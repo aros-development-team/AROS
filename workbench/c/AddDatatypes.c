@@ -7,6 +7,7 @@
 */
 
 #include <aros/macros.h>
+#include <aros/bigendianio.h>
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/execbase.h>
@@ -15,6 +16,7 @@
 #include <dos/dosextens.h>
 #include <libraries/iffparse.h>
 #include <utility/name.h>
+#include <utility/hooks.h>
 #include <workbench/startup.h>
 
 #include <proto/exec.h>
@@ -22,8 +24,10 @@
 #include <proto/utility.h>
 #include <proto/iffparse.h>
 #include <proto/alib.h>
+#include <proto/arossupport.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include "../libs/datatypes/datatypes_intern.h"
 #undef DOSBase
@@ -32,6 +36,43 @@
 #undef LocaleBase
 #undef DTList
 
+
+/******************************** STRUCTURES *********************************/
+
+/* same as datatypes/datatypes.h/struct DataTypeHeader, but always big endian
+and 32 bit pointers (which in the file are actually offsets) */
+
+struct FileDataTypeHeader	    
+{
+    ULONG	 fdth_NameOffset;     /* Name of the data type */
+    ULONG	 fdth_BaseNameOffset; /* Base name of the data type */
+    ULONG	 fdth_PatternOffset;  /* File name match pattern */
+    ULONG	 fdth_MaskOffset;     /* Comparision mask (binary) */
+    ULONG	 fdth_GroupID;        /* DataType Group */
+    ULONG	 fdth_ID;             /* DataType ID (same as IFF FORM type) */
+    WORD	 fdth_MaskLen;        /* Length of the comparision mask */
+    WORD	 fdth_Pad;            /* Unused at present (must be 0) */
+    UWORD	 fdth_Flags;          /* Flags -- see below */
+    UWORD	 fdth_Priority;
+};
+
+#define O(x)        offsetof(struct FileDataTypeHeader,x)
+
+static const IPTR FileDataTypeHeaderDesc[] =
+{
+    sizeof(struct FileDataTypeHeader),
+    SDM_ULONG(O(fdth_NameOffset)),
+    SDM_ULONG(O(fdth_BaseNameOffset)),
+    SDM_ULONG(O(fdth_PatternOffset)),
+    SDM_ULONG(O(fdth_MaskOffset)),
+    SDM_ULONG(O(fdth_GroupID)),
+    SDM_ULONG(O(fdth_ID)),
+    SDM_WORD(O(fdth_MaskLen)),
+    SDM_WORD(O(fdth_Pad)),
+    SDM_UWORD(O(fdth_Flags)),
+    SDM_UWORD(O(fdth_Priority)),
+    SDM_END
+};
 
 /******************************** PROTOTYPES *********************************/
 
@@ -646,6 +687,45 @@ void LoadDatatype(struct StackVars *sv, STRPTR name)
 }
 
 
+/****** AddDatatypes/MemStreamHook *******************************************
+*
+*   NAME
+*        MemStreamHook - needed by ReadStruct
+*
+*   SYNOPSIS
+*
+*   FUNCTION
+*
+*   INPUTS
+*
+*   RETURNS
+*
+*   EXAMPLE
+*
+*   SEE ALSO
+*
+******************************************************************************
+*
+*/
+
+LONG MemStreamHook(struct Hook * hook, UBYTE **memptr, Msg msg)
+{
+    LONG rc;
+
+    switch (msg->MethodID)
+    {
+	case BEIO_READ:
+	    rc = **memptr;
+	    (*memptr)++;
+	    break;
+	    
+	default:
+	    rc = EOF;
+	    break;
+    }
+
+    return rc;
+}
 
 /****** AddDatatypes/CreateDatatype *******************************************
 *
@@ -681,7 +761,8 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
     if((prop = FindProp(iff, ID_DTYP, ID_DTHD)))
     {
 	AllocLen = sizeof(struct CompoundDatatype) - 
-	    sizeof(struct DataTypeHeader) + prop->sp_Size;
+	          32 + /* was sizeof(struct DataTypeHeader), but we must use struct size as it would be on Amiga */
+		  prop->sp_Size;
 	
 	if(!(cdt = AllocVec(AllocLen, MEMF_PUBLIC | MEMF_CLEAR)))
 	{
@@ -689,83 +770,98 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
 	}
 	else
 	{
-	    cdt->DT.dtn_Header= &cdt->DTH;
+	    struct FileDataTypeHeader *fdh;
+	    UBYTE *memptr = (UBYTE *)prop->sp_Data;
+	    struct Hook hook;
 	    
-	    CopyMem(prop->sp_Data, &cdt->DTH, prop->sp_Size);
+	    hook.h_Entry = (HOOKFUNC)HookEntry;
+	    hook.h_SubEntry = (HOOKFUNC)MemStreamHook;
 	    
-	    cdt->DTH.dth_GroupID = AROS_BE2LONG(cdt->DTH.dth_GroupID);
-	    cdt->DTH.dth_ID = AROS_BE2LONG(cdt->DTH.dth_ID);
-	    cdt->DTH.dth_MaskLen = AROS_BE2WORD(cdt->DTH.dth_MaskLen);
-	    cdt->DTH.dth_Flags = AROS_BE2WORD(cdt->DTH.dth_Flags);
-	    cdt->DTH.dth_Priority = AROS_BE2WORD(cdt->DTH.dth_Priority);
-	    
-	    cdt->DTH.dth_Name = (STRPTR)
-		(AROS_BE2LONG((ULONG)cdt->DTH.dth_Name)    +(ULONG)&cdt->DTH);
-
-	    cdt->DTH.dth_BaseName = (STRPTR)
-		(AROS_BE2LONG((ULONG)cdt->DTH.dth_BaseName)+(ULONG)&cdt->DTH);
-
-	    cdt->DTH.dth_Pattern = (STRPTR)
-		(AROS_BE2LONG((ULONG)cdt->DTH.dth_Pattern) +(ULONG)&cdt->DTH);
-
-	    cdt->DTH.dth_Mask = (WORD*)
-		(AROS_BE2LONG((ULONG)cdt->DTH.dth_Mask)    +(ULONG)&cdt->DTH);
-	    
-	    cdt->DT.dtn_Node1.ln_Name =
-		cdt->DT.dtn_Node2.ln_Name = cdt->DTH.dth_Name;
-
-	    for(i = 0; i < cdt->DTH.dth_MaskLen; i++)
+	    if (ReadStruct(&hook, &fdh, &memptr, FileDataTypeHeaderDesc))
 	    {
-	        cdt->DTH.dth_Mask[i] = AROS_BE2WORD(cdt->DTH.dth_Mask[i]);
-	    }
+		IPTR extraoffset = sizeof(struct DataTypeHeader) - 32;
+		
+		cdt->DT.dtn_Header= &cdt->DTH;
+
+		cdt->DTH.dth_Name = (STRPTR)(fdh->fdth_NameOffset + extraoffset + (IPTR)&cdt->DTH);
+		cdt->DTH.dth_BaseName = (STRPTR)(fdh->fdth_BaseNameOffset + extraoffset + (IPTR)&cdt->DTH);
+		cdt->DTH.dth_Pattern = (STRPTR)(fdh->fdth_PatternOffset + extraoffset + (IPTR)&cdt->DTH);
+		cdt->DTH.dth_Mask = (WORD *)(fdh->fdth_MaskOffset + extraoffset + (IPTR)&cdt->DTH);
+		cdt->DTH.dth_GroupID = fdh->fdth_GroupID;
+		cdt->DTH.dth_ID = fdh->fdth_ID;
+		cdt->DTH.dth_MaskLen = fdh->fdth_MaskLen;
+		cdt->DTH.dth_Pad = fdh->fdth_Pad;
+		cdt->DTH.dth_Flags = fdh->fdth_Flags;
+		cdt->DTH.dth_Priority = fdh->fdth_Priority;
+		
+		CopyMem(prop->sp_Data + 32, cdt + 1, prop->sp_Size - 32);
+		
+		for(i = 0; i < cdt->DTH.dth_MaskLen; i++)
+		{
+	            cdt->DTH.dth_Mask[i] = AROS_BE2WORD(cdt->DTH.dth_Mask[i]);
+#if 0
+		    kprintf("mask[%d] = %04x (%c %c)\n", i, 
+			    cdt->DTH.dth_Mask[i],
+			    cdt->DTH.dth_Mask[i] & 255,
+			    (cdt->DTH.dth_Mask[i] >> 8) & 255);
+#endif
+		}
 
 #if 0	    
-kprintf("groupid = %c%c%c%c\n", cdt->DTH.dth_GroupID >> 24,
-				cdt->DTH.dth_GroupID >> 16,
-				cdt->DTH.dth_GroupID >> 8,
-				cdt->DTH.dth_GroupID);
-kprintf("     id = %c%c%c%c\n", cdt->DTH.dth_ID >> 24,
-				cdt->DTH.dth_ID >> 16,
-				cdt->DTH.dth_ID >> 8,
-				cdt->DTH.dth_ID);
-kprintf("flags   = %x\n",	cdt->DTH.dth_Flags);
-kprintf("pri     = %d\n",	cdt->DTH.dth_Priority);
-kprintf("name = %s\n",		cdt->DTH.dth_Name);
-kprintf("basename = %s\n",	cdt->DTH.dth_BaseName);
-kprintf("pattern = %s\n",	cdt->DTH.dth_Pattern);
-kprintf("masklen = %d\n",	cdt->DTH.dth_MaskLen);
+		kprintf("groupid = %c%c%c%c\n", cdt->DTH.dth_GroupID >> 24,
+						cdt->DTH.dth_GroupID >> 16,
+						cdt->DTH.dth_GroupID >> 8,
+						cdt->DTH.dth_GroupID);
+		kprintf("     id = %c%c%c%c\n", cdt->DTH.dth_ID >> 24,
+						cdt->DTH.dth_ID >> 16,
+						cdt->DTH.dth_ID >> 8,
+						cdt->DTH.dth_ID);
+		kprintf("flags   = %x\n",	cdt->DTH.dth_Flags);
+		kprintf("pri     = %d\n",	cdt->DTH.dth_Priority);
+		kprintf("name = %s\n",		cdt->DTH.dth_Name);
+		kprintf("basename = %s\n",	cdt->DTH.dth_BaseName);
+		kprintf("pattern = %s\n",	cdt->DTH.dth_Pattern);
+		kprintf("masklen = %d\n",	cdt->DTH.dth_MaskLen);
 #endif
-					
-	    NewList(&cdt->DT.dtn_ToolList);
-	    
-	    cdt->DT.dtn_Length = AllocLen;
-	    
-	    if((prop = FindProp(iff, ID_DTYP, ID_DTCD)))
-	    {
-		if((func = AllocVec(prop->sp_Size, MEMF_PUBLIC | MEMF_CLEAR)))
+
+		NewList(&cdt->DT.dtn_ToolList);
+
+		cdt->DT.dtn_Length = AllocLen;
+
+		if((prop = FindProp(iff, ID_DTYP, ID_DTCD)))
 		{
-		    cdt->DTCDChunk = func;
-		    cdt->DTCDSize = prop->sp_Size;
-		    
-		    CopyMem(prop->sp_Data,func,prop->sp_Size);
-		    
-		    HookBuffer = cdt->DTCDChunk;
-		    HookBufSize = cdt->DTCDSize;
-		    HookPosition = 0;
-
-		    if((SegList = InternalLoadSeg((BPTR)sv, NULL,
-						  (LONG_FUNC)FunctionArray,
-						  &DefaultStack)))
+		    if((func = AllocVec(prop->sp_Size, MEMF_PUBLIC | MEMF_CLEAR)))
 		    {
-			cdt->SegList = SegList;
-			cdt->Function = (APTR)((((ULONG)SegList) << 2) + 4);
-		    }
-		}
-	    }
+			cdt->DTCDChunk = func;
+			cdt->DTCDSize = prop->sp_Size;
 
-	    cdt = AddDatatype(sv, cdt);
-	}
-    }
+			CopyMem(prop->sp_Data,func,prop->sp_Size);
+
+			HookBuffer = cdt->DTCDChunk;
+			HookBufSize = cdt->DTCDSize;
+			HookPosition = 0;
+
+			if((SegList = InternalLoadSeg((BPTR)sv, NULL,
+						      (LONG_FUNC)FunctionArray,
+						      &DefaultStack)))
+			{
+			    cdt->SegList = SegList;
+			    cdt->Function = (APTR)((((ULONG)SegList) << 2) + 4);
+			}
+
+		    } /* if((func = AllocVec(prop->sp_Size, MEMF_PUBLIC | MEMF_CLEAR))) */
+
+		} /* if((prop = FindProp(iff, ID_DTYP, ID_DTCD))) */
+
+		cdt = AddDatatype(sv, cdt);
+
+		FreeStruct(fdh, FileDataTypeHeaderDesc);
+		
+	    } /* if (ReadStruct(&hook, &fdh, &memptr, FileDataTypeHeaderDesc)) */
+	    
+	} /* cdt AllocVec okay */
+	
+    } /* if((prop = FindProp(iff, ID_DTYP, ID_DTHD))) */
     
     return cdt;
 }
