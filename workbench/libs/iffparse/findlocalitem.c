@@ -79,7 +79,7 @@
 #if DEBUG
 	if (cn_node)
 	{
-	    D2(bug("    node=%p (%c%c%c%c)\n",
+	    DB2(bug("    node=%p (%c%c%c%c)\n",
 		cn_node,
 		cn_node->CN.cn_Type>>24,
 		cn_node->CN.cn_Type>>16,
@@ -89,7 +89,7 @@
 	}
 	else
 	{
-	    D2(bug("    node=%p (----)\n", cn_node));
+	    DB2(bug("    node=%p (----)\n", cn_node));
 	}
 #endif
 
@@ -101,7 +101,7 @@
 #if DEBUG
 	    if (lci_node)
 	    {
-		D2(bug("        lci_node=%p (%c%c%c%c, %c%c%c%c, %c%c%c%c)\n",
+		DB2(bug("        lci_node=%p (%c%c%c%c, %c%c%c%c, %c%c%c%c)\n",
 		    lci_node,
 		    lci_node->lci_Type>>24,
 		    lci_node->lci_Type>>16,
@@ -119,7 +119,7 @@
 	    }
 	    else
 	    {
-		D2(bug("        lci_node=%p (----, ----, ----)\n",
+		DB2(bug("        lci_node=%p (----, ----, ----)\n",
 		    lci_node
 		));
 	    }

@@ -196,7 +196,7 @@ LONG GetChunkHeader(struct IFFHandle *iff,
 	if (bytesread < 0)
 	    ReturnInt ("GetChunkHeader",LONG,bytesread);
 
-	D2(bug("  Found Chunk %c%c%c%c size=%d\n",
+	DB2(bug("  Found Chunk %c%c%c%c size=%d\n",
 	    id>>24,id>>16,id>>8,id,
 	    size,
 	    type>>24,type>>16,type>>8,type
@@ -208,7 +208,7 @@ LONG GetChunkHeader(struct IFFHandle *iff,
     else
     {
 	type = 0L;
-	D2(bug("  Found Chunk %c%c%c%c size=%d\n",
+	DB2(bug("  Found Chunk %c%c%c%c size=%d\n",
 	    id>>24,id>>16,id>>8,id,
 	    size
 	));

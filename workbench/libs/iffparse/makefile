@@ -79,6 +79,11 @@ iffparse_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    --assign lib=IFFParse \
 	    $^
 
+$(OBJDIR)/iffparse_init.o: libdefs.h
+
+libdefs.h : lib.conf $(TOP)/scripts/genlibdefs.gawk
+	gawk -f $(TOP)/scripts/genlibdefs.gawk lib.conf > libdefs.h
+
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@

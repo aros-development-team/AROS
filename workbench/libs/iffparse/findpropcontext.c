@@ -67,7 +67,7 @@
     /* Start at the parent of the top node */
     do
     {
-	D2(bug("   node=%p (%c%c%c%c)\n",
+	DB2(bug("   node=%p (%c%c%c%c)\n",
 	    node,
 	    node->cn_ID>>24, node->cn_ID>>16, node->cn_ID>>8, node->cn_ID
 	));
