@@ -29,7 +29,9 @@ VOID DoGMLayout(struct Gadget		*glist,
     while (glist && numgad)
     {
     	/* Is this a BOOPSI gad with special relativity ? */
-    	if (glist->GadgetType & GTYP_CUSTOMGADGET && glist->Flags & GFLG_RELSPECIAL)
+    	if ((glist->GadgetType & GTYP_CUSTOMGADGET) &&
+	    (glist->Flags & (GFLG_RELSPECIAL | GFLG_RELRIGHT | GFLG_RELBOTTOM |
+	                     GFLG_RELWIDTH | GFLG_RELHEIGHT)))
     	{
     	    struct gpLayout lmsg;
     	    lmsg.MethodID    = GM_LAYOUT;
