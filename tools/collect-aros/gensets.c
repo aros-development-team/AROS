@@ -7,6 +7,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <errno.h>
+
+#include "misc.h"
 
 typedef struct setnode
 {
@@ -16,8 +19,6 @@ typedef struct setnode
     struct setnode *next;
 } setnode;
 
-
-
 setnode *new_setnode(const char *name, setnode *next, int off, unsigned long pri){
    setnode *n;
 
@@ -25,8 +26,7 @@ setnode *new_setnode(const char *name, setnode *next, int off, unsigned long pri
        !(n->secname = strdup(name))
       )
    {
-	perror("Internal Error - gensets");
-	exit(1);
+	fatal("new_setnode()", strerror(errno));
    }
 
    n->off_setname = off;
@@ -65,7 +65,7 @@ setnode *get_setnode(setnode **list, const char *name, int off, unsigned long pr
     return (*curr = new_setnode(name, *curr, off, pri));
 }
 
-int emit_sets(setnode *setlist, FILE *out)
+void emit_sets(setnode *setlist, FILE *out)
 {
     char setname_big[201];
     int i;
@@ -110,10 +110,7 @@ int emit_sets(setnode *setlist, FILE *out)
             "    __%s_END__ = .;\n",
             oldnode->secname, setname_big
         );
-
     }
-
-    return 1;
 }
 
 
@@ -143,29 +140,4 @@ void parse_secname(const char *secname, setnode **setlist_ptr)
 
     get_setnode(setlist_ptr, secname, off, pri);
 }
-
-/*
-    This routine is slow, but does the work and it's the simplest to write down.
-    All this will get integrated into the linker anyway, so there's no point
-    in doing optimizations
-*/
-int gensets(FILE *in, FILE *out)
-{
-    char sec[201];
-    setnode *setlist = NULL;
-
-    while (fscanf(in, " %200s ", sec)>0)
-    {
-        parse_secname(sec, &setlist);
-    }
-
-    return emit_sets(setlist, out);
-}
-
-#ifdef GENSETS_TEST
-int main(void)
-{
-    return gensets(stdin, stdout);
-}
-#endif
 
