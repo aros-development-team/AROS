@@ -260,7 +260,12 @@ AROS_UFH3S(ULONG, ProcessDrawerData,
 kprintf ("ProcessDrawerData\n");
 #endif
 
-    if (DO(data->sdd_Dest)->do_Type == WBDRAWER)
+/*    if (DO(data->sdd_Dest)->do_Type == WBDRAWER)
+*/
+    /* sba: all icons which have do_DrawerData set actually contain
+     * also the drawer data */
+
+    if (DO(data->sdd_Dest)->do_DrawerData)
     {
 	switch (data->sdd_Mode)
 	{
@@ -325,13 +330,13 @@ kprintf ("ReadImage: %dx%dx%d (%d bytes)\n"
 	for (t=0; t<size; t++)
 	{
 	    UWORD data;
-	    	    
+
 	    if (!ReadWord (streamhook, &data, file))
 		break;
-		
+
 	    image->ImageData[t] = AROS_WORD2BE(data);
     	}
-	
+
 	if (t != size)
 	{
 	    FreeStruct (image, ImageDesc);
@@ -366,11 +371,11 @@ kprintf ("WriteImage: %dx%dx%d (%d bytes)\n"
     for (t=0; t<size; t++)
     {
     	UWORD data = image->ImageData[t];
-	
+
 	if (!WriteWord (streamhook, AROS_WORD2BE(data), file))
 	    break;
     }
-    
+
     return (t == size);
 } /* WriteImage */
 
@@ -491,11 +496,11 @@ AROS_UFH3S(ULONG, ProcessFlagPtr,
     switch (data->sdd_Mode)
     {
     case SDV_SPECIALMODE_READ:
-	if (FRead (data->sdd_Stream, &ptr, 4, 1) == EOF)
+	if (FRead (data->sdd_Stream, &ptr, 1, 4) != 4)
 	    return FALSE;
 
 #if 0
-kprintf ("ProcessFlagPtr: %08lx\n", ptr);
+kprintf ("ProcessFlagPtr: %08lx %ld\n", ptr);
 #endif
 
 	*((APTR *)data->sdd_Dest) = (APTR)(ptr != 0L);
@@ -508,7 +513,7 @@ kprintf ("ProcessFlagPtr: %08lx\n", ptr);
 	else
 	    ptr = 0L;
 
-	if (FWrite (data->sdd_Stream, &ptr, 4, 1) == EOF)
+	if (FWrite (data->sdd_Stream, &ptr, 1, 4) != 4)
 	    return FALSE;
 
 	break;
