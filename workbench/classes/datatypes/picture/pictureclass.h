@@ -15,8 +15,8 @@ struct Picture_Data
  struct ColorRegister *ColMap;
  ULONG                *ColRegs;
  ULONG                *GRegs;
- ULONG                *ColTable;
- ULONG                *ColTable2;
+ UBYTE                *ColTable;
+ UBYTE                *ColTable2;
  ULONG                 Allocated;
  UWORD                 NumColors;
  UWORD                 NumAlloc;

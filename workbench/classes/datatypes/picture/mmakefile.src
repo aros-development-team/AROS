@@ -7,7 +7,7 @@ USER_CFLAGS   := -DCOMPILE_DATATYPE
 MODNAME := picture
 MODTYPE := datatype
 
-FILES := pictureclass libfunc
+FILES := pictureclass libfunc colorhandling
 FUNCS := obtainengine
 
 USE_ROMLIB := yes
