@@ -1,18 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.2  1997/01/01 03:46:16  ldp
-    Committed Amiga native (support) code
-
-    Changed clib to proto
-
-    Revision 1.1  1996/11/14 08:51:35  aros
-    Some work on the kernel:
-    Mapping of Linux-Signals to AROS interrupts
-    Some documentation to the exec microkernel
-    hopefully all holes plugged now
-
 
     Desc:
     Lang:
@@ -56,13 +44,27 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct Interrupt *old;
-    Disable();
-    old=(struct Interrupt *)SysBase->IntVects[intNumber].iv_Node;
-    SysBase->IntVects[intNumber].iv_Data=interrupt->is_Data;
-    SysBase->IntVects[intNumber].iv_Code=interrupt->is_Code;
-    SysBase->IntVects[intNumber].iv_Node=&interrupt->is_Node;
-    Enable();
-    return old;
+    struct Interrupt *oldint;
+
+    Disable ();
+
+    oldint = (struct Interrupt *)SysBase->IntVects[intNumber].iv_Node;
+    SysBase->IntVects[intNumber].iv_Node = (struct Node *)interrupt;
+
+    if (interrupt)
+    {
+	SysBase->IntVects[intNumber].iv_Data = interrupt->is_Data;
+	SysBase->IntVects[intNumber].iv_Code = interrupt->is_Code;
+    }
+    else
+    {
+	SysBase->IntVects[intNumber].iv_Data = (APTR)~0;
+	SysBase->IntVects[intNumber].iv_Code = (void *)~0;
+    }
+
+    Enable ();
+
+    return oldint;
+
     AROS_LIBFUNC_EXIT
 } /* SetIntVector */

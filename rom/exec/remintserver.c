@@ -1,18 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.2  1997/01/01 03:46:14  ldp
-    Committed Amiga native (support) code
-
-    Changed clib to proto
-
-    Revision 1.1  1996/11/14 08:51:35  aros
-    Some work on the kernel:
-    Mapping of Linux-Signals to AROS interrupts
-    Some documentation to the exec microkernel
-    hopefully all holes plugged now
-
 
     Desc:
     Lang:
@@ -21,6 +9,9 @@
 #include <exec/interrupts.h>
 #include <proto/exec.h>
 #include <aros/libcall.h>
+#ifdef _AMIGA
+#include <hardware/custom.h>
+#endif
 
 /*****************************************************************************
 
@@ -56,12 +47,25 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct Interrupt *prev;
-    Disable();
-    prev=(struct Interrupt *)&SysBase->IntVects[intNumber].iv_Data;
-    while(prev->is_Node.ln_Succ!=&interrupt->is_Node)
-	prev=(struct Interrupt *)prev->is_Node.ln_Succ;
-    prev->is_Node.ln_Succ=interrupt->is_Node.ln_Succ;
-    Enable();
+    struct List *list;
+#ifdef _AMIGA
+    struct Custom *custom = (struct Custom *)((void **)0xdff000);
+#endif
+
+    list = (struct List *)SysBase->IntVects[intNumber].iv_Data;
+
+    Disable ();
+    Remove ((struct Node *)interrupt);
+
+    if (list->lh_TailPred == (struct Node *)list)
+    {
+	/* disable interrupts if there are no more nodes on the list */
+#ifdef _AMIGA
+	custom->intena = (UWORD)(1<<intNumber);
+#endif
+    }
+
+    Enable ();
+
     AROS_LIBFUNC_EXIT
 } /* RemIntServer */
