@@ -16,6 +16,7 @@
 #include <exec/errors.h>
 #include <exec/memory.h>
 #include <libraries/partition.h>
+#include <aros/debug.h>
 
 struct Volume {
    struct MsgPort *mp;
