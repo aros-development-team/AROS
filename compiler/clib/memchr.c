@@ -51,7 +51,7 @@
     while (n)
     {
 	if (*ptr == c)
-	    return ptr;
+	    return ((void *)ptr);
 
 	n --;
 	ptr ++;
