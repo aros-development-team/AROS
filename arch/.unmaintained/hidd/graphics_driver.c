@@ -528,6 +528,7 @@ void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 	tofill.MaxX = x2 + xrel;
 	tofill.MaxY = y2 + yrel;
 	
+	LockLayerRom(L);
 	
 	while (NULL != CR)
 	{
@@ -573,7 +574,7 @@ void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 	    CR = CR->Next;
 	}
 	
-
+        UnlockLayerRom(L);
     }
     
 	
