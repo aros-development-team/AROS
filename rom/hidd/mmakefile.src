@@ -16,10 +16,10 @@ LIBNAME     := hiddclass
 ULIBNAME    := Hiddclass
 LIBPOST     := hidd
 
-FILES       := hiddclass functable
+FILES       := hiddclass
 
 INIT_FILE   := $(LIBNAME)_init
-END_FILE    := $(LIBNAME)_end
+END_FILE    := $(OBJDIR)/endtag
 
 MY_INCLS    := $(wildcard include/*.h)
 DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
@@ -43,7 +43,7 @@ ifndef INITFUNC
 INITFUNC := $(OBJDIR)/$(INIT_FILE).o
 endif
 ifndef ENDFUNC
-ENDFUNC := $(OBJDIR)/$(END_FILE).o
+ENDFUNC := $(END_FILE).o
 endif
 ifndef OSMODULE
 OSMODULE := $(LIBNAME).$(LIBPOST)
@@ -91,7 +91,7 @@ kernel-hidd-includes-quick : setup-includes includes-copy
 
 # --- QUICK HACKS END ---
 
-DEPS := $(foreach f, $(INIT_FILE) $(FILES) $(END_FILE), $(OBJDIR)/$(f).d)
+DEPS := $(foreach f, $(INIT_FILE) $(FILES) $(notdir $(END_FILE)), $(OBJDIR)/$(f).d)
 
 $(LIB): libdefs.h $(ALL_OBJS)
 	%mklib_q from=$(ALL_OBJS)
@@ -116,13 +116,7 @@ libdefs.h : lib.conf
 	@$(ECHO) "Generating $@..."
 	@$(ARCHTOOL) -c
 
-$(END_FILE).c :
-	@$(ECHO) "Generating $@..."
-	@$(ECHO) "#include <libcore/libtail.c>" > $@
-
-# Rule to create functable.c
-functable.c : libdefs.h
-	@$(ARCHTOOL) -t
+%mkendtag_q
 
 #MM
 clean ::
