@@ -13,10 +13,10 @@
 #endif
 
 size_t strlen (const char * str);
-int strcasecmp (const char * s1, const char * s2);
-int strcmp (const char * s1, const char * s2);
-int strncasecmp (const char *str1, const char * str2, size_t n);
-int strncmp (const char * s1, const char * s2, size_t n);
+int    strcasecmp (const char * s1, const char * s2);
+int    strcmp (const char * s1, const char * s2);
+int    strncasecmp (const char *str1, const char * str2, size_t n);
+int    strncmp (const char * s1, const char * s2, size_t n);
 char * strdup (const char * str);
 char * strcpy (char * dest, const char * src);
 char * strcat (char * dest, const char * src);
@@ -34,6 +34,11 @@ char * stpcpy (char * dest, const char * src);
 
 #define index(s, c)  strchr(s, c)
 #define rindex(s, c) strrchr(s, c)
+
+char * stpblk( const char * str );   /* Supplemental (not ANSI C) */
+
+#define stpbrk(s,cs) strpbrk(s,cs)   /* Supplemental (not ANSI C) */
+#define stpchr(s,c)  strchr(s,c)     /* Supplemental (not ANSI C) */
 
 char * strrev(char * s); /* SAS C */
 int stch_l(const char * in, long * lvalue); /* SAS C */
