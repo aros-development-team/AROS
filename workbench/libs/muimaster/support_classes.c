@@ -7,17 +7,12 @@
 
 #include <string.h>
 
-#ifndef __AROS__
-#ifndef __MAXON__
-#include <dos.h>
-#endif
-#endif
-
 #include <intuition/classes.h>
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+
 #ifdef __AROS__
 #include <proto/muimaster.h>
 #endif

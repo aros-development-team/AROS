@@ -20,15 +20,7 @@
 #include <clib/macros.h>
 #endif
 
-#ifdef __AROS__
-#ifndef AROS_ASMCALL_H
-#include <aros/asmcall.h>
-#endif
-#else
-#ifndef _COMPILER_H
-#include "compiler.h"
-#endif
-#endif
+#include "support.h"
 
 struct IClass *GetPublicClass(CONST_STRPTR className, struct Library *mb);
 BOOL DestroyClasses(struct Library *MUIMasterBase);
