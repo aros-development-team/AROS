@@ -27,7 +27,7 @@ $(COUNTRYDIR)/%.country : $(OBJDIR)/%.o
 
 $(MAKECOUNTRY) : $(OBJDIR)/makecountry.o $(foreach f, $(COUNTRIES),$(OBJDIR)/$(f).o)
 	@$(ECHO) "Making $(@F)..."
-	@$(HOST_LD) $(HOST_LDFLAGS) $^ -o $@
+	@$(HOST_CC) $(HOST_LDFLAGS) $^ -o $@
 
 $(OBJDIR)/%.o : %.c
 	%compile_q cmd=$(HOST_CC) opt="$(HOST_CFLAGS) -I$(AROS_INCLUDES) $(USER_DEFINES)"
