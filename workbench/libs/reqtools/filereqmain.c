@@ -183,6 +183,7 @@ ULONG ASM SAVEDS PropReqHandler (
 		ReplyMsg ((struct Message *)appmsg);
 		goto iterate;
 	    }
+    	    ReplyMsg ((struct Message *)appmsg);	    
 	}
     }
 
