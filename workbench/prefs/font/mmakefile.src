@@ -14,6 +14,7 @@ USE_AMIGALIB    := yes
 USE_MLIB        := yes
 USE_MUILIB      := yes
 
+#MM- workbench-prefs : workbench-prefs-font
 #MM workbench-prefs-font : includes linklibs workbench-prefs-font-catalogs 
 
 %make_prog_setup mmake=workbench-prefs-font
