@@ -236,10 +236,10 @@ ULONG val, sigs = 0;
 		sigs = CheckSignal(SIGBREAKF_CTRL_C | sigs);
 
 	    }
-	    get(st, MUIA_String_Contents, (IPTR *)&string);
+	    get(st, MUIA_String_Contents, &string);
 	    if (strlen(string)==0)
             {
-                get(tst, MUIA_String_Contents, (IPTR *)&secret);
+                get(tst, MUIA_String_Contents, &secret);
                 retval = StrDup(secret);
             }
             else retval = StrDup(string);

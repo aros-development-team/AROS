@@ -104,13 +104,13 @@ int main(void)
 
         if (sigs == LWA_RV_OK)
         {
-            get(LoginWin, MUIA_LoginWindow_UserName, (IPTR *)&string);
+            get(LoginWin, MUIA_LoginWindow_UserName, &string);
             userName = StrDup(string);
             
-            get(LoginWin, MUIA_LoginWindow_UserPass, (IPTR *)&string);
+            get(LoginWin, MUIA_LoginWindow_UserPass, &string);
             userPass = StrDup(string);
             
-            get(LoginWin, MUIA_LoginWindow_Method, (IPTR *)&string);
+            get(LoginWin, MUIA_LoginWindow_Method, &string);
             loginMeth = StrDup(string);
 
             Printf(" Hello %s, welcome to aros..\n",userName);
