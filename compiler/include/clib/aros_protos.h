@@ -19,8 +19,8 @@
 #endif
 
 #ifdef DEBUG_FreeMem
-#   ifndef CLIB_EXEC_PROTOS_H
-#	include <clib/exec_protos.h>
+#   ifndef PROTO_EXEC_H
+#	include <proto/exec.h>
 #   endif
 #   if DEBUG_FreeMem
 #	undef FreeMem
