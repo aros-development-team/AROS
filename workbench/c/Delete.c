@@ -178,6 +178,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 		
 		return RETURN_FAIL;
 	    }
+	    UnLockDosList(LDF_ALL | LDF_READ);
 	}
 
 	for (match = MatchFirst(files[i], ap); match == 0;
@@ -272,6 +273,8 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
     {
 	printf("No file to delete\n");
     }
-    
+
+    MatchEnd(ap);
+
     return RETURN_OK;
 }
