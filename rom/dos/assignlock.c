@@ -60,7 +60,6 @@
     BOOL success = DOSTRUE;
 
     struct DosList    *dl, *newdl = NULL;
-    struct Process    *me = (struct Process *)FindTask(NULL);
     struct FileHandle *fh = (struct FileHandle *)BADDR(lock);
 
     if(lock != NULL)
