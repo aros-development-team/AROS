@@ -75,6 +75,7 @@ struct MUI_CustomClass *CL_TextIconList, *CL_TextIconListview;
 struct TextIconEntry
 {
     struct MinNode  	    node;
+    struct MinNode  	    selection_node;
     struct FileInfoBlock    fib;
     LONG    	    	    field_width[NUM_COLUMNS];
     UBYTE   	    	    datebuf[LEN_DATSTRING];
@@ -96,6 +97,7 @@ struct TextIconList_DATA
     LONG    	    	    	update_scrolldy;
     LONG    	    	    	update_entry;
     struct MinList  	    	entries_list;
+    struct MinList  	    	selection_list;
     struct RastPort 	    	temprp;
     struct Rectangle	    	view_rect;
     struct Rectangle	    	header_rect;
@@ -110,7 +112,11 @@ struct TextIconList_DATA
     BYTE    	    	    	column_visible[NUM_COLUMNS];
     BYTE    	    	    	column_align[NUM_COLUMNS];
     BYTE    	    	    	column_clickable[NUM_COLUMNS];
+    BYTE    	    	    	column_sortable[NUM_COLUMNS];
     STRPTR  	    	    	column_title[NUM_COLUMNS];
+    BYTE    	    	    	sort_column;
+    BYTE    	    	    	sort_direction;
+    BYTE    	    	    	sort_dirs;
     LONG    	    	    	inputstate;
     BOOL    	    	    	show_header;
     BOOL    	    	    	is_setup;
@@ -122,10 +128,12 @@ struct TextIconList_DATA
 #define UPDATE_SCROLL	    	2
 #define UPDATE_DIRTY_ENTRIES  	3
 #define UPDATE_ALL  	    	4
+#define UPDATE_HEADER	    	5
 
-#define INPUTSTATE_NONE     	0
-#define INPUTSTATE_PAN	    	1
-#define INPUTSTATE_COL_RESIZE 	2
+#define INPUTSTATE_NONE     	    0
+#define INPUTSTATE_PAN	    	    1
+#define INPUTSTATE_COL_RESIZE 	    2
+#define INPUTSTATE_COL_HEADER_CLICK 3
 
 #define MUIB_TextIconList   	    (MUIB_AROS | 0x00000700)
 
@@ -151,6 +159,17 @@ struct MUIP_TextIconList_Add        {STACKULONG MethodID; struct FileInfoBlock *
 #define INDEX_DATE  	    3
 #define INDEX_TIME  	    4
 #define INDEX_COMMENT 	    5
+
+#define SORT_DRAWERS_FIRST  0
+#define SORT_DRAWERS_MIXED  1
+#define SORT_DRAWERS_LAST   2
+
+#define SORT_DIRECTION_UP   0
+#define SORT_DIRECTION_DOWN 1
+
+#define SORT_BY_NAME	    0
+#define SORT_BY_DATE	    1
+#define SORT_BY_SIZE	    2
 
 static STRPTR GetTextIconEntryText(struct TextIconList_DATA *data, struct TextIconEntry *entry,
     	    	    	           LONG index)
@@ -352,6 +371,208 @@ static struct TextIconEntry *GetEntryFromIndex(struct TextIconList_DATA *data, L
     return retval;    
 }
 
+static LONG LineUnderMouse(struct TextIconList_DATA *data, LONG mx, LONG my)
+{
+    LONG index = -1;
+    
+    if ((mx >= data->view_rect.MinX) &&
+	(my >= data->view_rect.MinY) &&
+    	(mx <= data->view_rect.MaxX) &&
+	(my <= data->view_rect.MaxY))
+    {
+    	index = (my - data->view_rect.MinY + data->view_y) / data->lineheight;
+	
+	if ((index < 0) || (index >= data->num_entries)) index = -1;
+    }
+    
+    return index;
+}
+
+static LONG ColumnUnderMouse(struct TextIconList_DATA *data, LONG mx, LONG my)
+{
+    LONG col = -1;
+
+    if ((mx >= data->view_rect.MinX) &&
+	(my >= data->view_rect.MinY - data->headerheight) &&
+    	(mx <= data->view_rect.MaxX) &&
+	(my <= data->view_rect.MaxY))
+    {
+    	LONG x = data->view_rect.MinX - data->view_x + LINE_SPACING_LEFT;
+	LONG w, i;
+	
+    	for(i = 0; i < NUM_COLUMNS; i++)
+	{
+	    LONG index = data->column_pos[i];
+	    
+	    if (!data->column_visible[index]) continue;
+	    
+	    w = data->column_width[index];
+	    
+	    if ((mx >= x) && (mx < x + w))
+	    {
+	    	col = index;
+		break;
+	    }
+	    x += w;
+	}
+	
+    }
+    
+    return col;    
+}
+
+static LONG ColumnHeaderUnderMouse(struct TextIconList_DATA *data, LONG mx, LONG my)
+{
+    LONG col = -1;
+
+    if (data->show_header &&
+    	(my >= data->header_rect.MinY) &&
+	(my <= data->header_rect.MaxY))
+    {
+    	col = ColumnUnderMouse(data, mx, my);
+    }
+        
+    return col;    
+}
+
+static LONG ColumnResizeHandleUnderMouse(struct TextIconList_DATA *data, LONG mx, LONG my)
+{
+    LONG col = -1;
+
+    if ((mx >= data->view_rect.MinX) &&
+	(my >= data->view_rect.MinY - data->headerheight) &&
+    	(mx <= data->view_rect.MaxX) &&
+	(my <= data->view_rect.MaxY))
+    {
+    	LONG x = data->view_rect.MinX - data->view_x + LINE_SPACING_LEFT;
+	LONG w, i;
+	
+    	for(i = 0; i < NUM_COLUMNS; i++)
+	{
+	    LONG index = data->column_pos[i];
+	    
+	    if (!data->column_visible[index]) continue;
+	    
+	    w = data->column_width[index];
+	    
+	    if (abs(mx - (x + w - 1)) <= 4)
+	    {
+	    	col = index;
+		break;
+	    }
+	    x += w;
+	}
+	
+    }
+    
+    return col;    
+}
+
+static BOOL GetColumnCoords(struct TextIconList_DATA *data, LONG index, LONG *x1, LONG *x2)
+{
+    LONG i;
+    BOOL retval = FALSE;
+    LONG x = data->view_rect.MinX - data->view_x + LINE_SPACING_LEFT;
+    
+    for(i = 0; i < NUM_COLUMNS; i++)
+    {
+    	LONG idx = data->column_pos[i];
+	LONG w;
+	
+    	if (!data->column_visible[idx]) continue;
+	
+	w = data->column_width[idx];
+	
+	if (idx == index)
+	{
+	    retval = TRUE;
+	    *x1 = x - ((i == 0) ? LINE_SPACING_LEFT : 0);
+	    *x2 = x + w - ((i == NUM_COLUMNS - 1) ? 0 : 1);
+	    break;	    
+	}
+	
+	x += w;
+    }
+    
+    return retval;
+}
+
+static LONG CompareNodes(struct TextIconList_DATA *data, struct TextIconEntry *node1, struct TextIconEntry *node2)
+{
+    LONG pri1 = (node1->fib.fib_DirEntryType > 0) ? 1 : 0;
+    LONG pri2 = (node2->fib.fib_DirEntryType > 0) ? 1 : 0;
+    LONG diff = (pri2 - pri1) * -(data->sort_dirs - 1);
+    
+    if (!diff)
+    {
+    	switch(data->sort_column)
+	{
+	    case INDEX_DATE:
+	    case INDEX_TIME:
+	    	diff = CompareDates((const struct DateStamp *)&node2->fib.fib_Date,
+		    	    	    (const struct DateStamp *)&node1->fib.fib_Date);
+
+    	    	break;
+		
+	    case INDEX_SIZE:
+	    	if (node1->fib.fib_Size < node2->fib.fib_Size)
+		{
+		    diff = -1;
+		}
+		else if (node1->fib.fib_Size > node2->fib.fib_Size)
+		{
+		    diff = 1;
+		}
+		break;
+		
+    	    default:
+	    case INDEX_NAME:
+	    	diff = Stricmp(node1->fib.fib_FileName, node2->fib.fib_FileName);
+		break;
+		
+	}
+	
+	if (data->sort_direction == SORT_DIRECTION_DOWN) diff = -diff;
+    }
+    
+    return diff;
+}
+
+static void SortInNode(struct TextIconList_DATA *data, struct List *list, struct Node *node,
+		       LONG (*compare)(APTR data, APTR node1, APTR node2))
+{
+    struct Node *prevnode = NULL;
+    struct Node *checknode;
+    
+    ForeachNode(list, checknode)
+    {
+        if (compare(data, node, checknode) < 0) break;
+
+	prevnode = checknode;
+    }
+    
+    Insert(list, node, prevnode);
+}
+
+static void ReSortEntries(struct TextIconList_DATA *data)
+{
+    struct List templist;
+    struct Node *node, *succ;
+    
+    NEWLIST(&templist);
+    
+    ForeachNodeSafe(&data->entries_list, node, succ)
+    {
+    	Remove(node);
+    	AddTail(&templist, node);
+    }
+    
+    ForeachNodeSafe(&templist, node, succ)
+    {
+    	SortInNode(data, (struct List *)&data->entries_list, node, (APTR)CompareNodes);
+    }
+}
+
 static BOOL MustRenderRect(struct TextIconList_DATA *data, struct Rectangle *rect)
 {
     if (data->update_rect1 && data->update_rect2)
@@ -377,18 +598,52 @@ static void RenderHeaderField(Object *obj, struct TextIconList_DATA *data,
     STRPTR text;
     struct TextExtent te;
     ULONG fit;
+    BOOL  sel = FALSE;
+    
+    if ((data->inputstate == INPUTSTATE_COL_HEADER_CLICK) &&
+    	(data->click_column == index))
+    	
+    {
+    	if (ColumnHeaderUnderMouse(data, data->click_x, data->click_y) == index)
+	{
+	    sel = TRUE;
+	}
+    }
     
     text = GetTextIconHeaderText(data, index);
 
-    SetAPen(_rp(obj), _pens(obj)[MPEN_HALFSHINE]);
+    SetAPen(_rp(obj), _pens(obj)[sel ? MPEN_HALFSHADOW : MPEN_HALFSHINE]);
     RectFill(_rp(obj), rect->MinX + 1, rect->MinY + 1,
     	    	       rect->MaxX - 1, rect->MaxY - 1);
-    SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+    SetAPen(_rp(obj), _pens(obj)[sel ? MPEN_SHADOW : MPEN_SHINE]);
     RectFill(_rp(obj), rect->MinX, rect->MinY, rect->MinX, rect->MaxY);
     RectFill(_rp(obj), rect->MinX + 1, rect->MinY, rect->MaxX - 1, rect->MinY);
-    SetAPen(_rp(obj), _pens(obj)[MPEN_HALFSHADOW]);
+    SetAPen(_rp(obj), _pens(obj)[sel ? MPEN_HALFSHINE : MPEN_HALFSHADOW]);
     RectFill(_rp(obj), rect->MaxX, rect->MinY, rect->MaxX, rect->MaxY);
     RectFill(_rp(obj), rect->MinX + 1, rect->MaxY, rect->MaxX - 1, rect->MaxY);
+    		       
+    if (index == data->sort_column)
+    {
+    	LONG x = rect->MaxX - 4 - 6;
+	LONG y = (rect->MinY + rect->MaxY + 1) / 2 - 3;
+	
+	if (x > rect->MinX)
+	{
+	    SetAPen(_rp(obj), _pens(obj)[sel ? MPEN_SHADOW : MPEN_HALFSHADOW]);
+	    if (data->sort_direction == SORT_DIRECTION_UP)
+	    {
+		RectFill(_rp(obj), x, y, x + 5, y + 1);
+		RectFill(_rp(obj), x + 1, y + 2, x + 4, y + 3);
+		RectFill(_rp(obj), x + 2, y + 4, x + 3, y + 5);
+	    }
+	    else
+	    {
+		RectFill(_rp(obj), x, y + 4, x + 5, y + 5);
+		RectFill(_rp(obj), x + 1, y + 2, x + 4, y + 3);
+		RectFill(_rp(obj), x + 2, y, x + 3, y + 1);
+	    }
+	}
+    }
     		       
     rect->MinX += HEADERENTRY_SPACING_LEFT;
     rect->MinY += HEADERLINE_SPACING_TOP;
@@ -403,7 +658,7 @@ static void RenderHeaderField(Object *obj, struct TextIconList_DATA *data,
 
 	if (!fit) return;
 
-	SetABPenDrMd(_rp(obj), _pens(obj)[MPEN_TEXT], _pens(obj)[MPEN_HALFSHINE], JAM2);
+	SetABPenDrMd(_rp(obj), _pens(obj)[MPEN_TEXT], 0, JAM1);
 	Move(_rp(obj), rect->MinX, rect->MinY + _rp(obj)->TxBaseline);
 	Text(_rp(obj), text, fit);
     }
@@ -420,7 +675,7 @@ static void RenderHeaderline(Object *obj, struct TextIconList_DATA *data)
     linerect.MaxX -= data->view_x;
 
     linerect.MinX = data->header_rect.MinX - data->view_x;
-    linerect.MaxX = linerect.MinX + data->width - 1;
+    linerect.MaxX = data->header_rect.MaxX; //linerect.MinX + data->width - 1;
     linerect.MinY = data->header_rect.MinY;
     linerect.MaxY = data->header_rect.MaxY;
     
@@ -451,7 +706,20 @@ static void RenderHeaderline(Object *obj, struct TextIconList_DATA *data)
 	}
 	x += data->column_width[index];
     }
-        
+    
+    x += HEADERLINE_SPACING_RIGHT;
+    
+    if (x < linerect.MaxX)
+    {
+    	linerect.MinX = x;
+	
+	if (MustRenderRect(data, &linerect))
+	{
+    	    SetABPenDrMd(_rp(obj), _pens(obj)[MPEN_HALFSHINE], 0, JAM1);
+	    RectFill(_rp(obj), linerect.MinX, linerect.MinY, linerect.MaxX, linerect.MaxY);
+	}
+    }
+    
 }
 
 #define ENTRYPOS_FIRST -1
@@ -521,7 +789,7 @@ static void RenderEntry(Object *obj, struct TextIconList_DATA *data, LONG index)
     LONG    	     firstvis, lastvis;
     
     linerect.MinX = data->view_rect.MinX - data->view_x;
-    linerect.MaxX = linerect.MinX + data->width - 1;
+    linerect.MaxX = data->view_rect.MaxX; //linerect.MinX + data->width - 1;
     linerect.MinY = data->view_rect.MinY + index * data->lineheight - data->view_y;
     linerect.MaxY = linerect.MinY + data->lineheight - 1;
     
@@ -556,6 +824,19 @@ static void RenderEntry(Object *obj, struct TextIconList_DATA *data, LONG index)
 	    }
 	}
 	x += data->column_width[index];
+    }
+
+    x += LINE_SPACING_RIGHT;
+    
+    if (x < linerect.MaxX)
+    {
+    	linerect.MinX = x;
+	
+	if (MustRenderRect(data, &linerect))
+	{
+    	    SetABPenDrMd(_rp(obj), _pens(obj)[MPEN_SHINE], 0, JAM1);
+	    RectFill(_rp(obj), linerect.MinX, linerect.MinY, linerect.MaxX, linerect.MaxY);
+	}
     }
         
 }
@@ -604,6 +885,7 @@ static IPTR TextIconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
     NewList((struct List*)&data->entries_list);
+    NewList((struct List*)&data->selection_list);
     data->show_header = TRUE;
     data->active_entry = -1;
     
@@ -615,6 +897,15 @@ static IPTR TextIconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
     }
     data->column_align[INDEX_SIZE] = COLUMN_ALIGN_RIGHT;
     data->column_clickable[INDEX_NAME] = TRUE;
+
+    data->column_sortable[INDEX_NAME] = TRUE;
+    data->column_sortable[INDEX_SIZE] = TRUE;
+    data->column_sortable[INDEX_DATE] = TRUE;
+    data->column_sortable[INDEX_TIME] = TRUE;
+
+    data->sort_column = INDEX_NAME;
+    data->sort_direction = SORT_DIRECTION_UP;
+    data->sort_dirs = SORT_DRAWERS_FIRST;
     
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -881,6 +1172,23 @@ static IPTR TextIconList_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_A
     return rc;
 }
 
+static void DrawHeaderLine(Object *obj, struct TextIconList_DATA *data)
+{
+    APTR clip;
+    
+    if (data->show_header && MustRenderRect(data, &data->header_rect))
+    {
+	clip = MUI_AddClipping(muiRenderInfo(obj), data->header_rect.MinX,
+    	    	    	    	    		   data->header_rect.MinY,
+						   data->header_rect.MaxX - data->header_rect.MinX + 1,
+						   data->header_rect.MaxY - data->header_rect.MinY + 1);
+
+	RenderHeaderline(obj, data);
+
+	MUI_RemoveClipping(muiRenderInfo(obj),clip);
+    }
+}
+
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
@@ -1072,6 +1380,14 @@ static IPTR TextIconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *
 	    return 0;
 	    
 	} /* else if (data->update == UPDATE_DIRTY_ENTRIES) */
+	else if (data->update == UPDATE_HEADER)
+	{
+	    data->update = 0;
+	    
+	    DrawHeaderLine(obj, data);
+	    
+	    return 0;
+	}
 	
     } /* if (msg->flags & MADF_DRAWUPDATE) */
 
@@ -1087,136 +1403,12 @@ static IPTR TextIconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *
 	MUI_RemoveClipping(muiRenderInfo(obj),clip);
     }
     
-    if (data->show_header && MustRenderRect(data, &data->header_rect))
-    {
-	clip = MUI_AddClipping(muiRenderInfo(obj), data->header_rect.MinX,
-    	    	    	    	    		   data->header_rect.MinY,
-						   data->header_rect.MaxX - data->header_rect.MinX + 1,
-						   data->header_rect.MaxY - data->header_rect.MinY + 1);
-
-	RenderHeaderline(obj, data);
-
-	MUI_RemoveClipping(muiRenderInfo(obj),clip);
-    }
+    DrawHeaderLine(obj, data);
     
-
     data->update = 0;
 
     return 0;
 }
-
-static LONG LineUnderMouse(struct TextIconList_DATA *data, LONG mx, LONG my)
-{
-    LONG index = -1;
-    
-    if ((mx >= data->view_rect.MinX) &&
-	(my >= data->view_rect.MinY) &&
-    	(mx <= data->view_rect.MaxX) &&
-	(my <= data->view_rect.MaxY))
-    {
-    	index = (my - data->view_rect.MinY + data->view_y) / data->lineheight;
-	
-	if ((index < 0) || (index >= data->num_entries)) index = -1;
-    }
-    
-    return index;
-}
-
-static LONG ColumnUnderMouse(struct TextIconList_DATA *data, LONG mx, LONG my)
-{
-    LONG col = -1;
-
-    if ((mx >= data->view_rect.MinX) &&
-	(my >= data->view_rect.MinY - data->headerheight) &&
-    	(mx <= data->view_rect.MaxX) &&
-	(my <= data->view_rect.MaxY))
-    {
-    	LONG x = data->view_rect.MinX - data->view_x + LINE_SPACING_LEFT;
-	LONG w, i;
-	
-    	for(i = 0; i < NUM_COLUMNS; i++)
-	{
-	    LONG index = data->column_pos[i];
-	    
-	    if (!data->column_visible[index]) continue;
-	    
-	    w = data->column_width[index];
-	    
-	    if ((mx >= x) && (mx < x + w))
-	    {
-	    	col = index;
-		break;
-	    }
-	    x += w;
-	}
-	
-    }
-    
-    return col;    
-}
-
-static LONG ColumnResizeHandleUnderMouse(struct TextIconList_DATA *data, LONG mx, LONG my)
-{
-    LONG col = -1;
-
-    if ((mx >= data->view_rect.MinX) &&
-	(my >= data->view_rect.MinY - data->headerheight) &&
-    	(mx <= data->view_rect.MaxX) &&
-	(my <= data->view_rect.MaxY))
-    {
-    	LONG x = data->view_rect.MinX - data->view_x + LINE_SPACING_LEFT;
-	LONG w, i;
-	
-    	for(i = 0; i < NUM_COLUMNS; i++)
-	{
-	    LONG index = data->column_pos[i];
-	    
-	    if (!data->column_visible[index]) continue;
-	    
-	    w = data->column_width[index];
-	    
-	    if (abs(mx - (x + w - 1)) <= 4)
-	    {
-	    	col = index;
-		break;
-	    }
-	    x += w;
-	}
-	
-    }
-    
-    return col;    
-}
-
-static BOOL GetColumnCoords(struct TextIconList_DATA *data, LONG index, LONG *x1, LONG *x2)
-{
-    LONG i;
-    BOOL retval = FALSE;
-    LONG x = data->view_rect.MinX - data->view_x + LINE_SPACING_LEFT;
-    
-    for(i = 0; i < NUM_COLUMNS; i++)
-    {
-    	LONG idx = data->column_pos[i];
-	LONG w;
-	
-    	if (!data->column_visible[idx]) continue;
-	
-	w = data->column_width[idx];
-	
-	if (idx == index)
-	{
-	    retval = TRUE;
-	    *x1 = x - ((i == 0) ? LINE_SPACING_LEFT : 0);
-	    *x2 = x + w - ((i == NUM_COLUMNS - 1) ? 0 : 1);
-	    break;	    
-	}
-	
-	x += w;
-    }
-    
-    return retval;
-}
-
 
 /**************************************************************************
  MUIM_HandleEvent
@@ -1261,6 +1453,7 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 					data->active_entry = line;
 					if (old && old->selected && !shift_qual)
 					{
+					    Remove((struct Node *)&old->selection_node);
 				    	    old->selected = FALSE;
 					    old->dirty = TRUE;
 
@@ -1275,6 +1468,7 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 					    {
 						if (entry->selected)
 						{
+					    	    Remove((struct Node *)&entry->selection_node);
 					    	    entry->selected = FALSE;
 						    entry->dirty = TRUE;
 						}
@@ -1285,6 +1479,7 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 
 					if (new && !new->selected)
 					{
+					    AddTail((struct List *)&data->selection_list, (struct Node *)&new->selection_node);
 				    	    new->selected = TRUE;
 					    new->dirty = TRUE;
 
@@ -1312,7 +1507,24 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 			    	    DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);			    
 				}
 				
-			    } /* else if click on column header entry */
+			    } /* else if click on column header entry resize handle */
+			    else if ((col = ColumnHeaderUnderMouse(data, mx, my)) >= 0)
+			    {
+				data->inputstate = INPUTSTATE_COL_HEADER_CLICK;
+				data->click_column = col;
+				data->click_x = mx;
+				data->click_y = my;
+
+    	    	    		if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
+				{
+			    	    DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+			    	    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+			    	    DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);			    
+				}
+
+    	    	    	    	data->update = UPDATE_HEADER;
+				MUI_Redraw(obj, MADF_DRAWUPDATE);
+			    }
 			    
 			} /* if (data->inputstate == INPUTSTATE_NONE) */
 		    	break;
@@ -1329,6 +1541,47 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 			    
 			    data->inputstate = INPUTSTATE_NONE;
 			}
+			else if (data->inputstate == INPUTSTATE_COL_HEADER_CLICK)
+			{
+		    	    if (data->ehn.ehn_Events & IDCMP_MOUSEMOVE)
+			    {
+				DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+				data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+				DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);			    
+			    }
+
+			    data->inputstate = INPUTSTATE_NONE;
+			    
+			    if (ColumnHeaderUnderMouse(data, data->click_x, data->click_y) == data->click_column)
+			    {
+				
+				if (data->column_sortable[data->click_column])
+				{
+				    if (data->sort_column == data->click_column)
+				    {
+				    	data->sort_direction = 1 - data->sort_direction;
+				    }
+				    else
+				    {
+				    	data->sort_direction = SORT_DIRECTION_UP;
+					data->sort_column = data->click_column;
+				    }
+				
+				    ReSortEntries(data);
+				
+				    data->update = UPDATE_ALL;
+				    MUI_Redraw(obj, MADF_DRAWUPDATE);
+
+				}
+				else
+				{
+			    	    data->update = UPDATE_HEADER;
+				    MUI_Redraw(obj, MADF_DRAWUPDATE);
+				}
+				
+			    } /* mouse still over column header */
+			    
+			} /* else if (data->inputstate == INPUTSTATE_COL_HEADER_CLICK) */
 			break;
 		    	
 		    case MIDDLEDOWN:
@@ -1438,6 +1691,19 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 		    } /* else if (new_colwidth < act_colwidth) */
 		    
 		} /* else if (data->inputstate == INPUTSTATE_COL_RESIZE) */
+		else if (data->inputstate == INPUTSTATE_COL_HEADER_CLICK)
+		{
+		    BOOL old = ColumnHeaderUnderMouse(data, data->click_x, data->click_y);
+		    BOOL new = ColumnHeaderUnderMouse(data, mx, my);
+		    
+		    if (new != old)
+		    {
+		    	data->click_x = mx;
+			data->click_y = my;
+			data->update = UPDATE_HEADER;
+			MUI_Redraw(obj, MADF_DRAWUPDATE);
+		    }
+		}
 		break;
 		
     	} /* switch (msg->imsg->Class) */
@@ -1461,11 +1727,13 @@ static IPTR TextIconList_Clear(struct IClass *cl, Object *obj, struct MUIP_TextI
     {
         FreePooled(data->pool,node,sizeof(*node));
     }
+    NewList((struct List *)&data->selection_list);
 
     data->view_x = data->view_y = data->width = data->height = 0;
     data->num_entries = 0;
     data->active_entry = -1;
     data->num_selected = 0;
+    
     
     for(i = 0; i < NUM_COLUMNS; i++)
     {
@@ -1533,7 +1801,7 @@ static IPTR TextIconList_Add(struct IClass *cl, Object *obj, struct MUIP_TextIco
     
     data->num_entries++;
     
-    AddTail((struct List *)&data->entries_list, (struct Node *)entry);
+    SortInNode(data, (struct List *)&data->entries_list, (struct Node *)entry, (APTR)CompareNodes);
     
     if (data->is_setup)
     {
