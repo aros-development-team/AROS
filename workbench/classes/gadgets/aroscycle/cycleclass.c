@@ -139,6 +139,7 @@ IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
 
             data->labels = (STRPTR *)tag->ti_Data;
             data->numlabels = 0;
+	    data->active = 0;
             mylabels = data->labels;
             if (mylabels)
             {
@@ -155,6 +156,10 @@ IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
             data->active = tag->ti_Data;
             rerender = TRUE;
             break;
+	    
+	case GA_Disabled:
+	    rerender = TRUE;
+	    break;
         }
     }
 

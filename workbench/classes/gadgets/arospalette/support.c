@@ -7,6 +7,7 @@
 */
 #include <proto/graphics.h>
 #include <proto/intuition.h>
+#include <graphics/gfxmacros.h>
 #include <intuition/classes.h>
 #include <intuition/cghooks.h>
 #include <intuition/gadgetclass.h>
@@ -283,7 +284,7 @@ VOID UpdateActiveColor( struct PaletteData	*data,
     framebox.Width  = data->pd_ColWidth  + VBORDER;
     framebox.Height = data->pd_RowHeight + HBORDER;
 
-    RenderFrame(data, rp, &framebox, dri, TRUE, AROSPaletteBase);
+    RenderFrame(data, rp, &framebox, dri, TRUE, TRUE, AROSPaletteBase);
 
     /* The newly update color becomes the new OldColor */
     data->pd_OldColor = data->pd_Color;
@@ -302,34 +303,22 @@ UWORD disabledpattern[2] = {0x4444, 0x1111};
 void DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen,
 			 struct PaletteBase_intern *AROSPaletteBase)
 {
-
-    WORD x, y;
+    UWORD pattern[] = { 0x8888, 0x2222 };
 
     EnterFunc(bug("DrawDisabledPattern(rp=%p, gadbox=%p, pen=%d)\n",
     		rport, gadbox, pen));
 
+    SetDrMd( rport, JAM1 );
+    SetAPen( rport, pen );
+    SetAfPt( rport, pattern, 1);
 
-    for (y=0; y<(gadbox->Height-1); y++)
-    {
-        for (x=0; x<(gadbox->Width-1); x++)
-	{
-	    if (y%2)
-	    {
-		if (!((x+1)%4))
-		{
-		    Move(rport, gadbox->Left + x, gadbox->Top + y);
-		    Draw(rport, gadbox->Left + x, gadbox->Top + y);
-		}
-	    } else
-	    {
-		if (!((x+3)%4))
-		{
-		    Move(rport, gadbox->Left + x, gadbox->Top + y);
-		    Draw(rport, gadbox->Left + x, gadbox->Top + y);
-		}
-            }
-	}
-    }
+    /* render disable pattern */
+    RectFill( rport, gadbox->Left,
+    		     gadbox->Top,
+		     gadbox->Left + gadbox->Width - 1,
+		     gadbox->Top + gadbox->Height -1 );
+		         
+    SetAfPt ( rport, NULL, 0);
 
     ReturnVoid("DrawDisabledPattern");
 }
@@ -479,7 +468,7 @@ BOOL RenderLabel( struct Gadget *gad, struct IBox *gadbox,
 **  RenderFrame()  **
 ********************/
 VOID RenderFrame(struct PaletteData *data, struct RastPort *rp, struct IBox *gadbox,
-        struct DrawInfo *dri, BOOL recessed, struct PaletteBase_intern *AROSPaletteBase)
+        struct DrawInfo *dri, BOOL recessed, BOOL edgesonly, struct PaletteBase_intern *AROSPaletteBase)
 {
     WORD left, top, right, bottom;
 
@@ -493,10 +482,10 @@ VOID RenderFrame(struct PaletteData *data, struct RastPort *rp, struct IBox *gad
     {
 	struct TagItem frame_tags[] =
 	{
-	    {IA_Resolution	, (dri->dri_Resolution.X << 16) +  dri->dri_Resolution.Y	},
-	    {IA_FrameType	, FRAME_BUTTON							},
-	    {IA_EdgesOnly	, TRUE								},
-	    {TAG_DONE										}
+	    {IA_Resolution	, (dri->dri_Resolution.X << 16) +  dri->dri_Resolution.Y},
+	    {IA_FrameType	, FRAME_BUTTON						},
+	    {IA_EdgesOnly	, edgesonly						},
+	    {TAG_DONE									}
 	};
 
 	data->pd_Frame = NewObjectA(NULL, FRAMEICLASS, frame_tags);

@@ -260,14 +260,14 @@ STATIC VOID palette_render(Class *cl, Object *o, struct gpRender *msg)
 	    RenderLabel((struct Gadget *)o, gbox, rp,
     			data->pd_LabelPlace, AROSPaletteBase);
 
-	    RenderFrame(data, rp, gbox, dri, FALSE, AROSPaletteBase);
+	    RenderFrame(data, rp, gbox, dri, FALSE, FALSE, AROSPaletteBase);
 
     	    RenderPalette(data, rp, AROSPaletteBase);
     	    
     	    /* Render frame aroun ibox */
     	    if (data->pd_IndWidth || data->pd_IndHeight)
     	    {
-    	    	RenderFrame(data, rp, &(data->pd_IndicatorBox), dri, TRUE, AROSPaletteBase);
+    	    	RenderFrame(data, rp, &(data->pd_IndicatorBox), dri, TRUE, TRUE, AROSPaletteBase);
     	    }
     
     	case GREDRAW_UPDATE:
@@ -732,18 +732,26 @@ AROS_UFH3S(IPTR, dispatch_paletteclass,
 	    if ( retval && ((msg->MethodID != OM_UPDATE) || (cl == OCLASS(o))) )
 	    {
 	    	struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
+
 	    	if (gi)
 	    	{
 		    struct RastPort *rp = ObtainGIRPort(gi);
+
 		    if (rp)
-		    {
-
-
-		        DoMethod(o, GM_RENDER, gi, rp, GREDRAW_UPDATE);
+		    {		        
+		        DoMethod(o, 
+				 GM_RENDER,
+				 gi,
+				 rp,
+				 FindTagItem(GA_Disabled, ((struct opSet *)msg)->ops_AttrList) ? GREDRAW_REDRAW : GREDRAW_UPDATE
+				 );
+				 
 		        ReleaseGIRPort(rp);
 
 		    } /* if */
+		    
 	    	} /* if */
+		
 	    } /* if */
 
 	    break;

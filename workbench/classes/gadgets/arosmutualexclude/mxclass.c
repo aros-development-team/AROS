@@ -153,7 +153,7 @@ IPTR mx_set(Class *cl, Object *obj, struct opSet *msg)
 	}
     }
 
-    if ((retval) && (((Class *) (*(obj - sizeof(Class *)))) == cl))
+    if ((retval) && ((msg->MethodID != OM_UPDATE) || (cl == OCLASS(obj))))
     {
         struct RastPort *rport;
 

@@ -90,7 +90,7 @@ UWORD GetPalettePen(struct PaletteData *, UWORD);
 UBYTE Colors2Depth(UWORD);
 
 VOID RenderFrame(struct PaletteData *, struct RastPort *, struct IBox *,
-		struct DrawInfo *, BOOL, struct PaletteBase_intern *);
+		struct DrawInfo *, BOOL, BOOL, struct PaletteBase_intern *);
 
 VOID RenderPalette(struct PaletteData *, struct RastPort *,
 		struct PaletteBase_intern *);
