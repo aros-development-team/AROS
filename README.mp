@@ -68,3 +68,77 @@ you can use MP_SetProtection() to protect specific parts of the message,
 but you should not use this function in the final version of your application
 since it uses *lots* of ressources.
 
+MMU Library/Resource
+--------------------
+
+MMUInfo * MMU_QueryInfo (void)
+
+    typedef struct
+    {
+	ULONG PageSize; /* If Pagesize is 0, then no MMU is available */
+    } MMUInfo;
+
+MMUContext * MMU_NewContext (void)
+
+    Create a new MMU context. There is only one context for your whole
+    task, so if you call this function more than once, you will get
+    the same pointer again. But note that you must pair MMU_NewContext()
+    and MMU_DeleteContext() calls.
+
+void MMU_DeleteContext (void)
+
+    Delete the MMU's context. Must be called as many times as
+    MMU_NewContext() was called.
+
+ULONG MMU_Protect (MMUContext mmuctx, APTR Memory, ULONG Size, ULONG Mode,
+	struct Hook * Hit)
+
+    Memory pointer and Size will be rounded to the next multiple of the MMU's
+    pagesize. Mode is one of the flags MMUF_READSELF, MMUF_WRITESELF,
+    MMUF_EXECSELF, MMUF_NONESELF, MMUF_READOTHER, MMUF_WRITEOTHER,
+    MMUF_EXECOTHER, MMUF_NONEOTHER.
+
+    Hit will be called when the memory is accessed and the flag is not set
+    (ie. a read to memory by the process itself if MMUF_READSELF is not set
+    or any access by someone else if MMUF_NONEOTHER is set).
+
+    The hook will be called as so:
+
+	CallHook (Hit, MMUContext, OffendingTask, Address, Reason)
+
+    OffendingTask is the task structure of the task which did the illegal
+    access, Address is the address in memory where the hit happened
+    and Reason is one of the MMU flags (and only one). If you want to
+    create some memory where other tasks can read and you can write to,
+    try this:
+
+	MMU_Protect (mmuctx, mem, size,
+	    MMUF_READSELF|MMUF_WRITESELF|MMUF_READOTHER, &hit);
+
+    If the PC ever points to that memory or someone else tries to write into
+    that memory, hit will be called.
+
+    The most simple hit might be:
+
+	RemTask (OffendingTask);
+
+    To do something like VMM, use it like this:
+
+	MMU_Protect (mmuctx, 0x80000000, size,
+	    MMUF_NONESELF|MMUF_NONEOTHER, &hit);
+
+    Then you will trap all accesses from the address 0x80000000 to
+    0x80000000+size-1. Hit would then check that the access was from a task
+    which is allowed to use VMM and load the memory from the diskfile.
+
+APTR MMU_AllocMem (MMUContext * MMUCtx, ULONG Size, ULONG Flags, ULONG Mode)
+
+    Is a small utility routine to allocate some memory with the mode
+    already. Use MMU_FreeMem() to get rid of the memory again. The
+    protection will be cleared then. The function will pool requests with
+    the same protection flags.
+
+MMU_FreeMem (MMUContext * MMUCtx, APTR Address, ULONG Size);
+
+    Free memory which was allocated by MMU_AllocMem().
+
