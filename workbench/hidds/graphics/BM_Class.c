@@ -2108,7 +2108,20 @@ static HIDDT_Pixel bitmap_mapcolor(OOP_Class *cl, OOP_Object *o,
 
     if (IS_TRUECOLOR(pf))
     {
-    	msg->color->pixval = MAP_RGB(red, green, blue, pf);
+    	if (HIDD_PF_SWAPPIXELBYTES(pf))
+	{
+	    #warning "bitmap_mapcolor assuming that SwapPixelBytes flag only set for 2-byte/16-bit pixel formats"
+
+	    HIDDT_Pixel pixel = MAP_RGB(red, green, blue, pf);
+	    
+	    SWAPBYTES_WORD(pixel);
+	    
+	    msg->color->pixval = pixel;
+	}
+	else
+	{
+    	    msg->color->pixval = MAP_RGB(red, green, blue, pf);
+	}
     }
     else
     {
@@ -2133,9 +2146,17 @@ static VOID bitmap_unmappixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
     
     if (IS_TRUECOLOR(pf))
     {
-    	msg->color->red		= RED_COMP	(msg->pixel, pf);
-    	msg->color->green	= GREEN_COMP	(msg->pixel, pf);
-    	msg->color->blue	= BLUE_COMP	(msg->pixel, pf);
+    	HIDDT_Pixel pixel = msg->pixel;
+	
+	if (HIDD_PF_SWAPPIXELBYTES(pf))
+	{
+	    #warning "bitmap_unmappixel assuming that SwapPixelBytes flag only set for 2-byte/16-bit pixel formats"
+	    pixel = SWAPBYTES_WORD(pixel);
+	}
+	
+    	msg->color->red		= RED_COMP	(pixel, pf);
+    	msg->color->green	= GREEN_COMP	(pixel, pf);
+    	msg->color->blue	= BLUE_COMP	(pixel, pf);
     }
     else
     {
