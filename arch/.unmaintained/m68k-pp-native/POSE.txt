@@ -12,20 +12,9 @@ Emulator_Src_3.4/SrcShared/EmStructs.h:
  
  This is necessary, because otherwise it does not accept
  the AROS ROM.
- 
 
-Emulator_Src_3.4/SrcShared/Hardware/EmBankDRAM.cpp:
 
- #if 0 out everthing in the PrvCheckBelowStackPointerAccess()
- function, otherwise stack errors are reported all the time.
- 
+ONe change is necessary to the AROS source code:
 
-Emulator_Src_3.4/SrcShared/EmPalmOS.cpp:
-
- In the function EmPalmOS::CheckStackPointerDecrement()
- comment out the "Errors::ReportErrStackOverflow ();"
- inside the "if(fatal)" block, otherwise one gets
- stack overflow errors.
- 
-
- 
+config/m68k-pp-native/exec/rawputchar.c
+Deactivate the line where the address 0xdddddebc is accessed.
