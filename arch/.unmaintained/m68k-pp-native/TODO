@@ -1,0 +1,18 @@
+TODO list for the Palm Port (ROM)
+
+- When processes are closed access to DOSBase (see createnewproc ->
+  KillCurrentProcess()) is needed. Since DOSBase cannot be a global 
+  variable the DOSBase must either be found on the stack (needs to be 
+  put on the stack when the process/task is created) or one must use
+  OpenLibrary() [tried it w/o much success]
+
+- adapting towards i386-native version:
+  - all modules should be searched for in the ROM and their information
+    about their resident lists should be collected into a list
+  - Task switching should be done like in i386 native (same functions etc.)
+
+- IRQ Hidd
+- graphics hidd (black and white support might be difficult to achieve with
+  our multi color OS, might want to try a 256/64k color display hidd)
+- rom handler for file system: needed to place AROS files on it and to be
+  able to boot something.
