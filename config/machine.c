@@ -1,17 +1,12 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <stdio.h>
 #include <stddef.h>
 #include <exec/types.h>
-
-#ifndef _AMIGA
-#   if defined(AMIGA) || defined(__AMIGA__)
-#	define _AMIGA
-#   endif
-#endif
+#include <aros/config.h>
 
 struct __aros_longalign
 {
@@ -110,7 +105,7 @@ int main (void)
     if (worstalign < iptralign)   worstalign = iptralign;
     if (worstalign < doublealign) worstalign = doublealign;
 
-#ifdef _AMIGA
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     if (worstalign < 8) worstalign = 8;
 #endif
 
