@@ -85,7 +85,7 @@ static void Action(void)
     cr = lay->ClipRect;
     while(cr)
     {
-    	Printf("#%04d (%4d,%4d) - (%4d, %4d)  Size: %4d x %4d  %s%s\n",
+    	Printf("#%04ld (%4ld,%4ld) - (%4ld, %4ld)  Size: %4ld x %4ld  %s%s\n",
 		++count,
 		cr->bounds.MinX,
 		cr->bounds.MinY,
