@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-97 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
     Desc: layers.library Resident and initialization.
@@ -13,14 +13,19 @@
 #include "libdefs.h"
 #include "layers_extfuncs.h"
 
+#include <graphics/clip.h>
+#include <graphics/regions.h>
+#include <graphics/layers.h>
+#include <aros/asmcall.h>
+
 #define DEBUG 0
 #include <aros/debug.h>
 #undef kprintf
 
-extern const UBYTE name[];
-extern const UBYTE version[];
-extern UBYTE dearray[];
-int start(void);
+extern const UBYTE Layers_name[];
+extern const UBYTE Layers_version[];
+extern UBYTE Layers_dearray[];
+int Layers_start(void);
 void patchlist(void);
 extern const char END;
 
@@ -50,16 +55,16 @@ const struct SpecialResident Layers_resident =
     LIBVERSION,
     NT_LIBRARY,
     63,		/* priority; just after layers.library */
-    (STRPTR)name,
-    (STRPTR)&version[6],
-    &start
+    (STRPTR)Layers_name,
+    (STRPTR)&Layers_version[6],
+    &Layers_start
     },
     SR_COOKIE,		/* magic cookie to recognize a patchable library */
-    dearray,		/* pointer to array of function status bytes */
+    Layers_dearray,	/* pointer to array of function status bytes */
     36			/* highest vector slot in this library */
 };
 
-UBYTE dearray[] =
+UBYTE Layers_dearray[] =
 {
     /* 36 functions in layers.library V40 (plus one for offset 0) */
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /*   0-  9 */
@@ -68,13 +73,13 @@ UBYTE dearray[] =
     1, 1, 1, 1, 1, 1, 1           /*  30- 39 */
 };
 
-const UBYTE name[]="layers.strap";
+const UBYTE Layers_name[]="layers.strap";
 
-const UBYTE version[]="$VER: layers.strap 41.1 (06.04.1997)";
+const UBYTE Layers_version[]="$VER: layers.strap 41.2 (02.11.1997)";
 
 #define SetFunc(offset,name) \
 { \
-    if(dearray[offset]) \
+    if(Layers_dearray[offset]) \
 	SetFunction((struct Library *)LayersBase, (offset * -6), (APTR)&AROS_SLIB_ENTRY(name,Layers)); \
 }
 
@@ -83,10 +88,11 @@ const UBYTE version[]="$VER: layers.strap 41.1 (06.04.1997)";
 
 /* use this to disable a setfunc that works (to keep the 2 types apart), so
  * the malfunctioning function can be isolated
+ * If this doesn't make sense, don't worry. :-)
  */
 #define SetFunc1(offset,name) /* eps */
 
-int start(void)
+int Layers_start(void)
 {
     struct Library *LayersBase;
     struct Library *SysBase = *(void **)4;
@@ -101,12 +107,12 @@ int start(void)
 	 * ni = not implemented
 	 */
 	SetFunc1( 5, InitLayers);		// fc
-	SetFunc0( 6, CreateUpfrontLayer);	// ni
-	SetFunc0( 7, CreateBehindLayer);	// ni
+	SetFunc1( 6, CreateUpfrontLayer);	// fc
+	SetFunc1( 7, CreateBehindLayer);	// fc
 	SetFunc0( 8, UpfrontLayer);		// ni
 	SetFunc0( 9, BehindLayer);		// ni
-	SetFunc0(10, MoveLayer);		// ni
-	SetFunc0(11, SizeLayer);		// ni
+	SetFunc1(10, MoveLayer);		// fc
+	SetFunc1(11, SizeLayer);		// fc
 	SetFunc0(12, ScrollLayer);		// ni
 	SetFunc0(13, BeginUpdate);		// ni
 	SetFunc0(14, EndUpdate);		// ni
@@ -126,12 +132,16 @@ int start(void)
 	SetFunc0(28, MoveLayerInFrontOf);	// ni
 	SetFunc0(29, InstallClipRegion);	// ni
 	SetFunc0(30, MoveSizeLayer);		// ni
-	SetFunc0(31, CreateUpfrontHookLayer);	// ni
+	SetFunc1(31, CreateUpfrontHookLayer);	// fc
 	SetFunc0(32, CreateBehindHookLayer);	// ni
 	SetFunc1(33, InstallLayerHook);		// fc
 	SetFunc1(34, InstallLayerInfoHook);	// fc
 	SetFunc1(35, SortLayerCR);		// fc
-	SetFunc1(36, DoHookClipRects);		// fc (superbitmap handling untested!)
+	SetFunc1(36, DoHookClipRects);		// fc
+
+	/*
+	 * General note about these functions: superbitmap handling is untested!
+         */
 
 	CloseLibrary(LayersBase);
     }
@@ -144,7 +154,7 @@ D(void patchlist(void)
     int i;
 
     for(i = 1; i < Layers_resident.maxslot; i++)
-	kprintf(dearray[i] ? "+" : "-");
+	kprintf(Layers_dearray[i] ? "+" : "-");
 
     kprintf("\n\n");
 });
