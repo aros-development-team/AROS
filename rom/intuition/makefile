@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 
 FILES = intuition_init intuition_functable intuition_driver gadgets \
 	boolgadgets propgadgets boopsigadgets \
-	imageclass frameiclass
+	imageclass frameiclass icclass buttongclass gadgetclass
 FUNCTIONS = \
 	activatewindow \
 	addclass \
