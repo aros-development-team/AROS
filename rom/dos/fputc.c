@@ -84,23 +84,26 @@
 
 		return EOF;
 	    }
-	    
+
 	    /* Got it. Use it. */
 	    fh->fh_Flags |= FHF_BUF;
 	    fh->fh_Size = IOBUFSIZE;
 	}
-	
+
 	/* Prepare buffer */
 	fh->fh_Pos = fh->fh_Buf;
 	fh->fh_End = fh->fh_Buf + fh->fh_Size;
 	fh->fh_Flags |= FHF_WRITE;
     }
-    
-    /* Check if there is still some space in the buffer */
-    if (fh->fh_Pos >= fh->fh_End)
+
+    /* Write data */
+    *fh->fh_Pos++ = character;
+
+   /* Check if there is still some space in the buffer */
+    if (fh->fh_Pos >= fh->fh_End || (fh->fh_Flags & FHF_LINEBUF && character=='\n') || fh->fh_Flags & FHF_NOBUF)
     {
 	UBYTE *pos;
-	
+
 	/* Write the data. (In many pieces if the first one isn't enough). */
 	pos = fh->fh_Buf;
 
@@ -125,9 +128,6 @@
 	/* Reset buffer */
 	fh->fh_Pos = fh->fh_Buf;
     }
-
-    /* Write data and return */
-    *fh->fh_Pos++ = character;
 
     return character;
 
