@@ -72,7 +72,7 @@ BOOT_TAR_FILES := \
     System/Wanderer System.info \
     Tools/Editor Tools/HDToolBox Tools/HDToolBox.info Tools.info \
     Tools/Commodities/Opaque Tools/Commodities/Opaque.info Tools/Debug \
-    Utilities/MultiView Utilities/Multiview.info Utilities.info 
+    Utilities/MultiView Utilities/MultiView.info Utilities.info 
 
 
 BOOT_SRC_DIR    := $(AROSDIR)
