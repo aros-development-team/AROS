@@ -19,6 +19,7 @@
 
 #include <proto/oop.h>
 #include <proto/utility.h>
+#include <proto/dos.h>
 
 #include <exec/memory.h>
 #include <exec/lists.h>
@@ -57,11 +58,11 @@ static struct ABDescr attrbases[] =
 /* !!! Include methods whose implementation is eqaul for windows and pixmaps
  (except the DRAWABLE) */
 
-#define SDEBUG 0
-#define DEBUG 1
+#include "bitmap_common.c"
+
+#define DEBUG 0
 #include <aros/debug.h>
  
-#include "bitmap_common.c"
 
 /*********** BitMap::New() *************************************/
 
@@ -238,10 +239,13 @@ UX11
 	    
 	    port = CreateMsgPort();
 	    msg = AllocMem(sizeof (*msg), MEMF_PUBLIC | MEMF_CLEAR);
-	    
-	    if (NULL != port && NULL != msg) {
+
+	    if (NULL != port && NULL != msg)
+	    {
 	 
 	    	XGCValues gcval;
+
+
 		/* Send a message to the x11 task that the window has been created */
 		msg->notify_type = NOTY_WINCREATE;
 		msg->xdisplay = GetSysDisplay();
@@ -258,6 +262,7 @@ UX11
 		WaitPort(port);
 		GetMsg(port);
 		
+
 		/* Send a message to the X11 task to ask when the window has been mapped */
 		
    		msg->xdisplay = GetSysDisplay();
@@ -271,7 +276,6 @@ UX11
 		WaitPort(port);
 		
 		GetMsg(port);
-
 		
 	    	gcval.plane_mask = AllPlanes;
 	    	gcval.graphics_exposures = False;
@@ -286,7 +290,7 @@ UX11
 	    	if (data->gc)
 	    	{
 		    	/* Set the bitmap pixel format in the superclass */
-		    
+
 		    	if (!set_pixelformat(o, XSD(cl), DRAWABLE(data))) {
 			    ok = FALSE;
 			}
@@ -296,18 +300,16 @@ UX11
 		} /* if (gc created) */
 		
 		
-		
 	    } else {
 	    	ok = FALSE;
 	    } /* if (msgport created && msg allocated) */
-	    
+
 	    if (NULL != msg)
 	    	FreeMem(msg, sizeof (*msg));
 		
 	    if (NULL != port)
 	    	DeleteMsgPort(port);
 		
-	
 	    
 	} else {
 	    ok = FALSE;
@@ -336,20 +338,21 @@ static VOID onbitmap_dispose(Class *cl, Object *o, Msg msg)
     struct bitmap_data *data = INST_DATA(cl, o);
     EnterFunc(bug("X11Gfx.BitMap::Dispose()\n"));
     
-    
     if (data->gc)
     {
 LX11
     	XFreeGC(data->display, data->gc);
 UX11	
     }
+
     if (DRAWABLE(data))
     {
 
+
 	struct MsgPort *port;
 	struct notify_msg *msg;
-	
-	
+
+
 	port = CreateMsgPort();
 	msg = AllocMem(sizeof (*msg), MEMF_PUBLIC | MEMF_CLEAR);
 	if (NULL == port || NULL == msg) {
@@ -362,14 +365,14 @@ UX11
 	msg->xwindow = DRAWABLE(data);
 	msg->execmsg.mn_ReplyPort = port;
 	
-	PutMsg(port, (struct Message *)msg);
+	PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)msg);
 	WaitPort(port);
 	
 	GetMsg(port);
 	
 	FreeMem(msg, sizeof (*msg));
 	DeleteMsgPort(port);
-	
+
 LX11	
 	
     	XDestroyWindow( GetSysDisplay(), DRAWABLE(data));
