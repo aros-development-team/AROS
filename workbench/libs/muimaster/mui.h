@@ -28,6 +28,23 @@ typedef unsigned long STACKULONG;
 #endif
 #endif
 
+/* With the following define a typical dispatcher will
+ * looks like this:
+ *   BOOPSI_DISPATCHER(IPTR,IconWindow_Dispatcher,cl,obj,msg)
+ *
+ */
+#ifndef _AROS
+#define BOOPSI_DISPATCHER(rettype,name,cl,obj,msg) \
+__saveds __asm rettype name(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
+#else
+#define BOOPSI_DISPATCHER(rettype,name,cl,obj,msg) \
+AROS_UFH3S(rettype, name,\
+	AROS_UFHA(Class  *, cl,  A0),\
+	AROS_UFHA(Object *, obj, A2),\
+	AROS_UFHA(Msg     , msg, A1))
+#endif
+
+
 /* START PRIV */
 
 /* This structure is used for the internal classes */
