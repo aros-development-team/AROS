@@ -8,11 +8,23 @@ type=`uname`
 CC="cc"
 COMMON_CFLAGS="-g"
 RANLIB="ranlib"
+X11LIBDIR=""
+X11INCDIR=""
 
 # Flags to link AROS binaries (ie. binaries which are to be started
 # inside AROS). What we need is something like a shared lib: All
 # references resolved but no startup-code added.
 ILDFLAGS="-nostartfiles -nostdlib"
+
+# If you need a special kind of assembler (eg. as), set $AS. If $AS is not
+# set, $CC is used.
+# Special flags for $AS are taken from $COMMON_AFLAGS, if it exists or
+# from $COMMON_CFLAGS otherwise.
+# If X11 is installed in a directory of it´s own, you can specify that
+# directory in $X11BASEDIR. $X11LIBDIR will then point to $X11BASEDIR/lib
+# and $X11LDFLAGS will contain -L$X11LIBDIR. The same applies to $X11INCDIR.
+# If only one part is in a nonstandard place (eg. the libs), you
+# can set one of the $X11LIBDIR/X11INCDIRs, too.
 
 case "$type" in
 "Linux" )
@@ -21,6 +33,7 @@ case "$type" in
 	ILDFLAGS="-nostartfiles -nostdlib -Xlinker -i"
 	ARCH="linux"
 	KERNEL="i386-emul"
+	X11LIBDIR="/usr/X11R6/lib"
 	;;
 "HP-UX" )
 	COMMON_CFLAGS="-Aa -g"
@@ -50,3 +63,35 @@ echo "ILDFLAGS = \$(CFLAGS) $ILDFLAGS" >> $1
 echo "RANLIB = $RANLIB" >> $1
 echo "ARCH = $ARCH" >> $1
 echo "KERNEL = $KERNEL" >> $1
+
+if [ -z "$AS" ]; then
+    echo "SYS_AS = $CC" >> $1
+else
+    echo "SYS_AS = $AS" >> $1
+fi
+if [ -z "$COMMON_AFLAGS" ]; then
+    echo "COMMON_AFLAGS = $COMMON_CFLAGS" >> $1
+else
+    echo "COMMON_AFLAGS = $COMMON_AFLAGS" >> $1
+fi
+
+if [ -n "$X11BASEDIR" ]; then
+    X11LIBDIR=$X11BASEDIR/lib
+    X11INCDIR=$X11BASEDIR/include
+fi
+
+if [ -n "$X11LIBDIR" ]; then
+    echo "X11LIBDIR = $X11LIBDIR" >> $1
+    echo "X11LDFLAGS = -L$X11LIBDIR" >> $1
+else
+    echo "X11LIBDIR = /usr/lib" >> $1
+    echo "X11LDFLAGS =" >> $1
+fi
+if [ -n "$X11INCDIR" ]; then
+    echo "X11INCDIR = $X11INCDIR" >> $1
+    echo "X11CCFLAGS = -I$X11INCDIR" >> $1
+else
+    echo "X11INCDIR = /usr/include" >> $1
+    echo "X11CCFLAGS =" >> $1
+fi
+
