@@ -29,13 +29,11 @@ docs : autodocs $(HTMLDIR)/srcs $(HTMLDIR)/index.html \
 	access-rights
 
 #MM
-setup-docs : $(SRC2HTML)
-	@for dir in $(HTMLDIR) $(HTMLDIR)/autodocs $(HTMLDIR)/pics \
-		$(DOCGENDIR) ; do \
-	    if [ ! -d $$dir ]; then \
-		mkdir $$dir ; \
-	    else true ; fi ; \
-	done
+setup-docs : make-dirs $(SRC2HTML)
+
+make-dirs :
+	@mkdir -p $(HTMLDIR) $(HTMLDIR)/autodocs $(HTMLDIR)/pics \
+		$(DOCGENDIR)
 
 copy-files : $(HTMLDIR)/rtdemo.log $(HTMLDIR)/pubkey.asc $(HTMLDIR)/license.html \
 	$(HTMLDIR)/oldnews.html
@@ -78,7 +76,7 @@ src2html/src2html :
 $(HTMLDIR)/index.html : $(FILES) doc_header.html doc_footer.html \
 	    	$(SRC2HTML) keywords.db files.db \
 		page_header.html $(DOCGENDIR)/run-src2html
-	cp *.src *.html *.db $(DOCGENDIR)
+	cp -p *.src *.html *.db $(DOCGENDIR)
 	cd $(DOCGENDIR) ; \
 	export TOP="$(TOP)" ; \
 	$(RUN_SRC2HTML) && \
