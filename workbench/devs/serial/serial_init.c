@@ -196,7 +196,7 @@ AROS_LH3(void, open,
           SU->su_Unit  = HIDD_Serial_NewUnit(SerialDevice->SerialObject, unitnum);
           if (NULL != SU->su_Unit)
           {
-            HIDD_SerialUnit_Init(SU->su_Unit, RBF_InterruptHandler, NULL);
+            HIDD_SerialUnit_Init(SU->su_Unit, RBF_InterruptHandler, NULL, NULL, NULL);
             ioreq->io_Device = (struct Device *)SerialDevice;
             ioreq->io_Unit   = (struct Unit *)SU;  
             SerialDevice->device.dd_Library.lib_OpenCnt ++;

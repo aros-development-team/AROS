@@ -13,7 +13,7 @@
 
 extern struct serialbase * pubSerialBase;
 
-ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum)
+ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userdata)
 {
   struct SerialUnit * SU = NULL;
   ULONG index = 0;

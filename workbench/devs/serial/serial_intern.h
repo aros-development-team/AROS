@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  2000/09/11 19:15:04  stegerg
+    changes because of callback functions now having an additional param.
+
     Revision 1.6  2000/03/09 16:55:27  bergers
     Some bugfixes.
 
@@ -70,7 +73,7 @@ struct SerialUnit * findUnit(struct serialbase * SerialDevice,
                              ULONG unitnum);
 
 
-ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum);
+ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userdata);
 
 extern struct ExecBase * SysBase;
 
