@@ -919,8 +919,10 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 //	if (gdk_rectangle_intersect(&group_rect, &child_rect,
 //				    &muiRenderInfo(obj)->mri_ClipRect))
 //	    DoMethodA(child, (Msg)msg);
-	    MUI_Redraw(child,MADF_DRAWOBJECT);
-
+	if (((msg->flags & MADF_DRAWUPDATE) && data->update) || (data->flags & GROUP_PAGEMODE))
+	    MUI_Redraw(child, MADF_DRAWOBJECT);
+	else
+	    MUI_Redraw(child, msg->flags);
 	muiRenderInfo(obj)->mri_ClipRect = group_rect;
 /*  	    g_print("set back clip to (%d, %d, %d, %d)\n", */
 /*  		    group_rect.x, group_rect.y, group_rect.width, group_rect.height); */
