@@ -17,7 +17,7 @@
 	AROS_LH1(struct DiskObject *, GetDiskObjectNew,
 
 /*  SYNOPSIS */
-	AROS_LHA(UBYTE *, name, A0),
+	AROS_LHA(CONST_STRPTR, name, A0),
 
 /*  LOCATION */
 	struct Library *, IconBase, 22, Icon)
