@@ -177,6 +177,8 @@ void Cleanup(STRPTR msg);
 void InitMenus(void);
 void MakeMenus(void);
 void KillMenus(void);
+BOOL MenuChecked(UWORD menucode);
+void SetMenuCheck(UWORD menucode, BOOL on);
 void SetMenuFlags(void);
 
 /*********************************************************************************************/

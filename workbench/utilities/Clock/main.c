@@ -79,10 +79,10 @@ static WORD 	    	clockcx, clockcy, clockrx, clockry;
 static WORD 	    	clockraster1_w, clockraster1_h;
 static WORD 	    	clockraster2_w, clockraster2_h;
 static WORD 	    	areabuffer[30];
-static WORD             opt_winleft = 20,
-    	    	    	opt_wintop = 20,
-			opt_winwidth = 100,
-			opt_winheight = 100;
+static WORD             opt_winleft = 0,
+    	    	    	opt_wintop = -1,
+			opt_winwidth = 150,
+			opt_winheight = 150;
 static BOOL 	    	quitme, timer_running;
 
 static IPTR             args[NUM_ARGS];
@@ -280,8 +280,7 @@ static void CalcClockMetrics(void)
     clockry = (win->GZZHeight - BORDER_CLOCK_SPACING_Y * 2) / 2;
     
     clockcx = win->BorderLeft + BORDER_CLOCK_SPACING_X + clockrx;
-    clockcy = win->BorderTop  + BORDER_CLOCK_SPACING_Y + clockry;
-    
+    clockcy = win->BorderTop  + BORDER_CLOCK_SPACING_Y + clockry;    
 }
 
 /*********************************************************************************************/
@@ -290,9 +289,11 @@ static void CalcClockMetrics(void)
 #define HOURHANDSIZE_PERCENT2 	    80.0
 #define HOURHANDSIZE_ANGLEOFF 	    0.1
 
-#define MINUTEHANDSIZE_PERCENT      85.0
-#define MINUTEHANDSIZE_PERCENT2     80.0
+#define MINUTEHANDSIZE_PERCENT      82.0
+#define MINUTEHANDSIZE_PERCENT2     77.0
 #define MINUTEHANDSIZE_ANGLEOFF     0.06
+
+#define SECONDHANDSIZE_PERCENT	    82
 
 #define TICK_PERCENT 	    	    95
 #define TICK_PERCENT2 	    	    90
@@ -306,6 +307,8 @@ static void RenderTicks(void)
 {
     LONG i, x, y, x2, y2;
     double angle;
+    
+    if ((clockrx < 10) || (clockry < 10)) return;
     
     SetAPen(&clockrp1, dri->dri_Pens[SHADOWPEN]);
     
@@ -337,7 +340,7 @@ static void RenderTicks(void)
 	    AreaEnd(&clockrp1);
 	    
 	}
-	else
+	else if ((clockrx > 30) && (clockry > 30))
 	{
     	    x2 = clockrx + cos(angle) * clockrx * TICK_PERCENT2 / 100.0;
 	    y2 = clockry - sin(angle) * clockry * TICK_PERCENT2 / 100.0;
@@ -414,6 +417,25 @@ static void RenderMinuteHand(void)
 
 /*********************************************************************************************/
 
+static void RenderSecondHand(void)
+{
+    LONG second = currdate.ds_Tick / TICKS_PER_SECOND;
+    LONG x, y;
+    double angle;
+    
+    angle = MY_PI / 2.0 + MY_PI * 2.0 * ((double)60 - second) / 60.0;
+    
+    SetAPen(&clockrp2, dri->dri_Pens[FILLPEN]);
+    Move(&clockrp2, clockrx, clockry);
+    
+    x = clockrx + cos(angle) * clockrx * SECONDHANDSIZE_PERCENT / 100.0;
+    y = clockry - sin(angle) * clockry * SECONDHANDSIZE_PERCENT / 100.0;
+    
+    Draw(&clockrp2, x, y);
+}
+
+/*********************************************************************************************/
+
 static void RenderClock1(void)
 {
     WORD rasterw, rasterh;
@@ -472,11 +494,13 @@ static void RenderClock1(void)
 
 /*********************************************************************************************/
 
-static void RenderClock2(void)
+static BOOL RenderClock2(void)
 {
     static struct DateStamp olddate;
     static BOOL firsttime = TRUE;
-    BOOL newdate, newsec;
+    static BOOL old_opt_showsecs;
+    BOOL newdate, newsec, blit1to2 = FALSE;
+    BOOL retval = FALSE;
     
     WORD rasterw, rasterh;
     
@@ -485,13 +509,14 @@ static void RenderClock2(void)
    
     newdate = (olddate.ds_Days != currdate.ds_Days) ||
     	      (olddate.ds_Minute != currdate.ds_Minute);
-    newsec = (olddate.ds_Tick % TICKS_PER_SECOND) != (currdate.ds_Tick % TICKS_PER_SECOND);
+    newsec = (olddate.ds_Tick / TICKS_PER_SECOND) != (currdate.ds_Tick / TICKS_PER_SECOND);
     
     if (!clockbm1 || firsttime || newdate ||
     	(rasterw != clockraster2_w) ||
 	(rasterh != clockraster2_h))
     {
 	RenderClock1();
+	blit1to2 = TRUE;
     }
     
     if (!clockbm1) return;
@@ -516,9 +541,19 @@ static void RenderClock2(void)
 	    return;
     	}
     
+    	blit1to2 = TRUE;
     }
- 
-    BltBitMap(clockbm1, 0, 0, clockbm2, 0, 0, rasterw, rasterh, 192, 255, 0);
+    
+    if (blit1to2) newsec = TRUE;
+    if (newsec && opt_showsecs) blit1to2 = TRUE;
+    if (opt_showsecs != old_opt_showsecs) blit1to2 = TRUE;
+    old_opt_showsecs = opt_showsecs;
+    
+    if (blit1to2)
+    {
+    	BltBitMap(clockbm1, 0, 0, clockbm2, 0, 0, rasterw, rasterh, 192, 255, 0);
+	retval = TRUE;
+    }
 
     if (newsec && opt_showsecs)
     {
@@ -530,7 +565,9 @@ static void RenderClock2(void)
 
 	InitTmpRas(&tmpras, clockraster2, RASSIZE(rasterw, rasterh));
 	clockrp2.TmpRas = &tmpras;
-    	
+
+	RenderSecondHand();
+	
     	DeinitRastPort(&clockrp2);
     }
         
@@ -546,54 +583,58 @@ static void RenderClock(void)
     LockLayerInfo(&scr->LayerInfo);
 
     CalcClockMetrics();
-    RenderClock2();
+      
+    if (RenderClock2())
+    {
+
+	SetAPen(win->RPort, dri->dri_Pens[BACKGROUNDPEN]);
+
+	if (clockbm2)
+	{
+	    RectFill(win->RPort,
+		     win->BorderLeft,
+		     win->BorderTop,
+		     win->Width - win->BorderRight - 1,
+		     win->BorderTop + BORDER_CLOCK_SPACING_Y - 1);
+	    RectFill(win->RPort,
+		     win->Width - win->BorderRight- BORDER_CLOCK_SPACING_X,
+		     win->BorderTop + BORDER_CLOCK_SPACING_Y,
+		     win->Width - win->BorderRight - 1,
+		     win->Height - win->BorderBottom - 1);
+
+	    RectFill(win->RPort,
+		     win->BorderLeft,
+	    	     win->Height - win->BorderBottom - BORDER_CLOCK_SPACING_Y,
+		     win->Width - win->BorderRight - BORDER_CLOCK_SPACING_X,
+		     win->Height - win->BorderBottom - 1);
+
+	    RectFill(win->RPort,
+		     win->BorderLeft,
+		     win->BorderTop + BORDER_CLOCK_SPACING_Y,
+		     win->BorderLeft + BORDER_CLOCK_SPACING_X - 1,
+		     win->Height - win->BorderBottom - BORDER_CLOCK_SPACING_Y);
+
+    	    BltBitMapRastPort(clockbm2,
+	    	    	      0,
+			      0,
+			      win->RPort,
+			      clockcx - clockrx,
+			      clockcy - clockry,
+			      clockraster2_w,
+			      clockraster2_h,
+			      192);
+	}
+	else
+	{
+	    RectFill(win->RPort,
+		     win->BorderLeft,
+		     win->BorderTop,
+		     win->Width - win->BorderRight - 1,
+		     win->Height - win->BorderBottom - 1);
+	}
+	
+    } /* if (RenderClock2()) */
     
-    SetAPen(win->RPort, dri->dri_Pens[BACKGROUNDPEN]);
-
-    if (clockbm2)
-    {
-	RectFill(win->RPort,
-		 win->BorderLeft,
-		 win->BorderTop,
-		 win->Width - win->BorderRight - 1,
-		 win->BorderTop + BORDER_CLOCK_SPACING_Y - 1);
-	RectFill(win->RPort,
-		 win->Width - win->BorderRight- BORDER_CLOCK_SPACING_X,
-		 win->BorderTop + BORDER_CLOCK_SPACING_Y,
-		 win->Width - win->BorderRight - 1,
-		 win->Height - win->BorderBottom - 1);
-
-	RectFill(win->RPort,
-		 win->BorderLeft,
-	    	 win->Height - win->BorderBottom - BORDER_CLOCK_SPACING_Y,
-		 win->Width - win->BorderRight - BORDER_CLOCK_SPACING_X,
-		 win->Height - win->BorderBottom - 1);
-
-	RectFill(win->RPort,
-		 win->BorderLeft,
-		 win->BorderTop + BORDER_CLOCK_SPACING_Y,
-		 win->BorderLeft + BORDER_CLOCK_SPACING_X - 1,
-		 win->Height - win->BorderBottom - BORDER_CLOCK_SPACING_Y);
-
-    	BltBitMapRastPort(clockbm2,
-	    	    	  0,
-			  0,
-			  win->RPort,
-			  clockcx - clockrx,
-			  clockcy - clockry,
-			  clockraster2_w,
-			  clockraster2_h,
-			  192);
-    }
-    else
-    {
-	RectFill(win->RPort,
-		 win->BorderLeft,
-		 win->BorderTop,
-		 win->Width - win->BorderRight - 1,
-		 win->Height - win->BorderBottom - 1);
-    }
-
     UnlockLayerInfo(&scr->LayerInfo);
 	
 }
@@ -603,6 +644,8 @@ static void RenderClock(void)
 static void MakeWindow(void)
 {
     WORD minwidth, minheight;
+    
+    if (opt_wintop == -1) opt_wintop = scr->BarHeight + 1;
     
     minwidth  = scr->WBorLeft + scr->WBorRight + 50;
     minheight = scr->WBorTop + scr->Font->ta_YSize + 1 + scr->WBorBottom + 50;
@@ -702,6 +745,10 @@ static void HandleWin(void)
 				quitme = TRUE;
 				break;
 
+    	    	    	    case MSG_MEN_SETTINGS_SECONDS:
+			    	opt_showsecs = MenuChecked(FULLMENUNUM(1, 1, NOSUB));
+			    	break;
+				
 			} /* switch(GTMENUITEM_USERDATA(item)) */
 
 			men = item->NextSelect;
@@ -730,15 +777,28 @@ static void HandleWin(void)
 
 static void HandleTimer(void)
 {
+    struct DateStamp ds;
+    
     if (timer_running) GetMsg(TimerMP);
 
     DateStamp(&currdate);
     
     RenderClock();
     
+    DateStamp(&ds);
+    
     TimerIO->tr_node.io_Command = TR_ADDREQUEST;
-    TimerIO->tr_time.tv_secs = 1;
-    TimerIO->tr_time.tv_micro = 0;
+    
+    if (ds.ds_Tick == 0)
+    {
+    	TimerIO->tr_time.tv_secs = 1;
+    	TimerIO->tr_time.tv_micro = 0;
+    }
+    else
+    {
+     	TimerIO->tr_time.tv_secs = 0;
+    	TimerIO->tr_time.tv_micro = 1000000 - (1000000 / TICKS_PER_SECOND) * (ds.ds_Tick % TICKS_PER_SECOND);
+   }
     
     SendIO(&TimerIO->tr_node);
     timer_running = TRUE;
