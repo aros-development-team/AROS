@@ -173,7 +173,7 @@ GCCSCRIPT=$(GNUCOMMON)/S/Package-Startup
 $(OSGENDIR)/boot/aros.iso: $(BINDIR)/boot/aros-pc-i386.gz $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/grub/menu.lst.DH0
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
-	@mkisofs \
+	@mkisofs -f \
 		-o $(OSGENDIR)/boot/aros.iso \
 		-b boot/grub/iso9660_stage1_5 \
 		-c boot/boot.catalog \
