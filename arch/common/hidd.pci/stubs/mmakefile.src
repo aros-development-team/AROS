@@ -1,0 +1,17 @@
+#$Id$
+include $(TOP)/config/make.cfg
+
+MODNAME	:=  pci
+MODTYPE	:=  hidd
+
+USER_CFLAGS :=	-DAROS_USE_OOP -I.
+
+FILES       :=
+STUBS	    := $(MODNAME)_stubs
+
+# When there is actually a hidd.irq class for here, generate the whole
+# lot.
+
+%make_hidd_stubs hidd=pci
+
+%common
