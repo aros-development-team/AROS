@@ -381,6 +381,12 @@ Var_Subst (const char * in)
 
 		argv = Func_SplitArgs (args->buffer);
 
+		if (!argv)
+		{
+		    PushError ("Error reading arguments for function %s()", varname->buffer);
+		    return NULL;
+		}
+
 		ret = (String) CallCB (f->cb, argv, 0, f->cbd);
 
 		Func_FreeArgs (argv);
@@ -473,6 +479,11 @@ Func_SplitArgs (const char * args)
 	    {
 		newarg = Var_Subst (arg->buffer);
 
+		if (!newarg)
+		{
+		    return NULL;
+		}
+
 		argv[n++] = xstrdup (newarg->buffer);
 
 		VS_Clear (newarg);
@@ -485,6 +496,11 @@ Func_SplitArgs (const char * args)
 	}
 
 	newarg = Var_Subst (arg->buffer);
+
+	if (!newarg)
+	{
+	    return NULL;
+	}
 
 	argv[n++] = newarg->buffer;
 
