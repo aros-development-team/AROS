@@ -65,6 +65,7 @@
 	midinode->midinode.mi_SigTask=FindTask(0);
 
 	midinode->midinode.mi_ReceiveSigBit=-1;
+	midinode->midinode.mi_ParticipantSigBit=-1;
 
 	midinode->midinode.mi_TimeStamp=&midinode->dummytimestamp;
 
