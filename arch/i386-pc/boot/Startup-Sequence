@@ -48,11 +48,13 @@ Mount PIPEFS:
 ;SetEnv Workbench $Workbench
 ;SetEnv Kickstart $Kickstart
 
+Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
+
+FixFonts
+
 AddDatatypes REFRESH QUIET
 IPrefs
 ;Run <NIL: >NIL: ConClip
-
-Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
 
 SetClock LOAD
 
