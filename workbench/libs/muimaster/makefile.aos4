@@ -37,7 +37,7 @@ LINK = -nostartfiles
 TARGET = zunemaster.library
 
 # Additional linker libraries
-LIBS = -ldebug
+LIBS = -ldebug -lm
 
 # Version of the binary to build
 VERSION = 0
@@ -100,6 +100,9 @@ CLASSSRCS=aboutmui.c\
 	scrollgroup.c \
 	semaphore.c \
 	settings.c \
+	settingsgroup.c \
+	slider.c \
+	string.c \
 	text.c \
 	virtgroup.c \
 	volumelist.c \
@@ -135,6 +138,7 @@ BASEARCHSRCS=\
 	mui_obtainpen.c \
 	mui_rejectidcmp.c \
 	mui_releasepen.c \
+	mui_redraw.c \
 	mui_removeclipping.c \
 	mui_removeclipregion.c \
 	mui_request.c \
@@ -145,6 +149,7 @@ BASEARCHSRCS=\
 	support_classes.c \
 	support.c \
 	textengine.c \
+	zunemaster_68k.c \
 	zunemaster_init-aos4.c
 
 SRCS = $(BASEARCHSRCS) $(addprefix classes/,$(CLASSSRCS))
