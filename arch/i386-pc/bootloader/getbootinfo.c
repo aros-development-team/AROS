@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: GetBootInfo() function.
-    Lang: english
+    GetBootInfo() function.
 */
 #include "bootloader_intern.h"
 #include <proto/bootloader.h>
