@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Support functions for console.device
@@ -12,7 +12,7 @@
 #include <exec/io.h>
 #include <exec/memory.h>
 
-#include <proto/boopsi.h>
+#include <proto/intuition.h>
 #include <intuition/classes.h>
 
 #include <devices/conunit.h>

@@ -12,7 +12,7 @@
 #include <exec/lists.h>
 
 #include <proto/exec.h>
-#include <proto/boopsi.h>
+#include <proto/intuition.h>
 #include <proto/console.h>
 #include <exec/io.h>
 #include <exec/alerts.h>

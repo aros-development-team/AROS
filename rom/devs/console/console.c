@@ -12,7 +12,6 @@
 
 #include <proto/exec.h>
 #include <proto/console.h>
-#include <proto/boopsi.h>
 #include <proto/intuition.h>
 #include <exec/resident.h>
 #include <exec/errors.h>
@@ -150,10 +149,6 @@ AROS_LH2(struct ConsoleBase *, init,
     ConsoleDevice->intuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
     if (!ConsoleDevice->intuitionBase)
 	Alert(AT_DeadEnd | AN_ConsoleDev | AG_OpenLib | AO_Intuition);
-
-    ConsoleDevice->boopsiBase = OpenLibrary(BOOPSINAME, 37);
-    if (!ConsoleDevice->boopsiBase)
-	Alert(AT_DeadEnd | AN_ConsoleDev | AG_OpenLib | AO_Unknown);
 
     ConsoleDevice->utilityBase = OpenLibrary("utility.library", 37);
     if (!ConsoleDevice->utilityBase)

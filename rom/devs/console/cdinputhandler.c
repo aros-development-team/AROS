@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: console.device function CDInputHandler()
@@ -15,7 +15,6 @@
 #include <exec/libraries.h>
 #include <exec/memory.h>
 #include <proto/console.h>
-#include <proto/boopsi.h>
 #include <proto/intuition.h>
 #include <intuition/intuitionbase.h>
 
