@@ -2092,6 +2092,8 @@ void processFSM(struct rambase *rambase)
 	    
 	default:
 	    error = ERROR_NOT_IMPLEMENTED;
+	    
+	    D(kprintf("ram_handler, unimplemented FSA: %ld\n", iofs->IOFS.io_Command));
 	    break;
  /*
    FSA_FILE_MODE
