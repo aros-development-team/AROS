@@ -184,6 +184,10 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 	    }
 
 	    break;
+	
+	    /*
+	     * The other attributes are added in SetPlayerAttrsA!!
+	     */
 	}
     }
 
