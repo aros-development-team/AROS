@@ -14,8 +14,9 @@ endif
 	$(MMAKE)
 
 mmake:
-	make -C tools/mmake
-	cp tools/mmake/mmake .
+	cd tools/MetaMake; ./configure
+	make -C tools/MetaMake
+	cp tools/MetaMake/mmake .
 
 genmf:
 	make -C tools/genmf
