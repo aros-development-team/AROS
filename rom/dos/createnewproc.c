@@ -328,7 +328,7 @@ void internal_ChildFree(APTR tid);
     process->pr_CLI = MKBADDR(cli);
 
     /* Set the name of this program */
-    internal_SetProgramName(cli, name);
+    internal_SetProgramName(cli, name, DOSBase);
     D(bug("Calling internal_SetProgramName() with name = %s\n", name));
 
     process->pr_PktWait = NULL;

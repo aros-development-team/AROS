@@ -90,7 +90,8 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 
 
 /* Cli dependent SetProgramName() for use in CreateNewProc() */
-BOOL internal_SetProgramName(struct CommandLineInterface *cli, STRPTR name);
+BOOL internal_SetProgramName(struct CommandLineInterface *cli, STRPTR name,
+			     struct DosLibrary *DOSBase);
 
 
 /* Pattern matching function used by MatchPattern() and MatchPatternNoCase() */

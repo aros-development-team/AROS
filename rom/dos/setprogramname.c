@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Sets the name of the current program.
@@ -50,27 +50,28 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    return internal_SetProgramName(Cli(), name) ? DOSTRUE : DOSFALSE;
+    return internal_SetProgramName(Cli(), name, DOSBase) ? DOSTRUE : DOSFALSE;
 
     AROS_LIBFUNC_EXIT
 } /* SetProgramName */
 
 
-BOOL internal_SetProgramName(struct CommandLineInterface *cli, STRPTR name)
+BOOL internal_SetProgramName(struct CommandLineInterface *cli, STRPTR name,
+			     struct DosLibrary *DOSBase)
 {
     STRPTR  s;
     ULONG   namelen;
 
-    if(cli == NULL)
+    if (cli == NULL)
+    {
 	return FALSE;
+    }
     
     s = name;
 
@@ -79,8 +80,10 @@ BOOL internal_SetProgramName(struct CommandLineInterface *cli, STRPTR name)
 
     namelen = s - name - 1;
     
-    if(namelen > 255)
+    if (namelen > 255)
+    {
 	return FALSE;
+    }
     
     s = AROS_BSTR_ADDR(cli->cli_CommandName);
     
