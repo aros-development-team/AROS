@@ -18,6 +18,17 @@
 #define SUBMENUIMAGE             (0x1AL)
 
 /*** Window attributes ******************************************************/
+
+#define WA_ExtraTitlebarGadgets                 (WA_Dummy + 151)
+#define WA_ExtraGadgetsStartID                  (WA_Dummy + 152)
+#define WA_ExtraGadget_Iconify                  (WA_Dummy + 153)
+#define WA_ExtraGadget_Lock                     (WA_Dummy + 154)
+#define WA_ExtraGadget_MUI                      (WA_Dummy + 155)
+#define WA_ExtraGadget_PopUp                    (WA_Dummy + 156)
+#define WA_ExtraGadget_Snapshot                 (WA_Dummy + 157)
+#define WA_ExtraGadget_Jump                     (WA_Dummy + 158)
+
+
 /*= WA_ExtraTitlebarGadgets ================================================*/
 /*- Flags ------------------------------------------------------------------*/
 #define ETG_ICONIFY              (0x01L)
@@ -36,13 +47,13 @@
 #define ETD_Jump                 (5)
 
 /*- Gadget IDs -------------------------------------------------------------*/
-#define ETI_BASE                 (0xFFD0)
-#define ETI_Iconify              (ETI_BASE + ETD_Iconify)
-#define ETI_Lock                 (ETI_BASE + ETD_Lock)
-#define ETI_MUI                  (ETI_BASE + ETD_MUI)
-#define ETI_PopUp                (ETI_BASE + ETD_PopUp)
-#define ETI_Snapshot             (ETI_BASE + ETD_Snapshot)
-#define ETI_Jump                 (ETI_BASE + ETD_Jump)
+#define ETI_Dummy                (0xFFD0)
+#define ETI_Iconify              (ETI_Dummy + ETD_Iconify)
+#define ETI_Lock                 (ETI_Dummy + ETD_Lock)
+#define ETI_MUI                  (ETI_Dummy + ETD_MUI)
+#define ETI_PopUp                (ETI_Dummy + ETD_PopUp)
+#define ETI_Snapshot             (ETI_Dummy + ETD_Snapshot)
+#define ETI_Jump                 (ETI_Dummy + ETD_Jump)
 
 
 
