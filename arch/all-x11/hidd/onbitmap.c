@@ -139,6 +139,7 @@ UX11
 	    
 	/* We must allways have this one */
 	winattr.event_mask |= StructureNotifyMask;
+	winattr.event_mask |= SubstructureNotifyMask;
 	
 	winattr.event_mask |= FocusChangeMask;
 	    

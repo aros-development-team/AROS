@@ -21,6 +21,7 @@
 #include <exec/libraries.h>
 #include <exec/types.h>
 #include <exec/resident.h>
+#include <exec/memory.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
 #include <proto/oop.h>
@@ -272,6 +273,8 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     BOOL displayable, framebuffer;
     
     struct pHidd_Gfx_NewBitMap p;
+    Object *newbm;
+    IPTR drawable;
     
     struct gfx_data *data;
     struct TagItem tags[] =
@@ -358,7 +361,12 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     p.mID = msg->mID;
     p.attrList = tags;
     
-    ReturnPtr("X11Gfx::NewBitMap", Object *, (Object *)DoSuperMethod(cl, o, (Msg)&p));
+    newbm = (Object *)DoSuperMethod(cl, o, (Msg)&p);
+    if (NULL != newbm && framebuffer) {
+    	GetAttr(newbm, aHidd_X11BitMap_Drawable, &drawable);
+	data->fbwin = (Window)drawable;
+    }
+    ReturnPtr("X11Gfx::NewBitMap", Object *, newbm);
 }
 
 /******* X11Gfx::Set()  ********************************************/
@@ -406,25 +414,48 @@ static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
 
 static Object *gfxhidd_show(Class *cl, Object *o, struct pHidd_Gfx_Show *msg)
 {
-    Object *fb;
-    fb = (Object *)DoSuperMethod(cl, o, (Msg)msg);
-    if (NULL != fb) {
-    	IPTR width, height, modeid, win;
-	Object *pf, *sync;
-	struct gfx_data *data;
+    Object *fb = 0;
+    IPTR width, height, modeid;
+    Object *pf, *sync;
+    struct gfx_data *data;
 	
-	data = INST_DATA(cl, o);
+    data = INST_DATA(cl, o);
 	
-	GetAttr(msg->bitMap, aHidd_BitMap_ModeID, &modeid);
-	HIDD_Gfx_GetMode(o, (HIDDT_ModeID)modeid, &sync, &pf);
+    GetAttr(msg->bitMap, aHidd_BitMap_ModeID, &modeid);
+    if ( HIDD_Gfx_GetMode(o, (HIDDT_ModeID)modeid, &sync, &pf)) {
+    	struct MsgPort *port;
 	
-	GetAttr(sync, aHidd_Sync_HDisp, &width);
+    	GetAttr(sync, aHidd_Sync_HDisp, &width);
 	GetAttr(sync, aHidd_Sync_VDisp, &height);
+#if 0	
 	
-	GetAttr(fb, aHidd_X11BitMap_Drawable, &win);
-LX11	
-	XResizeWindow(data->display, (Window)win, width, height);
-UX11	
+	/* Send resize message to the x11 task */
+	port = CreateMsgPort();
+	if (NULL != port) {
+	    struct notify_msg *nmsg;
+	    
+	    nmsg = AllocMem(sizeof (*nmsg), MEMF_PUBLIC);
+	    if (NULL != nmsg) {
+	    	nmsg->notify_type = NOTY_RESIZEWINDOW;
+		nmsg->xdisplay	  = data->display;
+		nmsg->xwindow	  = data->fbwin;
+		nmsg->width	  = width;
+		nmsg->height	  = height;
+		nmsg->execmsg.mn_ReplyPort = port;
+		
+		PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)nmsg);
+		
+		WaitPort(port);
+		FreeMem(nmsg, sizeof (*nmsg));
+#endif		
+		
+		fb = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+#if 0		
+	    }
+	    DeleteMsgPort(port);
+	}
+	
+#endif
     }
     return fb;
 }
@@ -652,13 +683,13 @@ LX11
     if (numvisuals > 1)
     {
 
-    	    kprintf("GOT MORE THAN ONE VISUAL FROM X\n");
+    	    kprintf("!!! GOT MORE THAN ONE VISUAL FROM X !!!\n");
 //    	    kill(getpid(), SIGSTOP);
     }
 
     if (NULL == visinfo)
     {
-    	    kprintf("COULD NOT GET X VISUAL INFO\n");
+    	    kprintf("!!! COULD NOT GET X VISUAL INFO !!!\n");
     	    kill(getpid(), SIGSTOP);
     	    
     	    ok = FALSE;
@@ -695,7 +726,7 @@ LX11
 	    	break;
 		
 	    default:
-	    	kprintf("GFX HIDD only supports truecolor and pseudocolor diplays for now\n");
+	    	kprintf("!!! GFX HIDD only supports truecolor and pseudocolor diplays for now !!!\n");
 	    	kill(getpid(), SIGSTOP);
 	}
 
@@ -736,10 +767,8 @@ LX11
    	   , BlackPixel(xsd->display, DefaultScreen(xsd->display))
     );
 
-kprintf("\n1\n");
     if (0 == xsd->dummy_window_for_creating_pixmaps)
     {
-kprintf("\n2 ----\n");
 	ok = FALSE;
     }
 #if USE_XSHM
@@ -748,7 +777,6 @@ kprintf("\n2 ----\n");
     xsd->xshm_info = init_shared_mem(xsd->display);
     if (NULL == xsd->xshm_info)
     {
-kprintf("\n3\n");
     	ok = FALSE;
 kprintf("INITIALIZATION OF XSHM FAILED !!\n");	    
     }
@@ -760,7 +788,6 @@ kprintf("INITIALIZATION OF XSHM FAILED !!\n");
     }    	
 #endif
 
-	kprintf("\n3 %d \n",ok);
 
 UX11
     

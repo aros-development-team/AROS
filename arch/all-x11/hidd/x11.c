@@ -344,9 +344,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 	    }
 	}
 	
-// kprintf("WAITING FOR SIGS\n");
 	sigs = Wait(notifysig | unixiosig | xtp.kill_signal);			
-// kprintf("GOT SIG\n");
 D(bug("Got input from unixio\n"));
 /*			
 	if (ret != 0)
@@ -362,7 +360,6 @@ D(bug("Got input from unixio\n"));
 	     
 	     uiomsg = (struct uioMessage *)GetMsg(unixio_port);
 	     result = uiomsg->result;
-// kprintf("GOT MSG FROM UNIXIO, result = %d\n", result);
 	     
 	     FreeMem(uiomsg, sizeof (struct uioMessage));
 	     
@@ -384,13 +381,11 @@ D(bug("Got input from unixio\n"));
 	if (sigs & notifysig) {
 	    while ((nmsg = (struct notify_msg *)GetMsg(xsd->x11task_notify_port))) {
 		/* Add the messages to an internal list */
-//		kprintf("MEASSAGE RECEIVED\n");
 		
 		switch (nmsg->notify_type) {
 		
 		case NOTY_WINCREATE: {
 		    struct xwinnode * node;
-// kprintf("RECEIVED CREATENOTIFY\n");		    
 		    /* Maintain a list of open windows for the X11 event handler in x11.c */
 		    
 		    node = AllocMem(sizeof (struct xwinnode), MEMF_CLEAR);
@@ -409,33 +404,37 @@ D(bug("Got input from unixio\n"));
 		    ReplyMsg((struct Message *)nmsg);
 		    break; }
 		
-		case NOTY_MAPWINDOW: {
-		    /* BOOL found = FALSE; */
-#if 0
-		    struct xwinnode *node;
-#endif
-		    
+		case NOTY_MAPWINDOW:
+LX11		
 	            XMapRaised (nmsg->xdisplay, nmsg->xwindow);
+UX11		    
+		    AddTail((struct List *)&nmsg_list, (struct Node *)nmsg);			
+		    
+		    /* Do not reply message yet */
+		    break;
+		    
+		case NOTY_RESIZEWINDOW: {
+		    XWindowChanges xwc;
+		    
+		    xwc.width  = nmsg->width;
+		    xwc.height = nmsg->height;
+		    
+		    
+LX11	
+#if 1
+		    XConfigureWindow(nmsg->xdisplay
+		    	, nmsg->xwindow
+		    	, CWWidth | CWHeight
+			, &xwc
+		    );
 
-		    #if 0 /* stegerg: this was, when XMapRaised was still called in onbitmap.c */
-		    
-		    /* If the window has allready been mapped, then just reply the message */
-		    ForeachNode(&xwindowlist, node) {
-		    	if (nmsg->xwindow == node->xwindow) {
-			    if (node->window_mapped) {
-			    	ReplyMsg((struct Message *)nmsg);
-				found = TRUE;
-			    }
-			}
-		    
-		    }
-		    
-		    #endif
-		    
-		    /*if (!found) {*/
-			AddTail((struct List *)&nmsg_list, (struct Node *)nmsg);			
-		    /*}*/
-		    
+#else
+		    XResizeWindow(nmsg->xdisplay, nmsg->xwindow
+		    	, nmsg->width, nmsg->height);
+#endif			
+		    XFlush(nmsg->xdisplay);
+UX11	
+		    AddTail((struct List *)&nmsg_list, (struct Node *)nmsg);
 		    /* Do not reply message yet */
 		    break; }
 		
@@ -478,7 +477,6 @@ D(bug("Calling XPending\n"));
 	    pending = XPending (xsd->display);
 UX11	    
 
-// kprintf("pending: %d\n");
 	    if (pending == 0)
 	    	break;
 
@@ -489,7 +487,6 @@ UX11
 
 	    D(bug("Got Event for X=%d\n", event.xany.window));
 
-// kprintf("GOT EVENT FROM X: %d\n", event.type);		    
 	    if (event.type == MappingNotify) {
 LX11
 		    XRefreshKeyboardMapping ((XMappingEvent*)&event);
@@ -516,9 +513,33 @@ UX11
 	    	case GraphicsExpose:
 	    	case Expose:
 		    break;
+		    
+		case ConfigureRequest:
+			kprintf("!!! CONFIGURE REQUEST !!\n");
+			break;
 
-	        case ConfigureNotify:
-		    break;
+	        case ConfigureNotify: {
+		    /* The window has been resized */
+		
+		    XConfigureEvent *me;
+		    struct notify_msg *nmsg, *safe;
+		    
+		    me = (XConfigureEvent *)&event;
+		    ForeachNodeSafe(&nmsg_list, nmsg, safe) {
+		    	if (    me->window == nmsg->xwindow
+			     && nmsg->notify_type == NOTY_RESIZEWINDOW) {
+			     /*  The window has now been mapped.
+			         Send reply to app */
+				 
+			     Remove((struct Node *)nmsg);
+			     ReplyMsg((struct Message *)nmsg);
+			}
+		    }
+		    
+		    
+		     
+		    break; }
+
 
 	    	case ButtonPress:
 	        case ButtonRelease:
@@ -602,7 +623,8 @@ UX11
 		    me = (XMapEvent *)&event;
 		    
 		    ForeachNodeSafe(&nmsg_list, nmsg, safe) {
-		    	if (me->window == nmsg->xwindow) {
+		    	if (me->window == nmsg->xwindow
+			    && nmsg->notify_type == NOTY_MAPWINDOW) {
 			     /*  The window has now been mapped.
 			         Send reply to app */
 				 

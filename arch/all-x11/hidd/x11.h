@@ -119,7 +119,8 @@ struct xwinnode
 enum {
 	NOTY_MAPWINDOW,
 	NOTY_WINCREATE,
-	NOTY_WINDISPOSE
+	NOTY_WINDISPOSE,
+	NOTY_RESIZEWINDOW
 
 };
 
@@ -131,6 +132,10 @@ struct notify_msg {
      Display *xdisplay;     
      Window xwindow;
      Object *bmobj;
+     
+     /* Only for NOTY_RESIZEWINDOW */
+     ULONG width;
+     ULONG height;
 };
 
 
