@@ -5,13 +5,13 @@
     Desc:
     Lang: english
 */
-#include "asl_intern.h"
 
 /*****************************************************************************
 
     NAME */
 #include <proto/asl.h>
 #include <libraries/asl.h>
+#include "asl_intern.h"
 
 	AROS_LH1(void, FreeFileRequest,
 

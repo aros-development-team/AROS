@@ -5,12 +5,12 @@
     Desc:
     Lang: english
 */
-#include "asl_intern.h"
 
 /*****************************************************************************
 
     NAME */
 #include <proto/asl.h>
+#include "asl_intern.h"
 
 	AROS_LH0(struct FileRequester *, AllocFileRequest,
 

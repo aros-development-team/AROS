@@ -7,10 +7,10 @@
 */
 
 
-#include "asl_intern.h"
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <exec/memory.h>
+#include "asl_intern.h"
 
 /*****************************************************************************
 

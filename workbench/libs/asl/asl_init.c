@@ -6,9 +6,11 @@
     Lang: English.
 */
 
+#define AROS_ALMOST_COMPATIBLE /* For NEWLIST() macro */
+
 #include <stddef.h>
 #include <exec/libraries.h>
-#include <exec/types.h>
+#include <exec/lists.h>
 #include <exec/resident.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
