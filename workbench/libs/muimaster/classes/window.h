@@ -174,6 +174,10 @@ struct MUI_RenderInfo
 
     Object *mri_VertProp; /* Valid between MUIM_Show/MUIM_Hide */
     Object *mri_HorizProp;
+
+    /* buffering */
+    struct RastPort mri_BufferRP;
+    struct BitMap  *mri_BufferBM;
 };
 
 #define MUIMRI_RECTFILL (1<<0)
