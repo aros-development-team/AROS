@@ -167,9 +167,9 @@ c/get;2;laguest;Write C:Get
 c/getenv;2;laguest;Write C:GetEnv
 c/if;2;SDuvan;Write If
 c/info;0;digulla;Write Info
-c/join;1;chodorowski;Write Join
+c/join;2;chodorowski;Write Join
 c/librarytest;1;matthias;librarytest
-c/list;1;matthias;Write C:List
+c/list;1;matthias,bergers;Write C:List
 c/makelink;0;srittau;Write C:MakeLink
 c/newshell;1;matthias;Write C:NewShell
 c/path;1;matthias;Write C:Path
@@ -186,9 +186,9 @@ c/setclock;1;srittau;Write SetClock
 c/setdate;2;SDuvan;Write C:SetDate
 c/setenv;2;laguest;Write C:SetEnv
 c/shell;1;SDuvan;Write C:Shell
-c/sort;0;digulla;Write Sort
+c/sort;1;bergers;Write Sort
 c/stack;2;SDuvan;Write C:Stack
-c/status;1;laguest;Write C:Status
+c/status;1;bergers;Write C:Status
 c/type;2;matthias;Write C:Type
 c/unalias;2;laguest;Write C:UnAlias
 c/unset;2;laguest;Write C:UnSet
@@ -697,10 +697,10 @@ expansion00020;2;iaint;Write AddDosNode
 gadtools00000;1;srittau;Write CreateGadgetA
 gadtools00001;2;srittau;Write FreeGadgets
 gadtools00002;2;srittau;Write GT_SetGadgetAttrsA
-gadtools00003;2;bergers;Write CreateMenusA
-gadtools00004;2;bergers;Write FreeMenus
-gadtools00005;1;bergers;Write LayoutMenuItemsA
-gadtools00006;1;bergers;Write LayoutMenusA
+gadtools00003;2;bergers,stegerg;Write CreateMenusA
+gadtools00004;2;bergers,stegerg;Write FreeMenus
+gadtools00005;2;bergers,stegerg;Write LayoutMenuItemsA
+gadtools00006;2;bergers,stegerg;Write LayoutMenusA
 gadtools00007;2;stegerg;Write GT_GetIMsg
 gadtools00008;2;srittau;Write GT_ReplyIMsg
 gadtools00009;1;srittau;Write GT_RefreshWindow
