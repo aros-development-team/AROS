@@ -126,7 +126,16 @@ extern int __vcscan (void * data, int (*getc)(void *),
 #define putc fputc
 #define getc fgetc
 #define getchar()   getc(stdin)
-#define putchar(c)  putc(c,stdout)
+
+#ifndef _CLIB_KERNEL_
+    static int __inline__ putchar(int c)
+    {
+        return putc(c, stdout);
+    }
+#else
+#   define putchar(c)  putc(c,stdout)
+#endif
+
 #define gets(s)     fgets(s, BUFSIZ, stdin)
 
 #endif /* _STDIO_H */
