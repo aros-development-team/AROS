@@ -9,10 +9,16 @@ CC="cc"
 COMMON_CFLAGS="-g"
 RANLIB="ranlib"
 
+# Flags to link AROS binaries (ie. binaries which are to be started
+# inside AROS). What we need is something like a shared lib: All
+# references resolved but no startup-code added.
+ILDFLAGS="-nostartfiles -nostdlib"
+
 case "$type" in
 "Linux" )
 	CC="gcc"
 	COMMON_CFLAGS="-Wall -g"
+	ILDFLAGS="-nostartfiles -nostdlib -Xlinker -i"
 	ARCH="linux"
 	KERNEL="i386-emul"
 	;;
@@ -34,6 +40,7 @@ echo "# Edit \$(TOP)/configure instead and delete this file" >> $1
 echo >> $1
 echo "CC = $CC" >> $1
 echo "COMMON_CFLAGS = $COMMON_CFLAGS" >> $1
+echo "ILDFLAGS = \$(CFLAGS) $ILDFLAGS" >> $1
 echo "RANLIB = $RANLIB" >> $1
 echo "ARCH = $ARCH" >> $1
 echo "KERNEL = $KERNEL" >> $1
