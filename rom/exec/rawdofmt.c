@@ -63,8 +63,12 @@
    than 68k, and arrays are always properly aligned.  */
 
 
-#define fetch_mem_arg(type) \
-    (*((type *)DataStream)++)
+#define fetch_mem_arg(type)              \
+({                                       \
+    type __retval = *(type *)DataStream; \
+    DataStream = (type *)DataStream + 1; \
+    __retval;                            \
+})
 
 /* Fetch the data either from memory or from the va_list, depending
    on the value of user_va_list_ptr.  */
@@ -82,20 +86,20 @@
 
 
 /* Call the PutCharProc funtion with the given parameters.  */
-#define PutCh(ch)                           \
-do                                          \
-{                                           \
-    if (PutChProc != NULL)                  \
-    {                                       \
-        AROS_UFC2(void, PutChProc,          \
-        AROS_UFCA(UBYTE, (ch),   D0     ),  \
-        AROS_UFCA(APTR , (PutChData), A3)); \
-    }                                       \
-    else                                    \
-    {                                       \
-        *((UBYTE *)PutChData)++ = ch;       \
-    }                                       \
-} while (0);
+#define PutCh(ch)                         \
+do                                        \
+{                                         \
+    if (PutChProc != NULL)                \
+    {                                     \
+        AROS_UFC2(void, PutChProc,        \
+        AROS_UFCA(UBYTE, (ch), D0),       \
+        AROS_UFCA(APTR , PutChData, A3)); \
+    }                                     \
+    else                                  \
+    {                                     \
+	*UPutChData++ = ch;               \
+    }                                     \
+} while (0)
 
 
 /*****************************************************************************
@@ -240,6 +244,7 @@ do                                          \
 #   define PutChData __PutChData
 #endif
 
+    UBYTE   *UPutChData = PutChData;
     va_list *user_va_list_ptr = NULL;
     va_list  VaListStream;
 

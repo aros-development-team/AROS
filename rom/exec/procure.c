@@ -122,7 +122,7 @@
 	if (bidMsg->ssm_Semaphore != NULL)
 	    sr->sr_Waiter = NULL;
 	else
-	    (IPTR)sr->sr_Waiter = SM_SHARED;
+	    sr->sr_Waiter = (APTR)SM_SHARED;
 
 	AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)bidMsg);
     }
