@@ -6,7 +6,7 @@ CFLAGS	:= $(USER_DEFINES) -O2 -Wunused -Wall $(SPECIAL_CFLAGS) $(INCLUDES)
 OBJDIR	:= $(GENDIR)/$(CURDIR)
 DESTDIR := $(BINDIR)/Utilities
 
-FILES := main misc procedure parse variables gui execute cleanup
+FILES := main misc procedure parse variables gui more execute cleanup
 SRCS := $(foreach f, $(FILES), $(f).c)
 OBJS := $(foreach f, $(FILES), $(OBJDIR)/$(f).o)
 

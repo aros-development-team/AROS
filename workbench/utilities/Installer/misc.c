@@ -9,6 +9,7 @@ extern void outofmem( void * );
 
 /* Internal function prototypes */
 int strtostrs ( char *, char *** );
+char *collatestrings ( int, char ** );
 char *addquotes ( char * );
 void freestrlist( STRPTR * );
 
@@ -45,6 +46,42 @@ char **out = *outarr;
   *outarr = out;
 
 return i;
+}
+
+/*
+ * Collate array of strings with glueing LINEFEEDs
+ */
+char *collatestrings ( int n, char ** instrs )
+{
+char *retval;
+int len = 0, i, j, k;
+
+  for ( i = 0 ; i < n ; i++ )
+  {
+    /* Add length of line to total length of text,
+       plus additional LINEFEED (NULL for last item ) */
+    len += strlen ( instrs[i] ) + 1;
+  }
+  retval = malloc ( sizeof( char ) * len );
+  if( retval != NULL )
+  {
+    j = 0;
+    for ( i = 0 ; i < n ; i++ )
+    {
+      k = 0;
+      for ( len = strlen ( instrs[i] ) ; len > 0 ; len-- )
+      {
+        retval[j] = instrs[i][k];
+        j++;
+        k++;
+      }
+      retval[j] = LINEFEED;
+      j++;
+    }
+    retval[j-1] = 0;
+  }
+
+return retval;
 }
 
 /*

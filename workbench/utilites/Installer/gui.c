@@ -8,6 +8,8 @@
 #include "Installer.h"
 #include "execute.h"
 #include "texts.h"
+#include "more.h"
+#include "misc.h"
 
 /* External variables */
 extern BPTR inputfile;
@@ -28,9 +30,6 @@ extern void dump_varlist();
 #endif /* DEBUG */
 extern void end_malloc();
 extern void outofmem( void * );
-extern int strtostrs ( char *, char *** );
-extern char *addquotes( char * );
-extern void freestrlist( STRPTR * );
 extern void traperr( char *, char * );
 
 /* Internal function prototypes */
@@ -60,6 +59,7 @@ int request_confirm( struct ParameterList *, long int );
 void abort_install();
 void final_report();
 void setgadgetdisable( int );
+void setaboutgaddisable( int );
 void display_text( char * );
 
 #include <proto/intuition.h>
@@ -86,6 +86,8 @@ UWORD code;
 
 const char GuiWinTitle[] ="AROS - Installer V43.3";
 
+#define _MX_HEIGHT 15
+
 APTR vi;
 struct Screen *scr;
 struct Gadget
@@ -99,9 +101,11 @@ struct Gadget
 	      *abortgad = NULL,
 	      *skipgad = NULL,
 	      *helpgad = NULL,
+	      *aboutgad = NULL,
 	/* Special */
 	      *gad = NULL;
 
+#ifdef USE_INTUITEXT
 struct IntuiText itext = {
     1,		/* FrontPen */
     0,		/* BackPen */
@@ -112,6 +116,7 @@ struct IntuiText itext = {
     NULL,	/* IText */
     NULL	/* NextText */
 };
+#endif
 
 #define ID_BOOLGADFALSE 0
 struct NewGadget gt_boolgadfalse = {
@@ -146,7 +151,7 @@ struct NewGadget gt_stringgad = {
 
 #define ID_MXGAD 3
 struct NewGadget gt_mxgad = {
-  15,90, MX_WIDTH, MX_HEIGHT,
+  15,90, MX_WIDTH, _MX_HEIGHT,
   NULL, NULL,
   ID_MXGAD, PLACETEXT_RIGHT, NULL, NULL
 };
@@ -157,6 +162,7 @@ STRPTR *mxlabels;
 #define ABORTGAD	2
 #define SKIPGAD		4
 #define HELPGAD		8
+#define ABOUTGAD		8
 
 #define ID_PROCEEDGAD 100
 struct NewGadget gt_proceedgad = {
@@ -384,8 +390,13 @@ int finish = FALSE;
 
     text = strdup( "Aborting Installation:" );
     outofmem( text );
+#ifdef USE_INTUITEXT
     itext.IText = text;
     PrintIText( rp, &itext, 10, 10 );
+#else
+    Move( rp, 20, 25 );
+    Text( rp, text, strlen(text) );
+#endif
     free( text );
     out = malloc( sizeof( char * ) );
     outofmem( out );
@@ -393,8 +404,13 @@ int finish = FALSE;
     m = strtostrs( msg, &out );
     for( n = 0 ; n < m ; n++ )
     {
+#ifdef USE_INTUITEXT
       itext.IText = out[n];
       PrintIText( rp, &itext, 10, 15*(n+2) );
+#else
+      Move( rp, 20, 15*n+45 );
+      Text( rp, out[n], strlen(out[n]) );
+#endif
       free( out[n] );
     }
     free( out );
@@ -465,8 +481,13 @@ int n, m;
 
   text = strdup( "Aborting Installation:" );
   outofmem( text );
+#ifdef USE_INTUITEXT
   itext.IText = text;
   PrintIText( rp, &itext, 10, 10 );
+#else
+  Move( rp, 20, 25 );
+  Text( rp, text, strlen(text) );
+#endif
   free( text );
   out = malloc( sizeof( char * ) );
   outofmem( out );
@@ -474,8 +495,13 @@ int n, m;
   m = strtostrs( msg, &out );
   for( n = 0 ; n < m ; n++ )
   {
+#ifdef USE_INTUITEXT
     itext.IText = out[n];
     PrintIText( rp, &itext, 10, 15*(n+2) );
+#else
+    Move( rp, 20, 15*n+45 );
+    Text( rp, out[n], strlen(out[n]) );
+#endif
     free( out[n] );
   }
   free( out );
@@ -484,8 +510,13 @@ int n, m;
 #endif /* DEBUG */
   text = strdup( "Done with Installation." );
   outofmem( text );
+#ifdef USE_INTUITEXT
   itext.IText = text;
   PrintIText( rp, &itext, 10, 15*(n+2) );
+#else
+  Move( rp, 20, 15*n+45 );
+  Text( rp, text, strlen(text) );
+#endif
   free( text );
 #ifdef DEBUG
   printf( "\nDone with installation.\n\n" );
@@ -555,8 +586,13 @@ int n, m;
 
   text = strdup( "Working on Installation:" );
   outofmem( text );
+#ifdef USE_INTUITEXT
   itext.IText = text;
   PrintIText( rp, &itext, 10, 10 );
+#else
+  Move( rp, 20, 25 );
+  Text( rp, text, strlen(text) );
+#endif
 #ifdef DEBUG
   printf( "%s\n", text );
 #endif /* DEBUG */
@@ -567,8 +603,13 @@ int n, m;
   m = strtostrs( msg, &out );
   for( n = 0 ; n < m ; n++ )
   {
+#ifdef USE_INTUITEXT
     itext.IText = out[n];
     PrintIText( rp, &itext, 10, 15*(n+2) );
+#else
+    Move( rp, 20, 15*n+45 );
+    Text( rp, out[n], strlen(out[n]) );
+#endif
     free( out[n] );
   }
   free( out );
@@ -586,7 +627,6 @@ void show_message( char * msg ,struct ParameterList * pl )
 {
 char **out;
 int n, m;
-char c;
 int finish = FALSE;
 
   if( GetPL( pl, _ALL ).used == 1 || get_var_int( "@user-level" ) > _NOVICE )
@@ -594,7 +634,8 @@ int finish = FALSE;
 
     clear_gui();
 
-    setgadgetdisable( SKIPGAD );
+    setgadgetdisable( SKIPGAD
+		    | ( (GetPL( pl, _HELP ).used == 1) ? 0 : HELPGAD ) );
     RefreshGList(stdglist,GuiWin,NULL,-1);
     GT_RefreshWindow(GuiWin,NULL);
 
@@ -604,42 +645,62 @@ int finish = FALSE;
     m = strtostrs( msg, &out );
     for( n = 0 ; n < m ; n++ )
     {
+#ifdef USE_INTUITEXT
       itext.IText = out[n];
       PrintIText( rp, &itext, 10, 15*(n+1) );
+#else
+      Move( rp, 20, 15*n+30 );
+      Text( rp, out[n], strlen(out[n]) );
+#endif
       free( out[n] );
     }
     free( out );
 #ifdef DEBUG
     printf( "%s\n", msg );
 #endif /* DEBUG */
-    do
+
+    while( !finish )
     {
-      printf( " P - Proceed\n A - Abort\n H - Help\n" );
-      scanf( "%c", &c );
-      switch( tolower( c ) )
+      WaitPort( GuiWin->UserPort );
+      while((imsg = GT_GetIMsg( GuiWin->UserPort )))
       {
-	case 'p': /* Proceed */
-	    finish = TRUE;
-	    break;
-	case 'a': /* abort */
-	    abort_install();
-	    break;
-	case 'h': /* help */
-	    m = GetPL( pl, _HELP ).intval;
-	    for( n = 0 ; n < m ; n++ )
-	    {
-	      printf( "%s\n", GetPL( pl, _HELP ).arg[n] );
-	    }
-	    if( m == 0 )
-	    {
-#warning FIXME: What default help text is used?
-	      printf( "Press Proceed to continue or Abort to abort\n" );
-	    }
-	    break;
-	default :
-	    break;
-      }
-    } while( !finish );
+	class = imsg->Class;
+	code = imsg->Code;
+	switch( class )
+	{
+	  case IDCMP_GADGETUP:
+		switch( ( (struct Gadget *)(imsg->IAddress) )->GadgetID )
+		{
+		  case ID_PROCEEDGAD:
+		    finish = TRUE;
+		    break;
+		  case ID_ABORTGAD:
+		    abort_install();
+		    break;
+		  case ID_HELPGAD:
+		    m = GetPL( pl, _HELP ).intval;
+#ifdef DEBUG
+		    for( n = 0 ; n < m ; n++ )
+		    {
+		      printf( "%s\n", GetPL( pl, _HELP ).arg[n] );
+		    }
+#endif /* DEBUG */
+		    setgadgetdisable( PROCEEDGAD|ABORTGAD|SKIPGAD|HELPGAD );
+		    morenmain( "Help on Message", m, GetPL( pl, _HELP ).arg );
+		    setgadgetdisable( SKIPGAD
+				    | ( (GetPL( pl, _HELP ).used == 1) ? 0 : HELPGAD ) );
+		    break;
+		  default:
+		    break;
+		}
+		break;
+	  default:
+		break;
+	}
+	GT_ReplyIMsg(imsg);
+	
+      } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+    } /* !finish */
 
   }
 }
@@ -651,9 +712,8 @@ int finish = FALSE;
 void show_help_userlevel( )
 {
 #warning TODO: help for userlevel-requester
-#ifdef DEBUG
-  printf( "\n NOVICE won't be asked anymore questions\n AVERAGE will have to interact\n EXPERT must confirm all actions\n" );
-#endif /* DEBUG */
+
+  moremain( "Help on UserLevel", "\n NOVICE won't be asked anymore questions\n AVERAGE will have to interact\n EXPERT must confirm all actions\n" );
 }
 
 
@@ -662,10 +722,13 @@ void show_help_userlevel( )
  */
 void show_help_logfile()
 {
+char *helptext;
+
 #warning TODO: help for logfile-requester
-#ifdef DEBUG
-  printf( "\n Printer will go to PRT:\n Log File will be %s\n",preferences.transcriptfile );
-#endif /* DEBUG */
+  helptext = malloc( 512 * sizeof(char) );
+  sprintf( helptext, "\n Printer will go to PRT:\n Log File will be %s\n", preferences.transcriptfile );
+  moremain( "Help on Logfiles", helptext );
+  free(helptext);
 }
 
 
@@ -675,9 +738,7 @@ void show_help_logfile()
 void show_help_pretend()
 {
 #warning TODO: help for pretend-requester
-#ifdef DEBUG
-  printf( "\n \"Pretend to Install\" will not install the application for real\n on your Disk, instead it will log all the actions to the log-file.\n However if the \"(safe)\" flag is set for functions in the script\n these will bedone even if in pretend mode.\n" );
-#endif /* DEBUG */
+  moremain( "Help on Pretend-to-install mode", "\n \"Pretend to Install\" will not install the application for real\n on your Disk, instead it will log all the actions to the log-file.\n However if the \"(safe)\" flag is set for functions in the script\n these will bedone even if in pretend mode.\n" );
 }
 
 
@@ -686,10 +747,13 @@ void show_help_pretend()
  */
 void show_help_installer( )
 {
+char *helptext;
+
 #warning TODO: help/about for Installer
-#ifdef DEBUG
-  printf( "\nThis is AROS Installer V%d.%d\nIt is intended to be compatible to Installer V43.3\n\nThis program was written by Henning Kiel <hkiel@aros.org>\n\n", INSTALLER_VERSION, INSTALLER_REVISION );
-#endif /* DEBUG */
+  helptext = malloc( 512 * sizeof(char) );
+  sprintf( helptext, "\nThis is AROS Installer V%d.%d\nIt is intended to be compatible\nto Installer V43.3\n\nThis program was written by\n Henning Kiel <hkiel@aros.org>\n\n", INSTALLER_VERSION, INSTALLER_REVISION );
+  moremain( "About Installer", helptext );
+  free(helptext);
 }
 
 
@@ -714,8 +778,13 @@ char welcome[1024];
     m = strtostrs( msg, &out );
     for( n = 0 ; n < m ; n++ )
     {
+#ifdef USE_INTUITEXT
       itext.IText = out[n];
       PrintIText( rp, &itext, 10, 15*(n+1) );
+#else
+      Move( rp, 20, 15*n+30 );
+      Text( rp, out[n], strlen(out[n]) );
+#endif
       free( out[n] );
     }
     free( out );
@@ -726,8 +795,13 @@ char welcome[1024];
   else
   {
     sprintf( welcome, "Welcome to the %s App installation utility!\n", get_var_arg( "@app-name" ) );
+#ifdef USE_INTUITEXT
     itext.IText = welcome;
-    PrintIText( rp, &itext, 5, 15 );
+    PrintIText( rp, &itext, 5, 20 );
+#else
+    Move( rp, 15, 25 );
+    Text( rp, welcome, strlen(welcome) );
+#endif
 #ifdef DEBUG
     printf( welcome );
 #endif
@@ -754,7 +828,7 @@ char welcome[1024];
 			GTMX_Active, usrlevel,
 			TAG_DONE );
   gt_mxgad.ng_LeftEdge = 15;
-  gad = CreateGadget( BUTTON_KIND, gad, &gt_aboutgad,
+  aboutgad = gad = CreateGadget( BUTTON_KIND, gad, &gt_aboutgad,
 			GA_Immediate, TRUE,
 			TAG_DONE );
 
@@ -799,10 +873,18 @@ char welcome[1024];
 		  abort_install();
 		  break;
 	      case ID_HELPGAD:
+		  setgadgetdisable( PROCEEDGAD|ABORTGAD|SKIPGAD|HELPGAD );
+		  setaboutgaddisable( TRUE );
 		  show_help_userlevel();
+		  setaboutgaddisable( FALSE );
+		  setgadgetdisable( SKIPGAD );
 		  break;
 	      case ID_ABOUTGAD:
+		  setgadgetdisable( PROCEEDGAD|ABORTGAD|SKIPGAD|HELPGAD );
+		  setaboutgaddisable( TRUE );
 		  show_help_installer();
+		  setaboutgaddisable( FALSE );
+		  setgadgetdisable( SKIPGAD );
 		  break;
 	      default:
 		  break;
@@ -833,8 +915,13 @@ char welcome[1024];
   if( usrlevel > 0 )
   {
     /* Ask for logfile-creation */
+#ifdef USE_INTUITEXT
     itext.IText = LOG_QUESTION;
     PrintIText( rp, &itext, 15, 35 );
+#else
+    Move( rp, 25, 50 );
+    Text( rp, LOG_QUESTION, strlen(LOG_QUESTION) );
+#endif
 
     mxlabels = malloc( 4*sizeof(STRPTR) );
     mxlabels[0] = strdup( LOG_FILE_TEXT );
@@ -899,7 +986,9 @@ char welcome[1024];
 		    abort_install();
 		    break;
 		  case ID_HELPGAD:
+		    setgadgetdisable( PROCEEDGAD|ABORTGAD|SKIPGAD|HELPGAD );
 		    show_help_logfile();
+		    setgadgetdisable( SKIPGAD );
 		    break;
 		  default:
 		    break;
@@ -923,8 +1012,13 @@ char welcome[1024];
       freestrlist( mxlabels );
       free( gt_mxgad.ng_GadgetText );
       gt_mxgad.ng_GadgetText = NULL;
+#ifdef USE_INTUITEXT
       itext.IText = PRETEND_QUESTION;
       PrintIText( rp, &itext, 15, 35 );
+#else
+      Move( rp, 25, 50 );
+      Text( rp, PRETEND_QUESTION, strlen(PRETEND_QUESTION) );
+#endif
 
       mxlabels = malloc( 3*sizeof(STRPTR) );
       mxlabels[0] = strdup( NOPRETEND_TEXT );
@@ -985,7 +1079,9 @@ char welcome[1024];
 		      abort_install();
 		      break;
 		    case ID_HELPGAD:
+		      setgadgetdisable( PROCEEDGAD|ABORTGAD|SKIPGAD|HELPGAD );
 		      show_help_pretend();
+		      setgadgetdisable( SKIPGAD );
 		      break;
 		    default:
 		      break;
@@ -1061,10 +1157,17 @@ int finish = FALSE;
     DrawBevelBoxA(rp, 5,5,GuiWin->Width-15-GuiWin->BorderLeft,GuiWin->Height-65-GuiWin->BorderTop,bevel_tag);
     DrawBevelBoxA(rp, 15,12,GuiWin->Width-35-GuiWin->BorderLeft,GuiWin->Height-160-GuiWin->BorderTop,bevel_tag);
 	
+#ifdef USE_INTUITEXT
     itext.IText = nostring;
     PrintIText( rp, &itext, 40, 92 );
     itext.IText = yesstring;
     PrintIText( rp, &itext, 40, 132 );
+#else
+    Move( rp, 50, 107 );
+    Text( rp, nostring, strlen(nostring) );
+    Move( rp, 50, 147 );
+    Text( rp, yesstring, strlen(yesstring) );
+#endif
 
     j = 0;
     for( i = 0 ; i < GetPL( pl, _PROMPT ).intval ; i ++ )
@@ -1078,8 +1181,13 @@ int finish = FALSE;
       m = strtostrs( GetPL( pl, _PROMPT ).arg[i], &out );
       for( n = 0 ; n < m ; n++ )
       {
+#ifdef USE_INTUITEXT
 	itext.IText = out[n];
 	PrintIText( rp, &itext, 15, 15*j+7 );
+#else
+	Move( rp, 25, 15*j+22 );
+	Text( rp, out[n], strlen(out[n]) );
+#endif
 	free( out[n] );
 	j++;
       }
@@ -1131,6 +1239,8 @@ int finish = FALSE;
       } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
 
     } while( !finish );
+    RemoveGList(GuiWin,glist,-1);
+    GT_RefreshWindow(GuiWin,NULL);
   }
 
   if( preferences.transcriptstream != NULL )
@@ -1610,8 +1720,13 @@ char **out;
       m = strtostrs( GetPL( pl, _PROMPT ).arg[i], &out );
       for( n = 0 ; n < m ; n++ )
       {
+#ifdef USE_INTUITEXT
 	itext.IText = out[n];
 	PrintIText( rp, &itext, 15, 15*j+7 );
+#else
+	Move( rp, 25, 15*j+22 );
+	Text( rp, out[n], strlen(out[n]) );
+#endif
 	free( out[n] );
 	j++;
       }
@@ -1718,6 +1833,12 @@ void setgadgetdisable( int list )
 			TAG_DONE );
     GT_SetGadgetAttrs( helpgad, GuiWin, NULL,
 			GA_Disabled, (list & HELPGAD) ? TRUE : FALSE,
+			TAG_DONE );
+}
+void setaboutgaddisable( int disable )
+{
+    GT_SetGadgetAttrs( aboutgad, GuiWin, NULL,
+			GA_Disabled, disable,
 			TAG_DONE );
 }
 

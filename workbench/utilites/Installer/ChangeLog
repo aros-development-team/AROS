@@ -280,4 +280,16 @@
 - implemented (database "grapics-mem") and (database "total-mem")
 - added variable doing_abort to work around the "abort in abort" BUG00003
 
+0045
+- changed PrintIText() to Move(),Text()
+- activated global gadgets for show_message()
+- imported code from AROS/workbench/utilities/More/more.c to display
+  scrollable texts in a new window (used for help windows).
+
+0046
+- added misc.h with function prototypes of misc.c
+- added function collatestrings() to misc.c which collates lines of strings
+- added gui.h as API description for future GUIs
+- scaled size of mxgadgets
+
 

@@ -3,6 +3,8 @@
 #include "Installer.h"
 #include "execute.h"
 #include "cmdlist.h"
+#include "misc.h"
+#include "gui.h"
 
 /* External variables */
 extern InstallerPrefs preferences;
@@ -18,27 +20,9 @@ extern void set_variable( char *, char *, long int );
 extern void dump_varlist();
 #endif /* DEBUG */
 extern struct ProcedureList *find_proc( char * );
-extern void show_abort( char * );
-extern void show_complete( long int );
-extern void show_exit( char * );
-extern void show_working( char * );
-extern void show_message( char *, struct ParameterList * );
-extern void final_report();
-extern long int request_bool( struct ParameterList * );
-extern long int request_number( struct ParameterList * );
-extern char *request_string( struct ParameterList * );
-extern long int request_choice( struct ParameterList * );
-extern char *request_dir( struct ParameterList * );
-extern char *request_disk( struct ParameterList * );
-extern char *request_file( struct ParameterList * );
-extern long int request_options( struct ParameterList * );
-extern void request_userlevel( char * );
-extern int request_confirm( struct ParameterList *, long int );
 extern void traperr( char *, char * );
 extern void outofmem( void * );
 extern void link_function( char *, long int );
-extern char *addquotes( char * );
-extern void display_text( char * );
 
 /* Internal function prototypes */
 int eval_cmd( char * );
