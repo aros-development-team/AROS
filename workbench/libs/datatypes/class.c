@@ -285,6 +285,7 @@ AROS_UFH3(IPTR, Dispatcher,
 	    struct Gadget   *newobject;
 	    struct DTObject *newdto;
 	    
+kprintf("dtclass_new 1\n");
 	    if(!(newobject = (struct Gadget *)DoSuperMethodA(class, object,
 							     msg)))
 		SetIoErr(ERROR_NO_FREE_STORE);
@@ -294,6 +295,7 @@ AROS_UFH3(IPTR, Dispatcher,
 		struct TagItem *nametag;
 		BOOL Success = FALSE;
 		APTR handle;
+kprintf("dtclass_new 2\n");
 		
 		newdto = INST_DATA(class, newobject);
 		
@@ -310,17 +312,35 @@ AROS_UFH3(IPTR, Dispatcher,
 		    SetIoErr(ERROR_REQUIRED_ARG_MISSING);
 		else
 		{
-		    if (!(newdto->dto_Name = AllocVec((ULONG)strlen((UBYTE *)nametag->ti_Data) + 1,
-						      MEMF_PUBLIC | MEMF_CLEAR)))
+		    LONG namelen = 2;
+		    
+kprintf("dtclass_new 3\n");
+		    if (newdto->dto_SourceType == DTST_FILE)
+		    {
+		        namelen = (ULONG)strlen((UBYTE *)nametag->ti_Data) + 1;
+		    }
+		    
+		    if (!(newdto->dto_Name = AllocVec(namelen, MEMF_PUBLIC | MEMF_CLEAR)))
 			SetIoErr(ERROR_NO_FREE_STORE);
 		    else
 		    {
-			strcpy(newdto->dto_Name, (UBYTE *)nametag->ti_Data);
+kprintf("dtclass_new 4\n");
+			switch(newdto->dto_SourceType)
+			{
+			    case DTST_FILE:
+			        strcpy(newdto->dto_Name, (UBYTE *)nametag->ti_Data);
+				break;
 			
+			    case DTST_CLIPBOARD:
+			    	newdto->dto_Name[0] = '0' + (UBYTE)nametag->ti_Data;
+				break;				
+			}
+			    
 			if(!(newdto->dto_DataType = (struct DataType *)GetTagData(DTA_DataType, NULL, attrs)))
 			    Success = TRUE;
 			else
 			{
+kprintf("dtclass_new 5\n");
 			    switch(newdto->dto_SourceType)
 			    {
 			    case DTST_FILE:
@@ -358,6 +378,7 @@ kprintf("datatypes.library: calling NewOpen success = %d\n",Success);
 				break;
 				
 			    case DTST_CLIPBOARD:
+kprintf("dtclass_new 6\n");
 				newdto->dto_Handle = handle;
 				Success = TRUE;
 				break;

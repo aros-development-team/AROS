@@ -1,5 +1,6 @@
 
 #define USE_BOOPSI_STUBS
+#include <aros/macros.h>
 #include <datatypes/datatypes.h>
 #include <proto/utility.h>
 #include <proto/dos.h>
@@ -271,8 +272,8 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
     struct List *list  = NULL;
     BOOL         found = FALSE;
    
-    ULONG IFF_ID   = *((ULONG*)CheckArray);
-    ULONG IFF_Size = *((ULONG*)(CheckArray+4));
+    ULONG IFF_ID   = AROS_BE2LONG(*((ULONG*)CheckArray));
+    ULONG IFF_Size = AROS_BE2LONG(*((ULONG*)(CheckArray+4)));
     
     if(((!dthc->dthc_FileHandle) && (dthc->dthc_IFF)) ||
        (((Size*3/4 < IFF_Size) && (Size*4/3 > IFF_Size)) &&
@@ -330,7 +331,7 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
 		UWORD count;
 		
 		found=TRUE;
-		
+
 		for(count = cur->DTH.dth_MaskLen; count--; msk++, cmp++)
 		{
 		    if(*msk>0)

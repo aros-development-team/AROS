@@ -103,11 +103,16 @@ kprintf("obtaindatatype: 5\n");
 	    cbh->cbh_Req.io_Command = CMD_READ;
 	    cbh->cbh_Req.io_Data = CheckArray;
 	    cbh->cbh_Req.io_Length = sizeof(CheckArray);
-	    
+
+kprintf("\n1\n");	    
 	    if(DoIO((struct IORequest*)&cbh->cbh_Req))
+{	    
+kprintf("\n1 error %d\n", cbh->cbh_Req.io_Error);
 		SetIoErr(ERROR_OBJECT_NOT_FOUND);
+}
 	    else
 	    {
+kprintf("\n2\n");	    
 		cbh->cbh_Req.io_Error = 0;
 		cbh->cbh_Req.io_Offset = 0;
 		
@@ -116,6 +121,7 @@ kprintf("obtaindatatype: 5\n");
 		else
 		{
 		    struct DTHookContext dthc;
+kprintf("\n3\n");	    
 		    
 		    dthc.dthc_SysBase = (struct Library *)SysBase;
 		    dthc.dthc_DOSBase = DOSBase;
@@ -128,12 +134,15 @@ kprintf("obtaindatatype: 5\n");
 		    dthc.dthc_Buffer = CheckArray;
 		    dthc.dthc_BufferLength = cbh->cbh_Req.io_Actual;
 		    
+kprintf("\n4\n");	    
 		    cdt = ExamineData(DataTypesBase,
 				      &dthc,
 				      CheckArray,
 				      (UWORD)cbh->cbh_Req.io_Actual,
 				      "",
 				      NULL);
+kprintf("\n5\n");	    
+
 		}
 	    }
 	}
