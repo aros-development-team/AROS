@@ -2,12 +2,15 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/08/28 17:58:05  digulla
+    Show off all types of BOOLGADGETs and PROPGADGETs
+
     Revision 1.5  1996/08/23 17:05:41  digulla
     The demo crashes if kprintf() is called, so don't do it.
     New feature: Open console and use RawKeyConvert() to wait for ESC to quit the
-    		demo.
+		demo.
     New feature: Added two gadgets: One with GFLG_GADGHCOMP, the other with
-    		GFLG_GADGHIMAGE
+		GFLG_GADGHIMAGE
     New feature: The user can select the gadgets and gets messages for them.
     New feature: More verbose and better error codes.
 
@@ -119,10 +122,10 @@ void Refresh (struct RastPort * rp)
     SetDrMd (rp, JAM2);
 
     Move (rp, 0, 0);
-    Draw (rp, 320, 225);
+    Draw (rp, 320, 150);
 
     Move (rp, 640, 0);
-    Draw (rp, 0, 450);
+    Draw (rp, 0, 300);
 
     Move (rp, 300, 40);
     Text (rp, "Hello World.", 12);
@@ -161,6 +164,7 @@ void Refresh (struct RastPort * rp)
 
 #define GAD_WID     100
 #define GAD_HEI     30
+#define BORDER	    20
 
 WORD BorderData[6*2*2] =
 {
@@ -178,7 +182,8 @@ WORD BorderData[6*2*2] =
     -1, 1,
     (GAD_WID-2), 0,
 };
-struct Border DemoBottomBorder =
+struct Border
+DemoBottomBorder =
 {
     GAD_WID-1, GAD_HEI-1,
     1, 2,
@@ -215,27 +220,181 @@ DemoITopBorder =
     &DemoIBottomBorder
 };
 
-struct Gadget DemoGadget2 =
+struct PropInfo
+DemoPropInfo1 =
+{
+    AUTOKNOB | FREEHORIZ | PROPNEWLOOK,
+    0, 0,
+    MAXBODY, MAXBODY,
+    0,0,0,0,0,0
+},
+DemoPropInfo2 =
+{
+    AUTOKNOB | FREEVERT | PROPNEWLOOK,
+    0, 0,
+    MAXBODY, MAXBODY,
+    0,0,0,0,0,0
+},
+DemoPropInfo3 =
+{
+    AUTOKNOB | FREEHORIZ | FREEVERT | PROPNEWLOOK,
+    0, 0,
+    MAXBODY, MAXBODY,
+    0,0,0,0,0,0
+};
+
+struct Gadget
+DemoGadget8 =
 {
     NULL, /* NextGadget */
-    220, 512-GAD_HEI-10, GAD_WID, GAD_HEI, /* hit box */
-    GFLG_GADGHIMAGE | GFLG_LABELSTRING, /* Flags */
+    -(BORDER+GAD_HEI+GAD_WID), -((GAD_HEI+BORDER)*3+GAD_WID), GAD_WID, GAD_WID, /* hit box */
+    GFLG_GADGHIMAGE
+	| GFLG_RELRIGHT
+	| GFLG_RELBOTTOM
+	, /* Flags */
+    GACT_IMMEDIATE
+	| GACT_RELVERIFY
+	| GACT_TOGGLESELECT
+	, /* Activation */
+    GTYP_PROPGADGET, /* Type */
+    NULL, NULL, /* Render */
+    NULL, /* Text */
+    0L, (APTR)&DemoPropInfo3, /* MutualExcl, SpecialInfo */
+    9, /* GadgetID */
+    NULL /* UserData */
+},
+DemoGadget7 =
+{
+    &DemoGadget8, /* NextGadget */
+    -(BORDER+GAD_HEI), BORDER, GAD_HEI, -(GAD_HEI*3+BORDER*4), /* hit box */
+    GFLG_GADGHIMAGE
+	| GFLG_RELRIGHT
+	| GFLG_RELHEIGHT
+	, /* Flags */
+    GACT_IMMEDIATE
+	| GACT_RELVERIFY
+	| GACT_TOGGLESELECT
+	, /* Activation */
+    GTYP_PROPGADGET, /* Type */
+    NULL, NULL, /* Render */
+    NULL, /* Text */
+    0L, (APTR)&DemoPropInfo2, /* MutualExcl, SpecialInfo */
+    8, /* GadgetID */
+    NULL /* UserData */
+},
+DemoGadget6 =
+{
+    &DemoGadget7, /* NextGadget */
+    BORDER, -((GAD_HEI+BORDER)*3), -(2*BORDER), GAD_HEI, /* hit box */
+    GFLG_GADGHIMAGE
+	| GFLG_RELBOTTOM
+	| GFLG_RELWIDTH
+	, /* Flags */
+    GACT_IMMEDIATE
+	| GACT_RELVERIFY
+	| GACT_TOGGLESELECT
+	, /* Activation */
+    GTYP_PROPGADGET, /* Type */
+    NULL, NULL, /* Render */
+    NULL, /* Text */
+    0L, (APTR)&DemoPropInfo1, /* MutualExcl, SpecialInfo */
+    7, /* GadgetID */
+    NULL /* UserData */
+},
+DemoGadget5 =
+{
+    &DemoGadget6, /* NextGadget */
+    BORDER+(GAD_WID+BORDER)*4, -((GAD_HEI+BORDER)*2), GAD_WID, GAD_HEI, /* hit box */
+    GFLG_GADGHIMAGE
+	| GFLG_LABELSTRING
+	| GFLG_RELBOTTOM
+	, /* Flags */
+    GACT_IMMEDIATE
+	| GACT_RELVERIFY
+	| GACT_TOGGLESELECT
+	, /* Activation */
+    GTYP_BOOLGADGET, /* Type */
+    &DemoTopBorder, &DemoITopBorder, /* Render */
+    (struct IntuiText *)"Toggle", /* Text */
+    0L, NULL, /* MutualExcl, SpecialInfo */
+    6, /* GadgetID */
+    NULL /* UserData */
+},
+DemoGadget4 =
+{
+    &DemoGadget5, /* NextGadget */
+    BORDER+(GAD_WID+BORDER)*3, -((GAD_HEI+BORDER)*2), GAD_WID, GAD_HEI, /* hit box */
+    GFLG_GADGHNONE
+	| GFLG_LABELSTRING
+	| GFLG_RELBOTTOM
+	, /* Flags */
+    GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
+    GTYP_BOOLGADGET, /* Type */
+    &DemoTopBorder, NULL, /* Render */
+    (struct IntuiText *)"None", /* Text */
+    0L, NULL, /* MutualExcl, SpecialInfo */
+    5, /* GadgetID */
+    NULL /* UserData */
+},
+DemoGadget3 =
+{
+    &DemoGadget4, /* NextGadget */
+    BORDER+(GAD_WID+BORDER)*2, -((GAD_HEI+BORDER)*2), GAD_WID, GAD_HEI, /* hit box */
+    GFLG_GADGHIMAGE
+	| GFLG_LABELSTRING
+	| GFLG_RELBOTTOM
+	, /* Flags */
     GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &DemoTopBorder, &DemoITopBorder, /* Render */
-    (struct IntuiText *)"Exit", /* Text */
+    (struct IntuiText *)"Image", /* Text */
     0L, NULL, /* MutualExcl, SpecialInfo */
-    2, /* GadgetID */
+    4, /* GadgetID */
+    NULL /* UserData */
+},
+DemoGadget2 =
+{
+    &DemoGadget3, /* NextGadget */
+    BORDER+(GAD_WID+BORDER)*1, -((GAD_HEI+BORDER)*2), GAD_WID, GAD_HEI, /* hit box */
+    GFLG_GADGHBOX
+	| GFLG_LABELSTRING
+	| GFLG_RELBOTTOM
+	, /* Flags */
+    GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
+    GTYP_BOOLGADGET, /* Type */
+    &DemoTopBorder, NULL, /* Render */
+    (struct IntuiText *)"Box", /* Text */
+    0L, NULL, /* MutualExcl, SpecialInfo */
+    3, /* GadgetID */
     NULL /* UserData */
 },
 DemoGadget1 =
 {
     &DemoGadget2, /* NextGadget */
-    20, 512-GAD_HEI-10, GAD_WID, GAD_HEI, /* hit box */
-    GFLG_GADGHCOMP | GFLG_LABELSTRING, /* Flags */
+    BORDER+(GAD_WID+BORDER)*0, -((GAD_HEI+BORDER)*2), GAD_WID, GAD_HEI, /* hit box */
+    GFLG_GADGHCOMP
+	| GFLG_LABELSTRING
+	| GFLG_RELBOTTOM
+	, /* Flags */
     GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &DemoTopBorder, NULL, /* Render */
+    (struct IntuiText *)"Complement", /* Text */
+    0L, NULL, /* MutualExcl, SpecialInfo */
+    2, /* GadgetID */
+    NULL /* UserData */
+},
+ExitGadget =
+{
+    &DemoGadget1, /* NextGadget */
+    BORDER, -(GAD_HEI+BORDER), GAD_WID, GAD_HEI, /* hit box */
+    GFLG_GADGHIMAGE
+	| GFLG_LABELSTRING
+	| GFLG_RELBOTTOM
+	, /* Flags */
+    GACT_RELVERIFY, /* Activation */
+    GTYP_BOOLGADGET, /* Type */
+    &DemoTopBorder, &DemoITopBorder, /* Render */
     (struct IntuiText *)"Exit", /* Text */
     0L, NULL, /* MutualExcl, SpecialInfo */
     1, /* GadgetID */
@@ -257,6 +416,7 @@ static LONG tinymain(void)
     };
     int cont, draw;
     ULONG args[4];
+    int prop;
 
     VPrintf ("Welcome to the window demo of AROS\n", NULL);
     Flush (Output ());
@@ -280,7 +440,7 @@ static LONG tinymain(void)
 		  | IDCMP_GADGETUP
 		  ;
     nw.Flags = 0L;
-    nw.FirstGadget = &DemoGadget1;
+    nw.FirstGadget = &ExitGadget;
     nw.CheckMark = NULL;
     nw.Title = "Open a window demo";
     nw.Type = WBENCHSCREEN;
@@ -310,6 +470,7 @@ static LONG tinymain(void)
 
     cont = 1;
     draw = 0;
+    prop = 0;
 
     while (cont)
     {
@@ -447,6 +608,66 @@ static LONG tinymain(void)
 
 		args[0] = gadget->GadgetID;
 		VPrintf ("User released gadget %ld\n", args);
+
+		if (gadget->GadgetID == 1)
+		    cont = 0;
+		else if (gadget->GadgetID == 2)
+		{
+		    prop ++;
+
+		    switch (prop)
+		    {
+		    case 0:
+			ModifyProp (&DemoGadget6, win, NULL,
+			    DemoPropInfo1.Flags,
+			    0, 0, MAXBODY, MAXBODY);
+			ModifyProp (&DemoGadget7, win, NULL,
+			    DemoPropInfo2.Flags,
+			    0, 0, MAXBODY, MAXBODY);
+			ModifyProp (&DemoGadget8, win, NULL,
+			    DemoPropInfo3.Flags,
+			    0, 0, MAXBODY, MAXBODY);
+			break;
+
+		    case 1:
+			ModifyProp (&DemoGadget6, win, NULL,
+			    DemoPropInfo1.Flags,
+			    0, 0, MAXBODY/2, MAXBODY);
+			ModifyProp (&DemoGadget7, win, NULL,
+			    DemoPropInfo2.Flags,
+			    0, 0, MAXBODY, MAXBODY/2);
+			ModifyProp (&DemoGadget8, win, NULL,
+			    DemoPropInfo3.Flags,
+			    0, 0, MAXBODY/2, MAXBODY/2);
+			break;
+
+		    case 2:
+			ModifyProp (&DemoGadget6, win, NULL,
+			    DemoPropInfo1.Flags,
+			    MAXPOT, 0, MAXBODY/2, MAXBODY);
+			ModifyProp (&DemoGadget7, win, NULL,
+			    DemoPropInfo2.Flags,
+			    0, MAXPOT, MAXBODY, MAXBODY/2);
+			ModifyProp (&DemoGadget8, win, NULL,
+			    DemoPropInfo3.Flags,
+			    MAXPOT, MAXPOT, MAXBODY/2, MAXBODY/2);
+			break;
+
+		    default:
+			ModifyProp (&DemoGadget6, win, NULL,
+			    DemoPropInfo1.Flags,
+			    0, 0, MAXBODY/9, MAXBODY);
+			ModifyProp (&DemoGadget7, win, NULL,
+			    DemoPropInfo2.Flags,
+			    0, 0, MAXBODY, MAXBODY/9);
+			ModifyProp (&DemoGadget8, win, NULL,
+			    DemoPropInfo3.Flags,
+			    0, 0, MAXBODY/9, MAXBODY/9);
+			prop = -1;
+			break;
+
+		    }
+		}
 
 		break; }
 
