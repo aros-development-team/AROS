@@ -1,4 +1,10 @@
-/* Must be compiled with sc's libcode option */
+/********************************************************************** 
+ text.datatype - (c) 2000 by Sebastian Bauer
+
+ This module is the library initializion module for the
+ datatype.
+ It must be compiled with sc's libcode option
+***********************************************************************/
 
 #include "text_intern.h"
 
@@ -9,19 +15,19 @@ struct IClass 		*dt_class;
 struct ExecBase 	*SysBase;
 struct IntuitionBase 	*IntuitionBase;
 struct GfxBase	 	*GfxBase;
+#ifdef _AROS
 struct UtilityBase	*UtilityBase;
+#else
+struct Library		*UtilityBase;
+#endif
 struct DosLibrary 	*DOSBase;
 struct Library 		*LayersBase;
 struct Library 		*DiskfontBase;
 struct Library 		*DataTypesBase;
 struct Library 		*IFFParseBase;
 
-/* Inside datatype */
+/* inside textclass.c */
 struct IClass *DT_MakeClass(void);
-
-#ifndef _AROS
-void kprintf(...);
-#endif
 
 #ifdef _AROS
 #undef	register
@@ -49,7 +55,11 @@ ASM SAVEDS int __UserLibInit( register __a6 struct Library *libbase )
 		{
 		    if((DiskfontBase = OpenLibrary("diskfont.library", 37)))
 		    {
+#ifdef _AROS
 			if((UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37)))
+#else
+			if((UtilityBase = (struct Library *)OpenLibrary("utility.library", 37)))
+#endif
 			{
 			    if((DataTypesBase = OpenLibrary("datatypes.library", 37)))
 			    {
@@ -99,7 +109,6 @@ ASM SAVEDS void __UserLibCleanup( register __a6 struct Library *libbase )
 SAVEDS STDARGS struct IClass *ObtainEngine(void)
 {
     return dt_class;
-//  return NULL;
 }
 
 /**************************************************************************************************/

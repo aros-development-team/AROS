@@ -1,4 +1,4 @@
-LIBOBJS = libfunc.o datatype_dt.o
+LIBOBJS = libfunc.o textclass_dt.o support_dt.o
 
 text.datatype: ${LIBOBJS}
    slink with <<
@@ -15,10 +15,13 @@ libversion 44 librevision 4 libid "text.datatype 44.4 (02.07.00)"
    avail flush
 
 libfunc.o: libfunc.c
-   sc nostackstack libcode libfunc.c OBJNAME=$@
+   sc nostackcheck libcode libfunc.c OBJNAME=$@
 
-datatype_dt.o: datatype.c
-   sc nostackcheck define=COMPILE_DATATYPE datatype.c OBJNAME=$@
+textclass_dt.o: textclass.c
+   sc nostackcheck define=COMPILE_DATATYPE textclass.c OBJNAME=$@
+
+support_dt.o: support.c
+   sc nostackcheck define=COMPILE_DATATYPE support.c OBJNAME=$@
 
 install:
    copy ReadMe DH2:Projects/Text-DT

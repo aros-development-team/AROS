@@ -1,85 +1,32 @@
-/**************************************************************************************************/
+/********************************************************************** 
+ text.datatype - (c) 2000 by Sebastian Bauer
+
+ This module provides some support functions
+***********************************************************************/
+
+#include <string.h>
 
 #include "text_intern.h"
 
-/**************************************************************************************************/
 
 #ifndef _AROS
+#ifdef __SASC
 
-/**************************************************************************************************/
-
-#ifndef __MAXON__
-
+/* sprintf replacements for SAS C (shorter code, currently not used
+   anywhere in the code) */
+#ifdef UNUSED
 STATIC VOID SR_CopyFunc(VOID)
 {
-    __emit(0x16c0); // MOVE.B  D0,(A3)+
+    __emit(0x16c0);		/* MOVE.B  D0,(A3)+ */
 }
 
-#else
-VOID SR_CopyFunc(VOID);
-#endif
-
-//-------------------------------------
-int sprintf( char *buf, const char *fmt,...)
+int sprintf(char *buf, const char *fmt,...)
 {
-    RawDoFmt((STRPTR)fmt, (STRPTR*)&fmt + 1, (void(*)())SR_CopyFunc, buf);
-    
+    RawDoFmt((STRPTR) fmt, (STRPTR *) & fmt + 1, (void (*)()) SR_CopyFunc, buf);
     return 1;
 }
-
-/**************************************************************************************************/
-
-#ifndef __MAXON__
-
-/**************************************************************************************************/
-
-char *strncpy(char *dest, const char *src, size_t n)
-{
-    LONG i;
-    char *destPtr = dest;
-    
-    for(i = 0; i < n; i++)
-    {
-	char c = *src++;
-	
-	*destPtr++ = c;
-	if(c == 0) break;
-    }
-    
-    while(i<n)
-    {
-	*destPtr++ = 0;
-	i++;
-    }
-    
-    return dest;
-}
-
-/**************************************************************************************************/
-
-int strncmp(const char *str1, const char *str2, size_t n)
-{
-    LONG i;
-    
-    for(i = 0; i < n; i++)
-    {
-	char a = *str1++;
-	char b = *str2++;
-	char c = a - b;
-
-	if( c != 0) return c;
-	if( a == 0) return 0;
-    }
-    
-    return 0;
-}
-
-/**************************************************************************************************/
-
-#endif /* __MAXON__ */
-
-/**************************************************************************************************/
-
+#endif /* UNUSED */
+#endif /* __SASC */
 #endif /* _AROS */
 
 /**************************************************************************************************/
@@ -170,8 +117,9 @@ struct MinNode *List_Find(APTR list, ULONG num)
 #endif
 
 
-/**************************************************************************************************/
-
+/**************************************************************************
+ Dupplicates a string
+**************************************************************************/
 STRPTR StrCopy( const STRPTR str )
 {
     STRPTR dst;
@@ -185,51 +133,9 @@ STRPTR StrCopy( const STRPTR str )
     return dst;
 }
 
-/**************************************************************************************************/
-
-#if 0
-
-STRPTR StrCopyPool( APTR pool, const STRPTR str )
-{
-    STRPTR dst;
-
-    if( !str ) return NULL;
-    if( !*str) return NULL;
-
-    dst = (STRPTR)AllocVecPooled(pool, strlen(str) + 1);
-    if(dst) strcpy(dst,str);
-
-    return dst;
-}
-
-#endif
-
-/**************************************************************************************************/
-
-#ifndef _AROS
-
-STRPTR StrNCopyPool( APTR pool, const STRPTR str, LONG len)
-{
-    STRPTR s = NULL;
-    
-    if(pool)
-    {
-	if((s=(STRPTR)AllocVecPooled(pool, len + 1)))
-	{
-	    strncpy(s, str, len);
-	    s[len] = 0;
-	    
-	    return s;
-	}
-    }
-    
-    return s;
-}
-
-#endif
-
-/**************************************************************************************************/
-
+/**************************************************************************
+ Returns the size of a file
+**************************************************************************/
 LONG GetFileSize( BPTR fileh )
 {
     struct FileInfoBlock *fib = (struct FileInfoBlock*)AllocDosObject( DOS_FIB, NULL );
@@ -251,8 +157,9 @@ LONG GetFileSize( BPTR fileh )
     return size;
 }
 
-/**************************************************************************************************/
-
+/**************************************************************************
+ Prepares the clipboard so that text can be written into it
+**************************************************************************/
 struct IFFHandle *PrepareClipboard(void)
 {
     struct IFFHandle *iff = AllocIFF();
@@ -282,8 +189,9 @@ struct IFFHandle *PrepareClipboard(void)
     return NULL;
 }
 
-/**************************************************************************************************/
-
+/**************************************************************************
+ Free all resources allocated in PrepareClipboard
+**************************************************************************/
 VOID FreeClipboard(struct IFFHandle *iff)
 {
     PopChunk(iff);
@@ -293,4 +201,3 @@ VOID FreeClipboard(struct IFFHandle *iff)
     FreeIFF(iff);
 }
 
-/**************************************************************************************************/

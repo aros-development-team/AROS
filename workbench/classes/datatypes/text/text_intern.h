@@ -109,8 +109,6 @@ struct Text_Data
     STRPTR 		title;
     UBYTE 		*buffer_allocated;
     ULONG 		buffer_allocated_len;
-//  UBYTE 		*buffer_setted;
-//  ULONG 		buffer_setted_len;
     struct List 	line_list;		/* double linked list of the lines		*/
     
     struct TextFont 	*font;
@@ -148,7 +146,11 @@ struct Text_Data
 extern struct ExecBase 		*SysBase;
 extern struct IntuitionBase 	*IntuitionBase;
 extern struct GfxBase 		*GfxBase;
+#ifdef _AROS
 extern struct UtilityBase	*UtilityBase;
+#else
+extern struct Library		*UtilityBase;
+#endif
 extern struct DosLibrary	*DOSBase;
 extern struct Library 		*LayersBase;
 extern struct Library 		*DiskfontBase;
@@ -160,19 +162,6 @@ extern struct IClass		*dt_class;
 /**************************************************************************************************/
 
 /* Protos: support.c */
-
-#ifndef _AROS
-
-int 			sprintf( char *buf, const char *fmt, ...);
-
-#ifndef __MAXON__
-
-char *			strncpy(char *dest, const char *src, size_t n);
-int 			strncmp(const char *str1, const char *str2, size_t n);
-
-#endif /* __MAXON__ */
-
-#endif /* _AROS */
 
 struct MinNode *	Node_Next(APTR node);
 struct MinNode *	Node_Prev(APTR node);

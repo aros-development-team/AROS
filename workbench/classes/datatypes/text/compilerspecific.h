@@ -31,6 +31,10 @@
 #define ASM	__asm
 #define STDARGS	__stdargs
 
+#if !defined(_DOS_H) && defined(__SASC)
+#include <dos.h>
+#endif
+
 #endif
 
 #endif /* COMPILERSPECIFIC_H */
