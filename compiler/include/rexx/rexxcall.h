@@ -23,8 +23,8 @@
 
 #define AROS_AREXXLIBQUERYFUNC(f,m,lt,l,o,p) \
   AROS_LH2(ULONG, f, \
-	     AROS_LCA(struct RexxMsg *, m, A0), \
-	     AROS_LCA(STRPTR *, _retargstringptr, A1), \
+	     AROS_LHA(struct RexxMsg *, m, A0), \
+	     AROS_LHA(STRPTR *, _retargstringptr, A1), \
 	     lt, l, o, p) { AROS_LIBFUNC_INIT
 #define AROS_AREXXLIBQUERYFUNC_END \
     AROS_LIBFUNC_EXIT }
