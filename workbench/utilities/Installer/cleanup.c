@@ -6,6 +6,7 @@
 /* cleanup.c -- here are all functions used before exiting program */
 
 #include "Installer.h"
+#include "locale.h"
 
 /* External variables */
 extern ScriptArg script;
@@ -45,6 +46,7 @@ void cleanup( )
   free_script( script.cmd );
   free_varlist();
   deinit_gui();
+  Locale_Deinitialize();
 }
 
 void end_malloc( )

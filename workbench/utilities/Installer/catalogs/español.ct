@@ -1,0 +1,10 @@
+## version $VER: Installer.catalog 1.0 (14.9.2003)
+## language español
+## codeset 0
+;
+MSG_OK
+OK
+;
+MSG_CANCEL
+Abandonar
+;

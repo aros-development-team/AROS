@@ -345,3 +345,6 @@
 - added sources for test.script.info
 - removed obsolte parts from gui
 
+0056
+- added Locale support
+

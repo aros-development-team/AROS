@@ -5,13 +5,14 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := main misc procedure parse variables gui more execute cleanup
+FILES := main misc procedure parse variables gui locale more execute cleanup
 
 EXEDIR := $(AROSDIR)/Utilities
 
 #MM- workbench-utilities : workbench-utilities-installer
 #MM workbench-utilities-installer : includes linklibs \
-#MM     workbench-utilities-installer-script
+#MM workbench-utilities-installer-script \
+#MM workbench-utilities-installer-catalogs
 
 %build_prog mmake=workbench-utilities-installer \
     progname=Installer targetdir=$(EXEDIR) \
