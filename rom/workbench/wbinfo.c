@@ -18,18 +18,14 @@
     NAME */
     #include <proto/workbench.h>
 
-    AROS_LH7(struct AppIcon *, AddAppIconA,
+    AROS_LH3(ULONG, WBInfo,
 /*  SYNOPSIS */
-    AROS_LHA(ULONG,                 id,       D0),
-    AROS_LHA(ULONG,                 userdata, D1),
-    AROS_LHA(char *,                text,     A0),
-    AROS_LHA(struct MsgPort *,    msgport,  A1),
-    AROS_LHA(BPTR,                  lock,     A2),
-    AROS_LHA(struct DiskObject *, diskobj,  A3),
-    AROS_LHA(struct TagItem *,    taglist,  A4),
+    AROS_LHA(BPTR,              lock,   A0),
+    AROS_LHA(STRPTR,            name,   A1),
+    AROS_LHA(struct Screen *, screen, A2),
 
 /*  LOCATION */
-    struct WorkbenchBase *, WorkbenchBase, 10, Workbench)
+    struct WorkbenchBase *, WorkbenchBase, 15, Workbench)
 
 /*  FUNCTION
 
@@ -54,11 +50,11 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
-    aros_print_not_implemented ("AddAppIconA");
-#warning TODO: Write Workbench/AddAppIconA
+    aros_print_not_implemented ("WBInfo");
+#warning TODO: Write Workbench/WBInfo
 
     return NULL;
 
     AROS_LIBFUNC_EXIT
-} /* AddAppIconA */
+} /* WBInfo */
 

@@ -35,14 +35,22 @@ LIBNAME  := workbench
 ULIBNAME := Workbench
 
 OSMODULE  := workbench.library
-FILES	  := 
+FILES	  :=
 FUNCTIONS := \
 	addappicona \
 	addappmenuitema \
 	addappwindowa \
 	removeappicon \
 	removeappmenuitem \
-	removeappwindow
+	removeappwindow \
+    wbinfo \
+    openworkbenchobjecta \
+    closeworkbenchobjecta \
+    workbenchcontrola \
+    addappwindowdropzonea \
+    removeappwindowdropzone \
+    changeworkbenchselectiona \
+    makeworkbenchobjectvisiblea
 
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of extra libraries that you want included during
