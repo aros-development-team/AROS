@@ -2,6 +2,9 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.18  2001/09/04 17:39:02  falemagn
+    Supports AbortIO() now
+
     Revision 1.17  2001/08/23 23:14:27  falemagn
     Corrected a stupid bug that led to a crash if a pipe couldn't be found
 
@@ -37,6 +40,8 @@
 */
 #define AROS_ALMOST_COMPATIBLE
 
+#define DEBUG 1
+
 #include <exec/errors.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
@@ -57,7 +62,9 @@
 #include <string.h>
 #include <stddef.h>
 
-//#define kprintf(x...)
+#if !DEBUG
+#    define kprintf(x...)
+#endif
 
 static const char name[];
 static const char version[];
@@ -105,23 +112,17 @@ struct filenode
     ULONG            numusers;           /* Number of actual users of this pipe */
     ULONG            numwriters;         /* Num of actual writers */
     ULONG            numreaders;         /* Num of actual readers */
+    struct List      waitinglist;	 /* List of files waiting for a reader or a writer to become available */
     struct List      pendingwrites;      /* List of pending write requestes */
     struct List      pendingreads;       /* List of pending read requestes */
     ULONG            flags;              /* See below */
 };
-/*
-   Abuse of pendingreads so that it's used as waiting list either for
-   readers or writers before respectively a writer or a reader becomes
-   available
-*/
-#define waitinglist pendingreads
 
 /* Flags for filenodes */
 #define FNF_DELETEONCLOSE 1               /* Specify this flag when you want a pipe to be deleted
                                              when it's closed. Useful for unnamed pipes */
 struct usernode
 {
-    struct Node      node;
     struct filenode *fn;
     ULONG            mode;
 };
@@ -130,7 +131,7 @@ static STRPTR           SkipColon    (STRPTR str);
 static size_t           LenFirstPart (STRPTR path);
 static struct filenode *FindFile     (struct dirnode   **dn_ptr,      STRPTR path);
 static struct filenode *GetFile      (struct pipefsbase  *pipefsbase, STRPTR filename, struct dirnode *dn, ULONG mode, ULONG *err);
-static ULONG            SendRequest  (struct pipefsbase  *pipefsbase, struct IOFileSys *iofs);
+static ULONG            SendRequest  (struct pipefsbase  *pipefsbase, struct IOFileSys *iofs, BOOL abort);
 static STRPTR           StrDup       (struct pipefsbase  *pipefsbase, STRPTR str);
 
 
@@ -319,7 +320,7 @@ AROS_LH0(BPTR, expunge, struct pipefsbase *, pipefsbase, 3, pipefs_handler)
 	return 0;
     }
 
-    SendRequest(pipefsbase, NULL);
+    SendRequest(pipefsbase, NULL, TRUE);
 
     /* Free all resources */
     CloseLibrary((struct Library *)pipefsbase->dosbase);
@@ -366,7 +367,7 @@ AROS_LH1(void, beginio,
 	case FSA_CREATE_DIR:
         case FSA_DELETE_OBJECT:
 	case FSA_FILE_MODE:
-	    error = SendRequest(pipefsbase, iofs);
+	    error = SendRequest(pipefsbase, iofs, FALSE);
 	    enqueued = !error;
 	    break;
 
@@ -402,16 +403,17 @@ AROS_LH1(void, beginio,
 }
 
 AROS_LH1(LONG, abortio,
- AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct pipefsbase *, pipefsbase, 6, pipefs_handler)
+AROS_LHA(struct IOFileSys *, iofs, A1),
+struct pipefsbase *, pipefsbase, 6, pipefs_handler)
 {
     AROS_LIBFUNC_INIT
-    /* Everything already done. */
-    return 0;
+
+    return SendRequest(pipefsbase, iofs, TRUE);
+
     AROS_LIBFUNC_EXIT
 }
 
-static ULONG SendRequest(struct pipefsbase *pipefsbase, struct IOFileSys *iofs)
+static ULONG SendRequest(struct pipefsbase *pipefsbase, struct IOFileSys *iofs, BOOL abort)
 {
     struct pipefsmessage *msg = AllocVec(sizeof(*msg), MEMF_PUBLIC);
 
@@ -421,6 +423,7 @@ static ULONG SendRequest(struct pipefsbase *pipefsbase, struct IOFileSys *iofs)
 	msg->msg.mn_Node.ln_Name = "PIPEFSMSG";
         msg->msg.mn_Length       = sizeof(struct pipefsmessage);
 	msg->iofs                = iofs;
+	msg->curlen              = abort;
 
 	if (iofs)
 	{
@@ -555,6 +558,7 @@ static struct filenode *NewFileNode(struct pipefsbase *pipefsbase, STRPTR filena
 	    fn->type = ST_PIPEFILE;
 
 	    DateStamp(&fn->datestamp);
+	    NEWLIST(&fn->waitinglist);
 	    NEWLIST(&fn->pendingwrites);
 	    NEWLIST(&fn->pendingreads);
 
@@ -654,6 +658,69 @@ AROS_UFH3(LONG, pipefsproc,
 
 	    un = (struct usernode *)msg->iofs->IOFS.io_Unit;
 	    fn = un->fn;
+
+	    if (msg->curlen) /* This field is abused too see whethet the user wants to abort the request */
+	    {
+		struct pipefsmessage *msg2;
+		BOOL found = FALSE;
+
+		kprintf("The user wants to abort this request.\n");
+
+	        ForeachNode(&fn->waitinglist, msg2)
+		{
+		    if (msg2->iofs == msg->iofs)
+		    {
+			found = TRUE;
+
+			fn->numusers--;
+			if (un->mode & FMF_WRITE)
+			    fn->numwriters--;
+			if (un->mode & FMF_READ)
+			    fn->numreaders--;
+
+			FreeVec(un);
+
+			break;
+		    }
+		}
+		if (!found && (un->mode & FMF_WRITE))
+		{
+		    ForeachNode(&fn->pendingwrites, msg2)
+		    {
+		        if (msg2->iofs == msg->iofs)
+			{
+			    found = TRUE;
+			    break;
+			}
+		    }
+		}
+		if (!found && (un->mode & FMF_READ))
+		{
+		    ForeachNode(&fn->pendingreads, msg2)
+		    {
+		        if (msg2->iofs == msg->iofs)
+			{
+			    found = TRUE;
+			    break;
+			}
+		    }
+		}
+
+		if (found)
+		{
+		    kprintf("Aborting the request.\n");
+		    Remove((struct Node *)msg2);
+		    msg2->iofs->IOFS.io_Error = IOERR_ABORTED;
+		    SendBack(msg2, ERROR_INTERRUPTED);
+		}
+		else
+		{
+    		    kprintf("There was no I/O in process for this request.\n");
+		}
+
+		FreeVec(msg);
+		continue;
+	    }
 
 	    switch (msg->iofs->IOFS.io_Command)
 	    {
@@ -770,41 +837,41 @@ AROS_UFH3(LONG, pipefsproc,
 			kprintf("User was a reader. ");
 			fn->numreaders--;
 			kprintf("There are %d readers at the moment\n", fn->numreaders);
-   		    }
+			if (!fn->numreaders)
+			{
+			    struct pipefsmessage *msg;
+
+			    kprintf("There are no readers anymore. %s\n",
+			            IsListEmpty(&fn->pendingwrites) ?
+				    "There are no pending writes"   :
+			            "Reply to all the waiting writers");
+
+			    while ((msg = (struct pipefsmessage *)RemHead(&fn->pendingwrites)))
+			        SendBack(msg, ERROR_BROKEN_PIPE);
+		        }
+		    }
 		    if (un->mode & FMF_WRITE)
 		    {
 			kprintf("User was a writer. ");
 			fn->numwriters--;
 			kprintf("There are %d writers at the moment\n", fn->numwriters);
-   		    }
 
-		    if (un->mode&FMF_WRITE && !fn->numwriters)
-		    {
-			struct pipefsmessage *msg;
-
-			kprintf("There are no writers anymore. %s\n",
-			        IsListEmpty(&fn->pendingreads) ?
-				"There are no pending reads"   :
-			        "Reply to all the waiting readers");
-			while ((msg = (struct pipefsmessage *)RemHead(&fn->pendingreads)))
+			if (!fn->numwriters)
 			{
-			    msg->iofs->io_Union.io_READ_WRITE.io_Length =
-			    msg->iofs->io_Union.io_READ_WRITE.io_Length - msg->curlen;
-			    SendBack(msg, 0);
+			    struct pipefsmessage *msg;
+
+			    kprintf("There are no writers anymore. %s\n",
+			            IsListEmpty(&fn->pendingreads) ?
+				    "There are no pending reads"   :
+			            "Reply to all the waiting readers");
+			    while ((msg = (struct pipefsmessage *)RemHead(&fn->pendingreads)))
+			    {
+			        msg->iofs->io_Union.io_READ_WRITE.io_Length =
+			        msg->iofs->io_Union.io_READ_WRITE.io_Length - msg->curlen;
+			        SendBack(msg, 0);
+			    }
 			}
-		    }
-		    if (un->mode&FMF_READ && !fn->numreaders)
-		    {
-			struct pipefsmessage *msg;
-
-			kprintf("There are no readers anymore. %s\n",
-			        IsListEmpty(&fn->pendingwrites) ?
-				"There are no pending writes"   :
-			        "Reply to all the waiting writers");
-
-			while ((msg = (struct pipefsmessage *)RemHead(&fn->pendingwrites)))
-			    SendBack(msg, ERROR_BROKEN_PIPE);
-		    }
+   		    }
 
 		    un->fn->numusers--;
 
@@ -1080,6 +1147,7 @@ AROS_UFH3(LONG, pipefsproc,
     		        SendBack(msg, ERROR_WOULD_BLOCK);
 		        continue;
 		    }
+
 		    kprintf("Enqueing the message\n");
 		    msg->curlen = msg->iofs->io_Union.io_READ_WRITE.io_Length;
 		    AddTail(&fn->pendingwrites, (struct Node *)msg);
