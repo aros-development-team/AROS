@@ -122,6 +122,30 @@ BOOL FontPrefs2Gadgets
     return TRUE;
 }
 
+Object *makeMenuitem(CONST_STRPTR text)
+{
+    CONST_STRPTR title    = NULL, 
+                 shortcut = NULL;
+    
+    if (text[1] == '\0')
+    {
+        title    = text + 2;
+        shortcut = text;
+    }
+    else
+    {
+        title    = text;
+        shortcut = NULL;
+    }
+    
+    return MenuitemObject,
+        MUIA_Menuitem_Title,      (IPTR) title,
+        shortcut != NULL       ?
+        MUIA_Menuitem_Shortcut :
+        TAG_IGNORE,               (IPTR) shortcut,
+    End;
+}
+
 /*** Methods ****************************************************************/
 IPTR FPWindow$OM_NEW
 (
@@ -148,16 +172,10 @@ IPTR FPWindow$OM_NEW
     
     tags[2].ti_Data = (IPTR) MenustripObject,
         Child, MenuObject,
-            MUIA_Menu_Title, "Preferences",
+            MUIA_Menu_Title, MSG(MSG_MENU_PREFERENCES),
             
-            Child, importMI = MenuitemObject,
-                MUIA_Menuitem_Title,    "Import...",
-                MUIA_Menuitem_Shortcut, "I",
-            End,            
-            Child, exportMI = MenuitemObject,
-                MUIA_Menuitem_Title,    "Export...",
-                MUIA_Menuitem_Shortcut, "E",
-            End,
+            Child, importMI = makeMenuitem(MSG(MSG_MENU_PREFERENCES_IMPORT)),
+            Child, exportMI = makeMenuitem(MSG(MSG_MENU_PREFERENCES_EXPORT)),
         End,
     End;
 
