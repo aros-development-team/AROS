@@ -37,31 +37,31 @@ static UBYTE lokeymaptypes[] =
     N, 		/* 0D */
     N, 		/* 0E */
     S|A, 	/* 0F */
-    S|A, 	/* 10 */
-    S|A, 	/* 11 */
-    S|A, 	/* 12 */
-    S|A, 	/* 13 */
-    S|A, 	/* 14 */
-    S|A, 	/* 15 */
-    S|A, 	/* 16 */
-    S|A, 	/* 17 */
-    S|A, 	/* 18 */
-    S|A, 	/* 19 */
+    V,	 	/* 10 q */
+    V,	 	/* 11 w */
+    V,	 	/* 12 e */
+    V,	 	/* 13 r */
+    V,	 	/* 14 t */
+    V,	 	/* 15 z */
+    V,	 	/* 16 u */
+    V,	 	/* 17 i */
+    V,	 	/* 18 o */
+    V,	 	/* 19 p */
     S|A, 	/* 1A */
     S|A, 	/* 1B */
     S|A, 	/* 1C */
     S|A, 	/* 1D */
     S|A, 	/* 1E */
     S|A, 	/* 1F */
-    S|A, 	/* 20 */
-    S|A, 	/* 21 */
-    S|A, 	/* 22 */
-    S|A, 	/* 23 */
-    S|A, 	/* 24 */
-    S|A, 	/* 25 */
-    S|A, 	/* 26 */
-    S|A, 	/* 27 */
-    S|A, 	/* 28 */
+    V, 		/* 20 a */
+    V, 		/* 21 s */
+    V, 		/* 22 d */
+    V, 		/* 23 f */
+    V, 		/* 24 g */
+    V, 		/* 25 h */
+    V, 		/* 26 j */
+    V, 		/* 27 k */
+    V,	 	/* 28 l */
     N, 		/* 29 */
     N, 		/* 2A */
     N, 		/* 2B */
@@ -70,13 +70,13 @@ static UBYTE lokeymaptypes[] =
     N, 		/* 2E */
     N, 		/* 2F */
     N, 		/* 30 */
-    S|A, 	/* 31 */
-    S|A, 	/* 32 */
-    S|A, 	/* 33 */
-    S|A, 	/* 34 */
-    S|A, 	/* 35 */
-    S|A, 	/* 36 */
-    S|A, 	/* 37 */
+    V,	 	/* 31 y */
+    V,	 	/* 32 x */
+    V,	 	/* 33 c */
+    V,	 	/* 34 v */
+    V,	 	/* 35 b */
+    V,	 	/* 36 n */
+    V,	 	/* 37 m */
     S|A,	/* 38 */
     S|A,	/* 39 */
     N, 		/* 3A */
@@ -380,8 +380,8 @@ UBYTE left_descr[] =
     2,4,
     3,6,
     
-    0x9B,'C',
-    0x9B,' ','@'
+    0x9B,'D',
+    0x9B,' ','A'
 };
 
 UBYTE right_descr[] =
@@ -389,8 +389,8 @@ UBYTE right_descr[] =
     2,4,
     3,6,
     
-    0x9B,'D',
-    0x9B,' ','A'
+    0x9B,'C',
+    0x9B,' ','@'
 };
 
 UBYTE tab_descr[] =
@@ -415,7 +415,7 @@ static IPTR hikeymap[] =
     BYTES(8, 8, 8, 8),		/* 41 BACKSPACE*/
     STRING(tab_descr),		/* 42 TAB */
     BYTES(13, 13, 13, 13),	/* 43 ENTER */
-    BYTES(0, 0, 10, 10),	/* 44 RETURN */
+    BYTES(0, 0, 10, 13),	/* 44 RETURN */
     BYTES(0, 0, 0x9B, 27),	/* 45 ESCAPE */
     BYTES(127, 127, 127, 127),	/* 46 DEL */
     BYTES(0, 0, 0, 0),		/* 47 */
@@ -425,8 +425,8 @@ static IPTR hikeymap[] =
     BYTES(0, 0, 0, 0), 		/* 4B */
     STRING(up_descr),		/* 4C CURSOR UP*/
     STRING(down_descr),		/* 4D CURSOR DOWN*/
-    STRING(left_descr),		/* 4E CURSOR LEFT */
-    STRING(right_descr),	/* 4F CURSOR RIGHT */
+    STRING(right_descr),	/* 4E CURSOR RIGHT */
+    STRING(left_descr),		/* 4F CURSOR LEFT */
     STRING(f1_descr),		/* 50 F1 */
     STRING(f2_descr),		/* 51 */
     STRING(f3_descr),		/* 52 */
