@@ -220,6 +220,7 @@ SHARED	:= \
 	sleep \
 	snprintf \
 	spawnv \
+	spawnvp \
 	sprintf \
 	srand48 \
 	sscanf \
