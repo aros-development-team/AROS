@@ -1,46 +1,26 @@
-/*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
-
-    Desc: Internal header file for workbench library
-    Lang: english
-*/
 #ifndef __WORKBENCH_INTERN_H__
 #define __WORKBENCH_INTERN_H__
 
-#ifndef EXEC_TYPES_H
-#   include <exec/types.h>
-#endif
-#ifndef EXEC_NODES_H
-#   include <exec/nodes.h>
-#endif
-#ifndef EXEC_LISTS_H
-#   include <exec/lists.h>
-#endif
-#ifndef EXEC_SEMAPHORES_H
-#   include <exec/semaphores.h>
-#endif
-#ifndef EXEC_MEMORY_H
-#   include <exec/memory.h>
-#endif
-#ifndef EXEC_LIBRARIES_H
-#   include <exec/libraries.h>
-#endif
-#ifndef EXEC_EXECBASE_H
-#   include <exec/execbase.h>
-#endif
-#ifndef DOS_DOS_H
-#   include <dos/dos.h>
-#endif
-#ifndef DOS_DOSTAGS_H
-#   include <dos/dostags.h>
-#endif
-#ifndef UTILITY_UTILITY_H
-#   include <utility/utility.h>
-#endif
-#ifndef INTUITION_INTUITION_H
-#   include <intuition/intuition.h>
-#endif
+/*
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Internal header file for workbench.library.
+*/
+
+#include <exec/types.h>
+#include <exec/nodes.h>
+#include <exec/lists.h>
+#include <exec/semaphores.h>
+#include <exec/memory.h>
+#include <exec/libraries.h>
+#include <exec/execbase.h>
+#include <dos/dos.h>
+#include <dos/dostags.h>
+#include <utility/utility.h>
+#include <intuition/intuition.h>
+
+#include <workbench/icon.h>
 
 #include <proto/intuition.h>
 #include <proto/exec.h>
@@ -62,7 +42,8 @@ struct WorkbenchBase {
     struct Library         *wb_DOSBase;
     struct Library         *wb_UtilityBase;
     struct Library         *wb_IntuitionBase;
-
+    struct Library         *wb_IconBase;
+    
     struct MsgPort         *wb_HandlerPort;       /* The Workbench Handler's message port. */
     struct MsgPort         *wb_AppPort;           /* The Workbench App's message port. */
 
@@ -76,6 +57,7 @@ struct WorkbenchBase {
 
     struct SignalSemaphore  wb_InitializationSemaphore; /* Semaphore for single-tasking library initializtion. */
     struct SignalSemaphore  wb_BaseSemaphore; /* Semaphore to arbitrate library base access */
+    
     BOOL                    wb_LibsOpened;        /* Are the libraries opened? */
 };
 
@@ -83,6 +65,7 @@ struct WorkbenchBase {
 #define UtilityBase     ((struct UtilityBase *)(WorkbenchBase->wb_UtilityBase))
 #define IntuitionBase   ((struct IntuitionBase *)(WorkbenchBase->wb_IntuitionBase))
 #define DOSBase         ((struct DosLibrary *)(WorkbenchBase->wb_DOSBase))
+#define IconBase        (WorkbenchBase->wb_IconBase)
 
 #define LockWorkbench()   ObtainSemaphore(&(WorkbenchBase->wb_BaseSemaphore))
 #define UnlockWorkbench() ReleaseSemaphore(&(WorkbenchBase->wb_BaseSemaphore))

@@ -74,7 +74,13 @@ ULONG SAVEDS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
             D(bug("Workbench: Failed to open dos.library!\n"));
             return FALSE;
         }
-
+        
+        if (!(WorkbenchBase->wb_IconBase = OpenLibrary(ICONNAME, 37L)))
+        {
+            D(bug("Workbench: Failed to open icon.library!\n"));
+            return FALSE;
+        }
+        
         WorkbenchBase->wb_LibsOpened = TRUE;
     }
 
@@ -85,18 +91,23 @@ ULONG SAVEDS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
 
 void SAVEDS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
 {
-    if ((WorkbenchBase->wb_UtilityBase))
+    if ((WorkbenchBase->wb_IconBase))
     {
-        CloseLibrary(WorkbenchBase->wb_UtilityBase);
+        CloseLibrary(WorkbenchBase->wb_IconBase);
     }
-
+    
+    if ((WorkbenchBase->wb_DOSBase))
+    {
+        CloseLibrary(WorkbenchBase->wb_DOSBase);
+    }
+    
     if ((WorkbenchBase->wb_IntuitionBase))
     {
         CloseLibrary(WorkbenchBase->wb_IntuitionBase);
     }
-
-    if ((WorkbenchBase->wb_DOSBase))
+    
+    if ((WorkbenchBase->wb_UtilityBase))
     {
-        CloseLibrary(WorkbenchBase->wb_DOSBase);
+        CloseLibrary(WorkbenchBase->wb_UtilityBase);
     }
 } /* L_ExpungeLib */
