@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1997/07/21 17:36:08  srittau
+    DisposeObject() accepts now NULL pointers.
+
     Revision 1.4  1997/01/27 00:36:37  ldp
     Polish
 
@@ -46,7 +49,8 @@
 	of the class carefully to find out how it behaves.
 
     INPUTS
-	object - The result of a call to NewObject() or a similar function.
+	object - The result of a call to NewObject() or a similar function,
+	         may be NULL.
 
     RESULT
 	None.
@@ -74,6 +78,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     ULONG MethodID = OM_DISPOSE;
+
+    if (!object)
+        return;
 
     OCLASS (object)->cl_ObjectCount --;
 
