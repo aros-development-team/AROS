@@ -48,7 +48,7 @@ boopsi00001;2;caldi;Implement BOOPSI ButtonGadgetClass
 boopsi00002;2;;Implement BOOPSI FrameIClass
 boopsi00003;2;;Implement BOOPSI FrButtonClass
 boopsi00004;2;digulla;Implement BOOPSI GadgetClass
-boopsi00005;0;;Implement BOOPSI GroupGClass
+boopsi00005;2;stegerg;Implement BOOPSI GroupGClass
 boopsi00006;2;caldi;Implement BOOPSI ICClass
 boopsi00007;0;;Implement BOOPSI ITextIClass
 boopsi00008;2;caldi;Implement BOOPSI ImageClass
