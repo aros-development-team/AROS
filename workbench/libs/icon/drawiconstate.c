@@ -53,7 +53,7 @@
     
     struct NativeIcon *nativeicon;
     
-    nativeicon = GetNativeIcon(icon, IconBase);
+    nativeicon = GetNativeIcon(icon, LB(IconBase));
     if (nativeicon && nativeicon->icon35.img1.imagedata)
     {
     	if (GfxBase && CyberGfxBase)
@@ -74,6 +74,57 @@
 		    img = &nativeicon->icon35.img1;
 		}
 		
+		if (img->mask)
+		{
+		    struct BitMap *bm;
+		    
+		    bm = AllocBitMap(nativeicon->icon35.width,
+		    	    	     nativeicon->icon35.height,
+				     0,
+				     0,
+				     rp->BitMap);
+		    
+		    if (bm)
+		    {
+		    	struct RastPort bmrp;
+			
+			InitRastPort(&bmrp);
+			bmrp.BitMap = bm;
+			
+			WriteLUTPixelArray(img->imagedata,
+		    	    		   0,
+					   0,
+					   nativeicon->icon35.width,
+					   &bmrp,
+					   img->palette,
+					   0,
+					   0,
+					   nativeicon->icon35.width,
+					   nativeicon->icon35.height,
+					   CTABFMT_XRGB8);
+			
+			#if 1
+			BltMaskBitMapRastPort(bm,
+			    	    	      0,
+					      0,
+					      rp,
+					      leftEdge,
+					      topEdge,
+					      nativeicon->icon35.width,
+					      nativeicon->icon35.height,
+					      0xE0,
+					      img->mask);
+			#endif		      
+			DeinitRastPort(&bmrp);
+			
+			FreeBitMap(bm);
+			
+			return;
+			
+		    } /* if (bm) */ 
+		    
+		} /* if (img->mask) */
+		
 		WriteLUTPixelArray(img->imagedata,
 		    	    	   0,
 				   0,
@@ -85,10 +136,13 @@
 				   nativeicon->icon35.width,
 				   nativeicon->icon35.height,
 				   CTABFMT_XRGB8);
-		return;		   
-	    }
-	}
-    }
+		return;
+		
+	    } /* if (bmdepth >= 15) */
+	    
+	} /* if (GfxBase && CyberGfxBase) */
+	
+    } /* if (nativeicon && nativeicon->icon35.img1.imagedata) */
     
     if (state == IDS_SELECTED && icon->do_Gadget.SelectRender)
     {
