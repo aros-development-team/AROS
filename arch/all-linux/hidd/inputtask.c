@@ -141,6 +141,9 @@ kprintf("UNIXIO %p\n", unixio);
     mousesig	= 1L << mouse_port->mp_SigBit;
 kprintf("SIGS: %p, %p\n", kbdsig, mousesig);
 kprintf("FDS: %d, %d\n", lsd->kbdfd, lsd->mousefd);
+
+    Hidd_UnixIO_AsyncIO(unixio, lsd->kbdfd,   vHidd_UnixIO_Terminal, kbd_port,	vHidd_UnixIO_Read, SysBase);
+    Hidd_UnixIO_AsyncIO(unixio, lsd->mousefd, vHidd_UnixIO_Terminal, mouse_port,  vHidd_UnixIO_Read, SysBase);
     
     for (;;) {
 	LONG err_kbd, err_mouse;
@@ -149,8 +152,6 @@ kprintf("FDS: %d, %d\n", lsd->kbdfd, lsd->mousefd);
 	/* Turn on kbd support */
 //	init_kbd(lsd);
 	
-	err_kbd		= Hidd_UnixIO_AsyncIO(unixio, lsd->kbdfd,   vHidd_UnixIO_Terminal, kbd_port,	vHidd_UnixIO_Read, SysBase);
-	err_mouse	= Hidd_UnixIO_AsyncIO(unixio, lsd->mousefd, vHidd_UnixIO_Terminal, mouse_port,  vHidd_UnixIO_Read, SysBase);
 	
 //    	ret = (int)Hidd_UnixIO_Wait( unixio, lsd->kbdfd, vHidd_UnixIO_Read, NULL, NULL);
 //	cleanup_kbd(lsd);
@@ -197,6 +198,9 @@ kprintf("FDS: %d, %d\n", lsd->kbdfd, lsd->mousefd);
 
 	    }	/* for (;;) */
 	    free_unixio_message(kbd_port, lsd);
+
+	    err_kbd = Hidd_UnixIO_AsyncIO(unixio, lsd->kbdfd,   vHidd_UnixIO_Terminal, kbd_port,	vHidd_UnixIO_Read, SysBase);
+
 	} /* if (sigs & kbdsig) */
 	
 	if (sigs & mousesig)
@@ -290,6 +294,9 @@ kprintf("FDS: %d, %d\n", lsd->kbdfd, lsd->mousefd);
 	    	    	    
 end_mouse_event:
 	    free_unixio_message(mouse_port, lsd);
+
+	    err_mouse	= Hidd_UnixIO_AsyncIO(unixio, lsd->mousefd, vHidd_UnixIO_Terminal, mouse_port,  vHidd_UnixIO_Read, SysBase);
+
 	}
     	
     } /* Forever */
