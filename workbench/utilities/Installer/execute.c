@@ -1719,6 +1719,87 @@ void *params;
 		}
 		break;
 
+	    case _MAKEASSIGN:
+		if (current->next != NULL)
+		{
+		    char *assign;
+		    int safe = FALSE;
+
+		    if (current->next)
+		    {
+			parameter = get_parameters(current->next, level);
+			safe = GetPL(parameter, _SAFE).used;
+			free_parameterlist(parameter);
+		    }
+		    current = current->next;
+		    ExecuteCommand();
+
+		    if (current->arg != NULL)
+		    {
+			GetString(current->arg);
+		    }
+		    else
+		    {
+			error = SCRIPTERROR;
+			traperr("<%s> requires an assign name as argument!\n", current->parent->cmd->arg);
+		    }
+		    assign = string;
+
+		    if (current->next != NULL)
+		    {
+			/* Add Path to Assign */
+			BPTR lock;
+
+			current = current->next;
+			ExecuteCommand();
+
+			if (current->arg != NULL)
+			{
+			    GetString(current->arg);
+			}
+			lock = Lock(string, SHARED_LOCK);
+			if ( lock != NULL )
+			{
+			    if (preferences.pretend == 0 || safe)
+			    {
+				if (AssignAdd(assign, lock) == DOSFALSE)
+				{
+				    if (AssignLock(assign, lock) == DOSFALSE)
+				    {
+					error = DOSERROR;
+					UnLock(lock);
+				    }
+				    else
+				    {
+					current->parent->intval = 1;
+				    }
+				}
+				else
+				{
+				    current->parent->intval = 1;
+				}
+			    }
+			}
+			FreeVec(string);
+		    }
+		    else
+		    {
+			if (preferences.pretend == 0 || safe)
+			{
+			    /* Remove Assign */
+			    AssignLock(string,NULL);
+			    current->parent->intval = 1;
+			}
+		    }
+		    FreeVec(assign);
+		}
+		else
+		{
+		    error = SCRIPTERROR;
+		    traperr("<%s> requires at least one argument!\n", current->arg);
+		}
+		break;
+
       /* Here are all unimplemented commands */
 	    case _COPYFILES	:
 	    case _COPYLIB	:
@@ -1729,7 +1810,6 @@ void *params;
 	    case _GETSUM	:
 	    case _GETVERSION	:
 	    case _ICONINFO	:
-	    case _MAKEASSIGN	:
 	    case _PATMATCH	:
 	    case _PROTECT	:
 	    case _REXX		:
