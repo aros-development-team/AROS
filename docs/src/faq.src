@@ -278,7 +278,6 @@ of work would be lost in a situation where the Amiga needs every
 support it can get.
 \end{new}
 
-\begin{new}{12.9.1997}
 \section{I want to be a beta tester}
 
 Sure, no problem. But we don't keep a list of beta testers, so all you have
@@ -289,22 +288,19 @@ report.
 
 Currently we have these lists:
 
+\begin{new}{13.9.1999}
 \begin{description}
 \item{aros-user} This is a public list on which we post announcements and
 updates. The language is english.
+\link{Sign up here}{http://www.aros.org/mailman/listinfo/aros-user}
 
-\item{aros-gfx} This is a public list where we discuss RTG and HIDDs.
-The language is german for now.
 \end{description}
 
 There is also a list for developers, but that list is private. Ask
 me if you want to be added to it.
 
-To add yourself to any of the open lists, write an EMail to
-\shell{<listname>-request@aros.fh-konstanz.de} (replace \shell{<listname>}
-with the name of the list) with \shell{SUBSCRIBE <youremail>} in the body
-(the subject is ignored), for example, \shell{SUBSCRIBE
-digulla@fh-konstanz.de}. Note that for security reasons, the EMail after
+To add yourself to any of the open lists, follow the links above.
+Note that, for security reasons, the EMail after
 the subscribe must match your local address (ie. where the mail comes
 from). This is to protect you from beeing added by someone else.
 

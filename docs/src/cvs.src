@@ -35,7 +35,7 @@ If you want to have access to the database, then get the
 AROS developer archive from the AmiNET and compile \filename{crypt.c} (just
 say \shell{make crypt}
 \begin{new}{15.9.1998}
-or download \link{crypt.c}{ftp://aros.fh-konstanz.de/pub/aros/crypt.c}
+or download \link{crypt.c}{ftp://ftp.aros.org/pub/aros/crypt.c}
 and follow the instructions in the file.
 \end{new}
 Think of a good password and use \filename{crypt}
@@ -95,7 +95,7 @@ the algorithm for encoding the password.
 \end{new}
 
 Mail the password you have created to me:
-\email{digulla@aros.fh-konstanz.de}. The subject must be
+\email{digulla@aros.org}. The subject must be
 \shell{Access to AROS CVS Server} and with this text in the mail:
 
 \begin{new}{18.8.1997}
@@ -126,13 +126,13 @@ Before you can use any CVS commands, you must log into the server. To do this,
 use the CVS command \shell{login}:
 
 \begin{example}
-> cvs -d :pserver:user@aros.fh-konstanz.de:/home/AROS/CVS login
+> cvs -d :pserver:user@cvs.aros.org:/home/cvs/aros login
 \end{example}
 
 where \shell{user} is your login, eg. digulla:
 
 \begin{example}
-> cvs -d :pserver:digulla@aros.fh-konstanz.de:/home/AROS/CVS login
+> cvs -d :pserver:digulla@cvs.aros.org:/home/cvs/aros login
 \end{example}
 
 \begin{new}{7.1.1998}
@@ -162,13 +162,13 @@ the argument to the \shell{-d} option in the environment
 variable \shell{CVSROOT}. Use
 
 \begin{example}
-setenv CVSROOT :pserver:user@aros.fh-konstanz.de:/home/AROS/CVS
+setenv CVSROOT :pserver:usercvs.aros.org:/home/cvs/aros
 \end{example}
 
 on Amiga or if you have a C shell (csh) and
 
 \begin{example}
-export CVSROOT=:pserver:user@aros.fh-konstanz.de:/home/AROS/CVS
+export CVSROOT=:pserver:usercvs.aros.org:/home/cvs/aros
 \end{example}
 
 for Bourne/Korn shells (bash, ksh).
@@ -272,7 +272,7 @@ construction and tasks which are finished.
 Just send an e-mail to
 
 \begin{example}
-aros@aros.fh-konstanz.de
+aros@aros.org
 \end{example}
 
 with the \shell{Subject: jobserv} and in the body of the mail

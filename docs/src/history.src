@@ -1,31 +1,19 @@
 \chapter{History}
 
-\begin{new}{22.12.1997}
+\begin{new}{13.9.1999}
 \section{Project History}
 
 \begin{itemize}
-\item 15.3.1999 The user can now move Windows in AROS' screens 
-    around.
+\item 13.9.1999 Began to reorganize the whole site after hardware outage.
+\item 15.3.1999 The user can now move around Windows in AROS' screens.
 \item 11.3.1999 Added a new 
     \link{status report}{other/status}.
 \item 7.1.1998 Updated FAQ: Read the status between AROS and Amiga Int/Inc.
 \item 22.12.1997 50% of AROS are completed and the homepage has now
     about 200hits/day (more than 13'000 in all)
-\item 1.12.1997 These pages are available as
-    \link{tar.gz archive}{ftp://wi-pc44.fh-konstanz.de/pub/aros/AROSdocs-current.tgz}
-\item 18.11.1997 Removed the source from our FTP server until Amiga
-    Int./Inc. make a decision whether we can continue AROS or not
-    and if we can under what conditions.
-\item 15.11.1997 Talked to Jeff Schindler about AROS
-\item 14.11.1997 Talked to Petro Tyschtschenko about AROS
-\item 28.10.1997 Our first HIDD: The UnixIO.hidd
-\item 23.10.1997 BOOPSI.library and HIDD.class have been committed.
-\item 17.10.1997 AROS has two new mailing lists: \shell{aros-gfx}
-    and \shell{aros-user}.
 \end{itemize}
 \end{new}
 
-\begin{new}{13.8.1997}
 \section{AROS 1.12 (current)}
 
 NOTE: This is beta. If you want this code, then have a look at our
@@ -55,7 +43,6 @@ The source is 6.5MB right now.
 \item BOOPSI code has been split from intuition.library into boopsi.library
     (intuition.library now uses the functions from boopsi.library).
 \end{itemize}
-\end{new}
 
 \section{AROS 1.11}
 
@@ -84,9 +71,7 @@ Things we currently work on:
 \item ANSI C library for AROS
 \item A own C compiler for AROS (VBCC)
 \item diskfont.library,
-\begin{new}{22.7.1997}
 math libs,
-\end{new}
 datatypes and gadtools
 \item AROS on Amiga (maybe even bootable)
 \item CLI commands

@@ -4,46 +4,46 @@
 \section{More Related}
 
 \begin{itemize}
-\item \link{AROS FTP Server}{ftp://aros.fh-konstanz.de/pub/aros/} which
+\item \link{AROS FTP Server}{ftp://ftp.aros.org/pub/aros/} which
 contains the latest binary release for Linux as
 \begin{itemize}
-\item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-lx86-bin.tgz}
+\item \link{tar.gz}{ftp://ftp.aros.org/pub/aros/AROS-lx86-bin.tgz}
 (\fileinfo{$(TOP)/../dist/AROS-lx86-bin.tgz})
-\item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-lx86-bin.readme}
+\item and the \link{readme}{ftp://ftp.aros.org/pub/aros/AROS-lx86-bin.readme}
 (\fileinfo{$(TOP)/../dist/AROS-lx86-bin.readme})
 \end{itemize}
 or the same for IBM compatible PCs (boots off a floppy disk)
 \begin{itemize}
-\item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-ibmpc-bin.tgz}
+\item \link{tar.gz}{ftp://ftp.aros.org/pub/aros/AROS-ibmpc-bin.tgz}
 (\fileinfo{$(TOP)/../dist/AROS-ibmpc-bin.tgz})
-\item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-ibmpc-bin.readme}
+\item and the \link{readme}{ftp://ftp.aros.org/pub/aros/AROS-ibmpc-bin.readme}
 (\fileinfo{$(TOP)/../dist/AROS-ibmpc-bin.readme})
 \end{itemize}
 or a copy of this WWW site for offline reading:
 \begin{itemize}
-\item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-docs.tgz}
+\item \link{tar.gz}{ftp://ftp.aros.org/pub/aros/AROS-docs.tgz}
 (\fileinfo{$(TOP)/../dist/AROS-docs.tgz})
-\item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-docs.readme}
+\item and the \link{readme}{ftp://ftp.aros.org/pub/aros/AROS-docs.readme}
 (\fileinfo{$(TOP)/../dist/AROS-docs.readme})
 \end{itemize}
 or the complete source
 \begin{itemize}
-\item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-source.tgz}
+\item \link{tar.gz}{ftp://ftp.aros.org/pub/aros/AROS-source.tgz}
 (\fileinfo{$(TOP)/../dist/AROS-source.tgz})
-\item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-source.readme}
+\item and the \link{readme}{ftp://ftp.aros.org/pub/aros/AROS-source.readme}
 (\fileinfo{$(TOP)/../dist/AROS-source.readme})
 \end{itemize}
 
 \item AROS in
-\link{Germany (Main site)}{http://aros.fh-konstanz.de/aros/},
+\link{Germany (Main site)}{http://ftp.aros.org/aros/},
 \link{Germany (Mirror site)}{http://www.vmc.de/aros/}
 and
 \link{Sweden (Mirror site)}{http://www.lysator.liu.se/amiga/aros/}
 \item
 \begin{new}{15.9.1998}
-\link{Source for crypt tool}{ftp://aros.fh-konstanz.de/pub/aros/crypt.c}
+\link{Source for crypt tool}{ftp://ftp.aros.org/pub/aros/crypt.c}
 and a
-\link{binary for Amiga}{ftp://aros.fh-konstanz.de/pub/aros/AROS-crypt.lha}
+\link{binary for Amiga}{ftp://ftp.aros.org/pub/aros/AROS-crypt.lha}
 \end{new}
 \item \link{AROS for Amiga}{http://www.xs4all.nl/~ldp/aros/index.html}
 \item \link{AROS AutoDocs}{adoc_index.html}
