@@ -91,3 +91,4 @@ struct  MUIP_Group_FindObject               { ULONG MethodID; STACKLONG x, y; };
 
 #define MUIA_Group_Forward    0x80421422 /* V11 .s. BOOL */
 
+extern const struct __MUIBuiltinClass _MUI_Group_desc;
