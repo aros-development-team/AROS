@@ -25,6 +25,12 @@
 #define AI_ArosReleaseMinor	(AI_Base + 3)
 	/* ULONG: Minor AROS release version, e.g. 11 */
 
+#define AI_ArosReleaseDate	(AI_Base + 4)
+	/* LONG: Days since 1978-01-01 */
+
+#define AI_ArosBuildDate	(AI_Base + 5)
+	/* STRPTR */
+
 /* Architecture specific tags */
 
 /* Native Amiga */

@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Open a screen
+    Desc: Retrieve information about the OS
     Lang: english
 */
 #define AROS_TAGRETURNTYPE  ULONG
@@ -50,4 +50,4 @@ extern struct ArosBase * ArosBase;
     retval = ArosInquireA(AROS_SLOWSTACKTAGS_ARG(tag1));
 
     AROS_SLOWSTACKTAGS_POST
-} /* ArowInquire */
+} /* ArosInquire */
