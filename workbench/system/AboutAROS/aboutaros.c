@@ -56,6 +56,7 @@ ZUNE_CUSTOMCLASS_INLINE_4
 
     OM_NEW, struct opSet *,
     ({
+         struct AboutAROS_DATA *data           = NULL;
          Object                *window,
                                *licenseButton,
                                *authorsList,
@@ -209,6 +210,7 @@ ZUNE_CUSTOMCLASS_INLINE_4
 
          if (self == NULL) goto error;
 
+         data = INST_DATA(CLASS, self);
          data->aad_Window = window;
          data->aad_Pool   = pool;
 
