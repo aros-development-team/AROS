@@ -1,3 +1,4 @@
+/* SYSTEM_CALL (<syscall name> [, <syscall alias>]) */
 
 SYSTEM_CALL (fopen)
 SYSTEM_CALL (fdopen)
@@ -6,11 +7,11 @@ SYSTEM_CALL (printf)
 SYSTEM_CALL (vprintf)
 SYSTEM_CALL (fprintf)
 SYSTEM_CALL (vfprintf)
-SYSTEM_CALL (fputc)
+SYSTEM_CALL (fputc, putc)
 SYSTEM_CALL (fputs)
 SYSTEM_CALL (puts)
 SYSTEM_CALL (fflush)
-SYSTEM_CALL (fgetc)
+SYSTEM_CALL (fgetc, getc)
 SYSTEM_CALL (ungetc)
 SYSTEM_CALL (fgets)
 SYSTEM_CALL (feof)
