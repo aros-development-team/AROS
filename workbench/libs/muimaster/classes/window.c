@@ -1699,7 +1699,9 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
     } /* check if imsg translate to predefined keystroke */
 
     active_object = NULL;
-    if (FindObjNode(&data->wd_CycleChain, data->wd_ActiveObject))
+    if ((data->wd_ActiveObject != NULL)
+	&& (DoMethod(data->wd_RootObject, MUIM_FindAreaObject,
+		     (IPTR)data->wd_ActiveObject) != NULL))
     {
 	active_object = data->wd_ActiveObject;
 	get(active_object, MUIA_Disabled, &disabled);
@@ -2699,7 +2701,9 @@ static IPTR Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
             STORE = (data->wd_Flags & MUIWF_OPENED) ? ((IPTR)data->wd_RenderInfo.mri_Window) : FALSE;
             return 1;
 	case MUIA_Window_ActiveObject:
-	    if (FindObjNode(&data->wd_CycleChain, data->wd_ActiveObject))
+	    if ((data->wd_ActiveObject != NULL)
+		&& (DoMethod(data->wd_RootObject, MUIM_FindAreaObject,
+			     (IPTR)data->wd_ActiveObject) != NULL))
 		STORE = (IPTR)data->wd_ActiveObject;
 	    else
 		STORE = (IPTR)NULL;
