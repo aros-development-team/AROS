@@ -76,7 +76,7 @@ SKIPPTR(ptr);
 
 /****************************************************************************************/
 
-struct TextFont *ConvDiskFont(BPTR seglist, STRPTR fontname,
+struct DiskFontHeader *ConvDiskFont(BPTR seglist, STRPTR fontname,
     	    	    	      struct DiskfontBase_intern *DiskfontBase)
 {
     UWORD count, numchars;
@@ -184,7 +184,7 @@ struct TextFont *ConvDiskFont(BPTR seglist, STRPTR fontname,
     dfh = prevsegment = AllocSegment(prevsegment, i, MEMF_ANY | MEMF_CLEAR, DiskfontBase);
     if (!dfh) goto failure;
 
-    fontsegment = tmp_dfh.dfh_Segment = MAKE_REAL_SEGMENT(dfh);
+    fontsegment = tmp_dfh.dfh_Segment = (BPTR)MAKE_REAL_SEGMENT(dfh);
     
     tf = &dfh->dfh_TF;
     
@@ -445,7 +445,7 @@ struct TextFont *ConvDiskFont(BPTR seglist, STRPTR fontname,
     
     /* ----------------------- */
 
-    ReturnPtr("ConvTextFont", struct TextFont *, tf);
+    ReturnPtr("ConvTextFont", struct DiskFontHeader *, dfh);
 
 failure:
 
@@ -458,7 +458,17 @@ failure:
     	UnLoadSeg(fontsegment);
     }
 
-    ReturnPtr("ConvTextFont", struct TextFont *, 0);		
+    ReturnPtr("ConvTextFont", struct DiskFontHeader *, 0);		
+}
+
+void DisposeConvDiskFont(struct DiskFontHeader *dfh,
+			 struct DiskfontBase_intern *DiskfontBase)
+{
+    if (dfh!=NULL)
+    {
+	StripFont(&dfh->dfh_TF);
+	UnLoadSeg(MKBADDR(((BPTR *)dfh)-1));
+    }
 }
 
 /****************************************************************************************/
@@ -474,7 +484,7 @@ struct TextFont *ReadDiskFont(
 	STRPTR realfontname,
 	struct DiskfontBase_intern *DiskfontBase)
 {	
-    struct TextFont *tf = NULL;
+    struct DiskFontHeader *dfh = NULL;
     STRPTR  	     filename;
     BPTR    	     seglist;
     
@@ -485,12 +495,12 @@ struct TextFont *ReadDiskFont(
     
     if ((seglist = LoadSeg(filename)) != 0)
     {
-	tf = ConvDiskFont(seglist, realfontname, DiskfontBase);
+	dfh = ConvDiskFont(seglist, realfontname, DiskfontBase);
 
 	UnLoadSeg(seglist);
     }
 
-    ReturnPtr("ReadDiskFont", struct TextFont *, tf);	
+    ReturnPtr("ReadDiskFont", struct TextFont *, &dfh->dfh_TF);	
 }
 
 /****************************************************************************************/
