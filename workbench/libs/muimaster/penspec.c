@@ -6,6 +6,7 @@
 */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <proto/dos.h>
 #include <proto/graphics.h>
 
@@ -24,6 +25,8 @@ BOOL zune_pen_spec_to_intern (const struct MUI_PenSpec *spec,
 {
     if (!spec || !intern)
 	return FALSE;
+
+    memset(intern, 0, sizeof(*intern));
 
     D(bug("zune_pen_spec_to_intern: parsing %s\n", spec->ps_buf));
     switch (spec->ps_buf[0])
