@@ -13,14 +13,32 @@
 #include <errno.h>
 #include "__errno.h"
 #include "__open.h"
+#include <stdio.h>
 
-static int __getc(BPTR fh);
-static int __ungetc(int c, BPTR fh);
+/*
+** If the VFSCANF_DIRECT_DOS define is set to 1, dos.library functions FGetC()
+** and UnGetC() are used directly, for possibly better speed. Otherwise
+** the clib functions fgetc/ungetc are used.
+*/
+ 
+#define VFSCANF_DIRECT_DOS 1
+
+#if VFSCANF_DIRECT_DOS
+
+struct __vfscanf_handle
+{
+    FILE  *stream;
+    fdesc *fdesc;
+};
+
+static int __getc(struct __vfscanf_handle *h);
+static int __ungetc(int c, struct __vfscanf_handle *h);
+
+#endif
 
 /*****************************************************************************
 
     NAME */
-#include <stdio.h>
 #include <stdarg.h>
 
 	int vfscanf (
@@ -57,7 +75,28 @@ static int __ungetc(int c, BPTR fh);
 
 ******************************************************************************/
 {
-    fdesc *fdesc = __getfdesc(stream->fd);
+#if VFSCANF_DIRECT_DOS
+    struct __vfscanf_handle h;
+    
+    h.stream = stream;
+    h.fdesc  = __getfdesc(stream->fd);
+
+    if (!h.fdesc)
+    {
+        GETUSER;
+
+	errno = EBADF;
+	return 0;
+    }
+
+
+    Flush (h.fdesc->fh);
+
+    return __vcscan (&h, __getc, __ungetc, format, args);
+#else
+    fdesc *fdesc;
+    
+    fdesc = __getfdesc(stream->fd);
 
     if (!fdesc)
     {
@@ -67,36 +106,71 @@ static int __ungetc(int c, BPTR fh);
 	return 0;
     }
 
-
     Flush (fdesc->fh);
-
-    return __vcscan (fdesc->fh, __getc, __ungetc, format, args);
+    
+    return __vcscan (stream, fgetc, ungetc, format, args);
+       
+#endif
 } /* vfscanf */
 
-static int __ungetc(int c, BPTR fh)
+#if VFSCANF_DIRECT_DOS
+
+static int __ungetc(int c, struct __vfscanf_handle *h)
 {
-    if (!UnGetC(fh, c))
+    /* Note: changes here might require changes in ungetc.c!! */
+
+    if (c < -1)
+	c = (unsigned int)c;
+
+    if (!UnGetC((BPTR)h->fdesc->fh, c))
     {
     	GETUSER;
 
 	errno = IoErr2errno(IoErr());
-	return EOF;
+
+	if (errno)
+	{
+	    h->stream->flags |= _STDIO_ERROR;
+	}
+	else
+	{
+	    h->stream->flags |= _STDIO_EOF;
+	}
+	
+	c = EOF;
     }
 
     return c;
 }
 
-static int __getc(BPTR fh)
+static int __getc(struct __vfscanf_handle *h)
 {
     int c;
 
-    if ((c = FGetC(fh)) == -1)
+    /* Note: changes here might require changes in fgetc.c!! */
+
+    c = FGetC((BPTR)h->fdesc->fh);
+    
+    if (c == EOF)
     {
     	GETUSER;
 
-	errno = IoErr2errno(IoErr());
-	return EOF;
+    	c = IoErr();
+	
+	if (c)
+	{
+	    errno = IoErr2errno(c);
+	    h->stream->flags |= _STDIO_ERROR;
+	}
+	else
+	{
+	    h->stream->flags |= _STDIO_EOF;
+	}
+	
+	c = EOF;
     }
 
     return c;
 }
+
+#endif
