@@ -190,8 +190,6 @@ IPTR FPWindow$MUIM_PreferencesWindow_Test
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
     
-    printf("FPWindow: Test\n");
-    
     return NULL;
 }
 
@@ -202,8 +200,6 @@ IPTR FPWindow$MUIM_PreferencesWindow_Revert
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
     
-    printf("FPWindow: Revert\n");
-    
     return NULL;
 }
 
@@ -213,7 +209,6 @@ IPTR FPWindow$MUIM_PreferencesWindow_Save
 )
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
-    printf("FPWindow: Save\n");
     
     Gadgets2FontPrefs(fontPrefs, data);
     WritePrefs("ENV:sys/font.prefs", fontPrefs);
@@ -231,7 +226,6 @@ IPTR FPWindow$MUIM_PreferencesWindow_Use
 )
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
-    printf("FPWindow: Use\n");
     
     Gadgets2FontPrefs(fontPrefs, data);
     WritePrefs("ENV:sys/font.prefs", fontPrefs);
@@ -248,7 +242,6 @@ IPTR FPWindow$MUIM_PreferencesWindow_Cancel
 )
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
-    printf("FPWindow: Cancel\n");
     
     SetAttrs(self, MUIA_Window_Open, FALSE, TAG_DONE);
     DoMethod(_app(self), MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
