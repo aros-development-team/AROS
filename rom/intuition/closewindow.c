@@ -2,6 +2,14 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.23  2000/04/07 19:44:49  stegerg
+    call UnlockPubScreen only if window->MoreFlags has bit
+    WMFLG_DO_UNLOCKPUBSCREEN set. Not each window on a public
+    screen is a visitor window (for example requester windows
+    are usually not) and not every window caues a LockPubScreen
+    when it is opened, for example when WA_CustomScreen is used
+    (like by Requesters) or WA_PubScreen, <something != NULL>.
+
     Revision 1.22  2000/02/04 21:56:17  stegerg
     use SendDeferedActionMsg instead of PutMsg
 
@@ -142,14 +150,14 @@
     
     
     struct MsgPort *userport;
+    struct Screen *screen;
+    BOOL do_unlockscreen;
     
-
     D(bug("CloseWindow (%p)\n", window));
 
-    if(GetPrivScreen(window->WScreen)->pubScrNode != NULL)
-    {
-	UnlockPubScreen(NULL, window->WScreen);
-    }
+    screen = window->WScreen;
+    do_unlockscreen = ((GetPrivScreen(screen)->pubScrNode != NULL) &&
+    		       (window->MoreFlags & WMFLG_DO_UNLOCKPUBSCREEN)) ? TRUE : FALSE;
 
     /* We take a very simple approach to avoid race conditions with the
        intuition input handler running one input.device 's task:
@@ -181,6 +189,8 @@
     
     Wait(SIGF_INTUITION);
     
+    if (do_unlockscreen) UnlockPubScreen(NULL, screen);
+
     /* As of now intuition has removed us from th list of
        windows, and we will recieve no more messages
     */
