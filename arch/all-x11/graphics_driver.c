@@ -19,6 +19,7 @@
 #include <graphics/rastport.h>
 #include <graphics/gfxbase.h>
 #include <graphics/text.h>
+#include <graphics/view.h>
 #include <proto/graphics.h>
 #include <proto/arossupport.h>
 #include "graphics_intern.h"
@@ -926,6 +927,18 @@ UX11
     }
 }
 
+void driver_InitView(struct View * View, struct GfxBase * GfxBase)
+{
+  /* To Do */
+  View->DxOffset = 0;
+  View->DyOffset = 0;
+} /* driver_InitView */
+
+void driver_InitVPort(struct ViewPort * ViewPort, struct GfxBase * GfxBase)
+{
+  /* To Do (maybe even an unnecessary function) */
+} /* driver_InitVPort */	
+
 ULONG driver_SetWriteMask (struct RastPort * rp, ULONG mask,
 			struct GfxBase * GfxBase)
 {
@@ -1386,3 +1399,4 @@ UX11
     return width*(ystop - ystart + 1);
 } /* driver_WritePixelArray8 */
 
+ 
