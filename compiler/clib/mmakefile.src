@@ -164,6 +164,7 @@ SHARED	:= \
         getgid \
         getegid \
         getgrgid \
+        getpwnam \
         getpwuid \
 	gmtime \
 	isatty \
