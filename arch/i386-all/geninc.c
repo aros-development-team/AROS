@@ -70,6 +70,7 @@ int main (void)
     printf ("#define Disable       %d\n", FuncOffset (20));
     printf ("#define Enable        %d\n", FuncOffset (21));
     printf ("#define Enqueue       %d\n", FuncOffset (45));
+    printf ("#define FindTask	   %d\n", FuncOffset (49));
     printf ("#define StackSwap     %d\n", FuncOffset (122));
 
     printf ("\n# Constants\n");
