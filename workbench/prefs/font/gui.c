@@ -149,7 +149,7 @@ Object *makeMenuitem(CONST_STRPTR text)
 /*** Methods ****************************************************************/
 IPTR FPWindow$OM_NEW
 (
-    struct IClass *CLASS, Object *self, struct opSet *message 
+    Class *CLASS, Object *self, struct opSet *message 
 )
 {
     struct FPWindow_DATA *data = NULL;
@@ -245,7 +245,7 @@ error:
 
 IPTR FPWindow$MUIM_PreferencesWindow_Test
 (     
-    struct IClass *CLASS, Object *self, Msg message 
+    Class *CLASS, Object *self, Msg message 
 )
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
@@ -258,7 +258,7 @@ IPTR FPWindow$MUIM_PreferencesWindow_Test
 
 IPTR FPWindow$MUIM_PreferencesWindow_Revert
 (     
-    struct IClass *CLASS, Object *self, Msg message 
+    Class *CLASS, Object *self, Msg message 
 )
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
@@ -271,7 +271,7 @@ IPTR FPWindow$MUIM_PreferencesWindow_Revert
 
 IPTR FPWindow$MUIM_PreferencesWindow_Save
 (     
-    struct IClass *CLASS, Object *self, Msg message 
+    Class *CLASS, Object *self, Msg message 
 )
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
@@ -287,7 +287,7 @@ IPTR FPWindow$MUIM_PreferencesWindow_Save
 
 IPTR FPWindow$MUIM_PreferencesWindow_Use
 (     
-    struct IClass *CLASS, Object *self, Msg message 
+    Class *CLASS, Object *self, Msg message 
 )
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
@@ -303,7 +303,7 @@ IPTR FPWindow$MUIM_PreferencesWindow_Use
 
 IPTR FPWindow$MUIM_PreferencesWindow_Cancel
 (     
-    struct IClass *CLASS, Object *self, Msg message 
+    Class *CLASS, Object *self, Msg message 
 )
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
@@ -318,7 +318,7 @@ IPTR FPWindow$MUIM_PreferencesWindow_Cancel
 
 IPTR FPWindow$MUIM_FPWindow_Import
 (     
-    struct IClass *CLASS, Object *self, Msg message 
+    Class *CLASS, Object *self, Msg message 
 )
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
@@ -336,7 +336,7 @@ IPTR FPWindow$MUIM_FPWindow_Import
 
 IPTR FPWindow$MUIM_FPWindow_Export
 (     
-    struct IClass *CLASS, Object *self, Msg message 
+    Class *CLASS, Object *self, Msg message 
 )
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
