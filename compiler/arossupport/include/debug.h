@@ -37,6 +37,8 @@
 #undef ReturnBool
 
 /* Sanity check macros */
+#undef DBPRINTF
+#undef THIS_FILE
 #undef ASSERT_VALID_PTR(x)
 #undef ASSERT_VALID_PTR_OR_NULL(x)
 #undef ASSERT(x)
@@ -129,19 +131,31 @@
 
 #define DBPRINTF kprintf
 
+/* The trick with THIS_FILE allows us to reuse the same static string
+ * instead of allocating a new copy for each invocation of these macros.
+ */
+#define THIS_FILE __FILE__
+
 #define ASSERT(x) ( (x) ? 0 :					\
 	( DBPRINTF("\x07%s:%ld: assertion failed: %s\n",	\
-	__FILE__, __LINE__, #x) ) );
-
-#define ASSERT_VALID_PTR_OR_NULL(x) ( ((((APTR)(x)) == NULL) ||	\
-	(((LONG)(x) > 1024) &&	TypeOfMem((APTR)(x)))) ? 0 :	\
-	( DBPRINTF("\x07%s:%ld: bad pointer: %s = $%lx\n",	\
-	__FILE__, __LINE__, #x, (APTR)(x)) ) );
+	THIS_FILE, __LINE__, #x) ) );
 
 #define ASSERT_VALID_PTR(x) ( (((LONG)(x) > 1024) &&		\
 	TypeOfMem((APTR)(x))) ? 0 :				\
 	( DBPRINTF("\x07%s, %ld: bad pointer: %s = $%lx\n",	\
-	__FILE__, __LINE__, #x, (APTR)(x)) ) );
+	THIS_FILE, __LINE__, #x, (APTR)(x)) ) );
+
+#define ASSERT_VALID_PTR_OR_NULL(x) ( ((((APTR)(x)) == NULL) ||	\
+	(((LONG)(x) > 1024) &&	TypeOfMem((APTR)(x)))) ? 0 :	\
+	( DBPRINTF("\x07%s:%ld: bad pointer: %s = $%lx\n",	\
+	THIS_FILE, __LINE__, #x, (APTR)(x)) ) );
+
+#define ASSERT_VALID_TASK(t) ( ASSERT_VALID_PTR(t) &&		\
+	(((t)->tc_Node.ln_Type == NT_TASK) ||
+	(t)->tc_Node.ln_Type == NT_PROCESS) )
+
+#define ASSERT_VALID_PROCESS(p) ( ASSERT_VALID_PTR(p) &&	\
+	(((p)->pr_Task.tc_Node.ln_Type == NT_PROCESS) )
 
 
     /* return-macros. NOTE: I make a copy of the value in __aros_val, because
@@ -173,9 +187,11 @@
 #   define D(x)     /* eps */
 #   define DB2(x)     /* eps */
 
+#   define ASSERT(x)
 #   define ASSERT_VALID_PTR(x)
 #   define ASSERT_VALID_PTR_OR_NULL(x)
-#   define ASSERT(x)
+#   define ASSERT_VALID_TASK(t)
+#   define ASSERT_VALID_PROCESS(p)
 
 #   define ReturnVoid(name)                 return
 #   define ReturnPtr(name,type,val)         return val
