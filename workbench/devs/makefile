@@ -15,7 +15,8 @@ FILES = console cdinputhandler rawkeyconvert
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	$(DEVS)
+	$(DEVS) \
+	$(DEVSDIR)/Mountlist
 
 setup:
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
@@ -25,6 +26,9 @@ setup:
 clean:
 	$(RM) $(OSGENDIR)
 	$(RM) $(DEVSDIR)
+
+$(DEVSDIR)/Mountlist : Mountlist
+	$(CP) $< $@
 
 $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
