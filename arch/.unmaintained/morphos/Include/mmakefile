@@ -1,0 +1,33 @@
+include $(TOP)/config/make.cfg
+
+INCSUBDIRS :=	aros \
+		exec \
+		libcore
+		
+
+INCLUDES      := $(foreach d,$(INCSUBDIRS),$(wildcard $(d)/*.*))
+DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
+
+#MM- includes-morphos : setup-includes-morphos includes-copy-morphos
+#MM
+includes-copy-morphos : $(DEST_INCLUDES)
+
+$(INCDIR)/%.h : %.h
+	@$(CP) $< $@
+
+$(INCDIR)/%.c : %.c
+	@$(CP) $< $@
+
+#MM
+setup-includes-morphos :
+	@$(FOR) dir in $(AROS_INCLUDES)         \
+		$(foreach f,$(INCSUBDIRS),$(AROS_INCLUDES)/$(f)) \
+		$(GENINCDIR) \
+		$(foreach f,$(INCSUBDIRS),$(GENINCDIR)/$(f)) \
+	; do \
+	   $(IF) $(TEST) ! -d "$$dir" ; then $(MKDIR) "$$dir" ; else true ; fi ;\
+	done
+
+#MM
+clean :
+	-$(RM) $(INCDIR)
