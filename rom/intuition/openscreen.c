@@ -346,11 +346,7 @@ static const ULONG coltab[] = {
     
     if ((success = InitRastPort (&screen->Screen.RastPort))) rp_inited = TRUE;
         
-    screen->Screen.RastPort.BitMap = AllocBitMap(ns.Width, 
-						 ns.Height, 
-						 ns.Depth, 
-						 BMF_CLEAR | BMF_DISPLAYABLE , 
-						 NULL);
+    screen->Screen.RastPort.BitMap = AllocScreenBitMap(modeid);
     D(bug("got bitmap\n"));	    
     
     /* Init screen's viewport */
