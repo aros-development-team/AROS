@@ -89,11 +89,18 @@ STRPTR  ArgString(UBYTE **tt, STRPTR entry, STRPTR defaultstring);
 struct  InputEvent *InvertString(STRPTR str, struct KeyMap *km);
 
 /* Graphics */
+#ifndef ObtainBestPen
 LONG ObtainBestPen( struct ColorMap * cm, LONG R, LONG G, LONG B, ULONG tag1, ...);
+#endif
+
+#ifndef GetRPAttrs
 void GetRPAttrs( struct RastPort * rp, Tag tag1, ...);
+#endif
 
 /* Intuition */
+#ifndef SetWindowPointer 
 void SetWindowPointer( struct Window * window, ULONG tag1, ...);
+#endif
 
 /* Locale */
 struct Catalog *OpenCatalog(	struct Locale * locale,
