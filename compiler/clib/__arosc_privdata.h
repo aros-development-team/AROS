@@ -74,6 +74,9 @@ struct arosc_privdata
     char *acpd_apathbuf; /* Buffer that holds the AROS path converted from the
                             equivalent *nix path.  */
     int   acpd_doupath;  /* BOOL - does the conversion need to be done?  */
+    
+    /* spawn* */
+    char *acpd_joined_args;
 };
 
 #define __get_arosc_privdata() ((struct arosc_privdata *)__get_arosc_userdata())
