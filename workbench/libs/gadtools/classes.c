@@ -94,6 +94,7 @@ IPTR button_set(Class * cl, Object * obj, struct opSet * msg)
     struct TagItem *tag, tags[2];
     struct RastPort *rport;
 
+    /* Catch everything, but GA_Disabled. */
     tag = FindTagItem(GA_Disabled, msg->ops_AttrList);
     if (tag) {
 	tags[0].ti_Tag = GA_Disabled;
@@ -102,6 +103,9 @@ IPTR button_set(Class * cl, Object * obj, struct opSet * msg)
 	DoSuperMethod(cl, obj, OM_SET, tags, msg->ops_GInfo);
 	retval = TRUE;
     }
+
+    /* Redraw the gadget, if an attribute was changed and if this is the
+       objects' base-class. */
     if ((retval) && (((Class *) (*(obj - sizeof(Class *)))) == cl)) {
 	rport = ObtainGIRPort(msg->ops_GInfo);
 	if (rport) {
@@ -110,6 +114,7 @@ IPTR button_set(Class * cl, Object * obj, struct opSet * msg)
 	    retval = FALSE;
 	}
     }
+
     return retval;
 }
 
