@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <workbench/icon.h>
@@ -97,7 +98,7 @@
     {
 	/* icon.library v44 uses a global identification hook
 	 * to determine the filetype. We just call GetDiskObjectNew() for now */
-	
+
 	if (fail)
 	{
 	    dob = GetDiskObject(name);
