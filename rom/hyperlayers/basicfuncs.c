@@ -433,6 +433,7 @@ struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
   int looped = FALSE;
   struct ClipRect * firstcr = NULL, * cr;
   struct BitMap * display_bm = l->rp->BitMap;
+
   /*
    * From region r create cliprects
    */
@@ -497,7 +498,6 @@ kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
     else
       break;
   } /* while (1) */
-
 
   return firstcr;
 }
@@ -1403,7 +1403,7 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
 
       _TranslateRect(&region->bounds, l->bounds.MinX, l->bounds.MinY);
 
-      r = AndRegionRegion(l->VisibleRegion, region);
+      r = AndRegionRegionND(l->VisibleRegion, region);
 
       l->ClipRect = _CreateClipRectsFromRegion(r,
                                                l,
