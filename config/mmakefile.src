@@ -5,7 +5,7 @@ CONFIG_H := $(INCDIR)/aros/config.h
 GENCONFIG_H := $(GENINCDIR)/aros/config.h
 
 #MM setup : setup-$(ARCH)
-setup : make-dirs $(CONFIG_H) $(GENCONFIG_H)
+setup : make-dirs $(GENDIR)/config_h.stamp $(GENCONFIG_H)
 	@$(ECHO) "Creating mf.inc files..."
 	@$(SORT) +1 $(GENDIR)/config.files -o $(GENDIR)/config.files.sort
 	@$(UNIQ) $(GENDIR)/config.files.sort $(GENDIR)/config.files
@@ -16,10 +16,11 @@ setup : make-dirs $(CONFIG_H) $(GENCONFIG_H)
 make-dirs :
 	%mkdirs_q $(INCDIR)/aros $(GENINCDIR)/aros
 
-$(CONFIG_H): $(TOP)/configure
-	$(SHELL) $(TOP)/configure -h $@
+$(GENDIR)/config_h.stamp : $(TOP)/configure
+	$(SHELL) $(TOP)/configure -h $(CONFIG_H)
+	@$(TOUCH) $@
 
-$(GENCONFIG_H): $(CONFIG_H)
+$(GENCONFIG_H) : $(CONFIG_H)
 	$(CP) $< $@
 
 #MM
@@ -28,7 +29,7 @@ clean ::
 	$(RM) $(CONFIG_H) $(GENCONFIG_H) $(INCDIR)/aros $(GENINCDIR)/aros
 
 #MM
-machine:
+machine :
 	$(CC) -I$(TOP)/compiler/include -I$(TOP)/compiler/arossupport/include -o machine machine.c
 	./machine
 
