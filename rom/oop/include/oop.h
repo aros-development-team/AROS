@@ -34,6 +34,12 @@ typedef struct
 } *Msg;
 
 
+struct ABDescr
+{
+    STRPTR interfaceID;
+    AttrBase *attrBase;
+};
+
 typedef struct IClass Class;
 
 struct IClass
