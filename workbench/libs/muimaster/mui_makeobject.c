@@ -290,6 +290,9 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 	    return MUI_NewObject( MUIC_Menuitem,
 		MUIA_Menuitem_Title, params[0],
 		MUIA_Menuitem_Shortcut, params[1],
+		MUIA_Menuitem_Checkit, !!(params[2]&CHECKIT),
+		MUIA_Menuitem_Checked, !!(params[2]&CHECKED),
+		MUIA_Menuitem_Enabled, !((params[2]&NM_ITEMDISABLED) || (params[2]&NM_MENUDISABLED)),
 		/* flags NYI */
 		MUIA_UserData, params[3],
 	    	TAG_DONE);

@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#include <proto/intuition.h>
+
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -55,6 +57,17 @@ __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
+
+//		if (!app)
+		{
+			struct EasyStruct es;
+			es.es_StructSize = sizeof(struct EasyStruct);
+			es.es_Flags = 0;
+			es.es_Title = title;
+			es.es_TextFormat = format;
+			es.es_GadgetFormat = gadgets;
+			return EasyRequestArgs(NULL,&es,NULL,params);
+		}
 
     return 0;
 

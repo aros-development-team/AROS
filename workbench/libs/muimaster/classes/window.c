@@ -33,6 +33,8 @@
 #include <proto/muimaster.h>
 #endif
 
+#define MUI_OBSOLETE /* for the obsolette menu stuff */
+
 #include "mui.h"
 #include "support.h"
 #include "classes/window.h"
@@ -1693,6 +1695,69 @@ static IPTR Window_FreeGadgetID(struct IClass *cl, Object *obj, struct MUIP_Wind
     return 0;
 }
 
+
+/**************************************************************************
+ MUIM_Window_GetMenuCheck
+**************************************************************************/
+static IPTR Window_GetMenuCheck(struct IClass *cl, Object *obj, struct MUIP_Window_GetMenuCheck *msg)
+{
+    IPTR stat;
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+    Object *item;
+    Object *strip = data->wd_ChildMenustrip;
+    if (!strip) strip = data->wd_Menustrip;
+    if (!strip) return 0;
+    if (!(item = (Object*)DoMethod(strip, MUIM_FindUData, msg->MenuID))) return 0;
+    get(item,MUIA_Menuitem_Checked, &stat);
+    return stat;
+}
+
+/**************************************************************************
+ MUIM_Window_SetMenuCheck
+**************************************************************************/
+static IPTR Window_SetMenuCheck(struct IClass *cl, Object *obj, struct MUIP_Window_SetMenuCheck *msg)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+    Object *item;
+    Object *strip = data->wd_ChildMenustrip;
+    if (!strip) strip = data->wd_Menustrip;
+    if (!strip) return 0;
+    if (!(item = (Object*)DoMethod(strip, MUIM_FindUData, msg->MenuID))) return 0;
+    set(item,MUIA_Menuitem_Checked,msg->stat);
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_Window_GetMenuState
+**************************************************************************/
+static IPTR Window_GetMenuState(struct IClass *cl, Object *obj, struct MUIP_Window_GetMenuState *msg)
+{
+    IPTR stat;
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+    Object *item;
+    Object *strip = data->wd_ChildMenustrip;
+    if (!strip) strip = data->wd_Menustrip;
+    if (!strip) return 0;
+    if (!(item = (Object*)DoMethod(strip, MUIM_FindUData, msg->MenuID))) return 0;
+    get(item,MUIA_Menuitem_Enabled, &stat);
+    return stat;
+}
+
+/**************************************************************************
+ MUIM_Window_SetMenuState
+**************************************************************************/
+static IPTR Window_SetMenuState(struct IClass *cl, Object *obj, struct MUIP_Window_SetMenuState *msg)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+    Object *item;
+    Object *strip = data->wd_ChildMenustrip;
+    if (!strip) strip = data->wd_Menustrip;
+    if (!strip) return 0;
+    if (!(item = (Object*)DoMethod(strip, MUIM_FindUData, msg->MenuID))) return 0;
+    set(item,MUIA_Menuitem_Enabled,msg->stat);
+    return 0;
+}
+
 /******************************************************************************/
 /******************************************************************************/
 
@@ -1726,6 +1791,10 @@ AROS_UFH3S(IPTR, Window_Dispatcher,
 	case MUIM_Window_DragObject: return Window_DragObject(cl, obj, (APTR)msg);
 	case MUIM_Window_AllocGadgetID: return Window_AllocGadgetID(cl, obj, (APTR)msg);
 	case MUIM_Window_FreeGadgetID: return Window_FreeGadgetID(cl, obj, (APTR)msg);
+	case MUIM_Window_GetMenuCheck: return Window_GetMenuCheck(cl, obj, (APTR)msg);
+	case MUIM_Window_SetMenuCheck: return Window_SetMenuCheck(cl, obj, (APTR)msg);
+	case MUIM_Window_GetMenuState: return Window_GetMenuCheck(cl, obj, (APTR)msg);
+	case MUIM_Window_SetMenuState: return Window_SetMenuCheck(cl, obj, (APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);

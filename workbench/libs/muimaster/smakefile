@@ -54,6 +54,7 @@ CLASSESOBJS= \
   objs/classes/menuitem.o \
   objs/classes/notify.o \
   objs/classes/numeric.o \
+  objs/classes/popasl.o \
   objs/classes/popobject.o \
   objs/classes/popstring.o \
   objs/classes/prop.o \
@@ -256,6 +257,9 @@ objs/classes/menuitem.o: classes/menuitem.c
 
 objs/classes/numeric.o: classes/numeric.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/numeric.c objname=$@
+
+objs/classes/popasl.o: classes/popasl.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/popasl.c objname=$@
 
 objs/classes/popobject.o: classes/popobject.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/popobject.c objname=$@
