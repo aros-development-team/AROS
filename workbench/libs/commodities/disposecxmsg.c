@@ -40,7 +40,7 @@
     This function can only be used within the context of the input handler,
     and not from within a commodities' context; that is if you for instance
     get a CXM_IEVENT CxMsg from a commodity sender object, you must
-    Replymsg() it instead of Disposing it.
+    ReplyMsg() it instead of Disposing it.
 
     EXAMPLE
 
