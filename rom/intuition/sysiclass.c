@@ -229,6 +229,7 @@ D(bug("SYSIA_Which type: %d\n", data->type));
                 break;
 
             case DEPTHIMAGE:
+	    case SDEPTHIMAGE:
             case ZOOMIMAGE:
             case CLOSEIMAGE:
             case SIZEIMAGE:
@@ -236,7 +237,6 @@ D(bug("SYSIA_Which type: %d\n", data->type));
 		if (IM(obj)->Height == 0) IM(obj)->Height = DEFSIZE_HEIGHT;
 	        break;
 		
-            case SDEPTHIMAGE:
             case MENUCHECK:
             case AMIGAKEY:
 #warning FIXME: Missing Tags
@@ -332,6 +332,7 @@ D(bug("sysi_setnew called successfully\n"));
     case RIGHTIMAGE:
     case DOWNIMAGE:
     
+    case SDEPTHIMAGE:
     case DEPTHIMAGE:
     case ZOOMIMAGE:
     case CLOSEIMAGE:
@@ -702,7 +703,8 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     	break;
     }
 
-    case DEPTHIMAGE: {
+    case DEPTHIMAGE:
+    case SDEPTHIMAGE: {
         UWORD *pens = data->dri->dri_Pens;
 	UWORD bg;
 
@@ -720,7 +722,12 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	h_spacing = width / 6;
 	v_spacing = height / 6;
 	
-	bg = getbgpen(msg->imp_State, pens);
+	if (data->type == DEPTHIMAGE)
+	{
+	    bg = getbgpen(msg->imp_State, pens);
+	} else {
+	    bg = pens[BACKGROUNDPEN];
+	}
 	
 	/* Clear background into correct color */
 	SetAPen(rport, bg);
@@ -751,7 +758,8 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	
 	/* Fill top left window (inside of the frame above) */
 	
-	if (msg->imp_State != IDS_INACTIVENORMAL)
+	if ((msg->imp_State != IDS_INACTIVENORMAL) &&
+	    (data->type != SDEPTHIMAGE))
 	{
 	    SetAPen(rport,pens[BACKGROUNDPEN]);
 	    RectFill(rport
@@ -772,7 +780,8 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 		, IntuitionBase);
 		
 	/* Fill bottom right window (inside of the frame above) */
-	SetAPen(rport, pens[(msg->imp_State == IDS_INACTIVENORMAL) ? BACKGROUNDPEN : SHINEPEN]);
+	SetAPen(rport, pens[((msg->imp_State == IDS_INACTIVENORMAL) &&
+			     (data->type != SDEPTHIMAGE)) ? BACKGROUNDPEN : SHINEPEN]);
 	RectFill(rport
 		, left + (width / 3) 	+ 1
 		, top + (height / 3)	+ 1
@@ -1044,7 +1053,7 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
     WORD bottom = top + height - 1;
     BOOL leftedgegodown = FALSE;
     BOOL topedgegoright = FALSE;
-    
+
     switch(which)
     {
     	case CLOSEIMAGE:
@@ -1059,11 +1068,12 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
 	
 	case ZOOMIMAGE:
 	case DEPTHIMAGE:
+	case SDEPTHIMAGE:
 	    /* draw separator line at the left side */
 	    SetAPen(rp, pens[SHINEPEN]);
 	    WritePixel(rp, left, top);
 	    SetAPen(rp, pens[SHADOWPEN]);
-	    RectFill(rp, left, top + 1, right, bottom);
+	    RectFill(rp, left, top + 1, left, bottom);
 
 	    left++;
 	    break;
