@@ -2,8 +2,8 @@
 include $(TOP)/config/make.cfg
 
 INCSUBDIRS :=	aros \
-	        aros/c++ \
-		aros/c++/exec \
+	        c++ \
+		c++/exec \
 		clib \
 		datatypes \
 		defines \

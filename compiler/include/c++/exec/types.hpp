@@ -151,7 +151,7 @@ struct TypeWrapper<T *> : TypeWrapperPtr<T, sizeof(T *)>
    TypeWrapper<T *> inherits from TypeWrapperPtr<T, sizeof(T *)>.
    
    Is this a bug or a feature?!  */
-#include <aros/c++/swappedtype.hpp>
+#include <c++/swappedtype.hpp>
 
 
 /* Some useful types, in their big and little endian version.
