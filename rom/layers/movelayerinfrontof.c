@@ -173,63 +173,89 @@
               in that area.
 	    */
 	   /*
-              Now I have to look for the ClipRect in L_tmp that
-              is now hidden.
+              Now I have to look for the ClipRects in L_tmp that
+              must now be hidden. There might be more than just
+              one ClipRect that needs to be hidden.
 	    */
-           CR_tmp = internal_WhichClipRect(L_tmp,
-                                           CR->bounds.MinX,
-                                           CR->bounds.MinY);
-           /* 
-              CR_tmp needs to get the content of what's visible in
-              the area now. It will be hidden. 
-            */
-           if (0 == (L_tmp->Flags & LAYERSIMPLE))
-           {
-             if (0 == (L_tmp->Flags & LAYERSUPER))
-             {
-               /* it's a smart layer */
-               /* I need to allocate a bitmap to backup the data */
-               CR_tmp->BitMap = 
-                    AllocBitMap(CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
-                                CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
-                                GetBitMapAttr(L_tmp->rp->BitMap, BMA_DEPTH),
-                                0,
-                                L_tmp->rp->BitMap);
-               
-               BltBitMap(L_tmp->rp->BitMap,
-                         CR_tmp->bounds.MinX,
-                         CR_tmp->bounds.MinY,
-                         CR_tmp->BitMap,
-                         CR_tmp->bounds.MinX & 0x0f,
-                         0,
-                         CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
-                         CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
-                         0x0c0,
-                         0xff,
-                         NULL);
-             }
-             else
-             {
-               /* it's a superbitmap layer */
-               CR_tmp->BitMap = L_tmp->SuperBitMap;
-               BltBitMap(L_tmp->rp->BitMap,
-                         CR_tmp->bounds.MinX,
-                         CR_tmp->bounds.MinY,
-                         CR_tmp->BitMap,
-                         CR_tmp->bounds.MinX - L_tmp->bounds.MinX + L_tmp->Scroll_X,
-                         CR_tmp->bounds.MinY - L_tmp->bounds.MinY + L_tmp->Scroll_Y,
-                         CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
-                         CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
-                         0x0c0,
-                         0xff,
-                         NULL);
-             }
-           }
-           else
-           {
-             /* It's a simple layer. I don't do anything here */
-           }
 
+           CR_tmp = L_tmp->ClipRect;
+           while (NULL != CR_tmp)
+           {
+             if (NULL == CR_tmp->lobs &&
+                 !(CR_tmp->bounds.MinX > CR->bounds.MaxX ||
+                   CR_tmp->bounds.MinY > CR->bounds.MaxY ||
+                   CR_tmp->bounds.MaxX < CR->bounds.MinX ||
+                   CR_tmp->bounds.MaxY < CR->bounds.MinY))
+             {
+               /*   
+                  CR_tmp needs to get the content of what's visible in
+                  the area now. It will be hidden. 
+                */
+               if (0 == (L_tmp->Flags & LAYERSIMPLE))
+               {
+                 if (0 == (L_tmp->Flags & LAYERSUPER))
+                 {
+                   /* it's a smart layer */
+                   /* I need to allocate a bitmap to backup the data */
+                   CR_tmp->BitMap = 
+                     AllocBitMap(CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
+                                 CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
+                                 GetBitMapAttr(L_tmp->rp->BitMap, BMA_DEPTH),
+                                 0,
+                                 L_tmp->rp->BitMap);
+               
+                   BltBitMap(L_tmp->rp->BitMap,
+                             CR_tmp->bounds.MinX,
+                             CR_tmp->bounds.MinY,
+                             CR_tmp->BitMap,
+                             CR_tmp->bounds.MinX & 0x0f,
+                             0,
+                             CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
+                             CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
+                             0x0c0,
+                             0xff,
+                             NULL);
+                 }
+                 else
+                 {
+                   /* it's a superbitmap layer */
+                   CR_tmp->BitMap = L_tmp->SuperBitMap;
+                   BltBitMap(L_tmp->rp->BitMap,
+                             CR_tmp->bounds.MinX,
+                             CR_tmp->bounds.MinY,
+                             CR_tmp->BitMap,
+                             CR_tmp->bounds.MinX - L_tmp->bounds.MinX + L_tmp->Scroll_X,
+                             CR_tmp->bounds.MinY - L_tmp->bounds.MinY + L_tmp->Scroll_Y,
+                             CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
+                             CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
+                             0x0c0,
+                             0xff,
+                             NULL);
+                 }
+               }
+               else
+               {
+                 /*
+                 ** Take the area of that ClipRect out of the DamageList
+                 ** such that no mess happens on the screen.
+                 */
+                 struct Rectangle R = CR_tmp->bounds;
+                 CR_tmp->bounds.MinX -= L_tmp->bounds.MinX;
+                 CR_tmp->bounds.MinY -= L_tmp->bounds.MinY;
+                 CR_tmp->bounds.MaxX -= L_tmp->bounds.MinX;
+                 CR_tmp->bounds.MaxY -= L_tmp->bounds.MinY;
+                 ClearRectRegion(L_tmp->DamageList, &R);
+                 
+               }
+               /*
+               ** Mark this ClipRect as hidden.
+               */
+               CR_tmp->lobs = layer_to_move;
+             }
+             
+             CR_tmp = CR_tmp->Next;
+           } /* while */
+           
            /* Whatever can be found in CR will be shown now. */
 
            if (0 == (layer_to_move->Flags & LAYERSIMPLE))
@@ -279,26 +305,18 @@
              
              OrRectRegion(layer_to_move->DamageList, &Rect);
              layer_to_move->Flags |= LAYERREFRESH;
-             BltBitMap(layer_to_move->rp->BitMap,
-                       0,
-                       0,
-                       layer_to_move->rp->BitMap,
-                       CR->bounds.MinX,
-                       CR->bounds.MinY,
-                       CR->bounds.MaxX - CR->bounds.MinX + 1,
-                       CR->bounds.MaxY - CR->bounds.MinY + 1,
-                       0x0,
-                       0xff,
-                       NULL);
+             
+             _CallLayerHook(layer_to_move->BackFill,
+                            layer_to_move->rp,
+                            layer_to_move,
+                            &CR->bounds,
+                            CR->bounds.MinX,
+                            CR->bounds.MinY);
            }
 
-if (NULL == CR_tmp)
-  kprintf("Error!\n");
-
            CR    ->BitMap = NULL; 
-
-           CR_tmp->lobs   = layer_to_move;
            CR    ->lobs   = NULL;
+
            /* 
               Now I have to change all the lobs entries for this area
               in the layers that are further behind. What a pain.
@@ -310,10 +328,16 @@ if (NULL == CR_tmp)
                                          CR->bounds.MinY);
              if (NULL == L_tmp)
                break;
-             CR_tmp = internal_WhichClipRect(L_tmp,
-                                             CR->bounds.MinX,
-                                             CR->bounds.MinY);
-             CR_tmp -> lobs = layer_to_move;
+             CR_tmp = L_tmp->ClipRect;
+             while (NULL != CR_tmp)
+             {
+               if (!(CR_tmp->bounds.MinX > CR->bounds.MaxX ||
+                     CR_tmp->bounds.MinY > CR->bounds.MaxY || 
+                     CR_tmp->bounds.MaxX < CR->bounds.MinX ||
+                     CR_tmp->bounds.MaxY < CR->bounds.MinY))
+                 CR_tmp -> lobs = layer_to_move;
+               CR_tmp = CR_tmp->Next;
+             }
 	   } /* while */
 	 } /* if (...priority > .. priority) */
        } /* if */
@@ -327,17 +351,21 @@ if (NULL == CR_tmp)
        means that unvisible parts stay unvisible and some
        visible parts might get hidden.
        I have to visit all the ClipRects of the layer_to_move...
+
+       !!!! This might/probably is still wrong . 
+       !!!! Check with the code in BehindLayer() and maybe just copy it here.
      */
     while (NULL != CR)
     {
       /* Has this ClipRect been visible before? */
       if (NULL == CR->lobs)
       {
-        /* 
-           It was visible. Should it be hidden now? 
+        /*
+           It was visible. Should it be hidden now?
          */
         struct Layer * L_tmp = 
                      WhichLayer(LI, CR->bounds.MinX , CR->bounds.MinY);
+        
         if (L_tmp != layer_to_move )
 	{
           /* 
@@ -352,6 +380,8 @@ if (NULL == CR_tmp)
           struct Layer * L_top = L_tmp; /* need a backup */
           BOOL equal_rects;
           CR_tmp = L_tmp->ClipRect;
+
+// ??? Is this correct
 
           while (!(CR_tmp->bounds.MinX >= CR->bounds.MinX &&
                    CR_tmp->bounds.MinY >= CR->bounds.MinY && 

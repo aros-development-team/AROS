@@ -121,7 +121,6 @@
   **  Is it a simple layer?
   */
 
-  
   if (0 != (l->Flags & LAYERSIMPLE))
   {
     {
@@ -202,7 +201,7 @@
   } /* if (simple layer) */
 
   
-  l_tmp = (struct Layer *)AllocMem(sizeof(struct Layer)   , MEMF_CLEAR|MEMF_PUBLIC);
+  l_tmp = (struct Layer *)AllocMem(sizeof(struct Layer), MEMF_CLEAR|MEMF_PUBLIC);
   CR = _AllocClipRect(l);
   RP = CreateRastPort();
 
@@ -248,7 +247,6 @@
     ** works fine later, especially the DeleteLayer() 
     */
 
-
     l_behind = l_tmp->back;
     while (NULL != l_behind)
     {
@@ -257,9 +255,8 @@
       while (NULL != _CR)
       {
         if (_CR->lobs == l)
-	{
           _CR->lobs = l_tmp;
-	}
+
         _CR = _CR->Next;
       } /* while */
 
@@ -451,7 +448,7 @@
         Rect.MaxX -= l_behind->bounds.MinX;
         Rect.MaxY -= l_behind->bounds.MinY;
         ClearRectRegion(l_behind->DamageList, &Rect);
-      }      
+      }
       l_behind = l_behind ->back;
     } /* while */
 
@@ -474,7 +471,7 @@
           LONG DestX, DestY;
           struct Rectangle bounds;
 
-          if (dx > 0 && (CR->bounds.MaxX - l->bounds.MinX) > width)
+          if (dx > 0 && (CR->bounds.MaxX - l->bounds.MinX) >= width)
 	  {
             if ((CR->bounds.MinX - l->bounds.MinX) > width)
               DestX = CR->bounds.MinX;
@@ -497,10 +494,13 @@
                              &bounds,
                              bounds.MinX,
                              bounds.MinY);
-	      /* Build the DamageList relative to the screen, 
+	      /* 
+	         Build the DamageList relative to the screen, 
 	         fix it later 
 	      */
-              OrRectRegion(l->DamageList, &CR->bounds);
+	      if (0 != (l->Flags & LAYERSIMPLE))
+                OrRectRegion(l->DamageList, &CR->bounds);
+
               l->Flags |= LAYERREFRESH;
 	    }
             else
@@ -522,7 +522,7 @@
             }
 	  }
 
-          if (dy > 0 && (CR->bounds.MaxY - l->bounds.MinY) > height)
+          if (dy > 0 && (CR->bounds.MaxY - l->bounds.MinY) >= height)
 	  {
             if ((CR->bounds.MinY - l->bounds.MinY) > height)
               DestY = CR->bounds.MinY;
@@ -550,8 +550,8 @@
 	         Build the DamageList relative to the screen, 
 	         fix it later 
 	      */
-
-              OrRectRegion(l->DamageList, &CR->bounds);
+              if (0 != (l->Flags & LAYERSIMPLE))
+                OrRectRegion(l->DamageList, &CR->bounds);
               l->Flags |= LAYERREFRESH;
 	    }
             else
@@ -615,7 +615,7 @@
     l->DamageList->bounds.MaxX -= l->bounds.MinX;
     l->DamageList->bounds.MaxY -= l->bounds.MinY;
     
-    /* That's it folks! */
+    /* That's it */
     CleanupLayers(LI);
 
     InstallClipRegionClipRects(LI);
@@ -633,7 +633,6 @@
     
     retval = FALSE;
   }
-
 
   UnlockLayers(LI);
 

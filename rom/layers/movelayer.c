@@ -273,6 +273,8 @@
 
     UninstallClipRegionClipRects(LI);
 
+    SetLayerPriorities(LI);
+
     /* I have to go through all the cliprects of the layers that are 
        behind this layer and have an enty in lobs pointing to l. I
        have to change this pointer to l_tmp, so that everything still
@@ -468,10 +470,12 @@
                l_behind->bounds.MinY > l->bounds.MaxY ||
                l_behind->bounds.MaxY < l->bounds.MinY) )
       {
-        /* That is a simple refresh layer that the current layer l is
-           actually overlapping with. So I will erase the layer l's rectangle
-           from that layer l_behind's damagelist so no mess happens on the
-           screen */
+        /* 
+        ** That is a simple refresh layer that the current layer l is
+        ** actually overlapping with. So I will erase the layer l's rectangle
+        ** from that layer l_behind's damagelist so no mess happens on the
+        ** screen 
+        */
         struct Rectangle Rect = l->bounds;
         Rect.MinX -= l_behind->bounds.MinX;
         Rect.MinY -= l_behind->bounds.MinY;

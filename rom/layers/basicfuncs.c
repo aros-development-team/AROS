@@ -637,11 +637,13 @@ void UnsplitLayers(struct Layer_Info * LI, struct Rectangle * rect)
   /* The following function takes care of the top layer. */
   CleanTopLayer(LI); 
 
+  SetLayerPriorities(LI);
+
   L = L->back;
   while (NULL != L)
   {
     /* just in case this flag is set */
-    L->Flags &= ~LAYERUPDATING;
+//    L->Flags &= ~LAYERUPDATING;
     if (!(L->bounds.MinX > rect->MaxX ||
           L->bounds.MaxX < rect->MinX ||
           L->bounds.MinY > rect->MaxY ||

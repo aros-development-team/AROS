@@ -134,7 +134,7 @@
   CreateClipRects(LI, L);
 
   /* 
-     Cool! Now we process the ClipRectsList and restore the
+     Let's process the ClipRectsList and restore the
      cliprects found there and free the bitmaps and the
      list itself while doing so. 
    */
@@ -142,6 +142,7 @@
   {
     struct ClipRect * _CR_old = CR_old->Next;
     /* treat simple layer separately */
+    
     if (NULL != CR_old->lobs)
     {
       if (0 == (L->Flags & LAYERSIMPLE))
@@ -204,6 +205,22 @@
 		       CR_old->bounds.MinX,	/* ?????????? */
 		       CR_old->bounds.MinY	/* ?????????? */
 		       );
+      }
+      
+      /*
+      ** Take the ClipRects area out of the DamageList of the Layer
+      ** whose ClipRect became invisible
+      */
+      
+      if (0 != (CR_old->lobs->Flags & LAYERSIMPLE))
+      {
+        struct Layer * L_inv = CR_old->lobs;
+        struct Rectangle Rect = CR_old->bounds;
+        Rect.MinX -= L_inv->bounds.MinX;
+        Rect.MinY -= L_inv->bounds.MinY;
+        Rect.MaxX -= L_inv->bounds.MinX;
+        Rect.MaxY -= L_inv->bounds.MinY;
+        ClearRectRegion(L_inv->DamageList, &Rect);
       }
     }
     _FreeClipRect(CR_old, L);

@@ -354,8 +354,6 @@
   /*
       The last thing we have to do now is clear those parts of
       the deleted layer that were not hiding anything.
-      !!! Actually we should use EraseRect() here so the background
-      can be restored with the installed backfill hook.
   */
   R = LD->DamageList;
 
