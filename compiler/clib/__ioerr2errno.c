@@ -7,6 +7,7 @@
 */
 #include <dos/dos.h>
 #include <dos/dosasl.h>
+#include <dos/filesystem.h>
 #include "__errno.h"
 
 int IoErr2errno (int ioerr)
@@ -23,6 +24,12 @@ int IoErr2errno (int ioerr)
 
 	case ERROR_OBJECT_NOT_FOUND:
 	    return ENOENT;
+
+        case ERROR_WOULD_BLOCK:
+	    return EAGAIN;
+
+        case ERROR_BROKEN_PIPE:
+	    return EPIPE;
     }
 
     return MAX_ERRNO+1;
