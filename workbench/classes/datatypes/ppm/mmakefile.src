@@ -2,6 +2,7 @@
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
+USER_CFLAGS   := -DMYDEBUG
 
 MODNAME := ppm
 MODTYPE := datatype

@@ -61,6 +61,13 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
  struct BitMap *bm;
  struct RastPort rp;
 
+#ifdef MYDEBUG
+ struct TagItem *ti;
+ int Known;
+
+ Known=FALSE;
+#endif /* MYDEBUG */
+
  D(bug("ppm.datatype/OM_NEW: Reached\n"));
 
  D(bug("ppm.datatype/OM_NEW: cl: 0x%lx o: 0x%lx msg: 0x%lx\n", (unsigned long) cl, (unsigned long) o, (unsigned long) msg));
@@ -77,6 +84,26 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
  Attrs=((struct opSet *) msg)->ops_AttrList;
 
  D(bug("ppm.datatype/OM_NEW: Attrs: 0x%lx\n", (unsigned long) Attrs));
+
+#ifdef MYDEBUG
+ while((ti=NextTagItem(&Attrs)))
+ {
+  for(i=0; i<NumAttribs; i++)
+  {
+   if(ti->ti_Tag==KnownAttribs[i])
+   {
+    Known=TRUE;
+
+    D(bug("ppm.datatype/OM_NEW: Tag ID: %s\n", AttribNames[i]));
+   }
+  }
+
+  if(!Known)
+  {
+   D(bug("ppm.datatype/OM_NEW: Tag ID 0x%lx\n", ti->ti_Tag));
+  }
+ }
+#endif /* MYDEBUG */
 
  Title=(char *) GetTagData(DTA_Name, NULL, Attrs);
 
@@ -367,6 +394,271 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
  return(RetVal);
 }
 
+STATIC IPTR DT_NotifyMethod(struct IClass *cl, struct Gadget *g, struct opUpdate *msg)
+{
+#ifdef MYDEBUG
+ struct TagItem *tl;
+ struct TagItem *ti;
+
+ register int i;
+ int Known;
+
+ Known=FALSE;
+
+ tl=msg->opu_AttrList;
+
+ while(ti=NextTagItem(&tl))
+ {
+  for(i=0; i<NumAttribs; i++)
+  {
+   if(ti->ti_Tag==KnownAttribs[i])
+   {
+    Known=TRUE;
+
+    D(bug("ppm.datatype/OM_NOTIFY: %s %ld\n", AttribNames[i], ti->ti_Data));
+   }
+  }
+
+  if(!Known)
+  {
+   D(bug("ppm.datatype/OM_NOTIFY: 0x%lx %ld\n", ti->ti_Tag, ti->ti_Data));
+  }
+ }
+
+#endif /* MYDEBUG */
+
+ return(DoSuperMethodA(cl, (Object *) g, (Msg) msg));
+}
+
+STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
+{
+#ifdef MYDEBUG
+ struct TagItem *tl;
+ struct TagItem *ti;
+
+ register int i;
+ int Known;
+
+ Known=FALSE;
+
+ tl=msg->ops_AttrList;
+
+ while((ti=NextTagItem(&tl)))
+ {
+  switch (ti->ti_Tag)
+  {
+   case PDTA_ModeID:
+   {
+    D(bug("ppm.datatype/OM_SET: Tag ID: PDTA_ModeID\n"));
+
+    break;
+   }
+
+   case PDTA_BitMap:
+   {
+    D(bug("ppm.datatype/OM_SET: Tag ID: PDTA_BitMap\n"));
+
+    break;
+   }
+
+   case PDTA_NumColors:
+   {
+    D(bug("ppm.datatype/OM_SET: Tag ID: PDTA_NumColors\n"));
+
+    break;
+   }
+
+   case PDTA_Screen:
+   {
+    D(bug("ppm.datatype/OM_SET: Tag ID: PDTA_Screen\n"));
+
+    break;
+   }
+
+   case PDTA_FreeSourceBitMap:
+   {
+    D(bug("ppm.datatype/OM_SET: Tag ID: PDTA_FreeSourceBitMap\n"));
+
+    break;
+   }
+
+   case PDTA_Grab:
+   {
+    D(bug("ppm.datatype/OM_SET: Tag ID: PDTA_Grab\n"));
+
+    break;
+   }
+
+   case PDTA_ClassBitMap:
+   {
+    D(bug("ppm.datatype/OM_SET: Tag ID: PDTA_ClassBitMap\n"));
+
+    break;
+   }
+
+   default:
+   {
+    for(i=0; i<NumAttribs; i++)
+    {
+     if(ti->ti_Tag==KnownAttribs[i])
+     {
+      Known=TRUE;
+
+      D(bug("ppm.datatype/OM_SET: Tag ID: %s\n", AttribNames[i]));
+     }
+    }
+
+    if(!Known)
+    {
+     D(bug("ppm.datatype/OM_SET: Tag ID 0x%lx\n", ti->ti_Tag));
+    }
+   }
+  }
+ }
+#endif /* MYDEBUG */
+
+ return(DoSuperMethodA(cl, (Object *) g, (Msg) msg));
+}
+
+STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
+{
+#ifdef MYDEBUG
+ register int i;
+ int Known;
+
+ Known=FALSE;
+
+ switch(msg->opg_AttrID)
+ {
+  case PDTA_ModeID:
+  {
+   D(bug("ppm.datatype/OM_GET: Tag ID: PDTA_ModeID\n"));
+
+   break;
+  }
+
+  case PDTA_BitMapHeader:
+  {
+   D(bug("ppm.datatype/OM_GET: Tag ID: PDTA_BitMapHeader\n"));
+
+   break;
+  }
+
+  case PDTA_BitMap:
+  {
+   D(bug("ppm.datatype/OM_GET: Tag ID: PDTA_BitMap\n"));
+
+   break;
+  }
+
+  case PDTA_ColorRegisters:
+  {
+   D(bug("ppm.datatype/OM_GET: Tag ID: PDTA_ColorRegisters\n"));
+
+   break;
+  }
+
+  case PDTA_CRegs:
+  {
+   D(bug("ppm.datatype/OM_GET: Tag ID: PDTA_CRegs\n"));
+
+   break;
+  }
+
+  case PDTA_GRegs:
+  {
+   D(bug("ppm.datatype/OM_GET: Tag ID: PDTA_GRegs\n"));
+
+   break;
+  }
+
+  case PDTA_ColorTable:
+  {
+   D(bug("ppm.datatype/OM_GET: Tag ID: PDTA_ColorTable\n"));
+
+   break;
+  }
+
+  case PDTA_ColorTable2:
+  {
+   D(bug("ppm.datatype/OM_GET: Tag ID: PDTA_ColorTable2\n"));
+
+   break;
+  }
+
+  case PDTA_Allocated:
+  {
+   D(bug("ppm.datatype/OM_GET: Tag ID: PDTA_Allocated\n"));
+
+   break;
+  }
+
+  case PDTA_NumColors:
+  {
+   D(bug("ppm.datatype/OM_GET: Tag ID: PDTA_NumColors\n"));
+
+   break;
+  }
+
+  case PDTA_NumAlloc:
+  {
+   D(bug("ppm.datatype/OM_GET: Tag ID: PDTA_NumAlloc\n"));
+
+   break;
+  }
+
+  case PDTA_Grab:
+  {
+   D(bug("ppm.datatype/OM_GET: Tag ID: PDTA_Grab\n"));
+
+   break;
+  }
+
+  case PDTA_DestBitMap:
+  {
+   D(bug("ppm.datatype/OM_GET: Tag ID: PDTA_DestBitMap\n"));
+
+   break;
+  }
+
+  case PDTA_ClassBitMap:
+  {
+   D(bug("ppm.datatype/OM_GET: Tag ID: PDTA_ClassBitMap\n"));
+
+   break;
+  }
+
+  case DTA_Methods:
+  {
+   D(bug("ppm.datatype/OM_GET: Tag ID: DTA_Methods\n"));
+
+   break;
+  }
+
+  default:
+  {
+   for(i=0; i<NumAttribs; i++)
+   {
+    if(msg->opg_AttrID==KnownAttribs[i])
+    {
+     Known=TRUE;
+
+     D(bug("ppm.datatype/OM_GET: Tag ID: %s\n", AttribNames[i]));
+    }
+   }
+
+   if(!Known)
+   {
+    D(bug("ppm.datatype/OM_GET: Tag ID 0x%lx\n", msg->opg_AttrID));
+   }
+  }
+ }
+
+#endif /* MYDEBUG */
+
+ return(DoSuperMethodA(cl, (Object *) g, (Msg) msg));
+}
+
 /**************************************************************************************************/
 /**************************************************************************************************/
 /**************************************************************************************************/
@@ -376,12 +668,14 @@ AROS_UFH3S(IPTR, DT_Dispatcher,
 	   AROS_UFHA(Class *, cl, A0),
 	   AROS_UFHA(Object *, o, A2),
 	   AROS_UFHA(Msg, msg, A1))
-{
-    AROS_USERFUNC_INIT
 #else
 ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, register __a1 Msg msg)
-{
 #endif
+{
+#ifdef _AROS
+    AROS_USERFUNC_INIT
+#endif
+
     IPTR retval;
 
 #ifdef MYDEBUG
@@ -406,56 +700,48 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 	    retval = PPM_New(cl, o, (struct opSet *)msg);
 	    break;
 
+	case OM_UPDATE:
+	case OM_SET:
+
+	    D(bug("ppm.datatype/DT_Dispatcher: Method %s\n", (msg->MethodID==OM_UPDATE) ? "OM_UPDATE" : "OM_SET"));
+
+	    retval = DT_SetMethod(cl, (struct Gadget *) o, (struct opSet *) msg);
+
+	    break;
+
+	case OM_GET:
+
+	    D(bug("ppm.datatype/DT_Dispatcher: Method OM_GET\n"));
+
+	    retval = DT_GetMethod(cl, (struct Gadget *) o, (struct opGet *) msg);
+
+	    break;
+
+	case OM_NOTIFY:
+
+	    D(bug("ppm.datatype/DT_Dispatcher: Method OM_NOTIFY\n"));
+
+	    retval = DT_NotifyMethod(cl, (struct Gadget *) o, (struct opUpdate *) msg);
+
+	    break;
+
 	default:
 
 #ifdef MYDEBUG
-	for(i=0; i<NumMethods; i++)
-	{
-	 if(msg->MethodID==KnownMethods[i])
-	 {
-	  Known=TRUE;
+	    for(i=0; i<NumMethods; i++)
+	    {
+	     if(msg->MethodID==KnownMethods[i])
+	     {
+	      Known=TRUE;
 
-	  D(bug("ppm.datatype/DT_Dispatcher: Method %s\n", MethodNames[i]));
-	 }
-	}
+	      D(bug("ppm.datatype/DT_Dispatcher: Method %s\n", MethodNames[i]));
+	     }
+	    }
 
-	if(!Known)
-	{
-	 D(bug("ppm.datatype/DT_Dispatcher: Method 0x%lx\n", (unsigned long) msg->MethodID));
-	}
-
-	if(msg->MethodID==OM_NOTIFY)
-	{
-	 struct opUpdate *opUp;
-	 struct TagItem *tl;
-	 struct TagItem *ti;
-
-	 opUp=(struct opUpdate *) msg;
-
-	 tl=opUp->opu_AttrList;
-
-	 Known=FALSE;
-
-	 while(ti=NextTagItem(&tl))
-	 {
-	  for(i=0; i<NumAttribs; i++)
-	  {
-	   if(ti->ti_Tag==KnownAttribs[i])
-	   {
-	    Known=TRUE;
-
-	    D(bug("ppm.datatype/OM_NOTIFY: %s %ld\n", AttribNames[i], ti->ti_Data));
-	   }
-	  }
-
-	  if(!Known)
-	  {
-	   D(bug("ppm.datatype/OM_NOTIFY: 0x%lx %ld\n", ti->ti_Tag, ti->ti_Data));
-	  }
-	 }
-	}
-
-
+	    if(!Known)
+	    {
+	     D(bug("ppm.datatype/DT_Dispatcher: Method 0x%lx\n", (unsigned long) msg->MethodID));
+	    }
 #endif /* MYDEBUG */
 
 #if 0
