@@ -62,10 +62,14 @@ struct DataTypeHeader
 
 /* System file -- executable, directory, library, font and so on. */
 #define	GID_SYSTEM      MAKE_ID('s','y','s','t')
+#define ID_BINARY       MAKE_ID('b','i','n','a')
 #define ID_EXECUTABLE   MAKE_ID('e','x','e','c')
+#define ID_DIRECTORY    MAKE_ID('d','i','r','e')
+#define ID_IFF          MAKE_ID('i','f','f',0)
 
 /* Text, formatted or not */
 #define	GID_TEXT        MAKE_ID('t','e','x','t')
+#define ID_ASCII        MAKE_ID('a','s','c','i')
 
 /* Formatted text combined with graphics or other DataTypes */
 #define GID_DOCUMENT    MAKE_ID('d','o','c','u')
