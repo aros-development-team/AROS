@@ -10,6 +10,7 @@ NOTE: This is beta. If you want this code, then have a look at our
 The source is 6.5MB right now.
 
 \begin{itemize}
+\item Bugfixes (Do I really need to mention this every time ? ;-)
 \item New libs: layers, expansion
 \item New CLI tools
 \item Andreas Kleinert's CLib integrated
