@@ -34,6 +34,30 @@ enum {
     MUIV_String_Format_Right,
 };
 
+/* Extended features taken over from Alan Odgaard's BetterString MCC.
+   Attribute and method IDs match those of BetterString class. */
+
+#define MUIA_String_Columns         	    0xad001005
+#define MUIA_String_NoInput         	    0xad001007
+#define MUIA_String_SelectSize      	    0xad001001
+#define MUIA_String_StayActive      	    0xad001003
+#define MUIA_String_KeyUpFocus      	    0xad001008
+#define MUIA_String_KeyDownFocus    	    0xad001009
+
+#define MUIM_String_ClearSelected   	    0xad001004
+#define MUIM_String_FileNameStart   	    0xad001006
+#define MUIM_String_Insert          	    0xad001002
+
+#define MUIV_String_Insert_StartOfString    0x00000000
+#define MUIV_String_Insert_EndOfString      0xfffffffe
+#define MUIV_String_Insert_BufferPos        0xffffffff
+#define MUIV_String_BufferPos_End           0xffffffff
+
+#define MUIR_String_FileNameStart_Volume    0xffffffff
+
+struct MUIP_String_ClearSelected {ULONG MethodID;};
+struct MUIP_String_FileNameStart {ULONG MethodID; STRPTR buffer; LONG pos;};
+struct MUIP_String_Insert        {ULONG MethodID; STRPTR text; LONG pos;};
 
 extern const struct __MUIBuiltinClass _MUI_String_desc; /* PRIV */
 
