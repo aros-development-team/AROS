@@ -7033,7 +7033,6 @@ aros_config_cflags="$aros_config_cflags $optimization"
 echo "$as_me:$LINENO: result: $optimization" >&5
 echo "${ECHO_T}$optimization" >&6
 
-
 #-----------------------------------------------------------------------------
 echo "$as_me:$LINENO: checking what target variant to enable" >&5
 echo $ECHO_N "checking what target variant to enable... $ECHO_C" >&6
@@ -7055,7 +7054,6 @@ echo "$as_me:$LINENO: result: $enableval" >&5
 echo "${ECHO_T}$enableval" >&6
 
 #-----------------------------------------------------------------------------
-
 # This is the target configuration switch.
 case "$target_os" in
     linux*)
@@ -7342,7 +7340,7 @@ esac
 
 aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
 aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/config"
-aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development/Include/aros"
+aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development/include/aros"
 aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/include/aros"
 aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
 aros_scripts_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/scripts"
