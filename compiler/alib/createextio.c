@@ -47,6 +47,7 @@
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     struct IORequest *ioreq=NULL;
 
     if (port && (ioreq = AllocMem (iosize, MEMF_CLEAR|MEMF_PUBLIC)))

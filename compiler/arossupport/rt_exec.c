@@ -126,6 +126,7 @@ void RT_ExitExec (void)
 
 static IPTR RT_AllocMem (RTData * rtd, MemoryResource * rt, va_list args, BOOL * success)
 {
+    AROS_GET_SYSBASE
     rt->Size = va_arg (args, ULONG);
     rt->Flags = va_arg (args, ULONG);
 
@@ -139,6 +140,7 @@ static IPTR RT_AllocMem (RTData * rtd, MemoryResource * rt, va_list args, BOOL *
 
 static IPTR RT_FreeMem (RTData * rtd, MemoryResource * rt)
 {
+    AROS_GET_SYSBASE
     FreeMem (rt->Memory, rt->Size);
 
     return TRUE;
@@ -242,6 +244,7 @@ static IPTR RT_ShowErrorMem (RTData * rtd, int rtt, MemoryResource * rt,
 
 static IPTR RT_AllocVec (RTData * rtd, MemoryResource * rt, va_list args, BOOL * success)
 {
+    AROS_GET_SYSBASE
     rt->Size = va_arg (args, ULONG);
     rt->Flags = va_arg (args, ULONG);
 
@@ -255,6 +258,7 @@ static IPTR RT_AllocVec (RTData * rtd, MemoryResource * rt, va_list args, BOOL *
 
 static IPTR RT_FreeVec (RTData * rtd, MemoryResource * rt)
 {
+    AROS_GET_SYSBASE
     if (rt)
 	FreeVec (rt->Memory);
 
@@ -352,6 +356,7 @@ static IPTR RT_ShowErrorVec (RTData * rtd, int rtt, MemoryResource * rt,
 
 static IPTR RT_CreatePort (RTData * rtd, PortResource * rt, va_list args, BOOL * success)
 {
+    AROS_GET_SYSBASE
     STRPTR name;
     LONG   pri;
 
@@ -378,6 +383,7 @@ static IPTR RT_CreatePort (RTData * rtd, PortResource * rt, va_list args, BOOL *
 
 static IPTR RT_DeletePort (RTData * rtd, PortResource * rt)
 {
+    AROS_GET_SYSBASE
     DeletePort (rt->Port);
 
     return TRUE;
@@ -522,6 +528,7 @@ static IPTR RT_CheckPort (RTData * rtd, int rtt,
 
 static IPTR RT_OpenLibrary (RTData * rtd, LibraryResource * rt, va_list args, BOOL * success)
 {
+    AROS_GET_SYSBASE
     rt->Name	= va_arg (args, STRPTR);
     rt->Version = va_arg (args, ULONG);
 
@@ -535,6 +542,7 @@ static IPTR RT_OpenLibrary (RTData * rtd, LibraryResource * rt, va_list args, BO
 
 static IPTR RT_CloseLibrary (RTData * rtd, LibraryResource * rt)
 {
+    AROS_GET_SYSBASE
     CloseLibrary (rt->Lib);
 
     return TRUE;
@@ -594,4 +602,3 @@ static IPTR RT_ShowErrorLib (RTData * rtd, int rtt, LibraryResource * rt,
 
     return ret;
 } /* RT_ShowErrorLib */
-

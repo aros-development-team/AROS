@@ -62,6 +62,7 @@ extern struct Library *CxBase;
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     struct InputEvent *ieChain;
     struct InputEvent *ie;
     struct InputEvent *first;

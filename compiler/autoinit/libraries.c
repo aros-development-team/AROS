@@ -23,6 +23,7 @@ int __includelibrarieshandling;
 
 void __showerror(int code, char *title, char *format, ...)
 {
+    AROS_GET_SYSBASE
     struct Process *me = (struct Process *)FindTask(0);
 
     va_list args;
@@ -64,6 +65,7 @@ void __showerror(int code, char *title, char *format, ...)
 
 int set_open_libraries(void)
 {
+    AROS_GET_SYSBASE
     struct libraryset **set = (struct libraryset **)SETNAME(LIBS);
     int n = 1;
     struct Process *me = (struct Process *)FindTask(0);
@@ -100,6 +102,7 @@ int set_open_libraries(void)
 
 void set_close_libraries(void)
 {
+    AROS_GET_SYSBASE
     struct libraryset **set = (struct libraryset **)SETNAME(LIBS);
     int	n = ((int *)set)[0];
 

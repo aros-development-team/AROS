@@ -45,6 +45,7 @@
 ******************************************************************************/
 {
 #   define ioreq    ((struct IORequest *)io)
+    AROS_GET_SYSBASE
 
     /* Write illegal values to some fields to enforce crashes */
     ioreq->io_Message.mn_Node.ln_Type = -1L;

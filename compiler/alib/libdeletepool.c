@@ -38,6 +38,7 @@
 ******************************************************************************/
 {
 #   define poolHeader ((POOL*)pool)
+    AROS_GET_SYSBASE
 
     if (SysBase->LibNode.lib_Version>=39)
 	DeletePool(poolHeader);

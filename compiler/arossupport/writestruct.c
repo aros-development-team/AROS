@@ -78,6 +78,7 @@ struct WriteLevel
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     struct MinList	_list;
     struct WriteLevel * curr;
 
@@ -314,4 +315,3 @@ error:
 
     return FALSE;
 } /* WriteStruct */
-

@@ -28,6 +28,7 @@ extern LONG __startup_error;
 
 static int postopen(void)
 {
+    AROS_GET_SYSBASE
     struct AroscUserData *userdata;
     int ret;
 

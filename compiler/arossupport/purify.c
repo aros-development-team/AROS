@@ -17,8 +17,6 @@
 #include <aros/purify.h>
 #include <aros/rt.h>
 
-extern struct ExecBase * SysBase;
-
 struct PNode
 {
     struct Node Node;
@@ -75,6 +73,7 @@ extern void RT_ShowRTStack (void);
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     NEWLIST (&P_Memory);
 } /* Purify_Init */
 
@@ -117,6 +116,7 @@ extern void RT_ShowRTStack (void);
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     struct PNode * node;
 
     if (!InitWasCalled)
@@ -179,6 +179,7 @@ extern void RT_ShowRTStack (void);
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     struct PNode * node, * nodeBefore, * nodeAfter;
     UBYTE * mem;
 
@@ -265,6 +266,7 @@ extern void RT_ShowRTStack (void);
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     struct PNode * node;
     UBYTE * mem;
 
