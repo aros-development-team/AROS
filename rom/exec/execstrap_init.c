@@ -34,12 +34,6 @@ extern void AROS_SLIB_ENTRY(CachePostDMA_40,Exec)();
     Expand, improve and generally make the world a better place. :)
 */
 
-/*
-    Make the colored stripes optional. There is a report that on the
-    A4000/40, it never exits the stripes part of the code.
-*/
-#define FANCY_STRIPES 0
-
 int entry(void)
 {
     return 0;
@@ -56,7 +50,7 @@ struct Resident resident =
     &resident,
     (APTR)&end,
     RTF_COLDSTART,
-    1,			/* version */
+    41,			/* version */
     NT_KICKMEM,
     106,		/* Just above exec.library.
 			   Because exec is RTF_SINGLETASK, and this is
@@ -68,15 +62,13 @@ struct Resident resident =
 };
 
 const char name[] = "exec.strap";
-const char version[] = "$VER: AROS exec.strap 41.4 (11.2.97)";
+const char version[] = "$VER: AROS exec.strap 41.5 (13.2.97)";
 
 int start(void)
 {
     struct ExecBase *SysBase;
-#if (FANCY_STRIPES == 1)
     ULONG x, y;
     UWORD *color00 = (void *)0xdff180;
-#endif
     UWORD cpuflags;
 
     if (SysBase->LibNode.lib_Version < 37)
@@ -85,14 +77,12 @@ int start(void)
 	return 0;
     }
 
-#if (FANCY_STRIPES == 1)
     /* High-tech display tricks (blue effects) :-) */
     for (x=0; x<1000; x++)
     {
 	for (y = 200; y; y--) *color00 = 0x00f;
 	for (y = 200; y; y--) *color00 = 0x000;
     }
-#endif
 
     SysBase = *(void **)4;
     cpuflags = SysBase->AttnFlags;
@@ -133,7 +123,10 @@ int start(void)
     SetFunc( 42, Remove);
     SetFunc( 43, RemHead);
     SetFunc( 44, RemTail);
+#if 0
+    /* serial trouble */
     SetFunc( 45, Enqueue);
+#endif
     SetFunc( 46, FindName);
     SetFunc( 49, FindTask);
     SetFunc( 65, FindPort);
@@ -142,7 +135,7 @@ int start(void)
 
 #if 0
     /* The "move.w ccr,d0" should really be implemented as part of the jumptable, for speed.
-       Is this desirable? */
+       Do not patch, for now. */
     if ((cpuflags & AFF_68010) == AFF_68010)
 	SetFunc( 88, GetCC_10);
 #endif
@@ -161,17 +154,16 @@ int start(void)
        BTW5: For the MC68060, we could also enable the Branch Cache at this point.
     */
 
-    /* Pre-stuff these vectors for 68000/68010 use. */
+#if 0
+    /* TODO: Rework this logic so a particular vector isn't patched more than
+       once. SetFunction() calls CacheClearU(), so putting the routine address
+       directly in the vector+2, and manually clearing of the cache (not with
+       the Cachexxx() functions) when done is the way to go here. Better write
+       a short assembler function to do all this.
+    */
     SetFunc(106, CacheClearU);
     SetFunc(127, CachePreDMA);
     SetFunc(128, CachePostDMA);
-
-    /*
-	Test for increasing processor types. We could also let these functions
-	test ExecBase->AttnFlags for themselves and decide which action to take.
-	That would mean less work here, but more work in the function that has
-	to be repeated everytime it's called.
-    */
     if ((cpuflags & AFF_68020) == AFF_68020)
     {
 	SetFunc(106, CacheClearU_20);
@@ -188,6 +180,7 @@ int start(void)
 	    }
 	}
     }
+#endif
     Enable();
 
     SetFunc( 12, InitCode);
@@ -222,11 +215,7 @@ int start(void)
     SetFunc( 59, AddPort);
     SetFunc( 60, RemPort);
     SetFunc( 62, GetMsg);
-#if 0
-    /* Essentially works, but for some reason is not fast enough to detect a
-       CONNECT string from my modem with ppp.device. Or something. */
     SetFunc( 64, WaitPort);
-#endif
     SetFunc( 66, AddLibrary);
     SetFunc( 67, RemLibrary);
     SetFunc( 68, OldOpenLibrary);
@@ -251,7 +240,10 @@ int start(void)
     SetFunc( 87, RawDoFmt);
 #endif
     SetFunc( 89, TypeOfMem);
+#if 0
+    /* May be incompatible with OS37 OpenLibrary() */
     SetFunc( 92, OpenLibrary);
+#endif
     SetFunc( 93, InitSemaphore);
 #if 0
     /* Can only be patched if we have control over the microkernel: */
@@ -283,7 +275,6 @@ int start(void)
     }
     /* We don't have to clear any caches, SetFunction takes care of them. */
 
-#if (FANCY_STRIPES == 1)
     /*
 	High-tech display tricks (green effects) :-)
     */
@@ -292,7 +283,6 @@ int start(void)
 	for (y = 200; y; y--) *color00 = 0x0f0;
 	for (y = 200; y; y--) *color00 = 0x000;
     }
-#endif
 
     return 0;
 }
