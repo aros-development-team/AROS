@@ -6,6 +6,10 @@ NULL
 <ckeyword>NULL</ckeyword>
 int
 <ckeyword>int</ckeyword>
+sizeof
+<ckeyword>sizeof</ckeyword>
+inline
+<ckeyword>inline</ckeyword>
 typedef
 <ckeyword>typedef</ckeyword>
 static
