@@ -234,6 +234,7 @@ struct GadToolsBase_intern
     struct SignalSemaphore   bevelsema;
     /* Actually an Object *. The image used for bevel boxes. */
     struct Image           * bevel;
+    struct SignalSemaphore   classsema;
 };
 
 /* extended intuimsg as used by GT_GetIMsg, GT_FilterIMsg, ... */
