@@ -16,6 +16,13 @@
 
 #define ICOA_Directory            TAG_USER+1
 
+#define ICA_BASE TAG_USER+1000
+
+#define ICA_VertScroller  ICA_BASE+1
+#define ICA_HorizScroller ICA_BASE+2
+#define ICA_ScrollToHoriz ICA_BASE+3
+#define ICA_ScrollToVert  ICA_BASE+4
+
 
 #endif /* LIBRARIES_DESKTOP_H */
 
