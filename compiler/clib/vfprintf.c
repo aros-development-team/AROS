@@ -1,3 +1,11 @@
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Implementation of vfprintf()
+    Lang: english
+*/
+/* Original source from libnix */
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -31,9 +39,46 @@
 #define BLANKFLAG     8  /* ' ' is set */
 #define SIGNFLAG      16 /* '+' is set */
 
-extern unsigned char *__decimalpoint;
+unsigned char *__decimalpoint = ".";
 
-int vfprintf(FILE *stream,const char *format,va_list args)
+/*****************************************************************************
+
+    NAME */
+#include <stdio.h>
+#include <stdarg.h>
+
+	int vfprintf (
+
+/*  SYNOPSIS */
+	FILE	   * stream,
+	const char * format,
+	va_list      args)
+
+/*  FUNCTION
+	Format a list of arguments and print them on the specified stream.
+
+    INPUTS
+	stream - A stream on which one can write
+	format - A printf() format string.
+	args - A list of arguments for the format string.
+
+    RESULT
+	The number of characters written.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+	06.12.1996 digulla copied from libnix
+
+******************************************************************************/
 {
   size_t outcount=0;
 

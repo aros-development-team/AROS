@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: ANSI C function memcpy()
+    Desc: ANSI C function memchr()
     Lang: english
 */
 #include <clib/exec_protos.h>

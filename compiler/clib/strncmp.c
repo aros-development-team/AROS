@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: ANSI C function strcmp()
+    Desc: ANSI C function strncmp()
     Lang: english
 */
 

@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: C function stricmp() and strcasecmp()
+    Desc: ANSI C function strcasecmp()
     Lang: english
 */
 #include <ctype.h>
@@ -64,8 +64,3 @@
     /* Now return the difference. */
     return diff;
 } /* strcasecmp */
-
-int stricmp (const char * s1, const char * s2)
-{
-    return strcasecmp (s1, s2);
-}

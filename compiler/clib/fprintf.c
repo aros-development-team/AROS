@@ -2,13 +2,49 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Implementation of fprintf()
+    Desc: ANSI C function fprintf()
     Lang: english
 */
-#include <stdio.h>
 #include <stdarg.h>
 
-int fprintf(FILE * fh, const char * format, ...)
+/*****************************************************************************
+
+    NAME */
+#include <stdio.h>
+
+	int fprintf (
+
+/*  SYNOPSIS */
+	FILE	   * fh,
+	const char * format,
+	...)
+
+/*  FUNCTION
+	Format a string with the specified arguments and write it to
+	the stream.
+
+    INPUTS
+	fh - Write to this stream
+	format - How to format the arguments
+	... - The additional arguments
+
+    RESULT
+	The number of characters written to the stream or EOF on error.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+	10.12.1996 digulla created
+
+******************************************************************************/
 {
     int     retval;
     va_list args;
