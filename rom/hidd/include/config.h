@@ -29,17 +29,19 @@
 #define HIDDA_AppMsgPort	(HIDDA_CPBase + 4)  /* ISG-- struct MsgPort * */
 
 /* Methods */
-#define HIDDM_QueryConfig	0x8010	/* Msg */
-#define HIDDM_FreeConfig	0x8011  /* struct hmFreeData * */
-#define HIDDM_QueryModeList	0x8012	/* Msg */
-#define HIDDM_FreeModeList	0x8013	/* struct hmFreeData * */
-#define HIDDM_Apply		0x8014	/* Msg */
-#define HIDDM_ValueToString	0x8015	/* struct hmValueToString * */
-#define HIDDM_StringToValue	0x8016	/* struct hmStringToValue * */
-#define HIDDM_GetTagName	0x8017	/* struct hmValueToString * */
+#define HIDDM_ConfigBase	(HIDDM_Base + 0x100)
+#define HIDDM_QueryConfig	(HIDDM_ConfigBase + 1)	/* ULONG M (???) */
+#define HIDDM_FreeConfig	(HIDDM_ConfigBase + 2)	/* ULONG M ( hmFreeData *) */
+#define HIDDM_QueryModeList	(HIDDM_ConfigBase + 3)	/* ULONG M (???) */
+#define HIDDM_FreeModeList	(HIDDM_ConfigBase + 4)	/* ULONG M ( hmFreeData *) */
+#define HIDDM_Apply		(HIDDM_ConfigBase + 5)	/* ULONG M (???) */
+#define HIDDM_ValueToString	(HIDDM_ConfigBase + 6)	/* ULONG M ( hmValueToString *) */
+#define HIDDM_StringToValue	(HIDDM_ConfigBase + 7)	/* ULONG M ( hmStringToValue *) */
+#define HIDDM_GetTagName	(HIDDM_ConfigBase + 8)	/* ULONG M ( hmValueToString *) */
 
 struct hmFreeData 
 {
+
     STACKULONG		Method;
     struct TagItem     *AttrList;
 };
