@@ -12,7 +12,6 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/locale.h>
-#include <proto/dos.h>
 
 #include <utility/tagitem.h>
 #include <libraries/mui.h>
