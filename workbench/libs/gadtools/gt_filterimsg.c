@@ -125,7 +125,6 @@
 					
 					msg_only_for_gadtools = FALSE;
 					
-			    		rc->imsg.eim_IntuiMessage.Class = IDCMP_MOUSEMOVE;
 					rc->imsg.eim_IntuiMessage.Code = contextgad->gadget_value;
 				    }
 			    	    break;
@@ -166,7 +165,6 @@
 					{
 				    	    msg_only_for_gadtools = FALSE;
 
-				    	    rc->imsg.eim_IntuiMessage.Class = IDCMP_MOUSEMOVE;
 					    rc->imsg.eim_IntuiMessage.Code = contextgad->gadget_value;
 					    rc->imsg.eim_IntuiMessage.IAddress = (APTR)contextgad->parentgadget;
 					}
