@@ -639,10 +639,17 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	    rect.MaxY += _mtop(obj) - data->view_y + data->update_icon->y;
 
 	    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
+
+    	#if 1
+            DoMethod(obj, MUIM_DrawBackground, rect.MinX, rect.MinY,
+		     rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
+		     data->view_x, data->view_y, 0);
+	#else
             DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj),
 		     _mwidth(obj), _mheight(obj),
 		     data->view_x, data->view_y, 0);
-
+    	#endif
+	
 	    /* We could have deleted also other icons so they must be redrawn */
 	    icon = List_First(&data->icon_list);
 	    while (icon)
@@ -652,10 +659,10 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 		    struct Rectangle rect2;
 		    IconList_GetIconRectangle(obj, icon, &rect2);
 
-		    rect2.MinX += _mleft(obj) - data->view_x + data->update_icon->x;
-		    rect2.MaxX += _mleft(obj) - data->view_x + data->update_icon->x;
-		    rect2.MinY += _mtop(obj) - data->view_y + data->update_icon->y;
-		    rect2.MaxY += _mtop(obj) - data->view_y + data->update_icon->y;
+		    rect2.MinX += _mleft(obj) - data->view_x + icon->x;
+		    rect2.MaxX += _mleft(obj) - data->view_x + icon->x;
+		    rect2.MinY += _mtop(obj) - data->view_y + icon->y;
+		    rect2.MaxY += _mtop(obj) - data->view_y + icon->y;
 
 		    if (RectAndRect(&rect,&rect2))
 		    {
@@ -1266,14 +1273,46 @@ static ULONG IconList_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragD
 
     if (msg->obj == obj)
     {
-	if (data->first_selected)
+	struct IconEntry *icon = data->first_selected;
+	
+	if (icon)
 	{
-	    data->first_selected->x = msg->x - _mleft(obj) + data->view_x - data->touch_x;
-	    data->first_selected->y = msg->y - _mtop(obj) + data->view_y - data->touch_y;
+	    struct Rectangle old, new;
+	    struct Region    *region;
+	    APTR    	     clip = NULL;
+	    
+	    IconList_GetIconRectangle(obj, icon, &old);
+	    old.MinX += _mleft(obj) - data->view_x + icon->x;
+	    old.MaxX += _mleft(obj) - data->view_x + icon->x;
+	    old.MinY += _mtop(obj) - data->view_y + icon->y;
+	    old.MaxY += _mtop(obj) - data->view_y + icon->y;
+	    
+	    icon->x = msg->x - _mleft(obj) + data->view_x - data->touch_x;
+	    icon->y = msg->y - _mtop(obj) + data->view_y - data->touch_y;
 	    	    
 	    IconList_RethinkDimensions(obj, data, data->first_selected);
+
+	    IconList_GetIconRectangle(obj, data->first_selected, &new);
+	    new.MinX += _mleft(obj) - data->view_x + icon->x;
+	    new.MaxX += _mleft(obj) - data->view_x + icon->x;
+	    new.MinY += _mtop(obj) - data->view_y + icon->y;
+	    new.MaxY += _mtop(obj) - data->view_y + icon->y;
+	    
+	    region = NewRegion();
+	    if (region)
+	    {
+	    	OrRectRegion(region, &old);
+	    	OrRectRegion(region, &new);
+		clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
+	    }
 	    
 	    MUI_Redraw(obj,MADF_DRAWOBJECT);
+	    
+	    if (region)
+	    {
+	    	MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+	    }
+	    
 	}
     } else
     {
