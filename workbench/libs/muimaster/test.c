@@ -589,6 +589,7 @@ End,
 		    End,
 
 		Child, CycleObject,
+				ButtonFrame,
 		    MUIA_Cycle_Entries, pages,
 		    End,
 

@@ -72,9 +72,13 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     obj = (Object *)DoSuperNew(cl, obj,
 		MUIA_InputMode, MUIV_InputMode_RelVerify,
+		MUIA_InnerTop,1,
+		MUIA_InnerBottom,1,
 		MUIA_Group_Horiz, TRUE,
 		Child, imgobj = ImageObject,
+		    MUIA_InnerLeft, 2,
 		    MUIA_Image_Spec, (IPTR)"6:17",
+		    MUIA_Image_FreeVert, TRUE,
 		    End,
 		Child, pageobj = PageGroup,
 		    End,

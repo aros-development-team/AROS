@@ -281,11 +281,11 @@ void cycle_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left
 
     /* The right bar */
     SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
-    Move(rport,right - 1, top + 1);
-    Draw(rport,right - 1, bottom - 1);
+    Move(rport,right - 1, top);
+    Draw(rport,right - 1, bottom);
     SetAPen(rport, mri->mri_Pens[MPEN_SHINE]);
-    Move(rport,right, top + 1);
-    Draw(rport,right, bottom - 1);
+    Move(rport,right, top);
+    Draw(rport,right, bottom);
 }
 
 void popup_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
@@ -403,7 +403,7 @@ static struct vector_image vector_table[] =
     {8,10,arrowright_draw},
     {16,10,checkbox_draw},
     {16,10,mx_draw},
-    {16,10,cycle_draw},
+    {15,8,cycle_draw},
     {10,11,popup_draw},
     {10,11,popfile_draw},
     {10,11,popdrawer_draw},
