@@ -22,6 +22,8 @@
 #include <aros/macros.h>
 
 void InitKeyboard(void);
+void putc(char);
+void putstring(char *);
 
 int boot_entry()
 {
@@ -93,7 +95,7 @@ AROS_LH2(int, init,
 			}
 			bn = (struct BootNode *)bn->bn_Node.ln_Succ;
 		}
-		kprintf
+		putstring
 			(
 					"No bootable disk found.\n"
 					"Insert bootable disk in any drive and press Enter.\n"
@@ -110,6 +112,13 @@ start_boot:
 	return 0;
 	AROS_LIBFUNC_EXIT
 }
+
+void putstring(char *string) {
+
+	while (*string)
+		putc(*string++);
+}
+
 
 int checkBoot(struct DeviceNode *dn) {
 struct FileSysStartupMsg *fssm= BADDR(dn->dn_Startup);
