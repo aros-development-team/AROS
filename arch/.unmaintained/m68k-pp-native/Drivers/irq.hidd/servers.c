@@ -75,7 +75,7 @@ void init_Servers(struct irq_staticdata *isd)
 		timer->h_Data = &SysBase->IntVects[INTB_VERTB];
 		timer->h_Code = timer_interrupt;
 	
-		Enqueue((struct List *)&isd->irqlist[vHidd_IRQ_Timer], (struct Node *)timer);
+		Enqueue((struct List *)&isd->irqlist[vHidd_IRQ_Timer2], (struct Node *)timer);
 	}
 }
 
@@ -138,13 +138,13 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 #define SysBase (isd->sysbase)
 
 HIDDT_IRQ_Id translation_table[] = {
-	vHidd_IRQ_Timer,
-	vHidd_IRQ_Keyboard,
+	vHidd_IRQ_Timer2,
+	vHidd_IRQ_CustomD,
 /* 2 */	-1,
 	-1, 
 	vHidd_IRQ_Serial1,
 /* 5 */	-1,
-	-1, //vHidd_IRQ_Floppy,
+	-1,
 /* 7 */	-1,
 	vHidd_IRQ_RTC,
 /* 9 */	-1,
@@ -152,8 +152,8 @@ HIDDT_IRQ_Id translation_table[] = {
 	-1,
 	vHidd_IRQ_Touchscreen,
 /* 13 */-1,
-	-1, //vHidd_IRQ_HDD1,
-	-1  //vHidd_IRQ_HDD2
+	-1,
+	-1
 };
 
 
