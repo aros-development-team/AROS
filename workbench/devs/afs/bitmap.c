@@ -1,3 +1,7 @@
+/* 
+   $Id$
+*/
+
 #define DEBUG 1
 
 #include <aros/debug.h>
@@ -116,7 +120,8 @@ ULONG i,blocks,maxinbitmap;
 	blocks=volume->rootblock*2-volume->bootblocks;					//blocks to mark in bitmaps
 	maxinbitmap=(volume->SizeBlock-1)*32;			//max blocks marked in a bitmapblock
 	//first create bitmapblocks stored in rootblock
-	for (i=0;i<=24;i++) {
+	for (i=0;i<=24;i++)
+	{
 		if (maxinbitmap>blocks)
 			maxinbitmap=blocks;
 		volume->bitmapblockpointers[i]=bitmapblock->blocknum;
@@ -124,8 +129,11 @@ ULONG i,blocks,maxinbitmap;
 		bitmapblock->blocknum += 1;
 		blocks=blocks-maxinbitmap;
 		if (blocks==0)
-			for (;i<=24;i++)
-				volume->bitmapblockpointers[i]=0;
+		{
+			i++;
+			while (i<=24)
+				volume->bitmapblockpointers[i++]=0;
+		}
 	}
 	//check extension blocks if neccessary
 	if (blocks) {

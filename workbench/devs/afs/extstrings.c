@@ -1,3 +1,7 @@
+/* 
+   $Id$
+*/
+
 #include "extstrings.h"
 
 UBYTE capitalch(UBYTE ch, UBYTE flags) {
@@ -40,5 +44,17 @@ ULONG length=0;
 	while (*str++)
 		length++;
 	return length;
+}
+
+void StrCpyToBstr(char *src, char *dst)
+{
+UWORD len=0;
+
+	while (*src)
+	{
+		dst[len+1]=*src++;
+		len++;
+	}
+	dst[0]=len;
 }
 

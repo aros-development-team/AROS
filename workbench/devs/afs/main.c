@@ -1,3 +1,7 @@
+/* 
+   $Id$
+*/
+
 #define DEBUG 1
 
 #include <proto/dos.h>
@@ -9,19 +13,22 @@
 #include <aros/macros.h>
 #include <aros/debug.h>
 
+#include "afsblocks.h"
 #include "afshandler.h"
-#include "filehandles1.h"
-#include "filehandles2.h"
-#include "filehandles3.h"
 #include "blockaccess.h"
 #include "bitmap.h"
 #include "checksums.h"
 #include "error.h"
-#include "afsblocks.h"
+#include "extstrings.h"
+#include "filehandles1.h"
+#include "filehandles2.h"
+#include "filehandles3.h"
 #include "volumes.h"
+
 #include "baseredef.h"
 
-ULONG error=0;								//global errors (ERROR_xyz)
+/*global errors (dos error code ERROR_xyz) */
+ULONG error=0;
 
 /*******************************************
  Name  : getDiskInfo
@@ -29,7 +36,7 @@ ULONG error=0;								//global errors (ERROR_xyz)
          Disk info;
          answer on ACTION_DISK_INFO
  Input : id - InfoData structure to fill
- Output: (currently) DOSTRUE
+ Output: 0 = no error
 ********************************************/
 LONG getDiskInfo(struct Volume *volume, struct InfoData *id) {
 
@@ -45,6 +52,13 @@ LONG getDiskInfo(struct Volume *volume, struct InfoData *id) {
 	return 0;
 }
 
+/*******************************************
+ Name  : flush
+ Descr.: flush buffers and update disk (sync)
+ Input : afsbase -
+         volume  - volume to flush
+ Output: DOSTRUE
+********************************************/
 ULONG flush(struct afsbase *afsbase, struct Volume *volume) {
 
 	flushCache(volume->blockcache);
@@ -53,39 +67,77 @@ ULONG flush(struct afsbase *afsbase, struct Volume *volume) {
 	return DOSTRUE;
 }
 
+/*******************************************
+ Name  : inhibit
+ Descr.: forbid/permit access for this volume
+ Input : afsbase -
+         volume  - the volume
+         forbid  - DOSTRUE to forbid
+                   DOSFALSE to permit access
+ Output: 0 = no error
+********************************************/
 LONG inhibit(struct afsbase *afsbase, struct Volume *volume, ULONG forbid) {
 
-	if (forbid) {
-#warning inhibit: always ok!!!
-//		if (exclusiveLocks(&volume->locklist)) return DOSFALSE;
+	if (forbid)
+	{
+#warning inhibit: no nest checking!!!
+/*		if (exclusiveLocks(&volume->locklist)) return DOSFALSE; */
 		flush(afsbase, volume);
 		remDosVolume(afsbase, volume);
 	}
-	else {
+	else
+	{
 		newMedium(afsbase, volume);
 	}
-	return DOSTRUE;
+	return 0;
 }
 
+/*******************************************
+ Name  : markBitmaps
+ Descr.: mark newly allocated bitmapblocks
+         (for format)
+ Input : afsbase -
+         volume  - the volume
+ Output: -
+********************************************/
 void markBitmaps(struct afsbase *afsbase, struct Volume *volume) {
 struct BlockCache *blockbuffer;
 ULONG i,curblock;
 
-	for (i=0;i<=24;i++)
+	for (i=0;(i<=24) && (volume->bitmapblockpointers[i]);i++)
 		markBlock(afsbase, volume, volume->bitmapblockpointers[i], 0);
 	curblock=volume->bitmapextensionblock;
-	while (curblock) {
+	while (curblock)
+	{
 		blockbuffer=getBlock(afsbase, volume, curblock);
-		if (!blockbuffer) return;
-		for (i=0;i<volume->SizeBlock-1;i++) {
-			if (!blockbuffer->buffer[i]) break;
+		if (!blockbuffer)
+			return;
+		for (i=0;i<volume->SizeBlock-1;i++)
+		{
+			if (!blockbuffer->buffer[i])
+				break;
 			markBlock(afsbase, volume, AROS_BE2LONG(blockbuffer->buffer[i]), 0);
 		}
 		curblock=AROS_BE2LONG(blockbuffer->buffer[volume->SizeBlock-1]);
 	}
 }
 
-void format(struct afsbase *afsbase, struct Volume *volume, char *name, ULONG dostype) {
+/*******************************************
+ Name  : format
+ Descr.: initialize a volume
+ Input : afsbase -
+         volume  - volume to initialize
+         name    - name of volume
+         dostype - DOS\0/...
+ Output: 0 for success; error code otherwise
+********************************************/
+LONG format
+	(
+		struct afsbase *afsbase,
+		struct Volume *volume,
+		char *name, ULONG dostype
+	)
+{
 struct BlockCache *blockbuffer;
 struct DateStamp ds;
 UWORD i;
@@ -110,12 +162,24 @@ UWORD i;
 			blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)]=-1;
 			createNewBitmapBlocks(afsbase, volume);
 			for (i=BLK_BITMAP_POINTERS_START(volume);i<=BLK_BITMAP_POINTERS_END(volume);i++)
-				blockbuffer->buffer[i]=AROS_LONG2BE(volume->bitmapblockpointers[i-BLK_BITMAP_POINTERS_START(volume)]);
-			blockbuffer->buffer[BLK_BITMAP_EXTENSION(volume)]=AROS_LONG2BE(volume->bitmapextensionblock);
+			{
+				blockbuffer->buffer[i]=AROS_LONG2BE
+					(
+						volume->bitmapblockpointers[i-BLK_BITMAP_POINTERS_START(volume)]
+					);
+			}
+			blockbuffer->buffer[BLK_BITMAP_EXTENSION(volume)]=AROS_LONG2BE
+					(
+						volume->bitmapextensionblock
+					);
 			blockbuffer->buffer[BLK_ROOT_DAYS(volume)]=AROS_LONG2BE(ds.ds_Days);
 			blockbuffer->buffer[BLK_ROOT_MINS(volume)]=AROS_LONG2BE(ds.ds_Minute);
 			blockbuffer->buffer[BLK_ROOT_TICKS(volume)]=AROS_LONG2BE(ds.ds_Tick);
-			CopyMem(name,(APTR)((ULONG)blockbuffer->buffer+(BLK_DISKNAME_START(volume)*4)),name[0]+1);
+			StrCpyToBstr
+				(
+					name,
+					(APTR)((ULONG)blockbuffer->buffer+(BLK_DISKNAME_START(volume)*4))
+				);
 			blockbuffer->buffer[volume->SizeBlock-12]=0;
 			blockbuffer->buffer[volume->SizeBlock-11]=0;
 			blockbuffer->buffer[BLK_VOLUME_DAYS(volume)]=AROS_LONG2BE(ds.ds_Days);
@@ -129,27 +193,42 @@ UWORD i;
 			blockbuffer->buffer[volume->SizeBlock-2]=0;
 			blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)]=AROS_LONG2BE(ST_ROOT);
 			blockbuffer->buffer[BLK_CHECKSUM]=0;
-			blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,blockbuffer->buffer));
+			blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE
+				(
+					0-calcChkSum(volume->SizeBlock,blockbuffer->buffer)
+				);
 			writeBlock(afsbase, volume,blockbuffer);
 			blockbuffer->flags &= ~BCF_USED;
 			invalidBitmap(afsbase, volume);
 			markBlock(afsbase, volume, volume->rootblock,0);
 			markBitmaps(afsbase, volume);
 			validBitmap(afsbase, volume);
+			return 0;
 		}
-		error=ERROR_UNKNOWN;
 	}
+	return ERROR_UNKNOWN;
 }
 
+/*******************************************
+ Name  : relabel
+ Descr.: rename a volume
+ Input : afsbase -
+         volume  - volume to rename
+         name    - new name for volume
+ Output: DOSTRUE for success; DOSFALSE otherwise
+********************************************/
 LONG relabel(struct afsbase *afsbase, struct Volume *volume, char *name) {
 struct BlockCache *blockbuffer;
 struct DateStamp ds;
 
-	error=0;
-	remDosVolume(afsbase, volume);	//remove dos entry
+	remDosVolume(afsbase, volume);
 	if (!(blockbuffer=getBlock(afsbase, volume,volume->rootblock)))
 		return DOSFALSE;
-	CopyMem(name,(APTR)((ULONG)blockbuffer->buffer+(BLK_DISKNAME_START(volume)*4)),name[0]+1);
+	StrCpyToBstr
+		(
+			name,
+			(APTR)((ULONG)blockbuffer->buffer+(BLK_DISKNAME_START(volume)*4))
+		);
 	DateStamp(&ds);
 	blockbuffer->buffer[BLK_ROOT_DAYS(volume)]=AROS_LONG2BE(ds.ds_Days);
 	blockbuffer->buffer[BLK_ROOT_MINS(volume)]=AROS_LONG2BE(ds.ds_Minute);
@@ -158,10 +237,15 @@ struct DateStamp ds;
 	blockbuffer->buffer[BLK_VOLUME_MINS(volume)]=AROS_LONG2BE(ds.ds_Minute);
 	blockbuffer->buffer[BLK_VOLUME_TICKS(volume)]=AROS_LONG2BE(ds.ds_Tick);
 	blockbuffer->buffer[BLK_CHECKSUM]=0;
-	blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,blockbuffer->buffer));
+	blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE
+		(
+			0-calcChkSum(volume->SizeBlock,blockbuffer->buffer)
+		);
 	writeBlock(afsbase, volume, blockbuffer);
-	initDeviceList(afsbase, volume, blockbuffer);	// update devicelist info (name)
-	addDosVolume(afsbase, volume, 0);						// add new volume entry
+	/* update devicelist info (name) */
+	initDeviceList(afsbase, volume, blockbuffer);
+	/* add new volume entry */
+	addDosVolume(afsbase, volume);
 	return DOSTRUE;
 }
 
@@ -173,7 +257,6 @@ struct DateStamp ds;
 ********************************************/
 void work(struct afsbase *afsbase) {
 struct IOFileSys *iofs;
-struct Volume *volume;
 LONG retval;
 
 	afsbase->port.mp_SigBit = SIGBREAKB_CTRL_F;
@@ -384,7 +467,7 @@ LONG retval;
 				break;
 /* morecache */
 			case FSA_INHIBIT :
-				inhibit
+				error=inhibit
 					(
 						afsbase,
 						((struct AfsHandle *)iofs->IOFS.io_Unit)->volume,
@@ -392,7 +475,7 @@ LONG retval;
 					);
 				break;
 			case FSA_FORMAT :
-				format
+				error=format
 					(
 						afsbase,
 						((struct AfsHandle *)iofs->IOFS.io_Unit)->volume,

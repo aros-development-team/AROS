@@ -42,7 +42,7 @@ struct Volume {
 struct Volume *initVolume(struct afsbase *, struct Device *, STRPTR, ULONG, struct DosEnvec *, ULONG *);
 void uninitVolume(struct afsbase *, struct Volume *);
 LONG newMedium(struct afsbase *, struct Volume *);
-LONG addDosVolume(struct afsbase *, struct Volume *, LONG);
+LONG addDosVolume(struct afsbase *, struct Volume *);
 void remDosVolume(struct afsbase *, struct Volume *);
 LONG initDeviceList(struct afsbase *, struct Volume *,struct BlockCache *);
 

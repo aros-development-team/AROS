@@ -1,3 +1,7 @@
+/* 
+   $Id$
+*/
+
 #include <strings.h>
 
 #include "extstrings.h"

@@ -1,3 +1,7 @@
+/* 
+   $Id$
+*/
+
 #include <stdio.h>
 
 #define DEBUG 1

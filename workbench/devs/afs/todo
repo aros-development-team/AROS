@@ -1,35 +1,3 @@
-verlorener Block nach rename:
- blocknr=896 (filename=fuck)
-
-AROS
-----
-MatchNext:
-					 /*
-                ** This is a normal AChain (no pattern). Try to lock it
-                ** to see if it exists.
-                */
-                if (!(lock = Lock(ac->an_String, SHARED_LOCK)))
-                {
-                    /* It does not exist, so if possible go back one step */
-                          ^^^^ ^^^ ^^^^^
-							check against ERROR_OBJECT_NOT_FOUND
-							(ERROR_OBJECT_IN_USE, ERROR_NO_FREE_STORE, ...)
-
-FSA_EXAMINE_ALL
-	ERROR_BUFFER_OVERFLOW
-	see Mail stegeberg
-EXAMINE
-	why io_DirPos???
-	only for Examine(), ExNext()
-	but that kind of variable must also be used
-	in examine_all!
-
-FSA_EXAMINE_ALL
-
-allocBlock() in bitmap.c
-	eigener speicherbereich ueberschrieben?
-	-> printf(),Write() ($FFD0) sturezt ab!
-
 diskchange senden an OS (seite 616f) ? TD_ADDCHANGEINT ?
 
 TEST
@@ -45,10 +13,3 @@ niy: lock_record, free_record, change_mode, serialize_disk
 make_link, read_link, set_file_size, write_protect, set_owner
 later: more_cache, add_notify, remove_notify
 EXAMINE_ALL, (EXAMINE_ALL_END) emulated bye dos via examine(), exNext()
-
-ACTION_DIE Problem:
-ein packet wurde wahrscheinlich nach replyPacket() geschickt!
- war noch von dir: es sollten jedoch vor dem schliessen alle
- Nachrichten mit einem DOSFALSE beantwortet werden
- (beim debuggen wird/ist dos gesperrt)
-->vor diesem packet senden wurde LockDosList aufgerufen (remVolume() wartet!)
