@@ -25,7 +25,7 @@ extern struct Library *MUIMasterBase;
 #include "prefs.h"
 
 
-//#define MYDEBUG 1
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -278,7 +278,7 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return 0;
     }
 
-    D(bug("muimaster.library/group.c: Group Object created at 0x%lx\n",obj));
+    D(bug("Group_New(0x%lx)\n",obj));
 
     if (data->flags & GROUP_VIRTUAL)
     {
@@ -465,7 +465,7 @@ static ULONG Group_AddMember(struct IClass *cl, Object *obj, struct opMember *ms
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
-    D(bug("muimaster.library/area.c: Added member 0x%lx to 0x%lx\n",msg->opam_Object,obj));
+    D(bug("Group_AddMember(0x%lx, 0x%lx)\n",obj, msg->opam_Object));
 
 
     DoMethodA(data->family, (Msg)msg);
@@ -733,7 +733,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct Region *region = NULL;
     APTR clip;
 
-    D(bug("muimaster.library/group.c: Draw Group Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
+    D(bug("Group_Draw(%lx) %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
 
     DoSuperMethodA(cl, obj, (Msg)msg);
 
@@ -932,6 +932,8 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 
 #define END_MINMAX() \
+    tmp.DefHeight = CLAMP(tmp.DefHeight, tmp.MinHeight, tmp.MaxHeight); \
+    tmp.DefWidth = CLAMP(tmp.DefWidth, tmp.MinWidth, tmp.MaxWidth); \
     tmp.MaxHeight = MAX(tmp.MaxHeight, tmp.MinHeight); \
     tmp.MaxWidth = MAX(tmp.MaxWidth, tmp.MinWidth); \
     msg->MinMaxInfo->MinWidth += tmp.MinWidth; \
@@ -940,8 +942,8 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     msg->MinMaxInfo->MaxWidth = MIN(msg->MinMaxInfo->MaxWidth, MUI_MAXMAX); \
     msg->MinMaxInfo->MaxHeight += tmp.MaxHeight; \
     msg->MinMaxInfo->MaxHeight = MIN(msg->MinMaxInfo->MaxHeight, MUI_MAXMAX); \
-    msg->MinMaxInfo->DefWidth += tmp.MinWidth; \
-    msg->MinMaxInfo->DefHeight += tmp.MinHeight;
+    msg->MinMaxInfo->DefWidth += tmp.DefWidth; \
+    msg->MinMaxInfo->DefHeight += tmp.DefHeight;
 
 /*
  * MinMax calculation function. When this is called,
@@ -966,8 +968,9 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
     int num_visible_children = Group_GetNumVisibleChildren(data, children);
 
     tmp.MinHeight = 0;
+    tmp.DefHeight = 0;
     tmp.MaxHeight = MUI_MAXMAX;
-    tmp.MinWidth = tmp.MaxWidth = (num_visible_children - 1) * data->horiz_spacing;
+    tmp.MinWidth = tmp.DefWidth = tmp.MaxWidth = (num_visible_children - 1) * data->horiz_spacing;
 
     if (data->flags & GROUP_SAME_WIDTH) {
 	cstate = (Object *)children->mlh_Head;
@@ -984,9 +987,11 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
 	if (data->flags & GROUP_SAME_WIDTH)
 	    _minwidth(child) = MIN(maxminwidth, _maxwidth(child));
 	tmp.MinWidth += _minwidth(child);
+	tmp.DefWidth += _defwidth(child);
 	tmp.MaxWidth += _maxwidth(child);
 	tmp.MaxWidth = MIN(tmp.MaxWidth, MUI_MAXMAX);
 	tmp.MinHeight = MAX(tmp.MinHeight, _minheight(child));
+	tmp.DefHeight = MAX(tmp.DefHeight, _defheight(child));
 	tmp.MaxHeight = MIN(tmp.MaxHeight, _maxheight(child));
     }
     END_MINMAX();
@@ -1005,8 +1010,9 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
     int num_visible_children = Group_GetNumVisibleChildren(data, children);
 
     tmp.MinWidth = 0;
+    tmp.DefWidth = 0;
     tmp.MaxWidth = MUI_MAXMAX;
-    tmp.MinHeight = tmp.MaxHeight = (num_visible_children - 1) * data->vert_spacing;
+    tmp.MinHeight = tmp.DefHeight = tmp.MaxHeight = (num_visible_children - 1) * data->vert_spacing;
 
     if (data->flags & GROUP_SAME_HEIGHT)
     {
@@ -1026,9 +1032,11 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
 	if (data->flags & GROUP_SAME_HEIGHT)
 	    _minheight(child) = MIN(maxminheight, _maxheight(child));
 	tmp.MinHeight += _minheight(child);
+	tmp.DefHeight += _defheight(child);
 	tmp.MaxHeight += _maxheight(child);
 	tmp.MaxHeight = MIN(tmp.MaxHeight, MUI_MAXMAX);
 	tmp.MinWidth = MAX(tmp.MinWidth, _minwidth(child));
+	tmp.DefWidth = MAX(tmp.DefWidth, _defwidth(child));
 	tmp.MaxWidth = MIN(tmp.MaxWidth, _maxwidth(child));
     }
     END_MINMAX();
@@ -1037,7 +1045,7 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
 
 static void
 minmax_2d_rows_pass (struct MUI_GroupData *data, struct MinList *children,
-		     struct MUI_MinMax *req, const WORD maxmin_height)
+		     struct MUI_MinMax *req, WORD maxmin_height, WORD maxdef_height)
 {
     int i, j;
     Object *cstate;
@@ -1048,22 +1056,27 @@ minmax_2d_rows_pass (struct MUI_GroupData *data, struct MinList *children,
     /* for each row */
     for (i = 0; i < data->rows; i++) {
 	/* calculate min and max height of this row */
-	int min_h = 0, max_h = MUI_MAXMAX;
+	int min_h = 0, def_h = 0, max_h = MUI_MAXMAX;
 	j = 0;
 	while ((child = NextObject(&cstate))) {
 	    if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
 		continue;
 	    if (data->flags & GROUP_SAME_HEIGHT)
+	    {
 		_minheight(child) = MIN(maxmin_height, _maxheight(child));
+		_defheight(child) = MIN(maxdef_height, _maxheight(child));
+	    }
 	    min_h = MAX(min_h, _minheight(child));
+	    def_h = MAX(def_h, _defheight(child));
 	    max_h = MIN(max_h, _maxheight(child));
 	    ++j;
 	    if ((j % data->columns) == 0)
 		break;
 	}
 	max_h = MAX(max_h, min_h);
-/*  	g_print("row %d : min_h=%d max_h=%d\n", i, min_h, max_h); */
+/*  	D(bug("row %d : min_h=%d max_h=%d\n", i, min_h, max_h)); */
 	req->MinHeight += min_h;
+	req->DefHeight += def_h;
 	req->MaxHeight += max_h;
     }
 }
@@ -1071,7 +1084,7 @@ minmax_2d_rows_pass (struct MUI_GroupData *data, struct MinList *children,
 
 static void
 minmax_2d_columns_pass (struct MUI_GroupData *data, struct MinList *children,
-			struct MUI_MinMax *req, const WORD maxmin_width)
+			struct MUI_MinMax *req, WORD maxmin_width, WORD maxdef_width)
 {
     int i, j;
     Object *cstate;
@@ -1079,7 +1092,7 @@ minmax_2d_columns_pass (struct MUI_GroupData *data, struct MinList *children,
 
     for (i = 0; i < data->columns; i++) {
 	/* calculate min and max width of this column */
-	int min_w = 0, max_w = MUI_MAXMAX;
+	int min_w = 0, def_w = 0, max_w = MUI_MAXMAX;
 	j = 0;
 	/* process all childs to get childs on a column */
 	cstate = (Object *)children->mlh_Head;
@@ -1090,13 +1103,18 @@ minmax_2d_columns_pass (struct MUI_GroupData *data, struct MinList *children,
 	    if (((j - 1) % data->columns) != i)
 		continue;
 	    if (data->flags & GROUP_SAME_WIDTH)
+	    {
 		_minwidth(child) = MIN(maxmin_width, _maxwidth(child));
+		_defwidth(child) = MIN(maxdef_width, _maxwidth(child));
+	    }
 	    min_w = MAX(min_w, _minwidth(child));
+	    def_w = MAX(def_w, _defwidth(child));
 	    max_w = MIN(max_w, _maxwidth(child));
 	}
 	max_w = MAX(max_w, min_w);
-/*  	g_print("col %d : min_w=%d max_w=%d\n", i, min_w, max_w); */
+/*  	D(bug("col %d : min_w=%d max_w=%d\n", i, min_w, max_w)); */
 	req->MinWidth += min_w;
+	req->DefWidth += def_w;
 	req->MaxWidth += max_w;
     }
 }
@@ -1111,6 +1129,8 @@ group_minmax_2d(struct IClass *cl, Object *obj,
     struct MUI_MinMax tmp;
     WORD maxmin_width;
     WORD maxmin_height;
+    WORD maxdef_width;
+    WORD maxdef_height;
 
     if (!data->columns)
     {
@@ -1122,11 +1142,13 @@ group_minmax_2d(struct IClass *cl, Object *obj,
     	if (data->num_childs % data->columns) return;
 	data->rows = data->num_childs / data->columns;
     }
-    tmp.MinHeight = tmp.MaxHeight = (data->rows - 1) * data->vert_spacing;
-    tmp.MinWidth = tmp.MaxWidth = (data->columns - 1) * data->horiz_spacing;
+    tmp.MinHeight = tmp.DefHeight = tmp.MaxHeight = (data->rows - 1) * data->vert_spacing;
+    tmp.MinWidth = tmp.DefWidth = tmp.MaxWidth = (data->columns - 1) * data->horiz_spacing;
     /* get minimum dims if same dims for all childs are needed */
     maxmin_width = 0;
     maxmin_height = 0;
+    maxdef_width = 0;
+    maxdef_height = 0;
 
     if ((data->flags & GROUP_SAME_WIDTH) || (data->flags & GROUP_SAME_HEIGHT)) {
 	cstate = (Object *)children->mlh_Head;
@@ -1135,11 +1157,13 @@ group_minmax_2d(struct IClass *cl, Object *obj,
 		continue;
 	    maxmin_width = MAX(maxmin_width, _minwidth(child));
 	    maxmin_height = MAX(maxmin_height, _minheight(child));
+	    maxdef_width = MAX(maxdef_width, _defwidth(child));
+	    maxdef_height = MAX(maxdef_height, _defheight(child));
 	}
 /*  	g_print("2d group: mminw=%d mminh=%d\n", maxmin_width, maxmin_height); */
     }
-    minmax_2d_rows_pass (data, children, &tmp, maxmin_height);
-    minmax_2d_columns_pass (data, children, &tmp, maxmin_width);
+    minmax_2d_rows_pass (data, children, &tmp, maxmin_height, maxdef_height);
+    minmax_2d_columns_pass (data, children, &tmp, maxmin_width, maxdef_width);
     END_MINMAX();
 }
 
@@ -1162,6 +1186,10 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
 	tmp.MinWidth = MAX(tmp.MinWidth, _minwidth(child));
 	tmp.MaxHeight = MIN(tmp.MaxHeight, _maxheight(child));
 	tmp.MaxWidth = MIN(tmp.MaxWidth, _maxwidth(child));
+	tmp.DefHeight = MAX(tmp.DefHeight,
+			    ((_defheight(child) < MUI_MAXMAX) ? _defheight(child) : tmp.DefHeight));
+	tmp.DefWidth = MAX(tmp.DefWidth,
+			   ((_defwidth(child) < MUI_MAXMAX) ? _defwidth(child) : tmp.DefWidth));
     }
     END_MINMAX();
 }
