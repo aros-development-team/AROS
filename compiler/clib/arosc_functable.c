@@ -40,7 +40,7 @@ void *const arosc_functable[]=
     &AROS_SLIB_ENTRY(close,arosc),
     &AROS_SLIB_ENTRY(expunge,arosc),
     &AROS_SLIB_ENTRY(null,arosc),
-#define SYSTEM_CALL(name)  &name,
+#define SYSTEM_CALL(name, x...)  &name,
 #include <sys/syscall.def>
 #undef SYSTEM_CALL
     (void *)-1

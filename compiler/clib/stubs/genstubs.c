@@ -12,12 +12,16 @@
 #include <aros/cpu.h>
 #include <exec/libraries.h>
 
-#define SYSTEM_CALL(name) "" #name "" ,
+#define SYSTEM_CALL(name, alias...) { #name , #alias }, 
 
-static char *names[]=
+struct
 {
-#include "../include/sys/syscall.def"
-NULL
+    char *name;
+    char *alias;
+} syscalls [] =
+{
+    #include "../include/sys/syscall.def"
+    { NULL, NULL }
 };
 
 int main(int argc, char *argv[])
@@ -32,19 +36,25 @@ int main(int argc, char *argv[])
 
     if (!strcmp(argv[1], "-list"))
     {
- 	for (n=0; names[n]; n++)
-    	    printf("%s\n", names[n]);
+ 	for (n=0; syscalls[n].name; n++)
+    	    printf("%s\n",syscalls[n].name);
 
 	return 0;
     }
 
-    for (n=0; names[n]; n++)
-	if (!strcmp(names[n], argv[1]))
+    for (n=0; syscalls[n].name != NULL; n++)
+	if (!strcmp(syscalls[n].name, argv[1]))
 	{
 	    printf(STUBCODE,
-	           names[n], "aroscbase",
+	           syscalls[n].name, "aroscbase",
 	           &(__AROS_GETJUMPVEC(NULL, (n+1+LIB_RESERVED))->vec));
 	    printf("\n");
+	    if (syscalls[n].alias[0] != '\0' )
+	    {
+	        printf(".globl %s\n"
+		       "\t.set %s, %s\n",
+		       syscalls[n].alias, syscalls[n].alias, syscalls[n].name);
+	    }
 
 	    return 0;
 	}

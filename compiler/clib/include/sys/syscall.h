@@ -14,7 +14,7 @@
 
 enum
 {
-#define SYSTEM_CALL(name) ,SYS_##name
+#define SYSTEM_CALL(name, x...) ,SYS_##name
 SYS_clibdummy = LIB_RESERVED
 #include <sys/syscall.def>
 #undef SYSTEM_CALL
