@@ -1610,11 +1610,15 @@ ifneq (%(mmake),)
 includes-copy : %(mmake)
 
 #MM
-%(mmake) : %(mmake)-includes-setup $(INCL_FILES_1) $(INC_FILES_2)
+%(mmake) : %(mmake)-includes-setup $(INCL_FILES_1) $(INCL_FILES_2)
+
+.PHONY: %(mmake)
+
 else
 #MM
 includes-copy : includes-setup $(INCL_FILES_1) $(INCL_FILES_2)
 endif
+
 
 $(AROS_INCLUDES)/%(path)/%.h : $(_INC_PATH)%.h
 	@$(CP) $< $@
@@ -1624,12 +1628,16 @@ $(GENINCDIR)/%(path)/%.h : $(_INC_PATH)%.h
 
 ifneq (%(mmake),)
 %(mmake)-includes-setup : $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path)
+
+.PHONY: %(mmake)-includes-setup
 else
 includes-setup : $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path)
 endif
 
 $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path) :
 	%mkdir_q dir=$@
+
+,PHONY: includes-copy includes-setup
 
 %end
 

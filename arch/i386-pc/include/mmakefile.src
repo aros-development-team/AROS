@@ -41,12 +41,12 @@ $(GENINCDIR)/% : %
 # geninc is run on the host (which is incorrect...)
 GENINC_CFLAGS := $(USER_CFLAGS) $(OS_CFLAGS) -I$(GENINCDIR) $(HOST_CFLAGS)
 
-$(GENINC) : geninc.c
+$(GENINC) : geninc.c $(MACHINE_H)
 	@echo "CFLAGS=$(GENINC_CFLAGS)"
 	@echo "Creating geninc..."
 	@$(HOST_CC) $(GENINC_CFLAGS) -o $@ $<
 
-machine.i : $(GENINC) $(MACHINE_H)
+machine.i : $(GENINC) 
 	$(GENINC) > machine.i
 
 %common
