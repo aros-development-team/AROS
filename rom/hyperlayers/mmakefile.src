@@ -74,6 +74,7 @@ FILES	  := basicfuncs movelayerz
 FUNCTIONS := \
 	beginupdate \
 	behindlayer \
+	changelayervisibility \
 	createbehindhooklayer \
 	createbehindlayer \
 	createupfronthooklayer \
