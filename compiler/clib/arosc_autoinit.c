@@ -6,26 +6,22 @@
     Lang: english
 */
 
-#include <dos/dos.h>
-#include <exec/memory.h>
-#include <proto/exec.h>
 #include <aros/symbolsets.h>
-#include <stdio.h>
-#include <setjmp.h>
-#include <sys/syscall.h>
-#include <sys/arosc.h>
+#include "arosc_init.h"
 
-int do_arosc_internals __attribute__((weak)) = 0;
-
-static int postopen(void)
+static AROS_SET_LIBFUNC(__arosc_libopen, struct Library *, aroscbase)
 {
-    return do_arosc_internals ? syscall(SYS_arosc_internalinit, NULL) : 0;
+    return !arosc_internalinit();
 }
 
-static void preclose(void)
+static AROS_SET_LIBFUNC(__arosc_libclose, struct Library *, aroscbase)
 {
-    if (do_arosc_internals)
-        syscall(SYS_arosc_internalexit);
+    arosc_internalexit();
+
+    return 1;
 }
 
-ADD2LIBS("arosc.library", 39, LIBSET_AROSC_PRI, struct Library *, aroscbase, postopen, preclose);
+ADD2OPENLIB(__arosc_libopen, 0);
+ADD2CLOSELIB(__arosc_libclose, 0);
+
+ADD2LIBS("arosc.library", 39, LIBSET_AROSC_PRI, struct Library *, aroscbase, NULL, NULL);
