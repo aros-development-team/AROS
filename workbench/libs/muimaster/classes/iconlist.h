@@ -18,15 +18,28 @@
 #define MUIC_IconList "IconList.zune"
 
 /* IconList methods */
-#define MUIM_IconList_Clear               (METHOD_USER|0x1042ad89) /* Zune: V1 */
-#define MUIM_IconList_Update              (METHOD_USER|0x1042ad8a) /* Zune: V1 */
-#define MUIM_IconList_Add                 (METHOD_USER|0x1042ad8b) /* Zune: V1 returns BOOL */
-struct MUIP_IconList_Clear                {ULONG MethodID;};
-struct MUIP_IconList_Update               {ULONG MethodID;};
-struct MUIP_IconList_Add                  {ULONG MethodID; struct DiskObject *dob; char *filename; void *udata; /* More to add */};
+#define MUIM_IconList_Clear             (METHOD_USER|0x1042ad89) /* Zune: V1 */
+#define MUIM_IconList_Update            (METHOD_USER|0x1042ad8a) /* Zune: V1 */
+#define MUIM_IconList_Add               (METHOD_USER|0x1042ad8b) /* Zune: V1 returns BOOL */
+#define MUIM_IconList_NextSelected      (METHOD_USER|0x1042ad8c) /* Zune: V1 */
+struct MUIP_IconList_Clear              {ULONG MethodID;};
+struct MUIP_IconList_Update             {ULONG MethodID;};
+struct MUIP_IconList_Add                {ULONG MethodID; struct DiskObject *dob; char *filename; void *udata; /* More to add */};
+struct MUIP_IconList_NextSelected       {ULONG MethodID; struct IconList_Entry **entry;}; /* *entry maybe MUIV_IconList_NextSelected_Start, *entry is MUIV_IconList_NextSelected_End if no more entries are selected */
+
+#define MUIV_IconList_NextSelected_Start 0
+#define MUIV_IconList_NextSelected_End   0
 
 /* IconList attrs */
 #define MUIA_IconList_DoubleClick         (TAG_USER|0x10427878) /* Zune: V1 ..g BOOL */
+
+/* used by MUIM_IconList_NextSelected */
+struct IconList_Entry
+{
+    struct DiskObject *dob;
+    char *name;
+    void *udata;
+};
 
 /******************/
 /* IconDrawerList */

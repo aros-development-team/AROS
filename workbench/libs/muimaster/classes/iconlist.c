@@ -39,8 +39,13 @@ extern struct Library *MUIMasterBase;
 struct IconEntry
 {
     struct MinNode node;
+    struct IconList_Entry entry;
+
+    /* the following could be removed because they are inside IconList_Entry */
     char *filename;
     struct DiskObject *dob;
+    void *udata;
+
     int x,y;
     int width,height;
     int selected;
@@ -283,7 +288,7 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
     node = List_First(&data->icon_list);
     while (node)
     {
-	if (node->dob)
+	if (node->dob && node->x != NO_ICON_POSITION && node->y != NO_ICON_POSITION)
 	{
 	    SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
 	    DrawIconState(_rp(obj),node->dob,node->filename,_mleft(obj) - data->view_x + node->x, _mtop(obj) - data->view_y + node->y, node->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, FALSE, TAG_DONE);
@@ -320,6 +325,9 @@ static ULONG IconList_Clear(struct IClass *cl, Object *obj, struct MUIP_IconList
         FreePooled(data->pool,node,sizeof(struct IconEntry));
     }
 
+    data->first_selected = NULL;
+    data->view_x = data->view_y = 0;
+
     MUI_Redraw(obj,MADF_DRAWOBJECT);
     return 1;
 }
@@ -343,6 +351,7 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
 	    GetIconRectangleA(NULL,msg->dob,NULL,&rect,NULL);
 
 	    entry->dob = msg->dob;
+	    entry->udata = msg->udata;
 
 	    entry->x = msg->dob->do_CurrentX;
 	    entry->y = msg->dob->do_CurrentY;
@@ -407,7 +416,7 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 				node = Node_Next(node);
 			    }
 
-			    if (DoubleClick(data->last_secs, data->last_mics, msg->imsg->Seconds, msg->imsg->Micros))
+			    if (DoubleClick(data->last_secs, data->last_mics, msg->imsg->Seconds, msg->imsg->Micros) && data->last_selected == node)
 			    {
 				set(obj,MUIA_IconList_DoubleClick, TRUE);
 			    } else
@@ -461,6 +470,56 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
     }
 
     return 0;
+}
+
+/**************************************************************************
+ MUIM_IconList_NextSelected
+**************************************************************************/
+static ULONG IconList_NextSelected(struct IClass *cl, Object *obj, struct MUIP_IconList_NextSelected *msg)
+{
+    struct MUI_IconData *data = INST_DATA(cl, obj);
+    struct IconEntry *node;
+    struct IconList_Entry *ent;
+
+    if (!msg->entry) return NULL;
+    ent = *msg->entry;
+    if (((IPTR)ent) == MUIV_IconList_NextSelected_Start)
+    {
+	if (!(node = data->last_selected))
+	{
+	    *msg->entry = (struct IconList_Entry*)MUIV_IconList_NextSelected_End;
+	} else
+	{
+	    node->entry.dob = node->dob;
+	    node->entry.name = node->filename;
+	    node->entry.udata = node->udata;
+	    *msg->entry = &node->entry;
+	}
+	return 0;
+    }
+    
+
+    node = List_First(&data->icon_list); /* not really necessary but it avoids compiler warnings */
+
+    node = (struct IconEntry*)((char*)ent) - ((char*)(&node->entry) - (char*)node);
+    node = Node_Next(node);
+
+    while (node)
+    {
+	if (node->selected)
+	{
+	    node->entry.dob = node->dob;
+	    node->entry.name = node->filename;
+	    node->entry.udata = node->udata;
+	    *msg->entry = &node->entry;
+	    return 0;
+	}
+	node = Node_Next(node);
+    }
+
+    *msg->entry = (struct IconList_Entry*)MUIV_IconList_NextSelected_End;
+
+    return NULL;
 }
 
 /**************************************************************************
@@ -542,7 +601,7 @@ static ULONG IconList_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragD
 	}
     }
 
-    return DoSuperMethodA(cl,obj,msg);
+    return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
 #ifndef _AROS
@@ -570,9 +629,11 @@ AROS_UFH3S(IPTR,IconList_Dispatcher,
 	case MUIM_DeleteDragImage: return IconList_DeleteDragImage(cl,obj,(APTR)msg);
 	case MUIM_DragQuery: return IconList_DragQuery(cl,obj,(APTR)msg);
 	case MUIM_DragDrop: return IconList_DragDrop(cl,obj,(APTR)msg);
+
 	case MUIM_IconList_Update: return IconList_Update(cl,obj,(APTR)msg);
 	case MUIM_IconList_Clear: return IconList_Clear(cl,obj,(APTR)msg);
 	case MUIM_IconList_Add: return IconList_Add(cl,obj,(APTR)msg);
+	case MUIM_IconList_NextSelected: return IconList_NextSelected(cl,obj,(APTR)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
