@@ -262,7 +262,7 @@ VOID StartAsyncConsoleRead(struct filehandle *fh, struct conbase *conbase)
 	SendIO(ioReq(fh->conreadio));
 
 	fh->flags |= FHFLG_ASYNCCONSOLEREAD;
-    }				    				    
+    }
 }
 
 /****************************************************************************************/
@@ -329,11 +329,11 @@ AROS_UFH3(VOID, conTaskEntry,
 )
 {
     struct conTaskParams *param = (struct conTaskParams *)FindTask(NULL)->tc_UserData;
-    
+
 #undef SysBase
 #define SysBase conbase->sysbase
 
-    struct conbase  	*conbase = param->conbase;    
+    struct conbase  	*conbase = param->conbase;
 
     struct filehandle 	*fh;
     struct IOFileSys 	*iofs = param->iofs;
@@ -341,12 +341,12 @@ AROS_UFH3(VOID, conTaskEntry,
     STRPTR  	    	filename = iofs->io_Union.io_OPEN.io_Filename;
 #endif
     LONG    	    	err = 0;
-    
+
     BOOL    	    	ok = FALSE;
-    
+
     D(bug("conTaskEntry: taskparams = %x  conbase = %x  iofs = %x  filename = \"%s\"\n",
     			param, conbase, iofs, filename));
-    
+
     fh = AllocMem(sizeof (struct filehandle), MEMF_PUBLIC | MEMF_CLEAR);
     if (fh)
     {
@@ -354,18 +354,22 @@ AROS_UFH3(VOID, conTaskEntry,
 
 	fh->usecount  = 1;
 
-        fh->contask   = FindTask(NULL);	
+	/* if iofs->IOFS.io_Unit equals 1 it means that we have to start in RAW mode */
+	if (iofs->IOFS.io_Unit)
+	    fh->flags |= FHFLG_RAW;
+
+        fh->contask   = FindTask(NULL);
 	fh->breaktask = param->parentTask;
-	
+
 	NEWLIST(&fh->pendingReads);
 	NEWLIST(&fh->pendingWrites);
-	
+
     	/* Create msgport for console.device communication
 	   and for app <-> contask communication  */
 	fh->conreadmp = AllocMem(sizeof (struct MsgPort) * 3, MEMF_PUBLIC|MEMF_CLEAR);
 	if (fh->conreadmp)
 	{
-	
+
     	    D(bug("contask: mem for conreadmp, conwritemp and contaskmp allocated\n"));
 
 	    fh->conreadmp->mp_Node.ln_Type = NT_MSGPORT;
@@ -375,30 +379,30 @@ AROS_UFH3(VOID, conTaskEntry,
 	    NEWLIST(&fh->conreadmp->mp_MsgList);
 
 	    fh->conwritemp = fh->conreadmp + 1;
-	    
+
 	    fh->conwritemp->mp_Node.ln_Type = NT_MSGPORT;
 	    fh->conwritemp->mp_Flags = PA_SIGNAL;
 	    fh->conwritemp->mp_SigBit = AllocSignal(-1);
 	    fh->conwritemp->mp_SigTask = fh->contask;
 	    NEWLIST(&fh->conwritemp->mp_MsgList);
-	    
+
 	    fh->contaskmp = fh->conwritemp + 1;
 
-	    fh->contaskmp->mp_Node.ln_Type = NT_MSGPORT;	    
+	    fh->contaskmp->mp_Node.ln_Type = NT_MSGPORT;
 	    fh->contaskmp->mp_Flags = PA_SIGNAL;
 	    fh->contaskmp->mp_SigBit = AllocSignal(-1);
 	    fh->contaskmp->mp_SigTask = fh->contask;
 	    NEWLIST(&fh->contaskmp->mp_MsgList);
-	    
+
 	    fh->conreadio = (struct IOStdReq *)CreateIORequest(fh->conreadmp, sizeof (struct IOStdReq));
 	    if (fh->conreadio)
 	    {
     	    	D(bug("contask: conreadio created\n"));
-		
+
 		fh->nw = default_nw;
 
 		parse_filename(conbase, fh, iofs, &fh->nw);
-		
+
     	    	if (!(fh->flags & FHFLG_AUTO))
 		{
 		    err = MakeConWindow(fh, conbase);
@@ -408,10 +412,10 @@ AROS_UFH3(VOID, conTaskEntry,
 		{
 		    ok = TRUE;
 		}
-		
+
 		if (ok)
 		{
-		   iofs->IOFS.io_Unit = (struct Unit *)fh;			
+		   iofs->IOFS.io_Unit = (struct Unit *)fh;
 		}
 		else
 		{
@@ -423,23 +427,23 @@ AROS_UFH3(VOID, conTaskEntry,
 	    {
 	    	err = ERROR_NO_FREE_STORE;
 	    }
-	    
+
 	    if (!ok) FreeMem(fh->conreadmp, sizeof(struct MsgPort) * 3);
-	    
+
 	} /* if (fh->conreadmp) */
 	else
 	{
 	    err = ERROR_NO_FREE_STORE;
 	}
-	
+
 	if (!ok) FreeMem(fh, sizeof (struct filehandle));
-	
+
     } /* if (fh) */
     else
     	err = ERROR_NO_FREE_STORE;
-	
+
     iofs->io_DosError = err;
-    
+
     Signal(param->parentTask, param->initSignal);
     if (err)
     {
@@ -447,15 +451,15 @@ AROS_UFH3(VOID, conTaskEntry,
         /* parent Task will kill us */
         Wait(0);
     }
-    
+
     D(bug("con task: initialization okay. entering main loop.\n"));
-    
+
     /* Main Loop */
-    
+
     /* Send first read request to console.device */
 
-    StartAsyncConsoleRead(fh, conbase);	
-    
+    StartAsyncConsoleRead(fh, conbase);
+
     while(! ((fh->usecount == 0) && ((fh->flags & FHFLG_EOF) || !(fh->flags & FHFLG_WAIT))) )
     {
         ULONG conreadmask = 1L << fh->conreadmp->mp_SigBit;
