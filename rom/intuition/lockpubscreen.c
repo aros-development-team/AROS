@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  2000/01/30 23:45:34  bernie
+    Increment visitor count even for LockPubScreen(NULL); Don't expect that IntuitionBase->DefaultScreen is always non-NULL (the AutoDoc says LockPubScreen() should open the Workbench in that case, but we still don't); Add pointer checking assertions.
+
     Revision 1.7  1999/10/12 17:45:44  SDuvan
     Added docs, minor updates
 
@@ -103,22 +106,31 @@
 
     if(!name)
     {
-	scr = GetPrivIBase(IntuitionBase)->DefaultPubScreen;
-	//ASSERT(scr != NULL);
+	LockPubScreenList();
+	if ((scr = GetPrivIBase(IntuitionBase)->DefaultPubScreen))
+	{
+	    ASSERT_VALID_PTR(scr);
+	    GetPrivScreen(scr)->pubScrNode->psn_VisitorCount++;
+	}
+	UnlockPubScreenList();
     }
     else
     {
 	struct PubScreenNode *psn;
-	
+	ASSERT_VALID_PTR(name);
+
 	/* Browse the public screen list */
 	if ((psn = (struct PubScreenNode *)FindName(LockPubScreenList(), name)))
 	{
+	    ASSERT_VALID_PTR(psn);
+
 	    /* Don't lock screens in private state */
 	    if((psn != NULL) && !(psn->psn_Flags & PSNF_PRIVATE))
 	    {
 		/* Increment screen lock count */
 		psn->psn_VisitorCount++;
 		scr = psn->psn_Screen;
+		ASSERT_VALID_PTR(scr);
 	    }
 	}
 	
@@ -128,4 +140,4 @@
     return scr;
 
     AROS_LIBFUNC_EXIT
-} /* LockPubScreen */
+} /* LociPubScreen */
