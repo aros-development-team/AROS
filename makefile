@@ -28,7 +28,13 @@ include $(TOP)/config/make.cfg
 #	newer than the executable, then the executable is linked anew).
 #
 # END_DESC{localmakevar}
-DEP_LIBS= $(LIBDIR)/libAmigaOS.a \
+ifeq ("$(SHARED_AR)","")
+LIBAMIGAOS = $(LIBDIR)/libAmigaOS.a
+else
+LIBAMIGAOS = $(LIBDIR)/libAmigaOS.so
+endif
+
+DEP_LIBS= $(LIBAMIGAOS) \
     $(GENDIR)/filesys/emul_handler.o \
     $(LIBDIR)/libaros.a
 
@@ -199,18 +205,22 @@ subdirs:
 #
 # END_DESC{internaltarget}
 AmigaOS :
-	@$(MAKE) $(MFLAGS) $(LIBDIR)/libAmigaOS.a
+	@$(MAKE) $(MFLAGS) $(LIBAMIGAOS)
 
 # BEGIN_DESC{internaltarget}
 # \item{$(LIBDIR)/libAmigaOS.a} Recreate the kernel if any kernel function
 #	has been recompiled.
 #
 # END_DESC{internaltarget}
-$(LIBDIR)/libAmigaOS.a : $(wildcard $(OSGENDIR)/*.o) \
+$(LIBAMIGAOS) : $(wildcard $(OSGENDIR)/*.o) \
 	    $(wildcard $(GENDIR)/alib/*.o)
 	@echo "Recreating library"
+ifeq ("$(SHARED_AR)","")
 	@$(AR) $@ $?
 	$(RANLIB) $@
+else
+	@$(SHARED_AR) $@ $^
+endif
 
 CLIBDIR=$(TOP)/compiler/include/clib
 

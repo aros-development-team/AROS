@@ -48,7 +48,7 @@ clean:
 	$(RM) $(OSGENDIR) *.err $(LIBDIR)/libdos.a
 
 $(OSGENDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 dos_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \

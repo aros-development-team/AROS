@@ -45,20 +45,33 @@ ILDFLAGS="-nostartfiles -nostdlib"
 
 case "$type" in
 "Linux" )
+	# The main compiler
 	CC="gcc"
+	# The CFLAGS usually to use (in addition to the includes and use flags)
 	COMMON_CFLAGS="-Wall -g -O0"
+	# CFLAGS to be used to link applications
 	ILDFLAGS="-nostartfiles -nostdlib -Xlinker -i"
+	# Which OS ?
 	ARCH="linux"
+	# Which CPU ?
 	if [ "$proc" = "m68k" ]; then
 	    KERNEL="m68k-emul"
+	    # How to generate dependency files
 	    MKDEPEND="makedepend -D__GNUC__ -D__mc68000__"
 	else
 	    KERNEL="i386"
 	    MKDEPEND="makedepend -D__GNUC__ -Di386"
 	fi
+	# Search this directory for GUI libs
 	GUI_LIBDIR="/usr/X11R6/lib"
+	# Link with these GUI libs
 	GUI_LIBFLAGS="-lX11"
+	# The flags usually passed to the assembler
 	COMMON_AFLAGS="-x assembler-with-cpp"
+	# Flags to compile objects for shared libs
+	SHARED_CFLAGS="-fpic"
+	# Command to generate shared libs
+	SHARED_AR="ld -shared -o"
 	;;
 "HP-UX" )
 	COMMON_CFLAGS="-Aa -g"
@@ -168,6 +181,11 @@ case "$1" in
 
     echo "GUI_LIBFLAGS = $GUI_LIBFLAGS" >> $2
     echo "MKDEPEND = $MKDEPEND" >> $2
+
+    if [ -n "$SHARED_CFLAGS" ]; then
+	echo "SHARED_CFLAGS = $SHARED_CFLAGS" >> $2
+	echo "SHARED_AR = $SHARED_AR" >> $2
+    fi
 
     if [ -d config ]; then
 	cd config ; make TOP=.. CURDIR=./config config

@@ -57,15 +57,15 @@ $(DEST)toc.html : $(SRCS) tochtml.gawk
 	@echo "" >> $@
 	chmod a+r $@
 
-$(DEST)devinfo-4.html : devinfo-4.src src2html.gawk page_header.html \
-	    page_footer.html collectcontents.sh contents2html.gawk \
-	    makefile2html.gawk
-	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
-	chmod a+r $@
-
 $(DEST)%.html : %.src src2html.gawk page_header.html page_footer.html
 	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
 	chmod a+r $@
+
+$(DEST)devinfo-4.html : devinfo-4.src src2html.gawk page_header.html \
+	    page_footer.html collectcontents.sh contents2html.gawk \
+	    makefile2html.gawk
+
+$(DEST)links.html: $(TOP)/dist/AROS*.tgz
 
 autodocs: $(DEST)adoc_index.html gen/htmlpages
 

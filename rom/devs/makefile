@@ -30,7 +30,7 @@ setup:
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
 $(OSGENDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OSGENDIR)/%.d: %.c
