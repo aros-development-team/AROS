@@ -2471,9 +2471,11 @@ STATIC IPTR listview_input(Class *cl, Object *o, struct gpInput *msg)
     shown = ShownEntries(o, data);
 
 
-    if (msg->gpi_IEvent->ie_Class == IECLASS_RAWMOUSE)
+    if ((msg->gpi_IEvent->ie_Class == IECLASS_RAWMOUSE) ||
+        (msg->gpi_IEvent->ie_Class == IECLASS_TIMER))
     {
-        if ((msg->gpi_IEvent->ie_Code == SELECTDOWN) ||
+        if ((msg->gpi_IEvent->ie_Class == IECLASS_TIMER) ||
+	    (msg->gpi_IEvent->ie_Code == SELECTDOWN) ||
 	    (msg->gpi_IEvent->ie_Code == IECODE_NOBUTTON))
 	{
 	    /* offset from top of listview of the entry clicked */
