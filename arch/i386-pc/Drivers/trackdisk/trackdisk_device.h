@@ -42,14 +42,13 @@ struct TDU
     struct List	tdu_Listeners;
     APTR	td_DMABuffer;		/* Buffer for DMA accesses */
     ULONG	tdu_ChangeNum;		/* Number of changes occured */
+    BOOL	tdu_Busy;		/* Unit working? */
     UBYTE	tdu_UnitNum;		/* Unit number */
     UBYTE	tdu_DiskIn;		/* Disk in drive? */
     UBYTE	tdu_ProtStatus;
     UBYTE	tdu_lastcyl;
     UBYTE	tdu_lasthd;
     UBYTE	tdu_flags;
-    UBYTE	tdu_si1;
-    UBYTE	tdu_si2;
 };
 
 struct TrackDiskBase
@@ -61,12 +60,12 @@ struct TrackDiskBase
     struct timerequest  	*td_TimerIO;
     struct MsgPort      	*td_TimerMP;
     ULONG			td_IntBit;		/* Sigbit for floppyints */
-    struct SignalSemaphore  	io_lock;		/* Lock IO access to floppy */
+    ULONG			td_TmoBit;		/* Used for timeout signaling */
     UBYTE			td_comsize;        	/* RAW command size */
     UBYTE			td_rawcom[9];      	/* RAW command to send */
     UBYTE			td_result[7];      	/* Last set of bytes */
-    UBYTE			td_timeout[TD_NUMUNITS];
     UBYTE			td_dor;			/* Digital Output Register */
-    volatile UBYTE		td_iotime;
-    UWORD			td_scandrives;		/* Used for drivepolling */
+    UBYTE			td_sr0;
+    UBYTE			td_pcn;
+    UBYTE			td_inttmo;
 };

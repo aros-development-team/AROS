@@ -229,12 +229,6 @@ AROS_LH2(struct TrackDiskBase *, init,
     	ReturnPtr("Trackdisk",struct TrackDiskBase *,NULL);
     }
 
-    /* Create IO locking semaphore */
-    InitSemaphore(&TDBase->io_lock);
-
-    /* Set drive polling default */
-    TDBase->td_scandrives = 125;
-
     /* Set up the IRQ system */
     OOPBase = OpenLibrary(AROSOOP_NAME, 0);
 
@@ -380,7 +374,6 @@ AROS_LH1(void, beginio,
 	    case TD_ADDCHANGEINT:
 	    case TD_CHANGENUM:
 	    case TD_CHANGESTATE:
-	    case TD_MOTOR:
 	    case TD_PROTSTATUS:
 	    case TD_REMCHANGEINT:
 	    case TD_GETGEOMETRY:
@@ -391,6 +384,7 @@ AROS_LH1(void, beginio,
 	    case CMD_UPDATE:
 	    case CMD_WRITE:
 	    case TD_FORMAT:
+	    case TD_MOTOR:
 		PutMsg(&TDBase->td_TaskData->td_Port, &iotd->iotd_Req.io_Message);
 		iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
 		return;
@@ -436,13 +430,19 @@ BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    iotd->iotd_Req.io_Error = IOERR_NOCMD;
 	    break;
 	case CMD_READ:
+	    tdu->tdu_Busy = TRUE;
 	    iotd->iotd_Req.io_Error = td_read(iotd, tdb);
+	    tdu->tdu_Busy = FALSE;
 	    break;
 	case CMD_UPDATE:
+	    tdu->tdu_Busy = TRUE;
 	    iotd->iotd_Req.io_Error = td_update(tdu, tdb);
+	    tdu->tdu_Busy = FALSE;
 	    break;
 	case CMD_WRITE:
+	    tdu->tdu_Busy = TRUE;
 	    iotd->iotd_Req.io_Error = td_write(iotd, tdb);
+	    tdu->tdu_Busy = FALSE;
 	    break;
 	case TD_ADDCHANGEINT:
 	    Forbid();
@@ -480,7 +480,7 @@ BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 		    td_motoroff(tdu->tdu_UnitNum,tdb);
 		    break;
 		case 1:
-		    td_motoron(tdu->tdu_UnitNum,tdb);
+		    td_motoron(tdu->tdu_UnitNum,tdb,TRUE);
 		    break;
 		default:
 		    iotd->iotd_Req.io_Error = TDERR_NotSpecified;
@@ -595,27 +595,24 @@ void TD_DevTask(struct TrackDiskBase *tdb)
     sysBase = tdb->sysbase;
 
     tdb->td_IntBit = AllocSignal(-1);
+    tdb->td_TmoBit = AllocSignal(-1);
     tdb->td_TimerMP = CreateMsgPort();
     tdb->td_TimerIO = (struct timerequest *) CreateIORequest(tdb->td_TimerMP, sizeof(struct timerequest));
     OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tdb->td_TimerIO, 0);
     temp = (struct IOExtTD *)CreateExtIO(CreateMsgPort(),sizeof(struct IOExtTD));
 
     /* Initialize FDC */
-    fd_outb(0, FD_DOR);	/* Reset controller */
-    fd_outb(0, FD_DOR);
-    fd_outb(4, FD_DOR);	/* Turn it on again */
     td_dinit(tdb);
-
+    
     /* Initial check for floppies */
-    D(bug("DT: Checking for drives\n"));
     for (i=0;i<TD_NUMUNITS;i++)
     {
 	if(tdb->td_Units[i])
 	{
-	    D(bug("DT: Recalibrating drive %d\n",i));
 	    td_recalibrate(tdb->td_Units[i]->tdu_UnitNum,1,0,tdb);
 	    tdb->td_Units[i]->tdu_DiskIn = (td_getDiskChange() ^ 1);
 	    tdb->td_Units[i]->tdu_ProtStatus = td_getprotstatus(i,tdb);
+	    tdb->td_Units[i]->tdu_Busy = FALSE;
 	}
     }
 
@@ -666,13 +663,11 @@ void TD_DevTask(struct TrackDiskBase *tdb)
 			    /* does not seem to work always */
 			    td_rseek(tdu->tdu_UnitNum,0,1,tdb);
 			    td_rseek(tdu->tdu_UnitNum,1,1,tdb);
-			    dir = (inb(FD_DIR)>>7);
+			    dir = (inb(FDC_DIR)>>7);
 			    if (dir == 0)
 			    {
 				D(bug("Floppy insertion detected\n"));
-				/* Seek to cyl 40 for quick access */
 				td_recalibrate(tdu->tdu_UnitNum,1,0,tdb);
-				td_recalibrate(tdu->tdu_UnitNum,0,40,tdb);
 				tdu->tdu_DiskIn = TDU_DISK;
 				tdu->tdu_ChangeNum++;
 				tdu->tdu_ProtStatus = td_getprotstatus(tdu->tdu_UnitNum,tdb);
@@ -685,23 +680,26 @@ void TD_DevTask(struct TrackDiskBase *tdb)
 			    }
 			    break;
 			case TDU_DISK:
-			    /* We really should not do this here. */
-			    td_motoron(tdu->tdu_UnitNum,tdb);
-			    dir = (inb(FD_DIR)>>7);
-			    td_motoroff(tdu->tdu_UnitNum,tdb);
-			    if (dir == 1)
+			    if (!tdu->tdu_Busy)
 			    {
-				D(bug("Floppy removal detected\n"));
-				/* Go to cylinder 0 */
-				td_recalibrate(tdu->tdu_UnitNum,1,0,tdb);
-				tdu->tdu_DiskIn = TDU_NODISK;
-				tdu->tdu_ChangeNum++;
-				Forbid();
-				ForeachNode(&tdu->tdu_Listeners,iotd)
+				/* We really should not do this here. */
+				td_motoron(tdu->tdu_UnitNum,tdb,FALSE);
+				dir = (inb(FDC_DIR)>>7);
+				td_motoroff(tdu->tdu_UnitNum,tdb);
+				if (dir == 1)
 				{
-				    Cause((struct Interrupt *)((struct IOExtTD *)iotd->iotd_Req.io_Data));
+				    D(bug("Floppy removal detected\n"));
+				    /* Go to cylinder 0 */
+				    td_recalibrate(tdu->tdu_UnitNum,1,0,tdb);
+				    tdu->tdu_DiskIn = TDU_NODISK;
+				    tdu->tdu_ChangeNum++;
+				    Forbid();
+				    ForeachNode(&tdu->tdu_Listeners,iotd)
+				    {
+					Cause((struct Interrupt *)((struct IOExtTD *)iotd->iotd_Req.io_Data));
+				    }
+				    Permit();
 				}
-				Permit();
 			    }
 			    break;
 		    }
@@ -725,26 +723,15 @@ void TD_DevTask(struct TrackDiskBase *tdb)
 #define TDBase ((struct TrackDiskBase *)irq->h_Data)
 void td_floppytimer(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
-    int i;
-
-    for (i=0; i<TD_NUMUNITS; i++)
-    {
-	// Decrease only if timeout !=0 and !=255
-	if ((TDBase->td_timeout[i] > 0) && (TDBase->td_timeout[i] < 255))
-	{
-	    TDBase->td_timeout[i]--;
-	}
-    }
-
     // Does anyone wait for io?
-    if (TDBase->td_iotime)
+    if (TDBase->td_inttmo)
     {
 	// Decrease timeout
-	TDBase->td_iotime--;
+	TDBase->td_inttmo--;
 	// timeout?
-	if (!TDBase->td_iotime)
+	if (!TDBase->td_inttmo)
 	{
-	    Signal(&TDBase->td_TaskData->td_Task,(1L << TDBase->td_IntBit));
+	    Signal(&TDBase->td_TaskData->td_Task,(1L << TDBase->td_TmoBit));
 	}
     }
 }
