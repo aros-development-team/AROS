@@ -21,6 +21,9 @@ char *getcwd(char *buf, size_t size);
 int   isatty(int fd);
 int   lseek(int fildes, off_t offset, int whence);
 
+/* returns the caller's process ID */
+pid_t getpid(void);
+
 /* Create a one-way communication channel (pipe).
    If successful, two file descriptors are stored in PIPEDES;
    bytes written on PIPEDES[1] can be read from PIPEDES[0].
