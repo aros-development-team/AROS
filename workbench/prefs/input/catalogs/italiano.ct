@@ -1,0 +1,161 @@
+## version $VER: inputprefs.catalog 1.0 (12.12.2001)
+## language italiano
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Impossibile aprire %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Impossibile usare uno schermo pubblico!
+; Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+DrawInfo non disponibili!
+; Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+VisualInfo non disponibili!
+; Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Impossibile creare oggetti!
+; Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Impossibile creare i menu!
+; Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Impossibile creare finestra!
+; Can't create window!
+;
+MSG_WINTITLE
+Preferenze Input
+; Input Preferences
+;
+MSG_MEN_PROJECT
+Progetto
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+A\0Apri...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+S\0Salva con nome...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+E\0Esci
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Modifica
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Ripristina Default
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+U\0Ultima revisione
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Ripristina
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Opzioni
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Creare icone?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Carica preferenze
+; Load Input Preferences
+;
+MSG_ASL_SAVE_TITLE
+Salva preferenze
+; Save Input Preferences
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_GAD_SAVE
+Salva
+; Save
+;
+MSG_GAD_USE
+Usa
+; Use
+;
+MSG_GAD_CANCEL
+Annulla
+; Cancel
+;
+MSG_GAD_TAB_MOUSE
+Mouse
+; Mouse
+;
+MSG_GAD_TAB_KEYBOARD
+Tastiera
+; Keyboard
+;
+MSG_GAD_MOUSE_SPEED
+Velocità puntatore
+; Mouse Speed
+;
+MSG_GAD_MOUSE_ACCELERATED
+Accelerazione
+; Accelerated
+;
+MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY
+Doppio click
+; Double-Click Delay
+;
+MSG_GAD_KEY_REPEAT_DELAY
+Ripetizione tasti
+; Key Repeat Delay
+;
+MSG_GAD_KEY_REPEAT_RATE
+Frequenza ripetizione
+; Key Repeat Rate
+;
+MSG_GAD_KEY_TEST
+Test
+; Test
+;
+MSG_GAD_KEY_TYPE
+Scrivi
+; Type
+;
+MSG_TIME_FORMAT
+%d.%02d s
+; %d.%02d s
+;
+MSG_GAD_MOUSE_BUTTON_MAPPING
+Pulsanti del mouse
+; Button mapping
+;
+MSG_GAD_MOUSE_MAPPING_SELECT
+Seleziona
+; Select
+;
+MSG_GAD_MOUSE_MAPPING_MENU
+Menu
+; Menu
+;
+MSG_GAD_MOUSE_MAPPING_THIRD
+Terzo
+; Third
+;
+MSG_GAD_MOUSE_DOUBLECLICK_DELAY
+Ritardo doppio-click
+; Double-Click Delay
+;

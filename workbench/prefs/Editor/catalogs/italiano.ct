@@ -1,0 +1,104 @@
+#version $VER: JanoPrefs.catalog 1.0 (24.2.2001)
+#codeset 0
+#language italiano
+;
+; *****************************
+;  NewMenu strings
+; *****************************
+;
+; Edit Menu
+;
+MSG_RESETDEFAULT
+Valori predefiniti
+;
+MSG_LASTSAVED
+Ultimi valori salvati
+;
+; *********************
+;   Preference window 
+; *********************
+;
+MSG_TITLEWIN
+Preferenze
+;
+MSG_TAB
+Tabulatori:
+;
+MSG_SEPARATORS
+Separatori:
+;
+MSG_TXTFONT
+Font testo:
+;
+MSG_SCRFONT
+Font schermo:
+;
+MSG_PUBSCREEN
+Modalitù schermo:
+;
+MSG_BACKDROP
+Sfondo
+;
+MSG_LEFTMARGIN
+Margine sinistro
+;
+MSG_AUTOINDENT
+Rientranza automatica
+;
+MSG_EXTEND
+Tastierino numerico esteso
+;
+MSG_PREFSSAVE
+Salva
+;
+MSG_USEPREFS
+Usa
+;
+MSG_DISCARDPREFS
+Annulla
+;
+MSG_USEDEF
+Valori predefiniti
+;
+MSG_CHOOSEIT
+Scegli tra...
+;
+MSG_CLONEPARENT
+Clona superiore
+;
+MSG_COLOR_BACK
+Sfondo
+;
+MSG_COLOR_TEXT
+Testo standard
+;
+MSG_COLOR_FILLTXT
+Selezione
+;
+MSG_COLOR_FILLSEL
+Testo selezionato
+;
+MSG_COLOR_MARGINBACK
+Margine dello sfondo
+;
+MSG_COLOR_MARGINTXT
+Margine del testo
+;
+MSG_COLOR_SHINE
+Pannello
+;
+MSG_COLOR_SHADE
+Ombra del pannello
+;
+MSG_COLOR_PANELBACK
+Retro del pannello
+;
+MSG_COLOR_PANELTEXT
+Testo del pannello
+;
+MSG_COLOR_GLYPH
+Sezione del pannello
+;
+MSG_COLOR_MARKEDLINES
+Pannello attivo
+;
