@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/09/21 15:49:26  digulla
+    Use AROS instead of C.lib functions
+
     Revision 1.7  1996/09/17 16:42:59  digulla
     Use general startup code
 
@@ -23,7 +26,7 @@
 #include <clib/utility_protos.h>
 #include <utility/tagitem.h>
 #include <utility/utility.h>
-#include <stdlib.h>
+#include <clib/aros_protos.h>
 
 struct UtilityBase *UtilityBase;
 
@@ -41,7 +44,6 @@ int num_dirs, max_dirs;
 static int AddEntry (struct table * table, char * entry)
 {
     char * dup;
-    int len;
 
     if (table->num == table->max)
     {
@@ -63,12 +65,8 @@ static int AddEntry (struct table * table, char * entry)
 	table->max = new_max;
     }
 
-    len = strlen (entry) + 1;
-
-    if (!(dup = AllocVec (len, MEMF_ANY)) )
+    if (!(dup = StrDup (entry)) )
 	return 0;
-
-    CopyMem ((char *)entry, dup, len);
 
     table->entries[table->num ++] = dup;
     return 1;
@@ -162,10 +160,10 @@ static LONG do_dir (void)
 
 		    indent ++;
 
-		    qsort (dirs.entries, dirs.num, sizeof (char *),
+		    QSort (dirs.entries, dirs.num, sizeof (char *),
 			compare_strings);
 
-		    ptr = path + strlen (path);
+		    ptr = path + StrLen (path);
 
 		    if (*path && ptr[-1] != ':' && ptr[-1] != '/')
 		    {
@@ -181,7 +179,7 @@ static LONG do_dir (void)
 
 			if (args.all)
 			{
-			    strcpy (ptr, dirs.entries[t]);
+			    StrCpy (ptr, dirs.entries[t]);
 
 			    showline ("%-25.s <DIR>\n", argv);
 			    do_dir ();
@@ -198,7 +196,7 @@ static LONG do_dir (void)
 
 		if (files.num)
 		{
-		    qsort (files.entries, files.num, sizeof (char *),
+		    QSort (files.entries, files.num, sizeof (char *),
 			compare_strings);
 
 		    for (t=0; t<files.num; t+=2)
@@ -258,7 +256,7 @@ int main (int argc, char ** argv)
     rda=ReadArgs("Dir,OPT/K,ALL/S",(IPTR *)&args,NULL);
     if(rda!=NULL)
     {
-	strcpy (path, args.dir!=NULL?args.dir:"");
+	StrCpy (path, args.dir!=NULL?args.dir:"");
 
 	error = do_dir ();
 
