@@ -11,14 +11,15 @@
 #include "workbench_intern.h"
 
 /*** Prototypes ************************************************************/
-BOOL StartHandler(struct WorkbenchBase *WorkbenchBase);
+BOOL   StartHandler(struct WorkbenchBase *WorkbenchBase);
 
-void AddHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase);
-void RemoveHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase);
-
+VOID   __AddHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase);
+VOID   __RemoveHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase);
 STRPTR __AllocateNameFromLock(BPTR lock, struct WorkbenchBase *WorkbenchBase);
 
 /*** Macros *****************************************************************/
+#define AddHiddenDevice(name) (__AddHiddenDevice((name), WorkbenchBase))
+#define RemoveHiddenDevice(name) (__RemoveHiddenDevice((name), WorkbenchBase))
 #define AllocateNameFromLock(lock) (__AllocateNameFromLock((lock), WorkbenchBase))
 
 #endif /* __WORKBENCH_SUPPORT_H__ */
