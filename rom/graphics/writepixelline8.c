@@ -12,7 +12,7 @@
     NAME */
 #include <clib/graphics_protos.h>
 
-	AROS_LH6 (LONG, WritePixelLine8,
+	AROS_LH6(LONG, WritePixelLine8,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *	, rp		, A0),
