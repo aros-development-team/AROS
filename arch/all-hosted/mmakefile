@@ -135,7 +135,7 @@ else
 DEPLIB_CGFX=$(LIBDIR)/libcybergraphics.a
 endif
 
-DEP_LIBS = \
+DEP_LIBS := \
 	$(LIBDIR)/libemul.a \
 	$(LIBDIR)/libcon.a \
 	$(LIBDIR)/libnil.a \
@@ -161,18 +161,26 @@ DEP_LIBS = \
 	$(LIBDIR)/libinput.a \
 	$(LIBDIR)/libkeymap.a \
 	$(LIBDIR)/libx11cl.a \
-	$(LIBDIR)/liblinux.a \
 	$(LIBDIR)/libkeyboard.a \
 	$(LIBDIR)/libgameport.a \
 	$(DEPLIB_AROS)
 
-LIBS =	-L$(LIBDIR) \
+ifeq ("$(AROS_HOST_ARCH)","linux")
+DEP_LIBS := $(DEP_LIBS) $(LIBDIR)/liblinux.a
+endif
+
+
+LIBS :=	-L$(LIBDIR) \
 	-lexec -lboot -lintuition -lgraphics -llayers -ldos -lconsole \
 	-lhiddclass -lunixiocl -lutility -ltimer \
 	-laros -lmathffp -lmathieeesingbas -lexpansion -lbattclock \
-	-larossupport -lamiga -linput -lkeymap -loop -lx11cl -llinux \
+	-larossupport -lamiga -linput -lkeymap -loop -lx11cl \
 	-lhiddgraphicsstubs -lkeyboard -lgameport -lworkbench -lcon -lnil -lram -lemul \
 	-lcybergraphics
+
+ifeq ("$(AROS_HOST_ARCH)","linux")
+LIBS := $(LIBS) -llinux
+endif
 
 $(BINDIR)/aros: $(GENDIR)/aros.o $(DEP_LIBS)
 	$(CC) $(CFLAGS) -Dmain=submain $< $(LIBS) \
