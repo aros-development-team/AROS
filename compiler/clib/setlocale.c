@@ -5,6 +5,8 @@
     ANSI C / POSIX function setlocale().
 */
 
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
