@@ -7,15 +7,19 @@
 #include <aros/debug.h>
 
 #include <exec/types.h>
+#include <intuition/classes.h>
+#include <intuition/classusr.h>
+#include <libraries/mui.h>
 
+#include "abstracticon.h"
 #include "desktop_intern.h"
+#include "iconclass.h"
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
 #include "desktop_intern_protos.h"
-#include "abstracticon.h"
 
 IPTR abstractIconNew(Class *cl, Object *obj, struct opSet *msg)
 {
@@ -25,9 +29,9 @@ IPTR abstractIconNew(Class *cl, Object *obj, struct opSet *msg)
     BOOL script=FALSE, pure=FALSE, archived=FALSE, readable=FALSE, writeable=FALSE, executable=FALSE, deleteable=FALSE;
     UBYTE *comment=NULL;
 
-    while ((tag = NextTagItem(&tstate)) != NULL)
+    while((tag = NextTagItem(&tstate)) != NULL)
     {
-        switch (tag->ti_Tag)
+        switch(tag->ti_Tag)
         {
             case AIA_Comment:
                 comment = (UBYTE *) tag->ti_Data;
@@ -78,11 +82,11 @@ IPTR abstractIconNew(Class *cl, Object *obj, struct opSet *msg)
 
 IPTR abstractIconDispose(Class *cl, Object *obj, Msg msg)
 {
-	IPTR retval;
+    IPTR retval;
 
-	retval=DoSuperMethodA(cl, obj, msg);
+    retval=DoSuperMethodA(cl, obj, msg);
 
-	return retval;
+    return retval;
 }
 
 IPTR abstractIconGet(Class *cl, Object *obj, struct opGet *msg)
@@ -169,7 +173,7 @@ IPTR abstractIconSet(Class *cl, Object *obj, struct opSet *msg)
     if(doSuper)
         retval=DoSuperMethodA(cl, obj, (Msg) msg);
 
-	return retval;
+    return retval;
 }
 
 BOOPSI_DISPATCHER(IPTR, abstractIconDispatcher, cl, obj, msg)

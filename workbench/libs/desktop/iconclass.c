@@ -161,15 +161,12 @@ IPTR iconSet(Class * cl, Object * obj, struct opSet * msg)
                 data->whyRedraw =
                     SetAttrs(data->imagePart, MUIA_Selected, tag->ti_Data,
                              TAG_END);
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
                 break;
             case IA_Executed:
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
                 break;
             case IA_Directory:
             // this is the same as moving a file
                 data->directory = (UBYTE *) tag->ti_Data;
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
                 break;
             case IA_Type:
                 data->type = (LONG) tag->ti_Data;
@@ -316,7 +313,10 @@ IPTR iconHandleInput(Class * cl, Object * obj, struct MUIP_HandleInput * msg)
                                     (data->lastClickSecs,
                                      data->lastClickMicros, nowSeconds,
                                      nowMicros))
+                                {
+                                	kprintf("%d : executed\n", obj);
                                     SetAttrs(obj, IA_Executed, TRUE, TAG_END);
+                                }
                                 else
                                     SetAttrs(obj, IA_Selected, TRUE, TAG_END);
                             }

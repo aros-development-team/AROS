@@ -94,7 +94,6 @@ IPTR desktopObsSet(Class * cl, Object * obj, struct opSet * msg)
                                             obj, _app(_presentation(obj)));
                     PutMsg(DesktopBase->db_HandlerPort,
                            (struct Message *) htl);
-                    retval = DoSuperMethodA(cl, obj, (Msg) msg);
 
                     break;
                 }

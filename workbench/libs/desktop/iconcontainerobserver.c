@@ -95,7 +95,6 @@ IPTR iconConObsSet(Class * cl, Object * obj, struct opSet * msg)
                     PutMsg(DesktopBase->db_HandlerPort,
                            (struct Message *) hsr);
 
-                    retval = DoSuperMethodA(cl, obj, (Msg) msg);
                     DoMethod(_presentation(obj), MUIM_KillNotify, PA_InTree);
 
                     break;

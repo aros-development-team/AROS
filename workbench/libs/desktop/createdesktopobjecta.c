@@ -78,6 +78,8 @@
                 STRPTR          dir;
                 struct TagItem *tag;
 
+kprintf("creating iconcontainer\n");
+
                 tag = FindTagItem(ICOA_Directory, tags);
                 if (tag)
                 {
