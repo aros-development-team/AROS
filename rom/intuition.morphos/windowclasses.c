@@ -1576,6 +1576,7 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
             break;
 
+#ifdef __MORPHOS__
         case IECLASS_NEWTIMER:
             if (OPAQUESIZE && !data->drag_refreshed && WindowsReplied(w->WScreen,IntuitionBase))
             {
@@ -1584,7 +1585,7 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
                 data->drag_ticks = 2;
             }
             break;
-
+#endif /* __MORPHOS__ */
         } /* switch (ie->ie_Class) */
 
     } /* if (gi) */
