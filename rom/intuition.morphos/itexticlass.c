@@ -35,13 +35,13 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 
-#ifdef _AROS
+#ifndef __MORPHOS__
 #include "intuition_intern.h"
 #include "maybe_boopsi.h"
 #include <aros/asmcall.h>
 #include <proto/alib.h>
 #include "gadgets.h"
-#endif
+#endif /* !__MORPHOS__ */
 
 /****************************************************************************/
 

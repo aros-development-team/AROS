@@ -30,10 +30,10 @@
 #include "intuition_private.h"
 #include "intuition_pdefs.h"
 
-#ifdef _AROS
+#ifndef __MORPHOS__
 #include <aros/asmcall.h>
 #include <proto/alib.h>
-#endif
+#endif /* !__MORPHOS__ */
 
 #include "intuition_intern.h"
 #include "icclass.h"

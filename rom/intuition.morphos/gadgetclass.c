@@ -36,7 +36,7 @@ Original version 10/25/96 by caldi@usa.nai.net
 #include <proto/graphics.h>
 #include <proto/utility.h>
 
-#ifdef _AROS
+#ifndef __MORPHOS__
 struct ICData;
 #include "intuition_intern.h"
 #include "maybe_boopsi.h"
@@ -58,7 +58,7 @@ struct ICData;
 
 #endif
 
-#endif
+#endif /* !__MORPHOS__ */
 
 #define DEBUG_GADGET(x) ;
 
