@@ -8,8 +8,10 @@
 #include <exec/execbase.h>
 #include <proto/exec.h>
 #include <signal.h>
+#include <stdio.h>
 
 void _os_enable (void);
+extern int supervisor;
 
 /******************************************************************************
 
@@ -59,6 +61,11 @@ void _Enable (struct ExecBase * SysBase)
 void _os_enable (void)
 {
     sigset_t set;
+
+    if (supervisor)
+    {
+	fprintf (stderr, "Enable() called in supervisor mode\n");
+    }
 
     sigfillset (&set);
 
