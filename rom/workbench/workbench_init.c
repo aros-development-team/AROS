@@ -7,7 +7,7 @@
 */
 
 #include "workbench_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 #include "handler.h"
 
 #ifdef SysBase

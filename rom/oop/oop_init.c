@@ -13,7 +13,7 @@
 #include <oop/oop.h>
 
 #include "intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 #include "hash.h"
 #undef SDEBUG

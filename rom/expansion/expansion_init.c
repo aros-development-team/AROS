@@ -17,7 +17,7 @@
 #include <proto/expansion.h>
 
 #include "expansion_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 static const UBYTE name[];
 static const UBYTE version[];

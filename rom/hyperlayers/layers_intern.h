@@ -18,7 +18,7 @@
 #include <setjmp.h>
 #include <dos/dos.h>   /* BPTR below */
 
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 
 #include "../graphics/intregions.h"

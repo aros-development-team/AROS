@@ -1,25 +1,23 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := timer
-MODTYPE := device
-
-USER_CFLAGS := -I.
-INCLUDE_FILES := include/timer.h
-
 FILES := timervblank
 FUNCS := abortio addtime beginio cmptime getsystime subtime
 
-MAKE_SHLIB := $(SHARED_TIMER)
-
 #MM- kernel-timer : includes linklibs
-%make_module_setup mmake=kernel-timer
-%make_module_cpak
-%make_module mmake=kernel-timer
-%make_lib_includes
+#MM- kernel-timer-linklib : includes linklibs
+
+%build_module_macro mmake=kernel-timer \
+  modname=timer modtype=device \
+  funcs=$(FUNCS) files=$(FILES) \
+  conffile=lib.conf \
+  genshlinklib=$(SHARED_TIMER)
+  
 
 #MM includes-copy
+
+INCLUDE_FILES := include/timer.h
+
 %copy_includes path=hidd
 
-%include_deps
 %common

@@ -4,22 +4,17 @@
 #
 include $(TOP)/config/make.cfg
 
-MODNAME := keymap
-MODTYPE := library
-USER_INCLUDES := -I.
-
 FILES := defaultkeymap support
 FUNCS := askkeymapdefault mapansi maprawkey setkeymapdefault
 
-USE_CLIB := yes
+#MM- kernel-keymap-linklib : kernel-keymap-intern-linklib
 
-MAKE_SHLIB := $(SHARED_KEYMAP)
+#MM- kernel-keymap-intern-linklib : includes linklibs
 
-#MM- kernel-keymap : includes linklibs
-%make_module_setup mmake=kernel-keymap
-%make_module_cpak
-%make_module mmake=kernel-keymap
-%make_lib_includes
+%build_module_macro mmake=kernel-keymap-intern \
+  modname=keymap modtype=library \
+  funcs=$(FUNCS) files=$(FILES) \
+  conffile=lib.conf \
+  genshlinklib=$(SHARED_KEYMAP)
 
 %common
-%include_deps

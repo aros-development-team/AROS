@@ -6,7 +6,7 @@
     Lang: english
 */
 #include "layers_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 #include <graphics/gfxbase.h>
 
 #ifdef SysBase

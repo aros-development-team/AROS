@@ -28,7 +28,7 @@
 #include <proto/arossupport.h>
 
 #include "timer_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 /****************************************************************************************/
 

@@ -16,7 +16,7 @@
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <aros/asmcall.h>
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 #include "keymap_intern.h"
 
 /****************************************************************************************/
