@@ -137,6 +137,7 @@ struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * G
 
 	    /* We can use this rastport. Allocate driverdata */
     	    dd = AllocMem (sizeof(struct gfx_driverdata), MEMF_CLEAR);
+	    if (!dd) bug("********* Init Driver Data Allocmem faaiiiiiiiiiiiiiiiiiiiiiiiled!\n");
     	    if (dd)
     	    {
 	        struct shared_driverdata *sdd;
@@ -160,9 +161,9 @@ struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * G
     		    dd->dd_RastPort = rp;
     		    SetDriverData(rp, dd);
     		    rp->Flags |= RPF_DRIVER_INITED;
-		    
+		    bug(";;;;;;;;;;;;;;;;;; GC %x\n",rp->BitMap);
 		    ReturnPtr("InitDriverData", struct gfx_driverdata *, dd);
-	        }
+	        } bug(";;;;;;;;;;;;;;;;;; no GC %x\n",rp->BitMap);
 		
 		FreeMem(dd, sizeof (struct gfx_driverdata));
 	
@@ -184,10 +185,13 @@ void DeinitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 
 
     dd = (struct gfx_driverdata *) rp->longreserved[0];
+    rp->longreserved[0] = 0;
     
     HIDD_Gfx_DisposeGC(sdd->gfxhidd, dd->dd_GC);
 
     FreeMem (dd, sizeof(struct gfx_driverdata));
+    rp->Flags &= ~RPF_DRIVER_INITED;
+    
     ReturnVoid("DeinitDriverData");
 }
 
@@ -208,17 +212,35 @@ BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 	if (!old)
 	{
 	    old = InitDriverData(rp, GfxBase);
+
+/* stegerg: ???? would have returned TRUE even if old == NULL
 	    if (old)
 	    	retval = TRUE;
+*/
+	    if (!old) retval = FALSE;
 	}
 	else if (rp != old->dd_RastPort)
 	{
+	    /* stegerg: cloned rastport?	    
+	    ** Make sure to clear driverdata pointer and flag
+	    ** in case InitDriverData fail
+	    */
+	    rp->longreserved[0] = 0;
+	    rp->Flags &= ~RPF_DRIVER_INITED;
+	    
 	    dd = InitDriverData(rp, GfxBase);
+
+/* stegerg: ???? would have returned TRUE even if dd = NULL
 	    if (dd)
 	   	 retval = TRUE;
+*/
+
+	    if (!dd) retval = FALSE;
 
 	}
     }
+    
+    bug("======== correctdriverdata rp = %x dd = %x  RC = %ld\n",rp,GetDriverData(rp),retval);
     return retval;
 }
 
@@ -425,6 +447,8 @@ void driver_SetAPen (struct RastPort * rp, ULONG pen,
 void driver_SetBPen (struct RastPort * rp, ULONG pen,
 		    struct GfxBase * GfxBase)
 {
+    struct gfx_driverdata *dd;
+    
     if (CorrectDriverData (rp, GfxBase))
     {
     	
@@ -433,7 +457,11 @@ void driver_SetBPen (struct RastPort * rp, ULONG pen,
 		{ TAG_DONE,	0UL}
 	};
 	
-	SetAttrs( GetDriverData(rp)->dd_GC, col_tags );
+	dd = GetDriverData(rp);
+	if (dd)
+	{
+	    SetAttrs( dd->dd_GC, col_tags );
+	}
     }
 }
 
@@ -451,6 +479,7 @@ void driver_SetDrMd (struct RastPort * rp, ULONG mode,
 	{ aHidd_GC_DrawMode,	vHidd_GC_DrawMode_Copy },
 	{ TAG_DONE, 0UL }
     };
+    struct gfx_driverdata *dd;
     
     if (!CorrectDriverData (rp, GfxBase))
     	return;
@@ -470,9 +499,12 @@ void driver_SetDrMd (struct RastPort * rp, ULONG mode,
     }
 
 #warning Handle INVERSVID by swapping apen and bpen ?
-	
-    SetAttrs( GetDriverData(rp)->dd_GC, drmd_tags);
-	
+
+    dd = GetDriverData(rp);
+    if (dd)
+    {
+    	SetAttrs(dd->dd_GC, drmd_tags);
+    }
     return;
     	
 }
@@ -1468,7 +1500,7 @@ WORD driver_TextLength (struct RastPort * rp, STRPTR string, ULONG len,
 {
     struct TextFont *tf = rp->Font;
     WORD strlen = 0;
-    
+
     while (len --)
     {
 	
@@ -2009,8 +2041,6 @@ void driver_PolyDraw (struct RastPort * rp, LONG count, WORD * coords,
 		    struct GfxBase * GfxBase)
 {
     int i;                              /* Loop variable */
-
-    CorrectDriverData (rp, GfxBase);
 
     for(i = 0; i < count-1; i++)
     {
