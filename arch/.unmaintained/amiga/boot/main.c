@@ -126,6 +126,7 @@ int main(int argc, char **argv)
 		break;
 	    case 'd':
 		debug = TRUE;
+		break;
 	    default:
 		Printf("Unknown option: %c\n", argv[0][1]);
 		break;
