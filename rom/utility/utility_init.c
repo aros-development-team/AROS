@@ -23,6 +23,7 @@
 #define LC_LIB_FIELD(lib)       (((struct IntUtilityBase *)(lib))->UBase.ub_LibNode)
 #define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB
+#define LC_NO_EXPUNGELIB
 
 #include <libcore/libheader.c>
 
