@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  2000/01/11 16:05:00  bergers
+    Update. Move some code from intuition_driver to this directoy.
+
     Revision 1.6  1998/10/20 16:45:54  hkiel
     Amiga Research OS
 
@@ -64,10 +67,25 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    intui_EndRefresh (window, complete, IntuitionBase);
+  /* Check whether the BeginRefresh was aborted due to a FALSE=BeginUpdate()*/
+  if (0 != (window->Flags & WFLG_WINDOWREFRESH))
+    EndUpdate(window->WLayer, complete);
+  
+  /* reset all bits indicating a necessary or ongoing refresh */
+  window->Flags &= ~WFLG_WINDOWREFRESH;
+  
+  /* I reset this one only if Complete is TRUE!?! */
+  if (TRUE == complete)
+    window->WLayer->Flags &= ~LAYERREFRESH;
 
-    AROS_LIBFUNC_EXIT
+  /* Unlock the layers. */
+  if (0 != (window->Flags & WFLG_GIMMEZEROZERO))
+    UnlockLayerRom(window->BorderRPort->Layer);
+  
+  UnlockLayerRom(window->WLayer);
+
+  AROS_LIBFUNC_EXIT
 } /* EndRefresh */

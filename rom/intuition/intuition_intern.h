@@ -241,14 +241,9 @@ extern int intui_GetWindowSize (void);
 extern void intui_WindowLimits (struct Window * window,
 	    WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight);
 extern void intui_ActivateWindow (struct Window *);
-extern void intui_BeginRefresh (struct Window * window,
-	    struct IntuitionBase * IntuitionBase);
 extern BOOL intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
 	    WORD width, WORD height);
 extern void intui_CloseWindow (struct Window *, struct IntuitionBase *);
-extern void intui_EndRefresh (struct Window * window,
-	    BOOL complete,
-	    struct IntuitionBase * IntuitionBase);
 extern void intui_MoveWindow (struct Window * window, WORD dx, WORD dy);
 extern int  intui_OpenWindow (struct Window *, struct IntuitionBase *, 
 			      struct BitMap * SuperBitMap, struct Hook *backfillhook);
@@ -263,6 +258,8 @@ void intrequest_freelabels(STRPTR *gadgetlabels, struct IntuitionBase *Intuition
 void intrequest_freegadgets(struct Gadget *gadgets, struct IntuitionBase *IntuitionBase);
 
 void windowneedsrefresh(struct Window * w, struct IntuitionBase * IntuitionBase);
+
+extern void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2); 
 
 void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
 

@@ -65,14 +65,23 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-  intui_ScrollWindowRaster(win,
-                           dx,
-                           dy,
-                           xmin,
-                           ymin,
-                           xmax,
-                           ymax,
-                           IntuitionBase);
+
+  ScrollRasterBF(win->RPort,
+                 dx,
+                 dy,
+                 xmin,
+                 ymin,
+                 xmax,
+                 ymax);
+  /* Has there been damage to the layer? */
+  if (0 != (win->RPort->Layer->Flags & LAYERREFRESH))
+  {
+    /* 
+       Send a refresh message to the window if it doesn't already
+       have one.
+    */
+    windowneedsrefresh(win, IntuitionBase);
+  } 
 
   AROS_LIBFUNC_EXIT
 } /* ScrollWindowRaster */

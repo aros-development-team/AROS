@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  2000/01/11 16:05:00  bergers
+    Update. Move some code from intuition_driver to this directoy.
+
     Revision 1.6  1998/10/20 16:45:51  hkiel
     Amiga Research OS
 
@@ -63,10 +66,25 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    intui_BeginRefresh (window, IntuitionBase);
+  /* lock all necessary layers */
+  LockLayerRom(window->WLayer);
+  /* Find out whether it's a GimmeZeroZero window with an extra layer to lock */
+  if (0 != (window->Flags & WFLG_GIMMEZEROZERO))
+    LockLayerRom(window->BorderRPort->Layer);
 
-    AROS_LIBFUNC_EXIT
+  /* I don't think I ever have to update the BorderRPort's layer */
+  if (FALSE == BeginUpdate(window->WLayer))
+  {
+    EndUpdate(window->WLayer, FALSE);
+kprintf("%s :BeginUpdate returned FALSE!->Aborting BeginUpdate()\n",__FUNCTION__);
+    return;
+  }
+  
+  /* let the user know that we're currently doing a refresh */
+  window->Flags |= WFLG_WINDOWREFRESH;
+
+  AROS_LIBFUNC_EXIT
 } /* BeginRefresh */

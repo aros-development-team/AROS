@@ -1,6 +1,7 @@
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
+#include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/dos.h>
 #include <dos/dos.h>
@@ -71,4 +72,14 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
              sizeof(struct Preferences),
              TRUE);
 */
+}
+
+
+
+void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2)
+{
+    if ((x2 >= x1) && (y2 >= y1))
+    {
+    	RectFill(rp, x1, y1, x2, y2);
+    }
 }
