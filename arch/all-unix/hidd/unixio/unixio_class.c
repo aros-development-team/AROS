@@ -560,7 +560,7 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
 
 IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode, APTR callback, APTR callbackdata)
 {
-     static MethodID mid = NULL;
+     static MethodID mid = 0UL;
      struct uioMsg p;
      
      if (!mid)

@@ -56,7 +56,7 @@ VOID consoleTaskEntry(struct coTaskParams *ctp)
 	if (inputio)
 	{
 	    /* Open the input.device */
-	    if (!OpenDevice("input.device", -1, (struct IORequest *)inputio, NULL))
+	    if (!OpenDevice("input.device", -1, (struct IORequest *)inputio, 0UL))
 	    {
 	    	/* Initialize the inputhandler itself */
 	    	ConsoleDevice->inputHandler = initCDIH(ConsoleDevice);
