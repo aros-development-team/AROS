@@ -255,7 +255,7 @@ Class *makeStdConClass(struct ConsoleBase *ConsoleDevice)
    cl = MakeClass(NULL, NULL ,CONSOLECLASSPTR , sizeof(struct stdcondata), 0UL);
    if (cl)
    {
-    	cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_stdconclass);
+    	cl->cl_Dispatcher.h_Entry = (APTR)dispatch_stdconclass;
     	cl->cl_Dispatcher.h_SubEntry = NULL;
 
     	cl->cl_UserData = (IPTR)ConsoleDevice;

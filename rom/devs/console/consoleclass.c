@@ -280,7 +280,7 @@ Class *makeConsoleClass(struct ConsoleBase *ConsoleDevice)
    cl = MakeClass(NULL, ROOTCLASS, NULL, sizeof(struct consoledata), 0UL);
    if (cl)
    {
-    	cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_consoleclass);
+    	cl->cl_Dispatcher.h_Entry = (APTR)dispatch_consoleclass;
     	cl->cl_Dispatcher.h_SubEntry = NULL;
 
     	cl->cl_UserData = (IPTR)ConsoleDevice;
