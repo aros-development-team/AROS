@@ -298,7 +298,10 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	}
     }
 
-    if (defaults[6].ti_Data) SetVBuf((BPTR) defaults[6].ti_Data, NULL, BUF_NONE, -1);
+    if (defaults[6].ti_Data)
+    {
+        SetVBuf((BPTR) defaults[6].ti_Data, NULL, BUF_LINE, -1);
+    }
 
     /* NP_CurrentDir */
 
