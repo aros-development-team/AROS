@@ -88,7 +88,7 @@ __inline static Fixed32 FixMul(Fixed32 eins,Fixed32 zwei)
 __inline static Fixed32 FixDiv(Fixed32 eins,Fixed32 zwei)
 {
 #ifdef _AROS
-	eins = DOUBLE_TO_FIXED( (double) eins / (double) zwei );
+	eins = (double) eins / (double) zwei * 65536.0;
 #else
 	
 #ifndef version060
@@ -118,7 +118,7 @@ __inline static Fixed32 FixDiv(Fixed32 eins,Fixed32 zwei)
 	 : "fp0"
 	);
 #else
-	eins = DOUBLE_TO_FIXED( (double) eins / (double) zwei );
+	eins = (double) eins / (double) zwei * 65536.0;
 #endif
 #endif /* version060 */
 

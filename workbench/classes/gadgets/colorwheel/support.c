@@ -378,12 +378,12 @@ STATIC VOID ClutWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
     	UWORD		cx = data->wheelcx,
     			cy = data->wheelcy,
     			rx = data->wheelrx - 4,
-    			ry = data->wheelry - 4,
-    			depth = GetBitMapAttr( rp->BitMap, BMA_DEPTH );    	
+    			ry = data->wheelry - 4;
     	ULONG		rasSize;
 
-    	rasSize = RASSIZE( width*depth, height );
-    	
+
+    	rasSize = RASSIZE( width, height );
+
     	if( (ras = AllocVec( rasSize, MEMF_CHIP ) ) )
     	{    		
     	    struct AreaInfo	ai;
@@ -508,34 +508,30 @@ STATIC VOID ClutWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
 		        ConvertHSBToRGB(&hsb, &rgb);
 
 		        t = Bayer16[y & 15][x & 15];
+
 			t = (t * range) / 255;
 
 		        v = ( rgb.cw_Red >> 24 );
-
 		        base = (v / range) * range;
-
 		        r = (v - base > t) ? base + range : base;
 
 		        v = ( rgb.cw_Green >> 24 );
-
 		        base = (v / range) * range;
-
 			g = (v - base > t) ? base + range : base;
 
 		        v = ( rgb.cw_Blue >> 24 );
-
 		        base = (v / range) * range;
-
 		        b = (v - base > t) ? base + range : base;
 
-	            	r = ((r / range) * levels * levels);
-	            	g /= range;
-	            	b /= range;
-	            	base =  r + (g*levels) + b;	            	    
+	            	r /= range;if (r >= levels) r = levels - 1;
+	            	g /= range;if (g >= levels) g = levels - 1;
+	            	b /= range;if (b >= levels) b = levels - 1;
+
+	            	base = (r*levels*levels) + (g*levels) + b;	            	    
 	            	*p++ = data->pens[ base ];
 
 	            	#if USE_SYMMETRIC_SPEEDUP
-	            	base = r + (b*levels) + g;
+	            	base = (r*levels*levels) + (b*levels) + g;
 	            	*--p2 = data->pens[ base ];
 	            	#endif
 		    }
@@ -931,7 +927,7 @@ void allocPens( struct ColorWheelData *data, struct ColorWheelBase_intern *Color
 			}	
 		    }		
 
-		    range = 255 / (levels - 1);
+		    range = 254 / (levels - 1);
 		    p = data->pens;
 
 		    for(r = 0, i = 0 ; r < levels ; r++)
