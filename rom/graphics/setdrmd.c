@@ -51,6 +51,7 @@
     driver_SetDrMd (rp, drawMode, GfxBase);
 
     rp->DrawMode = drawMode;
+    rp->linpatcnt = 0;
 
     AROS_LIBFUNC_EXIT
 } /* SetDrMd */
