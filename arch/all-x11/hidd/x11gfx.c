@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: X11 gfx HIDD for AROS.
@@ -76,7 +76,9 @@ struct gfx_data
     
     /* Frame buffer window */
     Window	fbwin;
-   
+#if ADJUST_XWIN_SIZE
+    Window	masterwin;
+#endif
 };
 
 
@@ -365,6 +367,10 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
     if (NULL != newbm && framebuffer) {
     	OOP_GetAttr(newbm, aHidd_X11BitMap_Drawable, &drawable);
 	data->fbwin = (Window)drawable;
+#if ADJUST_XWIN_SIZE
+    	OOP_GetAttr(newbm, aHidd_X11BitMap_MasterWindow, &drawable);
+	data->masterwin = (Window)drawable;
+#endif
     }
     ReturnPtr("X11Gfx::NewBitMap", OOP_Object *, newbm);
 }
@@ -429,10 +435,15 @@ static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
     if ( HIDD_Gfx_GetMode(o, (HIDDT_ModeID)modeid, &sync, &pf)) {
     	struct MsgPort *port;
 	
+#if 1
+    	OOP_GetAttr(msg->bitMap, aHidd_BitMap_Width, &width);
+	OOP_GetAttr(msg->bitMap, aHidd_BitMap_Height, &height);
+#else
     	OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
 	OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
-#if 0	
-	
+#endif
+
+#if ADJUST_XWIN_SIZE		
 	/* Send resize message to the x11 task */
 	port = CreateMsgPort();
 	if (NULL != port) {
@@ -440,11 +451,12 @@ static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 	    
 	    nmsg = AllocMem(sizeof (*nmsg), MEMF_PUBLIC);
 	    if (NULL != nmsg) {
-	    	nmsg->notify_type = NOTY_RESIZEWINDOW;
-		nmsg->xdisplay	  = data->display;
-		nmsg->xwindow	  = data->fbwin;
-		nmsg->width	  = width;
-		nmsg->height	  = height;
+	    	nmsg->notify_type 	= NOTY_RESIZEWINDOW;
+		nmsg->xdisplay	  	= data->display;
+		nmsg->xwindow	 	= data->fbwin;
+		nmsg->masterxwindow	= data->masterwin;
+		nmsg->width	  	= width;
+		nmsg->height	  	= height;
 		nmsg->execmsg.mn_ReplyPort = port;
 		
 		PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)nmsg);
@@ -454,7 +466,7 @@ static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 #endif		
 		
 		fb = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-#if 0		
+#if ADJUST_XWIN_SIZE		
 	    }
 	    DeleteMsgPort(port);
 	}

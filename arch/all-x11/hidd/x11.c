@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: X11 hidd. Connects to the X server and receives events.
@@ -46,6 +46,7 @@
 
 
 #include "x11.h"
+#include "x11gfx_intern.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -406,7 +407,10 @@ D(bug("Got input from unixio\n"));
 		
 		case NOTY_MAPWINDOW:
 LX11		
-	            XMapRaised (nmsg->xdisplay, nmsg->xwindow);
+	            XMapWindow (nmsg->xdisplay, nmsg->xwindow);
+#if ADJUST_XWIN_SIZE
+		    XMapRaised (nmsg->xdisplay, nmsg->masterxwindow);
+#endif
 UX11		    
 		    AddTail((struct List *)&nmsg_list, (struct Node *)nmsg);			
 		    
@@ -421,21 +425,19 @@ UX11
 		    
 		    
 LX11	
-#if 1
 		    XConfigureWindow(nmsg->xdisplay
-		    	, nmsg->xwindow
+		    	, nmsg->masterxwindow
 		    	, CWWidth | CWHeight
 			, &xwc
 		    );
 
-#else
-		    XResizeWindow(nmsg->xdisplay, nmsg->xwindow
-		    	, nmsg->width, nmsg->height);
-#endif			
 		    XFlush(nmsg->xdisplay);
 UX11	
+		    ReplyMsg((struct Message *)nmsg);
+#if 0
 		    AddTail((struct List *)&nmsg_list, (struct Node *)nmsg);
 		    /* Do not reply message yet */
+#endif
 		    break; }
 		
 		case NOTY_WINDISPOSE: {
@@ -515,9 +517,11 @@ UX11
 		    break;
 		    
 		case ConfigureRequest:
-			kprintf("!!! CONFIGURE REQUEST !!\n");
-			break;
+		    kprintf("!!! CONFIGURE REQUEST !!\n");
+		    break;
 
+#if 0
+/* stegerg: not needed */
 	        case ConfigureNotify: {
 		    /* The window has been resized */
 		
@@ -539,7 +543,7 @@ UX11
 		    
 		     
 		    break; }
-
+#endif
 
 	    	case ButtonPress:
 	        case ButtonRelease:

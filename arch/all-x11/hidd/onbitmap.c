@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Bitmap class for X11 hidd.
@@ -52,6 +52,12 @@ static struct OOP_ABDescr attrbases[] =
 /* Macro trick to reuse code between offscreen and onscreen bitmap hidd
 (bitmap_common.c) */
 #define DRAWABLE(data) (data)->drawable.xwindow
+
+#if ADJUST_XWIN_SIZE
+#define MASTERWIN(data) (data)->masterxwindow
+#else
+#define MASTERWIN(data) DRAWABLE(data)
+#endif
 
 #define MNAME(x) onbitmap_ ## x
 
@@ -120,7 +126,7 @@ UX11
 	/* end stegerg */
 	
 	/* Get attr values */
-	OOP_GetAttr(o, aHidd_BitMap_Width,		&width);
+	OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
 	OOP_GetAttr(o, aHidd_BitMap_Height, 	&height);
 
 
@@ -169,9 +175,42 @@ LX11
 	    valuemask |= CWColormap;
 	}
 /* end stegerg */
+
+#if ADJUST_XWIN_SIZE
+	{
+	    XSetWindowAttributes winattr;
+	    unsigned long 	valuemask = 0;
+
+	    if (data->flags & BMDF_COLORMAP_ALLOCED)
+	    {
+		winattr.colormap = data->colmap;
+		valuemask |= CWColormap;
+	    }
+	    
+	    MASTERWIN(data) = XCreateWindow( GetSysDisplay()
+	    		    , rootwin
+			    , 0	/* leftedge 	*/
+			    , 0	/* topedge	*/
+			    , width
+			    , height
+			    , 0	/* BorderWidth	*/
+			    , depth
+			    , InputOutput
+			    , DefaultVisual (GetSysDisplay(), GetSysScreen())
+			    , valuemask
+			    , &winattr
+	   	     );
+	}
 	
+	if (MASTERWIN(data)) 
+#endif	
+
 	DRAWABLE(data) = XCreateWindow( GetSysDisplay()
-	    		, rootwin
+#if ADJUST_XWIN_SIZE
+	    		, MASTERWIN(data)
+#else
+			, rootwin
+#endif
 			, 0	/* leftedge 	*/
 			, 0	/* topedge	*/
 			, width
@@ -184,25 +223,33 @@ LX11
 			, &winattr
 	   	 );
 UX11	    
+
 	D(bug("Xwindow : %p\n", DRAWABLE(data)));
+
+#if ADJUST_XWIN_SIZE
+	if (DRAWABLE(data) && MASTERWIN(data))
+#else
 	if (DRAWABLE(data))
+#endif
 	{
             XSizeHints 		sizehint;
 	    struct MsgPort 	*port;	    
 	    struct notify_msg 	*msg;
 
 LX11
-	    XStoreName   (GetSysDisplay(), DRAWABLE(data), "AROS");
-	    XSetIconName (GetSysDisplay(), DRAWABLE(data), "AROS Screen");
+	    XStoreName   (GetSysDisplay(), MASTERWIN(data), "AROS");
+	    XSetIconName (GetSysDisplay(), MASTERWIN(data), "AROS Screen");
 		    
+#if !ADJUST_XWIN_SIZE
 	    sizehint.flags      = PMinSize | PMaxSize;
 	    sizehint.min_width  = width;
 	    sizehint.min_height = height;
 	    sizehint.max_width  = width;
 	    sizehint.max_height = height;
-	    XSetWMNormalHints (GetSysDisplay(), DRAWABLE(data), &sizehint);
+	    XSetWMNormalHints (GetSysDisplay(), MASTERWIN(data), &sizehint);
+#endif
 	    
-	    XSetWMProtocols (GetSysDisplay(), DRAWABLE(data), &XSD(cl)->delete_win_atom, 1);
+	    XSetWMProtocols (GetSysDisplay(), MASTERWIN(data), &XSD(cl)->delete_win_atom, 1);
 
 	    D(bug("Calling XMapRaised\n"));
 
@@ -246,6 +293,7 @@ UX11
 		msg->notify_type = NOTY_WINCREATE;
 		msg->xdisplay = GetSysDisplay();
 		msg->xwindow = DRAWABLE(data);
+		msg->masterxwindow = MASTERWIN(data);
 		msg->bmobj = o;
 		msg->execmsg.mn_ReplyPort = port;
 		
@@ -263,15 +311,18 @@ UX11
 		
    		msg->xdisplay = GetSysDisplay();
 		msg->xwindow = DRAWABLE(data);
+		msg->masterxwindow = MASTERWIN(data);
 		msg->notify_type = NOTY_MAPWINDOW;
 		msg->execmsg.mn_ReplyPort = port;
-		
+
 		PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)msg);
 
 		/* Wait for result */
 		WaitPort(port);
 		
 		GetMsg(port);
+
+kprintf("NOTY_MAPWINDOW request returned\n");		
 		
 	    	gcval.plane_mask = AllPlanes;
 	    	gcval.graphics_exposures = False;
@@ -359,6 +410,7 @@ UX11
 	msg->notify_type = NOTY_WINDISPOSE;
    	msg->xdisplay = GetSysDisplay();
 	msg->xwindow = DRAWABLE(data);
+	msg->masterxwindow = MASTERWIN(data);
 	msg->execmsg.mn_ReplyPort = port;
 	
 	PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)msg);
@@ -373,9 +425,18 @@ LX11
 	
     	XDestroyWindow( GetSysDisplay(), DRAWABLE(data));
 	XFlush( GetSysDisplay() );
-UX11	
-	
+UX11		
     }
+
+#if ADJUST_XWIN_SIZE
+    if (MASTERWIN(data))
+    {
+LX11
+        XDestroyWindow( GetSysDisplay(), MASTERWIN(data));
+	XFlush( GetSysDisplay() );
+UX11
+    }
+#endif
 
     if (data->flags & BMDF_COLORMAP_ALLOCED)
     {

@@ -13,12 +13,12 @@ extern OOP_AttrBase HiddX11BitMapAB;
 
 enum {
     aoHidd_X11BitMap_Drawable,
-    
+    aoHidd_X11BitMap_MasterWindow,
     num_Hidd_X11BitMap_Attrs
 };
 
 #define aHidd_X11BitMap_Drawable	(HiddX11BitMapAB + aoHidd_X11BitMap_Drawable)
-
+#define aHidd_X11BitMap_MasterWindow	(HiddX11BitMapAB + aoHidd_X11BitMap_MasterWindow)
 
 
 /* This structure is used for both onscreen and offscreen X11 bitmaps !! */
@@ -41,6 +41,7 @@ struct bitmap_data
     	Window 	xwindow;
 	Pixmap  pixmap;
     } drawable;
+    Window	masterxwindow;
     
     Cursor	cursor;
 //    long 	maxpen;

@@ -1122,6 +1122,10 @@ static VOID MNAME(get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    	*msg->storage = (IPTR)DRAWABLE(data);
 		break;
 
+	    case aoHidd_X11BitMap_MasterWindow:
+	        *msg->storage = (IPTR)data->masterxwindow;
+		break;
+		
 	    default:
 	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;

@@ -1,7 +1,7 @@
 #ifndef X11GFX_INTERN_H
 #define X11GFX_INTERN_H
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: X11 gfx HIDD for AROS.
@@ -32,6 +32,7 @@ VOID free_ximage(XImage *image);
 
 #define USE_X11_DRAWFUNCS  	1
 #define X11SOFTMOUSE		0
+#define ADJUST_XWIN_SIZE	1	/* Resize the xwindow to the size of the actual visible screen */
 
 /* Private Attrs and methods for the X11Gfx Hidd */
 

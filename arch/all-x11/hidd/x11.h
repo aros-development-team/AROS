@@ -2,7 +2,7 @@
 #define HIDD_X11_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Include for the x11 HIDD.
@@ -131,6 +131,7 @@ struct notify_msg {
      ULONG notify_type; /* NOTY_xxxx */
      Display *xdisplay;     
      Window xwindow;
+     Window masterxwindow;
      OOP_Object *bmobj;
      
      /* Only for NOTY_RESIZEWINDOW */
