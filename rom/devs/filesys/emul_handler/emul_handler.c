@@ -52,6 +52,11 @@
 #include <sys/time.h>
 #undef timeval
 
+/* Underlying OS's rename() Clib function */
+#include "/usr/include/stdio.h"
+//extern int rename(const char *old, const char *new);
+
+
 #include "emul_handler_intern.h"
 #ifdef __GNUC__
 #   include "emul_handler_gcc.h"
@@ -115,7 +120,7 @@ const struct Resident emul_handler_resident=
 
 static const char name[]="emul.handler";
 
-static const char version[]="$VER: emul_handler 41.4 (27.08.1998)\r\n";
+static const char version[]="$VER: emul_handler 41.5 (21.06.2000)\r\n";
 
 static const APTR inittabl[4]=
 {
@@ -1111,6 +1116,30 @@ static LONG create_softlink(struct emulbase * emulbase,
 
 /*********************************************************************************************/
 
+static LONG rename_object(struct emulbase * emulbase,
+                            struct filehandle *fh, STRPTR file, STRPTR newname)
+{
+    LONG ret = 0L;
+
+    char *filename = NULL , *newfilename = NULL;
+
+    ret = makefilename(emulbase, &filename, fh->name, file);
+    if (!ret)
+    {
+	ret = makefilename(emulbase, &newfilename, fh->name, newname);
+	if (!ret)
+	{
+	    if (rename(filename,newfilename))
+		ret = err_u2a();
+	    emul_free(emulbase, newfilename);
+	}
+	emul_free(emulbase, filename);
+    }
+
+    return ret;
+}
+
+
 static LONG read_softlink(struct emulbase *emulbase,
                           struct filehandle *fh,
                           STRPTR buffer,
@@ -1456,8 +1485,10 @@ AROS_LH1(void, beginio,
             break;
 
 	case FSA_RENAME:
-#warning FIXME: not supported yet
-	    error=ERROR_ACTION_NOT_KNOWN;
+	    error = rename_object(emulbase,
+                                    (struct filehandle *)iofs->IOFS.io_Unit,
+                                    iofs->io_Union.io_RENAME.io_Filename,
+                                    iofs->io_Union.io_RENAME.io_NewName);
 	    break;
 
         case FSA_READ_SOFTLINK:
