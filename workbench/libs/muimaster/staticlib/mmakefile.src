@@ -8,7 +8,8 @@ LIB	:= mui
 
 FILES	:= mui_allocaslrequesttags \
 	   mui_aslrequesttags \
-    	   mui_newobject
+	   mui_makeobject \
+    	   mui_newobject 
 
 #MM- linklibs: linklibs-mui
 #MM linklibs-mui : includes
