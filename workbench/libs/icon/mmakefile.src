@@ -18,7 +18,7 @@ endif
 FILES	:=  basicfuncs diskobjio
 FUNCS	:=  addfreelist bumprevision deletediskobject dupdiskobject drawiconstate findtooltype \
 	    freediskobject freefreelist getdefdiskobject getdiskobject \
-	    getdiskobjectnew geticonrectangle matchtoolvalue putdefdiskobject putdiskobject
+	    getdiskobjectnew geticonrectangle geticontaglist matchtoolvalue putdefdiskobject putdiskobject
 
 USE_AMIGALIB := yes
 USE_ROMLIB := yes
