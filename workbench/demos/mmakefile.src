@@ -20,6 +20,7 @@ FILES	:= \
 else
 FILES	:= \
     cctest \
+    childwindow \
     clippingtest \
     colorwheel \
     compleximage \
