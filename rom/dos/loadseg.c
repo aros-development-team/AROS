@@ -69,7 +69,7 @@ BPTR LoadSeg_AOUT(BPTR file);
     {
 D(bug("Loading \"%s\"...\n", name));
 	/* Then try to load the different file formats */
-/*	  segs=LoadSeg_AOS(file); Not yet */
+	segs=LoadSeg_AOS(file);
 	if(!segs)
 	    segs=LoadSeg_ELF(file);
 	if(!segs)
