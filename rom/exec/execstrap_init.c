@@ -6,7 +6,7 @@
     Lang: english
 */
 #define DEBUG 0
-#define LMBSUPPORT 1
+#define LMBSUPPORT 0
 
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -90,13 +90,14 @@ struct SpecialResident resident =
 };
 
 const char name[] = "exec.strap";
-const char version[] = "$VER: exec.strap 41.9 (21.3.1997)";
+const char version[] = "$VER: exec.strap 41.9 (22.3.1997)";
 
 /*
     Array of function slots to enable/disable. They are all set to 1 (enabled)
-    by default. "boot" will find the SR_COOKIE in the resident structure to see
+    by default. Arosboot will find the SR_COOKIE in the resident structure to see
     if this array is present, and will then disable certain functions if they
-    are specified as off in the config file.
+    are specified as off in the config file. We could extend this for more config
+    file options, as we have 7 more bits to play with in the array.
 */
 UBYTE dearray[] =
 {
@@ -159,9 +160,11 @@ int start(void)
 
     flash(BLUE);
 
-#if 1 /* Disable in boot.config */
+#if 1 /* Disable in arosboot.config */
     /* The cause of a second infinite reset loop, as reported on 39.106 ROM?
        I have the same ROM, without this problem */
+    /* Update: gcc produced 64-bit multiply instructions, which are missing on
+       the 68060. Recoded so it won't produce these anymore. Still to test. */
     /* First patch SetFunction itself. */
     SetFunc( 70, SetFunction);
 #endif
@@ -307,7 +310,7 @@ int start(void)
     SetFunc( 87, RawDoFmt);
 #endif
     SetFunc( 89, TypeOfMem);
-#if 1 /* Disable in boot.config */
+#if 1 /* Disable in arosboot.config */
     /* May be incompatible with OS37 OpenLibrary() */
     SetFunc( 92, OpenLibrary);
 #endif
