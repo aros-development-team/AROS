@@ -1,0 +1,28 @@
+#   $Id$
+#
+#   Generate the libarosm for arm. Not much content so far.
+#
+include $(TOP)/config/make.cfg
+
+LIB	:= arosm
+
+FILES	:= \
+	dummy
+
+#MM linklibs-arosm-arm
+
+#Needed to write this target so it becomes arm specific
+linklibs-$(LIB)-arm: setup $(LIBDIR)/lib$(LIB).a
+	@$(NOP)
+
+AFLAGS =
+
+$(OBJDIR)/%.o : %.s
+	%assemble_q opt=$(AFLAGS)
+
+#%make_linklib_setup
+
+%make_linklib
+
+%common
+%include_deps
