@@ -196,6 +196,9 @@ struct MemList *BuildMemList(struct ilsMemList *prelist, ULONG *modlist, ULONG m
 
 void StuffTags(struct MemList *memlist, ULONG *modlist, ULONG nummods)
 {
+    /* Fix 970102 ldp: protect the Kick ptrs with Forbid/Permit */
+    Forbid();
+
     if(SysBase->KickMemPtr)
     {
 	/*
@@ -217,12 +220,13 @@ void StuffTags(struct MemList *memlist, ULONG *modlist, ULONG nummods)
     /*
 	Flush caches. I have some problems with having to boot twice to get
 	into AROS. Maybe this will help? Or it may be the BlizKick util I'm
-	using that gets in the way?
+	using that gets in the way? Or maybe something totally unexpected? :)
     */
     CacheClearU();
 
     /*
-	And checksum the KickPtrs.
+	And checksum the KickPtrs. KickCheckSum is defined wrong in the include
+        file exec/execbase.h. It is defined as APTR, but really is a ULONG.
     */
     SysBase->KickCheckSum = (APTR)SumKickData();
 
@@ -230,6 +234,8 @@ void StuffTags(struct MemList *memlist, ULONG *modlist, ULONG nummods)
 	Flush caches (highly recommended).
     */
     CacheClearU();
+
+    Permit();
 }
 
 void *FindResMod(struct ilsMemList *list)
