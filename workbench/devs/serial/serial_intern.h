@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.6  2000/03/09 16:55:27  bergers
+    Some bugfixes.
+
     Revision 1.5  2000/01/12 18:14:04  bergers
     Update: Support of shared unit. AbortIO() implementation. Bugfixes, clenups etc.
 
@@ -106,7 +109,7 @@ struct SerialUnit
   struct Message    * su_ActiveWrite;
 
   ULONG               su_UnitNum;
-  ULONG               su_Flags;    // copy of IOExtSer->io_SerFlags;
+  ULONG               su_SerFlags;    // copy of IOExtSer->io_SerFlags;
   ULONG               su_Status;
   
   ULONG               su_CtlChar;

@@ -23,7 +23,7 @@ clean ::
 setup :
 	%mkdirs_q $(OBJDIR) $(DEVSDIR)
 
-$(DEVSDIR)/serial.device : $(OBJS)
+$(DEVS) : $(OBJS) $(INIT).c
 	%link_q startup=$(OBJDIR)/$(INIT).o $(OBJS)
 
 $(OBJDIR)/%.o : %.c

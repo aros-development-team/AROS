@@ -173,8 +173,7 @@ AROS_LH3(void, open,
       {
         SU->su_OpenerCount	= 1;
         SU->su_UnitNum		= unitnum;
-        SU->su_Flags		= ioreq->io_Flags;
-        
+        SU->su_SerFlags		= ((struct IOExtSer *)ioreq)->io_SerFlags;
         SU->su_InputBuffer	= AllocMem(MINBUFSIZE, MEMF_PUBLIC);
         
         if (NULL != SU->su_InputBuffer)
@@ -230,7 +229,7 @@ AROS_LH3(void, open,
       /* 
       ** Check whether one more opener to this unit is tolerated 
       */
-      if (0 != (SU->su_Flags & SERF_SHARED))
+      if (0 != (SU->su_SerFlags & SERF_SHARED))
       {
         /*
         ** This unit is in shared mode and one more opener
@@ -728,7 +727,7 @@ AROS_LH1(void, beginio,
         SU->su_BrkTime = ioreq->io_BrkTime;
         
       /* Copy the Flags from the iorequest to the Unit's Flags */
-      SU->su_Flags = ioreq->io_SerFlags;
+      SU->su_SerFlags = ioreq->io_SerFlags;
 
       /* Change baudrate if necessary and possible */
       if (SU->su_Baud != ioreq->io_Baud)

@@ -18,7 +18,7 @@ ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum)
   struct SerialUnit * SU = NULL;
   ULONG index = 0;
 
-  D(bug("!Received %d bytes on unit %d (%s)\n",length,unitnum,data));
+  D(bug("!Received %d bytes on unit %d\n",length,unitnum));
 
   SU = findUnit(pubSerialBase, unitnum);
     
@@ -33,7 +33,6 @@ ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum)
       {
         ioreq = (struct IOStdReq *)GetMsg(&SU->su_QReadCommandPort);
         SU->su_ActiveRead = (struct Message *)ioreq;
-        D(bug("Something is wrong!"));
       }
       
       while (NULL != ioreq)
