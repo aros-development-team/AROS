@@ -17,16 +17,16 @@ ifeq ($(FLAVOUR),native)
 # 2) Missing functions because we don't link with libc.a
 #
 
-FILES := gtdemo helloworld inquire intuitext librarytest listfonts \
-	 palettedemo readicon regiontest shadowborder sift strtest \
-	 mxgads
+FILES := gtdemo helloworld inquire intuitext librarytest listfonts keymaptest \
+	 mxgads palettedemo readicon regiontest shadowborder sift strtest
+	 
 
 else
 
 FILES := compleximage demowin gtdemo helloworld inquire intuitext \
-	 librarytest listfonts palettedemo readicon regiontest \
+	 librarytest listfonts keymaptest mxgads palettedemo readicon regiontest \
 	 rtdemo shadowborder sift simpleimage mathtest filereq \
-	 strtest unixio mxgads
+	 strtest unixio
 endif
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
