@@ -8,7 +8,8 @@ FUNCTIONS = \
 	applytagchanges callhookpkt findtagitem nexttagitem \
 	stricmp strnicmp tolower toupper getuniqueid smult32 umult32 \
 	smult64 umult64 date2amiga amiga2date allocatetagitems \
-	freetagitems
+	freetagitems clonetagitems gettagdata packbooltags \
+	refreshtagitemclones taginarray
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
