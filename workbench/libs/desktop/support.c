@@ -107,7 +107,7 @@ BOOL handlerSubUser(void)
 	return TRUE;
 }
 
-struct HandlerScanRequest* createScanMessage(ULONG command, struct MsgPort *replyPort, BPTR dirLock, Object *callback)
+struct HandlerScanRequest* createScanMessage(ULONG command, struct MsgPort *replyPort, BPTR dirLock, Object *callback, Object *app)
 {
 	struct HandlerScanRequest *hsr;
 
@@ -118,6 +118,7 @@ struct HandlerScanRequest* createScanMessage(ULONG command, struct MsgPort *repl
 	hsr->hsr_Message.di_Command=command;
 	hsr->hsr_CallBack=callback;
 	hsr->hsr_DirLock=dirLock;
+	hsr->hsr_Application=app;
 
 	return hsr;
 }

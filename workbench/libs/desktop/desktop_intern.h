@@ -12,7 +12,7 @@ struct DesktopBase
     struct Library db_Library;
 
 	BPTR db_SegList;
-
+	
 	struct ExecBase *db_SysBase;
 	struct Library *db_DOSBase;
 	struct IntuitionBase *db_IntuitionBase;
@@ -20,9 +20,24 @@ struct DesktopBase
 	struct Library *db_LayersBase;
 	struct Library *db_UtilityBase;
 	struct Library *db_MUIMasterBase;
+	struct Library *db_IconBase;
 
+	struct MUI_CustomClass *db_Observer;
+	struct MUI_CustomClass *db_Presentation;
 	struct MUI_CustomClass *db_IconContainer;
 	struct MUI_CustomClass *db_IconContainerObserver;
+	struct MUI_CustomClass *db_Icon;
+	struct MUI_CustomClass *db_DiskIcon;
+	struct MUI_CustomClass *db_DrawerIcon;
+	struct MUI_CustomClass *db_TrashcanIcon;
+	struct MUI_CustomClass *db_ToolIcon;
+	struct MUI_CustomClass *db_ProjectIcon;
+	struct MUI_CustomClass *db_IconObserver;
+	struct MUI_CustomClass *db_DiskIconObserver;
+	struct MUI_CustomClass *db_DrawerIconObserver;
+	struct MUI_CustomClass *db_ToolIconObserver;
+	struct MUI_CustomClass *db_ProjectIconObserver;
+	struct MUI_CustomClass *db_TrashcanIconObserver;
 
 	struct SignalSemaphore  db_BaseMutex;
 	struct SignalSemaphore  db_HandlerSafety;
@@ -62,7 +77,19 @@ AROS_LC2(ULONG, asl, AROS_LHA(ULONG,a,D0), AROS_LHA(ULONG,b,D1), struct DesktopB
 #define LayersBase DesktopBase->db_LayersBase
 #define UtilityBase DesktopBase->db_UtilityBase
 #define MUIMasterBase DesktopBase->db_MUIMasterBase
+#define IconBase DesktopBase->db_IconBase
 #define IconContainer DesktopBase->db_IconContainer
 #define IconContainerObserver DesktopBase->db_IconContainerObserver
+#define DiskIcon DesktopBase->db_DiskIcon
+#define DrawerIcon DesktopBase->db_DrawerIcon
+#define TrashcanIcon DesktopBase->db_TrashcanIcon
+#define ToolIcon DesktopBase->db_ToolIcon
+#define ProjectIcon DesktopBase->db_ProjectIcon
+#define IconObserver DesktopBase->db_IconObserver
+#define DiskIconObserver DesktopBase->db_DiskIconObserver
+#define DrawerIconObserver DesktopBase->db_DrawerIconObserver
+#define ToolIconObserver DesktopBase->db_ToolIconObserver
+#define ProjectIconObserver DesktopBase->db_ProjectIconObserver
+#define TrashcanIconObserver DesktopBase->db_TrashcanIconObserver
 
 #endif /* DESKTOP_INTERN_H */

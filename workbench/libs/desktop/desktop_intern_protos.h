@@ -8,11 +8,13 @@ BOOL handlerSubUser(void);
 BOOL handlerAddUser(void);
 BOOL startDesktopHandler(void);
 ULONG desktopHandler(void);
-struct HandlerScanRequest* createScanMessage(ULONG command, struct MsgPort *replyPort, BPTR dirLock, Object *callback);
+struct HandlerScanRequest* createScanMessage(ULONG command, struct MsgPort *replyPort, BPTR dirLock, Object *callback, Object *app);
 
 void NewList(struct List *list);
 ULONG DoMethod (Object *obj, ULONG MethodID, ...);
 ULONG DoSuperMethod(Class *cl, Object *obj, ULONG MethodID, ...);
+
+Object * MUI_NewObject(char * classname, Tag tag1, ...);
 
 AROS_UFP3(IPTR, iconContainerDispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
@@ -23,6 +25,79 @@ AROS_UFP3(IPTR, iconContainerObserverDispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFP3(IPTR, observerDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFP3(IPTR, iconObserverDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFP3(IPTR, diskIconObserverDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFP3(IPTR, drawerIconObserverDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFP3(IPTR, toolIconObserverDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFP3(IPTR, projectIconObserverDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFP3(IPTR, trashcanIconObserverDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFP3(IPTR, presentationDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFP3(IPTR, iconDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFP3(IPTR, diskIconDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFP3(IPTR, drawerIconDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFP3(IPTR, toolIconDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFP3(IPTR, projectIconDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFP3(IPTR, trashcanIconDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+
+
 
 #endif
 
