@@ -1730,7 +1730,7 @@ $(OBJDIR) $(MOD_DIR%(id)) :
 
 %end
 
-%define make_module_common dflags=$(CFLAGS) id=
+%define make_module_common dflags=$(CFLAGS) id= cc=$(TARGET_CC)
 # You need to put the $(OBJDIR) rules first, because they are more specific.
 # and that affects the way that GNU Make binds its dependencies.
 #
@@ -1739,19 +1739,19 @@ $(OBJDIR) $(MOD_DIR%(id)) :
 # happen though.
 
 $(OBJDIR%(id))/%.o : $(OBJDIR%(id))/%.c
-	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS%(id))
+	%compile_q cmd=%(cc) opt=$(CFLAGS%(id))
 
 $(OBJDIR%(id))/%.so : $(OBJDIR%(id))/%.c
-	%compile_q cmd=$(TARGET_CC) opt="$(SHARED_CFLAGS) $(CFLAGS%(id))"
+	%compile_q cmd=%(cc) opt="$(SHARED_CFLAGS) $(CFLAGS%(id))"
 
 $(OBJDIR%(id))/%.d : $(OBJDIR%(id))/%.c
 	%mkdepend_q flags=%(dflags)
 
 $(OBJDIR%(id))/%.o : %.c
-	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS%(id))
+	%compile_q cmd=%(cc) opt=$(CFLAGS%(id))
 
 $(OBJDIR%(id))/%.so : %.c
-	%compile_q cmd=$(TARGET_CC) opt="$(SHARED_CFLAGS) $(CFLAGS%(id))"
+	%compile_q cmd=%(cc) opt="$(SHARED_CFLAGS) $(CFLAGS%(id))"
 
 $(OBJDIR%(id))/%.d : %.c
 	%mkdepend_q flags=%(dflags)
@@ -1899,7 +1899,7 @@ $(AROS_INCLUDES)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
 #   of multiple files, with an init file, function table, and an endtag at the
 #   end.
 #
-%define make_module dflags=$(CFLAGS) mmake=/A id=
+%define make_module dflags=$(CFLAGS) mmake=/A id= cc=$(TARGET_CC)
 %safe_define var=INIT_FILE value="$(MODNAME)_init"
 %safe_define var=END_FILE value="endtag"
 %safe_define var=USE_ENDTAG value="yes"
@@ -1988,7 +1988,7 @@ clean ::
 	-@$(RM) $(AROS_MODULES)/$(MODULE%(id)) \
 	    $(AROSDIR)/lib/lib$(MODNAME).a $(AROSDIR)/lib/lib$(MODNAME).so
 
-%make_module_common dflags=%(dflags) id=%(id)
+%make_module_common dflags=%(dflags) id=%(id) cc=%(cc)
 %end
 
 #--------------------------------------------------------------------------
