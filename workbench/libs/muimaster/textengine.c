@@ -58,6 +58,7 @@ extern struct Library *MUIMasterBase;
  * Italic is looking ugly, no ?
  */
 
+#if 0
 
 typedef struct ZTextLine {
     struct MinNode node; /* embedded node */
@@ -67,6 +68,8 @@ typedef struct ZTextLine {
     WORD   lheight;
 } ZTextLine;
 
+#endif
+
 #define ZTL_LEFT    1
 #define ZTL_CENTER  2
 #define ZTL_RIGHT   3
@@ -74,6 +77,8 @@ typedef struct ZTextLine {
 #define DEFAULT_TEXT_ALIGN ZTL_LEFT
 
 /*-------------*/
+
+#if 0
 
 typedef struct ZTextChunk {
     struct MinNode node; /* embedded node */
@@ -90,6 +95,8 @@ typedef struct ZTextChunk {
     WORD                  lbearing;
     WORD                  lbear2;
 } ZTextChunk;
+
+#endif
 
 #define ZTC_STYLE_BOLD      (1<<0)
 #define ZTC_STYLE_ITALIC    (1<<1)
@@ -233,13 +240,13 @@ ZText *zune_text_new (STRPTR preparse, STRPTR content, int argtype, TEXT argbyte
 
     /* the other elements are done by other functions */
 
-    while (*buf)
+    do
     {
 	struct ZTextLine *ztl = zune_text_parse_line((STRPTR *)&buf, &zc, &argtype, arg);
 	if (ztl) AddTail((struct List*)&text->lines,(struct Node*)ztl);
 	else break;
 	if (*buf == '\n') buf++;
-    }
+    } while (*buf);
 
     mui_free(dup_content);
     return text;
@@ -844,4 +851,44 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 	}
 	top += line_node->lheight;
     }
+}
+
+int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y, struct ZTextLine **line_ptr, struct ZTextChunk **chunk_ptr, int *offset_ptr, int *len_ptr)
+{
+    int i,j;
+    struct ZTextLine *line;
+    struct ZTextChunk *chunk;
+
+    /* find the line */
+    for (i=0,line = (ZTextLine *)text->lines.mlh_Head; line->node.mln_Succ && i<y; line = (ZTextLine*)line->node.mln_Succ,i++);
+
+    if (!line->node.mln_Succ) return 0;
+    *line_ptr = line;
+    *chunk_ptr = NULL;
+    *offset_ptr = 0;
+    *len_ptr = 0;
+
+    for (chunk = (ZTextChunk*)&line->chunklist.mlh_Head; chunk->node.mln_Succ; chunk = (ZTextChunk*)chunk->node.mln_Succ)
+    {
+    	int len = strlen(chunk->str);
+    	if (len > y)
+    	{
+    	    break;
+    	} else
+    	{
+	    y -= len;
+    	}
+    }
+
+    if (line->node.mln_Succ)
+    {
+	struct RastPort rp;
+	*chunk_ptr = chunk;
+	InitRastPort(&rp);
+	SetFont(&rp,_font(obj));
+	*len_ptr = y;
+	*offset_ptr = TextLength(&rp,chunk->str,y);
+    }
+
+    return 1;
 }

@@ -31,6 +31,8 @@
 #endif
 
 #include "mui.h"
+#include "muimaster_intern.h"
+#include "support.h"
 
 #define MYDEBUG 1
 #include "debug.h"
@@ -77,7 +79,7 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -112,10 +114,20 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Text_SetVMax:
 		_handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETVMAX);
 		break;
+	    case MUIA_Text_Editable:
+	        _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_EDITABLE);
+	        break;
 	}
     }
 
     D(bug("muimaster.library/text.c: Text Object created at 0x%lx\n",obj));
+
+    data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS;
+    data->ehn.ehn_Priority = 0;
+    data->ehn.ehn_Flags    = 0;
+    data->ehn.ehn_Object   = obj;
+    data->ehn.ehn_Class    = cl;
+
     return (ULONG)obj;
 }
 
@@ -141,7 +153,7 @@ static ULONG Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem      *tags = msg->ops_AttrList;
     struct TagItem      *tag;
 
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -233,6 +245,8 @@ static ULONG Text_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	return FALSE;
 
     setup_text(data, obj);
+
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
     return TRUE;
 }
 
@@ -242,6 +256,8 @@ static ULONG Text_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 static ULONG Text_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
+
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
 
     if (data->ztext)
 	zune_text_destroy(data->ztext);
@@ -276,22 +292,21 @@ static ULONG Text_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 **************************************************************************/
 static ULONG Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
+    int height;
     struct MUI_TextData *data = INST_DATA(cl, obj);
 
     DoSuperMethodA(cl, obj, (Msg)msg);
 
-/*      g_print("%d %d\n", _font(obj)->ascent, _font(obj)->descent); */
-
-//    zune_text_get_bounds(data->ztext, obj); /* now done in MUIM_Setup */
-
+    height = data->ztext->height;
+    if (_font(obj)->tf_YSize > height) height = _font(obj)->tf_YSize;
 
     msg->MinMaxInfo->MinWidth += data->ztext->width;
     msg->MinMaxInfo->DefWidth += data->ztext->width;
     msg->MinMaxInfo->MaxWidth += data->ztext->width;
 
-    msg->MinMaxInfo->MinHeight += data->ztext->height;
-    msg->MinMaxInfo->DefHeight += data->ztext->height;
-    msg->MinMaxInfo->MaxHeight += data->ztext->height;
+    msg->MinMaxInfo->MinHeight += height;
+    msg->MinMaxInfo->DefHeight += height;
+    msg->MinMaxInfo->MaxHeight += height;
 
     if (!(data->mtd_Flags & MTDF_SETVMAX))
 	msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
@@ -318,6 +333,7 @@ static ULONG Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
+    Object *act;
     APTR clip;
 
     D(bug("muimaster.library/text.c: Draw Text Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
@@ -333,6 +349,25 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     zune_text_draw(data->ztext, obj,
 		   _mleft(obj), _mright(obj),
 		   _mtop(obj) + (_mheight(obj) - data->ztext->height) / 2);
+
+    get(_win(obj),MUIA_Window_ActiveObject,&act);
+
+    if (act == obj && (data->mtd_Flags & MTDF_EDITABLE))
+    {
+	struct ZTextLine *line;
+	struct ZTextChunk *chunk;
+	int offx,len;
+
+	if (zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len))
+	{
+            int cursor_width;
+            if (chunk && chunk->str && chunk->str[len]) cursor_width = TextLength(_rp(obj),&chunk->str[len],1);
+            else cursor_width = _font(obj)->tf_XSize;
+
+	    SetAPen(_rp(obj), _dri(obj)->dri_Pens[FILLPEN]);
+	    RectFill(_rp(obj), _mleft(obj) + offx, _mtop(obj), _mleft(obj) + offx + cursor_width - 1, _mtop(obj)+_font(obj)->tf_YSize-1);
+	}
+    }
 
 /*      zune_text_draw(data->ztext, obj, */
 /*  		   _mleft(obj), */
@@ -382,6 +417,189 @@ static ULONG Text_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg
     return 0;
 }
 
+/**************************************************************************
+ MUIM_GoActive
+**************************************************************************/
+static ULONG Text_GoActive(struct IClass * cl, Object * o, Msg msg)
+{
+  struct MUI_TextData *data = (struct MUI_TextData*) INST_DATA(cl, o);
+  if (!(data->mtd_Flags & MTDF_EDITABLE)) return DoSuperMethodA(cl,o,msg);
+
+  DoMethod(_win(o), MUIM_Window_RemEventHandler, &data->ehn);
+  data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
+  DoMethod(_win(o), MUIM_Window_AddEventHandler, &data->ehn);
+
+  MUI_Redraw(o, MADF_DRAWOBJECT);
+  return 0;
+}
+
+/**************************************************************************
+ MUIM_GoInactive
+**************************************************************************/
+static ULONG Text_GoInactive(struct IClass * cl, Object * o, Msg msg)
+{
+  struct MUI_TextData *data = (struct MUI_TextData*) INST_DATA(cl, o);
+  if (!(data->mtd_Flags & MTDF_EDITABLE)) return DoSuperMethodA(cl,o,msg);
+
+  DoMethod(_win(o), MUIM_Window_RemEventHandler, &data->ehn);
+  data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+  DoMethod(_win(o), MUIM_Window_AddEventHandler, &data->ehn);
+
+  MUI_Redraw(o, MADF_DRAWOBJECT);
+  return 0;
+}
+
+/**************************************************************************
+ MUIM_HandleEvent
+**************************************************************************/
+static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_HandleEvent *msg)
+{
+    struct MUI_TextData *data = (struct MUI_TextData*) INST_DATA(cl, obj);
+    ULONG retval = 0;
+    BOOL redraw = FALSE;
+
+    if (!(data->mtd_Flags & MTDF_EDITABLE)) return 0;
+
+    if (msg)
+    {
+	ULONG cl = msg->imsg->Class;
+	UWORD code = msg->imsg->Code;
+	UWORD qual = msg->imsg->Qualifier;
+	WORD x = msg->imsg->MouseX;
+	WORD y = msg->imsg->MouseY;
+
+	switch (cl)
+	{
+	    case    IDCMP_MOUSEBUTTONS: /* set cursor and activate it */
+		    if (code == SELECTDOWN)
+		    {
+			Object *act;
+			get(_win(obj),MUIA_Window_ActiveObject,&act);
+
+			if (_isinobject(x, y))
+			{
+			    if (act != obj) set(_win(obj), MUIA_Window_ActiveObject, obj);
+			    retval = MUI_EventHandlerRC_Eat;
+			}   else
+			{
+			    if (act == obj)
+				set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
+			}
+		    }
+		    break;
+
+	    case    IDCMP_RAWKEY:
+		    {
+			ULONG code = ConvertKey(msg->imsg);
+			if (code)
+			{
+			    retval = MUI_EventHandlerRC_Eat;
+			}
+		    }
+	    	    break;
+	}
+    }
+
+#if 0
+    case IDCMP_VANILLAKEY:
+      {
+	switch (code) {
+	case 8:		/* backspace */
+	  if (data->cursor_pos) {
+	    LONG shift;
+	    LONG i;
+
+	    if ((qual & IEQUALIFIER_LSHIFT) || (qual & IEQUALIFIER_RSHIFT)) {
+	      shift = data->cursor_pos;
+	    } else
+	      shift = 1;
+
+	    i = data->cursor_pos = data->cursor_pos - shift;
+	    while (data->edit_buffer[i + shift]) {
+	      data->edit_buffer[i] = data->edit_buffer[i + shift];
+	      i++;
+	    }
+	    data->edit_buffer[i] = 0;
+	    redraw = 1;
+	  }
+	  break;
+
+	case 127:		/* del */
+	  {
+	    if ((qual & IEQUALIFIER_LSHIFT) || (qual & IEQUALIFIER_RSHIFT)) {
+	      data->edit_buffer[data->cursor_pos] = 0;
+	    } else {
+	      LONG i = data->cursor_pos;
+	      while (data->edit_buffer[i]) {
+		data->edit_buffer[i] = data->edit_buffer[i + 1];
+		i++;
+	      }
+	    }
+	    redraw = 1;
+	  }
+	  break;
+
+	case 24:		/* CTRL X */
+	  data->edit_buffer[0] = 0;
+	  data->cursor_pos = 0;
+	  redraw = 1;
+	  break;
+
+	case 13:		/* return */
+	  set(_win(o), MUIA_Window_ActiveObject, NULL);
+	  set(o, MUIA_TransparentString_Acknowledge, TRUE);
+	  break;
+
+	default:
+	  if (!IsCntrl(data->locale, code)) {
+	    LONG buf_len = strlen(data->edit_buffer);
+	    LONG i;
+	    if (buf_len < BUF_SIZE) {
+	      for (i = buf_len; i >= data->cursor_pos; i--)
+		data->edit_buffer[i + 1] = data->edit_buffer[i];
+
+	      data->edit_buffer[data->cursor_pos++] = code;
+	      data->edit_buffer[buf_len + 1] = 0;
+	      redraw = 1;
+	    }
+	  }
+	}
+      }
+      break;
+    }
+  }
+  switch (msg->muikey) {
+  case MUIKEY_LEFT:
+    if (data->cursor_pos) {
+      data->cursor_pos--;
+      redraw = TRUE;
+    }
+    break;
+
+  case MUIKEY_RIGHT:
+    if (data->cursor_pos < strlen(data->edit_buffer)) {
+      data->cursor_pos++;
+      redraw = TRUE;
+    }
+    break;
+
+  case MUIKEY_LINESTART:
+    data->cursor_pos = 0;
+    redraw = TRUE;
+    break;
+
+  case MUIKEY_LINEEND:
+    data->cursor_pos = strlen(data->edit_buffer);
+    redraw = TRUE;
+    break;
+  }
+#endif
+
+
+    if (redraw) MUI_Redraw(obj, MADF_DRAWOBJECT);
+    return retval;
+}
+
 
 #ifndef _AROS
 __asm IPTR Text_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
@@ -406,6 +624,9 @@ AROS_UFH3S(IPTR, Text_Dispatcher,
 	case MUIM_Hide: return Text_Hide(cl, obj, (APTR)msg);
 	case MUIM_Export: return Text_Export(cl, obj, (APTR)msg);
 	case MUIM_Import: return Text_Import(cl, obj, (APTR)msg);
+	case MUIM_GoActive: return Text_GoActive(cl, obj, (APTR)msg);
+	case MUIM_GoInactive: return Text_GoInactive(cl,obj,(APTR)msg);
+	case MUIM_HandleEvent: return Text_HandleEvent(cl,obj,(APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);

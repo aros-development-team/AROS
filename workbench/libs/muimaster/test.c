@@ -118,6 +118,11 @@ void main(void)
 			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button8", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			End,
 		    End,
+		Child, TextObject,
+		    StringFrame,
+		    MUIA_Text_Editable, TRUE,
+		    MUIA_CycleChain,1,
+		    End,
 
     	    	Child, SliderObject,
     	    	    MUIA_Group_Horiz, TRUE,
