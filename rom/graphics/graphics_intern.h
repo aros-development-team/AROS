@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/16 14:05:49  digulla
+    Added #include <graphics/rastport.h>
+
     Revision 1.2  1996/08/13 13:59:42  digulla
     Added SysBase as a define and to GfxBase
 
@@ -21,6 +24,9 @@
 #endif
 #ifndef GRAPHICS_GFXBASE_H
 #   include <graphics/gfxbase.h>
+#endif
+#ifndef GRAPHICS_RASTPORT_H
+#   include <graphics/rastport.h>
 #endif
 
 extern struct GfxBase * GfxBase;
