@@ -19,4 +19,6 @@
 #MM	    workbench-libs-mathtrans \
 #MM	    workbench-libs-mathieeedoubbas \
 #MM	    workbench-libs-mathieeedoubtrans \
-#MM	    workbench-libs-realtime
+#MM	    workbench-libs-realtime \
+#MM	    workbench-libs-nonvolatile \
+#MM         workbench-libs-nvdisk
