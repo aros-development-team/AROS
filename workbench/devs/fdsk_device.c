@@ -355,6 +355,8 @@ AROS_LH1(void, beginio,
 	case CMD_READ:
 	case CMD_WRITE:
 	case TD_FORMAT:
+	case TD_CHANGENUM:
+	case TD_CHANGESTATE:
 	    /* Forward to unit thread */
 	    PutMsg(&((struct unit *)iotd->iotd_Req.io_Unit)->port, 
 		   &iotd->iotd_Req.io_Message);
@@ -595,6 +597,11 @@ AROS_UFH3(LONG, unitentry,
     		    D(bug("fdsk_device/unitentry: received %s\n", (iotd->iotd_Req.io_Command == CMD_WRITE) ? "CMD_WRITE" : "TD_FORMAT"));
  		    err = write(unit, iotd);
  		    break;
+		case TD_CHANGENUM:
+		case TD_CHANGESTATE:
+		    err = 0;
+		    iotd->iotd_Req.io_Actual = 0;
+		    break;
 		    
  	    } /* switch(iotd->iotd_Req.io_Command) */
 	    
