@@ -8,15 +8,6 @@
 #ifndef _MUI_CLASSES_NOTIFY_H
 #define _MUI_CLASSES_NOTIFY_H
 
-struct MUI_GlobalInfo
-{
-    ULONG priv0;
-    Object *mgi_ApplicationObject;
-
-    /* The following data is private only, might be extented! */
-    struct MsgPort *mgi_UserPort; /* application-wide IDCMP port */ /* PRIV */
-};
-
 struct MUI_NotifyData
 {
     struct MUI_GlobalInfo *mnd_GlobalInfo;
