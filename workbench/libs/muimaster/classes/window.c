@@ -2271,9 +2271,14 @@ static ULONG Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wi
 
 /*  	D(bug("zune_imspec_draw %s %d : %d %d %d %d\n", __FILE__, __LINE__, */
 /*  	      left, top, width, height)); */
+
+#if REDUCE_FLICKER_TEST
+	MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
+#else
 	zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
 			 left, top, width, height, left, top, 0);
 	MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+#endif
     }
     return TRUE;
 }
