@@ -92,15 +92,18 @@ extern int intui_GetWindowSize (void);
 extern void intui_ActivateWindow (struct Window *);
 extern void intui_BeginRefresh (struct Window * window,
 	    struct IntuitionBase * IntuitionBase);
+extern void intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
+	    WORD width, WORD height);
 extern void intui_CloseWindow (struct Window *, struct IntuitionBase *);
 extern void intui_EndRefresh (struct Window * window,
 	    BOOL complete,
 	    struct IntuitionBase * IntuitionBase);
+extern void intui_MoveWindow (struct Window * window, WORD dx, WORD dy);
 extern int intui_OpenWindow (struct Window *,
 	    struct IntuitionBase *);
 extern void intui_WindowToFront (struct Window * window);
 extern void intui_WindowToBack (struct Window * window);
 extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
-extern void intui_SizeWindow (struct Window * win, LONG dx, LONG dy);
+extern void intui_SizeWindow (struct Window * win, long dx, long dy);
 
 #endif /* INTUITION_INTERN_H */

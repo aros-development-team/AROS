@@ -65,6 +65,14 @@ AROS_LP1(void, BeginRefresh,
     AROS_LPA(struct Window *, window, A0),
     struct IntuitionBase *, IntuitionBase, 59, Intuition)
 
+AROS_LP5(void, ChangeWindowBox,
+    AROS_LPA(struct Window *, window, A0),
+    AROS_LPA(LONG           , left, D0),
+    AROS_LPA(LONG           , top, D1),
+    AROS_LPA(LONG           , width, D2),
+    AROS_LPA(LONG           , height, D3),
+    struct IntuitionBase *, IntuitionBase, 81, Intuition)
+
 AROS_LP1(void, ClearMenuStrip,
     AROS_LPA(struct Window *, window, A0),
     struct IntuitionBase *, IntuitionBase, 9, Intuition)
@@ -201,6 +209,12 @@ AROS_LP3(void, MoveScreen,
     AROS_LPA(LONG           , dx, D0),
     AROS_LPA(LONG           , dy, D1),
     struct IntuitionBase *, IntuitionBase, 27, Intuition)
+
+AROS_LP3(void, MoveWindow,
+    AROS_LPA(struct Window *, window, A0),
+    AROS_LPA(LONG           , dx, D0),
+    AROS_LPA(LONG           , dy, D1),
+    struct IntuitionBase *, IntuitionBase, 28, Intuition)
 
 AROS_LP9(void, NewModifyProp,
     AROS_LPA(struct Gadget    *, gadget, A0),

@@ -38,6 +38,15 @@
     AROS_LCA(struct Window *, window, A0), \
     struct IntuitionBase *, IntuitionBase, 59, Intuition)
 
+#define ChangeWindowBox(window, left, top, width, height) \
+    AROS_LC5(void, ChangeWindowBox, \
+    AROS_LCA(struct Window *, window, A0), \
+    AROS_LCA(LONG           , left, D0), \
+    AROS_LCA(LONG           , top, D1), \
+    AROS_LCA(LONG           , width, D2), \
+    AROS_LCA(LONG           , height, D3), \
+    struct IntuitionBase *, IntuitionBase, 81, Intuition)
+
 #define ClearMenuStrip(window) \
     AROS_LC1(void, ClearMenuStrip, \
     AROS_LCA(struct Window *, window, A0), \
@@ -198,6 +207,13 @@
     AROS_LCA(LONG           , dx, D0), \
     AROS_LCA(LONG           , dy, D1), \
     struct IntuitionBase *, IntuitionBase, 27, Intuition)
+
+#define MoveWindow(window, dx, dy) \
+    AROS_LC3(void, MoveWindow, \
+    AROS_LCA(struct Window *, window, A0), \
+    AROS_LCA(LONG           , dx, D0), \
+    AROS_LCA(LONG           , dy, D1), \
+    struct IntuitionBase *, IntuitionBase, 28, Intuition)
 
 #define NewModifyProp(gadget, window, requester, flags, horizPot, vertPot, horizBody, vertBody, numGad) \
     AROS_LC9(void, NewModifyProp, \

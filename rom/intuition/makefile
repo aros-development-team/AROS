@@ -13,6 +13,7 @@ FUNCTIONS = \
 	addclass \
 	autorequest \
 	beginrefresh \
+	changewindowbox \
 	clearmenustrip \
 	closescreen \
 	closewindow \
@@ -36,6 +37,7 @@ FUNCTIONS = \
 	modifyidcmp \
 	modifyprop \
 	movescreen \
+	movewindow \
 	newmodifyprop \
 	newobjecta \
 	obtaingirport \

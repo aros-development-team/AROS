@@ -351,6 +351,17 @@ void intui_WindowToBack (struct Window * window)
     XLowerWindow (sysDisplay, IW(window)->iw_XWindow);
 }
 
+void intui_MoveWindow (struct Window * window, WORD dx, WORD dy)
+{
+    XMoveWindow (sysDisplay, IW(window)->iw_XWindow, dx, dy);
+}
+
+void intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
+    WORD width, WORD height)
+{
+    XMoveResizeWindow (sysDisplay, IW(window)->iw_XWindow, x, y, width, height);
+}
+
 long StateToQualifier (unsigned long state)
 {
     long result;
