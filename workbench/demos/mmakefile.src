@@ -39,6 +39,7 @@ FILES	:= \
     listfonts \
     mathtest \
     menudemo \
+    modelclassdemo \
     multiple_timers \
     mxgads \
     oopdemo \
