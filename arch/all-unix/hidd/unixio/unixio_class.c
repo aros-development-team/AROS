@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1997 AROS - The Amiga Replacement OS
+    Copyright (C) 1997-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Unix filedescriptor/socket IO
@@ -30,11 +30,11 @@
 #include <proto/alib.h>
 
 /* Unix includes */
+#define timeval sys_timeval /* We don't want the unix timeval to interfere with the AROS one */
 #include <errno.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
-#define timeval sys_timeval
 #include <sys/stat.h>
 #include <sys/time.h>
 #undef timeval
