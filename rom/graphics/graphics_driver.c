@@ -224,7 +224,7 @@ int driver_init(struct GfxBase * GfxBase)
     InitSemaphore(&(PrivGBase(GfxBase)->blit_sema));
     
     /* Init the needed attrbases */
-#ifndef AROS_CREATE_ROM_BUG
+
     __IHidd_BitMap  	= OOP_ObtainAttrBase(IID_Hidd_BitMap);
     __IHidd_GC      	= OOP_ObtainAttrBase(IID_Hidd_GC);
     __IHidd_Sync    	= OOP_ObtainAttrBase(IID_Hidd_Sync);
@@ -241,9 +241,6 @@ int driver_init(struct GfxBase * GfxBase)
 	__IHidd_PlanarBM &&
 	__IHidd_Gfx      &&
 	__IHidd_FakeGfxHidd)
-#else
-#warning Activate me again!
-#endif
     {
 	PrivGBase(GfxBase)->pixel_buf=AllocMem(PIXELBUF_SIZE,MEMF_ANY);
 	if (PrivGBase(GfxBase)->pixel_buf) {
