@@ -211,8 +211,9 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	    ButtonFrame,
 	    MUIA_Image_Spec, spec,
 	    MUIA_InputMode, MUIV_InputMode_Immediate,
-	    MUIA_Image_FreeVert, TRUE,
-	    MUIA_Image_FreeHoriz, TRUE,
+//	    MUIA_Image_FreeVert, TRUE,
+//	    MUIA_Image_FreeHoriz, TRUE,
+	    MUIA_Weight, 0,
 	    End;
 
 	if (data->vector_image[i])
