@@ -51,7 +51,9 @@ ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...);
 
 #define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
+#ifndef __SASC
 struct MUI_RenderInfo;
+#endif
 
 ULONG DoSetupMethod(Object *obj, struct MUI_RenderInfo *info);
 
