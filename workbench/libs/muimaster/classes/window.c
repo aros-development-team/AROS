@@ -24,7 +24,7 @@
 #include <proto/commodities.h>
 #include <proto/layers.h>
 #include <proto/gadtools.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 

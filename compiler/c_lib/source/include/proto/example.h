@@ -10,7 +10,7 @@
 #ifndef PROTO_EXAMPLE_H
 #define PROTO_EXAMPLE_H
 
-#ifndef _AROS
+#ifndef __AROS__
 #   include <clib/example_protos.h>
 #   include <pragmas/example_pragmas.h>
 #else

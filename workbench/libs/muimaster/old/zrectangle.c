@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/graphics.h>
@@ -30,7 +30,7 @@
 static const int __version = 1;
 static const int __revision = 1;
 
-#ifdef _AROS
+#ifdef __AROS__
 #define gdk_draw_line(w,rp,xa,ya,xb,yb) \
     ({ Move((rp),(xa),(ya)); Draw((rp),(xb),(yb)); })
 #endif

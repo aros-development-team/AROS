@@ -14,7 +14,7 @@
 #   include <exec/types.h>
 #endif
 
-#ifdef _AROS
+#ifdef __AROS__
 
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>

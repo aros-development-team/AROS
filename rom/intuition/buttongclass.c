@@ -35,7 +35,7 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include "intuition_intern.h"
 #include "maybe_boopsi.h"
 #include <aros/asmcall.h>

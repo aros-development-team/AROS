@@ -64,7 +64,7 @@
 #define	REQTOOLSNAME		 "reqtools.library"
 #define	REQTOOLSVERSION		 38L
 
-#ifndef _AROS
+#ifndef __AROS__
 #define IPTR ULONG
 #endif
 
@@ -103,7 +103,7 @@ struct ReqToolsPrefs
     struct ReqDefaults 		ReqDefaults[RTPREF_NR_OF_REQ];
 };
 
-#ifdef _AROS
+#ifdef __AROS__
 #define RTPREFS_SIZE		(4 + (RTPREF_NR_OF_REQ * (4 + 4 + 2 + 2 + 2 + 2)))
 #else
 #define RTPREFS_SIZE 		(sizeof (struct ReqToolsPrefs) - sizeof (struct SignalSemaphore) - 4)

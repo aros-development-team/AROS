@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #include <proto/graphics.h>
 #include <stdio.h>
@@ -23,7 +23,7 @@
 #include <areadata.h>
 #include <renderinfo.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 static const ULONG MUIPEN_HIMASK = 0xFFFF0000;
 #endif
 
@@ -50,7 +50,7 @@ static const ULONG MUIPEN_HIMASK = 0xFFFF0000;
     g_return_val_if_fail(spec != NULL, 0);
     g_return_val_if_fail(mri  != NULL, 0);
     g_return_val_if_fail(mri->mri_Colormap != NULL, 0);
-#ifndef _AROS
+#ifndef __AROS__
     g_return_val_if_fail(mri->mri_Visual   != NULL, 0);
 #endif
 
@@ -93,7 +93,7 @@ static const ULONG MUIPEN_HIMASK = 0xFFFF0000;
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, MUIMasterBase)
 
-#ifndef _AROS
+#ifndef __AROS__
 
     /* a do nothing stub ... hopefully gdk_colormap_unref should free
      * everything for us on cleanup ...
@@ -135,13 +135,13 @@ zune_penspec_setup (struct MUI_RenderInfo *mri, struct MUI_PenSpec *spec)
     g_return_if_fail(mri  != NULL);
     g_return_if_fail(spec != NULL);
     g_return_if_fail(mri->mri_Colormap != NULL);
-#ifndef _AROS
+#ifndef __AROS__
     g_return_if_fail(mri->mri_Visual   != NULL);
 #endif
 
     if (spec->ps_penType == PST_RGB)
     {
-#ifndef _AROS
+#ifndef __AROS__
 	gdk_colormap_alloc_color(mri->mri_Colormap, &spec->ps_rgbColor,
 				 FALSE, TRUE);
 /*  	g_print("zune_penspec_setup rgb %p (%s) = %lx\n", */
@@ -156,7 +156,7 @@ zune_penspec_setup (struct MUI_RenderInfo *mri, struct MUI_PenSpec *spec)
     }
 }
 
-#ifndef _AROS
+#ifndef __AROS__
 
 /* call this at MUIM_Cleanup */
 void

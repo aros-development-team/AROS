@@ -481,7 +481,7 @@ void  SetData(STRPTR, struct CopyData *);
 LONG  TestDest(STRPTR, ULONG, struct CopyData *);
 ULONG TestLoop(ULONG, ULONG);
 
-#ifndef _AROS
+#ifndef __AROS__
 struct DosLibrary *DOSBase = 0;
 struct ExecBase *SysBase = 0;
 #endif
@@ -510,7 +510,7 @@ ULONG main(void)
     cd.RetVal2 = RETURN_FAIL;
     cd.Deep = 1;
     
-#ifndef _AROS
+#ifndef __AROS__
     if ((dosbase = (struct DosLibrary *)OpenLibrary("dos.library", 37)))
 #endif
     {
@@ -520,7 +520,7 @@ ULONG main(void)
 	struct IptrArgs iArgs;
 	struct Args args;
 
-#ifndef _AROS	
+#ifndef __AROS__	
 	DOSBase = dosbase;
 #endif
 
@@ -711,7 +711,7 @@ ULONG main(void)
 		    cd.Flags |= COPYFLAG_SOFTLINK | COPYFLAG_FORCELINK;
 		}
 
-#ifdef _AROS
+#ifdef __AROS__
 		if (*args.from == NULL)
 		{
 		    PutStr("No arguments specified\n");
@@ -1025,9 +1025,9 @@ ULONG main(void)
 	    cd.RetVal2 = cd.RetVal;
 	}
 	
-#ifndef _AROS
+#ifndef __AROS__
 	CloseLibrary((struct Library *)dosbase);
-#endif  /*_AROS*/
+#endif  /*__AROS__*/
 
 	if (args.errwarn && cd.RetVal2 == RETURN_WARN)
 	{

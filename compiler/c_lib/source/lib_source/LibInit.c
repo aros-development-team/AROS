@@ -30,7 +30,7 @@ struct ExecBase      * SysBase	     = NULL;
 struct IntuitionBase * IntuitionBase = NULL;
 struct GfxBase	     * GfxBase	     = NULL;
 
-#ifndef _AROS
+#ifndef __AROS__
 #   define INTUITIONNAME "intuition.library" /* AROS defines this */
 #else
 #   include <intuition/intuitionbase.h> /* INTUITIONNAME */

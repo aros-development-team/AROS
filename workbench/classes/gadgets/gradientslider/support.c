@@ -25,7 +25,7 @@
 
 #define SDEBUG 0
 #define DEBUG 0
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/debug.h>
 #endif
 

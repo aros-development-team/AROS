@@ -62,7 +62,7 @@ VOID OTAG_FreeFileName(STRPTR filename, struct DiskfontBase_intern *DiskfontBase
 
 /****************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 #warning This needs to be reworked for systems where sizeof(TagItem) is > 8!
 #endif
 

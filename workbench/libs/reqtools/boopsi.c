@@ -4,7 +4,7 @@
 #include <intuition/intuition.h>
 #include <intuition/imageclass.h>
 #include <intuition/intuition.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/asmcall.h>
 #endif
 
@@ -116,7 +116,7 @@ ULONG myTextLength(char *str, struct TextAttr *attr, UBYTE *underscore,
 
     } /* if (str) */
     
-#ifdef _AROS
+#ifdef __AROS__
     DeinitRastPort(&temprp);
 #endif
 
@@ -129,7 +129,7 @@ ULONG myTextLength(char *str, struct TextAttr *attr, UBYTE *underscore,
 
 #define imsg ((struct impDraw *)msg)
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH3(IPTR, myBoopsiDispatch,
 	  AROS_UFHA(Class *, cl, A0),
 	  AROS_UFHA(struct Image *, im, A2),
@@ -282,7 +282,7 @@ IPTR myBoopsiDispatch(REGPARAM(a0, Class *, cl),
     } /* switch(msg->MethodID) */
     
     return retval;
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_EXIT
 #endif    
 }

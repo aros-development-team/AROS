@@ -44,7 +44,7 @@ responsibility is assumed.
 
 static const char version[] = "$VER: simpleimage 41.1 (14.3.1997)\n";
 
-#if defined __AROS && !defined(_AMIGA)
+#if defined __AROS__ && !defined(_AMIGA)
 #ifdef __chip
 #undef __chip
 #endif
@@ -99,7 +99,7 @@ struct Image myImage;
 IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",37);
 if (IntuitionBase != NULL)
     {
-#ifdef __AROS
+#ifdef __AROS__
     if (NULL != (win = OpenWindowTags(NULL,
 			WA_Width,	200,
 			WA_Height,	100,
@@ -130,7 +130,7 @@ if (IntuitionBase != NULL)
 	/* Draw the same image at a new location */
 	DrawImage(win->RPort,&myImage,100,10);
 
-#ifdef __AROS
+#ifdef __AROS__
 	/* Wait for a keypress */
 	Wait (1L << win->UserPort->mp_SigBit);
 #else

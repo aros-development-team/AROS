@@ -19,7 +19,7 @@
 #include <proto/intuition.h>
 #include <proto/colorwheel.h>
 #include <proto/cybergraphics.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <cybergraphx/cybergraphics.h>
 #else
 #include <cybergraphics/cybergraphics.h>
@@ -29,7 +29,7 @@
 
 #include "colorwheel_intern.h"
 
-#ifndef _AROS
+#ifndef __AROS__
 #include "bmbmrp.h"
 #endif
 
@@ -41,7 +41,7 @@
 
 /***************************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
@@ -66,7 +66,7 @@
 				  (((g) >>  8) & 0x00FF0000) | \
 				  (((b) >>  0) & 0xFF000000) )
 
-#ifdef _AROS
+#ifdef __AROS__
 #if !AROS_BIG_ENDIAN
 #   define MAKE_RGB(r,g,b) 	MAKE_RGB_LE(r,g,b)
 #else
@@ -98,11 +98,11 @@ UBYTE Bayer16[16][16] =
    { 171,107,155, 91,167,103,151, 87,168,104,152, 88,164,100,148, 84}
 };
 
-#ifndef _AROS
+#ifndef __AROS__
 extern void ConvertHSBToRGB( REG(a0, struct ColorWheelHSB *hsb), REG(a1, struct ColorWheelRGB *rgb) );
 #endif
 
-#ifndef _AROS
+#ifndef __AROS__
 #undef SysBase
 void kprintf( STRPTR FormatStr, ... )
 {
@@ -771,7 +771,7 @@ VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *
        	if(data->mask)
        	{              		
        	    EraseRect( rp, box->Left,box->Top, box->Left+box->Width-1, box->Top+box->Height-1 );
-#ifdef _AROS
+#ifdef __AROS__
    	    BltMaskBitMapRastPort( 
    		    data->bm, 0, 0, 
   		    rp, box->Left, box->Top, box->Width, box->Height, 

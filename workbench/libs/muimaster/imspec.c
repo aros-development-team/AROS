@@ -19,7 +19,7 @@
 #include <proto/graphics.h>
 #include <proto/dos.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -37,7 +37,7 @@
 
 extern struct Library *MUIMasterBase;
 
-#ifdef _AROS
+#ifdef __AROS__
 static char *StrDup(char *x)
 {
     char *dup;

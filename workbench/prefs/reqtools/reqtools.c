@@ -45,7 +45,7 @@
 
 #include "reqtools_rev.h"
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/macros.h>
 #include <proto/alib.h>
 #define __exit exit
@@ -59,7 +59,7 @@ const char VersTag[] = VERSTAG;
 #define CONFIGFILE        	"Env:ReqTools.prefs"
 #define CONFIGFILE_ARC    	"EnvArc:ReqTools.prefs"
 
-#ifndef _AROS
+#ifndef __AROS__
 #pragma libcall ReqToolsBase rtLockPrefs   a8 00
 #pragma libcall ReqToolsBase rtUnlockPrefs ae 00
 #endif
@@ -79,7 +79,7 @@ struct Library        	*IconBase;
 struct GfxBase       	*GfxBase;
 struct IntuitionBase    *IntuitionBase;
 struct ReqToolsBase    	*ReqToolsBase;
-#ifdef _AROS
+#ifdef __AROS__
 struct UtilityBase    	*UtilityBase;
 #else	
 struct Library        	*UtilityBase;
@@ -808,7 +808,7 @@ SaveAs( VOID )
 
 TEXT    FaultBuff[ 100 ];
 
-#ifdef _AROS
+#ifdef __AROS__
 #define	LOADSAVETO configbuffer
 UBYTE	configbuffer[PREFSLEN];
 #else
@@ -833,7 +833,7 @@ LoadConfig( STRPTR fname )
         Close( file );
         return( FALSE );
     }
-#ifdef _AROS
+#ifdef __AROS__
 #define READ_ULONG *((ULONG *)configptr)++
 #define READ_UWORD *((UWORD *)configptr)++
 
@@ -887,7 +887,7 @@ SaveConfig( STRPTR fname )
         return( FALSE );
     }
 
-#ifdef _AROS
+#ifdef __AROS__
 #define WRITE_ULONG *((ULONG *)configptr)++ = AROS_LONG2BE(val)
 #define WRITE_UWORD *((UWORD *)configptr)++ = AROS_WORD2BE(val)
 
@@ -995,7 +995,7 @@ CreateIcon( STRPTR fname )
     }
 }
 
-#ifdef _AROS
+#ifdef __AROS__
 int main(int argc, char **argv)
 {
     __main(NULL);

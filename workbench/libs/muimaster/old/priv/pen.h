@@ -66,7 +66,7 @@ struct MUI_PenSpec {
 #define ps_mui u.s.v.mui
 #define ps_cmap u.s.v.cmap
 
-#ifndef _AROS
+#ifndef __AROS__
 
 /* set drawing color with the result from MUI_ObtainPen */
 void

@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
@@ -27,7 +27,7 @@
 
 static GMemChunk *mccMemChunk = NULL;
 
-#ifdef _AROS
+#ifdef __AROS__
 /* Classes... need a hash table for this */
 static Class **Classes = NULL;
 static int     ClassCount = 0;
@@ -52,7 +52,7 @@ static void init_mcc ()
 }
 
 
-#ifdef _AROS
+#ifdef __AROS__
 static Class *GetPublicClass(CONST_STRPTR className)
 {
     Class *cl;
@@ -158,7 +158,7 @@ kprintf("*** MUI_GetClass(\"%s\")...\n", className);
     cl = GetPublicClass(className);
     if (!cl)
     {
-#ifdef _AROS
+#ifdef __AROS__
 	/* do we have space for another class pointer? */
 	if (ClassCount == ClassSpace)
 	{
@@ -190,7 +190,7 @@ kprintf("*** MUI_GetClass: freeing old array\n");
 	    cl = _zune_class_load(className);
 	}
 
-#ifdef _AROS
+#ifdef __AROS__
 	if (cl)
 	{
 #warning FIXME: I should increase the open count of library (use cl->hook->data)

@@ -13,7 +13,7 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -93,7 +93,7 @@ static BOOL make_bitmap(struct IClass *cl, Object *obj)
 		      data->pixels,
 		      data->modulo);
     
-#ifdef _AROS
+#ifdef __AROS__
     DeinitRastPort(&temprp);
 #endif
     

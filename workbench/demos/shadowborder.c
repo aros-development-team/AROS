@@ -46,7 +46,7 @@ responsibility is assumed.
 
 static const char version[] = "$VER: shadowborder 41.1 (14.3.1997)\n";
 
-#ifdef __AROS
+#ifdef __AROS__
 #include <proto/alib.h>
 #endif
 
@@ -107,7 +107,7 @@ if (IntuitionBase)
     ** a border.  An application would probably never use such a
     ** window, but it is useful for demonstrating graphics...
     */
-#ifdef __AROS
+#ifdef __AROS__
     if ((win = OpenWindowTags(NULL,
 			WA_PubScreen,  screen,
 			WA_RMBTrap,	 TRUE,
@@ -144,7 +144,7 @@ if (IntuitionBase)
 	/* Draw the border again at 100,10 */
 	DrawBorder(win->RPort,&shadowBorder,100,10);
 
-#ifdef __AROS
+#ifdef __AROS__
 	Wait (1L << win->UserPort->mp_SigBit);
 #else
 	/* Wait a bit, then quit.

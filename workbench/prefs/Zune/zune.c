@@ -20,7 +20,7 @@
 #include <proto/utility.h>
 #include <proto/iffparse.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -34,7 +34,7 @@ struct Library *MUIMasterBase;
 void load_prefs(char *filename);
 void save_prefs(char *filename);
 
-#ifndef _AROS
+#ifndef __AROS__
 
 /* On AmigaOS we build a fake library base, because it's not compiled as sharedlibrary yet */
 #include "muimaster_intern.h"

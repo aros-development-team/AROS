@@ -251,7 +251,7 @@ _zune_window_resize (struct MUI_WindowData *data)
 void
 _zune_focus_new (Object *obj)
 {
-#ifdef _AROS
+#ifdef __AROS__
 
     struct RastPort *rp = _rp(obj);
     UWORD oldDrPt = rp->LinePtrn;
@@ -338,7 +338,7 @@ _zune_focus_destroy (Object *obj)
 {
 kprintf("*** _zune_focus_destroy()\n");
 
-#ifdef _AROS
+#ifdef __AROS__
 
 #warning FIXME: focus destroy (redraw object)
 

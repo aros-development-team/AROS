@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#ifndef _AROS
+#ifndef __AROS__
 typedef void (*VOID_FUNC)();
 #endif
 
@@ -49,7 +49,7 @@ void FillBarTable (char **table, char *buff)
 
 /****************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH2 (void, puttostr,
 	AROS_UFHA(UBYTE, chr, D0),
 	AROS_UFHA(STRPTR *,strPtrPtr,A3)
@@ -63,14 +63,14 @@ void puttostr(REGPARAM(d0, UBYTE, chr),
 #endif
     *(*strPtrPtr)= chr;
     (*strPtrPtr) ++;
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_EXIT
 #endif
 }
 
 /****************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH2 (void, CountBarsAndChars,
 	AROS_UFHA(UBYTE, chr, D0),
 	AROS_UFHA(ULONG *,ptr,A3)
@@ -84,14 +84,14 @@ void CountBarsAndChars(REGPARAM(d0, UBYTE, chr),
 #endif
     if (chr == '|') (ptr[0])++;
     (ptr[1])++;
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_EXIT
 #endif
 }
 
 /****************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH2 (void, CountNewLinesAndChars,
 	AROS_UFHA(UBYTE, chr, D0),
 	AROS_UFHA(ULONG *,ptr,A3)
@@ -105,7 +105,7 @@ void CountNewLinesAndChars(REGPARAM(d0, UBYTE, chr),
 #endif
     if (chr == '\n') (ptr[0])++;
     (ptr[1])++;
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_EXIT
 #endif
 }

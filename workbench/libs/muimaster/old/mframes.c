@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/graphics.h>
 #endif
 
@@ -37,7 +37,7 @@ rect_draw(struct MUI_RenderInfo *mri,
 	  int left, int top, int width, int height,
 	  MPen preset_color)
 { 
-#ifdef _AROS
+#ifdef __AROS__
 
     struct RastPort *rp = mri->mri_RastPort;
 
@@ -89,7 +89,7 @@ button_draw (struct MUI_RenderInfo *mri,
 	     int left, int top, int width, int height,
 	     MPen ul_preset, MPen lr_preset)
 {
-#ifdef _AROS
+#ifdef __AROS__
 
     struct RastPort *rp = mri->mri_RastPort;
 
@@ -168,7 +168,7 @@ thinborder_draw (struct MUI_RenderInfo *mri,
 		 int left, int top, int width, int height,
 		 MPen ul_preset, MPen lr_preset)
 {
-#ifdef _AROS
+#ifdef __AROS__
 
     struct RastPort *rp = mri->mri_RastPort;
 
@@ -324,7 +324,7 @@ semiround_bevel_draw (struct MUI_RenderInfo *mri,
 		      int left, int top, int width, int height,
 		      MPen pen1, MPen pen2, MPen pen3, MPen pen4, MPen pen5)
 {
-#ifdef _AROS
+#ifdef __AROS__
     struct RastPort *rp = mri->mri_RastPort;
 #else
     GdkPoint points[4];
@@ -333,7 +333,7 @@ semiround_bevel_draw (struct MUI_RenderInfo *mri,
     button_draw(mri, left, top, width, height, pen1, pen5);
     button_draw(mri, left+1, top+1, width-2, height-2, pen2, pen4);
 
-#ifdef _AROS
+#ifdef __AROS__
 
     SetAPen(rp, mri->mri_Pens[pen2]);
     WritePixel(rp, left, top);
@@ -415,7 +415,7 @@ round_thin_border_draw (struct MUI_RenderInfo *mri,
 			int left, int top, int width, int height,
 			MPen pen1, MPen pen2, MPen pen3, MPen pen4, MPen pen5)
 {
-#ifdef _AROS
+#ifdef __AROS__
     struct RastPort *rp = mri->mri_RastPort;
 #else
     GdkPoint points[4];
@@ -434,7 +434,7 @@ round_thin_border_draw (struct MUI_RenderInfo *mri,
     rect_draw(mri, left + 1, top + height - 3, 1, 3, pen4);
     rect_draw(mri, left + width - 3, top + 1, 3, 1, pen4);
 
-#ifdef _AROS
+#ifdef __AROS__
 
     WritePixel(rp, left + 2,         top + height - 3);
     WritePixel(rp, left + width - 3, top + 2);
@@ -493,7 +493,7 @@ round_thick_border_draw (struct MUI_RenderInfo *mri,
 			int left, int top, int width, int height,
 			MPen pen1, MPen pen2, MPen pen3, MPen pen4, MPen pen5)
 {
-#ifdef _AROS
+#ifdef __AROS__
     struct RastPort *rp = mri->mri_RastPort;
 #else
     GdkPoint points[1];
@@ -517,7 +517,7 @@ round_thick_border_draw (struct MUI_RenderInfo *mri,
     rect_draw(mri, left + width - 4, top + height - 4, 2, 2, pen3);
     rect_draw(mri, left + width - 4, top + 2, 2, 2, pen3);
 
-#ifdef _AROS
+#ifdef __AROS__
 
     /* these points were not in the original frame.  -dlc */
     SetAPen(rp, mri->mri_Pens[pen5]);
@@ -568,7 +568,7 @@ round_bevel_draw (struct MUI_RenderInfo *mri,
 		  MPen ul, MPen lr)
 {
     SetAPen(mri->mri_RastPort, mri->mri_Pens[MPEN_BACKGROUND]);
-#ifdef _AROS
+#ifdef __AROS__
     RectFill(mri->mri_RastPort,
              left, top, left + 3, top + height - 1);
     RectFill(mri->mri_RastPort,

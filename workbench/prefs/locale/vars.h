@@ -13,7 +13,7 @@
 VAR struct IntuitionBase        *IntuitionBase;
 VAR struct GfxBase              *GfxBase;
 
-#ifdef _AROS
+#ifdef __AROS__
 VAR struct UtilityBase          *UtilityBase;
 VAR struct LocaleBase           *LocaleBase;
 #else

@@ -8,7 +8,7 @@
 #include <intuition/classusr.h>
 #include <libraries/gadtools.h>
 #include <proto/utility.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 #ifdef HAVE_COOLIMAGES
@@ -86,7 +86,7 @@ STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Li
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *params)
 #else
 	AROS_LH2(Object *, MUI_MakeObjectA,

@@ -9,7 +9,7 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/dos.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -20,7 +20,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm struct MUI_CustomClass *MUI_CreateCustomClass(register __a0 struct Library *base, register __a1 char *supername, register __a2 struct MUI_CustomClass *supermcc,register __d0 int datasize,register __a3 APTR dispatcher)
 #else
 	AROS_LH5(struct MUI_CustomClass *, MUI_CreateCustomClass,

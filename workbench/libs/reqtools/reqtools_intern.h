@@ -21,7 +21,7 @@
 
 /****************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 
 /* filereqalloc.c */
 
@@ -57,7 +57,7 @@ typedef  struct IntuitionBase  IntuiBase;
 
 #define GPB(x) 		((struct ReqToolsBase *)x)
 
-#ifdef _AROS
+#ifdef __AROS__
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct ReqToolsBase *, RTBase, 3, ReqTools)
 #endif

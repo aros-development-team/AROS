@@ -25,9 +25,9 @@
 #include "../intuition/intuition_private.h"	/* LateIntuiInit proto	*/
 #include "devs_private.h"
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/asmcall.h>
-#endif /* _AROS */
+#endif /* __AROS__ */
 
 #define SDEBUG 0
 #define DEBUG 0

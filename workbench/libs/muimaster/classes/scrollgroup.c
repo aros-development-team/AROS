@@ -12,7 +12,7 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -30,7 +30,7 @@ struct MUI_ScrollgroupData
     struct Hook *layout_hook;
 };
 
-#ifndef _AROS
+#ifndef __AROS__
 __asm ULONG Scrollgroup_Layout_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 struct MUI_LayoutMsg *lm)
 #else
 AROS_UFH3(ULONG,Scrollgroup_Layout_Function,
@@ -148,7 +148,7 @@ AROS_UFH3(ULONG,Scrollgroup_Layout_Function,
 }
 
 
-#ifndef _AROS
+#ifndef __AROS__
 __asm ULONG Scrollgroup_Function(register __a0 struct Hook *hook, register __a1 void **msg)
 #else
 AROS_UFH3(ULONG,Scrollgroup_Function,

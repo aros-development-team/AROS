@@ -45,7 +45,7 @@ responsibility is assumed.
 
 static const char version[] = "$VER: compleximage 41.1 (14.3.1997)\n";
 
-#if defined __AROS && !defined(_AMIGA)
+#if defined __AROS__ && !defined(_AMIGA)
 #ifdef __chip
 #undef __chip
 #endif
@@ -130,7 +130,7 @@ if (IntuitionBase != NULL)
 			SA_Pens,	&pens,
 			TAG_END)))
 	{
-#ifdef __AROS
+#ifdef __AROS__
 	if (NULL != (win = OpenWindowTags(NULL,
 			    WA_RMBTrap,      TRUE,
 			    WA_CustomScreen, scr,
@@ -178,7 +178,7 @@ if (IntuitionBase != NULL)
 	    myImage.PlaneOnOff = 0x1;
 	    DrawImage(win->RPort,&myImage,100,50);
 
-#ifdef __AROS
+#ifdef __AROS__
 	    /* Wait for a keypress */
 	    Wait (1L << win->UserPort->mp_SigBit);
 #else

@@ -26,7 +26,7 @@
 #include <libraries/reqtools.h>
 #include <proto/reqtools.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/asmcall.h>
 #endif
 
@@ -56,7 +56,7 @@ extern struct DosLibrary 	*DOSBase;
 extern struct IntuitionBase 	*IntuitionBase;
 extern struct GfxBase 		*GfxBase;
 extern struct ReqToolsBase 	*ReqToolsBase;
-#if defined(_AROS) || defined(__GNUC__)
+#if defined(__AROS__) || defined(__GNUC__)
 extern struct UtilityBase 	*UtilityBase;
 #else
 extern struct Library 		*UtilityBase;
@@ -88,7 +88,7 @@ int ASM SAVEDS GetVScreenSize (
 
     Forbid();
 
-#ifdef _AROS
+#ifdef __AROS__
 #warning No VideoControl in AROS, yet
 #else
     if (IntuitionBase->FirstScreen == scr &&
@@ -101,7 +101,7 @@ int ASM SAVEDS GetVScreenSize (
 #endif
 	QueryOverscan (GetVPModeID (&scr->ViewPort), &dispclip, OSCAN_TEXT);
 	clip = &dispclip;
-#ifndef _AROS
+#ifndef __AROS__
     }
 #endif
 
@@ -127,7 +127,7 @@ int ASM SAVEDS GetVScreenSize (
 	UnlockIBase(ilock);
     }
 
-#ifdef _AROS
+#ifdef __AROS__
 #warning No VideoControl in AROS, yet
 #else
     if (isfirst &&
@@ -140,7 +140,7 @@ int ASM SAVEDS GetVScreenSize (
 #endif
 	QueryOverscan (GetVPModeID (&scr->ViewPort), &dispclip, OSCAN_TEXT);
 	clip = &dispclip;
-#ifndef _AROS
+#ifndef __AROS__
     }
 #endif
     if (pubscr)
@@ -492,7 +492,7 @@ struct BackFillMsg
 
 /****************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH3(void, WinBackFill,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(struct RastPort *, the_rp, A2),
@@ -515,14 +515,14 @@ void SAVEDS ASM WinBackFill (
     RectFill (&rp, msg->bounds.MinX, msg->bounds.MinY,
 		   msg->bounds.MaxX, msg->bounds.MaxY);
 
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_EXIT
 #endif
 }
 
 /****************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 
 AROS_UFH3(void, PatternWinBackFill,
     AROS_UFHA(struct Hook *, hook, A0),
@@ -575,7 +575,7 @@ struct Window *REGARGS OpenWindowBF (struct NewWindow *nw,
     UWORD maxpen = 0;
     int i;
 
-#ifdef _AROS
+#ifdef __AROS__
     if (backfillpattern)
     {
         hook->h_Entry = (ULONG (*)())PatternWinBackFill;

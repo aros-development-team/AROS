@@ -20,7 +20,7 @@
 #include <clib/macros.h>
 #endif
 
-#ifdef _AROS
+#ifdef __AROS__
 #ifndef AROS_ASMCALL_H
 #include <aros/asmcall.h>
 #endif
@@ -40,7 +40,7 @@ BOOL DestroyClasses(struct Library *MUIMasterBase);
 struct IClass *CreateBuiltinClass(CONST_STRPTR className, struct Library *MUIMasterBase);
 ULONG ConvertKey(struct IntuiMessage *imsg);
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFP3(IPTR, metaDispatcher,
 	AROS_UFPA(struct IClass  *, cl,  A0),
 	AROS_UFPA(Object *, obj, A2),

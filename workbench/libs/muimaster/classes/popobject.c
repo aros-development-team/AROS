@@ -13,7 +13,7 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -37,7 +37,7 @@ struct MUI_PopobjectData
     Object *wnd;
 };
 
-#ifndef _AROS
+#ifndef __AROS__
 static __asm ULONG Popobject_Open_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
 #else
 AROS_UFH3(ULONG,Popobject_Open_Function,
@@ -84,7 +84,7 @@ AROS_UFH3(ULONG,Popobject_Open_Function,
 }
 
 
-#ifndef _AROS
+#ifndef __AROS__
 static __asm ULONG Popobject_Close_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
 #else
 AROS_UFH3(ULONG,Popobject_Close_Function,

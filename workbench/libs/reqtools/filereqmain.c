@@ -20,7 +20,7 @@
    
 #define NO_SCROLLWINDOWRASTER 1
 
-#ifdef  _AROS
+#ifdef  __AROS__
 
     #define   DEBUG  1
     #include  <aros/debug.h>
@@ -33,7 +33,7 @@
 
 /****************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 #define fib_EntryType fib_DirEntryType
 #endif
 
@@ -56,7 +56,7 @@ static const IPTR ezreqtags[] = { RT_Underscore,'_',RTEZ_Flags,EZREQF_NORETURNKE
 BOOL
 ExpandLink( GlobData *glob )
 {
-#ifndef _AROS
+#ifndef __AROS__
     struct FileLock  *fl;
 #endif
     BOOL              rc = FALSE;
@@ -64,7 +64,7 @@ ExpandLink( GlobData *glob )
 
     *glob->winaddr = ( APTR ) -1;
 
-#ifdef _AROS
+#ifdef __AROS__
     res = ReadLink(NULL, glob->lock, glob->fib.fib_FileName, glob->linkbuf,
 		   sizeof(glob->linkbuf));
 #else
@@ -891,7 +891,7 @@ skipfile:
 				{TAG_DONE   	    	     }
 			    };
 			    
-    	    	    	#ifdef _AROS
+    	    	    	#ifdef __AROS__
 			    /* the other way (checking GFLG_SELECTED) does
 			       not work with AROS gadtools.library, and in
 			       general not with boopsi gadgets. Only with
@@ -912,7 +912,7 @@ skipfile:
 		    break;
 		    
 		case IDCMP_GADGETUP:
-#ifdef _AROS
+#ifdef __AROS__
 		    /* AROS gadtools library gadgets are boopsi gadgets, so checking
 		       for GTYP_STRGADGET does not work*/
 		    if ((code == KEYB_SHORTCUT) && ((gad->GadgetID == PATSTR) ||
@@ -1057,7 +1057,7 @@ rememberclicked:
 			    break;
 				
 			case ITALIC:
-			#ifdef _AROS
+			#ifdef __AROS__
 			    {
 			    	IPTR checked;
 				struct TagItem get_tags[] =
@@ -1088,7 +1088,7 @@ rememberclicked:
 			    goto updatestyle;
 				
 			case UNDERLINE:
-			#ifdef _AROS
+			#ifdef __AROS__
 			    {
 			    	IPTR checked;
 				struct TagItem get_tags[] =
@@ -1118,7 +1118,7 @@ rememberclicked:
 			    goto updatestyle;
 				
 			case BOLD:
-			#ifdef _AROS
+			#ifdef __AROS__
 			    {
 			    	IPTR checked;
 				struct TagItem get_tags[] =
@@ -1517,7 +1517,7 @@ iterate:
     if (doactgad)
     {
 /*
-#ifdef _AROS
+#ifdef __AROS__
 #warning Disabled this gadget activation here, as in Intuition this functions is slow (why? ask stegerg)
 #else
 */

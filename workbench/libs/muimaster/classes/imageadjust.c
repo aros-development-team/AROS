@@ -18,7 +18,7 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -48,7 +48,7 @@ struct MUI_ImageadjustData
     char *imagespec;
 };
 
-#ifndef _AROS
+#ifndef __AROS__
 static __asm VOID Pattern_Select_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
 #else
 AROS_UFH3(VOID,Pattern_Select_Function,
@@ -64,7 +64,7 @@ AROS_UFH3(VOID,Pattern_Select_Function,
     data->last_pattern_selected = new_selected;
 }
 
-#ifndef _AROS
+#ifndef __AROS__
 static __asm VOID Vector_Select_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
 #else
 AROS_UFH3(VOID,Vector_Select_Function,
@@ -80,7 +80,7 @@ AROS_UFH3(VOID,Vector_Select_Function,
     data->last_vector_selected = new_selected;
 }
 
-#ifndef _AROS
+#ifndef __AROS__
 static __saveds __asm void Imageadjust_External_Display(register __a0 struct Hook *h, register __a2 char **strings, register __a1 char *filename)
 #else
 AROS_UFH3(VOID,Imageadjust_External_Display,
@@ -305,7 +305,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     for (i=0;i<24;i++)
     {
     	char spec[10];
-    #ifdef _AROS
+    #ifdef __AROS__
     	sprintf(spec,"1:%d",i);
     #else
     	sprintf(spec,"1:%ld",i);
@@ -407,7 +407,7 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 				if ((data->imagespec = AllocVec(40,0)))
 				{
 				    if (data->last_pattern_selected != -1)
-				    #ifdef _AROS
+				    #ifdef __AROS__
 					sprintf(data->imagespec,"0:%d",data->last_pattern_selected+128);
 				    #else
 					sprintf(data->imagespec,"0:%ld",data->last_pattern_selected+128);
@@ -420,7 +420,7 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 				if ((data->imagespec = AllocVec(20,0)))
 				{
 				    if (data->last_vector_selected != -1)
-				    #ifdef _AROS
+				    #ifdef __AROS__
 					sprintf(data->imagespec,"1:%d",data->last_vector_selected);
 				    #else
 					sprintf(data->imagespec,"1:%ld",data->last_vector_selected);

@@ -5,7 +5,7 @@
     $Id$
 */
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -15,7 +15,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm VOID MUI_RemoveClipping(register __a0 struct MUI_RenderInfo *mri, register __a1 APTR handle)
 #else
 	AROS_LH2(VOID, MUI_RemoveClipping,

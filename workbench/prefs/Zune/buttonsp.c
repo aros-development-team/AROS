@@ -15,7 +15,7 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/alib.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
@@ -105,7 +105,7 @@ static IPTR ButtonsP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP
     return TRUE;
 }
 
-#ifndef _AROS
+#ifndef __AROS__
 __asm IPTR ButtonsP_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
 AROS_UFH3S(IPTR,ButtonsP_Dispatcher,

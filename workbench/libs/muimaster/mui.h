@@ -21,7 +21,7 @@
 #define MUIMASTER_VLATEST 41
 
 /* Sometype defs in AROS */
-#ifndef _AROS
+#ifndef __AROS__
 #ifndef _AROS_TYPES_DEFINED
 typedef unsigned long IPTR;
 typedef long STACKLONG;
@@ -35,7 +35,7 @@ typedef unsigned long STACKULONG;
  *   BOOPSI_DISPATCHER(IPTR,IconWindow_Dispatcher,cl,obj,msg)
  *
  */
-#ifndef _AROS
+#ifndef __AROS__
 #define BOOPSI_DISPATCHER(rettype,name,cl,obj,msg) \
 __saveds __asm rettype name(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
@@ -51,7 +51,7 @@ AROS_UFH3S(rettype, name,\
 
 /* This structure is used for the internal classes */
 
-#ifndef _AROS
+#ifndef __AROS__
 struct __MUIBuiltinClass {
     CONST_STRPTR name;
     CONST_STRPTR supername;
@@ -89,7 +89,7 @@ struct __MUIBuiltinClass {
 #endif
 
 /* the following prototypes here are only temporary so it can be compiled without problems */
-#ifndef _AROS
+#ifndef __AROS__
 
 #ifndef _COMPILER_H
 #include "compiler.h"

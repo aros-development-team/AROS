@@ -9,7 +9,7 @@
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -33,7 +33,7 @@ static struct IClass *load_external_class(CONST_STRPTR classname, struct Library
 
     for (pathptr = searchpaths; *pathptr; pathptr++)
     {
-#ifdef _AROS	    
+#ifdef __AROS__	    
 	snprintf(s, 255, *pathptr, classname);
 #else
 #warning "snprintf() not used on Amiga"
@@ -43,7 +43,7 @@ static struct IClass *load_external_class(CONST_STRPTR classname, struct Library
 	{
 	    /* call MCC_Query(0) */
 	
-#ifdef _AROS		
+#ifdef __AROS__		
 	    mcc = AROS_LVO_CALL1(struct MUI_CustomClass *,
 				 AROS_LCA(LONG, 0, D0),
 				 struct Library *, mcclib, 5, lib);
@@ -70,7 +70,7 @@ static struct IClass *load_external_class(CONST_STRPTR classname, struct Library
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm struct IClass *MUI_GetClass(register __a0 char *classname)
 #else
 	AROS_LH1(struct IClass *, MUI_GetClass,

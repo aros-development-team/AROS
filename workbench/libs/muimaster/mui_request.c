@@ -10,7 +10,7 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/asmcall.h>
 #include <proto/muimaster.h>
 #else
@@ -21,7 +21,7 @@
 
 extern struct Library *MUIMasterBase;
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH2S(void, cpy_func,
     AROS_UFHA(UBYTE, chr, D0),
     AROS_UFHA(STRPTR *, strPtrPtr, A3))
@@ -48,7 +48,7 @@ AROS_UFH2S(void, len_func,
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register __d2 LONGBITS flags, register __a0 char *title, register __a1 char *gadgets, register __a2 char *format, register __a3 APTR params)
 #else
 	AROS_LH7(LONG, MUI_RequestA,
@@ -92,7 +92,7 @@ __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register
     LONG result;
     char *reqtxt;
     LONG reqtxt_len;
-#ifndef _AROS
+#ifndef __AROS__
     static const ULONG len_func = 0x52934e75; /* addq.l  #1,(A3) ; rts */
     static const ULONG cpy_func = 0x16c04e75; /* move.b d0,(a3)+ ; rts */
 #endif
@@ -112,7 +112,7 @@ __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register
 	return EasyRequestArgs(NULL,&es,NULL,params);
     }
 
-#ifdef _AROS
+#ifdef __AROS__
     reqtxt_len = 0;
     RawDoFmt(format,params,(VOID_FUNC)AROS_ASMSYMNAME(len_func),&reqtxt_len);
 #else
@@ -122,7 +122,7 @@ __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register
 
     if (!(reqtxt = AllocVec(reqtxt_len+1,0))) return 0; /* Return cancel if something failed */
 
-#ifdef _AROS
+#ifdef __AROS__
     {
     	char *reqtxtptr = reqtxt;
 	

@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #endif
@@ -22,7 +22,7 @@
 #include <Family.h>
 #include <Window.h>
 #include <applicationdata.h>
-#ifndef _AROS
+#ifndef __AROS__
 #include <sys/time.h>
 #include <sys/stat.h>
 #endif
@@ -295,7 +295,7 @@ __zune_prefs_init (struct ZunePrefs *prefs)
 
     for (i = 0; i < -MUIV_Font_NegCount; i++)
     {
-#ifdef _AROS
+#ifdef __AROS__
 	prefs->fonts[i] = OpenFont(&defaultFont);
 #else
 	prefs->fonts[i] = gdk_font_load("fixed");
@@ -401,7 +401,7 @@ __zune_prefs_release(struct ZunePrefs *prefs)
     for (i = 0; i < -MUIV_Font_NegCount; i++)
     {
 	if (prefs->fonts[i])
-#ifdef _AROS
+#ifdef __AROS__
 	    CloseFont(prefs->fonts[i]);
 #else
 	    gdk_font_unref(prefs->fonts[i]);
@@ -491,7 +491,7 @@ __zune_prefs_sys_app_write(struct ZunePrefs *prefs, STRPTR app_title)
     return __zune_prefs_write(prefs, __zune_file_get_sys_prefs_app_file(app_title));
 }
 
-#ifndef _AROS
+#ifndef __AROS__
 
 static gboolean 
 zune_open_windows (gpointer appdata)

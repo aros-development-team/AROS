@@ -11,7 +11,7 @@
 
 #include "camd_intern.h"
 
-#ifdef _AROS
+#ifdef __AROS__
 #  undef DEBUG
 #  define DEBUG 1
 #  include <aros/debug.h>

@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #define USE_BOOPSI_STUBS
 #include <proto/utility.h>
 #include <proto/intuition.h>
@@ -72,7 +72,7 @@
 
 /****************************************************************************/
 
-#ifndef _AROS
+#ifndef __AROS__
 
 #if 0
 #undef SysBase
@@ -669,7 +669,7 @@ STATIC IPTR colorwheel_domain(Class *cl, Object *o, struct gpDomain *msg)
 
 /***************************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH3S(IPTR, dispatch_colorwheelclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
@@ -730,7 +730,7 @@ IPTR dispatch_colorwheelclass( REG(a0, Class *cl), REG(a2, Object *o), REG(a1, M
 
     return (retval);
 
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_EXIT
 #endif        
 }  /* dispatch_colorwheelclass */
@@ -746,7 +746,7 @@ struct IClass *InitColorWheelClass (struct ColorWheelBase_intern * ColorWheelBas
 
     if ((cl = MakeClass("colorwheel.gadget", GADGETCLASS, NULL, sizeof(struct ColorWheelData), 0)))
     {
-#ifdef _AROS
+#ifdef __AROS__
 	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_colorwheelclass);
 #else
 	cl->cl_Dispatcher.h_Entry    = (HOOKFUNC) dispatch_colorwheelclass;

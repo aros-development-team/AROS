@@ -10,7 +10,7 @@
 #include <proto/dos.h>
 #include <proto/iffparse.h>
 
-#ifndef _AROS
+#ifndef __AROS__
 #ifdef __SASC
 
 /* sprintf replacements for SAS C (shorter code, currently not used
@@ -28,7 +28,7 @@ int sprintf(char *buf, const char *fmt,...)
 }
 #endif /* UNUSED */
 #endif /* __SASC */
-#endif /* _AROS */
+#endif /* __AROS__ */
 
 /**************************************************************************************************/
 

@@ -5,7 +5,7 @@
     $Id$
 */
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -14,7 +14,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm LONG MUI_SetError(register __d0 LONG num)
 #else
 	AROS_LH1(LONG, MUI_SetError,

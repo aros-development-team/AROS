@@ -27,7 +27,7 @@
 #   include <graphics/gfxbase.h>
 #endif
 
-#ifdef _AROS
+#ifdef __AROS__
 #ifndef AROS_ASMCALL_H
 #   include <aros/asmcall.h>
 #endif
@@ -54,7 +54,7 @@
 #endif
 
 /* Sometype defs in AROS */
-#ifndef _AROS
+#ifndef __AROS__
 #ifndef _AROS_TYPES_DEFINED
 typedef unsigned long IPTR;
 typedef long STACKLONG;
@@ -102,7 +102,7 @@ struct MUIMasterBase_intern
 #undef MUIMB
 #define MUIMB(b)	((struct MUIMasterBase_intern *)b)
 
-#ifdef _AROS
+#ifdef __AROS__
 
 #include <proto/muimaster.h>
 
@@ -155,7 +155,7 @@ struct MUIMasterBase_intern
 #undef DataTypesBase
 #define DataTypesBase	(MUIMB(MUIMasterBase)->datatypesbase)
 */
-#else /* ! _AROS */
+#else /* ! __AROS__ */
 
 #undef SysBase
 #define SysBase     	(((struct MUIMasterBase_intern *)MUIMasterBase)->sysbase)
@@ -208,6 +208,6 @@ struct MUIMasterBase_intern
 #include "compiler.h"
 #endif
 
-#endif /* ! _AROS */
+#endif /* ! __AROS__ */
 
 #endif /* MUIMASTER_INTERN_H */

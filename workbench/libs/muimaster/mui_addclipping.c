@@ -7,7 +7,7 @@
 
 #include <proto/graphics.h>
 #include <proto/layers.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -19,7 +19,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS
+#ifndef __AROS__
 __asm APTR MUI_AddClipping(register __a0 struct MUI_RenderInfo *mri, register __d0 WORD left, register __d1 WORD top, register __d2 WORD width, register __d3 WORD height)
 #else
 	AROS_LH5(APTR, MUI_AddClipping,

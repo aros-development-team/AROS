@@ -836,7 +836,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
      /*
       *  planare BitMap in einen chunky Buffer auslesen
       */
-#ifdef _AROS
+#ifdef __AROS__
      for(i=0; i<BM_Height; i++)
      {
        /* AROS ReadPixelLine/Array8 does not need a temprp */
@@ -1012,7 +1012,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
  
     WriteChunkyPixels(&DestRP, 0, 0, BM_Width-1, BM_Height-1, pd->ChunkyBuffer, BM_Width16);
  
-#ifdef _AROS
+#ifdef __AROS__
     DeinitRastPort(&DestRP);
 #endif
    } /* else(pd->TrueColorSrc) */
@@ -1038,7 +1038,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
   */
  ReleaseSemaphore(&si->si_Lock);
 
-#ifdef _AROS
+#ifdef __AROS__
 si->si_VertUnit = 1;
 si->si_VisVert = domain->Height;
 si->si_TotVert = Height;
@@ -1215,7 +1215,7 @@ STATIC IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *
 
 /**************************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH3S(IPTR, DT_Dispatcher,
 	   AROS_UFHA(Class *, cl, A0),
 	   AROS_UFHA(Object *, o, A2),
@@ -1340,7 +1340,7 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
        
     return(RetVal);
 
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_EXIT
 #endif
 }
@@ -1353,7 +1353,7 @@ struct IClass *DT_MakeClass(struct Library *picturebase)
 
     if (cl)
     {
-#ifdef _AROS
+#ifdef __AROS__
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(DT_Dispatcher);
 #else
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;

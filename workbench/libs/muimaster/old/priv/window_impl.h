@@ -49,7 +49,7 @@ _zune_window_get_default_events (void);
 void
 _zune_window_change_events (struct MUI_WindowData *data);
 
-#ifndef _AROS
+#ifndef __AROS__
 
 /* process an event got in this window */
 gint

@@ -406,9 +406,9 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
  {
   D(bug("ppm.datatype/OM_NEW: AllocVec(RGBBuffer) failed\n"));
 
-#ifdef _AROS
+#ifdef __AROS__
   DeinitRastPort(&rp);
-#endif /* _AROS */
+#endif /* __AROS__ */
   FreeBitMap(bm);
   SetIoErr(ERROR_NO_FREE_STORE);
   CoerceMethod(cl, (Object *) RetVal, OM_DISPOSE);
@@ -422,9 +422,9 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
  {
   D(bug("ppm.datatype/OM_NEW: AllocVec(ChunkyBuffer) failed\n"));
 
-#ifdef _AROS
+#ifdef __AROS__
   DeinitRastPort(&rp);
-#endif /* _AROS */
+#endif /* __AROS__ */
   FreeBitMap(bm);
   FreeVec(RGBBuffer);
   SetIoErr(ERROR_NO_FREE_STORE);
@@ -443,9 +443,9 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
   {
    D(bug("ppm.datatype/OM_NEW: Read(RGBBuffer) failed\n"));
 
-#ifdef _AROS
+#ifdef __AROS__
    DeinitRastPort(&rp);
-#endif /* _AROS */
+#endif /* __AROS__ */
    FreeBitMap(bm);
    FreeVec(ChunkyBuffer);
    FreeVec(RGBBuffer);
@@ -473,9 +473,9 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
 
  D(bug("ppm.datatype/OM_NEW: Yes!!! We have done it!\n"));
 
-#ifdef _AROS
+#ifdef __AROS__
  DeinitRastPort(&rp);
-#endif /* _AROS */
+#endif /* __AROS__ */
  FreeVec(ChunkyBuffer);
  FreeVec(RGBBuffer);
 
@@ -909,7 +909,7 @@ else
 /**************************************************************************************************/
 /**************************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH3S(IPTR, DT_Dispatcher,
 	   AROS_UFHA(Class *, cl, A0),
 	   AROS_UFHA(Object *, o, A2),
@@ -918,7 +918,7 @@ AROS_UFH3S(IPTR, DT_Dispatcher,
 ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, register __a1 Msg msg)
 #endif
 {
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_INIT
 #endif
 
@@ -1026,7 +1026,7 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 //    D(bug("ppm.datatype/DT_Dispatcher: Leaving\n"));
 
     return retval;
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_EXIT
 #endif
 }
@@ -1041,7 +1041,7 @@ struct IClass *DT_MakeClass(struct Library *ppmbase)
 
     if (cl)
     {
-#ifdef _AROS
+#ifdef __AROS__
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(DT_Dispatcher);
 #else
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;

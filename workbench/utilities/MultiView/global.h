@@ -71,7 +71,7 @@
 #include <devices/inputevent.h>
 #endif
 
-#ifdef _AROS
+#ifdef __AROS__
 #ifndef DEVICES_RAWKEYCODES_H
 #include <devices/rawkeycodes.h>
 #endif

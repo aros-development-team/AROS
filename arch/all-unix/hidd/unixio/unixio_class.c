@@ -41,13 +41,13 @@
 #include <errno.h>
 #undef timeval
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/asmcall.h>
 
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
-#endif /* _AROS */
+#endif /* __AROS__ */
 
 static const UBYTE name[];
 static const UBYTE version[];

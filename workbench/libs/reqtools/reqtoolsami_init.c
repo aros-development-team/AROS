@@ -114,7 +114,7 @@ extern ULONG ASM SAVEDS GetString (REGPARAM(a1, UBYTE *, stringbuff),
 
 /****************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 #error No StackSwap support for AROS yet
 #endif
 

@@ -21,7 +21,7 @@
 
 #include <string.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -55,7 +55,7 @@ struct Asl_Startup
     Object *pop;
 };
 
-#ifndef _AROS
+#ifndef __AROS__
 __saveds static LONG Asl_Entry(void)
 #else
 static LONG Asl_Entry(void)
@@ -87,7 +87,7 @@ static LONG Asl_Entry(void)
     return 0;
 }
 
-#ifndef _AROS
+#ifndef __AROS__
 static __asm ULONG Popasl_Open_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
 #else
 AROS_UFH3(ULONG,Popasl_Open_Function,
@@ -210,7 +210,7 @@ AROS_UFH3(ULONG,Popasl_Open_Function,
 }
 
 
-#ifndef _AROS
+#ifndef __AROS__
 static __asm ULONG Popasl_Close_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
 #else
 AROS_UFH3(ULONG,Popasl_Close_Function,
@@ -261,7 +261,7 @@ AROS_UFH3(ULONG,Popasl_Close_Function,
 
 		        /* Remove the .font extension */
 		        if ((font_ext = strstr(buf,".font"))) *font_ext = 0;
-		    #ifdef _AROS
+		    #ifdef __AROS__
 		        sprintf(num_buf,"%d",size);
 		    #else
 		        sprintf(num_buf,"%ld",size);

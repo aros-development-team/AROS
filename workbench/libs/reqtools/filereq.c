@@ -566,7 +566,7 @@ void REGARGS ResetDrawerAndFileFields (GlobData *glob)
 
 /****************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH3(void, IntuiMsgFunc,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(APTR, req, A2),
@@ -592,7 +592,7 @@ void ASM SAVEDS IntuiMsgFunc (
 	CallHookPkt (glob->imsghook, glob->req, imsg);
 	ResetDrawerAndFileFields (glob);
     }
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_EXIT
 #endif
 }

@@ -9,7 +9,7 @@
 #ifndef __BUILTIN_H__
 #define __BUILTIN_H__
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/asmcall.h>
 #endif
 
@@ -45,7 +45,7 @@ extern _MUIBuiltinClass  _MUI_Configdata_desc; /* 10 */
 
 Class *_zune_builtin_class_create (CONST_STRPTR className);
 
-#ifndef _AROS
+#ifndef __AROS__
 void _zune_add_root_class (void);
 #endif
 

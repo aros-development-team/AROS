@@ -25,7 +25,7 @@
 #include <intuition/classes.h>
 #endif /* INTUITION_CLASSES_H */
 
-#if defined(_AROS)
+#if defined(__AROS__)
 
 	#ifndef AROS_DEBUG_H
 	#include <aros/debug.h>
@@ -45,7 +45,7 @@
 	#define INLINE static inline
 	#endif
 
-#else /* !_AROS */
+#else /* !__AROS__ */
 
 	#ifndef COMPILERSPECIFIC_H
 	#include "CompilerSpecific.h"
@@ -62,7 +62,7 @@
 	#define _CALL_DISPATCHER(entry, cl, o, msg) \
 		((HookPtr)(entry))(cl, o, msg)
 
-#endif /* _AROS */
+#endif /* __AROS__ */
 
 
 

@@ -7,7 +7,7 @@
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -18,7 +18,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm BOOL MUI_DeleteCustomClass(register __a0 struct MUI_CustomClass *mcc)
 #else
 	AROS_LH1(BOOL, MUI_DeleteCustomClass,

@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
@@ -76,7 +76,7 @@ kprintf("*** Slider->New: obj=0\n");
     data->gadget = NULL;
     data->flags = flags;
 
-#ifdef _AROS
+#ifdef __AROS__
     data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
 #else
     data->ehn.ehn_Events = GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK;
@@ -222,7 +222,7 @@ kprintf("*** Slider->Draw: refresh gadget\n");
     return TRUE;
 }
 
-#ifdef _AROS
+#ifdef __AROS__
 
 static ULONG
 event_button(struct IClass *cl, Object *obj, struct IntuiMessage *imsg)
@@ -262,7 +262,7 @@ mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 
     if (msg->imsg)
     {
-#ifdef _AROS
+#ifdef __AROS__
 	switch (msg->imsg->Class)
 	{
 	case IDCMP_MOUSEBUTTONS:

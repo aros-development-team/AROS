@@ -632,7 +632,7 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd)
 
 #if MENUS_UNDERMOUSE
 
-#ifdef _AROS
+#ifdef __AROS__
     if (!(temprp = CloneRastPort(&mhd->scr->RastPort))) return;
 #else
     temprp = &mhd->scr->RastPort;
@@ -658,7 +658,7 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd)
     win_tags[0].ti_Data = mhd->scr->MouseX - win_tags[2].ti_Data / 2;
     win_tags[1].ti_Data = mhd->scr->MouseY;
 
-#ifdef _AROS
+#ifdef __AROS__
     FreeRastPort(temprp);
 #endif /* Nothing to be done for AmigaOS */
 

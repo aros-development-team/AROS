@@ -5,7 +5,7 @@
     $Id$
 */
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -14,7 +14,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm VOID MUI_FreeClass(register __a0 struct IClass *classptr)
 #else
 	AROS_LH1(VOID, MUI_FreeClass,

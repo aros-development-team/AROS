@@ -23,7 +23,7 @@
 #include <proto/utility.h>
 #include <proto/iffparse.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -38,7 +38,7 @@ LONG xget(Object * obj, ULONG attr);
 struct Library *MUIMasterBase;
 
 
-#ifndef _AROS
+#ifndef __AROS__
 
 /* On AmigaOS we build a fake library base, because it's not compiled as sharedlibrary yet */
 #include "muimaster_intern.h"

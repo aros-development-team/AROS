@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/graphics.h>
@@ -24,7 +24,7 @@
  * I know I was not supposed to do that.
  */
 
-#ifndef _AROS
+#ifndef __AROS__
 
 static GSList *clip_list = NULL;
 static GMemChunk *rectChunk = NULL;
@@ -95,7 +95,7 @@ int isRegionWithinBounds(struct Region *r, int left, int top, int width, int hei
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, MUIMasterBase)
 
-#ifndef _AROS
+#ifndef __AROS__
     GdkRectangle *rect;
 
     g_return_val_if_fail(mri != NULL, NULL);
@@ -153,7 +153,7 @@ int isRegionWithinBounds(struct Region *r, int left, int top, int width, int hei
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, MUIMasterBase)
 
-#ifndef _AROS
+#ifndef __AROS__
     GSList *node = (GSList *)handle;
 
     g_return_if_fail(mri != NULL);
@@ -194,7 +194,7 @@ int isRegionWithinBounds(struct Region *r, int left, int top, int width, int hei
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, MUIMasterBase)
 
-#ifndef _AROS
+#ifndef __AROS__
 #warning FIXME: not implemented
 #else
     struct Window *w = mri->mri_Window;
@@ -252,7 +252,7 @@ int isRegionWithinBounds(struct Region *r, int left, int top, int width, int hei
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, MUIMasterBase)
 
-#ifndef _AROS
+#ifndef __AROS__
 #warning FIXME: not implemented
 #else
     struct Window *w = mri->mri_Window;
@@ -310,7 +310,7 @@ int isRegionWithinBounds(struct Region *r, int left, int top, int width, int hei
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, MUIMasterBase)
 
-#ifdef _AROS
+#ifdef __AROS__
 
     struct Window *w = mri->mri_Window;
     struct Layer  *l;
@@ -355,7 +355,7 @@ int isRegionWithinBounds(struct Region *r, int left, int top, int width, int hei
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, MUIMasterBase)
 
-#ifdef _AROS
+#ifdef __AROS__
 
     struct Window *w = mri->mri_Window;
 

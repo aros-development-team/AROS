@@ -16,7 +16,7 @@
 #include "filereq.h"
 
 
-#ifdef   _AROS
+#ifdef   __AROS__
 
     #define  DEBUG  0
     #include <aros/debug.h>
@@ -206,7 +206,7 @@ void REGARGS PrintEntry (GlobData *glob, int i)
 	}
 	else if (type == FONT || (type == glob->file_id))
 	{
-#ifdef _AROS
+#ifdef __AROS__
 #warning AROS LocaleLibrary does not yet patch RawDoFmt. So "%lD" (uppercase D) does not work yet here!
 	    Dofmt (sizestr, " %ld", &size);
 #else
@@ -691,7 +691,7 @@ BOOL REGARGS FindVolume (GlobData *glob, UBYTE *str, struct ReqEntry *curr)
 static BOOL
 IsDosVolume(struct DosList *dlist)
 {
-#ifdef _AROS
+#ifdef __AROS__
     struct InfoData id;
     BPTR            lock;
     STRPTR          volName = AllocVec(strlen(dlist->dol_DevName) + 2,
@@ -832,7 +832,7 @@ AddDisk(
 	{
 	    size = SIZE_NONE;
 
-#ifdef _AROS
+#ifdef __AROS__
 	    {
 		BPTR lock = Lock(&deventry->name, SHARED_LOCK);
 
@@ -885,7 +885,7 @@ AllocDevEntry( GlobData *glob, struct DosList *dlist, STRPTR name )
 	  glob->buff->pool, sizeof( struct DeviceEntry ) ) ) )
     {
 	strcpy( deventry->name, name );
-#ifdef _AROS
+#ifdef __AROS__
 #warning FIXME: dlist->dol_Task does not exist in AROS. For now assuming 0 here.
 	deventry->task = NULL;
 #else
@@ -902,7 +902,7 @@ AllocDevEntry( GlobData *glob, struct DosList *dlist, STRPTR name )
 static void
 GetVolName( BSTR bstr, STRPTR cstr )
 {
-#ifdef _AROS
+#ifdef __AROS__
     /* In AROS, BPTR:s are handled differently on different systems
        (to be binary compatible on Amiga) */
 
@@ -971,7 +971,7 @@ AddDiskNames( GlobData *glob, ULONG volreqflags )
     
     while( ( dlist = NextDosEntry( dlist, LDF_VOLUMES | LDF_ASSIGNS | LDF_READ ) ) )
     {
-#ifdef _AROS
+#ifdef __AROS__
 	GetVolName(dlist->dol_OldName, name);
 #else
 	GetVolName(dlist->dol_Name, name);
@@ -1009,19 +1009,19 @@ AddDiskNames( GlobData *glob, ULONG volreqflags )
 
 	while( deventry )
 	{
-#ifdef _AROS
+#ifdef __AROS__
 #warning FIXME: AROS has no dol_Task!
 #else
 	    devmatch |= ( deventry->task == dlist->dol_Task );
 #endif
-#ifdef _AROS
+#ifdef __AROS__
 #warning FIXME: AROS again has no dol_Task!
 	    if( !deventry->resolved && deventry->task && devmatch )
 #else
 	    if( !deventry->resolved && deventry->task && ( deventry->task == dlist->dol_Task ) )
 #endif
 	    {
-#ifdef _AROS
+#ifdef __AROS__
 		GetVolName( dlist->dol_OldName, devname );
 #else
 		GetVolName( dlist->dol_Name, devname );
@@ -1040,7 +1040,7 @@ AddDiskNames( GlobData *glob, ULONG volreqflags )
 	     * to a volume, and we should really show all devices in a
 	     * volume requester.
 	     */
-#ifdef _AROS
+#ifdef __AROS__
 	    GetVolName( dlist->dol_OldName, devname );
 #else
 	    GetVolName( dlist->dol_Name, devname );

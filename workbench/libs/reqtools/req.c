@@ -24,7 +24,7 @@
 
 /****************************************************************************************/
 
-#ifndef _AROS
+#ifndef __AROS__
 
 #ifdef __SASC
 #pragma libcall ReqToolsBase rtLockPrefs a8 00
@@ -660,7 +660,7 @@ ULONG ASM SAVEDS GetString (
 	if (gad)
 	{
 	    gad->GadgetType |= GTYP_BOOLGADGET;
-#ifdef _AROS
+#ifdef __AROS__
 #warning A workaround here for AROS, because this would overpaint many gadgets
 	    /* This seems to rely somehow on how GadTools refreshes gadgets
 	       (the order etc.).

@@ -14,7 +14,7 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/iffparse.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -205,7 +205,7 @@ static LONG Dataspace_ReadIFF(struct IClass *cl, Object *obj, struct MUIP_Datasp
 
     while (p < buffer + read)
     {
-#ifndef _AROS /* The check should be better processor depend */
+#ifndef __AROS__ /* The check should be better processor depend */
 
         /* Since data can be stored on uneven addresses we must read
         ** them byte by byte as MC68000 doesn't like this

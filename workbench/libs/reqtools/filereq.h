@@ -38,11 +38,11 @@
 #include <libraries/reqtools.h>
 #include <proto/reqtools.h>
 
-#if !defined(_AROS) && !defined(__GNUC__)
+#if !defined(__AROS__) && !defined(__GNUC__)
 #include <pragmas/reqtools_pragmas.h>
 #endif
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/asmcall.h>
 #include "reqtools_intern.h"
 #endif
@@ -59,7 +59,7 @@
 
 #define ThisProcess()		( ( struct Process * ) FindTask( NULL ) )
 
-#ifndef _AROS
+#ifndef __AROS__
 
 #ifdef __SASC
 #pragma libcall DOSBase DoPkt1 f0 32103
@@ -126,7 +126,7 @@ extern struct IntuitionBase	*IntuitionBase;
 extern struct GfxBase		*GfxBase;
 extern struct Library		*LayersBase;
 extern struct ReqToolsBase	*ReqToolsBase;
-#if defined(_AROS) || defined(__GNUC__)
+#if defined(__AROS__) || defined(__GNUC__)
 extern struct UtilityBase	*UtilityBase;
 #else
 extern struct Library		*UtilityBase;
@@ -403,7 +403,7 @@ void BuildColStr (char *, LONG, ULONG);
 
 void REGARGS SetDrawerAndFileFields (GlobData *);
 void REGARGS ResetDrawerAndFileFields (GlobData *);
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFP3(void, IntuiMsgFunc,
     AROS_UFPA(struct Hook *, hook, A0),
     AROS_UFPA(APTR, req, A2),

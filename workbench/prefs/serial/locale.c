@@ -12,7 +12,7 @@
 
 void InitLocale(STRPTR catname, ULONG version)
 {
-#ifdef _AROS
+#ifdef __AROS__
     LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 39);
 #else
     LocaleBase = (struct Library    *)OpenLibrary("locale.library", 39);

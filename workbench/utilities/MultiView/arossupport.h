@@ -6,12 +6,12 @@
     Lang: English
 */
 
-#ifndef _AROS
+#ifndef __AROS__
 
 #include <exec/types.h>
 
 extern ULONG *FindMethod(ULONG *methods, ULONG searchmethodid);
 extern struct DTMethod *FindTriggerMethod(struct DTMethod *methods, STRPTR command, ULONG method);
 
-#endif /* _AROS */
+#endif /* __AROS__ */
 

@@ -16,7 +16,7 @@
 /* About loading Zune classes in external files ...
  */
 
-#ifndef _AROS
+#ifndef __AROS__
 typedef ULONG (*QueryFunc) (LONG which);
 #endif
 

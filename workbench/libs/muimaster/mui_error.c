@@ -6,14 +6,14 @@
 */
 
 #include "muimaster_intern.h"
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm LONG MUI_Error(VOID)
 #else
 	AROS_LH0(LONG, MUI_Error,

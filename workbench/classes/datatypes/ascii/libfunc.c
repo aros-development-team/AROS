@@ -17,7 +17,7 @@ struct IClass 		*dt_class;
 struct ExecBase 	*SysBase;
 struct IntuitionBase 	*IntuitionBase;
 struct GfxBase	 	*GfxBase;
-#ifdef _AROS
+#ifdef __AROS__
 struct UtilityBase	*UtilityBase;
 #else
 struct Library		*UtilityBase;
@@ -34,7 +34,7 @@ struct IClass *DT_MakeClass(struct Library *asciibase);
 
 int __UserLibInit(struct Library *libbase )
 {
-#ifndef _AROS
+#ifndef __AROS__
     SysBase = *(struct ExecBase**)4;
 #endif
 
@@ -48,7 +48,7 @@ int __UserLibInit(struct Library *libbase )
 	    {
 		if((DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 39)))
 		{
-#ifdef _AROS
+#ifdef __AROS__
 		    if((UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37)))
 #else
 		    if((UtilityBase = (struct Library *)OpenLibrary("utility.library", 37)))

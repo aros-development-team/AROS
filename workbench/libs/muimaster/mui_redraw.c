@@ -9,7 +9,7 @@
 #include <intuition/classusr.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -20,7 +20,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm VOID MUI_Redraw(register __a0 Object *obj, register __d0 ULONG flags)
 #else
 	AROS_LH2(VOID, MUI_Redraw,

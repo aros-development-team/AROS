@@ -13,7 +13,7 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -540,7 +540,7 @@ static ULONG Notify_Set(struct IClass *cl, Object *obj, struct MUIP_Set *msg)
  */
 static ULONG Notify_SetAsString(struct IClass *cl, Object *obj, struct MUIP_SetAsString *msg)
 {
-#ifndef _AROS
+#ifndef __AROS__
     /* This is not very nice but can be changed later */
     char buf[2048];
     static const ULONG tricky=0x16c04e75; /* move.b d0,(a3)+ ; rts */

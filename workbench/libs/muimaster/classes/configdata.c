@@ -16,7 +16,7 @@
 #include <proto/iffparse.h>
 #include <proto/dos.h>
 #include <proto/commodities.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 

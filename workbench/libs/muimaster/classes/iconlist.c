@@ -13,7 +13,7 @@
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <workbench/icon.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <workbench/workbench.h>
 #warning workbench/workbench.h should be included also in workbench/icon.h
 #endif
@@ -26,7 +26,7 @@
 #include <proto/icon.h>
 #include <proto/layers.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -43,7 +43,7 @@ extern struct Library *MUIMasterBase;
 #define NO_ICON_POSITION (0x8000000) /* belongs to workbench/workbench.h */
 #endif
 
-#ifdef _AROS
+#ifdef __AROS__
 #define dol_Name dol_OldName /* This doesn't work really */
 #endif
 
@@ -133,7 +133,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     LONG txwidth; // txheight;
     SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
 
-#ifndef _AROS
+#ifndef __AROS__
     DrawIconState(_rp(obj),icon->dob,NULL,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, FALSE, TAG_DONE);
 #else
     DrawIconStateA(_rp(obj),icon->dob,NULL,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, NULL);
@@ -866,7 +866,7 @@ static ULONG IconList_CreateDragImage(struct IClass *cl, Object *obj, struct MUI
     	    InitRastPort(&temprp);
     	    temprp.BitMap = img->bm;
 
-#ifndef _AROS
+#ifndef __AROS__
 	    DrawIconState(&temprp,node->dob,NULL,0,0, node->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, TRUE, TAG_DONE);
 #else
 	    DrawIconStateA(&temprp,node->dob,NULL,0,0, node->selected?IDS_SELECTED:IDS_NORMAL, NULL);
@@ -1062,7 +1062,7 @@ static int ReadIcons(struct IClass *cl, Object *obj)
     ParsePatternNoCase("#?.info",pattern,sizeof(pattern));
     eac->eac_MatchString = pattern;
 */
-#ifdef _AROS
+#ifdef __AROS__
 #warning AROS ExAll() doesnt support eac_MatchString
 #endif
     eac->eac_MatchString = NULL;
@@ -1264,7 +1264,7 @@ static struct NewDosList *DosList_Create(void)
 			while(( dl = NextDosEntry(dl, LDF_VOLUMES)))
 			{
 				STRPTR name;
-#ifndef _AROS
+#ifndef __AROS__
 				UBYTE *dosname = (UBYTE*)BADDR(dl->dol_Name);
 				LONG len = dosname[0];
 				dosname++;
@@ -1284,7 +1284,7 @@ static struct NewDosList *DosList_Create(void)
 					{
 						ndn->name = name;
 						ndn->device = NULL;
-#ifndef _AROS
+#ifndef __AROS__
 						ndn->port = dl->dol_Task;
 #else
 						ndn->port = NULL;
@@ -1295,7 +1295,7 @@ static struct NewDosList *DosList_Create(void)
 			}
 			UnLockDosList(LDF_VOLUMES|LDF_READ);
 
-#ifndef _AROS
+#ifndef __AROS__
 			dl = LockDosList(LDF_DEVICES|LDF_READ);
 			while(( dl = NextDosEntry(dl, LDF_DEVICES)))
 			{

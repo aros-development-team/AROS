@@ -47,7 +47,7 @@ responsibility is assumed.
 
 static const char version[] = "$VER: intuitext 41.1 (14.3.1997)\n";
 
-#if defined __AROS && !defined(_AMIGA)
+#if defined __AROS__ && !defined(_AMIGA)
 #ifdef __chip
 #undef __chip
 #endif
@@ -85,13 +85,13 @@ ULONG myBACKGROUNDPEN;
 IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",37);
 if (IntuitionBase)
     {
-#ifdef __AROS
+#ifdef __AROS__
     if ((screen = LockPubScreen(NULL)))
 #else
     if (screen = LockPubScreen(NULL))
 #endif
 	{
-#ifdef __AROS
+#ifdef __AROS__
 	if ((drawinfo = GetScreenDrawInfo(screen)))
 #else
 	if (drawinfo = GetScreenDrawInfo(screen))
@@ -114,7 +114,7 @@ if (IntuitionBase)
 	    ** a text string.  An application would probably never use such a
 	    ** window, but it is useful for demonstrating graphics...
 	    */
-#ifdef __AROS
+#ifdef __AROS__
 	    if ((win = OpenWindowTags(NULL,
 				WA_PubScreen,	 screen,
 				WA_RMBTrap,	 TRUE,
@@ -139,7 +139,7 @@ if (IntuitionBase)
 		/* Draw the text string at 10,10 */
 		PrintIText(win->RPort,&myIText,10,10);
 
-#ifdef __AROS
+#ifdef __AROS__
 		/* Wait for keypress */
 		Wait (1L << win->UserPort->mp_SigBit);
 #else

@@ -6,9 +6,9 @@
 #include <intuition/imageclass.h>
 #include <intuition/icclass.h>
 #include <intuition/gadgetclass.h>
-#ifndef _AROS
+#ifndef __AROS__
 #include <intuition/pointerclass.h>
-#endif /* _AROS */
+#endif /* __AROS__ */
 
 #include <datatypes/datatypesclass.h>
 #include <datatypes/pictureclass.h>
@@ -162,12 +162,12 @@ const IPTR KnownAttribs[] =
  DTA_Handle,
  DTA_DataType,
  DTA_Domain,
-#ifndef _AROS
+#ifndef __AROS__
  DTA_Left,
  DTA_Top,
  DTA_Width,
  DTA_Height,
-#endif /* _AROS */
+#endif /* __AROS__ */
  DTA_ObjName,
  DTA_ObjAuthor,
  DTA_ObjAnnotation,
@@ -176,12 +176,12 @@ const IPTR KnownAttribs[] =
  DTA_ObjectID,
  DTA_UserData,
  DTA_FrameInfo,
-#ifndef _AROS
+#ifndef __AROS__
  DTA_RelRight,
  DTA_RelBottom,
  DTA_RelWidth,
  DTA_RelHeight,
-#endif /* _AROS */
+#endif /* __AROS__ */
  DTA_SelectDomain,
  DTA_TotalPVert,
  DTA_TotalPHoriz,
@@ -314,15 +314,15 @@ const IPTR KnownAttribs[] =
  SYSIA_Depth,
  SYSIA_Which,
  SYSIA_DrawInfo,
-#ifndef _AROS
+#ifndef __AROS__
  SYSIA_Pens,
  IA_ShadowPen,
  IA_HighlightPen,
-#endif /* _AROS */
+#endif /* __AROS__ */
  SYSIA_ReferenceFont,
  IA_SupportsDisable,
  IA_FrameType,
-#ifndef _AROS
+#ifndef __AROS__
  POINTERA_Dummy,
  POINTERA_BitMap,
  POINTERA_XOffset,
@@ -330,7 +330,7 @@ const IPTR KnownAttribs[] =
  POINTERA_WordWidth,
  POINTERA_XResolution,
  POINTERA_YResolution
-#endif /* _AROS */
+#endif /* __AROS__ */
 };
 
 const char *AttribNames[] =
@@ -370,12 +370,12 @@ const char *AttribNames[] =
  "DTA_Handle",
  "DTA_DataType",
  "DTA_Domain",
-#ifndef _AROS
+#ifndef __AROS__
  "DTA_Left",
  "DTA_Top",
  "DTA_Width",
  "DTA_Height",
-#endif /* _AROS */
+#endif /* __AROS__ */
  "DTA_ObjName",
  "DTA_ObjAuthor",
  "DTA_ObjAnnotation",
@@ -384,12 +384,12 @@ const char *AttribNames[] =
  "DTA_ObjectID",
  "DTA_UserData",
  "DTA_FrameInfo",
-#ifndef _AROS
+#ifndef __AROS__
  "DTA_RelRight",
  "DTA_RelBottom",
  "DTA_RelWidth",
  "DTA_RelHeight",
-#endif /* _AROS */
+#endif /* __AROS__ */
  "DTA_SelectDomain",
  "DTA_TotalPVert",
  "DTA_TotalPHoriz",
@@ -522,15 +522,15 @@ const char *AttribNames[] =
  "SYSIA_Depth",
  "SYSIA_Which",
  "SYSIA_DrawInfo",
-#ifndef _AROS
+#ifndef __AROS__
  "SYSIA_Pens",
  "IA_ShadowPen",
  "IA_HighlightPen",
-#endif /* _AROS */
+#endif /* __AROS__ */
  "SYSIA_ReferenceFont",
  "IA_SupportsDisable",
  "IA_FrameType",
-#ifndef _AROS
+#ifndef __AROS__
  "POINTERA_Dummy",
  "POINTERA_BitMap",
  "POINTERA_XOffset",
@@ -538,13 +538,13 @@ const char *AttribNames[] =
  "POINTERA_WordWidth",
  "POINTERA_XResolution",
  "POINTERA_YResolution"
-#endif /* _AROS */
+#endif /* __AROS__ */
 };
 
-#ifdef _AROS
+#ifdef __AROS__
 const int NumAttribs = 178;
-#else /* _AROS */
+#else /* __AROS__ */
 const int NumAttribs = 196;
-#endif /* _AROS */
+#endif /* __AROS__ */
 
 #endif /* MYDEBUG */

@@ -4,7 +4,7 @@
 #include <exec/libraries.h>
 #include <graphics/displayinfo.h>
 #include <libraries/asl.h>
-#ifndef _AROS
+#ifndef __AROS__
 #include <clib/exec_protos.h>
 #include <clib/asl_protos.h>
 #else

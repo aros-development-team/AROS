@@ -8,7 +8,7 @@
 #include <proto/graphics.h>
 #include <proto/layers.h>
 #include <proto/intuition.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -18,7 +18,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm APTR MUI_AddClipRegion(register __a0 struct MUI_RenderInfo *mri, register __a1 struct Region *r)
 #else
 	AROS_LH2(APTR, MUI_AddClipRegion,

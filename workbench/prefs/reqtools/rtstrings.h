@@ -3,7 +3,7 @@
 #include <exec/types.h>
 #endif
 
-#ifdef _AROS
+#ifdef __AROS__
 #define const /* Too many compiler warnings */
 #endif
 

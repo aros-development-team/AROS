@@ -85,7 +85,7 @@ struct Library *IFFParseBase=NULL;
 struct IntuitionBase *IntuitionBase=NULL;
 struct GfxBase *GfxBase=NULL;
 
-#ifdef _AROS
+#ifdef __AROS__
 #define __chip
 #endif
 
@@ -132,7 +132,7 @@ UWORD __chip fakePointerData[]={0,0,0,0,0};
 struct IFFHandle *iff=NULL;   /*IFF handle*/
 BPTR pL=NULL;                 /*Playlist file pointer*/
 BOOL masking,print,toFront,printPics;
-#ifdef _AROS
+#ifdef __AROS__
 struct WBStartup *WBenchMsg = NULL;
 #else
 extern struct WBStartup *WBenchMsg;

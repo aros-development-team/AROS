@@ -158,7 +158,7 @@ int __zune_prefs_write(struct ZunePrefs *prefs, STRPTR path);
 
 struct MUI_ApplicationData;
 
-#ifndef _AROS
+#ifndef __AROS__
 BOOL __zune_prefs_spy (struct MUI_ApplicationData *data);
 #endif
 

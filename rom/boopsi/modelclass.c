@@ -28,7 +28,7 @@
 #include "boopsi_private.h"
 #include "boopsi_pdefs.h"
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/asmcall.h>
 #include <proto/alib.h>
 #endif

@@ -5,7 +5,7 @@
 
 #include <devices/conunit.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 
 #include <aros/debug.h>
 #include <aros/macros.h>
@@ -46,7 +46,7 @@ struct rtWindowLock
 SAVEDS ASM struct ReqToolsBase *RTFuncs_Init(REGPARAM(d0, struct ReqToolsBase *, RTBase),
     	    	    	    	    	     REGPARAM(a0, BPTR, segList))					      
 {
-#ifdef _AROS
+#ifdef __AROS__
     /* SysBase is setup in reqtools_init.c */
 #else
     SysBase = *(struct ExecBase **)4L;

@@ -9,7 +9,7 @@
 #ifndef __ZUNE_PRIV_H__
 #define __ZUNE_PRIV_H__
 
-#ifdef _AROS
+#ifdef __AROS__
 
 
 #include <libdefs.h>

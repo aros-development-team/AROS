@@ -7,7 +7,7 @@
 
 #include <exec/types.h>
 #include <proto/graphics.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -20,7 +20,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm LONG MUI_ObtainPen(register __a0 struct MUI_RenderInfo *mri, register __a1 struct MUI_PenSpec *spec, register __d0 ULONG flags)
 #else
 	AROS_LH3(LONG, MUI_ObtainPen,

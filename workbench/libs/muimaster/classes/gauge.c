@@ -16,7 +16,7 @@
 
 #include <string.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -101,7 +101,7 @@ static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (data->info)
     {
-#ifdef _AROS
+#ifdef __AROS__
 	snprintf(data->buf, GAUGE_BUFSIZE, data->info, data->current);
 #else
 	sprintf(data->buf, data->info, data->current);
@@ -207,7 +207,7 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	if (data->info)
 	{
-#ifdef _AROS
+#ifdef __AROS__
 	snprintf(data->buf, GAUGE_BUFSIZE, data->info, data->current);
 #else
 	sprintf(data->buf, data->info, data->current);
@@ -279,7 +279,7 @@ static IPTR Gauge_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 
 	data->info_width = TextLength(&rp,data->buf,strlen(data->buf));
 	data->info_height = _font(obj)->tf_YSize;
-#ifdef _AROS
+#ifdef __AROS__
 	DeinitRastPort(&rp);
 #endif
     } else
