@@ -1,5 +1,6 @@
 #!/bin/bash
-set -x
+# be verbose:
+# set -x
 # Create a source archive plus binaries.
 #
 # Install:
