@@ -21,7 +21,6 @@
 #include <oop/oop.h>
 #include <string.h>
 
-#include "../graphics/graphics_private.h"	/* LateGfxInit proto	*/
 #include "../intuition/intuition_private.h"	/* LateIntuiInit proto	*/
 #include "devs_private.h"
 
@@ -29,8 +28,8 @@
 #include <aros/asmcall.h>
 #endif /* _AROS */
 
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 #warning This is just a temporary and hackish way to get the HIDDs up and working
@@ -110,6 +109,18 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 	    while (FGets(fh, buf, BUFSIZE))
 	    {
 	        STRPTR keyword = buf, arg, end;
+		STRPTR s;
+		
+		s = buf;
+		if (*s) {
+		    for (; *s; s ++)
+		    	;
+		    if (s[-1] == 10) {
+		    	s[-1] = 0;
+		    }
+		}
+		    
+		
 
 		D(bug("Got line\n"));
 		D(bug("Line: %s\n", buf));
