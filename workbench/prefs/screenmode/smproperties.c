@@ -11,6 +11,8 @@
 
 #include <zune/customclasses.h>
 
+#include "locale.h"
+
 #include "smproperties.h"
 
 struct ScreenModeProperties_DATA
@@ -55,17 +57,17 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
         CLASS, self, NULL,
 	MUIA_Group_Horiz, TRUE,
         Child, (IPTR)ColGroup(4),
-	    Child, (IPTR)Label1("\33lWidth:"),
+	    Child, (IPTR)Label1(__(MSG_WIDTH)),
 	    Child, HLeft(width = NumericbuttonObject, End),
 	    Child, (IPTR)(def_width = CheckMarkObject, End),
-	    Child, (IPTR)Label1("\33l_default"),
+	    Child, (IPTR)Label1(__(MSG_DEFAULT)),
 	        
-	    Child, (IPTR)Label1("\33lHeight:"),
+	    Child, (IPTR)Label1(__(MSG_HEIGHT)),
 	    Child, HLeft(height = NumericbuttonObject, End),
 	    Child, (IPTR)(def_height = CheckMarkObject, End),
-	    Child, (IPTR)Label1("\33ld_efault"),
+	    Child, (IPTR)Label1(__(MSG_DEFAULT)),
 	        
-	    Child, (IPTR)Label1("\33lDepth:"),
+	    Child, (IPTR)Label1(__(MSG_DEPTH)),
 	    Child, HLeft(depth = NumericbuttonObject, End),
 	    Child, (IPTR)RectangleObject, End,
 	    Child, (IPTR)RectangleObject, End,		
@@ -74,7 +76,7 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
 	Child, (IPTR)MUI_MakeObject(MUIO_VBar, 20),
 	    
 	Child, (IPTR)HCenter(HGroup,
-	    Child, (IPTR)Label1("\33lAutoscroll"),
+	    Child, (IPTR)Label1(__(MSG_AUTOSCROLL)),
 	    Child, (IPTR)(autoscroll = CheckMarkObject, End),
 	End),
 	
