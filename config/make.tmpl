@@ -1884,18 +1884,21 @@ GNU_PACKAGES := $(AROSDIR)/../GnuPackages
 
 %(mmake)-%(subpackage)-package-dir := $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)
 
+%(mmake)-%(subpackage)-package-basename := \
+    $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.$(AROS_TARGET_CPU)
+
 %build_with_configure mmake=%(mmake)-%(subpackage) srcdir=$(PORTSDIR)/%(package)/$(%(mmake)-archbase) \
      nix=yes prefix="$(%(mmake)-%(subpackage)-package-dir)" aros_prefix=%(aros_prefix) \
      postinstall="%(postinstall) %(mmake)-%(subpackage)-make-package" extraoptions="%(extraoptions)"
 
 #MM %(mmake)-%(subpackage)-make-package : %(mmake)-%(subpackage)-quick
 %(mmake)-%(subpackage)-make-package :
-	@$(ECHO) "Building \`$(%(mmake)-%(subpackage)-archbase)-aros-bin.tar.bz2'" && \
+	@$(ECHO) "Building \`$(%(mmake)-%(subpackage)-package-basename).tar.bz2'" && \
 	cd $(%(mmake)-%(subpackage)-package-dir) && \
-	tar --remove-files -cvf $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.tar * && \
+	tar --remove-files -cvf $(%(mmake)-%(subpackage)-package-basename).tar * && \
         mkdir -p "%(prefix)" && \
-        tar -xf $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.tar -C "%(prefix)"/ && \
-        bzip2 -9 -f $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.tar && \
+        tar -xf $(%(mmake)-%(subpackage)-package-basename).tar -C "%(prefix)"/ && \
+        bzip2 -9 -f $(%(mmake)-%(subpackage)-package-basename).tar && \
         cd .. && $(RM) $(%(mmake)-%(subpackage)-archbase)
 
 %end
