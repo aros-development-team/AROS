@@ -99,9 +99,9 @@ create-mf-inc-again :
 #MM- kernel-dos-pp-m68k : dos-pp-m68k kernel-dos-linklib
 
 # Setup libraries
-#MM kernel-exec-pp-m68k :
-kernel-exec-pp-m68k :
-	%add_objects rom/boot/libexec
+##MM kernel-exec-pp-m68k :
+#kernel-exec-pp-m68k :
+#	%add_objects rom/boot/libexec
 
 #MM kernel-aros-pp-m68k :
 kernel-aros-pp-m68k :
