@@ -113,10 +113,10 @@ includes-copy : $(DEST_INC) $(GEN_INC)
 	@$(NOP)
 
 $(INCDIR)/cybergraphx/%.h : include/%.h
-	$(CP) include/$(notdir $<) $@
+	@$(CP) include/$(notdir $<) $@
 
 $(GENINCDIR)/cybergraphx/%.h : include/%.h
-	$(CP) include/$(notdir $<) $@
+	@$(CP) include/$(notdir $<) $@
 
 #MM kernel-cgfx-linklib : setup includes kernel-cgfx-$(ARCH)-$(CPU)
 kernel-cgfx-linklib : $(LIB)

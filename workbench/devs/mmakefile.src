@@ -27,7 +27,7 @@ clean ::
 	-$(RM) $(DEVSDIR) *.err
 
 $(DEVSDIR)/Mountlist : Mountlist
-	$(CP) $< $@
+	@$(CP) $< $@
 
 $(OBJDIR)/%.o : %.c
 	%compile_q

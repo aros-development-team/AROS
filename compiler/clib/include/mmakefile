@@ -16,7 +16,7 @@ setup :
 	done
 
 $(INCDIR)/%.h : %.h
-	$(CP) $< $@
+	@$(CP) $< $@
 
 #MM
 clean :

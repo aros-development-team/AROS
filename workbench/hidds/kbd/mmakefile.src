@@ -16,10 +16,10 @@ includes-copy : $(DEST_INC) $(GEN_INC)
 	@$(NOP)
 
 $(INCDIR)/hidd/%.h : include/%.h
-	$(CP) include/$(notdir $<) $@
+	@$(CP) include/$(notdir $<) $@
 
 $(GENINCDIR)/hidd/%.h : include/%.h
-	$(CP) include/$(notdir $<) $@
+	@$(CP) include/$(notdir $<) $@
 
 #MM
 setup-includes :

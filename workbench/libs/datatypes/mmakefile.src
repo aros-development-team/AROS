@@ -82,10 +82,10 @@ includes-copy : $(DEST_INC) $(GEN_INC)
 	@$(NOP)
 
 $(INCDIR)/datatypes/%.h : include/%.h 
-	$(CP) include/$(notdir $<) $@
+	@$(CP) include/$(notdir $<) $@
 
 $(GENINCDIR)/datatypes/%.h : include/%.h
-	$(CP) include/$(notdir $<) $@
+	@$(CP) include/$(notdir $<) $@
 
 
 #MM

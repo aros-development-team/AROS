@@ -8,11 +8,11 @@ HELPDIR := $(BINDIR)/Help
 workbench-help: $(HELPDIR)/License $(HELPDIR)/Credits
 	$(NOP)
 
-$(HELPDIR)/License : $(TOP)/LICENSE ;\
-    $(CP) $< $@
+$(HELPDIR)/License : $(TOP)/LICENSE
+	@$(CP) $< $@
 
-$(HELPDIR)/Credits : $(TOP)/docs/src/credits ;\
-    $(CP) $< $@
+$(HELPDIR)/Credits : $(TOP)/docs/src/credits
+	@$(CP) $< $@
 
 #MM
 setup :
