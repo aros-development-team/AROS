@@ -6,17 +6,8 @@
 /* misc.c -- here are all miscellaneous functions for global use */
 
 #include "Installer.h"
+#include "cleanup.h"
 
-/* External variables */
-
-/* External function prototypes */
-extern void outofmem( void * );
-
-/* Internal function prototypes */
-int strtostrs ( char *, char *** );
-char *collatestrings ( int, char ** );
-char *addquotes ( char * );
-void freestrlist( STRPTR * );
 
 /*
  * Break string into array of strings at LINEFEEDs
@@ -32,6 +23,7 @@ char **out = *outarr;
     i++;
     /* allocate space for next string */
     out = ReAllocVec( out, ( i + 1 ) * sizeof( char *), MEMF_PUBLIC );
+    outofmem( out );
     for ( j = 0 ; in[j] && in[j]!=LINEFEED ; j++ );
     out[i-1] = AllocVec( ( j + 1 ) * sizeof( char ), MEMF_PUBLIC );
     outofmem( out[i-1] );

@@ -6,22 +6,16 @@
 /* parse.c -- Here are all functions used to parse the input file */
 
 #include "Installer.h"
-//#include <stdio.h>
+#include "parse.h"
+#include "cleanup.h"
+#include "procedure.h"
+#include "gui.h"
 
 /* External variables */
 extern char buffer[MAXARGSIZE];
 extern BPTR inputfile;
 extern int line;
 extern InstallerPrefs preferences;
-
-/* External function prototypes */
-extern void end_alloc();
-extern long int set_procedure( char **, int, ScriptArg * );
-extern void show_parseerror( char *, int );
-extern void cleanup();
-
-/* Internal function prototypes */
-void parse_file( ScriptArg * );
 
 
 int line;

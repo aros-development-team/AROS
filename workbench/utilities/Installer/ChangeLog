@@ -348,3 +348,7 @@
 0056
 - added Locale support
 
+0057
+- removed opening of Libraries as this is now done through libautoinit
+- moved prototypes of .c files to .h files
+

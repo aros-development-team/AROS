@@ -9,7 +9,12 @@
 #define DEBUG 1
 #include "Installer.h"
 #include "main.h"
+#include "cleanup.h"
 #include "locale.h"
+#include "gui.h"
+#include "parse.h"
+#include "variables.h"
+#include "execute.h"
 
 #include "version.h"
 
@@ -17,24 +22,6 @@
 /* External variables */
 extern int line;
 
-/* External function prototypes */
-extern void parse_file( ScriptArg * );
-extern void execute_script( ScriptArg * , int );
-extern void cleanup();
-extern void set_preset_variables( int );
-extern void *get_variable( char *name );
-extern long int get_var_int( char *name );
-extern void set_variable( char *name, char *text, long int intval );
-extern void end_alloc();
-#ifdef DEBUG
-extern void dump_varlist();
-#endif /* DEBUG */
-extern void show_parseerror( char *, int );
-extern void final_report();
-extern void init_gui();
-
-/* Internal function prototypes */
-int main( int, char ** );
 
 #ifdef DEBUG
 char test_script[] = "SYS:Utilities/test.script";
@@ -198,8 +185,9 @@ int nextarg, endoffile, count;
       preferences.novicelog = FALSE;
     }
 
-    /* Is PRETEND possible? */
+    /* Write to which LOGFILE? */
     preferences.transcriptfile = StrDup( ArgString( tooltypes, "LOGFILE", "install_log_file" ) );
+    /* Is PRETEND possible? */
     preferences.nopretend = (strcmp( "TRUE", ArgString(tooltypes, "PRETEND", "TRUE") ) != 0);
     ttemp = ArgString( tooltypes, "MINUSER", "NOVICE" );
     tstring = NULL;
@@ -401,6 +389,13 @@ int nextarg, endoffile, count;
   { /* Or free tooltypes array if started from WB */
     ArgArrayDone();
   }
+
+  /* If the script does not contain a (welcome) section, call the default one */
+  if ( preferences.welcome == FALSE )
+  {
+    request_userlevel( NULL );
+  }
+
 
   /* Don't bother NOVICE */
   if ( get_var_int( "@user-level" ) == _NOVICE )

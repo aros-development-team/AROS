@@ -10,41 +10,19 @@
 #include "cmdlist.h"
 #include "misc.h"
 #include "gui.h"
+#include "procedure.h"
+#include "cleanup.h"
+#include "variables.h"
+
 #include <sys/stat.h>
 
 /* External variables */
 extern InstallerPrefs preferences;
 extern int error, grace_exit;
 
-/* External function prototypes */
-extern void cleanup();
-extern void *get_variable( char * );
-extern char *get_var_arg( char * );
-extern long int get_var_int( char * );
-extern void set_variable( char *, char *, long int );
-#ifdef DEBUG
-extern void dump_varlist();
-#endif /* DEBUG */
-extern struct ProcedureList *find_proc( char * );
-extern void traperr( char *, char * );
-extern void outofmem( void * );
-extern void link_function( char *, long int );
-extern int user_confirmation( char * );
-
-/* Internal function prototypes */
-int eval_cmd( char * );
-void execute_script( ScriptArg *, int );
-char *strip_quotes( char * );
+/* Internal funtion declarations */
 static void callback( char, char ** );
-long int getint( ScriptArg * );
-int database_keyword( char * );
-char *collect_strings( ScriptArg *, char, int );
-struct ParameterList *get_parameters( ScriptArg *, int );
-void collect_stringargs( ScriptArg *, int, struct ParameterList * );
-void modify_userstartup( char *, struct ParameterList * );
-void free_parameterlist( struct ParameterList * );
-void free_parameter( struct ParameterList );
-void traperr( char *, char * );
+
 
 #define ExecuteCommand()				\
     if ( current->cmd != NULL )				\
