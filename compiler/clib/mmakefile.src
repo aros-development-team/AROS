@@ -54,6 +54,7 @@ FILES := \
 	fread \
 	free \
 	fseek \
+	ftell \
 	fwrite \
 	gettimeofday \
 	gmtime \
