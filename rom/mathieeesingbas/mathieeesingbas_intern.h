@@ -44,9 +44,6 @@
     Library, and use the mathieeespbas.library functions to get information.
 */
 
-extern struct ExecBase * SysBase;
-
-
 struct MathIeeeSingBasBase
 {
     struct Library   LibNode;
@@ -54,6 +51,7 @@ struct MathIeeeSingBasBase
     struct ExecBase  *misb_SysBase;
 };
 
+#define SysBase MathIeeeSingBasBase->misb_SysBase
 
 
 #define IEEESPMantisse_Mask 0x007FFFFF /* 23 bit for the mantisse  */
