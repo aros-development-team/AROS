@@ -2,6 +2,9 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.3  2001/07/15 20:52:23  falemagn
+    there was a silly bug. I fixed it, but it looks hacky... I think I'll have to look at it again. One of these days :)
+
     Revision 1.2  2001/07/15 20:16:38  falemagn
     Implemented named pipes. Actually there are ONLY named pipes. The standard AmigaOS PIPE: can be implemented assigning PIPE: to PIPEFS:namedpipe. pipe() support is about to come
 
@@ -336,7 +339,10 @@ AROS_LH1(void, beginio,
 	case FSA_SEEK:
 	    error = ERROR_SEEK_ERROR;
 	    break;
-        case FSA_SET_FILE_SIZE:
+	case FSA_IS_FILESYSTEM:
+	    iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem = TRUE;
+	    break;
+	case FSA_SET_FILE_SIZE:
         case FSA_EXAMINE_NEXT:
         case FSA_EXAMINE_ALL:
         case FSA_CREATE_DIR:
@@ -459,6 +465,8 @@ static struct filenode *FindFile(struct dirnode **dn_ptr, STRPTR path)
     }
 
     if (!dn || (BYTE)dn->node.ln_Type <= 0) return NULL;
+
+    if (!path[0]) return (struct filenode *)dn;
 
     len      = LenFirstPart(path);
     nextpart = &path[len];
