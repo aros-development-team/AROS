@@ -8,6 +8,7 @@
 
 #include <proto/oop.h>
 #include <proto/utility.h>
+#include <exec/memory.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 #include <hidd/graphics.h>
@@ -33,19 +34,16 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
     struct gfxmode_data * data;
     struct TagItem *tag, *tstate;
-    Object *pfobj = NULL;
-    
     Object *gfxhidd = NULL;
     
     ULONG width, height;
     
     HIDDT_StdPixFmt stdpf;
-    struct TagItem * pftags = NULL;
     
-    BOOL gotwidth = FALSE, gotheight = FALSE, gotpf = FALSE;
+    BOOL gotwidth = FALSE, gotheight = FALSE;
     BOOL ok = TRUE;
 
-    gfxhidd = GetTagData(aHidd_GfxMode_GfxHidd, NULL, msg->attrList);    
+    gfxhidd = (Object *)GetTagData(aHidd_GfxMode_GfxHidd, NULL, msg->attrList);    
     if (NULL == gfxhidd) {
 	kprintf("!!! NO GFXHIDD SUPPLPIED TO GfxMode::New() !!\n");
 	return NULL;
@@ -60,7 +58,7 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
 
     /* Get the number of pixel fromats for this gfxmode */
     data->numpfs = 0;
-    for (tstate = msg->AttrList; (tag = NextTagItem((const struct TagItem **)&tstate));  ) {
+    for (tstate = msg->attrList; (tag = NextTagItem((const struct TagItem **)&tstate));  ) {
     	if (	aHidd_GfxMode_PixFmtTags == tag->ti_Tag 
 	     ||	aHidd_GfxMode_StdPixFmt  == tag->ti_Tag ) {
 	     
@@ -135,7 +133,7 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
     }
     
     if (!ok) {
-	MethodID coerce_mid = GetMethodID(IID_Root, moRoot_Dispose);
+	MethodID dispose_mid = GetMethodID(IID_Root, moRoot_Dispose);
 	
 	CoerceMethod(cl, o, (Msg)&dispose_mid);
 	o = NULL;
@@ -149,15 +147,24 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
 
 static VOID gfxmode_dispose(Class *cl, Object *o, Msg msg)
 {
-     struct gfxmode_data *data;
+    struct gfxmode_data *data;
+    ULONG i;
      
-     data = INST_DATA(cl, o);
-
-     HIDD_Gfx_ReleasePixFmt(data->gfxhidd, data->pixfmt);
+    data = INST_DATA(cl, o);
+    
+    if (NULL != data->pfarray) {
      
-     DoSuperMethod(cl, o, (Msg)msg);
+	for (i = 0; i < data->numpfs; i ++) {
+    
+    	    if (NULL != data->pfarray[i]) {
+		HIDD_Gfx_ReleasePixFmt(data->gfxhidd, data->pfarray[i]);
+	    }
+	}
+    }
      
-     return;
+    DoSuperMethod(cl, o, (Msg)msg);
+     
+    return;
 }
 
 static VOID gfxmode_get(Class *cl, Object *o, struct pRoot_Get *msg)
@@ -179,89 +186,22 @@ kprintf("gfxmode::get()\n");
 	    	*msg->storage = data->height;
 		break;
 		
+	    case aoHidd_GfxMode_NumPixFmts:
+	    	*msg->storage = data->numpfs;
+		break;
+		
 	     default:
 	     	kprintf("TRYING TO GET UNKNOWN ATTR FROM GFXMODE CLASS\n");
 		break;
 
 	}
     
-    } else if (IS_PIXFMT_ATTR(msg->attrID, idx)) {
-    	/* Just as a service, we export the pixel format interface */
-	HIDDT_PixelFormat *pf;
-	
-	pf = (HIDDT_PixelFormat *)data->pixfmt;
-    	switch (idx) {
-	    case aoHidd_PixFmt_RedShift:
-	    	*msg->storage = pf->red_shift;
-	    	break;
-	
-	    case aoHidd_PixFmt_GreenShift:
-	    	*msg->storage = pf->green_shift;
-	    	break;
-	
-	    case aoHidd_PixFmt_BlueShift:
-	    	*msg->storage = pf->blue_shift;
-	    	break;
-	
-	    case aoHidd_PixFmt_AlphaShift:
-	    	*msg->storage = pf->alpha_shift;
-	    	break;
-	
-	    case aoHidd_PixFmt_RedMask:
-	    	*msg->storage = pf->red_mask;
-	    	break;
-	
-	    case aoHidd_PixFmt_GreenMask:
-	    	*msg->storage = pf->green_mask;
-	    	break;
-	
-	    case aoHidd_PixFmt_BlueMask:
-	    	*msg->storage = pf->blue_mask;
-	    	break;
-	
-	    case aoHidd_PixFmt_AlphaMask:
-	    	*msg->storage = pf->alpha_mask;
-	    	break;
-	
-	    case aoHidd_PixFmt_CLUTShift:
-	    	*msg->storage = pf->clut_shift;
-	    	break;
-	
-	    case aoHidd_PixFmt_CLUTMask:
-	    	*msg->storage = pf->clut_mask;
-	    	break;
-	
-	    case aoHidd_PixFmt_Depth:
-	    	*msg->storage = pf->depth;
-	    	break;
-	
-	    case aoHidd_PixFmt_BitsPerPixel:
-	    	*msg->storage = pf->size;
-	    	break;
-	
-	    case aoHidd_PixFmt_BytesPerPixel:
-	    	*msg->storage = pf->bytes_per_pixel;
-	    	break;
-	    
-	    case aoHidd_PixFmt_StdPixFmt:
-	    	*msg->storage = pf->stdpixfmt;
-	    	break;
-	    
-	    case aoHidd_PixFmt_GraphType:
-	    	*msg->storage = pf->flags;
-	    	break;
-	    
-	    default:
-	    	kprintf("TRYING TO GET UNKNOWN PIXFMT ATTR\n");
-		break;
-	}
-    
     } else {
+    	kprintf("!!! TRYING TO GET UNKNOWN ATTR FROM GFXMODE OBJECTS\n");
     	DoSuperMethod(cl, o, (Msg)msg);
     }
     
     return;
-    
     
 }
 
@@ -276,7 +216,7 @@ Object *gfxmode_lookuppixfmt(Class *cl, Object *o, struct pHidd_GfxMode_LookupPi
 	return NULL;
     }
     
-    return data->pfarrary[msg->pixFmtNo];
+    return data->pfarray[msg->pixFmtNo];
 }
 
 /*** init_gfxmodeclass *********************************************************/
@@ -288,7 +228,7 @@ Object *gfxmode_lookuppixfmt(Class *cl, Object *o, struct pHidd_GfxMode_LookupPi
 #define SysBase (csd->sysbase)
 
 #define NUM_ROOT_METHODS 3
-#define NUM_GFXMODE_METHODS 0
+#define NUM_GFXMODE_METHODS 1
 
 Class *init_gfxmodeclass(struct class_static_data *csd)
 {
@@ -301,6 +241,7 @@ Class *init_gfxmodeclass(struct class_static_data *csd)
     };
     
     struct MethodDescr gfxmode_descr[NUM_GFXMODE_METHODS + 1] = {
+        {(IPTR (*)())gfxmode_lookuppixfmt, 	moHidd_GfxMode_LookupPixFmt	},
 	{ NULL, 0UL }
     };
         

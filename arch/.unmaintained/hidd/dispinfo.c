@@ -21,8 +21,26 @@
 #include "graphics_intern.h"
 #include "graphics_internal.h"
 
-#define NUM2ID(num) ((num)  << 20)
-#define ID2NUM(modeid) ( (modeid) >> 20)
+#define NOTNULLMASK 0x10000000
+
+#define MAJOR_ID_SHIFT 26
+#define MINOR_ID_SHIFT 20
+
+#define NUM2MAJORID(num) ((num)  << MAJOR_ID_SHIFT)
+#define MAJORID2NUM(modeid) ( ((modeid) & ~NOTNULLMASK) >> MAJOR_ID_SHIFT)
+
+#define NUM2MINORID(num) ((num)  << MINOR_ID_SHIFT)
+#define MINORID2NUM(modeid) ( ((modeid) & ~NOTNULLMASK) >> MINOR_ID_SHIFT)
+
+
+
+/* This macro assures that a modeid is never 0 by setting the MSB to 1.
+   This is usefull because FindDisplayInfo just returns the modeid,
+   and FidDisplayInfo returning 0 indicates failure
+*/
+   
+#define GENERATE_MODEID(majoridx, minoridx)	\
+	(NUM2MAJORID(majoridx) | NUM2MINORID(minoridx) | NOTNULLMASK)
 
 struct displayinfo_item  {
 
@@ -34,16 +52,16 @@ struct displayinfo_item  {
 struct displayinfo_db {
     struct displayinfo_item *dispitems;
     struct SignalSemaphore sema;
-    ULONG currentnum;
+    ULONG current_major_num;
     ULONG	nummodes;
 };
 
-static ULONG compute_modeid(Object *gfxmode, struct displayinfo_db *db, struct GfxBase *GfxBase)
+static ULONG compute_major_modeid(Object *gfxmode, struct displayinfo_db *db, struct GfxBase *GfxBase)
 {
     ULONG id;
-    id = NUM2ID(db->currentnum);
+    id = NUM2MAJORID(db->current_major_num);
     
-    db->currentnum ++;
+    db->current_major_num ++;
     return id;
     
 }
@@ -52,12 +70,23 @@ VOID destroy_dispinfo_db(APTR dispinfo_db, struct GfxBase *GfxBase)
 {
     struct displayinfo_db *db;
     
+    
     db = (struct displayinfo_db *)dispinfo_db;
     
     ObtainSemaphore(&db->sema);
     
-    if (NULL != db->dispitems)
+    if (NULL != db->dispitems) {
+	ULONG i;
+	
+	for (i = 0; i < db->nummodes; i ++) {
+	    if (NULL != db->dispitems[i].gfxmode) {
+	    	DisposeObject(db->dispitems[i].gfxmode);
+		db->dispitems[i].gfxmode = NULL;
+	    }
+	}
+	
 	FreeMem(db->dispitems, sizeof (*db->dispitems) * db->nummodes);
+    }
     
     ReleaseSemaphore(&db->sema);
     FreeMem(db, sizeof (*db));
@@ -77,7 +106,7 @@ APTR build_dispinfo_db(struct List *gfxmodes, struct GfxBase *GfxBase)
     
     	/* Go through the gfxmode DB, counting all elemets*/
     	db->nummodes = 0;
-	db->currentnum = 0;
+	db->current_major_num = 0;
     	ForeachNode(gfxmodes, mnode) {
     	    db->nummodes ++;
    	}
@@ -91,7 +120,7 @@ APTR build_dispinfo_db(struct List *gfxmodes, struct GfxBase *GfxBase)
 	    ForeachNode(gfxmodes, mnode) {
 	    
 	    	db->dispitems[modeidx].gfxmode = mnode->gfxMode;
-		db->dispitems[modeidx].modeid  = compute_modeid(mnode->gfxMode, db, GfxBase);
+		db->dispitems[modeidx].modeid  = GENERATE_MODEID(compute_major_modeid(mnode->gfxMode, db, GfxBase), 0);
 		
 		modeidx ++;
 	    }
@@ -121,14 +150,38 @@ ULONG driver_NextDisplayInfo(ULONG lastid, struct GfxBase *GfxBase)
 
     if (INVALID_ID == lastid) {
 	if  (0 != db->nummodes)
-	     id = db->dispitems[0].modeid;	
+	     id = GENERATE_MODEID(0, 0);	
     } else {
-    	ULONG idx;
+    	ULONG majoridx, minoridx;
+	Object *gm;
+	ULONG numpfs;
 	
-	idx = ID2NUM(lastid);
-	idx ++;
-	if (idx < db->nummodes)
-	    id = db->dispitems[idx].modeid;
+	majoridx = MAJORID2NUM(lastid);
+	minoridx = MINORID2NUM(lastid);
+	
+	kprintf("GETTING GFXMODE %d %d\n", majoridx, minoridx);
+	gm = db->dispitems[majoridx].gfxmode;
+	GetAttr(gm, aHidd_GfxMode_NumPixFmts, &numpfs);
+	
+	/* Increase pixfmt idx */
+	minoridx ++;
+	
+	/* More pixfmts available for this gfxmode ? */
+	if (minoridx >= numpfs) {
+	
+	    /* No. Got to next gfxmode */
+	    majoridx ++;
+	    
+	    /* More gfxmodes availavle ? */
+	    if (majoridx < db->nummodes) {
+	    	/* Yes. compute new id */
+		id = GENERATE_MODEID(majoridx, minoridx);
+	    }
+	    
+	} else {
+	    /* Yes. compute new id */
+	    id = GENERATE_MODEID(majoridx, minoridx);
+	}
     }
     
     ReleaseSemaphore(&db->sema);
@@ -144,21 +197,47 @@ DisplayInfoHandle driver_FindDisplayInfo(ULONG id, struct GfxBase *GfxBase)
 {
     struct displayinfo_db *db;
     DisplayInfoHandle ret = NULL;
-    ULONG idx;
+    ULONG majoridx, minoridx;
     
     kprintf("FindDisplayInfo(id=%x)\n", id);
     
+    /* Check for the NOTNULLMASK */
+    if ((id & NOTNULLMASK) != NOTNULLMASK) {
+    	kprintf("!!! NO AROS MODEID IN FindDisplayInfo() !!!\n");
+    	return NULL;
+    }
     db = (struct displayinfo_db *)SDD(GfxBase)->dispinfo_db;
-    idx = ID2NUM(id);
+    
+    
+    
+    majoridx = MAJORID2NUM(id);
+    minoridx = MINORID2NUM(id);
+    
+    /* Here we obly check if the mode is really available */
+    
     
     ObtainSemaphoreShared(&db->sema);
     
-    if (idx < db->nummodes)
-    	ret = &db->dispitems[idx];
+    if (majoridx < db->nummodes) {
+    	Object *gm;
+	ULONG numpfs;
+	
+	gm = db->dispitems[majoridx].gfxmode;
+	
+	GetAttr(gm, aHidd_GfxMode_NumPixFmts, &numpfs);
+	
+	/* Check that the pixfmt is available */
+	if (minoridx < numpfs) {
+	
+	    /* We simply return the modeid, and use this to lookup in GetDisplayInfoData() */
+	    ret = (DisplayInfoHandle)GENERATE_MODEID(majoridx, minoridx);
+	}
+	
+    }
     
     ReleaseSemaphore(&db->sema);
 
-kprintf("FindDisplayInfo() returning %p\n", ret);    
+kprintf("FindDisplayInfo() returning %x\n", ret);    
     return ret;
     
     
@@ -230,10 +309,18 @@ ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size
     struct displayinfo_item *ditem;
     struct QueryHeader *qh;
     ULONG structsize;
-    Object *gm;
+    Object *gm, *pf;
+    
+    
+    ULONG modeid, majoridx, minoridx;
+    struct displayinfo_db *db;
+    
+    
     
     if (NULL == handle) {
 	if (INVALID_ID != id2) {
+	
+	    /* Check that id2 is a valid modeid */
 	    handle = FindDisplayInfo(id2);
 	    
 	} else {
@@ -246,9 +333,21 @@ ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size
 	kprintf("!!! COULD NOT GET HANDLE IN GetDisplayInfoData()\n");
 	return 0;
     }
-    ditem = (struct displayinfo_item *)handle;
-    kprintf("GetDisplayInfoData(modeid=%x, tagid=%x)\n"
-    	, ditem->modeid, tagid);
+    
+    
+    modeid = (ULONG)handle;
+    majoridx = MAJORID2NUM(modeid);
+    minoridx = MINORID2NUM(modeid);
+    
+    /* Look up the display info item */
+    db = (struct displayinfo_db *)SDD(GfxBase)->dispinfo_db;
+    
+    
+ObtainSemaphoreShared(&db->sema);
+    ditem = &db->dispitems[majoridx];
+    
+    kprintf("GetDisplayInfoData(handle=%d, major=%d, minor=%d, modeid=%x, tagid=%x)\n"
+    	, (ULONG)handle, majoridx, minoridx, ditem->modeid, tagid);
 	
     
     /* Build the queryheader */
@@ -268,6 +367,9 @@ ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size
     
     gm = ditem->gfxmode;
     
+    /* Get the belonging pixelformat */
+    pf = HIDD_GM_LookupPixFmt(gm, minoridx);
+    
     switch (tagid) {
     	case DTAG_DISP: {
 	    struct DisplayInfo *di;
@@ -284,9 +386,9 @@ ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size
 	    di->PaletteRange = 4096;
 
 	    /* Compute red green and blue bits */
-	    GetAttr(gm, aHidd_PixFmt_RedMask,	&redmask);
-	    GetAttr(gm, aHidd_PixFmt_GreenMask, &greenmask);
-	    GetAttr(gm, aHidd_PixFmt_BlueMask,	&bluemask);
+	    GetAttr(pf, aHidd_PixFmt_RedMask,	&redmask);
+	    GetAttr(pf, aHidd_PixFmt_GreenMask, &greenmask);
+	    GetAttr(pf, aHidd_PixFmt_BlueMask,	&bluemask);
 	    
 	    di->RedBits	  = compute_numbits(redmask);
 	    di->GreenBits = compute_numbits(greenmask);
@@ -307,7 +409,7 @@ ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size
 	    struct DimensionInfo *di;
 	    ULONG depth, width, height;
 	    
-	    GetAttr(gm, aHidd_PixFmt_Depth,  &depth);
+	    GetAttr(pf, aHidd_PixFmt_Depth,  &depth);
 	    GetAttr(gm, aHidd_GfxMode_Width,  &width);
 	    GetAttr(gm, aHidd_GfxMode_Height, &height);
 	    
@@ -403,7 +505,7 @@ ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size
 	    struct NameInfo *ni;
 	    ULONG depth, width, height;
 	    
-	    GetAttr(gm, aHidd_PixFmt_Depth,  &depth);
+	    GetAttr(pf, aHidd_PixFmt_Depth,  &depth);
 	    GetAttr(gm, aHidd_GfxMode_Width,  &width);
 	    GetAttr(gm, aHidd_GfxMode_Height, &height);
 	    
@@ -420,6 +522,10 @@ ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size
 	    break;
     	
     }
+    
+ReleaseSemaphore(&db->sema);    
+
+kprintf("GDID: %d\n", structsize);
     return structsize;
 }
 
@@ -427,7 +533,7 @@ ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size
 ULONG driver_GetVPModeID(struct ViewPort *vp, struct GfxBase *GfxBase)
 {
     ULONG modeid;
-    kprintf(" GetVPModeID returning %d\n", vp->ColorMap->VPModeID);
+    kprintf(" GetVPModeID returning %x\n", vp->ColorMap->VPModeID);
     modeid = vp->ColorMap->VPModeID;
     
     kprintf("RETURNING\n");
@@ -492,42 +598,52 @@ ULONG driver_BestModeIDA(struct TagItem *tags, struct GfxBase *GfxBase)
     
     for (i = 0; i < db->nummodes; i ++) {
     	struct displayinfo_item *ditem;
-	Object *gm;
+	Object *gm, *pf;
+	ULONG numpfs;
 	
 	
 	ULONG redmask, greenmask, bluemask;
 	ULONG gm_depth, gm_width, gm_height;
+	ULONG pfno;
+	
 
 	ditem = &db->dispitems[i];
 	gm = ditem->gfxmode;
-	GetAttr(gm, aHidd_PixFmt_RedMask,	&redmask);
-	GetAttr(gm, aHidd_PixFmt_GreenMask,	&greenmask);
-	GetAttr(gm, aHidd_PixFmt_BlueMask,	&bluemask);
 	
-	GetAttr(gm, aHidd_PixFmt_Depth,		&gm_depth);
-	GetAttr(gm, aHidd_GfxMode_Width,	&gm_width);
-	GetAttr(gm, aHidd_GfxMode_Height,	&gm_height);
+	GetAttr(gm, aHidd_GfxMode_NumPixFmts,	&numpfs);
+	for (pfno = 0; pfno < numpfs; pfno ++) {
+	
+	    pf = HIDD_GM_LookupPixFmt(gm, pfno);
+	
+	    GetAttr(pf, aHidd_PixFmt_RedMask,	&redmask);
+	    GetAttr(pf, aHidd_PixFmt_GreenMask,	&greenmask);
+	    GetAttr(pf, aHidd_PixFmt_BlueMask,	&bluemask);
+	
+	    GetAttr(pf, aHidd_PixFmt_Depth,		&gm_depth);
+	    GetAttr(gm, aHidd_GfxMode_Width,	&gm_width);
+	    GetAttr(gm, aHidd_GfxMode_Height,	&gm_height);
 kprintf("BestModeIDA: checking mode %d, id %x, (%dx%dx%d)\n"
 	, i, ditem->modeid, gm_width, gm_height, gm_depth );
 	
-	if (    compute_numbits(redmask)   >= redbits
-	     && compute_numbits(greenmask) >= greenbits
-	     && compute_numbits(bluemask)  >= bluebits
-	     && gm_depth  >= depth
-	     && gm_width  >= desired_width
-	     && gm_height >= desired_height) {
+	    if (    compute_numbits(redmask)   >= redbits
+	         && compute_numbits(greenmask) >= greenbits
+	         && compute_numbits(bluemask)  >= bluebits
+	         && gm_depth  >= depth
+	         && gm_width  >= desired_width
+	         && gm_height >= desired_height) {
 	     
 
 #warning Fix this 	    
-	    /* We return the first modeid that fulfill the criterias.
-	       Instead we should find the mode that has:
-	           - largest possible depth.
-		   - width/height that are nearest above or equal the desired ones
-	    */
-	    found_id = ditem->modeid;
-	    break;
+	    	/* We return the first modeid that fulfill the criterias.
+	 	      Instead we should find the mode that has:
+		           - largest possible depth.
+			   - width/height that are nearest above or equal the desired ones
+	    	*/
+		found_id = ditem->modeid;
+		break;
+	    }
 	     
-	}
+	} /* for (each pf in gfxmode) */
     }
     
     ReleaseSemaphore(&db->sema);

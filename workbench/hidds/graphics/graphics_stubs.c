@@ -725,7 +725,7 @@ BOOL HIDD_CM_SetColors(Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG
     return DoMethod(obj, (Msg)&p);
 }
 
-HIDDT_Pixel HIDD_CM_GetPixel(Object *obj, ULONG pixelNo)
+HIDDT_Pixel HIDD_CM_GetPixel(Object *obj, ULONG pixelNo) /* Starts at 0 */
 {
     static MethodID mid = 0;
     struct pHidd_ColorMap_GetPixel p;
@@ -738,3 +738,16 @@ HIDDT_Pixel HIDD_CM_GetPixel(Object *obj, ULONG pixelNo)
     return (HIDDT_Pixel)DoMethod(obj, (Msg)&p);
 }
 
+/************ GfxMode *****************************************/
+Object *HIDD_GM_LookupPixFmt(Object *obj, ULONG pixFmtNo) /* Starts at 0 */
+{
+    static MethodID mid = 0;
+    struct pHidd_GfxMode_LookupPixFmt p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_GfxMode, moHidd_GfxMode_LookupPixFmt);
+        
+    p.mID = mid;
+    p.pixFmtNo = pixFmtNo;
+    
+    return (Object *)DoMethod(obj, (Msg)&p);
+}

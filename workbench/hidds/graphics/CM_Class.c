@@ -167,11 +167,12 @@ static BOOL colormap_setcolors(Class *cl, Object *o, struct pHidd_ColorMap_SetCo
 	} else {
 	    msg->colors[i].pixval = col->pixval = (HIDDT_Pixel)col_idx;
 	}
-	kprintf("ColMap::SetColors: col %d (%x %x %x %x) mapped to %x\n"
+/*	kprintf("ColMap::SetColors: col %d (%x %x %x %x) mapped to %x\n"
 		, col_idx
 		, col->red, col->green, col->blue, col->alpha
 		, msg->colors[i].pixval);
 	
+*/
 	col ++;
 	col_idx ++;
     }

@@ -809,10 +809,23 @@ typedef struct {
 /******************** Gfx Mode definitions ********************/
 
 enum {
+     moHidd_GfxMode_LookupPixFmt = 0
+};
+
+
+struct pHidd_GfxMode_LookupPixFmt {
+    MethodID mID;
+    ULONG pixFmtNo;
+};
+
+Object *HIDD_GM_LookupPixFmt(Object *obj, ULONG pixFmtNo); /* Starts at 0 */
+
+enum {
      aoHidd_GfxMode_Width = 0,
      aoHidd_GfxMode_Height,
      aoHidd_GfxMode_StdPixFmt,
      aoHidd_GfxMode_PixFmtTags,
+     aoHidd_GfxMode_NumPixFmts,
      
      num_Hidd_GfxMode_Attrs
 };
@@ -821,6 +834,7 @@ enum {
 #define aHidd_GfxMode_Height		(HiddGfxModeAttrBase + aoHidd_GfxMode_Height	)
 #define aHidd_GfxMode_StdPixFmt		(HiddGfxModeAttrBase + aoHidd_GfxMode_StdPixFmt	)
 #define aHidd_GfxMode_PixFmtTags	(HiddGfxModeAttrBase + aoHidd_GfxMode_PixFmtTags	)
+#define aHidd_GfxMode_NumPixFmts	(HiddGfxModeAttrBase + aoHidd_GfxMode_NumPixFmts	)
 
 
 

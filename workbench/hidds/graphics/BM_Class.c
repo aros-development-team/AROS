@@ -389,8 +389,8 @@ static VOID bitmap_drawline(Class *cl, Object *obj, struct pHidd_BitMap_DrawLine
     Object *gc;
 
 
-kprintf("BitMap::DrawLine()\n");
-    EnterFunc(bug("BitMap::DrawLine() x1: %i, y1: %i x2: %i, y2: %i\n", msg->x1, msg->y1, msg->x2, msg->y2));
+/* kprintf("BitMap::DrawLine()\n");
+*/    EnterFunc(bug("BitMap::DrawLine() x1: %i, y1: %i x2: %i, y2: %i\n", msg->x1, msg->y1, msg->x2, msg->y2));
     
     gc = msg->gc;
     doclip = GC_DOCLIP(gc);
