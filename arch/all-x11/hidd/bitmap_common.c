@@ -32,58 +32,33 @@ static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 
     /* Ve have a vHidd_GT_Palette bitmap */    
 	
-#if 1
-    /* stegerg: dont do any allocation stuff!! */
-    
     if (!DoSuperMethod(cl, o, (Msg)msg)) return FALSE;
     
+    if (data->flags & BMDF_COLORMAP_ALLOCED)
+    {
 LX11	
 
-    for ( xc_i = msg->firstColor, col_i = 0;
-    		col_i < msg->numColors; 
-		xc_i ++, col_i ++ )
-    {
-        XColor xcol;
-	
-	xcol.red   = msg->colors[col_i].red;
-	xcol.green = msg->colors[col_i].green;
-	xcol.blue  = msg->colors[col_i].blue;
-	xcol.pad   = 0;
-	xcol.pixel = xc_i;
-	
-	xcol.flags = DoRed | DoGreen | DoBlue;
-	XStoreColor(data->display, data->colmap, &xcol);
+	for ( xc_i = msg->firstColor, col_i = 0;
+    		    col_i < msg->numColors; 
+		    xc_i ++, col_i ++ )
+	{
+            XColor xcol;
 
-    }
+	    xcol.red   = msg->colors[col_i].red;
+	    xcol.green = msg->colors[col_i].green;
+	    xcol.blue  = msg->colors[col_i].blue;
+	    xcol.pad   = 0;
+	    xcol.pixel = xc_i;
+
+	    xcol.flags = DoRed | DoGreen | DoBlue;
+	    XStoreColor(data->display, data->colmap, &xcol);
+
+	}
 UX11	
+    } /* if (data->flags & BMDF_COLORMAP_ALLOCED) */
     
     return TRUE;
        
-#else    
-    
-    for ( xc_i = msg->firstColor, col_i = 0;
-    		col_i < msg->numColors; 
-		xc_i ++, col_i ++ )
-    {
-        Bool success;
-	xc.red   = msg->colors[col_i].red;
-	xc.green = msg->colors[col_i].green;
-	xc.blue	 = msg->colors[col_i].blue;
-	
-	
-LX11	
-	success = XAllocColor(data->display, data->colmap, &xc);
-UX11	
-
-	if (!success)
-	    return FALSE;
-	
-	msg->colors[col_i].pixval = xc.pixel;
-#warning Also set pixval in internal baseclass colormap in some way
-    }
-#endif
-
-    return TRUE;
 }
 /*********  BitMap::PutPixel()  ***************************/
 

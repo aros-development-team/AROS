@@ -49,9 +49,10 @@ struct bitmap_data
     GC 		gc;	/* !!! This is an X11 GC, NOT a HIDD gc */
     Display	*display;
     int		screen;
-    
+    int		flags;
     
 };
 
+#define BMDF_COLORMAP_ALLOCED 1
 
 #endif /* _BITMAP_H */

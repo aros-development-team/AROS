@@ -103,12 +103,18 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 		
         if ( visualclass == PseudoColor)
 	{
+	    Colormap cm;
 LX11
-	    data->colmap = XCreateColormap(GetSysDisplay(),
-					   RootWindow(GetSysDisplay(), GetSysScreen()),
-					   XSD(cl)->vi.visual,
-					   AllocAll);
+	    cm = XCreateColormap(GetSysDisplay(),
+				 RootWindow(GetSysDisplay(), GetSysScreen()),
+				 XSD(cl)->vi.visual,
+				 AllocAll);				 
 UX11
+	    if (cm)
+	    {
+	        data->colmap = cm;
+		data->flags |= BMDF_COLORMAP_ALLOCED;
+	    }
 	}
 	
 	/* end stegerg */
@@ -160,7 +166,7 @@ LX11
 		   	| CWEventMask
 		    	| CWBackPixel;
 	
-	if ((visualclass == PseudoColor) && (data->colmap))
+	if (data->flags & BMDF_COLORMAP_ALLOCED)
 	{
 	    winattr.colormap = data->colmap;
 	    valuemask |= CWColormap;
@@ -368,8 +374,15 @@ LX11
 	
     	XDestroyWindow( GetSysDisplay(), DRAWABLE(data));
 	XFlush( GetSysDisplay() );
-UX11
+UX11	
 	
+    }
+
+    if (data->flags & BMDF_COLORMAP_ALLOCED)
+    {
+LX11
+	XFreeColormap(GetSysDisplay(), data->colmap);
+UX11
     }
     
     DoSuperMethod(cl, o, msg);
