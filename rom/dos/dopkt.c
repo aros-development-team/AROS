@@ -79,7 +79,7 @@
     
     kprintf("Allocated packet %p\n", dp);
 
-    if (NT_PROCESS == me->pr_Task.tc_Node.ln_Type)
+    if (__is_process(me))
     {
 	replyPort = &me->pr_MsgPort;
     }
