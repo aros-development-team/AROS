@@ -97,10 +97,10 @@ MOD_DIR := $(ZUNEDIR)/Libs
 %make_lib_includes
 
 BUILDINCTOOL := $(GENDIR)/$(CURDIR)/buildincludes
-INCLUDES := $(AROS_INCLUDES)/libraries/mui.h $(GENINCDIR)/libraries/mui.h
+INCLUDEFILES := $(AROS_INCLUDES)/libraries/mui.h $(GENINCDIR)/libraries/mui.h
 
 #MM includes-generate
-includes-generate : $(INCLUDES)
+includes-generate : $(INCLUDEFILES)
 	@$(NOP)
 	
 $(AROS_INCLUDES)/libraries/%.h : $(BUILDINCTOOL)
