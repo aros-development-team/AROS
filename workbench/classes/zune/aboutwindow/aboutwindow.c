@@ -73,7 +73,7 @@ BOOL NamesToList
                    *tag          = NULL;
     BOOL            success      = TRUE;
     IPTR            section      = SID_NONE;
-    CONST_STRPTR    sectionName;
+    CONST_STRPTR    sectionName  = NULL;
     BOOL            sectionFirst = TRUE;
     STRPTR          name;
     STRPTR          buffer;
