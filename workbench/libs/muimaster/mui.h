@@ -84,8 +84,13 @@ struct __MUIBuiltinClass {
 
 #else
 
-#define MUIOBJMACRO_START(class) MUI_NewObject(class
-#define BOOPSIOBJMACRO_START(class) NewObject(class, NULL
+#ifdef __amigaos4__
+#   define MUIOBJMACRO_START(class) (IZuneMaster->MUI_NewObject)(class
+#   define BOOPSIOBJMACRO_START(class) (IIntuition->NewObject)(class, NULL
+#else
+#   define MUIOBJMACRO_START(class) MUI_NewObject(class
+#   define BOOPSIOBJMACRO_START(class) NewObject(class, NULL
+#endif
 
 #define OBJMACRO_END TAG_DONE)
 
