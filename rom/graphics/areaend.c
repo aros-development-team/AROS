@@ -81,16 +81,17 @@
        SetAPen(rp, GetOutlinePen(rp));
 
     /* if the last polygon is not closed, then I should do so */
-    if ( areainfo->FlagPtr[-1] != 0x02 &&
-        (areainfo->VctrPtr[-1] != areainfo->FirstY ||
+    if ( areainfo->FlagPtr[-1] == 0x03 &&
+       (areainfo->VctrPtr[-1] != areainfo->FirstY ||
          areainfo->VctrPtr[-2] != areainfo->FirstX   ) )
     {
        if (-1 == AreaDraw(rp, areainfo->FirstX, areainfo->FirstY))
             return -1;
     }
+
     /* mark the previous polygon as closed */
     areainfo->FlagPtr[-1] = 2;
-
+    
     Count = areainfo->Count;  
 
 //kprintf("%d coord to process\n",Count);
