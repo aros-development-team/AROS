@@ -83,7 +83,7 @@ SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS)
 endif
 %prepare_shlib keymap $(SHARED_Keymap)
 
-%genromlib_f
+%genromlib_finline
 
 #MM kernel-keymap-linklib : setup includes kernel-keymap-$(ARCH)-$(CPU)
 kernel-keymap-linklib : $(LIB)

@@ -118,7 +118,7 @@ endif
 
 # Uncomment NO_FUNCTABLE line if you don't want the function table made
 # NO_FUNCTABLE := 1
-%genromlib_f
+%genromlib_finline
 
 #MM kernel-layers-linklib : setup includes kernel-layers-$(ARCH)-$(CPU)
 kernel-layers-linklib : $(LIB)

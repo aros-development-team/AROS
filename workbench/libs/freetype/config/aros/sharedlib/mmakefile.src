@@ -11,7 +11,6 @@ USER_INCLUDES	:= -I.
 
 %define_libs prelibs="-l$(LIBNAME) $(LIBDIR)/libfreetypelinklib.a"
 
-%genlibincludesinline
 
 %genlib_cpak
 

@@ -103,7 +103,7 @@ kernel-exec-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 
 # The all powerful ROM library generating stuff...
 NO_FUNCTABLE := 1
-%genromlib_f
+%genromlib_finline hasrt=-hasrt
 
 %asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(END_FILE) $(ALL_FILES)"
 %ctoasm_q

@@ -81,7 +81,7 @@ endif
 %prepare_shlib $(LIBNAME) $(SHARED_BATTCLOCK)
 
 NO_FUNCTABLE := 1
-%genromlib_f
+%genromlib_finline
 
 #MM kernel-battclock-linklib : setup includes kernel-battclock-$(ARCH)-$(CPU)
 kernel-battclock-linklib : $(LIB)

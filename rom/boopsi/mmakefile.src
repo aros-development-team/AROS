@@ -77,7 +77,7 @@ SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS)
 endif
 %prepare_shlib boopsi $(SHARED_BOOPSI)
 
-%genromlib_f
+%genromlib_finline
 
 #MM kernel-boopsi-linklib : setup includes kernel-boopsi-$(ARCH)-$(CPU)
 kernel-boopsi-linklib : $(LIB)

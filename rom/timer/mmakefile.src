@@ -81,7 +81,7 @@ endif
 %prepare_shlib $(LIBNAME) $(SHARED_TIMER)
 
 NO_FUNCTABLE := 1
-%genromlib_f
+%genromlib_finline
 
 #MM kernel-timer-linklib : setup includes kernel-timer-$(ARCH)-$(CPU)
 kernel-timer-linklib : $(LIB)

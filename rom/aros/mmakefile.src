@@ -72,7 +72,7 @@ endif
 
 %prepare_shlib aros $(SHARED_AROS)
 
-%genromlib_f
+%genromlib_finline
 
 #MM kernel-aros-linklib : setup includes kernel-aros-$(ARCH)-$(CPU)
 kernel-aros-linklib : $(LIB)

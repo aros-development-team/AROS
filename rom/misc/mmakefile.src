@@ -81,7 +81,7 @@ endif
 %prepare_shlib $(LIBNAME) $(SHARED_BATTCLOCK)
 
 NO_FUNCTABLE := 1
-%genromlib_f
+%genromlib_finline
 
 MY_INCLS := $(wildcard include/*.h)
 DEST_INC := $(foreach f,$(MY_INCLS), $(INCDIR)/resources/$(notdir $f))
