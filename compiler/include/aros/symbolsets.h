@@ -2,7 +2,7 @@
 #define _AROS_SYMBOLSETS_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Symbol sets support
@@ -75,6 +75,8 @@ const ULONG bname##_version = ver
 #define LIBSET_DISKFONT_PRI      8
 #define LIBSET_LOCALE_PRI        9
 #define LIBSET_ASL_PRI           10
+#define LIBSET_GADTOOLS_PRI 	 11
+#define LIBSET_REALTIME_PRI 	 12
 
 #define LIBSET_AROSC_PRI         20
 
