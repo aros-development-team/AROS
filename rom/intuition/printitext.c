@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1998/02/12 16:19:45  turrican
+    Fix uninitialized variable warnings
+
     Revision 1.8  1997/01/27 00:36:42  ldp
     Polish
 
@@ -90,7 +93,7 @@
     ULONG  bpen;
     ULONG  drmd;
     struct TextFont * font;
-    struct TextFont * newfont;
+    struct TextFont * newfont = NULL;
 
     /* Store important variables of the RastPort */
     apen = GetAPen (rp);

@@ -40,7 +40,7 @@ struct ListEntry **AllocEntries(ULONG			numnewentries,
 				struct ListData		*data,
 				struct ListBase_intern	*AROSListBase)
 {
-    struct ListEntry *nodes;
+    struct ListEntry *nodes = NULL;
 
     D(bug("aroslist:AllocEntries(numnewentries=%d, data=%p)\n", numnewentries, data));
     
@@ -53,7 +53,7 @@ struct ListEntry **AllocEntries(ULONG			numnewentries,
     nodes = AllocVec(UB(&nodes[numnewentries]) - UB(&nodes[0]), MEMF_ANY);
     if (nodes)
     {
-	struct ListEntry **pointerarray;
+	struct ListEntry **pointerarray = NULL;
 	
 	/* Allocate memory for expanded pointerarray */
     	numnewentries --;

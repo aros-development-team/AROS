@@ -77,7 +77,7 @@ STATIC struct FileEntry *GetFileList(BPTR fontslock, struct DiskfontBase_intern 
 	
 	struct FileEntry	felisthead = {0, 0},	/* Dummy list head */
 						*feptr,
-						*felist;
+						*felist = NULL;
 
 	BOOL success = TRUE;
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1998/02/12 16:19:44  turrican
+    Fix uninitialized variable warnings
+
     Revision 1.4  1997/01/27 00:36:42  ldp
     Polish
 
@@ -71,7 +74,7 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    BOOL result;
+    BOOL result = FALSE;
     WORD X = (point >> 16L);
     WORD Y =  point & 0x0000FFFFL;
 

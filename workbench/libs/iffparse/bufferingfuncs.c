@@ -410,7 +410,7 @@ BOOL BufferToStream
     /* Number of bytes axtually writen to the stream,
       or if negative: an IFFERR_.. error */
 
-    LONG   byteswritten,
+    LONG   byteswritten = 0,
 	  bytes2write,
 	  numbytes;
 
@@ -526,7 +526,7 @@ LONG ExitBufferedStream(struct IFFHandle *iff,
 	    - Write the whole buffer to this stream.
 	    - Free the buffer/
     */
-    LONG err;
+    LONG err = 0;
 
     struct BufferList *buflist;
 
@@ -581,7 +581,7 @@ ULONG BufStreamHandler
 )
 {
 
-    LONG error;
+    LONG error = 0;
 
     switch (cmd->sc_Command)
     {

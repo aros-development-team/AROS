@@ -41,10 +41,10 @@ BOOL ScanFontInfo
 	UWORD idx;
 	
     struct AFHookDescr      *afhd;
-    struct FontInfoNode     *finode;
+    struct FontInfoNode     *finode = NULL;
     struct FontHookCommand  fhc = {0};
 
-   	struct TTextAttr *srcattr, *destattr;
+   	struct TTextAttr *srcattr, *destattr = NULL;
 	UWORD sfi_state;
 	
 	BOOL  success	= TRUE;

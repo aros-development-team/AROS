@@ -68,8 +68,8 @@
     UWORD   bitmask;
     UWORD   shift;
     UWORD   offset;
-    ULONG   pen;
-    ULONG   lastPen;
+    ULONG   pen = 0;
+    ULONG   lastPen = 0;
 #define START_BITMASK	0x8000L
 
     /* Store important variables of the RastPort */

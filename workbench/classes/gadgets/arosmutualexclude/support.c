@@ -72,10 +72,10 @@ BOOL renderlabel(struct MXBase_intern *AROSMutualExcludeBase,
 		 struct Gadget *gad, struct RastPort *rport,
                  LONG labelplace, LONG ticklabelplace)
 {
-    struct TextFont *font, *oldfont;
+    struct TextFont *font = NULL, *oldfont;
     struct TextExtent te;
     STRPTR text;
-    int len, x, y;
+    int len = 0, x, y;
     UWORD width, height;
 
     if (gad->GadgetText)

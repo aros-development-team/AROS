@@ -63,7 +63,7 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
     fdh->NumEntries = numentries;
         
     /* Allocate mem for array of TTextAttrs */
-    fdh->TAttrArray = AllocVec( UB(&tattr[fdh->NumEntries]) - UB(&tattr[0]), MEMF_ANY|MEMF_CLEAR);
+    fdh->TAttrArray = AllocVec(fdh->NumEntries * sizeof(struct TTextAttr), MEMF_ANY|MEMF_CLEAR);
     if (!fdh->TAttrArray)
         goto failure;
     

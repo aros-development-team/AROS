@@ -26,7 +26,7 @@ BOOL CopyDescrToBuffer
 )
 {
     APTR bufend,
-         nextptr;
+         nextptr = NULL;
          
     UBYTE *bufptr;
     
@@ -38,7 +38,7 @@ BOOL CopyDescrToBuffer
     UWORD curstate,
           numentries = 0;
     
-    STRPTR lastnameinbuf;
+    STRPTR lastnameinbuf = NULL;
 
 
 	D(bug(
@@ -103,7 +103,7 @@ BOOL CopyDescrToBuffer
     /* Write the tags into the buffer */
     if (flags & AFF_TAGGED)
     {
-    	struct TagItem  *lasttagsinbuf;
+    	struct TagItem  *lasttagsinbuf = NULL;
     	
         curstate = BFSTATE_FONTTAGS;
         

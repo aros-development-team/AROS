@@ -46,7 +46,7 @@ struct TagItem *ReadTags(BPTR fh, ULONG numtags, struct DiskfontBase_intern *Dis
     
     
     taglist = AllocVec(
-    	UB(&taglist[ numtags ]) - UB(&taglist[0]),
+    	numtags * sizeof(struct TagItem),
         MEMF_ANY);
        
    if (!taglist)

@@ -21,7 +21,7 @@ AROS_UFH3(LONG, dosstreamhook,
     AROS_UFHA(ULONG       *, msg,  A1)
 )
 {
-    LONG rc;
+    LONG rc = 0;
 
     switch (*msg)
     {

@@ -48,7 +48,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-    struct Gadget *lastgad = NULL, *nextgad;
+    struct Gadget *lastgad = NULL, *nextgad = NULL;
 
     if (!glist)
 	return;

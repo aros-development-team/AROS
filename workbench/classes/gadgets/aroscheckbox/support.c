@@ -92,10 +92,10 @@ void closefont(struct CBBase_intern *AROSCheckboxBase,
 BOOL renderlabel(struct CBBase_intern *AROSCheckboxBase,
 		 struct Gadget *gad, struct RastPort *rport, LONG labelplace)
 {
-    struct TextFont *font, *oldfont;
+    struct TextFont *font = NULL, *oldfont;
     struct TextExtent te;
     STRPTR text;
-    int len, x, y;
+    int len = 0, x, y;
     UWORD width, height;
 
     if (gad->GadgetText)

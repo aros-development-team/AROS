@@ -71,7 +71,7 @@
 	struct FontHookCommand fhc;
 		
 	struct Hook 	*hook,
-					*bestmatch_hook;
+					*bestmatch_hook = NULL;
 		
 	struct TTextAttr 	best_so_far = {0}, *destattr;
 	struct TextFont *tf = 0;

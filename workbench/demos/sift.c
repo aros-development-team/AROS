@@ -106,7 +106,7 @@ int main(int argc, char **argv)
 {
     struct IFFHandle	*iff = NULL;
     long		error;
-    short		cbio;
+    short		cbio = 0;
 
 	/* if not enough args or '?', print usage */
 	if(((argc)&&(argc<MINARGS))||(argv[argc-1][0]=='?'))

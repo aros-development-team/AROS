@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
     struct AnchorPath * apath;
     IPTR	      * args[TOTAL_ARGS] = { NULL, NULL, NULL };
     STRPTR	      * FromFiles;
-    char	      * FileName;
+    char	      * FileName = NULL;
     char		PathName[MAX_PATH_LEN];
     LONG		MatchResult;
     BOOL		Success;
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
 
 			/* If we do not have a filename at the end of the path.
 			 */
-			if (*FileName == NULL)
+			if (FileName == NULL || *FileName == NULL)
 			{
 
 			    /* Obtain a full path with filename.
@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
 			Return_Value = RETURN_FAIL;
 
 			PutStr("Can't rename ");
-			if (*FileName == NULL) {
+			if (FileName == NULL || *FileName == NULL) {
 			    PutStr(apath->ap_Buf);
 			    PutStr(" as ");
 			    PutStr(PathName);

@@ -23,7 +23,7 @@ ULONG DOSStreamHandler
 )
 {
 
-    LONG error;
+    LONG error = 0;
 
     switch (cmd->sc_Command)
     {

@@ -831,7 +831,7 @@ static LONG open_file(struct rambase *rambase, struct filehandle **handle, STRPT
 {
     struct dnode *dir=(*handle)->node;
     struct filehandle *fh;
-    LONG error;
+    LONG error = 0;
 
     fh=AllocMem(sizeof(struct filehandle),MEMF_CLEAR);
     if(fh!=NULL)

@@ -22,7 +22,7 @@ struct Library *DiskfontBase;
 
 int main(int argc, char ** argv)
 {
-    ULONG afshortage;
+    ULONG afshortage = 0;
     IPTR  pargs[2];
 
     struct AvailFontsHeader *afh;

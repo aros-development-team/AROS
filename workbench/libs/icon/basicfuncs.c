@@ -17,7 +17,7 @@
 
 VOID GetDefIconName (LONG def_type, UBYTE * deficonname)
 {
-    UBYTE * extname;
+    UBYTE * extname = NULL;
 
     strcpy (deficonname,"ENV:Sys/def_");
 

@@ -60,7 +60,7 @@ static int read_block(BPTR file, APTR buffer, ULONG size)
 BPTR LoadSeg_AOS(BPTR file)
 {
   struct hunk *hunktab = NULL;
-  ULONG hunktype, count, first, last, offset, curhunk, numhunks;
+  ULONG hunktype, count = 0, first, last, offset, curhunk = 0, numhunks;
   LONG t;
   UBYTE name_buf[255];
   register i;
@@ -481,7 +481,7 @@ D(bug("Fontname copied\n"));
 		while (tag != TAG_DONE);
 		
 		/* Allocate memory for taglist */
-		taglist = (struct TagItem *)AllocVec(UB(&taglist[numtags]) - UB(&taglist[0]), MEMF_ANY);
+		taglist = (struct TagItem *)AllocVec(numtags * sizeof(struct TagItem), MEMF_ANY);
 		if (!taglist)
 			goto failure;
 		

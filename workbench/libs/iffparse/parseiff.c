@@ -78,7 +78,7 @@
     struct ContextNode *cn;
 
     LONG size;
-    LONG err;
+    LONG err = 0;
     LONG toseek; /* To hold number of bytes left to seek in a chunk */
     BOOL done = FALSE;
 
