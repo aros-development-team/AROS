@@ -52,10 +52,12 @@ int main(int argc, char **argv)
     		WA_Title,	(IPTR)"Stringgadget Demo",
     		WA_Gadgets,	(IPTR)&strgad,
     		WA_IDCMP,	IDCMP_GADGETUP|IDCMP_RAWKEY,
+		WA_DragBar,     TRUE,
     		TAG_END);
     	if (window)
     	{
 	    HandleEvents(window);
+	    CloseWindow(window);
     	}
     	
     	CloseLibrary((struct Library *)IntuitionBase);
@@ -82,6 +84,12 @@ VOID HandleEvents(struct Window *win)
 	    {
 		
 	    case IDCMP_GADGETUP:
+		break;
+
+	    case IDCMP_RAWKEY:
+	        if(imsg->Code == 0x10)
+		    terminated = TRUE;
+
 		break;
 		    					
 	    } /* switch (imsg->Class) */
