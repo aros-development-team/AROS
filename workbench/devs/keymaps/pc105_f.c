@@ -117,8 +117,8 @@ CONST UBYTE lokeymaptypes[] =
     V,	 	/* 28 l */
     V, 		/* 29 m */
 
-    S|A, 	/* 2A ù % */
-    S|A,      	/* 2B * µ */
+    D|S|A, 	/* 2A ù % */
+    D|S|A,     	/* 2B * µ */
     N, 		/* 2C undefined */
     N, 		/* 2D NUM 4 */
     N, 		/* 2E NUM 5 */
@@ -126,12 +126,12 @@ CONST UBYTE lokeymaptypes[] =
     S|A,	/* 30 < > */
     V,	 	/* 31 w */
     V,	 	/* 32 x */
-    V,	 	/* 33 c */
+    D|V,	/* 33 c */
     V,	 	/* 34 v */
     V,	 	/* 35 b */
     V,	 	/* 36 n */
 
-    S|A,	/* 37 , ? */
+    D|S|A,	/* 37 , ? */
     S|A,	/* 38 ; . */
     S|A,	/* 39 : / */
     S, 		/* 3A ! § */
@@ -231,34 +231,36 @@ CONST UBYTE hikeymaptypes[] =
 	(((UBYTE)b3)<<24) | (((UBYTE)b2)<<16) | (((UBYTE)b1)<<8) | (((UBYTE)b0)<<0)
 
 /* dead symbols
+ 
   1= ´
   2 = `
   3 = ^
   4 = ~
   5 = " 
-
+  6 = °
+  
 */
 
 CONST UBYTE a_descr[] =
 {
     DPF_MOD, 0x10,
-    DPF_MOD, 0x16,
-    0, 0xE6,
-    0, 0xC6,
+    DPF_MOD, 0x17,
+    0, 'æ', /* 0xE6 */
+    0, 'Æ', /* 0xC6 */
     0, 0x01,
     0, 0x01,
     0, 0x81,
     0, 0x81,
     
-    'a', 0xE1, 0xE0, 0xE2, 0xE3, 0xE4,
+    'a', 'á' /*0xE1*/, 'à' /*0xE0*/, 'â' /*0xE2*/, 'ã' /*0xE3*/, 'ä' /*0xE4*/, 'å' /*0xE5*/,
     
-    'A', 0xC1, 0xC0, 0xC2, 0xC3, 0xC4
+    'A', 'Á' /*0xC1*/, 'À' /*0xC0*/, 'Â' /*0xC2*/, 'Ã' /*0xC3*/, 'Ä' /*0xC4*/, 'Å' /*0xC5*/
 };
 
 CONST UBYTE e_descr[] =
 {
     DPF_MOD, 0x10,
-    DPF_MOD, 0x16,
+    DPF_MOD, 0x17,
     0, EUR,
     0, '¢',
     0, 0x05,
@@ -266,57 +268,73 @@ CONST UBYTE e_descr[] =
     0, 0x85,
     0, 0x85,
     
-    'e', 0xE9, 0xE8, 0xEA, 'e', 0xEB,
+    'e', 'é' /*0xE9*/, 'è' /*0xE8*/, 'ê' /*0xEA*/, 'e', 'ë' /*0xEB*/, 'e',
     
-    'E', 0xC9, 0xC8, 0xCA, 'E', 0xCB   
+    'E', 'É' /*0xC9*/, 'È' /*0xC8*/, 'Ê' /*0xCA*/, 'E', 'Ë' /*0xCB*/, 'E'
 };
 
 CONST UBYTE u_descr[] =
 {
     DPF_MOD, 0x10,
-    DPF_MOD, 0x16,
-    0, 0xB5,
-    0, 0xB5,
+    DPF_MOD, 0x17,
+    0, 'µ', /* 0xB5 */
+    0, 'µ', /* 0xB5 */
     0, 0x15,
     0, 0x15,
     0, 0x95,
     0, 0x95,
     
-    'u', 0xFA, 0xF9, 0xFB, 'u', 0xFC,
+    'u', 'ú' /*0xFA*/, 'ù' /*0xF9*/, 'û' /*0xFB*/, 'u', 'ü' /*0xFC*/, 'u',
     
-    'U', 0xDA, 0xD9, 0xDB, 'U', 0xDC
+    'U', 'Ú' /*0xDA*/, 'Ù' /*0xD9*/, 'Û' /*0xDB*/, 'U', 'Ü' /*0xDC*/, 'U'
 };
 
 CONST UBYTE i_descr[] =
 {
     DPF_MOD, 0x10,
-    DPF_MOD, 0x16,
-    0, 0xA1,
-    0, 0xA6,
+    DPF_MOD, 0x17,
+    0, '¡', /* 0xA1 */
+    0, '¦', /* 0xA6 */
     0, 0x09,
     0, 0x09,
     0, 0x89,
     0, 0x89,
     
-    'i', 0xED, 0xEC, 0xEE, 'i', 0xEF,
+    'i', 'í' /*0xED*/, 'ì' /*0xEC*/, 'î' /*0xEE*/, 'i', 'ï' /*0xEF*/, 'i',
     
-    'I', 0xCD, 0xCC, 0xCE, 'I', 0xCF
+    'I', 'Í' /*0xCD*/, 'Ì' /*0xCC*/, 'Î' /*0xCE*/, 'I', 'Ï' /*0xCF*/, 'I'
 };
 
 CONST UBYTE o_descr[] =
 {
     DPF_MOD, 0x10,
-    DPF_MOD, 0x16,
-    0, 0xF8,
-    0, 0xD8,
+    DPF_MOD, 0x17,
+    0, 'ø', /* 0xF8 */
+    0, 'Ø', /* 0xD8 */
     0, 0x0F,
     0, 0x0F,
     0, 0x8F,
     0, 0x8F,
     
-    'o', 0xF3, 0xF2, 0xF4, 0xF5, 0xF6,
+    'o', 'ó' /*0xF3*/, 'ò' /*0xF2*/, 'ô' /*0xF4*/, 'õ' /*0xF5*/, 'ö' /*0xF6*/, 'o',
     
-    'O', 0xD3, 0xD2, 0xD4, 0xD5, 0xD6
+    'O', 'Ó' /*0xD3*/, 'Ò' /*0xD2*/, 'Ô' /*0xD4*/, 'Õ' /*0xD5*/, 'Ö' /*0xD6*/, 'O'
+};
+ 
+CONST UBYTE c_descr[] =
+{
+    DPF_MOD, 0x10,
+    DPF_MOD, 0x17,
+    0, '¢' /*0xA2*/,
+    0, '©' /*0xA9*/,
+    0, 0x03,
+    0, 0x03,
+    0, 0x83,
+    0, 0x83,
+    
+    'c', 'ç' /*0xE7*/, 'c', 'c', 'c', 'c', 'c',
+    
+    'C', 'Ç' /*0xC7*/, 'C', 'C', 'C', 'C', 'C'
 };
 
 CONST UBYTE space_descr[] =
@@ -324,7 +342,7 @@ CONST UBYTE space_descr[] =
     DPF_MOD, 0x4,
     0, 0XA0,
 
-    ' ', 0xB4, '`','^','~',0xA8
+    ' ', '´' /*0xB4*/, '`','^','~', '¨' /*0xA8*/, '°' /*0xB0*/
 };
 
 CONST UBYTE KEY1A_descr[] =
@@ -332,7 +350,31 @@ CONST UBYTE KEY1A_descr[] =
     DPF_DEAD, 3,
     DPF_DEAD, 5,
     DPF_DEAD, 5,
-    DPF_DEAD, 5
+    DPF_DEAD, 6
+};
+
+CONST UBYTE KEY37_descr[] =
+{
+    0, ',',
+    0, '?',
+    DPF_DEAD, 1,
+    DPF_DEAD, 1
+};
+
+CONST UBYTE KEY2A_descr[] =
+{
+    0, 'ù',
+    0, '%',
+    DPF_DEAD, 3,
+    DPF_DEAD, 3
+};
+
+CONST UBYTE KEY2B_descr[] =
+{
+    0, '*',
+    0, 'µ',
+    DPF_DEAD, 2,
+    DPF_DEAD, 2
 };
 
 CONST IPTR lokeymap[] =
@@ -382,8 +424,8 @@ CONST IPTR lokeymap[] =
     BYTES('L', 'l', 'L', 'l'), 		/* 28 */
     BYTES('º', 'µ', 'M', 'm'), 		/* 29 */
 
-    BYTES('%', '^', '%', 'ù'), 	    	/* 2A */
-    BYTES('µ', '`', 'µ', '*'),	    	/* 2B */
+    DEAD(KEY2A_descr), 	    	    	/* 2A */
+    DEAD(KEY2B_descr),	    	    	/* 2B */
     BYTES(0, 0, 0, 0),			/* 2C undefined */
     BYTES('4', '4', '4', '4'),		/* 2D NUM 4 */
     BYTES('5', '5', '5', '5'), 		/* 2E NUM 5 */
@@ -391,12 +433,12 @@ CONST IPTR lokeymap[] =
     BYTES('¦', '|', '>', '<'),	    	/* 30 */
     BYTES('W', 'w', 'W', 'w'),		/* 31 */
     BYTES('>', '»', 'X', 'x'),		/* 32 */
-    BYTES('©', '¢', 'C', 'c'),		/* 33 */
+    DEAD(c_descr),		    	/* 33 */
     BYTES('`', 'v', 'V', 'v'),		/* 34 */
     BYTES('\'','b', 'B', 'b'),		/* 35 */
     BYTES('N', 'n', 'N', 'n'),		/* 36 */
 
-    BYTES('?','\'', '?', ','),		/* 37 */    
+    DEAD(KEY37_descr),		    	/* 37 */    
     BYTES('×', ';', '.', ';'),		/* 38 */
     BYTES('÷', '·', '/', ':'),		/* 39 */
     BYTES('§', '!', '§', '!'),		/* 3A */
