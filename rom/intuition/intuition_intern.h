@@ -51,6 +51,8 @@
 /* Needed for aros_print_not_implemented macro */
 #include <aros/debug.h>
 
+#include <aros/asmcall.h>
+
 /* ObtainGIRPort must install a 0 clipregion and
    set scrollx/scrolly of layer to 0. Since this
    will be restored only when ReleaseGIRPort is
@@ -74,6 +76,7 @@ struct IntIntuitionBase
     struct UtilityBase	   * UtilBase;
     struct Library	   * BOOPSIBase;
     struct Library	   * KeymapBase;
+    struct Library         * DOSBase;
     struct Library	   * TimerBase;
     struct MsgPort	   * TimerMP;
     struct timerequest	   * TimerIO;
@@ -192,6 +195,12 @@ extern struct IntuitionBase * IntuitionBase;
 #endif
 #define BOOPSIBase (GetPrivIBase(IntuitionBase)->BOOPSIBase)
 
+
+#ifdef DOSBase
+#undef DOSBase
+#endif
+#define DOSBase (GetPrivIBase(IntuitionBase)->DOSBase)
+
 #define PublicClassList ((struct List *)&(GetPrivIBase(IntuitionBase)->ClassList))
 
 /* Needed for close() */
@@ -252,6 +261,13 @@ void windowneedsrefresh(struct Window * w, struct IntuitionBase * IntuitionBase)
 inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w, struct IntuitionBase *IntuitionBase);
 inline VOID free_intuimessage(struct IntuiMessage *imsg, struct IntuitionBase *IntuitionBase);
 inline struct IntuiMessage *alloc_intuimessage(struct IntuitionBase *IntuitionBase);
+
+
+/* Replacement for dos.library/DisplayError() */
+AROS_UFP3(LONG, Intuition_DisplayError,
+    AROS_UFPA(STRPTR, formatStr , A0),
+    AROS_UFPA(ULONG , IDCMPFlags, D0),
+    AROS_UFPA(APTR  , args      , A1));
 
 
 struct closeMessage
@@ -350,5 +366,11 @@ enum
 	AMCODE_ZIPWINDOW,
 	AMCODE_CHANGEWINDOWBOX
 };
+
+
+/* Flag definitions for MoreFlags */
+
+#define  WMFLG_NOTIFYDEPTH  (1 << 0)     /* Window wants notification when
+					    it's depth arranged */
 
 #endif /* INTUITION_INTERN_H */
