@@ -191,9 +191,9 @@ endif
 #------------------------------------------------------------------------------
 # Rule to generate a functable
 #
-%define rule_genfunctable files=/A dir=. libdefs=libdefs.h
+%define rule_genfunctable name=functable files=/A dir=. libdefs=libdefs.h
 
-%(dir)/functable.c : $(addsuffix .c,%(files)) $(BINDIR)/scripts/genfunctable.awk %(libdefs)
+%(dir)/%(name).c : $(addsuffix .c,%(files)) $(BINDIR)/scripts/genfunctable.awk %(libdefs)
 	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
 ifneq (%(files),)
 	$(AWK) -v file=%(libdefs) -f $(BINDIR)/scripts/genfunctable.awk $(addsuffix .c,%(files)) > $@
@@ -707,16 +707,16 @@ endif
 
 TMP_FILES            := $(notdir $(BD_FILES$(BDID)))
 ifeq (%(genfunctable),yes)
-  TMP_FILES          := functable $(TMP_FILES)
+  TMP_FILES          := $(BD_MODNAME$(BDID))_functable $(TMP_FILES)
 else
   ifneq ($(BD_FUNCS$(BDID)),)
     ifeq (%(genfunctable),)
       ifneq ($(BD_MODTYPE$(BDID)),resource)
-        TMP_FILES    := functable $(TMP_FILES)
+        TMP_FILES    := $(BD_MODNAME$(BDID))_functable $(TMP_FILES)
       endif
     else
       ifneq (%(genfunctable),no)
-        TMP_FILES    := functable $(TMP_FILES)
+        TMP_FILES    := $(BD_MODNAME$(BDID))_functable $(TMP_FILES)
       endif
     endif
     TMP_FILES        += $(BD_FUNCS$(BDID))
@@ -851,7 +851,7 @@ endif
 %rule_compile basename=$(BD_ENDFILE$(BDID)) targetdir=$(BD_OBJDIR$(BDID)) \
 	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
 	      compiler=%(compiler)
-%rule_compile basename=$(BD_OBJDIR$(BDID))/functable targetdir=$(BD_OBJDIR$(BDID)) \
+%rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_functable targetdir=$(BD_OBJDIR$(BDID)) \
 	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
 	      compiler=%(compiler)
 endif
@@ -870,11 +870,13 @@ $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h :
 
 %libdefs_rule conffile=$(BD_CONFFILE$(BDID)) dest=$(BD_LIBDEFSINC$(BDID))
 
+ifneq ($(BD_ENDFILE$(BDID)),)
 $(BD_ENDFILE$(BDID)).c :
 	@$(ECHO) "generating $@"
 	@$(ECHO) "#include <libcore/libtail.c>" >$@
+endif
 
-%rule_genfunctable files=$(BD_FUNCS$(BDID)) dir=$(BD_OBJDIR$(BDID)) \
+%rule_genfunctable name=$(BD_MODNAME$(BDID))_functable files=$(BD_FUNCS$(BDID)) dir=$(BD_OBJDIR$(BDID)) \
   libdefs=$(BD_LIBDEFSINC$(BDID))
 
 # The module is linked from all the compiled .o files
