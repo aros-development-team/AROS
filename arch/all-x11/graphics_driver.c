@@ -23,6 +23,7 @@
 #include <proto/graphics.h>
 #include <proto/arossupport.h>
 #include "graphics_intern.h"
+#include "graphics_internal.h"
 
 #define static	/* nothing */
 
@@ -132,6 +133,70 @@ void UnlockX11 ()
 #define LX11
 #define UX11
 #endif
+
+
+struct gfx_driverdata * GetDriverData (struct RastPort * rp)
+{
+    return (struct gfx_driverdata *) rp->longreserved[0];
+}
+
+
+/* SetDriverData() should only be used when cloning RastPorts		*/
+/* For other purposes just change the values directly in the struct.	*/
+
+void SetDriverData (struct RastPort * rp, struct gfx_driverdata * DriverData)
+{
+    rp->longreserved[0] = (IPTR) DriverData;
+}
+
+
+/* InitDriverData() just allocates memory for the struct. To use e.g.	*/
+/* AreaPtrns, UpdateAreaPtrn() has to allocate the memory for the	*/
+/* Pattern itself (and free previously used memory!)			*/
+
+struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
+{
+    struct gfx_driverdata * retval;
+
+    kprintf("InitDriverData...\n");
+
+    retval = AllocMem (sizeof(struct gfx_driverdata), MEMF_CHIP|MEMF_CLEAR);
+    kprintf("AllocMem Okay\n");
+    if (!retval)
+    {
+    kprintf("retval==0\n");
+	fprintf (stderr, "Can't allocate Memory for internal use\n");
+	return NULL;
+    }
+    kprintf("retval!=0\n");
+    retval->dd_RastPort = rp;
+    kprintf("\n");
+
+    return retval;
+}
+
+void DeinitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
+{
+    struct gfx_driverdata * driverdata;
+
+    driverdata = (struct gfx_driverdata *) rp->longreserved[0];
+
+/* Free all allocated memory */
+    if (driverdata->dd_AreaPtrn)
+	FreeMem (driverdata->dd_AreaPtrn
+	, sizeof(UWORD) * (1<<driverdata->dd_AreaPtSz)
+	);
+
+    if (driverdata->dd_DashList)
+	FreeMem (driverdata->dd_DashList
+	    , 16 * sizeof(char)
+	);
+
+    FreeMem (driverdata
+	, sizeof(struct gfx_driverdata)
+    );
+}
+
 
 int driver_init (struct GfxBase * GfxBase)
 {
@@ -244,17 +309,17 @@ void driver_expunge (struct GfxBase * GfxBase)
 
 GC GetGC (struct RastPort * rp)
 {
-    return (GC) rp->longreserved[0];
+    return (GC) GetDriverData(rp)->dd_GC;
 }
 
 int GetXWindow (struct RastPort * rp)
 {
-    return (int) rp->longreserved[1];
+    return (int) GetDriverData(rp)->dd_Window;
 }
 
 void SetGC (struct RastPort * rp, GC gc)
 {
-    rp->longreserved[0] = (IPTR)gc;
+    GetDriverData(rp)->dd_GC = gc;
 }
 
 void SetXWindow (struct RastPort * rp, int win)
@@ -280,7 +345,7 @@ UX11
 	rp->BitMap->Planes[0] = (PLANEPTR)win;
     }
 
-    rp->longreserved[1] = (IPTR)win;
+    GetDriverData(rp)->dd_Window = win;
 }
 
 Display * GetSysDisplay (void)
@@ -293,87 +358,183 @@ int GetSysScreen (void)
     return sysScreen;
 }
 
+BOOL CompareAreaPtrn(UWORD * pat1, UWORD * pat2, BYTE size)
+{
+    int y;
+    BOOL equal = True;
+
+    for (y=0; y < (1<<size) && equal; y++)
+	equal = (pat1[y] == pat2[y]);
+
+    return equal;
+}
+
+Pixmap ConvertAreaPtrn (struct RastPort * rp, struct GfxBase * GfxBase)
+{
+    int y, z, width, height, depth;
+    char * pattern;
+    Pixmap stipple;
+
+    width = 16;
+
+    if (rp->AreaPtSz >= 0)
+    {
+	/* Singlecolored AreaPtrn */
+	height = 1<<(rp->AreaPtSz);
+
+        pattern = AllocMem(2*height*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
+
+	for (y=0; y<height; y++)
+	{
+	    pattern[2*y] = (char)( (rp->AreaPtrn[y]) & (255) );
+	    pattern[2*y+1] = (char)( ( (rp->AreaPtrn[y]) & (255<<8) ) >> 8);
+	}
+LX11
+        stipple = XCreateBitmapFromData (sysDisplay
+	    , GetXWindow (rp)
+	    , pattern
+	    , width
+    	    , height
+        );
+UX11
+        FreeMem (pattern, 2*height*sizeof(BYTE));
+
+    }
+    else
+    {
+	/* Multicolored AreaPtrn */
+        unsigned long foreground, background;
+
+	depth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);	/* Number of bitplanes used for AreaPtrn */
+	height = 1>>(rp->AreaPtSz);	/* AreaPtSz is negative */
+	    
+/* Specify the foreground and background pixel values to use.(Xlib Ref.Man.) */	    
+	foreground = BlackPixel(sysDisplay, sysScreen);	
+	background = WhitePixel(sysDisplay, sysScreen);
+
+	pattern = AllocMem(2*height*depth*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
+	for (z=0; z<depth; z++)
+	    for (y=0; y<height; y++)
+	    {
+	        pattern[2*y+2*z*height] = (char)( (rp->AreaPtrn[y+z*height]) & (0xff) );
+	        pattern[2*y+2*z*height+1] = (char)( ( (rp->AreaPtrn[y+z*height]) & (0xff<<8) ) >> 8);
+	    }
+LX11
+	stipple = XCreatePixmapFromBitmapData (sysDisplay
+	    , GetXWindow (rp)
+	    , pattern
+	    , width
+	    , height
+	    , foreground
+	    , background
+	    , depth
+	);
+UX11
+
+	FreeMem (pattern, 2*height*depth*sizeof(char));
+    }
+
+    return stipple;
+}
+
+void CopyAreaPtrn (UWORD * dest, UWORD * src ,int height)
+{
+    int y;
+
+    for (y=0; y<height; y++)
+	dest[y] = src[y];
+}
+
 void UpdateAreaPtrn (struct RastPort * rp, struct GfxBase * GfxBase)
 {
     if (rp->AreaPtrn != NULL)
     {
-	if (rp->AreaPtSz > 0)
+	int height;
+	Pixmap stipple;
+	struct gfx_driverdata * dd;
+
+	dd = GetDriverData (rp);
+
+	if (rp->AreaPtSz >= 0)
 	{
 	    /* Singlecolored AreaPtrn */
-            Pixmap stipple;
-            int width, height;
-	    char *pattern;
-	    int y;
 
-	    width = 16;
 	    height = 1<<(rp->AreaPtSz);
 
-	    pattern = AllocMem(2*height*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
-	    for (y=0; y<height; y++)
+	    if ( (dd->dd_AreaPtrn) && (dd->dd_AreaPtSz == rp->AreaPtSz) )
 	    {
-		pattern[2*y] = (char)( (rp->AreaPtrn[y]) & (255) );
-		pattern[2*y+1] = (char)( ( (rp->AreaPtrn[y]) & (255<<8) ) >> 8);
+		if (!CompareAreaPtrn(dd->dd_AreaPtrn, rp->AreaPtrn, rp->AreaPtSz))
+		{
+LX11
+		    XFreePixmap (sysDisplay, dd->dd_Pixmap);
+UX11
+		    stipple = ConvertAreaPtrn (rp, GfxBase);
+		    CopyAreaPtrn (dd->dd_AreaPtrn, rp->AreaPtrn,height);
+		}
+		else
+    		    stipple = dd->dd_Pixmap;
 	    }
+	    else
+	    {
+		if (!dd->dd_AreaPtrn)
+	    	    FreeMem (dd->dd_AreaPtrn, sizeof(UWORD)*(1<<dd->dd_AreaPtSz));
+		dd->dd_AreaPtSz = rp->AreaPtSz;
+		dd->dd_AreaPtrn = AllocMem (sizeof(UWORD)*height, MEMF_CHIP|MEMF_CLEAR);
+LX11
+		XFreePixmap (sysDisplay, dd->dd_Pixmap);
+UX11
+		stipple = ConvertAreaPtrn (rp, GfxBase);
+		CopyAreaPtrn (dd->dd_AreaPtrn, rp->AreaPtrn,height);
+	    }
+	    dd->dd_Pixmap = stipple;
+		
 LX11
 	    XSetFillStyle (sysDisplay
 		, GetGC(rp)
 		, FillStippled
 	    );
-
-	    stipple = XCreateBitmapFromData (sysDisplay
-		, GetXWindow (rp)
-		, pattern
-		, width
-		, height
-	    );
-
-	    FreeMem (pattern, 2*height*sizeof(char));
-
 	    XSetStipple( sysDisplay, GetGC (rp), stipple);
 UX11
 	}
 	else {
 	/* Multicolored AreaPtrn */
-            Pixmap tile;
-            unsigned int width, height, depth;
-            unsigned long foreground, background;
-	    char *pattern;
-	    int y,z;
 
-	    depth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);	/* Number of bitplanes used for AreaPtrn */
-	    width = 16;
-	    height = 1>>(rp->AreaPtSz);	/* AreaPtSz is negative */
-	    
-/* Specify the foreground and background pixel values to use.(Xlib Ref.Man.) */	    
-	    foreground = BlackPixel(sysDisplay, sysScreen);	
-	    background = WhitePixel(sysDisplay, sysScreen);
+	    height = 1>>(rp->AreaPtSz);
 
-	    pattern = AllocMem(2*height*depth*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
-	    for (z=0; z<depth; z++)
-		for (y=0; y<height; y++)
+	    if ( (dd->dd_AreaPtrn != NULL) && (dd->dd_AreaPtSz == rp->AreaPtSz) )
+	    {
+		if (!CompareAreaPtrn(dd->dd_AreaPtrn, rp->AreaPtrn, -rp->AreaPtSz))
 		{
-		    pattern[2*y+2*z*height] = (char)( (rp->AreaPtrn[y+z*height]) & (0xff) );
-		    pattern[2*y+2*z*height+1] = (char)( ( (rp->AreaPtrn[y+z*height]) & (0xff<<8) ) >> 8);
+LX11
+		    XFreePixmap (sysDisplay, dd->dd_Pixmap);
+UX11
+		    stipple = ConvertAreaPtrn (rp, GfxBase);
+		    CopyAreaPtrn (dd->dd_AreaPtrn, rp->AreaPtrn,height);
 		}
+		else
+    		    stipple = dd->dd_Pixmap;
+	    }
+	    else
+	    {
+		if (!dd->dd_AreaPtrn)
+		    FreeMem (dd->dd_AreaPtrn, sizeof(UWORD)*(1>>dd->dd_AreaPtSz));
+		dd->dd_AreaPtSz = rp->AreaPtSz;
+		dd->dd_AreaPtrn = AllocMem (sizeof(UWORD)*height, MEMF_CHIP|MEMF_CLEAR);
+LX11
+		XFreePixmap (sysDisplay, dd->dd_Pixmap);
+UX11
+		stipple = ConvertAreaPtrn (rp, GfxBase);
+		CopyAreaPtrn (dd->dd_AreaPtrn, rp->AreaPtrn,height);
+	    }
+	    dd->dd_Pixmap = stipple;
+
 LX11
 	    XSetFillStyle (sysDisplay
 		, GetGC(rp)
 		, FillTiled
 	    );
 
-	    tile = XCreatePixmapFromBitmapData (sysDisplay
-		, GetXWindow (rp)
-		, pattern
-		, width
-		, height
-		, foreground
-		, background
-		, depth
-	    );
-
-	    FreeMem (pattern, 2*height*depth*sizeof(char));
-
-	    XSetTile( sysDisplay, GetGC (rp), tile);
+	    XSetTile( sysDisplay, GetGC (rp), stipple);
 UX11
 	}
     }
@@ -521,7 +682,6 @@ UX11
 void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		    struct GfxBase * GfxBase)
 {
-    UpdateAreaPtrn (rp, GfxBase);
 LX11
     if (rp->DrawMode & COMPLEMENT)
     {
@@ -867,6 +1027,11 @@ UX11
 	}
     }
 
+    if(!GetDriverData(rp))
+	InitDriverData (rp, GfxBase);
+    else
+	if(GetDriverData(rp)->dd_RastPort!=rp)
+	    InitDriverData(rp, GfxBase);
     SetGC (rp, gc);
 
     rp->Flags |= 0x8000;
@@ -889,6 +1054,7 @@ UX11
 	return FALSE;
 LX11
     XCopyGC (sysDisplay, GetGC(oldRP), (1L<<(GCLastBit+1))-1, gc);
+    InitDriverData(newRP, GfxBase);
     SetGC (newRP, gc);
 UX11
     if (oldRP->BitMap)
@@ -925,6 +1091,8 @@ UX11
     {
 	FreeMem (rp->BitMap, sizeof (struct BitMap));
     }
+    if(GetDriverData(rp)->dd_RastPort==rp)
+	DeinitDriverData (rp, GfxBase);
 }
 
 void driver_InitView(struct View * View, struct GfxBase * GfxBase)
