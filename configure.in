@@ -185,6 +185,7 @@ case "$target_os" in
 	    ;;
 	esac
 	aros_shared_cflags="-fPIC"
+	aros_shared_default="yes"
 	;;
 
     native*)
@@ -198,6 +199,7 @@ case "$target_os" in
 	    aros_shared_ar="$aros_shared_ar -shared -o"
 	    aros_shell_ldflags=""
 	    aros_cpu="i386"
+	    aros_shared_default="no"
 	    ;;
 	*)
 	    echo "Unknown CPU for native --- $target_cpu"
@@ -215,6 +217,7 @@ case "$target_os" in
 	aros_genmap="-Xlinker -Map -Xlinker" # FreeBSD doesn't support maps
 	aros_shared_ar="$aros_shared_ar -shared -o"
 	aros_shared_cflags="-fPIC"
+	aros_shared_default="yes"
 	strip_args="-x"
 
 	# If we have bash, use that, otherwise, /bin/sh
@@ -230,6 +233,7 @@ case "$target_os" in
 	aros_common_cflags="-Wall -Wno-uninitialized -O2 -m68020 -m68881 -fomit-frame-pointer -fbuiltin -ffreestanding"
 	aros_mkdepend="$aros_mkdepend -D__GNUC__ -D_AMIGA -DAMIGA"
 	aros_common_aflags="-m68060 -x assembler-with-cpp"
+	aros_shared_default="no"
 	;;
     *)
 	AC_MSG_ERROR([Unsupported target architecture '$target'])
@@ -354,6 +358,7 @@ AC_SUBST(aros_gui_libflags)
 AC_SUBST(aros_gui_incdir)
 AC_SUBST(aros_gui_ccflags)
 AC_SUBST(aros_gfxsystem)
+AC_SUBST(aros_shared_default)
 
 dnl Prepare for output, make up all the generated patches
 case "$aros_flavour" in
@@ -412,7 +417,8 @@ if test ! -d bin/${aros_arch}-${aros_cpu}/AROS/include/aros ; then
     ${MKDIR} bin/${aros_arch}-${aros_cpu}/AROS/include/aros
 fi
 
-AC_OUTPUT(Makefile config/config.h config/host.cfg mmake.config)
+AC_OUTPUT(Makefile config/config.h config/host.cfg mmake.config
+    make.defaults)
 
 dnl This is in order to not defined SHARED_CFLAGS sometimes
 dnl We don't always do aros_shared_ar, aros_shared_cflags
