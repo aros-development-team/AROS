@@ -15,7 +15,8 @@ void AROS_SLIB_ENTRY(open,Mathieeesingtrans) (void);
 void AROS_SLIB_ENTRY(close,Mathieeesingtrans) (void);
 void AROS_SLIB_ENTRY(expunge,Mathieeesingtrans) (void);
 void AROS_SLIB_ENTRY(null,Mathieeesingtrans) (void);
-void AROS_SLIB_ENTRY(SPSqrt,Mathieeesingtrans) (void);
+void AROS_SLIB_ENTRY(IEEESPExp,Mathieeesingtrans) (void);
+void AROS_SLIB_ENTRY(IEEESPSqrt,Mathieeesingtrans) (void);
 
 void *const Mathieeesingtrans_functable[]=
 {
@@ -27,6 +28,13 @@ void *const Mathieeesingtrans_functable[]=
     NULL, /* 6 */
     NULL, /* 7 */
     NULL, /* 8 */
-    AROS_SLIB_ENTRY(SPSqrt,Mathieeesingtrans), /* 9 */
+    NULL, /* 9 */
+    NULL, /* 10 */
+    NULL, /* 11 */
+    NULL, /* 12 */
+    AROS_SLIB_ENTRY(IEEESPExp,Mathieeesingtrans), /* 13 */
+    NULL, /* 14 */
+    NULL, /* 15 */
+    AROS_SLIB_ENTRY(IEEESPSqrt,Mathieeesingtrans), /* 16 */
     (void *)-1L
 };

@@ -100,11 +100,13 @@ ULONG Res, i;
 LONG Mantisse;
 char Exponent;
 
-  /* e^0 = 1 */
-  if ( 0 == fnum1 )
-    return one;
 
   Exponent = (fnum1 & FFPExponent_Mask) -0x41;
+
+  /* e^0 = 1, e^(2^(<=-24)) = 1 */
+  if ( 0 == fnum1 || Exponent <= -24 )
+    return one;
+
 
   /* e^(>= 44) = overflow = infinity) */
   if (Exponent > 5)

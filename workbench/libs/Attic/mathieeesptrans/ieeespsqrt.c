@@ -20,15 +20,15 @@
 
     NAME */
 
-      AROS_LH1(LONG, SPSqrt,
+      AROS_LH1(LONG, IEEESPSqrt,
 
 /*  SYNOPSIS */
 
-      AROS_LHA(LONG, fnum1, D0),
+      AROS_LHA(LONG, y, D0),
 
 /*  LOCATION */
 
-      struct Library *, MathIeeeSingTransBase, 9, Mathieeesingtrans)
+      struct Library *, MathIeeeSingTransBase, 16, Mathieeesingtrans)
 
 /*  FUNCTION
 
@@ -36,7 +36,7 @@
 
     INPUTS
 
-      fnum1 - IEEE single precision number
+      y - IEEE single precision number
 
     RESULT
 
@@ -60,12 +60,12 @@
       ALGORITHM:
         First check for a zero and a negative argument and take
         appropriate action.
-        fnum = M * 2^E
+        y = M * 2^E
 
         Exponent is an odd number:
-        fnum = ( M*2 ) * 2^ (E-1)
+        y = ( M*2 ) * 2^ (E-1)
         Now E' = E-1 is an even number and
-           -> sqrt(fnum) = sqrt(M)   * sqrt(2)   * sqrt (2^E')
+              -> sqrt(y) = sqrt(M)   * sqrt(2)   * sqrt (2^E')
                          = sqrt(M)   * sqrt(2)   * 2^(E'/2)
         (with sqrt(M*2)>1)
                          = sqrt(M)   * sqrt(2)   * 2^(E'/2)
@@ -74,8 +74,8 @@
 
 
         Exponent is an even number:
-        -> sqrt(fnum) = sqrt(M) * sqrt (2^E) =
-                      = sqrt(M) * 2^(E/2)
+        -> sqrt(y) = sqrt(M) * sqrt (2^E) =
+                   = sqrt(M) * 2^(E/2)
 
         Now calculate the square root of the mantisse.
         The following algorithm calculates the square of a number + delta
@@ -104,30 +104,30 @@
   int z;
   ULONG Exponent;
 
-  if (0 == fnum1)
+  if (0 == y)
   {
     SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     return 0;
   }
   /* is fnum negative? */
-  if (fnum1 < 0)
+  if (y < 0)
   {
     SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return fnum1;
+    return y;
   }
 
   /* we can calculate the square-root now! */
 
-  TargetMantisse = ((fnum1 & IEEESPMantisse_Mask) | 0x00800000) << 8;
+  TargetMantisse = ((y & IEEESPMantisse_Mask) | 0x00800000) << 8;
 
-  if (fnum1 & 0x00800000)
+  if (y & 0x00800000)
   {
     /* TargetMantisse = TargetMantisse / 2; */
     TargetMantisse >>= 1;
-    Exponent = ((fnum1 >> 1) & IEEESPExponent_Mask) + 0x20000000;
+    Exponent = ((y >> 1) & IEEESPExponent_Mask) + 0x20000000;
   }
   else
-    Exponent = ((fnum1 >> 1) & IEEESPExponent_Mask) + 0x1f800000;
+    Exponent = ((y >> 1) & IEEESPExponent_Mask) + 0x1f800000;
 
 
   Res = 0;
