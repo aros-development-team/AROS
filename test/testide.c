@@ -2,10 +2,10 @@
 #include <exec/io.h>
 #include <exec/memory.h>
 #include <devices/trackdisk.h>
-#include <devices/timer.h>
 
 #include <proto/exec.h>
-#include <proto/timer.h>
+
+#include <sys/time.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -142,7 +142,7 @@ int main ( int argc, char *argv[] )
 
     printf("Benching\n");
 
-    GetSysTime(&tv1);
+    gettimeofday(&tv1,NULL);
     for (x=0;x<80;x++)
     {
 	io->iotd_Req.io_Length = 131072;
@@ -151,12 +151,12 @@ int main ( int argc, char *argv[] )
 	io->iotd_Req.io_Command = CMD_READ;
 	DoIO((struct IORequest *)io);
     }
-    GetSysTime(&tv2);
-    elapsed = ((double)(((tv2.tv_secs * 1000000) + tv2.tv_micro) - ((tv1.tv_secs * 1000000) + tv1.tv_micro)))/1000000.;
+    gettimeofday(&tv2,NULL);
+    elapsed = ((double)(((tv2.tv_sec * 1000000) + tv2.tv_usec) - ((tv1.tv_sec * 1000000) + tv1.tv_usec)))/1000000.;
 
     printf(" Read 10 MiB in %f seconds (%f MiB/s\n",elapsed,(10/elapsed));
 
-    GetSysTime(&tv1);
+    gettimeofday(&tv1,NULL);
     for (x=0;x<80;x++)
     {
 	io->iotd_Req.io_Length = 131072;
@@ -165,8 +165,8 @@ int main ( int argc, char *argv[] )
 	io->iotd_Req.io_Command = CMD_WRITE;
 	DoIO((struct IORequest *)io);
     }
-    GetSysTime(&tv2);
-    elapsed = ((double)(((tv2.tv_secs * 1000000) + tv2.tv_micro) - ((tv1.tv_secs * 1000000) + tv1.tv_micro)))/1000000.;
+    gettimeofday(&tv2,NULL);
+    elapsed = ((double)(((tv2.tv_sec * 1000000) + tv2.tv_usec) - ((tv1.tv_sec * 1000000) + tv1.tv_usec)))/1000000.;
 
     printf("Wrote 10 MiB in %f seconds (%f MiB/s\n",elapsed,(10/elapsed));
     return 0;
