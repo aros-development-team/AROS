@@ -9,11 +9,12 @@
 <SET desc="Add a node to the head of a list"
      lang="english"
      mlab="list"
-     returntype=""
-     funcname=""
-     libname=""
-     offset=""
-     notes=""
+     returntype="void"
+     funcname="AddHead"
+     libname="Exec"
+     offset="40"
+     libbasename="SysBase"
+     libbasetype="struct ExecBase *"
      internals=""
      local_includes=""
 >
@@ -24,21 +25,16 @@
     #include <exec/lists.h>
     #include <proto/exec.h>
 </BLOCK>
-<aros_lhi ret="void" name="AddHead">
 <BLOCK synopsis>
     <aros_lha type="struct List *" name="list" reg="A0">,
     <aros_lha type="struct Node *" name="node" reg="A1">
 </BLOCK>
-<LOCATION type="struct ExecBase *" var="SysBase" offset="40" name="Exec">
 <BLOCK function>
     Insert node <C>node</C> at the beginning of the list <C>list</C>.
 </BLOCK>
 <BLOCK inputs>
     <arg name=list> The list to insert the node into
     <arg name=node> This node is to be inserted
-</BLOCK>
-<BLOCK result>
-    None.
 </BLOCK>
 <BLOCK example>
     #include <exec/lists.h>
