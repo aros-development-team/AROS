@@ -13,8 +13,8 @@ memberlist:
 
 	Aaron "Optimizer" Digulla (coordination)
 	Matthias Fleischer (coding, ie. he's the one who works ;-) )
-	Martin Steigerwald (port to Alpha and Sparc)
-	Peter Boeckmann (coding some small functions)
+	Peter Boeckmann (port to Alpha and Sparc)
+	Martin Steigerwald (coding some small functions)
 	Iain Templeton (FreeBSD port and utility.library)
 	Lennard voor den Dag (Amiga port - at last :-)
 
