@@ -285,10 +285,14 @@ AROS_LH1(struct LIBBASETYPE *, open,
     {
 	DOSBase = OpenLibrary("dos.library", 0);
 
+	((struct DosLibrary *)DOSBase)->dl_IntuitionBase = 
+	    (struct Library *)LIBBASE;
+
 	/* Install intuition's version of DisplayError() that puts up
 	   a requester with Retry/Cancel options */
-	SetFunction(DOSBase, -81*LIB_VECTSIZE,
-		    AROS_SLIB_ENTRY(DisplayError, Intuition));
+	GetPrivIBase(LIBBASE)->OldDisplayErrorFunc = 
+	    SetFunction(DOSBase, -81*LIB_VECTSIZE,
+			AROS_SLIB_ENTRY(DisplayError, Intuition));
     }
 
 #if 0 /* intuition_driver stuff is dead */ 
@@ -316,11 +320,11 @@ AROS_LH0(BPTR, close,
     {
     
 #if 0 /* intuition_driver stuff is dead */
-	intui_close (LIBBASE);
+	intui_close(LIBBASE);
 #endif
 
 	/* Delayed expunge pending? */
-	if(LIBBASE->LibNode.lib_Flags&LIBF_DELEXP)
+	if(LIBBASE->LibNode.lib_Flags & LIBF_DELEXP)
 	    /* Then expunge the library */
 	    return expunge();
     }
@@ -339,10 +343,17 @@ AROS_LH0(BPTR, expunge,
     if(LIBBASE->LibNode.lib_OpenCnt)
     {
 	/* Set the delayed expunge flag and return. */
-	LIBBASE->LibNode.lib_Flags|=LIBF_DELEXP;
+	LIBBASE->LibNode.lib_Flags |= LIBF_DELEXP;
 	return 0;
     }
 
+
+    /* We are no longer patching DOS */
+    ((struct DosLibrary *)DOSBase)->dl_IntuitionBase = NULL;
+
+    /* Reset the old DisplayError() function */
+    SetFunction(DOSBase, -81*LIB_VECTSIZE,  
+		GetPrivIBase(LIBBASE)->OldDisplayErrorFunc);
 
     /* Free unecessary memory. */
     
