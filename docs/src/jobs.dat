@@ -1034,7 +1034,7 @@ intuition00038;0;digulla;Write SetDMRequest
 intuition00039;2;stegerg;Write SetMenuStrip
 intuition00040;0;digulla;Write SetPointer
 intuition00041;2;digulla;Write SetWindowTitles
-intuition00042;0;digulla;Write ShowTitle
+intuition00042;2;stegerg;Write ShowTitle
 intuition00043;2;digulla;Write SizeWindow
 intuition00044;2;bergers;Write ViewAddress
 intuition00045;2;bergers;Write ViewPortAddress
