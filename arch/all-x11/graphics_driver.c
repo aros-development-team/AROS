@@ -9,6 +9,9 @@
 #include <graphics/gfxbase.h>
 #include <graphics/text.h>
 #include <clib/graphics_protos.h>
+#include "graphics_intern.h"
+
+#define static	/* nothing */
 
 static Display	     * sysDisplay;
 static int	       sysScreen;
@@ -20,10 +23,10 @@ static struct TextAttr sysTA;
 #endif
 
 static const char * sysColName[] = {
-    "grey50",
-    "white",
+    "grey70",
     "black",
-    "slateblue",
+    "white",
+    "orange",
     NULL
 };
 
@@ -102,44 +105,47 @@ int driver_open (struct GfxBase * GfxBase)
 {
     struct TextFont * def;
 
-    sysTA.ta_Name = (STRPTR)SYSFONTNAME;
-    def = OpenFont (&sysTA);
-
-    if (!def)
+    if (!GfxBase->DefaultFont)
     {
-	fprintf (stderr, "Cannot open font %s; trying fixed\n",
-		SYSFONTNAME);
+	sysTA.ta_Name = (STRPTR)SYSFONTNAME;
 
-	sysTA.ta_Name = (STRPTR)"fixed";
 	def = OpenFont (&sysTA);
 
 	if (!def)
 	{
-	    fprintf (stderr, "Cannot open font\n");
-	    return False;
+	    fprintf (stderr, "Cannot open font %s; trying fixed\n",
+		    SYSFONTNAME);
+
+	    sysTA.ta_Name = (STRPTR)"fixed";
+	    def = OpenFont (&sysTA);
+
+	    if (!def)
+	    {
+		fprintf (stderr, "Cannot open font\n");
+		return False;
+	    }
 	}
+
+	GfxBase->DefaultFont = def;
+	sysTA.ta_YSize = def->tf_YSize;
     }
 
-    if (!GfxBase->DefaultFont)
-    {
-	GfxBase->DefaultFont = (struct TextFont *)def;
-	def->tf_Accessors ++;
-    }
-
-    def->tf_Accessors ++;
-
-    sysTA.ta_YSize = def->tf_YSize;
+    GfxBase->DefaultFont->tf_Accessors ++;
 
     return True;
 }
 
 void driver_close (struct GfxBase * GfxBase)
 {
+    GfxBase->DefaultFont->tf_Accessors --;
+
     return;
 }
 
 void driver_expunge (struct GfxBase * GfxBase)
 {
+    CloseFont (GfxBase->DefaultFont);
+
     return;
 }
 
@@ -151,6 +157,26 @@ GC GetGC (struct RastPort * rp)
 int GetXWindow (struct RastPort * rp)
 {
     return (int) rp->longreserved[1];
+}
+
+void SetGC (struct RastPort * rp, GC gc)
+{
+    rp->longreserved[0] = (ULONG)gc;
+}
+
+void SetXWindow (struct RastPort * rp, int win)
+{
+    rp->longreserved[1] = (ULONG)win;
+}
+
+Display * GetSysDisplay (void)
+{
+    return sysDisplay;
+}
+
+int GetSysScreen (void)
+{
+    return sysScreen;
 }
 
 void driver_SetAPen (struct RastPort * rp, unsigned long pen)
@@ -191,7 +217,7 @@ void driver_RectFill (struct RastPort * rp, long x1, long y1, long x2, long y2)
 #define ABS(x)          ((x) < 0 ? -(x) : (x))
 
 void driver_ScrollRaster (struct RastPort * rp, long dx, long dy,
-	long x1, long y1, long x2, long y2)
+	long x1, long y1, long x2, long y2, struct GfxBase * GfxBase)
 {
     long w, h, x3, y3, x4, y4, _dx_, _dy_;
     long apen = rp->FgPen;
@@ -310,7 +336,8 @@ void driver_SetFont (struct RastPort * rp, struct ETextFont * font)
     font->etf_Font.tf_Accessors ++;
 }
 
-struct TextFont * driver_OpenFont (struct TextAttr * ta)
+struct TextFont * driver_OpenFont (struct TextAttr * ta,
+	struct GfxBase * GfxBase)
 {
     struct ETextFont * tf;
     XFontStruct      * xfs;
@@ -345,7 +372,7 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta)
     return (struct TextFont *)tf;
 }
 
-void driver_CloseFont (struct ETextFont * tf)
+void driver_CloseFont (struct ETextFont * tf, struct GfxBase * GfxBase)
 {
     tf->etf_Font.tf_Accessors --;
 
