@@ -2,7 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: POSIX function close()
+    Desc: POSIX function closedir()
     Lang: english
 */
 
