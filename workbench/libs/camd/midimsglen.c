@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -47,6 +47,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct CamdBase *,CamdBase)
+
+	msg=0xff & msg>>24;
 
 	if(msg<0x80 || msg>0xff) return 0;
 
