@@ -624,48 +624,46 @@ void
 init (void)
 {
     char * optionfile;
-    char * home = getenv("HOME");
+    char * home;
     char line[256];
-    FILE * optfh;
+    FILE * optfh = NULL;
 
     NewList(&projects);
     defaultprj = project = initproject ("default");
     AddTail(&projects, project);
 
-    if ((optionfile = getenv ("MMAKE_CONFIG")))
-    {
-	optionfile = strdup (optionfile);
-    }
-    else
-    {
-	optionfile = xmalloc (strlen(home)+sizeof("/.mmake.config")+1);
-	sprintf (optionfile, "%s/.mmake.config", home);
-    }
 
-    optfh = fopen (optionfile, "r");
+    /* Try "$MMAKE_CONFIG" */
+    if (optionfile = getenv ("MMAKE_CONFIG"))
+	optfh = fopen (optionfile, "r");
 
+    /* Try "$HOME/.mmake.config" */
     if (!optfh)
     {
-	free (optionfile);
-	optionfile = strdup (".mmake.config");
-
-	optfh = fopen (optionfile, "r");
+	if (home = getenv("HOME"))
+	{
+		optionfile = xmalloc (strlen(home) + sizeof("/.mmake.config") + 1);
+		sprintf (optionfile, "%s/.mmake.config", home);
+		optfh = fopen (optionfile, "r");
+		free (optionfile);
+    	}
     }
 
+    /* Try with $CWD/.mmake.config" */
     if (!optfh)
-    {
-	free (optionfile);
-	optionfile = strdup ("mmake.config");
+	optfh = fopen (".mmake.config", "r");
 
-	optfh = fopen (optionfile, "r");
-    }
+    /* Try with "$CWD/mmake.config */
+    if (!optfh)
+	optfh = fopen ("mmake.config", "r");
 
+    /* Give up */
     if (!optfh)
     {
 	fprintf (stderr,
 	    "Please set the HOME or MMAKE_CONFIG env var (with setenv or export)\n"
 	);
-	error ("Opening %s for reading", optionfile);
+	error ("Opening mmake.config for reading");
 	exit (10);
     }
 
@@ -782,7 +780,6 @@ printf ("name=%s\n", name);
     }
 
     fclose (optfh);
-    free (optionfile);
 
     if (debug)
     {
