@@ -1,9 +1,19 @@
 \section{One for all and all for one - CVS}
 
-\label{CVS}CVS is a software to maintain a database which contains the
-sources of a project one works on. The software offers a list of commands
-to merge the most recent version of the project with the local sources and
-to publish changes one has made over the Internet.
+\label{CVS}CVS is a revision tool. It will maintain a database of the
+sources of a project and of the changes made to these sources. It will
+also merge any changes you make to the sources with the database. 
+
+CVS works with a server, called the repository (the main database), and
+clients, called the 'working directory', 'collection of sources' or
+'private source directory'. Both the repository and the working
+directories can be on the same machine. AROS, however, uses a repository
+that is accessible over the internet, so that people all over the world
+can help make AROS.
+
+CVS offers a list of commands to merge the most recent version of the 
+project with the local sources and to publish changes one has made over
+the Internet.
 
 \begin{new}{15.9.1998}
 \subsection{CVS on Un*x}
@@ -12,14 +22,16 @@ to publish changes one has made over the Internet.
 If you have Linux or any other Un*x, then all you need is
 CVS 1.9 or better.
 \begin{new}{15.9.1998}
-Note that versions of CVS between 1.9.16 and 1.10 don't work because the login protocal
+Note that versions of CVS between 1.9.16 and 1.10 don't work because the 
+login protocol
 has changed. Versions after (and including) 1.10 work again.
 \end{new}
-If it's not already on your system (type \shell{cvs} to find out), fetch
-if from one of the many GNU mirrors and install it in your \filename{$HOME}.
 
-If you want to have access to the database,
-then get the
+If it's not already on your system (type \shell{cvs} to find out), fetch
+CVS from one of the many GNU mirrors and install it in your
+\filename{$HOME}.
+
+If you want to have access to the database, then get the
 AROS developer archive from the AmiNET and compile \filename{crypt.c} (just
 say \shell{make crypt}
 \begin{new}{15.9.1998}
@@ -35,13 +47,13 @@ to encode it, like this:
 Encrypting my_password: cbEVHg0j9uNRs
 \end{example}
 
-Now skip the next section and read on in "How get access to the AROS CVS
-server".
+Now skip the next section and read on in "How to get access to the AROS
+CVS server".
 
 \begin{new}{7.10.1997}
 \subsection{CVS on Amiga}
 
-First, you have to get the CVS from ADE, install it. Then create a password
+First, you have to get CVS from ADE and install it. Then create a password
 as follows:
 
 Get the demo for AmiTCP 4.0 (\filename{AmiTCP-demo-40.lha}
@@ -135,7 +147,7 @@ This should ask you for your password. Type it in and if there is no error
 displayed, you are connected. If there is an error, try to omit the
 \shell{pserver}. If this still doesn't work, double check for
 typos and if you really, really, really can't find anything, then you
-got my email.
+can send me an e-mail.
 
 \begin{emph}
 It seems that the login command for CVS has changed. Version of CVS
@@ -184,7 +196,7 @@ Use the CVS checkout command for this:
 \end{example}
 
 This will create a
-directory AROS and populate it with all sources.
+directory called AROS and populate it with all sources.
 
 \subsection{How to update the sources}
 
@@ -198,8 +210,8 @@ CVS update command. Change to the AROS directory and do this:
 This should merge any changes that other users have made into your
 sources and create all new directories and files. If you
 and someone else has changed the same file, then CVS will try to merge
-the changes. That is, if he changed the first part and you the end of the
-file, CVS will do all the work for you. If there are changes which CVS
+the changes. That is, if (s)he changed the first part and you the end of
+the file, CVS will do all the work for you. If there are changes which CVS
 can't resolve (eg. you said |x--;| and the other one |x=x-1;|), then
 CVS will put \bold{both} versions in the file. Search for \shell{<<<<}
 to find such problems.
@@ -257,7 +269,7 @@ construction and tasks which are finished.
 
 \subsection{How does it work ?}
 
-Just send an EMail to
+Just send an e-mail to
 
 \begin{example}
 aros@aros.fh-konstanz.de
@@ -270,15 +282,15 @@ help
 \end{example}
 
 It will list all commands that jobserv currently understands. Note that
-this is an automated service so the subject must match. jobserv ignores all
-lines in an email that it doesn't understand and stops reading at the first
-\shell{end} or \shell{--} on a line of its own. jobserv will answer your EMails telling
-you what it did, what commands it did understand, which it did execute and
-which not and if not, why not. jobserv will also remember your EMail so
-others can see who added/requested/did which job - So don't worry you won't
-be credited for your work.
+this is an automated service so the subject must match.  jobserv ignores
+all lines in an email that it does not understand and stops reading at the
+first \shell{end} or \shell{--} on a line of its own.  jobserv will answer
+your e-mails telling you what it did, what commands it did understand,
+which it did execute and which not and if not, why not.  jobserv will also
+remember your e-mail so others can see who added/requested/did which job -
+So don't worry about not getting credit for your work.
 
-There is now a preliminary jobserver WWW interface:
+There is now a preliminary WWW interface for the jobserver:
 
 \begin{itemize}
 \item \lref{Show free jobs}{jobs-free}
@@ -306,8 +318,9 @@ add exec00001 Write AddHead
 	    already a job with the same id).
 
 \item{req <id>} Allocate a task. This task will now be allocated by you. Your
-	    EMail will be stored with it so everyone can see who is working
-	    on that job and query you if you take too long or whatever.
+	    e-mail address will be stored with it so everyone can see who
+            is working on that job and query you if you take too long or
+            whatever.
 
 \item{done <id>} After you requested the job and finished it, you must tell
 	    jobserv that you're through.
@@ -315,9 +328,9 @@ add exec00001 Write AddHead
 \item{show [free] [work] [done] [byme]} The most important command. It tells
 	    jobserv that you want to know what jobs are available and the
 	    like. All parameters are optional. "byme" is a flag which
-	    restricts the answer to jobs which match your EMail. The other
-	    flags are additive and restrict the reply to jobs which are
-	    still open, currently in progress or finished. So to see
+	    restricts the answer to jobs which match your e-mail. The
+            other flags are additive and restrict the reply to jobs which 
+            are still open, currently in progress or finished. So to see
 	    the jobs which were added and finished by you, use
 
 \begin{example}
