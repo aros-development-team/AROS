@@ -115,6 +115,12 @@ struct MUI_ListData
     /* Render optimization */
     int update; /* 1 - update everything, 2 - redraw entry at update_pos */
     int update_pos;
+
+    /* double click */
+    ULONG last_secs;
+    ULONG last_mics;
+    ULONG last_active;
+    ULONG doubleclick;
 };
 
 #define MOUSE_CLICK_ENTRY 1 /* on entry clicked */ 
@@ -639,6 +645,10 @@ static IPTR List_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 			set(obj, MUIA_List_VertProp_Entries, data->entries_num);
 		    }
 		    break;
+
+	    case    MUIA_Listview_DoubleClick:
+		    data->doubleclick = tag->ti_Data;
+		    break;
     	}
     }
 
@@ -664,6 +674,8 @@ static ULONG List_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_List_VertProp_Entries: STORE = STORE = data->vertprop_entries; return 1;
 	case MUIA_List_VertProp_Visible: STORE = data->vertprop_visible; return 1;
 	case MUIA_List_VertProp_First: STORE = data->vertprop_first; return 1;
+
+	case MUIA_Listview_DoubleClick: STORE = data->doubleclick; return 1;
     }
 
     if (DoSuperMethodA(cl, obj, (Msg) msg)) return 1;
@@ -884,7 +896,20 @@ static ULONG List_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 			    /* Now check if it was clicked on a title or on the entries */
 			    if (eclicky >= 0 && eclicky < data->entries_visible * data->entry_maxheight)
 			    {
-				List_MakeActive(cl, obj, mx, my);
+				List_MakeActive(cl, obj, mx, my); /* sets data->entries_active */
+
+				if (data->last_active == data->entries_active && DoubleClick(data->last_secs, data->last_mics, msg->imsg->Seconds, msg->imsg->Micros))
+				{
+				    set(obj,MUIA_Listview_DoubleClick, TRUE);
+				    nnset(obj,MUIA_Listview_DoubleClick, FALSE);
+				    data->last_active = -1;
+				    data->last_secs = data->last_mics = 0;
+				} else
+				{
+				    data->last_active = data->entries_active;
+				    data->last_secs = msg->imsg->Seconds;
+				    data->last_mics = msg->imsg->Micros;
+				}
 			    }
 
 			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, &data->ehn);

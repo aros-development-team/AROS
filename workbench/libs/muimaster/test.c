@@ -219,6 +219,7 @@ void main(void)
     Object *objects_button;
     Object *about_item, *quit_item;
     Object *context_menu;
+    Object *popobject, *listview;
 
     static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit",NULL};
 
@@ -299,10 +300,10 @@ void main(void)
 
     	    WindowContents, VGroup,
     	    	Child, TextObject, MUIA_Background, "2:cfffffff,cfffffff,10000000", TextFrame, MUIA_Text_Contents, "\33cHello World!!\nThis is a text object\n\33lLeft \33bbold\33n\n\33rRight",End,
-    	    	Child, PopobjectObject,
+    	    	Child, popobject = PopobjectObject,
     	    	    MUIA_Popstring_String, MUI_MakeObject(MUIO_String, NULL, 200),
     	    	    MUIA_Popstring_Button, PopButton(MUII_PopUp),
-    	    	    MUIA_Popobject_Object, ListviewObject,
+    	    	    MUIA_Popobject_Object, listview = ListviewObject,
 			MUIA_Listview_List, ListObject,
 			    InputListFrame,
 			    MUIA_List_DisplayHook, &hook_display,
@@ -506,6 +507,8 @@ End,
 
 	DoMethod(quit_item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 	DoMethod(about_item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard, about_function);
+
+	DoMethod(listview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE, popobject, 2, MUIM_Popstring_Close, TRUE);
 
 	set(wnd,MUIA_Window_Open,TRUE);
 
