@@ -438,9 +438,9 @@ BOOL retval=FALSE;
 					GetPartitionTableAttrs(ph, tags);
 					if ((type == PHPTT_MBR) || (type == PHPTT_RDB))
 					{
-						tags[0].ti_Tag = PTT_DOSENVEC;
+						tags[0].ti_Tag = PT_DOSENVEC;
 						tags[0].ti_Data = (STACKIPTR)de;
-						GetPartitionTableAttrs(ph, tags);
+						GetPartitionAttrs(ph, tags);
 						retval = TRUE;
 					}
 					else
