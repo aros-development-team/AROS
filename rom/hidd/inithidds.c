@@ -21,14 +21,14 @@
 #include <proto/dos.h>
 #include <oop/oop.h>
 
-#include "graphics_private.h"
+#include "../graphics/graphics_private.h"
 
 #ifdef _AROS
 #include <aros/asmcall.h>
 #endif /* _AROS */
 
-#define SDEBUG 0
-#define DEBUG 0
+#define SDEBUG 1
+#define DEBUG 1
 #include <aros/debug.h>
 
 static const UBYTE name[];
@@ -88,14 +88,18 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, InitHIDDs),
     struct initbase stack_b, *base = &stack_b;
     BOOL success = FALSE;
     
+    EnterFunc(bug("InitHIDDS::Init()\n"));
+    
     base->sysbase = SysBase;
     
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
     if (DOSBase)
     {
+    	D(bug("Dos opened\n"));
         OOPBase = OpenLibrary(AROSOOP_NAME, 0);
 	if (OOPBase)
 	{
+    	    D(bug("OOP opened\n"));
 	    if (init_hidds(base))
 	    {
 		success = TRUE;
@@ -106,7 +110,7 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, InitHIDDs),
     }
     
 
-    return success;
+    ReturnBool("InitHIDDs::Init", success);
 }
 
 #define SysBase (base->sysbase)
@@ -123,7 +127,7 @@ const struct hiddprefs
 }
 hprefs[] =
 {
-    { "S:gfxhidd.prefs", init_gfx },
+    { "Sys:s/gfxhidd.prefs", init_gfx },
     { NULL, 0 }
 }; 
 
@@ -134,11 +138,15 @@ static BOOL init_hidds(struct initbase *base)
     struct hiddprefs *hp;
     BOOL success = TRUE;
     
-    for (hp = hprefs; hprefs->file && success; hp ++)
+    EnterFunc(bug("init_hidds()\n"));
+    
+    for (hp = (struct hiddprefs *)hprefs; hp->file && success; hp ++)
     {
     
     	/* Read the prefs file */
 	BPTR fh;
+	
+	D(bug("Trying to open %s\n", hp->file));
 	fh = Open(hp->file, MODE_OLDFILE);
 	if (!fh)
 	{
@@ -146,8 +154,11 @@ static BOOL init_hidds(struct initbase *base)
 	}
 	else
 	{
+	    
 	    UBYTE hiddfile[BUFSIZE];
 	    UBYTE *append;
+	    
+	    D(bug("Opened file %s\n", hp->file));
 	    
 	    strcpy(hiddfile, HIDDPATH);
 	    
@@ -163,18 +174,23 @@ static BOOL init_hidds(struct initbase *base)
 	    {
 	    	struct Library *HiddBase;
 	    	/* Open the HIDD */
+		D(bug("Trying to open HIDD %s\n", hiddfile));
 		HiddBase = OpenLibrary(hiddfile, 0);
 		if (HiddBase)
 		{
 		    success = hp->init(HiddBase, base);
 		    
 		}
+		else
+		{
+		    success = FALSE;
+		}
 	    }
 	    Close(fh);
 	}
 	
     }
-    return success;
+    ReturnBool("init_hidds", success);
 }
 
 /*****************
@@ -186,25 +202,30 @@ static BOOL init_gfx(struct Library *hiddbase, struct initbase *base)
     struct GfxBase *GfxBase;
     BOOL success = FALSE;
     
+    EnterFunc(bug("init_gfx(hiddbase=%p)\n", hiddbase));
+    
     GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
     if (GfxBase)
     {
+    	D(bug("gfx.library opened\n"));
 
 	/*  Call private gfx.library call to init the HIDD.
 	    Gfx library is responsable for closing the HIDD
 	    library (although it will probably not be neccesary).
 	*/
 
+    	D(bug("calling private gfx InitGfxHidd()\n"));
 	if (InitGfxHidd(hiddbase))
 	{
+	    D(bug("success\n"));
 	    success = TRUE;
 	}
 	
 	CloseLibrary((struct Library *)GfxBase);
 	
     }
-    return success;
+    ReturnBool ("InitGfxHidd", success);
 }	    
 		    
 
-const char InitHIDDs_end = NULL;
+const char InitHIDDs_End = 0;
