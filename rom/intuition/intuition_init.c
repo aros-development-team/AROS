@@ -135,6 +135,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
     NEWLIST(&GetPrivIBase(LIBBASE)->PubScreenList);
     InitSemaphore(&GetPrivIBase(LIBBASE)->PubScrListLock);
 
+    InitSemaphore(&GetPrivIBase(LIBBASE)->GadgetLock);
 
     /* Add all other classes */
     InitImageClass (LIBBASE); /* After ROOTCLASS */
