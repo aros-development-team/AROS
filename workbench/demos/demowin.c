@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/09/11 16:50:25  digulla
+    Use correct way to access "entry"
+
     Revision 1.8  1996/08/30 17:03:11  digulla
     Uses kprintf() now. Makes life a lot easier.
 
@@ -440,7 +443,11 @@ static LONG tinymain(void)
 
     bug("Welcome to the window demo of AROS\n");
 
-    D(bug("main=%p Refresh=%p entry=%p\n", tinymain, Refresh, _entry));
+    D(bug("main=%p Refresh=%p entry=%p\n"
+	, tinymain
+	, Refresh
+	, __AROS_SLIB_ENTRY(entry,)
+    ));
 
     nw.LeftEdge = 100;
     nw.TopEdge = 100;
