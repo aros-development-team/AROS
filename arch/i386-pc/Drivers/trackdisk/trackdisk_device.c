@@ -107,7 +107,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
     struct TDU     *unit;
     struct ExpansionBase *ExpansionBase;
     struct DeviceNode *devnode;
-    ULONG *pp;
+    IPTR *pp;
 
     /* Try to get memory for structure */
     unit = AllocMem(sizeof(struct TDU), MEMF_PUBLIC | MEMF_CLEAR);
@@ -154,12 +154,12 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 	D(bug("TD: Adding bootnode\n"));
 	if (ExpansionBase)
 	{
-	    pp = (ULONG *)AllocMem(24*4,MEMF_PUBLIC|MEMF_CLEAR);
+	    pp = (IPTR *)AllocMem(sizeof(struct DosEnvec)+sizeof(IPTR)*4,MEMF_PUBLIC|MEMF_CLEAR);
 
 	    if (pp)
 	    {
-		pp[0] = (ULONG)"afs.handler";
-		pp[1] = (ULONG)name;
+		pp[0] = (IPTR)"afs.handler";
+		pp[1] = (IPTR)name;
 		pp[2] = num;
 		pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
 		pp[DE_SIZEBLOCK + 4] = 128;
