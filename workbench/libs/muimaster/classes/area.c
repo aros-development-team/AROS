@@ -40,7 +40,7 @@ static struct TextFont *zune_font_get(Object *obj, LONG preset)
 
     if ((preset <= MUIV_Font_Inherit) && (preset >= MUIV_Font_NegCount))
     {
-    	char *name;
+    	CONST_STRPTR name;
 	if (preset > 0) return NULL;
 
 	/* font already loaded, just return it */
@@ -241,7 +241,7 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
     /* Initial local instance data */
     data = INST_DATA(cl, obj);
 
-    data->mad_Flags = MADF_FILLAREA | MADF_SHOWME | MADF_SHOWSELSTATE;
+    data->mad_Flags = MADF_FILLAREA | MADF_SHOWME | MADF_SHOWSELSTATE | MADF_DROPABLE;
     data->mad_HorizWeight = data->mad_VertWeight = 100;
     data->mad_InputMode = MUIV_InputMode_None;
 
@@ -1763,7 +1763,7 @@ static IPTR Area_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP_D
 /**************************************************************************
  MUIM_DragBegin
 **************************************************************************/
-ULONG Area_DragBegin(struct IClass *cl, Object *obj, struct MUIP_DragBegin *msg)
+static ULONG Area_DragBegin(struct IClass *cl, Object *obj, struct MUIP_DragBegin *msg)
 {
     //struct MUI_AreaData *data = INST_DATA(cl, obj);
     _zune_focus_new(obj, 1);
@@ -1773,7 +1773,7 @@ ULONG Area_DragBegin(struct IClass *cl, Object *obj, struct MUIP_DragBegin *msg)
 /**************************************************************************
  MUIM_DragFinish
 **************************************************************************/
-ULONG Area_DragFinish(struct IClass *cl, Object *obj, struct MUIP_DragFinish *msg)
+static ULONG Area_DragFinish(struct IClass *cl, Object *obj, struct MUIP_DragFinish *msg)
 {
     //struct MUI_AreaData *data = INST_DATA(cl, obj);
     _zune_focus_destroy(obj);
