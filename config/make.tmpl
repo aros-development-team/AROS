@@ -678,8 +678,8 @@ endif
         $(%(mmake)-install_command)
 
 $(TOP)/$(CURDIR)/.files-touched:
-	-find %(srcdir) -name \*.in -or -name \*.am -or -name \*.m4 -print0 | \
-	    xargs -0 $(TOUCH) -r %(srcdir)/configure && $(TOUCH) $@
+	find %(srcdir) -name \*.in -or -name \*.am -or -name \*.m4 -exec \
+	    $(TOUCH) -r %(srcdir)/configure '{}' \; && $(TOUCH) $@
 
 #MM
 %(mmake)-uninstall :
@@ -691,22 +691,24 @@ endif
 
 ifeq (%(host),yes)
 $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+	$(RM) $@
 	%mkdirs_q $(GENDIR)/$(CURDIR)
-	cd $(GENDIR)/$(CURDIR); \
-	    $(RM) config.cache; \
-	    CC="$(HOST_CC)" \
-	        %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
-	        $(%(mmake)-includedir) %(extraoptions) && \
-	        $(TOUCH) $@
+	cd $(GENDIR)/$(CURDIR) && \
+	find . -name config.cache -exec $(RM) '{}' \; && \
+	CC="$(HOST_CC)" \
+	    %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
+	    $(%(mmake)-includedir) %(extraoptions) && \
+	    $(TOUCH) $@
 else
 $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+	$(RM) $@
 	%mkdirs_q $(GENDIR)/$(CURDIR)
-	cd $(GENDIR)/$(CURDIR); \
-	    $(RM) config.cache; \
-	    CC="$(TARGET_CC) -nix $(%(mmake)-s_flag)" CC_FOR_BUILD="$(HOST_CC)" \
-	        %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
-	        $(%(mmake)-includedir) %(extraoptions) --host=$(AROS_TARGET_CPU)-aros && \
-	        $(TOUCH) $@
+	cd $(GENDIR)/$(CURDIR) && \
+	find . -name config.cache -exec $(RM) '{}' \; && \
+	CC="$(TARGET_CC) -nix $(%(mmake)-s_flag)" CC_FOR_BUILD="$(HOST_CC)" \
+	    %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
+	    $(%(mmake)-includedir) %(extraoptions) --host=$(AROS_TARGET_CPU)-aros && \
+	    $(TOUCH) $@
 endif
 	
 #MM
