@@ -3,50 +3,31 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-LIBNAME  := mathtrans
-ULIBNAME := MathTrans
-
-# BEGIN_DESC{makefile}
-# This is the makefile for mathtrans.library. Use it if you want to compile
-# only this part of AROS.
-# END_DESC{makefile}
-
-# BEGIN_DESC{localmakevar}
-# \item{FILES} This is a list of all files (without the .c) which
-#	contain internal functions of the library (eg. libinit(),
-#	libopen(), libexpunge() and the function table).
-#
-# \item{FUNCTIONS} This is a list of all files (without the .c)
-#	with public functions of the library. The makefile will
-#	strip all files from this list for which a special
-#	version for this CPU does exist.
-#
-# END_DESC{localmakevar}
-
-FILES = functable intern_spisodd intern_spld
-
-FUNCTIONS = \
-	spsqrt \
+LIBNAME		:= mathtrans
+ULIBNAME	:= MathTrans
+FILES		:= intern_spisodd intern_spld
+FUNCTIONS	:= \
 	spacos \
 	spasin \
+	spatan \
+	spcos \
+	spcosh \
+	spexp \
 	spfieee \
-	sptieee \
 	splog \
 	splog10 \
-	spexp \
 	sppow \
-	spsinh \
-	spcosh \
-	sptanh \
-	spsincos \
-	spatan \
 	spsin \
-	spcos \
-	sptan
+	spsincos \
+	spsinh \
+	spsqrt \
+	sptan \
+	sptanh \
+	sptieee
 
 %define_libs prelibs=-l$(LIBNAME)
 
-%genlib_old
+%genlib
 
 #MM workbench-libs-mathtrans : setup includes linklibs
 workbench-libs-mathtrans : show-flags $(SLIB)
