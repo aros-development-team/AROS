@@ -44,20 +44,28 @@ struct MXBase_intern;
 
 /* MutualExcludeClass definitions */
 struct MXData {
+    /* Important pointers */
     struct DrawInfo *dri;
+    struct TextAttr *tattr;
     struct Image *mximage;
-    ULONG active, newactive;
+
+    /* Information about ticks */
+    ULONG active, newactive; /* The active tick and the tick to be activated */
+
+    /* Information about labels */
     STRPTR *labels;
-    ULONG numlabels;
+    ULONG numlabels; /* The number of labels */
+    LONG labelplace, ticklabelplace;
+    UWORD fontheight;
     UWORD spacing;
-    LONG labelplace;
 };
 
 
 /* Prototypes */
 void drawdisabledpattern(struct MXBase_intern *AROSMutualExcludeBase, struct RastPort *rport, UWORD pen, WORD left, WORD top, UWORD width, UWORD height);
 BOOL renderlabel(struct MXBase_intern *AROSMutualExcludeBase,
-		 struct Gadget *gad, struct RastPort *rport, LONG labelplace);
+		 struct Gadget *gad, struct RastPort *rport,
+                 LONG labelplace, LONG ticklabelplace);
 
 
 

@@ -39,6 +39,9 @@ void mx_setnew(Class * cl, Object * obj, struct opSet *msg)
 	case GA_DrawInfo:
 	    data->dri = (struct DrawInfo *) tag->ti_Data;
 	    break;
+        case GA_TextAttr:
+            data->tattr = (struct TextAttr *) tag->ti_Data;
+            break;
         case GA_LabelPlace:
             data->labelplace = (LONG) tag->ti_Data;
             break;
@@ -54,6 +57,9 @@ void mx_setnew(Class * cl, Object * obj, struct opSet *msg)
 	case AROSMX_Spacing:
 	    data->spacing = tag->ti_Data;
 	    break;
+        case AROSMX_TickLabelPlace:
+            data->ticklabelplace = (LONG) tag->ti_Data;
+            break;
 	}
     }
 }
@@ -83,14 +89,35 @@ Object *mx_new(Class * cl, Class * rootcl, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
     data->dri = NULL;
+    data->tattr = NULL;
     data->active = 0;
     data->labels = NULL;
     data->spacing = 1;
+    data->labelplace = GV_LabelPlace_Above;
+    data->ticklabelplace = GV_LabelPlace_Right;
     mx_setnew(cl, obj, msg);
 
+    /* Calculate fontheight */
+    if (data->tattr)
+        data->fontheight = data->tattr->ta_YSize;
+    else if ((G(obj)->Flags & GFLG_LABELITEXT) && (G(obj)->GadgetText))
+        data->fontheight = G(obj)->GadgetText->ITextFont->ta_YSize;
+    else
+        data->fontheight = G(obj)->Height;
+
+    /* Calculate gadget size */
+    if (G(obj)->Width == 0)
+        G(obj)->Width = MX_WIDTH;
+    G(obj)->Height = (data->fontheight + data->spacing) * data->numlabels -
+                     data->spacing;
+
+    if (data->tattr)
+        G(obj)->Height = data->numlabels * (data->tattr->ta_YSize + data->spacing);
+    else if ((G(obj)->Flags & GFLG_LABELITEXT) && (G(obj)->GadgetText))
+        G(obj)->Height = data->numlabels * (G(obj)->GadgetText->ITextFont->ta_YSize + data->spacing);
+
     tags[0].ti_Data = G(obj)->Width;
-    if (data->numlabels)
-	tags[1].ti_Data = (G(obj)->Height - data->spacing) / data->numlabels - data->spacing;
+    tags[1].ti_Data = GetTagData(AROSMX_TickHeight, MX_HEIGHT, msg->ops_AttrList);
     tags[2].ti_Data = (IPTR) data->dri;
     data->mximage = (struct Image *) NewObjectA(NULL, SYSICLASS, tags);
 
@@ -145,21 +172,21 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
 {
     struct MXData *data = INST_DATA(cl, obj);
     WORD ypos = G(obj)->TopEdge;
-    int y, blobheight;
-
-    blobheight = (G(obj)->Height - data->spacing * (data->numlabels - 1)) / data->numlabels;
+    int y;
 
     if (msg->gpr_Redraw == GREDRAW_UPDATE) {
-        blobheight += data->spacing;
+        /* Only redraw the current and the last tick activated */
         DrawImageState(msg->gpr_RPort, data->mximage,
-                       G(obj)->LeftEdge, ypos + data->active * blobheight,
+                       G(obj)->LeftEdge, ypos + data->active * (data->fontheight + data->spacing),
                        IDS_NORMAL, data->dri);
         DrawImageState(msg->gpr_RPort, data->mximage,
-                       G(obj)->LeftEdge, ypos + data->newactive * blobheight,
+                       G(obj)->LeftEdge, ypos + data->newactive * (data->fontheight + data->spacing),
                        IDS_SELECTED, data->dri);
     } else {
+        /* Full redraw */
         STRPTR *labels;
 
+        /* Draw ticks */
         for (y=0; y<data->numlabels; y++)
         {
             ULONG state;
@@ -171,31 +198,33 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
             DrawImageState(msg->gpr_RPort, data->mximage,
                            G(obj)->LeftEdge, ypos,
                            state, data->dri);
-            ypos += data->spacing + blobheight;
-
+            ypos += data->fontheight + data->spacing;
         }
 
         /* Draw main label */
         renderlabel(AROSMutualExcludeBase,
-                    G(obj), msg->gpr_RPort, data->labelplace);
+                    G(obj), msg->gpr_RPort,
+                    data->labelplace, data->ticklabelplace);
 
         /* Draw labels */
         SetABPenDrMd(msg->gpr_RPort,
                      data->dri->dri_Pens[TEXTPEN],
                      data->dri->dri_Pens[BACKGROUNDPEN],
                      JAM1);
-        ypos = G(obj)->TopEdge + (blobheight - msg->gpr_RPort->Font->tf_YSize) / 2 + msg->gpr_RPort->Font->tf_Baseline;
+        ypos = G(obj)->TopEdge + msg->gpr_RPort->Font->tf_Baseline;
         for (labels=data->labels; *labels; labels++) {
             Move(msg->gpr_RPort, G(obj)->LeftEdge + G(obj)->Width + 5, ypos);
             Text(msg->gpr_RPort, *labels, strlen(*labels));
-            ypos += data->spacing + blobheight;
+            ypos += data->fontheight + data->spacing;
         }
     }
 
-    drawdisabledpattern(AROSMutualExcludeBase, msg->gpr_RPort,
-                        data->dri->dri_Pens[SHADOWPEN],
-                        G(obj)->LeftEdge, G(obj)->TopEdge,
-                        G(obj)->Width, G(obj)->Height);
+    /* Draw disabled pattern */
+    if (G(obj)->Flags & GFLG_DISABLED)
+        drawdisabledpattern(AROSMutualExcludeBase, msg->gpr_RPort,
+                            data->dri->dri_Pens[SHADOWPEN],
+                            G(obj)->LeftEdge, G(obj)->TopEdge,
+                            G(obj)->Width-1, G(obj)->Height-1);
 
     return TRUE;
 }
@@ -210,7 +239,7 @@ IPTR mx_goactive(Class * cl, Object * obj, struct gpInput * msg)
         (msg->gpi_Mouse.X < G(obj)->LeftEdge + G(obj)->Width) &&
         (msg->gpi_Mouse.Y >= G(obj)->TopEdge) &&
         (msg->gpi_Mouse.Y < G(obj)->TopEdge + G(obj)->Height)) {
-        int y, blobheight = (G(obj)->Height - data->spacing * (data->numlabels -1)) / data->numlabels;
+        int y, blobheight = data->spacing + data->fontheight;
 
         retval = GMR_NOREUSE;
 

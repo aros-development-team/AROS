@@ -69,7 +69,8 @@ void closefont(struct MXBase_intern *AROSMutualExcludeBase,
 }
 
 BOOL renderlabel(struct MXBase_intern *AROSMutualExcludeBase,
-		 struct Gadget *gad, struct RastPort *rport, LONG labelplace)
+		 struct Gadget *gad, struct RastPort *rport,
+                 LONG labelplace, LONG ticklabelplace)
 {
     struct TextFont *font, *oldfont;
     struct TextExtent te;
@@ -105,35 +106,46 @@ BOOL renderlabel(struct MXBase_intern *AROSMutualExcludeBase,
             width  = ((struct Image *)gad->GadgetText)->Width;
             height = ((struct Image *)gad->GadgetText)->Height;
         }
-        if ((labelplace & GV_LabelPlace_Right))
+
+        if (labelplace == GV_LabelPlace_Right)
         {
             x = gad->LeftEdge + gad->Width + 5;
-            y = gad->TopEdge + ((gad->Height - height) / 2) + 1;
-        } else if ((labelplace & GV_LabelPlace_Above))
+            y = gad->TopEdge + (gad->Height - height) / 2 + 1;
+        } else if (labelplace == GV_LabelPlace_Above)
         {
-            x = gad->LeftEdge - ((width - gad->Width) / 2);
+            if (ticklabelplace == GV_LabelPlace_Left)
+                x = gad->LeftEdge - width - 1;
+            else if (ticklabelplace == GV_LabelPlace_Right)
+                x = gad->LeftEdge;
+            else
+                x = gad->LeftEdge - (width - gad->Width) / 2;
             y = gad->TopEdge - height - 2;
-        } else if ((labelplace & GV_LabelPlace_Below))
+        } else if (labelplace == GV_LabelPlace_Below)
         {
-            x = gad->LeftEdge - ((width - gad->Width) / 2);
+            if (ticklabelplace == GV_LabelPlace_Left)
+                x = gad->LeftEdge - width - 1;
+            else if (ticklabelplace == GV_LabelPlace_Right)
+                x = gad->LeftEdge;
+            else
+                x = gad->LeftEdge - (width - gad->Width) / 2;
             y = gad->TopEdge + gad->Height + 3;
-        } else if ((labelplace & GV_LabelPlace_In))
+        } else if (labelplace == GV_LabelPlace_In)
         {
-            x = gad->LeftEdge - ((width - gad->Width) / 2);
-            y = gad->TopEdge + ((gad->Height - height) / 2) + 1;
+            x = gad->LeftEdge - (width - gad->Width) / 2;
+            y = gad->TopEdge + (gad->Height - height) / 2 + 1;
         } else /* GV_LabelPlace_Left */
         {
             x = gad->LeftEdge - width - 4;
-            y = gad->TopEdge + ((gad->Height - height) / 2) + 1;
+            y = gad->TopEdge + (gad->Height - height) / 2 + 1;
         }
 
         y += rport->Font->tf_Baseline;
-        if ((gad->Flags & GFLG_LABELSTRING))
+        if (gad->Flags & GFLG_LABELSTRING)
         {
             SetABPenDrMd(rport, 1, 0, JAM1);
             Move(rport, x, y);
             Text(rport, text, len);
-        } else if ((gad->Flags & GFLG_LABELIMAGE))
+        } else if (gad->Flags & GFLG_LABELIMAGE)
             DrawImage(rport, (struct Image *)gad->GadgetText, x, y);
         else
         {
