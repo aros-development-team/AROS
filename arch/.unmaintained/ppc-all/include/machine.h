@@ -14,10 +14,10 @@
 #define AROS_BIG_ENDIAN 	   1 /* Big or little endian */
 #define AROS_SIZEOFULONG	   4 /* Size of an ULONG */
 #define AROS_WORDALIGN		   2 /* Alignment for WORD */
-#define AROS_LONGALIGN		   2 /* Alignment for LONG */
-#define AROS_PTRALIGN		   2 /* Alignment for PTR */
-#define AROS_IPTRALIGN		   2 /* Alignment for IPTR */
-#define AROS_DOUBLEALIGN	   2 /* Alignment for double */
+#define AROS_LONGALIGN		   4 /* Alignment for LONG */
+#define AROS_PTRALIGN		   4 /* Alignment for PTR */
+#define AROS_IPTRALIGN		   4 /* Alignment for IPTR */
+#define AROS_DOUBLEALIGN	   4 /* Alignment for double */
 #define AROS_WORSTALIGN 	   8 /* Worst case alignment */
 
 #define AROS_GET_SYSBASE	extern struct ExecBase   *SysBase;
@@ -29,7 +29,7 @@ register unsigned char * AROS_GET_SP asm("%sp");
 #endif
 
 /* ??? */
-#define SP_OFFSET 0
+#define SP_OFFSET 4
 
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the
@@ -79,12 +79,12 @@ struct JumpVec
     unsigned char vec[4];
 };
 /* Internal macros */
-#define __AROS_SET_VEC(v,a)             (*(ULONG*)(((ULONG)(v)->vec & 0x03FFFFFC))=(ULONG)(a))
-#define __AROS_GET_VEC(v)               ((APTR)(*(ULONG*)(((ULONG)(v)->vec) & 0x03FFFFFC)))
+#define __AROS_SET_VEC(v,a)             (*(ULONG*)(v)->vec=(ULONG)(a))
+#define __AROS_GET_VEC(v)               ((APTR)(*(ULONG*)(v)->vec))
 #endif
 /* Use these to acces a vector table */
 #define LIB_VECTSIZE			(sizeof (struct JumpVec))
-#define __AROS_GETJUMPVEC(lib,n)        (&((struct JumpVec *)lib)[-(n)])
+#define __AROS_GETJUMPVEC(lib,n)        ((struct JumpVec *)(((UBYTE *)lib)-(n*LIB_VECTSIZE)))
 #define __AROS_GETVECADDR(lib,n)        (__AROS_GET_VEC(__AROS_GETJUMPVEC(lib,n)))
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_SET_VEC(__AROS_GETJUMPVEC(lib,n),(APTR)(addr)))
 #define __AROS_INITVEC(lib,n)		__AROS_SETVECADDR(lib,n,_aros_not_implemented)
@@ -205,8 +205,8 @@ extern void _aros_not_implemented (char *);
 	"lwz    0,4(11)\n\t" \
 	"mtlr   0\n\t"       \
 	"mr     1,11\n\t"    \
-	: "=g"(_re), "=m"(*(APTR *)p)\
-	: "m"(_n), "g"(_n1), "g"(_n2), "g"(_n3)\
+	: "=r"(_re), "=m"(*(APTR *)p)\
+	: "m"(_n), "r"(_n1), "r"(_n2), "r"(_n3)\
 	: "cc", "memory", "0","11" );\
     (_t)_re;\
 })
