@@ -77,7 +77,7 @@ struct __MUIBuiltinClass {
 #endif
 /* END PRIV */
 
-#if !defined(NO_INLINE_STDARG) && !defined(__SASC)
+#if 0 && !defined(NO_INLINE_STDARG) && !defined(__SASC)
 
 #define MUIOBJMACRO_START(class)    \
 ({                                  \
