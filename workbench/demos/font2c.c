@@ -30,8 +30,8 @@ int main (int argc, char **argv)
 {
     UBYTE fontname[200];
     UBYTE outfilename[200];
-    UBYTE prestring_buf[200], *prestring;
-    UWORD ysize;
+    UBYTE prestring_buf[200], *prestring = NULL;
+    UWORD ysize = 0;
     
     
     STRPTR s;

@@ -182,9 +182,9 @@ int main(int argc, char ** argv)
 {
    UWORD c;
    LONG args[7];
-   char **filenames;
+   char **filenames = NULL;
    char curFilename[140];
-   BYTE playList; /*True if a playlist is being used, false otherwise*/
+   BYTE playList = FALSE; /*True if a playlist is being used, false otherwise*/
 
       /*Initialize the argument buffers to NULL*/
    for(c=0;c<7;c++)
@@ -399,7 +399,7 @@ LONG ilbmprops[] = { ID_ILBM,ID_CMAP,ID_ILBM,ID_BMHD,ID_ILBM,ID_CAMG,
 void ReadAndDisplay(char *filename,struct IFFHandle *iff)
 {
    int error;
-   UBYTE *bodyBuffer;   /*Pointer to buffer holding 'BODY' chunk info*/
+   UBYTE *bodyBuffer = NULL;   /*Pointer to buffer holding 'BODY' chunk info*/
    ULONG ViewModes;     /*Holds the viewmodes flags*/
    UWORD c;
    ButtonTypes button;
