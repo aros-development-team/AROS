@@ -14,13 +14,6 @@
 
 UBYTE version[] = "$VER: Font 0.14 (14.1.2002)";
 
-struct libInfo
-{
- APTR		lT_Library;
- STRPTR		lT_Name;
- ULONG		lT_Version;
-};
-
 struct Catalog *catalogPtr;
 extern struct RDArgs *readArgs;
 
@@ -55,19 +48,13 @@ void displayError(STRPTR errorMsg)
 void quitApp(STRPTR errorMsg, UBYTE errorCode)
 {
     UBYTE a;
-    extern struct libInfo libTable;	// init.c
     extern struct IFFHandle *iffHandle;	// handleiff.c
-    struct libInfo *tmpLibInfo = &libTable;
-    
+
     extern struct RDArgs *readArgs;
     if(errorMsg)
 	displayError(errorMsg);
 
-    if(LocaleBase)
-    {
-	CloseCatalog(catalogPtr); // Passing NULL is valid!
-	CloseLibrary((struct Library *)LocaleBase);
-    }
+   	CloseCatalog(catalogPtr); // Passing NULL is valid!
 
     if(appGUIData)
     {
@@ -113,17 +100,6 @@ void quitApp(STRPTR errorMsg, UBYTE errorCode)
 	if(fontPrefs[a])
 	    FreeMem(fontPrefs[a], sizeof(struct FontPrefs));
 
-    while(tmpLibInfo->lT_Name)
-    {
-	if((*(struct Library **)tmpLibInfo->lT_Library))
-	{
-	    CloseLibrary((*(struct Library **)tmpLibInfo->lT_Library));
-	    kprintf("Closed %s\n", tmpLibInfo->lT_Name);
-	}
-
-	tmpLibInfo++;
-    }
-
     exit(errorCode);
 }
 
@@ -131,16 +107,10 @@ int main(void)
 {
     extern struct AppGUIData *appGUIData; // init.c
 
-    if(!(LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 0L)))
-	printf("Warning: Can't open locale.library!"); // Non runtime critical error
-
     // NULL is not runtime critical but should be dealt with in a smarter fashion!
     // The default language (= built-in) language is english and doesn't need to be set (Introduced 0.13)
     if(!(catalogPtr = OpenCatalog(NULL, "Sys/fontprefs.catalog", OC_Version, REQ_CAT_VERSION, TAG_DONE)))
 	PrintFault(IoErr(), NULL); // If invalid catalog --> "unknown error"?
-
-    if(!(initLibs()))
-	quitApp(NULL, RETURN_FAIL);
 
     if(!(initPrefMem()))
 	quitApp(formatErrorMsg("fontPrefs"), RETURN_FAIL);
