@@ -213,7 +213,7 @@ srittau@aros.org
 "Filenote", "Rename" and "Protect" segfault. The buggy code seems to
 be somewhere in MatchFirst().
 
-BUG000031
+BUG000031 fixed
 mreckt@wurzelausix.CS.Uni-SB.DE
 "run" runs another program, but never returns.
 
@@ -289,7 +289,7 @@ the actual closing of the window, thus no race conditions occur.
 Downside is that it will slow down the inputhandler, but I think
 it is not a big problem.
 
-BUG000043
+BUG000043 fixed
 nlorentz@online.no
 fish/fiveinline hangs when trying to drag the window.
 It hangs inside the dragbar class when it tries to lock all layers.
