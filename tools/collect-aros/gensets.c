@@ -72,9 +72,8 @@ void emit_sets(setnode *setlist, FILE *out)
 
     while (setlist)
     {
-        i = 0;
-
         setnode *oldnode = setlist;
+        i = 0;
 
         do
         {
