@@ -93,6 +93,8 @@ struct Icon35
 struct IconPNG
 {
     APTR   handle;
+    UBYTE *filebuffer;
+    ULONG  filebuffersize;
     UBYTE *img1;
     UBYTE *img2;
     WORD   width;
@@ -128,7 +130,8 @@ struct IconBase
     struct MinList          iconlists[ICONLIST_HASHSIZE];
     
     APTR                    ib_MemoryPool;
-    
+    ULONG   	    	    ib_CRCTable[256];
+    BOOL    	    	    ib_CRCTableComputed;
     /* Default identify hook -----------------------------------------------*/
     struct Hook             ib_DefaultIdentifyHook;
     
@@ -170,6 +173,7 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook, void *stream,
 VOID FreeIcon35(struct NativeIcon *icon, struct IconBase *IconBase);
 
 BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase);
+BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase);
 VOID FreeIconPNG(struct DiskObject *dobj, struct IconBase *IconBase);
 
 
