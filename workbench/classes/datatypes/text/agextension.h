@@ -23,6 +23,6 @@ int HandleMouseLink(struct Text_Data *td, struct RastPort *rp,
 void TriggerWord(struct Text_Data *td, UBYTE *word);
 
 /* handle amigaguide specific trigger functions */
-void DT_AGTrigger(struct IClass *cl, Object *o, struct dtTrigger *msg);
+void Text__DTM_TRIGGER(struct IClass *cl, Object *o, struct dtTrigger *msg);
 
 #endif

@@ -1,15 +1,12 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := textclass libfunc support agextension
-FUNCS := obtainengine
+FILES := textclass support agextension
 
 #MM workbench-datatypes-text : includes linklibs
 
 USER_CFLAGS   := -DCOMPILE_DATATYPE -DMORPHOS_AG_EXTENSION
 
-%build_module_macro mmake=workbench-datatypes-text modname=text \
-  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
-  uselibs="amiga rom"
-
-%common
+%build_module mmake=workbench-datatypes-text \
+    modname=text modtype=datatype \
+    files=$(FILES) uselibs="amiga rom"

@@ -28,7 +28,6 @@
 #include <proto/utility.h>
 #include <proto/iffparse.h>
 #include <proto/layers.h>
-#include "text_intern.h"
 
 #ifndef __AROS__
 #include "libdefs.h"
