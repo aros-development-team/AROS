@@ -35,6 +35,10 @@ FUNCTIONS	:= \
 workbench-libs-gadtools : $(SLIB)
 	@$(NOP)
 
+#MM workbench-libs-gadtools-quick :
+workbench-libs-gadtools-quick : $(SLIB)
+	@$(NOP)
+
 #MM
 setup :
 	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
