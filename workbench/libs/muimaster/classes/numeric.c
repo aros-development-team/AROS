@@ -368,7 +368,15 @@ static ULONG  Numeric_ValueToScale(struct IClass *cl, Object * obj, struct MUIP_
     min = (data->flags & NUMERIC_REVERSE) ? msg->scalemax : msg->scalemin;
     max = (data->flags & NUMERIC_REVERSE) ? msg->scalemin : msg->scalemax;
 
-    val = min + ((data->value - data->min) * (max - min) +  (data->max - data->min)/2) / (data->max - data->min);
+    if (data->max != data->min)
+    {
+	val = min + ((data->value - data->min) * (max - min) +  (data->max - data->min)/2) / (data->max - data->min);
+    }
+    else
+    {
+	val = min;
+    }
+    
     val = CLAMP(val, min, max);
     return val;
 }
