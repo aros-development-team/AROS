@@ -67,12 +67,12 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 	    iofs.IOFS.io_Device  = fhin->fh_Device;
     	    iofs.IOFS.io_Unit    = fhin->fh_Unit;
 
-	    DosDoIO(&iofs.IOFS);
+	    DoIO(&iofs.IOFS);
 
 	    iofs.IOFS.io_Device  = fhout->fh_Device;
     	    iofs.IOFS.io_Unit    = fhout->fh_Unit;
 
-	    DosDoIO(&iofs.IOFS);
+	    DoIO(&iofs.IOFS);
         }
 
 	rc = RunCommand(ShellSeg, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT, argstr, argsize);
