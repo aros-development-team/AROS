@@ -926,10 +926,6 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
 
     signal = *msg->signal;
     
-    /* if user didn't handle ctrl-c himself, quit */
-    if (signal & SIGBREAKF_CTRL_C)
-	return MUIV_Application_ReturnID_Quit;
-
     /* process all pushed methods */
     while (application_do_pushed_method(data))
 	/* nothing */ ;
