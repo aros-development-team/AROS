@@ -173,18 +173,15 @@ AROS_LH0(BPTR, close, struct ListBase_intern *, LIBBASE, 2, BASENAME)
     /* I have one fewer opener. */
     if(!--LIBBASE->library.lib_OpenCnt)
     {
-	if (UtilityBase)
-	    CloseLibrary(UtilityBase);
-
-	if (IntuitionBase)
-	    CloseLibrary((struct Library *)IntuitionBase);
-	    
 	if (LIBBASE->classptr)
 	{
 	    RemoveClass(LIBBASE->classptr);
 	    FreeClass(LIBBASE->classptr);
 	}
 
+	CloseLibrary(UtilityBase);
+	CloseLibrary((struct Library *)IntuitionBase);
+	    
 	/* Delayed expunge pending? */
 	if(LIBBASE->library.lib_Flags&LIBF_DELEXP)
 	    /* Then expunge the library */
