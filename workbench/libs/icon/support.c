@@ -5,7 +5,6 @@
     Miscellaneous support functions.
 */
 
-#include <proto/dos.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -39,7 +38,7 @@ BPTR __OpenIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
     else
     {
         ULONG  length = nameLength + 5 /* strlen(".info") */ + 1 /* '\0' */;
-        STRPTR path   = AllocVec(length, MEMF_ANY);
+        STRPTR path   = AllocVecPooled(POOL, length);
         
         if(path != NULL)
         {
@@ -48,7 +47,7 @@ BPTR __OpenIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
             
             file = Open(path, mode);
             
-            FreeVec(path);
+            FreeVecPooled(POOL, path);
         }
         else
         {
@@ -193,12 +192,14 @@ struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconB
 {
     struct NativeIcon *icon, *reticon = NULL;
     LONG    	       hash;
+    LONG i = 0;
     
     hash = CalcIconHash(dobj);
     
     ObtainSemaphoreShared(&IconBase->iconlistlock);
     ForeachNode((struct List *)&IconBase->iconlists[hash], icon)
     {
+        i++;
     	if (dobj == &icon->dobj)
 	{
 	    reticon = icon;

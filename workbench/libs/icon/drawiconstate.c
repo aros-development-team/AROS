@@ -76,7 +76,7 @@
 		    img = &nativeicon->icon35.img1;
 		}
 		
-		if ((cgfxcoltab = AllocVec(img->numcolors * sizeof(ULONG), MEMF_ANY)))
+		if ((cgfxcoltab = AllocVecPooled(POOL, img->numcolors * sizeof(ULONG))))
 		{
 		    struct ColorRegister *cr;
 		    WORD i;
@@ -132,7 +132,7 @@
 			    DeinitRastPort(&bmrp);
 
 			    FreeBitMap(bm);
-    	    	    	    FreeVec(cgfxcoltab);
+    	    	    	    FreeVecPooled(POOL, cgfxcoltab);
 			    
 			    return;
 

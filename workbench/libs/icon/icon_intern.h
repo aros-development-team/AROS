@@ -24,6 +24,7 @@
 #include <proto/iffparse.h>
 #include <proto/utility.h>
 #include <proto/cybergraphics.h>
+#include <proto/dos.h>
 
 #include <stddef.h>
 
@@ -173,5 +174,6 @@ VOID FreeIcon35(struct NativeIcon *icon, struct IconBase *IconBase);
 #define IntuitionBase   ((struct IntuitionBase *) ((struct IconBase *) IconBase)->ib_IntuitionBase)
 #define GfxBase	        ((struct GfxBase *)       ((struct IconBase *) IconBase)->ib_GfxBase)
 
+#define POOL            (((struct IconBase *) IconBase)->ib_MemoryPool)
 
 #endif /* ICON_INTERN_H */
