@@ -690,6 +690,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
 
                     targetwindow->LeftEdge += dx;
                     targetwindow->TopEdge  += dy;
+                    targetwindow->RelLeftEdge += dx;
+                    targetwindow->RelTopEdge  += dy;
 
                     if (HAS_CHILDREN(targetwindow))
                       move_family(targetwindow, dx, dy);

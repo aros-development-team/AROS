@@ -519,20 +519,21 @@
     if (innerWidth != ~0L) nw.Width = innerWidth + w->BorderLeft + w->BorderRight;
     if (innerHeight != ~0L) nw.Height = innerHeight + w->BorderTop + w->BorderBottom;
 
-#if 0    
+    w->RelLeftEdge = nw.LeftEdge;
+    w->RelTopEdge  = nw.TopEdge;
+    
     if (NULL == parentwin)
     {
-#endif
       w->LeftEdge    = nw.LeftEdge;
       w->TopEdge     = nw.TopEdge;
-#if 0
     }
     else
     {
       w->LeftEdge    = nw.LeftEdge + parentwin->LeftEdge;
       w->TopEdge     = nw.TopEdge  + parentwin->TopEdge;
     }
-#endif
+kprintf("Window has LeftEdge/TopEdge: %d/%d and RelLeftEdge/RelTopEdge: %d/%d\n",
+        w->LeftEdge,w->TopEdge,w->RelLeftEdge,w->RelTopEdge);
 
     w->Width	   = (nw.Width  != ~0) ? nw.Width  : w->WScreen->Width - w->LeftEdge;
     w->Height	   = (nw.Height != ~0) ? nw.Height : w->WScreen->Height - w->TopEdge;
@@ -897,8 +898,8 @@ int intui_OpenWindow (struct Window * w,
 	  {
 	      struct Rectangle rect;
 	      
-	      rect.MinX = w->LeftEdge;
-	      rect.MinY = w->TopEdge;
+	      rect.MinX = w->RelLeftEdge;
+	      rect.MinY = w->RelTopEdge;
 	      rect.MaxX = rect.MinX + w->Width - 1;
 	      rect.MaxY = rect.MinY + w->Height - 1;
 	      
@@ -912,6 +913,13 @@ int intui_OpenWindow (struct Window * w,
 	          shape_created = TRUE;
 	      }
 	  }	  
+      }
+      else
+      {
+          shape->bounds.MinX += w->RelLeftEdge;
+          shape->bounds.MinY += w->RelTopEdge;
+          shape->bounds.MaxX += w->RelLeftEdge;
+          shape->bounds.MaxY += w->RelTopEdge;
       }
       
       if (shape) w->WLayer = CreateLayerTagList(&w->WScreen->LayerInfo,
