@@ -943,6 +943,11 @@ static void HandleAll(void)
 			    activearrowkind = CURSORRIGHT;
 			    ScrollTo(CURSORRIGHT, 0);
 			    break;
+			    
+			default:
+			    activearrowkind = 0;
+			    break;
+			    
 		    }
 		    break;
 		
