@@ -179,7 +179,7 @@ static const UBYTE tool_data_2[] =
 struct DiskObject *__GetBuiltinIcon_WB(LONG type, struct IconBase *IconBase)
 {
     struct DiskObject  temp = { 0 };
-    struct DrawerData  dd   = { 0 };
+    struct DrawerData  dd   = { { 0 }, 0 };
     struct Image       img1 = { 0 };
     struct Image       img2 = { 0 };
     
