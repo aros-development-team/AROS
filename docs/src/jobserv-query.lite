@@ -4,7 +4,7 @@ $sock = msqlConnect("");
 
 if ($sock < 0)
 {
-	echo ("Can't connect to server!\n");
+	echo ("Can't connect to server: $ERRMSG!\n");
 	exit (10);
 }
 
