@@ -10,8 +10,10 @@
 #include <exec/types.h>
 #include <utility/hooks.h>
 #include <utility/date.h>
+#define __NOLIBBASE__
 #include <proto/utility.h>
-#include <proto/alib.h>
+#undef __NOLIBBASE__
+#include <clib/alib_protos.h>
 
 #include <stdio.h>
 
@@ -377,7 +379,7 @@ VOID PrintDigits(UWORD number, char fill, UWORD len, struct Hook *hook,
 	i++;
     }
 
-    while(len - i > 0  && -1 != fill)
+    while(len - i > 0  && (char)-1 != fill)
     {
       len--;
       _WriteChar(fill, hook, locale);

@@ -10,6 +10,7 @@
 #include <libraries/locale.h>
 
 #include <proto/exec.h>
+#include <aros/asmcall.h>
 #include <aros/libcall.h>
 
 
@@ -340,6 +341,7 @@ AROS_LH1(BOOL, isxdigit,
 {
     AROS_LIBFUNC_INIT
 
+    return (BOOL)(__code_table_ctype[chr] & iXDigit);
     return (BOOL)( chr < __CODE_TABLE_SIZE
                  ? (__code_table_ctype[chr] & iXDigit)
                  : 0 );
@@ -436,8 +438,8 @@ AROS_LH4(LONG, strcompare,
         &&      ! (a= ( collTab[(UBYTE)*string1]
                       - collTab[(UBYTE)*(string2++)]))
         &&      *string1++ );
-        return a; }
 
+        return a; }
     else
         if (length) {
             if (string1 && *string1)
@@ -445,6 +447,7 @@ AROS_LH4(LONG, strcompare,
            if (string2 && *string2)
                 return -1; /* String2 exists therefore is bigger. */
         }
+
 
     return 0; /* Equal for the 0 characters we compared. */
 
@@ -458,34 +461,71 @@ AROS_LH4(LONG, strcompare,
    function-prototypes. Using prototypes would also be OK, though.)
    ----------------------------------------------------------------------- */
 
+#ifdef __MORPHOS__
+#define Xj(a,b) a##b
+#define TRAPIT(n,s)  \
+struct EmulLibEntry Xj(LIB_##n,_Gate) = { TRAP_LIB, 0, (void (*)(void)) LIB_##n }
+#define AROS_SLIB_ENTRY_GATED(n,s) Xj(LIB_##n,_Gate)
+
+    /* 0 - 3 */
+    TRAPIT(convtolower, english);
+    TRAPIT(convtoupper, english);
+    TRAPIT(null, Locale);
+    TRAPIT(getlangstring, english);
+
+    /* 4 - 7 */
+    TRAPIT(isalnum, english);
+    TRAPIT(isalpha, english);
+    TRAPIT(iscntrl, english);
+    TRAPIT(isdigit, english);
+
+    /* 8 - 11 */
+    TRAPIT(isgraph, english);
+    TRAPIT(islower, english);
+    TRAPIT(isprint, english);
+    TRAPIT(isspace, english);
+
+    /* 12 - 15 */
+    TRAPIT(ispunct, english);
+    TRAPIT(isupper, english);
+    TRAPIT(isxdigit, english);
+    TRAPIT(strconvert, english);
+
+    /* 16 */
+    TRAPIT(strcompare, english);
+#else
+#define AROS_SLIB_ENTRY_GATED AROS_SLIB_ENTRY
+#endif /*Morphos*/
+
+
 void *const __eng_functable[] =
 {
     /* 0 - 3 */
-    &AROS_SLIB_ENTRY(convtolower, english),
-    &AROS_SLIB_ENTRY(convtoupper, english),
-    &AROS_SLIB_ENTRY(null, Locale),
-    &AROS_SLIB_ENTRY(getlangstring, english),
+    &AROS_SLIB_ENTRY_GATED(convtolower, english),
+    &AROS_SLIB_ENTRY_GATED(convtoupper, english),
+    &AROS_SLIB_ENTRY_GATED(null, Locale),
+    &AROS_SLIB_ENTRY_GATED(getlangstring, english),
 
     /* 4 - 7 */
-    &AROS_SLIB_ENTRY(isalnum, english),
-    &AROS_SLIB_ENTRY(isalpha, english),
-    &AROS_SLIB_ENTRY(iscntrl, english),
-    &AROS_SLIB_ENTRY(isdigit, english),
+    &AROS_SLIB_ENTRY_GATED(isalnum, english),
+    &AROS_SLIB_ENTRY_GATED(isalpha, english),
+    &AROS_SLIB_ENTRY_GATED(iscntrl, english),
+    &AROS_SLIB_ENTRY_GATED(isdigit, english),
 
     /* 8 - 11 */
-    &AROS_SLIB_ENTRY(isgraph, english),
-    &AROS_SLIB_ENTRY(islower, english),
-    &AROS_SLIB_ENTRY(isprint, english),
-    &AROS_SLIB_ENTRY(isspace, english),
+    &AROS_SLIB_ENTRY_GATED(isgraph, english),
+    &AROS_SLIB_ENTRY_GATED(islower, english),
+    &AROS_SLIB_ENTRY_GATED(isprint, english),
+    &AROS_SLIB_ENTRY_GATED(isspace, english),
 
     /* 12 - 15 */
-    &AROS_SLIB_ENTRY(ispunct, english),
-    &AROS_SLIB_ENTRY(isupper, english),
-    &AROS_SLIB_ENTRY(isxdigit, english),
-    &AROS_SLIB_ENTRY(strconvert, english),
+    &AROS_SLIB_ENTRY_GATED(ispunct, english),
+    &AROS_SLIB_ENTRY_GATED(isupper, english),
+    &AROS_SLIB_ENTRY_GATED(isxdigit, english),
+    &AROS_SLIB_ENTRY_GATED(strconvert, english),
 
     /* 16 */
-    &AROS_SLIB_ENTRY(strcompare, english),
+    &AROS_SLIB_ENTRY_GATED(strcompare, english),
 
     (void *)-1
 };

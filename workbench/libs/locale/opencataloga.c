@@ -16,7 +16,7 @@
 #include <proto/iffparse.h>
 #include <proto/utility.h>
 #include <string.h>
-#include <aros/macros.h>
+//#include <aros/macros.h>
 #include <aros/debug.h>
 #include "locale_intern.h"
 
@@ -75,16 +75,20 @@ struct header
 #define FILENAMESIZE 256
 
     char    	    	  filename[FILENAMESIZE];
+    char                  buf[100];
+    LONG                  chars;
     ULONG   	    	  version;
+    ULONG		    	  catversion,catrevision;
     WORD    	    	  pref_language;
+    UWORD                 i;
 
     if (!locale)
     {
 	locale = def_locale = OpenLocale(NULL);
     }
-    
+
     if (!locale) return NULL;
-    
+
     specific_language = (char *)GetTagData(OC_Language, (IPTR)0, tags);
 
     if (specific_language)
@@ -118,7 +122,7 @@ struct header
     	if (def_locale) CloseLocale(def_locale);
 	return NULL;
     }
-    
+
     version = GetTagData(OC_Version,
                 	 0,
                 	 tags);
@@ -127,25 +131,28 @@ struct header
     {
 	struct IFFHandle * iff = NULL;
 
-	/* 
+	/*
 	** The wanted catalog might be in the list of catalogs that are
 	** already loaded. So check that list first.
 	*/
 	ObtainSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
-	
+
 	ForeachNode(&IntLB(LocaleBase)->lb_CatalogList, (struct Node *)catalog)
 	{
-	    if (catalog->ic_Name && 
+	    if (catalog->ic_Name &&
         	0 == strcmp(catalog->ic_Name, name) &&
         	catalog->ic_Catalog.cat_Language &&
         	0 == strcmp(catalog->ic_Catalog.cat_Language, language))
 	    {
         	catalog->ic_UseCount++;
         	ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
-		
+
 		if (def_locale) CloseLocale(def_locale);
-		
-        	return (struct Catalog *)catalog;
+
+        	{
+                SetIoErr(ERROR_ACTION_NOT_KNOWN);
+                return (struct Catalog *)catalog;
+            }
 	    }
 	}
 
@@ -160,18 +167,21 @@ struct header
 	{
 	    if (def_locale) CloseLocale(def_locale);
 	    SetIoErr(ERROR_NO_FREE_STORE);
-	    
+
 	    return NULL;
 	}
 
 	while((pref_language < 10) && language)
 	{
-    	    strcpy(filename, "PROGDIR:Catalogs");
+    	if ((((struct Process *)FindTask(NULL))->pr_HomeDir) != NULL)
+		{
+    		strcpy(filename, "PROGDIR:Catalogs");
             AddPart(filename, language, FILENAMESIZE);
             AddPart(filename, name    , FILENAMESIZE);
 
             iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE);
-	    if (iff->iff_Stream) break;
+	    }
+        	if (iff->iff_Stream) break;
 
     	    strcpy(filename, "LOCALE:Catalogs");
             AddPart(filename, language, FILENAMESIZE);
@@ -185,20 +195,20 @@ struct header
 	}
 
     	/* I no longer need the locale. So close it if we opened it */
-	
+
     	if (def_locale)
 	{
 	    CloseLocale(def_locale);
 	    def_locale = NULL;
 	}
-	
+
 #undef FILENAMESIZE
 
 	if (NULL == iff->iff_Stream)
 	{
 	    FreeIFF(iff);
-	    SetIoErr(ERROR_NO_FREE_STORE);
-	    
+	    SetIoErr(ERROR_OBJECT_NOT_FOUND);
+
 	    return NULL;
 	}
 
@@ -215,9 +225,9 @@ struct header
 	catalog->ic_UseCount = 1;
     	catalog->ic_Catalog.cat_Language = catalog->ic_LanguageName;
 	strcpy(catalog->ic_Name, name);
-	
+
 	InitIFFasDOS(iff);
-	
+
 	if (!OpenIFF(iff, IFFF_READ))
 	{
 	    while (1)
@@ -235,18 +245,18 @@ struct header
 			   if the catalog file *does* contain an ID_LANG chunk then
 			   this should be the same as "language" anyway. And if it
 			   is not, then maybe OpenCatalogA() should fail :-\ */
-			   
+
         	    	strcpy(catalog->ic_LanguageName, language);
     	    	    }
-		    
+
         	    /* Connect this catalog to the list of catalogs */
         	    ObtainSemaphore (&IntLB(LocaleBase)->lb_CatalogLock);
-        	    AddHead((struct List *)&IntLB(LocaleBase)->lb_CatalogList, 
+        	    AddHead((struct List *)&IntLB(LocaleBase)->lb_CatalogList,
                 	    &catalog->ic_Catalog.cat_Link);
         	    ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
 
     	    	    CloseIFF(iff);
-	    	    Close((BPTR)iff->iff_Stream);		    
+	    	    Close((BPTR)iff->iff_Stream);
 		    FreeIFF(iff);
 		    
         	    return &catalog->ic_Catalog;
@@ -260,19 +270,68 @@ struct header
         	    struct ContextNode * top = CurrentChunk(iff);
 
         	    switch (top->cn_ID)
-        	    {  
+        	    {
         		case ID_FORM:
         		    break;
 
         		case ID_FVER:
+                
+        		    if (top->cn_Size > 100) break; /*max 100 bytes*/
+
+                error = ReadChunkBytes(iff, buf, top->cn_Size);
+                if (error == top->cn_Size)
+			    {
+			    	error = 0;
+			    }
+
+            	else
+                {
         		    break;
+                }
+
+                buf[99] = 0;
+
+                /*Ok now we want to get the version and the revision.
+                They are separated by a blank space*/
+
+				i = 0;
+                while (buf[i] && (buf[i] != ' '))
+                i++;
+                while (buf[i] && (buf[i] == ' '))
+                i++;
+                while (buf[i] && (buf[i] != ' '))
+                i++;
+
+                if (buf[i])
+                {
+                	if ((chars = StrToLong(&buf[i],(LONG *)&catversion)) < 0)
+                		break;
+
+                	i += chars;
+                	if (buf[i++])
+                	{
+                		if (StrToLong(&buf[i],(LONG *)&catrevision) < 0)
+                    	break;
+           			}
+
+                 	catalog->ic_Catalog.cat_Version  = catversion;
+                	catalog->ic_Catalog.cat_Revision = catrevision;
+                    
+                 	if (version && (catversion != version))
+                    	{
+                    		error = RETURN_ERROR;
+                    	}
+
+                    	break;
+                }
+
 
         		case ID_LANG:
 			    /* The IntCatalog structure has only 30 bytes reserved for
 			       the language name. So make sure the chunk is not bigger. */
-			       
-        		    if (top->cn_Size > 30) break; 
-			    
+
+        		    if (top->cn_Size > 30) break;
+
 			    error = ReadChunkBytes(iff, catalog->ic_LanguageName, top->cn_Size);
 			    if (error == top->cn_Size)
 			    {
@@ -294,7 +353,7 @@ struct header
     	    	    	    if (!(catalog->ic_StringChunk = AllocVec(top->cn_Size, MEMF_PUBLIC | MEMF_CLEAR)))
 			    {
     	    	    	    	error = ERROR_NO_FREE_STORE;
-			    	SetIoErr(error);			    
+			    	SetIoErr(error);
 			    	break;
 			    }
 
@@ -307,55 +366,55 @@ struct header
 			    {
 			    	break;
 			    }
-			    
+
 			    /* Count the number of strings */
-			    
+
 			    {
 			    	UBYTE *buffer = catalog->ic_StringChunk;
 				LONG   c = 0, strlen;
-				
+
 			    	catalog->ic_NumStrings = 0;
-				
+
 				while(c < top->cn_Size)
 				{
 				    catalog->ic_NumStrings++;
-				    
+
 				    strlen = (buffer[4] << 24) +
 				    	     (buffer[5] << 16) +
 					     (buffer[6] << 8) +
 					     (buffer[7]);
-					       
+
 				    strlen  = 8 + strlen + (strlen & 1);
 				    if (strlen & 3) strlen += 4 - (strlen & 3);
-				    
+
 				    c += strlen; buffer += strlen;
 				}
-				
+
 			    }
-			    
+
     	    	    	    if (catalog->ic_NumStrings == 0) break; /* Paranoia? */
-			    
+
     	    	    	    if (!(catalog->ic_CatStrings = AllocVec(catalog->ic_NumStrings * sizeof(struct CatStr), MEMF_PUBLIC | MEMF_CLEAR)))
 			    {
     	    	    	    	error = ERROR_NO_FREE_STORE;
-			    	SetIoErr(error);			    
+			    	SetIoErr(error);
 				break;
 			    }
-			    
+
 			    /* Fill out catalog->ic_CatStrings array */
-			    
+
 			    {
 			    	UBYTE *buffer = catalog->ic_StringChunk;
 				ULONG i, strlen, id, previd = 0;
 				BOOL  inorder = TRUE;
-				
+
 				for(i = 0; i < catalog->ic_NumStrings; i++)
 				{
 				    id = (buffer[0] << 24) +
 				    	 (buffer[1] << 16) +
 					 (buffer[2] << 8) +
 					 (buffer[3]);
-					 
+
 				    strlen = (buffer[4] << 24) +
 				    	     (buffer[5] << 16) +
 					     (buffer[6] << 8) +
@@ -368,47 +427,47 @@ struct header
 
 				    strlen  = 8 + strlen + (strlen & 1);
 				    if (strlen & 3) strlen += 4 - (strlen & 3);
-				    
+
 				    if (id < previd) inorder = FALSE;
-				    
+
 				    buffer += strlen;
 				    previd = id;
 				}
-				
+
 				if (inorder) catalog->ic_Flags |= ICF_INORDER;
 			    }
-			    break;	    			    
-		      
+			    break;
+
         	    } /* switch (top->cn_ID) */
-		  
-        	} /* if (0 == error) */ 
-        	
+
+        	} /* if (0 == error) */
+
 		if (error)
         	{
 		    dispose_catalog(catalog, LocaleBase);
         	    /*
-        	    ** An error with the file occurred 
+        	    ** An error with the file occurred
         	    */
         	    break;
         	}
-	      
+
 	    } /* while (1) */
-	    
+
 	    CloseIFF(iff);
-	  
+
 	} /* if (!OpenIFF(iff, IFFF_READ)) */
 
 
 	Close((BPTR)iff->iff_Stream);
 	FreeIFF(iff);
 	FreeVec(catalog);
-      
-    } /* if (NULL != name) */  
+
+    } /* if (NULL != name) */
 
     if (def_locale) CloseLocale(def_locale);
 
     return NULL;
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* OpenCatalogA */

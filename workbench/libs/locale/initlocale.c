@@ -7,25 +7,26 @@
 */
 
 #include <exec/types.h>
+#include <proto/dos.h>
+#include <proto/iffparse.h>
 #include "locale_intern.h"
 #include <libraries/iffparse.h>
 #include <prefs/prefhdr.h>
 #include <prefs/locale.h>
 #include <proto/exec.h>
-#include <proto/dos.h>
-#include <proto/iffparse.h>
 #include <aros/asmcall.h>
 
 #include <aros/debug.h>
 
 #include <string.h>
 
-extern AROS_UFP4(ULONG, AROS_SLIB_ENTRY(strcompare, english), 
+extern AROS_UFP4(ULONG, AROS_SLIB_ENTRY(strcompare, english),
     AROS_UFPA(STRPTR, string1, A0),
     AROS_UFPA(STRPTR, string2, A1),
     AROS_UFPA(ULONG, length, D0),
     AROS_UFPA(ULONG, how, D1)
 );
+
 extern void *__eng_functable[];
 
 #define EC(x)\
@@ -54,12 +55,22 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 	STRPTR lName = il->il_Locale.loc_PrefLanguages[i];
 
 	/* Is this english? If not try and load the language */
-	if( NULL != lName && 
+	
+    #ifdef __MORPHOS__  /*I had some ugly problems with the macros adding a space before _Gate so I had to do it this way*/
+    if( NULL != lName &&
+    	    AROS_UFC4(ULONG, &LIB_strcompare_Gate,
+		AROS_UFCA(STRPTR, "english", A0),
+		AROS_UFCA(STRPTR, lName, A1),
+		AROS_UFCA(ULONG, 7, D0),
+		AROS_UFCA(ULONG, SC_ASCII, D1)) != 0)
+    #else
+    if( NULL != lName &&
     	    AROS_UFC4(ULONG, AROS_SLIB_ENTRY(strcompare, english),
 		AROS_UFCA(STRPTR, "english", A0),
 		AROS_UFCA(STRPTR, lName, A1),
 		AROS_UFCA(ULONG, 7, D0),
 		AROS_UFCA(ULONG, SC_ASCII, D1)) != 0)
+    #endif
 	{
 	    strcpy(fileBuf, lName);
 	    strcat(fileBuf, ".language");
@@ -127,7 +138,7 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 
     if(lang != NULL)
     {
-	mask = AROS_LC0(ULONG, mask, struct Library *, lang, 5, Language);
+    	mask = AROS_LC0(ULONG, mask, struct Library *, lang, 5, Language);
     }
     else
 	mask = 0;
@@ -137,11 +148,11 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     {
 	if(mask & (1<<i))
 	{
-	    il->il_LanguageFunctions[i] = __AROS_GETVECADDR(lang, (i+6));
+        il->il_LanguageFunctions[i] = __AROS_GETVECADDR(lang, (i+6));
 	}
 	else
 	{
-	    il->il_LanguageFunctions[i] = __eng_functable[i];
+        il->il_LanguageFunctions[i] = __eng_functable[i];
 	}
     }
 }
@@ -260,5 +271,6 @@ void InitLocale(STRPTR filename, struct IntLocale *locale,
     locale->il_Locale.loc_MonNegativeSpaceSep = cp->cp_MonNegativeSpaceSep;
     locale->il_Locale.loc_MonNegativeSignPos = cp->cp_MonNegativeSignPos;
     locale->il_Locale.loc_MonNegativeCSPos = cp->cp_MonNegativeCSPos;
+    locale->il_Locale.loc_CalendarType = cp->cp_CalendarType;
 }
 

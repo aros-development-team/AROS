@@ -92,7 +92,7 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
     LONG    	    days;
     LONG    	    retval = DOSTRUE;
     
-    hook.h_Entry = (HOOKFUNC)LocStrToDateGetCharFunc;
+    hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(LocStrToDateGetCharFunc);
     hook.h_Data = &buf;
     
     REPLACEMENT_LOCK;

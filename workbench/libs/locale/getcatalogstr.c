@@ -25,11 +25,11 @@
 	struct LocaleBase *, LocaleBase, 12, Locale)
 
 /*  FUNCTION
-	This function will return the string specified by the 
+	This function will return the string specified by the
 	stringNum from the given message catalog, or the defaultString
 	if the string could not be found.
 
-	If the catalog == NULL, then the defaultString will also be 
+	If the catalog == NULL, then the defaultString will also be
 	returned.
 
     INPUTS
@@ -59,7 +59,9 @@
 
 *****************************************************************************/
 {
+#ifndef __MORPHOS__
     AROS_LIBFUNC_INIT
+#endif
     AROS_LIBBASE_EXT_DECL(struct Library *,LocaleBase)
 
     STRPTR str = defaultString;
@@ -69,7 +71,7 @@
 	struct CatStr *cs = IntCat(catalog)->ic_CatStrings;
 	ULONG	      numstrings = IntCat(catalog)->ic_NumStrings;
     	ULONG 	      i = 0;
-	
+
 	for(i = 0; i < numstrings; i++, cs++)
 	{
 	    if(cs->cs_Id == stringNum)
@@ -79,7 +81,7 @@
 	    }
 	    else
 	    {
-		if((IntCat(catalog)->ic_Flags & ICF_INORDER) && 
+		if((IntCat(catalog)->ic_Flags & ICF_INORDER) &&
 		   (cs->cs_Id > stringNum))
 		{
 		    break;
@@ -87,9 +89,9 @@
 	    }
 	}
     }
-    
+
     return str;
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* GetCatalogStr */

@@ -8,8 +8,10 @@
 
 #include <exec/types.h>
 #include <libraries/locale.h>
+#include <libraries/iffparse.h>
 
 #include "locale_intern.h"
+
 
 /* stegerg: the strings "united_states.country", "english.language" and
    "english" have been verified on the Amiga with a test program which
