@@ -185,6 +185,7 @@ struct MUI_AreaData
     struct MUI_EventHandlerNode mad_hiehn; /* Eventhandler to simulate MUIM_HandleInput */
 
     char *mad_BackgroundSpec;
+    LONG               mad_DisableCount; /* counts number of disables */
     /* EBD PRIV */
 };
 
