@@ -20,11 +20,11 @@
 AROS_LH5(struct IClass *, MakeClass,
 
          /*  SYNOPSIS */
-         AROS_LHA(UBYTE         *, classID, A0),
-         AROS_LHA(UBYTE         *, superClassID, A1),
+         AROS_LHA(ClassID,         classID,       A0),
+         AROS_LHA(ClassID,         superClassID,  A1),
          AROS_LHA(struct IClass *, superClassPtr, A2),
-         AROS_LHA(ULONG          , instanceSize, D0),
-         AROS_LHA(ULONG          , flags, D1),
+         AROS_LHA(ULONG,           instanceSize,  D0),
+         AROS_LHA(ULONG,           flags,         D1),
 
          /*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 113, Intuition)
