@@ -36,14 +36,6 @@
 #include <proto/mathieeesingtrans.h>
 
 
-/*
-    This is the MathIeeeSingTransBase structure. It is documented here because
-    it is completely private. Applications should treat it as a struct 
-    Library, and use the mathieeespbas.library functions to get information.
-*/
-
-extern struct MathIeeeSingBasBase * MathIeeeSingBasBase;
-
 /* Internal prototypes */
 
 LONG intern_IEEESPLd(ULONG fnum);
