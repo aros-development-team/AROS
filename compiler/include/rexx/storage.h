@@ -61,11 +61,14 @@ struct RexxMsg
 #define RXTCCLS  0x0D000000
 
 /* Some commands added for AROS and regina only */
-#define RXADDRSRC 0xF0000000 /* Will register a resource node to call the clean up function
+#define RXADDRSRC  0xF0000000 /* Will register a resource node to call the clean up function
 			      * from when the rexx script finishes
 			      * The rexx implementation is free to use the list node fields
 			      * for their own purpose. */
-#define RXREMRSRC 0xF1000000 /* Will unregister an earlier registered resource node */
+#define RXREMRSRC  0xF1000000 /* Will unregister an earlier registered resource node */
+#define RXCHECKMSG 0xF2000000 /* Check if private fields are from the Rexx interpreter */
+#define RXSETVAR   0xF3000000 /* Set a variable with a given to a given value */
+#define RXGETVAR   0xF4000000 /* Get the value of a variable with the given name */
 
 #define RXCODEMASK 0xFF000000
 #define RXARGMASK  0x0000000F
