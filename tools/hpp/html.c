@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <toollib/toollib.h>
 #include <toollib/mystream.h>
+#include <toollib/stdiocb.h>
 #include <toollib/stringcb.h>
 #include <toollib/error.h>
 #include "parse.h"
@@ -716,7 +717,7 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
 	    body = HTML_ReadBody (in, data, block->node.name, 1);
 
-	    Var_SetConst ("@body", body->buffer);
+	    Var_SetConst ("@body", body->buffer+1);
 
 	    ForeachNode (&block->args, oarg)
 	    {
@@ -878,6 +879,44 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		    {
 			Str_SetLine (in, line);
 			Str_PushError (in, "HTML_Parse() failed in FILTER");
+			return T_ERROR;
+		    }
+		}
+		else if (!strcmp (tag->node.name, "INCLUDE"))
+		{
+		    HTMLTagArg	* file;
+		    StdioStream * ss;
+		    int 	  rc;
+
+		    file = (HTMLTagArg *) FindNodeNC (&tag->args, "FILE");
+
+		    if (!file)
+		    {
+			Str_PushError (in, "Missing argument FILE in INCLUDE");
+			return T_ERROR;
+		    }
+
+		    if (!file->value)
+		    {
+			Str_PushError (in, "Missing value for argument FILE in INCLUDE");
+			return T_ERROR;
+		    }
+
+		    ss = StdStr_New (file->value, "r");
+
+		    if (!ss)
+		    {
+			Str_PushError (in, "Unable to open %s", file);
+			return T_ERROR;
+		    }
+
+		    rc = HTML_Parse ((MyStream *)ss, out, data);
+
+		    StdStr_Delete (ss);
+
+		    if (rc != T_OK)
+		    {
+			Str_PushError (in, "Error parsing %s", file);
 			return T_ERROR;
 		    }
 		}
