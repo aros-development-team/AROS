@@ -47,7 +47,7 @@
 /* Default font for the HIDD driver */
 #include "default_font.c"
 
-#define PEN_BITS    4
+#define PEN_BITS    8
 #define NUM_COLORS  (1L << PEN_BITS)
 #define PEN_MASK    (NUM_COLORS - 1)
 
