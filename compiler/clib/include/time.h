@@ -9,12 +9,13 @@
     Lang: english
 */
 
-#ifndef __typedef_time_t
+#if !defined(__typedef_time_t) && !defined(_TIME_T)
 #   define __typedef_time_t
+#   define _TIME_T
     typedef long time_t;
 #endif
 
-#ifndef __typedef_clock_t
+#if !defined(__typedef_clock_t) && !defined(_CLOCK_T)
 #   define __typedef_clock_t
     typedef long clock_t;
 #endif
