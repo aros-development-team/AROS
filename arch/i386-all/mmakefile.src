@@ -45,10 +45,12 @@ $(GENINCDIR)/%.h : %.h
 	%mkdirs_q $(GENINCDIR)
 	$(CP) $< $@
 
+GENINC_CFLAGS := $(OS_CFLAGS) -I$(GENINCDIR) $(HOST_CFLAGS)
+
 $(GENINC) : geninc.c
-	@echo "CFLAGS=$(CFLAGS)"
+	@echo "CFLAGS=$(GENINC_CFLAGS)"
 	@echo "Creating geninc..."
-	@$(HOST_CC) $(CFLAGS) -o $@ $<
+	@$(HOST_CC) $(GENINC_CFLAGS) -o $@ $<
 
 machine.i: $(GENINC) $(MACHINE_H)
 	$(GENINC) > machine.i
