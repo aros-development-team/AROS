@@ -67,6 +67,12 @@
   
   struct AChain * AC = AP->ap_Current;
   BOOL success;
+  stuct Taks * task = FindTask(NULL);
+  
+  AP->ap_BreakBits &= (SIGBREAKF_CTRL_C|
+                       SIGBREAKF_CTRL_D|
+                       SIGBREAKF_CTRL_E|
+                       SIGBREAKF_CTRL_F);
   
   if (0 != (AP->ap_Flags & APF_DODIR ))
   {
@@ -119,10 +125,23 @@
   {
     do
     {
+      ULONG breakbits;
+      /*
+      ** Check for a break signal CTRL C/D/E/F
+      */
+      breakbits = (AP->ap_BreakBits & task->tc_SigRecvd);
+      
+      if (0 != breakbits)
+      {
+        /*
+        ** Finish right here... there might be a problem when/if the
+        ** algorithm is resumed the next time... Gotta test that.
+        */
+        AP->ap_FoundBreak = breakbits;
+        return ERROR_BREAK;
+      }
+
       success = ExNext (AC->an_Lock, &AC->an_Info);
-
-//kprintf("%s : Skipping dir/file %s\n",__FUNCTION__,AC->an_Info.fib_FileName);
-
     }
     while (DOSTRUE == success &&
            DOSFALSE == MatchPatternNoCase(AC->an_String,
@@ -133,7 +152,7 @@
     {
       /* 
       ** No more entries in this dir that match. So I might have to
-      ** step back one directory. Unlock the current dir first, 
+      ** step back one directory. Unlock the current dir first.
       */
 
 //kprintf("Couldn't find a matching file.!\n");
