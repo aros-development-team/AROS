@@ -186,7 +186,7 @@ void par_Init(struct Window *win, struct PartitionTableNode *table) {
 	findPartitions(win, table);
 	setPCPGadgetAttrs(win, table);
 	viewPartitionData(win, table, 0);
-	GT_SetGadgetAttrs(ptgad, win, NULL, PTCT_PartitionTable, table, TAG_DONE);
+	SetGadgetAttrs(ptgad, win, NULL, PTCT_PartitionTable, table, TAG_DONE);
 }
 
 void viewDosEnvecData
@@ -276,7 +276,7 @@ ULONG size;
 		pcpgadgets[ID_PCP_FILESYSTEM-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpfilesystemtags
 	);
-	GT_SetGadgetAttrs(ptgad, mainwin, NULL, PTCT_Selected, de, TAG_DONE);
+	SetGadgetAttrs(ptgad, mainwin, NULL, PTCT_Selected, de, TAG_DONE);
 }
 
 void viewPartitionData
@@ -399,7 +399,7 @@ ULONG disabled = pn ? FALSE : TRUE;
 		pcpgadgets[ID_PCP_FILESYSTEM-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpfilesystemtags
 	);
-	GT_SetGadgetAttrs(ptgad, mainwin, NULL, PTCT_Selected, pn, TAG_DONE);
+	SetGadgetAttrs(ptgad, mainwin, NULL, PTCT_Selected, pn, TAG_DONE);
 }
 
 void freePartitionNode(struct PartitionNode *pn) {
