@@ -249,7 +249,6 @@ struct GadToolsBase_intern
     struct Library		* layersbase;
     struct Library	 	* utilitybase;
 
-    struct Library      	* aroscybase;
     struct Library		* arospabase;
 
     Class 			* buttonclass;
