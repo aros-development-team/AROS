@@ -6,6 +6,9 @@
     Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE
+
+#define INIT AROS_SLIB_ENTRY(init,Intuition)
+
 #include <string.h>
 #include <exec/lists.h>
 #include <exec/resident.h>
@@ -18,6 +21,7 @@
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <proto/dos.h>
+#include <proto/arossupport.h>
 #ifndef INTUITION_CLASSES_H
 #   include <intuition/classes.h>
 #endif
@@ -33,11 +37,9 @@ static const char name[];
 static const char version[];
 static const APTR inittabl[4];
 static void *const FUNCTABLE[];
-AROS_LH2(struct LIBBASETYPE *, init,
-    AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
-    AROS_LHA(BPTR,                 segList, A0),
-    struct ExecBase *, sysBase, 0, Intuition
-);
+
+struct LIBBASETYPE *INIT();
+
 extern const char END;
 
 AROS_UFP3(static ULONG, rootDispatcher,
@@ -85,7 +87,7 @@ static const APTR inittabl[4]=
     (APTR)sizeof(struct IntIntuitionBase),
     (APTR)FUNCTABLE,
     NULL,
-    &AROS_SLIB_ENTRY(init,Intuition)
+    &INIT
 };
 
 static Class rootclass =
