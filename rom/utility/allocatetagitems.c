@@ -69,7 +69,8 @@
     struct TagItem *tags = NULL;
 
     if( numTags )
-	tags = AllocVec( numTags << 3, MEMF_CLEAR | MEMF_PUBLIC );
+	tags = AllocVec( numTags * sizeof(struct TagItem) ,
+			 MEMF_CLEAR | MEMF_PUBLIC );
 
     return tags;
 
