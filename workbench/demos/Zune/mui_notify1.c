@@ -1,34 +1,23 @@
 #include <exec/types.h>
-#ifdef _AROS
-#define AMIGA
-#endif
 
-#ifdef AMIGA
-#include <libraries/mui.h>
+//#include <libraries/mui.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/alib.h>
 #include <stdio.h>
-#else
-#include <zune/zune.h>
-#endif
 
-#ifdef AMIGA
-struct IntuitionBase *IntuitionBase;
+#include <mui.h>
+
 struct Library       *MUIMasterBase;
-#endif
 
 int main (void)
 {
     Object *obj;
     ULONG val;
 
-#ifdef AMIGA
     MUIMasterBase = OpenLibrary("muimaster.library", 0);
     if (MUIMasterBase == NULL) return 20;
-    IntuitionBase = OpenLibrary("intuition.library", 36);
-#endif
 
     obj = MUI_NewObjectA(MUIC_Notify, NULL);
     printf("new Notify object = %p\n", obj);
@@ -53,10 +42,7 @@ int main (void)
         MUI_DisposeObject(obj);
     }
 
-#ifdef AMIGA
-    CloseLibrary(IntuitionBase);
     CloseLibrary(MUIMasterBase);
-#endif
 
     return 0;
 }

@@ -1,21 +1,14 @@
 #include <exec/types.h>
-#ifdef _AROS
-#define AMIGA
-#endif
 
-#ifdef AMIGA
-#include <libraries/mui.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <clib/alib_protos.h>
 #include <stdio.h>
-#else
-#include <zune/zune.h>
-#endif
 
-#ifdef AMIGA
-struct IntuitionBase *IntuitionBase;
+#include <mui.h>
+#include <priv/Rectangle.h>
+
 struct Library       *MUIMasterBase;
 
 ULONG xget(Object *obj, Tag attr)
@@ -32,25 +25,14 @@ Object *MUI_NewObject(char const *className, ULONG tag1, ...)
     AROS_SLOWSTACKTAGS_POST
 }
 
-#endif
 
 int main (int argc, char **argv)
 {
     Object *app;
     Object *mainWin;
 
-#ifdef AMIGA
     MUIMasterBase = OpenLibrary("muimaster.library", 0);
     if (MUIMasterBase == NULL) return 20;
-    IntuitionBase = OpenLibrary("intuition.library", 36);
-#else
-    g_print("use '--gdk-debug all --sync' to debug events\n");
-
-    /*
-     * Zune needed this new call, for underlying libs.
-     */
-    MUI_Init(&argc, &argv);
-#endif
 
     /*
      * This big call uses macros from mui.h
@@ -150,13 +132,11 @@ int main (int argc, char **argv)
 	while (DoMethod(app, MUIM_Application_NewInput, &sigs)
 	       != MUIV_Application_ReturnID_Quit)
 	{
-#ifdef AMIGA
 	    if (sigs)
 	    {
 	        sigs = Wait(sigs | SIGBREAKF_CTRL_C);
 	        if (sigs & SIGBREAKF_CTRL_C) break;
 	    }
-#endif
 	}
     }
     
@@ -165,20 +145,11 @@ int main (int argc, char **argv)
 
 error:
 
-#ifdef AMIGA
     CloseLibrary(IntuitionBase);
     CloseLibrary(MUIMasterBase);
-#endif
 
     return 0;
 }
-
-
-
-
-
-
-
 
 
 
