@@ -8,7 +8,7 @@
 include $(TOP)/config/make.cfg
 
 # MetaMake rules
-#MM AROS : setup includes compiler kernel apps
+#MM AROS : setup includes compiler kernel workbench apps
 #MM clean
 
 AROS : $(BINDIR)/arosshell checkerr
