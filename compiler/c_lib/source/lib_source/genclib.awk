@@ -5,39 +5,39 @@ BEGIN {
 
     while ((getline < file) > 0)
     {
-	if ($2 == "BASENAME")
-	{
-	    lib = $3;
-	    basename = $3;
-	}
-	else if ($2 == "LIBBASE")
-	{
-	    libbase = $3;
-	}
-	else if ($2 == "LIBBASETYPEPTR")
-	{
-	    libbtp = $3;
-	    for (t=4; t<=NF; t++)
-		libbtp=libbtp" "$t;
-	}
-	else if ($2 == "NT_TYPE")
-	{
-	    if( $3 == "NT_RESOURCE" )
-	    {
-		firstlvo = 0;
-		libext = ".resource";
-	    }
-	    else if( $3 == "NT_DEVICE" )
-	    {
-		firstlvo = 6;
-		libext = ".device";
-	    }
-	    else
-	    {
-		firstlvo = 4;
-		libext = ".library";
-	    }
-	}
+        if ($2 == "BASENAME")
+        {
+            lib = $3;
+            basename = $3;
+        }
+        else if ($2 == "LIBBASE")
+        {
+            libbase = $3;
+        }
+        else if ($2 == "LIBBASETYPEPTR")
+        {
+            libbtp = $3;
+            for (t=4; t<=NF; t++)
+                libbtp=libbtp" "$t;
+        }
+        else if ($2 == "NT_TYPE")
+        {
+            if( $3 == "NT_RESOURCE" )
+            {
+                firstlvo = 0;
+                libext = ".resource";
+            }
+            else if( $3 == "NT_DEVICE" )
+            {
+                firstlvo = 6;
+                libext = ".device";
+            }
+            else
+            {
+                firstlvo = 4;
+                libext = ".library";
+            }
+        }
     }
 
     verbose_pattern = libbase"[ \\t]*,[ \\t]*[0-9]+[ \\t]*,[ \\t]*"basename;
@@ -63,24 +63,39 @@ BEGIN {
     print ""
 
     file = "headers.tmpl"
-    doprint = 0;
-    emit = 0;
+    doprint     = 0;
+    emit        = 0;
+    doParse     = 0;
+    nifct       = 0;
+    doInsertFct = 0;
 
     while ((getline < file) > 0)
     {
-	if ($1=="##begin" && $2 == "clib")
-	    doprint = 1;
-	else if ($1=="##end" && $2 == "clib")
-	    doprint = 0;
-	else if (doprint)
-	{
-	    print;
-	    emit ++;
-	}
+        if ($1=="##begin" && $2 == "clib")
+            doprint = 1;
+        else if ($1=="##end" && $2 == "clib")
+            doprint = 0;
+        else if ($1=="##begin" && $2 == "insert_fct")
+            doParse = 1;
+        else if ($1=="##end" && $2 == "insert_fct")
+            doParse = 0
+        else if (doprint)
+        {
+            print;
+            emit ++;
+        }
+        else if(doParse)
+        {
+            {
+                if($1 == "PRE") {sub(/^PRE / , ""); insert_pre  = $0;}
+                if($1 == "POST"){sub(/^POST /, ""); insert_post = $0;}
+                if($1 == "FCT") {insert_fct[nifct++] = $2;}
+            }
+         }
     }
 
     if (emit > 0)
-	print ""
+        print ""
 
     print "/* Prototypes */"
 }
@@ -91,12 +106,19 @@ BEGIN {
     gsub(/^[ \t]+/,"",line);
     if (!isarg)
     {
-	call=line;
-	narg=0;
+        call=line;
+        narg=0;
+
+        doInsertFct = 0;
+        for (i = 0; (i < nifct && doInterFct == 0); i++)
+        {
+          if(call ~ insert_fct[i]) doInsertFct = 1;
+        }
+
     }
     else
     {
-	arg[narg++]=line;
+        arg[narg++]=line;
     }
 }
 /LIBBASE[ \t]*,[ \t]*[0-9]+/ || $0 ~ verbose_pattern {
@@ -111,11 +133,15 @@ BEGIN {
 
     if (lvo > firstlvo)
     {
-	print call
-	for (t=0; t<narg; t++)
-	    print "\t"arg[t]
-	print "\t"line")";
-	print ""
+        if(doInsertFct) print insert_pre
+        print call
+
+        for (t=0; t<narg; t++)
+            print "\t"arg[t]
+        print "\t"line")";
+
+        if(doInsertFct) print insert_post
+        print ""
     }
     narg=0;
 }
