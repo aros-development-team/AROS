@@ -23,7 +23,10 @@
 #define LOC_MAJORV	0x0c
 #define LOC_MINORV	0x0e
 #define LOC_ROMSIZE	0x14		/* offset from end of ROM! */
-#define ROM_END		0x1000000
+#define ROM_END 	0x1000000
+
+#define KICKSIZE	(*(ULONG *)(ROM_END - LOC_ROMSIZE))
+#define KICKBASE	(ROM_END - KICKSIZE)
 
 /*****************************************************************************
 
@@ -47,9 +50,9 @@
 
     INPUTS
 	tags -- taglist with appropriate queries. The tag's ti_Data field
-	        should point to the location where the result of the query
-	        is stored. Do not forget to clear the location before, as
-	        queries not understood will be left untouched.
+		should point to the location where the result of the query
+		is stored. Do not forget to clear the location before, as
+		queries not understood will be left untouched.
 
     RESULT
 	All queries understood by this call will have appropriate values
@@ -69,13 +72,16 @@
 
 ******************************************************************************/
 {
+    IPTR	    ret;
     struct TagItem *tag;
 
-    D(bug("ArosInquire(taglist @ $%lx)\n", query));
+    D(bug("ArosInquire(taglist=%p)\n", tags));
 
-    while( (tag = NextTagItem(&taglist)))
+    while( (tag = NextTagItem(&tags)))
     {
 	D(bug("  tag = $%lx\n", tag->ti_Tag));
+
+	ret = 0;
 
 	switch(tag->ti_Tag)
 	{
@@ -87,19 +93,19 @@
 	*/
 
 	case AI_KickstartBase:
-	    ret = (ROM_END - ArosInquire(AI_KickstartSize));
+	    ret = KICKBASE;
 	    break;
 
 	case AI_KickstartSize:
-	    ret = *(ULONG *)(ROM_END - LOC_ROMSIZE);
+	    ret = KICKSIZE;
 	    break;
 
 	case AI_KickstartVersion:
-	    ret = (IPTR)(UWORD)*(UWORD *)(ArosInquire(AI_KickstartBase) + LOC_MAJORV);
+	    ret = (IPTR)(*(UWORD *)(KICKBASE + LOC_MAJORV));
 	    break;
 
 	case AI_KickstartRevision:
-	    ret = (IPTR)(UWORD)*(UWORD *)(ArosInquire(AI_KickstartBase) + LOC_MINORV);
+	    ret = (IPTR)(*(UWORD *)(KICKBASE + LOC_MINORV));
 	    break;
 #endif
 
@@ -108,20 +114,22 @@
 		aros.library version masquerades as AROS version. This means
 		that all aros modules must have the same major version number.
 	    */
-	    ret = (IPTR)(ULONG)LIBVERSION;
+	    ret = LIBVERSION;
 	    break;
 
 	case AI_ArosReleaseMajor:
 	    /* Update this whenever a new AROS is released */
-	    ret = (IPTR)(ULONG)1;
+	    ret = 1;
 	    break;
 
 	case AI_ArosReleaseMinor:
 	    /* Update this whenever a new AROS is released */
-	    ret = (IPTR)(ULONG)11;
+	    ret = 11;
 	    break;
 
 	}
+
+	*(ULONG *)(tag->ti_Data) = ret;
     }
 
 } /* ArosInquireTagList */
