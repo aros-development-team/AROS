@@ -39,10 +39,8 @@ FILES     := defaultlocale english initlocale
 FUNCTIONS := \
 	closecatalog closelocale convtolower convtoupper \
 	formatdate formatstring getcatalogstr getlocalestr \
-	isxxxx opencataloga openlocale parsedate \
+	isxxxx opencataloga openlocale parsedate prefsupdate \
 	strconvert strncmp
-
-# prefsupdate is missing in FUNCTIONS
 
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of extra libraries that you want included during
