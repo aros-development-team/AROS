@@ -12,7 +12,9 @@ STARTUP 	:= $(LIBDIR)/startup.o
 
 FILES		:= \
 	alib_util \
+	allocaslrequesttags \
 	allocnamedobject \
+	aslrequesttags \
 	argarrayinit \
 	argarraydone \
 	argint \
