@@ -137,10 +137,10 @@
     if (newWindow->DetailPen == 0xFF) newWindow->DetailPen = 1;
     if (newWindow->BlockPen  == 0xFF) newWindow->BlockPen = 0;
 
-    w->BorderLeft   = 0;
-    w->BorderTop    = 0;
-    w->BorderRight  = 0;
-    w->BorderBottom = 0;
+    w->BorderLeft   = 1;
+    w->BorderTop    = 10;
+    w->BorderRight  = 1;
+    w->BorderBottom = 1;
 
     w->MinWidth  = newWindow->MinWidth;
     w->MinHeight = newWindow->MinHeight;
