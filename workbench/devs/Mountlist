@@ -163,7 +163,7 @@ CD0:
 HOME:
 
 	FileSystem = emul.handler
-	Device     = Home:/root
+	Device     = Home:~
 
 /* Entry for host's unix usr directory */
 
