@@ -39,6 +39,7 @@ FILES	:= \
     SetDate \
     Setenv \
     SetKeyboard \
+    SetDefaultFont \
     Skip \
     Stack \
     Status \
