@@ -2,66 +2,15 @@
 include $(TOP)/config/make.cfg
 
 #MM- kernel-freebsd : \
-#MM    kernel-unix \
-#MM    exec-freebsd
-
-# Setup the CLIB metatargets...
-#MM- setup-clib-freebsd : setup-clib-freebsd-i386
-
-#MM setup-freebsd : \
-#MM	setup-exec-freebsd \
-#MM	setup-dos-unix \
-#MM	setup-battclock-unix \
-#MM	setup-$(GFXSYSTEM)
-setup-freebsd : 
-	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/exec $(OSGENDIR)/boot
-	%add_objects rom/boot/strap_emul
-
-
-#MM- kernel-exec-freebsd : exec-freebsd exec-i386 exec-unix \
-#MM	kernel-exec-linklib
-
-#MM- setup-dos-freebsd : setup-dos-unix
-
-#MM- setup-battclock-freebsd : setup-battclock-unix
+#MM    kernel-unix
 
 #MM- check : check-exec-unix
 
-#MM- clib-freebsd : clib-freebsd-i386
-
 #MM- includes-freebsd-i386 : includes-copy
-
-#MM setup-exec-freebsd : setup-exec-unix setup-exec-i386
-setup-exec-freebsd : $(GENINCDIR)/sigcore.h
-	%add_objects rom/exec/init
 
 %rule_archalias mainmmake=kernel-dos arch=freebsd alias=unix
 %rule_archalias mainmmake=kernel-battclock arch=freebsd alias=unix
 
 #MM- workbench-freebsd : workbench-unix
-
-#MM
-exec-freebsd : $(OSGENDIR)/exec/init.o
-
-FILES		:= exec/init
-DEPS		:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
-OS_INCLUDES	:= -I$(SYS_INCLUDES) -I$(GENINCDIR)
-CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
-
-$(GENINCDIR)/sigcore.h : $(TOP)/config/freebsd/exec/sigcore.h
-	%mkdirs_q $(GENINCDIR)
-	$(CP) $^ $@
-
-$(OSGENDIR)/%.o : %.c
-	%compile_q cmd=$(HOST_CC) opt=$(CFLAGS2)
-
-$(OSGENDIR)/%.d : %.c
-	%mkdepend_q $(CFLAGS2)
-
-%include_deps
-
-#MM
-clean ::
-	-$(RM) $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) */*.err
 
 %common
