@@ -185,16 +185,16 @@ const unsigned short int __ctype_b_array[384] =
     _ISgraph|_ISprint|_ISpunct, /* - */
     _ISgraph|_ISprint|_ISpunct, /* . */
     _ISgraph|_ISprint|_ISpunct, /* / */
-    _ISalnum|_ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 0 */
-    _ISalnum|_ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 1 */
-    _ISalnum|_ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 2 */
-    _ISalnum|_ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 3 */
-    _ISalnum|_ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 4 */
-    _ISalnum|_ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 5 */
-    _ISalnum|_ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 6 */
-    _ISalnum|_ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 7 */
-    _ISalnum|_ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 8 */
-    _ISalnum|_ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 9 */
+    _ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 0 */
+    _ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 1 */
+    _ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 2 */
+    _ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 3 */
+    _ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 4 */
+    _ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 5 */
+    _ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 6 */
+    _ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 7 */
+    _ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 8 */
+    _ISdigit|_ISgraph|_ISprint|_ISxdigit, /* 9 */
     _ISgraph|_ISprint|_ISpunct, /* : */
     _ISgraph|_ISprint|_ISpunct, /* ; */
     _ISgraph|_ISprint|_ISpunct, /* < */
@@ -202,64 +202,64 @@ const unsigned short int __ctype_b_array[384] =
     _ISgraph|_ISprint|_ISpunct, /* > */
     _ISgraph|_ISprint|_ISpunct, /* ? */
     _ISgraph|_ISprint|_ISpunct, /* @ */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint|_ISxdigit, /* A */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint|_ISxdigit, /* B */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint|_ISxdigit, /* C */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint|_ISxdigit, /* D */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint|_ISxdigit, /* E */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint|_ISxdigit, /* F */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* G */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* H */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* I */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* J */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* K */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* L */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* M */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* N */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* O */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* P */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* Q */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* R */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* S */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* T */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* U */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* V */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* W */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* X */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* Y */
-    _ISupper|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* Z */
+    _ISupper|_ISalpha|_ISgraph|_ISprint|_ISxdigit, /* A */
+    _ISupper|_ISalpha|_ISgraph|_ISprint|_ISxdigit, /* B */
+    _ISupper|_ISalpha|_ISgraph|_ISprint|_ISxdigit, /* C */
+    _ISupper|_ISalpha|_ISgraph|_ISprint|_ISxdigit, /* D */
+    _ISupper|_ISalpha|_ISgraph|_ISprint|_ISxdigit, /* E */
+    _ISupper|_ISalpha|_ISgraph|_ISprint|_ISxdigit, /* F */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* G */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* H */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* I */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* J */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* K */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* L */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* M */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* N */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* O */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* P */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* Q */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* R */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* S */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* T */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* U */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* V */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* W */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* X */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* Y */
+    _ISupper|_ISalpha|_ISgraph|_ISprint, /* Z */
     _ISgraph|_ISprint|_ISpunct, /* [ */
     _ISgraph|_ISprint|_ISpunct, /* \ */
     _ISgraph|_ISprint|_ISpunct, /* ] */
     _ISgraph|_ISprint|_ISpunct, /* ^ */
     _ISgraph|_ISprint|_ISpunct, /* _ */
     _ISgraph|_ISprint|_ISpunct, /* ` */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint|_ISxdigit, /* a */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint|_ISxdigit, /* b */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint|_ISxdigit, /* c */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint|_ISxdigit, /* d */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint|_ISxdigit, /* e */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint|_ISxdigit, /* f */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* g */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* h */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* i */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* j */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* k */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* l */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* m */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* n */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* o */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* p */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* q */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* r */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* s */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* t */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* u */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* v */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* w */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* x */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* y */
-    _ISlower|_ISalpha|_ISalnum|_ISgraph|_ISprint, /* z */
+    _ISlower|_ISalpha|_ISgraph|_ISprint|_ISxdigit, /* a */
+    _ISlower|_ISalpha|_ISgraph|_ISprint|_ISxdigit, /* b */
+    _ISlower|_ISalpha|_ISgraph|_ISprint|_ISxdigit, /* c */
+    _ISlower|_ISalpha|_ISgraph|_ISprint|_ISxdigit, /* d */
+    _ISlower|_ISalpha|_ISgraph|_ISprint|_ISxdigit, /* e */
+    _ISlower|_ISalpha|_ISgraph|_ISprint|_ISxdigit, /* f */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* g */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* h */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* i */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* j */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* k */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* l */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* m */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* n */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* o */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* p */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* q */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* r */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* s */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* t */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* u */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* v */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* w */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* x */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* y */
+    _ISlower|_ISalpha|_ISgraph|_ISprint, /* z */
     _ISgraph|_ISprint|_ISpunct, /* { */
     _ISgraph|_ISprint|_ISpunct, /* | */
     _ISgraph|_ISprint|_ISpunct, /* } */
