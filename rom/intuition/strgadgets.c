@@ -514,7 +514,8 @@ STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     UWORD mousex;
     window = sgw->GadgetInfo->gi_Window;
     
-    mousex = sgw->IEvent->ie_position.ie_xy.ie_x - window->LeftEdge;
+    GetGadgetDomain(sgw->Gadget, window, NULL, &bbox);
+    mousex = sgw->IEvent->ie_position.ie_xy.ie_x - window->LeftEdge - bbox.Left;
     
     EnterFunc(bug("DoSGHClick(sgw=%p)\n", sgw));
     
