@@ -92,19 +92,19 @@
 	/* Don't forget to find out some extra defaults here */
 	struct TagItem procTags[] =
 	{
-	    { NP_Seglist	, (IPTR)segList },
-	    { NP_FreeSeglist    , FALSE     	},
-	    { NP_StackSize	, stackSize 	},
-	    { NP_Name   	, (IPTR)name    },
-	    { NP_Priority	, pri	     	},
-	    { NP_WindowPtr	, windowPtr     },
-	    { NP_CurrentDir	, 0		},
-	    { NP_HomeDir	, 0	  	},
-	    { NP_Input	        , 0		},
-	    { NP_Output	        , 0		},
-	    { NP_CloseInput	, FALSE		},
-	    { NP_CloseOutput    , FALSE		},
-	    { TAG_DONE  	, NULL 	    	}
+	    { NP_Seglist	, (IPTR)segList   },
+	    { NP_FreeSeglist    , FALSE     	  },
+	    { NP_StackSize	, stackSize 	  },
+	    { NP_Name   	, (IPTR)name      },
+	    { NP_Priority	, pri	     	  },
+	    { NP_WindowPtr	, (IPTR)windowPtr },
+	    { NP_CurrentDir	, 0		  },
+	    { NP_HomeDir	, 0	  	  },
+	    { NP_Input	        , 0		  },
+	    { NP_Output	        , 0		  },
+	    { NP_CloseInput	, FALSE		  },
+	    { NP_CloseOutput    , FALSE		  },
+	    { TAG_DONE  	, NULL 	      	  }
 	};
 	
 	if ((pr = CreateNewProc(procTags)))
