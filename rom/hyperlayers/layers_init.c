@@ -52,8 +52,8 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR LIBBASE)
     LIBBASE->lb_GfxBase = (struct GfxBase *) OpenLibrary("graphics.library",0);
 
 #ifndef CREATE_ROM
-  SysBase = lh->lb_SysBase;
-  GfxBase = lh->lb_GfxBase;
+  SysBase = LIBBASE->lb_SysBase;
+  GfxBase = LIBBASE->lb_GfxBase;
 #endif
 
   if (NULL == LIBBASE->lb_UtilityBase)
