@@ -51,6 +51,11 @@ struct HIDDSerialUnitData
     ULONG 		unitnum;
     int			filedescriptor;
     ULONG		baudrate;
+    UBYTE		datalength;
+    BOOL		parity;
+    UBYTE		paritytype;
+    UBYTE		stopbits;
+    BOOL		breakcontrol;
     
     struct MsgPort	*replyport_read;
     struct Interrupt 	*softint_read;
@@ -61,12 +66,10 @@ struct HIDDSerialUnitData
     HIDD		unixio_write;
     
     struct termios	orig_termios;
-    
 };
 
 
-#define SER_DEFAULT_BAUDRATE	300
-//57600
+#define SER_DEFAULT_BAUDRATE	57600
 
 
 /* Library base */

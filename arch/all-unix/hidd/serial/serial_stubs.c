@@ -126,6 +126,21 @@ BOOL HIDD_SerialUnit_SetBaudrate(Object *obj, ULONG baudrate)
 
 /***************************************************************/
 
+BOOL HIDD_SerialUnit_SetParameters(Object *obj, struct TagItem * tags)
+{
+    static MethodID mid = 0;
+    struct pHidd_SerialUnit_SetParameters p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_SetParameters);
+        
+    p.mID	= mid;
+    p.tags      = tags;
+
+    return ((BOOL) DoMethod(obj, (Msg) &p));
+}
+
+/***************************************************************/
+
 BYTE HIDD_SerialUnit_SendBreak(Object *obj, int duration)
 {
     static MethodID mid = 0;
@@ -139,3 +154,17 @@ BYTE HIDD_SerialUnit_SendBreak(Object *obj, int duration)
     return ((BYTE)DoMethod(obj, (Msg) &p));
 }
 
+/***************************************************************/
+
+VOID HIDD_SerialUnit_GetCapabilities(Object *obj, struct TagItem * tags)
+{
+  static MethodID mid = 0;
+  struct pHidd_SerialUnit_GetCapabilities p;
+  
+  if (!mid) mid = GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_GetCapabilities);
+
+  p.mID         = mid;
+  p.taglist     = tags;
+  
+  DoMethod(obj, (Msg) &p);
+}

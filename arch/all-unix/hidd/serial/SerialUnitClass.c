@@ -6,17 +6,6 @@
     Lang: english
 */
 
-/*
-** Problem: When the tty device driver is closed a message is
-**          probably still in the UNIXIO task that asks for notification
-**          when data arrive on the serial device. The UNIXIO task
-**          will probably end up testing the filedescriptor that has
-**          already been closed down and hang everything.
-** Solution: There must be a way to get rid of that message to the UNIXIO
-**           task. 
-**
-*/
-
 /* Some POSIX includes */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -56,6 +45,10 @@
 void serialunit_receive_data();
 void serialunit_write_more_data();
 
+/* Some utility functions */
+void settermios(struct HIDDSerialUnitData * data);
+
+
 char * unitname[] =
 {
  "/dev/ttyS0",
@@ -87,11 +80,8 @@ static Object *serialunit_new(Class *cl, Object *obj, ULONG *msg)
 
     D(bug("Opening %s.\n",unitname[data->unitnum]));
 
-//Disable();
-
     data->filedescriptor = open(unitname[data->unitnum], O_NONBLOCK|O_RDWR);
 
-//Enable();
     D(bug("Opened %s on handle %d\n",unitname[data->unitnum], data->filedescriptor));
     
     if (-1 != data->filedescriptor)
@@ -106,6 +96,9 @@ static Object *serialunit_new(Class *cl, Object *obj, ULONG *msg)
       cfmakeraw(&_termios);
       cfsetspeed(&_termios, data->baudrate);
 
+/* !!! untested
+      _termios.c_iflag |= (IXON|IXOFF);
+*/
       if (tcsetattr(data->filedescriptor, TCSANOW, &_termios) >=0)
       {
         data->replyport_read = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC|MEMF_CLEAR);
@@ -292,6 +285,32 @@ static ULONG valid_baudrates[] =
   -1
 };
 
+/*** unused due to cfsetspeed ***
+
+static LONG unix_baudrates[] =
+{
+  B0,
+  B50,
+  B75,
+  B110
+  B134,
+  B150,
+  B200,
+  B300,
+  B600,
+  B1200,
+  B1800,
+  B2400,
+  B4800,
+  B9600,
+  B19200,
+  B38400,
+  B57600,
+  B115200
+};
+
+********************************/
+
 /******* SerialUnit::SetBaudrate() **********************************/
 ULONG serialunit_setbaudrate(Class *cl, Object *o, struct pHidd_SerialUnit_SetBaudrate *msg)
 {
@@ -326,6 +345,87 @@ ULONG serialunit_setbaudrate(Class *cl, Object *o, struct pHidd_SerialUnit_SetBa
   return valid;
 }
 
+static UBYTE valid_datalengths[] =
+{
+  5,
+  6,
+  7,
+  8,
+  -1
+};
+
+static UBYTE unix_datalengths[] =
+{
+  CS5,
+  CS6,
+  CS7,
+  CS8
+};
+
+/******* SerialUnit::SetParameters() **********************************/
+ULONG serialunit_setparameters(Class *cl, Object *o, struct pHidd_SerialUnit_SetParameters *msg)
+{
+  struct HIDDSerialUnitData * data = INST_DATA(cl, o);
+  BOOL valid = TRUE;
+  int i = 0;
+  struct TagItem * tags = msg->tags;
+  
+  while (TAG_END != tags[i].ti_Tag && TRUE == valid)
+  {
+    switch (tags[i].ti_Tag)
+    {
+      case TAG_DATALENGTH:
+      
+        if ((UBYTE)tags[i].ti_Data != data->datalength)
+        {
+          int i = 0;
+          BOOL found = FALSE;
+          while (TRUE == valid && -1 != (BYTE)valid_datalengths[i])
+          {
+            if ((UBYTE)tags[i].ti_Data == valid_datalengths[i])
+            {
+              found = TRUE;
+              data->datalength = unix_datalengths[i];
+            }
+
+            valid = found;
+            i++;
+          }
+          
+        }
+      break;
+        
+      case TAG_STOP_BITS:
+      break;
+      
+      case TAG_PARITY:
+	  if ( /* PARITY_0    == tags[i].ti_Data ||
+	          PARITY_1    == tags[i].ti_Data || */
+	      PARITY_EVEN == tags[i].ti_Data ||
+              PARITY_ODD  == tags[i].ti_Data)  
+          {
+	     data->parity     = TRUE;
+	     data->paritytype = tags[i].ti_Data;
+	  }
+	  else
+	    valid = FALSE;
+      break;
+      
+      case TAG_PARITY_OFF:
+        data->parity = FALSE;
+      break;
+      
+      default: 
+        valid = FALSE;
+    }
+    i++;
+  }
+  
+  settermios(data);
+  
+  return valid;
+}
+
 /******* SerialUnit::SendBreak() **********************************/
 BYTE serialunit_sendbreak(Class *cl, Object *o, struct pHidd_SerialUnit_SendBreak *msg)
 {
@@ -335,6 +435,34 @@ BYTE serialunit_sendbreak(Class *cl, Object *o, struct pHidd_SerialUnit_SendBrea
     return 0;
   
   return SerErr_LineErr;
+}
+
+/****** SerialUnit::GetCapabilities ********************************/
+VOID serialunit_getcapabilities(Class * cl, Object *o, struct TagItem * tags)
+{
+  if (NULL != tags)
+  {
+    int i = 0;
+    BOOL end = FALSE;
+    while (FALSE == end)
+    {
+      switch (tags[i].ti_Tag)
+      {
+        case HIDDA_SerialUnit_BPSRate:
+          tags[i].ti_Data = (STACKIPTR)valid_baudrates;
+        break;
+        
+        case HIDDA_SerialUnit_DataLength:
+          tags[i].ti_Data = (STACKIPTR)valid_datalengths;
+        break;
+        
+        case TAG_DONE:
+          end = TRUE;
+        break;
+      }
+      i++;
+    }
+  }
 }
 
 /************* The software interrupt handler that gets data from UART *****/
@@ -438,7 +566,9 @@ Class *init_serialunitclass (struct class_static_data *csd)
         {(IPTR (*)())serialunit_init,		moHidd_SerialUnit_Init},
         {(IPTR (*)())serialunit_write,		moHidd_SerialUnit_Write},
         {(IPTR (*)())serialunit_setbaudrate,	moHidd_SerialUnit_SetBaudrate},
+        {(IPTR (*)())serialunit_setparameters,	moHidd_SerialUnit_SetParameters},
         {(IPTR (*)())serialunit_sendbreak,	moHidd_SerialUnit_SendBreak},
+        {(IPTR (*)())serialunit_getcapabilities,moHidd_SerialUnit_GetCapabilities},
         {NULL, 0UL}
     };
     
@@ -492,3 +622,42 @@ void free_serialunitclass(struct class_static_data *csd)
     ReturnVoid("free_serialhiddclass");
 }
 
+
+/**************************************************************/
+
+void settermios(struct HIDDSerialUnitData * data)
+{
+
+  struct termios _termios;
+  tcgetattr(data->filedescriptor, &_termios);
+
+  _termios.c_cflag &= ~CSIZE;
+  _termios.c_cflag |= data->datalength;
+
+  if (FALSE == data->parity)
+    _termios.c_cflag &= ~(PARENB|PARODD);
+  else
+  {
+    _termios.c_cflag |= PARENB;
+    switch (data->paritytype)
+    {
+      case PARITY_EVEN:
+        _termios.c_cflag &= ~PARODD;
+      break;
+      
+      case PARITY_ODD:
+        _termios.c_cflag |= PARODD;
+      break;
+    }
+  }
+
+  if (tcsetattr(data->filedescriptor, TCSADRAIN, &_termios) < 0)
+  {
+//    D(bug("Failed to set new termios\n"));
+  }
+  else
+  {
+//    D(bug("Adjusted to new termios!\n"));
+  }
+
+}
