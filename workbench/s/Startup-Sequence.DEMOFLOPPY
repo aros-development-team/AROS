@@ -1,59 +1,14 @@
-;SetClock LOAD
-
-;-----------------------------------------------
-; Copy System to RAM:
-RAM:
-
 SYS:C/Unpack SYS:AROS.pkg RAM:
 
-C/Assign SYS: RAM:
-C/Assign C: SYS:C
+RAM:
+C/Assign SYS:  RAM:
+C/Assign C:    SYS:C
+
 Assign DEVS: SYS:Devs
 Assign LIBS: SYS:LIBS
-Assign S: SYS:S
-;-----------------------------------------------
+Assign S:    SYS:S
 
-;Version >NIL:
-FailAt 21
+Makedir RAM:T
+Assign T: RAM:T
 
-MakeDir RAM:T RAM:Clipboards RAM:ENV RAM:ENV/Sys
-
-Assign ENV:     RAM:ENV
-Assign T:       RAM:T
-Assign CLIPS:   RAM:Clipboards
-Assign KEYMAPS: DEVS:Keymaps
-Assign LOCALE:  SYS:Locale
-Assign LIBS:    SYS:Classes ADD
-Assign FONTS:   SYS:Fonts
-Assign ENVARC:  SYS:Prefs/Env-Archive
-;Assign HELP:    LOCALE:Help DEFER
-;Assign PRINTERS: DEVS:Printers
-
-Copy >NIL: ENVARC: ENV: ALL CLONE NOREQ
-
-Mount PIPEFS:
-
-;Mount DEVS:DOSDrivers/~(#?.info)
-
-;SetEnv Workbench $Workbench
-;SetEnv Kickstart $Kickstart
-
-Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
-
-FixFonts
-
-AddDatatypes REFRESH QUIET
-IPrefs
-;Run <NIL: >NIL: ConClip
-
-SetClock LOAD
-
-If EXISTS S:User-Startup
-  Execute S:User-Startup
-EndIf
-
-LoadWB
-
-Execute S:Shell-Startup
-
-;EndCLI
+Execute S:Startup-Sequence
