@@ -19,10 +19,8 @@ etc. 2) An Amiga Emulation (ie. a window in which you have a Workbench.
 Every new screen will open a new window) 3) A link-library with which you
 can port Amiga apps to other OSs (eg. Windows). 1) will have Amiga l&f,
 2) will have a mixture and 3) will have native l&f.
-\begin{new}{18.9.1997}
 The flavours 1 and 2 will optionally have binary compatibility if
 possible.
-\end{new}
 
 \end{itemize}
 
@@ -97,7 +95,6 @@ AROS, but what counts here is the intention of the law: It's ok to write a
 software which is compatible to some other software. Therefore we believe
 that AROS is protected by the law.
 
-\begin{new}{7.1.1998}
 Patents and header files are a different issue, though. We can use patented
 algorithms (eg. screen dragging or getting a menu when you press the
 right mousebutton) in Europe but this must not be imported into the US.
@@ -105,7 +102,6 @@ Header files on the other hand must be compatible but "as different as
 possible" from the orignal.
 
 Therefore to avoid any trouble we applied for an official Ok by Amiga Int.
-\end{new}
 
 \section{How compatible is AROS ?}
 
@@ -123,10 +119,7 @@ for SPARC, HPUX, Alpha, PIOS ONE/transAm and any other available
 hardware if someone wants to do that.
 
 \begin{itemize}
-\item 
-\begin{new}{12.10.1999}
-Linux/i386 with 2.x kernel.
-\end{new}
+\item Linux/i386 with 2.x kernel.
 FreeBSD: Status: everything works. Flavours: Emulation
 \item Amiga/AmigaOS: Status: parts work (like a big SetPatch()). Flavours: Standalone
 \item Linux/m68k: Status: alpha. Flavours: Emulation (binary
@@ -227,7 +220,6 @@ contact with PIOS and talked to them several times and they are willing
 to spare a machine (at least that's what we think they said :-) but
 mailing them that you want to see AROS on PIOS ONE might help :-)
 
-\begin{new}{1.8.1997}
 \section{How about PPC or PPC cards ?}
 
 We are regularily asked about AROS on PPC. The answer has always been the
@@ -239,7 +231,6 @@ want, it's just that we can't.
 
 \section{What does Amiga International say about AROS ?}
 
-\begin{new}{7.1.1998}
 Short: They are not sure if they like it.
 Long: We are now in contact with both Amiga Int (Petro Tyschtschenko) and
 Amiga Inc (Jeff Schindler). Aaron Digulla had a long talk to both
@@ -276,7 +267,6 @@ developed some extensions to the AmigaOS (HIDDs, RT and Purify) which
 we can develop further. It would just be a pity if several man years
 of work would be lost in a situation where the Amiga needs every
 support it can get.
-\end{new}
 
 \section{I want to be a beta tester}
 
@@ -288,21 +278,17 @@ report.
 
 Currently we have these lists:
 
-\begin{new}{13.9.1999}
 \begin{description}
 \item{aros-user} This is a public list on which we post announcements and
 updates. The language is english.
-\link{Sign up here}{http://www.aros.org/mailman/listinfo/aros-user}
+\link{Sign up here}{http://www.aros.org/mailman/listinfo/aros-user}.
+
+\item{aros-dev} This is a private list on which the developers coordinate
+the development. The language is english. You should only subscribe if
+you plan to work on AROS.
+\link{Sign up here}{http://www.aros.org/mailman/listinfo/aros-dev}.
 
 \end{description}
 
-There is also a list for developers, but that list is private. Ask
-me if you want to be added to it.
-
 To add yourself to any of the open lists, follow the links above.
-Note that, for security reasons, the EMail after
-the subscribe must match your local address (ie. where the mail comes
-from). This is to protect you from beeing added by someone else.
-
-\end{new}
 
