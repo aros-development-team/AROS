@@ -17,6 +17,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "ldscript.h"
+
+#define TMPTEMPLATE "aros-collect.XXXXXX"
+
 extern int gensets(FILE *in, FILE *out);
 
 void fatalerror(int status)
@@ -74,7 +78,7 @@ FILE *xfopen(char *name, char *mode)
 
 void docommand(char *path, char *argv[])
 {
-    extern char **environ; 
+    extern char **environ;
 
     pid_t pid=vfork();
     int status;
@@ -144,12 +148,12 @@ char *basename(char *path)
     return base;
 }
 
-char *tempoutname = NULL;
-char *setsfilename = NULL;
+char *tempoutname  = NULL;
+char *ldscriptname = NULL;
 
 void exitfunc(void)
 {
-    remove(setsfilename);
+//    remove(ldscriptname);
     remove(tempoutname);
 }
 
@@ -160,7 +164,7 @@ int main(int argc, char *argv[])
     char *command;
     char **ldargs;
     FILE *pipe;
-    FILE *setsfile = NULL;
+    FILE *ldscriptfile = NULL;
     char buf[200];
     int thereare = 0, incremental = 0;
 
@@ -183,19 +187,6 @@ int main(int argc, char *argv[])
 	}
     }
 
-    tempoutname  = xtempnam();
-    setsfilename = joinstrings(tempoutname, "-set.c", NULL);
-
-    /* disabled: for some strange reasons this doesn't always work...
-    arguments = joinargs(argv);
-    command = joinstrings("ld -r ", arguments, NULL);
-    printf(">>>1<<< %s\n", command);
-
-
-    if ((ret=WEXITSTATUS(system(command))))
-    	ERROR(ret, );
-    */
-
     ldargs = xmalloc(sizeof(char *) * (argc+2));
 
     ldargs[0] = basename(LINKERPATH);
@@ -211,19 +202,23 @@ int main(int argc, char *argv[])
     if (incremental)
         return 0;
 
-    command = joinstrings(NMPATH " ", output, NULL);
+    tempoutname  = xtempnam();
+    ldscriptname = joinstrings(tempoutname, "-ldscript.x", NULL);
+    command      = joinstrings(OBJDUMPPATH " -h ", output, NULL);
+    pipe         = xpopen(command);
+    ldscriptfile = xfopen(ldscriptname, "w");
 
-    pipe     = xpopen(command);
-    setsfile = xfopen(setsfilename, "w");
+    fprintf(ldscriptfile, LDSCRIPT_PART1);
+    ret = gensets(pipe, ldscriptfile);
+    fprintf(ldscriptfile, LDSCRIPT_PART2);
 
-    ret = gensets(pipe, setsfile);
-    fclose(setsfile);
+    fclose(ldscriptfile);
     pclose(pipe);
 
     if (ret)
     {
 	free(command);
-	command = joinstrings(GCCPATH " -static -nostartfiles -nostdlib -Wl,-r -o ", tempoutname, " ", output, " ", setsfilename, NULL);
+	command = joinstrings(LINKERPATH " -r -o ", tempoutname, " ", output, " -T ", ldscriptname, NULL);
 	xsystem(command);
 	free(command);
 	command = joinstrings(MVPATH " -f ", tempoutname, " ", output, NULL);
