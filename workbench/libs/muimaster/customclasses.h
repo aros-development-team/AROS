@@ -6,11 +6,12 @@
 #include <aros/symbolsets.h>
 #include <aros/autoinit.h>
 
-#define __ZUNE_CUSTOMCLASS_START(name)                               \
-BOOPSI_DISPATCHER(IPTR, name ## _Dispatcher, __class, __self, __msg) \
-{                                                                    \
-    switch (__msg->MethodID)                                         \
-    {                                                                \
+#define __ZUNE_CUSTOMCLASS_START(name)                                \
+BOOPSI_DISPATCHER(IPTR, name ## _Dispatcher, __class, __self, __msg); \
+BOOPSI_DISPATCHER(IPTR, name ## _Dispatcher, __class, __self, __msg)  \
+{                                                                     \
+    switch (__msg->MethodID)                                          \
+    {                                                                 \
 
 #define __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class) \
         default:                                                      \
@@ -22,6 +23,7 @@ BOOPSI_DISPATCHER(IPTR, name ## _Dispatcher, __class, __self, __msg) \
                                                                       \
 struct MUI_CustomClass * name ## _CLASS;                              \
                                                                       \
+int name ## _Initialize(void);                                        \
 int name ## _Initialize(void)                                         \
 {                                                                     \
     name ## _CLASS = MUI_CreateCustomClass                            \
@@ -43,6 +45,7 @@ int name ## _Initialize(void)                                         \
     return RETURN_OK;                                                 \
 }                                                                     \
                                                                       \
+void name ## _Deinitialize(void);                                     \
 void name ## _Deinitialize(void)                                      \
 {                                                                     \
     MUI_DeleteCustomClass(name ## _CLASS);                            \
@@ -126,6 +129,7 @@ ADD2EXIT(name ## _Deinitialize, 100);                                 \
 /*************************************************************************/
 
 #define __ZUNE_CUSTOMCLASS_INLINEMETHOD(cname, mname, m_msg_type, m_code) \
+IPTR mname(Class *CLASS, Object *self, m_msg_type message);               \
 IPTR mname(Class *CLASS, Object *self, m_msg_type message)                \
 {                                                                         \
     struct cname ## _DATA *data __unused = INST_DATA(CLASS, self);        \
