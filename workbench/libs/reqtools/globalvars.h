@@ -1,0 +1,12 @@
+extern struct ReqToolsBase  	*ReqToolsBase;
+extern struct ExecBase 	    	*SysBase;
+extern struct DosLibrary 	*DOSBase;
+extern struct UtilityBase 	*UtilityBase;
+extern struct IntuitionBase	*IntuitionBase;
+extern struct GfxBase 		*GfxBase;
+extern struct LocaleBase 	*LocaleBase;
+extern struct Library 		*LayersBase;
+extern struct Library 		*GadToolsBase;
+extern struct Device 		*ConsoleDevice;
+extern struct IOStdReq		iorequest;
+extern Class			*ButtonImgClass;

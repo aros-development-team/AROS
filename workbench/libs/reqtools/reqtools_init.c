@@ -39,6 +39,7 @@
 
 #include "general.h"
 #include "boopsigads.h"
+#include "rtfuncs.h"
 
 /****************************************************************************************/
 
@@ -121,29 +122,11 @@ const struct inittable datatable=
 
 /****************************************************************************************/
 
-#ifdef _AROS
-AROS_UFP3(IPTR, myBoopsiDispatch,
-	  AROS_UFPA(Class *, cl, A0),
-	  AROS_UFPA(struct Image *, im, A2),
-	  AROS_UFPA(Msg, msg, A1));
-#endif
+/* Global variables */
 
-/****************************************************************************************/
-
-struct ReqToolsBase 	*ReqToolsBase, *RTBase;
-struct ReqToolsBase	**RTBasePtr = &RTBase;
-
-struct ExecBase 	*SysBase;
-struct DosLibrary 	*DOSBase;
-struct UtilityBase 	*UtilityBase;
-struct IntuitionBase	*IntuitionBase;
-struct GfxBase 		*GfxBase;
-struct LocaleBase 	*LocaleBase;
-struct Library 		*LayersBase;
-struct Library 		*GadToolsBase;
-struct Device 		*ConsoleDevice;
-struct IOStdReq		iorequest;
-Class			*ButtonImgClass;
+#define extern
+#include "globalvars.h"
+#undef extern
 
 /****************************************************************************************/
 
@@ -154,63 +137,15 @@ AROS_LH2(struct IntReqToolsBase *, init,
 {
     AROS_LIBFUNC_INIT
     
-    *RTBasePtr = ReqToolsBase = (struct ReqToolsBase *)RTBase;
+    ReqToolsBase = (struct ReqToolsBase *)RTBase;
         
     /* This function is single-threaded by exec by calling Forbid. */
 
-    /* Store arguments */
     RTBase->rt_SysBase = SysBase = sysBase;
-    RTBase->rt.SegList = segList;
 
     D(bug("reqtools.library: Inside libinit func\n"));
     
-    InitSemaphore(&RTBase->rt.ReqToolsPrefs.PrefsSemaphore);
-    RTBase->rt.ReqToolsPrefs.PrefsSize = RTPREFS_SIZE;
-
-    /* Set default preferences */
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_FILEREQ].Size = 75;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_FILEREQ].ReqPos = REQPOS_TOPLEFTSCR;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_FILEREQ].LeftOffset = 25;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_FILEREQ].TopOffset = 18;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_FILEREQ].MinEntries = 10;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_FILEREQ].MaxEntries = 50;
-
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_FONTREQ].Size = 65;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_FONTREQ].ReqPos = REQPOS_TOPLEFTSCR;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_FONTREQ].LeftOffset = 25;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_FONTREQ].TopOffset = 18;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_FONTREQ].MinEntries = 6;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_FONTREQ].MaxEntries = 10;
-
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_PALETTEREQ].Size = 65;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_PALETTEREQ].ReqPos = REQPOS_TOPLEFTSCR;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_PALETTEREQ].LeftOffset = 25;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_PALETTEREQ].TopOffset = 18;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_PALETTEREQ].MinEntries = 6;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_PALETTEREQ].MaxEntries = 10;
-
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_SCREENMODEREQ].Size = 65;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_SCREENMODEREQ].ReqPos = REQPOS_TOPLEFTSCR;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_SCREENMODEREQ].LeftOffset = 25;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_SCREENMODEREQ].TopOffset = 18;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_SCREENMODEREQ].MinEntries = 6;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_SCREENMODEREQ].MaxEntries = 10;
-
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_VOLUMEREQ].Size = 65;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_VOLUMEREQ].ReqPos = REQPOS_TOPLEFTSCR;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_VOLUMEREQ].LeftOffset = 25;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_VOLUMEREQ].TopOffset = 18;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_VOLUMEREQ].MinEntries = 6;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_VOLUMEREQ].MaxEntries = 10;
-
-    //    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_OTHERREQ].Size = 65;
-    //    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_OTHERREQ].ReqPos = REQPOS_TOPLEFTSCR;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_OTHERREQ].LeftOffset = 25;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_OTHERREQ].TopOffset = 18;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_OTHERREQ].MinEntries = 6;
-    RTBase->rt.ReqToolsPrefs.ReqDefaults[RTPREF_OTHERREQ].MaxEntries = 10;
-
-    return RTBase;
+    return (struct IntReqToolsBase *)RTFuncs_Init(&RTBase->rt, segList);
 
     AROS_LIBFUNC_EXIT
 }
@@ -232,137 +167,11 @@ AROS_LH1(struct IntReqToolsBase *, open,
     */
     
     /* Keep compiler happy */
-    version = 0;
+    (void)version;
 
     D(bug("reqtools.library: Inside libopen func\n"));
     
-    if (DOSBase == NULL)
-    {
-        UBYTE configbuffer[RTPREFS_SIZE];
-	
-        DOSBase = RTBase->rt.rt_DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
-        if (DOSBase == NULL)
-            return NULL;
-
-	    
-	/* Read config file */
-	
-        D(bug("reqtools.library: Inside libopen func. Reading config file\n"));
-	
-	memset(configbuffer, 0, sizeof(configbuffer));
-	
-	if (GetVar("ReqTools.prefs",
-		   configbuffer,
-		   sizeof(configbuffer),
-		   GVF_BINARY_VAR | GVF_GLOBAL_ONLY | LV_VAR | GVF_DONT_NULL_TERM) == RTPREFS_SIZE)
-	{
-	    UBYTE *configptr = configbuffer;
-	    ULONG val;
-	    WORD  i;
-
-	    D(bug("reqtools.library: Inside libopen func. Configfile loaded successfully\n"));
-	    
-#define READ_ULONG 	*((ULONG *)configptr)++
-#define READ_UWORD 	*((UWORD *)configptr)++
-#define RTPREFS 	(RTBase->rt.ReqToolsPrefs)
-
-	    val = READ_ULONG;
-	    RTPREFS.Flags = AROS_LONG2BE(val);
-
-	    for(i = 0;i < RTPREF_NR_OF_REQ; i++)
-	    {
-		val = READ_ULONG;
-		RTPREFS.ReqDefaults[i].Size = AROS_LONG2BE(val);
-
-		val = READ_ULONG;
-		RTPREFS.ReqDefaults[i].ReqPos = AROS_LONG2BE(val);
-
-		val = READ_UWORD;
-		RTPREFS.ReqDefaults[i].LeftOffset = AROS_WORD2BE(val);
-
-		val = READ_UWORD;
-		RTPREFS.ReqDefaults[i].TopOffset = AROS_WORD2BE(val);
-
-		val = READ_UWORD;
-		RTPREFS.ReqDefaults[i].MinEntries = AROS_WORD2BE(val);
-
-		val = READ_UWORD;
-		RTPREFS.ReqDefaults[i].MaxEntries = AROS_WORD2BE(val);	    
-	    }
-	    	
-	}
-	
-    } /* if (DOSBase == NULL) */
-    
-    if(IntuitionBase == NULL)
-	IntuitionBase = RTBase->rt.rt_IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
-    if(IntuitionBase == NULL)
-	return NULL;
-
-    if(GfxBase == NULL)
-	GfxBase = RTBase->rt.rt_GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
-    if(GfxBase == NULL)
-	return NULL;
-    
-    if(UtilityBase == NULL)
-	UtilityBase = RTBase->rt.rt_UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37);
-    if(UtilityBase == NULL)
-	return NULL;
-
-    if(GadToolsBase == NULL)
-	GadToolsBase = RTBase->rt.rt_GadToolsBase = OpenLibrary("gadtools.library", 37);
-    if(GadToolsBase == NULL)
-	return NULL;
-
-    if(LayersBase == NULL)
-	LayersBase = OpenLibrary("layers.library", 37);
-    if(LayersBase == NULL)
-	return NULL;
-
-    if(LocaleBase == NULL)
-	LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 37);
-    if(LocaleBase == NULL)
-	return NULL;
-
-    D(bug("reqtools.library: Inside libopen func. Libraries opened successfully.\n"));
-
-    if (ConsoleDevice == NULL)
-    {
-        iorequest.io_Message.mn_Length = sizeof(iorequest);
-	
-        if (OpenDevice("console.device", CONU_LIBRARY, (struct IORequest *)&iorequest, 0))
-	{
-	    return NULL;
-	}
-	ConsoleDevice = iorequest.io_Device;
-    }
-    if (ConsoleDevice == NULL)
-        return NULL;
-
-    D(bug("reqtools.library: Inside libopen func. Console.device opened successfully.\n"));
-	
-    if (ButtonImgClass == NULL)
-    {
-        ButtonImgClass = MakeClass(NULL, IMAGECLASS, NULL, sizeof(struct LocalObjData), 0);
-	if (ButtonImgClass)
-	{
-	    ButtonImgClass->cl_Dispatcher.h_Entry = (APTR)AROS_ASMSYMNAME(myBoopsiDispatch);
-	    ButtonImgClass->cl_Dispatcher.h_SubEntry = NULL;
-	    ButtonImgClass->cl_UserData = (IPTR)RTBase;
-	}
-    }
-    if (ButtonImgClass == NULL)
-        return NULL;
-    
-    D(bug("reqtools.library: Inside libopen func. ButtonImgClass create successfully.\n"));
-
-    /* I have one more opener. */
-    RTBase->rt.LibNode.lib_Flags &= ~LIBF_DELEXP;
-    RTBase->rt.RealOpenCnt++;
-
-    return RTBase;
-
-    D(bug("reqtools.library: Inside libopen func. Returning success.\n"));
+    return (struct IntReqToolsBase *)RTFuncs_Open(&RTBase->rt, version);
 
     AROS_LIBFUNC_EXIT
 }
@@ -380,19 +189,8 @@ AROS_LH0(BPTR, close, struct IntReqToolsBase *, RTBase, 2, ReqTools)
 
     D(bug("reqtools.library: Inside libclose func.\n"));
 
-    /* I have one fewer opener. */
-    RTBase->rt.RealOpenCnt--;
+    return RTFuncs_Close(&RTBase->rt);
     
-    if((RTBase->rt.LibNode.lib_Flags & LIBF_DELEXP) != 0)
-    {
-	if(RTBase->rt.LibNode.lib_OpenCnt == 0)
-	    return expunge();
-	
-	RTBase->rt.LibNode.lib_Flags &= ~LIBF_DELEXP;
-    }
-
-    return NULL;
-
     AROS_LIBFUNC_EXIT
 }
 
@@ -402,7 +200,6 @@ AROS_LH0(BPTR, expunge, struct IntReqToolsBase *, RTBase, 3, ReqTools)
 {
     AROS_LIBFUNC_INIT
 
-    BPTR ret;
     /*
 	This function is single-threaded by exec by calling Forbid.
 	Never break the Forbid() or strange things might happen.
@@ -412,53 +209,19 @@ AROS_LH0(BPTR, expunge, struct IntReqToolsBase *, RTBase, 3, ReqTools)
  
     D(bug("reqtools.library: Inside libexpunge func.\n"));
 
-    if(RTBase->rt.RealOpenCnt != 0)
-    {
-	/* Set the delayed expunge flag and return. */
-	RTBase->rt.LibNode.lib_Flags |= LIBF_DELEXP;
-	return NULL;
-    }
-
-    /* Get rid of the library. Remove it from the list. */
-    Remove(&RTBase->rt.LibNode.lib_Node);
-
-    /* Get returncode here - FreeMem() will destroy the field. */
-    ret = RTBase->rt.SegList;
-
-    D(bug("reqtools.library: Inside libexpunge func. Freeing ButtonImgClass.\n"));
-
-    if (ButtonImgClass) FreeClass(ButtonImgClass);
-
-    D(bug("reqtools.library: Inside libexpunge func. Closing console.device.\n"));
+    return RTFuncs_Expunge(&RTBase->rt);
     
-    if (ConsoleDevice) CloseDevice((struct IORequest *)&iorequest);
-
-    D(bug("reqtools.library: Inside libexpunge func. Closing libraries.\n"));
-    
-    CloseLibrary((struct Library *)DOSBase);
-    CloseLibrary((struct Library *)IntuitionBase);
-    CloseLibrary((struct Library *)UtilityBase);
-    CloseLibrary((struct Library *)GfxBase);
-    CloseLibrary((struct Library *)LocaleBase);
-    CloseLibrary(GadToolsBase);
-    CloseLibrary(LayersBase);
-
-    D(bug("reqtools.library: Inside libexpunge func. Freeing libbase.\n"));
-
-    /* Free the memory. */
-    FreeMem((char *)RTBase-RTBase->rt.LibNode.lib_NegSize,
-	    RTBase->rt.LibNode.lib_NegSize + RTBase->rt.LibNode.lib_PosSize);
-
-    return ret;
     AROS_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH0I(int, null, struct ReqToolsBase *, RTBase, 4, ReqTools)
+AROS_LH0(int, null, struct IntReqToolsBase *, RTBase, 4, ReqTools)
 {
     AROS_LIBFUNC_INIT
-    return 0;
+
+    return RTFuncs_Null(&RTBase->rt);
+    
     AROS_LIBFUNC_EXIT
 }
 

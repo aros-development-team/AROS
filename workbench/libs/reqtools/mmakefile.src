@@ -25,7 +25,7 @@ ULIBNAME	:= ReqTools
 
 FILES := functable filereqalloc mem filereqextra req misc rtlocale \
 	 general filereq boopsigads filereqsetup filereqmain boopsi \
-	 palettereq
+	 palettereq rtfuncs
 
 FUNCTIONS :=	rtallocrequesta \
 		rtchangereqattra \

@@ -52,7 +52,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    ReleaseSemaphore(&GPB(ReqToolsBase)->rt.ReqToolsPrefs.PrefsSemaphore);
-
+    RTFuncs_UnlockPrefs(ReqToolsBase);
+    
     AROS_LIBFUNC_EXIT
+    
 } /* rtUnlockPrefs */

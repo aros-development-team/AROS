@@ -15,6 +15,7 @@
 #include <exec/memory.h>
 #include <aros/libcall.h>
 #include "reqtools_intern.h"
+#include "rtfuncs.h"
 
 /*****************************************************************************
 
@@ -77,56 +78,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct rtWindowLock *winLock;
-
-    /* Is this window already locked? */
-    if(window->FirstRequest != NULL)
-    {
-	struct rtWindowLock *wLock = (struct rtWindowLock *)window->FirstRequest;
-
-	while(wLock != NULL)
-	{
-	    if(wLock->rtwl_Magic ==  ('r' << 24 | 't' << 16 | 'L' << 8 | 'W'))
-	    {
-		if(wLock->rtwl_RequesterPtr == wLock)
-		{
-		    /* Window was already locked */
-		    wLock->rtwl_LockCount++;
-
-		    return wLock;
-		}
-	    }
-
-	    wLock = (struct rtWindowLock *)wLock->rtwl_Requester.OlderRequest;
-	}
-    }
-    winLock = (struct rtWindowLock *)AllocVec(sizeof(struct rtWindowLock),
-					      MEMF_CLEAR);
-    
-    /* No memory? */
-    if(winLock == NULL)
-	return NULL;
-
-    winLock->rtwl_Magic = 'r' << 24 | 't' << 16 | 'W' << 8 | 'L';
-    winLock->rtwl_RequesterPtr = winLock;
-    
-    winLock->rtwl_MinHeight = window->MinHeight;
-    winLock->rtwl_MaxHeight = window->MaxHeight;
-    winLock->rtwl_MinWidth  = window->MinWidth;
-    winLock->rtwl_MaxWidth  = window->MaxWidth;
-
-    WindowLimits(window, window->Width, window->Height,
-		 window->Width, window->Height);
-    
-    winLock->rtwl_ReqInstalled = Request((struct Requester *)winLock, window);
-    
-    winLock->rtwl_Pointer = window->Pointer;
-    winLock->rtwl_PtrHeight = window->PtrHeight;
-    winLock->rtwl_PtrWidth = window->PtrWidth;
-    
-    rtSetWaitPointer(window);
-    
-    return (APTR)winLock;
+    return RTFuncs_rtLockWindow(window);
 
     AROS_LIBFUNC_EXIT
+    
 } /* rtLockWindow */

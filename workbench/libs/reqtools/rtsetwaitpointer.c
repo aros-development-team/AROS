@@ -13,6 +13,7 @@
 #include <aros/libcall.h>
 #include <intuition/intuition.h>
 #include "reqtools_intern.h"
+#include "rtfuncs.h"
 
 /*****************************************************************************
 
@@ -66,10 +67,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct TagItem tags[] = { { WA_BusyPointer, TRUE },
-			      { TAG_DONE, NULL } };
-
-    SetWindowPointerA(window, (struct TagItem *)&tags);
-
+    RTFuncs_rtSetWaitPointer(window);
+    
     AROS_LIBFUNC_EXIT
-} /* rtSetWindowPointer */
+    
+} /* rtSetWaitPointer */

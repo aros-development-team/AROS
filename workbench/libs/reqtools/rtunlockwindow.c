@@ -14,6 +14,7 @@
 #include <exec/memory.h>
 #include <aros/libcall.h>
 #include "reqtools_intern.h"
+#include "rtfuncs.h"
 
 /*****************************************************************************
 
@@ -68,27 +69,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct rtWindowLock *wLock = (struct rtWindowLock *)windowlock;
-
-    if(wLock == NULL)
-	return;
-
-    if(wLock->rtwl_LockCount != 0)
-    {
-	wLock->rtwl_LockCount--;
-    }
-    else
-    {
-	struct TagItem tags[] = { { WA_Pointer, (IPTR)wLock->rtwl_Pointer },
-				  { TAG_DONE  , NULL } };
-
-	SetWindowPointerA(window, (struct TagItem *)&tags);
-
-	WindowLimits(window, wLock->rtwl_MinWidth, wLock->rtwl_MaxWidth,
-		     wLock->rtwl_MinHeight, wLock->rtwl_MaxHeight);
-
-	FreeVec(wLock);
-    }
+    RTFuncs_rtUnlockWindow(window, windowlock);
     
     AROS_LIBFUNC_EXIT
+    
 } /* rtUnlockWindow */
