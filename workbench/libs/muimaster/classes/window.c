@@ -331,7 +331,7 @@ static void HideRenderInfo(struct MUI_RenderInfo *mri)
     mri->mri_RastPort = NULL;
 }
 
-static ULONG _zune_window_get_default_events (void)
+static ULONG GetDefaultEvents (void)
 {
     return IDCMP_NEWSIZE      | IDCMP_REFRESHWINDOW
          | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_MENUPICK
@@ -339,7 +339,7 @@ static ULONG _zune_window_get_default_events (void)
          | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW;
 }
 
-static void _zune_window_change_events (struct MUI_WindowData *data, ULONG new_events)
+static void ChangeEvents (struct MUI_WindowData *data, ULONG new_events)
 {
     struct MinNode *mn;
     struct MUI_EventHandlerNode *ehn;
@@ -892,8 +892,7 @@ static void CreateWindowScrollbars(Object *obj, struct MUI_WindowData *data)
 }
 
 /* return FALSE only if no resize (dx=dy=0) occured */
-static BOOL
-_zune_window_resize (struct MUI_WindowData *data)
+static BOOL WindowResize (struct MUI_WindowData *data)
 {
     struct Window *win = data->wd_RenderInfo.mri_Window;
     int hborders = win->BorderLeft + win->BorderRight;
@@ -954,8 +953,6 @@ static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LO
 
 /**************/
 
-static ULONG window_Open(struct IClass *cl, Object *obj);
-static ULONG window_Close(struct IClass *cl, Object *obj);
 static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 			     struct IntuiMessage *event);
 
@@ -1126,7 +1123,7 @@ void HandleDragging (Object *oWin, struct MUI_WindowData *data,
 	data->wd_DropWindow = NULL;
 	data->wd_dnd = NULL;
 	/* stop listening to IDCMP_MOUSEMOVE */
-	_zune_window_change_events(data, _zune_window_get_default_events());
+	ChangeEvents(data, GetDefaultEvents());
     }
     ReplyMsg((struct Message*)imsg);
 }
@@ -1748,8 +1745,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
 /******************************************************************************/
 
 /* code for setting MUIA_Window_RootObject */
-static void window_change_root_object (struct MUI_WindowData *data, Object *obj,
-			   Object *newRoot)
+static void ChangeRootObject (struct MUI_WindowData *data, Object *obj,
+			      Object *newRoot)
 {
     Object *oldRoot;
 
@@ -1884,7 +1881,7 @@ static Object *GetPrevNextActiveObject (struct ObjNode *old_activenode, objnode_
  MUIV_Window_ActiveObject_Next and MUIV_Window_ActiveObject_Prev
  currently as there is no active object
 **************************************************************************/
-static void window_set_active_object (struct MUI_WindowData *data, Object *obj, ULONG newval)
+static void SetActiveObject (struct MUI_WindowData *data, Object *obj, ULONG newval)
 {
     struct ObjNode *old_activenode;
     Object *old_active;
@@ -1942,7 +1939,7 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
 /* MUIV_Window_Height_Screen and MUIV_Window_Height_Visible
  * are not handled yet, as their Width couterparts.
  */
-static void window_select_dimensions (struct MUI_WindowData *data)
+static void WindowSelectDimensions (struct MUI_WindowData *data)
 {
     if (!data->wd_Width)
     {
@@ -2048,7 +2045,7 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
                       | WFLG_CLOSEGADGET | WFLG_SIMPLE_REFRESH 
                       | WFLG_REPORTMOUSE | WFLG_NEWLOOKMENUS;
 
-    data->wd_Events = _zune_window_get_default_events();
+    data->wd_Events = GetDefaultEvents();
     data->wd_ActiveObject = NULL;
     data->wd_ID = 0;
     data->wd_ReqHeight = MUIV_Window_Height_Default;
@@ -2232,6 +2229,9 @@ static ULONG Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
+static ULONG WindowOpen(struct IClass *cl, Object *obj);
+static ULONG WindowClose(struct IClass *cl, Object *obj);
+
 /**************************************************************************
  OM_SET
 **************************************************************************/
@@ -2260,7 +2260,7 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	    case MUIA_Window_ActiveObject:
 /*  		D(bug("MUIA_Window_ActiveObject %ld (%p)\n", tag->ti_Data, tag->ti_Data)); */
-		window_set_active_object(data, obj, tag->ti_Data);
+		SetActiveObject(data, obj, tag->ti_Data);
 		break;
 	    case MUIA_Window_DefaultObject:
 		data->wd_DefaultObject = (APTR)tag->ti_Data;
@@ -2273,9 +2273,9 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 	    case MUIA_Window_Open:
 		if (tag->ti_Data && !(data->wd_Flags & MUIWF_OPENED))
-		    window_Open(cl, obj);
+		    WindowOpen(cl, obj);
 		else if (!tag->ti_Data && (data->wd_Flags & MUIWF_OPENED))
-		    window_Close(cl, obj);
+		    WindowClose(cl, obj);
 		else if (tag->ti_Data && (data->wd_Flags & MUIWF_OPENED))
 		{
 		    DoMethod(obj, MUIM_Window_ToFront);
@@ -2283,7 +2283,7 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		}
 		break;
 	    case MUIA_Window_RootObject:
-		window_change_root_object(data, obj, (Object *)tag->ti_Data);
+		ChangeRootObject(data, obj, (Object *)tag->ti_Data);
 		break;
 
 	    case MUIA_Window_Title:
@@ -2483,9 +2483,9 @@ static ULONG Window_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP
 
 /*
  * Called before window is opened or resized. It determines its bounds,
- * so you can call window_select_dimensions() to find the final dims.
+ * so you can call WindowSelectDimensions() to find the final dims.
  */
-static void window_minmax(Object *obj, struct MUI_WindowData *data)
+static void WindowMinMax(Object *obj, struct MUI_WindowData *data)
 {
     UWORD wd_innerLeft, wd_innerRight, wd_innerTop, wd_innerBottom;
 
@@ -2540,7 +2540,7 @@ static void window_minmax(Object *obj, struct MUI_WindowData *data)
 }
 
 
-static void install_backbuffer (struct IClass *cl, Object *obj)
+static void InstallBackbuffer (struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 #if 0
@@ -2559,15 +2559,14 @@ static void install_backbuffer (struct IClass *cl, Object *obj)
     }
 }
 
-static void deinstall_backbuffer (struct IClass *cl, Object *obj)
+static void DeinstallBackbuffer (struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    DeinitRastPort(&data->wd_RenderInfo.mri_BufferRP);
-    
     if (data->wd_RenderInfo.mri_BufferBM)
     {
-	FreeBitMap(data->wd_RenderInfo.mri_BufferBM);
+	DeinitRastPort(&data->wd_RenderInfo.mri_BufferRP);
+    	FreeBitMap(data->wd_RenderInfo.mri_BufferBM);
 	data->wd_RenderInfo.mri_BufferBM = NULL;
     }
 }
@@ -2577,7 +2576,7 @@ static void deinstall_backbuffer (struct IClass *cl, Object *obj)
  * An expose event is already queued, it will trigger
  * MUIM_Draw for us when going back to main loop.
  */
-static void window_Show (struct IClass *cl, Object *obj)
+static void WindowShow (struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     struct Window *win = data->wd_RenderInfo.mri_Window;
@@ -2596,7 +2595,7 @@ static void window_Show (struct IClass *cl, Object *obj)
     DoMethod(data->wd_RootObject, MUIM_Show);
 }
 
-static ULONG window_Open(struct IClass *cl, Object *obj)
+static ULONG WindowOpen(struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
@@ -2614,8 +2613,8 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
     }
 
     /* inquire about sizes */
-    window_minmax(obj,data);
-    window_select_dimensions(data);
+    WindowMinMax(obj,data);
+    WindowSelectDimensions(data);
 
     /* Decide which menustrip should be used */
     if (!data->wd_ChildMenustrip)
@@ -2633,11 +2632,11 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
 	return FALSE;
     }
 
-    install_backbuffer(cl, obj);
+    InstallBackbuffer(cl, obj);
 
     data->wd_Flags |= MUIWF_OPENED;
 
-    window_Show(cl, obj);
+    WindowShow(cl, obj);
 
     {
 	LONG left,top,width,height;
@@ -2669,7 +2668,7 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
 /******************************************************************************/
 /******************************************************************************/
 
-static ULONG window_Close(struct IClass *cl, Object *obj)
+static ULONG WindowClose(struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
@@ -2680,7 +2679,7 @@ static ULONG window_Close(struct IClass *cl, Object *obj)
     DoMethod(data->wd_RootObject, MUIM_Hide);
     zune_imspec_hide(data->wd_Background);
 
-    deinstall_backbuffer(cl, obj);
+    DeinstallBackbuffer(cl, obj);
 
     HideRenderInfo(&data->wd_RenderInfo);
 
@@ -2711,18 +2710,18 @@ static ULONG Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wi
     if (!(data->wd_Flags & MUIWF_OPENED)) return 0;
 
     DoMethod(data->wd_RootObject, MUIM_Hide);
-    deinstall_backbuffer(cl, obj);
+    DeinstallBackbuffer(cl, obj);
     HideRenderInfo(&data->wd_RenderInfo);
 
     /* inquire about sizes */
-    window_minmax(obj,data);
+    WindowMinMax(obj,data);
     /* resize window ? */
-    window_select_dimensions(data);
-    resized = _zune_window_resize(data);
+    WindowSelectDimensions(data);
+    resized = WindowResize(data);
 
-    install_backbuffer(cl, obj);
+    InstallBackbuffer(cl, obj);
 
-    window_Show(cl, obj);
+    WindowShow(cl, obj);
 
 #if 0
     if (msg->originator && !resized)
@@ -2780,7 +2779,7 @@ static ULONG Window_AddEventHandler(struct IClass *cl, Object *obj,
     msg->ehnode->ehn_Node.ln_Pri = msg->ehnode->ehn_Priority;
 #endif
     Enqueue((struct List *)&data->wd_EHList, (struct Node *)msg->ehnode);
-    _zune_window_change_events(data, _zune_window_get_default_events());
+    ChangeEvents(data, GetDefaultEvents());
     return TRUE;
 }
 
@@ -2795,7 +2794,7 @@ static ULONG Window_RemEventHandler(struct IClass *cl, Object *obj,
 //    D(bug("muimaster.library/window.c: Rem Eventhandler\n"));
 
     Remove((struct Node *)msg->ehnode);
-    _zune_window_change_events(data, _zune_window_get_default_events());
+    ChangeEvents(data, GetDefaultEvents());
     return TRUE;
 }
 
