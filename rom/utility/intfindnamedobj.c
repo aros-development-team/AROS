@@ -1,4 +1,12 @@
 /*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc:
+    Lang: english
+*/
+
+/*
     This function will start searching through a sublist of NamedObjects
     looking for the node which has the correct name (case insensitive).
     Case sensitive searches are done with FindName().
