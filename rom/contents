@@ -1,3 +1,8 @@
+boopsi/ - The BOOPSI system code. This is separated in order to use it
+	during early startup before intuition.library has been initialised.
+
+boot/ - Various boot time code. bootstraps, bootmenu etc...
+
 devs/ - ROM devices, ie. devices which are not loaded from
 	disk during runtime (eg. \filename{console.device}).
 
@@ -19,6 +24,8 @@ exec/ - The source for the exec.library. This is no good starting point
 
 graphics/ - Sourcecode for the \filename{graphics.library}. See
 	\lref{dos/}{dos} for more information.
+
+hidd/ - The system independant parts of the HIDD system.
 
 intuition/ - Sourcecode for the \filename{intuition.library}. See
 	\lref{dos/}{dos} for more information.
