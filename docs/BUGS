@@ -95,7 +95,7 @@ BUG000012
 digulla@aros.fh-konstanz.de
 TestExampleLib creates corrupt memory. Maybe library is freed twice ?
 
-BUG000013
+BUG000013 fixed
 srittau@aros.org
 Moria3D segfaults with a fp exception while "Loading Fading..." on an
 Intel (compatible) processors with internal FPU.
@@ -135,7 +135,7 @@ bergers@aros.org
 Devicetest cannot be linked correctly as there is no external Resident
 structure found in a linkfile.
 
-BUG000019
+BUG000019 fixed
 bergers@aros.org
 test/matchtest: when unlocking dirlock at the end of the program the dirlock 
 should still exist and not create a GURU-Meditation saying that this memory 
