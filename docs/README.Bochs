@@ -3,7 +3,7 @@ How to use AROS native-i386 with Bochs:
 Building:
 
   make clean
-  ./configure --target=native-i386 --enable-vmware-hack --enable-bochs-hack
+  ./configure --target=native-i386 --enable-bochs-hack
   make
 
 Download Bochs:
