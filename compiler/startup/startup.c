@@ -93,17 +93,20 @@ AROS_UFH3(static LONG, __startup_entry,
     
     if (set_open_libraries())
     {
-        if (set_call_funcs(SETNAME(INIT), 1, 1))
+        if
+	(
+	    setjmp(__aros_startup.as_startup_jmp_buf) == 0 &&
+            set_call_funcs(SETNAME(INIT), 1, 1)
+	)
 	{
             /* ctors/dtors get called in inverse order than init funcs */
             set_call_funcs(SETNAME(CTORS), -1, 0);
 
 	    /* Invoke the main function. A weak symbol is used as function name so that
 	       it can be overridden (for *nix stuff, for instance).  */
-              if (setjmp(__aros_startup.as_startup_jmp_buf) == 0)
-                  __aros_startup.as_startup_error = (*__main_function_ptr) (__argc, __argv);
+            __aros_startup.as_startup_error = (*__main_function_ptr) (__argc, __argv);
 		  
-              set_call_funcs(SETNAME(DTORS), 1, 0);
+            set_call_funcs(SETNAME(DTORS), 1, 0);
         }
         set_call_funcs(SETNAME(EXIT), -1, 0);
     }
