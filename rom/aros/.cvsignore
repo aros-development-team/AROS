@@ -2,7 +2,7 @@
 *.map
 makefile
 libdefs.h
-aros_functable.c
+*functable.c
+*endtag.c
 mmakefile
 functions.[ch]
-aros_endtag.c
