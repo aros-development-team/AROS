@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.6  2001/01/30 18:05:36  stegerg
+    changed ERROR_BREAK string from "Break" to "***Break"
+
     Revision 1.5  2000/05/21 08:47:46  SDuvan
     Added script errors
 
@@ -70,7 +73,7 @@ struct EString EString[]=
 { ERROR_LOCK_TIMEOUT,		"Lock timed out" },
 { ERROR_UNLOCK_ERROR,		"Unlock error" },
 { ERROR_BUFFER_OVERFLOW,	"Buffer overflow" },
-{ ERROR_BREAK,			"Break" },
+{ ERROR_BREAK,			"***Break" },
 { ERROR_NOT_EXECUTABLE, 	"File is not executable" },
 
 { STRING_INSERT_VOLUME,         "Please insert volume\n%s\nin any drive" },
