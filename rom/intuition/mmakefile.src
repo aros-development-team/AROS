@@ -67,6 +67,7 @@ FUNCTIONS := \
 	drawimagestate \
 	easyrequestargs \
 	endrefresh \
+	endrequest \
 	eraseimage \
 	freeclass \
 	freeremember \
@@ -76,6 +77,7 @@ FUNCTIONS := \
 	getdefaultpubscreen \
 	getscreendata \
 	getscreendrawinfo \
+	initrequester \
 	lateintuiinit \
 	lockibase \
 	lockpubscreen \
@@ -104,6 +106,7 @@ FUNCTIONS := \
 	removegadget \
 	removeglist \
 	reportmouse \
+	request \
 	resetmenustrip \
 	screentoback \
 	screentofront \
@@ -114,12 +117,15 @@ FUNCTIONS := \
 	setmenustrip \
 	setpointer \
 	setwindowtitles \
+	showtitle \
 	sizewindow \
 	sysreqhandler \
 	unlockibase \
 	unlockpubscreen \
 	viewaddress \
 	viewportaddress \
+	wbenchtoback \
+	wbenchtofront \
 	windowlimits \
 	windowtoback \
 	windowtofront
