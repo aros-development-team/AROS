@@ -220,6 +220,8 @@ void frbutton_setsize(Class *cl, Object *o, struct opSet *msg)
 
                 contents.Height = dri->dri_Font->tf_YSize;
                 contents.Width = LabelWidth(&rp, text, strlen(text), IntuitionBase);
+		
+		DeinitRastPort(&rp);
             }
             else
                 do_framebox = FALSE;
