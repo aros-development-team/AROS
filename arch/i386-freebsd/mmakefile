@@ -5,5 +5,3 @@ include $(TOP)/config/make.cfg
 #MM- kernel-link-freebsd-i386 : kernel-link-emul
 
 #MM- workbench-freebsd-i386 : workbench-freebsd
-
-#MM- setup-freebsd-i386 : setup-freebsd
