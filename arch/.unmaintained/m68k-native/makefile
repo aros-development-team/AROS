@@ -26,7 +26,8 @@ FILES = \
 	getcc \
 	superstate \
 	userstate \
-	stackswap
+	stackswap \
+	runprocess
 
 all: setup $(TOP)/include/aros/machine.h machine.i \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
