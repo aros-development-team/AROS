@@ -2591,6 +2591,8 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 		    break;
 
 	    case    IDCMP_INTUITICKS:
+	    	    if (!(data->ehn.ehn_Events & IDCMP_INTUITICKS)) break;
+		    
 	            if (!(_between(_mleft(obj),msg->imsg->MouseX,_mright(obj)) && _between(_mtop(obj),msg->imsg->MouseY,_mbottom(obj))))
 	            {
 			LONG new_virt_offx = data->virt_offx;
