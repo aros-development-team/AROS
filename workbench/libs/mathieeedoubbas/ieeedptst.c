@@ -22,25 +22,25 @@
       AROS_LHAQUAD(QUAD, y, D0, D1),
 
 /*  LOCATION */
-      struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 8, Mathieeedoubbas)
+      struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 8, MathIeeeDoubBas)
 
 /*  FUNCTION
-        Compare a IEEE double precision floting point number against zero.
+	Compare a IEEE double precision floting point number against zero.
 
 
     INPUTS
-        y  - IEEE double precision floating point number
+	y  - IEEE double precision floating point number
 
     RESULT
 
-        +1 : y > 0.0
-         0 : y = 0.0
-        -1 : y < 0.0
+	+1 : y > 0.0
+	 0 : y = 0.0
+	-1 : y < 0.0
 
-        Flags:
-          zero     : result is zero
-          negative : result is negative
-          overflow : 0
+	Flags:
+	  zero	   : result is zero
+	  negative : result is negative
+	  overflow : 0
 
     NOTES
 
@@ -53,9 +53,9 @@
 
     INTERNALS
       ALGORITHM:
-        Sign is negative: return -1
-        y == 0          : return 0
-        Otherwise       : return 1
+	Sign is negative: return -1
+	y == 0		: return 0
+	Otherwise	: return 1
 
     HISTORY
 

@@ -22,21 +22,21 @@
       AROS_LHAQUAD(LONG, y, D0, D1),
 
 /*  LOCATION */
-      struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 6, Mathieeedoubbas)
+      struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 6, MathIeeeDoubBas)
 
 /*  FUNCTION
 
 
     INPUTS
-        y  - signed integer number
+	y  - signed integer number
 
     RESULT
       IEEE double precision number
 
-        Flags:
-          zero     : result is zero
-          negative : result is negative
-          overflow : 0
+	Flags:
+	  zero	   : result is zero
+	  negative : result is negative
+	  overflow : 0
 
     NOTES
 
@@ -69,8 +69,8 @@ AROS_LIBFUNC_INIT
   if (y < 0 )
   {
     Set_Value64C(Res, IEEEDPSign_Mask_Hi,
-                      IEEEDPSign_Mask_Lo,
-                      IEEEDPSign_Mask_64);
+		      IEEEDPSign_Mask_Lo,
+		      IEEEDPSign_Mask_64);
     y = -y;
   }
   /* find out which is the number of the highest set bit */
@@ -83,8 +83,8 @@ AROS_LIBFUNC_INIT
   SHL32(yQuad , y , (53 - Exponent) );
 
   AND64QC(yQuad,  IEEEDPMantisse_Mask_Hi,
-                  IEEEDPMantisse_Mask_Lo,
-                  IEEEDPMantisse_Mask_64);
+		  IEEEDPMantisse_Mask_Lo,
+		  IEEEDPMantisse_Mask_64);
 
   Exponent += 0x3fe;
 

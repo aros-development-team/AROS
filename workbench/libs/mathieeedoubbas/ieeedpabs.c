@@ -22,22 +22,22 @@
       AROS_LHAQUAD(QUAD, y, D0, D1),
 
 /*  LOCATION */
-      struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 9, Mathieeedoubbas)
+      struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 9, MathIeeeDoubBas)
 
 /*  FUNCTION
       Calculate the absolute value of the given IEEE double precision
       floating point number
 
     INPUTS
-        y  - IEEE double precision floting point number
+	y  - IEEE double precision floting point number
 
     RESULT
-        absolute value of y
+	absolute value of y
 
-        Flags:
-          zero     : result is zero
-          negative : 0
-          overflow : 0
+	Flags:
+	  zero	   : result is zero
+	  negative : 0
+	  overflow : 0
 
     NOTES
 
@@ -50,7 +50,7 @@
 
     INTERNALS
       ALGORITHM:
-        set the sign-bit to zero
+	set the sign-bit to zero
 
     HISTORY
 
@@ -65,8 +65,8 @@
       /* set the sign-bit to zero */
       /* y &= (IEEEDPMantisse_Mask | IEEEDPExponent_Mask) */
       AND64QC(y, (IEEEDPMantisse_Mask_Hi | IEEEDPExponent_Mask_Hi),
-                 (IEEEDPMantisse_Mask_Lo | IEEEDPExponent_Mask_Lo),
-                 (IEEEDPMantisse_Mask_64 | IEEEDPExponent_Mask_64) )
+		 (IEEEDPMantisse_Mask_Lo | IEEEDPExponent_Mask_Lo),
+		 (IEEEDPMantisse_Mask_64 | IEEEDPExponent_Mask_64) )
       SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
     }
     return y;

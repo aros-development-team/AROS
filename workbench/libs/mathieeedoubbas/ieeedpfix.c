@@ -22,21 +22,21 @@
       AROS_LHAQUAD(QUAD, y, D0, D1),
 
 /*  LOCATION */
-      struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 5, Mathieeedoubbas)
+      struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 5, MathIeeeDoubBas)
 
 /*  FUNCTION
-        Convert IEEE double precision floating point number to integer
+	Convert IEEE double precision floating point number to integer
 
     INPUTS
-        y - IEEE double precision floating point
+	y - IEEE double precision floating point
 
     RESULT
-        absolute value of y
+	absolute value of y
 
-        Flags:
-          zero     : result is zero
-          negative : result is negative
-          overflow : ieeedp out of integer-range
+	Flags:
+	  zero	   : result is zero
+	  negative : result is negative
+	  overflow : ieeedp out of integer-range
 
     NOTES
 
@@ -74,8 +74,8 @@ tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
 
   if (is_eqC(y, 0x0, 0x0, 0x0ULL) ||
       is_eqC(y,IEEEDPSign_Mask_Hi,
-               IEEEDPSign_Mask_Lo,
-               IEEEDPSign_Mask_64)) /* y=+-0; */
+	       IEEEDPSign_Mask_Lo,
+	       IEEEDPSign_Mask_64)) /* y=+-0; */
   {
     SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     return 0;
@@ -85,11 +85,11 @@ tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
   Shift = 0x433 - Shift;
   tmp = Get_High32of64(y);
   AND64QC(y, IEEEDPMantisse_Mask_Hi,
-             IEEEDPMantisse_Mask_Lo,
-             IEEEDPMantisse_Mask_64);
+	     IEEEDPMantisse_Mask_Lo,
+	     IEEEDPMantisse_Mask_64);
   OR64QC(y,  0x00100000,
-             0x00000000,
-             0x0010000000000000ULL);
+	     0x00000000,
+	     0x0010000000000000ULL);
   SHRU64(y2, y , Shift);
   Res = Get_Low32of64(y2);
 

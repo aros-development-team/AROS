@@ -22,22 +22,22 @@
       AROS_LHAQUAD(QUAD, y, D0, D1),
 
 /*  LOCATION */
-      struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 10, Mathieeedoubbas)
+      struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 10, MathIeeeDoubBas)
 
 /*  FUNCTION
-        Switch the sign of the given IEEE double precision floating point
-        number
+	Switch the sign of the given IEEE double precision floating point
+	number
 
     INPUTS
-        y  - IEEE double precision floating point
+	y  - IEEE double precision floating point
 
     RESULT
-        -y
+	-y
 
-        Flags:
-          zero     : result is zero
-          negative : result is negative
-          overflow : 0
+	Flags:
+	  zero	   : result is zero
+	  negative : result is negative
+	  overflow : 0
 
     NOTES
 
@@ -51,7 +51,7 @@
     INTERNALS
       ALGORITHM:
 
-        Flip the sign-bit (even for zeroes).
+	Flip the sign-bit (even for zeroes).
 
     HISTORY
 
@@ -60,13 +60,13 @@
 AROS_LIBFUNC_INIT
   /* change the sign-bit */
   XOR64QC(y, IEEEDPSign_Mask_Hi,
-             IEEEDPSign_Mask_Lo,
-             IEEEDPSign_Mask_64);
+	     IEEEDPSign_Mask_Lo,
+	     IEEEDPSign_Mask_64);
 
   if (is_eqC(y, 0x0, 0x0, 0x0ULL) ||
       is_eqC(y, IEEEDPSign_Mask_Hi,
-                IEEEDPSign_Mask_Lo,
-                IEEEDPSign_Mask_64) )
+		IEEEDPSign_Mask_Lo,
+		IEEEDPSign_Mask_64) )
   {
     SetSR( Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
    return y;

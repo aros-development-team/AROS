@@ -23,25 +23,25 @@
       AROS_LHAQUAD(QUAD, z, D2, D3),
 
 /*  LOCATION */
-      struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 7, Mathieeedoubbas)
+      struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 7, MathIeeeDoubBas)
 
 /*  FUNCTION
-        Compares two IEEE double precision numbers
+	Compares two IEEE double precision numbers
 
     INPUTS
-        y  - IEEE double precision floating point
-        z  - IEEE double precision floating point
+	y  - IEEE double precision floating point
+	z  - IEEE double precision floating point
 
     RESULT
        +1 : y > z
-        0 : y = z
+	0 : y = z
        -1 : y < z
 
 
-        Flags:
-          zero     : y = z
-          negative : y < z
-          overflow : 0
+	Flags:
+	  zero	   : y = z
+	  negative : y < z
+	  overflow : 0
 
     NOTES
 
