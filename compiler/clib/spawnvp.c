@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <aros/debug.h>
 
 #include "__upath.h"
 #include "__spawnv.h"
@@ -85,8 +86,6 @@
 ******************************************************************************/
 {
     const char *acommand;
-    char *colon;
-    int ret;
 
     if (command == NULL || argv == NULL || argv[0] == NULL)
     {
@@ -96,19 +95,18 @@
     }
 
     acommand = __path_u2a(command);
-    if (acommand)
-        acommand = strdup(acommand);
-
     if (!acommand)
         return -1;
 
-    /* Is the path relative?  */
-    colon = strpbrk(acommand, ":/");
-    if (!colon || *colon == '/')
+    /* Does the command contain any reference to directories? If so, then
+       we don't have to wade trough the PATH.  */
+    if (strpbrk(acommand, ":/") == NULL)
     {
-        char default_PATH[] = "/bin:/usr/bin:";
+        /* Ok, it doesn't contain any such reference. Thus, from now on
+	   we can safely use command rather than acommand.  */
 
-        /* Yes, it is.  */
+	char *colon;
+        char default_PATH[] = "/bin:/usr/bin:";
 	const char *dir = getenv("PATH");
 
 	if (!dir) dir = default_PATH;
@@ -134,16 +132,21 @@
 	    {
 	        BPTR olddir = CurrentDir(dirlock);
 		BPTR seg;
+		int ret;
 
-		seg = LoadSeg(acommand);
+		seg = LoadSeg(command);
 
 		CurrentDir(olddir);
 		UnLock(dirlock);
 
+		kprintf("===== Trying to spawn %s in %s\n", command, dir);
 		ret = __spawnv(mode, seg, argv);
+		kprintf("===== ret = %d\n\n", ret);
 
-		if ((mode != P_WAIT && (ret > 0)) || ret == 0)
-		    goto end;
+		if (ret != -1)
+		    return ret;
+
+		kprintf("!!! %s\n", strerror(MAX_ERRNO + IoErr()));
 	    }
 
 	    /* Loop until the program is found and executed */
@@ -152,12 +155,10 @@
 
 	    dir = colon + 1;
         }
+
+	/* set acommand properly so that the below LoadSeg() has a chance to succeed. */
+	acommand = command;
     }
 
-    ret = __spawnv(mode, LoadSeg(acommand), argv);
-
-end:
-    free((void *)acommand);
-
-    return ret;
+    return __spawnv(mode, LoadSeg(acommand), argv);
 }
