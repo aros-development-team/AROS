@@ -1274,7 +1274,21 @@ void _BackFillRegion(struct Layer * l,
   RR = r->RegionRectangle;
   if (NULL == RR) return;
   
-  AndRegionRegion(l->visibleshape, r);
+  if (IS_SIMPLEREFRESH(l))
+  {
+    /* Only for simple refresh layers, becuase smart refresh layers
+       may have damage outside of visibleshape, like when being dragged
+       off screen */
+       
+    AndRegionRegion(l->visibleshape, r);
+  }
+  else
+  {
+    /* Maybe not needed, but to be sure ... */
+    
+    AndRectRegion(r, &l->bounds);
+  }
+  
   
   if (TRUE == addtodamagelist)
   {
