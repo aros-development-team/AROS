@@ -18,6 +18,7 @@ struct KeyboardBase
     struct Device      kb_device;
     struct ExecBase   *kb_sysBase;
     struct Library    *kb_LowLevelBase;
+
     BPTR               kb_seglist;
     
     struct MinList          kb_PendingQueue;  /* IOrequests (KBD_READEVENT) not done quick */
@@ -32,6 +33,10 @@ struct KeyboardBase
     UWORD   kb_writePos;
     BOOL    kb_ResetPhase;	        /* True if reset has begun */
     UBYTE  *kb_Matrix;
+    
+    Object	*kb_Hidd;	/* Hidd object to use */
+    struct Library *kb_OOPBase;
+    
 };
 
 
@@ -68,6 +73,11 @@ AROS_LC0(BPTR, expunge, struct KeyboardBase *, KBBase, 3, Keyboard)
 #undef SysBase
 #endif
 #define SysBase KBBase->kb_sysBase
+
+#ifdef OOPBase
+#undef OOPBase
+#endif
+#define OOPBase KBBase->kb_OOPBase
 
 #endif /* KEYBOARD_INTERN_H */
 

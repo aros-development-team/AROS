@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_INCLUDES := -I$(TOP)/rom/devs
+
 DEVS    := $(DEVSDIR)/keyboard.device
 FILES	:= keyboard
 OBJS	:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)

@@ -17,12 +17,18 @@
 #include <devices/keyboard.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/oop.h>
 #include <exec/memory.h>
 #include <exec/errors.h>
 #include <exec/lists.h>
+#include <oop/oop.h>
+#include <utility/utility.h>
+#include <hidd/keyboard.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 #include "abstractkeycodes.h"
 #include "keyboard_intern.h"
+#include "devs_private.h"
 
 #ifdef  __GNUC__
 #include "keyboard_gcc.h"
@@ -81,7 +87,7 @@ const struct Resident Keyboard_resident =
     RTF_AUTOINIT|RTF_COLDSTART,
     41,
     NT_DEVICE,
-    45,
+    44,
     (char *)name,
     (char *)&version[6],
     (ULONG *)inittabl
@@ -110,6 +116,15 @@ static void *const functable[] =
     (void *)-1
 };
 
+
+static AttrBase HiddKbdAB = 0;
+
+VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode, ULONG mode);
+AROS_UFP3(VOID, sendQueuedEvents,
+    AROS_UFPA(struct KeyboardBase *, KBBase, A1),
+    AROS_UFPA(APTR, thisfunc, A1),
+    AROS_UFPA(struct ExecBase *, SysBase, A6));
+    
 
 AROS_LH2(struct KeyboardBase *,  init,
  AROS_LHA(struct KeyboardBase *, KBBase, D0),
@@ -162,6 +177,49 @@ AROS_LH3(void, open,
 	return;
     }
 
+/* nlorentz: Some extra stuff that must be inited */
+    if (NULL == KBBase->kb_Matrix)
+    {
+        KBBase->kb_Matrix = AllocMem( KB_MATRIXSIZE, MEMF_ANY|MEMF_CLEAR);
+	if (NULL == KBBase->kb_Matrix)
+	{
+	    ioreq->io_Error = IOERR_OPENFAIL;
+	    return;
+	}
+    }
+    
+    if (!KBBase->kb_OOPBase)
+    {
+	KBBase->kb_OOPBase = OpenLibrary(AROSOOP_NAME, 0);
+	if (!KBBase->kb_OOPBase)
+	{
+	    ioreq->io_Error = IOERR_OPENFAIL;
+	    return;
+	}
+    }
+    
+    if (!HiddKbdAB)
+    {
+        HiddKbdAB = ObtainAttrBase(IID_Hidd_Kbd);
+	if (!HiddKbdAB)
+	{
+	    ioreq->io_Error = IOERR_OPENFAIL;
+	    D(bug("keyboard.device: Could not get attrbase\n"));
+	    return;
+	}
+    }
+    D(bug("keyboard.device: Attrbase: %x\n", HiddKbdAB));
+    
+    KBBase->kb_Interrupt.is_Node.ln_Type = NT_INTERRUPT;
+    KBBase->kb_Interrupt.is_Node.ln_Pri = 0;
+    KBBase->kb_Interrupt.is_Data = (APTR)KBBase;
+    KBBase->kb_Interrupt.is_Code = sendQueuedEvents;
+	
+/******* nlorentz: End of stuff added by me ********/
+
+
+/* nlorentz: No lowlevel library yet */
+#if 0
     if(!KBBase->kb_LowLevelBase)
     {
 	KBBase->kb_LowLevelBase = OpenLibrary("lowlevel.library", 41);
@@ -176,6 +234,7 @@ AROS_LH3(void, open,
 	ioreq->io_Error = IOERR_OPENFAIL;
 	return;
     }
+#endif
 
     /* I have one more opener. */
     KBBase->kb_device.dd_Library.lib_OpenCnt++;
@@ -318,10 +377,19 @@ AROS_LH1(void, beginio,
 	if(kbUn->kbu_readPos == KBBase->kb_writePos)
 	{
 	    ioreq->io_Flags &= ~IOF_QUICK;
+/* nlorentz: This is accesed from a software interrupt, so ObtainSemaphore()
+   cannot be used
+
 	    ObtainSemaphore(&KBBase->kb_QueueLock);
+*/
+	    Disable();
 	    kbUn->kbu_flags |= KBUF_PENDING;
 	    AddTail((struct List *)&KBBase->kb_PendingQueue, (struct Node *)ioreq);
+/*	
 	    ReleaseSemaphore(&KBBase->kb_QueueLock);
+	Dito.
+*/	
+	    Enable();
 	    break;
 	}
 	
@@ -385,6 +453,36 @@ AROS_LH1(void, beginio,
 	
 	break;
 	
+/* nlorentz: This command lets the keyboard.device initialize
+   the HIDD to use. It must be done this way, because
+   HIDDs might be loaded from disk, and keyboard.device is
+   inited before DOS is up and running.
+   The name of the HIDD class is in
+   ioStd(rew)->io_Data. Note that maybe we should
+   receive a pointer to an allreay created HIDD object instead.
+   Also note that the below is just a temporary hack, should
+   probably use IRQ HIDD instead to set the IRQ handler.
+*/   
+	
+    case CMD_HIDDINIT: {
+        struct TagItem tags[] =
+	{
+	    { aHidd_Kbd_IrqHandler, 	(IPTR)keyCallback},
+	    { aHidd_Kbd_IrqHandlerData,	(IPTR)KBBase },
+	    { TAG_DONE, 0UL }
+	};
+	D(bug("keyboard.device: Received CMD_HIDDINIT, hiddname=\"%s\"\n"
+		, (STRPTR)ioStd(ioreq)->io_Data ));
+
+	KBBase->kb_Hidd = NewObject(NULL, (STRPTR)ioStd(ioreq)->io_Data, tags);
+	if (!KBBase->kb_Hidd)
+	{
+	    D(bug("keyboard.device: Failed to open hidd\n"));
+	    ioreq->io_Error = IOERR_OPENFAIL;
+	}
+	break; }
+        
+    
     default:
 	ioreq->io_Error = IOERR_NOCMD;
 	break;
@@ -406,11 +504,20 @@ AROS_LH1(LONG, abortio,
 
     if(kbUn->kbu_flags & KBUF_PENDING)
     {
+/* nlorentz: This is accesed from a software interrupt, so ObtainSemaphore()
+   cannot be used
 	ObtainSemaphore(&KBBase->kb_QueueLock);
+*/
+	Disable();
+	
 	Remove((struct Node *)ioreq);		/* Correct? Interference? */
 	ReplyMsg(&ioreq->io_Message);
 	kbUn->kbu_flags &= ~KBUF_PENDING;
+/*	
 	ReleaseSemaphore(&KBBase->kb_QueueLock);
+	Dito.
+*/
+	Enable();
     }
     return 0;
 
@@ -463,10 +570,13 @@ BOOL HIDDM_initKeyboard(struct KeyboardHIDD *kh)
 #endif
 
 
-VOID keyCallback(UWORD keyCode, struct KeyboardBase *KBBase)
+VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode, ULONG mode)
 {
+    D(bug("keyCallBack(KBBase=%p, keyCode=%d, mode=%d)\n"
+    		, KBBase, keyCode, mode));
     KBBase->kb_keyBuffer[(KBBase->kb_writePos)++] = keyCode;
 
+D(bug("Wrote to buffer\n"));
     if(KBBase->kb_writePos == KB_BUFFERSIZE)
 	KBBase->kb_writePos = 0;
 
@@ -475,15 +585,22 @@ VOID keyCallback(UWORD keyCode, struct KeyboardBase *KBBase)
     else
 	BVBITSET(CORRECT(keyCode), KBBase->kb_Matrix);
 
+D(bug("Wrote to matrix\n"));
+
     if(!IsListEmpty(&KBBase->kb_PendingQueue))
+    {
+D(bug("doing software irq\n"));
+    
 	Cause(&KBBase->kb_Interrupt);
+    }
 }
 
+
+     
 
 #undef  BVBITSET
 #undef  BVBITCLEAR
 #undef  CORRECT
-
 
 VOID keyBroadCast(struct List *pendingList)
 {
@@ -494,11 +611,38 @@ VOID keyBroadCast(struct List *pendingList)
     ObtainSemaphore(&KBBase->kb_QueueLock);
     ForeachNode(pendingList, ioreq)
     {
-	ReplyMsg((struct Message *)&ioreq->io_Message);
+ 	ReplyMsg((struct Message *)&ioreq->io_Message);
 	Remove((struct Node *)ioreq);
 	kbUn->kbu_flags &= ~KBUF_PENDING;
     }
     ReleaseSemaphore(&KBBase->kb_QueueLock);
+}
+
+/* nlorentz: Software interrupt to be called when keys are received
+Copied and pasted from the function above */
+#undef SysBase
+AROS_UFH3(VOID, sendQueuedEvents,
+    AROS_UFHA(struct KeyboardBase *, KBBase, A1),
+    AROS_UFHA(APTR, thisfunc, A1),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    /* Broadcast keys */
+    struct IORequest *ioreq;
+    struct List *pendingList = (struct List *)&KBBase->kb_PendingQueue;
+
+/* nlorentz: no use since we're inside an interrupt
+    ObtainSemaphore(&KBBase->kb_QueueLock);
+*/
+    ForeachNode(pendingList, ioreq)
+    {
+ 	ReplyMsg((struct Message *)&ioreq->io_Message);
+	Remove((struct Node *)ioreq);
+	kbUn->kbu_flags &= ~KBUF_PENDING;
+    }
+/*  Dito.
+
+    ReleaseSemaphore(&KBBase->kb_QueueLock);
+*/    
 }
 
 static const char end = 0;
