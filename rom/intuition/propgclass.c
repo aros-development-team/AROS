@@ -100,7 +100,28 @@ STATIC UWORD FindScrollerTop(UWORD total, UWORD visible, UWORD pot)
     return (top);
 }
 
-STATIC VOID UpdateTop(Class *cl, Object *o, struct PropGData *data, BOOL final)
+STATIC VOID NotifyTop(Object *o, struct GadgetInfo *gi, UWORD top, BOOL final)
+{
+    struct opUpdate notifymsg;
+    struct TagItem notifyattrs[3];
+    	
+    notifyattrs[0].ti_Tag	= PGA_Top;
+    notifyattrs[0].ti_Data 	= top;
+    notifyattrs[1].ti_Tag	= GA_ID;
+    notifyattrs[1].ti_Data	= EG(o)->GadgetID;
+    notifyattrs[2].ti_Tag	= TAG_END;
+	
+    notifymsg.MethodID	    = OM_NOTIFY;
+    notifymsg.opu_AttrList  = notifyattrs;
+    notifymsg.opu_GInfo	    = gi;
+    notifymsg.opu_Flags	    = (final != FALSE) ? 0 : OPUF_INTERIM;
+	
+    DoSuperMethodA(OCLASS(o), o, (Msg)&notifymsg);
+    
+    return;
+}
+
+STATIC VOID UpdateTop(Object *o, struct GadgetInfo *gi, struct PropGData *data, BOOL final)
 {
 
     UWORD top, pot;
@@ -113,22 +134,8 @@ STATIC VOID UpdateTop(Class *cl, Object *o, struct PropGData *data, BOOL final)
     /* PGA_Top changed by user ? */
     if (top != data->top)
     {
-    	struct opUpdate notifymsg;
-    	struct TagItem notifyattrs[3];
-    	
-	data->top = top;
-	notifyattrs[0].ti_Tag	= PGA_Top;
-	notifyattrs[0].ti_Data 	= top;
-	notifyattrs[1].ti_Tag	= GA_ID;
-	notifyattrs[1].ti_Data	= EG(o)->GadgetID;
-	notifyattrs[2].ti_Tag	= TAG_END;
-	
-	notifymsg.MethodID	= OM_NOTIFY;
-	notifymsg.opu_AttrList	= notifyattrs;
-	notifymsg.opu_GInfo	= NULL;
-	notifymsg.opu_Flags	= (final != FALSE) ? 0 : OPUF_INTERIM;
-	
-	DoSuperMethodA(cl, o, (Msg)&notifymsg);
+    	data->top = top;
+      	NotifyTop(o, gi, top, final);
     }
     return;
 }
@@ -159,6 +166,7 @@ STATIC IPTR set_propgclass(Class *cl, Object *o,struct opSet *msg)
     	    case PGA_Top:
     	
 		data->top = tag->ti_Data;
+		NotifyTop(o, msg->ops_GInfo, data->top, TRUE);
  	    	set_flag= TRUE;
 		retval = 1UL;
 		break;
@@ -269,7 +277,7 @@ STATIC IPTR set_propgclass(Class *cl, Object *o,struct opSet *msg)
     	);
     }
 
-    ReturnPtr("set_propgclass", IPTR, retval);
+    return (retval);
 }
 
 STATIC IPTR new_propgclass(Class *cl, Object *o, struct opSet *msg)
@@ -369,7 +377,7 @@ STATIC IPTR goactive_propgclass(Class *cl, Object *o, struct gpInput *msg)
     	    retval = GMR_NOREUSE|GMR_VERIFY;
     	    
     	    /* Update PGA_Top. Final update. */
-    	    UpdateTop(cl, o, data, TRUE);
+    	    UpdateTop(o, msg->gpi_GInfo, data, TRUE);
     	}
     	else
     	{
@@ -421,7 +429,7 @@ STATIC IPTR handleinput_propgclass(Class *cl, Object *o, struct gpInput *msg)
     	    	data->last_y = msg->gpi_Mouse.Y;
     	    	
     	    	/* Update PGA_Top. Interim update. */
-    	    	UpdateTop(cl, o, data, FALSE);
+    	    	UpdateTop(o, msg->gpi_GInfo, data, FALSE);
     	    	
 	    } break;
 	    	    
@@ -441,7 +449,7 @@ STATIC IPTR handleinput_propgclass(Class *cl, Object *o, struct gpInput *msg)
     	    	SetGadgetType(o, GTYP_CUSTOMGADGET);
     	    	
     	    	/* Update PGA_Top. Final update. */
-    	    	UpdateTop(cl, o, INST_DATA(cl, o), TRUE);
+    	    	UpdateTop(o, msg->gpi_GInfo, INST_DATA(cl, o), TRUE);
     	    
     	    	*(msg->gpi_Termination) = IDCMP_GADGETUP;
     	    	retval = GMR_NOREUSE|GMR_VERIFY;
@@ -457,27 +465,19 @@ STATIC IPTR handleinput_propgclass(Class *cl, Object *o, struct gpInput *msg)
 STATIC IPTR render_propgclass(Class *cl, Object *o, struct gpRender *msg)
 {
     	
-    switch (msg->gpr_Redraw)
-    {
-
-    	case GREDRAW_UPDATE:
-    	    /*  TODO : Only redraw the knob */
+    /* Fake a standard intuition prop gadget */
+    SetGadgetType(o, GTYP_PROPGADGET);
     	    	    
-    	case GREDRAW_REDRAW:
-    	    	
-   	    /* Fake a standard intuition prop gadget */
-    	    SetGadgetType(o, GTYP_PROPGADGET);
-    	    	    
-    	    /* Redraw the whole gadget */
-    	    RefreshPropGadget
-    	    (
-    	    	(struct Gadget *)o,
-   	    	msg->gpr_GInfo->gi_Window,
-    	    	IntuitionBase
-    	    );
+    /* Redraw the whole gadget */
+    RefreshPropGadget
+    (
+    	(struct Gadget *)o,
+   	msg->gpr_GInfo->gi_Window,
+    	IntuitionBase
+    );
 
-    	    SetGadgetType(o, GTYP_CUSTOMGADGET);
-    }
+    SetGadgetType(o, GTYP_CUSTOMGADGET);
+
     return (1UL);
 
 }
@@ -501,7 +501,7 @@ STATIC IPTR goinactive_propgclass(Class *cl, Object *o, struct gpGoInactive *msg
 	SetGadgetType(o, GTYP_CUSTOMGADGET);
 	
 	/* Update PGA_Top. Final update */
-    	UpdateTop(cl, o, INST_DATA(cl, o), TRUE);
+    	UpdateTop(o, msg->gpgi_GInfo, INST_DATA(cl, o), TRUE);
     }
     return (0UL);   	    	
 }
@@ -544,7 +544,27 @@ AROS_UFH3(STATIC IPTR, dispatch_propgclass,
 	case OM_UPDATE:
 	    retval = DoSuperMethodA(cl, o, msg);
 	    retval += (IPTR)set_propgclass(cl, o, (struct opSet *)msg);
+
+	    /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
+	     * because it would circumvent the subclass from fully overriding it.
+	     * The check of cl == OCLASS(o) should fail if we have been
+	     * subclassed, and we have gotten here via DoSuperMethodA().
+	     */
+	    if ( retval && ( msg->MethodID == OM_UPDATE ) && ( cl == OCLASS(o) ) )
+	    {
+	    	struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
+	    	if (gi)
+	    	{
+		    struct RastPort *rp = ObtainGIRPort(gi);
+		    if (rp)
+		    {
+		    	DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
+		    	ReleaseGIRPort(rp);
+		    } /* if */
+	    	} /* if */
+	    } /* if */
 	    break;
+
 
 	case OM_GET:
 	    retval = (IPTR)get_propgclass(cl, o, (struct opGet *)msg);
