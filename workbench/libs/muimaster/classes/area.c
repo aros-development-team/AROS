@@ -1391,12 +1391,8 @@ static ULONG Area_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
-#warning FIXME: Export
-#if 0
-	DoMethod(msg->dataspace, MUIM_Dataspace_AddInt,
-		 id, "selected",
-		 data->mad_Flags & MADF_SELECTED);
-#endif
+    	char selected = (data->mad_Flags & MADF_SELECTED)?1:0;
+	DoMethod(msg->dataspace, MUIM_Dataspace_Add, &selected, sizeof(char),id);
     }
     return 0;
 }
@@ -1413,15 +1409,13 @@ static ULONG Area_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
-#if 0
-	DoMethod(msg->dataspace, MUIM_Dataspace_FindInt,
-		 id, "selected", &val);
-#endif
+    	char *selected = (char*)DoMethod(msg->dataspace, MUIM_Dataspace_Find, id);
 
-	if (val)
-	    data->mad_Flags |= MADF_SELECTED;
-	else
-	    data->mad_Flags &= ~MADF_SELECTED;
+	if (selected)
+	{
+	    if (*selected) data->mad_Flags |= MADF_SELECTED;
+	    else data->mad_Flags &= ~MADF_SELECTED;
+	}
     }
     return 0;
 }
