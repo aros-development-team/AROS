@@ -11,7 +11,7 @@
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #   include "arosc_gcc.h"
 #endif
 
@@ -187,9 +187,9 @@ int arosc_internalinit(struct AroscUserData *userdata)
     AROSC_USERDATA(0) = userdata;
 
     /* passes these value to the program */
-    userdata->ctype_b       = __ctype_b;
-    userdata->ctype_toupper = __ctype_toupper;
-    userdata->ctype_tolower = __ctype_tolower;
+    (unsigned short int *)(userdata->ctype_b)       = __ctype_b;
+    (int *)(userdata->ctype_toupper) = __ctype_toupper;
+    (int *)(userdata->ctype_tolower) = __ctype_tolower;
 
     if (userdata->olduserdata)
         userdata->umask = userdata->olduserdata->umask;
