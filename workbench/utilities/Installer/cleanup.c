@@ -6,24 +6,18 @@
 /* cleanup.c -- here are all functions used before exiting program */
 
 #include "Installer.h"
+#include "execute.h"
 #include "locale.h"
+#include "gui.h"
+#include "procedure.h"
+#include "variables.h"
+#include "cleanup.h"
 
 /* External variables */
 extern ScriptArg script;
 extern InstallerPrefs preferences;
 extern int error;
 
-/* External function prototypes */
-extern void free_varlist();
-extern void execute_script( ScriptArg *, int );
-extern void deinit_gui();
-extern void traperr( char *, char * );
-
-/* Internal function prototypes */
-void free_script( ScriptArg * );
-void cleanup();
-void end_alloc();
-void outofmem( void * );
 
 void free_script( ScriptArg *first )
 {

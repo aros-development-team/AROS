@@ -7,19 +7,11 @@
 
 #include "Installer.h"
 #include "execute.h"
+#include "cleanup.h"
+#include "procedure.h"
 
 /* External variables */
 extern struct CommandList internal_commands[];
-
-/* External function prototypes */
-extern void end_alloc();
-extern void cleanup();
-
-/* Internal function prototypes */
-struct ProcedureList *find_proc( char * );
-long int set_procedure( char **, int, ScriptArg * );
-void free_proclist();
-void link_function( char *, long int );
 
 
 int numusrprocs = 0, numactiveusrprocs = 0;

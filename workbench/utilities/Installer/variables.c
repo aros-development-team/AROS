@@ -8,27 +8,14 @@
 #include "Installer.h"
 #include "texts.h"
 #include "main.h"
+#include "gui.h"
+#include "cleanup.h"
+#include "variables.h"
 
 /* External variables */
 extern InstallerPrefs preferences;
 extern IPTR args[TOTAL_ARGS];
 extern UBYTE **tooltypes;
-
-/* External function prototypes */
-extern void request_userlevel( char * );
-extern void outofmem( void * );
-
-/* Internal function prototypes */
-void *get_variable( char * );
-char *get_var_arg( char * );
-long int get_var_int( char * );
-void set_variable( char *, char *, long int );
-void set_preset_variables( int );
-#ifdef DEBUG
-void dump_varlist();
-#endif /* DEBUG */
-void free_varlist();
-struct VariableList *find_var( char * );
 
 
 int numvariables = 0;
@@ -201,11 +188,6 @@ char *ttemp;
   set_variable( "@default-dest", DEFAULT_DEST, 0 );
   set_variable( "@installer-version", NULL, ( INSTALLER_VERSION << 16 ) + INSTALLER_REVISION );
   set_variable( "@user-level", NULL, preferences.defusrlevel );
-  if ( preferences.welcome == FALSE )
-  {
-    request_userlevel( NULL );
-  }
-
   set_variable( "@pretend", NULL, preferences.pretend );
 
   /* Set help texts */

@@ -11,10 +11,13 @@
 */
 
 #include "Installer.h"
+#include "cleanup.h"
 #include "execute.h"
 #include "texts.h"
 #include "more.h"
 #include "misc.h"
+#include "gui.h"
+#include "variables.h"
 
 /* External variables */
 extern BPTR inputfile;
@@ -24,49 +27,9 @@ extern InstallerPrefs preferences;
 extern int error, grace_exit;
 extern int doing_abort;
 
-/* External function prototypes */
-extern void cleanup();
-extern char *get_var_arg( char * );
-extern long int get_var_int( char * );
-extern void execute_script( ScriptArg *, int );
-extern void set_variable( char *, char *, long int );
-#ifdef DEBUG
-extern void dump_varlist();
-#endif /* DEBUG */
-extern void end_alloc();
-extern void outofmem( void * );
-extern void traperr( char *, char * );
-
-/* Internal function prototypes */
-void init_gui();
-void deinit_gui();
-void clear_gui();
-void show_abort( char * );
-void show_complete( long int );
-void show_exit( char * );
-void show_parseerror( char *, int );
-void show_working( char * );
-void show_message( char * ,struct ParameterList * );
-void show_help_userlevel();
-void show_help_pretend();
-void show_help_logfile();
-void show_help_installer();
-void request_userlevel();
-long int request_bool( struct ParameterList * );
-long int request_number( struct ParameterList * );
-char *request_string( struct ParameterList * );
-long int request_choice( struct ParameterList * );
-char *request_dir( struct ParameterList * );
-char *request_disk( struct ParameterList * );
-char *request_file( struct ParameterList * );
-long int request_options( struct ParameterList * );
-int request_confirm( struct ParameterList * );
-void abort_install( VOID_FUNC );
-void final_report();
 void setgadgetdisable( int );
+void abort_install( VOID_FUNC );
 void setaboutgaddisable( int );
-void display_text( char * );
-int user_confirmation( char * );
 
 #include <proto/intuition.h>
 #include <intuition/intuition.h>
@@ -78,11 +41,6 @@ int user_confirmation( char * );
 #include <proto/asl.h>
 #include <libraries/asl.h>
 
-
-struct IntuitionBase *IntuitionBase = NULL;
-struct Library *GadToolsBase = NULL;
-struct GfxBase * GfxBase = NULL;
-struct Library *AslBase = NULL;
 
 struct Window *GuiWin;
 struct RastPort *rp;
@@ -240,42 +198,6 @@ struct TagItem windowtags[] =
   { TAG_DONE }
 };
 
-/*
-struct TagItem ti2[] = {
-  { GTTX_Text, (ULONG)"dummystring" },
-  { GTTX_CopyText, TRUE },
-  { GTTX_Border, TRUE },
-  { GTTX_Justification, GTJ_LEFT },
-  { TAG_DONE } };
-*/
-
-  IntuitionBase = (struct IntuitionBase *)OpenLibrary( "intuition.library", 37L );
-  if (IntuitionBase == NULL)
-  {
-    cleanup();
-    exit(-1);
-  }
-
-  GfxBase = (struct GfxBase *)OpenLibrary( "graphics.library", 37L );
-  if (GfxBase == NULL)
-  {
-    cleanup();
-    exit(-1);
-  }
-
-  GadToolsBase = OpenLibrary( "gadtools.library", 0L );
-  if (GadToolsBase == NULL)
-  {
-    cleanup();
-    exit(-1);
-  }
-
-  AslBase = OpenLibrary( "asl.library", 39 );
-  if (AslBase == NULL)
-  {
-    cleanup();
-    exit(-1);
-  }
 
   scr = LockPubScreen( NULL );
   windowtags[2].ti_Data = ( scr->Width - WINDOWWIDTH ) / 2 ;
@@ -283,7 +205,6 @@ struct TagItem ti2[] = {
   if( NULL == ( GuiWin = OpenWindowTagList( NULL, windowtags ) ) )
   {
     cleanup();
-    CloseLibrary( (struct Library *)IntuitionBase );
     exit(-1);
   }
   rp = GuiWin->RPort;
@@ -309,7 +230,6 @@ struct TagItem ti2[] = {
 
   gad = CreateGadget( BUTTON_KIND, gad, &gt_boolgadtrue, TAG_DONE );
   gad = CreateGadget( BUTTON_KIND, gad, &gt_boolgadfalse, TAG_DONE );
-//  gad = CreateGadgetA( TEXT_KIND, gad, &gt_textgad, ti2 );
 
   gad = CreateContext( &stringglist );
   if(gad==NULL)
@@ -356,10 +276,6 @@ void deinit_gui( )
   FreeVisualInfo( vi );
   UnlockPubScreen( NULL, scr );
   CloseWindow( GuiWin );
-  CloseLibrary( (struct Library *)AslBase );
-  CloseLibrary( (struct Library *)GadToolsBase );
-  CloseLibrary( (struct Library *)GfxBase );
-  CloseLibrary( (struct Library *)IntuitionBase );
 }
 
 
