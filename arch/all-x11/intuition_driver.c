@@ -655,9 +655,10 @@ UX11
     SIGID ();
 }
 
-struct Window *intui_FindActiveWindow(struct InputEvent *ie, struct IntuitionBase * IntuitionBase)
+struct Window *intui_FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event, struct IntuitionBase * IntuitionBase)
 {
     /* Just dummy implemntation for now */
+    *swallow_event = FALSE;
     return NULL;
     
 }
