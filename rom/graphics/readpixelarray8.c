@@ -65,21 +65,22 @@ static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
 
     struct rp8_render_data  rp8rd;
     struct Rectangle 	    rr;
-
-#   warning Do not use HIDD_BM_PIXTAB() for non-hidd bitmaps
-    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, HIDD_BM_PIXTAB(rp->BitMap) };
+    HIDDT_PixelLUT  	    pixlut;  
+    LONG    	    	    pixread = 0;
     
-    LONG pixread = 0;
-    
-    EnterFunc(bug("driver_ReadPixelArray8(%p, %d, %d, %d, %d)\n",
+    EnterFunc(bug("ReadPixelArray8(%p, %d, %d, %d, %d)\n",
     	rp, xstart, ystart, xstop, ystop));
     
     if (!CorrectDriverData (rp, GfxBase))
 	return 0;
 	
-    
+#warning "ReadPixelArray8 on hi/truecolor screens or a LUT for it does not really make sense"
+
+    pixlut.entries = AROS_PALETTE_SIZE;
+    pixlut.pixels  = IS_HIDD_BM(rp->BitMap) ? HIDD_BM_PIXTAB(rp->BitMap) : NULL;
+     
     rp8rd.array  = array;
-    rp8rd.modulo = xstop - xstart + 1;
+    rp8rd.modulo = ((xstop - xstart + 1) + 15) & ~15;
     rp8rd.pixlut = &pixlut;
     
     rr.MinX = xstart;
@@ -89,7 +90,7 @@ static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
     
     pixread = do_render_func(rp, NULL, &rr, rp8_render, &rp8rd, FALSE, GfxBase);
 	
-    ReturnInt("driver_ReadPixelArray8", LONG, pixread);
+    ReturnInt("ReadPixelArray8", LONG, pixread);
 
     AROS_LIBFUNC_EXIT
 
