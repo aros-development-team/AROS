@@ -1753,7 +1753,7 @@ LOCK_HIDD(CR->BitMap);
 
 			SetAttrs( BM_OBJ(CR->BitMap), setgc_tags );
 			
-			HIDD_BM_BlitColorExpansion(BM_OBJ(bm)
+			HIDD_BM_BlitColorExpansion(BM_OBJ(CR->BitMap)
 				, fontbm
 				, intersect.MinX - toblit.MinX + xsrc	/* srcX		*/
 				, intersect.MinY - toblit.MinY		/* srcY		*/
@@ -3984,7 +3984,7 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
 	{ TAG_DONE, 0UL }
     };
 
-    
+kprintf("BltTemplate() !!\n");    
     EnterFunc(bug("driver_BltTemplate(%d, %d, %d, %d, %d, %d)\n"
     	, xSrc, srcMod, xDest, yDest, xSize, ySize));
 	
