@@ -35,7 +35,7 @@
 	AROS_LH3(struct RDArgs *, ReadArgs,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR,          template, D1),
+	AROS_LHA(CONST_STRPTR,    template, D1),
 	AROS_LHA(IPTR *,          array,    D2),
 	AROS_LHA(struct RDArgs *, rdargs,   D3),
 
@@ -113,6 +113,7 @@
     ULONG          multnum = 0, multmax = 0;
 
     /* Some variables */
+    CONST_STRPTR   cs1;
     STRPTR         s1, s2, *newmult;
     ULONG          arg, numargs, nextarg;
     LONG           it, item, chars, value;
@@ -270,11 +271,11 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 
     /* Count the number of items in the template (number of ','+1). */
     numargs = 1;
-    s1 = template;
+    cs1 = template;
 
-    while(*s1)
+    while(*cs1)
     {
-	if(*s1++ == ',')
+	if(*cs1++ == ',')
 	    numargs++;
     }
     
@@ -287,17 +288,17 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 	ERROR(ERROR_NO_FREE_STORE);
 
     /* Fill the flag array. */
-    s1 = template;
+    cs1 = template;
     s2 = flags;
 
-    while(*s1)
+    while(*cs1)
     {
 	/* A ',' means: goto next item. */
-	if(*s1 == ',')
+	if(*cs1 == ',')
 	    s2++;
 
 	/* In case of a '/' use the next character as option. */
-	if(*s1++ == '/')
+	if(*cs1++ == '/')
 	    *s2 |= argflags[*s1-'A'];
     }
 
