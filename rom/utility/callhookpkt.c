@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: CallHookPkt - Call an Amiga callback hook.
-    Lang: english
+    Call a callback hook.
 */
 #include "intern.h"
 
@@ -62,20 +61,12 @@
 
     INTERNALS
 
-    HISTORY
-	29-10-95    digulla automatically created from
-			    utility_lib.fd and clib/utility_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,UtilityBase)
 
-    return AROS_UFC3(IPTR, hook->h_Entry,
-	AROS_UFCA(struct Hook *, hook, A0),
-	AROS_UFCA(APTR,          object, A2),
-	AROS_UFCA(APTR,  paramPacket, A1)
-    );
+    return CALLHOOKPKT(hook, object, paramPacket);
 
     AROS_LIBFUNC_EXIT
-} /* CallHookPkt */
+} /* CallHookPkt() */
