@@ -65,7 +65,7 @@
     if (!fdesc)
     {
 	errno = EBADF;
-	return 0;
+	return -1;
     }
 
     switch (whence)
