@@ -68,7 +68,7 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                     Child, (IPTR) FreeLabel("Frame:"),
                     Child, (IPTR) d.button_popframe = MakePopframe(),
                     Child, (IPTR) Label("Font:"),
-                    Child, (IPTR) MakePopfont(&d.text_font_string, FALSE),
+                    Child, (IPTR) d.text_font_string = MakePopfont(FALSE),
                 End,
             End, /* Text Buttons */
             Child, (IPTR) VGroup, /* other buttons */

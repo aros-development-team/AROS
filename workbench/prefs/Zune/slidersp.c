@@ -120,7 +120,7 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                 End, /* HGroup Frame/BG */
                 Child, (IPTR) HGroup,
                     Child, (IPTR) Label2("Font:"),
-                    Child, (IPTR) MakePopfont(&d.knob_font_string, FALSE),
+                    Child, (IPTR) d.knob_font_string = MakePopfont(FALSE),
                 End, /* HGroup font */
             End, /* VGroup Knob Design */
         End, /* HGroup Container/Knob design */

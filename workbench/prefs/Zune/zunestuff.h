@@ -17,7 +17,7 @@ Object *MakeBackgroundPopimage(void);
 Object *MakePopframe(void);
 Object *MakePoppen(void);
 Object *MakeString(void);
-Object *MakePopfont(Object **string, BOOL fixed);
+Object *MakePopfont(BOOL fixed);
 
 void SliderToConfig (Object *slider, Object *configdata, ULONG cfg);
 void CheckmarkToConfig (Object *checkmark, Object *configdata, ULONG cfg);
