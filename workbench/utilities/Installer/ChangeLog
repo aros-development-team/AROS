@@ -352,3 +352,6 @@
 - removed opening of Libraries as this is now done through libautoinit
 - moved prototypes of .c files to .h files
 
+0058
+- started a Zune/MUI GUI gui_zune.c
+
