@@ -26,7 +26,7 @@ struct FreeLevel
 
     NAME */
 #include <stdio.h>
-#include <aros/structdesc.h>
+#include <aros/bigendianio.h>
 #include <proto/alib.h>
 
 	void FreeStruct (
