@@ -302,13 +302,13 @@ struct BlockCache *linkNewBlock
 		struct BlockCache *file
 	)
 {
-ULONG key,parent;
-char buffer[32];
-char *name;
+ULONG key; /* parent; */
+UBYTE buffer[32];
+STRPTR name;
 
 	file->buffer[BLK_PARENT(volume)]=AROS_LONG2BE(dir->blocknum);
 	D(bug("afs.handler: linkNewBlock: linking block %ld\n",file->blocknum));
-	name=(char *)((ULONG)file->buffer+(BLK_FILENAME_START(volume)*4));
+	name=(STRPTR)((ULONG)file->buffer+(BLK_FILENAME_START(volume)*4));
 	StrCpyFromBstr(name,buffer);
 	key=getHashKey(buffer,volume->SizeBlock-56,volume->flags)+BLK_TABLE_START;
 	// sort in ascending order
