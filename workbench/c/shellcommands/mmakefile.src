@@ -11,6 +11,7 @@ FILES	:= \
     Unset \
     Unsetenv \
     Skip \
+    Why \
     echo
 
 # I'd like to move this into a rule, but it would be far too hard.
