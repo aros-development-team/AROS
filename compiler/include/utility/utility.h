@@ -11,8 +11,6 @@ struct UtilityBase
     struct Library ub_LibNode;
     UBYTE ub_Language;
     UBYTE ub_Reserved;
-    struct ExecBase *ub_SysBase;
-    BPTR ub_SegList;
 };
 
 #endif
