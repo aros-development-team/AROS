@@ -59,7 +59,7 @@ exec-freebsd : $(OSGENDIR)/exec/init.o
 
 #MM- kernel-intuition-freebsd : intuition-$(GFXSYSTEM) kernel-intuition-linklib
 
-#MM- kernel-hidd-freebsd : kernel-hidd-linklib
+#MM- kernel-hidd-freebsd : kernel-hidd-linklib kernel-hidd-unix
 
 #MM- kernel-utility-freebsd : kernel-utility-linklib
 
@@ -71,7 +71,7 @@ exec-freebsd : $(OSGENDIR)/exec/init.o
 
 #MM- includes-freebsd : includes-copy includes-freebsd-i386
 
-#MM- workbench-freebsd : workbench-complete
+#MM- workbench-freebsd : workbench-complete workbench-hidd-unix
 
 #MM
 clean ::
