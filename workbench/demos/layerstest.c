@@ -13,8 +13,6 @@
 #include <proto/intuition.h>
 #include <proto/layers.h>
 
-#define GFX_SYSTEM X11   /* ord HIDD */
- 
 struct IntuitionBase *IntuitionBase;
 struct Library *GfxBase;
 struct Library *LayersBase;
@@ -297,6 +295,8 @@ void frame(struct Layer * layer)
                     layer->bounds.MaxY - layer->bounds.MinY);
     Draw(layer->rp, 0, layer->bounds.MaxY - layer->bounds.MinY);
     Draw(layer->rp, 0, 0);
+    Draw(layer->rp, layer->bounds.MaxX - layer->bounds.MinX, 
+                    layer->bounds.MaxY - layer->bounds.MinY);
 }
 
 void Frame(void)
@@ -535,7 +535,15 @@ void doall(void)
     {
       createupfrontlayer();
     } 
+    else if (!strcmp(buf, "cufl")) 
+    {
+      createupfrontlayer();
+    } 
     else if (!strcmp(buf, "deletelayer")) 
+    {
+      deletelayer();
+    } 
+    else if (!strcmp(buf, "dl")) 
     {
       deletelayer();
     } 
@@ -543,7 +551,15 @@ void doall(void)
     {
       upfrontlayer();
     } 
+    else if (!strcmp(buf, "ufl")) 
+    {
+      upfrontlayer();
+    } 
     else if (!strcmp(buf, "Frame")) 
+    {
+      Frame();
+    } 
+    else if (!strcmp(buf, "fr")) 
     {
       Frame();
     } 
