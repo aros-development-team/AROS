@@ -110,7 +110,7 @@
 	    buffer[index++] = *theString++;
 	}
 
-	if (code)
+	if (code == 0)
 	{
 	    /* If code is 0, just insert it. */
 	    if (len-- > 0)
