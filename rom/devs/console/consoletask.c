@@ -38,10 +38,8 @@
 static BOOL checkconunit(Object *unit, struct ConsoleBase *ConsoleDevice);
 static void answer_read_request(struct IOStdReq *req, struct ConsoleBase *ConsoleDevice);
 
-VOID consoleTaskEntry(struct coTaskParams *ctp)
+VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 {
-    struct ConsoleBase *ConsoleDevice = ctp->consoleDevice;
-    
     BOOL success = FALSE;
     LONG waitsigs = 0L, wakeupsig, commandsig, inputsig;
     
@@ -84,15 +82,6 @@ VOID consoleTaskEntry(struct coTaskParams *ctp)
     	DeleteMsgPort(inputmp);
     }
     
-    
-    if (success)
-    {
-    	/* Create a messageport that will be used to receive commands */
-	ConsoleDevice->commandPort = CreateMsgPort();
-	if (NULL == ConsoleDevice->commandPort)
-	    success = FALSE;
-    }
-    
     NEWLIST(&ConsoleDevice->readRequests);
     
     /* if not successfull,  throw an alert */
@@ -101,9 +90,6 @@ VOID consoleTaskEntry(struct coTaskParams *ctp)
     	Alert(AT_DeadEnd | AN_ConsoleDev | AG_OpenDev | AO_Unknown);
     }
     
-    /* Signal the parent task that we have been initialized */
-    Signal(ctp->parentTask, ctp->initSignal);
-    
     D(bug("Console task initialized\n"));
     
     
@@ -111,7 +97,7 @@ VOID consoleTaskEntry(struct coTaskParams *ctp)
     inputport = ((struct cdihData *)ConsoleDevice->inputHandler->is_Data)->inputPort;
     
     inputsig	= 1 << inputport->mp_SigBit;
-    commandsig	= 1 << ConsoleDevice->commandPort->mp_SigBit;
+    commandsig	= 1 << ConsoleDevice->commandPort.mp_SigBit;
     
     waitsigs = inputsig|commandsig|SIGBREAKF_CTRL_C;
     
@@ -218,7 +204,7 @@ VOID consoleTaskEntry(struct coTaskParams *ctp)
 	    struct IOStdReq *req;
 	    
 	    
-	    while ((req = (struct IOStdReq *)GetMsg(ConsoleDevice->commandPort)))
+	    while ((req = (struct IOStdReq *)GetMsg(&ConsoleDevice->commandPort)))
 	    {
 	    	switch (req->io_Command)
 		{
