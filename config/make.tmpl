@@ -1,9 +1,10 @@
 #############################################################################
 #############################################################################
 ##                                                                         ##
-## Here are the mmakefile macro's that are used as commands in a make rule.##
+## Here are the mmakefile macro's that are used as commands in the body    ##
+## of a make rule.                                                         ##
 ## They are used to help the portability of mmakefile to different         ##
-## platforms.                                                              ##
+## platforms and also will handle the error handling in a standard way.    ##
 ##                                                                         ##
 #############################################################################
 #############################################################################
@@ -90,6 +91,13 @@
 %end
 #------------------------------------------------------------------------------
 
+#------------------------------------------------------------------------------
+# Create the library
+%define mklib_q ar=$(AR) ranlib=$(RANLIB) to=$@ from=$(OBJS)
+	@$(ECHO) "Creating library %(to)..."
+	@%(ar) %(to) %(from)
+	@%(ranlib) %(to)
+%end
 
 #------------------------------------------------------------------------------
 # Create the dependency file %(to) for %(from)
@@ -118,13 +126,27 @@
 	fi
 %end
 
+#------------------------------------------------------------------------------
+# Create one directory without any output
+%define mkdir_q dir=.
+	@$(IF) $(TEST) ! -d %(dir) ; then $(MKDIR) %(dir) ; else $(NOP) ; fi
+%end
+
+#------------------------------------------------------------------------------
+# Create several directories without any output
+%define mkdirs_q dirs=/M
+	@$(FOR) dir in %(dirs) ; do \
+	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
+	done
+%end
+
 #############################################################################
 #############################################################################
 ##                                                                         ##
 ## Here are the mmakefile macro's that are used to do certain tasks in a   ##
-## mmakefile. They consist of one or more makefile rules.                  ##
+## mmakefile. They consist of one or more full makefile rules.             ##
 ## In general the files generated in these macro's are also defined as     ##
-## make targets so that they can be used a dependency in other rules       ##
+## make targets so that they can be used as a dependency in other rules    ##
 ##                                                                         ##
 #############################################################################
 #############################################################################
@@ -530,6 +552,31 @@ endif
 %end
 #------------------------------------------------------------------------------
 
+#------------------------------------------------------------------------------
+# Common rules for all makefiles
+%define common
+# Delete generated makefiles
+#MM
+clean ::
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+include $(TOP)/config/make.tail
+
+BDID := $(BDTARGETID)
+%end
+#------------------------------------------------------------------------------
+      
+
+#############################################################################
+#############################################################################
+##                                                                         ##
+## Here are the mmakefile build macro's. These are macro's that takes care ##
+## of everything to go from the sources to the generated target. Also all  ##
+## intermediate files and directories that are needed are created by these ##
+## rules.                                                                  ##
+##                                                                         ##
+#############################################################################
+#############################################################################
 
 #------------------------------------------------------------------------------
 # Build an imported source tree which uses the configure script from the
@@ -760,8 +807,8 @@ endif
 # Explanation of this macro is done in the developer's manual
 %define build_module mmake=/A modname=/A modtype=/A \
   conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" \
-  linklibfiles= cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) prefix=$(AROSDIR) \
-  reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_ALL.ref \
+  linklibfiles= cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) prefix=$(AROSDIR)\
+  reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_ALL.ref noref= \
   linklibname=$(BD_MODNAME$(BDID)) uselibs= \
   compiler=target
 
@@ -796,7 +843,11 @@ BD_ENDOBJ$(BDID)     := $(addsuffix .o,$(BD_ENDFILE$(BDID)))
 
 BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)) $(BD_STARTOBJ$(BDID)) $(BD_ENDOBJ$(BDID)))
 
+ifeq (%(noref),)
 BD_REFFILES$(BDID)   := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .ref, $(notdir $(BD_FILES$(BDID)))))
+else
+BD_REFFILES$(BDID)   := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .ref, $(notdir $(filter-out %(noref),$(BD_FILES$(BDID))))))
+endif
 BD_REFFILE$(BDID)    := %(reffile)
 
 ifeq ($(BD_MODTYPE$(BDID)),library)
@@ -1540,89 +1591,6 @@ endif
 #    a.%.b, then the stem is dir/foo)
 
 #------------------------------------------------------------------------------
-# Create one directory without any output
-%define mkdir_q dir=.
-	@$(IF) $(TEST) ! -d %(dir) ; then $(MKDIR) %(dir) ; else $(NOP) ; fi
-%end
-
-#------------------------------------------------------------------------------
-# Create several directories without any output
-%define mkdirs_q dirs=/M
-	@$(FOR) dir in %(dirs) ; do \
-	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
-	done
-%end
-
-#------------------------------------------------------------------------------
-# Same, more noisy
-%define mkdirs dirs=/M
-	@$(FOR) dir in %(dirs) ; do \
-	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
-	done
-%end
-
-#------------------------------------------------------------------------------
-# Create the library
-%define mklib_q ar=$(AR) ranlib=$(RANLIB) to=$@ from=$(OBJS)
-	@$(ECHO) "Creating library %(to)..."
-	@%(ar) %(to) %(from)
-	@%(ranlib) %(to)
-%end
-
-#------------------------------------------------------------------------------
-# Same but more noisy
-%define mklib ar=$(AR) ranlib=$(RANLIB) to=$@ from=$(OBJS)
-	@$(ECHO) "Creating library %(to)..."
-	%(ar) %(to) %(from)
-	%(ranlib) %(to)
-%end
-
-#------------------------------------------------------------------------------
-# Same but more noisy
-%define mkdepend flags=$(CFLAGS) from=$< to=$@ dir=$(@D) opt=
-	@$(IF) [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else $(NOP) ; fi
-	@$(ECHO) "Makedepend $(CURDIR)/$(notdir %(from))..."
-	$(MKDEPEND) %(flags) %(from) -o %(to)
-%end
-
-#------------------------------------------------------------------------------
-# Do something in all subdirs
-# This macro uses a trick: %(target) is evaluated *after* %(text), so one
-# can use %(target) in %(text).
-%define subdirs_q text="Making %(target)" target=$(TARGET) dirs=$(SUBDIRS) curdir=$(CURDIR) mflags=$(MFLAGS) submf=makefile top=$(TOP)
-	@$(FOR) dir in %(dirs) ; do \
-	    $(ECHO) "%(text) in %(curdir)/$$dir..." ; \
-	    if $(TEST) -f $$dir/%(submf).src && \
-		{ $(TEST) ! -f $$dir/%(submf) \
-		-o $$dir/%(submf).src -nt $$dir/%(submf) \
-		-o %(top)/config/make.tmpl -nt $$dir/%(submf) ; } ; then \
-		$(ECHO) "Generating %(submf)..." ; \
-		$(AWK) -f $(TOP)/scripts/genmf.gawk \
-		-v TOP="$(TOP)" \
-		$$dir/%(submf).src > $$dir/%(submf) || exit 1 ; \
-	    fi ; \
-	    if ( cd $$dir ; \
-		$(MAKE) %(mflags) --file=%(submf) \
-		    TOP="%(top)/.." CURDIR="%(curdir)/$$dir" \
-		    TARGET=%(target) %(target) ) ; \
-	    then $(NOP) ; else exit 1 ; fi ; \
-	done
-%end
-
-#------------------------------------------------------------------------------
-# Common rules for all makefiles
-%define common
-# Delete generated makefiles
-#MM
-clean ::
-	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
-
-include $(TOP)/config/make.tail
-
-BDID := $(BDTARGETID)
-%end
-
-#------------------------------------------------------------------------------
 # rule to generate libdefs.h with archtool (options may go away!)
 %define libdefs_rule conffile=lib.conf genlibdefstool=$(ARCHTOOL) dest=libdefs.h
 %(dest) : %(conffile) %(genlibdefstool)
@@ -1630,13 +1598,6 @@ BDID := $(BDTARGETID)
 	@%(genlibdefstool) -c -o $@ %(conffile)
 %end
 
-
-#------------------------------------------------------------------------------
-# rule to generate asm files from c files (for debugging purposes)
-%define asm_rule opt=$(GENASM)
-.PHONY : asm
-asm : $(foreach f,%(opt),$(f).s) all
-%end
 
 #------------------------------------------------------------------------------
 # generate asm files from c files (for debugging purposes)
@@ -1767,10 +1728,4 @@ clean ::
 DEPS := $(DEPS) $(STUBS_DEP)
 
 %end
-
-#------------------------------------------------------------------------------
-#   Hey! iaint says don't add things here, add them before my other message.
-#   The reason is that I'm trying to work out which of macros are still
-#   needed, and because of this, I'm trying to keep my additions separate
-#   from all the others.
-
+      
