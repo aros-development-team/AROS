@@ -72,7 +72,7 @@
 	/* non-layered rastport */
 
 	/* You MUST supply a rect to clip the hook's actions! */
-	_CallLayerHook(hook, rport->Layer, rport, rect, rect, 0, 0, LayersBase);
+	CallLayerHook(hook, rport->Layer, rport, rect, rect, 0, 0, LayersBase);
     }
     else
     {
@@ -128,7 +128,7 @@
 
 	    if(!cr->lobs)
 	    {
-		_CallLayerHook(hook, rport->Layer, rport, CurRect, CurRect, BaseX, BaseY, LayersBase);
+		CallLayerHook(hook, rport->Layer, rport, CurRect, CurRect, BaseX, BaseY, LayersBase);
 		continue;
 	    }
 
@@ -144,7 +144,7 @@
 		/* Use the ClipRect's bitmap for this hook */
 		rport->BitMap = cr->BitMap;
 
-		_CallLayerHook(hook, rport->Layer, rport, &rect3, CurRect, BaseX, BaseY, LayersBase);
+		CallLayerHook(hook, rport->Layer, rport, &rect3, CurRect, BaseX, BaseY, LayersBase);
 
 		/* And restore the original RastPort's bitmap */
 		rport->BitMap = bm;
@@ -178,7 +178,7 @@
 			continue;
 		}
 
-		_CallLayerHook(hook, rport->Layer, rport, CurRect, CurRect, 0, 0, LayersBase);
+		CallLayerHook(hook, rport->Layer, rport, CurRect, CurRect, 0, 0, LayersBase);
 	    }
 	}
     }

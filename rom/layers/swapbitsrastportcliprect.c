@@ -55,9 +55,9 @@
 
     D(bug("SwapBitsRastPortClipRect(rp @ $%lx, cr @ $%lx)\n", rp, cr));
 
-    _BltRPtoCR(rp, cr, A_XOR_C, LayersBase);
-    _BltCRtoRP(rp, cr, A_XOR_C, LayersBase);
-    _BltRPtoCR(rp, cr, A_XOR_C, LayersBase);
+    BltRPtoCR(rp, cr, A_XOR_C, LayersBase);
+    BltCRtoRP(rp, cr, A_XOR_C, LayersBase);
+    BltRPtoCR(rp, cr, A_XOR_C, LayersBase);
 
     AROS_LIBFUNC_EXIT
 } /* SwapBitsRastPortClipRect */
