@@ -1278,129 +1278,129 @@ int main(int argc,char *argv[])
     lock = Lock(DEF_INSTALL_IMAGE, ACCESS_READ);
     UnLock(lock);
 
-    Object* app = ApplicationObject,
-        MUIA_Application_Title      , "AROS Installer",
-        MUIA_Application_Version    , "$VER: InstallAROS 0.2 (22.03.04)",
-        MUIA_Application_Copyright  , "Copyright © 2003, The AROS Development Team. All rights reserved.",
-        MUIA_Application_Author     , "John \"Forgoil\" Gustafsson & Nic Andrews",
-        MUIA_Application_Description, "Installs AROS onto your PC.",
-        MUIA_Application_Base       , "INSTALLER",
+    Object *app = ApplicationObject,
+        MUIA_Application_Title,       (IPTR) "AROS Installer",
+        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 0.2 (22.03.04)",
+        MUIA_Application_Copyright,   (IPTR) "Copyright © 2003, The AROS Development Team. All rights reserved.",
+        MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson & Nic Andrews",
+        MUIA_Application_Description, (IPTR) "Installs AROS onto your PC.",
+        MUIA_Application_Base,        (IPTR) "INSTALLER",
 
-        SubWindow, (IPTR) wnd = WindowObject,
+        SubWindow, (IPTR) (wnd = WindowObject,
             MUIA_Window_Title, (IPTR) "AROS Installer",
             MUIA_Window_ID, MAKE_ID('f','o','r','g'),
             MUIA_Window_SizeGadget, TRUE,
-            WindowContents, (IPTR)wndcontents = VGroup,
+            WindowContents, (IPTR) (wndcontents = VGroup,
 
-                Child, VGroup,
-                    Child, HGroup,
-                        Child, VGroup,
+                Child, (IPTR) VGroup,
+                    Child, (IPTR) HGroup,
+                        Child, (IPTR) VGroup,
                             MUIA_Background, MUII_SHADOW,    
                     
-                            Child, ImageObject,
-                                MUIA_Frame, MUIV_Frame_None,
-                                MUIA_Image_Spec, (IPTR)"3:"DEF_INSTALL_IMAGE,
+                            Child, (IPTR) ImageObject,
+                                MUIA_Frame,             MUIV_Frame_None,
+                                MUIA_Image_Spec, (IPTR) "3:"DEF_INSTALL_IMAGE,
                             End,
-                            Child,HVSpace,
+                            Child, (IPTR) HVSpace,
                         End,
 
-                        Child, VGroup,
-                            Child, (IPTR) page = VGroup,
+                        Child, (IPTR) VGroup,
+                            Child, (IPTR) (page = VGroup,
                                 MUIA_Group_PageMode, TRUE,
                                 ReadListFrame,
                                 MUIA_Background, MUII_SHINE,
 
     /* each page represents an install time page .. you must have one for each enumerated install progress page */
 
-                                Child, VGroup,
-                                    Child, VGroup,
-                                        Child, (IPTR) welcomeMsg = FreeCLabel(""),
-                                        Child, HVSpace,
+                                Child, (IPTR) VGroup,
+                                    Child, (IPTR) VGroup,
+                                        Child, (IPTR) (welcomeMsg = FreeCLabel("")),
+                                        Child, (IPTR) HVSpace,
                                     End,
                                 End,
 
-                                Child, VGroup,
-                                    Child, VGroup,
-                                        Child, CLabel(KMsgInstallOptions),
-                                        Child, HVSpace,
-                                        Child, ColGroup(2),
-                                            Child, LLabel("Auto Select & Format Partitions"),
-                                            Child, check_autopart,
-                                            Child, LLabel("Choose Language Options"),
-                                            Child, check_locale,
-                                            Child, LLabel("Install AROS Core System"),
-                                            Child, check_core,
-                                            Child, LLabel("Install Extra Software"),
-                                            Child, check_extras,
-                                            Child, LLabel("Install Development Software"),
-                                            Child, check_dev,
-                                            Child, LLabel("Copy and Install Bootloader "),
-                                            Child, check_bootloader,
+                                Child, (IPTR) VGroup,
+                                    Child, (IPTR) VGroup,
+                                        Child, (IPTR) CLabel(KMsgInstallOptions),
+                                        Child, (IPTR) HVSpace,
+                                        Child, (IPTR) ColGroup(2),
+                                            Child, (IPTR) LLabel("Auto Select & Format Partitions"),
+                                            Child, (IPTR) check_autopart,
+                                            Child, (IPTR) LLabel("Choose Language Options"),
+                                            Child, (IPTR) check_locale,
+                                            Child, (IPTR) LLabel("Install AROS Core System"),
+                                            Child, (IPTR) check_core,
+                                            Child, (IPTR) LLabel("Install Extra Software"),
+                                            Child, (IPTR) check_extras,
+                                            Child, (IPTR) LLabel("Install Development Software"),
+                                            Child, (IPTR) check_dev,
+                                            Child, (IPTR) LLabel("Copy and Install Bootloader "),
+                                            Child, (IPTR) check_bootloader,
                                         End,
-                                        Child, HVSpace,
+                                        Child, (IPTR) HVSpace,
                                     End,
                                 End,
 
-                                Child, VGroup,
-                                    Child, VGroup,
-                                        Child, CLabel(KMsgPartitioning),
-                                        Child, HVSpace,
-                                        Child, VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, gauge1, End,
-                                        Child, ScaleObject, End,
-                                        Child, HVSpace,
+                                Child, (IPTR) VGroup,
+                                    Child, (IPTR) VGroup,
+                                        Child, (IPTR) CLabel(KMsgPartitioning),
+                                        Child, (IPTR) HVSpace,
+                                        Child, (IPTR) VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, gauge1, End,
+                                        Child, (IPTR) ScaleObject, End,
+                                        Child, (IPTR) HVSpace,
                                     End,
                                 End,
 
-                                Child, VGroup,
-                                    Child, VGroup,
-                                        Child, CLabel(KMsgPartitioningWipe),
-                                        Child, HVSpace,
-                                        Child, VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, (IPTR) gauge3, End,
-                                        Child, ScaleObject, End,
-                                        Child, HVSpace,
+                                Child, (IPTR) VGroup,
+                                    Child, (IPTR) VGroup,
+                                        Child, (IPTR) CLabel(KMsgPartitioningWipe),
+                                        Child, (IPTR) HVSpace,
+                                        Child, (IPTR) VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, (IPTR) gauge3, End,
+                                        Child, (IPTR) ScaleObject, End,
+                                        Child, (IPTR) HVSpace,
                                     End,
                                 End,
 
-                                Child, VGroup,
-                                    Child, VGroup,
-                                        Child, (IPTR) pagetitle        = CLabel(" "),
-                                        Child, HVSpace,
-                                        Child, (IPTR) pageheader       = FreeCLabel(KMsgInstall),
-                                        Child, HVSpace,
-                                        Child, (IPTR) label            = FreeLLabel("YOU SHOULD NOT SEE THIS"),
-                                        Child, HVSpace,
-                                        Child, (IPTR) currentaction    = TextObject,MUIA_Text_Contents,(IPTR)" ",End,
-                                        Child, VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, gauge2, End,
-                                        Child, HVSpace,
+                                Child, (IPTR) VGroup,
+                                    Child, (IPTR) VGroup,
+                                        Child, (IPTR) (pagetitle        = CLabel(" ")),
+                                        Child, (IPTR) HVSpace,
+                                        Child, (IPTR) (pageheader       = FreeCLabel(KMsgInstall)),
+                                        Child, (IPTR) HVSpace,
+                                        Child, (IPTR) (label            = FreeLLabel("YOU SHOULD NOT SEE THIS")),
+                                        Child, (IPTR) HVSpace,
+                                        Child, (IPTR) (currentaction    = TextObject,MUIA_Text_Contents,(IPTR)" ",End),
+                                        Child, (IPTR) VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, gauge2, End,
+                                        Child, (IPTR) HVSpace,
                                     End,
                                 End,
 
-                                Child, VGroup,
-                                    Child, VGroup,
+                                Child, (IPTR) VGroup,
+                                    Child, (IPTR) VGroup,
                                         MUIA_Group_SameHeight, FALSE,
-                                        Child, (IPTR) doneMsg = FreeCLabel(KMsgDone),
-                                        Child, HVSpace,
-                                        Child, ColGroup(2),
+                                        Child, (IPTR) (doneMsg = FreeCLabel(KMsgDone)),
+                                        Child, (IPTR) HVSpace,
+                                        Child, (IPTR) ColGroup(2),
                                             MUIA_Weight,0,
-                                            Child, LLabel("Reboot this computer now?"),
-                                            Child, check_reboot,
+                                            Child, (IPTR) LLabel("Reboot this computer now?"),
+                                            Child, (IPTR) check_reboot,
                                         End,
                                     End,
                                 End,
     /* */
-                            End,
+                            End),
                         End,
                     End,
-                    Child, HGroup,
-                        Child, HVSpace,
-                        Child, gad_back,
-                        Child, gad_proceed,
-                        Child, gad_cancel,
+                    Child, (IPTR) HGroup,
+                        Child, (IPTR) HVSpace,
+                        Child, (IPTR) gad_back,
+                        Child, (IPTR) gad_proceed,
+                        Child, (IPTR) gad_cancel,
                     End,
 
                 End,
-            End,
-        End,
+            End),
+        End),
     End;
 
     if (!app)
@@ -1419,33 +1419,33 @@ int main(int argc,char *argv[])
     struct MUI_CustomClass *mcc = MUI_CreateCustomClass(NULL, MUIC_Notify, NULL, sizeof(struct Install_DATA), Install_Dispatcher);
     Object *installer = NewObject(mcc->mcc_Class, NULL,
 
-                MUIA_Page, page,
-                MUIA_Gauge1, gauge1,
-                MUIA_Gauge2, gauge2,
-                MUIA_Install, label,
+                MUIA_Page, (IPTR) page,
+                MUIA_Gauge1, (IPTR) gauge1,
+                MUIA_Gauge2, (IPTR) gauge2,
+                MUIA_Install, (IPTR) label,
 /**/
 
-                MUIA_OBJ_Installer,app,
+                MUIA_OBJ_Installer,(IPTR) app,
 
-                MUIA_WelcomeMsg, welcomeMsg,
-                MUIA_FinishedMsg, doneMsg,
+                MUIA_WelcomeMsg, (IPTR) welcomeMsg,
+                MUIA_FinishedMsg, (IPTR) doneMsg,
 /**/
-                MUIA_List_Options, install_opts,
+                MUIA_List_Options, (IPTR) install_opts,
 /**/
-                MUIA_OBJ_WindowContent,wndcontents,
-                MUIA_OBJ_Window,wnd,
+                MUIA_OBJ_WindowContent,(IPTR) wndcontents,
+                MUIA_OBJ_Window,(IPTR) wnd,
 
-                MUIA_OBJ_PageTitle, pagetitle,
-                MUIA_OBJ_PageHeader, pageheader,
-                MUIA_OBJ_CActionStrng, currentaction,
-                MUIA_OBJ_Back,gad_back,
-                MUIA_OBJ_Proceed,gad_proceed,
-                MUIA_OBJ_Cancel,gad_cancel,
+                MUIA_OBJ_PageTitle, (IPTR) pagetitle,
+                MUIA_OBJ_PageHeader, (IPTR) pageheader,
+                MUIA_OBJ_CActionStrng, (IPTR) currentaction,
+                MUIA_OBJ_Back,(IPTR) gad_back,
+                MUIA_OBJ_Proceed,(IPTR) gad_proceed,
+                MUIA_OBJ_Cancel,(IPTR) gad_cancel,
 /**/
-                MUIA_OBJ_CWindow,cwnd,
-                MUIA_OBJ_CText, cancelmessage,
-                MUIA_OBJ_COK, gad_quit,
-                MUIA_OBJ_CCancel, gad_nquit,
+                MUIA_OBJ_CWindow,(IPTR) cwnd,
+                MUIA_OBJ_CText, (IPTR) cancelmessage,
+                MUIA_OBJ_COK, (IPTR) gad_quit,
+                MUIA_OBJ_CCancel, (IPTR) gad_nquit,
 
                 TAG_DONE);
 
@@ -1473,37 +1473,37 @@ int main(int argc,char *argv[])
 /* page descriptions */
     /* welcome page */
     install_content1[0] = INSTV_TEXT;
-    install_content1[1] = KMsgWelcome;
+    install_content1[1] = (IPTR) KMsgWelcome;
 
     install_content1[2] = TAG_DONE;
 
     /* Options Page */
     install_content2[0] = INSTV_TEXT;
-    install_content2[1] = KMsgInstallOptions;
+    install_content2[1] = (IPTR) KMsgInstallOptions;
 
     install_content2[0] = INSTV_SPACE;
     install_content2[1] = TAG_IGNORE;
 
     install_content2[0] = INSTV_BOOL;
-    install_content2[1] = check_autopart;
+    install_content2[1] = (IPTR) check_autopart;
 
     install_content2[2] = INSTV_BOOL;
-    install_content2[3] = check_locale;
+    install_content2[3] = (IPTR) check_locale;
 
     install_content2[4] = INSTV_BOOL;
-    install_content2[5] = check_core;
+    install_content2[5] = (IPTR) check_core;
 
     install_content2[6] = INSTV_BOOL;
-    install_content2[7] = check_extras;
+    install_content2[7] = (IPTR) check_extras;
 
     install_content2[8] = INSTV_BOOL;
-    install_content2[9] = check_bootloader;
+    install_content2[9] = (IPTR) check_bootloader;
 
     install_content2[10] = TAG_DONE;
 
     /* Prepare Drives Page */
     install_content3[0] = INSTV_TEXT;
-    install_content3[1] = KMsgPartitioning;
+    install_content3[1] = (IPTR) KMsgPartitioning;
 
     install_content3[2] = INSTV_RETURN;
     install_content3[3] = OPTION_PREPDRIVES;
@@ -1512,7 +1512,7 @@ int main(int argc,char *argv[])
 
     /* Wipe Drives */
     install_content4[0] = INSTV_TEXT;
-    install_content4[1] = KMsgPartitioningWipe;
+    install_content4[1] = (IPTR) KMsgPartitioningWipe;
 
     install_content4[2] = INSTV_RETURN;
     install_content4[3] = OPTION_FORMAT;
@@ -1524,13 +1524,13 @@ int main(int argc,char *argv[])
 
     /* ALL DONE !! */
     install_content6[0] = INSTV_TEXT;
-    install_content6[1] = KMsgDone;
+    install_content6[1] = (IPTR) KMsgDone;
 
     install_content6[2] = TAG_DONE;
 /* installer pages */
 
     install_pages[0] = INSTV_CURR;
-    install_pages[1] = install_content1;
+    install_pages[1] = (IPTR) install_content1;
 
     install_pages[0] = INSTV_TITLE;
     install_pages[1] = (IPTR)"AROS Installer";
@@ -1539,22 +1539,22 @@ int main(int argc,char *argv[])
     install_pages[1] = (IPTR)"3:"DEF_INSTALL_IMAGE;
 
     install_pages[0] = INSTV_PAGE;
-    install_pages[1] = install_content1;
+    install_pages[1] = (IPTR) install_content1;
 
     install_pages[2] = INSTV_PAGE;
-    install_pages[3] = install_content2;
+    install_pages[3] = (IPTR) install_content2;
 
     install_pages[4] = INSTV_PAGE;
-    install_pages[5] = install_content3;
+    install_pages[5] = (IPTR) install_content3;
 
     install_pages[6] = INSTV_PAGE;
-    install_pages[7] = install_content4;
+    install_pages[7] = (IPTR) install_content4;
 
     install_pages[8] = INSTV_PAGE;
-    install_pages[9] = install_content5;
+    install_pages[9] = (IPTR) install_content5;
 
     install_pages[10] = INSTV_PAGE;
-    install_pages[11] = install_content6;
+    install_pages[11] = (IPTR) install_content6;
 
     install_pages[12] = TAG_DONE;
     
