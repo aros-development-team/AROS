@@ -36,7 +36,7 @@ SetEnv Workbench $Workbench
 SetEnv Kickstart $Kickstart
 
 AddDatatypes REFRESH QUIET
-Run <NIL: >NIL: IPrefs
+IPrefs
 Run <NIL: >NIL: ConClip
 
 Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
@@ -74,7 +74,6 @@ Assign FDSK: SYS:DiskImages
 ; Install a Workbench screen background pattern.
 ; The wait is there to make sure, that IPrefs has installed new fonts
 ; before screen is opened
-Wait 1
 Run <NIL: >NIL: screenpattern
 
 PATH SYS:Demos ADD QUIET
