@@ -33,6 +33,15 @@
 
 extern struct Library *MUIMasterBase;
 
+STATIC STRPTR StrDupPooled(APTR pool, CONST_STRPTR str)
+{
+    char *newstr;
+    if (!str) return NULL;
+    newstr = AllocPooled(pool,strlen(str)+1);
+    if (newstr) strcpy(newstr,str);
+    return newstr;
+}
+
 static void Bitmap_Function(struct Hook *hook, Object *obj, APTR msg)
 {
     struct Imageadjust_DATA *data = *(struct Imageadjust_DATA **)msg;
@@ -51,10 +60,15 @@ static void Bitmap_Function(struct Hook *hook, Object *obj, APTR msg)
 static void Gradient_Function(struct Hook *hook, Object *obj, APTR msg)
 {
     struct Imageadjust_DATA *data = *(struct Imageadjust_DATA **)msg;
-    struct MUI_RGBcolor *start_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_start_poppen, MUIA_Pendisplay_RGBcolor);
-    struct MUI_RGBcolor *end_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_end_poppen, MUIA_Pendisplay_RGBcolor);
+    struct MUI_RGBcolor *start_rgb; 
+    struct MUI_RGBcolor *end_rgb;
     int angle = XGET(data->gradient_angle_slider, MUIA_Numeric_Value);
     int is_tiled = XGET(data->gradient_type_cycle, MUIA_Cycle_Active);
+
+    start_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_start_poppen,
+					   MUIA_Pendisplay_RGBcolor);
+    end_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_end_poppen,
+					 MUIA_Pendisplay_RGBcolor);
 
     snprintf(data->gradient_imagespec,sizeof(data->gradient_imagespec),
 	     "%s:%d,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
@@ -69,10 +83,15 @@ static void Gradient_Function(struct Hook *hook, Object *obj, APTR msg)
 static void GradientSwap_Function(struct Hook *hook, Object *obj, APTR msg)
 {
     struct Imageadjust_DATA *data = *(struct Imageadjust_DATA **)msg;
-    struct MUI_RGBcolor *start_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_start_poppen, MUIA_Pendisplay_RGBcolor);
-    struct MUI_RGBcolor *end_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_end_poppen, MUIA_Pendisplay_RGBcolor);
+    struct MUI_RGBcolor *start_rgb; 
+    struct MUI_RGBcolor *end_rgb;
     struct MUI_RGBcolor tmp;
     
+    start_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_start_poppen,
+					   MUIA_Pendisplay_RGBcolor);
+    end_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_end_poppen,
+					 MUIA_Pendisplay_RGBcolor);
+
     tmp = *start_rgb;
     set(data->gradient_start_poppen, MUIA_Pendisplay_RGBcolor, (IPTR)end_rgb);
     set(data->gradient_end_poppen, MUIA_Pendisplay_RGBcolor, (IPTR)&tmp);
@@ -102,9 +121,72 @@ static VOID Vector_Select_Function(struct Hook *hook, Object *obj, void **msg)
 }
 
 
-static void Imageadjust_External_Display(struct Hook *h, char **strings, char *filename)
+struct ExternalListEntry {
+    STRPTR reldir;
+    ULONG dirlen;
+    STRPTR filename;
+    ULONG namelen;
+    LONG type;
+};
+
+static void Imageadjust_External_Display(struct Hook *h, char **strings,
+					 struct ExternalListEntry *entry)
 {
-    if (filename) *strings = FilePart(filename);
+    static char buf[256];
+
+    if (entry->filename)
+    {
+	int len;
+	*strings = buf;
+	snprintf(buf, 256, "%s", FilePart(entry->filename));
+	buf[255] = 0;
+	len = strlen(buf);
+	if (len > 4 && !strcmp(buf + len - 4, ".mf0"))
+	    buf[len - 4] = 0;
+	else if (len > 4 && !strcmp(buf + len - 4, ".mb0"))
+	    buf[len - 4] = 0;
+	else if (len > 4 && !strcmp(buf + len - 4, ".mbr"))
+	    buf[len - 4] = 0;
+	else if (len > 6 && !strcmp(buf + len - 6, ".image"))
+	    buf[len - 6] = 0;
+    }
+}
+
+static struct ExternalListEntry *
+Imageadjust_External_Construct(struct Hook *h,
+			       APTR pool,
+			       struct ExternalListEntry *ele)
+{
+    struct ExternalListEntry *entry = NULL;
+
+    if (NULL == ele)
+	return NULL;
+
+    if (NULL != ele->filename)
+    {
+	entry = AllocPooled(pool, sizeof(struct ExternalListEntry));
+	if (NULL != entry)
+	{
+	    *entry = *ele;
+	    entry->filename = StrDupPooled(pool, entry->filename);
+	    entry->reldir = StrDupPooled(pool, entry->reldir);
+	    return entry;
+	}
+    }
+    return NULL;
+}
+
+static void Imageadjust_External_Destruct(struct Hook *h, APTR pool,
+					  struct ExternalListEntry *entry)
+{
+    if (entry != NULL)
+    {
+	if (entry->filename != NULL)
+	    FreePooled(pool, entry->filename, entry->namelen + 1);
+	if (entry->reldir != NULL)
+	    FreePooled(pool, entry->reldir, entry->dirlen + 1);
+	FreePooled(pool, entry, sizeof(struct ExternalListEntry));
+    }
 }
 
 
@@ -115,22 +197,24 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
 {
     BPTR lock = Lock(dir,ACCESS_READ);
     struct ExAllControl *eac;
-    struct ExAllData *ead, *entry;
+    struct ExAllData *ead, *EAData;
     LONG more;
     int dir_len = strlen(dir);
     if (!lock) return 0;
 
-    eac = (struct ExAllControl*)AllocDosObject(DOS_EXALLCONTROL,NULL);
+    //bug("AddDirectory: locked %s\n", dir);
+
+    eac = (struct ExAllControl*)AllocDosObject(DOS_EXALLCONTROL, NULL);
     if (!eac)
     {
 	UnLock(lock);
 	return 0;
     }
 
-    ead = AllocVec(1024,0);
-    if (!ead)
+    EAData = AllocVec(1024, 0);
+    if (!EAData)
     {
-	FreeDosObject(DOS_EXALLCONTROL,eac);
+	FreeDosObject(DOS_EXALLCONTROL, eac);
 	UnLock(lock);
 	return 0;
     }
@@ -139,19 +223,27 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
 
     do
     {
-    	more = ExAll(lock,ead,1024,ED_TYPE,eac);
+	//DoMethod(_app(list), MUIM_Application_InputBuffered);
+
+    	more = ExAll(lock, EAData, 1024, ED_TYPE, eac);
 	if ((!more) && (IoErr() != ERROR_NO_MORE_ENTRIES)) break;
 	if (eac->eac_Entries == 0) continue;
 
-	entry = ead;
+	ead = EAData;
 	do
 	{
-	    int len = dir_len + strlen(ead->ed_Name) + 10;
-	    char *buf = AllocVec(len,0);
+	    size_t namelen = strlen(ead->ed_Name);
+	    int len = dir_len + namelen + 10;
+	    char *buf;
+
+	    //DoMethod(_app(list), MUIM_Application_InputBuffered);
+
+	    buf = AllocVec(len,0);
 	    if (buf)
 	    {
 	    	LONG num;
 	    	int is_directory;
+		BOOL add_me = TRUE;
 
 		if (ead->ed_Type > 0)
 		{
@@ -162,14 +254,39 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
 		    }
 		} else is_directory = 0;
 
-		strcpy(buf,dir);
-		AddPart(buf,ead->ed_Name,len);
+		strcpy(buf, dir);
+		AddPart(buf, ead->ed_Name, len);
 
-		num = DoMethod(list,MUIM_List_InsertSingleAsTree, (IPTR)buf, (IPTR)parent, MUIV_List_InsertSingleAsTree_Bottom,is_directory?MUIV_List_InsertSingleAsTree_List:0);
+		if (!is_directory && namelen > 4
+		    && !strcmp(ead->ed_Name + namelen - 4, ".mf1"))
+		    add_me = FALSE;
+		if (!is_directory && namelen > 4
+		    && !strcmp(ead->ed_Name + namelen - 4, ".mb1"))
+		    add_me = FALSE;
+
+		if (add_me)
+		{
+		    struct ExternalListEntry ele;
+		    //bug("AddDirectory: adding image %s\n", buf);
+		    
+
+		    ele.reldir = dir + strlen(IMSPEC_EXTERNAL_PREFIX);
+		    ele.dirlen = strlen(ele.reldir);
+		    ele.filename = ead->ed_Name;
+		    ele.namelen = strlen(ele.filename);
+		    ele.type = ead->ed_Type;
+
+		    num = DoMethod(list, MUIM_List_InsertSingleAsTree,
+				   (IPTR)&ele,
+				   (IPTR)parent,
+				   MUIV_List_InsertSingleAsTree_Bottom,
+				   is_directory ?
+				   MUIV_List_InsertSingleAsTree_List : 0);
+		}
 
 		if (num != -1 && is_directory)
 		{
-		    AddDirectory(list,buf,num);
+		    AddDirectory(list, buf, num);
 		}
 		FreeVec(buf);
 	    }
@@ -177,8 +294,8 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
 	}   while (ead);
     } while (more);
 
-    FreeVec(ead);
-    FreeDosObject(DOS_EXALLCONTROL,eac);
+    FreeVec(EAData);
+    FreeDosObject(DOS_EXALLCONTROL, eac);
     UnLock(lock);
     return 1;
 }
@@ -243,6 +360,43 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct Imageadjust_DATA *data,
 	    set(data->color_group, MUIA_Penadjust_Spec, (IPTR)s+2);
 		break;
 
+	case '3':
+	case '4':
+	{
+	    struct ExternalListEntry *entry;
+	    LONG entries;
+	    int i;
+
+	    set(obj, MUIA_Group_ActivePage, 3);
+
+	    get(data->external_list, MUIA_List_Entries, &entries);
+	    for (i = 0; i < entries; i++)
+	    {
+		DoMethod(data->external_list, MUIM_List_GetEntry, i,
+			 (IPTR)&entry);
+		if (entry != NULL
+		    && entry->reldir != NULL
+		    && entry->filename != NULL)
+		{
+		    STRPTR file = FilePart(s+2);
+		    //bug("entry->reldir = %s, s + 2 = %s, len=%d\n",
+		    //entry->reldir, s + 2, strlen(s + 2) - strlen(file) - 1);
+		    if (!strncmp(entry->reldir, s + 2,
+				 strlen(s + 2) - strlen(file) - 1))
+		    {
+			//bug("entry->filename = %s, file = %s\n",
+			//entry->filename, file);
+			if (!strcmp(entry->filename, file))
+			{
+			    set(data->external_list, MUIA_List_Active, i);
+			    break;
+			}
+		    }
+		}
+	    }
+	} 
+	break;
+
 	case	'5':
 		set(data->bitmap_string,MUIA_String_Contents,(IPTR)s+2);
 		Bitmap_Function(NULL, obj, &data);
@@ -302,6 +456,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     static const char *labels_bg[] = {"Pattern", "Color", "Bitmap", "Gradient", NULL};
     static const char *labels_color[] = {"Color", NULL};
     static const char *gradient_type_entries[] = {"Scaled", "Tiled", NULL};
+
     Object *pattern_group = NULL;
     Object *vector_group = NULL;
     Object *external_list = NULL;
@@ -336,7 +491,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    MUIA_Listview_List, (IPTR)(external_list = ListObject,
 	        InputListFrame,
 	        MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
-	        MUIA_List_DestructHook, MUIV_List_DestructHook_String,
+		MUIA_List_DestructHook, MUIV_List_DestructHook_String,
 	        End),
 	    End;
     }
@@ -456,6 +611,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
     data->adjust_type = adjust_type;
     data->color_group = color_group;
+    data->originator = GetTagData(MUIA_Imageadjust_Originator, 0, msg->ops_AttrList);
 
     if (adjust_type != MUIV_Imageadjust_Type_Pen)
     {
@@ -581,11 +737,27 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	data->external_list = external_list;
 	data->external_display_hook.h_Entry = HookEntry;
 	data->external_display_hook.h_SubEntry = (HOOKFUNC)Imageadjust_External_Display;
-	set(data->external_list,MUIA_List_DisplayHook, (IPTR)&data->external_display_hook);
-    }
-    /* Because we have many childs, we disable the forwarding of the notify method */
-    DoMethod(obj, MUIM_Group_DoMethodNoForward, MUIM_Notify, MUIA_Group_ActivePage, 4, (IPTR)obj, 1, MUIM_Imageadjust_ReadExternal);
+	set(data->external_list, MUIA_List_DisplayHook, (IPTR)&data->external_display_hook);
 
+	data->external_construct_hook.h_Entry = HookEntry;
+	data->external_construct_hook.h_SubEntry = (HOOKFUNC)Imageadjust_External_Construct;
+	set(data->external_list, MUIA_List_ConstructHook, (IPTR)&data->external_construct_hook);
+
+	data->external_destruct_hook.h_Entry = HookEntry;
+	data->external_destruct_hook.h_SubEntry = (HOOKFUNC)Imageadjust_External_Destruct;
+	set(data->external_list, MUIA_List_DestructHook, (IPTR)&data->external_destruct_hook);
+
+	/* Because we have many childs, we disable the forwarding of the notify method */
+	DoMethod(obj, MUIM_Group_DoMethodNoForward, MUIM_Notify,
+		 MUIA_Group_ActivePage, 3, (IPTR)obj, 1,
+		 MUIM_Imageadjust_ReadExternal);
+
+	if (data->originator)
+	    DoMethod(data->external_list, MUIM_Notify,
+		     MUIA_Listview_DoubleClick, TRUE,
+		     MUIV_Notify_Application, 5, MUIM_Application_PushMethod,
+		     data->originator, 2,  MUIM_Popimage_CloseWindow, TRUE);
+    }
     Imageadjust_SetImagespec(obj,data,spec);
     return (IPTR)obj;
 }
@@ -647,7 +819,7 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 		    	data->imagespec = NULL;
 		    }
 
-		    get(obj,MUIA_Group_ActivePage,&act);
+		    get(obj, MUIA_Group_ActivePage, &act);
 		    
 		    for (i = 0; i < 4; i++)
 		    {
@@ -697,6 +869,26 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 			}
 			break;
 
+			case 3: /* External */
+			{
+			    struct ExternalListEntry *entry;
+
+			    DoMethod(data->external_list, MUIM_List_GetEntry,
+				     MUIV_List_GetEntry_Active, (IPTR)&entry);
+			    if (entry != NULL && entry->filename != NULL&& entry->reldir != NULL)
+			    {
+				LONG len;
+				len = 2 + strlen(entry->reldir) + 1 + strlen(entry->filename) + 1;
+				if ((data->imagespec = AllocVec(len, 0)))
+				{
+				    snprintf(data->imagespec, len, "3:%s/%s",
+					     entry->reldir, entry->filename);
+				    D(bug("Imageadjust_OM_GET: imspec=%s\n", data->imagespec));
+				}
+			    }
+			}
+			break;
+
 			case    4: /* Bitmap */
 				{
 				    char *str;
@@ -727,10 +919,23 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 IPTR Imageadjust__MUIM_Imageadjust_ReadExternal(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Imageadjust_DATA *data = INST_DATA(cl, obj);
-    DoMethod(data->external_list,MUIM_List_Clear);
-    AddDirectory(data->external_list,"MUI:Images",-1);
+
+    DoMethod(data->external_list, MUIM_List_Clear);
+    AddDirectory(data->external_list, IMSPEC_EXTERNAL_PREFIX, -1);
     return 0;
 }
+
+#if 0
+IPTR Imageadjust__MUIM_Imageadjust_ExternalSelected(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct Imageadjust_DATA *data = INST_DATA(cl, obj);
+
+    if (data->originator)
+	DoMethod(_app(obj), MUIM_Application_PushMethod, data->originator, 2,
+		 MUIM_Popimage_CloseWindow, TRUE);
+    return 0;
+}
+#endif
 
 #if ZUNE_BUILTIN_IMAGEADJUST
 BOOPSI_DISPATCHER(IPTR, Imageadjust_Dispatcher, cl, obj, msg)
@@ -751,6 +956,9 @@ BOOPSI_DISPATCHER(IPTR, Imageadjust_Dispatcher, cl, obj, msg)
         
         case MUIM_Imageadjust_ReadExternal: 
             return Imageadjust__MUIM_Imageadjust_ReadExternal(cl,obj,(APTR)msg);
+
+	    //case MUIM_Imageadjust_ExternalSelected: 
+            //return Imageadjust__MUIM_Imageadjust_ExternalSelected(cl,obj,(APTR)msg);
         
         default:
             return DoSuperMethodA(cl, obj, msg);
