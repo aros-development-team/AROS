@@ -5,8 +5,9 @@
     Desc:
     Lang: english
 */
-#define DEBUG 0
-#define LMBSUPPORT 0
+
+#define DEBUG 1
+#define LMBSUPPORT 1
 
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -65,9 +66,9 @@ struct SpecialResident
     UWORD maxslot;
 };
 
-#define SR_COOKIE 0x4afb4afc
+#define SR_COOKIE 0x4afa4afb
 
-struct SpecialResident resident =
+const struct SpecialResident resident =
 {
     {
     RTC_MATCHWORD,
@@ -90,7 +91,7 @@ struct SpecialResident resident =
 };
 
 const char name[] = "exec.strap";
-const char version[] = "$VER: exec.strap 41.9 (22.3.1997)";
+const char version[] = "$VER: exec.strap 41.10 (29.3.1997)";
 
 /*
     Array of function slots to enable/disable. They are all set to 1 (enabled)
@@ -145,7 +146,7 @@ int start(void)
     }
 #endif
 
-    D(bug("exec.strap installing...\n"));
+    D(bug("\nexec.strap installing...\n"));
 
     /*
 	This test will have to be changed if we start patching the exec version
@@ -346,6 +347,7 @@ int start(void)
 #if 0 /* ZZZ */
     SetFunc(120, AttemptSemaphoreShared);
 #endif
+    SetFunc(121, ColdReboot);
 
     /*
 	This test will have to be changed if we start patching the exec version
