@@ -331,16 +331,39 @@ LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
 void intui_BeginRefresh (struct Window * win,
 	struct IntuitionBase * IntuitionBase)
 {
+  /* lock all necessary layers */
+  LockLayerRom(win->WLayer);
+  /* Find out whether it's a GimmeZeroZero window with an extra layer to lock */
+  if (0 != (win->Flags & WFLG_GIMMEZEROZERO))
+    LockLayerRom(win->BorderRPort->Layer);
 
+  /* I don't think I ever have to update the BorderRPort's layer */
+  BeginUpdate(win->WLayer);
+  
+  /* let the user know that we're currently doing a refresh */
+  win->Flags |= WFLG_WINDOWREFRESH;
+  
 } /* intui_BeginRefresh */
 
 void intui_EndRefresh (struct Window * win, BOOL free,
 	struct IntuitionBase * IntuitionBase)
 {
+  EndUpdate(win->WLayer, free);
+  
+  /* reset all bits indicating a necessary or ongoing refresh */
+  win->Flags &= ~WFLG_WINDOWREFRESH;
+  
+  /* I reset this one only if Complete is TRUE!?! */
+  if (TRUE == free)
+    win->WLayer->Flags &= ~LAYERREFRESH;
 
+  /* Unlock the layers. */
+  if (0 != (win->Flags & WFLG_GIMMEZEROZERO))
+    UnlockLayerRom(win->BorderRPort->Layer);
+  
+  UnlockLayerRom(win->WLayer);
+ 
 } /* intui_EndRefresh */
-
-
 
 
 
