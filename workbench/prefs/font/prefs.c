@@ -16,13 +16,14 @@
 
 #include "locale.h"
 #include "misc.h"
+#include "prefs.h"
 
 #define DEBUG 1
 #include <aros/debug.h>
 
 /*** Variables **************************************************************/
 struct IFFHandle *iffHandle;
-struct FontPrefs *fontPrefs[3];
+struct FontPrefs *fp_Current[FP_COUNT];
 
 
 /*** Functions **************************************************************/
@@ -33,17 +34,17 @@ void initDefaultPrefs(struct FontPrefs **fontPrefsPtr)
 
     for (a = 0; a <= 2; a++)
     {
-	fontPrefs[a]->fp_Type = a;	/* Is this 0, 1, 2 or 1, 2, 3? Look it up! */
-	fontPrefs[a]->fp_FrontPen = 0;	/* Is this (really) default? Look it up! */
-	fontPrefs[a]->fp_BackPen = 0;	/* Is this (really) default? Look it up! */
-	fontPrefs[a]->fp_DrawMode = 0;	/* Is this (really) default? Look it up! */
+	fp_Current[a]->fp_Type = a;	/* Is this 0, 1, 2 or 1, 2, 3? Look it up! */
+	fp_Current[a]->fp_FrontPen = 0;	/* Is this (really) default? Look it up! */
+	fp_Current[a]->fp_BackPen = 0;	/* Is this (really) default? Look it up! */
+	fp_Current[a]->fp_DrawMode = 0;	/* Is this (really) default? Look it up! */
 
-	fontPrefs[a]->fp_TextAttr.ta_YSize = 8; /* Is this (really) default? Look it up! */
-	fontPrefs[a]->fp_TextAttr.ta_Style = FS_NORMAL;
- 	fontPrefs[a]->fp_TextAttr.ta_Flags = FPB_DISKFONT; /* Is this (really) default? Look it up! */
+	fp_Current[a]->fp_TextAttr.ta_YSize = 8; /* Is this (really) default? Look it up! */
+	fp_Current[a]->fp_TextAttr.ta_Style = FS_NORMAL;
+ 	fp_Current[a]->fp_TextAttr.ta_Flags = FPB_DISKFONT; /* Is this (really) default? Look it up! */
 
-	strcpy(fontPrefs[a]->fp_Name, "topaz.font"); /* Is this (really) default? Check it up! */
-	fontPrefs[a]->fp_TextAttr.ta_Name = fontPrefs[a]->fp_Name;
+	strcpy(fp_Current[a]->fp_Name, "topaz.font"); /* Is this (really) default? Check it up! */
+	fp_Current[a]->fp_TextAttr.ta_Name = fp_Current[a]->fp_Name;
     }
 }
 
@@ -53,18 +54,18 @@ BOOL Prefs_Initialize(void)
 
     for (i = 0; i <= 2; i++)
     {
-        fontPrefs[i] = AllocMem
+        fp_Current[i] = AllocMem
         (
             sizeof(struct FontPrefs), MEMF_ANY | MEMF_CLEAR
         );
         
-        if (fontPrefs[i] == NULL)
+        if (fp_Current[i] == NULL)
         {
 	    return FALSE; /* FIXME: Some structures may have been allocated */
         }
     }
     
-    initDefaultPrefs(fontPrefs);
+    initDefaultPrefs(fp_Current);
     
     return TRUE;
 }
@@ -75,7 +76,7 @@ void Prefs_Deinitialize(void)
     
     for (i = 0; i <= 2; i++)
     {
-        if (fontPrefs[i] != NULL) FreeMem(fontPrefs[i], sizeof(struct FontPrefs));
+        if (fp_Current[i] != NULL) FreeMem(fp_Current[i], sizeof(struct FontPrefs));
     }
     
     if(iffHandle != NULL) FreeIFF(iffHandle);
@@ -94,8 +95,39 @@ void convertEndian(struct FontPrefs *fontPrefs)
     fontPrefs->fp_TextAttr.ta_YSize = AROS_BE2WORD(fontPrefs->fp_TextAttr.ta_YSize);
 }
 
-/* Main *********************************************************************/
-BOOL WritePrefs(CONST_STRPTR filename, struct FontPrefs **fontPrefs)
+/* File IO (high-level) *****************************************************/
+BOOL FP_Test(void)
+{
+    return FALSE;
+}
+
+BOOL FP_Revert(void)
+{
+    return FALSE;
+}
+
+BOOL FP_Save(void)
+{
+    if (!FP_Write(FP_PATH_ENV, fp_Current)) return FALSE;
+    if (!FP_Write(FP_PATH_ENVARC, fp_Current)) return FALSE;
+    
+    return TRUE;
+}
+
+BOOL FP_Use(void)
+{
+    if (!FP_Write(FP_PATH_ENV, fp_Current)) return FALSE;
+
+    return TRUE;
+}
+
+BOOL FP_Cancel(void)
+{
+    return FP_Revert();
+}
+
+/* File IO (low-level) ******************************************************/
+BOOL FP_Write(CONST_STRPTR filename, struct FontPrefs **fontPrefs)
 {
     BOOL              rc = TRUE;
     UBYTE             a = 0, b = 0;
@@ -132,13 +164,13 @@ BOOL WritePrefs(CONST_STRPTR filename, struct FontPrefs **fontPrefs)
                     }
 		    kprintf("fontPrefs = %d bytes struct FontPrefs = %d bytes\n", sizeof(fontPrefs), sizeof(struct FontPrefs));
 
-		    convertEndian(fontPrefs[a]); // Convert to m68k endian
+		    convertEndian(fp_Current[a]); // Convert to m68k endian
 
-		    b = WriteChunkBytes(iffHandle, fontPrefs[a], sizeof(struct FontPrefs));
+		    b = WriteChunkBytes(iffHandle, fp_Current[a], sizeof(struct FontPrefs));
 
 		    b = PopChunk(iffHandle);
 
-		    convertEndian(fontPrefs[a]); // Revert to initial endian
+		    convertEndian(fp_Current[a]); // Revert to initial endian
 
 		    if (b) // TODO: We need some error checking here!
                     {
@@ -184,7 +216,7 @@ BOOL WritePrefs(CONST_STRPTR filename, struct FontPrefs **fontPrefs)
     return rc;
 }
 
-BOOL ReadPrefs(CONST_STRPTR filename, struct FontPrefs **readFontPrefs)
+BOOL FP_Read(CONST_STRPTR filename, struct FontPrefs **readFontPrefs)
 {
     UBYTE a;
     LONG error;

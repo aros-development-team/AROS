@@ -68,7 +68,7 @@ struct RDArgs * getArguments(void)
 // (GUI) interactive basis? Request for comments! (petah)
 UBYTE processArguments(void)
 {
-    extern struct FontPrefs *fontPrefs[3];
+    extern struct FontPrefs *fp_Current[3];
 
     if(!(readArgs = getArguments()))
 	PrintFault(IoErr(), NULL);
@@ -78,7 +78,7 @@ UBYTE processArguments(void)
 
     if(argArray[ARG_FROM])
     {
-	if(!(ReadPrefs((CONST_STRPTR) argArray[ARG_FROM], fontPrefs)))
+	if(!(FP_Read((CONST_STRPTR) argArray[ARG_FROM], fp_Current)))
 	    return(APP_FAIL);
 
      /* If USE or SAVE is set, write the FROM file to ENV: and/or ENVARC: and then quit. Is this
@@ -89,11 +89,11 @@ UBYTE processArguments(void)
 
 	if(argArray[ARG_USE] || argArray[ARG_SAVE])
 	{
-	    if(!(WritePrefs("ENV:sys/font.prefs", fontPrefs)))
+	    if(!(FP_Write("ENV:sys/font.prefs", fp_Current)))
 		return(APP_FAIL);
 
 	    if(argArray[ARG_SAVE])
-		if(!(WritePrefs("ENVARC:sys/font.prefs", fontPrefs)))
+		if(!(FP_Write("ENVARC:sys/font.prefs", fp_Current)))
 		    return(APP_FAIL);
 
 	    // Don't launch the rest of the program, just exit
@@ -101,7 +101,7 @@ UBYTE processArguments(void)
 	}
     }
     else
-	if(!(ReadPrefs("ENV:sys/font.prefs", fontPrefs)))
+	if(!(FP_Read("ENV:sys/font.prefs", fp_Current)))
 	    return(APP_FAIL);
 
     // What is "EDIT" supposed to do? Look it up!

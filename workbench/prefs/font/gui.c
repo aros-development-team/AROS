@@ -25,7 +25,7 @@
 #include "locale.h"
 #include "prefs.h"
 
-extern struct FontPrefs *fontPrefs[3]; // prefs.c
+extern struct FontPrefs *fp_Current[3]; // prefs.c
 
 #define BUFFERSIZE 512
 
@@ -68,7 +68,7 @@ BOOL FontString2FontPrefs(struct FontPrefs *fp, CONST_STRPTR buffer)
     snprintf
     (
         fp->fp_Name, nameLength + suffixLength + 1, "%.*s.font", 
-        nameLength, buffer
+        (int) nameLength, buffer
     ); 
     fp->fp_TextAttr.ta_Name = fp->fp_Name;
     
@@ -170,13 +170,13 @@ IPTR FPWindow$OM_NEW
     self = (Object *) DoSuperMethodA(CLASS, self, (Msg) message);
     if (self == NULL) goto error;
     
-    FontPrefs2FontString(buffer, BUFFERSIZE, fontPrefs[FP_WBFONT]);
+    FontPrefs2FontString(buffer, BUFFERSIZE, fp_Current[FP_WBFONT]);
     SetAttrs(iconsString, MUIA_Text_Contents, (IPTR) buffer, TAG_DONE);
     
-    FontPrefs2FontString(buffer, BUFFERSIZE, fontPrefs[FP_SYSFONT]);
+    FontPrefs2FontString(buffer, BUFFERSIZE, fp_Current[FP_SYSFONT]);
     SetAttrs(systemString, MUIA_Text_Contents, (IPTR) buffer, TAG_DONE);
     
-    FontPrefs2FontString(buffer, BUFFERSIZE, fontPrefs[FP_SCREENFONT]);
+    FontPrefs2FontString(buffer, BUFFERSIZE, fp_Current[FP_SCREENFONT]);
     SetAttrs(screenString, MUIA_Text_Contents, (IPTR) buffer, TAG_DONE);
     
     data = INST_DATA(CLASS, self);
@@ -220,10 +220,9 @@ IPTR FPWindow$MUIM_PreferencesWindow_Save
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
     
-    Gadgets2FontPrefs(fontPrefs, data);
-    WritePrefs("ENV:sys/font.prefs", fontPrefs);
-    WritePrefs("ENVARC:sys/font.prefs", fontPrefs);
-        
+    Gadgets2FontPrefs(fp_Current, data);
+    FP_Save(); /* FIXME: check error */
+    
     SetAttrs(self, MUIA_Window_Open, FALSE, TAG_DONE);
     DoMethod(_app(self), MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     
@@ -237,8 +236,8 @@ IPTR FPWindow$MUIM_PreferencesWindow_Use
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
     
-    Gadgets2FontPrefs(fontPrefs, data);
-    WritePrefs("ENV:sys/font.prefs", fontPrefs);
+    Gadgets2FontPrefs(fp_Current, data);
+    FP_Use(); /* FIXME: check error */
     
     SetAttrs(self, MUIA_Window_Open, FALSE, TAG_DONE);
     DoMethod(_app(self), MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
