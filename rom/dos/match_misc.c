@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Support functions for MatchFirst/MatchNext/MatchEnd
@@ -55,15 +55,18 @@ static void RemoveTrailingSlash(STRPTR s)
     }
 }
 
-/*****************************************************************************************
+/**************************************************************************
 
-The job of Match_BuildAChainList is to split the pattern string passed to MatchFirst into
-path components. Most imporant rules (as found out after hours of testing on Amiga):
+The job of Match_BuildAChainList is to split the pattern string passed to
+MatchFirst into path components. Most imporant rules (as found out after
+hours of testing on Amiga):
 
-  - Each path component containing a pattern string is put into a single AChain
-  - If there are several successive path components *without* pattern then this
-    are merged into one single AChain.
-  - No matter what: the last path component always gets into its own single AChain.
+  - Each path component containing a pattern string is put into a single
+    AChain
+  - If there are several successive path components *without* pattern then
+    this are merged into one single AChain.
+  - No matter what: the last path component always gets into its own single
+    AChain.
 
 Examples: [<???>] is one AChain
 
@@ -77,7 +80,7 @@ Examples: [<???>] is one AChain
   work:#?/aros/games                [work:] [#?] [aros] [games}
   work:#?/#?/aros/games/quake       [work:} [#?] [#?] [aros/games] [quake]
 
-*****************************************************************************************/
+**************************************************************************/
   
 LONG Match_BuildAChainList(STRPTR pattern, struct AnchorPath *ap,
 			   struct AChain **retac, struct DosLibrary *DOSBase)
@@ -263,9 +266,10 @@ done:
     {
 #if MATCHFUNCS_NO_DUPLOCK
         /*
-	** No DupLock() here, because then we would have to UnLock it in MatchEnd
-	** and we would not know any valid lock to which we could CurrentDir after,
-	** because we must make sure there is a valid CurrentDir after MatchEnd.
+	* No DupLock() here, because then we would have to UnLock it in
+	* MatchEnd and we would not know any valid lock to which we could
+	* CurrentDir after, because we must make sure there is a valid
+	* CurrentDir after MatchEnd.
 	*/
 	
         baseac->an_Lock = CurrentDir(0);
@@ -294,7 +298,7 @@ done:
 
     return error;}
 
-/****************************************************************************************/
+/******************************************************************************/
 
 LONG Match_MakeResult(struct AnchorPath *ap, struct DosLibrary *DOSBase)
 {
@@ -318,4 +322,4 @@ LONG Match_MakeResult(struct AnchorPath *ap, struct DosLibrary *DOSBase)
     return error;
 }
 
-/****************************************************************************************/
+/******************************************************************************/
