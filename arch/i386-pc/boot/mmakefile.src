@@ -10,7 +10,7 @@ OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o)
 BOOT_FILES := \
     C/Shell \
     S/Startup-Sequence \
-    contrib/aminet/untgz \
+    C/Unpack \
     boot/grub/stage1 boot/grub/stage2 \
     boot/grub/menu.lst
 
@@ -31,7 +31,8 @@ BOOT_TAR_FILES := \
     Libs/reqtools.library Libs/muimaster.library Libs/coolimages.library \
     Locale/Countries Locale/Languages \
     Locale/Catalogs/deutsch/Sys Locale/Catalogs/italiano/Sys Locale/Catalogs/svenska/Sys \
-    Prefs/Font Prefs/Locale Prefs/ReqTools Prefs/Serial Prefs/Env-Archive \
+    Prefs/Font Prefs/Locale Prefs/ReqTools Prefs/Serial \
+    Prefs/Env-Archive Prefs/Presets \
     S/Shell-Startup \
     System \
     Tools/Commodities \
@@ -54,7 +55,7 @@ setup-pc-i386 :
 	%mkdirs_q $(BOOT_DEST_DIR)/S
 	%mkdirs_q $(BOOT_DEST_DIR)/Prefs
 	%mkdirs_q $(BOOT_DEST_DIR)/Prefs/Env-Archive
-	%mkdirs_q $(BOOT_DEST_DIR)/Prefs/Env-Archive/Sys
+	%mkdirs_q $(BOOT_DEST_DIR)/Prefs/Env-Archive/SYS
 	%mkdirs_q $(BOOT_DEST_DIR)/contrib
 	%mkdirs_q $(BOOT_DEST_DIR)/contrib/aminet
 	%mkdirs_q $(BOOT_DEST_DIR)/boot/grub
@@ -77,7 +78,7 @@ $(BINDIR)/boot/grub/% : %
 
 #MM bootdisk-pc-i386 : software-pc-i386
 bootdisk-pc-i386: \
-	$(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.tgz \
+	$(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.pkg \
 	$(BINDIR)/boot/aros-pc-i386 install
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence.DEMOFLOPPY $(BOOT_DEST_DIR)/S/Startup-Sequence
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
@@ -90,8 +91,20 @@ bootdisk-pc-i386: \
 install: install.c
 	@$(HOST_CC) install.c -o install
 
-$(BOOT_DEST_DIR)/AROS.tgz :
-	@tar -f - -c -C $(BOOT_SRC_DIR) $(BOOT_TAR_FILES) -C $(TOP) LICENSE | gzip -9 > $(BOOT_DEST_DIR)/AROS.tgz
+$(BOOT_DEST_DIR)/AROS.pkg :
+	@$(RM) -rf $(GENDIR)/gen/rom/bootdisk.compressed
+	@$(MKDIR) -p $(GENDIR)/gen/rom/bootdisk.compressed
+	@( \
+            cd $(BOOT_SRC_DIR) && \
+            for path in $(BOOT_TAR_FILES); do \
+                $(SH) $(TOP)/config/i386-native/boot/copypath $$path $(GENDIR)/gen/rom/bootdisk.compressed ; \
+            done && \
+            cd $(GENDIR)/gen/rom && \
+            $(RM) AROS.pkg && \
+            $(TOP)/tools/package/pkg c AROS.pkg bootdisk.compressed && \
+            bzip2 -9 AROS.pkg && \
+            mv -f AROS.pkg.bz2 $(BOOT_DEST_DIR)/AROS.pkg \
+        )
 
 $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 	@$(CP) $< $@
