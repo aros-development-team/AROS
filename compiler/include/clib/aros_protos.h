@@ -17,5 +17,6 @@
 */
 ULONG CalcChecksum (APTR mem, ULONG size);
 int   STRCMP	   (const UBYTE *, const UBYTE *);
+int   kprintf	   (const UBYTE *, ...);
 
 #endif /* CLIB_AROS_PROTOS_H */
