@@ -1267,7 +1267,7 @@ AC_CONFIG_COMMANDS([genmf_executable],
     [chmod a+x ${aros_tools_dir}/genmf.py],
     [aros_tools_dir=${aros_tools_dir}]
 )
-AC_CONFIG_COMMANDS([adflib/myaros.conf_executable],
+AC_CONFIG_COMMANDS([adflib_myaros.conf_executable],
     [chmod a+x tools/adflib/myconf.aros]
 )
 

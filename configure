@@ -8550,7 +8550,7 @@ fi
 
           ac_config_commands="$ac_config_commands genmf_executable"
 
-          ac_config_commands="$ac_config_commands adflib/myaros.conf_executable"
+          ac_config_commands="$ac_config_commands adflib_myaros.conf_executable"
 
 
                                                                                                                                             ac_config_files="$ac_config_files Makefile rom/mmakefile ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in ${aros_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/adflib/myconf.aros"
@@ -9123,7 +9123,7 @@ do
   "compiler_executable" ) CONFIG_COMMANDS="$CONFIG_COMMANDS compiler_executable" ;;
   "genshared_executable" ) CONFIG_COMMANDS="$CONFIG_COMMANDS genshared_executable" ;;
   "genmf_executable" ) CONFIG_COMMANDS="$CONFIG_COMMANDS genmf_executable" ;;
-  "adflib/myaros.conf_executable" ) CONFIG_COMMANDS="$CONFIG_COMMANDS adflib/myaros.conf_executable" ;;
+  "adflib_myaros.conf_executable" ) CONFIG_COMMANDS="$CONFIG_COMMANDS adflib_myaros.conf_executable" ;;
   "${aros_geninc_dir}/host-conf.h" ) CONFIG_HEADERS="$CONFIG_HEADERS ${aros_geninc_dir}/host-conf.h:config/host-conf.h.in" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
@@ -9955,7 +9955,7 @@ echo "$as_me: executing $ac_dest commands" >&6;}
      ;;
     genshared_executable ) chmod a+x ${aros_scripts_dir}/genshared ;;
     genmf_executable ) chmod a+x ${aros_tools_dir}/genmf.py ;;
-    adflib/myaros.conf_executable ) chmod a+x tools/adflib/myconf.aros
+    adflib_myaros.conf_executable ) chmod a+x tools/adflib/myconf.aros
  ;;
   esac
 done
