@@ -614,10 +614,10 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 	{
 	    /* this code must not change the 'relright' variable */
 #warning The sizegadget is probably placed at a wrong place
-	    LONG top = w->Height - (TITLEBAR_HEIGHT - 1);
+	    LONG top = - (TITLEBAR_HEIGHT - 1);
 	    struct TagItem size_tags[] = {
 	            {GA_RelRight,	relright	},
-		    {GA_Top,		top  		},
+		    {GA_RelBottom,	top  		},
 		    {GA_Width,		TITLEBAR_HEIGHT	},
 		    {GA_Height,		TITLEBAR_HEIGHT	},
 		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
