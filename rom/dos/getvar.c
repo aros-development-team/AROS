@@ -122,16 +122,21 @@
           int j = 0;
           while ( (buffer[j] != '\n') && (j < i) )
             j++;
-            buffer[j]= 0x0; /* mark end of string */
+          if (j == i)
+            size = j - 1;
+          else
             size = j;
+          buffer[size]= 0x0; /* mark end of string */
         }
         else
-        {
-          size = lv->lv_Len;
-        }
+          if (GVF_BINARY_VAR == (flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM)))
+          {
+            size = i-1;
+            buffer[size] = 0x0; /* mark end of string */
+          }
 
         SetIoErr(lv->lv_Len);
-          return size;
+        return size;
 
       } /* Got lv */
     } /* !global only */
@@ -183,9 +188,19 @@
           int j = 0;
           while ( (buffer[j] != '\n') && (j < size) )
             j++;
-          buffer[j]= 0x0; /* mark end of string */
-          size = j;
+          if (j == size)
+            size--;
+          else
+            size = j;
+          buffer[size]= 0x0; /* mark end of string */
         }
+        else
+          if (GVF_BINARY_VAR == (flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM)))
+          {
+            size--;
+            buffer[size] = 0x0; /* mark end of string */
+          }
+
         SetIoErr(fSize);
         return size;
       } /* open(file) */
