@@ -1,0 +1,32 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.
+USER_CFLAGS   := -DMYDEBUG
+
+MODNAME := jpeg
+MODTYPE := datatype
+
+FILES := jpegclass libfunc
+FUNCS := obtainengine
+
+USE_AMIGALIB := yes
+USE_CLIB_STATIC := yes
+# USE_ALIB := yes
+USE_MLIB := yes
+
+#MM- workbench-datatypes-complete: workbench-datatypes-jpeg
+#MM workbench-datatypes-jpeg : setup includes linklibs linklibs-jpeg
+workbench-datatypes-jpeg : workbench-datatypes-jpeg-module
+
+%make_module_setup mmake=workbench-datatypes-jpeg
+
+$(MOD_DIR)/jpeg.readme : jpeg.readme
+	@$(CP) $< $@
+
+LIBS := -ljpeg $(LIBS)
+
+%make_module mmake=workbench-datatypes-jpeg
+
+%common
+%include_deps
