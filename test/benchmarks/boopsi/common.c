@@ -10,8 +10,6 @@
 
 #include <string.h>
 
-#define timeval aros_timeval
-
 #include <exec/types.h>
 #include <utility/tagitem.h>
 #include <libraries/mui.h>
@@ -22,7 +20,6 @@
 #include <proto/muimaster.h>
 #include <proto/utility.h>
 
-#undef timeval
 /*** Instance data **********************************************************/
 struct Test_DATA
 {

@@ -7,9 +7,7 @@
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/tasks.h>
-#define timeval aros_timeval
 #include <dos/dosextens.h>
-#undef timeval
 #include <stdio.h>
 #include <stddef.h>
 #include <signal.h>

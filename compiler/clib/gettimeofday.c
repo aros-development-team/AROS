@@ -5,7 +5,6 @@
     Query the current time and/or timezone.
 */
 
-#define timeval aros_timeval
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/timer.h>
@@ -13,7 +12,6 @@
 #include <devices/timer.h>
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
-#undef timeval
 
 
 #include "__time.h"
@@ -101,13 +99,9 @@ long __gmtoffset;
 
 ******************************************************************************/
 {
-    struct aros_timeval atv;
-
     if (tv)
     {
-        GetSysTime((struct timeval *)&atv);
-        tv->tv_sec  = atv.tv_secs;
-        tv->tv_usec = atv.tv_micro;
+        GetSysTime(tv);
 
         /* Adjust with the current timezone, stored in minutes west of GMT */
         tv->tv_sec += __gmtoffset * 60;
