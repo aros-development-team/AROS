@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/02 16:36:06  digulla
+    Fixed a couple of typos in TEST
+
     Revision 1.1  1996/10/02 16:32:58  digulla
     Remove a node from a single linked list
 
@@ -57,10 +60,20 @@
     while (*list && *list != node)
 	list = (APTR *)(*list);
 
-    return *list ? node : NULL;
+    if (*list)
+    {
+	*list = *((APTR *)node);
+	*((APTR *)node) = NULL;
+
+	return node;
+    }
+
+    return NULL;
 } /* RemoveSList */
 
 #ifdef TEST
+#include <stdio.h>
+
 /* A single linked list looks like this: */
 struct SNode
 {
@@ -80,13 +93,13 @@ int main (int argc, char ** argv)
     node1.Next = &node2;
     node2.Next = NULL;
 
-    ptr = RemoveSList (&List, &node2);
+    ptr = RemoveSList ((APTR *)&List, &node2);
     if (ptr != &node2)
 	fprintf (stderr, "Error: Couldn't find node2\n");
     else
 	printf ("node2 removed.\n");
 
-    ptr = RemoveSList (&List, &node1);
+    ptr = RemoveSList ((APTR *)&List, &node1);
     if (ptr != &node1)
 	fprintf (stderr, "Error: Couldn't find node1\n");
     else
