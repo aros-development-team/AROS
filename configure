@@ -27,6 +27,7 @@ GUI_INCDIR=""
 GUI_LIBFLAGS=""
 MKDEPEND="makedepend"
 FLAVOUR="emulation"
+SHELL_LDFLAGS=""
 
 # Flags to link AROS binaries (ie. binaries which are to be started
 # inside AROS). What we need is something like a shared lib: All
@@ -72,6 +73,8 @@ case "$type" in
 	SHARED_CFLAGS="-fPIC"
 	# Command to generate shared libs
 	SHARED_AR="gcc -shared -o"
+	# Required to link shared libraries in at runtime
+	SHELL_LDFLAGS= -Xlinker -rpath -Xlinker ./lib
 	;;
 "HP-UX" )
 	COMMON_CFLAGS="-Aa -g"
@@ -88,12 +91,14 @@ case "$type" in
 	CPU="i386"
 	COMMON_CFLAGS="-Wall -O2"
 	ILDFLAGS="-nostartfiles -nostdlib -Wl,-r,-n,-e,_entry"
-	GUI_BASEDIR="/usr/X11R6"
+	GUI_LIBDIR="/usr/X11R6/lib"
+	GUI_INCDIR="/usr/X11R6/include"
 	GUI_LIBFLAGS="-lX11"
-	AS="gcc"
-	CC="gcc"
+	AS="gcc -pipe"
+	CC="gcc -pipe"
 	COMMON_AFLAGS="-x assembler-with-cpp"
 	MKDEPEND="makedepend -D__GNUC__ -Di386"
+	CHECKUDS="nm -u"
 	;;
 "AmigaOS" )
 	CC="gcc"
@@ -142,7 +147,6 @@ case "$1" in
     echo "RANLIB := $RANLIB" >> $2
     echo "ARCH := $ARCH" >> $2
     echo "CPU := $CPU" >> $2
-    echo "CONFIG_MODS := $CONFIG_MODS" >> $2
     echo "FLAVOUR := $FLAVOUR" >> $2
 
     if [ -z "$AS" ]; then
@@ -184,10 +188,61 @@ case "$1" in
 
     echo "GUI_LIBFLAGS := $GUI_LIBFLAGS" >> $2
     echo "MKDEPEND := $MKDEPEND" >> $2
+    echo "SHELL_LDFLAGS := $SHELL_LDFLAGS" >> $2
 
     if [ -n "$SHARED_CFLAGS" ]; then
 	echo "SHARED_CFLAGS := $SHARED_CFLAGS" >> $2
 	echo "SHARED_AR := $SHARED_AR" >> $2
+    fi
+
+    # These change commands in config/make.cfg 
+    if [ -n "$RM" ]; then
+	echo "RM := $RM" >> $2
+    fi
+    if [ -n "$CP" ]; then
+	echo "CP := $CP" >> $2
+    fi
+    if [ -n "$MV" ]; then
+	echo "MV := $MV" >> $2
+    fi
+    if [ -n "$ECHO" ]; then
+	echo "ECHO := $ECHO" >> $2
+    fi
+    if [ -n "$MKDIR" ]; then
+	echo "MKDIR := $MKDIR" >> $2
+    fi
+    if [ -n "$TOUCH" ]; then
+	echo "TOUCH := $TOUCH" >> $2
+    fi
+    if [ -n "$AR" ]; then
+	echo "AR := $AR" >> $2
+    fi
+    if [ -n "$AWK" ]; then
+	echo "AWK := $AWK" >> $2
+    fi
+    if [ -n "$CHECKUDS" ]; then
+	echo "CHECKUDS := $CHECKUDS" >> $2
+    fi
+    if [ -n "$SORT" ]; then
+	echo "SORT := $SORT" >> $2
+    fi
+    if [ -n "$UNIQ" ]; then
+	echo "UNIQ := $UNIQ" >> $2
+    fi
+    if [ -n "$FOR" ]; then
+	echo "FOR := $FOR" >> $2
+    fi
+    if [ -n "$IF" ]; then
+	echo "IF := $IF" >> $2
+    fi
+    if [ -n "$NOP" ]; then
+	echo "NOP := $NOP" >> $2
+    fi
+    if [ -n "$CAT" ]; then
+	echo "CAT := $CAT" >> $2
+    fi
+    if [ -n "$TEST" ]; then
+	echo "TEST := $CAT" >> $2
     fi
     ;;
 "-h" )
