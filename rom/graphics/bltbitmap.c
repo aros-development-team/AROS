@@ -111,6 +111,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
     if ( srcBitMap->Pad != 0 || destBitMap->Pad != 0 
       || srcBitMap->Flags & BMF_AROS_DISPLAYED || destBitMap->Flags & BMF_AROS_DISPLAYED)
     {
+kprintf("Calling driver_BltBitMap %d,%d!!!\n",xSize,ySize);
 	planecnt = driver_BltBitMap (srcBitMap, xSrc, ySrc
 	    , destBitMap, xDest, yDest
 	    , xSize, ySize
@@ -124,7 +125,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	ULONG x, y, plane;
 	ULONG depth;
 	PLANEPTR src, dest, temp;
-
+kprintf("Doing nonvisible blit %d,%d!",xSize,ySize);
 	wSrc  =  srcBitMap->BytesPerRow * 8;
 	wDest = destBitMap->BytesPerRow * 8;
 	temp = NULL;
@@ -172,7 +173,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	for (plane=0; plane<depth; plane ++)
 	{
 	    /* Copy this plane ? */
-	    if (1L << plane & mask)
+	    if ((1L << plane) & mask)
 	    {
 		planecnt ++; /* count it */
 
@@ -184,7 +185,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 		    if ((src <= dest && src+srcBitMap->BytesPerRow > dest)
 			|| (dest <= src && dest+destBitMap->BytesPerRow > src)
 		    )
-		    {
+	            {
 			if (!temp)
 			{
 			    if (tempA)
@@ -226,11 +227,11 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest, ULONG xdest,
     BOOL set;
 
     sByte = xsrc / 8;
-    sBit = 1L << (xsrc & 7L);
+    sBit = 1L << (7-(xsrc & 7L));
     sSet = (src[sByte] & sBit) != 0;
 
     dByte = xdest / 8;
-    dBit = 1L << (xdest & 7L);
+    dBit = 1L << (7-(xdest & 7L));
     dSet = (dest[dByte] & dBit) != 0;
 
     set = 0;
