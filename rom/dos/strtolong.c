@@ -14,7 +14,7 @@
 	AROS_LH2I(LONG, StrToLong,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, string, D1),
+	AROS_LHA(CONST_STRPTR, string, D1),
 	AROS_LHA(LONG *, value,  D2),
 
 /*  LOCATION */
@@ -49,7 +49,7 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     LONG sign=0, v=0;
-    STRPTR s=string;
+    CONST_STRPTR s=string;
 
     /* Skip leading whitespace characters */
     if(*s==' '||*s=='\t')
