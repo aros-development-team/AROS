@@ -1,9 +1,6 @@
 /*
     Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: RexxSupport initialization code.
-    Lang: English
 */
 
 #include <stddef.h>
@@ -23,7 +20,7 @@ struct ExecBase *SysBase;
 
 ULONG SAVEDS STDARGS FreeType2_L_InitLib (struct LibHeader *Freetype2Base)
 {
-    D(bug("Inside Init func of regina.library\n"));
+    D(bug("Inside Init func of freetype2.library\n"));
 
     SysBase = Freetype2Base->lh_SysBase;
     
@@ -35,7 +32,7 @@ ULONG SAVEDS STDARGS FreeType2_L_InitLib (struct LibHeader *Freetype2Base)
 
 void  SAVEDS STDARGS FreeType2_L_ExpungeLib(struct LibHeader *Freetype2Base)
 {
-    D(bug("Inside Expunge func of regina.library\n"));
+    D(bug("Inside Expunge func of freetype2.library\n"));
 
     CloseLibrary(aroscbase);
 }
