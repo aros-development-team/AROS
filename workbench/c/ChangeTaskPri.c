@@ -92,12 +92,14 @@ int main(void)
 
 	    if( pr != NULL )
 	    {
+	    	LONG pri = (LONG)(*(IPTR *)args[ARG_PRI]);
+		
 		/* Check the bounds on the priority */
-		if( (LONG)args[ARG_PRI] < -128 || (LONG)args[ARG_PRI] > 127 )
+		if(pri < -128 || pri > 127 )
 		    error = ERROR_OBJECT_TOO_LARGE;
 		else
     		    /* Set the priority */
-    		    SetTaskPri( (struct Task *)pr, args[ARG_PRI] );
+    		    SetTaskPri( (struct Task *)pr, pri);
 	    }
 	    else
 	    {
