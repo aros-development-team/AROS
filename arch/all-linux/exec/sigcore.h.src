@@ -9,6 +9,13 @@
     Lang: english
 */
 
+#define USE_SA_SIGINFO 0
+
+#if USE_SA_SIGINFO
+#define SIGCORE_NEED_SA_SIGINFO 1
+#include <ucontext.h>
+#endif
+
 #include <signal.h>
 #include <errno.h>
 #include "etask.h"
@@ -56,6 +63,18 @@ typedef @sighandler@ SignalHandler;
 
     so the address of the signal context is &sig+1.
 */
+
+#if USE_SA_SIGINFO
+#define GLOBAL_SIGNAL_INIT \
+	static void sighandler (int sig, sigcontext_t * sc);    		\
+										\
+	static void SIGHANDLER (int sig, siginfo_t *blub, struct ucontext *u) 	\
+	{ 									\
+	    sighandler(sig, (sigcontext_t *)&u->uc_mcontext); 			\
+	}
+
+#else
+
 #define GLOBAL_SIGNAL_INIT \
 	static void sighandler (int sig, sigcontext_t * sc);    \
 								\
@@ -63,6 +82,7 @@ typedef @sighandler@ SignalHandler;
 	{							\
 	    sighandler (sig, (sigcontext_t *)(&sig+1));         \
 	}
+#endif
 
 /* Type of the values which can be stored on the stack. A variable
    which is to be used as a stack pointer must be declared as
