@@ -893,7 +893,7 @@ int i;
 			{
 				set(adddevicegadgets.win, MUIA_Window_Open, TRUE);
 			}
-			else
+			else if (iln->parent->ln.ln_Type == LNT_Harddisk)
 			{
 				struct HDTBPartition *table;
 				table = (struct HDTBPartition *)iln->parent;
