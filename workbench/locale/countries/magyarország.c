@@ -2,7 +2,7 @@
     Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Country data for united kingdom
+    Country data for Magyarország (Hungary).
 */
 
 #include <exec/types.h>
@@ -10,10 +10,10 @@
 #include <libraries/iffparse.h>
 #include <prefs/locale.h>
 
-/* magyar.country: based on this file on Amiga Developer CD 2.1: 
+/* magyarország.country: based on this file on Amiga Developer CD 2.1: 
    NDK/NDK_3.5/Examples/Locale/Countries/make_country_files.c */
    
-struct CountryPrefs magyarPrefs =
+struct CountryPrefs magyarorszagPrefs =
 {
     /* Reserved */
     { 0, 0, 0, 0 },
