@@ -32,6 +32,8 @@ char * strstr (const char * buf, const char * str);
 char * strtok (char * s1, const char * s2);
 char * stpcpy (char * dest, const char * src);
 
+char * index (const char *s, int c);
+
 char * strrev(char * s); /* SAS C */
 int stch_l(const char * in, long * lvalue); /* SAS C */
 int stcu_d(char * out, unsigned uivalue); /* SAS C */
