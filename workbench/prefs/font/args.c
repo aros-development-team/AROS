@@ -76,7 +76,7 @@ UBYTE processArguments(void)
  /* If FROM is set, then also check for the USE and SAVE keywords - but only then. There isn't
     any point in just replacing the same settings with the very same values? */
 
-    if(argArray[ARG_FROM])
+    if(argArray[ARG_FROM] != NULL)
     {
         if(!(FP_Read((CONST_STRPTR) argArray[ARG_FROM], fp_Current)))
             return(APP_FAIL);
@@ -87,16 +87,12 @@ UBYTE processArguments(void)
         implement some error checking in writeIFF() ? What if FROM is not set? Should we still 
         react for USE and SAVE (which we currently don't)? Request for comments to author! */
 
-        if(argArray[ARG_USE] || argArray[ARG_SAVE])
+        if (argArray[ARG_USE] || argArray[ARG_SAVE])
         {
-            if(!(FP_Write("ENV:sys/font.prefs", fp_Current)))
-                return(APP_FAIL);
-
-            if(argArray[ARG_SAVE])
-                if(!(FP_Write("ENVARC:sys/font.prefs", fp_Current)))
-                    return(APP_FAIL);
-
-            // Don't launch the rest of the program, just exit
+            if (argArray[ARG_USE] && !FP_Use()) return APP_FAIL;
+            if (argArray[ARG_SAVE] && !FP_Save()) return APP_FAIL;
+            
+            /* Don't launch the rest of the program, just exit */
             return(APP_STOP);
         }
     }
