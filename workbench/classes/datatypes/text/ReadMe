@@ -1,0 +1,88 @@
+Short:     V44.4 of the text.datatype replacemnet
+Uploader:  sebauer@t-online.de (Sebastian Bauer)
+Author:    sebauer@t-online.de (Sebastian Bauer)
+Type:      util/dtype
+Kurz:      V44.4 des text.datatypes Ersatz
+Requires:  OS 3.0
+Version:   44.4
+
+Introduction
+~~~~~~~~~~~~
+This is a replacement of the text.datatype. I wrote it because the
+orginal text.datatype lacks the support of marking and copying passages.
+I tried to be compatible with old one.
+
+Copyright, Distribution and Disclamer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This text.datatype is ©2000 by Sebastian Bauer.
+It is freeware. Feel free to spreat it, as long as
+all files are included and in an unchanged form. You are not
+allowed to make profit from its distribution!
+In no way the author can be made responible for any damage created
+by the program. Use it at your own risk!
+
+How to use install
+~~~~~~~~~~~~~~~~~~
+Simply copy the text.datatype file to SYS:Classes/DataTypes.
+You should then reboot the machine.
+Of course you also can use the included Installer Script to
+install it
+
+History
+~~~~~~~
+Version 44.4 (05.08.00)
+ - envvar: TEXTDT_MENUMARKING, if setted to 1, marking is only
+   possible if the menu item is selected before
+ - DTA_TextAttr attribute is supported now
+
+Version 44.3 (12.06.00)
+ - bug fix in word marking (reported by many people)
+ - tripple clicking marks the whole line
+ - TDTA_Buffer can be setted by a subclass now
+ - in some cases the last line was not displayed at all
+ - should be more compatible to the old text.datatype now
+
+Version 44.2 (20.05.00)
+ - hanged when last line was marked and then copied
+   (reported by Alexander Niven-Jenkins)
+ - did not refresh the contents in simple refresh windows when scrolled
+   (reported by Alexander Niven-Jenkins)
+ - now you can mark and without activating the select mode
+   (suggested by Nils Görs)
+ - a double click will mark wordwise
+
+Version 44.1 (30.04.00)
+ - Tabs weren't preserved when copying
+   (reported by Alexander Niven-Jenkins)
+
+Version 44.0 (27.03.00)
+ - initial release
+
+How can you reach me?
+~~~~~~~~~~~~~~~~~~~~~
+This text.datatype probably has many bugs so send bug reports to
+  sebauer@t-online.de or
+  Sebastian.Bauer@in.stud.tu-ilmenau.de
+
+Address:
+  Sebastian Bauer
+  Neustädter Str. 50
+  07768 Kahla
+
+Visit my homepage at
+  http://home.t-online.de/home/sebauer/
+  (german version)
+
+  http://home.t-online.de/home/sebauer/english.html
+  (english version)
+
+Here you can find the latest version of the text.datatype but also
+other things for Amiga, for example SimpleFind3, SimpleHTML or the
+Freeciv port.
+
+         __
+        / /
+   __  / /   Only Amiga makes it possible...
+   \ \/ /
+    \__/
+

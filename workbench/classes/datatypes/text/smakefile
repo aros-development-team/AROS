@@ -1,0 +1,25 @@
+LIBOBJS = libfunc.o datatype_dt.o
+
+text.datatype: ${LIBOBJS}
+   slink with <<
+LIBFD FD:dtclass_lib.fd
+to text.datatype
+FROM lib:libent.o lib:libinit.o $(LIBOBJS)
+lib lib:sc.lib lib:mydebug.o
+NOICONS
+SD
+SC
+libversion 44 librevision 4 libid "text.datatype 44.4 (02.07.00)"
+<
+   copy text.datatype SYS:Classes/datatypes
+   avail flush
+
+libfunc.o: libfunc.c
+   sc nostackstack libcode libfunc.c OBJNAME=$@
+
+datatype_dt.o: datatype.c
+   sc nostackcheck define=COMPILE_DATATYPE datatype.c OBJNAME=$@
+
+install:
+   copy ReadMe DH2:Projects/Text-DT
+   copy text.datatype DH2:Projects/Text-DT
