@@ -1,0 +1,1426 @@
+This is grub.info, produced by makeinfo version 4.0 from grub.texi.
+
+INFO-DIR-SECTION Kernel
+START-INFO-DIR-ENTRY
+* GRUB: (grub).                 The GRand Unified Bootloader
+* grub-install: (grub)Invoking grub-install.    Install GRUB on your drive
+* mbchk: (grub)Invoking mbchk.  Check for the format of a Multiboot kernel
+END-INFO-DIR-ENTRY
+
+   Copyright (C) 1996 Erich Boleyn Copyright (C) 1999, 2000 Free
+Software Foundation, Inc.
+
+   Permission is granted to make and distribute verbatim copies of this
+manual provided the copyright notice and this permission notice are
+preserved on all copies.
+
+   Permission is granted to copy and distribute modified versions of
+this manual under the conditions for verbatim copying, provided also
+that the entire resulting derived work is distributed under the terms
+of a permission notice identical to this one.
+
+   Permission is granted to copy and distribute translations of this
+manual into another language, under the above conditions for modified
+versions.
+
+
+File: grub.info,  Node: Embedded data,  Next: Filesystem interface,  Prev: Memory map,  Up: Top
+
+Embedded variables in GRUB
+**************************
+
+   GRUB's "stage1" and "stage2" have embedded variables whose locations
+are well-defined, so that the installation can patch the binary file
+directly without recompilation of the modules.
+
+   In "stage1", these are defined (The number in the parenthesis of
+each entry is an offset number):
+
+"stage1 version" (0x3e)
+     This is the version bytes (should 03:00).
+
+"loading drive" (0x40)
+     This is the BIOS drive number to load the block from. If the number
+     is 0xff, then load from the booting drive.
+
+"stage2 sector" (0x41)
+     This is the location of the first sector of the "stage2".
+
+"stage2 address" (0x45)
+     This is the data for the `jmp' command to the starting address of
+     the component loaded by the stage1.
+
+     A "stage1.5" should be loaded at address 0x2000, and a "stage2"
+     should be loaded at address 0x8000. Both use a CS of 0.
+
+"stage2 segment" (0x47)
+     This is the segment of the starting address of the component
+     loaded by the "stage1".
+
+   In the first sector of "stage1.5" and "stage2", the blocklists are
+recorded between "firstlist" (0x200) and "lastlist" (determined when
+assembling the file `stage2/start.S').
+
+   The trick here is that it is actually read backward, and the first
+8-byte blocklist is not read here, but after the pointer is decremented
+8 bytes, then after reading it, it decrements again, reads, decrements,
+reads, etc. until it is finished.  The terminating condition is when the
+number of sectors to be read in the next blocklist is 0.
+
+   The format of a blocklist can be seen from the example in the code
+just before the `firstlist' label. Note that it is always from the
+beginning of the disk, and _not_ relative to the partition boundaries.
+
+   In "stage1.5" and "stage2" (these are all defined at the beginning
+of `shared_src/asm.S'):
+
+"major version" (0x6)
+     This is the major version byte (should be 3).
+
+"minor version" (0x7)
+     This is the minor version byte (should be 0).
+
+"install_partition" (0x8)
+     This is an unsigned long representing the partition on the
+     currently booted disk which GRUB should expect to find it's data
+     files and treat as the default root partition.
+
+     The format of is exactly the same as the "partition" part (the
+     "disk" part is ignored) of the data passed to an OS by a
+     Multiboot-compliant boot loader in the "boot_device" data element,
+     with one exception.
+
+     The exception is that if the first level of disk partitioning is
+     left as 0xFF (decimal 255, which is marked as no partitioning
+     being used), but the second level does have a partition number, it
+     looks for the first BSD-style PC partition, and finds the numbered
+     BSD sub-partition in it.  The default "install_partition"
+     0xFF00FF, would then find the first BSD-style PC partition, and
+     use the `a' partition in it, and 0xFF01FF would use the `b'
+     partition, etc.
+
+     If an explicit first-level partition is given, then no search is
+     performed, and it will expect that the BSD-style PC partition is
+     in the appropriate location, else a `no such partition' error will
+     be returned.
+
+     If a "stage1.5" is being used, it will pass its own
+     "install_partition" to any "stage2" it loads, therefore
+     overwriting the one present in the "stage2".
+
+"stage2_id" (0xc)
+     This is the "stage1.5" or "stage2" identifier.
+
+"version_string" (0xd)
+     This is the "stage1.5" or "stage2" version string. It isn't meant
+     to be changed, simply easy to find.
+
+"config_file" (after the terminating zero of "version_string")
+     This is the location, using the GRUB filesystem syntax, of the
+     config file.  It will, by default, look in the "install_partition"
+     of the disk GRUB was loaded from, though one can use any valid
+     GRUB filesystem string, up to and including making it look on
+     other disks.
+
+     The boot loader itself doesn't search for the end of
+     "version_string", it simply knows where "config_file" is, so the
+     beginning of the string cannot be moved after compile-time.  This
+     should be OK, since the "version_string" is meant to be static.
+
+     The code of "stage2" starts again at offset 0x70, so "config_file"
+     string obviously can't go past there. Also, remember to terminate
+     the string with a 0.
+
+     Note that "stage1.5" uses a tricky internal representation for
+     "config_file", which is the format of `DEVICE:FILENAME' (`:' is
+     not present actually).  DEVICE is an unsigned long like
+     "install_partition", and FILENAME is an absolute filename or a
+     blocklist. If DEVICE is disabled, that is, the drive number is
+     0xff, then "stage1.5" uses the "boot drive" and the "install
+     partition" instead.
+
+
+File: grub.info,  Node: Filesystem interface,  Next: Bootstrap tricks,  Prev: Embedded data,  Up: Top
+
+The generic interface for the fs code
+*************************************
+
+   For any particular partition, it is presumed that only one of the
+"normal" filesystems such as FAT, FFS, or ext2fs can be used, so there
+is a switch table managed by the functions in `disk_io.c'. The notation
+is that you can only "mount" one at a time.
+
+   The blocklist filesystem has a special place in the system. In
+addition to the "normal" filesystem (or even without one mounted), you
+can access disk blocks directly (in the indicated partition) via the
+blocklist notation. Using the blocklist filesystem doesn't effect any
+other filesystem mounts.
+
+   The variables which can be read by the filesystem backend are:
+
+`current_drive'
+     Contain the current BIOS drive number (numbered from 0, if a
+     floppy, and numbered from 0x80, if a hard disk).
+
+`current_partition'
+     Contain the current partition number.
+
+`current_slice'
+     Contain the current partition type.
+
+`saved_drive'
+     Contain the "drive" part of the root device.
+
+`saved_partition'
+     Contain the "partition" part of the root device.
+
+`part_start'
+     Contain the current partition starting address.
+
+`part_length'
+     Contain the current partition length, in sectors.
+
+`print_possibilities'
+     True when the `dir' function should print the possible completions
+     of a file, and false when it should try to actually open a file of
+     that name.
+
+`FSYS_BUF'
+     Point to a filesystem buffer which is 32K in size, to use in any
+     way which the filesystem backend desires.
+
+   The variables which need to be written by a filesystem backend are:
+
+`filepos'
+     Should be the current position in the file.
+
+     *Caution:* the value of FILEPOS can be changed out from under the
+     filesystem code in the current implementation. Don't depend on it
+     being the same for later calls into the back-end code!
+
+`filemax'
+     Should be the length of the file.
+
+`disk_read_func'
+     Should be set to the value of `disk_read_hook' _only_ during
+     reading of data for the file, not any other fs data, inodes, FAT
+     tables, whatever, then set to `NULL' at all other times (it will be
+     `NULL' by default). If this isn't done correctly, then the
+     `testload' and `install' commands won't work correctly.
+
+   The functions expected to be used by the filesystem backend are:
+
+`devread'
+     Only read sectors from within a partition. Sector 0 is the first
+     sector in the partition.
+
+`grub_read'
+     If the backend uses the blocklist code (like the FAT filesystem
+     backend does), then `grub_read' can be used, after setting
+     BLOCK_FILE to 1.
+
+   The functions expected to be defined by the filesystem backend are
+described at least moderately in the file `filesys.h'. Their usage is
+fairly evident from their use in the functions in `disk_io.c', look for
+the use of the FSYS_TABLE array.
+
+   *Caution:* The semantics are such that then `mount'ing the
+filesystem, presume the filesystem buffer FSYS_BUF is corrupted, and
+(re-)load all important contents. When opening and reading a file,
+presume that the data from the `mount' is available, and doesn't get
+corrupted by the open/read (i.e. multiple opens and/or reads will be
+done with only one mount if in the same filesystem).
+
+
+File: grub.info,  Node: Bootstrap tricks,  Next: I/O ports detection,  Prev: Filesystem interface,  Up: Top
+
+The bootstrap mechanism used in GRUB
+************************************
+
+   The disk space can be used in a boot loader is very restricted
+because a MBR (*note MBR::) is only 512 bytes but it also contains a
+partition table (*note Partition table::) and a BPB. So the question is
+how to make a boot loader code enough small to be fit in a MBR.
+
+   However, GRUB is a very large program, so we break GRUB into 2 (or 3)
+distinct components, "stage1" and "stage2" (and optionally "stage1.5").
+*Note Memory map::, for more information.
+
+   We embed "stage1" in a MBR or in the boot sector of a partition ,
+and place "stage2" in a filesystem. The optional "stage1.5" can be
+installed in a filesystem, in the "boot loader" area in a FFS, and in
+the sectors right after a MBR, because "stage1.5" is enough small and
+the sectors right after a MBR is normally an unused region. The size of
+this region is the number of sectors per head minus 1.
+
+   Thus, all the "stage1" must do is just load a "stage2" or
+"stage1.5". But even if "stage1" needs not to support the user
+interface or the filesystem interface, it is impossible to make
+"stage1" less than 400 bytes, because GRUB should support both the CHS
+mode and the LBA mode (*note Low-level disk I/O::).
+
+   The solution used by GRUB is that "stage1" loads only the first
+sector of a "stage2" (or a "stage1.5") and "stage2" itself loads the
+rest. The flow of "stage1" is:
+
+  1. Initialize the system briefly.
+
+  2. Detect the geometry and the accessing mode of the "loading drive".
+
+  3. Load the first sector of the "stage2".
+
+  4. Jump to the starting address of the "stage2".
+
+   The flow of "stage2" (and "stage1.5") is:
+
+  1. Load the rest of itself to the real starting address, that is, the
+     starting address plus 512 bytes. The blocklists are stored in the
+     last part of the first sector.
+
+  2. Long jump to the real starting address.
+
+   Note that "stage2" (or "stage1.5") does not probe the geometry or
+the accessing mode of the "loading drive", since "stage1" has already
+probed them.
+
+
+File: grub.info,  Node: I/O ports detection,  Next: Memory detection,  Prev: Bootstrap tricks,  Up: Top
+
+How to detect I/O ports used for a BIOS drive
+*********************************************
+
+   In the PC world, BIOS cannot detect if a hard disk drive is SCSI or
+IDE, generally speaking. Thus, it is not trivial to know which BIOS
+drive corresponds to an OS device. So the Multiboot Specification
+describes some techniques on how to guess mappings (*note Multiboot
+Specification: (multiboot)BIOS device mapping techniques.).
+
+   However, the techniques described are unreliable or difficult to be
+implemented, so we use a different technique from them in GRUB. Our
+technique is "INT 13H tracking technique". More precisely, it runs the
+INT 13 call (*note Low-level disk I/O::) in single-step mode just like
+a debugger and parses the instructions.
+
+   To execute the call one instruction at a time, set the TF (trap flag)
+flag in the register "FLAGS". By this, your CPU generates "Break Point
+Trap" after each instruction is executed and call INT 1. In the stack
+in the interrupt handler, callee's FLAGS and the far pointer which
+points to the next instruction to be executed are pushed, so we can know
+what instruction will be executed in the next time and the current
+contents of all the registers. If the next instruction is an I/O
+operation, the interrupt handler adds the I/O port into the "I/O map".
+
+   If the INT 13 handler returns, the TF flag is cleared automatically
+by the instruction `iret', and then output the I/O map on the screen.
+See the source code for the command `ioprobe' (*note Command-line and
+menu entry commands::), for more information.
+
+
+File: grub.info,  Node: Memory detection,  Next: Low-level disk I/O,  Prev: I/O ports detection,  Up: Top
+
+How to detect all installed RAM
+*******************************
+
+   There are three BIOS calls which return the information of installed
+RAM. GRUB uses these calls to detect all installed RAM and which
+address range should be treated by operating systems.
+
+* Menu:
+
+* Query System Address Map::    INT 15H, AX=E820h interrupt call
+* Get Large Memory Size::       INT 15H, AX=E801h interrupt call
+* Get Extended Memory Size::    INT 15H, AX=88h interrupt call
+
+
+File: grub.info,  Node: Query System Address Map,  Next: Get Large Memory Size,  Up: Memory detection
+
+INT 15H, AX=E820h interrupt call
+================================
+
+   Real mode only.
+
+   This call returns a memory map of all the installed RAM, and of
+physical memory ranges reserved by the BIOS. The address map is returned
+by making successive calls to this API, each returning one "run" of
+physical address information.  Each run has a type which dictates how
+this run of physical address range should be treated by the operating
+system.
+
+   If the information returned from INT 15h, AX=E820h in some way
+differs from INT 15h, AX=E801h (*note Get Large Memory Size::) or INT
+15h AH=88h (*note Get Extended Memory Size::), then the information
+returned from E820h supersedes what is returned from these older
+interfaces. This allows the BIOS to return whatever information it
+wishes to for compatibility reasons.
+
+   Input:
+
+`EAX'       Function Code      E820h
+`EBX'       Continuation       Contains the "continuation value" to get
+                               the next run of physical memory. This is
+                               the value returned by a previous call to
+                               this routine. If this is the first call,
+                               `EBX' must contain zero.
+`ES:DI'     Buffer Pointer     Pointer to an Address Range Descriptor
+                               structure which the BIOS is to fill in.
+`ECX'       Buffer Size        The length in bytes of the structure
+                               passed to the BIOS. The BIOS will fill in
+                               at most `ECX' bytes of the structure or
+                               however much of the structure the BIOS
+                               implements. The minimum size which must be
+                               supported by both the BIOS and the caller
+                               is 20 bytes. Future implementations may
+                               extend this structure.
+`EDX'       Signature          `SMAP' - Used by the BIOS to verify the
+                               caller is requesting the system map
+                               information to be returned in `ES:DI'.
+
+   Output:
+
+`CF'        Carry Flag         Non-Carry - indicates no error
+`EAX'       Signature          `SMAP' - Signature to verify correct BIOS
+                               revision.
+`ES:DI'     Buffer Pointer     Returned Address Range Descriptor pointer.
+                               Same value as on input.
+`ECX'       Buffer Size        Number of bytes returned by the BIOS in
+                               the address range descriptor. The minimum
+                               size structure returned by the BIOS is 20
+                               bytes.
+`EBX'       Continuation       Contains the continuation value to get the
+                               next address descriptor. The actual
+                               significance of the continuation value is
+                               up to the discretion of the BIOS. The
+                               caller must pass the continuation value
+                               unchanged as input to the next iteration of
+                               the E820h call in order to get the next
+                               Address Range Descriptor. A return value
+                               of zero means that this is the last
+                               descriptor. Note that the BIOS indicates
+                               that the last valid descriptor has been
+                               returned by either returning a zero as the
+                               continuation value, or by returning carry.
+
+   The Address Range Descriptor Structure is:
+
+Offset in Bytes    Name                   Description
+0                  "BaseAddrLow"          Low 32 Bits of Base Address
+4                  "BaseAddrHigh"         High 32 Bits of Base Address
+8                  "LengthLow"            Low 32 Bits of Length in Bytes
+12                 "LengthHigh"           High 32 Bits of Length in Bytes
+16                 "Type"                 Address type of this range
+
+   The "BaseAddrLow" and "BaseAddrHigh" together are the 64 bit
+"BaseAddress" of this range. The "BaseAddress" is the physical address
+of the start of the range being specified.
+
+   The "LengthLow" and "LengthHigh" together are the 64 bit "Length" of
+this range. The "Length" is the physical contiguous length in bytes of
+a range being specified.
+
+   The "Type" field describes the usage of the described address range
+as defined in the table below:
+
+Value   Mnemonic                  Description
+1       "AddressRangeMemory"      This run is available RAM usable by the
+                                  operating system.
+2       "AddressRangeReserved"    This run of addresses is in use or
+                                  reserved by the system, and must not be
+                                  used by the operating system.
+Other   "Undefined"               Undefined - Reserved for future use.
+                                  Any range of this type must be treated
+                                  by the OS as if the type returned was
+                                  "AddressRangeReserved".
+
+   The BIOS can use the "AddressRangeReserved" address range type to
+block out various addresses as _not suitable_ for use by a programmable
+device.
+
+   Some of the reasons a BIOS would do this are:
+
+   * The address range contains system ROM.
+
+   * The address range contains RAM in use by the ROM.
+
+   * The address range is in use by a memory mapped system device.
+
+   * The address range is for whatever reason are unsuitable for a
+     standard device to use as a device memory space.
+
+   Here is the list of assumptions and limitations:
+
+  1. The BIOS will return address ranges describing system memory and
+     ISA or PCI memory that is contiguous with that system memory.
+
+  2. The BIOS _will not_ return a range description for the memory
+     mapping of PCI devices. ISA Option ROM's, and ISA plug & play
+     cards. This is because the OS has mechanisms available to detect
+     them.
+
+  3. The BIOS will return chipset defined address holes that are not
+     being used by devices as reserved.
+
+  4. Address ranges defined for memory mapped I/O devices (for example
+     APICs) will be returned as reserved.
+
+  5. All occurrences of the system BIOS will be mapped as reserved. This
+     includes the area below 1 MB, at 16 MB (if present) and at end of
+     the address space (4 GB).
+
+  6. Standard I/O address ranges will not be reported. Example video
+     memory at A0000 to BFFFF physical will not be described by this
+     function. The range from E0000 to EFFFF is motherboard-specific
+     and will be reported differently on different computers.
+
+  7. All of lower memory is reported as normal memory. It is OS's
+     responsibility to handle standard RAM locations reserved for
+     specific uses, for example: the interrupt vector table (0:0) and
+     the BIOS data area (40:0).
+
+   Here we explain an example address map. This sample address map
+describes a machine which has 128 MB RAM, 640K of base memory and 127
+MB extended.  The base memory has 639K available for the user and 1K
+for an extended BIOS data area.  There is a 4 MB Linear Frame Buffer
+(LFB) based at 12 MB.  The memory hole created by the chipset is from 8
+M to 16 M.  There are memory mapped APIC devices in the system.  The IO
+Unit is at FEC00000 and the Local Unit is at FEE00000.  The system BIOS
+is remapped to 4G - 64K.
+
+   Note that the 639K endpoint of the first memory range is also the
+base memory size reported in the BIOS data segment at 40:13.
+
+   Key to types: "ARM" is AddressRangeMemory, "ARR" is
+AddressRangeReserved.
+
+Base (Hex)  Length  Type    Description
+0000 0000   639K    ARM     Available Base memory - typically the same
+                            value as is returned via the INT 12 function.
+0009 FC00   1K      ARR     Memory reserved for use by the BIOS(s). This
+                            area typically includes the Extended BIOS data
+                            area.
+000F 0000   64K     ARR     System BIOS.
+0010 0000   7M      ARM     Extended memory, this is not limited to the
+                            64MB address range.
+0080 0000   8M      ARR     Chipset memory hole required to support the
+                            LFB mapping at 12 MB.
+0100 0000   120M    ARM     Base board RAM relocated above a chipset
+                            memory hole.
+FEC0 0000   4K      ARR     IO APIC memory mapped I/O at FEC00000. Note
+                            the range of addresses required for an APIC
+                            device may vary from one motherboard
+                            manufacturer to another
+FEE0 0000   4K      ARR     Local APIC memory mapped I/O at FEE00000.
+FFFF 0000   64K     ARR     Remapped System BIOS at end of address space.
+
+   The following code segment is intended to describe the algorithm
+needed when calling the Query System Address Map function. It is an
+implementation example and uses non standard mechanisms.
+
+     E820Present = FALSE;
+     Regs.ebx = 0;
+     do
+       {
+         Regs.eax = 0xE820;
+         Regs.es = SEGMENT (&Descriptor);
+         Regs.di = OFFSET (&Descriptor);
+         Regs.ecx = sizeof (Descriptor);
+         Regs.edx = 'SMAP';
+     
+         _int (0x15, Regs);
+     
+         if ((Regs.eflags & EFLAGS_CARRY) || Regs.eax != 'SMAP')
+           {
+             break;
+           }
+     
+         if (Regs.ecx < 20 || Regs.ecx > sizeof (Descriptor))
+           {
+             /* bug in bios - all returned descriptors must be at
+                least 20 bytes long, and can not be larger than
+                the input buffer.  */
+             break;
+           }
+     
+         E820Present = TRUE;
+         .
+         .
+         .
+         Add address range Descriptor.BaseAddress through
+         Descriptor.BaseAddress + Descriptor.Length
+         as type Descriptor.Type
+         .
+         .
+         .
+       }
+     while (Regs.ebx != 0);
+     
+     if (! E820Present)
+       {
+         .
+         .
+         .
+         call INT 15H, AX E801h and/or INT 15H, AH=88h to obtain old style
+         memory information
+         .
+         .
+         .
+       }
+
+
+File: grub.info,  Node: Get Large Memory Size,  Next: Get Extended Memory Size,  Prev: Query System Address Map,  Up: Memory detection
+
+INT 15H, AX=E801h interrupt call
+================================
+
+   Real mode only.
+
+   Originally defined for EISA servers, this interface is capable of
+reporting up to 4 GB of RAM.  While not nearly as flexible as E820h, it
+is present in many more systems.
+
+   Input:
+
+`AX'        Function Code      E801h.
+
+   Output:
+
+`CF'        Carry Flag         Non-Carry - indicates no error.
+`AX'        Extended 1         Number of contiguous KB between 1 and 16
+                               MB, maximum 0x3C00 = 15 MB.
+`BX'        Extended 2         Number of contiguous 64KB blocks between
+                               16 MB and 4GB.
+`CX'        Configured 1       Number of contiguous KB between 1 and 16
+                               MB, maximum 0x3c00 = 15 MB.
+`DX'        Configured 2       Number of contiguous 64KB blocks between
+                               16 MB and 4 GB.
+
+   Not sure what this difference between the "Extended" and
+"Configured" numbers are, but they appear to be identical, as reported
+from the BIOS.
+
+   It is possible for a machine using this interface to report a memory
+hole just under 16 MB (Count 1 is less than 15 MB, but Count 2 is
+non-zero).
+
+
+File: grub.info,  Node: Get Extended Memory Size,  Prev: Get Large Memory Size,  Up: Memory detection
+
+INT 15H, AX=88h interrupt call
+==============================
+
+   Real mode only.
+
+   This interface is quite primitive.  It returns a single value for
+contiguous memory above 1 MB.  The biggest limitation is that the value
+returned is a 16-bit value, in KB, so it has a maximum saturation of
+just under 64 MB even presuming it returns as much as it can.  On some
+systems, it won't return anything above the 16 MB boundary.
+
+   The one useful point is that it works on every PC available.
+
+   Input:
+
+`AH'        Function Code      88h
+
+   Output:
+
+`CF'        Carry Flag         Non-Carry - indicates no error.
+`AX'        Memory Count       Number of contiguous KB above 1 MB.
+
+
+File: grub.info,  Node: Low-level disk I/O,  Next: MBR,  Prev: Memory detection,  Up: Top
+
+INT 13H disk I/O interrupts
+***************************
+
+   In the PC world, living with the BIOS disk interface is definitely a
+nightmare. This section documents how awful the chaos is and how GRUB
+deals with the BIOS disks.
+
+* Menu:
+
+* CHS Translation::             CHS addressing and LBA addressing
+* CHS mode disk I/O::           INT 13H, AH=0xh interrupt call
+* LBA mode disk I/O::           INT 13H, AH=4xh interrupt call
+
+
+File: grub.info,  Node: CHS Translation,  Next: CHS mode disk I/O,  Up: Low-level disk I/O
+
+CHS addressing and LBA addressing
+=================================
+
+   CHS -- Cylinder/Head/Sector -- is the traditional way to address
+sectors on a disk. There are at least two types of CHS addressing; the
+CHS that is used at the INT 13H interface and the CHS that is used at
+the ATA device interface. In the MFM/RLL/ESDI and early ATA days the CHS
+used at the INT 13H interface was the same as the CHS used at the device
+interface.
+
+   Today we have CHS translating BIOS types that can use one CHS at the
+INT 13H interface and a different CHS at the device interface. These two
+types of CHS will be called the logical CHS or "L-CHS" and the physical
+CHS or "P-CHS" in this section. L-CHS is the CHS used at the INT 13H
+interface and P-CHS is the CHS used at the device interface.
+
+   The L-CHS used at the INT 13 interface allows up to 256 heads, up to
+1024 cylinders and up to 63 sectors. This allows support of up to 8GB
+drives. This scheme started with either ESDI or SCSI adapters many years
+ago.
+
+   The P-CHS used at the device interface allows up to 16 heads up to
+65535 cylinders, and up to 63 sectors. This allows access to about 2^26
+sectors (32GB) on an ATA device.  When a P-CHS is used at the INT 13H
+interface it is limited to 1024 cylinders, 16 heads and 63 sectors.
+This is where the old 528MB limit originated.
+
+   LBA -- Logical Block Address -- is another way of addressing sectors
+that uses a simple numbering scheme starting with zero as the address of
+the first sector on a device. The ATA standard requires that cylinder 0,
+head 0, sector 1 address the same sector as addressed by LBA 0. LBA
+addressing can be used at the ATA interface if the ATA device supports
+it. LBA addressing is also used at the INT 13H interface by the AH=4xH
+read/write calls.
+
+   ATA devices may also support LBA at the device interface. LBA allows
+access to approximately 2^28 sectors (137GB) on an ATA device.
+
+   A SCSI host adapter can convert a L-CHS directly to an LBA used in
+the SCSI read/write commands. On a PC today, SCSI is also limited to 8GB
+when CHS addressing is used at the INT 13H interface.
+
+   First, all OS's that want to be co-resident with another OS (and
+that is all of the PC based OS's that we know of) _must_ use INT 13H to
+determine the capacity of a hard disk. And that capacity information
+_must_ be determined in L-CHS mode. Why is this?  Because:
+
+  1. FDISK and the partition tables are really L-CHS based.
+
+  2. MS/PC DOS uses INT 13H AH=02H and AH=03H to read and write the
+     disk and these BIOS calls are L-CHS based.
+
+  3. The boot processing done by the BIOS is all L-CHS based.
+
+   During the boot processing, all of the disk read accesses are done in
+L-CHS mode via INT 13H and this includes loading the first of the OS's
+kernel code or boot manager's code.
+
+   Second, because there can be multiple BIOS types in any one system,
+each drive may be under the control of a different type of BIOS. For
+example, drive 80H (the first hard drive) could be controlled by the
+original system BIOS, drive 81H (the second drive) could be controlled
+by a option ROM BIOS and drive 82H (the third drive) could be controlled
+by a software driver. Also, be aware that each drive could be a
+different type, for example, drive 80H could be an MFM drive, drive 81H
+could be an ATA drive, drive 82H could be a SCSI drive.
+
+   Third, not all OS's understand or use BIOS drive numbers greater than
+81H. Even if there is INT 13H support for drives 82H or greater, the OS
+may not use that support.
+
+   Fourth, the BIOS INT 13H configuration calls are:
+
+AH=08H, Get Drive Parameters
+     This call is restricted to drives up to 528MB without CHS
+     translation and to drives up to 8GB with CHS translation. For
+     older BIOS with no support for >1024 cylinders or >528MB, this
+     call returns the same CHS as is used at the ATA interface (the
+     P-CHS). For newer BIOS's that do support >1024 cylinders or
+     >528MB, this call returns a translated CHS (the L-CHS). The CHS
+     returned by this call is used by FDISK to build partition records.
+
+AH=41H, Get BIOS Extensions Support
+     This call is used to determine if the IBM/Microsoft Extensions or
+     if the Phoenix Enhanced INT 13H calls are supported for the BIOS
+     drive number.
+
+AH=48H, Extended Get Drive Parameters
+     This call is used to determine the CHS geometries, LBA information
+     and other data about the BIOS drive number.
+
+   An ATA disk must implement both CHS and LBA addressing and must at
+any given time support only one P-CHS at the device interface. And, the
+drive must maintain a strict relationship between the sector addressing
+in CHS mode and LBA mode. Quoting `the ATA-2 document':
+
+     LBA = ( (cylinder * heads_per_cylinder + heads )
+             * sectors_per_track ) + sector - 1
+     
+     where heads_per_cylinder and sectors_per_track are the current
+     translation mode values.
+
+   This algorithm can also be used by a BIOS or an OS to convert a
+L-CHS to an LBA.
+
+   This algorithm can be reversed such that an LBA can be converted to a
+CHS:
+
+     cylinder = LBA / (heads_per_cylinder * sectors_per_track)
+         temp = LBA % (heads_per_cylinder * sectors_per_track)
+         head = temp / sectors_per_track
+       sector = temp % sectors_per_track + 1
+
+   While most OS's compute disk addresses in an LBA scheme, an OS like
+DOS must convert that LBA to a CHS in order to call INT 13H.
+
+   The basic problem is that there is no requirement that a CHS
+translating BIOS followed these rules. There are many other algorithms
+that can be implemented to perform a similar function. Today, there are
+at least two popular implementations: the Phoenix implementation
+(described above) and the non-Phoenix implementations. Because a
+protected mode OS that does not want to use INT 13H must implement the
+same CHS translation algorithm. If it doesn't, your data gets scrambled.
+
+   In the perfect world of tomorrow, maybe only LBA will be used. But
+today we are faced with the following problems:
+
+   * Some drives >528MB don't implement LBA.
+
+   * Some drives are optimized for CHS and may have lower performance
+     when given commands in LBA mode. Don't forget that LBA is
+     something new for the ATA disk designers who have worked very hard
+     for many years to optimize CHS address handling. And not all drive
+     designs require the use of LBA internally.
+
+   * The L-CHS to LBA conversion is more complex and slower than the bit
+     shifting L-CHS to P-CHS conversion.
+
+   * DOS, FDISK and the MBR are still CHS based -- they use the CHS
+     returned by INT 13H AH=08H.  Any OS that can be installed on the
+     same disk with DOS must understand CHS addressing.
+
+   * The BIOS boot processing and loading of the first OS kernel code
+     is done in CHS mode -- the CHS returned by INT 13H AH=08H is used.
+
+   * Microsoft has said that their OS's will not use any disk capacity
+     that can not also be accessed by INT 13H AH=0xH.
+
+   These are difficult problems to overcome in today's industry
+environment. The result: chaos.
+
+
+File: grub.info,  Node: CHS mode disk I/O,  Next: LBA mode disk I/O,  Prev: CHS Translation,  Up: Low-level disk I/O
+
+INT 13H, AH=0xh interrupt call
+==============================
+
+   Real mode only. These functions are the traditional CHS mode disk
+interface. GRUB calls them only if LBA mode is not available.
+
+   INT 13H, AH=02h reads sectors into memory.
+
+   Input:
+
+`AH'        02h
+`AL'        The number of sectors to read (must be non-zero).
+`CH'        Low 8 bits of cylinder number.
+`CL'        Sector number in bits 0-5, and high 2 bits of cylinder
+            number in bits 6-7.
+`DH'        Head number.
+`DL'        Drive number (bit 7 set for hard disk).
+`ES:BX'     Data buffer.
+
+   Output:
+
+`CF'        Set on error.
+`AH'        Status.
+`AL'        The number of sectors transferred (only valid if CF set for
+            some BIOSes).
+
+   INT 13H, AH=03h writes disk sectors.
+
+   Input:
+
+`AH'        03h
+`AL'        The number of sectors to write (must be non-zero).
+`CH'        Low 8 bits of cylinder number.
+`CL'        Sector number in bits 0-5, and high 2 bits of cylinder
+            number in bits 6-7.
+`DH'        Head number.
+`DL'        Drive number (bit 7 set for hard disk).
+`ES:BX'     Data buffer.
+
+   Output:
+
+`CF'        Set on error.
+`AH'        Status.
+`AL'        The number of sectors transferred (only valid if CF set for
+            some BIOSes).
+
+   INT 13H, AH=08h returns drive parameters. For systems predating the
+IBM PC/AT, this call is only valid for hard disks.
+
+   Input:
+
+`AH'        08h
+`DL'        Drive number (bit 7 set for hard disk).
+
+   Output:
+
+`CF'        Set on error.
+`AH'        0.
+`AL'        0 on at least some BIOSes.
+`BL'        Drive type (AT/PS2 floppies only).
+`CH'        Low 8 bits of maximum cylinder number.
+`CL'        Maximum sector number in bits 0-5, and high 2 bits of
+            maximum cylinder number in bits 6-7.
+`DH'        Maximum head number.
+`DL'        The number of drives.
+`ES:DI'     Drive parameter table (floppies only).
+
+
+File: grub.info,  Node: LBA mode disk I/O,  Prev: CHS mode disk I/O,  Up: Low-level disk I/O
+
+INT 13H, AH=4xh interrupt call
+==============================
+
+   Real mode only. These functions are IBM/MS INT 13 Extensions to
+support LBA mode. GRUB uses them if available so that it can read/write
+over 8GB area.
+
+   INT 13, AH=41h checks if LBA is supported.
+
+   Input:
+
+`AH'        41h.
+`BX'        55AAh.
+`DL'        Drive number.
+
+   Output:
+
+`CF'        Set on error.
+`AH'        Major version of extensions (10h for 1.x, 20h for 2.0 /
+            EDD-1.0, 21h for 2.1 / EDD-1.1 and 30h for EDD-3.0) if
+            successful, otherwise 01h (the error code of "invalid
+            function").
+`BX'        AA55h if installed.
+`AL'        Internal use.
+`CX'        API subset support bitmap (see below).
+`DH'        Extension version.
+
+   The bitfields for the API subset support bitmap are(1) (*note LBA
+mode disk I/O-Footnote-1::):
+
+Bit(s)      Description
+0           Extended disk access functions (AH=42h-44h, 47h, 48h)
+            supported.
+1           Removable drive controller functions (AH=45h, 46h, 48h, 49h,
+            INT 15H, AH=52h) supported.
+2           Enhanced disk drive (EDD) functions (AH=48h, 4Eh) supported.
+3-15        Reserved (0).
+
+   INT 13, AH=42h reads sectors into memory.
+
+   Input:
+
+`AH'        42h.
+`DL'        Drive number.
+`DS:SI'     Disk Address Packet (see below).
+
+   Output:
+
+`CF'        Set on error.
+`AH'        0 if successful, otherwise error code.
+
+   The format of "Disk Address Packet" is:
+
+Offset      Size        Description
+(hex)       (byte)      
+00          1           10h (The size of packet).
+01          1           Reserved (0).
+02          2           The number of blocks to transfer (max 007F for
+                        Phoenix EDD).
+04          4           Transfer buffer (SEGMENT:OFFSET).
+08          8           Starting absolute block number.
+
+   INT 13, AH=43h writes disk sectors.
+
+   Input:
+
+`AH'        43h.
+`AL'        Write flags (In version 1.0 and 2.0, bit 0 is the flag for
+            "verify write" and other bits are reserved (0). In version
+            2.1, 00h and 01h indicates "write without verify", and 02h
+            indicates "write with verify".
+`DL'        Drive number.
+`DS:SI'     Disk Address Packet (see above).
+
+   Output:
+
+`CF'        Set on error.
+`AH'        0 if successful, otherwise error code.
+
+   INT 13, AH=48h returns drive parameters. GRUB only makes use of the
+total number of sectors, and ignore the CHS information, because only
+L-CHS makes sense. *Note CHS Translation::, for more information.
+
+   Input:
+
+`AH'        48h.
+`DL'        Drive number.
+`DS:SI'     Buffer for drive parameters (see below).
+
+   Output:
+
+`CF'        Set on error.
+`AH'        0 if successful, otherwise error code.
+
+   The format of drive parameters is:
+
+Offset (hex)       Size        Description
+                   (byte)      
+00                 2           The size of buffer. Before calling this
+                               function, set to the maximum buffer size,
+                               at least 1Ah. The size actually filled is
+                               returned (1Ah for version 1.0, 1Eh for 2.x
+                               and 42h for 3.0).
+02                 2           Information flags (see below).
+04                 4           The number of physical cylinders.
+08                 4           The number of physical heads.
+0C                 4           The number of physical sectors per track.
+10                 8           The total number of sectors.
+18                 2           The bytes per sector.
+
+*v2.0 and later*               
+1A                 4           EDD configuration parameters.
+
+*v3.0*                         
+1E                 2           Signature BEDD to indicate presence of
+                               Device Path information.
+20                 1           The length of Device Path information,
+                               including signature and this byte (24h for
+                               version 3.0).
+21                 3           Reserved (0).
+24                 4           ASCIZ name of host bus (`ISA' or `PCI').
+28                 8           ASCIZ name of interface type (`ATA',
+                               `ATAPI', `SCSI', `USB', `1394' or `FIBRE').
+30                 8           Interface Path.
+38                 8           Device Path.
+40                 1           Reserved (0).
+41                 1           Checksum of bytes 1Eh-40h (2's complement
+                               of sum, which makes the 8 bit sum of bytes
+                               1Eh-41h equal to 00h).
+
+   The information flags are:
+
+Bit(s)      Description
+0           DMA boundary errors handles transparently.
+1           CHS information is valid.
+2           Removable drive.
+3           Write with verify supported.
+4           Drive has change-line support (required if drive is
+            removable).
+5           Drive can be locked (required if drive is removable).
+6           CHS information set to maximum supported values, not current
+            media.
+7-15        Reserved (0).
+
+
+File: grub.info,  Node: LBA mode disk I/O-Footnotes,  Up: LBA mode disk I/O
+
+   (1) It is known that (at least) the AMI BIOS in SuperMicro P6SBA
+motherboard (AMIBIOSC0631) does _not_ return the bitfields correctly.
+
+
+File: grub.info,  Node: MBR,  Next: Partition table,  Prev: Low-level disk I/O,  Up: Top
+
+The structure of Master Boot Record
+***********************************
+
+   A Master Boot Record ("MBR") is the sector at cylinder 0, head 0,
+sector 1 of a hard disk. A MBR-like structure must be created in each of
+partitions by the FDISK program.
+
+   At the completion of your system's Power On Self Test ("POST"), INT
+19H is called. Usually INT 19 tries to read a boot sector from the first
+floppy drive(1) (*note MBR-Footnote-1::). If a boot sector is found on
+the floppy disk, that boot sector is read into memory at location
+0000:7C00 and INT 19H jumps to memory location 0000:7C00. However, if
+no boot sector is found on the first floppy drive, INT 19H tries to
+read the MBR from the first hard drive. If an MBR is found it is read
+into memory at location 0000:7C00 and INT 19H jumps to memory location
+0000:7C00. The small program in the MBR will attempt to locate an
+active (bootable) partition in its partition table(2) (*note
+MBR-Footnote-2::). The small program in the boot sector must locate the
+first part of the operating system's kernel loader program (or perhaps
+the kernel itself or perhaps a "boot manager program") and read that
+into memory.
+
+   INT 19H is also called when the <CTRL>-<ALT>-<DEL> keys are used. On
+most systems, <CTRL>-<ALT>-<DEL> causes an short version of the POST to
+be executed before INT 19H is called.
+
+   The stuff is:
+
+Offset 0000
+     The address where the MBR code starts.
+
+Offset 01BE
+     The address where the partition table starts (*note Partition
+     table::).
+
+Offset 01FE
+     The signature, AA55.
+
+   However, the first 62 bytes of a boot sector are known as the BIOS
+Parameter Block ("BPB"), so GRUB cannot use these bytes for its own
+purpose.
+
+   If an active partition is found, that partition's boot record is read
+into 0000:7C00 and the MBR code jumps to 0000:7C00 with `SI' pointing
+to the partition table entry that describes the partition being booted.
+The boot record program uses this data to determine the drive being
+booted from and the location of the partition on the disk.
+
+   The first byte of an active partition table entry is 80. This byte is
+loaded into the `DL' register before INT 13H is called to read the boot
+sector. When INT 13H is called, `DL' is the BIOS device number. Because
+of this, the boot sector read by this MBR program can only be read from
+BIOS device number 80 (the first hard disk). This is one of the reasons
+why it is usually not possible to boot from any other hard disk.
+
+
+File: grub.info,  Node: MBR-Footnotes,  Up: MBR
+
+   (1) Which drive is read first depends on your BIOS settings.
+
+   (2) This behavior is DOS MBR's, and GRUB ignores the active flag.
+
+
+File: grub.info,  Node: Partition table,  Next: FAQ,  Prev: MBR,  Up: Top
+
+The format of partition table
+*****************************
+
+* Menu:
+
+* Partition basics::            Overview the partition table
+* Partition types::             The list of the "type" code
+* Partition entry format::      The format of the table entry
+* Partition table rules::       Some basic rules for partition table
+
+
+File: grub.info,  Node: Partition basics,  Next: Partition types,  Up: Partition table
+
+Overview the partition table
+============================
+
+   FDISK creates all partition records (sectors). The primary purpose
+of a partition record is to hold a partition table. The rules for how
+FDISK works are unwritten but so far most FDISK programs seem to follow
+the same basic idea.
+
+   First, all partition table records (sectors) have the same format.
+This includes the partition table record at cylinder 0, head 0, sector
+1 - what is known as the Master Boot Record (MBR). The last 66 bytes of
+a partition table record contain a partition table and a 2 byte
+signature. The first 446 bytes of these sectors usually contain a
+program but only the program in the MBR is ever executed (so extended
+partition table records could contain something other than a program in
+the first 466 bytes). For more information, see *Note MBR::.
+
+   Second, extended partitions are _nested_ inside one another and
+extended partition table records form a "linked list". We will attempt
+to show this in a diagram at *Note Partition entry format::.
+
+   Each partition table entry is 16 bytes and contains things like the
+start and end location of a partition in CHS, the start in LBA, the size
+in sectors, the partition "type" and the "active" flag. Older versions
+of FDISK may compute incorrect LBA or size values. And when your
+computer boots itself, only the CHS fields of the partition table
+entries are used (another reason LBA doesn't solve the >528MB problem).
+The CHS fields in the partition tables are in L-CHS format, see *Note
+CHS Translation::.
+
+
+File: grub.info,  Node: Partition types,  Next: Partition entry format,  Prev: Partition basics,  Up: Partition table
+
+The list of the "type" code
+===========================
+
+   There is no central clearing house to assign the codes used in the
+one byte "type" field. But codes are assigned (or used) to define most
+every type of file system that anyone has ever implemented on the x86
+PC: 12-bit FAT, 16-bit FAT, HPFS, NTFS, etc. Plus, an extended partition
+also has a unique type code.
+
+   In the FDISK program `sfdisk', the following list is assumed:
+
+00
+     Empty
+
+01
+     DOS 12-bit FAT
+
+02
+     XENIX /
+
+03
+     XENIX /usr
+
+04
+     DOS 16-bit FAT <32M
+
+05
+     DOS Extended
+
+06
+     DOS 16-bit FAT >=32M
+
+07
+     HPFS / NTFS
+
+08
+     AIX boot or SplitDrive
+
+09
+     AIX data or Coherent
+
+0A
+     OS/2 Boot Manager
+
+0B
+     Windows95 FAT32
+
+0C
+     Windows95 FAT32 (LBA)
+
+0E
+     Windows95 FAT16 (LBA)
+
+0F
+     Windows95 Extended (LBA)
+
+10
+     OPUS
+
+11
+     Hidden DOS FAT12
+
+12
+     Compaq diagnostics
+
+14
+     Hidden DOS FAT16
+
+16
+     Hidden DOS FAT16 (big)
+
+17
+     Hidden HPFS/NTFS
+
+18
+     AST Windows swapfile
+
+24
+     NEC DOS
+
+3C
+     PartitionMagic recovery
+
+40
+     Venix 80286
+
+41
+     Linux/MINIX (sharing disk with DRDOS)
+
+42
+     SFS or Linux swap (sharing disk with DRDOS)
+
+43
+     Linux native (sharing disk with DRDOS)
+
+50
+     DM (disk manager)
+
+51
+     DM6 Aux1 (or Novell)
+
+52
+     CP/M or Microsoft SysV/AT
+
+53
+     DM6 Aux3
+
+54
+     DM6
+
+55
+     EZ-Drive (disk manager)
+
+56
+     Golden Bow (disk manager)
+
+5C
+     Priam Edisk (disk manager)
+
+61
+     SpeedStor
+
+63
+     GNU Hurd or Mach or Sys V/386 (such as ISC UNIX)(1) (*note
+     Partition types-Footnote-1::)
+
+64
+     Novell Netware 286
+
+65
+     Novell Netware 386
+
+70
+     DiskSecure Multi-Boot
+
+75
+     PC/IX
+
+77
+     QNX4.x
+
+78
+     QNX4.x 2nd part
+
+79
+     QNX4.x 3rd part
+
+80
+     MINIX until 1.4a
+
+81
+     MINIX / old Linux
+
+82
+     Linux swap
+
+83
+     Linux native(2) (*note Partition types-Footnote-2::)
+
+84
+     OS/2 hidden C: drive
+
+85
+     Linux extended
+
+86
+     NTFS volume set
+
+87
+     NTFS volume set
+
+93
+     Amoeba
+
+94
+     Amoeba BBT
+
+A0
+     IBM Thinkpad hibernation
+
+A5
+     BSD/386
+
+A7
+     NeXTSTEP 486
+
+B7
+     BSDI fs
+
+B8
+     BSDI swap
+
+C1
+     DRDOS/sec (FAT-12)
+
+C4
+     DRDOS/sec (FAT-16, < 32M)
+
+C6
+     DRDOS/sec (FAT-16, >= 32M)
+
+C7
+     Syrinx
+
+DB
+     CP/M or Concurrent CP/M or Concurrent DOS or CTOS
+
+E1
+     DOS access or SpeedStor 12-bit FAT extended partition
+
+E3
+     DOS R/O or SpeedStor
+
+E4
+     SpeedStor 16-bit FAT extended partition < 1024 cyl.
+
+F1
+     SpeedStor
+
+F2
+     DOS 3.3+ secondary
+
+F4
+     SpeedStor large partition
+
+FE
+     SpeedStor >1024 cyl. or LANstep
+
+FF
+     Xenix Bad Block Table
+
+
+File: grub.info,  Node: Partition types-Footnotes,  Up: Partition types
+
+   (1) But the reason why they decided that 63 means GNU Hurd is not
+known. Do not use 63 for GNU Hurd.
+
+   (2) This is not true. Use 83 for ext2fs even if the owner OS is
+GNU/Hurd.
+
+
+File: grub.info,  Node: Partition entry format,  Next: Partition table rules,  Prev: Partition types,  Up: Partition table
+
+The format of the table entry
+=============================
+
+   The 16 bytes of a partition table entry are used as follows:
+
+         +--- Bit 7 is the active partition flag, bits 6-0 are zero.
+         |
+         |    +--- Starting CHS in INT 13 call format.
+         |    |
+         |    |      +--- Partition type byte.
+         |    |      |
+         |    |      |    +--- Ending CHS in INT 13 call format.
+         |    |      |    |
+         |    |      |    |        +-- Starting LBA.
+         |    |      |    |        |
+         |    |      |    |        |       +-- Size in sectors.
+         |    |      |    |        |       |
+         v <--+--->  v <--+-->     v       v
+     
+        0  1  2  3  4  5  6  7  8 9 A B  C D E F
+        DH DL CH CL TB DL CH CL LBA..... SIZE....
+     
+        80 01 01 00 06 0e be 94 3e000000 0c610900  1st entry
+     
+        00 00 81 95 05 0e fe 7d 4a610900 724e0300  2nd entry
+     
+        00 00 00 00 00 00 00 00 00000000 00000000  3rd entry
+     
+        00 00 00 00 00 00 00 00 00000000 00000000  4th entry
+
+   Bytes 0-3 are used by the small program in the Master Boot Record to
+read the first sector of an active partition into memory. The "DH",
+"DL", "CH" and "CL" above show which x86 register is loaded when the
+MBR program calls INT 13H AH=02h to read the active partition's boot
+sector. For more information, see *Note MBR::.
+
+   These entries define the following partitions:
+
+  1. The first partition, a primary partition DOS FAT, starts at CHS
+     0H,1H,1H (LBA 3EH) and ends at CHS 294H,EH,3EH with a size of
+     9610CH sectors.
+
+  2. The second partition, an extended partition, starts at CHS
+     295H,0H,1H (LBA 9614AH) and ends at CHS 37DH,EH,3EH with a size of
+     34E72H sectors.
+
+  3. The third and fourth table entries are unused.
+
