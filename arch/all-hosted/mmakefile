@@ -161,6 +161,7 @@ DEP_LIBS = \
 	$(LIBDIR)/libinput.a \
 	$(LIBDIR)/libkeymap.a \
 	$(LIBDIR)/libx11cl.a \
+	$(LIBDIR)/liblinux.a \
 	$(LIBDIR)/libkeyboard.a \
 	$(LIBDIR)/libgameport.a \
 	$(DEPLIB_AROS)
@@ -169,7 +170,7 @@ LIBS =	-L$(LIBDIR) \
 	-lexec -lboot -lintuition -lgraphics -llayers -ldos -lconsole \
 	-lhiddclass -lunixiocl -lutility -ltimer \
 	-laros -lmathffp -lmathieeesingbas -lexpansion -lbattclock \
-	-larossupport -lamiga -linput -lkeymap -loop -lx11cl \
+	-larossupport -lamiga -linput -lkeymap -loop -lx11cl -llinux \
 	-lhiddgraphicsstubs -lkeyboard -lgameport -lworkbench -lcon -lnil -lram -lemul \
 	-lcybergraphics
 
