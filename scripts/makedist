@@ -29,7 +29,6 @@ fi
 if [ ! -f "$dstdir/AROS-source-$rel.tgz" ]; then
     # Create source dist
     rm -rf AROS
-    rm -rf contrib/gnu
     cp -a AROS.source AROS
     find AROS -name CVS -prune -print0 | xargs -0 rm -r
     tar cz --exclude="AROS/contrib*" -f "$dstdir/AROS-source-$rel.tgz" AROS
