@@ -84,18 +84,29 @@ OBJDIR=$(OSGENDIR)/utility
 # ***** Native ***************
 ifeq ($(FLAVOUR),native)
 
+# The options for the linker
 LIBS = -L$(LIBDIR) -lutility -larosc
+
+# The filename of the linklib
 LIB=$(LIBDIR)/libutility.a
+
+# The names of the linklibs this depends on
 LIBLIST = utility arosc
+
+# The filenames of the linklibs this depends on
 LIBDEPS = $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
+
+# The object filenames
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ASM_FILES_EXIST),$(OBJDIR)/$(f).o)
+
+# The init and endskip object filenames
 INITFUNC = $(OBJDIR)/$(INIT_FILE).o
 ENDFUNC = $(OBJDIR)/$(END_FILE).o
 
 all: setup $(OSMODDIR)/utility.library
 
 .PHONY: asm
-asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE),$(f).s) all
+asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES),$(f).s) all
 
 $(OSMODDIR)/utility.library: $(INITFUNC) $(ENDFUNC) $(LIBDEPS)
 	@echo "Building $(notdir $@) ..."
@@ -149,6 +160,9 @@ $(OBJDIR)/%.o: %.c
 utility_functable.c: $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
 	%mkfunctable_q Utility
+
+utility_endtag.c: $(TOP)/scripts/makeendtag.awk
+	%mkendtag_q Utility
 
 $(OBJDIR)/utility_init.o: libdefs.h
 
