@@ -293,6 +293,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    {
 		im->Code	= ie->ie_Code;
 	    }
+	    
 
 	    ptr = "RAWMOUSE";
 
@@ -300,6 +301,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    {
 	    case SELECTDOWN: {
 		BOOL new_gadget = FALSE;
+
 
  	        /* 
 	        **  The mouse coordinates relative to the upper left
@@ -678,35 +680,12 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		ptr = "MOUSEMOVE";
 		iihdata->LastMouseX = ie->ie_X;
 		iihdata->LastMouseY = ie->ie_Y;
-
-
-		/* Check if there is already a MOUSEMOVE in the msg queue
-		** of the task
-		*/
 		
-		if (w->UserPort)
-		{
-		    msg = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
+		/* Set the screens mouse coords.
+		   This won't work if no window is active */
+		w->WScreen->MouseX = ie->ie_X;
+		w->WScreen->MouseY = ie->ie_Y;
 
-		    Forbid ();
-
-		    while ((succ = (struct IntuiMessage *)msg->ExecMessage.mn_Node.ln_Succ))
-		    {
-			if (msg->Class == IDCMP_MOUSEMOVE)
-			{
-#warning TODO: allow a number of such messages
-			   break;
-			}
-
-			msg = succ;
-		    }
-		}
-
-		Permit ();
-
-		/* If there is, don't add another one */
-		if (succ)
-		    break;
 
 
 		if (gadget)
@@ -794,10 +773,45 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		} /* switch GadgetType */
 	    } /* if (a gadget is currently active) */
 
+		/* Limit the number of IDCMP_MOUSEMOVE messages sent to intuition.
+		   note that this comes after handling gadgets, because gadgets should get all events.
+		*/
+
+		if (w->UserPort)
+		{
+		    msg = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
+
+		    Forbid ();
+
+		    while ((succ = (struct IntuiMessage *)msg->ExecMessage.mn_Node.ln_Succ))
+		    {
+			if (msg->Class == IDCMP_MOUSEMOVE)
+			{
+#warning TODO: allow a number of such messages
+			   break;
+			}
+
+			msg = succ;
+		    }
+		    Permit ();
+		}
+
+		/* If there is, don't add another one */
+		if (succ)
+		    continue;
+		    
+
 	    break; }
+
+
 
 	    } /* switch (im->im_Code)  (what button was pressed ?) */
 	    break;
+
+		/* Check if there is already a MOUSEMOVE in the msg queue
+		** of the task
+		*/
+
 
 
 
@@ -1134,9 +1148,9 @@ void windowneedsrefresh(struct Window * w,
   struct IntuiMessage * IM;
   BOOL found = FALSE;
   
-  /* Only Disble()/Enable() can be used to protect message queues */
+  /* Can use Forbid() for this */
   
-  Disable();
+  Forbid();
   
   IM = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
 
@@ -1154,7 +1168,7 @@ kprintf("Window %s already has a refresh message pending!!\n",w->Title);
     IM = (struct IntuiMessage *)IM->ExecMessage.mn_Node.ln_Succ;
   }
   
-  Enable();
+  Permit();
 
 kprintf("Sending a refresh message to window %s!!\n",w->Title);
   if (!found)
