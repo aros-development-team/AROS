@@ -302,13 +302,14 @@ DEFINEDIR=$(TOP)/compiler/include/defines
 includes: \
 	    $(CLIBDIR)/exec_protos.h \
 	    $(CLIBDIR)/aros_protos.h \
-	    $(CLIBDIR)/diskfont_protos.h \
 	    $(CLIBDIR)/dos_protos.h \
 	    $(CLIBDIR)/utility_protos.h \
 	    $(CLIBDIR)/graphics_protos.h \
 	    $(CLIBDIR)/layers_protos.h \
 	    $(CLIBDIR)/intuition_protos.h \
 	    $(CLIBDIR)/console_protos.h \
+	    $(CLIBDIR)/asl_protos.h \
+	    $(CLIBDIR)/diskfont_protos.h \
 	    $(CLIBDIR)/icon_protos.h \
 	    $(CLIBDIR)/iffparse_protos.h \
 	    $(CLIBDIR)/mathffp_protos.h \
@@ -350,6 +351,10 @@ $(CLIBDIR)/iffparse_protos.h: $(wildcard workbench/libs/iffparse/*.c) scripts/ge
 
 $(CLIBDIR)/mathffp_protos.h: $(wildcard rom/mathffp/*.c) scripts/genprotos.h
 	$(GENPROTOS) Mathffp "$(TOP)" rom/mathffp/*.c
+
+$(CLIBDIR)/asl_protos.h: $(wildcard workbench/libs/asl/*.c) scripts/genprotos.h
+	$(GENPROTOS) Asl "$(TOP)" \
+	    workbench/libs/asl/*.c
 
 $(CLIBDIR)/mathtrans_protos.h: $(wildcard workbench/libs/mathtrans/*.c) scripts/genprotos.h
 	$(GENPROTOS) Mathtrans "$(TOP)" workbench/libs/mathtrans/*.c
