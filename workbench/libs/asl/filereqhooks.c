@@ -225,17 +225,20 @@ AROS_UFH3(VOID, FRTagHook,
 	    */
 	    case ASLFR_InitialDrawer:
 	    /*	case ASL_Dir:  Obsolete */
-		ifreq->ifr_Drawer = (STRPTR)tidata;
+		if (tidata)
+		    ifreq->ifr_Drawer = (STRPTR)tidata;
 		break;
 
 	    case ASLFR_InitialFile:
 	    /* case ASL_File:  Obsolete */
-		ifreq->ifr_File = (STRPTR)tidata;
+		if (tidata)
+		    ifreq->ifr_File = (STRPTR)tidata;
 		break;
 
 	    case ASLFR_InitialPattern:
 	    /*	case ASL_Pattern:  Obsolete */
-		ifreq->ifr_Pattern = (STRPTR)tidata;
+	    	if (tidata)
+		    ifreq->ifr_Pattern = (STRPTR)tidata;
 		break;
 
 	    case ASLFR_UserData:

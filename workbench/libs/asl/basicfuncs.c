@@ -84,35 +84,38 @@ VOID ParseCommonTags
 
     while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
     {
+    	IPTR tidata = tag->ti_Data;
+	
 	/* The tags that are put "in a row" are defined as the same value,
 		and therefor we only use one of them, but the effect is for all of them
 	*/
-
+	
 	switch (tag->ti_Tag)
 	{
 	    case ASLFR_Window:
 /*	    case ASLFO_Window:
 	    case ASLSM_Window:
 	    case ASL_Window: */  /* Obsolete */
-		intreq->ir_Window = (struct Window *)tag->ti_Data;
+		intreq->ir_Window = (struct Window *)tidata;
 		break;
 
 	    case ASLFR_Screen:
 /*	    case ASLFO_Screen:
 	    case ASLSM_Screen: */
-		intreq->ir_Screen = (struct Screen *)tag->ti_Data;
+		intreq->ir_Screen = (struct Screen *)tidata;
 		break;
 
 	    case ASLFR_PubScreenName:
 /*	    case ASLFO_PubScreenName:
 	    case ASLSM_PubScreenName: */
-		intreq->ir_PubScreenName = (STRPTR)tag->ti_Data;
+		if (tidata)
+		    intreq->ir_PubScreenName = (STRPTR)tidata;
 		break;
 
 	    case ASLFR_PrivateIDCMP:
 /*	    case ASLFO_PrivateIDCMP:
 	    case ASLSM_PrivateIDCMP: */
-		if (tag->ti_Data)
+		if (tidata)
 		    intreq->ir_Flags |= IF_PRIVATEIDCMP;
 		else
 		    intreq->ir_Flags &= ~IF_PRIVATEIDCMP;
@@ -122,13 +125,13 @@ VOID ParseCommonTags
 	    case ASLFR_IntuiMsgFunc:
 /*	    case ASLFO_IntuiMsgFunc:
 	    case ASLSM_IntuiMsgFunc: */
-		intreq->ir_IntuiMsgFunc = (struct Hook *)tag->ti_Data;
+		intreq->ir_IntuiMsgFunc = (struct Hook *)tidata;
 		break;
 
 	    case ASLFR_SleepWindow:
 /*	    case ASLFO_SleepWindow:
 	    case ASLSM_SleepWindow: */
-		if (tag->ti_Data)
+		if (tidata)
 		    intreq->ir_Flags |= IF_SLEEPWINDOW;
 		else
 		    intreq->ir_Flags &= ~IF_SLEEPWINDOW;
@@ -137,7 +140,7 @@ VOID ParseCommonTags
 	    case ASLFR_PopToFront:
 /*	    case ASLFO_PopToFront:
 	    case ASLSM_PopToFront: */
-	    	if (tag->ti_Data)
+	    	if (tidata)
 		    intreq->ir_Flags |= IF_POPTOFRONT;
 		else
 		    intreq->ir_Flags &= ~IF_POPTOFRONT;
@@ -146,20 +149,21 @@ VOID ParseCommonTags
 	    case ASLFR_TextAttr:
 /*	    case ASLFO_TextAttr:
 	    case ASLSM_TextAttr: */
-		intreq->ir_TextAttr = (struct TextAttr *)tag->ti_Data;
+		intreq->ir_TextAttr = (struct TextAttr *)tidata;
 		break;
 	    
 	    case ASLFR_Locale:
 /*	    case ASLFO_Locale:
 	    case ASLSM_Locale: */
-		intreq->ir_Locale = (struct Locale *)tag->ti_Data;
+		intreq->ir_Locale = (struct Locale *)tidata;
 		break;
 
 	    case ASLFR_TitleText:
 /*	    case ASLFO_TitleText:
 	    case ASLSM_TitleText:
 	    case ASL_Hail: */ /* Obsolete */
-		intreq->ir_TitleText = (STRPTR)tag->ti_Data;
+		if (tidata)
+		    intreq->ir_TitleText = (STRPTR)tidata;
 		break;
 
 
@@ -167,50 +171,58 @@ VOID ParseCommonTags
 /*	    case ASLFO_PositiveText:
 	    case ASLSM_PositiveText:
 	    case ASL_OKText: */ /* Obsolete */
-		intreq->ir_PositiveText = (STRPTR)tag->ti_Data;
-		intreq->ir_Flags |= IF_USER_POSTEXT;
+		if (tidata)
+		{
+		    intreq->ir_PositiveText = (STRPTR)tidata;
+		    intreq->ir_Flags |= IF_USER_POSTEXT;
+		}
 		break;
 
 	    case ASLFR_NegativeText:
 /*	    case ASLFO_NegativeText:
 	    case ASLSM_NegativeText:
 	    case ASL_CancelText: */ /* Obsolete */
-		intreq->ir_NegativeText = (STRPTR)tag->ti_Data;
-		intreq->ir_Flags |= IF_USER_NEGTEXT;
+	    	if (tidata)
+		{
+		    intreq->ir_NegativeText = (STRPTR)tidata;
+		    intreq->ir_Flags |= IF_USER_NEGTEXT;
+		}
 		break;
 
 	    case ASLFR_InitialLeftEdge:
 /*	    case ASLFO_InitialLeftEdge:
 	    case ASLSM_InitialLeftEdge:
 	    case ASL_LeftEdge: */ /* Obsolete */
-		intreq->ir_LeftEdge = (UWORD)tag->ti_Data;
+		intreq->ir_LeftEdge = (UWORD)tidata;
 		break;
 
 	    case ASLFR_InitialTopEdge:
 /*	    case ASLFO_InitialTopEdge:
 	    case ASLSM_InitialTopEdge:
 	    case ASL_TopEdge: */ /* Obsolete */
-		intreq->ir_TopEdge = (UWORD)tag->ti_Data;
+		intreq->ir_TopEdge = (UWORD)tidata;
 		break;
 
 	    case ASLFR_InitialWidth:
 /*	    case ASLFO_InitialWidth:
 	    case ASLSM_InitialWidth:
 	    case ASL_Width: */ /* Obsolete */
-		intreq->ir_Width = (UWORD)tag->ti_Data;
+		intreq->ir_Width = (UWORD)tidata;
 		break;
 
 	    case ASLFR_InitialHeight:
 /*	    case ASLFO_InitialHeight:
 	    case ASLSM_InitialHeight:
 	    case ASL_Height: */ /* Obsolete */
-		intreq->ir_Height = (UWORD)tag->ti_Data;
+		intreq->ir_Height = (UWORD)tidata;
 		break;
 
 	    default:
 		break;
-	}
-    }
+		
+	} /* switch (tag->ti_Tag) */
+	
+    } /* while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL) */
     return;
 }
 
