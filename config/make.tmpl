@@ -191,6 +191,10 @@ FUNCTABLE_SRCS := $(foreach f,$(FUNCTION),$(f).c)
 functable.c : $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfunctable.awk
 	@echo "Generating $@..."
 	@$(AWK) -f $(BINDIR)/scripts/genfunctable.awk $< > $@
+
+endtag.c :
+	@echo "Generating $@..."
+	@echo "#include <libcore/libtail.c>" > $@
 %end
 
 # rule to generate asm files from c files (for debugging purposes)
