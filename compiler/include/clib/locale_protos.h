@@ -13,6 +13,9 @@
 #   include <aros/libcall.h>
 #endif
 
+/* Prototypes for stubs in amiga.lib */
+struct Catalog *OpenCatalog(struct Locale *locale, STRPTR name, ULONG tag1, ...);
+
 /*
     Prototypes
 */

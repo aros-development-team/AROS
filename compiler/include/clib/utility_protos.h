@@ -9,9 +9,15 @@
     Lang: english
 */
 
+#ifndef  EXEC_TYPES_H
+#   include <exec/types.h>
+#endif
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
 #endif
+
+/* Prototypes for stubs in amiga.lib */
+struct NamedObject *AllocNamedObject(STRPTR name, ULONG tag1, ...);
 
 /*
     Prototypes

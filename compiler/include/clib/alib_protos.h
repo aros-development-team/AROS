@@ -32,8 +32,6 @@ struct IORequest;
 struct Task;
 struct InputEvent;
 struct Hook;
-struct NamedObject;
-struct Catalog;
 struct Locale;
 /*
     Prototypes
@@ -54,9 +52,6 @@ struct MsgPort * CreatePort (STRPTR name, LONG pri);
 void DeletePort (struct MsgPort * mp);
 #endif
 
-/* Aros support */
-ULONG ArosInquire(ULONG tag1, ...);
-
 /* Extra */
 ULONG RangeRand (ULONG maxValue);
 ULONG FastRand (ULONG seed);
@@ -72,12 +67,6 @@ APTR LibCreatePool (ULONG requirements, ULONG puddleSize, ULONG threshSize);
 void LibDeletePool (APTR poolHeader);
 APTR LibAllocPooled (APTR poolHeader, ULONG memSize);
 void LibFreePooled (APTR poolHeader, APTR memory, ULONG memSize);
-
-/* Utility Support */
-struct NamedObject *AllocNamedObject(STRPTR name, ULONG tag1, ...);
-
-/* Locale Support */
-struct Catalog *OpenCatalog(struct Locale *locale, STRPTR name, ULONG tag1, ...);
 
 /* Hook Support */
 AROS_UFP3(IPTR, HookEntry,

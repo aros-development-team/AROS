@@ -16,6 +16,9 @@
 #   include <aros/libcall.h>
 #endif
 
+/* Prototypes for stubs in amiga.lib */
+ULONG ArosInquire(ULONG tag1, ...);
+
 /*
     Prototypes
 */

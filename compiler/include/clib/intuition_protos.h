@@ -32,10 +32,14 @@ extern struct IntuitionBase * IntuitionBase;
 /* Prototypes for stubs in amiga.lib */
 IPTR DoGadgetMethod (struct Gadget * gad, struct Window * win,
 		    struct Requester * req, ULONG MethodID, ...);
-ULONG SetAttrs (APTR obj, ULONG tag1, ...);
-ULONG SetSuperAttrs (Class * cl, Object * obj, ULONG tag1, ...);
 ULONG SetGadgetAttrs (struct Gadget * Gadget, struct Window * Window,
 		      struct Requester * Requester, ULONG tag1, ...);
+IPTR CallHookA (struct Hook * hook, APTR obj, APTR param);
+IPTR CallHook (struct Hook * hook, APTR obj, ...);
+
+#ifndef CLIB_BOOPSI_PROTOS_H /* Prevent name clashes */
+ULONG SetAttrs (APTR obj, ULONG tag1, ...);
+ULONG SetSuperAttrs (Class * cl, Object * obj, ULONG tag1, ...);
 APTR NewObject (Class * classPtr, UBYTE * classID, ULONG tag1, ...);
 IPTR DoMethodA (Object * obj, Msg message);
 IPTR DoMethod (Object * obj, ULONG MethodID, ...);
@@ -43,8 +47,7 @@ IPTR DoSuperMethodA (Class  * cl, Object * obj, Msg message);
 IPTR DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...);
 IPTR CoerceMethodA (Class * cl, Object * obj, Msg msg);
 IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
-IPTR CallHookA (struct Hook * hook, APTR obj, APTR param);
-IPTR CallHook (struct Hook * hook, APTR obj, ...);
+#endif
 
 struct Window * OpenWindowTags (struct NewWindow * newWindow, ULONG tag1, ...);
 struct Screen * OpenScreenTags (struct NewScreen * newScreen, ULONG tag1, ...);
