@@ -22,7 +22,7 @@ AROS_UFH2(void,vfp_hook,
 
     if (vfp->count >= 0 && chr != '\0')
     {
-	if (FPUTC(vfp->file, chr) < 0)
+	if (FPutC(vfp->file, chr) < 0)
 	{
 	    vfp->count = -1;
 
