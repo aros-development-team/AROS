@@ -56,6 +56,8 @@
 
     struct IntIFFHandle *intiff;
 
+    DEBUG_ALLOCIFF(dprintf("AllocIff: entry\n"));
+
     if ( (intiff=(struct IntIFFHandle*)AllocMem (sizeof(struct IntIFFHandle),
 	    MEMF_ANY|MEMF_CLEAR)
     ) )
@@ -85,6 +87,8 @@
 	GetIH(intiff)->iff_Depth = 0;
 
     }
+
+    DEBUG_ALLOCIFF(dprintf("AllocIff: return %p\n", intiff));
     return ((struct IFFHandle*)intiff);
 
     AROS_LIBFUNC_EXIT

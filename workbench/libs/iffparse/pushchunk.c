@@ -95,8 +95,8 @@
 
     LONG scan = 0;
 
-    DEBUG_PUSHCHUNK(dprintf("PushChunk: iff 0x%lx type 0x%08lx (%.4s) id 0x%08lx (%.4s) size %d\n",
-			    iff, type, &type, id, &id, size));
+    DEBUG_PUSHCHUNK(dprintf("PushChunk: iff 0x%lx type 0x%08lx (%c%c%c%c) id 0x%08lx (%c%c%c%c) size %d\n",
+			    iff, type, dmkid(type), id, dmkid(id), size));
 
     if (iff->iff_Flags & IFFF_WRITE)
     {

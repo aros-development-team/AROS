@@ -73,23 +73,19 @@
 
     D(bug ("EntryHandler (iff=%p, type=%c%c%c%c, id=%c%c%c%c, position=%d, handler=%p, object=%p)\n",
 	iff,
-	type>>24,type>>16,type>>8,type,
-	id>>24,id>>16,id>>8,id,
+	dmkid(type),
+	dmkid(id),
 	position, handler, object
     ));
 
-    if
-    (
-	!(lci = AllocLocalItem
-	    (
+    if (!(lci = AllocLocalItem(
 		type,
 		id,
 		IFFLCI_ENTRYHANDLER,
-		sizeof (struct HandlerInfo)
-	    )
-	)
-    )
+		sizeof (struct HandlerInfo))))
+    {
 	ReturnInt ("EntryHandler",LONG,IFFERR_NOMEM);
+    }
 
     /* Get pointer to the user data */
     hi = LocalItemData(lci);

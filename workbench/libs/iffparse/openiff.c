@@ -61,13 +61,14 @@
 
     if (iff == NULL)
     {
+	D(bug("openiff error: IFFERR_NOMEM\n"));
 	return (IFFERR_NOMEM);
     }
 
     /* Check that a valid StreamHandler Hook has been supplied */
     if (!( GetIntIH(iff)->iff_StreamHandler) )
     {
-	D(bug("openiff error: IFFERR_NOHOOK"));
+	D(bug("openiff error: IFFERR_NOHOOK\n"));
 	return (IFFERR_NOHOOK);
     }
      
@@ -119,7 +120,7 @@
 		if (err  == IFFERR_MANGLED)
 		{
 		    err = IFFERR_NOTIFF;
-    	    	    D(bug("IFFERR_MANGLED\n"));
+    	    	    D(bug("openiff error: IFFERR_MANGLED\n"));
 		}
 		
 		/* Fail. We should send CLEANUP to the stream */
@@ -141,6 +142,7 @@
 	
     } /* if (!err) */
 
+    D(bug("openiff: return %d\n", err));
     return (err);
     AROS_LIBFUNC_EXIT
 } /* OpenIFF */

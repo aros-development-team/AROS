@@ -54,13 +54,18 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
+    DEBUG_INITIFF(dprintf("InitIFF: iff %p flags 0x%lx streamHook %p\n",
+                          iff, flags, streamHook));
+
+    (void) IFFParseBase;
+
     /* Change the flags IFF flags to the supplied ones */
     iff->iff_Flags   |=   flags;
 
     /* Put the pointer to the streamHook into the iffhandle */
     GetIntIH(iff)->iff_StreamHandler  = streamHook;
 
-    return;
+    DEBUG_INITIFF(dprintf("InitIFF: donen"));
 
     AROS_LIBFUNC_EXIT
 } /* InitIFF */

@@ -62,16 +62,24 @@
     {
 	/* clear the IFFF_OPEN bit to mark IFF stream closed */
 	if (!(iff->iff_Flags & IFFF_OPEN) )
+	{
 	    return;
+	}
 
 	iff->iff_Flags &= ~IFFF_OPEN;
 
 	/* Pop of all contextnodes so that only the default one is remaining */
 
-	/*for (count = iff->iff_Depth; count; count -- )
-	    PopContextNode(iff, IPB(IFFParseBase));*/
+	/*
+	for (count = iff->iff_Depth; count; count -- )
+	{
+	    PopContextNode(iff, IPB(IFFParseBase));
+	}
+	*/
 	while (iff->iff_Depth)
+	{
 	    PopChunk(iff);
+	}
 
 	/* This is for safety:
 	  It might be in PopChunk that seeking or writing to streams failed.
@@ -97,6 +105,5 @@
 	);
     }
     
-    return;
     AROS_LIBFUNC_EXIT
 } /* CloseIFF */

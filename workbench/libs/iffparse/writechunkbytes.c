@@ -81,9 +81,12 @@
     byteswritten = WriteStream(iff, buf, numBytes, IPB(IFFParseBase));
 
     if (byteswritten > 0)
+    {
 	/* No error */
 	cn->cn_Scan += byteswritten;
+    }
 
+    DEBUG_WRITECHUNKBYTES(dprintf("WriteChunkBytes: return %ld\n", byteswritten));
     return (byteswritten);
 
     AROS_LIBFUNC_EXIT

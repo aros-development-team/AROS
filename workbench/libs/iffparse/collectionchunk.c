@@ -60,8 +60,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
-    DEBUG_COLLECTIONCHUNK(dprintf("CollectionChunk: iff 0x%lx type 0x%08lx (%.4s) id 0x%08lx (%.4s)\n",
-			    iff, type, &type, id, &id));
+    DEBUG_COLLECTIONCHUNK(dprintf("CollectionChunk: iff 0x%lx type 0x%08lx (%c%c%c%c) id 0x%08lx (%c%c%c%c)\n",
+			    iff, type, dmkid(type), id, dmkid(id)));
 
     return
     (

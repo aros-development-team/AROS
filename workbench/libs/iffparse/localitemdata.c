@@ -50,6 +50,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
+    (void) IFFParseBase;
+
     return
     (
 	localItem !=NULL ?

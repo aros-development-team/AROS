@@ -64,14 +64,16 @@
     struct LocalContextItem *lci_node,
 			    *lci_nextnode;
 
-    DEBUG_FINDLOCALITEM(dprintf("FindLocalItem: iff 0x%lx type 0x%08lx (%.4s) id 0x%08lx (%.4s) ident 0x%08lx (%.4s)\n",
-			    iff, type, &type, id, &id, ident, &ident));
+    (void) IFFParseBase;
+
+    DEBUG_FINDLOCALITEM(dprintf("FindLocalItem: iff 0x%lx type 0x%08lx (%c%c%c%c) id 0x%08lx (%c%c%c%c) ident 0x%08lx (%c%c%c%c)\n",
+	                        iff, type, dmkid(type), id, dmkid(id), ident, dmkid(ident)));
 
     D(bug("FindLocalItem (iff=%p, type=%c%c%c%c, id=%c%c%c%c, ident=%c%c%c%c)\n",
 	iff,
-	type>>24, type>>16, type>>8, type,
-	id>>24, id>>16, id>>8, id,
-	ident>>24,ident>>16,ident>>8,ident
+	dmkid(type),
+	dmkid(id),
+	dmkid(ident)
     ));
 
     /* Get contextnode at top */
@@ -84,10 +86,7 @@
 	{
 	    DB2(bug("    node=%p (%c%c%c%c)\n",
 		cn_node,
-		cn_node->CN.cn_Type>>24,
-		cn_node->CN.cn_Type>>16,
-		cn_node->CN.cn_Type>>8,
-		cn_node->CN.cn_Type
+		dmkid(cn_node->CN.cn_Type)
 	    ));
 	}
 	else
@@ -106,18 +105,9 @@
 	    {
 		DB2(bug("        lci_node=%p (%c%c%c%c, %c%c%c%c, %c%c%c%c)\n",
 		    lci_node,
-		    lci_node->lci_Type>>24,
-		    lci_node->lci_Type>>16,
-		    lci_node->lci_Type>>8,
-		    lci_node->lci_Type,
-		    lci_node->lci_ID>>24,
-		    lci_node->lci_ID>>16,
-		    lci_node->lci_ID>>8,
-		    lci_node->lci_ID,
-		    lci_node->lci_Ident>>24,
-		    lci_node->lci_Ident>>16,
-		    lci_node->lci_Ident>>8,
-		    lci_node->lci_Ident
+		    dmkid(lci_node->lci_Type),
+		    dmkid(lci_node->lci_ID),
+		    dmkid(lci_node->lci_Ident)
 		));
 	    }
 	    else

@@ -65,16 +65,14 @@
 
     struct IntLocalContextItem *intlci;
 
-    if
-    (
-	!(intlci = AllocMem
-	    (
-		sizeof (struct IntLocalContextItem),
-		MEMF_ANY|MEMF_CLEAR
-	    )
-	)
-    )
+    DEBUG_ALLOCLOCALITEM(dprintf("AllocLocalItem: type 0x%lx %c%c%c%c id 0x%lx %c%c%c%c ident 0x%lx %c%c%c&%c\n",
+	                         type, dmkid(type), id, dmkid(id), ident, dmkid(ident)));
+
+    if (!(intlci = AllocMem(sizeof (struct IntLocalContextItem), MEMF_ANY|MEMF_CLEAR)))
+    {
+	DEBUG_ALLOCLOCALITEM(dprintf("AllocLocalItem: out of memory #1!\n"));
 	return (FALSE);
+    }
 
     GetLCI(intlci)->lci_ID     = id;
     GetLCI(intlci)->lci_Type   = type;
@@ -83,17 +81,10 @@
     /* Only allocate user date if dataSize > 0 */
     if (dataSize > 0)
     {
-	if
-	(
-	    !(intlci->lci_UserData = AllocMem
-		(
-		    dataSize,
-		    MEMF_ANY|MEMF_CLEAR
-		)
-	    )
-	)
+	if (!(intlci->lci_UserData = AllocMem(dataSize, MEMF_ANY|MEMF_CLEAR)))
 	{
 	    FreeMem(intlci,sizeof (struct IntLocalContextItem));
+	    DEBUG_ALLOCLOCALITEM(dprintf("AllocLocalItem: out of memory #2!\n"));
 	    return (FALSE);
 	}
 
@@ -107,6 +98,7 @@
     }
 
 
+    DEBUG_ALLOCLOCALITEM(dprintf("AllocLocalItem: return %p\n", intlci));
     return ((struct LocalContextItem*)intlci);
 
 

@@ -53,11 +53,13 @@
     {
 	/* If the LCI has supplied userdata, then free it */
 	if ( GetIntLCI(localItem)->lci_UserData )
+	{
 	    FreeMem
 	    (
 		GetIntLCI(localItem)->lci_UserData,
 		GetIntLCI(localItem)->lci_UserDataSize
 	    );
+	}
 
 
 	/* Free the LCI itself */

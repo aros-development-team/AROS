@@ -27,6 +27,8 @@ IPTR PropPurgeFunc
 {
     struct StoredProperty *sp;
 
+    DEBUG_PROPHOOKS(dprintf("PropPurgeFunc: hook %p lci %p p 0x%lx", hook, lci, p));
+
     /* Get the stored property structure */
     sp = (struct StoredProperty*)LocalItemData(lci);
 
@@ -35,6 +37,8 @@ IPTR PropPurgeFunc
 
     /* Free the local item itself */
     FreeLocalItem(lci);
+
+    DEBUG_PROPHOOKS(dprintf("PropPurgeFunc: return NULL\n"));
 
     return (NULL);
 }
@@ -93,6 +97,8 @@ LONG PropFunc
 
     APTR  buf;
 
+    DEBUG_PROPHOOKS(dprintf("PropFunc: hook %p iff %p p %p\n", hook, iff, p));
+
     /* The Chunk that caused us to be invoked is always the top chunk */
     cn = TopChunk(iff);
 
@@ -108,7 +114,12 @@ LONG PropFunc
 	IFFLCI_PROP,
 	sizeof (struct StoredProperty)
     );
-    if (!lci) return (IFFERR_NOMEM);
+    if (!lci)
+    {
+	DEBUG_PROPHOOKS(dprintf("PropFunc: return IFFERR_NOMEM #1\n"));
+
+	return IFFERR_NOMEM;
+    }
 
     resinfo.LCI = lci;
 
@@ -121,15 +132,13 @@ LONG PropFunc
     size = cn->cn_Size;
 
 
-    buf = AllocMem
-    (
-	size,
-	MEMF_ANY
-    );
-
+    buf = AllocMem(size, MEMF_ANY);
     if (!buf)
     {
+	DEBUG_PROPHOOKS(dprintf("PropFunc: return IFFERR_NOMEM #2\n"));
+
 	PF_FreeResources(&resinfo, IFFParseBase);
+
 	return (IFFERR_NOMEM);
     }
 
@@ -141,21 +150,25 @@ LONG PropFunc
 
     /* Read chunk into the buffer */
 
-    bytesread = ReadChunkBytes
-    (
-	iff,
-	buf,
-	size
-    );
+    DEBUG_PROPHOOKS(dprintf("PropFunc: ReadChunkBytes(iff %p, buf %p, size %ld)\n", iff, buf, size));
 
-    /* Sucess ? */
+    bytesread = ReadChunkBytes(iff, buf, size);
+
+    DEBUG_PROPHOOKS(dprintf("PropFunc: ReadChunkBytes returned %lu\n", bytesread));
+
+    /* Success ? */
     if (bytesread != size)
     {
+	DEBUG_PROPHOOKS(dprintf("PropFunc: incomplete read! (%ld != %ld)\n", bytesread, size));
 	PF_FreeResources(&resinfo, IFFParseBase);
 
 	/* IFFERR_.. ? */
 	if (bytesread >= 0)
+	{
+	    DEBUG_PROPHOOKS(dprintf("PropFunc: err = IFFERR_MANGLED\n"));
 	    err = IFFERR_MANGLED;
+#warning FIXME: should return err here?
+	}
     }
 
 
@@ -164,13 +177,17 @@ LONG PropFunc
 
     if (err)
     {
+	DEBUG_PROPHOOKS(dprintf("PropFunc: return %ld\n", err));
+
 	PF_FreeResources(&resinfo, IFFParseBase);
-	return (err);
+
+	return err;
     }
 
 
     SetLocalItemPurge(lci, &IFFParseBase->proppurgehook);
 
-    return (NULL);
+    DEBUG_PROPHOOKS(dprintf("PropFunc: return 0\n"));
+    return 0;
 }
 

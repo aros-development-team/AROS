@@ -63,17 +63,19 @@
 			    iff, propArray, numPairs));
 
 #if DEBUG
+    {
     LONG * lptr = propArray;
     bug ("CollectionChunks (iff=%p, [\n", iff);
     for (count = 0; count < numPairs; count++)
     {
 	bug ("    {%c%c%c%c,%c%c%c%c}, ",
-	    *lptr>>24, *lptr>>16, *lptr>>8, *lptr,
-	    lptr[1]>>24, lptr[1]>>16, lptr[1]>>8, lptr[1]
+	    dmkid(lptr[0]),
+	    dmkid(lptr[1])
 	);
 	lptr += 2;
     }
     bug ("    ])\n");
+    }
 #endif
 
     for (count = 0; count < numPairs; count ++ )
