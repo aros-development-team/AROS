@@ -94,15 +94,15 @@ kernel-timer-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
 
 #MM clean setup
 
-#M M
-#includes-copy : $(foreach f, $(wildcard include/*.h), \
-#		$(INCDIR)/hidd/$(notdir $(f)) $(GENINCDIR)/hidd/$(notdir $(f)))
+#MM
+includes-copy : $(foreach f, $(wildcard include/*.h), \
+		$(INCDIR)/hidd/$(notdir $(f)) $(GENINCDIR)/hidd/$(notdir $(f)))
 
-#$(INCDIR)/hidd/%.h : include/%.h
-#	$(CP) include/$(notdir $<) $@
+$(INCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
 
-#$(GENINCDIR)/hidd/%.h : include/%.h
-#	$(CP) include/$(notdir $<) $@
+$(GENINCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
 
 %asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(ALL_FILES) $(END_FILE)"
 %ctoasm_q
