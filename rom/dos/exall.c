@@ -302,7 +302,7 @@ end:
 	return DOSFALSE;
     }
 
-    for(size = 1; buffer != NULL; size++)
+    for(size = 0; buffer != NULL; size++)
 	buffer = buffer->ed_Next;
 
     control->eac_Entries = size;
