@@ -98,6 +98,19 @@
     AROS_LCA(APTR, fallBack,     A2), \
     struct ExecBase *, SysBase, 6, Exec)
 
+#define RawIOInit() \
+    AROS_LC0(void, RawIOInit, \
+    struct ExecBase *, SysBase, 84, Exec)
+
+#define RawMayGetChar() \
+    AROS_LC0(LONG, RawMayGetChar, \
+    struct ExecBase *, SysBase, 84, Exec)
+
+#define RawPutChar(chr) \
+    AROS_LC1(void, RawPutChar, \
+    AROS_LCA(UBYTE, chr, D0), \
+    struct ExecBase *, SysBase, 86, Exec)
+
 #define AbortIO(iORequest) \
     AROS_LC1I(LONG, AbortIO, \
     AROS_LCA(struct IORequest *, iORequest, A1), \
@@ -519,11 +532,6 @@
     AROS_LCA(VOID_FUNC, PutChProc,    A2), \
     AROS_LCA(APTR,      PutChData,    A3), \
     struct ExecBase *, SysBase, 87, Exec)
-
-#define RawPutChar(character) \
-    AROS_LC1(ULONG, RawPutChar, \
-    AROS_LCA(ULONG, character, D0), \
-    struct ExecBase *, SysBase, 86, Exec)
 
 #define ReleaseSemaphore(sigSem) \
     AROS_LC1(void, ReleaseSemaphore, \

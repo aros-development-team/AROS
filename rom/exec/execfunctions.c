@@ -133,6 +133,9 @@ void AROS_SLIB_ENTRY(ChildOrphan,Exec)();
 void AROS_SLIB_ENTRY(ChildStatus,Exec)();
 void AROS_SLIB_ENTRY(ChildWait,Exec)();
 void AROS_SLIB_ENTRY(ObtainQuickVector,Exec)();
+void AROS_SLIB_ENTRY(RawIOInit,Exec)();
+void AROS_SLIB_ENTRY(RawMayGetChar,Exec)();
+void AROS_SLIB_ENTRY(RawPutChar,Exec)();
 
 void *ExecFunctions[131]=
 {
@@ -219,8 +222,8 @@ void *ExecFunctions[131]=
 	&AROS_SLIB_ENTRY(AddResource,Exec),
 	&AROS_SLIB_ENTRY(RemResource,Exec),
 	&AROS_SLIB_ENTRY(OpenResource,Exec),
-	NULL,		/* Private7 */
-	NULL,		/* Private8 */
+	&AROS_SLIB_ENTRY(RawIOInit,Exec), /* Private7 */
+	&AROS_SLIB_ENTRY(RawMayGetChar,Exec), /* Private8 */
 	&AROS_SLIB_ENTRY(RawPutChar,Exec),
 	&AROS_SLIB_ENTRY(RawDoFmt,Exec),
 	&AROS_SLIB_ENTRY(GetCC,Exec),

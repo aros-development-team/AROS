@@ -88,6 +88,16 @@ AROS_LP3I(APTR, PrepareContext,
     AROS_LPA(APTR, fallBack,     A2),
     struct ExecBase *, SysBase, 6, Exec)
 
+AROS_LP0(void, RawIOInit,
+    struct ExecBase *, SysBase, 84, Exec)
+
+AROS_LP0(LONG, RawMayGetChar,
+    struct ExecBase *, SysBase, 84, Exec)
+
+AROS_LP1(void, RawPutChar,
+    AROS_LPA(UBYTE, chr, D0),
+    struct ExecBase *, SysBase, 86, Exec)
+
 AROS_LP1I(LONG, AbortIO,
     AROS_LPA(struct IORequest *, iORequest, A1),
     struct ExecBase *, SysBase, 80, Exec)
@@ -434,10 +444,6 @@ AROS_LP4I(APTR,RawDoFmt,
     AROS_LPA(VOID_FUNC, PutChProc,    A2),
     AROS_LPA(APTR,      PutChData,    A3),
     struct ExecBase *, SysBase, 87, Exec)
-
-AROS_LP1(ULONG, RawPutChar,
-    AROS_LPA(ULONG, character, D0),
-    struct ExecBase *, SysBase, 86, Exec)
 
 AROS_LP1(void, ReleaseSemaphore,
     AROS_LPA(struct SignalSemaphore *, sigSem, A0),
