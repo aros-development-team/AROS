@@ -6,6 +6,7 @@ USER_INCLUDES=-Iinclude
 include $(TOP)/config/make.cfg
 
 OBJDIR=$(GENDIR)/clib
+INCDIR=$(BINDIR)/include
 LIBS = -L$(LIBDIR) -larosc -lamiga -laros -larosc
 DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
 	$(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
@@ -69,9 +70,14 @@ FILES = \
 	vsnprintf \
 	vsprintf
 
-all: setup $(OBJDIR)/links $(LIBDIR)/libarosc.a
+INCLUDES = $(wildcard include/*.h include/*/*.h)
+DEST_INCLUDES = $(foreach f,$(INCLUDES),$(BINDIR)/$(f))
+
+all: setup $(OBJDIR)/c-include $(LIBDIR)/libarosc.a
 
 setup:
+	@if [ ! -d $(INCDIR) ]; then $(MKDIR) $(INCDIR) ; else true ; fi
+	@if [ ! -d $(INCDIR)/sys ]; then $(MKDIR) $(INCDIR)/sys ; else true ; fi
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 
 test: $(TESTDIR)/snprintf
@@ -79,9 +85,10 @@ test: $(TESTDIR)/snprintf
 $(TESTDIR)/snprintf: snprintf.c $(LIBDIR)/startup.o $(DEPLIBS)
 	$(CC) -DTEST $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
-$(OBJDIR)/links:
-	$(TOP)/scripts/makelinks include $(BINDIR)/include "*.h"
-	touch $(OBJDIR)/links
+$(OBJDIR)/c-include: $(DEST_INCLUDES)
+
+$(INCDIR)/%.h: include/%.h
+	$(CP) $< $@
 
 clean:
 	$(RM) $(OBJDIR) *.err $(LIBDIR)/libc.a
@@ -97,7 +104,7 @@ $(LIBDIR)/libarosc.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@$(RM) $@
-	@touch $@
+	@$(TOUCH) $@
 	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
 
 include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
