@@ -21,6 +21,7 @@
 
 #include "ata.h"
 
+#define SysBase (LIBBASE->ata_SysBase)
 //---------------------------IO Commands---------------------------------------
 
 /* Invalid comand does nothing, complains only. */
