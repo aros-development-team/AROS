@@ -34,6 +34,9 @@
 
 #include <libcore/libheader.c>
 
+
+#define SysBase (IntHIDDClassBase->hd_SysBase)
+
 #undef  SDEBUG
 #undef  DEBUG
 #define DEBUG 1
@@ -44,6 +47,4 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
     EnterFunc(bug("HIDDClass: OpenLib()\n"));
     
     ReturnInt("HIDDClass: Open", ULONG, init_hiddclass(LIBBASE));
-
 }
-
