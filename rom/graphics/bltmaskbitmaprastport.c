@@ -88,6 +88,8 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     EnterFunc(bug("BltMaskBitMapRastPort(%d %d %d, %d, %d, %d)\n"
     	, xSrc, ySrc, xDest, yDest, xSize, ySize));
 
+    if ((xSize < 1) || (ySize < 1)) return;
+    
     if (!CorrectDriverData(destRP, GfxBase))
     	return;
 
@@ -101,7 +103,7 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
 
     /* The mask has always the same size as the source bitmap */    
     brd.mask_bpr = 2 * WIDTH_TO_WORDS(GetBitMapAttr(srcBitMap, BMA_WIDTH));
-     
+
     OOP_GetAttr(brd.srcbm_obj, aHidd_BitMap_PixFmt, (IPTR *)&brd.srcpf);
     {
     	IPTR attr;
