@@ -20,13 +20,17 @@
 #include "support.h"
 #include "prefs.h"
 
-#define MYDEBUG 1
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
 
 static const int __version = 1;
 static const int __revision = 1;
+
+/*
+ *  [FirstBound .... <- balance -> .... SecondBound]
+ */
 
 struct MUI_BalanceData
 {
@@ -35,8 +39,11 @@ struct MUI_BalanceData
     ULONG state;       /* 0: not clicked, 1: clicked, 2: shift-clicked */
     LONG clickpos;
     LONG lastpos;
-    LONG lazy;
+    LONG total_weight;
+    LONG first_bound;
+    LONG second_bound;
     struct List *objs;
+    WORD lazy;
 };
 
 /**************************************************************************
@@ -247,6 +254,39 @@ static void draw_object_frame (Object *obj, Object *o)
     Draw(_rp(obj), _mleft(o), _mbottom(o));
 }
 
+
+static LONG get_first_bound (struct MUI_BalanceData *data, Object *obj)
+{
+    ULONG spacing;
+
+    if (data->horizgroup)
+    {
+	get(_parent(obj), MUIA_Group_HorizSpacing, &spacing);
+	return _left(obj) + _minwidth(obj) + _subwidth(obj) + spacing;
+    }
+    else
+    {
+	get(_parent(obj), MUIA_Group_VertSpacing, &spacing);
+	return _top(obj) + _minheight(obj) + _subheight(obj) + spacing;
+    }
+}
+
+static LONG get_second_bound (struct MUI_BalanceData *data, Object *obj)
+{
+    ULONG spacing;
+
+    if (data->horizgroup)
+    {
+	get(_parent(obj), MUIA_Group_HorizSpacing, &spacing);
+	return _right(obj) - _minwidth(obj) - _subwidth(obj) - spacing;
+    }
+    else
+    {
+	get(_parent(obj), MUIA_Group_VertSpacing, &spacing);
+	return _bottom(obj) - _minheight(obj) - _subheight(obj) - spacing;
+    }
+}
+
 static void recalc_weights_all (struct IClass *cl, Object *obj, WORD mouse)
 {
     struct MUI_BalanceData *data = INST_DATA(cl, obj);
@@ -264,11 +304,72 @@ static void recalc_weights_all (struct IClass *cl, Object *obj, WORD mouse)
     
 }
 
+static ULONG get_total_weight_2(struct MUI_BalanceData *data, Object *objA, Object *objB)
+{
+    if (data->horizgroup)
+    {
+	return _hweight(objA) + _hweight(objB);
+    }
+    else
+    {
+	return _vweight(objA) + _vweight(objB);
+    }
+}
+
+static void set_weight_2 (struct MUI_BalanceData *data, Object *objA, Object *objB,
+			WORD current)
+{
+    LONG weightB;
+    LONG weightA;
+
+    if (current >= data->second_bound)
+    {
+	weightB = 0;
+	weightA = data->total_weight;
+	D(bug("weightB = 0\n"));
+    }
+    else if (current <= data->first_bound)
+    {
+	weightA = 0;
+	weightB = data->total_weight;
+	D(bug("weightA = 0\n"));
+    }
+    else
+    {
+	D(bug("L=%ld, mid=%ld, R=%ld || M=%d\n",
+	      data->first_bound, data->clickpos, data->second_bound,
+	      current));
+	weightA = (current - data->first_bound + 1) * data->total_weight
+	    / (data->second_bound - data->first_bound + 1);
+
+	D(bug("found wA = %ld\n", weightA));
+	if (weightA > data->total_weight)
+	{
+	    D(bug("*** weightA > data->total_weight\n"));
+	    weightA = data->total_weight;
+	}
+	weightB = data->total_weight - weightA;
+    }
+
+    if (data->horizgroup)
+    {
+	_hweight(objA) = weightA;
+	_hweight(objB) = weightB;
+    }
+    else
+    {
+	_vweight(objA) = weightA;
+	_vweight(objB) = weightB;
+    }
+}
+
 static void recalc_weights_neighbours (struct IClass *cl, Object *obj, WORD mouse)
 {
     struct MUI_BalanceData *data = INST_DATA(cl, obj);
     Object *sibling;
     Object *object_state;
+    Object *obj_before = NULL;
+    Object *obj_after = NULL;
 
     object_state = (Object *)data->objs->lh_Head;
     while ((sibling = NextObject(&object_state)))
@@ -276,7 +377,38 @@ static void recalc_weights_neighbours (struct IClass *cl, Object *obj, WORD mous
 	if (!(_flags(sibling) & MADF_SHOWME))
 	    continue;
 /*  	D(bug("sibling %lx\n", sibling)); */
+	if (sibling == obj)
+	{
+	    while ((sibling = NextObject(&object_state)))
+	    {
+		if (!(_flags(sibling) & MADF_SHOWME))
+		    continue;
+		obj_after = sibling;
+		break;
+	    }
+	    break;
+	}
+	obj_before = sibling;
+    }
+    if (!(obj_before && obj_after))
+    {
+	D(bug("Balance(%0xlx): missing siblings; before=%lx, after=%lx\n",
+	      obj, obj_before, obj_after));
+	return;
+    }
+    {
+	ULONG total_weight;
+	total_weight = get_total_weight_2(data, obj_before, obj_after);
+
+	if (data->total_weight == -1)
+	    data->total_weight = total_weight;
+
+	if (data->first_bound == -1)
+	    data->first_bound = get_first_bound(data, obj_before);
+	if (data->second_bound == -1)
+	    data->second_bound = get_second_bound(data, obj_after);
 	
+	set_weight_2(data, obj_before, obj_after, mouse);
     }
 }
 
@@ -341,6 +473,9 @@ static ULONG Balance_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 			    data->state = 2;
 			else
 			    data->state = 1;
+			data->total_weight = -1;
+			data->first_bound = -1;
+			data->second_bound = -1;
 			MUI_Redraw(obj,MADF_DRAWUPDATE);
 		    }
 	        }
