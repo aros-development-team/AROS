@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 
 int HandleName(struct DTDesc *TheDTDesc)
 {
- CARD8 *DataPtr;
+ uint8_t *DataPtr;
 
  if(!TheDTDesc)
  {
@@ -49,7 +49,7 @@ int HandleName(struct DTDesc *TheDTDesc)
 
 int HandleVersion(struct DTDesc *TheDTDesc)
 {
- CARD8 *DataPtr;
+ uint8_t *DataPtr;
 
  if(!TheDTDesc)
  {
@@ -71,7 +71,7 @@ int HandleVersion(struct DTDesc *TheDTDesc)
 
 int HandleBaseName(struct DTDesc *TheDTDesc)
 {
- CARD8 *DataPtr;
+ uint8_t *DataPtr;
 
  if(!TheDTDesc)
  {
@@ -95,7 +95,7 @@ int HandleBaseName(struct DTDesc *TheDTDesc)
 
 int HandlePattern(struct DTDesc *TheDTDesc)
 {
- CARD8 *DataPtr;
+ uint8_t *DataPtr;
 
  if(!TheDTDesc)
  {
@@ -119,7 +119,7 @@ int HandlePattern(struct DTDesc *TheDTDesc)
 
 int HandleMask(struct DTDesc *TheDTDesc)
 {
- CARD8 *DataPtr;
+ uint8_t *DataPtr;
  int i;
 
  if(!TheDTDesc)
@@ -133,14 +133,14 @@ int HandleMask(struct DTDesc *TheDTDesc)
 
 #if 1
  {
-  CARD8 *NewDataPtr;
+  uint8_t *NewDataPtr;
   int done = 0;
   
   TheDTDesc->DTH.dth_MaskLen = 0;
   
   while(!done)
   {
-   CARD8 c = *DataPtr++;
+   uint8_t c = *DataPtr++;
 
    switch(c)
    {
@@ -188,7 +188,7 @@ int HandleMask(struct DTDesc *TheDTDesc)
  }
  
 #else
- TheDTDesc->DTH.dth_MaskLen=(CARD16) strlen(DataPtr);
+ TheDTDesc->DTH.dth_MaskLen=(uint16_t) strlen(DataPtr);
  if(!TheDTDesc->DTH.dth_MaskLen)
  {
   return(TRUE);
@@ -196,7 +196,7 @@ int HandleMask(struct DTDesc *TheDTDesc)
 
  for(i=0; i<TheDTDesc->DTH.dth_MaskLen; i++)
  {
-  TheDTDesc->Mask[i] = (DataPtr[i]==0xFF) ? 0xFFFF : (CARD16) DataPtr[i];
+  TheDTDesc->Mask[i] = (DataPtr[i]==0xFF) ? 0xFFFF : (uint16_t) DataPtr[i];
  }
 #endif
 
@@ -207,7 +207,7 @@ int HandleMask(struct DTDesc *TheDTDesc)
 
 int HandleGroupID(struct DTDesc *TheDTDesc)
 {
- CARD8 *DataPtr;
+ uint8_t *DataPtr;
 
  if(!TheDTDesc)
  {
@@ -230,7 +230,7 @@ int HandleGroupID(struct DTDesc *TheDTDesc)
 
 int HandleID(struct DTDesc *TheDTDesc)
 {
- CARD8 *DataPtr;
+ uint8_t *DataPtr;
 
  if(!TheDTDesc)
  {
@@ -253,7 +253,7 @@ int HandleID(struct DTDesc *TheDTDesc)
 
 int HandleFlags(struct DTDesc *TheDTDesc)
 {
- CARD8 *DataPtr;
+ uint8_t *DataPtr;
  long Len;
  int i;
 
@@ -279,7 +279,7 @@ int HandleFlags(struct DTDesc *TheDTDesc)
 
  const int NumFlags=6;
 
- const CARD16 FlagValues[] =
+ const uint16_t FlagValues[] =
  {
   0x0000,
   0x0001,
@@ -335,7 +335,7 @@ int HandleFlags(struct DTDesc *TheDTDesc)
 
 int HandlePriority(struct DTDesc *TheDTDesc)
 {
- CARD8 *DataPtr;
+ uint8_t *DataPtr;
  unsigned long Pri;
 
  if(!TheDTDesc)
@@ -349,7 +349,7 @@ int HandlePriority(struct DTDesc *TheDTDesc)
 
  Pri=strtoul(DataPtr, NULL, 10);
 
- TheDTDesc->DTH.dth_Priority=(CARD16) Pri;
+ TheDTDesc->DTH.dth_Priority=(uint16_t) Pri;
 
  return(TRUE);
 }
@@ -509,10 +509,10 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
   return(FALSE);
  }
 
- FileDTH.dth_Name     = (CARD8 *)  (((unsigned int) sizeof(struct DataTypeHeader)));
- FileDTH.dth_BaseName = (CARD8 *)  (((unsigned int) FileDTH.dth_Name) + strlen(TheDTDesc->DTH.dth_Name) + 1);
- FileDTH.dth_Pattern  = (CARD8 *)  (((unsigned int) FileDTH.dth_BaseName) + strlen(TheDTDesc->DTH.dth_BaseName) + 1);
- FileDTH.dth_Mask     = (CARD16 *) (((unsigned int) FileDTH.dth_Pattern) + strlen(TheDTDesc->DTH.dth_Pattern) + 1);
+ FileDTH.dth_Name     = (uint8_t *)  (((unsigned int) sizeof(struct DataTypeHeader)));
+ FileDTH.dth_BaseName = (uint8_t *)  (((unsigned int) FileDTH.dth_Name) + strlen(TheDTDesc->DTH.dth_Name) + 1);
+ FileDTH.dth_Pattern  = (uint8_t *)  (((unsigned int) FileDTH.dth_BaseName) + strlen(TheDTDesc->DTH.dth_BaseName) + 1);
+ FileDTH.dth_Mask     = (uint16_t *) (((unsigned int) FileDTH.dth_Pattern) + strlen(TheDTDesc->DTH.dth_Pattern) + 1);
  FileDTH.dth_GroupID  = TheDTDesc->DTH.dth_GroupID;
  FileDTH.dth_ID       = TheDTDesc->DTH.dth_ID;
  FileDTH.dth_MaskLen  = TheDTDesc->DTH.dth_MaskLen;
@@ -520,10 +520,10 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
  FileDTH.dth_Flags    = TheDTDesc->DTH.dth_Flags;
  FileDTH.dth_Priority = TheDTDesc->DTH.dth_Priority;
 
- FileDTH.dth_Name     = (CARD8 *)  Swap32IfLE(((CARD32) FileDTH.dth_Name));
- FileDTH.dth_BaseName = (CARD8 *)  Swap32IfLE(((CARD32) FileDTH.dth_BaseName));
- FileDTH.dth_Pattern  = (CARD8 *)  Swap32IfLE(((CARD32) FileDTH.dth_Pattern));
- FileDTH.dth_Mask     = (CARD16 *) Swap32IfLE(((CARD32) FileDTH.dth_Mask));
+ FileDTH.dth_Name     = (uint8_t *)  Swap32IfLE(((uint32_t) FileDTH.dth_Name));
+ FileDTH.dth_BaseName = (uint8_t *)  Swap32IfLE(((uint32_t) FileDTH.dth_BaseName));
+ FileDTH.dth_Pattern  = (uint8_t *)  Swap32IfLE(((uint32_t) FileDTH.dth_Pattern));
+ FileDTH.dth_Mask     = (uint16_t *) Swap32IfLE(((uint32_t) FileDTH.dth_Mask));
  FileDTH.dth_GroupID  = Swap32IfLE(FileDTH.dth_GroupID);
  FileDTH.dth_ID       = Swap32IfLE(FileDTH.dth_ID);
  FileDTH.dth_MaskLen  = Swap16IfLE(FileDTH.dth_MaskLen);
@@ -570,7 +570,7 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
 
  if (TheDTDesc->DTH.dth_MaskLen)
  {
-  if(WriteChunkData(IH, (char *) TheDTDesc->DTH.dth_Mask, TheDTDesc->DTH.dth_MaskLen*sizeof(CARD16))<=0)
+  if(WriteChunkData(IH, (char *) TheDTDesc->DTH.dth_Mask, TheDTDesc->DTH.dth_MaskLen*sizeof(uint16_t))<=0)
   {
    EndChunk(IH);
    CloseIFF(IH);

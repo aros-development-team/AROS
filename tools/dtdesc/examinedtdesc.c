@@ -23,7 +23,7 @@
  *  prototypes
  */
 
-void PrintID(CARD32 ID, CARD8 *Buffer);
+void PrintID(uint32_t ID, uint8_t *Buffer);
 
 /*
  *  functions
@@ -34,7 +34,7 @@ int main(int argc, char **argv)
  struct IFFHandle *IH;
  char Buffer[128];
  long Size;
- CARD8 ID[5];
+ uint8_t ID[5];
  int i;
 
  if(!(argc==2))
@@ -136,10 +136,10 @@ int main(int argc, char **argv)
 
     DTH=(struct DataTypeHeader *) DTHDBuffer;
 
-    DTH->dth_Name     = (CARD8 *)  Swap32IfLE(((CARD32) DTH->dth_Name));
-    DTH->dth_BaseName = (CARD8 *)  Swap32IfLE(((CARD32) DTH->dth_BaseName));
-    DTH->dth_Pattern  = (CARD8 *)  Swap32IfLE(((CARD32) DTH->dth_Pattern));
-    DTH->dth_Mask     = (CARD16 *) Swap32IfLE(((CARD32) DTH->dth_Mask));
+    DTH->dth_Name     = (uint8_t *)  Swap32IfLE(((uint32_t) DTH->dth_Name));
+    DTH->dth_BaseName = (uint8_t *)  Swap32IfLE(((uint32_t) DTH->dth_BaseName));
+    DTH->dth_Pattern  = (uint8_t *)  Swap32IfLE(((uint32_t) DTH->dth_Pattern));
+    DTH->dth_Mask     = (uint16_t *) Swap32IfLE(((uint32_t) DTH->dth_Mask));
     DTH->dth_GroupID  = Swap32IfLE(DTH->dth_GroupID);
     DTH->dth_ID       = Swap32IfLE(DTH->dth_ID);
     DTH->dth_MaskLen  = Swap16IfLE(DTH->dth_MaskLen);
@@ -260,7 +260,7 @@ TheEnd:
  return(0);
 }
 
-void PrintID(CARD32 ID, CARD8 *Buffer)
+void PrintID(uint32_t ID, uint8_t *Buffer)
 {
  if(!Buffer)
  {

@@ -21,17 +21,16 @@
 
 struct DataTypeHeader
 {
- CARD8  *dth_Name;
- CARD8  *dth_BaseName;
- CARD8  *dth_Pattern;
- CARD16 *dth_Mask;
- CARD32  dth_GroupID;
- CARD32  dth_ID;
- CARD16  dth_MaskLen;
- CARD16  dth_Pad;
- CARD16  dth_Flags;
- CARD16  dth_Priority;
+ uint8_t  *dth_Name;
+ uint8_t  *dth_BaseName;
+ uint8_t  *dth_Pattern;
+ uint16_t *dth_Mask;
+ uint32_t  dth_GroupID;
+ uint32_t  dth_ID;
+ uint16_t  dth_MaskLen;
+ uint16_t  dth_Pad;
+ uint16_t  dth_Flags;
+ uint16_t  dth_Priority;
 };
 
 #endif /* DTDESC_H */
-

@@ -36,13 +36,13 @@ struct DTDesc
  FILE *Input;
 
  struct DataTypeHeader DTH;
- CARD8  Name[READBUFFERSIZE];
- CARD8  Version[READBUFFERSIZE];
- CARD8  BaseName[READBUFFERSIZE];
- CARD8  Pattern[READBUFFERSIZE];
- CARD16 Mask[READBUFFERSIZE];
+ uint8_t  Name[READBUFFERSIZE];
+ uint8_t  Version[READBUFFERSIZE];
+ uint8_t  BaseName[READBUFFERSIZE];
+ uint8_t  Pattern[READBUFFERSIZE];
+ uint16_t Mask[READBUFFERSIZE];
 
- CARD8 ReadBuffer[READBUFFERSIZE];
+ uint8_t ReadBuffer[READBUFFERSIZE];
 };
 
 /*
