@@ -11,6 +11,7 @@ FILES := ppmclass libfunc
 FUNCS := obtainengine
 
 USE_AMIGALIB := yes
+USE_CLIB_STATIC := yes
 
 #MM workbench-datatypes-ppm : setup includes linklibs
 workbench-datatypes-ppm : workbench-datatypes-ppm-module
