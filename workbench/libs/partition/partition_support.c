@@ -1,3 +1,10 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+*/
+
+
 #include <proto/exec.h>
 #include <devices/newstyle.h>
 #include <utility/tagitem.h>
@@ -137,6 +144,7 @@ QUAD offset;
 	offset=getStartBlock(ph)*(ph->de.de_SizeBlock<<2);
 	ioreq->iotd_Req.io_Offset=0xFFFFFFFF & offset;
 	ioreq->iotd_Req.io_Actual=offset>>32;
+kprintf("write\n");
 	return DoIO((struct IORequest *)&ioreq->iotd_Req);
 }
 
