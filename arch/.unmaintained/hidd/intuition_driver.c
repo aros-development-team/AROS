@@ -137,6 +137,8 @@ int intui_OpenWindow (struct Window * w,
 	struct IntuitionBase * IntuitionBase)
 {
     /* Create a layer for the window */
+    LONG layerflags = 0;
+    
     EnterFunc(bug("intui_OpenWindow(w=%p)\n", w));
     
     D(bug("screen: %p\n", w->WScreen));
@@ -144,20 +146,25 @@ int intui_OpenWindow (struct Window * w,
     
     /* Just insert some default values, should be taken from
        w->WScreen->WBorxxxx */
-       
+    
+    if (0 != (w->Flags & WFLG_BACKDROP))   
+      layerflags = LAYERBACKDROP;
     
     w->WLayer = CreateUpfrontLayer( &w->WScreen->LayerInfo
-    		, w->WScreen->RastPort.BitMap
+		, w->WScreen->RastPort.BitMap
 		, w->LeftEdge
 		, w->TopEdge
 		, w->LeftEdge + w->Width
 		, w->TopEdge  + w->Height
-		, 0
+		, layerflags
 		, NULL);
+    
 
-     D(bug("Layer created: %p\n", w->WLayer));
+    D(bug("Layer created: %p\n", w->WLayer));
     if (w->WLayer)
     {
+        /* Layer gets pointer to the window */
+        w->WLayer->Window = (APTR)Window; 
 	/* Window needs a rastport */
 	w->RPort = w->WLayer->rp;
 	
@@ -178,7 +185,7 @@ int intui_OpenWindow (struct Window * w,
 }
 
 void intui_CloseWindow (struct Window * w,
-	    struct IntuitionBase * IntuitionBase)
+	                struct IntuitionBase * IntuitionBase)
 {
     disposesysgads(w, IntuitionBase);
     if (w->WLayer)
@@ -210,15 +217,31 @@ void intui_RefreshWindowFrame(struct Window *w)
     ReturnVoid("intui_RefreshWindowFrame");
 }
 
-void intui_WindowToFront (struct Window * window)
+void intui_WindowToFront (struct Window * window,
+                          struct IntuitionBase * IntuitionBase)
 {
-
+  /* Depth arrange only non backdrop windows */
+  if (0 == (window->Flags & WFLG_BACKDROP))
+    UpfrontLayer(0, window->WLayer);
 }
 
-void intui_WindowToBack (struct Window * window)
+void intui_WindowToBack (struct Window * window,
 {
-
+  /* Depth arrange only non backdrop windows */
+  if (0 == (window->Flags & WFLG_BACKDROP))
+    BehindLayer(0, window->WLayer);
 }
+
+void intui_MoveWindowInFrontOf(struct Winodw * window, 
+                               struct Window * behindwindow,
+                               struct IntuitionBase * IntuitionBase)
+{
+  /* Depth arrange only non backdrop windows */
+  if (0 == (window->Flags & WFLG_BACKDROP) &&
+      0 == (behindwindow->Flags & WFLG_BACKDROP))
+    MoveLayerInFrontOf(window      ->WLayer, 
+                       behindwindow->WLayer);
+}                            
 
 void intui_MoveWindow (struct Window * window, WORD dx, WORD dy)
 {
