@@ -83,7 +83,7 @@ $(FD2PRAGMA) : $(TOP)/tools/fd2pragma/fd2pragma.c
 	@$(ECHO) Building fd2pragma...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/fd2pragma TOP=$(TOP)
 
-$(SFDC) : $(TOP)/tools/sfdc/main.pl 
+$(SFDC) : $(TOP)/tools/sfdc/*.pl 
 	@$(ECHO) Building sfdc...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/sfdc TOP=$(TOP)
 
