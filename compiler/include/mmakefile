@@ -3,6 +3,7 @@ include $(TOP)/config/make.cfg
 
 INCSUBDIRS :=	aros \
 		aros/preprocessor \
+		aros/preprocessor/facilities \
 		aros/preprocessor/variadic \
 	        c++ \
 		c++/exec \
