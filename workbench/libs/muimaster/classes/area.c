@@ -915,11 +915,15 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
 		width += 1;
 
+	    x = _mleft(obj) + (_mwidth(obj) - width) / 2;
             switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_position)
             {
-		case GROUP_TITLE_POSITION_RIGHT: x = _mright(obj) - width - 3;  break;
-		case GROUP_TITLE_POSITION_CENTERED: x = _mleft(obj) + (_mwidth(obj) - width) / 2; break;
-		default: x = _mleft(obj) + 2; /* additional space */
+		case GROUP_TITLE_POSITION_ABOVE:
+		    break;
+		case GROUP_TITLE_POSITION_CENTERED:
+		    break;
+		default:
+		    break;
 	    }
 
             if (x < _mleft(obj) + 2) x = _mleft(obj) + 2;
@@ -967,19 +971,18 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 		zune_text_draw(data->mad_TitleText, obj, x + 1, x + width, _top(obj) + 1);
 		SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
 		zune_text_draw(data->mad_TitleText, obj, x, x + width - 1, _top(obj));
-	    }   else
+	    }
+	    else
 	    {
-		if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_WHITE)
+		
+		if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_HILITE)
 		{
 		    SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
 		}
-	    }
-
-	    if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color != GROUP_TITLE_COLOR_3D)
-	    {
 		x++;
 		zune_text_draw(data->mad_TitleText, obj, x, x + width - 1, _top(obj));
 	    }
+
 	    MUI_RemoveClipping(muiRenderInfo(obj), textdrawclip);
 
 	    _font(obj) = obj_font;
