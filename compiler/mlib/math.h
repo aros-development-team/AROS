@@ -97,7 +97,7 @@ struct exception {
 
 
 #include <aros/system.h>
-__BEGIN_CDEFS
+__BEGIN_DECLS
 /*
  * ANSI/POSIX
  */
@@ -273,6 +273,6 @@ extern float lgammaf_r (float, int *);
 
 #endif /* !_XOPEN_SOURCE */
 #endif /* !_ANSI_SOURCE && !_POSIX_SOURCE */
-__END_CDEFS
+__END_DECLS
 
 #endif /* _MATH_H_ */
