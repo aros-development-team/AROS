@@ -2,7 +2,9 @@
 #define ZUNE_CUSTOMCLASSES_H
 
 #include <proto/muimaster.h>
+#include <dos/dos.h>
 #include <aros/symbolsets.h>
+#include <aros/autoinit.h>
 
 #define __ZUNE_CUSTOMCLASS_START(name)                               \
 BOOPSI_DISPATCHER(IPTR, name ## _Dispatcher, __class, __self, __msg) \
@@ -28,7 +30,18 @@ int name ## _Initialize(void)                                         \
         sizeof(struct name ## _DATA), name ## _Dispatcher             \
     );                                                                \
                                                                       \
-    return name ## _CLASS != NULL ? 0 : 20;                           \
+    if (!name ## _CLASS)                                              \
+    {                                                                 \
+        __showerror                                                   \
+	(                                                             \
+	    __getprogramname(),                                       \
+	    "Couldn not create Zune custom class `" #name "'"         \
+	);                                                            \
+                                                                      \
+	return RETURN_FAIL;                                           \
+    }                                                                 \
+                                                                      \
+    return RETURN_OK;                                                 \
 }                                                                     \
                                                                       \
 void name ## _Deinitialize(void)                                      \
