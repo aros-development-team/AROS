@@ -13,6 +13,7 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/cybergraphics.h>
+#include <proto/intuition.h>
 
 #include "mui.h"
 #include "muimaster_intern.h"
