@@ -7,6 +7,7 @@
 */
 
 #include <exec/alerts.h>
+#include <asm/registers.h>
 
 #undef DEBUG
 #define DEBUG 0
@@ -38,89 +39,6 @@ static VOID MNAME(clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear
     
     return;
 }
-
-#if 0
-
-/* this function does not really make sense for LUT bitmaps */
-
-static HIDDT_Pixel MNAME(mapcolor)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_MapColor *msg)
-{
-    int i,f;
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-
-    HIDDT_Pixel red	= msg->color->red >> 8;
-    HIDDT_Pixel green	= msg->color->green >> 8;
-    HIDDT_Pixel blue	= msg->color->blue >> 8;
-
-    HIDDT_Pixel color = red | (green << 8) | (blue << 16);
-    
-    i = 0;
-    f = 1;
-    
-    do
-    {
-	if (data->cmap[i] < 0x01000000)	/* Is empty? */
-	{
-	    f = 0;			/* Got color */
-	    data->cmap[i] = 0x01000000 | red | (green << 8) | (blue << 16);
-	    data->Regs->DAC[i*3] = red >> 2;
-	    data->Regs->DAC[i*3+1] = green >> 2;
-	    data->Regs->DAC[i*3+2] = blue >> 2;
-#ifdef OnBitmap
-	    ObtainSemaphore(&XSD(cl)->HW_acc);
-	    DisplayRestore(data->Regs);
-	    ReleaseSemaphore(&XSD(cl)->HW_acc);
-#endif /* OnBitmap */
-	}
-	else if ((data->cmap[i] & 0xffffff) == color)
-	{
-	    if ((data->cmap[i] & 0xff000000) != 0xff000000)
-	    {
-		data->cmap[i] += 0x01000000;
-	    }
-	    f=0;
-	}
-	else i++;	    
-    } while (f && (i<16));
-
-    return i;
-}
-
-#endif
-
-#if 0
-
-/* this function does not really make sense for LUT bitmaps */
-
-static VOID MNAME(unmappixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UnmapPixel *msg)
-{
-    int i,f;
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-
-    HIDDT_Pixel red	= msg->color->red >> 8;
-    HIDDT_Pixel green	= msg->color->green >> 8;
-    HIDDT_Pixel blue	= msg->color->blue >> 8;
-
-    HIDDT_Pixel color = red | (green << 8) | (blue << 16);
-
-    i = 0;
-    f = 1;
-
-    do
-    {
-	if ((data->cmap[i] & 0xffffff) == color)	/* Find color */
-	{
-	    f = 0;					/* Got color */
-	    if (data->cmap[i] & 0xff000000)		/* Dealloc it if used */
-	    {
-		data->cmap[i] -= 0x01000000;
-	    }
-	}
-	else i++;
-    } while (f && (i<16));
-}
-
-#endif
 
 //void vgaRestore(struct vgaHWRec *, BOOL onlyDAC);
 
@@ -194,7 +112,19 @@ static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
     *ptr = (char) fg;
 
 #ifdef OnBitmap
-    ptr2 = (char *)(0xa0000 + (msg->x + (msg->y * data->width)) / 8);
+
+    ptr2 = RREG_L(LSSA) + (msg->y * RREG_B(LVPW) * 2) + msg->x / 8;
+    pix = 0x80 >> (msg->x % 8);
+    if (fg)
+    {
+    	*ptr2 |= pix;
+    }
+    else
+    {
+    	*ptr2 &= ~pix;
+    }
+    
+/*     ptr2 = (char *)(0xa0000 + (msg->x + (msg->y * data->width)) / 8);
     pix = 0x8000 >> (msg->x % 8);
     ObtainSemaphore(&XSD(cl)->HW_acc);
 
@@ -202,6 +132,7 @@ static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
     *ptr2 |= 1;		// This or'ed value isn't important
 
     ReleaseSemaphore(&XSD(cl)->HW_acc);
+*/
 
 #endif /* OnBitmap */
 
@@ -223,44 +154,6 @@ static HIDDT_Pixel MNAME(getpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
     /* Get pen number from colortab */
     return pixel;
 }
-
-#if 0
-
-/*********  BitMap::DrawPixel()  ***************************/
-
-static VOID MNAME(drawpixel)(OOP_Class *cl,OOP_ Object *o, struct pHidd_BitMap_DrawPixel *msg)
-{
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    HIDDT_Pixel fg;
-    unsigned char *ptr;
-
-#ifdef OnBitmap
-    int pix;
-    int i;
-    unsigned char *ptr2;
-#endif /* OnBitmap */
-
-    fg = GC_FG(msg->gc);
-
-    ptr = (char *)(data->VideoData + msg->x + (msg->y * data->width));
-    *ptr = (char) fg;
-
-#ifdef OnBitmap
-    ptr2 = (char *)(0xa0000 + (msg->x + (msg->y * data->width)) / 8);
-    pix = 0x8000 >> (msg->x % 8);
-    ObtainSemaphore(&XSD(cl)->HW_acc);
-
-
-    *ptr2 |= 1;		// This or'ed value isn't important
-
-    ReleaseSemaphore(&XSD(cl)->HW_acc);
-
-#endif /* OnBitmap */
-
-    return;
-}
-
-#endif
 
 /*********  BitMap::PutImage()  ***************************/
 

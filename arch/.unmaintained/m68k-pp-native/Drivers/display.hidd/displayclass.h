@@ -28,15 +28,15 @@ struct DisplayModeDesc
     UBYTE		Depth;		/* BitsPerPixel */
     UBYTE		clock;		/* PixelClock used */
     ULONG		Flags;		/* Misc Flags */
-    UWORD		HDisplay;
-    UWORD		HSyncStart;
-    UWORD		HSyncEnd;
-    UWORD		HTotal;
-    UWORD		HSkew;
-    UWORD		VDisplay;
-    UWORD		VSyncStart;
-    UWORD		VSyncEnd;
-    UWORD		VTotal;
+    IPTR		HDisplay;
+    IPTR		HSyncStart;
+    IPTR		HSyncEnd;
+    IPTR		HTotal;
+    IPTR		HSkew;
+    IPTR		VDisplay;
+    IPTR		VSyncStart;
+    IPTR		VSyncEnd;
+    IPTR		VTotal;
 };
 
 struct DisplayModeEntry

@@ -86,7 +86,7 @@ char tab[127];
 static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("DisplayGfx.BitMap::New()\n"));
-*(ULONG *)0xc0de3123 = 0;
+
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
@@ -131,6 +131,7 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 		if (data->Regs)
 		{
 		    data->VideoData = AllocVec(width*height,MEMF_PUBLIC|MEMF_CLEAR);
+		    
 		    if (data->VideoData)
 		    {
 				struct DisplayModeDesc mode;
@@ -159,14 +160,20 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 					mode.clock	= (pixelc > 26000000) ? 1 : 0;
 					mode.Flags	= 0;
 					mode.HSkew	= 0;
+
 					OOP_GetAttr(sync, aHidd_Sync_HDisp, 		&mode.HDisplay);
 					OOP_GetAttr(sync, aHidd_Sync_VDisp, 		&mode.VDisplay);
 					OOP_GetAttr(sync, aHidd_Sync_HSyncStart, 	&mode.HSyncStart);
 					OOP_GetAttr(sync, aHidd_Sync_VSyncStart, 	&mode.VSyncStart);
+
+
 					OOP_GetAttr(sync, aHidd_Sync_HSyncEnd,		&mode.HSyncEnd);
 					OOP_GetAttr(sync, aHidd_Sync_VSyncEnd,		&mode.VSyncEnd);
+
 					OOP_GetAttr(sync, aHidd_Sync_HTotal,		&mode.HTotal);
 					OOP_GetAttr(sync, aHidd_Sync_VTotal,		&mode.VTotal);
+
+
 #undef xsd    
 				    ObtainSemaphore(&XSD(cl)->HW_acc);
 
@@ -186,11 +193,14 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
 				    XSD(cl)->visible = data;	/* Set created object as visible */
 
-				    ReturnPtr("DisplayGfx.BitMap::New()", Object *, o);
+    	    	    	    	    return o;
+				    
+				  //  ReturnPtr("DisplayGfx.BitMap::New()", Object *, o);
 				}
 		
 		    } /* if got data->VideoData */
-		    FreeMem(data->Regs,sizeof(struct DisplayHWRec));
+		    
+		    FreeVec(data->Regs);
 		} /* if got data->Regs */
 
 		{
