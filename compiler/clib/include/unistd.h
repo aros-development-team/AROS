@@ -2,7 +2,7 @@
 #define _UNISTD_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: ANSI-C header file unistd.h
@@ -17,5 +17,6 @@ ssize_t read (int fd, void * buf, size_t count);
 ssize_t write (int fd, const void * buf, size_t count);
 int close (int fd);
 int unlink(const char *pathname);
+void usleep(unsigned long usec);
 
 #endif /* _UNISTD_H */
