@@ -1100,21 +1100,27 @@ static IPTR Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     const struct ZuneFrameGfx *zframe;
     struct TextFont *obj_font = NULL;
+    ULONG flags = data->mad_Flags & MADF_DRAWFLAGS;
+    
     //APTR areaclip;
 
 /*      D(bug("Area_Draw(0x%lx) %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */
 /*      D(bug(" Area_Draw(%p) msg=0x%08lx flags=0x%08lx\n",obj, msg->flags,_flags(obj))); */
 
-    if (msg->flags & MADF_DRAWALL)
-	msg->flags |= MADF_DRAWOBJECT;
+    if (flags & MADF_DRAWALL)
+	flags |= MADF_DRAWOBJECT;
 
-    if (!(msg->flags & MADF_DRAWOBJECT))
+    msg->flags = flags;
+    data->mad_Flags &= ~MADF_DRAWFLAGS;
+    
+    if (!(flags & MADF_DRAWOBJECT))
     {
 	/* dont draw bg/frame, let subclass redraw content only
 	**/
 	return 0;
     }
 
+    
 /* Background cant be drawn without knowing anything about frame, thus some
  * calculations are made before background and frame drawing.
  */
