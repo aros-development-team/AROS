@@ -231,7 +231,7 @@ int td_dinit(struct TrackDiskBase *TDBase)
     /* Issue configure */
     td_configure(TDBase);
     // programm data rate
-    outb(0,FDC_DSR);
+    outb(0,FDC_CCR);
     // issue Sense Interrupt Status (loop 4 times)
     for (i=0; i<4; i++)
     {
@@ -364,7 +364,7 @@ int td_readwritetrack(UBYTE unitnum, char cyl, char hd, char mode, struct TrackD
     int err;		// Error
 
     /* Program data rate */
-    outb(0, FDC_DSR);	// 500kbit/s only!
+    outb(0, FDC_CCR);	// 500kbit/s only!
     do
     {
 	rwcnt = 3;	// Max 3 retries of read/write
@@ -588,7 +588,7 @@ int td_format(struct IOExtTD *iotd, struct TrackDiskBase *tdb)
     /* Start motor */
     td_motoron(unit->tdu_UnitNum,tdb,TRUE);
     /* Set datarate */
-    outb(0,FDC_DSR);
+    outb(0,FDC_CCR);
 
     /* Calculate CHS style address */
     sec = iotd->iotd_Req.io_Offset >> 9; // sector is wrong right now (LBA)
