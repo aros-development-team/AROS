@@ -75,6 +75,7 @@ SHARED	:= \
 	abs \
 	access \
 	asctime \
+	atexit \
 	atof \
 	atoi \
 	atol \

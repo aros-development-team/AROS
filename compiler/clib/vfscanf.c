@@ -8,6 +8,14 @@
 /* Original source from libnix */
 #define AROS_ALMOST_COMPATIBLE
 
+#include <proto/dos.h>
+#include <errno.h>
+#include "__errno.h"
+#include "__open.h"
+
+static int __getc(BPTR fh);
+static int __ungetc(int c, BPTR fh);
+
 /*****************************************************************************
 
     NAME */
@@ -48,6 +56,46 @@
 
 ******************************************************************************/
 {
-    fflush (stream);
-    return __vcscan (stream, (void *)fgetc, (void *)ungetc, format, args);
+    fdesc *fdesc = __getfdesc(stream->fd);
+
+    if (!fdesc)
+    {
+        GETUSER;
+
+	errno = EBADF;
+	return 0;
+    }
+
+
+    Flush (fdesc->fh);
+
+    return __vcscan (fdesc->fh, __getc, __ungetc, format, args);
 } /* vfscanf */
+
+static int __ungetc(int c, BPTR fh)
+{
+    if (!UnGetC(fh, c))
+    {
+    	GETUSER;
+
+	errno = IoErr2errno(IoErr());
+	return EOF;
+    }
+
+    return c;
+}
+
+static int __getc(BPTR fh)
+{
+    int c;
+
+    if ((c = FGetC(fh)) == -1)
+    {
+    	GETUSER;
+
+	errno = IoErr2errno(IoErr());
+	return EOF;
+    }
+
+    return c;
+}

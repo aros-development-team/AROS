@@ -57,22 +57,24 @@
 
 ******************************************************************************/
 {
-    GETUSER;
-
     size_t cnt;
 
     fdesc *fdesc = __getfdesc(stream->fd);
 
     if (!fdesc)
     {
+        GETUSER;
+
 	errno = EBADF;
 	return 0;
     }
 
-    cnt = FWrite ((BPTR)(fdesc->fh), buf, size, nblocks);
+    cnt = FWrite ((BPTR)fdesc->fh, buf, size, nblocks);
 
     if (cnt == -1)
     {
+    	GETUSER;
+
 	errno = IoErr2errno (IoErr ());
 
 	cnt = 0;
