@@ -758,7 +758,7 @@ graphics00041;1;bergers;Write QBlit
 graphics00042;2;bergers;Write InitArea
 graphics00043;2;bergers;Write SetRGB
 graphics00044;1;bergers;Write QBSBlit
-graphics00045;1;bergers;Write BltClear
+graphics00045;2;bergers;Write BltClear
 graphics00046;2;digulla;Write RectFill
 graphics00047;2;nlorentz;Write BltPattern
 graphics00048;2;digulla;Write ReadPixel
@@ -1130,7 +1130,7 @@ locale00000;2;iaint;Write CloseCatalog
 locale00001;2;iaint;Write CloseLocale
 locale00002;2;iaint;Write ConvToLower
 locale00003;2;iaint;Write ConvToUpper
-locale00004;1;iaint;Write FormatDate
+locale00004;2;iaint;Write FormatDate
 locale00005;2;bergers;Write FormatString
 locale00006;2;iaint;Write GetCatalogStr
 locale00007;2;iaint;Write GetLocaleStr
@@ -1145,7 +1145,7 @@ locale00015;2;iaint;Write IsPunct
 locale00016;2;iaint;Write IsSpace
 locale00017;2;iaint;Write IsUpper
 locale00018;2;iaint;Write IsXDigit
-locale00019;1;bergers;Write OpenCatalogA
+locale00019;2;bergers;Write OpenCatalogA
 locale00020;2;iaint;Write OpenLocale
 locale00021;2;iaint;Write ParseDate
 locale00022;2;iaint;Write StrConvert
