@@ -137,6 +137,7 @@ void Cleanup(STRPTR msg)
     KillPages();
     KillMenus();
     FreeVisual();
+    CleanupPrefs();
     FreeArguments();
     CloseLibs();
     CleanupLocale();
@@ -342,46 +343,6 @@ static void LayoutGUI(void)
 
 /*********************************************************************************************/
 
-static void MakeWin(void)
-{
-    WORD wx, wy;
-    
-    wx = (scr->Width - (winwidth + scr->WBorLeft + scr->WBorTop)) / 2;
-    wy = (scr->Height - (winheight + scr->WBorTop + scr->Font->ta_YSize + 1 + scr->WBorBottom)) / 2;
-    
-    win = OpenWindowTags(0, WA_PubScreen    , (IPTR)scr,
-    	    	    	    WA_Left 	    , wx,
-			    WA_Top  	    , wy,
-			    WA_InnerWidth   , winwidth,
-			    WA_InnerHeight  , winheight,
-			    WA_Title	    , (IPTR)MSG(MSG_WINTITLE),
-			    WA_CloseGadget  , TRUE,
-			    WA_DragBar	    , TRUE,
-			    WA_DepthGadget  , TRUE,
-			    WA_Activate     , TRUE,
-			    WA_Gadgets	    , (IPTR)buttontable[0].gad,
-			    WA_IDCMP	    , REGISTERTAB_IDCMP |
-			    	      	      BUTTONIDCMP   	|
-				      	      LISTVIEWIDCMP 	|
-				      	      IDCMP_CLOSEWINDOW,
-			    TAG_DONE);
-
-    SetMenuStrip(win, menus);
-    
-    RenderRegisterTab(win->RPort, &reg, TRUE);
-}
-
-/*********************************************************************************************/
-
-static void KillWin(void)
-{
-    pagetable[reg.active].handler(PAGECMD_REMGADGETS, 0);
-    
-    if (win) CloseWindow(win);
-}
-
-/*********************************************************************************************/
-
 static void MakeGadgets(void)
 {
     WORD    	    x = scr->WBorLeft + BORDER_X;
@@ -428,6 +389,11 @@ static void MakeGadgets(void)
 	
     }
     
+    for(i = 0; i < NUM_PAGES; i++)
+    {
+    	if (!(pagetable[i].handler(PAGECMD_MAKEGADGETS, 0)))
+	    Cleanup(MSG(MSG_CANT_CREATE_GADGET));
+    }
 }
 
 /*********************************************************************************************/
@@ -455,7 +421,10 @@ static void ActivatePage(WORD which)
 {
     if (which == activetab) return;
     
-    pagetable[activetab].handler(PAGECMD_REMGADGETS, 0);
+    if (activetab >= 0)
+    {
+    	pagetable[activetab].handler(PAGECMD_REMGADGETS, 0);
+    }
     
     SetDrMd(win->RPort, JAM1),
     SetAPen(win->RPort, dri->dri_Pens[BACKGROUNDPEN]);
@@ -465,6 +434,50 @@ static void ActivatePage(WORD which)
 
     pagetable[activetab].handler(PAGECMD_ADDGADGETS, 0);
     
+}
+
+
+/*********************************************************************************************/
+
+static void MakeWin(void)
+{
+    WORD wx, wy;
+    
+    wx = (scr->Width - (winwidth + scr->WBorLeft + scr->WBorTop)) / 2;
+    wy = (scr->Height - (winheight + scr->WBorTop + scr->Font->ta_YSize + 1 + scr->WBorBottom)) / 2;
+    
+    win = OpenWindowTags(0, WA_PubScreen    , (IPTR)scr,
+    	    	    	    WA_Left 	    , wx,
+			    WA_Top  	    , wy,
+			    WA_InnerWidth   , winwidth,
+			    WA_InnerHeight  , winheight,
+			    WA_Title	    , (IPTR)MSG(MSG_WINTITLE),
+			    WA_CloseGadget  , TRUE,
+			    WA_DragBar	    , TRUE,
+			    WA_DepthGadget  , TRUE,
+			    WA_Activate     , TRUE,
+			    WA_Gadgets	    , (IPTR)buttontable[0].gad,
+			    WA_IDCMP	    , REGISTERTAB_IDCMP |
+			    	      	      BUTTONIDCMP   	|
+				      	      LISTVIEWIDCMP 	|
+				      	      IDCMP_CLOSEWINDOW,
+			    TAG_DONE);
+
+    SetMenuStrip(win, menus);
+    
+    RenderRegisterTab(win->RPort, &reg, TRUE);
+    
+    activetab = -1;
+    ActivatePage(0);
+}
+
+/*********************************************************************************************/
+
+static void KillWin(void)
+{
+    pagetable[reg.active].handler(PAGECMD_REMGADGETS, 0);
+    
+    if (win) CloseWindow(win);
 }
 
 /*********************************************************************************************/
@@ -543,6 +556,7 @@ int main(void)
     InitMenus();
     OpenLibs();
     GetArguments();
+    InitPrefs();
     GetVisual();
     MakeMenus();
     MakePages();
