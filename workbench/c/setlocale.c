@@ -20,7 +20,7 @@ int main(int argc, char **av)
     LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 38);
     if(LocaleBase)
     {
-	new = OpenLocale("piglatin.prefs" /* av[1] */);
+	new = OpenLocale(av[1]);
 	FPuts(Output(), "Locale opened\n");
 	if(new)
 	{
