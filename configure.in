@@ -157,7 +157,21 @@ case "$host_os" in
                 ;;
         esac
         ;;
-	
+        
+    solaris*)
+        aros_host_arch="solaris"
+        aros_host_cc="$aros_host_cc -pipe"
+        case "$host_cpu" in
+            *sparc*)
+                aros_host_cpu="sparc"
+                ;;
+            *)
+                AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+                aros_host_cpu="$host_cpu"
+                ;;
+        esac
+        ;;
+        
     morphos*)
 	aros_host_cc="$aros_host_cc"
 	aros_host_arch="morphos"
@@ -405,6 +419,21 @@ case "$target_os" in
 	aros_flavour="emulation"
         strip_args="-x"
         ;;
+
+    solaris*)
+        aros_target_arch="solaris"
+        case "$target_cpu" in
+            *sparc*)
+                aros_target_cpu="sparc"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dsparc -D__Solaris__"
+                ;;
+            *)
+                AC_MSG_ERROR("Unknown CPU for Solaris -- $target_cpu")
+                ;;
+        esac
+        aros_target_cflags="$aros_target_cflags -D$aros_target_cpu"
+        aros_flavour="emulation"
+        ;;  
 
     morphos*)
 	aros_target_arch="morphos"
