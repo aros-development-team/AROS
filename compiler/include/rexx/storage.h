@@ -35,6 +35,11 @@ struct RexxMsg
 	struct FileHandle *rm_Stdout; /* Output filehandle to use */
 	LONG		rm_Unused1; /* Was rm_avail */
 };
+/* AROS comment: rm_Private1 and rm_Private2 are implementation specific.
+ * When sending a message that is meant to be handled in the same environment as
+ * another message one received from somewhere, these fields have to be copied
+ * to the new message.
+ */
 
 /* Shortcuts for the arguments */
 #define ARG0(msg) ((UBYTE *)msg->rm_Args[0])
@@ -54,6 +59,13 @@ struct RexxMsg
 #define RXTCOPN  0x0C000000
 #define RXTCCLS  0x0D000000
 
+/* Some commands added for AROS and regina only */
+#define RXADDRSRC 0xF0000000 /* Will register a resource node to call the clean up function
+			      * from when the rexx script finishes
+			      * The rexx implementation is free to use the list node fields
+			      * for their own purpose. */
+#define RXREMRSRC 0xF1000000 /* Will unregister an earlier registered resource node */
+
 #define RXCODEMASK 0xFF000000
 #define RXARGMASK  0x0000000F
 
@@ -71,7 +83,6 @@ struct RexxMsg
 #define RXFF_STRING	(1<<RXFB_STRING)
 #define RXFF_TOKEN	(1<<RXFB_TOKEN)
 #define RXFF_NONRET	(1<<RXFB_NONRET)
-#define RXFF_FUNCLIST   (1<<RXFB_FUNCLIST)
 
 struct RexxArg
 {
@@ -85,8 +96,8 @@ struct RexxArg
 struct RexxRsrc
 {
 	struct Node rr_Node;
-	WORD        rr_Unused1; /* rr_Func */
-	APTR        rr_Unused2; /* rr_Base */
+	WORD        rr_Func; /* Library offset of clean up function */
+	APTR        rr_Base; /* Library base of clean up function */
 	LONG        rr_Size; /* Total size of structure */
 	LONG        rr_Arg1; /* Meaning depends on type of Resource */
 	LONG        rr_Arg2; /* Meaning depends on type of Resource */
