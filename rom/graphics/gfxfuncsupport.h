@@ -153,7 +153,9 @@ struct gfx_driverdata
     struct MinNode    dd_Node;
     OOP_Object	    * dd_GC;
     struct RastPort * dd_RastPort;	/* This RastPort		*/
+    struct Rectangle  dd_ClipRectangle;
     WORD    	      dd_LockCount;
+    UBYTE   	      dd_ClipRectangleFlags;    
 };
 
 /****************************************************************************************/
@@ -196,6 +198,12 @@ UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase);
 
 BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
     	    	 LONG x2, LONG y2, BOOL UpdateDamageList, struct GfxBase * GfxBase);
+
+BOOL GetRPClipRectangleForLayer(struct RastPort *rp, struct Layer *lay,
+    	    	    	    	struct Rectangle *r, struct GfxBase *GfxBase);
+BOOL GetRPClipRectangleForBitMap(struct RastPort *rp, struct BitMap *bm,
+    	    	    	    	 struct Rectangle *r, struct GfxBase *GfxBase);
+
 
 /****************************************************************************************/
 
