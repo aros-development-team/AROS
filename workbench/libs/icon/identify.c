@@ -276,7 +276,8 @@ BOOL __FindDeviceName_WB
                 {
                     if (NameFromLock(lock, buffer, length))
                     {
-                        if (strncasecmp(volume, buffer, strlen(buffer) - 1) == 0)
+                        buffer[strlen(buffer) - 1] = '\0'; /* Remove trailing ':' */
+                        if (strcasecmp(volume, buffer) == 0)
                         {
                             if (strlcpy(buffer, device, length) < length)
                             {
