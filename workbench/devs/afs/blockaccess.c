@@ -1,4 +1,4 @@
-/* 
+/*
    $Id$
 */
 
@@ -97,13 +97,16 @@ ULONG readDisk
 	)
 {
 ULONG retval;
-QUAD offset;
+UQUAD offset;
 
 	D(bug("afs.handler:    readDisk: reading block %ld\n",start));
 	volume->iorequest->iotd_Req.io_Command=cmd;
 	volume->iorequest->iotd_Req.io_Length=count*BLOCK_SIZE(volume);
 	volume->iorequest->iotd_Req.io_Data=mem;
-	offset=(start+volume->startblock)*BLOCK_SIZE(volume);
+
+	offset  = start+volume->startblock;
+	offset *= BLOCK_SIZE(volume);
+
 	volume->iorequest->iotd_Req.io_Offset=0xFFFFFFFF & offset;
 	volume->iorequest->iotd_Req.io_Actual=offset>>32;
 	retval=DoIO((struct IORequest *)&volume->iorequest->iotd_Req);
