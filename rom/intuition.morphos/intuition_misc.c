@@ -75,6 +75,19 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
     GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth = AROS_DEFAULT_WBDEPTH;
     GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Control = 0;
 
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_TimeOut = 50;
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_MetaDrag = IEQUALIFIER_LCOMMAND;    
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags = ICF_3DMENUS |
+    	    	    					  ICF_MODEPROMOTE | 
+    	    	    					  ICF_MENUSNAP |
+							  ICF_STRGAD_FILTER |
+							  ICF_COERCE_LACE;
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_WBtoFront = 'N';
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_FrontToBack = 'M';
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqTrue = 'V';
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqFalse = 'B';  
+
+
     /*
      * Mouse default.
      */
