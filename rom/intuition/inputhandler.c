@@ -379,6 +379,17 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		        PrepareGadgetInfo(gi, w);
 		    	SetGadgetInfoGadget(gi, gadget);
 			
+			if ((gadget->Activation & GACT_IMMEDIATE) &&
+			    (w->IDCMPFlags & IDCMP_GADGETDOWN))
+			{
+			    fire_intuimessage(w,
+					      IDCMP_GADGETDOWN,
+					      0,
+					      gadget,
+					      IntuitionBase);
+
+			}
+
 			new_gadget = TRUE;
 		    }
 		}
@@ -386,17 +397,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		if (gadget)
 
 		{
-		    if ((gadget->Activation & GACT_IMMEDIATE) &&
-			(w->IDCMPFlags & IDCMP_GADGETDOWN))
-		    {
-			fire_intuimessage(w,
-					  IDCMP_GADGETDOWN,
-					  0,
-					  gadget,
-					  IntuitionBase);
-
-		    }
-
 		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
 		    {
 		    case GTYP_BOOLGADGET:
@@ -471,7 +471,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 			retval = Locked_DoMethodA ((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
-			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, &termination, 
+			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, termination, 
 							  &reuse_event, IntuitionBase);
 			    
 			break; }
@@ -558,7 +558,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 			retval = Locked_DoMethodA ((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
-			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, &termination,
+			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, termination,
 							  &reuse_event, IntuitionBase);
 
 			break; }
@@ -600,7 +600,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 			retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
-			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, &termination, 
+			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, termination, 
 							  &reuse_event, IntuitionBase);
 
 		    } /* if (active gadget is a BOOPSI gad) */
@@ -671,7 +671,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 			retval = Locked_DoMethodA ((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
-			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, &termination, 
+			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, termination, 
 							  &reuse_event, IntuitionBase);
 			
 			break; }
@@ -788,7 +788,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			ULONG ret = HandleStrInput(gadget, gi, ie, &imsgcode,
 						   IntuitionBase);
 
-			if (ret & SGA_END)
+			if (ret & (SGA_END | SGA_NEXTACTIVE | SGA_PREVACTIVE))
 			{
 			    if (gadget->Activation & GACT_RELVERIFY)
 			    {
@@ -797,10 +797,28 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 						  imsgcode,
 						  gadget,
 						  IntuitionBase);
-				gadget = NULL;
-
+				
 			    }
-			}
+			    
+			    if ((gadget->Flags & GFLG_TABCYCLE) && (ret & SGA_NEXTACTIVE))
+			    {
+				gadget = FindCycleGadget(w, gadget, GMR_NEXTACTIVE);
+			    }
+			    else if ((gadget->Flags & GFLG_TABCYCLE) && (ret & SGA_PREVACTIVE))
+			    {
+				gadget = FindCycleGadget(w, gadget, GMR_PREVACTIVE);
+			    }
+			    else
+			    {
+				gadget = NULL;
+			    }
+
+			    if (gadget)
+			    {
+				gadget = DoActivateGadget(w, gadget, IntuitionBase);
+			    }
+			    
+			} /* if (ret & (SGA_END | SGA_NEXTACTIVE | SGA_PREVACTIVE)) */
 
 			break; }
 
@@ -819,7 +837,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 			retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
-			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, &termination,
+			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, termination,
 							  &reuse_event, IntuitionBase);
 
 
@@ -900,7 +918,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 		    retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
-		    gadget = HandleCustomGadgetRetVal(retval, gi, gadget, &termination,
+		    gadget = HandleCustomGadgetRetVal(retval, gi, gadget, termination,
 						      &reuse_event, IntuitionBase);
 
 		} /* if ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET) */
