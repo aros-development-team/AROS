@@ -301,16 +301,16 @@ BOOL serialunit_setparameters(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialU
     switch (tags[i].ti_Tag)
     {
       case TAG_DATALENGTH:
-        if (tags[i].ti_Data >= 5 && tags[i].ti_Data <= 8)
+        if ((BYTE)tags[i].ti_Data >= 5 && (BYTE)tags[i].ti_Data <= 8)
           data->datalength = tags[i].ti_Data;
         else
           valid = FALSE;
       break;
       
-      case TAG_STOP_BITS:
-        if (16 == tags[i].ti_Data ||
-            32 == tags[i].ti_Data ||
-            24 == tags[i].ti_Data)
+      case TAG_STOP_BITS: /* 3 means 1.5 stopbits (if supported) */
+        if (1 == tags[i].ti_Data ||
+            2 == tags[i].ti_Data ||
+            3 == tags[i].ti_Data)
           data->stopbits = tags[i].ti_Data;
         else
           valid = FALSE;            
@@ -591,16 +591,16 @@ unsigned char get_lcr(struct HIDDSerialUnitData * data)
   
   switch (data->stopbits)
   {
-    case 16: /* 1 stopbit */
+    case 1: /* 1 stopbit */
       /* nothing to do */
     break;
     
-    case 24: /* 1.5 stopbits */
+    case 3: /* 1.5 stopbits (is this supported ?!!!) */
       if (data->datalength == 5)
         lcr |= (1 << 2);
     break;
     
-    case 32: /* 2 stopbits */
+    case 2: /* 2 stopbits */
       if (data->datalength >= 6 && data->datalength <= 8)
         lcr |= (1 << 2);
     break;

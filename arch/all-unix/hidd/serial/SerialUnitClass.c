@@ -451,6 +451,10 @@ ULONG serialunit_setparameters(OOP_Class *cl, OOP_Object *o, struct pHidd_Serial
       break;
         
       case TAG_STOP_BITS:
+          if (2 == tags[i].ti_Data) {
+            data->stopbits = 2;
+          } else 
+            data->stopbits = 1;
       break;
       
       case TAG_PARITY:
@@ -736,6 +740,9 @@ static void settermios(struct HIDDSerialUnitData * data)
   _termios.c_cflag &= ~CSIZE;
   _termios.c_cflag |= data->datalength;
 
+  /*
+   * Parity
+   */
   if (FALSE == data->parity)
     _termios.c_cflag &= ~(PARENB|PARODD);
   else
@@ -752,6 +759,13 @@ static void settermios(struct HIDDSerialUnitData * data)
       break;
     }
   }
+
+  /*
+   * Stop Bits 
+   */
+  _termios.c_cflag &= ~CSTOPB;
+  if (2 == data->stopbits)
+    _termios.c_cflag |= CSTOPB;
 
   if (tcsetattr(data->filedescriptor, TCSADRAIN, &_termios) < 0)
   {
