@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 #include <exec/tasks.h>
