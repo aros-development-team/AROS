@@ -9,7 +9,7 @@
 
 extern int gensets(FILE *in, FILE *out);
 
-void fatalerror_1(int status)
+void fatalerror(int status)
 {
     if (status)
     {
