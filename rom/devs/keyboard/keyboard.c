@@ -124,7 +124,7 @@ AROS_UFP3(VOID, kbdSendQueuedEvents,
     AROS_UFPA(struct KeyboardBase *, KBBase, A1),
     AROS_UFPA(APTR, thisfunc, A1),
     AROS_UFPA(struct ExecBase *, SysBase, A6));
-static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase);
+static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase);
     
 
 AROS_LH2(struct KeyboardBase *,  init,
@@ -373,24 +373,25 @@ AROS_LH1(void, beginio,
 	    break;
 	}
 	
+	Disable(); /* !! */
+	
 	if(kbUn->kbu_readPos == KBBase->kb_writePos)
 	{
 	    ioreq->io_Flags &= ~IOF_QUICK;
 	    request_queued = TRUE;
 	    D(bug("kbd: No keypresses, putting request in queue\n"));
 
-	    Disable();
 	    kbUn->kbu_flags |= KBUF_PENDING;
 	    AddTail((struct List *)&KBBase->kb_PendingQueue,
 		    (struct Node *)ioreq);
-	    Enable();
+	} else {
+	    D(bug("kbd: Events ready\n"));
 
-	    break;
+	    writeEvents(ioreq, KBBase);
 	}
-	D(bug("kbd: Events ready\n"));
 	
-	writeEvents(ioreq, KBBase);
-
+	Enable();
+	
 	break;
 	
 /* nlorentz: This command lets the keyboard.device initialize
@@ -436,7 +437,7 @@ AROS_LH1(void, beginio,
 }
 
 
-static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
+static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 {
     int    nEvents;             /* Number of struct InputEvent:s that there is
 				   room for in memory pointed to by io_Data */
@@ -444,8 +445,8 @@ static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
     UWORD  trueCode;            /* Code without possible keypress addition */
     int    i;			/* Loop variable */
     struct InputEvent *event;   /* Temporary variable */
-    (void)trueCode;		/* Supress warning */
-
+    BOOL   moreevents = TRUE;
+    
     event = (struct InputEvent *)(ioStd(ioreq)->io_Data);
 
     /* Number of InputEvents we can store in io_Data */
@@ -455,14 +456,12 @@ static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
     {
 	ioreq->io_Error = IOERR_BADLENGTH;
 	D(bug("kbd: Bad length\n"));
-	return;
+	return TRUE;
     }
-    else
-    {
-	nEvents = 1;
-    }    
 
     D(bug("NEvents = %i", nEvents));
+    
+    ioreq->io_Error = 0;
     
     for(i = 0; i < nEvents; i++)
     {
@@ -523,7 +522,10 @@ static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	
 	/* No more keys in buffer? */
 	if(kbUn->kbu_readPos == KBBase->kb_writePos)
+	{
+	    moreevents = FALSE;
 	    break;
+	}
 	
 	event->ie_NextEvent = (struct InputEvent *) ((UBYTE *)event
 			      + ALIGN(sizeof(struct InputEvent)));
@@ -554,6 +556,8 @@ static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	else
 	    ColdReboot();	/* Bye bye AROS */
     }
+    
+    return moreevents;
 }
 
 
@@ -666,14 +670,21 @@ AROS_UFH3(VOID, kbdSendQueuedEvents,
 
     ForeachNodeSafe(pendingList, ioreq, nextnode)
     {
+        BOOL moreevents;
+	
         D(bug("Replying msg: R: %i W: %i\n", kbUn->kbu_readPos,
 	      KBBase->kb_writePos));
-	writeEvents(ioreq, KBBase);
+	
+	moreevents = writeEvents(ioreq, KBBase);
 	
 	Remove((struct Node *)ioreq);
  	ReplyMsg((struct Message *)&ioreq->io_Message);
-	kbUn->kbu_flags &= ~KBUF_PENDING;
+	
+	if (!moreevents) break;
     }
+
+    if (IsListEmpty(pendingList)) kbUn->kbu_flags &= ~KBUF_PENDING;
+
 }
 
 static const char end = 0;
