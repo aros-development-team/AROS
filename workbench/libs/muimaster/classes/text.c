@@ -142,7 +142,7 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return NULL;
     }
 
-    D(bug("Text_New(0x%lx)\n", obj));
+/*      D(bug("Text_New(0x%lx)\n", obj)); */
 
     data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS;
     data->ehn.ehn_Priority = 0;
@@ -229,6 +229,9 @@ static ULONG Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 			}
 		    }
 		    break;
+	    case MUIA_Selected:
+		D(bug("Text_Set(%p) : MUIA_Selected val=%ld sss=%d\n", obj, tag->ti_Data, !!(_flags(obj) & MADF_SHOWSELSTATE)));
+		break;
 	}
     }
 
@@ -388,7 +391,7 @@ static ULONG Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 
     height = data->ztext->height;
     if (_font(obj)->tf_YSize > height) height = _font(obj)->tf_YSize;
-    D(bug("YSize=%ld\n", _font(obj)->tf_YSize));
+/*      D(bug("YSize=%ld\n", _font(obj)->tf_YSize)); */
 
     if (!(data->mtd_Flags & MTDF_EDITABLE))
     { 
