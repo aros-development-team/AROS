@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Make a font public available
@@ -50,10 +50,15 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
+    ASSERT_VALID_PTR(textFont);
+    
+    textFont->tf_Message.mn_Node.ln_Type = NT_FONT;
+    textFont->tf_Accessors = 0;
+    textFont->tf_Flags &= ~FPF_REMOVED;
+    
     Forbid();
     AddHead (&GfxBase->TextFonts, (struct Node *)textFont);
     Permit();
     
-
     AROS_LIBFUNC_EXIT
 } /* AddFont */
