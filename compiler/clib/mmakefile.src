@@ -29,11 +29,13 @@ FILES := \
 	bsearch \
 	bzero \
 	calloc \
+	chmod \
 	clearerr \
 	ctime \
 	ctype \
 	clock \
 	close \
+	closedir \
 	creat \
 	difftime \
 	drand48 \
@@ -87,13 +89,16 @@ FILES := \
 	mrand48 \
 	nrand48 \
 	open \
+	opendir \
 	perror \
 	printf \
 	putenv \
 	puts \
 	qsort \
 	rand \
+	random \
 	read \
+	readdir \
 	realloc \
 	remove \
 	rename \
@@ -108,6 +113,7 @@ FILES := \
 	sprintf \
 	srand48 \
 	sscanf \
+	stat \
 	stch_l \
 	stcu_d \
 	strcasecmp \
@@ -139,6 +145,7 @@ FILES := \
 	ungetc \
 	unlink \
 	unsetenv \
+	utime \
 	vfprintf \
 	vfscanf \
 	vprintf \
