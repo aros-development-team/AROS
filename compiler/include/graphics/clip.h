@@ -89,4 +89,9 @@ struct ClipRect
 #define ISGRTRX (1<<2)
 #define ISGRTRY (1<<3)
 
+/* This one is used for determining optimal offset for blitting into
+cliprects */
+#define ALIGN_OFFSET(x) ((x) & 0x0F)
+
+
 #endif /* GRAPHICS_CLIP_H */
