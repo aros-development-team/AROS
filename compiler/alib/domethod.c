@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: BOOPSI functions DoMethodA() and DoMethod()
-    Lang: english
 */
 
 #include <aros/debug.h>
@@ -49,9 +46,6 @@
 	NewObjectA(), SetAttrsA(), GetAttr(), DisposeObject(), CoerceMethodA(),
         DoSuperMethodA(), <intuition/classusr.h>
 
-    HISTORY
-	14.09.93    ada created
-
 ******************************************************************************/
 {
     AROS_GET_SYSBASE_OK
@@ -63,7 +57,7 @@
     ASSERT_VALID_PTR(OCLASS(obj));
     ASSERT_VALID_PTR(message);
 
-    return (CallHookPkt ((struct Hook *)OCLASS(obj), obj, message));
+    return CALLHOOKPKT((struct Hook *) OCLASS(obj), obj, message);
 } /* DoMethodA */
 
 ULONG DoMethod (Object * obj, ULONG MethodID, ...)
@@ -79,11 +73,10 @@ ULONG DoMethod (Object * obj, ULONG MethodID, ...)
     else
     {
     	ASSERT_VALID_PTR(OCLASS(obj));
- 	retval = CallHookPkt ((struct Hook *)OCLASS(obj)
-	    , obj
-	    , AROS_SLOWSTACKMETHODS_ARG(MethodID)
+ 	retval = CALLHOOKPKT
+        (
+            (struct Hook *) OCLASS(obj), obj, AROS_SLOWSTACKMETHODS_ARG(MethodID)
         );
     }
     AROS_SLOWSTACKMETHODS_POST
-} /* DoMethod */
-
+} /* DoMethod() */

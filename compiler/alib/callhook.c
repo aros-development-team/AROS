@@ -43,13 +43,10 @@
     SEE ALSO
 	CallHook()
 
-    HISTORY
-	22.11.96 digulla documented
-
 ******************************************************************************/
 {
-    return CallHookPkt (hook, object, param);
-} /* CallHookA */
+    return CALLHOOKPKT(hook, object, param);
+} /* CallHookA() */
 
 IPTR CallHook (struct Hook * hook, APTR object, ...)
 {
@@ -58,10 +55,9 @@ IPTR CallHook (struct Hook * hook, APTR object, ...)
 
     va_start (args, object);
 
-    retval = CallHookPkt (hook, object, (APTR)args);
+    retval = CALLHOOKPKT(hook, object, (APTR)args);
 
     va_end (args);
 
     return retval;
-} /* CallHook */
-
+} /* CallHook() */

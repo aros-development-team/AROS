@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: BOOPSI functions CoerceMethodA() and CoerceMethod()
-    Lang: english
 */
 
 #include <intuition/classes.h>
@@ -49,15 +46,12 @@
 
     SEE ALSO
 
-    HISTORY
-	28.11.96    ada created
-
 ******************************************************************************/
 {
     if ((!obj) || (!cl))
         return 0L;
-    return CallHookPkt ((struct Hook *)cl, obj, message);
-} /* CoerceMethodA */
+    return CALLHOOKPKT((struct Hook *) cl, obj, message);
+} /* CoerceMethodA() */
 
 ULONG CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...)
 {
@@ -65,10 +59,9 @@ ULONG CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...)
     if ((!obj) || (!cl))
         retval = 0L;
     else
-        retval = CallHookPkt ((struct Hook *)cl
-	    , obj
-	    , AROS_SLOWSTACKMETHODS_ARG(MethodID)
+        retval = CALLHOOKPKT
+        (
+            (struct Hook *) cl, obj, AROS_SLOWSTACKMETHODS_ARG(MethodID)
         );
     AROS_SLOWSTACKMETHODS_POST
-} /* CoerceMethod */
-
+} /* CoerceMethod() */

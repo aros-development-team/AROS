@@ -19,14 +19,4 @@
 #   include <aros/asmcall.h>
 #endif
 
-IPTR CallHookPkt (struct Hook * hook, APTR object, APTR paramPacket);
-#ifndef AROS_SLOWCALLHOOKPKT
-#   define CallHookPkt(h,o,p)                                   \
-	    AROS_UFC3(IPTR, (((struct Hook *)(h))->h_Entry),    \
-		AROS_UFHA(struct Hook *, h, A0),                \
-		AROS_UFHA(APTR,          o, A2),                \
-		AROS_UFHA(APTR,          p, A1)                 \
-	    )
-#endif
-
 #endif /* _ALIB_INTERN_H */
