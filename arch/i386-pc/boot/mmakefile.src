@@ -97,7 +97,7 @@ setup-pc-i386 :
 	%mkdirs_q $(BOOT_DEST_DIR)/Prefs/Env-Archive/SYS
 	%mkdirs_q $(BOOT_DEST_DIR)/boot/grub
 
-#MM kernel-link-pc-i386 : setup
+#MM kernel-link-pc-i386 : setup-pc-i386
 kernel-link-pc-i386 : $(BINDIR)/boot/aros-pc-i386
 
 $(BINDIR)/boot/aros-pc-i386 : $(OBJS) $(DEPLIBS)
