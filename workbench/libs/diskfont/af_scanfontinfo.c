@@ -114,13 +114,12 @@ BOOL ScanFontInfo
         	    /* Read the font description */
         	    retval = CallHookPkt( &afhd->ahd_Hook, &fhc, DFB(DiskfontBase) );
 
-        	    /* If FALSE, then there is a fatal error */
+         	    /* If FALSE, then there is a fatal error */
         	    if (!retval)
         	    {
 			success = FALSE;
 			break;
 		    }
-
 
         	    /* Is there a non-fatal error ? If so reuse the fontinfonode */
         	    if (retval & FH_SINGLEERROR)
@@ -140,15 +139,31 @@ BOOL ScanFontInfo
         		break;
         	    }
 
-        	    /* If we don't want scaled fonts and the font isn't designed,
+		    #warning CHECKME
+        	    /* 
+		       If we don't want scaled fonts and the font isn't designed,
         	       then skip it
+		       
+		       stegerg: tests have shown that AFF_SCALED only affects
+		                fonts which were bitmap scaled (NewScaledDiskFont?).
+				Those fonts have neither FPF_ROMFONT nor FPF_DISKFONT
+				set.
+				
+				Diskfonts have FPF_DISKFONT set -> not affected by AFF_SCALED
+				Outline Fonts have FPF_DISKFONT set -> not affected by AFF_SCALED.
+				
+				The FPF_DESIGNED bit seems to be irrelevant for
+				AFF_SCALED check.
         	    */
-        	    if ( !(userflags & AFF_SCALED) && !(srcattr->tta_Flags & FPF_DESIGNED))
+		    		
+		    #define IS_SCALED_FONT(ta) (((ta)->tta_Flags & (FPF_ROMFONT | FPF_DISKFONT)) == 0)
+		    
+        	    if (!(userflags & AFF_SCALED) && IS_SCALED_FONT(srcattr))
         	    {
 		        sfi_state = SFI_READDESCR;
 			break;
 		    }
-
+ 
         	    /* Everything went OK, now process the info we read */
 
         	    destattr->tta_YSize = srcattr->tta_YSize;
@@ -157,10 +172,21 @@ BOOL ScanFontInfo
 
 
         	    /* Set AvailFonts type */
-        	    finode->TAF.taf_Type =
-        	        (destattr->tta_Flags & FPF_DESIGNED ? 0 : AFF_SCALED) | afhd->ahd_Flags;
-
-
+		    
+		    #warning CHECKME
+		     	    
+		    /* taf_Type only ever seems to contain one of AFF_MEMORY/AFF_DISK/AFF_SCALED,
+		       but not a combination of these. */
+		       
+		    if (IS_SCALED_FONT(destattr))
+		    {
+		    	finode->TAF.taf_Type = AFF_SCALED;
+		    }
+		    else
+		    {
+		    	finode->TAF.taf_Type = afhd->ahd_Flags;
+    	    	    }
+		    
         	    /* Should we reuse last fontname ? */
 
         	    if (retval & FH_REUSENAME)
