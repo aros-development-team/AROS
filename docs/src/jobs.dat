@@ -426,7 +426,7 @@ dos00029;2;matthias;Write IsInteractive
 dos00030;2;SDuvan;Write Execute
 dos00031;2;matthias;Write AllocDosObject
 dos00032;2;matthias;Write FreeDosObject
-dos00033;1;SDuvan;Write DoPkt
+dos00033;2;SDuvan,bergers;Write DoPkt
 dos00034;1;SDuvan;Write SendPkt
 dos00035;1;SDuvan;Write WaitPkt
 dos00036;1;SDuvan;Write ReplyPkt
