@@ -12,22 +12,22 @@ FILES	    := irqclass servers
   conffile=lib.conf \
   genfunctable=yes
   
-MY_INCLS    := $(wildcard include/*.h)
-DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
-GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
-
-#MM
-includes-pc-i386 : $(DEST_INC) $(GEN_INC)
-
-$(INCDIR)/hidd/%.h : include/%.h
-	$(CP) include/$(notdir $<) $@
-
-$(GENINCDIR)/hidd/%.h : include/%.h
-	$(CP) include/$(notdir $<) $@
-
-#MM
-setup-includes :
-	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
+##MY_INCLS    := $(wildcard include/*.h)
+##DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
+##GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
+##
+###MM
+##includes-pc-i386 : $(DEST_INC) $(GEN_INC)
+##
+##$(INCDIR)/hidd/%.h : include/%.h
+##	$(CP) include/$(notdir $<) $@
+##
+##$(GENINCDIR)/hidd/%.h : include/%.h
+##	$(CP) include/$(notdir $<) $@
+##
+##MM
+##setup-includes :
+##	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
 
 #MM
 setup-pc-i386 :
