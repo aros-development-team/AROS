@@ -1,7 +1,16 @@
+/*
+    (C) 2000-2001 AROS - The Amiga Research OS
+    $Id$
+
+*/
+
+/*****************************************************************************************/
+
 #include <dos/dos.h>
 #include <intuition/intuition.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/icclass.h>
+#include <intuition/imageclass.h>
 #include <gadgets/gradientslider.h>
 #include <gadgets/colorwheel.h>
 #include <proto/exec.h>
@@ -123,15 +132,42 @@ static void getvisual(void)
 
 /*****************************************************************************************/
 
+#define BORDERX     4
+#define BORDERY     4
+#define SPACINGX    4
+#define SPACINGY    4
+#define GRADWIDTH   20
+
 static void makegads(void)
 {
-    struct ColorWheelRGB rgb;
-    struct ColorWheelHSB hsb;
+    struct ColorWheelRGB    rgb;
+    struct ColorWheelHSB    hsb;
+    Object  	    	    *im;
+    WORD    	    	    sizeheight = 14;
+    WORD    	    	    gradx, grady, gradw, gradh;
+    WORD    	    	    wheelx, wheely, wheelw, wheelh;
     
-    gradgad = (struct Gadget *)NewObject(0, "gradientslider.gadget", GA_RelRight	, -30,
-								     GA_Top		, 20,
-								     GA_Width		, 20,
-								     GA_RelHeight	, -40,
+    im = NewObject(NULL, SYSICLASS, SYSIA_DrawInfo, (IPTR)dri, SYSIA_Which, SIZEIMAGE, TAG_DONE);
+    if (im)
+    {
+    	sizeheight = ((struct Image *)im)->Height;
+	DisposeObject(im);
+    }
+    
+    wheelx = scr->WBorLeft + BORDERX;
+    wheely = scr->WBorTop + scr->Font->ta_YSize + 1 + BORDERY;
+    wheelw = -(scr->WBorLeft + scr->WBorRight + BORDERX * 2 + SPACINGX + GRADWIDTH);
+    wheelh = -(scr->WBorTop + scr->Font->ta_YSize + 1 + sizeheight + BORDERY * 2);
+    
+    gradx = -(scr->WBorRight + BORDERX + GRADWIDTH) + 1;
+    grady = scr->WBorTop + scr->Font->ta_YSize + 1 + BORDERY;
+    gradw = GRADWIDTH;
+    gradh = -(scr->WBorTop + scr->Font->ta_YSize + 1 + sizeheight + BORDERY * 2);
+    
+    gradgad = (struct Gadget *)NewObject(0, "gradientslider.gadget", GA_RelRight	, gradx,
+								     GA_Top		, grady,
+								     GA_Width		, gradw,
+								     GA_RelHeight	, gradh,
 								     GRAD_PenArray	, (IPTR)pens,
 								     GRAD_KnobPixels	, 10,
 								     PGA_Freedom	, LORIENT_VERT,
@@ -139,10 +175,10 @@ static void makegads(void)
 					 
     if (!gradgad) cleanup("Can't create gradientslider gadget!");
     
-    wheelgad = (struct Gadget *)NewObject(0, "colorwheel.gadget", GA_Left		, 10,
-    								  GA_Top		, 20,
-								  GA_RelWidth		, -50,
-								  GA_RelHeight		, -40,
+    wheelgad = (struct Gadget *)NewObject(0, "colorwheel.gadget", GA_Left		, wheelx,
+    								  GA_Top		, wheely,
+								  GA_RelWidth		, wheelw,
+								  GA_RelHeight		, wheelh,
 								  GA_RelVerify		, TRUE,
 								  WHEEL_Screen		, (IPTR)scr,
 								  WHEEL_BevelBox	, TRUE,
