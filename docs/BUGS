@@ -4,19 +4,23 @@ assign DEVS: devs -> ok
 list devs: -> ok
 list devs:nil.handler -> "List: Object is of wrong type"
 
-BUG000002
+BUG000002 fixed
 digulla@wi-pc44.fh-konstanz.de
 Workbench:> echo > test "Test"
 Couldn't run command: Object not found
 Workbench:> echo Test
 Test
 Workbench:>
+The problem was the space between ">" and "test". ReadItem() would now
+return "" for the filename and "test" as another parameter. Now I simply
+skip the ">" or "<" before I allow ReadItem() to process the filename.
 
 BUG000003 fixed
 klaus21@t-online.de
 exec.library/RemTail() crashes on an empty list. It should return NULL.
 I wouldn't be too surprised if RemHead() crashes, too. ('Crash' means:
 Segmentation fault.)
+The problem was that GetTail() didn't return NULL for an empty list.
 
 BUG000004
 klaus21@t-online.de
