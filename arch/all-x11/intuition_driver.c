@@ -5,6 +5,8 @@
 
 #undef CurrentTime /* Defined by X.h */
 
+#define DEBUG_FreeMem 1
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -70,11 +72,11 @@ struct IntWindow
 
 struct _keytable
 {
-	KeySym keysym;
-	WORD amiga;
-	UWORD amiga_qual;
-	char * normal, * shifted;
-	ULONG keycode;
+    KeySym keysym;
+    WORD amiga;
+    UWORD amiga_qual;
+    char * normal, * shifted;
+    ULONG keycode;
 } keytable[] =
 {
     {XK_Return, 0x44, 0, "\012", "\012", 0 },
@@ -183,6 +185,14 @@ struct Window * intui_OpenWindow (struct NewWindow * nw,
     iw = AllocMem (sizeof (struct IntWindow), MEMF_CLEAR);
     rp = AllocMem (sizeof (struct RastPort), MEMF_CLEAR);
 
+    if (!iw || !rp)
+    {
+	if (iw) FreeMem (iw, sizeof (struct IntWindow));
+	if (rp) FreeMem (rp, sizeof (struct RastPort));
+
+	return NULL;
+    }
+
     w = &iw->iw_Window;
 
     if (nw->IDCMPFlags)
@@ -215,11 +225,6 @@ struct Window * intui_OpenWindow (struct NewWindow * nw,
 
     intui_SetWindowTitles (w, nw->Title, (STRPTR)-1);
 
-    gcval.plane_mask = sysPlaneMask;
-
-    gc = XCreateGC (sysDisplay, iw->iw_XWindow, GCPlaneMask, &gcval);
-
-    SetGC (rp, gc);
     SetXWindow (rp, iw->iw_XWindow);
 
     XSetGraphicsExposures (sysDisplay, gc, TRUE);
@@ -231,8 +236,6 @@ struct Window * intui_OpenWindow (struct NewWindow * nw,
 
     w->WScreen = &WB;
 
-    SetFont (rp, GfxBase->DefaultFont);
-
     w->MinWidth  = nw->MinWidth;
     w->MinHeight = nw->MinHeight;
     w->MaxWidth  = nw->MaxWidth;
@@ -240,6 +243,13 @@ struct Window * intui_OpenWindow (struct NewWindow * nw,
 
     /*TODO __SetSizeHints (w); */
 
+    gcval.plane_mask = sysPlaneMask;
+
+    gc = XCreateGC (sysDisplay, iw->iw_XWindow, GCPlaneMask, &gcval);
+
+    SetGC (rp, gc);
+
+    SetFont (rp, GfxBase->DefaultFont);
     SetAPen (rp, nw->DetailPen);
     SetBPen (rp, nw->BlockPen);
     SetDrMd (rp, JAM2);
@@ -253,16 +263,22 @@ struct Window * intui_OpenWindow (struct NewWindow * nw,
 
     iw->iw_Region = XCreateRegion ();
 
-    XSelectInput (sysDisplay, iw->iw_XWindow, ExposureMask |
-	ButtonPressMask | ButtonReleaseMask | PointerMotionMask |
-	KeyPressMask | KeyReleaseMask |
-	EnterWindowMask | LeaveWindowMask |
-	StructureNotifyMask);
+    XSelectInput (sysDisplay, iw->iw_XWindow,
+	    ExposureMask
+	    | ButtonPressMask
+	    | ButtonReleaseMask
+	    | PointerMotionMask
+	    | KeyPressMask
+	    | KeyReleaseMask
+	    | EnterWindowMask
+	    | LeaveWindowMask
+	    | StructureNotifyMask
+    );
 
     ModifyIDCMP (w, w->IDCMPFlags);
 
-    XMapRaised (sysDisplay, iw->iw_XWindow);
     XDefineCursor (sysDisplay, iw->iw_XWindow, sysCursor);
+    XMapRaised (sysDisplay, iw->iw_XWindow);
 
     XSync (sysDisplay, FALSE);
 
@@ -276,6 +292,7 @@ void intui_CloseWindow (struct Window * win,
 {
     struct IntWindow * iw;
     struct Window * wptr;
+    struct IntuiMessage * im;
 
     iw = (struct IntWindow *)win;
 
@@ -292,14 +309,31 @@ void intui_CloseWindow (struct Window * win,
     IntuitionBase->ActiveWindow = wptr;
 
     XDestroyWindow (sysDisplay, iw->iw_XWindow);
-    XDestroyRegion (iw->iw_Region);
+
+    if (iw->iw_Region)
+	XDestroyRegion (iw->iw_Region);
+
+    CloseFont (win->RPort->Font);
+
     XFreeGC (sysDisplay, GetGC(win->RPort));
 
     FreeMem (win->RPort, sizeof (struct RastPort));
 
     if (win->UserPort)
-	DeleteMsgPort (win->UserPort);
+    {
+	/* Delete all pending messages */
+	Forbid ();
 
+	while ((im = (struct IntuiMessage *) RemHead (&win->UserPort->mp_MsgList)))
+	    FreeMem (im, sizeof (struct IntuiMessage));
+
+	Permit ();
+
+	/* Delete message port */
+	DeleteMsgPort (win->UserPort);
+    }
+
+    /* Free memory for the window */
     FreeMem (iw, sizeof (struct IntWindow));
 
     XSync (sysDisplay, FALSE);
@@ -648,27 +682,27 @@ void intui_ProcessXEvents (void)
 void RefreshWindowFrame (w)
 WIN * w;
 {
-      __SetSizeHints (w);
+    __SetSizeHints (w);
 }
 
 int IntuiTextLength (itext)
 struct IntuiText * itext;
 {
-	return (100);
+    return (100);
 }
 
 void SizeWindow (win, dx, dy)
 WIN * win;
 int dx, dy;
 {
-	XResizeWindow (sysDisplay, win->xwindow, win->Width+dx,
-		win->Height + dy);
+    XResizeWindow (sysDisplay, win->xwindow, win->Width+dx,
+	    win->Height + dy);
 }
 
 void ClearMenuStrip (win)
 WIN * win;
 {
-	return;
+    return;
 }
 
 void ActivateWindow (win)
@@ -716,26 +750,30 @@ BOOL free;
    /* und setzen */
    XSetRegion (sysDisplay, win->RPort->gc, region);
 }
+
 int AutoRequest (win, body, pos, neg, f_pos, f_neg, width, height)
 WIN * win;
 struct IntuiText * body, * pos, * neg;
 ULONG f_pos, f_neg;
 SHORT width, height;
 {
-	return (TRUE);
+    return (TRUE);
 }
 
 void GetScreenData (scr, size, type, screen)
 struct Screen * scr, * screen;
 long size, type;
 {
-	if (type != WBENCHSCREEN) {
-		movmem (scr, screen, size);
-	} else {
-		WB.Width = DisplayWidth(sysDisplay, sys_screen);
-		WB.Height = DisplayHeight (sysDisplay, sys_screen);
-		movmem (scr, &WB, size);
-	}
+    if (type != WBENCHSCREEN)
+    {
+	movmem (scr, screen, size);
+    }
+    else
+    {
+	WB.Width = DisplayWidth(sysDisplay, sys_screen);
+	WB.Height = DisplayHeight (sysDisplay, sys_screen);
+	movmem (scr, &WB, size);
+    }
 }
 
 int RawKeyConvert (ie, buf, size, km)
@@ -744,65 +782,69 @@ char * buf;
 long size;
 struct KeyMap * km;
 {
-	XKeyEvent xk;
-	char * ptr;
-	int t;
+    XKeyEvent xk;
+    char * ptr;
+    int t;
 
-	ie->ie_Code &= 0x7fff;
+    ie->ie_Code &= 0x7fff;
 
-	for (t=0; keytable[t].amiga != -1; t++) {
-		if (ie->ie_Code == keytable[t].keycode) {
-			if (ie->ie_Qualifier & SHIFT)
-				ptr = keytable[t].shifted;
-			else	ptr = keytable[t].normal;
+    for (t=0; keytable[t].amiga != -1; t++)
+    {
+	if (ie->ie_Code == keytable[t].keycode)
+	{
+	    if (ie->ie_Qualifier & SHIFT)
+		ptr = keytable[t].shifted;
+	    else
+		ptr = keytable[t].normal;
 
-			t = strlen(ptr);
-			if (t > size) t = size;
+	    t = strlen(ptr);
+	    if (t > size)
+		t = size;
 
-			strncpy (buf, ptr, t);
+	    strncpy (buf, ptr, t);
 
-			goto ende;
-		}
+	    goto ende;
 	}
+    }
 
-	xk.keycode = ie->ie_Code;
-	xk.display = sysDisplay;
-	xk.state = 0;
+    xk.keycode = ie->ie_Code;
+    xk.display = sysDisplay;
+    xk.state = 0;
 
-	if (ie->ie_Qualifier & SHIFT)
-		xk.state |= ShiftMask;
+    if (ie->ie_Qualifier & SHIFT)
+	xk.state |= ShiftMask;
 
-	if (ie->ie_Qualifier & CTRL)
-		xk.state |= ControlMask;
+    if (ie->ie_Qualifier & CTRL)
+	xk.state |= ControlMask;
 
-	if (ie->ie_Qualifier & CAPS)
-		xk.state |= LockMask;
+    if (ie->ie_Qualifier & CAPS)
+	xk.state |= LockMask;
 
-	if (ie->ie_Qualifier & ALT)
-		xk.state |= Mod1Mask;
+    if (ie->ie_Qualifier & ALT)
+	xk.state |= Mod1Mask;
 
-	if (ie->ie_Qualifier & AMIGAKEYS)
-		xk.state |= Mod2Mask;
+    if (ie->ie_Qualifier & AMIGAKEYS)
+	xk.state |= Mod2Mask;
 
-	if (ie->ie_Qualifier & IEQUALIFIER_LEFTBUTTON)
-		xk.state |= Button1Mask;
+    if (ie->ie_Qualifier & IEQUALIFIER_LEFTBUTTON)
+	xk.state |= Button1Mask;
 
-	if (ie->ie_Qualifier & IEQUALIFIER_MIDBUTTON)
-		xk.state |= Button2Mask;
+    if (ie->ie_Qualifier & IEQUALIFIER_MIDBUTTON)
+	xk.state |= Button2Mask;
 
-	if (ie->ie_Qualifier & IEQUALIFIER_RBUTTON)
-		xk.state |= Button3Mask;
+    if (ie->ie_Qualifier & IEQUALIFIER_RBUTTON)
+	xk.state |= Button3Mask;
 
-	t = XLookupString(&xk, buf, size, NULL, NULL);
+    t = XLookupString(&xk, buf, size, NULL, NULL);
 
-	if (!*buf && t == 1) t = 0;
-	if (!t) *buf = 0;
+    if (!*buf && t == 1) t = 0;
+    if (!t) *buf = 0;
 
 ende:	/*printf ("RawKeyConvert: In %02x %04x %04x Out : %d cs %02x '%c'\n",
-		ie->ie_Code, ie->ie_Qualifier, xk.state, t, (ubyte)*buf,
-		(ubyte)*buf);*/
+	    ie->ie_Code, ie->ie_Qualifier, xk.state, t, (ubyte)*buf,
+	    (ubyte)*buf);*/
 
-	return (t);
+    return (t);
 }
 
 #endif
