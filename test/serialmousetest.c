@@ -38,30 +38,39 @@ static int bufptr;
 static void mouse_buffer(char * buffer, ULONG len)
 {
 	ULONG i = 0;
+	
 	while (len > 0) {
 		switch (bufptr) {
 			case 0:
-				if (buffer[i] & 0x40) {
-					mousebuffer[0] = buffer[i];
-					bufptr++;
-				}
+				mousebuffer[bufptr++] = buffer[i];
 			break;
 		
 			case 1:
 			case 2:
-				mousebuffer[bufptr] = buffer[1];
+				mousebuffer[bufptr] = buffer[i];
+
 				if (2 == bufptr) {
 					BYTE dx,dy;
 					bufptr = 0;
 					
-					if ((mousebuffer[0] & 0x20))
-						printf("Left mouse button.\n");
-					if ((mousebuffer[1] & 0x10))
-						printf("Right mouse button.\n");
-					dx = (mousebuffer[0] & 0x03) << 6 | (mousebuffer[1] & 0x3f);
-					dy = (mousebuffer[0] & 0x0c) << 4 | (mousebuffer[2] & 0x3f);
-					if (dx || dy)
-						printf("Movement: dx %d, dy %d\n",dx,dy);
+					if ((mousebuffer[2] & 0x40)) {
+					
+						if ((mousebuffer[2] & 0x20))
+							printf("Left button down.\n");
+						if ((mousebuffer[2] & 0x10))
+							printf("Right button down.\n");
+						dy = (mousebuffer[1] & 0x20) 
+						           ? (mousebuffer[1]-0x40)
+						           : (mousebuffer[1]);
+						dx = (mousebuffer[0] & 0x20) 
+						           ? (mousebuffer[0]-0x40)
+						           : (mousebuffer[0]);
+					
+						if (dx || dy)
+							printf("Movement: dx %d, dy %d\n",dx,dy);
+					} else {
+						bufptr = 0;
+					}
 				} else
 					bufptr++;
 			break;
