@@ -53,7 +53,9 @@
     /* Get pointer to process structure */
     struct Process *me = (struct Process *)FindTask(NULL);
 
-    ASSERT(__is_process(me));
+    /* If this is not a Process, do nothing  */
+    if (!__is_process(me))
+        return
     
     /* Nothing spectacular */
     old = me->pr_Result2;
