@@ -19,6 +19,10 @@ etc. 2) An Amiga Emulation (ie. a window in which you have a Workbench.
 Every new screen will open a new window) 3) A link-library with which you
 can port Amiga apps to other OSs (eg. Windows). 1) will have Amiga l&f,
 2) will have a mixture and 3) will have native l&f.
+\begin{new}{18.9.1997}
+The flavours 1 and 2 will optionally have binary compatibility if
+possible.
+\end{new}
 
 \end{itemize}
 
@@ -107,6 +111,15 @@ Currently AROS is available for Intel PCs with Linux (Linux/i386) or
 FreeBSD and Amiga with AmigaOS and Linux/m68. We are working on versions
 for SPARC, HPUX, Alpha, PIOS ONE/transAm and any other available
 hardware if someone wants to do that.
+
+\begin{new}{18.9.1997}
+\begin{itemize}
+\item Linux/i386, FreeBSD: Status: everything works. Flavours: Emulation
+\item Amiga/AmigaOS: Status: parts work (like a big SetPatch()). Flavours: Standalone
+\item Linux/m68k: Status: alpha. Flavours: Emulation (binary
+compatible)
+\end{itemize}
+\end{new}
 
 \section{How about UAE ?}
 
