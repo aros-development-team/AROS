@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -198,6 +198,8 @@ void AsyncLayouter(void)
 	    else
 		FreeVec(lm);
 	}
+	
+	if (!retval) dtsi->si_Flags &= ~(DTSIF_LAYOUT | DTSIF_LAYOUTPROC);
     }
     
     ReleaseSemaphore(&(GPB(DataTypesBase)->dtb_Semaphores[SEM_ASYNC]));
@@ -205,4 +207,5 @@ void AsyncLayouter(void)
     return retval;
 
     AROS_LIBFUNC_EXIT
+    
 } /* DoAsyncLayout */
