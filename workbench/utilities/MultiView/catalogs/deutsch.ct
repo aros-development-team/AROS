@@ -92,9 +92,6 @@ D\0Als Vorgabe speichern
 MSG_MEN_PICT
 Bild
 ;
-MSG_MEN_PICT_FIT_WIN
- \0Auf Fenstergröße
-;
 MSG_MEN_PICT_ZOOM_IN
 Z\0Hereinzoomen
 ;
@@ -103,6 +100,18 @@ MSG_MEN_PICT_ZOOM_OUT
 ;
 MSG_MEN_PICT_RESET
  \0Orginalgröße
+;
+MSG_MEN_PICT_FIT_WIN
+ \0Auf Fenstergröße
+;
+MSG_MEN_PICT_KEEP_ASPECT
+ \0Festes Seitenverhältnis
+;
+MSG_MEN_PICT_FORCE_MAP
+ \0Farbpalette benutzen
+;
+MSG_MEN_PICT_DITHER
+ \0Dithering
 ;
 MSG_MEN_TEXT
 Text
