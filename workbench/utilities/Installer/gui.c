@@ -1754,7 +1754,7 @@ int max, finish = FALSE;
       } /* while ((imsg = GT_GetIMsg( GuiWin->UserPort )) */
     } /* !finish */
 
-    GT_GetGadgetAttrs( mxglist, GuiWin, NULL, GTMX_Active, &retval, TAG_DONE );
+    GT_GetGadgetAttrs( gad, GuiWin, NULL, GTMX_Active, &retval, TAG_DONE );
 
     request_choice_destruct();
 

@@ -314,4 +314,6 @@
 - partially implemented (delete). Need to implement (optional) and (delopts)
 - gui for (askchoice)
 
+0050
+- fixed crash of askchoice gui
 
