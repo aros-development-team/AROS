@@ -23,10 +23,9 @@ int main(struct ExecBase * SysBase, struct Library * DOSBase)
     LONG            rc = RETURN_FAIL;
     hidd_demo(SysBase);
 
-*(ULONG *)0xc0de0000 = 0;
 
 {
-    BPTR sseq = Open("S:Startup-Sequence", FMF_READ);
+//    BPTR sseq = Open("S:Startup-Sequence", FMF_READ);
     BPTR cis  = Open("CON:20/20///Boot Shell/AUTO", FMF_READ);
 
 
@@ -39,7 +38,7 @@ int main(struct ExecBase * SysBase, struct Library * DOSBase)
 	    { SYS_Input,       (IPTR)cis  },
 	    { SYS_Output,      (IPTR)NULL },
 	    { SYS_Error,       (IPTR)NULL },
-	    { SYS_ScriptInput, (IPTR)sseq },
+//	    { SYS_ScriptInput, (IPTR)sseq },
 	    { TAG_DONE,       0           }
         };
 
@@ -47,7 +46,7 @@ int main(struct ExecBase * SysBase, struct Library * DOSBase)
 	if (rc != -1)
 	{
 	    cis  = NULL;
-	    sseq = NULL;
+//	    sseq = NULL;
 	}
 	else
 	    rc = RETURN_FAIL;
@@ -58,7 +57,7 @@ int main(struct ExecBase * SysBase, struct Library * DOSBase)
     }
 
     Close(cis);
-    Close(sseq);
+//    Close(sseq);
 }
     return rc;
 }

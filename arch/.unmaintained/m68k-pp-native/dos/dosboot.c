@@ -205,7 +205,7 @@ boot:
     /* Initialize HIDDs */
     init_hidds(SysBase, (struct DosLibrary *)DOSBase);
 #endif
-
+D(bug("Calling boot now!\n"));
     /* We now call the system dependant boot - should never return. */
     AROS_UFC3(void, boot, 
 	      AROS_UFCA(STRPTR, argString, A0),
