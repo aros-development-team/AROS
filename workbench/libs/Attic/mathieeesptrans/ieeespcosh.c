@@ -44,9 +44,9 @@
 
 
       flags:
-	zero	 : result is zero
-	negative : 0 (not possible)
-	overflow : result too big for ffp-number
+        zero     : result is zero
+        negative : 0 (not possible)
+        overflow : result too big for ffp-number
 
     NOTES
 
@@ -66,6 +66,7 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
 LONG Res;
   /* cosh(-x) = cosh(x) */
   y &= ( IEEESPMantisse_Mask + IEEESPExponent_Mask );
@@ -96,4 +97,5 @@ LONG Res;
     return 0;
   }
   return Res;
+AROS_LIBFUNC_EXIT
 } /* SPCosh */

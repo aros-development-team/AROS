@@ -45,9 +45,9 @@
 
 
       flags:
-	zero	 : result is zero
-	negative : result is negative
-	overflow : result is too big
+        zero     : result is zero
+        negative : result is negative
+        overflow : result is too big
 
     NOTES
 
@@ -64,6 +64,8 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
+
   /* a ^ b  = e^(b * ln a )
   ** y ^ x  = e^(x * ln y )
   */
@@ -71,7 +73,7 @@
 
   /* y^x is illegal if y<0 and x is not an integer-value */
   if (y < 0 && x != IEEESPCeil(x) )
-	return 0;
+        return 0;
 
   Res = IEEESPLog( y & (IEEESPMantisse_Mask + IEEESPExponent_Mask) );
   Res = IEEESPMul(Res, x);
@@ -99,5 +101,5 @@
     SetSR(Overflow_Bit, Zero_Bit | Overflow_Bit);
 
   return Res;
-
+AROS_LIBFUNC_EXIT
 } /* SPPow */

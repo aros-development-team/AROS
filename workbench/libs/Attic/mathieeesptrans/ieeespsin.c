@@ -44,9 +44,9 @@
 
 
       flags:
-	zero	 : result is zero
-	negative : result is negative
-	overflow : 0
+        zero     : result is zero
+        negative : result is negative
+        overflow : 0
 
     NOTES
 
@@ -58,27 +58,28 @@
 
     INTERNALS
       Algorithm for Calculation of sin(y):
-	 z    = floor ( |y| / pi );
-	 y_1  = |y| - z * pi;	     => 0 <= y_1 < pi
+         z    = floor ( |y| / pi );
+         y_1  = |y| - z * pi;        => 0 <= y_1 < pi
 
-	 if (y_1 > pi/2 ) then y_1 = pi - y_1;
+         if (y_1 > pi/2 ) then y_1 = pi - y_1;
 
-	 => 0 <= y_1 < pi/2
+         => 0 <= y_1 < pi/2
 
-	 Res = y - y^3/3! + y^5/5! - y^7/7! + y^9/9! - y^11/11! =
-	     = y(1+y^2(-1/3!+y^2(1/5!+y^2(-1/7!+y^2(1/9!-1/11!y^2)))));
+         Res = y - y^3/3! + y^5/5! - y^7/7! + y^9/9! - y^11/11! =
+             = y(1+y^2(-1/3!+y^2(1/5!+y^2(-1/7!+y^2(1/9!-1/11!y^2)))));
 
-	 if (y < 0)
-	   Res = -Res;
+         if (y < 0)
+           Res = -Res;
 
-	 if (z was an odd number)
-	   Res = -Res;
+         if (z was an odd number)
+           Res = -Res;
 
     HISTORY
 
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
 LONG z,Res,ysquared,yabs,tmp;
   yabs = y & (IEEESPMantisse_Mask + IEEESPExponent_Mask);
 
@@ -99,16 +100,16 @@ LONG z,Res,ysquared,yabs,tmp;
   }
   ysquared = IEEESPMul(yabs,yabs);
   Res = IEEESPMul(yabs,
-	IEEESPAdd(sinf1,
-	IEEESPMul(ysquared,
-	IEEESPAdd(sinf2,
-	IEEESPMul(ysquared,
-	IEEESPAdd(sinf3,
-	IEEESPMul(ysquared,
-	IEEESPAdd(sinf4,
-	IEEESPMul(ysquared,
-	IEEESPAdd(sinf5,
-	IEEESPMul(ysquared, sinf6)))))))))));
+        IEEESPAdd(sinf1,
+        IEEESPMul(ysquared,
+        IEEESPAdd(sinf2,
+        IEEESPMul(ysquared,
+        IEEESPAdd(sinf3,
+        IEEESPMul(ysquared,
+        IEEESPAdd(sinf4,
+        IEEESPMul(ysquared,
+        IEEESPAdd(sinf5,
+        IEEESPMul(ysquared, sinf6)))))))))));
 
   if (y < 0 )
     Res ^= IEEESPSign_Mask;
@@ -126,5 +127,5 @@ LONG z,Res,ysquared,yabs,tmp;
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;
-
+AROS_LIBFUNC_EXIT
 } /* IEEESPSin */

@@ -44,9 +44,9 @@
 
 
       flags:
-	zero	 : result is zero
-	negative : result is negative
-	overflow : (not possible)
+        zero     : result is zero
+        negative : result is negative
+        overflow : (not possible)
 
     NOTES
 
@@ -58,9 +58,9 @@
 
     INTERNALS
 
-		( e^x - e^(-x) )
+                ( e^x - e^(-x) )
      tanh(x) =  ----------------
-		( e^x + e^(-x) )
+                ( e^x + e^(-x) )
 
      tanh( |x| >= 9 ) = 1
 
@@ -69,6 +69,7 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
 LONG Res;
 LONG y2 = y & (IEEESPMantisse_Mask + IEEESPExponent_Mask );
 LONG tmp;
@@ -83,7 +84,7 @@ LONG tmp;
   Res = IEEESPExp(y2);
   tmp = IEEESPDiv(one, Res);
   Res = IEEESPDiv( IEEESPAdd(Res, (tmp | IEEESPSign_Mask) ),
-		   IEEESPAdd(Res, tmp) );
+                   IEEESPAdd(Res, tmp) );
 
   /* Result is zero */
   if (0 == Res )
@@ -103,4 +104,5 @@ LONG tmp;
   }
 
   return Res;
+AROS_LIBFUNC_EXIT
 } /* SPTanh */

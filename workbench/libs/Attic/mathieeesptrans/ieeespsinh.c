@@ -44,9 +44,9 @@
 
 
       flags:
-	zero	 : result is zero
-	negative : result is negative
-	overflow : result is too big for IEEE single precsion format
+        zero     : result is zero
+        negative : result is negative
+        overflow : result is too big for IEEE single precsion format
 
     NOTES
 
@@ -65,6 +65,7 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
 LONG Res;
 LONG y2 = y & (IEEESPMantisse_Mask + IEEESPExponent_Mask);
 LONG tmp;
@@ -108,4 +109,5 @@ LONG tmp;
     return (Res | IEEESPSign_Mask);
   }
   return Res;
+AROS_LIBFUNC_EXIT
 } /* SPSinh */

@@ -100,6 +100,7 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
   ULONG Res, ResSquared, Delta, X, TargetMantisse;
   int z;
   ULONG Exponent;
@@ -161,4 +162,5 @@
   Res |= Exponent;
 
   return Res;
+AROS_LIBFUNC_EXIT
 } /* IEEESPSqrt */
