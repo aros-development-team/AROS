@@ -47,7 +47,7 @@ config:
 
 machine.i: geninc.c
 	$(CC) $(CFLAGS) -o geninc geninc.c
-	geninc > machine.i
+	./geninc > machine.i
 
 $(OSGENDIR)/%.o: %.s machine.i
 	$(AS) $(AFLAGS) $< -c -o $@ 2>&1|tee $*.err
