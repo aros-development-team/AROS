@@ -24,6 +24,9 @@
 #endif
 #include <aros/debug.h>
 
+/* if #define fills the unused stack with 0xE1 */
+#define STACKSNOOP
+
 static void KillCurrentTask(void);
 void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 
@@ -137,6 +140,26 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 	task->tc_SPReg = (UBYTE *)(task->tc_SPUpper) - SP_OFFSET;
 #else
 	task->tc_SPReg = (UBYTE *)(task->tc_SPLower) - SP_OFFSET;
+#endif
+
+#ifdef STACKSNOOP
+    {
+        UBYTE *startfill, *endfill;
+	
+    #if AROS_STACK_GROWS_DOWNWARDS	
+	startfill = (UBYTE *)task->tc_SPLower;
+	endfill   = ((UBYTE *)task->tc_SPReg) - 16;
+    #else
+        startfill = ((UBYTE *)task->tc_SPReg) + 16;
+	endfill   = ((UBYTE *)task->tc_SPUpper) - 1; /* FIXME: -1 correct ?? */
+    #endif
+
+        while(startfill <= endfill)
+	{
+	    *startfill++ = 0xE1;
+	}
+	
+    }
 #endif
 
     /* Default finalizer? */
