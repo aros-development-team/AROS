@@ -8,7 +8,7 @@ SDFILES := C_c_orig.sd C_h_orig.sd
 
 real-all: $(FLEXCAT) copy_sd_files
 
-$(FLEXCAT) : flexcat.c
+$(FLEXCAT) : flexcat.c copy_sd_files
 	@$(ECHO) "Compiling $@..."
 	@$(CC) $(CFLAGS) $< -o $@
 	@$(STRIP) $@

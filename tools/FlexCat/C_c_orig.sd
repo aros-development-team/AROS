@@ -3,16 +3,59 @@
 ##shortstrings
 
 #include <exec/types.h>
+#include <exec/libraries.h>
+#include <proto/locale.h>
+#include <libraries/locale.h>
 
-struct StringCollection /* name ??? */
+#define CATCOMP_NUMBERS 1
+
+#include "%b_strings.h"
+
+struct StringCollection
 {
-  ULONG	  id;
-  UWORD   size;
-  char    string[];  // this is not possible...
+  LONG	  id;
+  STRPTR  string;
 };
 
-struct StringCollection SC[]
+struct LocaleInfo 
 {
-  {%i, sizeof(%s), %s},
-  {0,0,""}
+  struct Library * li_LocaleBase;
+  struct Catalog * li_Catalog;
 };
+
+
+static struct StringCollection _sc[] =
+{
+  {%i, %s},
+  {-1,(STRPTR)NULL}
+};
+
+
+char * GetString(struct LocaleInfo * li,
+                 LONG stringNum)
+{
+  char *builtIn = NULL;
+  char *string;
+
+  struct Library * LocaleBase = li->li_LocaleBase;
+    
+  struct StringCollection * sc = _sc;
+  while (NULL != sc->string)
+  {
+    if (sc->id == stringNum)
+    {
+      builtIn = sc->string;
+      break;
+    }
+    sc = &sc[1];
+  }
+
+  if (NULL != li->li_Catalog)
+    string = GetCatalogStr(li->li_Catalog,
+                           stringNum,
+                           builtIn);
+  else
+    string = builtIn;
+
+  return string;
+}
