@@ -41,10 +41,16 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 #MM kernel-dos-kobj : kernel-dos-$(ARCH)-$(CPU)
 #MM kernel-dos : kernel-dos-$(ARCH)-$(CPU)
 
-%build_module_macro mmake=kernel-dos \
+#MM kernel-dos-includes : \
+#MM     kernel-utility-includes \
+#MM     kernel-exec-includes \
+#MM     kernel-timer-includes \
+#MM     kernel-intuition-includes
+
+%build_module mmake=kernel-dos \
   modname=dos modtype=library \
-  funcs=$(FUNCTIONS) files=$(FILES) \
-  conffile=lib.conf
+  files="dos_init $(FUNCTIONS) $(FILES)" \
+  noref=lddemon
 
 TESTS := datetostr runprocess strtodate splitname readargs
 TEST_DEPLIBS := arossupport arosc amiga
