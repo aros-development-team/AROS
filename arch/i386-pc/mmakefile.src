@@ -25,6 +25,7 @@ create-mf-inc-again :
 #MM- kernel-native : kernel-exec-native \
 #MM	    kernel-expansion-linklib kernel-expansion-native-i386 \
 #MM	    kernel-utility-linklib \
+#MM	    kernel-dos-native \
 #MM	    kernel-aros-linklib \
 #MM	    kernel-boopsi-linklib \
 #MM	    kernel-oop-linklib \
@@ -37,6 +38,7 @@ create-mf-inc-again :
 #MM	    kernel-devs \
 #MM         kernel-intuition-native \
 #MM	    kernel-keymap-linklib \
+#MM		kernel-filesys-native-i386 \
 #MM		Drivers-native-irq \
 #MM		Drivers-native-kbd \
 #MM		Drivers-native
@@ -49,7 +51,8 @@ create-mf-inc-again :
 # Setup
 #MM- setup-native : setup-exec-native-$(CPU) \
 #MM		setup-intuition-native-$(CPU) \
-#MM		setup-battclock-native-$(CPU)
+#MM		setup-battclock-native-$(CPU) \
+#MM		setup-dos-native-$(CPU)
 
 # Setup includes
 #MM- includes-native : includes-copy includes-native-$(CPU)
@@ -70,6 +73,8 @@ create-mf-inc-again :
 #MM	intuition-native-$(CPU) kernel-intuition-linklib
 
 #MM- kernel-battclock-native : battclock-native-$(CPU) kernel-battclock-linklib
+
+#MM- kernel-dos-native : dos-native-$(CPU) kernel-dos-linklib
 
 # Setup libraries
 #MM kernel-exec-native-i386 :
@@ -120,6 +125,10 @@ kernel-hidd-native-i386 :
 kernel-utility-native-i386 :
 	%add_objects rom/boot/libutility
 
+#MM kernel-dos-native-i386 :
+kernel-dos-native-i386 :
+	%add_objects rom/boot/libdos
+
 #MM kernel-timer-native-i386 :
 kernel-timer-native-i386 :
 	%add_objects rom/boot/libtimer
@@ -145,6 +154,10 @@ kernel-graphics-native-i386 :
 kernel-intuition-native-i386 :
 	%add_objects rom/boot/libintuition
 
+#MM kernel-filesys-native-i386 :
+kernel-filesys-native-i386 :
+	%add_objects rom/boot/libcon_handler
+
 #MM kernel-devs-native-i386 :
 kernel-devs-native-i386 :
 	%add_objects rom/boot/libgameport
@@ -153,6 +166,7 @@ kernel-devs-native-i386 :
 	%add_objects rom/boot/libconsole
 	%add_objects rom/boot/libtrackdisk
 	%add_objects rom/boot/libide
+	%add_objects rom/boot/libafs
 
 #MM
 includes-native-i386 : $(INCFILES) machine.i
