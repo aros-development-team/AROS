@@ -32,14 +32,14 @@ BOOT_TAR_FILES := \
     Libs/reqtools.library Libs/muimaster.library Libs/coolimages.library \
     Locale/Countries Locale/Languages \
     Locale/Catalogs/deutsch/Sys Locale/Catalogs/italiano/Sys Locale/Catalogs/svenska/Sys \
-    Prefs/Font Prefs/Locale Prefs/ReqTools Prefs/Serial \
+    Prefs/Font Prefs/Locale Prefs/ReqTools Prefs/Serial Prefs/Input Prefs/Time Prefs/Zune \
     Prefs/Env-Archive Prefs/Presets \
     S/Shell-Startup \
     System \
     Tools/Commodities \
-    Utilities/MultiView Utilities/More Utilities/Installer Utilities/test.script \
+    Utilities/MultiView \
     contrib/aminet/Format64 \
-    Tools/calculator Tools/WiMP Tools/HDToolBox
+    Tools/calculator Tools/HDToolBox
 
 BOOT_SRC_DIR    := $(AROSDIR)
 BOOT_DEST_DIR   := $(OSGENDIR)/bootdisk
