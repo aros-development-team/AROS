@@ -307,7 +307,7 @@
     else
       return retval;
   } /* while() */
-  va_end(args);
+  va_end(arg);
   return retval;
 }  
 
