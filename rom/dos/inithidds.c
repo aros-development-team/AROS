@@ -10,6 +10,7 @@
 #include <exec/resident.h>
 #include <exec/alerts.h>
 #include <exec/io.h>
+#include <dos/filesystem.h>
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
 #include <hidd/hidd.h>
