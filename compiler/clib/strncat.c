@@ -58,8 +58,12 @@
     while (*dest)
 	dest ++;
 
-    while (n && (*dest ++ = *src ++))
+    while (n && (*dest = *src))
+    {
 	n --;
+	dest ++; src ++;
+    }
+    *dest = 0; /* null-terminate conctenated string */
 
     return d;
 } /* strncat */
