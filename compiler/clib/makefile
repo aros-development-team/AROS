@@ -83,7 +83,8 @@ $(TESTDIR)/snprintf: snprintf.c $(LIBDIR)/startup.o $(DEPLIBS)
 	$(CC) -DTEST $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
 update-includes:
-	cd include ; \
+	@echo "Updating ANSI C includes"
+	@cd include ; \
 	$(MAKE) $(MFLAGS) TOP="../.." CURDIR="$(CURDIR)/include" all
 
 clean:
