@@ -4,3 +4,5 @@ mmakefile
 *.map
 libdefs.h
 layers_functable.c
+endtag.c
+functable.c
