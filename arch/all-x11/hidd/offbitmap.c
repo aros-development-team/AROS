@@ -132,7 +132,12 @@ LX11
 	depth = DefaultDepth(display, screen);
 UX11
     }
-
+    else
+    {
+    	#warning "Need this because of stipple bug in XFree86 :-("
+	width += 32;
+    }
+    
     D(bug("Creating X Pixmap, %p, %d, %d, %d\n"
 	, friend_drawable
 	, width
