@@ -147,10 +147,10 @@ endif
 %end
 
 # Generate endskip variable
-%define mkendtag_q lib=dummy from=$^ to=$@
+%define mkendtag_q lib=dummy to=$@
 	@$(ECHO) "Regenerating %(to)..."
 	@$(AWK) -f $(TOP)/scripts/makeendtag.awk \
-	    --assign lib="%(lib)" %(from)
+	    --assign lib="%(lib)"
 %end
 
 # Common rules for all makefiles
@@ -203,6 +203,112 @@ functable.c : $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfunctable.awk \
 endtag.c :
 	@$(ECHO) "Generating $@..."
 	@$(ECHO) "#include <libcore/libtail.c>" > $@
+%end
+
+%define genlib_old dest=libdefs.h flags=$(CFLAGS) from=$< to=$@ dir=$(@D) opt= cc=$(CC)
+ifndef SLIB
+SLIB := $(SLIBDIR)/$(LIBNAME).library
+endif
+ifndef LIB
+LIB := $(LIBDIR)/lib$(LIBNAME).a
+endif
+ifndef INIT_FILE
+INIT_FILE := $(LIBNAME)_init
+endif
+ifndef END_FILE
+END_FILE := $(LIBNAME)_endtag
+endif
+ifndef OBJDIR
+OBJDIR := $(GENDIR)/$(CURDIR)
+endif
+ifndef GENLIBDEF_SCRIPT
+GENLIBDEF_SCRIPT := $(TOP)/scripts/genlibdefs.gawk
+endif
+ifndef INITFUNC
+INITFUNC := $(OBJDIR)/$(INIT_FILE).o
+endif
+ifndef ENDFUNC
+ENDFUNC := $(OBJDIR)/$(END_FILE).o
+endif
+ifndef OBJS
+OBJS := $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+endif
+
+# ***** Native ***************
+ifeq ($(FLAVOUR),native)
+
+# Generate a map file
+MAPGEN	:= -Xlinker -M
+
+# Strip resulting binary
+STRIP	:= strip
+
+# ***** Not Native ***************
+else
+
+MAPGEN	:=
+STRIP	:= $(NOP)
+
+# ***** END ***************
+endif
+
+$(SLIB) : $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
+	@$(ECHO) "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) $(MAPGEN) $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.map
+	@$(ECHO) "Checking $@..."
+	@$(CHECKUDS) $@ > undefdsyms.list
+	@$(IF) $(TEST) -s undefdsyms.list ; then \
+	    $(CAT) undefdsyms.list >> $(@F)-x.err ; \
+	    $(ECHO) "There are undefined symbols in $@:" ; \
+	    $(CAT) undefdsyms.list ; \
+	else $(NOP) ; fi
+	@$(RM) undefdsyms.list
+	@$(IF) $(TEST) ! -s $(LIBNAME)lib.map; then $(RM) $(LIBNAME)lib.map ; else $(NOP) ; fi
+	@$(STRIP) $@
+
+# Collect all functions in a linklib for fast linking:
+$(LIB) : $(OBJS)
+	@$(ECHO) "Adding functions to $(notdir $@) ..."
+	@$(AR) $@ $?
+	@$(RANLIB) $@
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+setup :
+	@$(FOR) dir in $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS) ; do \
+	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
+	done
+
+clean ::
+	$(RM) $(OBJDIR) *.err
+
+$(OBJDIR)/%.o : %.c
+	@$(ECHO) "Compiling $(CURDIR)/%(from)..."
+	@%(cc) %(flags) -c $< -o $@ 2>&1|tee $*.err
+	@$(IF) $(TEST) -s $*.err ; then $(TOUCH) $(TOP)/errors ; else $(RM) $*.err ; fi
+
+$(LIBNAME)_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
+	    $(TOP)/scripts/makefunctable.awk
+	@$(ECHO) "Regenerating $@..."
+	@$(AWK) -f $(TOP)/scripts/makefunctable.awk \
+	    --assign lib="$(ULIBNAME)" $^
+
+$(LIBNAME)_endtag.c : $(TOP)/scripts/makeendtag.awk
+	@$(ECHO) "Regenerating $@..."
+	@$(AWK) -f $(TOP)/scripts/makeendtag.awk \
+	    --assign lib="$(ULIBNAME)"
+
+$(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
+
+libdefs.h : lib.conf $(GENLIBDEF_SCRIPT)
+	@$(ECHO) "Generating $@..."
+	@$(AWK) -f $(GENLIBDEF_SCRIPT) $< > $@
+
+$(OBJDIR)/%.d : %.c
+	@$(IF) [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$<..."
+	@$(MKDEPEND) -f- -p$(@D)/ $(MKDEPEND_FLAGS) -- $(CFLAGS) -- $< > $@
 %end
 
 # rule to generate asm files from c files (for debugging purposes)
