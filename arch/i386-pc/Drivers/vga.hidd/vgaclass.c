@@ -391,10 +391,16 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
     OOP_GetAttr(msg->src,  aHidd_VGABitMap_Drawable, (IPTR *)&src);
     OOP_GetAttr(msg->dest, aHidd_VGABitMap_Drawable, (IPTR *)&dest);
 
-    if (0 == dest || 0 == src)
+    if (!dest || !src ||
+    	((mode != vHidd_GC_DrawMode_Copy) &&
+	 (mode != vHidd_GC_DrawMode_And) &&
+	 (mode != vHidd_GC_DrawMode_Xor) &&
+	 (mode != vHidd_GC_DrawMode_Clear) &&
+	 (mode != vHidd_GC_DrawMode_Invert)))
     {
 	/* The source and/or destination object is no VGA bitmap, onscreen nor offscreen.
-	   Let the superclass do the copying in a more general way
+	   Or drawmode is not one of those we accelerate. Let the superclass do the
+	   copying in a more general way
 	*/
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 	return;
@@ -405,6 +411,7 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
     	struct bitmap_data *data = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
         struct bitmap_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
         int i, width, phase, j;
+	BOOL descending;
 
         // start of Source data
         unsigned char *s_start = data->VideoData +
@@ -419,137 +426,294 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 
 	width = msg->width;
 
-	if ((phase = ((long)s_start & 3L)))
+    	if ((msg->srcY > msg->destY) || ((msg->srcY == msg->destY) && (msg->srcX >= msg->destX)))
 	{
-	    phase = 4 - phase;
+	    if ((phase = ((long)s_start & 3L)))
+	    {
+		phase = 4 - phase;
+		if (phase > width) phase = width;
+		width -= phase;
+	    }
+	    descending = FALSE;
+	}
+	else
+	{
+	    s_start += (cnt - 1) * data->width + width;
+	    d_start += (cnt - 1) * ddata->width + width;
+
+	    phase = ((long)s_start & 3L);
 	    if (phase > width) phase = width;
 	    width -= phase;
+	    
+	    descending = TRUE;
 	}
 
         switch(mode)
 	{
 	    case vHidd_GC_DrawMode_Copy:
-                while (cnt--)
-    	        {
-	            i = width;
-	            j = phase;
-                    while (j--)
-                    {
-                        *(unsigned char*)d_start++ = *(unsigned char*)s_start++;
+	    	if (!descending)
+		{
+                    while (cnt--)
+    	            {
+	        	i = width;
+	        	j = phase;
+                	while (j--)
+                	{
+                            *d_start++ = *s_start++;
+                	}
+	        	while (i >= 4)
+	        	{
+		            *((unsigned long*)d_start) = *((unsigned long*)s_start);
+		            d_start += 4;
+		            s_start += 4;
+		            i -= 4;
+	        	}
+	        	while (i--)
+                	{
+                            *d_start++ = *s_start++;
+                	}
+                	d_start += d_add;
+                	s_start += s_add;
                     }
-	            while (i >= 4)
-	            {
-		        *((unsigned long*)d_start) = *((unsigned long*)s_start);
-		        d_start += 4;
-		        s_start += 4;
-		        i -= 4;
-	            }
-	            while (i--)
-                    {
-                        *(unsigned char*)d_start++ = *(unsigned char*)s_start++;
+		}
+		else
+		{
+                    while (cnt--)
+    	            {
+	        	i = width;
+	        	j = phase;
+                	while (j--)
+                	{
+                            *--d_start = *--s_start;
+                	}
+	        	while (i >= 4)
+	        	{
+			    d_start -= 4;
+			    s_start -= 4;
+		            *((unsigned long*)d_start) = *((unsigned long*)s_start);
+		            i -= 4;
+	        	}
+	        	while (i--)
+                	{
+                            *--d_start = *--s_start;
+                	}
+                	d_start -= d_add;
+                	s_start -= s_add;
                     }
-                    d_start += d_add;
-                    s_start += s_add;
-                }
+		}
 		break;
 		
 	    case vHidd_GC_DrawMode_And:
-                while (cnt--)
-    	        {
-	            i = width;
-	            j = phase;
-                    while (j--)
-                    {
-                        *(unsigned char*)d_start++ &= *(unsigned char*)s_start++;
+	    	if (!descending)
+		{
+                    while (cnt--)
+    	            {
+	        	i = width;
+	        	j = phase;
+                	while (j--)
+                	{
+                            *d_start++ &= *s_start++;
+                	}
+	        	while (i >= 4)
+	        	{
+		            *((unsigned long*)d_start) &= *((unsigned long*)s_start);
+		            d_start += 4;
+		            s_start += 4;
+		            i -= 4;
+	        	}
+	        	while (i--)
+                	{
+                            *d_start++ &= *s_start++;
+                	}
+                	d_start += d_add;
+                	s_start += s_add;
                     }
-	            while (i >= 4)
-	            {
-		        *((unsigned long*)d_start) &= *((unsigned long*)s_start);
-		        d_start += 4;
-		        s_start += 4;
-		        i -= 4;
-	            }
-	            while (i--)
-                    {
-                        *(unsigned char*)d_start++ &= *(unsigned char*)s_start++;
+		}
+		else
+		{
+                    while (cnt--)
+    	            {
+	        	i = width;
+	        	j = phase;
+                	while (j--)
+                	{
+                            *--d_start &= *--s_start;
+                	}
+	        	while (i >= 4)
+	        	{
+		            d_start -= 4;
+		            s_start -= 4;
+		            *((unsigned long*)d_start) &= *((unsigned long*)s_start);
+		            i -= 4;
+	        	}
+	        	while (i--)
+                	{
+                            *--d_start &= *--s_start;
+                	}
+                	d_start -= d_add;
+                	s_start -= s_add;
                     }
-                    d_start += d_add;
-                    s_start += s_add;
-                }
+		}
+		
 		break;
 
 	    case vHidd_GC_DrawMode_Xor:
-                while (cnt--)
-    	        {
-	            i = width;
-	            j = phase;
-                    while (j--)
-                    {
-                        *(unsigned char*)d_start++ ^= *(unsigned char*)s_start++;
+	    	if (!descending)
+		{
+                    while (cnt--)
+    	            {
+	        	i = width;
+	        	j = phase;
+                	while (j--)
+                	{
+                            *d_start++ ^= *s_start++;
+                	}
+	        	while (i >= 4)
+	        	{
+		            *((unsigned long*)d_start) ^= *((unsigned long*)s_start);
+		            d_start += 4;
+		            s_start += 4;
+		            i -= 4;
+	        	}
+	        	while (i--)
+                	{
+                            *d_start++ ^= *s_start++;
+                	}
+                	d_start += d_add;
+                	s_start += s_add;
                     }
-	            while (i >= 4)
-	            {
-		        *((unsigned long*)d_start) ^= *((unsigned long*)s_start);
-		        d_start += 4;
-		        s_start += 4;
-		        i -= 4;
-	            }
-	            while (i--)
-                    {
-                        *(unsigned char*)d_start++ ^= *(unsigned char*)s_start++;
+		}
+		else
+		{
+                    while (cnt--)
+    	            {
+	        	i = width;
+	        	j = phase;
+                	while (j--)
+                	{
+                            *--d_start ^= *--s_start;
+                	}
+	        	while (i >= 4)
+	        	{
+		            d_start -= 4;
+		            s_start -= 4;
+		            *((unsigned long*)d_start) ^= *((unsigned long*)s_start);
+		            i -= 4;
+	        	}
+	        	while (i--)
+                	{
+                            *--d_start ^= *--s_start;
+                	}
+                	d_start -= d_add;
+                	s_start -= s_add;
                     }
-                    d_start += d_add;
-                    s_start += s_add;
-                }
+		}
 		break;
 	    	
 	    case vHidd_GC_DrawMode_Clear:
-                while (cnt--)
-    	        {
-	            i = width;
-	            j = phase;
-                    while (j--)
-                    {
-                        *(unsigned char*)d_start++ = 0;
+	    	if (!descending)
+		{		
+                    while (cnt--)
+    	            {
+	        	i = width;
+	        	j = phase;
+                	while (j--)
+                	{
+                            *d_start++ = 0;
+                	}
+	        	while (i >= 4)
+	        	{
+		            *((unsigned long*)d_start) = 0;
+		            d_start += 4;
+		            i -= 4;
+	        	}
+	        	while (i--)
+                	{
+                            *d_start++ = 0;
+                	}
+                	d_start += d_add;
                     }
-	            while (i >= 4)
-	            {
-		        *((unsigned long*)d_start) = 0;
-		        d_start += 4;
-		        i -= 4;
-	            }
-	            while (i--)
-                    {
-                        *(unsigned char*)d_start++ = 0;
+		}
+		else
+		{
+                    while (cnt--)
+    	            {
+	        	i = width;
+	        	j = phase;
+                	while (j--)
+                	{
+                            *--d_start = 0;
+                	}
+	        	while (i >= 4)
+	        	{
+		            d_start -= 4;
+		            *((unsigned long*)d_start) = 0;
+		            i -= 4;
+	        	}
+	        	while (i--)
+                	{
+                            *--d_start = 0;
+                	}
+                	d_start -= d_add;
                     }
-                    d_start += d_add;
-                }
-		break;
-	    	
+		}
+    	    	break;
+			    	
 	    case vHidd_GC_DrawMode_Invert:
-                while (cnt--)
-    	        {
-	            i = width;
-	            j = phase;
-                    while (j--)
-                    {
-                        *(unsigned char*)d_start = ~*(unsigned char*)d_start;
-			d_start++;
+	    	if (!descending)
+		{
+                    while (cnt--)
+    	            {
+	        	i = width;
+	        	j = phase;
+                	while (j--)
+                	{
+                            *d_start = ~*d_start;
+			    d_start++;
+                	}
+	        	while (i >= 4)
+	        	{
+		            *((unsigned long*)d_start) = ~*((unsigned long*)d_start);
+		            d_start += 4;
+		            i -= 4;
+	        	}
+	        	while (i--)
+                	{
+                            *d_start = ~*d_start;
+			    d_start++;
+                	}
+                	d_start += d_add;
                     }
-	            while (i >= 4)
-	            {
-		        *((unsigned long*)d_start) = ~*((unsigned long*)d_start);
-		        d_start += 4;
-		        i -= 4;
-	            }
-	            while (i--)
-                    {
-                        *(unsigned char*)d_start = ~*(unsigned char*)d_start;
+		}
+		else
+		{
+                    while (cnt--)
+    	            {
+	        	i = width;
+	        	j = phase;
+                	while (j--)
+                	{
+                            *d_start = ~*d_start;
+			    d_start--;
+                	}
+	        	while (i >= 4)
+	        	{
+		            d_start -= 4;
+		            *((unsigned long*)d_start) = ~*((unsigned long*)d_start);
+		            i -= 4;
+	        	}
+	        	while (i--)
+                	{
+                            *d_start = ~*d_start;
+			    d_start--;
+                	}
+                	d_start -= d_add;
                     }
-                    d_start += d_add;
-                }
+		    break;
+		}
 		break;
-	}
+		
+	} /* switch(mode) */
 	
 	if (ddata->disp)
 	{
