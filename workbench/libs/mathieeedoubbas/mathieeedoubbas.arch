@@ -7,24 +7,28 @@
 */
 #Archive
 #Header
+#Local
 #include <aros/libcall.h>
+#/Local
 #include <proto/mathieeedoubbas.h>
+#Local
 #include <proto/exec.h>
 #include <exec/types.h>
 #include "mathieeedoubbas_intern.h"
+#/Local
 #/Header
 
 
-#Function LHAQUAD double IEEEDPAbs
-#Parameter double y D0 D1
+#Function double IEEEDPAbs
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floting point number
+#/Parameter
 #LibOffset 9
 #AutoDoc
     FUNCTION
       Calculate the absolute value of the given IEEE double precision
       floating point number
-
-    INPUTS
-	y  - IEEE double precision floting point number
 
     RESULT
 	absolute value of y
@@ -72,17 +76,18 @@
 
 
 
-#Function LHAQUAD double IEEEDPAdd
-#Parameter double y D0 D1
-#Parameter double z D2 D3
+#Function double IEEEDPAdd
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floting point number
+#/Parameter
+#Parameter double z D2/D3
+    IEEE double precision floting point number
+#/Parameter
 #LibOffset 11
 #AutoDoc
     FUNCTION
         Calculate the sum of two IEEE double precision numbers
-
-    INPUTS
-        y  - IEEE double precision floating point
-        z  - IEEE double precision floating point
 
     RESULT
         sum of y and z
@@ -233,15 +238,15 @@
 #/Function
 
 
-#Function LHAQUAD double IEEEDPCeil
-#Parameter double y D0 D1
+#Function double IEEEDPCeil
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floting point number
+#/Parameter
 #LibOffset 16
 #AutoDoc
     FUNCTION
         Calculates the ceil-value of a IEEE double precision number
-
-    INPUTS
-        y  - IEEE double precision floating point
 
     RESULT
         Flags:
@@ -291,17 +296,18 @@
 #/Function
 
 
-#Function LHAQUAD LONG IEEEDPCmp
-#Parameter double y D0 D1
-#Parameter double z D2 D3
+#Function LONG IEEEDPCmp
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floting point number
+#/Parameter
+#Parameter double z D2/D3
+    IEEE double precision floting point number
+#/Parameter
 #LibOffset 7
 #AutoDoc
     FUNCTION
 	Compares two IEEE double precision numbers
-
-    INPUTS
-	y  - IEEE double precision floating point
-	z  - IEEE double precision floating point
 
     RESULT
        +1 : y > z
@@ -366,17 +372,18 @@
 #/Function
 
 
-#Function LHAQUAD double IEEEDPDiv
-#Parameter double y D0 D1
-#Parameter double z D2 D3
+#Function double IEEEDPDiv
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floting point number
+#/Parameter
+#Parameter double z D2/D3
+    IEEE double precision floting point number
+#/Parameter
 #LibOffset 14
 #AutoDoc
     FUNCTION
 	Divides two IEEE double precision numbers
-
-    INPUTS
-	y  - IEEE double precision floating point
-	z  - IEEE double precision floating point
 
     RESULT
        +1 : y > z
@@ -412,15 +419,15 @@
 #/Function
 
 
-#Function LHAQUAD LONG IEEEDPFix
-#Parameter double y D0 D1
+#Function LONG IEEEDPFix
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floting point number
+#/Parameter
 #LibOffset 5
 #AutoDoc
     FUNCTION
 	Convert IEEE double precision floating point number to integer
-
-    INPUTS
-	y - IEEE double precision floating point
 
     RESULT
 	absolute value of y
@@ -492,16 +499,15 @@ QUAD * Qy = (QUAD *)&y;
 #/Function
 
 
-#Function LHAQUAD double IEEEDPFloor
-#Parameter double y D0 D1
+#Function double IEEEDPFloor
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floting point number
+#/Parameter
 #LibOffset 15
 #AutoDoc
     FUNCTION
 	Calculates the floor-value of a IEEE double precision number
-
-    INPUTS
-	y  - IEEE double precision floating point
-	z  - IEEE double precision floating point
 
     RESULT
        +1 : y > z
@@ -590,14 +596,15 @@ QUAD * Qy = (QUAD *)&y;
 #/Function
 
 
-#Function LHAQUAD double IEEEDPFlt
-#Parameter LONG y D0 D1
+#Function double IEEEDPFlt
+#Options QUAD
+#Parameter LONG y D0/D1
+    Signed integer to convert
+#/Parameter
 #LibOffset 6
 #AutoDoc
     FUNCTION
 
-    INPUTS
-	y  - signed integer number
 
     RESULT
       IEEE double precision number
@@ -664,17 +671,18 @@ QUAD * Qy = (QUAD *)&y;
 #/Function
 
 
-#Function LHAQUAD double IEEEDPMul
-#Parameter double y D0 D1
-#Parameter double z D2 D3
+#Function double IEEEDPMul
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floting point number
+#/Parameter
+#Parameter double z D2/D3
+    IEEE double precision floting point number
+#/Parameter
 #LibOffset 13
 #AutoDoc
     FUNCTION
 	Multiplies two IEEE double precision numbers
-
-    INPUTS
-	y  - IEEE double precision floating point
-	z  - IEEE double precision floating point
 
     RESULT
        +1 : y > z
@@ -705,16 +713,16 @@ QUAD * Qy = (QUAD *)&y;
 #/Function
 
 
-#Function LHAQUAD double IEEEDPNeg
-#Parameter double y D0 D1
+#Function double IEEEDPNeg
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floting point number
+#/Parameter
 #LibOffset 10
 #AutoDoc
     FUNCTION
 	Switch the sign of the given IEEE double precision floating point
 	number
-
-    INPUTS
-	y  - IEEE double precision floating point
 
     RESULT
 	-y
@@ -766,17 +774,18 @@ QUAD * Qy = (QUAD *)&y;
 #/Function
 
 
-#Function LHAQUAD double IEEEDPSub
-#Parameter double y D0 D1
-#Parameter double z D2 D3
+#Function double IEEEDPSub
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floting point number
+#/Parameter
+#Parameter double z D2/D3
+    IEEE double precision floting point number
+#/Parameter
 #LibOffset 12
 #AutoDoc
     FUNCTION
         Subtracts two IEEE double precision numbers
-
-    INPUTS
-        y  - IEEE double precision floating point
-        z  - IEEE double precision floating point
 
     RESULT
        +1 : y > z
@@ -810,15 +819,15 @@ QUAD * Qy = (QUAD *)&y;
 #/Function
 
 
-#Function LHAQUAD LONG IEEEDPTst
-#Parameter double y D0 D1
+#Function LONG IEEEDPTst
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floting point number
+#/Parameter
 #LibOffset 8
 #AutoDoc
     FUNCTION
 	Compare a IEEE double precision floting point number against zero.
-
-    INPUTS
-	y  - IEEE double precision floating point number
 
     RESULT
 

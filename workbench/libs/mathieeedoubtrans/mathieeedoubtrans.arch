@@ -16,15 +16,15 @@
 #/Header
 
 
-#Function LHAQUAD double IEEEDPAcos
-#Parameter double x D0 D1
+#Function double IEEEDPAcos
+#Options QUAD
+#Parameter double x D0/D1
+    IEEE double precision floating point number
+#/Parameter
 #LibOffset 20
 #AutoDoc
     FUNCTION
       Calculate the arcus cosine of the IEEE double precision number
-
-    INPUTS
-      y - IEEE double precision floating point number
 
     RESULT
       IEEE double precision floating point number
@@ -243,15 +243,15 @@
 #/Function
 
 
-#Function LHAQUAD double IEEEDPAsin
-#Parameter double x D0 D1
+#Function double IEEEDPAsin
+#Options QUAD
+#Parameter double x D0/D1
+    IEEE double precision floating point number
+#/Parameter
 #LibOffset 19
 #AutoDoc
     FUNCTION
       Calculate the arcus sine of the IEEE double precision number
-
-    INPUTS
-      y - IEEE double precision floating point number
 
     RESULT
       IEEE double precision floating point number
@@ -479,16 +479,16 @@
 #/Function
 
 
-#Function LHAQUAD double IEEEDPAtan
-#Parameter double y D0 D1
+#Function double IEEEDPAtan
+#Options QUAD
+#Parameter double y D0/D1
+      IEEE double precision floating point number
+#/Parameter
 #LibOffset 5
 #AutoDoc
     FUNCTION
       Calculates the angle of a given number representing the tangent
       of that angle. The angle will be in radians.
-
-    INPUTS
-      y - IEEE double precision floating point number
 
     RESULT
       IEEE double precision floating point number
@@ -592,15 +592,15 @@
 #/Function
 
 	
-#Function LHAQUAD double IEEEDPCos
-#Parameter double y D0 D1
+#Function double IEEEDPCos
+#Options QUAD
+#Parameter double y D0/D1
+      IEEE double precision floating point number
+#/Parameter
 #LibOffset 7
 #AutoDoc
     FUNCTION
       Calculate the cosine of a given IEEE double precision number in radians
-
-    INPUTS
-      y - IEEE double precision floating point number
 
     RESULT
       IEEE double precision floating point number
@@ -701,15 +701,15 @@
 #/Function
 
 
-#Function LHAQUAD double IEEEDPCosh
-#Parameter double y D0 D1
+#Function double IEEEDPCosh
+#Options QUAD
+#Parameter double y D0/D1
+      IEEE single precision floating point number
+#/Parameter
 #LibOffset 11
 #AutoDoc
     FUNCTION
       Calculate the hyperbolic cosine of the IEEE single precision number
-
-    INPUTS
-      y - IEEE single precision floating point number
 
     RESULT
       IEEE single precision floating point number
@@ -779,15 +779,15 @@ QUAD Res;
 #/Function
 
 
-#Function LHAQUAD double IEEEDPExp
-#Parameter double y D0 D1
+#Function double IEEEDPExp
+#Options QUAD
+#Parameter double y D0/D1
+      IEEE double precision number
+#/Parameter
 #LibOffset 13
 #AutoDoc
     FUNCTION
       Calculate e^x
-
-    INPUTS
-      y - IEEE double precision number
 
     RESULT
       IEEE double precision number
@@ -1020,15 +1020,15 @@ int i, Offset;
 #/Function
 
 
-#Function LHAQUAD double IEEEDPFieee
-#Parameter LONG y D0 D1
+#Function double IEEEDPFieee
+#Options QUAD
+#Parameter LONG y D0/D1
+        IEEE single precision floating point number
+#/Parameter
 #LibOffset 18
-#/AutoDoc
+#AutoDoc
     FUNCTION
         Convert IEEE single to IEEE double precision
-
-    INPUTS
-        y  - IEEE single precision floating point number
 
     RESULT
         IEEE double precision floting point number
@@ -1086,15 +1086,15 @@ QUAD Res, tmpQ;
 #/Function
 
 
-#Function LHAQUAD double IEEEDPLog
-#Parameter double y D0 D1
+#Function double IEEEDPLog
+#Options QUAD
+#Parameter double y D0/D1
+      IEEE double precision number
+#/Parameter
 #LibOffset 14
 #AutoDoc
     FUNCTION
       Calculate logarithm (base e) of the given IEEE double precision number
-
-    INPUTS
-      y - IEEE double precision number
 
     RESULT
       IEEE double precision number
@@ -1187,15 +1187,15 @@ LONG Exponent;
 #/Function
 
 
-#Function LHAQUAD double IEEEDPLog10
-#Parameter double y D0 D1
+#Function double IEEEDPLog10
+#Options QUAD
+#Parameter double y D0/D1
+      IEEE double precision number
+#/Parameter
 #LibOffset 21
 #AutoDoc
     FUNCTION
       Calculate logarithm (base 10) of the given IEEE double precision number
-
-    INPUTS
-      y - IEEE double precision number
 
     RESULT
       IEEE double precision number
@@ -1289,17 +1289,18 @@ LONG Exponent;
 #/Function
 
 
-#Function LHAQUAD double IEEEDPPow
-#Parameter double x D2 D3
-#Parameter double y D0 D1
+#Function double IEEEDPPow
+#Options QUAD
+#Parameter double x D2/D3
+    IEEE double precision floating point number
+#/Parameter
+#Parameter double y D0/D1
+    IEEE double precision floating point number
+#/Parameter
 #LibOffset 15
 #AutoDoc
     FUNCTION
       Calculate y raised to the x power (y^x)
-
-    INPUTS
-      x - IEEE double precision floating point number
-      y - IEEE double precision floating point number
 
     RESULT
       IEEE double precision floating point number
@@ -1381,15 +1382,15 @@ LONG Exponent;
 #/Function
 
 
-#Function LHAQUAD double IEEEDPSin
-#Parameter double y D0 D1
+#Function double IEEEDPSin
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floating point number
+#/Parameter
 #LibOffset 6
 #AutoDoc
     FUNCTION
       Calculate the sine of a given IEEE double precision number in radians
-
-    INPUTS
-      y - IEEE double precision floating point number
 
     RESULT
       IEEE double precision floating point number
@@ -1500,9 +1501,14 @@ LONG Exponent;
 #/Function
 
 
-#Function LHA double IEEEDPSincos
+#Function double IEEEDPSincos
+#Options QUAD
 #Parameter double * z A0
-#Parameter double y D0
+      Pointer to an IEEE double precision floating point number
+#/Parameter
+#Parameter double y D0/D1
+    IEEE double precision floating point number
+#/Parameter
 #LibOffset 9
 #AutoDoc
     FUNCTION
@@ -1511,10 +1517,6 @@ LONG Exponent;
       function returns the sine of that number as a result and puts
       the cosine of that number into *z which must represent
       a valid pointer to a IEEE double precision number.
-
-    INPUTS
-      z  - pointer to an IEEE double precision floating point number
-      y  - IEEE double precision floting point number
 
     RESULT
       *z            - IEEE double precision floating point number
@@ -1540,15 +1542,15 @@ LONG Exponent;
 #/Function
 
 
-#Function LHAQUAD double IEEEDPSinh
-#Parameter double y D0 D1
+#Function double IEEEDPSinh
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floating point number
+#/Parameter
 #LibOffset 10
 #AutoDoc
     FUNCTION
       Calculate the hyperbolic sine of the IEEE double precision number
-
-    INPUTS
-      y - IEEE double precision floating point number
 
     RESULT
       IEEE double precision floating point number
@@ -1632,15 +1634,15 @@ QUAD y2;
 #/Function
 
 
-#Function LHAQUAD double IEEEDPSqrt
-#Parameter double y D0 D1
+#Function double IEEEDPSqrt
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floating point number
+#/Parameter
 #LibOffset 16
 #AutoDoc
     FUNCTION
       Calculate square root of IEEE double precision floating point number
-
-    INPUTS
-      y - IEEEE double precision floating point number
 
     RESULT
       Motorola fast floating point number
@@ -1783,15 +1785,15 @@ QUAD y2;
 #/Function
 
 
-#Function LHAQUAD double IEEEDPTanh
-#Parameter double y D0 D1
+#Function double IEEEDPTanh
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floating point number
+#/Parameter
 #LibOffset 12
 #AutoDoc
     FUNCTION
       Calculate hyperbolic tangens of the IEEE double precision number
-
-    INPUTS
-      y - IEEE double precision floating point number
 
     RESULT
       IEEE double precision floating point number
@@ -1878,15 +1880,15 @@ QUAD y2;
 #/Function
 
 
-#Function LHAQUAD LONG IEEEDPTieee
-#Parameter double y D0 D1
+#Function LONG IEEEDPTieee
+#Options QUAD
+#Parameter double y D0/D1
+    IEEE double precision floating point number
+#/Parameter
 #LibOffset 17
 #AutoDoc
     FUNCTION
         Convert IEEE double to IEEE single precision number
-
-    INPUTS
-        y  - IEEE double precision number
 
     RESULT
         IEEE single precision number

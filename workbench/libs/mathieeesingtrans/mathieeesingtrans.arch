@@ -17,17 +17,14 @@
 #/Header
 
 
-#Function LHA float IEEESPAcos
+#Function float IEEESPAcos
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 20
 #AutoDoc
     FUNCTION
-
       Calculate arcuscos of the given number
-
-    INPUTS
-
-      y - IEEE single precision floating point number
 
     RESULT
 
@@ -149,20 +146,16 @@
 #/Function
 
 
-#Function LHA float IEEESPAsin
+#Function float IEEESPAsin
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 19
 #AutoDoc
     FUNCTION
-
       Calculate arcussin of the given number
 
-    INPUTS
-
-      y - IEEE single precision floating point number
-
     RESULT
-
       IEEE single precision floating point number
 
 
@@ -268,22 +261,18 @@
 #/Function
 
 
-#Function LHA float IEEESPAtan
+#Function float IEEESPAtan
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 5
 #AutoDoc
     FUNCTION
-
       Calculates the angle of a given number representing the tangent
       of that angle. The angle will be in radians.
 
 
-    INPUTS
-
-      y   - IEEE single precision floating point number
-
     RESULT
-
       IEEE single precision floating point number
 
     NOTES
@@ -367,22 +356,17 @@
 #/Function
 
 
-#Function LHA float IEEESPCos
+#Function float IEEESPCos
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 7
 #AutoDoc
     FUNCTION
-
       Calculate the cosine of a given IEEE single precision number in radians
 
-    INPUTS
-
-      y - IEEE single precision floating point number
-
     RESULT
-
       IEEE single precision floating point number
-
 
       flags:
         zero     : result is zero
@@ -474,22 +458,17 @@
 #/Function
 
 
-#Function LHA float IEEESPCosh
+#Function float IEEESPCosh
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 11
 #AutoDoc
     FUNCTION
-
       Calculate the hyperbolic cosine of the IEEE single precision number
 
-    INPUTS
-
-      y - IEEE single precision floating point number
-
     RESULT
-
       IEEE single precision floating point number
-
 
       flags:
         zero     : result is zero
@@ -547,22 +526,17 @@ LONG Res;
 #/Function
 
 
-#Function LHA float IEEESPExp
+#Function float IEEESPExp
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 13
 #AutoDoc
     FUNCTION
-
       Calculate e^x
 
-    INPUTS
-
-      y - IEEE single precision number
-
     RESULT
-
       IEEE single precision number
-
 
       flags:
         zero     : result is zero
@@ -668,16 +642,15 @@ char Exponent;
 #/Function
 
 
-#Function LHA float IEEESPFieee
+#Function float IEEESPFieee
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 18
 #AutoDoc
     FUNCTION
         Convert IEEE single to IEEE single
         It just returns the input parameter.
-
-    INPUTS
-        y  - IEEE single precision floating point number
 
     RESULT
         IEEE single precision floting point number
@@ -701,20 +674,16 @@ char Exponent;
 #/Function
 
 
-#Function LHA float IEEESPLog
+#Function float IEEESPLog
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 14
 #AutoDoc
     FUNCTION
-
       Calculate logarithm (base e) of the given IEEE single precision number
 
-    INPUTS
-
-      y - IEEE single precision number
-
     RESULT
-
       IEEE single precision number
 
       flags:
@@ -816,20 +785,16 @@ char Exponent;
 #/Function
 
 
-#Function LHA float IEEESPLog10
+#Function float IEEESPLog10
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 21
 #AutoDoc
     FUNCTION
-
       Calculate logarithm (base 10) of the given IEEE single precision number
 
-    INPUTS
-
-      y - IEEE single precision number
-
     RESULT
-
       IEEE single precision number
 
       flags:
@@ -931,22 +896,19 @@ char Exponent;
 #/Function
 
 
-#Function LHA float IEEESPPow
+#Function float IEEESPPow
 #Parameter float x D1
+    IEEE single precision floating point number
+#/Parameter
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 15
 #AutoDoc
     FUNCTION
-
       Calculate y raised to the x power (y^x)
 
-    INPUTS
-
-      x - IEEE single precision floating point number
-      y - IEEE single precision floating point number
-
     RESULT
-
       IEEE single precision floating point number
 
 
@@ -1008,22 +970,17 @@ char Exponent;
 #/Function
 
 
-#Function LHA float IEEESPSin
+#Function float IEEESPSin
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 6
 #AutoDoc
     FUNCTION
-
       Calculate the sine of a given IEEE single precision number in radians
 
-    INPUTS
-
-      y - IEEE single precision floating point number
-
     RESULT
-
       IEEE single precision floating point number
-
 
       flags:
         zero     : result is zero
@@ -1111,26 +1068,23 @@ LONG z,Res,ysquared,yabs,tmp;
 #/Function
 
 
-#Function LHA float IEEESPSincos
+#Function float IEEESPSincos
 #Parameter float * z A0
+    pointer to an IEEE single precision floating point number
+#/Parameter
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 9
 #AutoDoc
     FUNCTION
-
       Calculate the cosine and the sine of the given IEEE single
       precision number where y represents an angle in radians. The 
       function returns the sine of that number as a result and puts
       the cosine of that number into *z which must represent
       a valid pointer to a IEEE single precision number.
 
-    INPUTS
-
-      z  - pointer to an IEEE single precision floating point number
-      y  - IEEE single precision floting point number
-
     RESULT
-
       *z            - IEEE single precision floating point number
       direct result - IEEE single precision floating point number
 
@@ -1155,22 +1109,17 @@ LONG z,Res,ysquared,yabs,tmp;
 #/Function
 
 
-#Function LHA float IEEESPSinh
+#Function float IEEESPSinh
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 10
 #AutoDoc
     FUNCTION
-
       Calculate the hyperbolic sine of the IEEE single precision number
 
-    INPUTS
-
-      y - IEEE single precision floating point number
-
     RESULT
-
       IEEE single precision floating point number
-
 
       flags:
         zero     : result is zero
@@ -1240,22 +1189,17 @@ LONG tmp;
 #/Function
 
 
-#Function LHA float IEEESPSqrt
+#Function float IEEESPSqrt
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 16
 #AutoDoc
     FUNCTION
-
       Calculate square root of IEEE single precision number
 
-    INPUTS
-
-      y - IEEE single precision number
-
     RESULT
-
       IEEE single precision number
-
 
       flags:
         zero     : result is zero
@@ -1378,22 +1322,17 @@ LONG tmp;
 #/Function
 
 
-#Function LHA float IEEESPTan
+#Function float IEEESPTan
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 8
 #AutoDoc
     FUNCTION
-
       Calculate the tangens of a given IEEE single precision number in radians
 
-    INPUTS
-
-      y - IEEE single precision floating point number
-
     RESULT
-
       IEEE single precision floating point number
-
 
       flags:
         zero     : result is zero
@@ -1482,22 +1421,17 @@ LONG tmp;
 #/Function
 
 
-#Function LHA float IEEESPTanh
+#Function float IEEESPTanh
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 12
 #AutoDoc
     FUNCTION
-
       Calculate hyperbolic tangens of the IEEE single precision number
 
-    INPUTS
-
-      y - IEEE single precision floating point number
-
     RESULT
-
       IEEE single precision floating point number
-
 
       flags:
         zero     : result is zero
@@ -1562,16 +1496,15 @@ LONG tmp;
 #/Function
 
 
-#Function LHA float IEEESPTieee
+#Function float IEEESPTieee
 #Parameter float y D0
+    IEEE single precision floating point number
+#/Parameter
 #LibOffset 17
 #AutoDoc
     FUNCTION
         Convert IEEE single to IEEE single
         It just returns the input parameter.
-
-    INPUTS
-        y  - IEEE single precision floating point number
 
     RESULT
         IEEE single precision floting point number

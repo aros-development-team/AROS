@@ -17,13 +17,12 @@
 
 #Function LHA LONG IEEESPFix
 #Parameter float y D0
+    IEEEE single precision floating point
+#/Parameter
 #LibOffset 5
 #AutoDoc
     FUNCTION
         Convert ieeesp-number to integer
-
-    INPUTS
-        y - IEEEE single precision floating point
 
     RESULT
         absolute value of y
@@ -95,17 +94,13 @@
 
 #Function LHA float IEEESPFlt
 #Parameter LONG y D0
+    IEEEE single precision floating point
+#/Parameter
 #LibOffset 6
 #AutoDoc
     FUNCTION
 
-
-    INPUTS
-        y  - signed integer number
-
     RESULT
-
-
         Flags:
           zero     : result is zero
           negative : result is negative
@@ -182,15 +177,15 @@
 
 #Function LHA LONG IEEESPCmp
 #Parameter LONG y D0
+    IEEEE single precision floating point
+#/Parameter
 #Parameter LONG z D1
+    IEEEE single precision floating point
+#/Parameter
 #LibOffset 7
 #AutoDoc
     FUNCTION
         Compares two ieeesp numbers
-
-    INPUTS
-        y  - IEEE single precision floating point
-        z  - IEEE single precision floating point
 
     RESULT
        +1 : y > z
@@ -254,14 +249,12 @@
 
 #Function LHA LONG IEEESPTst
 #Parameter float y D0
+    IEEEE single precision floating point
+#/Parameter
 #LibOffset 8
 #AutoDoc
     FUNCTION
         Compare a ieeesp-number against zero.
-
-
-    INPUTS
-        y  - ieeesp number
 
     RESULT
 
@@ -316,12 +309,12 @@
 
 #Function LHA float IEEESPAbs
 #Parameter float y D0
+    IEEEE single precision floating point
+#/Parameter
 #LibOffset 9
 #AutoDoc
     FUNCTION
         Calculate the absolute value of a given floating point number
-    INPUTS
-        y  - ieeesp number
 
     RESULT
         absolute value of y
@@ -364,13 +357,12 @@
 
 #Function LHA float IEEESPNeg
 #Parameter float y D0
+    IEEEE single precision floating point
+#/Parameter
 #LibOffset 10
 #AutoDoc
     FUNCTION
         Switch the sign of the given ieeesp number
-
-    INPUTS
-        y  - IEEE single precision floating point
 
     RESULT
         -y
@@ -421,15 +413,15 @@
 
 #Function LHA float IEEESPAdd
 #Parameter float y D0
+    IEEEE single precision floating point
+#/Parameter
 #Parameter float z D1
+    IEEEE single precision floating point
+#/Parameter
 #LibOffset 11
 #AutoDoc
     FUNCTION
         Calculate the sum of two IEEE single precision numbers
-
-    INPUTS
-        y  - IEEE single precision floating point
-        z  - IEEE single precision floating point
 
     RESULT
         sum of y and z
@@ -552,16 +544,16 @@
 
 #Function LHA float IEEESPSub
 #Parameter float y D0
+    IEEEE single precision floating point
+#/Parameter
 #Parameter float z D1
+    IEEEE single precision floating point
+#/Parameter
 #LibOffset 12
 #AutoDoc
     FUNCTION
         Subtract two ieeesp numbers
         x = y-z;
-
-    INPUTS
-        y  - IEEE single precision floating point
-        z  - IEEE single precision floating point
 
     RESULT
 
@@ -594,16 +586,16 @@
 
 #Function LHA float IEEESPMul
 #Parameter float y D0
+    IEEEE single precision floating point
+#/Parameter
 #Parameter float z D1
+    IEEEE single precision floating point
+#/Parameter
 #LibOffset 13
 #AutoDoc
     FUNCTION
         Multiply two IEEE single precision numbers
         res = y * z;
-
-    INPUTS
-        y  - IEEE single precision floating point
-        z  - IEEE single precision floating point
 
     RESULT
 
@@ -679,16 +671,16 @@
 
 #Function LHA float IEEESPDiv
 #Parameter float y D0
+    IEEEE single precision floating point
+#/Parameter
 #Parameter float z D1
+    IEEEE single precision floating point
+#/Parameter
 #LibOffset 14
 #AutoDoc
     FUNCTION
         Divide two IEEE single precision floating point numbers
         x = y / z;
-
-    INPUTS
-        y  - IEEE single precision floating point
-        z  - IEEE single precision floating point
 
     RESULT
 
@@ -795,18 +787,16 @@
 
 #Function LHA float IEEESPFloor
 #Parameter float y D0
+    IEEEE single precision floating point
+#/Parameter
 #LibOffset 15
 #AutoDoc
     FUNCTION
         Calculate the largest integer ieeesp-number less than or equal to
         fnum
 
-
-    INPUTS
-        y  - IEEE single precision floating point
-
     RESULT
-             IEEE single precision floating point
+	IEEE single precision floating point
 
         Flags:
           zero     : result is zero
@@ -873,19 +863,15 @@
 
 #Function LHA float IEEESPCeil
 #Parameter float y D0
+    IEEEE single precision floating point
+#/Parameter
 #LibOffset 16
 #AutoDoc
     FUNCTION
         Calculate the least integer ieeesp-number greater than or equal to
         y
 
-
-    INPUTS
-        y  - IEEE single precision
-
     RESULT
-
-
         Flags:
           zero     : result is zero
           negative : result is negative
