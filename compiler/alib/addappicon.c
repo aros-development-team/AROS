@@ -9,8 +9,6 @@
 #include <dos/bptr.h>
 #include <utility/tagitem.h>
 
-extern struct Library * WorkbenchBase;
-
 /*****************************************************************************
 
     NAME */

@@ -8,8 +8,6 @@
 #define AROS_TAGRETURNTYPE struct AppMenuItem *
 #include <utility/tagitem.h>
 
-extern struct Library * WorkbenchBase;
-
 /*****************************************************************************
 
     NAME */
