@@ -355,8 +355,12 @@ AROS_LH1(void, beginio,
 	{
           if (TRUE == copyInDataUntilZero(SU, (struct IOStdReq *)ioreq))
 	  {
-            /* it could be satisfied completely */
-            ioreq->IOSer.io_Flags |= IOF_QUICK;
+            /* 
+            ** it could be completed immediately.
+            ** Check if I have to reply the message.
+            */
+            if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
+              ReplyMsg(&ioreq->IOSer.io_Message);
 
             break;
 	  }
@@ -366,8 +370,12 @@ AROS_LH1(void, beginio,
           D(bug("Calling copyInData!\n"));
           if (TRUE == copyInData(SU, (struct IOStdReq *)ioreq))
 	  {
-            /* it could be satisfied completely */
-            ioreq->IOSer.io_Flags |= IOF_QUICK;
+            /* 
+            ** it could be completed immediately.
+            ** Check if I have to reply the message.
+            */
+            if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
+              ReplyMsg(&ioreq->IOSer.io_Message);
             
             break;
 	  } 
@@ -450,11 +458,19 @@ AROS_LH1(void, beginio,
         if (complete == TRUE)
         {
           D(bug("completely sended the stream!\n"));
-          ioreq->IOSer.io_Flags |= IOF_QUICK;
-
+          /*
+          ** The request could be completed immediately.
+          ** Check if I have to reply the message
+          */
+          if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
+            ReplyMsg(&ioreq->IOSer.io_Message);
         }
         else
         {
+          /*
+          ** The request could not be completed immediately
+          ** Clear the flag.
+          */
           ioreq->IOSer.io_Flags &= ~IOF_QUICK;
           SU->su_ActiveWrite = (struct Message *)ioreq;
           SU->su_Status |= STATUS_WRITES_PENDING;
@@ -483,8 +499,13 @@ AROS_LH1(void, beginio,
       SU->su_InputNextPos = 0;
       SU->su_InputFirst = 0;
       SU->su_Status &= ~STATUS_BUFFEROVERFLOW;
-      ioreq->IOSer.io_Error = 0;      
-      ioreq->IOSer.io_Flags |= IOF_QUICK;
+      ioreq->IOSer.io_Error = 0;    
+      /*
+      ** The request could be completed immediately.
+      ** Check if I have to reply the message
+      */
+      if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
+        ReplyMsg(&ioreq->IOSer.io_Message);
     break;
 
     /*******************************************************************/
@@ -564,7 +585,12 @@ AROS_LH1(void, beginio,
 
       Enable();
 
-      ioreq->IOSer.io_Flags |= IOF_QUICK;
+      /*
+      ** The request could be completed immediately.
+      ** Check if I have to reply the message
+      */
+      if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
+        ReplyMsg(&ioreq->IOSer.io_Message);
     break;
 
     /*******************************************************************/
@@ -595,7 +621,12 @@ AROS_LH1(void, beginio,
       ioreq->io_Status = 0;
 
       ioreq->IOSer.io_Error = 0; 
-      ioreq->IOSer.io_Flags |= IOF_QUICK;
+      /*
+      ** The request could be completed immediately.
+      ** Check if I have to reply the message
+      */
+      if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
+        ReplyMsg(&ioreq->IOSer.io_Message);
 
     break;
 
@@ -700,7 +731,12 @@ AROS_LH1(void, beginio,
       
       SU->su_CtlChar  = ioreq->io_CtlChar;
 
-      ioreq->IOSer.io_Flags |= IOF_QUICK;
+      /*
+      ** The request could be completed immediately.
+      ** Check if I have to reply the message
+      */
+      if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
+        ReplyMsg(&ioreq->IOSer.io_Message);
     break;
 
     /*******************************************************************/
