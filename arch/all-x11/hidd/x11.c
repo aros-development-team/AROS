@@ -76,6 +76,7 @@ static Object *x11_new(Class *cl, Object *o, struct pRoot_New *msg)
 
 static VOID x11_dispose(Class *cl, Object *o, Msg msg)
 {
+    DoSuperMethod(cl, o, (Msg)msg);
     return;
 }
 
