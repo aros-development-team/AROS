@@ -1675,10 +1675,10 @@ layout_2d_row_precalc (struct MUI_GroupData *data,
 	    if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
 		continue;
 	    row_infos[i].min = MAX(row_infos[i].min, _minheight(child));
+	    row_infos[i].max = MIN(row_infos[i].max, _maxheight(child));
 	    if (_vweight(child) > 0)
 	    {
 		found_nonzero_vweight = TRUE;
-		row_infos[i].max = MIN(row_infos[i].max, _maxheight(child));
 		row_infos[i].weight += _vweight(child);
 	    }
 	    ++j;
@@ -1703,6 +1703,7 @@ layout_2d_row_precalc (struct MUI_GroupData *data,
     }
 }
 
+/* could be precalculated once at askminmax time ? */
 static void
 layout_2d_col_precalc (struct MUI_GroupData *data,
 		       struct layout2d_elem *col_infos,
@@ -1731,10 +1732,10 @@ layout_2d_col_precalc (struct MUI_GroupData *data,
 	    if (((j - 1) % data->columns) != i)
 		continue;
 	    col_infos[i].min = MAX(col_infos[i].min, _minwidth(child));
+	    col_infos[i].max = MIN(col_infos[i].max, _maxwidth(child));
 	    if (_hweight(child) > 0)
 	    {
 		found_nonzero_hweight = TRUE;
-		col_infos[i].max = MIN(col_infos[i].max, _maxwidth(child));
 		col_infos[i].weight += _hweight(child);
 	    }
 	}
