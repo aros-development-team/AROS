@@ -138,7 +138,7 @@ $(AROS_INCLUDES)/libraries/mui.h : $(GENINCDIR)/libraries/mui.h
 	@$(ECHO) Copying $< to $@
 	@$(CP) $< $@
 
-$(GENINCDIR)/libraries/mui.h : $(BUILDINCTOOL) mui.h $(CLASSINCLUDES)
+$(GENINCDIR)/libraries/mui.h : $(BUILDINCTOOL) mui.h macros.h $(CLASSINCLUDES)
 	@$(ECHO) Rebuilding $@
 	@$(BUILDINCTOOL) > $@
 
