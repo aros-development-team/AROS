@@ -20,7 +20,7 @@ LONG zune_imspec_get_height (struct MUI_ImageSpec *img);
 void zune_imspec_set_width (struct MUI_ImageSpec *img, LONG w);
 void zune_imspec_set_height (struct MUI_ImageSpec *img, LONG w);
 void zune_imspec_set_scaled_size (struct MUI_ImageSpec *img, LONG w, LONG h);
-struct MUI_ImageSpec *zune_imspec_copy(struct MUI_ImageSpec *spec);
+//struct MUI_ImageSpec *zune_imspec_copy(struct MUI_ImageSpec *spec);
 void zune_imspec_free(struct MUI_ImageSpec *spec);
 void zune_imspec_setup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri);
 void zune_imspec_cleanup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri);

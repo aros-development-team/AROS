@@ -279,7 +279,7 @@ void main(void)
 	    MUIA_Window_Activate, TRUE,
 
     	    WindowContents, VGroup,
-    	    	Child, TextObject, TextFrame, MUIA_Text_Contents, "\33cHello World!!\nThis is a text object\n\33lLeft \33bbold\33n\n\33rRight",End,
+    	    	Child, TextObject, MUIA_Background, "2:cfffffff,cfffffff,10000000", TextFrame, MUIA_Text_Contents, "\33cHello World!!\nThis is a text object\n\33lLeft \33bbold\33n\n\33rRight",End,
     	    	Child, PopobjectObject,
     	    	    MUIA_Popstring_String, MUI_MakeObject(MUIO_String, NULL, 200),
     	    	    MUIA_Popstring_Button, PopButton(MUII_PopUp),
@@ -308,7 +308,7 @@ void main(void)
 		        Child, group = VGroup,
 			    GroupFrameT("A vertical group"),
 			    Child, DropTextObject, MUIA_Dropable, TRUE, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drop Here", MUIA_Dropable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button8", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    Child, TextObject, TextFrame, MUIA_Background, MUII_MARKHALFSHINE, MUIA_CycleChain, 1, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Pattern", End,
 			   End,
 		       End,
 
