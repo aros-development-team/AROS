@@ -10,5 +10,3 @@
 # Include debugging information (so you can use gdb or similar)
 DEBUG = @aros_debug@
 
-# By default, use cpak, it is faster.
-USE_CPAK_DEFAULT := @aros_use_cpak@

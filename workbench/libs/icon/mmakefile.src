@@ -11,7 +11,6 @@ FORCE_DEPLIBS :=
 FORCE_LIBS    := $(MOSLIB)/libaros.a $(MOSLIB)/libstringio.a \
                  $(MOSLIB)/libstring.a $(MOSLIB)/libmath.a $(MOSLIB)/libc.a \
                  $(MOSLIB)/libamiga.a $(MOSLIB)/libsyscall.a
-USE_CPAK      := no
 endif
 
 FILES := support support_builtin diskobjio diskobj35io identify

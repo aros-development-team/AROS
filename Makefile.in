@@ -29,7 +29,7 @@ makedirs:
 	else true ; fi
 
 # Create the tools that are used to build AROS.
-tools : makedirs $(TOOLLIB) $(GENMF) $(CPAK) $(ARCHTOOL) \
+tools : makedirs $(TOOLLIB) $(GENMF) $(ARCHTOOL) \
 	$(FLEXCAT) $(GENSKELETON) $(CREATEDTDESC) $(ILBMTOC) $(ILBMTOICON) \
 	$(COLLECT-AROS) $(ADFLIB) $(CREATEHDFILE) $(AFSLIB) $(COPYTOAFS) \
 	$(MKFSAFFS) $(FD2INLINE) $(FD2PRAGMA)
@@ -41,10 +41,6 @@ $(TOOLLIB) : $(wildcard $(TOP)/tools/toollib/*.[ch])
 $(GENMF) : $(TOP)/tools/genmf/genmf.c
 	@$(ECHO) Building genmf...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmf TOP=$(TOP)
-
-$(CPAK) : $(TOP)/tools/cpak/cpak.c
-	@$(ECHO) Building cpak...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/cpak TOP=$(TOP)
 
 $(ARCHTOOL) : $(TOP)/tools/archtools/archtool.c
 	@$(ECHO) Building archtool...
@@ -133,7 +129,6 @@ arch-clean: clean
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake clean
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/FlexCat clean
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/archtools clean
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/cpak clean
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmf clean
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/toollib clean
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genskeleton clean
