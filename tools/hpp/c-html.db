@@ -1,7 +1,7 @@
 printf
-<A HREF="printf.asc"><stdfunc>printf</stdfunc></A>
+<A HREF="printf.asc"><cstdfunc>printf</cstdfunc></A>
 assert
-<A HREF="assert.asc"><stdfunc>assert</stdfunc></A>
+<A HREF="assert.asc"><cstdfunc>assert</cstdfunc></A>
 NULL
 <ckeyword>NULL</ckeyword>
 int
@@ -115,6 +115,6 @@ __cplusplus
 <stdio.h>
 <A HREF="/usr/include/stdio.h"><cheader>&lt;stdio.h&gt;</cheader></A>
 NewList
-<A HREF="addhead.html"><stdfunc>NewList</stdfunc></A>
+<A HREF="addhead.html"><cstdfunc>NewList</cstdfunc></A>
 AddHead
-<A HREF="addhead.html"><stdfunc>AddHead</stdfunc></A>
+<A HREF="addhead.html"><cstdfunc>AddHead</cstdfunc></A>

@@ -16,9 +16,10 @@
 <EDEF NAME="cppmacro" BEGIN="<TT>" END="</TT>">
 <EDEF NAME="ccomment" BEGIN="<FONT COLOR="green"><I>" END="</I></FONT>">
 <EDEF NAME="cidentifier" BEGIN="<I>" END="</I>">
+<EDEF NAME="cusertype" BEGIN="<B><I>" END="</I></B>">
 <EDEF NAME="cpunctuation" BEGIN="<FONT COLOR="orange"><B><TT>" END="</TT></B></FONT>">
 <EDEF NAME="cstring" BEGIN="<FONT COLOR="yellow"><B><TT>" END="</TT></B></FONT>">
-<EDEF NAME="cheader" BEGIN="<filename>" END="</filename>">
+<EDEF NAME="cheader" BEGIN="<efilename>" END="</efilename>">
 <EDEF NAME="cvalue" BEGIN="<FONT COLOR="blue"><B><TT>" END="</B></TT></FONT>">
 
 <REM --- Counters and variables --------------------------------------------->

@@ -3,13 +3,9 @@
     $Id$
 </REM>
 
-<HTML><HEAD>
-<TITLE>AROS - $libname/$funcname </TITLE>
-</HEAD>
-<BODY>
-<LAB $mlab>
+<DOC title="AROS - $libname/$funcname">
 
-<CENTER><P>(C) 1996 AROS - The Amiga Replacement OS</P></CENTER>
+<P><CENTER>(C) 1996 AROS - The Amiga Replacement OS</CENTER>
 <P><HR></P>
 
 <DL>
@@ -33,12 +29,12 @@ In <library name="$libname"> at offset $offset.
 
 <P>
 <DT>FUNCTION<DD>
-$function
+<EXPAND text="$function">
 
 <P>
 <DT>INPUTS<DD>
 <DL COMPACT>
-$inputs
+<EXPAND text="$inputs">
 </DL>
 
 <P>
@@ -69,5 +65,6 @@ $seealso
 $source
 </ecode>
 
-</DL></BODY></HTML>
+</DL>
+</DOC>
 

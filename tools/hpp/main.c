@@ -75,24 +75,43 @@ void main (int argc, char ** argv)
 
     for (t=1; t<argc; t++)
     {
-	ss = StdStr_New (argv[t], "r");
+	if (!strcmp (argv[t], "-set"))
+	{
+	    char * name, * value;
 
-	Var_Set ("filename", argv[t]);
+	    t++;
 
-	if (!ss)
-	    PrintErrorStack ();
+	    name = argv[t];
+	    value = name;
+
+	    while (*value && *value != '=') value++;
+
+	    if (*value)
+		*value++ = 0;
+
+	    Var_Set (name, value);
+	}
 	else
 	{
-	    rc = HTML_Parse ((MyStream *) ss, (MyStream *) out, NULL);
+	    ss = StdStr_New (argv[t], "r");
 
-	    if (rc == T_ERROR)
-	    {
-		PushError ("%s:%d:", Str_GetName (ss), Str_GetLine (ss));
+	    Var_Set ("filename", argv[t]);
+
+	    if (!ss)
 		PrintErrorStack ();
-	    }
+	    else
+	    {
+		rc = HTML_Parse ((MyStream *) ss, (MyStream *) out, NULL);
 
-	    StdStr_Delete (ss);
-	} /* if (ss) */
+		if (rc == T_ERROR)
+		{
+		    PushError ("%s:%d:", Str_GetName (ss), Str_GetLine (ss));
+		    PrintErrorStack ();
+		}
+
+		StdStr_Delete (ss);
+	    } /* if (ss) */
+	}
     } /* for all args */
 
     HTML_Exit ();

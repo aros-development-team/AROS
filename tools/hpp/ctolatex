@@ -2,9 +2,9 @@
 
 for file in "$@" ; do
     tmp="`basename $file .c`.tmp"
-    html="`basename $file .c`.html"
+    tex="`basename $file .c`.tex"
 
-    echo "<include file=tohtml.inc>" > "$tmp"
+    echo "<include file=tolatex.inc>" > "$tmp"
     echo "<doc title=\"$file\">" >> "$tmp"
     echo "<code type=c>" >> "$tmp"
     #echo "<include file=\"$file\">" >> "$tmp"
@@ -12,6 +12,6 @@ for file in "$@" ; do
     echo "</code>" >> "$tmp"
     echo "</doc>" >> "$tmp"
 
-    hpp "$tmp" > "$html"
+    hpp "$tmp" | sed -f ctolatex.filter > "$tex"
     rm "$tmp"
 done

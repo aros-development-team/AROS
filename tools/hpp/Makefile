@@ -29,16 +29,36 @@ exprtest : test_expr.o $(DEPLIBS)
 test_%.o : %.c
 	$(CC) -DTEST $(CFLAGS) -c $< -o $@
 
-test : test.html
+test : test.html background.html background.ps ctest.ps
 
-%.html : %.src
-	hpp $< > $@
+%.html : srcs/%.src
+	hpp tohtml.inc $< > $@
+
+ctest.html : srcs/ctest.c ctohtml tohtml.inc
+	ctohtml $<
+
+ctest.tex : srcs/ctest.c ctolatex tolatex.inc
+	ctolatex $<
+
+%.html : %.c
+	ctohtml $< > $@
+
+%.tex : srcs/%.src
+	hpp tolatex.inc $< > $@
+
+%.dvi : %.tex
+	latex $<
+	latex $<
+	latex $<
+
+%.ps : %.dvi
+	dvips $<
 
 ../toollib/libtoollib.a :
 	cd ../toollib ; make
 
 clean :
-	rm -f *.o format hpp htmlparsetest *.html *.bak
+	rm -f *.o format hpp htmlparsetest *.html *.bak *.log *.tex *.aux
 
 depend :
 	makedepend -- $(CFLAGS) -- *.c

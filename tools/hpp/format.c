@@ -49,6 +49,10 @@ emit_html_char (int c, FILE * out)
     case '<': fputs ("&lt;", out); break;
     case '>': fputs ("&gt;", out); break;
     case '$': fputs ("&#36;", out); break;
+    case '%': fputs ("&#37;", out); break;
+    case '\\': fputs ("&#92;", out); break;
+    case '{': fputs ("&#123;", out); break;
+    case '}': fputs ("&#125;", out); break;
     default: fputc (c, out); break;
     }
 }
@@ -78,6 +82,8 @@ main (int argc, char ** argv)
     DB_Init ();
     DB_Add ("c-html", "c-html.db");
     symbols = DB_New ("symbols");
+
+    labelstack[labelsp] = -1;
 
 #define NEWMODE(nm)             \
     if ((nm) != mode)           \
@@ -146,27 +152,15 @@ main (int argc, char ** argv)
 	switch (c)
 	{
 	case '&':
-	    NEWMODE(m_punct);
-	    fputs ("&amp;", stdout);
-	    column ++;
-	    break;
 	case '<':
-	    NEWMODE(m_punct);
-	    fputs ("&lt;",  stdout);
-	    column ++;
-	    break;
 	case '>':
-	    NEWMODE(m_punct);
-	    fputs ("&gt;",  stdout);
-	    column ++;
-	    break;
 	case '.': case '!': case '^': case '%':
 	case '(': case ')': case '=': case '?':
 	case '[': case ']': case '+': case '*':
 	case '~': case '-': case ':': case ',':
 	case ';': case '|':
 	    NEWMODE(m_punct);
-	    putchar (c);
+	    emit_html_char (c, stdout);
 	    column ++;
 	    break;
 
@@ -177,7 +171,7 @@ main (int argc, char ** argv)
 	    }
 
 	    NEWMODE(m_punct);
-	    putchar (c);
+	    emit_html_char (c, stdout);
 	    column ++;
 	    break;
 
@@ -186,13 +180,13 @@ main (int argc, char ** argv)
 		labelsp ++;
 
 	    NEWMODE(m_punct);
-	    putchar (c);
+	    emit_html_char (c, stdout);
 	    column ++;
 	    break;
 
 	case '\'':
 	    NEWMODE(m_value);
-	    putchar (c);
+	    emit_html_char (c, stdout);
 
 	    while ((c = getc (in)) != EOF)
 	    {
@@ -465,7 +459,7 @@ rem_again:
 		    if (labelstack[labelsp] != -1)
 		    {
 			char buffer[256];
-			sprintf (buffer, "<A HREF=\"#%d\"><cusertype>%s<cusertype></A>", labelstack[labelsp], ident->buffer);
+			sprintf (buffer, "<A HREF=\"#%d\"><cusertype>%s</cusertype></A>", labelstack[labelsp], ident->buffer);
 			DB_AddData (symbols, ident->buffer, buffer);
 			labelstack[labelsp] = -1;
 		    }
