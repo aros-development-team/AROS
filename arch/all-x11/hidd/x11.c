@@ -13,7 +13,6 @@
 #include <hidd/hidd.h>
 
 #include <proto/exec.h>
-#include <proto/dos.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 

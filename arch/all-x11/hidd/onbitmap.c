@@ -19,7 +19,6 @@
 
 #include <proto/oop.h>
 #include <proto/utility.h>
-#include <proto/dos.h>
 
 #include <exec/memory.h>
 #include <exec/lists.h>
