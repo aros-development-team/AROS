@@ -451,56 +451,17 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
         switch(mode)
 	{
 	    case vHidd_GC_DrawMode_Copy:
-	    	if (!descending)
-		{
-                    while (cnt--)
-    	            {
-	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
-                            *d_start++ = *s_start++;
-                	}
-	        	while (i >= 4)
-	        	{
-		            *((unsigned long*)d_start) = *((unsigned long*)s_start);
-		            d_start += 4;
-		            s_start += 4;
-		            i -= 4;
-	        	}
-	        	while (i--)
-                	{
-                            *d_start++ = *s_start++;
-                	}
-                	d_start += d_add;
-                	s_start += s_add;
-                    }
-		}
-		else
-		{
-                    while (cnt--)
-    	            {
-	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
-                            *--d_start = *--s_start;
-                	}
-	        	while (i >= 4)
-	        	{
-			    d_start -= 4;
-			    s_start -= 4;
-		            *((unsigned long*)d_start) = *((unsigned long*)s_start);
-		            i -= 4;
-	        	}
-	        	while (i--)
-                	{
-                            *--d_start = *--s_start;
-                	}
-                	d_start -= d_add;
-                	s_start -= s_add;
-                    }
-		}
+	    	HIDD_BM_CopyMemBox8(msg->dest,
+		    	    	    data->VideoData,
+				    msg->srcX,
+				    msg->srcY,
+				    ddata->VideoData,
+				    msg->destX,
+				    msg->destY,
+				    msg->width,
+				    msg->height,
+				    data->width,
+				    ddata->width);
 		break;
 		
 	    case vHidd_GC_DrawMode_And:
