@@ -566,7 +566,7 @@ static ULONG Register_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 		    {
 			if (data->active != i)
 			{
-			    set(obj, MUIA_Group_ActivePage, i);
+			    nfset(obj, MUIA_Group_ActivePage, i);
 			}
 			break;
 		    }
