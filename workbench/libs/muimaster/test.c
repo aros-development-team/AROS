@@ -33,9 +33,10 @@ void main(void)
 
     MUIMasterBase_instance.sysbase = *((struct ExecBase **)4);
     MUIMasterBase_instance.utilitybase = OpenLibrary("utility.library",37);
+    MUIMasterBase_instance.aslbase = OpenLibrary("asl.library",37);
+    MUIMasterBase_instance.gfxbase = OpenLibrary("graphics.library",37);
+    MUIMasterBase_instance.intuibase = OpenLibrary("intuition.library",37);
     __zune_prefs_init(&__zprefs);
-
-
 
     app = ApplicationObject,
     	SubWindow, wnd = WindowObject,
