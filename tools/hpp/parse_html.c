@@ -7,9 +7,6 @@
 #include <toollib/hash.h>
 #include <toollib/error.h>
 
-#define M_EOWS	     0
-#define M_SKIPQUOTE  1
-
 static Hash * HTMLAmpDB;
 
 #if 0
@@ -109,9 +106,30 @@ void HTML_InitParse (void)
 }
 
 int
+HTML_Get (MyStream * stream, CBD data)
+{
+    int c;
+
+    c = Str_Get (stream, data);
+
+    if (isspace (c))
+    {
+	while (isspace (c))
+	{
+	    c = Str_Get (stream, data);
+	}
+
+	Str_Unget (stream, c, data);
+	c = ' ';
+    }
+
+    return c;
+}
+
+int
 HTML_ScanText (String buffer, MyStream * stream, CBD data)
 {
-    int    c, mode;
+    int    c;
     int    line;
     char * ptr;
 
@@ -127,32 +145,33 @@ again:
 
     if (c == '<')
     {
-	mode = M_EOWS;
+	c = HTML_Get (stream, data);
 
-	while ((c = Str_Get (stream, data)) != EOF)
-	{
-	    if (!isspace (c))
-		goto beginOfTag;
-	}
-
-	if (c == EOF)
+	if (isspace (c))
+	    c = HTML_Get (stream, data);
+	else if (c == EOF)
 	{
 	    Str_SetLine (stream, line);
 	    Str_PushError (stream, "Unexpected EOF while parsing HTML tag");
 	    return T_ERROR;
 	}
 
-	while ((c = Str_Get (stream, data)) != EOF)
+	do
 	{
-	    if (mode == M_EOWS && c == '>')
+	    if (c == '>')
 		break;
 
 	    if (c == '"')
-		mode = (mode == M_EOWS) ? M_SKIPQUOTE : M_EOWS;
+	    {
+		VS_AppendChar (buffer, c);
 
-beginOfTag:
+		while ((c = Str_Get (stream, data)) != EOF && c != '"')
+		    VS_AppendChar (buffer, c);
+	    }
+
 	    VS_AppendChar (buffer, c);
 	}
+	while ((c = HTML_Get (stream, data)) != EOF);
 
 	if (c != '>')
 	{
@@ -161,41 +180,36 @@ beginOfTag:
 	    return T_ERROR;
 	}
 
-/* printf ("Tag=\"%s\"\n", buffer->buffer); */
+#if 0
+    printf ("Tag=\"%s\"\n", buffer->buffer);
+#endif
 
-	for (ptr=buffer->buffer; *ptr; ptr++)
+	ptr=buffer->buffer;
+
+	if (!strncasecmp (ptr, "REM", 3))
 	{
-	    if (!isspace (*ptr))
+	    ptr += 3;
+
+	    while (isspace (*ptr)) ptr ++;
+
+	    if (*ptr)
+		goto again;
+	    else
 	    {
-		if (!strncasecmp (ptr, "REM", 3))
+		String rem = HTML_ReadBody (stream, data, "REM", 1);
+
+		if (rem)
 		{
-		    ptr += 3;
-
-		    while (isspace (*ptr)) ptr ++;
-
-		    if (*ptr)
-			goto again;
-		    else
-		    {
-			String rem = HTML_ReadBody (stream, data, "REM", 1);
-
-			if (rem)
-			{
-			    VS_Delete (rem);
-			    goto again;
-			}
-			else
-			{
-			    Str_SetLine (stream, line);
-			    Str_PushError (stream, "Unexpected EOF while reading comment");
-			}
-		    }
+		    VS_Delete (rem);
+		    goto again;
 		}
-
-		break;
+		else
+		{
+		    Str_SetLine (stream, line);
+		    Str_PushError (stream, "Unexpected EOF while reading comment");
+		}
 	    }
 	}
-
 
 	return T_HTML_TAG;
     }
@@ -237,31 +251,27 @@ HTML_ParseTag (MyStream * stream, CBD data)
 {
     HTMLTag    * tag;
     HTMLTagArg * arg;
-    String	 str = VS_New (NULL);
-    char       * ptr;
+    String	 name  = VS_New (NULL);
+    String	 value = VS_New (NULL);
     int 	 c;
-    int 	 mode;
 
-    while ((c = Str_Get (stream, data)) != EOF)
-    {
-	if (!isspace (c))
-	    break;
-    }
+    c = HTML_Get (stream, data);
+
+    if (isspace (c))
+	c = HTML_Get (stream, data);
 
     if (c != EOF)
     {
-	VS_AppendChar (str, c);
-
-	while ((c = Str_Get (stream, data)) != EOF)
+	do
 	{
 	    if (isspace (c))
 		break;
 
-	    VS_AppendChar (str, c);
+	    VS_AppendChar (name, c);
 	}
+	while ((c = HTML_Get (stream, data)) != EOF);
     }
-
-    if (!str->len)
+    else
     {
 	Str_PushError (stream, "Unexpected EOF while parsing HTML tag name");
 	return NULL;
@@ -270,68 +280,78 @@ HTML_ParseTag (MyStream * stream, CBD data)
     tag = new (HTMLTag);
     NewList (&tag->args);
 
-    VS_ToUpper (str);
+    VS_ToUpper (name);
 
-    tag->node.name = xstrdup (str->buffer);
+    tag->node.name = xstrdup (name->buffer);
 
-/* printf ("Tag2=\"%s\"\n", tag->node.name); */
+#if 0
+    printf ("Tag2=\"%s\"\n", tag->node.name);
+#endif
 
-    while ((c = Str_Get (stream, data)) != EOF)
+    while ((c = HTML_Get (stream, data)) != EOF)
     {
 	if (isspace (c))
 	    continue;
 	else
 	{
-	    VS_Clear (str);
-	    VS_AppendChar (str, c);
+	    VS_Clear (name);
+	    VS_Clear (value);
+	    VS_AppendChar (name, c);
 
-	    mode = M_EOWS;
-
-	    while ((c = Str_Get (stream, data)) != EOF)
+	    while ((c = HTML_Get (stream, data)) != EOF)
 	    {
-		if (mode == M_EOWS && isspace (c))
+		if (isspace (c) || c == '=')
 		    break;
 
-		if (c == '"')
-		    mode = (mode == M_EOWS) ? M_SKIPQUOTE : M_EOWS;
+		VS_AppendChar (name, c);
+	    }
 
-#if 0
-		if (c == '&')
+	    if (isspace (c))
+		c = HTML_Get (stream, data);
+
+	    if (c == '=')
+	    {
+		c = HTML_Get (stream, data);
+		if (c == EOF)
 		{
-		    String buf = VS_New (NULL);
-		    int    rc;
+		    Str_PushError (stream, "Unexpected EOF while parsing argument for HTML tag %s", tag->node.name);
+		    return NULL;
+		}
 
-		    rc = HTML_ScanAmp (buf, stream, data);
-
-		    if (rc == T_ERROR)
+		do
+		{
+		    if (isspace (c))
+			break;
+		    else if (c == '"')
 		    {
-			Str_PushError (stream, "HTML_ParseTag() failed");
-			return NULL;
+			do
+			{
+			    VS_AppendChar (value, c);
+			}
+			while ((c = HTML_Get (stream, data)) != EOF && c != '"');
 		    }
 
-		    VS_AppendString (str, buf->buffer);
-
-		    VS_Delete (buf);
+		    VS_AppendChar (value, c);
 		}
-		else
-#endif
-		    VS_AppendChar (str, c);
+		while ((c = HTML_Get (stream, data)) != EOF);
 	    }
+	    else
+		Str_Unget (stream, c, data);
+
+#if 0
+    if (value->len)
+	printf ("{%s}={%s}\n", name->buffer, value->buffer);
+    else
+	printf ("{%s}\n", name->buffer);
+#endif
 
 	    arg = new (HTMLTagArg);
 
-	    ptr = str->buffer;
-
-	    while (*ptr && *ptr != '=') ptr ++;
-
-	    if (*ptr)
-		*ptr++ = 0;
-
-	    arg->node.name = xstrdup (str->buffer);
+	    arg->node.name = xstrdup (name->buffer);
 	    strupper (arg->node.name);
 
-	    if (*ptr)
-		arg->value = stripquotes (ptr);
+	    if (value->len)
+		arg->value = stripquotes (value->buffer);
 	    else
 		arg->value = NULL;
 
