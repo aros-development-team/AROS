@@ -198,6 +198,7 @@ SHARED	:= \
 	setbuf \
 	setenv \
 	setlinebuf \
+        setlocale \
 	setvbuf \
 	sigaction \
 	sigaddset \
