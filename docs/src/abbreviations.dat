@@ -10,6 +10,7 @@ bullet;Bullet.library (Fonts)
 c/;CLI Tools
 cardres;Card.resource
 cia;Cia.resource
+colorwheel;Colorwheel Gadget
 commodities;Commodities.library
 console;Console.device
 datatypes;Datatypes.library
@@ -21,6 +22,8 @@ exec;Exec.library
 expansion;Expansion.library
 gadtools;GadTools.library
 graphics;Graphics.library
+HID;Design a new HIDD
+HIDG;Graphics.HIDD
 icon;Icon.library
 iffparse;IFFParse.library
 input;Input.device

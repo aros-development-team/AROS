@@ -1,55 +1,65 @@
 BEGIN {
-    file="./jobserv-query.lite 'select jobid,status from jobs order by jobid'";
+    FS=";";
 
-    file | getline cnt;
     pos = 0;
     jobno = 0;
+    job[""] = 0;
 
-    while ((file | getline) > 0)
+    file="abbreviations.dat";
+    while ((getline < file) > 0)
     {
-	if ($0 == "")
-	{
-	    pos = 0;
-	    status = int(entry[1]);
+	long[$1] = $2;
+    }
+    close (file);
 
-	    if (match(entry[0],/^[a-zA-Z_]+[0-9]+$/))
+    file="jobs.dat";
+    while ((getline < file) > 0)
+    {
+	jobid=$1;
+	status=$2;
+	login=$3;
+	comment=$4;
+	
+	if (match (substr (jobid, length(jobid)-4), /^[0-9]+$/))
+	{
+	    name=substr(jobid,1,length(jobid)-5);
+	    #print name
+	    if (!(name in long))
 	    {
-		match(entry[0],/^[a-zA-Z_]+/);
-		name=substr(entry[0],RSTART,RLENGTH);
-		if (!(name in job) )
-		{
-		    jobname[jobno] = name;
-		    jobno ++;
-		}
-		job[name]++;
-		jobs ++;
-		if (status==1)
-		{
-		    jobw[name]++;
-		    work ++;
-		}
-		else if (status==2)
-		{
-		    jobd[name]++;
-		    done ++;
-		}
-		else
-		{
-		    jobf[name]++;
-		    free ++;
-		}
+		printf ("'%s' not found in list of abbreviations\n", name) >> "/dev/stderr";
+		long[name] = name;
+	    }
+
+	    if (!(name in job) )
+	    {
+		jobname[jobno] = name;
+		jobno ++;
+	    }
+	    
+	    job[name]++;
+	    jobs ++;
+	    if (status==1)
+	    {
+		jobw[name]++;
+		work ++;
+	    }
+	    else if (status==2)
+	    {
+		jobd[name]++;
+		done ++;
 	    }
 	    else
 	    {
-		ojobs ++;
-		if (status==1) owork ++;
-		else if (status==2) odone ++;
-		else ofree ++;
+		jobf[name]++;
+		free ++;
 	    }
 	}
 	else
 	{
-	    entry[pos++] = substr($0,2);
+	    ojobs ++;
+	    if (status==1) owork ++;
+	    else if (status==2) odone ++;
+	    else ofree ++;
 	}
     }
 
@@ -73,7 +83,7 @@ BEGIN {
 
 	if (job[name] != jobf[name])
 	    printf ("<TR><TD>%s</TD><TD ALIGN=RIGHT>%d</TD><TD ALIGN=RIGHT>%.2f%%</TD><TD ALIGN=RIGHT>%.2f%%</TD><TD ALIGN=RIGHT>%.2f%%</TD></TR>\n",
-		name,
+		long[name],
 		job[name],
 		jobf[name]*100.0/job[name],
 		jobw[name]*100.0/job[name],

@@ -239,13 +239,9 @@ $(DOCGENDIR)/devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt
 
 $(DOCGENDIR)/status.inc : stat2html.gawk
 	@echo "Rebuilding status table..."
-	@if test -x /usr/local/Hughes/bin/lite ; then \
-	    gawk -f stat2html.gawk > $@.new ; \
-	    $(MIC) $@.new $@ ; \
-	    if $(TEST) -e $@.new; then $(RM) $@.new ; else touch background.src ; fi ; \
-	else \
-	    echo "<I>Could not connect to mSQL Server</I>" > $(DOCGENDIR)/status.inc ; \
-	fi
+	gawk -f stat2html.gawk > $@.new
+	$(MIC) $@.new $@
+	if $(TEST) -e $@.new; then $(RM) $@.new ; else touch background.src ; fi
 
 $(DOCGENDIR)/contents.inc : collectcontents.sh contents2html.gawk \
 		makefile2html.gawk

@@ -399,7 +399,7 @@ diskfont00001;1;nlorentz;Write AvailFonts
 diskfont00002;1;SDuvan;Write NewFontContents
 diskfont00003;1;SDuvan;Write DisposeFontContents
 diskfont00004;0;digulla;Write NewScaledDiskFont
-Doc00001;0;indy;Convert docs/ to HPP
+Doc;0;digulla;Convert docs to HTML
 dos00000;2;matthias;Write Open
 dos00001;2;matthias;Write Close
 dos00002;2;matthias;Write Read
