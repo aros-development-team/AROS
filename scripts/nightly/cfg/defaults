@@ -22,6 +22,10 @@ CFG_MAIL_CC=MUST_BE_SET
 # Allowed: yes, no
 CFG_UPLOAD_ENABLE=no
 
+# Whether to remove the archives after having uploaded them.
+# Allowed: yes, no
+CFG_UPLOAD_PRUNE=yes
+
 #-- Distribution Server ------------------------------------------------------
 # Hostname
 CFG_DS=aros.sf.net
