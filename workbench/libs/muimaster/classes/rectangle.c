@@ -98,6 +98,8 @@ static ULONG Rectangle_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	}
     }
 
+    D(bug("muimaster.library/rectangle.c: New Rectangle Object at 0x%lx\n",obj));
+
     return (ULONG)obj;
 }
 
@@ -224,6 +226,7 @@ static ULONG Rectangle_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
 	zune_text_get_bounds(data->ztext, obj);
 	msg->MinMaxInfo->MinWidth  += data->ztext->width;
 	msg->MinMaxInfo->MinHeight += data->ztext->height;
+	D(bug("rect: minheight %ld\n",data->ztext->height));
 	if (__zprefs.group_title_color == GROUP_TITLE_COLOR_3D)
 	{
 	    msg->MinMaxInfo->MinWidth  += 1;
@@ -290,7 +293,7 @@ static ULONG  Rectangle_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *m
 	int x2;
 	int yt;
 
-        D(bug("muimaster.library/area.c: Draw Rectangle Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
+        D(bug("muimaster.library/rectangle.c: Draw Rectangle Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
 
 	SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
 	if (__zprefs.group_title_color == GROUP_TITLE_COLOR_3D)
