@@ -67,7 +67,8 @@ static BOOL get_pixfmt(HIDDT_PixelFormat *pf, struct linux_staticdata *fsd);
 
 static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-
+    UBYTE sync_description[32];
+    
     struct TagItem pftags[] =
     {
     	{ aHidd_PixFmt_RedShift     , 0	}, /* 0 */
@@ -101,6 +102,7 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ aHidd_Sync_UpperMargin, 0 },	/* 6 */
 	{ aHidd_Sync_LowerMargin, 0 },	/* 7 */
 	{ aHidd_Sync_VSyncLength, 0 },	/* 8 */
+	{ aHidd_Sync_Description, 0 },	/* 9 */
 	{ TAG_DONE  	    	, 0 }
     };
     
@@ -187,7 +189,10 @@ kprintf("FB;  mask: (%p, %p, %p, %p), shift: (%d, %d, %d, %d)\n"
 	synctags[6].ti_Data = LSD(cl)->vsi.upper_margin;
 	synctags[7].ti_Data = LSD(cl)->vsi.lower_margin;
 	synctags[8].ti_Data = LSD(cl)->vsi.vsync_len;
-	    
+	synctags[9].ti_Data = (IPTR)sync_description;
+	
+	snprintf(sync_description, sizeof(sync_description), "FBDev:%dx%d",
+	    	 LSD(cl)->vsi.xres, LSD(cl)->vsi.yres);
 	
 	mytags[1].ti_Data = (IPTR)msg->attrList;
 	mymsg.mID = msg->mID;
