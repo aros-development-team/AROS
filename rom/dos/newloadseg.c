@@ -1,55 +1,64 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: DOS function NewLoadSeg()
     Lang: english
+
 */
+#include <dos/dos.h>
+#include <dos/dosextens.h>
+#include <utility/tagitem.h>
+#include <proto/dos.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
 
     NAME */
-#include <utility/tagitem.h>
 #include <proto/dos.h>
 
-	AROS_LH2(BPTR, NewLoadSeg,
+        AROS_LH2(BPTR, NewLoadSeg,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR          , file, D1),
+        AROS_LHA(STRPTR, file, D1),
 	AROS_LHA(struct TagItem *, tags, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 128, Dos)
+        struct DosLibrary *, DOSBase, 128, Dos)
 
 /*  FUNCTION
+        Loads an executable file into memory via LoadSeg() and takes
+        additional actions based upon the supplied tags.
 
     INPUTS
+        file - NULL terminated name of the file
+        tags - pointer to the tagitems
 
     RESULT
+        Handle to the loaded executable or 0 if the load failed.
+        IoErr() gives additional information in that case.
 
     NOTES
 
     EXAMPLE
 
     BUGS
+        As there are no tags currently defined all this function does is
+        call LoadSeg()
 
     SEE ALSO
+        LoadSeg(), UnLoadSeg(), InternalLoadSeg(), InternalUnloadSeg()
 
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    extern void aros_print_not_implemented (char *);
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    aros_print_not_implemented ("NewLoadSeg");
+  return LoadSeg(file);
 
-    return 0L;
-    AROS_LIBFUNC_EXIT
+  AROS_LIBFUNC_EXIT
 } /* NewLoadSeg */
