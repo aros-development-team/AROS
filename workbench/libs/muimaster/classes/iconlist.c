@@ -787,7 +787,8 @@ static int ReadIcons(struct IClass *cl, Object *obj)
     struct MUI_IconDrawerData *data = INST_DATA(cl, obj);
     BPTR lock;
     struct ExAllControl *eac;
-    struct ExAllData *ead, *entry;
+    struct ExAllData *entry;
+    void *ead;
     LONG more;
     BPTR olddir;
     char pattern[40];
@@ -830,12 +831,12 @@ static int ReadIcons(struct IClass *cl, Object *obj)
 	if ((!more) && (IoErr() != ERROR_NO_MORE_ENTRIES)) break;
 	if (eac->eac_Entries == 0) continue;
 
-	entry = ead;
+	entry = (struct ExAllData*)ead;
 	do
 	{
 	    int len;
 
-	    strcpy(filename,ead->ed_Name);
+	    strcpy(filename,entry->ed_Name);
 
 /*
 	    // if we only display icons
@@ -860,7 +861,7 @@ static int ReadIcons(struct IClass *cl, Object *obj)
 		{
 		}
 	    }
-	}   while ((ead = ead->ed_Next));
+	}   while ((entry = entry->ed_Next));
     } while (more);
 
     CurrentDir(olddir);
