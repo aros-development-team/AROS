@@ -65,7 +65,7 @@ const APTR inittabl[4]=
     &INIT
 };
 
-static struct TagItem nstags[] =
+static const struct TagItem nstags[] =
 {
     { ANO_NameSpace, TRUE },
     { ANO_Flags, NSF_NODUPS },
@@ -115,7 +115,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
     GetIntUtilityBase(LIBBASE)->ub_LastID = 0;
 
     GetIntUtilityBase(LIBBASE)->ub_GlobalNameSpace =
-        AllocNamedObjectA("utility global name space", nstags);
+        AllocNamedObjectA("utility global name space", (struct TagItem *)nstags);
 
     if(GetIntUtilityBase(LIBBASE)->ub_GlobalNameSpace == NULL)
     {
