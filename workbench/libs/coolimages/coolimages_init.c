@@ -51,6 +51,8 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 
     CleanupCoolImageClass();
     CleanupCoolButtonClass();
+    
+    return TRUE;
 }
 
 ADD2INITLIB(Init, 0);

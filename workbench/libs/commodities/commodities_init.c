@@ -145,6 +145,8 @@ VOID ShutDownCx(struct CommoditiesBase *CxBase)
 AROS_SET_LIBFUNC(Expunge, struct CommoditiesBase, CxBase)
 {
     ShutDownCx(CxBase);
+    
+    return TRUE;
 }
 
 ADD2INITLIB(Init, 0);
