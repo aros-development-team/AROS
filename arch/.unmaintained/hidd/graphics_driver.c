@@ -3213,8 +3213,9 @@ static VOID blttemplate_amiga(PLANEPTR source, LONG x_src, LONG modulo, struct B
     
     /* Find the exact startbit */
     x_src &= 0x07;
-    
+/*    
 kprintf("DRMD: %d, APEN: %d, BPEN: %d\n", drmd, apen, bpen);
+*/
     for (y = 0; y < ysize; y ++)
     {
 	UBYTE *byteptr = srcptr;
@@ -3273,24 +3274,24 @@ kprintf("0");
 	    }
 	    if (set_pixel)
 	    {
- kprintf("X");		    
-		setbitmappixel(dest
+/* kprintf("X");		    
+*/		setbitmappixel(dest
 			, x + x_dest
 			, y + y_dest
 			, pen
 			, dest_depth, 0xFF
 		);
 	    }
-else
+/* else
 kprintf("0");
-	
+*/	
 	    /* Last pixel in this byte ? */
 	    if (((x + x_src) & 0x07) == 0x07)
 	    	byteptr ++;
 		
 	}
-kprintf("\n");	
-	srcptr += modulo;
+/* kprintf("\n");	
+*/	srcptr += modulo;
     }
     return;
 }	
@@ -3994,10 +3995,12 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
     struct Layer *L = rp->Layer;
     struct BitMap *bm = rp->BitMap;
     
+    
     EnterFunc(bug("driver_EraseRect(%d, %d, %d, %d)\n", x1, y1, x2, y2));
     if (!CorrectDriverData(rp, GfxBase))
     	ReturnVoid("driver_EraseRect(No driverdata)");
 
+    
     width  = GetBitMapAttr(bm, BMA_WIDTH);
     height = GetBitMapAttr(bm, BMA_HEIGHT);
     
@@ -4055,6 +4058,7 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 	msg.OffsetX = 0;
 	msg.OffsetY = 0;
 	
+    
 	for (;NULL != CR; CR = CR->Next)
 	{
 	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
@@ -4097,7 +4101,7 @@ ULOCK_HIDD(bm);
 		    	if (NULL == fakeRP)
 		    	    continue;
 		    
-		    	rp->BitMap = CR->BitMap;
+		    	fakeRP->BitMap = CR->BitMap;
 		    
 		    	msg.MinX = intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
 		    	msg.MinY = intersect.MinY - CR->bounds.MinY;
