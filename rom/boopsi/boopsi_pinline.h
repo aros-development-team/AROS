@@ -18,7 +18,7 @@
 #endif
 
 #define DoNotify(cl, o, ic, msg) \
-	LP4( , IPTR, DoNotify, \
+	LP4(0x60, IPTR, DoNotify, \
 	    Class *, (cl), a0, \
 	    Object *, (o), a1, \
 	    struct ICData *, (ic), a2, \
@@ -26,7 +26,7 @@
 	    , BOOPSI_BASE_NAME )
 
 #define FreeICData(ic) \
-	LP1NR(, void, FreeICData, \
+	LP1NR(0x5a, FreeICData, \
 	    struct ICData *, (ic), a0, \
 	    , BOOPSI_BASE_NAME )
 
