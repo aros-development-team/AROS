@@ -99,7 +99,7 @@ static struct Task *maintask;
 
 static struct RDArgs *myargs;
 static CxObj *cxbroker, *cxcust;
-static ULONG cxmask, actionmask;
+static ULONG cxmask, actionmask, icontrolmask;
 static WORD  winoffx, winoffy, winwidth, winheight;
 static LONG  newWindowX, newWindowY;
 static LONG  resizeOffsetX, resizeOffsetY;
@@ -108,15 +108,16 @@ static LONG  mouseBottom, mouseRight;
 static LONG  mouseTop, mouseLeft;
 static LONG  gadgetLeft, gadgetTop;
 static LONG  gadgetWidth, gadgetHeight;
-static UBYTE actionsig, actiontype;
+static UBYTE actionsig, icontrolsig, actiontype;
 static BOOL quitme, disabled;
 static BOOL offScreenLayersFlag;
-static BOOL setMouseBoundsFlag;
+static struct NotifyRequest *IControlChangeNR;
 
 static LONG args[NUM_ARGS];
 static char s[256];
 
 static void HandleAction(void);
+static void HandleIControl(void);
 
 /**********************************************************************************************/
 
@@ -124,7 +125,6 @@ static void HandleAction(void);
 #define ARRAY_TO_WORD(x) ( ((x)[0] << 8UL) + ((x)[1]) )
 
 #define CONFIGNAME_ENV	    	"ENV:Sys/icontrol.prefs"
-#define CONFIGNAME_ENVARC   	"ENVARC:Sys/icontrol.prefs"
 
 struct FileIControlPrefs
 {
@@ -192,37 +192,6 @@ BOOL GetOFFSCREENLAYERSPref()
     static struct FileIControlPrefs loadprefs;
     struct IFFHandle 	    	    *iff;    
     BOOL                      retval = FALSE;
-
-    /* removed code which checks for modification date change before rereading the file */
-    /* AROS doesn't keep track of file date changes?  It's always 0... */
-#if 0
-    static struct FileInfoBlock *fib = NULL;
-    static LONG days = 0, minutes = 0, ticks = 0;
-    BPTR fileLock;
-    /* default is unset */
-    
-    /* first, let's just see if the file has changed since we last examined it */
-    /* if not, we can skip everything else */
-    if (fib == NULL) fib = AllocDosObject(DOS_FIB, NULL);
-    fileLock = Lock(CONFIGNAME_ENV, ACCESS_READ);
-    Examine(fileLock,fib);
-
-    printf("old days, mins, ticks: %ld, %ld, %ld\n", days, minutes, ticks);
-    printf("new days, mins, ticks: %ld, %ld, %ld\n", fib->fib_Date.ds_Days, fib->fib_Date.ds_Minute, fib->fib_Date.ds_Tick);
-
-    /* no change */
-    if ((days==fib->fib_Date.ds_Days) && (minutes == fib->fib_Date.ds_Minute) && (ticks == fib->fib_Date.ds_Tick)) {
-    	UnLock(fileLock);
-    	return retval;
-    }
-    /* change, set new datestamp and then read new file in */
-    else {
-        days = fib->fib_Date.ds_Days;
-	minutes = fib->fib_Date.ds_Minute;
-	ticks = fib->fib_Date.ds_Tick;
-    	UnLock(fileLock);
-    }
-#endif
 
     if ((iff = AllocIFF()))
     {
@@ -347,6 +316,12 @@ static void Cleanup(char *msg)
     }
 
     if (actionsig) FreeSignal(actionsig);
+    if (icontrolsig) FreeSignal(icontrolsig);
+
+    if (IControlChangeNR != NULL) {
+    	EndNotify(IControlChangeNR);
+	FreeMem(IControlChangeNR, sizeof(struct NotifyRequest));
+    }
     
     exit(0);
 }
@@ -363,11 +338,33 @@ static void DosError(void)
 
 static void Init(void)
 {
+
+    /* create "action" signal, to handle window dragging and resize events */
     maintask = FindTask(0);
-    actionsig = AllocSignal(-1);
+    if((actionsig = AllocSignal(-1L)) != -1)
+    {
     actionmask = 1L << actionsig;
 
-    setMouseBoundsFlag = FALSE;
+    /* create "IControl pref changes" signal */
+    if((icontrolsig = AllocSignal(-1L)) != -1) 
+    {
+    icontrolmask = 1L << icontrolsig;
+    if ((IControlChangeNR = AllocMem(sizeof(struct NotifyRequest), MEMF_CLEAR)))
+        {
+        IControlChangeNR->nr_Name = CONFIGNAME_ENV;
+        IControlChangeNR->nr_Flags = NRF_SEND_SIGNAL;
+        IControlChangeNR->nr_stuff.nr_Signal.nr_Task = maintask;
+        IControlChangeNR->nr_stuff.nr_Signal.nr_SignalNum = icontrolsig;
+    
+        StartNotify(IControlChangeNR);
+    
+        /* set inital value for offscreenlayers */
+        offScreenLayersFlag = GetOFFSCREENLAYERSPref();
+        } else {
+            printf("Not enough memory for NotifyRequest.\n");
+        }
+      }
+    }
 }
 
 /************************************************************************************/
@@ -404,11 +401,6 @@ static void OpenLibs(void)
 }
 
 #define ABS(x) (((x)<0)?(-(x)):(x))
-/*
-#define WITHACCEL(x) ((x) << (ABS((x))>ACCELERATOR_THRESH)?1:2)
-#define WITHOUTACCEL(x) ((x) >> (ABS((x))>ACCELERATOR_THRESH)?1:2)
-*/
-
 inline WORD WITHACCEL(WORD raw) { if (ABS(raw) > ACCELERATOR_THRESH) return(raw << 2); else return(raw << 1);}
 inline WORD WITHOUTACCEL(WORD raw) { if (ABS(raw) > ACCELERATOR_THRESH) return(raw >> 2); else return(raw >> 1);}
 
@@ -521,9 +513,9 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 		        trackMouseX = actionwin->WScreen->MouseX;
 		        trackMouseY = actionwin->WScreen->MouseY;
 			DisposeCxMsg(msg);
-			/* and signal our need to reset mouse bounds */
-			setMouseBoundsFlag = TRUE;
-		        Signal(maintask, actionmask);
+			/* reset mouse bounds */
+		        SetMouseBounds();
+			//Signal(maintask, icontrolmask);
 		    }
 		    
 		} /* if (!opaque_active && scr) */
@@ -540,11 +532,6 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 	    case IECODE_NOBUTTON:
 	        if (opaque_active)
 		{ 
-		    /* if the main task is still waiting to reset mouse bounds, things are in a disoderly state, play it safe */
-	            if (setMouseBoundsFlag == TRUE) {
-		        DisposeCxMsg(msg);
-		        break;
-		    }
 		    if (IEQUALIFIER_RELATIVEMOUSE & ie->ie_Qualifier) { /* relative */
 		        trackMouseX = actionwin->WScreen->MouseX;
 		        trackMouseY = actionwin->WScreen->MouseY;
@@ -678,6 +665,14 @@ static void InitCX(void)
 
 /************************************************************************************/
 
+/* Handle the case where the IControl Prefs have changed */
+static void HandleIControl(void)
+{
+    D(bug("[Opaque] notified of icontrol.prefs change\n"));
+    offScreenLayersFlag = GetOFFSCREENLAYERSPref();
+    //SetMouseBounds();
+}
+
 /* Move window to absolute position newWindowX, newWindowY */
 static void HandleAction(void)
 {
@@ -744,25 +739,18 @@ static void HandleCx(void)
 
 /************************************************************************************/
 
+
 static void HandleAll(void)
 {
     ULONG sigs;
     
     while(!quitme)
     {
-        sigs = Wait(cxmask | actionmask | SIGBREAKF_CTRL_C);
+        sigs = Wait(cxmask | actionmask | icontrolmask | SIGBREAKF_CTRL_C);
 
 	if (sigs & cxmask) HandleCx();
-	if (sigs & actionmask) {
-            /* catch the mouse bounds reset flag before we call HandleAction (move or resize window) */
-            if (setMouseBoundsFlag == TRUE) {
-	        setMouseBoundsFlag = FALSE;
-	        offScreenLayersFlag = GetOFFSCREENLAYERSPref();
-	        SetMouseBounds();
-	    }
-	    else
-	        HandleAction(); /* "Action" == window moving or resizing */
-	}
+	if (sigs & actionmask) HandleAction(); /* "Action" == window moving or resizing */
+	if (sigs & icontrolmask) HandleIControl();
 	if (sigs & SIGBREAKF_CTRL_C) quitme = TRUE;
     } /* while(!quitme) */
     
