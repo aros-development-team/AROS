@@ -1,5 +1,0 @@
-mmakefile
-*.err
-*endtag.c
-libdefs.*
-functable.c
