@@ -263,15 +263,14 @@ static IPTR aslfontpreview_render(Class *cl, Object *o, struct gpRender *msg)
 	BOOL updating;
 	
     	updating = (lay->Flags & LAYERUPDATING) != 0;
-	if (updating)
-	{
-	    EndUpdate(lay, FALSE);
-	}
+	if (updating) EndUpdate(lay, FALSE);
 	
 	font = data->font ? data->font : msg->gpr_GInfo->gi_DrInfo->dri_Font;
 	text = data->font ? data->previewtext : (STRPTR)"???";
 	
 	oldclip = InstallClipRegion(lay, clip);
+	
+	if (updating) BeginUpdate(lay);
 	
     	SetAPen(rp, data->bpen);
     	RectFill(rp, x, y, x2, y2);
@@ -290,12 +289,10 @@ static IPTR aslfontpreview_render(Class *cl, Object *o, struct gpRender *msg)
 	Move(rp, x, (y + y2 + 1 - font->tf_YSize) / 2 + font->tf_Baseline);
 	Text(rp, text, textlen);
 	
-	if (updating)
-	{
-	    BeginUpdate(lay);
-	}
-	
+	if (updating) EndUpdate(lay, FALSE);	
 	InstallClipRegion(lay, oldclip);
+	if (updating) BeginUpdate(lay);
+	
     	DisposeRegion(clip);
     }
     return 0;
