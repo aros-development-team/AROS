@@ -1,22 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.4  1997/01/27 00:36:23  ldp
-    Polish
 
-    Revision 1.3  1996/12/09 13:53:32  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.2  1996/10/24 15:50:31  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/09/11 12:54:46  digulla
-    A couple of new DOS functions from M. Fleischer
-
-    Desc:
+    Desc: Check if a device is a filesystem.
     Lang: english
 */
 #include <proto/exec.h>
@@ -89,7 +75,7 @@
         
         /* Set return code */
         if(!iofs->io_DosError)
-            success=iofs->io_Args[0];
+            success=iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem;
     }
     /* All Done. */
     UnLockDosList(LDF_DEVICES|LDF_READ);

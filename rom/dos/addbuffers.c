@@ -1,22 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.4  1997/01/27 00:36:13  ldp
-    Polish
 
-    Revision 1.3  1996/12/09 13:53:20  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.2  1996/10/24 15:50:23  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/09/11 12:54:44  digulla
-    A couple of new DOS functions from M. Fleischer
-
-    Desc:
+    Desc: Add or remove cache memory from a filesystem.
     Lang: english
 */
 #include <proto/exec.h>
@@ -89,7 +75,7 @@
         iofs->IOFS.io_Unit   =dl->dol_Unit;
         iofs->IOFS.io_Command=FSA_MORE_CACHE;
         iofs->IOFS.io_Flags  =0;
-        iofs->io_Args[0]=numbuffers;
+        iofs->io_Union.io_MORE_CACHE.io_NumBuffers=numbuffers;
 
         /* Send the request. */
         DoIO(&iofs->IOFS);
@@ -97,12 +83,12 @@
         /* Set error code */
         if(!iofs->io_DosError)
         {
-            me->pr_Result2=iofs->io_Args[0];
+            SetIoErr(iofs->io_Union.io_MORE_CACHE.io_NumBuffers);
             success=1; 
 	}else
-	    me->pr_Result2=iofs->io_DosError;
+	    SetIoErr(iofs->io_DosError);
     }else
-        me->pr_Result2=ERROR_DEVICE_NOT_MOUNTED;
+        SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
     /* All Done. */
     UnLockDosList(LDF_DEVICES|LDF_READ);
     return success;
