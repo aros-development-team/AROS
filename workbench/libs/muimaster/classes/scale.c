@@ -224,7 +224,7 @@ static IPTR Scale_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 		if (ztext)
 		{
 		    zune_text_get_bounds(ztext, obj);
-		    zune_text_draw(ztext, obj, _mleft(obj),_mright(obj),_mtop(obj) + 3);
+		    zune_text_draw(ztext, obj, _mleft(obj),_mright(obj),_mtop(obj) + 4);
 		    zune_text_destroy(ztext);
 		}
 		Move(_rp(obj), _mleft(obj), _mtop(obj));
@@ -237,7 +237,7 @@ static IPTR Scale_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 		if (ztext)
 		{
 		    zune_text_get_bounds(ztext, obj);
-		    zune_text_draw(ztext, obj, _mleft(obj),_mright(obj),_mtop(obj) + 3);
+		    zune_text_draw(ztext, obj, _mleft(obj),_mright(obj),_mtop(obj) + 4);
 		    zune_text_destroy(ztext);
 		}
 		Move(_rp(obj), _mright(obj), _mtop(obj));
@@ -247,12 +247,19 @@ static IPTR Scale_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    else if (drawpct == TRUE) /* draw intermediate values and lines */
 	    {
 		ZText *ztext;
-
-		ztext = zune_text_new(NULL,"0%",ZTEXT_ARG_NONE,0);
+		int val = k * 100 / i;
+#ifdef _AROS
+		snprintf(buf, 255, "%d%%", val);
+#else
+		sprintf(buf, "%d%%", val);
+#endif
+		ztext = zune_text_new(NULL,buf,ZTEXT_ARG_NONE,0);
 		if (ztext)
 		{
+		    int width;
 		    zune_text_get_bounds(ztext, obj);
-		    zune_text_draw(ztext, obj, _mleft(obj),_mright(obj),_mtop(obj) + 3);
+		    width = TextLength(_rp(obj),buf,strlen(buf));
+		    zune_text_draw(ztext, obj, _mleft(obj) + _mwidth(obj) * k / i - width / 2,_mright(obj),_mtop(obj) + 4);
 		    zune_text_destroy(ztext);
 		}
 		Move(_rp(obj), _mleft(obj) + _mwidth(obj) * k / i, _mtop(obj));
@@ -266,18 +273,6 @@ static IPTR Scale_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 		drawpct = TRUE;
 	    }
 	}
-
-#if 0
-	{
-	    ZText *ztext = zune_text_new("\33c\0338",data->buf,ZTEXT_ARG_NONE,0);
-	    if (ztext)
-	    {
-	    	zune_text_get_bounds(ztext, obj);
-		zune_text_draw(ztext, obj, _mleft(obj),_mright(obj),_mtop(obj) + (_mheight(obj) - ztext->height)/2);
-		zune_text_destroy(ztext);
-	    }
-        }
-#endif
     }
     else
     {
