@@ -3,10 +3,12 @@
 #include <stdarg.h>
 #include <limits.h>
 #include <ctype.h>
-/* #include <stabs.h> */
 #include <math.h>
 #include <float.h>
-/* #include <strsup.h> */
+
+#ifndef BITSPERBYTE
+#define BITSPERBYTE 8
+#endif
 
 /* a little macro to make life easier */
 
