@@ -11,6 +11,8 @@
 #include "dos_intern.h"
 #include <string.h>
 
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -68,11 +70,13 @@
     BOOL success = TRUE;
     
     colon = strchr(devicename, ':');
+
     if (colon != NULL)
     {
 	UWORD stringlen = (UWORD)(colon - devicename);
 	
 	devicename_copy = AllocVec(stringlen + 1, MEMF_PUBLIC | MEMF_CLEAR);
+
 	if (devicename_copy != NULL)
 	{
 	    CopyMem(devicename, devicename_copy, stringlen);
@@ -80,11 +84,11 @@
 	    success = FALSE;
 	    
 	    dl = LockDosList(LDF_DEVICES | LDF_VOLUMES | LDF_ASSIGNS | LDF_READ);
-	    dl = FindDosEntry(dl, devicename_copy, LDF_DEVICES);
+	    dl = FindDosEntry(dl, devicename_copy, LDF_DEVICES | LDF_ASSIGNS | LDF_VOLUMES);
 
-	    if(dl != NULL)
+	    if (dl != NULL)
 	    {
-		switch(dl->dol_Type)
+		switch (dl->dol_Type)
 		{
 		case DLT_DEVICE:
 		    {
@@ -101,7 +105,7 @@
 			DoIO(&iofs.IOFS);
 			
 			/* Set return code */
-			if(!iofs.io_DosError)
+			if (!iofs.io_DosError)
 			{
 			    success = iofs.io_Union.io_IS_FILESYSTEM.io_IsFilesystem;
 			}
@@ -131,7 +135,7 @@
 		    }
 		    break;
 		    
-		} /* switch(dl->dol_Type) */
+		} /* switch (dl->dol_Type) */
 		
 	    } /* if (dl != NULL) */
 	    
@@ -144,7 +148,7 @@
 	} /* if (devicename_copy != NULL) */
 	
     } /* if (colon != NULL) */
-    
+
     return success;
     
     AROS_LIBFUNC_EXIT
