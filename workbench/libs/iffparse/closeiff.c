@@ -68,7 +68,6 @@
     for (count = iff->iff_Depth; count; count -- )
 	PopContextNode(iff, IPB(IFFParseBase));
 
-
     /* This is for safety:
       It might be in PopChunk that seeking or writing to streams failed.
       In that case the memory for eventual buffered setreams
@@ -83,19 +82,19 @@
 	GetIntIH(iff)->iff_BufferStartDepth = 0;
     }
 
-
-    /* Tell the custom stream to cleanup */
-    cmd.sc_Command = IFFCMD_CLEANUP;
-    CallHookPkt
-    (
-	GetIntIH(iff)->iff_StreamHandler,
-	iff,
-	&cmd
-    );
-
+    /* Check if there is a handler */
+    if (GetIntIH(iff)->iff_StreamHandler)
+    {
+	/* Tell the custom stream to cleanup */
+	cmd.sc_Command = IFFCMD_CLEANUP;
+	CallHookPkt
+	(
+	    GetIntIH(iff)->iff_StreamHandler,
+	    iff,
+	    &cmd
+	);
+    }
 
     return;
-
-
     AROS_LIBFUNC_EXIT
 } /* CloseIFF */
