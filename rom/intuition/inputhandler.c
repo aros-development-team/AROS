@@ -186,7 +186,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
        
        /* Use event to find the active window */
        
-	new_w = intui_FindActiveWindow(ie, &swallow_event, IntuitionBase)
+	new_w = intui_FindActiveWindow(ie, &swallow_event, IntuitionBase);
 	D(bug("iih:New active window: %p\n", new_w));
 
 
