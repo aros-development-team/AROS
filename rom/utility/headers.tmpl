@@ -7,3 +7,9 @@
 struct NamedObject *AllocNamedObject(STRPTR name, ULONG tag1, ...);
 
 ##end clib
+##begin proto
+#ifndef UtilityBase
+  extern struct UtilityBase * UtilityBase;
+#endif
+
+##end proto
