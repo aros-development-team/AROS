@@ -193,8 +193,6 @@ static IPTR Imagedisplay_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cle
 **************************************************************************/
 static IPTR Imagedisplay_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
-    struct MUI_ImagedisplayData *data = INST_DATA(cl, obj);
-
     DoSuperMethodA(cl,obj,(Msg)msg);
 
     msg->MinMaxInfo->MinWidth += 3;

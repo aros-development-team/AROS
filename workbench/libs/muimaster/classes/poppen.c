@@ -166,7 +166,7 @@ STATIC IPTR Poppen_CloseWindow(struct IClass *cl, Object *obj,
 	
 	get(data->penadjust, MUIA_Penadjust_Spec, &spec);
 	
-	set(obj, MUIA_Pendisplay_Spec, spec);
+	set(obj, MUIA_Pendisplay_Spec, (IPTR)spec);
     }
 
     DoMethod(_app(obj), OM_REMMEMBER, (IPTR)data->wnd);
