@@ -109,6 +109,16 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
     	DataTypesBase = OpenLibrary("datatypes.library", 37);
     if (!DataTypesBase)
     	return FALSE;
+
+    if (!IFFParseBase)
+    	IFFParseBase = OpenLibrary("iffparse.library", 37);
+    if (!IFFParseBase)
+    	return FALSE;
+
+    if (!DiskfontBase)
+    	DiskfontBase = OpenLibrary("diskfont.library", 37);
+    if (!DiskfontBase)
+    	return FALSE;
     
     MUIMB(MUIMasterBase)->intuibase = IntuitionBase;
 
@@ -172,6 +182,12 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR MUIMasterBa
     
     CloseLibrary(DataTypesBase);
     DataTypesBase = NULL;
+    
+    CloseLibrary(IFFParseBase);
+    IFFParseBase = NULL;
+    
+    CloseLibrary(DiskfontBase);
+    DiskfontBase = NULL;
 }
 
 /****************************************************************************************/
