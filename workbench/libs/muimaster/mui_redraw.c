@@ -58,15 +58,15 @@
     Object *wnd;
     Object *parent;
     struct Region *region = NULL;
-    APTR clip;
+    APTR clip = NULL;
     struct Rectangle *clip_rect;
     ULONG disabled;
 
     if (!(_flags(obj) & MADF_CANDRAW)) return;
 
     /* protect against recursive calls */
-    if (_flags(obj) & MADF_DRAWING)
-	return;
+/*      if (_flags(obj) & MADF_DRAWING) */
+/*  	return; */
     _flags(obj) |= MADF_DRAWING;
 
     get(obj,MUIA_WindowObject,&wnd);
@@ -212,10 +212,10 @@
 		 _width(obj), _height(obj), 0xc0);
     }
 
-    if (region)
+    if (clip)
     {
 	/* This call actually also frees the region */
-	MUI_RemoveClipRegion(muiRenderInfo(obj),region);
+	MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
     }
 
     _flags(obj) &= ~MADF_DRAWING;
