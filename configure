@@ -104,6 +104,7 @@ case "$type" in
 	AWK="awk"
 	MAKESHELL="/usr/local/bin/bash"
 	CHECKUDS="nm -u"
+	GENMAP="-Xlinker -assert -Xlinker " # FreeBSD doesn't support maps
 	;;
 "AmigaOS" )
 	CC="gcc"
