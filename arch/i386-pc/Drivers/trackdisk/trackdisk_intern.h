@@ -114,6 +114,12 @@ struct TDU
 #define ST3_WP      0x40        /* Write Protect */
 #define ST3_FT      0x80        /* Drive Fault */
 
+/* Bits for FD_PDMODE */
+#define PDM_EREG    0x20        /* Extended register enable */
+#define PDM_FDITRI  0x04        /* Tristate FDC */
+#define PDM_MINDLY  0x02        /* Min delay for AutoPD, 0=10ms 1=0.5s */
+#define PDM_AUTOPD  0x01        /* Auto PD enable */
+
 /* Values for FD_COMMAND */
 #define FD_RECALIBRATE      0x07    /* move to track 0 */
 #define FD_SEEK         0x0F    /* seek track */
@@ -132,6 +138,7 @@ struct TDU
 #define FD_LOCK         0x94    /* Fifo config lock */
 #define FD_RSEEK_OUT        0x8f    /* seek out (i.e. to lower tracks) */
 #define FD_RSEEK_IN     0xcf    /* seek in (i.e. to higher tracks) */
+#definf FD_PDMODE       0x17    /* Configure powerdown mode */
 
 /* This part SHOULD BE somewhere else!!! */
 
