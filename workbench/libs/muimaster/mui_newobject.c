@@ -58,7 +58,9 @@ __asm Object *MUI_NewObjectA(register __a0 char *classname,register __a1 struct 
     cl = MUI_GetClass(classname);
     if (cl)
     {
+#ifndef __MAXON__
 #warning FIXME: I should increase the open count of library (use cl->hook->data)
+#endif
 	return NewObjectA(cl, NULL, tags);
     }
 

@@ -51,7 +51,7 @@ __asm struct IClass *MUI_GetClass(register __a0 char *classname)
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
+    AROS_LIBBASE_EXT_DECL(struct Library *,MUIMasterBase)
 
     struct IClass *cl = NULL;
 
@@ -88,7 +88,9 @@ __asm struct IClass *MUI_GetClass(register __a0 char *classname)
 */
 	if (cl)
 	{
+#ifndef __MAXON__
 #warning FIXME: I should increase the open count of library (use cl->hook->data)
+#endif
 #if 0
 	    ASSERT(cl->cl_ID != NULL);
 	    ASSERT(strcmp(classname, cl->cl_ID) == 0);
