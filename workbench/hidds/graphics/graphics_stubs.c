@@ -132,7 +132,7 @@ ULONG HIDD_BM_PutPixel(Object *obj, WORD x, WORD y, ULONG val)
     p.mID  = mid;
     p.x    = x;
     p.y    = y;
-    p.val  = val;
+    p.pixel  = val;
 
     return(DoMethod(obj, (Msg) &p));
 }
@@ -408,3 +408,80 @@ VOID	 HIDD_BM_BlitColorExpansion	 (Object *obj, Object *srcBitMap, WORD srcX, WO
 
     DoMethod(obj, (Msg) &p);
 }
+
+/***************************************************************/
+
+HIDDT_Pixel HIDD_BM_MapColor(Object *obj, HIDDT_Color *color)
+{
+    static MethodID mid = 0;
+    struct pHidd_BitMap_MapColor p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_MapColor);
+    
+    p.mID	= mid;
+    p.color	= color;
+ 
+    
+    return DoMethod(obj, (Msg)&p);
+}
+
+/***************************************************************/
+
+VOID HIDD_BM_UnmapPixel(Object *obj, HIDDT_Pixel pixel, HIDDT_Color *color)
+{
+    static MethodID mid = 0;
+    struct pHidd_BitMap_UnmapPixel p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UnmapPixel);
+    
+    p.mID	= mid;
+    p.pixel	= pixel;
+    p.color	= color;
+
+    DoMethod(obj, (Msg)&p);
+}
+
+
+/***************************************************************/
+
+VOID     HIDD_BM_PutImageLUT  (Object *obj, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut)
+{
+    static MethodID mid = 0;
+    struct pHidd_BitMap_PutImageLUT p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutImageLUT);
+        
+    p.mID	= mid;
+    p.pixels	= pixels;
+    p.modulo	= modulo;
+    p.x		= x;
+    p.y		= y;
+    p.width	= width;
+    p.height	= height;
+    p.pixlut	= pixlut;
+
+    DoMethod(obj, (Msg) &p);
+}
+
+
+/***************************************************************/
+
+VOID     HIDD_BM_GetImageLUT  (Object *obj, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut)
+{
+    static MethodID mid = 0;
+    struct pHidd_BitMap_GetImageLUT p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetImageLUT);
+        
+    p.mID	= mid;
+    p.pixels	= pixels;
+    p.modulo	= modulo;
+    p.x		= x;
+    p.y		= y;
+    p.width	= width;
+    p.height	= height;
+    p.pixlut	= pixlut;
+
+    DoMethod(obj, (Msg) &p);
+}
+

@@ -97,23 +97,23 @@ static VOID chunkybm_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel
 
     switch(data->bytesperpixel)
     {
-	case 1: *((UBYTE *) dest)   = (UBYTE) msg->val; break;
-	case 2: *((UWORD *) dest)   = (UWORD) msg->val; break;
+	case 1: *((UBYTE *) dest)   = (UBYTE) msg->pixel; break;
+	case 2: *((UWORD *) dest)   = (UWORD) msg->pixel; break;
 	case 3: if (1 == ( ((IPTR)dest) & 1) )
                 {
                   /* first is odd */
-                  *((UBYTE *) dest++) = (UBYTE) msg->val >> 16;
-                  *((UWORD *) dest  ) = (UWORD) msg->val;
+                  *((UBYTE *) dest++) = (UBYTE) msg->pixel >> 16;
+                  *((UWORD *) dest  ) = (UWORD) msg->pixel;
                 }
                 else
                 {
                   /* first is even */
-                  *((UWORD *) dest++) = (UWORD) msg->val >> 8; 
-                  *((UBYTE *) dest  ) = (UBYTE) msg->val;
+                  *((UWORD *) dest++) = (UWORD) msg->pixel >> 8; 
+                  *((UBYTE *) dest  ) = (UBYTE) msg->pixel;
                 }
 		break;
 
-	case 4: *((ULONG *) dest)   = (ULONG) msg->val; break;
+	case 4: *((ULONG *) dest)   = (ULONG) msg->pixel; break;
     }
 	
 }

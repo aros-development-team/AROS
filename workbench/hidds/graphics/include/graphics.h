@@ -98,15 +98,78 @@ struct pHidd_Gfx_DisposeBitMap
 
 
 	/* Types */
+
+
+typedef UWORD HIDDT_ColComp;	/* Color component */
 	
-typedef struct
-{
-   UWORD	red;
-   UWORD	green;
-   UWORD	blue;
-   UWORD	aplha;
+typedef struct {
+   HIDDT_ColComp	red;
+   HIDDT_ColComp	green;
+   HIDDT_ColComp	blue;
+   HIDDT_ColComp	alpha;
    
 } HIDDT_Color;
+
+typedef ULONG HIDDT_Pixel;
+
+
+typedef struct {
+	ULONG entries;
+	HIDDT_Pixel *pixels;
+} HIDDT_PixelLUT;
+
+typedef struct {
+	ULONG entries;
+	HIDDT_Color *colors;
+} HIDDT_ColorLUT;
+
+typedef ULONG HIDDT_StdPixFmt;
+
+#define MAP_SHIFT	((sizeof (HIDDT_Pixel) - sizeof (HIDDT_ColComp)) *8)
+#define SHIFT_UP_COL(col) ((HIDDT_Pixel)((col) << MAP_SHIFT))
+
+#define MAP_COLCOMP(comp, val, pixfmt)	\
+	((SHIFT_UP_COL(val) >> (pixfmt)-> ## comp ## _shift) & (pixfmt)-> ## comp ## _mask)
+	
+
+#define MAP_RGB(r, g, b, pixfmt) 	\
+	  MAP_COLCOMP(red,   r, pixfmt) \
+	| MAP_COLCOMP(green, g, pixfmt)	\
+	| MAP_COLCOMP(blue,  b, pixfmt) 
+
+
+#define MAP_RGBA(r, g, b, pixfmt) 	\
+	  MAP_COMP(red,   r, pixfmt) 	\
+	| MAP_COMP(green, g, pixfmt)	\
+	| MAP_COMP(blue,  b, pixfmt)	\
+	| MAP_COMP(blue,  b, pixfmt)
+	
+	
+
+#define SHIFT_DOWN_PIX(pix) ((pix) >> MAP_SHIFT)
+#define GET_COLCOMP(comp, pix, pixfmt) \
+	SHIFT_DOWN_PIX( ( (pix) & (pixfmt)-> ## comp ## _mask) << pixfmt-> ## comp ## _shift )
+
+#define RED_COMP(pix, pixfmt)	GET_COLCOMP(red,   pix, pixfmt)
+#define GREEN_COMP(pix, pixfmt)	GET_COLCOMP(green, pix, pixfmt)
+#define BLUE_COMP(pix, pixfmt)	GET_COLCOMP(blue,  pix, pixfmt)
+
+typedef struct {
+	UWORD	depth;
+	UWORD	size;	
+	
+	HIDDT_Pixel red_mask;
+	HIDDT_Pixel green_mask;
+	HIDDT_Pixel blue_mask;
+	HIDDT_Pixel alpha_mask;
+	
+	HIDDT_Pixel red_shift;
+	HIDDT_Pixel green_shift;
+	HIDDT_Pixel blue_shift;
+	HIDDT_Pixel alpha_shift;
+	
+} HIDDT_PixelFormat;
+
 
 
 enum
@@ -132,6 +195,11 @@ enum
     moHidd_BitMap_FillSpan,
     moHidd_BitMap_Clear,
     moHidd_BitMap_BlitColorExpansion,
+    moHidd_BitMap_MapColor,
+    moHidd_BitMap_UnmapPixel,
+    moHidd_BitMap_PutImageLUT,
+    moHidd_BitMap_GetImageLUT,
+    
     moHidd_BitMap_PrivateSet
 };
 
@@ -232,7 +300,7 @@ struct pHidd_BitMap_PutPixel
 {
     MethodID  mID;
     WORD x, y;
-    ULONG val;
+    HIDDT_Pixel pixel;
 };
 
 struct pHidd_BitMap_GetPixel
@@ -324,6 +392,39 @@ struct pHidd_BitMap_BlitColorExpansion
     UWORD	height;
 };
 
+struct pHidd_BitMap_MapColor
+{
+    MethodID mID;
+    HIDDT_Color *color;
+};
+
+struct pHidd_BitMap_UnmapPixel
+{
+    MethodID mID;
+    HIDDT_Pixel pixel;
+    HIDDT_Color *color;
+};
+
+struct pHidd_BitMap_PutImageLUT
+{
+    MethodID mID;
+    UBYTE 	*pixels;
+    ULONG	modulo;
+    WORD	x, y;
+    WORD	width, height;
+    HIDDT_PixelLUT *pixlut;
+};
+
+struct pHidd_BitMap_GetImageLUT
+{
+    MethodID mID;
+    UBYTE	*pixels;
+    ULONG	modulo;
+    WORD	x, y;
+    WORD	width, height;
+    HIDDT_PixelLUT *pixlut;
+};
+
 
 /**** Graphics context definitions ********************************************/
     /* Methods for a graphics context */
@@ -392,8 +493,8 @@ VOID     HIDD_BM_Move        (Object obj, WORD x, WORD y);
 BOOL     HIDD_BM_DepthArrange(Object obj, Object bm);
 BOOL	 HIDD_BM_SetColors	(Object *obj, HIDDT_Color *tab, ULONG firstcolor, ULONG numcolors);
 
-ULONG    HIDD_BM_PutPixel(Object *obj, WORD x, WORD y, ULONG val);
-ULONG    HIDD_BM_GetPixel       (Object *obj, WORD x, WORD y);
+ULONG    HIDD_BM_PutPixel(Object *obj, WORD x, WORD y, HIDDT_Pixel pixel);
+HIDDT_Pixel    HIDD_BM_GetPixel       (Object *obj, WORD x, WORD y);
 ULONG    HIDD_BM_DrawPixel      (Object *obj, WORD x, WORD y);
 VOID     HIDD_BM_CopyBox         (Object *obj, WORD srcX, WORD srcY, Object *dest, WORD destX, WORD destY, UWORD width, UWORD height);
 VOID     HIDD_BM_GetImage	 	 (Object *obj, ULONG *pixelArray, WORD x, WORD y, WORD width, WORD height);
@@ -412,4 +513,30 @@ VOID     HIDD_BM_FillText        (Object *obj, WORD x, WORD y, STRPTR text, UWOR
 VOID     HIDD_BM_FillSpan        (Object *obj);
 VOID     HIDD_BM_Clear           (Object *obj);
 VOID	 HIDD_BM_BlitColorExpansion	 (Object *destObj, Object *srcObj, WORD srcX, WORD srcY, WORD destX, WORD destY,  UWORD width, UWORD height);
+
+HIDDT_Pixel HIDD_BM_MapColor (Object *destObj, HIDDT_Color *color);
+VOID	 HIDD_BM_UnmapPixel(Object *destObj, HIDDT_Pixel pixel, HIDDT_Color *color);
+
+VOID	 HIDD_BM_PutImageLUT 	 (Object *obj, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
+VOID	 HIDD_BM_GetImageLUT 	 (Object *obj, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
+
+
+/*******************************************************/
+/**  PROTECTED DATA 
+	!! These structures are at the top of the gfx hidd baseclasses.
+	DO NEVER ATTEMPT TO ACCESS THESE FROM OUTSIDE OF SUBCLASSES.
+	DON'T EVEN THINK ABOUT IT !!!
+	THEY SHOULD ONLY BE ACCESSED FROM THE SUBCLASSES, AND THEN
+	BY USING THE MACROS BELOW !! 
+*/
+
+struct _hidd_bitmap_protected
+{
+	HIDDT_PixelFormat pixfmt;
+};
+
+#define BM_PIXFMT(bm) (&((struct _hidd_bitmap_protected *)bm)->pixfmt)
+#define BM_DEPTH(bm)	BM_PIXFMT(bm)->depth
+
+
 #endif /* HIDD_GRAPHICS_H */
