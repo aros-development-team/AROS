@@ -176,7 +176,6 @@ SFILES := \
 
 ASMFILES  := setjmp longjmp
 SASMFILES := longjmp
-STUBFILES := $(shell $(CAT) $(STUBSDIR)/stubslist)
 
 OBJS  := $(foreach f, $(FILES)   , $(OBJDIR)/$(f).o)
 OBJS  += $(foreach f, $(SFILES)  , $(OBJDIR)/$(f).o)
@@ -184,7 +183,7 @@ OBJS  += $(foreach f, $(ASMFILES), $(COMMONOBJDIR)/$(f).o)
 
 STUBOBJS := $(foreach f, $(FILES)    , $(OBJDIR)/$(f).o)
 STUBOBJS += $(foreach f, $(ASMFILES) , $(COMMONOBJDIR)/$(f).o)
-STUBOBJS += $(foreach f, $(STUBFILES), $(STUBSDIR)/$(f).o)
+STUBOBJS += $(wildcard $(STUBSDIR)/*.o)
 
 SOBJS := $(foreach f, $(SFILES)   , $(SOBJDIR)/$(f).o)
 SOBJS += $(foreach f, $(SASMFILES), $(COMMONOBJDIR)/$(f).o)
@@ -222,7 +221,7 @@ $(COMMONOBJDIR)/%.o : %.c
 	%compile_q cmd=$(SYS_CC) opt="$(APPCFLAGS) -include $(INCDIR)/libraries/arosc.h"
 
 $(SOBJDIR)/%.o : %.c
-	%compile_q cmd=$(SYS_CC) opt="$(APPCFLAGS) -D_CLIB_KERNEL_ -include $(INCDIR)/libraries/arosc.h"
+	%compile_q cmd=$(SYS_CC) opt="$(APPCFLAGS) -D_CLIB_KERNEL_ -include $(INCDIR)/libraries/arosc.h -I$(TOP)"
 
 $(COMMONLIB) : $(COMMONOBJS)
 	%mklib_q from=$(COMMONOBJS)
@@ -240,7 +239,9 @@ $(STUBLIB) : $(STUBOBJS)
 
 $(SOBJDIR)/arosc_init.o : arosc_init.c
 
-arosc_init.c : $(AROS_INCLUDES)/sys/syscall.def
-
 %common
 %include_deps
+
+arosc_init.c : $(AROS_INCLUDES)/sys/syscall.def
+
+
