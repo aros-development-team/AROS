@@ -156,8 +156,19 @@ AROS_UFH3(ULONG,Scrollgroup_Function,
 
     switch (type)
     {
-	case	1: SetAttrs(data->contents,MUIA_Virtgroup_Top, val, MUIA_NoNotify, TRUE, MUIA_Group_Forward, FALSE, TAG_DONE); break;
-	case	2: SetAttrs(data->contents,MUIA_Virtgroup_Left, val, MUIA_NoNotify, TRUE, MUIA_Group_Forward, FALSE, TAG_DONE); break;
+	case	1:
+		{
+		    get(data->vert,MUIA_Prop_First,&val);
+		    SetAttrs(data->contents,MUIA_Virtgroup_Top, val, MUIA_NoNotify, TRUE, MUIA_Group_Forward, FALSE, TAG_DONE);
+		    break;
+		}
+
+	case	2:
+		{
+		    get(data->horiz,MUIA_Prop_First,&val);
+		    SetAttrs(data->contents,MUIA_Virtgroup_Left, val, MUIA_NoNotify, TRUE, MUIA_Group_Forward, FALSE, TAG_DONE);
+		    break;
+		}
 	case	3: nnset(data->horiz, MUIA_Prop_First, val); break;
 	case	4: nnset(data->vert, MUIA_Prop_First, val); break;
     }
