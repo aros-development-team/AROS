@@ -343,6 +343,12 @@ struct TagItem *tag;
 				Enqueue(&root->table->list, &ph->ln);
 			else
 				fillMem((BYTE *)entry, sizeof(struct PCPartitionTable), 0);
+			ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
+			ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
+			ph->dg.dg_Heads = ph->de.de_Surfaces;
+			ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
+			ph->dg.dg_Cylinders = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
+			ph->dg.dg_BufMemType = ph->de.de_BufMemType;
 			return ph;
 		}
 	}
