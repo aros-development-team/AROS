@@ -1,0 +1,233 @@
+### DO NOT MODIFY!
+### THIS MAKEFILE IS MODIFIED TO LINK WITH LINUX LIBRARIES!!!! 
+
+#$Id$
+include $(TOP)/config/make.cfg
+
+
+CFLAGS      := $(CFLAGS) -DAROS_USE_OOP -I.
+
+ILDFLAGS    := -nostartfiles -Xlinker -i -g
+
+# Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
+USER_INCLUDES := -I.
+
+# will be expand to LIBNAME.LIBPOST i.e. parallel.hidd
+LIBNAME     := parallel
+LIBPOST     := hidd
+DESTDIR	    := $(HIDDSDIR)
+
+OBJDIR	    := $(GENDIR)/$(CURDIR)
+
+FILES       := ParallelClass ParallelUnitClass
+	       
+EXTRA_LIBS  := -L$(LIBDIR) -lunixiocl -lamiga
+
+
+STUBS       := $(LIBNAME)_stubs
+STUB_FILE   := $(LIBDIR)/libhidd$(LIBNAME)stubs.a
+STUB_OBJS   := $(foreach f,$(STUBS), $(OBJDIR)/$(f).o)
+
+MY_INCLS    := $(wildcard include/*.h)
+DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
+GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
+
+
+ifeq ($(FLAVOUR),native)
+DEPLIBS := $(LIBDIR)/libhiddparallelstubs.a
+else
+DEPLIBS := $(LIBDIR)/libhiddparallelstubs.a
+endif
+
+LIBS := -lhiddparallelstubs
+
+
+#Generate the shared object
+ifndef LIBPOST
+LIBPOST := library
+endif
+ifndef DESTDIR
+DESTDIR	:= $(SLIBDIR)
+endif
+ifndef SLIB
+SLIB := $(DESTDIR)/$(LIBNAME).$(LIBPOST)
+endif
+ifndef LIB
+LIB := $(LIBDIR)/lib$(LIBNAME).a
+endif
+ifndef INIT_FILE
+INIT_FILE := $(LIBNAME)_init
+endif
+ifndef END_FILE
+END_FILE := $(LIBNAME)_end
+endif
+ifndef OBJDIR
+OBJDIR := $(GENDIR)/$(CURDIR)
+endif
+ifndef INITFUNC
+INITFUNC := $(OBJDIR)/$(INIT_FILE).o
+endif
+ifndef ENDFUNC
+ENDFUNC := $(OBJDIR)/$(END_FILE).o
+endif
+SYS_FILES := $(SYS_FILES) $(INIT_FILE) functable
+ifndef OBJS
+OBJS := $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+endif
+SYS_OBJS := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
+ifndef DEPS
+DEPS := $(foreach f, $(INIT_FILE) $(FILES) $(END_FILE), $(OBJDIR)/$(f).d)
+endif
+
+DESTDIRS := $(DESTDIRS) $(DESTDIR)
+
+# Insert collection lib lib$(LIBNAME).a into $(LIBS) for final $(SLIB) target
+STARTUP = $(LIBDIR)/startup.o
+LIBS = -L/usr/lib -lc -L$(LIBDIR) -l$(LIBNAME) -larossupport -lamiga 
+DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
+	$(LIBDIR)/libarosm.a 
+
+
+$(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
+	@$(ECHO) "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(LIBNAME)lib.map $(SYS_OBJS) $(LIBS) $(ENDFUNC) $(EXTRA_LIBS) -o $@ 2>&1|tee $(LIBNAME)lib.err
+	@$(ECHO) "Checking $@..."
+	@$(CHECKUDS) $@ > undefdsyms.list
+	@$(IF) $(TEST) -s undefdsyms.list ; then \
+	    $(CAT) undefdsyms.list >> $(@F)-x.err ; \
+	    $(ECHO) "There are undefined symbols in $@:" ; \
+	    $(CAT) undefdsyms.list ; \
+	else $(NOP) ; fi
+	@$(RM) undefdsyms.list
+	@$(IF) $(TEST) ! -s $(LIBNAME)lib.err; then $(RM) $(LIBNAME)lib.err ; else $(NOP) ; fi
+	@$(STRIP) $@
+
+# Collect all functions in a linklib for fast linking:
+$(LIB) : $(OBJS)
+	@$(ECHO) "Adding functions to $(notdir $@) ..."
+	@$(AR) $@ $?
+	@$(RANLIB) $@
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+setup :
+	@$(FOR) dir in $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS) ; do \
+	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
+	done
+
+clean ::
+	$(RM) $(OBJDIR) *.err libdefs.h functable.c $(END_FILE) $(EXTRA_CLEAN) \
+	    $(LIB) $(SLIB)
+
+$(OBJDIR)/%.o : %.c
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
+	@$(IF) $(TEST) -s $*.err ; then $(TOUCH) $(TOP)/errors ; else $(RM) $*.err ; fi
+
+# Rule to create a .library in the local dir
+libdefs.h : lib.conf $(ARCHTOOL)
+	@$(ECHO) "Generating $@..."
+	@$(ARCHTOOL) -c
+
+FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
+
+functable.c : $(FUNCTABLE_SRCS) $(ARCHTOOL) libdefs.h
+	@$(ECHO) "Generating $@..."
+	@$(ARCHTOOL) -t
+
+$(END_FILE).c :
+	@$(ECHO) "Generating $@..."
+	@$(ECHO) "#include <libcore/libtail.c>" > $@
+
+$(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
+
+ifneq (,$(ADDITIONAL_OBJS))
+$(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
+	@$(ECHO) "Error: The precompiled object $@ did not exist."
+	@exit 1
+endif
+
+$(OBJDIR)/%.d : %.c
+		@$(IF) [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$<..."
+	@$(MKDEPEND) $(CFLAGS) $< -o $@
+
+
+# Include these files but only if the current target is neither
+# setup nor clean.
+ifeq (,$(filter clean% setup% includes% ,$(TARGET)))
+-include $(DEPS)
+endif
+
+
+
+# Allways generate module in Sys:Hidds/
+
+#MM- workbench-hidds : hidd-parallel-module
+
+	
+#MM hidd-parallel-linklib : setup includes hidd-parallel-$(ARCH)-$(CPU)
+hidd-parallel-linklib : show-flags $(LIB) $(STUB_FILE) setup
+	@$(NOP)
+
+#MM hidd-parallel-module : setup includes hidd-parallel-$(ARCH)-$(CPU)
+hidd-parallel-module : show-flags $(SLIB) $(STUB_FILE)
+
+# --- QUICK HACKS BEGIN --- 
+# These are hacks for faster execution of "mmake" and "make". Use them
+# only if you know set the setup is correct and do not add them as targets
+# in other makefiles.
+#
+# Usage: 
+#   mmake AROS.hidd-parallel-quick
+#   make -f TOP=/dh1/AROS CURDIR=workbench/hidds/parallel mmakefile hidd-parallel-quick
+
+
+
+#MM hidd-parallel-module-quick : kernel-oop-$(ARCH)-$(CPU)
+hidd-parallel-module-quick : show-flags $(LIB) $(SLIB)
+	@$(NOP)
+
+#MM hidd-parallel-includes-quick : hidd-oop-$(ARCH)-$(CPU)
+hidd-parallel-includes-quick : setup-includes includes-copy 
+	$(NOP)
+
+# --- QUICK HACKS END ---
+
+# create stubs-file
+
+$(STUB_FILE) : $(STUB_OBJS)
+	@$(ECHO) "Creating library $@..."
+	@$(AR) $@ $(STUB_OBJS)
+	@$(RANLIB) $@
+
+$(OBJDIR)/%.o : %.c	
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
+	@$(IF) $(TEST) -s $*.err; then $(TOUCH) $(TOP)/errors ; else $(RM) $*.err ; fi
+
+#MM
+includes-copy : $(DEST_INC) $(GEN_INC)
+	@$(NOP)
+
+$(INCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+$(GENINCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+#MM
+setup-includes :
+	@$(FOR) dir in $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd ; do \
+	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
+	done
+
+
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err $(LIB) *.s
+
+
+%common
