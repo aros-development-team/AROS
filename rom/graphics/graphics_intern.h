@@ -60,6 +60,14 @@ extern VOID tfe_hashdelete(struct TextFont *tf, struct GfxBase *GfxBase);
 /* Macros */
 #define RASSIZE(w,h)    ((ULONG)(h)*( ((ULONG)(w)+15)>>3&0xFFFE))
 
+#define WIDTH_TO_BYTES(width) ((( (width) - 1) >> 3) + 1)
+#define WIDTH_TO_WORDS(width) ((( (width) - 1) >> 4) + 1)
+
+#define COORD_TO_BYTEIDX(x, y, bytes_per_row)	\
+	( ((y) * (bytes_per_row)) + ((x) >> 3) )
+
+#define XCOORD_TO_MASK(x) (1L << (7 - ((x) & 0x07)))
+
 /* Defines */
 #define BMT_STANDARD	0x0000	/* Standard bitmap */
 #define BMT_RGB 	0x1234	/* RTG Bitmap. 24bit RGB chunky */
@@ -114,7 +122,19 @@ extern LONG driver_BltBitMap ( struct BitMap * srcBitMap, LONG xSrc,
 extern VOID driver_BltBitMapRastPort(struct BitMap *,  LONG, LONG,
 			    struct RastPort *, LONG, LONG , LONG, LONG,
 			    ULONG, struct GfxBase *);
-VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort * destRP,
+extern VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
+    		, LONG xSrc, LONG ySrc
+		, struct RastPort *destRP
+		, LONG xDest, LONG yDest
+		, ULONG xSize, ULONG ySize
+		, ULONG minterm
+		, PLANEPTR bltMask
+		, struct GfxBase *GfxBase );
+		
+extern VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
+		LONG xMax, LONG yMax, ULONG byteCnt, struct GfxBase *GfxBase);
+		
+extern VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort * destRP,
 	LONG xDest, LONG yDest, LONG xSize, LONG ySize, struct GfxBase *GfxBase);
 extern int driver_CloneRastPort (struct RastPort *, struct RastPort *,
 			struct GfxBase *);
@@ -183,6 +203,11 @@ extern LONG driver_WritePixelLine8 (struct RastPort * rp, ULONG xstart,
 			    struct GfxBase *);
 			    
 extern void driver_WaitTOF (struct GfxBase *);
+
+
+#define DEBUG 0
+#define SDEBUG 0
+#include <aros/debug.h>
 
 
 #endif /* GRAPHICS_INTERN_H */
