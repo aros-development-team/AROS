@@ -46,6 +46,10 @@ BOOL GetKeyInfo(struct KeyInfo *ki, UWORD code, UWORD qual, struct KeyMap *km)
     {
         valid = FALSE;
     }
+    else if (code >= 128) /* Keymaps at the moment support only 128 keys */
+    {
+    	valid = FALSE; 
+    }
     else
     {
     	BYTE capsable;
