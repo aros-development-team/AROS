@@ -15,6 +15,10 @@
 #   include <exec/libraries.h>
 #endif
 
+#ifndef EXEC_MEMORY_H
+#   include <exec/memory.h>
+#endif
+
 #ifndef OOP_OOP_H
 #   include <oop/oop.h>
 #endif
@@ -22,6 +26,8 @@
 #ifndef HIDD_PCI_H
 #	include <hidd/pci.h>
 #endif
+
+#define USE_ALLOCATE 1
 
 //#include "bitmap.h"
 
@@ -73,10 +79,16 @@ struct nv_staticdata
 	struct riva_regs	init_state;
 
 	/* Memory manager data */
+
 	APTR				memory;
+
+#if USE_ALLOCATE
+    	struct MemHeader    	    	memheader;
+#else
 	ULONG				memsize;
 	ULONG				memfree;
 	struct vMemChunk	*first;
+#endif
 	/* memory Manager end */
 
 	UWORD				*cursor;
