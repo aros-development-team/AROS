@@ -17,7 +17,9 @@ FUNCTIONS	:= \
 	arpopen \
 	assign \
 	atol \
+	basename \
 	btocstr \
+	closewindowsafely \
 	comparelock \
 	createport \
 	createtaskreslist \
@@ -27,19 +29,26 @@ FUNCTIONS	:= \
 	dosfreemem \
 	escapestring \
 	filerequest \
+	findcli \
 	findprocess \
 	findtaskreslist \
 	fprintf \
 	freetaskreslist \
 	getenv \
+	lmult \
+	ldiv \
+	lmod \
 	pathname \
 	printf \
 	puts \
 	qsort \
 	readline \
 	setenv \
+	stamptostr \
+	strtostamp \
 	strcmp \
-	strncmp
+	strncmp \
+	tackon
 
 
 %define_libs prelibs=-l$(LIBNAME)

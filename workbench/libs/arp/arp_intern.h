@@ -12,6 +12,7 @@
 #include <exec/types.h>
 #include <libraries/arp.h>
 #include <intuition/intuition.h>
+#include <intuition/intuitionbase.h>
 #include <exec/ports.h>
 
 extern struct ArpBase ArpBase;
