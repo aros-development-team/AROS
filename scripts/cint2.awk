@@ -263,7 +263,7 @@ print "Working on " part_name "..."
 				len=length(par_type[t]);
 				len2=length(par_ptr[t]);
 
-				printf("\t__AROS_LA(%s", par_type[t])>>file;
+				printf("\t__AROS_LHA(%s", par_type[t])>>file;
 				printf("%s", substr(spaces,1,maxlen-len-len2))>>file;
 				printf("%s, %s, %s),\n",par_ptr[t],par_name[t],
 				    substr(regs,1,2))>>file;
