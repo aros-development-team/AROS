@@ -1,7 +1,7 @@
 /***************************************
   $Header$
 
-  C Cross Referencing & Documentation tool. Version 1.5c.
+  C Cross Referencing & Documentation tool. Version 1.5e.
 
   Collects the comments from the parser.
   ******************/ /******************
@@ -158,8 +158,11 @@ void SetCurrentComment(char* comment)
 
  if(comment)
    {
-    malloc_comment=Realloc(malloc_comment,strlen(comment)+1);
-    strcpy(malloc_comment,comment);
+    if(malloc_comment!=comment)
+      {
+       malloc_comment=Realloc(malloc_comment,strlen(comment)+1);
+       strcpy(malloc_comment,comment);
+      }
     current_comment=malloc_comment;
    }
  else

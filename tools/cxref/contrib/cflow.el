@@ -50,8 +50,8 @@
 
 ;;; Change log:
 ;; $Log$
-;; Revision 1.1  2002/12/22 13:53:23  verhaegs
-;; Initial revision
+;; Revision 1.2  2004/01/04 19:43:16  galaxy
+;; *** empty log message ***
 ;;
 
 ;;; Variables:

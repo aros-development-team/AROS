@@ -1,3 +1,21 @@
+Version 1.5e of cxref released : Sun Jun 29 10:30:00 2003
+---------------------------------------------------------
+
+Bug fixes
+  Don't lose the comment or value when C++ style comments follow a #define.
+  Updated to work with newer version of flex and SUN version of yacc.
+  Handle references for local functions with the same name in several files.
+  Remove some extra ';' from the HTML output.
+  Handle macros with variable args like MACRO(a,b,...) as well as MACRO(a,b...).
+
+GCC changes
+  Handle gcc-3.x putting all of its internal #defines in the output.
+  Compile cxref-cpp if using gcc-3.x that drops comment on same line as #define.
+
+
+*NOTE* The notes for version 1.5d below apply also.
+
+
 Version 1.5d of cxref released : Sun May 05 12:00:00 2002
 ---------------------------------------------------------
 

@@ -1,3 +1,14 @@
+2003-06-29  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5e of cxref released.
+
+2003-06-29  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* configure.in:
+	Updated to check that gcc passes through comments after a #define.
+
+	* README: Update with information about newer gcc versions.
+
 2002-05-05  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
 
 	Version 1.5d of cxref released.

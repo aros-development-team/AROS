@@ -1,4 +1,4 @@
-             C Cross Referencing & Documentation tool Version 1.5d
+             C Cross Referencing & Documentation tool Version 1.5e
              =====================================================
 
 To install the program, do the following:
@@ -13,13 +13,18 @@ To install the program, do the following:
 
    The list of generic configure options can be seen by using the --help option.
 
+   The most useful one is --prefix which allows the installation directory to
+   be specified.  For example './configure --prefix=/usr/local' will install all
+   of the files under 'bin' and 'man/man*' subdirectories of '/usr/local'.
+
 
 2) Run 'make'         in this directory to make all of the programs
        'make docs'    in this directory to make the README & documents
        'make install' in this directory to install the program.
 
        To install the files with a different root directory you can use
-       'make install DESTDIR=/some/directory/'.
+       'make install DESTDIR=/some/directory/'.  This will prefix all of
+       the installation directories with '/some/directory/'.
 
 
 3) Print README.ps, read README.dvi or browse README.html to understand how to

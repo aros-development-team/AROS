@@ -1,9 +1,13 @@
        C Cross Referencing & Documenting tool Version 1.5 - cxref-cpp
        ==============================================================
 
-This is a copy of the gcc-2.7.2 pre-processor with some modifications to make
-cxref work better.  If you use version 2.8.0 or later of gcc then this program
-is not built.
+If you have gcc version 2.8.0 or later installed then you do not need to use
+this program.  There are problems with gcc version 3.3 (and others?) where
+comments that follow on the same line as a #define statement are lost.
+
+
+This program is a copy of the gcc-2.7.2 pre-processor with some modifications to
+make cxref work better.  Most of the changes were put back into gcc version 2.8.0.
 
 The files are modified in the following way.
 

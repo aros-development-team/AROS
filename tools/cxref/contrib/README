@@ -22,8 +22,8 @@ An Emacs lisp file that can be used to convert the cxref.function file into a
 hierarchy of function calls that can be browsed.
 
 
-fixheader
----------
+fixheader.pl
+------------
 
 A Perl script that can be used to find the header files that are missing from a
 header file that cxref cannot parse or remove unneeded header files from source
@@ -41,8 +41,8 @@ This should be considered as experimental at the moment, it works on the cxref
 source code, but has not been tested very extensively beyond that.
 
 
-cxref_includes
---------------
+cxref_includes.pl
+-----------------
 
 A perl script that will run cxref on all of the include files that are
 referenced in the cxref.include file that was written out by running cxref on

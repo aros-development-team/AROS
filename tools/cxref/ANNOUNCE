@@ -1,4 +1,4 @@
-    C Cross Referencing & Documenting tool. Version 1.5d - cxref
+    C Cross Referencing & Documenting tool. Version 1.5e - cxref
     ============================================================
 
 Cxref is a program that will produce documentation (in LaTeX, HTML, RTF or SGML)
@@ -54,27 +54,18 @@ program.
 Changes
 -------
 
-Since version 1.5c:
+Since version 1.5d:
 
 Bug fixes
-  Fixes to HTML and SGML outputs (invalid character entities). Fix bug that
-  stopped -R/ from working.  Fix links to HTML source files in certain cases.
-  Keep the sign of negative numbers in #define output.  Improve the lex code
-  (flex -s).  Add some missing ';' to yacc code.  Fix the bison debugging
-  output.
-
-Configure/Make changes
-  Fix Makefile to compile using non-GNU make programs.
-  Add flex specific options to the Makefile if using it.
-  Fixes for build/configure outside the source tree.
-  Include DESTDIR in the Makefile to help installation.
-  Configure makes a guess what to do with cxref-cpp if gcc is not installed.
+  Don't lose the comment or value when C++ style comments follow a #define.
+  Updated to work with newer version of flex and SUN version of yacc.
+  Handle references for local functions with the same name in several files.
+  Remove some extra ';' from the HTML output.
+  Handle macros with variable args like MACRO(a,b,...) as well as MACRO(a,b...).
 
 GCC changes
-  Accept the gcc-3.0 __builtin_va_list type as-if it were a valid C type.
-  Handle the GCC __builtin_va_arg extension keyword.
-  Handle the GCC floating point hex extension data format.
-  Allow the use of gcc-3.x instead of the cxref-cpp program.
+  Handle gcc-3.x putting all of its internal #defines in the output.
+  Compile cxref-cpp if using gcc-3.x that drops comment on same line as #define.
 
 
 Availability
@@ -83,8 +74,8 @@ Availability
 Previous versions of this program have been tested on the following systems:
 Linux 1.[123].x, Linux 2.[01234].x, SunOS 4.1.x, Solaris 2.x, HPUX 10.x
 
-FTP server: ftp://ftp.demon.co.uk/pub/unix/tools/cxref-1.5d.tgz
-FTP server: ftp://ftp.ibiblio.org/pub/Linux/devel/lang/c/cxref-1.5d.tgz
+FTP server: ftp://ftp.demon.co.uk/pub/unix/tools/cxref-1.5e.tgz
+FTP server: ftp://ftp.ibiblio.org/pub/Linux/devel/lang/c/cxref-1.5e.tgz
 
 Web page: http://www.gedanken.demon.co.uk/cxref/
 
@@ -92,7 +83,7 @@ Web page: http://www.gedanken.demon.co.uk/cxref/
 Author & Copyright
 ------------------
 
-This program is copyright Andrew M. Bishop 1995,96,97,98,99,2000,01,02
+This program is copyright Andrew M. Bishop 1995,96,97,98,99,2000,01,02,03
 (amb@gedanken.demon.co.uk) and distributed under GPL.
 
 email: amb@gedanken.demon.co.uk

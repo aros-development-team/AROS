@@ -1,8 +1,7 @@
 #!/usr/bin/perl
-#-*-perl-*-
 
 #
-# Copyright Andrew M. Bishop 1996.97,98,2001.
+# Copyright Andrew M. Bishop 1996.97,98,2001,03.
 #
 # Usage: FAQ-html.pl < FAQ > FAQ.html
 #
@@ -43,53 +42,53 @@ while(<STDIN>)
    $pre++ if($pre);
 
    if ($_ eq "--------------------------------------------------------------------------------")
-       {
-        $pre=0,print "</pre>\n" if($pre);
-        print "<hr>\n";
-        $answers++              if( $answers);
-        $questions=0,$answers=1 if( $questions);
-        $questions=1            if(!$questions && !$answers);
-       }
+     {
+      $pre=0,print "</pre>\n" if($pre);
+      print "<hr>\n";
+      $answers++              if( $answers);
+      $questions=0,$answers=1 if( $questions);
+      $questions=1            if(!$questions && !$answers);
+     }
    elsif (m/^(Section [0-9]+)/)
-       {
-        $section = $1;
-        $section =~ tr/ /-/;
+     {
+      $section = $1;
+      $section =~ tr/ /-/;
 
-        $pre=0,print "</pre>\n" if($pre);
-        print "<p><b><a href=\"#$section\">$_</a></b>\n" if($questions);
-        print "<h2><a name=\"$section\">$_</a></h2>\n"       if($answers);
-       }
-   elsif(m/^(Q [0-9]+.[0-9]+[a-z]*)/)
-       {
-        $question = $1;
-        $question =~ tr/ /-/;
+      $pre=0,print "</pre>\n" if($pre);
+      print "<p><b><a href=\"#$section\">$_</a></b>\n" if($questions);
+      print "<h2><a name=\"$section\">$_</a></h2>\n"       if($answers);
+     }
+   elsif (m/^(Q [0-9]+.[0-9]+[a-z]*)/)
+     {
+      $question = $1;
+      $question =~ tr/ /-/;
 
-        $blank=0,$pre=0,print "</pre>\n" if($pre);
-        print "<p><a href=\"#$question\">$_</a>\n"  if($questions);
-        print "<h3><a name=\"$question\">$_</a></h3>\n" if($answers);
-        $pre=1,print "<pre>\n" if($answers);
-       }
-   elsif(m/\((See Q [0-9]+.[0-9]+[a-z]*)\)/)
-       {
-        $question = substr($1,4);
-        $question =~ tr/ /-/;
-        $href=$1;
+      $blank=0,$pre=0,print "</pre>\n" if($pre);
+      print "<p><a href=\"#$question\">$_</a>\n"  if($questions);
+      print "<h3><a name=\"$question\">$_</a></h3>\n" if($answers);
+      $pre=1,print "<pre>\n" if($answers);
+     }
+   elsif (m/\((See Q [0-9]+.[0-9]+[a-z]*)\)/)
+     {
+      $question = substr($1,4);
+      $question =~ tr/ /-/;
+      $href=$1;
 
-        s%$1%<a href="#$question">$href</a>% if($answers);
-        print "$_\n";
-       }
-   elsif(m%(^|[^\'\"])(http://[A-Za-z0-9-_.]+/[/A-Za-z0-9-_.~]*)%)
-       {
-        $href=$2;
+      s%$1%<a href="#$question">$href</a>% if($answers);
+      print "$_\n";
+     }
+   elsif (m%(^|[^\'\"])(http://[A-Za-z0-9-_.]+/[/A-Za-z0-9-_.~]*)%)
+     {
+      $href=$2;
 
-        s%$2%<a href="$href">$href</a>%;
-        print "$_\n";
-       }
+      s%$2%<a href="$href">$href</a>%;
+      print "$_\n";
+     }
    else
-       {
-        $blank=0,print "\n" if($blank);
-        print "$_\n";
-       }
+     {
+      $blank=0,print "\n" if($blank);
+      print "$_\n";
+     }
   }
 
 print "</BODY>\n";

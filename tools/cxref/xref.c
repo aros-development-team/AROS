@@ -1,13 +1,13 @@
 /***************************************
   $Header$
 
-  C Cross Referencing & Documentation tool. Version 1.5c.
+  C Cross Referencing & Documentation tool. Version 1.5e.
 
   Cross referencing of functions.
   ******************/ /******************
   Written by Andrew M. Bishop
 
-  This file Copyright 1995,96,97,99,2001 Andrew M. Bishop
+  This file Copyright 1995,96,97,98,99,2000,01,02 Andrew M. Bishop
   It may be distributed under the GNU Public License, version 2, or
   any higher version.  See section COPYING of the GNU Public license
   for conditions under which this file may be redistributed.
@@ -449,18 +449,21 @@ static void check_for_caller(File file,char* called,char* filename)
  for(func=file->functions;func;func=func->next)
     for(i=0;i<func->calls->n;i++)
        if(!strcmp(called,func->calls->s1[i]))
-          func->calls->s2[i]=MallocString(filename);
+          if(!func->calls->s2[i])
+             func->calls->s2[i]=MallocString(filename);
 
  /* Check the functions that are referenced. */
 
  for(i=0;i<file->f_refs->n;i++)
     if(!strcmp(called,file->f_refs->s1[i]))
-       file->f_refs->s2[i]=MallocString(filename);
+       if(!file->f_refs->s2[i])
+          file->f_refs->s2[i]=MallocString(filename);
 
  for(func=file->functions;func;func=func->next)
     for(i=0;i<func->f_refs->n;i++)
        if(!strcmp(called,func->f_refs->s1[i]))
-          func->f_refs->s2[i]=MallocString(filename);
+          if(!func->f_refs->s2[i])
+             func->f_refs->s2[i]=MallocString(filename);
 }
 
 
