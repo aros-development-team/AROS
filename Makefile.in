@@ -2,13 +2,12 @@
 # Copyright (C) 1998 AROS - The Amiga Research OS
 #
 # $Id$
-
 default: all
 
 TOP := $(shell pwd)
 include $(TOP)/config/make.cfg
 
-all: makedirs $(MMAKE) $(GENMF)
+all: $(MMAKE)
 	$(MMAKE) AROS.AROS
 
 docs: $(MMAKE)
@@ -29,7 +28,7 @@ makedirs:
 	    $(CP) _gdbinit $(BINDIR)/.gdbinit ; \
 	else true ; fi
 
-$(MMAKE):
+$(MMAKE): makedirs $(GENMF)
 	cd tools/MetaMake ; ./configure --prefix=$(TOOLDIR)
 	$(MAKE) -C tools/MetaMake
 	cp tools/MetaMake/mmake $(MMAKE)
