@@ -49,24 +49,32 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
    
-    LONG pixwritten;
-
-    #warning Do not use HIDD_BM_PIXTAB, because object might have no pixtab
+    HIDDT_PixelLUT pixlut;
+    LONG    	   pixwritten;
     
-    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, HIDD_BM_PIXTAB(rp->BitMap) };
-    
-    EnterFunc(bug("driver_WritePixelArray8(%p, %d, %d, %d, %d)\n",
+    EnterFunc(bug("WritePixelArray8(%p, %d, %d, %d, %d)\n",
     	rp, xstart, ystart, xstop, ystop));
 	
-  
+    pixlut.entries = AROS_PALETTE_SIZE;
+    pixlut.pixels  = IS_HIDD_BM(rp->BitMap) ? HIDD_BM_PIXTAB(rp->BitMap) : NULL;
+        
+    if (!pixlut.pixels)
+    {
+    	if (GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8)
+	{
+	    D(bug("WritePixelArray8: Can't work on hicolor/truecolor screen without LUT"));
+    	    ReturnInt("WritePixelArray8", LONG, 0);
+	}
+    }
+    
     pixwritten = write_pixels_8(rp, array
-    	, xstop - xstart + 1 /* modulo */
+    	, ((xstop - xstart + 1) + 15) & ~15 /* modulo */
 	, xstart, ystart
 	, xstop, ystop
 	, &pixlut
 	, GfxBase);
 
-    ReturnInt("driver_WritePixelArray8", LONG, pixwritten);
+    ReturnInt("WritePixelArray8", LONG, pixwritten);
 
     AROS_LIBFUNC_EXIT
     
