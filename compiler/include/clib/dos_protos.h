@@ -705,7 +705,7 @@ AROS_LP4(LONG, SetVBuf,
     AROS_LPA(LONG  , size, D4),
     struct DosLibrary *, DOSBase, 61, Dos)
 
-AROS_LP5(WORD, SplitName,
+AROS_LP5(LONG, SplitName,
     AROS_LPA(STRPTR, name, D1),
     AROS_LPA(ULONG , seperator, D2),
     AROS_LPA(STRPTR, buf, D3),

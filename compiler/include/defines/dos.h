@@ -832,7 +832,7 @@
     struct DosLibrary *, DOSBase, 61, Dos)
 
 #define SplitName(name, seperator, buf, oldpos, size) \
-    AROS_LC5(WORD, SplitName, \
+    AROS_LC5(LONG, SplitName, \
     AROS_LCA(STRPTR, name, D1), \
     AROS_LCA(ULONG , seperator, D2), \
     AROS_LCA(STRPTR, buf, D3), \
