@@ -432,6 +432,28 @@ else
     aros_debug_cflags="$aros_debug_cflags -O$optimization"
 fi
 AC_MSG_RESULT($withval)
+
+#-----------------------------------------------------------------------------
+
+AC_MSG_CHECKING([for type of build])
+AC_ARG_ENABLE(build_type,AC_HELP_STRING([--enable-build-type=TYPE],[Select the build type. Available types are: personal, nightly, snapshot, milestone, release. Do NOT use this option unless you know what you are doing! (default=personal)]),build_type=$enableval,build_type="personal")
+
+if test "$build_type" = "nightly"; then
+    build_type_string="NIGHTLY"
+elif test "$build_type" = "snapshot"; then
+    build_type_string="SNAPSHOT"
+elif test "$build_type" = "milestone"; then
+    build_type_string="MILESTONE"
+elif test "$build_type" = "release"; then
+    build_type_string="RELEASE"
+else
+    build_type_string="PERSONAL"
+    build_type="personal"
+fi
+
+aros_target_cflags="$aros_target_cflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build_type_string"
+
+AC_MSG_RESULT($build_type)
 #-----------------------------------------------------------------------------
 
 # This is the target configuration switch.
@@ -811,7 +833,7 @@ AC_MSG_CHECKING([for the target compiler's include path])
 if test "$aros_target_cc_includes" = "" ; then
     aros_target_cc_includes=`dirname \`${aros_target_cc} -print-libgcc-file-name\``/include
 fi
-AC_MSG_RESULT("$aros_target_cc_includes")
+AC_MSG_RESULT($aros_target_cc_includes)
 
 dnl Check if user specified --with-resolution=XRESxYRESxDEPTH
 AC_MSG_CHECKING([for default resolution of WBScreen])
@@ -828,22 +850,22 @@ if test "$resolution" != "none" ; then
     aros_default_wbheight=`echo $resolution | cut -d'x' -f2`
     aros_default_wbdepth=`echo $resolution | cut -d'x' -f3`
 fi
-AC_MSG_RESULT("$aros_default_wbwidth x $aros_default_wbheight x $aros_default_wbdepth")
+AC_MSG_RESULT($aros_default_wbwidth x $aros_default_wbheight x $aros_default_wbdepth)
 aros_cv_default_wbwidth=$aros_default_wbwidth
 aros_cv_default_wbheight=$aros_default_wbheight
 aros_cv_default_wbdepth=$aros_default_wbdepth
 
 dnl See if the user wants the BOCHS hack for native flavour
 AC_MSG_CHECKING([if bochs hack is enabled])
-AC_ARG_ENABLE(bochs_hack,[  --enable-bochs-hack     Enable hacks to make BOCHS (partly) work [default=no]],bochs_hack="yes",bochs_hack="no")
+AC_ARG_ENABLE(bochs_hack,[  --enable-bochs-hack     Enable hacks to make BOCHS (partly) work (default=no)],bochs_hack="yes",bochs_hack="no")
 if test "$bochs_hack" = "yes" ; then
     aros_bochs_hack="1"
 fi
-AC_MSG_RESULT("$bochs_hack")
+AC_MSG_RESULT($bochs_hack)
 
 dnl See if the user wants the serial debug output for native flavour
 AC_MSG_CHECKING([if serial debug is enabled])
-AC_ARG_WITH(serial-debug,[  --with-serial-debug   Enable serial debug output in native [default=no]],serial_debug=$withval,serial_debug=none)
+AC_ARG_WITH(serial-debug,[  --with-serial-debug   Enable serial debug output in native (default=no)],serial_debug=$withval,serial_debug=none)
 if test "$serial_debug" = "yes" ; then
     serial_debug="2"
 fi
@@ -852,32 +874,32 @@ if test "$serial_debug" = "no" ; then
 fi
 if test "$serial_debug" != "none" ; then
     aros_serial_debug=$serial_debug
-    AC_MSG_RESULT("on COM port $serial_debug")
+    AC_MSG_RESULT(on port $serial_debug)
 else
-    AC_MSG_RESULT("no")
+    AC_MSG_RESULT(no)
 fi
 
 dnl See if the user wants the palm debug output hack for palm native flavour
 AC_MSG_CHECKING([if palm debug hack is enabled])
-AC_ARG_ENABLE(palm_debug_hack,[  --enable-palm-debug-hack   Enable palm debug output hack in palm native [default=no]],palm_debug_hack="yes",palm_debug_hack="no")
+AC_ARG_ENABLE(palm_debug_hack,[  --enable-palm-debug-hack   Enable palm debug output hack in palm native (default=no)],palm_debug_hack="yes",palm_debug_hack="no")
 if test "$palm_debug_hack" = "yes" ; then
     aros_palm_debug_hack="1"
 fi
-AC_MSG_RESULT("$palm_debug_hack")
+AC_MSG_RESULT($palm_debug_hack)
 
 
 dnl See if the user wants nesting supervisor activated for unix flavour
 AC_MSG_CHECKING([if nesting supervisor support is enabled])
-AC_ARG_ENABLE(nesting_supervisor,[  --enable-nesting-supervisor   Enable nesting supervisor support in unix [default=no]],nesting_supervisor="yes",nesting_supervisor="no")
+AC_ARG_ENABLE(nesting_supervisor,[  --enable-nesting-supervisor   Enable nesting supervisor support in unix (default=no)],nesting_supervisor="yes",nesting_supervisor="no")
 if test "$nesting_supervisor" = "yes" ; then
     aros_nesting_supervisor="1"
 fi
-AC_MSG_RESULT("$nesting_supervisor")
+AC_MSG_RESULT($nesting_supervisor)
 
 
 all_debug_types="stack mungwall modules"
 
-AC_MSG_CHECKING([Which debug types to enable])
+AC_MSG_CHECKING([which debug types to enable])
 AC_ARG_ENABLE(debug,AC_HELP_STRING([--enable-debug=list],[Enable different types of debug. Commas or whitespaces can be used to separate the items in the list. Available types of modules are: all none stack mungwall modules. If no list is provided then "all" is assumed. (default=none)]),
  debug="$enableval",debug="")
 
@@ -915,12 +937,12 @@ else
     aros_debug="yes"
 fi
 
-AC_MSG_RESULT("$debug")
+AC_MSG_RESULT($debug)
 
 dnl See if the user wants cpak to be used
 AC_MSG_CHECKING([if cpak is enabled])
 AC_ARG_ENABLE(cpak,[  --enable-cpak           Enable cpak [default=yes]],aros_use_cpak="$enableval",aros_use_cpak="yes")
-AC_MSG_RESULT("$aros_use_cpak")
+AC_MSG_RESULT($aros_use_cpak)
 
 if test "$HAVE_XSHM_SUPPORT" = "1" ; then
   dnl See if the user wants the X11 MIT-SHM extension to be enabled
@@ -929,7 +951,7 @@ if test "$HAVE_XSHM_SUPPORT" = "1" ; then
   if test "$xshm_extension" = "no" ; then
       DO_XSHM_SUPPORT="0"
   fi
-  AC_MSG_RESULT("$xshm_extension")
+  AC_MSG_RESULT($xshm_extension)
 else
   DO_XSHM_SUPPORT="0"
 fi
