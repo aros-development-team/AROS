@@ -134,7 +134,6 @@ FUNCTIONS := \
 	initgmasks \
 	initmasks \
 	initrastport \
-	initregion \
 	inittmpras \
 	initview \
 	initvport \

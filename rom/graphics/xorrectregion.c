@@ -17,8 +17,8 @@
 	AROS_LH2(BOOL, XorRectRegion,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Region    *, region,    A0),
-	AROS_LHA(struct Rectangle *, rectangle, A1),
+	AROS_LHA(struct Region    *, Reg,  A0),
+	AROS_LHA(struct Rectangle *, Rect, A1),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 93, Graphics)
@@ -56,49 +56,21 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-#if USE_BANDED_FUNCTIONS
 
-    return _XorRectRegion(region, rectangle, GfxBase);
+    struct Region R;
+    struct RegionRectangle rr;
 
-#else
+    InitRegion(&R);
 
-    struct Region* intersection, *copy2;
+    R.bounds = *Rect;
+    R.RegionRectangle = &rr;
 
-    if ((intersection = CopyRegion(region)))
-    {
-        if ((copy2 = CopyRegion(region)))
-	{
-	    AndRectRegion(intersection, rectangle);
+    rr.Next = NULL;
+    MinX(&rr) = MinY(&rr) = 0;
+    MaxX(&rr) = Rect->MaxX - Rect->MinX;
+    MaxY(&rr) = Rect->MaxY - Rect->MinY;
 
-	    if (OrRectRegion(region, rectangle))
-	    {
-		if (intersection->RegionRectangle)
-		{
-		    BOOL result;
+    return XorRegionRegion(&R, Reg);
 
-		    if (!(result = ClearRegionRegion(intersection, region)))
-		    {
-		        /* reinstall old RegionRectangles and bounds*/
-			struct Region tmp;
-			tmp     = *region;
-			*region = *copy2;
-			*copy2  = tmp;
-		    }
-		    DisposeRegion(intersection);
-		    DisposeRegion(copy2);
-		    return result;
-		}
-
-		DisposeRegion(intersection);
-		DisposeRegion(copy2);
-		return TRUE;
-	    }
-	    DisposeRegion(copy2);
-	}
-	DisposeRegion(intersection);
-    }
-    return FALSE;
-#endif
     AROS_LIBFUNC_EXIT
-
 } /* XorRectRegion */

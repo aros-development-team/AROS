@@ -358,6 +358,28 @@ BOOL _LinkRegionRectangleList
 #define _DisposeRegionRectangleExtChunk(_chunk) \
     __DisposeRegionRectangleExtChunk(_chunk, GfxBase)
 
+#define SIZECHUNKBUF 20
+
+struct ChunkExt
+{
+    struct RegionRectangleExtChunk  Chunk;
+    struct ChunkPool               *Owner;
+};
+
+struct ChunkPool
+{
+    struct MinNode  Node;
+    struct ChunkExt Chunks[SIZECHUNKBUF];
+    struct MinList  ChunkList;
+    LONG            NumChunkFree;
+};
+
+void __DisposeRegionRectangleExtChunk
+(
+    struct RegionRectangleExtChunk *Chunk,
+    struct GfxBase *GfxBase
+);
+
 #endif /* GRAPHICS_INTERN_H */
 
 
