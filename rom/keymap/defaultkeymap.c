@@ -8,6 +8,7 @@
 #undef D
 #undef V
 #undef ST
+#undef NOP
 
 #define N KC_NOQUAL
 #define S KCF_SHIFT
@@ -16,6 +17,7 @@
 #define D KCF_DEAD
 #define V KC_VANILLA
 #define ST KCF_STRING
+#define NOP KCF_NOP
 
 static UBYTE lokeymaptypes[] =
 {
@@ -45,12 +47,12 @@ static UBYTE lokeymaptypes[] =
     S|A, 	/* 17 */
     S|A, 	/* 18 */
     S|A, 	/* 19 */
-    N, 		/* 1A */
-    N, 		/* 1B */
-    N, 		/* 1C */
-    N, 		/* 1D */
-    N, 		/* 1E */
-    N, 		/* 1F */
+    S|A, 	/* 1A */
+    S|A, 	/* 1B */
+    S|A, 	/* 1C */
+    S|A, 	/* 1D */
+    S|A, 	/* 1E */
+    S|A, 	/* 1F */
     S|A, 	/* 20 */
     S|A, 	/* 21 */
     S|A, 	/* 22 */
@@ -75,8 +77,8 @@ static UBYTE lokeymaptypes[] =
     S|A, 	/* 35 */
     S|A, 	/* 36 */
     S|A, 	/* 37 */
-    N, 		/* 38 */
-    N, 		/* 39 */
+    S|A,	/* 38 */
+    S|A,	/* 39 */
     N, 		/* 3A */
     N, 		/* 3B */
     N, 		/* 3C */
@@ -93,8 +95,8 @@ static UBYTE hikeymaptypes[] =
     V,	/* 42 */
     V,	/* 43 */
     V,	/* 44 */
-    V,	/* 45 */
-    V,	/* 46 */
+    NOP,/* 45 LSHIFT*/
+    NOP,/* 46 RSHIFT */
     V,	/* 47 */
     V,	/* 48 */
     V,	/* 49 */
@@ -119,15 +121,15 @@ static UBYTE hikeymaptypes[] =
     S, 		/* 5C */
     S, 		/* 5D */
     S, 		/* 5E */
-    S, 		/* 5F */
+    NOP,	/* 5F HELP */
     S, 		/* 60 */
     S, 		/* 61 */
     S, 		/* 62 */
-    S, 		/* 63 */
-    S, 		/* 64 */
-    S, 		/* 65 */
-    S, 		/* 66 */
-    S, 		/* 67 */
+    NOP,	/* 63 CONTROL */
+    NOP,	/* 64 LALT */
+    NOP,	/* 65 RALT */
+    NOP,	/* 66 LCOMMAND */
+    NOP, 	/* 67 RCOMMAND */
     S, 		/* 68 */
     S, 		/* 69 */
     S, 		/* 6A */
@@ -162,6 +164,7 @@ static UBYTE hikeymaptypes[] =
 #undef D
 #undef V
 #undef ST
+#undef NOP
 
 #undef STRING
 #undef DEAD
@@ -204,9 +207,9 @@ static IPTR lokeymap[] =
     BYTES(0, 0, 0, 0),	/* 1A */
     BYTES(0, 0, 0, 0),	/* 1B */
     BYTES(0, 0, 0, 0),	/* 1C */
-    BYTES(0, 0, 0, 0),	/* 1D */
-    BYTES(0, 0, 0, 0),	/* 1E */
-    BYTES(0, 0, 0, 0),	/* 1F */
+    BYTES('1', '1', '1', '1'),		/* 1D */
+    BYTES('2', '2', '2', '2'),		/* 1E */
+    BYTES('3', '3', '3', '3'),		/* 1F */
     
     BYTES('A', 'a', 'A', 'a'),		/* 20 */
     BYTES('S', 's', 'S', 's'),		/* 21 */
@@ -222,9 +225,9 @@ static IPTR lokeymap[] =
     BYTES(0, 0, 0, 0), /* 2A */
     BYTES(0, 0, 0, 0), /* 2B */
     BYTES(0, 0, 0, 0), /* 2C */
-    BYTES(0, 0, 0, 0), /* 2D */
-    BYTES(0, 0, 0, 0), /* 2E */
-    BYTES(0, 0, 0, 0), /* 2F */
+    BYTES('4', '4', '4', '4'),		/* 2D */
+    BYTES('5', '5', '5', '5'), 		/* 2E */
+    BYTES('6', '6', '6', '6'), 		/* 2F */
     BYTES(0, 0, 0, 0), /* 30 */
     
     BYTES('Z', 'z', 'Z', 'z'),		/* 31 */
@@ -235,14 +238,14 @@ static IPTR lokeymap[] =
     BYTES('N', 'n', 'N', 'n'),		/* 36 */
     BYTES('M', 'm', 'M', 'm'),		/* 37 */
     
-    BYTES(0, 0, 0, 0),	/* 38 */
-    BYTES(0, 0, 0, 0),	/* 39 */
+    BYTES(';', ',', ';', ','),		/* 38 */
+    BYTES(':', '.', ':', '.'),		/* 39 */
     BYTES(0, 0, 0, 0),	/* 3A */
     BYTES(0, 0, 0, 0),	/* 3B */
-    BYTES(0, 0, 0, 0),	/* 3C */
-    BYTES(0, 0, 0, 0),	/* 3D */
-    BYTES(0, 0, 0, 0),	/* 3E */
-    BYTES(0, 0, 0, 0),	/* 3F */
+    BYTES('.', '.', '.', '.'),		/* 3C */
+    BYTES('7', '7', '7', '7'),		/* 3D */
+    BYTES('8', '8', '8', '8'),		/* 3E */
+    BYTES('9', '9', '9', '9'),		/* 3F */
 };
 
 /* Strings for the F1 key. In a real AmigaOS keymap, these would have come after
@@ -300,7 +303,7 @@ UBYTE f1_descr[] =
 
 static IPTR hikeymap[] =
 {
-    BYTES(0, 0, 0, 0),	/* 40 */
+    BYTES(' ', ' ', ' ', ' '),	/* 40 */
     BYTES(0, 0, 0, 0),	/* 41 */
     BYTES(0, 0, 0, 0),	/* 42 */
     BYTES(0, 0, 0, 0),	/* 43 */
@@ -310,7 +313,7 @@ static IPTR hikeymap[] =
     BYTES(0, 0, 0, 0),	/* 47 */
     BYTES(0, 0, 0, 0),	/* 48 */
     BYTES(0, 0, 0, 0),	/* 49 */
-    BYTES(0, 0, 0, 0),	/* 4A */
+    BYTES('-', '-', '-', '-'),		/* 4A */
     BYTES(0, 0, 0, 0), 	/* 4B */
     BYTES(0, 0, 0, 0),	/* 4C */
     BYTES(0, 0, 0, 0),	/* 4D */
@@ -328,9 +331,9 @@ static IPTR hikeymap[] =
     BYTES(0, 0, 0, 0),	/* 59 */
     BYTES(0, 0, 0, 0),	/* 5A */
     BYTES(0, 0, 0, 0),	/* 5B */
-    BYTES(0, 0, 0, 0),	/* 5C */
-    BYTES(0, 0, 0, 0),	/* 5D */
-    BYTES(0, 0, 0, 0),	/* 5E */
+    BYTES('/', '/', '/', '/'),		/* 5C */
+    BYTES('*', '*', '*', '*'),		/* 5D */
+    BYTES('+', '+', '+', '+'),		/* 5E */
     BYTES(0, 0, 0, 0),	/* 5F */
     BYTES(0, 0, 0, 0),	/* 60 */
     BYTES(0, 0, 0, 0),	/* 61 */
