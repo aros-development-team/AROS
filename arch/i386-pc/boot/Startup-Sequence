@@ -13,6 +13,7 @@
 RAM:
 
 SYS:contrib/aminet/untgz SYS:AROS.tgz GUI CLOSEWB
+Copy >NIL: SYS:contrib/aminet/untgz RAM:Utilities
 
 C/Assign SYS: RAM:
 C/Assign C: SYS:C
