@@ -22,6 +22,7 @@ FILES	:= \
 	Filenote \
 	Info \
 	Install \
+	install-i386-pc \
 	Join \
 	LibList \
 	List \
