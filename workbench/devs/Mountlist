@@ -15,8 +15,48 @@ FDSK0:
 	Unit		= 0
 	BlockSize	= 512
 	Surfaces	= 2
-	BlocksPerTrack	= 9
+	BlocksPerTrack	= 11
 	LowCyl		= 0
 	HighCyl		= 79
 	Reserved	= 2
 #
+
+/* Entry for a file mounted as filesystem FDSK1: */
+FDSK1:
+	FileSystem	= ffs.handler
+	Device		= fdsk.device
+	Unit		= 1
+	BlockSize	= 512
+	Surfaces	= 2
+	BlocksPerTrack	= 11
+	LowCyl		= 0
+	HighCyl		= 79
+	Reserved	= 2
+#
+
+/* Entry for a file mounted as filesystem FDSK2: */
+FDSK2:
+	FileSystem	= ffs.handler
+	Device		= fdsk.device
+	Unit		= 2
+	BlockSize	= 512
+	Surfaces	= 2
+	BlocksPerTrack	= 11
+	LowCyl		= 0
+	HighCyl		= 79
+	Reserved	= 2
+#
+
+/* Entry for a file mounted as filesystem FDSK3: */
+FDSK3:
+	FileSystem	= ffs.handler
+	Device		= fdsk.device
+	Unit		= 3
+	BlockSize	= 512
+	Surfaces	= 2
+	BlocksPerTrack	= 11
+	LowCyl		= 0
+	HighCyl		= 79
+	Reserved	= 2
+#
+
