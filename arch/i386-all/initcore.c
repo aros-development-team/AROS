@@ -17,15 +17,19 @@ static void signals(int sig)
     struct IntVector *iv;
     supervisor++;
     iv=&SysBase->IntVects[sig2inttabl[sig]];
-    AROS_UFC2(void,iv->iv_Code,
-    	AROS_UFCA(APTR,iv->iv_Data,A1),
-    	AROS_UFCA(struct ExecBase *,SysBase,A6));
+    if (iv->iv_Code)
+    {
+	AROS_UFC2(void,iv->iv_Code,
+	    AROS_UFCA(APTR,iv->iv_Data,A1),
+	    AROS_UFCA(struct ExecBase *,SysBase,A6)
+	);
+    }
     AROS_ASMSYMNAME(disable)();
     supervisor--;
     if(SysBase->AttnResched&0x8000)
     {
-        SysBase->AttnResched&=~0x8000;
-        Dispatch();
+	SysBase->AttnResched&=~0x8000;
+	Dispatch();
     }
 }
 
@@ -33,7 +37,7 @@ void InitCore(void)
 {
     static const int sig2int[][2]=
     {
-        {   SIGALRM, INTB_VERTB   },
+	{   SIGALRM, INTB_VERTB   },
     };
     struct itimerval interval;
     int i;
@@ -41,8 +45,8 @@ void InitCore(void)
 
     for(i=0;i<sizeof(sig2int)/sizeof(sig2int[0]);i++)
     {
-        sig2inttabl[sig2int[i][0]]=sig2int[i][1];
-        sigaction(sig2int[i][0],&sa,NULL);
+	sig2inttabl[sig2int[i][0]]=sig2int[i][1];
+	sigaction(sig2int[i][0],&sa,NULL);
     }
 
     interval.it_interval.tv_sec = interval.it_value.tv_sec = 0;
