@@ -31,6 +31,7 @@ extern const struct Resident
     Expansion_resident,
     Exec_resident,
     Utility_resident,
+    Mathieeesingbas_resident,
     Aros_resident,
     OOP_resident,
     HIDD_resident,
