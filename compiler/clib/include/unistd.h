@@ -1,5 +1,5 @@
-#ifndef _UNISTD_H
-#define _UNISTD_H
+#ifndef _UNISTD_H_
+#define _UNISTD_H_
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
@@ -9,12 +9,7 @@
     Lang: english
 */
 #include <sys/types.h>
-
-/*
-  Posix standars says we have to define this if we're posix compatible.
-  I don't think we really are, but we're trying to, at least :)
-*/
-#define _POSIX_VERSION
+#include <sys/_posix.h>
 
 /* Prototypes */
 int   access (const char *path, int mode);
@@ -61,4 +56,4 @@ ssize_t write (int fd, const void * buf, size_t count);
 #define	X_OK	1		/* Test for execute permission.  */
 #define	F_OK	0		/* Test for existence.  */
 
-#endif /* _UNISTD_H */
+#endif /* _UNISTD_H_ */

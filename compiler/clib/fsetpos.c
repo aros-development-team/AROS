@@ -16,8 +16,8 @@
 	int fsetpos (
 
 /*  SYNOPSIS */
-	FILE   * stream,
-	fpos_t * pos)
+	FILE		* stream,
+	const fpos_t	* pos)
 
 /*  FUNCTION
 	Change the current position in a stream. This function is eqivalent

@@ -1,5 +1,5 @@
-#ifndef _STDLIB_H
-#define _STDLIB_H
+#ifndef _STDLIB_H_
+#define _STDLIB_H_
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
@@ -8,30 +8,96 @@
     Desc: ANSI-C header file stdlib.h
     Lang: English
 */
-#ifndef _SYS_TYPES_H
-#   include <sys/types.h>
+
+#include <aros/systypes.h>
+#include <sys/_posix.h>
+
+/* The following two types can be declared elsewhere */
+#ifdef	_AROS_SIZE_T_
+typedef _AROS_SIZE_T_	    size_t;
+#undef	_AROS_SIZE_T_
+#endif
+
+#ifdef	_AROS_WCHAR_T_
+typedef	_AROS_WCHAR_T_	    wchar_t;
+#undef	_AROS_WCHAR_T_
+#endif
+
+/* Types for div and ldiv */
+typedef struct div_t {
+    int quot;
+    int rem;
+} div_t;
+
+typedef struct ldiv_t {
+    long int quot;
+    long int rem;
+} ldiv_t;
+
+#if defined __STDC__ || __STDC_VERSION__ >= 199901L
+typedef struct lldiv_t {
+    long long int   quot;
+    long long int   rem;
+} lldiv_t;
+#endif
+
+#ifndef NULL
+#define NULL	    0
 #endif
 
 #define EXIT_SUCCESS	0 /* Success exit status */
 #define EXIT_FAILURE	1 /* Failing exit status */
 
-void __attribute__ ((noreturn)) exit (int code);
-void __attribute__ ((noreturn)) abort (void);
+/* Gives the largest size of a multibyte character for the current locale */
+#define MB_CUR_MAX      __mb_cur_max
 
-int atexit(void (*func)(void));
+#if !defined _CLIB_KERNEL_ && !defined _CLIB_LIBRARY_
+extern int __mb_cur_max;
+#else
+#   include <libraries/arosc.h>
+#endif
 
-int abs (int j);
-long labs (long j);
-double atof (const char *str);
-int atoi (const char *str);
-long atol (const char *str);
-long strtol (const char *str, char **endptr, int base);
-unsigned long strtoul (const char *str, char **endptr, int base);
-double strtod(const char *str, char **endptr);
+__BEGIN_DECLS
 
+/* String conversion functions */
+double atof(const char *nptr);
+int atoi(const char *nptr);
+long int atol(const char *nptr);
+#if  defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901
+long long int atoll(const char *nptr);
+#endif
+
+double strtod(const char * restrict nptr, char ** restrict endptr);
+float strtof(const char * restrict nptr, char ** restrict endptr);
+long double strtold(const char * restrict nptr, char ** restrict endptr);
+long int strtol(const char * restrict nptr,
+		char ** restrict endptr,
+		int base);
+unsigned long int strtoul(const char * restrict nptr,
+		char ** restrict endptr,
+		int base);
+
+#if defined(__GNUC__) || defined(__ICC) || \
+    (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901)
+long long int strtoll(const char * restrict nptr,
+		char ** restrict endptr,
+		int base);
+unsigned long long int strtoull(const char * restrict nptr,
+		char ** restrict endptr,
+		int base);
+#endif
+
+/* Pseudo-random number generation functions */
 int rand (void);
 void srand (unsigned int seed);
 
+/* Max. number returned by rand() */
+#ifndef RAND_MAX
+#   define RAND_MAX	   2147483647
+#endif
+
+/* Unix pseudo-random functions */
+#if !defined(_ANSI_SOURCE) && !defined(_POSIX_SOURCE)
 double drand48(void);
 double erand48(unsigned short int xsubi[3]);
 long int lrand48(void);
@@ -42,37 +108,79 @@ void srand48(long int seedval);
 unsigned short int *seed48(unsigned short int seed16v[3]);
 void lcong48(unsigned short int param[7]);
 
-/* Max. number returned by rand() */
-#ifndef RAND_MAX
-#   define RAND_MAX	   2147483647
-#endif
+/* Thread safe random */
+int       rand_r(unsigned int *);
 
 long random(void);
 void srandom(unsigned seed);
 char *initstate(unsigned seed, char *state, int n);
 char *setstate(char *state);
+#endif /* !_ANSI_SOURCE  && !_POSIX_SOURCE */
 
-void qsort(void * array, size_t count, size_t elementsize,
-	int (*comparefunction)(const void * element1, const void * element2));
-void *bsearch(const void * key, const void * base, size_t count,
-	size_t size, int (*comparefunction)(const void *, const void *));
-
+/* Memory management functions */
 void *malloc(size_t size);
 void *calloc(size_t count, size_t size);
 void *realloc(void *oldmem, size_t newsize);
 void  free(void *memory);
 
-char *getenv(const char *name);
-int   setenv(const char *name, const char *value, int overwrite);
-int   putenv(const char *string);
-int   unsetenv(const char *name);
-
-char *mktemp(char *buf);
+/* Communication with the environment */
+void  abort (void) __noreturn;
+int   atexit(void (*func)(void));
+void  exit (int code) __noreturn;
 int   system(const char *string);
+char *getenv(const char *name);
 
-char *gcvt(double number, size_t ndigit, char *buf);
+#if !defined(_ANSI_SOURCE) && !defined(_POSIX_SOURCE)
+int   putenv(const char *string);
+int   setenv(const char *name, const char *value, int overwrite);
+int   unsetenv(const char *name);
+#endif
+
+/* Searching and sorting utilities */
+void qsort(void * array, size_t count, size_t elementsize,
+	int (*comparefunction)(const void * element1, const void * element2));
+void *bsearch(const void * key, const void * base, size_t count,
+	size_t size, int (*comparefunction)(const void *, const void *));
+
+/* Integer arithmetic functions */
+int abs (int j);
+long labs (long j);
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901
+long long int llabs(long long int j);
+#endif
 
 div_t div(int numer, int denom);
 ldiv_t ldiv(long int numer, long int denom);
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901
+lldiv_t lldiv(long long int numer, long long int denom);
+#endif
 
-#endif /* _STDLIB_H */
+/* Multibyte character functions */
+int mblen(const char *s, size_t n);
+int mbtowc(wchar_t * restrict pwc, const char * restrict s, size_t n);
+int wctomb(char *s, wchar_t wchar);
+
+/* Multibyte string functions */
+size_t mbstowcs(wchar_t * restrict pwcs, const char * restrict s, size_t n);
+size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n);
+
+/* The following are POSIX/SUS additions */
+#if !defined(_ANSI_SOURCE)
+long      a64l(const char *);
+char     *ecvt(double, int, int *, int *);
+char     *fcvt (double, int, int *, int *);
+char     *gcvt(double, int, char *);
+int       getsubopt(char **, char *const *, char **);
+int       grantpt(int);
+char     *l64a(long);
+char     *mktemp(char *);
+int       mkstemp(char *);
+char     *ptsname(int);
+char     *realpath(const char *, char *);
+void      setkey(const char *);
+int       unlockpt(int);
+#endif /* _ANSI_SOURCE */
+
+__END_DECLS
+
+#endif /* _STDLIB_H_ */

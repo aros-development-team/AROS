@@ -9,14 +9,20 @@
     Lang: english
 */
 
-#include <time.h>
+#include <aros/systypes.h>
+
+#ifdef	_AROS_TIME_T_
+typedef	_AROS_TIME_T_	time_t;
+#undef	_AROS_TIME_T_
+#endif
 
 struct utimbuf {
 	time_t actime;		/* Access time */
 	time_t modtime;		/* Modification time */
 };
 
-
+__BEGIN_DECLS
 int utime(const char *filename, struct utimbuf *buf);
+__END_DECLS
 
 #endif /* !_UTIME_H_ */
