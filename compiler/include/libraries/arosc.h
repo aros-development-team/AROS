@@ -18,11 +18,7 @@
 
 struct AroscUserData
 {
-    /*
-       This field store the old value of tc_UserData
-       In future we'll use an ETask Field
-    */
-    APTR oldtc_UserData;
+    struct AroscUserData *olduserdata;
 
     /*
       This will be useful in case the structure will be extended.
