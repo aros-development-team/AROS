@@ -96,7 +96,7 @@ struct IntIntuitionBase
     int rom/inputhandler.c/InitIIH()
     */
     struct MsgPort	   * IntuiReplyPort;
-    struct MsgPort	   * IntuiDeferedActionPort;
+    struct MinList	   * IntuiDeferedActionQueue;
     struct IOStdReq	   * InputIO;
     struct MsgPort	   * InputMP;
     BOOL		     InputDeviceOpen;
@@ -114,6 +114,8 @@ struct IntIntuitionBase
     UWORD                    pubScrGlobalMode;
 
     struct SignalSemaphore   GadgetLock;
+    struct SignalSemaphore   MenuLock;
+    struct SignalSemaphore   DeferedActionLock;
     struct LayerContext      BackupLayerContext;
     
     struct IClass *dragbarclass;
@@ -122,6 +124,9 @@ struct IntIntuitionBase
     
     struct Preferences	    *DefaultPreferences;
     struct Preferences	    *ActivePreferences;
+    
+    struct MsgPort	    *MenuHandlerPort;
+    BOOL		    MenusActive;
 };
 
 struct IntScreen
@@ -241,65 +246,6 @@ extern struct IntuitionBase * IntuitionBase;
 			    )
 
 
-
-
-/* Driver prototypes */
-
-extern int  intui_init (struct IntuitionBase *);
-extern int  intui_open (struct IntuitionBase *);
-extern void intui_close (struct IntuitionBase *);
-extern void intui_expunge (struct IntuitionBase *);
-extern int intui_GetWindowSize (void);
-extern void intui_WindowLimits (struct Window * window,
-	    WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight);
-extern void intui_ActivateWindow (struct Window *);
-extern BOOL intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
-	    WORD width, WORD height);
-extern void intui_CloseWindow (struct Window *, struct IntuitionBase *);
-extern void intui_MoveWindow (struct Window * window, WORD dx, WORD dy);
-extern int  intui_OpenWindow (struct Window *, struct IntuitionBase *, 
-			      struct BitMap * SuperBitMap, struct Hook *backfillhook);
-extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
-extern void intui_RefreshWindowFrame(struct Window *win);
-extern struct Window *intui_FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event, struct IntuitionBase *IntuitionBase);
-void intui_ScrollWindowRaster(struct Window * win, WORD dx, WORD dy, WORD xmin,
-                           WORD ymin, WORD xmax, WORD ymax, struct IntuitionBase * IntuitionBase);
-
-/* Miscellaneous prototypes */
-void intrequest_freelabels(STRPTR *gadgetlabels, struct IntuitionBase *IntuitionBase);
-void intrequest_freegadgets(struct Gadget *gadgets, struct IntuitionBase *IntuitionBase);
-
-/* intuition_misc protos */
-extern void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
-extern void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2); 
-extern BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
-extern VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
-extern void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase);
-extern void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase);
-extern void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase);
-
-
-/* Replacement for dos.library/DisplayError() */
-AROS_UFP3(LONG, Intuition_DisplayError,
-    AROS_UFPA(STRPTR, formatStr , A0),
-    AROS_UFPA(ULONG , IDCMPFlags, D0),
-    AROS_UFPA(APTR  , args      , A1));
-
-
-struct closeMessage
-{
-    struct Message ExecMessage;
-    UWORD Code;
-    struct Window *Window;
-    /* Task calling CloseWindow() */
-    struct Task *closeTask;
-    
-};
-
-/* Called by intuition to free a window */
-VOID int_closewindow(struct closeMessage *msg, struct IntuitionBase *IntuitionBase);
-VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBase);
-
 #define REFRESHGAD_BOOPSI 1		/* boopsi gadgets */
 #define REFRESHGAD_BORDER 2		/* gadgets in window border */
 #define REFRESHGAD_REL    4		/* gadgets with GFLG_RELRIGHT, GFLG_RELBOTTOM, GFLG_RELWIDTH, GFLG_RELHEIGHT */
@@ -330,8 +276,10 @@ struct IntWindow
        since CloseWindow() may not fail.
     */
        
-    struct closeMessage *closeMessage;
+    struct DeferedActionMessage *closeMessage;
     Object * sysgads[NUM_SYSGADS];
+    struct Image *AmigaKey;
+    struct Image *Checkmark;
     
     /* When the Zoom gadget is pressed the window will have the
        dimensions stored here. The old dimensions are backed up here
@@ -389,8 +337,6 @@ struct DeferedActionMessage
     
 };
 
-/* IDCMP_WBENCHMESSAGE parameters */
-
 
 enum
 {
@@ -408,11 +354,58 @@ enum
 	AMCODE_ACTIVATEGADGET,
 };
 
-
 /* Flag definitions for MoreFlags */
 
 #define  WMFLG_NOTIFYDEPTH  (1 << 0)     /* Window wants notification when
 					    it's depth arranged */
+
+
+/* Called by intuition to free a window */
+VOID int_closewindow(struct DeferedActionMessage *msg, struct IntuitionBase *IntuitionBase);
+VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBase);
+
+/* Driver prototypes */
+
+extern int  intui_init (struct IntuitionBase *);
+extern int  intui_open (struct IntuitionBase *);
+extern void intui_close (struct IntuitionBase *);
+extern void intui_expunge (struct IntuitionBase *);
+extern int intui_GetWindowSize (void);
+extern void intui_WindowLimits (struct Window * window,
+	    WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight);
+extern void intui_ActivateWindow (struct Window *);
+extern BOOL intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
+	    WORD width, WORD height);
+extern void intui_CloseWindow (struct Window *, struct IntuitionBase *);
+extern void intui_MoveWindow (struct Window * window, WORD dx, WORD dy);
+extern int  intui_OpenWindow (struct Window *, struct IntuitionBase *, 
+			      struct BitMap * SuperBitMap, struct Hook *backfillhook);
+extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
+extern void intui_RefreshWindowFrame(struct Window *win);
+extern struct Window *intui_FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event, struct IntuitionBase *IntuitionBase);
+void intui_ScrollWindowRaster(struct Window * win, WORD dx, WORD dy, WORD xmin,
+                           WORD ymin, WORD xmax, WORD ymax, struct IntuitionBase * IntuitionBase);
+
+/* Miscellaneous prototypes */
+void intrequest_freelabels(STRPTR *gadgetlabels, struct IntuitionBase *IntuitionBase);
+void intrequest_freegadgets(struct Gadget *gadgets, struct IntuitionBase *IntuitionBase);
+
+/* intuition_misc protos */
+extern void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
+extern void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2); 
+extern BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
+extern VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
+extern void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase);
+extern void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase);
+extern void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase);
+extern void SendDeferedActionMsg(struct DeferedActionMessage *msg, struct IntuitionBase *IntuitionBase);
+
+
+/* Replacement for dos.library/DisplayError() */
+AROS_UFP3(LONG, Intuition_DisplayError,
+    AROS_UFPA(STRPTR, formatStr , A0),
+    AROS_UFPA(ULONG , IDCMPFlags, D0),
+    AROS_UFPA(APTR  , args      , A1));
 
 
 #endif /* INTUITION_INTERN_H */
