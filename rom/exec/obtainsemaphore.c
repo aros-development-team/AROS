@@ -10,20 +10,21 @@
 #include <exec/semaphores.h>
 #include <proto/exec.h>
 
-/*****************************************************************************
+/*****************************************************************************/
+#ifndef UseExecstubs
 
-    NAME
+/*    NAME */
 	#include <proto/exec.h>
 
 	AROS_LH1(void, ObtainSemaphore,
 
-    SYNOPSIS
+/*    SYNOPSIS */
 	AROS_LHA(struct SignalSemaphore *, sigSem, A0),
 
-    LOCATION
+/*    LOCATION */
 	struct ExecBase *, SysBase, 94, Exec)
 
-    FUNCTION
+/*    FUNCTION
 	Obtain an exclusive lock on a semaphore. If the semaphore is already
 	in use by another task this function will wait until the semaphore
 	becomes free.
@@ -51,9 +52,10 @@
 	21-01-96    fleischer implementation
 
 *****************************************************************************/
-
-void _ObtainSemaphore (struct SignalSemaphore * sigSem,
+#else
+void _Exec_ObtainSemaphore (struct SignalSemaphore * sigSem,
 	struct ExecBase * SysBase)
+#endif
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)

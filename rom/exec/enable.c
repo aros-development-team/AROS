@@ -9,9 +9,10 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 
-/*****************************************************************************
+/*****************************************************************************/
+#ifndef UseExecstubs
 
-    NAME */
+/*  NAME */
 #include <proto/exec.h>
 
 	AROS_LH0(void, Enable,
@@ -67,6 +68,9 @@
     HISTORY
 
 ******************************************************************************/
+#else
+void _Exec_Enable(struct ExecBase * SysBase)
+#endif
 {
     AROS_LIBFUNC_INIT
 

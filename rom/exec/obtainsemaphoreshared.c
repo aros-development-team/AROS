@@ -10,20 +10,21 @@
 #include <exec/semaphores.h>
 #include <proto/exec.h>
 
-/*****************************************************************************
+/*****************************************************************************/
+#ifndef UseExecstubs
 
-    NAME
+/*  NAME */
 	#include <proto/exec.h>
 
 	AROS_LH1(void, ObtainSemaphoreShared,
 
-    SYNOPSIS
+/*  SYNOPSIS */
 	AROS_LHA(struct SignalSemaphore *, sigSem, A0),
 
-    LOCATION
+/*  LOCATION */
 	struct ExecBase *, SysBase, 113, Exec)
 
-    FUNCTION
+/*  FUNCTION
 	Get a shared lock on a semaphore. If the lock cannot be obtained
 	immediately this function waits. There may be more than one shared
 	locks at the same time but only one exclusive one. An exclusive
@@ -53,9 +54,10 @@
 	21-01-96    fleischer implementation
 
 *****************************************************************************/
-
-void _ObtainSemaphoreShared (struct SignalSemaphore * sigSem,
+#else
+void _Exec_ObtainSemaphoreShared (struct SignalSemaphore * sigSem,
 			    struct ExecBase * SysBase)
+#endif
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)

@@ -10,20 +10,21 @@
 #include <exec/semaphores.h>
 #include <proto/exec.h>
 
-/*****************************************************************************
+/*****************************************************************************/
+#ifndef UseExecstubs
 
-    NAME
+/*    NAME  */
 	#include <proto/exec.h>
 
 	AROS_LH1(void, ReleaseSemaphore,
 
-    SYNOPSIS
+/*    SYNOPSIS  */
 	AROS_LHA(struct SignalSemaphore *, sigSem, A0),
 
-    LOCATION
+/*    LOCATION  */
 	struct ExecBase *, SysBase, 95, Exec)
 
-    FUNCTION
+/*    FUNCTION
 	Releases a lock on a semaphore obtained with either ObtainSemaphore(),
 	ObtainSemaphoreShared(), AttemptSemaphore or AttemptSemaphoreShared().
 	Each call to one of those functions must be accompanied with one
@@ -51,9 +52,10 @@
 	22-01-96    fleischer implementation
 
 *****************************************************************************/
-
-void _ReleaseSemaphore (struct SignalSemaphore * sigSem,
+#else
+void _Exec_ReleaseSemaphore (struct SignalSemaphore * sigSem,
 			struct ExecBase * SysBase)
+#endif
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)

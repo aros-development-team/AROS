@@ -9,11 +9,12 @@
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
-
-/*****************************************************************************
-
-    NAME */
 #include <proto/exec.h>
+
+/*****************************************************************************/
+#ifndef UseExecstubs
+
+/*  NAME */
 
 	AROS_LH0(void, Permit,
 
@@ -55,6 +56,9 @@
     HISTORY
 
 ******************************************************************************/
+#else
+void _Exec_Permit(struct ExecBase * SysBase)
+#endif
 {
     AROS_LIBFUNC_INIT
 
