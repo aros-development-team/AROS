@@ -1327,7 +1327,12 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 {
     BPTR              seglist;
     LONG              error = 0;
-    struct ShellState ss;
+    struct ShellState ss = {FALSE};
+/* 
+  if ss->residentCommand isn't initialized as FALSE, it's value is rather 
+  random ( loadCommand doesn't change it ) so unloadCommand almost always 
+  thinks that last Command was resident, and doesn't do an UnloadSeg...
+*/
 
     P(kprintf("Trying to load command: %s\nArguments: %s\n", command,
 	     commandArgs));
