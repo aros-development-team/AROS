@@ -497,10 +497,12 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 			/* Conversion failed. */
 			ERROR(ERROR_BAD_NUMBER);
 		    /* Put the result where it belongs. */
+		#if 0
 		    if(flags[arg]&REQUIRED)
 			/* Required argument. Return number. */
 			array[arg]=value;
 		    else
+		#endif
 		    {
 			/* Abuse the argbuf buffer. It's not needed anymore. */
 			argbuf[arg]=(STRPTR)value;
