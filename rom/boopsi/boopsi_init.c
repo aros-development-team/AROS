@@ -36,6 +36,8 @@ extern Class rootclass;
 extern struct IClass *InitICClass(struct Library *base);
 extern struct IClass *InitModelClass(struct Library *base);
 
+#define SysBase (GetBBase(BOOPSIBase)->bb_SysBase)
+
 #if 0
 static void FreeAllClasses(struct Library *BOOPSIBase)
 {

@@ -5,3 +5,4 @@ mmakefile
 libdefs.h
 endtag.c
 functable.c
+functions.[ch]

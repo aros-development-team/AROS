@@ -20,6 +20,7 @@
 #endif
 #include <utility/utility.h>
 #include <aros/asmcall.h>
+#include "intern.h"
 
 AROS_UFP3(static ULONG, rootDispatcher,
     AROS_UFPA(Class *,  cl,  A0),
@@ -43,9 +44,9 @@ Class rootclass =
 };
 
 
-#define BOOPSIBase	((struct BOOPSIBase *)(cl->cl_UserData))
+#define BOOPSIBase	(GetBBase(cl->cl_UserData))
 
-/******************************************************************************
+/*****i************************************************************************
 
     NAME */
 	AROS_UFH3(static IPTR, rootDispatcher,
