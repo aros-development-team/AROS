@@ -254,7 +254,10 @@ AROS_LH1(LIBBASETYPEPTR, open,
     if (!GetPrivIBase(LIBBASE)->InputDeviceOpen)
     {
     	if (!OpenDevice("input.device", -1, (struct IORequest *)GetPrivIBase(LIBBASE)->InputIO, NULL))
+	{
     	    GetPrivIBase(LIBBASE)->InputDeviceOpen = TRUE;
+	    InputBase = (struct Library *)GetPrivIBase(LIBBASE)->InputIO->io_Device;
+	}
     	else
     	    return (NULL);
     	
