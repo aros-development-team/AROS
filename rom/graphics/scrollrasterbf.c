@@ -97,8 +97,8 @@
       yMax = height;
   }
   
-  if (FALSE == driver_ScrollRaster(rp, dx, dy, xMin, yMin, xMax, yMax,
-                                   GfxBase))
+  if (FALSE == driver_MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE,
+                                 GfxBase))
     return;
 
   /* 
