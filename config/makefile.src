@@ -10,8 +10,8 @@ CONFIG_H = $(INCDIR)/aros/config.h
 
 all: setup
 	@echo "Creating mf.inc files..."
-	@sort +1 $(GENDIR)/config.files -o $(GENDIR)/config.files.sort
-	@uniq $(GENDIR)/config.files.sort $(GENDIR)/config.files
+	@$(SORT) +1 $(GENDIR)/config.files -o $(GENDIR)/config.files.sort
+	@$(UNIQ) $(GENDIR)/config.files.sort $(GENDIR)/config.files
 	@$(AWK) -f $(TOP)/scripts/genreplace.gawk \
 		--assign TOP="$(TOP)" --assign GENDIR="$(GENDIR)" \
 		$(GENDIR)/config.files
