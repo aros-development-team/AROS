@@ -1,0 +1,439 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>Intuition Ideas</TITLE>
+
+<H1>AROS Intuition Ideas</H1>
+
+<LINK REV="made" HREF="mailto:bmontgom@morgan.ucs.mun.ca">
+
+</HEAD>
+
+<BODY>
+
+This is a collection of ideas for Intuition and related libraries for the 
+<A HREF="http://www.telesys-innov.fr/AmigOS">Amiga OS Replacement Project.</A>
+If you wish to contribute an idea to this project email the
+<A HREF="mailto:amigosintuition@colombo.telesys-innov.fr">
+Intuition AROS mailing list.</A> <P>
+
+Use the subject line of "Intuition Ideas". <P>
+
+
+Contents: <P>
+
+<UL>
+<LI> <A HREF="#Preface">Preface</A>
+<LI> <A HREF="#General">Overall General Ideas</A>
+<LI> <A HREF="#Gui">Graphical User Interface Ideas</A>
+<LI> <A HREF="#Workbench">Workbench.library Ideas</A>
+<LI> <A HREF="#Intuition">Intuition.library Ideas</A>
+<LI> <A HREF="#Icons">Icon.library Ideas</A>
+<LI> <A HREF="#Boopsi">Boopsi Ideas</A>
+<LI> <A HREF="#Datatypes">Datatype related Ideas</A>
+<LI> <A HREF="#Gadtools">Gadtools Related Ideas</A>
+<LI> <A HREF="#Prefs">New Prefs Ideas</A>
+<LI> <A HREF="#Contributers">Contributers</A>
+</UL>
+
+<H2><A NAME="Preface">Preface:</A></H2>
+
+Due to the chaotic nature of the submissions, some modification and integration
+of the text is required, so what you submit may show up in a different form
+than you submitted.  When submitting ideas try and explain yourself as much as
+possible and avoid one line suggestions.
+<P>
+This is a work in progress.
+
+<H2><A NAME="Workbench">Workbench:</A></H2>
+
+In general workbench has to be reworked, made more accessible to the
+programming community for enhancements or even replacement.
+
+<PRE>
+- multi-threaded, asynchron design
+  - more than one task per window
+    - one for reading new information
+    - one for viewing information
+    - one for user inputs
+    - one for each started copy, move, delete or whatever action
+- better iconformat as high speed datatype
+  - direct chunky pixel support for gfx cards
+  - palette remapping
+  - accessing icon.library for batch processing of icons via single function
+- better text based display... (not as icons..) (DOpus like)
+- button banks, toolmanager facilities
+- configurable menues
+- global iconify which includes drawers.
+- arexx port
+
+Programs to consider for inspiration:
+--> DOpus 5.11, Toolmanager, Toolsdaemon 
+
+</PRE>
+
+<H2><A NAME="Intuition">Intuition:</A></H2>
+
+Should be the home of any layout engine.
+<PRE>
+Nadda so far.
+</PRE>
+
+<H2><A NAME="Icons">Icon.library Ideas:</A></H2>
+
+DiskObjects should be treated like objects, icon.library should have functions
+for renaming, copying, deleting, moving, loading and saving.  For optimizing
+purposes there has to be functions for saving and loading all the icons of a
+drawer at once.  This will allow experimentation with different icon storage
+schemes without many varients of icon.library.
+<P>
+The DiskObject structure needs an extended image structure to handle palettes,
+multiple frames (over 2) and possibly aspect ratios.
+<P>
+Icon storage format should be ilbm anim plus an extra block for non image icon 
+data.  This is to go further along the road to being able to use a paint
+program to edit icon images, more important when considering animated icons.
+
+<H2><A NAME="Boopsi">Boopsi Ideas:</A></H2>
+
+What is there to say about Boopsi?
+
+<PRE>
+Nadda so far.
+</PRE>
+
+<H2><A NAME="Datatypes">Datatypes Ideas:</A></H2>
+
+Datatypes should encompass more than just images for gadgets.
+<PRE>
+What about are more differenciated datatypes scheme for the new os... as
+follows!?
+
+datatype
+    - load-smallest-element (codec)
+    - load-all
+    - save-smallest-element (codec)
+    - save-all
+    - view (gadget)
+    - operators
+      - e.g. convert text from one standard to another
+      - or: rotate an image... an such
+    - editors
+      - direct link to editing software or directly integrated editing
+        software for each type
+    - arexx interface type
+
+This would add the following features:
+
+- able to do progressive type loading (good for those html browser with
+  progressive image loading)
+- able to manipulate types contents in a modular
+- able to integrate application more smoothly in that scheme
+
+Imaginge a texteditor:
+- it could use ascii-loaders and savers
+- it could have operators such as
+  - delete a line
+  - change a line
+  - reformat a block and such
+- and the main part is in the editor.subtype
+
+You could use it to view text, but also to edit texts. And even better
+only viewing texts would mean that only loadtype and viewtype will be
+loaded, but not the operators and editor.subtype
+
+Hmmm, I am getting a bit confused with the slang... is it a subtype, a
+datatype sub class or what...  :-)
+
+A new prefs accessing scheme could be implemented this way...
+
+- load (part of) tag based IFF PREFS file
+- save ....
+- change one part of the file
+- edit it
+  |
+  --general
+   |-- printer, serial, screenmode bla bla....
+- view contents...
+- arexx interface
+
+An in SYS:Prefs only the starters of all this in global mode.
+
+main()
+{    OpenLibrary("inputprefsedit.class",bla)
+    execute the edit function via a single call... (DoMethod?)
+    CloseLibrary(bla)
+}
+
+thats it, for one prefs program... all is modular...
+
+But could such a scheme be implemented without to much overhead???
+</PRE>
+
+<H2><A NAME="Gadtools">Gadtools Ideas:</A> </H2>
+
+The functionality of gadtools should be just a top layer on top of boopsi, if
+not made obsolete by a layout system.
+
+<PRE>
+It could do with a lot of improvements, most importantly though would 
+be allowing people to remove gadgets from windows!!!!
+- full font sensitivity with gadget grouping...
+  layouting with absolute coordinates is outdated...
+- more object orientated...
+
+e.g. I would remove gadtools completely, or leave it there for
+compatibility reasons, but I wont enhance it, I would simply replace it
+with a better BOOPSI implemention...
+
+</PRE>
+
+<H2><A NAME="Prefs">Preferences Related:</A></H2>
+
+More preferences programs!
+
+<PRE>
+- global, global-user-specific, local (application-specific) and
+  local-userspecific preferences
+- configurator-objects that could be called in every application and added
+  as a gadget to the gui
+- option for using and saving prefs
+  - option to have both directories for using and saving on the harddisc
+    (instead of ENV: in RAM:)
+
+</PRE>
+
+<H2><A NAME="Gui">Gui Related:</A></H2>
+
+The operating system needs a layout system.  Such a layout system should be as
+deluxe as the user and the programmer would like it to be or as streamlined and
+efficient as they would like it to be.  A similar system to BOOPSI or
+enhancement to BOOPSI, class related with multiple inheritance and 
+progressively complex classes that they user can choose via preferences which
+one to use.  
+
+<PRE>
+- full font- and windowsizing-sensitivity for _all_ new programs and
+  all system programs
+- object oriented
+- full configurability
+- with configurator, prefs program
+
+Layout library references:
+
+--> MUI, BGUI, TritonGUI, ClassAct
+
+Class Based Libraries:
+
+    There are several issues to be dealt with when considering adopting a class
+    system for the amiga system libraries.  One issue is fall through, if you
+    call a library looking for a paticular function but it exists only on it's
+    parent then the parent library has to be opened and checked for the
+    function as well.  There is the issue of what to do when a library is
+    missing in a class based system.  There is also the issue of how the user
+    can select less complex or more complex libraries via preferences.
+
+    In order for a class system to be applied to libraries additional
+    information has to be present within the libraries themselves:
+
+    -Parent(s)     Where to look when a function is 
+                   not found on a child library.
+
+    -Children      Maybe.
+
+    -Method Of     Either you use a flag in the LVO tables of child
+     Passthrough   libraries to indicate the function exists on a
+                   parent library or you get into using an additional
+                   table containing strings for the function names
+                   of each library.  For compatibility reasons and
+                   efficiency reasons the flag method would be better.
+
+     Pros:         Setfunction problem solved.  Just make a child library of
+                   the library whose functions you want to replace.
+                   User control of system complexity, if you want the super
+                   wiz bang layout library you select a child of the child
+                   of the generic layout library with the features you want.
+                   (How? No sure, see below)
+
+     Cons:         Loading extra libraries looking for functions on parents.
+                   Time taken to search for functions in a library using a
+                   named offset table scheme.  (Non existant with flag
+                   method)
+                   Child libraries have to have vector tables of the same
+                   size that of its immediate parent or larger and overriding
+                   functions have to be at the same offsets as the parent.  
+                   This could lead to bugs of the 'off by one' kind.
+                   OpenLibraryTags and its CloseLibrary function would have 
+		   to traverse the parents of a library when they open and 
+		   close them to update usage counts. Minor.
+                   Only new programs would be able to take advantage of
+                   class system libraries. Perhaps not.
+
+     How would this work?
+
+         This scheme could be implemented with a modified OpenLibrary()
+     function or a new OpenLibraryTags() function with a matching
+     CloseLibrary().  Upon opening a library (newly opened), the function 
+     could fill in the flag entries of any child library table with the 
+     apropriate values from that of the parents of the child library.  
+     (Talking single inheritance here).
+
+     Ex.    
+
+         guiclass.library
+             windowsizingcode()
+             dothisorthat()
+             FontAdaptiveCode()
+             slowdownsystem()
+             Parent: NULL
+
+         newguiclass.library
+             flag
+             flag
+             NewFontAdaptiveCode()
+             flag
+             Parent: guiclass.library
+
+         OpenLibraryTags() would return a pointer to the base of a new table
+         formed like so:
+
+             windowsizingcode()
+             dothisorthat()
+             NewFontAdaptiveCode()
+             slowdownsystem()
+
+The issue of how the user would be able to select one gui class or another is
+up for debate as well, any ideas?
+
+Misc thoughts:
+
+If you open "Intuition.library" then you won't get any of the sub
+classes of "Intuition.library" and if you redirect calls to it to 
+something else you screw up the fall through aspect and get into
+looping.  If OpenLibrary() just accepts "Intuition.library" as a
+flag instead of a filename to open and the actual Intuition.library
+is renamed to intuitionroot.library (Example) then this idea would be 
+workable.  A prefs program would setup child libraries to replace
+root libraries in a database for OpenLibrary().  This has a problem
+with only getting overrided functions in child libraries, no new
+functions.  Good solution for setfunction though.
+
+If apps call child libraries directly then apps have to check to see
+if they exist and if they don't call a simpler class of library.  This
+gets into not knowing the siblings of a paticular child class.  Some
+standard naming perhaps could solve this or a global table of
+hierarchy that apps could check which could be adjusted via prefs by 
+the user.  Requires bullet-proofing.  One possibility would be using
+the tags system of amigaos to check for advanced features akin to 
+termcaps in unix systems.
+
+Overrided functions could be unloaded, but then they would have to be
+reloaded if another app loaded a child library that didn't override the
+unloaded functions of the parent library in question.  I think that would be a 
+good idea... partially library loading... only non overridden function will be 
+loaded from the parent library.
+
+From practical experience with this type of system, you will find that the
+entire parent libraries will be loaded all the time anyway.  It depends on the
+amount of classes being used.  There is also a feature of this kind of
+system that you can call the parent function that your child function has
+overrided, this removing the need to duplicate the code of the parent function
+in its entirety.  In amiga terms it would be like a setfunction() that wedged
+into a vector, did something and called the original vector.  Or call the
+original vector first then do something.  With libraries like intuition and
+graphics etc, they are generally loaded all the time anyway.
+
+One could make a case of making exec the root library of this system,
+Intuition a child of graphics, layers a child of graphics as well etc.
+The thing about this system is that the root library remains pretty much the
+same as before, just a parent field added.
+
+We need exact implementation details and programming directives or we will
+end up in a mess...
+
+Any child library has to have a vector table equal to or greater than that of
+its parent.  This is to avoid overriding a function of grandparent
+where the parent vector table doesn't extend as far down as that of the
+grandparent.  You could program around that, checking for vector table sizes
+but why bother with the headache?
+
+Standard library names for child class libraries.  Intuition.library would
+be the simplest, Intuitionchild1.library would be the next up,
+Intuitionchild2.library would be the next up (Example).  Via prefs you select
+which real library would go into each class, Intuitionchild1=MUIclass.library
+for example.  Each standard would have to have a set API of course.  If a new
+library wanted to implement a new API they could start a new standard class,
+ie. Intuitionchild3.library but would have to include the API of the parents,
+ie. Intuitionchild1, Intuitionchild2, and Intuition.  Any ideas on a naming
+system?
+
+The system should get tag based whereever possible...
+
+I mean it the following. Dont let any _new_ program spy the system
+structures... NEVER. For the old programs, give them a fake of the needed
+structures as emulation.
+
+There should be function like GetTagList(object, taglist),
+SetTagList(object, taglist) everywhere. Exceptions from this rule _only_
+where needed for efficiency.
+
+This way you dont have to rethink how to keep the system compatible with
+older software all the way... Just change anything you want, as long as
+you can provide the old tags...
+
+</PRE>
+
+<H2><A NAME="General">General Ideas:</A></H2>
+
+Abtraction and modularization is the name of the game.  More power and more
+choices.
+
+<PRE>
+Modularization:
+
+- enhancement of the datatype concept
+  - viewtypes, edittypes, showtypes, printtypes, loadtypes, savetypes,
+    operatortypes (e.g. data manipulating, image processing functions),
+    configtypes
+  - enhancement of the gadget concept
+    - configurators as callable gadgets
+  - embedding of datatypes...
+    - iff files with more than one datatype
+    - guide files with inline gfx, anims, sounds...
+
+- modularization of applications in tiles... as above
+  - initialisators, configtypes, input/edittypes, operators, viewtypes,
+    printtypes, savetypes
+
+advantages of this concept described in some examples:
+
+- a word processor could embed a complete paint program as object or
+  vice versa...
+- a word processor could embed _local_ printer settings via the
+  printer.configtype of the system, custom configs are only needed
+  when there are options missing in the system printer.configtype
+- pictures could be remapped whereever needed via the remap.operator
+- there could be a configurator for each shell command to set the
+  default behaviour
+- and much more
+
+
+--> PPaint, Wordworth, ADPro, Superview and others already have such
+    concepts, but they are using different implementations not
+    compatible to each other.
+
+</PRE>
+
+<H2><A NAME="Contributers">People who have submitted ideas:</A></H2>
+
+<PRE>
+From: icwhiting@taz.dra.hmg.gb        "Ian"
+From: steigerw@stud.uni-frankfurt.de  "Martin Steigerwald" 
+From: bmontgom@morgan.ucs.mun.ca      "Byron Montgomerie"
+
+</PRE>
+
+</BODY>
+</HTML>
+
