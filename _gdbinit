@@ -1,1 +1,131 @@
 handle SIGUSR1 pass noprint nostop
+
+define liblist
+    set $lib = SysBase->LibList.lh_Head
+
+    printf "Base     OpenC   Name\n"
+    printf "---------------------------------------------------------------\n"
+    while ($lib->ln_Succ != 0)
+	printf "%08x %5d   %s\n", \
+	    $lib, \
+	    ((struct Library *)$lib)->lib_OpenCnt, \
+	    $lib->ln_Name
+	set $lib = $lib->ln_Succ
+    end
+end
+document liblist
+List the current libraries in the system
+end
+
+define devlist
+    set $dev = SysBase->DeviceList.lh_Head
+    printf "Base     OpenC   Name\n"
+    printf "---------------------------------------------------------------\n"
+    while ($dev->ln_Succ != 0)
+	printf "%08x %5d   %s\n", \
+	    $dev, \
+	    ((struct Library *)$dev)->lib_OpenCnt, \
+	    $dev->ln_Name
+	set $dev = $dev->ln_Succ
+    end
+end
+document devlist
+List the current devices in the system
+end
+
+define resourcelist
+    set $res = SysBase->ResourceList.lh_Head
+    printf "Base     Name\n"
+    printf "---------------------------------------------------------------\n"
+    while ($res->ln_Succ != 0)
+	printf "%08x %s\n", $res, $res->ln_Name
+	set $res = $res->ln_Succ
+    end
+end
+document resourcelist
+List the current resources in the system
+end
+
+define residentlist
+    set $resp = (struct Resident **)SysBase->ResModules
+    set $i = 0
+
+    printf "Address    Pri Flags Vers Type  Name\n"
+    printf "--------------------------------------------------------------\n"
+    while (($resp)[$i] != 0)
+	set $res = ($resp)[$i]
+	printf "%08x  %4d    %02x  %3d  %3d  %s\n", \
+	    $res, \
+	    ((struct Resident *)$res)->rt_Pri, \
+	    ((struct Resident *)$res)->rt_Flags, \
+	    ((struct Resident *)$res)->rt_Version, \
+	    ((struct Resident *)$res)->rt_Type, \
+	    ((struct Resident *)$res)->rt_Name
+	set $i = $i + 1
+    end
+end
+document residentlist
+List the system resident list
+end
+
+define taskready
+    set $task = (struct Task *)SysBase->TaskReady.lh_Head
+
+    printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
+    printf "-----------------------------------------------------------------------------\n"
+    while ($task->tc_Node.ln_Succ != 0)
+	printf "%08x %08x %08x %8d %8d %3d  %3ld %s\n", \
+	    $task, \
+	    $task->tc_SigWait, \
+	    $task->tc_SigRecvd, \
+	    $task->tc_SPUpper - $task->tc_SPLower, \
+	    $task->tc_SPUpper - $task->tc_SPReg, \
+	    $task->tc_Node.ln_Pri, \
+	    $task->tc_Node.ln_Type, \
+	    $task->tc_Node.ln_Name
+	set $task = (struct Task *)$task->tc_Node.ln_Succ
+    end
+end
+document taskready
+List of tasks current ready to run
+end
+
+define taskwait
+    set $task = (struct Task *)SysBase->TaskWait.lh_Head
+
+    printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
+    printf "-----------------------------------------------------------------------------\n"
+    while ($task->tc_Node.ln_Succ != 0)
+	printf "%08x %08x %08x %8d %8d %3d  %3ld %s\n", \
+	    $task, \
+	    $task->tc_SigWait, \
+	    $task->tc_SigRecvd, \
+	    $task->tc_SPUpper - $task->tc_SPLower, \
+	    $task->tc_SPUpper - $task->tc_SPReg, \
+	    $task->tc_Node.ln_Pri, \
+	    $task->tc_Node.ln_Type, \
+	    $task->tc_Node.ln_Name
+	set $task = (struct Task *)$task->tc_Node.ln_Succ
+    end
+end
+document taskwait
+List of tasks currently waiting for an event
+end
+
+define thistask
+    set $task = (struct Task *)SysBase->ThisTask
+    printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
+    printf "-----------------------------------------------------------------------------\n"
+    printf "%08x %08x %08x %8d %8d %3d  %3ld %s\n", \
+	$task, \
+	$task->tc_SigWait, \
+	$task->tc_SigRecvd, \
+	$task->tc_SPUpper - $task->tc_SPLower, \
+	$task->tc_SPUpper - $task->tc_SPReg, \
+	$task->tc_Node.ln_Pri, \
+	$task->tc_Node.ln_Type, \
+	$task->tc_Node.ln_Name
+end
+document thistask
+Print out information about the currently running task.
+end
