@@ -71,6 +71,12 @@
 #include <devices/inputevent.h>
 #endif
 
+#ifdef _AROS
+#ifndef DEVICES_RAWKEYCODES_H
+#include <devices/rawkeycodes.h>
+#endif
+#endif
+
 #ifndef LIBRARIES_GADTOOLS_H
 #include <libraries/gadtools.h>
 #endif
