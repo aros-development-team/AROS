@@ -23,6 +23,7 @@ FUNCS := \
 	unlockbitmaptaglist	\
 	writelutpixelarray	\
 	writepixelarray		\
+	writepixelarrayalpha	\
 	writergbpixel		
 
 #MM- kernel-cgfx : includes linklibs
