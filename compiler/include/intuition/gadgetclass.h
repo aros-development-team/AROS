@@ -2,7 +2,7 @@
 #define INTUITION_GADGETCLASS_H
 
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Headerfile for Intuitions' gadget classes.
@@ -32,19 +32,22 @@
    supplied as immediate data at the address, the object pointer points to. In
    other words, objects of GadgetClass are struct Gadget pointers. */
 
-/* Attributes. Most subclasses of GadgetClass implement a subset of these
-   attributes. Note also that even if an attribute is signed as settable, some
-   subclasses may ignore this or even behave strange, if such an attribute is
-   set, after they were added to a window. Read the class documentation of the
-   subclasses to learn about such caveats.
+/* *************************** Attributes *****************************/
+
+/* Most subclasses of GadgetClass implement a subset of these attributes. Note
+   also that even if an attribute is signed as settable, some subclasses may
+   ignore this or even behave strange, if such an attribute is set, after they
+   were added to a window. Read the class documentation of the subclasses to
+   learn about such caveats.
 
    Many of these attributes correspond directly to a field of the Gadget
    structure or to one flag for this structure. See <intuition/intuition.h> for
    more information. */
+
 #define GA_Dummy	(TAG_USER + 0x30000)
 
-/* Gadget placing. Of course, all GA_Rel attributes are mutually exclusive with
-   their non relative equivalents. */
+/* Gadget placing (in pixels). Of course, all GA_Rel attributes are mutually
+   exclusive with their non relative equivalents. */
   /* [ISG] (LONG) Left edge of gadget. */
 #define GA_Left 	(GA_Dummy +  1)
   /* [ISG] (LONG) Left edge of gadget, depending on right window border:
@@ -197,7 +200,7 @@
 #define GV_LabelPlace_Below 5
 
 
-/* Methods for GadgetClass and its subclasses. */
+/************* Methods for GadgetClass and its subclasses. ************/
 
 /* This method is used to test, if a mouse-click hit the gadget. You return
    GMR_GADGETHIT (see below), if you were hit and 0UL otherwise. Note that you
@@ -272,27 +275,25 @@ struct gpInput
 
 /* Return codes for GM_GOACTIVE and GM_HANDLEINPUT. These are actually flags
    and may be or'ed. */
-  /* Gadget is still active. */
-#define GMR_MEACTIVE   0
+  /* Gadget is still alive. */
+#define GMR_MEACTIVE      0
   /* Gadget has become inactive, but the input event may not be used again. */
-#define GMR_NOREUSE    (1L<<1)
+#define GMR_NOREUSE       (1L<<1)
   /* Gadget has become inactive, and the input event may be reused by
      intuition. */
-#define GMR_REUSE      (1L<<2)
+#define GMR_REUSE         (1L<<2)
   /* Gadget was selected. Generate IDCMP_GADGETUP message. gpi_Termination must
      be set. */
-#define GMR_VERIFY     (1L<<3)
+#define GMR_VERIFY        (1L<<3)
+
 /* If one of the following two flags is returned, the gadget has become
    inactive, but the next or previous gadget, which has the GFLG_TABCYCLE flag
    set is to be activated. */
-#define GMR_NEXTACTIVE (1L<<4) /* Activate next gadget. */
-#define GMR_PREVACTIVE (1L<<5) /* Activate previous gadget. */
+#define GMR_NEXTACTIVE    (1L<<4) /* Activate next gadget. */
+#define GMR_PREVACTIVE    (1L<<5) /* Activate previous gadget. */
 
-/* This return value is used as a hack to make gatools
-   gadgets work, and may be INCOMPATIBLE with a future AmimaOS 4.0.
-   OLY FOR SYSTEM USE !!!!
-*/
-   
+  /* This return value is used as a hack to make gatools gadgets work, and may
+     be INCOMPATIBLE with a future AmigaOS. FOR SYSTEM USE ONLY! */
 #define GMR_INTERIMUPDATE (1L<<20)
 
 /* See GM_GOACTIVE for explanation. */
@@ -394,10 +395,11 @@ struct gpDomain
  ***************************** PropGClass *****************************
  **********************************************************************/
 
-/* This class defines a standard proportional gadget, */
+/* This class defines a standard proportional gadget. */
 
 /* Attributes. */
 #define PGA_Dummy      (TAG_USER + 0x31000)
+
   /* [IS.] (ULONG) Define in which the direction gadget should stretch.
      Possible values are FREEVERT and FREEHORIZ (see <intuition/intuition.h>).
   */
@@ -415,6 +417,7 @@ struct gpDomain
 #define PGA_VertPot    (PGA_Dummy +  5)
   /* [ISG] (UWORD) */
 #define PGA_VertBody   (PGA_Dummy +  6)
+
 /* The following three attributes should not be used with the PGA_*Pot and
    PGA_*Body attributes. */
   /* [IS.] (UWORD) The total number of positions in the gadget. */
@@ -434,45 +437,81 @@ struct gpDomain
 
 /* StringGClass is just a normal "string" gadget. */
 
-/* Attributes */
-#define STRINGA_Dummy	   (TAG_USER      + 0x32000)
-#define STRINGA_MaxChars   (STRINGA_Dummy +  1)
-#define STRINGA_Buffer	   (STRINGA_Dummy +  2)
-#define STRINGA_UndoBuffer (STRINGA_Dummy +  3)
-#define STRINGA_WorkBuffer (STRINGA_Dummy +  4)
-#define STRINGA_BufferPos  (STRINGA_Dummy +  5)
-#define STRINGA_DispPos    (STRINGA_Dummy +  6)
-#define STRINGA_AltKeyMap  (STRINGA_Dummy +  7)
-#define STRINGA_Font	   (STRINGA_Dummy +  8)
-#define STRINGA_Pens	   (STRINGA_Dummy +  9)
-#define STRINGA_ActivePens (STRINGA_Dummy + 10)
-#define STRINGA_EditHook   (STRINGA_Dummy + 11)
-#define STRINGA_EditModes  (STRINGA_Dummy + 12)
+/* Attributes. */
+#define STRINGA_Dummy          (TAG_USER + 0x32000)
 
-/* booleans */
-#define STRINGA_ReplaceMode	(STRINGA_Dummy + 13)
-#define STRINGA_FixedFieldMode	(STRINGA_Dummy + 14)
-#define STRINGA_NoFilterMode	(STRINGA_Dummy + 15)
-#define STRINGA_Justification	(STRINGA_Dummy + 16) /* GACT_STRINGCENTER,
-							GACT_STRINGLEFT,
-							GACT_STRINGRIGHT */
-#define STRINGA_LongVal 	(STRINGA_Dummy + 17)
-#define STRINGA_TextVal 	(STRINGA_Dummy + 18)
-#define STRINGA_ExitHelp	(STRINGA_Dummy + 19) /* Exit on "Help" */
+  /* [I..] (WORD) Maximum number of characters the string gadget accepts.
+     Default defined below. */
+#define STRINGA_MaxChars       (STRINGA_Dummy +  1)
+  /* [I..] (STRPTR) Buffer for storing the current string of the gadget. */
+#define STRINGA_Buffer	       (STRINGA_Dummy +  2)
+  /* [I..] (STRPTR) Buffer for storing the old (undo) string of the gadget. */
+#define STRINGA_UndoBuffer     (STRINGA_Dummy +  3)
+  /* [I..] (STRPTR) Buffer for the class to work with. */
+#define STRINGA_WorkBuffer     (STRINGA_Dummy +  4)
+  /* [IS.] (WORD) Current position of cursor (relative to the beginning of the
+     buffer). */
+#define STRINGA_BufferPos      (STRINGA_Dummy +  5)
+  /* [IS.] (WORD) FIXME */
+#define STRINGA_DispPos        (STRINGA_Dummy +  6)
+  /* [IS.] (struct KeyMap *) KeyMap to use (see <devices/keymaps.h>). */
+#define STRINGA_AltKeyMap      (STRINGA_Dummy +  7)
+  /* [IS.] (struct TextFont *) Font to use for displaying the string (see
+     <graphics/text.h>). */
+#define STRINGA_Font	       (STRINGA_Dummy +  8)
+  /* [IS.] (LONG) The lower 16 bits specify the background-pen, the upper 16
+     bits the foreground-pen. The gadget is rendered, using these pens, if the
+     gadget is inactive */
+#define STRINGA_Pens	       (STRINGA_Dummy +  9)
+  /* [IS.] (LONG) Like STRINGA_Pens. These pens are used, if the gadget is
+     active. */
+#define STRINGA_ActivePens     (STRINGA_Dummy + 10)
+  /* [I..] (struct Hook *) FIXME */
+#define STRINGA_EditHook       (STRINGA_Dummy + 11)
+  /* [IS.] (ULONG) FIXME */
+#define STRINGA_EditModes      (STRINGA_Dummy + 12)
+  /* [IS.] (BOOL) If this is TRUE, the current character is overwritten, if the
+     use presses a key. Otherwise, the new character is inserted. */
+#define STRINGA_ReplaceMode    (STRINGA_Dummy + 13)
+  /* [IS.] (BOOL) FIXME */
+#define STRINGA_FixedFieldMode (STRINGA_Dummy + 14)
+  /* [IS.] (BOOL) FIXME */
+#define STRINGA_NoFilterMode   (STRINGA_Dummy + 15)
+  /* [IS.] (UWORD) Where should the text be justified? Use one of
+     GACT_STRINGCENTER, GACT_STRINGLEFT and GACT_STRINGRIGHT (defined in
+     <intuition/intuition.h>). */
+#define STRINGA_Justification  (STRINGA_Dummy + 16)
+  /* [ISG] (LONG) If this is set, the string gadget will only accept numeric
+     values. Argument is the number, the string gadget is to be set to. When
+     getting this attribute, this number is returned. */
+#define STRINGA_LongVal        (STRINGA_Dummy + 17)
+  /* [ISG] (STRPTR) If this is set, the string gadget will accept strings.
+     Argument is a string that is to be copied into the string gadget and its
+     buffer. */
+#define STRINGA_TextVal        (STRINGA_Dummy + 18)
+  /* [IS.] (BOOL) If this is set, pressing the "Help" key, while the gadget is
+     active, will unselect the gadget. */
+#define STRINGA_ExitHelp       (STRINGA_Dummy + 19) /* Exit on "Help" */
 
-#define SG_DEFAULTMAXCHARS	(128)
+/* Default, if STRINGA_MaxChars is not set. */
+#define SG_DEFAULTMAXCHARS (128)
 
-/* Gadget Layout related attributes	*/
-#define LAYOUTA_Dummy		(TAG_USER  + 0x38000)
-#define LAYOUTA_LayoutObj	(LAYOUTA_Dummy + 1)
-#define LAYOUTA_Spacing 	(LAYOUTA_Dummy + 2)
-#define LAYOUTA_Orientation	(LAYOUTA_Dummy + 3)
-#define LAYOUTA_ChildMaxWidth	(LAYOUTA_Dummy + 4)
-#define LAYOUTA_ChildMaxHeight	(LAYOUTA_Dummy + 5)
+/* Gadget layout related attributes. */
+#define LAYOUTA_Dummy	       (TAG_USER + 0x38000)
+  /* FIXME */
+#define LAYOUTA_LayoutObj      (LAYOUTA_Dummy + 1)
+  /* FIXME */
+#define LAYOUTA_Spacing        (LAYOUTA_Dummy + 2)
+  /* FIXME (see below) */
+#define LAYOUTA_Orientation    (LAYOUTA_Dummy + 3)
+  /* FIXME */
+#define LAYOUTA_ChildMaxWidth  (LAYOUTA_Dummy + 4)
+  /* FIXME */
+#define LAYOUTA_ChildMaxHeight (LAYOUTA_Dummy + 5)
 
-/* orientation values	*/
-#define LORIENT_NONE	0
-#define LORIENT_HORIZ	1
-#define LORIENT_VERT	2
+/* Orientation values. */
+#define LORIENT_NONE  0
+#define LORIENT_HORIZ 1
+#define LORIENT_VERT  2
 
 #endif /* INTUITION_GADGETCLASS_H */
