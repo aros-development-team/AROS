@@ -192,12 +192,3 @@ void fillMem(BYTE *mem, LONG size, BYTE fillbyte) {
     while (size--)
         mem[size]=fillbyte;
 }
-
-ULONG strlen(STRPTR str) {
-ULONG count = 0;
-
-    while (*str++)
-        count++;
-    return count;
-}
-
