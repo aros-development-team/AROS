@@ -1,0 +1,25 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES	:= main 
+
+x86FILES := x86/main \
+            x86/AMD/main \
+            x86/Cyrix/main \
+            x86/Intel/main \
+            x86/NatSemi/main \
+            x86/RiSE/main
+
+EXEDIR  := $(AROS_C)
+
+#MM- workbench-c : workbench-c-cpuinfo
+#MM workbench-c-cpuinfo : includes linklibs kernel-cpu-pc-i386
+
+%build_prog mmake=workbench-c-cpuinfo \
+    progname=CPUInfo targetdir=$(EXEDIR) \
+    files="$(FILES) $(x86FILES)" \
+    uselibs="arossupport amiga arosc m"
+
+%common

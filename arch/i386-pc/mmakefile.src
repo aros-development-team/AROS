@@ -35,6 +35,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM     workbench-fs-afs-kobj \
 #MM     workbench-hidd-graphics-kobj \
 #MM     aminet-disk-cdrom-amicdrom-kobj \
+#MM     kernel-cpu-pc-i386-kobj \
 #MM	kernel-pc-i386-drivers
 
 #MM- includes-pc-i386 : includes-copy-pc-i386 includes-copy

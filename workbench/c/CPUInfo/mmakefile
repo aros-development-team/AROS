@@ -1,0 +1,200 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES	:= main 
+
+x86FILES := x86/main \
+            x86/AMD/main \
+            x86/Cyrix/main \
+            x86/Intel/main \
+            x86/NatSemi/main \
+            x86/RiSE/main
+
+EXEDIR  := $(AROS_C)
+
+#MM- workbench-c : workbench-c-cpuinfo
+#MM workbench-c-cpuinfo : includes linklibs kernel-cpu-pc-i386
+
+
+.PHONY : workbench-c-cpuinfo workbench-c-cpuinfo-setup
+
+BDID := $(BDID)_
+ifneq ($(filter $(TARGET),workbench-c-cpuinfo workbench-c-cpuinfo-setup workbench-c-cpuinfo-clean workbench-c-cpuinfo-quick),)
+BDTARGETID := $(BDID)
+endif
+
+BD_PROGNAME$(BDID)  := CPUInfo
+BD_OBJDIR$(BDID)    := $(GENDIR)/$(CURDIR)
+BD_TARGETDIR$(BDID) := $(EXEDIR)
+
+BD_FILES$(BDID)     := $(FILES) $(x86FILES)
+BD_ASMFILES$(BDID)  := 
+BD_OBJS$(BDID)      := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID)) $(BD_ASMFILES$(BDID))))
+BD_DEPS$(BDID)      := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID))))
+
+BD_CFLAGS$(BDID)    := $(CFLAGS)
+BD_AFLAGS$(BDID)    := $(AFLAFS)
+BD_DFLAGS$(BDID)    := $(BD_CFLAGS$(BDID))
+BD_LDFLAGS$(BDID)   := $(LDFLAGS)
+
+#MM workbench-c-cpuinfo : workbench-c-cpuinfo-setup
+
+#MM
+workbench-c-cpuinfo-quick : workbench-c-cpuinfo
+
+workbench-c-cpuinfo : $(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID))
+
+#MM workbench-c-cpuinfo-setup
+
+workbench-c-cpuinfo-setup :: $(BD_OBJDIR$(BDID)) $(BD_TARGETDIR$(BDID))
+
+# Only add a rule for a directory for which there is no rule yet.
+
+TOCREATE_TMP := $(filter-out $(CREATED_DIRS_GLOB),$(BD_OBJDIR$(BDID)) $(BD_TARGETDIR$(BDID)))
+
+ifdef TOCREATE_TMP
+$(TOCREATE_TMP) :
+	@$(ECHO) "Creating directory $@"
+	@$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi
+
+  ifdef CREATED_DIRS_GLOB
+    CREATED_DIRS_GLOB += $(TOCREATE_TMP)
+  else
+    CREATED_DIRS_GLOB := $(TOCREATE_TMP)
+  endif
+endif
+
+ifneq ($(filter $(TARGET),workbench-c-cpuinfo workbench-c-cpuinfo-quick),)
+
+ifeq ($(BD_OBJDIR$(BDID)),)
+  TMP_TARGETBASE := %
+else
+  TMP_TARGETBASE := $(BD_OBJDIR$(BDID))/$(notdir %)
+endif
+
+ifeq ($(findstring target,host target),)
+  $(error unknown compiler target)
+endif
+ifeq (target,target)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(TARGET_CC)
+endif
+ifeq (target,host)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CC)
+endif
+
+$(TMP_TARGETBASE).o : %.c
+	@$(ECHO) "Compiling $(notdir $<)"
+	@$(IF) $(TMP_CMD) $(BD_CFLAGS$(BDID)) -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$<: $(TMP_CMD) $(BD_CFLAGS$(BDID)) -c $< -o $@" >> $(GENDIR)/errors ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Compile failed: $(TMP_CMD) $(BD_CFLAGS$(BDID)) -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+
+ifeq ($(BD_DFLAGS$(BDID)),)
+$(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_CFLAGS$(BDID))
+else
+$(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_DFLAGS$(BDID))
+endif
+$(TMP_TARGETBASE).d : %.c
+	@$(IF) $(TEST) ! -d $(dir $@) ; then $(MKDIR) $(dir $@) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$(notdir $<)..."
+	@$(MKDEPEND) $(TMP_DFLAGS) $< -o $@
+
+ifeq ($(BD_OBJDIR$(BDID)),)
+%.o : %.s
+	@$(ECHO) "Assembling $(notdir $<)..."
+	@$(IF) $(AS) $(BD_AFLAGS$(BDID)) -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$(notdir $<): $(AS) $(BD_AFLAGS$(BDID)) -c $< -o $@" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Assemble failed: $(AS) $(BD_AFLAGS$(BDID)) -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+
+else
+$(BD_OBJDIR$(BDID))/$(notdir %).o : %.s
+	@$(ECHO) "Assembling $(notdir $<)..."
+	@$(IF) $(AS) $(BD_AFLAGS$(BDID)) -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$(notdir $<): $(AS) $(BD_AFLAGS$(BDID)) -c $< -o $@" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Assemble failed: $(AS) $(BD_AFLAGS$(BDID)) -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+
+endif
+
+
+ifeq (no,yes)
+    NIX := $(AROS_LIB)/nixmain.o
+else
+    NIX :=
+endif
+
+ifeq (yes,no)
+$(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID)) : STARTUP :=
+else
+ifeq (no,yes)
+$(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID)) : STARTUP := $(AROS_LIB)/detach.o $(AROS_LIB)/startup.o $(NIX)
+else
+$(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID)) : STARTUP := $(AROS_LIB)/startup.o $(NIX)
+endif
+endif
+
+$(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID)) : $(BD_OBJS$(BDID)) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,arossupport amiga arosc m libinit autoinit))
+	@$(ECHO) "Linking $@..."
+	@$(IF) $(CC) $(BD_LDFLAGS$(BDID)) $(STARTUP) $(BD_OBJS$(BDID)) -o $@ $(addprefix -l,arossupport amiga arosc m) -llibinit -lautoinit $(addprefix -l,) $(COMPILER_LIBS) $() 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
+		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+				$(ECHO) "$@: $(CC) $(BD_LDFLAGS$(BDID)) $(STARTUP) $(BD_OBJS$(BDID)) -o $@ $(addprefix -l,arossupport amiga arosc m) -llibinit -lautoinit $(addprefix -l,) $()" >> $(GENDIR)/errors ; \
+				$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	   	else \
+			$(NOP) ; \
+    		fi ; \
+	else \
+	    $(ECHO) "Link failed: $(CC) $(BD_LDFLAGS$(BDID)) $(STARTUP) $(BD_OBJS$(BDID)) -o $@ $(addprefix -l,arossupport amiga arosc m) -llibinit -lautoinit $(addprefix -l,) $()" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi; \
+	$(STRIP) $@
+
+endif
+
+ifneq ($(BD_DEPS$(BDID)),)
+  ifneq (workbench-c-cpuinfo workbench-c-cpuinfo-quick,)
+    ifneq ($(findstring $(TARGET),workbench-c-cpuinfo workbench-c-cpuinfo-quick),)
+      -include $(BD_DEPS$(BDID))
+    endif
+  else
+    ifeq (,$(filter clean% %clean %clean% setup% includes% %setup,$(TARGET)))
+      -include $(BD_DEPS$(BDID))
+    endif
+  endif
+endif
+
+# Delete generated makefiles
+#MM
+clean ::
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+include $(TOP)/config/make.tail
+
+BDID := $(BDTARGETID)

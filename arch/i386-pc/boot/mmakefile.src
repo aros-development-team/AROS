@@ -12,7 +12,7 @@ KLIBS   := exec boot aros dos graphics utility intuition keymap \
 KDEVS   := timer input keyboard console gameport ide trackdisk
 KHNDLRS := con nil ram cdrom afs
 KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah vmwaregfx
-KRSRCS  := battclock bootloader misc
+KRSRCS  := battclock bootloader cpu misc
 #Disabled HIDD usbuhci
 
 KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \

@@ -7,7 +7,7 @@ CFILES		:= \
 	settaskpri signal setexcept superstate userstate core traps \
 	screen serialrawio exec_init execfunctions prepareexecbase
 
-AFILES		:= coldreboot corelow execstubs getcpu stackswap 
+AFILES		:= coldreboot corelow execstubs stackswap
 
 USER_CFLAGS 	:= -I../ -I$(TOP)/rom/exec -I$(GENINCDIR)
 SPECIAL_AFLAGS 	:= -I../ -I$(TOP)/rom/exec -I$(GENINCDIR)
