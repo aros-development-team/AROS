@@ -553,8 +553,8 @@ static ULONG Group_AddMember(struct IClass *cl, Object *obj, struct opMember *ms
     {
 	DoSetupMethod(msg->opam_Object, muiRenderInfo(obj));
     }
-    if (_flags(obj) & MADF_CANDRAW)
-	DoShowMethod(msg->opam_Object);
+/*      if (_flags(obj) & MADF_CANDRAW) */
+/*  	DoShowMethod(msg->opam_Object); */
 
     return TRUE;
 }
