@@ -10,7 +10,10 @@ extern struct Library *GadToolsBase;
 struct NewMenu windowMenus[] =
 {
  { NM_TITLE,	"Project",	  0, 0, 0, 0, },
- { NM_ITEM,	"Quit",		"O", 0, 0, MENU_ID_QUIT, },
+ { NM_ITEM,	"Open...",	"O", 0, 0, MENU_ID_OPEN, },
+ { NM_ITEM,	"Save As...",	"A", 0, 0, MENU_ID_SAVE, },
+ { NM_ITEM,	NM_BARLABEL,	  0, 0, 0, 0, },
+ { NM_ITEM,	"Quit",		"Q", 0, 0, MENU_ID_QUIT, },
  { NM_END,	NULL,		  0, 0, 0, 0, },
 };
 

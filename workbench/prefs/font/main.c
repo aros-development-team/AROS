@@ -35,7 +35,7 @@
 
 #define MX_INIT_ACTIVE 0 /* MX button that is active at startup */
 
-UBYTE version[] = "$VER: Font 0.3 (3.4.2001)";
+UBYTE version[] = "$VER: Font 0.5 (5.4.2001)";
 
 struct IntuitionBase *IntuitionBase;
 struct Library *GadToolsBase;
@@ -55,7 +55,7 @@ struct RDArgs *readArgs;
 extern struct FontPrefs *fontPrefs[3]; /* init.c */
 extern struct IFFHandle *iffHandle; /* handleiff.c */
 
-/*extern*/ IPTR argArray[NUM_ARGS]; /* args.c */
+IPTR argArray[NUM_ARGS]; /* args.c */
 
 STRPTR fontChoices[] = { "Workbench", "System", "Screen", NULL };
 STRPTR buttons[] = { "Save", "Use", "Cancel", NULL };
@@ -64,6 +64,8 @@ UWORD offsetX[3]; /* This implementation is getting obsolete! Change this! */
 
 extern struct Menu * setupMenus(APTR);
 extern struct RDArgs * getArguments(void);
+extern STRPTR aslOpenPrefs(void);
+extern STRPTR aslSavePrefs(void);
 extern BOOL getFont(struct FontPrefs *);
 extern void readIFF(UBYTE *, struct FontPrefs **);
 extern void writeIFF(UBYTE *, struct FontPrefs **);
@@ -299,7 +301,8 @@ void updateGUI(UBYTE fontChoice)
 {
  GT_SetGadgetAttrs(textGadget, prefsWindow, NULL, GTTX_Text, fontPrefs[fontChoice]->fp_Name, TAG_DONE);
  printf("updateGUI | fontChoice is %d\n", fontChoice);
- printf("fontPrefs->fpName is >%s<\n", fontPrefs[fontChoice]->fp_Name);
+ printf("fontPrefs->fp_Name is >%s<\n", fontPrefs[fontChoice]->fp_Name);
+ printf("fontPrefs->fp_TextAttr.ta_YSize is >%d<\n", fontPrefs[fontChoice]->fp_TextAttr.ta_YSize);
 }
 
 void openWindow(UWORD winWidth, UWORD winHeight, struct Gadget *winGadgets)
@@ -312,6 +315,7 @@ void openWindow(UWORD winWidth, UWORD winHeight, struct Gadget *winGadgets)
  struct IntuiMessage *intuiMessage;
  struct Gadget *gadget;
  APTR visualInfoPtr;
+ STRPTR fileName;
 
  /*
  if(!(publicScreen = LockPubScreen(NULL))) // We now hold two locks on this screen. Is this valid? Change!
@@ -385,6 +389,23 @@ void openWindow(UWORD winWidth, UWORD winHeight, struct Gadget *winGadgets)
        /* The output from GTMENUITEM_USERDATA must be casted */
        switch((UBYTE)GTMENUITEM_USERDATA(menuItem))
        {
+	case MENU_ID_OPEN :
+	 if(fileName = aslOpenPrefs())
+         {
+          printf("reading %s...\n", fileName);
+          readIFF(fileName, fontPrefs);
+          updateGUI(fontChoice); /* For the moment, always update the GUI */
+         }
+	break;
+
+        case MENU_ID_SAVE :
+         if(fileName = aslSavePrefs())
+         {
+          printf("saving %s...\n", fileName);
+          writeIFF(fileName, fontPrefs);
+         }
+        break;
+
         case MENU_ID_QUIT :
          printf("Menu quit!\n");
          running = FALSE;
@@ -419,7 +440,7 @@ void openWindow(UWORD winWidth, UWORD winHeight, struct Gadget *winGadgets)
 
        case BUTTON_USE :
         printf("use\n");
-        writeIFF("ENV:sys/fonts.prefs", fontPrefs);
+        writeIFF("ENV:sys/font.prefs", fontPrefs);
         running = FALSE;
        break;
 

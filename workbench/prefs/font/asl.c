@@ -1,5 +1,6 @@
 #include <proto/exec.h>
 #include <proto/asl.h>
+#include <proto/dos.h> /* AddPart() */
 #include <libraries/asl.h>
 #include <dos/dos.h> /* Return codes */
 #include <prefs/font.h>
@@ -8,6 +9,8 @@
 extern void quitApp(UBYTE *, UBYTE);  
 
 struct Library *AslBase;
+
+UBYTE fileName[128]; /* Path and the actual file name. Should we increase the size even more? */
 
 /* Return TRUE if user made a choice, otherwise false */
 BOOL getFont(struct FontPrefs *currentFont)
@@ -27,12 +30,13 @@ BOOL getFont(struct FontPrefs *currentFont)
 
    if(AslRequest(fontReq, NULL))
    {
+/*
     printf("Opened font requester!\n");
     printf("Font: >%s< tta_YSize: %d tta_Style: %d Flags: %d\n", fontReq->fo_TAttr.tta_Name,
 fontReq->fo_TAttr.tta_YSize, fontReq->fo_TAttr.tta_Style, fontReq->fo_TAttr.tta_Flags);
     printf("fo_FrontPen: %d fo_BackPen: %d fo_DrawMode: %d\n", fontReq->fo_FrontPen, fontReq->fo_BackPen,
  fontReq->fo_DrawMode);
-
+*/
 
     strcpy(currentFont->fp_Name, fontReq->fo_TAttr.tta_Name);
     printf("currentFont->fp_Name is >%s<\n", currentFont->fp_Name);
@@ -62,4 +66,66 @@ fontReq->fo_TAttr.tta_YSize, fontReq->fo_TAttr.tta_Style, fontReq->fo_TAttr.tta_
  }
  else
   quitApp("Can't open asl.library!", RETURN_FAIL);
+}
+
+STRPTR aslOpenPrefs(void)
+{
+ struct FileRequester *fileReq;
+
+ if(AslBase = OpenLibrary("asl.library", 0))
+ {
+  if(fileReq = AllocAslRequestTags(ASL_FileRequest, TAG_END))
+  {
+   if(AslRequest(fileReq, NULL))
+   {
+    strcpy(fileName, fileReq->rf_Dir);
+    AddPart(fileName, fileReq->rf_File, sizeof(fileName)); /* Check for success! */
+   }
+
+   FreeAslRequest(fileReq);
+  }
+  else
+   printf("Unable to open ASL requester!\n");
+
+  CloseLibrary(AslBase);
+ }
+ else
+  /* We don't need to bail out in this case - do we? */
+  printf("Can't open asl.library!");
+
+ if(fileName) /* Is fileName guaranteed to be empty if user didn't choose anything? Look up! */
+  return(fileName);
+ else
+  return(FALSE);
+}
+
+STRPTR aslSavePrefs(void)
+{
+ struct FileRequester *fileReq;
+
+ if(AslBase = OpenLibrary("asl.library", 0))
+ {
+  if(fileReq = AllocAslRequestTags(ASL_FileRequest, ASL_FuncFlags, FILF_SAVE, TAG_END))
+  {
+   if(AslRequest(fileReq, NULL))
+   {
+    strcpy(fileName, fileReq->rf_Dir);
+    AddPart(fileName, fileReq->rf_File, sizeof(fileName)); /* Check for success! */
+   }
+
+   FreeAslRequest(fileReq);
+  }
+  else
+   printf("Unable to open ASL requester!\n");
+
+  CloseLibrary(AslBase);
+ }
+ else
+  /* We don't need to bail out altogether in this case - do we? */
+  printf("Can't open asl.library!");
+
+ if(fileName) /* Is fileName guaranteed to be empty if user didn't choose anything? Look up! */
+  return(fileName);
+ else
+  return(FALSE);
 }
