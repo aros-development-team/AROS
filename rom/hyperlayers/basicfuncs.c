@@ -309,6 +309,13 @@ void SafeFreeExtLI(struct Layer_Info * li,
 #define MAX(a,b)    ((a) > (b) ? (a) : (b))
 #define MIN(a,b)    ((a) < (b) ? (a) : (b))
 
+void TranslateRect(struct Rectangle *rect, WORD dx, WORD dy)
+{
+    rect->MinX += dx;
+    rect->MinY += dy;
+    rect->MaxX += dx;
+    rect->MaxY += dy;
+}
 
 
 /***************************************************************************/
@@ -1435,8 +1442,23 @@ void _BackFillRegion(struct Layer * l,
     /* check if a region is empty */
     while (NULL != RR)
     {
+#if 1
+      /*stegerg */
+      struct Rectangle rect = RR->bounds;
+
 kprintf("%s: adding to damagelist!\n",__FUNCTION__);
+      
+      /* Region coords are screen relative, but damagelist coords are layer relative! */
+      
+      TranslateRect(&rect, r->bounds.MinX - l->bounds.MinX, r->bounds.MinY - l->bounds.MinY);
+
+      OrRectRegion(l->DamageList, &rect);
+      
+#else
+kprintf("%s: adding to damagelist!\n",__FUNCTION__);
+
       OrRectRegion(l->DamageList, &RR->bounds);
+#endif
       l->Flags |= LAYERREFRESH;
 
       RR = RR->Next;

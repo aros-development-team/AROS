@@ -98,7 +98,7 @@
     rectw.MinX = l->shape->bounds.MinX;
     rectw.MinY = l->shape->bounds.MinY;
     rectw.MaxX = l->shape->bounds.MaxX+dw;
-    rectw.MaxY = l->shape->bounds.MaxY;
+    rectw.MaxY = l->shape->bounds.MaxY+dh; /*stegerg: added +dh */
     AndRectRegion(newshape, &rectw); 
   }
 
@@ -115,33 +115,16 @@
   {
     recth.MinX = l->shape->bounds.MinX;
     recth.MinY = l->shape->bounds.MinY;
-    recth.MaxX = l->shape->bounds.MaxX;
+    recth.MaxX = l->shape->bounds.MaxX+dw; /*stegerg: added +dw */
     recth.MaxY = l->shape->bounds.MaxY+dh;
     AndRectRegion(newshape, &recth); 
   }
 
-  if (0 != dx)
+  if (dx || dy)
   {
-    newshape->bounds.MinX += dx; 
-    newshape->bounds.MaxX += dx; 
-
-    rectw.MinX += dx;
-    rectw.MaxX += dx;
-
-    recth.MinX += dx;
-    recth.MaxX += dx;
-  }
-  
-  if (0 != dy)
-  {
-    newshape->bounds.MinY += dy;
-    newshape->bounds.MaxY += dy;
-
-    rectw.MinY += dy;
-    rectw.MaxY += dy;
-
-    recth.MinY += dy;
-    recth.MaxY += dy;
+    TranslateRect(&newshape->bounds, dx, dy);
+    TranslateRect(&rectw, dx, dy);
+    TranslateRect(&recth, dx, dy);
   }
 
   first = GetFirstFamilyMember(l);
@@ -208,10 +191,8 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
     /*
      * Effectively move the layer...
      */
-    _l->bounds.MinX += dx;
-    _l->bounds.MinY += dy;
-    _l->bounds.MaxX += dx;
-    _l->bounds.MaxY += dy;
+     
+    TranslateRect(&_l->bounds, dx, dy);
 
     /*
      * ...and also its cliprects.
@@ -219,20 +200,14 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
     cr = _l->ClipRect;
     while (cr)
     {
-      cr->bounds.MinX += dx;
-      cr->bounds.MinY += dy;
-      cr->bounds.MaxX += dx;
-      cr->bounds.MaxY += dy;
+      TranslateRect(&cr->bounds, dx, dy);
       cr = cr->Next;
     }
 
     cr = _l->_cliprects;
     while (cr)
     {
-      cr->bounds.MinX += dx;
-      cr->bounds.MinY += dy;
-      cr->bounds.MaxX += dx;
-      cr->bounds.MaxY += dy;
+      TranslateRect(&cr->bounds, dx, dy);
       cr = cr->Next;
     }
     
@@ -247,11 +222,8 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
       l->Height += dh;
       break;
     }
-    _l->shape->bounds.MinX += dx;
-    _l->shape->bounds.MinY += dy;
-    _l->shape->bounds.MaxX += dx;
-    _l->shape->bounds.MaxY += dy;
-
+    
+    TranslateRect(&_l->shape->bounds, dx, dy);
       
     _l = _l->back;
   }
