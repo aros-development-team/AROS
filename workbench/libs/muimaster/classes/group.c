@@ -2157,13 +2157,14 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
     case MUIM_DragQueryExtended: return Group_DragQueryExtended(cl, obj, (APTR)msg);
     }
 
-    DoSuperMethodA(cl, obj, msg);
+    
     /* sometimes you want to call a superclass method,
      * but not dispatching to child. 
      * But what to do with list methods in a listview ?
      */
     Group_DispatchMsg(cl, obj, (APTR)msg);
-    return TRUE;
+    
+    return DoSuperMethodA(cl, obj, msg);
 }
 
 
