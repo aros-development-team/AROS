@@ -322,7 +322,7 @@ BOOL writeFullPath(struct AnchorPath * AP)
 {
   struct AChain * AC = AP->ap_Base;
   BOOL end = FALSE;
-  char * LastPos = &AP->ap_Buf;
+  char * LastPos = (char *)&AP->ap_Buf;
   int copied = 0;
   
   while (FALSE == end)
