@@ -15,7 +15,7 @@ FILES := basicfuncs specialreq \
 	 propclass arrowclass listviewclass \
 	 buttonclass stringclass cycleclass \
 	 fontpreviewclass fontstyleclass \
-	 colorpickerclass \
+	 colorpickerclass eraserclass \
 	 gadgets coolimagedata locale \
 	 asl_init
 

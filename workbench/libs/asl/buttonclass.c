@@ -366,16 +366,73 @@ static IPTR aslbutton_render(Class *cl, Object *o, struct gpRender *msg)
 	tx += (w - TextLength(msg->gpr_RPort, text, len)) / 2; 
 	ty += (h - msg->gpr_RPort->TxHeight) / 2 + msg->gpr_RPort->TxBaseline;
 	
-	SetABPenDrMd(msg->gpr_RPort,
-		     data->ld->ld_Dri->dri_Pens[(G(o)->Flags & GFLG_SELECTED) ? FILLTEXTPEN : TEXTPEN],
-		     0,
-		     JAM1);
+	if (data->frame)
+	{
+	    SetABPenDrMd(msg->gpr_RPort,
+			 data->ld->ld_Dri->dri_Pens[(G(o)->Flags & GFLG_SELECTED) ? FILLTEXTPEN : TEXTPEN],
+			 0,
+			 JAM1);
+	}
+	else
+	{
+    	#if AVOID_FLICKER
+	    struct TextExtent te;
+	    struct IBox obox, ibox;
+	    
+    	    getgadgetcoords(G(o), msg->gpr_GInfo, &obox.Left, &obox.Top, &obox.Width, &obox.Height);
+
+	    TextExtent(msg->gpr_RPort, text, len, &te);
+
+	    ibox.Width  = te.te_Extent.MaxX - te.te_Extent.MinX + 1;
+	    ibox.Height = te.te_Extent.MaxY - te.te_Extent.MinY + 1;
+    	    ibox.Left   = te.te_Extent.MinX + tx;
+	    ibox.Top	= te.te_Extent.MinY + ty;
+	    
+	    PaintBoxFrame(msg->gpr_RPort,
+	    	    	  &obox,
+			  &ibox,
+			  data->ld->ld_Dri->dri_Pens[BACKGROUNDPEN],
+			  AslBase);
+	        
+	#endif	
+	    SetABPenDrMd(msg->gpr_RPort,
+			 data->ld->ld_Dri->dri_Pens[(G(o)->Flags & GFLG_SELECTED) ? FILLTEXTPEN : TEXTPEN],
+			 data->ld->ld_Dri->dri_Pens[BACKGROUNDPEN],
+			 JAM2);
+	    
+	}
+	
 	Move(msg->gpr_RPort, tx, ty);
 	Text(msg->gpr_RPort, text, len);
-    } else {
+    }
+    else
+    {
     	x += 3; w -= 6;
 	y += 3; h -= 6;
-		 
+    
+    #if AVOID_FLICKER
+    	if (data->frame)
+	{
+	    struct IBox ibox, fbox;
+	    
+    	    getgadgetcoords(G(o), msg->gpr_GInfo, &fbox.Left, &fbox.Top, &fbox.Width, &fbox.Height);
+
+	    ibox.Left = x;
+	    ibox.Top = y;
+	    ibox.Width = w;
+	    ibox.Height = h;
+	    
+	    PaintInnerFrame(msg->gpr_RPort,
+	    	    	    data->ld->ld_Dri,
+			    data->frame,
+			    &fbox,
+			    &ibox,
+			    data->ld->ld_Dri->dri_Pens[BACKGROUNDPEN],
+			    AslBase);
+	}
+	
+    #endif
+    		 
 	SetABPenDrMd(msg->gpr_RPort,
 		     data->ld->ld_Dri->dri_Pens[(G(o)->Flags & GFLG_SELECTED) ? FILLPEN : BACKGROUNDPEN],
 		     0,

@@ -739,6 +739,19 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	}
 	
     } /* if (ismreq->ism_Flags & (ISMF_DOOVERSCAN | ISMF_DOWIDTH | ISMF_DOHEIGHT | ISMF_DODEPTH | ISMF_DOAUTOSCROLL)) */
+
+#if AVOID_FLICKER
+    {
+    	struct TagItem eraser_tags[] =
+	{
+	    {GA_Previous, (IPTR)gad},
+	    {TAG_DONE}
+	};
+	
+	udata->EraserGadget = gad = NewObjectA(AslBase->asleraserclass, NULL, eraser_tags);
+	/* Doesn't matter if this failed */
+    }
+#endif
         
     w = OUTERSPACINGX + labelwidth + LABELSPACINGX + maxcyclewidth + OUTERSPACINGX;
     if (w > ld->ld_MinWidth) ld->ld_MinWidth = w;

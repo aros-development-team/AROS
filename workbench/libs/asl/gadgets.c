@@ -303,6 +303,22 @@ void getgadgetcoords(struct Gadget *gad, struct GadgetInfo *gi, WORD *x, WORD *y
 
 /*******************************************************************************************/
 
+void getgadgetbounds(struct Gadget *gad, struct GadgetInfo *gi, WORD *x, WORD *y, WORD *w, WORD *h)
+{
+    if (!(gad->Flags & GFLG_EXTENDED) ||
+        !(EG(gad)->MoreFlags & GMORE_BOUNDS))
+    {
+    	return getgadgetcoords(gad, gi, x, y, w, h);
+    }
+	
+    *x = EG(gad)->BoundsLeftEdge + ((gad->Flags & GFLG_RELRIGHT)  ? gi->gi_Domain.Width  - 1 : 0);
+    *y = EG(gad)->BoundsTopEdge  + ((gad->Flags & GFLG_RELBOTTOM) ? gi->gi_Domain.Height - 1 : 0);
+    *w = EG(gad)->BoundsWidth    + ((gad->Flags & GFLG_RELWIDTH)  ? gi->gi_Domain.Width  : 0);
+    *h = EG(gad)->BoundsHeight   + ((gad->Flags & GFLG_RELHEIGHT) ? gi->gi_Domain.Height : 0);
+}
+
+/*******************************************************************************************/
+
 void connectscrollerandlistview(struct ScrollerGadget *scrollergad, Object *listview,
 				struct AslBase_intern *AslBase)
 {

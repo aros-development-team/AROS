@@ -33,7 +33,7 @@
 #endif
 
 #define SREQ_FIRST_OBJECT(x) ((x)->Listview)
-#define SREQ_LAST_OBJECT(x) ((x)->AutoScrollGadget)
+#define SREQ_LAST_OBJECT(x) ((x)->EraserGadget)
 
 #define SREQ_MAX_PROPERTIES	9
 
@@ -53,6 +53,7 @@ struct SMUserData
     Object			*HeightGadget;
     Object			*DepthGadget;
     Object			*AutoScrollGadget;
+    Object			*EraserGadget;
     
     struct ScrollerGadget 	ScrollGad;
     struct List			ListviewList;
