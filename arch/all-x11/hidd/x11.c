@@ -61,7 +61,7 @@ Cause() a software irq, but Cause() does not work at the moment..
 
 #define XTASK_PRIORITY 50
 
-#define XTASK_STACKSIZE 8192
+#define XTASK_STACKSIZE (32768)
 
 
 struct x11_data
