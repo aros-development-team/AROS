@@ -20,7 +20,7 @@
 #include <sys/stat.h>
 #include <setjmp.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include "etask.h"
@@ -205,6 +205,7 @@ int arosc_internalinit(void)
 
     if (!oldprivdata || (oldprivdata->acpd_process_returnaddr != me->pr_ReturnAddr))
     {
+        D(bug("arosc_internalinit(): AllocMem()\n"));
         privdata = AllocMem(sizeof *privdata, MEMF_CLEAR|MEMF_ANY);
 
         if (!privdata)
@@ -218,12 +219,10 @@ int arosc_internalinit(void)
 
 	GetIntETask(me)->iet_acpd = privdata;
 
-        kprintf("INIT - ALLOC\n");
-
         err = set_call_funcs(SETNAME(INIT), 1);
     }
 
-    kprintf("INIT\n");
+    D(bug("arosc_internalinit(): acpd_usercount++\n"));
     privdata->acpd_usercount++;
 
     return err;
@@ -233,8 +232,10 @@ int arosc_internalexit(void)
 {
     struct arosc_privdata *privdata = GetIntETask(FindTask(NULL))->iet_acpd;
 
-    kprintf("DEALLOC\n");
+    D(bug("arosc_internalexit(): --acpd_usercount\n"));
+
     #warning FIXME: privdata should NEVER be NULL here
+    ASSERT_VALID_PTR(privdata);
     if (privdata && --privdata->acpd_usercount == 0)
     {
         set_call_funcs(SETNAME(EXIT), -1);
@@ -242,7 +243,7 @@ int arosc_internalexit(void)
         /*restore the old value */
         GetIntETask(FindTask(NULL))->iet_acpd = privdata->acpd_oldprivdata;
 
-        kprintf("EXIT - DEALLOC\n");
+        D(bug("arosc_internalexit(): FreeMem()\n"));
         FreeMem(privdata, sizeof(*privdata));
     }
 
