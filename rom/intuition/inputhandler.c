@@ -402,6 +402,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			IPTR retval;
 			ULONG termination;
 			
+			/* Georg Steger: two idcmp_gadgetdowns were sent,
+			   unless goactive returns something != GMR_MEACTIVE */			
+			im->Class = 0L;
+			
 			/* We should send IDCMP_GADGETDOWN for GACT_IMMEDIATE gadgets */
 			if (new_gadget)
 			{
