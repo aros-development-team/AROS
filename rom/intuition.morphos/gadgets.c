@@ -20,6 +20,9 @@
 #include <graphics/rastport.h>
 #include <graphics/text.h>
 #include <graphics/gfxmacros.h>
+
+#include <string.h>
+
 #include "intuition_intern.h"
 #include "gadgets.h"
 
