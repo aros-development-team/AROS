@@ -17,6 +17,9 @@
 #include "muimaster_intern.h"
 #include "mui.h"
 
+#define MAX(a,b) (((a)>(b))?(a):(b))
+#define MIN(a,b) (((a)>(b))?(a):(b))
+
 /*****************************************************************************
 
     NAME */
@@ -60,6 +63,7 @@ __asm VOID MUI_Redraw(register __a0 Object *obj, register __d0 ULONG flags)
     Object *parent;
     struct Region *region = NULL;
     APTR clip;
+    struct Rectangle *clip_rect;
 
     if (!(muiAreaData(obj)->mad_Flags & MADF_CANDRAW)) return;
 
@@ -93,14 +97,23 @@ __asm VOID MUI_Redraw(register __a0 Object *obj, register __d0 ULONG flags)
 	}
     }
 
-    muiRenderInfo(obj)->mri_ClipRect.MinX = _left(obj);
-    muiRenderInfo(obj)->mri_ClipRect.MinY = _top(obj);
-    muiRenderInfo(obj)->mri_ClipRect.MaxX = _right(obj);
-    muiRenderInfo(obj)->mri_ClipRect.MaxY = _bottom(obj);
+    clip_rect = &muiRenderInfo(obj)->mri_ClipRect;
 
     if (region)
     {
+    	/* Maybe this should went to MUI_AddClipRegion() */
+    	clip_rect->MinX = MAX(_left(obj),region->bounds.MinX);
+    	clip_rect->MinY = MAX(_top(obj),region->bounds.MinY);
+    	clip_rect->MaxX = MIN(_right(obj),region->bounds.MaxX);
+    	clip_rect->MaxY = MIN(_bottom(obj),region->bounds.MaxY);
+
 	clip = MUI_AddClipRegion(muiRenderInfo(obj),region);
+    } else
+    {
+        clip_rect->MinX = _left(obj);
+        clip_rect->MinY = _top(obj);
+        clip_rect->MaxX = _right(obj);
+        clip_rect->MaxY = _bottom(obj);
     }
     DoMethod(obj, MUIM_Draw, flags);
 
