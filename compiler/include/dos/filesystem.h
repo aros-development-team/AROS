@@ -399,15 +399,20 @@ struct IFS_RELABEL
 
 /* io_FileMode for FSA_OPEN, FSA_OPEN_FILE and FSA_FILE_MODE. These are flags
    and may be or'ed. Note that not all filesystems support all flags. */
-#define FMF_LOCK    (1L<<0) /* Lock exclusively. */
-#define FMF_EXECUTE (1L<<1) /* Open for executing. */
+#define FMF_LOCK     (1L<<0) /* Lock exclusively. */
+#define FMF_EXECUTE  (1L<<1) /* Open for executing. */
 /* At least one of the following two flags must be specified. Otherwise expect
    strange things to happen. */
-#define FMF_WRITE   (1L<<2) /* Open for writing. */
-#define FMF_READ    (1L<<3) /* Open for reading. */
-#define FMF_CREATE  (1L<<4) /* Create file if it doesn't exist. */
-#define FMF_CLEAR   (1L<<5) /* Truncate file on open. */
-#define FMF_RAW     (1L<<6) /* Switch cooked to raw and vice versa. */
+#define FMF_WRITE    (1L<<2)  /* Open for writing. */
+#define FMF_READ     (1L<<3)  /* Open for reading. */
+#define FMF_CREATE   (1L<<4)  /* Create file if it doesn't exist. */
+#define FMF_CLEAR    (1L<<5)  /* Truncate file on open. */
+#define FMF_RAW      (1L<<6)  /* Switch cooked to raw and vice versa. */
+
+#define FMF_AMIGADOS (1L<<31) /* Identifies the old AmigaDOS modes */
+#define FMF_MODE_OLDFILE   FMF_AMIGADOS | FMF_WRITE | FMF_READ
+#define FMF_MODE_READWRITE FMF_MODE_OLDFILE | FMF_CREATE
+#define FMF_MODE_NEWFILE   FMF_MODE_READWRITE | FMF_LOCK | FMF_CLEAR
 
 /* io_MountMode for FSA_MOUNT_MODE. These are flags and may be or'ed. */
 #define MMF_READ	(1L<<0) /* Mounted for reading. */
