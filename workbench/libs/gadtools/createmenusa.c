@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
 #include "gadtools_intern.h"
 #include <exec/memory.h>
@@ -199,7 +196,7 @@
 	/*
 	** Set the secondary error value if requested.
 	*/
-	if ((Ptr =(ULONG*) GetTagData(GTMN_SecondaryError, NULL, tagList)))
+	if ((Ptr =(ULONG*) GetTagData(GTMN_SecondaryError, (IPTR) NULL, tagList)))
 	{
 	    *Ptr = GTMENU_NOMEM;
 	}

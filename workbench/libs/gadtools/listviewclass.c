@@ -743,15 +743,15 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
+STATIC Object *listview_new(Class *cl, Object *o, struct opSet *msg)
 {
     struct DrawInfo *dri;
     
     EnterFunc(bug("Listview::New()\n"));
 
-    dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
+    dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, (IPTR) NULL, msg->ops_AttrList);
     if (dri == NULL)
-    	ReturnPtr ("Listview::New", IPTR, NULL);
+    	ReturnPtr ("Listview::New", Object *, NULL);
     	
     D(bug("listview_new: Got dri: %p, dri font=%p, size=%d\n", dri, dri->dri_Font, dri->dri_Font->tf_YSize));
     
@@ -785,7 +785,7 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
 	    data->ld_Dri = dri;
 
 	    /* Set some defaults */
-	    tattr = (struct TextAttr *)GetTagData(GA_TextAttr, NULL, msg->ops_AttrList);
+	    tattr = (struct TextAttr *) GetTagData(GA_TextAttr, (IPTR) NULL, msg->ops_AttrList);
 	    if (tattr)
 	    {
 	    	data->ld_Font = OpenFont(tattr);
@@ -817,7 +817,7 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
 
     } /* if (object created) */
 
-    ReturnPtr ("Listview::New", IPTR, (IPTR)o);
+    ReturnPtr ("Listview::New", Object *, o);
 }
 
 /**********************************************************************************************/
@@ -1202,7 +1202,7 @@ AROS_UFH3S(IPTR, dispatch_listviewclass,
 	    
 	case OM_NEW:
 	    D(bug("dispatch_listviewclass: OM_NEW\n"));
-	    retval = listview_new(cl, o, (struct opSet *)msg);
+	    retval = (IPTR) listview_new(cl, o, (struct opSet *)msg);
 	    break;
 
 	case OM_UPDATE:

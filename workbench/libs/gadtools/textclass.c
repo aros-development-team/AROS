@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: Internal GadTools text class (NUMERIC_KIND and TEXT_KIND) .
-    Lang: English
+    Internal GadTools text class (NUMERIC_KIND and TEXT_KIND) .
 */
  
 
@@ -227,16 +226,16 @@ STATIC IPTR text_new(Class * cl, Object * o, struct opSet *msg)
     	data->flags 	= 0;
     	data->frontpen	= TEXTPEN;
     	data->backpen  	= BACKGROUNDPEN;
-    	data->toprint 	= NULL;
+    	data->toprint 	= (IPTR) NULL;
     	data->font 	= NULL;
     	data->maxnumberlength = 0; /* This means "no limit" */
-    	data->dispfunc = (APTR)GetTagData(GTA_Text_DispFunc, NULL, msg->ops_AttrList);
+    	data->dispfunc = (APTR)GetTagData(GTA_Text_DispFunc, (IPTR) NULL, msg->ops_AttrList);
     	data->labelplace = GetTagData(GA_LabelPlace, GV_LabelPlace_Left, msg->ops_AttrList);
 	
     	/* Open font to use for gadget */
     	
     	/* We will *ALWAYS* have a valid DrawInfo struct */
-    	data->dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
+    	data->dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, (IPTR) NULL, msg->ops_AttrList);
 
     	def_tattr.ta_Name  = data->dri->dri_Font->tf_Message.mn_Node.ln_Name;
     	def_tattr.ta_YSize = data->dri->dri_Font->tf_YSize;
@@ -271,7 +270,7 @@ STATIC IPTR text_new(Class * cl, Object * o, struct opSet *msg)
     	} else {
 	    STRPTR text;
 	    
-	    if ((text = (STRPTR)GetTagData(GTTX_Text, NULL, msg->ops_AttrList)))
+	    if ((text = (STRPTR)GetTagData(GTTX_Text, (IPTR) NULL, msg->ops_AttrList)))
 	    {
 	        data->toprint = (IPTR)text;
 	    }
@@ -300,7 +299,7 @@ STATIC IPTR text_new(Class * cl, Object * o, struct opSet *msg)
     
 error:
     CoerceMethod(cl, o, OM_DISPOSE);
-    ReturnPtr ("Text::New", IPTR, NULL);
+    ReturnPtr ("Text::New", IPTR, (IPTR) NULL);
 }
 
 /**********************************************************************************************/

@@ -49,7 +49,7 @@ struct ButtonData
 
 /**********************************************************************************************/
 
-STATIC IPTR button_new(Class * cl, Object * obj, struct opSet *msg)
+STATIC Object *button_new(Class * cl, Object * obj, struct opSet *msg)
 {
     struct ButtonData	*data;
     struct DrawInfo 	*dri;
@@ -63,7 +63,7 @@ STATIC IPTR button_new(Class * cl, Object * obj, struct opSet *msg)
 	{TAG_DONE			}
     };
 
-    dri = (struct DrawInfo *) GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
+    dri = (struct DrawInfo *) GetTagData(GA_DrawInfo, (IPTR) NULL, msg->ops_AttrList);
     if (!dri)
 	return NULL;
 
@@ -87,7 +87,7 @@ STATIC IPTR button_new(Class * cl, Object * obj, struct opSet *msg)
     data->dri = dri;
     data->frame = frame;
 
-    return (IPTR)obj;
+    return obj;
 }
 
 /**********************************************************************************************/
@@ -199,7 +199,7 @@ AROS_UFH3S(IPTR, dispatch_buttonclass,
     switch (msg->MethodID)
     {
 	case OM_NEW:
-	    retval = button_new(cl, obj, (struct opSet *) msg);
+	    retval = (IPTR) button_new(cl, obj, (struct opSet *) msg);
 	    break;
 
 	case OM_DISPOSE:
