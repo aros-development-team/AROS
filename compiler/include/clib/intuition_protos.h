@@ -353,6 +353,10 @@ AROS_LP2(void, ReportMouse,
     AROS_LPA(struct Window *, window, A0),
     struct IntuitionBase *, IntuitionBase, 39, Intuition)
 
+AROS_LP1(void, ScreenToBack,
+    AROS_LPA(struct Screen *, screen, A0),
+    struct IntuitionBase *, IntuitionBase, 41, Intuition)
+
 AROS_LP1(void, ScreenToFront,
     AROS_LPA(struct Screen *, screen, A0),
     struct IntuitionBase *, IntuitionBase, 42, Intuition)
@@ -366,7 +370,7 @@ AROS_LP1(void, SetDefaultPubScreen,
     AROS_LPA(UBYTE *, name, A0),
     struct IntuitionBase *, IntuitionBase, 90, Intuition)
 
-AROS_LP4(ULONG, SetGadgetAttrsA,
+AROS_LP4(IPTR, SetGadgetAttrsA,
     AROS_LPA(struct Gadget *,    gadget,    A0),
     AROS_LPA(struct Window *,    window,    A1),
     AROS_LPA(struct Requester *, requester, A2),
