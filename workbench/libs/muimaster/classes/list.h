@@ -254,4 +254,7 @@ struct  MUIP_Dirlist_ReRead                 { ULONG MethodID; };
 #define MUIV_Dirlist_Status_Valid 2
 
 
+extern const struct __MUIBuiltinClass _MUI_Listview_desc;
+extern const struct __MUIBuiltinClass _MUI_List_desc;
+
 #endif

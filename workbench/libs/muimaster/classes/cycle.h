@@ -19,5 +19,6 @@ extern char MUIC_Cycle[];
 #define MUIV_Cycle_Active_Next -1
 #define MUIV_Cycle_Active_Prev -2
 
+extern const struct __MUIBuiltinClass _MUI_Cycle_desc;
 
 #endif
