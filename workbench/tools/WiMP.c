@@ -535,7 +535,7 @@ struct NewGadget *buttons[] =
   initlvnodes ( &lv_list );
   gad = CreateGadget ( LISTVIEW_KIND, gad, &listviewgad,
 		GTLV_Labels,		(IPTR)&lv_list,
-		GTLV_ShowSelected,	NULL,
+		GTLV_ShowSelected,	(IPTR)NULL,
 		GTLV_ReadOnly,		FALSE,
 		TAG_DONE );
   screenlistg = gad;
@@ -643,7 +643,7 @@ struct NewGadget swinfogad =
   gad = CreateContext ( &igads );
   gad = CreateGadget ( LISTVIEW_KIND, igads, &swinfogad,
 		GTLV_Labels,		(IPTR)&lv_infolist,
-		GTLV_ShowSelected,	NULL,
+		GTLV_ShowSelected,	(IPTR)NULL,
 		GTLV_ReadOnly,		FALSE,
 		TAG_DONE );
 
@@ -933,7 +933,7 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 				es.es_TextFormat = ABOUT_TXT;
 				es.es_GadgetFormat = CONTINUE_TXT;
 				ClearIDCMP();
-				EasyRequest ( Window, &es, NULL, NULL, NULL );
+				EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
 				ResetIDCMP();
 				break;
 			  case 2: /* Quit */
@@ -958,7 +958,7 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 					es.es_TextFormat = CLOSESCREEN_TXT;
 					es.es_GadgetFormat = YESNO_TXT;
 					ClearIDCMP();
-					killit = EasyRequest ( Window, &es, NULL, NULL, NULL );
+					killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
 					ResetIDCMP();
 					if ( killit == EASYTRUE )
 					{
@@ -969,7 +969,7 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 					es.es_TextFormat = CLOSEWINDOW_TXT;
 					es.es_GadgetFormat = YESNO_TXT;
 					ClearIDCMP();
-					killit = EasyRequest ( Window, &es, NULL, NULL, NULL );
+					killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
 					ResetIDCMP();
 					if ( killit == EASYTRUE )
 					{
@@ -1130,7 +1130,7 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 			es.es_TextFormat = ABOUT_TXT;
 			es.es_GadgetFormat = CONTINUE_TXT;
 			ClearIDCMP();
-			EasyRequest ( Window, &es, NULL, NULL, NULL );
+			EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
 			ResetIDCMP();
 			break;
 
@@ -1257,7 +1257,7 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 				es.es_TextFormat = CLOSESCREEN_TXT;
 				es.es_GadgetFormat = YESNO_TXT;
 				ClearIDCMP();
-				killit = EasyRequest ( Window, &es, NULL, NULL, NULL );
+				killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
 				ResetIDCMP();
 				if ( killit == EASYTRUE )
 				{
@@ -1268,7 +1268,7 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 				es.es_TextFormat = CLOSEWINDOW_TXT;
 				es.es_GadgetFormat = YESNO_TXT;
 				ClearIDCMP();
-				killit = EasyRequest ( Window, &es, NULL, NULL, NULL );
+				killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
 				ResetIDCMP();
 				if ( killit == EASYTRUE )
 				{
