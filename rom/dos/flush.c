@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  2000/11/18 12:17:31  SDuvan
+    Updated layout
+
     Revision 1.7  1998/10/20 16:44:37  hkiel
     Amiga Research OS
 
@@ -51,7 +54,7 @@
 	file - filehandle
 
     RESULT
-	!=0 on success, 0 on error. IoErr() gives additional information
+	!= 0 on success, 0 on error. IoErr() gives additional information
 	in that case.
 
     NOTES
@@ -74,37 +77,46 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Get pointer to filehandle */
-    struct FileHandle *fh=(struct FileHandle *)BADDR(file);
-    long success=1;
+    struct FileHandle *fh = (struct FileHandle *)BADDR(file);
+    long success = 1;
 
     /* If the file is in write mode... */
-    if(fh->fh_Flags&FHF_WRITE)
+    if(fh->fh_Flags & FHF_WRITE)
     {
 	UBYTE *pos;
+
 	/* Unset write flag */
-	fh->fh_Flags&=~FHF_WRITE;
+	fh->fh_Flags &= ~FHF_WRITE;
 
 	/* Write the data. (In many pieces if the first one isn't enough). */
-	pos=fh->fh_Buf;
-        while(pos!=fh->fh_Pos)
+	pos = fh->fh_Buf;
+        while(pos != fh->fh_Pos)
         {
             LONG size;
-	    size=Write(file,pos,fh->fh_Pos-pos);
+
+	    size = Write(file,pos,fh->fh_Pos-pos);
 
 	    /* An error happened? No success. */
-	    if(size<0)
+	    if(size < 0)
 	    {
-	        success=0;
+	        success = 0;
 		break;
 	    }
-	    pos+=size;
+
+	    pos += size;
 	}
-    }else if(fh->fh_Pos<fh->fh_End)
+    }
+    else if(fh->fh_Pos < fh->fh_End)
+    {
         /* Read mode. Try to seek back to the current position. */
-        if(Seek(file,fh->fh_Pos-fh->fh_End,OFFSET_CURRENT)<0)
-            success=0;
+        if(Seek(file, fh->fh_Pos - fh->fh_End, OFFSET_CURRENT) < 0)
+            success = 0;
+    }
+
     /* Reinit the buffer and return. */
-    fh->fh_Pos=fh->fh_End=fh->fh_Buf;
+    fh->fh_Pos = fh->fh_End = fh->fh_Buf;
+
     return success;
+
     AROS_LIBFUNC_EXIT
 } /* Flush */

@@ -110,28 +110,28 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Allocated resources */
-    struct RDArgs *rda=NULL;
-    struct DAList *dalist=NULL;
-    UBYTE *flags=NULL;
-    STRPTR strbuf=NULL, iline=NULL;
-    STRPTR *multvec=NULL, *argbuf=NULL;
-    ULONG multnum=0, multmax=0;
+    struct RDArgs *rda = NULL;
+    struct DAList *dalist = NULL;
+    UBYTE         *flags = NULL;
+    STRPTR         strbuf = NULL, iline = NULL;
+    STRPTR        *multvec=NULL, *argbuf = NULL;
+    ULONG          multnum = 0, multmax = 0;
 
     /* Some variables */
-    STRPTR s1, s2, *newmult;
-    ULONG arg, numargs, nextarg;
-    LONG it, item, chars, value;
+    STRPTR         s1, s2, *newmult;
+    ULONG          arg, numargs, nextarg;
+    LONG           it, item, chars, value;
     struct CSource lcs, *cs;
 
     /* Get pointer to process structure. */
-    struct Process *me=(struct Process *)FindTask(NULL);
+    struct Process *me = (struct Process *)FindTask(NULL);
 
     /* Error recovery. C has no exceptions. This is a simple replacement. */
     LONG error;
 #undef ERROR
 #define ERROR(a) { error=a; goto end; }
 
-/* Template options */
+    /* Template options */
 #define REQUIRED 0x80 /* /A */
 #define KEYWORD  0x40 /* /K */
 #define TYPEMASK 0x07
@@ -146,48 +146,54 @@
     static const UBYTE argflags[]=
     { REQUIRED, 0, 0, 0, 0, REST, 0, 0, 0, 0, KEYWORD, 0, MULTIPLE,
       NUMERIC, 0, 0, 0, 0, SWITCH|KEYWORD, TOGGLE|KEYWORD, 0, 0, 0, 0, 0, 0 };
-
+    
     /* Allocate readargs structure (and private internal one) */
-    rda=(struct RDArgs *)AllocVec(sizeof(struct RDArgs),MEMF_ANY);
-    dalist=(struct DAList *)AllocVec(sizeof(struct DAList),MEMF_ANY);
-    if(rda==NULL||dalist==NULL)
-	ERROR(ERROR_NO_FREE_STORE);
+    rda = (struct RDArgs *)AllocVec(sizeof(struct RDArgs), MEMF_ANY);
+    dalist = (struct DAList *)AllocVec(sizeof(struct DAList), MEMF_ANY);
 
+    if(rda == NULL || dalist == NULL)
+	ERROR(ERROR_NO_FREE_STORE);
+    
     /* Init character source. */
-    if(rdargs!=NULL && rdargs->RDA_Source.CS_Buffer)
+    if(rdargs != NULL && rdargs->RDA_Source.CS_Buffer)
     {
-	cs=&rdargs->RDA_Source;
+	cs = &rdargs->RDA_Source;
     }
     else
     {
-	lcs.CS_Buffer=(me->pr_Arguments ? me->pr_Arguments : (UBYTE*)"");
-	s1=lcs.CS_Buffer;
-	while(*s1++)
-	    ;
-	lcs.CS_Length=(IPTR)s1-(IPTR)lcs.CS_Buffer-1;
-	lcs.CS_CurChr=0;
-	cs=&lcs;
+	lcs.CS_Buffer = (me->pr_Arguments ? me->pr_Arguments : (UBYTE *)"");
+ 	s1 = lcs.CS_Buffer;
+
+	while(*s1++);
+
+	lcs.CS_Length = (IPTR)s1 - (IPTR)lcs.CS_Buffer - 1;
+	lcs.CS_CurChr = 0;
+	cs = &lcs;
     }
 
     /* Check for optional reprompting */
-    if(rdargs==NULL||!(rdargs->RDA_Flags&RDAF_NOPROMPT))
+    if(rdargs == NULL || !(rdargs->RDA_Flags & RDAF_NOPROMPT))
     {
 	/* Check commandline for a single '?' */
-	s1=cs->CS_Buffer;
+	s1 = cs->CS_Buffer;
+
 	/* Skip leading whitespace */
-	while(*s1==' '||*s1=='\t')
+	while(*s1 == ' ' || *s1 == '\t')
 	    s1++;
+
 	/* Check for '?' */
-	if(*s1++=='?')
+	if(*s1++ == '?')
 	{
 	    /* Skip whitespace */
-	    while(*s1==' '||*s1=='\t')
+	    while(*s1 == ' ' || *s1 == '\t')
 		s1++;
+
 	    /* Check for EOL */
-	    if(*s1=='\n'||!*s1)
+	    if(*s1 == '\n' || !*s1)
 	    {
 		/* Only a single '?' on the commandline. */
-		BPTR input=me->pr_CIS, output=me->pr_COS;
+		BPTR  input = Input();
+		BPTR  output = Output();
 		ULONG isize=0, ibuf=0;
 		LONG c;
 		/* Prompt for more input */
@@ -196,41 +202,49 @@ printf ("rdargs=%p\n", rdargs);
 if (rdargs)
 printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 
-		if(rdargs!=NULL&&rdargs->RDA_ExtHelp!=NULL)
+		if(rdargs != NULL && rdargs->RDA_ExtHelp != NULL)
 		{
-		    if(FPuts(output,rdargs->RDA_ExtHelp))
+		    if(FPuts(output, rdargs->RDA_ExtHelp))
 			ERROR(me->pr_Result2);
-		}else if(FPuts(output,template)||FPuts(output,": "))
-		   ERROR(me->pr_Result2);
+		} else if(FPuts(output, template) || FPuts(output, ": "))
+		    ERROR(me->pr_Result2);
+
 		if(!Flush(output))
-		   ERROR(me->pr_Result2);
+		    ERROR(me->pr_Result2);
+
 		/* Read a line in. */
 		for(;;)
 		{
-		    if(isize>=ibuf)
+		    if(isize >= ibuf)
 		    {
 			/* Buffer too small. Get a new one. */
 			STRPTR newiline;
-			ibuf+=256;
-			newiline=(STRPTR)AllocVec(ibuf,MEMF_ANY);
-			if(newiline==NULL)
+
+			ibuf += 256;
+			newiline = (STRPTR)AllocVec(ibuf, MEMF_ANY);
+			if(newiline == NULL)
 			    ERROR(ERROR_NO_FREE_STORE);
-			CopyMemQuick((ULONG *)iline,(ULONG *)newiline,isize);
+
+			CopyMemQuick((ULONG *)iline, (ULONG *)newiline, isize);
 			FreeVec(iline);
-			iline=newiline;
+			iline = newiline;
 		    }
+
 		    /* Read character */
-		    c=FGetC(input);
+		    c = FGetC(input);
 		    /* Check and write it. */
-		    if(c==EOF&&me->pr_Result2)
+		    if(c == EOF && me->pr_Result2)
 			ERROR(me->pr_Result2);
-		    if(c==EOF||c=='\n'||!c)
+
+		    if(c == EOF || c== '\n' || !c)
 			break;
-		    iline[isize++]=c;
+
+		    iline[isize++] = c;
 		}
+
 		/* Prepare input source for new line. */
-		cs->CS_Buffer=iline;
-		cs->CS_Length=isize;
+		cs->CS_Buffer = iline;
+		cs->CS_Length = isize;
 	    }
 	}
     }
@@ -239,116 +253,133 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 	Get enough space for string buffer.
 	It's always smaller than the size of the input line+1.
     */
-    strbuf=(STRPTR)AllocVec(cs->CS_Length+1,MEMF_ANY);
-    if(strbuf==NULL)
+    strbuf = (STRPTR)AllocVec(cs->CS_Length + 1 ,MEMF_ANY);
+    if(strbuf == NULL)
 	ERROR(ERROR_NO_FREE_STORE);
 
     /* Count the number of items in the template (number of ','+1). */
-    numargs=1;
-    s1=template;
-    while(*s1)
-	if(*s1++==',')
-	    numargs++;
+    numargs = 1;
+    s1 = template;
 
-    /* Use this count to get space for temporary flag array and result buffer. */
-    flags=(UBYTE *)AllocVec(numargs+1,MEMF_CLEAR);
-    argbuf=(STRPTR *)AllocVec((numargs+1)*sizeof(STRPTR),MEMF_CLEAR);
-    if(flags==NULL||argbuf==NULL)
+    while(*s1)
+    {
+	if(*s1++ == ',')
+	    numargs++;
+    }
+    
+    /* Use this count to get space for temporary flag array and result
+       buffer. */
+    flags = (UBYTE *)AllocVec(numargs + 1, MEMF_CLEAR);
+    argbuf = (STRPTR *)AllocVec((numargs + 1)*sizeof(STRPTR), MEMF_CLEAR);
+
+    if(flags == NULL || argbuf == NULL)
 	ERROR(ERROR_NO_FREE_STORE);
 
     /* Fill the flag array. */
-    s1=template;
-    s2=flags;
+    s1 = template;
+    s2 = flags;
+
     while(*s1)
     {
 	/* A ',' means: goto next item. */
-	if(*s1==',')
+	if(*s1 == ',')
 	    s2++;
+
 	/* In case of a '/' use the next character as option. */
-	if(*s1++=='/')
-	    *s2|=argflags[*s1-'A'];
+	if(*s1++ == '/')
+	    *s2 |= argflags[*s1-'A'];
     }
+
     /* Add a dummy so that the whole line is processed. */
-    *++s2=MULTIPLE;
+    *++s2 = MULTIPLE;
 
     /*
-	Now process commandline for the first time:
-	* Go from left to right and fill all items that need filling.
-	* If an item is given as 'OPTION=VALUE' or 'OPTION VALUE' fill
-	  it out of turn.
+        Now process commandline for the first time:
+        * Go from left to right and fill all items that need filling.
+        * If an item is given as 'OPTION=VALUE' or 'OPTION VALUE' fill
+          it out of turn.
     */
-    s1=strbuf;
-    for(arg=0;arg<=numargs;arg=nextarg)
+    s1 = strbuf;
+
+    for(arg = 0; arg <= numargs; arg = nextarg)
     {
-	nextarg=arg+1;
+	nextarg = arg + 1;
 
 	/* Skip /K options and options that are already done. */
-	if(flags[arg]&KEYWORD||argbuf[arg]!=NULL)
+	if(flags[arg] & KEYWORD || argbuf[arg] != NULL)
 	    continue;
 
 	/* If the current option is of type /F do not look for keywords */
-	if((flags[arg]&TYPEMASK)!=REST)
+	if((flags[arg] & TYPEMASK) != REST)
 	{
 	    /* Get item. Quoted items are no keywords. */
-	    it=ReadItem(s1,~0ul/2,cs);
-	    if(it==ITEM_UNQUOTED)
+	    it = ReadItem(s1, ~0ul/2, cs);
+
+	    if(it == ITEM_UNQUOTED)
 	    {
 		/* Not quoted. Check if it's a keyword. */
-		item=FindArg(template,s1);
-		if(item>=0&&argbuf[item]==NULL)
+		item = FindArg(template, s1);
+		if(item >= 0 && argbuf[item] == NULL)
 		{
 		    /*
 			It's a keyword. Fill it and retry the current option
 			at the next turn
 		    */
-		    nextarg=arg;
-		    arg=item;
+		    nextarg = arg;
+		    arg = item;
 
 		    /* /S /T and /F may not be given as 'OPTION=VALUE'. */
-		    if((flags[item]&TYPEMASK)!=SWITCH&&
-		       (flags[item]&TYPEMASK)!=TOGGLE&&
-		       (flags[item]&TYPEMASK)!=REST)
+		    if((flags[item]&TYPEMASK) != SWITCH &&
+		       (flags[item]&TYPEMASK) != TOGGLE &&
+		       (flags[item]&TYPEMASK) != REST)
 		    {
 			/* Get value. */
-			it=ReadItem(s1,~0ul/2,cs);
-			if(it==ITEM_EQUAL)
-			    it=ReadItem(s1,~0ul/2,cs);
+			it = ReadItem(s1,~0ul/2,cs);
+
+			if(it == ITEM_EQUAL)
+			    it = ReadItem(s1,~0ul/2,cs);
 		    }
 		}
 	    }
+
 	    /* Check returncode of ReadItem(). */
-	    if(it==ITEM_EQUAL)
+	    if(it == ITEM_EQUAL)
 		ERROR(ERROR_BAD_TEMPLATE);
-	    if(it==ITEM_ERROR)
+	    if(it == ITEM_ERROR)
 		ERROR(me->pr_Result2);
-	    if(it==ITEM_NOTHING)
+	    if(it == ITEM_NOTHING)
 		break;
 	}
+
 	/* /F takes all the rest */
-	if((flags[arg]&TYPEMASK)==REST)
+	/* TODO: Take care of quoted strings(?) */
+	if((flags[arg] & TYPEMASK) == REST)
 	{
 	    /* Skip leading whitespace */
-	    while(cs->CS_CurChr<cs->CS_Length&&
-		  (cs->CS_Buffer[cs->CS_CurChr]==' '||
-		   cs->CS_Buffer[cs->CS_CurChr]=='\t'))
+	    while(cs->CS_CurChr < cs->CS_Length &&
+		  (cs->CS_Buffer[cs->CS_CurChr] == ' ' ||
+		   cs->CS_Buffer[cs->CS_CurChr] == '\t'))
 		cs->CS_CurChr++;
 
 	    /* Find the last non-whitespace character */
-	    s2=s1-1;
-	    argbuf[arg]=s1;
-	    while(cs->CS_CurChr<cs->CS_Length&&
-		  cs->CS_Buffer[cs->CS_CurChr]&&
-		  cs->CS_Buffer[cs->CS_CurChr]!='\n')
+	    s2 = s1 - 1;
+	    argbuf[arg] = s1;
+
+	    while(cs->CS_CurChr < cs->CS_Length &&
+		  cs->CS_Buffer[cs->CS_CurChr]  &&
+		  cs->CS_Buffer[cs->CS_CurChr]  != '\n')
 	    {
-		if(cs->CS_Buffer[cs->CS_CurChr]!=' '&&
-		   cs->CS_Buffer[cs->CS_CurChr]!='\t')
-		    s2=s1;
+		if(cs->CS_Buffer[cs->CS_CurChr] != ' ' &&
+		   cs->CS_Buffer[cs->CS_CurChr] != '\t')
+		    s2 = s1;
+
 		/* Copy string by the way. */
-		*s1++=cs->CS_Buffer[cs->CS_CurChr++];
+		*s1++ = cs->CS_Buffer[cs->CS_CurChr++];
 	    }
+
 	    /* Add terminator (1 after the character found). */
-	    s2[1]=0;
-	    it=ITEM_NOTHING;
+	    s2[1] = 0;
+	    it = ITEM_NOTHING;
 	    break;
 	}
 	/* /S or /T just set a flag */
@@ -364,7 +395,8 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 		newmult=(STRPTR *)AllocVec(multmax*sizeof(char *),MEMF_ANY);
 		if(newmult==NULL)
 		    ERROR(ERROR_NO_FREE_STORE);
-		CopyMemQuick((ULONG *)multvec,(ULONG *)newmult,multnum*sizeof(char *));
+		CopyMemQuick((ULONG *)multvec,(ULONG *)newmult,
+			     multnum*sizeof(char *));
 		FreeVec(multvec);
 		multvec=newmult;
 	    }
