@@ -1,9 +1,9 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Support functions fro the palette class
-    Lang: english
+    Desc: Support functions for the palette class
+    Lang: English
 */
 #include <proto/graphics.h>
 #include <proto/intuition.h>
@@ -46,6 +46,7 @@ VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox)
     }
 }
 
+
 /**********************
 **  GetPalettePen()  **
 **********************/
@@ -63,6 +64,7 @@ UWORD GetPalettePen(struct PaletteData *data, struct DrawInfo *dri, UWORD idx)
     return (pen);
 }
 
+
 /*********************
 **  Colors2Depth()  **
 *********************/
@@ -76,6 +78,7 @@ UBYTE Colors2Depth(UWORD numcolors)
 
     return (depth);
 }
+
 
 /********************
 **  InsidePalette  **
@@ -114,7 +117,6 @@ BOOL InsidePalette(struct PaletteData *data, WORD x, WORD y)
 }
 
 
-
 /*********************
 **  ComputeColor()  **
 *********************/
@@ -142,6 +144,7 @@ UWORD ComputeColor(struct PaletteData *data, WORD x, WORD y)
      
      return (UWORD)color;
 }
+
 
 /********************
 **  RenderPalette  **
@@ -192,6 +195,7 @@ VOID RenderPalette(struct PaletteData *data, struct DrawInfo *dri,
 
     ReturnVoid("RenderPalette");
 }
+
 
 /************************
 **  UpdateActiveColor  **
@@ -331,6 +335,7 @@ void DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen,
     ReturnVoid("DrawDisabledPattern");
 }
 
+
 /******************
 **  PrepareFont  **
 ******************/
@@ -349,8 +354,7 @@ struct TextFont *PrepareFont(struct RastPort *rport, struct IntuiText *itext,
 	if (font)
 	{
 	    SetFont(rport, font);
-#warning FIXME:
-	    /* SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff) FIXME */
+	    SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff);
 	} else
 	    font = rport->Font;
     } else
@@ -362,6 +366,7 @@ struct TextFont *PrepareFont(struct RastPort *rport, struct IntuiText *itext,
 
     ReturnPtr("PrepareFont", struct TextFont *, font);
 }
+
 
 /********************
 **  DisposeFont()  **
@@ -380,6 +385,7 @@ void DisposeFont(struct RastPort *rport,
  
     ReturnVoid("DisposeFont");
 }
+
 
 /********************
 **  RenderLabel()  **
@@ -468,6 +474,7 @@ BOOL RenderLabel( struct Gadget *gad, struct IBox *gadbox,
     }
     ReturnBool("RenderLabel", TRUE);
 }
+
 
 /********************
 **  RenderFrame()  **
