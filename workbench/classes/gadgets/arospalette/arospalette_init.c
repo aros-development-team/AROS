@@ -183,18 +183,21 @@ AROS_LH0(BPTR, close, struct PaletteBase_intern *, LIBBASE, 2, BASENAME)
     /* I have one fewer opener. */
     if(!--LIBBASE->library.lib_OpenCnt)
     {
-	if (UtilityBase)
-	    CloseLibrary(UtilityBase);
-	if (GfxBase)
-	    CloseLibrary((struct Library *)GfxBase);
-	if (IntuitionBase)
-	    CloseLibrary((struct Library *)IntuitionBase);
-	    
 	if (LIBBASE->classptr)
 	{
 	    RemoveClass(LIBBASE->classptr);
 	    FreeClass(LIBBASE->classptr);
+	    LIBBASE->classptr = NULL;
 	}
+
+	CloseLibrary(UtilityBase);
+	UtilityBase = NULL;
+
+	CloseLibrary((struct Library *)GfxBase);
+	GfxBase = NULL;
+
+	CloseLibrary((struct Library *)IntuitionBase);
+	IntuitionBase = NULL;
 
 	/* Delayed expunge pending? */
 	if(LIBBASE->library.lib_Flags&LIBF_DELEXP)

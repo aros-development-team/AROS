@@ -207,13 +207,23 @@ AROS_LH0(BPTR, close, struct LVBase_intern *, LIBBASE, 2, BASENAME)
 	{
 	    RemoveClass(LIBBASE->classptr);
 	    FreeClass(LIBBASE->classptr);
+	    LIBBASE->classptr = NULL;
 	}
 
 	CloseLibrary(UtilityBase);
+	UtilityBase = NULL;
+
 	CloseLibrary(BOOPSIBase);
+	BOOPSIBase = NULL;
+
 	CloseLibrary((struct Library *)GfxBase);
+	GfxBase = NULL;
+
 	CloseLibrary((struct Library *)IntuitionBase);
+	IntuitionBase = NULL;
+
 	CloseLibrary(DOSBase);
+	DOSBase = NULL;
 
 	/* Delayed expunge pending? */
 	if(LIBBASE->library.lib_Flags&LIBF_DELEXP)

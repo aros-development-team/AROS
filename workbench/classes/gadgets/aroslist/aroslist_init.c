@@ -178,10 +178,14 @@ AROS_LH0(BPTR, close, struct ListBase_intern *, LIBBASE, 2, BASENAME)
 	{
 	    RemoveClass(LIBBASE->classptr);
 	    FreeClass(LIBBASE->classptr);
+	    LIBBASE->classptr = NULL;
 	}
 
 	CloseLibrary(UtilityBase);
+	UtilityBase = NULL;
+
 	CloseLibrary((struct Library *)IntuitionBase);
+	IntuitionBase = NULL;
 	    
 	/* Delayed expunge pending? */
 	if(LIBBASE->library.lib_Flags&LIBF_DELEXP)
