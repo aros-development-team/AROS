@@ -1,0 +1,38 @@
+#ifndef PARTITION_SUPPORT_H
+#define PARTITION_SUPPORT_H
+
+#include <exec/types.h>
+#include <libraries/partition.h>
+#include <utility/tagitem.h>
+
+#include "partition_intern.h"
+
+struct PTFunctionTable {
+	ULONG		type; /* Partition Table Type */
+	STRPTR	name;
+	LONG		(*CheckPartitionTable)	(struct Library *, struct PartitionHandle *);
+	LONG		(*OpenPartitionTable)	(struct Library *, struct PartitionHandle *);
+	void		(*ClosePartitionTable)	(struct Library *, struct PartitionHandle *);
+	LONG		(*WritePartitionTable)	(struct Library *, struct PartitionHandle *);
+	LONG		(*CreatePartitionTable)	(struct Library *, struct PartitionHandle *);
+	struct PartitionHandle *(*AddPartition)(struct Library *, struct PartitionHandle *, struct TagItem *);
+	void 		(*DeletePartition)		(struct Library *, struct PartitionHandle *);
+	LONG 		(*GetPartitionTableAttrs)(struct Library *, struct PartitionHandle *, struct TagItem *);
+	LONG 		(*SetPartitionTableAttrs)(struct Library *, struct PartitionHandle *, struct TagItem *);
+	LONG 		(*GetPartitionAttrs)		(struct Library *, struct PartitionHandle *, struct TagItem *);
+	LONG 		(*SetPartitionAttrs)		(struct Library *, struct PartitionHandle *, struct TagItem *);
+	ULONG *	(*QueryPartitionTableAttrs)(struct Library *);
+	ULONG *	(*QueryPartitionAttrs)	(struct Library *);
+};
+
+extern struct PTFunctionTable *PartitionSupport[];
+
+LONG getGeometry(struct Library *, struct IOExtTD *, struct DriveGeometry *);
+void PartitionNsdCheck(struct Library *, struct PartitionHandle *);
+ULONG getStartBlock(struct PartitionHandle *);
+LONG readBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
+LONG writeBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
+struct TagItem *findTagItem(ULONG tag, struct TagItem *);
+void fillMem(BYTE *, LONG, BYTE);
+
+#endif /* PARTITION_SUPPORT_H */
