@@ -58,7 +58,7 @@
     /* Prepare I/O request. */
     InitIOFS(&iofs, FSA_RELABEL, DOSBase);
 
-    iofs.IOFS.io_Device = GetDevice(drive, NULL, DOSBase);
+    iofs.IOFS.io_Device = GetDevice(drive, &iofs.IOFS.io_Unit, DOSBase);
 
     if(iofs.IOFS.io_Device == NULL)
     {
