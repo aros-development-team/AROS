@@ -9,6 +9,7 @@
 #include <exec/memory.h>
 #include <exec/resident.h>
 #include <exec/alerts.h>
+#include <exec/io.h>
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
 #include <hidd/hidd.h>
@@ -19,9 +20,11 @@
 #include <proto/dos.h>
 #include <oop/oop.h>
 #include <ctype.h>
+#include <string.h>
 
 #include "../graphics/graphics_private.h"	/* LateGfxInit proto	*/
 #include "../intuition/intuition_private.h"	/* LateIntuiInit proto	*/
+#include "devs_private.h"
 
 #ifdef _AROS
 #include <aros/asmcall.h>
@@ -45,7 +48,8 @@ struct initbase
 #define OOPBase (base->oopbase)
 
 
-static BOOL init_gfx(STRPTR gfxclassname, struct initbase *base);
+static BOOL init_gfx  ( STRPTR gfxclassname,   struct initbase *base);
+static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initbase *base);
 
 /************************************************************************/
 
@@ -64,6 +68,8 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
     struct initbase stack_b, *base = &stack_b;
     BOOL success = TRUE;
     UBYTE buf[BUFSIZE];
+    UBYTE gfxname[BUFSIZE], kbdname[BUFSIZE], mousename[BUFSIZE];
+    BOOL got_gfx = FALSE, got_kbd = FALSE, got_mouse = FALSE;
     
     
     base->sysbase = sysBase;
@@ -151,36 +157,67 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 		}
 		else if (0 == strcmp(keyword, "gfx"))
 		{
-		    if (!init_gfx(arg, base))
-		    {
-		        success = FALSE;
-			break;
-		    }
-		    
+		    strncpy(gfxname, arg, BUFSIZE - 1);
+		    got_gfx = TRUE;
 		}
-		
-/*		else if (0 == strcmp(keyword, "mouse"))
+		else if (0 == strcmp(keyword, "mouse"))
 		{
-		    if (!init_mouse(arg, OOPBase))
-		    {
-		        success = FALSE;
-			break;
-		    }
+		    strncpy(mousename, arg, BUFSIZE - 1);
+		    got_mouse = TRUE;
 		}
 		else if (0 == strcmp(keyword, "kbd"))
 		{
-		    if (!init_kbd(arg, OOPBase))
-		    {
-		        success = FALSE;
-			break;
-		    }
+		    strncpy(kbdname, arg, BUFSIZE - 1);
+		    got_kbd = TRUE;
 		}
-*/		  
 		  
 	    }
 	    
 	    Close(fh);
+	    
+	    if (!got_gfx)
+	    {
+	        success = FALSE;
+	    	kprintf("No configureation for gfx hidd\n");
+		goto end;
+	    }
+	    
+	    if (!got_mouse)
+	    {
+	        success = FALSE;
+	    	kprintf("No configureation for mouse hidd\n");
+		goto end;
+	    }
 	
+	    if (!got_kbd)
+	    {
+	        success = FALSE;
+	    	kprintf("No configureation for keyboard hidd\n");
+		goto end;
+	    }
+	    
+	    if (!init_gfx(gfxname, base))
+	    {
+	        kprintf("Could not init gfx hidd %s\n", gfxname);
+		success = FALSE;
+		goto end;
+	    }
+	    
+	    if (!init_device(kbdname, "keyboard.device", base))
+	    {
+	        kprintf("Could not init keyboard hidd %s\n", kbdname);
+		success = FALSE;
+		goto end;
+	    }
+	    
+/*	    if (!init_device(mousename, "gameport.device", base))
+	    {
+	        kprintf("Could not init mouse hidd %s\n", mousename);
+		success = FALSE;
+		goto end;
+	    }
+*/
+end:
 	}
     
 	CloseLibrary(OOPBase);
@@ -233,6 +270,58 @@ static BOOL init_gfx(STRPTR gfxclassname, struct initbase *base)
     }
     ReturnBool ("init_gfxhidd", success);
 }	    
+
+
+static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initbase *base)
+{
+    BOOL success = FALSE;
+    struct MsgPort *mp;
+    
+    
+    EnterFunc(bug("init_device(classname=%s)\n", hiddclassname));
+    
+    mp = CreateMsgPort();
+    if (mp)
+    {
+    	struct IORequest *io;
+	io = CreateIORequest(mp, sizeof ( struct IOStdReq));
+	{
+	    if (0 == OpenDevice(devicename, 0, io, 0))
+	    {
+		UBYTE *data;
+		
+	        /* Allocate message data */
+		data = AllocMem(BUFSIZE, MEMF_PUBLIC);
+		if (data)
+		{
+		    #define ioStd(x) ((struct IOStdReq *)x)
+		    strcpy(data, hiddclassname);
+		    ioStd(io)->io_Command = CMD_HIDDINIT;
+		    ioStd(io)->io_Data = data;
+		    ioStd(io)->io_Length = strlen(data);
+		    
+		    /* Le the device init the HIDD */
+		    DoIO(io);
+		    if (0 == io->io_Error)
+		    {
+			success = TRUE;
+		    }
+		    
+		    FreeMem(data, BUFSIZE);
+		}
+		CloseDevice(io);
+		
+	    }
+	    DeleteIORequest(io);
+	    
+	}
+	
+	DeleteMsgPort(mp);
+    
+    }
+    
+    ReturnBool("init_device", success);
+}
 
 /*
 #include <dos/dosextens.h>
