@@ -58,7 +58,6 @@ extern BOOL tfe_hashadd(struct TextFontExtension * etf
 		, struct GfxBase *GfxBase);
 extern VOID tfe_hashdelete(struct TextFont *tf, struct GfxBase *GfxBase);
 /* Macros */
-#define RASSIZE(w,h)    ((ULONG)(h)*( ((ULONG)(w)+15)>>3&0xFFFE))
 
 #define WIDTH_TO_BYTES(width) ((( (width) - 1) >> 3) + 1)
 #define WIDTH_TO_WORDS(width) ((( (width) - 1) >> 4) + 1)
