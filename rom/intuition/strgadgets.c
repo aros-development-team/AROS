@@ -506,10 +506,15 @@ STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     
     struct TextFont *oldfont;
     struct RastPort *rp;
+    struct Window *window;
+    
 
     UWORD text_left, text_right;
     
-    UWORD mousex = sgw->IEvent->ie_position.ie_xy.ie_x;
+    UWORD mousex;
+    window = sgw->GadgetInfo->gi_Window;
+    
+    mousex = sgw->IEvent->ie_position.ie_xy.ie_x - window->LeftEdge;
     
     EnterFunc(bug("DoSGHClick(sgw=%p)\n", sgw));
     
@@ -520,7 +525,7 @@ STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     gad     = sgw->Gadget;
     strinfo = (struct StringInfo *)gad->SpecialInfo;
     
-    CalcBBox(sgw->GadgetInfo->gi_Window, gad, &bbox);
+    CalcBBox(window, gad, &bbox);
 
     if (gad->Flags & GFLG_STRINGEXTEND)
     {
