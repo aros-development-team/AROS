@@ -23,17 +23,6 @@
 #define RREG_B(addr)	*(UBYTE *)(addr)
 #endif
 
-#define IRQ_LEVEL1	0x064
-#define IRQ_LEVEL2	0x068
-#define IRQ_LEVEL3	0x06c
-#define IRQ_LEVEL4	0x070
-#define IRQ_LEVEL5	0x074
-#define IRQ_LEVEL6	0x078
-#define TRAP_0		0x080
-#define TRAP_1		0x084
-#define TRAP_2		0x088
-#define TRAP_3		0x08c
-#define TRAP_4		0x090
 
 /*
  * System Controler Registers
@@ -124,6 +113,34 @@
 #define ILCR            0xfffff314
 
 /*
+ * Port A:
+ */
+/*
+ * Port B:
+ */
+/*
+ * Port C:
+ */
+/*
+ * Port D:
+ */
+#define PDDIR           0xfffff418
+#define PDDATA          0xfffff419
+#define PDPUEN          0xfffff41a
+#define PDSEL           0xfffff41b
+#define PDPOL           0xfffff41c
+#define PDIRQEN         0xfffff41d
+#define PDKBEN          0xfffff41e
+#define PDIRQEG         0xfffff41f
+/*
+ * Port E:
+ */
+#define PEDIR           0xfffff420
+#define PEDATA          0xfffff421
+#define PEPUN           0xfffff422
+#define PESEL           0xfffff423
+
+/*
  * Port F: Turn LCD display on/off, ...
  */
 #define PFDIR           0xfffff428
@@ -158,6 +175,30 @@
 
 #define CAPT_F          (1<<1)
 #define COMP_F          (1<<0)
+
+
+/*
+ * Serial Peripheral Interface 1 and 2
+ */
+#define SPIRXD          0xfffff700
+#define SPITXD          0xfffff702
+#define SPICONT1        0xfffff704
+#define SPIINTCS        0xfffff706
+#define SPITEST         0xfffff708
+#define SPISPC          0xfffff70a
+
+#define SPIDATA2        0xfffff800
+#define SPICONT2        0xfffff802
+
+/*
+ * Some flags for SPI 2
+ */
+#define SPI_ENABLE_F    (1<<9)
+#define SPI_XCH_F       (1<<8)
+#define SPI_IRQ_F       (1<<7)
+#define SPI_IRQEN_F     (1<<6)
+#define SPI_PHA_F       (1<<5)
+#define SPI_POL_F       (1<<4)
 
 /*
  * UART 1 & 2
