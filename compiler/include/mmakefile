@@ -16,7 +16,6 @@ INCSUBDIRS :=	aros \
 		hardware/acpi \
 		hardware/pic \
 		hidd \
-		inline \
 		intuition \
 		libraries \
 		midi \
