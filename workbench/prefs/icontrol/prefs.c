@@ -283,7 +283,8 @@ BOOL DefaultPrefs(void)
     icontrolprefs.ic_Reserved[3] = 0;
     icontrolprefs.ic_TimeOut = 50;
     icontrolprefs.ic_MetaDrag = IEQUALIFIER_LCOMMAND;    
-    icontrolprefs.ic_Flags = ICF_MODEPROMOTE | 
+    icontrolprefs.ic_Flags = ICF_3DMENUS |
+    	    	    	     ICF_MODEPROMOTE | 
     	    	    	     ICF_MENUSNAP |
 			     ICF_STRGAD_FILTER |
 			     ICF_COERCE_LACE;
