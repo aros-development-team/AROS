@@ -92,6 +92,7 @@ FUNCTIONS := \
 	installlayerhook \
 	installlayerinfohook \
 	isfrontmostlayer \
+	islayerhiddenbysibling \
 	islayervisible \
 	locklayer \
 	locklayerinfo \
