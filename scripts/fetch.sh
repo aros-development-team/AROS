@@ -1,0 +1,208 @@
+#!/bin/sh
+
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+usage()
+{
+    error "Usage: $1 -a archive [-ao archive_origins...] [-d destination] [-po patches_origins...] [-p patch[:subdir][:patch options]...]"
+}
+
+fetch()
+{
+    local origin="$1" file="$2" destination="$3"
+    
+    if echo $origin | grep ":" >/dev/null; then
+        local protocol=`echo $origin | cut -d':' -f1`
+    fi
+
+    local ret=true
+    
+    case $protocol in
+        http | ftp)    
+            if ! wget -c "$origin/$file" -O "$destination/$file"; then
+	        rm -f "$destination/$file"
+                ret=false
+	    fi
+	    ;;
+	"")
+	    cp "$origin/$file" "$destination/$file";;
+	*)
+	    echo "Unknown protocol type \`$protocol'"
+	    ret=false;;
+    esac
+    
+    $ret
+}
+
+fetch_multiple()
+{
+    local origins="$1" file="$2" destination="$3"
+    
+    local ret=false
+    
+    for origin in $origins; do
+        echo "Trying $origin/$file..."
+        if fetch "$origin" "$file" "$destination"; then
+	    ret=true
+	    break
+	fi
+    done
+	
+    $ret
+}
+
+fetch_cached()
+{
+    local origins="$1" file="$2" destination="$3"
+    
+    echo -n "Checking whether \`$file' is already in \`$destination'..."
+    
+    if ! test -e "$destination/$file"; then
+        echo " NO."
+	if ! test -e "$destination"; then
+	    echo "\`$destination' does not exist yet. Making it."
+	    mkdir -p "$destination"
+	fi
+	echo "Fetching \`$file'."
+        fetch_multiple "$origins" "$file" "$destination"
+    else
+        echo " YES."
+        true
+    fi
+}
+
+error()
+{
+    echo $1
+    exit 1
+}
+
+
+unpack()
+{
+    local location="$1" archive="$2";
+    
+    local old_PWD="$PWD"
+    cd $location
+    
+    echo "Unpacking \`$archive'..."
+    
+    local ret=true
+    case "$archive" in
+        *.tar.bz2)
+	    if ! tar xfj "$archive"; then ret=false; fi
+	    ;;
+        *.tar.gz | *.tgz)
+	    if ! tar xfz "$archive"; then ret=false; fi
+	    ;;
+	*)
+	    echo "Unknown archive format for \`$archive'."
+	    ret=false
+	    ;;
+    esac
+	
+    cd "$old_PWD"
+    
+    $ret
+}
+
+unpack_cached()
+{
+    local location="$1" archive="$2";
+
+    if ! test -f ${location}/.${archive}.unpacked;  then
+        if unpack "$location" "$archive"; then
+	    echo yes > ${location}/.${archive}.unpacked
+	    true
+	else
+	    false
+	fi
+    fi
+}
+
+do_patch()
+{
+    local location="$1" patch_spec="$2";
+    
+    local old_PWD="$PWD"
+    cd $location
+    local abs_location="$PWD"
+    
+    local patch=`echo "$patch_spec": | cut -d: -f1`
+    local subdir=`echo "$patch_spec": | cut -d: -f2`
+    local patch_opt=`echo "$patch_spec": | cut -d: -f3`
+    
+    cd ${subdir:-.}
+    
+    local ret=true
+    
+    if ! patch $patch_opt < $abs_location/$patch; then
+        ret=false
+    fi
+    
+    cd "$old_PWD"
+    
+    $ret
+}
+
+patch_cached()
+{
+    local location="$1" patch="$2";
+
+    if ! test -f ${location}/.${patch}.applied;  then
+        if do_patch "$location" "$patch"; then
+	    echo yes > ${location}/.${patch}.applied
+	    true
+	else
+	    false
+	fi
+    fi
+}
+
+if test "$1" == ""; then
+    usage "$0"
+fi
+
+while  test "$1" != ""; do
+    if test "$2" == "" -o "${1:0:1}" == "-" -a  "${2:0:1}" == "-"; then
+        usage "$0"
+    fi
+    
+    case "$1" in
+        -ao) archive_origins="$2";;
+	 -a) archive="$2";;
+	 -d) destination="$2";;
+	-po) patches_origins="$2";;
+	 -p) patches="$2";;
+  	  *) echo "Unknown option \`$1'."; usage "$0";;
+    esac
+    
+    shift
+    shift
+done
+	
+archive_origins=${archive_origins:-.}
+destination=${destination:-.}
+patches_origins=${patches_origins:-.}
+        
+if ! fetch_cached "$archive_origins" "$archive" "$destination"; then
+    error "Error while fetching the archive \`$archive'."
+fi
+
+for patch in $patches; do
+    patch=`echo $patch | cut -d: -f1`
+    if ! fetch_cached "$patches_origins" "$patch" "$destination"; then
+        error "Error while fetching the patch \`$patch'."
+    fi
+done
+
+if ! unpack_cached "$destination" "$archive"; then
+    error "Error while unpacking \`$archive'."
+fi
+    
+for patch in $patches; do
+    if ! patch_cached "$destination" "$patch"; then
+        error "Error while applying the patch \`$patch'."
+    fi
+done
