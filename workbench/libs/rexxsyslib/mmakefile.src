@@ -18,9 +18,16 @@ FUNCS := \
 	 lockrexxbase \
 	 unlockrexxbase
 
+USE_ROMLIB := yes
 USE_AMIGALIB := yes
+USE_AROSLIB := yes
+#TODO: At the moment sprintf needs the mat library
+USE_MLIB := yes
 
 #MM- workbench-libs-rexxsyslib : setup includes linklibs workbench-libs-rexxsyslib-module
+#MM
+workbench-libs-rexxsyslib-quick : setup workbench-libs-rexxsyslib-module
+
 %make_module_setup mmake=workbench-libs-rexxsyslib
 %make_module_cpak
 %make_module mmake=workbench-libs-rexxsyslib
