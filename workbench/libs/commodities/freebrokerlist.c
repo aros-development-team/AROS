@@ -1,5 +1,5 @@
 /*
-    (C) 1997-99 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -29,7 +29,8 @@
 
     INPUTS
 
-    brokerList - List of commodity brokers.
+    brokerList  --  List of commodity brokers (a list of struct BrokerCopy
+                    nodes).
 
     RESULT
 
@@ -40,6 +41,8 @@
     BUGS
 
     SEE ALSO
+
+    cxintern.h
 
     INTERNALS
 
@@ -52,11 +55,11 @@
 {
     AROS_LIBFUNC_INIT
 
-    CxObj *broker;
+    struct BrokerCopy *brokerCopy;
 
-    while ((broker = (CxObj *)RemHead(brokerList)) != NULL)
+    while ((brokerCopy = (CxObj *)RemHead(brokerList)) != NULL)
     {
-        FreeCxStructure(broker, CX_OBJECT, CxBase);
+        FreeVec(brokerCopy);
     }
 
     AROS_LIBFUNC_EXIT
