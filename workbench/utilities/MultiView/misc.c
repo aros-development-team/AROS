@@ -345,6 +345,7 @@ ULONG DoWriteMethod(STRPTR name, ULONG mode)
     struct dtWrite msg;
     BPTR fh;
     ULONG retval;
+    Object newdto;
     
     fh = NULL;
     if (name)
@@ -357,6 +358,9 @@ ULONG DoWriteMethod(STRPTR name, ULONG mode)
 	    return FALSE;
 	}
     }
+
+    
+    
     msg.MethodID          = DTM_WRITE;
     msg.dtw_GInfo         = NULL;
     msg.dtw_FileHandle    = fh;
@@ -381,14 +385,33 @@ ULONG DoWriteMethod(STRPTR name, ULONG mode)
 
 ULONG DoLayout(ULONG initial)
 {
+    ULONG res;
     struct gpLayout msg;
 
-    msg.MethodID	= DTM_ASYNCLAYOUT;
+    D(bug("=> erase\n"));
+    EraseRect(win->RPort, win->BorderLeft,
+			  win->BorderTop,
+			  win->Width - 1 - win->BorderRight,
+			  win->Height - 1 - win->BorderBottom);
+
+#if 1
+    msg.MethodID	= GM_LAYOUT;
     msg.gpl_GInfo	= NULL;
     msg.gpl_Initial	= initial;
 
-    return DoMethodA(dto, (Msg)&msg);
-;    return DoAsyncLayout(dto, &msg);
+#if 0
+    D(bug("=> doasynclayout libcall\n"));
+    res = DoAsyncLayout(dto, &msg);
+#else
+    D(bug("=> GM_Layout method\n"));
+    res = DoDTMethodA(dto, win, 0, (Msg)&msg);
+#endif
+    D(bug("layout result %ld\n", res));
+    return res;
+#else
+    RemoveDTObject(win, dto);
+    AddDTObject(win, NULL, dto, -1);
+#endif
 }
 
 /*********************************************************************************************/
@@ -425,30 +448,7 @@ void DoZoom(WORD zoomer)
     }
     D(bug(" zoom %d width %d height %d\n", zoomer, curwidth, curheight));
     DoScaleMethod(curwidth, curheight, 0);
-#if 0
-    D(bug("=> layout\n"));
     DoLayout(TRUE);
-    D(bug("=> erase\n"));
-    EraseRect(win->RPort, win->BorderLeft,
-			  win->BorderTop,
-			  win->Width - 1 - win->BorderRight,
-			  win->Height - 1 - win->BorderBottom);
-			  
-    D(bug("=> attrs\n"));
-    SetDTAttrs (dto, NULL, NULL, GA_Left        , win->BorderLeft + 2                           ,
-				 GA_Top         , win->BorderTop + 2                            ,
-				 GA_RelWidth    , - win->BorderLeft - win->BorderRight - 4      ,
-				 GA_RelHeight   , - win->BorderTop - win->BorderBottom - 4      ,
-				 TAG_DONE);
-
-    D(bug("=> refresh\n"));
-    RefreshDTObjects(dto, win, NULL, NULL);
-#endif
-#warning TODO: better new layout required
-    D(bug("=> removedt\n"));
-    RemoveDTObject(win, dto);
-    D(bug("=> adddt\n"));
-    AddDTOToWin();
 }
 
 /*********************************************************************************************/

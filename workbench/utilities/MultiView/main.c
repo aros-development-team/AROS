@@ -89,6 +89,8 @@ static void FreeVisual(void);
 static void KillGadgets(void);
 static void CloseDTO(void);
 static void KillWindow(void);
+static void ScrollTo(UWORD dir, UWORD quali);
+static void FitToWindow(void);
 
 /*********************************************************************************************/
 
@@ -663,6 +665,8 @@ static void OpenDTO(void)
     dto_supports_next_field =  FALSE;
     dto_supports_prev_field =  FALSE;
     dto_supports_retrace =  FALSE;
+    dto_supports_browse_next =  FALSE;
+    dto_supports_browse_prev =  FALSE;
     dto_supports_search =  FALSE;
     dto_supports_search_next =  FALSE;
     dto_supports_search_prev =  FALSE;
@@ -673,6 +677,8 @@ static void OpenDTO(void)
 	if (FindTriggerMethod(triggermethods, NULL, STM_NEXT_FIELD))     dto_supports_next_field     = TRUE;
 	if (FindTriggerMethod(triggermethods, NULL, STM_PREV_FIELD))     dto_supports_prev_field     = TRUE;
 	if (FindTriggerMethod(triggermethods, NULL, STM_RETRACE))        dto_supports_retrace        = TRUE;
+	if (FindTriggerMethod(triggermethods, NULL, STM_BROWSE_NEXT))    dto_supports_browse_next    = TRUE;
+	if (FindTriggerMethod(triggermethods, NULL, STM_BROWSE_PREV))    dto_supports_browse_prev    = TRUE;
 	if (FindTriggerMethod(triggermethods, NULL, STM_SEARCH))         dto_supports_search         = TRUE;
 	if (FindTriggerMethod(triggermethods, NULL, STM_SEARCH_NEXT))    dto_supports_search_next    = TRUE;
 	if (FindTriggerMethod(triggermethods, NULL, STM_SEARCH_PREV))    dto_supports_search_prev    = TRUE;
@@ -691,6 +697,8 @@ static void OpenDTO(void)
 	dto_supports_next_field ? " STM_NEXT_FIELD" : "",
 	dto_supports_prev_field ? " STM_PREV_FIELD" : "",
 	dto_supports_retrace ? " STM_RETRACE" : "",
+	dto_supports_browse_next ? " STM_BROWSE_NEXT" : "",
+	dto_supports_browse_prev ? " STM_BROWSE_PREV" : "",
 	dto_supports_search ? " STM_SEARCH" : "",
 	dto_supports_search_next ? " STM_SEARCH_NEXT" : "",
 	dto_supports_search_prev ? " STM_SEARCH_PREV" : ""));
@@ -906,11 +914,7 @@ static void FitToWindow(void)
 	y = win->Height - (win->BorderTop + win->BorderBottom + 4);
 	D(bug("=> width %ld height %ld\n", x, y));
 	DoScaleMethod(x, y, pdt_keep_aspect);
-	#warning TODO: better new layout required
-	D(bug("=> removedt\n"));
-	RemoveDTObject(win, dto);
-	D(bug("=> adddt\n"));
-	AddDTOToWin();
+//	DoLayout(TRUE); seems to be done by intuition ?
     }
 }
 
@@ -951,6 +955,7 @@ static void HandleAll(void)
 			case 13: /* RETURN */
 			    if (dto_supports_activate_field) DoTrigger(STM_ACTIVATE_FIELD);
 			    else if (dto_supports_search) DoTrigger(STM_SEARCH);
+			    RefreshDTObjects (dto, win, NULL, NULL);
 			    break;
 			    
 			case 9: /* TAB */
@@ -961,7 +966,15 @@ static void HandleAll(void)
 			case 8: /* Backspace */
 			    if (dto_supports_retrace) DoTrigger(STM_RETRACE);
 			    break;
-			    
+
+			case '>':
+			    if (dto_supports_browse_next) DoTrigger(STM_BROWSE_NEXT);
+			    break;
+
+			case '<':
+			    if (dto_supports_browse_prev) DoTrigger(STM_BROWSE_PREV);
+			    break;
+
 		    } /* switch(msg->Code) */
 		    break;
 
@@ -1193,33 +1206,27 @@ static void HandleAll(void)
 				case MSG_MEN_PICT_FIT_WIN:
 				    pdt_fit_win = (item->Flags & CHECKED) ? TRUE : FALSE;
 				    FitToWindow();
+				    DoLayout(TRUE);
 				    break;
 
 				case MSG_MEN_PICT_KEEP_ASPECT:
 				    pdt_keep_aspect = (item->Flags & CHECKED) ? TRUE : FALSE;
 				    FitToWindow();
+				    DoLayout(TRUE);
 				    break;
 
 				case MSG_MEN_PICT_FORCE_MAP:
 				    SetDTAttrs (dto, NULL, NULL,
 						PDTA_DestMode, (item->Flags & CHECKED) ? FALSE : TRUE,
 						TAG_DONE);
-				    #warning TODO: better new layout required
-				    D(bug("=> removedt\n"));
-				    RemoveDTObject(win, dto);
-				    D(bug("=> adddt\n"));
-				    AddDTOToWin();
+				    DoLayout(TRUE);
 				    break;
 
 				case MSG_MEN_PICT_DITHER:
 				    SetDTAttrs (dto, NULL, NULL,
 						PDTA_DitherQuality, (item->Flags & CHECKED) ? 4 : 0,
 						TAG_DONE);
-				    #warning TODO: better new layout required
-				    D(bug("=> removedt\n"));
-				    RemoveDTObject(win, dto);
-				    D(bug("=> adddt\n"));
-				    AddDTOToWin();
+				    DoLayout(TRUE);
 				    break;
 
 				case MSG_MEN_TEXT_WORDWRAP:
@@ -1230,8 +1237,7 @@ static void HandleAll(void)
 				    SetDTAttrs (dto, NULL, NULL,
 						TDTA_WordWrap, (item->Flags & CHECKED) ? TRUE : FALSE,
 						TAG_DONE);
-				    #warning TODO: New layout required
-				    RefreshDTObjects (dto, win, NULL, NULL);
+				    DoLayout(TRUE);
 				    break;
 
 				case MSG_MEN_TEXT_SEARCH:
@@ -1295,7 +1301,7 @@ static void HandleAll(void)
 			    /* Time to refresh */
 			    case DTA_Sync:
 				/* Refresh the DataType object */
-//				    D(bug("dtasync\n\n"));
+				D(bug("Multiview: DTA_SYNC\n"));
 				RefreshDTObjects (dto, win, NULL, NULL);
 				break;
 
