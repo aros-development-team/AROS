@@ -16,7 +16,7 @@
 #include <oop/meta.h>
 #include <oop/server.h>
 #include <oop/proxy.h>
-
+#include <string.h>
 
 #include "intern.h"
 
