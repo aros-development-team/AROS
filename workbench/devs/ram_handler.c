@@ -977,7 +977,15 @@ static LONG examine(struct fnode *file,
     next=(STRPTR)ead+sizes[type];
     end=(STRPTR)ead+size;
 
-    *dirpos=(LONG)file;
+    /* Use *dirpos to store information for ExNext()
+     * *dirpos is copied to fib->fib_DiskKey in Examine()
+     */ 
+    if (file->type == ST_USERDIR)
+	*dirpos = (LONG)(((struct dnode*)file)->list.mlh_Head);
+    else
+	/* ExNext() should not be called in this case anyway */
+	*dirpos = (LONG)file;
+
     switch(type)
     {
 	case ED_OWNER:
@@ -1025,75 +1033,55 @@ static LONG examine(struct fnode *file,
     return 0;
 }
 
-static LONG examine_next(struct filehandle    *dir,
+static LONG examine_next(struct rambase *rambase,
+    			 struct filehandle    *dir,
                          struct FileInfoBlock *FIB)
 {
   int i;
   char * src, * dest;
   struct fnode * file = (struct fnode *)FIB->fib_DiskKey;
   
-  if (file == NULL)
+  ASSERT_VALID_PTR_OR_NULL(file);
+
+  if (file->node.mln_Succ == NULL)
     return ERROR_NO_MORE_ENTRIES;
   
-  if ( (file->type) == ST_USERDIR)
-  {
-    /* we're going to enter the dir and examine the first entry
-       in the directory which happens to have the same name as
-       the directory we just stepped on.*/
-    file = (struct fnode *)((struct vnode*)file)->list.mlh_Head;
-    
-    if (file != NULL)
-    {
-      /* for the next examination advance to next dir entry. */
-      FIB->fib_DiskKey = (LONG)((struct vnode*)file)->node.mln_Succ;
-    }
-    else
-    {
-      file = (struct fnode*)((struct vnode*)file)->node.mln_Succ;
-      FIB->fib_DiskKey = (LONG)file;
-    }  
-      
-  }
-  else
-  {
-    file = (struct fnode *)file->node.mln_Succ;
-    FIB->fib_DiskKey = (LONG)file;
-  }
   
-  if ((file->node.mln_Succ && file->type == ST_FILE    ) || 
-      (file                && file->type == ST_USERDIR )    )
+  FIB->fib_OwnerUID		= 0;
+  FIB->fib_OwnerGID		= 0;
+
+  FIB->fib_Date.ds_Days		= 0;
+  FIB->fib_Date.ds_Minute	= 0;
+  FIB->fib_Date.ds_Tick		= 0;
+  FIB->fib_Protection		= file->protect;
+  FIB->fib_Size			= file->size;
+
+  FIB->fib_DirEntryType 	= file->type;
+
+  /* fast copying of the filename */
+  src  = file->name;
+  dest = FIB->fib_FileName;
+
+  for (i=0; i<MAXFILENAMELENGTH-1;i++)
+    if(! (*dest++=*src++) )
+      break;
+
+  /* fast copying of the comment */
+  if (file->comment)
   {
-    FIB->fib_OwnerUID		= 0;
-    FIB->fib_OwnerGID		= 0;
-  
-    FIB->fib_Date.ds_Days	= 0;
-    FIB->fib_Date.ds_Minute	= 0;
-    FIB->fib_Date.ds_Tick	= 0;
-    FIB->fib_Protection		= file->protect;
-    FIB->fib_Size		= file->size;
-
-    FIB->fib_DirEntryType 	= file->type;
-  
-    /* fast copying of the filename */
-    src  = file->name;
-    dest = FIB->fib_FileName;
-
-    for (i=0; i<MAXFILENAMELENGTH-1;i++)
-      if(! (*dest++=*src++) )
-        break;
-
-    /* fast copying of the comment */
     src  = file->comment;
     dest = FIB->fib_Comment;
 
     for (i=0; i<MAXCOMMENTLENGTH-1;i++)
       if(! (*dest++=*src++) )
-        break;
-
-    return 0;
+	break;
   }
-  else 
-    return ERROR_NO_MORE_ENTRIES;
+  else
+    FIB->fib_Comment[0] = 0;
+
+  FIB->fib_DiskKey = (LONG)file->node.mln_Succ;
+
+  return 0;
 }
 
 static LONG examine_all(struct filehandle *dir, 
@@ -1342,7 +1330,8 @@ void deventry(struct rambase *rambase)
 		       Unit *current; current object
 		       struct FileInfoBlock *fib; 
 		    */
-	            error=examine_next((struct filehandle *)iofs->IOFS.io_Unit,
+	            error=examine_next(rambase,
+			               (struct filehandle *)iofs->IOFS.io_Unit,
 	    		               iofs->io_Union.io_EXAMINE_NEXT.io_fib);
 	            break;
 
