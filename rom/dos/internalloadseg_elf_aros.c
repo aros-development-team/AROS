@@ -259,17 +259,17 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
 
             eh->ident[EI_DATA] != ELFDATA2LSB ||
             eh->machine        != EM_386
+        
         #elif defined(__mc68000__)
 
             eh->ident[EI_DATA] != ELFDATA2MSB ||
             eh->machine        != EM_68K
         
         #elif defined(__arm__)
+            
             eh->ident[EI_DATA] != ELFDATA2LSB ||
             eh->machine        != EM_ARM
 
-#warning ARM has not been tested, yet!
-        
         #else
         #    error Your architecture is not supported
         #endif
