@@ -65,7 +65,7 @@ kernel-expansion-linklib : setup show-flags $(LIB)
 #MM kernel-expansion-module : setup includes
 kernel-expansion-module : setup show-flags $(OSMODDIR)/expansion.library
 
-%genromlib_f
+%genromlib_finline
 
 %asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(END_FILE) $(ALL_FILES)"
 %ctoasm_q
