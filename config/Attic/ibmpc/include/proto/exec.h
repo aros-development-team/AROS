@@ -1,11 +1,3 @@
-/*
-    (C) 1998 AROS - The Amiga Research OS
-    $Id$
-    
-    Desc: IBMPC prototypes.
-    Lang: English
-*/
-
 #ifndef PROTO_EXEC_H
 #define PROTO_EXEC_H
 
@@ -468,6 +460,10 @@
 #define Supervisor(userFunction) \
 	LP1A5FP(0x14, ULONG, Supervisor, __fpt, userFunction, \
 	, EXEC_BASE_NAME, unsigned long (*__fpt)())
+
+#define	Switch() \
+	LP0NR(0x24, Switch, \
+	, EXEC_BASE_NAME)
 
 #define TypeOfMem(address) \
 	LP1(0x164, ULONG, TypeOfMem, APTR, address, \
