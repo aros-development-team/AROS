@@ -21,12 +21,13 @@ FILES = helloworld \
 	shadowborder
 
 IMAGES = ArrowUp ArrowDown ArrowLeft ArrowRight ImageButton
+IMAGEFILES = $(foreach f,$(IMAGES),images/$(f)0.h images/$(f)1.h)
 
 EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
 all: setup data $(EXES) $(EXEDIR)/forkbomb
 
-data: $(foreach f,$(IMAGES),images/$(f)0.h images/$(f)1.h)
+data: $(IMAGEFILES)
 
 images/%.h : images/%.dat images/datfilt.awk
 	cd images ; gawk -f datfilt.awk $(<F)
@@ -45,7 +46,7 @@ $(EXEDIR)/librarytest: $(OBJDIR)/librarytest.o $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
 $(OBJDIR)/librarytest.o: librarytest.c $(TOP)/libs/dummylib_gcc.h
-	$(CC) $(CFLAGS) -I $(TOP)/libs -c $< -o $@
+	$(CC) $(CFLAGS) -I$(TOP)/libs -c $< -o $@
 
 $(EXEDIR)/%: $(OBJDIR)/%.o $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
@@ -53,7 +54,7 @@ $(EXEDIR)/%: $(OBJDIR)/%.o $(DEPLIBS)
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)/%.d: %.c
+$(OBJDIR)/%.d: %.c $(IMAGEFILES)
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
@@ -63,7 +64,7 @@ $(OBJDIR)/librarytest.d: librarytest.c
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -p$(OBJDIR)/
+	$(MKDEPEND) -p$(OBJDIR)/ -I$(TOP)/libs
 
 include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
