@@ -37,7 +37,6 @@ FILES := amiga2date \
 	obtainpentest \
 	writepixelarray \
 	rawtest \
-	strchr \
 	camdtree
 
 EXEDIR := $(AROSDIR)/test
