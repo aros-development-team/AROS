@@ -157,7 +157,7 @@ AROS_UFH1(void, idleCount,
     SysBase->IdleCount++;
 }
 
-extern SoftIntDispatch();
+extern ULONG SoftIntDispatch();
 
 AROS_LH2(struct LIBBASETYPE *, init,
     AROS_LHA(ULONG, dummy, D0),
