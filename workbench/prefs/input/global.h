@@ -179,6 +179,10 @@
 
 /*********************************************************************************************/
 
+#define USE_SHARED_COOLIMAGES 1
+
+/*********************************************************************************************/
+
 #define CONFIGNAME_ENV	    	"ENV:Sys/input.prefs"
 #define CONFIGNAME_ENVARC   	"ENVARC:Sys/input.prefs"
 
