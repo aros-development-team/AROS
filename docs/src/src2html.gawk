@@ -118,8 +118,12 @@ BEGIN {
 		{
 		    yytext="\n\n<P>\n<UL>\n<EM>";
 		}
+		else if (mode=="example")
+		{
+		    yytext="\n\n<PRE>";
+		}
 		else
-		    yytext="\n";
+		    yytext="!!!! Unknown mode " yytext " !!!!\n";
 	    }
 	    else if (yytext=="end")
 	    {
@@ -142,6 +146,10 @@ BEGIN {
 		else if (mode=="emph")
 		{
 		    yytext="</EM>\n</UL>\n";
+		}
+		else if (mode=="example")
+		{
+		    yytext="</PRE>";
 		}
 		else
 		    yytext="";
@@ -189,9 +197,20 @@ BEGIN {
 	    else if (yytext=="bold")
 	    {
 		getarg();
-		text=yytext;
 
 		yytext="<B>"yytext"</B>";
+	    }
+	    else if (yytext=="shell")
+	    {
+		getarg();
+
+		yytext="<TT><B>"yytext"</B></TT>";
+	    }
+	    else if (yytext=="email")
+	    {
+		getarg();
+
+		yytext="<A HREF=\"mailto:"yytext"\">"yytext"</A>";
 	    }
 	    else if (yytext=="filename")
 	    {
@@ -236,12 +255,22 @@ BEGIN {
 	}
 	else if (token=="text")
 	{
-	    gsub(/[ \t\n]+/," ",yytext);
-
-	    if (showpar && !skippar && mode=="text" && yytext!=" ")
+	    if (showpar && !skippar)
 	    {
-		showpar=0;
-		printf ("\n\n<P>");
+		if (mode=="text")
+		{
+		    gsub(/[ \t\n]+/," ",yytext);
+
+		    if (yytext != " ")
+		    {
+			showpar=0;
+			printf ("\n\n<P>");
+		    }
+		}
+		else if (mode=="example")
+		{
+		    yytext=yytext"\n    ";
+		}
 	    }
 	}
 
@@ -295,7 +324,7 @@ function yylex() {
 
 	return "arg";
     }
-    else if (match(yyrest,/^[^\\\|{]+]/))
+    else if (match(yyrest,/^[^\\\|{]+/))
     {
 	yytext=substr(yyrest,RSTART,RLENGTH);
 	yyrest=substr(yyrest,RSTART+RLENGTH);
