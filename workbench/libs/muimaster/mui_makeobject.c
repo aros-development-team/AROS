@@ -300,8 +300,8 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
             int control_char = get_control_char((const char *)params[0]);
             
 	    return MUI_NewObject(MUIC_Image,
-		    ButtonFrame,
-		    MUIA_Background   , MUII_ButtonBack,
+		    ImageButtonFrame,
+		    MUIA_Background, MUII_ButtonBack,
 		    MUIA_Weight,0,
 	            MUIA_Image_Spec, MUII_CheckMark,
 	            MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -360,7 +360,8 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 	}
 	case MUIO_PopButton: /* STRPTR imagespec */
 	    return MUI_NewObject(MUIC_Image,
-	    	ButtonFrame,
+	    	ImageButtonFrame,
+		MUIA_Background, MUII_ButtonBack,
 	    	MUIA_Weight,0,
 		MUIA_Image_Spec, params[0],
 		MUIA_InputMode, MUIV_InputMode_RelVerify,
