@@ -212,7 +212,7 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     if (aroscbase == NULL)
         goto err2;
 
-    __get_arosc_privdata()->acpd_do_not_substitute_argv0 = !childdata->parent_does_upath;
+    __get_arosc_privdata()->acpd_parent_does_upath = childdata->parent_does_upath;
     __get_arosc_privdata()->acpd_spawned = 1;
 
     rc = RunCommand
