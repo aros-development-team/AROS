@@ -10,7 +10,7 @@ AROS-amiga :
 kernel-amiga :
 	@$(NOP)
 
-#MM workbench-amiga : workbench-c workbench-libs workbench-classes workbench-s
+#MM workbench-amiga : workbench-c workbench-libs workbench-classes workbench-s workbench-locale
 workbench-amiga :
 	@$(NOP)
 

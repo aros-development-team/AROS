@@ -10,7 +10,7 @@ AROS-linux :
 kernel-linux :
 	@$(NOP)
 
-#MM workbench-linux : workbench-c workbench-devs workbench-libs workbench-classes workbench-s
+#MM workbench-linux : workbench-c workbench-devs workbench-libs workbench-classes workbench-s workbench-locale
 workbench-linux :
 	@$(NOP)
 
