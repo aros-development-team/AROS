@@ -23,10 +23,18 @@
 	struct DosLibrary *, DOSBase, 56, Dos)
 
 /*  FUNCTION
+	Read until NEWLINE (\n), EOF is encountered or buflen-1
+	characters have been read. If a NEWLINE is read, it will
+	be the last character in the buffer. The buffer will always
+	be \0-terminated.
 
     INPUTS
+	fh - Read buffered from this filehandle
+	buf - Put read chars in this buffer
+	buflen - The size of the buffer
 
     RESULT
+	buf or NULL if the first thing read is EOF.
 
     NOTES
 
@@ -46,10 +54,31 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    extern void aros_print_not_implemented (char *);
+    ULONG len;
+    LONG  c;
 
-    aros_print_not_implemented ("FGets");
+    buflen --;
 
-    return NULL;
+    for (len=0; len<buflen; len++)
+    {
+	c = FGetC (fh);
+
+	if (c == EOF)
+	{
+	    if (len == 0)
+		return NULL;
+	    else
+		break;
+	}
+
+	buf[len++] = c;
+
+	if (c == '\n')
+	    break;
+    }
+
+    buf[len] = 0;
+
+    return buf;
     AROS_LIBFUNC_EXIT
 } /* FGets */
