@@ -25,10 +25,13 @@ setup :
 clean:
 	$(RM) $(OBJDIR) *.err $(LIBDIR)/libamiga.a
 
-test: $(EXEDIR)/betest $(EXEDIR)/wstest
+test: $(EXEDIR)/betest $(EXEDIR)/wstest $(EXEDIR)/rstest
+
+$(EXEDIR)/rstest: readstruct.c $(LIBDIR)/startup.o $(DEPLIBS)
+	$(CC) -DTEST $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
 $(EXEDIR)/wstest: writestruct.c $(LIBDIR)/startup.o $(DEPLIBS)
-	$(CC) -DTEST $(ILDFLAGS) $(LIBDIR)/startup.o writestruct.c -o $@ $(LIBS)
+	$(CC) -DTEST $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
 $(EXEDIR)/betest: $(OBJDIR)/betest.o $(LIBDIR)/startup.o $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)

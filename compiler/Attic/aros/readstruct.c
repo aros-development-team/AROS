@@ -10,6 +10,7 @@
 #include <exec/memory.h>
 #include <clib/dos_protos.h>
 #include <clib/exec_protos.h>
+#include <aros/debug.h>
 
 struct ReadLevel
 {
@@ -85,7 +86,7 @@ struct ReadLevel
 #   define DESC     curr->sd[curr->pos]
 #   define IDESC    curr->sd[curr->pos ++]
 
-    while (DESC != SDT_END)
+    for (;;)
     {
 	if (!curr->pos)
 	{
@@ -93,10 +94,13 @@ struct ReadLevel
 		goto error;
 	}
 
+	if (DESC == SDT_END)
+	    break;
+
 	switch (IDESC)
 	{
 	case SDT_UBYTE:      /* Read one  8bit byte */
-	    if (!ReadByte (fh, curr->s + IDESC))
+	    if (!ReadByte (fh, (UBYTE *)(curr->s + IDESC)))
 		goto error;
 
 	    break;
@@ -126,26 +130,59 @@ struct ReadLevel
 	    break;
 
 	case SDT_STRING: {   /* Read a string */
-	    UBYTE valid_ptr;
+	    UBYTE    valid_ptr;
+	    STRPTR * sptr;
+
+	    sptr = (STRPTR *)(curr->s + IDESC);
 
 	    if (!ReadByte (fh, &valid_ptr))
 		goto error;
 
 	    if (valid_ptr)
 	    {
-		if (!ReadString (fh, (STRPTR *)(curr->s + IDESC)))
+		if (!ReadString (fh, sptr))
 		    goto error;
 	    }
 	    else
 	    {
-		*((APTR *)(curr->s + IDESC)) = NULL;
+		*sptr = NULL;
 	    }
 
 	    break; }
 
 	case SDT_STRUCT: {    /* Read a structure */
 	    struct ReadLevel * next;
-	    UBYTE valid_ptr;
+	    IPTR * desc;
+	    APTR   aptr;
+
+	    aptr = (APTR)(curr->s + IDESC);
+	    desc = (IPTR *)IDESC;
+
+	    curr->pos -= 3; /* Go back to type */
+
+	    if (!(next = AllocMem (sizeof (struct ReadLevel), MEMF_ANY)) )
+		goto error;
+
+	    AddTail (list, (struct Node *)next);
+	    next->sd  = desc;
+	    next->pos = 1;
+	    next->s   = aptr;
+
+	    curr = next;
+
+	    break; }
+
+	case SDT_PTR: {    /* Follow a pointer */
+	    struct ReadLevel * next;
+
+	    UBYTE  valid_ptr;
+	    IPTR * desc;
+	    APTR * aptr;
+
+	    aptr = ((APTR *)(curr->s + IDESC));
+	    desc = (IPTR *)IDESC;
+
+	    curr->pos -= 3;
 
 	    if (!ReadByte (fh, &valid_ptr))
 		goto error;
@@ -156,14 +193,14 @@ struct ReadLevel
 		    goto error;
 
 		AddTail (list, (struct Node *)next);
-		next->sd  = (IPTR *)IDESC;
+		next->sd  = desc;
 		next->pos = 0;
 
 		curr = next;
 	    }
 	    else
 	    {
-		*((APTR *)(curr->s + IDESC)) = NULL;
+		*aptr = NULL;
 	    }
 
 	    break; }
@@ -251,11 +288,27 @@ struct ReadLevel
 	    /* Get the last level */
 	    if ((curr = GetTail (list)))
 	    {
-		/*
-		    Now put the result of the current level in the
-		    struct of the previous level.
-		*/
-		*((APTR *)(last->s + IDESC)) = last->s;
+		switch (IDESC)
+		{
+		case SDT_STRUCT:
+		    curr->pos += 2; /* Skip 2 parameters */
+		    break;
+
+		case SDT_PTR: {
+		    APTR * aptr;
+
+		    aptr  = ((APTR *)(curr->s + IDESC));
+		    curr->pos ++; /* Skip description parameter */
+
+		    /*
+			Now put the result of the current level in the
+			struct of the previous level.
+		    */
+		    *aptr = last->s;
+
+		    break; }
+
+		}
 
 		FreeMem (last, sizeof (struct ReadLevel));
 	    }
@@ -275,12 +328,244 @@ struct ReadLevel
 error:
     curr = GetHead (list);
 
+    /* TODO
     if (curr && curr->s)
-	FreeStruct (curr->s, curr->sd);
+	FreeStruct (curr->s, curr->sd); */
 
     while ((curr = (struct ReadLevel *)RemTail (list)))
 	FreeMem (curr, sizeof (struct ReadLevel));
 
     return FALSE;
 } /* ReadStruct */
+
+#ifdef TEST
+#include <stdio.h>
+#include <dos/dos.h>
+#include <aros/structdesc.h>
+#include <clib/alib_protos.h>
+
+struct Level1
+{
+    BYTE l1_Byte;
+    LONG l1_Long;
+};
+
+struct MainLevel
+{
+    BYTE   ml_Byte;
+    UBYTE  ml_UByte;
+    WORD   ml_Word;
+    UWORD  ml_UWord;
+    LONG   ml_Long;
+    ULONG  ml_ULong;
+    FLOAT  ml_Float;
+    DOUBLE ml_Double;
+    STRPTR ml_String;
+    struct Level1 ml_Level1;
+
+    BYTE   * ml_BytePtr;
+    WORD   * ml_WordPtr;
+    LONG   * ml_LongPtr;
+    FLOAT  * ml_FloatPtr;
+    DOUBLE * ml_DoublePtr;
+    STRPTR * ml_StringPtr;
+    struct Level1 * ml_Level1Ptr;
+};
+
+IPTR ByteDesc[]   = { sizeof(UBYTE),  SDM_UBYTE(0),  SDM_END };
+IPTR WordDesc[]   = { sizeof(UWORD),  SDM_UWORD(0),  SDM_END };
+IPTR LongDesc[]   = { sizeof(ULONG),  SDM_ULONG(0),  SDM_END };
+IPTR FloatDesc[]  = { sizeof(FLOAT),  SDM_FLOAT(0),  SDM_END };
+IPTR DoubleDesc[] = { sizeof(DOUBLE), SDM_DOUBLE(0), SDM_END };
+IPTR StringDesc[] = { sizeof(STRPTR), SDM_STRING(0), SDM_END };
+
+#define O(x)        offsetof(struct Level1,x)
+IPTR Level1Desc[] =
+{
+    sizeof (struct Level1),
+    SDM_UBYTE(O(l1_Byte)),
+    SDM_ULONG(O(l1_Long)),
+    SDM_END
+};
+
+#undef O
+#define O(x)        offsetof(struct MainLevel,x)
+IPTR MainDesc[] =
+{
+    sizeof (struct MainLevel),
+    SDM_UBYTE(O(ml_Byte)),
+    SDM_UBYTE(O(ml_UByte)),
+    SDM_UWORD(O(ml_Word)),
+    SDM_UWORD(O(ml_UWord)),
+    SDM_ULONG(O(ml_Long)),
+    SDM_ULONG(O(ml_ULong)),
+    SDM_FLOAT(O(ml_Float)),
+    SDM_DOUBLE(O(ml_Double)),
+    SDM_STRING(O(ml_String)),
+    SDM_STRUCT(O(ml_Level1),Level1Desc),
+
+    SDM_PTR(O(ml_BytePtr),ByteDesc),
+    SDM_PTR(O(ml_WordPtr),WordDesc),
+    SDM_PTR(O(ml_LongPtr),LongDesc),
+    SDM_PTR(O(ml_FloatPtr),FloatDesc),
+    SDM_PTR(O(ml_DoublePtr),DoubleDesc),
+    SDM_PTR(O(ml_StringPtr),StringDesc),
+    SDM_PTR(O(ml_Level1Ptr),Level1Desc),
+
+    SDM_END
+};
+
+int main (int argc, char ** argv)
+{
+    struct MainLevel demo =
+    {
+	(BYTE)0x88,       0xFF,
+	(WORD)0x8844,     0xFF77,
+	(LONG)0x88442211, 0xFF773311,
+	1.5, 1.75,
+	"Hallo",
+	{ (BYTE)0x88, (LONG)0x88442211 },
+	/* ... */
+    };
+    BYTE b = (BYTE)0x88;
+    WORD w = (WORD)0x8844;
+    LONG l = (LONG)0x88442211;
+    FLOAT f = 1.5;
+    DOUBLE d = 1.75;
+    STRPTR s = "Hallo";
+    struct Level1 l1 =
+    {
+	(BYTE)0x88, (LONG)0x88442211
+    };
+    BPTR fh;
+    struct MainLevel * readback;
+
+    demo.ml_BytePtr = &b;
+    demo.ml_WordPtr = &w;
+    demo.ml_LongPtr = &l;
+    demo.ml_FloatPtr = &f;
+    demo.ml_DoublePtr = &d;
+    demo.ml_StringPtr = &s;
+    demo.ml_Level1Ptr = &l1;
+
+    fh = Open ("writestruct.dat", MODE_NEWFILE);
+
+    if (!fh)
+    {
+	PrintFault (IoErr(), "Can't open file\n");
+	return 10;
+    }
+
+    /*
+	This writes the following data stream:
+
+	    0000 88			    ml_Byte
+	    0001 ff			    ml_Ubyte
+	    0002 88 44			    ml_Word
+	    0004 ff 77			    ml_UWord
+	    0006 88 44 22 11		    ml_Long
+	    000a ff 77 33 11		    ml_ULong
+	    000e 3f c0 00 00		    ml_Float
+	    0012 3f fc 00 00 00 00 00 00    ml_Double
+	    001a 01:48 61 6c 6c 6f 00	    ml_String
+	    0021 88			    ml_Level1.l1_Byte
+	    0022 88 44 22 11		    ml_Level1.l1_Long
+	    0026 01:88			    ml_BytePtr
+	    0028 01:88 44		    ml_WordPtr
+	    002b 01:88 44 22 11 	    ml_LongPtr
+	    0030 01:3f c0 00 00 	    ml_FloatPtr
+	    0035 01:3f fc 00 00 00 00 00 00 ml_DoublePtr
+	    003e 01:01:48 61 6c 6c 6f 00    ml_StringPtr - Note two 01 !
+	    0046 01:88 88 44 22 11	    ml_Level1Ptr
+    */
+
+    if (!WriteStruct (fh, MainDesc, &demo))
+    {
+	PrintFault (IoErr(), "Failed to write to file\n");
+    }
+
+    if (!Close (fh))
+    {
+	PrintFault (IoErr(), "Failed to close file\n");
+    }
+
+    /* Read the structure back */
+    fh = Open ("writestruct.dat", MODE_OLDFILE);
+
+    if (!fh)
+    {
+	PrintFault (IoErr(), "Can't open file for reading\n");
+	return 10;
+    }
+
+    if (!ReadStruct (fh, MainDesc, (APTR *)&readback))
+    {
+	PrintFault (IoErr(), "Failed to read from file\n");
+    }
+    else
+    {
+	UBYTE * ptr;
+	int t;
+
+	ptr = (UBYTE *)readback;
+	t = 0;
+
+	kprintf ("readback = %p\n", readback);
+
+	kprintf ("%02x (88) %02x (FF)\n"
+	    , (UBYTE)readback->ml_Byte
+	    , readback->ml_UByte
+	);
+	kprintf ("%04x (8844) %04x (FF77)\n"
+	    , (UWORD)readback->ml_Word
+	    , readback->ml_UWord
+	);
+	kprintf ("%08lx (88442211) %08lx (FF773311)\n"
+	    , readback->ml_Long
+	    , readback->ml_ULong
+	);
+	kprintf ("%08lx (3FC00000) %08lx:%08lx (3FFC0000:00000000)\n"
+	    , *(ULONG *)&readback->ml_Float
+	    , ((ULONG *)&readback->ml_Double)[1]
+	    , ((ULONG *)&readback->ml_Double)[0]
+	);
+	kprintf ("%s (Hallo)\n"
+	    , readback->ml_String
+	);
+	kprintf ("{ %02x %08x } ({ 88 88442211 })\n"
+	    , (UBYTE)readback->ml_Level1.l1_Byte
+	    , readback->ml_Level1.l1_Long
+	);
+	kprintf ("%02x (88)\n"
+	    , (UBYTE)*readback->ml_BytePtr
+	);
+	kprintf ("%04x (8844)\n"
+	    , (UWORD)*readback->ml_WordPtr
+	);
+	kprintf ("%08lx (88442211)\n"
+	    , *readback->ml_LongPtr
+	);
+	kprintf ("%08lx (3FC00000) %08lx:%08lx (3FFC0000:00000000)\n"
+	    , *(ULONG *)readback->ml_FloatPtr
+	    , ((ULONG *)readback->ml_DoublePtr)[1]
+	    , ((ULONG *)readback->ml_DoublePtr)[0]
+	);
+	kprintf ("%s (Hallo)\n"
+	    , *readback->ml_StringPtr
+	);
+	kprintf ("{ %02x %08x } ({ 88 88442211 })\n"
+	    , (UBYTE)readback->ml_Level1Ptr->l1_Byte
+	    , readback->ml_Level1Ptr->l1_Long
+	);
+    }
+
+    if (!Close (fh))
+    {
+	PrintFault (IoErr(), "Failed to close file after reading\n");
+    }
+
+    return 0;
+} /* main */
+
+#endif /* TEST */
 
