@@ -62,7 +62,7 @@ struct Resident resident =
 };
 
 const char name[] = "exec.strap";
-const char version[] = "$VER: AROS exec.strap 41.5 (13.2.97)";
+const char version[] = "$VER: AROS exec.strap 41.5 (14.2.97)";
 
 int start(void)
 {
@@ -110,7 +110,6 @@ int start(void)
 
     SetFunc( 20, Disable);
     SetFunc( 22, Forbid);
-
 #if 0
     /* "Some trouble prevented CycleToMenu to initialize itself properly"
        Related to the microkernel. I know what it is. Cannot be fixed right now. */
@@ -124,7 +123,7 @@ int start(void)
     SetFunc( 43, RemHead);
     SetFunc( 44, RemTail);
 #if 0
-    /* serial trouble */
+    /* Serial trouble. Can't receive a good/complete connectstring. */
     SetFunc( 45, Enqueue);
 #endif
     SetFunc( 46, FindName);
@@ -249,10 +248,14 @@ int start(void)
     /* Can only be patched if we have control over the microkernel: */
     SetFunc( 94, _ObtainSemaphore);
 #endif
+#if 0 /* YYY */
     SetFunc( 96, AttemptSemaphore);
+#endif
     SetFunc( 99, FindSemaphore);
+#if 0 /* YYY */
     SetFunc(100, AddSemaphore);
     SetFunc(101, RemSemaphore);
+#endif
     SetFunc(103, AddMemList);
     SetFunc(109, CreateIORequest);
     SetFunc(110, DeleteIORequest);
@@ -264,7 +267,9 @@ int start(void)
 #endif
     SetFunc(114, AllocVec);
     SetFunc(115, FreeVec);
+#if 0 /* YYY */
     SetFunc(120, AttemptSemaphoreShared);
+#endif
 
     if (SysBase->LibNode.lib_Version >= 39)
     {
