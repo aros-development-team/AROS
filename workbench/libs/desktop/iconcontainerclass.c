@@ -107,7 +107,7 @@ IPTR iconConNew(Class * cl, Object * obj, struct opSet *ops)
         if (desktop == NULL)
             desktop = obj;
 
-        NewList((struct List *) &data->memberList);
+        NEWLIST((struct List *) &data->memberList);
         data->perfectLayout = TRUE;
         data->thisColumnWidth = 0;
         data->thisColumnHeight = 0;
@@ -126,7 +126,7 @@ IPTR iconConNew(Class * cl, Object * obj, struct opSet *ops)
         data->iconSelected = FALSE;
         data->justSelected = FALSE;
         data->open = TRUE;
-        NewList((struct List *) &data->selectedList);
+        NEWLIST((struct List *) &data->selectedList);
         data->ehn.ehn_Priority = 0;
         data->ehn.ehn_Flags = (1 << 1);
         data->ehn.ehn_Object = obj;

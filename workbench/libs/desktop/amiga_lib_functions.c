@@ -5,7 +5,6 @@
 
 #define NO_INLINE_STDARG        /* turn off inline def */
 
-#include <aros/debug.h>
 #include <aros/asmcall.h>
 
 #include <intuition/classusr.h>
@@ -22,10 +21,16 @@
 
 #include <clib/alib_protos.h>
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 /*
    All of the functions here have been copied from amiga.lib. This means we
    can convenient things like DoMethod() in desktop.library. 
  */
+
+static ULONG dbgDoMethodCount     = 0;
+static ULONG dbgDoMethodNULLCount = 0;
 
 void NewList(struct List *list)
 {
@@ -34,11 +39,15 @@ void NewList(struct List *list)
 
 IPTR DoMethodA(Object * obj, Msg message)
 {
-
+    dbgDoMethodCount++;
+    D(bug("*** DoMethod count: %d\n", dbgDoMethodCount));
     ASSERT_VALID_PTR(obj);
     if (!obj)
+    {
+        dbgDoMethodNULLCount++;
+        D(bug("*** DoMethodNULL count: %d\n", dbgDoMethodNULLCount));
         return 0L;
-
+    }
     ASSERT_VALID_PTR(OCLASS(obj));
     ASSERT_VALID_PTR(message);
 
@@ -47,9 +56,13 @@ IPTR DoMethodA(Object * obj, Msg message)
 
 ULONG DoMethod(Object * obj, ULONG MethodID, ...)
 {
+    dbgDoMethodCount++;
+    D(bug("*** DoMethod count: %d\n", dbgDoMethodCount));
     AROS_SLOWSTACKMETHODS_PRE(MethodID) ASSERT_VALID_PTR(obj);
     if (!obj)
     {
+        dbgDoMethodNULLCount++;
+        D(bug("*** DoMethodNULL count: %d\n", dbgDoMethodNULLCount));
         retval = 0L;
     }
     else

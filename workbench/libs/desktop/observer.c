@@ -60,7 +60,7 @@ IPTR observerNew(Class * cl, Object * obj, struct opSet * msg)
         data = INST_DATA(cl, obj);
         data->presentation = presentation;
         data->parent = parent;
-        NewList((struct List *) &data->freeList);
+        NEWLIST((struct List *) &data->freeList);
         data->inTree = FALSE;
 
         DoMethod(presentation, MUIM_Notify, PA_InTree, MUIV_EveryTime, obj, 3,

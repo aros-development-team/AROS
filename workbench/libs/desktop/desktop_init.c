@@ -158,7 +158,7 @@ AROS_LH2(struct DesktopBase *, init,
     DesktopBase->db_DefaultWindowArguments = NULL;
 
 // TEMPORARY! see note in DesktopOperation struct, in desktop_intern.h
-    NewList(&DesktopBase->db_OperationList);
+    NEWLIST(&DesktopBase->db_OperationList);
 // END TEMPORARY!
 
     D(bug("*** Exitiing DesktopBase::init...\n"));
@@ -399,7 +399,7 @@ AROS_LH1(struct DesktopBase *, open,
         dob->do_MutualExclude = 0;
         dob->do_Flags = 0;
         dob->do_Number = 1;
-        NewList(&dob->do_SubItems);
+        NEWLIST(&dob->do_SubItems);
         dob->do_Impl =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation,
                                   sizeof(struct InternalIconOpsClassData),
@@ -413,7 +413,7 @@ AROS_LH1(struct DesktopBase *, open,
         dob->do_MutualExclude = 0;
         dob->do_Flags = 0;
         dob->do_Number = 2;
-        NewList(&dob->do_SubItems);
+        NEWLIST(&dob->do_SubItems);
         dob->do_Impl =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation,
                                   sizeof(struct InternalWindowOpsClassData),
@@ -427,7 +427,7 @@ AROS_LH1(struct DesktopBase *, open,
         dob->do_MutualExclude = 0;
         dob->do_Flags = 0;
         dob->do_Number = 3;
-        NewList(&dob->do_SubItems);
+        NEWLIST(&dob->do_SubItems);
         subList = &dob->do_SubItems;
         dob->do_Impl =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation,
@@ -442,7 +442,7 @@ AROS_LH1(struct DesktopBase *, open,
         dob->do_MutualExclude = (1 << 5) | (1 << 6);
         dob->do_Flags = DOF_CHECKED | DOF_CHECKABLE | DOF_MUTUALEXCLUDE;
         dob->do_Number = 4;
-        NewList(&dob->do_SubItems);
+        NEWLIST(&dob->do_SubItems);
         dob->do_Impl =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation,
                                   sizeof(struct InternalWindowOpsClassData),
@@ -456,7 +456,7 @@ AROS_LH1(struct DesktopBase *, open,
         dob->do_MutualExclude = (1 << 4) | (1 << 6);
         dob->do_Flags = DOF_CHECKABLE | DOF_MUTUALEXCLUDE;
         dob->do_Number = 5;
-        NewList(&dob->do_SubItems);
+        NEWLIST(&dob->do_SubItems);
         dob->do_Impl =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation,
                                   sizeof(struct InternalWindowOpsClassData),
@@ -470,7 +470,7 @@ AROS_LH1(struct DesktopBase *, open,
         dob->do_MutualExclude = (1 << 4) | (1 << 5);
         dob->do_Flags = DOF_CHECKABLE | DOF_MUTUALEXCLUDE;
         dob->do_Number = 6;
-        NewList(&dob->do_SubItems);
+        NEWLIST(&dob->do_SubItems);
         dob->do_Impl =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation,
                                   sizeof(struct InternalWindowOpsClassData),
@@ -484,7 +484,7 @@ AROS_LH1(struct DesktopBase *, open,
         dob->do_MutualExclude = 0;
         dob->do_Flags = 0;
         dob->do_Number = 7;
-        NewList(&dob->do_SubItems);
+        NEWLIST(&dob->do_SubItems);
         dob->do_Impl =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation,
                                   sizeof(struct InternalDesktopOpsClassData),

@@ -56,7 +56,7 @@ ULONG desktopHandler(void)
     ULONG           idCount = 0;
     struct MinList  workingMessages;
 
-    NewList((struct List *) &workingMessages);
+    NEWLIST((struct List *) &workingMessages);
 
 // The library's OPEN vector gets a mutex on the library
 // base.  Trouble will come our way if someone started this
@@ -186,7 +186,7 @@ ULONG desktopHandler(void)
                                 struct SingleResult *sr;
                                 UBYTE          *fullPath;
 
-                                NewList(&tnList);
+                                NEWLIST(&tnList);
 
                                 dl = LockDosList(htl->htl_Types | LDF_READ);
                                 while ((dl =
