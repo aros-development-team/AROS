@@ -165,6 +165,8 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                                 */
                                 success = CLI_LaunchProgram(name, tags);
                             }
+                            
+                            UnLock(parent);
                         }
                         
                         UnLock(lock);
