@@ -276,26 +276,22 @@ static LONG free_lock(struct filehandle *current)
 	       current->fd!=STDERR_FILENO)
 	    {
 		close(current->fd);
-		printf("freeing name %s\n",current->name);
 		free(current->name);
 
 		if (current->pathname)
 		{
- 		  printf("freeing pathname %s\n",current->pathname);
 		  free(current->pathname);
 		}
 
 		if (current->DIR)
 		{
-		  printf("(1)closing dir!\n");
-		  //closedir((DIR *)current->DIR);
+		  closedir((DIR *)current->DIR);
 		}
 	    }
 	    break;
 	case FHD_DIRECTORY:
             if (current->fd)
             {
-              printf("(2)closing dir!\n");
 	      closedir((DIR *)current->fd);
 	    }
 	    
@@ -917,7 +913,7 @@ ULONG parent_dir(struct filehandle *fh,
 	         char ** DirName)
 {
   *DirName = pathname_from_name(fh->name);
-  printf("parent_dir of %s is %s \n",fh->name,*DirName);
+  /*printf("parent_dir of %s is %s \n",fh->name,*DirName);*/
   return 0;
 }
 
