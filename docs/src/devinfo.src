@@ -166,9 +166,17 @@ but later versions require it. If you have problems to login, try to omit
 If the login has succeeded, then you can save you some typing by storing
 the argument to the \shell{-d} option in the environment
 variable \shell{CVSROOT}. Use
-\shell{setenv CVSROOT :pserver:user@wi-pc44.fh-konstanz.de:/home/AROS/CVS}
+
+\begin{example}
+setenv CVSROOT :pserver:user@wi-pc44.fh-konstanz.de:/home/AROS/CVS
+\end{example}
+
 on Amiga or if you have a C shell (csh) and
-\shell{export CVSROOT=:pserver:user@wi-pc44.fh-konstanz.de:/home/AROS/CVS}
+
+\begin{example}
+export CVSROOT=:pserver:user@wi-pc44.fh-konstanz.de:/home/AROS/CVS
+\end{example}
+
 for Bourne/Korn shells (bash, ksh).
 
 On Amiga, you can make this
