@@ -1315,6 +1315,12 @@ D(bug("Window: %p\n", w));
 		    GFLG_REL*** gadgets (except those in the window border */
 	         EraseRelGadgetArea(targetwindow, IntuitionBase);
 
+                 ((struct IntWindow *)targetwindow)->ZipWidth  = targetwindow->Width;
+                 ((struct IntWindow *)targetwindow)->ZipHeight = targetwindow->Height;
+
+                 targetwindow->Width += am->dx;
+                 targetwindow->Height+= am->dy;
+		 
                  /* I first resize the outer window if a GZZ window */
                  if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
                  {
@@ -1322,7 +1328,6 @@ D(bug("Window: %p\n", w));
                              targetwindow->BorderRPort->Layer,
                              am->dx,
                              am->dy);
-                   RefreshWindowFrame(targetwindow);
                  }
 
                  SizeLayer(NULL, 
@@ -1330,12 +1335,6 @@ D(bug("Window: %p\n", w));
                            am->dx,
                            am->dy);
 		 
-                 ((struct IntWindow *)targetwindow)->ZipWidth  = targetwindow->Width;
-                 ((struct IntWindow *)targetwindow)->ZipHeight = targetwindow->Height;
-
-                 targetwindow->Width += am->dx;
-                 targetwindow->Height+= am->dy;
-
                  /* 
                     Only if the window is smaller now there can be damage
                     to report to layers further behind.
@@ -1357,10 +1356,7 @@ D(bug("Window: %p\n", w));
 		 DoGMLayout(targetwindow->FirstGadget, w, NULL, -1, FALSE, IntuitionBase);
 
                  /* and redraw the window frame */
-                 if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
-		 {
-		    RefreshWindowFrame(targetwindow);
-	         }
+		 RefreshWindowFrame(targetwindow);
 
 		 /* and refresh all gadgets except border gadgets */
 		 int_refreshglist(w->FirstGadget, w, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
@@ -1498,6 +1494,11 @@ D(bug("Window: %p\n", w));
 		     EraseRelGadgetArea(targetwindow, IntuitionBase);
 		 }
 
+                 targetwindow->LeftEdge = NewLeftEdge;
+                 targetwindow->TopEdge  = NewTopEdge;
+                 targetwindow->Width    = NewWidth;
+                 targetwindow->Height   = NewHeight; 
+		 
                  /* check for GZZ window */
                  if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
                  {
@@ -1507,7 +1508,6 @@ D(bug("Window: %p\n", w));
                                  NewTopEdge  - OldTopEdge,
                                  NewWidth    - OldWidth,
                                  NewHeight   - OldHeight);
-                   RefreshWindowFrame(targetwindow);
                  }
 
                  L = targetlayer;
@@ -1518,11 +1518,6 @@ D(bug("Window: %p\n", w));
                                NewTopEdge  - OldTopEdge,
                                NewWidth    - OldWidth,
                                NewHeight   - OldHeight);
-
-                 targetwindow->LeftEdge = NewLeftEdge;
-                 targetwindow->TopEdge  = NewTopEdge;
-                 targetwindow->Width    = NewWidth;
-                 targetwindow->Height   = NewHeight; 
 
                  if (w->ZipLeftEdge != ~0) w->ZipLeftEdge = OldLeftEdge;
                  if (w->ZipTopEdge  != ~0) w->ZipTopEdge  = OldTopEdge;
@@ -1535,11 +1530,8 @@ D(bug("Window: %p\n", w));
 		 DoGMLayout(targetwindow->FirstGadget, targetwindow, NULL, -1, FALSE, IntuitionBase);
 
 		 /* and redraw the window frame */
-		 if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
-		 {
-		    RefreshWindowFrame(targetwindow);
-		 }
-
+		 RefreshWindowFrame(targetwindow);
+		 
 		 /* and refresh all gadgets except border gadgets */
 		 int_refreshglist(targetwindow->FirstGadget, targetwindow, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
 
