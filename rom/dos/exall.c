@@ -196,14 +196,15 @@
 	    }
 	}
 
+        /* No entries found as of now yet.  */
+        control->eac_Entries = 0;
+	
 	/* If LastKey == 0 it means this is the first time we're getting called,
 	   in which case we need to initialize the FIB structure and a few other things. 
 	   A "nice" side effect of this, is that if one wants to restart the scanning, 
 	   he/she just has to set LastKey to 0.  */
 	if (control->eac_LastKey == 0)
-	{
-	    control->eac_Entries = 0;
-	    
+	{    
 	    if (!Examine(lock, icontrol->fib))
 	    {
 	        iofs.io_DosError == IoErr();
