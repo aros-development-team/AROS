@@ -96,7 +96,7 @@ static IPTR Framedisplay_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     {
 	case MUIA_Framedisplay_Spec:
 	    zune_frame_intern_to_spec(&data->fs_intern, (STRPTR)data->spec);
-	    *msg->opg_Storage = data->spec;
+	    *msg->opg_Storage = (IPTR)data->spec;
 	    return(TRUE);
     }
 
