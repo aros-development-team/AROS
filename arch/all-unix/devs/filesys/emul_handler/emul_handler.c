@@ -54,6 +54,8 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <pwd.h>
+
 #undef timeval
 
 #if defined(__linux__) || defined(__CYGWIN32__)
@@ -1608,24 +1610,63 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 	
 	if ((sp = strchr(unixpath, '~')))
 	{
-	    char *home;
+	    char *home = NULL;
 	    char *newunixpath = 0;
-	    
+	    char *sp_end;
+	    BOOL do_endpwent = FALSE;
 	    BOOL ok = FALSE;
 	    
-	    if ((home = getenv("HOME")))
+	    /* "~<name>" means home of user <name> */
+	     
+	    if ((sp[1] == '\0') || (sp[1] == '/'))
+	    {
+	    	sp_end = sp + 1;
+		home = getenv("HOME");
+	    }
+	    else
+	    {
+	    	struct passwd *pwd;
+		WORD  	       cmplen;
+		
+		for(sp_end = sp + 1;
+		    sp_end[0] != '\0' && sp_end[0] != '/';
+		    sp_end++)
+		{
+		}
+		
+	    
+		cmplen = sp_end - sp - 1;
+
+		while((pwd = getpwent()))
+		{
+		    if(memcmp(pwd->pw_name, sp + 1, cmplen) == 0)
+		    {
+	    	    	if (pwd->pw_name[cmplen] == '\0')
+			{
+		    	    home = pwd->pw_dir;
+			    break;
+			}
+		    }
+		}
+		
+		do_endpwent = TRUE;
+	    }
+	    
+	    if (home)
 	    {
 	    	newunixpath = AllocVec(strlen(unixpath) + strlen(home) + 1, MEMF_CLEAR);
 	    	if (newunixpath)
 	    	{
 		    strncpy(newunixpath, unixpath, sp - unixpath);
 		    strcat(newunixpath, home);
-		    strcat(newunixpath, sp + 1);
+		    strcat(newunixpath, sp_end);
 		    
 		    ok = TRUE;
 		    unixpath = newunixpath;
 	    	}
 	    }
+	    
+	    if (do_endpwent) endpwent();
 	    
 	    if (!ok)
 	    {
