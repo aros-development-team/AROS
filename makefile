@@ -40,7 +40,7 @@ LIBS=-L$(LIBDIR) \
 #	for the main targets (eg. all, clean).
 #
 # END_DESC{localmakevar}
-SUBDIRS = config apps/compiler rom workbench apps
+SUBDIRS = config rom compiler workbench apps
 
 # BEGIN_DESC{localmakevar}
 # \item{TESTDIR} The director in which the test cases will be put in
@@ -150,9 +150,7 @@ setup :
 	@if [ ! -d $(GENDIR) ]; then $(MKDIR) $(GENDIR) ; else true ; fi
 	@if [ ! -d $(GENDIR)/test ]; then $(MKDIR) $(GENDIR)/test ; else true ; fi
 	@if [ ! -d $(GENDIR)/filesys ]; then $(MKDIR) $(GENDIR)/filesys ; else true ; fi
-	@cd apps/compiler/include ; \
-	$(MAKE) $(MFLAGS) TOP="../../.." CURDIR="$(CURDIR)/apps/compiler/include" \
-		all
+	@$(MAKE) $(MFLAGS) subdirs TARGET=setup
 
 # BEGIN_DESC{target}
 # \item{check} Run tests to check if AROS runs ok on your system.
@@ -168,16 +166,8 @@ check : $(TESTS)
 #
 # END_DESC{target}
 clean:
-	$(RM) $(ARCHDIR) host.cfg
-	@for dir in $(SUBDIRS) ; do \
-	    ( echo "Cleaning in $$dir..." ; \
-	      if [ "$$dir" = "apps/compiler" ]; then \
-		  top="../.." ; else top=".." ; \
-	      fi ; \
-	      cd $$dir ; \
-	      $(MAKE) $(MFLAGS) TOP="$$top" CURDIR="$(CURDIR)/$$dir" \
-	      clean ) ; \
-	done
+	-$(RM) $(ARCHDIR) host.cfg
+	$(MAKE) $(MFLAGS) subdirs TARGET=clean
 
 # BEGIN_DESC{internaltarget}
 # \item{$(BINDIR)/arosshell} Create the AROS shell for systems which
@@ -193,14 +183,11 @@ $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
 # END_DESC{internaltarget}
 subdirs:
 	@for dir in $(SUBDIRS) ; do \
-	    echo "Making all in $$dir..." ; \
-	    if [ "$$dir" = "apps/compiler" ]; then \
-		top="../.." ; else top=".." ; \
-	    fi ; \
+	    echo "Making $(TARGET) in $$dir..." ; \
 	    if ( cd $$dir ; \
-		$(MAKE) $(MFLAGS) TOP="$$top" CURDIR="$(CURDIR)/$$dir" \
-		all ) ; \
-	    then echo -n ; else exit 1 ; fi ; \
+		$(MAKE) $(MFLAGS) TOP=".." CURDIR="$(CURDIR)/$$dir" \
+		TARGET=$(TARGET) $(TARGET) ) ; \
+	    then true ; else exit 1 ; fi ; \
 	done
 
 # BEGIN_DESC{internaltarget}
@@ -210,7 +197,7 @@ subdirs:
 #
 # END_DESC{internaltarget}
 AmigaOS :
-	$(MAKE) $(MFLAGS) $(LIBDIR)/libAmigaOS.a
+	@$(MAKE) $(MFLAGS) $(LIBDIR)/libAmigaOS.a
 
 # BEGIN_DESC{internaltarget}
 # \item{$(LIBDIR)/libAmigaOS.a} Recreate the kernel if any kernel function
@@ -219,10 +206,11 @@ AmigaOS :
 # END_DESC{internaltarget}
 $(LIBDIR)/libAmigaOS.a : $(wildcard $(OSGENDIR)/*.o) \
 	    $(wildcard $(GENDIR)/alib/*.o)
-	$(AR) $@ $?
+	@echo "Recreating library"
+	@$(AR) $@ $?
 	$(RANLIB) $@
 
-CLIBDIR=$(TOP)/apps/compiler/include/clib
+CLIBDIR=$(TOP)/compiler/include/clib
 
 includes: \
 	    $(CLIBDIR)/exec_protos.h \
@@ -273,4 +261,4 @@ $(GENDIR)/%.o: %.c
 #
 # END_DESC{target}
 cleandep:
-	$(RM) $(GENDIR)/*.d $(GENDIR)/*/*.d
+	find $(GENDIR) -name "*.d" -exec $(RM) "{}" \;
