@@ -1,19 +1,19 @@
 <section title="What programming languages are available ?">
 
-<P>Most development for AROS is done using ANSI C by crosscompiling 
+<p>Most development for AROS is done using ANSI C by crosscompiling 
 the sources under a different OS, eg. Linux, FreeBSD or NetBSD. There
 is currently no native C compiler that can be run under AROS, but 
 there are plans to port one. This however will probably take some time,
-so don't hold your breath. ;-)<P>
+so don't hold your breath. ;-)<p>
 
-<P>The languages that <B>are</B> available natively are 
-<A HREF="http://www.python.org/">Python</A> and 
-<A HREF="http://wouter.fov120.com/false/">False</A>. False can be 
-classified as an <I>exotic</I> language, so it will most likely not
+<p>The languages that <b>are</b> available natively are 
+<a href="http://www.python.org/">Python</a> and 
+<a href="http://wouter.fov120.com/false/">False</a>. False can be 
+classified as an <i>exotic</i> language, so it will most likely not
 be used for serious development, although it can be lots of fun. :-)
 Python is a scripting language which has become quite popular, because
 of it's nice design and features (object-oriented programming, module
 system, many useful modules included, clean syntax, ...). The current
-version of Python for AROS is 2.1.1. 
+version of Python for AROS is 2.1.1.</p>
 
 </section>
