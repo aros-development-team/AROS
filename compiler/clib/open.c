@@ -125,6 +125,7 @@
     }
 
     fn->File.fh = (void *)fh;
+    fn->File.flags = 0;
     fn->fd = __stdio_fd ++;
 
     AddTail ((struct List *)&__stdio_files, (struct Node *)fn);
