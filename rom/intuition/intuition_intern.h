@@ -4,6 +4,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/15 15:45:32  digulla
+    Two new functions: LockIBase() and UnlockIBase()
+    Modified code to make sure that it is impossible to access illegal data (ie.
+    	fields of a window which is currently beeing closed).
+
     Revision 1.6  1996/09/21 15:53:28  digulla
     IntScree structure to store private fields in a screen
 
@@ -33,6 +38,9 @@
 #ifndef EXEC_EXECBASE_H
 #   include <exec/execbase.h>
 #endif
+#ifndef EXEC_SEMAPHORES_H
+#   include <exec/semaphores.h>
+#endif
 #ifndef GRAPHICS_GFXBASE_H
 #   include <graphics/gfxbase.h>
 #endif
@@ -46,11 +54,14 @@ struct IntIntuitionBase
     struct IntuitionBase IBase;
 
     /* Put local shit here, invisible for the user */
-    struct GfxBase     * GfxBase;
-    struct ExecBase    * SysBase;
-    struct UtilityBase * UtilBase;
-    struct MinList	 ClassList;
-    struct Screen      * WorkBench;
+    struct GfxBase	   * GfxBase;
+    struct ExecBase	   * SysBase;
+    struct UtilityBase	   * UtilBase;
+    struct MinList	     ClassList;
+    struct Screen	   * WorkBench;
+    struct SignalSemaphore * SigSem;
+
+    APTR		     DriverData; /* Pointer which the driver may use */
 
 /*    struct MinList	   PublicScreenList;
     struct Screen      * DefaultPublicScreen; */
@@ -84,6 +95,10 @@ extern struct IntuitionBase * IntuitionBase;
 #define UtilityBase (GetPrivIBase(IntuitionBase)->UtilBase)
 
 #define PublicClassList ((struct List *)&(GetPrivIBase(IntuitionBase)->ClassList))
+
+/* Window-Flags */
+#define EWFLG_DELAYCLOSE	0x00000001L /* Delay CloseWindow() */
+#define EWFLG_CLOSEWINDOW	0x00000002L /* Call CloseWindow() */
 
 /* Needed for close() */
 #define expunge() \

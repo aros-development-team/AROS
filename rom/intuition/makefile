@@ -17,6 +17,7 @@ FUNCTIONS = \
 	getattr \
 	getdefaultpubscreen \
 	getscreendrawinfo \
+	lockibase \
 	lockpubscreen \
 	makeclass \
 	modifyidcmp \
@@ -35,6 +36,7 @@ FUNCTIONS = \
 	setdefaultpubscreen \
 	setwindowtitles \
 	sizewindow \
+	unlockibase \
 	unlockpubscreen
 
 all: setup \

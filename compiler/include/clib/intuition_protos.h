@@ -122,6 +122,14 @@ __AROS_LP1(struct DrawInfo *, GetScreenDrawInfo,
     __AROS_LCA(struct Screen *, screen, A0), \
     struct IntuitionBase *, IntuitionBase, 115, Intuition)
 
+__AROS_LP1(ULONG, LockIBase,
+    __AROS_LPA(ULONG, What, D0),
+    struct IntuitionBase *, IntuitionBase, 69, Intuition)
+#define LockIBase(What) \
+    __AROS_LC1(ULONG, LockIBase, \
+    __AROS_LCA(ULONG, What, D0), \
+    struct IntuitionBase *, IntuitionBase, 69, Intuition)
+
 __AROS_LP1(struct Screen *, LockPubScreen,
     __AROS_LPA(UBYTE *, name, A0),
     struct IntuitionBase *, IntuitionBase, 85, Intuition)
@@ -339,6 +347,14 @@ __AROS_LP3(void, SizeWindow,
     __AROS_LCA(long           , dx, D0), \
     __AROS_LCA(long           , dy, D1), \
     struct IntuitionBase *, IntuitionBase, 48, Intuition)
+
+__AROS_LP1(void, UnlockIBase,
+    __AROS_LPA(ULONG, ibLock, A0),
+    struct IntuitionBase *, IntuitionBase, 70, Intuition)
+#define UnlockIBase(ibLock) \
+    __AROS_LC1(void, UnlockIBase, \
+    __AROS_LCA(ULONG, ibLock, A0), \
+    struct IntuitionBase *, IntuitionBase, 70, Intuition)
 
 __AROS_LP2(void, UnlockPubScreen,
     __AROS_LPA(UBYTE         *, name, A0),

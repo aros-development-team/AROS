@@ -2,11 +2,16 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.11  1996/10/01 16:01:32  digulla
+    Revision 1.12  1996/10/15 15:45:31  digulla
+    Two new functions: LockIBase() and UnlockIBase()
+    Modified code to make sure that it is impossible to access illegal data (ie.
+    	fields of a window which is currently beeing closed).
+
+    Revision 1.11  1996/10/01 16:01:32	digulla
     Don't flush the library on expunge if it's in ROM (because the user cannot
-    	load it anymore).
+	load it anymore).
     Don't close anything as long as there are still processes which have me
-    	open.
+	open.
 
     Revision 1.10  1996/09/21 14:18:48	digulla
     Create a screen with OpenScreen()
@@ -161,6 +166,14 @@ __AROS_LH2(struct IntuitionBase *, init,
 
     if (!intui_init (IntuitionBase))
 	return NULL;
+
+    /* Create semaphore and initialize it */
+    GetPrivIBase(IntuitionBase)->SigSem = AllocMem (sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
+
+    if (!GetPrivIBase(IntuitionBase)->SigSem)
+	return NULL;
+
+    InitSemaphore (GetPrivIBase(IntuitionBase)->SigSem);
 
     /* The rootclass is created statically */
     rootclass.cl_UserData = (IPTR) IntuitionBase;

@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/15 15:45:31  digulla
+    Two new functions: LockIBase() and UnlockIBase()
+    Modified code to make sure that it is impossible to access illegal data (ie.
+    	fields of a window which is currently beeing closed).
+
     Revision 1.3  1996/09/21 14:16:26  digulla
     Debug code
     Only change the ActiveWindow is it is beeing closed
@@ -79,8 +84,17 @@ extern int  intui_GetWindowSize (void);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     struct IntuiMessage * im;
+    ULONG lock;
 
     D(bug("CloseWindow (%p)\n", window));
+
+    lock = LockIBase (0);
+
+    if (window->MoreFlags & EWFLG_DELAYCLOSE)
+    {
+	window->MoreFlags |= EWFLG_CLOSEWINDOW;
+	ReturnVoid ("CloseWindow");
+    }
 
     if (window == IntuitionBase->ActiveWindow)
 	IntuitionBase->ActiveWindow = NULL;
@@ -104,6 +118,8 @@ extern int  intui_GetWindowSize (void);
     /* Make sure the Screen is still valid */
     if (window == window->WScreen->FirstWindow)
 	window->WScreen->FirstWindow = window->NextWindow;
+
+    UnlockIBase (lock);
 
     /* Let the driver clean up */
     intui_CloseWindow (window, IntuitionBase);

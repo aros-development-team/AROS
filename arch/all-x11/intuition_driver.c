@@ -657,6 +657,7 @@ void intui_ProcessEvents (void)
     int    mpos_x, mpos_y;
     int    wait;
     XEvent event;
+    ULONG  lock;
 
     intuiReplyPort = CreateMsgPort ();
     wait = 0;
@@ -678,6 +679,8 @@ void intui_ProcessEvents (void)
 		continue;
 	    }
 
+	    lock = LockIBase (0L);
+
 	    /* Search window */
 	    for (screen=IntuitionBase->FirstScreen; screen; screen=screen->NextScreen)
 	    {
@@ -691,8 +694,12 @@ void intui_ProcessEvents (void)
 		    break;
 	    }
 
+
 	    if (w)
 	    {
+		/* Make sure that no one closes the window while we work on it */
+		w->MoreFlags |= EWFLG_DELAYCLOSE;
+
 		Dipxe(bug("X=%d is asocciated with Window %p\n",
 		    event.xany.window,
 		    w
@@ -701,6 +708,8 @@ void intui_ProcessEvents (void)
 	    else
 		Dipxe(bug("X=%d is not asocciated with a Window\n",
 		    event.xany.window));
+
+	    UnlockIBase (lock);
 
 	    if (!w)
 		continue;
@@ -1163,9 +1172,20 @@ void intui_ProcessEvents (void)
 		{
 		    im->ExecMessage.mn_ReplyPort = intuiReplyPort;
 
-		    PutMsg (w->UserPort, (struct Message *)im);
-		    im = NULL;
-		    wait ++;
+		    lock = LockIBase (0L);
+
+		    w->MoreFlags &= ~EWFLG_DELAYCLOSE;
+
+		    if (w->MoreFlags & EWFLG_CLOSEWINDOW)
+			CloseWindow (w);
+		    else
+		    {
+			PutMsg (w->UserPort, (struct Message *)im);
+			im = NULL;
+			wait ++;
+		    }
+
+		    UnlockIBase (lock);
 		}
 		else
 		    im->Class = 0;
