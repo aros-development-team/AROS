@@ -46,8 +46,10 @@ extern struct MathBase * MathBase;
 
 struct MathTransBase
 {
-    struct Library     library;
-    BPTR               seglist;
+    struct Library     LibNode;
+    BPTR               mtb_SegList;
+
+    struct ExecBase *  mtb_SysBase;
 };
 
 /* internal prototypes */

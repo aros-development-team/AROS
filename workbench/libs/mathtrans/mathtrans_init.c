@@ -5,13 +5,22 @@
     Desc: Init of mathtrans.library
     Lang: english
 */
-#include <utility/utility.h> /* this must be before mathtrans_intern.h */
 
 #include "mathtrans_intern.h"
 #include "libdefs.h"
 
+#define LC_SYSBASE_FIELD(lib)	(((LIBBASETYPEPTR       )(lib))->mtb_SysBase)
+#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->mtb_SegList)
+#define LC_RESIDENTNAME		mathtrans_resident
+#define LC_RESIDENTFLAGS	RTF_AUTOINIT
+#define LC_RESIDENTPRI		0
+#define LC_LIBBASESIZE		sizeof(LIBBASETYPE)
+#define LC_LIBHEADERTYPEPTR	LIBBASETYPEPTR
+#define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->LibNode)
+
 #define LC_NO_EXPUNGELIB
-#define LC_RESIDENTPRI	    -120
+#define LC_NO_OPENLIB
+#define LC_RESIDENTPRI	    0
 
 #include <libcore/libheader.c>
 
@@ -24,21 +33,15 @@ struct MathBase * MathBase;
 
 ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
 {
-    SysBase = lh->lh_SysBase;
+    SysBase = lh->mtb_SysBase;
 
-    return TRUE;
-} /* L_InitLib */
-
-ULONG SAVEDS L_OpenLib (LC_LIBHEADERTYPEPTR lh)
-{
-    if (!MathBase)
-	MathBase = (struct MathBase *)OpenLibrary ("mathffp.library", 39);
+    MathBase = (struct MathBase *)OpenLibrary ("mathffp.library", 0);
 
     if (!MathBase)
 	return FALSE;
 
     return TRUE;
-} /* L_OpenLib */
+} /* L_InitLib */
 
 void SAVEDS L_CloseLib (LC_LIBHEADERTYPEPTR lh)
 {
