@@ -1,10 +1,11 @@
 #include <hardware/intbits.h>
 #include <exec/interrupts.h>
 #include <exec/execbase.h>
+#include <exec/alerts.h>
 #include <proto/exec.h>
 #include <aros/asmcall.h>
-#include <signal.h>
 #include <stdio.h>
+#include "sigcore.h"
 #define timeval     sys_timeval
 #include <sys/time.h>
 #undef timeval
@@ -13,7 +14,19 @@ void os_disable(void);
 static int sig2inttabl[NSIG];
 int supervisor;
 
-static void signals(int sig)
+#ifdef __linux__
+static void sighandler (int sig, sigcontext_t * sc);
+
+static void SIGHANDLER (int sig)
+{
+    sighandler (sig, (sigcontext_t *)(&sig+1));
+}
+#endif /* __linux__ */
+
+static void UnixDispatch (sigcontext_t * sc, struct ExecBase * SysBase);
+
+
+static void sighandler (int sig, sigcontext_t * sc)
 {
     struct IntVector *iv;
 
@@ -25,6 +38,7 @@ static void signals(int sig)
     }
 
     supervisor++;
+
     iv=&SysBase->IntVects[sig2inttabl[sig]];
     if (iv->iv_Code)
     {
@@ -33,13 +47,74 @@ static void signals(int sig)
 	    AROS_UFCA(struct ExecBase *,SysBase,A6)
 	);
     }
-    os_disable ();
-    supervisor--;
+
     if(SysBase->AttnResched&0x8000)
     {
 	SysBase->AttnResched&=~0x8000;
-	Dispatch();
+
+	/* UnixDispatch (sc, SysBase); */
+	Dispatch ();
     }
+
+    supervisor--;
+}
+
+static void UnixDispatch (sigcontext_t * sc, struct ExecBase * SysBase)
+{
+    struct Task * this;
+    APTR sp;
+
+    /* Get the address of the current task */
+    this = FindTask (NULL);
+
+printf ("Dispatch(): Old task=%p (%s)\n",
+    this, this && this->tc_Node.ln_Name ? this->tc_Node.ln_Name : "(null)"
+);
+
+    /* Save old SP */
+    this->tc_SPReg = (APTR)SP(sc);
+
+    /* Switch flag set ? Call user function */
+    if (this->tc_Flags & TF_SWITCH)
+	(*(this->tc_Switch)) (SysBase);
+
+    /* Save IDNestCnt */
+    this->tc_IDNestCnt = SysBase->IDNestCnt;
+    SysBase->IDNestCnt = -1;
+
+    /* Get next task from ready list */
+    AddTail (&SysBase->TaskReady, (struct Node *)this);
+    this = (struct Task *)RemHead (&SysBase->TaskReady);
+
+    /* Set state to RUNNING */
+    this->tc_State = TS_RUN;
+
+    /* Restore IDNestCnt */
+    SysBase->IDNestCnt = this->tc_IDNestCnt;
+
+    /* Launch flag set ? Call user function */
+    if (this->tc_Flags & TF_LAUNCH)
+	(*(this->tc_Launch)) (SysBase);
+
+    /* Get new SP */
+    sp = this->tc_SPReg;
+
+    /* Check stack pointer */
+    if (sp < this->tc_SPLower || sp > this->tc_SPUpper)
+    {
+	Alert (AT_DeadEnd|AN_StackProbe);
+	/* This function never returns */
+    }
+
+    SP(sc) = (long)sp;
+
+    if (this->tc_Flags & TF_EXCEPT)
+	Exception ();
+
+printf ("Dispatch(): New task=%p (%s)\n",
+    this, this && this->tc_Node.ln_Name ? this->tc_Node.ln_Name : "(null)"
+);
+
 }
 
 void InitCore(void)
@@ -50,17 +125,19 @@ void InitCore(void)
     };
     struct itimerval interval;
     int i;
-    struct sigaction sa={ signals, 0, SA_RESTART, NULL };
+    struct sigaction sa;
 
+    sa.sa_handler  = (SIGHANDLER_T)SIGHANDLER;
     sigfillset (&sa.sa_mask);
+    sa.sa_flags    = SA_RESTART;
+    sa.sa_restorer = NULL;
 
-    for(i=0;i<sizeof(sig2int)/sizeof(sig2int[0]);i++)
+    for (i=0; i<(sizeof(sig2int)/sizeof(sig2int[0])); i++)
     {
-	sig2inttabl[sig2int[i][0]]=sig2int[i][1];
-	sigaction(sig2int[i][0],&sa,NULL);
-    }
+	sig2inttabl[sig2int[i][0]] = sig2int[i][1];
 
-printf ("InitCore\n");
+	sigaction (sig2int[i][0], &sa, NULL);
+    }
 
     interval.it_interval.tv_sec = interval.it_value.tv_sec = 0;
     interval.it_interval.tv_usec = interval.it_value.tv_usec = 1000000/50;
