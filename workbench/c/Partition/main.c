@@ -19,6 +19,14 @@
 
 #include "args.h"
 
+/*
+<Tjodden> BearlyWH: so, byteSize = dg_SectorSize * dg_Heads * dg_TrackSectors
+<Tjodden> and bytesPerCylinder = byteSize / dg_Cylinders
+<Tjodden> (just have to make sure to use UQUADs here I guess)
+
+byteSize = size of partition/drive in bytes
+*/
+
 int main(void)
 {
     struct PartitionHandle *root    = NULL, /* root partition */
@@ -102,11 +110,6 @@ int main(void)
                                   / (tableDG.dg_Heads * tableDG.dg_TrackSectors) 
                                   + 1;
     
-    D(bug("* highcyl = %ld\n", partitionDE.de_HighCyl));
-    D(bug("* lowcyl = %ld\n", partitionDE.de_LowCyl));
-    D(bug("* table lowcyl = %ld\n", tableDE.de_LowCyl));
-    D(bug("* table reserved = %ld\n", reserved));
-        
     mbrp = AddPartitionTags
     (
         root,
@@ -157,12 +160,7 @@ int main(void)
     partitionDE.de_NumBuffers     = 100;
     partitionDE.de_MaxTransfer    = 0xFFFFFF;
     partitionDE.de_Mask           = 0xFFFFFFFE;
-        
-    D(bug("* highcyl = %ld\n", partitionDE.de_HighCyl));
-    D(bug("* lowcyl = %ld\n", partitionDE.de_LowCyl));
-    D(bug("* table lowcyl = %ld\n", tableDE.de_LowCyl));
-    D(bug("* table reserved = %ld\n", reserved));
-    
+            
     rdbp = AddPartitionTags
     (
         mbrp,
