@@ -34,7 +34,7 @@ you´ve done your work with it.
 
 This approach produces equivalent code on the Amiga but on AROS it can slow
 things down a bit. If you must preserve the original state of the RastPort,
-it's more save to create a clone, work on it and then dispose it again. It
+it's more safe to create a clone, work on it and then dispose it again. It
 can also be faster if you would have to make a lot of changes to the RastPort
 to create two clones and set them to the two states you need. But your code
 should not depend on certain gains or losses of speed due to cloned RastPorts
@@ -68,5 +68,5 @@ overcome this, we introduce this rule:
     or similar functions, you must prepend "STCK" to each type, like
     this: WORD becomes STCKWORD, ULONG becomes STCKULONG, etc.
 
-If you want to be save: Don't use DoMethod() at all. It's very likely
+If you want to be safe: Don't use DoMethod() at all. It's very likely
 that the final AROS release will not support it at all.
