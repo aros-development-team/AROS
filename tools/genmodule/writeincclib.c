@@ -15,23 +15,23 @@ void writeincclib(struct config *cfg, struct functions *functions)
     struct stringlist *linelistit;
     
     snprintf(line, 255, "%s/clib/%s_protos.h", cfg->genincdir, cfg->modulename);
+
     out = fopen(line, "w");
-    if (out==NULL)
+
+    if (out == NULL)
     {
-	fprintf(stderr, "Could write file %s\n", line);
-	exit(20);
+        perror(line);
+        exit(20);
     }
+
     fprintf(out,
 	    "#ifndef CLIB_%s_PROTOS_H\n"
 	    "#define CLIB_%s_PROTOS_H\n"
 	    "\n"
-	    "/*\n"
-	    "    *** Automatically generated file. Please do not edit ***\n"
-	    "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
-	    "*/\n"
+        "%s"
 	    "\n"
 	    "#include <aros/libcall.h>\n",
-	    cfg->modulenameupper, cfg->modulenameupper
+	    cfg->modulenameupper, cfg->modulenameupper, getBanner(cfg)
     );
     for (linelistit = cfg->cdeflines; linelistit!=NULL; linelistit = linelistit->next)
 	fprintf(out, "%s\n", linelistit->s);

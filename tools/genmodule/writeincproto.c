@@ -13,19 +13,18 @@ void writeincproto(struct config *cfg)
     
     snprintf(line, 255, "%s/proto/%s.h", cfg->genincdir, cfg->modulename);
     out = fopen(line, "w");
-    if (out==NULL)
+
+    if (out == NULL)
     {
-	fprintf(stderr, "Could not write %s\n", line);
-	exit(20);
+        perror(line);
+    	exit(20);
     }
+
     fprintf(out,
 	    "#ifndef PROTO_%s_H\n"
 	    "#define PROTO_%s_H\n"
 	    "\n"
-	    "/*\n"
-	    "    *** Automatically generated file. Do not edit ***\n"
-	    "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
-	    "*/\n"
+        "%s"
 	    "\n"
 	    "#include <aros/system.h>\n"
 	    "\n"
@@ -35,7 +34,7 @@ void writeincproto(struct config *cfg)
 	    "extern %s%s;\n"
 	    "#endif\n"
 	    "\n",
-	    cfg->modulenameupper, cfg->modulenameupper,
+	    cfg->modulenameupper, cfg->modulenameupper, getBanner(cfg),
 	    cfg->modulename,
 	    cfg->libbase, cfg->modulenameupper,
 	    cfg->libbasetypeptrextern, cfg->libbase

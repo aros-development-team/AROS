@@ -24,11 +24,13 @@ void writeinclibdefs(struct config *cfg)
 	residentflags = "RTF_AUTOINIT";
     
     snprintf(line, 1023, "%s/%s_libdefs.h", cfg->gendir, cfg->modulename);
+
     out = fopen(line, "w");
-    if (out==NULL)
+
+    if (out == NULL)
     {
-	fprintf(stderr, "Could not write file \"%s\"\n", line);
-	exit(20);
+        perror(line);
+    	exit(20);
     }
     
     fprintf

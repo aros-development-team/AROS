@@ -25,17 +25,14 @@ void writestart(struct config *cfg, struct functions *functions)
     
     snprintf(line, 255, "%s/%s_start.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
-    if (out==NULL)
+
+    if (out == NULL)
     {
-	fprintf(stderr, "Could not write %s\n", line);
-	exit(20);
+        perror(line);
+        exit(20);
     }
-    fprintf(out,
-	    "/*\n"
-	    "    *** Automatically generated file. Do not edit ***\n"
-	    "    Copyright © 1995-2005, The AROS Development Team. All rights reserved.\n"
-	    "*/\n"
-    );
+
+    fprintf(out, getBanner(cfg));
 
     writedecl(out, cfg);
     if (!(cfg->options & OPTION_NORESIDENT))

@@ -9,8 +9,28 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "config.h"
+
+static char banner[256] = "\0";
+
+        
+const char*
+getBanner(struct config* config)
+{
+    if (banner[0] == '\0')
+    {
+        snprintf (banner, 255,
+"/*\n"
+"    *** Automatically generated from '%s'. Edits will be lost. ***\n"
+"    Copyright © 1995-2005, The AROS Development Team. All rights reserved.\n"
+"*/\n", config->conffile
+        );
+    }
+
+    return(banner);
+}
 
 static void readconfig(struct config *);
 static struct conffuncinfo *newconffuncinfo(const char *name, unsigned int lvo);
@@ -72,8 +92,18 @@ struct config *initconfig(int argc, char **argv, int command)
 	exit(20);
     }
     memset(cfg, 0, sizeof(struct config));
-    cfg->datestring = "00.00.0000";
 
+        time_t
+    now = time(NULL);
+
+        char
+    dateStringBuf[16];
+    
+    strftime(dateStringBuf, sizeof(dateStringBuf), "%d.%m.%Y",
+        localtime(&now));
+
+    cfg->datestring = strdup(dateStringBuf);
+    
     cfg->command = command;
     
     cfg->modulename = *argvit;
