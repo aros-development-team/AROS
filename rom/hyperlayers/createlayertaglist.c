@@ -95,64 +95,62 @@
 
   int i = 0;
   struct BitMap * superbitmap = NULL;
-  struct Hook * hook = NULL;
+  struct Hook * hook = NULL, *shapehook = NULL;
   int priority = UPFRONTPRIORITY;
   int visible = TRUE;
   struct Layer * behind = NULL, * infrontof = NULL, * parent = NULL; 
   struct Layer * l;
   struct RastPort * rp;
   struct Region * layershape = NULL, *shape;
-
-  while (TAG_DONE != tagList[i].ti_Tag)
+  struct TagItem *tag, *tstate = tagList;
+  
+  while((tag = NextTagItem(&tstate)))
   {
-    switch (tagList[i].ti_Tag)
+    switch (tag->ti_Tag)
     {
       case LA_Priority:
-        priority = tagList[i].ti_Data;
+        priority = tag->ti_Data;
       break;
       
       case LA_Hook:
-        hook = (struct Hook *)tagList[i].ti_Data;
+        hook = (struct Hook *)tag->ti_Data;
       break;
       
       case LA_SuperBitMap:
-        superbitmap = (struct BitMap *)tagList[i].ti_Data;
+        superbitmap = (struct BitMap *)tag->ti_Data;
       break;
       
       case LA_ChildOf:
-        parent = (struct Layer *)tagList[i].ti_Data;
+        parent = (struct Layer *)tag->ti_Data;
       break;
       
       case LA_InFrontOf:
         if (infrontof)
           return NULL;
-        infrontof = (struct Layer *)tagList[i].ti_Data;
+        infrontof = (struct Layer *)tag->ti_Data;
       break;
       
       case LA_Behind:
         if (behind)
           return NULL;
-        behind = (struct Layer *)tagList[i].ti_Data;
+        behind = (struct Layer *)tag->ti_Data;
       break;
       
       case LA_Visible:
-        visible = tagList[i].ti_Data;
+        visible = tag->ti_Data;
       break;
       
       case LA_Shape:
-        layershape = (struct Region *)tagList[i].ti_Data;
+        layershape = (struct Region *)tag->ti_Data;
       break;
-
-      case TAG_IGNORE:
-      case TAG_SKIP:
+      
+      case LA_ShapeHook:
+      	shapehook = (struct Hook *)tag->ti_Data;
       break;
-
-      default:
-        kprintf("%s: Unknown option %d!\n",__FUNCTION__,tagList[i].ti_Tag);
-        return NULL;
+   
     }
-    i++;
-  }
+
+  } /* while((tag = NextTagItem(&tstate))) */
   
   if ((flags & LAYERSUPER) && (NULL == superbitmap)) 
     return NULL;
@@ -211,6 +209,25 @@
   if (!shape)
     return NULL;
     
+  if (shapehook)
+  {
+    struct ShapeHookMsg msg;
+    
+    msg.Action = SHAPEHOOKACTION_CREATELAYER;
+    msg.Layer  = 0;
+    msg.ActualShape = layershape;
+    msg.NewBounds.MinX = x0;
+    msg.NewBounds.MinY = y0;
+    msg.NewBounds.MaxX = x1;
+    msg.NewBounds.MaxY = y1;
+    msg.OldBounds.MinX = 0;
+    msg.OldBounds.MinY = 0;
+    msg.OldBounds.MaxX = 0;
+    msg.OldBounds.MaxY = 0;
+    
+    layershape = (struct Region *)CallHookPkt(shapehook, NULL, &msg);
+  }
+  
   if (layershape) if (!AndRegionRegion(layershape, shape))
   {
     DisposeRegion(shape);
@@ -230,13 +247,14 @@
   /* Make shape region relative to screen */
   _TranslateRect(&shape->bounds, x0, y0);
   
-  l = AllocMem(sizeof(struct Layer), MEMF_CLEAR|MEMF_PUBLIC);
+  l = AllocMem(sizeof(struct IntLayer), MEMF_CLEAR|MEMF_PUBLIC);
   rp = CreateRastPort();
   
 
   if (l && rp)
   {
     l->shape = shape;
+    IL(l)->shapehook = shapehook;
     l->shaperegion = layershape;
     l->rp = rp;
     
@@ -439,7 +457,7 @@ failexit:
       DisposeRegion(l->DamageList);
     if (l->visibleshape)
       DisposeRegion(l->visibleshape);
-    FreeMem(l, sizeof(struct Layer));
+    FreeMem(l, sizeof(struct IntLayer));
   }
 
   if (rp)
