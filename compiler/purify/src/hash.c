@@ -39,6 +39,40 @@ MemHash * Purify_AddMemory (void * memory, int size, int flag, int type)
     return node;
 }
 
+void Purify_RemMemory (const void * mem)
+{
+    int hashcode = CalcHash (mem);
+    MemHash * node = (MemHash *)&memHash[hashcode], * next;
+
+#if LDEBUG
+    printf ("Purify_FindMemory (mem=%p)\n", mem);
+#endif
+
+    for ( ; (next=node->next); node=next)
+    {
+#if LDEBUG
+	printf ("    Checking against %p:%d (%p)\n",
+	    node->mem, node->size, node->mem+node->size);
+#endif
+	if (next->mem <= mem && next->mem+next->size > mem)
+	{
+#if LDEBUG
+	    printf ("    Node found\n");
+#endif
+	    node->next = next->next;
+	    xfree (next);
+	    if (Purify_LastNode == next)
+		Purify_LastNode = NULL;
+	    return;
+	}
+    }
+
+#if LDEBUG
+    printf ("    Nothing found\n");
+#endif
+}
+
+
 void Purify_SetMemoryFlags (MemHash * mem, int offset, int size, int flag)
 {
     char * ptr;
@@ -203,7 +237,10 @@ int Purify_CheckMemoryAccess (const void * mem, int size, int access)
 void Purify_PrintMemory (void)
 {
     MemHash * node;
-    int i, t, cnt;
+    int i;
+#if 0
+    int t, cnt;
+#endif
 
     for (i=0; i<256; i++)
     {

@@ -39,6 +39,7 @@ extern MemHash * Purify_LastNode;
 
 /* Prototypes */
 MemHash * Purify_AddMemory (void * mem, int size, int flag, int type);
+void Purify_RemMemory (const void * mem);
 void Purify_SetMemoryFlags (MemHash * mem, int offset, int size, int flag);
 void Purify_ModifyMemoryFlags (MemHash * mem, int offset, int size, int flag,
     int mask);
