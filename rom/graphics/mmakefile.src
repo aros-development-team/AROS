@@ -190,6 +190,7 @@ FUNCTIONS := \
 	setpointerpos \
 	setpointershape \
 	setrast \
+	setregion \
 	setrgb32 \
 	setrgb32cm \
 	setrgb4 \
