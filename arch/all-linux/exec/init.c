@@ -34,7 +34,6 @@
 extern const struct Resident
     Expansion_ROMTag,
     Exec_resident,
-    Partition_ROMTag,
     Utility_ROMTag,
     Aros_ROMTag,
 /*    BOOPSI_resident,*/
@@ -74,7 +73,6 @@ static const struct Resident *romtagList[] =
 {
     &Expansion_ROMTag,		    /* SingleTask,  110  */
     &Exec_resident,			    /* SingleTask,  105  */
-    &Partition_ROMTag,			    /* ColdStart,   104  */
     &Utility_ROMTag,			    /* ColdStart,   103  */
     &Aros_ROMTag,			    /* ColdStart,   102  */
     &Mathieeesingbas_ROMTag,              /* ColdStart,   101  */
