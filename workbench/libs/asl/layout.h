@@ -1,5 +1,5 @@
 /*
-    (C) 2000-2001 AROS - The Amiga Research OS
+    Copyright (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -36,6 +36,18 @@
 /*****************************************************************************************/
 
 struct AslBase_intern;
+
+/*****************************************************************************************/
+
+/* Options */
+
+/* AROS gadgetclass checks notification loops, while AmigaOS gadgetclass does not.
+   By setting USE_SAFE_NOTIFYING to 1, icclass objects will be used for connection
+   between listview gadget and scrollergadget (instead of direct connection through
+   gadget objects only), which is always safe, as icclass in both AmigaOS and AROS
+   checks for notification loops */
+   
+#define USE_SAFE_NOTIFYING  	1
 
 /*****************************************************************************************/
 
@@ -252,6 +264,10 @@ struct ScrollerGadget
     Object *prop;
     Object *arrow1;
     Object *arrow2;
+#if USE_SAFE_NOTIFYING
+    Object *prop_ic;
+    Object *listview_ic;
+#endif
 };
 
 #endif /* LAYOUT_H */

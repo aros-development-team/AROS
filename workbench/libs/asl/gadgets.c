@@ -1,5 +1,5 @@
 /*
-    (C) 1997-2001 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -178,21 +178,43 @@ BOOL makescrollergadget(struct ScrollerGadget *scrollergad, struct LayoutData *l
 		    
 		    if ((im = NewObjectA(NULL, SYSICLASS, image_tags)))
 		    {
-		        struct TagItem ic_tags [] =
+		    #if USE_SAFE_NOTIFYING
+		    	struct TagItem ic_tags [] =
 			{
-			    {ICA_TARGET	, (IPTR) scrollergad->prop	},
-			    {ICA_MAP    , (IPTR) arrowdec_to_prop	},
-			    {TAG_DONE					}
+			    {ICA_MAP , (IPTR) prop_to_lv },
+			    {TAG_DONE	    	    	 }
 			};
 			
-		        SetAttrs(scrollergad->arrow2, GA_Image, (IPTR)im,
-						      TAG_DONE);
+			if ((scrollergad->prop_ic = NewObjectA(NULL, ICCLASS, ic_tags)))
+			{
+			    ic_tags[0].ti_Data = (IPTR)lv_to_prop;
+			    
+			    if ((scrollergad->listview_ic = NewObjectA(NULL, ICCLASS, ic_tags)))			    
+			    {
+		    #endif			    	 
+		        	struct TagItem set_tags [] =
+				{
+				    {ICA_TARGET	, (IPTR) scrollergad->prop	},
+				    {ICA_MAP    , (IPTR) arrowdec_to_prop	},
+				    {TAG_DONE					}
+				};
+
+		        	SetAttrs(scrollergad->arrow2, GA_Image, (IPTR)im,
+							      TAG_DONE);
+
+				SetAttrsA(scrollergad->arrow1, set_tags);
+				set_tags[1].ti_Data = (IPTR)arrowinc_to_prop;
+				SetAttrsA(scrollergad->arrow2, set_tags);
+
+				result = TRUE;
+				
+		    #if USE_SAFE_NOTIFYING
+		    
+			    } /* if ((scrollergad->listview_ic = NewObjectA(NULL, ICCLASS, ic_tags))) */
+			    
+			} /* if ((scrollergad->prop_ic = NewObjectA(NULL, ICCLASS, ic_tags))) */
 			
-			SetAttrsA(scrollergad->arrow1, ic_tags);
-			ic_tags[1].ti_Data = (IPTR)arrowinc_to_prop;
-			SetAttrsA(scrollergad->arrow2, ic_tags);
-			
-			result = TRUE;
+		    #endif
 			
 		    } /* if ((im = NewObjectA(NULL, SYSICLASS, image_tags))) */
 		    
@@ -229,6 +251,14 @@ void killscrollergadget(struct ScrollerGadget *scrollergad, struct AslBase_inter
         DisposeObject(scrollergad->arrow2);
     }
     scrollergad->arrow2 = NULL;
+    
+#if USE_SAFE_NOTIFYING
+    if (scrollergad->prop_ic) DisposeObject(scrollergad->prop_ic);
+    scrollergad->prop_ic = NULL;
+    
+    if (scrollergad->listview_ic) DisposeObject(scrollergad->listview_ic);
+    scrollergad->listview_ic = NULL;
+#endif    
 }
 
 /*******************************************************************************************/
@@ -246,6 +276,31 @@ void getgadgetcoords(struct Gadget *gad, struct GadgetInfo *gi, WORD *x, WORD *y
 void connectscrollerandlistview(struct ScrollerGadget *scrollergad, Object *listview,
 				struct AslBase_intern *AslBase)
 {
+#if USE_SAFE_NOTIFYING
+
+    struct TagItem ic_tags[] =
+    {
+        {ICA_TARGET	, (IPTR)listview	},
+	{TAG_DONE				}
+    };
+    
+    /* ICA_TARGET of prop ic is listview gadget */
+    SetAttrsA(scrollergad->prop_ic, ic_tags);
+
+    /* ICA_TARGET of listview ic is prop gadget */
+    ic_tags[0].ti_Data = (IPTR)scrollergad->prop;
+    SetAttrsA(scrollergad->listview_ic, ic_tags);
+    
+    /* ICA_TARGET of listview gadget is listview ic */
+    ic_tags[0].ti_Data = (IPTR)scrollergad->listview_ic;
+    SetAttrsA(listview, ic_tags);
+    
+    /* ICA_TARGET of prop gadget is prop ic */
+    ic_tags[0].ti_Data = (IPTR)scrollergad->prop_ic;
+    SetAttrsA(scrollergad->prop, ic_tags);
+    
+#else
+
     struct TagItem ic_tags[] =
     {
         {ICA_TARGET	, (IPTR)listview	},
@@ -261,6 +316,8 @@ void connectscrollerandlistview(struct ScrollerGadget *scrollergad, Object *list
     ic_tags[1].ti_Data = (IPTR)lv_to_prop;
     
     SetAttrsA(listview,  ic_tags);
+    
+#endif
 }
 
 /*******************************************************************************************/
