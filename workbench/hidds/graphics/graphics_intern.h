@@ -49,6 +49,7 @@
 #define GOT_BM_ATTR(code)	GOT_ATTR(code, aoHidd_BitMap, bitmap)
 #define FOUND_BM_ATTR(code)	FOUND_ATTR(code, aoHidd_BitMap, bitmap);
 
+#define SWAPBYTES_WORD(x) ((((x) >> 8) & 0x00FF) | (((x) & 0x00FF) << 8))
 
 struct sync_data {
     ULONG pixtime; /* pixel time in pico seconds */
