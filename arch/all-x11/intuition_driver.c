@@ -95,11 +95,11 @@ static int MySysErrorHandler (Display *);
 static struct Task *CreateX11EventTask(struct IntuitionBase *IntuitionBase);
 
 
-struct IntWindow
+struct X11IntWindow
 {
-    struct Window iw_Window;
-    int 	  iw_XWindow;
-    Region	  iw_Region;
+    struct IntWindow	iw_Window;
+    int 		iw_XWindow;
+    Region		iw_Region;
 };
 
 static struct _keytable
@@ -336,9 +336,9 @@ void intui_expunge (struct IntuitionBase * IntuitionBase)
 void intui_SetWindowTitles (struct Window * win, UBYTE * text, UBYTE * screen)
 {
     XSizeHints hints;
-    struct IntWindow * w;
+    struct X11IntWindow * w;
 
-    w = (struct IntWindow *)win;
+    w = (struct X11IntWindow *)win;
 
     hints.x	 = win->LeftEdge;
     hints.y	 = win->TopEdge;
@@ -364,10 +364,10 @@ UX11
 
 int intui_GetWindowSize (void)
 {
-    return sizeof (struct IntWindow);
+    return sizeof (struct X11IntWindow);
 }
 
-#define IW(w)   ((struct IntWindow *)w)
+#define XIW(w)   ((struct X11IntWindow *)w)
 
 int intui_OpenWindow (struct Window * w,
 	struct IntuitionBase * IntuitionBase,
@@ -386,18 +386,18 @@ int intui_OpenWindow (struct Window * w,
     */
     w->LeftEdge = 0;
     w->TopEdge = 0;
-    if (!(IW(w)->iw_Window.RPort = CreateRastPort()))
+    if (!(XIW(w)->iw_Window.RPort = CreateRastPort()))
     	return FALSE;
 
-    if (!GetGC (IW(w)->iw_Window.RPort, GfxBase))
+    if (!GetGC (XIW(w)->iw_Window.RPort, GfxBase))
     {
-        FreeRastPort(IW(w)->iw_Window.RPort);
+        FreeRastPort(XIW(w)->iw_Window.RPort);
 	return FALSE;
     }
 
     winattr.event_mask = 0;
 
-    if ((IW(w)->iw_Window.Flags & WFLG_REFRESHBITS) == WFLG_SMART_REFRESH)
+    if ((XIW(w)->iw_Window.Flags & WFLG_REFRESHBITS) == WFLG_SMART_REFRESH)
     {
 	winattr.backing_store = Always;
     }
@@ -407,32 +407,32 @@ int intui_OpenWindow (struct Window * w,
 	winattr.event_mask |= ExposureMask;
     }
 
-    if ((IW(w)->iw_Window.Flags & WFLG_RMBTRAP)
-	|| IW(w)->iw_Window.IDCMPFlags
+    if ((XIW(w)->iw_Window.Flags & WFLG_RMBTRAP)
+	|| XIW(w)->iw_Window.IDCMPFlags
 	    & (IDCMP_MOUSEBUTTONS
 		| IDCMP_GADGETDOWN
 		| IDCMP_GADGETUP
 		| IDCMP_MENUPICK
 	    )
-	|| IW(w)->iw_Window.FirstGadget
+	|| XIW(w)->iw_Window.FirstGadget
     )
 	winattr.event_mask |= ButtonPressMask | ButtonReleaseMask;
 	
-    if (IW(w)->iw_Window.IDCMPFlags & IDCMP_REFRESHWINDOW)
+    if (XIW(w)->iw_Window.IDCMPFlags & IDCMP_REFRESHWINDOW)
 	winattr.event_mask |= ExposureMask;
 
-    if (IW(w)->iw_Window.IDCMPFlags & IDCMP_MOUSEMOVE
-	|| IW(w)->iw_Window.FirstGadget
+    if (XIW(w)->iw_Window.IDCMPFlags & IDCMP_MOUSEMOVE
+	|| XIW(w)->iw_Window.FirstGadget
     )
 	winattr.event_mask |= PointerMotionMask;
 
-    if (IW(w)->iw_Window.IDCMPFlags & (IDCMP_RAWKEY | IDCMP_VANILLAKEY))
+    if (XIW(w)->iw_Window.IDCMPFlags & (IDCMP_RAWKEY | IDCMP_VANILLAKEY))
 	winattr.event_mask |= KeyPressMask | KeyReleaseMask;
 
-    if (IW(w)->iw_Window.IDCMPFlags & IDCMP_ACTIVEWINDOW)
+    if (XIW(w)->iw_Window.IDCMPFlags & IDCMP_ACTIVEWINDOW)
 	winattr.event_mask |= EnterWindowMask;
 
-    if (IW(w)->iw_Window.IDCMPFlags & IDCMP_INACTIVEWINDOW)
+    if (XIW(w)->iw_Window.IDCMPFlags & IDCMP_INACTIVEWINDOW)
 	winattr.event_mask |= LeaveWindowMask;
 
     /* Always show me if the window has changed */
@@ -444,12 +444,12 @@ int intui_OpenWindow (struct Window * w,
     winattr.save_under = True;
     winattr.background_pixel = sysCMap[0];
 LX11
-    IW(w)->iw_XWindow = XCreateWindow (GetSysDisplay ()
+    XIW(w)->iw_XWindow = XCreateWindow (GetSysDisplay ()
 	, DefaultRootWindow (GetSysDisplay ())
-	, IW(w)->iw_Window.LeftEdge
-	, IW(w)->iw_Window.TopEdge
-	, IW(w)->iw_Window.Width
-	, IW(w)->iw_Window.Height
+	, XIW(w)->iw_Window.LeftEdge
+	, XIW(w)->iw_Window.TopEdge
+	, XIW(w)->iw_Window.Width
+	, XIW(w)->iw_Window.Height
 	, 0 /* BorderWidth */
 	, DefaultDepth (GetSysDisplay (), GetSysScreen ())
 	, InputOutput
@@ -462,25 +462,25 @@ LX11
 	, &winattr
     );
 
-    SetXWindow (IW(w)->iw_Window.RPort, IW(w)->iw_XWindow, GfxBase);
+    SetXWindow (XIW(w)->iw_Window.RPort, XIW(w)->iw_XWindow, GfxBase);
 
-    IW(w)->iw_Region = XCreateRegion ();
+    XIW(w)->iw_Region = XCreateRegion ();
 UX11
 
-    if (!IW(w)->iw_Region)
+    if (!XIW(w)->iw_Region)
     {
 LX11
-	XDestroyWindow (sysDisplay, IW(w)->iw_XWindow);
+	XDestroyWindow (sysDisplay, XIW(w)->iw_XWindow);
 UX11
 
 /* nlorentz: It is now driver's responsibility to create window
        rastport. See rom/intuition/openwindow.c for more info.
     */
-        FreeRastPort(IW(w)->iw_Window.RPort);
+        FreeRastPort(XIW(w)->iw_Window.RPort);
 	return FALSE;
     }
 LX11
-    XMapRaised (sysDisplay, IW(w)->iw_XWindow);
+    XMapRaised (sysDisplay, XIW(w)->iw_XWindow);
 UX11
     /* Show window *now* */
     
@@ -488,7 +488,7 @@ UX11
     
     SIGID ();
 
-    Diow(bug("Opening Window %p (X=%ld)\n", w, IW(w)->iw_XWindow));
+    Diow(bug("Opening Window %p (X=%ld)\n", w, XIW(w)->iw_XWindow));
 
     return 1;
 }
@@ -496,11 +496,11 @@ UX11
 void intui_CloseWindow (struct Window * w,
 	    struct IntuitionBase * IntuitionBase)
 {
-    Dicw(bug("Closing Window %p (X=%ld)\n", w, IW(w)->iw_XWindow));
+    Dicw(bug("Closing Window %p (X=%ld)\n", w, XIW(w)->iw_XWindow));
 LX11
-    XDestroyWindow (sysDisplay, IW(w)->iw_XWindow);
+    XDestroyWindow (sysDisplay, XIW(w)->iw_XWindow);
 
-    XDestroyRegion (IW(w)->iw_Region);
+    XDestroyRegion (XIW(w)->iw_Region);
 
     XSync (sysDisplay, FALSE);
 UX11
@@ -508,7 +508,7 @@ UX11
        rastport. See rom/intuition/openwindow.c for more info.
     */
     
-   FreeRastPort(IW(w)->iw_Window.RPort);
+   FreeRastPort(XIW(w)->iw_Window.RPort);
     SIGID ();
 }
 
@@ -516,7 +516,7 @@ void intui_WindowToFront (struct Window * window,
                           struct IntuitionBase * IntuitionBase)
 {
 LX11
-    XRaiseWindow (sysDisplay, IW(window)->iw_XWindow);
+    XRaiseWindow (sysDisplay, XIW(window)->iw_XWindow);
 UX11
     SIGID ();
 }
@@ -525,7 +525,7 @@ void intui_WindowToBack (struct Window * window,
                          struct IntuitionBase * IntuitionBase)
 {
 LX11
-    XLowerWindow (sysDisplay, IW(window)->iw_XWindow);
+    XLowerWindow (sysDisplay, XIW(window)->iw_XWindow);
 UX11
     SIGID ();
 }
@@ -533,7 +533,7 @@ UX11
 void intui_MoveWindow (struct Window * window, WORD dx, WORD dy)
 {
 LX11
-    XMoveWindow (sysDisplay, IW(window)->iw_XWindow, dx, dy);
+    XMoveWindow (sysDisplay, XIW(window)->iw_XWindow, dx, dy);
 UX11
     SIGID ();
 }
@@ -542,7 +542,7 @@ void intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
     WORD width, WORD height)
 {
 LX11
-    XMoveResizeWindow (sysDisplay, IW(window)->iw_XWindow, x, y, width, height);
+    XMoveResizeWindow (sysDisplay, XIW(window)->iw_XWindow, x, y, width, height);
 UX11
     SIGID ();
 }
@@ -620,7 +620,7 @@ void intui_SizeWindow (struct Window * win, long dx, long dy)
 {
 LX11
     XResizeWindow (sysDisplay
-	, ((struct IntWindow *)win)->iw_XWindow
+	, ((struct X11IntWindow *)win)->iw_XWindow
 	, win->Width + dx
 	, win->Height + dy
     );
@@ -641,7 +641,7 @@ LX11
     hints->max_height = (int)MaxHeight;
 
     XSetWMNormalHints (sysDisplay
-	, ((struct IntWindow *)win)->iw_XWindow
+	, ((struct X11IntWindow *)win)->iw_XWindow
 	, hints
     );
 UX11
@@ -650,7 +650,7 @@ UX11
 void intui_ActivateWindow (struct Window * win)
 {
 LX11
-    XSetInputFocus (sysDisplay, IW(win)->iw_XWindow, RevertToNone, XCurrentTime);
+    XSetInputFocus (sysDisplay, XIW(win)->iw_XWindow, RevertToNone, XCurrentTime);
 UX11
     SIGID ();
 }
@@ -751,7 +751,7 @@ void intui_BeginRefresh (struct Window * win,
 {
     /* Restrict rendering to a region */
 LX11
-    XSetRegion (sysDisplay, GetGC(IW(win)->iw_Window.RPort, GfxBase), IW(win)->iw_Region);
+    XSetRegion (sysDisplay, GetGC(XIW(win)->iw_Window.RPort, GfxBase), XIW(win)->iw_Region);
 UX11
     SIGID ();
 } /* intui_BeginRefresh */
@@ -766,8 +766,8 @@ LX11
     /* Zuerst alte Region freigeben (Speicher sparen) */
     if (free)
     {
-	XDestroyRegion (IW(win)->iw_Region);
-	IW(win)->iw_Region = XCreateRegion ();
+	XDestroyRegion (XIW(win)->iw_Region);
+	XIW(win)->iw_Region = XCreateRegion ();
     }
 
     /* Dann loeschen wir das ClipRect wieder indem wir ein neues
@@ -776,13 +776,13 @@ LX11
 
     rect.x	= 0;
     rect.y	= 0;
-    rect.width	= IW(win)->iw_Window.Width;
-    rect.height = IW(win)->iw_Window.Height;
+    rect.width	= XIW(win)->iw_Window.Width;
+    rect.height = XIW(win)->iw_Window.Height;
 
     XUnionRectWithRegion (&rect, region, region);
 
     /* und setzen */
-    XSetRegion (sysDisplay, GetGC(IW(win)->iw_Window.RPort, GfxBase), region);
+    XSetRegion (sysDisplay, GetGC(XIW(win)->iw_Window.RPort, GfxBase), region);
 UX11
     SIGID ();
 } /* intui_EndRefresh */
@@ -801,7 +801,7 @@ VOID XETaskEntry(struct IntuitionBase *IntuitionBase)
     XEvent	       event;
     struct Window    * w = NULL;
     struct Screen    * screen;
-    struct IntWindow * iw;
+    struct X11IntWindow * iw;
     struct MsgPort   * inputmp;
     struct IOStdReq  * inputio;
     HIDD unixio;
@@ -877,7 +877,7 @@ UX11
 	    	{
 		    for (w=screen->FirstWindow; w; w=w->NextWindow)
 		    {
-		    	if (((struct IntWindow *)w)->iw_XWindow == event.xany.window)
+		    	if (((struct X11IntWindow *)w)->iw_XWindow == event.xany.window)
 			    break;
 		    }
 
@@ -912,7 +912,7 @@ UX11
 	    	if (!w)
 		    continue;
 
-	    	iw = (struct IntWindow *)w;
+	    	iw = (struct X11IntWindow *)w;
 	    	
 	    	ie->ie_Class = 0;
 
