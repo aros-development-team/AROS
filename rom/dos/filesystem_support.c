@@ -11,6 +11,7 @@
 #include <dos/filesystem.h>
 #include <exec/memory.h>
 #include <proto/dos.h>
+#include <proto/exec.h>
 #include "dos_intern.h"
 
 #include <string.h>

@@ -6,6 +6,10 @@
 #include <exec/types.h>
 #include <proto/dos.h>
 #include "dos_intern.h"
+#undef SDEBUG
+#undef DEBUG
+#define DEBUG 0
+#include <aros/debug.h>
 
 LONG InternalFlush( struct FileHandle *fh, struct DosLibrary *DOSBase )
 {
