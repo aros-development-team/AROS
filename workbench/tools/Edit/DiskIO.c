@@ -26,18 +26,18 @@ struct FileRequester *fr=NULL;
 
 /* ASL load or save requester tags */
 static ULONG tags[] = {
-	ASLFR_InitialLeftEdge, 0,
-	ASLFR_InitialTopEdge,  0,
-	ASLFR_InitialWidth,    320,
-	ASLFR_InitialHeight,   256,
-	ASLFR_Window,          NULL,
-	ASLFR_Screen,          NULL,
-	ASLFR_Flags1,          0,
-	ASLFR_SleepWindow,     TRUE,
-	ASLFR_InitialDrawer,   NULL,
-	ASLFR_InitialFile,     NULL,
-	ASLFR_InitialPattern,  (ULONG)"#?",
-	ASLFR_TitleText,       NULL,
+	ASLFR_InitialLeftEdge,        0,
+	ASLFR_InitialTopEdge,         0,
+	ASLFR_InitialWidth,           320,
+	ASLFR_InitialHeight,          256,
+	ASLFR_Window,          (IPTR) NULL,
+	ASLFR_Screen,          (IPTR) NULL,
+	ASLFR_Flags1,                 0,
+	ASLFR_SleepWindow,            TRUE,
+	ASLFR_InitialDrawer,   (IPTR) NULL,
+	ASLFR_InitialFile,     (IPTR) NULL,
+	ASLFR_InitialPattern,  (IPTR) "#?",
+	ASLFR_TitleText,       (IPTR) NULL,
 	TAG_DONE
 };
 
