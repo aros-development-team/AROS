@@ -82,6 +82,8 @@ int bcmp (const void * s1, const void * s2, int n);
 void bcopy (const void * src, void * dst, size_t n);
 void bzero (void * src, int n);
 
+char *strsep(char **, const char *); /* BSD */
+
 /* Macros */
 #define stricmp  strcasecmp
 #define strnicmp strncasecmp

@@ -204,4 +204,4 @@ SYSTEM_CALL (getloadavg)
 SYSTEM_CALL (raise)
 SYSTEM_CALL (times)
 SYSTEM_CALL (ftime)
-
+SYSTEM_CALL (strsep)
