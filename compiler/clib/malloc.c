@@ -7,6 +7,8 @@
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
+
+extern struct SignalSemaphore __startup_memsem;
 extern APTR __startup_mempool;
 
 /*****************************************************************************
@@ -33,6 +35,7 @@ extern APTR __startup_mempool;
 	the memory will be freed for you when the application exits.
 
     NOTES
+        This function must not be used in a shared library.
 
     EXAMPLE
 
@@ -48,29 +51,33 @@ extern APTR __startup_mempool;
 
 ******************************************************************************/
 {
-    UBYTE * mem;
+    UBYTE * mem = NULL;
+
+    ObtainSemaphore(&__startup_memsem);
 
     /* Check if there is a pool already */
     if (!__startup_mempool)
     {
 	/* Create one if not */
 	__startup_mempool = CreatePool (MEMF_ANY, 4096L, 2000L);
-
-	/* Fail if the pool could not be created */
-	if (!__startup_mempool)
-	    return NULL;
     }
 
-    size += AROS_ALIGN(sizeof(size_t));
+    if (__startup_mempool)
+    {
+	size += AROS_ALIGN(sizeof(size_t));
+
+	/* Allocate the memory */
+	mem = AllocPooled (__startup_mempool, size);    
+	if (mem)
+	{	
+	    *((size_t *)mem) = size;
+	    mem += AROS_ALIGN(sizeof(size_t));
+	}
+    }
     
-    /* Allocate the memory */
-    mem = AllocPooled (__startup_mempool, size);    
-    if (mem)
-    {	
-	*((size_t *)mem) = size;
-	mem += AROS_ALIGN(sizeof(size_t));
-    }
-
+    ReleaseSemaphore(&__startup_memsem);
+    
     return mem;
+    
 } /* malloc */
 

@@ -7,6 +7,8 @@
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
+
+extern struct SignalSemaphore __startup_memsem;
 extern APTR __startup_mempool;
 
 /*****************************************************************************
@@ -31,6 +33,7 @@ extern APTR __startup_mempool;
 	None.
 
     NOTES
+        This function must not be used in a shared library
 
     EXAMPLE
 
@@ -49,6 +52,8 @@ extern APTR __startup_mempool;
     UBYTE * mem;
     size_t size;
 
+    ObtainSemaphore(&__startup_memsem);
+    
     if (memory && __startup_mempool)
     {
 	mem = ((UBYTE *)memory) - AROS_ALIGN(sizeof(size_t));
@@ -57,5 +62,7 @@ extern APTR __startup_mempool;
 	FreePooled (__startup_mempool, mem, size);
     }
 
+    ReleaseSemaphore(&__startup_memsem);
+    
 } /* free */
 
