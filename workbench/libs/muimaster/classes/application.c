@@ -113,7 +113,7 @@ MUIA_Application_DoubleStart [..G]        not triggered yet (todo)
 MUIA_Application_DropObject [IS.]         needs AppMessage
 MUIA_Application_ForceQuit [..G]          not triggered yet
 MUIA_Application_HelpFile [ISG]           unused/dummy
-MUIA_Application_Iconified [.SG]          todo (wm interaction ?)
+MUIA_Application_Iconified [.SG]          complete (handle appicons)
 MUIA_Application_Menu [I.G]               unimplemented (OBSOLETE)
 MUIA_Application_MenuAction [..G]         done
 MUIA_Application_MenuHelp [..G]           todo (ditto)
@@ -666,14 +666,28 @@ static ULONG Application_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 
 	    case    MUIA_Application_Iconified:
-	            if (data->app_Iconified != tag->ti_Data)
+	            {
+		        BOOL do_iconify = tag->ti_Data == 1;
+	                if (data->app_Iconified != do_iconify)
+		        {
+		            data->app_Iconified = do_iconify;
+                         
+			    nnset(obj, MUIA_ShowMe, !data->app_Iconified);
+		            #warning In case the WB is up, an appicon needs to be placed on the desktop
+		        }
+		    }
+		    break;
+		    
+	    case    MUIA_ShowMe:  
 		    {
+	                /* Ok ok, you think this stinks? Well, think of it as
+		           an attribute belonging to an interface which MUIC_Application,
+		           together with MUIC_Area and a few others implement. It makes
+		           sense now, yes?  */
                         struct List *wlist;
                         APTR         wstate;
                         Object      *curwin;
     
-			data->app_Iconified = tag->ti_Data;
-			
                         get(obj, MUIA_Application_WindowList, &wlist);
                      
 			if (wlist)
@@ -681,11 +695,10 @@ static ULONG Application_Set(struct IClass *cl, Object *obj, struct opSet *msg)
                             wstate = wlist->lh_Head;
                             while ((curwin = NextObject(&wstate)))
                             {
-                                set(curwin, MUIA_ShowMe, !data->app_Iconified);
+                                set(curwin, MUIA_ShowMe, tag->ti_Data);
                             }
 			}
 		    }
-		    #warning In case the WB is up, an appicon needs to be placed on the desktop
 		    break;
 
 	    case    MUIA_Application_Sleep:
