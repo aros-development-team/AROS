@@ -2153,6 +2153,15 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
 #endif
     case MUIM_CallHook: return DoSuperMethodA(cl, obj, (APTR)msg); /* Needs not to be forwarded */
     case MUIM_DrawBackground: return DoSuperMethodA(cl, obj, (APTR)msg); /* Needs not to be forwarded */
+ 
+    case MUIM_DragBegin:
+    case MUIM_DragDrop: 
+    case MUIM_DragQuery: 
+    case MUIM_DragFinish: 
+    case MUIM_DoDrag:
+    case MUIM_CreateDragImage:
+    case MUIM_DeleteDragImage:
+    	return DoSuperMethodA(cl, obj, (APTR)msg); /* Needs not to be forwarded? */
 
     case MUIM_DragQueryExtended: return Group_DragQueryExtended(cl, obj, (APTR)msg);
     }
