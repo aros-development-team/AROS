@@ -33,8 +33,20 @@ extern struct Library *MUIMasterBase;
 #include "mui.h"
 #include "imspec.h"
 
+#ifdef _AROS
+#define g_strdup(x) 	    	    	    	    \
+    ({	    	    	    	    	    	    \
+    	UBYTE *dup; 	    	    	    	    \
+	    	    	    	    	    	    \
+	dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC); \
+	if (dup) CopyMem((x), dup, strlen(x) + 1);  \
+	dup; 	    	    	    	    	    \
+    })
+#define g_free FreeVec
+#else
 #define g_strdup strdup
 #define g_free free
+#endif
 
 struct ZunePrefs __zprefs;
 
