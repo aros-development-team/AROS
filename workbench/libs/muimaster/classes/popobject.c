@@ -33,14 +33,10 @@ struct MUI_PopobjectData
     Object *wnd;
 };
 
-#ifndef __AROS__
-static __asm ULONG Popobject_Open_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
-#else
 AROS_UFH3(ULONG,Popobject_Open_Function,
 	AROS_UFHA(struct Hook *, hook,  A0),
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(void **, msg,  A1))
-#endif
 {
     struct MUI_PopobjectData *data = (struct MUI_PopobjectData *)hook->h_Data;
     Object *string = (Object*)msg[0];
@@ -80,14 +76,10 @@ AROS_UFH3(ULONG,Popobject_Open_Function,
 }
 
 
-#ifndef __AROS__
-static __asm ULONG Popobject_Close_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
-#else
 AROS_UFH3(ULONG,Popobject_Close_Function,
 	AROS_UFHA(struct Hook *, hook,  A0),
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(void **, msg,  A1))
-#endif
 {
     struct MUI_PopobjectData *data= (struct MUI_PopobjectData *)hook->h_Data;
     Object *string = (Object*)msg[0];

@@ -29,14 +29,10 @@ struct MUI_ScrollgroupData
     struct Hook *layout_hook;
 };
 
-#ifndef __AROS__
-__asm ULONG Scrollgroup_Layout_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 struct MUI_LayoutMsg *lm)
-#else
 AROS_UFH3(ULONG,Scrollgroup_Layout_Function,
 	AROS_UFHA(struct Hook *, hook,  A0),
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(struct MUI_LayoutMsg *, lm,  A1))
-#endif
 {
     struct MUI_ScrollgroupData *data = (struct MUI_ScrollgroupData *)hook->h_Data;
     switch (lm->lm_Type)
@@ -147,14 +143,10 @@ AROS_UFH3(ULONG,Scrollgroup_Layout_Function,
 }
 
 
-#ifndef __AROS__
-__asm ULONG Scrollgroup_Function(register __a0 struct Hook *hook, register __a1 void **msg)
-#else
 AROS_UFH3(ULONG,Scrollgroup_Function,
 	AROS_UFHA(struct Hook *, hook,  A0),
 	AROS_UFHA(APTR, dummy, A2),
 	AROS_UFHA(void **, msg,  A1))
-#endif
 {
     struct MUI_ScrollgroupData *data = (struct MUI_ScrollgroupData *)hook->h_Data;
     int type = (int)msg[0];
