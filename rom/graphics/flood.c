@@ -14,6 +14,9 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
+
+#define USE_WRITEPIXEL
+
 struct fillinfo
 {
     ULONG fillpen;
@@ -21,17 +24,23 @@ struct fillinfo
     struct RastPort *rp;
     UBYTE *rasptr;
     ULONG bpr;
+    ULONG orig_apen;
+    ULONG orig_bpen;
+    
     struct GfxBase *gfxbase;
 };
 
-#if DEBUG
 static VOID settmpraspixel(BYTE *rasptr, LONG x, LONG y,  ULONG bpr, UBYTE state);
 static BOOL gettmpraspixel(BYTE *rasptr, LONG x, LONG y,  ULONG bpr );
-#endif
 
 static BOOL filline(struct fillinfo *fi, LONG start_x, LONG start_y);
 static BOOL outline_isfillable(struct fillinfo *fi, LONG x, LONG y);
 static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y);
+
+#if DEBUG
+static int fail_count;
+static int pix_written;
+#endif
 
 /*****************************************************************************
 
@@ -78,11 +87,19 @@ static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y);
     ULONG bpr, needed_size;
     ULONG rp_width, rp_height;
     ULONG idx;
+    UBYTE right_mask;
     
     struct fillinfo fi;
     
-    D(bug("Flood(rp=%p, mode=%d, x=%d, y=%d)\n"
+    BOOL success;
+    
+    EnterFunc(bug("Flood(rp=%p, mode=%d, x=%d, y=%d)\n"
     		, rp, mode, x, y));
+
+#if DEBUG
+    fail_count = 0;
+    pix_written = 0;
+#endif
     
     /* Check for tmpras */
     if (NULL == tmpras)
@@ -98,6 +115,7 @@ static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y);
     	rp_width  = GetBitMapAttr(rp->BitMap, BMA_WIDTH);
     	rp_height = GetBitMapAttr(rp->BitMap, BMA_HEIGHT);
     }
+    
     
     bpr = WIDTH_TO_BYTES( rp_width );
     needed_size = bpr * rp_height;
@@ -131,10 +149,13 @@ static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y);
         tmpras->RasPtr[idx] |= 0x80;
 
     D(bug("Right\n"));
+    right_mask = XCOORD_TO_MASK(rp_width - 1);
+    D(bug("Width=%d, mask=%d\n", rp_width, right_mask));
     for (idx = (bpr * 2) - 1; idx < needed_size; idx += bpr )	/* right */
-        tmpras->RasPtr[idx] |= 0x01;
+        tmpras->RasPtr[idx] |= right_mask;
 	
     D(bug("Bottom\n"));
+    D(bug("height=%d, idx=%d\n", rp_height, bpr * (rp_height - 1) ));
     for (idx = bpr * (rp_height - 1); idx < needed_size; idx ++ )	/* bottom */
         tmpras->RasPtr[idx] |= 0xFF;
 	
@@ -161,19 +182,26 @@ static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y);
     fi.rasptr = tmpras->RasPtr;
     fi.rp = rp;
     fi.bpr = bpr;
+    
+    fi.orig_apen = GetAPen(rp);
+    fi.orig_bpen = GetBPen(rp);
+    
     fi.gfxbase = GfxBase;
     
-    D(bug("Callinf filline\n"));
-    filline(&fi, x, y);
+    D(bug("Calling filline\n"));
+    success = filline(&fi, x, y);
     
-    ReturnBool("Flood",  TRUE);
+    D(bug("fails: %d, pix written: %d\n", fail_count, pix_written));
+    
+    SetAPen(rp, fi.orig_apen);
+    
+    ReturnBool("Flood",  success);
 	
     AROS_LIBFUNC_EXIT
 } /* Flood */
 
 
 
-#if DEBUG
 
 static VOID settmpraspixel(BYTE *rasptr, LONG x, LONG y,  ULONG bpr, UBYTE state)
 {
@@ -194,15 +222,19 @@ static BOOL gettmpraspixel(BYTE *rasptr, LONG x, LONG y,  ULONG bpr )
     UBYTE mask = XCOORD_TO_MASK( x );
     BOOL state;
     
-    if (rasptr[idx] & mask)
+/* D(bug("gettmpraspixel (%d, %d, %d): idx=%d, mask=%d, rasptr[idx]=%d, state=%d\n"
+		,x, y, bpr, idx, mask, rasptr[idx], rasptr[idx] & mask));
+*/
+    if ((rasptr[idx] & mask) != 0)
 	state = TRUE;
     else
     	state = FALSE;
-    
+
+/* D(bug("Returning %d\n", state));    
+*/
     return state;
 }
 
-#endif
 
 #undef GfxBase
 #define GfxBase (fi->gfxbase)
@@ -212,16 +244,24 @@ static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y)
 
 
     BOOL fill;
-#if DEBUG
-    if (gettmpraspixel(fi->rasptr, x, y, fi->bpr))
-    	D(bug("Pixel checked twice at (%d, %d)\n", x, y));
 
+    if (TRUE == gettmpraspixel(fi->rasptr, x, y, fi->bpr))
+    {
+/*    	D(bug("Pixel checked twice at (%d, %d)\n", x, y)); */
+	fill = FALSE;
+#if DEBUG
+	fail_count ++;
 #endif
-    
-    if (fi->fillpen == ReadPixel(fi->rp, x, y))
-    	fill = TRUE;
+    }
     else
-    	fill = FALSE;
+    {
+    
+	if (fi->fillpen == ReadPixel(fi->rp, x, y))
+	   fill = TRUE;
+	else
+	    fill = FALSE;
+	    
+    }
 	
     return fill;
        
@@ -230,23 +270,32 @@ static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y)
 static BOOL outline_isfillable(struct fillinfo *fi, LONG x, LONG y)
 {
     BOOL fill;
-    EnterFunc(bug("outline_isfillable(fi=%p, x=%d, y=%d)\n",
+/*    EnterFunc(bug("outline_isfillable(fi=%p, x=%d, y=%d)\n",
     	fi, x, y));
-    
+*/    
+    if (TRUE == gettmpraspixel(fi->rasptr, x, y, fi->bpr))
+    {
+/*    	D(bug("Pixel checked twice at (%d, %d)\n", x, y)); */
+	fill = FALSE;
 #if DEBUG
-/*    if (gettmpraspixel(fi->rasptr, x, y, fi->bpr))
-    	D(bug("Pixel checked twice at (%d, %d)\n", x, y));
-*/
+	fail_count ++;
 #endif
-    if (fi->fillpen != ReadPixel(fi->rp, x, y))
-    	fill = TRUE;
+    }
     else
-        fill = FALSE;
+    {
+
+	if (fi->fillpen != ReadPixel(fi->rp, x, y))
+	   fill = TRUE;
+	else
+	   fill = FALSE;
+    }
 	
 /*    D(bug("fillpen: %d, pen: %d\n", fi->fillpen, ReadPixel(fi->rp, x, y)));
 */	
 	
-    ReturnBool("outline_isfillable", fill);
+/*    ReturnBool("outline_isfillable", fill);
+*/
+    return fill;
 }
 
 
@@ -255,17 +304,43 @@ static VOID putfillpixel(struct fillinfo *fi, LONG x, LONG y)
 {
 
 #warning Implement use of patterns
+   
 
-    WritePixel(fi->rp, x, y);
+#ifdef USE_WRITEPIXEL
+    ULONG pixval, set_pixel = 0UL;
+    
+    if (fi->rp->AreaPtrn)
+    {
+    	set_pixel = pattern_pen(fi->rp
+		, x, y
+		, fi->orig_apen
+		, fi->orig_bpen
+		, &pixval
+		, GfxBase);
+    }
+    else
+    {
+        pixval = GetAPen(fi->rp);
+        set_pixel = TRUE;
+    }
+    
+    if (set_pixel)
+    {
+        SetAPen(fi->rp, pixval);
+        WritePixel(fi->rp, x, y);
+    }
+    
+#endif
 
-#if DEBUG
     settmpraspixel(fi->rasptr, x, y, fi->bpr, 1);
 
-#endif    
+#if DEBUG
+    pix_written ++;
+#endif
     return;
 }
 
-#define STACKSIZE 1000
+#define STACKSIZE 100
 
 struct stack
 {
@@ -331,11 +406,6 @@ static BOOL filline(struct fillinfo *fi, LONG start_x, LONG start_y)
     
     for (x = start_x + 1; ; x ++)
     {
-
-#if DEBUG
-if (x > 100)
-	return FALSE;
-#endif	        
     
     	if (fi->isfillable(fi, x, start_y))
 	{
