@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Alias CLI command
-    Lang: english
+    Lang: English
 */
 
 /*****************************************************************************
@@ -87,43 +87,38 @@
 
 #define BUFFER_SIZE     160
 
-#define BUFFER_SIZE     160
-
 static const char version[] = "$VER: Alias 41.0 (27.07.1997)\n";
 
 void GetNewString(STRPTR, STRPTR, LONG);
 
+
 int main(int argc, char *argv[])
 {
-	struct RDArgs   * rda;
-    struct Process  * AliasProc;
-    struct LocalVar * AliasNode;
-    IPTR            * args[TOTAL_ARGS] = { NULL, NULL };
-    char              Buffer[BUFFER_SIZE];
-    IPTR              OutArgs[3];
-    int               Return_Value;
-    BOOL              Success;
-    LONG              VarLength;
-    char              Buffer1[BUFFER_SIZE];
-    char              Buffer2[BUFFER_SIZE];
-
-    Return_Value = RETURN_OK;
+    struct RDArgs   *rda;
+    struct Process  *AliasProc;
+    struct LocalVar *AliasNode;
+    IPTR            *args[TOTAL_ARGS] = { NULL, NULL };
+    char             Buffer[BUFFER_SIZE];
+    IPTR             OutArgs[3];
+    int              Return_Value = RETURN_OK;
+    BOOL             Success;
+    LONG             VarLength;
+    char             Buffer1[BUFFER_SIZE];
+    char             Buffer2[BUFFER_SIZE];
 
     rda = ReadArgs(ARG_TEMPLATE, (LONG *)args, NULL);
-    if (rda)
+
+    if(rda != NULL)
     {
-        if (args[ARG_NAME] != NULL || args[ARG_STRING] != NULL)
+        if(args[ARG_NAME] != NULL || args[ARG_STRING] != NULL)
         {
             /* Make sure we get to here is either arguments are
              * provided on the command line.
              */
-            if (args[ARG_NAME] != NULL && args[ARG_STRING] == NULL)
+            if(args[ARG_NAME] != NULL && args[ARG_STRING] == NULL)
             {
-                Success = GetVar((STRPTR)args[ARG_NAME],
-                                 &Buffer[0],
-                                 BUFFER_SIZE,
-                                 GVF_LOCAL_ONLY | LV_ALIAS
-                );
+                Success = GetVar((STRPTR)args[ARG_NAME], &Buffer[0],
+				 BUFFER_SIZE, GVF_LOCAL_ONLY | LV_ALIAS);
                 if (Success == FALSE)
                 {
                     Return_Value = RETURN_WARN;
@@ -138,14 +133,11 @@ int main(int argc, char *argv[])
             }
             else
             {
-                /* Add the new local variable to the list.
-                 */
+                /* Add the new local variable to the list. */
                 Success = SetVar((STRPTR)args[ARG_NAME],
                                  (STRPTR)args[ARG_STRING],
-                                 -1,
-                                 GVF_LOCAL_ONLY | LV_ALIAS
-                );
-                if (Success == FALSE)
+                                 -1, GVF_LOCAL_ONLY | LV_ALIAS);
+                if(Success == FALSE)
                 {
                     PrintFault(IoErr(), "Alias");
                     Return_Value = RETURN_ERROR;
@@ -154,61 +146,48 @@ int main(int argc, char *argv[])
         }
         else
         {
-            /* Display a list of aliases.
-             */
-            Forbid();
+            /* Display a list of aliases. */
             AliasProc = (struct Process *)FindTask(NULL);
-            Permit();
 
-            if (AliasProc != NULL)
+	    ForeachNode((struct List *)&(AliasProc->pr_LocalVars),
+			(struct Node *)AliasNode)
             {
-                ForeachNode((struct List *)&(AliasProc->pr_LocalVars),
-                            (struct Node *)AliasNode
-                )
-                {
-                    if (AliasNode->lv_Node.ln_Type == LV_ALIAS)
-                    {
-                        /* Get a clean variable with no excess
-                         * characters.
-                         */
-                        VarLength = -1;
-                        VarLength = GetVar(AliasNode->lv_Node.ln_Name,
-                                           &Buffer1[0],
-                                           BUFFER_SIZE,
-                                           GVF_LOCAL_ONLY | LV_ALIAS
-                        );
-                        if (VarLength != -1)
-                        {
-                            GetNewString(&Buffer1[0],
-                                         &Buffer2[0],
-                                         VarLength
-                            );
-
-                            Buffer2[VarLength] = NULL;
-
-                            OutArgs[0] = (IPTR)AliasNode->lv_Node.ln_Name;
-                            OutArgs[1] = (IPTR)&Buffer2[0];
-                            OutArgs[2] = (IPTR)NULL;
-                            VPrintf("%-20s\t%-20s\n", &OutArgs[0]);
-                        }    
-                    }    
-                }
-            }
-        }
+		if(AliasNode->lv_Node.ln_Type == LV_ALIAS)
+		{
+		    /* Get a clean variable with no excess
+		     * characters.
+		     */
+		    VarLength = GetVar(AliasNode->lv_Node.ln_Name,
+				       &Buffer1[0],
+				       BUFFER_SIZE,
+				       GVF_LOCAL_ONLY | LV_ALIAS);
+		    if (VarLength != -1)
+		    {
+			GetNewString(&Buffer1[0], &Buffer2[0], VarLength);
+			
+			Buffer2[VarLength] = NULL;
+			
+			OutArgs[0] = (IPTR)AliasNode->lv_Node.ln_Name;
+			OutArgs[1] = (IPTR)&Buffer2[0];
+			OutArgs[2] = (IPTR)NULL;
+			VPrintf("%-20s\t%-20s\n", &OutArgs[0]);
+		    }    
+		}    
+	    }
+	}
     }
     else
     {
         PrintFault(IoErr(), "Alias");
-
         Return_Value = RETURN_ERROR;
     }
 
-    if (rda)
-        FreeArgs(rda);
+    FreeArgs(rda);
 
-    return (Return_Value);
+    return Return_Value;
 
 } /* main */
+
 
 void GetNewString(STRPTR s, STRPTR d, LONG l)
 {
