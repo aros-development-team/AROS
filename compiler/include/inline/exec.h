@@ -294,7 +294,7 @@
 	, EXEC_BASE_NAME)
 
 #define MakeFunctions(target, functionArray, funcDispBase) \
-	LP3NR(0x5a, MakeFunctions, APTR, target, a0, APTR, functionArray, a1, unsigned long, funcDispBase, a2, \
+	LP3NR(0x5a, MakeFunctions, APTR, target, a0, APTR, functionArray, a1, APTR, funcDispBase, a2, \
 	, EXEC_BASE_NAME)
 
 #define MakeLibrary(funcInit, structInit, libInit, dataSize, segList) \
