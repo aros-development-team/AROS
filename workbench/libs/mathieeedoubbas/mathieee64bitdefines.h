@@ -88,6 +88,15 @@
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
+#define AND64Q(Dest64, Var64) \
+  Dest64 &= Var2_64 ;
+#else
+#define AND64Q(Dest64, Var64) \
+  Set_High32of64(Dest64, (Get_High32of64(Dest64) & Get_High32of64(Var64))); \
+  Set_Low32of64( Dest64, (Get_Low32of64 (Dest64) & Get_Low32of64 (Var64))); 
+#endif
+
+#if defined AROS_64BIT_TYPE || defined __GNUC__
 #define AND64QC(Dest64, Const64_Hi, Const64_Lo, Const64) \
   Dest64 &= Const64 ;
 #else
