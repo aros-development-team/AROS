@@ -64,6 +64,9 @@
 
 #endif
 
+struct PWCallBackArgs;
+typedef STDARGS char * (*PWCALLBACKFUNPTR) (long, long, struct PWCallBackArgs *);
+
 struct BackFillMsg;
 struct NewGadget;
 
@@ -76,6 +79,7 @@ extern void REGARGS FreeVpCM (struct ViewPort *, APTR, BOOL);
 
 extern struct TextFont * REGARGS GetReqFont (struct TextAttr *,
 				struct TextFont *, int *, int *, int);
+extern struct Screen *REGARGS LockPubScreenByAddr (struct Screen *);
 extern struct Screen *REGARGS GetReqScreen (struct NewWindow *,
 				struct Window **, struct Screen *, char *);
 extern void REGARGS DoWaitPointer (struct Window *, int, int);
