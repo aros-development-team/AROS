@@ -1,36 +1,8 @@
 #ifndef SERIAL_INTERN_H
 #define SERIAL_INTERN_H
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.9  2001/10/07 14:26:09  bergers
-    Implemented Write Buffer Empty interrupt handler.
-
-    Revision 1.8  2000/11/03 23:37:44  stegerg
-    oop renaming stuff
-
-    Revision 1.7  2000/09/11 19:15:04  stegerg
-    changes because of callback functions now having an additional param.
-
-    Revision 1.6  2000/03/09 16:55:27  bergers
-    Some bugfixes.
-
-    Revision 1.5  2000/01/12 18:14:04  bergers
-    Update: Support of shared unit. AbortIO() implementation. Bugfixes, clenups etc.
-
-    Revision 1.4  2000/01/09 21:35:13  bergers
-    Update on serial device.
-
-    Revision 1.3  1999/03/08 13:07:51  bergers
-    Update.
-
-    Revision 1.2  1999/03/05 13:29:29  bergers
-    Update.
-
-    Revision 1.1  1999/03/03 04:33:31  bergers
-    Very preliminary version. Doesn't do anything useful yet. (Mainly just to prevent that I erase my harddrive)
-
 
     Desc: Private definitions for Serial device.
     Lang:

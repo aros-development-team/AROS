@@ -1,6 +1,11 @@
 #ifndef  CLIPBOARD_INTERN_H
 #define  CLIPBOARD_INTERN_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/types.h>
 #include <exec/devices.h>
 #include <exec/semaphores.h>
