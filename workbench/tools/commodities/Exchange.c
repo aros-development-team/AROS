@@ -93,12 +93,12 @@
 
 #include <aros/debug.h>
 
-#define  P(x)   
+#define  P(x)   x
 
 struct ExchangeState
 {
     CxObj          *ec_broker;
-    struct MsgPort *ec_msgPort;	     /* Message oort for our broker */
+    struct MsgPort *ec_msgPort;	     /* Message port for our broker */
     struct Catalog *ec_catalog;	     /* Commodities locale catalog */
     struct List     ec_brokerList;   /* Current list of brokers */
 
@@ -115,6 +115,9 @@ struct ExchangeState
     struct Gadget  *ec_cycle;
     struct Gadget  *ec_textGad;
     struct Gadget  *ec_textGad2;
+
+    struct Menu    *ec_menus;
+
 
     /* Values settable via tooltypes/command arguments */
     BOOL       ec_cxPopup;
@@ -140,7 +143,6 @@ BOOL    readShellArgs(struct ExchangeState *ec);
 BOOL    readWBArgs(int argc, char **argv, struct ExchangeState *ec);
 BOOL    getResources(struct ExchangeState *es);
 
-/* TODO: Menus */
 
 int main(int argc, char **argv)
 {
@@ -192,7 +194,7 @@ struct NewBroker exBroker =
     NB_VERSION,
     "Exchange",
     "Commodities Exchange",	/* Should get this from the catalog */
-    "Controls the commodities in the system",  /* -- " -- */
+    "Controls system commodities",  /* -- " -- */
     NBU_UNIQUE | NBU_NOTIFY,	/* One Exchange is enough */
     COF_SHOW_HIDE,		/* nb_Flags */
     0,				/* nb_Pri -- should be set by tooltypes */
@@ -253,6 +255,16 @@ BOOL readWBArgs(int argc, char **argv, struct ExchangeState *ec)
 
     return TRUE;
 }
+
+
+enum { menu_Quit };
+
+static struct NewMenu nm[] =
+{
+    {NM_TITLE, "Project" },
+    {NM_ITEM,  "Quit", "Q", 0, 0, (APTR)menu_Quit },
+    {NM_END}
+};
 
 
 BOOL getResources(struct ExchangeState *ec)
@@ -324,6 +336,10 @@ BOOL getResources(struct ExchangeState *ec)
     if(ec->ec_broker == NULL)
 	return FALSE;
     
+    P(kprintf("Broker: %s Flags: %i\n", ec->ec_broker->co_Ext.co_BExt->bext_Name,
+	      ec->ec_broker->co_Flags));
+
+
     // AttachCxObj(ec->ec_broker, Hotkey("ctrl alt help", ec->ec_hotkeyPort));
 
     if(CxObjError(ec->ec_broker) != 0)
@@ -349,6 +365,14 @@ BOOL getResources(struct ExchangeState *ec)
     if(!initGadgets(ec))
 	return FALSE;
 
+    ec->ec_menus = CreateMenusA(nm, NULL);
+
+    if(ec->ec_menus == NULL)
+	return FALSE;
+
+    if(!LayoutMenusA(ec->ec_menus, ec->ec_visualInfo, NULL))
+	return FALSE;
+	
     ec->ec_window = OpenWindowTags(NULL,
 				   WA_PubScreen,    NULL,
 				   WA_Gadgets,      ec->ec_context,
@@ -360,7 +384,8 @@ BOOL getResources(struct ExchangeState *ec)
 				   WA_IDCMP,        BUTTONIDCMP | CYCLEIDCMP |
 				                    LISTVIEWIDCMP | 
 				                    IDCMP_CLOSEWINDOW |
-				                    IDCMP_GADGETUP,
+				                    IDCMP_GADGETUP |
+				                    IDCMP_MENUPICK,
 				   WA_DragBar,      TRUE,
 				   WA_CloseGadget,  TRUE,
 				   WA_DepthGadget,  TRUE,
@@ -369,6 +394,8 @@ BOOL getResources(struct ExchangeState *ec)
     
     if(ec->ec_window == NULL)
 	return FALSE;
+
+    SetMenuStrip(ec->ec_window, ec->ec_menus);
 
     UnlockPubScreen(NULL, screen);
 
@@ -535,6 +562,8 @@ BOOL initGadgets(struct ExchangeState *ec)
 				    TAG_DONE)) == NULL)
 	return FALSE;
     
+    /* NOTE! GadTools bug: The disabled state for cycle gadgets is not
+       changed when doing a GT_SetGadgetAttrs() */
 
     /* Information window */
     if((ec->ec_textGad = CreateGadget(TEXT_KIND, ec->ec_context,
@@ -563,16 +592,13 @@ BOOL initGadgets(struct ExchangeState *ec)
 
 void freeResources(struct ExchangeState *ec)
 {
-    // ClearMenuStrip(ec->ec_window->MenuStrip);
-
+    ClearMenuStrip(ec->ec_window);
     CloseWindow(ec->ec_window);
 
     P(kprintf("Closed window\n"));
 
-    // FreeMenus(ec->ec_menus);
-
+    FreeMenus(ec->ec_menus);
     FreeGadgets(ec->ec_context);
-
     FreeVisualInfo(ec->ec_visualInfo);
 
     P(kprintf("Freed visualinfo\n"));
@@ -656,10 +682,40 @@ void realMain(struct ExchangeState *ec)
 			GT_ReplyIMsg(msg);
 
 		    } /* case IDCMP_GADGETUP: */
+		    break;
+
+		case IDCMP_MENUPICK:
+		    {
+			struct MenuItem *item;
+			UWORD menuNum = msg->Code;
+			
+			while(menuNum != MENUNULL)
+			{			
+			    item = ItemAddress(ec->ec_menus, menuNum);
+	
+			    if(item != NULL)
+			    {
+				menuNum = item->NextSelect;
+				
+				P(kprintf("Menu selection: %i",
+					  (int)GTMENUITEM_USERDATA(item)));
+
+				switch((LONG)GTMENUITEM_USERDATA(item))
+				{
+				case menu_Quit:
+				    quitNow = TRUE;
+				    break;
+				}
+			    }
+			    else 
+				menuNum = MENUNULL;
+			}
+		    }
+		    break;
 		} /* switch(msg->Class) */
 	    } /* while(GT_GetIMsg()) */
 	} /* if(signals & winSig) */
-
+	
 	if(signals & cxSig)
 	{
 	    CxMsg *cxm;
@@ -672,6 +728,7 @@ void realMain(struct ExchangeState *ec)
 		{
 		    switch(CxMsgID(cxm))
 		    {
+		    case CXCMD_KILL:
 		    case CXCMD_DISAPPEAR:
 			quitNow = TRUE;
 			break;
@@ -733,6 +790,9 @@ void informBroker(LONG command, struct ExchangeState *ec)
 
     brok = getNth(&ec->ec_brokerList, whichGad);
 
+    P(kprintf("Informing the broker <%s>. Reason %d\n", brok->co_Node.ln_Name,
+	      (int)command));
+
     /* We don't care about errors for now */
     CxNotify(brok->co_Node.ln_Name, command);
 }
@@ -775,10 +835,15 @@ void updateInfo(struct ExchangeState *ec)
 	CxObj *broker   = getNth(&ec->ec_brokerList, whichGad);
 	BOOL   showHide = (broker->co_Flags & COF_SHOW_HIDE) == 0;
 
+	P(kprintf("Broker: %s Flags: %i\n", broker->co_Ext.co_BExt->bext_Name,
+		  broker->co_Flags));
+
 	setText(ec->ec_textGad,  (STRPTR)&broker->co_Ext.co_BExt->bext_Title,
 		ec);
 	setText(ec->ec_textGad2, (STRPTR)&broker->co_Ext.co_BExt->bext_Descr,
 		ec);
+
+	P(kprintf("%s show/hide gadgets.\n", showHide ? "Disabling" : "Enabling"));
 	setGadgetState(ec->ec_hideBut, showHide, ec);
 	setGadgetState(ec->ec_showBut, showHide, ec);
 
