@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,13 +20,6 @@
 
 #define DEBUG 1
 #include <aros/debug.h>
-
-/****************************************************************************************/
-
-#define NEWLIST(l)                          	\
-((l)->lh_Head = (struct Node *)&(l)->lh_Tail, 	\
- (l)->lh_Tail = NULL,                         	\
- (l)->lh_TailPred = (struct Node *)(l))
 
 /****************************************************************************************/
 
