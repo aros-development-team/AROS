@@ -2,6 +2,7 @@ CFLAGS = NOVERS gst=all.gst
 LIBCODE =
 
 SUPPORTOBJS = \
+  objs/datatypescache.o \
   objs/dragndrop.o \
   objs/frame.o \
   objs/imspec.o \
@@ -111,6 +112,9 @@ dirs:
 
 all.gst: headers.c
   sc headers.c noobjname makegst all.gst
+
+objs/datatypescache.o: datatypescache.c
+  sc $(CFLAGS) datatypescache.c objname=$@
 
 objs/dragndrop.o: dragndrop.c
   sc $(CFLAGS) dragndrop.c objname=$@
