@@ -21,13 +21,6 @@
 
 #include <devices/input.h>
 
-#if (!defined(__NetBSD__)) && (!defined (__CYGWIN32__))
-#define size_t sys_size_t
-#include <sys/types.h>
-#include <signal.h>
-#undef size_t
-#endif
-
 #include "console_gcc.h"
 #include "consoleif.h"
 
@@ -42,8 +35,8 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 {
     BOOL success = FALSE;
     LONG waitsigs = 0L, wakeupsig, commandsig, inputsig;
-    
-    
+
+
     /* CD input handler puts data into this port */
     struct MsgPort *inputport;
     
