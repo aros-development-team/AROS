@@ -53,6 +53,7 @@
 #include <stddef.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <sys/statfs.h>
 #include <sys/time.h>
 #include <pwd.h>
 
