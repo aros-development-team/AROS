@@ -31,6 +31,8 @@ extern void *ExecFunctions[];
 extern struct Library * PrepareAROSSupportBase (void);
 extern struct Resident Exec_resident; /* Need this for lib_IdString */
 extern void AROS_SLIB_ENTRY(CacheClearU,Exec)();
+extern void AROS_SLIB_ENTRY(TrapHandler,Exec)();
+extern void AROS_SLIB_ENTRY(TaskFinaliser,Exec)();
 
 static APTR allocmem(struct MemHeader *mh, ULONG size)
 {
@@ -119,8 +121,13 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 
     SysBase->Quantum = 4;
 
+    SysBase->TaskTrapCode = AROS_SLIB_ENTRY(TrapHandler,Exec);
+    SysBase->TaskExceptCode = NULL;
+    SysBase->TaskExitCode = AROS_SLIB_ENTRY(TaskFinaliser,Exec);
+    SysBase->TaskSigAlloc = 0xFFFF;
+    SysBase->TaskTrapAlloc = 0;
+
     SysBase->DebugAROSBase = PrepareAROSSupportBase ();
     
     return SysBase;
 }
-

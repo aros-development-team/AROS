@@ -186,9 +186,8 @@ AROS_LH2(struct LIBBASETYPE *, init,
 #warning FIXME: hack to avoid crash in timer_init.c:118
 SysBase->VBlankFrequency = 50;
 
-    /* We have been entered by a call to InitCode(RTF_SINGLETASK,0); */
-
-    /* Create boot task.  Sigh, we actually create a Process sized Task,
+    /*
+	Create boot task.  Sigh, we actually create a Process sized Task,
 	since DOS needs to call things which think it has a Process and
 	we don't want to overwrite memory with something strange do we?
 
@@ -226,29 +225,28 @@ SysBase->VBlankFrequency = 50;
 	t->tc_SPLower = 0;	    /* This is the system's stack */
 	t->tc_SPUpper = (APTR)~0UL;
 	t->tc_Flags |= TF_ETASK;
-	if (t->tc_Flags & TF_ETASK)
+
+	t->tc_UnionETask.tc_ETask = AllocVec
+	(
+	    sizeof(struct IntETask),
+	    MEMF_ANY|MEMF_CLEAR
+	);
+
+	if (!t->tc_UnionETask.tc_ETask)
 	{
-	    t->tc_UnionETask.tc_ETask = AllocTaskMem(t
-		, sizeof(struct IntETask)
-		, MEMF_ANY|MEMF_CLEAR
-	    );
+	    kprintf("Not enough memory for first task\n");
+	    Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
+	}
 
-	    if (!t->tc_UnionETask.tc_ETask)
-	    {
-		kprintf("Not enough memory for first task\n");
-		Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
-	    }
+	GetIntETask(t)->iet_Context = AllocTaskMem(t
+	    , SIZEOF_ALL_REGISTERS
+	    , MEMF_PUBLIC|MEMF_CLEAR
+	);
 
-	    GetIntETask(t)->iet_Context = AllocTaskMem(t
-		, SIZEOF_ALL_REGISTERS
-		, MEMF_PUBLIC|MEMF_CLEAR
-	    );
-
-	    if (!GetIntETask(t)->iet_Context)
-	    {
-		kprintf("Not enough memory for first task\n");
-		Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
-	    }
+	if (!GetIntETask(t)->iet_Context)
+	{
+	    kprintf("Not enough memory for first task\n");
+	    Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
 	}
 
 	SysBase->ThisTask = t;
