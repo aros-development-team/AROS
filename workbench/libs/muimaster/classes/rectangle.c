@@ -166,7 +166,7 @@ static ULONG Rectangle_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *
 }
 
 /**************************************************************************
- MUIM_Cleanuo
+ MUIM_Cleanup
 **************************************************************************/
 static ULONG Rectangle_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
