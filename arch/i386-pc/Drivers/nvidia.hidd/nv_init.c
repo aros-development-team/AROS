@@ -665,7 +665,7 @@ void vbuffer_free(struct nv_staticdata *nsd, APTR buff, int size)
 
 /** Class initialization */
 
-extern OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
+static OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
 
 static struct OOP_ABDescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
