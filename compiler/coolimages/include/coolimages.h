@@ -69,6 +69,7 @@ extern const struct CoolImage cool_warnimage;
 extern const struct CoolImage cool_diskimage;
 extern const struct CoolImage cool_switchimage;
 extern const struct CoolImage cool_monitorimage;
+extern const struct CoolImage cool_mouseimage;
 extern const struct CoolImage cool_infoimage;
 extern const struct CoolImage cool_askimage;
 extern const struct CoolImage cool_keyimage;

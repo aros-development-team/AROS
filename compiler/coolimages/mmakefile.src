@@ -15,6 +15,7 @@ FILES := saveimage \
 	 diskimage \
 	 switchimage \
 	 monitorimage \
+	 mouseimage \
 	 infoimage \
 	 askimage \
 	 keyimage \
