@@ -8,7 +8,8 @@ FILES := \
 	all-tests \
 	chdir \
 	strchr \
-	stpblk
+	stpblk \
+	spawnv
 
 EXEDIR := $(AROSDIR)/test/clib
 
