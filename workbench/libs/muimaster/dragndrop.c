@@ -24,7 +24,6 @@
 extern struct Library *MUIMasterBase;
 
 #ifdef __MAXON__
-#include <iostream.h>
 
 ULONG IconControl( struct DiskObject *icon, ... )
 {
