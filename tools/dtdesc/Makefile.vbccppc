@@ -1,0 +1,24 @@
+# Makefile for dtdesc
+
+.SUFFIXES: .c.o
+
+CC = \
+	vc
+
+CFLAGS = +ppc -Ic_iff/
+
+.c.o:
+	$(CC) $(CFLAGS) -c $*.c -o $@
+
+all: createdtdesc examinedtdesc
+
+createdtdesc: createdtdesc.o
+	vlink -belf32powerup -nostdlib -Lvlibppc: -Ljd:aros/dtdesc/c_iff/ vlibppc:startup.o createdtdesc.o -lc_iff -lvc -lpowerup -o createdtdesc
+
+examinedtdesc: examinedtdesc.o
+	vlink -belf32powerup -nostdlib -Lvlibppc: -Ljd:aros/dtdesc/c_iff/ vlibppc:startup.o examinedtdesc.o -lc_iff -lvc -lpowerup -o examinedtdesc
+
+clean:
+	delete FORCE #?.o
+	delete FORCE examinedtdesc
+	delete FORCE createdtdesc

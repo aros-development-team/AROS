@@ -1,0 +1,51 @@
+# Makefile for c_iff
+
+.SUFFIXES: .c.o
+
+CC = \
+	vc
+
+CFLAGS =
+
+RM = delete FORCE
+
+OBJS = \
+	checkiff.o \
+	closeiff.o \
+	endchunk.o \
+	filesize.o \
+	fixiffsize.o \
+	newchunk.o \
+	newiff.o \
+	newsubform.o \
+	openiff.o \
+	readchunkdata.o \
+	readchunkheader.o \
+	skipchunkdata.o \
+	writechunkdata.o
+
+.c.o:
+	$(CC) $(CFLAGS) -c $*.c -o $@
+
+all: c_iff.lib
+doc: c_iff.txt
+
+c_iff.lib: $(OBJS)
+	delete FORCE c_iff.lib
+	join $(OBJS) as $@
+
+c_iff.txt:
+	perl autodoc.pl *.c >c_iff.txt
+
+example: example.o c_iff.lib hot.iff
+	phxlnk from vlib:startup.o example.o c_iff.lib vlib:mieee.lib vlib:vc.lib vlib:amiga.lib to example
+
+$(OBJS): c_iff.h
+
+clean:
+	$(RM) c_iff.lib
+	$(RM) #?.o
+	$(RM) c_iff.txt
+	$(RM) example
+	$(RM) test1.iff
+

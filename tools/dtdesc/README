@@ -1,0 +1,33 @@
+dtdesc - The DataType Descriptor Tools
+
+Here you have two tools to create and disassemble DataType descriptors.
+DataType descriptors are those little files in Devs:DataTypes/ , which
+are used by the DataType system to recognice the type of a file.
+DataType descriptors are IFF-FORMs of type DTYP.
+They contain different chunks. The most important are:
+
+NAME : Name of the DataType, in most cases identical to the filename
+
+FVER : Amiga-version-string (optional)
+
+DTHD : DataTypeHeader The most important chunk.
+       Contains a struct DataTypeHeader as descriped in <datatypes/datatypes.h>
+       and the strings for this struct.
+
+DTCD : Code-chunk This chunk contains executable code. So you can have
+       a function to decide the type of a file.
+       Because this is not portable to AROS, it is not supported by dtdesc.
+
+For more informations see the header <datatypes/datatypes.h> .
+
+examinedtdesc is used to disassemble an existing DataType descriptor.
+It accepts as its only argument the filename of a DataType descriptor.
+And puts out a DataType description named descriptor.dtd .
+This DataType description is a ASCII-file, for details see the file FORMAT .
+
+createdtdesc is a tool to create a DataType descriptor.
+It accepts as its only argument the filename of a DataType description (*.dtd).
+And puts out the DataType descriptor, named after the "Name" keyword inside.
+Yes I know my naming convention is a bit confusing, come with better names!
+You can feed createdtdesc with the output of examinedtdesc.
+

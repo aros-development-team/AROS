@@ -1,0 +1,51 @@
+# Makefile for c_iff
+
+.SUFFIXES: .c.o
+
+CC = \
+	vc
+
+CFLAGS = +ppc
+
+RM = delete FORCE
+
+OBJS = \
+	checkiff.o \
+	closeiff.o \
+	endchunk.o \
+	filesize.o \
+	fixiffsize.o \
+	newchunk.o \
+	newiff.o \
+	newsubform.o \
+	openiff.o \
+	readchunkdata.o \
+	readchunkheader.o \
+	skipchunkdata.o \
+	writechunkdata.o
+
+.c.o:
+	$(CC) $(CFLAGS) -c $*.c -o $@
+
+all: libc_iff.a
+doc: c_iff.txt
+
+libc_iff.a: $(OBJS)
+	$(RM) libc_iff.a
+	ar -q $@ $(OBJS)
+
+c_iff.txt:
+	perl autodoc.pl *.c >c_iff.txt
+
+example: example.o libc_iff.a hot.iff
+	 vlink -belf32powerup -nostdlib -Lvlibppc: -Ljd:aros/dtdesc/c_iff/ vlibppc:startup.o example.o -lc_iff -lvc -lpowerup -o example
+
+$(OBJS): c_iff.h
+
+clean:
+	$(RM) libc_iff.a
+	$(RM) #?.o
+	$(RM) c_iff.txt
+	$(RM) example
+	$(RM) test1.iff
+
