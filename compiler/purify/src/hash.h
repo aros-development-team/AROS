@@ -43,6 +43,7 @@ void Purify_SetMemoryFlags (MemHash * mem, int offset, int size, int flag);
 void Purify_ModifyMemoryFlags (MemHash * mem, int offset, int size, int flag,
     int mask);
 MemHash * Purify_FindMemory (const void * mem);
+MemHash * Purify_FindNextMemory (const void * mem, int * offset);
 int Purify_CheckMemoryAccess (const void * mem, int size, int access);
 void Purify_PrintMemory (void);
 

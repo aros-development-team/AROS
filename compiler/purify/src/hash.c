@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <assert.h>
+#include <limits.h>
 #include "hash.h"
 #include "util.h"
 #include "error.h"
-#include "malloc.h"
+#include "memory.h"
 #include "debug.h"
 
 MemHashTable memHash;
@@ -251,6 +252,7 @@ void Purify_PrintMemory (void)
 
 		putchar ('\n');
 
+#if 0
 #define WIDTH	56
 
 		for (cnt=0,t=0; t<node->size; t++,cnt++)
@@ -271,8 +273,56 @@ void Purify_PrintMemory (void)
 
 		if (((t-1) & WIDTH) != WIDTH-1)
 		    putchar ('\n');
+#endif
 	    }
 	}
     }
 }
 
+#ifndef ABS
+#   define ABS(x)       (((x) < 0) ? -(x) : (x))
+#endif
+
+MemHash * Purify_FindNextMemory (const void * mem, int * offsetptr)
+{
+    MemHash * node, * next;
+    int i, offset, o;
+
+    next = NULL;
+    offset = INT_MAX;
+
+    for (i=0; i<256; i++)
+    {
+	for (node = memHash[i];
+	    node;
+	    node=node->next
+	)
+	{
+	    o = (long)mem - (long)node->mem;
+
+	    if (o > 0)
+	    {
+		if (o < node->size)
+		{
+		    *offsetptr = o;
+		    return node;
+		}
+		else
+		{
+		    o -= node->size;
+		}
+	    }
+
+	    if (ABS(o) < ABS(offset)
+		|| (ABS(o) == ABS(offset) && o > 0)
+	    )
+	    {
+		offset = o;
+		next = node;
+	    }
+	}
+    }
+
+    *offsetptr = offset;
+    return next;
+}
