@@ -24,7 +24,6 @@ LIBBASEFILES := \
 	locale \
         partition \
 	realtime \
-        timer \
 	utility \
 	workbench \
 	muimaster

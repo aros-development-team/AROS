@@ -11,7 +11,7 @@
 int utimes(const char *file, struct timeval tvp[2])
 {
     struct DateStamp ds;
-    ULONG t = (ULONG)tvp[1].tv_secs;
+    ULONG t = (ULONG)tvp[1].tv_sec;
 
     ds.ds_Days   = t / (60*60*24);
     ds.ds_Minute = (t / 60) % (60*24);

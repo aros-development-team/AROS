@@ -10,11 +10,14 @@
 */
 
 
+#define timeval aros_timeval
 #include <dos/dos.h>
 #include <exec/types.h>
 #include <exec/tasks.h>
 #include <exec/semaphores.h>
 #include <proto/exec.h>
+#include <devices/timer.h>
+#undef timeval
 
 #include <sys/types.h>
 
@@ -36,7 +39,7 @@ struct AroscUserData
     void **stderrptr;
     void *startup_jmp_bufptr;
     void *startup_errorptr;
-    
+
     /* these fields are for internal use only */
     void *env_list;
     struct MinList stdio_files;
@@ -67,6 +70,11 @@ struct AroscUserData
     int		*daylight;
     long int	*timezone;
     char	***tzname;
+
+    /* gettimeofday */
+    struct timerequest  timereq;
+    struct MsgPort      timeport;
+    struct Device      *TimerBase;
 };
 
 extern struct Library *aroscbase;
@@ -117,6 +125,9 @@ extern struct Library *aroscbase;
 #define __mb_cur_max                          (clib_userdata->mb_cur_max)
 #define	daylight                              (clib_userdata->daylight)
 #define tzname		                      (clib_userdata->tzname)
+#define __timereq                             (clib_userdata->timereq)
+#define __timeport                            (clib_userdata->timeport)
+#define TimerBase                             (clib_userdata->TimerBase)
 
 /* Special, there is a type called timezone as well */
 #define _timezone                             (clib_userdata->timezone)
