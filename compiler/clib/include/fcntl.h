@@ -10,7 +10,7 @@
 */
 
 /* Prototypes */
-int fcntl (int fd, int cmd, int arg);
+int fcntl (int fd, int cmd, ...);
 int open  (const char * filename, int flags, ...);
 int creat (const char * filename, int mode);
 

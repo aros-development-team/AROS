@@ -7,11 +7,12 @@
 
 #include <fcntl.h>
 #include <errno.h>
+#include <stdarg.h>
 
 #include "__errno.h"
 #include "__open.h"
 
-int fcntl(int fd, int cmd, int arg)
+int fcntl(int fd, int cmd, ...)
 {
     GETUSER;
     fdesc *desc = __getfdesc(fd);
@@ -29,6 +30,13 @@ int fcntl(int fd, int cmd, int arg)
 
 	case F_SETFL:
 	    {
+	        va_list ap;
+	        int arg;
+    
+	        va_start(ap, cmd);
+	        arg = va_arg(ap, int);
+	        va_end(ap);
+  
 	        int oldmode = __oflags2amode(desc->flags & ~(O_NONBLOCK|O_APPEND|O_ASYNC));
 		arg &= (O_NONBLOCK|O_APPEND|O_ASYNC);
 
