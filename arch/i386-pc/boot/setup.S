@@ -265,6 +265,16 @@ good_sig:
 		sub	ax,#DELTA_INITSEG ! aka #INITSEG
 		mov	ds,ax
 
+! clear setup area!!!!! For test only!
+
+		mov	es,ax
+		mov	cx,#256
+		mov	di,#0
+		mov	ax,#0
+		cld
+		rep
+		stosw
+
 ! check if an old loader tries to load a big-kernel
 		seg cs
 		test	byte ptr loadflags,#LOADED_HIGH ! Have we a big kernel?
@@ -330,7 +340,6 @@ oldstylemem:
 
 		xor	ax,ax
 		mov	ds,ax
-		seg	ds
 		lds	si,(4*0x41)
 		mov	ax,cs
 		sub	ax,#DELTA_INITSEG
@@ -347,7 +356,6 @@ oldstylemem:
 
 		xor	ax,ax
 		mov	ds,ax
-		seg	ds
 		lds	si,(4*0x46)
 		pop	cx
 		pop	es
@@ -408,7 +416,7 @@ no_mca:
 
 		mov	ax,cs
 		sub	ax,#DELTA_INITSEG
-		mov	dx,ax
+		mov	ds,ax
 		mov	(0x1ff),#0	! default is no pointing device
 		int	0x11		! int 0x11: equipment determination
 		test	al,#0x04	! check if pointing device installed
@@ -428,8 +436,6 @@ no_psmouse:
 		cmp	bx,#0x504d	! check for "PM" signature
 		jne	done_apm_bios	! no signature -> no APM BIOS
 		
-		mov	(64),ax		! APM version
-		mov	(76),cx		! APM flags
 		and	cx,#0x02	! Is 32-bit supported?
 		je	done_apm_bios	! no... :-((
 		
@@ -448,8 +454,28 @@ no_psmouse:
 		mov	(74),dx		! BIOS data segment
 		mov	(78),si		! BIOS code segment length
 		mov	(80),di		! BIOS data segment length
+!
+! Redo the installation check as the 32 bit connect
+! modifies the flags returned on some BIOSs
+!
+		mov	ax,#0x05300	! APM BIOS installation check
+		xor	bx,bx
+		int	0x15
+		jc	apm_disconnect	! error -> should not happen, tidy up
+
+		cmp	bx,#0x0504d	! check for "PM" signature
+		jne	apm_disconnect	! no signature -> should not happen, tidy up
+
+		mov	[64],ax		! record the APM BIOS version
+		mov	[76],cx		!	and flags
+
 		jmp	done_apm_bios
 
+apm_disconnect:
+		mov	ax,#0x05304	! Disconnect
+		xor	bx,bx
+		int	0x15		! ignore return code
+		jmp	done_apm_bios
 no_32_apm_bios:
 		and	(76),#0xfffd	! remove 32 bit support flag
 done_apm_bios:
@@ -480,7 +506,7 @@ rmodeswtch_end:
 		seg cs
 		test	byte ptr loadflags,#LOADED_HIGH
 		jz	do_move0	! we have a normal low loaded zImage
-				! we have a high loaded big kernel
+					! we have a high loaded big kernel
 		jmp	end_move	! ... and we skip moving
 
 do_move0:
@@ -759,11 +785,11 @@ bootsect_panic_mess:
 */
 
 empty_8042:
-		push    cx
-		mov     cx,#0xFFFF
+		push    ecx
+		mov     ecx,#0xFFFFFF
 
 empty_8042_loop:
-		dec     cx
+		dec     ecx
 		jz      empty_8042_end_loop
 
 		call	delay
@@ -777,7 +803,7 @@ no_output:
 		test	al,#2		! is input buffer full?
 		jnz	empty_8042_loop	! yes - loop
 empty_8042_end_loop:
-	        pop     cx
+	        pop     ecx
 		ret
 
 ! Delay after IO
