@@ -33,6 +33,7 @@ void freeitext(struct GadToolsBase_intern *GadToolsBase,
     FreeVec(itext);
 }
 
+/* Create a struct IntuiText accordings to a struct NewGadget */
 struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
 			    struct NewGadget *ng)
 {
@@ -72,7 +73,7 @@ struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
         it->ITextFont->ta_YSize = ng->ng_TextAttr->ta_YSize;
         it->ITextFont->ta_Style = ng->ng_TextAttr->ta_Style;
         it->ITextFont->ta_Flags = ng->ng_TextAttr->ta_Flags;
-    } else
+    } else /* (!ng->ng_TextAttr) */
     {
         int len = strlen(dri->dri_Font->tf_Message.mn_Node.ln_Name) + 1;
 
@@ -176,15 +177,15 @@ BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
             y = gad->TopEdge + (gad->Height - height) / 2 + 1;
         } else if (labelplace == GV_LabelPlace_Above)
         {
-            x = gad->LeftEdge - (width - gad->Width) / 2;
+            x = gad->LeftEdge + (gad->Width - width) / 2;
             y = gad->TopEdge - height - 2;
         } else if (labelplace == GV_LabelPlace_Below)
         {
-            x = gad->LeftEdge - (width - gad->Width) / 2;
+            x = gad->LeftEdge + (gad->Width - width) / 2;
             y = gad->TopEdge + gad->Height + 3;
         } else if (labelplace == GV_LabelPlace_In)
         {
-            x = gad->LeftEdge - (width - gad->Width) / 2;
+            x = gad->LeftEdge + (gad->Width - width) / 2;
             y = gad->TopEdge + (gad->Height - height) / 2 + 1;
         } else /* GV_LabelPlace_Left */
         {
@@ -192,7 +193,6 @@ BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
             y = gad->TopEdge + (gad->Height - height) / 2 + 1;
         }
 
-        y += rport->Font->tf_Baseline;
         if (gad->Flags & GFLG_LABELSTRING)
         {
             SetABPenDrMd(rport, 1, 0, JAM1);
