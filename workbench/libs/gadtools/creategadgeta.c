@@ -97,9 +97,14 @@
     stdgadtags[TAG_Top].ti_Data = ng->ng_TopEdge;
     stdgadtags[TAG_Width].ti_Data = ng->ng_Width;
     stdgadtags[TAG_Height].ti_Data = ng->ng_Height;
-    stdgadtags[TAG_IText].ti_Data = (IPTR)makeitext(GTB(GadToolsBase), ng);
-    if (!stdgadtags[TAG_IText].ti_Data)
-        return (NULL);
+    if (ng->ng_GadgetText)
+    {
+    	stdgadtags[TAG_IText].ti_Data = (IPTR)makeitext(GTB(GadToolsBase), ng);
+    	if (!stdgadtags[TAG_IText].ti_Data)
+            return (NULL);
+    } else {
+    	stdgadtags[TAG_IText].ti_Tag = TAG_IGNORE;
+    }
     stdgadtags[TAG_Previous].ti_Data = (IPTR)previous;
     stdgadtags[TAG_ID].ti_Data = ng->ng_GadgetID;
     stdgadtags[TAG_DrawInfo].ti_Data = (IPTR)(VI(ng->ng_VisualInfo)->vi_dri);
