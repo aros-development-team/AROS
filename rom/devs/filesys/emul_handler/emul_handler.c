@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Filesystem that accesses an underlying POSIX filesystem.
@@ -32,6 +32,7 @@
 #include <dos/filesystem.h>
 #include <dos/exall.h>
 #include <dos/dosasl.h>
+#include <dos/bptr.h>
 #include <proto/dos.h>
 #include <proto/expansion.h>
 #include <aros/libcall.h>
@@ -884,6 +885,12 @@ static LONG startup(struct emulbase *emulbase)
 			/* Make sure that the root directory is valid */
 			if(!stat(fhv->name,&st) && S_ISDIR(st.st_mode))
 			{
+			    #define DEVNAME "EMU"
+			    #define VOLNAME "Workbench"
+			    
+			    static const char *devname = DEVNAME;
+			    static const char *volname = VOLNAME;
+			    
 			    fhv->fd = (long)opendir(fhv->name);
 
 			    fhi->type = FHD_FILE;
@@ -902,39 +909,42 @@ static LONG startup(struct emulbase *emulbase)
 
 			    /*
 				Allocate space for the string from same mem
-				"Workbench" total 11 bytes (9 + NULL + length)
+				Add 1 for BSTR size.
 				Add an extra 4 for alignment purposes.
 			    */
 			    ret = ERROR_NO_FREE_STORE;
 
-			    dlv = AllocMem(sizeof(struct DeviceNode) + 15,
+			    dlv = AllocMem(sizeof(struct DeviceNode) + 4 + sizeof(DEVNAME) + 1,
 					   MEMF_CLEAR | MEMF_PUBLIC);
 
-			    dlv2 = AllocMem(sizeof(struct DeviceNode) + 30,
+			    dlv2 = AllocMem(sizeof(struct DeviceNode) + 4 + sizeof(VOLNAME) + 1,
 					    MEMF_CLEAR | MEMF_PUBLIC);
 
 			    if(dlv != NULL && dlv2 != NULL)
 			    {
 				STRPTR s;
 				STRPTR s2;
-
+    	    	    	    	WORD   i;
+				
 				/*  We want s to point to the first 4-byte
 				    aligned memory after the structure.
 				*/
 				s = (STRPTR)(((IPTR)dlv + sizeof(struct DeviceNode) + 4) & ~3);
 				s2 = (STRPTR)(((IPTR)dlv2 + sizeof(struct DeviceNode) + 4) & ~3);
 				
-
-				CopyMem("Foreign harddisk", &s[1], 17);
-				*s = 16;
-
+    	    	    	    	for(i = 0; i < sizeof(DEVNAME) - 1; i++)
+				{
+				    AROS_BSTR_putchar(s, i, devname[i]);
+				}
+				AROS_BSTR_setstrlen(s, sizeof(DEVNAME) - 1);
+				
 				dlv->dn_Type    = DLT_DEVICE;
 				dlv->dn_Unit    = (struct Unit *)fhv;
 				dlv->dn_Device  = &emulbase->device;
 				dlv->dn_Handler = NULL;
 				dlv->dn_Startup = NULL;
 				dlv->dn_OldName = MKBADDR(s);
-				dlv->dn_NewName = &s[1];
+				dlv->dn_NewName = AROS_BSTR_ADDR(dlv->dn_OldName);
 
 				AddBootNode(0, 0, dlv, NULL);
 
@@ -944,8 +954,11 @@ static LONG startup(struct emulbase *emulbase)
 				// AddDosEntry(MakeDosEntry("Workbench", 
 				//			    DLT_VOLUME));
 
-				CopyMem("Workbench", &s2[1], 10);
-				*s2 = 9;
+   	    	    	    	for(i = 0; i < sizeof(VOLNAME) - 1; i++)
+				{
+				    AROS_BSTR_putchar(s2, i, volname[i]);
+				}
+				AROS_BSTR_setstrlen(s2, sizeof(VOLNAME) - 1);
 
 				dlv2->dn_Type    = DLT_VOLUME;
 				dlv2->dn_Unit    = (struct Unit *)fhv;
@@ -953,7 +966,7 @@ static LONG startup(struct emulbase *emulbase)
 				dlv2->dn_Handler = NULL;
 				dlv2->dn_Startup = NULL;
 				dlv2->dn_OldName = MKBADDR(s2);
-				dlv2->dn_NewName = &s2[1];
+				dlv2->dn_NewName = AROS_BSTR_ADDR(dlv2->dn_OldName);
 
 				/* Make sure this is not booted from */
 				AddBootNode(-128, 0, dlv2, NULL);
