@@ -55,9 +55,7 @@ FILES	:= \
     easyrequest \
     extendfonttags \
     fastrand \
-    fprintf \
     freeievents \
-    fwritef \
     getdtattrs \
     getextsprite \
     getrexxvar \
@@ -89,7 +87,6 @@ FILES	:= \
     openscreentags \
     openwindowtags \
     openworkbenchobject \
-    printf \
     rangerand \
     reallocvec \
     refreshdtobject \
