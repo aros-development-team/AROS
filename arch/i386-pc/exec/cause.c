@@ -20,7 +20,7 @@
 
 #include "etask.h"
 
-static char softblock;
+extern char softblock;
 
 #define get_cs() \
 	({  short __value; \
@@ -35,6 +35,8 @@ AROS_LH1(void, Cause,
 
     UBYTE pri;
 
+    Disable();
+
     /* Check to ensure that this node is not already in a list. */
     if( softint->is_Node.ln_Type != NT_SOFTINT )
     {
@@ -43,41 +45,14 @@ AROS_LH1(void, Cause,
         pri = (softint->is_Node.ln_Pri + 0x20) >> 4;
 
         /* We are accessing an Exec list, protect ourselves. */
-        Disable();
         AddTail((struct List *)&SysBase->SoftInts[pri], (struct Node *)softint);
         softint->is_Node.ln_Type = NT_SOFTINT;
         SysBase->SysFlags |= SFF_SoftInt;
-        Enable();
 
-        if (!softblock)
-		{
-			/* If we are in supervisor mode we simply call InterruptServer.
-			Cause software interrupt (int 0x80) otherwise */
-			if (get_cs())
-			{
-				/* Called from user mode. We can do Cause in normal way */
-				__asm__ __volatile__ ("movl $0,%%eax\n\tint $0x80":::"eax","memory");
-			}
-			else
-			{
-				/* Cause() inside supervisor mode. We will call IntServer directly
-				no matter it is normal irq or Supervisor() call */
-				struct IntVector *iv;
-				iv = &SysBase->IntVects[INTB_SOFTINT];
-
-			    if (iv->iv_Code)
-			    {
-			        AROS_UFC5(void, iv->iv_Code,
-			            AROS_UFCA(ULONG, 0, D1),
-			            AROS_UFCA(ULONG, 0, A0),
-			            AROS_UFCA(APTR, NULL, A1),
-			            AROS_UFCA(APTR, iv->iv_Code, A5),
-			            AROS_UFCA(struct ExecBase *, SysBase, A6)
-			        );
-			    }
-			}
-		}
+	if (!softblock) __asm__ __volatile__ ("movl $0,%%eax\n\tint $0x80":::"eax","memory");
     }
+
+    Enable();
 
     AROS_LIBFUNC_EXIT
 } /* Cause() */
@@ -87,50 +62,12 @@ AROS_LH1(void, Cause,
 #endif
 #define SysBase (*(struct ExecBase **)4UL)
 
-void SaveRegs(struct Task *task, struct pt_regs *regs)
-{
-	/* Copy registers from struct pt_regs into iet_Context */
-    ULONG *dst = (ULONG*)GetIntETask(task)->iet_Context;
-    ULONG *src = (ULONG*)regs;
-    int i;
-
-	/* Save task's SP register */
-	task->tc_SPReg = regs->esp;
-
-    for (i=0; i<(SIZEOF_ALL_REGISTERS/4); i++, src++, dst++)
-        *dst = *src;
-
-#warning: TODO: Add FPU handling
-}
-
-void RestoreRegs(struct Task *task, struct pt_regs *regs)
-{
-    /* Copy registers from iet_Context into struct pt_regs */
-    ULONG *src = (ULONG*)GetIntETask(task)->iet_Context;
-    ULONG *dst = (ULONG*)regs;
-    int i;
-
-    for (i=0; i<(SIZEOF_ALL_REGISTERS/4); i++, src++, dst++)
-        *dst = *src;
-
-#warning: TODO: Add FPU handling
-}
-
 #define SC_ENABLE(regs)		(regs.eflags |= 0x200)
 #define SC_DISABLE(regs)	(regs.eflags &= ~0x200)
 
 asmlinkage void sys_Cause(struct pt_regs regs)
 {
     struct IntVector *iv;
-
-    /* Hmm, interrupts are nesting, not a good idea... */
-    if(!user_mode(&regs))
-    {
-#if NOISY
-        kprintf("Illegal Supervisor\n");
-#endif
-        return;
-    }
 
     iv = &SysBase->IntVects[INTB_SOFTINT];
 
@@ -160,51 +97,6 @@ asmlinkage void sys_Cause(struct pt_regs regs)
             AROS_UFCA(struct ExecBase *, SysBase, A6)
         );
     }
-
-    /* Has an interrupt told us to dispatch when leaving */
-    if (SysBase->AttnResched & 0x8000)
-    {
-        SysBase->AttnResched &= ~0x8000;
-
-        /* Save registers for this task (if there is one...) */
-        if (SysBase->ThisTask && SysBase->ThisTask->tc_State != TS_REMOVED)
-            SaveRegs(SysBase->ThisTask, &regs);
-
-        /* Tell exec that we have actually switched tasks... */
-        Dispatch ();
-
-        /* Get the registers of the old task */
-        RestoreRegs(SysBase->ThisTask, &regs);
-
-        /* Make sure that the state of the interrupts is what the task
-           expects.
-        */
-        if (SysBase->IDNestCnt < 0)
-            SC_ENABLE(regs);
-        else
-            SC_DISABLE(regs);
-
-        /* Ok, the next step is to either drop back to the new task, or
-            give it its Exception() if it wants one... */
-
-        if (SysBase->ThisTask->tc_Flags & TF_EXCEPT)
-        {
-            Disable();
-            Exception();
-            Enable();
-        }
-
-
-#if DEBUG_TT
-        if (lastTask != SysBase->ThisTask)
-        {
-            kprintf (stderr, "TT %s\n", SysBase->ThisTask->tc_Node.ln_Name);
-            lastTask = SysBase->ThisTask;
-        }
-#endif
-    }
-
-    /* Leave the interrupt. */
 }
 
 #undef SysBase
@@ -259,4 +151,3 @@ AROS_UFH5(void, SoftIntDispatch,
         softblock = 0;
     }
 }
-
