@@ -12,14 +12,9 @@ FILES := funcs
 #MM     includes-copy
 #MM workbench-libs-oss-unix : linklibs
 
+USER_CFLAGS := -I$(AROS_INCLUDES) -D__AROS__
 %build_module mmake=workbench-libs-oss-unix modname=oss \
     modtype=library files="$(FILES) oss_init" linklibname=ossshared \
-    uselibs="amiga rom m hiddstubs"
-
-%rule_compile basename=funcs targetdir=$(GENDIR)/$(CURDIR) \
-    compiler=host cflags="$(CFLAGS) -I$(AROS_INCLUDES) -D__AROS__"
-
-%rule_ref basename=funcs cflags="$(strip $(CFLAGS)) -I$(GENINCDIR)" \
-    targetdir=$(GENDIR)/$(CURDIR) compiler=host
+    uselibs="amiga rom m hiddstubs" compiler=host
 
 %common
