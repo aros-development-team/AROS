@@ -122,7 +122,7 @@ __asm LONG MUI_Error(VOID);
 __asm VOID MUI_FreeAslRequest(register __a0 APTR requester);
 __asm VOID MUI_FreeClass(register __a0 struct IClass *classptr);
 __asm struct IClass *MUI_GetClass(register __a0 char *classname);
-__asm BOOL MUI_Layout(register __a0 Object *obj,register __d1 LONG left,register __d2 LONG top,register __d3 LONG width,register __d4 LONG height, register __d5 ULONG flags);
+__asm BOOL MUI_Layout(register __a0 Object *obj, register __d0 LONG left, register __d1 LONG top, register __d2 LONG width, register __d3 LONG height, register __d4 ULONG flags);
 __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 ULONG *params);
 __asm Object *MUI_NewObjectA(register __a0 char *classname,register __a1 struct TagItem *tags);
 __asm LONG MUI_ObtainPen(register __a0 struct MUI_RenderInfo *mri, register __a1 struct MUI_PenSpec *spec, register __d0 ULONG flags);
