@@ -151,7 +151,7 @@ AROS_LH2(LIBBASETYPEPTR, init,
 	{
 	    LIBBASE->dl_TimerBase = LIBBASE->dl_TimerIO.tr_node.io_Device;
 
-#ifndef CREATE_ROM
+#ifndef AROS_CREATE_ROM
 	    *dosPtr = LIBBASE;
 #endif
 	    AddLibrary((struct Library *)LIBBASE);
