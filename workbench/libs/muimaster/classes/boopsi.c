@@ -136,6 +136,7 @@ static ULONG Boopsi_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_BoopsiData *data = INST_DATA(cl, obj);
     if (data->boopsi_taglist) FreeTagItems(data->boopsi_taglist);
+    DoSuperMethodA(cl,obj,msg);
     return 0;
 }
 
