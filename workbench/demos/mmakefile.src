@@ -34,6 +34,7 @@ FILES	:= \
     forkbomb \
     font2c \
     gtdemo \
+    gtmultiselect \
     helloworld \
     inquire \
     intuitext \
