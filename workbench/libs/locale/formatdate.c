@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -10,9 +10,7 @@
 #include <exec/types.h>
 #include <utility/hooks.h>
 #include <utility/date.h>
-#define __NOLIBBASE__
 #include <proto/utility.h>
-#undef __NOLIBBASE__
 #include <clib/alib_protos.h>
 
 #include <stdio.h>
