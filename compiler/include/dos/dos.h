@@ -15,8 +15,8 @@
 #ifndef DOS_BPTR_H
 #   include <dos/bptr.h>
 #endif
-#ifndef LIBRARIES_IFFPARSE_H
-#   include <libraries/iffparse.h>
+#ifndef AROS_MACROS_H
+#   include <aros/macros.h>
 #endif
 
 /* The name of the dos.library. Use this constant instead of the string. */
@@ -149,16 +149,16 @@ struct InfoData
 /* Filesystem types as used for id_DiskType. These are multi-character
    constants of identifier strings. They are self-descriptive. */
 #define ID_NO_DISK_PRESENT  (-1L)
-#define ID_UNREADABLE_DISK  MAKE_ID('B','A','D',0)
-#define ID_DOS_DISK         MAKE_ID('D','O','S',0)
-#define ID_FFS_DISK         MAKE_ID('D','O','S',1)
-#define ID_INTER_DOS_DISK   MAKE_ID('D','O','S',2)
-#define ID_INTER_FFS_DISK   MAKE_ID('D','O','S',3)
-#define ID_FASTDIR_DOS_DISK MAKE_ID('D','O','S',4)
-#define ID_FASTDIR_FFS_DISK MAKE_ID('D','O','S',5)
-#define ID_NOT_REALLY_DOS   MAKE_ID('N','D','O','S')
-#define ID_KICKSTART_DISK   MAKE_ID('K','I','C','K')
-#define ID_MSDOS_DISK       MAKE_ID('M','S','D',0)
+#define ID_UNREADABLE_DISK  AROS_MAKE_ID('B','A','D',0)
+#define ID_DOS_DISK         AROS_MAKE_ID('D','O','S',0)
+#define ID_FFS_DISK         AROS_MAKE_ID('D','O','S',1)
+#define ID_INTER_DOS_DISK   AROS_MAKE_ID('D','O','S',2)
+#define ID_INTER_FFS_DISK   AROS_MAKE_ID('D','O','S',3)
+#define ID_FASTDIR_DOS_DISK AROS_MAKE_ID('D','O','S',4)
+#define ID_FASTDIR_FFS_DISK AROS_MAKE_ID('D','O','S',5)
+#define ID_NOT_REALLY_DOS   AROS_MAKE_ID('N','D','O','S')
+#define ID_KICKSTART_DISK   AROS_MAKE_ID('K','I','C','K')
+#define ID_MSDOS_DISK       AROS_MAKE_ID('M','S','D',0)
 
 /**********************************************************************
  **************** Program Execution and Error Handling ****************

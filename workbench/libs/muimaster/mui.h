@@ -12,6 +12,9 @@
 #ifndef GRAPHICS_GRAPHICS_H
 #   include <graphics/gfx.h>
 #endif
+#ifndef LIBRARIES_IFFPARSE_H
+#   include <libraries/iffparse.h>
+#endif
 
 #ifdef __AROS__
 #   ifndef AROS_ASMCALL_H
@@ -21,6 +24,7 @@
 #else
 #   include "support_amigaos.h"
 #endif
+
 
 #include "mui_identifiers.h"
 
