@@ -71,45 +71,81 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
-    ULONG width;
-    ULONG fit;
 
-    if (constrainingExtent)
+    struct TextFont *tf = rp->Font;
+    ULONG   	     retval = 0;
+    
+    if (strLen && (constrainingBitHeight >= tf->tf_YSize))
     {
-	constrainingBitWidth  = constrainingExtent->te_Width;
-	constrainingBitHeight = constrainingExtent->te_Height;
-    }
-
-    /* Font too high ? */
-    if (rp->Font->tf_YSize > constrainingBitHeight)
-	return 0;
-
-    textExtent->te_Extent.MinX = 0;
-    textExtent->te_Extent.MinY = 0;
-    textExtent->te_Extent.MaxY = rp->Font->tf_YSize - 1;
-    textExtent->te_Height = rp->Font->tf_YSize;
-
-    textExtent->te_Extent.MaxX = 0;
-
-    for (width = fit = 0; strLen; strLen--)
-    {
-	width += TextLength (rp, string, 1);
-
-	if (width > constrainingBitWidth)
-	    break;
-
-	textExtent->te_Extent.MaxX = width - 1;
-	string += strDirection;
+   	BOOL ok = TRUE;
 	
-	fit ++;
-    }
+	textExtent->te_Extent.MinX 	= 0;
+	textExtent->te_Extent.MinY 	= -tf->tf_Baseline;
+    	textExtent->te_Extent.MaxX 	= 0;
+	textExtent->te_Extent.MaxY 	= tf->tf_YSize - tf->tf_Baseline - 1;
+    	textExtent->te_Width	= 0;
+	textExtent->te_Height 	= tf->tf_YSize;
+	
+	if (constrainingExtent)
+	{
+	    if ((constrainingExtent->te_Extent.MinY > textExtent->te_Extent.MinY) || 
+	    	(constrainingExtent->te_Extent.MaxY < textExtent->te_Extent.MaxY) ||
+	    	(constrainingExtent->te_Height < textExtent->te_Height))
+	    {
+	    	ok = FALSE;
+	    }    
+	}
+	
+	if (ok)
+	{
+	    while(strLen--)
+	    {
+    	    	struct TextExtent char_extent;
+	    	WORD 	    	  newwidth, newminx, newmaxx, minx, maxx;
+		
+	    	TextExtent(rp, string, 1, &char_extent);
+	    	string += strDirection;
+		
+		newwidth = textExtent->te_Width + char_extent.te_Width;
+		minx = textExtent->te_Width + char_extent.te_Extent.MinX;
+		maxx = textExtent->te_Width + char_extent.te_Extent.MaxX;
+		
+		newminx = (minx < textExtent->te_Extent.MinX) ? minx : textExtent->te_Extent.MinX;
+		newmaxx = (maxx > textExtent->te_Extent.MaxX) ? maxx : textExtent->te_Extent.MaxX;
+		
+		if (newmaxx - newminx + 1 > constrainingBitWidth) break;
+		
+		if (constrainingExtent)
+		{
+		    if (constrainingExtent->te_Extent.MinX > newminx) break;
+		    if (constrainingExtent->te_Extent.MaxX < newmaxx) break;
+		    if (constrainingExtent->te_Width < newwidth) break;
+		}
+				
+		textExtent->te_Width = newwidth;
+		textExtent->te_Extent.MinX = newminx;
+		textExtent->te_Extent.MaxX = newmaxx;
+		
+    	    	retval++;		
+		
+	    } /* while(strLen--) */
+	    
+	} /* if (ok) */
+	
+    } /* if (strLen && (constrainingBitHeight >= tf->tf_YSize)) */
 
-    if (fit)
+    if (retval == 0)
     {
-	textExtent->te_Width = textExtent->te_Extent.MaxX
-		             - textExtent->te_Extent.MinX + 1;
+    	textExtent->te_Width = 0;
+	textExtent->te_Height = 0;
+	textExtent->te_Extent.MinX = 0;
+	textExtent->te_Extent.MinY = 0;
+	textExtent->te_Extent.MaxX = 0;
+	textExtent->te_Extent.MaxY = 0;
     }
-
-    return fit;
+    
+    return retval;
+    
     AROS_LIBFUNC_EXIT
+    
 } /* TextFit */
