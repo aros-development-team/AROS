@@ -151,7 +151,7 @@ static HIDDT_Pixel  bitmap_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_B
 #define NUM_ROOT_METHODS	1
 #define NUM_BITMAP_METHODS	4
 
-OOP_Class *init_bmclass(struct linux_staticdata *fsd)
+OOP_Class *init_linuxbmclass(struct linux_staticdata *fsd)
 {
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = {
         {(IPTR (*)())bitmap_new    , moRoot_New    },
@@ -195,7 +195,7 @@ OOP_Class *init_bmclass(struct linux_staticdata *fsd)
                 OOP_AddClass(cl);
             } else {
 #warning The failure handlilg code is buggy. How do we know if the class was successfully added before removing it in free_onbcmlass ?
-                free_bmclass( fsd );
+                free_linuxbmclass( fsd );
                 cl = NULL;
             }
         }
@@ -210,7 +210,7 @@ OOP_Class *init_bmclass(struct linux_staticdata *fsd)
 
 /*** free_bitmapclass *********************************************************/
 
-void free_bmclass(struct linux_staticdata *fsd)
+void free_linuxbmclass(struct linux_staticdata *fsd)
 {
 
     if(NULL != fsd)  {

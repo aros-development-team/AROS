@@ -265,7 +265,7 @@ static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 #define NUM_ROOT_METHODS 3
 #define NUM_GFXHIDD_METHODS 1
 
-OOP_Class *init_gfxclass (struct linux_staticdata *fsd)
+OOP_Class *init_linuxgfxclass (struct linux_staticdata *fsd)
 {
     OOP_Class *cl = NULL;
 
@@ -306,7 +306,7 @@ OOP_Class *init_gfxclass (struct linux_staticdata *fsd)
 		fsd->gfxclass = cl;
 	    	OOP_AddClass(cl);
 	    } else {
-	    	free_gfxclass( fsd );
+	    	free_linuxgfxclass( fsd );
 		cl = NULL;
 	    }
 	}
@@ -319,7 +319,7 @@ OOP_Class *init_gfxclass (struct linux_staticdata *fsd)
 
 
 /*************** free_gfxclass()  **********************************/
-VOID free_gfxclass(struct linux_staticdata *fsd)
+VOID free_linuxgfxclass(struct linux_staticdata *fsd)
 {
     if(NULL != fsd) {
     
