@@ -320,8 +320,8 @@ static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD
 {
     struct IntWindow 	*w 	     = (struct IntWindow *)targetwindow;
     struct Layer	*targetlayer = targetwindow->WLayer, *L;
-    WORD		OldLeftEdge  = targetwindow->LeftEdge;
-    WORD		OldTopEdge   = targetwindow->TopEdge;
+    WORD		OldLeftEdge  = targetwindow->RelLeftEdge;
+    WORD		OldTopEdge   = targetwindow->RelTopEdge;
     WORD 		OldWidth     = targetwindow->Width;
     WORD 		OldHeight    = targetwindow->Height;
     WORD 		pos_dx, pos_dy, size_dx, size_dy;
@@ -347,8 +347,11 @@ static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD
 	    WindowSizeWillChange(targetwindow, size_dx, size_dy, IntuitionBase);
 	}
 
-	targetwindow->LeftEdge  = NewLeftEdge;
-	targetwindow->TopEdge   = NewTopEdge;
+	targetwindow->LeftEdge    += pos_dx;
+	targetwindow->TopEdge     += pos_dy;
+	targetwindow->RelLeftEdge += pos_dx;
+	targetwindow->RelTopEdge  += pos_dy;
+	
 	targetwindow->Width     = NewWidth;
 	targetwindow->Height    = NewHeight; 
 	targetwindow->GZZWidth  = targetwindow->Width  - targetwindow->BorderLeft - targetwindow->BorderRight;
@@ -749,8 +752,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
             break; }
 
             case AMCODE_SIZEWINDOW: {
-                WORD OldLeftEdge  = targetwindow->LeftEdge;
-                WORD OldTopEdge   = targetwindow->TopEdge;
+                WORD OldLeftEdge  = targetwindow->RelLeftEdge;
+                WORD OldTopEdge   = targetwindow->RelTopEdge;
                 WORD OldWidth     = targetwindow->Width;
                 WORD OldHeight    = targetwindow->Height;
                 WORD NewLeftEdge  = OldLeftEdge;
@@ -820,14 +823,14 @@ void HandleIntuiActions(struct IIHData *iihdata,
 		if (w->ZipLeftEdge != ~0)
 		{
 		    NewLeftEdge    = w->ZipLeftEdge;
-		    w->ZipLeftEdge = w->window.LeftEdge;
+		    w->ZipLeftEdge = w->window.RelLeftEdge;
 		}
 
 		NewTopEdge = targetwindow->TopEdge;
 		if (w->ZipTopEdge != ~0)
 		{
 		    NewTopEdge    = w->ZipTopEdge;
-		    w->ZipTopEdge = w->window.TopEdge;
+		    w->ZipTopEdge = w->window.RelTopEdge;
 		}
 		
 		NewWidth = targetwindow->Width;
@@ -946,7 +949,22 @@ void HandleIntuiActions(struct IIHData *iihdata,
                     ChangeLayerVisibility(targetwindow->BorderRPort->Layer, am->iam_ShowWindow.yesno);
                 }
                 ChangeLayerVisibility(targetwindow->WLayer, am->iam_ShowWindow.yesno);
-	        CheckLayerRefresh(targetwindow->WLayer, targetscreen, IntuitionBase);
+		
+		if (am->iam_ShowWindow.yesno)
+		{
+		    /* There can only be damage in the window which has been made visible */
+		    
+		    /* TODO: also check for refresh in child layers */
+		    
+		    if (IS_GZZWINDOW(targetwindow)) CheckLayerRefresh(targetwindow->BorderRPort->Layer, targetscreen, IntuitionBase);		    
+	            CheckLayerRefresh(targetwindow->WLayer, targetscreen, IntuitionBase);
+		}
+		else
+		{
+		    /* Since the window has been made invisible, all the layers behind might have been damaged */
+		    L = targetwindow->WLayer;
+		    CheckLayersBehind = TRUE;
+		}
 	        break;
 #endif
 	}

@@ -573,8 +573,8 @@
     }
     else
     {
-	((struct IntWindow *)w)->ZipLeftEdge = w->LeftEdge;
-	((struct IntWindow *)w)->ZipTopEdge  = w->TopEdge;
+	((struct IntWindow *)w)->ZipLeftEdge = w->RelLeftEdge;
+	((struct IntWindow *)w)->ZipTopEdge  = w->RelTopEdge;
 	((struct IntWindow *)w)->ZipWidth    = w->Width;
 	((struct IntWindow *)w)->ZipHeight   = w->Height;
     }
