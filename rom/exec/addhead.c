@@ -2,16 +2,15 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Exec function AddHead()
+    Desc: Add a node to the head of a list
     Lang: english
 */
-#include "exec_intern.h"
-#include <exec/lists.h>
-#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
+#include <exec/lists.h>
+#include <proto/exec.h>
 
 	AROS_LH2I(void, AddHead,
 

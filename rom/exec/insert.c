@@ -2,16 +2,15 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Insert a node into a list.
     Lang: english
 */
-#include "exec_intern.h"
-#include <exec/lists.h>
-#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
+#include <exec/lists.h>
+#include <proto/exec.h>
 
 	AROS_LH3I(void, Insert,
 

@@ -1,54 +1,18 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.12  1997/02/28 00:14:20  ldp
-    Check if a node has a name, and only strcmp() if it has. Should fix streams
-    of Enforcer hits of bytereads from 0. I didn't get them, but I got hitlogs of
-    35kB, so they sure were there. :)
 
-    Revision 1.11  1997/01/01 03:46:09  ldp
-    Committed Amiga native (support) code
-
-    Changed clib to proto
-
-    Revision 1.10  1996/12/10 13:51:44  aros
-    Moved all #include's in the first column so makedepend can see it.
-
-    Revision 1.9  1996/10/24 15:50:48  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.8  1996/10/21 20:47:33  aros
-    Changed struct SysBase to struct ExecBase
-
-    Revision 1.7  1996/10/19 17:17:44  aros
-    Use the ANSI C function
-
-    Revision 1.6  1996/09/12 13:23:23  digulla
-    Fixed a severe bug in the code. If nothing was found, the function returned
-	the list-header instead of NULL
-
-    Revision 1.5  1996/08/13 13:56:01  digulla
-    Replaced AROS_LA by AROS_LHA
-    Replaced some AROS_LH*I by AROS_LH*
-    Sorted and added includes
-
-    Revision 1.4  1996/08/01 17:41:10  digulla
-    Added standard header for all files
-
-    Desc:
+    Desc: Search for a node.
     Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE
-#include "exec_intern.h"
-#include <aros/libcall.h>
 #include <string.h>
-#include <exec/lists.h>
-#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
+#include <exec/lists.h>
+#include <proto/exec.h>
 
 	AROS_LH2I(struct Node *, FindName,
 
