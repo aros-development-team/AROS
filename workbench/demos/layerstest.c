@@ -38,7 +38,7 @@ int main(int argc, char **argv)
         {
 	  if ((LayersBase = OpenLibrary("layers.library", 0))) 
           {
-	    if (DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",0))
+	    if ((DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",0)))
 	    {
               if ((screen = openscreen())) 
               {
