@@ -51,7 +51,6 @@
     EXAMPLE
 
     BUGS
-	Gadget placing is still untidy.
 
     SEE ALSO
 	BuildEasyRequestArgs()

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Intuition function BuildEasyRequestArgs()
@@ -97,7 +97,6 @@ int charsinstring(STRPTR string, char c);
     EXAMPLE
 
     BUGS
-	Gadget placing is still untidy.
 
     SEE ALSO
 	EasyRequestArgs(), SysReqHandler(), FreeSysRequest()
@@ -412,7 +411,7 @@ struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
     struct Gadget *gadgetlist, *thisgadget = NULL;
     struct Image *gadgetframe;
     int currentgadget;
-    UWORD xoffset;
+    UWORD xoffset, restwidth;
 
     if (gadgetlabels[0] == NULL)
         return NULL;
@@ -424,7 +423,14 @@ struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
     if (!gadgetframe)
         return NULL;
 
-    xoffset = scr->WBorLeft + HSPACE;
+    restwidth = dims->width - scr->WBorLeft - scr->WBorRight - HSPACE * 2;
+    if (dims->gadgets == 1)
+        xoffset = scr->WBorLeft + HSPACE + (restwidth - dims->gadgetwidth) / 2;
+    else
+    {
+        xoffset = scr->WBorLeft + HSPACE;
+        restwidth -= dims->gadgets * dims->gadgetwidth;
+    }
     for (currentgadget = 0; gadgetlabels[currentgadget]; currentgadget++)
     {
         IPTR gadgetid;
@@ -449,11 +455,16 @@ struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
         if (currentgadget == 0)
             gadgetlist = thisgadget;
         if (!thisgadget)
-	{
+        {
             easyrequest_freegadgets(gadgetlist);
             return NULL;
         }
-        xoffset += dims->gadgetwidth + HSPACE;
+        if ((currentgadget + 1) != dims->gadgets)
+        {
+            xoffset += dims->gadgetwidth +
+                       restwidth / (dims->gadgets - currentgadget - 1);
+            restwidth -= restwidth / (dims->gadgets - currentgadget - 1);
+        }
     }
 
     return gadgetlist;
