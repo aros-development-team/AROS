@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write modulename_start.c. Part of genmodule.
@@ -70,6 +70,18 @@ void writestart(struct config *cfg)
 		"\n"
 	);
 
+	fprintf(out,
+		"#define __freebase(lh)\\\n"
+		"do {\\\n"
+		"    UWORD negsize, possize;\\\n"
+		"    UBYTE *negptr = (UBYTE *)lh;\\\n"
+		"    negsize = ((struct Library *)lh)->lib_NegSize;\\\n"
+		"    possize = ((struct Library *)lh)->lib_PosSize;\\\n"
+		"    FreeMem (negptr, negsize+possize);\\\n"
+		"} while(0)\n"
+		"\n"
+	);
+	
 	fprintf(out,
 		"AROS_UFP3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
 		"    AROS_UFPA(LIBBASETYPEPTR, lh, D0),\n"
@@ -217,6 +229,8 @@ void writestart(struct config *cfg)
 	);
 	if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE)
 	    fprintf(out, "    GM_SEGLIST_FIELD(lh) = segList;\n");
+	if (cfg->options & OPTION_DUPBASE)
+	    fprintf(out, "    GM_ROOTBASE_FIELD(lh) = (LIBBASETYPEPTR)lh;\n");
 	fprintf(out, "    if ( ");
 	if (!(cfg->options & OPTION_NOAUTOLIB))
 	    fprintf(out, "set_open_libraries() && ");
@@ -240,14 +254,7 @@ void writestart(struct config *cfg)
 	    fprintf(out, "        set_close_libraries();\n");
 	fprintf(out,
 		"\n"
-		"        {\n"
-		"            ULONG negsize, possize;\n"
-		"            UBYTE *negptr = (UBYTE *) lh;\n"
-		"            negsize  = ((struct Library *)lh)->lib_NegSize;\n"
-		"            possize  = ((struct Library *)lh)->lib_PosSize;\n"
-		"            negptr -= negsize;\n"
-		"            FreeMem (negptr, negsize + possize);\n"
-		"        }\n"
+		"        __freebase(lh);\n"
 		"        return NULL;\n"
 		"    }\n"
 		"    else\n"
@@ -310,10 +317,41 @@ void writestart(struct config *cfg)
 		    "{\n"
 		    "    AROS_LIBFUNC_INIT\n"
 		    "\n"
+	    );
+	    fprintf(out,
 		    "    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, lh) )\n"
 		    "    {\n"
-		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
-		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
+	    );
+	    if (!(cfg->options & OPTION_DUPBASE))
+	    {
+		fprintf(out,
+			"        ((struct Library *)lh)->lib_OpenCnt++;\n"
+			"        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
+	        );
+	    }
+	    else
+	    {
+		fprintf(out,
+			"        struct Library *newlib;\n"
+			"        UWORD possize = ((struct Library *)lh)->lib_PosSize;\n"
+			"\n"
+			"        ((struct Library *)lh)->lib_OpenCnt++;\n"
+			"        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
+			"\n"
+			"        newlib = MakeLibrary(GM_UNIQUENAME(InitTable).FuncTable,\n"
+			"                             GM_UNIQUENAME(InitTable).DataTable,\n"
+			"                             NULL,\n"
+			"                             GM_UNIQUENAME(InitTable).Size,\n"
+			"                             (BPTR)NULL\n"
+			"        );\n"
+			"        if (newlib == NULL)\n"
+			"            return 0;\n"
+			"\n"
+			"        CopyMem(lh, newlib, possize);\n"
+			"        lh = (LIBBASETYPEPTR)newlib;\n"
+		);
+	    }
+	    fprintf(out,
 		    "\n"
 		    "        return lh;\n"
 		    "    }\n"
@@ -348,9 +386,28 @@ void writestart(struct config *cfg)
 		    "{\n"
 		    "    AROS_LIBFUNC_INIT\n"
 		    "\n"
-		    "    ((struct Library *)lh)->lib_OpenCnt--;\n"
-		    "    set_call_libfuncs(SETNAME(CLOSELIB),-1,lh);\n"
 	    );
+	    if (!(cfg->options & OPTION_DUPBASE))
+	    {
+		fprintf(out,
+			"    ((struct Library *)lh)->lib_OpenCnt--;\n"
+			"    set_call_libfuncs(SETNAME(CLOSELIB),-1,lh);\n"
+		);
+	    }
+	    else
+	    {
+		fprintf(out,
+			"    if (lh != GM_ROOTBASE_FIELD(lh))\n"
+			"    {\n"
+			"        LIBBASETYPEPTR rootbase = GM_ROOTBASE_FIELD(lh);\n"
+			"        __freebase(lh);\n"
+			"        set_call_libfuncs(SETNAME(CLOSELIB),-1,lh);\n"
+			"        lh = rootbase;\n"
+			"    }\n"
+			"    ((struct Library *)lh)->lib_OpenCnt--;\n"
+			"\n"
+		);
+	    }
 	    if (cfg->modtype == DEVICE)
 		fprintf(out,
 			"    set_call_devfuncs(SETNAME(CLOSEDEV),-1,ioreq,0,0,lh);\n"
@@ -397,11 +454,7 @@ void writestart(struct config *cfg)
 			"\n"
 			"    if ( ((struct Library *)lh)->lib_OpenCnt == 0 )\n"
 			"    {\n"
-			"        BPTR seglist;\n"
-			"        ULONG negsize, possize;\n"
-			"        UBYTE *negptr = (UBYTE *)lh;\n"
-			"\n"
-			"        seglist = GM_SEGLIST_FIELD(lh);\n"
+			"        BPTR seglist = GM_SEGLIST_FIELD(lh);\n"
 			"\n"
 			"        Remove((struct Node *)lh);\n"
 			"\n"
@@ -413,10 +466,7 @@ void writestart(struct config *cfg)
 		    fprintf(out, "        set_close_libraries();\n");
 		fprintf(out,
 			"\n"
-			"        negsize = ((struct Library *)lh)->lib_NegSize;\n"
-			"        possize  = ((struct Library *)lh)->lib_PosSize;\n"
-			"        negptr -= negsize;\n"
-			"        FreeMem (negptr, negsize + possize);\n"
+			"        __freebase(lh);\n"
 			"\n"
 			"        return seglist;\n"
 			"    }\n"

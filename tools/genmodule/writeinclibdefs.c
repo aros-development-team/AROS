@@ -83,10 +83,16 @@ void writeinclibdefs(struct config *cfg)
 		"    struct Library   lh_LibNode;\n"
 		"    BPTR             lh_SegList;\n"
 		"    struct ExecBase *lh_SysBase;\n"
+	);
+	if (cfg->options & OPTION_DUPBASE)
+	    fprintf(out, "    LIBBASETYPEPTR   lh_RootBase;\n");
+	fprintf(out,
 		"};\n"
 		"#define GM_SYSBASE_FIELD(lh) ((lh)->lh_SysBase)\n"
 		"#define GM_SEGLIST_FIELD(lh) ((lh)->lh_SegList)\n"
 	);
+	if (cfg->options & OPTION_DUPBASE)
+	    fprintf(out, "#deifne GM_ROOTBASE_FIELD(lh) ((lh)->lh_RootBase)\n");
     }
     else
     {
@@ -99,6 +105,11 @@ void writeinclibdefs(struct config *cfg)
 	    fprintf(out,
 		    "#define GM_SEGLIST_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
 		    cfg->seglist_field
+	    );
+	if ((cfg->options & OPTION_DUPBASE) && cfg->rootbase_field != NULL)
+	    fprintf(out,
+		    "#define GM_ROOTBASE_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
+		    cfg->rootbase_field
 	    );
     }
 
