@@ -22,6 +22,20 @@ CFLAGS2 	:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec \
 #MM- workbench-linux-i386: workbench-linux
 #MM- contrib-linux-i386: contrib-linux
 
+#MM- AROS-linux-ppc: AROS-linux
+#MM- setup-linux-ppc: setup-linux
+#MM- includes-linux-ppc : includes-copy
+#MM- kernel-linux-ppc: kernel-linux
+#MM- kernel-exec-linux-ppc: kernel-exec-linux
+#MM- kernel-dos-linux-ppc: kernel-dos-linux
+#MM- kernel-graphics-linux-ppc: kernel-graphics-linux
+#MM- kernel-intuition-linux-ppc: kernel-intution-linux
+#MM- kernel-hidd-linux-ppc: kernel-hidd-linux
+#MM- kernel-utility-linux-ppc: kernel-utility-linux
+#MM- kernel-battclock-linux-ppc: kernel-battclock-linux
+#MM- workbench-linux-ppc: workbench-linux
+#MM- contrib-linux-ppc: contrib-linux
+
 
 #MM- AROS-linux : setup setup-linux includes compiler kernel workbench \
 #MM	    demos contrib shell
