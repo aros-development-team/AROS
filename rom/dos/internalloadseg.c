@@ -10,21 +10,7 @@
 #include <proto/dos.h>
 #include <aros/debug.h>
 #include "dos_intern.h"
-
-BPTR InternalLoadSeg_AOS(BPTR file,
-                         BPTR hunk_table,
-                         LONG_FUNC FuncArray,
-                         LONG * stack);
-
-BPTR InternalLoadSeg_ELF(BPTR file,
-                         BPTR hunk_table,
-                         LONG_FUNC FuncArray,
-                         LONG * stack);
-
-BPTR InternalLoadSeg_AOUT(BPTR file,
-                          BPTR hunk_table,
-                          LONG_FUNC FuncArray,
-                          LONG * stack);
+#include "internalloadseg.h"
 
 
 
@@ -97,7 +83,7 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
     /* Then try to load the different file formats */
     if (!segs)
     {
-      segs = InternalLoadSeg_AOS (fh, MKBADDR(NULL), functionarray, NULL);
+      segs = InternalLoadSeg_AOS (fh, MKBADDR(NULL), functionarray, NULL, DOSBase);
 #if DEBUG > 1
       if (segs)
         bug("Loaded as AmigaOS exe\n");
@@ -105,7 +91,7 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
     }
     if (!segs && IoErr()!=ERROR_NO_FREE_STORE)
     {
-      segs = InternalLoadSeg_ELF (fh, MKBADDR(NULL), functionarray, NULL);
+      segs = InternalLoadSeg_ELF (fh, MKBADDR(NULL), functionarray, NULL, DOSBase);
 #if DEBUG > 1
       if (segs)
         bug("Loaded as ELF exe\n");
@@ -113,7 +99,7 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
     }
     if (!segs && IoErr()!=ERROR_NO_FREE_STORE)
     {
-      segs = InternalLoadSeg_AOUT (fh, MKBADDR(NULL), functionarray, NULL);
+      segs = InternalLoadSeg_AOUT (fh, MKBADDR(NULL), functionarray, NULL, DOSBase);
 #if DEBUG > 1
       if (segs)
         bug("Loaded as a.out exe\n");
