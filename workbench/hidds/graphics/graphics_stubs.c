@@ -102,6 +102,51 @@ void HIDD_Gfx_DisposeBitMap(Object *obj, Object *bitMap)
 
     DoMethod(obj, (Msg) &p);
 }
+
+/***************************************************************/
+
+BOOL HIDD_Gfx_RegisterGfxModes(Object *obj, struct TagItem **modeTags)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_RegisterGfxModes p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_RegisterGfxModes);
+        
+    p.mID    = mid;
+    p.modeTags = modeTags;
+
+    return DoMethod(obj, (Msg) &p);
+}
+/***************************************************************/
+
+struct List * HIDD_Gfx_QueryGfxModes(Object *obj, struct TagItem *queryTags)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_QueryGfxModes p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_QueryGfxModes);
+        
+    p.mID    = mid;
+    p.queryTags = queryTags;
+
+    return (struct List *)DoMethod(obj, (Msg) &p);
+}
+/***************************************************************/
+
+void HIDD_Gfx_ReleaseGfxModes(Object *obj, struct List *modeList)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_ReleaseGfxModes p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ReleaseGfxModes);
+        
+    p.mID    = mid;
+    p.modeList = modeList;
+
+    DoMethod(obj, (Msg) &p);
+}
+
+
 /***************************************************************/
 
 BOOL HIDD_BM_SetColors (Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors)
@@ -351,7 +396,12 @@ VOID HIDD_BM_Clear (Object *obj)
 
 /***************************************************************/
 
-VOID     HIDD_BM_GetImage  (Object *obj, ULONG *pixels, WORD x, WORD y, WORD width, WORD height)
+VOID     HIDD_BM_GetImage  (Object *obj
+	, UBYTE *pixels
+	, ULONG modulo
+	, WORD x, WORD y
+	, WORD width, WORD height
+	, HIDDT_StdPixFmt pixFmt)
 {
     static MethodID mid = 0;
     struct pHidd_BitMap_GetImage p;
@@ -360,10 +410,14 @@ VOID     HIDD_BM_GetImage  (Object *obj, ULONG *pixels, WORD x, WORD y, WORD wid
         
     p.mID    = mid;
     p.pixels = pixels;
+    p.modulo = modulo;
     p.x = x;
     p.y = y;
     p.width  = width;
     p.height = height;
+    
+    p.pixFmt = pixFmt;
+    
     
 
     DoMethod(obj, (Msg) &p);
@@ -371,7 +425,12 @@ VOID     HIDD_BM_GetImage  (Object *obj, ULONG *pixels, WORD x, WORD y, WORD wid
 
 /***************************************************************/
 
-VOID     HIDD_BM_PutImage  (Object *obj, ULONG *pixels, WORD x, WORD y, WORD width, WORD height)
+VOID     HIDD_BM_PutImage  (Object *obj
+	, UBYTE *pixels
+	, ULONG modulo
+	, WORD x, WORD y
+	, WORD width, WORD height
+	, HIDDT_StdPixFmt pixFmt)
 {
     static MethodID mid = 0;
     struct pHidd_BitMap_PutImage p;
@@ -380,10 +439,12 @@ VOID     HIDD_BM_PutImage  (Object *obj, ULONG *pixels, WORD x, WORD y, WORD wid
         
     p.mID    = mid;
     p.pixels = pixels;
+    p.modulo = modulo;
     p.x = x;
     p.y = y;
     p.width  = width;
     p.height = height;
+    p.pixFmt = pixFmt;
 
     DoMethod(obj, (Msg) &p);
 }
@@ -485,3 +546,72 @@ VOID     HIDD_BM_GetImageLUT  (Object *obj, UBYTE *pixels, ULONG modulo, WORD x,
     DoMethod(obj, (Msg) &p);
 }
 
+
+ULONG HIDD_BM_BytesPerLine(Object *obj, HIDDT_StdPixFmt pixFmt, ULONG width)
+{
+     static MethodID mid = 0;
+     struct pHidd_BitMap_BytesPerLine p;
+     
+     if (!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_BytesPerLine);
+     
+     p.mID = mid;
+     p.pixFmt	= pixFmt;
+     p.width	= width;
+     
+     return DoMethod(obj, (Msg) &p);
+     
+}
+
+/***************************************************************/
+
+Object *    HIDD_BM_GetPixelFormat  (Object *obj, HIDDT_StdPixFmt stdPixFmt)
+{
+    static MethodID mid = 0;
+    struct pHidd_BitMap_GetPixelFormat p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetPixelFormat);
+        
+    p.mID = mid;
+    
+    p.stdPixFmt		= stdPixFmt;
+    
+    return (Object *)DoMethod(obj, (Msg) &p);
+}
+
+
+/***************************************************************/
+
+VOID     HIDD_BM_ConvertPixels  (Object *obj
+	, APTR *srcPixels
+	, HIDDT_PixelFormat *srcPixFmt
+	, ULONG srcMod
+	, APTR *dstBuf
+	, HIDDT_PixelFormat *dstPixFmt
+	, ULONG dstMod
+	, ULONG width, ULONG height
+	, HIDDT_PixelLUT *pixlut
+)
+{
+    static MethodID mid = 0;
+    struct pHidd_BitMap_ConvertPixels p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_ConvertPixels);
+        
+    p.mID = mid;
+    p.srcPixFmt = srcPixFmt;
+    p.srcPixels = srcPixels;
+    
+    p.srcMod	= srcMod;
+    
+    p.dstBuf	= dstBuf;
+    p.dstPixFmt	= dstPixFmt;
+    
+    p.dstMod	= dstMod;
+    
+    p.width	= width;
+    p.height	= height;
+    
+    p.pixlut	= pixlut;
+    
+    DoMethod(obj, (Msg) &p);
+}

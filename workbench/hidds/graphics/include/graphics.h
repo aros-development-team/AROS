@@ -25,9 +25,15 @@
 #define CLID_Hidd_BitMap        "hidd.graphics.bitmap"
 #define CLID_Hidd_GC		"hidd.graphics.gc"
 
+#define CLID_Hidd_GfxMode	"hidd.graphics.gfxmode"
+#define CLID_Hidd_PixFmt	"hidd.graphics.pixfmt"
+
 #define IID_Hidd_Gfx      "hidd.graphics.graphics"
 #define IID_Hidd_BitMap   "hidd.graphics.bitmap"
 #define IID_Hidd_GC       "hidd.graphics.gc"
+
+#define IID_Hidd_GfxMode	"hidd.graphics.gfxmode"
+#define IID_Hidd_PixFmt		"hidd.graphics.pixfmt"
 
 /* Some "example" hidd bitmaps */
 
@@ -44,9 +50,15 @@ typedef struct Object *HIDDT_GC;
 #define HiddGfxAttrBase         __IHidd_Gfx
 #define HiddBitMapAttrBase      __IHidd_BitMap
 
+#define HiddGfxModeAttrBase	__IHidd_GfxMode
+#define HiddPixFmtAttrBase	__IHidd_PixFmt
+
 extern AttrBase HiddGCAttrBase;
 extern AttrBase HiddGfxAttrBase;
 extern AttrBase HiddBitMapAttrBase;
+
+extern AttrBase HiddGfxModeAttrBase;
+extern AttrBase HiddPixFmtAttrBase;
 
 
 /**** Graphics definitions ****************************************************/
@@ -58,8 +70,27 @@ enum
     moHidd_Gfx_NewGC = 0,       /* Its only allowd to use these methods   */
     moHidd_Gfx_DisposeGC,       /* to create and to dispose a GC and      */
     moHidd_Gfx_NewBitMap,       /* bitmap because only the graphics-hidd  */
-    moHidd_Gfx_DisposeBitMap   /* class knows which gc- and bitmap-class */
+    moHidd_Gfx_DisposeBitMap,   /* class knows which gc- and bitmap-class */
 				/* works together.                        */
+				
+    /* Tis method is used only by subclasses, I repeat:
+    ONLY BY SUBCLASSES, to register available modes in the baseclass
+    */
+    moHidd_Gfx_RegisterGfxModes,
+    
+    /* These methods are used by apps to get available modes */
+    moHidd_Gfx_QueryGfxModes,
+    moHidd_Gfx_ReleaseGfxModes
+};
+
+
+/* Parameter tags for the QueryGfxMode method */
+enum {
+	tHidd_GfxMode_MinWidth = TAG_USER,
+	tHidd_GfxMode_MaxWidth,
+	tHidd_GfxMode_MinHeight,
+	tHidd_GfxMode_MaxHeight,
+	tHidd_GfxMode_PixFmts
 };
 
 
@@ -91,6 +122,27 @@ struct pHidd_Gfx_DisposeBitMap
     Object      *bitMap;
 };
 
+struct pHidd_Gfx_RegisterGfxModes {
+    MethodID mID;
+    struct TagItem **modeTags;
+};
+
+struct pHidd_Gfx_QueryGfxModes {
+    MethodID mID;
+    struct TagItem *queryTags;
+};
+
+struct pHidd_Gfx_ReleaseGfxModes {
+    MethodID mID;
+#warning Use a OOP list class instead of this
+    struct List *modeList;
+};
+
+
+struct ModeNode {
+	struct MinNode node;
+	Object *gfxMode;
+};
 
 
 
@@ -123,7 +175,38 @@ typedef struct {
 	HIDDT_Color *colors;
 } HIDDT_ColorLUT;
 
+
+/* GT == Graphids Type */
+enum { 
+	vHidd_GT_TrueColor,
+	vHidd_GT_Palette,
+	vHidd_GT_StaticPalette
+};
+
+#define vHidd_GT_Mask 0x03
+
+#define HIDD_BM_GRAPHTYPE(pf) ((pf)->flags & vHidd_GT_Mask)
+
 typedef ULONG HIDDT_StdPixFmt;
+typedef ULONG HIDDT_DrawMode;
+
+/* Standard pixelformats */
+enum {
+	vHidd_PixFmt_Native,
+	vHidd_PixFmt_Native32,
+	
+	num_Hidd_PseudoPixFmt,
+	
+	vHidd_PixFmt_RGB24 = num_Hidd_PseudoPixFmt,
+	vHidd_PixFmt_RGB16,
+	vHidd_PixFmt_ARGB32,
+	vHidd_PixFmt_RGBA32,
+	vHidd_PixFmt_LUT8,
+	
+	num_Hidd_PixFmt
+};
+
+#define num_Hidd_StdPixFmt (num_Hidd_PixFmt - num_Hidd_PseudoPixFmt)
 
 #define MAP_SHIFT	((sizeof (HIDDT_Pixel) - sizeof (HIDDT_ColComp)) *8)
 #define SHIFT_UP_COL(col) ((HIDDT_Pixel)((col) << MAP_SHIFT))
@@ -156,20 +239,26 @@ typedef ULONG HIDDT_StdPixFmt;
 
 typedef struct {
 	UWORD	depth;
-	UWORD	size;	
+	UWORD	size;	/* Size of pixel in bits */
+	UWORD bytes_per_pixel;	
 	
 	HIDDT_Pixel red_mask;
 	HIDDT_Pixel green_mask;
 	HIDDT_Pixel blue_mask;
 	HIDDT_Pixel alpha_mask;
 	
-	HIDDT_Pixel red_shift;
-	HIDDT_Pixel green_shift;
-	HIDDT_Pixel blue_shift;
-	HIDDT_Pixel alpha_shift;
+	ULONG red_shift;
+	ULONG green_shift;
+	ULONG blue_shift;
+	ULONG alpha_shift;
+	
+	HIDDT_Pixel clut_mask;
+	UWORD clut_shift;
+	
+	HIDDT_StdPixFmt stdpixfmt;
+	ULONG flags;
 	
 } HIDDT_PixelFormat;
-
 
 
 enum
@@ -199,6 +288,9 @@ enum
     moHidd_BitMap_UnmapPixel,
     moHidd_BitMap_PutImageLUT,
     moHidd_BitMap_GetImageLUT,
+    moHidd_BitMap_BytesPerLine,
+    moHidd_BitMap_GetPixelFormat,
+    moHidd_BitMap_ConvertPixels,
     
     moHidd_BitMap_PrivateSet
 };
@@ -333,17 +425,21 @@ struct pHidd_BitMap_CopyBox
 struct pHidd_BitMap_GetImage
 {
     MethodID mID;
-    ULONG	*pixels;
+    UBYTE	*pixels;
+    ULONG	modulo;
     WORD	x, y;
     WORD	width, height;
+    HIDDT_StdPixFmt pixFmt;
 };
 
 struct pHidd_BitMap_PutImage
 {
     MethodID mID;
-    ULONG 	*pixels;
+    UBYTE 	*pixels;
+    ULONG	modulo;
     WORD	x, y;
     WORD	width, height;
+    HIDDT_StdPixFmt pixFmt;
 };
 
 
@@ -425,6 +521,40 @@ struct pHidd_BitMap_GetImageLUT
     HIDDT_PixelLUT *pixlut;
 };
 
+struct pHidd_BitMap_GetPixelFormat
+{
+    MethodID mID;
+    HIDDT_StdPixFmt stdPixFmt;
+};
+
+
+struct pHidd_BitMap_BytesPerLine
+{
+    MethodID mID;
+    HIDDT_StdPixFmt pixFmt;
+    ULONG width;
+};
+
+
+struct pHidd_BitMap_ConvertPixels
+{
+    MethodID mID;
+    APTR *srcPixels;
+    HIDDT_PixelFormat *srcPixFmt;
+    
+    ULONG srcMod;	/* Source modulo */
+    
+    APTR *dstBuf;
+    HIDDT_PixelFormat *dstPixFmt;
+    
+    ULONG dstMod;
+    
+    ULONG width;
+    ULONG height;
+
+    HIDDT_PixelLUT *pixlut;
+    
+};
 
 /**** Graphics context definitions ********************************************/
     /* Methods for a graphics context */
@@ -487,6 +617,11 @@ Object * HIDD_Gfx_NewBitMap    (Object *hiddGfx, struct TagItem *tagList);
 VOID     HIDD_Gfx_DisposeBitMap(Object *hiddGfx, Object *bitMap);
 
 
+BOOL	 HIDD_Gfx_RegisterGfxModes(Object *hiddGfx, struct TagItem **modeTags);
+
+struct List *HIDD_Gfx_QueryGfxModes(Object *hiddGfx, struct TagItem *queryTags);
+VOID HIDD_Gfx_ReleaseModes(Object *hiddGfx, struct List *modeList);
+
 VOID     HIDD_BM_BltBitMap   (Object obj, Object dest, WORD srcX, WORD srcY, WORD destX, WORD destY, WORD width, WORD height);
 BOOL     HIDD_BM_Show        (Object obj);
 VOID     HIDD_BM_Move        (Object obj, WORD x, WORD y);
@@ -497,8 +632,8 @@ ULONG    HIDD_BM_PutPixel(Object *obj, WORD x, WORD y, HIDDT_Pixel pixel);
 HIDDT_Pixel    HIDD_BM_GetPixel       (Object *obj, WORD x, WORD y);
 ULONG    HIDD_BM_DrawPixel      (Object *obj, WORD x, WORD y);
 VOID     HIDD_BM_CopyBox         (Object *obj, WORD srcX, WORD srcY, Object *dest, WORD destX, WORD destY, UWORD width, UWORD height);
-VOID     HIDD_BM_GetImage	 	 (Object *obj, ULONG *pixelArray, WORD x, WORD y, WORD width, WORD height);
-VOID	 HIDD_BM_PutImage 	 (Object *obj, ULONG *pixelArray, WORD x, WORD y, WORD width, WORD height);
+VOID     HIDD_BM_GetImage	 	 (Object *obj, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
+VOID	 HIDD_BM_PutImage 	 (Object *obj, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
 VOID     HIDD_BM_DrawLine        (Object *obj, WORD x1, WORD y1, WORD x2, WORD y2);
 VOID     HIDD_BM_DrawRect        (Object *obj, WORD minX, WORD minY, WORD maxX, WORD maxY);
 VOID     HIDD_BM_FillRect        (Object *obj, WORD minX, WORD minY, WORD maxX, WORD maxY);
@@ -520,6 +655,19 @@ VOID	 HIDD_BM_UnmapPixel(Object *destObj, HIDDT_Pixel pixel, HIDDT_Color *color)
 VOID	 HIDD_BM_PutImageLUT 	 (Object *obj, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
 VOID	 HIDD_BM_GetImageLUT 	 (Object *obj, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
 
+ULONG HIDD_BM_BytesPerLine(Object *obj, HIDDT_StdPixFmt pixFmt, ULONG width);
+Object *HIDD_BM_GetPixelFormat(Object *obj, HIDDT_StdPixFmt pixFmt);
+
+VOID     HIDD_BM_ConvertPixels  (Object *obj
+	, APTR *srcPixels
+	, HIDDT_PixelFormat *srcPixFmt
+	, ULONG srcMod
+	, APTR *dstBuf
+	, HIDDT_PixelFormat *dstPixFmt
+	, ULONG dstMod
+	, ULONG width, ULONG height
+	, HIDDT_PixelLUT *pixlut
+);
 
 /*******************************************************/
 /**  PROTECTED DATA 
@@ -532,11 +680,77 @@ VOID	 HIDD_BM_GetImageLUT 	 (Object *obj, UBYTE *pixels, ULONG modulo, WORD x, W
 
 struct _hidd_bitmap_protected
 {
-	HIDDT_PixelFormat pixfmt;
+	Object *pixfmt;
 };
 
-#define BM_PIXFMT(bm) (&((struct _hidd_bitmap_protected *)bm)->pixfmt)
+#define BM_PIXFMT(bm) (HIDDT_PixelFormat *)(((struct _hidd_bitmap_protected *)bm)->pixfmt)
 #define BM_DEPTH(bm)	BM_PIXFMT(bm)->depth
 
+/******************** Gfx Mode definitions ********************/
 
+enum {
+     aoHidd_GfxMode_Width = 0,
+     aoHidd_GfxMode_Height,
+     aoHidd_GfxMode_StdPixFmt,
+     aoHidd_GfxMode_PixFmtPtr,
+     aoHidd_GfxMode_Depth,
+     
+     num_Hidd_GfxMode_Attrs
+};
+
+#define aHidd_GfxMode_Width	(HiddGfxModeAttrBase + aoHidd_GfxMode_Width	)
+#define aHidd_GfxMode_Height	(HiddGfxModeAttrBase + aoHidd_GfxMode_Height	)
+#define aHidd_GfxMode_StdPixFmt	(HiddGfxModeAttrBase + aoHidd_GfxMode_StdPixFmt	)
+#define aHidd_GfxMode_PixFmtPtr	(HiddGfxModeAttrBase + aoHidd_GfxMode_PixFmtPtr	)
+#define aHidd_GfxMode_Depth	(HiddGfxModeAttrBase + aoHidd_GfxMode_Depth	)
+
+#define IS_GFXMODE_ATTR(attr, idx) \
+	( ( ( idx ) = (attr) - HiddGfxModeAttrBase) < num_Hidd_GfxMode_Attrs)
+
+
+/****************** PixFmt definitions **************************/
+enum {
+    aoHidd_PixFmt_GraphType,
+    aoHidd_PixFmt_RedShift,
+    aoHidd_PixFmt_GreenShift,
+    aoHidd_PixFmt_BlueShift,
+    aoHidd_PixFmt_AlphaShift,
+    aoHidd_PixFmt_RedMask,
+    aoHidd_PixFmt_GreenMask,
+    aoHidd_PixFmt_BlueMask,
+    aoHidd_PixFmt_AlphaMask,
+    aoHidd_PixFmt_Depth,
+    aoHidd_PixFmt_BitsPerPixel,
+    aoHidd_PixFmt_BytesPerPixel,
+    aoHidd_PixFmt_StdPixFmt,
+    aoHidd_PixFmt_CLUTMask,
+    aoHidd_PixFmt_CLUTShift,
+    
+    num_Hidd_PixFmt_Attrs
+};
+
+
+#define aHidd_PixFmt_RedShift		(HiddPixFmtAttrBase + aoHidd_PixFmt_RedShift)
+#define aHidd_PixFmt_GreenShift		(HiddPixFmtAttrBase + aoHidd_PixFmt_GreenShift)
+#define aHidd_PixFmt_BlueShift		(HiddPixFmtAttrBase + aoHidd_PixFmt_BlueShift)
+#define aHidd_PixFmt_AlphaShift		(HiddPixFmtAttrBase + aoHidd_PixFmt_AlphaShift)
+#define aHidd_PixFmt_RedMask		(HiddPixFmtAttrBase + aoHidd_PixFmt_RedMask)
+#define aHidd_PixFmt_GreenMask		(HiddPixFmtAttrBase + aoHidd_PixFmt_GreenMask)
+#define aHidd_PixFmt_BlueMask		(HiddPixFmtAttrBase + aoHidd_PixFmt_BlueMask)
+#define aHidd_PixFmt_AlphaMask		(HiddPixFmtAttrBase + aoHidd_PixFmt_AlphaMask)
+#define aHidd_PixFmt_Depth		(HiddPixFmtAttrBase + aoHidd_PixFmt_Depth)
+#define aHidd_PixFmt_BytesPerPixel	(HiddPixFmtAttrBase + aoHidd_PixFmt_BytesPerPixel)
+#define aHidd_PixFmt_BitsPerPixel	(HiddPixFmtAttrBase + aoHidd_PixFmt_BitsPerPixel)
+#define aHidd_PixFmt_GraphType		(HiddPixFmtAttrBase + aoHidd_PixFmt_GraphType)
+#define aHidd_PixFmt_StdPixFmt		(HiddPixFmtAttrBase + aoHidd_PixFmt_StdPixFmt)
+#define aHidd_PixFmt_CLUTShift		(HiddPixFmtAttrBase + aoHidd_PixFmt_CLUTShift)
+#define aHidd_PixFmt_CLUTMask		(HiddPixFmtAttrBase + aoHidd_PixFmt_CLUTMask)
+
+
+#define IS_PIXFMT_ATTR(attr, idx) \
+	( ( ( idx ) = (attr) - HiddPixFmtAttrBase) < num_Hidd_PixFmt_Attrs)
+
+    
 #endif /* HIDD_GRAPHICS_H */
+
+

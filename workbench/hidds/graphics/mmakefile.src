@@ -16,7 +16,9 @@ DESTDIR	    := $(HIDDSDIR)
 OBJDIR	    := $(GENDIR)/$(CURDIR)
 
 FILES       := GraphicsClass BM_Class GC_Class  \
-               planarbm chunkybm
+               planarbm chunkybm convertpixels	\
+	       gfxmode pixfmt
+	       
 	       
 EXTRA_LIBS  := -L$(LIBDIR) -lhidd$(LIBNAME)stubs
 

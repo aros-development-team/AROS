@@ -15,12 +15,24 @@
 #include <dos/dos.h>
 
 
-struct HIDDGraphicsData
-{
-    Class *bitMapClass;  /* bitmap class     */
-    Class *gcClass;      /* graphics context */
+/* Instance data of GfxMode objects. We have it defined here so we can
+   access GfxMode objects' instance data directly (like BOOPSI gadgets)
+   in GraphicsClass
+*/
+struct gfxmode_data {
+    ULONG width;
+    ULONG height;
+    
+    Object *pixfmt;
+    
+    UWORD depth;
+    
 };
 
+struct HIDDGraphicsData
+{
+	struct MinList modelist;
+};
 
 struct HIDDBitMapData
 {
@@ -28,6 +40,7 @@ struct HIDDBitMapData
     
     ULONG width;         /* width of the bitmap in pixel  */
     ULONG height;        /* height of the bitmap in pixel */
+    ULONG reqdepth;	 /* Depth as requested by user */
     BOOL  displayable;   /* bitmap displayable?           */
     ULONG format;        /* planar or chunky              */
     ULONG flags;         /* see hidd/graphic.h 'flags for */
@@ -83,8 +96,14 @@ struct class_static_data
     Class                *gcclass;      /* graphics context class */
     Class		 *colormapclass; /* colormap class	  */
     
+    Class		 *gfxmodeclass;
+    Class		 *pixfmtclass;
+    
+    
     Class		 *planarbmclass;
     Class		 *chunkybmclass;
+    
+    Object		*std_pixfmts[num_Hidd_StdPixFmt];
 };
 
 
@@ -124,8 +143,17 @@ void   free_bitmapclass(struct class_static_data *csd);
 Class *init_gcclass(struct class_static_data *csd);
 void   free_gcclass(struct class_static_data *csd);
 
+Class *init_gfxmodeclass(struct class_static_data *csd);
+void   free_gfxmodeclass(struct class_static_data *csd);
+
+Class *init_pixfmtclass(struct class_static_data *csd);
+void   free_pixfmtclass(struct class_static_data *csd);
+
+
+
 VOID  bitmap_putpixel(Class *cl, Object *obj, struct pHidd_BitMap_PutPixel *msg);
 ULONG bitmap_getpixel(Class *cl, Object *obj, struct pHidd_BitMap_GetPixel *msg);
+VOID bitmap_convertpixels(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *msg);
 
 
 Class *init_planarbmclass(struct class_static_data *csd);
@@ -133,5 +161,6 @@ void   free_planarbmclass(struct class_static_data *csd);
 
 Class *init_chunkybmclass(struct class_static_data *csd);
 void   free_chunkybmclass(struct class_static_data *csd);
+
 
 #endif /* GRAPHICS_HIDD_INTERN_H */

@@ -31,6 +31,7 @@
 
 static AttrBase HiddBitMapAttrBase = 0;
 static AttrBase HiddGCAttrBase = 0;
+static AttrBase HiddPixFmtAttrBase = 0;
 
 /*** BitMap::New() ************************************************************/
 
@@ -112,7 +113,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
         memset(data, 0, sizeof(struct HIDDBitMapData));
         data->width       = 320;
         data->height      = 200;
-        data->prot.pixfmt.depth  = 8;
+        data->reqdepth	  = 8;
         data->displayable = FALSE;
         data->format      = vHidd_BitMap_Format_Planar;
         data->fg        = 1;        /* foreground color                        */
@@ -134,7 +135,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
                 {
                     case aoHidd_BitMap_Width       : data->width       = tag->ti_Data; break;
                     case aoHidd_BitMap_Height      : data->height      = tag->ti_Data; break;
-                    case aoHidd_BitMap_Depth       : data->prot.pixfmt.depth       = tag->ti_Data; break;
+                    case aoHidd_BitMap_Depth       : data->reqdepth    = tag->ti_Data; break;
                     case aoHidd_BitMap_Displayable : data->displayable = (BOOL) tag->ti_Data; break;
                     case aoHidd_BitMap_Format      : data->format      = tag->ti_Data; break;
 		    
@@ -197,7 +198,6 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
         {
             case aoHidd_BitMap_Width       : *msg->storage = data->width; D(bug("  width: %i\n", data->width)); break;
             case aoHidd_BitMap_Height      : *msg->storage = data->height; break;
-            case aoHidd_BitMap_Depth       : *msg->storage = data->prot.pixfmt.depth; break;
             case aoHidd_BitMap_Displayable : *msg->storage = (IPTR) data->displayable; break;
             case aoHidd_BitMap_Format      : *msg->storage = data->format; break;
 	    case aoHidd_BitMap_GC	   : *msg->storage = (IPTR) data->gc; break;
@@ -211,6 +211,13 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 	    case aoHidd_BitMap_ColorExpansionMode  : *msg->storage = data->colExp; break;
 	    case aoHidd_BitMap_Friend	   : *msg->storage = (IPTR)data->friend; break;
 	    
+            case aoHidd_BitMap_Depth:
+	    	if (NULL != data->prot.pixfmt) {
+	    	    *msg->storage = ((HIDDT_PixelFormat *)data->prot.pixfmt)->depth;
+		} else {
+		    *msg->storage = data->reqdepth;
+		}
+		break;
     
             default: DoSuperMethod(cl, obj, (Msg) msg);
         }
@@ -983,11 +990,10 @@ static VOID bitmap_drawpolygon(Class *cl, Object *obj, struct pHidd_BitMap_DrawP
 
 static VOID bitmap_fillpolygon(Class *cl, Object *obj, struct pHidd_BitMap_DrawPolygon *msg)
 {
-    struct HIDDBitMapData *data = INST_DATA(cl, obj);
 
     EnterFunc(bug("BitMap::FillPolygon()"));
 
-    D(bug("Sorry, not implemented yet\n"));
+    kprintf("Sorry, FillPolygon() not implemented yet in bitmap baseclasss\n");
 
     ReturnVoid("BitMap::FillPolygon");
 }
@@ -1158,11 +1164,10 @@ static VOID bitmap_drawtext(Class *cl, Object *obj, struct pHidd_BitMap_DrawText
 
 static VOID bitmap_drawfilltext(Class *cl, Object *obj, struct pHidd_BitMap_DrawText *msg)
 {
-    struct HIDDBitMapData *data = INST_DATA(cl, obj);
 
     EnterFunc(bug("BitMap::DrawFillText()\n"));
 
-    D(bug("Sorry, not implemented yet\n"));
+    kprintf("Sorry, DrawFillText() not implemented yet in bitmap baseclass\n");
 
     ReturnVoid("BitMap::DrawFillText");
 }
@@ -1203,7 +1208,6 @@ static VOID bitmap_drawfilltext(Class *cl, Object *obj, struct pHidd_BitMap_Draw
 
 static VOID bitmap_fillspan(Class *cl, Object *obj, struct pHidd_BitMap_DrawText *msg)
 {
-    struct HIDDBitMapData *data = INST_DATA(cl, obj);
 
     EnterFunc(bug("BitMap::FillSpan()\n"));
 
@@ -1270,7 +1274,7 @@ static VOID bitmap_clear(Class *cl, Object *obj, struct pHidd_BitMap_Clear *msg)
 static VOID bitmap_getimage(Class *cl, Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     WORD x, y;
-    ULONG *pixarray = msg->pixels;
+    ULONG *pixarray = (ULONG *)msg->pixels;
     
     for (y = 0; y < msg->height; y ++)
     {
@@ -1285,14 +1289,13 @@ static VOID bitmap_getimage(Class *cl, Object *o, struct pHidd_BitMap_GetImage *
 static VOID bitmap_putimage(Class *cl, Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     WORD x, y;
-    ULONG *pixarray = msg->pixels;
+    ULONG *pixarray = (ULONG *)msg->pixels;
     ULONG old_fg;
     struct TagItem fg_tags[] =
     {
 	{ aHidd_BitMap_Foreground,	0UL },
 	{ TAG_DONE, 0UL}
     };
-    struct HIDDBitMapData *data = INST_DATA(cl, o);
     
     EnterFunc(bug("BitMap::PutImage(x=%d, y=%d, width=%d, height=%d)\n"
     		, msg->x, msg->y, msg->width, msg->height));
@@ -1386,7 +1389,121 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColo
     
 }
 
+/*** BitMap::GetPixelFormat() **********************************************/
 
+#if 0
+static const HIDDT_PixelFormat std_pixfmts[num_Hidd_StdPixFmt] =
+{
+    {	/* HIDD_PixFmt_RGB24 */
+	24, 24, 3,
+	0x00FF0000,
+	0x0000FF00,
+	0x000000FF,
+	0x00000000,
+	
+	8, 16, 24, 0,
+	vHidd_PixFmt_RGB24,
+	vHidd_GT_TrueColor
+	
+    },
+    {	/* HIDD_PixFmt_RGB16 */
+	16, 16, 2,
+	0x0000F800,
+	0x000007E0,
+	0x0000001F,
+	0x00000000,
+	
+	16, 21, 27, 0,
+	vHidd_PixFmt_RGB16,
+	vHidd_GT_TrueColor
+    },
+    {	/* HIDD_PixFmt_ARGB32 */
+	32, 32, 4,
+	0x00FF0000,
+	0x0000FF00,
+	0x000000FF,
+	0xFF000000,
+	
+	8, 16, 24, 0,
+	vHidd_PixFmt_ARGB32,
+	vHidd_GT_TrueColor
+    },
+    {	/* HIDD_PixFmt_RGBA32 */
+	32, 32, 4,
+	0xFF000000,
+	0x00FF0000,
+	0x0000FF00,
+	0x000000FF,
+	
+	0, 8, 16, 24,
+	vHidd_PixFmt_RGBA32,
+	vHidd_GT_TrueColor
+    },
+    {	/* HIDD_PixFmt_LUT8 */
+	8, 8, 1,
+	0x00000000,
+	0x00000000,
+	0x00000000,
+	0x00000000,
+	
+	0, 0, 0, 0,
+	vHidd_PixFmt_LUT8,
+	vHidd_GT_Palette
+    }
+};
+
+#endif
+
+static Object *bitmap_getpixfmt(Class *cl, Object *o, struct pHidd_BitMap_GetPixelFormat *msg) 
+{
+    Object *fmt;
+    
+    kprintf("bitmap_getpixfmt\n");
+    
+    if (msg->stdPixFmt >= num_Hidd_PixFmt)
+    {
+    	kprintf("!!! Illegal pixel format passed to BitMap::GetPixelFormat()\n");
+	return;
+    }
+    
+    if (msg->stdPixFmt == vHidd_PixFmt_Native || msg->stdPixFmt == vHidd_PixFmt_Native32)
+    {
+	struct HIDDBitMapData *data;
+    
+	data = INST_DATA(cl, o);
+	fmt  = data->prot.pixfmt;
+    }
+    else
+    {
+    	fmt = CSD(cl)->std_pixfmts[msg->stdPixFmt - num_Hidd_PseudoPixFmt];
+    }
+
+#if 0    
+    if (msg->stdPixFmt == vHidd_PixFmt_Native32)
+    {
+	msg->pixFmtReturn->bytes_per_pixel = 4;
+	msg->pixFmtReturn->stdpixfmt = vHidd_PixFmt_Native32;
+    }
+#endif
+
+    return fmt;
+}
+
+
+/*** BitMap::BytesPerLine() **********************************************/
+static ULONG bitmap_bytesperline(Class *cl, Object *o, struct pHidd_BitMap_BytesPerLine *msg)
+{
+     Object *pf;
+     
+     
+kprintf("bitmap_bytesperline\n");
+     
+#warning Optimize this. We can just halfway reimplement bitmap_getpixelformat above
+     pf = HIDD_BM_GetPixelFormat(o, msg->pixFmt);
+     
+     return ((HIDDT_PixelFormat *)pf)->size * msg->width;
+     
+}
 /*** BitMap::Set() *****************************************************/
 
 /*
@@ -1414,7 +1531,6 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
             {
                 case aoHidd_BitMap_Width         : data->width         = tag->ti_Data; break;
                 case aoHidd_BitMap_Height        : data->height        = tag->ti_Data; break;
-                case aoHidd_BitMap_Depth         : data->prot.pixfmt.depth         = tag->ti_Data; break;
                 case aoHidd_BitMap_Displayable   : data->displayable   = (BOOL) tag->ti_Data; break;
                 case aoHidd_BitMap_Format        : data->format        = tag->ti_Data; break;
                 case aoHidd_BitMap_BytesPerRow   : data->bytesPerRow   = tag->ti_Data; break;
@@ -1431,6 +1547,15 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
 		case aoHidd_BitMap_PlaneMask	: (APTR)data->planeMask	= tag->ti_Data; break;
 		case aoHidd_BitMap_Font	   	: (APTR)data->font	= tag->ti_Data; break;
 		case aoHidd_BitMap_ColorExpansionMode	: data->colExp		= tag->ti_Data; break;
+
+                case aoHidd_BitMap_Depth:
+		    if (NULL != data->prot.pixfmt) {
+			((HIDDT_PixelFormat *)data->prot.pixfmt)->depth  = tag->ti_Data;
+		    } else {
+		    	data->reqdepth = tag->ti_Data;
+		    }
+		    break;
+
             }
         }
     }
@@ -1450,7 +1575,7 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
 #define SysBase (csd->sysbase)
 
 #define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 19
+#define NUM_BITMAP_METHODS 20
 
 Class *init_bitmapclass(struct class_static_data *csd)
 {
@@ -1463,7 +1588,7 @@ Class *init_bitmapclass(struct class_static_data *csd)
         {NULL, 0UL}
     };
 
-    struct MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
+    struct MethodDescr bitmap_descr[NUM_BITMAP_METHODS + 1] =
     {
         {(IPTR (*)())bitmap_setcolors	  	, moHidd_BitMap_SetColors	},
         {(IPTR (*)())bitmap_drawpixel		, moHidd_BitMap_DrawPixel	},
@@ -1482,13 +1607,16 @@ Class *init_bitmapclass(struct class_static_data *csd)
         {(IPTR (*)())bitmap_putimage		, moHidd_BitMap_PutImage		},
         {(IPTR (*)())bitmap_getimage		, moHidd_BitMap_GetImage		},
         {(IPTR (*)())bitmap_blitcolexp		, moHidd_BitMap_BlitColorExpansion	},
+        {(IPTR (*)())bitmap_getpixfmt		, moHidd_BitMap_GetPixelFormat	},
+        {(IPTR (*)())bitmap_bytesperline	, moHidd_BitMap_BytesPerLine	},
+	{(IPTR (*)())bitmap_convertpixels	, moHidd_BitMap_ConvertPixels	},
         {NULL, 0UL}
     };
     
     struct InterfaceDescr ifdescr[] =
     {
         {root_descr,    IID_Root       , NUM_ROOT_METHODS},
-        {bitMap_descr,  IID_Hidd_BitMap, NUM_BITMAP_METHODS},
+        {bitmap_descr,  IID_Hidd_BitMap, NUM_BITMAP_METHODS},
         {NULL, NULL, 0}
     };
 
@@ -1517,19 +1645,16 @@ Class *init_bitmapclass(struct class_static_data *csd)
             cl->UserData     = (APTR) csd;
             
             /* Get attrbase for the BitMap interface */
-            HiddBitMapAttrBase = ObtainAttrBase(IID_Hidd_BitMap);
-	    HiddGCAttrBase = ObtainAttrBase(IID_Hidd_GC);
-            if(HiddBitMapAttrBase && HiddGCAttrBase)
+            HiddBitMapAttrBase 	= ObtainAttrBase(IID_Hidd_BitMap);
+	    HiddGCAttrBase 	= ObtainAttrBase(IID_Hidd_GC);
+	    HiddPixFmtAttrBase 	= ObtainAttrBase(IID_Hidd_PixFmt);
+	    
+            if(HiddBitMapAttrBase && HiddGCAttrBase && HiddPixFmtAttrBase)
             {
                 AddClass(cl);
             }
             else
             {
-	    	if (HiddGCAttrBase)
-			ReleaseAttrBase(IID_Hidd_GC);
-			
-	    	if (HiddBitMapAttrBase)
-			ReleaseAttrBase(IID_Hidd_BitMap);
 			
                 free_bitmapclass(csd);
                 cl = NULL;
@@ -1552,8 +1677,19 @@ void free_bitmapclass(struct class_static_data *csd)
         RemoveClass(csd->bitmapclass);
         if(csd->bitmapclass) DisposeObject((Object *) csd->bitmapclass);
         csd->bitmapclass = NULL;
-        if(HiddBitMapAttrBase) ReleaseAttrBase(IID_Hidd_BitMap);
-	if (HiddGCAttrBase) ReleaseAttrBase(IID_Hidd_GC);
+        if(HiddBitMapAttrBase) {
+		ReleaseAttrBase(IID_Hidd_BitMap);
+		HiddBitMapAttrBase = 0;
+	}
+	if (HiddGCAttrBase) {
+		ReleaseAttrBase(IID_Hidd_GC);
+		HiddGCAttrBase = 0;
+	}
+	
+	if (HiddPixFmtAttrBase) {
+		ReleaseAttrBase(IID_Hidd_PixFmt);
+		HiddPixFmtAttrBase = 0;
+	}
     }
 
     ReturnVoid("free_bitmapclass");
