@@ -325,6 +325,7 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 {
     struct FRUserData 		*udata = (struct FRUserData *)ld->ld_UserData;	
     struct IntFileReq 		*ifreq = (struct IntFileReq *)ld->ld_IntReq;
+    struct FileRequester    	*freq = (struct FileRequester *)ld->ld_Req;
     struct FileInfoBlock 	*fib;
     UBYTE 			parsedpattern[MAX_PATTERN_LEN * 2 + 3];
     BPTR 			lock;
@@ -355,13 +356,13 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
      	D(bug("Could not lock directory \"%s\"\n", path));
     }
     else
-    {    
+    {	
     	fib = AllocDosObject(DOS_FIB, NULL);
 	if (fib)
     	{
 	    success = Examine(lock, fib);
 
-	    if (success) for(;;)
+	    if (success && fib->fib_DirEntryType > 0) for(;;)
 	    {
 		struct ASLLVFileReqNode *node;
 		BOOL 			ok, addentry = TRUE;
@@ -412,31 +413,48 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 		if (addentry && ifreq->ifr_HookFunc && (ifreq->ifr_Flags1 & FRF_FILTERFUNC))
 		{
 		    struct AnchorPath ap;
+		    STRPTR  	      old_frdrawer;
 		    
 		    /* FIXME: is ap.ap_Info enough for the hookfunc */
 		    
 		    memset(&ap, 0, sizeof(ap));
 		    ap.ap_Info = *fib;
 		    
+		    /* Some user filter functions access freq->fr_Drawer :-( */
+		    
+		    old_frdrawer = freq->fr_Drawer;
+		    freq->fr_Drawer = path;
+		    
 		    /* return code 0 means, add to list */
 		    
-		    if (ifreq->ifr_HookFunc(FRF_FILTERFUNC, &ap, (struct FileRequester *)ld->ld_Req) != 0)
+		    if (ifreq->ifr_HookFunc(FRF_FILTERFUNC, &ap, freq) != 0)
 		        addentry = FALSE;
+			
+		    freq->fr_Drawer = old_frdrawer;
 		}
 		
 		if (addentry && ifreq->ifr_FilterFunc)
 		{
 		    struct AnchorPath ap;
+		    STRPTR  	      old_frdrawer;
 
 		    /* FIXME: is ap.ap_Info enough for the filterfunc */
 		    
 		    memset(&ap, 0, sizeof(ap));
 		    ap.ap_Info = *fib;
 
+		    /* Some user filter functions access freq->fr_Drawer :-( */
+
+		    old_frdrawer = freq->fr_Drawer;
+		    freq->fr_Drawer = path;
+
 		    /* return code TRUE (!= 0) means, add to list */
 		    
-		    if (CallHookPkt(ifreq->ifr_FilterFunc, ld->ld_Req, &ap) == 0)
+		    if (CallHookPkt(ifreq->ifr_FilterFunc, freq, &ap) == 0)
 		        addentry = FALSE;
+
+		    freq->fr_Drawer = old_frdrawer;
+
 		}
 				
 		if (addentry)
@@ -499,7 +517,7 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 		    
 		} /* if (addentry) */
 		
-	    }; /* foreach file in directory */
+	    } /* foreach file in directory */
 
 	    FreeDosObject(DOS_FIB, fib);
 
