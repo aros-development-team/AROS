@@ -10,14 +10,7 @@
 #include "diskfont_intern.h"
 #include <string.h>
 
-#ifndef TURN_OFF_DEBUG
-#ifdef DEBUG
-#undef DEBUG
-#endif
-#define DEBUG 0
-#endif
-
-#  include <aros/debug.h>
+#include <aros/debug.h>
 
 /****************************************************************************/
 
@@ -129,8 +122,8 @@ STATIC VOID BufferInfoFree(struct BufferInfo *bi, struct DiskfontBase_intern *Di
 	
     if (flags & AFF_DISK)
     {
-	iterator = DF_IteratorInit(DFB(DiskfontBase));
-	while((attr = DF_IteratorGetNext(iterator, NULL, DFB(DiskfontBase)))!=NULL)
+	iterator = DF_IteratorInit(NULL, DFB(DiskfontBase));
+	while((attr = DF_IteratorGetNext(iterator, DFB(DiskfontBase)))!=NULL)
 	{
 	    if ((!IS_SCALED_FONT(attr) || (flags & AFF_SCALED))
 		&& !(IS_OUTLINE_FONT(attr) && (flags & AFF_BITMAP)))

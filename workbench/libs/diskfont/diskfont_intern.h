@@ -122,10 +122,10 @@ VOID MF_IteratorFree(APTR, struct DiskfontBase_intern *);
 /* diskfontfunc.c */
 
 VOID CleanUpFontsDirEntryList(struct DiskfontBase_intern *);
-APTR DF_IteratorInit(struct DiskfontBase_intern *);
-struct TTextAttr *DF_IteratorGetNext(APTR, struct TTextAttr *, struct DiskfontBase_intern *);
+APTR DF_IteratorInit(struct TTextAttr *, struct DiskfontBase_intern *);
+struct TTextAttr *DF_IteratorGetNext(APTR, struct DiskfontBase_intern *);
 VOID DF_IteratorRemember(APTR, struct DiskfontBase_intern *);
-struct TextFont *DF_IteratorRememberOpen(APTR, struct TTextAttr *, struct DiskfontBase_intern *);
+struct TextFont *DF_IteratorRememberOpen(APTR, struct DiskfontBase_intern *);
 VOID DF_IteratorFree(APTR, struct DiskfontBase_intern *);
 struct TextFont *DF_OpenFontPath(struct TextAttr *, struct DiskfontBase_intern *);
 

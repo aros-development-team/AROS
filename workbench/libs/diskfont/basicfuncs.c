@@ -13,7 +13,6 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include "diskfont_intern.h"

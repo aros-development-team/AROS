@@ -17,11 +17,6 @@
 #include <string.h>
 #include "diskfont_intern.h"
 
-
-#ifndef TURN_OFF_DEBUG
-#define DEBUG 0
-#endif
-
 #include <aros/debug.h>
 
 /****************************************************************************************/

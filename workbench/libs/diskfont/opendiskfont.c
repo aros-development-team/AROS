@@ -6,20 +6,14 @@
     Lang: english
 */
 
-#ifndef TURN_OFF_DEBUG
-#ifdef DEBUG
-#undef DEBUG
-#endif
-//#define DEBUG 1
-#endif
-#  include <aros/debug.h>
-
 #include <string.h>
 #include <graphics/text.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/graphics.h>
 #include "diskfont_intern.h"
+
+#include <aros/debug.h>
 
 
 /*****************************************************************************
@@ -73,9 +67,10 @@
     BOOL bestinmemory = TRUE;
     struct TTextAttr *ttait;
     struct TextFont *tf = NULL;
-    ULONG len = strlen(textAttr->ta_Name);
-
-    if (len>5 && strcasecmp(textAttr->ta_Name+len-5,".font")==0)
+    STRPTR filepart = FilePart(textAttr->ta_Name), wholename = textAttr->ta_Name;
+    ULONG len = strlen(filepart);
+    
+    if (len>5 && strcasecmp(filepart+len-5,".font")==0)
         len -= 5;
 
     D(bug("OpenDiskFont(textAttr=%p)\n", textAttr));
@@ -85,10 +80,9 @@
           textAttr->ta_Style,
           textAttr->ta_Flags));
 
-    /* If font name contains a path don´t look into the cache but open it directly from disk */
-    if (FilePart(textAttr->ta_Name) != textAttr->ta_Name)
-        return DF_OpenFontPath(textAttr, DFB(DiskfontBase));
-
+    /* Check if font is in memory, ignore path */
+    textAttr->ta_Name = filepart;
+    
     tf = OpenFont(textAttr);
     if (tf!=NULL)
     {
@@ -106,28 +100,35 @@
 	else
 	    tattr.tta_Tags = NULL;
 	
-	match_weight = WeighTAMatch((struct TTextAttr *)textAttr,
+	match_weight = WeighTAMatch(textAttr,
 				    (struct TextAttr *)&tattr,
 				    tattr.tta_Tags);
-    }
 
+	D(bug("OpenDiskFont: Found font in memory weight(%d)\n", match_weight));
+    }
+    else
+	D(bug("OpenDiskFont: No font found in memory\n"));
+
+    textAttr->ta_Name = wholename;
+    
     if (match_weight!=MAXFONTMATCHWEIGHT)
     {
-	iterator = DF_IteratorInit(DFB(DiskfontBase));
+	iterator = DF_IteratorInit((struct TTextAttr *)textAttr, DFB(DiskfontBase));
 	if (iterator == NULL)
-	    D(bug("Error initializing Diskfont Iterator\n"));
+	    D(bug("OpenDiskFont: Error initializing Diskfont Iterator\n"));
 	else
 	{
-	    while ((ttait = DF_IteratorGetNext(iterator, (struct TTextAttr *)textAttr, DFB(DiskfontBase)))!=NULL)
+	    while ((ttait = DF_IteratorGetNext(iterator, DFB(DiskfontBase)))!=NULL)
 	    {
-		D(bug("OpenDiskFont: Checking font: %s\n", ttait->tta_Name));
 	        ULONG len2 = strlen(ttait->tta_Name) - 5;
+
+		D(bug("OpenDiskFont: Checking font: %s(%d)\n", ttait->tta_Name, ttait->tta_YSize));
 
 	        D(bug("len: %d len2: %d\n", len, len2));
 	       
-		if ((len == len2)  && (strncasecmp(ttait->tta_Name, textAttr->ta_Name, len) == 0))
+		if ((len == len2)  && (strncasecmp(ttait->tta_Name, filepart, len) == 0))
 		{
-		    new_match_weight = WeighTAMatch((struct TTextAttr *)textAttr,
+		    new_match_weight = WeighTAMatch(textAttr,
 						    (struct TextAttr *)ttait,
 						    ttait->tta_Tags);
 
@@ -136,7 +137,11 @@
 			match_weight = new_match_weight;
 			DF_IteratorRemember(iterator, DFB(DiskfontBase));
 			bestinmemory = FALSE;
+			D(bug("Better weight (%d)\n", match_weight));
 		    }
+		    else
+			D(bug("No better weight (%d)\n", new_match_weight));
+		    
 		    if (match_weight==MAXFONTMATCHWEIGHT)
 			break;
 		}
@@ -147,7 +152,7 @@
 	    {
 		if (tf!=NULL)
 		    CloseFont(tf);
-		tf = DF_IteratorRememberOpen(iterator, (struct TTextAttr *)textAttr, DFB(DiskfontBase));
+		tf = DF_IteratorRememberOpen(iterator, DFB(DiskfontBase));
 	    }
 	    DF_IteratorFree(iterator, DFB(DiskfontBase));
 	}
