@@ -9,7 +9,17 @@ Enter the mSQL command below:
 The jobserver consists of the following tables:
 
 <UL>
-    <LI> <B><TT>jobs</TT><B><P>
+    <LI> <B><TT>abbreviations</TT></B><P>
+    Contains the abbreviations for various parts of the AmigaOS
+    plus the complete names.<P>
+
+    Fields:
+    <UL>
+	<LI> <TT>short</TT> (eg. cia)
+	<LI> <TT>long</TT> (eg. Cia.resource)
+    </UL>
+    <LI> <B><TT>jobs</TT></B><P>
+
     Fields:
     <UL>
 	<LI> <TT>jobid</TT> (eg. intuition00105)
@@ -18,6 +28,22 @@ The jobserver consists of the following tables:
 		be login instead of email.)
 	<LI> <TT>comment</TT> (eg. Write xyz)
     </UL>
+
+    <LI> <B><TT>users</TT></B><P>
+    Information about the AROS developers (login, real name, EMail address,
+    Work area).<P>
+
+    Fields:
+    <UL>
+	<LI> <TT>login</TT> The login of the user (eg. digulla)
+	<LI> <TT>name</TT> The real name of the user (eg. Aaron Digulla)
+	<LI> <TT>email</TT> The EMail address of the user (eg.
+	    digulla@hepe.com)
+	<LI> <TT>comment</TT> A comment about the user (eg. the part
+	    of AROS on which he currently works)
+    </UL>
+    <LI> <B><TT>jobs</TT></B><P>
+
 </UL>
 
 Here is a list of the most useful queries. You don't need to copy
