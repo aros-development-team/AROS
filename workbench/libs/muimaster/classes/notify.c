@@ -358,11 +358,7 @@ static ULONG mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 static ULONG mCallHook(struct IClass *cl, Object *obj, struct MUIP_CallHook *msg)
 {
     if (msg->Hook->h_Entry)
-#ifndef _AROS
 	return CallHookPkt(msg->Hook,obj, &msg->param1);
-#else
-	return (ULONG)(*(msg->Hook->h_Entry))(msg->Hook, obj, &msg->param1);
-#endif
     else return FALSE;
 }
 
