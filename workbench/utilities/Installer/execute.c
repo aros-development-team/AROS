@@ -1553,10 +1553,122 @@ void *params;
 			  }
 			  break;
 
+      case _EARLIER	: /* Return TRUE if file1 is older than file2 */
+			  if ( current->next != NULL && current->next->next != NULL)
+			  {
+			    char *file1 = NULL, *file2 = NULL;
+			    BPTR lock1, lock2;
+			    struct FileInfoBlock *fib1, *fib2;
+
+			    current = current->next;
+			    ExecuteCommand();
+			    if ( current->arg != NULL )
+			    {
+			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+			      {
+			        string = strip_quotes( current->arg );
+			      }
+			      else
+			      {
+				if( ( clip = get_var_arg( current->arg ) ) == NULL)
+				  string = strdup( current->arg );
+				else
+				  string = strip_quotes( clip );
+			      }
+			      file1 = string;
+			    }
+			    else
+			    {
+			      error = BADPARAMETER;
+			      traperr( "<%s> requires two string arguments!\n", current->arg );
+			    }
+
+			    current = current->next;
+			    ExecuteCommand();
+			    if ( current->arg != NULL )
+			    {
+			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+			      {
+			        string = strip_quotes( current->arg );
+			      }
+			      else
+			      {
+				if( ( clip = get_var_arg( current->arg ) ) == NULL)
+				  string = strdup( current->arg );
+				else
+				  string = strip_quotes( clip );
+			      }
+			      file2 = string;
+			    }
+			    else
+			    {
+			      error = BADPARAMETER;
+			      traperr( "<%s> requires two string arguments!\n", current->arg );
+			    }
+
+			    if ((lock1 = Lock(file1, SHARED_LOCK)) == NULL )
+			    {
+			      error = DOSERROR;
+			      traperr( "File not found <%s>\n", file1 );
+			    }
+			    if ((lock2 = Lock(file2, SHARED_LOCK)) == NULL )
+			    {
+			      error = DOSERROR;
+			      traperr( "File not found <%s>\n", file2 );
+			    }
+			    if ((fib1 = AllocDosObject( (ULONG)DOS_FIB, NULL )) == NULL )
+			    {
+			      error = DOSERROR;
+			      traperr( "Could not AllocDosObject FIB for file <%s>\n", file1 );
+			    }
+			    if ((fib2 = AllocDosObject( (ULONG)DOS_FIB, NULL )) == NULL )
+			    {
+			      error = DOSERROR;
+			      traperr( "Could not AllocDosObject FIB for file <%s>\n", file2 );
+			    }
+			    if (Examine(lock1, fib1) == FALSE)
+			    {
+			      error = DOSERROR;
+			      traperr( "Could not Examine() file <%s>\n", file1 );
+			    }
+			    if (Examine(lock2, fib2) == FALSE)
+			    {
+			      error = DOSERROR;
+			      traperr( "Could not Examine() file <%s>\n", file2 );
+			    }
+			    if (fib1->fib_Date.ds_Days < fib2->fib_Date.ds_Days)
+			    {
+			      current->parent->intval = 1;
+			    }
+			    else if (fib1->fib_Date.ds_Days == fib2->fib_Date.ds_Days)
+			    {
+			      if (fib1->fib_Date.ds_Minute < fib2->fib_Date.ds_Minute)
+			      {
+				current->parent->intval = 1;
+			      }
+			      else if (fib1->fib_Date.ds_Minute == fib2->fib_Date.ds_Minute)
+			      {
+				if (fib1->fib_Date.ds_Tick < fib2->fib_Date.ds_Tick)
+				{
+				  current->parent->intval = 1;
+				}
+			      }
+			    }
+			    FreeDosObject( DOS_FIB, fib2 );
+			    FreeDosObject( DOS_FIB, fib1 );
+			    UnLock(lock2);
+			    UnLock(lock1);
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires two string arguments!\n", current->arg );
+			  }
+			  break;
+
       /* Here are all unimplemented commands */
       case _COPYFILES	:
       case _COPYLIB	:
-      case _EARLIER	:
       case _EXPANDPATH	:
       case _FOREACH	:
       case _GETASSIGN	:

@@ -448,10 +448,12 @@ Execute an AmigaDOS script.
   the renaming will be done even when in PRETEND mode.
   This function returns 1 on success and 0 on failure.
 
+
 ( fileonly <pathname> )
   Returns the file part of <pathname>.
   Example:
     (fileonly "A:BC/def/gh") -> "gh"
+
 
 ( pathonly <pathname> )
   Returns the path part of <pathname>.
@@ -459,10 +461,14 @@ Execute an AmigaDOS script.
     (pathonly "A:BC/def/gh") -> "A:BC/def"
 
 
+( earlier <file1> <file2> )
+  Returns TRUE if file1 is older (earlier) than file2.
+
+
+
 /* Unimplemented commands */
 ( copyfiles )
 ( copylib )
-( earlier )
 ( expandpath )
 ( foreach )
 ( getassign )
