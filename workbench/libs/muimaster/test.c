@@ -28,12 +28,51 @@ __saveds void repeat_function(void)
     printf("MUI_Timer\n");
 }
 
+/* The custom class */
+
+struct DropText_Data
+{
+    ULONG times;
+};
+
+#ifndef _AROS
+__saveds __asm IPTR dispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
+#else
+AROS_UFH3S(IPTR, dispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1))
+#endif
+{
+    switch (msg->MethodID)
+    {
+    	case MUIM_DragQuery: return MUIV_DragQuery_Accept;
+    	case MUIM_DragDrop:
+    	{
+	    struct DropText_Data *data = (struct DropText_Data*)INST_DATA(cl,obj);
+	    char buf[100];
+	    data->times++;
+	    sprintf(buf,"%ld times",data->times); /* no MUIM_SetAsString yet */
+	    set(obj,MUIA_Text_Contents,buf);
+    	}
+    }
+    return DoSuperMethodA(cl,obj,(Msg)msg);
+}
+
+struct MUI_CustomClass *CL_DropText;
+
+#define DropTextObject (Object*)NewObject(CL_DropText->mcc_Class, NULL
+
+
+/* Main prog */
+
 void main(void)
 {
     Object *app;
     Object *wnd;
     Object *quit_button;
     Object *repeat_button;
+
     struct Hook hook;
 
     MUIMasterBase = (struct Library*)&MUIMasterBase_instance;
@@ -50,6 +89,9 @@ void main(void)
     __zune_prefs_init(&__zprefs);
 
     hook.h_Entry = (HOOKFUNC)repeat_function;
+
+    /* should check the result in a real program! */
+    CL_DropText = MUI_CreateCustomClass(NULL,MUIC_Text,NULL,sizeof(struct DropText_Data), dispatcher);
 
     app = ApplicationObject,
     	SubWindow, wnd = WindowObject,
@@ -71,7 +113,7 @@ void main(void)
 			End,
 		    Child, VGroup,
 			GroupFrameT("A vertical group"),
-			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button7", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			Child, DropTextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drop Here", MUIA_Dropable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button8", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			End,
 		    End,
@@ -116,6 +158,7 @@ void main(void)
 
 	MUI_DisposeObject(app);
     }
+    MUI_DeleteCustomClass(CL_DropText);
 }
 
 // ---- old test -------
