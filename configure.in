@@ -201,7 +201,6 @@ case "$host_os" in
 		;;
 	esac
         ;;
-
     *)
 	AC_MSG_ERROR([Unsupported host architecture $host])
 	;;
@@ -336,11 +335,10 @@ case "$target_os" in
 	esac
     ;;
 
-    native)
-	aros_target_arch="native"
+    pc)
+	aros_target_arch="pc"
 	aros_target_cflags="-Wall -O2 -DADEBUG=1 -DMDEBUG=1"
 	aros_shared_default="no"
-
 	case "$target_cpu" in
 	    *i?86*)
 		aros_target_cpu="i386"
@@ -459,7 +457,36 @@ case "$target_os" in
 		;;
 	esac
     ;;
-
+    pp*)
+	aros_target_arch="pp"
+	aros_shared_default="no"
+	case "$target_cpu" in
+	    *m68k*)
+		aros_target_cpu="m68k"
+		aros_flavour="ppnative"
+		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
+		aros_kernel_ldflags=""
+		aros_default_wbwidth=160
+                aros_default_wbheight=160
+		aros_default_wbdepth=1
+                aros_target_cc="m68k-linux-gcc -pipe"
+                aros_target_ld="m68k-linux-gcc -pipe"
+		aros_target_as="m68k-linux-gcc"
+		aros_static_ld="m68k-linux-gcc"
+		aros_shared_ld="m68k-linux-gcc"
+		aros_kernel_ld="m68k-linux-gcc"
+		aros_target_ar="m68k-linux-ar cru"
+		aros_target_ranlib="m68k-linux-ranlib"
+		aros_target_nm="m68k-linux-nm"
+		aros_target_objcopy="m68k-linux-objcopy"
+		aros_target_objdump="m68k-linux-objdump"
+		;;
+	   *)
+		AC_MSG_ERROR("Unknown CPU for PalmPilot -- $target_cpu")
+		;;
+	esac
+	;;
+ 
     *)
 	AC_MSG_ERROR([Unsupported target architecture $target])
 	;;
