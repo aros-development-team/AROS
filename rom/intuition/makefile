@@ -6,6 +6,7 @@ FILES = intuition_init intuition_functable intui_x11
 FUNCTIONS = \
 	addclass \
 	activatewindow \
+	closescreen \
 	closewindow \
 	disposeobject \
 	drawborder \
@@ -16,6 +17,8 @@ FUNCTIONS = \
 	modifyidcmp \
 	modifyprop \
 	newobjecta \
+	openscreen \
+	openscreentaglist \
 	openwindow \
 	openwindowtaglist \
 	printitext \
