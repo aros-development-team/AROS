@@ -25,7 +25,6 @@ RANLIB="ranlib"
 GUI_LIBDIR=""
 GUI_INCDIR=""
 GUI_LIBFLAGS=""
-SYSINCLUDES="-I/usr/include"
 MKDEPEND="makedepend"
 FLAVOUR="emulation"
 
@@ -67,9 +66,6 @@ case "$type" in
 	GUI_LIBDIR="/usr/X11R6/lib"
 	# Link with these GUI libs
 	GUI_LIBFLAGS="-lX11"
-	# System includes (order important!)
-	SYSINCLUDES="`$CC -print-libgcc-file-name |
-	    sed -e 's/libgcc.a/include/'` -I/usr/include"
 	# The flags usually passed to the assembler
 	COMMON_AFLAGS="-x assembler-with-cpp"
 	# Flags to compile objects for shared libs
@@ -143,7 +139,6 @@ case "$1" in
     echo "SYS_CC := $CC" >> $2
     echo "COMMON_CFLAGS := $COMMON_CFLAGS" >> $2
     echo "ILDFLAGS := \$(CFLAGS) $ILDFLAGS" >> $2
-    echo "SYSINCLUDES := $SYSINCLUDES" >> $2
     echo "RANLIB := $RANLIB" >> $2
     echo "ARCH := $ARCH" >> $2
     echo "CPU := $CPU" >> $2
