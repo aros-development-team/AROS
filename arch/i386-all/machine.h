@@ -103,9 +103,9 @@ extern void _aros_not_implemented (char *);
 #define __AROS_UFPA(type,name,reg)    type
 #define __AROS_UFCA(type,name,reg)    name
 #define __AROS_UFDA(type,name,reg)    type
-#define __AROS_LHAQUAD(type,name,reg1,reg2)	type name
-#define __AROS_LPAQUAD(type,name,reg1,reg2)	type
-#define __AROS_LCAQUAD(type,name,reg1,reg2)	name
+#define __AROS_LHAQUAD(type,name,reg1,reg2)     type name
+#define __AROS_LPAQUAD(type,name,reg1,reg2)     type
+#define __AROS_LCAQUAD(type,name,reg1,reg2)     name
 
 /* Prefix for library function in header, prototype and call */
 #define __AROS_LH_PREFIX    /* eps */
@@ -127,22 +127,22 @@ extern void _aros_not_implemented (char *);
     long _n3 = (long)(n3);\
     long _re;\
     __asm__ __volatile__(\
-	"movl	%5,%%eax\n\t"\
-	"pushl	%%eax\n\t"\
-	"movl	%4,%%eax\n\t"\
-	"pushl	%%eax\n\t"\
+	"movl   %5,%%eax\n\t"\
+	"pushl  %%eax\n\t"\
+	"movl   %4,%%eax\n\t"\
+	"pushl  %%eax\n\t"\
 	"movl   %3,%%eax\n\t"\
-	"pushl	%%eax\n\t"\
-	"movl	%%esp,%1\n\t"\
-	"movl	%2,%%eax\n\t"\
-	"call	*%%eax\n\t"\
-	"lea	12(%%esp),%%esp\n\t"\
-	"movl	%%eax,%0"\
+	"pushl  %%eax\n\t"\
+	"movl   %%esp,%1\n\t"\
+	"movl   %2,%%eax\n\t"\
+	"call   *%%eax\n\t"\
+	"lea    12(%%esp),%%esp\n\t"\
+	"movl   %%eax,%0"\
 	: "=g"(_re), "=m"(*(APTR *)p)\
 	: "ad"(n), "g"(_n1), "g"(_n2), "g"(_n3)\
-	: "cc", "memory");\
+	: "cc", "memory", "%eax" );\
     (t)_re;\
 })
 #define AROS_UFC3R(t,n,a1,a2,a3,p) __UFC3R(t,n,a1,a2,a3,p)
-	
+
 #endif /* AROS_MACHINE_H */
