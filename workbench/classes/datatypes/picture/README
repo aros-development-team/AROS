@@ -1,13 +1,210 @@
 This picture.datatype is a work in progress. It compiles cleanly, 
 but is far from being complete!
-Currently only the library-framework is done (trough copying from
-text.datatype ;) ) See the file TODO for a detailed description
-of the missing pieces.
+See the file TODO for a detailed description of the missing pieces.
 Feel free to help me with picure.datatype. But please contact me
 before to avoid double work.
 One word about style: I do use a strange intention-scheme!
 As long as picture.datatype is in development, I will use
-my own style, but I will fix this, if it's complete.
+my own style, but I will fix this, when it's complete.
+Goerg Steger has written some good comments on AROS-Dev.
+I will append his email to this README.
 
 Joerg Dietrich
 <Dietrich_Joerg@t-online.de>
+
+Georgs email:
+
+Hi
+
+I have seen that Joerg has commited framework of picture.datatype.
+Some comments which maybe help him a bit:
+
+the include datatypes/pictureclass.h should be update with
+new stuff in OS 3.5 includes.
+
+How I think things have to be done in some of the methods:
+
+OM_NEW:
+
+  Call DoSuperMethod. handle attributes which are valid only in
+  OM_NEW. Call DT_SetMethod function
+
+OM_DISPOSE:
+  release pens obtained during remapping
+  WaitBlit();
+  if PDTA_Bitmap FreeBitmap()
+  if PDTA_DestBitMap FreeBitmap()
+  Call DoSuperMethod
+  return
+
+OM_SET/OM_UPDATE:
+
+  if (msg->MethodID != OM_NEW) DoSuperMethod();
+  handle attrs
+  if a visual changing attribute was set
+     rp = ObatinGIRPort;
+     DoMethod(GM_RENDER, GREDRAW_UPDATE)
+     ReleaseGIRPort()
+  endif
+  return
+
+OM_GET:
+
+  should not be a problem. Don't forget DTA_Methods where
+  you pass an array of ULONGs containing the supported methods.
+  (terminated with ~0)
+
+GM_LAYOUT:
+
+  NotifyAttrChanges (o, msg->gpl_GInfo, 0,
+                     GA_ID      , G(o)->GadgetID,
+                     DTA_Busy   , TRUE          ,
+                     TAG_DONE);
+
+  retval = (IPTR) DoSuperMethodA (cl, o, (Msg)msg);
+
+  retval += DoAsyncLayout (o, msg);
+  return retval;
+
+DTM_PROCLAYOUT:
+
+  NotifyAttrChanges (o, ((struct gpLayout *) msg)->gpl_GInfo, 0,
+                     GA_ID      , G(o)->GadgetID,
+                     DTA_Busy   , TRUE          ,
+                     TAG_DONE);
+
+  retval = (IPTR) DoSuperMethodA (cl, o, (Msg)msg);
+  
+  /* fall through to DTM_ASNYLAYOUT !!!! */
+
+DTM_ASYNCLAYOUT:
+  ObtainSemaphore(DTSpecialInfo->si_Lock);
+
+  /* Here the real layout stuff happens. AFAIK here the
+  remapping of the picture happens if PDTA_Remap is TRUE,
+  so that it can be used on the screen in PDTA_Screen.
+  The remapped picture is saved in PDTA_DestBitMap. */
+
+  <remapping>
+
+  if (PDTA_FreeSourceBitMap) FreeBitmap(PDTA_BitMap bm)
+
+  NotifyAttrChanges (o, gpl->gpl_GInfo, 0,
+                     GA_ID              , G(o)->GadgetID,
+
+                     DTA_VisibleVert    , visiblevert                           ,
+                     DTA_TotalVert      , totalvert                             ,
+                     DTA_NominalVert    , nomvert                               ,
+                     DTA_VertUnit       , 1                                     ,
+
+                     DTA_VisibleHoriz   , visiblehoriz                          ,
+                     DTA_TotalHoriz     , totalhoriz                            ,
+                     DTA_NominalHoriz   , nomhoriz                              ,
+                     DTA_HorizUnit      , 1                                     ,
+
+                     DTA_Title          , (IPTR)title                           ,
+                     DTA_Busy           , FALSE                                 ,
+                     DTA_Sync           , TRUE                                  ,
+                     TAG_DONE);
+  ReleaseSemaphore(DTSpecialInfo->si_Lock);
+      
+  return 1;
+
+GM_RENDER:
+  ObtainSemaphore(DTSpecialInfo->si_Lock);
+  if (!(DTSpecialInfo->si_Flags & DTSIF_LAYOUT))
+     render bitmap in PDTA_DestBitMap (or PDTA_BitMap), blitting form
+     startx = DTA_TopHoriz and starty = DTA_TopVert
+  endif
+  ReleaseSemaphore(DTSpecialInfo->si_Lock);
+  return
+
+GM_HITTEST/GM_GOACTIVE/GM_HANDLEINPUT/GM_GOINACTIVE:
+
+  Seems to be handled all by datatypes base class (workbench/libs/datatypes/class.c):
+  drag scrolling, drag selecting, so let superclass handle all this methods.
+
+DTM_SELECT:
+  ?? save the select coords in the method somewhere and set a flag 
+  ~ is_selected = TRUE
+
+  ?? If you want call GM_RENDER and do some special highlighting on
+  the select area
+
+DTM_CLEARSELECTED:
+
+  ?? if (is_selected)
+  {
+     is_selected = FALSE;
+     if you did some special highlighting of the select area call
+     GM_RENDER to repaint everything   
+  }
+
+DTM_COPY:
+  save selected area (or everything, if no seleced area) 
+  to clipboard in IFF format
+
+DTM_WRITE:
+
+  save selected area of picture (or everything, if no
+  selected area) to disk. Usually IFF format, if
+  dtWrite->dtw_Mode == DTWM_IFF. It can also be
+  DTWM_RAW --> save in format of datatype, so I guess
+  in this case it's the job of the subclasses to
+  handle DTM_WRITE??
+
+DTM_FRAMEBOX:
+
+  ?? Fill out the strutures in dtFrameBox->dtf_FrameInfo
+  (based on dtf_ContentsInfo?). FRAMEF_SPECIFY? --> see
+  rom/intuition/frameiclass.c/IM_FRAMEBOX.
+
+
+
+
+Then there would still be the V43 picture.datatype
+extensions for hi/true color bitmaps.
+
+Attributes: PDTA_SourceMode/PDTA_DestMode etc. 
+
+Methods: PDTM_WRITEPIXELARRAY/PDTM_READPIXELARRAY
+
+I don't know much about this V43 extension as in the
+few picture sub datatypes I wrote on Amiga I always
+had just to deal with <= 8bit bitmaps and therefore
+did never switch the picture.datatype into V43 mode
+(with PDTA_SourceMode) in this sub classes.
+
+And what apps concerns, I again never switched the
+picture.datatype to V43 mode (with PDTA_Destmode).
+
+What I noticed: If in an app you open
+a picture with NewDTObject without specifying
+PDTA_DestMode then you would normally get always
+a <= 8 bit planar bitmap. But if you add such
+a datatype object to a window with AddDTObject
+it anyway seems to automatically switch to V43 mode
+(on a truecolor screen you will see the loaded
+picture in truecolor).
+
+But maybe the reason was that the program I tried,
+was not picture specific, instead it loaded and
+showed any file for which there was a datatype. And
+because of this the app did not send a DTM_PROCLAYOUT
+before further using the boject, which one usually does
+when using datatypes to open pictures (DTA_GroupID, GID_PICTURE)
+only, and nothing else.
+
+About GM_LAYOUT/DTM_LAYOUT/DTM_ASYNCLAYOUT: In text.datatype
+this is a bit different as sub classes of text.datatype
+must mainly handle this methods themselves, and cannot count on
+the text.datatype doing it. So what I wrote above is similiar
+to ascii.datatype or binary.datatype (subclasses of text.datatype).
+
+Picture.datatype subclasses OTOH (usually?) never handle
+GM_LAYOUT/DTM_LAYOUT/DTM_ASYNCLAYOUT at all, so these methods
+must be handled in picture.datatype itself, I think.
+
+--
+Georg Steger, Hochlercher 30, I-39030 St. Johann/Ahrntal
+EMail: georg.steger@rolmail.net

@@ -8,5 +8,24 @@
 
 struct Picture_Data
 {
- LONG Dummy;
+ ULONG                 Precision;
+ ULONG                 ModeID;
+ struct BitMapHeader  *bmhd;
+ struct BitMap        *bm;
+ struct ColorRegister *ColMap;
+ ULONG                *ColRegs;
+ ULONG                *GRegs;
+ ULONG                *ColTable;
+ ULONG                *ColTable2;
+ ULONG                 Allocated;
+ UWORD                 NumColors;
+ UWORD                 NumAlloc;
+ BOOL                  Remap;
+ struct Screen        *TheScreen;
+ BOOL                  FreeSourceBitMap;
+ Point                *Grab;
+ struct BitMap        *DestBM;
+ struct BitMap        *ClassBM;
+ UWORD                 NumSparse;
+ UBYTE                *SparseTable;
 };

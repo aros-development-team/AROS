@@ -1,30 +1,28 @@
-LIBOBJS = libfunc.o pictureclass_dt.o
-# support_dt.o
+LIBOBJS = libfunc.o pictureclass.o
 
-jdpicture.datatype: ${LIBOBJS}
+picture.datatype: ${LIBOBJS}
    slink with <<
 LIBFD FD:dtclass_lib.fd
-to jdpicture.datatype
+to picture.datatype
 FROM lib:libent.o lib:libinit.o $(LIBOBJS)
 lib lib:sc.lib
-#lib lib:sc.lib lib:mydebug.o
+lib lib:debug.lib
+lib lib:amiga.lib
 NOICONS
 SD
 SC
-libversion 44 librevision 5 libid "picture.datatype 44.5 (21.09.00)"
+libversion 41 librevision 0 libid "picture.datatype 41.0 (03-Oct-2000)"
 <
-#   copy picture.datatype SYS:Classes/datatypes
    avail flush
 
 libfunc.o: libfunc.c
-   sc nostackcheck libcode libfunc.c OBJNAME=$@
+   sc nostackcheck libcode define=MYDEBUG libfunc.c OBJNAME=$@
 
-pictureclass_dt.o: pictureclass.c
-   sc nostackcheck define=COMPILE_DATATYPE pictureclass.c OBJNAME=$@
+pictureclass.o: pictureclass.c
+   sc nostackcheck define=MYDEBUG pictureclass.c OBJNAME=$@
 
-support_dt.o: support.c
-   sc nostackcheck define=COMPILE_DATATYPE support.c OBJNAME=$@
+clean:
+    delete FORCE libfunc.o
+    delete FORCE pictureclass.o
+    delete FORCE picture.datatype
 
-install:
-   copy ReadMe DH2:Projects/Picture-DT
-   copy picture.datatype DH2:Projects/Picture-DT
