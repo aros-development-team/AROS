@@ -28,7 +28,9 @@ for package in $CFG_PACKAGES; do
     resetl
 done
 
+setl cleanup.log
 source $SP/cleanup
+resetl
 
 printi "Compressing log files..."
 for file in $LOG_BASE/*.log; do
