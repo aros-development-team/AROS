@@ -118,14 +118,13 @@ struct Volume *volume;
 		{
 			if (openBlockDevice(afsbase, &volume->ioh)!= NULL)
 			{
-				volume->rootblock=
+				volume->countblocks =
 					(
 						(
-							(
-								devicedef->de_HighCyl-devicedef->de_LowCyl+1
-							)*devicedef->de_Surfaces*devicedef->de_BlocksPerTrack
-						)-1+devicedef->de_Reserved
-					)/2;	/* root in the middle of a partition */
+							devicedef->de_HighCyl-devicedef->de_LowCyl+1
+						)*devicedef->de_Surfaces*devicedef->de_BlocksPerTrack
+					);
+				volume->rootblock =(volume->countblocks-1+devicedef->de_Reserved)/2;
 				volume->startblock=
 						devicedef->de_LowCyl*
 						devicedef->de_Surfaces*
@@ -166,7 +165,7 @@ struct Volume *volume;
 	}
 	else
 		*error=ERROR_NO_FREE_STORE;
-	return 0;
+	return NULL;
 }
 
 /*******************************************
