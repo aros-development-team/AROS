@@ -1,3 +1,10 @@
+/*
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    $Id$
+    
+    Desc: header exporting support functions from libautoinit.a
+*/
+
 #ifndef AUTOINIT_H
 #define AUTOINIT_H
 

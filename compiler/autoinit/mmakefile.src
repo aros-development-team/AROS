@@ -35,12 +35,15 @@ LIBHANDLINGFILES := \
 	libraries_nolibs \
 	libraries
 
-FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES)
+MISCFILES := \
+	detach
+
+FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES) $(MISCFILES)
 
 #MM- linklibs: linklibs-autoinit
 #MM linklibs-autoinit : includes includes-copy
 
-%copy_includes includes=autoinit.h path=aros dir=
+%copy_includes includes="autoinit.h detach.h" path=aros dir=
 
 %build_linklib mmake=linklibs-autoinit libname=autoinit files=$(FILES)
 
