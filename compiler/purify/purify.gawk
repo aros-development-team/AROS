@@ -6,26 +6,25 @@ BEGIN {
 	print "Unsupported cpu: "cpu;
 	exit (10);
     }
-    print "# Purify V0.1" > out;
+    print "# Purify V0.2" > out;
     mainfunc=0;
+    section="";
 }
-/^[ \t]call malloc/ {
-    print "\t\tcall Purify_malloc" >> out;
-    next;
+/^[ \t]*.text/ {
+    section=".text";
 }
-/^[ \t]call free/ {
-    print "\t\tcall Purify_free" >> out;
-    next;
+/^[ \t]*.data/ {
+    section=".data";
 }
-/^[ \t]call calloc/ {
-    print "\t\tcall Purify_calloc" >> out;
-    next;
+/^[ \t]*.section/ {
+    section="$2";
 }
-/^[ \t]call realloc/ {
-    print "\t\tcall Purify_realloc" >> out;
-    next;
+/^[ \t]call (malloc|free|calloc|realloc|f?read|memmove|memcpy|strcpy)$/ {
+    #print >> out; next;
+    print "\t\tcall Purify_"$2 >> out; next;
 }
 /^[ \t]*pushl/ {
+    #print >> out; next;
     print "\t\tpushl $4" >> out
     print "\t\tpushl %esp" >> out;
     print "\t\tcall _Purify_Push" >> out;
@@ -33,6 +32,7 @@ BEGIN {
     print >> out ; next
 }
 /^[ \t]*popl/ {
+    #print >> out; next;
     print "\t\tpushl $4" >> out
     print "\t\tpushl %esp" >> out;
     print "\t\tcall _Purify_Pop" >> out;
@@ -40,6 +40,7 @@ BEGIN {
     print >> out ; next
 }
 /^[ \t]*subl.*,%esp$/ {
+    #print >> out; next;
     na=split($2,a,",");
     print "\t\tpushl "a[1] >> out
     print "\t\tpushl %esp" >> out;
@@ -48,17 +49,18 @@ BEGIN {
     print >> out ; next
 }
 /^[ \t]*movl.*,%esp$/ {
+    #print >> out; next;
     na=split($2,a,",");
     print "\t\tpushl "a[1] >> out
     print "\t\tpushl %esp" >> out;
     print "\t\tcall _Purify_MoveSP" >> out;
     print "\t\taddl $8,%esp" >> out;
-    print >> out;
-    next;
+    print >> out; next;
 }
 /^[ \t]*((lea|jmp)|.*%st[(][0-9]+[)])/ { print >> out; next }
 /^[ \t]*[a-z]+ .*([^(]+)?[(][^)]+[)]/ {
-    #print $0
+    #print >> out; next;
+    #print $0 " NR="NR" line="line
 
     if (match($2,/^([^(,]+)?[(][^)]+[)]/))
     {
@@ -155,6 +157,7 @@ BEGIN {
     next;
 }
 /^[ \t]ret$/ {
+    #print >> out; next;
     print "\t\tcall _Purify_LeaveFunction" >> out
     if (mainfunc)
     {
@@ -164,9 +167,14 @@ BEGIN {
 }
 /^[ \t]*.size/ {
     print >> out;
-    print ".section\t.rodata" >> out;
-    print ".L"funcname":" >> out;
-    print "\t\t.string \""funcname"\"" >> out;
+    if (section==".text")
+    {
+	print ".section\t.rodata" >> out;
+	print ".L"funcname":" >> out;
+	print "\t\t.string \""funcname"\"" >> out;
+	restore_section(".rodata");
+    }
+    next;
 }
 /^[ \t]*.type/ {
     match($2,/^[^,]+/);
@@ -187,7 +195,9 @@ BEGIN {
 	newfunc=0;
     }
     else
+    {
 	print "\t\tmovl $"line",Purify_Lineno" >> out;
+    }
 }
 /^.stabs "\/[^"]+",100/ {
     match($2,/"[^"]+"/);
@@ -200,6 +210,7 @@ BEGIN {
     print ".section\t.rodata" >> out;
     print ".Lfilename:" >> out;
     print "\t\t.string \""path filename"\"" >> out;
+    restore_section(".rodata");
     next
 }
 /^[ \t]*\./ { print >> out; next }
@@ -209,3 +220,13 @@ BEGIN {
     print $0 >> out;
 }
  { print >> out; }
+
+function restore_section(sect) {
+    if (sect != section)
+    {
+	if (section==".text" || section==".data")
+	    print section >> out;
+	else if (section!="")
+	    print ".section "section >> out;
+    }
+}
