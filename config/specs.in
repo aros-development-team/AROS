@@ -11,7 +11,7 @@
 -lamiga -larossupport -larosc -lm
 
 *startfile:
-%{detach:@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/detach.o} @TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/startup.o
+%{detach:@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/detach.o}  @TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/startup.o %{nix:@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/nixmain.o}
 
 *predefines:
 -D__ELF__ -D__@gcc_target_cpu@__ -A-system -Asystem(posix) -D__AROS__
