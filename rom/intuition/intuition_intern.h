@@ -234,7 +234,8 @@ extern void intui_EndRefresh (struct Window * window,
 	    BOOL complete,
 	    struct IntuitionBase * IntuitionBase);
 extern void intui_MoveWindow (struct Window * window, WORD dx, WORD dy);
-extern int  intui_OpenWindow (struct Window *, struct IntuitionBase *, struct BitMap * SuperBitMap);
+extern int  intui_OpenWindow (struct Window *, struct IntuitionBase *, 
+			      struct BitMap * SuperBitMap, struct Hook *backfillhook);
 extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
 extern void intui_RefreshWindowFrame(struct Window *win);
 extern struct Window *intui_FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event, struct IntuitionBase *IntuitionBase);
