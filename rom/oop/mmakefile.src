@@ -9,24 +9,12 @@ include $(TOP)/config/make.cfg
 # Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
 USER_INCLUDES := -I.
 
+# Avoid warnings in include/intuition/*.h (only on amiga?)
+CFLAGS   := $(CFLAGS) -DAROS_USE_OOP
+
 MY_INCLS := $(wildcard include/*.h)
 DEST_INC := $(foreach f,$(MY_INCLS), $(INCDIR)/oop/$(notdir $f))
 GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/oop/$(notdir $f))
-
-#MM
-includes-copy : $(DEST_INC) $(GEN_INC)
-	@$(NOP)
-
-$(INCDIR)/oop/%.h : include/%.h
-	$(CP) include/$(notdir $<) $@
-
-$(GENINCDIR)/oop/%.h : include/%.h
-	$(CP) include/$(notdir $<) $@
-
-#MM
-setup-includes :
-	%mkdirs_q  $(GENINCDIR) $(INCDIR) $(GENINCDIR)/oop $(INCDIR)/oop
-
 
 # BEGIN_DESC{localmakevar}
 # \item{LIBNAME} The lowercase name of the library (without the extension).
@@ -68,7 +56,7 @@ FUNCTIONS := newobject obtainattrbase releaseattrbase getattrbase getmethodid \
 # END_DESC{localmakevar}
 
 ifeq ("$(FLAVOUR)","native")
-DEPLIBS := arosc amiga
+DEPLIBS := amiga arossupport arosc
 else
 DEPLIBS :=
 endif
@@ -98,7 +86,21 @@ SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS)
 endif
 %prepare_shlib oop $(SHARED_OOP)
 
-%genromlib_f
+%genromlib_finline
+
+#MM
+setup-includes :
+	%mkdirs_q  $(GENINCDIR) $(INCDIR) $(GENINCDIR)/oop $(INCDIR)/oop
+
+#MM
+includes-copy : $(DEST_INC) $(GEN_INC)
+	@$(NOP)
+
+$(INCDIR)/oop/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+$(GENINCDIR)/oop/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
 
 #MM kernel-oop-linklib : setup includes kernel-oop-$(ARCH)-$(CPU)
 kernel-oop-linklib : show-flags $(LIB)
@@ -107,6 +109,27 @@ kernel-oop-linklib : show-flags $(LIB)
 #MM kernel-oop-module : setup includes kernel-oop-$(ARCH)-$(CPU)
 kernel-oop-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
+
+
+# --- QUICK HACKS BEGIN --- 
+# These are hacks for faster execution of "mmake" and "make". Use them
+# only if you know set the setup is correct and do not add them as targets
+# in other makefiles.
+#
+# Usage: 
+#   mmake AROS.kernel-oop-module-quick
+#   make -f TOP=/dh1/AROS CURDIR=rom/oop mmakefile kernel-oop-module-quick
+
+#MM kernel-oop-module-quick : kernel-oop-$(ARCH)-$(CPU)
+kernel-oop-module-quick : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+	@$(NOP)
+
+#MM kernel-oop-includes-quick : hidd-oop-$(ARCH)-$(CPU)
+kernel-oop-includes-quick : setup-includes includes-generate includes-copy 
+	$(NOP)
+
+# --- QUICK HACKS END ---
+
 
 #MM clean setup
 
