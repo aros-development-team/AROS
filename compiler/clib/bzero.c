@@ -16,7 +16,7 @@
 
 /*  SYNOPSIS */
 	void * ptr,
-	int    len)
+	size_t    len)
 
 /*  FUNCTION
 	Write len zero bytes to ptr. If len is zero, does nothing.
