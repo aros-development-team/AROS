@@ -239,29 +239,29 @@ static BPTR DupFH(BPTR fh, LONG mode);
 	struct TagItem proctags[] =
 	{
 	    { NP_Entry      , (IPTR)NewCliProc              }, /* 0  */
-	    { NP_Priority   , me->pr_Task.tc_Node.ln_Pri    }, /* 2  */
-	    { NP_StackSize  , AROS_STACKSIZE                }, /* 3  */
-	    { NP_Path       , (IPTR)NULL                    }, /* 4  */
+	    { NP_Priority   , me->pr_Task.tc_Node.ln_Pri    }, /* 1  */
+	    { NP_StackSize  , AROS_STACKSIZE                }, /* 2  */
+	    { NP_Path       , (IPTR)NULL                    }, /* 3  */
 	    { NP_Name       , isBoot ? (IPTR)"Boot Shell" :
 	                      isBackground ?
 			      (IPTR)"Background CLI" :
-			      (IPTR)"New Shell"             }, /* 5  */
-	    { NP_Input      , (IPTR)cis                     }, /* 6  */
-	    { NP_Output     , (IPTR)cos                     }, /* 7  */
-	    { NP_CloseInput , (isAsynch || cis_opened)      }, /* 8  */
-	    { NP_CloseOutput, (isAsynch || cos_opened)      }, /* 9  */
-	    { NP_Cli        , (IPTR)TRUE                    }, /* 11 */
+			      (IPTR)"New Shell"             }, /* 4  */
+	    { NP_Input      , (IPTR)cis                     }, /* 5  */
+	    { NP_Output     , (IPTR)cos                     }, /* 6  */
+	    { NP_CloseInput , (isAsynch || cis_opened)      }, /* 7  */
+	    { NP_CloseOutput, (isAsynch || cos_opened)      }, /* 8  */
+	    { NP_Cli        , (IPTR)TRUE                    }, /* 9  */
 	    { NP_WindowPtr  , isAsynch ? (IPTR)NULL :
-	                      (IPTR)me->pr_WindowPtr        }, /* 12 */
-	    { NP_Arguments  , (IPTR)command                 }, /* 13 */
-	    { NP_Synchronous, FALSE                         }, /* 14 */
-	    { NP_Error      , (IPTR)ces                     }, /* 16 */
+	                      (IPTR)me->pr_WindowPtr        }, /* 10 */
+	    { NP_Arguments  , (IPTR)command                 }, /* 11 */
+	    { NP_Synchronous, FALSE                         }, /* 12 */
+	    { NP_Error      , (IPTR)ces                     }, /* 13 */
 	    { NP_CloseError , (isAsynch || ces_opened) &&
               /* Since old AmigaOS programs don't know anything about Error()
               being handled by this function, don't close the Error stream
               if it's the same as the caller's one*/
-			      ces != Error()                }, /* 17 */
-	    { TAG_END       , 0                             }
+			      ces != Error()                }, /* 14 */
+	    { TAG_END       , 0                             }  /* 15 */
 	};
 
 	Tag filterList[] =
@@ -281,11 +281,11 @@ static BPTR DupFH(BPTR fh, LONG mode);
 
 	FilterTagItems(newtags, filterList, TAGFILTER_NOT);
 
-	proctags[sizeof(proctags)/(sizeof(proctags[0]))].ti_Tag  = TAG_MORE;
-	proctags[sizeof(proctags)/(sizeof(proctags[0]))].ti_Data = (IPTR)newtags;
+	proctags[sizeof(proctags)/(sizeof(proctags[0])) - 1].ti_Tag  = TAG_MORE;
+	proctags[sizeof(proctags)/(sizeof(proctags[0])) - 1].ti_Data = (IPTR)newtags;
 
 	cliproc = CreateNewProc(proctags);
-	
+
 	if (cliproc)
 	{
 	    csm.csm_Msg.mn_Node.ln_Type = NT_MESSAGE;
