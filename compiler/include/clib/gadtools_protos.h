@@ -9,9 +9,38 @@
     Lang: english
 */
 
+#ifndef EXEC_LIBRARIES_H
+#   include <exec/libraries.h>
+#endif
+#ifndef INTUITION_INTUITION_H
+#   include <intuition/intuition.h>
+#endif
+#ifndef INTUITION_SCREENS_H
+#   include <intuition/screens.h>
+#endif
+#ifndef GRAPHICS_RASTPORT_H
+#   include <graphics/rastport.h>
+#endif
+#ifndef LIBRARIES_GADTOOLS_H
+#   include <libraries/gadtools.h>
+#endif
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
 #endif
+
+/* Prototypes for stubs in amiga.lib */
+struct Gadget * CreateGadget(ULONG kind, struct Gadget * previous,
+                             struct NewGadget * ng, ULONG tag1, ...);
+struct Menu * CreateMenus(struct NewMenu * newmenu, ULONG tag1, ...);
+void DrawBevelBox(struct RastPort *rport, WORD left, WORD top, WORD width,
+                  WORD height, ULONG tag1, ...);
+APTR GetVisualInfo(struct Screen * screen, ULONG tag1, ...);
+LONG GT_GetGadgetAttrs(struct Gadget * gad, struct Window * win,
+                       struct Requester * req, ULONG tag1, ...);
+void GT_SetGadgetAttrs(struct Gadget * gad, struct Window * win,
+                       struct Requester * req, ULONG tag1, ...);
+BOOL LayoutMenuItems(struct MenuItem * menuitem, APTR vi, ULONG tag1, ...);
+BOOL LayoutMenus(struct Menu * menu, APTR vi, ULONG tag1, ...);
 
 AROS_LP1(struct Gadget *, CreateContext,
     AROS_LPA(struct Gadget **, glistptr, A0),

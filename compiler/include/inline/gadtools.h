@@ -18,6 +18,11 @@
 	, GADTOOLS_BASE_NAME)
 
 #ifndef NO_INLINE_STDARG
+#define CreateGadget(d0, a0, a1, tags...) \
+     ({ULONG _tags[] = { tags }; CreateGadgetA((d0), (a0), (a1), (struct TagItem *)_tags);})
+#endif
+
+#ifndef NO_INLINE_STDARG
 #define CreateGadget(a0, a1, a2, tags...) \
 	({ULONG _tags[] = { tags }; CreateGadgetA((a0), (a1), (a2), (struct TagItem *)_tags);})
 #endif /* !NO_INLINE_STDARG */
