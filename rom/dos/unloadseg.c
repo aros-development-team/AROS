@@ -58,6 +58,7 @@ extern void Exec_FreeMem();
         extern struct MinList debug_seglist;
         struct debug_segnode *segnode;
 
+    	Forbid();
         ForeachNode(&debug_seglist, segnode)
         {
             if (segnode->seglist == seglist)
@@ -68,6 +69,7 @@ extern void Exec_FreeMem();
                 break;
             }
         }
+	Permit();
 #endif
         return InternalUnLoadSeg(seglist, __AROS_GETVECADDR(SysBase, 35));
     }
