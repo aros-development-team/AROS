@@ -10,6 +10,7 @@
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include "__errno.h"
 
 /*****************************************************************************
 
@@ -65,7 +66,14 @@
     }
 
     if (c == EOF)
-	stream->flags |= _STDIO_FILEFLAG_EOF;
+    {
+	errno = IoErr2errno (IoErr ());
+
+	if (errno)
+	    stream->flags |= _STDIO_FILEFLAG_ERROR;
+	else
+	    stream->flags |= _STDIO_FILEFLAG_EOF;
+    }
 
     return c;
 } /* fgetc */
