@@ -711,8 +711,8 @@ int intui_OpenWindow (struct Window * w,
                            
       /* Could the layer be created. Nothing bad happened so far, so simply leave */
       if (NULL == L)
-        ReturnBool("intui_OpenWindow", FALSE);
-				      
+          ReturnBool("intui_OpenWindow", FALSE);
+	      			      
       /* install it as the BorderRPort */
       w->BorderRPort = L->rp;
 
@@ -740,6 +740,18 @@ int intui_OpenWindow (struct Window * w,
         DeleteLayer(0, L);
         ReturnBool("intui_OpenWindow", FALSE);
       }	
+
+      if ((layerflags & LAYERBACKDROP) && (w->WScreen->Flags & SHOWTITLE))
+      {
+          /* backdrop window was created over screen barlayer, but it must be
+	     under the screen barlayer if screen has flag SHOWTITLE set */
+	     
+          Forbid();
+	  w->WScreen->Flags &= ~SHOWTITLE;
+	  Permit();
+	  
+	  ShowTitle(w->WScreen, TRUE);
+      }
       	  
       /* That should do it, I guess... */
     }
