@@ -166,12 +166,13 @@ int main(int argc, char *argv[])
     FILE *pipe;
     FILE *ldscriptfile = NULL;
     char buf[200];
-    int thereare = 0, incremental = 0;
-    int ignore_missing_symbols = 0;
+    int thereare  = 0, incremental            = 0,
+        strip_all = 0, ignore_missing_symbols = 0;
 
     char *LINKERPATH  = getenv("AROS_TARGET_LINKERPATH");
     char *OBJDUMPPATH = getenv("AROS_TARGET_OBJDUMPPATH");
     char *NMPATH      = getenv("AROS_TARGET_NMPATH");
+    char *STRIPPATH   = getenv("AROS_TARGET_STRIPPATH");
 
 
     if (!LINKERPATH)
@@ -192,6 +193,12 @@ int main(int argc, char *argv[])
         NMPATH = "/usr/bin/nm";
     }
 
+    if (!STRIPPATH)
+    {
+        fprintf(stderr, "%s: AROS_TARGET_STRIPPATH variable not set, using default value /usr/bin/strip\n", argv[0]);
+        NMPATH = "/usr/bin/strip";
+    }
+
     atexit(exitfunc);
 
 
@@ -207,12 +214,29 @@ int main(int argc, char *argv[])
      	        output = argv[cnt][2]?&argv[cnt][2]:argv[++cnt];
             else
 	    /* Incremental linking is requested */
-            if (argv[cnt][1]=='r')
+            if (argv[cnt][1]=='r' && argv[cnt][2]=='\0')
 	        incremental = 1;
 	    else
 	    /* Ignoring of missing symbols is requested */
 	    if (argv[cnt][1]=='i')
 	        ignore_missing_symbols = 1;
+	    else
+	    /* Complete stripping is requested, but we do it our own way */
+	    if (argv[cnt][1]=='s' && argv[cnt][2]=='\0')
+	    {
+                strip_all = 1;
+		argv[cnt][1] = 'r'; /* Just some non-harming option... */
+	    }
+	    else
+	    /* The user just requested help info, don't do anything else */
+	    if (strncmp(&argv[cnt][1], "-help", 6) == 0)
+	    {
+	        /* I know, it's not incremental linking we're after, but the end result
+		   is the same */
+	        incremental = 1;
+	        break;
+	    }
+
 	}
     }
 
@@ -256,6 +280,13 @@ int main(int argc, char *argv[])
 
     free(command);
     free(tempoutname);
+
+    if (ignore_missing_symbols)
+    {
+        thereare = 0;
+	goto end;
+    }
+
     command = joinstrings(NMPATH, " -C -ul ", output, NULL);
 
     pipe = xpopen(command);
@@ -273,14 +304,19 @@ int main(int argc, char *argv[])
 
     pclose(pipe);
 
-    if (thereare && (0 == ignore_missing_symbols))
+end:
+    if (thereare)
         remove(output);
     else
 	chmod(output, 0766);
 
-    if (1 == ignore_missing_symbols) {
-         thereare = 0;
+    if (strip_all)
+    {
+        free(command);
+        command = joinstrings(STRIPPATH, " --strip-unneeded ", output, NULL);
+	xsystem(command);
     }
+
     return thereare;
 }
 
