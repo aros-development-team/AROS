@@ -15,8 +15,8 @@
 #include <hidd/hidd.h>
 
 /* POSIX includes */
-#include <dirent.h>
 #include <sys/types.h>
+#include <dirent.h>
 
 
 struct conbase
