@@ -663,12 +663,16 @@ struct Gadget *FindCycleGadget(struct Window *win, struct Gadget *gad, WORD dire
 	    
 	    while(g)
 	    {
-	        if ((g == gad) && (!(gad->Flags & GFLG_TABCYCLE)))
+	        if (g == gad)
 		{
-		    /* should never happen */
-		    g = NULL;break;
+		    if (!(gad->Flags & GFLG_TABCYCLE) || (gad->Flags & GFLG_DISABLED))
+		    {
+		        /* should never happen */
+			g = NULL;
+		    }
+		    break;
 		}
-		if (g->Flags & GFLG_TABCYCLE) break;
+		if (!(g->Flags & GFLG_DISABLED) && (g->Flags & GFLG_TABCYCLE)) break;
 		
 		g = g->NextGadget;
 		if (!g) g = win->FirstGadget;
@@ -678,6 +682,8 @@ struct Gadget *FindCycleGadget(struct Window *win, struct Gadget *gad, WORD dire
 	case GMR_PREVACTIVE:
 	    prev = 0;g = 0;
 	    gg = win->FirstGadget;
+	    
+	    /* find a TABCYCLE gadget which is before gad in window's gadgetlist */
 	    while (gg)
 	    {
 	        if (gg == gad)
@@ -685,23 +691,25 @@ struct Gadget *FindCycleGadget(struct Window *win, struct Gadget *gad, WORD dire
 		    if (prev) g = prev;
 		    break;
 		}
-		if (gg->Flags & GFLG_TABCYCLE) prev = gg;
+		if (!(gg->Flags & GFLG_DISABLED) && (gg->Flags & GFLG_TABCYCLE)) prev = gg;
 		gg = gg->NextGadget;
 	    }
 	    
 	    if (gg && !g)
 	    {
+	        /* There was no TABCYCLE gadget before gad in window's gadgetlist */
+		
 	        gg = gg->NextGadget;
 		if (!gg)
 		{
-		    if (gad->Flags & GFLG_TABCYCLE) g = gad;
+		    if (!(gad->Flags & GFLG_DISABLED) && (gad->Flags & GFLG_TABCYCLE)) g = gad;
 		    break;
 		}
 		prev = 0;
 		
 		while(gg)
 		{
-		    if (gg->Flags & GFLG_TABCYCLE) prev = gg;
+		    if (!(gg->Flags & GFLG_DISABLED) && (gg->Flags & GFLG_TABCYCLE)) prev = gg;
 		    gg = gg->NextGadget;
 		}
 		
@@ -709,7 +717,7 @@ struct Gadget *FindCycleGadget(struct Window *win, struct Gadget *gad, WORD dire
 		{
 		    g = prev;
 		} else {
-		    if (gad->Flags & GFLG_TABCYCLE) g = gad;
+		    if (!(gad->Flags & GFLG_DISABLED) && (gad->Flags & GFLG_TABCYCLE)) g = gad;
 		}
 	    }    
 		    
