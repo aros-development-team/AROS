@@ -61,18 +61,21 @@
 
     LONG         count = 0;
     CxObj       *te2;
-    struct Node *temp;
+    CxObj       *tempObj;
 
     FreeBrokerList(CopyofList);
 
     ObtainSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
 
-    ForeachNode(&GPB(CxBase)->cx_BrokerList, temp)
+    ForeachNode(&GPB(CxBase)->cx_BrokerList, (struct Node *)tempObj)
     {
+	if(CxObjType(tempObj) == CX_ZERO)
+	    break;
+
 	if(!(te2 = (CxObj *)AllocCxStructure(CX_OBJECT, CX_BROKER, CxBase)))
 	    break;
 
-        *te2->co_Ext.co_BExt = *(((CxObj *)temp)->co_Ext.co_BExt);
+        *te2->co_Ext.co_BExt = *tempObj->co_Ext.co_BExt;
         AddTail(CopyofList, (struct Node *)te2);
         count++;
     }
