@@ -17,6 +17,56 @@
 #include "mui.h"
 #include "support.h"
 
+static CONST_STRPTR searchpaths[] = {
+    "PROGDIR:Zune/%s",
+    "Zune/%s",
+    NULL,
+};
+
+static struct IClass *load_external_class(CONST_STRPTR classname)
+{
+    struct Library *mcclib;
+    struct MUI_CustomClass *mcc;
+    struct IClass *cl;
+    CONST_STRPTR *pathptr;
+    UBYTE s[255];
+
+    for (pathptr = searchpaths; *pathptr; pathptr++)
+    {
+#ifdef _AROS	    
+	snprintf(s, 255, *pathptr, classname);
+#else
+#warning "snprintf() not used on Amiga"
+	sprintf(s, *pathptr, classname);
+#endif
+	if ((mcclib = OpenLibrary(s, 0)))
+	{
+	    /* call MCC_Query(0) */
+	
+#ifdef _AROS		
+	    mcc = AROS_LVO_CALL1(struct MUI_CustomClass *,
+				 AROS_LCA(LONG, 0, D0),
+				 struct Library *, mcclib, 5, lib);
+#else
+#warning "You need to make MCC_Query() call here!!!!!!!!!!!!!!!!!!!"
+	    mcc = 0;
+#endif			
+	    if (mcc)
+	    {
+		cl = mcc->mcc_Class;
+		if (cl)
+		{
+		    mcc->mcc_Module = mcclib;
+		    return cl;
+		}
+	    }
+		
+	    if (!cl) CloseLibrary(mcclib);
+	}
+    }
+    return NULL;
+}
+
 /*****************************************************************************
 
     NAME */
@@ -83,50 +133,11 @@ __asm struct IClass *MUI_GetClass(register __a0 char *classname)
 
 	cl = CreateBuiltinClass(classname, MUIMasterBase);
 
-#if 1
-#warning "check this!"
     	if (!cl)
 	{
-    	    struct Library *mcclib;
-	    struct MUI_CustomClass *mcc;
-	    UBYTE s[64];
-#ifdef _AROS	    
-	    snprintf(s, 64, "Zune/%s", classname);
-#else
-#warning "snprintf() not used on Amiga"
-			sprintf(s, "Zune/%s", classname);
-#endif
-    	    if ((mcclib = OpenLibrary(s, 0)))
-	    {
-	    	/* call MCC_Query(0) */
+	    cl = load_external_class(classname);
+	}
 
-#ifdef _AROS		
-	    	mcc = AROS_LVO_CALL1(struct MUI_CustomClass *,
-		    	AROS_LCA(LONG, 0, D0),
-			struct Library *, mcclib, 5, lib);
-#else
-#warning "You need to make MCC_Query() call here!!!!!!!!!!!!!!!!!!!"
-    	    	mcc = 0;
-#endif			
-	    	if (mcc)
-		{
-		    cl = mcc->mcc_Class;
-		    if (cl)
-		    {
-		    	mcc->mcc_Module = mcclib;
-		    }
-		}
-		
-		if (!cl) CloseLibrary(mcclib);
-	    }
-	}
-#endif
-	
-/*	if (!cl)
-	{
-	    cl = _zune_class_load(className);
-	}
-*/
 	if (cl)
 	{
 #ifndef __MAXON__
