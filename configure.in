@@ -308,8 +308,10 @@ dnl ---------------------------------------------------------------------------
 # Check for some includes for the X11 HIDD and the kernel
 AC_CHECK_HEADERS([sys/ipc.h sys/shm.h \
     sys/mmap.h sys/mman.h sysexits.h \
-    sys/statfs.h sys/statvfs.h sys/vfs.h sys/param.h sys/mount.h \
+    sys/statfs.h sys/statvfs.h sys/vfs.h sys/param.h \
 ])
+
+AC_CHECK_HEADERS([sys/mount.h],,,[#include <sys/param.h>])
 
 AC_HEADER_DIRENT
 AC_HEADER_STAT
