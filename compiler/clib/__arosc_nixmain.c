@@ -123,7 +123,7 @@ BOOL clone_vars(struct MinList *old_vars)
     me = (struct Process *)FindTask(NULL);
     /* Copied and adapted from rom/dos/createnewproc.c. Perhaps there should
        be a public function for this?  */
-    ForeachNode((struct List *)&me->pr_LocalVars, (struct Node *)lv)
+    ForeachNode(&me->pr_LocalVars, lv)
     {
         size_t copyLength = strlen(lv->lv_Node.ln_Name) + 1 + sizeof(struct LocalVar);
 
@@ -173,7 +173,7 @@ static void free_vars(struct MinList *vars)
     struct LocalVar *varNode;
     struct Node     *tempNode;
 
-    ForeachNodeSafe((struct List *)vars, (struct Node *)varNode, tempNode)
+    ForeachNodeSafe(vars, varNode, tempNode)
     {
         FreeMem(varNode->lv_Value, varNode->lv_Len);
         Remove((struct Node *)varNode);

@@ -11,7 +11,7 @@
 
 #include <dos/dos.h>
 
-typedef struct
+typedef struct _fdesc
 {
     BPTR fh;
     int  flags;

@@ -11,6 +11,9 @@
 
 #include "etask.h"
 
+struct _fdesc;
+struct __env_item;
+
 struct arosc_privdata
 {
     /* All stuff visible by the user */
@@ -34,11 +37,11 @@ struct arosc_privdata
     struct arosc_privdata *acpd_oldprivdata;
 
     /* malloc.c */
-    void *acpd_startup_mempool;
+    APTR acpd_startup_mempool;
     struct SignalSemaphore acpd_startup_memsem;
 
     /* __env.c */
-    void *acpd_env_list;
+    struct __env_item *acpd_env_list;
 
     /* __stdio.c */
     struct MinList acpd_stdio_files;
@@ -49,7 +52,7 @@ struct arosc_privdata
 
     /* __open.c */
     int    acpd_numslots;
-    void **acpd_fd_array;
+    struct _fdesc **acpd_fd_array;
 
     /* atexit.c */
     struct MinList acpd_atexit_list;
@@ -67,7 +70,7 @@ struct arosc_privdata
     struct Device      *acpd_TimerBase;
 
     /* __arosc_usedata  */
-    APTR acpd_process_returnaddr;
+    APTR  acpd_process_returnaddr;
     ULONG acpd_usercount;
 
     /* __upath */
@@ -89,12 +92,12 @@ struct arosc_privdata
 #define __get_arosc_privdata() ((struct arosc_privdata *)__get_arosc_userdata())
 
 #define __oldprivdata                         (__get_arosc_privdata()->acpd_oldprivdata)
-#define __env_list          (*((__env_item **)(&(__get_arosc_privdata()->acpd_env_list))))
+#define __env_list                            (__get_arosc_privdata()->acpd_env_list)
 #define __stdio_files                         (__get_arosc_privdata()->acpd_stdio_files)
 #define __numslots                            (__get_arosc_privdata()->acpd_numslots)
-#define __fd_array          ((fdesc **)       (__get_arosc_privdata()->acpd_fd_array))
+#define __fd_array                            (__get_arosc_privdata()->acpd_fd_array)
 #define __startup_memsem                      (__get_arosc_privdata()->acpd_startup_memsem)
-#define __startup_mempool   ((APTR)           (__get_arosc_privdata()->acpd_startup_mempool))
+#define __startup_mempool                     (__get_arosc_privdata()->acpd_startup_mempool)
 #define __startup_datestamp                   (__get_arosc_privdata()->acpd_startup_datestamp)
 #define __stdfiles                            (__get_arosc_privdata()->acpd_stdfiles)
 #define __atexit_list                         (__get_arosc_privdata()->acpd_atexit_list)
