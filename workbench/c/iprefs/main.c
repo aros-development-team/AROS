@@ -10,7 +10,7 @@
 
 #include "global.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <stdlib.h>
@@ -300,15 +300,44 @@ static void HandleAll(void)
 
 /*********************************************************************************************/
 
-int main(void)
+void main2()
 {
+    struct Process *me = (struct Process *)FindTask(NULL);
+
     OpenLibs();
     GetENVName();
     StartNotifications();
     PreparePatches();
+
+    /* Handle all NRF_NOTIFY_INITIAL responses */
+    HandleNotify();
+
+    /* Signal the original task that we are done so that it may exit and
+       the Startup-Sequence may hence continue */
+    Signal((struct Task *)me->pr_Task.tc_UserData, SIGBREAKF_CTRL_F);
+
     HandleAll();
     Cleanup(NULL);
-    
+}
+
+
+int main(void)
+{
+    struct TagItem tags[] =
+    {
+	{ NP_CopyVars   , (IPTR)TRUE  },
+	{ NP_Entry      , (IPTR)main2 },
+	{ NP_UserData   , (IPTR)FindTask(NULL) },
+	{ TAG_END       , (IPTR)NULL  }
+    };
+
+    /* Detach from the CLI by ourselves */
+    CreateNewProc(tags);
+
+    /* Barrier synchronization to make sure that for instance font patches
+       are made before any fonts are used (opening screens). */
+    Wait(SIGBREAKF_CTRL_F);
+
     return 0;
 }
 
