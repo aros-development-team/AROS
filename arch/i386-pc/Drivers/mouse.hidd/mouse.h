@@ -143,6 +143,8 @@ struct mouse_data
 #define KBD_STATUS_OBF 			0x01 	/* keyboard output buffer full */
 #define KBD_STATUS_IBF 			0x02 	/* keyboard input buffer full */
 #define KBD_STATUS_MOUSE_OBF		0x20	/* Mouse output buffer full */
+#define KBD_STATUS_GTO                  0x40    /* General receive/xmit timeout */
+#define KBD_STATUS_PERR                 0x80    /* Parity error */
 
 #define KBD_CTRLCMD_READ_MODE		0x20
 #define KBD_CTRLCMD_WRITE_MODE		0x60
