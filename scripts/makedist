@@ -41,20 +41,27 @@ for dist in $distfiles ; do
     # Now read the list of files one by one
     cat $dist | while read line ; do
 	# Replace patterns
-	ls $dir/$line >> $filenames
+	if [ "x$line" != "x" ]; then
+	    ls $dir/$line >> $filenames
+	    if [ "x$3" != "x" ]; then
+		ls $dir/$line
+	    fi
+	fi
     done
 done
 
 # Sort the names
 sort $filenames | uniq > $filenames.srt
 
-# Create compressed tar archive
-rm -f $archive.tgz
-tar -cvvz --files-from=$filenames.srt -f "$archive.tgz"
+if [ "x$3" = "x" ]; then
+    # Create compressed tar archive
+    rm -f $archive.tgz
+    tar -cvvz --files-from=$filenames.srt -f "$archive.tgz"
 
-# Create LhA archive
-rm -f $archive.lha
-lha a "$archive.lha" `cat $filenames.srt`
+    # Create LhA archive
+    rm -f $archive.lha
+    lha a "$archive.lha" `cat $filenames.srt`
 
-# Remove list of filenames
-rm -f $filenames $filenames.srt
+    # Remove list of filenames
+    rm -f $filenames $filenames.srt
+fi
