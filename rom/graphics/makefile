@@ -10,6 +10,7 @@ FUNCTIONS = \
 	clonerastport \
 	closefont \
 	createrastport \
+	deinitrastport \
 	draw \
 	drawellipse \
 	eraserect \
