@@ -9,6 +9,7 @@
 
 #include <proto/dos.h>
 #include "__errno.h"
+#include "__upath.h"
 
 /*****************************************************************************
 
@@ -35,7 +36,6 @@
     EXAMPLE
 
     BUGS
-    	Does not set errno
 
     SEE ALSO
     	unlink
@@ -44,13 +44,12 @@
 
 ******************************************************************************/
 {
-    if (!DeleteFile ((STRPTR)pathname))
+    if (!DeleteFile (__path_u2a(pathname)))
     {
 	errno = IoErr2errno (IoErr());
 	return -1;
     }
 
     return 0;
-    
 } /* remove */
 
