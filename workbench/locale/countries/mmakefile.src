@@ -10,7 +10,7 @@ DEPLIBS=$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a
 LIBS=-L$(LIBDIR) -lamiga -larosc
 MAKECOUNTRY=$(OBJDIR)/makecountry
 
-COUNTRIES=australia deutschland great_britain nederland
+COUNTRIES=australia deutschland great_britain nederland polska
 
 COUNTIFF=$(foreach f, $(COUNTRIES), $(COUNTRYDIR)/$(f).country)
 
