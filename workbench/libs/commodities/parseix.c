@@ -29,8 +29,8 @@
 #define DEBUG_PARSEIX(x)	;
 #define DEBUG_PMATCH(x)		;
 
-BOOL pMatch(pix_S[], STRPTR, LONG *, BOOL *, struct Library *CxBase);
-VOID GetNext(STRPTR *);
+BOOL pMatch(pix_S[], CONST_STRPTR, LONG *, BOOL *, struct Library *CxBase);
+VOID GetNext(CONST_STRPTR *);
 BOOL IsSeparator(char);
 
 /*****************************************************************************
@@ -41,7 +41,7 @@ BOOL IsSeparator(char);
 
 /*  SYNOPSIS */
 
-	AROS_LHA(STRPTR, desc, A0),
+	AROS_LHA(CONST_STRPTR, desc, A0),
 	AROS_LHA(IX *  , ix  , A1),
 
 /*  LOCATION */
@@ -265,10 +265,10 @@ BOOL IsSeparator(char);
 } /* ParseIX */
 
 
-BOOL pMatch(pix_S words[], STRPTR string, LONG *v, BOOL *dash,
+BOOL pMatch(pix_S words[], CONST_STRPTR string, LONG *v, BOOL *dash,
 	    struct Library *CxBase)
 {
-    STRPTR nstr = string;
+    CONST_STRPTR nstr = string;
     int    i;
 
     DEBUG_PMATCH(dprintf("pMatch: words[0] = \"%s\" string \"%s\" dash %d\n",
@@ -302,7 +302,7 @@ BOOL pMatch(pix_S words[], STRPTR string, LONG *v, BOOL *dash,
 }
 
 
-VOID GetNext(STRPTR *str)
+VOID GetNext(CONST_STRPTR *str)
 {
     while (!(IsSeparator(**str)))
     {
