@@ -671,8 +671,19 @@ static ULONG mNewInput(struct IClass *cl, Object *obj,
 	if (signal & (1L << data->app_TimerPort->mp_SigBit))
 	{
 	    struct timerequest_ext *time_ext;
+	    struct Node *n;
+	    struct List list;
+	    NewList(&list);
+
+	    /* At first we fetch all messages from the message port and store them
+	    ** in a list, we use the node of the Message here */
 	    while ((time_ext = (struct timerequest_ext *)GetMsg(data->app_TimerPort)))
+	    	AddTail(&list,(struct Node*)time_ext);
+
+	    /* Now we proccess the list and resend the timer io, no loop can happen */
+	    for (n = list.lh_Head; n->ln_Succ; n = n->ln_Succ)
 	    {
+		struct timerequest_ext *time_ext = (struct timerequest_ext *)n;
 		struct MUI_InputHandlerNode *ihn = time_ext->ihn;
 		time_ext->treq.tr_time.tv_secs = time_ext->ihn->ihn_Millis/1000;
 		time_ext->treq.tr_time.tv_micro = (time_ext->ihn->ihn_Millis%1000)*1000;
