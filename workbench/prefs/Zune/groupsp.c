@@ -137,7 +137,6 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     
     data = INST_DATA(cl, obj);
     *data = d;
-    set(data->font_title_string, MUIA_CycleChain, 1);
 
     return (IPTR)obj;
 }
