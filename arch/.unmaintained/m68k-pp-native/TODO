@@ -2,6 +2,9 @@ TODO list for the Palm Port (ROM)
 
 - Rename CREATE_ROM define in all files where used to AROS_CREATE_ROM
 
+- The memory allocation for the Supervisor stack, display memory is
+  a mess right now or non-existent.
+
 - When processes are closed access to DOSBase (see createnewproc ->
   KillCurrentProcess()) is needed. Since DOSBase cannot be a global 
   variable the DOSBase must either be found on the stack (needs to be 
