@@ -1,25 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.7  1997/01/27 00:22:37  ldp
-    Include proto instead of clib
 
-    Revision 1.6  1996/09/17 16:43:00  digulla
-    Use general startup code
-
-    Revision 1.5  1996/09/13 17:52:10  digulla
-    Use IPTR
-
-    Revision 1.4  1996/09/12 14:49:25  digulla
-    More checks
-    Better code to specify size of buffer
-
-    Revision 1.3  1996/08/01 17:40:45  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: List the contents of a directory
+    Lang: english
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -94,7 +78,7 @@ int main (int argc, char ** arvg)
 				argv[1]=(IPTR)flags;
 				argv[2]=(IPTR)date;
 				argv[3]=(IPTR)time;
-				if(VPrintf("%-25.s   <Dir> %7.s %s %s\n",argv)<0)
+				if(VPrintf("%-25.s   <Dir> %7.s %-11s %s\n",argv)<0)
 				{
 				    error=RETURN_ERROR;
 				    loop=0;
