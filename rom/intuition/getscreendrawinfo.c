@@ -2,6 +2,9 @@
     (C) 1995-99 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  2000/07/24 18:58:30  stegerg
+    added an ASSERT_VALID_PTR(screen)
+
     Revision 1.6  1999/01/16 23:18:29  hkiel
     Extended AutoDocs
 
@@ -74,6 +77,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+    ASSERT_VALID_PTR(screen);
+    
     return &(((struct IntScreen *)screen)->DInfo);
 
     AROS_LIBFUNC_EXIT
