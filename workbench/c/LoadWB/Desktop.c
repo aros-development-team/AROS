@@ -38,7 +38,7 @@ struct Desktop Desktop =
 static struct NewMenu nm[] =
 {
   {NM_TITLE, "Workbench"              },
-    {NM_ITEM,  "Backdrop",           "B", CHECKIT},
+    {NM_ITEM,  "Backdrop",           "B", CHECKIT | CHECKED},
     {NM_ITEM,  "Execute Command...", "E"},
     {NM_ITEM,  "Redraw All" },
     {NM_ITEM,  "Update All" },
@@ -99,12 +99,20 @@ ULONG WinFlags;
     WinFlags = (WFLG_ACTIVATE | WFLG_WBENCHWINDOW);
     if(Desktop.Backdrop)
     {
-	nm[1].nm_Flags |= CHECKED;
+	if(menus)
+	{
+	    struct MenuItem *backdropitem = ItemAddress( menus, FULLMENUNUM(0,0,0) );
+	    backdropitem->Flags |= CHECKED;
+	}
 	WinFlags |= (WFLG_BACKDROP | WFLG_BORDERLESS);
     }
     else
     {
-	nm[1].nm_Flags &= ~CHECKED;
+	if(menus)
+	{
+	    struct MenuItem *backdropitem = ItemAddress( menus, FULLMENUNUM(0,0,0) );
+	    backdropitem->Flags &= ~CHECKED;
+	}
 	WinFlags |= (WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SIZEBRIGHT);
     }
 
