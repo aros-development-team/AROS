@@ -51,6 +51,9 @@
 #define EG(o) ((struct ExtGadget *)o)
 #define IM(o) ((struct Image *)o)
 
+#undef IntuitionBase
+#define IntuitionBase	((struct IntuitionBase *)(cl->cl_UserData))
+
 /***********************************************************************************/
 
 VOID notifypressed(Class *cl, Object *o, struct GadgetInfo *ginfo, ULONG flags)
@@ -365,8 +368,6 @@ IPTR buttong_goinactive(Class * cl, Object * o, struct gpGoInactive * msg)
 /***********************************************************************************/
 
 
-#undef IntuitionBase
-#define IntuitionBase	((struct IntuitionBase *)(cl->cl_UserData))
 
 /***********************************************************************************/
 
