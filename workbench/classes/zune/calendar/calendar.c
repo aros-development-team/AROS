@@ -28,8 +28,6 @@
 
 /*** Instance data **********************************************************/
 
-LONG                         firstweekday;
-
 struct Calendar_DATA
 {
     struct MUI_EventHandlerNode ehn;
@@ -40,6 +38,7 @@ struct Calendar_DATA
     WORD    	    	    	cellheight, base_cellheight;
     WORD    	    	    	mwday; /* weekday of 1st of month */
     WORD    	    	    	old_mday;
+    LONG                        firstweekday;
 };
 
 STRPTR def_daylabels[] =
@@ -58,9 +57,9 @@ STRPTR def_daylabels[] =
 IPTR Calendar$OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Calendar_DATA *data;
-    struct TagItem  	*ti, tags[] =
+    struct TagItem       *ti, tags[] =
     {
-	{TAG_MORE   	, (IPTR)msg->ops_AttrList   }
+        {TAG_MORE, (IPTR) msg->ops_AttrList }
     };
     
     msg->ops_AttrList = tags;
@@ -85,11 +84,13 @@ IPTR Calendar$OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 	    if (locale)
 	    {
 	    	data->defdaylabels[i] = GetLocaleStr(locale, ABDAY_1 + i);
-	    }
+                data->firstweekday = locale->loc_CalendarType;
+            }
 	    else
 	    {
 	    	data->defdaylabels[i] = def_daylabels[i];
-	    }
+                data->firstweekday = 0;
+            }
 	}
 	
 	if (locale) CloseLocale(locale);
@@ -408,7 +409,7 @@ IPTR Calendar$MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
     //kprintf("mwday = %d  mdays = %d\n", data->mwday, mdays);
     
-    day = firstweekday - data->mwday + 1 - 7;
+    day = data->firstweekday - data->mwday + 1 - 7;
     
     SetFont(_rp(obj), _font(obj));
     SetDrMd(_rp(obj), JAM1);
@@ -487,7 +488,7 @@ IPTR Calendar$MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 	    	SetSoftStyle(_rp(obj), FSF_BOLD, AskSoftStyle(_rp(obj)));
 		SetAPen(_rp(obj), _dri(obj)->dri_Pens[SHINEPEN]);
 		
-		text = data->daylabels[(x + firstweekday) % 7];
+		text = data->daylabels[(x + data->firstweekday) % 7];
 	    }
 	    
 	    if (text)
@@ -532,7 +533,7 @@ static WORD DayUnderMouse(Object *obj, struct Calendar_DATA *data, struct IntuiM
     
     i = y * 7 + x;
     
-    i += firstweekday - data->mwday + 1;
+    i += data->firstweekday - data->mwday + 1;
     
     if (i < 1)
     {
