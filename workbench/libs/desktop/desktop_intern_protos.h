@@ -1,15 +1,17 @@
 /*
-   Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2003, The AROS Development Team. All rights reserved.
    $Id$ 
- */
+*/
 
 #ifndef DESKTOP_INTERN_PROTOS_H
-#    define DESKTOP_INTERN_PROTOS_H
+#define DESKTOP_INTERN_PROTOS_H
 
-#    include <aros/asmcall.h>
+#include <aros/asmcall.h>
 
-#    include <clib/alib_protos.h>
-#    include <proto/muimaster.h>
+#include <clib/alib_protos.h>
+#include <proto/muimaster.h>
+
+#include <libraries/desktop.h>
 
 struct WorkingMessageNode *findWorkedMessage(struct MinList *list, ULONG id);
 BOOL            handlerSubUser(void);
@@ -129,4 +131,4 @@ AROS_UFH3(IPTR, containerIconObserverDispatcher,
           AROS_UFHA(Class *, cl, A0),
           AROS_UFHA(Object *, obj, A2), AROS_UFHA(Msg, msg, A1));
 
-#endif
+#endif /* DESKTOP_INTERN_PROTOS_H */
