@@ -1,11 +1,12 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: GetProgramDir() - Get the lock for PROGDIR:
     Lang: english
 */
 #include "dos_intern.h"
+#include <proto/exec.h>
 
 /*****************************************************************************
 
@@ -21,10 +22,19 @@
 	struct DosLibrary *, DOSBase, 100, Dos)
 
 /*  FUNCTION
+	This function will return the shared lock on the directory that
+	the current directory was loaded from. You can use this to help
+	you find data files which were supplied with your program.
+
+	A NULL return is possible, which means that you may be running
+	from the Resident list.
+
+	You should NOT under any circumstance UnLock() this lock.
 
     INPUTS
 
     RESULT
+	A shared lock on the directory the program was started from.
 
     NOTES
 
@@ -37,17 +47,16 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
+	27-11-1996  digulla automatically created from
 			    dos_lib.fd and clib/dos_protos.h
+	17-02-1997  iaint   Implemented. Required for locale.
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    extern void aros_print_not_implemented (char *);
 
-    aros_print_not_implemented ("GetProgramDir");
+    return ((struct Process *)FindTask(NULL))->pr_HomeDir;
 
-    return DOSFALSE;
     AROS_LIBFUNC_EXIT
 } /* GetProgramDir */
