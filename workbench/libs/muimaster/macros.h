@@ -270,17 +270,17 @@
 #define get(obj,attr,store) GetAttr(attr,obj,(IPTR *)store)
 #endif /* !__GNUC__ */
 
-#define set(obj,attr,value) SetAttrs(obj,attr,value,TAG_DONE)
-#define nnset(obj,attr,value) SetAttrs(obj,MUIA_NoNotify,TRUE,attr,value,TAG_DONE)
+#define set(obj,attr,value) SetAttrs(obj,attr,(IPTR)value,TAG_DONE)
+#define nnset(obj,attr,value) SetAttrs(obj,MUIA_NoNotify,TRUE,attr,(IPTR)value,TAG_DONE)
 
 /* Zune */
-#define nfset(obj,attr,value) SetAttrs(obj,MUIA_Group_Forward,FALSE,attr,value,TAG_DONE)
+#define nfset(obj,attr,value) SetAttrs(obj,MUIA_Group_Forward,FALSE,attr,(IPTR)value,TAG_DONE)
 /* Zune */
-#define nnfset(obj,attr,value) SetAttrs(obj,MUIA_Group_Forward,FALSE,MUIA_NoNotify,TRUE,attr,value,TAG_DONE)
+#define nnfset(obj,attr,value) SetAttrs(obj,MUIA_Group_Forward,FALSE,MUIA_NoNotify,TRUE,attr,(IPTR)value,TAG_DONE)
 
 #define setmutex(obj,n)     set(obj,MUIA_Radio_Active,n)
 #define setcycle(obj,n)     set(obj,MUIA_Cycle_Active,n)
-#define setstring(obj,s)    set(obj,MUIA_String_Contents,s)
+#define setstring(obj,s)    set(obj,MUIA_String_Contents,(IPTR)s)
 #define setcheckmark(obj,b) set(obj,MUIA_Selected,b)
 #define setslider(obj,l)    set(obj,MUIA_Numeric_Value,l)
 
