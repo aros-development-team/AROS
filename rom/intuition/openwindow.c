@@ -97,6 +97,7 @@
     ULONG   	    	helpgroup;
     
     ULONG   	    	lock;
+    ULONG               windowvisible = TRUE;
     BOOL    	    	driver_init_done = FALSE, have_helpgroup = FALSE;
 
 
@@ -281,6 +282,10 @@
             case WA_Parent:
                 parentwin = ((struct Window *)tag->ti_Data);
                 parentl   = parentwin->WLayer;
+                break;
+
+            case WA_Visible:
+                windowvisible = (ULONG)tag->ti_Data;
                 break;
 
 	    case WA_Pointer:
@@ -605,7 +610,13 @@
 	IW(w)->helpgroup = helpgroup;
     }	
 	
-    if (!intui_OpenWindow (w, IntuitionBase, nw.BitMap, backfillhook, shape, parentl))
+    if (!intui_OpenWindow (w, 
+                           IntuitionBase, 
+                           nw.BitMap, 
+                           backfillhook, 
+                           shape, 
+                           parentl,
+                           windowvisible))
 	goto failexit;
 
 /* nlorentz: The driver has in some way or another allocated a rastport for us,
@@ -762,7 +773,8 @@ int intui_OpenWindow (struct Window * w,
 	struct BitMap        * SuperBitMap,
 	struct Hook          * backfillhook,
 	struct Region	     * shape,
-	struct Layer         * parent)
+	struct Layer         * parent,
+	ULONG                  visible)
 {
     /* Create a layer for the window */
     LONG layerflags = 0;
@@ -874,6 +886,7 @@ int intui_OpenWindow (struct Window * w,
 	  {LA_Shape 	    , (IPTR)shape   	    	    	    	    	    	    	},
 	  {LA_SuperBitMap   , (IPTR)SuperBitMap							},
 	  {LA_ChildOf       , (IPTR)parent							},
+	  {LA_Visible       , (ULONG)visible                                                    },
 	  {TAG_DONE 	    	    	    	    	    	    	    	    	    	}
       };
       BOOL shape_created = FALSE;
