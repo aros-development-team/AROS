@@ -548,12 +548,12 @@ AROS_LP2(LONG, FPutC,
 AROS_LP2(LONG, FPuts,
     AROS_LPA(BPTR,   file,   D1),
     AROS_LPA(STRPTR, string, D2),
-    struct DosLibrary *, DOSBase, 56, Dos)
+    struct DosLibrary *, DOSBase, 57, Dos)
 #define FPuts(file, string) \
     AROS_LC2(LONG, FPuts, \
     AROS_LCA(BPTR,   file,   D1), \
     AROS_LCA(STRPTR, string, D2), \
-    struct DosLibrary *, DOSBase, 56, Dos)
+    struct DosLibrary *, DOSBase, 57, Dos)
 
 AROS_LP4(LONG, FRead,
     AROS_LPA(BPTR , fh, D1),
