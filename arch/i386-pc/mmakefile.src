@@ -8,6 +8,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #   
 
 #MM- AROS-native : general-setup-native-i386 kernel-native-i386 software-native-i386
+#MM	    bootdisk-native-i386
 
 #MM- general-setup-native-i386: setup setup-native includes compiler
 
