@@ -19,6 +19,7 @@
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <proto/dos.h>
+#include <proto/alib.h>
 #include <utility/tagitem.h>
 #include <aros/debug.h>
 #include "libdefs.h"
