@@ -37,9 +37,12 @@
 
 ******************************************************************************/
 {
-#warning TODO: implement sigfillset()
+	if (NULL != set) {
+		memset(&set->__val, 0xff, sizeof(set->__val));
+		return 0;
+	}
 
-    return -1; /* return failure */
+	return -1; /* return failure */
 
 } /* sigfillset */
 
