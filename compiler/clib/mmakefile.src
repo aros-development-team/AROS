@@ -35,13 +35,11 @@ LIB	    := $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
 
 COMMON	:= \
 	__alloca \
-	__isinf \
 	bcmp \
 	bcopy \
 	bzero \
 	ctype \
 	div \
-	isinf \
 	ldiv \
 	lldiv \
 	memchr \
@@ -93,6 +91,7 @@ SHARED	:= \
 	__env \
 	__exitfunc \
 	__ioerr2errno \
+	__isinf \
 	__open \
 	__rand48 \
 	__spawnv \
@@ -163,6 +162,7 @@ SHARED	:= \
         geteuid \
 	gmtime \
 	isatty \
+	isinf \
 	jrand48 \
         kill \
 	labs \
@@ -331,18 +331,18 @@ ROM_STATIC := \
 #   - The stubs are generated, and are in the shared link library.
 STUBS    := $(wildcard $(OBJDIR)/stubs/*.o)
 
-# Dependencies
+# Dependancies
 DEPS := $(foreach f,$(COMMON),$(OBJDIR)/$(f).d) \
 	$(foreach f,$(SHARED),$(OBJDIR)/shared/$(f).d) \
 	$(OBJDIR)/shared/arosc_init.d $(OBJDIR)/shared/arosc_functable.d \
 	$(OBJDIR)/shared/arosc_endtag.d
 
-COMMON_OBJ := 	$(foreach f,$(COMMON),$(OBJDIR)/$(f).o) \
-	   	$(foreach f,$(COMMON_ARCH),$(OBJDIR)/arch/$(f).o) 
- 
-SHARED_OBJ :=	$(COMMON_OBJ) $(STUBS) $(OBJDIR)/arosc_autoinit.o
+SHARED_OBJ :=	$(foreach f,$(COMMON),$(OBJDIR)/$(f).o) \
+	   	$(foreach f,$(COMMON_ARCH),$(OBJDIR)/arch/$(f).o) \
+		$(STUBS) $(OBJDIR)/arosc_autoinit.o
 
-MODULE_OBJ :=	$(foreach f, $(SHARED), $(OBJDIR)/shared/$(f).o)
+MODULE_OBJ :=	$(foreach f,$(COMMON) $(SHARED),$(OBJDIR)/shared/$(f).o) \
+	   	$(foreach f,$(COMMON_ARCH),$(OBJDIR)/arch/$(f).o)
 
 ROM_OBJ	   :=	$(foreach f,$(ROM_ONLY),$(OBJDIR)/rom/$(f).o) \
 		$(foreach f,$(ROM_COMMON),$(OBJDIR)/$(f).o) \
@@ -362,18 +362,14 @@ linklibs-clib-quick : linklibs-clib
 
 linklibs-clib : setup-clib $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
 
-$(OBJDIR)/libarosccommon.a: $(COMMON_OBJ)
-	%mklib_q from=$^
-
 $(SHARED_LIB) : $(SHARED_OBJ)
 	%mklib_q from=$^
 
 $(ROM_LIB) : $(ROM_OBJ)
 	%mklib_q from=$^
 
-$(AROS_LIBS)/$(MODULE) : $(MODULE_OBJ) $(OBJDIR)/libarosccommon.a
-	%link_module_q objs="$(OBJDIR)/shared/arosc_init.o $(OBJDIR)/shared/arosc_functable.o $(MODULE_OBJ)" endtag="$(OBJDIR)/shared/arosc_endtag.o" ldflags="$(LDFLAGS) -L$(OBJDIR)" \
-	libs="$(LIBS) -larosccommon"
+$(AROS_LIBS)/$(MODULE) : $(MODULE_OBJ)
+	%link_module_q objs="$(OBJDIR)/shared/arosc_init.o $(OBJDIR)/shared/arosc_functable.o $(MODULE_OBJ)" endtag="$(OBJDIR)/shared/arosc_endtag.o"
 
 $(OBJDIR)/static/%.o : %.c
 	%compile_q opt="$(CFLAGS)"
