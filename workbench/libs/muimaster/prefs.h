@@ -136,31 +136,7 @@ struct ZunePrefs {
     WORD     window_inner_bottom;
 
     ULONG    app_cfg_spy_delay;
-
-#if 0
-    ZStringSet *comments;
-#endif
 };
-
-//extern GdkColor __mpens[];
-
-void __zune_prefs_init    (struct ZunePrefs *prefs);
-void __zune_prefs_release (struct ZunePrefs *prefs);
-
-int __zune_prefs_sys_global_read(struct ZunePrefs *prefs);
-int __zune_prefs_sys_app_read(struct ZunePrefs *prefs, STRPTR app_title);
-int __zune_prefs_user_global_read(struct ZunePrefs *prefs);
-int __zune_prefs_user_app_read(struct ZunePrefs *prefs, STRPTR app_title);
-int __zune_prefs_user_global_write(struct ZunePrefs *prefs);
-int __zune_prefs_user_app_write(struct ZunePrefs *prefs, STRPTR app_title);
-int __zune_prefs_user_global_write_current (void);
-
-int __zune_prefs_read(struct ZunePrefs *prefs, STRPTR path);
-int __zune_prefs_write(struct ZunePrefs *prefs, STRPTR path);
-
-#ifndef _AROS
-//BOOL __zune_prefs_spy (struct MUI_ApplicationData *data);
-#endif
 
 struct ZunePrefsNew
 {
@@ -180,9 +156,6 @@ struct ZunePrefsNew
     WORD     window_inner_right;
     WORD     window_inner_top;
     WORD     window_inner_bottom;
-
-    /* MUI Pens */
-    struct { int red; int green; int blue; } muipens[MPEN_COUNT];
 
     /* MUI Keys */
     ZuneKeySpec muikeys[MUIKEY_COUNT];
