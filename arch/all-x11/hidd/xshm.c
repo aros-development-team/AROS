@@ -16,6 +16,7 @@ conflicts between AROS includes and system includes */
 #include <stdlib.h>
 #include <string.h>
 #include "xshm.h"
+#include <aros/debug.h>
 
 /* stegerg: maybe more safe, even if Unix malloc is used and not AROS malloc */
 #define NO_MALLOC 1
