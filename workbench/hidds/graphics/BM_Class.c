@@ -58,7 +58,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
         data->height      = 200;
         data->depth       = 8;
         data->displayable = FALSE;
-        data->format      = HIDDV_BitMap_Format_Planar;
+        data->format      = vHIDD_BitMap_Format_Planar;
 
         tstate = msg->attrList;
         while((tag = NextTagItem(&tstate)))
@@ -91,7 +91,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
         {
             /* bitmap is not displayable */
 
-            if(data->format & HIDDV_BitMap_Format_Chunky)
+            if(data->format & vHIDD_BitMap_Format_Chunky)
             {
                 data->bytesPerPixel = (data->depth + 7) / 8;
                 data->bytesPerRow   = data->bytesPerPixel * ((data->width + alignOffset) / alignDiv);
@@ -160,7 +160,7 @@ static void bitmap_dispose(Class *cl, Object *obj, Msg *msg)
 
     EnterFunc(bug("BitMap::Dispose()\n"));
 
-    if(data->format & HIDDV_BitMap_Format_Planar)
+    if(data->format & vHIDD_BitMap_Format_Planar)
     {
         if(data->buffer)
         {

@@ -31,7 +31,7 @@ GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
 STUB_OBJS   := $(foreach f,$(STUBS), $(OBJDIR)/$(f).o)
 
 ifeq ($(FLAVOUR),native)
-DEPLIBS := arossupport arosc
+DEPLIBS := arossupport arosc hiddgraphicsstubs
 else
 DEPLIBS :=
 endif

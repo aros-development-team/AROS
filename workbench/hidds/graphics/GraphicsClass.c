@@ -35,12 +35,12 @@ static Object *hiddgfx_newgc(Class *cl, Object *o, struct pHidd_Gfx_NewGC *msg)
 
     switch (msg->gcType)
     {
-        case  HIDDV_Gfx_GCType_Quick:
+        case  vHIDD_Gfx_GCType_Quick:
             gc = NewObject(NULL, CLID_Hidd_GCQuick, msg->attrList);
 
             break;
             
-        case HIDDV_Gfx_GCType_Clip:
+        case vHIDD_Gfx_GCType_Clip:
             /* The Clip GC must come from a subclass     */
             gc = NULL;
             break;

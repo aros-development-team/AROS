@@ -14,8 +14,9 @@
 #include "graphics_intern.h"
 
 #undef  SDEBUG
+#define SDEBUG 0
 #undef  DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #undef  BM
@@ -37,7 +38,7 @@ ULONG gc_readpixel_q(Class *cl, Object *obj, struct pHidd_GC_ReadPixel *msg)
 
     EnterFunc(bug("GC::ReadPixel_Q() x: %i y: %i\n", msg->x, msg->y));
 
-    if(BM->format & HIDDV_BitMap_Format_Chunky)
+    if(BM->format & vHIDD_BitMap_Format_Chunky)
     {
         /* bitmap in chunky format */
 
@@ -61,7 +62,7 @@ ULONG gc_readpixel_q(Class *cl, Object *obj, struct pHidd_GC_ReadPixel *msg)
 
          plane     = (UBYTE **) BM->buffer;
          offset    = msg->x / 8 + msg->y * BM->bytesPerRow;
-         pixel     = 128 >> msg->x % 8;
+         pixel     = 128 >> (msg->x % 8);
          retVal    = 0;
 
          for(i = 0; i < BM->depth; i++)

@@ -27,7 +27,7 @@
 
 #define IID_Hidd_Gfx      "I_GfxHidd"
 #define IID_Hidd_BitMap   "I_HiddBitMap"
-#define IID_Hidd_GC  	  "I_HiddGC"
+#define IID_Hidd_GC       "I_HiddGC"
 
 typedef struct Object *HIDDT_BitMap;
 typedef struct Object *HIDDT_GC;
@@ -59,8 +59,8 @@ enum
 
 /* GC types */
 
-#define vHIDD_Gfx_NewGC_Quick  0x1
-#define vHIDD_Gfx_NewGC_Clip   0x2
+#define vHIDD_Gfx_GCType_Quick  0x1
+#define vHIDD_Gfx_GCType_Clip   0x2
 
 
 /* messages for a graphics hidd */
@@ -244,6 +244,47 @@ struct pHidd_GC_DrawLine
     WORD        x1 ,y1, x2, y2;
 };
 
+struct pHidd_GC_CopyArea
+{
+    MethodID    mID;
+    WORD        srcX, srcY;
+    Object      *dest;
+    WORD        destX, destY;
+    UWORD       width, height;
+};
+
+struct pHidd_GC_DrawRect
+{
+    MethodID    mID;
+    WORD        minX, minY, maxX, maxY;
+};
+
+struct pHidd_GC_DrawEllipse
+{
+    MethodID    mID;
+    WORD        x, y;
+    UWORD       rx, ry;
+};
+
+struct pHidd_GC_DrawPolygon
+{
+    MethodID    mID;
+    WORD        n;         /* number of coordinates */
+    WORD        *coords;   /* size 2*n              */
+};
+
+struct pHidd_GC_DrawText
+{
+    MethodID    mID;
+    WORD        x, y;      /* Start position, see autodocs */
+    STRPTR      text;      /* Latin 1 string               */
+    UWORD       length;    /* Number of characters to draw */
+};
+
+struct pHidd_GC_Clear
+{
+    MethodID    mID;
+};
 
 /* Predeclarations of stubs in libhiddgraphicsstubs.h */
 
@@ -251,5 +292,28 @@ Object * HIDD_Gfx_NewGC        (Object *hiddGfx, ULONG gcType, struct TagItem *t
 VOID     HIDD_Gfx_DisposeGC    (Object *hiddGfx, Object *gc);
 Object * HIDD_Gfx_NewBitMap    (Object *hiddGfx, struct TagItem *tagList);
 VOID     HIDD_Gfx_DisposeBitMap(Object *hiddGfx, Object *bitMap);
+
+VOID     HIDD_BM_BltBitMap   (Object obj, Object dest, WORD srcX, WORD srcY, WORD destX, WORD destY, WORD width, WORD height);
+BOOL     HIDD_BM_Show        (Object obj);
+VOID     HIDD_BM_Move        (Object obj, WORD x, WORD y);
+BOOL     HIDD_BM_DepthArrange(Object obj, Object bm);
+
+ULONG    HIDD_GC_WritePixelDirect(Object *obj, WORD x, WORD y, ULONG val);
+ULONG    HIDD_GC_ReadPixel       (Object *obj, WORD x, WORD y);
+ULONG    HIDD_GC_WritePixel      (Object *obj, WORD x, WORD y);
+VOID     HIDD_GC_CopyArea        (Object *obj, WORD srcX, WORD srcY, Object *dest, WORD destX, WORD destY, UWORD width, UWORD height);
+VOID     HIDD_GC_DrawLine        (Object *obj, WORD x1, WORD y1, WORD x2, WORD y2);
+VOID     HIDD_GC_DrawRect        (Object *obj, WORD minX, WORD minY, WORD maxX, WORD maxY);
+VOID     HIDD_GC_FillRect        (Object *obj, WORD minX, WORD minY, WORD maxX, WORD maxY);
+VOID     HIDD_GC_DrawEllipse     (Object *obj, WORD x, WORD y, WORD ry, WORD rx);
+VOID     HIDD_GC_FillEllipse     (Object *obj, WORD x, WORD y, WORD ry, WORD rx);
+VOID     HIDD_GC_DrawArc         (Object *obj);
+VOID     HIDD_GC_FillArc         (Object *obj);
+VOID     HIDD_GC_DrawPolygon     (Object *obj, UWORD n, WORD *coords);
+VOID     HIDD_GC_FillPolygon     (Object *obj, UWORD n, WORD *coords);
+VOID     HIDD_GC_DrawText        (Object *obj, WORD x, WORD y, STRPTR text, UWORD length);
+VOID     HIDD_GC_FillText        (Object *obj, WORD x, WORD y, STRPTR text, UWORD length);
+VOID     HIDD_GC_FillSpan        (Object *obj);
+VOID     HIDD_GC_Clear           (Object *obj);
 
 #endif /* HIDD_GRAPHICS_H */

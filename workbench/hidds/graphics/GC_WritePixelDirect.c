@@ -14,15 +14,16 @@
 #include "graphics_intern.h"
 
 #undef  SDEBUG
+#define SDEBUG 0
 #undef  DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #undef  BM
 #define BM ((struct HIDDBitMapData *) gc->bitMap)
 
 
-/*** GC::WritePixelDirect_Q () ********************************************/
+/*** GC::WritePixelDirect_Q() ********************************************/
 
 VOID gc_writepixeldirect_q(Class *cl, Object *obj, struct pHidd_GC_WritePixelDirect *msg)
 {
@@ -37,7 +38,7 @@ VOID gc_writepixeldirect_q(Class *cl, Object *obj, struct pHidd_GC_WritePixelDir
 
     EnterFunc(bug("GC::WritePixelDirect_Q()\n"));
 
-    if(BM->format & HIDDV_BitMap_Format_Chunky)
+    if(BM->format & vHIDD_BitMap_Format_Chunky)
     /* bitmap in chunky-mode */
     {
         /* bitmap in chunky-mode */
@@ -58,7 +59,7 @@ VOID gc_writepixeldirect_q(Class *cl, Object *obj, struct pHidd_GC_WritePixelDir
          /* bitmap in plane-mode */
          plane     = (UBYTE **) BM->buffer;
          offset    = msg->x / 8 + msg->y * BM->bytesPerRow;
-         pixel     = 128 >> msg->x % 8;
+         pixel     = 128 >> (msg->x % 8);
          notPixel  = ~pixel;
          mask      = 1;
 
