@@ -16,7 +16,7 @@
 	AROS_LH1(STRPTR, DosGetLocalizedString,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, stringNum, D0),
+	AROS_LHA(LONG, stringNum, D1),
 
 /* LOCATION */
 	struct DosLibrary *, DOSBase, 154, Dos)
