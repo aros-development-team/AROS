@@ -8,7 +8,7 @@
 #include <utility/utility.h> /* this must be before mathieeedoubbas_intern.h */
 
 #include "mathieeedoubtrans_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 #define LC_NO_OPENLIB
 #define LC_NO_EXPUNGELIB
