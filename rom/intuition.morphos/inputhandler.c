@@ -735,8 +735,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                          for sdepth gadget! */
                         gadget = FindGadget (IntuitionBase->FirstScreen,
                                      stitlebarhit ? 0 : w, stitlebarhit ? 0 : req,
-                                     IntuitionBase->ActiveScreen->MouseX,
-                                     IntuitionBase->ActiveScreen->MouseY,
+                                     IntuitionBase->ActiveScreen ? IntuitionBase->ActiveScreen->MouseX : 0,
+                                     IntuitionBase->ActiveScreen ? IntuitionBase->ActiveScreen->MouseY : 0,
                                      gi, FALSE, IntuitionBase);
 
                         D(bug("Click on gadget %p\n", gadget));
