@@ -140,7 +140,7 @@ static VOID planarbm_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel
 
     for(i = 0; i < data->depth; i++)
     {
-	if(msg->val & mask)
+	if(msg->pixel & mask)
 	{
 	    *(*plane + offset) = *(*plane + offset) | pixel;
 	}
