@@ -897,7 +897,7 @@ void wanderer_guisettings(void)
 
 void wanderer_about(void)
 {
-    OpenWorkbenchObject("SYS:System/AboutAROS", TAG_DONE);
+    OpenWorkbenchObject("SYS:System/About", TAG_DONE);
 }
 
 void wanderer_quit(void)
