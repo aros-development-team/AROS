@@ -1024,15 +1024,15 @@ IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
                 break;
             
             case GTA_Scroller_Inc:
-                /* buttong_class gives - GA_ID if mouse outside arrow */
+                /* buttong_class gives -GA_ID if mouse outside arrow */
                 if ((tag->ti_Data > 0) && (opU(msg)->opu_Flags & OPUF_INTERIM))
                 {
-          	    /* Check for top = total */
-            	    if (tags[0].ti_Data - 1 > tags[1].ti_Data)
+            	    /* Top < (Total - Visible) ? */
+            	    if (tags[1].ti_Data < (tags[0].ti_Data - tags[2].ti_Data))
             	    {
             	    	((ULONG)tags[1].ti_Data) ++;
            	    	retval = 1UL;
-            	    }
+           	    }
             	}
             	break;
             
@@ -2018,7 +2018,7 @@ STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
 		
 		/* Rerender old active if it was shown in the listview */
 		if (    (oldpos >= data->ld_Top) 
-		     && (oldpos <= data->ld_Top + NumItemsFit(o, data)) )
+		     && (oldpos < data->ld_Top + NumItemsFit(o, data)) )
 		{
 
 	    	    data->ld_FirstDamaged = oldpos - data->ld_Top;
@@ -2147,6 +2147,8 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 			data->ld_FirstDamaged, 
 			data->ld_NumDamaged,
 			GadToolsBase);
+			
+		data->ld_FirstDamaged = -1;
 
 	    }
 
