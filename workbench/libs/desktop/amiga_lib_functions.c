@@ -5,6 +5,7 @@
 
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
+#include <proto/muimaster.h>
 
 #include <stdarg.h>
 #include "desktop_intern.h"
@@ -96,4 +97,16 @@ IPTR SetAttrs (
     retval = SetAttrsA (object, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* SetAttrs */
+
+
+Object * MUI_NewObject(char * classname, Tag tag1, ...)
+{
+    AROS_SLOWSTACKTAGS_PRE(tag1)
+
+    retval = MUI_NewObjectA(classname, AROS_SLOWSTACKTAGS_ARG(tag1));
+
+    AROS_SLOWSTACKTAGS_POST
+
+} /* MUI_NewObject */
+
 
