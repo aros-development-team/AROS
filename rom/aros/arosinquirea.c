@@ -80,11 +80,16 @@ IPTR kickbase(void);
     struct TagItem *tag;
     ULONG ret = 0;
 
+#   define SetData(tag,type,value)  \
+	D(bug("   Data was: %d\n", *((type *)(tag->ti_Data)))); \
+	(*((type *)(tag->ti_Data)) = value); \
+	D(bug("   Data is : %d\n", *((type *)(tag->ti_Data))))
+
     D(bug("ArosInquireA(taglist=%p)\n", taglist));
 
     while( (tag = NextTagItem(&taglist)))
     {
-	D(bug("  tag = $%lx\n", tag->ti_Tag));
+	D(bug("  tag = 0x%lx  data = 0x%lx\n", tag->ti_Tag, tag->ti_Data));
 
 	switch(tag->ti_Tag)
 	{
@@ -97,20 +102,25 @@ IPTR kickbase(void);
 	*/
 
 	case AI_KickstartBase:
-	    *(IPTR *)tag->ti_Data = kickbase();
+	    SetData (tag, APTR, kickbase());
 	    break;
 
 	case AI_KickstartSize:
-	    *(IPTR *)tag->ti_Data = kicksize();
+	    SetData (tag, ULONG, kicksize());
 	    break;
 
 	case AI_KickstartVersion:
-	    *(UWORD *)tag->ti_Data = *(UWORD *)(kickbase() + LOC_MAJORV);
+	    SetData (tag, UWORD, *(UWORD *)(kickbase() + LOC_MAJORV));
 	    break;
 
 	case AI_KickstartRevision:
-	    *(UWORD *)tag->ti_Data = *(UWORD *)(kickbase() + LOC_MINORV);
+	    SetData (tag, UWORD, *(UWORD *)(kickbase() + LOC_MINORV));
 	    break;
+#else
+	case AI_KickstartSize:
+	    SetData (tag, ULONG, 0);
+	    break;
+
 #endif
 
 	case AI_ArosVersion:
@@ -118,22 +128,20 @@ IPTR kickbase(void);
 		aros.library version masquerades as AROS version. This means
 		that all aros modules must have the same major version number.
 	    */
-	    *(IPTR *)tag->ti_Data = (IPTR)(ULONG)LIBVERSION;
+	    SetData (tag, IPTR, LIBVERSION);
 	    break;
 
 	case AI_ArosReleaseMajor:
 	    /* Update this whenever a new AROS is released */
-	    *(IPTR *)tag->ti_Data = (IPTR)(ULONG)1;
+	    SetData (tag, IPTR, 1);
 	    break;
 
 	case AI_ArosReleaseMinor:
 	    /* Update this whenever a new AROS is released */
-	    *(IPTR *)tag->ti_Data = (IPTR)(ULONG)11;
+	    SetData (tag, IPTR, 12);
 	    break;
 
 	}
-
-	*(ULONG *)(tag->ti_Data) = ret;
     }
 
     return ret;
