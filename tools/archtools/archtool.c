@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -52,7 +53,7 @@ int copy(char *src, char *dest);
 /* Parses file or lib.conf if file==NULL
    puts values in struct libconf
    returns 0 on success						*/
-int parse_libconf(char *file, struct libconf *lc);
+struct libconf * parse_libconf(char *file);
 
 
 char *get_line(FILE *fd)
@@ -291,18 +292,452 @@ struct libconf
   int option;
 };
 
-int parse_libconf(char *file, struct libconf *lc)
+typedef struct _Node Node;
+
+struct _Node
+{
+    Node * next,
+         * prev;
+    char * name;
+};
+
+typedef struct
+{
+    Node * first,
+         * last,
+         * prelast;
+}
+List;
+
+/* Macros */
+#   define NewList(l)       (((List *)l)->prelast = (Node *)(l), \
+                            ((List *)l)->last = 0, \
+                            ((List *)l)->first = (Node *)&(((List *)l)->last))
+
+#   define AddHead(l,n)     ((void)(\
+        ((Node *)n)->next        = ((List *)l)->first, \
+        ((Node *)n)->prev        = (Node *)&((List *)l)->first, \
+        ((List *)l)->first->prev = ((Node *)n), \
+        ((List *)l)->first       = ((Node *)n)))
+
+#   define AddTail(l,n)     ((void)(\
+        ((Node *)n)->next          = (Node *)&((List *)l)->last, \
+        ((Node *)n)->prev          = ((List *)l)->prelast, \
+        ((List *)l)->prelast->next = ((Node *)n), \
+        ((List *)l)->prelast       = ((Node *)n) ))
+
+#   define Remove(n)        ((void)(\
+        ((Node *)n)->prev->next = ((Node *)n)->next,\
+        ((Node *)n)->next->prev = ((Node *)n)->prev ))
+
+#   define GetHead(l)       (void *)(((List *)l)->first->next \
+                                ? ((List *)l)->first \
+                                : (Node *)0)
+#   define GetTail(l)       (void *)(((List *)l)->prelast->prev \
+                                ? ((List *)l)->prelast \
+                                : (Node *)0)
+#   define GetNext(n)       (void *)(((Node *)n)->next->next \
+                                ? ((Node *)n)->next \
+                                : (Node *)0)
+#   define GetPrev(n)       (void *)(((Node *)n)->prev->prev \
+                                ? ((Node *)n)->prev \
+                                : (Node *)0)
+#   define ForeachNode(l,n) \
+        for (n=(void *)(((List *)(l))->first); \
+            ((Node *)(n))->next; \
+            n=(void *)(((Node *)(n))->next))
+#   define ForeachNodeSafe(l,node,nextnode) \
+        for (node=(void *)(((List *)(l))->first); \
+            ((nextnode)=(void*)((Node *)(node))->next); \
+            (node)=(void *)(nextnode))
+
+Node * FindNode (List * list, const char * name)
+{
+    Node * node;
+    
+    ForeachNode (list, node)
+    {
+	if (!strcmp (node->name, name))
+	    return node;
+    }
+
+    return NULL;
+}
+
+int GetListLen (List * list)
+{
+    int i = 0;
+    Node * node;
+
+    ForeachNode (list, node)
+	i ++;
+
+    return i;
+}
+
+typedef struct _Headerline
+{
+    Node node;
+    int isLocal;
+} HeaderLine;
+    
+typedef struct _Header
+{
+    List lines;
+} Header;
+
+#define FUNCFLAG_INDEPENDENT	    1
+#define FUNCFLAG_RETURNSQUAD	    2
+
+typedef struct _Function
+{
+    Node node;
+    char * macro;
+    char * type;
+    List parameters;
+    int libOffset;
+    /* AutoDoc sections */
+    List sections;
+    char * code;
+    int flags;
+} Function;
+
+typedef struct _Parameter
+{
+    Node node;
+    char * macro;
+    char * type;
+    List registers;
+    char * description;
+} Parameter;
+
+char * readText (FILE * fh, char * delim)
+{
+    char * text = NULL;
+    char * line, * ptr, * ptr2;
+    int textLen = 0, len;
+    int delimLen = strlen (delim);
+    int n;
+    
+    while ( (line = get_line (fh)) )
+    {
+	if (line[0] == '#' && line[1] == '/' 
+	    && !strncmp (line+2, delim, delimLen))
+	{
+	    free (line);
+	    break;
+	}
+	
+	ptr = line;
+	while (isspace (*ptr))
+	    ptr ++;
+
+	for (n=strlen (ptr); n>0; n--)
+	    if (!isspace (ptr[n-1]))
+		break;
+
+	text = realloc (text, textLen+n+2);
+	strncpy (text+textLen, ptr, n);
+	textLen += n;
+	text[textLen++] = '\n';
+	text[textLen] = 0;
+	free (line);
+    }
+    
+    return text;
+}
+
+char * joinStrings (int n, char ** strings, char * sep)
+{
+    int i, len, sepLen=0, resultLen=0;
+    char * result = NULL;
+
+    if (sep)
+	sepLen = strlen (sep);
+    
+    for (i=0; i<n; i++)
+    {
+	// printf ("'%s' Adding '%s'\n", result, strings[i]);
+	len = strlen (strings[i]);
+	if (len)
+	{
+	    result = realloc (result, resultLen+len+sepLen+1);
+	    strcpy (result+resultLen, strings[i]);
+
+	    if (sepLen && i+1!=n)
+		strcpy (result+resultLen+len, sep);
+	
+	    resultLen += len+sepLen;
+	}
+    }
+
+    // printf ("result '%s'\n", result);
+    return result;
+}
+
+char * joinVAStrings (char * sep, char * str, ...)
+{
+    va_list args;
+    int i, len, sepLen=0, resultLen=0;
+    char * result = NULL, * next;
+
+    va_start (args, str);
+    
+    if (sep)
+	sepLen = strlen (sep);
+    
+    while (str)
+    {
+	next = va_arg (args, char *);
+
+	len = strlen (str);
+	if (len)
+	{
+	    result = realloc (result, resultLen+len+sepLen+1);
+	    strcpy (result+resultLen, str);
+
+	    if (sepLen && next)
+		strcpy (result+resultLen+len, sep);
+	
+	    resultLen += len+sepLen;
+	}
+
+	str = next;
+    }
+
+    return result;
+}
+
+Parameter * newParameter (FILE * fh, int num, char ** header)
+{
+    Parameter * par = malloc (sizeof (Parameter));
+    Node * reg;
+    char * line, * ptr;
+
+    par->node.name = strdup (header[num-2]);
+    par->type = joinStrings (num-3, &header[1], " ");
+    printf ("Type %d %s\n", num-3, par->type);
+    NewList (&par->registers);
+    par->description = readText (fh, "Parameter");
+
+    for (ptr=header[num-1]; *ptr; )
+    {
+	Node * node = malloc (sizeof (Node));
+	node->name = malloc (3);
+	strncpy (node->name, ptr, 2);
+	node->name[2] = 0;
+	printf ("Reg %s\n", node->name);
+	AddTail (&par->registers, node);
+	
+	ptr += 2;
+	if (*ptr == '/')
+	    ptr ++;
+    }
+    
+    if (strlen (header[num-1]) == 5)
+	par->macro = "LHAQUAD";
+    else
+	par->macro = "LHA";
+    
+    return par;
+}
+
+Function * newFunction (FILE * fh, int num, char ** header)
+{
+    Function * func = malloc (sizeof (Function));
+    char * line, ** words = NULL;
+    int n;
+
+    func->node.name = strdup (header[num-1]);
+    func->type = joinStrings (num-2, &header[1], " ");
+    NewList (&func->parameters);
+    NewList (&func->sections);
+    func->libOffset = -1;
+    func->code = NULL;
+    func->flags = 0;
+
+    while ( (line = get_line (fh)) )
+    {
+	n = get_words (line, &words);
+	if (!n)
+	{
+	    free (line);
+	    continue;
+	}
+
+	if (!strcmp (words[0], "#Parameter"))
+	{
+	    Parameter * par;
+
+	    par = newParameter (fh, n, words);
+	    if (!par)
+	    {
+		fprintf (stderr, "Reading of %s failed.", func->node.name);
+		free (line);
+		return NULL;
+	    }
+	    AddTail (&func->parameters, par);
+	}
+	else if (!strcmp (words[0], "#Options"))
+	{
+	    int i;
+
+	    for (i=1; i<n; i++)
+	    {
+		if (!strcmp (words[i], "I"))
+		    func->flags |= FUNCFLAG_INDEPENDENT;
+		else if (!strcmp (words[i], "QUAD"))
+		    func->flags |= FUNCFLAG_RETURNSQUAD;
+		else
+		    fprintf (stderr, "%s: Unknown option %s\n",
+			func->node.name, words[i]
+		    );
+	    }
+	}
+	else if (!strcmp (words[0], "#LibOffset"))
+	{
+	    func->libOffset = atoi (words[1]);
+	}
+	else if (!strcmp (words[0], "#AutoDoc"))
+	{
+	    /* TODO Read autodocs */
+	    char * str = readText (fh, "AutoDoc");
+	    free (str);
+	}
+	else if (!strcmp (words[0], "#Code"))
+	{
+	    func->code = readText (fh, "Code");
+	}
+	else if (!strcmp (words[0], "#/Function"))
+	    break;
+	else
+	    fprintf (stderr, "Unexpected input: %s\n", line);
+
+	free (line);
+    }
+    
+    return func;
+}
+
+typedef struct _Archive
+{
+    struct libconf * libconf;
+    List functions;
+    List header;
+} Archive;
+
+void addToArchive (Archive * arch, char * filename)
+{
+    FILE * fh;
+    char * line;
+    int inArchive, inHeader, isLocal;
+    
+    fh = fopen (filename, "rb");
+    if (!fh)
+    {
+	fprintf (stderr, "Cannot open %s for reading\n", filename);
+	exit (1);
+    }
+
+    inArchive = inHeader = 0;
+    while ( (line = get_line (fh)) )
+    {
+	if (!strncmp (line, "#Archive", 8))
+	    inArchive = 1;
+	else if (!strncmp (line, "#Header", 7))
+	{
+	    if (!inArchive)
+	    {
+		fprintf (stderr, "Found #Header outside of #Archive\n");
+		exit (1);
+	    }
+	    isLocal = 0;
+	    
+	    free (line);
+	    while ( (line = get_line (fh)) )
+	    {
+		if (!strncmp (line, "#/Header", 8))
+		    break;
+		else if (!strncmp (line, "#Local", 6))
+		    isLocal = 1;
+		else if (!strncmp (line, "#/Local", 7))
+		    isLocal = 0;
+		else
+		{
+		    HeaderLine * hl = malloc (sizeof (HeaderLine));
+		    hl->node.name = line;
+		    hl->isLocal = isLocal;
+
+		    AddTail (&arch->header, hl);
+		    
+		    /* Do not free the line */
+		    continue;
+		}
+
+		free (line);
+	    }
+	}
+	else if (!strncmp (line, "#Function", 7))
+	{
+	    Function * func, * old;
+	    int n;
+	    char ** words = NULL;
+
+	    n = get_words (line, &words);
+	    func = newFunction (fh, n, words);
+	    if (!func)
+	    {
+		fprintf (stderr, "Error reading function\n");
+		exit (1);
+	    }
+
+	    /* Overwrite existing functions */
+	    old = (Function *)FindNode (&arch->functions, func->node.name);
+	    if (old)
+	    {
+		Remove (old);
+		/* TODO free old */
+	    }
+	    AddTail (&arch->functions, func);
+	}
+	    
+	free (line);
+    }
+
+    fclose (fh);
+}
+
+Archive * newArchive (int num, char ** filenames)
+{
+    Archive * arch = malloc (sizeof (Archive));
+    int i;
+
+    arch->libconf = parse_libconf (NULL);
+    if (!arch->libconf)
+	exit (0);
+
+    NewList (&arch->functions);
+    NewList (&arch->header);
+
+    for (i=0; i<num; i++)
+	addToArchive (arch, filenames[i]);
+
+    return arch;
+}
+
+struct libconf * parse_libconf(char *file)
 {
 FILE *fd;
 int num, len, i;
 char *line, *word;
 char **words = NULL;
+struct libconf * lc = calloc (1, sizeof (struct libconf));
 
   fd = fopen((file?file:"lib.conf"),"rb");
   if(!fd)
   {
     fprintf( stderr, "Couldn't open %s!\n", (file?file:"lib.conf") );
-    return -1;
+    return NULL;
   }
   while( (line = get_line(fd)) )
   {
@@ -466,7 +901,7 @@ char **words = NULL;
   if( lc->type == 0 )
     lc->type = t_library;
 
-return 0;
+    return lc;
 }
 
 /*
@@ -545,8 +980,7 @@ time_t t;
     fprintf( stderr, "Couldn't open file %s!\n", "libdefs.h.new" );
     return -1;
   }
-  lc = calloc( 1, sizeof(struct libconf) );
-  if(parse_libconf((argc==2?NULL:argv[1]),lc))
+  if(!(lc = parse_libconf((argc==2?NULL:argv[1]))) )
     return(-1);
   if( lc->copyright == NULL )
   {
@@ -639,199 +1073,98 @@ time_t t;
 return 0;
 }
 
+void writeFuncHeader (FILE * fh, Function * func, const char * macro)
+{
+    int n = GetListLen (&func->parameters);
+
+    fprintf (fh, "%s%s%d%s(%s, %s, \\\n",
+	macro,
+	(func->flags & FUNCFLAG_RETURNSQUAD) ? "QUAD" : "",
+	n,
+	(func->flags & FUNCFLAG_INDEPENDENT) ? "I" : "",
+	func->type, func->node.name
+    );
+}
+
+void writeFunctionToFile (FILE * fh, Function * func)
+{
+    Parameter * par;
+    Node * reg;
+    char str[128], * ptr;
+    
+    writeFuncHeader (fh, func, "AROS_LH");
+    ForeachNode (&func->parameters, par)
+    {
+	ptr = str;
+	*ptr = 0;
+	ForeachNode (&par->registers, reg)
+	{
+	    strcat (ptr, reg->name);
+	    if (reg->next->next)
+		strcat (ptr, ", ");
+	}
+	//printf ("Reg '%s'\n", str);
+
+	fprintf (fh, "    AROS_%s(%s, %s, %s), \\\n", 
+	    par->macro, par->type, par->node.name, str
+	);
+    }
+
+    fprintf (fh, "LIBBASETYPEPTR, LIBBASE, %d, BASENAME)\n", func->libOffset);
+    fprintf (fh, "{\n    AROS_LIBFUNC_INIT\n\n");
+    fprintf (fh, "%s\n", func->code);
+    fprintf (fh, "\n    AROS_LIBFUNC_EXIT\n} /* %s */\n", func->node.name);
+}
+
+void writeArchiveHeader (FILE * fh, Archive * arch)
+{
+    HeaderLine * line;
+
+    fprintf (fh, "#include \"libdefs.h\"\n\n");
+    ForeachNode (&arch->header, line)
+    {
+	fprintf (fh, "%s\n", line->node.name);
+    }
+}
 
 int extractfiles(int argc, char **argv)
 {
-FILE *fd, *fdo = NULL;
-char *line = 0;
-char *word, **words = NULL;
-int in_archive, in_header, in_function, in_autodoc, in_code;
-int num, len, i;
-char **name = NULL, **type = NULL, **reg = NULL, *header = NULL, *code = NULL;
-int numregs = 1;
-char *macro[2];
-int numparams=0;
-
-  if(argc != 3)
-  {
-    fprintf( stderr, "Usage: %s <destdir> <archfile>\n", argv[0] );
-    exit(-1);
-  }
-  fd = fopen(argv[2],"rb");
-  if(!fd)
-  {
-    fprintf( stderr, "Couldn't open file %s!\n", argv[2] );
-    exit(-1);
-  }
-  chdir(argv[1]);
-
-  in_archive = 0;
-  in_function = 0;
-  in_autodoc = 0;
-  in_header = 0;
-  in_code = 0;
-  while( (line = get_line(fd)) )
-  {
-    word = keyword(line);
-    if( word && (tolower(word[0])!=word[0] || tolower(word[1])!=word[1]) )
+    Archive * arch;
+    Function * func;
+    char * filename;
+    char * newname;
+    FILE * fh;
+    
+    if(argc != 3)
     {
-      if( strcmp(word,"Archive")==0 && !in_archive )
-        in_archive = 1;
-      else if( strcmp(word,"/Archive")==0 && in_archive && ! in_function && !in_header )
-        break;
-      else if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc )
-        in_autodoc = 1;
-      else if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
-        in_autodoc = 0;
-      else if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
-        in_code = 1;
-      else if( strcmp(word,"/Code")==0 && in_code )
-        in_code = 0;
-      else if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
-        in_header = 1;
-      else if( strcmp(word,"/Header")==0 && in_header )
-        in_header = 0;
-      else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
-      {
-      char *filename;
-
-        num = get_words(line,&words);
-        name = realloc( name, sizeof(char *) );
-        name[0] = strdup(words[num-1]);
-        type = realloc( type, sizeof(char *) );
-        len = 0;
-        for( i=2 ; i < num-1 ; i++ )
-          len += strlen(words[i]);
-        type[0] = malloc( (len+num-3) * sizeof(char) );
-        strcpy( type[0], words[2]);
-        for( i=3 ; i < num-1 ; i++ )
-        {
-          strcat( type[0], " " );
-          strcat( type[0], words[i] );
-        }
-        if(strcmp(words[1],"LHAQUAD")==0)
-        {
-          macro[0] = strdup("LHQUAD");
-          macro[1] = strdup("LHAQUAD");
-          numregs = 2;
-        }
-        else
-        {
-          macro[0] = strdup("LH");
-          macro[1] = strdup("LHA");
-          numregs = 1;
-        }
-        numparams = 0;
-        if(fdo)
-          fclose(fdo);
-        filename = malloc( (strlen(name[0])+3)*sizeof(char) );
-        sprintf( filename, "%s.c", name[0] );
-        for( i = 0 ; filename[i] ; i++ )
-          filename[i] = tolower(filename[i]);
-        fdo = fopen(filename,"w");
-        if(!fdo)
-        {
-          fprintf( stderr, "Couldn't open file %s!\n", filename );
-          exit(-1);
-        }
-        in_function = 1;
-        fprintf( fdo, "#include \"libdefs.h\"\n\n" );
-      }
-      else if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
-      {
-        fprintf( fdo, "%s\n", header);
-        fprintf( fdo, "AROS_%s%d(%s, %s, \\\n", macro[0], numparams, type[0], name[0] );
-        for( i = 1 ; i <= numparams ; i++ )
-        {
-          fprintf( fdo, "AROS_%s(%s, %s, %s), \\\n", macro[1], type[i], name[i], reg[i] );
-        }
-        fprintf( fdo, "LIBBASETYPEPTR, LIBBASE, %s, BASENAME)\n", reg[0] );
-        fprintf( fdo, "{\n    AROS_LIBFUNC_INIT\n\n" );
-        fprintf( fdo, "%s\n", code );
-        fprintf( fdo, "\n    AROS_LIBFUNC_EXIT\n} /* %s */\n", name[0] );
-        in_function = 0;
-        for( i=0 ; i < numparams ; i++ )
-        {
-          free(name[i]);
-          free(type[i]);
-          free(reg[i]);
-        }
-        free(name);
-        free(type);
-        free(reg);
-        free(code);
-        free(macro[0]);
-        free(macro[1]);
-        name = NULL;
-        type = NULL;
-        reg = NULL;
-        code = NULL;
-      }
-      else if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
-      {
-        numparams++;
-        num = get_words( line, &words );
-        name = realloc( name, (numparams+1)*sizeof(char *) );
-        name[numparams] = strdup( words[num-1-numregs] );
-        type = realloc( type, (numparams+1)*sizeof(char *) );
-        len = 0;
-        for( i=1 ; i < num-1-numregs ; i++ )
-          len += strlen(words[i]);
-        type[numparams] = malloc( (len+num-2-numregs) * sizeof(char) );
-        strcpy( type[numparams], words[1]);
-        for( i=2 ; i < num-1-numregs ; i++ )
-        {
-          strcat( type[numparams], " " );
-          strcat( type[numparams], words[i] );
-        }
-        reg = realloc( reg, (numparams+1)*sizeof(char *) );
-        reg[numparams] = strdup( words[num-numregs] );
-        len = strlen( words[num-numregs] );
-        for( i = numregs-1 ; i > 0 ; i-- )
-        {
-          len += strlen( words[num-i] ) + 2;
-          reg[numparams] = realloc( reg[numparams], (len+1) * sizeof(char) );
-          strcat( reg[numparams], ", " );
-          strcat( reg[numparams], words[num-i] );
-        }
-      }
-      else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
-      {
-        num = get_words(line,&words);
-        reg = realloc( reg, (numparams+1)*sizeof(char *) );
-        reg[0] = strdup(words[1]);
-      }
-
-      free(word);
+	fprintf( stderr, "Usage: %s <destdir> <archfiles...>\n", argv[0] );
+	exit(-1);
     }
-    else
+    arch = newArchive (argc-2, &argv[2]);
+
+    chdir(argv[1]);
+
+    ForeachNode (&arch->functions, func)
     {
-      if(in_header)
-      {
-	/* Skip this line. It splits the header in a part which is global
-	 * (for the autodocs) and a local part which is only necessary
-	 * to compile the code. */
-        if (!strcmp (word, "Local"))
-	  continue;
-	
-        i = (header?strlen(header):0);
-        header = realloc( header, (i+strlen(line)+2)*sizeof(char) );
-        sprintf( &header[i], "%s\n", line );
-      }
-      if(in_code)
-      {
-        i = (code?strlen(code):0);
-        code = realloc( code, (i+strlen(line)+2)*sizeof(char) );
-        sprintf( &code[i], "%s\n", line );
-      }
-    }
-    free(line);
-  }
-  fclose(fdo);
-  fclose(fd);
-  free(header);
+	filename = joinVAStrings (NULL, func->node.name, ".c", NULL);
+	newname = joinVAStrings (NULL, func->node.name, ".c.new", NULL);
 
-return 0;
+	fh = fopen (newname, "w");
+	if (!fh)
+	{
+	    fprintf( stderr, "Couldn't open file %s!\n", newname );
+	    exit (1);
+	}
+
+	writeArchiveHeader (fh, arch);
+	writeFunctionToFile (fh, func);
+	fclose (fh);
+	moveifchanged (filename, newname);
+	free (filename);
+	free (newname);
+    }
+    
+    return 0;
 }
 
 void emit(FILE *out, struct libconf *lc, char **names, int number)
@@ -912,8 +1245,7 @@ int has_arch = 1;
 
 
   /* First check if we have a HIDD which does not have an archive */
-  lc = calloc( 1, sizeof(struct libconf) );
-  if(parse_libconf(NULL,lc))
+  if(!(lc=parse_libconf(NULL)))
     return(-1);
 
   if (lc->type == t_hidd || lc->type == t_gadget || lc->type == t_class)
@@ -1017,175 +1349,40 @@ return 0;
 
 int gensource(int argc, char **argv)
 {
-FILE *fd, *fdo = NULL;
-char *newfile;
-char *line = 0;
-char *word = NULL, **words = NULL;
-int in_archive, in_header, in_function, in_autodoc, in_code;
-int num, i, len;
-char **name = NULL, **type = NULL, **reg = NULL;
-int numregs = 1;
-char *macro[2];
-int numparams=0;
-
-  if(argc != 3)
-  {
-    fprintf( stderr, "Usage: %s <archfile> <sourcefile>\n", argv[0] );
-    exit(-1);
-  }
-  fd = fopen(argv[1],"rb");
-  if(!fd)
-  {
-    fprintf( stderr, "Couldn't open file %s!\n", argv[1] );
-    exit(-1);
-  }
-  newfile = malloc( (strlen(argv[2])+5) * sizeof(char) );
-  sprintf( newfile, "%s.new", argv[2] );
-  fdo = fopen(newfile,"w");
-  if(!fdo)
-  {
-    fprintf( stderr, "Couldn't open file %s!\n", newfile );
-    exit(-1);
-  }
-
-  in_archive = 0;
-  in_header = 0;
-  in_function = 0;
-  in_autodoc = 0;
-  in_code = 0;
-  while( (line = get_line(fd)) )
-  {
-    free(word);
-    word = keyword(line);
-    if( word && (isupper(word[0]) || isupper(word[1])) )
+    Archive * arch;
+    Function * func;
+    char * filename;
+    FILE * fh;
+    
+    if(argc != 3)
     {
-      if( strcmp(word,"Archive")==0 && !in_archive )
-        in_archive = 1;
-      else if( strcmp(word,"/Archive")==0 && in_archive && !in_header && ! in_function )
-        break;
-      else if( strcmp(word,"AutoDoc")==0 && in_function && !in_code && !in_autodoc )
-        in_autodoc = 1;
-      else if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
-        in_autodoc = 0;
-      else if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
-      {
-        fprintf( fdo, "\nAROS_%s%d(%s, %s, \\\n", macro[0], numparams, type[0], name[0] );
-        for( i = 1 ; i <= numparams ; i++ )
-        {
-          fprintf( fdo, "AROS_%s(%s, %s, %s), \\\n", macro[1], type[i], name[i], reg[i] );
-        }
-        fprintf( fdo, "LIBBASETYPEPTR, LIBBASE, %s, BASENAME)\n", reg[0] );
-        fprintf( fdo, "{\n    AROS_LIBFUNC_INIT\n\n" );
-        in_code = 1;
-      }
-      else if( strcmp(word,"/Code")==0 && in_code )
-      {
-        fprintf( fdo, "\n    AROS_LIBFUNC_EXIT\n} /* %s */\n", name[0] );
-        in_code = 0;
-      }
-      else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
-      {
-        num = get_words(line,&words);
-        name = realloc( name, sizeof(char *) );
-        name[0] = strdup(words[num-1]);
-        type = realloc( type, sizeof(char *) );
-        len = 0;
-        for( i=2 ; i < num-1 ; i++ )
-          len += strlen(words[i]);
-        type[0] = malloc( (len+num-3) * sizeof(char) );
-        strcpy( type[0], words[2]);
-        for( i=3 ; i < num-1 ; i++ )
-        {
-          strcat( type[0], " " );
-          strcat( type[0], words[i] );
-        }
-        if(strcmp(words[1],"LHAQUAD")==0)
-        {
-          macro[0] = strdup("LHQUAD");
-          macro[1] = strdup("LHAQUAD");
-          numregs = 2;
-        }
-        else
-        {
-          macro[0] = strdup("LH");
-          macro[1] = strdup("LHA");
-          numregs = 1;
-        }
-        numparams = 0;
-        in_function = 1;
-      }
-      else if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
-      {
-        for( i=0 ; i < numparams ; i++ )
-        {
-          free(name[i]);
-          free(type[i]);
-          free(reg[i]);
-        }
-        free(name);
-        free(type);
-        free(reg);
-        free(macro[0]);
-        free(macro[1]);
-        name = NULL;
-        type = NULL;
-        reg = NULL;
-        in_function = 0;
-      }
-      else if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
-      {
-        fprintf( fdo, "#include \"libdefs.h\"\n\n" );
-        in_header = 1;
-      }
-      else if( strcmp(word,"/Header")==0 && in_header )
-        in_header = 0;
-      else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
-      {
-        num = get_words(line,&words);
-        reg = realloc( reg, (numparams+1)*sizeof(char *) );
-        reg[0] = strdup(words[1]);
-      }
-      else if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
-      {
-        numparams++;
-        num = get_words( line, &words );
-        name = realloc( name, (numparams+1) * sizeof(char *) );
-        name[numparams] = strdup( words[num-1-numregs] );
-        type = realloc( type, (numparams+1) * sizeof(char *) );
-        len = 0;
-        for( i=1 ; i < num-1-numregs ; i++ )
-          len += strlen(words[i]);
-        type[numparams] = malloc( (len+num-2-numregs) * sizeof(char) );
-        strcpy( type[numparams], words[1]);
-        for( i=2 ; i < num-1-numregs ; i++ )
-        {
-          strcat( type[numparams], " " );
-          strcat( type[numparams], words[i] );
-        }
-        reg = realloc( reg, (numparams+1)*sizeof(char *) );
-        reg[numparams] = strdup( words[num-numregs] );
-        len = strlen( words[num-numregs] );
-        for( i = numregs-1 ; i > 0 ; i-- )
-        {
-          len += strlen( words[num-i] ) + 2;
-          reg[numparams] = realloc( reg[numparams], (len+1) * sizeof(char) );
-          strcat( reg[numparams], ", " );
-          strcat( reg[numparams], words[num-i] );
-        }
-      }
+	fprintf( stderr, "Usage: %s <destfile> <archfiles...>\n", argv[0] );
+	exit(-1);
     }
-    else if(in_header || in_code )
-      fprintf( fdo, "%s\n", line );
+    arch = newArchive (argc-2, &argv[2]);
 
-    free(line);
-  }
-  fclose(fdo);
-  fclose(fd);
-  moveifchanged(argv[2],newfile);
-  free(newfile);
+    filename = joinVAStrings (NULL, argv[1], ".new", NULL);
+    fh = fopen (filename, "w");
+    if (!fh)
+    {
+	fprintf( stderr, "Couldn't open file %s!\n", filename);
+	exit (1);
+    }
 
-return 0;
+    writeArchiveHeader (fh, arch);
+
+    ForeachNode (&arch->functions, func)
+    {
+	writeFunctionToFile (fh, func);
+    }
+
+    fclose (fh);
+    moveifchanged (argv[1], filename);
+    free (filename);
+    
+    return 0;
 }
+
 
 int genautodocs(int argc, char **argv)
 {
@@ -1276,14 +1473,7 @@ int numparams = 0;
             strcat( type[0], " " );
             strcat( type[0], words[i] );
           }
-          if(strcmp(words[1],"LHAQUAD")==0)
-          {
-            numregs = 2;
-          }
-          else
-          {
-            numregs = 1;
-          }
+          numregs = 1;
         }
         else if( in_autodoc && !in_afunc )
         {
@@ -1672,8 +1862,7 @@ int firstlvo;
     fprintf( stderr, "Usage: %s <incdir> <archfile>\n", argv[0] );
     exit(-1);
   }
-  lc = calloc( 1, sizeof(struct libconf) );
-  if(parse_libconf(NULL,lc))
+  if(!(lc=parse_libconf(NULL)))
     return(-1);
   if( lc->libbasetypeptr == NULL )
   {
@@ -1802,14 +1991,13 @@ int firstlvo;
         {
           macro[0] = strdup("LCQUAD");
           macro[1] = strdup("LCAQUAD");
-          numregs = 2;
         }
         else
         {
           macro[0] = strdup("LC");
           macro[1] = strdup("LCA");
-          numregs = 1;
         }
+        numregs = 1;
         numparams = 0;
         in_function = 1;
       }
@@ -1919,8 +2107,7 @@ int firstlvo;
     fprintf( stderr, "Usage: %s <incdir> <archfile>\n", argv[0] );
     exit(-1);
   }
-  lc = calloc( 1, sizeof(struct libconf) );
-  if(parse_libconf(NULL,lc))
+  if(!(lc=parse_libconf(NULL)) )
     return(-1);
   if( lc->libbasetypeptr == NULL )
   {
@@ -2148,8 +2335,7 @@ struct libconf *lc;
     fprintf( stderr, "Usage: %s <incdir>\n", argv[0] );
     exit(-1);
   }
-  lc = calloc( 1, sizeof(struct libconf) );
-  if(parse_libconf(NULL,lc))
+  if(!(lc = parse_libconf(NULL)) )
     return(-1);
   filename = malloc( (strlen(argv[1])+strlen(lc->libname)+20) * sizeof(char) );
   sprintf( filename, "%s/pragmas/%s_pragmas.h", argv[1], lc->libname );
@@ -3093,8 +3279,7 @@ char *upperbasename;
     fprintf( stderr, "Usage: %s <incdir>\n", argv[0] );
     exit(-1);
   }
-  lc = calloc( 1, sizeof(struct libconf) );
-  if(parse_libconf(NULL,lc))
+  if(!(lc = parse_libconf(NULL)) )
     return(-1);
   if( lc->libbasetypeptr == NULL )
   {
@@ -3167,8 +3352,7 @@ int firstlvo;
     fprintf( stderr, "Usage: %s <incdir> <archfile>\n", argv[0] );
     exit(-1);
   }
-  lc = calloc( 1, sizeof(struct libconf) );
-  if(parse_libconf(NULL,lc))
+  if(!(lc = parse_libconf(NULL)) )
     return(-1);
   if( lc->libbasetypeptr == NULL )
   {
@@ -3442,8 +3626,7 @@ int firstlvo;
     fprintf( stderr, "Usage: %s <incdir> <archfile>\n", argv[0] );
     exit(-1);
   }
-  lc = calloc( 1, sizeof(struct libconf) );
-  if(parse_libconf(NULL,lc))
+  if(!(lc = parse_libconf(NULL)) )
     return(-1);
   if( lc->libbasetypeptr == NULL )
   {
