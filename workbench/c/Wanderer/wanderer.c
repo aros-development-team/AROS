@@ -470,7 +470,7 @@ BOOPSI_DISPATCHER(IPTR,IconWindow_Dispatcher,cl,obj,msg)
 
 struct MUI_CustomClass *CL_IconWindow;
 
-#define IconWindowObject (Object*)NewObject(CL_IconWindow->mcc_Class, NULL
+#define IconWindowObject BOOPSIOBJMACRO_START(CL_IconWindow->mcc_Class)
 
 
 /**************************************************************************
@@ -579,7 +579,7 @@ BOOPSI_DISPATCHER(IPTR,Wanderer_Dispatcher,cl,obj,msg)
 
 struct MUI_CustomClass *CL_Wanderer;
 
-#define WandererObject (Object*)NewObject(CL_Wanderer->mcc_Class, NULL
+#define WandererObject BOOPSIOBJMACRO_START(CL_Wanderer->mcc_Class)
 
 
 /******** Execute Window ********/
@@ -648,9 +648,9 @@ void execute_ok(void)
 	    	SYS_Asynch,	TRUE,
 	    	SYS_Input,  (IPTR)input,
 	    	SYS_Output, (IPTR)NULL,
-#ifdef __AROS__
-	    	SYS_Error,  (IPTR)NULL,
-#endif
+                __AROS__ ?
+	    	SYS_Error :
+                TAG_IGNORE,  (IPTR)NULL,
 		NP_CurrentDir, lock, /* Will be freed automatical if successful */
 	    	TAG_DONE) == -1)
         {
@@ -681,19 +681,22 @@ void shell_open(char **cd_ptr)
 
 #ifdef __AROS__
     if (SystemTags("",
-#else
-    if (SystemTags("newshell",
-#endif
 	SYS_Asynch,     TRUE,
 	SYS_Input,	    (IPTR)win,
 	SYS_Output,	    (IPTR)NULL,
-#ifdef __AROS__
 	SYS_Background, FALSE,
 	SYS_Error,	    (IPTR)NULL,
 	SYS_UserShell,  TRUE,
-#endif
 	NP_CurrentDir, cd,
 	TAG_DONE) == -1)
+#else
+    if (SystemTags("newshell",
+	SYS_Asynch,     TRUE,
+	SYS_Input,	    (IPTR)win,
+	SYS_Output,	    (IPTR)NULL,
+	NP_CurrentDir, cd,
+	TAG_DONE) == -1)
+#endif
     {
     	Close(win);
     	UnLock(cd);
@@ -842,7 +845,7 @@ AROS_UFH3(void, hook_func_action,
 		    MUIA_IconWindow_IsRoot, FALSE,
 		    MUIA_IconWindow_ActionHook, &hook_action,
 		    MUIA_IconWindow_Drawer, buf,
-		    End;
+		EndBoopsi;
 
 		if (drawerwnd)
 		{
@@ -979,7 +982,7 @@ int main(void)
             MUIA_IconWindow_IsRoot, TRUE,
 	    MUIA_IconWindow_IsBackdrop, TRUE,
 	    MUIA_IconWindow_ActionHook, &hook_action,
-	    End,
+	    EndBoopsi,
 	SubWindow, execute_wnd = WindowObject,
 	    MUIA_Window_Title, "Execute a file",
 	    WindowContents, VGroup,
@@ -999,7 +1002,7 @@ int main(void)
 		    End,
 		End,
 	    End,
-	End;
+	EndBoopsi;
 
     if (app)
     {
