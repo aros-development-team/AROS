@@ -1,0 +1,17 @@
+# Makefile for MetaMake on Amiga with Geek Gadgets(ADE)
+
+CC      = gcc
+CFLAGS  = -O2
+DEFS    = -DHAVE_CONFIG_H
+CP      = cp
+RM      = rm
+BINDIR  = /bin
+
+all: mmake 
+	
+mmake: mmake.c config.h.amiga
+	$(CP) config.h.amiga config.h
+	$(CC) $(CFLAGS) $(DEFS) -o mmake mmake.c
+
+clean:
+	$(RM) config.h mmake
