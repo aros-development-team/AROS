@@ -116,7 +116,7 @@ int td_sendcommand(struct TrackDiskBase *TDBase)
     {
 	int i;
 
-	kprintf("[Floppy] Resending command\n"));
+	kprintf("[Floppy] Resending command\n");
 	err = 0;
 	td_dinit(TDBase);
 	// Resend command

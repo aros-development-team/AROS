@@ -282,7 +282,7 @@ AROS_LH2(struct TrackDiskBase *, init,
 	/* We only want 3.5" 1.44Mb drives */
 	if (((drives >> (4*i))&0x0f) == 4)
 	{
-	    kprintf("[Floppy] Unit %d is a 1.44Mb drive\n",i));
+	    kprintf("[Floppy] Unit %d is a 1.44Mb drive\n",i);
 	    TD_InitUnit(i,TDBase);
 	}
     }
