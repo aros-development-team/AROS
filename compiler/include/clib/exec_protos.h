@@ -167,6 +167,16 @@ AROS_LP2I(void, AddHead,
     AROS_LCA(struct Node *, node, A1), \
     struct ExecBase *, SysBase, 40, Exec)
 
+AROS_LP2(void, AddIntServer,
+    AROS_LPA(ULONG,              intNumber, D0),
+    AROS_LPA(struct Interrupt *, interrupt, A1),
+    struct ExecBase *, SysBase, 28, Exec)
+#define AddIntServer(intNumber, interrupt) \
+    AROS_LC2(void, AddIntServer, \
+    AROS_LCA(ULONG,              intNumber, D0), \
+    AROS_LCA(struct Interrupt *, interrupt, A1), \
+    struct ExecBase *, SysBase, 28, Exec)
+
 AROS_LP1(void, AddLibrary,
     AROS_LPA(struct Library *, library,A1),
     struct ExecBase *, SysBase, 66, Exec)
@@ -785,6 +795,16 @@ AROS_LP1I(struct Node *, RemHead,
     AROS_LCA(struct List *, list, A0), \
     struct ExecBase *, SysBase, 43, Exec)
 
+AROS_LP2(void, RemIntServer,
+    AROS_LPA(ULONG,              intNumber, D0),
+    AROS_LPA(struct Interrupt *, interrupt, A1),
+    struct ExecBase *, SysBase, 29, Exec)
+#define RemIntServer(intNumber, interrupt) \
+    AROS_LC2(void, RemIntServer, \
+    AROS_LCA(ULONG,              intNumber, D0), \
+    AROS_LCA(struct Interrupt *, interrupt, A1), \
+    struct ExecBase *, SysBase, 29, Exec)
+
 AROS_LP1(void, RemLibrary,
     AROS_LPA(struct Library *, library,A1),
     struct ExecBase *, SysBase, 67, Exec)
@@ -886,6 +906,16 @@ AROS_LP3(APTR, SetFunction,
     AROS_LCA(LONG,             funcOffset,  A0), \
     AROS_LCA(APTR,             newFunction, D0), \
     struct ExecBase *, SysBase, 70, Exec)
+
+AROS_LP2(struct Interrupt *, SetIntVector,
+    AROS_LPA(ULONG,              intNumber, D0),
+    AROS_LPA(struct Interrupt *, interrupt, A1),
+    struct ExecBase *, SysBase, 27, Exec)
+#define SetIntVector(intNumber, interrupt) \
+    AROS_LC2(struct Interrupt *, SetIntVector, \
+    AROS_LCA(ULONG,              intNumber, D0), \
+    AROS_LCA(struct Interrupt *, interrupt, A1), \
+    struct ExecBase *, SysBase, 27, Exec)
 
 AROS_LP2(ULONG, SetSignal,
     AROS_LPA(ULONG, newSignals, D0),

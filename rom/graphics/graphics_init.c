@@ -74,8 +74,13 @@ AROS_LH2(struct GfxBase *, init,
 
     SysBase = sysBase;
 
+    Disable();
     if (!driver_init (GfxBase))
+    {
+	Enable();
 	return NULL;
+    }
+    Enable();
 
     /* You would return NULL if the init failed */
     return GfxBase;
@@ -108,8 +113,13 @@ AROS_LH1(struct GfxBase *, open,
 	sysTA.ta_YSize = def->tf_YSize;
     }
 
+    Disable();
     if (!driver_open (GfxBase))
+    {
+	Enable();
 	return NULL;
+    }
+    Enable();
 
     /* I have one more opener. */
     GfxBase->LibNode.lib_OpenCnt++;

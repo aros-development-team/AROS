@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/11/14 08:54:18  aros
+    Some more changes
+
     Revision 1.6  1996/10/24 15:50:35  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -94,9 +97,6 @@
 
     EXAMPLE
 
-    BUGS
-	The rdargs argument is currently ignored.
-
     SEE ALSO
 	FreeArgs(), Input()
 
@@ -123,7 +123,7 @@
     STRPTR s1, s2, *newmult;
     ULONG arg, numargs, nextarg;
     LONG it, item, chars, value;
-    struct CSource cs;
+    struct CSource lcs, *cs;
 
     /* Get pointer to process structure. */
     struct Process *me=(struct Process *)FindTask(NULL);
@@ -155,61 +155,77 @@
 	ERROR(ERROR_NO_FREE_STORE);
 
     /* Init character source. */
-    cs.CS_Buffer=me->pr_Arguments;
-    s1=cs.CS_Buffer;
-    while(*s1++)
-	;
-    cs.CS_Length=(IPTR)s1-(IPTR)cs.CS_Buffer-1;
-    cs.CS_CurChr=0;
-
-    /* Check commandline for a single '?' */
-    s1=cs.CS_Buffer;
-    /* Skip leading whitespace */
-    while(*s1==' '||*s1=='\t')
-	s1++;
-    /* Check for '?' */
-    if(*s1++=='?')
+    if(rdargs!=NULL)
+	cs=&rdargs->RDA_Source;
+    else
     {
-	/* Skip whitespace */
+	lcs.CS_Buffer=me->pr_Arguments;
+	s1=lcs.CS_Buffer;
+	while(*s1++)
+	    ;
+	lcs.CS_Length=(IPTR)s1-(IPTR)lcs.CS_Buffer-1;
+	lcs.CS_CurChr=0;
+	cs=&lcs;
+    }
+
+    /* Check for optional reprompting */
+    if(rdargs==NULL||!(rdargs->RDA_Flags&RDAF_NOPROMPT))
+    {
+	/* Check commandline for a single '?' */
+	s1=cs->CS_Buffer;
+	/* Skip leading whitespace */
 	while(*s1==' '||*s1=='\t')
 	    s1++;
-	/* Check for EOL */
-	if(*s1=='\n'||!*s1)
+	/* Check for '?' */
+	if(*s1++=='?')
 	{
-	    /* Only a single '?' on the commandline. */
-	    BPTR input=me->pr_CIS, output=me->pr_COS;
-	    ULONG isize=0, ibuf=0;
-	    LONG c;
-	    /* Prompt for more input */
-	    if(FPuts(output,template)||FPuts(output,": ")||!Flush(output))
-	       ERROR(me->pr_Result2);
-	    /* Read a line in. */
-	    for(;;)
+	    /* Skip whitespace */
+	    while(*s1==' '||*s1=='\t')
+		s1++;
+	    /* Check for EOL */
+	    if(*s1=='\n'||!*s1)
 	    {
-		if(isize>=ibuf)
+		/* Only a single '?' on the commandline. */
+		BPTR input=me->pr_CIS, output=me->pr_COS;
+		ULONG isize=0, ibuf=0;
+		LONG c;
+		/* Prompt for more input */
+		if(rdargs!=NULL&&rdargs->RDA_ExtHelp!=NULL)
 		{
-		    /* Buffer too small. Get a new one. */
-		    STRPTR newiline;
-		    ibuf+=256;
-		    newiline=(STRPTR)AllocVec(ibuf,MEMF_ANY);
-		    if(newiline==NULL)
-			ERROR(ERROR_NO_FREE_STORE);
-		    CopyMemQuick((ULONG *)iline,(ULONG *)newiline,isize);
-		    FreeVec(iline);
-		    iline=newiline;
+		    if(FPuts(output,rdargs->RDA_ExtHelp))
+			ERROR(me->pr_Result2);
+		}else if(FPuts(output,template)||FPuts(output,": "))
+		   ERROR(me->pr_Result2);
+		if(!Flush(output))
+		   ERROR(me->pr_Result2);
+		/* Read a line in. */
+		for(;;)
+		{
+		    if(isize>=ibuf)
+		    {
+			/* Buffer too small. Get a new one. */
+			STRPTR newiline;
+			ibuf+=256;
+			newiline=(STRPTR)AllocVec(ibuf,MEMF_ANY);
+			if(newiline==NULL)
+			    ERROR(ERROR_NO_FREE_STORE);
+			CopyMemQuick((ULONG *)iline,(ULONG *)newiline,isize);
+			FreeVec(iline);
+			iline=newiline;
+		    }
+		    /* Read character */
+		    c=FGetC(input);
+		    /* Check and write it. */
+		    if(c==EOF&&me->pr_Result2)
+			ERROR(me->pr_Result2);
+		    if(c==EOF||c=='\n'||!c)
+			break;
+		    iline[isize++]=c;
 		}
-		/* Read character */
-		c=FGetC(input);
-		/* Check and write it. */
-		if(c==EOF&&me->pr_Result2)
-		    ERROR(me->pr_Result2);
-		if(c==EOF||c=='\n'||!c)
-		    break;
-		iline[isize++]=c;
+		/* Prepare input source for new line. */
+		cs->CS_Buffer=iline;
+		cs->CS_Length=isize;
 	    }
-	    /* Prepare input source for new line. */
-	    cs.CS_Buffer=iline;
-	    cs.CS_Length=isize;
 	}
     }
 
@@ -217,11 +233,9 @@
 	Get enough space for string buffer.
 	It's always smaller than the size of the input line+1.
     */
-    strbuf=(STRPTR)AllocVec(cs.CS_Length+1,MEMF_ANY);
+    strbuf=(STRPTR)AllocVec(cs->CS_Length+1,MEMF_ANY);
     if(strbuf==NULL)
 	ERROR(ERROR_NO_FREE_STORE);
-
-    /* TODO: rdargs!=NULL */
 
     /* Count the number of items in the template (number of ','+1). */
     numargs=1;
@@ -270,7 +284,7 @@
 	if((flags[arg]&TYPEMASK)!=REST)
 	{
 	    /* Get item. Quoted items are no keywords. */
-	    it=ReadItem(s1,~0ul/2,&cs);
+	    it=ReadItem(s1,~0ul/2,cs);
 	    if(it==ITEM_UNQUOTED)
 	    {
 		/* Not quoted. Check if it's a keyword. */
@@ -290,9 +304,9 @@
 		       (flags[item]&TYPEMASK)!=REST)
 		    {
 			/* Get value. */
-			it=ReadItem(s1,~0ul/2,&cs);
+			it=ReadItem(s1,~0ul/2,cs);
 			if(it==ITEM_EQUAL)
-			    it=ReadItem(s1,~0ul/2,&cs);
+			    it=ReadItem(s1,~0ul/2,cs);
 		    }
 		}
 	    }
@@ -308,23 +322,23 @@
 	if((flags[arg]&TYPEMASK)==REST)
 	{
 	    /* Skip leading whitespace */
-	    while(cs.CS_CurChr<cs.CS_Length&&
-		  (cs.CS_Buffer[cs.CS_CurChr]==' '||
-		   cs.CS_Buffer[cs.CS_CurChr]=='\t'))
-		cs.CS_CurChr++;
+	    while(cs->CS_CurChr<cs->CS_Length&&
+		  (cs->CS_Buffer[cs->CS_CurChr]==' '||
+		   cs->CS_Buffer[cs->CS_CurChr]=='\t'))
+		cs->CS_CurChr++;
 
 	    /* Find the last non-whitespace character */
 	    s2=s1-1;
 	    argbuf[arg]=s1;
-	    while(cs.CS_CurChr<cs.CS_Length&&
-		  cs.CS_Buffer[cs.CS_CurChr]&&
-		  cs.CS_Buffer[cs.CS_CurChr]!='\n')
+	    while(cs->CS_CurChr<cs->CS_Length&&
+		  cs->CS_Buffer[cs->CS_CurChr]&&
+		  cs->CS_Buffer[cs->CS_CurChr]!='\n')
 	    {
-		if(cs.CS_Buffer[cs.CS_CurChr]!=' '&&
-		   cs.CS_Buffer[cs.CS_CurChr]!='\t')
+		if(cs->CS_Buffer[cs->CS_CurChr]!=' '&&
+		   cs->CS_Buffer[cs->CS_CurChr]!='\t')
 		    s2=s1;
 		/* Copy string by the way. */
-		*s1++=cs.CS_Buffer[cs.CS_CurChr++];
+		*s1++=cs->CS_Buffer[cs->CS_CurChr++];
 	    }
 	    /* Add terminator (1 after the character found). */
 	    s2[1]=0;

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/11/14 08:54:17  aros
+    Some more changes
+
     Revision 1.6  1996/10/24 15:50:28  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -74,29 +77,29 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    
+
     static const ULONG flagarray[]=
-    { LDF_DEVICES, LDF_ASSIGNS, LDF_VOLUMES, LDF_ASSIGNS, LDF_ASSIGNS };
-    
+    { 0, LDF_DEVICES, LDF_ASSIGNS, LDF_VOLUMES, LDF_ASSIGNS, LDF_ASSIGNS };
+
     /* Determine the size of the name (-1 if the last character is a ':') */
     STRPTR end=name;
     ULONG size;
     while(*end++)
-        ;
+	;
     size=~(name-end);
-    if(size&&*--end==':')
-        size--;
+    if(size&&end[-2]==':')
+	size--;
 
     /* Follow the list */   
     for(;;)
     {
-        /* Get next entry. Return NULL if there is none. */
+	/* Get next entry. Return NULL if there is none. */
 	dlist=dlist->dol_Next;
 	if(dlist==NULL)
 	    return NULL;
 
 	/* Check type and name */
-	if(flags&flagarray[dlist->dol_Type]&&
+	if(flags&flagarray[dlist->dol_Type+1]&&
 	   !Strnicmp(name,dlist->dol_DevName,size)&&!dlist->dol_DevName[size])
 	    return dlist;
     }

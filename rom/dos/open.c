@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1996/11/14 08:54:18  aros
+    Some more changes
+
     Revision 1.9  1996/10/24 15:50:33  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -93,6 +96,7 @@
 
     struct FileHandle *ret;
     BPTR con, ast;
+    LONG error;
 
     /* Get pointer to process structure */
     struct Process *me=(struct Process *)FindTask(NULL);
@@ -146,9 +150,10 @@
 	    iofs->IOFS.io_Unit	=((struct FileHandle *)BADDR(ast))->fh_Unit;
 	    iofs->io_Args[0]=(IPTR)"";
 	    (void)DoIO(&iofs->IOFS);
+	    error=me->pr_Result2=iofs->io_DosError;
 	}else
-	    (void)DoName(iofs,name,DOSBase);
-	if(!(me->pr_Result2=iofs->io_DosError))
+	    error=DoName(iofs,name,DOSBase);
+	if(!error)
 	{
 	    ret->fh_Device=iofs->IOFS.io_Device;
 	    ret->fh_Unit  =iofs->IOFS.io_Unit;

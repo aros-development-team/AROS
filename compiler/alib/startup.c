@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/11/14 08:54:16  aros
+    Some more changes
+
     Revision 1.5  1996/10/24 15:50:20  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -33,6 +36,14 @@
 extern int main (int argc, char ** argv);
 extern APTR __startup_mempool; /* malloc() and free() */
 
+/*
+    TODO: This won't work for normal AmigaOS for two reasons:
+    1. You can't expect SysBase to be in A6. The correct way
+       is to use *(struct ExecBase **)4.
+    2. Amiga gcc puts strings into the code section - and since
+       all gccs emit strings for a certain function _before_ the
+       code the program will crash immediately.
+*/
 AROS_LH0(LONG,entry,struct ExecBase *,sysbase,,)
 {
     AROS_LIBFUNC_INIT

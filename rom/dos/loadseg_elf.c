@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1996/11/14 08:54:17  aros
+    Some more changes
+
     Revision 1.9  1996/10/24 15:50:32  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -257,6 +260,10 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 	    for(i=0;i<numrel;i++)
 	    {
 		symbol=&symtab[reltab[i].info>>8];
+#if 0
+		if(!symbol->size)
+		    ERROR(ERROR_OBJECT_WRONG_TYPE);
+#endif
 		switch(reltab[i].info&0xff)
 		{
 		case RELO_32:

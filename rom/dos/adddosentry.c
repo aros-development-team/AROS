@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/11/14 08:54:17  aros
+    Some more changes
+
     Revision 1.5  1996/10/24 15:50:23  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -20,6 +23,7 @@
 */
 #include <dos/dosextens.h>
 #include <clib/utility_protos.h>
+#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -74,11 +78,18 @@
 
     dl=LockDosList(LDF_ALL|LDF_WRITE);
     if(dlist->dol_Type!=DLT_VOLUME)
-    {
-	dl=FindDosEntry(dl,dlist->dol_DevName,LDF_DEVICES|LDF_ASSIGNS|LDF_WRITE);
-	if(dl!=NULL)
-	    success=0;
-    }
+	for(;;)
+	{
+	    dl=dl->dol_Next;
+	    if(dl==NULL)
+		break;
+	    if(dl->dol_Type!=DLT_VOLUME&&
+	       !Stricmp(dl->dol_DevName,dlist->dol_DevName))
+	    {
+		success=0;
+		break;
+	    }
+	}
     if(success)
     {
 	dlist->dol_Next=DOSBase->dl_DevInfo;

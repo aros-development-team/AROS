@@ -62,7 +62,8 @@ FUNCTION
 
 INPUT
 	io_Args[0]	name of the exec device to mount the filesystem on
-	io_Args[1]	dos environment vector
+	io_Args[1]	Unit number for the exec device
+	io_Args[2]	dos environment vector
 
 RESULT
 	io_Device	device base pointer
