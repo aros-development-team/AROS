@@ -143,9 +143,10 @@ AROS_LH4(IPTR, DoGadgetMethodA,
 
                 if (rport)
                 {
+		#if 0 /* stegerg: CHECKME!!!! */
                     //init intuition's global dogadmethod rp with obtained data
                     CopyMem(rport,rp,sizeof (struct RastPort));
-
+ 
                     if (gi->gi_DrInfo)
                     {
                         SetFont(rp, gi->gi_DrInfo->dri_Font);
@@ -153,7 +154,17 @@ AROS_LH4(IPTR, DoGadgetMethodA,
 
                     ((struct gpRender *)msg)->gpr_RPort = rp;
                     ((struct gpRender *)msg)->gpr_GInfo = gi;
+    	    	#else
+                    if (gi->gi_DrInfo)
+                    {
+                        SetFont(rport, gi->gi_DrInfo->dri_Font);
+                    }
 
+                    ((struct gpRender *)msg)->gpr_RPort = rport;
+                    ((struct gpRender *)msg)->gpr_GInfo = gi;
+		
+		#endif
+		
                     ret = Custom_DoMethodA(gad, msg);
 
                     ReleaseGIRPort(rport);
