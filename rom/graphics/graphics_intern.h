@@ -1,7 +1,7 @@
 #ifndef GRAPHICS_INTERN_H
 #define GRAPHICS_INTERN_H
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Internal header file for graphics.library
@@ -31,6 +31,7 @@
 
 #include "fontsupport.h"
 
+#define REGIONS_USE_MEMPOOL 	1
 
 extern struct GfxBase * GfxBase;
 
@@ -48,9 +49,15 @@ struct GfxBase_intern
 
     struct tfe_hashnode   	* tfe_hashtab[TFE_HASHTABSIZE];
     struct SignalSemaphore  	tfe_hashtab_sema;
+#if REGIONS_USE_MEMPOOL
+    struct SignalSemaphore  	regionsem;
+    APTR    	    	    	regionpool;
+#endif
 };
 
 /* Macros */
+
+#define PrivGBase(x)   	    	((struct GfxBase_intern *)x)
 
 #define WIDTH_TO_BYTES(width) 	((( (width) - 1) >> 3) + 1)
 #define WIDTH_TO_WORDS(width) 	((( (width) - 1) >> 4) + 1)

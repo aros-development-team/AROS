@@ -56,9 +56,15 @@
     struct RegionRectangle *next;
     
     ASSERT_VALID_PTR(regionrectangle);
-    
+
+#if REGIONS_USE_MEMPOOL
+    ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
+    FreePooled(PrivGBase(GfxBase)->regionpool, regionrectangle, sizeof(struct RegionRectangle));
+    ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
+#else        
     FreeMem(regionrectangle, sizeof(struct RegionRectangle));	
-    
+#endif
+
     AROS_LIBFUNC_EXIT
     
 } /* DisposeRegionRectangle */

@@ -52,9 +52,14 @@
     AROS_LIBFUNC_INIT
 
     struct RegionRectangle *rr;	
-    
+#if REGIONS_USE_MEMPOOL
+    ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
+    rr = AllocPooled(PrivGBase(GfxBase)->regionpool, sizeof(struct RegionRectangle));
+    ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
+#else       
     rr = AllocMem(sizeof(struct RegionRectangle), MEMF_CLEAR);
-    
+#endif
+ 
     return rr;
     
     AROS_LIBFUNC_EXIT
