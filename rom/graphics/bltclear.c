@@ -40,7 +40,8 @@
 	A cleared block of Chip-Ram.
 
     NOTES
-	- this function *might* not use the blitter
+        THIS FUNCTION IS DEPRECATED except if you want to simply clear
+        some memory.
 
     EXAMPLE
 
@@ -58,7 +59,21 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  driver_BltClear (memBlock, bytecount, flags, GfxBase);
+  ULONG count, end;
+
+  if (0 != (flags & 2) )
+    /* use row/bytesperrow */
+    bytecount = (bytecount & 0xFFFF) * (bytecount >> 16);
+
+  /* we have an even number of BYTES to clear here */
+  /* but use LONGS for clearing the block */
+  count = 0;
+  end = bytecount >> 2;
+  while(count < end)
+    ((ULONG *)memBlock)[count++] = 0;
+  /* see whether we had an odd number of WORDS */
+  if (0 != (bytecount & 2))
+    ((UWORD *)memBlock)[(count * 2)] = 0;
 
   AROS_LIBFUNC_EXIT
 } /* BltClear */
