@@ -127,7 +127,6 @@ cliprects */
 #define UPFRONTPRIORITY		20
 
 #define IS_VISIBLE(l) (TRUE == l->visible)
-#define IS_EMPTYREGION(r) (NULL == r->RegionRectangle)
 
 
 #endif /* GRAPHICS_CLIP_H */
