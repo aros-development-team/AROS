@@ -168,7 +168,7 @@ struct IntRequestUserData
 
 
 
-extern struct IntuitionBase * IntuitionBase;
+/*extern struct IntuitionBase * IntuitionBase;*/
 
 #define GetPubIBase(ib)   ((struct IntuitionBase *)ib)
 #define GetPrivIBase(ib)  ((struct IntIntuitionBase *)ib)
