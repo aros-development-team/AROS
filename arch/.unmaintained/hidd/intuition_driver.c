@@ -566,6 +566,7 @@ void intui_BeginRefresh (struct Window * win,
   if (FALSE == BeginUpdate(win->WLayer))
   {
     EndUpdate(win->WLayer, FALSE);
+kprintf("%s :BeginUpdate returned FALSE!->Aborting BeginUpdate()\n",__FUNCTION__);
     return;
   }
   
@@ -578,7 +579,10 @@ void intui_EndRefresh (struct Window * win, BOOL free,
 	struct IntuitionBase * IntuitionBase)
 {
 #warning this code should be moved inside intuition (it does not contain any hardware specific code)
-  EndUpdate(win->WLayer, free);
+  
+  /* Check whether the BeginRefresh was aborted due to a FALSE=BeginUpdate()*/
+  if (0 != (win->Flags & WFLG_WINDOWREFRESH))
+    EndUpdate(win->WLayer, free);
   
   /* reset all bits indicating a necessary or ongoing refresh */
   win->Flags &= ~WFLG_WINDOWREFRESH;
