@@ -5,6 +5,8 @@
     $Id$
 */
 
+#include <stdio.h>
+
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #ifdef _AROS
@@ -12,8 +14,8 @@
 #endif
 
 #include "muimaster_intern.h"
+#include "mui.h"
 #include "support.h"
-#include <stdio.h>
 
 /*****************************************************************************
 
@@ -88,8 +90,12 @@ __asm struct IClass *MUI_GetClass(register __a0 char *classname)
     	    struct Library *mcclib;
 	    struct MUI_CustomClass *mcc;
 	    UBYTE s[64];
-	    
+#ifdef _AROS	    
 	    snprintf(s, 64, "Zune/%s", classname);
+#else
+#warning "snprintf() not used on Amiga"
+			sprintf(s, "Zune/%s", classname);
+#endif
     	    if ((mcclib = OpenLibrary(s, 0)))
 	    {
 	    	/* call MCC_Query(0) */
@@ -100,7 +106,7 @@ __asm struct IClass *MUI_GetClass(register __a0 char *classname)
 			struct Library *, mcclib, 5, lib);
 #else
 #warning "You need to make MCC_Query() call here!!!!!!!!!!!!!!!!!!!"
-    	    	mcc = 0
+    	    	mcc = 0;
 #endif			
 	    	if (mcc)
 		{

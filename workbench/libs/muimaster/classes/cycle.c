@@ -201,9 +201,12 @@ static IPTR Cycle_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     	struct opSet ops = *msg;
 	struct TagItem tags[] =
 	{
-	    {MUIA_Group_Forward , FALSE     	    	    },
-	    {TAG_MORE	    	, (IPTR)msg->ops_AttrList   }	    
+	    {MUIA_Group_Forward , FALSE },
+	    {TAG_MORE	    	, 0       }	    
 	};
+
+	/* Zune must also be compilable with SAS C on Amiga */
+	tags[1].ti_Data = (IPTR)msg->ops_AttrList;
 	
 	ops.ops_AttrList =  tags;
 	

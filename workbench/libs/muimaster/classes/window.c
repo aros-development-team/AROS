@@ -56,8 +56,25 @@ static void handle_event(Object *win, struct IntuiMessage *event);
 #define IM(x) ((struct Image*)(x))
 #define G(x) ((struct Gadget*)(x))
 #define GADGETID(x) (((struct Gadget*)(x))->GadgetID)
+
+#ifdef _AROS
 #define DO_HALFSHINE_GUN(a,b) ({ ULONG val = ((((a)>>24) + 3 * ((b)>>24)) / 4); val + (val<<8) + (val<<16) + (val<<24);})
 #define DO_HALFSHADOW_GUN(a,b) ({ ULONG val = ((((a)>>24) + 5 * ((b)>>24)) / 6); val + (val<<8) + (val<<16) + (val<<24);})
+#else
+static ULONG DO_HALFSHINE_GUN(ULONG a, ULONG b)
+{
+    ULONG val = ((((a)>>24) + 3 * ((b)>>24)) / 4);
+    val = val + (val<<8) + (val<<16) + (val<<24);
+    return val;
+}
+
+static ULONG DO_HALFSHADOW_GUN(ULONG a, ULONG b)
+{
+    ULONG val = ((((a)>>24) + 5 * ((b)>>24)) / 6);
+    val = val + (val<<8) + (val<<16) + (val<<24);
+    return val;
+}
+#endif
 
 /* this is for the cycle list */
 struct ObjNode

@@ -8,7 +8,6 @@ SUPPORTOBJS = \
   objs/imspec.o \
   objs/menu.o \
   objs/support.o \
-  objs/prefs.o \
   objs/textengine.o
 
 LIBOBJS = \
