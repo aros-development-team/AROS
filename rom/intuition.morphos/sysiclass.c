@@ -29,6 +29,7 @@
 
 #include "gadgets.h" /* Some handy rendering funtions */
 
+#if 0
 extern BYTE *ibPrefs;
 extern BYTE *ibSnapshot;
 extern BYTE *ibSnapshotSel;
@@ -40,6 +41,7 @@ extern BYTE *ibLock;
 extern BYTE *ibLockSel;
 extern VOID DrawIB(struct RastPort *rp,BYTE *ib,LONG cx,LONG cy,struct IntuitionBase *IntuitionBase);
 extern void DrawJUMP(struct RastPort *rp,ULONG state,LONG cx,LONG cy,struct IntuitionBase *IntuitionBase);
+#endif
 
 #undef DEBUG
 #define DEBUG 0
@@ -1384,7 +1386,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
         }
 
         /* MUI and other non-std images */
-
+#if 0
     case MUIIMAGE:
         {
             UWORD *pens = data->dri->dri_Pens;
@@ -1523,7 +1525,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 
             break;
         }
-
+#endif
     } /* switch (image type) */
 exit:
 
