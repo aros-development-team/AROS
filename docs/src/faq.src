@@ -40,9 +40,9 @@ and how. And then we decide.
 %\begin{new}[21.03.1997]
 Also we want to be binary compatible to the old AmigaOS on Amiga. The
 reason for this is just that a new OS without any programs that run on
-it, has no chance to survive. Therefore we try to make the shift from
+it has no chance to survive. Therefore we try to make the shift from
 the old OS to our new one as painless as possible (but not to the
-extend that we can't improve AROS afterwards). As usual, everything
+extent that we can't improve AROS afterwards). As usual, everything
 has it's price and we try to decide carefully what that price might be
 and if we and everyone else will be willing to pay it.
 %\end{new}
