@@ -35,6 +35,8 @@
 #include "textengine.h"
 #include "support.h"
 
+#include "muimaster_intern.h"
+
 extern struct Library *MUIMasterBase;
 
 #define MAX(a,b) ((a)>(b)?(a):(b))

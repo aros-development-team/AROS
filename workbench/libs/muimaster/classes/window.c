@@ -38,8 +38,11 @@
 #include "classes/window.h"
 #include "classes/area.h"
 
+#include "muimaster_intern.h"
+
 #define MYDEBUG 1
 #include "debug.h"
+
 
 extern struct Library *MUIMasterBase;
 

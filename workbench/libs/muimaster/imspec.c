@@ -36,6 +36,8 @@
 #include "support.h"
 #include "imspec.h"
 
+#include "muimaster_intern.h"
+
 extern struct Library *MUIMasterBase;
 
 #if 0

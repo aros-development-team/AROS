@@ -28,6 +28,7 @@
 #endif
 
 #include "mui.h"
+#include "muimaster_intern.h"
 
 extern struct Library *MUIMasterBase;
 
