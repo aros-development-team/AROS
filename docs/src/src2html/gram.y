@@ -23,7 +23,7 @@
 %left BEGIN BEGIN_NEW ITEM END FILENAME FILEINFO
 %left LREF SHELL LABEL BOLD EMAIL ITALICS
 %left SMALLPIC LARGEPIC TOC APPENDIX
-%left DEBUG PAR NL INDEX THEINDEX TODAY
+%left DEBUG PAR NL SPACE INDEX THEINDEX TODAY
 %left <string> ARG
 %left IF
 %type <string> optarg
@@ -100,6 +100,8 @@ command : CHAPTER ARG
 	{ emit (PAR); }
 	| NL
 	{ emit (NL); }
+	| SPACE
+	{ emit (SPACE); }
 	| TODAY
 	{ emit (TODAY); }
 	| INDEX ARG

@@ -483,6 +483,10 @@ void emit_html (int token, va_list args)
 	emit_nl ();
 	break;
 
+    case SPACE:
+	emit_special ("&nbsp;");
+	break;
+
     case SMALLCODE:
 	{
 	    char * code = va_arg (args, char *);

@@ -77,6 +77,7 @@ TEXT	    ([^\\\|{]|\n)+
 "\\debug"         { return DEBUG; }
 "\\par"           { return PAR; }
 "\\nl"            { return NL; }
+"\\ "             { return SPACE; }
 "\\index"         { return INDEX; }
 "\\today"         { return TODAY; }
 
