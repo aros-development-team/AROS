@@ -350,16 +350,16 @@ DevCMD00106;0;;Write PRD_DUMPRPORT
 DevCMD00107;0;;Write PRD_PRTCOMMAND
 DevCMD00108;0;;Write PRD_QUERY
 DevCMD00109;0;;Write PRD_RAWWRITE
-DevCMD00114;1;bergers;Write SD - CMD_CLEAR
-DevCMD00115;1;bergers;Write SD - CMD_FLUSH
-DevCMD00116;1;bergers;Write SD - CMD_READ
-DevCMD00117;1;bergers;Write SD - CMD_RESET
+DevCMD00114;2;bergers;Write SD - CMD_CLEAR
+DevCMD00115;2;bergers;Write SD - CMD_FLUSH
+DevCMD00116;2;bergers;Write SD - CMD_READ
+DevCMD00117;2;bergers;Write SD - CMD_RESET
 DevCMD00118;1;bergers;Write SD - CMD_START
 DevCMD00119;1;bergers;Write SD - CMD_STOP
-DevCMD00120;1;bergers;Write SD - CMD_WRITE
-DevCMD00122;1;bergers;Write SDCMD_BREAK
-DevCMD00123;1;bergers;Write SDCMD_QUERY
-DevCMD00124;1;bergers;Write SDCMD_SETPARAMS
+DevCMD00120;2;bergers;Write SD - CMD_WRITE
+DevCMD00122;2;bergers;Write SDCMD_BREAK
+DevCMD00123;2;bergers;Write SDCMD_QUERY
+DevCMD00124;2;bergers;Write SDCMD_SETPARAMS
 DevCMD00126;1;UNKNOWN;Write TR_ADDREQUEST
 DevCMD00127;2;UNKNOWN;Write TR_GETSYSTIME
 DevCMD00128;2;UNKNOWN;Write TR_SETSYSTIME
@@ -872,8 +872,8 @@ graphics00163;2;hkiel;Implement AreaPtrn
 graphics00164;2;hkiel;Implement multicolored AreaPtrn
 HID00001;0;;Write Alarm.hidd
 HID00002;0;;Write Timer.hidd
-HID00003;1;bergers;Write Serial.hidd
-HID00004;1;bergers;Write Parallel.hidd
+HID00003;2;bergers;Write Serial.hidd
+HID00004;2;bergers;Write Parallel.hidd
 HID00005;0;;Write Keyboard.hidd
 HID00006;0;;Write Sound.hidd
 HID00007;0;;Write IRQ.hidd
@@ -1143,7 +1143,7 @@ locale00021;2;iaint;Write ParseDate
 locale00022;2;iaint;Write StrConvert
 locale00023;2;iaint;Write StrnCmp
 lowlevel00000;0;digulla;Write ReadJoyPort
-lowlevel00001;0;digulla;Write GetLanguageSelection
+lowlevel00001;2;bergers;Write GetLanguageSelection
 lowlevel00002;1;SDuvan;Write GetKey
 lowlevel00003;1;SDuvan;Write QueryKeys
 lowlevel00004;1;SDuvan;Write AddKBInt
