@@ -182,46 +182,119 @@ UX11
 static ULONG *ximage_to_buf(OOP_Class *cl, OOP_Object *bm
 	, HIDDT_Pixel *buf, XImage *image
 	, ULONG width, ULONG height, ULONG depth
-	, APTR dummy)
+	, struct pHidd_BitMap_GetImage *msg)
 {
+    BOOL use_modulo = TRUE;
 
-    if (image->bits_per_pixel == 16)
+    if (msg->modulo == HIDD_BM_BytesPerLine(bm, msg->pixFmt, width))
     {
-
-	/* sg */
-	
-    	LONG x, y;
-	UWORD *imdata = (UWORD *)image->data;
-	
-	for (y = 0; y < height; y ++)
-	{
-	    for (x = 0; x < width; x ++)
+    	use_modulo = FALSE;	
+    }
+       
+    switch (msg->pixFmt)
+    {
+	case vHidd_StdPixFmt_Native:
+    	    if (!use_modulo)
 	    {
-		*buf ++ = (UWORD)*imdata ++;
-		
+		memcpy(buf, image->data, msg->modulo * height);
+		((UBYTE *)buf) += msg->modulo * height;
 	    }
-	    imdata += ((image->bytes_per_line / 2) - width); /*sg*/
+	    else
+	    {
+		LONG  y;
+        	UBYTE *imdata = image->data;
+
+		for (y = 0; y < height; y ++)
+		{
+		    memcpy(buf, imdata, msg->modulo);
+
+		    ((UBYTE *)imdata) += image->bytes_per_line;
+		    ((UBYTE *)buf) += msg->modulo;
+		}
+	    }
+	    break;
+
+	case vHidd_StdPixFmt_Native32:
+    	    switch (image->bits_per_pixel)
+	    {	
+		case 16:
+		{
+		    LONG x, y;
+
+		    UWORD *imdata = (UWORD *)image->data;
+
+		    for (y = 0; y < height; y ++)
+		    {
+			HIDDT_Pixel *p = buf;
+
+			for (x = 0; x < width; x ++)
+			{
+			    *p++ = *imdata++;
+			}
+			((UBYTE *)imdata) += (image->bytes_per_line - width * 2);
+			((UBYTE *)buf) += msg->modulo;
+		    }
+		    break;
+		}
+
+		default:
+		{
+		    LONG x, y;
+
+    		LX11	    
+		    for (y = 0; y < height; y ++)
+		    {
+	    		HIDDT_Pixel *p;
+
+	    		p = buf;
+	    		for (x = 0; x < width; x ++)
+			{
+			    *p++ = XGetPixel(image, x, y);
+			}
+			((UBYTE *)buf) += msg->modulo;
+		    }
+    		UX11
+		    break;
+		}
+
+	    } /* switch (image->bits_per_pixel) */
+
+	    break;
+
+	 default:
+	 {
+
+	    OOP_Object *srcpf, *dstpf, *gfxhidd;
+	    APTR srcPixels = image->data, dstBuf = buf;
+
+	    //kprintf("DEFAULT PIXEL CONVERSION\n");
+
+	    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+	    dstpf = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
+
+	    OOP_GetAttr(bm, aHidd_BitMap_PixFmt, (IPTR *)&srcpf);
+
+	    //kprintf("CALLING ConvertPixels()\n");
+
+     	    HIDD_BM_ConvertPixels(bm, &srcPixels
+		    , (HIDDT_PixelFormat *)srcpf
+		    , image->bytes_per_line
+		    , &dstBuf
+		    , (HIDDT_PixelFormat *)dstpf
+		    , msg->modulo
+		    , width, height
+		    , NULL /* We have no CLUT */
+	    );
+
+	    //kprintf("CONVERTPIXELS DONE\n");
+
+
+	    ((UBYTE *)buf) += msg->modulo * height;
+	    break;
 	}
 
-	
-    }
-    else
-    {
-    	LONG x, y;
+    } /* switch (msg->pixFmt) */
 
-LX11	
-	for (y = 0; y < height; y ++)
-	{
-	    for (x = 0; x < width; x ++)
-	    {
-		*buf ++ = XGetPixel(image, x, y);
-	    }
-	    
-	}
-UX11
-    
-    }
-    
     return buf;
 }
 
@@ -454,7 +527,7 @@ UX11
 }    
 
 static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
-{
+{    
 #if USE_XSHM
     if (XSD(cl)->use_xshm)
     {
@@ -463,7 +536,7 @@ static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
 	    , msg->width, msg->height
 	    , msg->pixels
 	    , (APTR (*)())ximage_to_buf
-	    , NULL
+	    , msg
 	);
     }
     else
@@ -474,7 +547,7 @@ static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
 	     , msg->width, msg->height
 	     , msg->pixels
 	     , (APTR (*)())ximage_to_buf
-	     , NULL
+	     , msg
 	 );
     }
 	
@@ -527,143 +600,150 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm
 
     /* Test if modulo == width */
     BOOL use_modulo = TRUE;
-/*    kprintf("buf_to_ximage(cl=%p, o=%p, buf=%p, image=%p, width=%d, height=%d, depth=%d, msg=%p)\n"
-    	, cl, bm, buf, image, width, height, depth, msg);
-    
-*/
-    if (msg->modulo == HIDD_BM_BytesPerLine(bm, msg->pixFmt, width)) {
-    	use_modulo = FALSE;
-	
+
+    if (msg->modulo == HIDD_BM_BytesPerLine(bm, msg->pixFmt, width))
+    {
+    	use_modulo = FALSE;	
     }
-    
-    
-    switch (msg->pixFmt) {
-    case vHidd_StdPixFmt_Native:
-    	if (!use_modulo) {
-	    memcpy(image->data, buf, msg->modulo * height);
-	} else {
-	    LONG y;
-            UBYTE *imdata = image->data;
-
-	
-	    for (y = 0; y < height; y ++) {
-		memcpy(imdata, buf, msg->modulo);
-
-#if 0			
-		((UBYTE *)imdata) += msg->modulo;
-#else
-		((UBYTE *)imdata) += image->bytes_per_line; /*sg*/
-#endif
-		((UBYTE *)buf) += msg->modulo;
+       
+    switch (msg->pixFmt)
+    {
+	case vHidd_StdPixFmt_Native:
+    	    if (!use_modulo)
+	    {
+		memcpy(image->data, buf, msg->modulo * height);
+		((UBYTE *)buf) += msg->modulo * height;
 	    }
+	    else
+	    {
+		LONG y;
+        	UBYTE *imdata = image->data;
+
+
+		for (y = 0; y < height; y ++)
+		{
+		    memcpy(imdata, buf, msg->modulo);
+
+		    ((UBYTE *)imdata) += image->bytes_per_line;
+		    ((UBYTE *)buf) += msg->modulo;
+		}
+	    }
+	    break;
+
+	case vHidd_StdPixFmt_Native32:
+    	    switch (image->bits_per_pixel)
+	    {
+
+		case 16:
+		{
+		    LONG x, y;
+
+		    UWORD *imdata = (UWORD *)image->data;
+
+		    for (y = 0; y < height; y ++)
+		    {
+			HIDDT_Pixel *p = buf;
+			for (x = 0; x < width; x ++)
+			{
+			    *imdata ++ = (UWORD)*p ++;
+			}
+			((UBYTE *)imdata) += (image->bytes_per_line - width * 2); 
+			((UBYTE *)buf) += msg->modulo;
+		    }
+		    break;
+		}
+
+
+		case 24:
+		{
+		    LONG x, y;
+
+		    UBYTE *imdata = image->data;
+		    HIDDT_PixelFormat *pf;
+
+		    pf = BM_PIXFMT(bm);
+
+		    for (y = 0; y < height; y ++)
+		    {
+
+	    		HIDDT_Pixel *p = buf;
+
+	    		for (x = 0; x < width; x ++)
+			{
+			     register HIDDT_Pixel pix;
+
+			     pix = *p ++;
+    	    		#if (AROS_BIG_ENDIAN == 1)
+	    		    *imdata ++ = pix >> 16;
+			    *imdata ++ = (pix & pf->green_mask) >> 8;
+			    *imdata ++ = (pix & pf->blue_mask);
+    	    		#else
+			    *imdata ++ = (pix & pf->blue_mask);
+			    *imdata ++ = (pix & pf->green_mask) >> 8;
+			    *imdata ++ = pix >> 16;
+    	    		#endif
+			}
+			((UBYTE *)imdata) += (image->bytes_per_line - width * 3);		
+			((UBYTE *)buf) += msg->modulo;
+		    }
+		    break;
+		}
+
+		default:
+		{
+		    LONG x, y;
+
+    		LX11	    
+		    for (y = 0; y < height; y ++) 
+    	    	    {
+	    		HIDDT_Pixel *p;
+
+	    		p = buf;
+	    		for (x = 0; x < width; x ++)
+			{
+			     XPutPixel(image, x, y, *p ++);
+			}
+			((UBYTE *)buf) += msg->modulo;
+		    }
+    		UX11
+		    break;
+		}
+
+	    } /* switch (image->bits_per_pixel) */
+
+	    break;
+
+
+
+	 default:
+	 {    
+	    OOP_Object *srcpf, *dstpf, *gfxhidd;
+	    APTR srcPixels = buf, dstBuf = image->data;
+
+	    //kprintf("DEFAULT PIXEL CONVERSION\n");
+
+	    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+	    srcpf = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
+
+	    OOP_GetAttr(bm, aHidd_BitMap_PixFmt, (IPTR *)&dstpf);
+
+	    //kprintf("CALLING ConvertPixels()\n");
+
+     	    HIDD_BM_ConvertPixels(bm, &srcPixels
+		    , (HIDDT_PixelFormat *)srcpf
+		    , msg->modulo
+		    , &dstBuf
+		    , (HIDDT_PixelFormat *)dstpf
+		    , image->bytes_per_line
+		    , width, height
+		    , NULL /* We have no CLUT */
+	    );
+
+	    //kprintf("CONVERTPIXELS DONE\n");
+
+	    ((UBYTE *)buf) += msg->modulo * height;
+	    break;
 	}
-	break;
-	
-    case vHidd_StdPixFmt_Native32:
-/* kprintf("Native32 format, bits_per_pixel=%d\n", image->bits_per_pixel);
-*/    	switch (image->bits_per_pixel) {
-	
-	case 16: {
-	    LONG x, y;
-	    
-	    UWORD *imdata = (UWORD *)image->data;
-/*	    kprintf("16 bit Native32, modulo=%d, imdat=%x\n"
-	    	, msg->modulo, imdata);
-*/
-
-	    for (y = 0; y < height; y ++) {
-		HIDDT_Pixel *p = buf;
-		for (x = 0; x < width; x ++) {
-		    *imdata ++ = (UWORD)*p ++;
-		}
-		((UBYTE *)imdata) += (image->bytes_per_line - width * 2); /*sg*/
-		((UBYTE *)buf) += msg->modulo;
-	    }
-	    break; }
-		
-		
-	case 24: {
-	    LONG x, y;
-	    
-	    UBYTE *imdata = image->data;
-	    HIDDT_PixelFormat *pf;
-	    
-	    pf = BM_PIXFMT(bm);
-	    
-	    for (y = 0; y < height; y ++) {
-	    
-	    	HIDDT_Pixel *p = buf;
-		
-	    	for (x = 0; x < width; x ++) {
-		     register HIDDT_Pixel pix;
-		     
-		     pix = *p ++;
-#if (AROS_BIG_ENDIAN == 1)
-	    	    *imdata ++ = pix >> 16;
-		    *imdata ++ = (pix & pf->green_mask) >> 8;
-		    *imdata ++ = (pix & pf->blue_mask);
-#else
-		    *imdata ++ = (pix & pf->blue_mask);
-		    *imdata ++ = (pix & pf->green_mask) >> 8;
-		    *imdata ++ = pix >> 16;
-#endif
-		}
-		((UBYTE *)imdata) += (image->bytes_per_line - width * 3); /*sg*/		
-		((UBYTE *)buf) += msg->modulo;
-	    }
-	    break; }
-	    
-	default: {
-	    LONG x, y;
-
-LX11	    
-	    for (y = 0; y < height; y ++) {
-	    	HIDDT_Pixel *p;
-	    
-	    	p = buf;
-	    	for (x = 0; x < width; x ++) {
-		     XPutPixel(image, x, y, *p ++);
-		}
-		((UBYTE *)buf) += msg->modulo;
-	    }
-UX11
-	    break; }
-	
-	} /* switch (image->bits_per_pixel) */
-	
-	break;
-	     
-	
-	
-     default: {
-     
-	OOP_Object *srcpf, *dstpf, *gfxhidd;
-	APTR srcPixels = buf, dstBuf = image->data;
-		
-	//kprintf("DEFAULT PIXEL CONVERSION\n");
-	
-	OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-	srcpf = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
-	
-	OOP_GetAttr(bm, aHidd_BitMap_PixFmt, (IPTR *)&dstpf);
-	
-	//kprintf("CALLING ConvertPixels()\n");
-	
-     	HIDD_BM_ConvertPixels(bm, &srcPixels
-		, (HIDDT_PixelFormat *)srcpf
-		, msg->modulo
-		, &dstBuf
-		, (HIDDT_PixelFormat *)dstpf
-		, image->bytes_per_line
-		, width, height
-		, NULL /* We have no CLUT */
-	);
-	
-	//kprintf("CONVERTPIXELS DONE\n");
-	
-	
-	((UBYTE *)buf) += msg->modulo * height;
-	break; }
 
     } /* switch (msg->pixFmt) */
     
