@@ -22,13 +22,13 @@ ifeq ($(FLAVOUR),native)
 #
 
 FILES = gtdemo helloworld inquire intuitext librarytest listfonts \
-	readicon regiontest shadowborder sift
+	readicon regiontest shadowborder sift strtest
 
 else
 
 FILES = compleximage demowin gtdemo helloworld inquire intuitext \
 	librarytest listfonts readicon regiontest rtdemo shadowborder \
-	sift simpleimage mathtest filereq
+	sift simpleimage mathtest filereq strtest
 endif
 
 IMAGES = ArrowUp ArrowDown ArrowLeft ArrowRight ImageButton
