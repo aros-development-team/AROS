@@ -23,6 +23,7 @@ case "$Lib" in
     "Icon" ) basedir="$TOP/workbench/libs/icon" ;;
     "IFFParse" ) basedir="$TOP/workbench/libs/iffparse" ;;
     "Diskfont" ) basedir="$TOP/workbench/libs/diskfont" ;;
+    "Locale" ) basedir="$TOP/workbench/libs/locale" ;;
 esac
 
 privclib="$basedir/${lib}_private.h"
