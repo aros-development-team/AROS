@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: AROS specific checkbox class implementation.
@@ -128,7 +128,7 @@ IPTR check_set(Class * cl, Object * obj, struct opSet * msg)
 
     /* Redraw ourself? */
     if ((retval) && (msg->MethodID != OM_NEW) &&
-        (((Class *) (*(obj - sizeof(Class *)))) == cl)) {
+        (OCLASS(obj) == cl)) {
 	rport = ObtainGIRPort(msg->ops_GInfo);
 	if (rport) {
 	    DoMethod(obj, GM_RENDER, msg->ops_GInfo, rport, GREDRAW_UPDATE);
