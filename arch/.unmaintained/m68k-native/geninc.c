@@ -34,13 +34,23 @@ int main (void)
     printf ("\n# struct DosBase\n");
     printf ("\tdl_SysBase    = %d\n", (int)offsetof (struct DosLibrary, dl_SysBase));
 
+    printf ("\n# struct StackSwapStruct\n");
+    printf ("\tstk_Lower     = %d\n", (int)offsetof (struct StackSwapStruct, stk_Lower));
+    printf ("\tstk_Upper     = %d\n", (int)offsetof (struct StackSwapStruct, stk_Upper));
+    printf ("\tstk_Pointer   = %d\n", (int)offsetof (struct StackSwapStruct, stk_Pointer));
+
     printf ("\n# Task Flags\n");
     printf ("\tTS_RUN        = %d\n", TS_RUN);
     printf ("\tTS_READY      = %d\n", TS_READY);
     printf ("\tTF_EXCEPT     = 0x%04lX\n", TF_EXCEPT);
     printf ("\tTF_SWITCH     = 0x%04lX\n", TF_SWITCH);
 
+    printf ("\tTB_EXCEPT     = %d\n", TB_EXCEPT);
+    printf ("\tTB_SWITCH     = %d\n", TB_SWITCH);
+    printf ("\tTB_LAUNCH     = %d\n", TB_LAUNCH);
+
     printf ("\n# Exec functions\n");
+    printf ("\tSupervisor    = %d\n", FuncOffset (5));
     printf ("\tSwitch        = %d\n", FuncOffset (6));
     printf ("\tDispatch      = %d\n", FuncOffset (7));
     printf ("\tException     = %d\n", FuncOffset (8));
