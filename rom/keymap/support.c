@@ -131,11 +131,11 @@ WORD GetDeadKeyIndex(UWORD code, UWORD qual, struct KeyMap *km)
 	    {
 	        UBYTE *dead_descr = (UBYTE *)ki.Key_Mapping;
 
-	        if (dead_descr[idx] == DPF_DEAD)
+	        if (dead_descr[idx * 2] == DPF_DEAD)
 	        {
 	            /* Clear first */
 
-	            retval = dead_descr[idx + 1];
+	            retval = dead_descr[idx * 2 + 1];
 
 	            retval &= 0x00FF; /* Clear upper byte */
 	        }
