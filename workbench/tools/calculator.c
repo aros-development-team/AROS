@@ -689,7 +689,7 @@ static void HandleButton(WORD type)
 		fflush(tapefh);
 	    }
 	    break;
-	    
+
 	case STATE_OP:
 	    break;
 	    
