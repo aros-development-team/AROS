@@ -170,9 +170,15 @@ const struct TextFont topaz8_tf =
 		{	/* mn_Node */
 			NULL,
 			NULL,
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+			NT_FONT,
+			0,
+			"topaz.font"
+#else
 			"topaz.font",
-			12,
+			NT_FONT,
 			0
+#endif /* AROS_FLAVOUR */
 		},
 		NULL,
 		0
