@@ -612,7 +612,7 @@ ifndef DEPLIBS
 DEPLIBS :=
 endif
 ifndef DEPS
-DEPS := $(foreach f,$(INIT_FILE) functions $(FILES) $(END_FILE),$(OBJDIR)/$(f).d)
+DEPS := $(foreach f,$(INIT_FILE) functions $(FILES) $(notdir $(END_FILE)),$(OBJDIR)/$(f).d)
 endif
 ALL_OBJS := $(SYS_OBJS) $(OBJS) $(OBJDIR)/functions.o $(ENDFUNC)
 
@@ -629,7 +629,7 @@ else
 	@strip -x $@
 endif
 
-setup :
+setup ::
 %mkdirs_q $(OBJDIR) $(LIBDIR) $(OSMODDIR) $(DESTDIRS)
 
 clean ::
