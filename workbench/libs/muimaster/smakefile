@@ -60,6 +60,10 @@ dirs:
     if not exists objs/classes
       makedir objs/classes
     endif
+
+    if not exists objs/demos
+      makedir objs/demos
+    endif
 <
 
 all.gst: headers.c
@@ -200,6 +204,9 @@ test: objs/test.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
   sc link lib lib:debug.lib to test with <<
 objs/test.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
 <
+
+demos: 
+  smake -f //demos/smakefile
 
 clean:
   -delete objs all

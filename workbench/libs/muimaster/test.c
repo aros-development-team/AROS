@@ -21,12 +21,6 @@ typedef unsigned long IPTR;
 
 #include "mui.h"
 
-Object *MUI_NewObject(char *classname, int tag,...)
-{
-    return MUI_NewObjectA(classname, (struct TagItem*)&tag);
-}
-
-
 /* muimaster.library is not yet a library */
 #include "muimaster_intern.h"
 

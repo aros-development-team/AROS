@@ -12,6 +12,7 @@
 #endif
 
 #include "muimaster_intern.h"
+#include "mui.h"
 
 /*****************************************************************************
 
@@ -53,7 +54,6 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 ULONG *para
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
-#if 0
     switch (type)
     {
 	case MUIO_Label: /* STRPTR label, ULONG flags */
@@ -124,7 +124,7 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 ULONG *para
 		MUIA_Background   , MUII_ButtonBack,
 		TAG_DONE);
 	}
-
+#if 0
 	case MUIO_Checkmark: /* STRPTR label */
 	{
 	    return MUI_NewObject(MUIC_Group,
@@ -152,12 +152,15 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 ULONG *para
 
 	case MUIO_Radio: /* STRPTR label, STRPTR *entries */
 	    break;
+#endif
 
+#if 0
 	case MUIO_Slider: /* STRPTR label, LONG min, LONG max */
 	    break;
 
 	case MUIO_String: /* STRPTR label, LONG maxlen */
 	    break;
+
 
 	case MUIO_PopButton: /* STRPTR imagespec */
 	    return MUI_NewObject(MUIC_Image,
@@ -166,7 +169,7 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 ULONG *para
 		MUIA_ShowSelState, FALSE,
 		TAG_DONE);
 	    break;
-
+#endif
 	case MUIO_HSpace: /* LONG space   */
 	    return MUI_NewObject(MUIC_Rectangle,
 		MUIA_FixWidth, params[0],
@@ -192,7 +195,7 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 ULONG *para
 		MUIA_FixWidth, params[0],
 		TAG_DONE);
 	    break;
-
+#if 0
 	case MUIO_MenustripNM: /* struct NewMenu *nm, ULONG flags */
 	    break;
 
@@ -208,11 +211,9 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 ULONG *para
 
 	case MUIO_NumericButton: /* STRPTR label, LONG min, LONG max, STRPTR format */
 	    break;
-
-	default:
-#warning FIXME: complain loud for missing/wrong MUIO_something
-    }
 #endif
+    }
+
 
     return NULL;
 
