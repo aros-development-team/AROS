@@ -22,4 +22,28 @@ _Avbryt
 MSG_CONSOLE_TITLE
 Kommandoutmatning
 ; Command Output
-; 
+;
+MSG_ERROR_HEADER
+FEL
+; ERROR
+;
+MSG_ERROR_OK
+*OK
+; *OK
+;
+MSG_ERROR_LOCALE
+Kan inte initiera locale.
+; Can't initialize locale.
+;
+MSG_ERROR_CLASSES
+Kan inte initiera klasser.
+; Can't initialize classes.
+;
+MSG_ERROR_OPEN_CONSOLE
+Kan inte öppna konsollfönster.
+; Can't open console window.
+;
+MSG_ERROR_EXECUTE
+Kan inte exekvera kommando.
+; Can't execute command.
+;

@@ -14,3 +14,21 @@ _Cancel
 MSG_CONSOLE_TITLE (//)
 Command Output
 ;
+MSG_ERROR_HEADER (//)
+ERROR
+;
+MSG_ERROR_OK (//)
+*OK
+;
+MSG_ERROR_LOCALE (//)
+Can't initialize locale.
+;
+MSG_ERROR_CLASSES (//)
+Can't initialize custom classes.
+;
+MSG_ERROR_OPEN_CONSOLE (//)
+Can't open console window.
+;
+MSG_ERROR_EXECUTE (//)
+Can't execute command.
+;

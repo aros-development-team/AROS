@@ -312,7 +312,11 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
                         automatically freed when the process exits).
                     */
                     
-                    // FIXME: error dialog
+                    ShowError
+                    (
+                        self, data->ecd_Window, 
+                        _(MSG_ERROR_EXECUTE), TRUE
+                    );
                     
                     WorkbenchControl
                     (
@@ -328,7 +332,11 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
             }
             else
             {
-                // FIXME: error dialog
+                ShowError
+                (
+                    self, data->ecd_Window, 
+                    _(MSG_ERROR_OPEN_CONSOLE), TRUE
+                );
             }            
         }
     
