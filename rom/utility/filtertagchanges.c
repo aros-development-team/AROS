@@ -66,7 +66,7 @@
     {
 	struct TagItem *change, *orig;
 
-	while ((change = NextTagItem(&changeList)))
+	while ((change = NextTagItem((const struct TagItem **)&changeList)))
 	{
 	    if ((orig = FindTagItem(change->ti_Tag, originalList)))
 	    {
