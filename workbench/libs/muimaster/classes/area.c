@@ -489,8 +489,11 @@ static IPTR Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		/* this is not documented in MUI but it is possible,
 		   and needed to suppress frame for external images */
 		data->mad_Frame = tag->ti_Data;
+		if (muiGlobalInfo(obj))
+		{
 		set_inner_sizes(obj, data);
 		set_title_sizes(obj, data);
+	    	}
 		break;
 
 	    case MUIA_ControlChar:
