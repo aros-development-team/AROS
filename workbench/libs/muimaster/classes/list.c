@@ -13,6 +13,8 @@
 #include "muimaster_intern.h"
 #include "support.h"
 
+#ifdef _AROS
+
 extern struct Library *MUIMasterBase;
 
 /**************** Listview ***************/
@@ -136,3 +138,5 @@ const struct __MUIBuiltinClass _MUI_List_desc = {
     sizeof(struct MUI_ListData), 
     (void*)List_Dispatcher 
 };
+
+#endif
