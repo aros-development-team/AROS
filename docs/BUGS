@@ -580,35 +580,35 @@ SDuvan: This is not a bug in 'Which'. The reason for this is that the
         executable bit is not set for AROS executables hosted on UNIX. 
 
 BUG000082
-adam.chodorowski@chello.se
+chodorowski@aros.org
 Keyboard repeat in X isn't re-enabled properly after AROS has exited (either 
 cleanly or killed by force) or if it looses focus. This makes it a bit 
 annoying to use other X programs when AROS is running.
 
 BUG000083
-adam.chodorowski@chello.se
+chodorowski@aros.org
 In the CLI, entered commands containing only blank characters are not treated 
 as empty and are incorrectly added to the command history.
 
 BUG000084 Fixed
-adam.chodorowski@chello.se
+chodorowski@aros.org
 In the CLI, the command history is circular (ie. it wraps around). The proper
 behaviour would be to stop at the endpoints and present an empty prompt (this
 is the way it works in AmigaOS).
 
 BUG000085 FIXED
-adam.chodorowski@chello.se
+chodorowski@aros.org
 In the CLI, ^L (formfeed -> clears the screen and positions the cursor at (0,0))
 seems to end up in the command history, leading to "interesting" results when
 you press arrow up/down.
 
 BUG000086 FIXED
-adam.chodorowski@chello.se
+chodorowski@aros.org
 The catalog rom/dos/catalogs/polski.ct is not an polish translation as the name
 suggests, but a german one.
 
 BUG000087 
-adam.chodorowski@chello.se
+chodorowski@aros.org
 The mouse handling in native/i386 is buggy. If you hold a mouse button pressed, 
 it doesn't stay pressed. After about one second, the OS thinks the button has
 been released and quickly pressed again. So you have problems moving windows or
