@@ -416,16 +416,6 @@ AROS_LH1(struct AslBase_intern *, open,
     if (!IntuitionBase)
 	return (NULL);
 
-    if (!LIBBASE->aroslistviewbase)
-	LIBBASE->aroslistviewbase = OpenLibrary(AROSLISTVIEWNAME, 37);
-    if (!LIBBASE->aroslistviewbase)
-	return (NULL);
-
-    if (!LIBBASE->aroslistbase)
-	LIBBASE->aroslistbase = OpenLibrary(AROSLISTNAME, 37);
-    if (!LIBBASE->aroslistbase)
-	return (NULL);
-
     if (!LIBBASE->aslpropclass)
         LIBBASE->aslpropclass = makeaslpropclass(LIBBASE);
     if (!LIBBASE->aslpropclass)
@@ -542,14 +532,6 @@ AROS_LH0(BPTR, close, struct AslBase_intern *, LIBBASE, 2, BASENAME)
 	    CloseLibrary((struct Library *)IntuitionBase);
 	IntuitionBase = NULL;
 	
-	if (LIBBASE->aroslistviewbase)
-	    CloseLibrary(LIBBASE->aroslistviewbase);
-	LIBBASE->aroslistviewbase = NULL;
-	
-	if (LIBBASE->aroslistbase)
-	    CloseLibrary(LIBBASE->aroslistbase);
-	LIBBASE->aroslistbase = NULL;
-
 	/* Delayed expunge pending? */
 	if(LIBBASE->library.lib_Flags&LIBF_DELEXP)
 	    /* Then expunge the library */
