@@ -306,9 +306,11 @@ static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
         ObtainSemaphore(&XSD(cl)->HW_acc);
         vgaRefreshArea(data, 1, &box);
         ReleaseSemaphore(&XSD(cl)->HW_acc);
-
-	if ( ((XSD(cl)->mouseX >= box.x1) && (XSD(cl)->mouseX <= box.x2)) ||
-	     ((XSD(cl)->mouseY >= box.y1) && (XSD(cl)->mouseY <= box.y2)) )
+	
+	if ( (	(XSD(cl)->mouseX + XSD(cl)->mouseW >= box.x1) &&
+		(XSD(cl)->mouseX <= box.x2) ) ||
+	    (	(XSD(cl)->mouseY + XSD(cl)->mouseH >= box.y1) && 
+		(XSD(cl)->mouseY <= box.y2) ) )
 	    draw_mouse(XSD(cl));
     }
     ReturnVoid("VGAGfx.BitMap::PutImage");
@@ -386,9 +388,11 @@ static VOID MNAME(putimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
         vgaRefreshArea(data, 1, &box);
         ReleaseSemaphore(&XSD(cl)->HW_acc);
 
-	if ( ((XSD(cl)->mouseX >= box.x1) && (XSD(cl)->mouseX <= box.x2)) ||
-	     ((XSD(cl)->mouseY >= box.y1) && (XSD(cl)->mouseY <= box.y2)) )
-	    draw_mouse(XSD(cl));
+        if ( (  (XSD(cl)->mouseX + XSD(cl)->mouseW >= box.x1) &&
+                (XSD(cl)->mouseX <= box.x2) ) ||
+            (   (XSD(cl)->mouseY + XSD(cl)->mouseH >= box.y1) &&
+                (XSD(cl)->mouseY <= box.y2) ) )
+            draw_mouse(XSD(cl));
     }
     ReturnVoid("VGAGfx.BitMap::PutImageLUT");
 }
@@ -527,9 +531,11 @@ static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
         vgaRefreshArea(data, 1, &box);
         ReleaseSemaphore(&XSD(cl)->HW_acc);
 
-	if ( ((XSD(cl)->mouseX >= box.x1) && (XSD(cl)->mouseX <= box.x2)) ||
-	     ((XSD(cl)->mouseY >= box.y1) && (XSD(cl)->mouseY <= box.y2)) )
-	    draw_mouse(XSD(cl));
+        if ( (  (XSD(cl)->mouseX + XSD(cl)->mouseW >= box.x1) &&
+                (XSD(cl)->mouseX <= box.x2) ) ||
+            (   (XSD(cl)->mouseY + XSD(cl)->mouseH >= box.y1) &&
+                (XSD(cl)->mouseY <= box.y2) ) )
+            draw_mouse(XSD(cl));
     }
     ReturnVoid("VGAGfx.BitMap::FillRect");
 }

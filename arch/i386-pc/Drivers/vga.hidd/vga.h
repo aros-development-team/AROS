@@ -72,11 +72,13 @@ struct vga_staticdata
     OOP_Class 	*vgaclass;
     OOP_Class 	*onbmclass;
     OOP_Class 	*offbmclass;
+#if 0
     OOP_Class 	*mouseclass;
-
+#endif
     OOP_Object 	*vgahidd;
+#if 0
     OOP_Object 	*mousehidd;
-
+#endif
     LONG		mouseX;		/* Pointer X position on screen */
     ULONG		mouseW;		/* Pointer width */
     LONG		mouseY;		/* Pointer Y position on screen */
@@ -86,31 +88,6 @@ struct vga_staticdata
 
     VOID	(*activecallback)(APTR, OOP_Object *, BOOL);
     APTR	callbackdata;
-};
-
-enum
-{
-    moHidd_Gfx_SetMouseShape = num_Hidd_Gfx_Methods + 2,
-    moHidd_Gfx_SetMouseXY,
-    moHidd_Gfx_ShowHide
-};
-
-struct pHidd_Gfx_SetMouseShape {
-    OOP_MethodID mID;
-    ULONG width;
-    ULONG height;
-    UBYTE *shape;
-};
-
-struct pHidd_Gfx_SetMouseXY {
-    OOP_MethodID mID;
-    LONG dx;
-    LONG dy;
-};
-
-struct pHidd_Gfx_ShowHide {
-    OOP_MethodID mID;
-    BOOL visible;
 };
 
 #if 0

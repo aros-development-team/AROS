@@ -88,11 +88,11 @@ static BOOL initclasses(struct vga_staticdata *xsd)
     xsd->offbmclass = init_offbmclass(xsd);
     if (NULL == xsd->offbmclass)
     	goto failure;
-
+#if 0
     xsd->mouseclass = init_mouseclass(xsd);
     if (NULL == xsd->mouseclass)
     	goto failure;
-
+#endif
     return TRUE;
         
 failure:
@@ -104,10 +104,10 @@ failure:
 
 static VOID freeclasses(struct vga_staticdata *xsd)
 {
-
+#if 0
     if (xsd->mouseclass)
     	free_mouseclass(xsd);
-
+#endif
     if (xsd->vgaclass)
     	free_vgaclass(xsd);
 

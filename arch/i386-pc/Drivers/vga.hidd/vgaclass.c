@@ -32,6 +32,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define ONLY640
+
 /* Some attrbases needed as global vars.
   These are write-once read-many */
 
@@ -371,63 +373,6 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
     ReturnPtr("VGAGfx::NewBitMap", OOP_Object *, (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg));
 }
 
-/********** GfxHidd::SetMouseShape()  ****************************/
-
-static VOID gfxhidd_setmouseshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetMouseShape *msg)
-{
-    if (msg->shape)
-    {
-	XSD(cl)->mouseW = msg->width;
-	XSD(cl)->mouseH = msg->height;
-	XSD(cl)->mouseShape = msg->shape;
-    }
-    else
-    {
-	XSD(cl)->mouseW = 11;
-	XSD(cl)->mouseH = 11;
-	XSD(cl)->mouseShape = shape;
-    }
-    
-    draw_mouse(XSD(cl));
-}
-
-/********** GfxHidd::SetMouseXY()  ****************************/
-
-static VOID gfxhidd_setmousexy(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetMouseXY *msg)
-{
-    struct Box box = {0, 0, 0, 0};
-
-    box.x1 = XSD(cl)->mouseX;
-    box.y1 = XSD(cl)->mouseY;
-    box.x2 = box.x1 + XSD(cl)->mouseW;
-    box.y2 = box.y1 + XSD(cl)->mouseH;
-
-    if (XSD(cl)->visible)
-	vgaRefreshArea(XSD(cl)->visible, 1, &box);
-
-    XSD(cl)->mouseX += msg->dx;
-    XSD(cl)->mouseY += msg->dy;
-
-    if (XSD(cl)->visible)
-    {
-        if (XSD(cl)->mouseX < 0) XSD(cl)->mouseX = 0;
-	if (XSD(cl)->mouseY < 0) XSD(cl)->mouseY = 0;
-	if (XSD(cl)->mouseX >= XSD(cl)->visible->width) XSD(cl)->mouseX = XSD(cl)->visible->width - 1;
-	if (XSD(cl)->mouseY >= XSD(cl)->visible->height) XSD(cl)->mouseY = XSD(cl)->visible->height - 1;
-    }
-    
-    draw_mouse(XSD(cl));
-}
-
-/********** GfxHidd::SetMouseVisible()  ****************************/
-
-static VOID gfxhidd_showhide(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowHide *msg)
-{
-    XSD(cl)->mouseVisible = msg->visible;
-    
-    draw_mouse(XSD(cl));
-}
-
 /*********  GfxHidd::CopyBox()  ***************************/
 
 static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
@@ -614,9 +559,11 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
     	    vgaRefreshArea(ddata, 1, &box);
             ReleaseSemaphore(&XSD(cl)->HW_acc);
 
-	    if ( ((XSD(cl)->mouseX >= box.x1) && (XSD(cl)->mouseX <= box.x2)) ||
-		 ((XSD(cl)->mouseY >= box.y1) && (XSD(cl)->mouseY <= box.y2)) )
-		draw_mouse(XSD(cl));
+        if ( (  (XSD(cl)->mouseX + XSD(cl)->mouseW >= box.x1) &&
+                (XSD(cl)->mouseX <= box.x2) ) ||
+            (   (XSD(cl)->mouseY + XSD(cl)->mouseH >= box.y1) &&
+                (XSD(cl)->mouseY <= box.y2) ) )
+            draw_mouse(XSD(cl));
 	}
     }
     ReturnVoid("VGAGfx.BitMap::CopyBox");
@@ -650,8 +597,8 @@ static BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     if (XSD(cl)->visible)
 	vgaRefreshArea(XSD(cl)->visible, 1, &box);
 
-    XSD(cl)->mouseX = msg->x;
-    XSD(cl)->mouseY = msg->y;
+    XSD(cl)->mouseX = (short)msg->x;
+    XSD(cl)->mouseY = (short)msg->y;
 
     if (XSD(cl)->visible)
     {
@@ -683,7 +630,7 @@ static VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, struct pHidd_
 /********************  init_vgaclass()  *********************************/
 
 #define NUM_ROOT_METHODS 3
-#define NUM_VGA_METHODS 8 /* stegerg: was 5*/
+#define NUM_VGA_METHODS 5
 
 OOP_Class *init_vgaclass (struct vga_staticdata *xsd)
 {
@@ -700,11 +647,7 @@ OOP_Class *init_vgaclass (struct vga_staticdata *xsd)
     struct OOP_MethodDescr vgahidd_descr[NUM_VGA_METHODS + 1] = 
     {
     	{(IPTR (*)())gfxhidd_newbitmap,		moHidd_Gfx_NewBitMap},
-	{(IPTR (*)())gfxhidd_setmouseshape,	moHidd_Gfx_SetMouseShape},
-	{(IPTR (*)())gfxhidd_setmousexy,	moHidd_Gfx_SetMouseXY},
-	{(IPTR (*)())gfxhidd_showhide,		moHidd_Gfx_ShowHide},
 	{(IPTR (*)())gfxhidd_copybox,		moHidd_Gfx_CopyBox},
-
 /* stegerg */
 	{(IPTR (*)())gfxhidd_setcursorshape,	moHidd_Gfx_SetCursorShape},
 	{(IPTR (*)())gfxhidd_setcursorpos,	moHidd_Gfx_SetCursorPos},
@@ -777,7 +720,6 @@ VOID free_vgaclass(struct vga_staticdata *xsd)
     ReturnVoid("free_vgaclass");
 }
 
-
 void draw_mouse(struct vga_staticdata *xsd)
 {
     int pix;
@@ -786,7 +728,6 @@ void draw_mouse(struct vga_staticdata *xsd)
     
     if (xsd->mouseVisible)
     {
-
         if (xsd->visible)
 	{
 	    /* Get display width */
