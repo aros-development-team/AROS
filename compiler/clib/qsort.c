@@ -2,16 +2,19 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/09/21 15:47:52  digulla
+    Use Amiga types
+    Full ANSI prototypes
+
     Revision 1.2  1996/08/01 17:40:45  digulla
     Added standard header for all files
 
     Desc:
     Lang:
 */
-#include <sys/types.h>
-/* #include <stdlib.h> */
+#include <exec/types.h>
 
-static inline char	*med3 (char *, char *, char *, int (*)());
+static inline const char *med3 (const char *, const char *, const char *, int (*)());
 static inline void	 swapfunc (char *, char *, int, int);
 
 #define min(a, b)       (a) < (b) ? a : b
@@ -34,9 +37,7 @@ static inline void	 swapfunc (char *, char *, int, int);
 	es % sizeof(long) ? 2 : es == sizeof(long)? 0 : 1;
 
 static inline void
-swapfunc(a, b, n, swaptype)
-	char *a, *b;
-	int n, swaptype;
+swapfunc (char *a, char *b, int n, int swaptype)
 {
 	if(swaptype <= 1)
 		swapcode(long, a, b, n)
@@ -54,10 +55,8 @@ swapfunc(a, b, n, swaptype)
 
 #define vecswap(a, b, n)        if ((n) > 0) swapfunc(a, b, n, swaptype)
 
-static inline char *
-med3(a, b, c, cmp)
-	char *a, *b, *c;
-	int (*cmp)();
+static inline const char *
+med3(const char *a, const char *b, const char *c, int (*cmp)(const void *, const void *))
 {
 	return cmp(a, b) < 0 ?
 	       (cmp(b, c) < 0 ? b : (cmp(a, c) < 0 ? c : a ))
@@ -65,10 +64,7 @@ med3(a, b, c, cmp)
 }
 
 void
-qsort(a, n, es, cmp)
-	void *a;
-	size_t n, es;
-	int (*cmp)();
+QSort(VOID *a, ULONG n, ULONG es, int (*cmp)(const VOID *, const VOID *))
 {
 	char *pa, *pb, *pc, *pd, *pl, *pm, *pn;
 	int d, r, swaptype, swap_cnt;
@@ -88,11 +84,11 @@ loop:	SWAPINIT(a, es);
 		pn = a + (n - 1) * es;
 		if (n > 40) {
 			d = (n / 8) * es;
-			pl = med3(pl, pl + d, pl + 2 * d, cmp);
-			pm = med3(pm - d, pm, pm + d, cmp);
-			pn = med3(pn - 2 * d, pn - d, pn, cmp);
+			pl = (char *)med3(pl, pl + d, pl + 2 * d, cmp);
+			pm = (char *)med3(pm - d, pm, pm + d, cmp);
+			pn = (char *)med3(pn - 2 * d, pn - d, pn, cmp);
 		}
-		pm = med3(pl, pm, pn, cmp);
+		pm = (char *)med3(pl, pm, pn, cmp);
 	}
 	swap(a, pm);
 	pa = pb = a + es;
@@ -136,12 +132,12 @@ loop:	SWAPINIT(a, es);
 	r = min(pd - pc, pn - pd - es);
 	vecswap(pb, pn - r, r);
 	if ((r = pb - pa) > es)
-		qsort(a, r / es, es, cmp);
+		QSort(a, r / es, es, cmp);
 	if ((r = pd - pc) > es) {
 		/* Iterate rather than recurse to save stack space */
 		a = pn - r;
 		n = r / es;
 		goto loop;
 	}
-/*		qsort(pn - r, r / es, es, cmp);*/
+/*		QSort(pn - r, r / es, es, cmp);*/
 }
