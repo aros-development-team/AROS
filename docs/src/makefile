@@ -225,7 +225,7 @@ includes: devlist.inc status.inc jobserv-free.inc jobserv-work.inc \
 devlist.inc : devitemfilt.gawk $(HOME)/CVSROOT/passwd.txt
 	gawk -f $< > $@
 
-status.inc : stathtml.gawk
+status.inc : stathtml.gawk jobserv-query.lite
 	gawk -f $< > $@
 
 jobserv-free.inc : jobserv-showfree.cgi
