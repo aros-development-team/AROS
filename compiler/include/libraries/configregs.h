@@ -22,11 +22,23 @@ struct ExpansionRom
     UWORD   er_Manufacturer;
     ULONG   er_SerialNumber;
     UWORD   er_InitDiagVec;
-    UBYTE   er_Reserved0c;
-    UBYTE   er_Reserved0d;
-    UBYTE   er_Reserved0e;
-    UBYTE   er_Reserved0f;
+    union {
+	struct {
+	    UBYTE   c;
+	    UBYTE   d;
+	    UBYTE   e;
+	    UBYTE   f;
+	} Reserved0;
+	struct DiagArea *DiagArea;
+    } er_;
 };
+
+/* This allows for simpler definition when assigning a DiagArea pointer. */
+#define er_Reserved0c	er_.Reserved0.c
+#define er_Reserved0d	er_.Reserved0.d
+#define er_Reserved0e	er_.Reserved0.e
+#define er_Reserved0f	er_.Reserved0.f
+#define er_DiagArea	er_.DiagArea
 
 struct ExpansionControl
 {
