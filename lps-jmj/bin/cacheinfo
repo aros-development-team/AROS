@@ -1,0 +1,9 @@
+#!/bin/tcsh
+# * P_LZ_COPYRIGHT_BEGIN ******************************************************
+# * Copyright 2001-2004 Laszlo Systems, Inc.  All Rights Reserved.            *
+# * Use is subject to license terms.                                          *
+# * P_LZ_COPYRIGHT_END ********************************************************
+
+wget -q -O /tmp/tmp.$$ "http://localhost:8080/lps/foo.lzx?lzt=cacheinfo&pwd=laszlo&size=$1"
+cat /tmp/tmp.$$
+/bin/rm -rf /tmp/tmp.$$
