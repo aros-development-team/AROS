@@ -13,8 +13,6 @@
 
 #include "graphics_intern.h"
 
-#warning FIXME: define NT_HIDD in libraries.h or something else
-#define NT_HIDD NT_LIBRARY
 
 #undef SysBase
 
