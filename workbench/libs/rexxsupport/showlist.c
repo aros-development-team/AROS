@@ -34,8 +34,8 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
     UBYTE argc = msg->rm_Action & RXARGMASK;
     BOOL isexec;
     char delim = 0;
-    struct List *execl;
-    ULONG dosflags;
+    struct List *execl = NULL;
+    ULONG dosflags = 0L;
     UBYTE *string, *name = NULL;
     ULONG ssize;
 

@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -61,10 +58,6 @@
 
     INTERNALS
 
-    HISTORY
-
-    26.7.99  SDuvan  implemented
-
 ******************************************************************************/
 
 {
@@ -76,7 +69,7 @@
 
     error = (LONG *)GetTagData(PLAYER_ErrorCode, NULL, tl);
 
-    while ((tag = NextTagItem((const struct TagItem **)&tl)) != NULL)
+    while ((tag = NextTagItem(&tl)) != NULL)
     {
 	switch(tag->ti_Tag)
 	{

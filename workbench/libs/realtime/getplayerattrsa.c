@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
+
 #include <proto/exec.h>
 #include <proto/realtime.h>
 #include <proto/utility.h>
@@ -61,10 +59,6 @@
 
     INTERNALS
 
-    HISTORY
-
-    26.7.99  SDuvan  implemented
-
 ******************************************************************************/
 
 #define Put (*((IPTR *)(tag->ti_Data)))
@@ -80,7 +74,7 @@
 
     if (player != NULL)
     {
-	while ((tag = NextTagItem((const struct TagItem **)&tl)) != NULL)
+	while ((tag = NextTagItem(&tl)) != NULL)
 	{
 	    switch (tag->ti_Tag)
 	    {

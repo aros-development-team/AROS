@@ -23,8 +23,7 @@
 LONG rxsupp_reply(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     struct RexxMsg *msg2 = *(struct RexxMsg **)ARG1(msg);
-    UBYTE arg;
-
+    
     if (msg2 == NULL)
     {
         *argstring = NULL;
