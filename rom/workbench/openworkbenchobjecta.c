@@ -431,10 +431,10 @@ BOOL __WB_BuildArguments
     struct TagItem *tstate   = tags,
                    *tag      = NULL;
     BPTR            lastLock = NULL;
-    LONG            numArgs  = 1;
-    struct WBArg   *args;
-    
+    struct WBArg   *args     = NULL;
+        
     /*-- Calculate the number of arguments ---------------------------------*/
+    startup->sm_NumArgs = 1;
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
@@ -450,19 +450,20 @@ BOOL __WB_BuildArguments
                 */
                 if (lastLock != NULL || (STRPTR) tag->ti_Data != NULL)
                 {
-                    numArgs++;
+                    startup->sm_NumArgs++;
                 }
                 break;
         }
     }
     
     /*-- Allocate memory for the arguments ---------------------------------*/
-    args = AllocMem(sizeof(struct WBArg) * numArgs, MEMF_ANY | MEMF_CLEAR);
+    args = AllocMem(sizeof(struct WBArg) * startup->sm_NumArgs, MEMF_ANY | MEMF_CLEAR);
     if (args != NULL)
     {
+        startup->sm_ArgList = args;
+        
         /*-- Build the argument list ---------------------------------------*/
-        LONG i      = 0;
-        BOOL error  = FALSE;
+        LONG i = 0;
         
         if
         (
@@ -475,7 +476,7 @@ BOOL __WB_BuildArguments
         i++;
         
         tstate = tags; lastLock = NULL;
-        while ((tag = NextTagItem(&tstate)) != NULL && !error)
+        while ((tag = NextTagItem(&tstate)) != NULL)
         {
             switch (tag->ti_Tag)
             {
@@ -500,7 +501,7 @@ BOOL __WB_BuildArguments
                             if (args[i].wa_Lock == NULL)
                             {
                                 D(bug("workbench.library: WB_BuildArguments: Failed to duplicate lock!\n"));
-                                error = TRUE;
+                                goto error;
                                 break;
                             }
                         }
@@ -517,7 +518,7 @@ BOOL __WB_BuildArguments
                             if (args[i].wa_Name == NULL)
                             {
                                 D(bug("workbench.library: WB_BuildArguments: Failed to duplicate string!\n"));
-                                error = TRUE;
+                                goto error;
                                 break;
                             }
                         }
@@ -532,27 +533,31 @@ BOOL __WB_BuildArguments
             }
         }
         
-error:
-        if (error)
-        {
-            D(bug("workbench.library: WB_BuildArguments: Freeing resources after error...\n"));
-            /* Free allocated resources */
-            for (i = 0; i < numArgs; i++)
-            {
-                if (args[i].wa_Lock != NULL) UnLock(args[i].wa_Lock);
-                if (args[i].wa_Name != NULL) FreeVec(args[i].wa_Name);
-            }
-            
-            return FALSE;
-        }
-        
-        startup->sm_NumArgs = numArgs;
-        startup->sm_ArgList = args;
-        
         return TRUE;
     }
+    else
+    {
+        D(bug("workbench.library: WB_BuildArguments: Failed to allocate memory for argument array\n"));
+    }
     
-    D(bug("workbench.library: WB_BuildArguments: Failed to allocate memory for argument array\n"));
+error:
+    D(bug("workbench.library: WB_BuildArguments: Freeing resources after error...\n"));
+    /* Free allocated resources */
+    if (args != NULL)
+    {
+        int i;
+        
+        for (i = 0; i < startup->sm_NumArgs; i++)
+        {
+            if (args[i].wa_Lock != NULL) UnLock(args[i].wa_Lock);
+            if (args[i].wa_Name != NULL) FreeVec(args[i].wa_Name);
+        }
+        
+        FreeMem(args, sizeof(struct WBArg) * startup->sm_NumArgs);
+    }
+    
+    startup->sm_NumArgs = 0;
+    startup->sm_ArgList = NULL;
     
     return FALSE;
 }
