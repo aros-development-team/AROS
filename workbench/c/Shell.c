@@ -758,7 +758,7 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	}
 	
 	/* stegerg: Set redirection to default in/out handles */
-	
+
 	rd->oldIn  = SelectInput(cli->cli_StandardInput);
 	rd->oldOut = SelectOutput(cli->cli_StandardOutput);
 	
@@ -1369,8 +1369,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 	if(residentSeg != NULL)
 	{
 	    /* Can we use this command? */
-	    if(!(residentSeg->seg_UC <  CMD_DISABLED ||
-		 residentSeg->seg_UC == CMD_SYSTEM))
+	    if(residentSeg->seg_UC !=  CMD_DISABLED)
 	    {
 		if(residentSeg->seg_UC >= 0)
 		    residentSeg->seg_UC++;
@@ -1384,6 +1383,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 	Permit();
     }
 
+    ss->residentCommand = FALSE;
 
     P(kprintf("Trying to load command1: %s\n", commandName));
 
@@ -1452,7 +1452,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 /* Execute one command */
 LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 {
-    BPTR              seglist;
+    BPTR              module;
     LONG              error = 0;
     struct ShellState ss = {FALSE};
 /*
@@ -1464,14 +1464,15 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
     P(kprintf("Trying to load command: %s\nArguments: %s\n", command,
 	     commandArgs));
 
-    seglist = loadCommand(command, &ss);
+    module = loadCommand(command, &ss);
 
     /* Set command name even if we couldn't load the command to be able to
        report errors correctly */
     SetProgramName(command);
 
-    if(seglist != NULL)
+    if(module != NULL)
     {
+	BPTR seglist = ss.residentCommand ? ((struct Segment *)BADDR(module))->seg_Seg:module
 	P(kprintf("Command loaded!\n"));
 
 	SetIoErr(0);        	    	 /* Clear error before we execute this command */
@@ -1482,14 +1483,14 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 					 commandArgs, strlen(commandArgs));
 
 	P(kprintf("Returned from command %s\n", command));
-	unloadCommand(cli->cli_Module, &ss);
+	unloadCommand(module, &ss);
 
 	cli->cli_Result2 = IoErr();
     }
     else
     {
 	/* Implicit cd? */
-	if(!(rd->haveInRD || rd->haveOutRD || rd->haveAppRD) && IoErr() == ERROR_OBJECT_WRONG_TYPE || IoErr() == ERROR_OBJECT_NOT_FOUND )
+	if(!(rd->haveInRD || rd->haveOutRD || rd->haveAppRD) && (IoErr() == ERROR_OBJECT_WRONG_TYPE || IoErr() == ERROR_OBJECT_NOT_FOUND))
 	{
 	    BPTR lock = Lock(command, SHARED_LOCK);
 
