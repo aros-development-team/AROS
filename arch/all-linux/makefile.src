@@ -2,32 +2,24 @@
 TOP=../..
 CURDIR=config/linux
 
-#	-I./pthreads/include
 USER_INCLUDES= \
 	-I/usr/include -I$(TOP)/rom/graphics -I$(TOP)/rom/intuition \
 	-I$(TOP)/rom/exec
 
 include $(TOP)/config/make.cfg
 
-FILES = graphics_driver intuition_driver \
-	rawioinit rawmaygetchar rawputchar
+FILES=
+DIRS= unix x11
 
 DEPS = $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+SUBDIRS= $(foreach f,$(DIRS),../$(f))
 
-all: setup \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
-
-threads : $(LIBDIR)/libgthreads.a $(LIBDIR)/libmalloc.a
-	cd pthreads/src ; make
-
-$(LIBDIR)/libgthreads.a : pthreads/lib/libgthreads.a
-	cp $? $@
-
-$(LIBDIR)/libmalloc.a : pthreads/malloc/libmalloc.a
-	cp $? $@
+all: setup $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
+	%subdirs_q target=all top=..
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
+	%subdirs_q target=setup top=..
 
 clean::
 	-$(RM) $(OSGENDIR) *.err
@@ -41,4 +33,3 @@ $(OSGENDIR)/%.d: %.c
 	%mkdepend_q flags=$(CFLAGS2)
 
 %common
-%include_deps
