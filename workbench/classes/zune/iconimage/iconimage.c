@@ -35,7 +35,7 @@ struct IconImage_DATA
 /*** Methods ****************************************************************/
 IPTR IconImage$OM_NEW
 (
-    struct IClass *CLASS, Object *self, struct opSet *message 
+    Class *CLASS, Object *self, struct opSet *message 
 )
 {
     struct IconImage_DATA *data       = NULL; 
@@ -92,7 +92,7 @@ error:
 
 IPTR IconImage$MUIM_Draw
 (
-    struct IClass *CLASS, Object *self, struct MUIP_Draw *message
+    Class *CLASS, Object *self, struct MUIP_Draw *message
 )
 {
     struct IconImage_DATA *data = INST_DATA(CLASS, self); 
@@ -123,7 +123,7 @@ IPTR IconImage$MUIM_Draw
 
 IPTR IconImage$MUIM_AskMinMax
 (
-    struct IClass *CLASS, Object *self, struct MUIP_AskMinMax *message
+    Class *CLASS, Object *self, struct MUIP_AskMinMax *message
 )
 {
     struct IconImage_DATA *data = INST_DATA(CLASS, self);

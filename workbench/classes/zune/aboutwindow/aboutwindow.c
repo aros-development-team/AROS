@@ -193,7 +193,7 @@ STRPTR Names2Text(struct Catalog *catalog, struct TagItem *tags)
 
 IPTR AboutWindow$OM_NEW
 (
-    struct IClass *CLASS, Object *self, struct opSet *message 
+    Class *CLASS, Object *self, struct opSet *message 
 )
 {
     struct AboutWindow_DATA *data              = NULL; 
@@ -415,7 +415,7 @@ error:
 
 IPTR AboutWindow$MUIM_Window_Setup
 (
-    struct IClass *CLASS, Object *self, Msg message
+    Class *CLASS, Object *self, Msg message
 )
 {
     struct AboutWindow_DATA *data    = INST_DATA(CLASS, self);
@@ -535,14 +535,14 @@ IPTR AboutWindow$MUIM_Window_Setup
         /*- Setup version object -------------------------------------------*/
         if (length > 0)
         {
-            /*- Allocate memory ------------------------------------------------*/
+            /*- Allocate memory --------------------------------------------*/
             buffer = AllocVec(length, MEMF_ANY);
             
             if (buffer != NULL)
             {
                 buffer[0] = '\0';
                 
-                /*- Generate text ----------------------------------------------*/
+                /*- Generate text ------------------------------------------*/
                 if (title != NULL)
                 {
                     strlcat(buffer, MUIX_B, length);
@@ -633,7 +633,7 @@ IPTR AboutWindow$MUIM_Window_Setup
 
 IPTR AboutWindow$OM_DISPOSE
 (
-    struct IClass *CLASS, Object *self, Msg message 
+    Class *CLASS, Object *self, Msg message 
 )
 {
     struct AboutWindow_DATA *data   = INST_DATA(CLASS, self);

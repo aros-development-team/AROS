@@ -53,7 +53,7 @@ struct PreferencesWindow_DATA
 
 IPTR PreferencesWindow$OM_NEW
 (
-    struct IClass *CLASS, Object *self, struct opSet *message 
+    Class *CLASS, Object *self, struct opSet *message 
 )
 {
     struct PreferencesWindow_DATA *data = NULL; 
@@ -185,7 +185,7 @@ error:
 
 IPTR PreferencesWindow$OM_DISPOSE
 (
-    struct IClass *CLASS, Object *self, Msg message 
+    Class *CLASS, Object *self, Msg message 
 )
 {
     struct PreferencesWindow_DATA *data = INST_DATA(CLASS, self);
