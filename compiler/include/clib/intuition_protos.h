@@ -25,7 +25,9 @@
 #   include <intuition/classes.h>
 #endif
 
+#ifndef IntuitionBase
 extern struct IntuitionBase * IntuitionBase;
+#endif
 
 /* Prototypes for stubs in amiga.lib */
 IPTR DoGadgetMethod (struct Gadget * gad, struct Window * win,
