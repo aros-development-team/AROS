@@ -82,8 +82,6 @@ $(BINDIR)/boot/aros-native-i386 : $(OBJS)
 
 #MM workbench-boot-native-i386
 workbench-boot-native-i386: \
-	$(BINDIR)/boot/grub/stage1 \
-	$(BINDIR)/boot/grub/stage2 \
 	$(BINDIR)/boot/grub/menu.lst
 	@$(NOP)
 
