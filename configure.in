@@ -405,11 +405,6 @@ aros_palm_debug_hack="0"
 # Unix flavour stuff
 aros_nesting_supervisor="0"
 
-# Debug stuff
-aros_mungwall_debug="1"
-aros_stack_debug="1"
-aros_modules_debug="1"
-
 # Collect-aros stuff: "-ius" to ignore undefined symbols
 ignore_undefined_symbols=""
 
@@ -476,11 +471,11 @@ else
 	fi
 	export aros_${d}_debug="1"
     done
+    aros_debug="yes"
 fi
 AC_MSG_RESULT($debug)
 
 if test "$aros_messages_debug" = "1"; then
-    aros_debug="yes"
     aros_messages_debug="-DADEBUG=1 -DMDEBUG=1"
 fi
 if test "$aros_symbols_debug" = "1"; then
