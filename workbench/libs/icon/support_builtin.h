@@ -12,6 +12,6 @@
 struct DiskObject *__GetBuiltinIcon_WB(LONG type, struct IconBase *IconBase);
 
 /*** Macros *****************************************************************/
-#define GetBuiltinIcon(type) (__GetBuiltinIcon_WB((type), IconBase))
+#define GetBuiltinIcon(type) (__GetBuiltinIcon_WB((type), LB(IconBase)))
 
 #endif /* _SUPPORT_BUILTIN_H_ */

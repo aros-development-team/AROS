@@ -16,7 +16,7 @@
 	AROS_LHA(LONG, type, D0),
 
 /*  LOCATION */
-	struct IconBase *, IconBase, 20, Icon)
+	struct Library *, IconBase, 20, Icon)
 
 /*  FUNCTION
 	Gets the default icon for the supplied type of icon.
@@ -43,7 +43,7 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IconBase *, IconBase)
+    AROS_LIBBASE_EXT_DECL(struct Library *, IconBase)
     
     return GetIconTags(NULL, ICONGETA_GetDefaultType, type, TAG_DONE);
     

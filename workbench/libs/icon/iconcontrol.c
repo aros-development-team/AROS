@@ -23,7 +23,7 @@
         AROS_LHA(struct TagItem *,    tags, A1),
 
 /*  LOCATION */
-        struct IconBase *, IconBase, 26, Icon)
+        struct Library *, IconBase, 26, Icon)
 
 /*  FUNCTION
 
@@ -44,7 +44,7 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IconBase *, IconBase)
+    AROS_LIBBASE_EXT_DECL(struct Library *, IconBase)
     
     struct TagItem  *tstate       = tags,
                     *tag          = NULL;
@@ -71,23 +71,23 @@
         {
             /* Global tags -------------------------------------------------*/
             case ICONCTRLA_SetGlobalScreen:
-                IconBase->ib_Screen = (struct Screen *) tag->ti_Data;
+                LB(IconBase)->ib_Screen = (struct Screen *) tag->ti_Data;
                 processed++;
                 break;
                 
             case ICONCTRLA_GetGlobalScreen:
-                STORE((struct Screen **) tag->ti_Data, IconBase->ib_Screen);
+                STORE((struct Screen **) tag->ti_Data, LB(IconBase)->ib_Screen);
                 processed++;
                 break;
                 
             case ICONCTRLA_SetGlobalPrecision:
             case OBP_Precision:
-                IconBase->ib_Precision = tag->ti_Data;
+                LB(IconBase)->ib_Precision = tag->ti_Data;
                 processed++;
                 break;
                 
             case ICONCTRLA_GetGlobalPrecision:
-                STORE((LONG *) tag->ti_Data, IconBase->ib_Precision);
+                STORE((LONG *) tag->ti_Data, LB(IconBase)->ib_Precision);
                 processed++;
                 break;
                 
@@ -100,52 +100,52 @@
                 break;
                 
             case ICONCTRLA_SetGlobalFrameless:
-                IconBase->ib_Frameless = tag->ti_Data;
+                LB(IconBase)->ib_Frameless = tag->ti_Data;
                 processed++;
                 break;
                 
             case ICONCTRLA_GetGlobalFrameless:
-                STORE((LONG *) tag->ti_Data, IconBase->ib_Frameless);
+                STORE((LONG *) tag->ti_Data, LB(IconBase)->ib_Frameless);
                 processed++;
                 break;
                 
             case ICONCTRLA_SetGlobalIdentifyHook:
-                IconBase->ib_IdentifyHook = (struct Hook *) tag->ti_Data;
+                LB(IconBase)->ib_IdentifyHook = (struct Hook *) tag->ti_Data;
                 processed++;
                 break;
                 
             case ICONCTRLA_GetGlobalIdentifyHook:
-                STORE((struct Hook **) tag->ti_Data, IconBase->ib_IdentifyHook);
+                STORE((struct Hook **) tag->ti_Data, LB(IconBase)->ib_IdentifyHook);
                 processed++;
                 break;
                 
             case ICONCTRLA_SetGlobalMaxNameLength:
-                IconBase->ib_MaxNameLength = tag->ti_Data;
+                LB(IconBase)->ib_MaxNameLength = tag->ti_Data;
                 processed++;
                 break;
             
             case ICONCTRLA_GetGlobalMaxNameLength:
-                STORE((LONG *) tag->ti_Data, IconBase->ib_MaxNameLength);
+                STORE((LONG *) tag->ti_Data, LB(IconBase)->ib_MaxNameLength);
                 processed++;
                 break;
                 
             case ICONCTRLA_SetGlobalNewIconsSupport:
-                IconBase->ib_NewIconsSupport = tag->ti_Data;
+                LB(IconBase)->ib_NewIconsSupport = tag->ti_Data;
                 processed++;
                 break;
                 
             case ICONCTRLA_GetGlobalNewIconsSupport:
-                STORE((LONG *) tag->ti_Data, IconBase->ib_NewIconsSupport);
+                STORE((LONG *) tag->ti_Data, LB(IconBase)->ib_NewIconsSupport);
                 processed++;
                 break;
                 
             case ICONCTRLA_SetGlobalColorIconSupport:
-                IconBase->ib_ColorIconSupport = tag->ti_Data;
+                LB(IconBase)->ib_ColorIconSupport = tag->ti_Data;
                 processed++;
                 break;
                 
             case ICONCTRLA_GetGlobalColorIconSupport:
-                STORE((LONG *) tag->ti_Data, IconBase->ib_ColorIconSupport);
+                STORE((LONG *) tag->ti_Data, LB(IconBase)->ib_ColorIconSupport);
                 processed++;
                 break;
             

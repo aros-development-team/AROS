@@ -26,7 +26,7 @@
 	AROS_LHA(CONST_STRPTR,     name, A0),
 	AROS_LHA(struct TagItem *, tags, A1),
 /*  LOCATION */
-	struct IconBase *, IconBase, 30, Icon)
+	struct Library *, IconBase, 30, Icon)
 
 /*  FUNCTION
 
@@ -47,7 +47,7 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IconBase *,IconBase)
+    AROS_LIBBASE_EXT_DECL(struct Library *, IconBase)
 
     struct TagItem    *tstate            = tags,
                       *tag;
@@ -191,18 +191,18 @@
                         iim.iim_SysBase     = (struct Library *) SysBase;
                         iim.iim_DOSBase     = (struct Library *) DOSBase;
                         iim.iim_UtilityBase =                    UtilityBase;
-                        iim.iim_IconBase    = (struct Library *) IconBase;
+                        iim.iim_IconBase    =                    IconBase;
                         iim.iim_Tags        = tags;
                         
                         iim.iim_ParentLock  = ParentDir(iim.iim_FileLock);
                         iim.iim_FileHandle  = Open(name, MODE_OLDFILE);
                         
-                        if (IconBase->ib_IdentifyHook != NULL)
+                        if (LB(IconBase)->ib_IdentifyHook != NULL)
                         {
                             /* Use user-provided identify hook */
                             icon = (struct DiskObject *) CALLHOOKPKT
                             (
-                                IconBase->ib_IdentifyHook, NULL, &iim
+                                LB(IconBase)->ib_IdentifyHook, NULL, &iim
                             );
                             // FIXME: do sanity checks here (we don't trust
                             // FIXME: the user-provided hook ;-))
@@ -212,7 +212,7 @@
                             /* Use default identify hook */
                             icon = (struct DiskObject *) CALLHOOKPKT
                             (
-                                &IconBase->ib_DefaultIdentifyHook, NULL, &iim
+                                &(LB(IconBase)->ib_DefaultIdentifyHook), NULL, &iim
                             );
                         }
                         
