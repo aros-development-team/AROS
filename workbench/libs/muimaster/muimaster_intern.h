@@ -73,7 +73,9 @@ struct MUIMasterBase_intern
     struct IntuitionBase    	*intuibase;
     struct Library  	    	*cxbase;
     struct Library  	    	*keymapbase;
-    
+#ifdef _AROS
+    struct Library		*gadtoolsbase;
+#endif
     struct SignalSemaphore ClassSempahore;
     struct IClass **Classes;
     int     ClassCount;
@@ -113,6 +115,9 @@ struct MUIMasterBase_intern
 
 #undef KeymapBase
 #define KeymapBase  	(MUIMB(MUIMasterBase)->keymapbase)
+
+#undef GadToolsBase
+#define GadToolsBase  	(MUIMB(MUIMasterBase)->gadtoolsbase)
 
 #else
 
