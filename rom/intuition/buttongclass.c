@@ -241,14 +241,9 @@ IPTR buttong_handleinput(Class * cl, Object * o, struct gpInput * msg)
 	    if (EG(o)->Flags & GFLG_SELECTED)
 	    {
 	        /* MUST pass tags for notification to work */
-	        struct TagItem ntags[] = {
-	            {GA_ID,	0},
-	            {TAG_DONE,}
-	        };
+	        struct TagItem ntags = {TAG_DONE, 0UL};
 	        
-	        ntags[0].ti_Data = EG(o)->GadgetID;
-	    
-		DoMethod(o, OM_NOTIFY, ntags, gi, OPUF_INTERIM);
+		DoMethod(o, OM_NOTIFY, &ntags, gi, OPUF_INTERIM);
 	    }
 	    break;
 	}
