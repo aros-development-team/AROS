@@ -13,7 +13,9 @@ OBJS := $(OSGENDIR)/graphics/graphics_driver.o				\
 	$(OSGENDIR)/graphics/dispinfo.o					\
 	$(OSGENDIR)/graphics/fakegfxhidd.o				\
 	$(OSGENDIR)/boot/hidd_graphics.o				\
-	$(OSGENDIR)/boot/display_driver.o
+	$(OSGENDIR)/boot/display_driver.o				\
+	$(OSGENDIR)/boot/hidd_irq.o					\
+	$(OSGENDIR)/boot/hidd_serial.o
 
 LIBS = -L$(LIBDIR)    \
 	-lexec        \
