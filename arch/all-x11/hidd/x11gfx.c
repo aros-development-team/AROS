@@ -201,6 +201,8 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
 
     BOOL displayable;
     Class *bm_cl;
+    Object *bm;
+    
     struct gfx_data *data;
     struct TagItem tags[] =
     {
@@ -228,13 +230,16 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
     if (displayable)
-    	bm_cl = X11GfxBase->bitmapclass;
+    {
+    	bm = NewObject(X11GfxBase->bitmapclass, NULL, tags);
+    }
     else
-	bm_cl = X11GfxBase->osbitmapclass;
+    {
+	bm = NewObject(NULL, CLID_Hidd_BitMap, tags);
+    }
     
     
-    
-    ReturnPtr("X11Gfx::NewBitMap", Object *, NewObject(bm_cl, NULL, tags));
+    ReturnPtr("X11Gfx::NewBitMap", Object *, bm);
 }
 
 /******* X11Gfx::Set()  ********************************************/

@@ -116,8 +116,8 @@ enum
     moHidd_BitMap_CopyBox,
     moHidd_BitMap_PutPixel,
     moHidd_BitMap_DrawPixel,
-    moHidd_BitMap_PutBox,
-    moHidd_BitMap_GetBox,
+    moHidd_BitMap_PutImage,
+    moHidd_BitMap_GetImage,
     moHidd_BitMap_GetPixel,
     moHidd_BitMap_DrawLine,
     moHidd_BitMap_DrawRect,
@@ -130,7 +130,7 @@ enum
     moHidd_BitMap_FillText,
     moHidd_BitMap_FillSpan,
     moHidd_BitMap_Clear,
-    moHidd_BitMap_BlitColExp,
+    moHidd_BitMap_BlitColorExpansion,
     moHidd_BitMap_PrivateSet
 };
 
@@ -163,7 +163,7 @@ enum {
     aoHidd_BitMap_PlaneMask,           /* [.SG] Shape bitmap                       */
 
     aoHidd_BitMap_GC,           /* [ISG]  bitmaps GC                       */
-    aoHidd_BitMap_ColExpMode,	/* [ISG] Mode for color expansion operations */
+    aoHidd_BitMap_ColorExpansionMode,	/* [ISG] Mode for color expansion operations */
     
     num_Hidd_BitMap_Attrs
 };    
@@ -193,7 +193,7 @@ enum {
 #define aHidd_BitMap_LinePattern (HiddBitMapAttrBase + aoHidd_BitMap_LinePattern)
 #define aHidd_BitMap_PlaneMask   (HiddBitMapAttrBase + aoHidd_BitMap_PlaneMask)
 #define aHidd_BitMap_GC		 (HiddBitMapAttrBase + aoHidd_BitMap_GC)
-#define aHidd_BitMap_ColExpMode	 (HiddBitMapAttrBase + aoHidd_BitMap_ColExpMode)
+#define aHidd_BitMap_ColorExpansionMode	 (HiddBitMapAttrBase + aoHidd_BitMap_ColorExpansionMode)
 
 
 
@@ -255,7 +255,7 @@ struct pHidd_BitMap_CopyBox
     UWORD       width, height;
 };
 
-struct pHidd_BitMap_GetBox
+struct pHidd_BitMap_GetImage
 {
     MethodID mID;
     ULONG	*pixels;
@@ -263,7 +263,7 @@ struct pHidd_BitMap_GetBox
     WORD	width, height;
 };
 
-struct pHidd_BitMap_PutBox
+struct pHidd_BitMap_PutImage
 {
     MethodID mID;
     ULONG 	*pixels;
@@ -305,7 +305,7 @@ struct pHidd_BitMap_Clear
     MethodID    mID;
 };
 
-struct pHidd_BitMap_BlitColExp
+struct pHidd_BitMap_BlitColorExpansion
 {
     MethodID mID;
     Object	*srcBitMap;
@@ -341,7 +341,7 @@ enum
                                    /*       changing                           */
     aoHidd_GC_LinePattern,         /* [.SG] Pattern for line drawing          */
     aoHidd_GC_PlaneMask,           /* [.SG] Shape bitmap                       */
-    aoHidd_GC_ColExpMode,	   /* [.SG] Mode for color expansion */
+    aoHidd_GC_ColorExpansionMode,	   /* [.SG] Mode for color expansion */
     
     num_Hidd_GC_Attrs
 };
@@ -355,7 +355,7 @@ enum
 #define aHidd_GC_ColorMask   (HiddGCAttrBase + aoHidd_GC_ColorMask)
 #define aHidd_GC_LinePattern (HiddGCAttrBase + aoHidd_GC_LinePattern)
 #define aHidd_GC_PlaneMask   (HiddGCAttrBase + aoHidd_GC_PlaneMask)
-#define aHidd_GC_ColExpMode  (HiddGCAttrBase + aoHidd_GC_ColExpMode)
+#define aHidd_GC_ColorExpansionMode  (HiddGCAttrBase + aoHidd_GC_ColorExpansionMode)
 
 
 /* Drawmodes for a graphics context */
@@ -389,8 +389,8 @@ ULONG    HIDD_BM_PutPixel(Object *obj, WORD x, WORD y, ULONG val);
 ULONG    HIDD_BM_GetPixel       (Object *obj, WORD x, WORD y);
 ULONG    HIDD_BM_DrawPixel      (Object *obj, WORD x, WORD y);
 VOID     HIDD_BM_CopyBox         (Object *obj, WORD srcX, WORD srcY, Object *dest, WORD destX, WORD destY, UWORD width, UWORD height);
-VOID     HIDD_BM_GetBox	 	 (Object *obj, ULONG *pixelArray, WORD x, WORD y, WORD width, WORD height);
-VOID	 HIDD_BM_PutBox 	 (Object *obj, ULONG *pixelArray, WORD x, WORD y, WORD width, WORD height);
+VOID     HIDD_BM_GetImage	 	 (Object *obj, ULONG *pixelArray, WORD x, WORD y, WORD width, WORD height);
+VOID	 HIDD_BM_PutImage 	 (Object *obj, ULONG *pixelArray, WORD x, WORD y, WORD width, WORD height);
 VOID     HIDD_BM_DrawLine        (Object *obj, WORD x1, WORD y1, WORD x2, WORD y2);
 VOID     HIDD_BM_DrawRect        (Object *obj, WORD minX, WORD minY, WORD maxX, WORD maxY);
 VOID     HIDD_BM_FillRect        (Object *obj, WORD minX, WORD minY, WORD maxX, WORD maxY);
@@ -404,5 +404,5 @@ VOID     HIDD_BM_DrawText        (Object *obj, WORD x, WORD y, STRPTR text, UWOR
 VOID     HIDD_BM_FillText        (Object *obj, WORD x, WORD y, STRPTR text, UWORD length);
 VOID     HIDD_BM_FillSpan        (Object *obj);
 VOID     HIDD_BM_Clear           (Object *obj);
-VOID	 HIDD_BM_BlitColExp	 (Object *destObj, Object *srcObj, WORD srcX, WORD srcY, WORD destX, WORD destY,  UWORD width, UWORD height);
+VOID	 HIDD_BM_BlitColorExpansion	 (Object *destObj, Object *srcObj, WORD srcX, WORD srcY, WORD destX, WORD destY,  UWORD width, UWORD height);
 #endif /* HIDD_GRAPHICS_H */

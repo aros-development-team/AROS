@@ -599,7 +599,7 @@ static VOID bitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
     
 }
 
-static VOID bitmap_getbox(Class *cl, Object *o, struct pHidd_BitMap_GetBox *msg)
+static VOID bitmap_getimage(Class *cl, Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     /* Read an X image from which we can faster get the pixels, since the
        X image resides in the client.
@@ -609,7 +609,7 @@ static VOID bitmap_getbox(Class *cl, Object *o, struct pHidd_BitMap_GetBox *msg)
     struct bitmap_data *data;
     XImage *image;
     
-    EnterFunc(bug("X11Gfx.BitMap::GetBox(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
+    EnterFunc(bug("X11Gfx.BitMap::GetImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
     	msg->pixels, msg->x, msg->y, msg->width, msg->height));
 	
     data = INST_DATA(cl, o);
@@ -622,7 +622,7 @@ static VOID bitmap_getbox(Class *cl, Object *o, struct pHidd_BitMap_GetBox *msg)
 	, ZPixmap);
 	
     if (!image)
-    	ReturnVoid("X11Gfx.BitMap::GetBox(couldn't get XImage)");
+    	ReturnVoid("X11Gfx.BitMap::GetImage(couldn't get XImage)");
 	
     for (y = 0; y < msg->height; y ++)
     {
@@ -634,11 +634,11 @@ static VOID bitmap_getbox(Class *cl, Object *o, struct pHidd_BitMap_GetBox *msg)
     }
     XFree(image);
     
-    ReturnVoid("X11Gfx.BitMap::GetBox");
+    ReturnVoid("X11Gfx.BitMap::GetImage");
     
 }
 
-static VOID bitmap_putbox(Class *cl, Object *o, struct pHidd_BitMap_PutBox *msg)
+static VOID bitmap_putimage(Class *cl, Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     ULONG mode;
     WORD x, y;
@@ -646,7 +646,7 @@ static VOID bitmap_putbox(Class *cl, Object *o, struct pHidd_BitMap_PutBox *msg)
     struct bitmap_data *data;
     XImage *image;
 
-    EnterFunc(bug("X11Gfx.BitMap::PutBox(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
+    EnterFunc(bug("X11Gfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
     	msg->pixels, msg->x, msg->y, msg->width, msg->height));
 	
     data = INST_DATA(cl, o);
@@ -660,7 +660,7 @@ static VOID bitmap_putbox(Class *cl, Object *o, struct pHidd_BitMap_PutBox *msg)
 	, ZPixmap
     );
     if (!image)
-    	ReturnVoid("X11Gfx.BitMap::PutBox(couldn't get XImage)");
+    	ReturnVoid("X11Gfx.BitMap::PutImage(couldn't get XImage)");
     	
     D(bug("drawmode: %d\n", mode));
     if (mode == vHIDD_GC_DrawMode_Copy)
@@ -674,9 +674,11 @@ static VOID bitmap_putbox(Class *cl, Object *o, struct pHidd_BitMap_PutBox *msg)
 		
 		XPutPixel(image, x, y, data->hidd2x11cmap[*pixarray ++]);
 		
+		
 	    }
 	    
 	}
+	
 	
     }
     else
@@ -717,27 +719,33 @@ static VOID bitmap_putbox(Class *cl, Object *o, struct pHidd_BitMap_PutBox *msg)
    XFree(image);
 
    XFlush(data->display);
-   ReturnVoid("X11Gfx.BitMap::PutBox");
+   ReturnVoid("X11Gfx.BitMap::PutImage");
 
    
 }
 
 
+#undef SDEBUG
+#undef DEBUG
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
 
-/*** BitMap::BlitColExp() **********************************************/
-static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColExp *msg)
+
+/*** BitMap::BlitColorExpansion() **********************************************/
+static VOID bitmap_blitcolorexpansion(Class *cl, Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     ULONG cemd;
-    XImage *src_im, *dest_im;
+    XImage *dest_im;
     struct bitmap_data *data = INST_DATA(cl, o);
     ULONG fg, bg, fg_pixel, bg_pixel;
     LONG x, y;
     
-    EnterFunc(bug("X11Gfx.BitMap::BlitColExp(%p, %d, %d, %d, %d, %d, %d)\n"
+    EnterFunc(bug("X11Gfx.BitMap::BlitColorExpansion(%p, %d, %d, %d, %d, %d, %d)\n"
     	, msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
     
     /* Get the color expansion mode */
-    GetAttr(o, aHidd_BitMap_ColExpMode, &cemd);
+    GetAttr(o, aHidd_BitMap_ColorExpansionMode, &cemd);
     
     dest_im = XGetImage(data->display
     	, data->xwindow
@@ -748,7 +756,7 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColE
     	
     
     if (!dest_im)
-    	ReturnVoid("X11Gfx.BitMap::BlitColExp()");
+    	ReturnVoid("X11Gfx.BitMap::BlitColorExpansion()");
 
     GetAttr(o, aHidd_BitMap_Foreground, &fg);
     GetAttr(o, aHidd_BitMap_Background, &bg);
@@ -761,29 +769,20 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColE
     D(bug("fg_pixel: %d\n", fg_pixel));
     D(bug("bg_pixel: %d\n", bg_pixel));
 
-    /* Get XImage from offscreen HIDD bitmap */
-    GetAttr(msg->srcBitMap, aHidd_X11Osbm_XImage, (IPTR *)&src_im);
-
-    D(bug("Src ximage: %p\n", src_im));
+    D(bug("Src bm: %p\n", msg->srcBitMap));
     for (y = 0; y < msg->height; y ++)
     {
     	for (x = 0; x < msg->width; x ++)
 	{
 	    ULONG is_set;
 	    
+	    is_set = HIDD_BM_GetPixel(msg->srcBitMap, x + msg->srcX, y + msg->srcY);
 	    
-	    is_set = XGetPixel(src_im, x + msg->srcX, y + msg->srcY);
-	    is_set = map_x11_to_hidd(data->hidd2x11cmap, is_set);
-	    D(bug("Got pixel val %d for (%d, %d)\n"
-	    	, is_set, x + msg->srcX, y + msg->srcY));
-	    
+/* D(bug("%d", is_set)); */
 	    if (is_set)
 	    {
-	        D(bug("Putting pixel %d at (%d, %d)\n"
-			, fg_pixel, x + msg->destX, y + msg->destY));
 	    	XPutPixel(dest_im, x, y, fg_pixel);
 		
-//	       D(bug("pixel put\n"));
 	    }
 	    else
 	    {
@@ -793,6 +792,7 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColE
 		}
 	    }
 	} /* for (each x) */
+/*	D(bug("\n")); */
 	    
     } /* for (each y) */
     
@@ -814,7 +814,7 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColE
     XFlush(data->display);
     
     
-    ReturnVoid("X11Gfx.BitMap::BlitColExp()");
+    ReturnVoid("X11Gfx.BitMap::BlitColorExpansion()");
 }
 
 /*** init_bitmapclass *********************************************************/
@@ -844,9 +844,9 @@ Class *init_bitmapclass(struct x11gfxbase *X11GfxBase)
     	{(IPTR (*)())bitmap_drawpixel,		moHidd_BitMap_DrawPixel},
     	{(IPTR (*)())bitmap_fillrect,		moHidd_BitMap_FillRect},
     	{(IPTR (*)())bitmap_copybox,		moHidd_BitMap_CopyBox},
-    	{(IPTR (*)())bitmap_getbox,		moHidd_BitMap_GetBox},
-    	{(IPTR (*)())bitmap_putbox,		moHidd_BitMap_PutBox},
-    	{(IPTR (*)())bitmap_blitcolexp,		moHidd_BitMap_BlitColExp},
+    	{(IPTR (*)())bitmap_getimage,		moHidd_BitMap_GetImage},
+    	{(IPTR (*)())bitmap_putimage,		moHidd_BitMap_PutImage},
+    	{(IPTR (*)())bitmap_blitcolorexpansion,		moHidd_BitMap_BlitColorExpansion},
         {NULL, 0UL}
     };
     

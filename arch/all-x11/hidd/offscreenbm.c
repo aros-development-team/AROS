@@ -116,7 +116,7 @@ static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	D(bug("Allocating %d for imagedata, width=%d, height=%d, depth=%d, bytesperrow=%d\n"
 	, bytesperrow * depth * height, width, height, depth, bytesperrow));
 	
-	data->imdata = AllocVec( bytesperrow * depth * height, MEMF_ANY);
+	data->imdata = AllocVec( bytesperrow * depth * height, MEMF_ANY|MEMF_CLEAR);
 	if (!data->imdata)
 	{
 	    ok = FALSE;
@@ -222,6 +222,12 @@ static VOID bitmap_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *
    
 
     XPutPixel(data->ximage, msg->x, msg->y, data->hidd2x11cmap[msg->val]);
+    
+/*    D(bug("HW pixelval: %d\n", data->hidd2x11cmap[msg->val]));
+*/    
+    D(bug("HW pixelval: %lx\n", XGetPixel(data->ximage, msg->x, msg->y) ));
+    D(bug("pixelval: %d\n", map_x11_to_hidd(data->hidd2x11cmap, data->hidd2x11cmap[msg->val]) ));
+
 
     ReturnVoid("X11Gfx.OSBM::PutPixel");
     

@@ -352,12 +352,12 @@ VOID HIDD_BM_Clear (Object *obj)
 
 /***************************************************************/
 
-VOID     HIDD_BM_GetBox  (Object *obj, ULONG *pixels, WORD x, WORD y, WORD width, WORD height)
+VOID     HIDD_BM_GetImage  (Object *obj, ULONG *pixels, WORD x, WORD y, WORD width, WORD height)
 {
     static MethodID mid = 0;
-    struct pHidd_BitMap_GetBox p;
+    struct pHidd_BitMap_GetImage p;
     
-    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetBox);
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetImage);
         
     p.mID    = mid;
     p.pixels = pixels;
@@ -372,12 +372,12 @@ VOID     HIDD_BM_GetBox  (Object *obj, ULONG *pixels, WORD x, WORD y, WORD width
 
 /***************************************************************/
 
-VOID     HIDD_BM_PutBox  (Object *obj, ULONG *pixels, WORD x, WORD y, WORD width, WORD height)
+VOID     HIDD_BM_PutImage  (Object *obj, ULONG *pixels, WORD x, WORD y, WORD width, WORD height)
 {
     static MethodID mid = 0;
-    struct pHidd_BitMap_PutBox p;
+    struct pHidd_BitMap_PutImage p;
     
-    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutBox);
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutImage);
         
     p.mID    = mid;
     p.pixels = pixels;
@@ -391,12 +391,12 @@ VOID     HIDD_BM_PutBox  (Object *obj, ULONG *pixels, WORD x, WORD y, WORD width
 
 /***************************************************************/
 
-VOID	 HIDD_BM_BlitColExp	 (Object *obj, Object *srcBitMap, WORD srcX, WORD srcY, WORD destX, WORD destY,  UWORD width, UWORD height)
+VOID	 HIDD_BM_BlitColorExpansion	 (Object *obj, Object *srcBitMap, WORD srcX, WORD srcY, WORD destX, WORD destY,  UWORD width, UWORD height)
 {
     static MethodID mid = 0;
-    struct pHidd_BitMap_BlitColExp p;
+    struct pHidd_BitMap_BlitColorExpansion p;
     
-    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_BlitColExp);
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_BlitColorExpansion);
         
     p.mID	= mid;
     p.srcBitMap	= srcBitMap;
