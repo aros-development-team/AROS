@@ -2001,7 +2001,61 @@ DMSG("   %s\n",ret);
 		else
 		{
 		    error = SCRIPTERROR;
-		    traperr("<%s> requires at one argument!\n", current->arg);
+		    traperr("<%s> requires at least one argument!\n", current->arg);
+		}
+		break;
+
+	    case _TACKON	:
+		if (current->next != NULL && current->next->next != NULL)
+		{
+		    char ret[MAXFILENAMELENGTH];
+
+		    current = current->next;
+		    ExecuteCommand();
+
+		    if (current->arg != NULL)
+		    {
+			GetString(current->arg);
+		    }
+		    else
+		    {
+			error = SCRIPTERROR;
+			traperr("<%s> requires a path part as argument!\n", current->parent->cmd->arg);
+		    }
+		    clip = string;
+
+		    current = current->next;
+		    ExecuteCommand();
+
+		    if (current->arg != NULL)
+		    {
+			GetString(current->arg);
+		    }
+		    else
+		    {
+			error = SCRIPTERROR;
+			traperr("<%s> requires a file part as argument!\n", current->parent->cmd->arg);
+		    }
+
+		    ret[0] = 0;
+		    if (AddPart(ret, clip, MAXFILENAMELENGTH) == 0)
+		    {
+			error = DOSERROR;
+			traperr("AddPart(%s) failed!\n", clip);
+		    }
+		    FreeVec(clip);
+		    if (AddPart(ret, string, MAXFILENAMELENGTH) == 0)
+		    {
+			error = DOSERROR;
+			traperr("AddPart(%s) failed!\n", string);
+		    }
+		    FreeVec(string);
+		    current->parent->arg = addquotes(ret);
+		}
+		else
+		{
+		    error = SCRIPTERROR;
+		    traperr("<%s> requires two arguments!\n", current->arg);
 		}
 		break;
 
@@ -2016,7 +2070,6 @@ DMSG("   %s\n",ret);
 	    case _PATMATCH	:
 	    case _PROTECT	:
 	    case _REXX		:
-	    case _TACKON	:
 	    case _TEXTFILE	:
 	    case _TOOLTYPE	:
 		fprintf(stderr, "Unimplemented command <%s>\n", current->arg);

@@ -506,6 +506,13 @@ Execute an AmigaDOS script.
   <path> does not exist.
 
 
+( tackon <path> <file> )
+  Returns the combined pathname of <path>+<file>.
+
+  NOTE: Currently DOS.library/AddPart() cannot cope with a leading '/' in the
+  <file> parameter.
+
+
 /* Unimplemented commands */
 ( copyfiles )
 ( copylib )
@@ -516,7 +523,6 @@ Execute an AmigaDOS script.
 ( patmatch )
 ( protect )
 ( rexx )
-( tackon )
 ( tooltype )
 
 /* Here are all tags, first the ones which have to be executed */
