@@ -235,10 +235,10 @@ ssize_t     write(int fd, const void *buf, size_t nbytes);
 
 #if __POSIX_VISIBLE >= 199209 || __XSI_VISIBLE
 /* NOTIMPL size_t      confstr(int name, char *buf, size_t len); */
-/* NOTIMPL int         getopt(int argc, char * const *argv, const char *optstring); */
+int         getopt(int argc, char * const argv[], const char *optstring);
 
-/* NOTIMPL extern char *optarg; */
-/* NOTIMPL extern int  optind, opterr, optopt; */
+extern char *optarg;
+extern int  optind, opterr, optopt;
 #endif
 
 #if __POSIX_VISIBLE >= 199506 || __XSI_VISIBLE
