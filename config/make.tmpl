@@ -524,7 +524,7 @@ endif
 
 #MM
 %(mmake)-quick : $(GENDIR)/$(CURDIR)/.configured
-        @$(%(mmake)-PATH); \
+	@$(%(mmake)-PATH); \
 	 if ! $(MAKE) PROGDIR="PROGDIR:" -q -C $(GENDIR)/$(CURDIR); then \
 	    $(MAKE) PROGDIR="PROGDIR:" -C $(GENDIR)/$(CURDIR); \
 	    ret=$$?; \
