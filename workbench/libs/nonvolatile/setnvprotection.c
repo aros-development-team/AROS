@@ -64,10 +64,6 @@ AROS_LH4(BOOL, SetNVProtection,
 
     INTERNALS
 
-    HISTORY
-
-    April 2000,  SDuvan  --  implemented
-
 ******************************************************************************/
 
 {

@@ -1,9 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 #include <string.h>
 #include <dos/dosextens.h>
@@ -78,10 +75,6 @@ AROS_LH5(LONG, StoreNV,
     GetCopyNV(), GetNVInfo()
 
     INTERNALS
-
-    HISTORY
-
-    April 2000,  SDuvan  --  implemented
 
 ******************************************************************************/
 

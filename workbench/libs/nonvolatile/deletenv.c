@@ -1,9 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 /*****************************************************************************
@@ -65,10 +62,6 @@ AROS_LH3(BOOL, DeleteNV,
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-
-    April 2000,  SDuvan  --  implemented
 
 ******************************************************************************/
 

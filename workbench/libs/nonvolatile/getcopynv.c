@@ -1,9 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 #include <string.h>
@@ -57,10 +54,6 @@ AROS_LH3(APTR, GetCopyNV,
     FreeNVData(), <libraries/nonvolatile.h>
 
     INTERNALS
-
-    HISTORY
-
-    April 2000,  SDuvan  --  implemented
 
 ******************************************************************************/
 
