@@ -5,6 +5,7 @@
     Desc: Start the internal debugger.
     Lang: english
 */
+#include <string.h>
 #include "exec_intern.h"
 #include <proto/exec.h>
 #include <exec/types.h>
@@ -16,13 +17,13 @@
 
 #define Prompt 		kprintf("SAD(%ld,%ld)>",SysBase->TDNestCnt,SysBase->IDNestCnt)
 
-#define GetHead(l)      (void *)(((struct List *)l)->lh_Head->ln_Succ \
+/*#define GetHead(l)      (void *)(((struct List *)l)->lh_Head->ln_Succ \
 				? ((struct List *)l)->lh_Head \
 				: (struct Node *)0)
 #define GetSucc(n)      (void *)(((struct Node *)n)->ln_Succ->ln_Succ \
 				? ((struct Node *)n)->ln_Succ \
 				: (struct Node *)0)
-
+*/
 /****************************************************************************************/
 
 void 	InitKeyboard(void);
@@ -32,7 +33,6 @@ void	DumpRegs();
 ULONG	GetL(char*);
 UWORD	GetW(char*);
 UBYTE	GetB(char*);
-ULONG	strcmp(const char*,const char*);
 int	get_irq_list(char *buf);
 
 /****************************************************************************************/

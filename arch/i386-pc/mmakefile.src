@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-OS_INCLUDES	:= -I$(GENINCDIR)
+USER_INCLUDES	:= -I$(GENINCDIR)
 
 #
 # Rule to create AROS for pc-i386

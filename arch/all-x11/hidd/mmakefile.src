@@ -6,16 +6,11 @@ include $(TOP)/config/make.cfg
 # and there doesn't seem to be a template for handling thiscase
 # so I write the file manually.
 
+USER_INCLUDES := -I$(GENINCDIR)
 ifdef GUI_INCDIR
-USER_INCLUDES := -I. -I$(GUI_INCDIR)
-XSHM_INCLUDES := -I$(SYS_INCLUDES) -I$(GUI_INCDIR)
-else
-USER_INCLUDES := -I.
-XSHM_INCLUDES := -I$(SYS_INCLUDES)
+USER_INCLUDES += -I$(GUI_INCDIR)
 endif
-
-USER_INCLUDES += -I$(SYS_INCLUDES)
-OS_INCLUDES := -I$(GENINCDIR)
+USER_CFLAGS := -D__AROS__
 
 X11KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey.table
 
@@ -25,8 +20,8 @@ FILES	   := x11 support x11gfx onbitmap offbitmap support x11kbd x11mouse x11cli
   modname=x11gfx modtype=hidd \
   initfile=x11_init files=$(FILES) \
   conffile=lib.conf \
-  compiler=host \
-  genfunctable=yes
+  genfunctable=yes \
+  compiler=host
 
 #MM x11keymaptable
 x11keymaptable : setup-x11keymaptable $(TOOLDIR)/makexkeytable $(X11KEYMAPTABLE_FILE)
@@ -71,8 +66,4 @@ setup-x11keymaptable :
 $(TOOLDIR)/makexkeytable: makexkeytable.c
 	$(HOST_CC) $(GUI_CCFLAGS) -I$(GUI_INCDIR) $(GUI_LDFLAGS) -lX11 $< -o $@ 
 
-OBJDIR := $(GENDIR)/$(CURDIR)
-$(OBJDIR)/xshm.o	: xshm.c
-	%compile_q cmd=$(HOST_CC) opt="$(SHARED_CFLAGS) $(XSHM_INCLUDES) $(CFLAGS)"
-	
 %common

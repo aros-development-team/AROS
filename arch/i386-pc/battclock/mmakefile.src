@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 OBJDIR		:= $(OSGENDIR)/battclock
-OS_INCLUDES	:= -I$(GENINCDIR)
+USER_INCLUDES	:= -I$(GENINCDIR)
 CFLAGS2 	:= $(CFLAGS) -I../.. -I$(GENDIR)/rom/battclock -include $(GENDIR)/rom/battclock/battclock_deflibdefs.h
 AFLAGS2 	:= $(AFLAGS) -I../.. -I$(GENINCDIR)
 TESTS		:=

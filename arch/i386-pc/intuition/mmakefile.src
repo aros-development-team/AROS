@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 OBJDIR		:= $(OSGENDIR)/intuition
-OS_INCLUDES	:= -I$(GENINCDIR)
+USER_INCLUDES	:= -I$(GENINCDIR)
 CFLAGS2 	:= $(CFLAGS) -I.. -I$(TOP)/rom/intuition
 AFLAGS2 	:= $(AFLAGS) -I.. -I$(TOP)/rom/intuition -I$(GENINCDIR)
 TESTS		:=

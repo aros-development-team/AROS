@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 GENINC		:= $(TOOLDIR)/geninc-i386$(HOST_EXE_SUFFIX)
-OS_INCLUDES	:= -I$(GENINCDIR)
+USER_INCLUDES	:= -I$(GENINCDIR)
 MACHINE_H	:= $(GENINCDIR)/aros/machine.h
 INCFILES	:= $(GENINCDIR)/aros/machine.h \
 		   $(AROS_INCLUDES)/aros/machine.h \

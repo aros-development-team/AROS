@@ -8,7 +8,7 @@ $(GENINCDIR)/sigcore.h : sigcore.h
 	%mkdirs_q $(GENINCDIR)
 	$(CP) $^ $@
 
-OS_INCLUDES := -I$(SYS_INCLUDES) -I$(GENINCDIR)
+USER_INCLUDES := -I$(GENINCDIR)
 USER_CFLAGS := -I$(TOP)/rom/exec
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=freebsd \

@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/compiler/clib -I..
-SPECIAL_AFLAGS 	:= -I..
+USER_AFLAGS 	:= -I..
 %build_archspecific \
   mainmmake=linklibs-clib maindir=compiler/clib \
   arch=i386 \
