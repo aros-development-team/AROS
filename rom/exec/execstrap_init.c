@@ -5,7 +5,7 @@
     Desc:
     Lang: english
 */
-#define DEBUG 2
+#define DEBUG 0
 
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -235,10 +235,7 @@ int start(void)
     SetFunc( 66, AddLibrary);
     SetFunc( 67, RemLibrary);
     SetFunc( 68, OldOpenLibrary);
-#if 0
-    /* Guru 01 00 00 0f (AN_BadFreeAddr). Kludge (see source) didn't help. */
     SetFunc( 69, CloseLibrary);
-#endif
     SetFunc( 71, SumLibrary);
     SetFunc( 72, AddDevice);
     SetFunc( 73, RemDevice);
