@@ -1,0 +1,100 @@
+$Id$
+
+This is the AROS port of the jpegsrc.v6b sources from IJG. It creates the
+libjpeg linker library and some test programs. See doc directory for
+full documentation and man files for the test programs. The sources
+have the ljpeg-6b patch applied, that adds support for a JPEG format
+with lossless compression/decompression. This patch also updated the
+documentation in doc directory.
+
+"This software is based in part on the work of the Independent JPEG Group"
+
+This needs to be stated in accompanying documentation of all programs,
+that make use of libjpeg or these sources.
+See doc/README for copyright details.
+
+You can find the original sources at:
+ftp://ftp.uu.net/graphics/jpeg/jpegsrc.v6b.tar.gz
+
+You can find the lossless patch at:
+ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick/delegates/ljpeg-6b.tar.gz
+
+Directory structure:
+doc : documentation for linker library and test programs
+main : sources for linker library
+test : sources for test programs
+
+Global changes to the original sources:
+* Added CVS header
+* Replaced EXTERN define by JEXTERN, because of conflicts
+* Replaced GLOBAL define by JGLOBAL, because of conflicts
+* Added missing prototypes to header files
+
+Additional changes will be indicated in the file header of the changed file.
+
+Files deleted from the original sources:
+ Makefiles and similar:
+* ansi2knr.c
+* ckconfig.c
+* config.guess
+* config.sub
+* configure
+* install-sh
+* jconfig.cfg
+* jconfig.bcc
+* jconfig.dj
+* jconfig.mac
+* jconfig.manx
+* jconfig.mc6
+* jconfig.sas
+* jconfig.st
+* jconfig.vc
+* jconfig.vms
+* jconfig.wat
+* ltconfig
+* ltmain.sh
+* makefile.cfg
+* makcjpeg.st
+* makdjpeg.st
+* makeapps.ds
+* makefile.ansi
+* makefile.bcc
+* makefile.dj
+* makefile.manx
+* makefile.mc6
+* makefile.mms
+* makefile.sas
+* makefile.unix
+* makefile.vc
+* makefile.vms
+* makefile.wat
+* makelib.ds
+* makeproj.mac
+* makljpeg.st
+* maktjpeg.st
+* makvms.opt
+
+ Documentation:
+* anis2knr.1
+
+ Testimages:
+* testimg.bmp
+* testimg.jpg
+* testimg.ppm
+* testimgl.jpg
+* testimgl.ppm
+* testimgp.jpg
+* testorig.jpg
+* testprog.jpg
+
+ Library:
+* jmemdos.c
+* jmemdosa.asm
+* jmemmac.c
+
+Files added to the original sources:
+* README
+* LEGAL
+* test/README
+* main/mmakefile.src
+* test/mmakefile.src
