@@ -16,7 +16,7 @@ USE_AMIGALIB := yes
 USE_MLIB := yes
 
 #MM- workbench-utilities : workbench-utilities-clock 
-#MM workbench-utilities-clock : includes linklibs setup-clock-catalogs
+#MM workbench-utilities-clock : includes linklibs workbench-utilities-clock-catalogs
 
 %make_prog_setup mmake=workbench-utilities-clock
 
