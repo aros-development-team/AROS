@@ -1,25 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2002, The AROS Development Team.
     $Id$
-    $Log$
-    Revision 1.6  1998/10/20 16:46:39  hkiel
-    Amiga Research OS
-
-    Revision 1.5  1998/04/13 22:50:02  hkiel
-    Include <proto/exec.h>
-
-    Revision 1.4  1996/10/23 14:07:21  aros
-    #define was renamed
-
-    Revision 1.3  1996/10/19 17:07:32  aros
-    Include <aros/machine.h> instead of machine.h
-
-    Revision 1.2  1996/08/01 17:41:41  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
 */
+
 #include <proto/exec.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
@@ -29,16 +12,9 @@
 #include <aros/machine.h>
 #include <stdio.h>
 
-#define NEWLIST(l)                          \
-((l)->lh_Head=(struct Node *)&(l)->lh_Tail, \
- (l)->lh_Tail=NULL,                         \
- (l)->lh_TailPred=(struct Node *)(l))
-
-/* shared */
 int cnt;
 int sigbit1,sigbit2;
 struct Task *parent;
-extern struct ExecBase *SysBase;
 
 #define STACKSIZE 4096
 
