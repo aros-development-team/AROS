@@ -131,7 +131,7 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *);
 					 0x0c0);
 #endif
 #warning Cannot set this flag since for some reason ClipBlit seems not to copy the right stuff. Also see below in the subroutine for EraseRect!!!
-//				CurVSprite->Flags |= BACKSAVED;
+				CurVSprite->Flags |= BACKSAVED;
 			}
 
 
