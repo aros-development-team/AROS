@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#include <stdio.h>
 #include "icon_intern.h"
 
 /*****************************************************************************
@@ -94,20 +95,15 @@
 
 	    if (((!strncmp(oldnameptr,"_of_",4)) && founddigit))
 	    {
-		/* Multiple copy */
-		strcpy (tempstr, "copy_");
-		tempstrptr += 5;
-
 		/* convert back from num to text, but first increase copycount */
 		copy_number ++;
 
-		/* Recursive function to copy the number into the string,
-		   returns numbertextlength, the length of the number in
-		   textform */
-
-		tempstrptr = WriteValue (copy_number, tempstrptr);
-
-		strcpy (tempstrptr, oldnameptr);
+		snprintf (tempstr,
+		    sizeof (tempstr),
+		    "copy_%d%s",
+		    copy_number,
+		    oldnameptr
+		);
 	    }
 	    else
 	    {
