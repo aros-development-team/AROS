@@ -76,7 +76,7 @@
 	if( ( system == TRUE && seg->seg_UC == CMD_SYSTEM )
          || ( system == FALSE && seg->seg_UC != CMD_SYSTEM ) )
 	{
-	    if( strnicmp( name, AROS_BSTR_ADDR(seg->seg_Name),
+	    if( strncasecmp( name, AROS_BSTR_ADDR(seg->seg_Name),
 		    AROS_BSTR_strlen(seg->seg_Name) ) == 0 )
 	    {
 		/* We have a matching segment */

@@ -53,7 +53,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    struct Process *pr = FindTask(NULL);
+    struct Process *pr = (struct Process *)FindTask(NULL);
     return BADDR(pr->pr_ConsoleTask);
 
     AROS_LIBFUNC_EXIT

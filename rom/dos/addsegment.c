@@ -66,7 +66,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    struct Segment *sptr, *next, *prev;
+    struct Segment *sptr;
     int namelen = strlen(name);
 
     /* Make sure type is valid */
@@ -84,7 +84,7 @@
 #ifdef AROS_FAST_BSTR
 	CopyMem(name, sptr->seg_Name, namelen);
 #else
-	Copymem(name, &sptr->seg_Name[1], namelen);
+	CopyMem(name, &sptr->seg_Name[1], namelen);
 	*sptr->seg_Name = namelen;
 #endif
 
@@ -96,5 +96,5 @@
 	return TRUE;
     }
     return FALSE;
-
+    AROS_LIBFUNC_EXIT
 } /* AddSegment */

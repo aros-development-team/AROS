@@ -56,7 +56,7 @@
     APTR old;
     struct Process *pr;
     
-    pr = FindTask(NULL);
+    pr = (struct Process *)FindTask(NULL);
     old = pr->pr_ConsoleTask;
     pr->pr_ConsoleTask = MKBADDR(handler);
 

@@ -62,7 +62,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    struct Process *pr = FindTask(NULL);
+    struct Process *pr = (struct Process *)FindTask(NULL);
     struct IOFileSys io,*iofs=&io;
     struct FileHandle *fh = BADDR(lock);	
     ULONG error = 0;
@@ -79,19 +79,19 @@
 
     if( (error = DoName(iofs, path, DOSBase)) == 0 )
     {
-	iofs->io_Command = FSA_READ_SOFTLINK;
+	iofs->IOFS.io_Command = FSA_READ_SOFTLINK;
 
 	iofs->io_Union.io_READ_SOFTLINK.io_Buffer = buffer;
     	iofs->io_Union.io_READ_SOFTLINK.io_Size   = size;
 
-    	DoIO(iofs);
+    	DoIO(&iofs->IOFS);
 
 	error = iofs->io_DosError;
 
-	iofs->io_Command = FSA_CLOSE;
-	DoIO(iofs);
+	iofs->IOFS.io_Command = FSA_CLOSE;
+	DoIO(&iofs->IOFS);
 
-	SetIoError( error );
+	SetIoErr( error );
     }
     return (!error);
 
