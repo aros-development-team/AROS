@@ -40,12 +40,15 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-#define SysBase      (LC_SYSBASE_FIELD(lh))
+#define sysBase      (LC_SYSBASE_FIELD(lh))
+
+struct ExecBase * SysBase;
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
     struct class_static_data *csd; /* GfxHidd static data */
-    
+
+    SysBase = sysBase;    
     EnterFunc(bug("GfxHIDD_Init()\n"));
 
     /*
@@ -58,7 +61,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     lh->hdg_csd = csd;
     if(csd)
     {
-        csd->sysbase = SysBase;
+        csd->sysbase = sysBase;
         
         D(bug("  Got csd\n"));
 
