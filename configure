@@ -2862,7 +2862,6 @@ echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
 	aros_host_arch="freebsd"
 	aros_host_cpu="i386"
 
-	        	aros_target_cc_includes="/usr/include"
 
 	        	case $host_os in
 	    freebsd[56]*)
@@ -7963,6 +7962,7 @@ esac
 aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
 aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/config"
 aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development/include/aros"
+aros_gendir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen"
 aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/include/aros"
 aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
 aros_scripts_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/scripts"
@@ -8222,7 +8222,30 @@ fi;
 echo "$as_me:$LINENO: checking for the target compiler's include path" >&5
 echo $ECHO_N "checking for the target compiler's include path... $ECHO_C" >&6
 if test "$aros_target_cc_includes" = "" ; then
+    #try to guess where the directory is
     aros_target_cc_includes=`dirname \`${aros_target_cc} -print-libgcc-file-name\``/include
+    if ! test -d ss$aros_target_cc_includes; then
+        #the directory doesn't exist, we need to do some more work
+        aros_target_cc_includes=${PWD}/${aros_gendir}/cc_include
+
+	headers="limits.h mmintrin.h stdbool.h syslimits.h float.h \
+	         stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
+		 zutil.h"
+
+        dirs=
+	for h in $headers; do
+	    deps=$(echo "#include <$h>" | \
+	           $aros_host_cc -E -M - 2>/dev/null | \
+		   sed 's/^.*://; s/\\$/ /g; s/[ \t]\+/ /g')
+
+	    for d in $deps; do
+	        dir=${aros_target_cc_includes}$(echo $(dirname $d) | \
+		                                sed -n "s,^.*/include\(/.\+\)\+,\1,p")
+		mkdir -p $dir
+		cp $d $dir
+	    done
+	done
+    fi
 fi
 echo "$as_me:$LINENO: result: $aros_target_cc_includes" >&5
 echo "${ECHO_T}$aros_target_cc_includes" >&6
