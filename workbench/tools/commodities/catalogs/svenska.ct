@@ -162,3 +162,92 @@ Systemets programstartare
 MSG_STARTMENU_CXDESCR
 Startar program från meny
 ; Program launch commodity
+;
+MSG_FKEY_CXNAME
+FKey
+; FKey
+;
+MSG_FKEY_CXTITLE
+Function To Keys:
+; Function To Keys:
+;
+MSG_FKEY_CXDESCR
+Attach Special Functions To Keys
+; Attach Special Functions To Keys
+;
+MSG_FKEY_WINTITLE
+FKey: Hot Key = <%s>
+; FKey: Hot Key = <%s>
+;
+MSG_FKEY_DEFINED_KEYS
+Defined Keys
+; Defined Keys
+;
+MSG_FKEY_NEW_KEY
+_New Key
+; _New Key
+;
+MSG_FKEY_DELETE_KEY
+_Delete Key
+; _Delete Key
+;
+MSG_FKEY_COMMAND
+Command
+; Command
+;
+MSG_FKEY_COMMAND_PARAMS
+Command Parameters
+; Command Parameters
+;
+MSG_FKEY_CMD_CYCLE_WIN
+Cycle Windows
+; Cycle Windows
+;
+MSG_FKEY_CMD_CYCLE_SCR
+Cycle Screens
+; Cycle Screens
+;
+MSG_FKEY_CMD_ENLARGE_WIN
+Enlarge Window
+; Enlarge Window
+;
+MSG_FKEY_CMD_SHRINK_WIN
+Shrink Window
+; Shrink Window
+;
+MSG_FKEY_CMD_TOGGLE_WIN_SIZE
+Toggle Window Size
+; Toggle Window Size
+;
+MSG_FKEY_CMD_INSERT_TEXT
+Insert Text
+; Insert Text
+;
+MSG_FKEY_CMD_RUN_PROG
+Run Program
+; Run Program
+;
+MSG_FKEY_CMD_RUN_AREXX
+Run Arexx Script
+; Run Arexx Script
+;
+MSG_FKEY_MEN_PROJECT
+Project
+; Project
+;
+MSG_FKEY_MEN_PROJECT_SAVE
+S\0Save Defined Keys
+; S\0Save Defined Keys
+;
+MSG_FKEY_MEN_PROJECT_HIDE
+H\0Hide
+; H\0Hide
+;
+MSG_FKEY_MEN_PROJECT_ICONIFY
+I\0Iconify
+; I\0Iconify
+;
+MSG_FKEY_MEN_PROJECT_QUIT
+Q\0Quit
+; Q\0Quit
+;
