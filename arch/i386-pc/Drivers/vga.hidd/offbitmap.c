@@ -182,7 +182,7 @@ static VOID offbitmap_dispose(Class *cl, Object *o, Msg msg)
 
 
 #define NUM_ROOT_METHODS   3
-#define NUM_BITMAP_METHODS 11
+#define NUM_BITMAP_METHODS 10
 
 
 Class *init_offbmclass(struct vga_staticdata *xsd)
@@ -204,7 +204,7 @@ Class *init_offbmclass(struct vga_staticdata *xsd)
     	{(IPTR (*)())MNAME(putpixel),		moHidd_BitMap_PutPixel},
     	{(IPTR (*)())MNAME(clear),		moHidd_BitMap_Clear},
     	{(IPTR (*)())MNAME(getpixel),		moHidd_BitMap_GetPixel},
-    	{(IPTR (*)())MNAME(drawpixel),		moHidd_BitMap_DrawPixel},
+/*    	{(IPTR (*)())MNAME(drawpixel),		moHidd_BitMap_DrawPixel},*/
     	{(IPTR (*)())MNAME(fillrect),		moHidd_BitMap_FillRect},
     	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
     	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
