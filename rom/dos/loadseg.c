@@ -79,7 +79,7 @@ q        IoErr() gives additional information in that case.
     FunctionArray[2] = __AROS_GETVECADDR(SysBase,35);
 
     /* Open the file */
-    file = Open (name,MODE_OLDFILE);
+    file = Open (name, FMF_READ);
 
     if (file)
     {

@@ -96,7 +96,7 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 	
 	/* Open the hidd prefsfile */
 	
-	fh = Open(HIDDPREFSFILE, MODE_OLDFILE);
+	fh = Open(HIDDPREFSFILE, FMF_READ);
 	if (!fh)
 	{
 	    success = FALSE;
