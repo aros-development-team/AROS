@@ -4,8 +4,8 @@
 
 To compile code for AROS, you only need the binary distribution and
 a C compiler. If you use Linux, you should have everything neccessary
-already, if you use Amiga, install the ADE development environment
-(see \lref{ADE}{ADE}).
+already, if you use Amiga, install the GeekGadgets development environment
+(see \lref{GG}{GG}).
 
 \section{Compiling}
 

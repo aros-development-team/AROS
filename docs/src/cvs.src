@@ -48,15 +48,15 @@ CVS server".
 
 \subsection{CVS on Amiga}
 
-First, you have to get CVS from ADE and install it. Then create a password
-as follows:
+First, you have to get CVS from GeekGadgets and install it. Then create a
+password as follows:
 
 Get the demo for AmiTCP 4.0 (\filename{AmiTCP-demo-40.lha}
 in \filename{comm/tcp}) from AmiNET
 (no need to install AmiTCP; just get the archive and extract the file
 \filename{AmiTCP} from it).
 You also must have
-\filename{ixemul.library} 45.0 (should come with ADE) and
+\filename{ixemul.library} 48.0 (should come with GeekGadgets) and
 \filename{ixnet.library} in \filename{LIBS:}. Then you can create
 your password with \filename{crypt} out of the \filename{AROS-crypt.lha}
 archive from AmiNET (in \filename{dev/misc}) like this:
