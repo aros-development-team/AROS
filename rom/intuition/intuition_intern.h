@@ -317,6 +317,12 @@ struct IntWindow
     WORD mousequeue;
     /* act. number of mousemove events sent to this window */
     WORD num_mouseevents;
+    /* max. number of repeated IDCMP_RAWKEY, IDCMP_VANILLAKEY and IDCMP_IDCMPUPDATE
+       messages to send to this window */
+    WORD repeatqueue;
+    /* act. number of repeated IDCMP_RAWKEY, IDCMP_VANILLAKEY and IDCMP_IDCMPUPDATE
+       messages sent to this window */
+    WORD num_repeatevents;
     
     WORD sizeimage_width;
     WORD sizeimage_height;
