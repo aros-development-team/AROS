@@ -59,7 +59,7 @@ exec-netbsd : $(OSGENDIR)/exec/init.o
 
 #MM- kernel-intuition-netbsd : intuition-$(GFXSYSTEM) kernel-intuition-linklib
 
-#MM- kernel-hidd-netbsd : kernel-hidd-linklib
+#MM- kernel-hidd-netbsd : kernel-hidd-linklib kernel-hidd-unix
 
 #MM- kernel-utility-netbsd : kernel-utility-linklib
 
@@ -71,7 +71,7 @@ exec-netbsd : $(OSGENDIR)/exec/init.o
 
 #MM- includes-netbsd : includes-copy includes-netbsd-i386
 
-#MM- workbench-netbsd : workbench-complete
+#MM- workbench-netbsd : workbench-complete workbench-hidd-unix
 
 #MM
 clean ::
