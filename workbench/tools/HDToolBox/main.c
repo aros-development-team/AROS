@@ -171,7 +171,7 @@ BOOL running=TRUE;
 					par_Init(0, current_pt);
 					RemoveGList(win, mainglist, ~0);
 					clearGadgets((struct ExtGadget *)mainglist, win, -1);
-					AddGList(win, pcpglist, 0, ~0, NULL);
+					AddGList(win, pcpglist, ~0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
 					break;
 				case ID_PCP_PARTITION :
@@ -194,7 +194,7 @@ BOOL running=TRUE;
 					det_Init(win, current_partition);
 					RemoveGList(win, pcpglist, ~0);
 					clearGadgets((struct ExtGadget *)pcpglist, win, -1);
-					AddGList(win, dglist, 0, ~0, NULL);
+					AddGList(win, dglist, ~0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
 					break;
 				case ID_PCP_STARTCYL :
@@ -286,14 +286,14 @@ BOOL running=TRUE;
 					}
 					RemoveGList(win, pcpglist, ~0);
 					clearGadgets((struct ExtGadget *)pcpglist, win, -1);
-					AddGList(win, mainglist, 0, ~0, NULL);
+					AddGList(win, mainglist, ~0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
 					break;
 				case ID_PCP_CANCEL :
 					pcp_Cancel(current_pt);
 					RemoveGList(win, pcpglist, ~0);
 					clearGadgets((struct ExtGadget *)pcpglist, win, -1);
-					AddGList(win, mainglist, 0, ~0, NULL);
+					AddGList(win, mainglist, ~0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
 					break;
 				case ID_DET_TYPELV :
@@ -413,7 +413,7 @@ BOOL running=TRUE;
 					det_Ok(current_partition);
 					RemoveGList(win, dglist, ~0);
 					clearGadgets((struct ExtGadget *)dglist, win, -1);
-					AddGList(win, pcpglist, 0, ~0, NULL);
+					AddGList(win, pcpglist, ~0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
 					viewPartitionData(mainwin, current_pt, current_partition);
 					break;
@@ -421,7 +421,7 @@ BOOL running=TRUE;
 					det_Cancel(current_partition);
 					RemoveGList(win, dglist, ~0);
 					clearGadgets((struct ExtGadget *)dglist, win, -1);
-					AddGList(win, pcpglist, 0, ~0, NULL);
+					AddGList(win, pcpglist, ~0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
 					viewPartitionData(mainwin, current_pt, current_partition);
 					break;
