@@ -912,6 +912,7 @@ VOID RefreshStrGadget(struct Gadget	*gad,
     {
 	if (gad->GadgetRender)
 	{
+	   #warning rom/intuition/strgadgets.c: really DrawBorder here?
   	    DrawBorder(rp,
     		    (struct Border *)gad->GadgetRender,
     		    gad->LeftEdge,
@@ -937,15 +938,11 @@ VOID UpdateStringInfo(struct Gadget *gad)
 
     if (gad->Activation & GACT_LONGINT)
     {
-    	/* If empty string, then strinfo->Longint is 0,
-    	** and without this test, strinfo->Buffer will contain "0"
-    	*/
-    	if (strinfo->NumChars != 0)
+   	if ((strinfo->NumChars != 0) || (strinfo->LongInt != 0))
     	{
             /* NOTE: The max number of chars written INCLUDES trailing \0 */
     	    snprintf(strinfo->Buffer, strinfo->MaxChars, "%d", strinfo->LongInt);
-	    
-    	}
+    	} 
     }
     
     strinfo->NumChars = strlen(strinfo->Buffer);
