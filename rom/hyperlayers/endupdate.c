@@ -68,18 +68,20 @@
   if (NULL != l->ClipRect)
   {
     if (IS_SMARTREFRESH(l))
-      CopyAndFreeClipRectsClipRects(l,l->ClipRect,l->cr2);
+      _CopyClipRectsToClipRects(l,l->ClipRect, l->cr2,0,FALSE);
     else
       _FreeClipRectListBM(l,l->ClipRect);
   }
       
   l->ClipRect = l->cr2;
+  l->cr2 = NULL;
 
   if (FALSE != flag)
   {
     /* the update was complete so I free the damage list */
     ClearRegion(l->DamageList);
-  } 
+    l->Flags &= ~LAYERREFRESH;
+  }
   
   UnlockLayer(l);
 

@@ -68,7 +68,24 @@
   LockLayer(0, l);
 
   l->cr2 = l->ClipRect;
-  l->ClipRect = CopyClipRectsInRegion(l, l->cr2, l->DamageList);
+
+  l->DamageList->bounds.MinX += l->bounds.MinX;
+  l->DamageList->bounds.MinY += l->bounds.MinY;
+  l->DamageList->bounds.MaxX += l->bounds.MinX;
+  l->DamageList->bounds.MaxY += l->bounds.MinY;
+
+#warning If the damagelist was correct (which it currently is not) then this following statement would not be necessary!
+  AndRegionRegion(l->VisibleRegion, l->DamageList);
+
+  l->ClipRect = CreateClipRectsFromRegion(l->DamageList,
+                                          l,
+                                          FALSE,
+                                          TRUE);
+
+  l->DamageList->bounds.MinX -= l->bounds.MinX;
+  l->DamageList->bounds.MinY -= l->bounds.MinY;
+  l->DamageList->bounds.MaxX -= l->bounds.MinX;
+  l->DamageList->bounds.MaxY -= l->bounds.MinY;
 
   /*
   ** Must not set flag before InstallClipRegion!!! Keep this order!!!
