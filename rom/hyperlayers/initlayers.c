@@ -70,6 +70,7 @@
     InitSemaphore(&li->Lock);
 
     li->fatten_count = -1;
-
+    li->Flags = LIFLG_SUPPORTS_OFFSCREEN_LAYERS;
+    
     AROS_LIBFUNC_EXIT
 } /* InitLayers */
