@@ -294,7 +294,7 @@
        * layer is to be visible
        */
       struct Layer * _l = l->back;
-
+      struct Layer * lparent = l->parent;
       /*
        * First tell all layers behind this layer to
        * back up their parts that the new layer will
@@ -307,8 +307,13 @@
         else
           ClearRegionRegion(l->shape, _l->VisibleRegion);
         
-        if (_l == parent)
-          break;
+        if (_l == lparent)
+        {
+          if (IS_VISIBLE(_l) || (NULL == lparent->parent))
+            break;
+          else
+            lparent = lparent->parent;
+        }
         _l = _l->back;
       }
 
