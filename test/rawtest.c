@@ -1,5 +1,6 @@
 #include <exec/types.h>
 #include <proto/dos.h>
+#include <string.h>
 #include <stdlib.h>
 
 #define MODE_CON 0

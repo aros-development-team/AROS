@@ -2,6 +2,9 @@
 #include <proto/rexxsyslib.h>
 #include <rexx/storage.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+
 struct Library *RexxSysBase;
 
 int main(void)
