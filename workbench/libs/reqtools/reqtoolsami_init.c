@@ -12,7 +12,7 @@
 #define REVISION 0
 
 #define NAME_STRING      "reqtools.library"
-#define VERSION_STRING   "$VER: reqtools 39.0 (20.04.2001)\r\n"
+#define VERSION_STRING   "$VER: reqtools 39.0 (16.06.2001)\r\n"
 
 extern const char name[];
 extern const char version[];
