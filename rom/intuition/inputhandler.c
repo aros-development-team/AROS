@@ -642,6 +642,15 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    
 		    ie->ie_X = iihdata->DeltaMouseX + iihdata->LastMouseX;
 		    ie->ie_Y = iihdata->DeltaMouseY + iihdata->LastMouseY;
+		    
+		    if (ie->ie_X < 0) ie->ie_X = 0;
+		    if (ie->ie_Y < 0) ie->ie_Y = 0;
+		    
+		    if (w)
+		    {
+		    	if (ie->ie_X >= w->WScreen->Width)  ie->ie_X = w->WScreen->Width - 1;
+			if (ie->ie_Y >= w->WScreen->Height) ie->ie_Y = w->WScreen->Height - 1;
+		    }
 		}
 		else
 		{
