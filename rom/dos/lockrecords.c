@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
-    Lang: english
+    Lang: English
 */
 #include "dos_intern.h"
 
@@ -24,11 +24,24 @@
 
 /*  FUNCTION
 
+    Lock several records at the same time. The timeout specified is applied
+    to each lock to attempt. The array of RecordLock:s is terminated with
+    an entry where rec_FH is equal to NULL.
+
     INPUTS
+
+    recArray  --  array of records to lock
+    timeout   --  maximum number of ticks to wait for a lock to be ready
 
     RESULT
 
+    Success/failure indication. In case of a success, all the record locks
+    are locked. In case of failure, no record locks are locked.
+
     NOTES
+
+    A set of records should always be locked in the same order so as to
+    reduce possiblities of deadlock.
 
     EXAMPLE
 
@@ -36,33 +49,36 @@
 
     SEE ALSO
 
+    UnLockRecords()
+
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
 
-  while (NULL != BADDR(recArray->rec_FH))
-  {
-    LONG success =
-      LockRecord(
-        recArray->rec_FH,
-        recArray->rec_Offset,
-        recArray->rec_Length,
-        recArray->rec_Mode,
-        timeout
-      );
-    if (success != DOSTRUE)
-      return success;
-    /* everything OK -> advance to the next entry */
-    recArray++;
-  }
-  return DOSTRUE;
+    struct RecordLock *rLock = recArray;
 
-  AROS_LIBFUNC_EXIT
+    while (BADDR(recArray->rec_FH) != NULL)
+    {
+	BPTR temp;
+
+	if (!LockRecord(recArray->rec_FH, recArray->rec_Offset,
+			recArray->rec_Length, recArray->rec_Mode, timeout))
+	{
+	    temp = recArray->rec_FH;
+	    UnLockRecords(rLock);
+	    recArray->rec_FH = temp;
+
+	    return DOSFALSE;
+	}
+
+	recArray++;
+    }
+
+    return DOSTRUE;
+
+    AROS_LIBFUNC_EXIT
 } /* LockRecords */
