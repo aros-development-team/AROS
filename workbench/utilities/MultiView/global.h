@@ -51,6 +51,10 @@
 #include <graphics/gfx.h>
 #endif
 
+#ifndef GRAPHICS_GFXBASE_H
+#include <graphics/gfxbase.h>
+#endif
+
 #ifndef GRAPHICS_CLIP_H
 #include <graphics/clip.h>
 #endif
@@ -151,6 +155,10 @@
 
 #ifndef PROTO_ASL_H
 #include <proto/asl.h>
+#endif
+
+#ifndef PROTO_DISKFONT_H
+#include <proto/diskfont.h>
 #endif
 
 /*********************************************************************************************/

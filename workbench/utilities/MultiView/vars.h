@@ -20,6 +20,7 @@ VAR struct Library		*LayersBase;
 VAR struct Library		*DataTypesBase;
 VAR struct Library		*AslBase;
 VAR struct Library		*GadToolsBase;
+VAR struct Library  	    	*DiskfontBase;
 
 VAR struct Screen		*scr;
 VAR struct Window		*win;
