@@ -1,0 +1,103 @@
+## version $VER: localeprefs.catalog 1.0 (23.02.2001)
+## codeset 0
+## language italiano
+;
+MSG_CANT_OPEN_LIB
+Impossibile aprire %s V%ld !\n
+;
+MSG_CANT_LOCK_SCR
+Impossibile bloccare lo schermo!
+;
+MSG_CANT_GET_DRI
+Impossibile aprire la struttura DrawInfo!
+;
+MSG_CANT_GET_VI
+Impossibile aprire la struttura VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Impossibile creare i Gadget!
+;
+MSG_CANT_CREATE_MENUS
+Impossibile creare i menu!
+;
+MSG_CANT_CREATE_WIN
+Impossibile aprire una finestra!
+;
+MSG_WINTITLE
+Preferenze internazionali (Locale)
+;
+MSG_MEN_PROJECT
+Progetto
+;
+MSG_MEN_PROJECT_OPEN
+O\0Apri...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Salva come...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Esci
+;
+MSG_MEN_EDIT
+Modifica
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Configurazione predefinita
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Ultima versione salvata
+;
+MSG_MEN_EDIT_RESTORE
+R\0Ripristina
+;
+MSG_MEN_SETTINGS
+Preferenze
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Crea le icone?
+;
+MSG_ASL_OPEN_TITLE
+Modifica preferenze
+;
+MSG_ASL_SAVE_TITLE
+Salva le preferenze
+;
+MSG_OK
+Ok
+;
+MSG_GAD_AVAIL_LANGUAGES
+Lingue disponibili
+;
+MSG_GAD_PREF_LANGUAGES
+Lingue preferite
+;
+MSG_GAD_CLEAR_LANGUAGES
+Rimuovi lingue
+;
+MSG_GAD_SAVE
+Salva
+;
+MSG_GAD_USE
+Usa
+;
+MSG_GAD_CANCEL
+Annulla
+;
+MSG_GAD_TAB_LANGUAGE
+Lingua
+;
+MSG_GAD_TAB_COUNTRY
+Stato
+;
+MSG_GAD_TAB_TIMEZONE
+Fuso orario
+;
+MSG_TIMEZONE_1HOUR
+Fuso orario: 1 Ora rispetto GMT
+;
+MSG_TIMEZONE_HOURS
+Fuso orario: %ld Ore rispetto GMT
+;
+MSG_TIMEZONE_HOURSMINS
+Fuso orario: %ld ore e %ld minuti rispetto GMT
+;

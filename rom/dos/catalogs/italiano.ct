@@ -1,0 +1,179 @@
+MSG_ERROR_NO_FREE_STORE (103//)
+memoria insufficiente
+;
+MSG_ERROR_TASK_TABLE_FULL (105//)
+tavola dei processi completa
+;
+MSG_ERROR_BAD_TEMPLATE (114//)
+template errato
+;
+MSG_ERROR_BAD_NUMBER (115//)
+numero errato
+;
+MSG_ERROR_REQUIRED_ARG_MISSING (116//)
+manca un argomento necessario
+;
+MSG_ERROR_KEY_NEEDS_ARG (117//)
+manca un valore dopo la keyword
+;
+MSG_ERROR_TOO_MANY_ARGS (118//)
+numero di argomenti errato
+;
+MSG_ERROR_UNMATCHED_QUOTES (119//)
+unmatched quotes
+;
+MSG_ERROR_LINE_TOO_LONG (120//)
+linea degli argomenti invalida o troppo lunga
+;
+MSG_ERROR_FILE_NOT_OBJECT (121//)
+il file non è eseguibile
+;
+MSG_ERROR_INVALID_RESIDENT_LIBRARY (122//)
+libreria residente invalida
+;
+MSG_ERROR_NO_DEFAULT_DIR (201//)
+errore 201
+;
+MSG_ERROR_OBJECT_IN_USE (202//)
+l'oggetto è in uso
+;
+MSG_ERROR_OBJECT_EXISTS (203//)
+l'oggetto esiste già
+;
+MSG_ERROR_DIR_NOT_FOUND (204//)
+directory non trovata
+;
+MSG_ERROR_OBJECT_NOT_FOUND (205//)
+oggetto non trovato
+;
+MSG_ERROR_BAD_STREAM_NAME (206//)
+descrizione della finestra invalida
+;
+MSG_ERROR_OBJECT_TOO_LARGE (207//)
+oggetto troppo grande
+;
+MSG_ERROR_ACTION_NOT_KNOWN (209//)
+tipo di azione sconosciuto del filesystem
+;
+MSG_ERROR_INVALID_COMPONENT_NAME (210//)
+nome dell'oggetto invalido
+;
+MSG_ERROR_INVALID_LOCK (211//)
+blocco dell'oggetto invalido
+;
+MSG_ERROR_OBJECT_WRONG_TYPE (212//)
+L'oggetto non è della tipologia richiesta
+;
+MSG_ERROR_DISK_NOT_VALIDATED (213//)
+disco non convalidato
+;
+MSG_ERROR_DISK_WRITE_PROTECTED (214//)
+disco protetto dalla scrittura
+;
+MSG_ERROR_RENAME_ACROSS_DEVICES (215//)
+tentativo di rinominazione invalida
+;
+MSG_ERROR_DIRECTORY_NOT_EMPTY (216//)
+la directory non è vuota
+;
+MSG_ERROR_TOO_MANY_LEVELS (217//)
+troppi livelli
+;
+MSG_ERROR_DEVICE_NOT_MOUNTED (218//)
+dispositivo (o volume) non montato
+;
+MSG_ERROR_SEEK_ERROR (219//)
+ricerca fallita
+;
+MSG_ERROR_COMMENT_TOO_BIG (220//)
+commento troppo lungo
+;
+MSG_ERROR_DISK_FULL (221//)
+il disco è pieno
+;
+MSG_ERROR_DELETE_PROTECTED (222//)
+oggetto protetto dalla cancellazione
+;
+MSG_ERROR_WRITE_PROTECTED (223//)
+file protetto dalla scrittura
+;
+MSG_ERROR_READ_PROTECTED (224//)
+file protetto dalla lettura
+;
+MSG_ERROR_NOT_A_DOS_DISK (225//)
+disco DOS non valido
+;
+MSG_ERROR_NO_DISK (226//)
+manca il disco
+;
+MSG_ERROR_NO_MORE_ENTRIES (232//)
+la directory è piena
+;
+MSG_ERROR_IS_SOFT_LINK (233//)
+l'oggetto è un collegamento semplice
+;
+MSG_ERROR_OBJECT_LINKED (234//)
+l'oggetto è collegato
+;
+MSG_ERROR_BAD_HUNK (235//)
+bad loadfile hunk
+;
+MSG_ERROR_NOT_IMPLEMENTED (236//)
+funzione mancante
+;
+MSG_ERROR_RECORD_NOT_LOCKED (240//)
+record non bloccato
+;
+MSG_ERROR_LOCK_COLLISION (241//)
+collisione del blocco del record
+;
+MSG_ERROR_LOCK_TIMEOUT (242//)
+tempo esaurito per blocco record
+;
+MSG_ERROR_UNLOCK_ERROR (243//)
+errore nello sblocco del record
+;
+MSG_ERROR_BUFFER_OVERFLOW (303//)
+buffer overflow
+;
+MSG_ERROR_BREAK (304//)
+***Interruzione
+;
+MSG_ERROR_NOT_EXECUTABLE (305//)
+file non eseguibile
+;
+MSG_STRING_INSERT_VOLUME (4000//)
+Prego inserire volume\n%s\nin un drive qualsiasi
+;
+MSG_STRING_VOLUME_FULL (4001//)
+Il volume %s è pieno
+;
+MSG_STRING_NO_DISK (4002//)
+Disco non presente nel drive %s
+;
+MSG_STRING_NO_DOS_DISK (4003//)
+Disco non-DOS nel drive %s
+;
+MSG_STRING_MUST_REPLACE (4004//)
+È NECESSARIO sostituire il volume\n\
+%s\n\
+nel drive %s
+;
+MSG_STRING_RETRY (5000//)
+Riprova
+;
+MSG_STRING_CANCEL (5001//)
+Annulla
+;
+MSG_STRING_REQUESTTITLE (5002//)
+Richiesta di sistema
+;
+MSG_ERROR_NO_MATCHING_ELSEENDIF (10000//)
+manca corrispettivo Else o EndIf
+;
+MSG_ERROR_SCRIPT_ONLY (10001//)
+questo comando può essere usato solo in file di comando
+;
+MSG_ERROR_UNKNOWN (100//)
+errore indefinito
+;

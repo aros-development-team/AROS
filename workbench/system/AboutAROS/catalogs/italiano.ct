@@ -1,0 +1,63 @@
+## version $VER: AboutAROS.catalog 1.0 (12.8.2003)
+## language deutsch
+## codeset 0
+;
+MSG_TITLE
+Informazioni su AROS
+; About AROS
+;
+;MSG_PERSONAL_BUILD
+;** Personal Build
+; Personal Build
+;
+;MSG_NIGHTLY_BUILD
+;** Nightly Build
+; Nightly Build
+;
+;MSG_SNAPSHOT
+;** Snapshot
+; Snapshot
+;
+;MSG_MILESTONE
+;** Milestone
+; Milestone
+;
+;MSG_RELEASE
+;** Release
+; Release
+;
+MSG_COPYRIGHT
+Copyright © 1995-2003, The AROS Development Team. Tutti i diritti riservati.
+; Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+;
+MSG_LICENSE_1
+Rilasciato secondo i termini della
+; Released under the terms of the
+;
+MSG_LICENSE_2
+AROS Public License
+; AROS Public License
+;
+MSG_LICENSE_3
+, versione 1.1.
+; , version 1.1.
+;
+MSG_MORE_INFORMATION
+Visitare il sito http://www.aros.org/ per maggiori informazioni.
+; Please visit http://www.aros.org/ for more information.
+;
+MSG_PAGE_AUTHORS
+Autori
+; Authors
+;
+MSG_PAGE_SPONSORS
+Sponsor
+; Sponsors
+;
+MSG_PAGE_ACKNOWLEDGEMENTS
+Ringraziamenti
+; Acknowledgements
+;
+MSG_SECTION_TOOLS
+Strumenti
+; Tools

@@ -1,0 +1,29 @@
+## version $VER: wanderer.catalog 1.0 (14.02.2004)
+## language italiano
+## codeset 0
+;
+;
+MSG_NAME
+Preferenze di Wanderer
+; Wanderer Preferences
+;
+MSG_BACKGROUNDS
+Sfondi
+; Backgrounds
+;
+MSG_BACKGROUND_WORKBENCH
+Workbench
+; Workbench
+;
+MSG_BACKGROUND_DRAWERS
+Directory
+; Drawers
+;
+MSG_SELECT_WORKBENCH_BACKGROUND
+Scegli uno sfondo per il Workbench
+; Select Workbench Background
+;
+MSG_SELECT_DRAWER_BACKGROUND
+Scegli uno sfondo per le directory
+; Select Drawer Background
+;

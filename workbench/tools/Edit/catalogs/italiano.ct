@@ -1,0 +1,336 @@
+## version $VER: JanoEditor.catalog 1.0 (1.10.2000).
+## codeset 0
+## language italiano
+;
+;
+; *****************************
+;  NewMenu strings
+; *****************************
+;
+; Project Menu
+;
+MSG_PROJECTTITLE
+Progetto
+;
+MSG_NEWEMPTYFILE
+Nuovo
+;
+MSG_OPENNEWFILE
+Apri...
+;
+MSG_LOADINPRJ
+Carica...
+;
+MSG_SAVEFILE
+Salva
+;
+MSG_SAVEFILEAS
+Salva come...
+;
+MSG_SAVECHANGES
+Salva modifiche
+;
+MSG_PRINTFILE
+Stampa
+;
+MSG_INFORMATION
+Informazioni...
+;
+MSG_CLOSE
+Chiudi
+;
+MSG_QUIT
+Esci
+;
+; Edit Menu
+;
+MSG_EDITTITLE
+Modifica
+;
+MSG_CUT
+Taglia
+;
+MSG_COPY
+Copia
+;
+MSG_PASTE
+Incolla
+;
+MSG_MARK
+Seleziona paragrafo
+;
+MSG_MARKCOLUMN
+Seleziona colonna
+;
+MSG_SELECTALL
+Seleziona tutto
+;
+MSG_DELLINE
+Elimina riga
+;
+MSG_SUBTOOLS
+Strumenti
+;
+MSG_INDENT
+Aggiungi tabulazione
+;
+MSG_UNINDENT
+Elimina tabulazione
+;
+MSG_UPPERCASE
+Maiuscolo
+;
+MSG_LOWERCASE
+Minuscolo
+;
+MSG_TOGGLECASE
+Inverti Mai./Min.
+;
+MSG_INSERTFILE
+Inserisci file...
+;
+MSG_UNDO
+Annulla
+;
+MSG_REDO
+Ripeti
+;
+; Search Menu
+;
+MSG_SEARCHTITLE
+Cerca
+;
+MSG_FIND
+Trova...
+;
+MSG_REPLACE
+Sostituisci...
+;
+MSG_SUBFIND
+Cerca
+;
+MSG_NEXTFIND
+Prossimo
+;
+MSG_PREVFIND
+Precedente
+;
+MSG_NEXTREPLACE
+Reinserisci
+;
+MSG_PREVPAGE
+Pagina precedente
+;
+MSG_NEXTPAGE
+Pagina successiva
+;
+MSG_GOTOLINE
+Vai alla riga...
+;
+MSG_FINDBRACKET
+Verifica parentesi
+;
+MSG_LASTMODIF
+Ultima modifica
+;
+MSG_BEGOFLINE
+Inizio riga
+;
+MSG_ENDOFLINE
+Fine riga
+;
+; Macro Menu
+;
+MSG_MACROTITLE
+Macro
+;
+MSG_STARTRECORD
+Avvia registrazione
+;
+MSG_STOPRECORD
+Fine registrazione
+;
+MSG_PLAYMACRO
+Esegui macro
+;
+MSG_REPEATMACRO
+Ripeti macro...
+;
+; Environment Menu
+;
+MSG_ENVTITLE
+Ambiente
+;
+MSG_SCRMODE
+Modalità schermo...
+;
+MSG_FONTS
+Font...
+;
+MSG_PREFS
+Preferenze...
+;
+MSG_LOADPREFS
+Carica preferenze...
+;
+MSG_SAVEPREFS
+Salva preferenze
+;
+MSG_SAVEPREFSAS
+Salva preferenze come...
+;
+;
+;
+; *****************************
+;  Possible error messages
+; *****************************
+;
+ERR_BADOS
+Sistema obsoleto. Aggiorna a nuova versione.
+;
+ERR_NOASLREQ
+Impossibile aprire finestra dialogo file!
+;
+ERR_NOMEM
+Non c'è abbastanza memoria!
+;
+ERR_NOGUI
+Impossibile aprire l'interfaccia utente!
+;
+ERR_NONAME
+Senza Titolo
+; Not really an error but simplify translation
+;
+ERR_WRITECLIP
+Impossibile scrivere sul documento!
+;
+ERR_OPENCLIP
+Impossibile aprire il documento!
+;
+ERR_LOADFILE
+Impossibile accedere al file!
+;
+ERR_NOTXTINCLIP
+Il documento è vuoto!
+;
+ERR_WRONG_TYPE
+L'oggetto è una directory!
+;
+ERR_READCLIP
+Lettura incompleta del docuemnto. Forse manca la memoria.
+;
+ERR_NOBRACKET
+Nessuna parentesi sotto il cursore!
+;
+ERR_NOT_FOUND
+Stringa `%s' irreperibile.
+;
+ERR_LOADFONT
+Impossibile aprire il font selezionato!
+;
+ERR_NOPREFEDITOR
+Impossibile trovare l'editor delle preferenze!
+;
+ERR_BADPREFSFILE
+File preferenze invalido.
+;
+ERR_FILEMODIFIED
+%s è stato modificato.\nChiudere lo stesso il documento?
+;
+ERR_SLC
+Salva|Chiudi|Annulla
+;
+ERR_NOSEARCHTEXT
+Non c'è nessun testo da cercare!
+;
+ERR_FILEEXISTS
+Questo file esiste già. Sovrascrivere il documento?
+;
+ERR_OC
+Sì|No!
+;
+WARN_RECORD
+Registrazione della macro in corso...
+;
+WARN_RECORDED
+Macro registrata
+;
+WARN_REC
+[ENR]
+;
+;
+; *************************************
+;  Information window related messages
+; *************************************
+;
+MSG_ABOUT
+Informazioni
+;
+MSG_FORMATINFO
+%s per %s\nConçu di T.Pierron et C.Guillaume © 2000\n\nDocumento attuale : %s\nLunghezza: %ld %s, %ld %s.
+;
+MSG_CONTINUE
+Continua
+;
+MSG_BYTE
+carattere
+;
+MSG_BYTES
+caratteri
+;
+MSG_LINE
+linea
+;
+MSG_LINES
+linee
+;
+;
+; *************************
+;  Search & replace window
+; *************************
+;
+MSG_SEARCHWINDOW
+Ricerca del testo
+;
+MSG_REPLACEWINDOW
+Trova e sostituisci
+;
+MSG_SEARCHSTRING
+Trova:
+;
+MSG_REPLACESTRING
+Sostituisci con:
+;
+MSG_OPTCASE
+Modi conformi
+;
+MSG_OPTWORDS
+Parola intera
+;
+MSG_BUTTONREPLACE
+_Rimpiazza
+;
+MSG_BUTTONREPALL
+Rimpi_azza tutti
+;
+MSG_BUTTONSEARCH
+Cerca
+;
+MSG_NEXTSEARCH
+_Precedente
+;
+MSG_USESEARCH
+_Usa
+;
+MSG_CANCELSEARCH
+Annulla
+;
+MSG_REPLACEALL
+Sostituzione di %ld %s con `%s'.
+;
+MSG_OCCURENCY
+occorrenza
+;
+MSG_OCCURENCIES
+occorrenze
+;

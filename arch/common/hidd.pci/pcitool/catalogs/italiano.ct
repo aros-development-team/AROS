@@ -1,0 +1,157 @@
+## version $VER: pcitool.catalog 1.1 (6.2.2004)
+## language italiano
+## codeset 0
+;
+;
+MSG_TITLE
+PCI Tool
+; PCI Tool
+;
+MSG_WINTITLE
+PCITool
+; PCI Tool
+;
+MSG_DESCRIPTION
+Rilevazione e gestione schede PCI
+; PCI querying and managment
+;
+MSG_ERROR_LOCALE
+Impossibile aprire impostazioni locali
+; Can't open locale
+;
+MSG_ERROR_OK
+OK
+; Ok
+;
+MSG_ERROR_HEADER
+ERRORE
+; ERROR
+;
+MSG_DRIVER_INFO
+Informazioni driver
+;Driver info
+;
+MSG_DRIVER_NAME
+Nome driver:
+;Driver name:
+;
+MSG_DIRECT_BUS
+Bus diretto:
+;Direct bus:
+;
+MSG_HARDWARE_INFO
+Info sull'hardware:
+;Hardware info:
+;
+MSG_PCI_DEVICE_INFO
+Info su dispositivo PCI
+;PCI device info
+;
+MSG_DEVICE_DESCRIPTION
+Descrizione:
+;Description:
+;
+MSG_VENDORNAME
+ID produttore:
+;VendorID:
+;
+MSG_PRODUCTNAME
+Nome:
+;ProductID:
+;
+MSG_VENDORID
+ID produttore:
+;VendorID:
+;
+MSG_PRODUCTID
+ID prodotto:
+;ProductID:
+;
+MSG_REVISIONID
+Revisione:
+;RevisionID:
+;
+MSG_INTERFACE
+Interfaccia:
+;Interface:
+;
+MSG_CLASS
+Classe:
+;Class:
+;
+MSG_SUBCLASS
+Sottoclasse:
+;Subclass:
+;
+MSG_IRQ
+IRQ:
+;IRQ:
+;
+MSG_ROM_BASE
+ROM base:
+;ROM Base
+;
+MSG_ROM_SIZE
+dimens. ROM:
+;ROM Size:
+;
+MSG_BRIDGE
+Bridge per bus %d (ISA %sattivo, VGA %sattivo)
+;Bridge handles bus %d (ISA %senabled, VGA %senabled)
+;
+MSG_MEMORY_RANGE
+Memoria usata da %08x a %08x
+;Memory ranges from %08x to %08x
+;
+MSG_PREFETCHABLE_MEMORY
+Memoria prefetch da %08x a %08x
+;Prefetchable ranges memory from %08x to %08x
+;
+MSG_IO_RANGE
+I/O da %04x a %04x
+;IO ranges from %04x to %04x
+;
+MSG_IO_MSG
+IO: %s, MEM: %s, Master: %s, PaletteSnoop: %s, 66MHz abilitata: %s
+;IO: %s, MEM: %s, Master: %s, PaletteSnoop: %s, 66MHz capable: %s
+;
+MSG_IO
+I/O
+;I/O
+;
+MSG_MEMORY
+memoria
+;Memory
+;
+MSG_PREFETCHABLE
+Prefetch
+;Prefetchable
+;
+MSG_YES
+sì
+;yes
+;
+MSG_NO
+no
+;no
+;
+MSG_NA
+N/D
+;N/A
+;
+MSG_NOT
+no
+;not
+;
+MSG_SIZE4
+%s%s a 0x04x (dim. 0x%04x)
+;%s%s at 0x%04x (size 0x%04x)
+;
+MSG_SIZE8
+%s%s a 0x08x (dim. 0x%08x)
+;%s%s at 0x%08x (size 0x%08x)
+;
+MSG_UNUSED
+--inutile--
+;--unused--
+;

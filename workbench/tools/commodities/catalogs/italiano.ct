@@ -1,0 +1,262 @@
+## version $VER: Commodities.catalog 1.0 (14.10.2001)
+## language français
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Impossibile aprire %s V%ld !\n
+;
+MSG_CANT_LOCK_SCR
+Impossibile accedere allo schermo pubblico!
+;
+MSG_CANT_GET_DRI
+Impossibile aprire la struttura DrawInfo!
+;
+MSG_CANT_GET_VI
+Impossibile aprire la struttura VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Impossibile creare i gadget!
+;
+MSG_CANT_CREATE_MENUS
+Impossibile creare i menu!
+;
+MSG_CANT_LAYOUT_MENUS
+Impossibile disegnare i menu!\n
+; Can't layout menus!\n
+;
+MSG_CANT_CREATE_WIN
+Impossibile creare la finestra!\n
+;
+MSG_CANT_ALLOCATE_MEM
+Impossibile allocare la memoria!\n
+; Can't allocate application memory!\n
+;
+MSG_CANT_CREATE_MSGPORT
+Impossibile creare porta messaggio!\n
+; Can't create message port!\n
+;
+MSG_CANT_CREATE_BROKER
+Impossibile creare oggetto CxBroker!\n
+; Can't create CxBroker object!\n
+;
+MSG_CANT_CREATE_CUSTOM
+Impossibile creare oggetto CxCustom!\n
+; Can't create CxCustom object!\n
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_MEN_PROJECT
+Progetto
+; Project
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Esci
+; Q\0Quit
+;
+MSG_EXCHANGE_CXNAME
+Exchange
+; Exchange
+;
+MSG_EXCHANGE_CXTITLE
+Commodities Exchange
+; Commodities Exchange
+;
+MSG_EXCHANGE_CXDESCR
+Controlla commodity di sistema
+; Controls system commodities
+;
+MSG_EXCHANGE_WINTITLE
+Exchange
+; Exchange
+;
+MSG_EXCHANGE_LISTVIEW
+Commodity disponibili
+; Available commodities
+;
+MSG_EXCHANGE_INFO
+Informazioni
+; Information
+;
+MSG_EXCHANGE_GAD_SHOW
+Mostra
+; Show
+;
+MSG_EXCHANGE_GAD_HIDE
+Nascondi
+; Hide
+;
+MSG_EXCHANGE_GAD_REMOVE
+Rimuovi
+; Remove
+;
+MSG_EXCHANGE_CYCLE_ACTIVE
+Attiva
+; Active
+;
+MSG_EXCHANGE_CYCLE_INACTIVE
+Disattiva
+; Inactive
+;
+MSG_BLANKER_CXNAME
+Blanker
+; Blanker
+;
+MSG_BLANKER_CXTITLE
+Salvaschermo
+; System Screen Blanker
+;
+MSG_BLANKER_CXDESCR
+Salva lo schermo quando il sistema è a riposo
+; Blanks screen when system inactive
+;
+MSG_CLICK2FNT_CXNAME
+ClickToFront
+; ClickToFront
+;
+MSG_CLICK2FNT_CXTITLE
+Porta avanti
+; Click To Front Utility
+;
+MSG_CLICK2FNT_CXDESCR
+Porta in primo piano la finestra su cui si clicca
+; Click windows to front
+;
+MSG_OPAQUE_CXNAME
+Opaque
+; Opaque
+;
+MSG_OPAQUE_CXTITLE
+Finestre complete
+; Opaque windows
+;
+MSG_OPAQUE_CXDESCR
+Sposta le finestre con tutto il contenuto
+; Realtime moving of windows
+;
+MSG_AUTOPOINT_CXNAME
+AutoPoint
+; AutoPoint
+;
+MSG_AUTOPOINT_CXTITLE
+Auto-focus
+; Automatic window activator
+;
+MSG_AUTOPOINT_CXDESCR
+Attiva la finestra su cui si trova il puntatore
+; Activates the window under the mouse
+;
+MSG_STARTMENU_CXNAME
+StartMenu
+; StartMenu
+;
+MSG_STARTMENU_CXTITLE
+Esecutore di applicazioni
+; System Program Starter
+;
+MSG_STARTMENU_CXDESCR
+Lancia le applicazioni preferite 
+; Program launch commodity
+;
+MSG_FKEY_CXNAME
+FKey
+; FKey
+;
+MSG_FKEY_CXTITLE
+Tasti funzione:
+; Function To Keys:
+;
+MSG_FKEY_CXDESCR
+Modifica le funzioni dei tasti
+; Attach Special Functions To Keys
+;
+MSG_FKEY_WINTITLE
+FKey: Hot Key = <%s>
+; FKey: Hot Key = <%s>
+;
+MSG_FKEY_DEFINED_KEYS
+Tasti definiti
+; Defined Keys
+;
+MSG_FKEY_NEW_KEY
+_Nuovo tasto
+; _New Key
+;
+MSG_FKEY_DELETE_KEY
+_Elimina tasto
+; _Delete Key
+;
+MSG_FKEY_COMMAND
+Comando
+; Command
+;
+MSG_FKEY_COMMAND_PARAMS
+Parametri del comando
+; Command Parameters
+;
+MSG_FKEY_CMD_CYCLE_WIN
+Mostra ciclicamente le finestre
+; Cycle Windows
+;
+MSG_FKEY_CMD_CYCLE_SCR
+Mostra ciclicamente gli schermi
+; Cycle Screens
+;
+MSG_FKEY_CMD_ENLARGE_WIN
+Allarga la finestra
+; Enlarge Window
+;
+MSG_FKEY_CMD_SHRINK_WIN
+Comprimi la finestra
+; Shrink Window
+;
+MSG_FKEY_CMD_TOGGLE_WIN_SIZE
+Modifica la dimensione della finestra
+; Toggle Window Size
+;
+MSG_FKEY_CMD_INSERT_TEXT
+Inserisci testo
+; Insert Text
+;
+MSG_FKEY_CMD_RUN_PROG
+Lancia applicazione
+; Run Program
+;
+MSG_FKEY_CMD_RUN_AREXX
+Lancia script Arexx
+; Run Arexx Script
+;
+MSG_FKEY_MEN_PROJECT
+Progetto
+; Project
+;
+MSG_FKEY_MEN_PROJECT_SAVE
+S\0Salva i tasti definiti
+; S\0Save Defined Keys
+;
+MSG_FKEY_MEN_PROJECT_HIDE
+C\0Nascondi
+; H\0Hide
+;
+MSG_FKEY_MEN_PROJECT_ICONIFY
+I\0Riduci a icona
+; I\0Iconify
+;
+MSG_FKEY_MEN_PROJECT_QUIT
+Q\0Esci
+; Q\0Quit
+;
+MSG_NOCAPSLOCK_CXNAME
+NoCapsLock
+; NoCapsLock
+;
+MSG_NOCAPSLOCK_CXTITLE
+Elimina blocca maiuscole:
+; NoCapsLock:
+;
+MSG_NOCAPSLOCK_CXDESCR
+Disattiva il tasto BlocMaiusc
+; Renders the CAPS LOCK key ineffective
+;
