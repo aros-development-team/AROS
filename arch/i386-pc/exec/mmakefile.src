@@ -17,7 +17,7 @@ INCFILES	:= \
 
 FILES		:= \
 	cause disable enable switch preparecontext coldreboot stackswap rawputchar \
-	debug initresident allocmem freemem
+	debug initresident
 	
 COREFILES	:= \
 	init traps ints execstubs screen cpu hidds
