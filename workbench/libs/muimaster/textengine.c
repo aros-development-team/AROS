@@ -17,6 +17,7 @@
 #include <clib/alib_protos.h>
 #include <intuition/screens.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
@@ -312,7 +313,7 @@ static CONST_STRPTR parse_escape_code (ZTextLine *ztl, struct zune_context *zc, 
 	    if (t == NULL)
 		break;
 	    *t = 0;
-	    if (sscanf(s, "%lx", &tmp) == 1)
+	    if (HexToLong(s,&tmp) != -1)
 	    {
 		li = (struct ListImage *)tmp;
 		D(bug("listimage = %lx\n", li));
@@ -339,7 +340,7 @@ static CONST_STRPTR parse_escape_code (ZTextLine *ztl, struct zune_context *zc, 
 	    if (t == NULL)
 		break;
 	    *t = 0;
-	    if (sscanf(s, "%ld", &pen) == 1)
+	    if (StrToLong(s,&pen) != -1)
 	    {
 		D(bug("pen = %ld\n", pen));
 		zc->pen = pen;
