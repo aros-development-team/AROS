@@ -18,12 +18,6 @@
 #include <hardware/acpi/acpi.h>
 #include <hardware/pic/pic.h>
 
-/* ADJUSTABLE SETTINGS --------------- */
-
-#define     MAX_CPU         32
-
-/* ----------------------------------- */
-
 /* ALL supported processor families should have an entry here (for future compatability - DO NOT CHANGE THE ORDER!) */
 
 enum supported_CPU_families 
