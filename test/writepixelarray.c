@@ -251,13 +251,15 @@ static void action(void)
 
 /***********************************************************************************/
 
-void main(void)
+int main(void)
 {
     openlibs();
     getvisual();
     makewin();
     action();
     cleanup(0);
+
+    return 0; /* keep compiler happy */
 }
 
 /***********************************************************************************/

@@ -151,5 +151,7 @@ int main (void)
 #if REMOVE_DUMMY
     RemoveDummy();
 #endif
+
+    return 0;
 }
 

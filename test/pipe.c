@@ -40,7 +40,7 @@ static BPTR DupFH(BPTR fh, LONG mode)
     return ret;
 }
 
-void main(void)
+int main(void)
 {
     struct FileHandle *fhin, *fhout;
     struct MsgPort *port;
@@ -70,4 +70,6 @@ void main(void)
 
     Close(fhout);
     DeletePort(port);
+
+    return 0;
 }
