@@ -605,13 +605,15 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 	** was earlier
 	*/
 
+#if 0
 	if (muikey != MUIKEY_NONE)
 	{
 	    res = DoMethod(data->wd_ActiveObject->obj, MUIM_HandleEvent, (IPTR)event, muikey);
 	    if (res & MUI_EventHandlerRC_Eat) return;
 	}
+#endif
 
-/*	for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+	for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
 	{
 	    ehn = (struct MUI_EventHandlerNode *)mn;
 
@@ -622,7 +624,7 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 		if (res & MUI_EventHandlerRC_Eat)
 		    return;
 	    }
-	}*/
+	}
     }
 
     /* try DefaultObject */

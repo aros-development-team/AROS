@@ -156,9 +156,6 @@ void main(void)
     {
 	ULONG sigs = 0;
 
-    	printf("Application Object created at 0x%lx\n",app);
-    	printf("Window Object created at 0x%lx\n",wnd);
-
     	DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     	DoMethod(second_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, second_wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
     	DoMethod(open_button, MUIM_Notify, MUIA_Pressed, FALSE, second_wnd, 3,  MUIM_Set, MUIA_Window_Open, TRUE);

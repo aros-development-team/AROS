@@ -868,26 +868,27 @@ int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y, struct ZTex
     *offset_ptr = 0;
     *len_ptr = 0;
 
-    for (chunk = (ZTextChunk*)&line->chunklist.mlh_Head; chunk->node.mln_Succ; chunk = (ZTextChunk*)chunk->node.mln_Succ)
+    for (chunk = (ZTextChunk*)line->chunklist.mlh_Head; chunk->node.mln_Succ; chunk = (ZTextChunk*)chunk->node.mln_Succ)
     {
-    	int len = strlen(chunk->str);
-    	if (len > y)
+    	int len = chunk->str?(strlen(chunk->str)):0;
+    	if (len >= x)
     	{
     	    break;
     	} else
     	{
-	    y -= len;
+	    x -= len;
+	    *offset_ptr += chunk->cwidth;
     	}
     }
 
-    if (line->node.mln_Succ)
+    if (chunk->node.mln_Succ)
     {
 	struct RastPort rp;
 	*chunk_ptr = chunk;
 	InitRastPort(&rp);
 	SetFont(&rp,_font(obj));
-	*len_ptr = y;
-	*offset_ptr = TextLength(&rp,chunk->str,y);
+	*len_ptr = x;
+	*offset_ptr += TextLength(&rp,chunk->str,x);
     }
 
     return 1;
