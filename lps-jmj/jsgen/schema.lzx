@@ -1,0 +1,46 @@
+<!-- Tests XML generation -->
+<canvas>
+    <include href="redmond/redmond.lzx" />
+  <!-- String, Number, Event, and ID attributes -->
+  <window id="id" title="Title" x="5" y="10" other="5" onclick="f()"/>
+
+  <!-- Child views -->
+  <view>
+    <view id="a">
+       <view id="aa"/>
+    </view>
+    <view id="b"/>
+  </view>
+
+  <!-- An entity with no attributes? -->
+  <view/>
+  <!-- Property and method elements -->
+  <view>
+    <property name="p" value="1"/>
+    <method name="f">return 1;</method>
+    <method name="g" args="a, b">return a+b;</method>
+  </view>
+
+  <!-- All the view types -->
+  <canvas/>
+  <button/>
+  <dialog title="Dialog"/>
+  <gridView/>
+  <listView/>
+  <menu/>
+  <menubar/>
+  <menuitem/>
+  <tableView/>
+  <text/>
+  <view/>
+  <window/>
+
+  <data>
+    <record a="abc" b="def"/>
+  </data>
+</canvas>
+<!-- * X_LZ_COPYRIGHT_BEGIN ***************************************************
+* Copyright 2001-2004 Laszlo Systems, Inc.  All Rights Reserved.              *
+* Use is subject to license terms.                                            *
+* X_LZ_COPYRIGHT_END ****************************************************** -->
+<!-- @LZX_VERSION@                                                         -->
