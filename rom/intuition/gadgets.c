@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Common routines for Gadgets
@@ -21,7 +21,8 @@
 #define EG(o) ((struct ExtGadget *)o)
 #define IM(o) ((struct Image *)o)
 
-/* print the label of a gadget object */
+/* print the label of a gadget object
+   FIXME: Has to be reworked! */
 void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg)
 {
     struct RastPort *rp = msg->gpr_RPort;
@@ -39,8 +40,9 @@ void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg)
 		   strlen(EG(o)->GadgetText->IText), &te);
         PrintIText(rp,
 	    EG(o)->GadgetText,
-	    container.Left,
-	    container.Top);
+	    container.Left + (container.Width  - te.te_Width ) / 2,
+	    container.Top  + (container.Height - te.te_Height) / 2
+        );
 	break; }
 
     case GFLG_LABELSTRING:
