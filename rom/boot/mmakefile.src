@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 OBJDIR	:= $(GENDIR)/$(CURDIR)
-LIB	:= $(LIBDIR)/libboot.a
+LIBNAME	:= boot
 
 # This directory contains a number of modules that only have an effect during
 # boot time. Things such as the system boot strap, the bootmenu and syscheck
@@ -12,12 +12,17 @@ LIB	:= $(LIBDIR)/libboot.a
 # dependancies. $(OBJS) is initially empty, you should use %add_replace
 # in order to select modules.
 
+ifeq ($(FLAVOUR),emulation)
 FILES	:= strap_emul
+else
+FILES := strap
+endif
+
 DEF_OBJ :=
 %prepare_replace rom/boot
 
-OBJS	:= $(foreach f, $(ADDITIONAL_OBJS) $(DEF_OBJ), $(OBJDIR)/$(f).o)
-DEPS	:= $(foreach f, $(ADDITIONAL_OBJS) $(DEF_OBJ), $(OBJDIR)/$(f).d)
+OBJS := $(foreach f,$(FILES) $(DEF_OBJ), $(OBJDIR)/$(f).o)
+DEPS	:= $(foreach f, $(FILES) $(DEF_OBJ), $(OBJDIR)/$(f).d)
 
 %prepare_shlib boot $(SHARED_BOOT)
 
