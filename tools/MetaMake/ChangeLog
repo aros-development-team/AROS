@@ -1,0 +1,5 @@
+Wed Oct  1 11:48:59 CEST 1997  Aaron Digulla  <digulla@aros.fh-konstanz.de>
+
+    * Added autoconf.
+    * Added GPL and modified Copyright notices appropriately
+    * Version 0.5 released.

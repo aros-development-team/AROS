@@ -1,0 +1,9 @@
+mmake
+mmake.o
+Makefile
+config.h
+MetaMake-*.*.tar.gz
+stamp-h
+config.cache
+config.log
+config.status
