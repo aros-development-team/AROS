@@ -3,25 +3,6 @@
 
 echo "Welcome for AROS configuration."
 
-### This may go into ./configure ???
-echo -n "Do you want to cross-compile [y/N] ?"
-read cross
-case "$cross" in
-  [yY] | [yY]es )
-    echo Yes.
-### INSERT CROSSCOMPILING STUFF HERE
-    ;;
-  *)
-### INSERT THE STUFF FOR NORMAL COMPILING HERE
-    echo No.
-    ;;
-esac
-
-
-### This is really needed _before_ anything else, because without mmake
-### you can't do anything and the user doesn't know what to do (unless
-### he read ./INSTALL ;-)
-
 echo Checking for AROS Tools...
 cd tools
 
@@ -61,7 +42,8 @@ fi
 
 echo -n "Checking for MetaMake... "
 if [ -x "`which mmake`" ] ; then
-  echo `which mmake`
+  MMAKE="mmake"
+  echo $MMAKE
 else
   if [ -x "MetaMake/mmake" ] ; then
     echo "locally installed in tools/MetaMake/mmake."
@@ -69,6 +51,7 @@ else
     echo "Not found!"
     echo "Trying to generate it..."
     cd MetaMake
+    ./configure
     make
     if [ -x "mmake" ] ; then
       echo "Successfully generated tool."
@@ -78,6 +61,7 @@ else
     fi
     cd ..
   fi
+  MMAKE="tools/MetaMake/mmake"
 fi
 
 cd ..
@@ -118,8 +102,10 @@ else
   fi
 fi
 
+echo
 echo "You have installed all necessary tools to compile AROS now."
-echo "Type mmake AROS to start building the tree."
+echo
+echo "Type '$MMAKE AROS' to start building the tree."
 echo
 echo "If you want to change the configuration, feel free to call $0 again."
 echo
