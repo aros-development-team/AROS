@@ -1,5 +1,5 @@
-#ifndef HIDD_PCI_H
-#define HIDD_PCI_H
+#ifndef HIDD_PCIBUS_H
+#define HIDD_PCIBUS_H
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
@@ -93,4 +93,4 @@ struct pHidd_PCI_FreeQuery
 	HIDDT_PCI_Device	**devices;
 };
 
-#endif /* HIDD_IRQ_H */
+#endif /* HIDD_PCIBUS_H */

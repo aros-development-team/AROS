@@ -1,7 +1,7 @@
 #ifndef HARDWARE_H
 #define HARDWARE_H
 
-#include <hidd/pci.h>
+#include <hidd/pcibus.h>
 #include "usb.h"
 
 #define VENDOR_INTEL      0x8086

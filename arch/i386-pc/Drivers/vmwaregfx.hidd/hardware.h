@@ -2,7 +2,7 @@
 #define HARDWARE_H
 
 #include <exec/libraries.h>
-#include <hidd/pci.h>
+#include <hidd/pcibus.h>
 #include <oop/oop.h>
 #include "bitmap.h"
 #include "mouse.h"

@@ -13,7 +13,7 @@
 #include <oop/oop.h>
 #include <utility/utility.h>
 
-#include <hidd/pci.h>
+#include <hidd/pcibus.h>
 #include <hidd/graphics.h>
 
 #include <string.h>
@@ -807,7 +807,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 			nsd->utilitybase = OpenLibrary(UTILITYNAME, 37);
 			if (nsd->utilitybase)
 			{
-				nsd->pcihidd = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+				nsd->pcihidd = OOP_NewObject(NULL, CLID_Hidd_PCIBus, NULL);
 				if (nsd->pcihidd)
 				{
 					if (findCard(nsd))

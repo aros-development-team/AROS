@@ -27,8 +27,8 @@
 #   include <oop/oop.h>
 #endif
 
-#ifndef HIDD_PCI_H
-#	include <hidd/pci.h>
+#ifndef HIDD_PCIBUS_H
+#	include <hidd/pcibus.h>
 #endif
 
 #define USE_ALLOCATE 1
