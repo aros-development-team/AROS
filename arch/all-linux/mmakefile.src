@@ -1,17 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# Setup the CLIB metatargets...
-#MM- setup-clib-linux : setup-clib-linux-$(CPU)
-
-# Setup the ALIB metatargets...
-#MM- setup-alib-linux : setup-alib-linux-$(CPU)
-
-# These are the targets to get mmake to do what I want...
-#MM- setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-$(GFXSYSTEM) setup-alib-linux
-
-#MM- setup-exec-m68k : setup-exec-linux-m68k
-
 #MM- kernel-linux : \
 #MM    kernel-unix \
 #MM    kernel-hidd-linux-kobj
@@ -19,12 +8,6 @@ include $(TOP)/config/make.cfg
 %rule_archalias mainmmake=kernel-exec arch=linux alias=unix
 %rule_archalias mainmmake=kernel-dos arch=linux alias=unix
 %rule_archalias mainmmake=kernel-battclock arch=linux alias=unix
-
-#MM- exec-m68k : exec-linux-m68k
-
-#MM- setup-dos-linux : setup-dos-unix
-
-#MM- setup-battclock-linux : setup-battclock-unix
 
 MM- check : check-exec-unix
 
