@@ -1,0 +1,28 @@
+#
+
+include $(TOP)/config/make.cfg
+
+#MM contrib-grub
+contrib-grub: setup grub-build grub-copy
+
+.PHONY: grub-build
+grub-build: Makefile
+	make
+
+grub-copy: $(AROSDIR)/boot/grub/stage1 $(AROSDIR)/boot/grub/stage2
+
+setup:
+	%mkdirs_q $(AROSDIR)/boot
+	%mkdirs_q $(AROSDIR)/boot/grub
+
+$(AROSDIR)/boot/grub/stage1: stage1/stage1
+	@$(CP) stage1/stage1 $(AROSDIR)/boot/grub
+
+$(AROSDIR)/boot/grub/stage2: stage2/stage2
+	@$(CP) stage2/stage2 $(AROSDIR)/boot/grub
+ 
+configure: configure.in
+	autoconf
+
+Makefile: configure
+	./configure
