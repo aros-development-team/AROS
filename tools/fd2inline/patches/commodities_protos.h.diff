@@ -1,0 +1,11 @@
+--- commodities_protos.h.orig	Wed Aug 30 18:52:53 1995
++++ commodities_protos.h	Sun Nov 26 20:15:32 1995
+@@ -32,7 +32,7 @@
+ 
+ CxObj *CreateCxObj( unsigned long type, long arg1, long arg2 );
+ CxObj *CxBroker( struct NewBroker *nb, LONG *error );
+-LONG ActivateCxObj( CxObj *co, long true );
++LONG ActivateCxObj( CxObj *co, long tf );
+ void DeleteCxObj( CxObj *co );
+ void DeleteCxObjAll( CxObj *co );
+ ULONG CxObjType( CxObj *co );

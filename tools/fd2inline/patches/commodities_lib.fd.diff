@@ -1,0 +1,11 @@
+--- commodities_lib.fd.orig	Sun Feb 18 16:31:36 1996
++++ commodities_lib.fd	Sun Feb 18 16:31:36 1996
+@@ -7,7 +7,7 @@
+ *
+ CreateCxObj(type,arg1,arg2)(d0/a0/a1)
+ CxBroker(nb,error)(a0,d0)
+-ActivateCxObj(co,true)(a0,d0)
++ActivateCxObj(co,tf)(a0,d0)
+ DeleteCxObj(co)(a0)
+ DeleteCxObjAll(co)(a0)
+ CxObjType(co)(a0)
