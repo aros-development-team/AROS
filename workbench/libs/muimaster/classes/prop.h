@@ -22,6 +22,7 @@ struct  MUIP_Prop_Increase                  { ULONG MethodID; LONG amount; };
 #define MUIA_Prop_Slider                    0x80429c3a /* V4  isg BOOL              */
 #define MUIA_Prop_UseWinBorder              0x8042deee /* V13 i.. LONG              */
 #define MUIA_Prop_Visible                   0x8042fea6 /* V4  isg LONG              */
+#define MUIA_Prop_OnlyTrigger               0x8042fea7 /* PRIV */
 
 #define MUIV_Prop_UseWinBorder_None 0
 #define MUIV_Prop_UseWinBorder_Left 1
