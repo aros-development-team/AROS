@@ -3,7 +3,7 @@
 export LC_ALL=C
 
 echo Searching for a suitable compiler...
-cc=gcc
+cc=${CC:=gcc}
 
 while true; do
     echo -en "Trying \\033[1m$cc\\033[0;39m... "
