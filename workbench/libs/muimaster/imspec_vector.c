@@ -187,6 +187,11 @@ void mx_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG h
     WritePixel(rport, right - 2, bottom - 1);
     RectFill(rport, left + 3, bottom, right - 3, bottom);
 	
+    SetAPen(rport, mri->mri_DrawInfo->dri_Pens[BACKGROUNDPEN]);
+    RectFill(rport, left + 3, top + 1, right - 3, bottom - 1);
+    RectFill(rport, left + 2, top + 2, right - 2, bottom - 2);
+    RectFill(rport, left + 1, top + 3, right - 1, bottom - 3);
+
     if (state == IDS_SELECTED)
     {
 	left += 3;right -= 3;width -= 6;
