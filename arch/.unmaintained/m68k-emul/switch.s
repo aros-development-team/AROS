@@ -53,29 +53,64 @@
 	.globl	AROS_SLIB_ENTRY(Switch,Exec)
 	.type	AROS_SLIB_ENTRY(Switch,Exec),@function
 AROS_SLIB_ENTRY(Switch,Exec):
+	/* Check to see if we are called from supervisor */
+	tst.b	AROS_CSYMNAME(supervisor)
+	jbeq	.nosup
+
+	/* Called from supervisor mode - set the delayed dispatch flag
+           and return */
+#if !UseRegisterArgs
+	move.l	%a6,-(%sp)
+	move.l	8(%sp),%a6
+#endif
+	bset	#7,AttnResched(%a6)
+#if !UseRegisterArgs
+	move.l	(%sp)+,%a6
+#endif
+	rts
+
+	/* Called from user mode */
+.nosup:
 	/* Preserve scratch registers */
 	movem.l	%d0-%d1/%a0-%a1,-(%sp)
 
+	/* Always disable interrupts when testing task lists */
+	jbsr	AROS_CSYMNAME(os_disable)
+#if !UseRegisterArgs
 	/* Get SysBase */
 	move.l	20(%sp),%a0
 
 	/* If not in state TS_RUN the current task is already moved
 	   to one of the task lists. */
 	move.l	ThisTask(%a0),%a1
+#else
+	move.l	ThisTask(%a6),%a1
+#endif
+	cmpi.b	#TS_RUN,tc_State(%a1)
+	jbne	.disp
+
+	/* If TB_EXCEPT is not set... */
 	btst	#TB_EXCEPT,tc_Flags(%a1)
-	bne	disp
-	cmp.b	#TS_RUN,tc_State(%a1)
-	bne	disp
+	jbne	.disp
 
 	/* ...move task to the ready list */
 	move.b	#TS_READY,tc_State(%a1)
+#if !UseRegisterArgs
 	move.l	%a0,-(%sp)
 	move.l	%a1,-(%sp)
 	pea	TaskReady(%a0)
 	jsr	Enqueue(%a0)
 	addq.w	#8,%sp
 	addq.w	#4,%sp
+#else
+	lea.l	TaskReady(%a6),%a0
+	jsr	Enqueue(%a6)
+#endif
 
 	/* dispatch */
-disp:	movem.l	(%sp)+,%d0-%d1/%a0-%a1
+.disp:	movem.l	(%sp)+,%d0-%d1/%a0-%a1
+#if !UseRegisterArgs
 	jmp	AROS_SLIB_ENTRY(Dispatch,Exec)
+#else
+	jmp	Dispatch(%a6)
+#endif
