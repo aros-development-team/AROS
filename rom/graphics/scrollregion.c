@@ -76,13 +76,13 @@
             TranslateRect(Bounds(cutRegion), dx, dy);
 
             AndRectRegion(cutRegion, rect);
-            
+
             newRegion = ClearRectRegionND(region, rect);
             if (newRegion)
             {
                 if (OrRegionRegion(cutRegion, newRegion))
                 {
-		    _SwapRegions(region, newregion);
+		    _SwapRegions(region, newRegion);
 
                     res = TRUE;
                 }
