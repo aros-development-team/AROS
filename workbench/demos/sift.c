@@ -30,6 +30,21 @@ warranties are made.  All use is at your own risk. No liability or
 responsibility is assumed.
 */
 
+/*
+AROS NOTE
+
+This example had to be changed, because it
+
+a) uses obsolete includes, which are not included in the AROS distribution and
+b) is not fully compatible with gcc.
+
+All changes are indicated by AROS NOTE.
+
+    $Log$
+    Revision 1.2  1997/03/06 18:17:47  srittau
+    Made sift AROS compatible.
+
+*/
 
 /*
 *
@@ -46,7 +61,13 @@ responsibility is assumed.
 
 #include <exec/types.h>
 #include <exec/memory.h>
-#include <libraries/dos.h>
+/*
+    AROS NOTE: In the Commodore version of sift the following include was
+    <libraries/dos.h>. But because <libraries/dos.h> is considered obsolete
+    and AROS doesn't include any obsolete includes or definitions, it was
+    changed to <dos/dos.h>.
+*/
+#include <dos/dos.h>
 #include <libraries/iffparse.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -62,7 +83,12 @@ int chkabort(void) { return(0); }  /* really */
 
 #define MINARGS 2
 
-UBYTE vers[] = "\0$VER: sift 37.1";       /* 2.0 Version string for c:Version to find */
+/*
+    AROS NOTE: The version was changed from 37.1 to 37.2 and the current date
+    was included. The date was missing in the Commodore version.
+    The original string was: "\0$VER: sift 37.1"
+*/
+UBYTE vers[] = "\0$VER: sift 37.2 (6.3.97)";       /* 2.0 Version string for c:Version to find */
 UBYTE usage[] = "Usage: sift IFFfilename (or -c for clipboard)";
 
 void PrintTopChunk (struct IFFHandle *);  /* proto for our function */
@@ -130,7 +156,13 @@ void main(int argc, char **argv)
 	else
 		{
 		/* Set up IFF_File for AmigaDOS I/O.  */
-		if (!(iff->iff_Stream = Open (argv[1], MODE_OLDFILE)))
+/*
+    AROS NOTE: Added cast. This is necessary, because Open returns a BPTR,
+    but iff_Stream is declared as IPTR, which is in fact an unsigned integer.
+    IPTR is used in AROS instead of ULONG, if the corresponding field stores
+    a value, which may be used as pointer.
+*/
+		if (!(iff->iff_Stream = (IPTR)Open (argv[1], MODE_OLDFILE)))
 			{
 			puts ("File open failed.");
 			goto bye;
@@ -139,7 +171,11 @@ void main(int argc, char **argv)
 		}
 
 	/* Start the IFF transaction. */
-	if (error = OpenIFF (iff, IFFF_READ))
+/*
+    AROS NOTE: Added extra parentheses around "error = OpenIFF()". Gcc wants
+    this for some reason.
+*/
+	if ((error = OpenIFF (iff, IFFF_READ)))
 		{
 		puts ("OpenIFF failed.");
 		goto bye;
@@ -200,7 +236,10 @@ bye:
 				CloseClipboard ((struct ClipboardHandle *)
 						iff->iff_Stream);
 			else
-				Close (iff->iff_Stream);
+/*
+    AROS NOTE: Added cast. See above for reasons.
+*/
+				Close ((BPTR)iff->iff_Stream);
 
 		/* Free the IFF_File structure itself. */
 		FreeIFF (iff);
