@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.6  1996/11/01 02:05:24  aros
+#    Motorola syntax (no more MIT)
+#
 #    Revision 1.5  1996/10/24 15:51:30  aros
 #    Use the official AROS macros over the __AROS versions.
 #
@@ -61,38 +64,38 @@
 
 _Exec_Exception:
 	# First clear task exception bit.
-	movel	a6@(ThisTask),a2
-	bclr	#TB_EXCEPT,a2@(tc_Flags)
+	move.l	ThisTask(a6),a2
+	bclr	#TB_EXCEPT,tc_Flags(a2)
 
 	# If the exception is raised out of a Wait()
 	# IDNestCnt may be almost everything.
 	# Store nesting level and set it to a
 	# defined value 1 beyond -1.
-excusr: moveb	a6@(IDNestCnt),d2
-	clrb	a6@(IDNestCnt)
+excusr: move.b	IDNestCnt(a6),d2
+	clr.b	IDNestCnt(a6)
 
 exloop: # get signals causing the exception
 	# (do nothing if there are none)
-	movel	a2@(tc_SigExcept),d0
-	andl	a2@(tc_SigRecvd),d0
-	jeq	excend
+	move.l	tc_SigExcept(a2),d0
+	and.l	tc_SigRecvd(a2),d0
+	beq	excend
 
 	# disable the signals
-	eorl	d0,a2@(tc_SigExcept)
-	eorl	d0,a2@(tc_SigRecvd)
+	eor.l	d0,tc_SigExcept(a2)
+	eor.l	d0,tc_SigRecvd(a2)
 
 	# call the exception vector with interrupts enabled
-	movel	a2@(tc_ExceptData),a1
-	movel	a2@(tc_ExceptCode),a0
-	jsr	a6@(Enable)
-	jsr	a0@
-	jsr	a6@(Disable)
+	move.l	tc_ExceptData(a2),a1
+	move.l	tc_ExceptCode(a2),a0
+	jsr	Enable(a6)
+	jsr	(a0)
+	jsr	Disable(a6)
 
 	# reenable signals and look again
-	orl	d0,a2@(tc_SigExcept)
-	jra	exloop
+	or.l	d0,tc_SigExcept(a2)
+	bra	exloop
 
 	# restore state of Disable() and return
-excend: moveb	d2,a6@(IDNestCnt)
+excend: move.b	d2,IDNestCnt(a6)
 	rts
 

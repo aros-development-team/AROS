@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.4  1996/11/01 02:05:23  aros
+#    Motorola syntax (no more MIT)
+#
 #    Revision 1.3  1996/10/24 15:51:29  aros
 #    Use the official AROS macros over the __AROS versions.
 #
@@ -52,16 +55,16 @@ _Exec_CacheClearU:
 _Exec_CacheClearU_30:
 	# Do the real work in supervisor mode
 	# Preserve a5 in a1 (faster than stack space)
-	movel	a5,a1
-	leal	cacheclearusup,a5
-	jsr	a6@(Supervisor)
-	movel	a1,a5
+	move.l	a5,a1
+	lea.l	cacheclearusup,a5
+	jsr	Supervisor(a6)
+	move.l	a1,a5
 	rts
 
 cacheclearusup:
 	# Set CD and CI bit in cacr
 	movec	cacr,d0
-	orw	#0x0808,d0
+	or.w	#$0808,d0
 	movec	d0,cacr
 	rte
 

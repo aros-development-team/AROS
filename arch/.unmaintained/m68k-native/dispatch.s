@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.5  1996/11/01 02:05:24  aros
+#    Motorola syntax (no more MIT)
+#
 #    Revision 1.4  1996/10/24 15:51:30  aros
 #    Use the official AROS macros over the __AROS versions.
 #
@@ -24,7 +27,7 @@
 #
 #   FUNCTION
 #	This function switches between the task in SysBase->ThisTask and
-#	the first task in the ready list. Is must be called from supervisor
+#	the first task in the ready list. It must be called from supervisor
 #	mode with all registers set to the values of the underlying user
 #	context and sp pointing to the normal exception frame (just as if
 #	it was a routine in one of the interrupt vectors).
@@ -105,103 +108,103 @@
 _Exec_Dispatch:
 
 	# preserve a5 then move user stack pointer into it
-	movel	a5,sp@-
-	movel	usp,a5
+	move.l	a5,-(sp)
+	move.l	usp,a5
 
 	# move whole user context to user stack
-	movel	sp@+,a5@-
-	movew	sp@+,a5@-
-	movel	sp@+,a5@-
-	moveml	d0-d7/a0-a4/a6,a5@-
+	move.l	(sp)+,-(a5)
+	move.w	(sp)+,-(a5)
+	move.l	(sp)+,-(a5)
+	movem.l	d0-d7/a0-a4/a6,-(a5)
 
 	# get SysBase
-	movel	_sysbase,a6
+	move.l	_SysBase,a6
 
 	# disable interrupts the simple way
-	movew	#0x2700,sr
+	move.w	#0x2700,sr
 
 	# get current task and store usp there
-	movel	a6@(ThisTask),a2
-	movel	a5,a2@(tc_SPReg)
+	move.l	ThisTask(a6),a2
+	move.l	a5,tc_SPReg(a2)
 
 	# call the switch routine if necessary
-	btst	#TB_SWITCH,a2@(tc_Flags)
-	jeq	noswch
-	movel	a2@(tc_Switch),a5
-	jsr	a5@
+	btst	#TB_SWITCH,tc_Flags(a2)
+	beq	noswch
+	move.l	tc_Switch(a2),a5
+	jsr	(a5)
 
 	# store IDNestCnt and reenable interrupt hardware
-noswch: moveb	a6@(IDNestCnt),a2@(tc_IDNestCnt)
-	moveb	#-1,a6@(IDNestCnt)
-	movew	#INTEN+SET,INTENA
+noswch: move.b	IDNestCnt(a6),tc_IDNestCnt(a2)
+	move.b	#-1,IDNestCnt(a6)
+	move.w	#INTEN+SET,INTENA
 
 	# get address of ready list
-	leal	a6@(TaskReady),a0
+	lea.l	TaskReady(a6),a0
 
 	# remove first ready task in the list
-	movel	a0@,a2
-	movel	a2@,a1
-	movel	a1,a0@
-	movel	a0,a1@(4:W)
+	move.l	(a0),a2
+	move.l	(a2),a1
+	move.l	a1,(a0)
+	move.l	a0,4.w(a1)
 
 	# and use it as new current task
-	movel	a2,a6@(ThisTask)
-	moveb	#TS_RUN,d0
-	moveb	d0,a2@(tc_State)
+	move.l	a2,ThisTask(a6)
+	move.b	#TS_RUN,d0
+	move.b	d0,tc_State(a2)
 
 	# restore IDNestCnt and disable interrupt hardware if necessary
-	moveb	a2@(tc_IDNestCnt),a6@(IDNestCnt)
-	jpl	nodis
-	movew	#INTEN,INTENA
+	move.b	tc_IDNestCnt(a2),IDNestCnt(a6)
+	bpl	nodis
+	move.w	#INTEN,INTENA
 
 	# call the launch routine if necessary
-nodis:	btst	#TB_LAUNCH,a2@(tc_Flags)
-	jeq	nolnch
-	movel	a2@(tc_Launch),a5
-	jsr	a5@
+nodis:	btst	#TB_LAUNCH,tc_Flags(a2)
+	beq	nolnch
+	move.l	tc_Launch(a2),a5
+	jsr	(a5)
 
 	# get user stack pointer
-nolnch: movel	a2@(tc_SPReg),a5
+nolnch: move.l	tc_SPReg(a2),a5
 
 	# test task exception bit
-	btst	#TB_EXCEPT,a2@(tc_Flags)
-	jne	exc
+	btst	#TB_EXCEPT,tc_Flags(a2)
+	bne	exc
 
 	# not set. read complete user context
-	moveml	a5@+,d0-d7/a0-a4/a6
-	movel	a5@+,sp@-
-	movew	a5@+,sp@-
-	movel	a5@+,sp@-
+	movem.l	(a5)+,d0-d7/a0-a4/a6
+	move.l	(a5)+,-(sp)
+	move.w	(a5)+,-(sp)
+	move.l	(a5)+,-(sp)
 
 	# restore usp and a5 and return
-	movel	a5,usp
-	movel	sp@+,a5
+	move.l	a5,usp
+	move.l	(sp)+,a5
 	rte
 
 	# Raise a task exception.
 	# The user stack looks like: a5, ccr, pc, a6, a4-a0, d7-d0.
 	# Change that to	     pc, ccr, a5, a6, a4-a0, d7-d0
 	# so that it's easier to restore the context.
-exc:	movel	a5@(14*4),d0
-	movel	a5@(14*4+6),a5@(14*4)
-	movel	d0,a5@(14*4+6)
+exc:	move.l	14*4(a5),d0
+	move.l	14*4+6(a5),14*4(a5)
+	move.l	d0,14*4+6(a5)
 
 	# do a Disable() to fall down to user context atomically
-	jsr	a6@(Disable)
+	jsr	Disable(a6)
 
 	# prepare going to user mode
-	movel	a5,usp
-	movel	#usrexc,sp@-
-	clrw	sp@-
+	move.l	a5,usp
+	move.l	#usrexc,-(sp)
+	clr.w	-(sp)
 	rte
 
 	# handle exception
-usrexc: jsr	a6@(Exception)
-	jsr	a6@(Enable)
+usrexc: jsr	Exception(a6)
+	jsr	Enable(a6)
 
 	# restore context
-	moveml	sp@+,d0-d7/a0-a4/a6
-	movel	sp@+,a5
-	movew	sp@+,ccr
+	movem.l	(sp)+,d0-d7/a0-a4/a6
+	move.l	(sp)+,a5
+	move.w	(sp)+,ccr
 	rts
 

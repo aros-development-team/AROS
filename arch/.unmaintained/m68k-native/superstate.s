@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.4  1996/11/01 02:05:25  aros
+#    Motorola syntax (no more MIT)
+#
 #    Revision 1.3  1996/10/24 15:51:32  aros
 #    Use the official AROS macros over the __AROS versions.
 #
@@ -48,32 +51,32 @@
 #
 #******************************************************************************
 
-	Supervisor  =	-0x1e
+	.include "machine.i"
 
 	.globl	_Exec_SuperState
 _Exec_SuperState:
 	| Goto supervisor mode. Preserve a5 in d0 (faster than stack space)
-	movel	a5,d0
-	leal	super,a5
+	move.l	a5,d0
+	lea.l	super,a5
 
 	| Do not change user stack - use jmp
-	jmp	a6@(Supervisor)
+	jmp	Supervisor(a6)
 super:
 	| Restore a5
-	movel	d0,a5
+	move.l	d0,a5
 
 	| Check if called from supervisor mode
-	btst	#5,sp@
-	jeq	fromuser
+	btst	#5,(sp)
+	beq	fromuser
 
 	| Called from supervisor mode. Just return NULL.
-	moveql	#0,d0
+	moveq.l	#0,d0
 	rte
 
 fromuser:
 	| Called from user mode. Restore sp and return supervisor sp.
-	movel	sp,d0
-	movel	usp,sp
+	move.l	sp,d0
+	move.l	usp,sp
 
 	| usp already points to the returnaddress for the SuperState() call.
 	rts

@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.5  1996/11/01 02:05:25  aros
+#    Motorola syntax (no more MIT)
+#
 #    Revision 1.4  1996/10/24 15:51:33  aros
 #    Use the official AROS macros over the __AROS versions.
 #
@@ -51,15 +54,15 @@
 	.globl	_Exec_UserState
 _Exec_UserState:
 	| simply return if argument is NULL
-	tstl	d0
-	jne	nonzero
+	tst.l	d0
+	bne	nonzero
 	rts
 nonzero:
 	| Transfer sp
-	movel	sp,usp
+	move.l	sp,usp
 
 	| Set old supervisor sp
-	movel	d0,sp
+	move.l	d0,sp
 
 	| And return. This jumps directly to a rts.
 	rte

@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.5  1996/11/01 02:05:24  aros
+#    Motorola syntax (no more MIT)
+#
 #    Revision 1.4  1996/10/24 15:51:30  aros
 #    Use the official AROS macros over the __AROS versions.
 #
@@ -71,7 +74,7 @@ _Exec_Forbid:
 	# routine - but nothing in C can guarantee to preserve all registers
 	# and to increment atomically - so better use this simple assembly
 	# routine
-	addqb	#1,a6@(TDNestCnt)
+	addq.b	#1,TDNestCnt(a6)
 	rts
 
 

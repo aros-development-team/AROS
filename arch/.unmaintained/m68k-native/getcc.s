@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.4  1996/11/01 02:05:24  aros
+#    Motorola syntax (no more MIT)
+#
 #    Revision 1.3  1996/10/24 15:51:30  aros
 #    Use the official AROS macros over the __AROS versions.
 #
@@ -49,12 +52,12 @@
 	# 68000 version
 	.globl	_Exec_GetCC
 _Exec_GetCC:
-	movew	sr,d0
+	move.w	sr,d0
 	rts
 
 	# 68010 and up
 	.globl	_Exec_GetCC_01
 _Exec_GetCC_01:
-	movew	ccr,d0
+	move.w	ccr,d0
 	rts
 

@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.5  1996/11/01 02:05:25  aros
+#    Motorola syntax (no more MIT)
+#
 #    Revision 1.4  1996/10/24 15:51:33  aros
 #    Use the official AROS macros over the __AROS versions.
 #
@@ -63,22 +66,22 @@ _Exec_Switch:
 	| call switch in supervisor mode
 	| this is necessary to determine if the current context is user or
 	| supervisor mode
-	movel	a5,sp@-
+	movel	a5,-(sp)
 	movel	#switch,a5
-	jsr	a6@(Supervisor)
-	movel	sp@+,a5
+	jsr	Supervisor(a6)
+	movel	(sp)+,a5
 	rts
 
 switch:
 	| test if called from supervisor mode
 	| (supervisor bit is bit 8+5 of sr when calling Switch() )
-	btst	#5,sp@
+	btst	#5,(sp)
 	jeq	nosup
 
 	| called from supervisor mode (grrrr)
 	| since I can only Dispatch() when falling down to user mode I
 	| must do it later - set the delayed dispatch flag and return
-	bset	#7,a6@(AttnResched)
+	bset	#7,AttnResched(a6)
 end:	rte
 
 	| Called from user mode
@@ -86,23 +89,23 @@ end:	rte
 nosup:	movew	#0x2700,sr
 
 	| Preserve scratch registers
-	moveml	d0/d1/a0/a1,sp@-
+	moveml	d0/d1/a0/a1,-(sp)
 
 	| If not in state TS_RUN the current task is part of one of the
 	| task lists.
-	movel	a6@(ThisTask),a1
-	cmpb	#TS_RUN,a1@(tc_State)
+	movel	ThisTask(a6),a1
+	cmpb	#TS_RUN,tc_State(a1)
 	jne	disp
 
 	| If TB_EXCEPT is not set...
-	btst	#TB_EXCEPT,a1@(tc_Flags)
+	btst	#TB_EXCEPT,tc_Flags(a1)
 	jne	disp
 
 	| ...Move task to the ready list
-	moveb	#TS_READY,a1@(tc_State)
-	leal	a6@(TaskReady),a0
-	jsr	a6@(Enqueue)
+	moveb	#TS_READY,tc_State(a1)
+	leal	TaskReady(a6),a0
+	jsr	Enqueue(a6)
 
 	| dispatch
-disp:	moveml	sp@+,d0/d1/a0/a1
-	jmp	a6@(Dispatch)
+disp:	moveml	(sp)+,d0/d1/a0/a1
+	jmp	Dispatch(a6)

@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.5  1996/11/01 02:05:24  aros
+#    Motorola syntax (no more MIT)
+#
 #    Revision 1.4  1996/10/24 15:51:31  aros
 #    Use the official AROS macros over the __AROS versions.
 #
@@ -57,25 +60,25 @@
 _Exec_SetSR:
 	# Do the real work in supervisor mode
 	# Preserve a5 in a0 (faster than stack space)
-	movel	a5,a0
-	leal	setsrsup,a5
-	jsr	a6@(Supervisor)
-	movel	a0,a5
+	move.l	a5,a0
+	lea.l	setsrsup,a5
+	jsr	Supervisor(a6)
+	move.l	a0,a5
 	rts
 
 setsrsup:
 	# The old value of sr now lies on the top of the stack.
 	# d1 = (mask & newSR) | (~mask & SR)
-	andw	d1,d0
-	eorw	#-1,d1
-	andw	sp@,d1
-	orw	d0,d1
+	and.w	d1,d0
+	eor.w	#-1,d1
+	and.w	(sp),d1
+	or.w	d0,d1
 
 	# Get returncode
-	clrl	d0
-	movew	sp@,d0
+	clr.l	d0
+	move.w	(sp),d0
 
 	# Set new sr value
-	movew	d1,sp@
+	move.w	d1,(sp)
 	rte
 

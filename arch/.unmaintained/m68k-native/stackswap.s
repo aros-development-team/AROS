@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.6  1996/11/01 02:05:25  aros
+#    Motorola syntax (no more MIT)
+#
 #    Revision 1.5  1996/10/24 15:51:32  aros
 #    Use the official AROS macros over the __AROS versions.
 #
@@ -61,34 +64,34 @@
 
 _Exec_StackSwap:
 	| Preserve returnaddress and fix sp
-	movel	sp@+,d0
+	move.l	(sp)+,d0
 
 	| Get pointer to tc_SPLower in a1 (tc_SPUpper is next)
-	movel	a6@(ThisTask),a1
-	leal	a1@(tc_SPLower),a1
+	move.l	ThisTask(a6),a1
+	lea.l	tc_SPLower(a1),a1
 
 	| Just to be sure interrupts always find a good stackframe
-	jsr	a6@(Disable)
+	jsr	Disable(a6)
 
 	| Swap Lower boundaries
-	movel	a1@,d1
-	movel	a0@,a1@+
-	movel	d1,a0@+
+	move.l	(a1),d1
+	move.l	(a0),(a1)+
+	move.l	d1,(a0)+
 
 	| Swap higher boundaries
-	movel	a1@,d1
-	movel	a0@,a1@
-	movel	d1,a0@+
+	move.l	(a1),d1
+	move.l	(a0),(a1)
+	move.l	d1,(a0)+
 
 	| Swap stackpointers
-	movel	sp,d1
-	movel	a0@,sp
-	movel	d1,a0@
+	move.l	sp,d1
+	move.l	(a0),sp
+	move.l	d1,(a0)
 
 	| Reenable interrupts.
-	jsr	a6@(Enable)
+	jsr	Enable(a6)
 
 	| Restore returnaddress and return
-	movel	d1,sp@-
+	move.l	d1,-(sp)
 	rts
 

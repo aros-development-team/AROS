@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.5  1996/11/01 02:05:23  aros
+#    Motorola syntax (no more MIT)
+#
 #    Revision 1.4  1996/10/24 15:51:30  aros
 #    Use the official AROS macros over the __AROS versions.
 #
@@ -86,9 +89,9 @@
 
 _Exec_Disable:
 	# disable interrupts
-	movew	#INTEN,INTENA
+	move.w	#INTEN,INTENA
 
 	# increment nesting count and return
-	addqb	#1,a6@(IDNestCnt)
+	addq.b	#1,IDNestCnt(a6)
 	rts
 

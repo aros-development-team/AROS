@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.5  1996/11/01 02:05:24  aros
+#    Motorola syntax (no more MIT)
+#
 #    Revision 1.4  1996/10/24 15:51:31  aros
 #    Use the official AROS macros over the __AROS versions.
 #
@@ -23,24 +26,24 @@
 	.globl	_Exec__ObtainSemaphore
 	.type	_Exec__Obtainsemaphore,@function
 _Exec__ObtainSemaphore:
-	moveml	d0/d1/a0/a1,sp@-
-	jbsr	_Exec_ObtainSemaphore
-	moveml	sp@+,d0/d1/a0/a1
+	movem.l	d0-d1/a0-a1,-(sp)
+	bsr	_Exec_ObtainSemaphore
+	movem.l	(sp)+,d0-d1/a0-a1
 	rts
 
 	.globl	_Exec__ReleaseSemaphore
 	.type	_Exec__ReleaseSemaphore,@function
 _Exec__ReleaseSemaphore:
-	moveml	d0/d1/a0/a1,sp@-
-	jbsr	_Exec_ReleaseSemaphore
-	moveml	sp@+,d0/d1/a0/a1
+	movem.l	d0-d1/a0-a1,-(sp)
+	bsr	_Exec_ReleaseSemaphore
+	movem.l	(sp)+,d0-d1/a0-a1
 	rts
 
 	.globl	_Exec__ObtainSemaphoreShared
 	.type	_Exec__ObtainSemaphoreShared,@function
 _Exec__ObtainSemaphoreShared:
-	moveml	d0/d1/a0/a1,sp@-
-	jbsr	_Exec_ObtainSemaphoreShared
-	moveml	sp@+,d0/d1/a0/a1
+	movem.l	d0-d1/a0-a1,-(sp)
+	bsr	_Exec_ObtainSemaphoreShared
+	movem.l	(sp)+,d0-d1/a0-a1
 	rts
 

@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.5  1996/11/01 02:05:24  aros
+#    Motorola syntax (no more MIT)
+#
 #    Revision 1.4  1996/10/24 15:51:31  aros
 #    Use the official AROS macros over the __AROS versions.
 #
@@ -54,20 +57,20 @@
 
 _Exec_Permit:
 	# decrement nesting count and return if there are Forbid()s left
-	subqb	#1,a6@(TDNestCnt)
-	jpl	end
+	subq.b	#1,TDNestCnt(a6)
+	bpl	end
 
 	# return if there are no delayed switches pending.
-	tstb	a6@(AttnResched+1)
-	jpl	end
+	tst.b	AttnResched+1(a6)
+	bpl	end
 
 	# if IDNestCnt is not -1 taskswitches are still forbidden
-	tstb	a6@(IDNestCnt)
-	jpl	end
+	tst.b	IDNestCnt(a6)
+	bpl	end
 
 	# Unset delayed switch bit and do the delayed switch
-	bclr	#7,a6@(0x12b)
-	jsr    a6@(Switch)
+	bclr	#7,$12b(a6)
+	jsr    Switch(a6)
 
 	# all done.
 end:	rts

@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.5  1996/11/01 02:05:25  aros
+#    Motorola syntax (no more MIT)
+#
 #    Revision 1.4  1996/10/24 15:51:32  aros
 #    Use the official AROS macros over the __AROS versions.
 #
@@ -58,10 +61,10 @@
 	.globl	_Exec_Supervisor
 _Exec_Supervisor:
 	| a privileged do-nothing instruction
-	orw	#0x0000,sr
+	or.w	#0x0000,sr
 	| No trap? Then this was called from supervisor mode. Prepare a rte.
-	movew	sr,sp@-
-	jmp	a5@
+	move.w	sr,-(sp)
+	jmp	(a5)
 
 	| CPU privilege violation vector points to here
 	.globl	_TrapLevel8
@@ -69,31 +72,31 @@ _TrapLevel8:
 
 	| There's only one legal location which may do a privilege
 	| violation - and that's the instruction above.
-	cmpl	#_Exec_Supervisor,sp@(2:W)
+	cmp.l	#_Exec_Supervisor,2.w(sp)
 	jne	pv
 	| All OK. Prepare returnaddress and go to the right direction.
-	movel	#end,sp@(2:W)
-	jmp	a5@
+	move.l	#end,2.w(sp)
+	jmp	(a5)
 end:	rts
 
 	| Store trap number
-pv:	movel	#8,sp@-
-	jra	_TrapEntry
+pv:	move.l	#8,-(sp)
+	bra	_TrapEntry
 
 	| And handle the trap
 _TrapEntry:
 	| Simple disable
-	orw	#0x0700,sr
+	or.w	#0x0700,sr
 
 	| get some room for destination address
-	subqw	#4,sp
+	subq.w	#4,sp
 
 	| calculate destination address without clobbering any registers
-	movel	a0,sp@-
-	movel	4,a0
-	movel	a0@(ThisTask),a0
-	movel	a0@(tc_TrapCode),sp@(4)
-	movel	sp@+,a0
+	move.l	a0,-(sp)
+	move.l	4,a0
+	move.l	ThisTask(a0),a0
+	move.l	tc_TrapCode(a0),4(sp)
+	move.l	(sp)+,a0
 
 	| and jump
 	rts
