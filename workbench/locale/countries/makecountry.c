@@ -33,7 +33,7 @@ extern struct CountryPrefs
     australiaPrefs,
     deutschPrefs,
     greatBritainPrefs,
-    nederlandPrefs;
+    nederlandPrefs,
     polskaPrefs;
 
 /* Please keep this in alphabetical order, ie the order of Latin 1 */
