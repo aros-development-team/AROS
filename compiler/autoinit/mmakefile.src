@@ -5,7 +5,8 @@
 include $(TOP)/config/make.cfg
 
 LIBBASEFILES := \
-        __showerror \
+        __getprogramname \
+	__showerror \
 	aros \
 	asl \
 	arosc \

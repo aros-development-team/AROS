@@ -8,6 +8,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <aros/symbolsets.h>
+#include <aros/autoinit.h>
 
 int __nocommandline __attribute__((weak)) = 0;
 
@@ -25,8 +26,6 @@ int __initcommandline(void)
 {
     AROS_GET_SYSBASE_OK
     char *ptr    = NULL;
-    LONG  namlen = 64;
-    int   done   = 0;
 
     if (WBenchMsg)
         return 0;
@@ -123,24 +122,10 @@ int __initcommandline(void)
     /*
      * get program name
      */
-     do
-     {
-	if (!(__argv[0] = AllocVec(namlen, MEMF_ANY)))
-	    return RETURN_FAIL;
+     __argv[0] = __getprogramname();
 
-	if (!(GetProgramName(__argv[0], namlen)))
-	{
-	    if (IoErr() == ERROR_LINE_TOO_LONG)
-	    {
-		namlen *= 2;
-		FreeVec(__argv[0]);
-	    }
-	    else
-		return RETURN_FAIL;
-	}
-	else
-	    done = 1;
-    } while (!done);
+     if (!__argv[0])
+         return RETURN_FAIL;
 
 #if 0 /* Debug argument parsing */
 
