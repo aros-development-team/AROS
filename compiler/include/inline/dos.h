@@ -649,6 +649,11 @@
 	LP3(0x162, LONG, VFPrintf, BPTR, fh, d1, STRPTR, format, d2, APTR, argarray, d3, \
 	, DOS_BASE_NAME)
 
+#ifndef NO_INLINE_STDARG
+#define FPrintf(a0, a1, tags...) \
+	({ULONG _tags[] = { tags }; VFPrintf((a0), (a1), (LONG *)_tags);})
+#endif /* !NO_INLINE_STDARG */
+
 #define VFWritef(fh, format, argarray) \
 	LP3NR(0x15c, VFWritef, BPTR, fh, d1, STRPTR, format, d2, LONG *, argarray, d3, \
 	, DOS_BASE_NAME)
