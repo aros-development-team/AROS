@@ -307,6 +307,7 @@ int init_gui(void)
 	    MUIA_Window_Activate, TRUE,
 
 	    WindowContents, VGroup,
+	        MUIA_Group_VertSpacing, 10,
     	    	Child, HGroup,
 	          Child, VGroup,
 		    Child, ListviewObject,
@@ -317,6 +318,7 @@ int init_gui(void)
 			End,
 		    Child, HGroup,
 			Child, MUI_NewObject(MUIC_Popimage,
+					     MUIA_Disabled, TRUE,
 					     MUIA_Draggable, TRUE,
 					     MUIA_FixHeight, 20,
 					     MUIA_FixWidth, 30,
