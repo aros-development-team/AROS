@@ -47,101 +47,103 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  LONG retval = -1;
-  ULONG index;
-  struct PaletteExtra * pe = cm->PalExtra;
+    LONG retval = -1;
+    ULONG index;
+    struct PaletteExtra * pe = cm->PalExtra;
+
+    if (NULL != pe)
+    {
+	ULONG best_distance = (ULONG)-1;
+
+	struct TagItem defaults[] =
+	{ 
+	    {OBP_Precision, PRECISION_IMAGE},
+	    {OBP_FailIfBad, FALSE}
+	};
+
+	/* 
+	** override the defaults if necessary 
+	*/
+	defaults[0].ti_Data = GetTagData(OBP_Precision, 
+                                	 defaults[0].ti_Data,
+                                	 tags);
+
+	defaults[1].ti_Data = GetTagData(OBP_FailIfBad, 
+                                	 defaults[1].ti_Data,
+                                	 tags);
+
+	/* 
+	** let nobody else play with the PalExtra structure 
+	*/
+	ObtainSemaphore(&pe->pe_Semaphore);
+
+	/* 
+	** Walk through the list of shared pens and search
+	** for the closest color.
+	*/
+	index = pe->pe_FirstShared;
+	while (-1 != (BYTE)index)
+	{
+	    ULONG distance = color_distance(cm,r,g,b,index);
+	    if (distance < best_distance)
+	    {
+        	best_distance = distance;
+        	retval        = index;
+        	break;
+	    }
+	    index = pe->pe_AllocList[index];
+	}
+    #warning The color distance calc might be different than in AmigaOS. 
+	/* 
+	** If the best distance to an available color is greater than
+	** the square of the tolerance, try to allocate a better
+	** color, otherwise increase the shared counter for that color.
+	** If only a little amount of colors is free for allocation in the
+	** colormap the restrictions towards color matching should be
+	** much looser than if the amount of free colors is close to 0.
+	** The autodocs say that.
+	*/
+	if (
+            (PRECISION_EXACT == defaults[0].ti_Data && 0 != best_distance ) ||
+            (best_distance * pe->pe_NFree  > 
+            (defaults[0].ti_Data * defaults[0].ti_Data) * pe->pe_SharableColors
+            )
+	   )
+	{
+	    /*
+	    ** The given tolerance could not be accomplished.
+	    ** Try to allocate a pen. If that fails we
+	    ** return -1 if the user specified OBP_FailIfBad = TRUE.
+	    */
+	    LONG tmp = ObtainPen(cm,-1,r,g,b,0);
+	    if (-1 == tmp)
+	    {
+        	/* 
+        	** Return -1 if the user is strict with color matching.
+        	** In the other case retval is not changed.
+        	*/
+        	if (TRUE == defaults[1].ti_Data)
+        	  retval = -1;
+	    }
+	    else
+                retval = tmp;
+	}
+	else
+	{
+	    /*
+	    ** One more application is using this color
+	    */
+	    pe->pe_RefCnt[retval]++;
+	}
+
+	ReleaseSemaphore(&pe->pe_Semaphore);
+      
+    } /* if (NULL != pe) */
+    return retval;
+
+    AROS_LIBFUNC_EXIT
   
-  if (NULL != pe)
-  {
-    ULONG best_distance = (ULONG)-1;
-
-    struct TagItem defaults[] =
-    { 
-      {OBP_Precision, PRECISION_IMAGE},
-      {OBP_FailIfBad, FALSE}
-    };
-
-    /* 
-    ** override the defaults if necessary 
-    */
-    defaults[0].ti_Data = GetTagData(OBP_Precision, 
-                                     defaults[0].ti_Data,
-                                     tags);
-
-    defaults[1].ti_Data = GetTagData(OBP_FailIfBad, 
-                                     defaults[1].ti_Data,
-                                     tags);
-
-    /* 
-    ** let nobody else play with the PalExtra structure 
-    */
-    ObtainSemaphore(&pe->pe_Semaphore);
-
-    /* 
-    ** Walk through the list of shared pens and search
-    ** for the closest color.
-    */
-    index = pe->pe_FirstShared;
-    while (-1 != (BYTE)index)
-    {
-      ULONG distance = color_distance(cm,r,g,b,index);
-      if (distance < best_distance)
-      {
-        best_distance = distance;
-        retval        = index;
-        break;
-      }
-      index = pe->pe_AllocList[index];
-    }
-#warning The color distance calc might be different than in AmigaOS. 
-    /* 
-    ** If the best distance to an available color is greater than
-    ** the square of the tolerance, try to allocate a better
-    ** color, otherwise increase the shared counter for that color.
-    ** If only a little amount of colors is free for allocation in the
-    ** colormap the restrictions towards color matching should be
-    ** much looser than if the amount of free colors is close to 0.
-    ** The autodocs say that.
-    */
-    if (
-        (PRECISION_EXACT == defaults[0].ti_Data && 0 != best_distance ) ||
-        (best_distance * pe->pe_NFree  > 
-        (defaults[0].ti_Data * defaults[0].ti_Data) * pe->pe_SharableColors
-        )
-       )
-    {
-      /*
-      ** The given tolerance could not be accomplished.
-      ** Try to allocate a pen. If that fails we
-      ** return -1 if the user specified OBP_FailIfBad = TRUE.
-      */
-      LONG tmp = ObtainPen(cm,-1,r,g,b,0);
-      if (-1 == tmp)
-      {
-        /* 
-        ** Return -1 if the user is strict with color matching.
-        ** In the other case retval is not changed.
-        */
-        if (TRUE == defaults[1].ti_Data)
-          retval = -1;
-      }
-      else
-        retval = tmp;
-    }
-    else
-    {
-      /*
-      ** One more application is using this color
-      */
-      pe->pe_RefCnt[retval]++;
-    }
-    
-    ReleaseSemaphore(&pe->pe_Semaphore);
-  }
-  return retval;
-  
-  AROS_LIBFUNC_EXIT
 } /* ObtainBestPenA */

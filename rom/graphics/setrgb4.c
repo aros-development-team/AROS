@@ -61,33 +61,36 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  driver_SetRGB4 (vp, n, r, g, b, GfxBase);
+    if (vp->ColorMap) SetRGB4CM(vp->ColorMap, n, r, g, b);
+        
+    driver_SetRGB4 (vp, n, r, g, b, GfxBase);
 
-  /************************************************************
-  / This is the code that works correctly on the real thing
-  struct ColorMap * CM = vp->ColorMap;
+    /************************************************************
+    / This is the code that works correctly on the real thing
+    struct ColorMap * CM = vp->ColorMap;
 
-  / is there a ColorMap connected to the ViewPort??  /
-  if (NULL != CM)
-  {
-    struct View * MyView = ViewAddress();
-    if(CM->Count > n)
+    / is there a ColorMap connected to the ViewPort??  /
+    if (NULL != CM)
     {
-      WORD * RGBValues = CM->ColorTable;
-      RGBValues[n] = ((r & 0x000f) << 8) +
-                     ((g & 0x000f) << 4) + 
-                      (b & 0x000f);
+      struct View * MyView = ViewAddress();
+      if(CM->Count > n)
+      {
+	WORD * RGBValues = CM->ColorTable;
+	RGBValues[n] = ((r & 0x000f) << 8) +
+                       ((g & 0x000f) << 4) + 
+                	(b & 0x000f);
+      }
+
+      / Make the changes visible /
+      MakeVPort(MyView, MyView->ViewPort);
+      MrgCop(MyView);
+      LoadView(MyView);
     }
+    ************************************************************/
 
-    / Make the changes visible /
-    MakeVPort(MyView, MyView->ViewPort);
-    MrgCop(MyView);
-    LoadView(MyView);
-  }
-  ************************************************************/
-
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
+    
 } /* SetRGB32 */

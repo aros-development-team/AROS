@@ -36,9 +36,9 @@
 	table      - a pointer to an array of 32 bit RGB triplets
 
     RESULT
-	-1 	: if no valid entry. (index to high)
-	other	: UWORD RGB value, 4 bits per electron gun, right justified
-
+	the ULONG pointed to by table will be filled with the 32 bit
+	fractional RGB values from the colormap
+	
     NOTES
 	table should point to an array of at least 3*ncolors longwords.
 
@@ -57,24 +57,22 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  LONG LUT[] = {0x00000000,0x11111111,0x22222222,0x33333333,
-		0x44444444,0x55555555,0x66666666,0x77777777,
-		0x88888888,0x99999999,0xaaaaaaaa,0xbbbbbbbb,
-		0xcccccccc,0xdddddddd,0xeeeeeeee,0xffffffff};
+    ULONG i,n;
 
-  ULONG i,n;
+    for (i = firstcolor, n = 0; i < (ncolors+firstcolor); i++ )
+    {
+        ULONG red, green, blue;
+	
+	color_get(cm, &red, &green, &blue, i);
+	
+	table[n++] = red;
+	table[n++] = green;
+	table[n++] = blue;
+    }
 
-  n = 0;
-  for (i=firstcolor; i< (ncolors+firstcolor); i++ )
-  {
-    WORD RGBValue = GetRGB4(cm, i);
-    table[n++] = LUT[(RGBValue >> 8) & 0xf];
-    table[n++] = LUT[(RGBValue >> 4) & 0xf];
-    table[n++] = LUT[ RGBValue       & 0xf];
-  }
-
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
+    
 } /* GetRGB32 */

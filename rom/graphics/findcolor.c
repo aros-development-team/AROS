@@ -54,56 +54,38 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  ULONG retval = 0;
+    ULONG retval = 0;
 
-  if (NULL != cm)
-  {
-    ULONG index = 0;
-    ULONG best_distance = (ULONG)-1;
-    ULONG distance;
-
-    if (-1 == maxpen && NULL != cm->PalExtra)
-    {    
-      struct PaletteExtra * pe = cm->PalExtra;
-      /*
-      ** According to the autodocs maxpen=-1 and an installed PalExtra
-      ** structure will limit the search to only those pens which could
-      ** be rendered in. So which are these ones and which ones are the
-      ** sprite colors in a color map?????
-      */
-#warning What do I do in this case?
-      /* Currently I just search the list of shared pens */
-      index = pe->pe_FirstShared;
-      while (-1 != (BYTE)index)
-      {
-        distance = color_distance(cm,r,g,b,index);
-        if (distance < best_distance)
-        {
-          best_distance = distance;
-          retval = index;
-        }
-        index = pe->pe_AllocList[index];
-      }
-    }
-    else
+    if (NULL != cm)
     {
-      while (index <= maxpen && index < cm->Count)
-      {
-        distance = color_distance(cm,r,g,b,index);
-        if (distance < best_distance)
-        {
-          best_distance = distance;
-          retval = index;
-        }
-        index++;
-      } 
-    }
-  }
+	ULONG index = 0;
+	ULONG best_distance = (ULONG)-1;
+	ULONG distance;
 
-  return retval;
-  
-  AROS_LIBFUNC_EXIT
+	if (-1 == maxpen && NULL != cm->PalExtra)
+	{
+	    /* pe_SharableColors is not the number of colors but the last color index! */
+	    maxpen = cm->PalExtra->pe_SharableColors;
+	}
+	
+	if (maxpen >= cm->Count) maxpen = cm->Count - 1;
+	
+	while (index <= maxpen)
+	{
+            distance = color_distance(cm,r,g,b,index);
+            if (distance < best_distance)
+            {
+                best_distance = distance;
+                retval = index;
+            }
+            index++;
+	} 
+    }
+
+    return retval;
+
+    AROS_LIBFUNC_EXIT
 } /* FindColor */

@@ -57,13 +57,14 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  if (NULL != cm && n < cm->Count)
-  {
-    color_set(cm, r,g,b,n);
-  }
+    if (NULL != cm && n < cm->Count)
+    {
+        color_set(cm, r,g,b,n);
+    }
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
+    
 } /* SetRGB32CM */

@@ -259,6 +259,11 @@ VOID color_set(struct ColorMap * cm,
                ULONG b,
                ULONG index);
 
+VOID color_get(struct ColorMap *cm,
+		ULONG *r,
+		ULONG *g,
+		ULONG *b,
+		ULONG index);
 
 
               

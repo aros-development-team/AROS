@@ -50,63 +50,69 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  struct PaletteExtra * pe;
+    struct PaletteExtra * pe;
 
-  if (NULL != cm->PalExtra)
+    if (NULL != cm->PalExtra)
+        return 0;
+
+    pe = AllocMem(sizeof(struct PaletteExtra), MEMF_CLEAR|MEMF_PUBLIC);
+    if (NULL != pe)
+    {
+	/* 
+	** if you change the number of byte allocated here then you
+	** must also make chnages to FreeColorMap()!
+	*/
+	pe->pe_RefCnt    = AllocMem(cm->Count, MEMF_CLEAR);
+	pe->pe_AllocList = AllocMem(cm->Count, MEMF_ANY);
+
+	if (NULL != pe->pe_RefCnt && NULL != pe->pe_AllocList)
+	{
+	    /* initialize the AllocList BYTE-array */
+	    ULONG i = 0;
+	    while (i < cm->Count)
+	    {
+                pe->pe_AllocList[i] = (BYTE)i-1;
+                i++;
+	    }
+
+	    /* connect the PaletteExtra structure to the ColorMap */
+	    cm ->PalExtra = pe;
+
+	    /* initialize the Palette Extra structure */
+	    InitSemaphore(&pe->pe_Semaphore);
+	    pe->pe_ViewPort = vp;
+
+	    pe->pe_FirstFree   = cm->Count-1;
+	    pe->pe_NFree       = cm->Count;
+	    pe->pe_FirstShared = (UWORD)-1;
+	    pe->pe_NShared     = 0;
+
+	    /* set all entries in the color table to be shareable
+               pe_SharableColors is not the number of colors but the last color index! */
+
+	    pe->pe_SharableColors = cm->Count-1;
+	    
+	} /* if (NULL != pe->pe_RefCnt && NULL != pe->pe_AllocList) */
+	else
+	{
+	    /* some memory allocation failed */
+	    if (pe->pe_RefCnt)
+                FreeMem(pe->pe_RefCnt, cm->Count);
+	    if (pe->pe_AllocList) 
+                FreeMem(pe->pe_AllocList, cm->Count);
+	    FreeMem(pe, sizeof(struct PaletteExtra));
+	    return 1;
+	}
+	
+    } /* if (NULL != pe) */
+    else
+	return 1;
+
     return 0;
 
-  pe = AllocMem(sizeof(struct PaletteExtra), MEMF_CLEAR|MEMF_PUBLIC);
-  if (NULL != pe)
-  {
-    /* 
-    ** if you change the number of byte allocated here then you
-    ** must also make chnages to FreeColorMap()!
-    */
-    pe->pe_RefCnt    = AllocMem(cm->Count, MEMF_CLEAR);
-    pe->pe_AllocList = AllocMem(cm->Count, MEMF_ANY);
+    AROS_LIBFUNC_EXIT
   
-    if (NULL != pe->pe_RefCnt && NULL != pe->pe_AllocList)
-    {
-      /* initialize the AllocList BYTE-array */
-      ULONG i = 0;
-      while (i < cm->Count)
-      {
-        pe->pe_AllocList[i] = (BYTE)i-1;
-        i++;
-      }
-      
-      /* connect the PaletteExtra structure to the ColorMap */
-      cm ->PalExtra = pe;
-    
-      /* initialize the Palette Extra structure */
-      InitSemaphore(&pe->pe_Semaphore);
-      pe->pe_ViewPort = vp;
-      
-      pe->pe_FirstFree   = cm->Count-1;
-      pe->pe_NFree       = cm->Count;
-      pe->pe_FirstShared = (UWORD)-1;
-      pe->pe_NShared     = 0;
-      /* set all entries in the color table to be shareable */
-      pe->pe_SharableColors = cm->Count-1;
-    }
-    else
-    {
-      /* some memory allocation failed */
-      if (pe->pe_RefCnt)
-        FreeMem(pe->pe_RefCnt, cm->Count);
-      if (pe->pe_AllocList) 
-        FreeMem(pe->pe_AllocList, cm->Count);
-      FreeMem(pe, sizeof(struct PaletteExtra));
-      return 1;
-    }
-  }
-  else
-    return 1;
-
-  return 0;
-  
-  AROS_LIBFUNC_EXIT
 } /* AttachPalExtra */

@@ -50,18 +50,19 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
-  
-  WORD * CT;
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  /* anything invalid?  */
-  if ( (NULL == colormap) || (colormap->Count < (entry+1)) )
-    return -1L;
+    WORD * CT;
 
-  /* All we`re currently doing is read the entry and return it. */
-  CT = colormap->ColorTable;
-  return CT[entry];
+    /* anything invalid?  */
+    if ( (NULL == colormap) || (entry >= colormap->Count) )
+        return -1L;
 
-  AROS_LIBFUNC_EXIT
+    /* All we`re currently doing is read the entry and return it. */
+    CT = colormap->ColorTable;
+    return CT[entry];
+
+    AROS_LIBFUNC_EXIT
+    
 } /* GetRGB4 */
