@@ -38,43 +38,56 @@ locally, it can move itself to the remote host.
 
 Definitions:
 
-Class - A collection of Interfaces and Methods.
+Class - A collection of Interfaces and a description of the Objects
+of this Class.
 
-Object - Instance of a class.
+Object - Instance of a class. If you think of a Class as a blueprint of
+something, then an Object is what you get when you build the something
+after the instructuctions of the blueprint.
 
 Method - A method is a function which is called with a class, an object
 and a message as arguments.
 
 Interface - An interface is a view of an object. Interfaces are
 defined globally. A class can implement any number of Interfaces.
-It contains a table of Methods.
+An Interface contains a table of Methods.
 
 Method Stub - This is a normal C function which is called with an
 object and a message. It is used to simplify the call of a method.
-The Method Stub extracts the class from the Object and invokes the
-Method.
+The Method Stub extracts the class from the Object and the Interface
+from the Full Method ID and invokes the Method.
 
-Method Base - The lowest ID of all Methods of a Class. All methods
-of the class haven ID equal or larger than this.
+Method Base - The lowest ID of all methods on an Interface. Along with the
+Method Count, this is used to determine if a method if supported by an
+Interface. This is a constant during the lifetime of the system.
 
-Method Count - The number of methods of a Class.
+Method Count - The number of methods of an Interface. This value
+can change (it is possible to add methods to an interface during
+runtime).
 
 Interface ID - The ID of an Interface. It is used to look up an
-Interface in a Class.
+Interface when a Method should be invoked.
+This is a constant during the lifetime of the system.
 
 Method Offset - The offset to the Method Base for a Method. Always
-positive.
+positive. This is a constant during the lifetime of the system.
 
 Method ID - The addition of Method Base and Method Offset for a specific
-Method.
+Method. This is a constant during the lifetime of the system.
+If you have an Interface Object, you can call the method.
+
+Full Method ID - The addition of Method ID and the Interface ID. The
+Interface ID is used to look up the Interface and then the Method ID is
+used to call the method in the Interface. This is a constant during the
+lifetime of the system.
 
 Method Name - A string with the name of a method.
 
 Method Object - An Object used to store a Method to allow to invoke
 the method fast.
 
-Interface Object - An object used to store a Interface
-and allows you to invoke all methods of that interface fast.
+Interface Object - An object used to store an Interface
+which allows you to invoke all methods of that interface fast.
 
 
 Possible solutions to design goals w/pros & cons
