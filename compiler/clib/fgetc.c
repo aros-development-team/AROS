@@ -63,6 +63,8 @@
 	return EOF;
     }
 
+    /* Note: changes here might require changes in vfscanf.c!! */
+    
     c = FGetC ((BPTR)(fdesc->fh));
     if (c == EOF)
     {
