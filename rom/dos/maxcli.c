@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1997/11/10 17:37:46  turrican
+    Return value was off by 1
+
     Revision 1.6  1997/01/27 00:36:26  ldp
     Polish
 
@@ -67,6 +70,6 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     
-    return DOSBase->dl_ProcCnt-1;
+    return DOSBase->dl_ProcCnt;
     AROS_LIBFUNC_EXIT
 } /* MaxCli */
