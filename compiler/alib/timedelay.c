@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define AROS_ALMOST_COMPATIBLE /* NEWLIST */
+
 #include <exec/types.h>
 #include <aros/asmcall.h>
 #include <devices/timer.h>
@@ -66,6 +68,7 @@
     mp.mp_Flags = PA_SIGNAL;
     mp.mp_SigTask = FindTask(NULL);
     mp.mp_SigBit = SIGB_SINGLE;
+    NEWLIST(&mp.mp_MsgList);
 
     tr.tr_node.io_Message.mn_Node.ln_Type = NT_MESSAGE;
     tr.tr_node.io_Message.mn_Node.ln_Pri = 0;
