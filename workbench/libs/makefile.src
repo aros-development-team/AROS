@@ -3,13 +3,12 @@ TOP=../..
 
 include $(TOP)/config/make.cfg
 
-SUBDIRS= \
+SUBDIRS=mathieeesptrans \
+	mathtrans \
 	diskfont \
 	gadtools \
 	icon \
-	iffparse \
-	mathtrans \
-	mathieeesptrans
+	iffparse
 
 OBJDIR = $(GENDIR)/workbench/libs
 FILES = dummy

@@ -21,13 +21,18 @@ LIB=$(LIBDIR)/lib$(LIBNAME).so
 
 INIT_FILE = $(LIBNAME)_init
 
-FILES = $(LIBNAME)_functable 
+FILES = $(LIBNAME)_functable intern_ieeespld
 
 END_FILE = $(LIBNAME)_endtag
 
 FUNCTIONS = \
 	ieeespsqrt \
-	ieeespexp
+	ieeespexp \
+	ieeespsinh \
+	ieeespcosh \
+	ieeesptanh \
+	ieeesplog \
+	ieeesplog10
 
 
 
