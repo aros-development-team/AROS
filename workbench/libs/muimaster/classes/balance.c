@@ -16,6 +16,8 @@
 #include <proto/exec.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
+#else
+#define ASSERT(x) x
 #endif
 
 #include "mui.h"
