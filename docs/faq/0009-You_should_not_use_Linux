@@ -1,9 +1,0 @@
-<section title="You should not use Linux or X11 !">
-
-<p>The final version of AROS will not depend on Linux or X11 anymore (but
-it will run on them if you insist). Currently, we use Linux and X11 to
-speed up development. For example, if I write a new function to open
-a window, I can write that single function and need not write hundreds
-of other functions in layers, graphics, etc.</p>
-
-</section>

@@ -1,8 +1,0 @@
-<section title="What do I need to compile AROS ?">
-
-<p>You need a Linux distribution
-(<a href="http://www.suse.com">SuSE</a> usually works,
-<a href="http://www.redhat.com">RedHat</a> usually less :-)
-AROS compiles with GCC 2.95.3 and also with GCC 3.0</p>
-
-</section>
