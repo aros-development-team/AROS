@@ -1,5 +1,5 @@
 ## version $VER: Commodities.catalog 1.0 (14.10.2001)
-## language français
+## language italiano
 ## codeset 0
 ;
 ;
@@ -8,9 +8,6 @@ Impossibile aprire %s V%ld !\n
 ;
 MSG_CANT_LOCK_SCR
 Impossibile accedere allo schermo pubblico!
-;
-MSG_CANT_GET_DRI
-Impossibile aprire la struttura DrawInfo!
 ;
 MSG_CANT_GET_VI
 Impossibile aprire la struttura VisualInfo!
