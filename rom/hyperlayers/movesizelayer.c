@@ -70,7 +70,7 @@
 
   struct Layer * first, *_l, *lparent;
   struct Region * newshape = NewRegion(), * oldshape, * r, *br;
-  struct Rectangle rect;
+  struct Rectangle rectw, recth;
   
   LockLayers(l->LayerInfo);
 #warning Write a function to copy a region.
@@ -82,45 +82,59 @@
 
   if (dw > 0)
   {
-    rect.MinX = l->shape->bounds.MaxX+1;
-    rect.MinY = l->shape->bounds.MinY;
-    rect.MaxX = rect.MinX + dw - 1;
-    rect.MaxY = l->shape->bounds.MaxY+dh;
-    OrRectRegion(newshape, &rect); 
+    rectw.MinX = l->shape->bounds.MaxX+1;
+    rectw.MinY = l->shape->bounds.MinY;
+    rectw.MaxX = rectw.MinX + dw - 1;
+    rectw.MaxY = l->shape->bounds.MaxY+dh;
+    OrRectRegion(newshape, &rectw); 
   }
   else
   if (dw < 0)
   {
-    rect.MinX = l->shape->bounds.MinX;
-    rect.MinY = l->shape->bounds.MinY;
-    rect.MaxX = l->shape->bounds.MaxX+dw;
-    rect.MaxY = l->shape->bounds.MaxY;
-    AndRectRegion(newshape, &rect); 
+    rectw.MinX = l->shape->bounds.MinX;
+    rectw.MinY = l->shape->bounds.MinY;
+    rectw.MaxX = l->shape->bounds.MaxX+dw;
+    rectw.MaxY = l->shape->bounds.MaxY;
+    AndRectRegion(newshape, &rectw); 
   }
 
   if (dh > 0)
   {
-    rect.MinX = l->shape->bounds.MinX;
-    rect.MinY = l->shape->bounds.MaxY + 1;
-    rect.MaxX = l->shape->bounds.MaxX+dw;
-    rect.MaxY = rect.MinY + dh - 1;
-    OrRectRegion(newshape, &rect); 
+    recth.MinX = l->shape->bounds.MinX;
+    recth.MinY = l->shape->bounds.MaxY + 1;
+    recth.MaxX = l->shape->bounds.MaxX+dw;
+    recth.MaxY = recth.MinY + dh - 1;
+    OrRectRegion(newshape, &recth); 
   }
   else
   if (dh < 0)
   {
-    rect.MinX = l->shape->bounds.MinX;
-    rect.MinY = l->shape->bounds.MinY;
-    rect.MaxX = l->shape->bounds.MaxX;
-    rect.MaxY = l->shape->bounds.MaxY+dh;
-    AndRectRegion(newshape, &rect); 
+    recth.MinX = l->shape->bounds.MinX;
+    recth.MinY = l->shape->bounds.MinY;
+    recth.MaxX = l->shape->bounds.MaxX;
+    recth.MaxY = l->shape->bounds.MaxY+dh;
+    AndRectRegion(newshape, &recth); 
+  }
+
+  if (dx)
+  {
+    newshape->bounds.MinX += dx; 
+    newshape->bounds.MaxX += dx; 
+    rectw.MinX += dx;
+    rectw.MaxX += dx;
+    recth.MinX += dx;
+    recth.MaxX += dx;
   }
   
-  newshape->bounds.MinX += dx; 
-  newshape->bounds.MinY += dy;
-  newshape->bounds.MaxX += dx; 
-  newshape->bounds.MaxY += dy;
-
+  if (dy)
+  {
+    newshape->bounds.MinY += dy;
+    newshape->bounds.MaxY += dy;
+    rectw.MinY += dy;
+    rectw.MaxY += dy;
+    recth.MinY += dy;
+    recth.MaxY += dy;
+  }
   first = GetFirstFamilyMember(l);
 //kprintf("%s called for layer %p, first = %p!\n",__FUNCTION__,l,first);
   
@@ -296,12 +310,24 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
     {
       if (lparent &&
           (IS_SIMPLEREFRESH(lparent) || (lparent==l->LayerInfo->check_lp)))
-        _BackFillRegion(l->parent, oldshape);
+        _BackFillRegion(l->parent, oldshape, FALSE);
     }
   }
 
-  DisposeRegion(r);
   DisposeRegion(oldshape);
+
+  if (dw > 0 || dh > 0)
+  {
+    ClearRegion(r);
+    if (dw > 0)
+      OrRectRegion(r, &rectw);
+    if (dh > 0)
+      OrRectRegion(r, &recth);
+    if (!IS_SUPERREFRESH(l))
+      _BackFillRegion(l, r, TRUE);
+  }
+
+  DisposeRegion(r);
 
   UnlockLayers(l->LayerInfo);
 

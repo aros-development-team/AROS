@@ -227,7 +227,7 @@ void ExitLIExtra(struct Layer_Info * li,
     struct LayerInfo_extra *lie = li->LayerInfo_extra;
 
     /* Free all resources associated with the layers. */
-    FreeLayerResources(li, TRUE);
+//    FreeLayerResources(li, TRUE);
 
     UnlockLayerInfo(li);
 
@@ -279,72 +279,6 @@ void SafeFreeExtLI(struct Layer_Info * li,
 /***************************************************************************/
 /*                            RESOURCE HANDLING                            */
 /***************************************************************************/
-
-/*
- * Add a resource to the LayerInfo resource list, dynamically allocating
- * extra storage space if needed.
- */
-BOOL AddLayersResource(struct Layer_Info * li,
-                       void *              ptr,
-                       ULONG               Size)
-{
-    struct ResourceNode *rn;
-    struct ResData      *rd;
-
-    if(!li)
-	return TRUE;
-
-    if(IsListEmpty(&((struct LayerInfo_extra *)li->LayerInfo_extra)->lie_ResourceList))
-	if(!(rn = AddLayersResourceNode(li)))
-	    return FALSE;
-
-    /* Check to see if there are some entries left */
-    if(--rn->rn_FreeCnt < 0)
-    {
-	/* If all entries are full, we have none left. Logic. :-) */
-	rn->rn_FreeCnt = 0;
-
-	/* So we add some more space for resources... */
-	if(!(rn = AddLayersResourceNode(li)))
-	    return FALSE;
-
-	/* ...and decrement it for the following operations. */
-	rn->rn_FreeCnt--;
-    }
-
-    rd = rn->rn_FirstFree++;
-
-    rd->ptr  = ptr;
-    rd->Size = Size;
-
-    return TRUE;
-}
-
-/*
- * Add a new node to the LayerInfo resource list.
- */
-struct ResourceNode * AddLayersResourceNode(struct Layer_Info * li)
-{
-    struct ResourceNode *rn;
-
-    if(!(rn = (struct ResourceNode *)AllocMem(sizeof(struct ResourceNode), MEMF_ANY)))
-	return NULL;
-
-    /*
-     * We keep 48 entries in this list. Could change depending on resource
-     * allocation going on in Layers. For every n*48 allocations, a new node
-     * must be allocated. This can (slightly) slow down operations if this
-     * happens a lot.
-     */
-    rn->rn_FreeCnt   = 48;
-
-    /* Point the cached pointer to the first free vector. */
-    rn->rn_FirstFree = &rn->rn_Data[0];
-
-    AddHead((struct List *)&((struct LayerInfo_extra *)li->LayerInfo_extra)->lie_ResourceList, &rn->rn_Link);
-
-    return rn;
-}
 
 /*
  * Allocate memory for a ClipRect.
@@ -434,73 +368,6 @@ void _FreeClipRectListBM(struct Layer * L,
   L->SuperSaveClipRects = CR;
 }
 
-/*
- * Allocate memory of a given size and enter it into the LayerInfo's
- * resource list.
- */
-void * AllocLayerStruct(ULONG               Size,
-                        ULONG               Flags,
-                        struct Layer_Info * li,
-                        struct LayersBase * LayersBase)
-{
-    void *mem;
-
-    mem = AllocMem(Size, Flags);
-
-    /* If there is no LayerInfo, this is just a straight AllocMem(). */
-    if(li)
-    {
-	/* But if there is a LI, and there was an error, drop back to the
-	   previous environment. */
-	if(!mem)
-	    ExitLIExtra(li, LayersBase);
-
-	/* If not, enter the memory into the layers resource list. */
-	if(!AddLayersResource(li, mem, Size))
-	{
-	    FreeMem(mem, Size);
-
-	    /* Again, drop back in case of an error. */
-	    ExitLIExtra(li, LayersBase);
-	}
-    }
-
-    return mem;
-}
-
-/*
- * Traverse the ResourceList associated with the LayerInfo, and free all
- * allocated resources.
- */
-void FreeLayerResources(struct Layer_Info * li,
-                        BOOL                flag)
-{
-    struct ResourceNode *rn;
-    struct ResData      *rd;
-    ULONG                count;
-
-    while( (rn = (struct ResourceNode *)
-	RemHead((struct List *)&((struct LayerInfo_extra *)li->LayerInfo_extra)->lie_ResourceList)) )
-    {
-	if(flag)
-	{
-	    count = 48 - rn->rn_FreeCnt;
-
-	    for(rd = &rn->rn_Data[0]; count-- != 0; rd++)
-	    {
-		if(rd->Size == RD_REGION)
-		    DisposeRegion(rd->ptr);
-		else if(rd->Size == RD_BITMAP)
-		    FreeBitMap(rd->ptr);
-		else
-		    FreeMem(rd->ptr, rd->Size);
-	    }
-
-	    FreeMem(rn, sizeof(struct ResourceNode));
-	}
-    }
-
-}
 
 /***************************************************************************/
 /*                              MISCELLANEOUS                              */
@@ -667,45 +534,18 @@ void UninstallClipRegionClipRects(struct Layer_Info * LI)
 /*-----------------------------------END-----------------------------------*/
 
 
-/*
- * Backup any parts of the layer that overlap with the backup_region
- * and that are not already backed up. Create the cliprects and
- * bitmaps if necessary.
- * Assumption: Only visible parts become invisible,
- *             invisible parts will not become visible.
- *
- * This function MUST not manipulate hide_region!!!!
- */
-int _BackupPartsOfLayer(struct Layer * l, 
-                        struct Region * hide_region,
-                        int dx,
-                        int backupsimplerefresh)
+struct ClipRect * CreateClipRectsFromRegion(struct Region *r,
+                                            struct Layer * l,
+                                            int invisible)
 {
-  struct ClipRect * cr, * firstcr = NULL, * oldcr;
-  struct RegionRectangle * rr;
-  struct Region * r = NewRegion();
-  struct BitMap * display_bm = l->rp->BitMap; 
-  int invisible = FALSE;
-
-
-#if 0
-kprintf("\t %s: l=%p\n",
-        __FUNCTION__,
-        l);  
-#endif
-#warning Write function to copy a region
-
-  OrRegionRegion(l->VisibleRegion, r);
-  ClearRegionRegion(hide_region,r);
-  AndRegionRegion(l->shape,r);
-  AndRegionRegion(l->parent->shape,r);
-  
+  int looped = FALSE;
+  struct ClipRect * firstcr = NULL, * cr;
   /*
    * From region r create cliprects
    */
   while (1)
   {
-    rr = r->RegionRectangle;
+    struct RegionRectangle * rr = r->RegionRectangle;
     while (rr)
     {
       cr = _AllocClipRect(l);
@@ -732,25 +572,37 @@ kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
       rr = rr->Next;
     }
   
-    if (FALSE == invisible)
+    if (FALSE == looped)
     {
       /*
        * Flip the shape to the visible part
        */
       XorRegionRegion(l->shape,r);
-      invisible = TRUE;
+      AndRegionRegion(l->shape,r);
+      if (invisible == TRUE)
+        invisible = FALSE;
+      else
+        invisible = TRUE;
+      looped = TRUE;
     }
     else
       break;
   } /* while (1) */
   
-  DisposeRegion(r);
+  return firstcr;
+}
 
+int CopyClipRectsToClipRects(struct Layer * l,
+                             struct ClipRect * firstcr,
+                             int backupsimplerefresh,
+                             int dx)
+{
+  struct BitMap * display_bm = l->rp->BitMap;
   /*
    * firstcr holds all new cliprects.
-   * flags = TRUE means that that cr will be visible.
+   * lobs = TRUE means that that cr will be invisible.
    */
-  oldcr = l->ClipRect;
+  struct ClipRect * oldcr = l->ClipRect;
 
   while (NULL != oldcr)
   {
@@ -784,7 +636,6 @@ kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
           if (IS_SIMPLEREFRESH(l) && 
                  (FALSE == backupsimplerefresh || NULL != oldcr->lobs))
           {
-
               struct Rectangle rect;
               rect.MinX = _cr->bounds.MinX - l->bounds.MinX;
               rect.MinY = _cr->bounds.MinY - l->bounds.MinY;
@@ -964,7 +815,45 @@ kprintf("\t\t %s backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
     _FreeClipRect(oldcr, l);
     oldcr = _cr;
   } /* for all oldcr's */
+
+  return TRUE;
+}
+
+/*
+ * Backup any parts of the layer that overlap with the backup_region
+ * and that are not already backed up. Create the cliprects and
+ * bitmaps if necessary.
+ * Assumption: Only visible parts become invisible,
+ *             invisible parts will not become visible.
+ *
+ * This function MUST not manipulate hide_region!!!!
+ */
+int _BackupPartsOfLayer(struct Layer * l, 
+                        struct Region * hide_region,
+                        int dx,
+                        int backupsimplerefresh)
+{
+  struct ClipRect * firstcr;
+  struct Region * r = NewRegion();
+
+#if 0
+kprintf("\t %s: l=%p\n",
+        __FUNCTION__,
+        l);  
+#endif
+#warning Write function to copy a region
+
+  OrRegionRegion(l->VisibleRegion, r);
+  ClearRegionRegion(hide_region,r);
+  AndRegionRegion(l->shape,r);
+  AndRegionRegion(l->parent->shape,r);
+
+  firstcr = CreateClipRectsFromRegion(r,l,FALSE);
   
+  DisposeRegion(r);
+
+  CopyClipRectsToClipRects(l,firstcr,backupsimplerefresh,dx);
+
   l->ClipRect = firstcr;
 
   /*
@@ -986,11 +875,9 @@ kprintf("\t\t %s backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
 int _ShowPartsOfLayer(struct Layer * l, 
                       struct Region * show_region)
 {
-  struct ClipRect * cr, * firstcr = NULL, * oldcr;
-  struct RegionRectangle * rr;
+  struct ClipRect * cr, * firstcr, * oldcr;
   struct Region * r = NewRegion();
   struct BitMap * display_bm = l->rp->BitMap;
-  int invisible = FALSE;
   
 //kprintf("%s called for %p\n",__FUNCTION__,l);
 #warning Write function to copy a region
@@ -999,55 +886,16 @@ int _ShowPartsOfLayer(struct Layer * l,
   AndRegionRegion(l->shape,r);
   AndRegionRegion(l->parent->shape,r);
   
-  /*
-   * From region r create cliprects
-   */
-  while (1)
-  {
-    rr = r->RegionRectangle;
-    while (rr)
-    {
-      cr = _AllocClipRect(l);
-      cr->bounds.MinX = rr->bounds.MinX + r->bounds.MinX;
-      cr->bounds.MinY = rr->bounds.MinY + r->bounds.MinY;
-      cr->bounds.MaxX = rr->bounds.MaxX + r->bounds.MinX;
-      cr->bounds.MaxY = rr->bounds.MaxY + r->bounds.MinY;
-      cr->lobs  = invisible;
-      cr->Next  = firstcr;
-#if 0
-kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d, layer : %p\n",
-        __FUNCTION__,
-        cr->bounds.MinX,
-        cr->bounds.MinY,
-        cr->bounds.MaxX,
-        cr->bounds.MaxY,
-        invisible,
-        l);
-#endif
-
-      firstcr = cr;
-
-      rr = rr->Next;
-    }
-
-    if (FALSE == invisible)
-    {
-      /*
-       * Flip the shape to the visible part
-       */
-      XorRegionRegion(l->shape,r);
-      invisible = TRUE;
-    }
-    else
-      break;
-  }
+  firstcr = CreateClipRectsFromRegion(r,l,FALSE);
   
   DisposeRegion(r);
+
   /*
    * firstcr holds all new cliprects.
    * lobs = TRUE means that that cr will be visible.
    */
   oldcr = l->ClipRect;
+
 
   while (NULL != oldcr)
   {
@@ -1303,11 +1151,6 @@ kprintf("%s: Adding %d/%d-%d/%d to damagelist!\n",
                   ySrc  = 0;
                 }
               }
-              else
-              {
-kprintf("!!!!!!!!!!!!! MISSING ??????????????\n");
-#warning Missing, maybe the same as above or not necessary.
-              }
 
               if (oldcr->bounds.MaxX > _cr->bounds.MaxX)
                 xSize -= (oldcr->bounds.MaxX - _cr->bounds.MaxX);
@@ -1341,6 +1184,19 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d\n",
           } /* if is simple else ... */
         } /* if new cliprect is visible or invisible   */
       } /* if rectangles overlap */
+      else
+      {
+        if (NULL == _cr->BitMap)
+        {
+//kprintf("Alloc bitmap!\n");
+           _cr->BitMap = AllocBitMap(
+           _cr->bounds.MaxX - _cr->bounds.MinX + 1 + 16 ,
+           _cr->bounds.MaxY - _cr->bounds.MinY + 1,
+           display_bm->Depth,
+           BMF_CLEAR,
+           display_bm);
+        }
+      }
       _cr = _cr->Next;
     } /* all new cliprects */
     
@@ -1350,7 +1206,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d\n",
     _FreeClipRect(oldcr, l);
     oldcr = _cr;
   } /* for all old cliprects */
-  
+
   l->ClipRect = firstcr;
 
   /*
@@ -1480,9 +1336,28 @@ int ClearRegionRegion(struct Region * rd, struct Region * r)
  * It is assumed that the region r is not needed anymore.
  */
 void _BackFillRegion(struct Layer * l, 
-                     struct Region * r)
+                     struct Region * r,
+                     int addtodamagelist)
 {
-  struct RegionRectangle * RR = r->RegionRectangle;
+  struct RegionRectangle * RR;
+  
+  if (TRUE == addtodamagelist)
+  {
+    RR  = r->RegionRectangle;
+    /* check if a region is empty */
+    while (NULL != RR)
+    {
+      OrRectRegion(l->DamageList, &RR->bounds);
+      l->Flags |= LAYERREFRESH;
+
+      RR = RR->Next;
+    }
+  }
+#if 0
+  if (l->parent)
+    AndRegionRegion(l->parent->shape, r);
+#endif
+  RR  = r->RegionRectangle;
   /* check if a region is empty */
   while (NULL != RR)
   {
@@ -1490,6 +1365,7 @@ void _BackFillRegion(struct Layer * l,
      RR->bounds.MinY += r->bounds.MinY;
      RR->bounds.MaxX += r->bounds.MinX;
      RR->bounds.MaxY += r->bounds.MinY;
+
 #if 0
 kprintf("\t\t: %s Clearing rect : %d/%d-%d/%d  layer: %p, hook: %p, bitmap: %p\n",
         __FUNCTION__,
@@ -1502,12 +1378,13 @@ kprintf("\t\t: %s Clearing rect : %d/%d-%d/%d  layer: %p, hook: %p, bitmap: %p\n
         l->rp->BitMap);
 #endif
      _CallLayerHook(l->BackFill,
-            	    l->rp,
-            	    l,
-            	    &RR->bounds,
-            	    RR->bounds.MinX,
-            	    RR->bounds.MinY);
+                    l->rp,
+                    l,
+                    &RR->bounds,
+                    RR->bounds.MinX,
+                    RR->bounds.MinY);
     RR = RR->Next;
   }
+
 }
 

@@ -146,4 +146,5 @@ int ClearRegionRegion(struct Region * rd, struct Region * r);
 struct Layer * _FindFirstFamilyMember(struct Layer * l);
 
 void _BackFillRegion(struct Layer * l, 
-                     struct Region * r);
+                     struct Region * r,
+                     int addtodamagelist);

@@ -123,7 +123,7 @@
 kprintf("lparent: %p, l->parent: %p\n",lparent,l->parent);
       if (lparent && 
           (IS_SIMPLEREFRESH(lparent) || (lparent==l->LayerInfo->check_lp)))
-        _BackFillRegion(lparent, l->shape);
+        _BackFillRegion(lparent, l->shape, FALSE);
     }
   }
   

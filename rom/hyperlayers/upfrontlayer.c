@@ -63,7 +63,7 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-  struct Layer * first, * _l, * lbehind = NULL, * lfront = NULL;
+  struct Layer * first, * _l;
   int found = FALSE;
   LONG ret;
 
