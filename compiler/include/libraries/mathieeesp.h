@@ -59,7 +59,7 @@
 
 
 /* I also include the function prototypes here! */
-
+#if 0
 #ifndef PROTO_MATHIEEESINGBAS_H
 #include <proto/mathieeesingbas.h>
 #endif
@@ -67,5 +67,5 @@
 #ifndef PROTO_MATHIEEESINGTRANS_H
 #include <proto/mathieeesingtrans.h>
 #endif
-
+#endif
 #endif  /* LIBRARIES_MATHIEEESP_H */
