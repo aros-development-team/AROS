@@ -17,6 +17,7 @@
 #include "desktop_intern.h"
 #include "presentation.h"
 #include "iconcontainerclass.h"
+#include "iconclass.h"
 
 #include "desktop_intern_protos.h"
 
@@ -92,6 +93,8 @@ IPTR iconConNew(Class *cl, Object *obj, struct opSet *ops)
 		data->vertScroll=FALSE;
 		data->horizProp=horiz;
 		data->vertProp=vert;
+		data->iconSelected=FALSE;
+		data->justSelected=FALSE;
 	}
 
 	return retval;
@@ -298,6 +301,8 @@ IPTR iconConAdd(Class *cl, Object *obj, struct opMember *msg)
 	muiNotifyData(msg->opam_Object)->mnd_ParentObject = obj;
 	DoMethod(msg->opam_Object, MUIM_ConnectParent, obj);
 
+	DoMethod(msg->opam_Object, MUIM_Notify, IA_Selected, TRUE, obj, 3, MUIM_Set, ICA_JustSelected, TRUE);
+
 	DoSetupMethod(msg->opam_Object, muiRenderInfo(obj));
 
 	DoMethod(msg->opam_Object, MUIM_AskMinMax, &minMax);
@@ -450,6 +455,7 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
 				// this is slow... but necessary. If members are groups, then
 				// we can't resort to the above
+				// todo: ONLY layout those objects that are, or will be, on-scren
 				MUI_Layout(mn->m_Object, _left(mn->m_Object)-scrollAmountX-_mleft(obj), _top(mn->m_Object)-scrollAmountY-_mtop(obj), _width(mn->m_Object), _height(mn->m_Object), 0);
 
 				mn=(struct MemberNode*)mn->m_Node.mln_Succ;
@@ -539,6 +545,11 @@ IPTR iconConSet(Class *cl, Object *obj, struct opSet *msg)
 				data->vertScroll=TRUE;
 				MUI_Redraw(obj, MADF_DRAWUPDATE);
 				break;
+			case ICA_JustSelected:
+kprintf("justselected\n");
+				data->justSelected=tag->ti_Data;
+				retval=DoSuperMethodA(cl, obj, (Msg)msg);
+				break;
 			default:
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
@@ -569,6 +580,59 @@ IPTR iconConConnectParent(Class *cl, Object *obj, struct MUIP_ConnectParent *msg
 	}
 
 	SetAttrs(obj, PA_InTree, TRUE, TAG_END);
+
+	return retval;
+}
+
+IPTR iconConHandleInput(Class *cl, Object *obj, struct MUIP_HandleInput *msg)
+{
+	IPTR retval=0;
+
+	struct IconContainerClassData *data;
+
+	data=(struct IconContainerClassData*)INST_DATA(cl, obj);
+
+	if(msg->imsg)
+	{
+		switch(msg->imsg->Class)
+		{
+			case IDCMP_MOUSEBUTTONS:
+			{
+				if(msg->imsg->Code==SELECTDOWN)
+				{
+					if(msg->imsg->MouseX >= _mleft(obj) && msg->imsg->MouseX <= _mright(obj) &&
+						msg->imsg->MouseY >= _mtop(obj) && msg->imsg->MouseY <= _mbottom(obj))
+					{
+						if(!data->justSelected)
+							DoMethod(obj, ICM_UnselectAll);
+						else
+							data->justSelected=FALSE;
+					}
+
+				}
+				break;
+			}
+		}
+	}
+
+	return retval;
+}
+
+IPTR iconConUnselectAll(Class *cl, Object *obj, Msg msg)
+{
+	IPTR retval=0;
+	struct MemberNode *mn;
+	struct IconContainerClassData *data;
+
+	data=(struct IconContainerClassData*)INST_DATA(cl, obj);
+
+	mn=(struct MemberNode*)data->memberList.mlh_Head;
+	while(mn->m_Node.mln_Succ)
+	{
+		if(_selected(mn->m_Object))
+			SetAttrs(mn->m_Object, IA_Selected, FALSE, TAG_END);
+		mn=(struct MemberNode*)mn->m_Node.mln_Succ;
+	}
 
 	return retval;
 }
@@ -613,6 +677,12 @@ AROS_UFH3(IPTR, iconContainerDispatcher,
 			break;
 		case MUIM_ConnectParent:
 			retval=iconConConnectParent(cl, obj, (struct MUIP_ConnectParent*)msg);
+			break;
+		case MUIM_HandleInput:
+			retval=iconConHandleInput(cl, obj, (struct MUIP_HandleInput*)msg);
+			break;
+		case ICM_UnselectAll:
+			retval=iconConUnselectAll(cl, obj, msg);
 			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, msg);

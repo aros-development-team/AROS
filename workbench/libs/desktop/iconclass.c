@@ -17,6 +17,7 @@
 #include <proto/utility.h>
 
 #include "presentation.h"
+#include "iconcontainerclass.h"
 #include "iconclass.h"
 
 #include "desktop_intern_protos.h"
@@ -28,6 +29,7 @@ IPTR iconNew(Class *cl, Object *obj, struct opSet *msg)
 	struct TagItem *tag;
 	struct DiskObject *diskobject=NULL;
 	UBYTE *label=NULL;
+	BOOL selected=FALSE;
 
 	tag=FindTagItem(IA_DiskObject, msg->ops_AttrList);
 	if(tag)
@@ -43,6 +45,13 @@ IPTR iconNew(Class *cl, Object *obj, struct opSet *msg)
 		tag->ti_Tag=TAG_IGNORE;
 	}
 
+	tag=FindTagItem(IA_Selected, msg->ops_AttrList);
+	if(tag)
+	{
+		selected=tag->ti_Data;
+		tag->ti_Tag=TAG_IGNORE;
+	}
+
 	retval=DoSuperMethodA(cl, obj, msg);
 	if(retval)
 	{
@@ -50,6 +59,7 @@ IPTR iconNew(Class *cl, Object *obj, struct opSet *msg)
 		data=INST_DATA(cl, obj);
 		data->diskObject=diskobject;
 		data->label=label;
+		data->selected=selected;
 
 		data->imagePart=RectangleObject,
 			ButtonFrame,
@@ -80,6 +90,18 @@ IPTR iconSet(Class *cl, Object *obj, struct opSet *msg)
     {
 		switch(tag->ti_Tag)
 		{
+			case IA_Label:
+				SetAttrs(data->labelPart, MUIA_Text_Contents, tag->ti_Data, TAG_END);
+				break;
+			case IA_Selected:
+				data->selected=tag->ti_Data;
+				SetAttrs(data->imagePart, MUIA_Selected, tag->ti_Data, TAG_END);
+				if(tag->ti_Data)
+					retval=DoSuperMethodA(cl, obj, (Msg)msg);
+				break;
+			case IA_Executed:
+				retval=DoSuperMethodA(cl, obj, (Msg)msg);
+				break;
 			default:
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
@@ -138,7 +160,57 @@ IPTR iconAskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 	msg->MinMaxInfo->DefHeight+=(_minheight(data->imagePart)+_minheight(data->labelPart));
 	msg->MinMaxInfo->MaxHeight+=(_minheight(data->imagePart)+_minheight(data->labelPart));
 
-kprintf("_defheight: %d, _defwidth: %d\n", msg->MinMaxInfo->DefHeight, msg->MinMaxInfo->DefWidth);
+	return retval;
+}
+
+IPTR iconHandleInput(Class *cl, Object *obj, struct MUIP_HandleInput *msg)
+{
+	IPTR retval=0;
+	struct IconClassData *data;
+
+	data=(struct IconClassData*)INST_DATA(cl, obj);
+
+	if(msg->imsg)
+	{
+		switch(msg->imsg->Class)
+		{
+			case IDCMP_MOUSEBUTTONS:
+			{
+				if(msg->imsg->Code==SELECTDOWN)
+				{
+					if(msg->imsg->MouseX >= _mleft(obj) && msg->imsg->MouseX <= _mright(obj) &&
+						msg->imsg->MouseY >= _mtop(obj) && msg->imsg->MouseY <= _mbottom(obj))
+					{
+						if(data->selected)
+						{
+							ULONG nowSeconds=0, nowMicros=0;
+
+							CurrentTime(&nowSeconds, &nowMicros);
+							DoubleClick(data->lastClickSecs, data->lastClickMicros, nowSeconds, nowMicros);
+							SetAttrs(obj, IA_Executed, TRUE, TAG_END);
+						}
+						else
+						{
+							CurrentTime(&data->lastClickSecs, &data->lastClickMicros);
+							DoMethod(_parent(obj), ICM_UnselectAll, obj);
+							SetAttrs(obj, IA_Selected, TRUE, TAG_END);
+						}
+					}
+
+				}
+				break;
+			}
+		}
+	}
+}
+
+IPTR iconSetup(Class *cl, Object *obj, struct MUIP_Setup *msg)
+{
+	IPTR retval=0;
+
+	DoSuperMethodA(cl, obj, msg);
+
+	MUI_RequestIDCMP(obj, IDCMP_MOUSEBUTTONS);
 
 	return retval;
 }
@@ -167,6 +239,12 @@ AROS_UFH3(IPTR, iconDispatcher,
 //		case MUIM_AskMinMax:
 //			retval=iconAskMinMax(cl, obj, (struct MUIP_AskMinMax*)msg);
 //			break;
+		case MUIM_HandleInput:
+			retval=iconHandleInput(cl, obj, (struct MUIP_HandleInput*)msg);
+			break;
+		case MUIM_Setup:
+			retval=iconSetup(cl, obj, (struct MUIP_Setup*)msg);
+			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, msg);
 			break;
