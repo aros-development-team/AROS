@@ -327,6 +327,26 @@ void movesizelayer(void)
   }
 }
 
+void sizelayer(void)
+{
+  int i,dx,dy;
+  printf("Resize layer with id: ");
+  scanf("%d",&i);
+  printf("delta width: ");
+  scanf("%d",&dx);
+  printf("delta height: ");
+  scanf("%d",&dy);
+  if (layers[i])
+  {
+    SizeLayer(0, layers[i], dx, dy);
+    printf("Resized layer with id %d.\n",i);
+  }
+  else
+  {
+    printf("No layer with id %d\n",i);
+  }
+}
+
 void motion(void)
 {
   int i,dx,dy,iter;
@@ -922,7 +942,7 @@ void doall(void)
     {
         printf("quit help createupfrontlayer [cul] createbehindlayer [cbl] deletelayer [dl]\n");
         printf("behindlayerupfrontlayer [ul] movelayerinfrontof [mlio]\n");
-        printf("movelayer [ml] movesizelayer [msl] motion [mot] \n");
+        printf("movelayer [ml] movesizelayer [msl] sizelayer [sl] motion [mot] \n");
         printf("Frame [F]  DemoA DemoB DemoC\n");
     } 
     else if (!strcmp(buf, "createupfrontlayer") || !strcmp(buf, "cul")) 
@@ -956,6 +976,10 @@ void doall(void)
     else if (!strcmp(buf, "movesizelayer") || !strcmp(buf, "msl")) 
     {
       movesizelayer();
+    }     
+    else if (!strcmp(buf, "sizelayer") || !strcmp(buf, "sl")) 
+    {
+      sizelayer();
     }     
     else if (!strcmp(buf, "motion") || !strcmp(buf, "mot")) 
     {
