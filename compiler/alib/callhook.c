@@ -1,8 +1,8 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc: amiga.lib function CallHook()
+    Desc: amiga.lib function CallHook() which doesn't use utility.library
     Lang: english
 */
 #include <aros/system.h>
