@@ -101,7 +101,7 @@
     /* Fill all entries */
     for(i=0;i<entry->ml_NumEntries;i++)
     {
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 	/*
 	    Somewhat of a compatibility kludge: some programs rely that
 	    AllocEntry() doesn't fail if the length field is 0.
@@ -136,7 +136,7 @@
 		/* All done */
 		return entry;
 	    }
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 	}
 	else /* if length = 0 */
 	{

@@ -9,7 +9,7 @@
 #include <proto/exec.h>
 #include "exec_private.h"
 
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 #define SysBase 	*(void **)4
 #endif
 

@@ -22,7 +22,7 @@
 #include <aros/debug.h>
 #undef kprintf
 
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 #   define NATIVE(x)        x
 #else
 #   define NATIVE(x)        /* eps */
@@ -89,7 +89,7 @@
 	/* All done. */
 	Permit();
     }
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     else
     {
 	/* Local vars not guaranteed to be initialised to 0. I initialise

@@ -27,7 +27,7 @@
 	       Structures
 **************************************/
 
-#if AROS_FLAVOUR == AROS_FLAVOUR_NATIVE
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 struct Node
 {
     struct Node * ln_Succ,

@@ -13,7 +13,7 @@
 #endif
 
 /* System() */
-#if AROS_FLAVOUR!=AROS_NATIVE
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 #   define SYS_Dummy	   (DOS_TAGBASE)
 #else
 #   define SYS_Dummy	   (TAG_USER + 32)
@@ -27,7 +27,7 @@
 /* CreateNewProc() */
 /* One of NP_Seglist or NP_Entry MUST be given. Everything else is optional.
    Defaults are in parenthese. */
-#if AROS_FLAVOUR!=AROS_NATIVE
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 #   define NP_Dummy	   (DOS_TAGBASE + 1000)
 #else
 #   define NP_Dummy	   (TAG_USER + 1000)
@@ -68,7 +68,7 @@
 #define NP_UserData	(NP_Dummy + 26) /* IPTR to put into tc_UserData (NULL) */
 
 /* AllocDosObject() */
-#if AROS_FLAVOUR!=AROS_NATIVE
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 #   define ADO_Dummy	   (DOS_TAGBASE + 2000)
 #else
 #   define ADO_Dummy	   (TAG_USER + 2000)

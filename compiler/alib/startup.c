@@ -16,7 +16,7 @@
 #   include <aros/debug.h>
 #endif
 
-#if AROS_FLAVOUR == AROS_FLAVOUR_NATIVE
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 asm("
 	.text
 

@@ -106,7 +106,7 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     if(task->tc_TrapCode==NULL)
 	task->tc_TrapCode=&AROS_SLIB_ENTRY(TrapHandler,Exec);
 
-#if AROS_FLAVOUR!=AROS_FLAVOUR_NATIVE
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     /*
 	If you can't to store the registers on the signal stack, you
 	must set this flag.

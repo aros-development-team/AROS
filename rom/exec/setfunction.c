@@ -76,13 +76,13 @@
 {
     AROS_LIBFUNC_INIT
     APTR ret;
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     ULONG *vecaddr;
 #endif
 
     D(bug("SetFunction(%s, %lx, %lx) = ", (ULONG)library->lib_Node.ln_Name, funcOffset, (ULONG)newFunction));
 
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     /*
 	Fix dos.library/ramlib attempts to SetFunction() CloseDevice/
 	CloseLibrary/RemDevice/RemLibrary/OpenDevice/OpenLibrary.
@@ -132,7 +132,7 @@
     /* Mark the library as changed. */
     library->lib_Flags|=LIBF_CHANGED;
 
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     /* The following section is coded like this (instead of using the macros),
        because else gcc will output 64-bit muls instructions, that are not
        present on the 68060 (and will crash it). It's faster this way, too. :) */

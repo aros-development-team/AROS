@@ -97,7 +97,7 @@ AROS_UFH1(ULONG, AROS_SLIB_ENTRY(init,alerthook),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     /*
 	Clear memory location zero (a cookie for the delayed guru after reset).
 	Some machines will keep putting a guru up during every reset if I don't

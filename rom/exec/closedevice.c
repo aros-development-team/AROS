@@ -23,7 +23,7 @@
 #include <aros/debug.h>
 #undef kprintf
 
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 #   define NATIVE(x)        x
 #else
 #   define NATIVE(x)        /* eps */
@@ -93,7 +93,7 @@
 	/* Trash device field */
 	iORequest->io_Device=(struct Device *)-1;
     }
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     else
     {
 	/* local vars not guaranteed to be initialised to 0 */
@@ -104,7 +104,7 @@
     /* All done. */
     Permit();
 
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     /*
 	Kludge to force the seglist to register d0. Ramlib patches this
 	vector for seglist expunge capability and expects the seglist in

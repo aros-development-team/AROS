@@ -25,7 +25,7 @@
 #define LOC_ROMSIZE	0x14		/* offset from end of ROM! */
 #define ROM_END 	0x1000000
 
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 /* Native AROS support functions */
 IPTR kicksize(void);
 IPTR kickbase(void);
@@ -94,7 +94,7 @@ IPTR kickbase(void);
 	switch(tag->ti_Tag)
 	{
 
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 	/*
 	    Only support these tags if we are on the native machine. On other
 	    machines this call will not touch the storage space. Set the
@@ -147,7 +147,7 @@ IPTR kickbase(void);
     return ret;
 } /* ArosInquireA */
 
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 /* Native AROS support functions */
 IPTR kicksize(void)
 {

@@ -284,7 +284,7 @@ const char *const Dos_SubstDateTable[]=
 		switch(*fstring)
 		{
 		case 'y':
-#if AROS_FLAVOUR == AROS_FLAVOUR_NATIVE
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 		    *buf++ = year/10%10+'0';
 		    *buf++ = year%10+'0';
 #else

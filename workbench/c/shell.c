@@ -19,13 +19,39 @@
 static const char version[] = "$VER: shell 41.1 (2.3.1997)\n";
 
 BPTR cLock;
+struct CommandLineInterface *cli;
 
 static void printpath(void)
+{
+    STRPTR buf;
+    ULONG i;
+    for(i=256;;i+=256)
+    {
+	buf=AllocVec(i,MEMF_ANY);
+	if(buf==NULL)
+	    break;
+	if(GetCurrentDirName(buf,i) == DOSTRUE)
+	{
+	    FPuts(Output(),buf);
+	    FreeVec(buf);
+	    break;
+	}
+	FreeVec(buf);
+	if (IoErr() != ERROR_OBJECT_TOO_LARGE)
+	    break;
+    }
+}
+
+static void setpath(BPTR lock)
 {
     BPTR dir;
     STRPTR buf;
     ULONG i;
-    dir=CurrentDir(0);
+
+    if(lock==NULL)
+	dir=CurrentDir(0);
+    else
+	dir=lock;
     for(i=256;;i+=256)
     {
 	buf=AllocVec(i,MEMF_ANY);
@@ -33,13 +59,14 @@ static void printpath(void)
 	    break;
 	if(NameFromLock(dir,buf,i))
 	{
-	    FPuts(Output(),buf);
+	    SetCurrentDirName(buf);
 	    FreeVec(buf);
 	    break;
 	}
 	FreeVec(buf);
     }
-    CurrentDir(dir);
+    if(lock==NULL)
+	CurrentDir(dir);
 }
 
 static void prompt(void)
@@ -142,7 +169,7 @@ BPTR loadseg(STRPTR name)
 	s++;
     }
     old=CurrentDir(0);
-    cur=(BPTR *)BADDR(Cli()->cli_CommandDir);
+    cur=(BPTR *)BADDR(cli->cli_CommandDir);
     while(cur!=NULL)
     {
 	(void)CurrentDir(cur[1]);
@@ -175,7 +202,7 @@ LONG execute(STRPTR com)
     while(*last++)
 	;
     args=s1=(STRPTR)AllocVec(last-com+1,MEMF_ANY);
-    rest=s2=(STRPTR)AllocVec(last-com+1,MEMF_ANY);
+    rest=s2=(STRPTR)AllocVec(last-com+1,MEMF_ANY|MEMF_CLEAR);
     if(args==NULL||rest==NULL)
     {
 	error=ERROR_NO_FREE_STORE;
@@ -219,7 +246,7 @@ LONG execute(STRPTR com)
 		*rest++=com[size++];
 	    if(res==ITEM_NOTHING||res==ITEM_ERROR)
 	    {
-		*rest++=0;
+		*rest++='\n';
 		break;
 	    }
 	    continue;
@@ -241,6 +268,7 @@ LONG execute(STRPTR com)
 	    error=IoErr();
 	    goto end;
 	}
+	cli->cli_CurrentInput=in;
 	in=SelectInput(in);
     }
     if(outfile!=NULL)
@@ -252,6 +280,7 @@ LONG execute(STRPTR com)
 	    error=IoErr();
 	    goto end;
 	}
+	cli->cli_CurrentOutput=out;
 	out=SelectOutput(out);
     }
     if(out==NULL && appfile!=NULL)
@@ -263,6 +292,7 @@ LONG execute(STRPTR com)
 	    error=IoErr();
 	    goto end;
 	}
+	cli->cli_CurrentOutput=out;
 	Seek (out,0,OFFSET_END);
 	out=SelectOutput(out);
     }
@@ -272,9 +302,14 @@ LONG execute(STRPTR com)
 	last=s2;
 	while(*last++)
 	    ;
-	RunCommand(seglist,100000,s2,last-s2-1);
+	SetProgramName(command);
+	cli->cli_Module=seglist;
+	cli->cli_ReturnCode = RunCommand(seglist,100000,s2,last-s2-1);
+	AROS_BSTR_setstrlen(cli->cli_CommandName,0);
+	AROS_BSTR_putchar(cli->cli_CommandName,0,'\0');
+	cli->cli_Module=0;
 	UnLoadSeg(seglist);
-	Cli()->cli_Result2 = IoErr();
+	cli->cli_Result2 = IoErr();
     }else if(infile==NULL&&outfile==NULL)
     {
 	lock=Lock(command,SHARED_LOCK);
@@ -285,8 +320,10 @@ LONG execute(STRPTR com)
 	    {
 		if(Examine(lock,fib))
 		{
-		    if(fib->fib_DirEntryType>0)
+		    if(fib->fib_DirEntryType>0) {
+			setpath(lock);
 			lock=CurrentDir(lock);
+		    }
 		    else
 			SetIoErr(error=ERROR_OBJECT_WRONG_TYPE);
 		}
@@ -307,7 +344,7 @@ end:
     FreeVec(s2);
     if(error)
     {
-	Cli()->cli_Result2 = error;
+	cli->cli_Result2 = error;
 	PrintFault(error,"Couldn't run command");
     }
     Flush(Output());
@@ -353,6 +390,11 @@ int main (int argc, char ** argv)
 	return RETURN_ERROR;
     }
 
+    cli=Cli();
+    cli->cli_StandardInput=cli->cli_CurrentInput=Input();
+    cli->cli_StandardOutput=cli->cli_CurrentOutput=Output();
+    setpath(NULL);
+
     rda=ReadArgs("FROM,COMMAND/K/F",(IPTR *)args,NULL);
     if(rda!=NULL)
     {
@@ -363,6 +405,7 @@ int main (int argc, char ** argv)
 	    ULONG num=((struct Process *)FindTask(NULL))->pr_TaskNum;
 	    VPrintf("New Shell process %ld\n",&num);
 	    Flush(Output());
+	    cli->cli_Interactive=DOSTRUE;
 	    executefile((STRPTR)args[0]);
 	    for(;;)
 	    {

@@ -85,7 +85,7 @@ char *const inputname = "input.device";
     /* Arbitrate for the device list */
     Forbid();
 
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     /*
 	Kludge for compatibility with V40 kickstart. DO NOT depend on this!
 	See TaggedOpenLibrary() for more info.

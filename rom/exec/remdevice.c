@@ -23,7 +23,7 @@
 #include <aros/debug.h>
 #undef kprintf
 
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 #   define NATIVE(x)        x
 #else
 #   define NATIVE(x)        /* eps */
@@ -87,7 +87,7 @@
     /* All done. */
     Permit();
 
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     /*
 	Kludge to force the seglist to register d0. Ramlib patches this
 	vector for seglist expunge capability and expects the seglist in
