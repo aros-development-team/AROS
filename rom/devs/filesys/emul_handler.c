@@ -6,12 +6,9 @@
     Lang: english
 */
 #include <aros/system.h>
-#ifndef _AMIGA	/* ADA <sys/time.h> has provisions for this */
-#   define DEVICES_TIMER_H /* avoid redefinition of struct timeval */
-#endif /* _AMIGA */
 #include <exec/resident.h>
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <utility/tagitem.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
@@ -27,7 +24,9 @@
 #include <stddef.h>
 #include <errno.h>
 #include <sys/stat.h>
+#define timeval sys_timeval
 #include <sys/time.h>
+#undef timeval
 #ifdef __GNUC__
 #   include "emul_handler_gcc.h"
 #endif
@@ -595,7 +594,7 @@ AROS_LH1(void, beginio,
 		for(;;)
 		{
 		    fd_set rfds;
-		    struct timeval tv;
+		    struct sys_timeval tv;
 		    FD_ZERO(&rfds);
 		    FD_SET(fh->fd,&rfds);
 		    tv.tv_sec=0;
