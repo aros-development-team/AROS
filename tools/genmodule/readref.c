@@ -17,10 +17,10 @@ struct _parseinfo
 };
 
 /* Prototypes of static functions */
-static int parsemuimethodname(char *name,
-			      struct _parseinfo *parseinfo,
-			      struct config *cfg,
-			      struct functions *functions
+static int parsemethodname(char *name,
+			   struct _parseinfo *parseinfo,
+			   struct config *cfg,
+			   struct functions *functions
 );
 static int parsemacroname(char *name,
 			  struct _parseinfo *parseinfo,
@@ -124,7 +124,7 @@ void readref(struct config *cfg, struct functions *functions)
 		
 		parseinfo.infunction =
 		(
-		       parsemuimethodname(begin, &parseinfo, cfg, functions)
+		       parsemethodname(begin, &parseinfo, cfg, functions)
 		    || parsemacroname(begin, &parseinfo, cfg, functions)
 		    || parsefunctionname(begin, &parseinfo, cfg, functions)
 		);
@@ -292,19 +292,20 @@ void readref(struct config *cfg, struct functions *functions)
 }
 
 
-static int parsemuimethodname(char *name,
-			      struct _parseinfo *parseinfo,
-			      struct config *cfg,
-			      struct functions *functions
+static int parsemethodname(char *name,
+			   struct _parseinfo *parseinfo,
+			   struct config *cfg,
+			   struct functions *functions
 )
 {
     int ok = 0;
-    
-    if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
+
+    if (cfg->boopsiprefix != NULL)
     {
-	char *sep;
+	char *sep = NULL;
+	const char **prefixptr = cfg->boopsiprefix;
 	
-	/* For a MUI class a custom dispatcher has the name
+	/* For a BOOPSI class a custom dispatcher has the name
 	 * 'modulename_Dispatcher'
 	 */
 	if
@@ -313,9 +314,9 @@ static int parsemuimethodname(char *name,
 	    && strcmp(name+strlen(cfg->modulename), "_Dispatcher") == 0
 	)
 	    cfg->customdispatcher = 1;	
-	    
-	sep = strstr(name, "__OM_");
-	if (sep == NULL) sep = strstr(name, "__MUIM_");
+
+	while (*prefixptr != NULL && sep == NULL)
+	    sep = strstr(name, *prefixptr);
                 
 	if 
 	(
