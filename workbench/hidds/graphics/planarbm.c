@@ -339,7 +339,7 @@ Class *init_planarbmclass(struct class_static_data *csd)
         {NULL, 0UL}
     };
 
-    struct MethodDescr planarbm_descr[NUM_BITMAP_METHODS + 1] =
+    struct MethodDescr planarbm_descr[NUM_PLANARBM_METHODS + 1] =
     {
         {(IPTR (*)())planarbm_setbitmap		, moHidd_PlanarBM_SetBitMap	},
         {NULL, 0UL}
