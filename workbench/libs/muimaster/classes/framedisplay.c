@@ -54,7 +54,7 @@ IPTR Framedisplay__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     	}
     }
 
-    D(bug("Framedisplay_New(%lx) spec=%lx\n", obj, data->img));
+    D(bug("Framedisplay_New(%lx) spec=%lx\n", obj, data->fs_intern));
     return (IPTR)obj;
 }
 
