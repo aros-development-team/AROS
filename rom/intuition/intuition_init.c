@@ -121,7 +121,8 @@ AROS_LH2(struct LIBBASETYPE *, init,
     if (!GetPrivIBase(LIBBASE)->IBaseLock)
 	return NULL;
 
-    InitSemaphore (GetPrivIBase(LIBBASE)->IBaseLock);
+    InitSemaphore(GetPrivIBase(LIBBASE)->IBaseLock);
+    InitSemaphore(&GetPrivIBase(LIBBASE)->PubScrListLock);
 
     /* Add all other classes */
     InitImageClass (LIBBASE); /* After ROOTCLASS */
@@ -148,6 +149,8 @@ AROS_LH2(struct LIBBASETYPE *, init,
     GetPrivIBase(LIBBASE)->DefaultEditHook.h_Data	= LIBBASE;
     
     GetPrivIBase(LIBBASE)->GlobalEditHook = &(GetPrivIBase(LIBBASE)->DefaultEditHook);
+
+    NEWLIST(&GetPrivIBase(LIBBASE)->PubScreenList);
 
     /* You would return NULL if the init failed */
     return LIBBASE;
