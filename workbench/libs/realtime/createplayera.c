@@ -11,7 +11,7 @@
 
     NAME */
 
-struct Conductor *createConductor(BOOL private, LONG *error,
+struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 				  struct Library *RTBase);
 
 #include <proto/exec.h>
@@ -159,14 +159,14 @@ struct Conductor *createConductor(BOOL private, LONG *error,
 	{
 	case PLAYER_Conductor:
 	    if(tag->ti_Data == -1)
-		player->pl_Source = createConductor(TRUE, error, RTBase);
+		player->pl_Source = createConductor(TRUE, error, (STRPTR)tag->ti_Data,RTBase);
 	    else
 	    {
 		struct Conductor *cd;
 		cd = FindConductor((STRPTR)tag->ti_Data);
 
 		if(cd == NULL)
-		    player->pl_Source = createConductor(FALSE, error, RTBase);
+		    player->pl_Source = createConductor(FALSE, error, (STRPTR)tag->ti_Data,RTBase);
 		else
 		    player->pl_Source = cd;
 	    }
@@ -196,7 +196,7 @@ struct Conductor *createConductor(BOOL private, LONG *error,
 } /* CreatePlayerA */
 
 
-struct Conductor *createConductor(BOOL private, LONG *error, struct Library *RTBase)
+struct Conductor *createConductor(BOOL private, LONG *error, STRPTR name,struct Library *RTBase)
 {
     struct Conductor *cd = AllocMem(sizeof(struct Conductor), 
 				    MEMF_PUBLIC | MEMF_CLEAR);
@@ -208,6 +208,8 @@ struct Conductor *createConductor(BOOL private, LONG *error, struct Library *RTB
 
 	return NULL;
     }
+
+    cd->cdt_Link.ln_Name=name;
 
     NEWLIST(&cd->cdt_Players);
 
