@@ -36,16 +36,25 @@
 struct ExecBase   * SysBase; /* global variable */
 struct LocaleBase * LocaleBase;
 
+
 ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
     SysBase = lh->ll_SysBase;
 
     LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library",39);
-    if (!LocaleBase)
+
+    if (LocaleBase == NULL)
+    {
         return FALSE;
+    }
+
+    InitSemaphore(&lh->ll_Lock);
+    lh->ll_VBlank.is_Data = NULL;
+    lh->ll_VBlank.is_Code = NULL;
 
     return TRUE;
 } /* L_InitLib */
+
 
 void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
 {
