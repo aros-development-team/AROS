@@ -1324,4 +1324,6 @@ wb00010;1;chodorowski;Write OpenWorkbenchObjectA
 wb00011;1;chodorowski;Write CloseWorkbenchObjectA
 wb00012;1;chodorowski;Write MakeWorkbenchObjectVisibleA
 wb00013;1;chodorowski;Write WorkbenchControlA
+wb00014;1;chodorowski;Write RegisterWorkbench
+wb00015;1;chodorowski;Write UnregisterWorkbench
 multiview00000;1;stegerg;Write MultiView
