@@ -416,9 +416,9 @@ endif
 $(GENFILE_TMP) : %(basename).c $(CXREF) %(includefile)
 	@$(ECHO) "Generating $(notdir $@)..."
 ifeq (%(includefile),)
-	@$(CXREF) -raw -CPP 'gcc %(cflags) -E -C -dD' $< >$@
+	@$(CXREF) -raw -CPP '$(TARGET_CC) %(cflags) -E -C -dD' $< >$@
 else
-	@$(CXREF) -raw -CPP 'gcc %(cflags) -include %(includefile) -E -C -dD' $< >$@
+	@$(CXREF) -raw -CPP '$(TARGET_CC) %(cflags) -include %(includefile) -E -C -dD' $< >$@
 endif
 
 %end
@@ -816,7 +816,7 @@ endif
 
 # Some include files need to be generated before the .c can be parsed.
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick %(mmake)-kobj),) # Only for this target these deps are wanted
-$(BD_REFFILES$(BDID)) : $(BD_REFFILE_DEPS$(BDID))
+$(BD_REFFILES$(BDID)) : $(BD_REFFILE_DEPS$(BDID)) $(dir $(GENMODULE))/genmod_inc/aros/libcall.h
 $(BD_DEPS$(BDID)) : $(BD_DFILE_DEPS$(BDID))
 endif
 
