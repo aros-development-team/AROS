@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI C function malloc()
-    Lang: english
+    Lang: English
 */
 #include <errno.h>
 #include <dos/dos.h>
@@ -22,7 +22,7 @@ APTR __startup_mempool;
 #include <sys/types.h>
 #include <stdlib.h>
 
-	void * malloc (
+	void *malloc (
 
 /*  SYNOPSIS */
 	size_t size)
@@ -65,15 +65,16 @@ APTR __startup_mempool;
 
     GETUSER;
 
-    UBYTE * mem = NULL;
+    UBYTE *mem = NULL;
 
     ObtainSemaphore(&__startup_memsem);
 
     /* Allocate the memory */
-    mem = AllocPooled (__startup_mempool, size + AROS_ALIGN(sizeof(struct memheader)));
+    mem = AllocPooled(__startup_mempool,
+		      size + AROS_ALIGN(sizeof(struct memheader)));
     if (mem)
     {
-	struct memheader *mh = mem;
+	struct memheader *mh = (struct memheader *)mem;
 
 	mh->memsem  = &__startup_memsem;
 	mh->mempool = __startup_mempool;
@@ -82,8 +83,9 @@ APTR __startup_mempool;
 	mem += AROS_ALIGN(sizeof(struct memheader));
     }
     else
+    {
         errno = ENOMEM;
-
+    }
 
     ReleaseSemaphore(&__startup_memsem);
 
@@ -97,9 +99,12 @@ int __init_memstuff(void)
     GETUSER;
 
     InitSemaphore(&__startup_memsem);
-    __startup_mempool = CreatePool (MEMF_ANY, 4096L, 2000L);
+    __startup_mempool = CreatePool(MEMF_ANY, 4096L, 2000L);
+
     if (!__startup_mempool)
+    {
 	return RETURN_FAIL;
+    }
 
     return 0;
 }
@@ -110,7 +115,9 @@ void __exit_memstuff(void)
     GETUSER;
 
     if (__startup_mempool)
+    {
 	DeletePool(__startup_mempool);
+    }
 }
 
 ADD2INIT(__init_memstuff, 0);
