@@ -14,6 +14,7 @@
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 
+#include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
@@ -38,8 +39,6 @@ enum numeric_flags {
 };
 
 extern struct Library *MUIMasterBase;
-
-#include <aros/debug.h>
 
 /**************************************************************************
  OM_NEW
