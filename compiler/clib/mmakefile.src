@@ -20,6 +20,7 @@ FILES := \
 	__vcscan \
 	abort \
 	abs \
+	access \
 	asctime \
 	atof \
 	atoi \
@@ -49,6 +50,7 @@ FILES := \
 	fgetc \
 	fgetpos \
 	fgets \
+	fileno \
 	fopen \
 	fprintf \
 	fscanf \
@@ -59,6 +61,7 @@ FILES := \
 	fseek \
 	fsetpos \
 	ftell \
+	ftruncate \
 	fwrite \
 	gcvt \
 	getenv \
@@ -78,6 +81,7 @@ FILES := \
 	memmove \
 	memset \
 	mktemp \
+	mkdir \
 	mrand48 \
 	nrand48 \
 	open \
@@ -125,6 +129,7 @@ FILES := \
 	strtol \
 	strtoul \
 	time \
+	truncate \
 	ungetc \
 	unlink \
 	unsetenv \
