@@ -122,9 +122,6 @@ struct BootConfig *ReadConfig(char *file)
 					    {
 						D(bug(" ok\n"));
 
-						D(bug("strlen = %ld\n",
-						    strlen((char *)vec_module[ARG_MOD_MODULE])+1));
-
 						strcpy(modnode->mn_Node.ln_Name, (char *)vec_module[ARG_MOD_MODULE]);
 						D(bug("Copied name \"%s\"\n", (ULONG)modnode->mn_Node.ln_Name));
 
@@ -254,7 +251,7 @@ struct BootConfig *ReadConfig(char *file)
 		    if(!(Close(fh)))
 		    {
 			ioerr = IoErr();
-			D(bug(" failed\n"));
+			D(bug(" fail\n"));
 		    }
 		    else
 		    {
@@ -264,7 +261,7 @@ struct BootConfig *ReadConfig(char *file)
 		else
 		{
 		    ioerr = IoErr();
-		    D(bug(" failed\n"));
+		    D(bug(" fail\n"));
 		}
 
 		D(bug("Freeing linebuffer..."));
@@ -274,7 +271,7 @@ struct BootConfig *ReadConfig(char *file)
 	    else
 	    {
 		ioerr = ERROR_NO_FREE_STORE;
-		D(bug(" failed\n"));
+		D(bug(" fail\n"));
 	    }
 
 	    D(bug("Freeing RDArgs..."));
@@ -283,20 +280,20 @@ struct BootConfig *ReadConfig(char *file)
 	}
 	else
 	{
-	    D(bug(" failed\n"));
+	    D(bug(" fail\n"));
 	    ioerr = ERROR_NO_FREE_STORE;
 	}
     }
     else
     {
-	D(bug(" failed\n"));
+	D(bug(" fail\n"));
 	ioerr = ERROR_NO_FREE_STORE;
     }
 
 
     if(ioerr)
     {
-	if(!quiet) PrintFault(ioerr, "AROS boot");
+	if(!quiet) PrintFault(ioerr, "arosboot");
 	FreeConfig(config);
 	return 0;
     }
