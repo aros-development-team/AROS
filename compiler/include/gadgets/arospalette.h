@@ -8,11 +8,24 @@
 #define AROSPALETTECLASS "palette.aros"
 #define AROSPALETTECLASSPATH "SYS:Classes/Gadgets/arospalette.gadget"
 
+/* [IS] (UBYTE) The number of colors to show specified by depth.
+   Palette will show 2^depth colors */
 #define AROSA_Palette_Depth		GTPA_Depth
+
+/* [IS] (UBYTE) Select color of palette */
 #define AROSA_Palette_Color		GTPA_Color
+
+/* [I] (UBYTE) First color to use in palette */ 
 #define AROSA_Palette_ColorOffset	GTPA_ColorOffset
+
+/* [I] (UWORD) Width of indicator box. If specified, color indicator
+   box will be placed to the left of palette. */
 #define AROSA_Palette_IndicatorWidth	GTPA_IndicatorWidth
+
+/* [I] (UWORD) Height of indicator box. If specified, color indicator
+   box will be placed on the top of palette. */
 #define AROSA_Palette_IndicatorHeight	GTPA_IndicatorHeight
+
 #define AROSA_Palette_NumColors		GTPA_NumColors
 #define AROSA_Palette_ColorTable	GTPA_ColorTable
 
