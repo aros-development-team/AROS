@@ -964,7 +964,13 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
       FALSE == addtodamagelist)
   {
     struct Region * dr = l->DamageList;
-    struct RegionRectangle * rr = dr->RegionRectangle;
+    struct RegionRectangle * rr;
+
+    _TranslateRect(&dr->bounds, l->bounds.MinX, l->bounds.MinY);
+    AndRectRegion(dr, &l->bounds);
+    _TranslateRect(&dr->bounds, -l->bounds.MinX, -l->bounds.MinY);
+    
+    rr = dr->RegionRectangle;
     while (rr)
     {
       _TranslateRect(&rr->bounds, 
