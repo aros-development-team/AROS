@@ -185,8 +185,8 @@ readcache (Cache_priv * cache)
     if (fh)
     {
 	char * name;
-	
-	while (name != NULL)
+
+	do
 	{
 	    if (!readstring (fh, &name))
 	    {
@@ -200,6 +200,7 @@ readcache (Cache_priv * cache)
 	    addnodeonce (&cache->addedfiles, name);
 	    xfree (name);
 	}
+	while (name != NULL);
 
 	if (fh)
 	    cache->topdir = readcachedir (fh);
