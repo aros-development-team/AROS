@@ -12,10 +12,6 @@
 #include <aros/libcall.h>
 #include "layers_intern.h"
 
-#define DEBUG 0
-#include <aros/debug.h>
-#undef kprintf
-
 
 
 /*****************************************************************************
@@ -140,7 +136,7 @@
       }
       /* make the new layer the top layer.*/
       li->top_layer     = L;
-kprintf("cuhl: Inserting layer as very first one!\n");
+//kprintf("cuhl: Inserting layer as very first one!\n");
     }
     else
     {
@@ -148,7 +144,7 @@ kprintf("cuhl: Inserting layer as very first one!\n");
       while ( L_behind->back != NULL &&
              (L_behind->back->Flags & LAYERBACKDROP) == 0)
         L_behind = L_behind->back;
-kprintf("BACKDROP layer inserted after non-BACKDROP layers!\n");
+//kprintf("BACKDROP layer inserted after non-BACKDROP layers!\n");
       /* 
          L_behind now points to the layer that the new layer has
          to go behind. 
@@ -193,28 +189,61 @@ kprintf("BACKDROP layer inserted after non-BACKDROP layers!\n");
        layers behind them, but those parts are backed up now)
     */
 
+    /* the whole part from here ... */
+
     CR = L->ClipRect;
     while (CR != NULL)
     {
       if (NULL == CR->lobs)
       {
-        BltBitMap(
-          bm /* Source Bitmap - we don't need one for clearing, but this
-                one will also do :-) */,
-          0,
-          0,
-          bm /* Destination Bitmap - */,
-          CR->bounds.MinX,
-          CR->bounds.MinY,
-          CR->bounds.MaxX-CR->bounds.MinX+1,
-          CR->bounds.MaxY-CR->bounds.MinY+1,
-          0x000 /* supposed to clear the destination */,
-          0xff,
-          NULL
-        );
+        if (0 == (L->Flags & LAYERSUPER))
+	{
+          /* no superbitmap */
+          BltBitMap(
+            bm /* Source Bitmap - we don't need one for clearing, but this
+                  one will also do :-) */,
+            0,
+            0,
+            bm /* Destination Bitmap - */,
+            CR->bounds.MinX,
+            CR->bounds.MinY,
+            CR->bounds.MaxX-CR->bounds.MinX+1,
+            CR->bounds.MaxY-CR->bounds.MinY+1,
+            0x000 /* supposed to clear the destination */,
+            0xff,
+            NULL
+          );
+	}
+        else
+	{
+          /* with superbitmap */
+          BltBitMap(
+            bm2 /* Source Bitmap = superbitmap  */,
+            CR->bounds.MinX - L->bounds.MinX /* + L->Scroll_X = 0! */,
+            CR->bounds.MinY - L->bounds.MinY /* + L->Scroll_Y = 0! */,
+            bm, /* Destination Bitmap - */
+            CR->bounds.MinX,
+            CR->bounds.MinY,
+            CR->bounds.MaxX-CR->bounds.MinX+1,
+            CR->bounds.MaxY-CR->bounds.MinY+1,
+            0x0c0, /* copy  */
+            0xff,
+            NULL
+          );
+	}
       }
       CR = CR->Next;
     }
+
+    /* ... to here will be replaced by : */
+    /*
+    DoHookClipRects(hook, RP, L->bounds);
+     */
+    /*
+       once DoHookClipRects is there and a default backfill is implemented. 
+       (basically the same code as above) 
+     */
+
     UnlockLayers(li);    
   }
   else /* not enough memory */

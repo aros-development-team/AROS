@@ -6,39 +6,51 @@
     Lang: english
 */
 #include <aros/libcall.h>
-
-#define DEBUG 0
-#include <aros/debug.h>
-#undef kprintf
+#include <graphics/clip.h>
+#include <exec/types.h>
+#include <proto/exec.h>
+#include <graphics/layers.h>
+#include "layers_intern.h"
 
 /*****************************************************************************
 
     NAME */
-#include <proto/layers.h>
-#include "layers_intern.h"
 
 	AROS_LH4(void, ScrollLayer,
 
 /*  SYNOPSIS */
 	AROS_LHA(LONG          , dummy, A0),
-	AROS_LHA(struct Layer *, layer, A1),
-	AROS_LHA(LONG          , dx, D0),
-	AROS_LHA(LONG          , dy, D1),
+	AROS_LHA(struct Layer *, l    , A1),
+	AROS_LHA(LONG          , dx   , D0),
+	AROS_LHA(LONG          , dy   , D1),
 
 /*  LOCATION */
 	struct LayersBase *, LayersBase, 12, Layers)
 
 /*  FUNCTION
+        For superbitmapped layers this function work like this:.
+        It updates the contents of the superbitmap with what is
+        visible on the display, repositions the superbitmap
+        and redraws the display.
+        For non-superbitmapped layers, all subsequent (x,y) pairs 
+        are adjusted by the scroll(x,y) value in the layer. If
+        ScrollLayer(-10,-3) was called and (0,0) is drawn it will
+        finally end up at coordinates (10, 3) in the superbitmap.
 
     INPUTS
+        l  - pointer to layer
+        dx - delta x to add to current x scroll value
+        dy - delta y to add to current y scroll value
 
     RESULT
+        
 
     NOTES
 
     EXAMPLE
 
     BUGS
+      not tested
 
     SEE ALSO
 
@@ -50,10 +62,32 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-    D(bug("ScrollLayer(layer @ $%lx, dx %ld, dy %ld)\n", layer, dx, dy));
+  if (0 == dx && 0 == dy)
+    return;
 
-    AROS_LIBFUNC_EXIT
+  /* if it's a superbitmapped layer */
+  if ((l->Flags & LAYERSUPER) != 0)
+  {
+    /* store the visible "stuff" to the superbitmap */
+    //SyncSBitMap(l);
+    
+    l->Scroll_X += dx;
+    l->Scroll_Y += dy;
+
+    /* show what's in the superbitmap */
+    //CopySBitMap(l);
+    return;
+  }
+  else
+  {
+    l->Scroll_X += dx;
+    l->Scroll_Y += dy;
+  }
+
+  return;  
+
+  AROS_LIBFUNC_EXIT
 } /* ScrollLayer */

@@ -5,20 +5,20 @@
     Desc:
     Lang: english
 */
+
+#include <aros/libcall.h>
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <graphics/layers.h>
 #include <graphics/regions.h>
-
+#include "layers_intern.h"
 
 
 /*****************************************************************************
 
     NAME */
 #include <proto/layers.h>
-#include "layers_intern.h"
-#include <aros/libcall.h>
 
 	AROS_LH2(LONG, DeleteLayer,
 
@@ -35,7 +35,7 @@
 
     RESULT
 
-    NOTES
+    NOTES  
 
     EXAMPLE
 
@@ -118,10 +118,11 @@
       LD->back->front = NULL;
   }
  
-  /* Let's delete the ClipRects of the layer LD that are
+  /*
+     Let's delete the ClipRects of the layer LD that are
      hidden themselves. 
      The other ClipRects I add to the damage List for
-     me to refroesh (clear) through at the end.
+     me to refresh (clear) through at the end.
   */
 
   /* clear the region that is there */
@@ -136,9 +137,10 @@
     {
       /* 
          This ClipRect of the layer is hidden. So we can simply 
-         free the bitmap data there.
+         free the bitmap data there, if it's not a superbitmap.
        */
-      FreeBitMap(CR->BitMap);
+      if (0 == (LD->Flags & LAYERSUPER))
+        FreeBitMap(CR->BitMap);
     }
     else
     {
@@ -159,6 +161,26 @@
         UnlockLayers(LI);
         return FALSE;
       }
+      /* 
+        If this layer has a superbitmap I must store the information
+        of the visible area into the superbitmap. 
+       */
+      if (0 != (LD->Flags & LAYERSUPER))
+      {
+        BltBitMap(
+          LD->rp->BitMap, /* visible bitmap */
+          CR->bounds.MinX,
+          CR->bounds.MinY,
+          LD->SuperBitMap,  /* storage area */
+          CR->bounds.MinX - LD->bounds.MinX + LD->Scroll_X,
+          CR->bounds.MinY - LD->bounds.MinY + LD->Scroll_Y,
+          CR->bounds.MaxX - CR->bounds.MinX + 1,
+          CR->bounds.MaxY - CR->bounds.MinY + 1,
+          0x0c0, /* copy */
+          0xff,
+          NULL
+	);           
+      }
     }
     FreeMem(CR, sizeof(struct ClipRect));      
     CR = _CR;
@@ -167,8 +189,6 @@
      just to make sure...
      Remember: The ClipRects list is now invalid!
   */
-  
-  
 
   /* there is a damagelist left and there is a layer behind */
   if (NULL != LD->DamageList->RegionRectangle && NULL != LD->back)
@@ -207,6 +227,7 @@
           */
           if (Ltmp == L_behind)
           {  
+            /* ... restore the bitmap stuff found there */
             if (0 == (L_behind->Flags & LAYERSUPER))
 	    { 
               /* no SuperBitMap */
@@ -222,7 +243,11 @@
                 0x0c0, /* copy */
                 0xff,
                 NULL
-               );
+              );
+              /*
+                Also free the bitmap as it's useless now.
+	       */
+              FreeBitMap(CR->BitMap);
 	    }
             else
 	    {
@@ -241,11 +266,9 @@
                 NULL
                );              
 	    }
-            /* ... restore the bitmap stuff found there */
             /* 
-               Free the bitmap and clear the lobs entry 
+               clear the lobs entry and BitMap entry 
             */
-            FreeBitMap(CR->BitMap);
             CR->BitMap = NULL;
             CR->lobs   = NULL;
             /*
@@ -289,6 +312,7 @@
   /* check if a region is empty */
   while (NULL != RR)
   {
+    /* !!!here should actually be filled with the layerinfo hook!!!*/
     BltBitMap(
       LD->rp->BitMap, /* don't need a source but mustn't give NULL!!!*/
       0,
@@ -311,8 +335,7 @@
      - damagelist 
      - layer structure itself
    */
- 
-   
+
   FreeMem(LD->rp, sizeof(struct RastPort));
   DisposeRegion(LD->DamageList);
   FreeMem(LD, sizeof(struct Layer));

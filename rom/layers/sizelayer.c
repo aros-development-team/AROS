@@ -115,7 +115,7 @@
       l->front->back = l_tmp;
 
     l->front = l_tmp;
-
+kprintf("l->Flags %d\n",l->Flags);
     /* copy important data to the temporary layer. this list might be 
        shrinkable
        depending on what data deletelayer() needs later on */
@@ -125,6 +125,7 @@
     l_tmp->Flags      = l->Flags;
     l_tmp->LayerInfo  = LI;
     l_tmp->DamageList = l->DamageList;
+    l_tmp->SuperBitMap= l->SuperBitMap;
 
     /* init the rastport structure of the temporary layer */
     InitRastPort(RP);
@@ -205,6 +206,75 @@
              width,
              height,
              0x0c0);
+    /*
+      If the layer is a superbitmapped layer and the width or
+      the height of the resized layer has decreased, then I
+      have to backup the visible part into the superbitmap so
+      the infomation doesn't get lost.
+     */
+    /* 
+      only do this if the width or the height has decreased 
+      and only for a superbitmapped layer!
+     */
+ 
+    if (0 != (l->Flags & LAYERSUPER) && (dx < 0 || dy < 0))
+    {
+      struct BitMap * bm = l->rp->BitMap;
+
+      CR = l_tmp->ClipRect;
+      while (NULL != CR)
+      {
+        if (NULL == CR->lobs)
+	{
+          LONG SrcX, SrcY;
+          if (dx < 0 && (CR->bounds.MaxX - l_tmp->bounds.MinX) > width)
+	  {
+            if ((CR->bounds.MinX - l_tmp->bounds.MinX) > width)
+              SrcX = CR->bounds.MinX;
+            else
+              SrcX = l_tmp->bounds.MinX + width;
+
+            BltBitMap(
+              bm,             /* Source Bitmap = rastport's bitmap */
+              SrcX,
+              CR->bounds.MinY,
+              l->SuperBitMap, /* Destination Bitmap = SuperBitMap */
+              SrcX            - l->bounds.MinX + l->Scroll_X,
+              CR->bounds.MinY - l->bounds.MinY + l->Scroll_Y,
+              CR->bounds.MaxX - SrcX            + 1,
+              CR->bounds.MaxY - CR->bounds.MinY + 1,
+              0x0c0, /* copy */
+              0xff,
+              NULL
+            );
+	  }
+
+          if (dy < 0 && (CR->bounds.MaxY - l_tmp->bounds.MinY) > height)
+	  {
+            if ((CR->bounds.MinY - l_tmp->bounds.MinY) > height)
+              SrcY = CR->bounds.MinY;
+            else
+              SrcY = l_tmp->bounds.MinY + height;
+
+            BltBitMap(
+              bm,             /* Source Bitmap = rastport's bitmap */
+              CR->bounds.MinX,
+              SrcY,
+              l->SuperBitMap, /* Destination Bitmap = SuperBitMap */
+              CR->bounds.MinX - l->bounds.MinX + l->Scroll_X,
+              SrcY            - l->bounds.MinY + l->Scroll_Y,
+              CR->bounds.MaxX - CR->bounds.MinX + 1,
+              CR->bounds.MaxY - SrcY            + 1,
+              0x0c0, /* copy */
+              0xff,
+              NULL
+            );
+	  }
+
+	}
+        CR = CR->Next;
+      } 
+    }
 
     /* 
       The layer that was resized is totally visible now but right on
@@ -222,11 +292,12 @@
        area that ClipBlit reached into.
     */
     /* only do this if the size increased */
+
     if (dx > 0 || dy > 0)
     {
       struct BitMap * bm = l->rp->BitMap;
       CR = l->ClipRect;
-      while (CR != NULL)
+      while (NULL != CR)
       {
         if (NULL == CR->lobs)
         {
@@ -239,20 +310,42 @@
             else
               DestX = l->bounds.MinX + width;
 
-            BltBitMap(
-              bm /* Source Bitmap - we don't need one for clearing, but this
-                   one will also do :-) */,
-              0,
-              0,
-              bm /* Destination Bitmap - */,
-              DestX,
-              CR->bounds.MinY,
-              CR->bounds.MaxX-DestX+1,
-              CR->bounds.MaxY-CR->bounds.MinY+1,
-              0x000 /* supposed to clear the destination */,
-              0xff,
-              NULL
-            );
+            if (0 == (l->Flags & LAYERSUPER))
+	    {
+              /* no superbitmap */
+              BltBitMap(
+                bm /* Source Bitmap - we don't need one for clearing, but this
+                     one will also do :-) */,
+                0,
+                0,
+                bm /* Destination Bitmap - */,
+                DestX,
+                CR->bounds.MinY,
+                CR->bounds.MaxX-DestX+1,
+                CR->bounds.MaxY-CR->bounds.MinY+1,
+                0x000 /* supposed to clear the destination */,
+                0xff,
+                NULL
+              );
+	    }
+            else
+	    {
+kprintf("sl: super!!\n");
+              /* with superbitmap */
+              BltBitMap(
+                l->SuperBitMap /* Source Bitmap = superbitmap */,
+                DestX           - l->bounds.MinX + l->Scroll_X,
+                CR->bounds.MinY - l->bounds.MinY + l->Scroll_Y,
+                bm             /* Destination Bitmap */,
+                DestX,
+                CR->bounds.MinY,
+                CR->bounds.MaxX-DestX+1,
+                CR->bounds.MaxY-CR->bounds.MinY+1,
+                0x0c0 /* supposed to clear the destination */,
+                0xff,
+                NULL
+              );
+            }
 	  }
 
           if (dy > 0 && (CR->bounds.MaxY - l->bounds.MinY) > height)
@@ -262,20 +355,42 @@
             else
               DestY = l->bounds.MinY + height;
 
-            BltBitMap(
-              bm /* Source Bitmap - we don't need one for clearing, but this
-                   one will also do :-) */,
-              0,
-              0,
-              bm /* Destination Bitmap - */,
-              CR->bounds.MinX,
-              DestY,
-              CR->bounds.MaxX-CR->bounds.MinX+1,
-              CR->bounds.MaxY-DestY+1,
-              0x000 /* supposed to clear the destination */,
-              0xff,
-              NULL
-            );
+            if (0 == (l->Flags & LAYERSUPER))
+	    {
+              /* no superbitmap */
+              BltBitMap(
+                bm /* Source Bitmap - we don't need one for clearing, but this
+                     one will also do :-) */,
+                0,
+                0,
+                bm /* Destination Bitmap */,
+                CR->bounds.MinX,
+                DestY,
+                CR->bounds.MaxX-CR->bounds.MinX+1,
+                CR->bounds.MaxY-DestY+1,
+                0x000 /* supposed to clear the destination */,
+                0xff,
+                NULL
+              );
+	    }
+            else
+	    {
+kprintf("sl: super!!  b\n");
+              /* with superbitmap */
+              BltBitMap(
+                l->SuperBitMap /* Source Bitmap = superbitmap*/,
+                CR->bounds.MinX - l->bounds.MinX + l->Scroll_X,
+                DestY           - l->bounds.MinY + l->Scroll_Y,
+                bm /* Destination Bitmap */,
+                CR->bounds.MinX,
+                DestY,
+                CR->bounds.MaxX-CR->bounds.MinX+1,
+                CR->bounds.MaxY-DestY+1,
+                0x0c0 /* supposed to clear the destination */,
+                0xff,
+                NULL
+              );
+	    }
 	  }
         }
       CR = CR->Next;
