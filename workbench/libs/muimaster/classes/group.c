@@ -390,10 +390,17 @@ static ULONG Group_AddMember(struct IClass *cl, Object *obj, struct opMember *ms
 
     /* if we are in an application tree, propagate pointers */
     if (muiNotifyData(obj)->mnd_GlobalInfo)
+    {
+        /* Only childs of groups can have parents */
+        muiNotifyData(msg->opam_Object)->mnd_ParentObject = obj;
 	DoMethod(msg->opam_Object, MUIM_ConnectParent, (IPTR)obj);
+    }
 
     if (_flags(obj) & MADF_SETUP)
+    {
+	muiRenderInfo(msg->opam_Object) = muiRenderInfo(obj);
 	DoMethod(msg->opam_Object, MUIM_Setup, (IPTR)muiRenderInfo(obj));
+    }
     if (_flags(obj) & MADF_CANDRAW)
 	DoMethod(msg->opam_Object, MUIM_Show);
 
@@ -412,7 +419,10 @@ static ULONG Group_RemMember(struct IClass *cl, Object *obj, struct opMember *ms
     if (_flags(obj) & MADF_SETUP)
 	DoMethod(msg->opam_Object, MUIM_Cleanup);
     if (muiNotifyData(obj)->mnd_GlobalInfo)
+    {
 	DoMethod(msg->opam_Object, MUIM_DisconnectParent);
+        muiNotifyData(msg->opam_Object)->mnd_ParentObject = NULL;
+    }
 
     data->num_childs--;
     DoMethodA(data->family, (Msg)msg);
@@ -550,9 +560,8 @@ Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-static ULONG Group_Setup(struct IClass *cl, Object *obj, Msg msg)
+static ULONG Group_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
-    static ULONG          method = MUIM_Cleanup;
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
     Object               *cstate_copy;
@@ -570,6 +579,8 @@ static ULONG Group_Setup(struct IClass *cl, Object *obj, Msg msg)
 	if (! (_flags(child) & MADF_SHOWME))
 	    continue;
 
+	/* MUI set the correct render info *before* it calls MUIM_Setup, this must be done in other areas too */
+	muiRenderInfo(child) = msg->RenderInfo;
 	if (!DoMethodA(child, (Msg)msg))
 	{
 	    /* Send MUIM_Cleanup to all objects that received MUIM_Setup.
@@ -580,7 +591,7 @@ static ULONG Group_Setup(struct IClass *cl, Object *obj, Msg msg)
 	    {
 		if (! (_flags(child) & MADF_SHOWME))
 		    continue;
-		DoMethodA(child, (Msg)&method);
+		DoMethod(child, MUIM_Cleanup);
 	    }
 	    return FALSE;
 	}
