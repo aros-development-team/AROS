@@ -23,9 +23,11 @@ FILES	:= \
     Lab \
     List \
     Lock \
+    MakeLink \
     Prompt \
     Protect \
     Quit \
+    Relabel \
     RequestChoice \
     RequestFile \
     Set \
