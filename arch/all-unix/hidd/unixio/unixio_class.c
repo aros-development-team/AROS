@@ -22,9 +22,7 @@
 #include <hardware/intbits.h>
 #include <hardware/custom.h>
 
-#include <oop/root.h>
-#include <oop/meta.h>
-#include <oop/hiddmeta.h>
+#include <oop/oop.h>
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -199,7 +197,7 @@ static void WaitForIO (void)
 	ForeachNode (&waitList, msg)
 	{
 	    D(bug("%d, ", msg->fd));
-	    if (msg->mode == HIDDV_UnixIO_Read)
+	    if (msg->mode == vHidd_UnixIO_Read)
 	    {
 		FD_SET (msg->fd, &rfds);
 		rp = &rfds;
@@ -274,7 +272,7 @@ reply:
 /********************
 **  UnixIO::New()  **
 ********************/
-static Object *unixio_new(Class *cl, Object *o, struct P_Root_New *msg)
+static Object *unixio_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("UnixIO::New(cl=%s)\n", cl->ClassNode.ln_Name));
     D(bug("DoSuperMethod:%p\n", cl->DoSuperMethod));
@@ -293,7 +291,7 @@ static Object *unixio_new(Class *cl, Object *o, struct P_Root_New *msg)
 	    D(bug("Port created\n"));
 	    ReturnPtr("UnixIO::New", Object *, o);
     	}
-	dispose_mid = GetMethodID(IID_Root, MO_Root_Dispose);
+	dispose_mid = GetMethodID(IID_Root, moRoot_Dispose);
 	CoerceMethod(cl, o, (Msg)&dispose_mid);
     }
     ReturnPtr("UnixIO::New", Object *, NULL);
@@ -376,21 +374,21 @@ AROS_UFH3(static void *, AROS_SLIB_ENTRY(init, UnixIO),
     
     struct MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
     {
-    	{ (IPTR (*)())unixio_new,	MO_Root_New		},
-    	{ (IPTR (*)())unixio_dispose,	MO_Root_Dispose	},
+    	{ (IPTR (*)())unixio_new,	moRoot_New	},
+    	{ (IPTR (*)())unixio_dispose,	moRoot_Dispose	},
     	{ NULL, 0UL }
     };
 
     struct MethodDescr unixio_mdescr[NUM_UNIXIO_METHODS + 1] =
     {
-    	{ (IPTR (*)())unixio_wait,	HIDDMO_UnixIO_Wait		},
+    	{ (IPTR (*)())unixio_wait,	moHidd_UnixIO_Wait		},
     	{ NULL, 0UL }
     };
     
     struct InterfaceDescr ifdescr[] =
     {
     	{root_mdescr, IID_Root, NUM_ROOT_METHODS},
-	{unixio_mdescr, IID_UnixIO, NUM_UNIXIO_METHODS},
+	{unixio_mdescr, IID_Hidd_UnixIO, NUM_UNIXIO_METHODS},
 	{NULL, NULL, 0UL}
     };
 
@@ -496,18 +494,18 @@ AROS_UFH3(static void *, AROS_SLIB_ENTRY(init, UnixIO),
     /* Create the class structure for the "unixioclass" */
     
     {
-        ULONG __OOPI_Meta = GetAttrBase(IID_Meta);
+        AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
 	
         struct TagItem tags[] =
     	{
-            {A_Meta_SuperID,		(IPTR)CLID_Hidd},
-	    {A_Meta_InterfaceDescr,	(IPTR)ifdescr},
-	    {A_Meta_ID,			(IPTR)CLID_UnixIO_Hidd},
-	    {A_Meta_InstSize,		(IPTR)sizeof (struct UnixIOData) },
+            {aMeta_SuperID,		(IPTR)CLID_Hidd},
+	    {aMeta_InterfaceDescr,	(IPTR)ifdescr},
+	    {aMeta_ID,			(IPTR)CLID_Hidd_UnixIO},
+	    {aMeta_InstSize,		(IPTR)sizeof (struct UnixIOData) },
 	    {TAG_DONE, 0UL}
     	};
 
-    	cl = NewObject(NULL, CLID_HIDDMeta, tags);
+    	cl = NewObject(NULL, CLID_HiddMeta, tags);
     
     	if(cl)
     	{
@@ -527,13 +525,13 @@ AROS_UFH3(static void *, AROS_SLIB_ENTRY(init, UnixIO),
 
 #define OOPBase ( ((struct uio_data *)OCLASS(o)->UserData)->ud_OOPBase )
 
-IPTR HIDD_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode)
+IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode)
 {
-     static ULONG mid = NULL;
+     static MethodID mid = NULL;
      struct uioMsg p;
      
      if (!mid)
-     	mid = GetMethodID(IID_UnixIO, HIDDMO_UnixIO_Wait);
+     	mid = GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_Wait);
      p.um_MethodID = mid;
      p.um_Filedesc = fd;
      p.um_Mode	   = mode;
@@ -542,7 +540,7 @@ IPTR HIDD_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode)
 }
 
 
-/* The below function is merely a hack to avoid
+/* The below function is just a hack to avoid
    name conflicts inside intuition_driver.c
 */
 
@@ -550,5 +548,5 @@ IPTR HIDD_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode)
 HIDD *New_UnixIO(struct Library *OOPBase)
 {
    struct TagItem tags[] = {{ TAG_END, 0 }};
-   return (HIDD)NewObject (NULL, CLID_UnixIO_Hidd, (struct TagItem *)tags);
+   return (HIDD)NewObject (NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
 }

@@ -16,15 +16,15 @@
 #   include <exec/libraries.h>
 #endif
 
-#define CLID_UnixIO_Hidd	"unixioclass"
-#define IID_UnixIO	"I_UnixIO"
+#define CLID_Hidd_UnixIO "unixio.hidd"
+#define IID_Hidd_UnixIO	"I_Hidd_UnixIO"
 
 
 enum {
-    HIDDMO_UnixIO_Wait = 0,	/* LONG M ( uioMsg *)		*/
-    HIDDMO_UnixIO_Select,	/* for async IO, unused		*/
+    moHidd_UnixIO_Wait = 0,	/* LONG M ( uioMsg *)		*/
+    moHidd_UnixIO_Select,	/* for async IO, unused		*/
     
-    NUM_M_UnixIO
+    num_Hidd_UnixIO_Attrs
     
 };
 
@@ -36,11 +36,11 @@ struct uioMsg
 };
 
 /* UnixIO HIDD Values */
-#define HIDDV_UnixIO_Read       0x1
-#define HIDDV_UnixIO_Write      0x2
+#define vHidd_UnixIO_Read       0x1
+#define vHidd_UnixIO_Write      0x2
 
 /* Stubs */
-IPTR HIDD_UnixIO_Wait(HIDD *h, ULONG fd, ULONG mode);
+IPTR Hidd_UnixIO_Wait(HIDD *h, ULONG fd, ULONG mode);
 HIDD *New_UnixIO(struct Library * /* OOPBase */);
 
 

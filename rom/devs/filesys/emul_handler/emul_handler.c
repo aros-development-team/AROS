@@ -1025,7 +1025,7 @@ AROS_LH2(struct emulbase *, init,
     if (!OOPBase)
 	return NULL;
 
-    emulbase->unixio = NewObject (NULL, CLID_UnixIO_Hidd, (struct TagItem *)tags);
+    emulbase->unixio = NewObject (NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
 
     if (!emulbase->unixio)
     {
@@ -1141,7 +1141,7 @@ AROS_LH1(void, beginio,
 		if (fh->fd==STDOUT_FILENO)
 		    fh->fd=STDIN_FILENO;
 
-		error = HIDD_UnixIO_Wait(emulbase->unixio, fh->fd, HIDDV_UnixIO_Read);
+		error = Hidd_UnixIO_Wait(emulbase->unixio, fh->fd, vHidd_UnixIO_Read);
 
 		if (error == 0) {
 		    iofs->io_Union.io_READ.io_Length = read (fh->fd,iofs->io_Union.io_READ.io_Buffer,iofs->io_Union.io_READ.io_Length);

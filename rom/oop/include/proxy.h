@@ -14,20 +14,17 @@ extern ULONG __OOPI_Proxy;
 #define IID_Proxy "Proxy"
 #define CLID_Proxy "proxyclass"
 
-#define ProxyBase (__OOPI_Proxy)
-
-#define IsProxyAttr(attr) \
-    (((attr) & ~(METHOD_MASK)) == (__OOPI_Proxy))
+#define ProxyAttrBase (__IProxy)
 
 
 enum {
-    AO_Proxy_RealObject = 0, /* The object we are a proxy for */
-    AO_Proxy_Port,
-    NUM_A_Proxy
+    aoProxy_RealObject = 0, /* The object we are a proxy for */
+    aoProxy_Port,
+    num_Proxy_Attrs
 };
 
-#define A_Proxy_RealObject	(ProxyBase + AO_Proxy_RealObject)
-#define A_Proxy_Port		(ProxyBase + AO_Proxy_Port)
+#define aProxy_RealObject	(ProxyAttrBase + aoProxy_RealObject)
+#define aProxy_Port		(ProxyAttrBase + aoProxy_Port)
 
 
 #endif /* OOP_PROXY_H */

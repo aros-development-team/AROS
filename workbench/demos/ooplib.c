@@ -20,13 +20,7 @@
 #include <exec/memory.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
-#include <oop/meta.h>
-#include <oop/root.h>
-#include <oop/method.h>
-#include <oop/interface.h>
 #include <oop/server.h>
-#include <oop/ifmeta.h>
-#include <oop/hiddmeta.h>
 
 #include <stdio.h>
 #include <sys/time.h>
@@ -55,16 +49,16 @@ struct Task *CreateServerTask(APTR taskparams);
 #define CLID_Timer "timerclass"
 
 #define IID_Timer "Timer"
-#define MO_Timer_Start 	0
-#define MO_Timer_Stop  	1
-#define MO_Timer_PrintElapsed 2
-#define MO_Timer_TestMethod	3
+#define moTimer_Start 	0
+#define moTimer_Stop  	1
+#define moTimer_PrintElapsed 2
+#define moTimer_TestMethod	3
 
-#define TimerBase	(__OOPI_Timer)
-#define M_Timer_Start		(TimerBase + MO_Timer_Start)
-#define M_Timer_Stop		(TimerBase + MO_Timer_Stop)
-#define M_Timer_PrintElapsed	(TimerBase + MO_Timer_PrintElapsed)
-#define M_Timer_TestMethod	(TimerBase + MO_Timer_TestMethod)
+#define TimerBase	(__ITimer)
+#define M_Timer_Start		(TimerBase + moTimer_Start)
+#define M_Timer_Stop		(TimerBase + moTimer_Stop)
+#define M_Timer_PrintElapsed	(TimerBase + moTimer_PrintElapsed)
+#define M_Timer_TestMethod	(TimerBase + moTimer_TestMethod)
 
 
 // #define GLOBAL_CLASS
@@ -78,11 +72,11 @@ struct Library *OOPBase;
 Class *MakeTimerClass();
 VOID FreeTimerClass(Class *cl);
 
-ULONG __OOPI_Meta;
-ULONG __OOPI_Timer;
-ULONG __OOPI_Method;
-ULONG __OOPI_Server;
-ULONG __OOPI_Interface;
+ULONG __IMeta;
+ULONG __ITimer;
+ULONG __IMethod;
+ULONG __IServer;
+ULONG __IInterface;
 
 Class *timercl;
 
@@ -102,11 +96,11 @@ int main (int argc, char **argv)
     {
 	D(bug("Got OOPBase\n"));
     	if ( 
-	       ( __OOPI_Meta   	  = GetAttrBase( IID_Meta		))
-	    && ( __OOPI_Timer  	  = GetAttrBase( IID_Timer		)) 
-	    && ( __OOPI_Method 	  = GetAttrBase( IID_Method		)) 
-	    && ( __OOPI_Server 	  = GetAttrBase( IID_Server		)) 
-	    && ( __OOPI_Interface = GetAttrBase( IID_Interface	)) 
+	       ( __IMeta   	  = GetAttrBase( IID_Meta	))
+	    && ( __ITimer  	  = GetAttrBase( IID_Timer	)) 
+	    && ( __IMethod 	  = GetAttrBase( IID_Method	)) 
+	    && ( __IServer 	  = GetAttrBase( IID_Server	)) 
+	    && ( __IInterface 	  = GetAttrBase( IID_Interface	)) 
 	    
 	    )
 	{
@@ -130,18 +124,18 @@ int main (int argc, char **argv)
 		if (timer)
 		{
 		    Method *m;
-		    ULONG test_mid = GetMethodID(IID_Timer, MO_Timer_TestMethod);
+		    ULONG test_mid = GetMethodID(IID_Timer, moTimer_TestMethod);
 		    struct TagItem iftags[] =
 		    {
-		    	{ A_Interface_TargetObject,	(IPTR)timer},
-			{ A_Interface_InterfaceID,	(IPTR)IID_Timer},
+		    	{ aInterface_TargetObject,	(IPTR)timer},
+			{ aInterface_InterfaceID,	(IPTR)IID_Timer},
 			{ TAG_DONE, 0UL }
 		    };
 		    struct TagItem mtags[] =
 		    {
-		    	{A_Method_TargetObject, (IPTR)timer		},
-			{A_Method_Message,	(IPTR)&test_mid	},
-			{A_Method_MethodID,	test_mid	},
+		    	{aMethod_TargetObject, (IPTR)timer		},
+			{aMethod_Message,	(IPTR)&test_mid	},
+			{aMethod_MethodID,	test_mid	},
 			{TAG_DONE,}
 		    };
 		    
@@ -174,25 +168,25 @@ int main (int argc, char **argv)
 			    		NUM_IF_INVOCATIONS);
 
 			test_mid = M_Timer_Start;
-			iftimer->Call(iftimer, (Msg)&test_mid);
+			iftimer->callMethod(iftimer, (Msg)&test_mid);
 
 			test_mid = M_Timer_TestMethod;
 
 			for (i = 0; i < NUM_IF_INVOCATIONS; i ++)
 			{
-			    iftimer->Call(iftimer, msg);
+			    iftimer->callMethod(iftimer, msg);
 			}
 
 			test_mid = M_Timer_Stop;
-			iftimer->Call(iftimer, (Msg)&test_mid);
+			iftimer->callMethod(iftimer, (Msg)&test_mid);
 
 			printf("Time elapsed: ");
 
 			test_mid = M_Timer_PrintElapsed;
-		    	iftimer->Call(iftimer, (Msg)&test_mid);
+		    	iftimer->callMethod(iftimer, (Msg)&test_mid);
 
 			test_mid = M_Timer_TestMethod;
-			printf ("Result of testmethod: %ld\n", iftimer->Call(iftimer, (Msg)&test_mid));
+			printf ("Result of testmethod: %ld\n", iftimer->callMethod(iftimer, (Msg)&test_mid));
 
 
 		    	DisposeObject((Object *)iftimer);
@@ -238,24 +232,24 @@ int main (int argc, char **argv)
 			    printf("Doing %ld invocations using IPC\n",
 			    		NUM_INVOCATIONS);
 
-			    test_mid = GetMethodID(IID_Timer, MO_Timer_Start);
+			    test_mid = GetMethodID(IID_Timer, moTimer_Start);
 			    DoMethod(timer, (Msg)&test_mid);
 
-			    test_mid = GetMethodID(IID_Timer, MO_Timer_TestMethod);
+			    test_mid = GetMethodID(IID_Timer, moTimer_TestMethod);
 			    for (i = 0; i < NUM_INVOCATIONS; i ++)
 			    {
 			    	DoMethod(timer, (Msg)&test_mid);
 			    }
 
-			    test_mid = GetMethodID(IID_Timer, MO_Timer_Stop);
+			    test_mid = GetMethodID(IID_Timer, moTimer_Stop);
 			    DoMethod(timer, (Msg)&test_mid);
 
 			    printf("Time elapsed: ");
 
-			    test_mid = GetMethodID(IID_Timer, MO_Timer_PrintElapsed);
+			    test_mid = GetMethodID(IID_Timer, moTimer_PrintElapsed);
 		    	    DoMethod(timer, (Msg)&test_mid);
 
-			    test_mid = GetMethodID(IID_Timer, MO_Timer_TestMethod);
+			    test_mid = GetMethodID(IID_Timer, moTimer_TestMethod);
 			    printf ("Result of testmethod: %ld\n", DoMethod(timer, (Msg)&test_mid));
 
 
@@ -372,10 +366,10 @@ Class *MakeTimerClass()
 
     struct MethodDescr methods[] =
     {
-	{(IPTR (*)())_Timer_Start,		MO_Timer_Start},
-	{(IPTR (*)())_Timer_Stop,		MO_Timer_Stop},
-	{(IPTR (*)())_Timer_PrintElapsed,	MO_Timer_PrintElapsed},
-	{(IPTR (*)())_Timer_TestMethod,		MO_Timer_TestMethod},
+	{(IPTR (*)())_Timer_Start,		moTimer_Start},
+	{(IPTR (*)())_Timer_Stop,		moTimer_Stop},
+	{(IPTR (*)())_Timer_PrintElapsed,	moTimer_PrintElapsed},
+	{(IPTR (*)())_Timer_TestMethod,		moTimer_TestMethod},
 	{NULL, 0UL}
 
     };
@@ -388,10 +382,10 @@ Class *MakeTimerClass()
 
     struct TagItem tags[] =
     {
-        {A_Meta_SuperID,		(IPTR)CLID_Root},
-	{A_Meta_InterfaceDescr,		(IPTR)ifdescr},
-	{A_Meta_ID,			(IPTR)CLID_Timer},
-	{A_Meta_InstSize,		(IPTR)sizeof (struct TimerData)},
+        {aMeta_SuperID,		(IPTR)CLID_Root},
+	{aMeta_InterfaceDescr,		(IPTR)ifdescr},
+	{aMeta_ID,			(IPTR)CLID_Timer},
+	{aMeta_InstSize,		(IPTR)sizeof (struct TimerData)},
 	{TAG_DONE, 0UL}
     };
 #ifndef GLOBAL_CLASS
@@ -399,7 +393,7 @@ Class *tcl;
 #endif
 
     
-    tcl = (Class *)NewObject(NULL, CLID_HIDDMeta, tags);
+    tcl = (Class *)NewObject(NULL, CLID_MIMeta, tags);
 
 
     if (tcl)

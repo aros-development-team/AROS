@@ -8,7 +8,6 @@
 #define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 #include <proto/exec.h>
-#include <oop/root.h>
 #include "intern.h"
 #define MD(x) ((struct metadata *)x)
 
@@ -66,7 +65,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
-    struct P_Root_New p;
+    struct pRoot_New p;
     Object *o;
     
     EnterFunc(bug("NewObjectA(classPtr=%p, classID=%s, tagList=%p)\n",
@@ -93,8 +92,8 @@
     
     D(bug("Creating new instance\n"));
 
-    p.MID = GetMethodID(IID_Root, MO_Root_New);
-    p.AttrList = tagList;
+    p.mID = GetMethodID(IID_Root, moRoot_New);
+    p.attrList = tagList;
     
     D(bug("mid=%ld\n", p.MID));
 

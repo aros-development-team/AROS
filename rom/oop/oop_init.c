@@ -12,12 +12,8 @@
 #include <utility/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
-#include <oop/root.h>
-#include <oop/meta.h>
-#include <oop/method.h>
 #include <oop/server.h>
 #include <oop/proxy.h>
-#include <oop/interface.h>
 
 #include "intern.h"
 #include "libdefs.h"
@@ -77,13 +73,13 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
     struct IDDescr intern_ids[] =
     {
     	/* We must make sure that Root gets ID 0 and Meta gets ID 1 */
-	{ IID_Root,		&__OOPI_Root		},
-	{ IID_Meta,		&__OOPI_Meta		},
+	{ IID_Root,		&__IRoot		},
+	{ IID_Meta,		&__IMeta		},
 	
-	{ IID_Method,		&__OOPI_Method		},
-	{ IID_Server,		&__OOPI_Server		},
-	{ IID_Proxy,		&__OOPI_Proxy		},
-	{ IID_Interface,	&__OOPI_Interface	},
+	{ IID_Method,		&__IMethod		},
+	{ IID_Server,		&__IServer		},
+	{ IID_Proxy,		&__IProxy		},
+	{ IID_Interface,	&__IInterface		},
 	{ NULL,	NULL }
     };
 

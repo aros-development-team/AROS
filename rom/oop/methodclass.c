@@ -12,10 +12,6 @@
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
-#include <oop/method.h>
-#include <oop/root.h>
-#include <oop/meta.h>
-#include <oop/ifmeta.h>
 
 #include "intern.h"
 #include "private.h"
@@ -54,10 +50,11 @@ struct method_data
     Method public;
 };
 
+#define IS_METHOD_ATTR(attr, idx) ((idx = attr - MethodAttrBase) < num_Method_Attrs)
 /********************
 **  Method::New()  **
 ********************/
-static Object *method_new(Class *cl, Object *o, struct P_Root_New *msg)
+static Object *method_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
     Msg m_msg     = NULL;
     Object *m_obj = NULL;
@@ -68,30 +65,32 @@ static Object *method_new(Class *cl, Object *o, struct P_Root_New *msg)
     struct intmethod *m;
     struct IFMethod *ifm;
     
+    ULONG idx;
+    
     EnterFunc(bug("Method::New()\n"));
     
     
     /* Parse the createion-time attributes passed to the object */ 
-    tstate = msg->AttrList;
+    tstate = msg->attrList;
     
     while ((tag = NextTagItem(&tstate)))
     {
-     	if (IsMethodAttr(tag->ti_Tag))
+     	if (IS_METHOD_ATTR(tag->ti_Tag, idx))
 	{
-	    switch (TagIdx(tag->ti_Tag))
+	    switch (idx)
 	    {
-	    	case AO_Method_TargetObject:
+	    	case aoMethod_TargetObject:
 		    /* The object from which we get the method */
 		    m_obj = (Object *)tag->ti_Data;
 		    break;
 		
 		
-		case AO_Method_Message:
+		case aoMethod_Message:
 		     /* The message to pass with the method */
 		     m_msg = (Msg)tag->ti_Data;
 		     break;
 		
-		case AO_Method_MethodID:
+		case aoMethod_MethodID:
 		    /* The ID of the method to pass */
 		    mid = (ULONG)tag->ti_Data;
 		    break;
@@ -127,16 +126,16 @@ static Object *method_new(Class *cl, Object *o, struct P_Root_New *msg)
 	m_msg->MID = mid;
 
 	/* Target object is stored for user convenience */
-    	m->public.TargetObject  = m_obj;
+    	m->public.targetObject  = m_obj;
 	
 	/* The message is stored for user convenience */
-	m->public.Message       = m_msg;
+	m->public.message       = m_msg;
 	
 	/* Store method implemetation func and the class that will
 	   receive the method call. (We skip unimplemented class calls)
 	*/
-	m->public.MethodFunc    = ifm->MethodFunc;
-	m->public.MClass	= ifm->mClass;
+	m->public.methodFunc    = ifm->MethodFunc;
+	m->public.methodClass	= ifm->mClass;
 	
 	/* Initialize OCLASS(methodobject) */
 	m->oclass	= cl;
@@ -173,8 +172,8 @@ Class *init_methodclass(struct IntOOPBase *OOPBase)
 
     struct MethodDescr methods[] =
     {
-	{(IPTR (*)())method_new,	MO_Root_New},
-	{(IPTR (*)())method_dispose,	MO_Root_Dispose},
+	{(IPTR (*)())method_new,	moRoot_New},
+	{(IPTR (*)())method_dispose,	moRoot_Dispose},
 	{ NULL, 0UL }
     };
     
@@ -186,10 +185,10 @@ Class *init_methodclass(struct IntOOPBase *OOPBase)
     
     struct TagItem tags[] =
     {
-        {A_Meta_SuperID,		(IPTR)NULL},
-	{A_Meta_InterfaceDescr,		(IPTR)ifdescr},
-	{A_Meta_ID,			(IPTR)CLID_Method},
-	{A_Meta_InstSize,		(IPTR)sizeof (struct method_data)},
+        {aMeta_SuperID,			(IPTR)NULL},
+	{aMeta_InterfaceDescr,		(IPTR)ifdescr},
+	{aMeta_ID,			(IPTR)CLID_Method},
+	{aMeta_InstSize,		(IPTR)sizeof (struct method_data)},
 	{TAG_DONE,  0UL}
     };
 
@@ -198,7 +197,7 @@ Class *init_methodclass(struct IntOOPBase *OOPBase)
     
     EnterFunc(bug("init_methodclass()\n"));
     
-    cl = (Class *)NewObject(NULL, CLID_IFMeta, tags);
+    cl = (Class *)NewObject(NULL, CLID_MIMeta, tags);
     if (cl)
     {
     	D(bug("Method class successfully created\n"));

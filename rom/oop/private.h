@@ -8,8 +8,8 @@
     Lang: english
 */
 
-#ifndef OOP_META_H
-#   include <oop/meta.h>
+#ifndef OOP_OOP_H
+#   include <oop/oop.h>
 #endif
 
 #ifndef EXEC_LIBRARIES_H
@@ -22,7 +22,7 @@
 
 enum
 {
-   MO_meta_allocdisptabs = NUM_M_Meta,
+   MO_meta_allocdisptabs = num_Meta_Attrs,
    MO_meta_freedisptabs,
    MO_meta_iterateifs,
    MO_meta_findmethod,

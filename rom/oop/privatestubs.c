@@ -7,7 +7,6 @@
 */
 #include <proto/oop.h>
 #include <oop/oop.h>
-#include <oop/meta.h>
 #include "private.h"
 #include "intern.h"
 

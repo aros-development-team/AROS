@@ -8,7 +8,6 @@
 #define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 #include <proto/exec.h>
-#include <oop/root.h>
 #include "intern.h"
 #define MD(x) ((struct metadata *)x)
 
@@ -54,7 +53,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
-    ULONG mid = GetMethodID(IID_Root, MO_Root_Dispose);
+    ULONG mid = GetMethodID(IID_Root, moRoot_Dispose);
     
     EnterFunc(bug("DisposeObject(classID=%s)\n",
     		OCLASS(obj)->ClassNode.ln_Name));

@@ -17,7 +17,7 @@
 #include <aros/debug.h>
 #include "hash.h"
 
-	AROS_LH2(ULONG, GetMethodID,
+	AROS_LH2(MethodID, GetMethodID,
 
 /*  SYNOPSIS */
 	AROS_LHA(STRPTR  	, interfaceID, A0),

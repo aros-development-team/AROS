@@ -33,13 +33,6 @@
 #   include <oop/oop.h>
 #endif
 
-#ifndef OOP_ROOT_H
-#   include <oop/root.h>
-#endif
-
-#ifndef OOP_META_H
-#   include <oop/meta.h>
-#endif
 
 /* Predeclaration */
 struct IntOOPBase;
@@ -51,6 +44,8 @@ struct IntOOPBase;
 #define SDEBUG 0
 #define DEBUG 0
 
+#define NUM_METHOD_BITS 10
+#define METHOD_MASK ((1 << NUM_METHOD_BITS) - 1)
 
 
 /* These are used to index an array in the library base
@@ -83,12 +78,12 @@ struct IDDescr
 
 /* defines used to access the interface IDs stored in the library base */
 
-#define __OOPI_Root		(GetOBase(OOPBase)->ob_InternIDs[IDX_IRoot])
-#define __OOPI_Meta		(GetOBase(OOPBase)->ob_InternIDs[IDX_IMeta])
-#define __OOPI_Method		(GetOBase(OOPBase)->ob_InternIDs[IDX_IMethod])
-#define __OOPI_Server		(GetOBase(OOPBase)->ob_InternIDs[IDX_IServer])
-#define __OOPI_Proxy		(GetOBase(OOPBase)->ob_InternIDs[IDX_IProxy])
-#define __OOPI_Interface	(GetOBase(OOPBase)->ob_InternIDs[IDX_IInterface])
+#define __IRoot		(GetOBase(OOPBase)->ob_InternIDs[IDX_IRoot])
+#define __IMeta		(GetOBase(OOPBase)->ob_InternIDs[IDX_IMeta])
+#define __IMethod	(GetOBase(OOPBase)->ob_InternIDs[IDX_IMethod])
+#define __IServer	(GetOBase(OOPBase)->ob_InternIDs[IDX_IServer])
+#define __IProxy	(GetOBase(OOPBase)->ob_InternIDs[IDX_IProxy])
+#define __IInterface	(GetOBase(OOPBase)->ob_InternIDs[IDX_IInterface])
 
 #define GetOBase(lib)           ((struct IntOOPBase *)(lib))
 #define SysBase 		(GetOBase(OOPBase)->ob_SysBase)
@@ -220,7 +215,7 @@ struct basemetaobject /* Real instance data of the base meta class */
     	struct IFMethod *iftable[NUM_BASEMETA_IFS]; /* has two interfaces: root and meta */
     
     	/* The interface tables */
-    	struct IFMethod	rootif[NUM_M_Root];
+    	struct IFMethod	rootif[num_Root_Methods];
     	struct IFMethod	metaif[NUMTOTAL_M_Meta];
     } inst;
 };
@@ -231,7 +226,7 @@ struct rootclassobject
     struct rootinst
     {
     	struct metadata data;
-    	struct IFMethod rootif[NUM_M_Root];
+    	struct IFMethod rootif[num_Root_Methods];
     } inst;
 };
 

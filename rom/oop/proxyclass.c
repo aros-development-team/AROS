@@ -11,11 +11,8 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <oop/oop.h>
-#include <oop/root.h>
 #include <oop/proxy.h>
-#include <oop/meta.h>
 #include <oop/server.h>
-#include <oop/ifmeta.h>
 
 #include <string.h>
 
@@ -58,7 +55,7 @@ struct ProxyData
 /************
 **  New()  **
 ************/
-static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
+static Object *_Root_New(Class *cl, Object *o, struct pRoot_New *msg)
 {
     /* Get the attributes */
     Object *realobject;
@@ -69,14 +66,14 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
     /* Pares params */
 
     /* Object from other process which we create a proxy for */
-    realobject = (Object *)GetTagData(A_Proxy_RealObject,	NULL, msg->AttrList);
+    realobject = (Object *)GetTagData(aProxy_RealObject,	NULL, msg->attrList);
     
     /* MsgPort to pass method invocation throgh.
        Note that one could very well use a socket or a pipe to pass
        the methods
     */
     
-    serverport = (struct MsgPort *)GetTagData(A_Proxy_Port, 	NULL, msg->AttrList);
+    serverport = (struct MsgPort *)GetTagData(aProxy_Port, 	NULL, msg->attrList);
     
     /* Those two params MUST be supplied */
     if ( !(realobject && serverport) )
@@ -86,7 +83,7 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
     if (o)
     {
         struct ProxyData *data;
-	ULONG disp_mid = GetMethodID(IID_Root, MO_Root_Dispose);
+	ULONG disp_mid = GetMethodID(IID_Root, moRoot_Dispose);
 	    
 	data = (struct ProxyData *)INST_DATA(cl, o);
 	
@@ -190,8 +187,8 @@ Class *init_proxyclass(struct Library *OOPBase)
 
     struct MethodDescr root_methods[] =
     {
-	{(IPTR (*)())_Root_New,			MO_Root_New},
-	{(IPTR (*)())_Root_Dispose,		MO_Root_Dispose},
+	{(IPTR (*)())_Root_New,			moRoot_New},
+	{(IPTR (*)())_Root_Dispose,		moRoot_Dispose},
 	{ NULL, 0UL }
     };
     
@@ -204,11 +201,11 @@ Class *init_proxyclass(struct Library *OOPBase)
     
     struct TagItem tags[] =
     {
-        {A_Meta_SuperID,		(IPTR)CLID_Root},
-	{A_Meta_InterfaceDescr,		(IPTR)ifdescr},
-	{A_Meta_ID,			(IPTR)CLID_Proxy},
-	{A_Meta_InstSize,		(IPTR)sizeof (struct ProxyData) },
-	{A_Meta_DoMethod,		(IPTR)_Proxy_DoMethod},
+        {aMeta_SuperID,			(IPTR)CLID_Root},
+	{aMeta_InterfaceDescr,		(IPTR)ifdescr},
+	{aMeta_ID,			(IPTR)CLID_Proxy},
+	{aMeta_InstSize,		(IPTR)sizeof (struct ProxyData) },
+	{aMeta_DoMethod,		(IPTR)_Proxy_DoMethod},
 	{TAG_DONE, 0UL}
     };
 
@@ -217,7 +214,7 @@ Class *init_proxyclass(struct Library *OOPBase)
     
     EnterFunc(bug("InitProxyClass()\n"));
     
-    cl = (Class *)NewObject(NULL, CLID_IFMeta, tags);
+    cl = (Class *)NewObject(NULL, CLID_MIMeta, tags);
     if (cl)
     {
         cl->UserData = OOPBase;

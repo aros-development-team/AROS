@@ -11,10 +11,7 @@
 #include <exec/memory.h>
 
 #include <proto/oop.h>
-#include <oop/meta.h>
-#include <oop/root.h>
 #include <oop/oop.h>
-#include <oop/ifmeta.h>
 
 #include "intern.h"
 #include "hash.h"
@@ -96,7 +93,7 @@ static ULONG calc_ht_entries(struct ifmeta_inst *cl
 /********************
 **  IFMeta::New()  **
 ********************/
-static Object *ifmeta_new(Class *cl, Object *o, struct P_Root_New *msg)
+static Object *ifmeta_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
 
     IPTR (*domethod)(Object *, Msg) = NULL;
@@ -115,9 +112,9 @@ static Object *ifmeta_new(Class *cl, Object *o, struct P_Root_New *msg)
 	
 	inst = (struct ifmeta_inst *)o;
 	
-	domethod 	= (IPTR (*)())GetTagData(A_Meta_DoMethod, 	NULL, msg->AttrList);
-	coercemethod 	= (IPTR (*)())GetTagData(A_Meta_CoerceMethod, 	NULL, msg->AttrList);
-	dosupermethod	= (IPTR (*)())GetTagData(A_Meta_DoSuperMethod, NULL, msg->AttrList);
+	domethod 	= (IPTR (*)())GetTagData(aMeta_DoMethod, 	NULL, msg->attrList);
+	coercemethod 	= (IPTR (*)())GetTagData(aMeta_CoerceMethod, 	NULL, msg->attrList);
+	dosupermethod	= (IPTR (*)())GetTagData(aMeta_DoSuperMethod, 	NULL, msg->attrList);
 	
 
         D(bug("Instance allocated %p\n", inst));
@@ -485,7 +482,7 @@ BOOL init_ifmetaclass(struct IntOOPBase *OOPBase)
 {
     struct MethodDescr root_mdescr[NUM_ROOT_METHODS + 1]=
     {
-    	{ (IPTR (*)())ifmeta_new,	MO_Root_New		},
+    	{ (IPTR (*)())ifmeta_new,	moRoot_New		},
 	{  NULL, 0UL }
     };
 
@@ -540,7 +537,7 @@ BOOL init_ifmetaclass(struct IntOOPBase *OOPBase)
     {
     	D(bug("ifmeta disptabs allocated\n"));
     	/* initialize Class ID */
-	imo->inst.base.public.ClassNode.ln_Name = CLID_IFMeta;
+	imo->inst.base.public.ClassNode.ln_Name = CLID_MIMeta;
 	imo->inst.base.public.InstOffset 	= sizeof (struct metadata);
 	
 	D(bug("IFMeta DoMethod=%p\n", Meta_DoMethod));

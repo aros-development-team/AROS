@@ -11,10 +11,6 @@
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
-#include <oop/root.h>
-#include <oop/meta.h>
-#include <oop/interface.h>
-#include <oop/ifmeta.h>
 
 #include "private.h"
 
@@ -59,7 +55,7 @@ struct interface_object
 /***********************
 **  Interface::New()  **
 ***********************/
-static Object *interface_new(Class *cl, Object *o, struct P_Root_New *msg)
+static Object *interface_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
      
     
@@ -71,10 +67,10 @@ static Object *interface_new(Class *cl, Object *o, struct P_Root_New *msg)
     /* Parse parameters */
     
     /* What target object does the user want an interface object for ? */
-    if_obj = (Object *)GetTagData(A_Interface_TargetObject, NULL, msg->AttrList);
+    if_obj = (Object *)GetTagData(aInterface_TargetObject, NULL, msg->attrList);
     
     /* What interface does he want from the object ? */
-    if_id  = (STRPTR)GetTagData(A_Interface_InterfaceID,  NULL,  msg->AttrList);
+    if_id  = (STRPTR)GetTagData(aInterface_InterfaceID,  NULL,  msg->attrList);
 
     EnterFunc(bug("Interface::New(if_obj=%p, if_id=%s)\n", if_obj, if_id));
     
@@ -108,14 +104,14 @@ static Object *interface_new(Class *cl, Object *o, struct P_Root_New *msg)
 	   (He doesn't have to store both)
 	*/
 	
-	ifo->data.public.TargetObject = if_obj;
+	ifo->data.public.targetObject = if_obj;
 	
 	
 	/* Function for calling a method on an interface obect.
 	   Just use a standard one, but we could add support
 	   for letting the user override the function with his own.
 	*/
-	ifo->data.public.Call = StdCallIF;
+	ifo->data.public.callMethod = StdCallIF;
 	
 	/* The interface object must have some methods to call :-) */
 	ifo->data.methodtable = if_mtab;
@@ -162,7 +158,7 @@ static IPTR StdCallIF(Interface *iface, Msg msg)
     method = &( ((struct interface_data *)iface)->methodtable[midx] );
     
     /* ... and call the method on the interface object's target object */
-    return ( method->MethodFunc(method->mClass, iface->TargetObject, msg) );
+    return ( method->MethodFunc(method->mClass, iface->targetObject, msg) );
 
 }
 
@@ -174,8 +170,8 @@ Class *init_interfaceclass(struct Library *OOPBase)
 
     struct MethodDescr methods[] =
     {
-	{(IPTR (*)())interface_new,		MO_Root_New},
-	{(IPTR (*)())interface_dispose,		MO_Root_Dispose},
+	{(IPTR (*)())interface_new,		moRoot_New},
+	{(IPTR (*)())interface_dispose,		moRoot_Dispose},
 	{ NULL, 0UL }
     };
     
@@ -187,10 +183,10 @@ Class *init_interfaceclass(struct Library *OOPBase)
     
     struct TagItem tags[] =
     {
-        {A_Meta_SuperID,		(IPTR)NULL},
-	{A_Meta_InterfaceDescr,		(IPTR)ifdescr},
-	{A_Meta_ID,			(IPTR)CLID_Interface},
-	{A_Meta_InstSize,		(IPTR)sizeof (struct interface_data)},
+        {aMeta_SuperID,		(IPTR)NULL},
+	{aMeta_InterfaceDescr,		(IPTR)ifdescr},
+	{aMeta_ID,			(IPTR)CLID_Interface},
+	{aMeta_InstSize,		(IPTR)sizeof (struct interface_data)},
 	{TAG_DONE, 0UL}
     };
 
@@ -199,7 +195,7 @@ Class *init_interfaceclass(struct Library *OOPBase)
     
     EnterFunc(bug("init_interfaceclass()\n"));
     
-    cl = (Class *)NewObject(NULL, CLID_IFMeta, tags);
+    cl = (Class *)NewObject(NULL, CLID_MIMeta, tags);
     if (cl)
     {
         cl->UserData = OOPBase;

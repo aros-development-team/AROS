@@ -12,11 +12,8 @@
 #include <exec/memory.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
-#include <oop/root.h>
-#include <oop/meta.h>
 #include <oop/server.h>
 #include <oop/proxy.h>
-#include <oop/ifmeta.h>
 #include <string.h>
 
 #include "intern.h"
@@ -58,7 +55,7 @@ struct  ServerObjectNode
 
 #define OOPBase ((struct Library *)cl->UserData)
 
-static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
+static Object *_Root_New(Class *cl, Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("Server::New(cl=%s, o=%p, msg=%p)\n",
     		cl->ClassNode.ln_Name, o, msg));
@@ -76,7 +73,7 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
 	data = INST_DATA(cl, o);
     	D(bug("got instdata\n"));
 
-	disp_mid = GetMethodID(IID_Root, MO_Root_Dispose);
+	disp_mid = GetMethodID(IID_Root, moRoot_Dispose);
     	D(bug("got dispmid\n"));
 	/* Clear so we can test what resources are allocated in Dispose() */
 	D(bug("Object created, o=%p, data=%p\n", o, data));
@@ -209,8 +206,8 @@ static Object * _Server_FindObject(Class *cl, Object *o, struct P_Server_FindObj
     	/* If found, create a proxy for the object */
 	struct TagItem proxy_tags[] =
 	{
-	    {A_Proxy_RealObject,	(IPTR)so->so_Object},
-	    {A_Proxy_Port,		(IPTR)data->ReceivePort},
+	    {aProxy_RealObject,	(IPTR)so->so_Object},
+	    {aProxy_Port,		(IPTR)data->ReceivePort},
 	    {TAG_DONE,	0UL}
 	};
 	
@@ -259,17 +256,17 @@ Class *init_serverclass(struct Library *OOPBase)
 
     struct MethodDescr root_methods[] =
     {
-	{(IPTR (*)())_Root_New,			MO_Root_New},
-	{(IPTR (*)())_Root_Dispose,		MO_Root_Dispose},
+	{(IPTR (*)())_Root_New,			moRoot_New},
+	{(IPTR (*)())_Root_Dispose,		moRoot_Dispose},
 	{ NULL, 0UL }
     };
     
     struct MethodDescr server_methods[] =
     {
-	{(IPTR (*)())_Server_AddObject,		MO_Server_AddObject},
-	{(IPTR (*)())_Server_RemoveObject,	MO_Server_RemoveObject},
-	{(IPTR (*)())_Server_FindObject,	MO_Server_FindObject},
-	{(IPTR (*)())_Server_Run,		MO_Server_Run},
+	{(IPTR (*)())_Server_AddObject,		moServer_AddObject},
+	{(IPTR (*)())_Server_RemoveObject,	moServer_RemoveObject},
+	{(IPTR (*)())_Server_FindObject,	moServer_FindObject},
+	{(IPTR (*)())_Server_Run,		moServer_Run},
 	{ NULL, 0UL }
     };
     
@@ -282,10 +279,10 @@ Class *init_serverclass(struct Library *OOPBase)
     
     struct TagItem tags[] =
     {
-        {A_Meta_SuperID,		(IPTR)CLID_Root},
-	{A_Meta_InterfaceDescr,		(IPTR)ifdescr},
-	{A_Meta_ID,			(IPTR)CLID_Server},
-	{A_Meta_InstSize,		(IPTR)sizeof (struct ServerData)},
+        {aMeta_SuperID,		(IPTR)CLID_Root},
+	{aMeta_InterfaceDescr,		(IPTR)ifdescr},
+	{aMeta_ID,			(IPTR)CLID_Server},
+	{aMeta_InstSize,		(IPTR)sizeof (struct ServerData)},
 	{TAG_DONE, 0UL}
     };
 
@@ -294,7 +291,7 @@ Class *init_serverclass(struct Library *OOPBase)
     
     EnterFunc(bug("InitServerClass()\n"));
     
-    cl = (Class *)NewObject(NULL, CLID_IFMeta, tags);
+    cl = (Class *)NewObject(NULL, CLID_MIMeta, tags);
     if (cl)
     {
         cl->UserData = OOPBase;

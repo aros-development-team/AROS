@@ -38,22 +38,22 @@ int main (int argc, char ** argv)
     }
 
 
-    hidd = NewObject (NULL, CLID_UnixIO_Hidd, tags);
+    hidd = NewObject (NULL, CLID_Hidd_UnixIO, tags);
 
     if (!hidd)
     {
 	CloseLibrary (OOPBase);
 	CloseLibrary ((struct Library *)DOSBase);
 
-	vpa[0] = (IPTR)CLID_UnixIO_Hidd;
+	vpa[0] = (IPTR)CLID_Hidd_UnixIO;
 	VPrintf("Need \"%s\" class\n", vpa);
 	return 10;
     }
 
     fd = 0;
-    uio_msg.um_MethodID = GetMethodID(IID_UnixIO, HIDDMO_UnixIO_Wait);
+    uio_msg.um_MethodID = GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_Wait);
     uio_msg.um_Filedesc = fd;
-    uio_msg.um_Mode	= HIDDV_UnixIO_Read;
+    uio_msg.um_Mode	= vHidd_UnixIO_Read;
     ret = DoMethod(hidd, (Msg)&uio_msg);
 
     vpa[0] = ret;

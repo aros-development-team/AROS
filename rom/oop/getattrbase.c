@@ -17,7 +17,7 @@
 
 #include <aros/debug.h>
 
-	AROS_LH1(ULONG, GetAttrBase,
+	AROS_LH1(AttrBase, GetAttrBase,
 
 /*  SYNOPSIS */
 	AROS_LHA(STRPTR  	, stringID, A0),

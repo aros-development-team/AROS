@@ -16,20 +16,20 @@ extern ULONG __OOPI_Server;
 #define CLID_Server "serverclass"
 
 enum {
-    MO_Server_AddObject = 0,
-    MO_Server_RemoveObject,
-    MO_Server_FindObject,
-    MO_Server_Run,
+    moServer_AddObject = 0,
+    moServer_RemoveObject,
+    moServer_FindObject,
+    moServer_Run,
     
-    NUM_M_Server
+    num_Server_Methods
 };
 
 #define ServerBase (__OOPI_Server)
 
-#define M_Server_AddObject	(ServerBase + MO_Server_AddObject)
-#define M_Server_RemoveObject	(ServerBase + MO_Server_RemoveObject)
-#define M_Server_FindObject	(ServerBase + MO_Server_FindObject)
-#define M_Server_Run		(ServerBase + MO_Server_Run)
+#define M_Server_AddObject	(ServerBase + moServer_AddObject)
+#define M_Server_RemoveObject	(ServerBase + moServer_RemoveObject)
+#define M_Server_FindObject	(ServerBase + moServer_FindObject)
+#define M_Server_Run		(ServerBase + moServer_Run)
 
 /* Message parameter structs */
 
@@ -55,7 +55,7 @@ struct P_Server_FindObject
 #define Server_AddObject(o, object, id)	\
 ({		\
     struct P_Server_AddObject msg;	\
-    msg.MethodID = GetMethodID(IID_Server, MO_Server_AddObject);	\
+    msg.MethodID = GetMethodID(IID_Server, moServer_AddObject);	\
     msg.Object = object;		\
     msg.ObjectID = id;			\
     ((BOOL)DoMethod(o, (Msg)&msg));		\
@@ -64,7 +64,7 @@ struct P_Server_FindObject
 #define Server_RemoveObject(o, id)	\
 ({		\
     struct P_Server_RemoveObject msg;		\
-    msg.MethodID = GetMethodID(IID_Server, MO_Server_RemoveObject);	\
+    msg.MethodID = GetMethodID(IID_Server, moServer_RemoveObject);	\
     msg.ObjectID = id;				\
     DoMethod(o, (Msg)&msg);			\
 })
@@ -72,14 +72,14 @@ struct P_Server_FindObject
 #define Server_FindObject(o, id)	\
 ({					\
     struct P_Server_FindObject msg;	\
-    msg.MethodID = GetMethodID(IID_Server, MO_Server_FindObject);	\
+    msg.MethodID = GetMethodID(IID_Server, moServer_FindObject);	\
     msg.ObjectID = id;			\
     ((Object *)DoMethod(o, (Msg)&msg));		\
 })
 
 #define Server_Run(o)			\
 ({					\
-    ULONG mid = GetMethodID(IID_Server, MO_Server_Run);		\
+    ULONG mid = GetMethodID(IID_Server, moServer_Run);		\
     DoMethod(o, (Msg)&mid);		\
 })
 
