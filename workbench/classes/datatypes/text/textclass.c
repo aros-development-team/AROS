@@ -2302,7 +2302,6 @@ STATIC ULONG DT_Render(struct IClass * cl, struct Gadget * g, struct gpRender * 
 	{
 	    ULONG redraw_type;
 
-#ifndef _AROS
 	    if (!AttemptSemaphoreShared(&(si->si_Lock)))
 	    {
 		/* The datatype should be redrawn but can not get the lock, so redraw it the next time fully */
@@ -2310,9 +2309,6 @@ STATIC ULONG DT_Render(struct IClass * cl, struct Gadget * g, struct gpRender * 
 		td->redraw = 1;
 		return 0;
 	    }
-#else
-	    ObtainSemaphore(&(si->si_Lock));
-#endif
 
 	    if (td->redraw)
 	    {
