@@ -21,14 +21,20 @@ New this time:
 HOW TO USE THIS
 ---------------
 
-There are two archives:
+There are two kinds of archives:
 
-    AROSdev.lha
-    AROS-$a-$b.lha
+    AROS-source.tgz
+    AROS-docs.tgz
+    AROS-<key>-bin.tgz
 
-$a is the system and $b is the CPU this archive is for, ie.
-AROS-linux-i386.lha is the binary archive for linux with Intel CPU (386 and
-above), AROS-amiga.lha is the Amiga binary.
+AROS-source is the complete source tree, AROS-docs is just a copy of the
+HTML pages which you'll find on our site and AROS-<key>-bin is an archive
+with the binaries for <key>. Here is a list of keys:
+
+    amiga - Binary for 680x0 hardware
+    lx86 - Binaries for Linux/i386
+    fx86 - Binaries for FreeBSD/i386
+    ibmpc - Binaries for IBM compatible PC standalone
 
 If you are not involved with developing AROS but want to try it out or
 (even better) want to write apps for AROS, get the binary archive. It
@@ -86,8 +92,8 @@ If you like it and use it regularly please send a message to the
 following address:
 
     Aaron "Optimizer" Digulla
-    Th.-Heuss-Str. 8
-    78467 Konstanz
+    Haldenweg 5
+    78464 Konstanz
     Germany
 
     EMail: digulla@hepe.com
