@@ -34,7 +34,7 @@ extern struct GfxBase * GfxBase;
 #define BMT_RGBA	0x1238	/* RTG Bitmap. 32bit RGBA chunky */
 #define BMT_DRIVER	0x8000	/* Special RTG bitmap.
 				   Use this as an offset. */
-#define TFE_COOKIE      0xffff
+
 #define TFE(tfe) ((struct TextFontExtension*)tfe)
 
 /* Forward declaration */
