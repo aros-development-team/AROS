@@ -3,7 +3,7 @@ TOP=../..
 
 include $(TOP)/config/make.cfg
 
-SUBDIRS=exec utility clib
+SUBDIRS=layers exec utility clib
 
 SPECIAL_CFLAGS = -I $(TOP)/exec
 
