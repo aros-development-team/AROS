@@ -1,0 +1,5 @@
+CFG_MAIL_CC=falemagn@studenti.unina.it
+CFG_DS_USER=falemagn
+CFG_PACKAGES=(sources sdk contrib hosted i386-pc documentation)
+
+
