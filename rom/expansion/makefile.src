@@ -24,7 +24,7 @@ include $(TOP)/config/make.cfg
 # we use this as an anchor for the link.
 INIT_FILE = expansion_init
 
-FILES =
+FILES = expansion_functable
 
 # Guarantee that this will go at the end of the file:
 END_FILE = expansion_endtag
@@ -100,9 +100,9 @@ $(LIB): $(OBJS)
 else
 # Use OS's own includes over the ones from AROS
 ifeq ("$(SHARED_EXPANSION)","yes")
-SPECIAL_CFLAGS=$(SHARED_CFLAGS) -I/usr/include
+SPECIAL_CFLAGS=$(SHARED_CFLAGS)
 else
-SPECIAL_CFLAGS=-I/usr/include
+SPECIAL_CFLAGS= 
 endif
 
 # This is required for systems that use shared libraries, you need the name

@@ -5,8 +5,10 @@
     Desc: Expansion Resident and initialization.
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE
 
 #include <exec/types.h>
+#include <exec/lists.h>
 #include <exec/alerts.h>
 #include <exec/libraries.h>
 #include <exec/resident.h>
@@ -17,11 +19,11 @@
 #include "expansion_intern.h"
 #include "libdefs.h"
 
-extern const UBYTE name[];
-extern const UBYTE version[];
-extern const APTR initabl[4];
-extern void *const FUNCTABLE[];
-struct LIBBASETYPE *INIT();
+static const UBYTE name[];
+static const UBYTE version[];
+static const APTR inittabl[4];
+static void *const FUNCTABLE[];
+struct LIBBASETYPE *AROS_SLIB_ENTRY(init,BASENAME)();
 extern const char END;
 
 int Expansion_entry()
@@ -40,18 +42,18 @@ const struct Resident Expansion_resident =
     110,
     (STRPTR)name,
     (STRPTR)&version[6],
-    (ULONG *)initabl
+    (ULONG *)inittabl
 };
 
-const UBYTE name[]=LIBNAME;
-const UBYTE version[]=VERSION;
+static const UBYTE name[]=LIBNAME;
+static const UBYTE version[]=VERSION;
 
-const APTR inittabl[4]=
+static const APTR inittabl[4]=
 {
     (APTR)sizeof(struct IntExpansionBase),
     (APTR)FUNCTABLE,
     NULL,
-    &INIT
+    &AROS_SLIB_ENTRY(init,BASENAME)
 };
 
 AROS_LH2(struct LIBBASETYPE *, init,
@@ -72,7 +74,9 @@ AROS_LH2(struct LIBBASETYPE *, init,
     LIBBASE->LibNode.lib_Version = LIBVERSION;
     LIBBASE->LibNode.lib_Revision = LIBREVISION;
     LIBBASE->LibNode.lib_IdString = (STRPTR)&version[6];
-    
+   
+    NEWLIST(&LIBBASE->MountList);
+ 
 #if 0
     /* See what expansion hardware we can detect. */
     ConfigChain();
@@ -80,4 +84,80 @@ AROS_LH2(struct LIBBASETYPE *, init,
     
     return LIBBASE;
     AROS_LIBFUNC_EXIT
+}
+
+AROS_LH1(struct LIBBASETYPE *, open,
+	AROS_LHA(ULONG, version, D0),
+	struct LIBBASETYPE *, LIBBASE, 1, BASENAME)
+{
+	AROS_LIBFUNC_INIT
+
+	/* Keep compiler happy. */
+	version = version;
+
+	LIBBASE->LibNode.lib_OpenCnt++;
+	LIBBASE->LibNode.lib_Flags &= ~LIBF_DELEXP;
+
+	return LIBBASE;
+
+	AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(BPTR, close,
+	struct LIBBASETYPE *, LIBBASE, 2, BASENAME)
+{
+	AROS_LIBFUNC_INIT
+
+	/* I have one fewer openers */
+	if( !--LIBBASE->LibNode.lib_OpenCnt)
+	{
+#ifdef DISK_BASED
+		/* Delayed expunge pending? */
+		if(LIBBASE->LibNode.lib_Flags & LIBF_DELEXP)
+			return expunge();
+#endif DISK_BASED
+	}
+	return 0;
+
+	AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(BPTR, expunge,
+	struct LIBBASETYPE *, LIBBASE, 3, BASENAME)
+{
+	AROS_LIBFUNC_INIT
+
+	BPTR ret;
+
+	/* Test for openers */
+	if(LIBBASE->LibNode.lib_OpenCnt)
+	{
+		/* Set delayed expunge and return. */
+		LIBBASE->LibNode.lib_Flags |= LIBF_DELEXP;
+		return 0;
+	}
+
+#ifdef DISK_BASED
+	/* Get rid of the library. Remove from the library list. */	
+	Remove(&LIBBASE->LibNode);
+
+	/* Save returncode here, FreeMem() will destroy the field. */
+	ret = IntExpBase(LIBBASE)->eb_SegList;
+
+	/* Free the memory */
+	FreeMem((char*)LIBBASE - LIBBASE->LibNode.lib_NegSize,
+		LIBBASE->LibNode.lib_NegSize + LIBBASE->LibNode.lib_PosSize);
+#else
+	ret = 0;
+#endif
+	return ret;
+
+	AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0I(int, null, struct LIBBASETYPE *, LIBBASE, 4, BASENAME)
+{
+	AROS_LIBFUNC_INIT
+	return 0;
+	AROS_LIBFUNC_EXIT
 }

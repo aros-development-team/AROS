@@ -1,0 +1,4 @@
+makefile
+makefile.bak
+*.err
+*.map
