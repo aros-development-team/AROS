@@ -1,5 +1,5 @@
 /*
-    (C) 1999-2000 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Realtime.library initialization code.
@@ -15,8 +15,14 @@
 
 #include <exec/types.h>
 #include <exec/resident.h>
+#include <exec/interrupts.h>
+#include <hardware/intbits.h>
+#include <dos/dos.h>
+#include <proto/dos.h>
 #include <proto/exec.h>
+#include <utility/tagitem.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 
 #include "initstruct.h"
 #include <stddef.h>
@@ -31,6 +37,11 @@
 #include <aros/debug.h>
 
 #define INIT	AROS_SLIB_ENTRY(init, RealTime)
+
+BOOL AllocTimer(struct internal_RealTimeBase *RTBase);
+void FreeTimer(struct internal_RealTimeBase *RTBase);
+
+extern void Pulse();
 
 struct inittable;
 extern const char name[];
@@ -119,9 +130,13 @@ AROS_LH2(struct internal_RealTimeBase *, init,
     RTBase->rtb_SegList = segList;
 
     for(i = 0; i < RT_MAXLOCK; i++)
+    {
 	InitSemaphore(&RTBase->rtb_Locks[i]);
+    }
 
     NEWLIST(&RTBase->rtb_ConductorList);
+
+    RTBase->rtb_TickErr = 0;	/* How may such a thing be measured? */
 
     return RTBase;
 
@@ -144,11 +159,52 @@ AROS_LH1(struct RealTimeBase *, open,
     /* Keep compiler happy */
     version = 0;
 
-    if(GPB(RTBase)->rtb_UtilityBase == NULL)
+    if (GPB(RTBase)->rtb_UtilityBase == NULL)
+    {
 	GPB(RTBase)->rtb_UtilityBase = OpenLibrary("utility.library", 41);
+    }
 
-    if(GPB(RTBase)->rtb_UtilityBase == NULL)
+    if (GPB(RTBase)->rtb_UtilityBase == NULL)
+    {
 	return NULL;
+    }
+
+    if (GPB(RTBase)->rtb_DOSBase == NULL)
+    {
+	GPB(RTBase)->rtb_DOSBase = OpenLibrary("dos.library", 41);
+    }
+
+    if (GPB(RTBase)->rtb_DOSBase == NULL)
+    {
+	return NULL;
+    }
+
+    if (RTBase->rtb_LibNode.lib_OpenCnt == 0)
+    {
+	/* I use a process here just to be able to use CreateNewProc() so
+	   I don't have to fiddle with stack order and such... */
+	struct TagItem tags[] = { { NP_Entry   , (IPTR)Pulse            },
+				  { NP_Name    , (IPTR)"RealTime Pulse" },
+				  { NP_Priority, (IPTR)127              },
+				  { NP_UserData, (IPTR)RTBase           },
+				  { TAG_DONE   , (IPTR)NULL             } };
+	
+	GPB(RTBase)->rtb_PulseTask = (struct Task *)CreateNewProc(tags);
+
+	if (GPB(RTBase)->rtb_PulseTask == NULL)
+	{
+	    return NULL;
+	}
+
+	kprintf("Realtime pulse task created\n");
+
+	if (!AllocTimer((struct internal_RealTimeBase *)RTBase))
+	{
+	    return NULL;
+	}
+	
+	kprintf("Realtime pulse timer created\n");
+    }
 
     /* I have one more opener. */
     RTBase->rtb_LibNode.lib_OpenCnt++;
@@ -172,9 +228,13 @@ AROS_LH0(BPTR, close, struct RealTimeBase *, RTBase, 2, RealTime)
     /* I have one fewer opener. */
 
     if(--(RTBase->rtb_LibNode.lib_OpenCnt) == 0)
+    {
 	return expunge();
+    }
     else
+    {
 	RTBase->rtb_LibNode.lib_Flags &= ~LIBF_DELEXP;
+    }
 
     return NULL;
 
@@ -195,12 +255,18 @@ AROS_LH0(BPTR, expunge, struct internal_RealTimeBase *, RTBase, 3, RealTime)
     CloseLibrary(GPB(RTBase)->rtb_UtilityBase);
 
     /* Test for openers. */
-    if(RTBase->rtb_LibNode.lib_OpenCnt)
+    if (RTBase->rtb_LibNode.lib_OpenCnt)
     {
 	/* Set the delayed expunge flag and return. */
 	RTBase->rtb_LibNode.lib_Flags |= LIBF_DELEXP;
 	return 0;
     }
+
+    FreeTimer(RTBase);
+
+    /* Shut down the pulse message task -- must be done AFTER freeing the
+       timer! */
+    Signal(RTBase->rtb_PulseTask, SIGBREAKF_CTRL_C);
 
     /* Get rid of the library. Remove it from the list. */
     Remove(&RTBase->rtb_LibNode.lib_Node);
@@ -213,6 +279,7 @@ AROS_LH0(BPTR, expunge, struct internal_RealTimeBase *, RTBase, 3, RealTime)
 	    RTBase->rtb_LibNode.lib_NegSize + RTBase->rtb_LibNode.lib_PosSize);
 
     return ret;
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -222,4 +289,45 @@ AROS_LH0I(int, null, struct RealTimeBase *, RTBase, 4, RealTime)
     AROS_LIBFUNC_INIT
     return 0;
     AROS_LIBFUNC_EXIT
+}
+
+
+/* RealTime timer interrupt -- currently only a VBlank interrupt */
+AROS_UFH4(ULONG, rtVBlank,
+	  AROS_UFHA(ULONG, dummy, A0),
+	  AROS_UFHA(void *, data, A1),
+	  AROS_UFHA(ULONG, dummy2, A5),
+	  AROS_UFHA(struct ExecBase *, mySysBase, A6))
+{ 
+    struct internal_RealTimeBase *RTBase = GPB(data);
+
+    // kprintf("Signalling task %p\n", RTBase->rtb_PulseTask);
+    Signal(RTBase->rtb_PulseTask, SIGF_SINGLE);
+
+    return 0;
+}
+
+
+BOOL AllocTimer(struct internal_RealTimeBase *RTBase)
+{
+    /* TODO */
+    /* This should be replaced by some timer.device thing when an accurate
+       timer is available -- UNIT_MICROHZ? */
+
+    RTBase->rtb_VBlank.is_Code         = (APTR)&rtVBlank;
+    RTBase->rtb_VBlank.is_Data         = (APTR)RTBase;
+    RTBase->rtb_VBlank.is_Node.ln_Name = "RealTime VBlank server";
+    RTBase->rtb_VBlank.is_Node.ln_Pri  = 127;
+    RTBase->rtb_VBlank.is_Node.ln_Type = NT_INTERRUPT;
+    
+    /* Add a VBLANK server to take care of the heartbeats. */
+    AddIntServer(INTB_VERTB, &RTBase->rtb_VBlank);
+
+    return TRUE;
+}
+
+
+void FreeTimer(struct internal_RealTimeBase *RTBase)
+{
+    RemIntServer(INTB_VERTB, &RTBase->rtb_VBlank);
 }
