@@ -27,7 +27,7 @@ clean ::
 $(OBJDIR)/%.o : %.c
 	%compile_q opt=$(CFLAGS2)
 
-$(OBJDIR)/%.o : %.s
+$(OBJDIR)/%.o : %.s ../machine.i
 	%assemble_q opt=$(AFLAGS2)
 
 $(OBJDIR)/%.d : %.c
