@@ -22,6 +22,7 @@
 #	define AROS_USERFUNC_EXIT
 #	define AROS_ASMSYMNAME(n) n
 /* endian macros */
+#	define AROS_BE2WORD(x) x
 #	define AROS_BE2LONG(x) x
 #	define AROS_LONG2BE(x) x
 #	define AROS_WORD2BE(x) x
