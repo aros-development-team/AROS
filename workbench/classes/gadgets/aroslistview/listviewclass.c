@@ -118,7 +118,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 			TAG_END);
 
 		tags[1].ti_Data = numentries;
-		DoMethod(o, OM_SET, tags, msg->ops_GInfo);
+		DoMethod(o, OM_SET, (IPTR) tags, (IPTR) msg->ops_GInfo);
 
 		retval = 1UL;
 	    } break;
@@ -209,7 +209,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 
 			    data->lvd_NumDamaged = abs_steps;
 
-			    DoMethod(o, GM_RENDER, msg->ops_GInfo, rp, GREDRAW_UPDATE);
+			    DoMethod(o, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rp, GREDRAW_UPDATE);
 			    ReleaseGIRPort(rp);
 			    retval = 0UL;
 
@@ -563,12 +563,12 @@ STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
 	    rp = ObtainGIRPort(msg->gpi_GInfo);
 	    if (rp)
 	    {
-		DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+		DoMethod(o, GM_RENDER, (IPTR) msg->gpi_GInfo, (IPTR) rp, GREDRAW_UPDATE);
 		if (updateoldactive != -1)
 		{
 		    data->lvd_DamageOffset = updateoldactive;
 		    data->lvd_NumDamaged   = 1;
-		    DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+		    DoMethod(o, GM_RENDER, (IPTR) msg->gpi_GInfo, (IPTR) rp, GREDRAW_UPDATE);
 		}
 
 		ReleaseGIRPort(rp);
@@ -580,7 +580,7 @@ STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
 	{
 	    DoMethod(   o,
 			AROSM_Listview_SingleClick,
-			msg->gpi_GInfo,
+			(IPTR) msg->gpi_GInfo,
 			clickpos + data->lvd_First);
 	}
 
@@ -590,7 +590,7 @@ STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
 	{
 	    DoMethod(   o,
 			AROSM_Listview_DoubleClick,
-			msg->gpi_GInfo,
+			(IPTR) msg->gpi_GInfo,
 			clickpos + data->lvd_First);
 	}
 
@@ -723,7 +723,7 @@ D(bug("data->lvd_List: %p\n", data->lvd_List));
 
 	    tags[0].ti_Data  = ShownEntries(data, &container, AROSListviewBase);
 D(bug("Layot: notifying visible=%d, gi=%d\n", tags[0].ti_Data, gi));
-	    DoMethod(o, OM_SET, tags, gi);
+	    DoMethod(o, OM_SET, (IPTR) tags, (IPTR) gi);
 	} /* if (gadgetinfo supplied) */
 
     } /* if (GFLG_xxx or first layout) */
@@ -810,7 +810,7 @@ D(bug("lv disph: %d\n", msg->MethodID));
 			D(bug("Major rerender: o=%d, n=%d\n",
 				data->lvd_DamageOffset, data->lvd_NumDamaged));
 
-			DoMethod(o, GM_RENDER, gi, rp, GREDRAW_UPDATE);
+			DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_UPDATE);
 			ReleaseGIRPort(rp);
 
 		    } /* if */
@@ -845,7 +845,7 @@ D(bug("lv disph: %d\n", msg->MethodID));
 	    struct LVData *data = INST_DATA(cl, o);
 	    retval = (IPTR)DoMethod(    data->lvd_List,
 			AROSM_List_Insert,
-			LIP(msg)->ItemArray,
+			(IPTR) LIP(msg)->ItemArray,
 			LIP(msg)->Position);
 	 } break;
 
@@ -858,7 +858,7 @@ D(bug("lv disph: %d\n", msg->MethodID));
 	    struct LVData *data = INST_DATA(cl, o);
 	    retval = (IPTR)DoMethod(    data->lvd_List,
 			AROSM_List_InsertSingle,
-			LISP(msg)->Item,
+			(IPTR) LISP(msg)->Item,
 			LISP(msg)->Position);
 
 	} break;
