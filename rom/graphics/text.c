@@ -239,7 +239,9 @@ void BltTemplateBasedText(struct RastPort *rp, STRPTR text, ULONG len,
 	    {
 		dst = raster + underline * (LONG)raswidth_bpr;
 		next_word = *(UWORD *)dst;
-
+    	    #if !AROS_BIG_ENDIAN
+	    	next_word = AROS_WORD2BE(next_word);
+	    #endif
 		count  = raswidth16 / 16;
 
 		while(count--)
@@ -249,17 +251,23 @@ void BltTemplateBasedText(struct RastPort *rp, STRPTR text, ULONG len,
 		    if (count > 1)
 		    {
 			next_word = ((UWORD *)dst)[1];
+			
+		    #if !AROS_BIG_ENDIAN
+		    	next_word = AROS_WORD2BE(next_word);
+		    #endif
 		    }
 		    else
 		    {
 			next_word = 0;
 		    }
-
 		    word = ((act_word << 1) & 0xFFFF) + (next_word >> 15);
 		    word |= (act_word >> 1) + ((prev_word << 15) & 0xFFFF);
 		    word &= ~act_word;
 
 		    word = 0xFFFF &~ word;
+    	    #if !AROS_BIG_ENDIAN
+	    	    word = AROS_BE2WORD(word);
+	    #endif
 
 		    *(UWORD *)dst = word;
 		    dst += 2;
