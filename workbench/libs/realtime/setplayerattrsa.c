@@ -1,6 +1,6 @@
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -44,9 +44,8 @@
 
     RESULT
 
-    A pointer to a player structure or NULL if failure. In case of a failure
-    additional information may be retreived from the LONG variable pointed
-    to by PLAYER_ErrorCode if you have specified that tag.
+    Success/failure indicator. If failure, then, in case the PLAYER_ErrorCode
+    is provided, more information can be obtained via that pointer.
 
     NOTES
 
@@ -71,7 +70,7 @@
 
     LONG           *error = NULL;
     struct TagItem *tag, *tl = tagList;
-
+    APTR            lock;
 
     error = (LONG *)GetTagData(PLAYER_ErrorCode, NULL, tl);
 
@@ -90,22 +89,28 @@
 	case PLAYER_Priority:
 	    player->pl_Link.ln_Pri = (BYTE)tag->ti_Data;
 
-	    if(player->pl_Link.ln_Succ != NULL)
+	    if (player->pl_Link.ln_Succ != NULL)
 	    {
 		/* If this node has been (is) inserted before, then remove it
 		   and put it in the right place. */
 
 		/* Is this player attached to a conductor? */
-		if(player->pl_Source != NULL)
+		if (player->pl_Source != NULL)
 		{		    
+		    APTR lock;
+
+		    lock = LockRealTime(RT_CONDUCTORS);
 		    Remove((struct Node *)player);
 		    Enqueue((struct List *)&player->pl_Source->cdt_Players,
 			    (struct Node *)player);
+		    UnlockRealTime(lock);
 		}
 		else
 		{
 		    if(error != NULL)
+		    {
 			*error = RTE_NOCONDUCTOR;
+		    }
 
 		    return FALSE;
 		}
@@ -114,8 +119,10 @@
 	    break;
 
 	case PLAYER_Conductor:
-	    if(tag->ti_Data == NULL)
+	    if (tag->ti_Data == NULL)
+	    {
 		player->pl_Source = NULL;
+	    }
 	    else
 	    {
 		struct Conductor *conductor;
@@ -125,10 +132,12 @@
 		conductor = FindConductor((STRPTR)tag->ti_Data);
 		UnlockRealTime(lock);
 
-		if(conductor == NULL)
+		if (conductor == NULL)
 		{
-		    if(error != NULL)
+		    if (error != NULL)
+		    {
 			*error = RTE_NOCONDUCTOR;
+		    }
 
 		    return FALSE;
 		}
@@ -137,10 +146,31 @@
 	    break;
 
 	case PLAYER_Ready:
-	    if((BOOL)tag->ti_Data)
+	    if ((BOOL)tag->ti_Data)
+	    {
+		struct Conductor *conductor = player->pl_Source;
+		APTR   lock;
+
 		player->pl_Flags |= PLAYERF_READY;
+
+		if (conductor != NULL)
+		{
+		    ObtainSemaphoreShared(&conductor->cdt_Lock);
+
+		    if (conductor->cdt_Barrier != NULL)
+		    {
+			Signal(conductor->cdt_Barrier, SIGF_SINGLE);
+		    }
+
+		    ReleaseSemaphore(&conductor->cdt_Lock);
+		}
+		
+		UnlockRealTime(lock);
+	    }
 	    else
+	    {
 		player->pl_Flags &= ~PLAYERF_READY;
+	    }
 		
 	    break;
 
@@ -150,33 +180,45 @@
 	    break;
 
 	case PLAYER_Alarm:
-	    if((BOOL)tag->ti_Data)
+	    if ((BOOL)tag->ti_Data)
+	    {
 		player->pl_Flags |= PLAYERF_ALARMSET;
+	    }
 	    else
+	    {
 		player->pl_Flags &= ~PLAYERF_ALARMSET;
+	    }
 
 	    break;
 
 	case PLAYER_AlarmSigTask:
-	    if((struct Task *)tag->ti_Data == NULL)
+	    if ((struct Task *)tag->ti_Data == NULL)
+	    {
 		player->pl_Flags &= ~PLAYERF_ALARMSET;
+	    }
 		
 	    player->pl_Task = (struct Task *)tag->ti_Data;
 	    break;
 
 	case PLAYER_AlarmSigBit:
-	    if((BYTE)tag->ti_Data == -1)
+	    if ((BYTE)tag->ti_Data == -1)
+	    {
 		player->pl_Flags &= ~PLAYERF_ALARMSET;
+	    }
 
 	    /* We could use player->pl_Link.ln_Type here */
 	    player->pl_Reserved0 = (BYTE)tag->ti_Data;      /* NOTE! */
 	    break;
 
 	case PLAYER_Quiet:
-	    if((BOOL)tag->ti_Data)
+	    if ((BOOL)tag->ti_Data)
+	    {
 		player->pl_Flags |= PLAYERF_QUIET;
+	    }
 	    else
+	    {
 		player->pl_Flags &= ~PLAYERF_QUIET;
+	    }
 		
 	    break;
 
@@ -189,35 +231,57 @@
 	    break;
 
 	case PLAYER_Conducted:
-	    if((BOOL)tag->ti_Data)
+	    if ((BOOL)tag->ti_Data)
+	    {
 		player->pl_Flags |= PLAYERF_CONDUCTED;
+	    }
 	    else
+	    {
 		player->pl_Flags &= ~PLAYERF_CONDUCTED;
+	    }
 
 	    break;
 
 	case PLAYER_ExtSync:
-	    /* TODO: Try to become the external sync source */
+	    lock = LockRealTime(RT_CONDUCTORS);
 
-	    if((BOOL)tag->ti_Data)
+	    if ((BOOL)tag->ti_Data)
 	    {
-		BOOL succeed;
-		/* Try to become external sync source */
+		if (player->pl_Source->cdt_Flags & CONDUCTF_EXTERNAL)
+		{
+		    /* Only one external synchronizer at a time, please */
+		    UnlockRealTime(lock);
 
-		if(succeed)
-		    player->pl_Flags |= PLAYERF_EXTSYNC;
+		    return FALSE;
+		}
+
+		player->pl_Source->cdt_Flags |= CONDUCTF_EXTERNAL;
+		player->pl_Flags |= PLAYERF_EXTSYNC;
 	    }
 	    else
+	    {
+		/* If this player was the external synchronizer, we
+		   clean up */
+		if (player->pl_Flags & PLAYERF_EXTSYNC)
+		{
+		    player->pl_Source->cdt_Flags &= ~CONDUCTF_EXTERNAL;
+		    player->pl_Source->cdt_Flags &= ~CONDUCTF_GOTTICK;
+		}
+
 		player->pl_Flags &= ~PLAYERF_EXTSYNC;
+	    }
+
+	    UnlockRealTime(lock);
 
 	    break;
 	}
     }
 
     /* Consistency checks */
-    if(player->pl_Task == NULL)
+    if (player->pl_Task == NULL)
+    {
 	player->pl_Flags &= ~PLAYERF_ALARMSET;
-
+    }
 
     return TRUE;
 
