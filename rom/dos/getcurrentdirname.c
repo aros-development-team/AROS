@@ -68,11 +68,11 @@
     if (clen >= (len-1))
     {
 	clen = len-1;
-	me->pr_Result2 = ERROR_OBJECT_TOO_LARGE;
+	me->pr_Result2 = ERROR_LINE_TOO_LONG;
 	ret = DOSFALSE;
     }
     CopyMem(cname, buf, clen);
-    buf[clen+1] = '\0';
+    buf[clen] = '\0';
 
     return ret;
     AROS_LIBFUNC_EXIT

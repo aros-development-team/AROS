@@ -52,6 +52,7 @@
     struct CommandLineInterface *cli = BADDR(me->pr_CLI);
     STRPTR cname;
     ULONG clen;
+    BOOL ret = DOSTRUE;
 
     if (cli == NULL)
     {
@@ -62,10 +63,15 @@
 
     cname = AROS_BSTR_ADDR(cli->cli_CommandName);
     clen = (ULONG)AROS_BSTR_strlen(cli->cli_CommandName);
-    clen = (clen >= (len-1)?len-1:clen);
+    if (clen >= (len-1))
+    {
+	clen = len-1;
+	me->pr_Result2 = ERROR_LINE_TOO_LONG;
+	ret = DOSFALSE;
+    }
     CopyMem(cname, buf, clen);
-    buf[clen+1] = '\0';
+    buf[clen] = '\0';
 
-    return DOSTRUE;
+    return ret;
     AROS_LIBFUNC_EXIT
 } /* GetProgramName */
