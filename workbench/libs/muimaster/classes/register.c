@@ -618,8 +618,25 @@ IPTR Register__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
 	switch (msg->muikey)
 	{
 	    case MUIKEY_PRESS:
+	    case MUIKEY_RIGHT:
+	    case MUIKEY_TOGGLE:
 		nfset(obj, MUIA_Group_ActivePage, MUIV_Group_ActivePage_Next);
 		return MUI_EventHandlerRC_Eat;
+		
+	    case MUIKEY_LEFT:
+		nfset(obj, MUIA_Group_ActivePage, MUIV_Group_ActivePage_Prev);
+		return MUI_EventHandlerRC_Eat;
+		
+	    case MUIKEY_WORDLEFT:
+	    case MUIKEY_LINESTART:
+		nfset(obj, MUIA_Group_ActivePage, MUIV_Group_ActivePage_First);
+		return MUI_EventHandlerRC_Eat;
+	    	
+	    case MUIKEY_WORDRIGHT:
+	    case MUIKEY_LINEEND:
+		nfset(obj, MUIA_Group_ActivePage, MUIV_Group_ActivePage_Last);
+		return MUI_EventHandlerRC_Eat;
+		
 	}
     }
 
