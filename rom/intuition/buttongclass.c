@@ -114,6 +114,27 @@ void buttong_render(Class *cl, Object *o, struct gpRender *msg)
 	}
 	else /* GFLG_GADGIMAGE set */
 	{
+	    ULONG state;
+	    
+	    if (EG(o)->Activation & (GACT_LEFTBORDER |
+	    			     GACT_TOPBORDER |
+				     GACT_RIGHTBORDER |
+				     GACT_BOTTOMBORDER))
+	    {
+	    	if (msg->gpr_GInfo->gi_Window->Flags & WFLG_WINDOWACTIVE)
+		{
+		    state = IDS_NORMAL;
+		}
+		else
+		{
+		    state = IDS_INACTIVENORMAL;
+		}
+	    }
+	    else
+	    {
+	    	state = IDS_NORMAL;
+	    }
+	    
 	    if ((EG(o)->SelectRender != NULL) &&
 		(EG(o)->Flags & GFLG_SELECTED)) /* render selected image */
 	    {
@@ -126,7 +147,7 @@ void buttong_render(Class *cl, Object *o, struct gpRender *msg)
 		DrawImageState(rp,
 		    IM(EG(o)->SelectRender),
 		    x, y,
-		    IDS_SELECTED,
+		    state + IDS_SELECTED,
 		    msg->gpr_GInfo->gi_DrInfo );
 	    }
 	    else if ( EG(o)->GadgetRender != NULL ) /* render normal image */
@@ -140,7 +161,7 @@ void buttong_render(Class *cl, Object *o, struct gpRender *msg)
 		DrawImageState(rp,
 		    IM(EG(o)->GadgetRender),
 		    x, y,
-		    ((EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
+		    state + ((EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
 		    msg->gpr_GInfo->gi_DrInfo);
 	    }
 	}
