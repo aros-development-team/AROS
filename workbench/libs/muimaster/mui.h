@@ -20,7 +20,10 @@
 #   ifndef AROS_ASMCALL_H
 #       include <aros/asmcall.h>
 #   endif
-#endif /* __AROS__ */
+#   define SAVEDS
+#else
+#   include "support_amigaos.h"
+#endif
 
 #include "mui_identifiers.h"
 
@@ -28,32 +31,15 @@
 #define MUIMASTER_VMIN    41
 #define MUIMASTER_VLATEST 41
 
-/* Sometype defs in AROS */
-#ifndef __AROS__
-#ifndef _AROS_TYPES_DEFINED
-typedef unsigned long IPTR;
-typedef long STACKLONG;
-typedef unsigned long STACKULONG;
-#define _AROS_TYPES_DEFINED
-#endif
-#endif
-
-
-/* With the following define a typical dispatcher will
- * looks like this:
- *   BOOPSI_DISPATCHER(IPTR,IconWindow_Dispatcher,cl,obj,msg)
- *
- */
-#ifndef __AROS__
+/* 
+    With the following define a typical dispatcher will looks like this:
+    BOOPSI_DISPATCHER(IPTR,IconWindow_Dispatcher,cl,obj,msg) 
+*/
 #define BOOPSI_DISPATCHER(rettype,name,cl,obj,msg) \
-__saveds __asm rettype name(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-#define BOOPSI_DISPATCHER(rettype,name,cl,obj,msg) \
-AROS_UFH3(rettype, name,\
-	AROS_UFHA(Class  *, cl,  A0),\
-	AROS_UFHA(Object *, obj, A2),\
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+    AROS_UFH3(SAVEDS rettype, name,\
+        AROS_UFHA(Class  *, cl,  A0),\
+        AROS_UFHA(Object *, obj, A2),\
+        AROS_UFHA(Msg     , msg, A1))
 
 
 /* START PRIV */
@@ -125,7 +111,6 @@ struct __MUIBuiltinClass {
 
 /* the following prototypes here are only temporary so it can be compiled without problems */
 #ifndef __AROS__
-#include "support_amigaos.h"
 
 __asm APTR MUI_AddClipping(register __a0 struct MUI_RenderInfo *mri, register __d0 WORD left, register __d1 WORD top, register __d2 WORD width, register __d3 WORD height);
 __asm APTR MUI_AddClipRegion(register __a0 struct MUI_RenderInfo *mri, register __a1 struct Region *r);

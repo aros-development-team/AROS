@@ -25,7 +25,6 @@
 #   ifndef AROS_ASMCALL_H
 #       include <aros/asmcall.h>
 #   endif
-#   define SAVEDS
 #else
 #   include "support_amigaos.h"
 #endif 
