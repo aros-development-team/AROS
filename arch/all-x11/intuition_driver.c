@@ -660,11 +660,12 @@ VOID intui_WaitEvent(struct InputEvent          *ie,
 {
     static HIDD        unixio = NULL;
     XEvent	       event;
-    struct Window    * w;
+    struct Window    * w = NULL;
     struct Screen    * screen;
     struct IntWindow * iw;
     ULONG	       lock;
     int 	       ret;
+    static const struct TagItem tags[] = {{ TAG_END, 0 }};
 
     Dipxe(bug("intui_WaitEvent(ie=%p, wstorage=%p)\n", ie, wstorage));
 
@@ -672,7 +673,7 @@ VOID intui_WaitEvent(struct InputEvent          *ie,
 
     if (!unixio)
     {
-	unixio = NewObject (NULL, UNIXIOCLASS, TAG_END);
+	unixio = NewObjectA (NULL, UNIXIOCLASS, (struct TagItem *)tags);
 
 	Dipxe(bug("unixio=%ld\n",unixio));
 
