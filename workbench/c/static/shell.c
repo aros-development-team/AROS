@@ -110,8 +110,8 @@ static const char version[] = "$VER: shell 41.5 (9.1.2000)\n";
 
 #define SET_HOMEDIR 1
 
-#define  P(x)	x	/* Debug macro */
-#define  P2(x) 	x	/* Debug macro */
+#define  P(x)		/* Debug macro */
+#define  P2(x) 		/* Debug macro */
 
 
 #define  min(a,b)  ((a) < (b)) ? (a) : (b)
