@@ -1115,9 +1115,11 @@ static ULONG List_Redraw(struct IClass *cl, Object *obj, struct MUIP_List_Redraw
 static ULONG List_Remove(struct IClass *cl, Object *obj, struct MUIP_List_Remove *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    LONG pos;
+    LONG pos,cur;
     LONG new_act;
     struct ListEntry *lentry;
+    int rem_count = 1;
+    int parents;
 
     if (!data->entries_num) return 0;
 
@@ -1155,12 +1157,28 @@ static ULONG List_Remove(struct IClass *cl, Object *obj, struct MUIP_List_Remove
 
     lentry = data->entries[pos];
     DoMethod(obj, MUIM_List_Destruct, lentry->data, data->pool);
-    RemoveListEntries(data,pos,1);
-    data->confirm_entries_num--;
+
+    parents = lentry->parents;
+    cur = pos + 1;
+
+    /* Now remove all children of the element */
+    while (cur < data->entries_num)
+    {
+	lentry = data->entries[cur];
+	if (lentry->parents <= parents) break;
+	DoMethod(obj, MUIM_List_Destruct, lentry->data, data->pool);
+	cur++;
+    }
+
+    RemoveListEntries(data, pos, cur - pos);
+    data->confirm_entries_num -= cur - pos;
+
+    /* ensure that the active element is in a valid range */
+    if (new_act >= data->entries_num) new_act = data->entries_num - 1;
 
     SetAttrs(obj,
 	MUIA_List_Entries, data->confirm_entries_num,
-	pos == data->entries_active?MUIA_List_Active:TAG_DONE, new_act, /* Inform only if neccessary (for notify) */
+	new_act == data->entries_active?MUIA_List_Active:TAG_DONE, new_act, /* Inform only if neccessary (for notify) */
 	TAG_DONE);
 
     data->update = 1;
