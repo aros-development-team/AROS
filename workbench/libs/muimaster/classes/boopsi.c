@@ -5,6 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <aros/debug.h>
 #include <exec/memory.h>
 #include <intuition/icclass.h>
 #include <intuition/gadgetclass.h>
@@ -208,6 +209,7 @@ ULONG Boopsi__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 ULONG Boopsi__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
+
     switch (msg->opg_AttrID)
     {
     	case MUIA_Boopsi_Object: STORE = (LONG)data->boopsi_object;
@@ -222,9 +224,9 @@ ULONG Boopsi__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
             	if (tag->ti_Tag == msg->opg_AttrID)
             	{
 		    if (data->boopsi_object)
-		    {
-		    	/* Call the get method of the boopsi object and update the remember list */
-		    	ULONG val;
+		    {		    	/* Call the get method of the boopsi object and update the remember list */
+		    	IPTR val;
+
 		    	if (GetAttr(msg->opg_AttrID,data->boopsi_object,&val))
 			    tag->ti_Data = val;
 		    }
@@ -237,7 +239,8 @@ ULONG Boopsi__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 	    /* The id is not in the attr list, so we try the boopsi object first (fills in the msg then) */
 	    if (data->boopsi_object)
 	    {
-	    	ULONG val;
+	    	IPTR val;
+
 	    	if (GetAttr(msg->opg_AttrID,data->boopsi_object,&val))
 		{
 		    STORE=val;
