@@ -104,6 +104,6 @@ void adfInitNativeFct()
  */
 BOOL myIsDevNative(char *devName)
 {
-    return (strncmp(devName,"/dev/",5)==0);
+    return (strncmp(devName,"/xxx/",5)==0);
 }
 /*##########################################################################*/
