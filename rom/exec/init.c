@@ -107,7 +107,7 @@ AROS_UFH2(int, Dispatcher,
     AROS_UFHA (struct ExecBase *, SysBase, A6)
 )
 {
-    Disable();
+    /* Disable(); */
     /* Check if a task switch is necessary */
     if(SysBase->TaskReady.lh_Head->ln_Succ!=NULL&&
        SysBase->ThisTask->tc_Node.ln_Pri<=
@@ -125,7 +125,7 @@ AROS_UFH2(int, Dispatcher,
 	}else
 	    SysBase->AttnResched|=0x80;
     }
-    Enable();
+    /* Enable(); */
     /* Wasn't explicitly for me */
     return 0;
 }
