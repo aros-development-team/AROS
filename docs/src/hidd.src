@@ -1,0 +1,156 @@
+\begin{new}{6.8.1997}
+\chapter{Hardware Independend Device Driver - HIDD}
+
+\section{Introduction}
+
+The AmigaOS is built on the Amigas' custom chips. This is a fact which is
+eventually discovered when you hit the rather tight limits they impose
+and try to circumvent them by adding new hardware. For the new hardware,
+you also need a device driver. But sometimes, the applications can't be
+made to use this new driver because the old one is compiled in or, even
+worse, the OS refuses to use anything besides the built in driver or,
+even more worse, the OS doesn't use a driver to access this chip at all.
+
+AROS was designed to be a portable OS and be compatible to the old AmigaOS.
+But we had to design something which lessens these burdens without
+becoming incompatible nor loosing too much speed. So we developed the
+idea of the HIDD - the Hardware Independend Device Driver.
+
+\section{Features}
+
+HIDDs offer a consistent API for everything one could want to do with
+a device. Here is a quick overview:
+
+\begin{itemize}
+\item Query the system for all available HIDDs or only for certain types
+(eg. all serial HIDDs or all graphics HIDDs).
+\item Configure a HIDD
+\end{itemize}
+
+The complete life cycle of a HIDD is like this:
+
+\begin{enumeration}
+\item The OS boots. HIDDs on external cards get installed by the
+OS in the global list of all available HIDDs.
+\item The OS reads the extended romtags from the HIDD and puts that
+information in the global list of all available HIDDs.
+\item Some application asks for a list with the informations about
+all HIDDs or a specific type of HIDD.
+\item The application loads the HIDD and the config plugin.
+This makes the HIDD initialize some internal data structures but
+not always the hardware. A HIDD might be the driver for several kinds
+of different hardwares which are all available.
+\item The application asks for the current config of the HIDD. If the
+config plugin has its own GUI, the application displays it. Otherwise,
+the application displays the information in an own window. For this,
+the application queries the config plugin for all available modes.
+\item Whenever the user changes something in the applications window,
+the application changes the HIDD and queries the config plugin for
+the current config plus the new list of available modes. This allows
+to have modes where certain other modes are not available (eg.
+24bit depth with more than 800x600).
+\item When the user presses ok, the application or config plugin closes
+the window/GUI. The Ok or Apply button must be ghosted as long as
+the HIDD says that the configuration is not ok. The application can
+now expunge the config plugin.
+\item When the device is explicitly activated or used for the first time
+(eg. data is written to it), it will use the configuration to initialize
+the hardware.
+\item The user can deactivate the device and change the config if the
+HIDD permits that.
+\end{enumeration}
+
+\section{The HIDD API}
+
+HIDDs are plain exec devices with an extended API which looks like this:
+
+\begin{description}
+\item{|HIDD_Get()|} Query information about the HIDD in gerenal (eg. its name
+and version) and the current status.
+\item{|HIDD_Set()|} Change the current status of a HIDD.
+\end{itemize}
+
+\subsection{|HIDD_Get()|}
+
+|HIDD_Get()| queries information about the HIDD in general and the
+current status. The prototype looks like this:
+
+\begin{code}
+IPTR HIDD_GetA (HIDDT hidd, struct TagItem * tags);
+IPTR HIDD_Get (HIDDT hidd, Tag tag, ...);
+\end{core}
+
+The return type is device specific but should be 0 in case of success
+and non-zero in case of an error. A good practice is either to return
+an error code or the number of an offending tag in the taglist.
+
+The data field of the tagitem lists must be a pointer to the data type
+of the tag.
+
+\subsection{|HIDD_Set()|}
+
+|HIDD_Set()| changes the current status of a HIDD.
+The prototype looks like this:
+
+\begin{code}
+IPTR HIDD_SetA (HIDDT hidd, struct TagItem * tags);
+IPTR HIDD_Set (HIDDT hidd, Tag tag, ...);
+\end{core}
+
+The return type is device specific but should be 0 in case of success
+and non-zero in case of an error. A good practice is either to return
+an error code or the number of an offending tag in the taglist.
+
+\subsection{Common tags for all HIDDs}
+
+\begin{description}
+\item{|HIDDA_Type|} [G] This is the basic type of the HIDD (eg. serial, parallel,
+graphics).
+\item{|HIDDA_SubType|} [G] This is a more specific type. If |HIDDA_Type| is
+|HIDDC_Type_Serial|, then this is a bitfield with one or more bits
+of |HIDDC_Type_Serial_RS232| or |HIDDC_Type_Serial_RS488| set.
+\item{|HIDDA_Producer|} [G] The ID of the producer as handed out by Amiga
+International.
+\item{|HIDDA_Name|} |char *| [G] The name of this device (eg. serial.device).
+\item{|HIDDA_HardwareName|} |char *| [G] The name of the hardware
+(eg. "Builtin Serial Port", "COM1", etc.).
+\item{|HIDDA_Active|} |BOOL| [ISG] Tells if the device is active or
+(de-)actives it when set.
+\item{|HIDDA_Status|} [G] The current status of a HIDD. This is a
+set of bits which show if the init of the hardware was successful,
+if the device is active or if the device is ready to be activated.
+\end{itemize}
+
+\section{The HIDD Config API}
+
+\begin{code}
+/* load and dispose plugin */
+HIDDT_Config HIDD_LoadPlugin (HIDDT hidd);
+void HIDD_ExpungePlugin (HIDDT_Config configPlugin);
+
+/* Query plugin */
+ULONG HIDD_QueryConfig (HIDDT_Config configPlugin, struct TagItem ** tagList);
+ULONG HIDD_QueryModes (HIDDT_Config configPlugin, struct TagItem ** tagList);
+
+/* Modify plugin */
+ULONG HIDD_GetConfigA (HIDDT_Config configPlugin, struct TagItem * tagList);
+ULONG HIDD_GetConfig (HIDDT_Config configPlugin, Tag tag, ...);
+ULONG HIDD_SetConfigA (HIDDT_Config configPlugin, struct TagItem * tagList);
+ULONG HIDD_SetConfig (HIDDT_Config configPlugin, Tag tag, ...);
+
+/* Convert values to strings and vice versa */
+STRPTR HIDD_IntToString (HIDDT_Config configPlugin, Tag tag, ULONG value);
+ULONG HIDD_StringToInt (HIDDT_Config configPlugin, Tag tag, STRPTR string);
+
+/* Get a name for a tag */
+STRPTR HIDD_GetTagName (HIDDT_Config configPlugin, Tag tag);
+\end{core}
+
+The taglist of |HIDD_QueryModes()| consists of the types |BOOL|,
+|HIDDT_Limit| (a min and max value), |HIDDT_List| (a list with
+string/value pairs or one-of-many selection) or |HIDDT_OptionList| (same as
+|HIDDT_List| but for some-of-many selection. The result is
+passed as a bitfield).
+
+\end{new}
+
