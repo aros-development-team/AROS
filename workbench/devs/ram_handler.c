@@ -307,7 +307,7 @@ static void Strfree(struct rambase *rambase, STRPTR string)
 AROS_LH3(void, open,
  AROS_LHA(struct IOFileSys *, iofs, A1),
  AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D0),
+ AROS_LHA(ULONG,              flags, D1),
 	   struct rambase *, rambase, 1, ramdev)
 {
     AROS_LIBFUNC_INIT

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.16  1996/11/14 22:39:11  aros
+    Fixed register conflict
+
     Revision 1.15  1996/10/24 15:51:01  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -540,7 +543,7 @@ AROS_LH2(struct emulbase *, init,
 AROS_LH3(void, open,
  AROS_LHA(struct IOFileSys *, iofs, A1),
  AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D0),
+ AROS_LHA(ULONG,              flags, D1),
 	   struct emulbase *, emulbase, 1, emul_handler)
 {
     AROS_LIBFUNC_INIT
