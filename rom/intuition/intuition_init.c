@@ -37,11 +37,11 @@
 static const char name[];
 static const char version[];
 static const APTR inittabl[4];
-static void *const FUNCTABLE[];
+static void *const LIBFUNCTABLE[];
 
 struct LIBBASETYPE *INIT();
 
-extern const char END;
+extern const char LIBEND;
 
 /* There has to be a better way... */
 struct IClass *InitImageClass (struct LIBBASETYPE * LIBBASE);
@@ -63,9 +63,9 @@ const struct Resident Intuition_resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&Intuition_resident,
-    (APTR)&END,
+    (APTR)&LIBEND,
     RTF_AUTOINIT|RTF_COLDSTART,
-    LIBVERSION,
+    VERSION_NUMBER,
     NT_LIBRARY,
     10,
     (char *)name,
@@ -75,12 +75,12 @@ const struct Resident Intuition_resident=
 
 static const char name[]=INTUITIONNAME;
 
-static const char version[]=VERSION;
+static const char version[]=VERSION_STRING;
 
 static const APTR inittabl[4]=
 {
     (APTR)sizeof(struct IntIntuitionBase),
-    (APTR)FUNCTABLE,
+    (APTR)LIBFUNCTABLE,
     NULL,
     &INIT
 };

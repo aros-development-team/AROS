@@ -1,6 +1,6 @@
 functions.[ch]
-intuition_functable.c
-intuition_endtag.c
+functable.c
+endtag.c
 libdefs.h
 makefile
 mmakefile

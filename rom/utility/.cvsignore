@@ -4,3 +4,4 @@ libdefs.h
 *.s
 *.map
 mmakefile
+functions.[ch]
