@@ -1,10 +1,10 @@
 #define AROS_ALMOST_COMPATIBLE
 #include <hidd/unixio.h>
 #include <proto/exec.h>
-#include <proto/boopsi.h>
 #include <proto/dos.h>
 #include <proto/alib.h>
 #include <proto/intuition.h>
+#include <proto/boopsi.h>
 
 struct Library * BOOPSIBase;
 struct DosLibrary * DOSBase;

@@ -27,6 +27,7 @@
 #include <libraries/configvars.h>
 #include <libraries/expansionbase.h>
 #include <aros/debug.h>
+#include <proto/boopsi.h>
 
 /* Unix includes */
 #include <unistd.h>
@@ -443,19 +444,19 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh,
 	    {
 		if (rmdir(filename))
 		    ret = err_u2a();
-                else
-                    free_lock(fh);
+		else
+		    free_lock(fh);
 	    }
 	    else
 	    {
 		if (unlink(filename))
 		    ret = err_u2a();
-                else
-                    free_lock(fh);
+		else
+		    free_lock(fh);
 	    }
 	} else
 	    ret = err_u2a();
-        free(filename);
+	free(filename);
     }
 
     return ret;
@@ -472,91 +473,91 @@ static LONG startup(struct emulbase *emulbase)
     ExpansionBase = OpenLibrary("expansion.library",0);
     if(ExpansionBase != NULL)
     {
-    	fhi=(struct filehandle *)malloc(sizeof(struct filehandle));
-      	if(fhi!=NULL)
+	fhi=(struct filehandle *)malloc(sizeof(struct filehandle));
+	if(fhi!=NULL)
 	{
-    	    fho=(struct filehandle *)malloc(sizeof(struct filehandle));
-    	    if(fho!=NULL)
-    	    {
-    		fhe=(struct filehandle *)malloc(sizeof(struct filehandle));
-    		if(fhe!=NULL)
-    		{
-    		    fhv=(struct filehandle *)malloc(sizeof(struct filehandle));
-    		    if(fhv != NULL)
-    		    {
-    			struct stat st;
-    
-    			fhv->name = ".";
-    			fhv->type = FHD_DIRECTORY;
-    
-    			/* Make sure that the root directory is valid */
-    			if(!stat(fhv->name,&st) && S_ISDIR(st.st_mode))
-    			{
-    			    fhv->fd = (long)opendir(fhv->name);
-    
-    			    fhi->type = FHD_FILE;
-    			    fhi->fd   = STDIN_FILENO;
-    			    fhi->name = "";
-    			    fho->type = FHD_FILE;
-    			    fho->fd   = STDOUT_FILENO;
-    			    fho->name = "";
-    			    fhe->type = FHD_FILE;
-    			    fhe->fd   = STDERR_FILENO;
-    			    fhe->name = "";
-    
-    			    emulbase->stdin  = (struct Unit *)fhi;
-    			    emulbase->stdout = (struct Unit *)fho;
-    			    emulbase->stderr = (struct Unit *)fhe;
-    
-    			    /*
-    				Allocate space for the string from same mem
-    				"Workbench" total 11 bytes (9 + NULL + length)
+	    fho=(struct filehandle *)malloc(sizeof(struct filehandle));
+	    if(fho!=NULL)
+	    {
+		fhe=(struct filehandle *)malloc(sizeof(struct filehandle));
+		if(fhe!=NULL)
+		{
+		    fhv=(struct filehandle *)malloc(sizeof(struct filehandle));
+		    if(fhv != NULL)
+		    {
+			struct stat st;
+
+			fhv->name = ".";
+			fhv->type = FHD_DIRECTORY;
+
+			/* Make sure that the root directory is valid */
+			if(!stat(fhv->name,&st) && S_ISDIR(st.st_mode))
+			{
+			    fhv->fd = (long)opendir(fhv->name);
+
+			    fhi->type = FHD_FILE;
+			    fhi->fd   = STDIN_FILENO;
+			    fhi->name = "";
+			    fho->type = FHD_FILE;
+			    fho->fd   = STDOUT_FILENO;
+			    fho->name = "";
+			    fhe->type = FHD_FILE;
+			    fhe->fd   = STDERR_FILENO;
+			    fhe->name = "";
+
+			    emulbase->stdin  = (struct Unit *)fhi;
+			    emulbase->stdout = (struct Unit *)fho;
+			    emulbase->stderr = (struct Unit *)fhe;
+
+			    /*
+				Allocate space for the string from same mem
+				"Workbench" total 11 bytes (9 + NULL + length)
 				Add an extra 4 for alignment purposes.
-    			    */
-    			    ret=ERROR_NO_FREE_STORE;
-    			    dlv = AllocMem(sizeof(struct DeviceNode) + 15, MEMF_CLEAR|MEMF_PUBLIC);
-    			    if(dlv!=NULL)
-    			    {
-    				STRPTR s;
-   
-				/*  We want s to point to the first 4-byte 
-				    aligned memory after the structure. 
+			    */
+			    ret=ERROR_NO_FREE_STORE;
+			    dlv = AllocMem(sizeof(struct DeviceNode) + 15, MEMF_CLEAR|MEMF_PUBLIC);
+			    if(dlv!=NULL)
+			    {
+				STRPTR s;
+
+				/*  We want s to point to the first 4-byte
+				    aligned memory after the structure.
 				*/
 				s = (STRPTR)(((IPTR)dlv + sizeof(struct DeviceNode) + 4) & ~3);
-    				CopyMem("Workbench", &s[1], 9);
-    				*s = 9;
-    
-    				dlv->dn_Type   = DLT_DEVICE;
-    				dlv->dn_Unit   = (struct Unit *)fhv;
-    				dlv->dn_Device = &emulbase->device;
-    				dlv->dn_Handler = NULL;
-    				dlv->dn_Startup = NULL;
-    				dlv->dn_OldName = MKBADDR(s);
-    				dlv->dn_NewName = &s[1];
-    
-    				AddBootNode( 0, 0, dlv, NULL);
-    				return 0;
-    			    }
-    			} /* valid directory */
-    			else
-    			{
-    			    /* If this was under config/ I could
-    			       actually print out a message, but
-    			       alas I don't have that liberty...
-    
-    			       It'd be nice to be able to add some
-    			       extra alert definitions though...
-    			    */
-    			    Alert(AT_DeadEnd|AO_Unknown|AN_Unknown );
-    			}
-    			free_lock(fhv);
-    		    }
-    		    free(fhe);
-    		}
-    		free(fho);
-    	    }
-    	    free(fhi);
-    	}
+				CopyMem("Workbench", &s[1], 9);
+				*s = 9;
+
+				dlv->dn_Type   = DLT_DEVICE;
+				dlv->dn_Unit   = (struct Unit *)fhv;
+				dlv->dn_Device = &emulbase->device;
+				dlv->dn_Handler = NULL;
+				dlv->dn_Startup = NULL;
+				dlv->dn_OldName = MKBADDR(s);
+				dlv->dn_NewName = &s[1];
+
+				AddBootNode( 0, 0, dlv, NULL);
+				return 0;
+			    }
+			} /* valid directory */
+			else
+			{
+			    /* If this was under config/ I could
+			       actually print out a message, but
+			       alas I don't have that liberty...
+
+			       It'd be nice to be able to add some
+			       extra alert definitions though...
+			    */
+			    Alert(AT_DeadEnd|AO_Unknown|AN_Unknown );
+			}
+			free_lock(fhv);
+		    }
+		    free(fhe);
+		}
+		free(fho);
+	    }
+	    free(fhi);
+	}
     }
     CloseLibrary(ExpansionBase);
 
@@ -678,7 +679,7 @@ static LONG examine_all(struct filehandle *fh,struct ExAllData *ead,ULONG size,U
 
 
 static LONG create_hardlink(struct emulbase *emulbase,
-                            struct filehandle **handle,STRPTR name,struct filehandle *oldfile)
+			    struct filehandle **handle,STRPTR name,struct filehandle *oldfile)
 {
     LONG error=0L;
     struct filehandle *fh;
@@ -686,20 +687,20 @@ static LONG create_hardlink(struct emulbase *emulbase,
     fh = malloc(sizeof(struct filehandle));
     if (!fh)
     {
-        error = makefilename(emulbase, &fh->name, (*handle)->name, name);
-        if (!error)
-        {
-            if (!link(oldfile->name, fh->name))
-                *handle = fh;
-            else
-                error = err_u2a();
-        } else
-        {
-            error = ERROR_NO_FREE_STORE;
-            free(fh);
-        }
+	error = makefilename(emulbase, &fh->name, (*handle)->name, name);
+	if (!error)
+	{
+	    if (!link(oldfile->name, fh->name))
+		*handle = fh;
+	    else
+		error = err_u2a();
+	} else
+	{
+	    error = ERROR_NO_FREE_STORE;
+	    free(fh);
+	}
     } else
-        error = ERROR_NO_FREE_STORE;
+	error = ERROR_NO_FREE_STORE;
 
     return error;
 }
@@ -761,7 +762,7 @@ AROS_LH3(void, open,
 	{
 		iofs->IOFS.io_Error = -1;
 		return;
-	} 
+	}
     }
 
    /* I have one more opener. */
@@ -826,7 +827,7 @@ AROS_LH1(void, beginio,
 	    error=open_(emulbase,
 			(struct filehandle **)&iofs->IOFS.io_Unit,
 			iofs->io_Union.io_OPEN.io_Filename,
-                        iofs->io_Union.io_OPEN.io_FileMode);
+			iofs->io_Union.io_OPEN.io_FileMode);
 	    break;
 
 	case FSA_CLOSE:
@@ -902,16 +903,16 @@ AROS_LH1(void, beginio,
 	    break;
 	}
 
-        case FSA_SET_FILE_SIZE:
-            /* We could manually change the size, but this is currently not
-               implemented. */
-        case FSA_WAIT_CHAR:
-            /* We could manually wait for a character to arrive, but this is
-               currently not implemented. */
-        case FSA_FILE_MODE:
-            /* !!! not supported yet !!! */
-            error=ERROR_ACTION_NOT_KNOWN;
-            break;
+	case FSA_SET_FILE_SIZE:
+	    /* We could manually change the size, but this is currently not
+	       implemented. */
+	case FSA_WAIT_CHAR:
+	    /* We could manually wait for a character to arrive, but this is
+	       currently not implemented. */
+	case FSA_FILE_MODE:
+	    /* !!! not supported yet !!! */
+	    error=ERROR_ACTION_NOT_KNOWN;
+	    break;
 
 	case FSA_IS_INTERACTIVE:
 	{
@@ -938,19 +939,19 @@ AROS_LH1(void, beginio,
 	    error=examine((struct filehandle *)iofs->IOFS.io_Unit,
 			  iofs->io_Union.io_EXAMINE.io_ead,
 			  iofs->io_Union.io_EXAMINE.io_Size,
-                          iofs->io_Union.io_EXAMINE.io_Mode);
+			  iofs->io_Union.io_EXAMINE.io_Mode);
 	    break;
 
 	case FSA_EXAMINE_ALL:
 	    error=examine_all((struct filehandle *)iofs->IOFS.io_Unit,
 			      iofs->io_Union.io_EXAMINE_ALL.io_ead,
 			      iofs->io_Union.io_EXAMINE_ALL.io_Size,
-                              iofs->io_Union.io_EXAMINE_ALL.io_Mode);
+			      iofs->io_Union.io_EXAMINE_ALL.io_Mode);
 	    break;
 
-        case FSA_EXAMINE_ALL_END:
-            error=0;
-            break;
+	case FSA_EXAMINE_ALL_END:
+	    error=0;
+	    break;
 
 	case FSA_OPEN_FILE:
 	    error=open_file(emulbase,
@@ -967,19 +968,19 @@ AROS_LH1(void, beginio,
 			       iofs->io_Union.io_CREATE_DIR.io_Protection);
 	    break;
 
-        case FSA_CREATE_HARDLINK:
-            error = create_hardlink(emulbase,
-                                    (struct filehandle **)&iofs->IOFS.io_Unit,
-                                    iofs->io_Union.io_CREATE_HARDLINK.io_Filename,
-                                    (struct filehandle *)iofs->io_Union.io_CREATE_HARDLINK.io_OldFile);
-            break;
+	case FSA_CREATE_HARDLINK:
+	    error = create_hardlink(emulbase,
+				    (struct filehandle **)&iofs->IOFS.io_Unit,
+				    iofs->io_Union.io_CREATE_HARDLINK.io_Filename,
+				    (struct filehandle *)iofs->io_Union.io_CREATE_HARDLINK.io_OldFile);
+	    break;
 
-        case FSA_CREATE_SOFTLINK:
-        case FSA_RENAME:
-        case FSA_READ_SOFTLINK:
-            /* !!! not supported yet !!! */
-            error=ERROR_ACTION_NOT_KNOWN;
-            break;
+	case FSA_CREATE_SOFTLINK:
+	case FSA_RENAME:
+	case FSA_READ_SOFTLINK:
+	    /* !!! not supported yet !!! */
+	    error=ERROR_ACTION_NOT_KNOWN;
+	    break;
 
 	case FSA_DELETE_OBJECT:
 	    error = delete_object(emulbase,
@@ -987,15 +988,15 @@ AROS_LH1(void, beginio,
 				  iofs->io_Union.io_DELETE_OBJECT.io_Filename);
 	    break;
 
-        case FSA_SET_COMMENT:
-        case FSA_SET_PROTECT:
-        case FSA_SET_OWNER:
-        case FSA_SET_DATE:
-        case FSA_IS_FILESYSTEM:
-        case FSA_MORE_CACHE:
-        case FSA_FORMAT:
-        case FSA_MOUNT_MODE:
-            /* !!! not supported yet !!! */
+	case FSA_SET_COMMENT:
+	case FSA_SET_PROTECT:
+	case FSA_SET_OWNER:
+	case FSA_SET_DATE:
+	case FSA_IS_FILESYSTEM:
+	case FSA_MORE_CACHE:
+	case FSA_FORMAT:
+	case FSA_MOUNT_MODE:
+	    /* !!! not supported yet !!! */
 
 	default:
 	    error=ERROR_ACTION_NOT_KNOWN;

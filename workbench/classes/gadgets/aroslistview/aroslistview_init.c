@@ -16,8 +16,8 @@
 #include <graphics/gfxbase.h>
 #include <intuition/intuition.h>
 #include <proto/exec.h>
-#include <proto/boopsi.h>
 #include <proto/intuition.h>
+#include <proto/boopsi.h>
 
 /*
     These do magic things with some types and must come after all other

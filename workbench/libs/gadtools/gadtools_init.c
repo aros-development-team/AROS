@@ -7,8 +7,6 @@
 */
 #define AROS_ALMOST_COMPATIBLE
 #include <stddef.h>
-#include <proto/exec.h>
-#include <proto/boopsi.h>
 #include <exec/libraries.h>
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -16,6 +14,7 @@
 #include <utility/tagitem.h>
 #include <utility/utility.h>
 #include <intuition/imageclass.h>
+#include <proto/exec.h>
 #include "initstruct.h"
 #include "gadtools_intern.h"
 #include "libdefs.h"
@@ -181,9 +180,9 @@ AROS_LH1(struct GadToolsBase_intern *, open,
 	return NULL;
 
     if (!LIBBASE->bevel)
-        LIBBASE->bevel = (struct Image *)makebevelobj(GadToolsBase);
+	LIBBASE->bevel = (struct Image *)makebevelobj(GadToolsBase);
     if (!LIBBASE->bevel)
-        return NULL;
+	return NULL;
 
     /* I have one more opener. */
     LIBBASE->library.lib_OpenCnt++;
@@ -206,16 +205,16 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
     /* I have one fewer opener. */
     if(!--LIBBASE->library.lib_OpenCnt)
     {
-        if (LIBBASE->bevel)
-            DisposeObject(LIBBASE->bevel);
+	if (LIBBASE->bevel)
+	    DisposeObject(LIBBASE->bevel);
 
 	if (LIBBASE->buttonclass)
 	    FreeClass(LIBBASE->buttonclass);
 
 	if (LIBBASE->arosmxbase)
 	    CloseLibrary(LIBBASE->arosmxbase);
-        if (LIBBASE->aroscybase)
-            CloseLibrary(LIBBASE->aroscybase);
+	if (LIBBASE->aroscybase)
+	    CloseLibrary(LIBBASE->aroscybase);
 	if (LIBBASE->aroscbbase)
 	    CloseLibrary(LIBBASE->aroscbbase);
 
