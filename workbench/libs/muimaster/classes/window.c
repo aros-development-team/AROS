@@ -305,6 +305,30 @@ _zune_window_resize (struct MUI_WindowData *data)
 
 /**************/
 
+STATIC BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LONG x, LONG y)
+{
+    Object                *cstate;
+    Object                *child;
+    struct MinList        *ChildList;
+
+    if (get(obj, MUIA_Group_ChildList, (ULONG *)&(ChildList)))
+    {
+        cstate = (Object *)ChildList->mlh_Head;
+        while ((child = NextObject(&cstate)))
+        {
+	    if (ContextMenuUnderPointer(data,child,x,y)) return TRUE;
+	}
+    }
+
+    if (!(muiAreaData(obj)->mad_Flags & MADF_CANDRAW)) return FALSE;
+    if (!(muiAreaData(obj)->mad_ContextMenu)) return FALSE;
+    if (x >= _left(obj) && x <= _right(obj) && y >= _top(obj) && y <= _bottom(obj)) return TRUE;
+
+    return FALSE;
+}
+
+/**************/
+
 void _zune_window_message(struct IntuiMessage *imsg)
 {
     struct Window *iWin;
@@ -351,6 +375,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		    {
 			struct Window *wnd;
 			get(child, MUIA_Window_Window,(ULONG*)&wnd);
+			if (!wnd) continue:
+
 			if (wnd->WLayer == l)
 			{
 			    data->wd_DropWindow = wnd;
@@ -447,6 +473,11 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
     switch (imsg->Class)
     {
+    	case    IDCMP_MOUSEMOVE:
+    		if (ContextMenuUnderPointer(data,data->wd_RootObject,imsg->MouseX,imsg->MouseY)) iWin->Flags |= WFLG_RMBTRAP;
+    		else iWin->Flags &= ~WFLG_RMBTRAP;
+    		break;
+
 	case	IDCMP_NEWSIZE:
 		if ((iWin->GZZWidth  != data->wd_Width) || (iWin->GZZHeight != data->wd_Height))
 		{

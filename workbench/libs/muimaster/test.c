@@ -119,6 +119,8 @@ void main(void)
     Object *quit_button;
     Object *repeat_button;
     Object *about_item, *quit_item;
+    Object *context_menu;
+
     static char *pages[] = {"Groups","Colorwheel",NULL};
 
     struct Hook hook;
@@ -145,6 +147,15 @@ void main(void)
     hook.h_Entry = (HOOKFUNC)repeat_function;
     hook_wheel.h_Entry = (HOOKFUNC)wheel_function;
     hook_slider.h_Entry = (HOOKFUNC)slider_function;
+
+    context_menu = MenuitemObject,
+	    MUIA_Family_Child, MenuitemObject,
+		MUIA_Menuitem_Title, "Project",
+		MUIA_Family_Child, about_item = MenuitemObject, MUIA_Menuitem_Title, "About...", MUIA_Menuitem_Shortcut, "?", End,
+ 		MUIA_Family_Child, MenuitemObject, MUIA_Menuitem_Title, ~0, End,
+		MUIA_Family_Child, quit_item = MenuitemObject, MUIA_Menuitem_Title, "Quit", MUIA_Menuitem_Shortcut, "Q", End,
+		End,
+	    End;
 
     /* should check the result in a real program! */
     CL_DropText = MUI_CreateCustomClass(NULL,MUIC_Text,NULL,sizeof(struct DropText_Data), dispatcher);
@@ -173,7 +184,7 @@ void main(void)
 			    Child, repeat_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Repeat", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drag Me", MUIA_Draggable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, open_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Open Window", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button4", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    Child, TextObject, MUIA_ContextMenu, context_menu, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Press Right", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button5", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, HVSpace, //TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button6", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    End,
@@ -285,6 +296,7 @@ void main(void)
 
 	MUI_DisposeObject(app);
     }
+    if (context_menu) MUI_DisposeObject(context_menu);
     CloseLibrary(ColorWheelBase);
     MUI_DeleteCustomClass(CL_DropText);
 

@@ -72,7 +72,7 @@ struct TextFont *zune_font_get (LONG preset)
 /*
 Area.mui/MUIA_Background            done
 Area.mui/MUIA_BottomEdge            done
-Area.mui/MUIA_ContextMenu
+Area.mui/MUIA_ContextMenu           done
 Area.mui/MUIA_ContextMenuTrigger
 Area.mui/MUIA_ControlChar           done
 Area.mui/MUIA_CycleChain            done
@@ -112,7 +112,7 @@ Area.mui/MUIA_VertDisappear
 Area.mui/MUIA_VertWeight            done
 Area.mui/MUIA_Weight                done
 Area.mui/MUIA_Width                 done
-Area.mui/MUIA_Window
+Area.mui/MUIA_Window                done
 Area.mui/MUIA_WindowObject          done
 
 Area.mui/MUIM_AskMinMax             done
@@ -310,6 +310,9 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Weight:
 		data->mad_HorizWeight = data->mad_VertWeight = tag->ti_Data;
 		break;
+	    case MUIA_ContextMenu:
+		data->mad_ContextMenu = (Object*)tag->ti_Data;
+		break;
 	}
     }
 
@@ -466,6 +469,9 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Dropable:
 	        _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DROPABLE);
 	        break;
+	    case MUIA_ContextMenu:
+		data->mad_ContextMenu = (Object*)tag->ti_Data;
+		break;
 	}
     }
 
@@ -571,6 +577,9 @@ static ULONG Area_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	    else
 		STORE = 0L;
 	    return(TRUE);
+	case MUIA_ContextMenu:
+	    STORE = (ULONG)data->mad_ContextMenu;
+	    return 1;
     }
 
     return(DoSuperMethodA(cl, obj, (Msg) msg));
@@ -1376,8 +1385,7 @@ static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 static ULONG Area_ContextMenuBuild(struct IClass *cl, Object *obj, struct MUIP_ContextMenuBuild *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
-
-    return (ULONG)data->mad_ContextMenu; /* a MenuStrip object */
+    return (ULONG)data->mad_ContextMenu; /* a Menustrip object */
 }
 
 
