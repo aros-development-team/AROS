@@ -39,6 +39,9 @@ void UnlockX11();
 #include "propgadgets.h"
 #include "boopsigadgets.h"
 #include "strgadgets.h"
+#undef GfxBase
+#include "graphics_internal.h"
+#define GfxBase _GfxBase
 
 static struct IntuitionBase * IntuiBase;
 
@@ -53,11 +56,6 @@ extern struct SignalSemaphore * X11lock;
 extern struct Task * inputDevice;
 #define SIGID()      Signal (inputDevice, SIGBREAKF_CTRL_F)
 
-Display * GetSysDisplay (void);
-int	  GetSysScreen (void);
-extern void SetGC (struct RastPort * rp, GC gc);
-extern GC GetGC (struct RastPort * rp);
-extern void SetXWindow (struct RastPort * rp, int win);
 
 static int MyErrorHandler (Display *, XErrorEvent *);
 static int MySysErrorHandler (Display *);
@@ -263,7 +261,7 @@ int intui_OpenWindow (struct Window * w,
 {
     XSetWindowAttributes winattr;
 
-    if (!GetGC (IW(w)->iw_Window.RPort))
+    if (!GetGC (IW(w)->iw_Window.RPort, GfxBase))
 	return FALSE;
 
     winattr.event_mask = 0;
@@ -333,7 +331,7 @@ LX11
 	, &winattr
     );
 
-    SetXWindow (IW(w)->iw_Window.RPort, IW(w)->iw_XWindow);
+    SetXWindow (IW(w)->iw_Window.RPort, IW(w)->iw_XWindow, GfxBase);
 
     IW(w)->iw_Region = XCreateRegion ();
 UX11
@@ -587,7 +585,7 @@ void intui_BeginRefresh (struct Window * win,
 {
     /* Restrict rendering to a region */
 LX11
-    XSetRegion (sysDisplay, GetGC(IW(win)->iw_Window.RPort), IW(win)->iw_Region);
+    XSetRegion (sysDisplay, GetGC(IW(win)->iw_Window.RPort, GfxBase), IW(win)->iw_Region);
 UX11
     SIGID ();
 } /* intui_BeginRefresh */
@@ -618,7 +616,7 @@ LX11
     XUnionRectWithRegion (&rect, region, region);
 
     /* und setzen */
-    XSetRegion (sysDisplay, GetGC(IW(win)->iw_Window.RPort), region);
+    XSetRegion (sysDisplay, GetGC(IW(win)->iw_Window.RPort, GfxBase), region);
 UX11
     SIGID ();
 } /* intui_EndRefresh */

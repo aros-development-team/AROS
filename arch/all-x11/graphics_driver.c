@@ -95,11 +95,11 @@ struct ETextFont
 #define ETF(tf)         ((struct ETextFont *)tf)
 
 #if defined (X11_LOCK)
-static struct GfxBase *lock_GfxBase;
+/* static struct GfxBase *lock_GfxBase; */
 
-void LockX11 ()
+void LockX11 (struct GfxBase * GfxBase)
 {
-    struct GfxBase *GfxBase = lock_GfxBase;
+    /* struct GfxBase *GfxBase = lock_GfxBase; */
 #if defined (X11_LOCK_DEBUG)
     fprintf (stderr, "LockX11()\n");
     fflush (stderr);
@@ -114,9 +114,9 @@ void LockX11 ()
 #endif
 }
 
-void UnlockX11 ()
+void UnlockX11 (struct GfxBase * GfxBase)
 {
-    struct GfxBase *GfxBase = lock_GfxBase;
+    /* struct GfxBase *GfxBase = lock_GfxBase; */
 #if defined (X11_LOCK_DEBUG)
     fprintf (stderr, "UnlockX11()\n");
     fflush (stderr);
@@ -127,8 +127,8 @@ void UnlockX11 ()
     Enable ();
 #endif
 }
-#define LX11 LockX11();
-#define UX11 UnlockX11();
+#define LX11 LockX11(GfxBase);
+#define UX11 UnlockX11(GfxBase);
 #else
 #define LX11
 #define UX11
@@ -141,7 +141,7 @@ struct gfx_driverdata * GetDriverData (struct RastPort * rp)
 }
 
 
-/* SetDriverData() should only be used when cloning RastPorts		*/
+/* SetDriverData() should only be used when cloning RastPorts           */
 /* For other purposes just change the values directly in the struct.	*/
 
 void SetDriverData (struct RastPort * rp, struct gfx_driverdata * DriverData)
@@ -150,15 +150,15 @@ void SetDriverData (struct RastPort * rp, struct gfx_driverdata * DriverData)
 }
 
 
-/* InitDriverData() just allocates memory for the struct. To use e.g.	*/
-/* AreaPtrns, UpdateAreaPtrn() has to allocate the memory for the	*/
-/* Pattern itself (and free previously used memory!)			*/
+/* InitDriverData() just allocates memory for the struct. To use e.g.   */
+/* AreaPtrns, UpdateAreaPtrn() has to allocate the memory for the       */
+/* Pattern itself (and free previously used memory!)                    */
 
 struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 {
     struct gfx_driverdata * retval;
 
-    retval = AllocMem (sizeof(struct gfx_driverdata), MEMF_CHIP|MEMF_CLEAR);
+    retval = AllocMem (sizeof(struct gfx_driverdata), MEMF_CLEAR);
     if (!retval)
     {
 	fprintf (stderr, "Can't allocate Memory for internal use\n");
@@ -199,7 +199,7 @@ BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 
     if (!rp)
     {
-    	retval = False;
+	retval = False;
     }
     else
     {
@@ -211,13 +211,34 @@ BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 	}
 	else if (rp != old->dd_RastPort)
 	{
-    	    dd = InitDriverData(rp, GfxBase);
+	    dd = InitDriverData(rp, GfxBase);
 	    if (old->dd_Window)
 		dd->dd_Window = old->dd_Window;
 	    else
 		retval = False;
 	    if (old->dd_GC)
-		dd->dd_GC = old->dd_GC;
+	    {
+		XGCValues gcval;
+		GC gc;
+
+		gcval.plane_mask = sysPlaneMask;
+		gcval.graphics_exposures = True;
+LX11
+		gc = XCreateGC (sysDisplay
+		    , DefaultRootWindow (sysDisplay)
+		    , GCPlaneMask
+			| GCGraphicsExposures
+		    , &gcval
+		);
+UX11
+		if (gc)
+		{
+		    XCopyGC (sysDisplay, old->dd_GC, ~0L, gc);
+		    dd->dd_GC = gc;
+		}
+		else
+		    retval = False;
+	    }
 	    else
 		retval = False;
 	}
@@ -235,9 +256,9 @@ int driver_init (struct GfxBase * GfxBase)
     short t;
     short depth;
 
-#if defined (X11_LOCK)
+/* #if defined (X11_LOCK)
     lock_GfxBase = GfxBase;
-#endif
+#endif */
 
     if (!XInitThreads ())
     {
@@ -335,23 +356,28 @@ void driver_expunge (struct GfxBase * GfxBase)
     return;
 }
 
-GC GetGC (struct RastPort * rp)
+GC GetGC (struct RastPort * rp, struct GfxBase * GfxBase)
 {
     return (GC) GetDriverData(rp)->dd_GC;
 }
 
-int GetXWindow (struct RastPort * rp)
+int GetXWindow (struct RastPort * rp, struct GfxBase * GfxBase)
 {
     return (int) GetDriverData(rp)->dd_Window;
 }
 
-void SetGC (struct RastPort * rp, GC gc)
+void SetGC (struct RastPort * rp, GC gc, struct GfxBase * GfxBase)
 {
+    if (GetDriverData(rp)->dd_GC)
+	XFreeGC (sysDisplay, GetDriverData(rp)->dd_GC);
+
     GetDriverData(rp)->dd_GC = gc;
 }
 
-void SetXWindow (struct RastPort * rp, int win)
+void SetXWindow (struct RastPort * rp, int win, struct GfxBase * GfxBase)
 {
+    CorrectDriverData (rp, GfxBase);
+
     if (rp->BitMap)
     {
 	int width, height, depth, dummy;
@@ -410,8 +436,8 @@ Pixmap ConvertAreaPtrn (struct RastPort * rp, struct GfxBase * GfxBase)
 	/* Singlecolored AreaPtrn */
 	height = 1<<(rp->AreaPtSz);
 	if (height == 1)
-    	    pattern = AllocMem(2*2*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
-        pattern = AllocMem(2*height*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
+	    pattern = AllocMem(2*2*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
+	pattern = AllocMem(2*height*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
 
 	for (y=0; y<height; y++)
 	{
@@ -425,38 +451,38 @@ Pixmap ConvertAreaPtrn (struct RastPort * rp, struct GfxBase * GfxBase)
 	    height = 2;
 	}
 LX11
-        stipple = XCreateBitmapFromData (sysDisplay
-	    , GetXWindow (rp)
+	stipple = XCreateBitmapFromData (sysDisplay
+	    , GetXWindow (rp, GfxBase)
 	    , pattern
 	    , width
-    	    , height
-        );
+	    , height
+	);
 UX11
-        FreeMem (pattern, 2*height*sizeof(BYTE));
+	FreeMem (pattern, 2*height*sizeof(BYTE));
 
     }
     else
     {
 	/* Multicolored AreaPtrn */
-        unsigned long foreground, background;
+	unsigned long foreground, background;
 
-	depth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);	/* Number of bitplanes used for AreaPtrn */
-	height = 1>>(rp->AreaPtSz);	/* AreaPtSz is negative */
-	    
-/* Specify the foreground and background pixel values to use.(Xlib Ref.Man.) */	    
-	foreground = BlackPixel(sysDisplay, sysScreen);	
+	depth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);   /* Number of bitplanes used for AreaPtrn */
+	height = 1>>(rp->AreaPtSz);     /* AreaPtSz is negative */
+
+/* Specify the foreground and background pixel values to use.(Xlib Ref.Man.) */
+	foreground = BlackPixel(sysDisplay, sysScreen);
 	background = WhitePixel(sysDisplay, sysScreen);
 
 	pattern = AllocMem(2*height*depth*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
 	for (z=0; z<depth; z++)
 	    for (y=0; y<height; y++)
 	    {
-	        pattern[2*y+2*z*height] = (char)( (rp->AreaPtrn[y+z*height]) & (0xff) );
-	        pattern[2*y+2*z*height+1] = (char)( ( (rp->AreaPtrn[y+z*height]) & (0xff<<8) ) >> 8);
+		pattern[2*y+2*z*height] = (char)( (rp->AreaPtrn[y+z*height]) & (0xff) );
+		pattern[2*y+2*z*height+1] = (char)( ( (rp->AreaPtrn[y+z*height]) & (0xff<<8) ) >> 8);
 	    }
 LX11
 	stipple = XCreatePixmapFromBitmapData (sysDisplay
-	    , GetXWindow (rp)
+	    , GetXWindow (rp, GfxBase)
 	    , pattern
 	    , width
 	    , height
@@ -507,12 +533,12 @@ UX11
 		    CopyAreaPtrn (dd->dd_AreaPtrn, rp->AreaPtrn,height);
 		}
 		else
-    		    stipple = dd->dd_Pixmap;
+		    stipple = dd->dd_Pixmap;
 	    }
 	    else
 	    {
 		if (!dd->dd_AreaPtrn)
-	    	    FreeMem (dd->dd_AreaPtrn, sizeof(UWORD)*(1<<dd->dd_AreaPtSz));
+		    FreeMem (dd->dd_AreaPtrn, sizeof(UWORD)*(1<<dd->dd_AreaPtSz));
 		dd->dd_AreaPtSz = rp->AreaPtSz;
 		dd->dd_AreaPtrn = AllocMem (sizeof(UWORD)*height, MEMF_CHIP|MEMF_CLEAR);
 LX11
@@ -522,13 +548,13 @@ UX11
 		CopyAreaPtrn (dd->dd_AreaPtrn, rp->AreaPtrn,height);
 	    }
 	    dd->dd_Pixmap = stipple;
-		
+
 LX11
 	    XSetFillStyle (sysDisplay
-		, GetGC(rp)
+		, GetGC(rp, GfxBase)
 		, FillStippled
 	    );
-	    XSetStipple( sysDisplay, GetGC (rp), stipple);
+	    XSetStipple( sysDisplay, GetGC (rp, GfxBase), stipple);
 UX11
 	}
 	else {
@@ -547,7 +573,7 @@ UX11
 		    CopyAreaPtrn (dd->dd_AreaPtrn, rp->AreaPtrn,height);
 		}
 		else
-    		    stipple = dd->dd_Pixmap;
+		    stipple = dd->dd_Pixmap;
 	    }
 	    else
 	    {
@@ -565,33 +591,33 @@ UX11
 
 LX11
 	    XSetFillStyle (sysDisplay
-		, GetGC(rp)
+		, GetGC(rp, GfxBase)
 		, FillTiled
 	    );
 
-	    XSetTile( sysDisplay, GetGC (rp), stipple);
+	    XSetTile( sysDisplay, GetGC (rp, GfxBase), stipple);
 UX11
 	}
     }
     else {
 	/* No AreaPtrn -> Use solid fill style */
 LX11
-        XSetFillStyle (sysDisplay
-            , GetGC (rp)
-            , FillSolid
-        );
+	XSetFillStyle (sysDisplay
+	    , GetGC (rp, GfxBase)
+	    , FillSolid
+	);
 UX11
     }
 }
 
-void UpdateLinePtrn (struct RastPort * rp)
+void UpdateLinePtrn (struct RastPort * rp, struct GfxBase * GfxBase)
 {
     XGCValues gcval;
 
 LX11
     XSetFillStyle (sysDisplay
-        , GetGC(rp)
-        , FillSolid
+	, GetGC(rp, GfxBase)
+	, FillSolid
     );
 UX11
 
@@ -624,13 +650,13 @@ UX11
 	gcval.line_style = LineOnOffDash;
 LX11
 	XChangeGC (sysDisplay
-	    , GetGC(rp)
+	    , GetGC(rp, GfxBase)
 	    , GCLineStyle
 	    , &gcval
 	);
 
 	XSetDashes (sysDisplay
-	    , GetGC(rp)
+	    , GetGC(rp, GfxBase)
 	    , 0
 	    , dash_list
 	    , n+1
@@ -643,7 +669,7 @@ UX11
 	gcval.line_style = LineSolid;
 LX11
 	XChangeGC (sysDisplay
-	    , GetGC(rp)
+	    , GetGC(rp, GfxBase)
 	    , GCLineStyle
 	    , &gcval
 	);
@@ -660,13 +686,13 @@ void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
     apen &= PEN_MASK;
     bpen &= PEN_MASK;
 LX11
-    XSetForeground (sysDisplay, GetGC (rp), sysCMap[apen]);
-    XSetBackground (sysDisplay, GetGC (rp), sysCMap[bpen]);
+    XSetForeground (sysDisplay, GetGC (rp, GfxBase), sysCMap[apen]);
+    XSetBackground (sysDisplay, GetGC (rp, GfxBase), sysCMap[bpen]);
 
     if (drmd & COMPLEMENT)
-	XSetFunction (sysDisplay, GetGC(rp), GXxor);
+	XSetFunction (sysDisplay, GetGC(rp, GfxBase), GXxor);
     else
-	XSetFunction (sysDisplay, GetGC(rp), GXcopy);
+	XSetFunction (sysDisplay, GetGC(rp, GfxBase), GXcopy);
 UX11
 }
 
@@ -676,7 +702,7 @@ void driver_SetAPen (struct RastPort * rp, ULONG pen,
     CorrectDriverData (rp, GfxBase);
     pen &= PEN_MASK;
 LX11
-    XSetForeground (sysDisplay, GetGC (rp), sysCMap[pen]);
+    XSetForeground (sysDisplay, GetGC (rp, GfxBase), sysCMap[pen]);
 UX11
 }
 
@@ -686,7 +712,7 @@ void driver_SetBPen (struct RastPort * rp, ULONG pen,
     CorrectDriverData (rp, GfxBase);
     pen &= PEN_MASK;
 LX11
-    XSetBackground (sysDisplay, GetGC (rp), sysCMap[pen]);
+    XSetBackground (sysDisplay, GetGC (rp, GfxBase), sysCMap[pen]);
 UX11
 }
 
@@ -701,9 +727,9 @@ void driver_SetDrMd (struct RastPort * rp, ULONG mode,
     CorrectDriverData (rp, GfxBase);
 LX11
     if (mode & COMPLEMENT)
-	XSetFunction (sysDisplay, GetGC(rp), GXxor);
+	XSetFunction (sysDisplay, GetGC(rp, GfxBase), GXxor);
     else
-	XSetFunction (sysDisplay, GetGC(rp), GXcopy);
+	XSetFunction (sysDisplay, GetGC(rp, GfxBase), GXcopy);
 UX11
 }
 
@@ -712,7 +738,7 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 {
     CorrectDriverData (rp, GfxBase);
 LX11
-    XClearArea (sysDisplay, GetXWindow (rp),
+    XClearArea (sysDisplay, GetXWindow (rp, GfxBase),
 		x1, y1, x2-x1+1, y2-y1+1, False);
 
 UX11
@@ -731,15 +757,15 @@ LX11
 
 	pen = ((ULONG)(rp->FgPen)) & PEN_MASK;
 
-	XSetForeground (sysDisplay, GetGC (rp), sysPlaneMask);
+	XSetForeground (sysDisplay, GetGC (rp, GfxBase), sysPlaneMask);
 
-	XFillRectangle (sysDisplay, GetXWindow (rp), GetGC (rp),
+	XFillRectangle (sysDisplay, GetXWindow (rp, GfxBase), GetGC (rp, GfxBase),
 		x1, y1, x2-x1+1, y2-y1+1);
 
-	XSetForeground (sysDisplay, GetGC (rp), sysCMap[pen]);
+	XSetForeground (sysDisplay, GetGC (rp, GfxBase), sysCMap[pen]);
     }
     else
-	XFillRectangle (sysDisplay, GetXWindow (rp), GetGC (rp),
+	XFillRectangle (sysDisplay, GetXWindow (rp, GfxBase), GetGC (rp, GfxBase),
 		x1, y1, x2-x1+1, y2-y1+1);
 UX11
     SIGID ();
@@ -753,7 +779,7 @@ void driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
 {
     LONG w, h, x3, y3, x4, y4, _dx_, _dy_;
     ULONG apen;
-    
+
     CorrectDriverData (rp, GfxBase);
     apen = GetAPen (rp);
 
@@ -778,43 +804,43 @@ void driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
 LX11
     if (dx <= 0) {
 	if (dy <= 0) {
-	    XCopyArea (sysDisplay,GetXWindow(rp),GetXWindow(rp),GetGC(rp),
+	    XCopyArea (sysDisplay,GetXWindow(rp, GfxBase),GetXWindow(rp, GfxBase),GetGC(rp, GfxBase),
 		    x1, y1, w, h, x3, y3);
 
-	    if (_dy_) XClearArea (sysDisplay,GetXWindow(rp),
+	    if (_dy_) XClearArea (sysDisplay,GetXWindow(rp, GfxBase),
 		    x1, y1, w+_dx_, _dy_, FALSE);
 
-	    if (_dx_) XClearArea (sysDisplay,GetXWindow(rp),
+	    if (_dx_) XClearArea (sysDisplay,GetXWindow(rp, GfxBase),
 		    x1, y1, _dx_, h, FALSE);
 
 	} else { /* dy > 0 */
-	    XCopyArea (sysDisplay,GetXWindow(rp),GetXWindow(rp),GetGC(rp),
+	    XCopyArea (sysDisplay,GetXWindow(rp, GfxBase),GetXWindow(rp, GfxBase),GetGC(rp, GfxBase),
 		    x1, y3, w, h, x3, y1);
 
-	    XClearArea (sysDisplay,GetXWindow(rp),
+	    XClearArea (sysDisplay,GetXWindow(rp, GfxBase),
 		    x1, y4, w+_dx_, _dy_, FALSE);
 
-	    if (_dx_) XClearArea (sysDisplay,GetXWindow(rp),
+	    if (_dx_) XClearArea (sysDisplay,GetXWindow(rp, GfxBase),
 		    x1, y1, _dx_, h, FALSE);
 	}
     } else { /* dx > 0 */
 	if (dy <= 0) {
-	    XCopyArea (sysDisplay,GetXWindow(rp),GetXWindow(rp),GetGC(rp),
+	    XCopyArea (sysDisplay,GetXWindow(rp, GfxBase),GetXWindow(rp, GfxBase),GetGC(rp, GfxBase),
 		    x3, y1, w, h, x1, y3);
 
-	    if (_dy_) XClearArea (sysDisplay,GetXWindow(rp),
+	    if (_dy_) XClearArea (sysDisplay,GetXWindow(rp, GfxBase),
 		    x1, y1, w+_dx_, _dy_, FALSE);
 
-	    XClearArea (sysDisplay,GetXWindow(rp),
+	    XClearArea (sysDisplay,GetXWindow(rp, GfxBase),
 		    x4, y3, _dx_, h, FALSE);
 	} else { /* dy > 0 */
-	    XCopyArea (sysDisplay,GetXWindow(rp),GetXWindow(rp),GetGC(rp),
+	    XCopyArea (sysDisplay,GetXWindow(rp, GfxBase),GetXWindow(rp, GfxBase),GetGC(rp, GfxBase),
 		    x3, y3, w, h, x1, y1);
 
-	    XClearArea (sysDisplay,GetXWindow(rp),
+	    XClearArea (sysDisplay,GetXWindow(rp, GfxBase),
 		    x1, y4, w+_dx_, _dy_, FALSE);
 
-	    XClearArea (sysDisplay,GetXWindow(rp),
+	    XClearArea (sysDisplay,GetXWindow(rp, GfxBase),
 		    x4, y1, _dx_, h, FALSE);
 	}
     }
@@ -828,9 +854,9 @@ void driver_DrawEllipse (struct RastPort * rp, LONG x, LONG y, LONG rx, LONG ry,
 		struct GfxBase * GfxBase)
 {
     CorrectDriverData (rp, GfxBase);
-    UpdateLinePtrn (rp);
+    UpdateLinePtrn (rp, GfxBase);
 LX11
-    XDrawArc (sysDisplay, GetXWindow(rp), GetGC(rp),
+    XDrawArc (sysDisplay, GetXWindow(rp, GfxBase), GetGC(rp, GfxBase),
 	    x-rx, y-ry, rx*2, ry*2,
 	    0, 360*64);
 UX11
@@ -843,10 +869,10 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     CorrectDriverData (rp, GfxBase);
 LX11
     if (rp->DrawMode & JAM2)
-	XDrawImageString (sysDisplay, GetXWindow(rp), GetGC(rp), rp->cp_x,
+	XDrawImageString (sysDisplay, GetXWindow(rp, GfxBase), GetGC(rp, GfxBase), rp->cp_x,
 	    rp->cp_y, string, len);
     else
-	XDrawString (sysDisplay, GetXWindow(rp), GetGC(rp), rp->cp_x,
+	XDrawString (sysDisplay, GetXWindow(rp, GfxBase), GetGC(rp, GfxBase), rp->cp_x,
 	    rp->cp_y, string, len);
 
     rp->cp_x += TextLength (rp, string, len);
@@ -874,9 +900,9 @@ void driver_Draw (struct RastPort * rp, LONG x, LONG y,
 		    struct GfxBase * GfxBase)
 {
     CorrectDriverData (rp, GfxBase);
-    UpdateLinePtrn (rp);
+    UpdateLinePtrn (rp, GfxBase);
 LX11
-    XDrawLine (sysDisplay, GetXWindow(rp), GetGC(rp),
+    XDrawLine (sysDisplay, GetXWindow(rp, GfxBase), GetGC(rp, GfxBase),
 	    rp->cp_x, rp->cp_y,
 	    x, y);
 UX11
@@ -897,7 +923,7 @@ LX11
     SIGID ();
 
     image = XGetImage (sysDisplay
-	, GetXWindow(rp)
+	, GetXWindow(rp, GfxBase)
 	, x, y
 	, 1, 1
 	, AllPlanes
@@ -924,7 +950,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
     if(!CorrectDriverData (rp, GfxBase))
 	return ((ULONG)-1L);
 LX11
-    XDrawPoint (sysDisplay, GetXWindow(rp), GetGC(rp),
+    XDrawPoint (sysDisplay, GetXWindow(rp, GfxBase), GetGC(rp, GfxBase),
 	    x, y);
 UX11
     /* SIGID (); */
@@ -936,9 +962,9 @@ void driver_PolyDraw (struct RastPort * rp, LONG count, WORD * coords,
 		    struct GfxBase * GfxBase)
 {
     CorrectDriverData (rp, GfxBase);
-    UpdateLinePtrn (rp);
+    UpdateLinePtrn (rp, GfxBase);
 LX11
-    XDrawLines (sysDisplay, GetXWindow(rp), GetGC(rp),
+    XDrawLines (sysDisplay, GetXWindow(rp, GfxBase), GetGC(rp, GfxBase),
 	    (XPoint *)coords, count,
 	    CoordModeOrigin
     );
@@ -951,7 +977,7 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 {
     CorrectDriverData (rp, GfxBase);
 LX11
-    XClearArea (sysDisplay, GetXWindow(rp),
+    XClearArea (sysDisplay, GetXWindow(rp, GfxBase),
 	    0, 0,
 	    1000, 1000,
 	    FALSE);
@@ -964,8 +990,8 @@ void driver_SetFont (struct RastPort * rp, struct TextFont * font,
 {
     CorrectDriverData (rp, GfxBase);
 LX11
-    if (GetGC(rp))
-	XSetFont (sysDisplay, GetGC(rp), ETF(font)->etf_XFS.fid);
+    if (GetGC(rp, GfxBase))
+	XSetFont (sysDisplay, GetGC(rp, GfxBase), ETF(font)->etf_XFS.fid);
 UX11
 }
 
@@ -1087,7 +1113,7 @@ UX11
 	InitDriverData (rp, GfxBase);
     else
 	CorrectDriverData(rp, GfxBase);
-    SetGC (rp, gc);
+    SetGC (rp, gc, GfxBase);
 
     rp->Flags |= 0x8000;
 
@@ -1100,7 +1126,7 @@ int driver_CloneRastPort (struct RastPort * newRP, struct RastPort * oldRP,
     GC gc;
 LX11
     gc = XCreateGC (sysDisplay
-	, GetXWindow (oldRP)
+	, GetXWindow (oldRP, GfxBase)
 	, 0L
 	, NULL
     );
@@ -1108,9 +1134,9 @@ UX11
     if (!gc)
 	return FALSE;
 LX11
-    XCopyGC (sysDisplay, GetGC(oldRP), (1L<<(GCLastBit+1))-1, gc);
+    XCopyGC (sysDisplay, GetGC(oldRP, GfxBase), (1L<<(GCLastBit+1))-1, gc);
     CorrectDriverData (newRP, GfxBase);
-    SetGC (newRP, gc);
+    SetGC (newRP, gc, GfxBase);
 UX11
     if (oldRP->BitMap)
     {
@@ -1134,12 +1160,12 @@ void driver_DeinitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
 {
     GC gc;
 
-    if ((gc = GetGC (rp)))
+    if ((gc = GetGC (rp, GfxBase)))
     {
 LX11
 	XFreeGC (sysDisplay, gc);
 UX11
-	SetGC (rp, NULL);
+	SetGC (rp, NULL, GfxBase);
     }
 
     if (rp->BitMap)
@@ -1160,7 +1186,7 @@ void driver_InitView(struct View * View, struct GfxBase * GfxBase)
 void driver_InitVPort(struct ViewPort * ViewPort, struct GfxBase * GfxBase)
 {
   /* To Do (maybe even an unnecessary function) */
-} /* driver_InitVPort */	
+} /* driver_InitVPort */
 
 ULONG driver_SetWriteMask (struct RastPort * rp, ULONG mask,
 			struct GfxBase * GfxBase)
@@ -1169,7 +1195,7 @@ ULONG driver_SetWriteMask (struct RastPort * rp, ULONG mask,
     GC gc;
 
     CorrectDriverData (rp, GfxBase);
-    if ((gc = GetGC (rp)))
+    if ((gc = GetGC (rp, GfxBase)))
     {
 	gcval.plane_mask = sysPlaneMask;
 LX11
@@ -1354,7 +1380,7 @@ ULONG getBitMapPixel (struct BitMap * bm, LONG x, LONG y)
 
 void copyBitMapToImage (struct BitMap * srcBitMap, LONG xSrc, LONG ySrc,
     XImage * xImage, LONG xDest, LONG yDest,
-    ULONG minterm, ULONG mask)
+    ULONG minterm, ULONG mask, struct GfxBase * GfxBase)
 {
     ULONG sColor, dColor;
 
@@ -1412,6 +1438,7 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 			, (XImage *)(destBitMap->Planes[0])
 			, x+xDest, y+yDest
 			, minterm, mask
+			, GfxBase
 		    );
 		}
 	    }
@@ -1443,7 +1470,8 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
     return planecnt;
 }
 
-void driver_BltClear (void * memBlock, ULONG bytecount, ULONG flags)
+void driver_BltClear (void * memBlock, ULONG bytecount, ULONG flags,
+    struct GfxBase * GfxBase)
 {
   /* this will do the job on *any* system
    * without using the blitter
@@ -1550,8 +1578,8 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
     width = xstop - xstart + 1;
 
     CorrectDriverData (rp, GfxBase);
-    gc = GetGC(rp);
-    win = GetXWindow(rp);
+    gc = GetGC(rp, GfxBase);
+    win = GetXWindow(rp, GfxBase);
 
 #if 1
     theVisual = DefaultVisual (GetSysDisplay (), GetSysScreen ());
@@ -1646,4 +1674,4 @@ UX11
     return width*(ystop - ystart + 1);
 } /* driver_WritePixelArray8 */
 
- 
+

@@ -5,6 +5,7 @@
     Desc: Graphics function BltClear()
     Lang: english
 */
+#include "graphics_intern.h"
 
 /*****************************************************************************
 
@@ -26,14 +27,14 @@
 
     INPUTS
 	memBlock  - pointer to beginning of memory to be cleared
-	flags     - set bit 0 to force function to wait until
+	flags	  - set bit 0 to force function to wait until
 		    the blitter - if used - is done
-	            set bit 1 for row/bytesperrow - mode
+		    set bit 1 for row/bytesperrow - mode
 	bytecount - if bit 1 is set to 1: bytecount contains an even number
-	                                  of bytes to clear
+					  of bytes to clear
 		    if bit 1 is set to 0: low 16 bits are taken as number of
-                                          bytes per row and upper 16 bits
-					  are taken as number of rows.	
+					  bytes per row and upper 16 bits
+					  are taken as number of rows.
 
     RESULT
 	A cleared block of Chip-Ram.

@@ -59,7 +59,8 @@ extern ULONG CalcHashIndex(ULONG n);
 /* Driver prototypes */
 extern struct BitMap * driver_AllocBitMap (ULONG, ULONG, ULONG, ULONG,
 			struct BitMap *, struct GfxBase *);
-extern void driver_BltClear (void * memBlock, ULONG bytecount, ULONG flags);
+extern void driver_BltClear (void * memBlock, ULONG bytecount, ULONG flags,
+			struct GfxBase * GfxBase);
 extern LONG driver_BltBitMap ( struct BitMap * srcBitMap, LONG xSrc,
 			LONG ySrc, struct BitMap * destBitMap, LONG xDest,
 			LONG yDest, LONG xSize, LONG ySize, ULONG minterm,

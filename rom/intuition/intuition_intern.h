@@ -78,7 +78,8 @@ extern struct IntuitionBase * IntuitionBase;
 #ifdef GfxBase
 #undef GfxBase
 #endif
-#define GfxBase     (GetPrivIBase(IntuitionBase)->GfxBase)
+#define _GfxBase     (GetPrivIBase(IntuitionBase)->GfxBase)
+#define GfxBase     _GfxBase
 #ifdef SysBase
 #undef SysBase
 #endif
