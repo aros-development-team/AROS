@@ -17,6 +17,8 @@
 
 #include <string.h>
 
+/**********************************************************************************/
+
 void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
 {
     BYTE read_preferences = FALSE;
@@ -421,6 +423,14 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
 }
 
 /**********************************************************************************/
+
+void SendDeferedActionMsg(struct DeferedActionMessage *msg, struct IntuitionBase *IntuitionBase)
+{    
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+    AddTail((struct List *)GetPrivIBase(IntuitionBase)->IntuiDeferedActionQueue, (struct Node *)msg);
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+}
+
 /**********************************************************************************/
 /**********************************************************************************/
 /**********************************************************************************/
