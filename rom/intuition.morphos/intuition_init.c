@@ -136,7 +136,7 @@ const struct Resident Intuition_resident=
         NT_LIBRARY,
         10,
         (char *)name,
-        (char *)VSTRING,
+        (char *)&version[6],
         (ULONG *)inittabl
 #ifdef __MORPHOS__
         ,REVISION_NUMBER,
@@ -304,7 +304,9 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
         DEBUG_INIT(dprintf("LIB_Init: create groupgclass\n"));
         InitGroupGClass (LIBBASE);      /* After GADGETCLASS    */
 
+#ifdef __MORPHOS__
         GetPrivIBase(LIBBASE)->mosmenuclass = InitMuiMenuClass(LIBBASE);
+#endif
 
         DEBUG_INIT(dprintf("LIB_Init: create menubarlabelclass\n"));
         InitMenuBarLabelClass (LIBBASE); /* After IMAGECLASS */
@@ -335,10 +337,12 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
         GetPrivIBase(LIBBASE)->IPrefsLoaded = FALSE;
         #endif
 
+#ifdef SKINS
         if (!GetPrivIBase(LIBBASE)->SmallMenuPool)
         {
             if (!(GetPrivIBase(LIBBASE)->SmallMenuPool = CreatePool(MEMF_SEM_PROTECTED,(sizeof (struct SmallMenuEntry))*20,(sizeof (struct SmallMenuEntry))*20))) return NULL;
         }
+#endif
 
         if (!(GetPrivIBase(LIBBASE)->IDCMPPool = CreatePool(MEMF_SEM_PROTECTED,(sizeof (struct IntIntuiMessage)) * 100,sizeof (struct IntIntuiMessage)))) return NULL;
 
