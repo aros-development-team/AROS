@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "intuition_intern.h"
+#include <graphics/rastport.h>
 
 /*****************************************************************************
 
@@ -56,11 +57,17 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/FreeScreenBuffer()
-    aros_print_not_implemented ("FreeScreenBuffer");
+  if (NULL != screenbuffer)
+  {
+    FreeDBufInfo(screenbuffer->sb_DBufInfo);
+    if (screen->RastPort.BitMap != screenbuffer->sb_BitMap)
+      FreeBitMap(screenbuffer->sb_BitMap);
+          
+    FreeMem(screenbuffer, sizeof(struct ScreenBuffer));
+  }
 
-    AROS_LIBFUNC_EXIT
+  AROS_LIBFUNC_EXIT
 } /* FreeScreenBuffer */

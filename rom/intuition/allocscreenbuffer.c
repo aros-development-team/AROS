@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "intuition_intern.h"
+#include <proto/graphics.h>
 
 /*****************************************************************************
 
@@ -82,10 +83,58 @@
 
     struct ScreenBuffer *ScreenBuffer = NULL;
 
-#warning TODO: Write intuition/AllocScreenBuffer()
-    aros_print_not_implemented ("AllocScreenBuffer");
-
-    return ScreenBuffer;
+    if (NULL != screen)
+    {
+      if (NULL != (ScreenBuffer = AllocMem(sizeof (struct ScreenBuffer), 
+                                           MEMF_CLEAR)))
+      {
+        if (NULL != (ScreenBuffer->sb_DBufInfo != 
+                     AllocDBufInfo(&screen->ViewPort)))
+        {
+          if (NULL != bitmap)
+          {
+            /* Get a bitmap */
+            if (0 != (flags & SB_SCREEN_BITMAP))
+            {
+              bitmap = screen->RastPort.BitMap;
+            }
+            else
+            {
+              bitmap = AllocBitMap(screen->Width,
+                                   screen->Height,
+                                   GetBitMapAttr(screen->RastPort.BitMap,BMA_DEPTH),
+                                   BMF_CLEAR|BMF_DISPLAYABLE,
+                                   screen->RastPort.BitMap);
+              if (NULL == bitmap)
+              {
+                FreeDBufInfo(ScreenBuffer->sb_DBufInfo);
+                FreeMem(ScreenBuffer, sizeof(struct ScreenBuffer));
+                return NULL;
+              }
+            }
+          }
+          ScreenBuffer->sb_BitMap = bitmap;
+          
+          if (0 != (flags & SB_COPY_BITMAP))
+          {
+            BltBitMap(screen->RastPort.BitMap,
+                      0,
+                      0,
+                      bitmap,
+                      0,
+                      0,
+                      screen->Width,
+                      screen->Height,
+                      0x0c0, /* copy */
+                      ~0,
+                      NULL);
+          }
+        }
+        FreeMem(ScreenBuffer, sizeof(struct ScreenBuffer));
+      }
+    }
+    
+    return NULL;
 
     AROS_LIBFUNC_EXIT
 } /* AllocScreenBuffer */
