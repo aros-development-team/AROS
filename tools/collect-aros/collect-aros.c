@@ -76,7 +76,7 @@ void docommand(char *path, char *argv[])
 	errno = 0; /* the parent process is going to exit too
 	            and we don't want it to complain again about the error. */
 
-	_exit(1); /* we can't use exit because it would close the /O channels  of the parent process */
+	_exit(1); /* we can't use exit because it would close the I/O channels  of the parent process */
     }
 
     waitpid(pid, &status, 0);
@@ -116,6 +116,16 @@ char *joinstrings(char *first, ...)
     va_end (strings);
 
     return str;
+}
+
+char *basename(char *path)
+{
+    char *base = path;
+
+    for (; *path; path++)
+        if (*path=='/') base = path+1;
+
+    return base;
 }
 
 char *tempoutname = NULL;
@@ -161,7 +171,7 @@ int main(int argc, char *argv[])
 
     ldargs = xmalloc(sizeof(char *) * (argc+2));
 
-    ldargs[0] = "collect2";
+    ldargs[0] = basename(LINKERPATH);
     ldargs[1] = "-r";
 
     for (cnt = 1; cnt < argc; cnt++)
