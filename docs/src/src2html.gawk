@@ -316,7 +316,8 @@ BEGIN {
 	    else if (yytext=="exec")
 	    {
 		getarg();
-		cmd=yytext " | gawk -f src2html.gawk";
+		gsub(/\$[(]TOP[)]/,TOP,yytext);
+		cmd=yytext " | gawk -f src2html.gawk --assign TOP=\""TOP"\"";
 
 		#print cmd;
 
