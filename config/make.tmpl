@@ -1258,7 +1258,7 @@ clean ::
 # a separate directory. In that case see make_prog_multi
 #
 
-%define make_prog_single dir=/A
+%define make_prog_single dir=/A 
 %make_prog_common dir=%(dir)
 
 %(dir)/% : $(OBJDIR)/%.o
@@ -1281,7 +1281,7 @@ clean ::
 # Common code for building programs
 #
 %define make_prog_common dflags=$(CFLAGS) dir=/A
-CFLAGS  := $(USER_CFLAGS) $(TARGET_CFLAGS) $(STATIC_CFLAGS) -I$(AROS_INCLUDES) -D__AROS -D__AROS__
+CFLAGS  := $(TARGET_CFLAGS) $(USER_CFLAGS) $(STATIC_CFLAGS) -I$(AROS_INCLUDES) -D__AROS -D__AROS__
 LDFLAGS := $(TARGET_LDFLAGS) $(STATIC_LDFLAGS) $(USER_LDFLAGS)
 
 OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
