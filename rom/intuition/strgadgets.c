@@ -989,6 +989,8 @@ VOID UpdateStrGadget(struct Gadget	*gad,
     rp = ObtainGIRPort(&gi);
     if (!rp) return;
 
+    GetPensAndFont(gad, pens, win, rp, IntuitionBase);
+ 
     CalcBBox(win, gad, &bbox);
 
     /* Update the stringinfo struct in case of user change */
@@ -1000,9 +1002,7 @@ VOID UpdateStrGadget(struct Gadget	*gad,
     	
     dispstr = strinfo->Buffer + strinfo->DispPos;
     dispstrlen = MIN(strinfo->DispCount, strinfo->NumChars - strinfo->DispPos);
-    
-    GetPensAndFont(gad, pens, win, rp, IntuitionBase);
-    
+       
     /* Clear the background */
     SetAPen(rp, pens[STRBACKPEN]);
     SetDrMd(rp, JAM1);
