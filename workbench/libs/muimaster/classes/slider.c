@@ -147,8 +147,8 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
 	if (nw > width) width = nw;
     }
     data->max_text_width = width;
-    data->knob_width  = width + knob_frame->ileft + knob_frame->iright + 2;
-    data->knob_height = _font(obj)->tf_YSize + knob_frame->itop + knob_frame->ibottom;
+    data->knob_width  = width + knob_frame->ileft + knob_frame->iright + 4;
+    data->knob_height = _font(obj)->tf_YSize + knob_frame->itop + knob_frame->ibottom + 1;
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 #ifdef __AROS__
@@ -190,7 +190,7 @@ static ULONG Slider_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMin
     {
 	msg->MinMaxInfo->MinWidth  += data->knob_width + 1;
 	msg->MinMaxInfo->MinHeight += data->knob_height;
-	msg->MinMaxInfo->DefWidth  += data->knob_width + (max - min) + 20;
+	msg->MinMaxInfo->DefWidth  += data->knob_width * 4 + 2;
 	msg->MinMaxInfo->DefHeight += data->knob_height;
 	msg->MinMaxInfo->MaxWidth   = MUI_MAXMAX;
 	msg->MinMaxInfo->MaxHeight += data->knob_height;
@@ -200,7 +200,7 @@ static ULONG Slider_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMin
 	msg->MinMaxInfo->MinWidth  += data->knob_width;
 	msg->MinMaxInfo->MinHeight += data->knob_height + 1;
 	msg->MinMaxInfo->DefWidth  += data->knob_width;
-	msg->MinMaxInfo->DefHeight += data->knob_height + (max - min) + 20;
+	msg->MinMaxInfo->DefHeight += data->knob_height * 4 + 2;
 	msg->MinMaxInfo->MaxWidth  += data->knob_width;
 	msg->MinMaxInfo->MaxHeight  = MUI_MAXMAX;
     }
@@ -282,8 +282,8 @@ static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     buf = (char*)DoMethod(obj,MUIM_Numeric_Stringify,val);
     width = TextLength(_rp(obj),buf,strlen(buf));
     
-    Move(_rp(obj), data->knob_left + knob_frame->ileft + 1 + (data->max_text_width - width)/2,
-	 data->knob_top + _font(obj)->tf_Baseline + knob_frame->itop);
+    Move(_rp(obj), data->knob_left + knob_frame->ileft + 2 + (data->max_text_width - width)/2,
+	 data->knob_top + _font(obj)->tf_Baseline + knob_frame->itop + 1);
     Text(_rp(obj), buf, strlen(buf));
 
     return TRUE;
