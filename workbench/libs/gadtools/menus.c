@@ -6,6 +6,8 @@
    Lang: English
 */
 #include <stdio.h>
+#include <string.h>
+
 #include <proto/exec.h>
 #include <exec/types.h>
 #include <exec/libraries.h>
@@ -43,6 +45,28 @@
 #define IMAGE_EXTRA_RIGHT  1
 #define IMAGE_EXTRA_TOP    1
 #define IMAGE_EXTRA_BOTTOM 1
+
+/**************************************************************************************************/
+
+static BOOL is_menubarlabelclass_image(struct Image *im, struct GadToolsBase_intern *GadToolsBase)
+{
+    BOOL is_barlabel = FALSE;
+
+    if (im)
+    {
+	if (im->Depth == CUSTOMIMAGEDEPTH)
+	{
+	    Class *cl = OCLASS(im);
+
+	    if (cl->cl_ID)
+	    {
+		if (strcmp(cl->cl_ID, MENUBARLABELCLASS) == 0) is_barlabel = TRUE;
+	    }
+	}
+    }
+    
+    return is_barlabel;
+}
 
 /**************************************************************************************************/
 
@@ -186,37 +210,29 @@ struct MenuItem * makemenuitem(struct NewMenu * newmenu,
 	** An image.
 	*/
 	menuitem->ItemFill = (APTR)newmenu->nm_Label;
-      } else {
-        struct IClass *cl;
-	
+      } else {	
         /*
 	** A barlabel image.
 	*/
 	
+	struct TagItem barlabel_tags[] =
+	{
+	  {IA_Left	, ITEXT_EXTRA_LEFT	},
+	  {IA_Top	, 3			},
+	  {IA_Width	, 20			},
+	  {IA_Height	, 2			},
+	  {TAG_DONE				}
+	};
+
 	menuitem->Flags &= ~ITEMENABLED;
-	
-	cl = makebarlabelclass(GadToolsBase);
-	if (!cl)
+
+	menuitem->ItemFill = NewObjectA(NULL, MENUBARLABELCLASS, barlabel_tags);
+
+	if (!menuitem->ItemFill)
 	{
 	  FreeVec(menuitem);
 	  menuitem = NULL;
-	} else {
-	  struct TagItem barlabel_tags[] =
-	  {
-	    {IA_Left	, ITEXT_EXTRA_LEFT	},
-	    {IA_Top	, 3			},
-	    {IA_Width	, 20			},
-	    {IA_Height	, 2			},
-	    {TAG_DONE				}
-	  };
-
-	  menuitem->ItemFill = NewObjectA(cl, NULL, barlabel_tags);
-	  if (!menuitem->ItemFill)
-	  {
-	    FreeVec(menuitem);
-	    menuitem = NULL;
-	  }
-	}	 
+	}
       } 
     } /* is_image */
   } /* if (NULL != menuitem) */
@@ -232,13 +248,11 @@ static void freeitem(struct MenuItem *item, struct GadToolsBase_intern * GadTool
   {
     struct Image *im = (struct Image *)item->ItemFill;
 
-    if (im) if (im->Depth == CUSTOMIMAGEDEPTH)
+    if (is_menubarlabelclass_image(im, GadToolsBase))
     {
-      if (OCLASS(im) == GadToolsBase->barlabelclass)
-      {
-	DisposeObject(im);
-      }
+      DisposeObject(im);
     }
+
   }
   
   FreeVec(item);
@@ -327,7 +341,7 @@ static ULONG EqualizeItems(struct MenuItem *firstitem, struct Image *amikeyimage
     
     /* Calc. the max. width of item text/image (+ checkmark image)
        Calc. the min. item->LeftEdge */
-        
+
     for(item = firstitem; item; item = item->NextItem)
     {
         if (item->LeftEdge < minx) minx = item->LeftEdge;
@@ -428,19 +442,17 @@ static ULONG EqualizeItems(struct MenuItem *firstitem, struct Image *amikeyimage
 	{
 	    struct Image *im = (struct Image *)item->ItemFill;
 	    
-	    if (im->Depth == CUSTOMIMAGEDEPTH)
+	    if (is_menubarlabelclass_image(im, GadToolsBase))
 	    {
-	        if (OCLASS(im) == GadToolsBase->barlabelclass)
+		struct TagItem image_tags [] =
 		{
-		    struct TagItem image_tags [] =
-		    {
-		        {IA_Width	, maxwidth - ITEXT_EXTRA_LEFT - ITEXT_EXTRA_RIGHT	},
-			{SYSIA_DrawInfo	, (IPTR)vi->vi_dri					},
-			{TAG_DONE								}
-		    };
-		    
-		    SetAttrsA(im, image_tags);
-		}
+		    {IA_Width	, maxwidth - ITEXT_EXTRA_LEFT - ITEXT_EXTRA_RIGHT	},
+		    {SYSIA_DrawInfo	, (IPTR)vi->vi_dri					},
+		    {TAG_DONE								}
+		};
+
+		SetAttrsA(im, image_tags);
+
 	    }
 	}
     }
@@ -504,7 +516,7 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
           }
 	}
       }
- 
+
       addwidth += amikeyimage->Width +
 		  AMIGAKEY_KEY_SPACING +
 		  TEXT_AMIGAKEY_SPACING;
@@ -577,21 +589,13 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
       ** Image
       */
       struct Image * im = (struct Image *)menuitem->ItemFill;
-      BOOL is_barlabel = FALSE;
       
       if (NULL == im)
         return FALSE;
-
-      if (im->Depth == CUSTOMIMAGEDEPTH)
-      {
-        if (OCLASS(im) == GadToolsBase->barlabelclass)
-	{
-	  is_barlabel = TRUE;
-	}
-      }
       
-      if (is_barlabel)
+      if (is_menubarlabelclass_image(im, GadToolsBase))
       {
+
         menuitem->Height = 7;
 
       } else {
@@ -605,7 +609,6 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
       curY += menuitem->Height;
     }
     
-
     /*
     ** In case this menu becomes too high it will have more columns.
     */
@@ -627,7 +630,7 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
     */    
     menuitem = menuitem->NextItem;
   }
-  
+
   EqualizeItems(equalizeitem, amikeyimage, vi, GadToolsBase);
   
   return TRUE;
