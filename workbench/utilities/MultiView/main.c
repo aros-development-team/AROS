@@ -20,6 +20,13 @@
 
 /*********************************************************************************************/
 
+/* Many datatype classes seem to rely on OM_NOTIFY calls coming back to the datatype object
+   as OM_UPDATE :-\ */
+   
+#define BACK_CONNECTION 1
+
+/*********************************************************************************************/
+
 #define ARG_TEMPLATE    "FILE,CLIPBOARD/S,CLIPUNIT/K/N,SCREEN/S,PUBSCREEN/K,REQUESTER/S," \
 			"BOOKMARK/S,FONTNAME/K,FONTSIZE/K/N,BACKDROP/S,WINDOW/S," \
 			"PORTNAME/K,IMMEDIATE/S,REPEAT/S,PRTUNIT/K/N"
@@ -273,16 +280,29 @@ static void MakeICObjects(void)
 						   TAG_DONE);
     horiz_to_dto_ic_obj = NewObject(NULL, ICCLASS, ICA_MAP, horiz_to_dto_map,
 						   TAG_DONE);
-
-    if (!model_obj || !dto_to_vert_ic_obj || !dto_to_horiz_ic_obj ||
-	!vert_to_dto_ic_obj || !horiz_to_dto_ic_obj)
+#if BACK_CONNECTION
+    model_to_dto_ic_obj = NewObject(NULL, ICCLASS, TAG_DONE);
+#endif
+    
+    if (!model_obj  	    	||
+    	!dto_to_vert_ic_obj 	||
+	!dto_to_horiz_ic_obj 	||
+	!vert_to_dto_ic_obj 	||
+	!horiz_to_dto_ic_obj 
+    #if BACK_CONNECTION
+	|| !model_to_dto_ic_obj
+    #endif
+       )
     {
 	Cleanup(MSG(MSG_CANT_CREATE_IC));
     }
 
     DoMethod(model_obj, OM_ADDMEMBER, dto_to_vert_ic_obj);
     DoMethod(model_obj, OM_ADDMEMBER, dto_to_horiz_ic_obj);
-
+#if BACK_CONNECTION
+    DoMethod(model_obj, OM_ADDMEMBER, model_to_dto_ic_obj);
+#endif
+    
     model_has_members = TRUE;
 
 }
@@ -295,6 +315,9 @@ static void KillICObjects(void)
     {
 	if (dto_to_vert_ic_obj) DisposeObject(dto_to_vert_ic_obj);
 	if (dto_to_horiz_ic_obj) DisposeObject(dto_to_horiz_ic_obj);
+    #if BACK_CONNECTION
+	if (model_to_dto_ic_obj) DisposeObject(model_to_dto_ic_obj);
+    #endif
     }
 
     if (model_obj) DisposeObject(model_obj);
@@ -574,6 +597,9 @@ static void OpenDTO(void)
 
     SetAttrs(vert_to_dto_ic_obj, ICA_TARGET, (IPTR)dto, TAG_DONE);
     SetAttrs(horiz_to_dto_ic_obj, ICA_TARGET, (IPTR)dto, TAG_DONE);
+#if BACK_CONNECTION
+    SetAttrs(model_to_dto_ic_obj, ICA_TARGET, (IPTR)dto, TAG_DONE);
+#endif
 
     val = 0;
     GetDTAttrs(dto, DTA_NominalHoriz, &val, TAG_DONE); winwidth  = (WORD)val;
