@@ -30,7 +30,7 @@
 
 #include <graphics/rastport.h>
 
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #    include "console_gcc.h"
 #endif
 

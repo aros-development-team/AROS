@@ -30,7 +30,7 @@
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <exec/lists.h>
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #    include "parallel_intern.h"
 #endif
 

@@ -20,7 +20,7 @@
 #include <exec/errors.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #    include "input_intern.h"
 #endif
 
