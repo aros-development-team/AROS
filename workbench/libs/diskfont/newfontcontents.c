@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 /****************************************************************************************/
@@ -197,7 +194,7 @@ struct contentsBuffer
 	    /* Embedded tags? */
 	    if(dfh->dfh_TF.tf_Style & FSF_TAGGED)
 	    {
-		struct TagItem *ti = (struct TagItem *)(dfh->dfh_TagList); /* dfh_TagList */
+		const struct TagItem *ti = (struct TagItem *)(dfh->dfh_TagList); /* dfh_TagList */
 		struct TagItem *tPtr;
 	 	struct TagItem *item;
 		WORD   nTags = 0;
@@ -292,7 +289,7 @@ VOID CopyContents(struct List *list, APTR mem)
 {
     struct contentsBuffer *temp;
 
-    ForeachNode(list, (struct Node *)temp)
+    ForeachNode(list, temp)
     {
 	CopyMem(&temp->fc, mem, sizeof(struct FontContents));
 	mem += sizeof(struct FontContents);

@@ -76,7 +76,7 @@ struct FontDescrHeader *ReadFontDescr(CONST_STRPTR filename, struct DiskfontBase
     	fdh->OTagList = OTAG_GetFile(filename, DiskfontBase);
 	if (fdh->OTagList)
 	{
-	    availsizes = (UWORD *)GetTagData(OT_AvailSizes, NULL, fdh->OTagList->tags);
+	    availsizes = (UWORD *)GetTagData(OT_AvailSizes, (IPTR) NULL, fdh->OTagList->tags);
 	    if (availsizes)
 	    {
 	    	/* OT_AvailSizes points to an UWORD array, where the first UWORD
