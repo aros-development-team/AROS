@@ -148,7 +148,7 @@ void setPartitionType(struct PartitionTableNode *table) {
 	{
 	case PHPTT_RDB:
 		table->typelist = &rdbtypelist;
-		CopyMem(table->defaulttype.id, "DOS\002", 4);
+		CopyMem("DOS\002",table->defaulttype.id, 4);
 		table->defaulttype.id_len = 4;
 		break;
 	case PHPTT_MBR:
