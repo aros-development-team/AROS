@@ -174,6 +174,8 @@ int      pclose(FILE *);
 FILE    *popen(const char *, const char *);
 int	 fileno(FILE *);
 
+void setlinebuf(FILE *stream);
+
 #if 0
 char	*ctermid(char *);
 char	*ctermid_r(char *);
