@@ -85,7 +85,7 @@ static const struct Resident *romtagList[] =
 	&Mathieeesingbas_resident,      /* ColdStart,   101  */
 	&OOP_resident,                  /* ColdStart,   94	 */
 	&HIDD_resident,                 /* ColdStart,   92	 */
-//	&irqHidd_resident,              /* ColdStart,   90	 */
+	&irqHidd_resident,              /* ColdStart,   90	 */
 	&Graphics_resident,             /* ColdStart,   65	 */
 	&Layers_resident,               /* ColdStart,   60	 */
 	&Timer_resident,                /* ColdStart,   50	 */
@@ -98,7 +98,7 @@ static const struct Resident *romtagList[] =
 	&Intuition_resident,            /* ColdStart,   10	 */	
 	&hiddgraphics_resident,		/* ColdStart,   9	 */
 	&displayHidd_resident,		/* ColdStart,   9	 */
-//	&hiddserial_resident,		/* ColdStart,   9	 */
+	&hiddserial_resident,		/* ColdStart,   9	 */
 	&Console_resident,              /* ColdStart,   5	 */
 	&Workbench_resident,		/* ColdStart,  -120	 */
 	&Mathffp_resident,		/* ColdStart,  -120	 */
