@@ -27,7 +27,7 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 static const char unknown[]  = "--unknown device--";
@@ -378,6 +378,8 @@ ULONG init_hiddclass(struct IntHIDDClassBase *lh)
     	D(bug("Got CSD\n"));
         NEWLIST(&csd->hiddList);
         InitSemaphore(&csd->listLock);
+	
+	csd->sysBase = SysBase;
 
         alert = AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_Unknown;
         OOPBase = OpenLibrary(AROSOOP_NAME, 0);

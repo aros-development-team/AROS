@@ -37,7 +37,7 @@ struct HIDDData
 /* Static Data for the hiddclass. */
 struct class_static_data
 {
-    struct ExecBase             *SysBase;
+    struct ExecBase             *sysBase;
     struct Library              *UtilityBase;
     struct Library              *OOPBase;
 
@@ -63,7 +63,7 @@ struct IntHIDDClassBase
 #define CSD(x) ((struct class_static_data *)x)
 
 #undef SysBase
-#define SysBase (CSD(cl->UserData)->SysBase)
+#define SysBase (CSD(cl->UserData)->sysBase)
 
 #undef UtilityBase
 #define UtilityBase (CSD(cl->UserData)->UtilityBase)
