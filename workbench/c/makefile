@@ -18,7 +18,8 @@ EXES = $(EXEDIR)/helloworld \
 	$(EXEDIR)/shell \
 	$(EXEDIR)/dir \
 	$(EXEDIR)/wait \
-	$(EXEDIR)/forkbomb
+	$(EXEDIR)/forkbomb \
+	$(EXEDIR)/openwin
 
 all: setup $(EXES)
 
