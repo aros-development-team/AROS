@@ -494,17 +494,17 @@ STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 
     UWORD text_left, text_right;
     
-    UWORD mousex;
+    WORD mousex;
     window = sgw->GadgetInfo->gi_Window;
     
     GetGadgetDomain(sgw->Gadget, window->WScreen, window, NULL, (struct IBox *)&bbox);
-    mousex = sgw->IEvent->ie_position.ie_xy.ie_x - window->LeftEdge - bbox.Left;
+    mousex = window->MouseX - bbox.Left;
     
     EnterFunc(bug("DoSGHClick(sgw=%p)\n", sgw));
     
     D(bug("Gadget text: %s\n", sgw->WorkBuffer));
 
-    rp	    =  sgw->GadgetInfo->gi_RastPort;
+    rp	    = sgw->GadgetInfo->gi_RastPort;
     oldfont = rp->Font;    
     gad     = sgw->Gadget;
     strinfo = (struct StringInfo *)gad->SpecialInfo;
@@ -982,7 +982,7 @@ VOID UpdateStrGadget(struct Gadget	*gad,
     if (!rp) return;
 
     CalcBBox(win, gad, &bbox);
-    
+
     /* Update the stringinfo struct in case of user change */
     UpdateStringInfo(gad);
     
