@@ -65,8 +65,6 @@ extern struct Library *CxBase;
 
 ******************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-
     struct InputEvent *ieChain;
     struct InputEvent *ie;
     struct InputEvent *first;
@@ -123,7 +121,7 @@ extern struct Library *CxBase;
 		FreeIEvents(first);
 		return NULL;
 	    }
-	    
+
 	    ie->ie_Class     = ix->ix_Class;
 	    ie->ie_Code      = ix->ix_Code;
 	    ie->ie_Qualifier = ix->ix_Qualifier;
@@ -149,8 +147,6 @@ extern struct Library *CxBase;
 	
 	ieChain = ie;
     }
-    
+
     return first;
-    
-    AROS_LIBFUNC_EXIT
 } /* InvertString */

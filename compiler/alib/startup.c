@@ -61,6 +61,8 @@ AROS_UFH3(LONG, entry,
     AROS_UFHA(struct ExecBase *,sysbase,A6)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct Process *myproc;
 
     SysBase = sysbase;
@@ -114,6 +116,8 @@ AROS_UFH3(LONG, entry,
     CloseLibrary((struct Library *)DOSBase);
 
     return __startup_error;
+
+    AROS_USERFUNC_EXIT
 } /* entry */
 
 /* if the programmer hasn't defined a symbol with the name __nocommandline

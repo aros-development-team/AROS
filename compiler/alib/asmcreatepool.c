@@ -43,6 +43,7 @@
 
 *****************************************************************************/
 {
-    return CreatePool(MemFlags, PuddleSize, ThreshSize);	
-    
+    AROS_USERFUNC_INIT
+    return CreatePool(MemFlags, PuddleSize, ThreshSize);
+    AROS_USERFUNC_EXIT
 } /* AsmCreatePool */
