@@ -75,40 +75,40 @@ typedef unsigned long (*ULONG_FUNC)();
 
 #if !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) /* Function headers for user functions */
 #define AROS_UFH0(t,n) \
-    __AROS_UFH_PREFIX t n (void)
+    __AROS_UFH_PREFIX t n (void) {
 #define AROS_UFH1(t,n,a1) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1)\
-    )
+    ) {
 #define AROS_UFH2S(t,n,a1,a2) \
     __AROS_UFH_PREFIX static t n (\
     __AROS_UFHA(a1),\
     __AROS_UFHA(a2)\
-    )
+    ) {
 #define AROS_UFH2(t,n,a1,a2) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\
     __AROS_UFHA(a2)\
-    )
+    ) {
 #define AROS_UFH3(t,n,a1,a2,a3) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\
     __AROS_UFHA(a2),\
     __AROS_UFHA(a3)\
-    )
+    ) {
 #define AROS_UFH3S(t,n,a1,a2,a3) \
     __AROS_UFH_PREFIX static t n (\
     __AROS_UFHA(a1),\
     __AROS_UFHA(a2),\
     __AROS_UFHA(a3)\
-    )
+    ) {
 #define AROS_UFH4(t,n,a1,a2,a3,a4) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\
     __AROS_UFHA(a2),\
     __AROS_UFHA(a3),\
     __AROS_UFHA(a4)\
-    )
+    ) {
 #define AROS_UFH5(t,n,a1,a2,a3,a4,a5) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\
@@ -116,7 +116,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_UFHA(a3),\
     __AROS_UFHA(a4),\
     __AROS_UFHA(a5)\
-    )
+    ) {
 #define AROS_UFH5S(t,n,a1,a2,a3,a4,a5) \
     __AROS_UFH_PREFIX static t n (\
     __AROS_UFHA(a1),\
@@ -124,7 +124,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_UFHA(a3),\
     __AROS_UFHA(a4),\
     __AROS_UFHA(a5)\
-    )
+    ) {
 #define AROS_UFH6(t,n,a1,a2,a3,a4,a5,a6) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\
@@ -133,7 +133,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_UFHA(a4),\
     __AROS_UFHA(a5),\
     __AROS_UFHA(a6)\
-    )
+    ) {
 #define AROS_UFH7(t,n,a1,a2,a3,a4,a5,a6,a7) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\
@@ -143,7 +143,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_UFHA(a5),\
     __AROS_UFHA(a6),\
     __AROS_UFHA(a7)\
-    )
+    ) {
 #define AROS_UFH8(t,n,a1,a2,a3,a4,a5,a6,a7,a8) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\
@@ -154,7 +154,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_UFHA(a6),\
     __AROS_UFHA(a7),\
     __AROS_UFHA(a8)\
-    )
+    ) {
 #define AROS_UFH9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\
@@ -166,7 +166,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_UFHA(a7),\
     __AROS_UFHA(a8),\
     __AROS_UFHA(a9)\
-    )
+    ) {
 #define AROS_UFH10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\
@@ -179,7 +179,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_UFHA(a8),\
     __AROS_UFHA(a9),\
     __AROS_UFHA(a10)\
-    )
+    ) {
 #define AROS_UFH11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\
@@ -193,7 +193,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_UFHA(a9),\
     __AROS_UFHA(a10),\
     __AROS_UFHA(a11)\
-    )
+    ) {
 #define AROS_UFH12(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\
@@ -208,7 +208,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_UFHA(a10),\
     __AROS_UFHA(a11),\
     __AROS_UFHA(a12)\
-    )
+    ) {
 #define AROS_UFH13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\
@@ -224,7 +224,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_UFHA(a11),\
     __AROS_UFHA(a12),\
     __AROS_UFHA(a13)\
-    )
+    ) {
 #define AROS_UFH14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\
@@ -241,7 +241,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_UFHA(a12),\
     __AROS_UFHA(a13),\
     __AROS_UFHA(a14)\
-    )
+    ) {
 #define AROS_UFH15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\
@@ -259,7 +259,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_UFHA(a13),\
     __AROS_UFHA(a14),\
     __AROS_UFHA(a15)\
-    )
+    ) {
 
 /* Call a user function */
 #define AROS_UFC0(t,n) \
@@ -759,7 +759,7 @@ typedef unsigned long (*ULONG_FUNC)();
 #   define AROS_USERFUNC_INIT {
 #endif
 #ifndef AROS_USERFUNC_EXIT
-#   define AROS_USERFUNC_EXIT }
+#   define AROS_USERFUNC_EXIT }}
 #endif
 
 /******************************************************************************
