@@ -67,7 +67,7 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ide_Unit *unit)
     struct ExpansionBase *ExpansionBase;
     struct DeviceNode *devnode;
     ULONG *pp;
-    static int volnum = 0;
+    static int volnum;
     
     ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",
 							40L);
@@ -80,7 +80,7 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ide_Unit *unit)
 	{
 	    pp[0] = (ULONG)"afs.handler";
 	    pp[1] = (ULONG)name;
-	    pp[2] = 0;
+	    pp[2] = unit->au_UnitNumber;
 	    pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
 	    pp[DE_SIZEBLOCK + 4] = unit->au_SectSize/4;
 	    pp[DE_NUMHEADS + 4] = unit->au_Heads;
@@ -258,7 +258,7 @@ void strcp(char *dest, char *src, int num)
 
 struct ide_Unit *InitUnit(ULONG num, struct ideBase *ib)
 {
-    struct ide_Unit     *unit = NULL;
+    struct ide_Unit     *unit;
 
     /* Try to get memory for structure */
     unit = AllocMem(sizeof(struct ide_Unit), MEMF_PUBLIC | MEMF_CLEAR);
