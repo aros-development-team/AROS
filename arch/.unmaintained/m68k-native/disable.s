@@ -52,11 +52,11 @@
  
     INTERNALS
  	For old exec Disable() there exists an assembler macro replacement
- 	that is (of course) importable. Using a Disable() implementation
+ 	that is (of course) unportable. Using a Disable() implementation
  	equal to this macro would not only have some impact on Disable()
  	itself but also on other functions (e.g. Signal()).
  	Therefore I decided to drop support for this macro to a certain
- 	extend. The difference is only miniscule:
+ 	extent. The difference is only minuscule:
  	If a task uses the assembler macro and activates some higher priority
  	task he cannot expect this task to be awakened immediately at Enable()
  	but only at the next context switch. But I do not think that this

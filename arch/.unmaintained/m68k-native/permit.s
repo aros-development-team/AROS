@@ -58,7 +58,7 @@ AROS_SLIB_ENTRY(Permit,Exec):
 	bpl	end
 
 	/* Unset delayed switch bit and do the delayed switch */
-	bclr	#7,0x12b(a6)
+	bclr	#7,AttnResched+1(a6)
 	jsr    Switch(a6)
 
 	/* all done. */
