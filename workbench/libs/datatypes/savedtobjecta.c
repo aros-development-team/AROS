@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 #include <string.h>
@@ -69,10 +66,6 @@ STRPTR CreateIconName(STRPTR name, struct Library *DataTypesBase);
 
     INTERNALS
 
-    HISTORY
-
-    6.8.99   SDuvan  implemented
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -128,38 +121,18 @@ STRPTR CreateIconName(STRPTR name, struct Library *DataTypesBase);
 	return 0;
     }
 
-    if(saveicon == TRUE)
+    if (saveicon)
     {
-	struct DiskObject *dObj;
-	STRPTR             iconName = CreateIconName(file, DataTypesBase);
+	struct DiskObject *icon = GetDiskObjectNew(file);
 
-	dObj = GetDiskObjectNew(iconName);
-
-	if(dObj != NULL)
+	if(icon != NULL)
 	{
-	    PutDiskObject(iconName, dObj);
-	    FreeDiskObject(dObj);
+	    PutDiskObject(file, icon);
+	    FreeDiskObject(icon);
 	}
-
-        FreeVec(iconName);
     }    
 
     return ret;
 
     AROS_LIBFUNC_EXIT
-} /* SaveDTObjectA */
-
-
-STRPTR CreateIconName(STRPTR name, struct Library *DataTypesBase)
-{
-    ULONG  len;
-    STRPTR iconName;
-
-    len = strlen(name);
-    iconName = AllocVec(len + sizeof(".info"), MEMF_PUBLIC);
-
-    CopyMem(name, iconName, len);
-    CopyMem(".info", iconName + len, sizeof(".info"));
-
-    return iconName;
-}
+} /* SaveDTObjectA() */
