@@ -1,25 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.7  1997/01/01 03:46:11  ldp
-    Committed Amiga native (support) code
-
-    Changed clib to proto
-
-    Revision 1.6  1996/12/10 13:51:46  aros
-    Moved all #include's in the first column so makedepend can see it.
-
-    Revision 1.5  1996/10/24 15:50:51  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.4  1996/08/13 13:56:03  digulla
-    Replaced AROS_LA by AROS_LHA
-    Replaced some AROS_LH*I by AROS_LH*
-    Sorted and added includes
-
-    Revision 1.3  1996/08/01 17:41:12  digulla
-    Added standard header for all files
 
     Desc:
     Lang:
@@ -72,12 +53,12 @@
     AROS_LIBFUNC_INIT
 
     /* Check for validity */
-    if(resident->rt_MatchWord!=RTC_MATCHWORD||
-       resident->rt_MatchTag!=resident)
+    if(resident->rt_MatchWord != RTC_MATCHWORD ||
+       resident->rt_MatchTag != resident)
 	return NULL;
 
     /* Depending on the autoinit flag... */
-    if(resident->rt_Flags&RTF_AUTOINIT)
+    if(resident->rt_Flags & RTF_AUTOINIT)
     {
 	/* ...initialize automatically... */
 	struct init
@@ -87,25 +68,68 @@
 	    APTR structure;
 	    ULONG_FUNC init;
 	};
-	struct init *init=(struct init *)resident->rt_Init;
+	struct init *init = (struct init *)resident->rt_Init;
 	struct Library *library;
-	library=MakeLibrary(init->vectors,init->structure,
-			    init->init,init->dSize,segList);
-	if(library!=NULL)
+	library = MakeLibrary(init->vectors, init->structure,
+			      NULL, init->dSize, segList);
+
+	if(library != NULL)
 	{
-	    library->lib_Node.ln_Type=resident->rt_Type;
-	    library->lib_Node.ln_Name=resident->rt_Name;
-	    library->lib_Version     =resident->rt_Version;
-	    library->lib_IdString    =resident->rt_IdString;
+	    /*
+		Copy over the interesting stuff from the ROMtag, and set the
+		library state to indicate that this lib has changed and
+		should be checksummed at the next opportunity.
+	    */
+	    library->lib_Node.ln_Type = resident->rt_Type;
+	    library->lib_Node.ln_Name = resident->rt_Name;
+	    library->lib_Version      = resident->rt_Version;
+	    library->lib_IdString     = resident->rt_IdString;
+	    library->lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
+
+	    /*
+		Call the library init vector, if set.
+	    */
+	    if(init->init)
+	    {
+		library = AROS_UFC3(struct Library *, init->init,
+		    AROS_UFCA(struct Library *,  library, D0),
+		    AROS_UFCA(BPTR,              segList, A0),
+		    AROS_UFCA(struct ExecBase *, SysBase, A6)
+		);
+	    }
+
+	    /*
+		Test the library base, in case the init routine failed in
+		some way.
+	    */
+	    if(library != NULL)
+	    {
+		/*
+		    Add the initialized module to the system.
+		*/
+		switch(resident->rt_Type)
+		{
+		    case NT_DEVICE:
+			AddDevice((struct Device *)library);
+			break;
+		    case NT_LIBRARY:
+			AddLibrary(library);
+			break;
+		    case NT_RESOURCE:
+			AddResource(library);
+			break;
+		}
+	    }
 	}
+
 	return library;
     }
     else
 	/* ...or let the library do it. */
-	return AROS_UFC3(struct Library *,resident->rt_Init,
-	    AROS_UFCA(ULONG,0L,D0),
-	    AROS_UFCA(BPTR,segList,A0),
-	    AROS_UFCA(struct ExecBase *,SysBase,A6)
+	return AROS_UFC3(struct Library *, resident->rt_Init,
+	    AROS_UFCA(ULONG,             0L,      D0),
+	    AROS_UFCA(BPTR,              segList, A0),
+	    AROS_UFCA(struct ExecBase *, SysBase, A6)
 	);
 
     AROS_LIBFUNC_EXIT
