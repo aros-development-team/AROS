@@ -21,7 +21,7 @@ clean:
 
 $(OBJDIR)/%.o: %.c
 	$(SYS_CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	if test ! -s $*.err; then rm $*.err ; else true ; fi
+	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(LIBDIR)/%.o: %.c
 	$(SYS_CC) $(CFLAGS) -c $< -o $@

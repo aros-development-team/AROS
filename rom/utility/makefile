@@ -23,7 +23,7 @@ clean:
 
 $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	if test ! -s $*.err; then rm $*.err ; else true ; fi
+	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 utility_functable.c: $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
