@@ -15,11 +15,27 @@
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
+#ifndef EXEC_MEMORY_H
+#   include <exec/memory.h>
+#endif
+#ifndef INTUITION_CLASSES_H
+#   include <intuition/classes.h>
+#endif
+#ifndef INTUITION_INTUITIONBASE_H
+#   include <intuition/intuitionbase.h>
+#endif
+#ifndef GRAPHICS_GFXBASE_H
+#   include <graphics/gfxbase.h>
+#endif
 
 #ifdef _AROS
-#ifndef AROS_LIBCALL_H
-#   include <aros/libcall.h>
+#ifndef AROS_ASMCALL_H
+#   include <aros/asmcall.h>
 #endif
+#ifndef CLIB_BOOPSISTUBS_H
+#   include <clib/boopsistubs.h>
+#endif
+
 #else
 #define AROS_LIBFUNC_INIT
 #define AROS_LIBBASE_EXT_DECL(a,b) extern a b;
@@ -50,7 +66,10 @@ struct MUIMasterBase_intern
     BPTR			seglist;
 
     struct UtilityBase		*utilitybase;
-
+    struct Library  	    	*aslbase;
+    struct GfxBase  	    	*gfxbase;
+    struct IntuitionBase    	*intuibase;
+    
     struct SignalSemaphore ClassSempahore;
     struct IClass **Classes;
     int     ClassCount;
@@ -60,13 +79,22 @@ struct MUIMasterBase_intern
 /****************************************************************************************/
 
 #undef MUIMB
-#define MUIMB(b)		((struct MUIMasterBase_intern *)b)
+#define MUIMB(b)	((struct MUIMasterBase_intern *)b)
 
 #undef SysBase
-#define SysBase     (((struct MUIMasterBase_intern*)MUIMasterBase)->sysbase)
+#define SysBase     	(MUIMB(MUIMasterBase)->sysbase)
 
 #undef UtilityBase
-#define UtilityBase	(((struct MUIMasterBase_intern*)MUIMasterBase)->utilitybase)
+#define UtilityBase	(MUIMB(MUIMasterBase)->utilitybase)
+
+#undef AslBase
+#define AslBase     	(MUIMB(MUIMasterBase)->aslbase)
+
+#undef GfxBase
+#define GfxBase     	(MUIMB(MUIMasterBase)->gfxbase)
+
+#undef IntuitionBase
+#define IntuitionBase  	(MUIMB(MUIMasterBase)->intuibase)
 
 /****************************************************************************************/
 

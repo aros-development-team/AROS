@@ -23,6 +23,9 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 extern struct Library *MUIMasterBase;
 
@@ -120,7 +123,7 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->rows = 1;
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -207,7 +210,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 ** we do know. The best way should be using NextTagItem() and simply
 ** browsing through the list.
 */
-    while ((tag = NextTagItem(&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -310,10 +313,10 @@ static ULONG Group_AddMember(struct IClass *cl, Object *obj, struct opMember *ms
 
     /* if we are in an application tree, propagate pointers */
     if (muiNotifyData(obj)->mnd_GlobalInfo)
-	DoMethod(msg->opam_Object, MUIM_ConnectParent, obj);
+	DoMethod(msg->opam_Object, MUIM_ConnectParent, (IPTR)obj);
 
     if (_flags(obj) & MADF_SETUP)
-	DoMethod(msg->opam_Object, MUIM_Setup, muiRenderInfo(obj));
+	DoMethod(msg->opam_Object, MUIM_Setup, (IPTR)muiRenderInfo(obj));
     if (_flags(obj) & MADF_CANDRAW)
 	DoMethod(msg->opam_Object, MUIM_Show);
 
@@ -360,7 +363,7 @@ group_connect_childs (struct MUI_GroupData *data, Object *obj)
 		zune_imspec_copy(muiAreaData(obj)->mad_Background);
 	}
 #endif
-	DoMethod(child, MUIM_ConnectParent, obj);
+	DoMethod(child, MUIM_ConnectParent, (IPTR)obj);
     }
 }
 

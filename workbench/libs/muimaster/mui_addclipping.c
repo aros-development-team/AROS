@@ -8,6 +8,9 @@
 
 #include <proto/graphics.h>
 #include <proto/layers.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "support.h"
 
@@ -23,14 +26,14 @@ __asm APTR MUI_AddClipping(register __a0 struct MUI_RenderInfo *mri, register __
 	AROS_LH5(APTR, MUI_AddClipping,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MUI_RenderInfo, mri, A0),
+	AROS_LHA(struct MUI_RenderInfo *, mri, A0),
 	AROS_LHA(WORD, left, D0),
 	AROS_LHA(WORD, top, D1),
 	AROS_LHA(WORD, width, D2),
 	AROS_LHA(WORD, height, D3),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 24, MUIMaster)
+	struct Library *, MUIMasterBase, 24, MUIMaster)
 #endif
 
 /*  FUNCTION

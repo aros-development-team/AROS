@@ -7,6 +7,9 @@
 */
 
 #include <proto/intuition.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -17,14 +20,14 @@
 #ifndef _AROS
 __asm Object *MUI_NewObjectA(register __a0 char *classname,register __a1 struct TagItem *tags)
 #else
-	AROS_LH2(ULONG, MUI_NewObjectA,
+	AROS_LH2(Object *, MUI_NewObjectA,
 
 /*  SYNOPSIS */
 	AROS_LHA(char *, classname, A0),
 	AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 5, MUIMaster)
+	struct Library *, MUIMasterBase, 5, MUIMaster)
 #endif
 /*  FUNCTION
 

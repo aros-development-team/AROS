@@ -23,6 +23,9 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "mui.h"
 
@@ -102,7 +105,7 @@ static ULONG mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     /*
      * parse initial taglist
      */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	if (tag->ti_Tag == MUIA_Family_Child)
 	{
@@ -229,8 +232,8 @@ static ULONG
 mRemove(struct IClass *cl, Object *obj,
 			   struct MUIP_Family_Remove *msg)
 {
-    struct MUI_FamilyData *data = INST_DATA(cl, obj);
-    struct Node *node;
+    /* struct MUI_FamilyData *data = INST_DATA(cl, obj);
+    struct Node *node; */
 
     if (msg->obj)
     {
@@ -272,8 +275,8 @@ static ULONG mTransfer(struct IClass *cl, Object *obj, struct MUIP_Family_Transf
 
     while ((child = NextObject(&cstate)))
     {
-	DoMethod(obj, MUIM_Family_Remove, child);
-	DoMethod(msg->family, MUIM_Family_AddTail, child);
+	DoMethod(obj, MUIM_Family_Remove, (IPTR)child);
+	DoMethod(msg->family, MUIM_Family_AddTail, (IPTR)child);
     }
     return TRUE;
 }

@@ -6,6 +6,10 @@
     Lang: english
 */
 
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
+
 #include "mui.h"
 #include "muimaster_intern.h"
 
@@ -22,7 +26,7 @@ __asm VOID MUI_RemoveClipping(register __a0 struct MUI_RenderInfo *mri, register
 	AROS_LHA(APTR, handle, A1),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 25, MUIMaster)
+	struct Library *, MUIMasterBase, 25, MUIMaster)
 #endif
 /*  FUNCTION
 

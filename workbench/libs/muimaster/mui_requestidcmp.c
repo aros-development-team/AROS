@@ -6,6 +6,10 @@
     Lang: english
 */
 
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
+
 #include <intuition/classusr.h>
 
 #include "muimaster_intern.h"
@@ -23,7 +27,7 @@ __asm VOID MUI_RequestIDCMP(register __a0 Object *obj, register __d0 ULONG flags
 	AROS_LHA(ULONG, flags, D0),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 15, MUIMaster)
+	struct Library *, MUIMasterBase, 15, MUIMaster)
 #endif
 /*  FUNCTION
 

@@ -23,6 +23,9 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #define MYDEBUG 1
 #include "debug.h"
@@ -234,7 +237,7 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -337,7 +340,7 @@ static ULONG mSet(struct IClass *cl, Object *obj, struct opSet *msg)
     ** we do know. The best way should be using NextTagItem() and simply
     ** browsing through the list.
     */
-    while ((tag = NextTagItem(&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -441,7 +444,7 @@ static ULONG mAddMember(struct IClass *cl, Object *obj, struct opMember *msg)
 
     DoMethodA(data->app_WindowFamily, (Msg)msg);
     /* Application knows its GlobalInfo, so we can inform window */
-    DoMethod(msg->opam_Object, MUIM_ConnectParent, obj);
+    DoMethod(msg->opam_Object, MUIM_ConnectParent, (IPTR)obj);
     return TRUE;
 }
 
@@ -485,6 +488,7 @@ static ULONG mIconify(struct IClass *cl, Object *obj, Msg *msg)
     return TRUE;
 }
 
+void _zune_window_message(struct IntuiMessage *imsg); /* from window.c */
 
 /*
  * MUIM_Application_InputBuffered : process all pending events

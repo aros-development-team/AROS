@@ -8,6 +8,9 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "support.h"
 #include "mui.h"
@@ -28,7 +31,7 @@ int isRegionWithinBounds(struct Region *r, int left, int top, int width, int hei
 /**************************************************************************
  ...
 **************************************************************************/
-struct IClass *GetPublicClass(CONST_STRPTR className, struct MUIMasterBase *mb)
+struct IClass *GetPublicClass(CONST_STRPTR className, struct Library *mb)
 {
     struct IClass *cl;
     int i;
@@ -47,7 +50,7 @@ struct IClass *GetPublicClass(CONST_STRPTR className, struct MUIMasterBase *mb)
 /**************************************************************************
  ...
 **************************************************************************/
-BOOL DestroyClasses(struct MUIMasterBase *MUIMasterBase)
+BOOL DestroyClasses(struct Library *MUIMasterBase)
 {
     int i;
 
@@ -107,10 +110,10 @@ static const struct __MUIBuiltinClass *builtins[] =
  */
 
 #ifdef _AROS
-AROS_UFP3(IPTR, metaDispatcher,
-	AROS_UFPA(struct IClass  *, cl,  A0),
-	AROS_UFPA(Object *, obj, A2),
-	AROS_UFPA(Msg     , msg, A1))
+AROS_UFH3(IPTR, metaDispatcher,
+	AROS_UFHA(struct IClass  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1))
 {
     return AROS_UFC4(IPTR, cl->cl_Dispatcher.h_SubEntry,
         AROS_UFPA(Class  *, cl,  A0),
@@ -136,7 +139,7 @@ __asm ULONG metaDispatcher(register __a0 struct IClass *cl, register __a2 Object
  Given the builtin class, construct the
  class and make it public (because of the fake lib base).
 **************************************************************************/
-static struct IClass *builtin_to_public_class(const struct __MUIBuiltinClass *desc, struct MUIMasterBase *MUIMasterBase)
+static struct IClass *builtin_to_public_class(const struct __MUIBuiltinClass *desc, struct Library *MUIMasterBase)
 {
     struct IClass *cl;
     struct IClass *superClassPtr;
@@ -155,7 +158,7 @@ static struct IClass *builtin_to_public_class(const struct __MUIBuiltinClass *de
             return NULL;
     }
 
-    if (!(cl = MakeClass(desc->name, superClassID, superClassPtr, desc->datasize, 0)))
+    if (!(cl = MakeClass((STRPTR)desc->name, (STRPTR)superClassID, superClassPtr, desc->datasize, 0)))
 	return NULL;
 
     cl->cl_Dispatcher.h_Entry = (HOOKFUNC)metaDispatcher;
@@ -168,7 +171,7 @@ static struct IClass *builtin_to_public_class(const struct __MUIBuiltinClass *de
 /**************************************************************************
  Create a builtin class and all its superclasses.
 **************************************************************************/
-struct IClass *CreateBuiltinClass(CONST_STRPTR className, struct MUIMasterBase *MUIMasterBase)
+struct IClass *CreateBuiltinClass(CONST_STRPTR className, struct Library *MUIMasterBase)
 {
     int i;
 

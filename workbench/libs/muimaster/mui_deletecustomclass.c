@@ -8,6 +8,9 @@
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -25,7 +28,7 @@ __asm BOOL MUI_DeleteCustomClass(register __a0 struct MUI_CustomClass *mcc)
 	AROS_LHA(struct MUI_CustomClass *, mcc, A0),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 19, MUIMaster)
+	struct Library *, MUIMasterBase, 19, MUIMaster)
 #endif
 /*  FUNCTION
 

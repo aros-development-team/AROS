@@ -6,6 +6,10 @@
     Lang: english
 */
 
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
+
 #include "muimaster_intern.h"
 
 /*****************************************************************************
@@ -20,7 +24,7 @@ __asm LONG MUI_SetError(register __d0 LONG num)
 	AROS_LHA(LONG, num, D0),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 12, MUIMaster)
+	struct Library *, MUIMasterBase, 12, MUIMaster)
 #endif
 /*  FUNCTION
 

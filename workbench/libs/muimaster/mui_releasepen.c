@@ -7,6 +7,9 @@
 */
 
 #include <proto/graphics.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -27,7 +30,7 @@ __asm VOID MUI_ReleasePen(register __a0 struct MUI_RenderInfo *mri, register __d
 	AROS_LHA(LONG, pen, D0),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 23, MUIMaster)
+	struct Library *, MUIMasterBase, 23, MUIMaster)
 #endif
 /*  FUNCTION
 

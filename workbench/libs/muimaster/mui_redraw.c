@@ -8,6 +8,9 @@
 
 #include <clib/alib_protos.h>
 #include <intuition/classusr.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "muimaster_intern.h"
 #include "mui.h"
@@ -21,11 +24,11 @@ __asm VOID MUI_Redraw(register __a0 Object *obj, register __d0 ULONG flags)
 	AROS_LH2(VOID, MUI_Redraw,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object, obj, A0),
+	AROS_LHA(Object *, obj, A0),
 	AROS_LHA(ULONG, flags, D0),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 17, MUIMaster)
+	struct Library *, MUIMasterBase, 17, MUIMaster)
 #endif
 /*  FUNCTION
 

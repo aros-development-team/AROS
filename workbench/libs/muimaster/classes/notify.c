@@ -25,6 +25,9 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "muimaster_intern.h"
 #include "mui.h"
@@ -133,7 +136,7 @@ static ULONG mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
-    while ((tag = NextTagItem(&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -251,7 +254,7 @@ static ULONG mSet(struct IClass *cl, Object *obj, struct opSet *msg)
     ** we do know. The best way should be using NextTagItem() and simply
     ** browsing through the list.
     */
-    while ((tag = NextTagItem(&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -280,7 +283,7 @@ static ULONG mSet(struct IClass *cl, Object *obj, struct opSet *msg)
     if (data->mnd_NotifyList == NULL)
 	return TRUE;
     tags = msg->ops_AttrList;
-    while ((tag = NextTagItem(&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
 	for (node = data->mnd_NotifyList->mlh_Head; node->mln_Succ;
 	     node = node->mln_Succ)

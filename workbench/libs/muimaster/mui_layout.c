@@ -8,6 +8,9 @@
 
 #include <intuition/classusr.h>
 #include <clib/alib_protos.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -29,7 +32,7 @@ __asm BOOL MUI_Layout(register __a0 Object *obj,register __d1 LONG left,register
 	AROS_LHA(ULONG, two, D4),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 21, MUIMaster)
+	struct Library *, MUIMasterBase, 21, MUIMaster)
 #endif
 /*  FUNCTION
 

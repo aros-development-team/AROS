@@ -38,6 +38,13 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
+/* Global libbase vars */
+struct ExecBase *SysBase;
+struct Library *MUIMasterBase;
+
+struct ExecBase **SysBasePtr = &SysBase;
+struct Library  **MUIMasterBasePtr = &MUIMasterBase;
+
 #define SysBase			(LC_SYSBASE_FIELD(MUIMasterBase))
 
 /****************************************************************************************/
@@ -46,11 +53,29 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
 {
     D(bug("Inside Init func of muimaster.library\n"));
 
+    *SysBasePtr = SysBase;
+    *MUIMasterBasePtr = MUIMasterBase;
+    
     if (!UtilityBase)
         (struct Library *)UtilityBase = OpenLibrary("utility.library", 37);
     if (!UtilityBase)
         return FALSE;
 
+    if (!AslBase)
+    	AslBase = OpenLibrary("asl.library", 37);
+    if (!AslBase)
+    	return FALSE;
+
+    if (!GfxBase)
+    	(struct Library *)GfxBase = OpenLibrary("graphics.library", 37);
+    if (!GfxBase)
+    	return FALSE;
+	
+    if (!IntuitionBase)
+    	(struct Library *)IntuitionBase = OpenLibrary("intuition.library", 37);
+    if (!IntuitionBase)
+    	return FALSE;
+	
     return TRUE;
 }
 
@@ -80,6 +105,15 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR MUIMasterBa
 
     CloseLibrary((struct Library *)UtilityBase);
     UtilityBase = NULL;
+    
+    CloseLibrary(AslBase);
+    AslBase = NULL;
+    
+    CloseLibrary((struct Library *)GfxBase);
+    GfxBase = NULL;
+    
+    CloseLibrary((struct Library *)IntuitionBase);
+    IntuitionBase = NULL;
 }
 
 /****************************************************************************************/

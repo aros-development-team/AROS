@@ -7,6 +7,9 @@
 */
 
 #include <intuition/classusr.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "muimaster_intern.h"
 
@@ -23,7 +26,7 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 ULONG *para
 	AROS_LHA(ULONG *, params, A0),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 20, MUIMaster)
+	struct Library *, MUIMasterBase, 20, MUIMaster)
 #endif
 
 /*  FUNCTION

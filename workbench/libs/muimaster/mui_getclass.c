@@ -8,6 +8,9 @@
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "muimaster_intern.h"
 #include "support.h"
@@ -24,7 +27,7 @@ __asm struct IClass *MUI_GetClass(register __a0 char *classname)
 	AROS_LHA(char *, classname, A0),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 13, MUIMaster)
+	struct Library *, MUIMasterBase, 13, MUIMaster)
 #endif
 /*  FUNCTION
 

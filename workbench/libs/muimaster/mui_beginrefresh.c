@@ -9,6 +9,9 @@
 #include <proto/graphics.h>
 #include <proto/layers.h>
 #include <proto/intuition.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -22,11 +25,11 @@ __asm BOOL MUI_BeginRefresh(register __a0 struct MUI_RenderInfo *mri, register _
 	AROS_LH2(ULONG, MUI_BeginRefresh,
 
 /*  SYNOPSIS */
-	AROS_LHA( struct MUI_RenderInfo *mri, mri, A0),
+	AROS_LHA( struct MUI_RenderInfo *, mri, A0),
 	AROS_LHA(ULONG, flags, D0),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 28, MUIMaster)
+	struct Library *, MUIMasterBase, 28, MUIMaster)
 #endif
 /*  FUNCTION
 

@@ -7,6 +7,9 @@
 */
 
 #include <proto/intuition.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "muimaster_intern.h"
 
@@ -19,10 +22,10 @@ __asm VOID MUI_DisposeObject(register __a0 Object *obj)
 	AROS_LH1(VOID, MUI_DisposeObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object, *obj, A0),
+	AROS_LHA(Object *, obj, A0),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 6, MUIMaster)
+	struct Library *, MUIMasterBase, 6, MUIMaster)
 #endif
 /*  FUNCTION
 

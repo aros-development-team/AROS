@@ -7,6 +7,9 @@
 */
 
 #include "muimaster_intern.h"
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 /*****************************************************************************
 
@@ -19,7 +22,7 @@ __asm LONG MUI_Error(VOID)
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 11, MUIMaster)
+	struct Library *, MUIMasterBase, 11, MUIMaster)
 #endif
 /*  FUNCTION
 
