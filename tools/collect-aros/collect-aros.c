@@ -180,13 +180,13 @@ int main(int argc, char *argv[])
 
     if (!OBJDUMPPATH)
     {
-        fprintf(stderr, "%s: AROS_TARGET_OBJDUMPPATH variable not set, using default value /usr/bin/ld\n", argv[0]);
+        fprintf(stderr, "%s: AROS_TARGET_OBJDUMPPATH variable not set, using default value /usr/bin/objdump\n", argv[0]);
         OBJDUMPPATH = "/usr/bin/objdump";
     }
 
     if (!NMPATH)
     {
-        fprintf(stderr, "%s: AROS_TARGET_NMPATH variable not set, using default value /usr/bin/ld\n", argv[0]);
+        fprintf(stderr, "%s: AROS_TARGET_NMPATH variable not set, using default value /usr/bin/nm\n", argv[0]);
         NMPATH = "/usr/bin/nm";
     }
 
