@@ -83,18 +83,18 @@
     /* Then try to load the different file formats */
     if (!segs)
     {
-      segs = InternalLoadSeg_AOS (fh, MKBADDR(NULL), functionarray, NULL, DOSBase);
-#if DEBUG > 1
-      if (segs)
-        bug("Loaded as AmigaOS exe\n");
-#endif
-    }
-    if (!segs && IoErr()!=ERROR_NO_FREE_STORE)
-    {
       segs = InternalLoadSeg_ELF (fh, MKBADDR(NULL), functionarray, NULL, DOSBase);
 #if DEBUG > 1
       if (segs)
         bug("Loaded as ELF exe\n");
+#endif
+    }
+    if (!segs && IoErr()==ERROR_NOT_EXECUTABLE)
+    {
+      segs = InternalLoadSeg_AOS (fh, MKBADDR(NULL), functionarray, NULL, DOSBase);
+#if DEBUG > 1
+      if (segs)
+        bug("Loaded as AmigaOS exe\n");
 #endif
     }
     if (!segs && IoErr()!=ERROR_NO_FREE_STORE)
