@@ -48,8 +48,16 @@
     })	
 #define g_free FreeVec
 #else
-#define g_strdup(x) strdup(x)
-#define g_free(x) free(x);
+
+static char *g_strdup(char *x)
+{
+    char *dup;
+    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
+    if (dup) CopyMem((x), dup, strlen(x) + 1);
+    return dup;
+}
+
+#define g_free(x) FreeVec(x);
 #endif
 
 extern struct Library *MUIMasterBase;

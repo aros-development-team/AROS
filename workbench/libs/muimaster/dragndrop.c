@@ -30,7 +30,7 @@ ULONG IconControl( struct DiskObject *icon, ... )
 	return IconControlA(icon,(struct TagItem*)((((ULONG*)&icon)+1)));
 }
 
-struct DiskObject *GetIconTags( const STRPTR name, ... )
+struct DiskObject *GetIconTags( CONST_STRPTR name, ... )
 {
 	return GetIconTagList(name,(struct TagItem*)(((ULONG*)&name)+1));
 }

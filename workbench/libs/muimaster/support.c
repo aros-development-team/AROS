@@ -1,7 +1,9 @@
 #include <string.h>
 
 #ifndef _AROS
+#ifndef __MAXON__
 #include <dos.h>
+#endif
 #endif
 
 #include <intuition/classes.h>
@@ -10,6 +12,7 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/keymap.h>
+#include <proto/utility.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -141,6 +144,12 @@ AROS_UFH3(IPTR, metaDispatcher,
 }
 
 #else
+#ifdef __MAXON__
+__asm ULONG metaDispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
+{
+    return CallHookPkt(&cl->cl_Dispatcher,obj, msg);
+}
+#else
 __asm ULONG metaDispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
 {
     __asm ULONG (*entry)(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg) =
@@ -149,6 +158,7 @@ __asm ULONG metaDispatcher(register __a0 struct IClass *cl, register __a2 Object
     putreg(REG_A6,(long)cl->cl_Dispatcher.h_Data);
     return entry(cl,obj,msg);
 }
+#endif
 #endif
 
 
