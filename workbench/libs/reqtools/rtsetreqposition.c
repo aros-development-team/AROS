@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -17,6 +17,7 @@
 
 #include "reqtools_intern.h"
 #include "general.h"
+#include "rtfuncs.h"
 
 /*****************************************************************************
 

@@ -1,16 +1,14 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
+#include <proto/partition.h>
 #include "partition_support.h"
 #include "platform.h"
 
-#ifdef __AMIGAOS__
-extern void Partition_ClosePartitionTable(struct PartitionHandle *, struct Library *);
-#endif
 
 /*****************************************************************************
 
@@ -59,11 +57,12 @@ extern void Partition_ClosePartitionTable(struct PartitionHandle *, struct Libra
 	{
 	struct PTFunctionTable *handler = root->table->handler;
 
+#undef DestroyPartitionTable()
 		if (handler->DestroyPartitionTable)
 		{
 			retval = handler->DestroyPartitionTable(PartitionBase, root);
 			if (retval == 0)
-				Partition_ClosePartitionTable(root, PartitionBase);
+				ClosePartitionTable(root);
 		}
 	}
 	return retval;
