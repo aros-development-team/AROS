@@ -48,5 +48,7 @@
 #   warning TODO: Implement icon/PutIconTagList()
     aros_print_not_implemented("icon/PutIconTagList()");
     
+    return FALSE;
+    
     AROS_LIBFUNC_EXIT
 } /* PutIconTagList() */
