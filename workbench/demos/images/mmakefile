@@ -8,5 +8,5 @@ IMAGEFILES  := $(foreach f,$(IMAGES),$(f)0.h $(f)1.h)
 demo-setup : $(IMAGEFILES)
 
 %.h : %.dat datfilt.awk
-	gawk -f datfilt.awk $<
+	${AWK} -f datfilt.awk $<
 
