@@ -30,6 +30,8 @@
 #include <proto/utility.h>
 #include <proto/alib.h>
 
+#include <devices/timer.h>
+
 /* Unix includes */
 #define timeval sys_timeval /* We don't want the unix timeval to interfere with the AROS one */
 #include <sys/types.h>
@@ -133,6 +135,23 @@ AROS_UFH5 (void, SigIO_IntServer,
     AROS_USERFUNC_EXIT
 }
 
+
+#ifdef __linux__
+static int unixio_start_timer(struct timerequest * timerio)
+{
+    int rc = FALSE;
+    if (NULL != timerio) {
+        timerio->tr_node.io_Command = TR_ADDREQUEST;
+        timerio->tr_time.tv_secs    = 0;
+        timerio->tr_time.tv_micro   = 250000;
+        
+        SendIO(&timerio->tr_node);
+        rc = TRUE;
+    }
+    return rc;
+}
+#endif
+
 /******************
 **  UnixIO task  **
 ******************/
@@ -155,6 +174,23 @@ static void WaitForIO (void)
     ULONG rmask;
     int flags;
     pid_t my_pid = getpid();
+#ifdef __linux__
+    int terminals_write_counter = 0;
+    struct MsgPort * timer_port = NULL;
+    struct timerequest * timerio = NULL;
+#endif
+    /*
+     * Since the signal was allocated by other task, but really is mine
+     * I need to allocate it here 'manually'. Otherwise the CreateMsgPort()
+     * would get the wrong signal.
+     */
+    AllocSignal(ud->ud_Port -> mp_SigBit);
+
+#ifdef __linux__
+    timer_port = CreateMsgPort();
+    timerio = CreateIORequest(timer_port, sizeof(struct timerequest));
+    OpenDevice("timer.device", UNIT_VBLANK, &timerio->tr_node, 0);
+#endif
 
     NEWLIST (&waitList);
 
@@ -187,14 +223,33 @@ static void WaitForIO (void)
 #endif		    
 		    
 	    D(bug("wfio: Waiting for message or signal for task %s\n",ud->ud_WaitForIO->tc_Node.ln_Name));
-	    rmask = Wait ((ULONG) 1 << ud->ud_Port -> mp_SigBit | SIGBREAKF_CTRL_C);
-	    if (rmask & SIGBREAKF_CTRL_C)
+	    rmask = Wait ((ULONG) (1 << ud->ud_Port -> mp_SigBit) | 
+	                          (1 << timer_port  -> mp_SigBit) |
+	                          SIGBREAKF_CTRL_C);
+#ifdef __linux__
+	    if (rmask & 1 << timer_port -> mp_SigBit)
 	    {
-	        D(bug("wfio: Got signal\n"));
+	        /*
+	         * Must take the message from the timer port.
+	         * Will be sending it again.
+	         */
+	        GetMsg(timer_port);
+	        if (terminals_write_counter > 0) {
+	          //kprintf("RE STARTING TIMER! (%d)\n",terminals_write_counter);
+	          unixio_start_timer(timerio);
+	        } else {
+	          //kprintf("NOT RE STARTING TIMER!\n");
+	        }
 	    }
-	    else if (rmask & 1 << ud->ud_Port -> mp_SigBit)
+	    else
+#endif
+	    if (rmask & 1 << ud->ud_Port -> mp_SigBit)
 	    {
 	        D(bug("wfio: Got message\n"));
+	    }
+	    else if (rmask & SIGBREAKF_CTRL_C)
+	    {
+	        D(bug("wfio: Got signal\n"));
 	    }
 	}
 
@@ -208,7 +263,16 @@ static void WaitForIO (void)
 
 	      fcntl (msg->fd, F_SETOWN, my_pid);
 	      flags = fcntl (msg->fd, F_GETFL);
-	      fcntl (msg->fd, F_SETFL, flags | FASYNC);
+	      fcntl (msg->fd, F_SETFL, flags | FASYNC | O_NONBLOCK);
+#ifdef __linux__
+	      if (msg->mode & vHidd_UnixIO_Write &&
+	          msg->fd_type & vHidd_UnixIO_Terminal) {
+	          terminals_write_counter++;
+	          if (1 == terminals_write_counter) {
+	              unixio_start_timer(timerio);
+	          }
+	      }
+#endif
 	    }
 	    else
 	    {
@@ -222,6 +286,21 @@ static void WaitForIO (void)
 	      {
 	        if (umsg->fd == msg->fd)
 	        {
+#ifdef __linux__
+                  if (umsg->mode & vHidd_UnixIO_Write &&
+                      umsg->fd_type & vHidd_UnixIO_Terminal) {
+                      terminals_write_counter--;
+#if 0
+                      if (0 == terminals_write_counter) {
+                        if (!CheckIO(&timerio->tr_node)) 
+                          AbortIO(&timerio->tr_node);
+                        WaitIO(&timerio->tr_node);
+                        kprintf("KIIIIILLLED!\n");
+                      }
+#endif
+                  }
+#endif
+
 	          Remove((struct Node *)umsg);
 	          FreeMem(umsg, sizeof(struct uioMessage));
 	        }
@@ -248,7 +327,7 @@ static void WaitForIO (void)
 		FD_SET (msg->fd, &rfds);
 		rp = &rfds;
 	    }
-	    
+
 	    if (msg->mode & vHidd_UnixIO_Write)
 	    {
 		FD_SET (msg->fd, &wfds);
@@ -264,7 +343,7 @@ static void WaitForIO (void)
 	D(bug("\n"));
 
         tv.tv_sec  = 0;
-	tv.tv_usec = 0; /* stegerg: CHECKME, was 100000 */
+	tv.tv_usec = 0;
 
 	errno = 0; /* set errno to zero before select() call */
 	selecterr = select (maxfd+1, rp, wp, ep, &tv);
@@ -317,12 +396,16 @@ kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x (flags :
 			flags = fcntl (msg->fd, F_GETFL);
 			fcntl (msg->fd, F_SETFL, flags & ~FASYNC);
 		        ReplyMsg ((struct Message *)msg);
+#ifdef __linux__
+                        if (msg->mode & vHidd_UnixIO_Write)
+                            terminals_write_counter--;
+#endif
 		    } else {
 		        /*
 		         * Since I am supposed to keep the message
 		         * I cannot use ReplyMsg() on it, because that
 		         * would put it on the reply port's message port.
-g		         * So I am doing things 'manually' here what
+		         * So I am doing things 'manually' here what
 		         * ReplyMsg() does internally, except for putting
 		         * the message onto the message port.
 		         */
@@ -420,7 +503,7 @@ static IPTR unixio_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 static IPTR unixio_wait(OOP_Class *cl, OOP_Object *o, struct uioMsg *msg)
 {
     IPTR retval = 0UL;
-    struct UnixIOData *id = OOP_INST_DATA(cl, o);
+//    struct UnixIOData *id = OOP_INST_DATA(cl, o);
     struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
     struct MsgPort  * port = CreatePort(NULL, 0);
     struct uio_data *ud = (struct uio_data *)cl->UserData;
@@ -480,8 +563,9 @@ static IPTR unixio_asyncio(OOP_Class *cl, OOP_Object *o, struct uioMsgAsyncIO *m
 	*/
 
 	umsg->Message.mn_ReplyPort = port;
-	umsg->fd   = ((struct uioMsg *)msg)->um_Filedesc;
-	umsg->mode = ((struct uioMsg *)msg)->um_Mode;
+	umsg->fd      = ((struct uioMsg *)msg)->um_Filedesc;
+	umsg->fd_type = ((struct uioMsg *)msg)->um_Filedesc_Type;
+	umsg->mode    = ((struct uioMsg *)msg)->um_Mode;
 	umsg->callback = NULL;
 	umsg->callbackdata = NULL;
 
@@ -737,20 +821,22 @@ IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode, APTR callback, APTR callbac
      return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
 }
 
-IPTR Hidd_UnixIO_AsyncIO(HIDD *o, ULONG fd, struct MsgPort * port, ULONG mode, struct ExecBase * SysBase)
+IPTR Hidd_UnixIO_AsyncIO(HIDD *o, ULONG fd, ULONG fd_type, struct MsgPort * port, ULONG mode, struct ExecBase * SysBase)
 {
      static OOP_MethodID mid = 0UL;
      struct uioMsgAsyncIO p;
      
      if (!mid)
      	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_AsyncIO);
-     p.um_MethodID = mid;
-     p.um_Filedesc = fd;
-     p.um_ReplyPort= port;
-     p.um_Mode	   = mode;
+     p.um_MethodID      = mid;
+     p.um_Filedesc      = fd;
+     p.um_Filedesc_Type = fd_type;
+     p.um_ReplyPort     = port;
+     p.um_Mode	        = mode;
      
      return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
 }
+
 
 VOID Hidd_UnixIO_AbortAsyncIO(HIDD *o, ULONG fd, struct ExecBase * SysBase)
 {

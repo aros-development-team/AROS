@@ -26,6 +26,7 @@ struct uioMessage
 {
     struct Message Message;
     int 	   fd;
+    int            fd_type;
     int 	   mode;
     int 	   result;
     void *callback;
@@ -45,6 +46,7 @@ struct uioMsg
 {
     STACKULONG um_MethodID;
     STACKULONG um_Filedesc;
+    STACKULONG um_Filedesc_Type;
     STACKULONG um_Mode;
     APTR um_CallBack;
     APTR um_CallBackData;
@@ -54,6 +56,7 @@ struct uioMsgAsyncIO
 {
     STACKULONG um_MethodID;
     STACKULONG um_Filedesc;
+    STACKULONG um_Filedesc_Type;
     STACKULONG um_Mode;
     struct MsgPort * um_ReplyPort;
 };
@@ -71,10 +74,14 @@ struct uioMsgAbortAsyncIO
 #define vHidd_UnixIO_Abort	0x4
 #define vHidd_UnixIO_Keep       0x8
 
+/* Types of Filedescriptors */
+#define vHidd_UnixIO_Terminal   0x1
+#define vHidd_UnixIO_Socket     0x2
+
 /* Stubs */
 IPTR Hidd_UnixIO_Wait(HIDD *h, ULONG fd, ULONG mode, APTR callback,  APTR callbackdata, struct ExecBase *);
 HIDD *New_UnixIO(struct Library * /* OOPBase */, struct ExecBase *);
-IPTR Hidd_UnixIO_AsyncIO(HIDD *h, ULONG fd, struct MsgPort *port, ULONG mode, struct ExecBase *);
+IPTR Hidd_UnixIO_AsyncIO(HIDD *h, ULONG fd, ULONG fd_type, struct MsgPort *port, ULONG mode, struct ExecBase *);
 VOID Hidd_UnixIO_AbortAsyncIO(HIDD *h, ULONG fd, struct ExecBase *);
 
 #endif /* HIDD_UNIXIO_H */
