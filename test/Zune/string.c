@@ -76,11 +76,13 @@ void init_gui()
 	    End,
 	End,
     End;
+
     if (app == NULL)
     {
 	/* failed to initialize GUI */
 printf("Failed to intialize Zune GUI\n");
     }
+    set(app,MUIA_Window_DefaultObject, (IPTR)root);
     set(btproceed,MUIA_CycleChain,1);
     set(btabort,MUIA_CycleChain,1);
 
@@ -181,32 +183,29 @@ return retval;
 char *request_string(char *def)
 {
 char *retval, *string;
+char *out;
+BOOL running = TRUE;
+Object *st, *wc;
+ULONG val, sigs = 0;
 
     string = def;
-    {
-    char *out;
-    BOOL running = TRUE;
-    Object *st, *wc;
-    ULONG val, sigs = 0;
 
-	out = StrDup("test");
+    out = StrDup("test");
 
-	wc = VGroup,
-	Child, VGroup, GroupFrame,
-		    Child, TextObject,
-			MUIA_Text_Contents, (IPTR)(out),
-			MUIA_Text_Editable, FALSE,
-			MUIA_Text_Multiline, TRUE,
-		    End,
-		    Child, st  = StringObject,
-			StringFrame,
-			MUIA_String_Contents,	(IPTR)string,
-			MUIA_String_MaxLen,	128,
-			MUIA_String_AdvanceOnCR,TRUE,
-			MUIA_CycleChain,	TRUE,
-		    End,
-		End,
-	    End;
+    wc = VGroup, GroupFrame,
+	    Child, TextObject,
+		MUIA_Text_Contents, (IPTR)(out),
+		MUIA_Text_Editable, FALSE,
+		MUIA_Text_Multiline, TRUE,
+	    End,
+	    Child, st  = StringObject,
+		StringFrame,
+		MUIA_String_Contents,	(IPTR)string,
+		MUIA_String_MaxLen,	12,
+		MUIA_String_AdvanceOnCR,TRUE,
+		MUIA_CycleChain,	TRUE,
+	    End,
+	End;
 
 	if (wc)
 	{
@@ -230,12 +229,14 @@ char *retval, *string;
 
 	    }
 	    get(st, MUIA_String_Contents, (IPTR *)&string);
-
+	    retval = StrDup(string);
 	    DelContents(wc);
 	}
+	else
+	{
+	    retval = StrDup(string);
+	}
 	FreeVec(out);
-    }
-    retval = string;
 
 return retval;
 }
@@ -244,7 +245,7 @@ return retval;
 int main()
 {
 char *string;
-long int *intval;
+long int intval;
 
     init_gui();
 
@@ -252,6 +253,7 @@ long int *intval;
     {
 	string = request_string("blah");
 	printf("you entered string <%s>\n",string);
+	FreeVec(string);
 	if(quit) break;
 	intval = request_number(99);
 	printf("you entered number <%ld>\n",intval);
