@@ -3,6 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES	:=	vga vga-modes font_acorn_8x8 aros-logo
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
+AFLAGS2	:=	$(AFLAGS) -I../..
 
 #MM Drivers-native :
 Drivers-native : $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
@@ -20,7 +21,7 @@ clean ::
 	-$(RM) $(OBJDIR) *.err
 
 $(OBJDIR)/%.o : %.S
-	%assemble_q
+	%assemble_q opt=$(AFLAGS2)
 
 $(OBJDIR)/%.o : %.c
 	%compile_q
