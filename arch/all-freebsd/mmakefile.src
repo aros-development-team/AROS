@@ -36,7 +36,7 @@ setup-freebsd :
 
 
 #MM setup-exec-freebsd : setup-exec-unix setup-exec-i386
-setup-exec-freebsd : $(TOP)/config/unix/exec/sigcore.h
+setup-exec-freebsd : 
 	%add_objects rom/exec/init
 
 #MM
