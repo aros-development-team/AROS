@@ -9,140 +9,141 @@
 
 #ifdef _AROS
 #include <libraries/locale.h>
-extern struct ReqToolsBase *ReqToolsBase;
+extern struct ReqToolsBase 	*ReqToolsBase;
 #endif
 
-extern struct Window	*WindowPtr;
-extern struct Hook	IntuiHook;
+extern struct Window		*WindowPtr;
+extern struct Hook		IntuiHook;
 
 #ifdef _AROS
-struct LocaleBase *LocaleBase;
+struct LocaleBase		*LocaleBase;
 #define LOCALECAST (struct LocaleBase *)
 #else
-struct Library	*LocaleBase;
+struct Library			*LocaleBase;
 #define LOCALECAST
 #endif
-struct Catalog	*Catalog;
+struct Catalog			*Catalog;
 
 
 VOID
 InitLocale( VOID )
 {
-	if( ( LocaleBase = LOCALECAST OpenLibrary( "locale.library", 0 ) ) )
-	{
-		Catalog = OpenCatalogA( NULL, "reqtoolsprefs.catalog", NULL );
-	}
+    if( ( LocaleBase = LOCALECAST OpenLibrary( "locale.library", 0 ) ) )
+    {
+	Catalog = OpenCatalogA( NULL, "reqtoolsprefs.catalog", NULL );
+    }
 }
 
 
 VOID
 FreeLocale( VOID )
 {
-	if( LocaleBase )
-	{
-		CloseCatalog( Catalog );
-		CloseLibrary( (struct Library *)LocaleBase );
-	}
+    if( LocaleBase )
+    {
+	CloseCatalog( Catalog );
+	CloseLibrary( (struct Library *)LocaleBase );
+    }
 }
 
 
 STRPTR
 GetString( STRPTR idstr )
 {
-	STRPTR local;
+    STRPTR local;
 
-	local = idstr + 2;
+    local = idstr + 2;
 
-	if( LocaleBase )
-	{
-		return( ( STRPTR ) GetCatalogStr( Catalog, ( ( UBYTE ) idstr[ 0 ] << 8 ) | idstr[ 1 ], local ) );
-	}
+    if( LocaleBase )
+    {
+	return( ( STRPTR ) GetCatalogStr( Catalog, ( ( UBYTE ) idstr[ 0 ] << 8 ) | idstr[ 1 ], local ) );
+    }
 
-	return( local );
+    return( local );
 }
 
 VOID
 LocalizeMenus( struct NewMenu *nm )
 {
-	STRPTR	local;
+    STRPTR local;
 
-	while( nm->nm_Type != NM_END )
+    while( nm->nm_Type != NM_END )
+    {
+	if( nm->nm_Label && ( nm->nm_Label != NM_BARLABEL ) )
 	{
-		if( nm->nm_Label && ( nm->nm_Label != NM_BARLABEL ) )
+	    local = GetString( nm->nm_Label );
+
+	    if( nm->nm_Type != NM_TITLE )
+	    {
+		if( *local != ' ' )
 		{
-			local = GetString( nm->nm_Label );
-
-			if( nm->nm_Type != NM_TITLE )
-			{
-				if( *local != ' ' )
-				{
-					nm->nm_CommKey = local;
-				}
-
-				local += 2;
-			}
-
-			nm->nm_Label = local;
+		    nm->nm_CommKey = local;
 		}
 
-		++nm;
+		local += 2;
+	    }
+
+	    nm->nm_Label = local;
 	}
+
+	++nm;
+    }
 }
 
 
 VOID
 LocalizeLabels( STRPTR *labels )
 {
-	STRPTR	local;
+    STRPTR local;
 
-	while( *labels )
-	{
-		local = GetString( *labels );
-		*labels++ = local;
-	}
+    while( *labels )
+    {
+	local = GetString( *labels );
+	*labels++ = local;
+    }
 }
 
 
 
-static struct EasyStruct	EZ;
+static struct EasyStruct EZ;
 
 
 ULONG
 EasyReq( STRPTR str, STRPTR gadtxt, APTR args )
 {
-	if( ReqToolsBase )
+    if( ReqToolsBase )
+    {
+	struct TagItem tags[] =
 	{
-		struct TagItem tags[] =
-		{
-			{RT_Window	, (IPTR)WindowPtr	},
-			{RT_LockWindow	, WindowPtr != NULL	},
-			{RT_ShareIDCMP	, WindowPtr != NULL	},
-			{RT_IntuiMsgFunc, (IPTR)&IntuiHook	},
-			{TAG_DONE				}
-		
-		};
-		
-		return( rtEZRequestA( str, gadtxt, NULL, args, tags) );
-	}
+	    {RT_Window		, (IPTR)WindowPtr	},
+	    {RT_LockWindow	, WindowPtr != NULL	},
+	    {RT_ShareIDCMP	, WindowPtr != NULL	},
+	    {RT_IntuiMsgFunc	, (IPTR)&IntuiHook	},
+	    {TAG_DONE					}
 
-	EZ.es_StructSize = sizeof( struct EasyStruct );
-	EZ.es_Title = GetString( MSG_INFORMATION );
-	EZ.es_TextFormat = str;
-	EZ.es_GadgetFormat = gadtxt;
-	return( ( ULONG ) EasyRequestArgs( NULL, &EZ, NULL, args ) );
+	};
+
+	return( rtEZRequestA( str, gadtxt, NULL, args, tags) );
+    }
+
+    EZ.es_StructSize = sizeof( struct EasyStruct );
+    EZ.es_Title = GetString( MSG_INFORMATION );
+    EZ.es_TextFormat = str;
+    EZ.es_GadgetFormat = gadtxt;
+    
+    return( ( ULONG ) EasyRequestArgs( NULL, &EZ, NULL, args ) );
 }
 
 
 ULONG
 LocEZReq( STRPTR str, STRPTR gadtxt, ... )
 {
-	return( EasyReq( GetString( str ), GetString( gadtxt ), &gadtxt + 1 ) );
+    return( EasyReq( GetString( str ), GetString( gadtxt ), &gadtxt + 1 ) );
 }
 
 ULONG
 EZReq( STRPTR str, STRPTR gadtxt, ... )
 {
-	return( EasyReq( str, gadtxt, &gadtxt + 1 ) );
+    return( EasyReq( str, gadtxt, &gadtxt + 1 ) );
 }
 
 
