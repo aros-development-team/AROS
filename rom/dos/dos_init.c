@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/10/23 14:23:06  aros
+    Use LIB_VECTSIZE over sizeof(struct JumpVec)
+
     Revision 1.7  1996/09/17 18:40:21  digulla
     Only one global DOSBase to avoid multiple opens without close
     InitSemaphore() needs SysBase
@@ -30,6 +33,7 @@
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <exec/execbase.h>
+#include <exec/libraries.h>
 #include <clib/exec_protos.h>
 #include <aros/libcall.h>
 #include <dos/dosextens.h>
@@ -118,12 +122,12 @@ __AROS_LH2(struct DosLibrary *, init,
 
 	if(DOSBase->dl_LDDemon!=NULL)
 	{
-	    (void)SetFunction(&SysBase->LibNode,-92*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(OpenLibrary,Dos));
-	    (void)SetFunction(&SysBase->LibNode,-74*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(OpenDevice,Dos));
-	    (void)SetFunction(&SysBase->LibNode,-69*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(CloseLibrary,Dos));
-	    (void)SetFunction(&SysBase->LibNode,-75*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(CloseDevice,Dos));
-	    (void)SetFunction(&SysBase->LibNode,-67*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(RemLibrary,Dos));
-	    (void)SetFunction(&SysBase->LibNode,-73*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(RemLibrary,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-92*LIB_VECTSIZE,__AROS_SLIB_ENTRY(OpenLibrary,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-74*LIB_VECTSIZE,__AROS_SLIB_ENTRY(OpenDevice,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-69*LIB_VECTSIZE,__AROS_SLIB_ENTRY(CloseLibrary,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-75*LIB_VECTSIZE,__AROS_SLIB_ENTRY(CloseDevice,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-67*LIB_VECTSIZE,__AROS_SLIB_ENTRY(RemLibrary,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-73*LIB_VECTSIZE,__AROS_SLIB_ENTRY(RemLibrary,Dos));
 
 	    DOSBase->dl_LDHandler.is_Node.ln_Name="lib & dev loader demon";
 	    DOSBase->dl_LDHandler.is_Node.ln_Pri=0;
