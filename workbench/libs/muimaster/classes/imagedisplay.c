@@ -153,9 +153,9 @@ static IPTR Imagedisplay_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     struct MUI_ImagedisplayData *data = INST_DATA(cl, obj);
     switch (msg->opg_AttrID)
     {
-	case    MUIA_Imagedisplay_Spec:
-		*msg->opg_Storage = (ULONG)data->spec;
-	        break;
+	case MUIA_Imagedisplay_Spec:
+	    *msg->opg_Storage = (ULONG)data->spec;
+	    return(TRUE);
     }
 
     return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
