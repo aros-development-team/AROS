@@ -107,9 +107,13 @@
     DosDoIO(&iofs.IOFS);
 
     /* Set error code and return */
-    SetIoErr(iofs.io_DosError);
-
-    return iofs.io_DosError == 0 ? DOSTRUE : DOSFALSE;
+    if (iofs.io_DosError != 0)
+    {
+        SetIoErr(iofs.io_DosError);
+	return DOSFALSE;
+    }
+    
+    return DOSTRUE;
 
     AROS_LIBFUNC_EXIT
 } /* ChangeMode */
