@@ -422,7 +422,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			    break;
 			}
 
-			if (!gadget)
+			if (!gadget && IntuitionBase->ActiveScreen)
 			{
   			    gadget = FindGadget (IntuitionBase->ActiveScreen,
 		    				 w,
