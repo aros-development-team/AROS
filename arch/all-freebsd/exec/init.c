@@ -65,7 +65,12 @@ static const struct Resident *romtagList[] =
     &Expansion_resident,                    /* SingleTask,  110  */
     &Exec_resident,                         /* SingleTask,  105  */
     &Utility_resident,                      /* ColdStart,   103  */
+    &Mathieeesingbas_resident,              /* ColdStart,   101  */
     &Aros_resident,			    /* ColdStart,   102  */
+    &Mathieeesingbas_resident,              /* ColdStart,   101  */
+#if 0
+    &BOOPSI_resident,                       /* ColdStart,   95   */
+#endif
     &OOP_resident,			    /* ColdStart,   ??	 */
     &HIDD_resident,			    /* ColdStart,   92   */
     &UnixIO_resident,			    /* ColdStart,   91   */
