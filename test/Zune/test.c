@@ -351,7 +351,7 @@ int main(void)
 		            GA_Height   , 0,
 		            ICA_TARGET  , ICTARGET_IDCMP, /* needed for notification */
 		            WHEEL_Saturation, 0, /* start in the center */
-		            MUIA_FillArea, TRUE, /* use this because it defaults to FALSE 
+		            MUIA_FillArea, TRUE, /* use this because it defaults to FALSE
 					        for boopsi gadgets but the colorwheel
 					        doesnt bother about redrawing its backgorund */
 		            End,
@@ -440,6 +440,10 @@ int main(void)
 		    MUIA_String_AdvanceOnCR, TRUE,
 		    End,
 
+		Child, CycleObject,
+		    ButtonFrame,
+		    MUIA_Cycle_Entries, pages,
+		    End,
 		Child, ScrollbarObject,
 		    MUIA_Group_Horiz, TRUE,
 		    MUIA_Prop_Visible, 100,
