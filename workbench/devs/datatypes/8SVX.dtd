@@ -1,0 +1,10 @@
+# DataType Description for 8SVX
+Name=8SVX
+Version=$VER: ILBM 41.0 (17-Jul-2004)
+BaseName=8svx
+Pattern=#?
+Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY '8' 'S' 'V' 'X'
+GroupID=soun
+ID=8svx
+Flags=DTF_IFF
+Priority=0
