@@ -1501,12 +1501,15 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
 	DoMethod(obj, MUIM_Window_Cleanup);
 	return FALSE;
     }
+
+#if 0
     /* no frame/inner space for root object ! */
     muiAreaData(data->wd_RootObject)->mad_Frame = 0;
     _addleft(data->wd_RootObject) = 0;
     _addtop(data->wd_RootObject) = 0;
     _subwidth(data->wd_RootObject) = 0;
     _subheight(data->wd_RootObject) = 0;
+#endif
 
     /* inquire about sizes */
     window_minmax(obj,data);

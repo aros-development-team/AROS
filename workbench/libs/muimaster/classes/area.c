@@ -383,6 +383,7 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->mad_hiehn.ehn_Class    = 0;
 
     D(bug("muimaster.library/area.c: Area Object created at 0x%lx\n",obj));
+    D(bug("muimaster.library/area.c: frame %ld\n",data->mad_Frame));
 
     return (ULONG)obj;
 }
