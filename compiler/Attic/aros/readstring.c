@@ -7,12 +7,13 @@
 */
 #include <clib/dos_protos.h>
 #include <exec/memory.h>
+#include <clib/exec_protos.h>
 
 /******************************************************************************
 
     NAME */
 #include <stdio.h>
-#include <clib/exec_protos.h>
+#include <clib/alib_protos.h>
 
 	BOOL ReadString (
 

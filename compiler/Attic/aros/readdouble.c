@@ -11,9 +11,9 @@
 
     NAME */
 #include <stdio.h>
-#include <exec/types.h>
+#include <clib/alib_protos.h>
 
-	BOOL ReadFloat (
+	BOOL ReadDouble (
 
 /*  SYNOPSIS */
 	BPTR	 fh,
@@ -51,96 +51,33 @@
 ******************************************************************************/
 {
     ULONG   value[2];
+    UBYTE * ptr;
     ULONG * lptr;
-    LONG  c;
-
-    c = FGetC (fh);
-
-    if (c == EOF)
-	return FALSE;
+    LONG    c;
 
 #if AROS_BIG_ENDIAN
-    value[0] = c << 24;
-#else /* Little endian */
-    value[1] = c;
+    ptr = (UBYTE *)&value;
+#   define NEXT ++
+#else
+    ptr = ((UBYTE *)&value) + 3;
+#   define NEXT --
 #endif
 
-    c = FGetC (fh);
+#define READ_ONE_BYTE		    \
+    if ((c = FGetC (fh)) == EOF)    \
+	return FALSE;		    \
+				    \
+    *ptr NEXT = c
 
-    if (c == EOF)
-	return FALSE;
+    READ_ONE_BYTE;
+    READ_ONE_BYTE;
+    READ_ONE_BYTE;
+    READ_ONE_BYTE;
 
-#if AROS_BIG_ENDIAN
-    value[0] |= c << 16;
-#else /* Little endian */
-    value[1] |= c << 8;
-#endif
-
-    c = FGetC (fh);
-
-    if (c == EOF)
-	return FALSE;
-
-#if AROS_BIG_ENDIAN
-    value[0] |= c << 8;
-#else /* Little endian */
-    value[1] |= c << 16;
-#endif
-
-    c = FGetC (fh);
-
-    if (c == EOF)
-	return FALSE;
-
-#if AROS_BIG_ENDIAN
-    value[0] |= c;
-#else /* Little endian */
-    value[1] |= c << 24;
-#endif
-
-    c = FGetC (fh);
-
-    if (c == EOF)
-	return FALSE;
-
-#if AROS_BIG_ENDIAN
-    value[1] = c << 24;
-#else /* Little endian */
-    value[0] = c;
-#endif
-
-    c = FGetC (fh);
-
-    if (c == EOF)
-	return FALSE;
-
-#if AROS_BIG_ENDIAN
-    value[1] |= c << 16;
-#else /* Little endian */
-    value[0] |= c << 8;
-#endif
-
-    c = FGetC (fh);
-
-    if (c == EOF)
-	return FALSE;
-
-#if AROS_BIG_ENDIAN
-    value[1] |= c << 8;
-#else /* Little endian */
-    value[0] |= c << 16;
-#endif
-
-    c = FGetC (fh);
-
-    if (c == EOF)
-	return FALSE;
-
-#if AROS_BIG_ENDIAN
-    value[1] |= c;
-#else /* Little endian */
-    value[0] |= c << 24;
-#endif
+    READ_ONE_BYTE;
+    READ_ONE_BYTE;
+    READ_ONE_BYTE;
+    READ_ONE_BYTE;
 
     lptr = (ULONG *)dataptr;
     lptr[0] = value[0];

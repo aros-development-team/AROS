@@ -11,7 +11,7 @@
 
     NAME */
 #include <stdio.h>
-#include <exec/types.h>
+#include <clib/alib_protos.h>
 
 	BOOL ReadLong (
 
@@ -49,52 +49,28 @@
 
 ******************************************************************************/
 {
-    ULONG value;
-    LONG  c;
-
-    c = FGetC (fh);
-
-    if (c == EOF)
-	return FALSE;
+    ULONG   value;
+    LONG    c;
+    UBYTE * ptr;
 
 #if AROS_BIG_ENDIAN
-    value = c << 24;
-#else /* Little endian */
-    value = c;
+    ptr = (UBYTE *)&value;
+#   define NEXT ++
+#else
+    ptr = ((UBYTE *)&value) + 3;
+#   define NEXT --
 #endif
 
-    c = FGetC (fh);
+#define READ_ONE_BYTE		    \
+    if ((c = FGetC (fh)) == EOF)    \
+	return FALSE;		    \
+				    \
+    *ptr NEXT = c
 
-    if (c == EOF)
-	return FALSE;
-
-#if AROS_BIG_ENDIAN
-    value |= c << 16;
-#else /* Little endian */
-    value |= c << 8;
-#endif
-
-    c = FGetC (fh);
-
-    if (c == EOF)
-	return FALSE;
-
-#if AROS_BIG_ENDIAN
-    value |= c << 8;
-#else /* Little endian */
-    value |= c << 16;
-#endif
-
-    c = FGetC (fh);
-
-    if (c == EOF)
-	return FALSE;
-
-#if AROS_BIG_ENDIAN
-    value |= c;
-#else /* Little endian */
-    value |= c << 24;
-#endif
+    READ_ONE_BYTE;
+    READ_ONE_BYTE;
+    READ_ONE_BYTE;
+    READ_ONE_BYTE;
 
     *dataptr = value;
 
