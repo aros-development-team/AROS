@@ -177,8 +177,8 @@ static void MakeTasks(void)
 {
     maintask = FindTask(NULL);
     
-    task1 = CreateTask("Task 1", 0, Task1, 2048);
-    task2 = CreateTask("Task 2", 0, Task2, 2048);
+    task1 = CreateTask("Task 1", 0, Task1, AROS_STACKSIZE);
+    task2 = CreateTask("Task 2", 0, Task2, AROS_STACKSIZE);
     
     if (!task1 || !task2) Cleanup("Can't create tasks!");
    
