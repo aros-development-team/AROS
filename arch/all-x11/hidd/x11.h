@@ -126,6 +126,7 @@ struct x11_staticdata
     struct Library *oopbase;
     struct Library *utilitybase;
     struct ExecBase *sysbase;
+    struct Library *dosbase;
     
     Display *display;
     
@@ -185,7 +186,7 @@ VOID free_x11class	( struct x11_staticdata * );
 #define OOPBase		((struct Library *)XSD(cl)->oopbase)
 #define UtilityBase	((struct Library *)XSD(cl)->utilitybase)
 #define SysBase		(XSD(cl)->sysbase)
-
+#define DosBase		(XSD(cl)->dosbase)
 
 
 #define LX11 ObtainSemaphore (&XSD(cl)->x11sema);
