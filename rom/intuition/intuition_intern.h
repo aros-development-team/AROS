@@ -86,7 +86,7 @@ struct IntIntuitionBase
     int rom/inputhandler.c/InitIIH()
     */
     struct MsgPort	   * IntuiReplyPort;
-    
+    struct MsgPort	   * IntuiDeferedActionPort;
     struct IOStdReq	   * InputIO;
     struct MsgPort	   * InputMP;
     BOOL		     InputDeviceOpen;
@@ -257,7 +257,6 @@ inline struct IntuiMessage *alloc_intuimessage(struct IntuitionBase *IntuitionBa
 struct closeMessage
 {
     struct Message ExecMessage;
-    ULONG Class;
     UWORD Code;
     struct Window *Window;
     /* Task calling CloseWindow() */
@@ -297,6 +296,11 @@ struct IntWindow
     WORD ZipTopEdge;
     WORD ZipWidth;
     WORD ZipHeight;
+    
+    /* max. number of mousemove events to send to this window */
+    WORD mousequeue;
+    /* act. number of mousemove events sent to this window */
+    WORD num_mouseevents;
 };
 
 
@@ -315,11 +319,10 @@ Another note: Maybe use a union here to save space.
 */
 
 
-struct shortIntuiMessage
+struct DeferedActionMessage
 {
     struct Message  ExecMessage;
-    ULONG           Class;
-    UWORD           Code;
+    UWORD           Code; 
     struct Window * Window;
     struct Window * BehindWindow; /* only used by MoveWindowInFrontOf */
     WORD            dx;           /* used by MoveLayer, SizeLayer */
@@ -337,15 +340,15 @@ struct shortIntuiMessage
 enum
 {
 	/* Sent from application task to intuition inside CloseWindow() */
-	IMCODE_CLOSEWINDOW = 0,
-	IMCODE_ACTIVATEWINDOW,
-	IMCODE_SIZEWINDOW,
-	IMCODE_WINDOWTOBACK,
-	IMCODE_WINDOWTOFRONT,
-	IMCODE_MOVEWINDOW,
-	IMCODE_MOVEWINDOWINFRONTOF,
-	IMCODE_ZIPWINDOW,
-	IMCODE_CHANGEWINDOWBOX
+	AMCODE_CLOSEWINDOW = 0,
+	AMCODE_ACTIVATEWINDOW,
+	AMCODE_SIZEWINDOW,
+	AMCODE_WINDOWTOBACK,
+	AMCODE_WINDOWTOFRONT,
+	AMCODE_MOVEWINDOW,
+	AMCODE_MOVEWINDOWINFRONTOF,
+	AMCODE_ZIPWINDOW,
+	AMCODE_CHANGEWINDOWBOX
 };
 
 #endif /* INTUITION_INTERN_H */
