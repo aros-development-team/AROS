@@ -17,11 +17,11 @@ EXE := $(DESTDIR)/2View
 
 .PHONY : all clean
 
-#MM demo : demo-setup
-demo : $(OBJS) $(EXE)
+#MM demos : demos-setup
+demos : $(OBJS) $(EXE)
 
 #MM
-demo-setup :
+demos-setup :
 	%mkdirs_q $(DESTDIR) $(OBJDIR)
 
 $(EXE) : $(DESTDIR)/% : $(OBJS) $(DEPLIBS)
