@@ -201,3 +201,22 @@ any available machine but it must be available to us. We got in
 contact with PIOS and talked to them several times and they are willing
 to spare a machine (at least that's what we think they said :-) but
 mailing them that you want to see AROS on PIOS ONE might help :-)
+
+\begin{new}{1.8.1997}
+\section{How about PPC or PPC cards ?}
+
+We are regularily asked about AROS on PPC. The answer has always been the
+same: There is no one on the AROS team who own a PPC so we can't do
+anything about this. We have ordered a PPC card from phase5 and a PIOS
+ONE and when they become available, AROS will be ported. But no one
+can tell at this stage, when that will happen. So it's not that we don't
+want, it's just that we can't.
+
+\section{What does Amiga International say about AROS ?}
+
+Short: Nothing. Long: We tried to get in contact with AI twice by EMail but
+got nothing back. Aaron Digulla will attend at the
+\link{IPISA}{http://www.bhuman.it/ipisa/} in Milano in November and maybe
+Petro Tyschtschenko will be there as well so we can meet him personally.
+
+\end{new}
