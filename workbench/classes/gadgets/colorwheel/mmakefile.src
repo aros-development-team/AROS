@@ -22,6 +22,10 @@ FUNCTIONS := \
 workbench-classes-gadgets-colorwheel : $(SLIB)
 	@$(NOP)
 
+#MM workbench-classes-gadgets-colorwheel-quick :
+workbench-classes-gadgets-colorwheel-quick : $(SLIB)
+	@$(NOP)
+
 #MM
 setup :
 	%mkdirs_q $(OBJDIR) $(LIBDIR) $(GADGETDIR) $(DESTDIRS)
