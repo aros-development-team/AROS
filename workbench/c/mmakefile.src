@@ -34,17 +34,13 @@ FILES	:= \
     RequestChoice \
     RequestFile \
     Search \
-    Set \
     SetDate \
-    Setenv \
     SetKeyboard \
     SetDefaultFont \
     Skip \
     Stack \
     Status \
     Unalias \
-    Unset \
-    Unsetenv \
     Version \
     Which \
     addbuffers \
@@ -58,7 +54,6 @@ FILES	:= \
     delete \
     devlist \
     dir \
-    echo \
     execute \
     install \
     liblist \
@@ -83,6 +78,7 @@ FILES	:= \
 
 # I'd like to move this into a rule, but it would be far too hard.
 EXES := $(foreach f,$(FILES), $(AROS_C)/$(f))
+
 USER_CFLAGS := -I$(TOP)/rom/dos -O2 -fomit-frame-pointer
 
 USE_CLIB_SHARED := yes
