@@ -61,8 +61,6 @@ inline struct RegionRectangleExtChunk *__NewRegionRectangleExtChunk
 
     Pool = (struct ChunkPool *)GetHead(&PrivGBase(GfxBase)->ChunkPoolList);
 
-tryagain:
-
     if (!Pool || !Pool->NumChunkFree)
     {
 	int i;
@@ -89,27 +87,6 @@ tryagain:
     }
 
     ChunkE = (struct ChunkExt *)GetHead(&Pool->ChunkList);
-#warning Remove this check when the bug is surely gone away
-    if (!ChunkE)
-    {
-        kprintf("\007%s (%s): Argh! ChunkE is NULL, but this should NEVER happen. NumChunkFree = %ld\n", __FILE__, __FUNCTION__, Pool->NumChunkFree);
-        /*
-            There's a bug for which NumChunkFree maybe non-null
-            (tipically 1) although Pool->ChunkList is empty.
-
-            This happens in a non predictable way, and the only explanation I can find
-            about it is that it has to have something to do with the fact that
-            Forbid()/Permit() are not atomic... One should fix that to see whether I'm right.
-            In the meantime this hack seems to work well.
-
-            ****
-
-            Ok, It seems I fixed that, but I leave this check here anyway, in case it happens again
-        */
-
-        Pool->NumChunkFree = 0;
-        goto tryagain;
-    }
 
     REMOVE(ChunkE);
 
