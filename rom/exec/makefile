@@ -10,24 +10,19 @@ ifeq ($(FLAVOUR),native)
 FILES = execstrap_init
 
 FUNCTIONS = \
-	initcode initstruct makelibrary makefunctions findresident initresident \
-	setintvector addintserver remintserver \
-	allocmem freemem availmem allocentry freeentry typeofmem \
-	addmemlist addmemhandler remmemhandler \
-	insert addhead addtail remove remhead remtail enqueue findname \
-	setsignal allocsignal freesignal \
-	addport remport waitport findport createmsgport deletemsgport \
-	putmsg getmsg replymsg \
-	doio sendio checkio waitio abortio createiorequest deleteiorequest \
-	addresource remresource openresource \
-	addlibrary remlibrary oldopenlibrary closelibrary \
-	setfunction sumlibrary openlibrary taggedopenlibrary \
-	adddevice remdevice \
-	findtask \
-	rawdofmt \
-	allocvec freevec \
-	initsemaphore attemptsemaphore findsemaphore addsemaphore remsemaphore \
-	obtainsemaphoreshared attemptsemaphoreshared
+	initcode initstruct makelibrary makefunctions findresident	    \
+	initresident setintvector addintserver remintserver allocmem	    \
+	freemem availmem allocentry freeentry typeofmem addmemlist	    \
+	addmemhandler remmemhandler insert addhead addtail remove remhead   \
+	remtail enqueue findname setsignal allocsignal freesignal addport   \
+	remport waitport findport createmsgport deletemsgport putmsg getmsg \
+	replymsg doio sendio checkio waitio abortio createiorequest	    \
+	deleteiorequest addresource remresource openresource addlibrary     \
+	remlibrary oldopenlibrary closelibrary setfunction sumlibrary	    \
+	openlibrary taggedopenlibrary adddevice remdevice findtask rawdofmt \
+	allocvec freevec initsemaphore attemptsemaphore findsemaphore	    \
+	addsemaphore remsemaphore obtainsemaphoreshared 		    \
+	attemptsemaphoreshared
 
 # Functions that are written in asm and need to be linked into exec.strap.
 # These are in config/$(KERNEL).
@@ -73,7 +68,7 @@ FUNCTIONS = \
 	closedevice doio sendio \
 	checkio abortio waitio \
 	initresident cause \
-	rawputchar addintserver \
+	addintserver \
 	remintserver setintvector \
 	alloctrap childfree childorphan childstatus childwait coldreboot \
 	debug findresident freetrap initcode sumkickdata obtainquickvector
