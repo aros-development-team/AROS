@@ -1,11 +1,19 @@
 #ifndef _ABOUTWINDOW_PRIVATE_H_
 #define _ABOUTWINDOW_PRIVATE_H_
 
+/*
+    Copyright © 2003, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+#include <exec/types.h>
+
 /*** Instance data **********************************************************/
 struct AboutWindow_DATA
 {
     /*- Private ------------------------------------------------------------*/
     struct Catalog *awd_Catalog;
+    APTR            awd_Pool;
     
     /*- Protected ----------------------------------------------------------*/
     Object         *awd_RootGroup,

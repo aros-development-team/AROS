@@ -67,104 +67,91 @@ STRPTR Section2Name(struct Catalog *catalog, ULONG section)
     }
 }
 
-STRPTR Names2Text(struct Catalog *catalog, struct TagItem *tags)
+BOOL NamesToList
+(
+    Object *list, struct TagItem *tags, struct AboutWindow_DATA *data
+)
 {
-    struct TagItem *tag          = NULL, 
-                   *tstate       = tags;
-    CONST_STRPTR    indent       = "    ";
-    ULONG           indentLength = strlen(indent);
-    STRPTR          result       = NULL;
-    ULONG           length       = 0;
+    struct TagItem *tstate       = tags,
+                   *tag          = NULL;
+    BOOL            success      = TRUE;
+    IPTR            section      = SID_NONE;
+    STRPTR          sectionName;
     BOOL            sectionFirst = TRUE;
-    ULONG           section      = NULL;
-    STRPTR          sectionName  = NULL;
-    ULONG           sectionCount = 0;
+    STRPTR          name;
+    STRPTR          buffer;
+    ULONG           length       = 0;
     
-    /* Check for sane input parameters -------------------------------------*/
-    if (tags == NULL) return NULL;
+    if (tags == NULL) return FALSE;
     
-    /* Calculate the length of text ----------------------------------------*/
-    while ((tag = NextTagItem(&tstate)) != NULL)
+    while ((tag = NextTagItem(&tstate)) != NULL && success == TRUE)
     {
         switch (tag->ti_Tag)
         {
             case SECTION_ID:
-                section     = (ULONG) tag->ti_Data;
-                sectionName = Section2Name(catalog, section);
+                section     = tag->ti_Data;
+                sectionName = Section2Name(data->awd_Catalog, section);
                 
                 if (sectionName != NULL)
                 {
-                    sectionCount++;
-                
-                    length += strlen(MUIX_B) + strlen(sectionName) 
-                            + strlen(MUIX_N) + 1; /* newline */
-                }
-                break;
-                
-            case NAME:
-                length += strlen((STRPTR) tag->ti_Data) + 1 /* newline */;
-                
-                if (sectionName != NULL)
-                {
-                    /*  Indent name unless in SID_NONE or unknown section */
-                    length += indentLength;
-                }
-                
-                break;
-        }
-    }
-    if (sectionCount > 1)
-    {
-        length += sectionCount - 1; /* Newline between sections */
-    }
-    length += 1; /* Terminating '\0' */
-    
-    /* Allocate space for result -------------------------------------------*/
-    result = AllocVec(length, MEMF_ANY);
-    if (result == NULL) return NULL;
-    result[0] = '\0';
-    
-    /* Generate text -------------------------------------------------------*/
-    tstate = tags; 
-    sectionFirst = TRUE;
-    while ((tag = NextTagItem(&tstate)) != NULL)
-    {
-        switch (tag->ti_Tag)
-        {
-            case SECTION_ID:
-                section     = (ULONG) tag->ti_Data;
-                sectionName = Section2Name(catalog, section);
-                
-                if (sectionName != NULL)
-                {
-                    sectionFirst ? sectionFirst = FALSE 
-                                 : strlcat(result, "\n", length);
+                    sectionFirst 
+                        ? sectionFirst = FALSE
+                        : DoMethod(list, MUIM_List_InsertSingle, (IPTR) "");
                     
-                    strlcat(result, MUIX_B, length);
-                    strlcat(result, sectionName, length);
-                    strlcat(result, MUIX_N, length);
-                    strlcat(result, "\n", length);
+                    length = strlen(MUIX_B) + strlen(sectionName) + 1;
+                    buffer = AllocPooled(data->awd_Pool, length);
+                    if (buffer != NULL)
+                    {
+                        buffer[0] = '\0';
+                        strcat(buffer, MUIX_B);
+                        strcat(buffer, sectionName);
+                        
+                        DoMethod
+                        (
+                            list, MUIM_List_InsertSingle, 
+                            (IPTR) buffer, MUIV_List_Insert_Bottom
+                        );
+                    }
+                    else
+                    {
+                        success = FALSE;
+                        break;
+                    }
                 }
+                
                 break;
                 
-            case NAME:
-                if (sectionName != NULL)
+            case NAME_STRING:
+                name   = (STRPTR) tag->ti_Data;
+                
+                length = strlen(name) + 1;
+                if (sectionName != NULL) length += 4;
+                
+                buffer = AllocPooled(data->awd_Pool, length);
+                if (buffer != NULL)
                 {
-                    /*  Indent name unless in SID_NONE or unknown section */
-                    strlcat(result, indent, length);
+                    buffer[0] = '\0';
+                    if (sectionName != NULL) strcat(buffer, "    ");
+                    strcat(buffer, name);
+                    
+                    DoMethod
+                    (
+                        list, MUIM_List_InsertSingle, 
+                        (IPTR) buffer, MUIV_List_Insert_Bottom
+                    );
                 }
-                strlcat(result, (STRPTR) tag->ti_Data, length);
-                strlcat(result, "\n", length);
+                else
+                {
+                    success = FALSE;
+                    break;
+                }
+                
                 break;
         }
     }
     
-    /* Remove trailing newline */
-    if (result[length - 2] == '\n') result[length - 2] = '\0';
-    
-    return result;
+    return success;
 }
-
 
 /*** Methods ****************************************************************/
 
@@ -175,35 +162,42 @@ IPTR AboutWindow__OM_NEW
 {
     struct AboutWindow_DATA *data              = NULL; 
     struct TagItem          *tag               = NULL, 
-                            *tstate            = message->ops_AttrList;    
+                            *tstate            = message->ops_AttrList,
+                            *authorsTags       = NULL,
+                            *sponsorsTags      = NULL;
     struct Catalog          *catalog           = NULL;
+    APTR                     pool;
     Object                  *rootGroup         = NULL,
                             *imageGroup        = NULL,
                             *imageObject       = NULL,
                             *versionObject     = NULL,
                             *copyrightObject   = NULL,
                             *descriptionGroup  = NULL,
-                            *descriptionObject = NULL;
+                            *descriptionObject = NULL,
+                            *authorsList       = NULL,
+                            *sponsorsList      = NULL;
     
     STRPTR                   title             = NULL,
                              versionNumber     = NULL,
                              versionDate       = NULL,
                              versionExtra      = NULL,
                              description       = NULL,
-                             copyright         = NULL,
+                             copyright         = NULL;
                              
-                             authors           = NULL, 
-                             sponsors          = NULL;
     STRPTR                   pages[]           = { NULL, NULL, NULL }; 
     UBYTE                    nextPage          = 0;
     
-    /* Initialize locale */
+    /* Allocate memory pool ------------------------------------------------*/
+    pool = CreatePool(MEMF_ANY, 4096, 4096);
+    if (pool == NULL) return NULL;
+        
+    /* Initialize locale ---------------------------------------------------*/
     catalog = OpenCatalogA
     (
         NULL, "System/Classes/Zune/AboutWindow.catalog", NULL
     );
-    
-    /* Parse initial attributes */
+        
+    /* Parse initial attributes --------------------------------------------*/
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
@@ -243,11 +237,11 @@ IPTR AboutWindow__OM_NEW
                 break;
             
             case MUIA_AboutWindow_Authors:
-                authors = Names2Text(catalog, (struct TagItem *) tag->ti_Data);
+                authorsTags = (struct TagItem *) tag->ti_Data;
                 break; 
                 
             case MUIA_AboutWindow_Sponsors:
-                sponsors = Names2Text(catalog, (struct TagItem *) tag->ti_Data);
+                sponsorsTags = (struct TagItem *) tag->ti_Data;
                 break;
                             
             default:
@@ -257,7 +251,7 @@ IPTR AboutWindow__OM_NEW
         tag->ti_Tag = TAG_IGNORE;
     }
     
-    /* Setup image */
+    /* Setup image ---------------------------------------------------------*/
     if (imageObject == NULL)
     {
         TEXT path[1024], program[1024]; path[0] = '\0'; program[0] = '\0';
@@ -272,14 +266,14 @@ IPTR AboutWindow__OM_NEW
         }
     }
 
-    /* Setup pages */
-    if (authors != NULL)
+    /* Setup pages ---------------------------------------------------------*/
+    if (authorsTags != NULL)
     {
         pages[nextPage] = _(MSG_AUTHORS);
         nextPage++;
     }
     
-    if (sponsors != NULL)
+    if (sponsorsTags != NULL)
     {
         pages[nextPage] = _(MSG_SPONSORS);
         nextPage++;
@@ -319,30 +313,14 @@ IPTR AboutWindow__OM_NEW
             End,
             Child, (IPTR) VSpace(6),
             Child, (IPTR) RegisterGroup(pages),
-                Child, (IPTR) VGroup,
-                    Child, (IPTR) ScrollgroupObject,
-                        MUIA_Scrollgroup_Contents, (IPTR) VGroupV,
-                            TextFrame,
-                            
-                            Child, (IPTR) TextObject,
-                                MUIA_Text_PreParse, (IPTR) MUIX_L,
-                                MUIA_Text_Contents, (IPTR) authors,
-                            End,
-                            Child, (IPTR) HVSpace,
-                        End,
+                Child, (IPTR) ListviewObject,
+                    MUIA_Listview_List, (IPTR) authorsList = ListObject,
+                        ReadListFrame,
                     End,
                 End,
-                Child, (IPTR) VGroup,
-                    Child, (IPTR) ScrollgroupObject,
-                        MUIA_Scrollgroup_Contents, (IPTR) VGroupV,
-                            TextFrame,
-                            
-                            Child, (IPTR) TextObject,
-                                MUIA_Text_PreParse, (IPTR) MUIX_L,
-                                MUIA_Text_Contents, (IPTR) sponsors,
-                            End,
-                            Child, (IPTR) HVSpace,
-                        End,
+                Child, (IPTR) ListviewObject,
+                    MUIA_Listview_List, (IPTR) sponsorsList = ListObject,
+                        ReadListFrame,
                     End,
                 End,
             End, 
@@ -355,6 +333,7 @@ IPTR AboutWindow__OM_NEW
     
     data = INST_DATA(CLASS, self);
     data->awd_Catalog           = catalog;
+    data->awd_Pool              = pool;
     data->awd_RootGroup         = rootGroup;
     data->awd_ImageGroup        = imageGroup;
     data->awd_ImageObject       = imageObject;
@@ -369,8 +348,8 @@ IPTR AboutWindow__OM_NEW
     data->awd_Copyright         = copyright;
     data->awd_Description       = description;
     
-    if (authors != NULL) FreeVec(authors);
-    if (sponsors != NULL) FreeVec(sponsors);
+    if (authorsTags != NULL)  NamesToList(authorsList, authorsTags, data);
+    if (sponsorsTags != NULL) NamesToList(sponsorsList, sponsorsTags, data);
     
     /* Setup notifications */
     DoMethod
@@ -383,9 +362,6 @@ IPTR AboutWindow__OM_NEW
     
 error:
     if (catalog != NULL) CloseCatalog(catalog);
-    
-    if (authors != NULL) FreeVec(authors);
-    if (sponsors != NULL) FreeVec(sponsors);
     
     return NULL;
 }
@@ -624,6 +600,8 @@ IPTR AboutWindow__OM_DISPOSE
     {
         if (ptrs[i] != NULL) FreeVec(ptrs[i]);
     }
+    
+    if (data->awd_Pool != NULL) DeletePool(data->awd_Pool);
     
     if (data->awd_Catalog != NULL) CloseCatalog(data->awd_Catalog);
     

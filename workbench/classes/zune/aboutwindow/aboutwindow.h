@@ -86,24 +86,25 @@
             SECTION
             (
                 SID_PROGRAMMING,
-                NAME, "Marvin",
-                NAME, "Ford Prefect"
+                NAME("Marvin"),
+                NAME("Ford Prefect")
             ),
             SECTION
             (
                 SID_TRANSLATING,
-                NAME, "Zaphod Beeblebrox"
+                NAME("Zaphod Beeblebrox")
             )
         );
 +*/
-#define SECTION_ID                (MUIB_AboutWindow | 0x000000F0)
-#define NAME                      (MUIB_AboutWindow | 0x000000F1)
+#define SECTION_ID              (MUIB_AboutWindow | 0x000000F0)
+#define NAME_STRING             (MUIB_AboutWindow | 0x000000F1)
 
-#define SID_NONE                  (0)
-#define SID_PROGRAMMING           (1)
-#define SID_TRANSLATING           (2)
+#define SID_NONE                (0)
+#define SID_PROGRAMMING         (1)
+#define SID_TRANSLATING         (2)
 
-#define SECTION(id, args...) SECTION_ID, id, args
+#define SECTION(id, args...)    SECTION_ID, id, args
+#define NAME(name)              NAME_STRING, ((IPTR) (name))
 
 /*** Protected attributes ***************************************************/
 #if 0 /* FIXME: Implement */
