@@ -279,6 +279,10 @@ static IPTR Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	{
 	    case    MUIA_Background:
 		    data->mad_Flags |= MADF_OWNBG;
+		    if (data->mad_BackgroundSpec)
+		    {
+		    	zune_image_spec_free(data->mad_BackgroundSpec);
+		    }
 		    data->mad_BackgroundSpec = zune_image_spec_duplicate(tag->ti_Data);
 		    break;
 
@@ -1929,7 +1933,7 @@ static IPTR Area_DeleteDragImage(struct IClass *cl, Object *obj, struct MUIP_Del
 	if (msg->di->bm) FreeBitMap(msg->di->bm);
 	FreeVec(msg->di);
     }
-    return NULL;
+    return 0;
 }
 
 /**************************************************************************
@@ -1946,7 +1950,7 @@ static IPTR Area_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP_D
 		return (IPTR)obj;
 	}
     }
-    return NULL;
+    return 0;
 }
 
 /**************************************************************************
