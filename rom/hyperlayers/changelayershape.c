@@ -82,24 +82,25 @@
 
   LockLayers(l->LayerInfo);
 
-  if (!(NULL == newshape || NULL == callback))
   {
     struct Region r, cutoldshape, rtmp, cutnewshape;
-    struct Layer * lparent, *_l, *lfirst;
+    struct Layer * lparent, * _l, * lfirst;
     int behind_l = FALSE;
     r.RegionRectangle = NULL;
     rtmp.RegionRectangle = NULL;
     cutoldshape.RegionRectangle = NULL;
     cutnewshape.RegionRectangle = NULL;
 
-
-    /*
-     * Backup everything that is visible right now into 
-     * cliprects.
-     */
-    _SetRegion(l->shape, &cutoldshape);
-    AndRegionRegion(l->parent->shape, &cutoldshape);
-    _BackupPartsOfLayer(l, &cutoldshape, 0, TRUE, LayersBase);
+    if (IS_VISIBLE(l))
+    {
+      /*
+       * Backup everything that is visible right now into 
+       * cliprects.
+       */
+      _SetRegion(l->shape, &cutoldshape);
+      AndRegionRegion(l->parent->shape, &cutoldshape);
+      _BackupPartsOfLayer(l, &cutoldshape, 0, TRUE, LayersBase);
+    }
 
     /*
      * Get the current layer's shape as the paramter to return
@@ -114,12 +115,12 @@
        * The user can manipulate the cliprects of the layer
        * l and can have a look at the current shape.
        */
-      l->shaperegion = AROS_UFC5(struct Region *, callback,
-                        AROS_UFCA(struct Region *   , newshape  , A0),
-                        AROS_UFCA(struct Layer  *  , l          , A1),
-                        AROS_UFCA(struct ClipRect *, l->ClipRect, A2),
-                        AROS_UFCA(struct Region *  , l->shape   , A3),
-                        AROS_UFCA(void          *  , arg        , A4));
+      l->shaperegion = AROS_UFC5(struct Region   * , callback,
+                       AROS_UFCA(struct Region   * , newshape   , A0),
+                       AROS_UFCA(struct Layer    * , l          , A1),
+                       AROS_UFCA(struct ClipRect * , l->ClipRect, A2),
+                       AROS_UFCA(struct Region   * , l->shape   , A3),
+                       AROS_UFCA(void            * , arg        , A4));
     }
     else
     {
@@ -128,7 +129,7 @@
        */
       l->shaperegion = newshape;
     }
- 
+    
     ClearRegion(l->shape);
     /*
      * At this point l->shaperegion holds the layer that is to be 
@@ -146,101 +147,108 @@
     AndRegionRegion(l->parent->shape, &cutnewshape);
 
 
-    /*
-     * Let me backup parts of the layers that are behind the
-     * layer l and in front of it.
-     */
-    lparent = l->parent;
-    lfirst = GetFirstFamilyMember(l);
-    _l = lfirst;
+    if (IS_VISIBLE(l))
+    {
+      /*
+       * Let me backup parts of the layers that are behind the
+       * layer l and in front of it.
+       */
+      lparent = l->parent;
+      lfirst = GetFirstFamilyMember(l);
+      _l = lfirst;
     
-    while (1)
-    {
-      if ((l != _l) && IS_VISIBLE(_l) && DO_OVERLAP(&cutnewshape.bounds, &l->shape->bounds))
-        _BackupPartsOfLayer(_l, &cutnewshape, 0, FALSE, LayersBase);
-      else
-        ClearRegionRegion(&cutnewshape, _l->VisibleRegion);
+      while (1)
+      {
+        if ((l != _l) && IS_VISIBLE(_l) && DO_OVERLAP(&cutnewshape.bounds, &l->shape->bounds))
+          _BackupPartsOfLayer(_l, &cutnewshape, 0, FALSE, LayersBase);
+        else
+          ClearRegionRegion(&cutnewshape, _l->VisibleRegion);
          
-      if (_l == lparent)
-      {
-        if (IS_VISIBLE(_l) || (NULL == lparent->parent))
-          break;
-        else
-          lparent = lparent->parent;
-      }
+        if (_l == lparent)
+        {
+          if (IS_VISIBLE(_l) || (NULL == lparent->parent))
+            break;
+          else
+            lparent = lparent->parent;
+        }
       
-      _l = _l->back;
-    }
+        _l = _l->back;
+      } /* while (1) */
 
       
-    if (lfirst->front)
-    {
-      _SetRegion(lfirst->front->VisibleRegion, &r);
-      _SetRegion(lfirst->front->shape, &rtmp);
-      AndRegionRegion(lfirst->front->parent->shape, &rtmp);
-      ClearRegionRegion(&rtmp, &r);
-    }
-    else
-      _SetRegion(l->LayerInfo->check_lp->shape, &r);
-
-    /*
-     * Make the new layer and its family visible
-     * Since the parent might have become bigger more
-     * of the children might become visible...
-     */    
-    _l = lfirst;
-    lparent = l->parent;
-      
-    while (1)
-    {
-      if (IS_VISIBLE(_l) && 
-          (DO_OVERLAP(&cutnewshape.bounds, &_l->shape->bounds) ||
-           DO_OVERLAP(&cutoldshape.bounds, &_l->shape->bounds)))
+      if (lfirst->front)
       {
-        ClearRegion(l->VisibleRegion);
-        _ShowPartsOfLayer(l, &r, LayersBase);
-      }
-      else
-        _SetRegion(&r, _l->VisibleRegion);
-          
-
-      if ((TRUE == behind_l) && (IS_VISIBLE(_l) || IS_ROOTLAYER(_l)))
-        AndRegionRegion(_l->VisibleRegion, &cutoldshape);
-
-      if (_l == lparent)
-      {
-        if (IS_VISIBLE(_l) || (NULL == lparent->parent))
-          break;
-        else
-          lparent = lparent->parent;
-      }
-          
-      if (IS_VISIBLE(_l))
-      {
-        _SetRegion(_l->shape, &rtmp);
-        AndRegionRegion(_l->parent->shape, &rtmp);
+        _SetRegion(lfirst->front->VisibleRegion, &r);
+        _SetRegion(lfirst->front->shape, &rtmp);
+        AndRegionRegion(lfirst->front->parent->shape, &rtmp);
         ClearRegionRegion(&rtmp, &r);
       }
+      else
+        _SetRegion(l->LayerInfo->check_lp->shape, &r);
 
-      if (l == _l)
-        behind_l = TRUE;
+      /*
+       * Make the new layer and its family visible
+       * Since the parent might have become bigger more
+       * of the children might become visible...
+       */    
+      _l = lfirst;
+      lparent = l->parent;
       
-      _l = _l->back;
-    }
+      while (1)
+      {
+        if (IS_VISIBLE(_l) && 
+            (DO_OVERLAP(&cutnewshape.bounds, &_l->shape->bounds) ||
+             DO_OVERLAP(&cutoldshape.bounds, &_l->shape->bounds)))
+        {
+          ClearRegion(l->VisibleRegion);
+          _ShowPartsOfLayer(l, &r, LayersBase);
+        }
+        else
+          _SetRegion(&r, _l->VisibleRegion);
+          
 
-    ClearRegion(&rtmp);
+        if ((TRUE == behind_l) && (IS_VISIBLE(_l) || IS_ROOTLAYER(_l)))
+          AndRegionRegion(_l->VisibleRegion, &cutoldshape);
+
+        if (_l == lparent)
+        {
+          if (IS_VISIBLE(_l) || (NULL == lparent->parent))
+            break;
+          else
+            lparent = lparent->parent;
+        }
+          
+        if (IS_VISIBLE(_l))
+        {
+          _SetRegion(_l->shape, &rtmp);
+          AndRegionRegion(_l->parent->shape, &rtmp);
+          ClearRegionRegion(&rtmp, &r);
+        }
+
+        if (l == _l)
+          behind_l = TRUE;
+      
+        _l = _l->back;
+      } /* while(1) */
+
+      ClearRegion(&rtmp);
+      ClearRegion(&r);
+
+      if (!IS_EMPTYREGION(&cutoldshape))
+      {
+        if (lparent &&
+            (IS_SIMPLEREFRESH(lparent) || IS_ROOTLAYER(lparent)))
+              _BackFillRegion(l->parent, &cutoldshape, TRUE);
+      }
+
+      ClearRegion(&cutoldshape);
+
+    } /* if (IS_VISIBLE(l)) */
+    
     ClearRegion(&cutnewshape);
-    ClearRegion(&r);
   
-    if (!IS_EMPTYREGION(&cutoldshape))
-    {
-      if (lparent &&
-          (IS_SIMPLEREFRESH(lparent) || IS_ROOTLAYER(lparent)))
-            _BackFillRegion(l->parent, &cutoldshape, TRUE);
-    }
-  
-    ClearRegion(&cutoldshape);
   }
+  
   UnlockLayers(l->LayerInfo);
   
   return returnshape;
