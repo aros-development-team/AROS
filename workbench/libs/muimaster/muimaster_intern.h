@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,20 +24,6 @@
 #ifndef GRAPHICS_GFXBASE_H
 #   include <graphics/gfxbase.h>
 #endif
-
-#ifdef __AROS__
-#ifndef AROS_ASMCALL_H
-#   include <aros/asmcall.h>
-#endif
-
-#else
-
-#define AROS_LIBFUNC_INIT
-#define AROS_LIBBASE_EXT_DECL(a,b) extern a b;
-#define AROS_LIBFUNC_EXIT
-
-#endif
-
 #ifndef DOS_DOS_H
 #   include <dos/dos.h>
 #endif
@@ -47,17 +31,15 @@
 #   include <utility/utility.h>
 #endif
 #ifndef EXEC_SEMAPHORES_H
-#include <exec/semaphores.h>
+#   include <exec/semaphores.h>
 #endif
 
-/* Sometype defs in AROS */
-#ifndef __AROS__
-#ifndef _AROS_TYPES_DEFINED
-typedef unsigned long IPTR;
-typedef long STACKLONG;
-typedef unsigned long STACKULONG;
-#define _AROS_TYPES_DEFINED
-#endif
+#ifdef __AROS__
+#   ifndef AROS_ASMCALL_H
+#       include <aros/asmcall.h>
+#   endif
+#else
+#   include "support_amigaos.h"
 #endif
 
 #include "mui.h"
@@ -202,7 +184,6 @@ struct MUIMasterBase_intern
 #define DataTypesBase	(((struct MUIMasterBase_intern *)MUIMasterBase)->datatypesbase)
 */
 
-#include "support_amigaos.h"
 
 #endif /* ! __AROS__ */
 
