@@ -29,7 +29,6 @@
 	len - How many bytes to copy.
 
     RESULT
-	dest.
 
     NOTES
 	The original bcopy() allows overlapping src and dst.
