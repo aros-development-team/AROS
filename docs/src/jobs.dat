@@ -122,7 +122,7 @@ BOOPSI/GroupGClass;0;;Implement BOOPSI GroupGClass
 BOOPSI/ICClass;2;caldi;Implement BOOPSI ICClass
 BOOPSI/ITextIClass;0;;Implement BOOPSI ITextIClass
 BOOPSI/ImageClass;2;caldi;Implement BOOPSI ImageClass
-BOOPSI/ModelClass;0;;Implement BOOPSI ModelClass
+BOOPSI/ModelClass;2;stegerg;Implement BOOPSI ModelClass
 BOOPSI/PointerClass;0;digulla;Implement BOOPSI PointerClass
 BOOPSI/PropGClass;2;nlorentz;Implement BOOPSI PropGClass
 BOOPSI/propgadgets;2;digulla;Implement PROP Gadgets
