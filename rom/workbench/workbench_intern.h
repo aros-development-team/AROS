@@ -135,6 +135,16 @@ struct AppWindow {
     struct MsgPort *aw_MsgPort;
 };
 
+
+#define  AWDZFlag_fix        0	/* IBox value is actual coordinate */
+#define  AWDZFlag_relLeft    1
+#define  AWDZFlag_relRight   2
+#define  AWDZFlag_relTop     3
+#define  AWDZFlag_relBottom  4
+#define  AWDZFlag_relWidth   5
+#define  AWDZFlag_relHeight  6
+
+
 struct AppWindowDropZone {
     struct Node       awdz_Node;
 
@@ -142,6 +152,12 @@ struct AppWindowDropZone {
     ULONG             awdz_UserData;
 
     struct IBox       awdz_Box;
+
+    /* These four tells how to compute the drop zone size and position */
+    UWORD             awdz_leftSpecifier;
+    UWORD             awdz_topSpecifier;
+    UWORD             awdz_widthSpecifier;
+    UWORD             awdz_heightSpecifier;
     struct Hook      *awdz_Hook;
 };
 
