@@ -79,8 +79,7 @@ struct config
     /* The function config data present in the functionlist section */
     struct conffuncinfo *conffunclist;
     
-    /* BOOPSI specific data */
-    const char **boopsiprefix
+    /* MCC specific data */
     char *superclass;
     int customdispatcher; /* does class have custom dispatcher? */
 };
