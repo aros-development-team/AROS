@@ -123,10 +123,10 @@ STRPTR StopBitsLabels[] =
 
 STRPTR DataBitsLabels[] =
 {
-	"5",
-	"6",
-	"7",
 	"8",
+	"7",
+	"6",
+	"5",
 	NULL
 };
 
@@ -142,12 +142,10 @@ STRPTR ParityLabels[] =
 
 STRPTR BufferSizeLabels[] =
 {
-	"32",
-	"64",
-	"128",
-	"256",
 	"512",
 	"1024",
+	"2048",
+	"4096",
 	NULL
 };
 
@@ -420,7 +418,7 @@ VOID RefreshDataBitsGadget(VOID)
 		i++;
 	}
 
-	GT_SetGadgetAttrs(baudrate, win, NULL, GTCY_Active , 3,
+	GT_SetGadgetAttrs(databits, win, NULL, GTCY_Active , 0,
 	                                       TAG_DONE);
 }
 
@@ -488,7 +486,7 @@ VOID ReadGadgets(VOID)
 	serialprefs.sp_BaudRate = atol(BaudrateLabels[index]);
 
 	GT_GetGadgetAttrs(databits, win, NULL, GTCY_Active, &index, TAG_DONE);
-	serialprefs.sp_BitsPerChar = atol(DataBitsLabels[index]);
+	serialprefs.sp_BitsPerChar = index;
 
 	GT_GetGadgetAttrs(parity  , win, NULL, GTCY_Active, &index, TAG_DONE);
 	serialprefs.sp_Parity = index;
