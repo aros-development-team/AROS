@@ -28,9 +28,9 @@ struct hunk
 
 #include <proto/dos.h>
 
-BPTR InternalLoadSeg_AOS(BPTR fh, 
-                         BPTR table, 
-                         LONG * funcarray,
+BPTR InternalLoadSeg_AOS(BPTR fh,
+                         BPTR table,
+                         void * funcarray,
                          LONG * stack)
 {
   AROS_LIBFUNC_INIT
@@ -61,12 +61,26 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       ULONG tmp, req;
 
       case HUNK_SYMBOL:
+        /* The SYMBOL_HUNK looks like this:
+             ---------------------
+             | n = size of       |  This
+             |   symbol in longs |  may
+             |-------------------|  be
+             | n longwords = name|  repeated
+             | of symbol         |  any
+             |-------------------|  number
+             | value (1 long)    |  of times
+             --------------------|
+             | 0 = end of HUNK_  |
+             |       SYMBOL      |
+             --------------------   */
+
         D(bug("HUNK_SYMBOL (skipping)\n"));
-        while(!read_block(fh, &count, sizeof(count)) && count)
-        {
-          if (Seek(fh, (count+1)*4, OFFSET_CURRENT) < 0)
-            goto end;
-        }
+          while(!read_block(fh, &count, sizeof(count)) && count)
+          {
+            if (Seek(fh, (count+1)*4, OFFSET_CURRENT) < 0)
+              goto end;
+          }
       break;
 
       case HUNK_UNIT:
@@ -229,10 +243,49 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         }
       break;
 
+      case HUNK_RELOC32SHORT:
+        {
+          ULONG Wordcount = 0;
+          while (1)
+          {
+            ULONG *addr;
+
+            if (read_block(fh, &count, sizeof(count)))
+              goto end;
+            if (count == 0L)
+              break;
+            i = count;
+            if (read_block(fh, &count, sizeof(count)))
+              goto end;
+            D(bug("\tHunk #%ld:\n", count));
+            while (i > 0)
+            {
+              Wordcount++;
+              /* read a 16bit number (2 bytes) */
+              if (read_block(fh, &offset, 2))
+                goto end;
+              /* offset now contains the byte offset in it`s 16 highest bits.
+                 These 16 highest bits have to become the 16 lowest bits so
+                 we get the word we need.  */
+              (ULONG)offset >>= ((sizeof(offset)-2)*8);
+              D(bug("\t\t0x%06lx\n", offset));
+              addr = (ULONG *)(hunktab[curhunk].memory + offset);
+              *addr += (ULONG)(hunktab[count].memory);
+              --i;
+            } /* while (i > 0)*/
+          } /* while (1) */
+
+        /* if the amount of words read was odd, then skip the following
+           16-bit word   */
+        if (0x1 == Wordcount & 0x1)
+          Seek(fh, 2, OFFSET_CURRENT);
+        }
+      break;
+
       case HUNK_END:
         D(bug("HUNK_END\n"));
         ++curhunk;
-        break;
+      break;
 
       case HUNK_RELOC16:
         D(bug("HUNK_RELOC16 not implemented\n"));
