@@ -249,7 +249,6 @@ VOID FreeCommon(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	D(bug("Window freed\n"));
 
 	if (ld->ld_VisualInfo) FreeVisualInfo(ld->ld_VisualInfo);
-	
 	if (ld->ld_Dri) FreeScreenDrawInfo(ld->ld_Screen, ld->ld_Dri);
 	
 	if (ld->ld_ScreenLocked)

@@ -51,7 +51,7 @@
 
     /* Here We should also free WBArg when multiselection etc. etc. */
     struct ReqNode *reqnode;
-		
+
     if ((reqnode = FindReqNode(requester, ASLB(AslBase))) != NULL)
     {
     	/* Strip requester specific stuff */
@@ -68,6 +68,7 @@
 	FreeMem(reqnode, sizeof (struct ReqNode));
 		
     }
+
     return;
 
     AROS_LIBFUNC_EXIT

@@ -246,6 +246,7 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 	FreeCommon(ld, ASLB(AslBase));
 
     } /* if (ld) */
+
     ReturnBool ("AslRequest", success);
 
     AROS_LIBFUNC_EXIT

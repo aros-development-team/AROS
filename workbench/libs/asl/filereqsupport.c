@@ -428,7 +428,7 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 
 		    /* return code TRUE (!= 0) means, add to list */
 		    
-		    if (CallHookPkt(ifreq->ifr_FilterFunc, (struct FileRequester *)ld->ld_Req, &ap) == 0)
+		    if (CallHookPkt(ifreq->ifr_FilterFunc, ld->ld_Req, &ap) == 0)
 		        addentry = FALSE;
 		}
 				

@@ -77,9 +77,8 @@ AROS_UFH3(VOID, SMTagHook,
     AROS_UFHA(struct AslBase_intern *,  AslBase,        A1)
 )
 {
-    struct TagItem *tag, *tstate;
-
-    struct IntModeReq *imreq;
+    struct TagItem 	*tag, *tstate;
+    struct IntModeReq 	*imreq;
     
     EnterFunc(bug("SMTagHook(hook=%p, pta=%p)\n", hook, pta));
 
@@ -88,114 +87,123 @@ AROS_UFH3(VOID, SMTagHook,
     tstate = pta->pta_Tags;
     while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
     {
-
+	IPTR tidata = tag->ti_Data;
+	
 	switch (tag->ti_Tag)
 	{
 	    case ASLSM_CustomSMList:
-	        imreq->ism_CustomSMList = (struct List *)tag->ti_Data;
+	        imreq->ism_CustomSMList = (struct List *)tidata;
 		break;
 
 	    case ASLSM_FilterFunc:
-	        imreq->ism_FilterFunc = (struct Hook *)tag->ti_Data;
+	        imreq->ism_FilterFunc = (struct Hook *)tidata;
 		break;
 				
             case ASLSM_DoAutoScroll:
-	        if (tag->ti_Data)
+	        if (tidata)
 		    imreq->ism_Flags |= ISMF_DOAUTOSCROLL;
 		else
 		    imreq->ism_Flags &= ~ISMF_DOAUTOSCROLL;
 		break;
 
 	    case ASLSM_DoDepth:
-	        if (tag->ti_Data)
+	        if (tidata)
 		    imreq->ism_Flags |= ISMF_DODEPTH;
 		else
 		    imreq->ism_Flags &= ~ISMF_DODEPTH;
 		break;
 
             case ASLSM_DoWidth:
-	        if (tag->ti_Data)
+	        if (tidata)
 		    imreq->ism_Flags |= ISMF_DOWIDTH;
 		else
 		    imreq->ism_Flags &= ~ISMF_DOWIDTH;
 		break;
 		
             case ASLSM_DoHeight:
-	        if (tag->ti_Data)
+	        if (tidata)
 		    imreq->ism_Flags |= ISMF_DOHEIGHT;
 		else
 		    imreq->ism_Flags &= ~ISMF_DOHEIGHT;
 		break;
 
             case ASLSM_DoOverscanType:
-	        if (tag->ti_Data)
+	        if (tidata)
 		    imreq->ism_Flags |= ISMF_DOOVERSCAN;
 		else
 		    imreq->ism_Flags &= ~ISMF_DOOVERSCAN;
 		break;
 		
 	    case ASLSM_UserData:
-		((struct ScreenModeRequester *)pta->pta_Req)->sm_UserData = (APTR)tag->ti_Data;
+		((struct ScreenModeRequester *)pta->pta_Req)->sm_UserData = (APTR)tidata;
 		break;
 
 	    case ASLSM_InitialAutoScroll:
-	        imreq->ism_AutoScroll = tag->ti_Data ? TRUE : FALSE;
+	        imreq->ism_AutoScroll = tidata ? TRUE : FALSE;
 		break;
 		
 	    case ASLSM_InitialDisplayDepth:
-	        imreq->ism_DisplayDepth = tag->ti_Data;
+	        imreq->ism_DisplayDepth = tidata;
 		break;
 	
 	    case ASLSM_InitialDisplayWidth:
-	        imreq->ism_DisplayWidth = tag->ti_Data;
+	        imreq->ism_DisplayWidth = tidata;
 		break;
 
             case ASLSM_InitialDisplayHeight:
-	        imreq->ism_DisplayHeight = tag->ti_Data;
+	        imreq->ism_DisplayHeight = tidata;
 		break;
 	
 	    case ASLSM_InitialDisplayID:
-	        imreq->ism_DisplayID = tag->ti_Data;
+	        imreq->ism_DisplayID = tidata;
 		break;
 		
   	    case ASLSM_InitialInfoLeftEdge:
-	        imreq->ism_InfoLeftEdge = tag->ti_Data;
+	        imreq->ism_InfoLeftEdge = tidata;
 		break;
 		
 	    case ASLSM_InitialInfoTopEdge:
-	        imreq->ism_InfoTopEdge = tag->ti_Data;
+	        imreq->ism_InfoTopEdge = tidata;
 		break;
 		
 	    case ASLSM_InitialInfoOpened:
-	        imreq->ism_InfoOpened = tag->ti_Data ? TRUE : FALSE;
+	        imreq->ism_InfoOpened = tidata ? TRUE : FALSE;
 		break;
 	
 	    case ASLSM_InitialOverscanType:
-	        imreq->ism_OverscanType = tag->ti_Data;
+	        imreq->ism_OverscanType = tidata;
 		break;
 	
 	    case ASLSM_MinWidth:
-	        imreq->ism_MinWidth = tag->ti_Data;
+	        imreq->ism_MinWidth = tidata;
 		break;
 		
 	    case ASLSM_MaxWidth:
-	        imreq->ism_MaxWidth = tag->ti_Data;
+	        imreq->ism_MaxWidth = tidata;
 		break;
 		
 	    case ASLSM_MinHeight:
-	        imreq->ism_MinHeight = tag->ti_Data;
+	        imreq->ism_MinHeight = tidata;
 		break;
 	
 	    case ASLSM_MaxHeight:
-	        imreq->ism_MaxHeight = tag->ti_Data;
+	        imreq->ism_MaxHeight = tidata;
 		break;
 	
 	    case ASLSM_MinDepth:
-	        imreq->ism_MinDepth = tag->ti_Data;
+	        imreq->ism_MinDepth = tidata;
 		break;
 		
 	    case ASLSM_MaxDepth:
-	        imreq->ism_MaxDepth = tag->ti_Data;
+	        imreq->ism_MaxDepth = tidata;
+		break;
+		
+	    case ASLSM_PropertyFlags:
+	        imreq->ism_PropertyFlags = tidata;
+		break;
+		
+	    case ASLSM_PropertyMask:
+	        imreq->ism_PropertyMask = tidata;
 		break;
 		
 	    default:
@@ -209,9 +217,6 @@ AROS_UFH3(VOID, SMTagHook,
 
     if (imreq->ism_MaxDepth < imreq->ism_MinDepth)
         imreq->ism_MaxDepth = imreq->ism_MinDepth;
-
-    if (imreq->ism_MaxDepth > 8)
-        imreq->ism_MinDepth = imreq->ism_MaxDepth;
 	    
     if (imreq->ism_DisplayDepth < imreq->ism_MinDepth)
         imreq->ism_DisplayDepth = imreq->ism_MinDepth;
@@ -271,25 +276,25 @@ AROS_UFH3(ULONG, SMGadgetryHook,
 
 struct ButtonInfo
 {
-    WORD gadid;  
-    char *text;
-    const struct CoolImage *coolimage;
-    Object **objvar;
+    WORD 			gadid;  
+    char 			*text;
+    const struct CoolImage 	*coolimage;
+    Object 			**objvar;
 };
 
 STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {    
-    struct SMUserData *udata = ld->ld_UserData;
-    struct IntModeReq *imreq = (struct IntModeReq *)ld->ld_IntReq;
-    STRPTR str[6];
-    struct ButtonInfo bi[NUMBUTS] =
+    struct SMUserData 	*udata = ld->ld_UserData;
+    struct IntModeReq 	*imreq = (struct IntModeReq *)ld->ld_IntReq;
+    STRPTR 		str[6];
+    struct ButtonInfo 	bi[NUMBUTS] =
     {
         { ID_BUTOK	, GetIR(imreq)->ir_PositiveText , &cool_monitorimage, &udata->OKBut	 },
 	{ ID_BUTCANCEL  , GetIR(imreq)->ir_NegativeText , &cool_cancelimage , &udata->CancelBut  }
     };
 
-    Object *gad;
-    WORD gadrows, x, y, w, h, i, y2;
+    Object 		*gad;
+    WORD 		gadrows, x, y, w, h, i, y2;
     
     NEWLIST(&udata->ListviewList);
     
@@ -613,7 +618,7 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		    text += strlen(text) + 1;
 		}
 		*array++ = NULL;
-		
+				
 		udata->DepthGadget = gad = NewObjectA(AslBase->aslcycleclass, NULL, cycle_tags);
 		if (!gad) goto failure;
 		
@@ -648,16 +653,16 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     {
         struct NewMenu nm[] =
 	{
-	    {NM_TITLE, imreq->ism_Menu_Control},
-	     {NM_ITEM, imreq->ism_Item_Control_LastMode + 2	, imreq->ism_Item_Control_LastMode},
-	     {NM_ITEM, imreq->ism_Item_Control_NextMode + 2	, imreq->ism_Item_Control_NextMode},
-	     {NM_ITEM, NM_BARLABEL},
-	     {NM_ITEM, imreq->ism_Item_Control_PropertyList + 2	, imreq->ism_Item_Control_PropertyList},
-	     {NM_ITEM, imreq->ism_Item_Control_Restore + 2	, imreq->ism_Item_Control_Restore},
-	     {NM_ITEM, NM_BARLABEL},
-	     {NM_ITEM, imreq->ism_Item_Control_OK + 2		, imreq->ism_Item_Control_OK},
-	     {NM_ITEM, imreq->ism_Item_Control_Cancel + 2	, imreq->ism_Item_Control_Cancel},
-	    {NM_END}
+	    {NM_TITLE, imreq->ism_Menu_Control													},
+	     {NM_ITEM, imreq->ism_Item_Control_LastMode + 2	, imreq->ism_Item_Control_LastMode	, 0, 0, (APTR)SMMEN_LASTMODE		},
+	     {NM_ITEM, imreq->ism_Item_Control_NextMode + 2	, imreq->ism_Item_Control_NextMode	, 0, 0, (APTR)SMMEN_NEXTMODE 		},
+	     {NM_ITEM, NM_BARLABEL														},
+	     {NM_ITEM, imreq->ism_Item_Control_PropertyList + 2	, imreq->ism_Item_Control_PropertyList	, 0, 0, (APTR)SMMEN_PROPERTYLIST	},
+	     {NM_ITEM, imreq->ism_Item_Control_Restore + 2	, imreq->ism_Item_Control_Restore	, 0, 0, (APTR)SMMEN_RESTORE		},
+	     {NM_ITEM, NM_BARLABEL														},
+	     {NM_ITEM, imreq->ism_Item_Control_OK + 2		, imreq->ism_Item_Control_OK		, 0, 0, (APTR)SMMEN_OK			},
+	     {NM_ITEM, imreq->ism_Item_Control_Cancel + 2	, imreq->ism_Item_Control_Cancel	, 0, 0, (APTR)SMMEN_CANCEL		},
+	    {NM_END																}
 	};
 
 	struct TagItem menu_tags[] =
@@ -713,11 +718,11 @@ STATIC BOOL SMGadLayout(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 STATIC ULONG SMHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct IntuiMessage *imsg;
-    ULONG retval = GHRET_OK;
-    struct SMUserData *udata;
-    struct IntModeReq *imreq;
-    WORD gadid;
+    struct IntuiMessage 	*imsg;
+    struct SMUserData 		*udata;
+    struct IntModeReq 		*imreq;
+    WORD 			gadid;
+    ULONG 			retval = GHRET_OK;
 
     EnterFunc(bug("SMHandleEvents: Class: %d\n", imsg->Class));
 
@@ -728,28 +733,41 @@ STATIC ULONG SMHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 
     switch (imsg->Class)
     {
-    case IDCMP_CLOSEWINDOW:
-	retval = FALSE;
-	break;
+	case IDCMP_CLOSEWINDOW:
+	    retval = FALSE;
+	    break;
+
+        case IDCMP_RAWKEY:
+	    switch (imsg->Code)
+	    {
+	        case CURSORUP:
+		    SMChangeActiveLVItem(ld, -1, imsg->Qualifier, AslBase);
+		    break;
+		    
+		case CURSORDOWN:
+		    SMChangeActiveLVItem(ld, 1, imsg->Qualifier, AslBase);
+		    break;
+	    }
+	    break;
 	
-    case IDCMP_GADGETUP:
-	gadid = ((struct Gadget *)imsg->IAddress)->GadgetID;
-	
-	D(bug("GADGETUP! gadgetid=%d\n", gadid));
+	case IDCMP_GADGETUP:
+	    gadid = ((struct Gadget *)imsg->IAddress)->GadgetID;
 
-	switch (gadid)
-	{
-	    case ID_BUTCANCEL:
-		retval = FALSE;
-		break;
+	    D(bug("GADGETUP! gadgetid=%d\n", gadid));
 
-	    case ID_BUTOK:
-		retval = GHRET_FINISHED_OK;
-		break;
-	    
-	} /* switch (gadget ID) */
+	    switch (gadid)
+	    {
+		case ID_BUTCANCEL:
+		    retval = FALSE;
+		    break;
 
-	break; /* case IDCMP_GADGETUP: */
+		case ID_BUTOK:
+		    retval = GHRET_FINISHED_OK;
+		    break;
+
+	    } /* switch (gadget ID) */
+
+	    break; /* case IDCMP_GADGETUP: */
 
     } /* switch (imsg->Class) */
 
@@ -763,9 +781,9 @@ STATIC ULONG SMHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 *******************/
 STATIC VOID SMGadCleanup(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct SMUserData *udata;
-    struct ScreenModeRequester *req;
-    struct IntReq *intreq;
+    struct SMUserData 		*udata;
+    struct ScreenModeRequester 	*req;
+    struct IntReq 	*intreq;
     
     EnterFunc(bug("SMGadCleanup(ld=%p)\n", ld));
 

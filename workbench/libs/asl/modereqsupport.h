@@ -19,5 +19,7 @@
 #   include "layout.h"
 #endif
 
-void SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase);
+LONG SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase);
+void SMChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct AslBase_intern *AslBase);
+
 

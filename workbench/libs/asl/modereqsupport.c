@@ -13,6 +13,7 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <exec/memory.h>
+#include <dos/dos.h>
 #include <graphics/modeid.h>
 #include <graphics/displayinfo.h>
 #include <graphics/monitor.h>
@@ -41,7 +42,7 @@ static WORD SMCompareNodes(struct IntModeReq *imreq, struct DisplayMode *node1,
 
 /*****************************************************************************************/
 
-void SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
+LONG SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct SMUserData 	 *udata = (struct SMUserData *)ld->ld_UserData;	
     struct IntModeReq 	 *imreq = (struct IntModeReq *)ld->ld_IntReq;
@@ -49,9 +50,9 @@ void SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
     struct DimensionInfo diminfo;
     struct DisplayInfo   dispinfo;
     struct NameInfo	 nameinfo;
-    UBYTE		 name[DISPLAYNAMELEN + 1];
-    
-    ULONG 		displayid = INVALID_ID;
+    UBYTE		 name[DISPLAYNAMELEN + 1];    
+    ULONG 		 displayid = INVALID_ID;
+    WORD		 i, active = 0;
     
     while(INVALID_ID != (displayid = NextDisplayInfo(displayid)))
     {
@@ -75,30 +76,104 @@ void SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		D(bug("SMGetModes: No NameInfo. Making by hand. Name = \"%s\"\n", name));
 	    }
 	    
-	    dispmode = AllocPooled(ld->ld_IntReq->ir_MemPool, sizeof(struct DisplayMode));
-	    if (dispmode)
+	    if (diminfo.MaxDepth < imreq->ism_MinDepth) continue;
+	    
+	    if ((diminfo.MinRasterWidth  > imreq->ism_MaxWidth ) ||
+	        (diminfo.MaxRasterWidth  < imreq->ism_MinWidth ) ||
+		(diminfo.MinRasterHeight > imreq->ism_MaxHeight) ||
+		(diminfo.MaxRasterHeight < imreq->ism_MinHeight)) continue;
+		
+	    if ((dispinfo.PropertyFlags   & imreq->ism_PropertyMask) !=
+	        (imreq->ism_PropertyFlags & imreq->ism_PropertyMask)) continue;
+	
+	    if (imreq->ism_FilterFunc)
 	    {
-	        dispmode->dm_DimensionInfo = diminfo;
-		dispmode->dm_PropertyFlags = dispinfo.PropertyFlags;
-		dispmode->dm_Node.ln_Name  = PooledCloneString(name, NULL, ld->ld_IntReq->ir_MemPool, AslBase);
-		SortInNode(imreq, &udata->ListviewList, &dispmode->dm_Node, (APTR)SMCompareNodes, AslBase);
+		if (CallHookPkt(imreq->ism_FilterFunc, ld->ld_Req, (APTR)displayid) == 0)
+		    continue;     
 	    }
+	    
+	    dispmode = AllocPooled(ld->ld_IntReq->ir_MemPool, sizeof(struct DisplayMode));
+	    if (!dispmode) return ERROR_NO_FREE_STORE;
+	    
+	    dispmode->dm_DimensionInfo = diminfo;
+	    dispmode->dm_PropertyFlags = dispinfo.PropertyFlags;
+	    dispmode->dm_Node.ln_Name  = PooledCloneString(name, NULL, ld->ld_IntReq->ir_MemPool, AslBase);
+
+	    SortInNode(imreq, &udata->ListviewList, &dispmode->dm_Node, (APTR)SMCompareNodes, AslBase);
 	    
 	} /* if diminfo and dispinfo could be retrieved */
 	
     } /* while(INVALID_ID != (displayid = NextDisplayInfo(displayid))) */
     
+    if (imreq->ism_CustomSMList)
+    {
+        struct DisplayMode *succ;
+	
+	ForeachNodeSafe(imreq->ism_CustomSMList, dispmode, succ)
+	{
+	    /* custom modes must have displayID from range 0xFFFF0000 .. 0xFFFFFFFF */
+	    
+	    if (succ->dm_DimensionInfo.Header.DisplayID < 0xFFFF0000) continue;
+	    
+	    Remove(&dispmode->dm_Node);
+	    SortInNode(imreq, &udata->ListviewList, &dispmode->dm_Node, (APTR)SMCompareNodes, AslBase);
+	}	
+    }
+    
     SetAttrs(udata->Listview, ASLLV_Labels, (IPTR)&udata->ListviewList,
                               TAG_DONE);
 
-    if (!IsListEmpty(&udata->ListviewList))
+    if (IsListEmpty(&udata->ListviewList))
     {
-        SetAttrs(udata->Listview, ASLLV_Active, 0,
-				  TAG_DONE);
+        return ERROR_NO_MORE_ENTRIES;
     }
-        
+    
+    SetAttrs(udata->Listview, ASLLV_Active, 0,
+		              TAG_DONE);    
+    return 0;        
 }
 
 
 /*****************************************************************************************/
 
+void SMChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct AslBase_intern *AslBase)
+{
+    struct SMUserData 		*udata = (struct SMUserData *)ld->ld_UserData;    
+    struct IntModeReq 		*imreq = (struct IntModeReq *)ld->ld_IntReq;
+    struct ASLLVFileReqNode 	*node;
+    IPTR 			active, total, visible;
+    struct TagItem		set_tags[] =
+    {
+    	{ASLLV_Active		, 0		},
+	{ASLLV_MakeVisible	, 0		},
+	{TAG_DONE				}
+    };
+    
+    GetAttr(ASLLV_Active , udata->Listview, &active );
+    GetAttr(ASLLV_Total  , udata->Listview, &total  );
+    GetAttr(ASLLV_Visible, udata->Listview, &visible);
+    
+    if (quali & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+    {
+        delta *= (visible - 1);
+    }
+    else if (quali & (IEQUALIFIER_LALT | IEQUALIFIER_RALT | IEQUALIFIER_CONTROL))
+    {
+        delta *= total;
+    }
+
+    active += delta;
+    
+    if (((LONG)active) < 0) active = 0;
+    if (active >= total) active = total - 1;
+    
+    set_tags[0].ti_Data = set_tags[1].ti_Data = active;
+    
+    SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
+    
+}
+
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/

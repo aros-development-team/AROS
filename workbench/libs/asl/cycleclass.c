@@ -702,12 +702,16 @@ static IPTR aslcycle_goinactive(Class * cl, Object * o, struct gpGoInactive *msg
 {
     struct AslCycleData *data = INST_DATA(cl, o);
     
-    if (data->popupwindow) CloseWindow(data->popupwindow);
+    if (data->popupwindow)
+    {
+        CloseWindow(data->popupwindow);
+        data->popupwindow = 0;
+    }
+    
     if (data->sentgadgetup)
     {
         RenderObject_Update(cl, o, msg->gpgi_GInfo);
     }
-    data->popupwindow = 0;
     
     return 0;
 }

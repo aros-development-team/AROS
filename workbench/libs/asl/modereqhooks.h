@@ -51,13 +51,22 @@ struct SMUserData
     struct Hook			ListviewHook;
     UWORD 			ButWidth;
     UWORD 			ButHeight;    
-    STRPTR			colorarray[25];
-    UBYTE			colortext[50];
+    STRPTR			colorarray[33];
+    UBYTE			colortext[150];
     UBYTE 			Flags;
 	
 };
 
 /* Has the gadgetry been layouted before ? */
 #define SMFLG_LAYOUTED 		(1 << 0)
+
+/* Menu IDs */
+
+#define SMMEN_LASTMODE		1
+#define SMMEN_NEXTMODE		2 
+#define SMMEN_PROPERTYLIST	3 
+#define SMMEN_RESTORE		4 
+#define SMMEN_OK		5 
+#define SMMEN_CANCEL		6 
 
 #endif /* MODEREQHOOKS_H */
