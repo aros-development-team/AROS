@@ -48,16 +48,8 @@ AROS_LH0(void, Switch,
 	*/
 
 	SysBase->AttnResched |= 0x8000;
-this->tc_Flags |= 2;
-//kprintf("Calling kill!\n");
 	kill(getpid(), SIGUSR1);
 
-while (0 != (this->tc_Flags & 2))
-{
-  int dummy=0;
-  dummy++;
-}
-//kprintf("Running again!\n");
     }
 
     AROS_LIBFUNC_EXIT
