@@ -212,10 +212,15 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 #if 0
 	case MUIO_MenustripNM: /* struct NewMenu *nm, ULONG flags */
 	    break;
+#endif
 
 	case MUIO_Menuitem: /* STRPTR label, STRPTR shortcut, ULONG flags, ULONG data  */
-	    break;
-#endif
+	    return MUI_NewObject( MUIC_Menuitem,
+		MUIA_Menuitem_Title, params[0],
+		MUIA_Menuitem_Shortcut, params[1],
+		/* flags NYI */
+		MUIA_UserData, params[3],
+	    	TAG_DONE);
 
 	case MUIO_BarTitle: /* STRPTR label */
 	    return MUI_NewObject(MUIC_Rectangle,
