@@ -94,6 +94,19 @@ struct MUI_GroupData
 #define GROUP_PAGEMODE    (1<<5)
 #define GROUP_VIRTUAL     (1<<6)
 
+/* During minmax calculations objects with a weight of 0 shall
+   be treated like they had identical min/def/max size, ie. fixed size.
+   
+   During layout objects with 0 weight must be treated like fixed-sized
+   too, but for hgroups only in x direction, and for vgroups only in
+   y direction. I think ... */
+   
+#define w0_defwidth(x) (_hweight(x) ? _defwidth(x) : _minwidth(x))
+#define w0_maxwidth(x) (_hweight(x) ? _maxwidth(x) : _minwidth(x))
+
+#define w0_defheight(x) (_vweight(x) ? _defheight(x) : _minheight(x))
+#define w0_maxheight(x) (_vweight(x) ? _maxheight(x) : _minheight(x))
+
 static const int __version = 1;
 static const int __revision = 1;
 
@@ -1000,14 +1013,14 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
 	if (! (_flags(child) & MADF_SHOWME)  || (_flags(child) & MADF_BORDERGADGET))
 	    continue;
 	if (data->flags & GROUP_SAME_WIDTH)
-	    _minwidth(child) = MIN(maxminwidth, _maxwidth(child));
+	    _minwidth(child) = MIN(maxminwidth, w0_maxwidth(child));
 	tmp.MinWidth += _minwidth(child);
-	tmp.DefWidth += _defwidth(child);
-	tmp.MaxWidth += _maxwidth(child);
+	tmp.DefWidth += w0_defwidth(child);
+	tmp.MaxWidth += w0_maxwidth(child);
 	tmp.MaxWidth = MIN(tmp.MaxWidth, MUI_MAXMAX);
 	tmp.MinHeight = MAX(tmp.MinHeight, _minheight(child));
-	tmp.DefHeight = MAX(tmp.DefHeight, _defheight(child));
-	tmp.MaxHeight = MIN(tmp.MaxHeight, _maxheight(child));
+	tmp.DefHeight = MAX(tmp.DefHeight, w0_defheight(child));
+	tmp.MaxHeight = MIN(tmp.MaxHeight, w0_maxheight(child));
     }
     END_MINMAX();
 }
@@ -1045,14 +1058,14 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
 	if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
 	    continue;
 	if (data->flags & GROUP_SAME_HEIGHT)
-	    _minheight(child) = MIN(maxminheight, _maxheight(child));
+	    _minheight(child) = MIN(maxminheight, w0_maxheight(child));
 	tmp.MinHeight += _minheight(child);
-	tmp.DefHeight += _defheight(child);
-	tmp.MaxHeight += _maxheight(child);
+	tmp.DefHeight += w0_defheight(child);
+	tmp.MaxHeight += w0_maxheight(child);
 	tmp.MaxHeight = MIN(tmp.MaxHeight, MUI_MAXMAX);
 	tmp.MinWidth = MAX(tmp.MinWidth, _minwidth(child));
-	tmp.DefWidth = MAX(tmp.DefWidth, _defwidth(child));
-	tmp.MaxWidth = MIN(tmp.MaxWidth, _maxwidth(child));
+	tmp.DefWidth = MAX(tmp.DefWidth, w0_defwidth(child));
+	tmp.MaxWidth = MIN(tmp.MaxWidth, w0_maxwidth(child));
     }
     END_MINMAX();
 }
@@ -1078,12 +1091,12 @@ minmax_2d_rows_pass (struct MUI_GroupData *data, struct MinList *children,
 		continue;
 	    if (data->flags & GROUP_SAME_HEIGHT)
 	    {
-		_minheight(child) = MIN(maxmin_height, _maxheight(child));
-		_defheight(child) = MIN(maxdef_height, _maxheight(child));
+		_minheight(child) = MIN(maxmin_height, w0_maxheight(child));
+		_defheight(child) = MIN(maxdef_height, w0_maxheight(child));
 	    }
 	    min_h = MAX(min_h, _minheight(child));
-	    def_h = MAX(def_h, _defheight(child));
-	    max_h = MIN(max_h, _maxheight(child));
+	    def_h = MAX(def_h, w0_defheight(child));
+	    max_h = MIN(max_h, w0_maxheight(child));
 	    ++j;
 	    if ((j % data->columns) == 0)
 		break;
@@ -1119,12 +1132,12 @@ minmax_2d_columns_pass (struct MUI_GroupData *data, struct MinList *children,
 		continue;
 	    if (data->flags & GROUP_SAME_WIDTH)
 	    {
-		_minwidth(child) = MIN(maxmin_width, _maxwidth(child));
-		_defwidth(child) = MIN(maxdef_width, _maxwidth(child));
+		_minwidth(child) = MIN(maxmin_width, w0_maxwidth(child));
+		_defwidth(child) = MIN(maxdef_width, w0_maxwidth(child));
 	    }
 	    min_w = MAX(min_w, _minwidth(child));
-	    def_w = MAX(def_w, _defwidth(child));
-	    max_w = MIN(max_w, _maxwidth(child));
+	    def_w = MAX(def_w, w0_defwidth(child));
+	    max_w = MIN(max_w, w0_maxwidth(child));
 	}
 	max_w = MAX(max_w, min_w);
 /*  	D(bug("col %d : min_w=%d max_w=%d\n", i, min_w, max_w)); */
@@ -1172,8 +1185,8 @@ group_minmax_2d(struct IClass *cl, Object *obj,
 		continue;
 	    maxmin_width = MAX(maxmin_width, _minwidth(child));
 	    maxmin_height = MAX(maxmin_height, _minheight(child));
-	    maxdef_width = MAX(maxdef_width, _defwidth(child));
-	    maxdef_height = MAX(maxdef_height, _defheight(child));
+	    maxdef_width = MAX(maxdef_width, w0_defwidth(child));
+	    maxdef_height = MAX(maxdef_height, w0_defheight(child));
 	}
 /*  	g_print("2d group: mminw=%d mminh=%d\n", maxmin_width, maxmin_height); */
     }
@@ -1200,12 +1213,12 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
 
 	tmp.MinHeight = MAX(tmp.MinHeight, _minheight(child));
 	tmp.MinWidth = MAX(tmp.MinWidth, _minwidth(child));
-	tmp.MaxHeight = MIN(tmp.MaxHeight, _maxheight(child));
-	tmp.MaxWidth = MIN(tmp.MaxWidth, _maxwidth(child));
+	tmp.MaxHeight = MIN(tmp.MaxHeight, w0_maxheight(child));
+	tmp.MaxWidth = MIN(tmp.MaxWidth, w0_maxwidth(child));
 	tmp.DefHeight = MAX(tmp.DefHeight,
-			    ((_defheight(child) < MUI_MAXMAX) ? _defheight(child) : tmp.DefHeight));
+			    ((w0_defheight(child) < MUI_MAXMAX) ? w0_defheight(child) : tmp.DefHeight));
 	tmp.DefWidth = MAX(tmp.DefWidth,
-			   ((_defwidth(child) < MUI_MAXMAX) ? _defwidth(child) : tmp.DefWidth));
+			   ((w0_defwidth(child) < MUI_MAXMAX) ? w0_defwidth(child) : tmp.DefWidth));
 	D(bug("minmax_pagemode(%lx) defw = %ld\n", obj, tmp.DefWidth));
     }
     END_MINMAX();
@@ -1342,7 +1355,7 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
 	    continue;
 	totalBonus -= _minwidth(child);
 
-	if (_minwidth(child) != _maxwidth(child))
+	if (_minwidth(child) != w0_maxwidth(child))
 	    data->horiz_weight_sum += _hweight(child);
     }
 
@@ -1367,15 +1380,15 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
 	_flags(child) &= ~MADF_MAXSIZE;
 	if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
 	    continue;
-	if (_minwidth(child) == _maxwidth(child))
+	if (_minwidth(child) == w0_maxwidth(child))
 	    continue;
 /*	if ((totalBonus * _hweight(child) / (double)data->horiz_weight_sum) >
 	    (_maxwidth(child) - _minwidth(child)))*/
 	if ((totalBonus * _hweight(child) / data->horiz_weight_sum) >
-	    (_maxwidth(child) - _minwidth(child)))
+	    (w0_maxwidth(child) - _minwidth(child)))
 	{
 	    _flags(child) |= MADF_MAXSIZE;
-	    totalBonus -= _maxwidth(child) - _minwidth(child);
+	    totalBonus -= w0_maxwidth(child) - _minwidth(child);
 	    data->horiz_weight_sum -= _hweight(child);
 	}
     }
@@ -1394,7 +1407,7 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
 
 	if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
 	    continue;
-	has_variable_width = (_minwidth(child) != _maxwidth(child)) &&
+	has_variable_width = (_minwidth(child) != w0_maxwidth(child)) &&
 	    !(_flags(child) & MADF_MAXSIZE);
 	/* center child if group height is bigger than maxheight */
 	height = MIN(_maxheight(child), _mheight(obj));
@@ -1411,17 +1424,17 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
 	}
 
 	width = (_flags(child) & MADF_MAXSIZE) ?
-	    _maxwidth(child) : _minwidth(child);
+	    w0_maxwidth(child) : _minwidth(child);
 	if (has_variable_width && data->horiz_weight_sum)
 	{
 //	    bonus = ROUND(totalBonus * _hweight(child)
 //			  / (double)data->horiz_weight_sum);
 	    bonus = (totalBonus * _hweight(child) + data->horiz_weight_sum  / 2) / data->horiz_weight_sum;
 
-	    bonus = MIN(bonus, _maxwidth(child) - width);
+	    bonus = MIN(bonus, w0_maxwidth(child) - width);
 	    width += bonus;
 	}
-	width = CLAMP(width, _minwidth(child), _maxwidth(child));
+	width = CLAMP(width, _minwidth(child), w0_maxwidth(child));
 	if (!MUI_Layout(child, left, top, width, height, 0))
 	    return;
 	left += data->horiz_spacing + width;
@@ -1467,7 +1480,7 @@ static void group_layout_vert(struct IClass *cl, Object *obj, struct MinList *ch
 	    continue;
 	totalBonus -= _minheight(child);
 
-	if (_minheight(child) != _maxheight(child))
+	if (_minheight(child) != w0_maxheight(child))
 	    data->vert_weight_sum += _vweight(child);
     }
 
@@ -1491,15 +1504,15 @@ static void group_layout_vert(struct IClass *cl, Object *obj, struct MinList *ch
 	_flags(child) &= ~MADF_MAXSIZE;
 	if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
 	    continue;
-	if (_minheight(child) == _maxheight(child))
+	if (_minheight(child) == w0_maxheight(child))
 	    continue;
 /*	if ((totalBonus * _vweight(child) / (double)data->vert_weight_sum) >
 	    (_maxheight(child) - _minheight(child)))*/
 	if ((totalBonus * _vweight(child) / data->vert_weight_sum) >
-	    (_maxheight(child) - _minheight(child)))
+	    (w0_maxheight(child) - _minheight(child)))
 	{
 	    _flags(child) |= MADF_MAXSIZE;
-	    totalBonus -= _maxheight(child) - _minheight(child);
+	    totalBonus -= w0_maxheight(child) - _minheight(child);
 	    data->vert_weight_sum -= _vweight(child);
 	}
     }
@@ -1514,13 +1527,13 @@ static void group_layout_vert(struct IClass *cl, Object *obj, struct MinList *ch
 
 	if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
 	    continue;
-	has_variable_height = (_minheight(child) != _maxheight(child)) &&
+	has_variable_height = (_minheight(child) != w0_maxheight(child)) &&
 	    !(_flags(child) & MADF_MAXSIZE);
 	width = MIN(_maxwidth(child), _mwidth(obj));
 	width = MAX(width, _minwidth(child));
 	left = (_mwidth(obj) - width) / 2;
 	height = (_flags(child) & MADF_MAXSIZE) ?
-	    _maxheight(child) : _minheight(child);
+	    w0_maxheight(child) : _minheight(child);
 
 	if (has_variable_height && data->vert_weight_sum) /* Added this check, because data->vert_weight_sum might be 0 */
 	{
@@ -1529,11 +1542,11 @@ static void group_layout_vert(struct IClass *cl, Object *obj, struct MinList *ch
 
 	    bonus = (totalBonus * _vweight(child) + data->vert_weight_sum  / 2) / data->vert_weight_sum;
 
-	    bonus = MIN(bonus, _maxheight(child) - height);
+	    bonus = MIN(bonus, w0_maxheight(child) - height);
 	    height += bonus;
 	}
 
-	height = CLAMP(height, _minheight(child), _maxheight(child));
+	height = CLAMP(height, _minheight(child), w0_maxheight(child));
 	if (!MUI_Layout(child, left, top, width, height, 0))
 	    return;
 	top += data->vert_spacing + height;
@@ -1575,7 +1588,7 @@ layout_2d_row_precalc (struct MUI_GroupData *data,
 	    if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
 		continue;
 	    row_infos[i].min = MAX(row_infos[i].min, _minheight(child));
-	    row_infos[i].max = MIN(row_infos[i].max, _maxheight(child));
+	    row_infos[i].max = MIN(row_infos[i].max, w0_maxheight(child));
 	    row_infos[i].weight += _vweight(child);
 	    ++j;
 	    if ((j % data->columns) == 0)
@@ -1623,7 +1636,7 @@ layout_2d_col_precalc (struct MUI_GroupData *data,
 	    if (((j - 1) % data->columns) != i)
 		continue;
 	    col_infos[i].min = MAX(col_infos[i].min, _minwidth(child));
-	    col_infos[i].max = MIN(col_infos[i].max, _maxwidth(child));
+	    col_infos[i].max = MIN(col_infos[i].max, w0_maxwidth(child));
 	    col_infos[i].weight += _hweight(child);
 	}
 	col_infos[i].max = MAX(col_infos[i].max, col_infos[i].min);
