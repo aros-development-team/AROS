@@ -66,7 +66,7 @@ main ()
     // The first line must print two equal pointers and the second line
     // must print two times "hello".
     printf ("string %p %p\n", p1, (void *)p2);
-    printf ("%s %s\n", p1, (const char *)p2);
+    printf ("%s %s\n", p1, (UBYTE *)p2);
     putchar ('\n');
 
     // Show the contents of the memory (to prove that the actual data is BE)

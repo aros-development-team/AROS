@@ -27,7 +27,7 @@ int main (int argc, char ** argv)
     ul = 0x1234;
 
     assert (s == w);
-    printf ("us=%x uw=%x\n", us, short (uw));
+    printf ("us=%x uw=%x\n", us, int (uw));
     printf ("ul=%lx\n", (unsigned long)ul);
     assert (us == uw);
 
