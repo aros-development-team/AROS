@@ -49,7 +49,7 @@ static ULONG Scrollbar_New(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 			       MUIA_Group_Spacing, 0,
 			       MUIA_Background, MUII_BACKGROUND,
-			       TAG_MORE, msg->ops_AttrList);
+			       TAG_MORE, (IPTR) msg->ops_AttrList);
     if (!obj)
 	return FALSE;
 

@@ -46,7 +46,7 @@ static ULONG String_New(struct IClass *cl, Object * obj, struct opSet *msg)
 	MUIA_Text_Editable, TRUE,
 	MUIA_Text_SetMin, TRUE,
 	MUIA_Text_SetMax, FALSE,
-	TAG_MORE, msg->ops_AttrList);
+	TAG_MORE, (IPTR) msg->ops_AttrList);
 
     if (!obj)
     {

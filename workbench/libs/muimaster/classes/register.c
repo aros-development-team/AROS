@@ -274,7 +274,7 @@ static ULONG Register_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL, MUIA_Group_PageMode, TRUE,
 					MUIA_Background, MUII_RegisterBack,
-    	    	    	    	    	TAG_MORE, msg->ops_AttrList);
+    	    	    	    	    	TAG_MORE, (IPTR) msg->ops_AttrList);
     if (!obj) return NULL;
 
     data = INST_DATA(cl, obj);

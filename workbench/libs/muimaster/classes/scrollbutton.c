@@ -39,7 +39,7 @@ static ULONG Scrollbutton_New(struct IClass * cl, Object * o, struct opSet * msg
   	ButtonFrame,
   	MUIA_InputMode, MUIV_InputMode_RelVerify,
   	MUIA_Background, MUII_ButtonBack,
-	TAG_MORE, msg->ops_AttrList);
+	TAG_MORE, (IPTR) msg->ops_AttrList);
 }
 
 static ULONG Scrollbutton_Get(struct IClass * cl, Object * o, struct opGet * msg)

@@ -214,7 +214,7 @@ AROS_UFH2S(void, len_func,
 	    DoMethod(req_group, MUIM_Group_ExitChange);
 
 	    /* now activate that button with a starting "*" */
-	    if(active != -1) set(req_wnd, MUIA_Window_ActiveObject, req_but[active]);
+	    if(active != -1) set(req_wnd, MUIA_Window_ActiveObject, (IPTR) req_but[active]);
 
 	    /* lets collect the waiting returnIDs now */
 	    // COLLECT_RETURNIDS;
