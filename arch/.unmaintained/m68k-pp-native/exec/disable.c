@@ -12,7 +12,10 @@
 #include <asm/registers.h>
 
 /*****************************************************************************/
-#ifndef UseExecstubs
+#undef Exec
+#ifdef UseExecstubs
+#    define Exec _Exec
+#endif
 
 /*  NAME */
 #include <proto/exec.h>
@@ -69,19 +72,17 @@
     HISTORY
 
 ******************************************************************************/
-#else
-void _Exec_Disable(struct ExecBase * SysBase)
-#endif
 {
-	AROS_LIBFUNC_INIT
+#undef Exec
+
+        AROS_LIBFUNC_INIT
 
 	/*
 	 * Disable interrupts by masking all interrupts.
 	 */
 	SetSR(0x0700,0x0700);
-	
+
 	SysBase->IDNestCnt++;
 
 	AROS_LIBFUNC_EXIT
-
 } /* Disable() */
