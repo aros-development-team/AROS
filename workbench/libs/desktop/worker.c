@@ -52,15 +52,19 @@ void scan(struct ScannerWorkerContext *swc)
                                               MEMF_ANY);
         for (i = 0; i < swc->swc_EAC->eac_Entries; i++)
         {
+            ULONG length = strlen(swc->swc_DirName) + 1 /* strlen("/") */ 
+                         + strlen(ead->ed_Name) + 1 /* '\0' */;
+            
             sr[i].sr_Name = ead->ed_Name;
 
-            fullPath =
-                AllocVec(strlen(swc->swc_DirName) + strlen("/") +
-                         strlen(ead->ed_Name) + 1, MEMF_ANY);
-            strcpy(fullPath, swc->swc_DirName);
+            fullPath = AllocVec(length, MEMF_ANY);
+            
+            strlcpy(fullPath, swc->swc_DirName, length);
             if (swc->swc_DirName[strlen(swc->swc_DirName) - 1] != ':')
-                strcat(fullPath, "/");
-            strcat(fullPath, ead->ed_Name);
+            {
+                strlcat(fullPath, "/", length);
+            }
+            strlcat(fullPath, ead->ed_Name, length);
 
             sr[i].sr_DiskObject = GetDiskObjectNew(fullPath);
 

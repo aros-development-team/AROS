@@ -808,20 +808,16 @@ IPTR iconConnectParent(Class * cl, Object * obj,
                                               IA_Type);
         if (dc)
         {
-            UBYTE          *buffer;
+            STRPTR description = NULL;
 
-            buffer = AllocVec(sizeof(UBYTE) * 10, MEMF_ANY);
+            // this will change to tool/project/drawer/etc...
+            if (data->type < 0)      description = "File";
+            else if (data->type > 0) description = "Drawer";
+            else                     description = "Unknown";
 
-        // this will change to tool/project/drawer/etc...
-            if (data->type < 0)
-                strcpy(buffer, "File");
-            else if (data->type > 0)
-                strcpy(buffer, "Drawer");
-            else
-                strcpy(buffer, "Unknown");
-
-            data->typePart = TextObject, MUIA_Text_Contents, buffer, End;
-
+            data->typePart = TextObject, 
+                MUIA_Text_Contents, description, 
+            End;
         }
 
         dc = (struct DetailColumn *) DoMethod(_parent(obj), ICM_GetColumn,
@@ -832,35 +828,45 @@ IPTR iconConnectParent(Class * cl, Object * obj,
             UBYTE           day[LEN_DATSTRING];
             UBYTE           date[LEN_DATSTRING];
             UBYTE           time[LEN_DATSTRING];
-            UBYTE          *buffer;
-
-            buffer = AllocVec(sizeof(UBYTE) * (LEN_DATSTRING * 3), MEMF_ANY);
-
-            dt.dat_Stamp = data->lastChanged;
-            dt.dat_Format = FORMAT_DOS;
-            dt.dat_Flags = DTF_SUBST;
-            dt.dat_StrDay = day;
+            ULONG           bufferLength = LEN_DATSTRING * 3; /* FIXME: ??? */
+            UBYTE          *buffer = AllocVec(bufferLength, MEMF_ANY);
+            /* FIXME: error checking */
+            
+            dt.dat_Stamp   = data->lastChanged;
+            dt.dat_Format  = FORMAT_DOS;
+            dt.dat_Flags   = DTF_SUBST;
+            dt.dat_StrDay  = day;
             dt.dat_StrDate = date;
             dt.dat_StrTime = time;
 
             if (DateToStr(&dt))
             {
                 if (strcmp(dt.dat_StrDay, "Yesterday") == 0)
-                    strcpy(buffer, dt.dat_StrDay);
+                {
+                    strlcpy(buffer, dt.dat_StrDay, length);
+                }
                 else if (strcmp(dt.dat_StrDay, "Today") == 0)
-                    strcpy(buffer, dt.dat_StrDay);
+                {
+                    strlcpy(buffer, dt.dat_StrDay, length);
+                }
                 else
-                    strcpy(buffer, dt.dat_StrDate);
-
-                strcat(buffer, " ");
-                strcat(buffer, dt.dat_StrTime);
+                {
+                    strlcpy(buffer, dt.dat_StrDate, length);
+                }
+                
+                strlcat(buffer, " ");
+                strlcat(buffer, dt.dat_StrTime);
             }
             else
+            {
                 kprintf("ERROR\n");
-
+            }
+            
             data->lastModifiedPart = TextObject,
-                MUIA_Text_Contents, buffer, End;
-
+                MUIA_Text_Contents, buffer, 
+            End;
+            
+            /* FIXME: free buffer */
         }
     }
 

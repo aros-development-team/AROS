@@ -189,16 +189,22 @@ ULONG desktopHandler(void)
                                 NEWLIST(&tnList);
 
                                 dl = LockDosList(htl->htl_Types | LDF_READ);
-                                while ((dl =
-                                        NextDosEntry(dl, htl->htl_Types)))
+                                while
+                                (
+                                    (dl = NextDosEntry(dl, htl->htl_Types))
+                                )
                                 {
-                                    tn = (struct TempNode *)
-                                        AllocVec(sizeof(struct TempNode),
-                                                 MEMF_ANY);
-                                    tn->t_Name =
-                                        AllocVec(strlen(dl->dol_DevName) + 1,
-                                                 MEMF_ANY);
-                                    strcpy(tn->t_Name, dl->dol_DevName);
+                                    ULONG length = strlen(dl->dol_DevName) + 1;
+                                    
+                                    tn = (struct TempNode *) AllocVec
+                                    (
+                                        sizeof(struct TempNode), MEMF_ANY
+                                    );
+                                    tn->t_Name = AllocVec
+                                    (
+                                        length + 1, MEMF_ANY
+                                    );
+                                    strlcpy(tn->t_Name, dl->dol_DevName, length);
                                     AddTail(&tnList, (struct Node *) tn);
                                     i++;
                                 }
@@ -211,23 +217,30 @@ ULONG desktopHandler(void)
                                 tn = tnList.lh_Head;
                                 while (tn->t_Node.ln_Succ)
                                 {
+                                    ULONG length = strlen(tn->t_Name) + 2;
+                                    
                                     sr[j].sr_Name = tn->t_Name;
-                                    fullPath =
-                                        AllocVec(strlen(tn->t_Name) + 2,
-                                                 MEMF_ANY);
-                                    strcpy(fullPath, tn->t_Name);
-                                    strcat(fullPath, ":");
-                                    sr[j].sr_DiskObject =
-                                        GetDiskObjectNew(fullPath);
-                                    tn = (struct TempNode *) tn->t_Node.
-                                        ln_Succ;
+                                    
+                                    fullPath = AllocVec(length + 2, MEMF_ANY);
+                                    
+                                    strlcpy(fullPath, tn->t_Name, length);
+                                    strlcat(fullPath, ":", length);
+                                    
+                                    sr[j].sr_DiskObject = GetDiskObjectNew
+                                    (
+                                        fullPath
+                                    );
+                                    tn = (struct TempNode *) tn->t_Node.ln_Succ;
                                     j++;
                                 }
 
-                                DoMethod(htl->htl_Application,
-                                         MUIM_Application_PushMethod,
-                                         htl->htl_CallBack, 3, ICOM_AddIcons,
-                                         i, sr);
+                                DoMethod
+                                (
+                                    htl->htl_Application,
+                                    MUIM_Application_PushMethod,
+                                    htl->htl_CallBack, 3,
+                                    ICOM_AddIcons, i, sr
+                                );
 
                                 break;
                             }

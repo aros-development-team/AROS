@@ -41,7 +41,8 @@ IPTR containerIconObserverExecute(Class * cl, Object * obj, Msg msg)
     UBYTE          *name,
                    *directory,
                    *newDir;
-    LONG            dirNameLen = 0;
+    ULONG           dirNameLen = 0;
+    ULONG           length = 0;
     struct ContainerIconObserverClassData *data;
     IPTR            retval = 1;
     Object         *horiz,
@@ -65,19 +66,20 @@ IPTR containerIconObserverExecute(Class * cl, Object * obj, Msg msg)
     if (directory)
         dirNameLen = strlen(directory);
 
-    newDir = AllocVec(strlen(name) + dirNameLen + 2, MEMF_ANY);
+    length = strlen(name) + dirNameLen + 1 /* ':' or '/' */ + 1;
+    newDir = AllocVec(length, MEMF_ANY);
 
     if (directory)
     {
-        strcpy(newDir, directory);
-        strcat(newDir, name);
-        strcat(newDir, "/");
+        strlcpy(newDir, directory, length);
+        strlcat(newDir, name, length);
+        strlcat(newDir, "/", length);
         title = name;
     }
     else
     {
-        strcpy(newDir, name);
-        strcat(newDir, ":");
+        strlcpy(newDir, name, length);
+        strlcat(newDir, ":", length);
         title = newDir;
     }
 
