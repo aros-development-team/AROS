@@ -57,7 +57,7 @@
     BPTR                  lock     = NULL;
 
     /* Test whether the named path exist, as-is. */
-    if ((lock = Lock(name, SHARED_LOCK)))
+    if ((lock = Lock(name, ACCESS_READ)))
     {
         /* Find out some info about the file. */
         if (Examine(lock, &fib))
