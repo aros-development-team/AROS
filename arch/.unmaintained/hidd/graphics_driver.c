@@ -87,13 +87,13 @@ static AttrBase HiddBitMapAttrBase = 0;
 static AttrBase HiddGCAttrBase = 0;
 
 
-#define PIXELBUF_SIZE 2000000
+#define PIXELBUF_SIZE 200000
 #define NUMPIX (PIXELBUF_SIZE / 4)
 
 #define NUMLUTPIX (PIXELBUF_SIZE)
 
 /* This buffer is used for planar-to-chunky-converion */
-static ULONG pixel_buf[PIXELBUF_SIZE];
+static ULONG *pixel_buf;
 static struct SignalSemaphore pixbuf_sema;
 
 #define LOCK_PIXBUF ObtainSemaphore(&pixbuf_sema);
@@ -289,8 +289,11 @@ int driver_init (struct GfxBase * GfxBase)
 		{
 	           /* Init the driver's defaultfont */
 		   if (init_romfonts(GfxBase))
-	    	   	ReturnInt("driver_init", int, TRUE);
-			
+	    	   {
+			pixel_buf=AllocMem(PIXELBUF_SIZE,MEMF_ANY);
+			if (pixel_buf)
+		   	    ReturnInt("driver_init", int, TRUE);
+		   }	
 		   ReleaseAttrBase(IID_Hidd_GC);
 		}
 		
