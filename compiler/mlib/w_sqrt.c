@@ -1,21 +1,25 @@
-
-/* @(#)w_sqrt.c 1.3 95/01/18 */
+/* @(#)w_sqrt.c 5.1 93/09/24 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
 
-/* 
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_sqrt.c,v 1.5 1999/08/28 00:07:09 peter Exp $";
+#endif
+
+/*
  * wrapper sqrt(x)
  */
 
-#include "fdlibm.h"
+#include "math.h"
+#include "math_private.h"
 
 #ifdef __STDC__
 	double sqrt(double x)		/* wrapper sqrt */

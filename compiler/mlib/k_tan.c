@@ -1,39 +1,42 @@
-
-/* @(#)k_tan.c 1.3 95/01/18 */
+/* @(#)k_tan.c 5.1 93/09/24 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
+
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_tan.c,v 1.5 1999/08/28 00:06:42 peter Exp $";
+#endif
 
 /* __kernel_tan( x, y, k )
  * kernel tan function on [-pi/4, pi/4], pi/4 ~ 0.7854
  * Input x is assumed to be bounded by ~pi/4 in magnitude.
  * Input y is the tail of x.
- * Input k indicates whether tan (if k=1) or 
+ * Input k indicates whether tan (if k=1) or
  * -1/tan (if k= -1) is returned.
  *
  * Algorithm
- *	1. Since tan(-x) = -tan(x), we need only to consider positive x. 
+ *	1. Since tan(-x) = -tan(x), we need only to consider positive x.
  *	2. if x < 2^-28 (hx<0x3e300000 0), return x with inexact if x!=0.
  *	3. tan(x) is approximated by a odd polynomial of degree 27 on
  *	   [0,0.67434]
  *		  	         3             27
  *	   	tan(x) ~ x + T1*x + ... + T13*x
  *	   where
- *	
+ *
  * 	        |tan(x)         2     4            26   |     -59.2
  * 	        |----- - (1+T1*x +T2*x +.... +T13*x    )| <= 2
- * 	        |  x 					| 
- * 
+ * 	        |  x 					|
+ *
  *	   Note: tan(x+y) = tan(x) + tan'(x)*y
  *		          ~ tan(x) + (1+x*x)*y
- *	   Therefore, for better accuracy in computing tan(x+y), let 
+ *	   Therefore, for better accuracy in computing tan(x+y), let
  *		     3      2      2       2       2
  *		r = x *(T2+x *(T3+x *(...+x *(T12+x *T13))))
  *	   then
@@ -45,11 +48,12 @@
  *		       = 1 - 2*(tan(y) - (tan(y)^2)/(1+tan(y)))
  */
 
-#include "fdlibm.h"
+#include "math.h"
+#include "math_private.h"
 #ifdef __STDC__
-static const double 
+static const double
 #else
-static double 
+static double
 #endif
 one   =  1.00000000000000000000e+00, /* 0x3FF00000, 0x00000000 */
 pio4  =  7.85398163397448278999e-01, /* 0x3FE921FB, 0x54442D18 */
@@ -78,12 +82,14 @@ T[] =  {
 #endif
 {
 	double z,r,v,w,s;
-	int ix,hx;
-	hx = __HI(x);	/* high word of x */
+	int32_t ix,hx;
+	GET_HIGH_WORD(hx,x);
 	ix = hx&0x7fffffff;	/* high word of |x| */
 	if(ix<0x3e300000)			/* x < 2**-28 */
 	    {if((int)x==0) {			/* generate inexact */
-		if(((ix|__LO(x))|(iy+1))==0) return one/fabs(x);
+	        uint32_t low;
+		GET_LOW_WORD(low,x);
+		if(((ix|low)|(iy+1))==0) return one/fabs(x);
 		else return (iy==1)? x: -one/x;
 	    }
 	    }
@@ -110,15 +116,15 @@ T[] =  {
 	    return (double)(1-((hx>>30)&2))*(v-2.0*(x-(w*w/(w+v)-r)));
 	}
 	if(iy==1) return w;
-	else {		/* if allow error up to 2 ulp, 
+	else {		/* if allow error up to 2 ulp,
 			   simply return -1.0/(x+r) here */
      /*  compute -1.0/(x+r) accurately */
 	    double a,t;
 	    z  = w;
-	    __LO(z) = 0;
+	    SET_LOW_WORD(z,0);
 	    v  = r-(z - x); 	/* z+v = r+x */
 	    t = a  = -1.0/w;	/* a = -1.0/w */
-	    __LO(t) = 0;
+	    SET_LOW_WORD(t,0);
 	    s  = 1.0+t*z;
 	    return t+a*(s+t*v);
 	}

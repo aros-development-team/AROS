@@ -1,15 +1,18 @@
-
-/* @(#)s_tanh.c 1.3 95/01/18 */
+/* @(#)s_tanh.c 5.1 93/09/24 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
+
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tanh.c,v 1.5 1999/08/28 00:06:56 peter Exp $";
+#endif
 
 /* Tanh(x)
  * Return the Hyperbolic Tangent of x
@@ -35,7 +38,8 @@
  *	only tanh(0)=0 is exact for finite argument.
  */
 
-#include "fdlibm.h"
+#include "math.h"
+#include "math_private.h"
 
 #ifdef __STDC__
 static const double one=1.0, two=2.0, tiny = 1.0e-300;
@@ -51,14 +55,14 @@ static double one=1.0, two=2.0, tiny = 1.0e-300;
 #endif
 {
 	double t,z;
-	int jx,ix;
+	int32_t jx,ix;
 
     /* High word of |x|. */
-	jx = __HI(x);
+	GET_HIGH_WORD(jx,x);
 	ix = jx&0x7fffffff;
 
     /* x is INF or NaN */
-	if(ix>=0x7ff00000) { 
+	if(ix>=0x7ff00000) {
 	    if (jx>=0) return one/x+one;    /* tanh(+-inf)=+-1 */
 	    else       return one/x-one;    /* tanh(NaN) = NaN */
 	}

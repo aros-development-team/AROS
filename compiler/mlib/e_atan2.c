@@ -1,21 +1,23 @@
-
-/* @(#)e_atan2.c 1.3 95/01/18 */
+/* @(#)e_atan2.c 5.1 93/09/24 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
- *
  */
+
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_atan2.c,v 1.7 1999/08/28 00:06:28 peter Exp $";
+#endif
 
 /* __ieee754_atan2(y,x)
  * Method :
  *	1. Reduce y to positive by atan2(y,x)=-atan2(-y,x).
- *	2. Reduce x to positive by (if x and y are unexceptional): 
+ *	2. Reduce x to positive by (if x and y are unexceptional):
  *		ARG (x+iy) = arctan(y/x)   	   ... if x > 0,
  *		ARG (x+iy) = pi - arctan[y/(-x)]   ... if x < 0,
  *
@@ -33,18 +35,19 @@
  *	ATAN2(+-INF, (anything but,0,NaN, and INF)) is +-pi/2;
  *
  * Constants:
- * The hexadecimal values are the intended ones for the following 
- * constants. The decimal values may be used, provided that the 
- * compiler will convert from decimal to binary accurately enough 
+ * The hexadecimal values are the intended ones for the following
+ * constants. The decimal values may be used, provided that the
+ * compiler will convert from decimal to binary accurately enough
  * to produce the hexadecimal values shown.
  */
 
-#include "fdlibm.h"
+#include "math.h"
+#include "math_private.h"
 
 #ifdef __STDC__
-static const double 
+static const double
 #else
-static double 
+static double
 #endif
 tiny  = 1.0e-300,
 zero  = 0.0,
@@ -54,20 +57,20 @@ pi      = 3.1415926535897931160E+00, /* 0x400921FB, 0x54442D18 */
 pi_lo   = 1.2246467991473531772E-16; /* 0x3CA1A626, 0x33145C07 */
 
 #ifdef __STDC__
-	double __ieee754_atan2(double y, double x)
+	double __generic___ieee754_atan2(double y, double x)
 #else
-	double __ieee754_atan2(y,x)
+	double __generic___ieee754_atan2(y,x)
 	double  y,x;
 #endif
-{  
+{
 	double z;
-	int k,m,hx,hy,ix,iy;
-	unsigned lx,ly;
+	int32_t k,m,hx,hy,ix,iy;
+	uint32_t lx,ly;
 
-	hx = __HI(x); ix = hx&0x7fffffff;
-	lx = __LO(x);
-	hy = __HI(y); iy = hy&0x7fffffff;
-	ly = __LO(y);
+	EXTRACT_WORDS(hx,lx,x);
+	ix = hx&0x7fffffff;
+	EXTRACT_WORDS(hy,ly,y);
+	iy = hy&0x7fffffff;
 	if(((ix|((lx|-lx)>>31))>0x7ff00000)||
 	   ((iy|((ly|-ly)>>31))>0x7ff00000))	/* x or y is NaN */
 	   return x+y;
@@ -77,7 +80,7 @@ pi_lo   = 1.2246467991473531772E-16; /* 0x3CA1A626, 0x33145C07 */
     /* when y = 0 */
 	if((iy|ly)==0) {
 	    switch(m) {
-		case 0: 
+		case 0:
 		case 1: return y; 	/* atan(+-0,+anything)=+-0 */
 		case 2: return  pi+tiny;/* atan(+0,-anything) = pi */
 		case 3: return -pi-tiny;/* atan(-0,-anything) =-pi */
@@ -85,7 +88,7 @@ pi_lo   = 1.2246467991473531772E-16; /* 0x3CA1A626, 0x33145C07 */
 	}
     /* when x = 0 */
 	if((ix|lx)==0) return (hy<0)?  -pi_o_2-tiny: pi_o_2+tiny;
-	    
+
     /* when x is INF */
 	if(ix==0x7ff00000) {
 	    if(iy==0x7ff00000) {
@@ -114,7 +117,11 @@ pi_lo   = 1.2246467991473531772E-16; /* 0x3CA1A626, 0x33145C07 */
 	else z=atan(fabs(y/x));		/* safe to do y/x */
 	switch (m) {
 	    case 0: return       z  ;	/* atan(+,+) */
-	    case 1: __HI(z) ^= 0x80000000;
+	    case 1: {
+	    	      uint32_t zh;
+		      GET_HIGH_WORD(zh,z);
+		      SET_HIGH_WORD(z,zh ^ 0x80000000);
+		    }
 		    return       z  ;	/* atan(-,+) */
 	    case 2: return  pi-(z-pi_lo);/* atan(+,-) */
 	    default: /* case 3 */

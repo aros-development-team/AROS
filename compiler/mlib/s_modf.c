@@ -1,18 +1,21 @@
-
-/* @(#)s_modf.c 1.3 95/01/18 */
+/* @(#)s_modf.c 5.1 93/09/24 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
 
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_modf.c,v 1.5 1999/08/28 00:06:53 peter Exp $";
+#endif
+
 /*
- * modf(double x, double *iptr) 
+ * modf(double x, double *iptr)
  * return fraction part of x, and return x's integral part in *iptr.
  * Method:
  *	Bit twiddling.
@@ -21,7 +24,8 @@
  *	No exception.
  */
 
-#include "fdlibm.h"
+#include "math.h"
+#include "math_private.h"
 
 #ifdef __STDC__
 static const double one = 1.0;
@@ -36,44 +40,43 @@ static double one = 1.0;
 	double x,*iptr;
 #endif
 {
-	int i0,i1,j0;
-	unsigned i;
-	i0 =  __HI(x);		/* high x */
-	i1 =  __LO(x);		/* low  x */
+	int32_t i0,i1,j0;
+	uint32_t i;
+	EXTRACT_WORDS(i0,i1,x);
 	j0 = ((i0>>20)&0x7ff)-0x3ff;	/* exponent of x */
 	if(j0<20) {			/* integer part in high x */
 	    if(j0<0) {			/* |x|<1 */
-		__HIp(iptr) = i0&0x80000000;
-		__LOp(iptr) = 0;		/* *iptr = +-0 */
+	        INSERT_WORDS(*iptr,i0&0x80000000,0);	/* *iptr = +-0 */
 		return x;
 	    } else {
 		i = (0x000fffff)>>j0;
 		if(((i0&i)|i1)==0) {		/* x is integral */
+		    uint32_t high;
 		    *iptr = x;
-		    __HI(x) &= 0x80000000;
-		    __LO(x)  = 0;	/* return +-0 */
+		    GET_HIGH_WORD(high,x);
+		    INSERT_WORDS(x,high&0x80000000,0);	/* return +-0 */
 		    return x;
 		} else {
-		    __HIp(iptr) = i0&(~i);
-		    __LOp(iptr) = 0;
+		    INSERT_WORDS(*iptr,i0&(~i),0);
 		    return x - *iptr;
 		}
 	    }
 	} else if (j0>51) {		/* no fraction part */
+	    uint32_t high;
 	    *iptr = x*one;
-	    __HI(x) &= 0x80000000;
-	    __LO(x)  = 0;	/* return +-0 */
+	    GET_HIGH_WORD(high,x);
+	    INSERT_WORDS(x,high&0x80000000,0);	/* return +-0 */
 	    return x;
 	} else {			/* fraction part in low x */
-	    i = ((unsigned)(0xffffffff))>>(j0-20);
+	    i = ((uint32_t)(0xffffffff))>>(j0-20);
 	    if((i1&i)==0) { 		/* x is integral */
+	        uint32_t high;
 		*iptr = x;
-		__HI(x) &= 0x80000000;
-		__LO(x)  = 0;	/* return +-0 */
+		GET_HIGH_WORD(high,x);
+		INSERT_WORDS(x,high&0x80000000,0);	/* return +-0 */
 		return x;
 	    } else {
-		__HIp(iptr) = i0;
-		__LOp(iptr) = i1&(~i);
+	        INSERT_WORDS(*iptr,i0,i1&(~i));
 		return x - *iptr;
 	    }
 	}

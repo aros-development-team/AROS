@@ -1,21 +1,25 @@
-
-/* @(#)w_log.c 1.3 95/01/18 */
+/* @(#)w_log.c 5.1 93/09/24 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
+
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_log.c,v 1.5 1999/08/28 00:07:05 peter Exp $";
+#endif
 
 /*
  * wrapper log(x)
  */
 
-#include "fdlibm.h"
+#include "math.h"
+#include "math_private.h"
 
 
 #ifdef __STDC__
@@ -33,7 +37,7 @@
 	if(_LIB_VERSION == _IEEE_ || isnan(x) || x > 0.0) return z;
 	if(x==0.0)
 	    return __kernel_standard(x,x,16); /* log(0) */
-	else 
+	else
 	    return __kernel_standard(x,x,17); /* log(x<0) */
 #endif
 }

@@ -1,23 +1,27 @@
-
-/* @(#)w_scalb.c 1.3 95/01/18 */
+/* @(#)w_scalb.c 5.1 93/09/24 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
 
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_scalb.c,v 1.5 1999/08/28 00:07:08 peter Exp $";
+#endif
+
 /*
  * wrapper scalb(double x, double fn) is provide for
- * passing various standard test suite. One 
+ * passing various standard test suite. One
  * should use scalbn() instead.
  */
 
-#include "fdlibm.h"
+#include "math.h"
+#include "math_private.h"
 
 #include <errno.h>
 
@@ -47,10 +51,10 @@
 	}
 	if(z==0.0&&z!=x) {
 	    return __kernel_standard(x,(double)fn,33); /* scalb underflow */
-	} 
+	}
 #ifndef _SCALB_INT
 	if(!finite(fn)) errno = ERANGE;
 #endif
 	return z;
-#endif 
+#endif
 }

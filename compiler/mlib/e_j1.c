@@ -1,15 +1,18 @@
-
-/* @(#)e_j1.c 1.3 95/01/18 */
+/* @(#)e_j1.c 5.1 93/09/24 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
+
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_j1.c,v 1.5 1999/08/28 00:06:33 peter Exp $";
+#endif
 
 /* __ieee754_j1(x), __ieee754_y1(x)
  * Bessel function of the first and second kinds of order zero.
@@ -31,16 +34,16 @@
  * 	   (To avoid cancellation, use
  *		sin(x) +- cos(x) = -cos(2x)/(sin(x) -+ cos(x))
  * 	    to compute the worse one.)
- *	   
+ *
  *	3 Special cases
  *		j1(nan)= nan
  *		j1(0) = 0
  *		j1(inf) = 0
- *		
+ *
  * Method -- y1(x):
- *	1. screen out x<=0 cases: y1(0)=-inf, y1(x<0)=NaN 
+ *	1. screen out x<=0 cases: y1(0)=-inf, y1(x<0)=NaN
  *	2. For x<2.
- *	   Since 
+ *	   Since
  *		y1(x) = 2/pi*(j1(x)*(ln(x/2)+Euler)-1/x-x/2+5/64*x^3-...)
  *	   therefore y1(x)-2/pi*j1(x)*ln(x)-1/x is an odd function.
  *	   We use the following function to approximate y1,
@@ -56,7 +59,8 @@
  *	   by method mentioned above.
  */
 
-#include "fdlibm.h"
+#include "math.h"
+#include "math_private.h"
 
 #ifdef __STDC__
 static double pone(double), qone(double);
@@ -65,9 +69,9 @@ static double pone(), qone();
 #endif
 
 #ifdef __STDC__
-static const double 
+static const double
 #else
-static double 
+static double
 #endif
 huge    = 1e300,
 one	= 1.0,
@@ -84,19 +88,23 @@ s03  =  1.17718464042623683263e-06, /* 0x3EB3BFF8, 0x333F8498 */
 s04  =  5.04636257076217042715e-09, /* 0x3E35AC88, 0xC97DFF2C */
 s05  =  1.23542274426137913908e-11; /* 0x3DAB2ACF, 0xCFB97ED8 */
 
+#ifdef __STDC__
+static const double zero    = 0.0;
+#else
 static double zero    = 0.0;
+#endif
 
 #ifdef __STDC__
-	double __ieee754_j1(double x) 
+	double __ieee754_j1(double x)
 #else
-	double __ieee754_j1(x) 
+	double __ieee754_j1(x)
 	double x;
 #endif
 {
 	double z, s,c,ss,cc,r,u,v,y;
-	int hx,ix;
+	int32_t hx,ix;
 
-	hx = __HI(x);
+	GET_HIGH_WORD(hx,x);
 	ix = hx&0x7fffffff;
 	if(ix>=0x7ff00000) return one/x;
 	y = fabs(x);
@@ -156,20 +164,19 @@ static double V0[5] = {
 };
 
 #ifdef __STDC__
-	double __ieee754_y1(double x) 
+	double __ieee754_y1(double x)
 #else
-	double __ieee754_y1(x) 
+	double __ieee754_y1(x)
 	double x;
 #endif
 {
 	double z, s,c,ss,cc,u,v;
-	int hx,ix,lx;
+	int32_t hx,ix,lx;
 
-        hx = __HI(x);
+	EXTRACT_WORDS(hx,lx,x);
         ix = 0x7fffffff&hx;
-        lx = __LO(x);
     /* if Y1(NaN) is NaN, Y1(-inf) is NaN, Y1(inf) is 0 */
-	if(ix>=0x7ff00000) return  one/(x+x*x); 
+	if(ix>=0x7ff00000) return  one/(x+x*x);
         if((ix|lx)==0) return -one/zero;
         if(hx<0) return zero/zero;
         if(ix >= 0x40000000) {  /* |x| >= 2.0 */
@@ -199,10 +206,10 @@ static double V0[5] = {
                     z = invsqrtpi*(u*ss+v*cc)/sqrt(x);
                 }
                 return z;
-        } 
+        }
         if(ix<=0x3c900000) {    /* x < 2**-54 */
             return(-tpi/x);
-        } 
+        }
         z = x*x;
         u = U0[0]+z*(U0[1]+z*(U0[2]+z*(U0[3]+z*U0[4])));
         v = one+z*(V0[0]+z*(V0[1]+z*(V0[2]+z*(V0[3]+z*V0[4]))));
@@ -328,8 +335,9 @@ static double ps2[5] = {
 	double *p,*q;
 #endif
 	double z,r,s;
-        int ix;
-        ix = 0x7fffffff&__HI(x);
+        int32_t ix;
+	GET_HIGH_WORD(ix,x);
+	ix &= 0x7fffffff;
         if(ix>=0x40200000)     {p = pr8; q= ps8;}
         else if(ix>=0x40122E8B){p = pr5; q= ps5;}
         else if(ix>=0x4006DB6D){p = pr3; q= ps3;}
@@ -339,7 +347,7 @@ static double ps2[5] = {
         s = one+z*(q[0]+z*(q[1]+z*(q[2]+z*(q[3]+z*q[4]))));
         return one+ r/s;
 }
-		
+
 
 /* For x >= 8, the asymptotic expansions of qone is
  *	3/8 s - 105/1024 s^3 - ..., where s = 1/x.
@@ -464,8 +472,9 @@ static double qs2[6] = {
 	double *p,*q;
 #endif
 	double  s,r,z;
-	int ix;
-	ix = 0x7fffffff&__HI(x);
+	int32_t ix;
+	GET_HIGH_WORD(ix,x);
+	ix &= 0x7fffffff;
 	if(ix>=0x40200000)     {p = qr8; q= qs8;}
 	else if(ix>=0x40122E8B){p = qr5; q= qs5;}
 	else if(ix>=0x4006DB6D){p = qr3; q= qs3;}
