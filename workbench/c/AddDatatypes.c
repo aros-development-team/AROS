@@ -148,12 +148,6 @@ LONG_FUNC FunctionArray[]=
 
 struct StackVars
 {
-    struct Library       *DOSBase;
-    struct Library       *UtilityBase;
-    struct Library       *LocaleBase;
-    struct Library       *IFFParseBase;
-    struct Process       *MyProc;
-    struct WBStartup     *WBMsg;
     struct DataTypesList *DTList;
     UBYTE                 ExclPat[2*EXCL_LEN+2+1];
     struct ArgArray  AA;
@@ -163,12 +157,6 @@ struct StackVars
 };
 
 #undef  SysBase
-#define DOSBase           sv->DOSBase
-#define UtilityBase       sv->UtilityBase
-#define LocaleBase        sv->LocaleBase
-#define IFFParseBase      sv->IFFParseBase
-#define MyProc            sv->MyProc
-#define WBMsg             sv->WBMsg
 #define DTList            sv->DTList
 #define ExclPat           sv->ExclPat
 #define AA                sv->AA
@@ -197,115 +185,79 @@ struct StackVars
 ******************************************************************************
 *
 */
+int UtilityBase_version  = 37;
+int LocaleBase_version   = 37;
+int IFFParseBase_version = 37;
 
 int main(void)
 {
+    extern struct WBStartup *WBenchMsg;
     struct StackVars  vars;
     struct StackVars *sv;
     int    result = RETURN_FAIL;
-	
+
     memset(&vars, 0, sizeof(struct StackVars));
     sv = &vars;
-    
-    MyProc = (struct Process *)FindTask(NULL);
 
-    if(!MyProc->pr_CLI)
+    if((DTList = CreateDTList(sv)))
     {
-	WaitPort(&MyProc->pr_MsgPort);
-	WBMsg = (struct WBStartup*)GetMsg(&MyProc->pr_MsgPort);
-    }
-    
-    //    if((*((struct ExecBase**)4))->LibNode.lib_Version>=37)
-    //    {
-	if((DOSBase = OpenLibrary("dos.library", 37)))
+    	ParsePatternNoCase(ExcludePattern, ExclPat, sizeof(ExclPat));
+
+	ObtainSemaphore(&DTList->dtl_Lock);
+
+	if(WBenchMsg)
 	{
-	    if((UtilityBase = OpenLibrary("utility.library", 37)))
+	    UWORD num;
+	    struct WBArg *wa = &WBenchMsg->sm_ArgList[1];
+
+	    for(num = 1; num<WBenchMsg->sm_NumArgs; wa++)
 	    {
-		if((LocaleBase = OpenLibrary("locale.library", 37)))
-		{
-		    if((IFFParseBase = OpenLibrary("iffparse.library", 37)))
-		    {
-			if((DTList = CreateDTList(sv)))
-			{
-			    ParsePatternNoCase(ExcludePattern, ExclPat, 
-					       sizeof(ExclPat));
-			    
-			    ObtainSemaphore(&DTList->dtl_Lock);
-			    
-			    if(WBMsg)
-			    {
-				UWORD num;
-				struct WBArg *wa = &WBMsg->sm_ArgList[1];
-
-				for(num = 1; num<WBMsg->sm_NumArgs; wa++)
-				{
-				    BPTR olddir = CurrentDir(wa->wa_Lock);
-				    LoadDatatype(sv, wa->wa_Name);
-				    CurrentDir(olddir);
-				}
-
-				result = RETURN_OK;
-			    }
-			    else
-			    {
-				struct RDArgs *RDArgs;
-				
-				if(!(RDArgs = ReadArgs(Template, (LONG*)&AA,
-						       NULL)))
-				{
-				    PrintFault(IoErr(), NULL);
-				}
-				else
-				{
-				    if(AA.aa_Refresh)
-				    {
-					if(DateScan(sv))
-					{
-					    ScanDirectory(sv, "DEVS:DataTypes");
-					}
-				    }
-				    else
-				    {
-					UBYTE **files = AA.aa_Files;
-
-					if(files)
-					{
-					    while(*files)
-					    {
-						ScanDirectory(sv, *files);
-						files++;
-					    }
-					}
-				    }
-
-				    result = RETURN_OK;
-				    FreeArgs(RDArgs);
-				}
-			    }
-			    
-			    ReleaseSemaphore(&DTList->dtl_Lock);
-			}
-
-			CloseLibrary(IFFParseBase);
-		    }
-
-		    CloseLibrary(LocaleBase);
-		}
-
-		CloseLibrary(UtilityBase);
+		BPTR olddir = CurrentDir(wa->wa_Lock);
+		LoadDatatype(sv, wa->wa_Name);
+		CurrentDir(olddir);
 	    }
 
-	    CloseLibrary(DOSBase);
+	    result = RETURN_OK;
+	}
+	else
+	{
+	    struct RDArgs *RDArgs;
+
+	    if(!(RDArgs = ReadArgs(Template, (LONG*)&AA, NULL)))
+	    {
+		PrintFault(IoErr(), NULL);
+	    }
+	    else
+	    {
+		if(AA.aa_Refresh)
+		{
+		    if(DateScan(sv))
+		    {
+			ScanDirectory(sv, "DEVS:DataTypes");
+		    }
+		}
+		else
+		{
+		    UBYTE **files = AA.aa_Files;
+
+		    if(files)
+		    {
+			while(*files)
+			{
+			    ScanDirectory(sv, *files);
+			    files++;
+			}
+		    }
+	        }
+
+		result = RETURN_OK;
+		FreeArgs(RDArgs);
+	    }
 	}
 
-	//     }
-    
-    if(WBMsg)
-    {
-	ReplyMsg((struct Message*)WBMsg);
-	Forbid();
+	ReleaseSemaphore(&DTList->dtl_Lock);
     }
-    
+
     return result;
 }
 
@@ -337,7 +289,7 @@ BOOL DateScan(struct StackVars *sv)
     BOOL   result = TRUE;
     BPTR   lock;
     struct FileInfoBlock *fib;
-    
+
     if((lock = Lock("DEVS:Datatypes", ACCESS_READ)))
     {
 	if((fib = AllocDosObject(DOS_FIB, NULL)))

@@ -110,37 +110,30 @@ int main(int argc, char **argv)
 		    NULL };
 
     struct RDArgs *rda;
-    struct UtilityBase *UtilityBase;
 
     struct CommandLineInterface *cli = Cli();
 
-    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 41);
-
-    if(UtilityBase == NULL)
-	return RETURN_FAIL;
-
-
     if((cli != NULL) && (cli->cli_CurrentInput != cli->cli_StandardInput))
     {
-	D(bug("Current input = %p, Standard input = %p\n", 
+	D(bug("Current input = %p, Standard input = %p\n",
 	      cli->cli_CurrentInput, cli->cli_StandardInput));
-	  
+
 	rda = ReadArgs("NOT/S,WARN/S,ERROR/S,FAIL/S,,EQ/K,GT/K,GE/K,VAL/S,EXISTS/K",
 		       args, NULL);
-	
+
 	if(rda != NULL)
 	{
-	    
+
 	    STRPTR *argArray  = (STRPTR *)args[4];
 	    STRPTR *argArray2 = argArray;
-	    
+
 	    if(args[4])		/* Multiple arguments... */
 	    {
 		int i = 0;
-		
+
 		while(argArray2++ != NULL)
 		    i++;
-		
+
 		if(i != 2)	/* ...there must be exactly two of them. */
 		{
 		    FreeArgs(rda);
@@ -149,12 +142,12 @@ int main(int argc, char **argv)
 		    return RETURN_ERROR;
 		}
 	    }
-	    
+
 	    if(args[1])	/* WARN */
 	    {
 		if(cli->cli_ReturnCode >= RETURN_WARN)
 		    result = TRUE;
-	    } 
+	    }
 	    else if(args[2])	/* ERROR */
 	    {
 		if(cli->cli_ReturnCode >= RETURN_ERROR)
@@ -170,23 +163,23 @@ int main(int argc, char **argv)
 		if(args[8])
 		{
 		    LONG val1, val2;
-		    
+
 		    StrToLong(argArray[0], (LONG *)&val1);
 		    StrToLong(argArray[1], (LONG *)&val2);
-		    
+
 		    if(args[5] && (val1 == val2))
 			result = TRUE;
-		    
+
 		    if(args[6] && (val1 > val2))
 			result = TRUE;
-		    
+
 		    if(args[7] && (val1 >= val2))
 			result = TRUE;
 		}
 		else
 		{
 		    LONG res = Stricmp(argArray[0], argArray[1]);
-		    
+
 		    result = (args[5] && (res == 0)) ||
 		             (args[6] && (res >  0)) ||
 			     (args[7] && (res >= 0));
@@ -195,19 +188,19 @@ int main(int argc, char **argv)
 	    else if(args[9])		/* EXISTS */
 	    {
 		BPTR lock = Lock((STRPTR)args[9], SHARED_LOCK);
-		
+
 		if(lock != NULL)
 		    result = TRUE;
-		
+
 		UnLock(lock);
 	    }
-	    
+
 	    if(args[0])		       /* NOT */
 		result = !result;
-	    
-	    
+
+
 	    /* We have determined the result -- now we've got to act on it. */
-	    
+
 	    if(!result)
 	    {
 		char a;
@@ -215,39 +208,39 @@ int main(int argc, char **argv)
 		int  level = 1;	    /* If block level */
 		BOOL found = FALSE; /* Have we found a matching Else or
 				       EndIF? */
-		
+
 		SelectInput(cli->cli_CurrentInput);
-		
+
 		while(!found)
 		{
 		    LONG status;
-		    
+
 		    status = ReadItem(buffer, sizeof(buffer), NULL);
-		    
+
 		    if(status == ITEM_ERROR)
 			break;
-		    
+
 		    if(status == ITEM_NOTHING)
 		    {
 			if(FGetC(Input()) == ENDSTREAMCH)
 			    break;
 		    }
-		    
+
 		    switch(FindArg("IF,ELSE,ENDIF", buffer))
 		    {
 		    case 0:
 			level++;
 			//			printf("Found If\n");
 			break;
-			
+
 		    case 1:
 			if(level == 0)
 			    found = TRUE;
 			break;
-			
+
 		    case 2:
 			level--;
-			
+
 			if(level == 0)
 			    found = TRUE;
 			break;
@@ -272,8 +265,6 @@ int main(int argc, char **argv)
 	Flush(Output());
 	PrintFault(ERROR_SCRIPT_ONLY, "If");
     }
-
-    CloseLibrary((struct Library *)UtilityBase);
 
     return RETURN_OK;
 }

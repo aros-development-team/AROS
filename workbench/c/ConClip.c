@@ -59,10 +59,6 @@ const STRPTR CONCLIP_PORTNAME = "ConClip.rendezvous";
 
 /*****************************************************************************************/
 
-struct Library 		*IFFParseBase;
-struct UtilityBase	*UtilityBase;
-struct IntuitionBase 	*IntuitionBase;
-
 static struct MsgPort 	*progport;
 static struct Hook	edithook, *oldedithook;
 static struct Task	*progtask;
@@ -75,29 +71,11 @@ static UBYTE 		s[256];
 static void cleanup(STRPTR msg)
 {
     if (msg) printf("ConClip: %s\n", msg);
-    
+
     if (oldedithook) SetEditHook(oldedithook);
     if (progport) DeletePort(progport);
-    
-    if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
-    if (UtilityBase) CloseLibrary((struct Library *)UtilityBase);
-    if (IFFParseBase) CloseLibrary(IFFParseBase);
-    
+
     exit(0);
-}
-
-/*****************************************************************************************/
-
-static void openlibs(void)
-{
-    IFFParseBase = OpenLibrary("iffparse.library", 39);
-    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
-    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 39);
-    
-    if (!IFFParseBase || !UtilityBase || !IntuitionBase)
-    {
-        cleanup("Error opening libraries!");
-    }
 }
 
 /*****************************************************************************************/
@@ -399,7 +377,6 @@ static void handleall(void)
 int main(void)
 {
     init();
-    openlibs();
     getarguments();
     checkport();
     installedithook();

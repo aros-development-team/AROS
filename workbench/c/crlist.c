@@ -18,9 +18,6 @@
 #define ARG_NUMBERS 1
 #define NUM_ARGS    2
 
-struct IntuitionBase *IntuitionBase = NULL;
-struct GfxBase *GfxBase = NULL;
-
 static struct Screen *scr;
 static struct Window *win;
 static struct Layer *lay;
@@ -31,7 +28,7 @@ static char s[256];
 static void Cleanup(char *msg)
 {
     WORD rc;
-    
+
     if (msg)
     {
     	printf("crlist: %s\n",msg);
@@ -39,26 +36,9 @@ static void Cleanup(char *msg)
     } else {
     	rc = RETURN_OK;
     }
-    
-    if (MyArgs) FreeArgs(MyArgs);
-    
-    if (GfxBase) CloseLibrary((struct Library *)GfxBase);
-    if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
-    
-    exit(rc);
-}
 
-static void OpenLibs(void)
-{
-    if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",0)))
-    {
-    	Cleanup("Can´t open intuition.library!");
-    }
-    
-    if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",0)))
-    {
-    	Cleanup("Can´t open graphics.library!");
-    }
+    if (MyArgs) FreeArgs(MyArgs);
+    exit(rc);
 }
 
 static void GetArguments(void)
@@ -72,28 +52,30 @@ static void GetArguments(void)
 
 static void Action(void)
 {
+    extern struct IntuitionBase *IntuitionBase;
     struct RastPort *rp;
     struct ClipRect *cr;
     WORD x, y, i, count = 0;
-    
+
     puts("Activate the window whose cliprects you want to see.\n");
     puts("You have 3 seconds of time!\n\n");
-    
+
     Delay(3*50);
 
     win = IntuitionBase->ActiveWindow;
-    scr = win->WScreen;
-    
+
     if (!win) Cleanup("No active window!");
-    
-    if (!(rp = CloneRastPort(&win->WScreen->RastPort)))
+
+    scr = win->WScreen;
+
+    if (!(rp = CloneRastPort(&scr->RastPort)))
     {
     	Cleanup("Can´t clone screen rastport!");
     }
     SetDrMd(rp,JAM1);
-    
+
     lay = win->WLayer;
-    
+
     cr = lay->ClipRect;
     while(cr)
     {
@@ -161,7 +143,6 @@ static void Action(void)
 
 int main(void)
 {
-    OpenLibs();
     GetArguments();
     Action();
     Cleanup(0);

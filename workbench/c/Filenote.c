@@ -111,8 +111,6 @@
 
 static const char version[] = "$VER: Filenote 41.1 (29.08.1998)\n";
 
-struct UtilityBase *UtilityBase;
-
 int Do_Filenote(struct AnchorPath *, STRPTR, STRPTR, LONG, LONG);
 
 int main(int argc, char *argv[])
@@ -126,52 +124,41 @@ int main(int argc, char *argv[])
 
     Return_Value = RETURN_OK;
 
-    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
-    if (UtilityBase != NULL)
+    apath = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN,
+                     MEMF_ANY | MEMF_CLEAR);
+    if (apath)
     {
-        apath = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN,
-                         MEMF_ANY | MEMF_CLEAR);
-        if (apath)
+        /* Make sure DOS knows the buffer size.
+         */
+        apath->ap_Flags = APF_DOWILD | APF_FollowHLinks;
+        apath->ap_Strlen = MAX_PATH_LEN;
+        apath->ap_BreakBits = 0;
+        apath->ap_FoundBreak = 0;
+
+        rda = ReadArgs(ARG_TEMPLATE, args, NULL);
+        if (rda)
         {
-            /* Make sure DOS knows the buffer size.
-             */
-            apath->ap_Flags = APF_DOWILD | APF_FollowHLinks;
-            apath->ap_Strlen = MAX_PATH_LEN;
-            apath->ap_BreakBits = 0;
-            apath->ap_FoundBreak = 0;
-
-            rda = ReadArgs(ARG_TEMPLATE, args, NULL);
-            if (rda)
-            {
-                Return_Value = Do_Filenote(apath,
-                                           (STRPTR)args[ARG_FILE],
-                                           (STRPTR)args[ARG_COMMENT],
-                                           (LONG)args[ARG_ALL],
-                                           (LONG)args[ARG_QUIET]
-                );
-                FreeArgs(rda);
-            }
-            else
-            {
-                PrintFault(IoErr(), ERROR_HEADER);
-
-                Return_Value = RETURN_FAIL;
-            }
+            Return_Value = Do_Filenote(apath,
+                                       (STRPTR)args[ARG_FILE],
+                                       (STRPTR)args[ARG_COMMENT],
+                                       (LONG)args[ARG_ALL],
+                                       (LONG)args[ARG_QUIET]
+            );
+            FreeArgs(rda);
         }
         else
         {
+            PrintFault(IoErr(), ERROR_HEADER);
+
             Return_Value = RETURN_FAIL;
         }
-
-        FreeVec(apath);
-
-        CloseLibrary((struct Library *)UtilityBase);
     }
     else
     {
-        VPrintf("Need \'utility.library\' version 39 or above\n", NULL);
         Return_Value = RETURN_FAIL;
     }
+
+    FreeVec(apath);
 
     RT_Exit();
 

@@ -105,8 +105,6 @@
  */
 #define NOT_SET         0
 
-struct IntuitionBase * IntuitionBase;
-
 static const char version[] = "$VER: RequestChoice 41.1 (08.09.1997)\n";
 
 static char ERROR_HEADER[] = "RequestChoice";
@@ -121,32 +119,22 @@ int main(int argc, char *argv[])
 
     Return_Value = RETURN_OK;
 
-    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 39L);
-    if (IntuitionBase != NULL)
+    rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
+    if (rda)
     {
-        rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
-        if (rda) {
-            Return_Value = Do_RequestChoice((STRPTR)args[ARG_TITLE],
-                                            (STRPTR)args[ARG_BODY],
-                                            (STRPTR *)args[ARG_GADGETS],
-                                            (STRPTR)args[ARG_PUBSCREEN]
-            );
-	    FreeArgs(rda);
-        } else {
-            PrintFault(IoErr(), ERROR_HEADER);
-            Return_Value = RETURN_FAIL;
-        }
-
-        CloseLibrary((struct Library *)IntuitionBase);
+	Return_Value = Do_RequestChoice((STRPTR)args[ARG_TITLE],
+                                        (STRPTR)args[ARG_BODY],
+                                        (STRPTR *)args[ARG_GADGETS],
+                                        (STRPTR)args[ARG_PUBSCREEN]);
+	FreeArgs(rda);
     }
     else
     {
-        VPrintf("Need \'intuition.library\' version 39 or above\n", NULL);
+	PrintFault(IoErr(), ERROR_HEADER);
         Return_Value = RETURN_FAIL;
     }
 
     return (Return_Value);
-
 } /* main */
 
 
