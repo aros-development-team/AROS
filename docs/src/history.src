@@ -18,6 +18,8 @@ more info.
 the various directories to \filename{AROS/config/$(ARCH)} and the CPU
 specific files to \filename{AROS/config/$(KERNEL)}.
 
+\item HTML docs
+
 \end{itemize}
 
 \section{AROS 1.8}
