@@ -10,7 +10,9 @@ FILES	:= \
 	arosc \
 	dos \
 	functions \
-	libraries
+	intuition \
+	libraries \
+	utility
 
 #MM- linklibs: linklibs-autoinit
 #MM linklibs-autoinit : includes
