@@ -22,7 +22,7 @@ typedef	__wchar_t       wchar_t;
 
 #ifndef	__AROS_WINT_T_DECLARED
 #define __AROS_WINT_T_DECLARED
-typedef	__wint          wint_t;
+typedef	__wint_t        wint_t;
 #endif
 
 #ifdef  _AROS_VA_LIST_
@@ -34,7 +34,7 @@ typedef _AROS_VA_LIST_  va_list;
 typedef union
 {
     char    _mbs[32];
-    QUAD    _mbs_align;
+    int64_t _mbs_align;
 } mbstate_t;
 
 struct tm;
