@@ -152,7 +152,7 @@ int main (int argc, char **argv)
      * Open window and ALWAYS check.
      */
     set(mainWin, MUIA_Window_Open, TRUE);
-    if (!xget(mainWin, MUIA_Window_Open))
+    if (!XGET(mainWin, MUIA_Window_Open))
     {
 	MUI_DisposeObject(app);
 	fprintf(stderr, "ERROR: can't open main window.\n");

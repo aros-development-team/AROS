@@ -62,24 +62,24 @@ AROS_UFH0(void, repeat_function)
 
 AROS_UFH0(void, wheel_function)
 {
-    nnset(r_slider,MUIA_Numeric_Value, (xget(wheel,WHEEL_Red) >> 24) & 0xff);
-    nnset(g_slider,MUIA_Numeric_Value, (xget(wheel,WHEEL_Green) >> 24) & 0xff);
-    nnset(b_slider,MUIA_Numeric_Value, (xget(wheel,WHEEL_Blue) >> 24) & 0xff);
+    nnset(r_slider,MUIA_Numeric_Value, (XGET(wheel,WHEEL_Red) >> 24) & 0xff);
+    nnset(g_slider,MUIA_Numeric_Value, (XGET(wheel,WHEEL_Green) >> 24) & 0xff);
+    nnset(b_slider,MUIA_Numeric_Value, (XGET(wheel,WHEEL_Blue) >> 24) & 0xff);
 }
 
 AROS_UFH0(void, slider_function)
 {
     struct ColorWheelRGB cw;
-    ULONG red = xget(r_slider,MUIA_Numeric_Value);
-    ULONG green = xget(g_slider,MUIA_Numeric_Value);
-    ULONG blue = xget(b_slider,MUIA_Numeric_Value);
+    ULONG red = XGET(r_slider,MUIA_Numeric_Value);
+    ULONG green = XGET(g_slider,MUIA_Numeric_Value);
+    ULONG blue = XGET(b_slider,MUIA_Numeric_Value);
 
     cw.cw_Red = (red<<24)|(red<<16)|(red<<8)|red;
     cw.cw_Green = (green<<24)|(green<<16)|(green<<8)|green;
     cw.cw_Blue = (blue<<24)|(blue<<16)|(blue<<8)|blue;
 
     nnset(wheel, WHEEL_RGB, &cw);
-    set(hue_gauge, MUIA_Gauge_Current, xget(wheel,WHEEL_Hue));
+    set(hue_gauge, MUIA_Gauge_Current, XGET(wheel,WHEEL_Hue));
 }
 
 AROS_UFH0(void, objects_function)
@@ -144,8 +144,8 @@ AROS_UFH3(void, display2_function,
 
 AROS_UFH0(void, save_function)
 {
-    char *text = (char*)xget(editor_text, MUIA_Text_Contents);
-    char *filename = (char*)xget(filename_string, MUIA_String_Contents);
+    char *text = (char*)XGET(editor_text, MUIA_Text_Contents);
+    char *filename = (char*)XGET(filename_string, MUIA_String_Contents);
     BPTR fh;
 
     if (!strlen(filename)) return;
@@ -166,7 +166,7 @@ AROS_UFH0(void, add_function)
 
 AROS_UFH0(void, add_child_function)
 {
-    int act = xget(list2,MUIA_List_Active);
+    int act = XGET(list2,MUIA_List_Active);
 
     DoMethod(list2,MUIM_List_InsertSingleAsTree, id++, act /* parent */, MUIV_List_InsertSingleAsTree_Bottom, 0);
 }
