@@ -244,16 +244,6 @@ $(OBJDIR)/functable.c : mmakefile.src $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfun
 %end
 
 #------------------------------------------------------------------------------
-# Generate function table -- seems to be unused
-%define mkfunctable_old lib=dummy from=$^ to=$@
-	@$(ECHO) "Regenerating %(to)..."
-	@$(AWK) -f $(TOP)/scripts/makefunctable.awk \
-	    -v lib="%(lib)" %(from)
-
-%compilefunctable
-%end
-
-#------------------------------------------------------------------------------
 # Generate endskip variable
 %define mkendtag_q
 $(END_FILE).c :
