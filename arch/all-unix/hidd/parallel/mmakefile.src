@@ -124,7 +124,7 @@ FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 
 %mkfunctable_arch
 
-$(END_FILE).c :
+$(END_FILE).c : libdefs.h
 	@$(ECHO) "Generating $@..."
 	@$(ECHO) "#include <libcore/libtail.c>" > $@
 
