@@ -34,13 +34,6 @@ static void REGARGS CheckGadgetsSize (ULONG *gadlen, ULONG *width, ULONG availwi
 
 /****************************************************************************************/
 
-LONG ColorsDispFunc (struct Gadget *gad, WORD i)
-{
-    return (1 << i);
-}
-
-/****************************************************************************************/
-
 static char *oscanlabs_cat[] =
 	{ MSG_REGULAR_SIZE, MSG_TEXT_SIZE, MSG_GFX_SIZE, MSG_MAX_SIZE, NULL };
 
