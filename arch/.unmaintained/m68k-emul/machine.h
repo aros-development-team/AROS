@@ -11,7 +11,7 @@
 */
 
 /* We want register args, and LVOs */
-#define UseRegisterArgs 1
+/*#define UseRegisterArgs 1 */
 #define EnableSetFunction 1
 
 /* Linux/m68k gcc has no register args capabilities */
