@@ -683,6 +683,19 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 	}
     }
 
+    if (code == '\033')
+    {
+	Object *act;
+	get(_win(obj),MUIA_Window_ActiveObject,&act);
+
+	if (act == obj)
+	    set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
+#ifdef __AROS__
+	    DeinitRastPort(&rp);
+#endif
+	    return 0;
+    }
+
     if (data->accept)
     {
     	/* Check if character is accepted */
