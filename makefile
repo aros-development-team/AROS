@@ -113,7 +113,7 @@ dist-dir : FORCE
 dist-tar : FORCE
 	cd $(ARCHDIR) ; \
 	    $(RM) ../../dist/$(BINARCHIVE).tgz ; \
-	    tar chvzf ../../dist/$(BINARCHIVE).tgz AROS
+	    tar chvvzf ../../dist/$(BINARCHIVE).tgz AROS
 
 dist-lha : FORCE
 	cd $(ARCHDIR) ; \
