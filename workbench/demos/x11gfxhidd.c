@@ -34,6 +34,7 @@ VOID test_blttemplate( struct Window *w);
 VOID test_bltpattern(struct Window *w);
 VOID test_bltmask(struct Window *w);
 VOID test_flood(struct Window *w);
+VOID handleevents(struct Window *win);
 
 int main(int argc, char **argv)
 {
@@ -52,10 +53,10 @@ int main(int argc, char **argv)
 	      
               if ((screen = openscreen())) 
               {
-	        
 		w1 = openwindow(screen, 100, 100, 200, 200);
 		if (w1)
 		{
+#if 0	        
 
 #ifdef USE_TWO_WINDOWS
 		    struct Window *w2;
@@ -66,15 +67,18 @@ int main(int argc, char **argv)
 
 #endif	       
 			/* Wait forever */
-			test_flood(w1);
-
-			Wait(0L);
+			handleevents(w1);
+/*			test_flood(w1);
+*/
 
 #ifdef USE_TWO_WINDOWS		
 			CloseWindow(w2);
 		    }
 		    
 #endif		    
+
+#endif		
+
 		    CloseWindow(w1);
 		}
 		CloseScreen(screen);
@@ -240,3 +244,46 @@ VOID test_bltpattern(struct Window *w)
     return;
 
 }
+
+
+VOID handleevents(struct Window *win)
+{
+    struct IntuiMessage *imsg;
+    struct MsgPort *port = win->UserPort;
+    BOOL terminated = FALSE;
+	
+    EnterFunc(bug("HandleEvents(win=%p)\n", win));
+    
+    while (!terminated)
+    {
+	if ((imsg = (struct IntuiMessage *)GetMsg(port)) != NULL)
+	{
+	    
+	    switch (imsg->Class)
+	    {
+		
+		
+	    case IDCMP_REFRESHWINDOW:
+	    	BeginRefresh(win);
+	    	EndRefresh(win, TRUE);
+	    	break;
+	    	
+	    case IDCMP_CLOSEWINDOW:
+	    	terminated = TRUE;
+	    	break;
+		    					
+	    } /* switch (imsg->Class) */
+	    ReplyMsg((struct Message *)imsg);
+	    
+	    			
+	} /* if ((imsg = GetMsg(port)) != NULL) */
+	else
+	{
+	    Wait(1L << port->mp_SigBit);
+	}
+    } /* while (!terminated) */
+	
+    ReturnVoid("HandleEvents");
+} /* HandleEvents() */
+
+
