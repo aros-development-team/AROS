@@ -35,7 +35,7 @@ LIBNAME  := graphics
 ULIBNAME := Graphics
 
 OSMODULE  := graphics.library
-FILES	  := intregions graphics_misc areafill fontsupport
+FILES	  := intregions graphics_misc areafill fontsupport color_support
 FUNCTIONS := \
 	addanimob \
 	addbob \
@@ -82,6 +82,7 @@ FUNCTIONS := \
 	drawglist \
 	extendfont \
 	eraserect \
+	findcolor \
 	flood \
 	fontextent \
 	freebitmap \
