@@ -9,7 +9,8 @@ OBJDIR=$(GENDIR)/clib
 
 FILES = ctype printf strcmp stricmp strlen strcpy qsort \
 	strdup malloc free calloc realloc memcpy bcopy \
-	bzero memset vprintf vfprintf fputc putc __stdio
+	bzero memset vprintf vfprintf fputc putc __stdio \
+	fgetc fprintf errno feof fgetc fflush fputs puts
 
 all: setup $(OBJDIR)/links $(LIBDIR)/libarosc.a
 
