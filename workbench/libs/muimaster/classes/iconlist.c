@@ -104,6 +104,35 @@ struct MUI_IconData
 };
 
 /**************************************************************************
+ Checks weather we can place a icon with the given dimesions at the
+ suggested positions
+
+ TODO: Should also take the label dimensions into account
+**************************************************************************/
+static int IconList_CouldPlaceIcon(struct MUI_IconData *data, int atx, int aty, int width, int height)
+{
+    struct IconEntry *icon;
+
+    icon = List_First(&data->icon_list);
+    while (icon)
+    {
+	if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
+	{
+	    int icon_right = icon->x + icon->width - 1;
+	    int icon_bottom = icon->y + icon->height - 1;
+	    int at_right = atx + width - 1;
+	    int at_bottom = aty + height - 1;
+
+	    if (!(atx >= icon_right || at_right <= icon->x || aty >= icon_bottom || at_bottom <= icon->y))
+		return 0;
+	}
+	icon = Node_Next(icon);
+    }
+    return 1;
+}
+
+
+/**************************************************************************
  OM_NEW
 **************************************************************************/
 static IPTR IconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
@@ -270,6 +299,8 @@ static ULONG IconList_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     ULONG rc = DoSuperMethodA(cl,obj,(Msg)msg);
+    data->view_width = _mwidth(obj);
+    data->view_height = _mheight(obj);
     return rc;
 }
 
@@ -280,22 +311,48 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     APTR clip;
-    struct IconEntry *node;
+    struct IconEntry *icon;
 
     DoSuperMethodA(cl, obj, (Msg) msg);
+
+    /* At we see if there any Icons without proper position, this is the wrong place here,
+     * it should be done after all icons have been loaded */
+    icon = List_First(&data->icon_list);
+    while (icon)
+    {
+	if (icon->dob && icon->x == NO_ICON_POSITION && icon->y == NO_ICON_POSITION)
+	{
+	    int cur_x = data->view_x;
+	    int cur_y = data->view_y;
+	    int loops = 0;
+
+	    while (!IconList_CouldPlaceIcon(data, cur_x, cur_y, icon->width, icon->height) && loops < 5000)
+	    {
+		cur_y += 10;
+		if (cur_y + icon->height > data->view_x + data->view_height) /* on both sides -1 */
+		{
+		    cur_x += 10;
+		    cur_y = data->view_y;
+		}
+	    }
+	    icon->x = cur_x;
+	    icon->y = cur_y;
+	}
+	icon = Node_Next(icon);
+    }
 
     clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
 			   _mwidth(obj), _mheight(obj));
 
-    node = List_First(&data->icon_list);
-    while (node)
+    icon = List_First(&data->icon_list);
+    while (icon)
     {
-	if (node->dob && node->x != NO_ICON_POSITION && node->y != NO_ICON_POSITION)
+	if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
 	{
 	    SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
-	    DrawIconState(_rp(obj),node->dob,node->label,_mleft(obj) - data->view_x + node->x, _mtop(obj) - data->view_y + node->y, node->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, FALSE, TAG_DONE);
+	    DrawIconState(_rp(obj),icon->dob,icon->label,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, FALSE, TAG_DONE);
 	}
-	node = Node_Next(node);
+	icon = Node_Next(icon);
     }
 
     MUI_RemoveClipping(muiRenderInfo(obj),clip);
