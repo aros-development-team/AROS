@@ -130,6 +130,8 @@ extern LONG driver_BltBitMap ( struct BitMap * srcBitMap, LONG xSrc,
 			LONG ySrc, struct BitMap * destBitMap, LONG xDest,
 			LONG yDest, LONG xSize, LONG ySize, ULONG minterm,
 			ULONG mask, PLANEPTR tempA, struct GfxBase *);
+extern VOID driver_BitMapScale(struct BitScaleArgs * bsa,
+                               struct GfxBase * GfxBase);
 extern VOID driver_BltBitMapRastPort(struct BitMap *,  LONG, LONG,
 			    struct RastPort *, LONG, LONG , LONG, LONG,
 			    ULONG, struct GfxBase *);
