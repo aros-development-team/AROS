@@ -39,10 +39,16 @@
 #define EM_68K          4
 #define EM_PPC         20
 #define EM_ARM         40
+#define EM_X86_64       62      /* AMD x86-64 */
 
 #define R_386_NONE      0
 #define R_386_32        1
 #define R_386_PC32      2
+
+/* AMD x86-64 relocations.  */
+#define R_X86_64_NONE   0       /* No reloc */
+#define R_X86_64_64     1       /* Direct 64 bit  */
+#define R_X86_64_PC32   2       /* PC relative 32 bit signed */
 
 #define R_68k_NONE      0
 #define R_68K_32        1
@@ -80,6 +86,7 @@
 
 #define EI_CLASS        4
 #define ELFCLASS32      1
+#define ELFCLASS64      2               /* 64-bit objects */
 
 #define ELF32_R_SYM(val)        ((val) >> 8)
 #define ELF32_R_TYPE(val)       ((val) & 0xff)
@@ -132,7 +139,7 @@ struct relo
 {
     ULONG offset;   /* Address of the relocation relative to the section it refers to */
     ULONG info;     /* Type of the relocation */
-#if defined(__mc68000__) || defined (__ppc__) || defined (__powerpc__) || defined(__arm__)
+#if defined(__mc68000__) || defined (__x86_64__) || defined (__ppc__) || defined (__powerpc__) || defined(__arm__)
     LONG  addend;   /* Constant addend used to compute value */
 #endif
 };
@@ -268,7 +275,7 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
 
         #elif defined(__x86_64__)
             eh->ident[EI_DATA] != ELFDATA2LSB ||
-	    eh->machine        != EM_x86_64
+	    eh->machine        != EM_X86_64
 	    
         #elif defined(__mc68000__)
 
@@ -476,15 +483,15 @@ static int relocate
 
             #elif defined(__x86_64__)
 		/* These weren't tested */
-            case R_x86_64: /* 64bit direct/absolute */
+            case R_X86_64_64: /* 64bit direct/absolute */
                 *p = s + rel->addend;
                 break;
 
-            case R_x86_PC64: /* PC relative 64 bit signed */
+            case R_X86_64_PC32: /* PC relative 32 bit signed */
                 *p = s + rel->addend - (ULONG)p;
                 break;
 
-            case R_x86_64_NONE: /* No reloc */
+            case R_X86_64_NONE: /* No reloc */
                 break;
 		
             #elif defined(__mc68000__)
