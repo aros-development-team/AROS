@@ -9,6 +9,6 @@
 #include <exec/types.h>
 
 /*** Prototypes *************************************************************/
-VOID DoDetach(VOID);
+VOID DoDetach(LONG rvalue);
 
 #endif /* _DETACH_H_ */
