@@ -54,7 +54,7 @@ struct __dummyIconData__
     struct MUI_NotifyData mnd;
     struct MUI_AreaData mad;
     struct PresentationClassData pcd;
-    struct AbstractIconClassData;
+    struct AbstractIconClassData aic;
     struct IconClassData icd;
 };
 
