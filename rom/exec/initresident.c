@@ -41,14 +41,22 @@
 	with the information given therein. The Init() vector is
 	called and the base address returned.
 
+	The Init() vector is called with the following registers:
+		D0 = 0
+		A0 = segList
+		A6 = ExecBase
+
     INPUTS
 	resident - Pointer to resident structure.
 	segList  - Pointer to loaded module, 0 for resident modules.
 
     RESULT
-	A pointer to the library or device ready to add to the exec lists.
+	A pointer returned from the Init() vector. Usually this is the
+	base of the library/device/resource. NULL for failure.
 
     NOTES
+	AUTOINIT modules are automatically added to the correct exec list.
+	Non AUTOINIT modules have to do all the work themselves.
 
     EXAMPLE
 
