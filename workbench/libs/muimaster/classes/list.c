@@ -6,6 +6,7 @@
 */
 
 #include <string.h>
+#include <stdlib.h>
 
 #include <exec/memory.h>
 #include <graphics/gfx.h>
@@ -113,7 +114,7 @@ struct MUI_ListData
     struct MUI_ImageSpec *list_selcur;
 
     /* Render optimization */
-    int update; /* 1 - update everything, 2 - redraw entry at update_pos */
+    int update; /* 1 - update everything, 2 - redraw entry at update_pos, 3 - scroll to current entries_first (old value is is update_pos) */
     int update_pos;
 
     /* double click */
@@ -121,6 +122,9 @@ struct MUI_ListData
     ULONG last_mics;
     ULONG last_active;
     ULONG doubleclick;
+
+    /* list type */
+    ULONG input; /* FALSE - readonly, otherwise TRUE */
 };
 
 #define MOUSE_CLICK_ENTRY 1 /* on entry clicked */ 
@@ -398,15 +402,26 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
     APTR *array = NULL;
     char *format = NULL;
     
-    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
+    obj = (Object *)DoSuperNew(cl, obj,
+	MUIA_InnerLeft,0,
+	MUIA_InnerRight,0,
+	MUIA_InnerTop,0,
+	MUIA_InnerBottom,0,
+    	TAG_MORE, msg->ops_AttrList);
     if (!obj) return FALSE;
-    
+
     data = INST_DATA(cl, obj);
 
     data->columns = 1;
     data->entries_active = MUIV_List_Active_Off;
     data->intern_puddle_size = 2008;
     data->intern_tresh_size = 1024;
+    data->input = 1;
+
+    SetAttrs(obj,
+	MUIA_Background, MUII_ListBack,
+	MUIA_FillArea,FALSE,
+	TAG_DONE);
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -624,8 +639,10 @@ static IPTR List_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 
 	    case    MUIA_List_First:
+		    data->update_pos = data->entries_first;
+		    data->update = 3;
 		    data->entries_first = tag->ti_Data;
-		    data->update = 1;
+		    
 		    MUI_Redraw(obj,MADF_DRAWUPDATE);
 		    if (data->vertprop_first != tag->ti_Data)
 		    {
@@ -782,13 +799,17 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct MUI_ListData *data = INST_DATA(cl, obj);
     int entry_pos,y;
     APTR clip;
+    int start, end;
 
     DoSuperMethodA(cl, obj, (Msg) msg);
 
     if (msg->flags & MADF_DRAWUPDATE)
     {
     	if (data->update == 1)
-	    DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),0,0);
+	    DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),0, + data->entries_first * data->entry_maxheight,0);
+    } else
+    {
+	DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),0, + data->entries_first * data->entry_maxheight,0);
     }
 
     clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
@@ -813,12 +834,37 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     y = data->entries_top_pixel;
 
-    for (entry_pos = data->entries_first; entry_pos < data->entries_first + data->entries_visible && entry_pos < data->entries_num; entry_pos++)
+    start = data->entries_first;
+    end = data->entries_first + data->entries_visible;
+
+    if ((msg->flags & MADF_DRAWUPDATE) && data->update == 3)
+    {
+	int diffy = data->entries_first - data->update_pos;
+	int top,bottom;
+	if (abs(diffy) < data->entries_visible)
+	{
+	    ScrollRaster(_rp(obj),0,diffy * data->entry_maxheight,_mleft(obj),y,_mright(obj),_mbottom(obj));
+	    if (diffy > 0)
+	    {
+	    	start = end - diffy;
+	    	y += data->entry_maxheight * (data->entries_visible - diffy);
+	    }
+	    else end = start - diffy;
+	}
+
+	top = y;
+	bottom = y + (end - start) * data->entry_maxheight;
+
+	DoMethod(obj,MUIM_DrawBackground,_mleft(obj),top,_mwidth(obj),bottom - top + 1,0,top - _mtop(obj) + data->entries_first * data->entry_maxheight,0);
+    }
+
+    for (entry_pos = start; entry_pos < end && entry_pos < data->entries_num; entry_pos++)
     {
 	struct ListEntry *entry = data->entries[entry_pos];
 
         if (!(msg->flags & MADF_DRAWUPDATE) ||
             ((msg->flags & MADF_DRAWUPDATE) && data->update == 1) ||
+            ((msg->flags & MADF_DRAWUPDATE) && data->update == 3) ||
             ((msg->flags & MADF_DRAWUPDATE) && data->update == 2 && data->update_pos == entry_pos))
         {
 	    if (entry_pos == data->entries_active)
@@ -830,7 +876,7 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    {
 		if ((msg->flags & MADF_DRAWUPDATE) && data->update == 2 && data->update_pos == entry_pos)
 		{
-		    DoMethod(obj,MUIM_DrawBackground,_mleft(obj),y,_mwidth(obj), data->entry_maxheight,0,0);
+		    DoMethod(obj,MUIM_DrawBackground,_mleft(obj),y,_mwidth(obj), data->entry_maxheight,0,y - _mtop(obj) + data->entries_first * data->entry_maxheight,0);
 		}
 	    }
 	    List_DrawEntry(cl,obj,entry_pos,y);
