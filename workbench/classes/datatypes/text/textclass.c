@@ -50,8 +50,10 @@
 
 #ifdef _AROS
 #define NO_PRINTER 1
+#define NO_GMORE_SCROLLRASTER 1
 #else
 #define NO_PRINTER 0
+#define NO_GMORE_SCROLLRASTER 0
 #endif
 
 /* 17 is reserved for help */
@@ -892,6 +894,10 @@ static void ScrollXText(struct Text_Data *td, struct RastPort *rp)
 **************************************************************************/
 static void SetTopText(struct Text_Data *td, struct RastPort *rp, LONG newy)
 {
+#if NO_GMORE_SCROLLRASTER
+    BOOL refresh_old, refresh_new;
+#endif
+
     if (newy < 0)
 	newy = 0;
 
@@ -899,6 +905,10 @@ static void SetTopText(struct Text_Data *td, struct RastPort *rp, LONG newy)
     {
 	if ((td->vert_diff = newy - td->vert_top))
 	{
+	#if NO_GMORE_SCROLLRASTER
+	    refresh_old = (rp->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
+    	#endif
+	
 	    if (abs(td->vert_diff) < td->vert_visible)
 	    {
 		ScrollYText(td, rp);
@@ -911,6 +921,23 @@ static void SetTopText(struct Text_Data *td, struct RastPort *rp, LONG newy)
 		td->vert_top = newy;
 	    }
 	    DrawText(td, rp);
+
+	#if NO_GMORE_SCROLLRASTER
+	    if (!(rp->Layer->Flags & LAYERUPDATING))
+	    {
+		refresh_new = (rp->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
+		if (refresh_new)
+		{
+		    BOOL nocarerefresh = (((struct Window *)rp->Layer->Window)->Flags & WFLG_NOCAREREFRESH) ? TRUE : FALSE;
+
+		    BeginUpdate(rp->Layer);
+		    DrawText(td, rp);
+		    EndUpdate(rp->Layer, !refresh_old || nocarerefresh);
+    	    	}
+	    }
+	    
+	#endif
+	
 	}
     }
     else
@@ -922,10 +949,18 @@ static void SetTopText(struct Text_Data *td, struct RastPort *rp, LONG newy)
 **************************************************************************/
 static void SetTopHorizText(struct Text_Data *td, struct RastPort *rp, LONG newx)
 {
+#if NO_GMORE_SCROLLRASTER
+    BOOL refresh_old, refresh_new;
+#endif
+
     if (rp)
     {
 	if ((td->horiz_diff = newx - td->horiz_top))
 	{
+	#if NO_GMORE_SCROLLRASTER
+	    refresh_old = (rp->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
+    	#endif
+	
 	    if (abs(td->horiz_diff) < td->horiz_visible)
 	    {
 		ScrollXText(td, rp);
@@ -939,6 +974,23 @@ static void SetTopHorizText(struct Text_Data *td, struct RastPort *rp, LONG newx
 	    }
 
 	    DrawText(td, rp);
+	    
+	#if NO_GMORE_SCROLLRASTER
+	    if (!(rp->Layer->Flags & LAYERUPDATING))
+	    {
+		refresh_new = (rp->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
+		if (refresh_new)
+		{
+		    BOOL nocarerefresh = (((struct Window *)rp->Layer->Window)->Flags & WFLG_NOCAREREFRESH) ? TRUE : FALSE;
+
+		    BeginUpdate(rp->Layer);
+		    DrawText(td, rp);
+		    EndUpdate(rp->Layer, !refresh_old || nocarerefresh);
+    	    	}
+	    }
+	    
+	#endif
+	
 	}
     }
     else
@@ -948,7 +1000,7 @@ static void SetTopHorizText(struct Text_Data *td, struct RastPort *rp, LONG newx
 /**************************************************************************
  Returns the line at the specificed line number. The x coordinate will
  be adjusted.
-**************************************************************************/
+*************************** ***********************************************/
 static struct Line *NewFindLine(struct Text_Data *td, LONG x, LONG y, LONG *xpos, LONG *line_xpos)
 {
     struct Line *line = (struct Line *) List_First(&td->line_list);
@@ -1920,9 +1972,10 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object * o, struct opSet *
 	struct DTSpecialInfo *si = (struct DTSpecialInfo *) g->SpecialInfo;
 	struct TagItem *ti;
 
+    #if !NO_GMORE_SCROLLRASTER
 	/* We use ScrollRaster() so this tag must be set (see Autodocs ScrollWindowRaster()) */
 	((struct ExtGadget*)g)->MoreFlags |= GMORE_SCROLLRASTER;
-
+    #endif
 	memset(td, 0, sizeof(struct Text_Data));
 	if ((ti = FindTagItem(DTA_TextAttr, msg->ops_AttrList)))
 	{
