@@ -22,6 +22,8 @@
 #endif
 #include "debug.h"
 
+#include <string.h>
+
 struct RDBData {
 	struct RigidDiskBlock rdb;
 	UBYTE rdbblock; /* the block rdb was read from */
