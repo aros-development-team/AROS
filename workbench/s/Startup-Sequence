@@ -6,7 +6,7 @@
 
 ;SetPatch QUIET
 
-SetClock LOAD
+;SetClock LOAD
 
 Mount RAM:
 Mount NIL:
@@ -48,6 +48,8 @@ Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commoditi
 
 
 ; -- BEGIN "AROS under construction" section -------------------------
+
+SetClock LOAD
 
 ; Call FixFonts if it was never called before
 If NOT EXISTS SYS:Fonts/_fixfonts_called
