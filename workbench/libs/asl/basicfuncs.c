@@ -579,12 +579,18 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 		    terminated = TRUE;
 		    break;
 
-		case IDCMP_NEWSIZE:
-		    break;
-
 		case IDCMP_MOUSEMOVE:
 		    break;
 
+		case IDCMP_NEWSIZE:
+		    win = ld->ld_Window;
+		    SetAPen(win->RPort, 0);
+		    RectFill(win->RPort,
+		             win->BorderLeft,
+		             win->BorderTop,
+		             win->Width - win->BorderRight,
+		             win->Height- win->BorderTop);
+		    
 		case IDCMP_REFRESHWINDOW:
 
 		    win = ld->ld_Window;
