@@ -8,7 +8,7 @@
 #MM- workbench-libs-complete : workbench-libs-amigaguide \
 #MM         workbench-libs-asl \
 #MM         workbench-libs-commodities \
-#         workbench-libs-bsdsocket \
+#MM         workbench-libs-bsdsocket \
 #MM         workbench-libs-datatypes \
 #MM         workbench-libs-diskfont \
 #MM         workbench-libs-gadtools \
