@@ -75,7 +75,7 @@
 	return AllocVec (newsize, requirements);
 
     mem = (UBYTE *)oldmem - AROS_ALIGN(sizeof(ULONG));
-    oldsize = *((ULONG *)mem);
+    oldsize = *((ULONG *)mem) - sizeof(ULONG);
 
     /* Reduce or enlarge the memory ? */
     if (newsize < oldsize)
