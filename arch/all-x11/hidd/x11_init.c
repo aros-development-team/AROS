@@ -158,6 +158,7 @@ static int MyErrorHandler (Display * display, XErrorEvent * errevent)
 	, buffer
     );
     fflush (stderr);
+//    *((ULONG *)0) = 0;
 
     return 0;
 }
@@ -166,6 +167,7 @@ static int MySysErrorHandler (Display * display)
 {
     perror ("X11-Error");
     fflush (stderr);
+//    *((ULONG *)0) = 0;
 
     return 0;
 }

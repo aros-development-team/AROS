@@ -563,9 +563,10 @@ static ULONG *buf_to_ximage(Class *cl, Object *bm
 
     /* Test if modulo == width */
     BOOL use_modulo = TRUE;
-    kprintf("buf_to_ximage(cl=%p, o=%p, buf=%p, image=%p, width=%d, height=%d, depth=%d, msg=%p)\n"
+/*    kprintf("buf_to_ximage(cl=%p, o=%p, buf=%p, image=%p, width=%d, height=%d, depth=%d, msg=%p)\n"
     	, cl, bm, buf, image, width, height, depth, msg);
     
+*/
     if (msg->modulo == HIDD_BM_BytesPerLine(bm, msg->pixFmt, msg->width)) {
     	use_modulo = FALSE;
 	
@@ -595,16 +596,16 @@ static ULONG *buf_to_ximage(Class *cl, Object *bm
 	break;
 	
     case vHidd_PixFmt_Native32:
-kprintf("Native32 format, bits_per_pixel=%d\n", image->bits_per_pixel);
-    	switch (image->bits_per_pixel) {
+/* kprintf("Native32 format, bits_per_pixel=%d\n", image->bits_per_pixel);
+*/    	switch (image->bits_per_pixel) {
 	
 	case 16: {
 	    LONG x, y;
 	    
 	    UWORD *imdata = (UWORD *)image->data;
-	    kprintf("16 bit Native32, modulo=%d, imdat=%x\n"
+/*	    kprintf("16 bit Native32, modulo=%d, imdat=%x\n"
 	    	, msg->modulo, imdata);
-
+*/
 
 	    for (y = 0; y < height; y ++) {
 		HIDDT_Pixel *p = buf;
