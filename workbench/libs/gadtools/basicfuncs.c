@@ -25,7 +25,13 @@
 
 /**********************************************************************************************/
 
+#ifdef __MORPHOS__
+#else
+/*
+ * looks buttugly..but if you want this as default:-)
+ */
 #define HIGH_COLOR 1  /* instead of underscore use different color to highlight key */
+#endif
 
 #define EG(x) ((struct ExtGadget *)(x))
 

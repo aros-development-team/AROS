@@ -54,7 +54,8 @@
     if (imsg)
     {
     	origmsg = GT_PostFilterIMsg(imsg);
-	ReplyMsg(&origmsg->ExecMessage);
+	if (origmsg)
+	    ReplyMsg(&origmsg->ExecMessage);
     }
 
     AROS_LIBFUNC_EXIT

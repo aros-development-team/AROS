@@ -536,7 +536,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 		
 	    case GTLV_Labels:	/* [IS] */
 	    	data->ld_Labels = (struct List *)tidata;
-		data->ld_Selected = ~0;
+//		data->ld_Selected = ~0;
 		data->ld_Top = 0;
 		
 		{

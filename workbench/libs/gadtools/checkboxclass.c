@@ -13,6 +13,7 @@
 #include <proto/dos.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
+#include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <intuition/intuition.h>
 #include <intuition/cghooks.h>
