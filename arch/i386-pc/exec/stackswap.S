@@ -56,10 +56,14 @@ AROS_SLIB_ENTRY(StackSwap,Exec):
 	movl	ThisTask(%eax),%ecx
 	leal	tc_SPLower(%ecx),%ecx
 
+	pushl %edx
+	pushl	%ecx
 	/* Just to be sure interrupts always find a good stackframe */
 	pushl	%eax
 	call	*Disable(%eax)
 	popl	%eax
+	popl	%ecx
+	popl	%edx
 
 	movl	(%esp),%eax
 	pushl	%ebx
@@ -83,12 +87,15 @@ AROS_SLIB_ENTRY(StackSwap,Exec):
 	popl	%ebx
 	xchgl	(%eax),%esp
 
+	pushl %edx
 	movl	(4),%eax
 	/* Reenable interrupts. */
+	pushl	%eax
 	call	*Enable(%eax)
 	popl	%eax
+//	popl	%edx
 
 	/* Restore returnaddress and return */
-	pushl	%edx
+//	pushl	%edx
 	ret
 
