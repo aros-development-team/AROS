@@ -2,7 +2,7 @@
 #define DOS_DOSEXTENS_H
 
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: LibBase and some important structures
@@ -81,6 +81,9 @@ struct DosLibrary
       /* The flags are the same, as they were in RootNode->rn_Flags. See below
          for definitions. */
     ULONG		   dl_Flags;
+
+    /* Resident segment list **PRIVATE** */
+    BPTR		   dl_ResList;
 };
 
 /* dl_Flags/rn_Flags */
@@ -647,9 +650,6 @@ struct StandardPacket
     struct DosPacket sp_Pkt;
 };
 
-#define CMD_SYSTEM	-1
-#define CMD_INTERNAL	-2
-#define CMD_DISABLED	-999
 #endif
 
 /**********************************************************************
@@ -660,10 +660,14 @@ struct StandardPacket
 struct Segment
 {
     BPTR  seg_Next;    /* Pointer to next segment. */
-    LONG  seg_UC;
-    BPTR  seg_Seg;
+    LONG  seg_UC;      /* Usage count/type */
+    BPTR  seg_Seg;     /* Actual Segment */
     UBYTE seg_Name[4]; /* The first characters of the name (BSTR). */
 };
+
+#define CMD_SYSTEM	-1
+#define CMD_INTERNAL	-2
+#define CMD_DISABLED	-999
 
 /**********************************************************************
  *************************** Error Handling ***************************
