@@ -36,6 +36,7 @@
 #include "intuition_intern.h"
 #include "strgadgets.h" /* To get GlobalEditFunc prototype */
 #include "inputhandler.h"
+#include "menutask.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -138,7 +139,9 @@ AROS_LH2(struct LIBBASETYPE *, init,
     InitSemaphore(&GetPrivIBase(LIBBASE)->PubScrListLock);
 
     InitSemaphore(&GetPrivIBase(LIBBASE)->GadgetLock);
-
+    InitSemaphore(&GetPrivIBase(LIBBASE)->MenuLock);
+    InitSemaphore(&GetPrivIBase(LIBBASE)->DeferedActionLock);
+    
     /* Add all other classes */
     InitImageClass (LIBBASE); /* After ROOTCLASS */
     InitFrameIClass (LIBBASE); /* After IMAGECLASS */
@@ -162,6 +165,10 @@ AROS_LH2(struct LIBBASETYPE *, init,
     if (!GetPrivIBase(LIBBASE)->sizebuttonclass)
     	return NULL;
   
+    /* FIXME: no cleanup routines for MenuHandler task */
+    if (!InitDefaultMenuHandler(IntuitionBase))
+        return NULL;
+
     LoadDefaultPreferences(LIBBASE);
           
     /* You would return NULL if the init failed */
