@@ -1,4 +1,3 @@
-- fix: layers with clipping region are corrupted when moved.
 - fix: parent layer should get/use layer info hook
 - handling of errors: out of memory error!
 
@@ -15,5 +14,3 @@
                 scale a layer and its contents:
                      ScaleLayer(factor,numerator,denominator, fixx, fixy) (see ScalerDiv) 
                      use BitMapScale()
-                make invisible layer visible and
-                     vice versa : ChangeLayerVisibility(TRUE/FALSE)
