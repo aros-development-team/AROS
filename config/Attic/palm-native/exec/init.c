@@ -31,12 +31,12 @@
 //extern _end;
 extern const char Exec_end;
 
-unsigned long Memory;	/* Size of whole memory */
+//unsigned long Memory;	/* Size of whole memory */
 
 extern ULONG m68k_SSP;
 
 struct ExecBase *SysBase=NULL;
-struct MemHeader *mh;
+struct MemHeader *mh = NULL;
 
 ULONG GetMemSize();
 
