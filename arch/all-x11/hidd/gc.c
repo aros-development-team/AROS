@@ -80,7 +80,8 @@ static Object *gc_new(Class *cl, Object *o, struct pRoot_New *msg)
 	 bm_data = (struct bitmap_data *)INST_DATA(X11GfxBase->bitmapclass, bitmap);
 
 	 
-	 /* For the sake of speed we duplicate some info from the bitmap object */
+	 /* For the sake of speed we duplicate some info directly
+	    from the bitmap object */
 	 data->xwindow = bm_data->xwindow;
 	 data->display = bm_data->sysdisplay;
 	 data->screen  = bm_data->sysscreen;
