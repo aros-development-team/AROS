@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: The main mouse class.
@@ -29,6 +29,7 @@
 #include <hidd/mouse.h>
 
 #include <devices/inputevent.h>
+#include <string.h>
 
 #include "mouse.h"
 
@@ -113,8 +114,11 @@ static OOP_Object * _mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
         if (!test_mouse_usb(cl, o))
         {
+	    memset(&data->u.com, 0, sizeof(data->u.com));
+	    
 	    if (!test_mouse_com(cl, o))
 	    {
+	    	memset(&data->u.ps2, 0, sizeof(data->u.ps2));
         	if (!test_mouse_ps2(cl, o))
                 {
                     /* No mouse found. What we can do now is just Dispose() :( */
