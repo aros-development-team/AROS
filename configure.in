@@ -805,7 +805,7 @@ aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/config"
 aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}/AROS/Include/aros"
 aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/include/aros"
 aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
-aros_target_scripts_dir="bin/${aros_target_arch}-${aros_target_cpu}/AROS/scripts"
+aros_scripts_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/scripts"
 
 # Find the tools that we need for the target - this could be quite
 # expensive, but we shall try it anyway.
@@ -1117,8 +1117,8 @@ fi
 if test ! -d ${aros_tools_dir} ; then
     ${MKDIR} ${aros_tools_dir}
 fi
-if test ! -d ${aros_target_scripts_dir} ; then
-    ${MKDIR} ${aros_target_scripts_dir}
+if test ! -d ${aros_scripts_dir} ; then
+    ${MKDIR} ${aros_scripts_dir}
 fi
 
 AC_CONFIG_HEADERS(${aros_geninc_dir}/host-conf.h:config/host-conf.h.in)
@@ -1130,8 +1130,8 @@ AC_CONFIG_COMMANDS([compiler_executable],
      aros_target_arch=${aros_target_arch}]
 )
 AC_CONFIG_COMMANDS([genshared_executable],
-    [chmod a+x ${aros_target_scripts_dir}/genshared],
-    [aros_target_scripts_dir=${aros_target_scripts_dir}]
+    [chmod a+x ${aros_scripts_dir}/genshared],
+    [aros_scripts_dir=${aros_scripts_dir}]
 )
 AC_CONFIG_COMMANDS([genmf_executable],
     [chmod a+x ${aros_tools_dir}/genmf.py],
@@ -1148,7 +1148,7 @@ AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in
     ${aros_targetcfg_dir}/specs:config/specs.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc:scripts/aros-gcc.in
-    ${aros_target_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in
+    ${aros_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in
     ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
 )
 
