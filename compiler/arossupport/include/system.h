@@ -164,8 +164,9 @@
 
 /* Makes a 'new' symbol which occupies the same memory location as the 'old' symbol */
 #if !defined AROS_MAKE_ALIAS
-#   define AROS_MAKE_ALIAS(old, new) \
-        typeof(old) new __attribute__((__alias__(__AROS_STR(AROS_CSYM_FROM_ASM_NAME(old)))))
+#   define AROS_MAKE_ALIAS(old, new)                                                  \
+        extern typeof(old) new;                                                       \
+        AROS_MAKE_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(new), AROS_CSYM_FROM_ASM_NAME(old))
 #endif
 
 /* define an asm symbol 'sym' with value 'value'
