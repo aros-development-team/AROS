@@ -16,7 +16,7 @@ void free_intuimessage(struct IntuiMessage *imsg,
 struct IntuiMessage *alloc_intuimessage(struct Window *w,
 					struct IntuitionBase *IntuitionBase);
 
-void fire_intuimessage(struct Window *w,
+BOOL fire_intuimessage(struct Window *w,
                        ULONG Class,
 		       UWORD Code,
 		       APTR IAddress,
@@ -47,6 +47,8 @@ struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, stru
 struct Gadget * FindGadget (struct Window * window, int x, int y,
 			    struct GadgetInfo * gi, struct IntuitionBase *IntuitionBase);
 
+BOOL InsideGadget(struct Window *win, struct Gadget *gad,
+		  WORD x, WORD y);
 
 /*********************************************************************/
 
