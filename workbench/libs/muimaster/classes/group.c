@@ -925,6 +925,8 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
     tmp.MaxWidth = MUI_MAXMAX;
     tmp.MinHeight = tmp.MaxHeight =  (data->num_childs - 1) * data->vert_spacing;
 
+#warning FIXME: (data->num_childs - 1) is not really true as there can be MADF_SHOWME less gadgets (and MADF_BORDERGADGET)
+
     if (data->flags & GROUP_SAME_HEIGHT) {
 	cstate = (Object *)children->mlh_Head;
 	while ((child = NextObject(&cstate))) {

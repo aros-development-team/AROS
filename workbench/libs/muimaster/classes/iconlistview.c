@@ -193,18 +193,30 @@ static ULONG IconListview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     Object *vert,*horiz,*button,*group;
 
     struct Hook *layout_hook = mui_alloc_struct(struct Hook);
+    int usewinborder;
+
     if (!layout_hook) return NULL;
+    usewinborder = GetTagData(MUIA_IconListview_UseWinBorder, FALSE, msg->ops_AttrList);
+
+    if (!usewinborder) button = ScrollbuttonObject, End;
+    else button = NULL;
 
     layout_hook->h_Entry = (HOOKFUNC)IconListview_Layout_Function;
 
     obj = (Object *)DoSuperNew(cl, obj,
     	MUIA_Group_Horiz, FALSE,
     	Child, group = GroupObject,
-	    MUIA_Group_LayoutHook, layout_hook,
+	    usewinborder?TAG_IGNORE:MUIA_Group_LayoutHook, layout_hook,
 	    Child, iconlist,
-	    Child, vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End,
-	    Child, horiz = ScrollbarObject, MUIA_Group_Horiz, TRUE, End,
-	    Child, button = ScrollbuttonObject, End,
+	    Child, vert = ScrollbarObject,
+		usewinborder?MUIA_Prop_UseWinBorder:TAG_IGNORE, MUIV_Prop_UseWinBorder_Right,
+		MUIA_Group_Horiz, FALSE,
+		End,
+	    Child, horiz = ScrollbarObject,
+	    	usewinborder?MUIA_Prop_UseWinBorder:TAG_IGNORE, MUIV_Prop_UseWinBorder_Bottom,
+	    	MUIA_Group_Horiz, TRUE,
+	    	End,
+	    usewinborder?TAG_IGNORE:Child, button,
 	    End,
 	TAG_DONE);
 
@@ -270,14 +282,7 @@ static ULONG IconListview_Show(struct IClass *cl, Object *obj, struct MUIP_Show 
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-#ifndef _AROS
-__asm IPTR IconListview_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,IconListview_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+BOOPSI_DISPATCHER(IPTR,IconListview_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
