@@ -12,7 +12,7 @@ FUNCS := openengine \
 	 
 %libdefs_rule
 
-%make_module_setup mmake=workbench-libs-asl
+%make_module_setup mmake=workbench-libs-bullet
 %make_lib_includes
 
 %common
