@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 	{
 		if (args[ARG_LIBNAME]!=0)
 		{
-			APTR tmpBase = OpenLibrary((STRPTR *)args[ARG_LIBNAME],0);
+			APTR tmpBase = OpenLibrary((CONST_STRPTR) args[ARG_LIBNAME],0);
 			if (tmpBase != 0)
 			{
 				printf ("OPENLIB.c: Succesfully opened !\n");
