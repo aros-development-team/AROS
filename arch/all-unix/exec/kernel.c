@@ -72,13 +72,13 @@ static const int sig2trap[][2] =
    systems initial signal handler, which simply calls
    sighandler(int signum, sigcontext_t sigcontext)
 */
-//GLOBAL_SIGNAL_INIT
+GLOBAL_SIGNAL_INIT
 
 /* sighandler() Handle the signals:
     You can either turn them into interrupts, or alternatively,
     you can turn them into traps (eg software failures)
 */
-static void sighandler(int sig, sigcontext_t sc)
+static void sighandler(int sig, sigcontext_t * sc)
 {
     struct IntVector *iv;
 
@@ -168,21 +168,21 @@ static void sighandler(int sig, sigcontext_t sc)
 
 	/* Save registers for this task (if there is one...) */
 	if (SysBase->ThisTask && SysBase->ThisTask->tc_State != TS_REMOVED)
-	    SAVEREGS(SysBase->ThisTask, (&sc));
+	    SAVEREGS(SysBase->ThisTask, sc);
 
 	/* Tell exec that we have actually switched tasks... */
 	Dispatch ();
 
 	/* Get the registers of the old task */
-	RESTOREREGS(SysBase->ThisTask, (&sc));
+	RESTOREREGS(SysBase->ThisTask,sc);
 
 	/* Make sure that the state of the interrupts is what the task
 	   expects.
 	*/
 	if (SysBase->IDNestCnt < 0)
-	    SC_ENABLE((&sc));
+	    SC_ENABLE(sc);
 	else
-	    SC_DISABLE((&sc));
+	    SC_DISABLE(sc);
 
 	/* Ok, the next step is to either drop back to the new task, or
 	    give it its Exception() if it wants one... */
@@ -279,7 +279,7 @@ void InitCore(void)
 #endif
 
     /* We want to be signalled - make these interrupts. */
-    sa.sa_handler = (SIGHANDLER_T)sighandler;
+    sa.sa_handler = (SIGHANDLER_T)SIGHANDLER;
     sa.sa_mask = sig_int_mask;
     for(i=0; i < (sizeof(sig2int) / sizeof(sig2int[0])); i++)
     {
