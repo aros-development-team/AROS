@@ -6,6 +6,9 @@
     Lang: english
 */
 #include <aros/libcall.h>
+#include <proto/layers.h>
+#include <proto/graphics.h>
+#include "layers_intern.h"
 
 /*****************************************************************************
 

@@ -5,7 +5,10 @@
     Desc:
     Lang: english
 */
+#include <aros/asmcall.h>
+#include <aros/debug.h>
 #include <proto/exec.h>
+#include <proto/utility.h>
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <layers_intern.h>

@@ -6,6 +6,7 @@
     Lang: english
 */
 #include <aros/libcall.h>
+#include <proto/graphics.h>
 #include <proto/layers.h>
 #include <graphics/clip.h>
 #include <graphics/layers.h>

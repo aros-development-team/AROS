@@ -10,6 +10,7 @@
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <graphics/layers.h>
+#include <proto/layers.h>
 #include "layers_intern.h"
 #include "basicfuncs.h"
 

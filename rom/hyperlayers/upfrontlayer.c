@@ -10,6 +10,7 @@
 #include <exec/memory.h>
 #include <aros/libcall.h>
 #include <proto/graphics.h>
+#include <proto/layers.h>
 #include "layers_intern.h"
 
 
