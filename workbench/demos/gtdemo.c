@@ -32,6 +32,9 @@
 
 #include <aros/rt.h>
 
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
 struct IntuitionBase *IntuitionBase;
 struct Library *GadToolsBase;
 
@@ -46,6 +49,9 @@ struct Gadget *button;
 #define ID_CHECKBOX 2
 #define ID_MX 3
 #define ID_CYCLE 4
+#define ID_PALETTE 5
+#define ID_SLIDER 6
+#define ID_SCROLLER 7
 
 struct NewGadget buttongad =
 {
@@ -73,6 +79,41 @@ struct NewGadget mxgad =
     210, 60, MX_WIDTH, 20,
     "Mutual Exclude (3)", NULL,
     ID_MX, PLACETEXT_RIGHT, NULL, NULL
+};
+
+struct NewGadget palettegad =
+{
+    210, 180, 120, 100,
+    "Palette (5)", NULL,
+    ID_PALETTE, PLACETEXT_ABOVE, NULL, NULL
+};
+
+struct NewGadget textgad =
+{
+    380, 40, 120, 30,
+    NULL, NULL,
+    0, 0, NULL, NULL
+};
+
+struct NewGadget numbergad =
+{
+    380, 80, 70, 20,
+    NULL, NULL,
+    0, 0, NULL, NULL
+};
+
+struct NewGadget slidergad =
+{
+    380, 130, 120, 20,
+    "Slider (6)", NULL,
+    ID_SLIDER, PLACETEXT_ABOVE, NULL, NULL
+};
+
+struct NewGadget scrollergad =
+{
+    380, 160, 20, 100,
+    NULL, NULL,
+    ID_SCROLLER, 0, NULL, NULL
 };
 
 STRPTR mxlabels[] =
@@ -109,8 +150,11 @@ BOOL openlibs()
 
 void closelibs()
 {
+D(bug("Closelibs: closing gadtools\n"));
     CloseLibrary(GadToolsBase);
+D(bug("Closelibs: closing intuition\n"));
     CloseLibrary((struct Library *) IntuitionBase);
+D(bug("Closelibs: libs closed\n"));
 }
 
 
@@ -127,8 +171,11 @@ struct Gadget *gt_init()
 
 void gt_end()
 {
+    D(bug("gtend: Freeing gadgets\n"));
     FreeGadgets(glist);
+    D(bug("gtend: Freeing visualnfo\n"));
     FreeVisualInfo(vi);
+    D(bug("gtend: Unlocking screen\n"));
     UnlockPubScreen(NULL, scr);
 }
 
@@ -147,6 +194,8 @@ BOOL openwin()
 			     CHECKBOXIDCMP |
                              CYCLEIDCMP |
                              MXIDCMP |
+                             PALETTEIDCMP |
+                             SLIDERIDCMP |
                              IDCMP_GADGETUP |
 			     IDCMP_VANILLAKEY |
 			     IDCMP_CLOSEWINDOW |
@@ -170,25 +219,78 @@ struct Gadget *makegadgets(struct Gadget *gad)
     checkbox.ng_VisualInfo = vi;
     cyclegad.ng_VisualInfo = vi;
     mxgad.ng_VisualInfo = vi;
+    palettegad.ng_VisualInfo = vi;
+    textgad.ng_VisualInfo = vi;
+    numbergad.ng_VisualInfo = vi;
+    slidergad.ng_VisualInfo = vi;
+    scrollergad.ng_VisualInfo = vi;
 
     gad = CreateGadget(BUTTON_KIND, gad, &buttongad,
                        GA_Immediate, TRUE,
                        TAG_DONE);
+D(bug("Created button gadget: %p\n", gad));
     button = gad;
     gad = CreateGadget(CHECKBOX_KIND, gad, &checkbox,
                        GTCB_Checked, FALSE,
                        GTCB_Scaled, TRUE,
                        TAG_DONE);
+D(bug("Created checkbox gadget: %p\n", gad));
     gad = CreateGadget(CYCLE_KIND, gad, &cyclegad,
                        GTCY_Labels, &cyclelabels,
                        TAG_DONE);
+D(bug("Created cycle gadget: %p\n", gad));
     gad = CreateGadget(MX_KIND, gad, &mxgad,
 		       GTMX_Labels, &mxlabels,
                        GTMX_Scaled, TRUE,
                        GTMX_TitlePlace, PLACETEXT_ABOVE,
 		       TAG_DONE);
 
+D(bug("Created mx gadget: %p\n", gad));
+    gad = CreateGadget(PALETTE_KIND, gad, &palettegad,
+    		       GTPA_NumColors,		6,
+    		       GTPA_IndicatorHeight,	30,
+    		       GTPA_Color,		0,
+		       TAG_DONE);
 
+D(bug("Created palette gadget: %p\n", gad));
+    gad = CreateGadget(TEXT_KIND, gad, &textgad,
+    		       GTTX_Text,	"Text display",
+    		       GTTX_CopyText,	TRUE,
+    		       GTTX_Border,	TRUE,
+    		       GTTX_Justification,	GTJ_CENTER,
+		       TAG_DONE);
+
+D(bug("Created text gadget: %p\n", gad));
+    gad = CreateGadget(NUMBER_KIND, gad, &numbergad,
+    		       GTNM_Number,	10,
+    		       GTNM_Border,	TRUE,
+    		       GTNM_Justification,	GTJ_CENTER,
+		       TAG_DONE);
+    
+D(bug("Created number gadget: %p\n", gad));
+    gad = CreateGadget(SLIDER_KIND, gad, &slidergad,
+    		       GTSL_Min,		10,
+    		       GTSL_Max,		20,
+    		       GTSL_Level,		12,
+    		       GTSL_MaxLevelLen,	3,
+    		       GTSL_LevelFormat,	"%2ld",
+    		       GTSL_LevelPlace,		PLACETEXT_RIGHT,
+    		       GTSL_Justification,	GTJ_RIGHT,
+    		       PGA_Freedom,		LORIENT_HORIZ,
+		       TAG_DONE);
+
+
+D(bug("Created slider gadget: %p\n", gad));
+    gad = CreateGadget(SCROLLER_KIND, gad, &scrollergad,
+    		       GTSC_Top,		2,
+    		       GTSC_Total,		10,
+    		       GTSC_Visible,		2,
+    		       GTSC_Arrows,		10,
+    		       GA_RelVerify,		TRUE,
+    		       PGA_Freedom,		LORIENT_VERT,
+		       TAG_DONE);
+
+D(bug("Created scroller gadget: %p\n", gad));
     if (!gad) {
         FreeGadgets(glist);
         printf("GTDemo: Error creating gadgets\n");
@@ -248,6 +350,23 @@ void handlewin()
                 }
                 printf("\n");
                 break;
+            case IDCMP_MOUSEMOVE:
+            	if (msg->IAddress)
+            	{
+            	    switch (((struct Gadget *) msg->IAddress)->GadgetID) {
+            	    case ID_SLIDER:
+            	    	printf("Slider moved to value %d\n", msg->Code);
+            	    	break;
+            	    	
+            	    case ID_SCROLLER:
+            	    	printf("Scroller moved to value %d\n", msg->Code);
+            	    	break;
+
+            	    }
+
+            	}
+            	break;
+            	
 	    case IDCMP_GADGETUP:
 		printf("Gadget %d released",
 		       ((struct Gadget *) msg->IAddress)->GadgetID);
@@ -255,6 +374,11 @@ void handlewin()
 		case ID_BUTTON:
 		    ready = TRUE;
 		    break;
+		    
+		case ID_PALETTE:
+		    printf(" (color: %d)", msg->Code);
+		    break;
+		    
 		case ID_CHECKBOX:{
                     BOOL checked;
 
@@ -281,6 +405,15 @@ int main()
 {
     int error = RETURN_OK;
 
+
+
+#if SDEBUG     /* Debugging hack */
+    struct Task *idtask;
+    SDInit();
+    if ((idtask = FindTask("input.device")))
+    	idtask->tc_UserData = NULL;
+#endif    	
+
     RT_Init();
 
     if (openlibs() != FALSE) {
@@ -297,9 +430,13 @@ int main()
 		error = RETURN_FAIL;
 	} else
 	    error = RETURN_FAIL;
+	    
+	D(bug("Doing gt_end()\n"));
 	gt_end();
     } else
 	error = RETURN_FAIL;
+
+D(bug("closing libs\n"));
     closelibs();
 
     RT_Exit();
