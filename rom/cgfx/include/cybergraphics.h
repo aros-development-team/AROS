@@ -5,6 +5,8 @@
 #   include <graphics/displayinfo.h>
 #endif
 
+
+
 #ifndef UTILITY_TAGITEM_H
 #   include <utility/tagitem.h>
 #endif
@@ -117,6 +119,17 @@ struct CDrawMsg {
 };
 
 #define CTABFMT_XRGB8	0UL
+
+
+/*** The extend cybergfx flags are now defined together with the
+   old AmigaOS flags, so we have to include them here
+*/
+
+#ifndef GRAPHICS_GFX_H
+#   include <graphics/gfx.h>
+#endif
+
+#define SHIFT_PIXFMT( fmt ) (  ((ULONG)(fmt)) << BMB_PIXFMT_SHIFTUP )
 
 
 #endif /* CYBERGRAPHX_CYBERGRAPHICS_H */
