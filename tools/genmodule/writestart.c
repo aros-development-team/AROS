@@ -26,7 +26,7 @@ void writestart(void)
     fprintf(out,
 	    "/*\n"
 	    "    *** Automatically generated file. Do not edit ***\n"
-	    "    Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
+	    "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
 	    "*/\n"
 	    "#include <libcore/libheader.c>\n");
     
@@ -76,7 +76,7 @@ void writestart(void)
 	    }
 	    fprintf(out,
 		    ");\n\n"
-		    "AROS_LIBFUNC_EXIT\n"
+		    "    AROS_LIBFUNC_EXIT\n"
 		    "}\n\n");
 	    break;
 	    
