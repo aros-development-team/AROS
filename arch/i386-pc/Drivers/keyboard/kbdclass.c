@@ -265,20 +265,24 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             irq->h_Code         = kbd_keyint;
             irq->h_Data         = (APTR)data;
 
+//kprintf("kbdclass: calling disable/kbd_clear_input/kbd_reset/enable()\n");
             Disable();
 	    kbd_clear_input();
 	    kbd_reset();		/* Reset the keyboard */
+//kprintf("kbdclass: updateleds \n");
+            kbd_updateleds(0);
             Enable();
+
+//kprintf("kbdclass:adding irqhandler \n");
             
             HIDD_IRQ_AddHandler(XSD(cl)->irqhidd, irq, vHidd_IRQ_Keyboard);
-
-            kbd_updateleds(0);
             ObtainSemaphore(&XSD(cl)->sema);
             XSD(cl)->kbdhidd = o;
             ReleaseSemaphore(&XSD(cl)->sema);
 
         }
     }
+//kprintf("kbdclass: exit\n");
     ReturnPtr("Kbd::New", OOP_Object *, o);
 }
 
@@ -444,7 +448,8 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     UWORD le = data->le;
     
     unsigned int work = 10000;
-    
+
+//kprintf("ki: {\n");    
     info = kbd_read_status();
 
     while ((info & KBD_STATUS_OBF))     	/* data from information port */
@@ -483,7 +488,7 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         else if (keycode==KBD_REPLY_ACK)
         {
             //return -1;		/* Treat it as NoKey */
-            D(bug("Kbd: Got Keyboard ACK!!!\n"));
+            D(bug("Kbd: Gottt Keyboard ACK!!!\n"));
             info = kbd_read_status();
             continue;
         }
@@ -600,7 +605,9 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 
             if (result == 0x78)    // Reset request
                 ColdReboot();
-                                           
+                      
+	    //kprintf("ki: c %d (%x)\n", result, result);
+	                         
             /* Pass the code to handler */
             data->kbd_callback(data->callbackdata, result);
         }
@@ -617,6 +624,7 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     } /* while data can be read */
 
     //return 0;	/* Enable processing other intServers */
+//kprintf("ki: }\n");
     return;
 }
 
