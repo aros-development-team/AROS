@@ -67,7 +67,8 @@
     
     struct pRoot_New p;
     Object *o;
-    
+
+// kprintf("NewObject(class=%s, classptr=%p, tags=%p)\n", classID, classPtr, tagList);    
     EnterFunc(bug("NewObject(classPtr=%p, classID=%s, tagList=%p)\n",
     		classPtr, ((classID != NULL) ? classID : (UBYTE *)"(null)"), tagList));
 		
@@ -77,9 +78,12 @@
     if (!classPtr)
     {
 	/* If a public ID was given, find pointer to class */
-	classPtr = (Class *)FindName((struct List *)&(GetOBase(OOPBase)->ob_ClassList), classID);
-	if (classPtr)
-	   MD(classPtr)->objectcount ++; /* We don't want the class to be freed while we work on it */
+	if (classID) {
+	    
+	    classPtr = (Class *)FindName((struct List *)&(GetOBase(OOPBase)->ob_ClassList), classID);
+	    if (classPtr)
+		MD(classPtr)->objectcount ++; /* We don't want the class to be freed while we work on it */
+	}
     }
     
     /* Release lock on list */
