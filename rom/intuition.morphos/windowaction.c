@@ -1,5 +1,6 @@
 /*
     Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 

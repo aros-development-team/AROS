@@ -3,6 +3,7 @@
     
 /*
     Copyright © 2002-2003 The MorphOS Development Team, All Rights Reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
