@@ -45,6 +45,7 @@
 #include "desktopclass.h"
 #include "containericonobserver.h"
 #include "abstracticon.h"
+#include "abstracticoncontainer.h"
 
 #include "desktop_intern_protos.h"
 
@@ -256,12 +257,22 @@ AROS_LH1(struct DesktopBase *, open,
         if (!DesktopBase->db_Presentation)
             return NULL;
 
-        DesktopBase->db_IconContainer =
+        DesktopBase->db_AbstractIconContainer =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Presentation,
+                                  sizeof(struct AbstractIconContainerData),
+                                  abstractIconContainerDispatcher);
+        if (!DesktopBase->db_AbstractIconContainer)
+            return NULL;
+
+
+
+        DesktopBase->db_IconContainer =
+            MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_AbstractIconContainer,
                                   sizeof(struct IconContainerClassData),
                                   iconContainerDispatcher);
         if (!DesktopBase->db_IconContainer)
             return NULL;
+
 
         DesktopBase->db_Observer =
             MUI_CreateCustomClass(NULL, MUIC_Notify, NULL,

@@ -321,7 +321,7 @@ IPTR iconObserverExecute(Class * cl, Object * obj, Msg msg)
 
 BOOPSI_DISPATCHER(IPTR, iconObserverDispatcher, cl, obj, msg)
 {
-    ULONG           retval = 0;
+    ULONG retval = 0;
 
     switch (msg->MethodID)
     {

@@ -9,16 +9,16 @@
 #include <libraries/mui.h>
 #include "presentation.h"
 
-#define AIA_BASE         TAG_USER+3400
+#define AIA_BASE           TAG_USER+3400
 
-#define AIA_Script       AIA_BASE+1
-#define AIA_Pure         AIA_BASE+2
-#define AIA_Archived     AIA_BASE+3
-#define AIA_Readable     AIA_BASE+4
-#define AIA_Writeable    AIA_BASE+5
-#define AIA_Executable   AIA_BASE+6
-#define AIA_Deleteable   AIA_BASE+7
-#define AIA_Comment      AIA_BASE+8
+#define AIA_Script         AIA_BASE+1
+#define AIA_Pure           AIA_BASE+2
+#define AIA_Archived       AIA_BASE+3
+#define AIA_Readable       AIA_BASE+4
+#define AIA_Writeable      AIA_BASE+5
+#define AIA_Executable     AIA_BASE+6
+#define AIA_Deleteable     AIA_BASE+7
+#define AIA_Comment        AIA_BASE+8
 
 struct AbstractIconClassData
 {

@@ -31,7 +31,8 @@ FILES := \
     internalwindowopsclass \
     internaldesktopopsclass \
     containericonobserver \
-    abstracticon
+    abstracticon \
+    abstracticoncontainer
 
 FUNCS := \
     createdesktopobjecta \

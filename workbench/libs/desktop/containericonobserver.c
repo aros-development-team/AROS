@@ -101,7 +101,7 @@ IPTR containerIconObserverExecute(Class * cl, Object * obj, Msg msg)
         CDO_IconContainer, 
         
         ICOA_Directory, newDir,
-        ICA_Desktop,       desktop,
+        AICA_Desktop,       desktop,
         ICA_VertScroller,  vert,
         ICA_HorizScroller, horiz,
         MUIA_FillArea, FALSE,

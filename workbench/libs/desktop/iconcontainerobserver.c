@@ -152,7 +152,7 @@ IPTR iconConObsAddIcons(Class * cl, Object * obj, struct icoAddIcon * msg)
 
     data = (struct IconContainerObserverClassData *) INST_DATA(cl, obj);
 
-    GetAttr(ICA_Desktop, _presentation(obj), &desktop);
+    GetAttr(AICA_Desktop, _presentation(obj), &desktop);
 
     for (i = 0; i < msg->wsr_Results; i++)
     {
