@@ -699,6 +699,10 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
     struct DTSpecialInfo *si;
     ULONG SrcWidth, SrcHeight;
     unsigned int SrcDepth;
+    struct IBox *domain;
+    IPTR Width, Height;
+    STRPTR Title;
+
 
     pd = (struct Picture_Data *) INST_DATA(cl, g);
     si = (struct DTSpecialInfo *) g->SpecialInfo;
@@ -782,10 +786,6 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
     } /* if(msg->gpl_Initial) */
 
     ReleaseSemaphore( &si->si_Lock );   /* unlock object data */
-
-    struct IBox *domain;
-    IPTR Width, Height;
-    STRPTR Title;
 
     /*
      *  Attribute holen
