@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <exec/types.h>
+#include <prefs/prefhdr.h>
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -17,7 +18,7 @@
 #include <proto/dos.h>
 #include <proto/commodities.h>
 
-/*  #define MYDEBUG 1 */
+#define MYDEBUG 1
 #include "debug.h"
 
 #include "muimaster_intern.h"
@@ -30,34 +31,20 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_ConfigdataData
 {
-    char *appname;
+    Object *app;
     struct ZunePrefsNew prefs;
     int test;
 };
 
-static CONST_STRPTR GetConfigString(Object *obj, ULONG id, CONST_STRPTR def)
-{
-    CONST_STRPTR f = (CONST_STRPTR)DoMethod(obj, MUIM_Dataspace_Find, id);
-    if (!f)
-	return def;
-    return f;
-}
 
-static ULONG GetConfigULong(Object *obj, ULONG id, ULONG def)
-{
-    ULONG v;
-    ULONG *vp = (ULONG *)DoMethod(obj, MUIM_Dataspace_Find, id);
-    if (!vp)
-	return def;
-    v = AROS_LONG2BE(*vp);
-    return v;
-}
-
-
-
-static void LoadPrefs(STRPTR filename, Object *obj)
+/*
+ * Get the content of the file into the supplied Dataspace object.
+ */
+static BOOL LoadPrefs(STRPTR filename, Object *obj)
 {
     struct IFFHandle *iff;
+    BOOL res = TRUE;
+
     if ((iff = AllocIFF()))
     {
 	if ((iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE)))
@@ -79,11 +66,35 @@ static void LoadPrefs(STRPTR filename, Object *obj)
 
 		CloseIFF(iff);
 	    }
+	    else
+	    {
+		res = FALSE;
+	    }
 	    Close((BPTR)iff->iff_Stream);
+	}
+	else
+	{
+	    res = FALSE;
 	}
 	FreeIFF(iff);
     }
+    else
+    {
+	res = FALSE;
+    }
+    return res;
 }
+
+static CONST_STRPTR GetConfigString(Object *obj, ULONG id)
+{
+    return (CONST_STRPTR)DoMethod(obj, MUIM_Configdata_GetString, id);
+}
+
+static ULONG GetConfigULong(Object *obj, ULONG id)
+{
+    return (ULONG)DoMethod(obj, MUIM_Configdata_GetULong, id);
+}
+
 
 /*------------ imspec config stuff --------------*/
 
@@ -93,7 +104,7 @@ struct spec_cfg {
     CONST_STRPTR defspec;
 };
 
-struct spec_cfg imspec_defaults[] =
+static struct spec_cfg DefImspecValues[] =
 {
     { MUII_WindowBack,    MUICFG_Background_Window,     "0:128" },
     { MUII_RequesterBack, MUICFG_Background_Requester,  "0:137" },
@@ -139,7 +150,7 @@ struct spec_cfg imspec_defaults[] =
     { MUII_ReadListBack,  MUICFG_Background_ReadList,   "0:128" },
 };
 
-static int Num_Imspec_Defaults = sizeof(imspec_defaults) / sizeof(struct spec_cfg);
+static int Num_Imspec_Defaults = sizeof(DefImspecValues) / sizeof(struct spec_cfg);
 
 /* called by Configdata_New */
 static void init_imspecs (Object *obj, struct MUI_ConfigdataData *data)
@@ -148,9 +159,10 @@ static void init_imspecs (Object *obj, struct MUI_ConfigdataData *data)
 
     for (i = 0; i < Num_Imspec_Defaults; i++)
     {
-	struct spec_cfg *img = imspec_defaults + i;
-	CONST_STRPTR imspec = GetConfigString(obj, img->cfgid, img->defspec);
+	CONST_STRPTR imspec;
+	struct spec_cfg *img = DefImspecValues + i;
 
+	imspec = GetConfigString(obj, img->cfgid);
 	D(bug("init_imspecs: %ld %lx %s ...\n", img->muiv, img->cfgid, imspec));
 	data->prefs.imagespecs[img->muiv] = imspec;
 	if (!data->prefs.imagespecs[img->muiv])
@@ -163,7 +175,7 @@ static void init_imspecs (Object *obj, struct MUI_ConfigdataData *data)
 /*------------ framespec config stuff --------------*/
 
 /* spec format : type, recessed, left, right, up, down spacing */
-struct spec_cfg framespec_defaults[] =
+static struct spec_cfg DefFramespecValues[] =
 {
     { MUIV_Frame_None,        MUICFG_Invalid,           "000000" }, /* invisible frame          */
     { MUIV_Frame_Button,      MUICFG_Frame_Button,      "202211" }, /* text button              */
@@ -182,7 +194,7 @@ struct spec_cfg framespec_defaults[] =
     { MUIV_Frame_Drag,        MUICFG_Frame_Drag,        "300000" }, /* dnd frame                */
 };
 
-static int Num_Framespec_Defaults = sizeof(framespec_defaults) / sizeof(struct spec_cfg);
+static int Num_Framespec_Defaults = sizeof(DefFramespecValues) / sizeof(struct spec_cfg);
 
 /* called by Configdata_New */
 static void init_framespecs (Object *obj, struct MUI_ConfigdataData *data)
@@ -191,12 +203,53 @@ static void init_framespecs (Object *obj, struct MUI_ConfigdataData *data)
 
     for (i = 0; i < Num_Framespec_Defaults; i++)
     {
-	struct spec_cfg *fcfg = framespec_defaults + i;
-	CONST_STRPTR framespec = GetConfigString(obj, fcfg->cfgid, fcfg->defspec);
+	CONST_STRPTR framespec;
+	struct spec_cfg *fcfg = DefFramespecValues + i;
+
+	framespec = GetConfigString(obj, fcfg->cfgid);
 	zune_frame_spec_to_intern(framespec,
 				  &data->prefs.frames[fcfg->muiv]);
     }
 }
+
+struct def_ulval {
+    ULONG id;
+    ULONG val;
+};
+
+static struct def_ulval DefULValues[] =
+{
+    { MUICFG_Window_Spacing_Left,   4 },
+    { MUICFG_Window_Spacing_Right,  4 },
+    { MUICFG_Window_Spacing_Top,    3 },
+    { MUICFG_Window_Spacing_Bottom, 3 },
+    { MUICFG_Radio_HSpacing, 4 },
+    { MUICFG_Radio_VSpacing, 1 },
+    { MUICFG_Cycle_MenuCtrl_Position, CYCLE_MENU_POSITION_BELOW },
+    { MUICFG_Cycle_MenuCtrl_Level, 2 },
+    { MUICFG_Cycle_MenuCtrl_Speed, 0 },
+    { MUICFG_Cycle_Menu_Recessed, FALSE },
+    { MUICFG_List_FontLeading, 1 },
+    { 0, 0 },
+};
+
+struct def_strval {
+    ULONG id;
+    CONST_STRPTR val;
+};
+
+static struct def_strval DefStrValues[] =
+{
+    { MUICFG_Font_Normal,   NULL },
+    { MUICFG_Font_List,     NULL },
+    { MUICFG_Font_Tiny,     NULL },
+    { MUICFG_Font_Fixed,    NULL },
+    { MUICFG_Font_Title,    NULL },
+    { MUICFG_Font_Big,      NULL },
+    { MUICFG_Font_Button,   NULL },
+    { MUICFG_Font_Knob,     NULL },
+    { 0, 0 },
+};
 
 
 /**************************************************************************
@@ -219,23 +272,23 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_Configdata_Application:
-		    data->appname = (char*)tag->ti_Data;
+		    data->app = (Object *)tag->ti_Data;
 		    break;
 	}
     }
 
-    LoadPrefs("env:zune/global.prefs",obj);
+    LoadPrefs("env:zune/global.prefs", obj);
 
     /*---------- fonts stuff ----------*/
 
-    data->prefs.fonts[-MUIV_Font_Normal] = (char*)DoMethod(obj, MUIM_Dataspace_Find, MUICFG_Font_Normal);
-    data->prefs.fonts[-MUIV_Font_List] = (char*)DoMethod(obj, MUIM_Dataspace_Find, MUICFG_Font_List);
-    data->prefs.fonts[-MUIV_Font_Tiny] = (char*)DoMethod(obj, MUIM_Dataspace_Find, MUICFG_Font_Tiny);
-    data->prefs.fonts[-MUIV_Font_Fixed] = (char*)DoMethod(obj, MUIM_Dataspace_Find, MUICFG_Font_Fixed);
-    data->prefs.fonts[-MUIV_Font_Title] = (char*)DoMethod(obj, MUIM_Dataspace_Find, MUICFG_Font_Title);
-    data->prefs.fonts[-MUIV_Font_Big] = (char*)DoMethod(obj, MUIM_Dataspace_Find, MUICFG_Font_Big);
-    data->prefs.fonts[-MUIV_Font_Button] = (char*)DoMethod(obj, MUIM_Dataspace_Find, MUICFG_Font_Button);
-    data->prefs.fonts[-MUIV_Font_Knob] = (char*)DoMethod(obj, MUIM_Dataspace_Find, MUICFG_Font_Knob);
+    data->prefs.fonts[-MUIV_Font_Normal] = GetConfigString(obj, MUICFG_Font_Normal);
+    data->prefs.fonts[-MUIV_Font_List] =   GetConfigString(obj, MUICFG_Font_List);
+    data->prefs.fonts[-MUIV_Font_Tiny] =   GetConfigString(obj, MUICFG_Font_Tiny);
+    data->prefs.fonts[-MUIV_Font_Fixed] =  GetConfigString(obj, MUICFG_Font_Fixed);
+    data->prefs.fonts[-MUIV_Font_Title] =  GetConfigString(obj, MUICFG_Font_Title);
+    data->prefs.fonts[-MUIV_Font_Big] =    GetConfigString(obj, MUICFG_Font_Big);
+    data->prefs.fonts[-MUIV_Font_Button] = GetConfigString(obj, MUICFG_Font_Button);
+    data->prefs.fonts[-MUIV_Font_Knob] =   GetConfigString(obj, MUICFG_Font_Knob);
 
     /*---------- images stuff ----------*/
 
@@ -247,10 +300,10 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /*---------- window stuff ----------*/
 
-    data->prefs.window_inner_left = GetConfigULong(obj, MUICFG_Window_Spacing_Left, 4);
-    data->prefs.window_inner_right = GetConfigULong(obj, MUICFG_Window_Spacing_Right, 4);
-    data->prefs.window_inner_top = GetConfigULong(obj, MUICFG_Window_Spacing_Top, 3);
-    data->prefs.window_inner_bottom = GetConfigULong(obj, MUICFG_Window_Spacing_Bottom, 3);
+    data->prefs.window_inner_left = GetConfigULong(obj, MUICFG_Window_Spacing_Left);
+    data->prefs.window_inner_right = GetConfigULong(obj, MUICFG_Window_Spacing_Right);
+    data->prefs.window_inner_top = GetConfigULong(obj, MUICFG_Window_Spacing_Top);
+    data->prefs.window_inner_bottom = GetConfigULong(obj, MUICFG_Window_Spacing_Bottom);
     data->prefs.window_position = WINDOW_POSITION_FORGET_ON_EXIT;
 
     /*---------- group stuff ----------*/
@@ -267,19 +320,15 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /*---------- Buttons ----------*/
 
-    data->prefs.radiobutton_hspacing = GetConfigULong(obj, MUICFG_Radio_HSpacing, 4);
-    data->prefs.radiobutton_vspacing = GetConfigULong(obj, MUICFG_Radio_VSpacing, 1);
+    data->prefs.radiobutton_hspacing = GetConfigULong(obj, MUICFG_Radio_HSpacing);
+    data->prefs.radiobutton_vspacing = GetConfigULong(obj, MUICFG_Radio_VSpacing);
 
     /*---------- Cycles ----------*/
 
-    data->prefs.cycle_menu_position =
-	GetConfigULong(obj, MUICFG_Cycle_MenuCtrl_Position, CYCLE_MENU_POSITION_BELOW);
-    data->prefs.cycle_menu_min_entries =
-	GetConfigULong(obj, MUICFG_Cycle_MenuCtrl_Level, 2);
-    data->prefs.cycle_menu_speed =
-	GetConfigULong(obj, MUICFG_Cycle_MenuCtrl_Speed, 0);
-    data->prefs.cycle_menu_recessed_entries =
-	GetConfigULong(obj, MUICFG_Cycle_Menu_Recessed, FALSE);
+    data->prefs.cycle_menu_position = GetConfigULong(obj, MUICFG_Cycle_MenuCtrl_Position);
+    data->prefs.cycle_menu_min_entries = GetConfigULong(obj, MUICFG_Cycle_MenuCtrl_Level);
+    data->prefs.cycle_menu_speed = GetConfigULong(obj, MUICFG_Cycle_MenuCtrl_Speed);
+    data->prefs.cycle_menu_recessed_entries = GetConfigULong(obj, MUICFG_Cycle_Menu_Recessed);
 
     /*---------- Sliders ----------*/
     /* all taken care of in frames and images */
@@ -290,8 +339,7 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /*---------- Lists ----------*/
 
-    data->prefs.list_linespacing =
-	GetConfigULong(obj, MUICFG_List_FontLeading, 1);
+    data->prefs.list_linespacing = GetConfigULong(obj, MUICFG_List_FontLeading);
 
     /*---------- Strings ----------*/
     /* all taken care of in frames and images */
@@ -400,11 +448,209 @@ static ULONG  Configdata_Get(struct IClass *cl, Object * obj, struct opGet *msg)
 }
 
 
+/**************************************************************************
+ MUIM_Configdata_GetString
+**************************************************************************/
+static IPTR Configdata_GetString(struct IClass *cl, Object * obj,
+				 struct MUIP_Configdata_GetString *msg)
+{
+    CONST_STRPTR s;
+
+    s = (CONST_STRPTR)DoMethod(obj, MUIM_Dataspace_Find, msg->id);
+    if (!s)
+    {
+	int i;
+
+	for (i = 0; DefStrValues[i].id != 0; i++)
+	{
+	    if (DefStrValues[i].id == msg->id)
+		return (IPTR)DefStrValues[i].val;
+	}
+	for (i = 0; i < Num_Imspec_Defaults; i++)
+	{
+	    if (DefImspecValues[i].cfgid == msg->id)
+		return (IPTR)DefImspecValues[i].defspec;
+	}
+	for (i = 0; i < Num_Framespec_Defaults; i++)
+	{
+	    if (DefFramespecValues[i].cfgid == msg->id)
+		return (IPTR)DefFramespecValues[i].defspec;
+	}
+	return (IPTR)0;
+    }
+    else
+    {
+	return (IPTR)s;
+    }
+}
+
+
+/**************************************************************************
+ MUIM_Configdata_GetULong
+**************************************************************************/
+static ULONG Configdata_GetULong(struct IClass *cl, Object * obj,
+				 struct MUIP_Configdata_GetULong *msg)
+{
+    ULONG *vp;
+
+    vp = (ULONG *)DoMethod(obj, MUIM_Dataspace_Find, msg->id);
+    if (!vp)
+    {
+	int i;
+
+	for (i = 0; DefULValues[i].id != 0; i++)
+	{
+	    if (DefULValues[i].id == msg->id)
+		return DefULValues[i].val;
+	}
+	return 0;
+    }
+    else
+    {
+	return AROS_LONG2BE(*vp);
+    }
+}
+
+
+/**************************************************************************
+ MUIM_Configdata_SetULong
+**************************************************************************/
+static ULONG Configdata_SetULong(struct IClass *cl, Object * obj,
+				 struct MUIP_Configdata_SetULong *msg)
+{
+    ULONG v = msg->val;
+    ULONG *vp = &v;
+    int i;
+
+    for (i = 0; DefULValues[i].id != 0; i++)
+    {
+	if (DefULValues[i].id == msg->id)
+	    if (DefULValues[i].val == v)
+	    {
+		D(bug("Configdata_SetULong : set to def, id %08lx, val %ld\n",
+		      msg->id, v));
+	    }
+    }
+
+    v = AROS_LONG2BE(v);
+    D(bug("Configdata_SetULong: adding %08lx to %08lx chunk\n", v, msg->id));
+    DoMethod(obj, MUIM_Dataspace_Add, (IPTR)vp, 4, msg->id);
+    return 0;
+}
+
+
+static int SavePrefsHeader(struct IFFHandle *iff)
+{
+    if (!PushChunk( iff, 0, MAKE_ID('P','R','H','D'), IFFSIZE_UNKNOWN))
+    {
+	struct PrefHeader ph;
+	ph.ph_Version = 0;
+	ph.ph_Type = 0;
+	ph.ph_Flags = 0;
+
+	if (WriteChunkBytes(iff, &ph, sizeof(struct PrefHeader)))
+	    if (!PopChunk(iff)) return 1;
+	PopChunk(iff);
+    }
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_Configdata_Save
+**************************************************************************/
+static ULONG Configdata_Save(struct IClass *cl, Object * obj,
+			     struct MUIP_Configdata_Save *msg)
+{
+    struct IFFHandle *iff;
+    if ((iff = AllocIFF()))
+    {
+    	if (!(iff->iff_Stream = (IPTR)Open(msg->filename,MODE_NEWFILE)))
+    	{
+    	    /* Try to Create the directory where the file is located */
+	    char *path = StrDup(msg->filename);
+	    if (path)
+	    {
+	    	char *path_end = PathPart(path);
+	    	if (path_end != path)
+	    	{
+		    BPTR lock;
+		    *path_end = 0;
+		    if ((lock = CreateDir(path)))
+		    {
+			UnLock(lock);
+			iff->iff_Stream = (IPTR)Open(msg->filename,MODE_NEWFILE);
+		    }
+		}
+	    	FreeVec(path);
+	    }
+    	}
+
+	if (iff->iff_Stream)
+	{
+	    InitIFFasDOS(iff);
+
+	    if (!OpenIFF(iff, IFFF_WRITE))
+	    {
+		if (!PushChunk(iff, MAKE_ID('P','R','E','F'), ID_FORM, IFFSIZE_UNKNOWN))
+		{
+		    if (SavePrefsHeader(iff))
+		    {
+		    	DoMethod(obj,MUIM_Dataspace_WriteIFF, (IPTR)iff, 0, MAKE_ID('M','U','I','C'));
+		    }
+		    PopChunk(iff);
+		}
+
+		CloseIFF(iff);
+	    }
+	    Close((BPTR)iff->iff_Stream);
+	}
+	FreeIFF(iff);
+    }
+    return 0;
+}
+
+
+/**************************************************************************
+ MUIM_Configdata_Load
+**************************************************************************/
+static ULONG Configdata_Load(struct IClass *cl, Object * obj,
+			     struct MUIP_Configdata_Load *msg)
+{
+    struct IFFHandle *iff;
+    if ((iff = AllocIFF()))
+    {
+	if ((iff->iff_Stream = (IPTR)Open(msg->filename,MODE_OLDFILE)))
+	{
+	    InitIFFasDOS(iff);
+
+	    if (!OpenIFF(iff, IFFF_READ))
+	    {
+		StopChunk( iff, MAKE_ID('P','R','E','F'), MAKE_ID('M','U','I','C'));
+
+		while (!ParseIFF(iff, IFFPARSE_SCAN))
+		{
+		    struct ContextNode *cn;
+		    if (!(cn = CurrentChunk(iff))) continue;
+		    if (cn->cn_ID == MAKE_ID('M','U','I','C'))
+			DoMethod(obj, MUIM_Dataspace_ReadIFF, (IPTR)iff);
+		}
+
+		CloseIFF(iff);
+	    }
+	    Close((BPTR)iff->iff_Stream);
+	}
+	FreeIFF(iff);
+    }
+    return 0;
+}
+
+
 /*
  * The class dispatcher
  */
 BOOPSI_DISPATCHER(IPTR, Configdata_Dispatcher, cl, obj, msg)
 {
+    D(bug("Configdata %p got %08lx method\n", obj, msg->MethodID));
     switch (msg->MethodID)
     {
 	/* Whenever an object shall be created using NewObject(), it will be
@@ -413,6 +659,11 @@ BOOPSI_DISPATCHER(IPTR, Configdata_Dispatcher, cl, obj, msg)
 	case OM_NEW: return Configdata_New(cl, obj, (struct opSet *)msg);
 	case OM_DISPOSE: return Configdata_Dispose(cl, obj, (APTR)msg);
 	case OM_GET: return Configdata_Get(cl, obj, (APTR)msg);
+	case MUIM_Configdata_GetString: return Configdata_GetString(cl, obj, (APTR)msg);
+	case MUIM_Configdata_GetULong: return Configdata_GetULong(cl, obj, (APTR)msg);
+	case MUIM_Configdata_SetULong: return Configdata_SetULong(cl, obj, (APTR)msg);
+	case MUIM_Configdata_Save: return Configdata_Save(cl, obj, (APTR)msg);
+	case MUIM_Configdata_Load: return Configdata_Load(cl, obj, (APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
