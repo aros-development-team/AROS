@@ -13,12 +13,13 @@ ifeq ($(FLAVOUR),native)
 #
 # Some files cause problems:
 #
-# 1) No (working) __chip keyword in ld
+# 1) No (working) __chip keyword in the standard ld
 # 2) Missing functions because we don't link with libc.a
+# 3) "fixed or forbidden register was spilled"
 #
 
 FILES := gtdemo helloworld inquire intuitext librarytest listfonts keymaptest \
-	 mxgads oopdemo palettedemo readicon regiontest shadowborder sift strtest \
+	 mxgads oopdemo readicon regiontest shadowborder sift strtest \
 	 ooplib consoledemo
 	 
 
