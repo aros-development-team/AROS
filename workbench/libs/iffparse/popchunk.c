@@ -113,7 +113,7 @@
 	    err = SeekStream
 	    (
 		iff,
-		size - 4,
+		size,
 		IPB(IFFParseBase)
 	    );
 
@@ -137,8 +137,9 @@
 		1,
 		IPB(IFFParseBase)
 	    );
-
+	    
 	    if (err) return (err);
+	    size++;
 
 	}
 
@@ -164,6 +165,20 @@
 
     PopContextNode(iff, IPB(IFFParseBase));
 
+    /* stegerg: is this okay!? */
+    
+    if (iff->iff_Flags & IFFF_WRITE)
+    {
+        cn = TopChunk(iff);
+	
+	/* Might work without this check, because there seems to be always at
+	   least one contextnode --> see AllocIFF) */
+	if (cn->cn_Node.mln_Succ)
+	{
+	    cn->cn_Scan += size + sizeof(ULONG) + sizeof(ULONG);
+	}
+    }
+    
     return (NULL);
 
 
