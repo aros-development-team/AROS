@@ -63,9 +63,9 @@ struct MathIeeeDoubBasBase
 #define Overflow_Bit 0x00000002  
 
 
-#define IEEEDPMantisse_Mask_Hi 0x000FFFFF /* 62 bit for the mantisse  */
+#define IEEEDPMantisse_Mask_Hi 0x000FFFFF /* 52 bit for the mantisse  */
 #define IEEEDPMantisse_Mask_Lo 0xFFFFFFFF 
-#define IEEEDPExponent_Mask_Hi 0x7FF00000 /* 10 bit for the exponent  */
+#define IEEEDPExponent_Mask_Hi 0x7FF00000 /* 11 bit for the exponent  */
 #define IEEEDPExponent_Mask_Lo 0x00000000 
 #define IEEEDPSign_Mask_Hi     0x80000000 /*  1 bit for the sign      */
 #define IEEEDPSign_Mask_Lo     0x00000000 
