@@ -382,10 +382,6 @@
 
     w->WScreen = nw.Screen;
     
-    w->UserPort = CreateMsgPort();
-    if (NULL == w->UserPort)
-	goto failexit;
-
     if (!ModifyIDCMP (w, nw.IDCMPFlags))
 	goto failexit;
 	
