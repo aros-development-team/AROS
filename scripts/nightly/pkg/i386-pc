@@ -23,6 +23,8 @@ make    bootdisk-pc-i386
 makedir $BUILD_BASE/$PACKAGE
 copy    $BUILD_BASE/AROS/bin/pc-i386/gen/rom/boot/aros.bin $BUILD_BASE/$PACKAGE
 cd      $BUILD_BASE
+copy    $SOURCE_AROS/LICENSE $PACKAGE
+copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
 archive $ARCHIVE $PACKAGE
 delete  $PACKAGE
 
@@ -45,6 +47,8 @@ make    bootiso-pc-i386
 makedir $BUILD_BASE/$PACKAGE
 copy    $BUILD_BASE/AROS/bin/pc-i386/gen/rom/boot/aros.iso $BUILD_BASE/$PACKAGE
 cd      $BUILD_BASE
+copy    $SOURCE_AROS/LICENSE $PACKAGE
+copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
 archive $ARCHIVE $PACKAGE
 delete  $PACKAGE
 
