@@ -2,6 +2,14 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1997/03/27 15:43:33  digulla
+    Updated comments
+
+    Renamed SigSem into IBaseLock
+
+    Added semaphore for ClassList. This semaphore is always requested when the
+    ClassList is accessed.
+
     Revision 1.8  1997/03/20 16:05:08  digulla
     Fixed bug: Added FindClass()
 
@@ -105,14 +113,7 @@
     if (!superClassPtr)
     {
 	/* Search for the class ... */
-	for (superClassPtr=GetHead(PublicClassList);
-	    superClassPtr;
-	    superClassPtr=GetSucc(superClassPtr)
-	)
-	{
-	    if (!strcmp(superClassPtr->cl_ID, superClassID))
-		break;
-	}
+	superClassPtr = FindClass (superClassID, IntuitionBase);
 
 	if (!superClassPtr)
 	    return (NULL);  /* nothing found */

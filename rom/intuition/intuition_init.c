@@ -113,12 +113,20 @@ AROS_LH2(struct IntuitionBase *, init,
 	return NULL;
 
     /* Create semaphore and initialize it */
-    GetPrivIBase(IntuitionBase)->SigSem = AllocMem (sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
+    GetPrivIBase(IntuitionBase)->IBaseLock = AllocMem (sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
 
-    if (!GetPrivIBase(IntuitionBase)->SigSem)
+    if (!GetPrivIBase(IntuitionBase)->IBaseLock)
 	return NULL;
 
-    InitSemaphore (GetPrivIBase(IntuitionBase)->SigSem);
+    InitSemaphore (GetPrivIBase(IntuitionBase)->IBaseLock);
+
+    /* Create semaphore and initialize it */
+    GetPrivIBase(IntuitionBase)->ClassListLock = AllocMem (sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
+
+    if (!GetPrivIBase(IntuitionBase)->ClassListLock)
+	return NULL;
+
+    InitSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
 
     /* The rootclass is created statically */
     rootclass.cl_UserData = (IPTR) IntuitionBase;
@@ -285,6 +293,9 @@ Class * FindClass (ClassID classID, struct IntuitionBase * IntuitionBase)
 {
     Class * classPtr;
 
+    /* Lock the list */
+    ObtainSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
+
     /* Search for the class */
     ForeachNode (PublicClassList, classPtr)
     {
@@ -292,7 +303,10 @@ Class * FindClass (ClassID classID, struct IntuitionBase * IntuitionBase)
 	    break;
     }
 
-    return classPtr; /* Nothing found */
+    /* Unlock list */
+    ReleaseSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
+
+    return classPtr; /* found node or NULL */
 }
 
 #undef IntuitionBase

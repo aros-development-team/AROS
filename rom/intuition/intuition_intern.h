@@ -36,14 +36,19 @@ struct IntIntuitionBase
     struct GfxBase	   * GfxBase;
     struct ExecBase	   * SysBase;
     struct UtilityBase	   * UtilBase;
-    struct MinList	     ClassList;
     struct Screen	   * WorkBench;
-    struct SignalSemaphore * SigSem;
+    struct SignalSemaphore * IBaseLock;
+
+    struct MinList	     ClassList;
+    struct SignalSemaphore * ClassListLock;
 
     APTR		     DriverData; /* Pointer which the driver may use */
 
-/*    struct MinList	   PublicScreenList;
-    struct Screen      * DefaultPublicScreen; */
+/*
+    struct MinList	     PublicScreenList;
+    struct Screen	   * DefaultPublicScreen;
+    struct SignalSemaphore * PubScreenListLock;
+*/
 };
 
 struct IntScreen

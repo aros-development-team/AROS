@@ -1,22 +1,8 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.4  1997/01/27 00:36:35  ldp
-    Polish
 
-    Revision 1.3  1996/12/10 14:00:00  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.2  1996/10/24 15:51:17  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/08/28 17:55:34  digulla
-    Proportional gadgets
-    BOOPSI
-
-
-    Desc:
+    Desc: Makes a class publically available.
     Lang: english
 */
 #include <proto/exec.h>
@@ -70,7 +56,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+    ObtainSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
     AddTail (PublicClassList, (struct Node *)classPtr);
+    ReleaseSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
 
     classPtr->cl_Flags |= CLF_INLIST;
 

@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Locks the access to all public fields of the IntuitionBase
     Lang: english
 */
 #include <proto/exec.h>
@@ -54,7 +54,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    ObtainSemaphore (GetPrivIBase(IntuitionBase)->SigSem);
+    ObtainSemaphore (GetPrivIBase(IntuitionBase)->IBaseLock);
 
     return What;
     AROS_LIBFUNC_EXIT
