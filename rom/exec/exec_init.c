@@ -33,7 +33,7 @@
 
 static const UBYTE name[];
 static const UBYTE version[];
-extern const char *END;
+extern const char END;
 static struct ExecBase *AROS_SLIB_ENTRY(init,BASENAME)();
 
 const struct Resident Exec_resident =
@@ -148,7 +148,7 @@ void idleTask(struct ExecBase *SysBase)
 	    if( SetSignal(0,0) & SIGBREAKF_CTRL_F )
 		inputDevice = FindTask("input.device");
 	}
-	
+
 	/* Test if there are any other tasks in the ready queue */
 	if( !IsListEmpty(&SysBase->TaskReady) )
 	{
@@ -161,7 +161,7 @@ void idleTask(struct ExecBase *SysBase)
 AROS_UFH1(void, idleCount,
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
-    /* This keeps track of how many times the idle task becomes active. 
+    /* This keeps track of how many times the idle task becomes active.
 	Apart from also testing the tc_Launch vector, it also keeps a
 	count of how many times we've gone idle since startup.
     */
@@ -207,7 +207,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	t->tc_Node.ln_Pri = 0;
 	t->tc_State = TS_RUN;
 	t->tc_SigAlloc = 0xFFFF;
-	t->tc_SPLower = 0;          /* This is the system's stack */
+	t->tc_SPLower = 0;	    /* This is the system's stack */
 	t->tc_SPUpper = (APTR)~0UL;
 
 	SysBase->ThisTask = t;
@@ -303,8 +303,10 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	to the DOS (whatever it is) to Permit(); RemTask(NULL);
     */
     InitCode(RTF_COLDSTART, 0);
-    
+
     /* There had better be some kind of task waiting to run. */
     return NULL;
     AROS_LIBFUNC_EXIT
 }
+
+const char END = 1;
