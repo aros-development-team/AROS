@@ -126,10 +126,6 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 
     INTERNALS
 
-    HISTORY
-
-    26.7.99  SDuvan  implemented
-
 ******************************************************************************/
 
 {
@@ -158,7 +154,7 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
     player->pl_Reserved0 = -1;	          /* AlarmSigBit */
     player->pl_Flags |= PLAYERF_READY;
 
-    while((tag = NextTagItem((const struct TagItem **)&tl)) != NULL)
+    while((tag = NextTagItem(&tl)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{

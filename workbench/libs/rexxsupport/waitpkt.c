@@ -23,8 +23,7 @@
 LONG rxsupp_waitpkt(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     struct PortNodeData *data;
-    UBYTE *name;
-
+    
     data = (struct PortNodeData *)FindName(&RSBI(RexxSupportBase)->openports, ARG1(msg));
     if (data != NULL)
     {

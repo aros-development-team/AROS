@@ -24,7 +24,7 @@
 LONG rxsupp_showdir(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     UBYTE argc = msg->rm_Action & RXARGMASK;
-    UBYTE type; /* 0 == all, 1 == file, 2 == dir */
+    UBYTE type = 0; /* 0 == all, 1 == file, 2 == dir */
     char delim = 0;
     BPTR lock;
     UBYTE *string;
