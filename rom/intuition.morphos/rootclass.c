@@ -81,10 +81,13 @@ AROS_UFH3(IPTR, rootDispatcher,
 
         if (o)
         {
+            _OBJ(o)->o_Class = objcl;
+            
+            #warning "Use atomic macro for this once we have some"
             Forbid();
-            ++objcl->cl_ObjectCount;
+            objcl->cl_ObjectCount++;
             Permit();
-            ((struct _Object *)o)->o_Class = objcl;
+            
             retval = (IPTR) BASEOBJECT(o);
         }
         break;
@@ -93,8 +96,9 @@ AROS_UFH3(IPTR, rootDispatcher,
         /* Free memory. Caller is responsible that everything else
            is already cleared! */
         objcl = OCLASS(o);
+        #warning "Use atomic macro for this once we have some"
         Forbid();
-        --objcl->cl_ObjectCount;
+        OCLASS(o)->cl_ObjectCount--;
         Permit();
         FreeMem (_OBJECT(o),
                  objcl->cl_InstOffset + objcl->cl_InstSize + sizeof (struct _Object));
