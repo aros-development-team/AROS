@@ -532,8 +532,6 @@
       w->LeftEdge    = nw.LeftEdge + parentwin->LeftEdge;
       w->TopEdge     = nw.TopEdge  + parentwin->TopEdge;
     }
-kprintf("Window has LeftEdge/TopEdge: %d/%d and RelLeftEdge/RelTopEdge: %d/%d\n",
-        w->LeftEdge,w->TopEdge,w->RelLeftEdge,w->RelTopEdge);
 
     w->Width	   = (nw.Width  != ~0) ? nw.Width  : w->WScreen->Width - w->LeftEdge;
     w->Height	   = (nw.Height != ~0) ? nw.Height : w->WScreen->Height - w->TopEdge;
