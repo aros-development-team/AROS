@@ -85,10 +85,10 @@ struct InputEvent *InvertString(STRPTR str, struct KeyMap *km);
 /* Gadtools */
 APTR GetVisualInfo (struct Screen * screen, ULONG tag1, ...);
 struct Gadget * CreateGadget(	ULONG kind, 
-				struct Gadget * previous, 
-				struct NewGadget * ng,
-				ULONG tag1,
-				...);
+			struct Gadget * previous, 
+			struct NewGadget * ng,
+			ULONG tag1,
+			...);
 void DrawBevelBox(	struct RastPort * rp,
 			WORD left,
 			WORD top,
@@ -106,6 +106,8 @@ LONG GT_GetGadgetAttrs(	struct Gadget * gad,
 			struct Requester * req,
 			ULONG	tag1,
 			...);
+struct Menu * CreateMenus( struct NewMenu * newmenu, ULONG tag1, ...);
+BOOL LayoutMenus( struct Menu * menu, APTR vi, ULONG tag1, ...);
 
 /* Pools */
 APTR LibCreatePool (ULONG requirements, ULONG puddleSize, ULONG threshSize);
