@@ -51,7 +51,6 @@ FILES	:= \
 	TaskList \
 	Touch \
 	Type \
-	Vbemtrr \
 	Version \
 	Wait \
 	Which
