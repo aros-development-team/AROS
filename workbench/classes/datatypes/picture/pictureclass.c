@@ -68,6 +68,42 @@ STATIC ULONG notifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1
  return(DoMethod(o, OM_NOTIFY, &tag1, ginfo, flags));
 }
 
+STATIC IPTR DT_NotifyMethod(struct IClass *cl, struct Gadget *g, struct opUpdate *msg)
+{
+#ifdef MYDEBUG
+ struct TagItem *tl;
+ struct TagItem *ti;
+
+ register int i;
+ int Known;
+
+ Known=FALSE;
+
+ tl=msg->opu_AttrList;
+
+ while(ti=NextTagItem(&tl))
+ {
+  for(i=0; i<NumAttribs; i++)
+  {
+   if(ti->ti_Tag==KnownAttribs[i])
+   {
+    Known=TRUE;
+
+    D(bug("picture.datatype/OM_NOTIFY: %s %ld\n", AttribNames[i], ti->ti_Data));
+   }
+  }
+
+  if(!Known)
+  {
+   D(bug("picture.datatype/OM_NOTIFY: 0x%lx %ld\n", ti->ti_Tag, ti->ti_Data));
+  }
+ }
+
+#endif /* MYDEBUG */
+
+ return(DoSuperMethodA(cl, (Object *) g, (Msg) msg));
+}
+
 STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
 {
  struct Gadget *g;
@@ -135,6 +171,7 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *m
     D(bug("picture.datatype/OM_NEW: Tag ID: PDTA_BitMap\n"));
 
     pd->bm=(struct BitMap *) ti->ti_Data;
+    pd->DestBM=pd->bm;
     break;
    }
 
@@ -190,16 +227,7 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *m
    {
     D(bug("picture.datatype/OM_NEW: Tag ID: PDTA_NumSparse\n"));
 
-    /*
-     *  Currently we don't allow Sparse to be changeable by user
-     *  because we use it for our own purposes.
-     *
-     *  So if you are a application developer: NEVER USE IT!
-     */
-
-#if 0
     pd->NumSparse=ti->ti_Data;
-#endif /* 0 */
     break;
    }
 
@@ -207,13 +235,7 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *m
    {
     D(bug("picture.datatype/OM_NEW: Tag ID: PDTA_SparseTable\n"));
 
-    /*
-     *  See above!
-     */
-
-#if 0
     pd->SparseTable=(UBYTE *) ti->ti_Data;
-#endif /* 0 */
     break;
    }
   }
@@ -272,12 +294,16 @@ STATIC VOID DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
 
   if(pd->DestBM)
   {
+#if 0
    FreeBitMap(pd->DestBM);
+#endif
   }
 
   if(pd->ClassBM)
   {
+#if 0
    FreeBitMap(pd->ClassBM);
+#endif
   }
 
   if(pd->SparseTable)
@@ -320,6 +346,7 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
     D(bug("picture.datatype/OM_SET: Tag ID: PDTA_BitMap\n"));
 
     pd->bm=(struct BitMap *) ti->ti_Data;
+    pd->DestBM=pd->bm;
 
     break;
    }
@@ -337,12 +364,16 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
    {
     D(bug("picture.datatype/OM_SET: Tag ID: PDTA_Screen\n"));
 
+    pd->TheScreen=(struct Screen *) ti->ti_Data;
+
     break;
    }
 
    case PDTA_FreeSourceBitMap:
    {
     D(bug("picture.datatype/OM_SET: Tag ID: PDTA_FreeSourceBitMap\n"));
+
+    pd->FreeSourceBitMap=(BOOL) ti->ti_Data;
 
     break;
    }
@@ -351,12 +382,16 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
    {
     D(bug("picture.datatype/OM_SET: Tag ID: PDTA_Grab\n"));
 
+    pd->Grab=(Point *) ti->ti_Data;
+
     break;
    }
 
    case PDTA_ClassBitMap:
    {
     D(bug("picture.datatype/OM_SET: Tag ID: PDTA_ClassBitMap\n"));
+
+    pd->ClassBM=(struct BitMap *) ti->ti_Data;
 
     break;
    }
@@ -392,10 +427,6 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
     }
 
 #endif /* MYDEBUG */
-
-#if 0
-    D(bug("picture.datatype/OM_SET: Tag ID: 0x%lx\n", ti->ti_Tag));
-#endif /* 0 */
    }
   }
  }
@@ -489,6 +520,10 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   {
    D(bug("picture.datatype/OM_GET: Tag ID: PDTA_GRegs\n"));
 
+   /*
+    *  Alloc GRegs here!
+    */
+
    *(msg->opg_Storage)=(ULONG) pd->GRegs;
 
    break;
@@ -498,6 +533,10 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   {
    D(bug("picture.datatype/OM_GET: Tag ID: PDTA_ColorTable\n"));
 
+   /*
+    *  Alloc ColorTable here!
+    */
+
    *(msg->opg_Storage)=(ULONG) pd->ColTable;
 
    break;
@@ -506,6 +545,10 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   case PDTA_ColorTable2:
   {
    D(bug("picture.datatype/OM_GET: Tag ID: PDTA_ColorTable2\n"));
+
+   /*
+    *  Alloc ColorTable2 here!
+    */
 
    *(msg->opg_Storage)=(ULONG) pd->ColTable2;
 
@@ -543,6 +586,10 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   {
    D(bug("picture.datatype/OM_GET: Tag ID: PDTA_Grab\n"));
 
+   /*
+    *  Alloc Grab here!
+    */
+
    *(msg->opg_Storage)=(ULONG) pd->Grab;
 
    break;
@@ -552,6 +599,10 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   {
    D(bug("picture.datatype/OM_GET: Tag ID: PDTA_DestBitMap\n"));
 
+   /*
+    *  Alloc DestBitMap here!
+    */
+
    *(msg->opg_Storage)=(ULONG) pd->DestBM;
 
    break;
@@ -560,6 +611,10 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   case PDTA_ClassBitMap:
   {
    D(bug("picture.datatype/OM_GET: Tag ID: PDTA_ClassBitMap\n"));
+
+   /*
+    *  Alloc ClassBitMap here!
+    */
 
    *(msg->opg_Storage)=(ULONG) pd->ClassBM;
 
@@ -602,12 +657,6 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 
 #endif /* MYDEBUG */
 
-#if 0
-
-   D(bug("picture.datatype/OM_GET: Tag ID: 0x%lx\n", msg->opg_AttrID));
-
-#endif /* 0 */
-
    return(DoSuperMethodA(cl, (Object *) g, (Msg) msg));
   }
  }
@@ -619,19 +668,24 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 {
  struct Picture_Data *pd;
  struct IBox *domain;
- IPTR TopVert, VisibleVert, TotalVert;
- IPTR TopHoriz, VisibleHoriz, TotalHoriz;
+ IPTR TopVert, TopHoriz, NominalWidth, NominalHeight;
+
+ WORD SrcX, SrcY, DestX, DestY, SizeX, SizeY;
 
  pd=(struct Picture_Data *) INST_DATA(cl, g);
 
+ if(!pd->DestBM)
+ {
+  D(bug("picture.datatype/GM_RENDER: No DestBM set!\n"));
+  return(FALSE);
+ }
+
  if(!(GetDTAttrs((Object *) g, DTA_Domain, &domain,
 			       DTA_TopVert, &TopVert,
-			       DTA_VisibleVert, &VisibleVert,
-			       DTA_TotalVert, &TotalVert,
 			       DTA_TopHoriz, &TopHoriz,
-			       DTA_VisibleHoriz, &VisibleHoriz,
-			       DTA_TotalHoriz, &TotalHoriz,
-			       TAG_DONE) == 7))
+			       DTA_NominalHoriz, &NominalWidth,
+			       DTA_NominalVert, &NominalHeight,
+			       TAG_DONE) == 5))
  {
   D(bug("picture.datatype/GM_RENDER: Couldn't get dimensions\n"));
   return(FALSE);
@@ -639,15 +693,19 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 
  D(bug("picture.datatype/GM_RENDER: Domain: %ld %ld %ld %ld\n", domain->Left, domain->Top, domain->Width, domain->Height));
  D(bug("picture.datatype/GM_RENDER: TopVert      : %lu\n", (unsigned long) TopVert));
- D(bug("picture.datatype/GM_RENDER: VisibleVert  : %lu\n", (unsigned long) VisibleVert));
- D(bug("picture.datatype/GM_RENDER: TotalVert    : %lu\n", (unsigned long) TotalVert));
  D(bug("picture.datatype/GM_RENDER: TopHoriz     : %lu\n", (unsigned long) TopHoriz));
- D(bug("picture.datatype/GM_RENDER: VisibleHoriz : %lu\n", (unsigned long) VisibleHoriz));
- D(bug("picture.datatype/GM_RENDER: TotalHoriz   : %lu\n", (unsigned long) TotalHoriz));
+ D(bug("picture.datatype/GM_RENDER: Width        : %lu\n", (unsigned long) NominalWidth));
+ D(bug("picture.datatype/GM_RENDER: Height       : %lu\n", (unsigned long) NominalHeight));
 
-#if 0
- BltBitMapRastPort(pd->DestBM, Left, Top, msg->gpr_RPort, Left, Top, RelWidth, RelHeight, 0xC0);
-#endif
+ SrcX=TopHoriz;
+ SrcY=TopVert;
+ DestX=domain->Left;
+ DestY=domain->Top;
+
+ SizeX=((NominalWidth - TopHoriz) < domain->Width) ? (NominalWidth - TopHoriz) : domain->Width;
+ SizeY=((NominalHeight - TopVert) < domain->Height) ? (NominalHeight - TopVert) : domain->Height;
+
+ BltBitMapRastPort(pd->DestBM, SrcX, SrcY, msg->gpr_RPort, DestX, DestY, SizeX, SizeY, 0xC0);
 
  return(TRUE);
 }
@@ -904,7 +962,7 @@ STATIC VOID DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *
  {
   D(bug("picture.datatype/DTM_FRAMEBOX: Before: Doesn't has GadgetInfo\n"));
  }
-#endif /* 0 */
+#endif
 
  DoSuperMethodA(cl, (Object *) g, (Msg) msg);
 
@@ -917,7 +975,7 @@ STATIC VOID DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *
  {
   D(bug("picture.datatype/DTM_FRAMEBOX: After: Doesn't has GadgetInfo\n"));
  }
-#endif /* 0 */
+#endif
 
  return;
 }
@@ -1064,6 +1122,13 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
   {
    D(bug("picture.datatype/DT_Dispatcher: Method DTM_FRAMEBOX\n"));
    DT_FrameBox(cl, (struct Gadget *) o, (struct dtFrameBox *) msg);
+   break;
+  }
+
+  case OM_NOTIFY:
+  {
+   D(bug("picture.datatype/DT_Dispatcher: Method OM_NOTIFY\n"));
+   RetVal = DT_NotifyMethod(cl, (struct Gadget *) o, (struct opUpdate *) msg);
    break;
   }
  
