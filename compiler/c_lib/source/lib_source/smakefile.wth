@@ -1,5 +1,4 @@
-FROM StartUp.o
-LibInit.o
+FROM LibInit.o
 SampleFuncs.o
 LIB lib:sc.lib lib:amiga.lib
 NODEBUG

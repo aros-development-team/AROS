@@ -1,4 +1,4 @@
-Storm Shell Project (0010)
+Storm Shell Project (0013)
 Settings (Start)
 C/C++ Environment
 Includepath (End)
@@ -11,16 +11,23 @@ C/C++ Preprozessor
 Defines (End)
 1 1 1
 C/C++ Options
-0 1 1 0 0 0 0 0 0 0 0 0 0
+0 1 1 0 0 0 0 0 0 0 0 0 0 0 0
 C/C++ Optimizer
 6
 C/C++ Warnings
 1 1 1 1 1 1 0 1
 Assembler
 0 ""
+0 "CON://640/200/Storm Assembler/AUTO/WAIT/SCREEN StormScreen"
 0 0
+0 1 60 0 1 0 0 20 0
+Sets (End)
+0 1 0 0 0 2 1 0 0
+1 1 1 1 0 0 0 0 0
+1 0
+0 0 0 0 0
 Linker
-0 1 "PROGDIR:startup.o" 0 0 1 0 0 0 0
+0 1 "PROGDIR:startup.o" 0 0 1 0 1 0 0
 "StormC:lib" 0 "StormC:lib/logfile" 0 0 0
 0 "_WizardSurface"
 0 0 50 0 50 0 50 0 0
@@ -33,16 +40,6 @@ Run
 1 0
 0 0 0 "" ""
 Settings (End)
-File
-1 "StartUp.c"
-"StartUp.c"
-"/include/example/examplebase.h"
-"samplefuncs.h"
-"maxon.h"
-Storm Shell Project (Dependencies)
-"StartUp.o" "StartUp.debug"
-""
-"StartUp.o" "StartUp.debug"
 File
 1 "LibInit.c"
 "LibInit.c"

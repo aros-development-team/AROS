@@ -1,13 +1,9 @@
-example.library :  StartUp.o LibInit.o SampleFuncs.o
+example.library :  LibInit.o SampleFuncs.o
 
                    SLINK WITH smakefile.wth
                    Copy example.library libs:
                    Copy example.library //libs
                    Delete example.library.info
-
-StartUp.o : StartUp.c
-
-                  SC StartUp.c
 
 LibInit.o : LibInit.c
 

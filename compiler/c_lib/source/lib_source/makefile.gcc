@@ -3,13 +3,10 @@ CFLAGS	= -O2 -fstrength-reduce -fomit-frame-pointer -msmall-code -fbaserel -c -I
 LDFLAGS = -noixemul -nostartfiles -fbaserel -s
 LDLIBS	=
 
-OBJS	= StartUp.o LibInit.o SampleFuncs.o
+OBJS	= LibInit.o SampleFuncs.o
 
 example.library: $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS)
-
-StartUp.o: StartUp.c
-	$(CC) $(CFLAGS) -fno-force-mem StartUp.c
 
 LibInit.o: LibInit.c
 	$(CC) $(CFLAGS) LibInit.c
