@@ -236,6 +236,7 @@ int main(int argc, char **argv)
         mapSysBase = TRUE;
         i++;
       }
+      else
       if (!strcmp(argv[i], "--hostmem"))
       {
         use_hostmem = TRUE;
