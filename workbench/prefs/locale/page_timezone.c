@@ -16,6 +16,8 @@
 
 /*********************************************************************************************/
 
+#define DOUBLE_ARROWS	    	1
+
 #define CONTINENT_RED 	    	18
 #define CONTINENT_GREEN     	114
 #define CONTINENT_BLUE      	58
@@ -26,57 +28,64 @@
 
 #define SELECTED_INTENSITY_INC	80
 
+#define GAD_DEC     	    	1000
+#define GAD_INC     	    	1001
+#define GAD_TEXT    	    	1002
+
 /*********************************************************************************************/
 
 #define NUM_TIMEZONES 36
 
 static struct timezone
 {
+    WORD id;
     WORD minoffset;
     WORD pen;
 }
 timezone_table[NUM_TIMEZONES] =
 {
-    {  0	    }, /* Z :    0:00 */
-    {  1 * 60  	    }, /* A : +  1:00 */
-    {  2 * 60  	    }, /* B : +  2:00 */
-    {  3 * 60  	    }, /* C : +  3:00 */
-    {  3 * 60 + 30  }, /* C*: +  3:30 */
-    {  4 * 60       }, /* D : +  4:00 */
-    {  4 * 60 + 30  }, /* D*: +  4:30 */
-    {  5 * 60  	    }, /* E : +  5:00 */
-    {  5 * 60 + 30  }, /* E*: +  5:30 */
-    {  6 * 60  	    }, /* F : +  6:00 */
-    {  6 * 60 + 30  }, /* F*: +  6:30 */
-    {  7 * 60  	    }, /* G : +  7:00 */
-    {  8 * 60  	    }, /* H : +  8:00 */
-    {  9 * 60  	    }, /* I : +  9:00 */
-    {  9 * 60 + 30  }, /* I*: +  9:30 */
-    { 10 * 60 	    }, /* K : + 10:00 */
-    { 10 * 60 + 30  }, /* K*: + 10:30 */
-    { 11 * 60 	    }, /* L : + 11:00 */
-    { 11 * 60 + 30  }, /* L*: + 11:30 */
-    { 12 * 60 	    }, /* M : + 12:00 */
-    { 13 * 60 	    }, /* M*: + 13:00 */
-    { -1 * 60 	    }, /* N : -  1:00 */
-    { -2 * 60 	    }, /* O : -  2:00 */
-    { -3 * 60 	    }, /* P : -  3:00 */
-    { -3 * 60 - 30  }, /* P*: -  3:30 */
-    { -4 * 60 	    }, /* Q : -  4:00 */
-    { -5 * 60 	    }, /* R : -  5:00 */
-    { -6 * 60 	    }, /* S : -  6:00 */
-    { -7 * 60 	    }, /* T : -  7:00 */
-    { -8 * 60 	    }, /* U : -  8:00 */
-    { -8 * 60 - 30  }, /* U*: -  8:30 */
-    { -9 * 60 	    }, /* V : -  9:00 */
-    { -9 * 60 - 30  }, /* V*: -  9:30 */
-    {-10 * 60 	    }, /* W : - 10:00 */
-    {-11 * 60 	    }, /* X : - 11:00 */
-    {-12 * 60 	    }, /* Y : - 12:00 */
+    {  0,   0	    	}, /* Z :    0:00 */
+    {  1,   1 * 60  	}, /* A : +  1:00 */
+    {  2,   2 * 60  	}, /* B : +  2:00 */
+    {  3,   3 * 60  	}, /* C : +  3:00 */
+    {  4,   3 * 60 + 30 }, /* C*: +  3:30 */
+    {  5,   4 * 60      }, /* D : +  4:00 */
+    {  6,   4 * 60 + 30 }, /* D*: +  4:30 */
+    {  7,   5 * 60  	}, /* E : +  5:00 */
+    {  8,   5 * 60 + 30 }, /* E*: +  5:30 */
+    {  9,   6 * 60  	}, /* F : +  6:00 */
+    { 10,   6 * 60 + 30 }, /* F*: +  6:30 */
+    { 11,   7 * 60  	}, /* G : +  7:00 */
+    { 12,   8 * 60  	}, /* H : +  8:00 */
+    { 13,   9 * 60  	}, /* I : +  9:00 */
+    { 14,   9 * 60 + 30 }, /* I*: +  9:30 */
+    { 15,  10 * 60 	}, /* K : + 10:00 */
+    { 16,  10 * 60 + 30 }, /* K*: + 10:30 */
+    { 17,  11 * 60 	}, /* L : + 11:00 */
+    { 18,  11 * 60 + 30 }, /* L*: + 11:30 */
+    { 19,  12 * 60 	}, /* M : + 12:00 */
+    { 20,  13 * 60 	}, /* M*: + 13:00 */
+    { 35, -12 * 60 	}, /* Y : - 12:00 */
+    { 34, -11 * 60 	}, /* X : - 11:00 */
+    { 33, -10 * 60 	}, /* W : - 10:00 */
+    { 32,  -9 * 60 - 30 }, /* V*: -  9:30 */
+    { 31,  -9 * 60 	}, /* V : -  9:00 */
+    { 30,  -8 * 60 - 30 }, /* U*: -  8:30 */
+    { 29,  -8 * 60 	}, /* U : -  8:00 */
+    { 28,  -7 * 60 	}, /* T : -  7:00 */
+    { 27,  -6 * 60 	}, /* S : -  6:00 */
+    { 26,  -5 * 60 	}, /* R : -  5:00 */
+    { 25,  -4 * 60 	}, /* Q : -  4:00 */
+    { 24,  -3 * 60 - 30 }, /* P*: -  3:30 */
+    { 23,  -3 * 60 	}, /* P : -  3:00 */
+    { 22,  -2 * 60 	}, /* O : -  2:00 */
+    { 21,  -1 * 60 	}, /* N : -  1:00 */
+
 };
 
 /*********************************************************************************************/
 
+static struct Gadget *gadlist, *textgad, *gad;
 static WORD domleft, domtop, domwidth, domheight;
 static WORD active_timezone;
 static BOOL truecolor, init_done;
@@ -87,6 +96,8 @@ static UBYTE *earthmap_chunky_remapped;
 
 static ULONG earthmap_coltab[256];
 static UBYTE remaptable[256];
+static UBYTE timezone_text[256];
+static WORD  pen2index[NUM_TIMEZONES];
 
 static BOOL pens_alloced, page_active;
 
@@ -209,11 +220,11 @@ static LONG timezone_init(void)
        
     for(i = 0; i < NUM_TIMEZONES; i++)
     {
+	WORD id = timezone_table[i].id;
     	WORD i2;
-	
-    	ULONG r = ((i & 0x30) >> 4) * 64;
-	ULONG g = ((i & 0x0C) >> 2) * 64;
-	ULONG b = ((i & 0x03)     ) * 64;
+    	ULONG r = ((id & 0x30) >> 4) * 64;
+	ULONG g = ((id & 0x0C) >> 2) * 64;
+	ULONG b = ((id & 0x03)     ) * 64;
 	ULONG rgb = (r << 16) + (g << 8) + b;
 	
     	timezone_table[i].pen = -1;
@@ -225,6 +236,8 @@ static LONG timezone_init(void)
 		break;
 	    }
 	}
+	
+	pen2index[id] = i;
     }
     
     init_done = TRUE;
@@ -262,6 +275,12 @@ static void RepaintEarthmap(void)
 {
     if (page_active)
     {
+    	STRPTR fmt;
+	WORD   minoffset;
+	
+	minoffset = timezone_table[active_timezone].minoffset;
+	if (minoffset < 0) minoffset = -minoffset;
+	
 	if (truecolor)
 	{
 	    WriteLUTPixelArray(earthmap_chunky,
@@ -293,8 +312,46 @@ static void RepaintEarthmap(void)
 			      earthmap_chunky_remapped,
 			      EARTHMAP_SMALL_WIDTH);
 	}
+
+	if (minoffset == 60)
+	{
+	    fmt = MSG(MSG_TIMEZONE_1HOUR);
+	}
+	else if (minoffset % 60)
+	{
+	    fmt = MSG(MSG_TIMEZONE_HOURSMINS);
+	}
+	else
+	{
+	    fmt = MSG(MSG_TIMEZONE_HOURS);
+	}
 	
+	sprintf(timezone_text, fmt, minoffset / 60, minoffset % 60);
+	
+	GT_SetGadgetAttrs(textgad, win, NULL, GTTX_Text, (IPTR)timezone_text,
+	    	    	    	    	      TAG_DONE);
+					       
     } /* if (page_active) */
+}
+
+/*********************************************************************************************/
+
+static void scroll_timezone(WORD delta)
+{
+    active_timezone += delta;
+    
+    if (active_timezone < 0)
+    {
+	active_timezone = NUM_TIMEZONES - 1;
+    }
+    else if (active_timezone >= NUM_TIMEZONES)
+    {
+	active_timezone = 0;
+    }
+    
+    ClearEarthmapSelection();
+    SetEarthmapSelection(timezone_table[active_timezone].pen);
+    RepaintEarthmap();
 }
 
 /*********************************************************************************************/
@@ -318,30 +375,64 @@ static LONG timezone_input(struct IntuiMessage *msg)
 	    UBYTE timezonepen;
 	    
 	    retval = TRUE;
-	    
-	    ClearEarthmapSelection();
+
 	    timezonepen = timezones_chunky[y * TIMEZONES_SMALL_WIDTH + x];
-	    SetEarthmapSelection(timezonepen);
-	    RepaintEarthmap();
-	    
 	    timezonergb = timezones_small_pal[timezonepen];
 	    timezoneid =  (timezonergb & 0xC00000) >> (16 + 2);
 	    timezoneid += (timezonergb & 0x00C000) >> (8 + 4);
 	    timezoneid += (timezonergb & 0x0000C0) >> (0 + 6);
-	    
+	    	    
 	    if ((timezoneid >= 0) && (timezoneid < NUM_TIMEZONES))
 	    {
-	    	active_timezone = timezoneid;
+	    	active_timezone = pen2index[timezoneid];
 		
 		/* AmigaOS seems to have the sign the other way round, therefore the "-" */
 
 		localeprefs.lp_GMTOffset = -timezone_table[active_timezone].minoffset;
+
+		ClearEarthmapSelection();
+		SetEarthmapSelection(timezonepen);
+		RepaintEarthmap();
+		
 	    }
 	    
-	    //printf("You clicked on timezone: %d\n", timezoneid);
+	}
+
+    }
+    else if ((msg->Class == IDCMP_RAWKEY))
+    {
+    	switch(msg->Code)
+	{
+	    case CURSORLEFT:
+	    	scroll_timezone(-1);
+	    	retval = TRUE;
+		break;
+		
+	    case CURSORRIGHT:
+	    	scroll_timezone(1);
+	    	retval = TRUE;
+		break;
+		
 	}
     }
-    
+    else if ((msg->Class == IDCMP_GADGETUP))
+    {
+    	struct Gadget *gad = (struct Gadget *)msg->IAddress;
+	
+	switch(gad->GadgetID)
+	{
+	    case GAD_DEC:
+	    	scroll_timezone(-1);
+		retval = TRUE;
+		break;
+		
+	    case GAD_INC:
+	    	scroll_timezone(1);
+		retval = TRUE;
+		break;
+	}
+    }
+        
     return retval;
 }
 
@@ -366,6 +457,68 @@ static void timezone_cleanup(void)
 	}
 	pens_alloced = FALSE;
     }
+    
+    if (gadlist) FreeGadgets(gadlist);
+    gadlist = NULL;
+}
+
+/*********************************************************************************************/
+
+static LONG timezone_makegadgets(void)
+{
+    struct NewGadget ng;
+    WORD w;
+    
+    w = dri->dri_Font->tf_XSize + 8;
+    
+    gad = CreateContext(&gadlist);
+
+    ng.ng_LeftEdge   = domleft;
+    ng.ng_TopEdge    = domtop + EARTHMAP_SMALL_HEIGHT + 2 + SPACE_Y;
+    ng.ng_Width      = w;
+    ng.ng_Height     = dri->dri_Font->tf_YSize + BUTTON_EXTRAHEIGHT;
+    ng.ng_GadgetText = "<";
+    ng.ng_TextAttr   = 0;
+    ng.ng_GadgetID   = GAD_DEC;
+    ng.ng_Flags      = 0;
+    ng.ng_VisualInfo = vi;
+   
+    gad = CreateGadgetA(BUTTON_KIND, gad, &ng, NULL);
+
+#if DOUBLE_ARROWS
+    ng.ng_LeftEdge   = domleft + domwidth - w - w;
+    
+    gad = CreateGadgetA(BUTTON_KIND, gad, &ng, NULL);
+#endif
+    
+    ng.ng_LeftEdge   = domleft + domwidth - w;
+    ng.ng_GadgetText = ">";
+    ng.ng_GadgetID   = GAD_INC;
+    
+    gad = CreateGadgetA(BUTTON_KIND, gad, &ng, NULL);
+
+#if DOUBLE_ARROWS
+    ng.ng_LeftEdge   = domleft + w;
+    
+    gad = CreateGadgetA(BUTTON_KIND, gad, &ng, NULL);
+#endif
+
+    
+#if DOUBLE_ARROWS
+    ng.ng_LeftEdge   = domleft + w * 2 + SPACE_X;
+    ng.ng_Width      = domwidth - w * 4 - SPACE_X * 2;
+#else
+    ng.ng_LeftEdge   = domleft + w + SPACE_X;
+    ng.ng_Width      = domwidth - w * 2 - SPACE_X * 2;
+#endif
+    ng.ng_GadgetID   = GAD_TEXT;
+    
+    gad = textgad = CreateGadget(TEXT_KIND, gad, &ng, GTTX_Border   	, TRUE	    	,
+    	    	    	    	    	    	      GTTX_Clipped  	, TRUE	    	,
+						      GTTX_Text     	, (IPTR)"hello" ,
+						      GTTX_Justification, GTJ_CENTER	,
+						      TAG_DONE);
+    return gad ? TRUE : FALSE;
 }
 
 /*********************************************************************************************/
@@ -396,6 +549,37 @@ static void timezone_prefs_changed(void)
 
 /*********************************************************************************************/
 
+static void DrawEarthmapFrame(void)
+{
+    SetDrMd(win->RPort, JAM1);
+
+    SetAPen(win->RPort, dri->dri_Pens[SHADOWPEN]);
+
+    RectFill(win->RPort, domleft,
+		    	 domtop,
+			 domleft + domwidth - 2,
+			 domtop);
+
+    RectFill(win->RPort, domleft,
+		    	 domtop + 1,
+			 domleft,
+			 domtop + EARTHMAP_SMALL_HEIGHT + 2 - 1);
+
+    SetAPen(win->RPort, dri->dri_Pens[SHINEPEN]);
+
+    RectFill(win->RPort, domleft + domwidth - 1,
+		    	 domtop,
+			 domleft + domwidth - 1,
+			 domtop + EARTHMAP_SMALL_HEIGHT + 2 - 1);
+
+    RectFill(win->RPort, domleft + 1,
+		    	 domtop + EARTHMAP_SMALL_HEIGHT + 2 - 1,
+			 domleft + domwidth - 2,
+			 domtop + EARTHMAP_SMALL_HEIGHT + 2 - 1);
+}
+
+/*********************************************************************************************/
+
 LONG page_timezone_handler(LONG cmd, IPTR param)
 {
     LONG retval = TRUE;
@@ -414,7 +598,7 @@ LONG page_timezone_handler(LONG cmd, IPTR param)
 	    break;
 	    
 	case PAGECMD_GETMINHEIGHT:
-	    retval = EARTHMAP_SMALL_HEIGHT + 2;
+	    retval = EARTHMAP_SMALL_HEIGHT + 2 + dri->dri_Font->tf_YSize + BUTTON_EXTRAHEIGHT + SPACE_Y;
 	    break;
 	    
 	case PAGECMD_SETDOMLEFT:
@@ -434,20 +618,17 @@ LONG page_timezone_handler(LONG cmd, IPTR param)
 	    break;
 	    
 	case PAGECMD_MAKEGADGETS:
+	    retval = timezone_makegadgets();
 	    break;
 	    
 	case PAGECMD_ADDGADGETS:
 	    if (!page_active)
 	    {
-		SetDrMd(win->RPort, JAM1);
+	    	DrawEarthmapFrame();
 
-		SetAPen(win->RPort, dri->dri_Pens[SHADOWPEN]);
-		RectFill(win->RPort, domleft, domtop, domleft + domwidth - 2, domtop);
-		RectFill(win->RPort, domleft, domtop + 1, domleft, domtop + domheight - 1);
-
-		SetAPen(win->RPort, dri->dri_Pens[SHINEPEN]);
-		RectFill(win->RPort, domleft + domwidth - 1, domtop, domleft + domwidth - 1, domtop + domheight - 1);
-		RectFill(win->RPort, domleft + 1, domtop + domheight - 1, domleft + domwidth - 2, domtop + domheight - 1);
+		AddGList(win, gadlist, -1, -1, NULL);
+		GT_RefreshWindow(win, NULL);
+		RefreshGList(gadlist, win, NULL, -1);
 
     	    	ClearEarthmapSelection();
 		SetEarthmapSelection(timezone_table[active_timezone].pen);
@@ -459,9 +640,19 @@ LONG page_timezone_handler(LONG cmd, IPTR param)
 	    break;
 	    
 	case PAGECMD_REMGADGETS:
-	    page_active = FALSE;
+	    if (page_active)
+	    {
+		if (gadlist) RemoveGList(win, gadlist, -1);
+		
+	    	page_active = FALSE;
+	    }
 	    break;
-	    
+	
+	case PAGECMD_REFRESH:
+	    DrawEarthmapFrame();
+	    RepaintEarthmap();
+	    break;
+	
 	case PAGECMD_HANDLEINPUT:
 	    retval = timezone_input((struct IntuiMessage *)param);
 	    break;

@@ -441,10 +441,20 @@ static void ActivatePage(WORD which)
 
 static void MakeWin(void)
 {
-    WORD wx, wy;
+    static struct IBox zoom;
+    WORD    	       w, t, h, wx, wy;
     
-    wx = (scr->Width - (winwidth + scr->WBorLeft + scr->WBorTop)) / 2;
-    wy = (scr->Height - (winheight + scr->WBorTop + scr->Font->ta_YSize + 1 + scr->WBorBottom)) / 2;
+    w = winwidth + scr->WBorLeft + scr->WBorRight;
+    t = scr->WBorTop + scr->Font->ta_YSize + 1;
+    h = winheight + t + scr->WBorBottom;
+    
+    wx = (scr->Width - w) / 2;
+    wy = (scr->Height - h) / 2;
+    
+    zoom.Left   = -1;
+    zoom.Top    = -1;
+    zoom.Width  = w;
+    zoom.Height = t;
     
     win = OpenWindowTags(0, WA_PubScreen    , (IPTR)scr     	    	,
     	    	    	    WA_Left 	    , wx    	    	    	,
@@ -458,12 +468,15 @@ static void MakeWin(void)
 			    WA_Activate     , TRUE  	    	    	,
 			    WA_Gadgets	    , (IPTR)buttontable[0].gad	,
 			    WA_NewLookMenus , TRUE  	    	    	,
-			    WA_IDCMP	    , REGISTERTAB_IDCMP |
-			    	      	      BUTTONIDCMP   	|
-				      	      LISTVIEWIDCMP 	|
-				      	      IDCMP_CLOSEWINDOW |
-					      IDCMP_VANILLAKEY  |
-					      IDCMP_MENUPICK	    	,
+			    WA_Zoom 	    , (IPTR)&zoom   	        ,
+			    WA_IDCMP	    , REGISTERTAB_IDCMP   |
+			    	      	      BUTTONIDCMP   	  |
+				      	      LISTVIEWIDCMP 	  |
+				      	      IDCMP_CLOSEWINDOW   |
+					      IDCMP_VANILLAKEY    |
+					      IDCMP_RAWKEY        |
+					      IDCMP_MENUPICK	  |
+					      IDCMP_REFRESHWINDOW   	,
 			    TAG_DONE);
 
     SetMenuStrip(win, menus);
@@ -524,6 +537,16 @@ static void HandleAll(void)
 		    quitme = TRUE;
 		    break;
 		
+		case IDCMP_REFRESHWINDOW:
+		    GT_BeginRefresh(win);
+		    
+		    GT_RefreshWindow(win, NULL);
+    	    	    RenderRegisterTab(win->RPort, &reg, TRUE);	
+		    pagetable[activetab].handler(PAGECMD_REFRESH, 0);
+		    	    
+		    GT_EndRefresh(win, TRUE);
+		    break;
+		    
 		case IDCMP_VANILLAKEY:
 		    switch(msg->Code)
 		    {
