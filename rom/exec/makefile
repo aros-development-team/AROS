@@ -40,7 +40,8 @@ FUNCTIONS = \
 	adddevice remdevice opendevice \
 	closedevice doio sendio \
 	checkio abortio waitio \
-	initresident cause
+	initresident cause \
+	rawputchar
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/10 13:22:49  digulla
+    New function: RawPutChar()
+
     Revision 1.5  1996/09/11 16:54:24  digulla
     Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
     	some systems name an external symbol "x" as "_x" and others as "x".
@@ -88,6 +91,7 @@ void _Exec_AbortIO();
 void _Exec_AddResource();
 void _Exec_RemResource();
 void _Exec_OpenResource();
+void _Exec_RawPutChar();
 void _Exec_RawDoFmt();
 void _Exec_TypeOfMem();
 void _Exec_Procure();
@@ -213,7 +217,7 @@ void *ExecFunctions[131]=
 	&_Exec_OpenResource,
 	NULL,		/* Private7 */
 	NULL,		/* Private8 */
-	NULL,		/* Private9 */
+	&_Exec_RawPutChar,
 	&_Exec_RawDoFmt,
 	NULL,		/* GetCC */
 	&_Exec_TypeOfMem,
