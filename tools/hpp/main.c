@@ -32,16 +32,6 @@ MyStdioPutCB (StdioStream * ss, int c, CBD data)
 	    if (c == lastc)
 		return 1;
 	}
-	else if (c == '<')
-	{
-	    intag = 1;
-	    allowbreak = 1;
-	}
-	else if (c == '>')
-	{
-	    intag = 0;
-	    allowbreak = -1;
-	}
 	else if (!intag && isspace (c))
 	{
 	    allowbreak = 1;
