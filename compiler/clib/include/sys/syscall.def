@@ -202,4 +202,5 @@ SYSTEM_CALL (getw)
 SYSTEM_CALL (putw)
 SYSTEM_CALL (getloadavg)
 SYSTEM_CALL (raise)
+SYSTEM_CALL (times)
 
