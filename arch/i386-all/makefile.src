@@ -43,8 +43,8 @@ all: setup $(MACHINE_H) machine.i \
 
 setup :
 	@echo "CFLAGS=$(CFLAGS)"
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
-	@if [ ! -d $(CLIBDIR) ]; then $(MKDIR) $(CLIBDIR) ; else true ; fi
+	%mkdir_q $(OSGENDIR)
+	%mkdir_q $(CLIBDIR)
 
 $(MACHINE_H): machine.h
 	cp $< $@
@@ -58,36 +58,15 @@ machine.i: geninc.c
 	./geninc > machine.i
 
 $(CLIBDIR)/%.o: %.s machine.i
-	@echo "Assembling $(CURDIR)/$<..."
-	@$(AS) $(AFLAGS) -c $< -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+	%assemble_q
 
 $(OSGENDIR)/%.o: %.s machine.i
-	@echo "Assembling $(CURDIR)/$<..."
-	@$(AS) $(AFLAGS) -c $< -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+	%assemble_q
 
 $(OSGENDIR)/%.o: %.c
-	@echo "Compiling $(CURDIR)/$<..."
-	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+	%compile_q $< $@ $*.err $(CFLAGS2))
 
 $(OSGENDIR)/%.d: %.c $(MACHINE_H)
-	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	@echo "Makedepend $(CURDIR)/$<..."
-	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $< > $@
+	%mkdepend_q $< $@ $(@D)
 
-all : makefile
-
-makefile : makefile.src $(TOP)/scripts/genmf.gawk \
-	    $(TOP)/config/make.tmpl
-	@echo "Regenerating makefile..."
-	@mv makefile makefile.bak
-	@gawk -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
-	    makefile.src > makefile
-
-ifneq ("$(TARGET)","clean")
-ifneq ("$(TARGET)","setup")
-include $(DEPS)    
-endif
-endif
+%include_deps

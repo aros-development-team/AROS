@@ -1,0 +1,38 @@
+%define mkdir_q
+	@if [ ! -d %1 ]; then $(MKDIR) %1 ; else true ; fi
+%end
+
+%define assemble_q $< $@ $*.err $(AFLAGS)
+	@echo "Assembling $(CURDIR)/%1..."
+	@$(AS) %4 -c %1 -o %2 2>&1|tee %3
+	@if test ! -s %3; then rm %3 ; else true ; fi
+%end
+
+%define compile_q $< $@ $*.err $(CFLAGS)
+	@echo "Compiling $(CURDIR)/%1..."
+	@$(CC) %4 -c %1 -o %2 2>&1|tee %3
+	@if test ! -s %3; then rm %3 ; else true ; fi
+%end
+
+%define mkdepend_q $< $@ $(@D)
+	@if [ ! -d %3 ]; then $(MKDIR) %3 ; else true ; fi
+	@echo "Makedepend $(CURDIR)/%1..."
+	@$(MKDEPEND) -f- -p%3/ -- $(CFLAGS) -- %1 > %2
+%end
+
+%define include_deps $(DEPS)
+all : makefile
+
+makefile : makefile.src $(TOP)/scripts/genmf.gawk \
+	    $(TOP)/config/make.tmpl
+	@echo "Regenerating makefile..."
+	@mv makefile makefile.bak
+	@gawk -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
+	    makefile.src > makefile
+
+ifneq ("$(TARGET)","clean")
+ifneq ("$(TARGET)","setup")
+include %1 %2 %3 %4 %5
+endif
+endif
+%end
