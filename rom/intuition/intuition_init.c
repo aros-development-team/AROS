@@ -153,7 +153,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
     InitSemaphore(&GetPrivIBase(LIBBASE)->GadgetLock);
     InitSemaphore(&GetPrivIBase(LIBBASE)->MenuLock);
     InitSemaphore(&GetPrivIBase(LIBBASE)->IntuiActionLock);
-    
+        
     /* Add all other classes */
     InitImageClass (LIBBASE); 		/* After ROOTCLASS 	*/
     InitFrameIClass (LIBBASE); 		/* After IMAGECLASS 	*/
@@ -248,6 +248,8 @@ AROS_LH1(struct LIBBASETYPE *, open,
 	if (!(GfxBase = (void *)OpenLibrary (GRAPHICSNAME, 39)) )
 	    return NULL;
     }
+
+    GetPrivIBase(LIBBASE)->ScreenFont = GfxBase->DefaultFont;
 
     if (!LayersBase)
     {
