@@ -64,7 +64,7 @@ void            load_pens   ( void );
 void            free_prop   ( struct Scroll * );
 void            adjust_win  ( struct Window *, BYTE PrjBar );
 struct Scroll * add_prop    ( struct Window * );
-STRPTR          GetMenuText ( ULONG );
+CONST_STRPTR    GetMenuText ( ULONG );
 void            prop_adj    ( Project );
 void            clear_brcorner( void );
 void            CloseMainWnd( BOOL );
