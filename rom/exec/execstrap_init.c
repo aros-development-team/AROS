@@ -9,11 +9,14 @@
 #include <exec/resident.h>
 #include <exec/nodes.h>
 #include <exec/execbase.h>
-#include <hardware/cia.h>
 
 #include <proto/exec.h>
 
 #include "exec_extfuncs.h"
+
+#define DEBUG 0
+#include <aros/debug.h>
+#undef kprintf
 
 #define SetFunc(offset,name) \
     SetFunction((struct Library *)SysBase, (offset * -6), (APTR)&AROS_SLIB_ENTRY(name,Exec));
@@ -64,16 +67,23 @@ struct Resident resident =
 const char name[] = "exec.strap";
 const char version[] = "$VER: exec.strap 41.5 (14.2.97)";
 
+struct ExecBase *SysBase;
+
 int start(void)
 {
-    struct ExecBase *SysBase;
     ULONG x, y;
     UWORD *color00 = (void *)0xdff180;
     UWORD cpuflags;
 
+    SysBase = *(void **)4;
+    cpuflags = SysBase->AttnFlags;
+
+    DB2(bug("exec.strap installing...\n"));
+
     if (SysBase->LibNode.lib_Version < 37)
     {
 	/* Refuse to run on anything less than ROM 2.04 */
+	D(bug("Found kickstart < 37. Exec.strap not started.\n"));
 	return 0;
     }
 
@@ -83,9 +93,6 @@ int start(void)
 	for (y = 200; y; y--) *color00 = 0x00f;
 	for (y = 200; y; y--) *color00 = 0x000;
     }
-
-    SysBase = *(void **)4;
-    cpuflags = SysBase->AttnFlags;
 
     /* First patch SetFunction itself. */
 #if 0
@@ -273,6 +280,7 @@ int start(void)
 
     if (SysBase->LibNode.lib_Version >= 39)
     {
+	DB2(bug("Found kickstart >= 39. Extra functions installed.\n"));
 	/* V39+ functions: */
 	SetFunc(129, AddMemHandler);
 	SetFunc(130, RemMemHandler);
@@ -289,6 +297,7 @@ int start(void)
 	for (y = 200; y; y--) *color00 = 0x000;
     }
 
+    DB2(bug("exec.strap installation done.\n"));
     return 0;
 }
 
