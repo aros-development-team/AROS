@@ -4,7 +4,7 @@
 
     Open a drawer or launch a program.
 */
-
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <exec/types.h>
@@ -464,6 +464,7 @@ BOOL __WB_BuildArguments
         LONG i      = 0;
         BOOL error  = FALSE;
         
+	#warning "CHECKME: if the check fails (goto error), lock gets UnLock()ed, but may it?"
         if
         (
                (args[i].wa_Lock = lock)         == NULL
