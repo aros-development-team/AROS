@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Add a dropzone to an AppWindow's list of AppWindowDropZones.
-    Lang: English
+    Add a dropzone to an AppWindow's list of AppWindowDropZones.
 */
 
 #include <exec/types.h>
@@ -142,7 +141,7 @@
     dropZone->awdz_ID       = id;
     dropZone->awdz_UserData = userdata;
     
-    while ((tag = NextTagItem((const struct TagItem **)&tagState)))
+    while ((tag = NextTagItem(&tagState)))
     {
         switch (tag->ti_Tag)
 	{
