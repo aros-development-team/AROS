@@ -1,3 +1,11 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Deutsch (German) PC105 Keymap
+    Lang: English
+*/
+
 #include <devices/keymap.h>
 
 #define KMNAME "pc105_d"
