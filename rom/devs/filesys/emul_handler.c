@@ -64,8 +64,8 @@ static const char end;
 
 struct filehandle
 {
-    char * name;     /* full name including pathname */
-    int    type;
+    char * name;     /* full name including pathname                 */
+    int    type;     /* type can either be FHD_FILE or FHD_DIRECTORY */
     char * pathname; /* if type == FHD_FILE then you'll find the pathname here */
     long   dirpos;   /* and how to reach it via seekdir(.,dirpos) here. */
     long   DIR;      /* both of these vars will be filled in by examine *only* (at the moment) */
@@ -245,7 +245,6 @@ static LONG makefilename(struct emulbase *emulbase,
 {
     LONG ret = 0;
     int len, dirlen;
-
     dirlen = strlen(dirname) + 1;
     len = strlen(filename) + dirlen + 1;
     *dest=(char *)malloc(len);
@@ -309,7 +308,6 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
     struct filehandle *fh;
     struct stat st;
     long flags;
-
     fh=(struct filehandle *)malloc(sizeof(struct filehandle));
     if(fh!=NULL)
     {
@@ -378,7 +376,6 @@ static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRP
     struct filehandle *fh;
     mode_t prot;
     long flags;
-
     fh=(struct filehandle *)malloc(sizeof(struct filehandle));
     if(fh!=NULL)
     {
@@ -652,7 +649,6 @@ static LONG examine(struct filehandle *fh,
 {
     STRPTR next, end, last, name;
     struct stat st;
-
     if(type>ED_OWNER)
 	return ERROR_BAD_NUMBER;
     next=(STRPTR)ead+sizes[type];
@@ -693,8 +689,9 @@ static LONG examine(struct filehandle *fh,
       }
     }
     else
+    {
       *dirpos = (LONG)telldir((DIR *)fh->fd);
-
+    }
     switch(type)
     {
 	default:
@@ -713,12 +710,17 @@ static LONG examine(struct filehandle *fh,
 	    ead->ed_Size	= st.st_size;
 	case ED_TYPE:
           if (S_ISDIR(st.st_mode))
-            ead->ed_Type 	= 1 /* S_ISDIR(st.st_mode)?(*fh->name?ST_USERDIR:ST_ROOT):0*/;
+            ead->ed_Type 	= S_ISDIR(st.st_mode)?(*fh->name?ST_USERDIR:ST_ROOT):0;
           else
             ead->ed_Type 	= ST_FILE;
 	case ED_NAME:
 	    ead->ed_Name=next;
 	    last=name=*fh->name?fh->name:"Workbench";
+
+            /* do not show the "." but "" instead */
+	    if (last[0] == '.' && last[1] == '\0')
+	      last=name="";
+
 	    while(*name)
 		if(*name++=='/')
 		    last=name;
@@ -743,7 +745,6 @@ static LONG examine_next(struct filehandle *fh,
   struct dirent *dir;
   char 		*name, *src, *dest, *pathname;
   DIR		*ReadDIR;
-  
   /* first of all we have to go to the position where Examine() or
      ExNext() stopped the previous time so we can read the next entry! */
   switch(fh->type)
@@ -828,6 +829,7 @@ static LONG examine_all(struct filehandle *fh,
     struct dirent *dir;
     LONG error;
     off_t dummy; /* not anything is done with this value but passed to examine */
+
     if(fh->type!=FHD_DIRECTORY)
 	return ERROR_OBJECT_WRONG_TYPE;
     for(;;)
@@ -913,7 +915,6 @@ ULONG parent_dir(struct filehandle *fh,
 	         char ** DirName)
 {
   *DirName = pathname_from_name(fh->name);
-  /*printf("parent_dir of %s is %s \n",fh->name,*DirName);*/
   return 0;
 }
 
@@ -1034,9 +1035,7 @@ AROS_LH1(void, beginio,
 
     /* WaitIO will look into this */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_MESSAGE;
-
     Disable();
-
     /*
 	Do everything quick no matter what. This is possible
 	because I never need to Wait().
