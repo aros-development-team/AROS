@@ -182,6 +182,7 @@ OOP_Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
 	HIDD_BM_OBJ(&bm)	= bm_obj;
 	HIDD_BM_COLMAP(&bm)	= NULL;
 	HIDD_BM_COLMOD(&bm)	= vHidd_ColorModel_Palette;
+	HIDD_BM_REALDEPTH(&bm)	= 1;
 	
 	bm.Rows		= height;
 	bm.BytesPerRow	= WIDTH_TO_BYTES(width);
