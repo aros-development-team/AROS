@@ -123,6 +123,7 @@
         }
         
 	if (disabled)
+#ifdef __AROS__
 	{
 #if 0
             /*
@@ -157,29 +158,14 @@
                     );
                 }
             }
-
-#else
-            
+#else            
             LONG  width  = _width(obj);
             LONG  height = _height(obj);
             LONG *buffer = AllocVec(width * height * sizeof(LONG), MEMF_ANY);
 
             if (buffer != NULL)
             {
-#if 1
                 memset(buffer, 0xAA, width * height * sizeof(LONG));
-#else
-                LONG color = (0xAA << 24) + (0xAA << 16) + (0xAA << 8) + 0xBB;
-                LONG x, y;
-                
-                for (y = 0; y < height; y++)
-                {
-                    for (x = 0; x < width; x++)
-                    {
-                        buffer[y * width + x] = color;
-                    }
-                }
-#endif
                 
                 WritePixelArrayAlpha
                 (
@@ -190,6 +176,19 @@
                 FreeVec(buffer);
             }
 #endif
+            else
+#endif /* __AROS__ */
+            {
+                /* fallback */
+                const static UWORD pattern[] = { 0x8888, 0x2222, };
+                LONG fg = muiRenderInfo(obj)->mri_Pens[MPEN_SHADOW];
+                
+                SetDrMd(_rp(obj), JAM1);
+                SetAPen(_rp(obj), fg);
+                SetAfPt(_rp(obj), pattern, 1);
+                RectFill(_rp(obj), _left(obj), _top(obj), _right(obj), _bottom(obj));
+                SetAfPt(_rp(obj), NULL, 0);
+            }
         }
     }
 
