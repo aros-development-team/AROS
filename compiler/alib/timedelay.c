@@ -57,7 +57,7 @@
 ******************************************************************************/
 {
     AROS_USERFUNC_INIT
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
 
     struct timerequest tr;
     struct MsgPort mp;

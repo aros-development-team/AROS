@@ -55,7 +55,7 @@
 ******************************************************************************/
 {
     FILENODE * fn;
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
 
     if (close(stream->fd) == -1)
     	return EOF;

@@ -55,7 +55,7 @@
 ******************************************************************************/
 {
     GETUSER;
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
 
     ssize_t cnt;
 

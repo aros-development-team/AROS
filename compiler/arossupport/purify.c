@@ -114,7 +114,7 @@ extern void RT_ShowRTStack (void);
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     struct PNode * node;
 
     if (!InitWasCalled)
@@ -177,7 +177,7 @@ extern void RT_ShowRTStack (void);
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     struct PNode * node, * nodeBefore, * nodeAfter;
     UBYTE * mem;
 
@@ -264,7 +264,7 @@ extern void RT_ShowRTStack (void);
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     struct PNode * node;
     UBYTE * mem;
 

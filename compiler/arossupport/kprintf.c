@@ -79,7 +79,7 @@
 
 int vkprintf (const UBYTE * fmt, va_list args)
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     int 	 ret;
     static const char uhex[] = "0123456789ABCDEF";
     static const char lhex[] = "0123456789abcdef";

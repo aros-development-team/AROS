@@ -77,7 +77,7 @@ struct WriteLevel
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     struct MinList	_list;
     struct WriteLevel * curr;
 

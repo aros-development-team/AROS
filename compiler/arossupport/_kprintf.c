@@ -26,7 +26,7 @@ AROS_UFH2 (void, KPutChar,
 
 void KPrintF(STRPTR format, ...)
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     va_list args;
 
     va_start(args, format);

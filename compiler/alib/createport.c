@@ -47,7 +47,7 @@
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     struct MsgPort * mp;
 
     mp = CreateMsgPort ();

@@ -58,7 +58,7 @@
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     STRPTR buffer;
     LONG   size, maxsize;
     LONG   c;

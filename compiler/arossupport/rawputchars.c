@@ -45,7 +45,7 @@
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
 
     while (*str && len --)
 	RawPutChar (*str ++);

@@ -56,7 +56,7 @@
     GETUSER;
 
     fdesc *fdesc;
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     AROS_GET_DOSBASE
 
     if (!(fdesc = __getfdesc(fd)))

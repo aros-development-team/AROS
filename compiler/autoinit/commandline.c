@@ -23,7 +23,7 @@ static int  __argmax;
 
 int __initcommandline(void)
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     char *ptr    = NULL;
     LONG  namlen = 64;
     int   done   = 0;
@@ -158,7 +158,7 @@ int __initcommandline(void)
 
 void __exitcommandline(void)
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
 
     if (WBenchMsg)
         return;

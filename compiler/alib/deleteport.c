@@ -42,7 +42,7 @@
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     if (mp->mp_Node.ln_Name)
 	RemPort (mp);
 

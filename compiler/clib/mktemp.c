@@ -47,7 +47,7 @@
 
 ******************************************************************************/
 { 
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     long  pid = (long)FindTask(0L);
     char *c = template + strlen(template);
     BPTR  lock;

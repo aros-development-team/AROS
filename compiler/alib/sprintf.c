@@ -55,6 +55,6 @@ AROS_UFH2(void, __putChr,
 
 *****************************************************************************/
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     RawDoFmt(format, &format+1, (VOID_FUNC)__putChr, &buffer);
 } /* sprintf */

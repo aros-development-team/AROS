@@ -89,6 +89,7 @@
 {
     va_list	 ap;
     int 	 ret;
+    AROS_GET_SYSBASE_OK
 
 #warning FIXME check the systems and the debug level
     // Check SysBase->DebugAROSBase->DebugConfig

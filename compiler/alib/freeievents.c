@@ -43,7 +43,7 @@
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     struct InputEvent *next;
     
     for(next = ie; next != NULL; ie = next)
