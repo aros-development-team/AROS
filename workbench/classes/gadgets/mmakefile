@@ -1,0 +1,6 @@
+# $Id$
+
+# The workbench-classes target points back to config/$(ARCH)/mmakefile:
+#MM workbench-classes : workbench-classes-$(ARCH)
+workbench-classes :
+	@$(NOP)

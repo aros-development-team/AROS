@@ -1,6 +1,6 @@
 # $Id$
 
-#Not working yet: workbench demos apps
+#Not working yet: demos (chip keyword problems etc)
 
 #MM AROS-amiga : setup includes compiler arosboot kernel apps workbench
 AROS-amiga :
@@ -10,14 +10,18 @@ AROS-amiga :
 kernel-amiga :
 	@$(NOP)
 
-#MM workbench-amiga : workbench-c workbench-libs workbench-s
+#MM workbench-amiga : workbench-c workbench-libs workbench-classes workbench-s
 workbench-amiga :
 	@$(NOP)
 
 #MM workbench-libs-amiga : workbench-libs-diskfont workbench-libs-gadtools
 #MM workbench-libs-amiga : workbench-libs-icon workbench-libs-iffparse
-#MM workbench-libs-amiga : workbench-libs-mathieeesptrans workbench-libs-mathtrans
 workbench-libs-amiga :
+	@$(NOP)
+
+##MM workbench-classes-amiga : workbench-classes-aroscheckbox workbench-classes-aroslist
+##MM workbench-classes-amiga : workbench-classes-aroslistview workbench-classes-arosmutualexclude
+workbench-classes-amiga :
 	@$(NOP)
 
 #MM apps-amiga : 

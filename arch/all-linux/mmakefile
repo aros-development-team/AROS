@@ -10,7 +10,7 @@ AROS-linux :
 kernel-linux :
 	@$(NOP)
 
-#MM workbench-linux : workbench-c workbench-devs workbench-libs workbench-s
+#MM workbench-linux : workbench-c workbench-devs workbench-libs workbench-classes workbench-s
 workbench-linux :
 	@$(NOP)
 
@@ -18,6 +18,11 @@ workbench-linux :
 #MM workbench-libs-linux : workbench-libs-icon workbench-libs-iffparse
 #MM workbench-libs-linux : workbench-libs-mathieeesptrans workbench-libs-mathtrans
 workbench-libs-linux :
+	@$(NOP)
+
+#MM workbench-classes-linux : workbench-classes-aroscheckbox workbench-classes-aroslist
+#MM workbench-classes-linux : workbench-classes-aroslistview workbench-classes-arosmutualexclude
+workbench-classes-linux :
 	@$(NOP)
 
 #MM apps-linux : Moria3D games

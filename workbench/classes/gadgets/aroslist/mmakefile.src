@@ -23,26 +23,8 @@ ENDFUNC  := $(OBJDIR)/$(END_FILE).o
 
 CLASS := $(GADGETDIR)/aroslist.class
 
-#MM workbench : setup includes
-workbench : show-flags $(CLASS)
-
-# ***** Native ***************
-ifeq ($(FLAVOUR),native)
-
-# Generate a map file
-MAPGEN := -Xlinker -M
-
-# Strip resulting binary
-STRIP := strip
-
-# ***** Not Native ***************
-else
-
-MAPGEN :=
-STRIP  := $(NOP)
-
-# ***** END ***************
-endif
+#MM workbench-classes-aroslist : setup includes
+workbench-classes-aroslist : show-flags $(CLASS)
 
 %define_libs prelibs=-laroslist
 
@@ -51,9 +33,9 @@ LIB := $(LIBDIR)/libaroslist.a
 
 $(CLASS) : $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(MAPGEN) $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee aroslistlib.map
+	@$(CC) $(ILDFLAGS) $(GENMAP) aroslistlib.map $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee aroslistlib.err
 	%checkuds
-	@$(IF) $(TEST) ! -s aroslistlib.map; then $(RM) aroslistlib.map ; else $(NOP) ; fi
+	@$(IF) $(TEST) ! -s aroslistlib.err; then $(RM) aroslistlib.err ; else $(NOP) ; fi
 	@$(STRIP) $@
 
 # Collect all functions in a linklib for fast linking:

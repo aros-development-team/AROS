@@ -23,26 +23,8 @@ ENDFUNC     := $(OBJDIR)/$(END_FILE).o
 
 CLASS	    := $(GADGETDIR)/arosmutualexclude.gadget
 
-#MM workbench : setup includes
-workbench : show-flags $(CLASS)
-
-# ***** Native ***************
-ifeq ($(FLAVOUR),native)
-
-# Generate a map file
-MAPGEN = -Xlinker -M
-
-# Strip resulting binary
-STRIP = strip
-
-# ***** Not Native ***************
-else
-
-MAPGEN =
-STRIP = true
-
-# ***** END ***************
-endif
+#MM workbench-classes-arosmutualexclude : setup includes
+workbench-classes-arosmutualexclude : show-flags $(CLASS)
 
 %define_libs prelibs=-larosmutualexclude
 
@@ -51,9 +33,9 @@ LIB := $(LIBDIR)/libarosmutualexclude.a
 
 $(CLASS) : $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(MAPGEN) $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee arosmutualexcludelib.map
+	@$(CC) $(ILDFLAGS) $(GENMAP) arosmutualexcludelib.map $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee arosmutualexcludelib.err
 	%checkuds
-	@$(IF) $(TEST) ! -s arosmutualexcludelib.map; then $(RM) arosmutualexcludelib.map ; else $(NOP) ; fi
+	@$(IF) $(TEST) ! -s arosmutualexcludelib.err; then $(RM) arosmutualexcludelib.err ; else $(NOP) ; fi
 	@$(STRIP) $@
 
 # Collect all functions in a linklib for fast linking:
