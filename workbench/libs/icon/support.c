@@ -76,7 +76,7 @@ BPTR __OpenDefaultIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBas
     if (strpbrk(name, "/:") != NULL) return NULL;
     
     /* Attempt to open the icon from each path in turn */
-    for (i = 0, path = paths[i]; path != NULL; i++)
+    for (i = 0, path = paths[0]; path != NULL; i++, path = paths[i])
     {
         TEXT  buffer[256]; /* Filename buffer; should be more than large enough */
         ULONG copied;      /* Number of bytes copied */
