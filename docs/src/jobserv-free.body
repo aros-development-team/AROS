@@ -16,6 +16,7 @@
 <OPTION VALUE="console">Console.device
 <OPTION VALUE="dtclass">DTClass
 <OPTION VALUE="datatypes">Datatypes.library
+<OPTION VALUE="DevCMD">Device commands
 <OPTION VALUE="disk">Disk.resource
 <OPTION VALUE="diskfont">Diskfont.library
 <OPTION VALUE="dos">Dos.library
