@@ -481,9 +481,12 @@ AROS_LH4(BYTE, OpenDevice,
 	and contain no path. Eg. The user can request gadgets/foo.gadget,
 	but the resident only contains foo.gadget
     */
+
     stripped_devname = FilePart(devname);
+
     ObtainSemaphore(&DOSBase->dl_LDObjectsListSigSem);
     object = (struct LDObjectNode *)FindName(&DOSBase->dl_LDObjectsList, stripped_devname);
+
     if (!object)
     {
         object = LDNewObjectNode(stripped_devname, DOSBase);
@@ -744,14 +747,6 @@ AROS_UFH3(void, LDDemon,
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
     struct LDDMsg *ldd;
 
-    /* Fix up the MsgPort, this isn't really a race. */
-
-#if 0 /* stegerg */
-    DOSBase->dl_LDDemonPort->mp_SigBit = AllocSignal(-1);
-    DOSBase->dl_LDDemonPort->mp_Flags = PA_SIGNAL;
-#endif
-
-
     for(;;)
     {
 	WaitPort(DOSBase->dl_LDDemonPort);
@@ -816,6 +811,9 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(Init, LDDemon),
 	Alert( AN_RAMLib | AG_NoMemory | AT_DeadEnd );
     }
 
+    FreeSignal(DOSBase->dl_LDDemonPort->mp_SigBit);
+    DOSBase->dl_LDDemonPort->mp_SigBit = SIGBREAKB_CTRL_F;
+    
     DOSBase->dl_LDHandler.is_Node.ln_Name = (STRPTR)ldDemonName;
     DOSBase->dl_LDHandler.is_Node.ln_Pri = 0;
     DOSBase->dl_LDHandler.is_Code = (void (*)())LDFlush;
@@ -851,27 +849,7 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(Init, LDDemon),
 
     /* Fix up the MsgPort */
 
-#if 0 /* stegerg */
-    DOSBase->dl_LDDemonPort->mp_Flags = 0;
-#endif
-
     DOSBase->dl_LDDemonPort->mp_SigTask = DOSBase->dl_LDDemonTask;
-    FreeSignal(DOSBase->dl_LDDemonPort->mp_SigBit);
-
-#if 1 /* stegerg */
-    DOSBase->dl_LDDemonPort->mp_SigBit = 16;
-
-    Disable();
-    if (DOSBase->dl_LDDemonTask->pr_Task.tc_SigAlloc & (1L << 16))
-    {
-    	Alert( AT_DeadEnd | AN_RAMLib | AG_ProcCreate );
-    }
-    DOSBase->dl_LDDemonTask->pr_Task.tc_SigAlloc  |= (1L << 16);
-    DOSBase->dl_LDDemonTask->pr_Task.tc_SigExcept &= ~(1L << 16);
-    DOSBase->dl_LDDemonTask->pr_Task.tc_SigWait   &= ~(1L << 16);
-    DOSBase->dl_LDDemonTask->pr_Task.tc_SigRecvd  &= ~(1L << 16);
-    Enable();
-#endif
 
     /* Then unlock the semaphore to allow other processes to run. */
     ReleaseSemaphore(&DOSBase->dl_LDObjectsListSigSem);
