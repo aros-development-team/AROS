@@ -1659,7 +1659,71 @@ D(bug("Window: %p\n", w));
                 L = targetlayer;
 
 		break; }
+	
+	    case AMCODE_ACTIVATEGADGET:
+	    	/* Note: This message must not be freed, because
+		   it must be replied back to the app by sending
+		   SIGF_INTUITION to the app task and placing
+		   a result code in am->Code!!! */
 
+		am->Code = FALSE;
+		
+		/* Activate gadget only if no other gadget is
+		   actually active and the gadget to be
+		   activated is in the actual active window
+		   and the gadget is not disabled */
+		   
+		if ((iihdata->ActiveGadget == NULL) &&
+		    (IntuitionBase->ActiveWindow == targetwindow) &&
+		    ((am->Gadget->Flags & GFLG_DISABLED) == 0))
+		{
+		    switch(am->Gadget->GadgetType & GTYP_GTYPEMASK)
+		    {
+		        case GTYP_STRGADGET:
+			    iihdata->ActiveGadget = am->Gadget;
+			    am->Gadget->Activation |= GACT_ACTIVEGADGET;
+			    UpdateStrGadget(am->Gadget, targetwindow, IntuitionBase);
+			    break;
+			    
+			case GTYP_CUSTOMGADGET:
+			{
+			    struct gpInput gpi;
+			    struct IntuiMessage *im;
+			    ULONG termination;
+			    IPTR retval;
+			    
+			    if ((im = alloc_intuimessage(IntuitionBase)))
+			    {		    
+				PrepareGadgetInfo(gi, targetwindow);
+				SetGadgetInfoGadget(gi, am->Gadget);
+				
+				gpi.MethodID = GM_GOACTIVE;
+				gpi.gpi_GInfo	= gi;
+				gpi.gpi_IEvent	= NULL;
+				gpi.gpi_Termination = &termination;
+				gpi.gpi_Mouse.X = targetwindow->MouseX - gi->gi_Domain.Left - GetGadgetLeft(am->Gadget, targetwindow, NULL);
+				gpi.gpi_Mouse.Y = targetwindow->MouseY - gi->gi_Domain.Top  - GetGadgetTop(am->Gadget, targetwindow, NULL);
+				gpi.gpi_TabletData	= NULL;
+
+
+				retval = Locked_DoMethodA ((Object *)am->Gadget, (Msg)&gpi, IntuitionBase);
+				gadget = HandleCustomGadgetRetVal(retval, gi, am->Gadget, im, &termination, &ptr,
+								  &reuse_event, IntuitionBase);
+
+				if (gadget)
+				{
+				    gadget->Activation |= GACT_ACTIVEGADGET;
+				    iihdata->ActiveGadget = gadget;
+				}
+				free_intuimessage(im, IntuitionBase);
+			    }
+
+			}
+			    
+		    }
+		}
+		Signal(am->Task, SIGF_INTUITION);
+		break;
 	}
 
 	if (TRUE == CheckLayersBehind)
