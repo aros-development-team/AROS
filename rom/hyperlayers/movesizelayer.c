@@ -6,6 +6,7 @@
     Lang: english
 */
 #include <aros/libcall.h>
+#include <aros/debug.h>
 #include <proto/layers.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -72,7 +73,7 @@
 
   struct Layer * first, *_l, *lparent;
   struct Region * newshape, * oldshape, r, rtmp, cutnewshape;
-  struct Region *clipregion;
+  struct Region *clipregion, *olddamage = NULL;
   struct Rectangle rectw, recth;
 
   InitRegion(&r);
@@ -80,8 +81,36 @@
   InitRegion(&cutnewshape);
 
   LockLayers(l->LayerInfo);
-
+  
   clipregion = _InternalInstallClipRegion(l, NULL, 0, 0, LayersBase);
+
+  /* There's a little problem with CopyClipRectsToClipRects(). It
+     may call the backfill hook for the whole DamageList region.
+     Layers should never do this. It should call backfill hook only
+     for *new* damage, a layer operation causes. But not for those
+     areas which were part of the damage already before the layer
+     operation. Otherwise those latter areas might end up being
+     backfilled multiple times -> flickering. As fixing CopyClipRects-
+     ToClipRects() seems kinda complicated, I use a little trick: Set
+     a flag which tells the layers backfillhook calling function, not do
+     that. Before executing the movesizelayer operation I backup the old
+     damage region, and after executing of movesizelayer operation is done
+     I can use it to find out what areas where added to the damageregion.
+     i'll clear that special layer flag, and call the backfill hook for the
+     new damage areas. (stegerg) */
+     
+  if (IS_SIMPLEREFRESH(l))
+  {
+    if ((olddamage = CopyRegion(l->DamageList)))
+    {
+      _TranslateRect(&olddamage->bounds, l->bounds.MinX, l->bounds.MinY);
+      AndRegionRegion(l->VisibleRegion, olddamage);
+      AndRegionRegion(l->visibleshape, olddamage);
+      _TranslateRect(&olddamage->bounds, -l->bounds.MinX, -l->bounds.MinY);
+    	
+      IL(l)->intflags |= INTFLAG_AVOID_BACKFILL;
+    }
+  }
 
   /*
    * First Create the new region of the layer:
@@ -306,7 +335,6 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED (children)!\n",
     _l = _l->back;
   }
 
-
   /*
    * Now make those parts of the layers after l up to and including
    * its parent visible.
@@ -387,6 +415,22 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
 
   ClearRegion(&r);
 
+  if (olddamage)
+  {
+    struct Region *newdamage = CopyRegion(l->DamageList);
+    
+    IL(l)->intflags &= ~INTFLAG_AVOID_BACKFILL;
+    if (newdamage)
+    {
+      ClearRegionRegion(olddamage, newdamage);
+      _TranslateRect(&newdamage->bounds, l->bounds.MinX, l->bounds.MinY);
+      _BackFillRegion(l, newdamage, FALSE, LayersBase);
+      
+      DisposeRegion(newdamage);
+    }
+    DisposeRegion(olddamage);
+  }
+  
   if (clipregion)
     _InternalInstallClipRegion(l, clipregion, 0, 0, LayersBase);
 
