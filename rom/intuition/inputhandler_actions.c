@@ -45,8 +45,6 @@ void HandleDeferedActions(struct IIHData *iihdata,
         BOOL CheckLayersInFront = FALSE;
         struct Window * targetwindow = am->Window;
         struct Layer  * targetlayer  = targetwindow->WLayer, *L;
-        struct GadgetInfo * gi = &iihdata->GadgetInfo;
-	struct Gadget * gadget;
 	
 	switch (am->Code)
 	{
@@ -784,58 +782,11 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		    (IntuitionBase->ActiveWindow == targetwindow) &&
 		    ((am->Gadget->Flags & GFLG_DISABLED) == 0))
 		{
-		    switch(am->Gadget->GadgetType & GTYP_GTYPEMASK)
+
+		    if (DoActivateGadget(targetwindow, am->Gadget, IntuitionBase))
 		    {
-		        case GTYP_STRGADGET:
-			    iihdata->ActiveGadget = am->Gadget;
-			    am->Gadget->Activation |= GACT_ACTIVEGADGET;
-			    UpdateStrGadget(am->Gadget, targetwindow, IntuitionBase);
-
-			    am->Code = TRUE;
-			    break;
-			    
-			case GTYP_CUSTOMGADGET:
-			{
-			    struct gpInput gpi;
-			    ULONG termination;
-			    IPTR retval;
-			    BOOL reuse_event;
-			    	    
-			    PrepareGadgetInfo(gi, targetwindow);
-			    SetGadgetInfoGadget(gi, am->Gadget);
-
-			    gpi.MethodID = GM_GOACTIVE;
-			    gpi.gpi_GInfo	= gi;
-			    gpi.gpi_IEvent	= NULL;
-			    gpi.gpi_Termination = &termination;
-			    gpi.gpi_Mouse.X = targetwindow->MouseX - gi->gi_Domain.Left - GetGadgetLeft(am->Gadget, targetwindow, NULL);
-			    gpi.gpi_Mouse.Y = targetwindow->MouseY - gi->gi_Domain.Top  - GetGadgetTop(am->Gadget, targetwindow, NULL);
-			    gpi.gpi_TabletData	= NULL;
-
-
-			    retval = Locked_DoMethodA ((Object *)am->Gadget, (Msg)&gpi, IntuitionBase);
-			    gadget = HandleCustomGadgetRetVal(retval, gi, am->Gadget,&termination,
-							      &reuse_event, IntuitionBase);
-
-			    if (gadget)
-			    {
-				gadget->Activation |= GACT_ACTIVEGADGET;
-				iihdata->ActiveGadget = gadget;
-
-				am->Code = TRUE;
-			    }
-
-
-			}
-			
-			if (am->Code)
-			{
-			    PrepareGadgetInfo(gi, targetwindow);
-			    SetGadgetInfoGadget(gi, iihdata->ActiveGadget);
-			}
-			
-		    } /* switch(am->Gadget->GadgetType & GTYP_GTYPEMASK) */
-
+		    	am->Code = TRUE;
+		    }		
 		} /* if gadget activation ok (no other gadget active, window active, ...) */
 		
 		Signal(am->Task, SIGF_INTUITION);
