@@ -22,7 +22,7 @@ extern void traperr( char *, char * );
 /* Internal function prototypes */
 void free_script( ScriptArg * );
 void cleanup();
-void end_malloc();
+void end_alloc();
 void outofmem( void * );
 
 void free_script( ScriptArg *first )
@@ -31,8 +31,8 @@ void free_script( ScriptArg *first )
   {
     free_script( first->cmd );
     free_script( first->next );
-    free( first->arg );
-    free( first );
+    FreeVec( first->arg );
+    FreeVec( first );
   }
 }
 
@@ -51,8 +51,13 @@ void cleanup( )
 
 void end_malloc( )
 {
+end_alloc();
+}
+
+void end_alloc( )
+{
 #ifdef DEBUG
-  fprintf( stderr, "Couldn't malloc memory!\n");
+  fprintf( stderr, "Couldn't allocate memory!\n");
 #endif /* DEBUG */
   cleanup();
   exit(-1);

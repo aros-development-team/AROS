@@ -122,7 +122,7 @@ int i;
   {
     /* Enlarge list for one additional element */
     numvariables++;
-    variables = realloc( variables, sizeof(struct VariableList) * numvariables );
+    variables = ReAllocVec( variables, sizeof(struct VariableList) * numvariables, MEMF_PUBLIC );
     outofmem( variables );
     variables[i].varsymbol = NULL;
     variables[i].vartext = NULL;
@@ -130,7 +130,7 @@ int i;
   else
   {
     /* Free space for strings to be replaced in dynamic list */
-    free( variables[i].vartext );
+    FreeVec( variables[i].vartext );
     variables[i].vartext = NULL;
   }
 
@@ -140,14 +140,14 @@ int i;
   
   if ( variables[i].varsymbol == NULL )
   {
-    variables[i].varsymbol = strdup( name );
+    variables[i].varsymbol = StrDup( name );
     outofmem( variables[i].varsymbol );
   }
 
   /* Duplicate variable text if existent */
   if ( text != NULL )
   {
-    variables[i].vartext = strdup( text );
+    variables[i].vartext = StrDup( text );
     outofmem( variables[i].vartext );
   }
 
@@ -264,9 +264,9 @@ int i;
 
   for ( i = 0 ; i < numvariables ; i++ )
   {
-    free( variables[i].varsymbol );
-    free( variables[i].vartext );
+    FreeVec( variables[i].varsymbol );
+    FreeVec( variables[i].vartext );
   }
-  free( variables );
+  FreeVec( variables );
 }
 

@@ -131,7 +131,7 @@ void Cleanup()
     if (scr) UnlockPubScreen(0,scr);
 
     if (linearray) FreeVec(linearray);
-    if (filebuffer) free(filebuffer);
+    if (filebuffer) FreeVec(filebuffer);
 
 }
 
@@ -439,7 +439,7 @@ void DrawAllText(void)
 
 static void MakeWin(char *title)
 {
-    wintitle = strdup( title );
+    wintitle = StrDup( title );
 
     if (!(morewin = OpenWindowTags(0,WA_PubScreen,(IPTR)scr,
 				 WA_Left,(scr->Width - WINDOWWIDTH)/2,
@@ -1002,7 +1002,7 @@ void HandleAll(void)
 
 void moremain(char *title, char *text)
 {
-    filebuffer = strdup( text );
+    filebuffer = StrDup( text );
     filelen = strlen( filebuffer );
     MakeLineArray();
     GetVisual();

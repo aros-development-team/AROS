@@ -42,7 +42,6 @@
 
 extern struct ExecBase *SysBase;
 
-
 typedef struct ScriptArg
 {
   struct  ScriptArg *next;	/* Next argument				*/

@@ -329,3 +329,9 @@
 - implemented (earlier)
 - implemented (getdiskspace)
 
+0053
+- use StrDup() instead of strdup()
+  malloc(), calloc(), free() -> AllocVec(), FreeVec()
+  implemented ReAllocVec() as a replacement for realloc() in
+  AROS/compiler/alib
+
