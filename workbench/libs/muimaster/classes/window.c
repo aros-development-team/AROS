@@ -2033,7 +2033,7 @@ static Object *GetPrevNextActiveObject (struct ObjNode *old_activenode, objnode_
  MUIV_Window_ActiveObject_Next and MUIV_Window_ActiveObject_Prev
  currently as there is no active object
 **************************************************************************/
-static void SetActiveObject (struct MUI_WindowData *data, Object *obj, ULONG newval)
+static void SetActiveObject (struct MUI_WindowData *data, Object *obj, IPTR newval)
 {
     struct ObjNode *old_activenode;
     Object *old_active;
@@ -2079,7 +2079,9 @@ static void SetActiveObject (struct MUI_WindowData *data, Object *obj, ULONG new
     if (data->wd_ActiveObject != NULL)
     {
 	if (_flags(data->wd_ActiveObject) & MADF_CANDRAW)
+	{
 	    DoMethod(data->wd_ActiveObject, MUIM_GoActive);
+	}
     }
 }
 
@@ -2853,8 +2855,19 @@ static ULONG WindowOpen(struct IClass *cl, Object *obj)
 
     MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
 
+    /* stegerg: CHECKME! */
+#if 1
+    if (data->wd_ActiveObject)
+    {
+    	Object *active = data->wd_ActiveObject;
+	
+    	data->wd_ActiveObject = NULL; /* because of that check, whether it is same as old one */
+	set(obj, MUIA_Window_ActiveObject,active);
+    }
+#else
     if (data->wd_OldActive)
 	set(obj, MUIA_Window_ActiveObject, data->wd_OldActive);
+#endif
 
     return TRUE;
 }
