@@ -48,12 +48,18 @@ struct JumpVec
 #define __AROS_INITVEC(lib,n)           __AROS_GETJUMPVEC(lib,n)->jmp = __AROS_ASMJMP, \
 					__AROS_SETVECADDR(lib,n,_aros_not_implemented)
 
-/* 
+/*
    We want to activate the execstubs and preserve all registers
    when calling obtainsemaphore, obtainsemaphoreshared, releasesemaphore,
    getcc, permit, forbid, enable, disable
 */
-#define UseExecstubs 
+#undef UseExecstubs
+#define UseExecstubs 1
+
+/* For debugging only: Pass errnos from the emulated OS. dos/Fault() will
+   recognise them */
+#undef PassThroughErrnos
+#define PassThroughErrnos 0x40000000
 
 /*
     Find the next valid alignment for a structure if the next x bytes must
@@ -79,22 +85,28 @@ extern void _aros_not_implemented (void);
 #define __AROS_LH_BASE(basetype,basename)   basetype basename
 #define __AROS_LP_BASE(basetype,basename)   void *
 #define __AROS_LC_BASE(basetype,basename)   basename
+#define __AROS_LD_BASE(basetype,basename)   basetype
 
-/* How to transform an argument in header, prototype and call */
+/* How to transform an argument in header, opt prototype, call and forced
+   prototype. */
 #define __AROS_LHA(type,name,reg)     type name
 #define __AROS_LPA(type,name,reg)     type
 #define __AROS_LCA(type,name,reg)     name
+#define __AROS_LDA(type,name,reg)     type
 #define __AROS_UFHA(type,name,reg)    type name
 #define __AROS_UFPA(type,name,reg)    type
 #define __AROS_UFCA(type,name,reg)    name
+#define __AROS_UFDA(type,name,reg)    type
 
 /* Prefix for library function in header, prototype and call */
 #define __AROS_LH_PREFIX    /* eps */
 #define __AROS_LP_PREFIX    /* eps */
 #define __AROS_LC_PREFIX    /* eps */
+#define __AROS_LD_PREFIX    /* eps */
 #define __AROS_UFH_PREFIX   /* eps */
 #define __AROS_UFP_PREFIX   /* eps */
 #define __AROS_UFC_PREFIX   /* eps */
+#define __AROS_UFD_PREFIX   /* eps */
 
 /* if this is defined, all AROS_LP*-macros will expand to nothing. */
 #define __AROS_USE_MACROS_FOR_LIBCALL
