@@ -2,14 +2,20 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
+#include <proto/layers.h>
 #include <proto/intuition.h>
 #include <proto/dos.h>
 #include <dos/dos.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/preferences.h>
+#include <graphics/layers.h>
+
 #include "intuition_preferences.h"
 #include "intuition_intern.h"
+#include "boopsigadgets.h"
+
+#include <string.h>
 
 void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
 {
@@ -321,3 +327,100 @@ VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
     }
 }
 
+/**********************************************************************************/
+
+void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
+{
+    if (!scr->BarLayer)
+    {
+    	scr->BarLayer = CreateUpfrontHookLayer(&scr->LayerInfo,
+					       scr->RastPort.BitMap,
+					       0,
+					       0,
+					       scr->Width - 1,
+					       scr->BarHeight, /* 1 pixel heigher than scr->BarHeight */
+					       LAYERSIMPLE | LAYERBACKDROP,
+					       LAYERS_NOBACKFILL,
+					       NULL);
+					       
+					       
+	if (scr->BarLayer)
+	{
+	    SetFont(scr->BarLayer->rp, ((struct IntScreen *)scr)->DInfo.dri_Font);
+	    RenderScreenBar(scr, FALSE, IntuitionBase);
+	}
+    }
+}
+
+/**********************************************************************************/
+
+void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
+{
+    if (scr->BarLayer)
+    {
+        DeleteLayer(0, scr->BarLayer);
+	scr->BarLayer = FALSE;
+    }
+    
+}
+
+/**********************************************************************************/
+
+void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase)
+{
+    struct DrawInfo *dri = &((struct IntScreen *)scr)->DInfo;
+    struct RastPort *rp;
+    
+    if (scr->BarLayer)
+    {
+        rp = scr->BarLayer->rp;
+	
+	/* must lock GadgetLock to avoid deadlocks with ObtainGIRPort
+	   when calling refreshgadget inside layer update state */
+	   
+	ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+	LockLayerRom(scr->BarLayer);
+
+	if (refresh) BeginUpdate(scr->BarLayer);
+	
+	/* real BarHeight = scr->BarHeight + 1 !!! */
+	
+	SetDrMd(rp, JAM2);
+	
+	SetAPen(rp, dri->dri_Pens[BARBLOCKPEN]);
+	RectFill(rp, 0, 0, scr->Width - 1, scr->BarHeight - 1);
+	
+	SetAPen(rp, dri->dri_Pens[BARTRIMPEN]);
+	RectFill(rp, 0, scr->BarHeight, scr->Width - 1, scr->BarHeight);
+
+	if (scr->Title)
+	{
+	    SetAPen(rp, dri->dri_Pens[BARDETAILPEN]);
+	    SetBPen(rp, dri->dri_Pens[BARBLOCKPEN]);
+	    Move(rp, scr->BarHBorder, scr->BarVBorder + rp->TxBaseline);
+	    Text(rp, scr->Title, strlen(scr->Title));
+	}
+
+	if (scr->FirstGadget)
+	{
+	    RefreshBoopsiGadget(scr->FirstGadget, (struct Window *)scr, IntuitionBase);
+        }
+	
+	if (refresh)
+	{
+	    scr->BarLayer->Flags &= ~LAYERREFRESH;
+	    EndUpdate(scr->BarLayer, TRUE);
+	}
+	
+	
+
+	UnlockLayerRom(scr->BarLayer);
+	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+	
+    } /* if (scr->BarLayer) */
+}
+
+/**********************************************************************************/
+/**********************************************************************************/
+/**********************************************************************************/
+/**********************************************************************************/
