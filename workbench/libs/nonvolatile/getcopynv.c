@@ -29,15 +29,15 @@ AROS_LH3(APTR, GetCopyNV,
 
 /*  FUNCTION
 
-    Search the nonvolatile memory for the object 'itemName' allocated by
-    'appName' and return a copy of the item.
+    Search the nonvolatile storage for the object 'itemName' allocated by
+    'appName' and return a copy of the data.
 
     INPUTS
 
-    appName         --  name of the application that has allocated the item
+    appName         --  name of the application that allocated the item
     itemName        --  the object to look for
-    killRequesters  --  if TRUE no system requesters will be displayed during
-                        the operation of this function
+    killRequesters  --  if TRUE no system requesters will be allowed to be
+                        displayed during the operation of this function
 
     RESULT
 
@@ -56,6 +56,8 @@ AROS_LH3(APTR, GetCopyNV,
     INTERNALS
 
     HISTORY
+
+    April 2000,  SDuvan  --  implemented
 
 ******************************************************************************/
 

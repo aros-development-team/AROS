@@ -50,7 +50,7 @@ AROS_LH4(BOOL, SetNVProtection,
     
     NOTES
 
-    The only bit that should currently be used is the DELETE bit.
+    The only bit that should currently be used in the 'mask' is the DELETE bit.
 
     EXAMPLE
 
@@ -63,6 +63,8 @@ AROS_LH4(BOOL, SetNVProtection,
     INTERNALS
 
     HISTORY
+
+    April 2000,  SDuvan  --  implemented
 
 ******************************************************************************/
 

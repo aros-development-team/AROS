@@ -61,6 +61,8 @@ AROS_LH1(struct MinList *, GetItemList,
 
     HISTORY
 
+    November 2000,  SDuvan  --  implemented
+
 ******************************************************************************/
 
      /* The size of a combined NVEntry and the name associated with it;

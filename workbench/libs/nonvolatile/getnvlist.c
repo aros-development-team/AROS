@@ -32,14 +32,14 @@ AROS_LH2(struct MinList *, GetNVList,
 
 /*  FUNCTION
 
-    Get a list of items allocated by application 'appName'.
+    Returns a list of items allocated by application 'appName'.
 
     INPUTS
 
     appName         --  the application the nonvolatile items of which to query
                         about
-    killRequesters  --  if TRUE no system requesters will be displayed during
-                        the operation of this function
+    killRequesters  --  if TRUE you make sure that no system requesters will be
+                        displayed during the operation of this function
 
     RESULT
 
@@ -64,13 +64,12 @@ AROS_LH2(struct MinList *, GetNVList,
 
     HISTORY
 
+    April 2000,  SDuvan  --  implemented
+
 ******************************************************************************/
 
 {
     AROS_LIBFUNC_INIT
-
-/* Hmm, got to take care of scattered memory to be able to let the
-   user use FreeNVData() to dispose the structure */
 
     struct Process *me = (struct Process *)FindTask(NULL);
     APTR oldReq = me->pr_WindowPtr;

@@ -20,7 +20,7 @@ AROS_LH1(BOOL, MemInfo,
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct NVInfo *, nvInfo,  A0),
+	AROS_LHA(struct NVInfo *, nvInfo, A0),
 
 /*  LOCATION */
 
@@ -36,7 +36,8 @@ AROS_LH1(BOOL, MemInfo,
 
     RESULT
 
-    The 'nvInfo' structure will be filled with the appropriate values.
+    The 'nvInfo' structure will be filled with the appropriate values. In
+    case of failure, NULL will be returned.
 
     NOTES
 
@@ -48,7 +49,14 @@ AROS_LH1(BOOL, MemInfo,
 
     INTERNALS
 
+    3 blocks of free space are not reported as free, as it may be strange
+    for a user that queries the available storage memory, finds out that
+    free memory exists but still gets errors when using StoreNV() as the
+    memory was used for directory purposes.
+
     HISTORY
+
+    November 2000,  SDuvan  --  implemented
 
 ******************************************************************************/
 
@@ -60,8 +68,19 @@ AROS_LH1(BOOL, MemInfo,
     if(Info(GPB(nvdBase)->nvd_location, &info))
     {
 	nvInfo->nvi_MaxStorage = info.id_NumBlocks*info.id_BytesPerBlock;
-	nvInfo->nvi_FreeStorage =
-	    (info.id_NumBlocks - info.id_NumBlocksUsed)*info.id_BytesPerBlock;
+
+	/* 3 blocks are subtracted at it may be the case a new application wants
+	   to store a new item. Then the 'appName' directory will take one block,
+	   the new file will take at least one block and possibly a new directory
+	   block may need to be created containing the 'appName' directory */
+
+	if(info.id_NumBlocks < 3)
+	    nvInfo->nvi_FreeStorage = 0;
+	else
+	{
+	    nvInfo->nvi_FreeStorage =
+		(info.id_NumBlocks - info.id_NumBlocksUsed - 3)*info.id_BytesPerBlock;
+	}
     }
     else
 	return FALSE;

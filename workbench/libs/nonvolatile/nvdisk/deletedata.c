@@ -51,9 +51,13 @@ AROS_LH2(BOOL, DeleteData,
 
     SEE ALSO
 
+    nonvolatile.library/DeleteNV()
+
     INTERNALS
 
     HISTORY
+    
+    November 2000,  SDuvan  --  implemented
 
 ******************************************************************************/
 
@@ -64,16 +68,10 @@ AROS_LH2(BOOL, DeleteData,
     BPTR lock = Lock(appName, SHARED_LOCK);
     BOOL retval;
 
-    //    BPTR file = Open("T:temp", MODE_NEWFILE);
-    //    Close(file);
-
     D(bug("Entering DeleteData()"));
 
     if(lock == NULL)
     {
-	//	file = Open("T:temp2", MODE_NEWFILE);
-	//	Close(file);
-
 	D(bug("Could not lock directory %s", appName));
 	CurrentDir(oldCDir);
 	return FALSE;
@@ -81,13 +79,7 @@ AROS_LH2(BOOL, DeleteData,
 
     D(bug("Deleting file %s", itemName));
 
-    //    file = Open("T:temp3", MODE_NEWFILE);
-    //    Close(file);
-
     CurrentDir(lock);
-
-    //    file = Open("T:temp4", MODE_NEWFILE);
-    //    Close(file);
 
     retval = DeleteFile(itemName) == DOSTRUE ? TRUE : FALSE;
 

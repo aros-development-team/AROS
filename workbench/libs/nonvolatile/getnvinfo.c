@@ -55,6 +55,8 @@ AROS_LH1(struct NVInfo *, GetNVInfo,
 
     HISTORY
 
+    April 2000,  SDuvan  --  implemented
+
 ******************************************************************************/
 
 {

@@ -31,7 +31,8 @@ AROS_LH1(VOID, FreeNVData,
 
     INPUTS
 
-    data  --  data got from a nonvolatile.library function
+    data  --  data got from a nonvolatile.library function; may be NULL in
+              which case this function does nothing
 
     RESULT
     
@@ -43,9 +44,13 @@ AROS_LH1(VOID, FreeNVData,
 
     SEE ALSO
 
+    GetCopyNV(), GetNVInfo(), GetNVList()
+
     INTERNALS
 
     HISTORY
+
+    November 2000,  SDuvan  --  implemented
 
 ******************************************************************************/
 
@@ -55,4 +60,4 @@ AROS_LH1(VOID, FreeNVData,
     FreeVec(data);
 
     AROS_LIBFUNC_EXIT
-}
+} /* FreeNVData */

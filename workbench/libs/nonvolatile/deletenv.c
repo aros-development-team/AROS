@@ -10,7 +10,9 @@
 
     NAME */
 
+#ifndef  DEBUG
 #define  DEBUG  1
+#endif
 
 #include <aros/debug.h>
 
@@ -28,7 +30,7 @@ AROS_LH3(BOOL, DeleteNV,
 
 	AROS_LHA(STRPTR, appName,  A0),
 	AROS_LHA(STRPTR, itemName, A1),
-	AROS_LHA(BOOL,   killRequesters, D0),
+	AROS_LHA(BOOL,   killRequesters, D1),
 
 /*  LOCATION */
 
@@ -36,7 +38,7 @@ AROS_LH3(BOOL, DeleteNV,
 
 /*  FUNCTION
 
-    Delete a piece of data in the nonvolatile memory.
+    Delete a piece of data in the nonvolatile storage.
 
     INPUTS
 
@@ -44,7 +46,8 @@ AROS_LH3(BOOL, DeleteNV,
                         length 31
     itemName        --  name of the data to be deleted; maximum length 31
     killRequesters  --  if set to TRUE no system requesters will be displayed
-                        during the deletion operation
+                        during the deletion operation; if set to FALSE, system
+			requesters will be allowed to be displayed
 
     RESULT
     
@@ -64,6 +67,8 @@ AROS_LH3(BOOL, DeleteNV,
     INTERNALS
 
     HISTORY
+
+    April 2000,  SDuvan  --  implemented
 
 ******************************************************************************/
 

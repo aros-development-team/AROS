@@ -50,9 +50,13 @@ AROS_LH4(LONG, WriteData,
 
     SEE ALSO
 
+    nonvolatile.library/StoreNV()
+
     INTERNALS
 
     HISTORY
+
+    November 2000,  SDuvan  --  implemeneted
 
 ******************************************************************************/
 

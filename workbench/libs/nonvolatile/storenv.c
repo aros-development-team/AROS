@@ -10,6 +10,7 @@
 
     NAME */
 
+// #  define  DEBUG  1
 // #include <aros/debug.h>
 
 #include <libraries/nonvolatile.h>
@@ -61,6 +62,11 @@ AROS_LH5(LONG, StoreNV,
     
     NOTES
 
+    The strings 'appName' and 'itemName' should be descripive but short as the
+    size of the nonvolatile storage may be very limited. The strings may not
+    contatin the characters ':' or '/'. The maximum length for each of these
+    strings is 31.
+
     EXAMPLE
 
     BUGS
@@ -72,6 +78,8 @@ AROS_LH5(LONG, StoreNV,
     INTERNALS
 
     HISTORY
+
+    April 2000,  SDuvan  --  implemented
 
 ******************************************************************************/
 

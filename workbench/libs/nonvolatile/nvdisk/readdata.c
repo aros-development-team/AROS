@@ -54,6 +54,8 @@ AROS_LH2(APTR, ReadData,
 
     HISTORY
 
+    November 2000,  SDuvan  --  implemented
+
 ******************************************************************************/
 
 {
@@ -67,9 +69,8 @@ AROS_LH2(APTR, ReadData,
        file containing the data. */
     struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
 
-    if(fib)
+    if(fib != NULL)
     {
-
 	oldCDir = CurrentDir(GPB(nvdBase)->nvd_location);
 	lock = Lock(appName, SHARED_LOCK);
 
@@ -79,16 +80,16 @@ AROS_LH2(APTR, ReadData,
 
 	    lock2 = Lock(itemName, SHARED_LOCK);
 
-	    if(lock2)
+	    if(lock2 != NULL)
 	    {
 		// We have now found the file -- check how big it is
 		Examine(lock2, fib);
 
 		mem = AllocVec(fib->fib_Size, MEMF_ANY);
 
-		if(mem)
+		if(mem != NULL)
 		{
-		    if (Read(lock2, mem, fib->fib_Size) != fib->fib_Size)
+		    if(Read(lock2, mem, fib->fib_Size) != fib->fib_Size)
 		    {
 		        FreeVec(mem);
 			mem = NULL;

@@ -56,6 +56,8 @@ AROS_LH3(BOOL, SetProtection,
 
     HISTORY
 
+    April 2000,  SDuvan  --  implemented
+    
 ******************************************************************************/
 
 {
