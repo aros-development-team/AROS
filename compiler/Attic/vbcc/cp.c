@@ -252,7 +252,7 @@ int copy_propagation(struct flowgraph *fg,int global)
                 else size=l2zl(0L);
 /*            print_cp(cp_act); pric2(stdout,p);*/
             r=0;
-            if(p->code!=ADDRESS){
+            if(p->code!=ADDRESS&&p->code!=NOP){
                 if((p->q1.flags&(VAR|VARADR))==VAR){
                     r|=cprop(&p->q1,0,size);
                     if(p->q1.flags&DREFOBJ) r|=cprop(&p->q1,1,0);

@@ -480,7 +480,7 @@ np postfix_expression(void)
                     last_alist=first_alist=al;
                 }
                 killsp();
-                if(*s==',') {s++;killsp();} /* hier noch strenger */
+                if(*s==',') {s++;killsp();if(*s==')') error(59);} /* hier noch strenger */
             }
             new->alist=first_alist;
             if(*s!=')') error(59); else s++;

@@ -730,7 +730,7 @@ int type_expression2(np p)
         al=p->alist;
         if((p->left->ntyp->flags&15)!=POINTER||(p->left->ntyp->next->flags&15)!=FUNKT)
             {error(26);return(0);}
-        if(ok&&p->left->left->flags==IDENTIFIER&&p->left->left->o.v->storage_class==EXTERN){
+        if(ok&&p->left->left&&p->left->left->flags==IDENTIFIER&&p->left->left->o.v->storage_class==EXTERN){
             s=p->left->left->o.v->identifier;
             flags=p->left->left->o.v->flags;
         }

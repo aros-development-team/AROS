@@ -277,7 +277,7 @@ int dead_assignments(struct flowgraph *fg)
             if(p->z.flags&VAR){
                 i=p->z.v->index;
                 if(p->z.flags&DREFOBJ) i+=vcount-rcount;
-                if(!BTST(isused,i)){
+                if(!BTST(isused,i)&&!(p->typf&VOLATILE)){
                     if(DEBUG&1024){printf("dead assignment deleted:\n");pric2(stdout,p);}
                     if(*p->z.v->identifier&&p->code!=ASSIGN){ err_ic=p;error(170,i>=vcount-rcount?"*":"",p->z.v->identifier);err_ic=0;}
                     if(p->code!=GETRETURN) changed=1;

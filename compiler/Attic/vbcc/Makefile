@@ -1,5 +1,5 @@
 # $Id$
-TOP=../../..
+TOP=../..
 
 include $(TOP)/config/make.cfg
 
@@ -18,17 +18,27 @@ CCS_FILES = opts regss
 CC_OBJS = $(foreach f,$(BASIC_FILES) $(CC_FILES),$(OBJDIR)/$(f).o)
 CCS_OBJS = $(foreach f,$(BASIC_FILES) $(CCS_FILES),$(OBJDIR)/$(f).o)
 
-EXES = $(EXEDIR)/vc $(EXEDIR)/vbcc $(EXEDIR)/vbccs
+EXES = $(EXEDIR)/vc $(EXEDIR)/vbcc$(KERNEL) $(EXEDIR)/vbccs$(KERNEL)
 
 all : setup $(EXES)
 
-$(EXEDIR)/vc : vc.c $(LIBDIR)/startup.o $(DEPLIBS)
+local-gcc :
+	-$(RM) $(EXES) $(OBJDIR)/*.o
+	$(MAKE) $(MFLAGS) -f mf.local
+	@if [ ! -d bin ]; then $(MKDIR) bin; else true ; fi
+	mv vc vbcc$(KERNEL) vbccs$(KERNEL) bin/
+
+local-vc :
+	-$(RM) $(EXES) $(OBJDIR)/*.o
+	$(MAKE) $(MFLAGS) -f mf.local CC=vc APPCFLAGS="-v -I. -Imachines/i386" ILDFLAGS=
+
+$(EXEDIR)/vc : vc.c $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
-$(EXEDIR)/vbcc : $(CC_OBJS) $(LIBDIR)/startup.o $(DEPLIBS)
+$(EXEDIR)/vbcci386 : $(CC_OBJS) $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $(CC_OBJS) -o $@ $(LIBS) #-lm
 
-$(EXEDIR)/vbccs : $(CCS_OBJS) $(LIBDIR)/startup.o $(DEPLIBS)
+$(EXEDIR)/vbccsi386 : $(CCS_OBJS) $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $(CCS_OBJS) -o $@ $(LIBS) #-lm
 
 setup :

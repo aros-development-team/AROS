@@ -7,14 +7,8 @@ static char FILE_[]=__FILE__;
 /*  Public data that MUST be there.				*/
 
 /*  Commandline-flags the code-generator accepts		*/
-#define FLAG_CPU	    g_flags[0]
-#define FLAG_FPU	    g_flags[1]
-#define FLAG_NODELPOP	    g_flags[2]
-#define FLAG_CONSTINDATA    g_flags[3]
-#define FLAG_MERGECONST     g_flags[4]
-#define FLAG_ELF	    g_flags[5]
 int g_flags[MAXGF]={VALFLAG,VALFLAG,0,0,
-		    0,0};
+		    0};
 char *g_flags_name[MAXGF]={"cpu","fpu","no-delayed-popping","const-in-data",
 			   "merge-constants","elf"};
 union ppi g_flags_val[MAXGF];
@@ -77,7 +71,7 @@ static void function_bottom(FILE *f,struct Var *,long);
 
 #define isreg(x) ((p->x.flags&(REG|DREFOBJ))==REG)
 
-static long loff,stackoffset,notpopped;
+static long loff,stackoffset,notpopped,dontpop;
 
 static char *ccs[]={"z","nz","l","ge","le","g","mp"};
 static char *ccu[]={"z","nz","b","ae","be","a","mp"};
@@ -88,6 +82,7 @@ static char *dct[]={"","byte","short","long","long","long","long","long","long"}
 static pushedsize,pushorder=2;
 static int fst[8];
 static int cxl,dil,sil;
+static char *idprefix="",*labprefix="";
 
 static struct fpconstlist {
     struct fpconstlist *next;
@@ -99,7 +94,7 @@ static int addfpconst(struct obj *o,int t)
 {
     struct fpconstlist *p=firstfpc;
     t&=15;
-    if(FLAG_MERGECONST&USEDFLAG){
+    if(g_flags[4]&USEDFLAG){
 	for(p=firstfpc;p;p=p->next){
 	    if(t==p->typ){
 		eval_const(&p->val,t);
@@ -128,9 +123,9 @@ static void probj2(FILE *f,struct obj *p,int t)
 	}else{
 	    if(!zleqto(l2zl(0L),p->val.vlong)){printval(f,&p->val,LONG,0);fprintf(f,"+");}
 	    if(p->v->identifier==empty||(p->v->nesting>0&&p->v->storage_class!=EXTERN)){
-		fprintf(f,"l%ld",zl2l(p->v->offset));
+		fprintf(f,"%sl%ld",idprefix,zl2l(p->v->offset));
 	    }else{
-		fprintf(f,"%s%s",FLAG_ELF?"":"_",p->v->identifier);
+		fprintf(f,"%s%s",idprefix,p->v->identifier);
 	    }
 	}
     }
@@ -147,7 +142,7 @@ static void probj2(FILE *f,struct obj *p,int t)
     }
     if(p->flags&KONST){
 	if((t&15)==FLOAT||(t&15)==DOUBLE){
-	    fprintf(f,"l%d",addfpconst(p,t));
+	    fprintf(f,"%sl%d",labprefix,addfpconst(p,t));
 	}else{
 	    fprintf(f,"$");printval(f,&p->val,t&31,0);
 	}
@@ -279,8 +274,8 @@ static void function_top(FILE *f,struct Var *v,long offset)
 {
     int i;
     if(section!=CODE){fprintf(f,codename);section=CODE;}
-    if(v->storage_class==EXTERN) fprintf(f,"\t.global\t%s%s\n",FLAG_ELF?"":"_",v->identifier);
-    fprintf(f,"%s%s:\n",FLAG_ELF?"":"_",v->identifier);
+    if(v->storage_class==EXTERN) fprintf(f,"\t.globl\t%s%s\n",idprefix,v->identifier);
+    fprintf(f,"%s%s:\n",idprefix,v->identifier);
     for(pushedsize=0,i=1;i<sp;i++){
 	if(regused[i]&&!regscratch[i]){
 	    fprintf(f,"\tpushl\t%s\n",regnames[i]);
@@ -362,6 +357,13 @@ static void move(FILE *f,struct obj *q,int qr,struct obj *z,int zr,int t)
 	    fprintf(f,"\tmovl\t%s,%s\n",regnames[qr],regnames[zr]);
 	return;
     }
+    if(zr&&(q->flags&KONST)){
+	eval_const(&q->val,t);
+	if(zleqto(vlong,l2zl(0L))&&zuleqto(vulong,ul2zul(0UL))&&zdeqto(vdouble,d2zd(0.0))){
+	    fprintf(f,"\txorl\t%s,%s\n",regnames[zr],regnames[zr]);
+	    return;
+	}
+    }
     fprintf(f,"\tmov%c\t",x_t[t&15]);
     if(qr) fprintf(f,"%s",regnames[qr]); else probj2(f,q,t);
     fprintf(f,",");
@@ -414,6 +416,9 @@ int init_cg(void)
     regsa[sp]=1;
     /*	We need at least one free slot in the flaoting point stack  */
     regsa[16]=1;regscratch[16]=0;
+    /*	Use l%d as labels and _%s as identifiers by default. If     */
+    /*	-elf is specified we use .l%d and %s instead.		    */
+    if(g_flags[5]&USEDFLAG) labprefix="."; else idprefix="_";
     return(1);
 }
 
@@ -505,21 +510,21 @@ void gen_var_head(FILE *f,struct Var *v)
     if(v->clist) constflag=is_const(v->vtyp);
     if(v->storage_class==STATIC){
 	if((v->vtyp->flags&15)==FUNKT) return;
-	if(v->clist&&(!constflag||(FLAG_CONSTINDATA&USEDFLAG))&&section!=DATA){fprintf(f,dataname);section=DATA;}
-	if(v->clist&&constflag&&!(FLAG_CONSTINDATA&USEDFLAG)&&section!=CODE){fprintf(f,codename);section=CODE;}
+	if(v->clist&&(!constflag||(g_flags[3]&USEDFLAG))&&section!=DATA){fprintf(f,dataname);section=DATA;}
+	if(v->clist&&constflag&&!(g_flags[3]&USEDFLAG)&&section!=CODE){fprintf(f,codename);section=CODE;}
 	if(!v->clist&&section!=BSS){fprintf(f,bssname);section=BSS;}
-	if(section!=BSS) fprintf(f,"\t.align\t2\nl%ld:\n",zl2l(v->offset));
-	    else fprintf(f,"\t.lcomm\tl%ld,",zl2l(v->offset));
+	if(section!=BSS) fprintf(f,"\t.align\t2\n%sl%ld:\n",idprefix,zl2l(v->offset));
+	    else fprintf(f,"\t.lcomm\t%sl%ld,",idprefix,zl2l(v->offset));
 	newobj=1;
     }
     if(v->storage_class==EXTERN){
-	fprintf(f,"\t.global\t%s%s\n",FLAG_ELF?"":"_",v->identifier);
+	fprintf(f,"\t.globl\t%s%s\n",idprefix,v->identifier);
 	if(v->flags&(DEFINED|TENTATIVE)){
-	    if(v->clist&&(!constflag||(FLAG_CONSTINDATA&USEDFLAG))&&section!=DATA){fprintf(f,dataname);section=DATA;}
-	    if(v->clist&&constflag&&!(FLAG_CONSTINDATA&USEDFLAG)&&section!=CODE){fprintf(f,codename);section=CODE;}
+	    if(v->clist&&(!constflag||(g_flags[3]&USEDFLAG))&&section!=DATA){fprintf(f,dataname);section=DATA;}
+	    if(v->clist&&constflag&&!(g_flags[3]&USEDFLAG)&&section!=CODE){fprintf(f,codename);section=CODE;}
 	    if(!v->clist&&section!=BSS){fprintf(f,bssname);section=BSS;}
-	    if(section!=BSS) fprintf(f,"\t.align\t2\n%s%s:\n",FLAG_ELF?"":"_",v->identifier);
-		else fprintf(f,"\t.comm\t%s%s,",FLAG_ELF?"":"_",v->identifier);
+	    if(section!=BSS) fprintf(f,"\t.align\t2\n%s%s:\n",idprefix,v->identifier);
+		else fprintf(f,"\t.comm\t%s%s,",idprefix,v->identifier);
 	    newobj=1;
 	}
     }
@@ -566,7 +571,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
     regs[16]=0;
     loff=((zl2l(offset)+1)/2)*2;
     function_top(f,v,loff);
-    stackoffset=notpopped=0;
+    stackoffset=notpopped=dontpop=0;
     finit();
     for(;p;pr(f,p),p=p->next){
 	c=p->code;t=p->typf;
@@ -586,24 +591,18 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	    regs[p->q1.reg]=0;
 	    continue;
 	}
-	if(notpopped){
+	if(notpopped&&!dontpop){
 	    int flag=0;
-	    if(c==LABEL||c==COMPARE||c==TEST||c==BRA) flag=1;
-	    if(!flag&&c!=CALL&&c!=GETRETURN){
-		struct IC *np=p->next;
-		while(np&&np->code==FREEREG) np=np->next;
-		if(np&&np->code==TEST) flag=1;
-	    }
-	    if(flag){
+	    if(c==LABEL||c==COMPARE||c==TEST||c==BRA){
 		fprintf(f,"\taddl\t$%ld,%%esp\n",notpopped);
 		stackoffset+=notpopped;notpopped=0;
 	    }
 	}
-	if(c==LABEL) {forder(f);fprintf(f,"l%d:\n",t);continue;}
+	if(c==LABEL) {forder(f);fprintf(f,"%sl%d:\n",labprefix,t);continue;}
 	if(c>=BEQ&&c<=BRA){
 	    forder(f);
-	    if(lastcomp&UNSIGNED) fprintf(f,"\tj%s\tl%d\n",ccu[c-BEQ],t);
-		else		  fprintf(f,"\tj%s\tl%d\n",ccs[c-BEQ],t);
+	    if(lastcomp&UNSIGNED) fprintf(f,"\tj%s\t%sl%d\n",ccu[c-BEQ],labprefix,t);
+		else		  fprintf(f,"\tj%s\t%sl%d\n",ccs[c-BEQ],labprefix,t);
 	    continue;
 	}
 	if(c==MOVETOREG){
@@ -815,7 +814,8 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	    fprintf(f,"\n");
 	    if(!zleqto(l2zl(0L),p->q2.val.vlong)){
 		notpopped+=zl2l(p->q2.val.vlong);
-		if(!(FLAG_NODELPOP&USEDFLAG)&&stackoffset==-notpopped){
+		dontpop-=zl2l(p->q2.val.vlong);
+		if(!(g_flags[2]&USEDFLAG)&&stackoffset==-notpopped){
 		/*  Entfernen der Parameter verzoegern	*/
 		}else{
 		    fprintf(f,"\taddl\t$%ld,%%esp\n",zl2l(p->q2.val.vlong));
@@ -826,6 +826,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	    continue;
 	}
 	if(c==ASSIGN||c==PUSH){
+	    if(c==PUSH) dontpop+=zl2l(p->q2.val.vlong);
 	    if((t&15)==FLOAT||(t&15)==DOUBLE){
 		if(c==ASSIGN){
 		    prfst(f,"fassign");
@@ -849,9 +850,9 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	    if((t&15)>POINTER||!zleqto(p->q2.val.vlong,sizetab[t&15])||!zlleq(p->q2.val.vlong,l2zl(4L))){
 		int mdi=di,msi=si,m=0;long l;
 		l=zl2l(p->q2.val.vlong);
-		if(regs[cx]){m|=1;if(!cxl)cxl=++label;fprintf(f,"\tmovl\t%s,l%d\n",regnames[cx],cxl);}
-		if(regs[msi]||!regused[msi]){m|=2;if(!sil)sil=++label;fprintf(f,"\tmovl\t%s,l%d\n",regnames[msi],sil);}
-		if(regs[mdi]||!regused[mdi]){m|=4;if(!dil)dil=++label;fprintf(f,"\tmovl\t%s,l%d\n",regnames[mdi],dil);}
+		if(regs[cx]){m|=1;if(!cxl)cxl=++label;fprintf(f,"\tmovl\t%s,%sl%d\n",regnames[cx],labprefix,cxl);}
+		if(regs[msi]||!regused[msi]){m|=2;if(!sil)sil=++label;fprintf(f,"\tmovl\t%s,%sl%d\n",regnames[msi],labprefix,sil);}
+		if(regs[mdi]||!regused[mdi]){m|=4;if(!dil)dil=++label;fprintf(f,"\tmovl\t%s,%sl%d\n",regnames[mdi],labprefix,dil);}
 		if((p->z.flags&REG)&&p->z.reg==msi&&(p->q1.flags&REG)&&p->q1.reg==mdi){
 		    msi=di;mdi=si;
 		    m|=8;
@@ -884,9 +885,9 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 		    if(l%2) fprintf(f,"\tmovsw\n");
 		    if(l%1) fprintf(f,"\tmovsb\n");
 		}
-		if(m&4) fprintf(f,"\tmovl\tl%d,%s\n",dil,regnames[mdi]);
-		if(m&2) fprintf(f,"\tmovl\tl%d,%s\n",sil,regnames[msi]);
-		if(m&1) fprintf(f,"\tmovl\tl%d,%s\n",cxl,regnames[cx]);
+		if(m&4) fprintf(f,"\tmovl\t%sl%d,%s\n",labprefix,dil,regnames[mdi]);
+		if(m&2) fprintf(f,"\tmovl\t%sl%d,%s\n",labprefix,sil,regnames[msi]);
+		if(m&1) fprintf(f,"\tmovl\t%sl%d,%s\n",labprefix,cxl,regnames[cx]);
 		continue;
 	    }
 	    if(t==FLOAT) t=LONG;
@@ -943,9 +944,9 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 		while(b&&b->code==FREEREG) b=b->next;
 		if(!b) ierror(0);
 		if(b->code==BLT) b->code=BGT;
-		if(b->code==BLE) b->code=BGE;
-		if(b->code==BGT) b->code=BLT;
-		if(b->code==BGE) b->code=BLE;
+		else if(b->code==BLE) b->code=BGE;
+		else if(b->code==BGT) b->code=BLT;
+		else if(b->code==BGE) b->code=BLE;
 	    }
 	    if((t&15)==FLOAT||(t&15)==DOUBLE){
 		prfst(f,"fcomp");
@@ -973,14 +974,6 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	    fprintf(f,"\tcmp%c\t",x_t[t&15]);
 	    probj2(f,&p->q2,t);fprintf(f,",");
 	    probj2(f,&p->q1,t);fprintf(f,"\n");
-	    continue;
-	}
-	if(c>=OR&&c<=AND){
-	    if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p);
-	    move(f,&p->q1,0,0,reg,t);
-	    fprintf(f,"\t%s%c\t",logicals[c-OR],x_t[t&15]);
-	    probj2(f,&p->q2,t);fprintf(f,",%s\n",regnames[reg]);
-	    move(f,0,reg,&p->z,0,t);
 	    continue;
 	}
 	if((t&15)==FLOAT||(t&15)==DOUBLE){
@@ -1011,7 +1004,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 		fprintf(f,"\tpush%c\t",x_t[t&15]);probj2(f,&p->q2,t);
 		fprintf(f,"\n");m|=4;stackoffset-=4;
 	    }
-	    if(t&UNSIGNED) fprintf(f,"\tmovl\t$0,%s\n\tdivl\t",regnames[dx]);
+	    if(t&UNSIGNED) fprintf(f,"\txorl\t%s,%s\n\tdivl\t",regnames[dx],regnames[dx]);
 		else	   fprintf(f,"\tcltd\n\tidivl\t");
 	    if((m&4)||(isreg(q2)&&p->q2.reg==dx)){
 		fprintf(f,"(%s)",regnames[sp]);
@@ -1026,10 +1019,36 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	    if(m&1){ fprintf(f,"\tpopl\t%s\n",regnames[ax]);stackoffset+=4;}
 	    continue;
 	}
-	if(c>=LSHIFT&&c<=MOD){
+	if((c>=LSHIFT&&c<=MOD)||(c>=OR&&c<=AND)){
+	    char *s;
+	    if(c>=OR&&c<=AND) s=logicals[c-OR];
+		else s=arithmetics[c-LSHIFT];
+	    if(c!=MULT&&compare_objects(&p->q1,&p->z)){
+		if(isreg(z)||isreg(q1)||(p->q2.flags&KONST)){
+		    if((p->q2.flags&KONST)&&(c==ADD||c==SUB)){
+			eval_const(&p->q2.val,t);
+			if(zleqto(vlong,l2zl(1L))&&zuleqto(vulong,ul2zul(1UL))&&zdeqto(vdouble,d2zd(1.0))){
+			    if(c==ADD) s="inc"; else s="dec";
+			    fprintf(f,"\t%s%c\t",s,x_t[t&15]);
+			    probj2(f,&p->z,t);fprintf(f,"\n");
+			    continue;
+			}
+		    }
+		    fprintf(f,"\t%s%c\t",s,x_t[t&15]);
+		    probj2(f,&p->q2,t);fprintf(f,",");
+		    probj2(f,&p->z,t);fprintf(f,"\n");
+		    continue;
+		}else{
+		    if(isreg(q2)) reg=p->q2.reg; else reg=get_reg(f,p);
+		    move(f,&p->q2,0,0,reg,t);
+		    fprintf(f,"\t%s%c\t%s",s,x_t[t&15],regnames[reg]);
+		    fprintf(f,","); probj2(f,&p->z,t);fprintf(f,"\n");
+		    continue;
+		}
+	    }
 	    if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p);
 	    move(f,&p->q1,0,0,reg,t);
-	    fprintf(f,"\t%s%c\t",arithmetics[c-LSHIFT],x_t[t&15]);
+	    fprintf(f,"\t%s%c\t",s,x_t[t&15]);
 	    probj2(f,&p->q2,t);fprintf(f,",%s\n",regnames[reg]);
 	    move(f,0,reg,&p->z,0,t);
 	    continue;
@@ -1055,7 +1074,7 @@ void cleanup_cg(FILE *f)
     while(p=firstfpc){
 	if(f){
 	    if(section!=CODE){fprintf(f,codename);section=CODE;}
-	    fprintf(f,"l%d:\n\t.long\t",p->label);
+	    fprintf(f,"%sl%d:\n\t.long\t",labprefix,p->label);
 	    ip=(unsigned char *)&p->val.vdouble;
 	    fprintf(f,"0x%02x%02x%02x%02x",ip[3],ip[2],ip[1],ip[0]);
 	    if((p->typ&15)==DOUBLE){
@@ -1068,9 +1087,9 @@ void cleanup_cg(FILE *f)
     }
     if(f){
 	if(section!=BSS){fprintf(f,bssname);section=BSS;}
-	if(cxl) fprintf(f,"\t.lcomm\tl%d,4\n",cxl);
-	if(sil) fprintf(f,"\t.lcomm\tl%d,4\n",sil);
-	if(dil) fprintf(f,"\t.lcomm\tl%d,4\n",dil);
+	if(cxl) fprintf(f,"\t.lcomm\t%sl%d,4\n",labprefix,cxl);
+	if(sil) fprintf(f,"\t.lcomm\t%sl%d,4\n",labprefix,sil);
+	if(dil) fprintf(f,"\t.lcomm\t%sl%d,4\n",labprefix,dil);
     }
 }
 

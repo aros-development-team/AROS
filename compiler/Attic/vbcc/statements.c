@@ -7,6 +7,8 @@ static char FILE_[]=__FILE__;
 int cont_label=0;
 int test_assignment(struct Typ *,np);
 
+#define cr()
+#ifndef cr
 void cr(void)
 /*  tested Registerbelegung */
 {
@@ -14,6 +16,7 @@ void cr(void)
     for(i=0;i<=MAXR;i++)
         if(regs[i]!=regsa[i]) {error(149,regnames[i]);regs[i]=regsa[i];}
 }
+#endif
 void statement(void)
 /*  bearbeitet ein statement                                    */
 {

@@ -115,7 +115,7 @@ void num_defs(void)
     memset(rd_parms,0,dsize);
     for(i=0;i<vcount;i++){
         struct Var *v=vilist[i];
-        if(i>=vcount-rcount||v->offset<0||v->nesting==0||v->storage_class==EXTERN||v->storage_class==STATIC){
+        if(i>=vcount-rcount||zl2l(v->offset)<0||(v->flags&REGPARM)||v->nesting==0||v->storage_class==EXTERN||v->storage_class==STATIC){
             BSET(rd_parms,i+dcount+1);
         }
     }
@@ -406,7 +406,7 @@ int constant_propagation(struct flowgraph *fg,int global)
         p=g->start;
         while(p){
 /*            if(DEBUG&1024){print_rd(rd_defs);pric2(stdout,p);}*/
-            if(p->code!=ADDRESS&&(p->typf&15)<=POINTER&&(p->code<LABEL||p->code>BRA)){
+            if(p->code!=ADDRESS&&p->code!=NOP&&(p->typf&15)<=POINTER&&(p->code<LABEL||p->code>BRA)){
                 int i;
                 if((p->q1.flags&(VAR|VARADR))==VAR){
                     i=p->q1.v->index;

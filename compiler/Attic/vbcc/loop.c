@@ -42,6 +42,19 @@ struct srlist{
 
 struct srlist *first_sr,*last_sr;
 
+/*  Liste, in die Daten fuer loop-unrolling eingetragen werden. */
+struct urlist{
+    int flags;
+    long total,unroll;
+    struct IC *cmp,*branch,*ind;
+    struct flowgraph *start,*head;
+    struct urlist *next;
+} *first_ur;
+
+#define UNROLL_COMPLETELY 1
+#define UNROLL_MODULO 2
+#define UNROLL_INVARIANT 3
+
 /*  Hier werden Induktionsvariablen vermerkt    */
 struct IC **ind_vars;
 
@@ -514,17 +527,19 @@ int used_in_loop_only(struct flowgraph *start,struct flowgraph *end,struct obj *
     return(1);
 }
 
-int always_reached(struct flowgraph *start,struct flowgraph *end,struct flowgraph *fg,struct IC *z)
+int always_reached(struct flowgraph *start,struct flowgraph *end,struct flowgraph *fg,struct IC *z,int ignorecall)
 /*  Testet, ob z immer ausgefuehrt wird, falls start in fg ausgefuehrt  */
 /*  wird. fg_tmp ist ein Bitvektor, um zu merken, welche Bloecke sicher */
 /*  zu z fuehren. Das ganze fuer die Schleife start-end.                */
+/*  Wenn ignorecall!=0 ist, wird angenommen, dass jeder CALL            */
+/*  zurueckkehrt (das ist nuetzlich fuer loop-unrolling).               */
 {
     unsigned char *bmk=fg_tmp;
     struct IC *p;struct flowgraph *g;
     int changed;
 
     for(p=z;p;p=p->prev){
-        if(p->code==CALL) return(0);
+        if(!ignorecall&&p->code==CALL) return(0);
         if(p==fg->start) break;
     }
 
@@ -543,7 +558,7 @@ int always_reached(struct flowgraph *start,struct flowgraph *end,struct flowgrap
                     if((!b||BTST(bmk,b->index))&&
                        (!n||(g->end&&g->end->code==BRA)||BTST(bmk,n->index))){
                         for(p=g->end;p;p=p->prev){
-                            if(p->code==CALL) break;
+                            if(!ignorecall&&p->code==CALL) break;
                             if(p==g->start){
                                 if(g==start) return(1);
                                 changed=1; BSET(bmk,g->index);
@@ -666,7 +681,7 @@ void frequency_reduction(struct flowgraph *start,struct flowgraph *end,struct fl
                         }
                         if(k1&&k2){
 /*                            if(DEBUG&1024){ printf("found loop-invariant IC:\n");pric2(stdout,p);}*/
-                            if(!BTST(moved,p->defindex)&&(always_reached(start,end,g,p)||(!dangerous_IC(p)&&used_in_loop_only(start,end,&p->z)))){
+                            if(!BTST(moved,p->defindex)&&(always_reached(start,end,g,p,0)||(!dangerous_IC(p)&&used_in_loop_only(start,end,&p->z)))){
                                 if(p->z.flags&DREFOBJ)
                                     k1=def_invariant(p->z.v->index,-1);
                                 else
@@ -1028,55 +1043,307 @@ void strength_reduction(struct flowgraph *start,struct flowgraph *end,struct flo
         if(g==end) break;
     }
 }
-void unroll(struct flowgraph *start,struct flowgraph *head)
+void copy_code(struct IC *start,struct IC *end,struct IC *dest,int n)
+/*  Kopiert Code von start bis end n-mal hinter dest. Generiert         */
+/*  entsprechend neue Labels. Allerdings wird der Flussgraph und        */
+/*  aliasing-info nicht angepasst und muss danach neu generiert werden. */
 {
-    struct flowlist *lp;struct flowgraph *end;struct IC *p;
-    struct obj *o;union atyps init_val,end_val,step_val;
+    int firstl=0,lastl=0,*larray,i,j;
+    struct IC *p,*new;
+    if(DEBUG&1024) printf("copy_code %d times\n",n);
+    /*  Feststellen, welche Labels in der Schleife definiert werden.    */
+    for(p=start;p;p=p->next){
+        if(p->code==LABEL){
+            if(firstl==0||firstl>p->typf) firstl=p->typf;
+            if(lastl ==0|| lastl<p->typf) lastl =p->typf;
+        }
+        if(p==end) break;
+    }
+    if(DEBUG&1024) printf("firstl=%d, lastl=%d\n",firstl,lastl);
+    larray=mymalloc((lastl-firstl+1)*sizeof(*larray));
+    for(i=0;i<=lastl-firstl;i++) larray[i]=0;
+    for(p=start;p;p=p->next){
+        if(p->code==LABEL) larray[p->typf-firstl]=1;
+        if(p==end) break;
+    }
+    /*  Hauptschleife.  */
+    for(i=0;i<n;i++){
+        /*  Neue Labels erzeugen.   */
+        for(j=0;j<=lastl-firstl;j++)
+            if(larray[j]) larray[j]=++label;
+        /*  Code kopieren (rueckwaerts).    */
+        for(p=end;p;p=p->prev){
+            new=mymalloc(ICS);
+            *new=*p;
+            /*  Fuer free_alias.    */
+            new->change_cnt=new->use_cnt=0;
+            /*  Evtl. Label anpassen.   */
+            if(p->code>=LABEL&&p->code<=BRA){
+                if(p->typf>=firstl&&p->typf<=lastl&&larray[p->typf-firstl])
+                    new->typf=larray[p->typf-firstl];
+            }
+            insert_IC(dest,new);
+            if(p==start) break;
+        }
+    }
+    free(larray);
+}
+void add_ur(int flags,long total,long unroll,struct flowgraph *start,struct flowgraph *head,struct IC *cmp,struct IC *branch,struct IC *ind)
+/*  Fuegt Daten fuer loop-unrolling in Stack ein.                       */
+{
+    struct urlist *new=mymalloc(sizeof(struct urlist));
+    if(DEBUG&1024) printf("add_ur, flags=%d\n",flags);
+    new->flags=flags;
+    new->total=total;
+    new->unroll=unroll;
+    new->start=start;
+    new->head=head;
+    new->cmp=cmp;
+    new->branch=branch;
+    new->ind=ind;
+    new->next=first_ur;
+    first_ur=new;
+}
+int do_unroll(int donothing)
+/*  Fuehrt loop-unrolling durch. Wenn donothing!=0, wird die Liste nur  */
+/*  freigegeben.                                                        */
+{
+    int changed=0; struct urlist *m;
+    while(m=first_ur){
+        int flags=m->flags;
+        long total=m->total,unroll=m->unroll;
+        struct flowgraph *start=m->start,*head=m->head;
+        struct IC *cmp=m->cmp,*branch=m->branch,*ind=m->ind;
+        if(donothing) flags=0;
+        if(flags==UNROLL_COMPLETELY){
+            /*  Schleife komplett ausrollen.    */
+            if(DEBUG&1024) printf("unroll loop completely\n");
+            copy_code(start->start->next,cmp->prev,start->start,total-1);
+            if(DEBUG&1024) printf("removing loop branch\n");
+            remove_IC(branch);
+            if(!cmp->z.flags){
+                remove_IC(cmp);
+                if(DEBUG&1024) printf("removing loop compare\n");
+            }
+            changed|=1;
+        }
+        if(flags==UNROLL_MODULO){
+            /*  Schleife teilweise ausrollen.   */
+            if(DEBUG&1024) printf("unroll loop partially, n=%ld,r=%ld\n",unroll,total%unroll);
+            if(unroll>1){
+                copy_code(start->start->next,cmp->prev,head->start,total%unroll);
+                copy_code(start->start->next,cmp->prev,start->start,unroll-1);
+                changed|=1;
+            }
+        }
+        if(flags==UNROLL_INVARIANT){
+            struct IC *new; struct Var *v; int out=++label;
+            long i; struct Typ *t;
+            if(DEBUG&1024) printf("unrolling non-constant loop\n");
+            if(cmp->q1.flags&VAR) t=cmp->q1.v->vtyp; else t=cmp->q2.v->vtyp;
+            v=add_var(empty,clone_typ(t),AUTO,0);
+            /*  branch dient hier teilweise als leere Schablone.    */
+            /*  Label an Schleifenausgang setzen.   */
+            new=mymalloc(ICS); *new=*branch;
+            new->change_cnt=new->use_cnt=0;
+            new->code=LABEL;
+            new->typf=out;
+            insert_IC(branch,new);
+            /*  Test vor die unroll-Variante.   */
+            new=mymalloc(ICS); *new=*branch;
+            new->change_cnt=new->use_cnt=0;
+            if(branch->code==BLT) new->code=BGE;
+            if(branch->code==BLE) new->code=BGT;
+            if(branch->code==BGT) new->code=BLE;
+            if(branch->code==BGE) new->code=BLT;
+            if(branch->code==BEQ) new->code=BNE;
+            if(branch->code==BNE) new->code=BEQ;
+            new->typf=out;
+            insert_IC(head->start,new);
+            new=mymalloc(ICS); *new=*cmp;
+            new->change_cnt=new->use_cnt=0;
+            insert_IC(head->start,new);
+            /*  Einsprungpunkte fuer die Modulos.   */
+            for(i=1;i<unroll;i++){
+                copy_code(start->start->next,cmp->prev,head->start,1);
+                new=mymalloc(ICS); *new=*branch;
+                new->change_cnt=new->use_cnt=0;
+                new->code=LABEL;
+                new->typf=label+i+1;
+                insert_IC(head->start,new);
+            }
+            /*  Testen, welches Modulo. */
+            for(i=unroll-2;i>=0;i--){
+                new=mymalloc(ICS); *new=*branch;
+                new->change_cnt=new->use_cnt=0;
+                new->code=BEQ;
+                if(i>0) new->typf=label+i+1;
+                   else new->typf=start->start->typf;
+                insert_IC(head->start,new);
+                new=mymalloc(ICS); *new=*branch;
+                new->change_cnt=new->use_cnt=0;
+                if(SWITCHSUBS) new->q1.val.vlong=l2zl(1L);
+                    else       new->q1.val.vlong=l2zl(i);
+                eval_const(&new->q1.val,LONG);
+                new->q1.flags=VAR;
+                new->q1.v=v;
+                new->q1.val.vlong=l2zl(0L);
+                new->typf=t->flags;
+                if(SWITCHSUBS||i==0){
+                    new->code=TEST;
+                    insert_IC(head->start,new);
+                    if(i>0){
+                        new=mymalloc(ICS);
+                        *new=*head->start->next;
+                        new->change_cnt=new->use_cnt=0;
+                        new->code=SUB;
+                        new->z=new->q1;
+                        new->q2.flags=KONST;
+                        insert_const2(&new->q2.val,new->typf&31);
+                        insert_IC(head->start,new);
+                    }
+                }else{
+                    new->code=COMPARE;
+                    new->q2.flags=KONST;
+                    insert_const2(&new->q2.val,new->typf&31);
+                    insert_IC(head->start,new);
+                }
+            }
+            /*  Durchlaeufe modulo unroll berechnen.    */
+            new=mymalloc(ICS); *new=*branch;
+            new->change_cnt=new->use_cnt=0;
+            new->code=AND;
+            new->typf=t->flags;
+            new->q1.flags=VAR;
+            new->q1.v=v;
+            new->q1.val.vlong=l2zl(0L);
+            new->z=new->q1;
+            new->q2.flags=KONST;
+            new->q2.val.vlong=l2zl(unroll-1);
+            eval_const(&new->q2.val,LONG);
+            insert_const2(&new->q2.val,new->typf);
+            new->z=new->q1;
+            insert_IC(head->start,new);
+            new=mymalloc(ICS); *new=*ind;
+            new->change_cnt=new->use_cnt=0;
+            new->code=DIV;
+            new->q1=head->start->next->z;
+            new->z=new->q1;
+            insert_IC(head->start,new);
+            new=mymalloc(ICS); *new=*head->start->next;
+            new->change_cnt=new->use_cnt=0;
+            new->code=SUB;
+            if(!compare_objs(&ind->z,&cmp->q1,new->typf)){
+                if(ind->code==ADD){new->q1=cmp->q2;new->q2=ind->z;}
+                    else          {new->q2=cmp->q2;new->q2=ind->z;}
+            }else{
+                if(ind->code==ADD){new->q1=cmp->q1;new->q2=ind->z;}
+                    else          {new->q2=cmp->q1;new->q2=ind->z;}
+            }
+            insert_IC(head->start,new);
+            copy_code(start->start->next,cmp->prev,start->start,unroll-1);
+            label+=unroll;
+            changed|=2;
+        }
+        first_ur=m->next;
+        free(m);
+    }
+    return(changed);
+}
+void unroll(struct flowgraph *start,struct flowgraph *head)
+/*  Versucht loop-unrolling.                                            */
+{
+    struct flowlist *lp;struct flowgraph *end,*g;struct IC *p,*m,*branch,*cmp;
+    struct obj *o,*e,*cc; union atyps init_val,end_val,step_val;
     unsigned char *tmp;
-    long dist,step;
+    long dist,step,ic_cnt,n;
     int bflag=0,t=0,i,flags=0; /* 1: sub, 2: init_val gefunden  */
     end=start->loopend;
     if(DEBUG&1024) printf("checking for possible unrolling from %d to %d\n",start->index,end->index);
     for(lp=start->in;lp;lp=lp->next)
         if(lp->graph->index>start->index&&lp->graph->index<=end->index&&lp->graph!=end) return;
     if(DEBUG&1024) printf("only one backward-branch\n");
-    p=end->end;
+    e=0; p=end->end;
     do{
-        if(p->code>=BEQ&&p->code<BRA) bflag=p->code;
+        if(p->code>=BEQ&&p->code<BRA){ branch=p;bflag=p->code;cc=&p->z; }
         if(p->code==TEST){
-            o=&p->q1;t=p->typf;
-            vlong=l2zl(0L);insert_const2(&end_val,LONG);
+            if(compare_objs(cc,&p->z,p->typf)) return;
+            o=&p->q1;t=p->typf;cmp=p;
+            end_val.vlong=l2zl(0L); eval_const(&end_val,LONG);
+            insert_const2(&end_val,t);
             break;
         }
         if(p->code==COMPARE){
-            if(p->q2.flags&KONST){
-                o=&p->q1;t=p->typf;
-                end_val=p->q2.val;
-                break;
+            if(compare_objs(cc,&p->z,p->typf)) return;
+            cmp=p;
+            if(p->q1.flags&VAR){
+                if(ind_vars[p->q1.v->index]){
+                    o=&p->q1;t=p->typf;
+                    e=&p->q2;
+                    break;
+                }
             }
-            if(p->q1.flags&KONST){
-                o=&p->q2;t=p->typf;
-                end_val=p->q2.val;
-                if(bflag==BLT) bflag=BGT;
-                if(bflag==BLE) bflag=BGE;
-                if(bflag==BGT) bflag=BLT;
-                if(bflag==BGE) bflag=BLE;
-                break;
+            if(p->q2.flags&VAR){
+                if(ind_vars[p->q2.v->index]){
+                    o=&p->q2;t=p->typf;
+                    e=&p->q1;
+                    if(bflag==BLT) bflag=BGT;
+                    if(bflag==BLE) bflag=BGE;
+                    if(bflag==BGT) bflag=BLT;
+                    if(bflag==BGE) bflag=BLE;
+                    break;
+                }
             }
             return;
         }
         if(p==end->start) return;
         p=p->prev;
     }while(p);
-    if(!(o->flags&VAR)) return;
+    if(!e||e->flags&KONST){
+        if(e) end_val=e->val;
+        if(DEBUG&1024) printf("end condition is constant\n");
+    }else{
+        if(!(e->flags&VAR)) return;
+        i=e->v->index;
+        if(e->flags&DREFOBJ) i+=vcount-rcount;
+        if(DEBUG&1024) printf("testing end-condition\n");
+        memcpy(rd_defs,end->rd_in,dsize);
+        for(m=end->start;m;m=m->next){
+            if(m==cmp){
+                if(DEBUG&1024) pric2(stdout,m);
+                if(!def_invariant(i,-1)) return;
+                if(DEBUG&1024) printf("end condition loop-invariant\n");
+                break;
+            }
+            rd_change(m);
+            if(m==end->end) ierror(0);
+        }
+    }
     p=ind_vars[o->v->index];
     if(!p) return;
     if(compare_objs(o,&p->z,t)) return;
     if(DEBUG&1024) printf("loop condition only dependant on induction var\n");
     if(!(p->q2.flags&KONST)) return;
     if(DEBUG&1024) printf("induction is constant\n");
+    for(ic_cnt=0,g=start;g;g=g->normalout){
+        for(m=g->start;m;m=m->next){
+            if(m==p&&!always_reached(start,end,g,p,1)) return;
+            ic_cnt++;
+            if(m==g->end) break;
+        }
+        if(g==end) break;
+    }
+    ic_cnt-=2;  /*  Branch und Test */
+    if(DEBUG&1024) printf("induction always reached\n");
+    if(DEBUG&1024) printf("ICs in loop: %ld\n",ic_cnt);
     step_val=p->q2.val;
     if(p->code==SUB) flags|=1;
+    if(e&&!(e->flags&KONST)){
+        /*  Anzahl der Schleifendurchlaeufe kann beim Eintritt in die   */
+        /*  Schleife zur Laufzeit berechnet werden.                     */
+/*        add_ur(UNROLL_INVARIANT,0,4,start,head,cmp,branch,p);*/
+        return;
+    }
     i=p->z.v->index;
     if(p->z.flags&DREFOBJ) i+=vcount-rcount;
     tmp=mymalloc(dsize);
@@ -1157,9 +1424,20 @@ void unroll(struct flowgraph *start,struct flowgraph *head)
             return;
         }
     }
-    if(bflag==BLT||bflag==BGT) dist--;
+    if(bflag==BLT||bflag==BGT||bflag==BNE){
+        if(step>0) dist--; else dist++;
+    }
     if(dist/step<0) ierror(0);
     if(DEBUG&1024) printf("loop is executed %ld times\n",dist/step+1);
+    if(start->start->code!=LABEL) ierror(0);
+    if(ic_cnt*(dist/step+1)<=c_flags_val[25].l){
+        /*  Schleife komplett ausrollen.    */
+        add_ur(UNROLL_COMPLETELY,dist/step+1,dist/step+1,start,head,cmp,branch,p);
+    }else{
+        /*  Schleife teilweise ausrollen.   */
+        n=(c_flags_val[25].l-ic_cnt-2)/(2*ic_cnt);
+        add_ur(UNROLL_MODULO,dist/step+1,n,start,head,cmp,branch,p);
+    }
 }
 
 int loop_optimizations(struct flowgraph *fg)
@@ -1197,7 +1475,7 @@ int loop_optimizations(struct flowgraph *fg)
         if(g->loopend){
             frequency_reduction(g,g->loopend,last);
             strength_reduction(g,g->loopend,last);
-            unroll(g,last);
+            if(c_flags_val[0].l&2048) unroll(g,last);
         }
         last=g;
     }
@@ -1219,6 +1497,7 @@ int loop_optimizations(struct flowgraph *fg)
 
     changed|=move_to_head();
     changed|=do_sr();
+    changed|=do_unroll(changed);
 
     free(moved);
     free(not_movable);

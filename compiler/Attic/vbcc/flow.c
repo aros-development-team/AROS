@@ -186,7 +186,7 @@ void print_flowgraph(struct flowgraph *g)
     static int dontprint=0;
     int flag,i;struct flowlist *lp;struct IC *ip;
     if(dontprint) return;
-    if(DEBUG&1024) {puts("print_flowgraph()");scanf("%d",&i);}
+    puts("print_flowgraph()");scanf("%d",&i);
     if(i<0){dontprint=1;return;}
     if(!i) return;
     while(g){

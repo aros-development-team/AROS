@@ -74,7 +74,7 @@
 "illegal escape-sequence in string",WARNING|ANSIV,
 "character constant contains multiple chars",WARNING,
 "could not evaluate sizeof-expression",ERROR|ANSIV,
-"\" expected (unterminated string)",ERROR|ANSIV,
+"\" expected",ERROR|ANSIV,
 "something wrong with numeric constant",ERROR|ANSIV,                /*  75  */
 "identifier expected",ERROR|ANSIV|FATAL,
 "definition does not match previous declaration",WARNING|ANSIV,
@@ -215,6 +215,9 @@
 "constant is unsigned due to size",WARNING|DONTWARN,
 "varargs function called without prototype in scope",WARNING,
 "suspicious format string",WARNING,
-"format string contains \'\\0\'",WARNING,                              /*  215 */
+"format string contains \'\\0\'",WARNING,                           /*  215 */
 "illegal use of keyword <%s>",WARNING|ANSIV,
-
+"register <%s> used with wrong type",ERROR,
+"register <%s> is not free",ERROR,
+"'__reg' used in old-style function definition",WARNING,
+"unknown register \"%s\"",WARNING,                                  /*  220 */

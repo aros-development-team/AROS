@@ -1,0 +1,15 @@
+-sd
+-no-preprocessor
+-no-fp-return
+-cc=vbcca68k -quiet
+-ccv=vbcca68k
+-pp=vcpp -Iixinclude: -D__STDC__=1 %s %s %s
+-ppv=vcpp -Iixinclude: -D__STDC__=1 %s %s %s
+-as=PhxAss quiet opt NRQBTLPSM %s to %s
+-asv=PhxAss opt NRQBTLPSM %s to %s
+-rm=delete quiet %s
+-rmv=delete %s
+-ld=PhxLnk vlib:bcrt0.o %s %s vlib:ixemuls.lib to %s
+-l2=PhxLnk %s %s to %s
+-ldv=PhxLnk vlib:bcrt0.o %s %s vlib:ixemuls.lib to %s
+-l2v=PhxLnk %s %s to %s

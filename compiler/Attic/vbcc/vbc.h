@@ -51,7 +51,7 @@ struct identifier_list{
     struct identifier_list *next;
 };
 struct Var{
-    int storage_class,priority,flags;
+    int storage_class,reg,priority,flags;
     char *identifier;
     int nesting,index;
     zlong offset;
@@ -74,13 +74,14 @@ struct Var{
 #define SCANFLIKE 1024
 #define NOTTYPESAFE 2048
 #define DNOTTYPESAFE 4096
+#define REGPARM 8192
 
 #define SLSIZE 32   /*  struct_lists in diesen Abstaenden realloc'en    */
 
 struct struct_list{
     char *identifier;
     struct Typ *styp;
-    int storage_class;
+    int storage_class,reg;
 };
 struct struct_declaration{
     int count;
@@ -358,7 +359,12 @@ extern int regbnesting[MAXR+1];
 
 extern void add_IC(struct IC *),free_IC(struct IC *),insert_IC(struct IC *,struct IC *);
 extern void gen_IC(np,int,int),convert(np,int),gen_label(int),savescratch(int,struct IC *,int);
-extern zlong push_args(struct argument_list *,struct struct_declaration *,int);
+struct regargs_list{
+    struct regargs_list *next;
+    int reg;
+    struct Var *v;
+};
+extern zlong push_args(struct argument_list *,struct struct_declaration *,int,struct regargs_list **);
 extern int regok(int,int,int),allocreg(int,int),freturn(struct Typ *);
 extern int icok(struct IC *);
 extern void free_reg(int);

@@ -23,7 +23,8 @@ char *ename[]={"strange","sequence","move","set+","set-","set*","set/","set%",
                 "address-of-struct","add-int-to-pointer","sub-int-from-pointer",
                 "sub-pointer-from-pointer","push-reg","pop-reg","pop-args",
                 "save-regs","restore-regs","identifier-label","dc","align",
-                "colon","get-return","set-return","move-from-reg","move-to-reg"};
+                "colon","get-return","set-return","move-from-reg","move-to-reg",
+                "nop"};
 
 char *s,*ident;
 char string[MAXINPUT+2],number[MAXI],buff[MAXI];
@@ -63,7 +64,8 @@ int c_flags[MAXCF]={
     VALFLAG,FUNCFLAG,FUNCFLAG,VALFLAG,
     VALFLAG,0,0,0,
     0,0,0,0,
-    0,0,0,0,0
+    0,0,0,0,0,
+    VALFLAG
 };
 char *c_flags_name[MAXCF]={
     "O","o","ic1","ic2",
@@ -71,7 +73,8 @@ char *c_flags_name[MAXCF]={
     "maxerrors","dontwarn","warn","maxoptpasses",
     "inline-size","nested-comments","cpp-comments","macro-redefinition",
     "no-trigraphs","no-preprocessor","E","dontkeep-initialized-data",
-    "strip-path","fp-associative","iso","no-alias-opt","no-multiple-ccs"
+    "strip-path","fp-associative","iso","no-alias-opt","no-multiple-ccs",
+    "unroll-size"
 };
 union ppi c_flags_val[MAXCF];
 
@@ -105,5 +108,5 @@ struct IC *err_ic;
 
 int multiple_ccs;
 
-char *copyright="vbcc V0.4d (c) in 1995-96 by Volker Barthelmann\n";
+char *copyright="vbcc V0.4f (c) in 1995-96 by Volker Barthelmann\n";
 

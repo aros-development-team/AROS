@@ -9,7 +9,7 @@ static char FILE_[]=__FILE__;
 
 struct const_list *initialization(struct Typ *,int);
 int test_assignment(struct Typ *,np);
-int return_sc,has_return;
+int return_sc,return_reg,has_return;
 
 extern int float_used;
 extern void optimize(long,struct Var *);
@@ -41,14 +41,14 @@ struct Typ *declaration_specifiers(void)
 /* evtl. muessen noch storage-classes uns strengere       */
 /* Pruefungen etc. eingebaut werden                       */
 {
-    int typ=0,type_qualifiers=0,notdone,storage_class;
+    int typ=0,type_qualifiers=0,notdone,storage_class,hard_reg;
     char *merk,*imerk,sident[MAXI],sbuff[MAXI];
     struct Typ *new=mymalloc(TYPS),*t,*ts;
     struct struct_declaration *ssd;
     struct struct_list (*sl)[];
     size_t slsz;
     struct Var *v;
-    storage_class=0;
+    storage_class=hard_reg=0;
     new->next=0; new->exact=0;
     do{
         merk=s;killsp();cpbez(buff,0);notdone=0;
@@ -155,6 +155,7 @@ struct Typ *declaration_specifiers(void)
                 s++;killsp();
                 while(*s!='}'){
                     cpbez(sident,1);killsp();
+                    if(*sident==0) {error(56);break;}
                     t=mymalloc(TYPS);
                     t->flags=CONST|INT;
                     t->next=0;
@@ -172,11 +173,11 @@ struct Typ *declaration_specifiers(void)
                     }
                     vlong=l2zl(1L);val=zladd(val,vlong);
                     v->vtyp->flags=CONST|ENUM;
-                    if(*s=='}') break;
-                    if(*s==',') s++; else error(57);
+                    if(*s!='}'&&*s!=',') {error(56);break;}
+                    if(*s==',') s++;
                     killsp();
+                    if(*s=='}') {s++; break;}
                 }
-                s++;
             }
             killsp();
             typ=settyp(INT,typ);*buff=0;
@@ -209,6 +210,26 @@ struct Typ *declaration_specifiers(void)
         if(!strcmp("static",buff)) {dsc;storage_class=STATIC;notdone=1;}
         if(!strcmp("extern",buff)) {dsc;storage_class=EXTERN;notdone=1;}
         if(!strcmp("typedef",buff)) {dsc;storage_class=TYPEDEF;notdone=1;}
+        if(!(c_flags[7]&USEDFLAG)&&!strcmp("__reg",buff)){
+            char *d;int f=0;
+            killsp(); if(*s=='(') s++; else error(151);
+            killsp(); if(*s=='\"') s++; else error(74);
+            d=buff;
+            while(*s&&*s!='\"'){
+                if(d-buff-2>MAXI){
+                    if(!f){ error(206,MAXI);f=1;}
+                }else *d++=*s;
+                s++;
+            }
+            *d=0;
+            if(*s=='\"') s++; else error(74);
+            killsp(); if(*s==')') s++; else error(59);
+            for(hard_reg=1;hard_reg<=MAXR;hard_reg++){
+                if(!strcmp(buff,regnames[hard_reg])) break;
+            }
+            if(hard_reg>MAXR){ hard_reg=0;error(220,buff);}
+            notdone=1;
+        }
 
         if(!notdone&&*buff&&typ==0&&!(type_qualifiers&(XSIGNED|UNSIGNED))){
             v=find_var(buff,0);
@@ -224,6 +245,7 @@ struct Typ *declaration_specifiers(void)
     }while(notdone);
     s=merk;
     return_sc=storage_class;
+    return_reg=hard_reg;
     if(typ==0){
         if(storage_class==0&&type_qualifiers==0) {free(new);return(0);}
         typ=INT;
@@ -235,7 +257,6 @@ struct Typ *declaration_specifiers(void)
     new->flags=typ|type_qualifiers;
     return(new);
 }
-
 
 struct Typ *declarator(struct Typ *a)
 /* Erzeugt einen neuen Typ, auf Basis des Typs a            */
@@ -359,6 +380,8 @@ struct Typ *direct_declarator(struct Typ *a)
                     {error(21);return_sc=AUTO;}
                 (*sl)[fsd->count].styp=t;
                 (*sl)[fsd->count].storage_class=return_sc;
+                (*sl)[fsd->count].reg=return_reg;
+                if(return_reg&&!regok(return_reg,t->flags,0)) error(217,regnames[return_reg]);
                 (*sl)[fsd->count].identifier=add_identifier(ident,strlen(ident));
                 if(t){
                     if(((*sl)[fsd->count].styp->flags&15)==VOID&&fsd->count!=0)
@@ -407,7 +430,8 @@ struct Typ *direct_declarator(struct Typ *a)
                 nesting=m;
             }
             killsp();
-            if(*s!=')'||komma) error(59); else s++;
+            if(komma) error(59);
+            if(*s!=')') error(59); else s++;
             killsp();
             if(*s==','||*s==';'||*s==')'||*s=='=') leave_block();
             if(last){
@@ -477,6 +501,7 @@ int declaration(int offset)
     if(!strcmp("unsigned",buff)) return(1);
     if(!strcmp("void",buff)) return(1);
     if(!strcmp("volatile",buff)) return(1);
+    if(!(c_flags[7]&USEDFLAG)&&!strcmp("__reg",buff)) return(1);
     v=find_var(buff,0);
     if(v&&v->storage_class==TYPEDEF) return(1);
     return(0);
@@ -611,10 +636,11 @@ struct Var *add_var(char *identifier, struct Typ *t, int storage_class,struct co
 /*  maschinenspezifisches und Codegeneration fehlen noch        */
 /*  Alignment maschinenabhaengig                                */
 /*  In der storage_class werden die Flags PARAMETER und evtl.   */
-/*  OLDSTYLE erkannt.                                           */
+/*  OLDSTYLE und REGPARM erkannt.                               */
 {
     struct Var *new;int f;
     struct struct_declaration *sd;
+    static zlong paroffset;
     /*if(*identifier==0) return;*/ /* sollte woanders bemaekelt werden */
     if(DEBUG&2) printf("add_var(): %s\n",identifier);
     if((t->flags&15)==FUNKT&&((t->next->flags&15)==ARRAY||(t->next->flags&15)==FUNKT))
@@ -624,12 +650,17 @@ struct Var *add_var(char *identifier, struct Typ *t, int storage_class,struct co
     new->clist=clist;
     new->vtyp=t;
     new->storage_class=storage_class&7;
+    new->reg=0;
     new->next=0;
     new->flags=0;
     new->fi=0;
     new->nesting=nesting;
 /*    if((storage_class&7)==STATIC||(storage_class&7)==EXTERN) new->flags=USEDASSOURCE|USEDASDEST;*/
-    if(storage_class&PARAMETER) new->flags=USEDASDEST;
+    if(DEBUG&2) printf("storage_class=%d\n",storage_class);
+    if(storage_class&PARAMETER) new->flags|=USEDASDEST;
+    if(storage_class&REGPARM) {new->flags|=REGPARM;storage_class&=~PARAMETER;}
+    if(DEBUG&2) printf("storage_class=%d\n",storage_class);
+    if(DEBUG&2) printf("max_offset=%ld\n",max_offset);
     if((storage_class&7)==REGISTER) new->priority=registerpri; else new->priority=0;
     if(last_var[nesting]){
         new->offset=zladd(last_var[nesting]->offset,szof(last_var[nesting]->vtyp));
@@ -637,29 +668,41 @@ struct Var *add_var(char *identifier, struct Typ *t, int storage_class,struct co
         last_var[nesting]=new;
     }else{
         new->offset=l2zl(0L);
+        paroffset=maxalign;
         first_var[nesting]=last_var[nesting]=new;
     }
     f=t->flags&15;
     if((storage_class&7)==AUTO||(storage_class&7)==REGISTER){
+        if(DEBUG&2) printf("auto\n");
         if(type_uncomplete(t)&&(t->flags&15)!=ARRAY) error(202,identifier);
         /*  das noch ueberpruefen   */
         if((c_flags_val[0].l&2)&&nesting==1&&!(storage_class&PARAMETER)){
             new->offset=max_offset;
         }else{
-            new->offset=local_offset[nesting];
+            if(storage_class&PARAMETER){
+                new->offset=paroffset;
+            }else{
+                new->offset=local_offset[nesting];
+            }
         }
         new->offset=zlmult(zldiv(zladd(new->offset,zlsub(align[f],l2zl(1L))),align[f]),align[f]);
-        if((storage_class&PARAMETER)&&f>=CHAR&&f<=SHORT){
-        /*  Integer-Erweiterungen fuer alle Funktionsparameter  */
-            local_offset[nesting]=zladd(new->offset,sizetab[INT]);
+        if(storage_class&PARAMETER){
+            if(f>=CHAR&&f<=SHORT){
+            /*  Integer-Erweiterungen fuer alle Funktionsparameter  */
+                paroffset=zladd(new->offset,sizetab[INT]);
+            }else{
+                paroffset=zladd(new->offset,szof(new->vtyp));
+            }
         }else{
             local_offset[nesting]=zladd(new->offset,szof(new->vtyp));
         }
         /*  Bei alten Funktionen werden FLOAT als DOUBLE uebergeben */
         if((storage_class&(PARAMETER|OLDSTYLE))==(PARAMETER|OLDSTYLE)&&f==FLOAT)
-            local_offset[nesting]=zladd(local_offset[nesting],zlsub(sizetab[DOUBLE],sizetab[FLOAT]));
+            paroffset=zladd(local_offset[nesting],zlsub(sizetab[DOUBLE],sizetab[FLOAT]));
 
-        if(zlleq(max_offset,local_offset[nesting])) max_offset=local_offset[nesting];
+        if(!(storage_class&PARAMETER))
+            if(zlleq(max_offset,local_offset[nesting])) max_offset=local_offset[nesting];
+        if(DEBUG&2) printf("max_offset=%ld\n",max_offset);
     }
     if((storage_class&7)==STATIC) new->offset=l2zl((long)++label);
     if(storage_class&PARAMETER){
@@ -669,6 +712,9 @@ struct Var *add_var(char *identifier, struct Typ *t, int storage_class,struct co
         /* nichts tun, oder? Datenformate, bei denen wirklich           */
         /* umgewandelt werden muss, werden (noch?) nicht unterstuetzt.  */
         /* Ob sowas aber ueberhaupt zulaessig waere, weiss ich nicht.   */
+
+        if(DEBUG&2) printf("parameter\n");
+
         if(f>=CHAR&&f<=SHORT&&!zlleq(sizetab[INT],sizetab[f])){
             if(BIGENDIAN){
                 new->offset=zladd(new->offset,zlsub(sizetab[INT],sizetab[f]));
@@ -752,10 +798,11 @@ void var_declaration(void)
 /*  noetigen Strukturen                                         */
 {
     struct Typ *ts,*t,*old=0,*om=0;char *imerk,vident[MAXI];
-    int mdef=0,makeint=0,notdone,storage_class,msc,extern_flag,isfunc,had_decl;
+    int mdef=0,makeint=0,notdone,storage_class,msc,extern_flag,isfunc,
+        had_decl,hard_reg,mhr;
     struct Var *v;
     ts=declaration_specifiers();notdone=1;
-    storage_class=return_sc;
+    storage_class=return_sc;hard_reg=return_reg;
     if(storage_class==EXTERN) extern_flag=1; else extern_flag=0;
     killsp();
     if(*s==';'){
@@ -780,11 +827,11 @@ void var_declaration(void)
     if(storage_class==0){
         if(nesting==0) storage_class=EXTERN; else storage_class=AUTO;
     }
-    msc=storage_class;
+    msc=storage_class;mhr=hard_reg;
     while(notdone){
         int oldnesting=nesting;
         imerk=ident;ident=vident;*vident=0;  /* merken von ident hier vermutlich */
-        storage_class=msc;
+        storage_class=msc;hard_reg=mhr;
         if(old) {freetyp(old);old=0;}
         t=declarator(clone_typ(ts));
         if((t->flags&15)!=FUNKT) isfunc=0;
@@ -799,7 +846,7 @@ void var_declaration(void)
                 if(t&&v->vtyp&&!compare_pointers(v->vtyp,t,255)){
                     error(68,vident);
                 }
-                if(storage_class!=v->storage_class&&!extern_flag)
+                if((storage_class!=v->storage_class&&!extern_flag)||hard_reg!=v->reg)
                     error(28,v->identifier);
                 if(!isfunc&&!extern_flag) v->flags|=TENTATIVE;
             }
@@ -813,6 +860,7 @@ void var_declaration(void)
             had_decl=0;
             if(isfunc&&*s!=','&&*s!=';'&&*s!=')'&&*s!='='&&nesting>0) nesting--;
             v=add_var(vident,t,storage_class,0);
+            v->reg=hard_reg;
             if(isfunc&&*s!=','&&*s!=';'&&*s!=')'&&*s!='='&&nesting>=0) nesting++;
             if(!v) ierror(0);
             else{
@@ -901,6 +949,9 @@ void var_declaration(void)
         int i,oldstyle=0;
         fline=line;
         if(DEBUG&1) printf("Funktionsdefinition!\n");
+        {int i;
+            for(i=1;i<=MAXR;i++) {regs[i]=regused[i]=regsa[i];regsbuf[i]=0;}
+        }
         cur_func=v->identifier;
         if(only_inline==2) only_inline=0;
         if(nesting<1) ierror(0);
@@ -909,7 +960,7 @@ void var_declaration(void)
             else v->flags|=DEFINED;
         if(storage_class!=EXTERN&&storage_class!=STATIC) error(34);
         if(extern_flag) error(120);
-        if(!strcmp(v->identifier,"main")&&(!t->next||t->next->flags!=INT)) error(121);
+        if(storage_class==EXTERN&&!strcmp(v->identifier,"main")&&(!t->next||t->next->flags!=INT)) error(121);
         if(!had_decl&&v->nesting==0&&v->storage_class==EXTERN)
             error(168,v->identifier);
         while(*s!='{'){
@@ -943,6 +994,8 @@ void var_declaration(void)
                             if(return_sc!=AUTO&&return_sc!=REGISTER)
                                 {error(122);return_sc=AUTO;}
                             (*t->exact->sl)[i].storage_class=return_sc;
+                            (*t->exact->sl)[i].reg=return_reg;
+                            if(return_reg) error(219);
                             (*t->exact->sl)[i].styp=ts;
                         }
                     }
@@ -975,17 +1028,13 @@ void var_declaration(void)
             error(123);
         nocode=0;currentpri=1;
 /*        enter_block();*/
-        local_offset[1]=maxalign;
+        local_offset[1]=l2zl(0L);
         return_var=0;
         if(!v->vtyp) ierror(0);
         if(v->vtyp->next->flags==VOID) return_typ=0;
         else{
             return_typ=v->vtyp->next;
             if(!freturn(return_typ)){
-#ifdef OLDPARMS
-                return_var=add_var(empty,clone_typ(return_typ),STATIC,0);
-                return_var->flags|=DEFINED;
-#else
                 /*  Parameter fuer die Rueckgabe von Werten, die nich in einem  */
                 /*  Register sind.                                              */
                 struct Typ *rt=mymalloc(TYPS);
@@ -993,10 +1042,9 @@ void var_declaration(void)
                 return_var=add_var(empty,clone_typ(rt),AUTO|PARAMETER|oldstyle,0);
                 return_var->flags|=DEFINED;
                 free(rt);
-#endif
             }
         }
-        first_ic=last_ic=0;ic_count=0;
+        first_ic=last_ic=0;ic_count=0;max_offset=l2zl(0L);
         for(i=0;i<t->exact->count;i++){
             if(!(*t->exact->sl)[i].styp&&*(*t->exact->sl)[i].identifier){
                 struct Typ *nt;
@@ -1004,11 +1052,15 @@ void var_declaration(void)
                 nt->flags=INT; nt->next=0;
                 (*t->exact->sl)[i].styp=nt;
                 (*t->exact->sl)[i].storage_class=AUTO;
+                (*t->exact->sl)[i].reg=0;
                 error(124);
             }
             if(*(*t->exact->sl)[i].identifier){
-                struct Var *tmp;
-                tmp=add_var((*t->exact->sl)[i].identifier,clone_typ((*t->exact->sl)[i].styp),(*t->exact->sl)[i].storage_class|PARAMETER|oldstyle,0);
+                struct Var *tmp;int sc;
+                sc=((*t->exact->sl)[i].storage_class|PARAMETER|oldstyle);
+                if((*t->exact->sl)[i].reg) sc|=REGPARM;
+                tmp=add_var((*t->exact->sl)[i].identifier,clone_typ((*t->exact->sl)[i].styp),sc,0);
+                tmp->reg=(*t->exact->sl)[i].reg;
                 tmp->flags|=DEFINED;
                 if(oldstyle){
                     freetyp((*t->exact->sl)[i].styp);
@@ -1017,59 +1069,24 @@ void var_declaration(void)
             }
         }
         if(oldstyle) t->exact->count=0; /*  Prototype entfernen */
-        local_offset[1]=l2zl(0L);
+/*        local_offset[1]=l2zl(0L);*/
         return_label=++label;
         v->flags|=GENERATED;
-        {int i;
-            for(i=1;i<=MAXR;i++) {regs[i]=regused[i]=regsa[i];regsbuf[i]=0;}
-        }
-        max_offset=l2zl(0L);function_calls=0;float_used=0;has_return=0;goto_used=0;
+        function_calls=0;float_used=0;has_return=0;goto_used=0;
         compound_statement();
         if((v->vtyp->next->flags&15)!=VOID&&!has_return){
             if(strcmp(v->identifier,"main")) error(173,v->identifier);
                 else error(174,v->identifier);
         }
+#if 0
         {int i;
             for(i=1;i<=MAXR;i++) if(regs[i]!=regsa[i]) {printf("Register %s:\n",regnames[i]);ierror(0);}
         }
-        gen_label(return_label);
-#ifdef OLDPARMS
-        if(return_var){
-        /*  Zeiger in Returnregister schreiben, bei Funktionen, deren   */
-        /*  Rueckgabewert nicht in Registern uebergeben wird            */
-            int rreg;
-            struct Typ *pointer=mymalloc(TYPS);
-            struct IC *new=mymalloc(ICS);
-            pointer->flags=POINTER;pointer->next=0;
-            rreg=freturn(pointer);
-            free(pointer);
-            if(regs[rreg]) ierror(0);
-            new->code=ALLOCREG;
-            new->q1.flags=REG;
-            new->q2.flags=new->z.flags=0;
-            new->typf=0;
-            new->q1.reg=rreg;
-            add_IC(new);
-            regs[rreg]=1;
-            new=mymalloc(ICS);
-            new->code=ASSIGN;
-            new->typf=POINTER;
-            new->q1.flags=SCRATCH|VAR|VARADR;
-            new->q1.reg=0;
-            new->q1.v=return_var;
-            new->q1.val.vlong=l2zl(0L);
-            new->q2.flags=0;
-            new->q2.val.vlong=sizetab[POINTER];
-            new->z.flags=REG;
-            new->z.reg=rreg;
-            add_IC(new);
-            free_reg(rreg);
-        }
 #endif
+        gen_label(return_label);
         if(first_ic&&errors==0){
             if((c_flags[2]&USEDFLAG)&&ic1){fprintf(ic1,"function %s\n",v->identifier); pric(ic1,first_ic);}
-/*            if((c_flags[0]&USEDFLAG)&&(c_flags_val[0].l&1)) simple_regs();*/
-            if(c_flags[0]&USEDFLAG) optimize(c_flags_val[0].l,v);
+            optimize(c_flags_val[0].l,v);
             if((c_flags[3]&USEDFLAG)&&ic2){fprintf(ic2,"function %s\n",v->identifier); pric(ic2,first_ic);}
             if(out&&!only_inline&&!(c_flags[5]&USEDFLAG)){
                 gen_code(out,first_ic,v,max_offset);
@@ -1136,20 +1153,6 @@ void var_declaration(void)
         }
     }
     if(old) freetyp(old);
-}
-int storage_class_specifiers(void)
-/*  Gibt angegebene storage_class zurueck                   */
-/*  muss nach ANSI wohl in declaration_specifiers           */
-/*  integriert werden                                       */
-{
-    char *merk=s,buff[MAXI];
-    killsp();cpbez(buff,0);
-    if(!strcmp("auto",buff)) return(AUTO);
-    if(!strcmp("register",buff)) return(REGISTER);
-    if(!strcmp("static",buff)) return(STATIC);
-    if(!strcmp("extern",buff)) return(EXTERN);
-    if(!strcmp("typedef",buff)) return(TYPEDEF);
-    s=merk;return(0);
 }
 struct Typ *clone_typ(struct Typ *old)
 /*  Erzeugt Kopie eines Typs und liefert Zeiger auf Kopie   */
@@ -1298,7 +1301,7 @@ void gen_clist(FILE *f,struct Typ *t,struct const_list *cl)
             al=align[fl];
             if(!zleqto(zlmod(sz,al),l2zl(0L))){
                 gen_ds(f,zlsub(al,zlmod(sz,al)),0);
-                sz+=zladd(sz,zlsub(al,zlmod(sz,al)));
+                sz=zladd(sz,zlsub(al,zlmod(sz,al)));
             }
             if(!(*t->exact->sl)[i].identifier) ierror(0);
             if((*t->exact->sl)[i].identifier[0]){

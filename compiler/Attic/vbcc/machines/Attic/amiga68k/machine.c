@@ -124,7 +124,7 @@ static long pof2(zulong x)
 #define PEA 1000
 
 static int addressing(void);
-static long notpopped,stackoffset,loff;
+static long notpopped,dontpop,stackoffset,loff;
 static int offlabel,regoffset;
 /*  For keeping track of condition codes.   */
 static struct obj *cc_set,*cc_set_tst;
@@ -261,7 +261,7 @@ static struct IC *do_refs(FILE *f,struct IC *p)
         reg=get_reg(f,0,p);
         p->q1.flags&=~DREFOBJ;
         fprintf(f,"\tmove.l\t");probj2(f,&p->q1,t);
-        p->q1.flags=REG|SCRATCH|DREFOBJ;
+        p->q1.flags=REG|DREFOBJ;
         p->q1.reg=reg;
         fprintf(f,",%s\n",regnames[p->q1.reg]);
         if(equal&1) p->q2=p->q1;
@@ -272,7 +272,7 @@ static struct IC *do_refs(FILE *f,struct IC *p)
         reg=get_reg(f,0,p);
         p->q2.flags&=~DREFOBJ;
         fprintf(f,"\tmove.l\t");probj2(f,&p->q2,t);
-        p->q2.flags=REG|SCRATCH|DREFOBJ;
+        p->q2.flags=REG|DREFOBJ;
         p->q2.reg=reg;
         fprintf(f,",%s\n",regnames[p->q2.reg]);
         if(equal) p->z=p->q2;
@@ -281,7 +281,7 @@ static struct IC *do_refs(FILE *f,struct IC *p)
         reg=get_reg(f,0,p);
         p->z.flags&=~DREFOBJ;
         fprintf(f,"\tmove.l\t");probj2(f,&p->z,t);
-        p->z.flags=REG|SCRATCH|DREFOBJ;
+        p->z.flags=REG|DREFOBJ;
         p->z.reg=reg;
         fprintf(f,",%s\n",regnames[p->z.reg]);
     }
@@ -296,7 +296,7 @@ static struct IC *do_refs(FILE *f,struct IC *p)
                 if((!zdeqto(d2zd(0.0),vdouble)||!zleqto(l2zl(0L),vlong)||!zuleqto(ul2zul(0UL),vulong))&&regavailable(1)){
                     reg=get_reg(f,1,p);
                     move(f,&p->q1,0,0,reg,t);
-                    p->q1.flags=REG|SCRATCH;p->q1.reg=reg;
+                    p->q1.flags=REG;p->q1.reg=reg;
                     p->q1.val.vlong=l2zl(0L);
                 }
             }
@@ -305,7 +305,7 @@ static struct IC *do_refs(FILE *f,struct IC *p)
                 if((!zdeqto(d2zd(0.0),vdouble)||!zleqto(l2zl(0L),vlong)||!zuleqto(ul2zul(0UL),vulong))&&regavailable(1)){
                     reg=get_reg(f,1,p);
                     move(f,&p->q2,0,0,reg,t);
-                    p->q2.flags=REG|SCRATCH;p->q2.reg=reg;
+                    p->q2.flags=REG;p->q2.reg=reg;
                     p->q2.val.vlong=l2zl(0L);
                 }
             }
@@ -822,11 +822,12 @@ static int addressing(void)
         }
         if(c==FREEREG){
         /*  wir koennen den Modus tatsaechlich benutzen */
-            struct AddressingMode *am;struct IC *p1,*p2;int dreg;
+            struct AddressingMode *am;struct IC *p1,*p2;int dreg,i;
             if(DEBUG&32) printf("freereg %s found\n",regnames[p->q1.reg]);
             if(q1reg>=9&&q1reg<=16) {am_freedreg[q1reg-8]=p;if(DEBUG&32) printf("freedreg[%d]=%lx\n",q1reg-8,(long)p);}
             if(q1reg>8) continue;
             if(DEBUG&32) printf("use=%p,base=%p,dist=%p,dreg=%p\n",(void*)am_use[q1reg],(void*)am_base[q1reg],(void*)am_dist[q1reg],(void*)am_dreg[q1reg]);
+            for(i=1;i<=8;i++) if(am_base[i]==q1reg) clear_am(i);
             if(!am_use[q1reg]||!am_base[q1reg]) continue;
             if(!am_dist[q1reg]&&!am_dreg[q1reg]&&!am_inc[q1reg]) continue;
             p1=am_dist_ic[q1reg];p2=am_dreg_ic[q1reg];
@@ -1063,9 +1064,14 @@ static void assign(FILE *f,struct IC *p,struct obj *q,struct obj *z,int c,long s
         if(c==PUSH) {fprintf(f,"-(a7)");stackoffset-=size;} else probj2(f,z,t);
         fprintf(f,"\n");return;
     }else{
-        int a1,a2,qreg,zreg,dreg,s=size,loops;char *cpstr;
+        int a1,a2,qreg,zreg,dreg,s=size,loops,scratch=0;char *cpstr;
+        struct IC *m;
+        for(m=p->next;m&&m->code==FREEREG;m=m->next){
+            if(m->q1.reg==q->reg) scratch|=1;
+            if(m->q1.reg==z->reg) scratch|=2;
+        }
         if(c==PUSH) cpstr="\tmove.%c\t-(%s),-(%s)\n"; else cpstr="\tmove.%c\t(%s)+,(%s)+\n";
-        if((c==PUSH||(q->flags&SCRATCH))&&(q->flags&(REG|DREFOBJ))==(REG|DREFOBJ)&&q->reg>=1&&q->reg<=8&&!q->am){
+        if((c==PUSH||(scratch&1))&&(q->flags&(REG|DREFOBJ))==(REG|DREFOBJ)&&q->reg>=1&&q->reg<=8&&!q->am){
             qreg=q->reg;
             if(c==PUSH)
                 fprintf(f,"\tadd%s.%s\t#%ld,%s\n",quick[s<=8],strshort[s<=32767],(long)s,regnames[q->reg]);
@@ -1081,9 +1087,13 @@ static void assign(FILE *f,struct IC *p,struct obj *q,struct obj *z,int c,long s
             zreg=8;
 /*            fprintf(f,"\tadd%s.%s\t#%ld,%s\n",quick[s<=8],strshort[s<=32767],(long)s,regnames[qreg]);*/
         }else{
-            zreg=get_reg(f,0,p);
-            fprintf(f,"\tlea\t");probj2(f,z,POINTER);
-            fprintf(f,",%s\n",regnames[zreg]);
+            if((scratch&2)&&(z->flags&(REG|DREFOBJ))==(REG|DREFOBJ)&&z->reg>=1&&z->reg<=8&&!z->am){
+                zreg=z->reg;
+            }else{
+                zreg=get_reg(f,0,p);
+                fprintf(f,"\tlea\t");probj2(f,z,POINTER);
+                fprintf(f,",%s\n",regnames[zreg]);
+            }
         }
         a1=alignment(q);
         if(c!=PUSH)  a2=alignment(z); else a2=0;
@@ -1472,7 +1482,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
     function_top(f,v,zl2l(offset));
     if(p!=first_ic) ierror(0);
     cc_set=cc_set_tst=0;
-    stackoffset=notpopped=0;
+    stackoffset=notpopped=dontpop=0;
     for(;p;pr(f,p),p=p->next){
         if(dbout){
         /*  Hier soll spaeter mal das Sourcefile angegeben werden.  */
@@ -1490,19 +1500,11 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
         if(cc_set&&(DEBUG&512)){fprintf(f,"; cc_set=");probj2(f,cc_set,t);fprintf(f,"\n");}
         pushedreg&=16;if(c==RESTOREREGS) pushedreg=0;
         if(DEBUG&256){fprintf(f,"; "); pric2(f,p);}
-        if(DEBUG&512) fprintf(f,"; stackoffset=%ld, notpopped=%ld, pushedreg=%d\n",stackoffset,notpopped,pushedreg);
+        if(DEBUG&512) fprintf(f,"; stackoffset=%ld, notpopped=%ld, pushedreg=%d, dontpop=%ld\n",stackoffset,notpopped,pushedreg,dontpop);
         /*  muessen wir Argumente poppen?   */
-        if(notpopped){
+        if(notpopped&&!dontpop){
             int flag=0;
-            if(c==LABEL||c==COMPARE||c==TEST||c==BRA) flag=1;
-            /*  wenn demnaechst TEST kommt, gleich poppen, um evtl. ein */
-            /*  tst einzusparen                                         */
-            if(!flag&&c!=CALL&&c!=GETRETURN){
-                struct IC *np=p->next;
-                while(np&&np->code==FREEREG) np=np->next;
-                if(np&&np->code==TEST) flag=1;
-            }
-            if(flag){
+            if(c==LABEL||c==COMPARE||c==TEST||c==BRA){
                 fprintf(f,"\tadd%s.%s\t#%ld,a7\n",quick[notpopped<=8],strshort[notpopped<32768],notpopped);
                 stackoffset+=notpopped;notpopped=0;/*cc_set_tst=cc_set=0;*/
             }
@@ -1588,6 +1590,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
         if(c==PEA){
             fprintf(f,"\tpea\t");probj2(f,&p->q1,t);fprintf(f,"\n");
             stackoffset-=zl2l(p->q2.val.vlong);
+            dontpop+=zl2l(p->q2.val.vlong);
             continue;
         }
         if(c==MOVEFROMREG){
@@ -1927,6 +1930,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
             if(dbout) act_line=0;
             if(zl2l(p->q2.val.vlong)){
                 notpopped+=zl2l(p->q2.val.vlong);
+                dontpop-=zl2l(p->q2.val.vlong);
                 if(!(g_flags[10]&USEDFLAG)&&!(pushedreg&30)&&stackoffset==-notpopped){
                 /*  Entfernen der Parameter verzoegern  */
                 }else{
@@ -1993,6 +1997,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
         }
         if(c==ASSIGN||c==PUSH){
             if(c==ASSIGN&&compare_objects(&p->q1,&p->z)) cc_set=0;
+            if(c==PUSH) dontpop+=zl2l(p->q2.val.vlong);
             assign(f,p,&p->q1,&p->z,c,zl2l(p->q2.val.vlong),t);
             continue;
         }
@@ -2049,8 +2054,8 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
                 /*  nicht sehr schoen   */
                     int result=get_reg(f,1,p);
                     saveregs(f,p);
-                    assign(f,p,&p->q1,0,PUSH,msizetab[t&15],t);
                     assign(f,p,&p->q2,0,PUSH,msizetab[t&15],t);
+                    assign(f,p,&p->q1,0,PUSH,msizetab[t&15],t);
                     if(gas){
                         fprintf(f,"\t.global\t__ieeecmp%c\n\tjbsr\t__ieeecmp%c\n\tadd.w\t#%ld,a7\n",x_t[t&15],x_t[t&15],2*msizetab[t&15]);
                     }else{
@@ -2192,8 +2197,8 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
                     continue;
                 }else{
                     saveregs(f,p);
-                    assign(f,p,&p->q1,0,PUSH,msizetab[t&15],t);
                     assign(f,p,&p->q2,0,PUSH,msizetab[t&15],t);
+                    assign(f,p,&p->q1,0,PUSH,msizetab[t&15],t);
                     if(gas){
                         fprintf(f,"\t.global\t__ieee%s%c\n\tjbsr\t__ieee%s%c\n\tadd.w\t#%ld,a7\n",ename[c],x_t[t&15],ename[c],x_t[t&15],2*msizetab[t&15]);
                     }else{

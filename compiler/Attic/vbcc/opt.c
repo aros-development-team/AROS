@@ -351,6 +351,7 @@ void optimize(long flags,struct Var *function)
 {
 #ifndef NO_OPTIMIZER
     struct flowgraph *fg=0;int r,pass=0;
+    if(!(c_flags[25]&USEDFLAG)) c_flags_val[25].l=60;
     if(!(c_flags[11]&USEDFLAG)) c_flags_val[11].l=10;
     if(!function) ierror(0);
     norek=nocall=0;
@@ -562,6 +563,7 @@ void optimize(long flags,struct Var *function)
     }else{
         /*  keine Optimierungen     */
         if(flags&1) simple_regs();
+        load_simple_reg_parms();
     }
     lastlabel=label;
 }

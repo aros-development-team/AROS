@@ -357,7 +357,7 @@ void killsp(void)
             }else{
                 line++;
                 read_new_line=1;
-                if(DEBUG&1) printf("Line %d\n",line);}
+                if(DEBUG&1) printf("Line %d\n",line);
                 if(!strncmp("#pragma",string,7)){
                     error(163);
                     s=string+7;
@@ -432,7 +432,8 @@ void killsp(void)
                     if(DEBUG&1) printf("new line: %d (file=%s)\n",line,errfname);
                     line--;
                 }
-            s=string;
+                s=string;
+            }
         }while(*s=='#');
         killsp();
     }
@@ -759,6 +760,7 @@ void probj(FILE *f,struct obj *p,int t)
             }
         }
         fprintf(f,"(%s)",p->v->identifier);
+        if(p->v->reg) fprintf(f,":%s",regnames[p->v->reg]);
     }
     if((p->flags&REG)&&!(p->flags&VAR)) fprintf(f,"%s",regnames[p->reg]);
     if(p->flags&KONST){
