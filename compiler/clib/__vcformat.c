@@ -38,7 +38,7 @@
 #define BLANKFLAG     8  /* ' ' is set */
 #define SIGNFLAG      16 /* '+' is set */
 
-unsigned char *__decimalpoint = ".";
+const unsigned char *const __decimalpoint = ".";
 
 /*****************************************************************************
 
@@ -88,11 +88,11 @@ unsigned char *__decimalpoint = ".";
   {
     if(*format=='%')
     {
-      static char flagc[]=
+      static const char flagc[]=
       { '#','0','-',' ','+' };
-      static char lowertabel[]=
+      static const char lowertabel[]=
       { '0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f' };
-      static char uppertabel[]=
+      static const char uppertabel[]=
       { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F' };
       size_t width=0,preci=ULONG_MAX,flags=0; /* Specifications */
       char type,subtype='i';
@@ -153,7 +153,7 @@ unsigned char *__decimalpoint = ".";
 	case 'x':
 	case 'X':
 	{ unsigned long v;
-	  char *tabel;
+	  const char *tabel;
 	  int base;
 
 	  if(type=='p')

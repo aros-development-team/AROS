@@ -505,10 +505,10 @@ const int __ctype_tolower_array[384] =
 };
 
 
-const unsigned short int * __ctype_b	   = &__ctype_b_array[128];
+const unsigned short int *const __ctype_b = &__ctype_b_array[128];
 
-const int * __ctype_toupper = &__ctype_toupper_array[128];
-const int * __ctype_tolower = &__ctype_tolower_array[128];
+const int *const __ctype_toupper = &__ctype_toupper_array[128];
+const int *const __ctype_tolower = &__ctype_tolower_array[128];
 
 /*****************************************************************************
 
