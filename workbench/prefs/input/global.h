@@ -204,6 +204,8 @@
 #define TABBORDER_X 	    	8
 #define TABBORDER_Y 	    	8
 #define SPACE_X     	    	4
+#define GROUPSPACE_X	    	8
+#define GROUPSPACE_Y	    	8
 #define SPACE_Y     	    	4
 #define FRAMETITLE_OFFX     	8
 #define FRAMETITLE_TITLESPACE	2
