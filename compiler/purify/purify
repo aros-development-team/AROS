@@ -1,6 +1,6 @@
 #!/bin/bashx
 
-export PURIFYPATH=$HOME/Purify
+export PURIFYPATH=$HOME/AROS/compiler/purify
 
 debug=0
 
