@@ -538,6 +538,7 @@ kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
       break;
   } /* while (1) */
 
+
   return firstcr;
 }
 
@@ -1127,10 +1128,10 @@ int _ShowPartsOfLayer(struct Layer * l,
    * If there is a clipping region then the whole
    * window is currently backed up in l->ClipRect
    * That covers the complete area. I must first
-   * make these visible, move them back to 
+   * make these visible, move them back to
    * l->_cliprects and recreate the clipping cliprects
    * according to the clipregion
-   */ 
+   */
 
 if (show_region == l->VisibleRegion)
   kprintf("ERROR - same regions!! %s\n",__FUNCTION__);
@@ -1140,7 +1141,7 @@ if (show_region == l->VisibleRegion)
   OrRegionRegion(show_region,l->VisibleRegion);
   SetRegion(l->VisibleRegion,&r);
   AndRegionRegion(l->visibleshape,&r);
-  
+
   newcr = _CreateClipRectsFromRegion(&r,l,FALSE,NULL,LayersBase);
   ClearRegion(&r);
 
@@ -1284,6 +1285,8 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
     else
       break;
   }
+
+  ClearRegion(&r);
 
   return TRUE;
 }
