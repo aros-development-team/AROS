@@ -25,19 +25,6 @@
 #define SP_OFFSET 0
 
 /*
-    Replace BPTRs by simple APTRs for this machine. On Amiga with binary
-    compatibility, this would look like this:
-
-    typedef ULONG BPTR;
-    #define MKBADDR(a)      (((BPTR)(a))>>2)
-    #define BADDR(a)        (((APTR)(a))<<2)
-*/
-#define AROS_BPTR_TYPE	    APTR
-#define AROS_BSTR_TYPE	    STRPTR
-#define MKBADDR(a)          ((APTR)(a))
-#define BADDR(a)            (a)
-
-/*
     One entry in a libraries' jumptable. For assembler compatibility, the
     field jmp should contain the code for an absolute jmp to a 32bit
     address. There are also a couple of macros which you should use to

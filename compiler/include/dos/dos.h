@@ -8,6 +8,24 @@
 #   include <aros/machine.h>
 #endif
 
+/*
+    Replace BPTRs by simple APTRs for this machine. On Amiga with binary
+    compatibility, this would look like this:
+
+    typedef ULONG BPTR;
+    #define MKBADDR(a)      (((BPTR)(a))>>2)
+    #define BADDR(a)        (((APTR)(a))<<2)
+*/
+#ifndef AROS_BPTR_TYPE
+#   define AROS_FAST_BPTR
+#   define AROS_BPTR_TYPE   APTR
+#   define MKBADDR(a)       ((APTR)(a))
+#   define BADDR(a)         (a)
+#endif
+#ifndef AROS_BSTR_TYPE
+#   define AROS_BSTR_TYPE   STRPTR
+#endif
+
 #ifndef __typedef_BPTR
 #   define __typedef_BPTR
     typedef AROS_BPTR_TYPE BPTR;
