@@ -170,6 +170,7 @@ static void area_update_data(Object *obj, struct MUI_AreaData *data);
 static void setup_control_char (struct MUI_AreaData *data, Object *obj,
 				struct IClass *cl);
 static void cleanup_control_char (struct MUI_AreaData *data, Object *obj);
+static void area_disabled_change(struct IClass *cl, Object *obj);
 
 //static void setup_cycle_chain (struct MUI_AreaData *data, Object *obj);
 //static void cleanup_cycle_chain (struct MUI_AreaData *data, Object *obj);
@@ -571,6 +572,11 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->mad_ContextMenu = (Object*)tag->ti_Data;
 		break;
 	}
+    }
+
+    if (change_disable)
+    {
+	area_disabled_change(cl, obj);
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -1510,6 +1516,7 @@ static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
+    if (data->mad_DisableCount) return 0;
     if (data->mad_InputMode == MUIV_InputMode_None && !data->mad_ContextMenu) return 0;
 
     if (msg->muikey != MUIKEY_NONE)
@@ -1790,6 +1797,17 @@ static void area_update_data(Object *obj, struct MUI_AreaData *data)
 /*  	  obj, data->mad_Frame, data->mad_addleft, data->mad_addtop, data->mad_subwidth, data->mad_subheight)); */
 }
 
+static void area_disabled_change(struct IClass *cl, Object *obj)
+{
+    struct MUI_AreaData *data = INST_DATA(cl, obj);
+
+    if (data->mad_DisableCount)
+    {
+    }
+    else
+    {
+    }
+}
 
 BOOPSI_DISPATCHER(IPTR, Area_Dispatcher, cl, obj, msg)
 {
