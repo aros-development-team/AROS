@@ -1,6 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+GENINC		:= $(TOOLDIR)/geninc-m68k-linux$(HOST_EXE_SUFFIX)
 OS_INCLUDES	:= -I$(GENINCDIR)
 USER_INCLUDES	:= -I$(TOP)/rom/exec
 INCFILES	:= $(GENINCDIR)/aros/machine.h \
@@ -14,7 +15,7 @@ includes-linux-m68k : $(INCFILES) machine.i
 
 #MM
 clean::
-	$(RM) $(INCFILES) $(TESTS) machine.i geninc
+	$(RM) $(INCFILES) $(TESTS) machine.i $(GENINC)
 
 $(INCDIR)/aros/%.h : %.h
 	%mkdirs_q $(INCDIR)/aros
@@ -28,10 +29,12 @@ $(GENINCDIR)/%.h : %.h
 	%mkdirs_q $(GENINCDIR)
 	$(CP) $< $@
 
-machine.i: geninc.c $(MACHINE_H)
+machine.i: $(GENINC) $(MACHINE_H)
+	$(GENINC) > machine.i
+
+$(GENINC) : geninc.c
 	@echo "CFLAGS=$(CFLAGS)"
 	@echo "Creating geninc..."
-	@$(CC) $(CFLAGS) -o geninc $<
-	./geninc > machine.i
+	@$(CC) $(CFLAGS) -o $@ $<
 
 %common

@@ -3,6 +3,7 @@ TOP=../..
 
 include $(TOP)/config/make.cfg
 
+GENINC		:= $(TOOLDIR)/geninc-m68k-native$(HOST_EXE_SUFFIX)
 OS_INCLUDES	:= -I$(GENINCDIR)
 MACHINE_H       := $(GENINCDIR)/aros/machine.h
 DISTMACHINE_H	:= $(INCDIR)/aros/machine.h
@@ -14,7 +15,7 @@ includes-amiga-m68k : $(MACHINE_H) $(DISTMACHINE_H) machine.i
 
 #MM
 clean::
-	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i geninc
+	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i $(GENINC)
 
 $(MACHINE_H): machine.h
 	%mkdirs_q $(GENINCDIR)
@@ -24,11 +25,13 @@ $(DISTMACHINE_H) : machine.h
 	%mkdirs_q $(INCDIR)
 	$(CP) $< $@
 
-machine.i: geninc.c $(MACHINE_H)
+machine.i: $(GENINC) $(MACHINE_H)
+	$(GENINC) > machine.i
+
+$(GENINC) : geninc.c
 	@echo "CFLAGS=$(CFLAGS)"
 	@echo "Creating geninc..."
-	$(CC) $(CFLAGS) -o geninc $<
-	./geninc > machine.i
+	$(CC) $(CFLAGS) -o $@ $<
 
 $(OSGENDIR)/%.d: %.c
 	%mkdepend_q
