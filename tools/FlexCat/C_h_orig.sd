@@ -81,9 +81,6 @@ static const struct CatCompArrayType CatCompArray[] =
 
 /***************************************************************/
 
-
-#ifdef CATCOMP_CODE
-
 struct LocaleInfo
 {
   APTR li_LocaleBase;
@@ -91,6 +88,7 @@ struct LocaleInfo
 };
 
 
+#ifdef CATCOMP_CODE
 
 STRPTR GetString(struct LocaleInfo *li, LONG stringNum)
 {
