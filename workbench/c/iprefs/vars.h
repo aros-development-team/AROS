@@ -45,3 +45,5 @@ VAR UBYTE   	    	    	serialprefsname[256];
 VAR UBYTE   	    	    	printerprefsname[256];
 VAR UBYTE   	    	    	pointerprefsname[256];
 VAR UBYTE   	    	    	overscanprefsname[256];
+
+VAR BOOL    	    	    	patches_installed;
