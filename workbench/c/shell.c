@@ -98,6 +98,8 @@ struct UtilityBase *UtilityBase;
 
 static const char version[] = "$VER: shell 41.5 (9.1.2000)\n";
 
+#define SET_HOMEDIR 1
+
 #define  P(x)			/* Debug macro */
 #define  P2(x)			/* Debug macro */
 
@@ -135,6 +137,10 @@ struct CommandLine
 
 struct ShellState
 {
+#if SET_HOMEDIR
+    BPTR  oldHomeDir;		/* shared lock on program file's parent directory */
+    BOOL  homeDirChanged;
+#endif
     BOOL  residentCommand;	/* The last command executed was resident */
 };
 
@@ -1213,6 +1219,14 @@ void unloadCommand(BPTR commandSeg, struct ShellState *ss)
     }
     else
 	UnLoadSeg(commandSeg);
+
+#if SET_HOMEDIR
+    if (ss->homeDirChanged)
+    {
+        UnLock(SetProgramDir(ss->oldHomeDir));
+	ss->homeDirChanged = FALSE;
+    }
+#endif
 }
 
 
@@ -1276,48 +1290,92 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
  
     commandSeg = LoadSeg(commandName);
 
-    /* The command was in the current directory */
-    if(commandSeg != NULL)
-	return commandSeg;
-
-    /* If this was an absolute path, we don't check the paths set by
-       'path' or the C: multiassign */
-
-    if(absolutePath)
-	return FALSE;
-
-    oldCurDir = CurrentDir(NULL);
-    
-    paths = (BPTR *)BADDR(cli->cli_CommandDir);
-    
-    while(paths != NULL)
+    if (commandSeg != NULL)
     {
-	P(char test[512]);
-	P(NameFromLock(paths[1], test, sizeof(test)));
-	
-	CurrentDir(paths[1]);
-	
-	P2(kprintf("Checking path %s\n", test));
-	
-	commandSeg = LoadSeg(commandName);
-	
-	if(commandSeg != NULL)
-	    break;
-	
-	paths = (BPTR *)BADDR(paths[0]);    /* Go on with the next path */
-    }
+        /* command loading succeeded */
 
-    /* The last resort -- the C: multiassign */
-    if(commandSeg == NULL)
+#if SET_HOMEDIR
+	BPTR fh, lock;
+	
+	if ((fh = Open(commandName, MODE_OLDFILE)))
+	{
+	    if ((lock = ParentOfFH(fh)))
+	    {
+	        ss->oldHomeDir = SetProgramDir(lock);
+	        ss->homeDirChanged = TRUE;
+	    }
+	    Close(fh);	    
+	}
+#endif	
+    }
+    else
     {
-	/* commandName has "C:" just before it */
-	commandSeg = LoadSeg(commandName - 2);
-    }
 
-    /* Reset our current dir */
-    CurrentDir(oldCurDir);
+	/* If this was an absolute path, we don't check the paths set by
+	   'path' or the C: multiassign */
 
+	if(absolutePath)
+	    return FALSE;
+    
+	oldCurDir = CurrentDir(NULL);
+
+	paths = (BPTR *)BADDR(cli->cli_CommandDir);
+
+	while(paths != NULL)
+	{
+	    P(char test[512]);
+	    P(NameFromLock(paths[1], test, sizeof(test)));
+
+	    CurrentDir(paths[1]);
+
+	    P2(kprintf("Checking path %s\n", test));
+
+	    commandSeg = LoadSeg(commandName);
+
+#if SET_HOMEDIR
+	    if(commandSeg != NULL)
+	    {
+	        BPTR lock = DupLock(paths[1]);
+		
+		if (lock)
+		{
+		    ss->oldHomeDir = SetProgramDir(lock);
+		    ss->homeDirChanged = TRUE;
+		}
+		break;
+	    }
+#endif	    
+	    paths = (BPTR *)BADDR(paths[0]);    /* Go on with the next path */
+	}
+
+	/* The last resort -- the C: multiassign */
+	if(commandSeg == NULL)
+	{
+	    /* commandName has "C:" just before it */
+	    commandSeg = LoadSeg(commandName - 2);
+
+#if SET_HOMEDIR	    
+	    if (commandSeg != NULL)
+	    {
+	        BPTR lock;
+		
+		if ((lock = Lock("C:", SHARED_LOCK)))
+		{
+		    ss->oldHomeDir = SetProgramDir(lock);
+		    ss->homeDirChanged = TRUE;
+		}
+	    }
+#endif
+	}
+
+	/* Reset our current dir */
+	CurrentDir(oldCurDir);
+
+    } /* if(commandSeg != NULL) else ... */
+    
     return commandSeg;
+    
+
 }
 
 
