@@ -29,7 +29,7 @@
 #include "displayclass.h"
 #include "bitmap.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define ONLY640
