@@ -207,8 +207,8 @@ END {
     print "#define BASENAME         "basename
     print "#define BASENAME_STRING  \""basename"\""
     print "#define VERSION_STRING   \"$VER: "libname" "version"."revision" ("date")\\r\\n\""
-    print "#define LIBEND           "basename"_end"
-    print "#define LIBFUNCTABLE     "basename"_functable"
+    print "#define LIBEND           "libname"_end"
+    print "#define LIBFUNCTABLE     "libname"_functable"
     print "#define COPYRIGHT_STRING \""copyright"\""
     print "#endif /* "define" */"
 }
