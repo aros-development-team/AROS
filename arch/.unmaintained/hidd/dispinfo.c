@@ -74,8 +74,13 @@ struct displayinfo_db {
 static ULONG compute_major_modeid(Object *gfxmode, struct displayinfo_db *db, struct GfxBase *GfxBase)
 {
     ULONG id;
+#if 1
+    /* stegerg */
+    id = db->current_major_num;
+#else
     id = NUM2MAJORID(db->current_major_num);
-    
+#endif
+
     db->current_major_num ++;
     return id;
     
@@ -135,6 +140,7 @@ APTR build_dispinfo_db(struct List *gfxmodes, struct GfxBase *GfxBase)
 	    ForeachNode(gfxmodes, mnode) {
 	    
 	    	db->dispitems[modeidx].gfxmode = mnode->gfxMode;
+		
 		db->dispitems[modeidx].modeid  = GENERATE_MODEID(compute_major_modeid(mnode->gfxMode, db, GfxBase), 0);
 		
 		modeidx ++;
@@ -572,11 +578,12 @@ ULONG driver_BestModeIDA(struct TagItem *tags, struct GfxBase *GfxBase)
 	, desired_width		= 640
 	, desired_height	= 200;
     UBYTE depth = 1;
-    ULONG monitorid, sourceid;
+    ULONG monitorid = INVALID_ID, sourceid = INVALID_ID;
     UBYTE redbits	= 4
     	, greenbits	= 4
 	, bluebits	= 4;
-	
+    ULONG dipf_musthave = 0
+    	, dipf_mustnothave = 0;
     struct displayinfo_db *db;
     ULONG i;
     
@@ -587,8 +594,19 @@ ULONG driver_BestModeIDA(struct TagItem *tags, struct GfxBase *GfxBase)
     UBYTE maxrb = 0, maxgb = 0, maxbb = 0;
 */    
     /* First try to get viewport */
-    vp		= (struct ViewPort *)GetTagData(BIDTAG_ViewPort, (IPTR)NULL, tags);
-    sourceid	= GetTagData(BIDTAG_SourceID, INVALID_ID, tags);
+    vp			= (struct ViewPort *)GetTagData(BIDTAG_ViewPort, (IPTR)NULL	, tags);
+    monitorid		= GetTagData(BIDTAG_MonitorID		, monitorid		, tags);
+    sourceid		= GetTagData(BIDTAG_SourceID		, sourceid		, tags);
+    depth		= GetTagData(BIDTAG_Depth		, depth			, tags);
+    nominal_width	= GetTagData(BIDTAG_NominalWidth	, nominal_width		, tags);
+    nominal_height	= GetTagData(BIDTAG_NominalHeight	, nominal_height	, tags);
+    desired_width	= GetTagData(BIDTAG_DesiredWidth	, desired_width		, tags);
+    desired_height	= GetTagData(BIDTAG_DesiredHeight	, desired_height	, tags);
+    redbits		= GetTagData(BIDTAG_RedBits		, redbits		, tags);
+    greenbits		= GetTagData(BIDTAG_GreenBits		, greenbits		, tags);
+    bluebits		= GetTagData(BIDTAG_BlueBits		, bluebits		, tags);
+    dipf_musthave	= GetTagData(BIDTAG_DIPFMustHave	, dipf_musthave		, tags);
+    dipf_mustnothave	= GetTagData(BIDTAG_DIPFMustNotHave	, dipf_mustnothave	, tags);
     
     if (NULL != vp) {
     	/* Set some new default values */
