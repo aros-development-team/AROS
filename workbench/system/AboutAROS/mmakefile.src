@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 FILES 	    := main aboutaros locale
 EXEDIR      := $(AROS_SYSTEM)
-EXE 	    := $(EXEDIR)/AboutAROS
+EXE 	    := $(EXEDIR)/About
 
 USE_AROSLIB     := yes
 USE_CLIB_SHARED := yes
