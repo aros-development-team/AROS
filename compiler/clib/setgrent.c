@@ -3,11 +3,14 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #include <grp.h>
 
 void setgrent()
 {
-    #warning Implement setgrent()
-    
+#   warning Implement setgrent()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+
     return;
 }

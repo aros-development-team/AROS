@@ -5,11 +5,11 @@
     POSIX function execvp().
 */
 
+#include <aros/debug.h>
+
 #include <fcntl.h>
 #include <unistd.h>
-
 #include <errno.h>
-
 
 /*****************************************************************************
 
@@ -40,7 +40,8 @@
 
 ******************************************************************************/
 {
-#   warning TODO: implement execvp()
+#   warning Implement execvp()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     return -1;
 } /* execvp() */

@@ -5,6 +5,8 @@
     POSIX function kill().
 */
 
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -34,7 +36,8 @@
 
 ******************************************************************************/
 {
-#   warning TODO: Implement kill()
+#   warning Implement kill()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     return -1;
 } /* kill() */

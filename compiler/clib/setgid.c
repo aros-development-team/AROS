@@ -5,6 +5,8 @@
     POSIX function setgid().
 */
 
+#include <aros/debug.h>
+
 #include <sys/types.h>
 
 /*****************************************************************************
@@ -35,6 +37,8 @@
 
 ******************************************************************************/
 {
-#warning Implement setgid() properly
+#   warning Implement setgid()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+
     return 0;
 } /* setgid() */
