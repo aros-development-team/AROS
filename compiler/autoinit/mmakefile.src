@@ -10,12 +10,14 @@ LIB	:= autoinit
 
 FILES	:= \
 	libraries_nolibs \
+	aros \
 	asl \
 	arosc \
 	commandline \
 	cybergraphics \
 	diskfont \
 	dos \
+	expansion \
 	functions \
 	graphics \
 	iffparse \
