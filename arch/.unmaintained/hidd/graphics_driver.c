@@ -784,11 +784,18 @@ void driver_Draw (struct RastPort * rp, LONG x, LONG y,
   LONG dx = 1, dy = 1;
   LONG _x, _y;
   LONG steps, counter;
-  
+  UWORD LinePtrn;
+  BYTE shift = (rp->linpatcnt & 0x0f);
+
   EnterFunc(bug("driver_Draw(rp=%p, x=%d, y=%d)\n", rp, x, y));
 
     if (!CorrectDriverData (rp, GfxBase))
     	return;
+
+  /* Initilize the LinePattern to its initial value. */
+  /* I wished there was a rotation command in C */  
+  LinePtrn = (rp->LinePtrn >>       shift) |
+             (rp->LinePtrn << (16 - shift));
 
   if (rp->cp_x != x)
     if (rp->cp_x > x)
@@ -825,13 +832,29 @@ void driver_Draw (struct RastPort * rp, LONG x, LONG y,
     steps = dx;
   else
     steps = dy;
-    
+  
+  /* now I can aleady set the linpatcnt from the amount of steps I will
+     have to go through. The highest value for the linpatcnt that
+     I want is 15 as more doens't make sense to shift the pattern with
+     16 bits anyway. */
+  rp->linpatcnt = (BYTE)(shift + (steps + 1)) & 0x0f; 
+  
   counter = 0;  
   while (counter <= steps)
   {
     counter++;
-    WritePixel(rp, x, y);
-
+    /* see whether the linepattern permits to set this pixel... 
+       it depends whether the lowest bit in thge pattern is set. */
+    if (0 != (LinePtrn & 0x01))
+    {
+      WritePixel(rp, x, y);
+      /* a fast way to rotate the linepattern by one bit ... 
+         I know that the highest bit has to be '1' now. */
+      LinePtrn = (LinePtrn >> 1) | 0x8000;
+    }
+    else
+      LinePtrn = LinePtrn >> 1;
+ 
     if (dx > dy)
     {
       x += x_step;
