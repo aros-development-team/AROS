@@ -2,7 +2,7 @@
 TOP=../..
 
 # Use OS's own includes over the ones from AROS
-ifeq ("$(SHARED_EXEC"),"yes")
+ifeq ("$(SHARED_EXEC)","yes")
 SPECIAL_CFLAGS=$(SHARED_CFLAGS) -I/usr/include
 else
 SPECIAL_CFLAGS=-I/usr/include
