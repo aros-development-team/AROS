@@ -246,6 +246,10 @@ static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	     	*msg->storage = (IPTR)TRUE;
 		found = TRUE;
 		break;
+	     case aoHidd_Gfx_IsWindowed:
+	        *msg->storage = (IPTR)TRUE;
+	        found = TRUE;
+	        break;
 	}
     }
     
