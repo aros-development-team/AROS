@@ -102,25 +102,25 @@ struct ReadLevel
 	    break;
 
 	case SDT_UWORD:      /* Read one 16bit word */
-	    if (!ReadWord (fh, (UWORD *)curr->s + IDESC))
+	    if (!ReadWord (fh, (UWORD *)(curr->s + IDESC)))
 		goto error;
 
 	    break;
 
 	case SDT_ULONG:      /* Read one 32bit long */
-	    if (!ReadLong (fh, (ULONG *)curr->s + IDESC))
+	    if (!ReadLong (fh, (ULONG *)(curr->s + IDESC)))
 		goto error;
 
 	    break;
 
 	case SDT_FLOAT:      /* Read one 32bit IEEE */
-	    if (!ReadFloat (fh, (FLOAT *)curr->s + IDESC))
+	    if (!ReadFloat (fh, (FLOAT *)(curr->s + IDESC)))
 		goto error;
 
 	    break;
 
 	case SDT_DOUBLE:     /* Read one 64bit IEEE */
-	    if (!ReadDouble (fh, (DOUBLE *)curr->s + IDESC))
+	    if (!ReadDouble (fh, (DOUBLE *)(curr->s + IDESC)))
 		goto error;
 
 	    break;
@@ -133,12 +133,12 @@ struct ReadLevel
 
 	    if (valid_ptr)
 	    {
-		if (!ReadString (fh, (STRPTR *)curr->s + IDESC))
+		if (!ReadString (fh, (STRPTR *)(curr->s + IDESC)))
 		    goto error;
 	    }
 	    else
 	    {
-		*((APTR *)curr->s + IDESC) = NULL;
+		*((APTR *)(curr->s + IDESC)) = NULL;
 	    }
 
 	    break; }
@@ -163,7 +163,7 @@ struct ReadLevel
 	    }
 	    else
 	    {
-		*((APTR *)curr->s + IDESC) = NULL;
+		*((APTR *)(curr->s + IDESC)) = NULL;
 	    }
 
 	    break; }
