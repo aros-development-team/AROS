@@ -274,7 +274,10 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
 		case ANBC: /* (ANBC) if invert source and blit thru mask */
 		    D(bug("BltMaskBitMapRastPort does not support ANBC minterm yet"));
 		    break;
-		    
+
+		default:
+		    D(bug("BltMaskBitMapRastPort: minterm 0x%x not handled.\n", brd->minterm));
+		    break;
 	    } /* switch(brd->minterm) */
 	    
 	    HIDD_BM_PutImage(dstbm_obj,
