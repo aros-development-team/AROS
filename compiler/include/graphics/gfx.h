@@ -40,6 +40,8 @@ struct BitMap
     PLANEPTR Planes[8];
 };
 
+#define RASSIZE(w,h)   ( (h) * ( ((w)+15) >>3 & 0xFFFE ))
+
 struct Rectangle
 {
     WORD MinX;
