@@ -5,6 +5,9 @@ SPECIAL_CFLAGS = -I/usr/include
 
 include $(TOP)/config/make.cfg
 
+OBJDIR=$(OSGENDIR)/intuition
+LIB=$(LIBDIR)/libintuition.so
+
 FILES = intuition_init intuition_functable gadgets \
 	boolgadgets propgadgets boopsigadgets \
 	imageclass frameiclass icclass buttongclass gadgetclass
@@ -73,16 +76,21 @@ FUNCTIONS = \
 	windowtoback \
 	windowtofront
 
-all: setup \
-	$(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).o)
+OBJS=$(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+
+all: setup $(LIB)
+
+$(LIB) : $(OBJS)
+	@echo "Recreating $@..."
+	@$(SHARED_AR) $@ $(OBJS)
 
 setup :
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 
 clean:
-	$(RM) $(OSGENDIR) *.err
+	$(RM) $(OBJDIR) *.err
 
-$(OSGENDIR)/%.o: %.c
+$(OBJDIR)/%.o: %.c
 	$(CC) $(SHARED_CFLAGS)  $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
@@ -92,10 +100,10 @@ intuition_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    --assign lib=Intuition \
 	    $^
 
-$(OSGENDIR)/%.d: %.c
+$(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 ifneq ($(TARGET),clean)
-include $(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).d)
+include $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
 endif

@@ -7,6 +7,8 @@ SPECIAL_CFLAGS=-I/usr/include
 include $(TOP)/config/make.cfg
 
 ifeq ($(FLAVOUR),native)
+OBJDIR=$(OSGENDIR)
+
 FILES = execstrap_init
 
 FUNCTIONS = \
@@ -18,10 +20,10 @@ FUNCTIONS = \
 	remport waitport findport createmsgport deletemsgport putmsg getmsg \
 	replymsg doio sendio checkio waitio abortio createiorequest	    \
 	deleteiorequest addresource remresource openresource addlibrary     \
-	remlibrary oldopenlibrary closelibrary setfunction sumlibrary       \
-	openlibrary taggedopenlibrary adddevice remdevice opendevice        \
-	closedevice findtask rawdofmt allocvec freevec initsemaphore        \
-	attemptsemaphore findsemaphore addsemaphore remsemaphore            \
+	remlibrary oldopenlibrary closelibrary setfunction sumlibrary	    \
+	openlibrary taggedopenlibrary adddevice remdevice opendevice	    \
+	closedevice findtask rawdofmt allocvec freevec initsemaphore	    \
+	attemptsemaphore findsemaphore addsemaphore remsemaphore	    \
 	obtainsemaphoreshared attemptsemaphoreshared createpool deletepool  \
 	allocpooled freepooled
 
@@ -30,6 +32,9 @@ FUNCTIONS = \
 ASMFUNCTIONS = forbid disable getcc cacheclearu cachepredma cachepostdma
 
 else
+OBJDIR=$(OSGENDIR)/exec
+LIB=$(LIBDIR)/libexec.so
+
 FILES = init execfunctions
 
 FUNCTIONS = \
@@ -80,14 +85,14 @@ LIBS = -L$(LIBDIR) -laros -larosc
 
 all: setup $(OSMODDIR)/exec.strap
 
-$(OSMODDIR)/exec.strap: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-			$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
-			$(foreach f,$(ASMFUNCTIONS),$(OSGENDIR)/$(f).o) \
+$(OSMODDIR)/exec.strap: $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
+			$(foreach f,$(FUNCTIONS),$(OBJDIR)/$(f).o) \
+			$(foreach f,$(ASMFUNCTIONS),$(OBJDIR)/$(f).o) \
 			$(LIBDIR)/libaros.a $(LIBDIR)/libarosc.a
 	$(CC) $(ILDFLAGS)  -Xlinker -M \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(ASMFUNCTIONS),$(OSGENDIR)/$(f).o) \
+	$(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
+	$(foreach f,$(FUNCTIONS),$(OBJDIR)/$(f).o) \
+	$(foreach f,$(ASMFUNCTIONS),$(OBJDIR)/$(f).o) \
 	$(LIBS) -o $@ 2>&1|tee execstrap.err
 	@if test ! -s execstrap.err; then rm execstrap.err ; else true ; fi
 	@strip $@
@@ -99,27 +104,31 @@ asm: all $(foreach f,$(FUNCTIONS),$(f).s)
 %.s: %.c
 	$(CC) -S $(CFLAGS) $< -c -o $@
 else
-all: setup \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
 
+OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+
+all: setup $(LIB)
 endif
 
 setup :
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@if [ ! -d $(OSMODDIR) ]; then $(MKDIR) $(OSMODDIR) ; else true ; fi
 
 clean:
-	$(RM) $(OSGENDIR) *.err $(LIBDIR)/libexec.a
+	$(RM) $(OBJDIR) *.err $(LIBDIR)/libexec.a
 
-$(OSGENDIR)/%.o: %.c
+$(LIB): $(OBJS)
+	@echo "Recreating $@..."
+	@$(SHARED_AR) $@ $(OBJS)
+
+$(OBJDIR)/%.o: %.c
 	$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
-$(OSGENDIR)/%.d: %.c
+$(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 ifneq ($(TARGET),clean)
-include $(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).d)
+include $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
 endif

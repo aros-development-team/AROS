@@ -40,7 +40,9 @@ DEP_LIBS= $(LIBAMIGAOS) \
     $(LIBDIR)/libaros.a
 
 LIBS=-L$(LIBDIR) \
-	$(GENDIR)/filesys/emul_handler.o -lAmigaOS -lamiga -laros
+	$(GENDIR)/filesys/emul_handler.o -lAmigaOS \
+	-lintuition -lgraphics -ldos -lexec -lutility \
+	-lamiga -laros
 
 # BEGIN_DESC{localmakevar}
 # \item{SUBDIRS} Contains the names of directories in which Make will recurse
@@ -215,13 +217,21 @@ AmigaOS :
 #	has been recompiled.
 #
 # END_DESC{internaltarget}
-$(LIBAMIGAOS) : $(wildcard $(OSGENDIR)/*.o) $(LIBDIR)/libamiga.a
+LIBOBJS=$(wildcard $(OSGENDIR)/*.o)
+ifneq ("$(SHARED_AR)","")
+LIBLIBS=$(LIBDIR)/libexec.so $(LIBDIR)/libdos.so $(LIBDIR)/libutility.so \
+	$(LIBDIR)/libgraphics.so \
+	$(LIBDIR)/libintuition.so
+LIBPATH=$(shell cd $(LIBDIR) ; pwd)
+endif
+$(LIBAMIGAOS) : $(LIBOBJS) $(LIBLIBS) $(LIBDIR)/libamiga.a
 	@echo "Recreating library"
 ifeq ("$(SHARED_AR)","")
 	@$(AR) $@ $?
-	$(RANLIB) $@
+	@$(RANLIB) $@
 else
-	@$(SHARED_AR) $@ $^ -L$(LIBDIR) -lamiga
+	@$(SHARED_AR) $@ $(LIBOBJS) -L$(LIBDIR) \
+		-lintuition -lgraphics -ldos -lutility -lexec -lamiga
 endif
 
 GENPROTOS=$(TOP)/scripts/genprotos

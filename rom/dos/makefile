@@ -12,6 +12,9 @@ LIBS = -L$(LIBDIR) -lamiga -laros -larosc
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a $(LIBDIR)/startup.o \
 	$(LIBDIR)/libarosc.a
 
+OBJDIR=$(OSGENDIR)/dos
+LIB=$(LIBDIR)/libdos.so
+
 FILES = dos_init dos_functable lddemon errorlist loadseg_elf doname \
 	loadseg_aout
 
@@ -21,16 +24,16 @@ FUNCTIONS = \
 	assignlock assignpath attemptlockdoslist changemode checksignal cli  \
 	cliinitnewcli cliinitrun close comparedates createdir createnewproc  \
 	createproc currentdir datestamp datetostr	\
-	delay deletefile deletevar deviceproc doname dopkt     \
-	duplock endnotify errorlist errorreport       \
+	delay deletefile deletevar deviceproc dopkt	\
+	duplock endnotify errorreport	    \
 	exall exallend examine execute exit exnext fault fgetc	   \
 	fgets filepart findarg findcliproc finddosentry findsegment findvar  \
 	flush format fputc fputs fread freeargs freedeviceproc	     \
 	freedosentry freedosobject fwrite getargstr getconsoletask   \
 	getcurrentdirname getdeviceproc getfilesystask getprogramdir	     \
 	getprogramname getprompt getvar info inhibit input internalloadseg   \
-	internalunloadseg ioerr isfilesystem isinteractive lddemon loadseg   \
-	loadseg_elf lock lockdoslist lockrecord lockrecords makedosentry     \
+	internalunloadseg ioerr isfilesystem isinteractive loadseg   \
+	lock lockdoslist lockrecord lockrecords makedosentry	 \
 	makelink matchend matchfirst matchnext matchpattern		     \
 	matchpatternnocase maxcli namefromlock newloadseg	  \
 	nextdosentry open openfromlock output parentdir    \
@@ -46,19 +49,24 @@ FUNCTIONS = \
 	vfwritef vprintf waitforchar waitpkt write writechars \
 	dosgetstring
 
-all: setup \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
+OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+
+all: setup $(LIB)
 
 setup :
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
+	@if [ ! -d $(LIBDIR) ]; then $(MKDIR) $(LIBDIR) ; else true ; fi
 
 clean:
-	$(RM) $(OSGENDIR) *.err $(LIBDIR)/libdos.a
+	$(RM) $(OBJDIR) *.err $(LIB)
 
 TESTS = datetostr strtodate splitname
 
 test: setup-test $(foreach f,$(TESTS),$(EXEDIR)/$(f))
+
+$(LIB) : $(OBJS)
+	@echo "Recreating $@..."
+	@$(SHARED_AR) $@ $(OBJS)
 
 $(EXEDIR)/%: %.c $(DEPLIBS)
 	$(CC) $(ILDFLAGS) -DTEST $(COMMON_CFLAGS) $(LIBDIR)/startup.o \
@@ -68,7 +76,7 @@ setup-test :
 	@if [ ! -d $(TESTOBJDIR) ]; then $(MKDIR) $(TESTOBJDIR) ; else true ; fi
 	@if [ ! -d $(EXEDIR) ]; then $(MKDIR) $(EXEDIR) ; else true ; fi
 
-$(OSGENDIR)/%.o: %.c
+$(OBJDIR)/%.o: %.c
 	$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
@@ -78,10 +86,10 @@ dos_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    --assign lib=Dos \
 	    $^
 
-$(OSGENDIR)/%.d: %.c
+$(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 ifneq ($(TARGET),clean)
-include $(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).d)
+include $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
 endif

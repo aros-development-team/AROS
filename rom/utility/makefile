@@ -61,18 +61,19 @@ FUNCTIONS := $(filter-out $(ASM_FILES_EXIST),$(FUNCTIONS))
 
 ifeq ($(FLAVOUR),native)
 LIBS = -L$(LIBDIR) -larosc
+OBJDIR=$(OSGENDIR)
 
 all: setup $(OSMODDIR)/utility.library
 
 asm: all $(foreach f,$(FUNCTIONS),$(f).s)
 
-$(OSMODDIR)/utility.library: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-			     $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
-			     $(foreach f,$(ASM_FILES_EXIST),$(OSGENDIR)/$(f).o)
+$(OSMODDIR)/utility.library: $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
+			     $(foreach f,$(FUNCTIONS),$(OBJDIR)/$(f).o) \
+			     $(foreach f,$(ASM_FILES_EXIST),$(OBJDIR)/$(f).o)
 	$(CC) $(ILDFLAGS) -Xlinker -M \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(ASM_FILES_EXIST),$(OSGENDIR)/$(f).o) \
+	$(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
+	$(foreach f,$(FUNCTIONS),$(OBJDIR)/$(f).o) \
+	$(foreach f,$(ASM_FILES_EXIST),$(OBJDIR)/$(f).o) \
 	$(LIBS) -o $@ 2>&1|tee utilitylib.err
 	@if test ! -s utilitylib.err; then rm utilitylib.err ; else true ; fi
 	@strip $@
@@ -80,17 +81,25 @@ $(OSMODDIR)/utility.library: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 %.s: %.c
 	$(CC) -S $(CFLAGS) $< -c -o $@
 else
-all: setup \
-	$(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).o)
+OBJDIR=$(OSGENDIR)/utility
+LIB=$(LIBDIR)/libutility.so
+
+OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+
+all: setup $(LIB)
+
+$(LIB) : $(OBJS)
+	@echo "Recreating $@..."
+	@$(SHARED_AR) $@ $(OBJS)
 endif
 
 setup :
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 
 clean:
-	-$(RM) $(OSGENDIR) *.err $(LIBDIR)/libutility.a
+	-$(RM) $(OBJDIR) *.err $(LIB)
 
-$(OSGENDIR)/%.o: %.c
+$(OBJDIR)/%.o: %.c
 	$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
@@ -105,10 +114,10 @@ $(OBJDIR)/utility_init.o: libdefs.h
 libdefs.h: lib.conf $(TOP)/scripts/genlibdefs.gawk
 	gawk -f $(TOP)/scripts/genlibdefs.gawk lib.conf > libdefs.h
 
-$(OSGENDIR)/%.d: %.c
+$(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 ifneq ($(TARGET),clean)
-include $(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).d)
+include $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
 endif
