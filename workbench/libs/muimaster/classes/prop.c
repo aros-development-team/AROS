@@ -81,8 +81,6 @@ IPTR Prop__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (data->first < 0)
 	data->first = 0;
-    if (data->visible > data->entries)
-	data->visible = data->entries;
 
     data->ehn.ehn_Events   = IDCMP_IDCMPUPDATE;
     data->ehn.ehn_Priority = 0;
@@ -143,8 +141,6 @@ IPTR Prop__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (data->first < 0)
 	data->first = 0;
-    if (data->visible > data->entries)
-	data->visible = data->entries;
 
     if (data->prop_object && refresh && !only_trigger)
     {
