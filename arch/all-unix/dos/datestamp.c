@@ -8,6 +8,7 @@
 #include <aros/system.h>
 #include <exec/types.h>
 #include <aros/libcall.h>
+#include <aros/host-conf.h>
 
 #define timeval sys_timeval
 #include <sys/time.h>

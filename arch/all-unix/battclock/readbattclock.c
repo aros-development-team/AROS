@@ -7,9 +7,11 @@
 */
 
 #include "battclock_intern.h"
-
 #include <proto/battclock.h>
+#include <aros/host-conf.h>
+
 #include <time.h>
+
 
 AROS_LH0(ULONG, ReadBattClock, APTR, BattClockBase, 2, Battclock)
 {
@@ -35,10 +37,10 @@ AROS_LH0(ULONG, ReadBattClock, APTR, BattClockBase, 2, Battclock)
 	Still, I'll be dead, and by then they won't be using 32-bit clocks
 	I expect...
     */
-#ifdef __FreeBSD__
+#ifdef HAVE_STRUCT_TM_TM_GMTOFF
     return (t - 252460800 + tm->tm_gmtoff);
 #else
-    return (t - 252460800 + tm->tm_gmtoff);
+    return (t - 252460800);
 #endif
     AROS_LIBFUNC_EXIT
 } /* ReadBattClock */

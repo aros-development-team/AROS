@@ -13,7 +13,9 @@
 
 #include <proto/exec.h>
 
-#if defined(__linux__) && defined(__mc68000__)
+#include <aros/host-conf.h>
+
+#ifdef HAS_MMAP_H
 #include <sys/mmap.h>
 #endif
 
