@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 # END_DESC{makefile}
 
 # Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
-USER_INCLUDES := -I. -I$(TOP)/rom/boopsi
+USER_INCLUDES := -I. -I$(TOP)/rom/boopsi -I$(TOP)/rom/dos
 
 # BEGIN_DESC{localmakevar}
 # \item{LIBNAME} The lowercase name of the library (without the extension).
@@ -37,7 +37,8 @@ ULIBNAME := Intuition
 OSMODULE  := intuition.library
 FILES	  := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
 	     gadgetclass gadgets imageclass inputhandler propgadgets propgclass \
-	     requesters strgadgets strgclass sysiclass windowclasses
+	     requesters strgadgets strgclass sysiclass windowclasses \
+	     displayerror
 
 FUNCTIONS := \
 	activategadget \
