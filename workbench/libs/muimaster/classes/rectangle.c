@@ -59,7 +59,7 @@ IPTR Rectangle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	TAG_MORE, (IPTR) msg->ops_AttrList);
 
     if (!obj)
-	return NULL;
+	return 0;
 
     /* Initial local instance data */
     data = INST_DATA(cl, obj);
@@ -358,7 +358,7 @@ D(bug("Draw Rectangle(0x%lx) %ldx%ldx%ldx%ld mw=%ld mh=%ld\n",obj,_left(obj),_to
 	    draw_line(_rp(obj), x, _mtop(obj), x, _mbottom(obj));
 
 	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
-	    draw_line(_rp(obj), x, _mtop(obj), x, _mbottom(obj));
+	    draw_line(_rp(obj), x+1, _mtop(obj), x+1, _mbottom(obj));
 	}
 	else
 	{
