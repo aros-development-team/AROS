@@ -190,7 +190,7 @@ struct IntSMReq
     LONG		ism_InfoTopEdge;
     BOOL		ism_InfoOpened;
     
-     STRPTR		ism_Overscan1Text;
+    STRPTR		ism_Overscan1Text;
     STRPTR		ism_Overscan2Text;
     STRPTR		ism_Overscan3Text;
     STRPTR		ism_Overscan4Text;

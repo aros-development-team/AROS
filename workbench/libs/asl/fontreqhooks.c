@@ -31,6 +31,9 @@
 #include "layout.h"
 #include "coolimages.h"
 
+#define CATCOMP_NUMBERS
+#include "asl_strings.h"
+
 #define SDEBUG 0
 #define DEBUG 0
 
@@ -327,7 +330,8 @@ AROS_UFH3(ULONG, FOGadgetryHook,
 struct ButtonInfo
 {
     WORD 			gadid;  
-    char 			*text;
+    STRPTR  	    	    	text;
+    LONG    	    	    	deftextid;
     const struct CoolImage 	*coolimage;
     Object 			**objvar;
 };
@@ -341,8 +345,8 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     STRPTR 		str[6];
     struct ButtonInfo 	bi[NUMBUTS] =
     {
-        { ID_BUTOK	, GetIR(iforeq)->ir_PositiveText , &cool_useimage    , &udata->OKBut	  },
-	{ ID_BUTCANCEL  , GetIR(iforeq)->ir_NegativeText , &cool_cancelimage , &udata->CancelBut  }
+        { ID_BUTOK	, GetIR(iforeq)->ir_PositiveText , MSG_FONTREQ_POSITIVE_GAD, &cool_useimage    , &udata->OKBut	  },
+	{ ID_BUTCANCEL  , GetIR(iforeq)->ir_NegativeText , MSG_FONTREQ_NEGATIVE_GAD, &cool_cancelimage , &udata->CancelBut  }
     };
     Object 		*gad;
     LONG		error;
@@ -364,10 +368,12 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     error = ERROR_NO_FREE_STORE;
     
     /* calc. min. size */
-    
+
     w = 0;
     for(i = 0; i < NUMBUTS; i++)
     {
+    	if(!bi[i].text) bi[i].text = GetString(bi[i].deftextid, GetIR(iforeq)->ir_Catalog, AslBase);
+
         x = TextLength(&ld->ld_DummyRP, bi[i].text, strlen(bi[i].text));
 
 #if FOREQ_COOL_BUTTONS
@@ -669,25 +675,27 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     {
         struct NewMenu nm[] =
 	{
-	    {NM_TITLE, iforeq->ifo_Menu_Control													},
-	     {NM_ITEM, iforeq->ifo_Item_Control_LastFont + 2	, iforeq->ifo_Item_Control_LastFont	, 0, 0, (APTR)FOMEN_LASTFONT		},
-	     {NM_ITEM, iforeq->ifo_Item_Control_NextFont + 2	, iforeq->ifo_Item_Control_NextFont	, 0, 0, (APTR)FOMEN_NEXTFONT 		},
-	     {NM_ITEM, NM_BARLABEL														},
-	     {NM_ITEM, iforeq->ifo_Item_Control_Restore + 2 	, iforeq->ifo_Item_Control_Restore	, 0, 0, (APTR)FOMEN_RESTORE 		},
-	     {NM_ITEM, iforeq->ifo_Item_Control_Rescan + 2	, iforeq->ifo_Item_Control_Rescan	, 0, 0, (APTR)FOMEN_RESCAN		},
-	     {NM_ITEM, NM_BARLABEL														},
-	     {NM_ITEM, iforeq->ifo_Item_Control_OK + 2		, iforeq->ifo_Item_Control_OK		, 0, 0, (APTR)FOMEN_OK			},
-	     {NM_ITEM, iforeq->ifo_Item_Control_Cancel + 2	, iforeq->ifo_Item_Control_Cancel	, 0, 0, (APTR)FOMEN_CANCEL		},
+	    {NM_TITLE, (STRPTR)MSG_FONTREQ_MEN_CONTROL							},
+	     {NM_ITEM, (STRPTR)MSG_FONTREQ_MEN_CONTROL_LASTFONT , 0, 0, 0, (APTR)FOMEN_LASTFONT		},
+	     {NM_ITEM, (STRPTR)MSG_FONTREQ_MEN_CONTROL_NEXTFONT , 0, 0, 0, (APTR)FOMEN_NEXTFONT 	},
+	     {NM_ITEM, NM_BARLABEL									},
+	     {NM_ITEM, (STRPTR)MSG_FONTREQ_MEN_CONTROL_RESTORE	, 0, 0, 0, (APTR)FOMEN_RESTORE 		},
+	     {NM_ITEM, (STRPTR)MSG_FONTREQ_MEN_CONTROL_RESCAN	, 0, 0, 0, (APTR)FOMEN_RESCAN		},
+	     {NM_ITEM, NM_BARLABEL									},
+	     {NM_ITEM, (STRPTR)MSG_FONTREQ_MEN_CONTROL_OK   	, 0, 0, 0, (APTR)FOMEN_OK		},
+	     {NM_ITEM, (STRPTR)MSG_FONTREQ_MEN_CONTROL_CANCEL	, 0, 0, 0, (APTR)FOMEN_CANCEL		},
 	    {NM_END																}
 	};
 
 	struct TagItem menu_tags[] =
 	{
-	    {GTMN_NewLookMenus  , TRUE  	    	    	},
-	    {GTMN_TextAttr	, GetIR(iforeq)->ir_TextAttr 	},
-	    {TAG_DONE   	    	    	    	    	}
+	    {GTMN_NewLookMenus  , TRUE  	    	    	    },
+	    {GTMN_TextAttr	, (IPTR)GetIR(iforeq)->ir_TextAttr  },
+	    {TAG_DONE   	    	    	    	    	    }
 	};
 	
+	LocalizeMenus(nm, GetIR(iforeq)->ir_Catalog, AslBase);
+
 	/* Don't fail, if menus cannot be created/layouted, because a requester
 	   without menus is still better than no requester at all */
 	   

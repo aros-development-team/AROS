@@ -788,35 +788,35 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     {
         struct NewMenu nm[] =
 	{
-	    {NM_TITLE, (STRPTR)MSG_FILEREQ_MEN_CONTROL																		}, /*  0 */ 
+	    {NM_TITLE, (STRPTR)MSG_FILEREQ_MEN_CONTROL											}, /*  0 */ 
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_LASTNAME		, 0 , 0		, 0		, (APTR)FRMEN_LASTNAME		}, /*  1 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_NEXTNAME		, 0, 0		, 0		, (APTR)FRMEN_NEXTNAME		}, /*  2 */
-	     {NM_ITEM, NM_BARLABEL																			}, /*  3 */
+	     {NM_ITEM, NM_BARLABEL													}, /*  3 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_RESTORE		, 0, 0		, 0		, (APTR)FRMEN_RESTORE		}, /*  4 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_PARENT		, 0, 0		, 0		, (APTR)FRMEN_PARENT		}, /*  5 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_VOLUMES		, 0, 0		, 0		, (APTR)FRMEN_VOLUMES		}, /*  6 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_UPDATE	    	, 0, 0		, 0		, (APTR)FRMEN_UPDATE		}, /*  7 */
-	     {NM_ITEM, NM_BARLABEL																			}, /*  8 */
+	     {NM_ITEM, NM_BARLABEL													}, /*  8 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_DELETE		, 0, 0		, 0		, (APTR)FRMEN_DELETE		}, /*  9 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER	, 0, 0		, 0		, (APTR)FRMEN_NEWDRAWER		}, /* 10 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_RENAME		, 0, 0		, 0		, (APTR)FRMEN_RENAME		}, /* 11 */
-	     {NM_ITEM, NM_BARLABEL																			}, /* 12 */
+	     {NM_ITEM, NM_BARLABEL													}, /* 12 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_SELECT		, 0, 0		, 0		, (APTR)FRMEN_SELECT		}, /* 13 */
-	     {NM_ITEM, NM_BARLABEL																			}, /* 14 */
+	     {NM_ITEM, NM_BARLABEL													}, /* 14 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_OK		, 0, 0		, 0		, (APTR)FRMEN_OK		}, /* 15 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_CANCEL		, 0, 0		, 0		, (APTR)FRMEN_CANCEL		}, /* 16 */
-	    {NM_TITLE, (STRPTR)MSG_FILEREQ_MEN_FILELIST																		}, /* 17 */
+	    {NM_TITLE, (STRPTR)MSG_FILEREQ_MEN_FILELIST											}, /* 17 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTNAME	, 0, CHECKIT   	, 2 + 4		, (APTR)FRMEN_BYNAME		}, /* 18 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTDATE	, 0, CHECKIT	, 1 + 4		, (APTR)FRMEN_BYDATE		}, /* 19 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTSIZE	, 0, CHECKIT	, 1 + 2		, (APTR)FRMEN_BYSIZE		}, /* 20 */
-	     {NM_ITEM, NM_BARLABEL																			}, /* 21 */
+	     {NM_ITEM, NM_BARLABEL													}, /* 21 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTUP	    	, 0, CHECKIT 	, 32		, (APTR)FRMEN_ASCENDING		}, /* 22 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTDOWN	, 0, CHECKIT	, 16		, (APTR)FRMEN_DESCENDING	}, /* 23 */
-	     {NM_ITEM, NM_BARLABEL																			}, /* 24 */
+	     {NM_ITEM, NM_BARLABEL													}, /* 24 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST	, 0, CHECKIT	, 256 + 512	, (APTR)FRMEN_DRAWERSFIRST	}, /* 25 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME	, 0, CHECKIT	, 128 + 512	, (APTR)FRMEN_DRAWERSMIX	}, /* 26 */
 	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST	, 0, CHECKIT	, 128 + 256	, (APTR)FRMEN_DRAWERSLAST	}, /* 27 */
-	    {NM_END																					}  /* 28 */
+	    {NM_END															}  /* 28 */
 	};
 
 	struct TagItem menu_tags[] =

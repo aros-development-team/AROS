@@ -164,7 +164,7 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 	    nw.Title = intreq->ir_TitleText;
 	    if (!nw.Title)
 	    {
-	    	nw.Title = GetString(intreq->ir_TitleID, intreq->ir_Catalog, AslBase);
+	    	nw.Title = GetString(intreq->ir_TitleID, intreq->ir_Catalog, ASLB(AslBase));
 	    }
 	    
 	    D(bug("\tWindow title: %s", nw.Title));
