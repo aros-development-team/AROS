@@ -71,6 +71,8 @@ extern char *modulename, *basename, *modulenameupper, *libbase, *libbasetype,
 extern unsigned int majorversion, minorversion, firstlvo;
 extern struct linelist *cdeflines, *protolines;
 
+extern int customdispatcher; /* does class have custom dispatcher? */
+
 void readconfig(void);
 void readref(void);
 void readrefmcc(void);

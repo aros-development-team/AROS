@@ -279,10 +279,12 @@ void readref(void)
 void readrefmcc(void)
 {
     struct linelist *linelistit = NULL;
-    char structname[512]; char *line = NULL;
-    
+    char structname[512], dispatcher[512];
+    char *line = NULL;
     snprintf(structname, 511, "struct %s_DATA", modulename); 
+    snprintf(dispatcher, 511, "FUNCTION : %s_Dispatcher", modulename);
     structname[511] = '\0';
+    dispatcher[511] = '\0';
     
     if (!fileopen(reffile))
     {
@@ -298,6 +300,11 @@ void readrefmcc(void)
         {
             instruct = 1;
             readline(); /* Skip opening brace */
+            continue;
+        }
+        else if (strncmp(line, dispatcher, strlen(dispatcher)) == 0)
+        {
+            customdispatcher = 1;
             continue;
         }
         
