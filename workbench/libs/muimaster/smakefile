@@ -85,6 +85,7 @@ CLASSESOBJS= \
   objs/classes/popimage.o \
   objs/classes/poplist.o \
   objs/classes/popobject.o \
+  objs/classes/popscreen.o \
   objs/classes/popstring.o \
   objs/classes/prop.o \
   objs/classes/radio.o \
@@ -399,6 +400,9 @@ objs/classes/popobject.o: classes/popobject.c
 
 objs/classes/poppen.o: classes/poppen.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/poppen.c objname=$@
+
+objs/classes/popscreen.o: classes/popscreen.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/popscreen.c objname=$@
 
 objs/classes/popstring.o: classes/popstring.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/popstring.c objname=$@
