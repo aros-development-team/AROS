@@ -65,20 +65,15 @@
     APTR oldobject;
     struct _Object *nextobject;
     
-    oldobject = (APTR)(*((Object **)objectPtrPtr));
-    
-    if (oldobject)
+    nextobject = (struct _Object *)(*((struct _Object **)objectPtrPtr))->o_Node.mln_Succ;
+    if (nextobject)
     {
-    	nextobject = (struct _Object *)_OBJECT(oldobject)->o_Node.mln_Succ;
-    
-    	if (nextobject)
-    	{
-	    *((Object **)objectPtrPtr) = BASEOBJECT(nextobject);
-    	} 
-    	else
-    	{
-            *((Object **)objectPtrPtr) = NULL;
-    	}
+    	oldobject = (Object *)BASEOBJECT(*((struct _Object **)objectPtrPtr));
+    	*((struct _Object **)objectPtrPtr) = nextobject;
+    }
+    else
+    {
+    	oldobject = NULL;
     }
 
     return oldobject;
