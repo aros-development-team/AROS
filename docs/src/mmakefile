@@ -23,7 +23,7 @@ RUN_SRC2HTML := $(SRC2HTML) --html --output=index.html \
 
 #MM- all-docs : setup-docs doc-includes docs
 #MM docs : src2html setup-docs copy-pics
-docs : autodocs $(HTMLDIR)/srcs $(HTMLDIR)/index.html \
+docs : $(HTMLDIR)/srcs $(HTMLDIR)/index.html \
 	copy-files \
 	access-rights
 
