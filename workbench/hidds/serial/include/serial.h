@@ -94,6 +94,7 @@ enum
     moHidd_SerialUnit_Start,
     moHidd_SerialUnit_Stop,
     moHidd_SerialUnit_GetCapabilities,
+    moHidd_SerialUnit_GetStatus,
     moHidd_SerialUnit_NumMethods	// always keep this the last one!
 };
 
@@ -150,6 +151,10 @@ struct pHidd_SerialUnit_Stop
     OOP_MethodID        mID;
 };
 
+struct pHidd_SerialUnit_GetStatus
+{
+    OOP_MethodID        mID;
+};
 
 
 /* some tags for HIDD_SerialUnit_SetParameters() */
@@ -187,5 +192,6 @@ BYTE     HIDD_SerialUnit_SendBreak(OOP_Object *obj, int duration);
 VOID     HIDD_SerialUnit_Stop(OOP_Object * obj);
 VOID     HIDD_SerialUnit_Start(OOP_Object * obj);
 VOID     HIDD_SerialUnit_GetCapabilities(OOP_Object *obj, struct TagItem *tags);
+UWORD    HIDD_SerialUnit_GetStatus(OOP_Object *obj);
 
 #endif /* HIDD_SERIAL_H */

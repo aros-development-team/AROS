@@ -753,8 +753,10 @@ AROS_LH1(void, beginio,
 
     case SDCMD_QUERY:
 
-      SU->su_Status = 0;
-      // SU->su_Status = HIDD_QUERY(SU->su_HIDD); 
+      /*
+      ** set the io_Status to the status of the serial port
+      */
+      ioreq->io_Status = HIDD_SerialUnit_GetStatus(SU->su_Unit);
       if (0 != (SU->su_Status & STATUS_BUFFEROVERFLOW))
       {
         ioreq->io_Status |= IO_STATF_OVERRUN;
@@ -769,16 +771,6 @@ AROS_LH1(void, beginio,
         else
           ioreq->IOSer.io_Actual = unread;
       }
-
-      /*
-      ** set the io_Status to the status of the serial port
-      */
-#if 1
-#warning Simply setting io_Status to 0!
-      ioreq->io_Status = 0;
-#else
-      ioreq->io_Status = HIDD_SerialUnit_GetStatus(SU->su_Unit);
-#endif
 
       ioreq->IOSer.io_Error = 0; 
       /*

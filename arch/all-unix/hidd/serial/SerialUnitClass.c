@@ -554,6 +554,14 @@ VOID serialunit_getcapabilities(OOP_Class * cl, OOP_Object *o, struct TagItem * 
   }
 }
 
+/****** SerialUnit::GetStatus ********************************/
+UWORD serialunit_getstatus(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_GetStatus *msg)
+{
+	struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
+
+	return 0;
+}
+
 /************* The software interrupt handler that gets data from UART *****/
 
 
@@ -669,6 +677,7 @@ OOP_Class *init_serialunitclass (struct class_static_data *csd)
         {(IPTR (*)())serialunit_start,          moHidd_SerialUnit_Start},
         {(IPTR (*)())serialunit_stop,           moHidd_SerialUnit_Stop}, 
         {(IPTR (*)())serialunit_getcapabilities,moHidd_SerialUnit_GetCapabilities},
+        {(IPTR (*)())serialunit_getstatus,      moHidd_SerialUnit_GetStatus},
         {NULL, 0UL}
     };
     
