@@ -1,16 +1,31 @@
 #ifndef UTILITY_UTILITY_H
 #define UTILITY_UTILITY_H
-#include <exec/types.h>
-#include <exec/libraries.h>
-#include <dos/dos.h>
+
+/*
+    (C) 1997 AROS - The Amiga Replacement OS
+    $Id: 
+
+    Desc: Definitions for utility.library
+    Lang: english
+*/
+
+#ifndef EXEC_TYPES_H
+#   include <exec/types.h>
+#endif
+#ifndef EXEC_LIBRARIES_H
+#   include <exec/libraries.h>
+#endif
+#ifndef DOS_DOS_H
+#   include <dos/dos.h>
+#endif
 
 #define UTILITYNAME	"utility.library"
 
 struct UtilityBase
 {
     struct Library ub_LibNode;
-    UBYTE ub_Language;
-    UBYTE ub_Reserved;
+    UBYTE          ub_Language;
+    UBYTE          ub_Reserved;
 };
 
-#endif
+#endif /* UTILITY_UTILITY_H */
