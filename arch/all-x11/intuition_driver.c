@@ -143,7 +143,7 @@ static int MyErrorHandler (Display * display, XErrorEvent * errevent)
     );
     fflush (stderr);
 
-    exit (10);
+    return 0;
 }
 
 static int MySysErrorHandler (Display * display)
@@ -151,7 +151,7 @@ static int MySysErrorHandler (Display * display)
     perror ("X11-Error");
     fflush (stderr);
 
-    exit (10);
+    return 0;
 }
 
 int intui_init (struct IntuitionBase * IntuitionBase)
@@ -294,7 +294,7 @@ int intui_OpenWindow (struct Window * w,
 	, IW(w)->iw_Window.TopEdge
 	, IW(w)->iw_Window.Width
 	, IW(w)->iw_Window.Height
-	, 5 /* BorderWidth */
+	, 0 /* BorderWidth */
 	, DefaultDepth (GetSysDisplay (), GetSysScreen ())
 	, InputOutput
 	, DefaultVisual (GetSysDisplay (), GetSysScreen ())
@@ -703,13 +703,13 @@ void intui_ProcessEvents (void)
 
 		XUnionRectWithRegion (&rect, iw->iw_Region, iw->iw_Region);
 
-		if (count != 0)
-		    break;
+		if (count == 0)
+		{
+		    RefreshGadgets (w->FirstGadget, w, NULL);
 
-		RefreshGadgets (w->FirstGadget, w, NULL);
-
-		im->Class = IDCMP_REFRESHWINDOW;
-		ptr	  = "REFRESHWINDOW";
+		    im->Class = IDCMP_REFRESHWINDOW;
+		    ptr       = "REFRESHWINDOW";
+		}
 	    } break;
 
 	    case ConfigureNotify:
