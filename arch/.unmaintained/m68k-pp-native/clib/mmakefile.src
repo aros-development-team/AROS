@@ -12,11 +12,11 @@ OBJS  := $(foreach f, $(ASMFILES)   , $(COMMONOBJDIR)/$(f).o)
 AFLAGS2         := $(AFLAGS) -I..
 
 #MM
-clib-pp-native : $(OBJS)
+clib-pp-m68k : $(OBJS)
 	@$(NOP)
 
 #MM
-setup-clib-pp-native-m68000 :
+setup-clib-pp-m68k :
 	%mkdirs_q $(OBJDIR) $(SOBJDIR)
 
 

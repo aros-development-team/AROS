@@ -39,12 +39,12 @@ COREFILES	:= init \
 
 
 #MM
-exec-pp-native-m68000 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \
+exec-pp-m68k : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \
 	$(foreach f,$(COREFILES), $(OBJDIR)/$(f).o)
 	@$(NOP)
 
 #MM
-setup-exec-pp-native-m68000 :
+setup-exec-pp-m68k :
 	%mkdirs_q $(OBJDIR)
 	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
 	%add_objects $(foreach f,$(COREFILES), rom/exec/$(f))
@@ -52,7 +52,7 @@ setup-exec-pp-native-m68000 :
 
 
 #MM
-includes-pp-native-m68000 :
+includes-pp-m68k :
 	@$(NOP)
 
 #MM

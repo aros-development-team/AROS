@@ -1,24 +1,15 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-##MM- AROS-pp-native : setup setup-native includes compiler kernel boot-native \
-##MM	    create-mf-inc-again kernel-link-native binary-pp-native-m68000 \
-##MM	    workbench-pp-native-m68000 demos contrib-pp-native-m68000
+OS_INCLUDES   := -I$(GENINCDIR)
 
-
-#MM- AROS-pp-native-1 : setup
-
-
-#MM- AROS-pp-native : \
-#MM	setup-pp-native \
-#MM	includes \
-#MM	includes-pp-native-m68000 \
-#MM	compiler-nofpu \
-#MM	kernel \
+#MM- AROS-pp-m68k : general-setup-pp-m68k     \
+#MM	kernel-pp-m68k                        \
 #MM	boot-pp-native
 
+#MM- general-setup-pp-m68k: setup setup-pp-m68k includes includes-pp-m68k compiler-nofpu
 
-#Instead of the target 'compiler' I need to make the traget compiler-nofpu
+#Instead of the target 'compiler' I need to make the target compiler-nofpu
 #MM- compiler-nofpu : setup includes \
 #MM	linklibs-amiga \
 #MM	linklibs-arosm-m68000 \
@@ -36,29 +27,29 @@ create-mf-inc-again :
 
 
 # Kernel
-#MM- kernel-pp-native :                    \
-#MM	kernel-exec-pp-native              \
-#MM	kernel-expansion-linklib      \
-#MM	kernel-expansion-pp-native-m68000  \
-#MM	kernel-utility-linklib        \
-#MM	kernel-aros-linklib           \
+#MM- kernel-pp-m68k :                      \
+#MM	kernel-exec-pp-m68k                \
+#MM	kernel-expansion-linklib           \
+#MM	kernel-expansion-pp-m68k           \
+#MM	kernel-utility-linklib             \
+#MM	kernel-aros-linklib                \
 #MM	kernel-oop-native-i386 kernel-oop-linklib            \
-#MM	kernel-hidd-linklib           \
-#MM	kernel-mathieeesingbas-linklib\
-#MM	kernel-timer-linklib          \
-#MM	kernel-misc-linklib kernel-misc-pp-native-m68000 \
-#MM	kernel-battclock-pp-native         \
-#MM	kernel-boot-linklib-quick     \
-#MM	kernel-dos-pp-native               \
-#MM	kernel-graphics-linklib       \
-#MM	graphics-gfxhidd              \
-#MM	kernel-graphics-pp-native-m68000   \
-#MM	kernel-layers-linklib         \
-#MM	kernel-intuition-pp-native         \
-#MM	kernel-mathffp-linklib        \
-#MM	kernel-workbench-linklib      \
-#MM	kernel-keymap-linklib         \
-#MM	kernel-keyboard-linklib       \
+#MM	kernel-hidd-linklib                \
+#MM	kernel-mathieeesingbas-linklib     \
+#MM	kernel-timer-linklib               \
+#MM	kernel-misc-linklib kernel-misc-pp-m68k \
+#MM	kernel-battclock-pp-m68k           \
+#MM	kernel-boot-linklib-quick          \
+#MM	kernel-dos-pp-m68k                 \
+#MM	kernel-graphics-linklib            \
+#MM	graphics-gfxhidd                   \
+#MM	kernel-graphics-pp-m68k            \
+#MM	kernel-layers-linklib              \
+#MM	kernel-intuition-pp-m68k           \
+#MM	kernel-mathffp-linklib             \
+#MM	kernel-workbench-linklib           \
+#MM	kernel-keymap-linklib              \
+#MM	kernel-keyboard-linklib            \
 #MM	kernel-gameport-linklib kernel-input-linklib kernel-console-linklib
 
 
@@ -68,17 +59,17 @@ create-mf-inc-again :
 ##MM	    kernel-boot-linklib \
 ##MM	    kernel-devs \
 ##MM	    kernel-keymap-linklib \
-##MM		kernel-filesys-pp-native-m68000 \
+##MM		kernel-filesys-pp-m68k \
 ##MM		Drivers-irq \
 ##MM		Drivers-kbd \
-##MM		Drivers-pp-native
+##MM		Drivers-pp-m68k
 
 
 # Setup
-#MM- setup-pp-native : setup-exec-$(ARCH)-$(CPU) \
+#MM- setup-pp-m68k : setup-exec-$(ARCH)-$(CPU) \
 #MM	setup-mlib-$(ARCH)-$(CPU) \
 #MM	setup-clib-$(ARCH)-$(CPU) \
-#MM	setup-dos-native-$(ARCH)
+#MM	setup-dos-$(ARCH)-$(CPU)
 
 
 # MM		setup-intuition-$(CPU) \
@@ -86,111 +77,111 @@ create-mf-inc-again :
 # MM		setup-dos-$(CPU)
 
 # Setup includes
-#MM- includes-pp-native : includes-copy includes-$(CPU)
+#MM- includes-pp-m68k : includes-copy-$(ARCH)-$(CPU) includes-copy
 
 # Setup bootsector and kernel startup code
-#MM- boot-pp-native : boot-$(CPU)
+#MM- boot-pp-m68k : boot-$(CPU)
 
 # Setup the CLIB metatargets...
-#MM- setup-clib-pp-native : setup-clib-pp-native-$(CPU)
+#MM- setup-clib-pp-m68k : setup-clib-pp-$(CPU)
 
-#MM- clib-pp-native : clib-$(CPU)
+#MM- clib-pp-m68k : clib-$(CPU)
 
-#MM- alib-pp-native : alib-$(CPU)
+#MM- alib-pp-m68k : alib-$(CPU)
 
-#MM- kernel-exec-pp-native : exec-$(ARCH)-$(CPU) kernel-exec-linklib
+#MM- kernel-exec-pp-m68k : exec-$(ARCH)-$(CPU) kernel-exec-linklib
 
-#MM- kernel-intuition-pp-native : intuition-$(GFXSYSTEM) \
+#MM- kernel-intuition-pp-m68k : intuition-$(GFXSYSTEM) \
 #MM	intuition-$(CPU) kernel-intuition-linklib
 
-#MM- kernel-battclock-pp-native : battclock-$(CPU) kernel-battclock-linklib
+#MM- kernel-battclock-pp-m68k : battclock-$(CPU) kernel-battclock-linklib
 
-#MM- kernel-dos-pp-native : dos-native-pp-native kernel-dos-linklib
+#MM- kernel-dos-pp-m68k : dos-pp-m68k kernel-dos-linklib
 
 # Setup libraries
-#MM kernel-exec-pp-native-m68000 :
-kernel-exec-pp-native-m68000 :
+#MM kernel-exec-pp-m68k :
+kernel-exec-pp-m68k :
 	%add_objects rom/boot/libexec
 
-#MM kernel-aros-pp-native-m68000 :
-kernel-aros-pp-native-m68000 :
+#MM kernel-aros-pp-m68k :
+kernel-aros-pp-m68k :
 	%add_objects rom/boot/libaros
 
-#MM kernel-keymap-pp-native-m68000 :
-kernel-keymap-pp-native-m68000 :
+#MM kernel-keymap-pp-m68k :
+kernel-keymap-pp-m68k :
 	%add_objects rom/boot/libkeymap
 
-#MM kernel-mathffp-pp-native-m68000 :
-kernel-mathffp-pp-native-m68000 :
+#MM kernel-mathffp-pp-m68k :
+kernel-mathffp-pp-m68k :
 	%add_objects rom/boot/libmathffp
 
-#MM kernel-mathieeesingbas-pp-native-m68000 :
-kernel-mathieeesingbas-pp-native-m68000 :
+#MM kernel-mathieeesingbas-pp-m68k :
+kernel-mathieeesingbas-pp-m68k :
 	%add_objects rom/boot/libmathieeesingbas
 
-#MM kernel-expansion-pp-native-m68000 :
-kernel-expansion-pp-native-m68000 :
+#MM kernel-expansion-pp-m68k :
+kernel-expansion-pp-m68k :
 	%add_objects rom/boot/libexpansion
 
-#MM kernel-oop-pp-native-m68000 :
-kernel-oop-pp-native-m68000 :
+#MM kernel-oop-pp-m68k :
+kernel-oop-pp-m68k :
 	%add_objects rom/boot/liboop
 
-#MM kernel-layers-pp-native-m68000 :
-kernel-layers-pp-native-m68000 :
+#MM kernel-layers-pp-m68k :
+kernel-layers-pp-m68k :
 	%add_objects rom/boot/liblayers
 
-#MM kernel-workbench-pp-native-m68000 :
-kernel-workbench-pp-native-m68000 :
+#MM kernel-workbench-pp-m68k :
+kernel-workbench-pp-m68k :
 	%add_objects rom/boot/libworkbench
 
-#MM kernel-hidd-pp-native-m68000 :
-kernel-hidd-pp-native-m68000 :
+#MM kernel-hidd-pp-m68k :
+kernel-hidd-pp-m68k :
 	%add_objects rom/boot/libhiddclass
 
-#MM kernel-utility-pp-native-m68000 :
-kernel-utility-pp-native-m68000 :
+#MM kernel-utility-pp-m68k :
+kernel-utility-pp-m68k :
 	%add_objects rom/boot/libutility
 
-#MM kernel-dos-pp-native-m68000 :
-kernel-dos-pp-native-m68000 :
+#MM kernel-dos-pp-m68k :
+kernel-dos-pp-m68k :
 	%add_objects rom/boot/libdos
 
-#MM kernel-boot-pp-native-m68000 :
-kernel-boot-pp-native-m68000 :
+#MM kernel-boot-pp-m68k :
+kernel-boot-pp-m68k :
 	%add_objects rom/boot/libboot
 
-#MM kernel-timer-pp-native-m68000 :
-kernel-timer-pp-native-m68000 :
+#MM kernel-timer-pp-m68k :
+kernel-timer-pp-m68k :
 	%add_objects rom/boot/libtimer
 
-#MM kernel-battclock-pp-native-m68000 :
-kernel-battclock-pp-native-m68000 :
+#MM kernel-battclock-pp-m68k :
+kernel-battclock-pp-m68k :
 	%add_objects rom/boot/libbattclock
 
-#MM kernel-misc-pp-native-m68000 :
-kernel-misc-pp-native-m68000 :
+#MM kernel-misc-pp-m68k :
+kernel-misc-pp-m68k :
 	%add_objects rom/boot/libmisc
 
-#MM kernel-cgfx-pp-native-m68000 :
-kernel-cgfx-pp-native-m68000 :
+#MM kernel-cgfx-pp-m68k :
+kernel-cgfx-pp-m68k :
 	%add_objects rom/boot/libcybergraphics
 
-#MM kernel-graphics-pp-native-m68000 :
-kernel-graphics-pp-native-m68000 :
+#MM kernel-graphics-pp-m68k :
+kernel-graphics-pp-m68k :
 	%add_objects rom/boot/libgraphics
 	%add_objects rom/boot/libhiddgraphicsstubs
 
-#MM kernel-intuition-pp-native-m68000 :
-kernel-intuition-pp-native-m68000 :
+#MM kernel-intuition-pp-m68k :
+kernel-intuition-pp-m68k :
 	%add_objects rom/boot/libintuition
 
-#MM kernel-filesys-pp-native-m68000 :
-kernel-filesys-pp-native-m68000 :
+#MM kernel-filesys-pp-m68k :
+kernel-filesys-pp-m68k :
 	%add_objects rom/boot/libcon_handler
 
-#MM kernel-devs-pp-native-m68000 :
-kernel-devs-pp-native-m68000 :
+#MM kernel-devs-pp-m68k :
+kernel-devs-pp-m68k :
 	%add_objects rom/boot/libgameport
 	%add_objects rom/boot/libinput
 	%add_objects rom/boot/libkeyboard
@@ -200,17 +191,17 @@ kernel-devs-pp-native-m68000 :
 	%add_objects rom/boot/libafs
 
 #MM
-includes-pp-native-m68000 : $(INCFILES)
+includes-pp-m68k : $(INCFILES)
 	@$(NOP)
 
 #MM
-binary-pp-native-m68000 : build
+binary-pp-m68k : build
 	@./build $(OSGENDIR)/boot/bootsect $(OSGENDIR)/boot/setup \
 	    $(OSGENDIR)/boot/kernel >$(OSGENDIR)/boot/aros.bin
 
-#MM- contrib-pp-native-m68000 : contrib-complete
+#MM- contrib-pp-m68k : contrib-complete
 
-#MM- workbench-pp-native-m68000 : workbench-complete workbench
+#MM- workbench-pp-m68k : workbench-complete workbench
 
 #MM
 clean ::

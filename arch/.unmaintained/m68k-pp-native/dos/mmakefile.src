@@ -10,11 +10,11 @@ TESTS :=
 FILES := createnewproc aros dosboot boot
 
 #MM
-dos-native-pp-native : $(foreach f, $(FILES), $(OBJDIR)/$(f).o)
+dos-pp-m68k : $(foreach f, $(FILES), $(OBJDIR)/$(f).o)
 	@$(NOP)
 
 #MM
-setup-dos-native-pp-native :
+setup-dos-pp-m68k :
 	%mkdirs_q $(OBJDIR)
 	%add_objects $(foreach f,$(FILES), rom/dos/$(f))
 	%exclude_files $(foreach f, $(FILES), rom/dos/$(f))
