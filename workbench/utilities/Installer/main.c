@@ -78,14 +78,14 @@ int nextarg, endoffile, count;
     /* open script file */
     if (args[ARG_SCRIPT])
     {
-      filename = StrDup( (STRPTR)args[ARG_SCRIPT] );
+      filename = (STRPTR)args[ARG_SCRIPT];
     }
     else
     {
       fprintf( stderr, "No SCRIPT specified!\n" );
 #ifdef DEBUG
       fprintf( stderr, "Using %s instead...\n", test_script );
-      filename = StrDup( test_script );
+      filename = test_script;
 #else
       FreeArgs(rda);
       exit(-1);
@@ -109,7 +109,7 @@ int nextarg, endoffile, count;
       exit(-1);
 #endif /* DEBUG */
     }
-    filename = StrDup( ttemp );
+    filename = ttemp;
   }
 
   inputfile = Open( filename, MODE_OLDFILE );
@@ -199,15 +199,8 @@ int nextarg, endoffile, count;
     }
 
     /* Is PRETEND possible? */
-    if ( strcmp( "TRUE", ArgString(tooltypes, "PRETEND", "TRUE") ) == 0 )
-    {
-      preferences.nopretend = FALSE;
-    }
-    else
-    {
-      preferences.nopretend = TRUE;
-    }
     preferences.transcriptfile = StrDup( ArgString( tooltypes, "LOGFILE", "install_log_file" ) );
+    preferences.nopretend = (strcmp( "TRUE", ArgString(tooltypes, "PRETEND", "TRUE") ) != 0);
     ttemp = ArgString( tooltypes, "MINUSER", "NOVICE" );
     tstring = NULL;
     preferences.minusrlevel = _NOVICE;
@@ -313,10 +306,10 @@ int nextarg, endoffile, count;
       count = Read( inputfile, &buffer[0], 1 );
       if ( count == 0 )
       {
-	break;
+	endoffile = TRUE;
       }
 
-      if ( !isspace( buffer[0] ) )
+      if ( !isspace( buffer[0] ) && (endoffile == FALSE) )
       {
 	/* This is text, is it valid ? */
 	switch( buffer[0] )
@@ -380,7 +373,6 @@ int nextarg, endoffile, count;
     currentarg->next = NULL;
   }
 
-  FreeVec( filename );
   Close( inputfile );
 
   if ( preferences.transcriptfile != NULL )
