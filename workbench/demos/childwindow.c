@@ -1,3 +1,4 @@
+
 #include <intuition/intuition.h>
 #include <graphics/gfx.h>
 #include <graphics/gfxmacros.h>
@@ -8,6 +9,7 @@
 #include <dos/rdargs.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define WINWIDTH    	260
 #define WINHEIGHT   	260
@@ -45,12 +47,12 @@ static void openlibs(void)
     {
     	cleanup("Can't open intuition.library!", NULL);
     }
-
+    
     if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 39)))
     {
     	cleanup("Can't open graphics.library!", NULL);
     }
-   
+    
 }
 
 static void getvisual(void)
@@ -85,35 +87,33 @@ static void makeshape(void)
     rect.MaxY = WINCY + 20;
     
     if (!(OrRectRegion(shape, &rect))) cleanup("Can't create region!\n", NULL);
-
+    
 }
 
 static struct Window * makeparentwin(ULONG visible)
 {
-    struct Window * win;
     struct TagItem win_tags[] =
     {
-    	{WA_Left    	, 30	    	    	    	    },
-	{WA_Top     	, 30	    	    	    	    },
-	{WA_Width   	, 400	  	    	    	    },
-	{WA_Height  	, 300 		    	    	    },
-	{WA_MinWidth    , 200                               },
-	{WA_MaxWidth    , 500                               },
-	{WA_MinHeight   , 200                               },
-	{WA_MaxHeight   , 400                               },
-	{WA_Title   	, (IPTR)"Parent window"             },
-	{WA_CloseGadget , TRUE	    	    	    	    },
-	{WA_DepthGadget , TRUE	    	    	    	    },
-	{WA_DragBar 	, TRUE	    	    	    	    },
-	{WA_IDCMP   	, IDCMP_CLOSEWINDOW 	    	    },
-	{WA_Activate	, TRUE	    	    	    	    },
-	{WA_Visible     , visible                           },
-	{WA_SizeGadget  , TRUE                              },
-	{TAG_DONE                                           }
+    	{ WA_Left    	, 30	    	    	    	    },
+	{ WA_Top     	, 30	    	    	    	    },
+	{ WA_Width   	, 400	  	    	    	    },
+	{ WA_Height  	, 300 		    	    	    },
+	{ WA_MinWidth   , 200                               },
+	{ WA_MaxWidth   , 500                               },
+	{ WA_MinHeight  , 200                               },
+	{ WA_MaxHeight  , 400                               },
+	{ WA_Title   	, (IPTR)"Parent window"             },
+	{ WA_CloseGadget, TRUE	    	    	    	    },
+	{ WA_DepthGadget, TRUE	    	    	    	    },
+	{ WA_DragBar 	, TRUE	    	    	    	    },
+	{ WA_IDCMP   	, IDCMP_CLOSEWINDOW 	    	    },
+	{ WA_Activate	, TRUE	    	    	    	    },
+	{ WA_Visible    , (IPTR)visible                     },
+	{ WA_SizeGadget , TRUE                              },
+	{ TAG_DONE                                          }
     };
 
-    win = OpenWindowTagList(0, win_tags);
-    return win;
+    return OpenWindowTagList(0, win_tags);
 }
 
 static void makewin(struct Window * parent)
@@ -121,17 +121,17 @@ static void makewin(struct Window * parent)
     UWORD pattern[] = {0x5555, 0xAAAA};
     struct TagItem win_tags[] =
     {
-    	{WA_Left    	, 30	    	    	    	    },
-	{WA_Top     	, 30	    	    	    	    },
-	{WA_Width   	, WINWIDTH  	    	    	    },
-	{WA_Height  	, WINHEIGHT 	    	    	    },
-	{WA_Title   	, (IPTR)"Irregular shaped window"   },
-	{WA_DepthGadget , TRUE	    	    	    	    },
-	{WA_DragBar 	, TRUE	    	    	    	    },
-	{WA_Activate	, TRUE	    	    	    	    },
-	{WA_Shape   	, (IPTR)shape	    	    	    },
-	{WA_Parent      , parent			    },
-	{TAG_DONE   	    	    	    	    	    }
+    	{ WA_Left    	, 30	    	    	    	    },
+	{ WA_Top     	, 30	    	    	    	    },
+	{ WA_Width   	, WINWIDTH  	    	    	    },
+	{ WA_Height  	, WINHEIGHT 	    	    	    },
+	{ WA_Title   	, (IPTR)"Irregular shaped window"   },
+	{ WA_DepthGadget, TRUE	    	    	    	    },
+	{ WA_DragBar 	, TRUE	    	    	    	    },
+	{ WA_Activate	, TRUE	    	    	    	    },
+	{ WA_Shape   	, (IPTR)shape	    	    	    },
+	{ WA_Parent     , (IPTR)parent			    },
+	{ TAG_DONE   	    	    	    	    	    }
     };
     
     win = OpenWindowTagList(0, win_tags);
@@ -179,20 +179,26 @@ int main(int argc, char **argv)
     rda = ReadArgs("INVISIBLE/S", (IPTR *)args, NULL);
 
     if (TRUE == (ULONG)args[0])
-      visible = FALSE;
+    {
+	visible = FALSE;
+    }
+
     if (rda)
     {
-      openlibs();
-      getvisual();
-      makeshape();
-      w = makeparentwin(visible);
-      if (w)
-      {
-        makewin(w);
-        handleall(w);
-      }
-      cleanup(0,w);
-      FreeArgs(rda);
+	openlibs();
+	getvisual();
+	makeshape();
+	w = makeparentwin(visible);
+
+	if (w)
+	{
+	    makewin(w);
+	    handleall(w);
+	}
+	
+	cleanup(0, w);
+	FreeArgs(rda);
     }
+    
     return 0;
 }
