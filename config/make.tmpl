@@ -1325,6 +1325,10 @@ ifdef USE_MLIB
 %(libs) := $(%(libs)) -larosm
 %(deps) := $(%(deps)) $(LIBDIR)/libarosm.a
 endif
+ifdef USE_BGUILIB
+%(libs) := $(%(libs)) -lbgui
+%(deps) := $(%(deps)) $(LIBDIR)/libbgui.a
+endif
 %(libs) := $(%(libs)) %(postlibs)
 %end
 
