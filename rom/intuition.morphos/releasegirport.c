@@ -70,8 +70,6 @@ AROS_LH1(void, ReleaseGIRPort,
 
         UNLOCKGADGET
 
-        if (rp->Layer) UnlockLayerInfo(rp->Layer->LayerInfo);
-
         FreeRastPort (rp);
     }
 

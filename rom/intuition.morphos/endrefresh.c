@@ -68,8 +68,6 @@ AROS_LH2(void, EndRefresh,
     if (BLAYER(window))
         UnlockLayer(BLAYER(window));
 
-    UNLOCKGADGET
-
     UnlockLayerInfo(&window->WScreen->LayerInfo);
 
     AROS_LIBFUNC_EXIT

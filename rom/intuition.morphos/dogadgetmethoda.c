@@ -103,20 +103,6 @@ AROS_LH4(IPTR, DoGadgetMethodA,
         /* Protect DoMethodA against race conditions between app task
         and input.device task (which executes Intuitions Inputhandler) */
 
-        if (win)
-        {
-            if (IS_SCREEN_GADGET(gad))
-            {
-                if (((struct Screen*)win)->BarLayer) LockLayer(0,((struct Screen*)win)->BarLayer);
-            } else {
-                //jDc: we don't check to which rp the gadget belongs, so let's lock both layers
-                LOCKWINDOWLAYERS(win);
-            }
-        }
-
-        //jDc: lock above doesn't of course protect against simultaneous use of
-        //our static rastport and gadgetinfo, let's use gadgetlock here, and ONLY here ;)
-        //maybe we should have a static ginfo and rp per window?
         ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
 
         //jDc: SetupGInfo fails when there's no window (but it also clears gadgetinfo!)
@@ -185,16 +171,6 @@ AROS_LH4(IPTR, DoGadgetMethodA,
         if (gi->gi_DrInfo) FreeScreenDrawInfo (gi->gi_Screen, gi->gi_DrInfo );
 
         ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
-
-        if (win)
-        {
-            if (IS_SCREEN_GADGET(gad))
-            {
-                if (((struct Screen*)win)->BarLayer) UnlockLayer(((struct Screen*)win)->BarLayer);
-            } else {
-                UNLOCKWINDOWLAYERS(win);
-            }
-        }
 
     } /* if (gad) */
 
