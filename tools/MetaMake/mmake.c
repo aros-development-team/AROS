@@ -918,9 +918,8 @@ readcache (Project * prj)
 	prj->topdir->node.name = xstrdup ("");
 	prj->topdir->parent = NULL;
 
-	stat ("", &st);
-
-	prj->topdir->time = 0; /* Force a check the first time */
+	/* Force a check the first time */
+	prj->topdir->time = 0;
     }
 
     if (fh)
@@ -1692,6 +1691,11 @@ execute (Project * prj, const char * cmd, const char * in,
 
     rc = system (cmdstr);
 
+    if (rc)
+    {
+	printf ("%s failed: %d\n", cmdstr, rc);
+    }
+
     return !rc;
 }
 
@@ -1778,7 +1782,7 @@ callmake (Project * prj, const char * tname, const char * mforig)
 	    else
 		printf ("config.deps is newer\n");
 
-	    if (!execute (prj, prj->genmakefilescript,"-",dest,src))
+	    if (!execute (prj, prj->genmakefilescript,"-","-",""))
 	    {
 		fprintf (stderr, "Error while regenerating makefile %s\n", dest);
 		unlink (dest);
