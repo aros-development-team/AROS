@@ -116,7 +116,71 @@ struct MUI_IconData
     ULONG last_secs;
     ULONG last_mics;
     struct IconEntry *last_selected;
+
+    /* Render stuff */
+
+    /* values for update */
+    /* 1 = draw the given single icon only */
+    ULONG update;
+
+    struct IconEntry *update_icon;
 };
+
+/**************************************************************************
+ 
+**************************************************************************/
+int RectAndRect(struct Rectangle *a, struct Rectangle *b)
+{
+    if ((a->MinX > b->MaxX) || (a->MinY > b->MaxY) || (a->MaxX < b->MinX) || (a->MaxY < b->MinY))
+	return 0;
+    return 1;
+}
+
+/**************************************************************************
+ Draw the icon at its position
+**************************************************************************/
+static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *icon)
+{
+    LONG tx,ty;
+    LONG txwidth,txheight;
+    SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
+
+#ifndef _AROS
+    DrawIconState(_rp(obj),icon->dob,NULL,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, FALSE, TAG_DONE);
+#else
+    DrawIconStateA(_rp(obj),icon->dob,NULL,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, NULL);
+#endif
+
+    if (icon->label)
+    {
+	txwidth = TextLength(_rp(obj),icon->label,strlen(icon->label));
+	tx = _mleft(obj) - data->view_x + icon->x + (icon->width - txwidth)/2;
+	ty = _mtop(obj) - data->view_y + icon->y + icon->height + _font(obj)->tf_Baseline + 1;
+	Move(_rp(obj),tx,ty);
+	Text(_rp(obj),icon->label,strlen(icon->label));
+    }
+}
+
+/**************************************************************************
+ As we don't use the label drawing of icon.library we also have to do
+ this by hand
+**************************************************************************/
+static void IconList_GetIconRectangle(Object *obj, struct IconEntry *icon, struct Rectangle *rect)
+{
+    int tx,txwidth;
+
+    GetIconRectangleA(NULL,icon->dob,NULL,rect,NULL);
+
+    if (icon->label)
+    {
+	txwidth = TextLength(_rp(obj),icon->label,strlen(icon->label));
+	tx = (icon->width - txwidth)/2;
+	if (tx < rect->MinX) rect->MinX = tx;
+	if (tx + txwidth - 1 > rect->MaxX) rect->MaxX = tx + txwidth - 1;
+    }
+
+    rect->MaxY += _font(obj)->tf_YSize + 2;
+}
 
 /**************************************************************************
  Checks weather we can place a icon with the given dimesions at the
@@ -148,7 +212,6 @@ static int IconList_CouldPlaceIcon(Object *obj, struct MUI_IconData *data, int a
     return 1;
 }
 
-
 /**************************************************************************
  OM_NEW
 **************************************************************************/
@@ -165,7 +228,7 @@ static IPTR IconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
     NewList((struct List*)&data->icon_list);
 
-//    set(obj,MUIA_FillArea,FALSE);
+    set(obj,MUIA_FillArea,FALSE);
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -332,6 +395,54 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 
     DoSuperMethodA(cl, obj, (Msg) msg);
 
+    if (msg->flags & MADF_DRAWUPDATE)
+    {
+	if (data->update == 1) /* draw only a single icon at update_icon */
+	{
+	    struct Rectangle rect;
+
+	    IconList_GetIconRectangle(obj, data->update_icon, &rect);
+	    rect.MinX += _mleft(obj) - data->view_x + data->update_icon->x;
+	    rect.MaxX += _mleft(obj) - data->view_x + data->update_icon->x;
+	    rect.MinY += _mtop(obj) - data->view_y + data->update_icon->y;
+	    rect.MaxY += _mtop(obj) - data->view_y + data->update_icon->y;
+
+	    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
+	    EraseRect(_rp(obj),rect.MinX,rect.MinY,rect.MaxX,rect.MaxY);
+
+	    /* We could have deleted also other icons so they must be redrawn */
+	    icon = List_First(&data->icon_list);
+	    while (icon)
+	    {
+		if (icon != data->update_icon)
+		{
+		    struct Rectangle rect2;
+		    IconList_GetIconRectangle(obj, icon, &rect2);
+
+		    rect2.MinX += _mleft(obj) - data->view_x + data->update_icon->x;
+		    rect2.MaxX += _mleft(obj) - data->view_x + data->update_icon->x;
+		    rect2.MinY += _mtop(obj) - data->view_y + data->update_icon->y;
+		    rect2.MaxY += _mtop(obj) - data->view_y + data->update_icon->y;
+
+		    if (RectAndRect(&rect,&rect2))
+		    {
+			IconList_DrawIcon(obj, data, icon);
+		    }
+		}
+		icon = Node_Next(icon);
+	    }
+
+	    IconList_DrawIcon(obj, data, data->update_icon);
+	    data->update = 0;
+	    MUI_RemoveClipping(muiRenderInfo(obj),clip);
+	    return 0;
+	}
+    } else
+    {
+    	/* We don't use the predefined MUI background because workbench has own */
+	EraseRect(_rp(obj),_mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
+    }
+
     /* At we see if there any Icons without proper position, this is the wrong place here,
      * it should be done after all icons have been loaded */
     icon = List_First(&data->icon_list);
@@ -358,37 +469,21 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	icon = Node_Next(icon);
     }
 
-    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
-			   _mwidth(obj), _mheight(obj));
+    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
     icon = List_First(&data->icon_list);
     while (icon)
     {
 	if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
 	{
-	    LONG tx,ty;
-	    LONG txwidth,txheight;
-	    SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
-
-#ifndef _AROS
-	    DrawIconState(_rp(obj),icon->dob,NULL,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, FALSE, TAG_DONE);
-#else
-	    DrawIconStateA(_rp(obj),icon->dob,NULL,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, NULL);
-#endif
-
-	    if (icon->label)
-	    {
-		txwidth = TextLength(_rp(obj),icon->label,strlen(icon->label));
-		tx = _mleft(obj) - data->view_x + icon->x + (icon->width - txwidth)/2;
-		ty = _mtop(obj) - data->view_y + icon->y + icon->height + _font(obj)->tf_Baseline + 1;
-		Move(_rp(obj),tx,ty);
-		Text(_rp(obj),icon->label,strlen(icon->label));
-	    }
+	    IconList_DrawIcon(obj, data, icon);
 	}
 	icon = Node_Next(icon);
     }
 
     MUI_RemoveClipping(muiRenderInfo(obj),clip);
+
+    data->update = 0;
 
     return 0;
 }
@@ -516,34 +611,46 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 			if (mx >= 0 && mx < _width(obj) && my >= 0 && my < _height(obj))
 			{
 			    struct IconEntry *node;
+			    struct IconEntry *new_selected = NULL;
 
-			    node = List_First(&data->icon_list);
-			    while (node)
-			    {
-			    	node->selected = 0;
-				node = Node_Next(node);
-			    }
 			    data->first_selected = NULL;
 
 			    node = List_First(&data->icon_list);
 			    while (node)
 			    {
 			    	if (mx >= node->x - data->view_x && mx < node->x - data->view_x + node->width &&
-			    	    my >= node->y - data->view_y && my < node->y - data->view_y + node->height)
+			    	    my >= node->y - data->view_y && my < node->y - data->view_y + node->height && !new_selected)
 			    	{
-				    node->selected = 1;
+				    new_selected = node;
+
+				    if (!node->selected)
+				    {
+					node->selected = 1;
+					data->update = 1;
+					data->update_icon = node;
+					MUI_Redraw(obj,MADF_DRAWUPDATE);
+				    }
+
 				    data->first_selected = node;
-				    break;
+				} else
+				{
+				    if (node->selected)
+				    {
+					node->selected = 0;
+					data->update = 1;
+					data->update_icon = node;
+					MUI_Redraw(obj,MADF_DRAWUPDATE);
+				    }
 				}
 				node = Node_Next(node);
 			    }
 
-			    if (DoubleClick(data->last_secs, data->last_mics, msg->imsg->Seconds, msg->imsg->Micros) && data->last_selected == node)
+			    if (DoubleClick(data->last_secs, data->last_mics, msg->imsg->Seconds, msg->imsg->Micros) && data->last_selected == new_selected)
 			    {
 				set(obj,MUIA_IconList_DoubleClick, TRUE);
 			    } else
 			    {
-				data->last_selected = node;
+				data->last_selected = new_selected;
 				data->last_secs = msg->imsg->Seconds;
 				data->last_mics = msg->imsg->Micros;
 
@@ -556,8 +663,6 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 				DoMethod(_win(obj),MUIM_Window_AddEventHandler, &data->ehn);
 				data->mouse_pressed = 1;
 			    }
-
-			    MUI_Redraw(obj,MADF_DRAWOBJECT);
 
 			    data->click_x = mx;
 			    data->click_y = my;
