@@ -1,0 +1,70 @@
+#   $Id$
+#
+#   Makefile to make MultiUserFS security library.
+
+include $(TOP)/config/make.cfg
+
+TOPLEVEL=$(shell pwd)
+
+FUNCS= 	\
+	secAccess_Control \
+	secAddMonitor \
+	secAllocGroupInfo \
+	secAllocUserInfo \
+	secCheckPasswd \
+	secCheckPasswdTags \
+	secContextLocate \
+	secEnumChildren \
+	secFreeExtOwner \
+	secFreeGroupInfo \
+	secFreeUserInfo \
+	secFreeze \
+	secGetConfigDirLock \
+	secGetDefProtection \
+	secGetGroupInfo \
+	secGetPasswdDirLock \
+	secGetPktDefProtection \
+	secGetPktOwner \
+	secGetRelationshipA \
+	secGetRelationship \
+	secGetTaskExtOwner \
+	secGetTaskOwner \
+	secGetUserInfo \
+	secKill \
+	secLimitDOSSetProtection \
+	secLoadPlugin \
+	secLocksecBase \
+	secLoginA \
+	secLogin \
+	secLogout \
+	secPasswd \
+	secPluginOperationComplete \
+	secRegisterHandler \
+	secRemMonitor \
+	secSetDefProtectionA \
+	secSetDefProtection \
+	secSetProtection \
+	secUnRegisterHandler \
+	secUnfreeze \
+	secUnloadPlugin \
+	secUnlocksecBase \
+	secUserInfo2ExtOwner \
+	secgetgid \
+	secgetpgid \
+	secgetuid \
+	secsetegid \
+	secseteuid \
+	secsetgid \
+	secsetreuid \
+	secsetuid
+
+EXEDIR := $(AROSDIR)/MuFS
+
+USER_INCLUDES := -I../Include
+
+#MM libs-multiuser : includes linklibs
+
+%build_module mmake=libs-mufs-security modname=security \
+  modtype=library files=$(FUNCS) uselibs="mui amiga rom m"
+
+%common
