@@ -12,7 +12,7 @@ set grid
 set terminal pbm small color
 set size 0.5,0.5
 set output "gen/plot.pbm"
-set xtics nomirror "02.02.1999", 86400 
+set xtics nomirror "02.02.1999", 604800
 #set ytics nomirror 28.0, 1.0
 set nomxtics
 plot '../../../CVSROOT/aros.size' using 1:($2/1024) title "" with lines
