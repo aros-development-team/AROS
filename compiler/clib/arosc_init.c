@@ -17,6 +17,7 @@
 #   include "arosc_gcc.h"
 #endif
 
+#include <libraries/arosc.h>
 #include <stddef.h>
 #include <ctype.h>
 
@@ -198,32 +199,32 @@ static void *const functable[]=
 int arosc_internalinit(struct AroscUserData *userdata)
 {
     /*save the old value of tc_UserData */
-    userdata->olduserdata = FindTask(0)->tc_UserData;
+    userdata->olduserdata = AROSC_USERDATA(0);
 
     /*store the new one */
-    FindTask(0)->tc_UserData = userdata;
+    AROSC_USERDATA(0) = userdata;
 
     /* passes these value to the program */
     userdata->ctype_b       = __ctype_b;
     userdata->ctype_toupper = __ctype_toupper;
     userdata->ctype_tolower = __ctype_tolower;
 
-    set_call_funcs(SETNAME(INIT), 1);
-
-    return 0;
+    return set_call_funcs(SETNAME(INIT), 1);
 }
 
 int arosc_internalexit(void)
 {
-    struct AroscUserData *userdata = FindTask(0)->tc_UserData;
+    struct AroscUserData *userdata = AROSC_USERDATA(0);
 
     set_call_funcs(SETNAME(EXIT), -1);
 
     /*restore the old value */
-    FindTask(0)->tc_UserData = userdata->olduserdata;
+    AROSC_USERDATA(0) = userdata->olduserdata;
 
     /* Free the memory the program has allocated for us */
     FreeVec(userdata);
+
+    return 0;
 }
 
 
