@@ -31,8 +31,8 @@ GUI_INCDIR	:= @aros_gui_incdir@
 GUI_CCFLAGS	:= @aros_gui_ccflags@
 SHELL_LDFLAGS	:= @aros_shell_ldflags@
 
-ARCHDIR  := $(TOP)/bin/$(HOST_ARCH)-$(HOST_CPU)
-TOOLDIR  := $(ARCHDIR)/tools
+ARCHDIR  := $(TOP)/bin/$(ARCH)-$(CPU)
+TOOLDIR  := $(TOP)/bin/$(HOST_ARCH)-$(HOST_CPU)/tools
 
 RANLIB	 := @RANLIB@
 AWK	 := @AWK@
