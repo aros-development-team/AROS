@@ -828,8 +828,8 @@ LX11
     xsd->xshm_info = init_shared_mem(xsd->display);
     if (NULL == xsd->xshm_info)
     {
-    	ok = FALSE;
-kprintf("INITIALIZATION OF XSHM FAILED !!\n");	    
+    	/* ok = FALSE; */
+    	kprintf("INITIALIZATION OF XSHM FAILED !!\n");	    
     }
     else
     {
