@@ -176,16 +176,16 @@ IPTR Balance__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 static void draw_object_frame (Object *obj, Object *o, BOOL fixed)
 {
     SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
-    Move(_rp(obj), _mleft(o), _mtop(o));
-    Draw(_rp(obj), _mleft(o), _mbottom(o));
-    Draw(_rp(obj), _mright(o), _mbottom(o));
-    Draw(_rp(obj), _mright(o), _mtop(o));
-    Draw(_rp(obj), _mleft(o), _mtop(o));
+    Move(_rp(obj), _left(o), _top(o));
+    Draw(_rp(obj), _left(o), _bottom(o));
+    Draw(_rp(obj), _right(o), _bottom(o));
+    Draw(_rp(obj), _right(o), _top(o));
+    Draw(_rp(obj), _left(o), _top(o));
     if (!fixed)
     {
-	Draw(_rp(obj), _mright(o), _mbottom(o));
-	Move(_rp(obj), _mright(o), _mtop(o));
-	Draw(_rp(obj), _mleft(o), _mbottom(o));
+	Draw(_rp(obj), _right(o), _bottom(o));
+	Move(_rp(obj), _right(o), _top(o));
+	Draw(_rp(obj), _left(o), _bottom(o));
     }
 }
 
