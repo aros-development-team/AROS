@@ -124,21 +124,18 @@ enum
 
 enum
 {
-    MUIV_List_Select_Off      = 0,
-    MUIV_List_Select_On       = 1,
-    MUIV_List_Select_Toggle   = 2,
-    MUIV_List_Select_Ask      = 3,
+    MUIV_List_Select_Active = -1,
+    MUIV_List_Select_All    = -2,
+
+    MUIV_List_Select_Off    = 0,
+    MUIV_List_Select_On     = 1,
+    MUIV_List_Select_Toggle = 2,
+    MUIV_List_Select_Ask    = 3,
 };
 
 enum
 {
     MUIV_List_GetEntry_Active = -1,
-};
-
-enum
-{
-    MUIV_List_Select_Active = -1,
-    MUIV_List_Select_All    = -2,
 };
 
 enum
@@ -195,12 +192,16 @@ enum
 #define MUIM_List_Destruct            (METHOD_USER|0x1d5100A2) /* Zune: V1 same like NList, PRIV for now! */
 #define MUIM_List_Compare             (METHOD_USER|0x1d5100A3) /* Zune: v1 same like NList, PRIV for now! */
 #define MUIM_List_Display             (METHOD_USER|0x1d5100A4) /* Zune: V1 same like NList, PRIV for now! */
+#define MUIM_List_SelectChange        (METHOD_USER|0x1d5100A5) /* Zune: V1 same like NLIST, PRIV for now! */
 #define MUIM_List_InsertSingleAsTree  (METHOD_USER|0x1d5100A6) /* Zune: V1 */
 struct MUIP_List_Construct            {ULONG MethodID; APTR entry; APTR pool;};
 struct MUIP_List_Destruct             {ULONG MethodID; APTR entry; APTR pool;};
 struct MUIP_List_Compare              {ULONG MethodID; APTR entry1; APTR entry2; LONG sort_type1; LONG sort_type2;};
 struct MUIP_List_Display              {ULONG MethodID; APTR entry; LONG entry_pos; STRPTR *strings; STRPTR *preparses;};
+struct MUIP_List_SelectChange         {ULONG MethodID; LONG pos; LONG state; ULONG flags;};
 struct MUIP_List_InsertSingleAsTree   {ULONG MethodID; APTR entry; LONG parent; LONG rel_entry_pos; ULONG flags;};
+
+#define MUIV_NList_SelectChange_Flag_Multi (1 << 0)
 
 #define MUIV_List_InsertSingleAsTree_Root     (-1)
 
