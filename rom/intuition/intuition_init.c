@@ -2,6 +2,12 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1996/09/21 14:18:48  digulla
+    Create a screen with OpenScreen()
+    Hand IntuitionBase to ROOTCLASS by UserData
+    Don't close any libs on failure (the open-code tries to open more on the next
+    	try)
+
     Revision 1.9  1996/09/17 18:46:42  digulla
     Added comment to express the experimental state of inputDevice at this place.
 
@@ -46,7 +52,9 @@
 #include <exec/execbase.h>
 #include <clib/exec_protos.h>
 #include <clib/intuition_protos.h>
+#include <clib/alib_protos.h>
 #include <dos/dos.h>
+#include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <clib/dos_protos.h>
 #ifndef INTUITION_CLASSES_H
@@ -71,7 +79,6 @@ extern void intui_close (struct IntuitionBase *);
 extern void intui_expunge (struct IntuitionBase *);
 
 static ULONG rootDispatcher (Class *, Object *, Msg);
-static struct IntuitionBase * IntuiBase;
 
 int Intuition_entry(void)
 {
@@ -121,7 +128,6 @@ static Class rootclass =
 };
 
 void intui_ProcessEvents (void);
-static struct Screen WB;
 
 struct Process * inputDevice;
 
@@ -133,6 +139,7 @@ __AROS_LH2(struct IntuitionBase *, init,
     __AROS_FUNC_INIT
     struct TagItem inputTask[]=
     {
+	{ NP_UserData,	0L },
 	{ NP_Entry,	(IPTR)intui_ProcessEvents },
 	{ NP_Input,	0L },
 	{ NP_Output,	0L },
@@ -142,25 +149,20 @@ __AROS_LH2(struct IntuitionBase *, init,
 	{ TAG_END, 0 }
     };
 
-    IntuiBase = IntuitionBase;
     SysBase = sysBase;
 
     NEWLIST (PublicClassList);
-
-    memset (&WB, 0, sizeof (struct Screen));
-
-    IntuitionBase->FirstScreen =
-	IntuitionBase->ActiveScreen = &WB;
-
-    GetPrivIBase(IntuitionBase)->WorkBench = &WB;
 
     if (!intui_init (IntuitionBase))
 	return NULL;
 
     /* The rootclass is created statically */
+    rootclass.cl_UserData = (IPTR) IntuitionBase;
     AddClass (&rootclass);
 
     /* TODO Create input.device. This is a bad hack. */
+    inputTask[0].ti_Data = (IPTR)IntuitionBase;
+
     inputDevice = CreateNewProc (inputTask);
 
     /* You would return NULL if the init failed */
@@ -173,6 +175,13 @@ __AROS_LH1(struct IntuitionBase *, open,
 	   struct IntuitionBase *, IntuitionBase, 1, Intuition)
 {
     __AROS_FUNC_INIT
+    struct TagItem screenTags[] =
+    {
+	{ SA_Depth, 4			},
+	{ SA_Type,  WBENCHSCREEN	},
+	{ SA_Title, (IPTR)"Workbench"   },
+	{ TAG_END, 0 }
+    };
 
     /* Keep compiler happy */
     version=0;
@@ -186,19 +195,25 @@ __AROS_LH1(struct IntuitionBase *, open,
     if (!UtilityBase)
     {
 	if (!(UtilityBase = (void *)OpenLibrary (UTILITYNAME, 39)) )
-	{
-	    CloseLibrary ((struct Library *)GfxBase);
+	    return NULL; /* don't close anything */
+    }
+
+    if (!GetPrivIBase(IntuitionBase)->WorkBench)
+    {
+	struct Screen * screen;
+
+	screen = OpenScreenTagList (NULL, screenTags);
+
+	if (!screen)
 	    return NULL;
-	}
+
+	IntuitionBase->FirstScreen =
+	    IntuitionBase->ActiveScreen =
+	    GetPrivIBase(IntuitionBase)->WorkBench = screen;
     }
 
     if (!intui_open (IntuitionBase))
-    {
-	CloseLibrary ((struct Library *)GfxBase);
-	CloseLibrary ((struct Library *)UtilityBase);
-
 	return NULL;
-    }
 
     /* I have one more opener. */
     IntuitionBase->LibNode.lib_OpenCnt++;
@@ -235,6 +250,15 @@ __AROS_LH0(BPTR, expunge,
 
     BPTR ret;
 
+    if (GetPrivIBase(IntuitionBase)->WorkBench)
+	CloseScreen (GetPrivIBase(IntuitionBase)->WorkBench);
+
+    if (UtilityBase)
+	CloseLibrary ((struct Library *)UtilityBase);
+
+    if (GfxBase)
+	CloseLibrary ((struct Library *)GfxBase);
+
     /* Test for openers. */
     if(IntuitionBase->LibNode.lib_OpenCnt)
     {
@@ -268,7 +292,7 @@ __AROS_LH0I(int, null,
 }
 
 #undef IntuitionBase
-#define IntuitionBase	IntuiBase
+#define IntuitionBase	((struct IntuitionBase *)(cl->cl_UserData))
 
 /******************************************************************************
 
