@@ -1368,6 +1368,10 @@ ifdef USE_REQTOOLSLIB
 %(libs) := $(%(libs)) -lreqtoolsstubs
 %(deps) := $(%(deps)) $(LIBDIR)/libreqtoolsstubs.a
 endif
+ifdef USE_COOLIMAGESLIB
+%(libs) := $(%(libs)) -lcoolimages
+%(deps) := $(%(deps)) $(LIBDIR)/libcoolimages.a
+endif
 %(libs) := $(%(libs)) %(postlibs)
 %end
 
