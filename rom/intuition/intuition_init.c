@@ -1,59 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.12  1996/10/15 15:45:31  digulla
-    Two new functions: LockIBase() and UnlockIBase()
-    Modified code to make sure that it is impossible to access illegal data (ie.
-    	fields of a window which is currently beeing closed).
 
-    Revision 1.11  1996/10/01 16:01:32	digulla
-    Don't flush the library on expunge if it's in ROM (because the user cannot
-	load it anymore).
-    Don't close anything as long as there are still processes which have me
-	open.
-
-    Revision 1.10  1996/09/21 14:18:48	digulla
-    Create a screen with OpenScreen()
-    Hand IntuitionBase to ROOTCLASS by UserData
-    Don't close any libs on failure (the open-code tries to open more on the next
-	try)
-
-    Revision 1.9  1996/09/17 18:46:42  digulla
-    Added comment to express the experimental state of inputDevice at this place.
-
-    Revision 1.8  1996/09/17 18:07:20  digulla
-    DOSBase and SysBase are now declared in the respective header files.
-    The type of DOSBase is "struct DosLibrary *". Fixed everywhere
-
-    Revision 1.7  1996/09/17 16:14:26  digulla
-    OpenWindowTagList() needs Utility.library
-
-    Revision 1.6  1996/09/13 17:57:09  digulla
-    Use IPTR
-
-    Revision 1.5  1996/09/11 16:54:31  digulla
-    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
-	some systems name an external symbol "x" as "_x" and others as "x".
-	(The problem arises with assembler symbols which might differ)
-
-    Revision 1.4  1996/08/29 13:33:31  digulla
-    Moved common code from driver to Intuition
-    More docs
-
-    Revision 1.3  1996/08/28 17:55:37  digulla
-    Proportional gadgets
-    BOOPSI
-
-    Revision 1.2  1996/08/23 17:24:11  digulla
-    Opening intuition.library called intui_init() instead of intui_open(). Ooops.
-
-    Revision 1.1  1996/08/13 15:37:26  digulla
-    First function for intuition.library
-
-
-    Desc:
-    Lang:
+    Desc: Library header for intuition
+    Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE
 #include <string.h>
@@ -155,7 +105,6 @@ __AROS_LH2(struct IntuitionBase *, init,
 	{ NP_Input,	0L },
 	{ NP_Output,	0L },
 	{ NP_Name,	(IPTR)"input.device" },
-	{ NP_StackSize, 100000 },
 	{ NP_Priority,	50 },
 	{ TAG_END, 0 }
     };
