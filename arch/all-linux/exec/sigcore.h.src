@@ -70,7 +70,7 @@ typedef @sighandler@ SignalHandler;
 
 /* How many general purpose registers are to be saved on the stack
    when a task switch happens */
-#define CPU_NUMREGS		    0
+#define CPU_NUMREGS		0
 
 /* Use this structure to save/restore registers if the stack is too
    small */
@@ -78,7 +78,9 @@ typedef @sighandler@ SignalHandler;
 struct AROS_cpu_context
 {
     ULONG regs[9]; /* eip (PC), ebp (FP), eax, ebx, ecx, edx, edi, esi, eflags */
-    struct _fpstate fpu; /* FPU registers */
+    struct _fpreg fregs[8]; /* FPU registers */
+    unsigned long fstatus;  /* cw alone causes a segfault */
+    unsigned long f_;
 };
 
 #define SIZEOF_ALL_REGISTERS	(sizeof (struct AROS_cpu_context))
@@ -118,7 +120,6 @@ struct AROS_cpu_context
 #define R5(sc)           (sc->esi)
 #define R6(sc)           (sc->eflags)
 
-
 /*
     Save and restore the CPU GPRs in the CPU context
 */
@@ -146,7 +147,7 @@ struct AROS_cpu_context
 	(PC(sc) = GetCpuContext(task)->regs[8])
 
 /*
-    It's not possible to do save the FPU under linux because linux
+    It's not possible to save the FPU under linux because linux
     uses the tasks stack to save the signal context. The signal
     context conatins the SP *before* the sigcontext was pushed on
     this stack, so it looks like this:
@@ -169,9 +170,10 @@ struct AROS_cpu_context
     Attention: The above WAS TRUE for 2.0.x kernels but now the stack layout
                looks different. See above!
 
-    Update: We store the registers now in our own structure
+    Update: We store the registers in our own structure now
 */
-#   define NO_FPU
+
+//#   define NO_FPU
 
 /*
     Size of the FPU stackframe in stack units (one stack unit is
@@ -184,7 +186,7 @@ struct AROS_cpu_context
 #endif
 
 /*
-    This macro return 1 if a FPU is available.
+    This macro returns 1 if an FPU is available.
 */
 #ifndef NO_FPU
 #   define HAS_FPU(sc)      (sc->fpstate)
@@ -197,11 +199,33 @@ struct AROS_cpu_context
 */
 #define SAVE_FPU(task,sc) \
 	HAS_FPU(sc) && \
-	    ((GetCpuContext(task)->fpu = *sc->fpstate), 1)
+            ((GetCpuContext(task)->fregs[0] = sc->fpstate->_st[0]), \
+             (GetCpuContext(task)->fregs[1] = sc->fpstate->_st[1]), \
+             (GetCpuContext(task)->fregs[2] = sc->fpstate->_st[2]), \
+             (GetCpuContext(task)->fregs[3] = sc->fpstate->_st[3]), \
+             (GetCpuContext(task)->fregs[4] = sc->fpstate->_st[4]), \
+             (GetCpuContext(task)->fregs[5] = sc->fpstate->_st[5]), \
+             (GetCpuContext(task)->fregs[6] = sc->fpstate->_st[6]), \
+             (GetCpuContext(task)->fregs[7] = sc->fpstate->_st[7]), \
+             (GetCpuContext(task)->fstatus  = sc->fpstate->status), \
+             (GetCpuContext(task)->f_       = sc->fpstate->sw    ), 1)
+
+//	    ((GetCpuContext(task)->fpu = *sc->fpstate), 1)
 
 #define RESTORE_FPU(task,sc) \
 	HAS_FPU(sc) && \
-	    ((*sc->fpstate = GetCpuContext(task)->fpu), 1)
+            ((sc->fpstate->_st[0] = GetCpuContext(task)->fregs[0]), \
+             (sc->fpstate->_st[1] = GetCpuContext(task)->fregs[1]), \
+             (sc->fpstate->_st[2] = GetCpuContext(task)->fregs[2]), \
+             (sc->fpstate->_st[3] = GetCpuContext(task)->fregs[3]), \
+             (sc->fpstate->_st[4] = GetCpuContext(task)->fregs[4]), \
+             (sc->fpstate->_st[5] = GetCpuContext(task)->fregs[5]), \
+             (sc->fpstate->_st[6] = GetCpuContext(task)->fregs[6]), \
+             (sc->fpstate->_st[7] = GetCpuContext(task)->fregs[7]), \
+             (sc->fpstate->status = GetCpuContext(task)->fstatus ), \
+             (sc->fpstate->sw     = GetCpuContext(task)->f_      ), 1)
+
+//	    ((*sc->fpstate = GetCpuContext(task)->fpu), 1)
 
 /*
     Prepare the stack. This macro is used on the stack before a new
