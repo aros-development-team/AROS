@@ -166,7 +166,7 @@ FUNCTIONS := \
 	showtitle \
 	showwindow \
 	sizewindow \
-	sysreqhandler \
+	sysreqhandler_aros \
 	timeddisplayalert \
 	unlockibase \
 	unlockpubscreen \
