@@ -48,8 +48,16 @@
 #define R_68K_32        1
 #define R_68K_PC32      4
 
+#define LO(x)	(x) & 0xFFFF
+#define HI(x)	((x) >> 16) & 0xFFFF
+#define HA(x)	(((x) >> 16) + ((x) & 0x8000 ? 1 : 0)) & 0xFFFF
+
 #define R_PPC_NONE      0
 #define R_PPC_ADDR32    1
+#define R_PPC_ADDR16_LO 4
+#define R_PPC_ADDR16_HA 6
+#define R_PPC_REL24     10
+#define R_PPC_REL32	26
 
 #define R_ARM_NONE      0
 #define R_ARM_PC24      1
@@ -128,7 +136,7 @@ struct relo
 {
     ULONG offset;   /* Address of the relocation relative to the section it refers to */
     ULONG info;     /* Type of the relocation */
-#if defined(__mc68000__) || defined(__arm__)
+#if defined(__mc68000__) || defined (__ppc__) || defined (__powerpc__) || defined(__arm__)
     LONG  addend;   /* Constant addend used to compute value */
 #endif
 };
@@ -464,8 +472,25 @@ static int relocate
             #elif defined(__ppc__) || defined(__powerpc__)
 
             case R_PPC_ADDR32:
-                *p += s;
+                *p = s + rel->addend;
                 break;
+	
+	    case R_PPC_ADDR16_LO:
+		*p = LO(s + rel->addend);
+		break;
+	    
+	    case R_PPC_ADDR16_HA:
+		*p = HA(s + rel->addend);
+		break;
+	    
+	    case R_PPC_REL24:
+                *p = (s + rel->addend - *p) >> 2;
+                break;
+
+	    case R_PPC_REL32:
+		*p = s + rel->addend - *p;
+		break;
+	    
             case R_PPC_NONE:
                 break;
             
@@ -491,7 +516,7 @@ static int relocate
             #endif
 
             default:
-                D(bug("[ELF Loader] Unrecognized relocation type %d\n", i, ELF32_R_TYPE(rel->info)));
+                D(bug("[ELF Loader] Unrecognized relocation type %d %d\n", i, ELF32_R_TYPE(rel->info)));
                 SetIoErr(ERROR_BAD_HUNK);
 		return 0;
         }
@@ -579,7 +604,7 @@ BPTR InternalLoadSeg_ELF
 
             #elif defined(__ppc__) || defined(__powerpc__)
 
-            sh[i].type == SHT_REL &&
+            sh[i].type == SHT_RELA &&
 
             #elif defined(__arm__)
             #warning Missing code for ARM            
