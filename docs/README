@@ -1,17 +1,18 @@
 Short: AROS - Amiga Replacement OS
 Author:   Aaron "Optimizer" Digulla (digulla@fh-konstanz.de) and many others
 Uploader: Aaron "Optimizer" Digulla (digulla@fh-konstanz.de)
-Version:  1.5
+Version:  1.6
 Type:	  misc/emu
 
 New this time:
 
-- Everything changed :) Throw away the 1.4 and below.
-- Most of Exec and much of DOS
-- A shell is available and some 10 commands to test it (like Dir, List,
-    Echo, etc).
-- CVS is used to allow multiple people to work on this at the same
-    time. Look into README.CVS for how to participate.
+- First small steps on graphics and intuition.library. You can open
+    a window and render in it - Due to a bug, the rendering won't be
+    visible every time. A small demo is there which open a window,
+    renders something (sometimes) and then waits for a keypress.
+- The includes and scripts were missing. They are here now.
+- More things are generated now (function tables and prototypes)
+- Some bug fixes.
 
 This project's goal is to provide a public available AmigaOS which
 is compatible with AmigaOS 3.1 (Kickstart 40.70) able to run on
@@ -20,6 +21,8 @@ memberlist:
 
 	Aaron "Optimizer" Digulla (coordination)
 	Matthias Fleischer (coding, ie. he's the one who works ;-) )
+	Martin Steigerwald (port to Alpha and Sparc)
+	Peter Boeckmann (coding some small functions)
 
 and some 300 others (which are not mentioned here since they have not
 written a line of code yet).
