@@ -5,15 +5,7 @@ include $(TOP)/config/make.cfg
 # boot time. Things such as the system boot strap, the bootmenu and syscheck
 # modules would go in here.
 
-FILES :=
-
-# We have a different strap depending upon which particular system that we 
-# run in. 
-ifeq ($(FLAVOUR),emulation)
-FILES := $(MODULES) strap_emul
-else
-FILES := $(MODULES) strap
-endif
+FILES := strap
 
 # Need this to suppress a warning, and get the correct path. MODNAME is used
 # in particular for constructing the link library name
