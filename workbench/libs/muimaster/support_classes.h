@@ -24,14 +24,22 @@
 
 #if ZUNE_EVERYTHING_BUILTIN
 #   define ZUNE_BUILTIN_ABOUTMUI 1
+#   define ZUNE_BUILTIN_GAUGE    1
 #else
 #   define ZUNE_BUILTIN_ABOUTMUI 0
+#   define ZUNE_BUILTIN_GAUGE    0
 #endif
 
 #if ZUNE_BUILTIN_ABOUTMUI
 #   define ZUNE_ABOUTMUI_DESC (&_MUI_Aboutmui_desc),
 #else
 #   define ZUNE_ABOUTMUI_DESC
+#endif
+
+#if ZUNE_BUILTIN_GAUGE
+#   define ZUNE_GAUGE_DESC (&_MUI_Gauge_desc),
+#else
+#   define ZUNE_GAUGE_DESC
 #endif
 
 struct IClass *GetPublicClass(CONST_STRPTR className, struct Library *mb);

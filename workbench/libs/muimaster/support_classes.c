@@ -114,7 +114,7 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_List_desc,
     &_MUI_Popasl_desc,
     &_MUI_Popobject_desc,
-    &_MUI_Gauge_desc,
+    ZUNE_GAUGE_DESC
     ZUNE_ABOUTMUI_DESC
     &_MUI_Settingsgroup_desc,
     &_MUI_Imageadjust_desc,
