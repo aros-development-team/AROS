@@ -357,10 +357,8 @@ dnl particular target.
 # The default tools are to use the same as the host, but only if the
 # host and target CPU are the same. With GCC this is normally enough.
 #
-# iaint, 26/11/2002:
-#   Sigh, temporarily disable cross-compiling support completely. There
-#   are other critical errors that need to be fixed first.
 
+aros_cc_pre=""
 aros_target_cc="$aros_host_cc"
 aros_target_as="$aros_host_cc"
 aros_shared_ld="$aros_host_ld"
@@ -499,6 +497,29 @@ aros_debug_cflags="$aros_symbols_debug $aros_messages_debug"
 aros_debug_aflags=""
 aros_debug_ldflags="$aros_symbols_debug"
 
+#-----------------------------------------------------------------------------
+#   Checking for distcc and ccache.
+#
+#   Always apply the transforms in this particular order. Basically you should
+#   always run 'ccache distcc compiler' in that order for the best performance.
+#
+AC_MSG_CHECKING([whether to enable distcc])
+AC_ARG_ENABLE(distcc,AC_HELP_STRING([--enable-distcc],[Use distcc as a front end to the compiler (default=no).]),distcc="$enableval",distcc="no")
+if test "$distcc" != "" -a "$distcc" != "no"; then
+    # AC_CHECK_PROG will print out the result in this case
+    AC_PATH_PROG(DISTCC,[distcc],distcc,no)
+else
+    AC_MSG_RESULT(no)
+fi
+
+AC_MSG_CHECKING([whether to enable ccache])
+AC_ARG_ENABLE(ccache,AC_HELP_STRING([--enable-ccache],[Use ccache as a front end to the compiler (default=no).]),ccache="$enableval",ccache="no")
+if test "$ccache" != "" -a "$ccache" != "no"; then
+    # AC_CHECK_PROG will print out the result in this case
+    AC_CHECK_PROG(CCACHE,[ccache],ccache,no)
+else
+    AC_MSG_RESULT(no)
+fi
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what optimization level to use])
@@ -819,13 +840,23 @@ aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}
 aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
 aros_scripts_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/scripts"
 
-# Find the tools that we need for the target - this could be quite
-# expensive, but we shall try it anyway.
-# AROS_TOOL_CC(TARGET_CC,$aros_target_cc)
-# AROS_TOOL_CC(TARGET_AS,$aros_target_as)
-# AROS_TOOL_CC(STATIC_LD,$aros_static_ld)
+# If we are running our own version of the gcc front-end, need to add it to
+# the ccache path, otherwise it will not be cached. Otherwise the compiler
+# will be in the path, and we do not have to do this...
 
-TARGET_CC="${TOPDIR}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc"
+if test "x${DISTCC}" != "x" ; then
+    if test "x${CCACHE}" != "x" ; then
+        aros_cc_pre="env CCACHE_PREFIX=${DISTCC} ${CCACHE} "
+    else
+        aros_cc_pre="${DISTCC} "
+    fi
+else
+    if test "x${CCACHE}" != "x" ; then
+        aros_cc_pre="env CCACHE_PATH=${TOPDIR}/${aros_tools_dir} ${CCACHE} "
+    fi
+fi
+
+TARGET_CC="${aros_cc_pre}${TOPDIR}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc"
 TARGET_AS=$TARGET_CC
 STATIC_LD=$TARGET_CC
 
@@ -844,6 +875,7 @@ AROS_TOOL(STRIP,$aros_target_strip,$aros_target_strip_flags)
 AROS_TOOL(OBJDUMP,$aros_target_objdump)
 AROS_TOOL(OBJCOPY,$aros_target_objcopy)
 
+#-----------------------------------------------------------------------------
 # See if we can compile SHM support
 HAVE_XSHM_SUPPORT=0
 if [[ "x$no_x" != "xyes" -a "x$ac_cv_header_sys_ipc_h" = "xyes" -a "x$ac_cv_header_sys_shm_h" = "xyes" ]]; then
