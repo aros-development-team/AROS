@@ -65,7 +65,10 @@ makefile - This is the magic file which holds the whole thing together.
 
 	\exec{gawk -f makefile2html.gawk --assign secfilt="target" $(TOP)/makefile}
 
-make.opt - File with options for the make. Edit to you liking.
+make.defaults - File with options for the make. If you want to change
+	an option, create a file \filename{make.opts} and put your changes
+	there. The most simple method is just to copy \filename{make.defaults}
+	to \filename{make.opts}.
 
 rom/ - Things which are internal parts of the OS.
 
