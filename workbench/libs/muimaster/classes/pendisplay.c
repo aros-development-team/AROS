@@ -65,7 +65,8 @@ static IPTR Pendisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Pendisplay_RGBcolor:
 	    	{
 		    struct MUI_RGBcolor *rgb = (struct MUI_RGBcolor *)tag->ti_Data;
-	    	    snprintf(data->penspec.ps_buf, sizeof(data->penspec.ps_buf), "%c%08x,%08x,%08x", PST_RGB, rgb->red, rgb->green, rgb->blue);
+	    	    snprintf(data->penspec.ps_buf, sizeof(data->penspec.ps_buf),
+			     "%c%08lx,%08lx,%08lx", PST_RGB, rgb->red, rgb->green, rgb->blue);
 		}
 		break;
 		
@@ -131,7 +132,8 @@ static IPTR Pendisplay_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    	{
 		    struct MUI_RGBcolor *rgb = (struct MUI_RGBcolor *)tag->ti_Data;
 
-	    	    snprintf(data->penspec.ps_buf, sizeof(data->penspec.ps_buf), "%c%08x,%08x,%08x", PST_RGB, rgb->red, rgb->green, rgb->blue);
+	    	    snprintf(data->penspec.ps_buf, sizeof(data->penspec.ps_buf),
+			     "%c%08lx,%08lx,%08lx", PST_RGB, rgb->red, rgb->green, rgb->blue);
 		}
 		newcol = TRUE;
 		break;
@@ -304,7 +306,7 @@ static IPTR Pendisplay_SetColormap(struct IClass *cl, Object *obj, struct MUIP_P
 {
     struct MUI_PenSpec penspec;
     
-    snprintf(penspec.ps_buf, sizeof(penspec.ps_buf), "%c%d", PST_CMAP, msg->colormap);    
+    snprintf(penspec.ps_buf, sizeof(penspec.ps_buf), "%c%ld", PST_CMAP, msg->colormap);    
     set(obj, MUIA_Pendisplay_Spec, (IPTR)&penspec);
    
     return 0;
@@ -317,7 +319,7 @@ static IPTR Pendisplay_SetRGB(struct IClass *cl, Object *obj, struct MUIP_Pendis
 {
     struct MUI_PenSpec penspec;
 
-    snprintf(penspec.ps_buf, sizeof(penspec.ps_buf), "%c%08x,%08x,%08x", PST_RGB, msg->r, msg->g, msg->b);
+    snprintf(penspec.ps_buf, sizeof(penspec.ps_buf), "%c%08lx,%08lx,%08lx", PST_RGB, msg->r, msg->g, msg->b);
     set(obj, MUIA_Pendisplay_Spec, (IPTR)&penspec);
    
     return 0;
@@ -330,7 +332,7 @@ static IPTR Pendisplay_SetMUIPen(struct IClass *cl, Object *obj, struct MUIP_Pen
 {
     struct MUI_PenSpec penspec;
     
-    snprintf(penspec.ps_buf, sizeof(penspec.ps_buf), "%c%d", PST_MUI, msg->muipen);
+    snprintf(penspec.ps_buf, sizeof(penspec.ps_buf), "%c%ld", PST_MUI, msg->muipen);
     set(obj, MUIA_Pendisplay_Spec, (IPTR)&penspec);
    
     return 0;
