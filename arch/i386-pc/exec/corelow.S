@@ -87,6 +87,23 @@ sys_Supervisor:     addl    $4,%esp     /* Remove caller address */
                     addl    $4,%esp     /* Remove call code */
                     jmp     *%edx       /* Call user code */
 
+                    .balign 32,0x90
+                    .globl  exec_SuperState
+                    .type   exec_SuperState,@function
+exec_SuperState:
+	xorl	%eax, %eax				/* clear eax */
+	testl	$0x3000,0x08(%esp)	/* check in save EFLAGS if called from SU mode */
+	je		exec_SS_IRET			/* if yes we don't need this routine */
+	movl	%esp,%eax				/* return int handler stack */
+	movl	0x0c(%eax),%esp		/* use user stack */
+	pushl	(%eax)					/* push return address */
+	ret								/* return after Supervisor() call */
+
+exec_SS_IRET:
+	iret
+
+/* for UserState() see userstate.c */
+
 /*
     System call routine. It executes given C code through 'int $0x80' call.
     The function code is specified in %eax register. Functions available are
@@ -151,10 +168,10 @@ Exec_Schedule_x:    movl    4,%edx
                     jne     1f
 
                     lea     TaskReady(%edx),%ecx
-                    cmpl    8(%ecx),%ecx
+                    cmpl    lh_TailPred(%ecx),%ecx
                     je      restore_all
 
-                    movl    (%ecx),%ecx
+                    movl    lh_Head(%ecx),%ecx
                     movb    ln_Pri(%ecx),%cl
                     cmpb    ln_Pri(%eax),%cl
                     jge     1f
@@ -288,8 +305,8 @@ Exec_Dispatch_com:  movl    4,%ebp
 
 Exec_Dispatch_x:    cli
                     leal    TaskReady(%ebp),%eax
-                    movl    (%eax),%ecx
-                    movl    (%ecx),%edx
+                    movl    lh_Head(%eax),%ecx
+                    movl    ln_Succ(%ecx),%edx
                     andl    %edx,%edx
                     jne     1f
 
@@ -299,8 +316,8 @@ Exec_Dispatch_x:    cli
                     hlt
                     jmp     Exec_Dispatch_x
 
-1:                  movl    %edx,(%eax)
-                    movl    %eax,4(%edx)
+1:                  movl    %edx,lh_Head(%eax)
+                    movl    %eax,ln_Pred(%edx)
                     incl    DispCount(%ebp)
                     movl    %ecx,ThisTask(%ebp)
 
