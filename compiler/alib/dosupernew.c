@@ -3,6 +3,8 @@
     $Id$
 */
 
+#define INTUITION_NO_INLINE_STDARG
+
 #include <intuition/classes.h>
 #include <stdarg.h>
 #include <proto/alib.h>
@@ -14,7 +16,7 @@
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
 
-	IPTR DoSuperNewA
+	IPTR DoSuperNewTagList
         (
 /*  SYNOPSIS */
             Class             *CLASS,
@@ -44,15 +46,15 @@
     if (CLASS == NULL || object == NULL) return NULL;
     
     return DoSuperMethod(CLASS, object, OM_NEW, tags, gadgetInfo);
-} /* DoSuperNewA */
+} /* DoSuperNewTagList() */
 
 ULONG DoSuperNewTags
 (
     Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, 
-    ULONG methodID, ...
+    IPTR tag1, ...
 )
 {
-    AROS_SLOWSTACKMETHODS_PRE(methodID)
+    AROS_SLOWSTACKMETHODS_PRE(tag1)
     
     if (CLASS == NULL || object == NULL)
     {
@@ -60,12 +62,12 @@ ULONG DoSuperNewTags
     }
     else
     {
-        retval = DoSuperNewA
+        retval = DoSuperNewTagList
         (
-            CLASS, object, gadgetInfo, AROS_SLOWSTACKMETHODS_ARG(methodID)
+            CLASS, object, gadgetInfo, AROS_SLOWSTACKMETHODS_ARG(tag1)
         );
     }
 
     AROS_SLOWSTACKMETHODS_POST
-} /* DoSuperNewTags */
+} /* DoSuperNewTags() */
 

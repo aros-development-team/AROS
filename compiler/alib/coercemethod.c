@@ -3,6 +3,8 @@
     $Id$
 */
 
+#define INTUITION_NO_INLINE_STDARG
+
 #include <intuition/classes.h>
 #include <stdarg.h>
 #include "alib_intern.h"
