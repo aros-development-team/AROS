@@ -27,8 +27,6 @@
 #define FORMAT_DEF 4
 #endif
 
-extern struct LocaleBase *globallocalebase;
-
 AROS_UFH3(void, LocDateToStrPutCharFunc,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(struct Locale *, locale, A2),
@@ -48,13 +46,13 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH1(LONG, LocDateToStr,
+	AROS_PLH1(LONG, LocDateToStr,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct DateTime *, datetime, D1),
 
 /*  LOCATION */
-	struct LocaleBase *, LocaleBase, 36, Locale)
+	struct DosLibrary *, DOSBase, 36, Locale)
 
 /*  FUNCTION
     	See dos.library/DateToStr
@@ -86,8 +84,6 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
 {
     AROS_LIBFUNC_INIT
     
-#define LocaleBase globallocalebase
-
     struct Locale *loc;
     struct Hook   hook;
     

@@ -21,7 +21,10 @@
 
 /* This global variable is needed for LocRawDoFmt */
 
-struct LocaleBase *globallocalebase;
+struct LocaleBase *globallocalebase = NULL;
+
+/* Avoid using nasty #defines if we can :-) */
+AROS_MAKE_ALIAS(globallocalebase, LocaleBase);
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
@@ -29,6 +32,9 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     
     struct IntLocale *def;
 
+    /* A few internal functions need to access a global LocaleBase pointer,
+       because they're used to patch dos.library functions, and thus don't
+       directly get a LocaleBase pointer. Someday, with TLS, this will go away. */
     globallocalebase = (struct LocaleBase *) LIBBASE;
     
     /* Do whatever static initialisation you need here */
