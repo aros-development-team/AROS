@@ -66,6 +66,7 @@
 
     if (--fdesc->opencount == 0)
     {
+        /* Due to a *stupid* behaviour of the dos.library we cannot handle closing failures cleanly :-(
 	if (
 	    fdesc->fh!=__stdfiles[STDIN_FILENO] &&
 	    fdesc->fh!=__stdfiles[STDOUT_FILENO] &&
@@ -78,6 +79,20 @@
 
 	    return -1;
         }
+        */
+#warning Damn dos.library! We cannot report the error code correctly! This oughta change someday...
+	/* Since the dos.library destroyes the file handle anyway, even if the closing fails, we cannot
+           report the error code correctly, so just close the file and get out of here */
+
+	if
+        (
+	    fdesc->fh!=__stdfiles[STDIN_FILENO] &&
+	    fdesc->fh!=__stdfiles[STDOUT_FILENO] &&
+	    fdesc->fh!=__stdfiles[STDERR_FILENO]
+        )
+	{
+            (void)Close(fdesc->fh);
+	}
 
 	free(fdesc);
     }
