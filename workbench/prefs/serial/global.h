@@ -167,7 +167,7 @@
 
 #define CATCOMP_NUMBERS
 
-#include "serialprefs_strings.h"
+#include "strings.h"
 
 /*********************************************************************************************/
 

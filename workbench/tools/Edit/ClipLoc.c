@@ -22,7 +22,7 @@
 
 #define  CATCOMP_NUMBERS		/* We will need the string id */
 #define  CATCOMP_STRINGS		/* and the english string corresponding to the id */
-#include "Jed_Strings.h"
+#include "strings.h"
 
 #define ID_FTXT	MAKE_ID('F','T','X','T')
 #define ID_CHRS	MAKE_ID('C','H','R','S')
@@ -215,7 +215,7 @@ static APTR catalog = NULL;
 /*** Localise all strings of the program ***/
 void InitLocale(void)
 {
-	if( (catalog = (APTR) OpenCatalogA(NULL, APPNAME ".catalog", NULL)) )
+	if( (catalog = (APTR) OpenCatalogA(NULL, "System/Tools/Editor.catalog", NULL)) )
 	{
 		WORD n;
 		/* Translate menu strings */

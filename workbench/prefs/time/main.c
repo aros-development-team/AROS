@@ -753,7 +753,7 @@ static void HandleAll(void)
 
 int main(void)
 {
-    InitLocale("Sys/timeprefs.catalog", 1);
+    InitLocale("System/Preferences/Time.catalog", 1);
     InitMenus();
     OpenLibs();
     OpenTimerDev();

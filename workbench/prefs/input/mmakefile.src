@@ -18,7 +18,7 @@ USE_MLIB := yes
 USE_COOLIMAGESLIB := yes
 
 #MM- workbench-prefs : workbench-prefs-input
-#MM workbench-prefs-input : includes linklibs setup-inputprefs-catalogs
+#MM workbench-prefs-input : includes linklibs workbench-prefs-input-catalogs
 
 %make_prog_setup mmake=workbench-prefs-input
 

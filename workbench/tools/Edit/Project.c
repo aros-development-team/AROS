@@ -19,7 +19,7 @@
 #include "ProtoTypes.h"
 
 #define  CATCOMP_NUMBERS			/* We will need the string id */
-#include "Jed_Strings.h"
+#include "strings.h"
 
 static Project first = NULL;		/* Keep track of first created project */
 UBYTE NbProject = 0;					/* Number of opened projects */

@@ -18,7 +18,7 @@ USE_MLIB := yes
 USE_COOLIMAGESLIB := yes
 
 #MM- workbench-prefs : workbench-prefs-locale
-#MM workbench-prefs-locale : includes linklibs setup-localeprefs-catalogs
+#MM workbench-prefs-locale : includes linklibs workbench-prefs-locale-catalogs 
 
 %make_prog_setup mmake=workbench-prefs-locale
 

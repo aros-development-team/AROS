@@ -18,7 +18,7 @@
 #include "ProtoTypes.h"
 
 #define  CATCOMP_NUMBERS
-#include "Jed_Strings.h"
+#include "strings.h"
 
 static struct Window *swin = NULL;			/* Main search/replace window */
 static struct Gadget *sgads,*sg;				/* Gadtool's gadgets */

@@ -4,7 +4,7 @@
 */
 
 #define CATCOMP_ARRAY
-#include "serialprefs_strings.h"
+#include "strings.h"
 
 #include "global.h"
 

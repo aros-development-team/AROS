@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -41,7 +41,7 @@
 #undef CATCOMP_STRINGS
 #undef CATCOMP_NUMBERS
 #define CATCOMP_NUMBERS
-#include "hdtoolbox_strings.h"
+#include "strings.h"
 
 #define SIMPLEBUTTON(text) SimpleButton(MSG(text))
 

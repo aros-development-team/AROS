@@ -14,7 +14,7 @@ USE_MLIB := yes
 USE_COOLIMAGESLIB := yes
 
 #MM- workbench-prefs : workbench-prefs-serial
-#MM workbench-prefs-serial : includes linklibs setup-serialprefs-catalogs
+#MM workbench-prefs-serial : includes linklibs workbench-prefs-serial-catalogs
 
 %make_prog_setup mmake=workbench-prefs-serial
 

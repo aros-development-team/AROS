@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 /*********************************************************************************************/
@@ -1118,7 +1115,7 @@ static void HandleAll(void)
 
 int main(void)
 {
-    InitLocale("Sys/multiview.catalog", 1);
+    InitLocale("System/Utilities/MultiView.catalog", 1);
     InitMenus();
     OpenLibs();
     GetArguments();

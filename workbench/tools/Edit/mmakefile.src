@@ -17,7 +17,7 @@ USE_AMIGALIB    := yes
 USE_MLIB        := yes
 
 #MM- workbench-tools : workbench-tools-editor
-#MM workbench-tools-editor : includes linklibs setup-janoeditor-catalogs
+#MM workbench-tools-editor : includes linklibs workbench-tools-editor-catalogs
 
 %make_prog_setup mmake=workbench-tools-editor
 

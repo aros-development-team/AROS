@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: AutoPoint commodity -- activates windows under the mouse pointer
-    Lang: English
+    AutoPoint commodity -- activates windows under the mouse pointer.
 */
 
 /******************************************************************************
@@ -69,7 +68,7 @@
 #define CATCOMP_STRINGS
 #define CATCOMP_ARRAY
 
-#include "commodities_strings.h"
+#include "strings.h"
 
 
 /***************************************************************************/
@@ -175,7 +174,7 @@ static BOOL initiate(int argc, char **argv, APState *as)
 
     if (LocaleBase != NULL)
     {
-	catalogPtr = OpenCatalog(NULL, "Sys/Commodities.catalog",
+	catalogPtr = OpenCatalog(NULL, "System/Tools/Commodities.catalog",
 				 OC_BuiltInLanguage, "english", TAG_DONE);
 	D(bug("Library locale.library opened!\n"));
     }

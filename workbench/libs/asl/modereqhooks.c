@@ -41,7 +41,7 @@
 #endif
 
 #define CATCOMP_NUMBERS
-#include "asl_strings.h"
+#include "strings.h"
 
 #define SDEBUG 0
 #define DEBUG 0

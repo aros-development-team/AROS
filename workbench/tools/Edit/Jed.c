@@ -23,7 +23,7 @@
 #include "Debug.h"
 
 #define  CATCOMP_NUMBERS		/* We will need the string id */
-#include "Jed_Strings.h"
+#include "strings.h"
 
 /* Linked list of opened project */
 Project  edit = NULL;

@@ -52,7 +52,7 @@ struct Catalog *REGARGS RT_OpenCatalog (struct Locale *locale)
 
     oldwinptr = proc->pr_WindowPtr;
     proc->pr_WindowPtr = (APTR)-1;
-    cat = OpenCatalogA (locale, "reqtools.catalog", (struct TagItem *)catalogtags);
+    cat = OpenCatalogA (locale, "System/Libs/reqtools.catalog", (struct TagItem *)catalogtags);
     proc->pr_WindowPtr = oldwinptr;
 
     return (cat);

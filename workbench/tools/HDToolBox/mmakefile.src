@@ -3,17 +3,16 @@
 include $(TOP)/config/make.cfg
 
 FILES = \
-		main \
-		devices \
-		gui \
-		harddisks \
-		hdtoolbox_support \
-		locale \
-		partitions \
-		partitiontables \
-		ptclass \
-		prefs
-		
+    main \
+    devices \
+    gui \
+    harddisks \
+    hdtoolbox_support \
+    locale \
+    partitions \
+    partitiontables \
+    ptclass \
+    prefs
 
 EXEDIR = $(AROSDIR)/Tools
 EXE = $(EXEDIR)/HDToolBox
@@ -25,8 +24,8 @@ USE_AMIGALIB := yes
 
 USER_CFLAGS := -Wunused -Wall -DHAVE_COOLIMAGES #-Werror
 
-#MM workbench-tools: setup-hdtoolbox-catalogs
-#MM workbench-tools-quick: setup-hdtoolbox-catalogs
+#MM workbench-tools: workbench-tools-hdtoolbox-catalogs
+#MM workbench-tools-quick: workbench-tools-hdtoolbox-catalogs
 
 %make_prog_setup mmake=workbench-tools
 

@@ -192,7 +192,7 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     }
 
     /* Open dos.catalog (needed for DosGetLocalizedString patch) */
-    il->il_DosCatalog = OpenCatalogA((struct Locale *)il, "Sys/dos.catalog", NULL);
+    il->il_DosCatalog = OpenCatalogA((struct Locale *)il, "System/Libs/dos.catalog", NULL);
 
     DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: DosCatalog 0x%lx\n",il->il_DosCatalog));
 }

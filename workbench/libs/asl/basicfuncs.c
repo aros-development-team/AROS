@@ -404,7 +404,7 @@ struct LayoutData *AllocCommon
 	    {TAG_DONE	    	    	    	 }
 	};
 	
-    	intreq->ir_Catalog = OpenCatalogA(intreq->ir_Locale, "Sys/asl.catalog", tags);
+    	intreq->ir_Catalog = OpenCatalogA(intreq->ir_Locale, "System/Libs/asl.catalog", tags);
     }
     	
     return (ld);

@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 /****************************************************************************************/
@@ -31,7 +28,7 @@
 #include "req.h"
 
 #define CATCOMP_NUMBERS
-#include "more_strings.h"
+#include "strings.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1524,7 +1521,7 @@ static void HandleAll(void)
 
 int main(void)
 {
-    InitLocale("Sys/more.catalog", 1);
+    InitLocale("System/Utilities/More.catalog", 1);
     InitMenus();
     GetArguments();
     OpenLibs();

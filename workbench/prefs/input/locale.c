@@ -4,7 +4,7 @@
 */
 
 #define CATCOMP_ARRAY
-#include "inputprefs_strings.h"
+#include "strings.h"
 
 #include "global.h"
 

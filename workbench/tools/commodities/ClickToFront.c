@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ClickToFront commodity -- puts windows to front when clicked in
-    Lang: English
+    ClickToFront commodity -- puts windows to front when clicked in.
 */
 
 /******************************************************************************
@@ -45,13 +44,6 @@
 
     INTERNALS
 
-    HISTORY
-
-    06.03.2000  SDuvan   implemented
-    13.10.2001  petah    Commodity is fully localized. Some extra safety
-                         checks have been added to the cleanup function. A
-                         version string has been added. (0.2)
-
 ******************************************************************************/
 
 
@@ -91,7 +83,7 @@ UBYTE version[] = "$VER: ClickToFront 0.2 (13.10.2001)";
 #define CATCOMP_STRINGS
 #define CATCOMP_ARRAY
 
-#include "commodities_strings.h"
+#include "strings.h"
 
 /* Libraries to open */
 struct LibTable
@@ -200,7 +192,7 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
 
     if (LocaleBase != NULL)
     {
-	catalogPtr = OpenCatalog(NULL, "Sys/Commodities.catalog", 
+	catalogPtr = OpenCatalog(NULL, "System/Tools/Commodities.catalog", 
 				 OC_BuiltInLanguage, "english", TAG_DONE);
 	D(bug("Library locale.library opened!\n"));
     }

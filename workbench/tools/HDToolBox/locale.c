@@ -8,7 +8,7 @@
 #include <proto/locale.h>
 #include <proto/alib.h>
 #include <libraries/locale.h>
-#include "hdtoolbox_strings.h"
+#include "strings.h"
 
 #include "locale.h"
 

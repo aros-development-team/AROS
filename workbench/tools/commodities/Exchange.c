@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-   $Id$
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
 
-   Desc: Exchange -- controls commodities
-   Lang: English
+    Exchange -- controls commodities.
  */
 
 /******************************************************************************
@@ -41,14 +40,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-
-    0x.01.2000  SDuvan   implemented
-    07.10.2001  petah    Exchange is fully localized. Some extra safety
-                         checks have been added to the cleanup function. A
-                         version string has been added. (0.2)
-    14.10.2001  petah    The listview is updated in a better fashion. (0.3)
 
 ******************************************************************************/
 
@@ -101,7 +92,7 @@
 #define CATCOMP_STRINGS
 #define CATCOMP_ARRAY
 
-#include "commodities_strings.h"
+#include "strings.h"
 
 #define  P(x)   
 
@@ -344,7 +335,7 @@ BOOL getResources(struct ExchangeState *ec)
     {
 	/* TODO: OC_BuiltInLanguage should be NULL, but AROS locale doesn't support
 	   it yet */
-	ec->ec_catalog = OpenCatalog(NULL, "Sys/Commodities.catalog",
+	ec->ec_catalog = OpenCatalog(NULL, "System/Tools/Commodities.catalog",
 				     OC_BuiltInLanguage, "english", TAG_DONE);
 
 	if (ec->ec_catalog == NULL)

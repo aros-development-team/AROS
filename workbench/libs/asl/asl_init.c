@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Asl initialization code.
-    Lang: English.
+    ASL initialization code.
 */
 
 
@@ -24,7 +23,7 @@
 #include LC_LIBDEFS_FILE
 
 #define CATCOMP_NUMBERS
-#include "asl_strings.h"
+#include "strings.h"
 
 #define INIT AROS_SLIB_ENTRY(init, Asl)
 

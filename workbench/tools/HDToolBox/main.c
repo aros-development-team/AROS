@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
 ULONG error;
 char *device;
 
-	InitLocale("hdtoolbox.catalog", 1);
+	InitLocale("System/Tools/HDToolBox.catalog", 1);
 	device = argc > 1 ? argv[1] : 0;
 	if ((error=initEnv(device))==ERR_NONE)
 	{

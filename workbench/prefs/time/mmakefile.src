@@ -15,7 +15,7 @@ USE_MLIB := yes
 USE_MUILIB := yes
 
 #MM- workbench-prefs : workbench-prefs-time
-#MM workbench-prefs-time : includes linklibs setup-timeprefs-catalogs
+#MM workbench-prefs-time : includes linklibs workbench-prefs-time-catalogs
 
 %make_prog_setup mmake=workbench-prefs-time
 

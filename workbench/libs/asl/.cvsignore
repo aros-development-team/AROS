@@ -1,4 +1,4 @@
 libdefs.h
 mmakefile
 *.err
-asl_strings.h
+strings.h
