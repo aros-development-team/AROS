@@ -109,15 +109,15 @@ static struct NewMenu nm[] =
   {NM_TITLE, "Wanderer"              },
     {NM_ITEM,  "Backdrop",           "B", CHECKIT|MENUTOGGLE|CHECKED, NULL, (void*)MEN_WANDERER_BACKDROP},
     {NM_ITEM,  "Execute Command...", "E", NULL,               NULL, (void*)MEN_WANDERER_EXECUTE},
-    {NM_ITEM,  "Redraw All" },
+    /*{NM_ITEM,  "Redraw All" },
     {NM_ITEM,  "Update All" },
-    {NM_ITEM,  "Last Message" },
+    {NM_ITEM,  "Last Message" },*/
     {NM_ITEM,  "Shell",              "W", NULL,               NULL, (void*)MEN_WANDERER_SHELL},
     {NM_ITEM,  "GUI Settings...",        NULL, NULL,          NULL, (void*)MEN_WANDERER_GUISETTINGS},
     {NM_ITEM,  "About...",           "?", NULL,               NULL, (void*)MEN_WANDERER_ABOUT},
     {NM_ITEM,  "Quit...",            "Q", NULL,               NULL, (void*)MEN_WANDERER_QUIT},
 
-  {NM_TITLE, "Window",          NULL, NM_MENUDISABLED},
+  /*{NM_TITLE, "Window",          NULL, NM_MENUDISABLED},
     {NM_ITEM,  "New Drawer", "N"},
     {NM_ITEM,  "Open Parent" },
     {NM_ITEM,  "Close", "K"},
@@ -135,25 +135,25 @@ static struct NewMenu nm[] =
       {NM_SUB, "Icon", NULL, CHECKIT | CHECKED, 2 + 4 + 8},
       {NM_SUB, "Name",NULL, CHECKIT, 1 + 4 + 8},
       {NM_SUB, "Size",NULL, CHECKIT, 1 + 2 + 8},
-      {NM_SUB, "Date", NULL, CHECKIT, 1 + 2 + 4},
+      {NM_SUB, "Date", NULL, CHECKIT, 1 + 2 + 4},*/
 
   {NM_TITLE, "Icon",          NULL, NM_MENUDISABLED},
     {NM_ITEM,  "Open", "O", NULL, NULL, (void*) MEN_ICON_OPEN},
-    {NM_ITEM,  "Close","C" },
-    {NM_ITEM,  "Rename...", "R"},
+/*    {NM_ITEM,  "Close","C" },
+    {NM_ITEM,  "Rename...", "R"},*/
     {NM_ITEM,  "Information...", "I", NULL, NULL, (void*) MEN_ICON_INFORMATION},
-    {NM_ITEM,  "Snapshot", "S" },
+/*    {NM_ITEM,  "Snapshot", "S" },
     {NM_ITEM,  "Unsnapshot", "U" },
     {NM_ITEM,  "Leave Out", "L" },
-    {NM_ITEM,  "Put Away", "P" },
+    {NM_ITEM,  "Put Away", "P" },*/
     {NM_ITEM, NM_BARLABEL},
     {NM_ITEM,  "Delete...", NULL, NULL, NULL, (void*) MEN_ICON_DELETE},
-    {NM_ITEM,  "Format Disk..." },
+/*    {NM_ITEM,  "Format Disk..." },
     {NM_ITEM,  "Empty Trash..." },
 
   {NM_TITLE, "Tools",          NULL, NM_MENUDISABLED},
     {NM_ITEM,  "ResetWanderer" },
-  {NM_END}
+  {NM_END}*/
 
 };
 
