@@ -25,7 +25,7 @@ BOOT_TAR_FILES := \
 	Classes/Gadgets/arospalette.gadget \
 	Classes/Gadgets/colorwheel.gadget Classes/Gadgets/gradientslider.gadget \
 	Demos \
-	Devs/DataTypes Devs/Keymaps Devs/cdrom.handler Devs/ramdrive.device Devs/clipboard.device \
+	Devs/DataTypes Devs/Keymaps Devs/ramdrive.device Devs/clipboard.device \
         Devs/parallel.device Devs/serial.device Devs/Mountlist Devs/fdsk.device Devs/pipefs.handler \
         Devs/zero.handler \
 	Fonts/fixed/8 Fonts/arial/11 Fonts/ttcourier/12 \
@@ -118,7 +118,7 @@ $(OSGENDIR)/boot/aros.iso: $(AROSDIR)/boot/aros.bin
 		-output $(OSGENDIR)/boot/aros.iso \
 		-b boot/aros.bin \
 		-allow-leading-dots \
-		-preparer AROS-Build -publisher AROS -rock \
+		-preparer AROS-Build -publisher AROS -rock -J \
 		$(AROSDIR)
 
 #MM
