@@ -175,7 +175,8 @@ includes-copy : $(AROS_INCLUDES)/math.h
 
 %rule_copy from=%.h to=$(AROS_INCLUDES)/%.h
 
-#MM- linklibs : linklibs-arosm-$(CPU)
+#MM- linklibs-core : linklibs-mlib
+#MM- linklibs : linklibs-mlib
 #MM- linklibs-mlib : linklibs-arosm-$(CPU)
 #MM linklibs-arosm-hasfpu : arosm-setup-link includes
 

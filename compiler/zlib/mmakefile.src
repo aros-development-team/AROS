@@ -19,6 +19,7 @@ FILES := \
     infutil \
     inffast
 
+#MM- linklibs-core : linklibs-arosz
 #MM- linklibs : linklibs-arosz
 #MM linklibs-zlib : linklibs-arosz
 #MM linklibs-arosz : arosz-setup-link includes

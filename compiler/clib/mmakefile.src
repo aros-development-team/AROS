@@ -388,6 +388,7 @@ ROM_OBJ	   :=	$(foreach f,$(ROM_ONLY),$(OBJDIR)/rom/$(f).o) \
 LIBS := -L$(AROS_LIB) -larosm -lautoinit
 DEP_LIBS := arosm autoinit
 
+#MM- linklibs-core : linklibs-clib
 #MM- linklibs : linklibs-clib
 #MM linklibs-clib : setup-clib includes linklibs-mlib linklibs-autoinit \
 #MM			clib-stubs
