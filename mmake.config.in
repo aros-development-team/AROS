@@ -7,7 +7,7 @@ defaultmakefilename mmakefile
 defaulttarget AROS
 genmakefilescript $(GENMF) $(TOP)/config/make.tmpl < $(MMSRC) > $(MMDEST)
 genmakefiledeps $(GENMF) $(TOP)/config/make.tmpl
-globalvarfile $(TOP)/bin/$(HOST_ARCH)-$(HOST_CPU)/gen/config/host.cfg
+globalvarfile $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)/gen/config/host.cfg
 genglobalvarfile sh $(TOP)/configure
 
 ignoredir CVS

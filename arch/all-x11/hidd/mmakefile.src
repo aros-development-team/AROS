@@ -13,7 +13,7 @@ else
 USER_INCLUDES := -I.
 XSHM_INCLUDES := -I$(SYS_INCLUDES)
 endif
-ifneq ("$(HOST_ARCH)","linux")
+ifneq ("$(AROS_HOST_ARCH)","linux")
 USER_INCLUDES := $(USER_INCLUDES) -I$(SYS_INCLUDES)
 endif
 

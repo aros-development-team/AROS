@@ -4,9 +4,9 @@
 # $Id$
 default: all
 
-HOST_CPU    ?= @aros_host_cpu@
-HOST_ARCH   ?= @aros_host_arch@
-TARGET_CPU  ?= @aros_target_cpu@
+AROS_HOST_CPU    ?= @aros_host_cpu@
+AROS_HOST_ARCH   ?= @aros_host_arch@
+AROS_TARGET_CPU  ?= @aros_target_cpu@
 AROS_TARGET_ARCH ?= @aros_target_arch@
 
 TOP := $(shell pwd)

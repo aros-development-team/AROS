@@ -1,9 +1,10 @@
 TOP = ../../..
 
-HOST_ARCH   = linux
-HOST_CPU    = i386
-TARGET_CPU  = m68k
+AROS_HOST_ARCH   = linux
+AROS_HOST_CPU    = i386
+AROS_TARGET_CPU  = m68k
 AROS_TARGET_ARCH = pp
+
 include $(TOP)/config/make.cfg
 
 INC = -I $(AROS_INCLUDES)

@@ -7,8 +7,8 @@
 # -------------------------------------------------------------------------- 
 # HOST SECTION
 # --------------------------------------------------------------------------
-HOST_ARCH	:= @aros_host_arch@
-HOST_CPU	:= @aros_host_cpu@
+AROS_HOST_ARCH	:= @aros_host_arch@
+AROS_HOST_CPU	:= @aros_host_cpu@
 
 HOST_CC		:= @aros_host_cc@
 HOST_LD		:= @aros_host_ld@
@@ -64,7 +64,7 @@ UNIQ		:= @UNIQ@
 LITE		:= @LITE@
 
 ARCH		:= $(AROS_TARGET_ARCH)
-CPU		:= $(TARGET_CPU)
+CPU		:= $(AROS_TARGET_CPU)
 GFXSYSTEM	:= gfxhidd
 CC		:= $(TARGET_CC)
 AS		:= $(TARGET_AS)
@@ -81,5 +81,5 @@ CHECKUDS	:= $(NM)
 # they belong in config/make.cfg
 ARCHDIR		:= $(TOP)/bin/$(ARCH)-$(CPU)
 MKDEPEND	:= $(TOP)/scripts/mkdep
-TOOLDIR		:= $(TOP)/bin/$(HOST_ARCH)-$(HOST_CPU)/tools
+TOOLDIR		:= $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)/tools
 GENMF		:= $(TOOLDIR)/genmf
