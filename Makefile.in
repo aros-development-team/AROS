@@ -7,9 +7,9 @@ MMAKE=@MMAKE@
 
 ifeq ($(MMAKE),)
 MMAKE=./mmake
-all: mmake genmf
+all: mmake genmf archtool
 else
-all: genmf
+all: genmf archtool
 endif
 	$(MMAKE)
 
@@ -20,6 +20,9 @@ mmake:
 
 genmf:
 	$(MAKE) -C tools/genmf
+
+archtool:
+	$(MAKE) -C tools/archtools
 
 clean:
 	$(MMAKE) AROS.clean

@@ -36,6 +36,7 @@ ULIBNAME := MathFFP
 
 OSMODULE  := mathffp.library
 FILES	  :=
+ARCHIVE   := mathffp.arch
 FUNCTIONS := spabs spadd spceil spcmp spdiv spfix spfloor spflt \
 	     spmul spneg spsub sptst
 
@@ -81,7 +82,7 @@ SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS)
 endif
 %prepare_shlib mathffp $(SHARED_MATHFFP)
 
-%genromlib_f
+%genromlib_arch
 
 #MM kernel-mathffp-linklib : setup includes kernel-mathffp-$(ARCH)-$(CPU)
 kernel-mathffp-linklib : show-flags $(LIB)

@@ -1,0 +1,1055 @@
+/*
+    (C) 1995-98 AROS - The Amiga Replacement OS
+    $Id$
+    $Log$
+    Revision 1.1  1998/09/21 20:49:14  hkiel
+    Started converting to new archtool
+
+
+    Desc: Archive of Mathffp Functions
+    Lang: english
+*/
+#Archive
+#Header
+#include <libraries/mathffp.h>
+#include <aros/libcall.h>
+#include <proto/mathffp.h>
+#include <proto/exec.h>
+#include <exec/types.h>
+#include "mathffp_intern.h"
+#/Header
+
+#Function LHA float SPAbs
+#Parameter float fnum1 D0
+#LibOffset 9
+#AutoDoc
+/*  FUNCTION
+        Calculate the absolute value of a given floating point number
+    INPUTS
+        fnum1  - ffp number
+
+    RESULT
+        absolute value of fnum1
+
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : 0
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+      ALGORITHM:
+        set the sign-bit to zero
+
+    HISTORY
+
+******************************************************************************/
+#/AutoDoc
+#Code
+{
+AROS_LIBFUNC_INIT
+    if (0 == fnum1)
+      /* value is 0 -> set the Zero Flag */
+      SetSR( Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+    else
+    {
+      fnum1 &= (FFPMantisse_Mask | FFPExponent_Mask);
+      /* set the sign-bit to zero */
+      SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
+    }
+    return fnum1;
+AROS_LIBFUNC_EXIT
+} /* SPAbs */
+#/Code
+#/Function
+
+
+#Function LHA float SPAdd
+#Parameter float fnum1 D1
+#Parameter float fnum2 D0
+#LibOffset 11
+#AutoDoc
+/*  FUNCTION
+        Calculate the sum of two ffp numbers
+
+    INPUTS
+        fnum1  - ffp number to add
+        fnum2  - ffp number to add
+
+    RESULT
+        sum of fnum1 and fnu2
+
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : result is too large or too small for ffp format
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+
+    INTERNALS
+      ALGORITHM:
+        Adapt the exponent of the ffp-number with the smaller
+        exponent to the ffp-number with the larger exponent.
+        Therefore rotate the mantisse of the ffp-number with the
+        smaller exponents by n bits, where n is the absolute value
+        of the difference of the exponents.
+        The exponent of the target ffp-number is set to the larger
+        exponent plus 1.
+        Additionally rotate both numbers by one bit to the right so
+        you can catch a result >1 in the MSB.
+        If the signs of the two numbers are equal then simply add
+        the two mantisses. The result of the mantisses will be
+        [0.5 .. 2[. Check the MSB. If zero, then the result is < 1
+        and therefore subtract 1 from the exponent. Normalize the
+        mantisse of the result by rotating it one bit to the left.
+        Check the mantisse for 0.
+        If the signs of the two numbers are different then subtract
+        the ffp-number with the neagtive sign from the other one.
+        The result of the mantisse will be [-1..1[. If the MSB of
+        the result is set, then the result is below zero and therefore
+        you have to calculate the absolute value of the mantisse.
+        Check the mantisse for zero. Normalize the mantisse by
+        rotating it to the left and decreasing the exponent for every
+        rotation.
+        Test the exponent of the result for an overflow.
+        That`s it!
+
+    HISTORY
+
+******************************************************************************/
+#/AutoDoc
+#Code
+{
+AROS_LIBFUNC_INIT
+  LONG Res;
+  ULONG Mant1, Mant2;
+  char Shift;
+  char Exponent;
+
+  SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
+
+  Mant1 = fnum1 & FFPMantisse_Mask;
+  Mant2 = fnum2 & FFPMantisse_Mask;
+  Shift = ((char)fnum1 & FFPExponent_Mask) -
+          ((char)fnum2 & FFPExponent_Mask);
+
+  if (Shift > 0)
+  {
+    if (Shift >= 31)
+      Mant2 = 0;
+    else
+      Mant2 >>= (Shift + 1);
+    Mant1 >>= 1;
+    Exponent = (fnum1 & FFPExponent_Mask) + 1;
+  }
+  else
+  {
+    if (Shift <= -31)
+      Mant1 = 0;
+    else
+      Mant1 >>= (-Shift + 1);
+    Mant2 >>= 1;
+    Exponent = (fnum2 & FFPExponent_Mask) + 1;
+  }
+
+  /* sign(fnum1) == sign(fnum2)
+  ** simple addition
+  ** 0.5 <= res < 2
+  */
+  if ( ((BYTE) fnum1 & FFPSign_Mask) - ((BYTE) fnum2 & FFPSign_Mask) == 0)
+  {
+    Res = fnum1 & FFPSign_Mask;
+    Mant1 += Mant2;
+    if ((LONG) Mant1 > 0)
+    {
+      Exponent --;
+      Mant1 +=Mant1;
+    }
+
+    if (0 == Mant1)
+    {
+      SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+      return 0;
+    }
+  }
+    /* second case: sign(fnum1) != sign(fnum2)
+    ** -1 <= res < 1
+    */
+  else
+  {
+    if ((char) fnum1 < 0)
+      Mant1 = Mant2 - Mant1;
+    else /* fnum2 < 0 */
+      Mant1 = Mant1 - Mant2;
+    /* if the result is below zero */
+    if ((LONG) Mant1 < 0)
+    {
+      Res = FFPSign_Mask;
+      Mant1 =-Mant1;
+      SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    }
+    else
+      Res = 0;
+      
+    /* test the result for zero, has to be done before normalizing
+    ** the mantisse
+    */
+    if (0 == Mant1)
+    {
+      SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+      return 0;
+    }
+    /* normalize the mantisse */
+      while ((LONG) Mant1 > 0)
+      {
+        Mant1 += Mant1;  /* one bit to the left. */
+        Exponent --;
+      }
+
+  } /* else */
+
+  if ((char) Exponent < 0)
+  {
+    SetSR(Overflow_Bit, Zero_Bit | Overflow_Bit);
+    /* do NOT change Negative_Bit! */
+    return (Res | (FFPMantisse_Mask | FFPExponent_Mask));
+  }
+
+  Res |= (Mant1 & FFPMantisse_Mask) | Exponent;
+  return Res;
+AROS_LIBFUNC_EXIT
+} /* SPAdd */
+#/Code
+#/Function
+
+
+#Function LHA float SPCeil
+#Parameter float y D0
+#LibOffset 16
+#AutoDoc
+/*  FUNCTION
+        Calculate the least integer ffp-number greater than or equal to
+        fnum1
+
+
+    INPUTS
+        y  - ffp number
+
+    RESULT
+
+
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : 0
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        SPFloor()
+
+    INTERNALS
+      ALGORITHM:
+         Ceil(y) = - Floor(-y)
+
+    HISTORY
+
+******************************************************************************/
+#/AutoDoc
+#Code
+{
+AROS_LIBFUNC_INIT
+
+  /* Ceil(y) = -Floor(-y) */
+  y = SPFloor(y ^ FFPSign_Mask);
+  return (y ^ FFPSign_Mask);
+AROS_LIBFUNC_EXIT
+} /* SPCeil */
+#/Code
+#/Function
+
+
+#Function LHA LONG SPCmp
+#Parameter float fnum1 D0
+#Parameter float fnum2 D1
+#LibOffset 7
+#AutoDoc
+/*  FUNCTION
+        Compares two ffp numbers
+
+    INPUTS
+        fnum1  - ffp number
+        fnum2  - ffp number
+
+    RESULT
+       +1 : fnum1 > fnum2
+        0 : fnum1 = fnum2
+       -1 : fnum1 < fnum2
+
+
+        Flags:
+          zero     : fnum2 = fnum1
+          negative : fnum2 < fnum1
+          overflow : 0
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+
+    INTERNALS
+      ALGORITHM:
+        1st case:
+          fnum1 is negative and fnum2 is positive
+            or
+          ( exponent(fnum1) < exponent(fnum2) and signs are equal )
+          -> fnum1 < fnum2
+
+        2nd case:
+          fnum1 is positive and fnum2 is negative
+            or
+          ( exponent(fnum1) > exponent(fnum2) and signs are equal )
+          -> fnum2 > fnum1
+
+        now the signs and exponents must be equal
+
+        3rd case:
+          fnum1 == fnum2
+
+        4th case:
+          mantisse(fnum1) < mantisse(fnum2)
+          -> fnum1 < fnum2
+
+        final case:
+          fnum1 > fnum2
+    HISTORY
+
+******************************************************************************/
+#/AutoDoc
+#Code
+{
+AROS_LIBFUNC_INIT
+
+  /* fnum1 is negative and fnum2 is positive
+  **  or
+  ** exponent of fnum1 is less than the exponent of fnum2
+  ** => fnum1 < fnum2
+  */
+  if ( (char)fnum1 < (char)fnum2 )
+  {
+    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    return -1;
+  }
+
+  /* fnum1 is positive and fnum2 is negative
+  **  or
+  ** exponent of fnum1 is greater tban the exponent if fnum2
+  ** => fnum1 > fnum2
+  */
+  if ((char) fnum1 > (char) fnum2 )
+  {
+    SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
+    return 1;
+  }
+
+  /*the signs and exponents of fnum1 and fnum2 must now be equal
+  **fnum1 == fnum2
+  */
+  if (fnum1 == fnum2)
+  {
+    SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+    return 0;
+  }
+
+  /* mantisse(fnum1) < mantisse(fnum2) */
+  if (fnum1 < fnum2)
+  {
+    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    return -1;
+  }
+
+  /* Mantisse(fnum1) > mantisse(fnum2) */
+  SetSR(0, Zero_Bit | Negative_Bit | Overflow_Bit);
+  return 1;
+AROS_LIBFUNC_EXIT
+} /* SPCmp */
+#/Code
+#/Function
+
+
+#Function LHA float SPDiv
+#Parameter float fnum1 D1
+#Parameter float fnum2 D0
+#LibOffset 14
+#AutoDoc
+/*  FUNCTION
+        Divide two ffp numbers
+        fnum = fnum2 / fnum1;
+
+    INPUTS
+        fnum1  - ffp number
+        fnum2  - ffp number
+
+    RESULT
+
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : result is out of range
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+        The parameters are swapped !
+
+    SEE ALSO
+
+
+    INTERNALS
+      ALGORITHM:
+        Check if fnum2 == 0: result = 0;
+        Check if fnum1 == 0: result = overflow;
+        The further algorithm comes down to a pen & paper division
+
+    HISTORY
+
+******************************************************************************/
+#/AutoDoc
+#Code
+{
+AROS_LIBFUNC_INIT
+  LONG Res = 0;
+  char Exponent = ((char) fnum2 & FFPExponent_Mask) -
+                  ((char) fnum1 & FFPExponent_Mask) + 0x41;
+
+  LONG Mant2 = ((ULONG)fnum2 & FFPMantisse_Mask);
+  LONG Mant1 = ((ULONG)fnum1 & FFPMantisse_Mask);
+  ULONG Bit_Mask = 0x80000000;
+
+  /* check if the dividend is zero */
+  if (0 == fnum2)
+  {
+    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    return 0;
+  }
+
+  /* check for division by zero */
+  if (0 == fnum1)
+  {
+    SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    return 0;
+  }
+
+  while (Bit_Mask >= 0x40 && Mant2 != 0)
+  {
+    if (Mant2 - Mant1 >= 0)
+    {
+      Mant2 -= Mant1;
+      Res |= Bit_Mask;
+
+      while (Mant2 > 0)
+      {
+        Mant2 <<= 1;
+        Bit_Mask >>= 1;
+      }
+
+      while (Mant1 > 0)
+      {
+        Mant1 <<=1;
+        Bit_Mask <<=1;
+      }
+    } /* if */
+    else
+    {
+      Mant1 = (ULONG) Mant1 >> 1;
+      Bit_Mask >>= 1;
+    }
+  } /* while */
+
+  /* normalize the mantisse */
+  while (Res > 0)
+  {
+    Res += Res;
+    Exponent --;
+  }
+
+  if ((char) Res < 0)
+    Res += 0x00000100;
+
+  Res &= FFPMantisse_Mask;
+  Res |= (Exponent & 0x7f);
+  Res |= (fnum1 & FFPSign_Mask) ^ (fnum2 & FFPSign_Mask);
+
+  if ((char) Res < 0)
+    SetSR(Negative_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+
+  if ((char) Exponent < 0)
+  {
+    SetSR(Overflow_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+    return(Res | (FFPMantisse_Mask | FFPExponent_Mask));
+  }
+  return Res;
+AROS_LIBFUNC_EXIT
+} /* SPDiv */
+#/Code
+#/Function
+
+
+#Function LHA LONG SPFix
+#Parameter float fnum D0
+#LibOffset 5
+#AutoDoc
+/*  FUNCTION
+        Convert ffp-number to integer
+
+    INPUTS
+        fnum   - ffp number
+
+    RESULT
+        absolute value of fnum1
+
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : ffp out of integer-range
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+#/AutoDoc
+#Code
+{
+AROS_LIBFUNC_INIT
+  LONG Res;
+  BYTE Shift;
+
+  if ((fnum & FFPExponent_Mask) > 0x60 )
+  {
+    if(fnum < 0) /* don`t hurt the SR! */
+    {
+      SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+      return 0x80000000;    
+    }
+    else
+    {
+      SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+      return 0x7fffffff;    
+    }
+  }
+
+
+  Shift = (fnum & FFPExponent_Mask) - 0x40;
+  Res = ((ULONG)(fnum & FFPMantisse_Mask)) >> (32 - Shift);
+
+  if (0 == Res)
+  {
+    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    return 0;
+  }
+
+  if (0x80000000 == Res)
+    return 0x7fffffff;
+
+
+  /* Test for a negative sign */
+  if ((char)fnum < 0)
+  {
+    Res = -Res;
+    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+  }
+
+  return Res;
+AROS_LIBFUNC_EXIT
+} /* SPFix */
+#/Code
+#/Function
+
+
+#Function LHA float SPFloor
+#Parameter float y D0
+#LibOffset 15
+#AutoDoc
+/*  FUNCTION
+        Calculate the largest integer ffp-number less than or equal to
+        fnum
+
+
+    INPUTS
+        y  - ffp number
+
+    RESULT
+             ffp number
+
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : 0 (???)
+
+    NOTES
+
+    EXAMPLE
+       floor(10.5) = 10
+       floor(0.5)  = 0
+       floor(-0.5) = -1
+       floor(-10.5)= -11
+
+    BUGS
+
+    SEE ALSO
+
+
+    INTERNALS
+      ALGORITHM:
+        The integer part of a ffp number are the left "exponent"-bits
+        of the mantisse!
+        Therefore:
+        Test the exponent for <= 0. This has to be done separately!
+        If the sign is negative then return -1 otherwise return 0.
+
+        Generate a mask of exponent(y) (where y is the given ffp-number)
+        bits starting with bit 31.
+        If y < 0 then test whether it is already an integer. If not
+        then y = y - 1 and generate that mask again. Use the
+        mask on the mantisse.
+
+    HISTORY
+******************************************************************************/
+#/AutoDoc
+#Code
+{
+AROS_LIBFUNC_INIT
+  LONG Mask = 0x80000000;
+
+  if (((char)y & FFPExponent_Mask)  <= 0x40)
+  {
+    if ((char)y < 0)
+    {
+      SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+      return 0x800000C1; /* -1 */
+    }
+    else
+    {
+      SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+      return 0;
+    }
+  }
+
+  /* |fnum| >= 1 */
+  Mask >>= ( ((char) y & FFPExponent_Mask) - 0x41);
+  Mask |= FFPSign_Mask | FFPExponent_Mask;
+
+  /* fnum is negative */
+  if ((char) y < 0)
+  /* is there anything behind the dot? */
+    if (0 != (y & (~Mask)) )
+    {
+      Mask = 0x80000000;
+      y    = SPAdd(y, 0x800000c1); /* y = y -1; */
+      Mask >>= ((char) y & FFPExponent_Mask) - 0x41;
+      Mask |= FFPSign_Mask | FFPExponent_Mask;
+    }
+
+  if((char) y < 0)
+    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+
+  return y & Mask;
+AROS_LIBFUNC_EXIT
+} /* SPFloor */
+#/Code
+#/Function
+
+
+#Function LHA float SPFlt
+#Parameter LONG inum D0
+#LibOffset 6
+#AutoDoc
+/*  FUNCTION
+
+
+    INPUTS
+        inum  - signed integer number
+
+    RESULT
+
+
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : ffp is not exactly the integer
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+/*
+    ALGORITHM
+        Return zero for x == 0.
+        If x < 0 set the sign-bit and calculate the absolute value
+        of x.
+        Find out which bit is the highest-set bit. If the number
+        of that bit > 24 then the result has the highest bit
+        of the mantisse set to one and the exponent equals the
+        number of the bit + 2. This is due to the fact that we only
+        have 24 bits for the mantisse.
+        Otherwise rotate the given integer by
+        (32 - (number of highes set bit + 1)) bits to the left and
+        calculate the result from that.
+*/
+#/AutoDoc
+#Code
+{
+AROS_LIBFUNC_INIT
+  BYTE Exponent = 0;
+  LONG TestMask = 0xFFFFFFFF;
+  LONG Res = 0;
+
+  if (inum == 0)
+  {
+    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    return 0;
+  }
+
+  if (inum < 0)
+  {
+    Res = FFPSign_Mask;
+    inum = -inum;
+  }
+  /* find out which is the number of the highes set bit */
+  while (TestMask & inum)
+  {
+    Exponent ++;
+    TestMask <<= 1;
+  }
+
+  /* Exponent = number of highest set bit + 1 */
+
+  inum <<= (32 - Exponent);
+  if ((char) inum < 0)
+    inum +=0x100;
+  inum &= FFPMantisse_Mask;
+
+  /* adapt the exponent to the ffp format */
+  Exponent += 0x40;
+  Res |= inum | Exponent;
+  if ((char) Res < 0)
+    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+
+  if (Exponent > (25 + 0x40))
+  {
+    Res |= 0x80000000;
+    SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+  }
+
+  return Res;
+AROS_LIBFUNC_EXIT
+} /* SPFlt */
+#/Code
+#/Function
+
+
+#Function LHA float SPMul
+#Parameter float fnum1 D1
+#Parameter float fnum2 D0
+#LibOffset 13
+#AutoDoc
+/*  FUNCTION
+        Multiply two ffp numbers
+        fnum = fnum1 * fnum2;
+
+    INPUTS
+        fnum1  - ffp number
+        fnum2  - ffp number
+
+    RESULT
+
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : result is out of range
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+#/AutoDoc
+#Code
+{
+AROS_LIBFUNC_INIT
+  char Exponent = ((char) fnum1 & FFPExponent_Mask) +
+                  ((char) fnum2 & FFPExponent_Mask) - 0x41;
+  ULONG Mant1H = ( (ULONG) (fnum1 & FFPMantisse_Mask)) >> 20;
+  ULONG Mant2H = ( (ULONG) (fnum2 & FFPMantisse_Mask)) >> 20;
+  ULONG Mant1L = (((ULONG) (fnum1 & FFPMantisse_Mask)) >> 8) & 0x00000fff;
+  ULONG Mant2L = (((ULONG) (fnum2 & FFPMantisse_Mask)) >> 8) & 0x00000fff;
+  LONG Res;
+
+  Res  =  (Mant1H * Mant2H) <<  8;
+  Res += ((Mant1H * Mant2L) >>  4);
+  Res += ((Mant1L * Mant2H) >>  4);
+  Res += ((Mant1L * Mant2L) >> 16);
+
+  /* Bit 32 is not set */
+  if ((LONG)Res > 0)
+    Res <<= 1; /* rotate the mantisse by one bit to the left */
+  else
+    Exponent ++;
+
+
+  if (0 == Res)
+  {
+    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    return 0;
+  }
+
+  Res |= ((fnum1 & FFPSign_Mask) ^ (fnum2 & FFPSign_Mask) );
+
+  /* overflow? */
+  if ((char) Exponent < 0 || (char) Exponent == 0x7f)
+  {
+    SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    return (Res | (FFPMantisse_Mask + FFPExponent_Mask));
+  }
+
+  Res |= Exponent;
+
+  if ((char) Res < 0)
+    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+
+  return Res;
+AROS_LIBFUNC_EXIT
+} /* SPMul */
+#/Code
+#/Function
+
+
+#Function LHA float SPNeg
+#Parameter float fnum1 D0
+#LibOffset 10
+#AutoDoc
+/*  FUNCTION
+        Calculate fnum1*(-1)
+
+    INPUTS
+        fnum1  - ffp number
+
+    RESULT
+        -fnum1
+
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : 0
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+
+    INTERNALS
+      ALGORITHM:
+        Return zero if fnum == 0.
+        Otherwise flip the sign-bit.
+
+    HISTORY
+
+******************************************************************************/
+#/AutoDoc
+#Code
+{
+AROS_LIBFUNC_INIT
+  if (0 == fnum1)
+  {
+    SetSR( Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    return 0;
+  }
+
+  /* flip sign-bit */
+  fnum1 ^= FFPSign_Mask;
+
+  if((char) fnum1 < 0)
+  /* result is negative */
+    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+  else
+    /* result is positive */
+    SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
+
+  return fnum1;
+AROS_LIBFUNC_EXIT
+} /* SPNeg */
+#/Code
+#/Function
+
+
+#Function LHA float SPSub
+#Parameter float fnum1 D0
+#Parameter float fnum2 D1
+#LibOffset 12
+#AutoDoc
+/*  FUNCTION
+        Subtract two floating point numbers
+        fnum = fnum2 - fnum1;
+
+    INPUTS
+        fnum1  - ffp number
+        fnum2  - ffp number
+
+    RESULT
+
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : result is out of range
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+
+    INTERNALS
+      ALGORITHM:
+        fnum = fnum2 + (-fnum1).
+
+    HISTORY
+
+******************************************************************************/
+#/AutoDoc
+#Code
+{
+AROS_LIBFUNC_INIT
+  return SPAdd(fnum2, fnum1 ^ FFPSign_Mask);
+AROS_LIBFUNC_EXIT
+} /* SPSub */
+#/Code
+#/Function
+
+
+#Function LHA LONG SPTst
+#Parameter float fnum D1
+#LibOffset 8
+#AutoDoc
+/*  FUNCTION
+        Compare a ffp-number against zero.
+
+
+    INPUTS
+        fnum  - ffp number
+
+    RESULT
+
+        +1 : fnum > 0.0
+         0 : fnum = 0.0
+        -1 : fnum < 0.0
+
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : 0
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+
+    INTERNALS
+      ALGORITHM:
+        Sign is negative: return -1
+        fnum == 0       : return 0
+        Otherwise       : return 1
+
+    HISTORY
+
+******************************************************************************/
+#/AutoDoc
+#Code
+{
+AROS_LIBFUNC_INIT
+  /* fnum1 is negative */
+  if ((char) fnum < 0)
+  {
+    SetSR(Negative_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+    return -1;
+  }
+
+  /* fnum1 is zero */
+  if (0 == fnum)
+  {
+    SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+    return 0;
+  }
+
+  /* fnum1 is positive */
+  SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
+  return 1;
+AROS_LIBFUNC_EXIT
+} /* SPTst */
+#/Code
+#/Function
+
+#/Archive
+
