@@ -113,6 +113,10 @@ static VOID gc_set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
                 case aoHidd_GC_LinePattern: 
 		    data->linePat = (UWORD) tag->ti_Data;
 		    break;
+
+                case aoHidd_GC_LinePatternCnt: 
+		    data->linePatCnt = (UWORD) tag->ti_Data;
+		    break;
 		    
                 case aoHidd_GC_PlaneMask:
 		    data->planeMask = (APTR) tag->ti_Data;
@@ -163,6 +167,10 @@ static VOID gc_get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 		
             case aoHidd_GC_LinePattern:
 	    	*msg->storage = data->linePat;
+		break;
+
+            case aoHidd_GC_LinePatternCnt:
+	    	*msg->storage = data->linePatCnt;
 		break;
 		
             case aoHidd_GC_PlaneMask:
