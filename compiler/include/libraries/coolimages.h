@@ -35,6 +35,8 @@
 #define COOL_WINDOWIMAGE_ID 	17
 #define COOL_KBDIMAGE_ID    	18
 
+#define DEF_COOLIMAGEHEIGHT 16
+
 #define COOLIMAGECLASS      "coolimageclass"
 #define COOLBUTTONGCLASS    "coolbuttongclass"
 
