@@ -403,7 +403,7 @@ static int nocase_open(struct emulbase *emulbase, char *pathname, int flags, mod
 }
 
 /*-------------------------------------------------------------------------------------------*/
- 
+
 static DIR *nocase_opendir(struct emulbase *emulbase, char *name)
 {
     DIR *result;
@@ -1589,20 +1589,6 @@ AROS_LH0I(int, null, struct emulbase *, emulbase, 4, emul_handler)
     AROS_LIBFUNC_EXIT
 }
 
-/*****************************************************************************/
-
-STRPTR fixName(STRPTR name)
-{
-    STRPTR colon = strchr(name, ':');
-
-    if (colon != NULL)
-    {
-	return colon + 1;
-    }
-
-    return name;
-}
-
 /*********************************************************************************************/
 
 AROS_LH1(void, beginio,
@@ -1612,13 +1598,13 @@ AROS_LH1(void, beginio,
     AROS_LIBFUNC_INIT
 
     LONG error = 0;
-    
+
     /* WaitIO will look into this */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_MESSAGE;
-    
+
     /* Disable(); */
     ObtainSemaphore(&emulbase->sem);
-    
+
     /*
       Do everything quick no matter what. This is possible
       because I never need to Wait().
@@ -1628,7 +1614,7 @@ AROS_LH1(void, beginio,
     case FSA_OPEN:
 	error = open_(emulbase,
 		      (struct filehandle **)&iofs->IOFS.io_Unit,
-		      fixName(iofs->io_Union.io_OPEN.io_Filename),
+		      iofs->io_Union.io_OPEN.io_Filename,
 		      iofs->io_Union.io_OPEN.io_FileMode);
 	if (
 			(error == ERROR_WRITE_PROTECTED) &&
@@ -1637,12 +1623,12 @@ AROS_LH1(void, beginio,
 	{
 		error = open_(emulbase,
                       (struct filehandle **)&iofs->IOFS.io_Unit,
-                      fixName(iofs->io_Union.io_OPEN.io_Filename),
+                      iofs->io_Union.io_OPEN.io_Filename,
                       iofs->io_Union.io_OPEN.io_FileMode & (~FMF_WRITE));
 	}
-		
+
 	break;
-	
+
     case FSA_CLOSE:
 	error = free_lock(emulbase, (struct filehandle *)iofs->IOFS.io_Unit);
 	break;
@@ -1825,7 +1811,7 @@ AROS_LH1(void, beginio,
     case FSA_OPEN_FILE:
 	error = open_file(emulbase,
 			  (struct filehandle **)&iofs->IOFS.io_Unit,
-			  fixName(iofs->io_Union.io_OPEN_FILE.io_Filename),
+			  iofs->io_Union.io_OPEN_FILE.io_Filename,
 			  iofs->io_Union.io_OPEN_FILE.io_FileMode,
 			  iofs->io_Union.io_OPEN_FILE.io_Protection);
 	if (
@@ -1835,7 +1821,7 @@ AROS_LH1(void, beginio,
 	{
 		error = open_file(emulbase,
 			 (struct filehandle **)&iofs->IOFS.io_Unit,
-			 fixName(iofs->io_Union.io_OPEN_FILE.io_Filename),
+			 iofs->io_Union.io_OPEN_FILE.io_Filename,
 			 iofs->io_Union.io_OPEN_FILE.io_FileMode & (~FMF_WRITE),
 			 iofs->io_Union.io_OPEN_FILE.io_Protection);
 	}
@@ -1844,28 +1830,28 @@ AROS_LH1(void, beginio,
     case FSA_CREATE_DIR:
 	error = create_dir(emulbase,
 			   (struct filehandle **)&iofs->IOFS.io_Unit,
-			   fixName(iofs->io_Union.io_CREATE_DIR.io_Filename),
+			   iofs->io_Union.io_CREATE_DIR.io_Filename,
 			   iofs->io_Union.io_CREATE_DIR.io_Protection);
 	break;
 	
     case FSA_CREATE_HARDLINK:
 	error = create_hardlink(emulbase,
 				(struct filehandle **)&iofs->IOFS.io_Unit,
-				fixName(iofs->io_Union.io_CREATE_HARDLINK.io_Filename),
+				iofs->io_Union.io_CREATE_HARDLINK.io_Filename,
 				(struct filehandle *)iofs->io_Union.io_CREATE_HARDLINK.io_OldFile);
 	    break;
 	    
     case FSA_CREATE_SOFTLINK:
 	error = create_softlink(emulbase,
 				(struct filehandle **)&iofs->IOFS.io_Unit,
-				fixName(iofs->io_Union.io_CREATE_SOFTLINK.io_Filename),
+				iofs->io_Union.io_CREATE_SOFTLINK.io_Filename,
 				iofs->io_Union.io_CREATE_SOFTLINK.io_Reference);
 	break;
 	    
     case FSA_RENAME:
 	error = rename_object(emulbase,
 			      (struct filehandle *)iofs->IOFS.io_Unit,
-			      fixName(iofs->io_Union.io_RENAME.io_Filename),
+			      iofs->io_Union.io_RENAME.io_Filename,
 			      iofs->io_Union.io_RENAME.io_NewName);
 	break;
 	
@@ -1879,7 +1865,7 @@ AROS_LH1(void, beginio,
     case FSA_DELETE_OBJECT:
 	error = delete_object(emulbase,
 			      (struct filehandle *)iofs->IOFS.io_Unit,
-			      fixName(iofs->io_Union.io_DELETE_OBJECT.io_Filename));
+			      iofs->io_Union.io_DELETE_OBJECT.io_Filename);
 	break;
 	
     case FSA_PARENT_DIR:
