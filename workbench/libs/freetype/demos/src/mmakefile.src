@@ -35,8 +35,8 @@ clean ::
 $(EXEDIR)/ftstring : $(OBJDIR)/ftstring.o $(COMMONOBJ) $(FREETYPELINKLIB) $(FREETYPEGRAPHLIB)
 	%link_q
 
-$(EXEDIR)/ftview : $(OBJDIR)/ftview.o $(OBJDIR)/ftrast2.o $(COMMONOBJ) $(FREETYPELINKLIB) $(FREETYPEGRAPHLIB)
-	%link_q from="$(OBJDIR)/ftview.o $(OBJDIR)/ftrast2.o"
+$(EXEDIR)/ftview : $(OBJDIR)/ftview.o $(COMMONOBJ) $(FREETYPELINKLIB) $(FREETYPEGRAPHLIB)
+	%link_q
 
 $(OBJDIR)/%.o : %.c
 	%compile_q
