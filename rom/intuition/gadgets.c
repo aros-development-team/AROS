@@ -599,6 +599,49 @@ void RenderDisabledPattern(struct RastPort *rp, struct DrawInfo *dri, WORD x1, W
 }
 
 /**********************************************************************************************/
+
+ULONG GetGadgetState(struct Window *window, struct Gadget *gadget)
+{
+    ULONG state = IDS_NORMAL;
+    
+    if (IS_BORDER_GADGET(gadget) && !(window->Flags & WFLG_WINDOWACTIVE))
+    {   
+	if (gadget->Flags & GFLG_DISABLED)
+	{
+            if (gadget->Flags & GFLG_SELECTED)
+	        state = IDS_INACTIVEDISABLED; /* Hmm ... there's no INACTIVEDISABLEDSELECTED */
+	    else
+	        state = IDS_INACTIVEDISABLED;
+	}
+	else
+	{
+            if (gadget->Flags & GFLG_SELECTED)
+	        state = IDS_INACTIVESELECTED;
+	    else
+	        state = IDS_INACTIVENORMAL;
+	}
+    }
+    else
+    {
+	if (gadget->Flags & GFLG_DISABLED)
+	{
+            if (gadget->Flags & GFLG_SELECTED)
+	        state = IDS_SELECTEDDISABLED;
+	    else
+	        state = IDS_DISABLED;
+	}
+	else
+	{
+            if (gadget->Flags & GFLG_SELECTED)
+	        state = IDS_SELECTED;
+	    else
+	        state = IDS_NORMAL;
+	}
+    }
+    
+    return state;
+}
+
 /**********************************************************************************************/
 /**********************************************************************************************/
 /**********************************************************************************************/

@@ -85,5 +85,8 @@ void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct Intuitio
 void RenderDisabledPattern(struct RastPort *rp, struct DrawInfo *dri, WORD x1, WORD y1,
 			   WORD x2, WORD y2, struct IntuitionBase *IntuitionBase);
 
+/* GetGadgetState returns IDS_? */
+ULONG GetGadgetState(struct Window *window, struct Gadget *gadget);
+
 #endif /* _GADGETS_H_ */
 
