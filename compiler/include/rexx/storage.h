@@ -88,8 +88,8 @@ struct RexxRsrc
 	WORD        rr_Unused1; /* rr_Func */
 	APTR        rr_Unused2; /* rr_Base */
 	LONG        rr_Size; /* Total size of structure */
-	LONG        rr_Args1; /* Meaning depends on type of Resource */
-	LONG        rr_Args2; /* Meaning depends on type of Resource */
+	LONG        rr_Arg1; /* Meaning depends on type of Resource */
+	LONG        rr_Arg2; /* Meaning depends on type of Resource */
 };
 
 /* Types for the resource nodes */
