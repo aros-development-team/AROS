@@ -375,7 +375,7 @@ int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
 
 void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 {
-    int width, height, FBPitch, left, i, j, SRCPitch, phase;
+    int width, height, FBPitch, left, right, i, j, SRCPitch, phase;
     register unsigned long m;
     unsigned char  s1, s2, s3, s4;
     unsigned long *src, *srcPtr;
@@ -390,15 +390,17 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
     outw(0x3ce, 0x0003);
     outw(0x3ce, 0xff08);
 
+    left = pbox->x1 & ~7;
+    right = (pbox->x2 & ~7) + 7;
+
     while(num--)
     {
-	left = pbox->x1 & ~7;
-        width = ((pbox->x2 - left) + 7) >> 3;
+        width = (right - left + 1) >> 3;
         height = pbox->y2 - pbox->y1 + 1;
         src = (unsigned long*)bmap->VideoData + (pbox->y1 * SRCPitch) + (left >> 2); 
         dst = (unsigned char*)0x000a0000 + (pbox->y1 * FBPitch) + (left >> 3);
 
-	if((phase = (long)dst & 3L))
+	if((phase = ((long)dst & 3L)))
 	{
 	    phase = 4 - phase;
 	    if(phase > width) phase = width;
