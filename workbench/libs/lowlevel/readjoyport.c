@@ -43,7 +43,7 @@
   AROS_LIBBASE_EXT_DECL(struct LowLevelBase *, LowLevelBase)
 
 #warning TODO: Write lowlevel/ReadJoyPort()
-    aros_print_not_implemented ("lowlevel/ReadJoyPort");
+    //aros_print_not_implemented ("lowlevel/ReadJoyPort");
 
     return JP_TYPE_NOTAVAIL; // return failure until implemented
 
