@@ -1,41 +1,52 @@
-# Makefile for dtdesc
+#   Copyright (C) 2000 AROS - The Amiga Research OS
+#   $Id$
+#
+#   Makefile for dtdesc
+
+SRC := createdtdesc.c examinedtdesc.c
 
 -include $(TOP)/config/make.cfg
 
-#.SUFFIXES: .c.o
+.SUFFIXES:
+.SUFFIXES: .c .o
 
-CC = \
-	cc
+# These are the compatibility variables. They will only be defined
+# if including $(TOP)/config/make.cfg fails (since they will then
+# be undefined.
 
-CFLAGS = -I . -I c_iff/
+HOST_CC	    ?= $(CC)
+HOST_STRIP  ?= strip
+MKDIR	    ?= mkdir
+HOST_CFLAGS ?= -Wall -g -O
+INCL	    := -I. -I c_iff
+TOOLDIR	    ?= .
+OBJDIR	    ?= $(TOOLDIR)/obj
 
-RM = rm -f
-AR = ar rv
-RANLIB = ranlib
+RM	    ?= rm -f
+AR	    ?= ar rv
+RANLIB	    ?= ranlib
 
-%.o : %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+CREATEDTDESC ?= createdtdesc
 
-#.c.o:
-#	$(CC) $(CFLAGS) -c $*.c -o $@
+all: $(OBJDIR) $(CREATEDTDESC) examinedtdesc
 
-all: $(CREATEDTDESC) examinedtdesc
+$(CREATEDTDESC): $(OBJDIR)/createdtdesc.o c_iff/libc_iff.a
+	$(HOST_CC) -o $(CREATEDTDESC) $(OBJDIR)/createdtdesc.o -L c_iff/ -l c_iff
 
-$(CREATEDTDESC): createdtdesc.o c_iff/libc_iff.a
-	$(CC) -o $(CREATEDTDESC) createdtdesc.o -L c_iff/ -l c_iff
+examinedtdesc: $(OBJDIR)/examinedtdesc.o c_iff/libc_iff.a
+	$(HOST_CC) -o examinedtdesc $(OBJDIR)/examinedtdesc.o -L c_iff/ -l c_iff
 
-examinedtdesc: examinedtdesc.o c_iff/libc_iff.a
-	$(CC) -o examinedtdesc examinedtdesc.o -L c_iff/ -l c_iff
+$(OBJDIR)/%.o : %.c
+	$(HOST_CC) $(HOST_CFLAGS) $(INCL) -c $< -o $@
 
 c_iff/libc_iff.a:
-	cd c_iff && \
-	make
+	cd c_iff && $(MAKE)
+
+$(OBJDIR) :
+	$(MKDIR) $(OBJDIR)
 
 clean:
 	$(RM) *.o
 	$(RM) examinedtdesc
 	$(RM) $(CREATEDTDESC)
-	cd c_iff && \
-	make clean
-
-
+	cd c_iff && $(MAKE) clean
