@@ -275,8 +275,10 @@ STATIC IPTR IconWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	MUIA_Window_Title,title,
 	MUIA_Window_Width,300,
 	MUIA_Window_Height,300,
+	MUIA_Window_UseBottomBorderScroller, TRUE,
+	MUIA_Window_UseRightBorderScroller, TRUE,
 	WindowContents, VGroup,
-		MUIA_Group_Child, MUI_NewObject(MUIC_IconListview, MUIA_IconListview_IconList, iconlist, TAG_DONE),
+		MUIA_Group_Child, MUI_NewObject(MUIC_IconListview, MUIA_IconListview_UseWinBorder, TRUE, MUIA_IconListview_IconList, iconlist, TAG_DONE),
 		End,
 	TAG_MORE, (IPTR)msg->ops_AttrList);
     if (!obj) return NULL;
