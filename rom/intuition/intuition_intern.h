@@ -199,7 +199,7 @@ extern void intui_MoveWindowInFrontOf (struct Window *, struct Window *, struct 
 extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
 extern void intui_SizeWindow (struct Window * win, long dx, long dy);
 extern void intui_RefreshWindowFrame(struct Window *win);
-
+extern struct Window *intui_FindActiveWindow(struct InputEvent *ie, struct IntuitionBase *IntuitionBase);
 /* Miscellaneous prototypes */
 void easyrequest_freelabels(STRPTR *gadgetlabels);
 void easyrequest_freegadgets(struct Gadget *gadgets);
