@@ -130,6 +130,7 @@
 	DataType = (struct DataType *)GetTagData(DTA_DataType, NULL, attrs);
 	Handle   =              (APTR)GetTagData(DTA_Handle,   NULL, attrs);
 	GroupID  =                    GetTagData(DTA_GroupID,  0   , attrs);
+	BaseName =           (UBYTE *)GetTagData(DTA_BaseName, NULL, attrs);
 
         D(bug("datatypes.library/NewDTObjectA: Got attrs DTA_DataType, DTA_Handle and DTA_GroupID\n"));
 	
