@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/10/21 20:47:33  aros
+    Changed struct SysBase to struct ExecBase
+
     Revision 1.7  1996/10/19 17:17:44  aros
     Use the ANSI C function
 
@@ -38,7 +41,7 @@
 	__AROS_LHA(UBYTE       *, name, A1),
 
 /*  LOCATION */
-	struct SysBase *, SysBase, 46, Exec)
+	struct ExecBase *, SysBase, 46, Exec)
 
 /*  FUNCTION
 	Look for a node with a certain name in a list.

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/21 20:47:53  aros
+    Changed struct SysBase to struct ExecBase
+
     Revision 1.5  1996/08/13 13:56:03  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -29,7 +32,7 @@
 	__AROS_LHA(struct Node *, pred, A2),
 
 /*  LOCATION */
-	struct SysBase *, SysBase, 39, Exec)
+	struct ExecBase *, SysBase, 39, Exec)
 
 /*  FUNCTION
 	Insert Node node after pred in list.
