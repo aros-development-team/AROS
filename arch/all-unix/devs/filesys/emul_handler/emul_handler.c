@@ -1982,7 +1982,7 @@ AROS_LH1(void, beginio,
 	    struct filehandle *lock1 = iofs->io_Union.io_SAME_LOCK.io_Lock[0],
 			      *lock2 = iofs->io_Union.io_SAME_LOCK.io_Lock[1];
 
-	    if (strcmp(lock1->name, lock2->name))
+	    if ((lock1->volume != lock2->volume) || strcmp(lock1->name, lock2->name))
 	    {
 		iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_DIFFERENT;
 	    }
