@@ -39,12 +39,14 @@ struct MUI_AreaData
     UWORD              mad_VertWeight;
     STRPTR             mad_ShortHelp;      /* bubble help */
     struct MUI_EventHandlerNode mad_ehn;
-    struct MUI_InputHandlerNode mad_Timer;
+    struct MUI_InputHandlerNode mad_Timer; /* MUIA_Timer */
     ULONG              mad_Timeval;       /* just to trigger notifications */
     struct MUI_EventHandlerNode mad_ccn;  /* gross hack for control char */
     Object            *mad_ContextMenu;   /* menu strip */
     struct ZText      *mad_TitleText;     /* frame title */
     TEXT               mad_ControlChar;   /* key shortcut */
+    LONG               mad_ClickX;        /* x position of the initial SELECTDOWN click */
+    LONG               mad_ClickY;        /* y position of the intiial SELECTDOWN click */
 };
 
 
@@ -73,6 +75,8 @@ struct MUI_AreaData
 #define MADF_DRAWALL           (1<< 19)
 #define MADF_CYCLECHAIN        (1<< 20)
 #define MADF_ACTIVE            (1<< 21)
+#define MADF_DRAGGABLE         (1<< 22)
+#define MADF_DRAGGING          (1<< 23)
 
 #define DRAW_BG_RECURSIVE (1<<1)
 

@@ -136,8 +136,9 @@ void _zune_window_change_events (struct MUI_WindowData *data)
         new_events |= ehn->ehn_Events;
     }
 
-    /* sba: kill the IDCMP_VANILLAKEY flag. MUI doesn't to this but programs
-    ** which use this will behave different
+    /* sba: kill the IDCMP_VANILLAKEY flag. MUI doesn't do this but programs
+    ** which use this will behave different if they request for this flag
+    ** (also on MUI)
     */
     new_events &= ~IDCMP_VANILLAKEY;
 
@@ -271,6 +272,36 @@ void _zune_window_message(struct IntuiMessage *imsg)
     oWin = (Object *)iWin->UserData;
 
     data = muiWindowData(oWin);
+
+    if (data->wd_DragObject)
+    {
+    	int finish_drag = 0;
+
+    	if (imsg->Class == IDCMP_MOUSEMOVE)
+    	{
+	    DrawDragNDrop(data->wd_dnd, imsg->MouseX + iWin->LeftEdge , imsg->MouseY + iWin->TopEdge);
+    	}
+
+    	if (imsg->Class == IDCMP_MOUSEBUTTONS)
+    	{
+	    if ((imsg->Code == MENUDOWN)  || (imsg->Code == SELECTUP))
+		finish_drag = 1;
+	}
+
+	if (imsg->Class == IDCMP_CLOSEWINDOW) finish_drag = 1;
+
+	if (finish_drag)
+	{
+	    UndrawDragNDrop(data->wd_dnd);
+	    DeleteDragNDrop(data->wd_dnd);
+	    DoMethod(data->wd_DragObject,MUIM_DeleteDragImage, data->wd_DragImage);
+	    data->wd_DragImage = NULL;
+	    data->wd_DragObject = NULL;
+	    data->wd_dnd = NULL;
+	    muiAreaData(data->wd_DragObject)->mad_Flags &= ~MADF_DRAGGING;
+    	}
+    	return;
+    }
 
     switch (imsg->Class)
     {
@@ -1220,6 +1251,13 @@ static ULONG Window_Setup(struct IClass *cl, Object *obj, Msg msg)
 static ULONG Window_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
+
+    if (data->wd_dnd)
+    {
+    	DeleteDragNDrop(data->wd_dnd);
+    	data->wd_dnd = NULL;
+    }
+
     CleanupRenderInfo(&data->wd_RenderInfo);
     return TRUE;
 }
@@ -1267,6 +1305,64 @@ static ULONG Window_RemControlCharHandler(struct IClass *cl, Object *obj, struct
     return TRUE;
 }
 
+/**************************************************************************
+ 
+**************************************************************************/
+static ULONG Window_DragObject(struct IClass *cl, Object *obj, struct MUIP_Window_DragObject *msg)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+    if (msg->obj)
+    {
+	struct DragNDrop *dnd;
+	struct MUI_DragImage *di;
+	struct BitMapNode *bmn;
+
+	if (!(dnd = CreateDragNDropA(NULL))) return NULL;
+	if (!(di = (struct MUI_DragImage*)DoMethod(msg->obj,MUIM_CreateDragImage,-msg->touchx,-msg->touchy,msg->flags)))
+	{
+	    DeleteDragNDrop(dnd);
+	    return 0;
+	}
+	if (!di->bm)
+	{
+	    DoMethod(msg->obj,MUIM_DeleteDragImage, di);
+	    DeleteDragNDrop(dnd);
+	    return 0;
+	}
+
+	if (!(bmn = CreateBitMapNode(
+		GUI_BitMap, di->bm,
+		GUI_LeftOffset, di->touchx,
+		GUI_TopOffset, di->touchy,
+		GUI_Width, di->width,
+		GUI_Height, di->height,
+		TAG_DONE)))
+	{
+	    DoMethod(msg->obj,MUIM_DeleteDragImage, di);
+	    DeleteDragNDrop(dnd);
+	    return 0;
+	}
+
+	AttachBitMapNode(dnd,bmn);
+
+	if (!PrepareDragNDrop(dnd, data->wd_RenderInfo.mri_Screen))
+	{
+	    DoMethod(msg->obj,MUIM_DeleteDragImage, di);
+	    DeleteDragNDrop(dnd);
+	    return 0;
+	}
+
+	muiAreaData(msg->obj)->mad_Flags |= MADF_DRAGGING;
+
+	data->wd_DragObject = msg->obj;
+	data->wd_dnd = dnd;
+	data->wd_DragImage = di;
+	return 1;
+    }
+    return 0;
+}
+
+
 /******************************************************************************/
 /******************************************************************************/
 
@@ -1298,6 +1394,7 @@ AROS_UFH3S(IPTR, Window_Dispatcher,
 	case MUIM_Window_Cleanup: return Window_Cleanup(cl, obj, (APTR)msg);
 	case MUIM_Window_AddControlCharHandler: return Window_AddControlCharHandler(cl, obj, (APTR)msg);
 	case MUIM_Window_RemControlCharHandler: return Window_RemControlCharHandler(cl, obj, (APTR)msg);
+	case MUIM_Window_DragObject: return Window_DragObject(cl, obj, (APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
