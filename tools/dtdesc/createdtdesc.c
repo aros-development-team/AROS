@@ -363,6 +363,7 @@ void Work(struct DTDesc *TheDTDesc)
  }
 
  WriteOutDTD(TheDTDesc);
+
 }
 
 int WriteOutDTD(struct DTDesc *TheDTDesc)
@@ -386,10 +387,12 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
   return(FALSE);
  }
 
+#if 0
  if(TheDTDesc->DTH.dth_MaskLen==0)
  {
   return(FALSE);
  }
+#endif
 
  if(strlen(TheDTDesc->Pattern)==0)
  {
@@ -507,14 +510,17 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
   TheDTDesc->DTH.dth_Mask[i]=Swap16IfLE(TheDTDesc->DTH.dth_Mask[i]);
  }
 
- if(WriteChunkData(IH, (char *) TheDTDesc->DTH.dth_Mask, TheDTDesc->DTH.dth_MaskLen*sizeof(CARD16))<=0)
+ if (TheDTDesc->DTH.dth_MaskLen)
  {
-  EndChunk(IH);
-  CloseIFF(IH);
-  remove(TheDTDesc->Name);
-  return(FALSE);
+  if(WriteChunkData(IH, (char *) TheDTDesc->DTH.dth_Mask, TheDTDesc->DTH.dth_MaskLen*sizeof(CARD16))<=0)
+  {
+   EndChunk(IH);
+   CloseIFF(IH);
+   remove(TheDTDesc->Name);
+   return(FALSE);
+  }
  }
-
+ 
  EndChunk(IH);
 
  CloseIFF(IH);
