@@ -11,6 +11,7 @@
 #MM	    workbench-classes-arosmutualexclude \
 #MM	    workbench-classes-aroscycle \
 #MM	    workbench-classes-arospalette \
-#MM         workbench-classes-gadgets-colorwheel
+#MM         workbench-classes-gadgets-colorwheel \
+#MM	    workbench-classes-gradientslider 
 
 #MM- workbench-complete : workbench-classes-complete
