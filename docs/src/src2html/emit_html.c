@@ -131,7 +131,7 @@ static void forcebreak (void)
     if (filecount)
 	paste_html_file ("page_footer.html");
 
-    emit_special ("<CENTER><HR WIDTH=\"80%\"></CENTER><P>");
+    /* emit_special ("<CENTER><HR WIDTH=\"80%\"></CENTER><P>"); */
     lastemitcount = emitcount;
     filecount ++;
 
@@ -197,33 +197,43 @@ static void emit_html_toc (void)
 	switch (typ)
 	{
 	case 1: /* Appendix */
+	    if (ss)
+	    {
+		emit_special ("</UL>\n");
+		ss = 0;
+	    }
 	    if (s)
 	    {
 		emit_special ("</UL>\n");
+		s = 0;
 	    }
-	    emit_special ("<LI><H1><A HREF=\"%s#%d\">Appendix %s %s (%s)</A></H1>\n",
+	    emit_special ("<LI><FONT SIZE=\"+3\"><B><A HREF=\"%s#%d\">Appendix %s %s (%s)</A></B></FONT>\n",
 		filename,
 		label,
 		num,
 		title,
 		datestr
 	    );
-	    s = 0;
 	    break;
 
 	case 2: /* Chapter */
+	    if (ss)
+	    {
+		emit_special ("</UL>\n");
+		ss = 0;
+	    }
 	    if (s)
 	    {
 		emit_special ("</UL>\n");
+		s = 0;
 	    }
-	    emit_special ("<LI><H1><A HREF=\"%s#%d\">Chapter %s %s (%s)</A></H1>\n",
+	    emit_special ("<LI><FONT SIZE=\"+3\"><B><A HREF=\"%s#%d\">Chapter %s %s (%s)</A></B></FONT>\n",
 		filename,
 		label,
 		num,
 		title,
 		datestr
 	    );
-	    s = 0;
 	    break;
 
 	case 3: /* Section */
@@ -235,15 +245,15 @@ static void emit_html_toc (void)
 	    if (ss)
 	    {
 		emit_special ("</UL>\n");
+		ss = 0;
 	    }
-	    emit_special ("<LI><H2><A HREF=\"%s#%d\">%s %s (%s)</A></H2>\n",
+	    emit_special ("<LI><FONT SIZE=\"+2\"><B><A HREF=\"%s#%d\">%s %s (%s)</A></B></FONT>\n",
 		filename,
 		label,
 		num,
 		title,
 		datestr
 	    );
-	    ss = 0;
 	    break;
 
 	case 4: /* Subsection */
@@ -252,7 +262,7 @@ static void emit_html_toc (void)
 		emit_special ("<UL>\n");
 	    }
 	    ss++;
-	    emit_special ("<LI><H3><A HREF=\"%s#%d\">%s %s (%s)</A></H3>\n\n",
+	    emit_special ("<LI><FONT SIZE=\"+1\"><B><A HREF=\"%s#%d\">%s %s (%s)</A></B></FONT>\n\n",
 		filename,
 		label,
 		num,
@@ -932,7 +942,7 @@ void emit_html_char (int c)
     case '&': emit_special ("&amp;"); break;
     case '<': emit_special ("&lt;"); break;
     case '>': emit_special ("&gt;"); break;
-    case '"': emit_special ("&quot;"); break;
+    case '"': emit_special ("&#34;"); break;
     default:  emit_char (c); break;
     }
 }
@@ -944,7 +954,7 @@ void emit_html_char_always (int c)
     case '&': emit_special ("&amp;"); break;
     case '<': emit_special ("&lt;"); break;
     case '>': emit_special ("&gt;"); break;
-    case '"': emit_special ("&quot;"); break;
+    case '"': emit_special ("&#34;"); break;
     default:  emit_char_always (c); break;
     }
 }

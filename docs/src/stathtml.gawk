@@ -60,7 +60,7 @@ BEGIN {
     printf ("%4d (%.2f%%) are currently in work.<BR>\n", work, work*100.0/jobs);
     printf ("%4d (%.2f%%) are completed.<P>\n",         done, done*100.0/jobs);
 
-    print "<TABLE BORDER=OFF><TR><TH>Job</TH><TH>Count</TH><TH>Todo</TH><TH>In work</TH><TH>Completed</TH></TR>"
+    print "<TABLE BORDER=1><TR><TH>Job</TH><TH>Count</TH><TH>Todo</TH><TH>In work</TH><TH>Completed</TH></TR>"
     for (t=0; t<jobno; t++)
     {
 	name = jobname[t];
