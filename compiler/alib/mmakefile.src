@@ -60,6 +60,7 @@ FILES		:= \
 	setattrs \
 	setgadgetattrs \
 	setsuperattrs \
+	sprintf \
 	setwindowpointer \
 	timedelay
 
