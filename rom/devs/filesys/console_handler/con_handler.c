@@ -32,6 +32,8 @@
 #include <devices/conunit.h>
 #include <aros/asmcall.h>
 
+#include <stddef.h>
+
 #undef SDEBUG
 #undef DEBUG
 #define SDEBUG 0
@@ -353,11 +355,11 @@ AROS_LH1(void, beginio,
 	case FSA_CHANGE_SIGNAL:
 	    iofs->IOFS.io_Flags	&= ~IOF_QUICK;
 	    request_queued = TRUE;
-	    
+
 	    PutMsg(((struct filehandle *)iofs->IOFS.io_Unit)->contaskmp,
-	           (struct Message *)iofs);		   
+	           (struct Message *)iofs);
 	    break;
-	    
+
 	case FSA_IS_INTERACTIVE:
 	    iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = TRUE;
 	    error = 0;
@@ -376,8 +378,78 @@ AROS_LH1(void, beginio,
 	    error=ERROR_ACTION_NOT_KNOWN;
 	    break;
 
-	case FSA_SAME_LOCK: 
 	case FSA_EXAMINE:
+        {
+            struct ExAllData  *ead        = iofs->io_Union.io_EXAMINE.io_ead;
+            const ULONG        type       = iofs->io_Union.io_EXAMINE.io_Mode;
+            const ULONG        size       = iofs->io_Union.io_EXAMINE.io_Size;
+            STRPTR             next, end;
+
+            static const ULONG sizes[]=
+            {
+                0,
+                offsetof(struct ExAllData,ed_Type),
+                offsetof(struct ExAllData,ed_Size),
+                offsetof(struct ExAllData,ed_Prot),
+                offsetof(struct ExAllData,ed_Days),
+                offsetof(struct ExAllData,ed_Comment),
+                offsetof(struct ExAllData,ed_OwnerUID),
+                sizeof(struct ExAllData)
+             };
+
+	     next = (STRPTR)ead + sizes[type];
+             end  = (STRPTR)ead + size;
+
+             if (type > ED_OWNER)
+             {
+                 error = ERROR_BAD_NUMBER;
+                 break;
+             }
+
+             switch(type)
+             {
+                 case ED_OWNER:
+                     ead->ed_OwnerUID = 0;
+                     ead->ed_OwnerGID = 0;
+
+                 /* Fall through */
+                 case ED_COMMENT:
+                     ead->ed_Comment = NULL;
+
+                 /* Fall through */
+                 case ED_DATE:
+                     ead->ed_Days  = 0;
+                     ead->ed_Mins  = 0;
+                     ead->ed_Ticks = 0;
+
+		 /* Fall through */
+                 case ED_PROTECTION:
+                     ead->ed_Prot = 0;
+
+                 /* Fall through */
+                 case ED_SIZE:
+                     ead->ed_Size = 0;
+
+                 /* Fall through */
+                 case ED_TYPE:
+                     ead->ed_Type = ST_PIPEFILE;
+
+		 /* Fall through */
+                 case ED_NAME:
+                     if (next >= end)
+		     {
+		         error = ERROR_BUFFER_OVERFLOW;
+                         break;
+		     }
+
+                     ead->ed_Name = next;
+		     *next = '\0';
+	    }
+        }
+	break;
+
+
+        case FSA_SAME_LOCK:
 	case FSA_EXAMINE_NEXT:
 	case FSA_EXAMINE_ALL:
 	case FSA_EXAMINE_ALL_END:
