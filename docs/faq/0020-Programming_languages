@@ -4,7 +4,7 @@
 the sources under a different OS, eg. Linux, FreeBSD or NetBSD. There
 is currently no native C compiler that can be run under AROS, but 
 there are plans to port one. This however will probably take some time,
-so don't hold your breath. ;-)<p>
+so don't hold your breath. ;-)</p>
 
 <p>The languages that <b>are</b> available natively are 
 <a href="http://www.python.org/">Python</a> and 
