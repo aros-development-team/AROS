@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: ANSI C function strncpy()
@@ -51,13 +51,14 @@
 {
     char * ptr = dest;
 
-    while (n && (*ptr = *src))
+    while (n-- && (*ptr = *src))
     {
 	ptr ++;
 	src ++;
-
-	n --;
     }
+
+    while (n--)
+	*ptr++ = '\0';
 
     return dest;
 } /* strncpy */
