@@ -478,9 +478,9 @@ static const ULONG coltab[] = {
 	{
 		struct Region * ls = NewRegion();
 		struct Rectangle r;
-		struct TagItem tags[4] = {{LA_VISIBLE, FALSE},
-		                          {LA_PRIORITY, ROOTPRIORITY},
-		                          {LA_SHAPE, (ULONG)ls},
+		struct TagItem tags[4] = {{LA_Visible, FALSE},
+		                          {LA_Priority, ROOTPRIORITY},
+		                          {LA_Shape, (ULONG)ls},
 		                          {TAG_DONE, -1}};
 
 		r.MinX = screen->Screen.LeftEdge;

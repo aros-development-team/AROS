@@ -1,5 +1,5 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Intuition function OpenWindow()
@@ -75,27 +75,28 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    struct NewWindow nw;
-    struct Window * w = NULL, *helpgroupwindow = NULL;
-    struct TagItem *tag, *tagList;
-    struct RastPort *rp;
-    struct Hook *backfillhook = LAYERS_BACKFILL;
-    struct IBox *zoombox = NULL;
-    struct Image *AmigaKey = NULL;
-    struct Image *Checkmark = NULL;
+    struct NewWindow 	nw;
+    struct Window   	*w = NULL, *helpgroupwindow = NULL;
+    struct TagItem  	*tag, *tagList;
+    struct RastPort 	*rp;
+    struct Hook     	*backfillhook = LAYERS_BACKFILL;
+    struct Region   	*shape = NULL;
+    struct IBox     	*zoombox = NULL;
+    struct Image    	*AmigaKey = NULL;
+    struct Image    	*Checkmark = NULL;
     
-    STRPTR  pubScreenName = NULL;
-    UBYTE * screenTitle = NULL;
-    BOOL    autoAdjust	= FALSE, pubScreenFallBack = FALSE;
-    ULONG   innerWidth	= ~0L;
-    ULONG   innerHeight = ~0L;
-    WORD    mousequeue = DEFAULTMOUSEQUEUE;
-    WORD    repeatqueue = 3; /* stegerg: test on my Amiga suggests this */
-    ULONG   moreFlags = 0;
-    ULONG   helpgroup;
+    STRPTR  	    	pubScreenName = NULL;
+    UBYTE   	    	*screenTitle = NULL;
+    BOOL    	    	autoAdjust = FALSE, pubScreenFallBack = FALSE;
+    ULONG   	    	innerWidth = ~0L;
+    ULONG   	    	innerHeight = ~0L;
+    WORD    	    	mousequeue = DEFAULTMOUSEQUEUE;
+    WORD    	    	repeatqueue = 3; /* stegerg: test on my Amiga suggests this */
+    ULONG   	    	moreFlags = 0;
+    ULONG   	    	helpgroup;
     
-    ULONG lock;
-    BOOL driver_init_done = FALSE, have_helpgroup = FALSE;
+    ULONG   	    	lock;
+    BOOL    	    	driver_init_done = FALSE, have_helpgroup = FALSE;
 
 
     ASSERT_VALID_PTR(newWindow);
@@ -271,11 +272,16 @@
 	    case WA_TabletMessages:
 		MODIFY_MFLAG(WMFLG_TABLETMESSAGES);
 		break;
-		
+	
+	    case WA_Shape:
+	    	shape = (struct Region *)tag->ti_Data;
+		break;
+		    
 	    case WA_Pointer:
 	    case WA_BusyPointer:
     #warning TODO: Missing WA_ Tags
 		break;
+		
 	    } /* switch Tag */
 
 	} /* while ((tag = NextTagItem (&tagList))) */
@@ -569,7 +575,7 @@
 	IW(w)->helpgroup = helpgroup;
     }	
 	
-    if (!intui_OpenWindow (w, IntuitionBase, nw.BitMap, backfillhook))
+    if (!intui_OpenWindow (w, IntuitionBase, nw.BitMap, backfillhook, shape))
 	goto failexit;
 
 /* nlorentz: The driver has in some way or another allocated a rastport for us,
@@ -724,7 +730,8 @@ exit:
 int intui_OpenWindow (struct Window * w,
 	struct IntuitionBase * IntuitionBase,
 	struct BitMap        * SuperBitMap,
-	struct Hook          * backfillhook)
+	struct Hook          * backfillhook,
+	struct Region	     * shape)
 {
     /* Create a layer for the window */
     LONG layerflags = 0;
@@ -828,6 +835,46 @@ int intui_OpenWindow (struct Window * w,
     }
     else
     {
+#ifdef CreateLayerTagList
+      struct TagItem win_tags[] =
+      {
+          {LA_Hook  	    , (IPTR)backfillhook	    	    	    	    	    	},
+	  {LA_Priority	    , (layerflags & LAYERBACKDROP) ? BACKDROPPRIORITY : UPFRONTPRIORITY },
+	  {LA_Shape 	    , (IPTR)shape   	    	    	    	    	    	    	},
+	  {LA_SuperBitMap   , (IPTR)SuperBitMap     	    	    	    	    	    	},
+	  {TAG_DONE 	    	    	    	    	    	    	    	    	    	}
+      };
+      BOOL shape_created = FALSE;
+
+      if (!shape) 
+      {
+          if ((shape = NewRegion()))
+	  {
+	      struct Rectangle rect;
+	      
+	      rect.MinX = w->LeftEdge;
+	      rect.MinY = w->TopEdge;
+	      rect.MaxX = rect.MinX + w->Width - 1;
+	      rect.MaxY = rect.MinY + w->Height - 1;
+	      
+	      if (!OrRectRegion(shape, &rect))
+	      {
+	          DisposeRegion(shape);
+	      }
+	      else
+	      {
+	          win_tags[2].ti_Data = (IPTR)shape;
+	          shape_created = TRUE;
+	      }
+	  }	  
+      }
+      
+      if (shape) w->WLayer = CreateLayerTagList(&w->WScreen->LayerInfo,
+      	    	    	    	    	    	w->WScreen->RastPort.BitMap,
+						layerflags,
+						win_tags);
+      if (shape_created && !w->WLayer) DisposeRegion(shape);					
+#else
       w->WLayer = CreateUpfrontHookLayer( 
                    &w->WScreen->LayerInfo
 	  	  , w->WScreen->RastPort.BitMap
@@ -838,6 +885,7 @@ int intui_OpenWindow (struct Window * w,
 		  , layerflags
 		  , backfillhook
 		  , SuperBitMap);
+#endif
 
       /* Install the BorderRPort here! see GZZ window above  */
       if (NULL != w->WLayer)
