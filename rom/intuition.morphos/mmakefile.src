@@ -149,7 +149,6 @@ USER_INCLUDES := -I$(TOP)/rom/dos
 %build_module_macro mmake=kernel-intuition \
   modname=intuition modtype=library \
   funcs=$(FUNCTIONS) files=$(FILES) \
-  conffile=lib.conf \
-  genshlinklib=$(SHARED_INTUITION)
+  conffile=lib.conf
 
 %common
