@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#define timeval sys_timeval
+#include <sys/time.h>
+#undef timeval
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include <utility/tagitem.h>
@@ -328,11 +331,10 @@ int intui_OpenWindow (struct Window * w,
     XMapRaised (sysDisplay, IW(w)->iw_XWindow);
 
     /* Show window *now* */
-    XFlush (sysDisplay);
+    /* XFlush (sysDisplay); */
+    SIGID ();
 
     Diow(bug("Opening Window %p (X=%ld)\n", iw, IW(w)->iw_XWindow));
-
-    SIGID ();
 
     return 1;
 }
@@ -538,37 +540,39 @@ ende:
 void intui_BeginRefresh (struct Window * win,
 	struct IntuitionBase * IntuitionBase)
 {
-   /* Restrict rendering to a region */
-   XSetRegion (sysDisplay, GetGC(IW(win)->iw_Window.RPort), IW(win)->iw_Region);
+    /* Restrict rendering to a region */
+    XSetRegion (sysDisplay, GetGC(IW(win)->iw_Window.RPort), IW(win)->iw_Region);
+    SIGID ();
 } /* intui_BeginRefresh */
 
 void intui_EndRefresh (struct Window * win, BOOL free,
 	struct IntuitionBase * IntuitionBase)
 {
-   Region region;
-   XRectangle rect;
+    Region region;
+    XRectangle rect;
 
-   /* Zuerst alte Region freigeben (Speicher sparen) */
-   if (free)
-   {
-      XDestroyRegion (IW(win)->iw_Region);
+    /* Zuerst alte Region freigeben (Speicher sparen) */
+    if (free)
+    {
+	XDestroyRegion (IW(win)->iw_Region);
 
-      IW(win)->iw_Region = XCreateRegion ();
-   }
+	IW(win)->iw_Region = XCreateRegion ();
+    }
 
-   /* Dann loeschen wir das ClipRect wieder indem wir ein neues
-      erzeugen, welches das ganze Fenster ueberdeckt. */
-   region = XCreateRegion ();
+    /* Dann loeschen wir das ClipRect wieder indem wir ein neues
+	erzeugen, welches das ganze Fenster ueberdeckt. */
+    region = XCreateRegion ();
 
-   rect.x      = 0;
-   rect.y      = 0;
-   rect.width  = IW(win)->iw_Window.Width;
-   rect.height = IW(win)->iw_Window.Height;
+    rect.x	= 0;
+    rect.y	= 0;
+    rect.width	= IW(win)->iw_Window.Width;
+    rect.height = IW(win)->iw_Window.Height;
 
-   XUnionRectWithRegion (&rect, region, region);
+    XUnionRectWithRegion (&rect, region, region);
 
-   /* und setzen */
-   XSetRegion (sysDisplay, GetGC(IW(win)->iw_Window.RPort), region);
+    /* und setzen */
+    XSetRegion (sysDisplay, GetGC(IW(win)->iw_Window.RPort), region);
+    SIGID ();
 } /* intui_EndRefresh */
 
 
@@ -763,10 +767,10 @@ void intui_ProcessEvents (void)
 		    w->Height = event.xconfigure.height;
 
 		    im->Class = IDCMP_NEWSIZE;
-		    
+
 		    /* Send GM_LAYOUT to all GA_RelSpecial BOOPSI gadgets */
 		    DoGMLayout(w->FirstGadget, w, NULL, -1, FALSE, IntuitionBase);
-		    
+
 		    ptr       = "NEWSIZE";
 		}
 
@@ -831,21 +835,21 @@ void intui_ProcessEvents (void)
 			    gpi.gpi_TabletData	= NULL;
 
 			    retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
-			    
+
 			    D(bug("\tProcessing GADGETDOWN\n"));
 
 			    if (retval & GMR_VERIFY)
 			    {
-			        D(bug("GMR_VERIFY gotten\n"));
-			    	im->Class = IDCMP_GADGETUP;
-			    	im->IAddress = gadget;
-			    	ptr	 = "GADGETUP";
-			    	im->Code = termination & 0x0000FFFF;
+				D(bug("GMR_VERIFY gotten\n"));
+				im->Class = IDCMP_GADGETUP;
+				im->IAddress = gadget;
+				ptr	 = "GADGETUP";
+				im->Code = termination & 0x0000FFFF;
 			    }
 			    else
 			    {
-			    	if (retval != GMR_MEACTIVE)
-			    	{
+				if (retval != GMR_MEACTIVE)
+				{
 				    im->Class = 0L;
 				    gadget = NULL;
 				}
@@ -932,9 +936,9 @@ void intui_ProcessEvents (void)
 
 			    if (retval & GMR_NOREUSE && !(retval & GMR_VERIFY))
 				im->Class = 0L; /* Swallow event */
-			    
+
 			    if (retval & GMR_VERIFY)
-			    	im->Code = termination & 0x0000FFFF;
+				im->Code = termination & 0x0000FFFF;
 
 			    break; }
 
@@ -1128,6 +1132,7 @@ void intui_ProcessEvents (void)
 			CloseWindow (w);
 		    else
 		    {
+			gettimeofday ((struct sys_timeval *)&im->Seconds, NULL);
 			PutMsg (w->UserPort, (struct Message *)im);
 			im = NULL;
 			wait ++;
