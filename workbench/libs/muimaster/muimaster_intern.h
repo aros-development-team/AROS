@@ -71,6 +71,8 @@ struct MUIMasterBase_intern
     struct GfxBase  	    	*gfxbase;
     struct Library  	    	*layersbase;
     struct IntuitionBase    	*intuibase;
+    struct Library  	    	*cxbase;
+    struct Library  	    	*keymapbase;
     
     struct SignalSemaphore ClassSempahore;
     struct IClass **Classes;
@@ -106,6 +108,12 @@ struct MUIMasterBase_intern
 #undef IntuitionBase
 #define IntuitionBase  	(MUIMB(MUIMasterBase)->intuibase)
 
+#undef CxBase
+#define CxBase	    	(MUIMB(MUIMasterBase)->cxbase)
+
+#undef KeymapBase
+#define KeymapBase  	(MUIMB(MUIMasterBase)->keymapbase)
+
 #else
 
 #undef SysBase
@@ -128,6 +136,12 @@ struct MUIMasterBase_intern
 
 #undef IntuitionBase
 #define IntuitionBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->intuibase)
+
+#undef CxBase
+#define CxBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->cxbase)
+
+#undef KeymapBase
+#define KeymapBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->keymapbase)
 
 #endif
 
