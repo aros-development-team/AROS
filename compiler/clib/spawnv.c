@@ -92,7 +92,5 @@
     if (!apath)
         return -1;
 
-    int ret = __spawnv(mode, LoadSeg(apath), argv);
-
-    return ret;
+    return __spawnv(mode, LoadSeg(apath), argv);
 }
