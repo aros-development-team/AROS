@@ -81,28 +81,22 @@ int test_mouse_ps2(OOP_Class *cl, OOP_Object *o)
             Disable();
             result = mouse_ps2reset(data);
             Enable();
-            
+
             /* If mouse_ps2reset() returned non-zero value, there is vaild PS/2 mouse */
             if (result)
             {
                 return 1;
             }
-            else
-            {
-                /* Either no PS/2 mouse or problems with it */
-                /* Remove mouse interrupt */
-                HIDD_IRQ_RemHandler(data->u.ps2.irqhidd, irq);
-		
-                /* Dispose IRQ object */
-                OOP_DisposeObject(data->u.ps2.irqhidd);
-		
-                /* Free IRQ structure as it's not needed anymore */
-                FreeMem(irq, sizeof(HIDDT_IRQ_Handler));
-            }
+            /* Either no PS/2 mouse or problems with it */
+            /* Remove mouse interrupt */
+            HIDD_IRQ_RemHandler(data->u.ps2.irqhidd, irq);
+            /* Free IRQ structure as it's not needed anymore */
+            FreeMem(irq, sizeof(HIDDT_IRQ_Handler));
         }
+        /* Dispose IRQ object */
+        OOP_DisposeObject(data->u.ps2.irqhidd);
     }
-    /* Rep
-    ort no PS/2 mouse */
+    /* Report no PS/2 mouse */
     return 0; 
 }
 
