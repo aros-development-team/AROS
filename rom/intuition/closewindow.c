@@ -1,7 +1,11 @@
 /*
     (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
+
     $Log$
+    Revision 1.37  2001/01/27 20:00:31  stegerg
+    clear SIGF_INTUITION before using it
+
     Revision 1.36  2001/01/12 21:25:07  stegerg
     dont CloseFont window->RPort->font but IntWindow->initialfont (the font
     which was opened during OpenWindow)
@@ -266,6 +270,8 @@ void LateCloseWindow(struct MsgPort *userport,
        the Wait() the window is gone  */
     userport = window->UserPort;
 
+    SetSignal(0, SIGF_INTUITION); /* !! */
+    
     SendIntuiActionMsg(msg, IntuitionBase);
 
     /* Attention: a window can also be created on the input device task context,
