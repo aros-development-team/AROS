@@ -61,14 +61,41 @@ char * unitname[] =
 
 /*************************** Classes *****************************/
 
+static AttrBase HiddSerialUnitAB;
+
+static struct ABDescr attrbases[] =
+{
+    { IID_Hidd_SerialUnit, &HiddSerialUnitAB },
+    { NULL,	NULL }
+};
+
 /******* SerialUnit::New() ***********************************/
-static Object *serialunit_new(Class *cl, Object *obj, struct pHidd_Serial_NewUnit *msg)
+static Object *serialunit_new(Class *cl, Object *obj, struct pRoot_New *msg)
 {
   struct HIDDSerialUnitData * data;
   static const struct TagItem tags[] = {{ TAG_END, 0}};
+  struct TagItem *tag, *tstate;
+  ULONG unitnum = 0;
+  
+  tstate = msg->attrList;
+  while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+  {
+      ULONG idx;
+
+      if (IS_HIDDSERIALUNIT_ATTR(tag->ti_Tag, idx))
+      {
+	  switch (idx)
+	  {
+	      case aoHidd_SerialUnit_Unit:
+		  unitnum = (ULONG)tag->ti_Data;
+		  break;
+	  }
+      }
+
+  } /* while (tags to process) */
   
   EnterFunc(bug("SerialUnit::New()\n"));
-  D(bug("!!!!Request for unit number %d\n",msg->unitnum));
+  D(bug("!!!!Request for unit number %d\n",unitnum));
 
   obj = (Object *)DoSuperMethod(cl, obj, (Msg)msg);
 
@@ -78,7 +105,7 @@ static Object *serialunit_new(Class *cl, Object *obj, struct pHidd_Serial_NewUni
     
     data = INST_DATA(cl, obj);
     
-    data->unitnum = msg->unitnum;
+    data->unitnum = unitnum;
 
     D(bug("Opening %s.\n",unitname[data->unitnum]));
 
@@ -602,10 +629,16 @@ Class *init_serialunitclass (struct class_static_data *csd)
     D(bug("Class=%p\n", cl));
     if(cl)
     {
-        D(bug("SerialUnit Class ok\n"));
-        cl->UserData = (APTR)csd;
+	if (ObtainAttrBases(attrbases))
+	{
+            D(bug("SerialUnit Class ok\n"));
+            cl->UserData = (APTR)csd;
 
-        AddClass(cl);
+            AddClass(cl);
+	} else {
+	    free_serialunitclass(csd);
+	    cl = NULL;
+	}
     }
 
     ReturnPtr("init_serialunitclass", Class *, cl);

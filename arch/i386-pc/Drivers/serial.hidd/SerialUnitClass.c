@@ -108,10 +108,37 @@ static inline unsigned int serial_inp(struct HIDDSerialUnitData * data,
 /* IO bases for every COM port */
 ULONG bases[] = { 0x3f8, 0x2f8, 0x3e8, 0x2e8 };
 
+static AttrBase HiddSerialUnitAB;
+
+static struct ABDescr attrbases[] =
+{
+    { IID_Hidd_SerialUnit, &HiddSerialUnitAB },
+    { NULL,	NULL }
+};
+
 /******* SerialUnit::New() ***********************************/
-static Object *serialunit_new(Class *cl, Object *obj, struct pHidd_Serial_NewUnit *msg)
+static Object *serialunit_new(Class *cl, Object *obj, struct pRoot_New *msg)
 {
   struct HIDDSerialUnitData * data;
+  struct TagItem *tag, *tstate;
+  ULONG unitnum = 0;
+  
+  tstate = msg->attrList;
+  while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+  {
+      ULONG idx;
+
+      if (IS_HIDDSERIALUNIT_ATTR(tag->ti_Tag, idx))
+      {
+	  switch (idx)
+	  {
+	      case aoHidd_SerialUnit_Unit:
+		  unitnum = (ULONG)tag->ti_Data;
+		  break;
+	  }
+      }
+
+  } /* while (tags to process) */
   
   EnterFunc(bug("SerialUnit::New()\n"));
 
@@ -121,12 +148,12 @@ static Object *serialunit_new(Class *cl, Object *obj, struct pHidd_Serial_NewUni
   {
     data = INST_DATA(cl, obj);
     
-    data->baseaddr = bases[msg->unitnum];
+    data->baseaddr = bases[unitnum];
     
     data->datalength = 8;
     data->parity     = FALSE;
     data->baudrate   = 0; /* will be initialize in set_baudrate() */
-    data->unitnum    = msg->unitnum;
+    data->unitnum    = unitnum;
 
     CSD(cl->UserData)->units[data->unitnum] = data;
 
@@ -464,10 +491,16 @@ Class *init_serialunitclass (struct class_static_data *csd)
     D(bug("Class=%p\n", cl));
     if(cl)
     {
-        D(bug("SerialUnit Class ok\n"));
-        cl->UserData = (APTR)csd;
+	if (ObtainAttrBases(attrbases))
+	{
+            D(bug("SerialUnit Class ok\n"));
+            cl->UserData = (APTR)csd;
 
-        AddClass(cl);
+            AddClass(cl);
+	} else {
+	    free_serialunitclass(csd);
+	    cl = NULL;
+	}
     }
 
     ReturnPtr("init_serialunitclass", Class *, cl);

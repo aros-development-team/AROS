@@ -35,6 +35,23 @@
 
 /**** serial definitions ****************************************************/
 
+extern AttrBase HiddSerialUnitAB;
+
+enum {
+    aoHidd_SerialUnit_Unit,
+    aoHidd_SerialUnit_BPSRate,
+    aoHidd_SerialUnit_DataLength,
+    
+    num_Hidd_SerialUnit_Attrs
+    
+};
+
+#define aHidd_SerialUnit_Unit		(HiddSerialUnitAB + aoHidd_SerialUnit_Unit)
+#define aHidd_SerialUnit_BPSRate	(HiddSerialUnitAB + aoHidd_SerialUnit_BPSRate)
+#define aHidd_SerialUnit_DataLength	(HiddSerialUnitAB + aoHidd_SerialUnit_DataLength)
+
+#define IS_HIDDSERIALUNIT_ATTR(attr, idx) IS_IF_ATTR(attr, idx, HiddSerialUnitAB, num_Hidd_SerialUnit_Attrs)
+
 enum
 {
     /* Methods for a serial hidd */

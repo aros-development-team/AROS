@@ -26,6 +26,14 @@
 
 /*static AttrBase HiddGCAttrBase;*/
 
+static AttrBase HiddSerialUnitAB;
+
+static struct ABDescr attrbases[] =
+{
+    { IID_Hidd_SerialUnit, &HiddSerialUnitAB },
+    { NULL,	NULL }
+};
+
 /*** HIDDSerial::NewUnit() *********************************************************/
 
 static Object *hiddserial_newunit(Class *cl, Object *obj, struct pHidd_Serial_NewUnit *msg)
@@ -66,7 +74,13 @@ static Object *hiddserial_newunit(Class *cl, Object *obj, struct pHidd_Serial_Ne
 
   if (unitnum >= 0 && unitnum < SER_MAX_UNITS)
   {
-    su = NewObject(NULL, CLID_Hidd_SerialUnit, (APTR)&msg->unitnum);
+    struct TagItem tags[] =
+    {
+        {aHidd_SerialUnit_Unit, unitnum},
+	{TAG_DONE		       }
+    };
+    
+    su = NewObject(NULL, CLID_Hidd_SerialUnit, tags);
     data->SerialUnits[unitnum] = su;
     /*
     ** Mark it as used
@@ -166,9 +180,12 @@ Class *init_serialhiddclass (struct class_static_data *csd)
 
         if(csd->serialunitclass)
         {
-            D(bug("SerialUnitClass ok\n"));
+ 	    if (ObtainAttrBases(attrbases))
+	    {
+        	D(bug("SerialUnitClass ok\n"));
 
-            ok = TRUE;
+        	ok = TRUE;
+	    }
         }
     }
 
