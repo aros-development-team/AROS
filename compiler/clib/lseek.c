@@ -15,7 +15,7 @@
     NAME */
 #include <unistd.h>
 
-	int lseek (
+	off_t lseek (
 
 /*  SYNOPSIS */
 	int    filedes,

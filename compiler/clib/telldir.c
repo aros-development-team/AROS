@@ -5,7 +5,8 @@
 
 #include <dirent.h>
 
-off_t telldir(const DIR *dir)
+long
+telldir(DIR *dir)
 {
     return dir->pos;
 }
