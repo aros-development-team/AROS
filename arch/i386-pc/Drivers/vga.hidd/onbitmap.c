@@ -186,7 +186,7 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 				}
 		
 		    } /* if got data->VideoData */
-		    FreeMem(data->Regs,sizeof(struct vgaHWRec));
+		    FreeVec(data->Regs);
 		} /* if got data->Regs */
 
 		{
