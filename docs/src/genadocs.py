@@ -5,7 +5,7 @@
 # HTML pages are regenerated.
 #
 
-import os, string, sys, time
+import os, string, sys, time, re
 
 # Parse arguments
 srcs = []
@@ -39,14 +39,18 @@ SRC2NAME = {
 }
 sections = ('NAME', 'LOCATION', 'SYNOPSIS',
     'FUNCTION', 'INPUTS', 'RESULT', 'NOTES', 'EXAMPLE',
-    'BUGS', 'SEE ALSO', 'INTERNALS'
+    'BUGS', 'SEE ALSO', 'INTERNALS', 'HISTORY'
 )
+
+eol2par = re.compile (r"[ \t\r]*\n\n\s*");
 
 alllibs = {}
 allfuncs = {}
 links = {}
 
 def filterSrc (src):
+    sys.stdout.write ("Regenerating %s..." % src)
+    sys.stdout.flush ()
     mode = 'searchheader'
     out = None
 
@@ -62,7 +66,9 @@ def filterSrc (src):
     
     fh = open (src, 'r')
     lineno = 0
+    line = None
     while 1:
+	lastline = line
 	line = fh.readline ()
 	if not line: break
 	lineno = lineno + 1
@@ -102,15 +108,16 @@ def filterSrc (src):
 		funcs.append (funcname)
 	        list.append ((libname, link))
 
-		print "Regenerating %s..." % htmlfile
+		sys.stdout.write ('.');
+		sys.stdout.flush ();
 		out = open (htmlfile, 'w')
 		out.write ("""<HTML><HEAD>
     <TITLE>AROS - The Amiga Research OS - AutoDocs</TITLE>
 </HEAD>
 <BODY BACKGROUND="/pics/background.gif" BGCOLOR="#C0C0C0"
    TEXT="#000011" LINK="#3300DD" ALINK="#FF5566" VLINK="#550055">
-<CENTER><P>(C) 1998-2000 AROS - The Amiga Research OS</P></CENTER>
-<P><HR></P>
+<CENTER>(C) 1998-2000 AROS - The Amiga Research OS</CENTER><P>
+<HR><P>
 """)
 		# Now read the data in the header
 		mode = 'autodoc'
@@ -150,7 +157,8 @@ def filterSrc (src):
 		if out:
 		    out.write ('<DL>\n')
 		    for s in sections:
-			out.write ('<DT>%s\n<DD>%s\n<P>\n' % (s, section[s]))
+			text = eol2par.sub ('<P>\n\n', string.strip (section[s]));
+			out.write ('<DT>%s\n<DD>%s<P>\n\n' % (s, text))
 		    out.write ('</DL>\n')
 		    out.write ('</BODY></HTML>')
 		    out.close ()
@@ -170,6 +178,7 @@ def filterSrc (src):
 		section[sectionname] = section[sectionname] + line + "\n"
 	    
     fh.close ()
+    print
 
 def tohtml (line):
     return string.replace (string.replace (string.replace (
