@@ -482,7 +482,7 @@ static Object * x11kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
 
     tstate = msg->attrList;
     D(bug("tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));	
-    while ((tag = NextTagItem(&tstate)))
+    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
 	ULONG idx;
 	
