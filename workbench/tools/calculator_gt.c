@@ -251,8 +251,6 @@ static void GetVisual(void)
     
     win_borderleft = scr->WBorLeft;
 
-    printf("Screen->Font: %p\n", scr->Font); /* NOTE! */
-
     /* SDuvan: was scr->WBorTop + scr->Font->ta_YSize + 1 */
     win_bordertop = scr->WBorTop + dri->dri_Font->tf_YSize + 1;
 
