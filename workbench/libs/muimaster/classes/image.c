@@ -29,7 +29,6 @@ extern struct Library *MUIMasterBase;
 
 #define MIF_FREEVERT         (1<<0)
 #define MIF_FREEHORIZ        (1<<1)
-#define MIF_FONTMATCH        (1<<2)
 #define MIF_FONTMATCHWIDTH   (1<<3)
 #define MIF_FONTMATCHHEIGHT  (1<<4)
 
@@ -51,12 +50,13 @@ static IPTR Image_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ImageData   *data;
     struct TagItem  	    *tag, *tags;
     
-    D(bug("Image_New starts\n"));
+/*      D(bug("Image_New starts\n")); */
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return FALSE;
     
     data = INST_DATA(cl, obj);
+    data->state = IDS_NORMAL;
 
     /* parse initial taglist */
 
@@ -64,8 +64,13 @@ static IPTR Image_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
+	    case MUIA_Selected:
+		if (tag->ti_Data)
+		    data->state = IDS_SELECTED;
+		break;
 	    case MUIA_Image_FontMatch:
-		_handle_bool_tag(data->flags, tag->ti_Data, MIF_FONTMATCH);
+		_handle_bool_tag(data->flags, tag->ti_Data, MIF_FONTMATCHWIDTH);
+		_handle_bool_tag(data->flags, tag->ti_Data, MIF_FONTMATCHHEIGHT);
 		break;
 	    case MUIA_Image_FontMatchWidth:
 		_handle_bool_tag(data->flags, tag->ti_Data, MIF_FONTMATCHWIDTH);
@@ -119,7 +124,7 @@ static IPTR Image_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	return NULL;
     }
     
-    D(bug("Image_New(%lx) spec=%lx\n", obj, data->img));
+/*      D(bug("Image_New(%lx) spec=%lx\n", obj, data->img)); */
     return (IPTR)obj;
 }
 
@@ -152,9 +157,14 @@ static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    data->state = IDS_SELECTED;
 		else
 		    data->state = IDS_NORMAL;
+		D(bug("Image_Set(%p): state=%ld\n", obj, data->state));
 		break;
 	    case MUIA_Image_State:
-		data->state = (LONG)tag->ti_Data;
+		if (data->state != (LONG)tag->ti_Data)
+		{
+		    data->state = (LONG)tag->ti_Data;
+		    MUI_Redraw(obj,MADF_DRAWOBJECT);
+		}
 		break;
 	    case MUIA_Image_Spec:
 		if (data->spec)
@@ -192,7 +202,7 @@ static IPTR Image_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     {
 	case    MUIA_Image_Spec:
 		*msg->opg_Storage = (ULONG)data->spec;
-	        break;
+	        return TRUE;
     }
 
     return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
@@ -245,30 +255,51 @@ static IPTR Image_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 
 	zune_imspec_askminmax(data->img, &minmax);
 
-	msg->MinMaxInfo->MinWidth += minmax.MinWidth;
-	msg->MinMaxInfo->MinHeight += minmax.MinHeight;
    
 	if (data->flags & MIF_FREEHORIZ)
 	{
-	    msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+	    msg->MinMaxInfo->MinWidth += minmax.MinWidth;
+	    msg->MinMaxInfo->MaxWidth += minmax.MaxWidth;
 	    msg->MinMaxInfo->DefWidth += minmax.DefWidth;
+	}
+	else if ((data->flags & MIF_FONTMATCHWIDTH) &&
+		 (_font(obj)->tf_XSize >= minmax.MinWidth) &&
+		 (_font(obj)->tf_XSize <= minmax.MaxWidth))
+	{
+	    msg->MinMaxInfo->MinWidth += _font(obj)->tf_XSize;
+	    msg->MinMaxInfo->MaxWidth += _font(obj)->tf_XSize;
+	    msg->MinMaxInfo->DefWidth += _font(obj)->tf_XSize;
 	}
 	else
 	{
+	    msg->MinMaxInfo->MinWidth += minmax.MinWidth;
 	    msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth;
 	    msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
 	}
 
 	if (data->flags & MIF_FREEVERT)
 	{
-	    msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
+	    msg->MinMaxInfo->MinHeight += minmax.MinHeight;
+	    msg->MinMaxInfo->MaxHeight += minmax.MaxHeight;
 	    msg->MinMaxInfo->DefHeight += minmax.DefHeight;
+	}
+	else if ((data->flags & MIF_FONTMATCHHEIGHT) &&
+		 (_font(obj)->tf_YSize >= minmax.MinHeight) &&
+		 (_font(obj)->tf_YSize <= minmax.MaxHeight))
+	{
+	    msg->MinMaxInfo->MinHeight += _font(obj)->tf_YSize;
+	    msg->MinMaxInfo->MaxHeight += _font(obj)->tf_YSize;
+	    msg->MinMaxInfo->DefHeight += _font(obj)->tf_YSize;
 	}
 	else
 	{
+	    msg->MinMaxInfo->MinHeight += minmax.MinHeight;
 	    msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;
 	    msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
 	}
+
+	
+
     }
     else if (data->old_image)
     {
@@ -282,7 +313,7 @@ static IPTR Image_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
     }
     else /* something's very wrong ! */
     {
-	D(bug("*** Image_AskMinMax : no img, no old_img\n"));
+/*  	D(bug("*** Image_AskMinMax : no img, no old_img\n")); */
 	msg->MinMaxInfo->MinWidth += 8;
 	msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
 	msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth;
@@ -325,6 +356,10 @@ static IPTR Image_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
 static IPTR Image_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
+
+    D(bug("Image_Draw(%p): msg=0x%08lx state=%ld sss=%ld\n",
+       obj, ((struct MUIP_Draw *)msg)->flags, data->state,
+	  !!(_flags(obj) & MADF_SHOWSELSTATE)));
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
