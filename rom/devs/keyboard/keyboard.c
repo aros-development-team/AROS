@@ -180,7 +180,8 @@ AROS_LH3(void, open,
 /* nlorentz: Some extra stuff that must be inited */
     if (NULL == KBBase->kb_Matrix)
     {
-        KBBase->kb_Matrix = AllocMem( KB_MATRIXSIZE, MEMF_ANY|MEMF_CLEAR);
+        KBBase->kb_Matrix = AllocMem(KB_MATRIXSIZE, MEMF_ANY|MEMF_CLEAR);
+
 	if (NULL == KBBase->kb_Matrix)
 	{
 	    ioreq->io_Error = IOERR_OPENFAIL;
@@ -225,14 +226,20 @@ AROS_LH3(void, open,
 	KBBase->kb_LowLevelBase = OpenLibrary("lowlevel.library", 41);
 
 	/* Install our own keyboard handler if opened for the first time */
-/*	if(KBBase->kb_LowLevelBase)
-	    AddKBInt(keyCallback, KBBase); */
+	if(KBBase->kb_LowLevelBase)
+ 	    if((KBBase->kb_kbIrqHandle = AddKBInt(keyCallback, KBBase) == NULL)
+	    {
+	        CloseLibrary(KBBase->kb_LowLevelBase);
+		KBBase->kb_LowLevelBase = NULL; /* Do cleanup below. */
+            }
+
     }
 
     if(!KBBase->kb_LowLevelBase)
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
 	return;
+	/* TODO: Clean up. */
     }
 #endif
 
@@ -267,11 +274,25 @@ AROS_LH0(BPTR, expunge, struct KeyboardBase *, KBBase, 3, Keyboard)
 {
     AROS_LIBFUNC_INIT
 
-    /* Do not expunge the device. Set the delayed expunge flag and return. */
+    /* TODO: Deallocate key buffer and matrix, and shut down the keyboard
+             interrupt. */
+#if 0
 
-    /* TODO: Deallocate key buffer. */
+    RemKBInt(KBBase->kb_kbIrqHandle);
+
+    /* Free buffers _after_ removing the interrupt. */
+    FreeMem(KBBase->kb_Matrix, KB_MATRIXSIZE);
+    FreeMem(KBBase->kb_keyBuffer, KB_BUFFERSIZE*sizeof(UWORD));
+
+    CloseLibrary(KBBase->kb_LowLevelBase);
+    KBBase->kb_LowLevelBase = NULL;
+
+#endif
+
+    /* Do not expunge the device. Set the delayed expunge flag and return. */
     KBBase->kb_device.dd_Library.lib_Flags |= LIBF_DELEXP;
     return 0;
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -351,14 +372,7 @@ AROS_LH1(void, beginio,
 	/* Check for reset... via keybuffer or via HIDD? */
 	/* if(bufferkey == 0x78) ... */
 	
-	/* Is it OK to presuppose that __AROS_STRUCTURE_ALIGNMENT is 2^n ? */
-	/* if((&ioStd(ioreq)->io_Data != ALIGN(&iostd(ioreq)->io_Data))
-	   well, this should actually be more like
-	   if((&ioStd(ioreq)->io_Data) < (AROS_PTR_MAX - __AROS_STRUCTURE_ALIGNMENT) ?
-	   (&ioStd(ioreq)->io_Data != ALIGN(&ioStd(ioreq)->io_Data)) : &ioStd(ioreq)->io_Data != ... */
-	
-	/* Hmm... (int) */
-	if(((IPTR)(&(ioStd(ioreq)->io_Data)) & (__AROS_STRUCTURE_ALIGNMENT - 1)) != 0)
+	if((((IPTR)ioStd(ioreq)->io_Data) & (__AROS_STRUCTURE_ALIGNMENT - 1)) != 0)
 	{
 	    D(bug("kbd: Bad address\n"));
 	    ioreq->io_Error = IOERR_BADADDRESS;
@@ -383,19 +397,12 @@ AROS_LH1(void, beginio,
 	    ioreq->io_Flags &= ~IOF_QUICK;
 	    request_queued = TRUE;
 	    D(bug("kbd: No keypresses, putting request in queue\n"));
-/* nlorentz: This is accesed from a software interrupt, so ObtainSemaphore()
-   cannot be used
 
-	    ObtainSemaphore(&KBBase->kb_QueueLock);
-*/
 	    Disable();
 	    kbUn->kbu_flags |= KBUF_PENDING;
 	    AddTail((struct List *)&KBBase->kb_PendingQueue, (struct Node *)ioreq);
-/*	
-	    ReleaseSemaphore(&KBBase->kb_QueueLock);
-	Dito.
-*/	
 	    Enable();
+
 	    break;
 	}
 	D(bug("kbd: Events ready\n"));
@@ -405,7 +412,10 @@ AROS_LH1(void, beginio,
 	for(i = 0; i < nEvents; i++)
 	{
 	    code = KBBase->kb_keyBuffer[kbUn->kbu_readPos++];
-	    
+
+	    if(kbUn->kbu_readPos == KB_BUFFERSIZE)
+		kbUn->kbu_readPos = 0;
+
 	    if(isQualifier(code) == TRUE)
 	    {
 		trueCode = code & AMIGAKEYMASK;
@@ -486,7 +496,7 @@ AROS_LH1(void, beginio,
 	KBBase->kb_Hidd = NewObject(NULL, (STRPTR)ioStd(ioreq)->io_Data, tags);
 	if (!KBBase->kb_Hidd)
 	{
-	    D(bug("keyboard.device: Failed to open hidd\n"));
+	    D(bug("keyboard.device: Failed to open hidd.\n"));
 	    ioreq->io_Error = IOERR_OPENFAIL;
 	}
 	break; }
@@ -513,19 +523,9 @@ AROS_LH1(LONG, abortio,
 
     if(kbUn->kbu_flags & KBUF_PENDING)
     {
-/* nlorentz: This is accesed from a software interrupt, so ObtainSemaphore()
-   cannot be used
-	ObtainSemaphore(&KBBase->kb_QueueLock);
-*/
 	Disable();
-	
-	Remove((struct Node *)ioreq);		/* Correct? Interference? */
 	ReplyMsg(&ioreq->io_Message);
 	kbUn->kbu_flags &= ~KBUF_PENDING;
-/*	
-	ReleaseSemaphore(&KBBase->kb_QueueLock);
-	Dito.
-*/
 	Enable();
     }
     return 0;
@@ -552,8 +552,6 @@ AROS_LH1(LONG, abortio,
    */
 
 #include  <hardware/cia.h>
-
-
 
 
 BOOL HIDDM_initKeyboard(struct KeyboardHIDD *kh)
@@ -621,14 +619,13 @@ VOID keyBroadCast(struct List *pendingList)
     ForeachNode(pendingList, ioreq)
     {
  	ReplyMsg((struct Message *)&ioreq->io_Message);
-	Remove((struct Node *)ioreq);
 	kbUn->kbu_flags &= ~KBUF_PENDING;
     }
     ReleaseSemaphore(&KBBase->kb_QueueLock);
 }
 
 /* nlorentz: Software interrupt to be called when keys are received
-Copied and pasted from the function above */
+   Copied and pasted from the function above */
 #undef SysBase
 AROS_UFH3(VOID, sendQueuedEvents,
     AROS_UFHA(struct KeyboardBase *, KBBase, A1),
@@ -641,20 +638,12 @@ AROS_UFH3(VOID, sendQueuedEvents,
     
     D(bug("Inside software irq\n"));
 
-/* nlorentz: no use since we're inside an interrupt
-    ObtainSemaphore(&KBBase->kb_QueueLock);
-*/
     ForeachNode(pendingList, ioreq)
     {
         D(bug("Replying msg\n"));
  	ReplyMsg((struct Message *)&ioreq->io_Message);
-	Remove((struct Node *)ioreq);
 	kbUn->kbu_flags &= ~KBUF_PENDING;
     }
-/*  Dito.
-
-    ReleaseSemaphore(&KBBase->kb_QueueLock);
-*/    
 }
 
 static const char end = 0;
