@@ -1,15 +1,17 @@
 #include <stdio.h>
 #include <strings.h>
 #include <proto/exec.h>
+#include <proto/gadtools.h>
 #include <proto/intuition.h>
 
 #include "details.h"
 #include "gadgets.h"
 #include "hdtoolbox_support.h"
 #include "partitiontypes.h"
+#include "platform.h"
 
 #define DEBUG 1
-#include <aros/debug.h>
+#include "debug.h"
 
 extern struct TagItem dettypelvtags[], dettypestringtags[],
 	detpartitiontabletags[], detbufferstags[], detmasktags[],
@@ -53,12 +55,12 @@ struct PartitionTypeNode *ptypenode;
 		dettypelvtags[0].ti_Data = TRUE;
 		dettypestringtags[1].ti_Data = (STACKIPTR)str;
 	}
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		detailsgadgets[ID_DET_TYPELV-ID_DET_FIRST_GADGET].gadget,
 		win,0,dettypelvtags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		detailsgadgets[ID_DET_TYPESTRING-ID_DET_FIRST_GADGET].gadget,
 		win,0,dettypestringtags
@@ -118,52 +120,52 @@ char maxt[16];
 		detendtags[0].ti_Data = TRUE;
 	}
 	setTypeGadgets(win, pn);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		detailsgadgets[ID_DET_PARTITION_TABLE-ID_DET_FIRST_GADGET].gadget,
 		win,0,detpartitiontabletags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		detailsgadgets[ID_DET_BLOCKSIZE-ID_DET_FIRST_GADGET].gadget,
 		win,0,detblocksizetags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		detailsgadgets[ID_DET_BUFFERS-ID_DET_FIRST_GADGET].gadget,
 		win,0,detbufferstags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		detailsgadgets[ID_DET_MASK-ID_DET_FIRST_GADGET].gadget,
 		win,0,detmasktags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		detailsgadgets[ID_DET_MAX_TRANSFER-ID_DET_FIRST_GADGET].gadget,
 		win,0,detmaxtransfertags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		detailsgadgets[ID_DET_AUTOMOUNT-ID_DET_FIRST_GADGET].gadget,
 		win,0,detautomounttags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		detailsgadgets[ID_DET_CUSTBOOT-ID_DET_FIRST_GADGET].gadget,
 		win,0,detcustboottags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		detailsgadgets[ID_DET_CUSTBB-ID_DET_FIRST_GADGET].gadget,
 		win,0,detcustbbtags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		detailsgadgets[ID_DET_BEGINING-ID_DET_FIRST_GADGET].gadget,
 		win,0,detbegintags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		detailsgadgets[ID_DET_END-ID_DET_FIRST_GADGET].gadget,
 		win,0,detendtags

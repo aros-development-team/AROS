@@ -14,7 +14,7 @@
 #include <libraries/gadtools.h>
 
 #define DEBUG 1
-#include <aros/debug.h>
+#include "debug.h"
 
 #include "hdtoolbox_support.h"
 #include "gadgets.h"
@@ -193,7 +193,7 @@ UWORD count=0;
 	{
 		if (*fmt == '\\')
 		{
-			*fmt++;
+			fmt++;
 			if (isdigit(*fmt))
 			{
 			ULONG val=0;

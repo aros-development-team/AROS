@@ -23,10 +23,11 @@
 #include "partitions.h"
 #include "partitiontables.h"
 #include "partitiontypes.h"
+#include "platform.h"
 #include "ptclass.h"
 
 #define DEBUG 1
-#include <aros/debug.h>
+#include "debug.h"
 
 struct IntuitionBase *IntuitionBase=NULL;
 struct GfxBase *GfxBase=NULL;
@@ -57,7 +58,7 @@ ULONG initEnv(char *device) {
 	GadToolsBase = OpenLibrary("gadtools.library", 0);
 	if (!GadToolsBase)
 		return ERR_GADTOOLS;
-	PartitionBase = (struct PartitionBase *)OpenLibrary("partition.library", 37);
+	PartitionBase = (struct PartitionBase *)OpenLibrary("partition.library", 1);
 	if (!PartitionBase)
 		return ERR_PARTITION;
 	scr = LockPubScreen(NULL);
@@ -100,6 +101,7 @@ ULONG initEnv(char *device) {
 		);
 	if (!mainwin)
 		return ERR_WINDOW;
+	SetWindowPointer(mainwin, WA_BusyPointer, TRUE, TAG_DONE);
 	if (device)
 		findHDs(device, 2);
 	else
@@ -108,6 +110,7 @@ ULONG initEnv(char *device) {
 		findHDs("scsi.device", 6);
 	}
 	findPartitionTables(mainwin, &hd_list);
+	SetWindowPointer(mainwin, WA_BusyPointer, FALSE, TAG_DONE);
 	return ERR_NONE;
 }
 
@@ -278,7 +281,7 @@ BOOL running=TRUE;
 					if (pcp_Ok(current_pt))
 					{
 						sctdtags[0].ti_Data = FALSE;
-						SetGadgetAttrsA
+						GT_SetGadgetAttrsA
 						(
 							maingadgets[ID_MAIN_SAVE_CHANGES-ID_MAIN_FIRST_GADGET].gadget,
 							0, 0, sctdtags

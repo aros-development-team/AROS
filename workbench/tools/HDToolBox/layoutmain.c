@@ -7,18 +7,18 @@
 #include <proto/gadtools.h>
 #include <proto/alib.h>
 
+#include <intuition/gadgetclass.h>
 #include <intuition/intuition.h>
 #include <libraries/gadtools.h>
 
 #include "mainwin.h"
 #include "error.h"
 #include "gadgets.h"
-
-#include <aros/debug.h>
+#include "platform.h"
 
 struct TagItem txttags[]=
 {
-	{GTTX_Text, (ULONG)"Interface  Address   LUN   Status    Drive Type"},
+	{GTTX_Text, (STACKIPTR)"Interface  Address   LUN   Status    Drive Type"},
 	{GTTX_CopyText, TRUE},
 	{GTTX_Clipped, TRUE},
 	{TAG_DONE,0}

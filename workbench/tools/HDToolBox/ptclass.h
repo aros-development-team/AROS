@@ -9,4 +9,6 @@
 #define PTS_EMPTY_AREA (1)
 #define PTS_PARTITION  (2)
 
+Class *makePTClass(void);
+
 #endif

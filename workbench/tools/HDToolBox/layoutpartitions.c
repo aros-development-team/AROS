@@ -5,10 +5,12 @@
 
 #include <exec/lists.h>
 #include <exec/nodes.h>
+#include <intuition/gadgetclass.h>
 #include <intuition/intuition.h>
 #include <libraries/gadtools.h>
 
 #include "gadgets.h"
+#include "platform.h"
 
 struct List partition_list;
 struct TagItem pcpartitiontags[] =
@@ -50,14 +52,14 @@ struct TagItem pcptotalcyltags[] =
 struct TagItem pcpsizetags[] =
 {
 	{GA_Disabled, TRUE},
-	{GTTX_Text, ""},
+	{GTTX_Text, (STACKIPTR)""},
 	{GTTX_Clipped, TRUE},
 	{TAG_DONE,NULL}
 };
 struct TagItem pcpnametags[] =
 {
 	{GA_Disabled, TRUE},
-	{GTST_String, ""},
+	{GTST_String, (STACKIPTR)""},
 	{GTST_MaxChars, 16},
 	{TAG_DONE,NULL}
 };
@@ -76,7 +78,7 @@ struct TagItem pcpbootpritags[] =
 struct TagItem pcpfilesystemtags[] =
 {
 	{GA_Disabled, TRUE},
-	{GTTX_Text, ""},
+	{GTTX_Text, (STACKIPTR)""},
 	{GTTX_Clipped, TRUE},
 	{GTTX_Justification, GTJ_CENTER},
 	{TAG_DONE,NULL}

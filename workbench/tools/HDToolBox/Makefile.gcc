@@ -1,0 +1,47 @@
+CC 	:= gcc
+LD	:= gcc
+RM  	:= rm
+CFLAGS	:= -Wall -DNO_INLINE_STDARG -D__AMIGAOS__ -O2 -m68020
+LDFLAGS := -noixemul -s
+EXE := /ram/HDToolBox
+FILES	:= \
+	main \
+	gadgets \
+	details \
+	debug \
+	hdtoolbox_support \
+	layoutmain \
+	layoutpartitions \
+	layoutdetails \
+	partitions \
+	partitiontables \
+	partitiontypes \
+	ptclass
+
+CFILES := $(FILES)
+
+COBJS	:= $(foreach f, $(CFILES), $(f).o)
+DEPS    := $(foreach f, $(CFILES), $(f).d)
+#EXTRALIB:= $(shell $(CC) --print-libgcc-file)
+
+.PHONY : all depend clean library
+	   
+all : $(EXE)
+
+depend	: $(DEPS)
+
+clean	:
+	rm -f *.o *.d $(EXE)
+	
+$(EXE) : $(COBJS)
+	$(LD) $(LDFLAGS) $^ $(EXTRALIB) -o $@
+
+%.o : %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+%.d : %.c
+	$(CC) $(CFLAGS) -M $< -o $@
+
+ifeq (,$(filter clean depend,$(TARGET)))
+-include $(DEPS)
+endif
