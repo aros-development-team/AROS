@@ -373,7 +373,7 @@ void MyExit (int Code)
   //VOID _STDCloseFlexCatCatalog(VOID)
 #elif defined(__GNUC__)
   //STATIC VOID _STDCloseFlexCatCatalog(VOID)
-#elif defined(__ICC)
+#elif defined(__INTEL_COMPILER)
   //STATIC VOID _STDCloseFlexCatCatalog(VOID)
 #else
   CloseFlexCatCatalog();      /* we need to close something... */
@@ -2686,7 +2686,7 @@ int main(int argc, char *argv [])
   // VOID _STIOpenFlexCatCatalog(VOID)
 #elif defined(__GNUC__)
   // VOID _STIOpenFlexCatCatalog(VOID)
-#elif defined(__ICC)
+#elif defined(__INTEL_COMPILER)
   // VOID _STIOpenFlexCatCatalog(VOID)
 #else
    OpenFlexCatCatalog();   /* no autoopen. we do it then */
