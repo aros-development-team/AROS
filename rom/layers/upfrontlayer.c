@@ -10,6 +10,7 @@
 #include <exec/memory.h>
 #include <layers_intern.h>
 #include <aros/libcall.h>
+#include <proto/graphics.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
