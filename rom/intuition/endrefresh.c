@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  2000/01/21 12:35:51  bergers
+    No need to refresh window frame.
+
     Revision 1.8  2000/01/21 10:06:28  bergers
     Also refreshes window frame.
 
@@ -73,13 +76,9 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-
   /* Check whether the BeginRefresh was aborted due to a FALSE=BeginUpdate()*/
   if (0 != (window->Flags & WFLG_WINDOWREFRESH))
-  {
-    RefreshWindowFrame(window);
     EndUpdate(window->WLayer, complete);
-  }
   
   /* reset all bits indicating a necessary or ongoing refresh */
   window->Flags &= ~WFLG_WINDOWREFRESH;
