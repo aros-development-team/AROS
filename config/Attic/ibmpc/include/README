@@ -1,2 +1,0 @@
-This directory contains all ibmpc specific includes. exec/etask.h is
-interesting: it contains eit_CR3 field which will be used in VMM and MP.
