@@ -5,6 +5,7 @@
     Desc: BOOPSI functions DoMethodA() and DoMethod()
     Lang: english
 */
+#include <aros/debug.h>
 #include <intuition/classes.h>
 #include <proto/alib.h>
 #include "alib_intern.h"
@@ -52,6 +53,9 @@
 
 ******************************************************************************/
 {
+    ASSERT_VALID_PTR(obj);
+    ASSERT_VALID_PTR(OCLASS(obj));
+    ASSERT_VALID_PTR(message);
     if (!obj)
 	return 0L;
     return (CallHookPkt ((struct Hook *)OCLASS(obj), obj, message));
@@ -60,6 +64,8 @@
 ULONG DoMethod (Object * obj, ULONG MethodID, ...)
 {
     AROS_SLOWSTACKMETHODS_PRE(MethodID)
+    ASSERT_VALID_PTR(obj);
+    ASSERT_VALID_PTR(OCLASS(obj));
     if (!obj)
 	retval = 0L;
     else

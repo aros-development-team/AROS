@@ -9,7 +9,7 @@
 #include <dos/bptr.h>
 #include <utility/tagitem.h>
 
-extern struct WorkbenchBase * WorkbenchBase;
+extern struct Library * WorkbenchBase;
 
 /*****************************************************************************
 

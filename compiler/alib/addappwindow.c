@@ -8,7 +8,7 @@
 #define AROS_TAGRETURNTYPE struct AppWindow *
 #include <utility/tagitem.h>
 
-extern struct WorkbenchBase * WorkbenchBase;
+extern struct Library * WorkbenchBase;
 
 /*****************************************************************************
 
