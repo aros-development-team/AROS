@@ -862,10 +862,10 @@ $(LIB) : $(OBJS)
 	@$(AR) $@ $(OBJS)
 	@$(RANLIB) $@
 
-$(OBJDIR)/functions.o : functions.c
+$(OBJDIR)/functions.o : $(OBJDIR)/functions.c
 %compile_q
 
-functions.c : mmakefile.src $(ARCHIVE)
+$(OBJDIR)/functions.c : mmakefile.src $(ARCHIVE)
 	@$(ARCHTOOL) -s $(ARCHIVE) $@
 
 ALL_FUNCTIONS := $(FUNCTIONS)
@@ -930,11 +930,16 @@ $(LIB) : $(OBJS)
 	@$(AR) $@ $(OBJS)
 	@$(RANLIB) $@
 
-functions.c : mmakefile.src $(foreach f,$(FUNCTIONS),$(f).c)
+$(OBJDIR)/functions.c : mmakefile.src $(foreach f,$(FUNCTIONS),$(f).c)
 	@$(CPAK) $(FUNCTIONS)
+%mkdir_q $(OBJDIR)
+	@$(MV) functions.c functions.h $(OBJDIR)
 
 ALL_FUNCTIONS := $(FUNCTIONS)
 %genlibincludesinline hasrt=%(hasrt)
+
+$(OBJDIR)/functions.o : $(OBJDIR)/functions.c
+%compile_q opt="$(CFLAGS) -I$(OBJDIR) -I." path=""
 
 $(OBJDIR)/%.o : %.c
 %compile_q
