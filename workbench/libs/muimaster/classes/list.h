@@ -133,6 +133,14 @@ struct  MUIP_List_TestPos                   { ULONG MethodID; LONG x; LONG y; st
 #define MUIA_List_Prop_Visible  0x804273e9 /* PRIV */
 #define MUIA_List_Prop_First    0x80429df3 /* PRIV */
 
+#define MUIA_List_VertProp_Entries  MUIA_List_Prop_Entries  /* PRIV */
+#define MUIA_List_VertProp_Visible  MUIA_List_Prop_Visible  /* PRIV */
+#define MUIA_List_VertProp_First    MUIA_List_Prop_First    /* PRIV */
+
+#define MUIA_List_HorizProp_Entries  0x80429df4 /* PRIV */
+#define MUIA_List_HorizProp_Visible  0x80429df5 /* PRIV */
+#define MUIA_List_HorizProp_First    0x80429df6 /* PRIV */
+
 /****************************************************************************/
 /** Floattext                                                              **/
 /****************************************************************************/
