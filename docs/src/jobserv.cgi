@@ -54,19 +54,19 @@ if ($query_string != "")
 
 	    if ($info[1] == "req")
 	    {
-		printf ("Allocating \"%s\"<BR>\n", $comment);
+		printf ("\"%s\" is now allocated by you.<BR>\n", $comment);
 		$status = 1;
 	    }
 	    else
 	    {
 		if ($info[1] == "free")
 		{
-		    printf ("Freeing \"%s\"<BR>\n", $comment);
+		    printf ("\"%s\" is no longer allocated by you.<BR>\n", $comment);
 		    $status = 0;
 		}
 		else
 		{
-		    printf ("Done with \"%s\"<BR>\n", $comment);
+		    printf ("\"%s\" is marked as completed.<BR>\n", $comment);
 		    $status = 2;
 		}
 	    }
