@@ -5,10 +5,6 @@
 
 /* gui.c -- here are all functions for the gui */
 
-/*
-  Comment out the next line if do not you want to use the
-  experimental Intuition based GUI
-*/
 
 #include "Installer.h"
 #include "cleanup.h"
@@ -365,14 +361,17 @@ int finish = FALSE;
  */
 void show_complete( long int percent )
 {
-char *text;
+static char *text = NULL;
 
-  text = AllocVec( strlen( GuiWinTitle ) + 13, MEMF_PUBLIC );
+  if(text == NULL)
+  {
+    text = AllocVec( strlen( GuiWinTitle ) + 13, MEMF_PUBLIC );
+  }
   if( text == NULL )
   {
     end_alloc();
   }
-  sprintf( text, "%s (Done %3ld%c)", GuiWinTitle, percent, PERCENT );
+  sprintf( text, "%s (Done %3ld%%)", GuiWinTitle, percent );
   SetWindowTitles( GuiWin, text, NULL);
 }
 
