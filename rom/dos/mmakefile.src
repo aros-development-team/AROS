@@ -8,6 +8,7 @@ SPECIAL_CFLAGS := $(SHARED_CFLAGS)
 endif
 
 LIBNAME     := dos
+ULIBNAME    := Dos
 EXEDIR	    := $(BINDIR)/test
 TESTOBJDIR  := $(GENDIR)/rom/dos
 OBJDIR	    := $(OSGENDIR)/$(LIBNAME)
@@ -73,22 +74,23 @@ show-flags :
 	@echo "CFLAGS=$(CFLAGS)"
 
 # MetaMake targets
-#MM kernel-dos : setup includes kernel-setup dos-$(ARCH) kernel-dos-$(ARCH)-$(CPU)
+#MM kernel-dos : setup-dos includes kernel-setup dos-$(ARCH) kernel-dos-$(ARCH)-$(CPU)
 kernel-dos :
 	@$(NOP)
 
 #MM
-setup :
+setup-dos :
 	%mkdirs_q $(OBJDIR) $(LIBDIR)
 
 #MM
 clean ::
-	$(RM) $(OBJDIR) *.err $(LIB)
+	$(RM) $(OBJDIR) *.err $(LIB) \
+	    $(LIBNAME)_functable.c $(LIBNAME)_endtag.c
 
 TESTS := datetostr strtodate splitname readargs
 
 #MM
-check : setup-test $(foreach f,$(TESTS),$(EXEDIR)/$(f))
+check : setup-check $(foreach f,$(TESTS),$(EXEDIR)/$(f))
 
 $(LIB) : $(OBJS)
 	%mklib_q
@@ -97,18 +99,18 @@ $(LIB) : $(OBJS)
 $(EXEDIR)/% : %.c $(DEPLIBS)
 	%link_q opt="$(ILDFLAGS) -DTEST $(COMMON_CFLAGS)"
 
-setup-test :
+setup-check :
 	%mkdirs_q $(TESTOBJDIR) $(EXEDIR)
 
 $(OBJDIR)/%.o : %.c
 	%compile_q
 
-dos_functable.c : $(foreach f,$(PRE_FUNCS),$(f).c) \
+$(LIBNAME)_functable.c : $(foreach f,$(PRE_FUNCS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
-	%mkfunctable_q Dos
+	%mkfunctable_q $(ULIBNAME)
 
 $(LIBNAME)_endtag.c : $(TOP)/scripts/makeendtag.awk
-	%mkendtag_q Dos
+	%mkendtag_q $(ULIBNAME)
 
 $(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
 
