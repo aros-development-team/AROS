@@ -211,6 +211,19 @@ struct MUI_MinMax
 #define MUIPEN(pen) ((pen) & MUIPEN_MASK)
 
 
+enum {
+    MUIV_Font_Inherit = 0,
+    MUIV_Font_Normal = -1,
+    MUIV_Font_List = -2,
+    MUIV_Font_Tiny = -3,
+    MUIV_Font_Fixed = -4,
+    MUIV_Font_Title = -5,
+    MUIV_Font_Big = -6,
+    MUIV_Font_Button = -7,
+    MUIV_Font_Knob = -8,
+    MUIV_Font_NegCount = -9,
+};
+
 /* Possible keyevents (user configurable) */
 enum
 {
