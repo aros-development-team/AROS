@@ -34,7 +34,7 @@
     +------------+-----------+-------------------------------------------------+ 
 
     WARNING!
-     
+
         AROS Kernel will not be placed in first 1MB of ram anymore. Instead it
         will be either somewhere in DMA memory (eg at 2nd MByte), at the end of
         available memory or placed at Virtual address. Don't trust its position.
@@ -67,11 +67,14 @@
 #include <proto/exec.h>
 
 #include <stddef.h>
-#include <strings.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "etask.h"
+#include "exec_util.h"
 
-/* 
+
+/*
  * Some macro definitions. __text will place given structure in .text section.
  * __no_ret will force function type to be no-return function. __packed will
  * force any structure to be non-aligned (we don't need alignment in native
@@ -110,6 +113,15 @@ AROS_UFH5S(void, IntServer,
     AROS_UFHA(struct List *, intList, A1),
     AROS_UFHA(APTR, intCode, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6));
+
+#undef memcpy
+#define memcpy(_d, _s, _len)                               \
+do                                                         \
+{                                                          \
+    int len = _len;                                        \
+    for (;len;len--) ((char *)_d)[len] = ((char *)_s)[len];\
+} while (0)
+
 
 /* Temporary information */
 
@@ -180,7 +192,7 @@ asm(                ".globl kernel_startup  \n\t"
 const char exec_core[] __text       = "Native/CORE v2.0.1";
 
 /*
- * First, we will define exec.library (global) to make it usable outside this 
+ * First, we will define exec.library (global) to make it usable outside this
  * file.
  */
 const char exec_name[] __text       = "exec.library";
@@ -220,7 +232,7 @@ void IdleTask()
         ((struct view*)0xb8000)[0].attr = 0x2f;
         ((struct view*)0xb8000)[0].sign ++;
     } while(1);
-}    
+}
 
 /*
  * Init the exec.library and as well whole system. This routine has to prepare
@@ -245,7 +257,7 @@ void exec_SetColors(char r, char g, char b)
 {
     int	    i;
     short   reg = 0x3c8;        /* IO reg to control PEL */
-    
+
     asm("movb   $0,%%al\n\t"    /* Start with color 0 */
         "outb   %%al,%w0\n\t"
         : /* no output */
@@ -383,16 +395,23 @@ void exec_cinit()
     /* Check whether we have .bss block */
     if ((int)&_end - (int)&_edata)
     {
-        /* 
+        /*
          * Damn! We have to GET RID OF THIS!!! But now the only thing I can do
          * is clearing it. GRUB have done it already but we have to repeat that
          * (it may NEED that as it might be ColdReboot())
          */
-        asm("rep\n\tstosb"
+
+#if 0
+	asm("rep\n\tstosb"
             :
             :"eax"(0),                          /* FIll with 0 */
              "D"(&_edata),                      /* Start of .bss */
              "ecx"((int)&_end-(int)&_edata));   /* Till end of the file */
+
+#else
+	bzero(&_edata,(int)&_end-(int)&_edata);
+#endif
+
     }
 
     clr();
@@ -407,11 +426,16 @@ void exec_cinit()
      * destroy it's private stuff (which is really needed to make CPU operate
      * propertly)
      */
+
+#if 0
     asm("rep\n\tstosl"
         :
         :"eax"(0),              /* Fill with 0 */
          "D"(8),                /* Start at ptr 8 - SKIP ExecBase! */
          "ecx"((4096-8)/4));    /* Do untill end of page */
+#else
+    bzero((void *)8, 4096-8);
+#endif
 
     /*
      * Feel better? Now! Quick. We will have to build new tables for our CPU to
@@ -436,11 +460,15 @@ void exec_cinit()
      * Fix Global Descriptor Table. Because I'm too lazy I'll just copy one from
      * here. I've already prepared such a nice one :)
      */
+#if 0
     asm("rep\n\tmovsl"
         :
         :"S"(&GDT_Table),   /* Copy from ROM table */
          "D"(0x900),        /* To RAM @ 0x00000900 */
          "c"(64/4));        /* 64 bytes */
+#else
+    memcpy((void *)0x900, &GDT_Table, 64);
+#endif
 
     /*
      * As we prepared all necessary stuff, we can hopefully load GDT and LDT
@@ -494,7 +522,7 @@ void exec_cinit()
     {
         rkprintf("Reallocating ExecBase...");
         /*
-         * If we managed to reach this point, it means that there was no ExecBase in 
+         * If we managed to reach this point, it means that there was no ExecBase in
          * the memory. That means that we have to calculate amount of memory available.
          *
          * We will guess ExecBase pointer by taking the lowest possible address and
@@ -514,11 +542,16 @@ void exec_cinit()
             (ULONG)ExecBase+= 137 * LIB_VECTSIZE;
 
             /* Now we will clear FAST memory. */
-            asm("rep\n\tstosl"
+#if 0
+	    asm("rep\n\tstosl"
                 :
                 : "D"(0x01000000),                  /* Start at 0x01000000 */
                   "eax"(0),                         /* Fill with 0 */
                   "c"((extmem - 0x01000000)/4));    /* Change to count number and scale to longwords */
+#else
+
+	    bzero((void *)0x01000000, extmem - 0x01000000);
+#endif
         }
 
         /*
@@ -527,8 +560,8 @@ void exec_cinit()
          */
 
         locmem = exec_RamCheck_dma();
-	
-        rkprintf("OK\nExecBase=%08.8lx\n", ExecBase);
+
+        rkprintf("OK\nExecBase=%p\n", ExecBase);
 
         /* Clear chip ram. Do it carefully as we have kernel somewhere in chip! */
 
@@ -537,35 +570,40 @@ void exec_cinit()
          * We will leave area 0x90000 - 0xa0000 uncleared as there is
          * temporary system stack!
          */
-        
-        asm("rep\n\tstosl"
+
+#if 0
+	asm("rep\n\tstosl"
             :
             : "D"(0x1000),              /* Firstly clear 1st MB of ram */
               "eax"(0),
               "c"((0x90000-0x1000)/4));
-        
+
         asm("rep\n\tstosl"
             :
             : "D"(&_end),               /* Then everything AFTER kernel 'till */
               "eax"(0),                 /* end of the CHIP area */
               "c"((locmem - (ULONG)&_end)/4));
+#else
+	bzero((void *)0x1000, 0x90000-0x1000);
+	bzero(&_end, locmem -(ULONG)&_end);
+#endif
     }
     else
     {
         ExecBase = *(struct ExecBase **)4UL;
-        
+
         locmem = ExecBase->MaxLocMem;
         extmem = (ULONG)ExecBase->MaxExtMem;
-	
-        rkprintf("Got old ExecBase = %08.8lx\n",ExecBase);
+
+        rkprintf("Got old ExecBase = %p\n",ExecBase);
     }
-    /* 
+    /*
      * We happend to be here with local ExecBase properly set as well as
      * local locmem and extmem
      */
 
 //    exec_SetColors(0x20,0x20,0x20);
-    
+
     /* Store this values as they may point to interesting stuff */
     KickMemPtr = ExecBase->KickMemPtr;
     KickTagPtr = ExecBase->KickTagPtr;
@@ -574,12 +612,16 @@ void exec_cinit()
     rkprintf("Clearing ExecBase\n");
 
     /* How about clearing most of ExecBase structure? */
+#if 0
     asm("rep\n\tstosl"
         :
         : "D"(&ExecBase->IntVects[0]),      /* Start clearing at IntVects */
           "eax"(0),
           "c"((sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]))/4));
-   
+#else
+    bzero(&ExecBase->IntVects[0], sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]));
+#endif
+
     ExecBase->KickMemPtr = KickMemPtr;
     ExecBase->KickTagPtr = KickTagPtr;
     ExecBase->KickCheckSum = KickCheckSum;
@@ -588,9 +630,9 @@ void exec_cinit()
      * Now everything is prepared to store ExecBase at the location 4UL and set
      * it complement in ExecBase structure
      */
-    
+
     rkprintf("Initializing library...");
-    
+
     *(struct ExecBase **)4 = ExecBase;
     ExecBase->ChkBase = ~(ULONG)ExecBase;
 
@@ -604,7 +646,7 @@ void exec_cinit()
     ExecBase->MaxExtMem = (APTR)extmem;
 
 #warning TODO: Write first step of alert.hook here!!!
-    
+
     exec_GetCPU();
 
     /*
@@ -666,7 +708,7 @@ void exec_cinit()
     rkprintf("OK\nBuilding JumpTable...");
 
     /* Build the jumptable */
-    ExecBase->LibNode.lib_NegSize = 
+    ExecBase->LibNode.lib_NegSize =
         Exec_MakeFunctions(ExecBase, ExecFunctions, NULL, ExecBase);
 
     rkprintf("OK\n");
@@ -675,20 +717,20 @@ void exec_cinit()
     if (extmem)
     {
         ULONG base = ((ULONG)ExecBase + sizeof(struct ExecBase) + 15) & ~15;
-	
+
         AddMemList(extmem - (base + 0x10000),
             MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL,
             0,
             (APTR)base,
             (STRPTR)exec_fastname);
-	
+
         AddMemList(locmem - 0x1000,
             MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA,
             -10,
             (APTR)0x1000,
             (STRPTR)exec_chipname);
 
-        rkprintf("Chip Memory : %dMB\nFast Memory : %dMB\n",
+        rkprintf("Chip Memory : %luMB\nFast Memory : %luMB\n",
                 locmem >> 20, (extmem - locmem) >> 20);
     }
     else
@@ -700,7 +742,7 @@ void exec_cinit()
             (APTR)base,
             (STRPTR)exec_chipname);
 
-        rkprintf("Chip Memory : %dMB\n", locmem >> 20);
+        rkprintf("Chip Memory : %luMB\n", locmem >> 20);
     }
 
     rkprintf("Memory added\n");
@@ -715,7 +757,7 @@ void exec_cinit()
     /* Add exec.library to system library list */
     SumLibrary((struct Library *)SysBase);
     Enqueue(&SysBase->LibList,&SysBase->LibNode.lib_Node);
-    
+
     rkprintf("OK\n");
 
     ExecBase->DebugAROSBase = PrepareAROSSupportBase();
@@ -765,7 +807,7 @@ void exec_cinit()
 
     irqSetup();
     rkprintf("IRQ services initialized\n");
-    
+
     /* Create user interrupt used to enter supervisor mode */
     set_gate(idt + 0x80, 14, 3, Exec_SystemCall);
 
@@ -781,13 +823,13 @@ void exec_cinit()
         UWORD sum=0, *ptr = &ExecBase->SoftVer;
         int i=((int)&ExecBase->IntVects[0] - (int)&ExecBase->SoftVer) / 2,
             j;
-            
+
         /* Calculate sum for every static part from SoftVer to ChkSum */
         for (j=0;j < i;j++)
         {
             sum+=*(ptr++);
         }
-	
+
         ExecBase->ChkSum = ~sum;
     }
 
@@ -859,6 +901,8 @@ void exec_cinit()
 
     rkprintf("Done\nJumping out from Supervisor mode...");
 
+#if 0
+
     asm("mov %0,%%ds\n\t"   /* User DS */
 	"mov %0,%%es\n\t"       /* User ES */
 	"pushl %0\n\t"          /* User SS */
@@ -870,6 +914,24 @@ void exec_cinit()
 	"1:\tsti"               /* Enable interrupts */
 	:
 	: "eax"(USER_DS),"ecx"(USER_CS));
+#else
+#    define _stringify(x) #x
+#    define stringify(x) _stringify(x)
+
+    asm("movl $" stringify(USER_DS) ",%eax\n\t"
+        "mov %eax,%ds\n\t"                         /* User DS */
+	"mov %eax,%es\n\t"                         /* User ES */
+	"pushl %eax\n\t"                           /* User SS */
+	"pushl %esp\n\t"                           /* Stack frame */
+	"pushl $0x3002\n\t"                        /* IOPL:3 */
+	"pushl $" stringify(USER_CS) "\n\t"        /* User CS */
+	"pushl $1f\n\t"                            /* Entry address */
+	"iret\n"                                   /* Go down to the user mode */
+	"1:\tsti");                                /* Enable interrupts */
+
+#   undef stringify
+#   undef _stringify
+#endif
 
     rkprintf("Done\n");
 
@@ -947,7 +1009,7 @@ void exec_cinit()
 
 
     Debug(0);
-    
+
     rkprintf("Ehm? forever loop...\n");
 
     hidd_demo();
@@ -980,7 +1042,7 @@ int exec_RamCheck_dma()
         *ptr = tmp;
         ptr += 4;
     } while ((int)ptr < 0x01000000);
-    
+
     return (int)ptr;
 }
 
@@ -999,7 +1061,7 @@ int exec_RamCheck_fast()
         *ptr = tmp;
         ptr += 4;
     } while(1);
-    
+
     return ((int)ptr > 0x01000000) ? (int)ptr : 0;
 }
 
@@ -1016,7 +1078,7 @@ int exec_check_base()
 {
     /* Get ExecBase from 0x00000004 */
     struct ExecBase *ExecBase=*(struct ExecBase **)4UL;
-    
+
     /* Attempt first test. If ExecBase is not aligned to 4 byte boundary then
      * it is not proper ExecBase */
     if (!((ULONG)ExecBase & 0x3))
@@ -1034,7 +1096,7 @@ int exec_check_base()
             UWORD sum=0, *ptr = &ExecBase->SoftVer;
             int i=((int)&ExecBase->IntVects[0] - (int)&ExecBase->SoftVer) / 2,
                 j;
-            
+
             /* Calculate sum for every static part from SoftVer to ChkSum */
             for (j=0;j < i;j++)
             {
@@ -1067,7 +1129,7 @@ int exec_check_base()
                     /*
                      * Really last thing. Check MaxLocMem and MaxExtMem fields
                      * in ExecBase. First cannot be grater than 16MB and smaller
-                     * than 2MB, second, if is not zero then has to be grater 
+                     * than 2MB, second, if is not zero then has to be grater
                      * than 16MB
                      */
 
@@ -1174,7 +1236,7 @@ ULONG **exec_RomTagScanner()
                         Enqueue(&rtList,(struct Node*)node);
                     }
                 }
-                
+
                 /* Get address of EndOfResident from RomTag but only when it's
                  * higher then present one - this avoids strange locks when 
                  * not all modules have Resident structure in .text section */
@@ -1225,7 +1287,7 @@ ULONG **exec_RomTagScanner()
         }
         RomTag[i] = 0;
     }
-    
+
     return RomTag;
 }
 
@@ -1301,6 +1363,8 @@ AROS_UFH5S(void, IntServer,
     AROS_UFHA(APTR, intCode, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+    AROS_USERFUNC_INIT
+
     struct Interrupt * irq;
 
     ForeachNode(intList, irq)
@@ -1313,4 +1377,6 @@ AROS_UFH5S(void, IntServer,
 	))
 	    break;
     }
+
+    AROS_USERFUNC_EXIT
 }
