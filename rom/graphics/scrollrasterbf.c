@@ -102,10 +102,10 @@
 	ULONG height = GetBitMapAttr(bm, BMA_HEIGHT);
 	
 	if (xMax >= width )
-	    xMax = width;
+	    xMax = width - 1;
 	    
 	if (yMax >= height)
-	    yMax = height;
+	    yMax = height - 1;
     }
 
     absdx = (dx >= 0) ? dx : -dx;
