@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: OOP rootclass
@@ -31,7 +31,7 @@
    it makes code of other metaclasses more consistent
 */
 
-#define OOPBase ((struct IntOOPBase *)(cl->UserData))
+#define OOPBase ((struct IntOOPBase *)(cl->OOPBasePtr))
 #define IS_META_ATTR(attr, idx) ( (idx = attr - MetaAttrBase) < num_Meta_Attrs )
 /**********************
 **  BaseMeta::New()  **
@@ -141,6 +141,8 @@ static OOP_Object *basemeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	
 	D(bug("superptr=%p\n", superptr));
 
+    	data->public.OOPBasePtr = OOPBase;
+
 	
 	/* Let subclass create an initialize dispatch tables for the new class object*/
 	if (meta_allocdisptabs(o, (OOP_Class *)superptr, ifdescr))
@@ -162,7 +164,7 @@ static OOP_Object *basemeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 		else
 		    data->public.InstOffset = 0UL;
 		D(bug("Setting other stuff\n"));
-		    
+				
 	    	data->subclasscount 	= 0UL;
 	    	data->objectcount	= 0UL;
 	    	data->superclass	= (OOP_Class *)superptr;
@@ -336,16 +338,16 @@ static struct IFMethod *basemeta_iterateifs(
    meta's UserData (IFMeta or HIDDMeta class
 */   
    
-#define OOPBase ((struct IntOOPBase *)OOP_OCLASS(OOP_OCLASS(cl))->UserData)
+#define OOPBase ((struct IntOOPBase *)cl->OOPBasePtr)
+
 static IPTR basemeta_dosupermethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     ULONG method_offset = msg->MID & METHOD_MASK;
     struct IFMethod *ifm;
     
-    
     EnterFunc(bug("basemeta_dosupermethod(cl=%p, o=%p, msg=%p)\n",
     	cl, o, msg));
-	
+
     if (MD(cl)->superclass == ROOTCLASSPTR)
     {
     	ifm = &(OOPBase->ob_RootClassObject.inst.rootif[msg->MID]);
@@ -376,7 +378,7 @@ static IPTR basemeta_dosupermethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 #undef OOPBase
 
-#define OOPBase ((struct IntOOPBase *)(cl->UserData))
+#define OOPBase ((struct IntOOPBase *)(cl->OOPBasePtr))
 /*******************************
 **  BaseMeta CoerceMethod()  **
 *******************************/
@@ -436,6 +438,7 @@ BOOL init_basemeta(struct IntOOPBase *OOPBase)
     bmo->oclass = BASEMETAPTR;
     
     bmo->inst.data.public.ClassNode.ln_Name = "private base metaclass";
+    bmo->inst.data.public.OOPBasePtr	= (struct Library *)OOPBase;
     bmo->inst.data.public.InstOffset 	= 0UL;
     bmo->inst.data.public.UserData 	= OOPBase;
     bmo->inst.data.public.DoSuperMethod = basemeta_dosupermethod;
@@ -489,7 +492,7 @@ BOOL init_basemeta(struct IntOOPBase *OOPBase)
 /************
 **  New()  **
 ************/
-#define OOPBase ((struct IntOOPBase*)(root_cl->UserData))
+#define OOPBase ((struct IntOOPBase*)(root_cl->OOPBasePtr))
 
 
 OOP_Object *root_new(OOP_Class *root_cl, OOP_Class *cl, struct pRoot_New *param)
@@ -565,6 +568,7 @@ BOOL init_rootclass(struct IntOOPBase *OOPBase)
     rco->oclass = &(OOPBase->ob_BaseMetaObject.inst.data.public);
     
     rco->inst.data.public.ClassNode.ln_Name = CLID_Root;
+    rco->inst.data.public.OOPBasePtr	= (struct Library *)OOPBase;
     rco->inst.data.public.InstOffset	= NULL;
     rco->inst.data.public.UserData	= (APTR)OOPBase;
     
