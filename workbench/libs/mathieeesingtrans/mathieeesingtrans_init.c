@@ -7,7 +7,7 @@
 */
 
 #include "mathieeesingtrans_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 #define LC_SYSBASE_FIELD(lib)	(((LIBBASETYPEPTR)(lib))->mist_SysBase)
 #define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR)(lib))->mist_SegList)
