@@ -28,7 +28,7 @@ BEGIN {
     print "    Desc: Function table for " lib;
     print "    Lang: english";
     print "*/";
-    print "#ifndef LIBCORE_COMPILER_H\n#   include <libcore/compiler.h>\n#endif";
+    print "#ifndef __MORPHOS__\n#ifndef LIBCORE_COMPILER_H\n#   include <libcore/compiler.h>\n#endif\n#endif";
     print "#ifndef NULL\n#define NULL ((void *)0)\n#endif\n";
     print "#include \"libdefs.h\"";
 
@@ -106,14 +106,16 @@ END {
 
     if ( libheader == 1 )
     {
-	print "    AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader),";
+	print "#ifdef __MORPHOS__\n    (void *const) FUNCARRAY_32BIT_NATIVE,\n#endif";
+    print "    AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader),";
 	print "    AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader),";
 	print "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader),";
 	print "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader),";
     }
     else
     {
-	print "    AROS_SLIB_ENTRY(open, BASENAME),";
+	print "#ifdef __MORPHOS__\n    (void *const) FUNCARRAY_32BIT_NATIVE,\n#endif";
+    print "    AROS_SLIB_ENTRY(open, BASENAME),";
 	print "    AROS_SLIB_ENTRY(close, BASENAME),";
 	print "    AROS_SLIB_ENTRY(expunge, BASENAME),";
 	print "    AROS_SLIB_ENTRY(null, BASENAME),";
