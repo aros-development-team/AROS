@@ -20,7 +20,7 @@
      But due to the gnu c-compiler we only have to preserve d0,d1,a0,a1.
      UseExecstubs has to be defined when UseRegisterArgs is used!
 */
-#ifdef UseRegisterArgs
+#if UseRegisterArgs
 #define UseExecstubs
 #endif
 
@@ -172,23 +172,41 @@ extern void _aros_not_implemented (void);
 #define __ASM_ARG(type, name, reg) \
 	"move.l "## reg ##",-(%sp)\n\t"
 
+#ifdef __PIC__
 #define __ASM_POSTFIX(type,name,system,argc) \
-	"jsr _"## AROS_SLIB_ENTRY_S(name,system) ##"\n\t"\
+	"bsr.l _"## AROS_SLIB_ENTRY_S(name,system) ##"@PLTPC\n\t"\
 	"add.w #4*" #argc "+4,%sp\n\t"\
 	"rts\n\t"\
 	".size "## AROS_SLIB_ENTRY_S(name,system) ##",.-"\
 	## AROS_SLIB_ENTRY_S(name,system) );\
     __AROS_LH_PREFIX type AROS_SLIB_ENTRY(name,_##system)(
+#else
+#define __ASM_POSTFIX(type,name,system,argc) \
+	"jbsr _"## AROS_SLIB_ENTRY_S(name,system) ##"\n\t"\
+	"add.w #4*" #argc "+4,%sp\n\t"\
+	"rts\n\t"\
+	".size "## AROS_SLIB_ENTRY_S(name,system) ##",.-"\
+	## AROS_SLIB_ENTRY_S(name,system) );\
+    __AROS_LH_PREFIX type AROS_SLIB_ENTRY(name,_##system)(
+#endif
 
-
+#ifdef __PIC__
 #define __ASM_POSTFIXI(type,name,system,argc) \
-	"jsr _"## AROS_SLIB_ENTRY_S(name,system) ##"\n\t"\
+	"bsr.l _"## AROS_SLIB_ENTRY_S(name,system) ##"@PLTPC\n\t"\
 	"add.w #4*" #argc ",%sp\n\t"\
 	"rts\n\t"\
 	".size "## AROS_SLIB_ENTRY_S(name,system) ##",.-"\
 	## AROS_SLIB_ENTRY_S(name,system) );\
     __AROS_LH_PREFIX type AROS_SLIB_ENTRY(name,_##system)(
-
+#else
+#define __ASM_POSTFIXI(type,name,system,argc) \
+	"jbsr _"## AROS_SLIB_ENTRY_S(name,system) ##"\n\t"\
+	"add.w #4*" #argc ",%sp\n\t"\
+	"rts\n\t"\
+	".size "## AROS_SLIB_ENTRY_S(name,system) ##",.-"\
+	## AROS_SLIB_ENTRY_S(name,system) );\
+    __AROS_LH_PREFIX type AROS_SLIB_ENTRY(name,_##system)(
+#endif
 
 #define AROS_LH0(t,n,bt,bn,o,s) \
     __ASM_PREFIX(n,s)\
@@ -1086,13 +1104,21 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 	".type " #name ",@function\n"\
 	#name ":\n\t"\
 
+#ifdef __PIC__
 #define __ASM_POSTFIX_U(type,name,argc) \
-	"jsr _" #name "\n\t"\
+	"bsr.l _" #name "@PLTPC\n\t"\
 	"add.w #4*" #argc ",%sp\n\t"\
 	"rts\n\t"\
 	".size " #name ",.-" #name);\
     __AROS_UFH_PREFIX type _##name (
-
+#else
+#define __ASM_POSTFIX_U(type,name,argc) \
+	"jbsr _" #name "\n\t"\
+	"add.w #4*" #argc ",%sp\n\t"\
+	"rts\n\t"\
+	".size " #name ",.-" #name);\
+    __AROS_UFH_PREFIX type _##name (
+#endif
 
 /* Function headers for user functions */
 
