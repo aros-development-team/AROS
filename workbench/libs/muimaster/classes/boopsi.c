@@ -440,7 +440,7 @@ BOOPSI_DISPATCHER(IPTR, Boopsi_Dispatcher, cl, obj, msg)
     }
     {
 	struct MUI_BoopsiData *data = INST_DATA(cl, obj);
-	if (((msg->MethodID >> 16) == ((TAG_USER >> 16) | 0x0042)) && data->boopsi_object)
+	if (((msg->MethodID >> 16) != ((TAG_USER >> 16) | 0x0042)) && data->boopsi_object)
 	{
 	    return DoMethodA(data->boopsi_object, msg);
 	}
