@@ -217,7 +217,7 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
 	if (*(struct Library **)(tmpLibTable->lT_Library) == NULL)
 	{
 	    printf("%s %s %i\n", getCatalog(catalogPtr, MSG_CANT_OPEN_LIB),
-		   tmpLibTable->lT_Name, tmpLibTable->lT_Version);
+		   tmpLibTable->lT_Name, (int)tmpLibTable->lT_Version);
 	    
 	    return FALSE;
 	}
