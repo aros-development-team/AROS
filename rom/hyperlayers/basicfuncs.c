@@ -982,6 +982,9 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
 
     _TranslateRect(&dr->bounds, l->bounds.MinX, l->bounds.MinY);
     AndRectRegion(dr, &l->bounds);
+    AndRegionRegion(l->VisibleRegion, dr);
+    AndRegionRegion(l->visibleshape, dr);
+    
     _TranslateRect(&dr->bounds, -l->bounds.MinX, -l->bounds.MinY);
     
     rr = dr->RegionRectangle;
@@ -990,6 +993,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
       _TranslateRect(&rr->bounds, 
                      dr->bounds.MinX + l->bounds.MinX,
                      dr->bounds.MinY + l->bounds.MinY);
+
       _CallLayerHook(l->BackFill,
                      l->rp,
                      l,
@@ -997,6 +1001,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
                      rr->bounds.MinX,
                      rr->bounds.MinY,
                      LayersBase);
+
       _TranslateRect(&rr->bounds, 
                      -dr->bounds.MinX-l->bounds.MinX,
                      -dr->bounds.MinY-l->bounds.MinY);
