@@ -25,8 +25,8 @@
 /***** Kbd HIDD *******************/
 
 /* IDs */
-#define IID_Hidd_Kbd		"hidd.kbd"
-#define CLID_Hidd_Kbd		"hidd.kbd"
+#define IID_Hidd_Kbd		"hidd.kbd.hw"
+#define CLID_Hidd_Kbd		"hidd.kbd.hw"
 
 /* Methods */
 enum
