@@ -368,7 +368,7 @@ case "$target_os" in
 		;;
 	    *powerpc*)
 	    	aros_target_cpu="ppc"
-		aros_object_format="elf32-powerpc"
+		aros_object_format="elf32ppc"
 		aros_flavour="emulation"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc -D__linux__"
 		aros_default_wbdepth=8
