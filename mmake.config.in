@@ -13,6 +13,5 @@ genglobalvarfile sh $(TOP)/configure
 ignoredir CVS
 ignoredir bin
 #uncomment next line if you have checked out contrib/regina
-#add contrib/regina/mmakefile-libs
 
 
