@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Help
+ICONS     := Help Catalogs Flags Countries
 ICONDIR   := $(AROSDIR)/Locale
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
