@@ -251,16 +251,16 @@ struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
 
     struct TagItem *tag, tags[] =
     {
-    	{GA_RelVerify,		TRUE},
-	{GA_Disabled,		FALSE},
-	{GTPA_Depth,		1},
-        {GTPA_Color,		0},
-        {GTPA_ColorOffset,	0},
-        {GTPA_IndicatorWidth,	0},
-        {GTPA_IndicatorHeight,	0},
-        {GTPA_NumColors,	0},
-        {GTPA_ColorTable,	0},
-	{TAG_MORE, (IPTR) NULL}
+    	{GA_RelVerify,		TRUE	}, /* 0 */
+	{GA_Disabled,		FALSE	}, /* 1 */
+	{GTPA_Depth,		1	}, /* 2 */
+        {GTPA_Color,		0	}, /* 3 */
+        {GTPA_ColorOffset,	0	}, /* 4 */
+        {GTPA_IndicatorWidth,	0	}, /* 5 */
+        {GTPA_IndicatorHeight,	0	}, /* 6 */
+        {GTPA_NumColors,	2	}, /* 7 */
+        {GTPA_ColorTable,	0	}, /* 8 */
+	{TAG_MORE, 		NULL	}
     };
     
     /* Could use GetTagData(), but this is faster */
@@ -268,15 +268,17 @@ struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
     {
     	IPTR tidata = tag->ti_Data;
     	
+	/* Note: GTPA_NumColors overrides GTPA_Depth tag! */
+	
     	switch (tag->ti_Tag)
     	{
     	case GA_Disabled:		tags[1].ti_Data = tidata; break;
-    	case GTPA_Depth:		tags[2].ti_Data	= tidata; tags[7].ti_Tag = TAG_IGNORE;break;
+    	case GTPA_Depth:		tags[2].ti_Data	= tidata; tags[7].ti_Data = 1L << tidata;break;
     	case GTPA_Color:		tags[3].ti_Data	= tidata; break;
     	case GTPA_ColorOffset:		tags[4].ti_Data	= tidata; break;
     	case GTPA_IndicatorWidth:	tags[5].ti_Data	= tidata; break;
     	case GTPA_IndicatorHeight:	tags[6].ti_Data	= tidata; break;
-    	case GTPA_NumColors:		tags[7].ti_Data	= tidata; tags[2].ti_Tag = TAG_IGNORE;break;
+    	case GTPA_NumColors:		tags[7].ti_Data	= tidata; break;
     	case GTPA_ColorTable:		tags[8].ti_Data	= tidata; break;
     	    
     	} /* switch() */
