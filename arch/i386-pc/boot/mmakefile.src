@@ -11,7 +11,7 @@ AFLAGS3		:= $(AFLAGS2) -I.. $(OS_INCLUDES) -traditional
 FILES		:= head
 LIB		:= $(LIBDIR)/boot/header.a
 LLINK		:= ld -r
-BLINK		:= ld -e startup_32 -Ttext 0x1000 -N -Map aros.map
+BLINK		:= ld -e startup_32 -Ttext 0x1000 -Map aros.map
 LINKLIBS	:= \
 	$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a \
 	$(LIBDIR)/libarosm.a $(LIBDIR)/libarossupport.a
@@ -66,6 +66,7 @@ kernel-link-native : $(foreach f,$(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o)
 	@$(LLINK) -o $(OSGENDIR)/boot/kernel.o \
 	    $(foreach f,$(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) \
 	    $(OSGENDIR)/graphics/graphics_driver.o \
+	    $(OSGENDIR)/intuition/intuition_driver.o \
 	    $(LINKLIBS)
 	@$(BLINK) -o $(OSGENDIR)/boot/kernel \
 	    $(OSGENDIR)/boot/kernel.o $(LINKLIBS)

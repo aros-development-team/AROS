@@ -19,7 +19,7 @@
     0x00000b00 - 0x00000fff	Global Descriptor Table - 5 entries
     0x00001000 - ....		Kernel - if small
     ....       - 0x00090fff	Temporary stack frame for startup code.
-    0x00091000 - 0x0009ffff	BIOS private data (e.g. PS mouse block)
+    0x00093000 - 0x0009ffff	BIOS private data (e.g. PS mouse block)
 
     *** end of SYSTEM USE ONLY area ***
 
@@ -67,7 +67,7 @@ start_again:	cld
 		mov	%ax,%fs
 		mov	%ax,%gs
 		mov	%ax,%ss
-		mov	$0x00091000,%esp
+		mov	$0x00093000,%esp
 
 		pushl	$0	/* Clear all unexcepted bits in EFLAGS */
 		popf
@@ -97,8 +97,6 @@ __clear:	outb	%al,%dx
 		cld
 		rep
 		stosb
-
-		sidt	idt
 
 		movl	$0x00000008,%eax
 		movl	%eax,(idt_base)
@@ -151,7 +149,7 @@ start:		cld
 		mov	%ax,%fs
 		mov	%ax,%gs
 		mov	%ax,%ss
-		mov	$0x00091000,%esp	/* Put stack in safe place */
+		mov	$0x00093000,%esp	/* Put stack in safe place */
 						/* skip BIOS ext area */
 
 		pushl	$0	/* Clear all unexcepted bits in EFLAGS */
@@ -166,14 +164,9 @@ start:		cld
 		rep
 		stosb
 
-/* Get GDT and IDT so that you can change them */
-
-		sgdt	gdt
-		sidt	idt
-
 /* Copy GDT to 0x00000b00 */
 
-		movl	(gdt_base),%esi
+		movl	$gdt_d,%esi
 		movl	$0x00000b00,%edi
 
 /* Store new address */
@@ -269,35 +262,6 @@ make_ientry:	lea	(empty_int),%edx
 int_entry:	.long	0
 		.long	0
 
-		.globl	Set_cursor
-Set_cursor:	ret
-
-
-		pushl	%ebp
-		movl	%esp,%ebp
-		pushl	%edx
-		pushl	%ecx
-		pushl	%ebx
-		pushl	%eax
-		movl	8(%ebp),%ebx
-		movw	$0x03d4,%dx
-		movb	$0x0e,%al
-		outb	%al,%dx
-		incb	%dx
-		movb	%bh,%al
-		outb	%al,%dx
-		decb	%dx
-		movb	$0x0f,%al
-		outb	%al,%dx
-		incb	%dx
-		movb	%bl,%al
-		outb	%al,%dx
-		popl	%eax
-		popl	%ebx
-		popl	%ecx
-		popl	%edx
-		popl	%ebp
-		ret
 
 /* Detecting CPU type - this code has bee taken directly from linux sources */
 
@@ -413,11 +377,37 @@ check_x87:
 	.byte 0xDB,0xE4		/* fsetpm for 287, ignored by 387 */
 	ret
 
+	.balign 32
+gdt_d:
+        .word   0,0,0,0         /* dummy */
+ 
+        .word   0xffff          /* 4GB */
+        .word   0x0000          /* base address = 0 */
+        .word   0x9a00          /* code read/exec */
+        .word   0x00cf          /* granularity=4096, 386 descriptor */
+ 
+        .word   0xffff          /* same as abowe except type */
+        .word   0x0000
+        .word   0x9200          /* data read/write */
+        .word   0x00cf
+ 
+        .word   0xffff          
+        .word   0x0000          /* The same two for user segments */
+        .word   0xfa00          
+        .word   0x00cf          
+ 
+        .word   0xffff
+        .word   0x0000
+        .word   0xf200
+        .word   0x00cf                                                                                     
 
+	.word 	-1
 gdt:
-	.word	0
+	.word	40
 gdt_base:
-	.long	0
+	.long	gdt_d
+
+	.word	-1
 idt:
 	.word	0
 idt_base:
