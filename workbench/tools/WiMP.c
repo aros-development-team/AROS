@@ -75,6 +75,7 @@ struct Library *GadToolsBase;
 struct GfxBase *GfxBase;
 struct Screen *Screen;
 struct Window *Window;
+struct Menu *menus;
 
 
 enum {None_type,Window_type,Screen_type,Max_type};
@@ -158,6 +159,25 @@ APTR vi;
 struct Gadget *glist = NULL;
 struct Gadget *screenlistg = NULL;
 
+static struct NewMenu nm[] = {
+  {NM_TITLE, "Project"},
+    {NM_ITEM, "About..."},
+    {NM_ITEM, NM_BARLABEL},
+    {NM_ITEM, "Quit", "Q"},
+  {NM_TITLE, "Window List"},
+    {NM_ITEM, "Update List"},
+    {NM_ITEM, NM_BARLABEL},
+    {NM_ITEM, "Kill"},
+    {NM_ITEM, "To Front"},
+    {NM_ITEM, "To Back"},
+    {NM_ITEM, "To Origin"},
+    {NM_ITEM, "Activate"},
+    {NM_ITEM, "Zip"},
+  {NM_TITLE, "Generic"},
+    {NM_ITEM, "Rescue All"},
+  {NM_END}
+};
+
 struct IntuiText killscr_body = {1,0,JAM1,10,10,NULL,(UBYTE *)"Do you really want to Close the selected Screen?",NULL};
 struct IntuiText killwin_body = {1,0,JAM1,10,10,NULL,(UBYTE *)"Do you really want to Close the selected Window?",NULL};
 struct IntuiText pos_body = {1,0,JAM1,10,10,NULL,(UBYTE *)"Yes.",NULL};
@@ -220,6 +240,13 @@ struct Gadget *gt_init()
 	gad = CreateContext(&glist);
 	
     return gad;
+}
+
+VOID makemenus()
+{
+    menus = CreateMenusA(nm,NULL);
+    LayoutMenusA(menus, vi, NULL);
+    SetMenuStrip(Window, menus);
 }
 
 struct Gadget *makegadgets(struct Gadget *gad)
@@ -290,6 +317,7 @@ void open_window()
 	, WA_IDCMP,	    IDCMP_REFRESHWINDOW
 			    | IDCMP_MOUSEBUTTONS
 			    | IDCMP_GADGETUP
+			    | IDCMP_MENUPICK
 			    | IDCMP_CLOSEWINDOW
 	, WA_Flags,	    WFLG_DRAGBAR
 			    | WFLG_DEPTHGADGET
@@ -358,6 +386,30 @@ IPTR xptr;
   }
 }
 
+VOID rescue_all()
+{
+struct Screen *scr;
+struct Window *win;
+
+  scr = IntuitionBase->FirstScreen;
+  while( scr )
+  {
+    win = scr->FirstWindow;
+    while( win )
+    {
+      if(  win->LeftEdge < 0
+	|| win->TopEdge  < 0
+	|| win->LeftEdge > scr->Width
+	|| win->TopEdge  > scr->Height )
+      {
+	MoveWindow ( win, - win->LeftEdge, - win->TopEdge );
+      }
+      win = win->NextWindow;
+    }
+    scr = scr->NextScreen;
+  }
+}
+
 VOID update_list()
 {
   freelvnodes(&lv_list);
@@ -371,10 +423,10 @@ VOID update_list()
 
 int main()
 {
-struct Screen *scr;
-struct Window *win;
 struct Gadget *gad;
 struct IntuiMessage *msg;
+struct MenuItem *item;
+struct EasyStruct es;
 ULONG class;
 UWORD code;
 IPTR object;
@@ -389,15 +441,171 @@ int quit=0;
   AddGList(Window,glist,0,-1,NULL);
   RefreshGList(glist,Window,NULL,-1);
 
+  makemenus();
+  
   while(quit==0)
   {
     WaitPort(Window->UserPort);
-    msg=(struct IntuiMessage *)GetMsg(Window->UserPort);
-    class=msg->Class;
+    msg = (struct IntuiMessage *)GetMsg(Window->UserPort);
+    class = msg->Class;
+    code = msg->Code;
     switch(class)
     {
       case IDCMP_CLOSEWINDOW :
-		quit=1;
+		quit = 1;
+		break;
+
+      case IDCMP_MENUPICK :
+		while (code!=MENUNULL)
+		{
+		  printf("Menu: %d %d %d\n",MENUNUM(code),ITEMNUM(code),SUBNUM(code));
+		  switch(MENUNUM(code))
+		  {
+		    case 0: /* Project */
+			switch(ITEMNUM(code))
+			{
+			  case 0: /* About */
+				es.es_StructSize = sizeof(es);
+				es.es_Flags	= 0;
+				es.es_Title	= "WiMP - The Window Manipulation Program";
+				es.es_TextFormat = "WiMP - The Window Manipulation Program\nCopyright 2000 by Henning Kiel\nhkiel@aros.org\n\nThis program is part of AROS";
+				es.es_GadgetFormat = "Continue";
+				EasyRequest(Window,&es,NULL,"Hallo","Blah");
+				break;
+			  case 2: /* Quit */
+				quit = 1;
+				break;
+			}
+			break;
+		    case 1: /* Window List */
+			switch(ITEMNUM(code))
+			{
+			  case 0: /* Update List */
+				update_list();
+				break;
+			  case 2: /* Kill */
+				object = getsw(&type);
+				if(type==Screen_type || type==Window_type)
+				{
+				int killit;
+				  switch(type)
+				  {
+				    case Screen_type :
+					killit = AutoRequest(Window,&killscr_body,&pos_body,&neg_body,0,0,200,75);
+					if( killit == TRUE )
+					{
+					  CloseScreen((struct Screen *)object);
+					}
+					break;
+				    case Window_type :
+					killit = AutoRequest(Window,&killwin_body,&pos_body,&neg_body,0,0,200,75);
+					if( killit == TRUE )
+					{
+					  CloseWindow((struct Window *)object);
+					}
+					break;
+				    default:
+					break;
+				  }
+				}
+				update_list();
+				break;
+			  case 3: /* To Front */
+				object = getsw(&type);
+				if(type==Screen_type || type==Window_type)
+				{
+				  switch(type)
+				  {
+				    case Screen_type :
+					ScreenToFront((struct Screen *)object);
+					break;
+				    case Window_type :
+					WindowToFront((struct Window *)object);
+					break;
+				    default:
+					break;
+				  }
+				}
+				update_list();
+				break;
+			  case 4: /* To Back */
+				object = getsw(&type);
+				if(type==Screen_type || type==Window_type)
+				{
+				  switch(type)
+				  {
+				    case Screen_type :
+					ScreenToBack((struct Screen *)object);
+					break;
+				    case Window_type :
+					WindowToBack((struct Window *)object);
+					break;
+				    default:
+					break;
+				  }
+				}
+				update_list();
+				break;
+			  case 5: /* To Origin */
+				object = getsw(&type);
+				if(type==Screen_type || type==Window_type)
+				{
+				  switch(type)
+				  {
+				    case Screen_type :
+					MoveScreen((struct Screen *)object,-((struct Screen *)object)->LeftEdge,-((struct Screen *)object)->TopEdge);
+					break;
+				    case Window_type :
+					MoveWindow((struct Window *)object,-((struct Window *)object)->LeftEdge,-((struct Window *)object)->TopEdge);
+					break;
+				    default:
+					break;
+				  }
+				  Delay(5);
+				}
+				update_list();
+				break;
+			  case 6: /* Activate */
+				object = getsw(&type);
+				if(type==Window_type)
+				{
+				  ActivateWindow((struct Window *)object);
+				}
+				update_list();
+				break;
+			  case 7: /* Zip */
+				object = getsw(&type);
+				if(type==Window_type)
+				{
+				  ZipWindow((struct Window *)object);
+				}
+				update_list();
+				break;
+			}
+			break;
+		    case 2: /* Generic */
+			switch(ITEMNUM(code))
+			{
+			  case 0: /* Rescue All */
+				rescue_all();
+				Delay(5);
+				update_list();
+				break;
+			}
+			break;
+		    default:
+			break;
+		  }
+		  if ((item = ItemAddress(menus,code)))
+		  {
+		    code = item->NextSelect;
+		  }
+		  else
+		  {
+		    code = MENUNULL;
+		  }
+		}
+		  
 		break;
 
       case IDCMP_GADGETUP :
@@ -512,24 +720,7 @@ int quit=0;
 			break;
 
 		  case ID_RESCUE:
-			scr = IntuitionBase->FirstScreen;
-			while( scr )
-			{
-			  win = scr->FirstWindow;
-			  while( win )
-			  {
-			    if(    win->LeftEdge < 0
-				|| win->TopEdge  < 0
-				|| win->LeftEdge > scr->Width
-				|| win->TopEdge  > scr->Height )
-			    {
-			      MoveWindow ( win, - win->LeftEdge, - win->TopEdge );
-			    }
-			    win = win->NextWindow;
-			  }
-			  scr = scr->NextScreen;
-			}
-
+			rescue_all();
 			Delay(5);
 			update_list();
 			break;
