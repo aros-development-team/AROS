@@ -2249,17 +2249,6 @@ $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path) :
 %end
 
 #------------------------------------------------------------------------------
-# Standard Binary Programs: Multiple source files to one output.
-#
-%define make_prog_multi dir=/A target=/A id=
-%make_prog_common dir=%(dir) id=%(id)
-
-%(target) : %(dir)/% : $(OBJS%(id))
-	%link_q cmd=$(STATIC_LD) opt=$(LDFLAGS%(id)) from=$^ libs=$(LIBS%(id))
-
-%end
-
-#------------------------------------------------------------------------------
 # Common code for building programs
 #
 %define make_prog_common dflags=$(CFLAGS) id= dir=/A
