@@ -49,6 +49,9 @@
     if (mcc && FreeClass(mcc->mcc_Class))
     {
 	mui_free(mcc);
+
+        MUI_FreeClass(mcc->mcc_Super);
+
 	return TRUE;
     }
 
