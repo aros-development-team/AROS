@@ -18,10 +18,10 @@ static const struct RastPort defaultRastPort =
     NULL, /* AreaInfo */
     NULL, /* GelsInfo */
     ~0, /* Mask */
-    1, /* FgPen */
+    ~0, /* FgPen */
     0, /* BgPen */
-    0, /* AOlPen */
-    JAM1, /* DrawMode */
+    ~0, /* AOlPen */
+    JAM2, /* DrawMode */
     0, /* AreaPtSz */
     0, /* linpatcnt */
     0, /* dummy */
