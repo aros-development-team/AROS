@@ -50,8 +50,17 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
-
-    driver_RectFill (rp, xMin, yMin, xMax, yMax, GfxBase);
+    
+    if (rp->AreaPtrn)
+    {
+    	/* When rasport has areaptrn, let BltPattern do the job */
+	BltPattern(rp, NULL, xMin, yMin, xMax, yMax, 0);
+	
+    }
+    else
+    {
+	driver_RectFill (rp, xMin, yMin, xMax, yMax, GfxBase);
+    }
 
     AROS_LIBFUNC_EXIT
 } /* RectFill */
