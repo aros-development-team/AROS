@@ -1,10 +1,12 @@
 /*
-        Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
+#include <stdio.h>
+#include <string.h>
 #include "rexxsyslib_intern.h"
 
 /*****************************************************************************

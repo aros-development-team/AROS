@@ -5,6 +5,7 @@
     Desc:
     Lang: English
 */
+#include <string.h>
 #include <dos/dosextens.h>
 
 /*****************************************************************************

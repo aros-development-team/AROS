@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -14,6 +14,8 @@
 #include <exec/memory.h>
 #include <aros/libcall.h>
 #include "reqtools_intern.h"
+#include "general.h"
+#include "rtfuncs.h"
 
 /*****************************************************************************
 
