@@ -25,6 +25,9 @@ AROS_UFPA(char *,argstr,A0),
 AROS_UFPA(ULONG,argsize,D0),
 AROS_UFPA(struct ExecBase *,sysbase,A6));
 
+extern int             __detacher_must_wait_for_signal __attribute__((weak));
+extern struct Process *__detacher_process              __attribute__((weak));
+
 AROS_UFH3(LONG, detach_entry,
 AROS_UFHA(char *,argstr,A0),
 AROS_UFHA(ULONG,argsize,D0),
@@ -68,18 +71,26 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 
         mysegment = NULL;
 
+	__detacher_process = (struct Process *)FindTask(NULL);
+
 	/* CreateNewProc() will take care of freeing the seglist */
 	newproc = CreateNewProc(tags);
 
-        CloseLibrary(DOSBase);
+        CloseLibrary((struct Library *)DOSBase);
+
+	if (__detacher_must_wait_for_signal)
+	    Wait(SIGBREAKF_CTRL_F);
 
 	return newproc ? RETURN_OK : RETURN_FAIL;
     }
 
-    CloseLibrary(DOSBase);
+    CloseLibrary((struct Library *)DOSBase);
 
     return AROS_UFC3(LONG, entry,
            AROS_UFCA(char *,argstr,A0),
            AROS_UFCA(ULONG,argsize,D0),
            AROS_UFCA(struct ExecBase *,SysBase,A6));
 }
+
+int             __detacher_must_wait_for_signal __attribute__((weak)) = 0;
+struct Process *__detacher_process              __attribute__((weak)) = NULL;
