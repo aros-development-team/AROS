@@ -6,7 +6,7 @@
 AROS-amiga :
 	@$(NOP)
 
-#MM kernel-amiga : kernel-exec kernel-aros kernel-utility
+#MM kernel-amiga : kernel-exec kernel-aros kernel-utility kernel-alerthook-module
 kernel-amiga :
 	@$(NOP)
 
