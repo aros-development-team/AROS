@@ -57,7 +57,7 @@
 #include "shcommands.h"
 
 AROS_SH1(Unsetenv, 41.0, 27.07.1997,
-AROS_SHA(,NAME,,NULL))
+AROS_SHA(,NAME, ,NULL))
 {
     AROS_SHCOMMAND_INIT
 
