@@ -172,3 +172,16 @@ void ConfigToString (Object *configdata, ULONG cfg, Object *string)
 {
     setstring(string, DoMethod(configdata, MUIM_Configdata_GetString, cfg));
 }
+
+#ifdef __amigaos4__
+Object *VARARGS68K DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy, ...)
+{
+    va_list argptr;
+    struct TagItem *tagList;
+    va_startlinear(argptr, dummy);
+    tagList = va_getlinearva(argptr, struct TagItem *);
+    obj = (Object*)DoSuperMethod(cl,obj,OM_NEW,tagList,dummy);
+    va_end(argptr);
+    return obj;
+}
+#endif
