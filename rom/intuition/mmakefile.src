@@ -70,6 +70,7 @@ FUNCTIONS := \
 	getdefaultpubscreen \
 	getscreendata \
 	getscreendrawinfo \
+	lateintuiinit \
 	lockibase \
 	lockpubscreen \
 	makeclass \
