@@ -331,7 +331,7 @@
 		case 'c':
 		{
 		    /* Some space for the result */
-		    UBYTE *b=cbuf;
+		    buf=cbuf;
 		    width=1;
 
 		    /* Get value */
@@ -340,11 +340,12 @@
 			/* Align datastream */
 			if(AROS_LONGALIGN>AROS_WORDALIGN)
 			    stream=(stream+AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1);
-			*b=*(ULONG *)stream;
+			*buf=*(ULONG *)stream;
 			stream+=sizeof(ULONG);
+			
 		    }else
 		    {
-			*b=*(UWORD *)stream;
+			*buf=*(UWORD *)stream;
 			stream+=sizeof(UWORD);
 		    }
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
