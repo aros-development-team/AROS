@@ -38,16 +38,17 @@ struct TextFont
     APTR	   tf_CharKern;
 };
 #define tf_Extension tf_Message.mn_ReplyPort
-#define GetTextFontExtension(font) \
-	((font->tf_Style & FSF_EXTENDED) \
-	    ? ((struct TextFontExtension *)(font->tf_Extension)) \
-	    : NULL \
-	)
+#ifdef __GNUC__
 #define GetTextFontReplyPort(font) \
-	((font->tf_Style & FSF_EXTENDED) \
-	    ? ((struct TextFontExtension *)(font->tf_Extension))->tfe_OrigReplyPort \
+	({ \
+	    struct TextFontExtension * tfe; \
+					    \
+	    tfe = ExtendFont (font, NULL);  \
+	    tfe \
+	    ? tfe->tfe_OrigReplyPort \
 	    : font->tf_Message.mn_ReplyPort \
-	)
+	})
+#endif /* __GNUC__ */
 
 struct TextFontExtension
 {
