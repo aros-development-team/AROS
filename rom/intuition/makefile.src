@@ -92,8 +92,12 @@ FUNCTIONS = \
 	windowtoback \
 	windowtofront
 
-ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)
+PRE_FUNCS = $(FUNCTIONS)
+%prepare_replace rom/intuition
+%filter_replace $(FUNCTIONS
 
+ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
+DEPS=$(foreach f,$(INIT_FILE) $(FILES) $(PRE_FUNC) $(END_FILE),$(OBJDIR)/$(f).d)
 OBJS=$(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 all: setup $(LIB)
@@ -111,7 +115,7 @@ clean::
 $(OBJDIR)/%.o: %.c
 	%compile_q
 
-intuition_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
+intuition_functable.c : $(foreach f,$(PRE_FUNCS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
 	%mkfunctable_q Intuition
 
@@ -120,10 +124,11 @@ intuition_endtag.c: $(TOP)/scripts/makeendtag.awk
 
 $(OBJDIR)/intuition_init.o: libdefs.h
 
+%additional_objs_rule
 %libdefs_rule
 
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q
 
 %common
-%include_deps $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).d)
+%include_deps
