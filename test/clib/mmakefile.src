@@ -5,7 +5,7 @@
 include $(TOP)/config/make.cfg
 
 FILES := \
-	runtests \
+	all-tests \
 	strchr \
 	stpblk
 
