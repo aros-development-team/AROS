@@ -90,24 +90,22 @@ void PutMidi2Link(
 	}
 
 	if(type==CMB_SysEx){
-		if(midilink->ml_SysExFilter.b[0]!=0){
-			if(midilink->ml_SysExFilter.b[0]&SXFM_3Byte){
+		if(midilink->ml_SysExFilter.sxf_Mode!=0){
+			if(midilink->ml_SysExFilter.sxf_Mode&SXFM_3Byte){
 				if(
-					midilink->ml_SysExFilter.b[1]!=msg2->status ||
-					midilink->ml_SysExFilter.b[1]!=msg2->status ||
-					midilink->ml_SysExFilter.b[1]!=msg2->status
+					midilink->ml_SysExFilter.sxf_ID1!=msg2->status ||
+					midilink->ml_SysExFilter.sxf_ID1!=msg2->status ||
+					midilink->ml_SysExFilter.sxf_ID1!=msg2->status
 				){
 					mymidinode->sysex_write=mymidinode->sysex_laststart;
 					return;
 				}
 			}else{
-				for(lokke=1;lokke<4;lokke++){
-					if(midilink->ml_SysExFilter.b[lokke]==msg2->status){
-						goto outofhere;
-					}
-				}
-				mymidinode->sysex_write=mymidinode->sysex_laststart;
-				return;
+			  if(midilink->ml_SysExFilter.sxf_ID1==msg2->status) goto outofhere;
+			  if(midilink->ml_SysExFilter.sxf_ID2==msg2->status) goto outofhere;
+			  if(midilink->ml_SysExFilter.sxf_ID3==msg2->status) goto outofhere;
+			  mymidinode->sysex_write=mymidinode->sysex_laststart;
+			  return;
 			}
 		}
 outofhere:
