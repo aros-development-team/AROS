@@ -9,10 +9,25 @@
 #include <exec/ports.h>
 #include <utility/tagitem.h>
 #include <intuition/intuition.h>
-
-#include "workbench_intern.h"
 #include <workbench/workbench.h>
 #include <proto/utility.h>
+
+#include <string.h>
+
+#define DEBUG 1
+#include "workbench_intern.h"
+
+/*** Prototypes *************************************************************/
+BOOL   __CLI_LaunchProgram(CONST_STRPTR command, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
+STRPTR __CLI_BuildCommandLine(CONST_STRPTR command, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
+BOOL   __WB_LaunchProgram(CONST_STRPTR command, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
+BOOL   __WB_BuildArguments(struct WBStartup *startup, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
+
+/*** Macros *****************************************************************/
+#define CLI_LaunchProgram(name, tags) (__CLI_LaunchProgram((name), (tags), WorkbenchBase))
+#define CLI_BuildCommandLine(name, tags) (__CLI_BuildCommandLine((name), (tags), WorkbenchBase))
+#define WB_LaunchProgram(name, tags) (__WB_LaunchProgram((name), (tags), WorkbenchBase))
+#define WB_BuildArguments(startup, tags) (__WB_BuildArguments((startup), (tags), WorkbenchBase))
 
 /*****************************************************************************
 
@@ -50,12 +65,11 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
-    struct TagItem       *tagState = tags;
-    struct TagItem       *tag      = NULL;
-
-    struct FileInfoBlock  fib      = { 0 };
-    BPTR                  lock     = NULL;
-
+    BOOL                  rc     = FALSE;
+    struct FileInfoBlock  fib    = { 0 };
+    BPTR                  lock   = NULL;
+    struct DiskObject    *icon   = NULL;
+    
     /* Test whether the named path exist, as-is. */
     if ((lock = Lock(name, ACCESS_READ)))
     {
@@ -70,31 +84,35 @@
                 */
                 // FIXME
             }
-            else if (fib.fib_Protection & FIBF_EXECUTE)
+            else if (~fib.fib_Protection & FIBF_EXECUTE)
             {
                 /*
                     It's an executable. Before I launch it, I must check
                     whether it is a Workbench program or a CLI program.
                 */
-                
-                
-                // FIXME
-                // if (has_icon) 
-                // {
-                //     /*
-                //        It's a Workbench program. Build an WBArg array
-                //        and WBStartup message and launch it.
-                //     */
-                // } 
-                // else
-                // {
-                //     /* 
-                //        It's a CLI program. Build the arguments as an
-                //        valid argument string and launch the program.
-                //     */
-                // }
-                
+                #if 0
+                icon = GetIconTags(name, TAG_DONE);
+                if (icon != NULL)
+                {
+                    /*
+                        It's a Workbench program. Build an WBArg array and 
+                        WBStartup message and launch it.
+                    */
+                    //FIXME
+                    // WB_LaunchProgram(name, tags); // more args?
+                    FreeDiskObject(icon);
+                } 
+                else
+                #endif
+                {
+                    /* 
+                        It's a CLI program. Build the arguments as an valid 
+                        argument string and launch the program.
+                    */
+                    rc = CLI_LaunchProgram(name, tags);
+                }
             }
+            #if 0
             else if (fib.fib_Protection & FIBF_SCRIPT)
             {
                 /* 
@@ -103,9 +121,10 @@
                     for a normal CLI program.
                 */
                 // FIXME
-                // [ach] Hmm... We don't seem to handle the script bit in AROS...
+                // [ach] The script bit isn't handled properly in AROS...
                 
             }
+            #endif
             else
             {
                 /*
@@ -113,29 +132,39 @@
                     a plain data file. Test whether it has an icon, and if
                     so try to launch it's default tool (if it has one). 
                 */
+                icon = GetIconTags
+                (
+                    name, ICONGETA_FailIfUnavailable, FALSE, TAG_DONE
+                );
                 
-                // if (has_icon)
-                // {
-                //     /* Test whether it has an valid default tool. */
-                //
-                //     if (has_valid_default_tool)
-                //     {
-                //         /* Build a correct WBArg array and launch the tool. */
-                //     }
-                //     else
-                //     {
-                //         /* Complain to the user about it. */
-                //     }
-                // } 
-                // else
-                // {
-                //     panic_or_something
-                // }
+                if (icon != NULL)
+                {
+                    /* Test whether it has an valid default tool. */
+                    bug("OWO: default tool: %s\n", icon->do_DefaultTool);
+                    if
+                    (
+                           icon->do_DefaultTool != NULL 
+                        && strlen(icon->do_DefaultTool) > 0
+                    )
+                    {
+                        //FIXME: launch default tool
+                    }
+                    else
+                    {
+                        // FIXME: default to global identify hook
+                    }
+                    
+                    FreeDiskObject(icon);
+                } 
+                else
+                {
+                    // FIXME
+                    // global identify hook
+                }
             }
         }
         
         UnLock(lock);
-        
     }
     else
     {
@@ -146,7 +175,9 @@
             relative) path: that is, it must not contain any ':' or '/'.
         */
         
-        if (strpbrk(name, '/:') == NULL)
+        D(bug("OpenWorkbenchObjectA: Lock failed, looking in search path...\n"));
+        
+        //if (strpbrk(name, '/:') == NULL)
         {
             struct CommandLineInterface *cli = Cli();
             if (cli != NULL)
@@ -171,38 +202,187 @@
                     lock = Lock(name, SHARED_LOCK);
                 }
                 
+                /* Restore current directory */
+                CurrentDir(cd); 
+                
+                /* Launch the program */
                 if (lock != NULL)
                 {
-                    /* FIXME: Launch program */
+                    STRPTR path = AllocateNameFromLock(lock);
+                    if (path != NULL)
+                    {
+                        rc = OpenWorkbenchObjectA(path, tags);
+                        FreeVec(path);
+                    }
+                    else
+                    {
+                        // FIXME: panic_or_something
+                    }
                     
                     UnLock(lock);
                 }
-                
-                /* Restore current directory */
-                CurrentDir(cd); 
             }
         }
     }
-
-
-    /* 
-        FIXME: Put the TagList parsing into separate support functions,
-        BuildWBArgs() and BuildCLIArgs(). 
-    */
-
-    while( (tag = NextTagItem( (const struct TagItem **) &tagState )) ) {
-        switch( tag->ti_Tag ) {
-            case WBOPENA_ArgLock:
-                /* FIXME: Do something... */
-                break;
-
-            case WBOPENA_ArgName:
-                /* FIXME: Do something... */
-                break;
-        }
-    }
-
-    return TRUE;
+    
+    return rc;
 
     AROS_LIBFUNC_EXIT
 } /* OpenWorkbenchObjectA() */
+
+STRPTR __CLI_BuildCommandLine
+(
+    CONST_STRPTR command, struct TagItem *tags,
+    struct WorkbenchBase *WorkbenchBase
+)
+{
+    struct TagItem *tstate   = tags;
+    struct TagItem *tag      = NULL;
+    BPTR            lastLock = NULL;
+    STRPTR          buffer   = NULL;
+    ULONG           length   = strlen(command) + 1 /* NULL */;
+    
+    /*-- Calculate length of resulting string ------------------------------*/
+    while ((tag = NextTagItem(&tstate)) != NULL)
+    {
+        switch (tag->ti_Tag)
+        {
+            case WBOPENA_ArgLock:
+                lastLock = (BPTR) tag->ti_Data;
+                break;
+                
+            case WBOPENA_ArgName:
+                if (lastLock != NULL)
+                {
+                    BPTR cd   = CurrentDir(lastLock);
+                    BPTR lock = Lock((STRPTR) tag->ti_Data, ACCESS_READ);
+                    if (lock != NULL)
+                    {
+                        STRPTR path = AllocateNameFromLock(lock);
+                        if (path != NULL)
+                        {
+                            length += 1 /* space */ + strlen(path);
+                            FreeVec(path);
+                        }
+                        
+                        UnLock(lock);
+                    }
+                    
+                    CurrentDir(cd);
+                }
+                break;
+        }
+    }
+    
+    /*-- Allocate space for command line string ----------------------------*/
+    buffer = AllocVec(length, MEMF_ANY);
+    
+    if (buffer != NULL)
+    {
+        buffer[0] = '\0';
+        
+        /*-- Build command line --------------------------------------------*/
+        strcat(buffer, command);
+        
+        tstate = tags; lastLock = NULL;
+        while ((tag = NextTagItem(&tstate)) != NULL )
+        {
+            switch (tag->ti_Tag)
+            {
+                case WBOPENA_ArgLock:
+                    lastLock = (BPTR) tag->ti_Data;
+                    break;
+                
+                case WBOPENA_ArgName:
+                    if (lastLock != NULL)
+                    {
+                        BPTR cd   = CurrentDir(lastLock);
+                        BPTR lock = Lock((STRPTR) tag->ti_Data, ACCESS_READ);
+                        if (lock != NULL)
+                        {
+                            STRPTR path = AllocateNameFromLock(lock);
+                            if (path != NULL)
+                            {
+                                strcat(buffer, " ");
+                                strcat(buffer, path);
+                                FreeVec(path);
+                            }
+                            
+                            UnLock(lock);
+                        }
+                        
+                        CurrentDir(cd);
+                    }
+                    break;
+            }
+        }
+    }
+    else
+    {
+        SetIoErr(ERROR_NO_FREE_STORE);
+    }
+    
+    return buffer;
+}
+
+BOOL __CLI_LaunchProgram
+(
+    CONST_STRPTR command, struct TagItem *tags, 
+    struct WorkbenchBase *WorkbenchBase
+)
+{
+    BPTR   input       = NULL;
+    STRPTR commandline = NULL;
+    
+    input = Open("CON:////Output Window/CLOSE/AUTO/WAIT", MODE_OLDFILE);
+    if (input == NULL) goto error;
+    
+    commandline = CLI_BuildCommandLine(command, tags);
+    if (commandline == NULL) goto error;
+    
+    if
+    (
+        // FIXME: this should actually be done in the handler, to reduce
+        // blocking time
+        SystemTags
+        (
+            commandline,
+            SYS_Asynch,          TRUE,
+            SYS_Input,    (IPTR) input,
+            SYS_Output,   (IPTR) NULL,
+            SYS_Error,    (IPTR) NULL, 
+            NP_StackSize,        WorkbenchBase->wb_DefaultStackSize,
+            TAG_DONE
+        ) == -1
+    )
+    {
+        goto error;
+    }
+    FreeVec(commandline);
+    
+    return TRUE;
+    
+error:
+    if (input != NULL) Close(input);
+    if (commandline != NULL) FreeVec(commandline);
+    
+    return FALSE;
+}
+
+BOOL __WB_BuildArguments
+(
+    struct WBStartup *startup, struct TagItem *tags, 
+    struct WorkbenchBase *WorkbenchBase
+)
+{
+    return FALSE;
+}
+
+BOOL __WB_LaunchProgram
+(
+    CONST_STRPTR command, struct TagItem *tags,
+    struct WorkbenchBase *WorkbenchBase
+)
+{
+    return FALSE;
+}

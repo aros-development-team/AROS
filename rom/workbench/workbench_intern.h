@@ -21,6 +21,8 @@
 #include <intuition/intuition.h>
 
 #include <workbench/icon.h>
+#include <workbench/workbench.h>
+#include <workbench/startup.h>
 
 #include <proto/intuition.h>
 #include <proto/exec.h>
