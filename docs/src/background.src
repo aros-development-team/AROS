@@ -96,7 +96,7 @@ of them work, others don't, yet.
 \item OMA2.0 assembler works. Linker hasn't been tried yet.
 \item ira V1.02, a disassembler from Aminet
 \item From the 3.1 Amiga Developer Update:
-\filename{liblist}, 
+\filename{liblist},
 \filename{portlist},
 \filename{tasklist},
 \filename{fontlist},
@@ -145,52 +145,8 @@ These are things which are still to do:
 
 \section{Licensing AROS}
 
-Several people asked us about to use parts of AROS or license the whole thing,
-for example to give it along with a new computer. Here are the preliminary
-ideas we have about how much we want for it. Note that our basic intentions
-are simply to provide the computer community with a good OS and to prevent
-anyone to make money with our hard work.
-
-\begin{description}
-\item{You are a PD developer or you ask no extra fee for AROS} Then AROS
-is of course free for you, too. It doesn't matter if you use part of AROS
-or the whole. All we ask is that you mention us.
-
-If you sell computers with AROS, you don't have to pay anything extra if
-the price for the machine with AROS is the same as without it.
-
-\item{You want to use part of core of AROS for a commercial or shareware
-product} Then you have to pay $1 (one dollar) per 10 lines of code or $1
-(one dollar), whichever is more. You always have to pay for the whole
-module with the code in it (core modules always contain only one function
-per module). Comments count as code. If you want to calculate the cost of
-some source, get the most recent version from an official source (eg. Aminet
-or the AROS-FTP-Server) and use the UN*X command "wc -l" on the parts you want.
-Then divide the result by 10 (rounding up). For example, the complete Exec
-has at the time of the writing of this text 12409 lines. That would cost
-you $1241.
-
-The price has to be paid only once and it allows you to use all future
-versions of that module in your code, so you also have bought all bugfixes
-and enhancements. You may use your copy in any way you want.
-
-\item{You want the whole thing and pay per sold unit} In this case,
-the price for AROS is 50% of the difference to the unit without AROS. So
-your computer costs $1000 without and you ask $100 for AROS, we want $50
-from you. This license doesn't include the right to modify the AROS source
-but it means that you can sell AROS and make profit from it.
-
-\item{You want the whole thing and pay only once} If you take everything,
-you have to pay half the price of all sources in \filename{AROS/config/}
-and \filename{AROS/rom/}. That would be $2615 for 52301 lines of code
-at the time of the writing of the text. For this price, you get a copy
-of the source and the right to modify and/or sell it as you wish.
-
-Updates to AROS are not free, though, but cheap. Each update costs
-$100, no matter how big the update is. We define an update as a release
-of AROS with a new version number. You only pay for updates you use, so
-you can skip several releases and pay still only $100 when you want the
-new source.
-
-\end{description}
-
+\begin{new}{7.1.1997}
+Since the new situation (we must have a license from Amiga Int/Inc), this
+has to be overworked. Right now, it's not possible to license AROS. Watch
+this space for further updates.
+\end{new}
