@@ -2,7 +2,6 @@
 
 #MM- AROS-amiga : setup includes compiler arosboot kernel workbench demos games utilities
 
-# hidd-graphics target removed from below line because of missing lib.conf file (?)
 #MM- kernel-amiga : kernel-hidd kernel-aros \
 #MM	kernel-exec-module \
 #MM	kernel-alerthook-module \
@@ -10,7 +9,9 @@
 #MM	kernel-utility-module \
 #MM	kernel-expansion-module \
 #MM	kernel-keymap-module \
-#MM	kernel-devs
+#MM	kernel-devs \
+#MM     kernel-oop-module \
+#MM     hidd-graphics-module
 
 # kernel-dos-module <- removed due to spilled register bug in egcs
 # kernel-graphics-module <- removed due to spilled register bug in egcs
