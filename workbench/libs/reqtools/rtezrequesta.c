@@ -29,8 +29,8 @@
 	AROS_LHA(char *, bodyfmt, A1),
 	AROS_LHA(char *, gadfmt, A2),
 	AROS_LHA(struct rtReqInfo *, reqinfo, A3),
-	AROS_LHA(APTR, argarray, A4),
-	AROS_LHA(struct TagItem *, taglist, A0),
+	AROS_LHA(APTR, argarray, A4),            /* tagcall: -1 */
+	AROS_LHA(struct TagItem *, taglist, A0), /* tagcall: -1 +Tags */ 
 
 /*  LOCATION */
 
