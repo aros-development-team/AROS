@@ -7,28 +7,12 @@ LIBNAME 	:= mathtrans
 ULIBNAME	:= MathTrans
 
 FILES		:= intern_spisodd intern_spld
-FUNCTIONS	:= \
-	spacos \
-	spasin \
-	spatan \
-	spcos \
-	spcosh \
-	spexp \
-	spfieee \
-	splog \
-	splog10 \
-	sppow \
-	spsin \
-	spsincos \
-	spsinh \
-	spsqrt \
-	sptan \
-	sptanh \
-	sptieee
+
+ARCHIVE		:= mathtrans.arch
 
 %define_libs prelibs=-l$(LIBNAME)
 
-%genlib_cpak
+%genlib_arch
 
 #MM workbench-libs-mathtrans : setup includes linklibs
 workbench-libs-mathtrans : show-flags $(SLIB)
