@@ -3,14 +3,17 @@
 #MM- AROS-amiga : setup includes compiler arosboot kernel workbench demos games utilities
 
 # hidd-graphics target removed from below line because of missing lib.conf file (?)
-#MM- kernel-amiga : kernel-hidd \
-#MM	kernel-exec-module kernel-aros \
+#MM- kernel-amiga : kernel-hidd kernel-aros \
+#MM	kernel-exec-module \
 #MM	kernel-alerthook-module \
 #MM	kernel-boopsi-module \
 #MM	kernel-utility-module \
-#MM	kernel-devs \
 #MM	kernel-expansion-module \
-#MM	kernel-keymap-module
+#MM	kernel-keymap-module \
+#MM	kernel-devs
+
+# kernel-dos-module <- removed due to spilled register bug in egcs
+# kernel-graphics-module <- removed due to spilled register bug in egcs
 
 #MM- workbench-amiga : workbench-c \
 #MM	workbench-devs \
@@ -24,11 +27,9 @@
 #MM	workbench-libs-gadtools \
 #MM	workbench-libs-icon \
 #MM	workbench-libs-iffparse \
-
-# These targets have been removed because of build problems with egcs 1.0.3
-# workbench-libs-mathtrans \
-# workbench-libs-mathieeedoubbas \
-# workbench-libs-mathieeedoubtrans
+#MM workbench-libs-mathtrans \
+#MM workbench-libs-mathieeedoubbas \
+#MM workbench-libs-mathieeedoubtrans
 
 #MM- workbench-classes-amiga : workbench-classes-complete
 
