@@ -444,7 +444,7 @@ static void frame_semiround_bevel_down_draw (struct MUI_RenderInfo *mri,
 /**************************************************************************
  hold builtin frames.
 **************************************************************************/
-static struct ZuneFrameGfx __builtinFrameGfx[] = {
+static const struct ZuneFrameGfx __builtinFrameGfx[] = {
     /* type 0 : FST_NONE */
     {frame_none_draw, 0, 0, 0, 0},
     {frame_none_draw, 0, 0, 0, 0},
@@ -504,13 +504,13 @@ static struct ZuneFrameGfx __builtinFrameGfx[] = {
 /**************************************************************************
 
 **************************************************************************/
-struct ZuneFrameGfx *zune_zframe_get (struct MUI_FrameSpec_intern *frameSpec)
+const struct ZuneFrameGfx *zune_zframe_get (const struct MUI_FrameSpec_intern *frameSpec)
 {
     if (frameSpec->type >= FST_COUNT) return &__builtinFrameGfx[2 * FST_RECT];
     return &__builtinFrameGfx[2 * frameSpec->type + frameSpec->state];
 }
 
-struct ZuneFrameGfx *zune_zframe_get_with_state (struct MUI_FrameSpec_intern *frameSpec,
+const struct ZuneFrameGfx *zune_zframe_get_with_state (const struct MUI_FrameSpec_intern *frameSpec,
 						 UWORD state)
 {
     if (frameSpec->type >= FST_COUNT) return &__builtinFrameGfx[2 * FST_RECT];
