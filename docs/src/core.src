@@ -50,12 +50,12 @@ state on the stack of the current task and starts a special routine
 called the interrupt handler. Basically this handler now checks for
 other tasks which might want to run, selects one of them and switches
 the stack to the one of the newly chosen task. It then finishes and
-tells the CPU to continue where it way before the interrupt. Since the
+tells the CPU to continue where it was before the interrupt. Since the
 CPU is quite dumb, it will just load it's state from the new stack (ie.
 the one of the new task) and so the new task will run and
 the old one will be sleeping.
 
-Now lets have a look at the details. The life of a task looks like this:
+Now let's have a look at the details. The life of a task looks like this:
 birth, waiting, running and dying. In computer terms, the task is
 created, then waits that it gets the CPU, does its work while it has
 the CPU (this might happen more than once) and at some stage, it
@@ -66,4 +66,4 @@ and another one gets it.
 \subsection{It's mine - task switching}
 
 We need some kind of interrupt handler. Here it doesn't matter how
-it works, only that is called by some magic.
+it works, only that it is called by some magic.
