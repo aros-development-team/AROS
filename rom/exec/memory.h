@@ -2,6 +2,13 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/23 14:26:58  aros
+    Renamed AROS macros from XYZ to AROS_XYZ, so we know what they are
+
+    Use only roundup macro for 256 bytes (not for 2^32)
+
+    Use AROS_WORSTALIGN instead of DOUBLEALIGN
+
     Revision 1.3  1996/10/19 17:11:07  aros
     Moved ALLOCVEC_TOTAL to machine.h because it's used many times.
 
@@ -29,14 +36,14 @@
 #define RTPOTx100000000(a)      \
 ((a)>=0x10000?RTPOTx10000(((a)+0xffff)/0x10000)*0x10000:RTPOTx10000(a))
 
-#define ROUNDUP_TO_POWER_OF_TWO(a)      RTPOTx100000000(a)
+#define ROUNDUP_TO_POWER_OF_TWO(a)      RTPOTx100(a)
 
 /* Some defines for the memory handling functions. */
 
 /* This is for the alignment of memchunk structures. */
 #define MEMCHUNK_TOTAL	\
-ROUNDUP_TO_POWER_OF_TWO(DOUBLEALIGN>sizeof(struct MemChunk)? \
-DOUBLEALIGN:sizeof(struct MemChunk))
+ROUNDUP_TO_POWER_OF_TWO(AROS_WORSTALIGN>sizeof(struct MemChunk)? \
+AROS_WORSTALIGN:sizeof(struct MemChunk))
 
 /* This allows to take the end of the MemHeader as the first MemChunk. */
 #define MEMHEADER_TOTAL \
@@ -58,6 +65,6 @@ struct Block
 };
 
 #define BLOCK_TOTAL \
-((sizeof(struct Block)+DOUBLEALIGN-1)&~(DOUBLEALIGN-1))
+((sizeof(struct Block)+AROS_WORSTALIGN-1)&~(AROS_WORSTALIGN-1))
 
 #endif
