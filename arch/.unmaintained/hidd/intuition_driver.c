@@ -563,7 +563,11 @@ void intui_BeginRefresh (struct Window * win,
     LockLayerRom(win->BorderRPort->Layer);
 
   /* I don't think I ever have to update the BorderRPort's layer */
-  BeginUpdate(win->WLayer);
+  if (FALSE == BeginUpdate(win->WLayer))
+  {
+    EndUpdate(win->WLayer, FALSE);
+    return;
+  }
   
   /* let the user know that we're currently doing a refresh */
   win->Flags |= WFLG_WINDOWREFRESH;
@@ -882,17 +886,19 @@ void windowneedsrefresh(struct Window * w,
      be refreshed twice :( */
 
   
-  BeginUpdate(w->WLayer);
-  
-  if (!(w->Flags & WFLG_GIMMEZEROZERO))
+  if (FALSE != BeginUpdate(w->WLayer))
   {
+  
+    if (!(w->Flags & WFLG_GIMMEZEROZERO))
+    {
       kprintf("REFRESHING NON GZZ WINDOW FRAME\n");
       RefreshWindowFrame(w);
-  }
+    }
   
-  kprintf("REFRESHING WINDOW GADGETS\n");
+    kprintf("REFRESHING WINDOW GADGETS\n");
 
-  RefreshGadgets(w->FirstGadget, w, NULL);
+    RefreshGadgets(w->FirstGadget, w, NULL);
+  }
 
   EndUpdate(w->WLayer, FALSE);
   
