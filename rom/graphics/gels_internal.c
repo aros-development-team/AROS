@@ -11,8 +11,11 @@
 #include <proto/graphics.h>
 #include <proto/exec.h>
 #include "gels_internal.h"
+#include "graphics_intern.h"
 
-struct IntVSprite * _CreateIntVSprite(struct VSprite * vs, struct RastPort * rp)
+struct IntVSprite * _CreateIntVSprite(struct VSprite * vs, 
+                                      struct RastPort * rp,
+                                      struct GfxBase * GfxBase)
 {
 	struct IntVSprite * ivs = AllocMem(sizeof(struct IntVSprite),
 	                                   MEMF_CLEAR);
@@ -25,13 +28,17 @@ struct IntVSprite * _CreateIntVSprite(struct VSprite * vs, struct RastPort * rp)
 		 * called by InitGels().
 		 */
 		if (NULL != rp)
-			_ValidateIntVSprite(ivs,rp, FALSE);
+			_ValidateIntVSprite(ivs,
+			                    rp, 
+			                    FALSE,
+			                    GfxBase);
 	}
 	return ivs;
 }
 
 
-VOID _DeleteIntVSprite(struct VSprite * vs)
+VOID _DeleteIntVSprite(struct VSprite * vs,
+                       struct GfxBase * GfxBase)
 {
 	struct IntVSprite * ivs = vs->IntVSprite;
 
@@ -56,7 +63,8 @@ VOID _DeleteIntVSprite(struct VSprite * vs)
  */
 BOOL _ValidateIntVSprite(struct IntVSprite * ivs, 
                          struct RastPort * rp,
-                         BOOL force_change)
+                         BOOL force_change,
+                         struct GfxBase * GfxBase)
 {
 	struct VSprite * vs = ivs->VSprite;
 	/*
@@ -163,7 +171,8 @@ kprintf("PlanePick: %02x, rp->BitMap:%p\n",vs->PlanePick,rp->BitMap);
  */
  
 void _ClearBobAndFollowClearPath(struct VSprite * CurVSprite, 
-                                 struct RastPort * rp)
+                                 struct RastPort * rp,
+                                 struct GfxBase * GfxBase)
 {
 	/*
 	 * If the bob has not been drawn, yet, then don't do anything.
@@ -178,7 +187,9 @@ void _ClearBobAndFollowClearPath(struct VSprite * CurVSprite,
 		/*
 		 * Clear the next one first. (recursion!!!)
 		 */
-		_ClearBobAndFollowClearPath(CurVSprite->ClearPath, rp);
+		_ClearBobAndFollowClearPath(CurVSprite->ClearPath, 
+		                            rp,
+		                            GfxBase);
 		CurVSprite->ClearPath = NULL;
 	}
 

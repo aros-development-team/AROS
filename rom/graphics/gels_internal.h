@@ -28,13 +28,17 @@ struct IntVSprite
 	WORD                Depth;
 };
 
-struct IntVSprite * _CreateIntVSprite(struct VSprite * vs, struct RastPort * rp);
-VOID _DeleteIntVSprite(struct VSprite * vs);
+struct IntVSprite * _CreateIntVSprite(struct VSprite * vs, 
+                                      struct RastPort * rp,
+                                      struct GfxBase * GfxBase);
+VOID _DeleteIntVSprite(struct VSprite * vs,
+                       struct GfxBase * GfxBase);
 BOOL _ValidateIntVSprite(struct IntVSprite * ivs, 
                          struct RastPort * rp,
-                         BOOL force_change);
+                         BOOL force_change,
+                         struct GfxBase * GfxBase);
 void _ClearBobAndFollowClearPath(struct VSprite * CurVSprite, 
-                                 struct RastPort * rp);
-
+                                 struct RastPort * rp,
+                                 struct GfxBase * GfxBase);
 
 #endif

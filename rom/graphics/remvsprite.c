@@ -86,8 +86,8 @@
 	 * Are only the head and the tail VSprite left?
 	 */
 	if (NULL == Head->NextVSprite->NextVSprite) {
-		_DeleteIntVSprite(Head);
-		_DeleteIntVSprite(Head->NextVSprite);
+		_DeleteIntVSprite(Head,GfxBase);
+		_DeleteIntVSprite(Head->NextVSprite,GfxBase);
 	}
 
 	AROS_LIBFUNC_EXIT

@@ -8,7 +8,7 @@
 #include "graphics_intern.h"
 #include "gels_internal.h"
 
-void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *);
+void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *, struct GfxBase *);
 
 /*****************************************************************************
 
@@ -93,7 +93,7 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *);
 			 */
 
 			if (NULL != CurVSprite->VSBob)
-				_ClearBobAndFollowClearPath(CurVSprite,rp);
+				_ClearBobAndFollowClearPath(CurVSprite,rp,GfxBase);
 
 			/*
 			 * If I am supposed to back up the background then
@@ -120,7 +120,8 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *);
 #warning Since BltRastPortBitMap (or something similar) does not exist I need to use ClipBlit here which is pretty ugly.
 				_ValidateIntVSprite(CurVSprite->IntVSprite,
 				                    rp,
-				                    FALSE);
+				                    FALSE,
+				                    GfxBase);
 				rp_bm.BitMap = CurVSprite->IntVSprite->SaveBuffer;
 
 				ClipBlit(rp,
@@ -154,7 +155,8 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *);
 				 */
 				_ValidateIntVSprite(CurVSprite->IntVSprite, 
 				                    rp, 
-				                    FALSE);
+				                    FALSE,
+				                    GfxBase);
 				
 				BltBitMapRastPort(CurVSprite->IntVSprite->ImageData,
 				                  0,

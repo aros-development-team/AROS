@@ -47,7 +47,8 @@
 	AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
 	_ClearBobAndFollowClearPath(bob->BobVSprite,
-	                            rp);
+	                            rp,
+	                            GfxBase);
 	RemVSprite(bob->BobVSprite);
 
 	AROS_LIBFUNC_EXIT
