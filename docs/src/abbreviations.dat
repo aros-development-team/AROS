@@ -54,6 +54,7 @@ ramdrive;Ramdrive.device
 realtime;RealTime.library
 reqtools;ReqTools.library
 rexxsyslib;RexxSys.library
+rexxmast;RexxMast Program
 timer;Timer.device
 translator;Translator.library
 utility;Utility.library
