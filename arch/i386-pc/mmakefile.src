@@ -186,7 +186,7 @@ create-mf-inc-again :
 #MM- includes-native : includes-copy-native-i386 includes-copy includes-native-i386
 
 #MM
-install-boot-disk : boot-disk
+install-bootdisk :
 	@$(ECHO) "Insert blank floppy-disk in /dev/fd0 and press enter."
 	@read
 	@$(ECHO) "Writing AROS Image to floppy..."
