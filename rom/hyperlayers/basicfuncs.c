@@ -27,6 +27,8 @@
 
 extern struct ExecBase * SysBase;
 
+#define CLIPRECTS_OUTSIDE_OF_SHAPE 1
+
 #define SCROLLSIGN +
 
 /*
@@ -478,7 +480,9 @@ kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
       else
         XorRectRegion(r,&l->bounds);
 
+#if !CLIPRECTS_OUTSIDE_OF_SHAPE
       AndRegionRegion(l->shape,r);
+#endif
       if (TRUE == invisible)
         invisible = FALSE;
       else
@@ -1194,7 +1198,9 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
     if (FALSE == invisible)
     {
       XorRectRegion(&r, &l->bounds);
+#if !CLIPRECTS_OUTSIDE_OF_SHAPE
       AndRegionRegion(l->shape, &r);
+#endif
       invisible = TRUE;
     }
     else
