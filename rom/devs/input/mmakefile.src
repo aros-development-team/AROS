@@ -6,10 +6,7 @@ include $(TOP)/config/make.cfg
 FUNCS := peekqualifier addnullevent
 FILES := processevents support
 
-%build_module_macro mmake=kernel-input \
+%build_module mmake=kernel-input \
   modname=input modtype=device \
-  initfile=input funcs=$(FUNCS) files=$(FILES) \
-  objdir=$(GENDIR)/rom/input \
-  conffile=lib.conf
-  
-%common
+  files="input $(FUNCS) $(FILES)" \
+  objdir=$(GENDIR)/rom/input
