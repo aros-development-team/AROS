@@ -71,6 +71,15 @@ To solve special problems on certain CPUs, we try to get a compiler which
 gets it right or, if that is impossible, we write a small preprocessor
 which replaces the dubious code by calls to the array versions.
 
+\subsection{Include files}
+
+Due to some weird reason the include files for workbench.library are called
+clib/wb_protos.h, defines/wb.h, inline/wb.h, wb_pragmas.h and proto/wb.h
+in AmigaOS. AROS decided to replace wb by the library's name |workbench|.
+We provide wrapper includes for consitency to (old) AmigaOS programs, but
+recommend using the new names |clib/workbench_protos.h|, |defines/workbench.h|,
+|inline/workbench.h|, |workbench_pragmas.h| and |proto/workbench.h| instead.
+
 \subsection{Registers and CPUs}
 
 AROS has put some effort in defining a way to write code which is hardware
