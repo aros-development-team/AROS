@@ -85,7 +85,9 @@ struct pHidd_SerialUnit_Init
 {
     MethodID	mID;
     VOID	*DataReceived;
+    VOID	*DataReceivedUserData;
     VOID	*WriteData;
+    VOID	*WriteDataUserData;
 };
 
 struct pHidd_SerialUnit_Write
@@ -146,7 +148,7 @@ struct pHidd_SerialUnit_GetCapabilities
 Object * HIDD_Serial_NewUnit		(Object *obj, ULONG unitnum);
 VOID     HIDD_Serial_DisposeUnit	(Object *obj, Object *unit);
 
-BOOL     HIDD_SerialUnit_Init	(Object *obj, VOID * DataReceived, VOID * WriteData);
+BOOL     HIDD_SerialUnit_Init	(Object *obj, VOID * DataReceived, VOID * DataReceivedUserData, VOID * WriteData, VOID * WriteDataUserData);
 ULONG    HIDD_SerialUnit_Write	(Object *obj, UBYTE * data, ULONG length);
 BOOL     HIDD_SerialUnit_SetBaudrate(Object *obj, ULONG baudrate);
 BOOL     HIDD_SerialUnit_SetParameters(Object *obj, struct TagItem *tags);
