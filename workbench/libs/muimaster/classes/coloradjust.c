@@ -225,7 +225,7 @@ static IPTR Coloradjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	Child, bslider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
         Child, VSpace(1),
 	Child, VSpace(1),
-	Child, colfield = ColorfieldObject, TextFrame, End,
+	Child, colfield = ColorfieldObject, TextFrame, MUIA_Weight, 0, End,
 	Child, (!colorwheelbase || !gradientsliderbase) ? HVSpace : HGroup,
 	    MUIA_Group_HorizSpacing, 2,
 	    Child, wheel = BoopsiObject,
