@@ -30,7 +30,7 @@ makedirs:
 
 # Create the tools that are used to build AROS.
 tools : makedirs $(TOOLLIB) $(GENMF) $(ARCHTOOL) \
-	$(FLEXCAT) $(GENSKELETON) $(CREATEDTDESC) $(ILBMTOC) $(ILBMTOICON) \
+	$(FLEXCAT) $(CREATEDTDESC) $(ILBMTOC) $(ILBMTOICON) \
 	$(COLLECT-AROS) $(ADFLIB) $(CREATEHDFILE) $(AFSLIB) $(COPYTOAFS) \
 	$(MKFSAFFS) $(FD2INLINE) $(FD2PRAGMA) $(SFDC)
 
@@ -49,10 +49,6 @@ $(ARCHTOOL) : $(TOP)/tools/archtools/archtool.c
 $(FLEXCAT) : $(TOP)/tools/FlexCat/flexcat.c
 	@$(ECHO) Building flexcat...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/FlexCat TOP=$(TOP)
-
-$(GENSKELETON) : $(TOP)/tools/genskeleton/genskeleton.c
-	@$(ECHO) Building genskeleton...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genskeleton TOP=$(TOP)
 
 $(CREATEDTDESC) : $(wildcard $(TOP)/tools/dtdesc/*.[ch]) $(wildcard $(TOP)/tools/dtdesc/c_iff/*.[ch])
 	@$(ECHO) Building createdtdesc...
