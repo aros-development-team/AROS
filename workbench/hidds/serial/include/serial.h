@@ -36,7 +36,7 @@
 
 /**** serial definitions ****************************************************/
 
-extern OOP_AttrBase HiddSerialUnitAB;
+//extern OOP_AttrBase HiddSerialUnitAB;
 
 enum {
     aoHidd_SerialUnit_Unit,
@@ -47,11 +47,11 @@ enum {
     
 };
 
-#define aHidd_SerialUnit_Unit		(HiddSerialUnitAB + aoHidd_SerialUnit_Unit)
-#define aHidd_SerialUnit_BPSRate	(HiddSerialUnitAB + aoHidd_SerialUnit_BPSRate)
-#define aHidd_SerialUnit_DataLength	(HiddSerialUnitAB + aoHidd_SerialUnit_DataLength)
+#define aHidd_SerialUnit_Unit		(__IHidd_SerialUnitAB + aoHidd_SerialUnit_Unit)
+#define aHidd_SerialUnit_BPSRate	(__IHidd_SerialUnitAB + aoHidd_SerialUnit_BPSRate)
+#define aHidd_SerialUnit_DataLength	(__IHidd_SerialUnitAB + aoHidd_SerialUnit_DataLength)
 
-#define IS_HIDDSERIALUNIT_ATTR(attr, idx) IS_IF_ATTR(attr, idx, HiddSerialUnitAB, num_Hidd_SerialUnit_Attrs)
+#define IS_HIDDSERIALUNIT_ATTR(attr, idx) IS_IF_ATTR(attr, idx, __IHidd_SerialUnitAB, num_Hidd_SerialUnit_Attrs)
 
 enum
 {
