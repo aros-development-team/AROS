@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Try to lock a sempahore.
@@ -54,25 +54,42 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
-    LONG ret=0;
+    struct Task *me = FindTask(NULL);
 
     /* Arbitrate for semaphore nesting count and owner fields */
     Forbid();
 
-    /* If the semaphore is free or the user is the current task */
-    if(!sigSem->ss_NestCount||sigSem->ss_Owner==SysBase->ThisTask)
-    {
-	/* Get an exclusive lock on it */
-	ObtainSemaphore(sigSem);
+    /*
+	We are going to lock or fail, so we increment the
+	ss_QueueCount anyway. We shall fix it up later if it was
+	wrong.
+    */
+    sigSem->ss_QueueCount++;
 
-	/* And return true */
-	ret=1;
+    /*	If it is now equal to zero, then we have got it */
+    if( sigSem->ss_QueueCount == 0 )
+    {
+	sigSem->ss_Owner = me;
+	sigSem->ss_NestCount++;
+    }
+    /*	It was already owned by me, so lets just inc the nest count */
+    else if( sigSem->ss_Owner == me )
+    {
+	sigSem->ss_NestCount++;
     }
 
-    /* All done */
+    /*	Owned by somebody else, we fix up the owner count. */
+    else
+    {
+	sigSem->ss_QueueCount--;
+    }
+
     Permit();
-    return ret;
+
+    /*
+	We own the semaphore if it is owned by me
+    */
+    return (sigSem->ss_Owner == me ? TRUE : FALSE);
 
     AROS_LIBFUNC_EXIT
 } /* AttemptSemaphore */
-

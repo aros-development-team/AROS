@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Try to lock a semaphore.
@@ -62,22 +62,52 @@
     /* Prepare semaphore message to be a sent message */
     bidMsg->ssm_Message.mn_Length=sizeof(struct SemaphoreMessage);
     bidMsg->ssm_Message.mn_Node.ln_Type=NT_MESSAGE;
+    bidMsg->ssm_Semaphore = (struct SignalSemaphore *)FindTask(NULL);
 
-    /* Arbitrate for the semaphore structure */
+    if( (IPTR)(bidMsg->ssm_Message.mn_Node.ln_Name) == SM_SHARED )
+    {
+	bidMsg->ssm_Semaphore = NULL;
+    }
+
+    /* Arbitrate for the semaphore structure - following like ObtainSema() */
     Forbid();
 
-    /* Try to get the semaphore immediately. */
-    if((IPTR)(bidMsg->ssm_Message.mn_Node.ln_Name)==SM_SHARED?
-       AttemptSemaphoreShared(sigSem):AttemptSemaphore(sigSem))
+    sigSem->ss_QueueCount++;
+    /*
+	Check if we own it
+    */
+    if( sigSem->ss_QueueCount == 0 )
     {
-	/* Got it. Reply the message. */
-	bidMsg->ssm_Semaphore=sigSem;
-	ReplyMsg(&bidMsg->ssm_Message);
+	/* No, and neither does anybody else - claim it as ours. */
+	sigSem->ss_Owner = (struct Task *)bidMsg->ssm_Semaphore;
+	sigSem->ss_NestCount++;
+	bidMsg->ssm_Semaphore = sigSem;
+	ReplyMsg((struct Message *)sigSem);
     }
-    else
-	/* Couldn't get it. Add message to the semaphore's waiting queue. */
-	AddTail((struct List *)&sigSem->ss_WaitQueue,&bidMsg->ssm_Message.mn_Node);
+    /*
+	Otherwise check if we already own it
+    */
+    else if( sigSem->ss_Owner == (struct Task *)bidMsg->ssm_Semaphore )
+    {
+	/* Yes we do... */
+	sigSem->ss_NestCount++;
+	bidMsg->ssm_Semaphore = sigSem;
+	ReplyMsg((struct Message *)sigSem);
+    }
 
+    /*
+	It is owned by somebody else, set up the waiter
+    */
+    else
+    {
+	/*
+	    We already have a structure for waiting, and we can't
+	    allocate on the stack, so we use it instead. Note that
+	    the SemaphoreRequest structure must be designed so that
+	    it matches the SemapohreMessage structure
+	*/
+	AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)bidMsg);
+    }
     /* All done. */
     Permit();
 
@@ -85,4 +115,3 @@
     return 0;
     AROS_LIBFUNC_EXIT
 } /* Procure */
-

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Release a semaphore.
@@ -60,92 +60,126 @@ void _Exec_ReleaseSemaphore (struct SignalSemaphore * sigSem,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
-    /* Arbitrate for the semaphore structure */
+    /* Protect the semaphore srtucture from multiple access. */
     Forbid();
 
-    /* Lower the use count. >0 means exclusive, <0 shared locked */
-    if(sigSem->ss_NestCount>0)
-	sigSem->ss_NestCount--;
-    else
-	sigSem->ss_NestCount++;
+    /* Release one on the nest count */
+    sigSem->ss_NestCount--;
+    sigSem->ss_QueueCount--;
 
-    /*
-	Now if the semaphore is free and there are other tasks waiting
-	wake them up.
-    */
-    if(!sigSem->ss_NestCount&&sigSem->ss_WaitQueue.mlh_Head->mln_Succ!=NULL)
+    if(sigSem->ss_NestCount == 0)
     {
-	/* Get first node in the waiting list */
-	struct SemaphoreNode *sn;
-	sn=(struct SemaphoreNode *)sigSem->ss_WaitQueue.mlh_Head;
-
-	/* Is it a shared lock? */
-	if((IPTR)sn->node.ln_Name!=SM_EXCLUSIVE)
+	/*
+	    There are two cases here. Either we are a shared
+	    semaphore, or not. If we are not, make sure that the
+	    correct Task is calling ReleaseSemaphore()
+	*/
+	if( sigSem->ss_Owner != NULL && sigSem->ss_Owner != FindTask(NULL) )
 	{
-	    /* Yes. Process all shared locks in the list. */
-	    while(sn->node.ln_Succ!=NULL)
+	    /*
+		If it is not, there is a chance that the semaphore
+		is corrupt. It will be afterwards anyway :-) 
+	    */
+	    Alert( AN_SemCorrupt );
+	}
+	/*
+	    Do not try and wake anything unless there are a number
+	    of tasks waiting. We do both the tests, this is another
+	    opportunity to throw an alert if there is an error.
+	*/
+	else if(
+	    sigSem->ss_QueueCount >= 0
+	 && sigSem->ss_WaitQueue.mlh_Head->mln_Succ != NULL
+	)
+	{
+	    struct SemaphoreRequest *sr, *srn;
+
+	    /*
+		Look at the first node, but only to see whether it
+		is shared or not.
+	    */
+	    sr = (struct SemaphoreRequest *)sigSem->ss_WaitQueue.mlh_Head;
+
+	    /*
+		A node is shared if the ln_Name/sr_Waiter field is
+		odd (ie it has bit 1 set).
+
+		If the sr_Waiter field is != NULL, then this is a
+		task waiting, otherwise it is a message.
+	    */
+	    if( ((IPTR)sr->sr_Waiter & SM_SHARED) == SM_SHARED )
 	    {
-		/* Remember node */
-		struct SemaphoreNode *on=sn;
+		/* This is a shared lock, so ss_Owner == NULL */
+		sigSem->ss_Owner = NULL;
 
-		/* Get next node now because there is a Remove() lurking */
-		sn=(struct SemaphoreNode *)sn->node.ln_Succ;
-
-		/* Is this a shared lock? */
-		if((IPTR)on->node.ln_Name!=SM_EXCLUSIVE)
+		/* Go through all the nodes to find the shared ones */
+		ForeachNodeSafe( &sigSem->ss_WaitQueue, sr, srn)
 		{
-		    /* Yes. Remove it from the list */
-		    Remove(&on->node);
+		    srn = (struct SemaphoreRequest *)sr->sr_Link.mln_Succ;
+		    Remove((struct Node *)sr);
 
-		    /*
-			Mark the semaphore as having one more openers.
-			This happens here because the new owner(s) may need
-			some time to really wake up and I don't want other
-			tasks obtaining the semaphore before him.
-		    */
-		    sigSem->ss_NestCount--;
-		    
-		    /* Dito. Invalidate the owner field. */
-		    sigSem->ss_Owner=NULL;
-		    
-		    /* Wake the new owner. Check access type. */
-		    if(on->node.ln_Pri==SN_TYPE_OBTAIN)
-			/* ObtainSemaphore() type. Send the semaphore signal. */
-			Signal(on->task,SEMAPHORESIGF);
-		    else
+		    if( ((IPTR)sr->sr_Waiter & SM_SHARED) == SM_SHARED )
 		    {
-			/* Procure() type. Reply the semaphore message. */
-			((struct SemaphoreMessage *)on)->ssm_Semaphore=sigSem;
-			ReplyMsg((struct Message *)on);
-		    }
+			/* Clear the bit, and update the owner count */
+			(IPTR)sr->sr_Waiter &= ~1;
+			sigSem->ss_NestCount++;
 
+			if(sr->sr_Waiter != NULL)
+			{
+			    /* This is a task, signal it */
+			    Signal(sr->sr_Waiter, SIGF_SINGLE);
+			}
+			else
+			{
+			    /* This is a message, send it back to its owner */
+			    ((struct SemaphoreMessage *)sr)->ssm_Semaphore = sigSem;
+			    ReplyMsg((struct Message *)sr->sr_Waiter);
+			}
+		    }
 		}
 	    }
-	}else
-	{
-	    /* The new owner wants an exclusive lock. Remove him from the list. */
-	    Remove(&sn->node);
 
-	    /* Mark the semaphore as having one more openers. */
-	    sigSem->ss_NestCount++;
-	    
-	    /* Check access type */
-	    if(sn->node.ln_Pri==SN_TYPE_OBTAIN)
+	    /*	This is an exclusive lock - awaken first node */
+	    else
 	    {
-		/*
-		    ObtainSemaphore() type. Set the owner field and
-		    Send the semaphore signal.
-		*/
-		sigSem->ss_Owner=sn->task;
-		Signal(sn->task,SEMAPHORESIGF);
-	    }else
-	    {
-		/* Procure() type. Reply the message. */
-		((struct SemaphoreMessage *)sn)->ssm_Semaphore=sigSem;
-		sigSem->ss_Owner=((struct Message *)sn)->mn_ReplyPort->mp_SigTask;
-		ReplyMsg((struct Message *)sn);
+		/* Save typing */
+		struct SemaphoreMessage *sm = (struct SemaphoreMessage *)sr;
+
+		/* Only awaken the first of the nodes */
+		Remove((struct Node *)sr);
+		sigSem->ss_NestCount++;
+
+		if(sr->sr_Waiter != NULL)
+		{
+		    sigSem->ss_Owner = sr->sr_Waiter;
+		    Signal(sr->sr_Waiter, SIGF_SINGLE);
+		}
+		else
+		{
+		    sigSem->ss_Owner = (struct Task *)sm->ssm_Semaphore;
+		    sm->ssm_Semaphore = sigSem;
+		    ReplyMsg((struct Message *)sr);
+		}
 	    }
+	} /* there are waiters */
+
+	/*  Otherwise, there are not tasks waiting. */
+	else
+	{
+	    sigSem->ss_Owner = NULL;
+	    sigSem->ss_QueueCount = -1;
+
+	    D(bug("ReleaseSemaphore(): No tasks - ss_NestCount == %ld\n",
+		sigSem->ss_NestCount));
 	}
+    }
+    else if(sigSem->ss_NestCount < 0)
+    {
+	/*
+	    This can't happen. It means that somebody has released
+	    omre times than they have obtained.
+	*/
+	Alert( AN_SemCorrupt );
     }
 
     /* All done. */

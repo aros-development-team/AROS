@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Try to lock a semaphore shared.
@@ -53,25 +53,36 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
-    LONG ret=0;
 
-    /* Arbitrate for the semaphore structure */
+    struct Task *me = FindTask(NULL);
+
+    /* Protect the semaphore structure */
     Forbid();
 
-    /*
-	If the semaphore is free, shared locked or owned by the current task
-	it's possible to get another lock.
-    */
-    if(sigSem->ss_NestCount<=0||sigSem->ss_Owner==SysBase->ThisTask)
-    {
-	/* Get it and return success */
-	ObtainSemaphoreShared(sigSem);
-	ret=1;
-    }
+    /* Increment the queue count. This will need SMP protection */
+    sigSem->ss_QueueCount++;
 
+    if( sigSem->ss_QueueCount == 0 )
+    {
+	/* The semaphore wasn't owned. We can now own it */
+	sigSem->ss_Owner = me;
+	sigSem->ss_NestCount++;
+    }
+    else if( sigSem->ss_Owner == me )
+    {
+	/* The semaphore was owned by me, just increase the nest count */
+	sigSem->ss_NestCount++;
+    }
+    else
+    {
+	/* We can't get ownership, just return it. */
+	sigSem->ss_QueueCount--;
+    }
+    
     /* All done. */
     Permit();
-    return ret;
+
+    return (sigSem->ss_Owner == me ? TRUE : FALSE );
+
     AROS_LIBFUNC_EXIT
 } /* AttemptSemaphoreShared */
-

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Lock a semaphore.
@@ -67,37 +67,58 @@ void _Exec_ObtainSemaphore (struct SignalSemaphore * sigSem,
     /* Arbitrate for the semaphore structure */
     Forbid();
 
-    /* Check if the semaphore is in use by another task */
-    if(sigSem->ss_NestCount&&sigSem->ss_Owner!=me)
+    /*
+	ss_QueueCount == -1 indicates that the semaphore is
+	free, so we increment this straight away. If it then
+	equals 0, then we are the first to allocate this semaphore.
+
+	Note: This will need protection for SMP machines.
+    */
+    sigSem->ss_QueueCount++;
+    if( sigSem->ss_QueueCount == 0 )
     {
-	/*
-	    I wish there was some shared memory available as a semaphore node.
-	    Unfortunately it isn't - and I cannot rely on being able to get
-	    some from AllocMem() at this point either, so I have to use a part
-	    of the stack instead :-(.
-	*/
-	struct SemaphoreNode sn;
-
-	sn.node.ln_Pri =SN_TYPE_OBTAIN;
-	sn.node.ln_Name=(char *)SM_EXCLUSIVE;
-	sn.task        =me;
-
-	/* Add the node to the semaphore's waiting queue. */
-	AddTail((struct List *)&sigSem->ss_WaitQueue,&sn.node);
-
-	/* Wait until the semaphore is free */
-	Wait(SEMAPHORESIGF);
-
-	/* ss_NestCount and ss_Owner are already set by ReleaseSemaphore() */
-    }else
-    {
-	/* The semaphore is free - take it over */
+	/* We now own the semaphore. This is quick. */
+	sigSem->ss_Owner = me;
 	sigSem->ss_NestCount++;
-	sigSem->ss_Owner=me;
     }
 
-    /* All done */
+    /* The semaphore was in use, but was it by us? */
+    else if( sigSem->ss_Owner == me )
+    {
+	/* Yes, just increase the nesting count */
+	sigSem->ss_NestCount++;
+    }
+
+    /*
+	Else, some other task must own it. We have
+	to set a waiting request here.
+    */
+    else
+    {
+	/*
+	    We need a node to mark our semaphore request. Lets use some
+	    stack memory.
+	*/
+	struct SemaphoreRequest sr;
+	sr.sr_Waiter = me;
+
+	/*
+	    Have to clear the signal to make sure that we don't
+	    return immediately. We then add the SemReq to the
+	    waiters list of the semaphore. We were the last to
+	    request, so we must be the last to get the semaphore.
+	*/
+	me->tc_SigRecvd &= ~SIGF_SINGLE;
+	AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)&sr);
+
+	/*
+	    Finally, we simply wait, ReleaseSemaphore() will fill in
+	    who owns the semaphore.
+	*/
+	Wait(SIGF_SINGLE);
+    }
+
+    /* All Done! */
     Permit();
     AROS_LIBFUNC_EXIT
 } /* ObtainSemaphore */
-

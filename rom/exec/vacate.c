@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Release a lock obtained with Procure().
@@ -57,23 +57,23 @@
     /* Arbitrate for the semaphore structure */
     Forbid();
 
+    ((struct SemaphoreRequest *)bidMsg)->sr_Waiter = NULL;
+
     /* Check if the message is still posted. */
     if(bidMsg->ssm_Message.mn_Node.ln_Type==NT_MESSAGE)
     {
 	/* Yes. Remove it from the semaphore's waiting queue. */
 	Remove(&bidMsg->ssm_Message.mn_Node);
+	sigSem->ss_QueueCount--;
 
 	/* And reply the message. */
 	ReplyMsg(&bidMsg->ssm_Message);
-    }else
+    }
+    else
 	/* The semaphore is already locked. Release the lock. */
 	ReleaseSemaphore(sigSem);
-
-    /* Clear the semaphore field. */
-    bidMsg->ssm_Semaphore=NULL;
 
     /* All done. */
     Permit();
     AROS_LIBFUNC_EXIT
 } /* Vacate */
-
