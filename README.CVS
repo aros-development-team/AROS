@@ -26,20 +26,20 @@ displayed, you are connected.
 5. Now you can use _any_ CVS comand as if the main source tree was
 on your local host. To get a complete copy of the current tree, use:
 
-    cvs -d :pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS checkout AROS
+    > cvs -d :pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS checkout AROS
 
 !!! NOTE !!! IMPORTANT !!!
 
-    You must use "aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS" to
-    login but ":pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS" to
-    use CVS (or in other words: after login, you must prepend ":pserver:"
-    to the argument of the -d option. This tells CVS that your are logged
-    in.
+You must use "aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS" to
+login but ":pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS" to
+use CVS (or in other words: after login, you must prepend ":pserver:"
+to the argument of the -d option. This tells CVS that your are logged
+in.
 
 6. What can I do now ? Well, you can edit any file or create any number
 of new files. To send me your changes, you must commit them, namely with:
 
-    cvs -d :pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS commit [<file>]
+    > cvs -d :pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS commit [<file>]
 
 where <file> is the name of a file you want to update on MY host. If
 you don't specify a certain file, CVS will update all files in the CURRENT
@@ -50,7 +50,7 @@ state at YOUR place.
 7. What do I do it I have a new file ? Then you must register it with
 "cvs ... add <file>", eg.
 
-    cvs -d :pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS add some_new_file.c
+    > cvs -d :pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS add some_new_file.c
 
 This won't do anything here at my place but simply tell CVS at YOUR
 place that there is a new file. The next "cvs ... commit" then registers
@@ -61,7 +61,7 @@ happens. CVS won't notice you or update your files. To tell CVS to look
 for new files and changes by other people (ie. make YOUR files uptodate),
 use
 
-    cvs -d :pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS update [<file>]
+    > cvs -d :pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS update [<file>]
 
 As usual, give a file if you want only this file to be checked and updated
 or nothing and CVS will check all files in this dir and all subdirs.
@@ -84,3 +84,23 @@ then offers you a file which contains the rest: Your changes and the
 changes of the other person. Then you have to manually clean this up
 and after that CVS will use this file as the new version. At least that's
 what the manual says :)
+
+10. And now the goodie for all those who read upto here: You don't need
+to type the looong line above every time. If you use csh or similar
+(to find out, try it. If it says "setenv: command not found" then you
+don't :), use this:
+
+    > setenv CVSROOT :pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS
+
+on the other shells, the command looks like this:
+
+    > export CVSROOT=:pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS
+
+NOTE: This must be done _after_ the login !! If you do it before, CVS
+will try to use an existing login to login :)
+
+After this, you can omit the "-d :pserver..." and just type, for example:
+
+    > cvs help
+
+Fave a lot of fun :)
