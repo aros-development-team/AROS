@@ -54,7 +54,7 @@ static struct SignalSemaphore OpenSemaphore;
 /*************************************************************************
  The start function
 *************************************************************************/
-#ifndef COMPILE_LINKED
+#ifndef COMPILE_STATIC
 LONG _start(void)
 {
     return 20;
@@ -289,7 +289,7 @@ Object *VARARGS68K _ZuneMaster_MUI_NewObject(struct ZuneMasterIFace *Self, CONST
 
     va_startlinear(ap, classname);
     tags = va_getlinearva(ap, struct TagItem *);
-    obj = Self->MUI_NewObject(classname, tags);
+    obj = Self->MUI_NewObjectA(classname, tags);
     va_end(ap);
     return obj;
 }
@@ -312,7 +312,7 @@ LONG VARARGS68K _ZuneMaster_MUI_Request(struct ZuneMasterIFace *Self, APTR app, 
 
     va_startlinear(ap, format);
     params = va_getlinearva(ap, APTR);
-    res = Self->MUI_Request(app,win,flags,title,gadgets,format,params);
+    res = Self->MUI_RequestA(app,win,flags,title,gadgets,format,params);
     va_end(ap);
     return res;
 }
