@@ -55,8 +55,8 @@
 ******************************************************************************/
 {
     double        val = 0;
-    int           tail, exp;
-    char          c = 0;
+    int           tail, exp = 0;
+    char          c = 0, ce = 0;
 
     while (isspace (*str))
 	str ++;
@@ -85,12 +85,16 @@
 
 	if(tolower(*str) == 'e')
 	{
-	    exp = 0;
+	    if (*str == '+' || *str == '-')
+	        c2 = *str ++;
+
 	    while (isdigit (*str))
 	    {
 		exp = exp * 10 + (*str - '0');
 		str ++;
 	    }
+	    if (c2 == '-')
+	        exp = -exp;
 	    val *= pow (10, exp);
 	}
 
