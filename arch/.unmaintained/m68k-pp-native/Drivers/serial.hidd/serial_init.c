@@ -47,14 +47,8 @@
 
 #define SysBase      (LC_SYSBASE_FIELD(lh))
 
-#warning !!!!! AQctivate again!!
-#if 0
 void serial_int_uart1(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 void serial_int_uart2(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
-#else
-#define serial_init_uart1(x,y)
-#define serial_init_uart2(x,y)
-#endif
 
 #undef OOPBase
 #define OOPBase (csd->oopbase)
@@ -104,8 +98,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 							Alert( AT_DeadEnd | AN_IntrMem );
 						}
 						irq->h_Node.ln_Pri=127;		/* Set the highest pri */
-#warning Activate again!!!
-//						irq->h_Code = serial_int_uart1;
+						irq->h_Code = serial_int_uart1;
 						irq->h_Data = (APTR)csd;
 //						HIDD_IRQ_AddHandler(csd->irqhidd, irq, vHidd_IRQ_Serial1);
 
@@ -116,8 +109,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 							Alert( AT_DeadEnd | AN_IntrMem );
 						}
 						irq->h_Node.ln_Pri=127;		/* Set the highest pri */
-#warning Activate again!!!
-//						irq->h_Code = serial_int_uart2;
+						irq->h_Code = serial_int_uart2;
 						irq->h_Data = (APTR)csd;
 //						HIDD_IRQ_AddHandler(csd->irqhidd, irq, vHidd_IRQ_Serial2);
 

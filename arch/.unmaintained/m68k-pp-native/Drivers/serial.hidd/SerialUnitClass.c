@@ -278,6 +278,8 @@ BOOL serialunit_setparameters(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialU
 BYTE serialunit_sendbreak(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_SendBreak *msg)
 {
 	struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
+	
+	data = NULL;
 
 	return SerErr_LineErr;
 }
@@ -344,6 +346,7 @@ UWORD serialunit_getstatus(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit
 	struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
 	UWORD status = 0;
 
+	data = NULL;
 	/*
 	 *
 	 */
@@ -637,15 +640,14 @@ BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed)
 
 /* Serial interrupts */
 
-#if 0
-
 #undef SysBase
 #define SysBase (hw->sysBase)
 #define csd ((struct class_static_data *)(irq->h_Data))
 
-void serial_int_13(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+void serial_int_uart1(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
 }
 
-
-#endif
+void serial_int_uart2(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+{
+}
