@@ -75,13 +75,13 @@ LONG /* error */ PKG_ExtractFile( APTR pkg )
     //Printf( "Extracting %s (%ld bytes)...\n", path, dataLength );
     
     /* Make sure the destination directory exists */
-    if( !MakeDirs( path ) ) { result = -1; goto cleanup; }
+    if( !MakeDirs( path ) ) { Printf("E:makedirs\n"); result = -1; goto cleanup; }
     
     /* Read and write the data in pieces */
     buffer = AllocMem( PKG_BUFFER_SIZE, MEMF_ANY );
-    if( buffer == NULL ) { result = -1; goto cleanup; }
+    if( buffer == NULL ) { Printf("E:mem\n"); result = -1; goto cleanup; }
     output = Open( path, MODE_NEWFILE );
-    if( output == NULL ) { result = -1; goto cleanup; }
+    if( output == NULL ) { Printf("E:create\n"); result = -1; goto cleanup; }
     
     {
         LONG total = 0;
@@ -100,10 +100,10 @@ LONG /* error */ PKG_ExtractFile( APTR pkg )
             }
             
             rc = PKG_Read( pkg, buffer, length );
-            if( rc == -1 || rc == 0 ) { result = -1; goto cleanup; }
+            if( rc == -1 || rc == 0 ) { Printf("E:read\n"); result = -1; goto cleanup; }
             
             rc = FILE_Write( output, buffer, length );
-            if( rc == -1 ) { result = -1; goto cleanup; }
+            if( rc == -1 ) { Printf("E:write\n"); result = -1; goto cleanup; }
             
             total += length;
         }
