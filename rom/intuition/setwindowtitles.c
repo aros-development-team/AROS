@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  1999/12/19 19:27:16  nlorentz
+    Now calls RefreshWindowFrame()
+
     Revision 1.7  1998/10/20 16:46:05  hkiel
     Amiga Research OS
 
@@ -95,6 +98,8 @@
 	window->Title = NULL;
     else if (windowTitle != (UBYTE *)~0L)
 	window->Title = windowTitle;
+	
+    RefreshWindowFrame(window);
 
     /* Change screen's title */
     if (!screenTitle)
