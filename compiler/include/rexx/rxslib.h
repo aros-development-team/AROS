@@ -17,51 +17,12 @@
 #define RXSDIR	 "REXX"
 #define RXSTNAME "ARexx"
 
-struct RxsLib
-{
-    struct Library  rl_Node;
-    UBYTE    	    rl_Flags;
-    UBYTE    	    rl_Shadow;
-    APTR     	    rl_SysBase;
-    APTR     	    rl_DOSBase;
-    APTR     	    rl_IeeeDPBase;
-    LONG     	    rl_SegList;
-    LONG     	    rl_NIL;
-    LONG     	    rl_Chunk;
-    LONG     	    rl_MaxNest;
-    struct NexxStr *rl_NULL;
-    struct NexxStr *rl_FALSE;
-    struct NexxStr *rl_TRUE;
-    struct NexxStr *rl_REXX;
-    struct NexxStr *rl_COMMAND;
-    struct NexxStr *rl_STDIN;
-    struct NexxStr *rl_STDOUT;
-    struct NexxStr *rl_STDERR;
-    STRPTR    	    rl_Version;
-    STRPTR    	    rl_TaskName;
-    LONG      	    rl_TaskPri;
-    LONG      	    rl_TaskSeg;
-    LONG      	    rl_StackSize;
-    STRPTR    	    rl_RexxDir;
-    STRPTR    	    rl_CTABLE;
-    STRPTR    	    rl_Notice;  
-    struct MsgPort  rl_RexxPort;
-    UWORD     	    rl_ReadLock;
-    LONG      	    rl_TraceFH;
-    struct List     rl_TaskList;
-    WORD      	    rl_NumTask;
-    struct List     rl_LibList;
-    WORD      	    rl_NumLib;
-    struct List     rl_ClipList;
-    WORD      	    rl_NumClip;
-    struct List     rl_MsgList;
-    WORD      	    rl_NumMsg;
-    struct List     rl_PgmList;
-    WORD      	    rl_NumPgm;
-    UWORD     	    rl_TraceCnt;
-    WORD      	    rl_avail;
-};
+/* Information in Rxslib should not be used in client programs
+ * Therefor don't provide any information to these client programs
+ */
+struct Rxslib;
 
+/* These are not necessary for client program either I think
 #define RLFB_TRACE  RTFB_TRACE
 #define RLFB_HALT   RTFB_HALT
 #define RLFB_SUSP   RTFB_SUSP
@@ -74,7 +35,9 @@ struct RxsLib
 #define RXSNEST     32
 #define RXSTPRI     0
 #define RXSSTACK    4096
+*/
 
+/* I'm not sure about these ones but let's dissable them for now
 #define CTB_SPACE   0
 #define CTB_DIGIT   1
 #define CTB_ALPHA   2
@@ -92,5 +55,6 @@ struct RxsLib
 #define CTF_REXXSPC (1 << CTB_REXXSPC)
 #define CTF_UPPER   (1 << CTB_UPPER)
 #define CTF_LOWER   (1 << CTB_LOWER)
+*/
 
 #endif

@@ -15,22 +15,25 @@
 #ifndef EXEC_PORTS_H
 #   include <exec/ports.h>
 #endif
+#ifndef DOS_DOSEXTENS_H
+#   include <dos/dosextens.h>
+#endif
 
 struct RexxMsg
 {
 	struct Message	rm_Node;	/* EXEC message structure */
-	APTR		rm_TaskBlock;	/* global structure (private) */
-	APTR		rm_LibBase;	/* library base (private) */
+	IPTR		rm_Private1;	/* private */
+	IPTR		rm_Private2;	/* private */
 	LONG		rm_Action;	/* command (action) code */
 	LONG		rm_Result1;	/* primary result (return code) */
-	LONG		rm_Result2;	/* secondary result */
+	IPTR		rm_Result2;	/* secondary result */
 	STRPTR		rm_Args[16];	/* argument block (ARG0-ARG15) */
 	struct MsgPort *rm_PassPort;	/* forwarding port */
 	STRPTR		rm_CommAddr;	/* host address (port name) */
 	STRPTR		rm_FileExt;	/* file extension */
-	LONG		rm_Stdin;	/* input stream (filehandle) */
-	LONG		rm_Stdout;	/* output stream (filehandle) */
-	LONG		rm_avail;	/* future expansion */
+	struct FileHandle *rm_Stdin;	/* input stream */
+	struct FileHandle *rm_Stdout;	/* output stream */
+	LONG		rm_Private3;	/* future expansion */
 };
 
 /* rm_Action definitions */
