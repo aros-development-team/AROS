@@ -118,8 +118,8 @@ static VOID MNAME(dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 #undef SDEBUG
 #undef DEBUG
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 /*** init_bmclass *********************************************************/
@@ -128,37 +128,40 @@ static VOID MNAME(dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 #define XSD(cl) xsd
 
 #define NUM_ROOT_METHODS   3
-#define NUM_BITMAP_METHODS 3
+#define NUM_BITMAP_METHODS 6
 
 OOP_Class *init_vesagfxoffbmclass(struct VesaGfx_staticdata *xsd)
 {
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
-	{(IPTR (*)())MNAME(new),     moRoot_New    },
-	{(IPTR (*)())MNAME(dispose), moRoot_Dispose},
-	{(IPTR (*)())MNAME(get),     moRoot_Get},
-	{NULL, 0UL}
+	{(IPTR (*)())MNAME(new)     , moRoot_New    },
+	{(IPTR (*)())MNAME(dispose) , moRoot_Dispose},
+	{(IPTR (*)())MNAME(get)     , moRoot_Get    },
+	{NULL	    	    	    , 0UL   	    }
     };
     struct OOP_MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
     {
-	{(IPTR (*)())MNAME(putpixel),           moHidd_BitMap_PutPixel},
-	{(IPTR (*)())MNAME(getpixel),           moHidd_BitMap_GetPixel},
-	{(IPTR (*)())MNAME(fillrect),           moHidd_BitMap_FillRect},
-	{NULL, 0UL}
+	{(IPTR (*)())MNAME(putpixel)	, moHidd_BitMap_PutPixel    },
+	{(IPTR (*)())MNAME(getpixel)	, moHidd_BitMap_GetPixel    },
+	{(IPTR (*)())MNAME(fillrect)	, moHidd_BitMap_FillRect    },
+	{(IPTR (*)())MNAME(putimage)	, moHidd_BitMap_PutImage    },
+	{(IPTR (*)())MNAME(getimage)	, moHidd_BitMap_GetImage    },
+    	{(IPTR (*)())MNAME(putimagelut) , moHidd_BitMap_PutImageLUT },
+	{NULL	    	    	    	, 0UL	    	    	    }
     };
     struct OOP_InterfaceDescr ifdescr[] =
     {
-	{root_descr,    IID_Root       , NUM_ROOT_METHODS},
-	{bitMap_descr,  IID_Hidd_BitMap, NUM_BITMAP_METHODS},
-	{NULL, NULL, 0}
+	{root_descr 	, IID_Root          , NUM_ROOT_METHODS	},
+	{bitMap_descr	, IID_Hidd_BitMap   , NUM_BITMAP_METHODS},
+	{NULL	    	, NULL	    	    , 0     	    	}
     };
     OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
     struct TagItem tags[] =
     {
-	{aMeta_SuperID,        (IPTR) CLID_Hidd_BitMap},
-	{aMeta_InterfaceDescr, (IPTR) ifdescr},
-	{aMeta_InstSize,       (IPTR) sizeof(struct BitmapData)},
-	{TAG_DONE, 0UL}
+	{aMeta_SuperID	    	, (IPTR) CLID_Hidd_BitMap   	    },
+	{aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	    },
+	{aMeta_InstSize     	, (IPTR) sizeof(struct BitmapData)  },
+	{TAG_DONE   	    	, 0UL	    	    	    	    }
     };
     OOP_Class *cl = NULL;
 
