@@ -194,12 +194,10 @@ char myFWrite(BPTR file, STRPTR buf, ULONG size)
 	if(buffer == NULL && NULL == (buffer = (STRPTR) AllocVec(MEM_CHUNK, MEMF_PUBLIC)))
 		goto emergency;
 
-#warning stegerg: does the else really belong to the 2nd if here?
-
-	if(size+usage > MEM_CHUNK)
+	if(size+usage > MEM_CHUNK) {
 		if( Write(file, buffer, usage) != usage ) return 0;
 		else usage = 0;
-
+	}
 	if(size > MEM_CHUNK)
 		emergency: return (char) (Write(file, buf, size) == size ? 1 : 0);
 	else
@@ -234,8 +232,8 @@ char myFClose( BPTR file )
 
 #define	FClose(x)			myFClose(x)
 
-/*** Write the lines svg in the file nom, returns 1 if all's OK ***/
-BYTE save_file(UBYTE *nom, LINE *svg, unsigned char eol)
+/*** Write the lines svg in the file `name', returns 1 if all's OK ***/
+BYTE save_file(UBYTE *name, LINE *svg, unsigned char eol)
 {
 	register STRPTR buf;
 	register LONG   i;
@@ -244,7 +242,7 @@ BYTE save_file(UBYTE *nom, LINE *svg, unsigned char eol)
 
 	BusyWindow(Wnd);
 
-	if( ( fh = Open(nom, MODE_NEWFILE) ) )
+	if( ( fh = Open(name, MODE_NEWFILE) ) )
 	{
 		for(ln=svg, buf=NULL, i=0; ln; ln=ln->next)
 		{
@@ -258,7 +256,7 @@ BYTE save_file(UBYTE *nom, LINE *svg, unsigned char eol)
 				if( i>=0 && (FWrite(fh, buf,       i,     1) != 1 ||
 				             FWrite(fh, chEOL+eol, szeol, 1) != 1 ) )
 				{
-					wrterr: ThrowDOSError(Wnd, nom);
+					wrterr: ThrowDOSError(Wnd, name);
 					i=0;    break;
 				}
 
@@ -276,7 +274,7 @@ BYTE save_file(UBYTE *nom, LINE *svg, unsigned char eol)
 	} else if(IoErr() == ERROR_OBJECT_EXISTS)
 		ThrowError(Wnd, ErrMsg(ERR_WRONG_TYPE));
 	else
-		ThrowError(Wnd, ErrMsg(ERR_NOWRTACCESS));
+		ThrowDOSError(Wnd, name);
 
 	WakeUp(Wnd);
 	return 1;

@@ -21,28 +21,18 @@
 #include "Events.h"
 #include "ProtoTypes.h"
 
-#ifdef _AROS
-#include <aros/macros.h>
-#define LONG2BE(x) AROS_LONG2BE(x)
-#define BE2LONG(x) AROS_BE2LONG(x)
-#else
-#define LONG2BE(x) (x)
-#define BE2LONG(x) (x)
-#endif
-
 #define  CATCOMP_NUMBERS
 #include "Jed_Strings.h"
 
 extern struct IntuitionBase *IntuitionBase;
-extern struct GfxBase       *GfxBase;
-extern struct Library       *AslBase;
+extern struct GfxBase *      GfxBase;
+extern struct Library *      AslBase;
+extern struct Library *      IFFParseBase;
 
 PREFS prefs, tmpprefs;
 UBYTE File[]   = APPNAME ".prefs";
 UBYTE ENV[]    = "ENVARC:";
-UBYTE IdForm[] = "FORM----PREF" JANO_STRID "----";
 UBYTE Path[100];
-UWORD ByteWrt, ByteRead;
 
 /** Special table for word separation **/
 UBYTE WordsSep[MAX_SPLIT] = "!-/:-?[-]^`{-¿×÷";
@@ -144,95 +134,98 @@ void set_default_prefs( PREFS *prefs, struct Screen *def )
 /* Open preference file according to `mode' */
 APTR open_prefs(STRPTR file, UBYTE mode)
 {
-	APTR fh = NULL;
-	switch( mode )
+	struct IFFHandle * pref;
+
+	if( IFFParseBase != NULL && (pref = (APTR) AllocIFF() ) )
 	{
-		case MODE_USE:
-			if(file == NULL)
-			{
-				/* First: search in local directory */
-				CopyMem(File, Path, sizeof(File)-1);
-				if(NULL == (fh = (APTR) Open( Path, MODE_OLDFILE )))
+		ULONG fh = 0;
+		switch( mode )
+		{
+			case MODE_USE:
+				if(file == NULL)
 				{
-					/* Otherwise, look in directory ENVARC */
-					CopyMem(ENV, Path,sizeof(ENV)-1);
-					CopyMem(File,Path+sizeof(ENV)-1,sizeof(File)-1);
-					fh = (APTR) Open( Path, MODE_OLDFILE );
-				}
-			} else if(NULL != (fh = (APTR) Open( file, MODE_OLDFILE )))
-				strcpy(Path,file);
-			ByteRead = 0;
-			break;
-		case MODE_SAVE:
-			if(NULL != (fh = (APTR) Open(Path, MODE_NEWFILE)))
-			{
-				FWrite((BPTR)fh, IdForm, sizeof(IdForm)-1, 1);
-				ByteWrt = 0;
-			}
+					/* First: search in local directory */
+					CopyMem(File, Path, sizeof(File)-1);
+					if(NULL == (fh = (ULONG) Open( Path, MODE_OLDFILE )))
+					{
+						/* Otherwise, look in directory ENVARC */
+						CopyMem(ENV, Path,sizeof(ENV)-1);
+						CopyMem(File,Path+sizeof(ENV)-1,sizeof(File)-1);
+						fh = (ULONG) Open( Path, MODE_OLDFILE );
+					}
+				} else if(NULL != (fh = (ULONG) Open( file, MODE_OLDFILE )))
+					strcpy(Path, file);
+				break;
+			case MODE_SAVE:
+				fh = (ULONG) Open(Path, MODE_NEWFILE);
+		}
+		/* Did we have a opened file? */
+		if( fh )
+		{
+			pref->iff_Stream = fh;
+			/* Use DOS function for accessing it */
+			InitIFFasDOS( pref );
+			/* Open it through iffparse */
+			if( !OpenIFF( pref, mode == MODE_SAVE ? IFFF_WRITE : IFFF_READ) )
+				return pref;
+		}
+		FreeIFF( pref );
 	}
-	return fh;
+	return NULL;
 }
 
-/*** Close preference file ***/
-void close_prefs(APTR file)
+/*** Close properly IFF handle ***/
+void close_prefs( struct IFFHandle * file )
 {
-	if(ByteWrt != 0) {
-		ULONG size = LONG2BE(ByteWrt);
-
-		if(ByteWrt & 1) FWrite((BPTR)file, &size, 1, 1);
-		Seek((BPTR)file, 4*sizeof(ULONG), OFFSET_BEGINNING);
-		FWrite((BPTR)file, &size, sizeof(ULONG), 1);
-		Seek((BPTR)file, sizeof(ULONG), OFFSET_BEGINNING);
-		
-		size = BE2LONG(size);
-		size += (size & 1 ? 13 : 12);
-		size = LONG2BE(size);
-		FWrite((BPTR)file, &size, sizeof(ULONG), 1);
-	}
-	Close((BPTR)file);
+	CloseIFF( file );
+	if( file->iff_Stream ) Close((BPTR) file->iff_Stream );
+	FreeIFF( file );
 }
 
 /*** Try to load a preference file ***/
-char load_prefs(PREFS *prefs, UBYTE *filename)
+UBYTE load_prefs(PREFS *prefs, STRPTR filename)
 {
 	APTR  file;
 	UBYTE err = RETURN_OK;
 
 	/* Locate preference file */
-	if(NULL != (file = open_prefs(filename, MODE_USE)))
+	if( (file = open_prefs(filename, MODE_USE)) )
 	{
-		ULONG  buf[5];
-		UBYTE *buffer;
-		/* Read IFF header to get the size */
-		if(sizeof(buf)  == Read((BPTR)file, buf, sizeof(buf)) &&
-		   JANO_PREFSID == BE2LONG(buf[3]) )
+		/* Search for PREF/JANO chunk in this file */
+		if( !StopChunk(file, ID_PREF, ID_JANO) )
 		{
-		    	ULONG chunksize = BE2LONG(buf[4]);
-			
-			/* Read the content of file */
-			if(NULL   != (buffer = (STRPTR) AllocVec(chunksize, MEMF_PUBLIC)) &&
-			   chunksize == Read((BPTR)file, buffer, chunksize) )
+			if( !ParseIFF(file, IFFPARSE_SCAN) )
 			{
-				/* At last converts it into PREFS struct */
-				memset(prefs, 0, sizeof(*prefs));
-				prefs->wordssep = WordsSep;
-				prefs->attrtxt.ta_Name = FontName;
-				prefs->attrscr.ta_Name = FontName+30;
-				while(ByteRead < chunksize) {
-					register STRPTR src;
-					src = buffer + ByteRead;
-					if(src[0] < MAX_NUMFIELD) {
-						register STRPTR dest = (STRPTR)prefs+offsets[*src];
-						if(sizefields[ *src ] == 0) dest = *(STRPTR *)dest;
-						CopyMem(src+2, dest, src[1]);
+				struct ContextNode * cn = CurrentChunk(file);
+				STRPTR buffer   = NULL;
+				UWORD  ByteRead = 0;
+
+				if( cn->cn_Type == ID_PREF && cn->cn_ID == ID_JANO           &&
+				   (buffer = (STRPTR) AllocVec(cn->cn_Size, MEMF_PUBLIC))    &&
+				    ReadChunkBytes(file, buffer, cn->cn_Size) == cn->cn_Size )
+				{
+					/* He have read the file, converts it into PREFS struct */
+					memset(prefs, 0, sizeof(*prefs));
+					prefs->wordssep = WordsSep;
+					prefs->attrtxt.ta_Name = FontName;
+					prefs->attrscr.ta_Name = FontName+30;
+					while(ByteRead < cn->cn_Size)
+					{
+						register STRPTR src;
+						src = buffer + ByteRead;
+						if(src[0] < MAX_NUMFIELD) {
+							register STRPTR dest = (STRPTR)prefs+offsets[*src];
+							if(sizefields[ *src ] == 0) dest = *(STRPTR *)dest;
+							CopyMem(src+2, dest, src[1]);
+						}
+						ByteRead += src[1]+2;
 					}
-					ByteRead += src[1]+2;
-				}
-			} else err = IoErr();
-			if(buffer != NULL) FreeVec( buffer );
-		} else err = ERROR_OBJECT_WRONG_TYPE;
+				} else err = RETURN_FAIL;
+				if(buffer != NULL) FreeVec( buffer );
+			} else err = RETURN_FAIL;
+		} else err = RETURN_FAIL;
 		close_prefs(file);
-	} else err = IoErr();
+	} else err = RETURN_FAIL;
 
 	if(err == RETURN_OK)
 	{
@@ -247,10 +240,6 @@ char load_prefs(PREFS *prefs, UBYTE *filename)
 		if(!prefs->use_txtfont ||
 		   !(prefs->txtfont = (void *) OpenDiskFont( &prefs->attrtxt )) )
 			prefs->txtfont = GfxBase->DefaultFont;
-#ifndef	JANOPREF
-		/* Need to create the screen?
-		if(prefs->use_pub) Scr=NULL; */
-#endif
 		/* Makes valid pointers */
 		text_to_attr(prefs->scrfont, &prefs->attrscr);
 		text_to_attr(prefs->txtfont, &prefs->attrtxt);
@@ -259,30 +248,37 @@ char load_prefs(PREFS *prefs, UBYTE *filename)
 	}
 	else set_default_prefs(prefs, IntuitionBase->ActiveScreen);
 	/* All done */
-	return (char)err;
+	return err;
 }
 
 /*** Save a file where we found it, otherwise in ENVARC: ***/
-char save_prefs(PREFS *prefs)
+UBYTE save_prefs(PREFS *prefs)
 {
 	APTR  file;
 	UBYTE num, size;
 	UBYTE NumField[2];
-	if(NULL != (file = open_prefs(Path, MODE_SAVE)))
+	if( (file = open_prefs(Path, MODE_SAVE)) )
 	{
-		/* Save window dimension */
-		CopyMem(&Wnd->LeftEdge, &prefs->left, 4*sizeof(WORD));
-		/* Write configuration file */
-		for(num=0; num < MAX_NUMFIELD; num++) {
-			register STRPTR src;
-			size = sizefields[ num ];
-			src  = (STRPTR)prefs + offsets[ num ];
-			if(size == 0) src = *(STRPTR *)src, size = strlen(src)+1;
+		if( !PushChunk(file, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN) )
+		{
+			if( !PushChunk(file, ID_PREF, ID_JANO, IFFSIZE_UNKNOWN) )
+			{	 
+				/* Save window dimension */
+				CopyMem(&Wnd->LeftEdge, &prefs->left, 4*sizeof(WORD));
+				/* Write configuration file */
+				for(num=0; num < MAX_NUMFIELD; num++) {
+					register STRPTR src;
+					size = sizefields[ num ];
+					src  = (STRPTR)prefs + offsets[ num ];
+					if(size == 0) src = *(STRPTR *)src, size = strlen(src)+1;
 
-			NumField[0] = num; NumField[1] = size;
-			if( FWrite((BPTR)file, NumField, 2, 1) != 1 ||
-			    FWrite((BPTR)file, src,   size, 1) != 1 ) break;
-			ByteWrt += size+2;
+					NumField[0] = num; NumField[1] = size;
+					if( WriteChunkBytes(file, NumField, 2) != 2   ||
+					    WriteChunkBytes(file, src,   size) != size ) break;
+				}
+				PopChunk( file );
+			}
+			PopChunk( file );
 		}
 		close_prefs(file);
 	}
@@ -306,16 +302,8 @@ struct TextFont *change_fonts(struct TextAttr *buf, void *Wnd, BOOL fixed)
 		if( AslRequest(fr, NULL) )
 		{
 			/* User may hit cancel! */
-			
-			if (DiskfontBase)
-			{
-				newfont = (void *) OpenDiskFont( &fr->fo_Attr );
-			}
-			else
-			{
-				newfont = (void *) OpenFont( &fr->fo_Attr );
-			}
-			
+			newfont = (void *) OpenDiskFont( &fr->fo_Attr );
+
 			if( newfont )
 			{
 				CopyMem(&fr->fo_Attr, buf, sizeof(*buf));
@@ -418,7 +406,7 @@ void ask_new_screen( void )
 		prefs.use_pub = TRUE;
 		/* Close everything */
 		CloseMainWnd(1);
-		if( setup() ) cleanup(ErrMsg(ERR_NOGUI),RETURN_FAIL);
+		if( setup() ) cleanup(ErrMsg(ERR_NOGUI), RETURN_FAIL);
 		new_size(EDIT_ALL);
 	}
 }
@@ -504,7 +492,7 @@ void setup_winpref( void )
 		SYS_Input,   NULL,
 		SYS_Output,  NULL,
 		SYS_Asynch,  TRUE,
-		TAG_DONE,    NULL,
+		TAG_DONE
 	};
 	struct FileLock *lock;
 	UBYTE  *path;

@@ -4,8 +4,8 @@
 ** Free software under terms of GNU license. 12 nov 2000 **
 **********************************************************/
 
-#include <intuition/intuition.h>					/* Std types */
-#include <devices/inputevent.h>					/* For raw keymap conversion */
+#include <intuition/intuition.h>            /* Std types */
+#include <devices/inputevent.h>             /* For raw keymap conversion */
 #include <dos/dos.h>
 #include "Jed.h"
 #include "Utility.h"
@@ -17,11 +17,10 @@
 #include "Search.h"
 #include "ProtoTypes.h"
 
-#define  CATCOMP_NUMBERS							/* String ID for ErrMsg() */
+#define  CATCOMP_NUMBERS   /* String ID for ErrMsg() */
 #include "Jed_Strings.h"
 
-struct InputEvent ie = {0,IECLASS_RAWKEY};	/* Keyboard translation map */
-struct IOClipReq *clip = NULL;
+static struct InputEvent   ie = {0,IECLASS_RAWKEY}; /* Keyboard translation map */
 extern struct IntuiMessage msgbuf;
 extern Project edit;
 
@@ -33,11 +32,8 @@ void handle_kbd(Project p)
 	static UBYTE buffer[8], shift;
 
 	/* Look is rawkey can be processed, thus doesn't translate it */
-#ifdef _AROS
 	if(msgbuf.Code > END_KEY) { record |= 0x80; return; }
-#else
-	if(msgbuf.Code >= HELP_KEY) { record |= 0x80; return; }
-#endif
+
 	/* Look if keypad should be processed as a PC one */
 	if( (*buffer = (msgbuf.Qualifier & IEQUALIFIER_NUMERICPAD && msgbuf.Code >= N0_KEY &&
 	               msgbuf.Code <= N9_KEY && (prefs.xtend || msgbuf.Qualifier & CTRLKEYS)))
@@ -161,34 +157,16 @@ void handle_kbd(Project p)
 			}
 			else split_curline( p ); return;
 #ifdef _AROS
-		case PGDOWN_KEY:
-			pg_updown(p, 1); 
-			return;
-			
-		case PGUP_KEY:
-			pg_updown(p, -1); 
-			return;
+		case PGDOWN_KEY: pg_updown(p, 1); return;
+		case PGUP_KEY:   pg_updown(p, -1); return;
 
 		case HOME_KEY:
-			if( msgbuf.Qualifier & CTRLKEYS )
-			{
-				move_to_line(p,0,LINE_AS_IS);
-			}
-			else
-			{
-				horiz_pos(p,0);
-			}
+			if( msgbuf.Qualifier & CTRLKEYS ) move_to_line(p,0,LINE_AS_IS);
+			else                              horiz_pos(p,0);
 			return;
-			
 		case END_KEY:
-			if( msgbuf.Qualifier & CTRLKEYS )
-			{
-				move_to_line(p,p->max_lines-1,LINE_AS_IS);
-			}
-			else
-			{
-				horiz_pos(p,MAXPOS);
-			}
+			if( msgbuf.Qualifier & CTRLKEYS ) move_to_line(p,p->max_lines-1,LINE_AS_IS);
+			else                              horiz_pos(p,MAXPOS);
 			return;
 #endif
 
@@ -311,6 +289,7 @@ void handle_menu( LONG MenuID )
 		}	break;
 		case 103:	/* Open (in current panel) */
 			if( warn_modif(edit) )
+			{
 				if( shift == 0 )
 				{
 					STRPTR path;
@@ -318,9 +297,7 @@ void handle_menu( LONG MenuID )
 						load_and_activate(edit, path, 1);
 				}
 				else reload_project( edit );
-			break;
-		case 104:	/* Insert file */
-			break;
+			}	break;
 		case 105:	/* Save */
 			if(0 == shift) goto case_sav;
 
@@ -360,37 +337,29 @@ void handle_menu( LONG MenuID )
 		case 201:	/* Cut */
 		case 202:	/* Copy to clipboard */
 			if( edit->ccp.select == 0 ) break;
-			if( clip || (clip = (void *) CBOpen(0))) {
-				if( !CBWriteFTXT(clip, edit->ccp.yc > edit->ccp.yp ? edit->ccp.line : edit->ccp.cline, &edit->ccp) )
-					ThrowError(Wnd, ErrMsg(ERR_WRITECLIP));
-				else
-					if( MenuID==202 ) unmark_all(edit,TRUE);
-					else del_block( edit );
-			} else ThrowError(Wnd, ErrMsg(ERR_OPENCLIP));
+
+			if( CBWriteFTXT(edit->ccp.yc > edit->ccp.yp ? edit->ccp.line : edit->ccp.cline, &edit->ccp) ) {
+				if( MenuID == 202 ) unmark_all(edit,TRUE);
+				else del_block( edit );
+			}
 			break;
 		case 203:	/* Paste from clipboard */
-			if( clip || (clip = (void *) CBOpen(0)) ) {
-				if( CBQueryFTXT(clip) )
-				{
-					LONG buf[3];
-					/* Read chars */
-					if( !CBReadCHRS(clip, &edit->undo, edit->edited, edit->nbc, buf) )
-						/* Don't stop because it may have some modif */
-						ThrowError(Wnd, ErrMsg(ERR_READCLIP));
+		{	LONG buf[3];
+			/* Read chars */
+			if( !CBReadCHRS(&edit->undo, edit->edited, edit->nbc, buf) )
+				/* CBReadCHRS will show the right error */
+				break;
 
-					/* Just one line concerned? */
-					edit->max_lines += buf[2];
-					if( buf[1] == 0 ) REDRAW_CURLINE(edit)
+			/* Just one line concerned? */
+			edit->max_lines += buf[2];
+			if( buf[1] == 0 ) REDRAW_CURLINE(edit)
 
-					/* Move cursor to the end of pasted text? */
-					if( shift == 0 ) move_cursor(edit,buf[0],buf[1]);
-					if( buf[1]>0 ) redraw_content(edit,edit->show,gui.topcurs,gui.nbline);
-					if( edit->ccp.select ) move_selection(edit, edit->nbrc, edit->nbl);
-					inv_curs(edit,TRUE); prop_adj(edit);
-
-				} else ThrowError(Wnd, ErrMsg(ERR_NOTXTINCLIP));
-			} else ThrowError(Wnd, ErrMsg(ERR_OPENCLIP));
-			break;
+			/* Move cursor to the end of pasted text? */
+			if( shift == 0 ) move_cursor(edit,buf[0],buf[1]);
+			if( buf[1]>0 ) redraw_content(edit,edit->show,gui.topcurs,gui.nbline);
+			if( edit->ccp.select ) move_selection(edit, edit->nbrc, edit->nbl);
+			inv_curs(edit,TRUE); prop_adj(edit);
+		}	break;
 		case 204:	/* Mark text */
 			if(shift) MenuID=205;
 		case 205:	/* Mark columnar */
@@ -416,8 +385,7 @@ void handle_menu( LONG MenuID )
 		case 3033: ReplacePattern(edit);    break; /* Replace next */
 		case 304:  pg_updown(edit,-1);      break; /* PgUp */
 		case 305:  pg_updown(edit, 1);      break; /* PgDown */
-#warning: stegerg: the 2nd param for goto_line was missing. I changed it to pass 0 as 2nd param.
-		case 306:  goto_line(edit, 0);         break; /* Goto line */
+		case 306:  goto_line(edit);         break; /* Goto line */
 		case 307:  match_bracket(edit);     break; /* Match bracket */
 		case 308:  last_modif(&edit->undo,0); break; /* Last modif */
 		case 309:  horiz_pos(edit,0);       break; /* Home */
@@ -426,7 +394,7 @@ void handle_menu( LONG MenuID )
 		case 402:  stop_macro();            break; /* Stop recording */
 		case 403:
 			if(shift == 0) { play_macro(1);  break; } /* Play current macro */
-		case 404:  repeat_macro(edit);      break; /* Reapeat one or more times */
+		case 404:  repeat_macro(edit);      break; /* Repeat one or more times */
 		case 501:  ask_new_screen();        break; /* Change screen mode */
 		case 502:  ask_new_font();          break; /* Change text font */
 		case 503:  setup_winpref();         break; /* General prefs */

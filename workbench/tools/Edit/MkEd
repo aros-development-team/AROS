@@ -3,7 +3,7 @@
 .ket }
 
 set CPU    "68020"
-set CFLAGS "Opt Ignore 100 CPU $CPU Define mc$CPU Define __SASC__"
+set CFLAGS "Opt Ignore 100 Define SKIP_PROTO CPU $CPU Define mc$CPU Define __SASC__"
 set EXE    "Jed"
 
 If "{Target}" eq "help"

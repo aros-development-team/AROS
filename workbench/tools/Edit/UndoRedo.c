@@ -22,11 +22,7 @@ UBYTE SizeOf[] = {0,
 	sizeof(struct _AddChar),
 	sizeof(struct _RemLine),
 	sizeof(struct _JoinLine),
-#ifdef _AROS
-    	sizeof(ULONG)
-#else
-	sizeof(UWORD)
-#endif
+	sizeof(struct _GroupBy)
 };
 
 #define	PRE_CHECK(jbuf)	{ \
@@ -138,9 +134,8 @@ void flush_undo_buf( JBuf jb )
 	}
 	/* Free the rollback segments */
 	for(jd = (RBOps)jb->rbseg; jd; prev = jd->prev, FreeVec(jd), jd = prev);
-	jb->ops       = NULL;
-	jb->rbseg     = NULL;
-	jb->size      = jb->rbsz = 0;
+	/* Reset struct fields to 0 */
+	memset(jb, 0, (ULONG) &((JBuf)0L)->rbtype);
 }
 
 /*** Register a character added in the buffer ***/
@@ -167,9 +162,9 @@ void reg_add_chars(JBuf jb, LINE *ln, ULONG pos, UWORD nb)
 		new_op:
 		if((buf = new_undo_buf(jb, sizeof(*buf))))
 		{
-			jb->nbc   = 1+(buf->pos = pos);
-			buf->line = jb->line    = ln;
-			buf->type = jb->op      = ADD_CHAR;
+			jb->nbc   = (buf->pos = pos)+1;
+			buf->line = jb->line  = ln;
+			buf->type = jb->op    = ADD_CHAR;
 			buf->nbc  = nb;
 		}
 	}
@@ -196,7 +191,7 @@ void move_rbseg(JBuf jb, STRPTR ins, UWORD size, ULONG off)
 	STRPTR dst,  src;
 	RBSeg  dmin, smin;
 
-	src  = (smin = dmin = jb->rbseg)->data + jb->rbsz - 1;
+	src = (smin = dmin = jb->rbseg)->data + jb->rbsz - 1;
 	{	/* Compute search final position: current + off bytes in rb segment */
 		register ULONG nb = jb->rbsz + off;
 		while( nb > dmin->max )
@@ -208,31 +203,15 @@ void move_rbseg(JBuf jb, STRPTR ins, UWORD size, ULONG off)
 	/* Move size bytes from src to dst */
 	while( size-- )
 	{
-		*dst-- = *src--;
-		if(dst < dmin->data) dmin=dmin->prev, dst=dmin->data+dmin->max-1;
-	#if 1
-		if(src < smin->data)
-		{
-			smin=smin->prev;
-			if (smin) src=smin->data+smin->max-1;
-		}
-	#else
 		if(src < smin->data) smin=smin->prev, src=smin->data+smin->max-1;
-	#endif
+		if(dst < dmin->data) dmin=dmin->prev, dst=dmin->data+dmin->max-1;
+		*dst-- = *src--;
 	}
-	/* Then insert string ins of "off" bytes */
+	/* Then insert string "ins" of "off" bytes */
 	for(src=ins+off-1; off--; )
 	{
-		*dst-- = *src--;
-	#if 1
-		if(dst < dmin->data)
-		{
-			dmin=dmin->prev;
-			if (dmin) dst=dmin->data+dmin->max-1;
-		}
-	#else
 		if(dst < dmin->data) dmin=dmin->prev, dst=dmin->data+dmin->max-1;
-	#endif
+		*dst-- = *src--;
 	}
 }
 
@@ -258,11 +237,7 @@ void reg_rem_chars(JBuf jb, LINE *ln, ULONG s, ULONG e)
 		}
 	}
 	/* Optimize if previous operation was the same */
-#if 1
-	if(jb->ops && (jb->op == REM_CHAR && jb->line == ln))
-#else
 	if(jb->op == REM_CHAR && jb->line == ln)
-#endif
 	{
 		buf = (RemChar) last_operation( jb );
 		/* Ranges don't match */
@@ -335,20 +310,13 @@ void reg_join_lines(JBuf jb, LINE *ln, LINE *ln2)
 /*** Group of modifications ***/
 void reg_group_by( JBuf jb )
 {
-#ifdef _AROS
-	ULONG *buf;
-#else
-	UWORD *buf;
-#endif
+	GroupBy buf;
+
 	/* No PRE_CHECK since GROUP_BY type doesn't imply any modif. */
 	if( NULL != (buf = new_undo_buf(jb, sizeof(*buf))) )
 	{
-#ifdef _AROS
 		jb->op = GROUP_BY;
-		((UBYTE *)buf)[3] = GROUP_BY;		
-#else
-		jb->op = *buf = GROUP_BY;
-#endif
+		buf->type = GROUP_BY;
 	}
 }
 
@@ -501,17 +469,19 @@ void rollback( JBuf jb )
 
 				/* Remove the last enterred word if it's a standalone modif */
 				if( buf->nbc > buf->pos )
-				if( group == 0 && buf->nbc > 1 && jb->rbtype == 0 )
 				{
-					register ULONG pos = backward_word(buf->line, buf->nbc-2);
+					if( group == 0 && buf->nbc > 1 && jb->rbtype == 0 )
+					{
+						register ULONG pos = backward_word(buf->line, buf->nbc-2);
 
-					if(pos < buf->pos) pos = buf->pos;
-					rem_chars(redolog, buf->line, pos, buf->nbc-1);
-					/* If the operation is non-empty, do not pops it */
-					if( ( buf->nbc = pos - buf->pos ) )
-						IS_COMMIT(ptr) = 0, ptr = NO_MEANING_VAL, lastpos += buf->nbc;
+						if(pos < buf->pos) pos = buf->pos;
+						rem_chars(redolog, buf->line, pos, buf->nbc-1);
+						/* If the operation is non-empty, do not pops it */
+						if( ( buf->nbc = pos - buf->pos ) )
+							IS_COMMIT(ptr) = 0, ptr = NO_MEANING_VAL, lastpos += buf->nbc;
+					}
+					else rem_chars(redolog, buf->line, buf->pos, buf->nbc-1);
 				}
-				else rem_chars(redolog, buf->line, buf->pos, buf->nbc-1);
 			}	break;
 			case REM_CHAR:			/* Characters remove from the buffer */
 			{

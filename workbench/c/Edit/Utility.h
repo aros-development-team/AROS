@@ -75,6 +75,10 @@ char warn_modif(Project p);
 void show_info(Project p);
 
 /** Simple requester to ask user for a number **/
-int get_number( Project p, STRPTR title, ULONG * result );
+int get_number( Project p, STRPTR title, LONG * result );
+
+/** About requester messages **/
+extern STRPTR JanoMessages[];
+#define	MsgAbout     (JanoMessages + (MSG_ABOUT - ERR_BADOS))
 
 #endif

@@ -18,7 +18,6 @@
 #include "ProtoTypes.h"
 
 #define  CATCOMP_NUMBERS
-#define  CATCOMP_STRINGS
 #include "Jed_Strings.h"
 
 static struct Window *swin = NULL;			/* Main search/replace window */
@@ -47,14 +46,6 @@ ULONG SWinTags[] = {
 	WA_Zoom,(ULONG)SWinZoom,
 	WA_NewLookMenus,TRUE,
 	TAG_DONE
-};
-
-STRPTR SWinTxt[] = {
-	MSG_SEARCHWINDOW_STR,  MSG_REPLACEWINDOW_STR, MSG_SEARCHSTRING_STR,
-	MSG_REPLACESTRING_STR, MSG_OPTCASE_STR,       MSG_OPTWORDS_STR,
-	MSG_BUTTONREPLACE_STR, MSG_BUTTONREPALL_STR,  MSG_BUTTONSEARCH_STR,
-	MSG_NEXTSEARCH_STR,    MSG_USESEARCH_STR,     MSG_CANCELSEARCH_STR, NULL,
-	MSG_REPLACEALL_STR,    MSG_OCCURENCY_STR,     MSG_OCCURENCIES_STR
 };
 
 UBYTE SearchStr[60], SLen=0;		/* Saved search and replace string */
@@ -172,7 +163,7 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 		NewSWin.TopEdge = 50;
 
 	/** Setting up GUI **/
-	if(NULL != (swin = (void *) OpenWindowTagList(&NewSWin, (struct TagItem *)SWinTags)))
+	if(NULL != (swin = (APTR) OpenWindowTagList(&NewSWin, (struct TagItem *)SWinTags)))
 	{
 		UWORD I;
 		rep = search = sgads = NULL;
@@ -435,12 +426,14 @@ void ReplacePattern( Project p )
 	{
 		/* Window overrides SearchStr buffer */
 		if( rep != NULL && (str = GetSI(search)->Buffer)[0] )
+		{
 			if( HilitePattern(p, str, 0, VERBOSE) == 1)
 			{
 				str = GetSI(rep)->Buffer;
 				len = GetSI(rep)->NumChars;
 				goto replace;
 			} else return;
+		}
 	}
 	else if( *SearchStr )
 	{
@@ -474,15 +467,10 @@ void ReplacePattern( Project p )
 void ReplaceAllPat( Project p )
 {
 	struct {				/* This vars must appear in this order for RawDoFmt */
-		WORD   nbrep;
+		ULONG  nbrep;
 		STRPTR occur;
 		STRPTR _find_, _replace_;
-	}
-#ifdef _AROS
-    	__attribute__((packed))
-#endif
-	args;
-
+	}	args;
 	WORD  	replen;
 	LINE  	*edited = p->edited;
 	LONG  	nbl     = p->nbl;
@@ -665,7 +653,7 @@ char HilitePattern(Project p, UBYTE *pattern, BYTE direction, BYTE quiet)
 }
 
 /*** Ask the user for a line number to jump to ***/
-void goto_line( Project p, STRPTR title )
+void goto_line( Project p )
 {
 	static LONG line_num;
 	

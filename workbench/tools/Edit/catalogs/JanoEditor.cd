@@ -191,9 +191,6 @@ Obsolete OS. Install v2.0 or better.
 ERR_NOASLREQ (//)
 Cannot alloc ASL requester!
 ;
-ERR_NOWRTACCESS (//)
-Disk is protected on writing
-;
 ERR_NOMEM (//)
 Out of memory!
 ;
@@ -329,7 +326,7 @@ MSG_CANCELSEARCH (//)
 _Cancel
 ;
 MSG_REPLACEALL (//)
-%d %s of `%s' replaced
+%ld %s of `%s' replaced
 ;
 MSG_OCCURENCY (//)
 occurency
