@@ -115,7 +115,8 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Scrollbutton_desc,
     &_MUI_Semaphore_desc,
     &_MUI_Dataspace_desc,
-    &_MUI_Bitmap_desc
+    &_MUI_Bitmap_desc,
+    &_MUI_Bodychunk_desc
 
 };
 
