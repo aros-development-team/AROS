@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#define DEBUG 1
 #include "Installer.h"
 #include "main.h"
 
@@ -70,16 +71,8 @@ int nextarg, endoffile, count;
       PrintFault( IoErr(), INSTALLER_NAME );
       exit(-1);
     }
-  }
-  else
-  { /* Invoked from Workbench */
-    preferences.fromcli = FALSE;
-    tooltypes = ArgArrayInit( argc, (UBYTE **)argv );
-  }
 
-  /* open script file */
-  if (argc)
-  {
+    /* open script file */
     if (args[ARG_SCRIPT])
     {
       filename = StrDup( (STRPTR)args[ARG_SCRIPT] );
@@ -97,7 +90,11 @@ int nextarg, endoffile, count;
     }
   }
   else
-  {
+  { /* Invoked from Workbench */
+    preferences.fromcli = FALSE;
+    tooltypes = ArgArrayInit( argc, (UBYTE **)argv );
+
+    /* open script file */
     ttemp = ArgString( tooltypes, "SCRIPT", NULL );
     if ( ttemp == NULL )
     {
@@ -125,9 +122,10 @@ int nextarg, endoffile, count;
   preferences.welcome = FALSE;
   preferences.transcriptstream = NULL;
   preferences.pretend = 0;
+
   if (argc)
   {
-  preferences.debug = TRUE;
+    preferences.debug = TRUE;
     if (args[ARG_NOLOG])
     {
       preferences.novicelog = FALSE;
@@ -185,7 +183,7 @@ int nextarg, endoffile, count;
   }
   else
   {
-  preferences.debug = FALSE;
+    preferences.debug = TRUE;
 
     /* Create a log file in Novice mode? (TRUE) */
     if ( strcmp( "TRUE", ArgString(tooltypes, "LOG", "TRUE") ) == 0 )
@@ -257,8 +255,6 @@ int nextarg, endoffile, count;
     dummy->parent = NULL;
     preferences.trapparent[count] = NULL;
   }
-
-#warning FIXME: distinguish between cli/workbench invocation
 
   /* Init GUI -- i.e open empty window */
   init_gui();

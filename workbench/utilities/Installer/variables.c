@@ -165,18 +165,14 @@ char *ttemp;
 
   if (argc)
   { /* Started from Shell */
-#ifdef DEBUG
     if ( args[ARG_APPNAME] )
     {
-#endif /* DEBUG */
       set_variable( "@app-name", (STRPTR)args[ARG_APPNAME], 0 );
-#ifdef DEBUG
     }
     else
     {
       set_variable( "@app-name", "DemoApp", 0 );
     }
-#endif /* DEBUG */
 
     if ( args[ARG_LANGUAGE] )
     {
@@ -193,12 +189,14 @@ char *ttemp;
       if (!ttemp)
       {
 #ifdef DEBUG
-       fprintf( stderr, "No ToolType APPNAME in Icon!\n" );
-       ArgArrayDone();
-       exit(-1);
-#endif /* DEBUG */
+	fprintf( stderr, "No ToolType APPNAME in Icon!\n" );
+#endif
+	set_variable( "@app-name", ttemp, 0 );
       }
-      set_variable( "@app-name", ttemp, 0 );
+      else
+      {
+	set_variable( "@app-name", "DemoApp", 0 );
+      }
       set_variable( "@language", ArgString( tooltypes, "LANGUAGE", "english" ), 0 );
   }
 
@@ -211,7 +209,7 @@ char *ttemp;
     request_userlevel( NULL );
   }
 
-  set_variable( "@pretend",		NULL,	preferences.pretend );
+  set_variable( "@pretend", NULL, preferences.pretend );
 
   /* Set help texts */
   set_variable( "@askchoice-help",	ASKCHOICE_HELP,	0 );
