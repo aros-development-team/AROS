@@ -35,8 +35,10 @@
 
 struct Library *MUIMasterBase;
 
-void load_prefs(char *filename);
+void load_prefs(void);
 void save_prefs(BOOL envarc);
+void test_prefs(void);
+void restore_prefs(void);
 
 #ifndef __AROS__
 
@@ -205,6 +207,7 @@ static Object *append_menuitem;
 static Object *saveas_menuitem;
 static Object *aboutzune_menuitem;
 static Object *quit_menuitem;
+static Object *LastSavedConfigdata = NULL;
 
 static Object *main_wnd;
 static Object *main_page_list;
@@ -336,6 +339,24 @@ void main_use_pressed(void)
 }
 
 /****************************************************************
+ Test pressed
+*****************************************************************/
+void main_test_pressed(void)
+{
+    test_prefs();
+}
+
+/****************************************************************
+ Cancel pressed
+*****************************************************************/
+void main_cancel_pressed(void)
+{
+    restore_prefs();
+    DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+}
+
+
+/****************************************************************
  Allocalte resources for gui
 *****************************************************************/
 int init_gui(void)
@@ -422,12 +443,12 @@ int init_gui(void)
     {
     	int i;
 
-	DoMethod(main_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-	DoMethod(cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	DoMethod(main_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 3, MUIM_CallHook, &hook_standard, main_cancel_pressed);
+	DoMethod(cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, main_cancel_pressed);
 	DoMethod(save_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, main_save_pressed);
 	DoMethod(use_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, main_use_pressed);
-//	DoMethod(test_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, main_test_pressed);
-	DoMethod(quit_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	DoMethod(test_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 6, MUIM_Application_PushMethod, app, 3, MUIM_CallHook, &hook_standard, main_test_pressed);
+	DoMethod(quit_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard, main_cancel_pressed);
 	DoMethod(aboutzune_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2, MUIM_Application_AboutMUI, main_wnd);
 
 	for (i=0;main_page_entries[i].name;i++)
@@ -464,7 +485,7 @@ void deinit_gui(void)
 /****************************************************************
  Load the given prefs
 *****************************************************************/
-void load_prefs(char *filename)
+void load_prefs(void)
 {
     Object *configdata = MUI_NewObjectA(MUIC_Configdata, NULL);
     if (configdata)
@@ -472,7 +493,7 @@ void load_prefs(char *filename)
 	int i;
 
 /*  	D(bug("zune::load_prefs: created configdata %p\n", configdata)); */
-	DoMethod(configdata, MUIM_Configdata_Load, (IPTR)filename);
+	LastSavedConfigdata = configdata;
 
         /* Call MUIM_Settingsgroup_ConfigToGadgets for every group */
 	for (i=0;main_page_entries[i].name;i++)
@@ -482,9 +503,24 @@ void load_prefs(char *filename)
 		DoMethod(p->group,MUIM_Settingsgroup_ConfigToGadgets,configdata);
 	}
 
-    	MUI_DisposeObject(configdata);
 /*  	D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
     }
+}
+
+/* write prefs to env: */
+void test_prefs(void)
+{
+    Object *cfg;
+
+    save_prefs(FALSE);
+/*      load_prefs(); */
+    cfg = MUI_NewObject(MUIC_Configdata, MUIA_Configdata_Application, app, TAG_DONE);
+    set(app, MUIA_Application_Configdata, cfg);
+}
+
+void restore_prefs(void)
+{
+    DoMethod(LastSavedConfigdata, MUIM_Configdata_Save, (IPTR)"ENV:zune/global.prefs");
 }
 
 /****************************************************************
@@ -508,12 +544,11 @@ void save_prefs(BOOL envarc)
 		DoMethod(p->group,MUIM_Settingsgroup_GadgetsToConfig,configdata);
 	}
 
-
 	if (envarc)
 	{
-	    DoMethod(configdata, MUIM_Configdata_Save, (IPTR)"envarc:zune/global.prefs");
+	    DoMethod(configdata, MUIM_Configdata_Save, (IPTR)"ENVARC:zune/global.prefs");
 	}
-	DoMethod(configdata, MUIM_Configdata_Save, (IPTR)"env:zune/global.prefs");
+	DoMethod(configdata, MUIM_Configdata_Save, (IPTR)"ENV:zune/global.prefs");
 
     	MUI_DisposeObject(configdata);
 /*  	D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
@@ -550,13 +585,14 @@ int main(void)
 	{
 	    if (init_gui())
 	    {
-		load_prefs("env:zune/global.prefs");
+		load_prefs();
 		set(main_wnd, MUIA_Window_Open, TRUE);
 		if (xget(main_wnd,MUIA_Window_Open))
 		{
 		    loop();
 		}
-
+		if (LastSavedConfigdata)
+		    MUI_DisposeObject(LastSavedConfigdata);
 		deinit_gui();
 	    }
 	    close_classes();
