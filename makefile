@@ -1,8 +1,3 @@
-ARCH=linux
-KERNEL=i386-emul
-
-VERSION = 1.5
-
 TOP=.
 CURDIR=.
 
@@ -17,6 +12,10 @@ DEP_LIBS= $(LIBDIR)/libAmigaOS.a \
 LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS -laros
 
+SUBDIRS = $(KERNEL) aros exec dos utility filesys libs
+DIST_FILES = makefile arosshell.c README.CVS gendef.awk make.cfg \
+	configure
+
 TESTDIR = $(BINDIR)/test
 TESTS = $(TESTDIR)/tasktest \
 	$(TESTDIR)/signaltest \
@@ -28,27 +27,21 @@ TESTS = $(TESTDIR)/tasktest \
 	$(TESTDIR)/devicetest \
 	$(TESTDIR)/filetest
 
-all : setup subdirs $(LIBDIR)/libAmigaOS.a $(BINDIR)/s/Startup-Sequence \
-	    $(BINDIR)/arosshell apps
+all : setup subdirs $(LIBDIR)/libAmigaOS.a \
+	    $(BINDIR)/s/Startup-Sequence $(BINDIR)/arosshell apps
 
 crypt : crypt.c
 	$(CC) -o crypt crypt.c
 
-dodist : dist-dir dist-bin dist-src
-
-dist-dir :
+dist : FORCE
 	@if [ ! -d dist ]; then $(MKDIR) dist ; fi
+	cd bin/$(ARCH) ; \
+	    tar cvvzf ../../dist/AROS_$(ARCH)_bin-$(VERSION).tar.gz AROS
+	cd .. ; tar cvvzf AROS/dist/AROS-$(VERSION).tar.gz \
+		$(addprefix AROS/, $(SUBDIRS) $(DIST_FILES))
 
-dist-bin :
-	cd bin/$(ARCH) ; tar cvvzf ../../AROS_$(ARCH)_bin-$(VERSION).tar.gz \
-		AROS
-
-dist-src :
-	tar cvvzf AROS-$(VERSION).tar.gz \
-		README.CVS aros arosshell.c c crypt.c \
-		devs dos dummy exec filesys gendef.awk \
-		i386-emul include libs m68k-emul m68k-native \
-		make.cfg makefile s test utility
+# Alwaye remake rules that depend on this one
+FORCE :
 
 setup :
 	@if [ ! -d bin ]; then $(MKDIR) bin ; fi
@@ -69,24 +62,18 @@ check : $(TESTS)
 	done
 
 clean:
-	$(RM) $(BINDIR) setup
-	@for dir in $(KERNEL) exec dos utility filesys libs ; do \
-	    ( cd $$dir ; \
+	$(RM) $(BINDIR) host.cfg
+	@for dir in $(SUBDIRS) ; do \
+	    ( echo "Cleaning in $$dir..." ; cd $$dir ; \
 	    $(MAKE) $(MFLAGS) clean ) ; \
 	done
 
 $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
 	$(CC) $(CFLAGS) $< $(LIBS) -o $@
 
-apps:
-	@cd c; $(MAKE) $(MFLAGS) \
-	    TOP=".." CURDIR="$(CURDIR)/c" ARCH=$(ARCH) \
-	    CC="$(CC)" COMMON_CFLAGS="$(COMMON_CFLAGS)" \
-	    all
-
 subdirs:
-	@for dir in $(KERNEL) aros exec dos utility filesys libs ; do \
-	    ( echo "Entering $$dir..." ; cd $$dir ; \
+	@for dir in $(SUBDIRS) ; do \
+	    ( echo "Making all in $$dir..." ; cd $$dir ; \
 	    $(MAKE) $(MFLAGS) \
 		TOP=".." CURDIR="$(CURDIR)/$$dir" ARCH=$(ARCH) \
 		CC="$(CC)" COMMON_CFLAGS="$(COMMON_CFLAGS)" \
