@@ -251,9 +251,9 @@ int driver_init (struct GfxBase * GfxBase)
 {
     char * displayName;
     Colormap cm;
-    XColor xc;
+/*    XColor xc; */
     XColor fg, bg;
-    short t;
+/*    short t; */
     short depth;
 
 /* #if defined (X11_LOCK)
@@ -292,6 +292,9 @@ int driver_init (struct GfxBase * GfxBase)
 
     sysPlaneMask = 0;
 
+/* nlorentz: This code most probably isn't necessary, as the palette now is set via.
+   LoadRGB32(). But it should be kept here for a while anyway.
+
     for (t=0; t < NUM_COLORS; t++)
     {
 	if (depth == 1)
@@ -304,8 +307,6 @@ int driver_init (struct GfxBase * GfxBase)
 	{
 	    if (XParseColor (sysDisplay, cm, sysColName[t], &xc))
 	    {
-/* printf ("Color(1) %d = %02x %02x %02x flags=%04x pixel=%08lx\n",
-    t, xc.red, xc.green, xc.blue, xc.flags, xc.pixel); */
 
 		if (!XAllocColor (sysDisplay, cm, &xc))
 		{
@@ -317,8 +318,6 @@ int driver_init (struct GfxBase * GfxBase)
 		}
 		else
 		    sysCMap[t] = xc.pixel;
-/* printf ("Color(2) %d = %02x %02x %02x flags=%04x pixel=%08lx\n",
-    t, xc.red, xc.green, xc.blue, xc.flags, xc.pixel); */
 
 		if (t == 0)
 		    bg = xc;
@@ -333,8 +332,10 @@ int driver_init (struct GfxBase * GfxBase)
 
 	sysPlaneMask |= sysCMap[t];
     }
-
+*/
     maxPen = NUM_COLORS;
+
+#warning fg an bg probably contain bogus values
 
     sysCursor = XCreateFontCursor (sysDisplay, XC_top_left_arrow);
     XRecolorCursor (sysDisplay, sysCursor, &fg, &bg);
@@ -355,6 +356,14 @@ void driver_expunge (struct GfxBase * GfxBase)
 {
     return;
 }
+
+/* Called after DOS is up & running */
+BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
+{
+
+    return TRUE;
+}
+
 
 GC GetGC (struct RastPort * rp, struct GfxBase * GfxBase)
 {
@@ -1275,7 +1284,8 @@ void driver_LoadRGB32 (struct ViewPort * vp, ULONG * table,
 LX11
 	/* Return colors */
 	if (t > 0)
-	    XFreeColors (sysDisplay, cm, &sysCMap[first], t, 0L);
+/*	    XFreeColors (sysDisplay, cm, &sysCMap[first], t, 0L) */;
+#warning FIXME:The XfreeColors call above makes XAllocColor crash
 UX11
 	/* Allocate new colors */
 	for (t=0; t<count; t++)
@@ -1519,7 +1529,8 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
 LX11
     /* Return color */
     if (color < maxPen)
-	XFreeColors (sysDisplay, cm, &sysCMap[color], 1, 0L);
+/*	XFreeColors (sysDisplay, cm, &sysCMap[color], 1, 0L) */ ;
+#warning FIXME:The XfreeColors call above makes XAllocColor crash
 UX11
     /* Allocate new color */
     xc.flags = DoRed | DoGreen | DoBlue;
