@@ -85,6 +85,8 @@ static OOP_Object *MNAME(new)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	else if (depth>8)
 	    multi = 2;
 	data->bytesperpix = multi;
+	data->bytesperline = width * multi;
+	
 	data->VideoData = AllocVec(width*height*multi, MEMF_PUBLIC | MEMF_CLEAR);
 	if (data->VideoData)
 	{
