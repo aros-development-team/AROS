@@ -270,7 +270,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	}
     }
 
-    if (defaults[6].ti_Data) SetVBuf(defaults[6].ti_Data, NULL, BUF_NONE, -1);
+    if (defaults[6].ti_Data) SetVBuf((BPTR)defaults[6].ti_Data, NULL, BUF_NONE, -1);
 
     /* NP_CurrentDir */
 
@@ -470,7 +470,7 @@ error:
 static void KillCurrentProcess(void)
 {
     /* I need the global here because there is no local way to get it */
-    struct DosLibrary * DOSBase = (struct DosLibrary *)OpenLibrary("dos.library",0);
+    struct DosLibrary * DOSBase = (struct DosLibrary *)OpenLibrary((UBYTE *)"dos.library",0);
     struct Process *me = NULL;
 
     if (NULL != DOSBase) {
