@@ -82,7 +82,8 @@ struct JumpVec
 		".globl fname ; "                      \
 		"fname : "                             \
 		"movl bname , %%a0; "                  \
-		"jmp vec(%%a0);\n"                     \
+		"movl vec(%%a0),%%a0;"                 \
+		"jmp (%%a0);\n"                        \
 		"EMITSTUB(%s, %s, %d) "
 
 /*
