@@ -40,7 +40,8 @@ FUNCTIONS := \
 	closecatalog closelocale convtolower convtoupper \
 	formatdate formatstring getcatalogstr getlocalestr \
 	isxxxx opencataloga openlocale parsedate prefsupdate \
-	strconvert strncmp locrawdofmt
+	strconvert strncmp locrawdofmt locstrnicmp locstricmp \
+	loctolower loctoupper
 
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of extra libraries that you want included during
