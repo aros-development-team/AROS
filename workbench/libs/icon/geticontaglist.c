@@ -112,7 +112,7 @@
 
     if (defaultType != -1 || defaultName != NULL)
     {
-	*isDefaultIcon = TRUE;
+	if (isDefaultIcon != NULL) *isDefaultIcon = TRUE;
         
         /* the name argument have to be ignored */
 
@@ -138,7 +138,7 @@
         
         if (dob == NULL && !failIfUnavailable)
         {
-            *isDefaultIcon = TRUE;
+            if (isDefaultIcon != NULL) *isDefaultIcon = TRUE;
 	    dob = GetDiskObjectNew(name);
 	}
     }
