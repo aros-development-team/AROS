@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Intuition function OpenScreen()
+    Desc: Open a new screen
     Lang: english
 */
 #include "intuition_intern.h"
@@ -106,8 +106,9 @@
 	screen->Screen.WBorRight = 0;
 	screen->Screen.WBorBottom = 0;
 
+	InitRastPort (&screen->Screen.RastPort);
 
-	screen->Screen.RastPort.BitMap = &screen->Screen.BitMap;
+	screen->Screen.BitMap = *screen->Screen.RastPort.BitMap;
 
 	screen->Screen.Title = newScreen->DefaultTitle;
 
