@@ -89,7 +89,8 @@ int main (int argc, char **argv)
      */
     app = ApplicationObject,
         MUIA_Application_Author, "Reez",
-	MUIA_Application_Title, "Application1",
+	MUIA_Application_Title, "Layout1",
+	MUIA_Application_Version, "$VER: Layout1 1.0 (01.08.99)",
         MUIA_Application_Description, "A very simple test program",
 	SubWindow, mainWin = WindowObject,
 	    MUIA_Window_Title, "My first MUI app !",
@@ -191,7 +192,6 @@ int main (int argc, char **argv)
 
 error:
 
-    CloseLibrary(IntuitionBase);
     closemuimaster();
 
     return 0;
