@@ -135,15 +135,14 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
 
             if (window)
             {
-                /* App task is allowed to modify window->Flags, for example
-                   set/clear WFLG_RMBTRAP. It is noid said that every compiler
-                   on every machine produces an atomic instruction, so some
-                   kind of semaphore is needed */
-
-                Forbid();
-                window->Flags |= WFLG_WINDOWACTIVE;
-                Permit();
-
+                /*
+                    Tasks are allowed to modify window->Flags, for example
+                     set/clear WFLG_RMBTRAP. It is not certain that every 
+                     compiler on every machine produces an atomic instruction.
+                */
+                #warning check that window->Flags is atomically set everywhere!
+                AROS_ATOMIC_ORL(window->Flags, WFLG_WINDOWACTIVE);
+                
                 pointer = IW(window)->pointer;
                 if (IW(window)->busy)
                     pointer = GetPrivIBase(IntuitionBase)->BusyPointer;
