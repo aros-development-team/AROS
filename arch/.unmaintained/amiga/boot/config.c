@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Amiga bootloader -- config file routines
-    Lang: english
+    Lang: C
 */
 
 #include <exec/types.h>

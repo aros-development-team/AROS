@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Amiga bootloader -- support structures
-    Lang: english
+    Lang: C
 */
 
 struct ilsMemList

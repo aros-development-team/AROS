@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Amiga bootloader -- InternalLoadSeg support routines
-    Lang: english
+    Lang: C
 */
 
 extern LONG ils_read(BPTR __d1, void * __d2, LONG __d3, struct DosLibrary * __a6);

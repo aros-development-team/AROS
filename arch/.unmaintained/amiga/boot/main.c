@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Amiga bootloader -- main file
-    Lang: english
+    Lang: C
 */
 
 /*
@@ -20,11 +20,12 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#include "registers.h"
 #include "boot.h"
 #include "ils.h"
 #include "config.h"
 #include "version.h"
+
+LONG Printf(STRPTR format, ...);
 
 struct Module *LoadModule(char *);
 void FreeModules(struct ModuleList *);
@@ -116,7 +117,7 @@ int main(void)
     }
     else
     {
-	Printf("Error loading one of the modules\n");
+	PutStr("Error loading one of the modules\n");
 	FreeModules(&ModuleList);
     }
 
@@ -163,6 +164,7 @@ void FreeModules(struct ModuleList *modlist)
 	next = (struct Module *)mod->m_Node.mln_Succ;
 	Remove((struct Node *)mod);
 	InternalUnLoadSeg(mod->m_SegList, &ils_free);
+	FreeVec(mod);
     }
 }
 

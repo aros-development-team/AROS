@@ -3,7 +3,10 @@
     $Id$
 
     Desc: Amiga bootloader -- InternalLoadSeg support routines
-    Lang: english
+    Lang: C
+*/
+/*
+    For more information: autodocs/dos/InternalLoadSeg()
 */
 
 #include <exec/types.h>
@@ -11,22 +14,28 @@
 #include <exec/memory.h>
 #include <exec/lists.h>
 
+#include <aros/asmcall.h>
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 
 #include "boot.h"
-#include "registers.h"
 
 extern struct ilsMemList ils_mem;
 
-LONG ils_read(BPTR handle __d1, void *buffer __d2, LONG length __d3,
-	      struct DosLibrary *DOSBase __a6)
+AROS_UFH4(LONG, ils_read,
+    AROS_UFHA(BPTR,                handle,  D1),
+    AROS_UFHA(void *,              buffer,  D2),
+    AROS_UFHA(LONG,                length,  D3),
+    AROS_UFHA(struct DosLibrary *, DOSBase, A6))
 {
     return( Read(handle, buffer, length) );
 }
 
-void *ils_alloc(ULONG size __d0, ULONG attrib __d1,
-		struct ExecBase *SysBase __a6)
+AROS_UFH3(void *, ils_alloc,
+    AROS_UFHA(ULONG,             size,    D0),
+    AROS_UFHA(ULONG,             attrib,  D1),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     void *result;
 
@@ -45,7 +54,7 @@ void *ils_alloc(ULONG size __d0, ULONG attrib __d1,
     /*
 	all memory that is allocated during the LoadSeg has to be entered
 	into the KickMemPtr for protection during reset. We keep a list of
-	our allocations so we can make this MemList
+	our allocations so we can later make this MemList
     */
     if(result)
     {
@@ -74,8 +83,10 @@ void *ils_alloc(ULONG size __d0, ULONG attrib __d1,
     return 0;
 }
 
-void ils_free(void *block __a1, ULONG size __d0,
-	      struct ExecBase *SysBase __a6)
+AROS_UFH3(void, ils_free,
+    AROS_UFHA(void *,            block,   A1),
+    AROS_UFHA(ULONG,             size,    D0),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     void *saveblock = block;
     struct ilsMemNode *node;

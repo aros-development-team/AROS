@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Amiga bootloader -- version strings
-    Lang: english
+    Lang: C
 */
 
 #define BANNER "AROS system loader"
