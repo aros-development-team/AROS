@@ -41,7 +41,7 @@ dist : dist-dir dist-tar dist-lha
 	cp README dist/AROSdev-$(VERSION).readme
 
 dist-dir : FORCE
-	@if [ ! -d dist ]; then $(MKDIR) dist ; fi
+	@if [ ! -d dist ]; then $(MKDIR) dist ; else true ; fi
 
 dist-tar : FORCE
 	cd bin/$(ARCH) ; \
@@ -61,18 +61,18 @@ dist-lha : FORCE
 FORCE :
 
 setup :
-	@if [ ! -d bin ]; then $(MKDIR) bin ; fi
-	@if [ ! -d bin/$(ARCH) ]; then $(MKDIR) bin/$(ARCH) ; fi
-	@if [ ! -d $(BINDIR) ]; then $(MKDIR) $(BINDIR) ; fi
-	@if [ ! -d $(SDIR) ]; then $(MKDIR) $(SDIR) ; fi
-	@if [ ! -d $(EXEDIR) ]; then $(MKDIR) $(EXEDIR) ; fi
-	@if [ ! -d $(LIBDIR) ]; then $(MKDIR) $(LIBDIR) ; fi
-	@if [ ! -d $(DEVSDIR) ]; then $(MKDIR) $(DEVSDIR) ; fi
-	@if [ ! -d $(SLIBDIR) ]; then $(MKDIR) $(SLIBDIR) ; fi
-	@if [ ! -d $(TESTDIR) ]; then $(MKDIR) $(TESTDIR) ; fi
-	@if [ ! -d $(GENDIR) ]; then $(MKDIR) $(GENDIR) ; fi
-	@if [ ! -d $(GENDIR)/test ]; then $(MKDIR) $(GENDIR)/test ; fi
-	@if [ ! -d $(GENDIR)/filesys ]; then $(MKDIR) $(GENDIR)/filesys ; fi
+	@if [ ! -d bin ]; then $(MKDIR) bin ; else true ; fi
+	@if [ ! -d bin/$(ARCH) ]; then $(MKDIR) bin/$(ARCH) ; else true ; fi
+	@if [ ! -d $(BINDIR) ]; then $(MKDIR) $(BINDIR) ; else true ; fi
+	@if [ ! -d $(SDIR) ]; then $(MKDIR) $(SDIR) ; else true ; fi
+	@if [ ! -d $(EXEDIR) ]; then $(MKDIR) $(EXEDIR) ; else true ; fi
+	@if [ ! -d $(LIBDIR) ]; then $(MKDIR) $(LIBDIR) ; else true ; fi
+	@if [ ! -d $(DEVSDIR) ]; then $(MKDIR) $(DEVSDIR) ; else true ; fi
+	@if [ ! -d $(SLIBDIR) ]; then $(MKDIR) $(SLIBDIR) ; else true ; fi
+	@if [ ! -d $(TESTDIR) ]; then $(MKDIR) $(TESTDIR) ; else true ; fi
+	@if [ ! -d $(GENDIR) ]; then $(MKDIR) $(GENDIR) ; else true ; fi
+	@if [ ! -d $(GENDIR)/test ]; then $(MKDIR) $(GENDIR)/test ; else true ; fi
+	@if [ ! -d $(GENDIR)/filesys ]; then $(MKDIR) $(GENDIR)/filesys ; else true ; fi
 
 check : $(TESTS)
 	@for test in $(TESTS) ; do \
@@ -94,7 +94,7 @@ subdirs:
 	    echo "Making all in $$dir..." ; \
 	    if ( cd $$dir ; \
 		$(MAKE) $(MFLAGS) CURDIR="$(CURDIR)/$$dir" all ) ; \
-	    then echo -n ; else exit 1 ; fi \
+	    then echo -n ; else exit 1 ; fi ; \
 	done
 
 # I have to restart make here since not all files might be existing
