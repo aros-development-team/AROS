@@ -61,17 +61,18 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
-    struct Task *me;
-
+    ASSERT_VALID_PTR(sigSem);
+    
     /* Get pointer to current task */
-    me=SysBase->ThisTask;
+    struct Task *me = SysBase->ThisTask;
 
 #if CHECK_INITSEM
     if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)
     {
         kprintf("\n\nObtainSemaphoreShared called on a not intialized semaphore!!! "
 	        "sem = %x  task = %x (%s)\n\n", sigSem, me, me->tc_Node.ln_Name);
-	Alert(AN_SemCorrupt);
+
+       Alert(AN_SemCorrupt);
     }
 #endif
 
@@ -86,6 +87,7 @@
 	Note: This will need protection for SMP machines.
     */
     sigSem->ss_QueueCount++;
+
     if( sigSem->ss_QueueCount == 0 )
     {
 	/*
@@ -93,8 +95,8 @@
 	    A shared semaphore does not have an owner, so we
 	    mark the semaphore as shared by ss_Owner == NULL
 	*/
-	sigSem->ss_Owner = NULL;
-	sigSem->ss_NestCount++;
+        sigSem->ss_Owner = NULL;
+        sigSem->ss_NestCount++;
     }
 
     /*
@@ -105,7 +107,7 @@
     else if( (sigSem->ss_Owner == me) || ( sigSem->ss_Owner == NULL ) )
     {
 	/* Yes, just increase the nesting count */
-	sigSem->ss_NestCount++;
+        sigSem->ss_NestCount++;
     }
 
     /*
@@ -123,10 +125,11 @@
 	    address. This is valid simply because we never run on an
 	    architecture where an odd address is a valid task structure.
 	*/
-	struct SemaphoreRequest sr;
-	sr.sr_Waiter = (struct Task *)((UBYTE *)me + 1);
+        struct SemaphoreRequest sr;
+        
+        sr.sr_Waiter = (struct Task *) ((UBYTE *) me + 1);
 
-	bug("Task = %8lx, Waiter = %8lx\n", me, sr.sr_Waiter);
+        bug("Task = %8lx, Waiter = %8lx\n", me, sr.sr_Waiter);
 
 	/*
 	    Have to clear the signal to make sure that we don't
@@ -135,17 +138,16 @@
 	    request, so we must be the last to get the semaphore.
 	*/
     	
-	#warning this must be atomic
-    
-    	AROS_ATOMIC_AND(me->tc_SigRecvd, ~SIGF_SINGLE);
-
-	AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)&sr);
+#warning this must be atomic
+        AROS_ATOMIC_AND(me->tc_SigRecvd, ~SIGF_SINGLE);
+        
+        AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)&sr);
 
 	/*
 	    Finally, we simply wait, ReleaseSemaphore() will fill in
 	    who owns the semaphore.
 	*/
-	Wait(SIGF_SINGLE);
+        Wait(SIGF_SINGLE);
     }
 
     /* All Done! */
