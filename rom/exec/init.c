@@ -2,9 +2,12 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.12  1996/10/01 15:49:19  digulla
+    Revision 1.13  1996/10/02 16:39:59  digulla
+    Linux needs even more stack
+
+    Revision 1.12  1996/10/01 15:49:19	digulla
     The memory is now of type CHIP instead of FAST because most software can live
-    	without FAST, but some cannot live without CHIP.
+	without FAST, but some cannot live without CHIP.
 
     Revision 1.11  1996/09/17 18:41:18	digulla
     This file now contains a DOSBase for internal use in the OS only (and
@@ -347,7 +350,7 @@ int main(int argc,char *argv[])
 	    { NP_Input, MKBADDR(fh_stdin) },
 	    { NP_Output, MKBADDR(fh_stdout) },
 	    { NP_Name, (IPTR)"Boot process" },
-	    { NP_StackSize, 8000 }, /* linux's printf needs that much. */
+	    { NP_StackSize, 20000 }, /* linux's printf needs that much. */
 	    { NP_Cli, 1 },
 	    { TAG_END, 0 }
 	};
