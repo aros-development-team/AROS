@@ -1146,6 +1146,72 @@ typedef unsigned long (*ULONG_FUNC)();
     bn))
 #endif
 
+#ifndef AROS_CALL6
+#define AROS_CALL6(t,a,a1,a2,a3,a4,a5,a6,bt,bn) \
+    (((__AROS_LC_PREFIX t(*)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LP_BASE(bt,bn)))\
+    a)(\
+    __AROS_LCA(a1),\
+    __AROS_LCA(a2),\
+    __AROS_LCA(a3),\
+    __AROS_LCA(a4),\
+    __AROS_LCA(a5),\
+    __AROS_LCA(a6),\
+    bn))
+#endif
+
+#ifndef AROS_CALL7
+#define AROS_CALL7(t,a,a1,a2,a3,a4,a5,a6,a7,bt,bn) \
+    (((__AROS_LC_PREFIX t(*)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LP_BASE(bt,bn)))\
+    a)(\
+    __AROS_LCA(a1),\
+    __AROS_LCA(a2),\
+    __AROS_LCA(a3),\
+    __AROS_LCA(a4),\
+    __AROS_LCA(a5),\
+    __AROS_LCA(a6),\
+    __AROS_LCA(a7),\
+    bn))
+#endif
+
+#ifndef AROS_CALL8
+#define AROS_CALL8(t,a,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn) \
+    (((__AROS_LC_PREFIX t(*)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LP_BASE(bt,bn)))\
+    a)(\
+    __AROS_LCA(a1),\
+    __AROS_LCA(a2),\
+    __AROS_LCA(a3),\
+    __AROS_LCA(a4),\
+    __AROS_LCA(a5),\
+    __AROS_LCA(a6),\
+    __AROS_LCA(a7),\
+    __AROS_LCA(a8),\
+    bn))
+#endif
+
 /* Special calls: Call a library function without the name just by the OFFSET */
 
 #ifndef AROS_LVO_CALL0
