@@ -20,10 +20,10 @@
 	AROS_LH4(BOOL, Fault,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG  , code, D1),
-	AROS_LHA(STRPTR, header, D2),
-	AROS_LHA(STRPTR, buffer, D3),
-	AROS_LHA(LONG  , len, D4),
+	AROS_LHA(LONG,         code,   D1),
+	AROS_LHA(CONST_STRPTR, header, D2),
+	AROS_LHA(STRPTR,       buffer, D3),
+	AROS_LHA(LONG,         len,    D4),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 78, Dos)
