@@ -318,8 +318,21 @@ static IPTR IconList_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-	    case MUIA_IconList_Left: data->view_x = tag->ti_Data; MUI_Redraw(obj,MADF_DRAWOBJECT); break;
-	    case MUIA_IconList_Top: data->view_y = tag->ti_Data; MUI_Redraw(obj,MADF_DRAWOBJECT); break;
+	    case    MUIA_IconList_Left:
+		    if (data->view_x != tag->ti_Data)
+		    {
+			data->view_x = tag->ti_Data;
+			MUI_Redraw(obj,MADF_DRAWOBJECT);
+		    }
+		    break;
+
+	    case    MUIA_IconList_Top:
+		    if (data->view_y != tag->ti_Data)
+		    {
+			data->view_y = tag->ti_Data;
+			MUI_Redraw(obj,MADF_DRAWOBJECT);
+		    }
+		    break;
     	}
     }
 
