@@ -746,7 +746,7 @@ BD_REFFILES$(BDID)   := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .ref, $(not
 endif
 BD_REFFILE$(BDID)    := %(reffile)
 
-ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device resource gadget datatype),)
+ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device resource),)
 BD_GENINCS$(BDID)    := clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h proto/$(BD_MODNAME$(BDID)).h
 endif
 BD_LIBDEFSINC$(BDID) := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
