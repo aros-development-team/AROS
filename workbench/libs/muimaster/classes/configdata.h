@@ -12,6 +12,11 @@
 
 /* The config items for MUIM_GetConfigItem */
 #define MUICFG_Invalid                  (-1L)
+#define MUICFG_Window_Spacing_Left      0x01  /* ULONG, horiz pixels (def.=4) */
+#define MUICFG_Window_Spacing_Right     0x02  /* ULONG, horiz pixels (def.=4) */
+#define MUICFG_Window_Spacing_Top       0x03  /* ULONG, vert pixels (def.=3) */
+#define MUICFG_Window_Spacing_Bottom    0x04  /* ULONG, vert pixels (def.=3) */
+#define MUICFG_Radio_HSpacing           0x05  /* ULONG, horiz pixels (def.=4) */
 #define MUICFG_Radio_HSpacing           0x05  /* ULONG, horiz pixels (def.=4) */
 #define MUICFG_Radio_VSpacing           0x06  /* ULONG, vertical pixels (def.=1) */
 #define MUICFG_List_FontLeading         0x0b  /* ULONG, vertical pixels (def.=1) */
