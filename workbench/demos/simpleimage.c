@@ -44,7 +44,7 @@ responsibility is assumed.
 
 static const char version[] = "$VER: simpleimage 41.1 (14.3.1997)\n";
 
-#ifdef __AROS
+#if defined __AROS && !defined(_AMIGA)
 #ifdef __chip
 #undef __chip
 #endif
@@ -99,14 +99,20 @@ struct Image myImage;
 IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",37);
 if (IntuitionBase != NULL)
     {
+#ifdef __AROS
     if (NULL != (win = OpenWindowTags(NULL,
 			WA_Width,	200,
 			WA_Height,	100,
 			WA_RMBTrap,	TRUE,
-#ifdef __AROS
 			WA_IDCMP,	IDCMP_RAWKEY,
-#endif
 			TAG_END)))
+#else
+    if (NULL != (win = OpenWindowTags(NULL,
+			WA_Width,	200,
+			WA_Height,	100,
+			WA_RMBTrap,	TRUE,
+			TAG_END)))
+#endif
 	{
 	myImage.LeftEdge    = MYIMAGE_LEFT;
 	myImage.TopEdge     = MYIMAGE_TOP;

@@ -107,13 +107,18 @@ if (IntuitionBase)
     ** a border.  An application would probably never use such a
     ** window, but it is useful for demonstrating graphics...
     */
+#ifdef __AROS
     if ((win = OpenWindowTags(NULL,
 			WA_PubScreen,  screen,
 			WA_RMBTrap,	 TRUE,
-#ifdef __AROS
 			WA_IDCMP,	IDCMP_RAWKEY,
-#endif
 			TAG_END)))
+#else
+    if ((win = OpenWindowTags(NULL,
+			WA_PubScreen,  screen,
+			WA_RMBTrap,	 TRUE,
+			TAG_END)))
+#endif
 	{
 	/* set information specific to the shadow component of the border */
 	shadowBorder.LeftEdge	= MYBORDER_LEFT + 1;

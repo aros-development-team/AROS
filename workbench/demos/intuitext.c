@@ -47,7 +47,10 @@ responsibility is assumed.
 
 static const char version[] = "$VER: intuitext 41.1 (14.3.1997)\n";
 
-#ifdef __AROS
+#if defined __AROS && !defined(_AMIGA)
+#ifdef __chip
+#undef __chip
+#endif
 #define __chip
 #include <proto/alib.h>
 #endif
@@ -113,17 +116,14 @@ if (IntuitionBase)
 	    */
 #ifdef __AROS
 	    if ((win = OpenWindowTags(NULL,
-#else
-	    if (win = OpenWindowTags(NULL,
-#endif
 				WA_PubScreen,	 screen,
 				WA_RMBTrap,	 TRUE,
-#ifdef __AROS
 				WA_IDCMP,	 IDCMP_RAWKEY,
-#endif
-#ifdef __AROS
 				TAG_END)))
 #else
+	    if (win = OpenWindowTags(NULL,
+				WA_PubScreen,	 screen,
+				WA_RMBTrap,	 TRUE,
 				TAG_END))
 #endif
 		{

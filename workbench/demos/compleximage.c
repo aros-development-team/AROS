@@ -45,7 +45,7 @@ responsibility is assumed.
 
 static const char version[] = "$VER: compleximage 41.1 (14.3.1997)\n";
 
-#ifdef __AROS
+#if defined __AROS && !defined(_AMIGA)
 #ifdef __chip
 #undef __chip
 #endif
@@ -130,13 +130,18 @@ if (IntuitionBase != NULL)
 			SA_Pens,	&pens,
 			TAG_END)))
 	{
+#ifdef __AROS
 	if (NULL != (win = OpenWindowTags(NULL,
 			    WA_RMBTrap,      TRUE,
 			    WA_CustomScreen, scr,
-#ifdef __AROS
 			    WA_IDCMP,	     IDCMP_RAWKEY,
-#endif
 			    TAG_END)))
+#else
+	if (NULL != (win = OpenWindowTags(NULL,
+			    WA_RMBTrap,      TRUE,
+			    WA_CustomScreen, scr,
+			    TAG_END)))
+#endif
 	    {
 	    myImage.LeftEdge	= MYIMAGE_LEFT;
 	    myImage.TopEdge	= MYIMAGE_TOP;
