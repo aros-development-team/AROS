@@ -40,12 +40,14 @@
 #include "bitmap.h"
 
 static OOP_AttrBase HiddBitMapAttrBase = 0;
+static OOP_AttrBase HiddPixFmtAttrBase = 0;
 static OOP_AttrBase HiddX11GfxAB = 0;
 static OOP_AttrBase HiddX11BitMapAB = 0;
 
 static struct OOP_ABDescr attrbases[] = 
 {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
+    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase },
     /* Private bases */
     { IID_Hidd_X11Gfx,		&HiddX11GfxAB	},
     { IID_Hidd_X11BitMap,	&HiddX11BitMapAB },
