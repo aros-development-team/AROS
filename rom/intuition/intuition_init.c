@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/09/17 16:14:26  digulla
+    OpenWindowTagList() needs Utility.library
+
     Revision 1.6  1996/09/13 17:57:09  digulla
     Use IPTR
 
@@ -45,6 +48,7 @@
 #ifndef UTILITY_HOOKS_H
 #   include <utility/hooks.h>
 #endif
+#include <utility/utility.h>
 #include "intuition_intern.h"
 
 static const char name[];
@@ -172,8 +176,22 @@ __AROS_LH1(struct IntuitionBase *, open,
 	    return NULL;
     }
 
+    if (!UtilityBase)
+    {
+	if (!(UtilityBase = (void *)OpenLibrary (UTILITYNAME, 39)) )
+	{
+	    CloseLibrary ((struct Library *)GfxBase);
+	    return NULL;
+	}
+    }
+
     if (!intui_open (IntuitionBase))
+    {
+	CloseLibrary ((struct Library *)GfxBase);
+	CloseLibrary ((struct Library *)UtilityBase);
+
 	return NULL;
+    }
 
     /* I have one more opener. */
     IntuitionBase->LibNode.lib_OpenCnt++;

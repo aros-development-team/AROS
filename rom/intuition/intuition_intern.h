@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/17 16:14:06  digulla
+    OpenWindowTagList() needs Utility.library
+
     Revision 1.3  1996/08/29 13:33:31  digulla
     Moved common code from driver to Intuition
     More docs
@@ -34,11 +37,13 @@
 struct IntIntuitionBase
 {
     struct IntuitionBase IBase;
+
     /* Put local shit here, invisible for the user */
-    struct GfxBase  * GfxBase;
-    struct ExecBase * SysBase;
-    struct MinList    ClassList;
-    struct Screen   * WorkBench;
+    struct GfxBase     * GfxBase;
+    struct ExecBase    * SysBase;
+    struct UtilityBase * UtilBase;
+    struct MinList	 ClassList;
+    struct Screen      * WorkBench;
 };
 
 extern struct IntuitionBase * IntuitionBase;
@@ -54,6 +59,10 @@ extern struct IntuitionBase * IntuitionBase;
 #undef SysBase
 #endif
 #define SysBase     (GetPrivIBase(IntuitionBase)->SysBase)
+#ifdef UtilityBase
+#undef UtilityBase
+#endif
+#define UtilityBase (GetPrivIBase(IntuitionBase)->UtilBase)
 
 #define PublicClassList ((struct List *)&(GetPrivIBase(IntuitionBase)->ClassList))
 
