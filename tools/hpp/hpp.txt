@@ -223,7 +223,11 @@ $upvar(varname) - Expands to the value of the global variable varname.
 	This is useful in macro when a parameter or local variable shadows
 	a global one.
 $strcmp(str1,str2) - Returns 0 if str1==str2, < 0 if str1 < str2 or > 0 if
-	str1 > str2.
+	str1 > str2. Note that HPP doesn't really know about strings, it
+	just compares the two arguments character-by-character, so don't
+	insert spaces or anything. If $var expands to text, then
+	$strcmp($var,text) expands to 0 and $strcmp($var, text)
+	expands to 84 ('t' - ' ' or 116 - 32).
 $strcasecmp(str1,str2) - Same as $strcmp() but ignores case.
 
 TODO
