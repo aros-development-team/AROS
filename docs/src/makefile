@@ -70,6 +70,7 @@ $(DEST)adoc_index.html: $(DEST)adoc_index.tmp adocpost.gawk adoc_header.html \
 
 $(DEST)adoc_index.tmp: $(AUTODOC_SRCS) adoc2html.gawk
 	gawk -f adoc2html.gawk $(AUTODOC_SRCS) > $@
+	chmod -R a+r $(DEST)/autodocs
 
 $(DEST)inc_index.html: $(INCLUDE_SRCS)
 	echo gawk -f inc2html.gawk $(AUTODOC_SRCS) > $@
