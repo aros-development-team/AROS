@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,7 +25,7 @@ struct EasyStruct es={sizeof (struct EasyStruct),0,"AFFS",0,"Cancel"};
 	else
 	{
 #warning kprintf for error printing when gfx.hidd is not initialized
-		kprintf(string,*args);
+		vkprintf(string,args);
 		kprintf("\n");
 	}
 #endif
