@@ -43,7 +43,7 @@ int entry(void)
     return -1;
 }
 
-const struct Resident resident=
+const struct Resident resident =
 {
     RTC_MATCHWORD,
     (struct Resident *)&resident,
@@ -58,14 +58,14 @@ const struct Resident resident=
 };
 
 const UBYTE name[] = "alert.hook\r\n";
-const UBYTE version[] = "$VER: alert.hook 41.6 (28.1.1997)";
-UBYTE nomem[] = "\x38\x0f" "Not Enough Memory! ";
-UBYTE sfail[] = "\x38\x0f" "Software Failure! ";
-UBYTE recov[] = "\x38\x0f" "Recoverable Alert! ";
-UBYTE mouse[] = "\x01\x50\x0f" "Press mouse button to continue.";
-UBYTE fmtstring[] = "\xa8\x2a" "Task:   %08lx - ";
-UBYTE errstring[] = "\x1e" "Error  %04x %04x - ";
-UBYTE tasknotfound[] = "--task not found--";
+const UBYTE version[] = "$VER: alert.hook 41.7 (29.3.1997)";
+UBYTE *const nomem = "\x38\x0f" "Not Enough Memory! ";
+UBYTE *const sfail = "\x38\x0f" "Software Failure! ";
+UBYTE *const recov = "\x38\x0f" "Recoverable Alert! ";
+UBYTE *const mouse = "\x01\x50\x0f" "Press mouse button to continue.";
+UBYTE *const fmtstring = "\xa8\x2a" "Task:   %08lx - ";
+UBYTE *const errstring = "\x1e" "Error  %04x %04x - ";
+UBYTE *const tasknotfound = "--task not found--";
 
 /* This is the callback for RawDoFmt() */
 AROS_UFH2(void, putChProc,
@@ -178,7 +178,7 @@ AROS_UFH1(ULONG, AROS_SLIB_ENTRY(init,alerthook),
 }
 
 /* Get a string from an array of type Errors. */
-STRPTR getString(STRPTR buffer, ULONG alertnum, struct Errors *errs)
+STRPTR getString(STRPTR buffer, ULONG alertnum, const struct Errors *errs)
 {
     while((errs->number) && (errs->number != alertnum))
     {
@@ -187,7 +187,7 @@ STRPTR getString(STRPTR buffer, ULONG alertnum, struct Errors *errs)
     return mystrcpy(buffer, errs->string, -1);
 }
 
-static struct Errors cpustrings[] =
+static const struct Errors cpustrings[] =
 {
     { ACPU_BusErr,      "Hardware bus fault/address error" },
     { ACPU_AddressErr,  "Illegal address access (odd)" },
@@ -204,7 +204,7 @@ static struct Errors cpustrings[] =
     { 0, "Unknown CPU error" }
 };
 
-static struct Errors subsystems[] =
+static const struct Errors subsystems[] =
 {
     { 0x01,     "exec.library " },
     { 0x02,     "graphics.library " },
@@ -235,7 +235,7 @@ static struct Errors subsystems[] =
     { 0x00,     "unknown " }
 };
 
-static struct Errors types[] =
+static const struct Errors types[] =
 {
     { 0x01,     "no memory for " },
     { 0x02,     "could not make library " },
@@ -251,7 +251,7 @@ static struct Errors types[] =
     { 0x00,     "unknown problem with "}
 };
 
-static struct Errors execstrings[] =
+static const struct Errors execstrings[] =
 {
     { AN_ExcptVect,     "MC68k Exception vector checksum" },
     { AN_BaseChkSum,    "ExecBase checksum" },
@@ -271,7 +271,7 @@ static struct Errors execstrings[] =
     { 0, "unknown exec.library error" }
 };
 
-static struct Errors gfxstrings[] =
+static const struct Errors gfxstrings[] =
 {
     { AN_GfxNoMem,      "Graphics out of memory" },
     { AN_GfxNoMemMspc,  "No memory to allocate MonitorSpec" },
@@ -288,18 +288,18 @@ static struct Errors gfxstrings[] =
     { 0, "unknown graphics.library error" }
 };
 
-static struct Errors unknownstrings[] =
+static const struct Errors unknownstrings[] =
 {
     { 0, "unknown error" }
 };
 
-static struct Errors layersstrings[] =
+static const struct Errors layersstrings[] =
 {
     { AN_LayersNoMem,   "layers: no memory" },
     { 0, "unknown layers.library error" }
 };
 
-static struct Errors intuistrings[] =
+static const struct Errors intuistrings[] =
 {
     { AN_GadgetType,    "intuition: unknown gadget type" },
     { AN_CreatePort,    "intuition couldn't create port, no memory" },
@@ -321,12 +321,12 @@ static struct Errors intuistrings[] =
     { 0, "unknown intuition.library error" }
 };
 
-static struct Errors mathstrings[] =
+static const struct Errors mathstrings[] =
 {
     { 0, "unknown math library error" }
 };
 
-static struct Errors dosstrings[] =
+static const struct Errors dosstrings[] =
 {
     { AN_StartMem,      "no memory at startup" },
     { AN_EndTask,       "EndTask did not end task" },
@@ -345,96 +345,96 @@ static struct Errors dosstrings[] =
     { 0, "unknown dos.library error" }
 };
 
-static struct Errors ramlibstrings[] =
+static const struct Errors ramlibstrings[] =
 {
     { AN_BadSegList,    "bad library seglist" },
     { 0, "unknown ramlib/lddemon error" }
 };
 
-static struct Errors iconstrings[] =
+static const struct Errors iconstrings[] =
 {
     { 0, "unknown icon.library error" }
 };
 
-static struct Errors expanstrings[] =
+static const struct Errors expanstrings[] =
 {
     { AN_BadExpansionFree,  "expansion freeing region already freed"},
     { 0, "unknown expansion.library error" }
 };
 
-static struct Errors utilitystrings[] =
+static const struct Errors utilitystrings[] =
 {
     {0, "unknown utility.library error" }
 };
 
-static struct Errors keymapstrings[] =
+static const struct Errors keymapstrings[] =
 {
     {0, "unknown keymap error" }
 };
 
-static struct Errors dfontstrings[] =
+static const struct Errors dfontstrings[] =
 {
     { 0, "unknown diskfont.library error" }
 };
 
-static struct Errors audiostrings[] =
+static const struct Errors audiostrings[] =
 {
     { 0, "unknown audio.device error" }
 };
 
-static struct Errors consolestrings[] =
+static const struct Errors consolestrings[] =
 {
     { AN_NoWindow, "can't open initial console window" },
     { 0, "unknown console.device error" }
 };
 
-static struct Errors gameportstrings[] =
+static const struct Errors gameportstrings[] =
 {
     { 0, "unknown gameport.device error" }
 };
 
-static struct Errors keyboardstrings[] =
+static const struct Errors keyboardstrings[] =
 {
     { 0, "unknown keyboard.device error" }
 };
 
-static struct Errors trackdiskstrings[] =
+static const struct Errors trackdiskstrings[] =
 {
     { AN_TDCalibSeek,   "trackdisk calibrate seek error" },
     { 0, "unknown trackdisk.device error" }
 };
 
-static struct Errors timerstrings[] =
+static const struct Errors timerstrings[] =
 {
     { AN_TMBadReq,      "bad timer request" },
     { AN_TMBadSupply,   "bad timer powersupply frequency" },
     { 0, "unknown timer.device error" }
 };
 
-static struct Errors ciastrings[] =
+static const struct Errors ciastrings[] =
 {
     { 0, "unknown cia resource error" }
 };
 
-static struct Errors diskstrings[] =
+static const struct Errors diskstrings[] =
 {
     { AN_DRHasDisk, "get disk unit, already has disk" },
     { AN_DRIntNoAct,"disk interrupt, no active unit" },
     { 0, "unknown disk.resource error" }
 };
 
-static struct Errors miscstrings[] =
+static const struct Errors miscstrings[] =
 {
     { 0, "unknown misc.resource error" }
 };
 
-static struct Errors bootstrings[] =
+static const struct Errors bootstrings[] =
 {
     { AN_BootError, "boot code returned an error" },
     { 0, "unknown bootstrap error" }
 };
 
-static struct Errors workbenchstrings[] =
+static const struct Errors workbenchstrings[] =
 {
     { AN_NoFonts,           "no fonts for workbench" },
     { AN_WBBadStartupMsg1,  "bad startup message 1 for workbench" },
@@ -444,17 +444,17 @@ static struct Errors workbenchstrings[] =
     { 0, "unknown workbench error" }
 };
 
-static struct Errors diskcopystrings[] =
+static const struct Errors diskcopystrings[] =
 {
     {0, "unknown diskcopy error" }
 };
 
-static struct Errors gadtoolsstrings[] =
+static const struct Errors gadtoolsstrings[] =
 {
     {0, "unknown gadtools.library error" }
 };
 
-static struct Errors *stringlist[] =
+static const struct Errors *const stringlist[] =
 {
     /* 0x00 */
     unknownstrings,
