@@ -55,6 +55,24 @@ struct gc_data
     
 };
 
+static ULONG map_x11_to_hidd(struct gc_data *data, ULONG x11pixel)
+{
+    ULONG hidd_pen = 0;
+    BOOL pix_found = FALSE;
+    for (hidd_pen = 0; hidd_pen < 256; hidd_pen ++)
+    {
+    	if (x11pixel == data->hidd2x11cmap[hidd_pen])
+	{
+	    pix_found = TRUE;
+	    break;
+	}
+    }
+    if (!pix_found)
+    	hidd_pen = 0UL;
+	
+    return hidd_pen;	
+    
+}
 /****************  GC::New()  *******************************/
 static Object *gc_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
@@ -70,24 +88,20 @@ static Object *gc_new(Class *cl, Object *o, struct pRoot_New *msg)
 	 BOOL ok = TRUE;
 	 
 	 data = (struct gc_data *)INST_DATA(cl, o);
-	 D(bug("data=%p\n", data));
 	 
 	 memset(data, 0, sizeof (struct gc_data));
 	 
-	 D(bug("Data set\n"));
 
 	 
          /* Get the bitmap attriute from the superclass */
 
 	 GetAttr(o, aHidd_GC_BitMap, (IPTR *)&bitmap);
-	 D(bug("Bitmap: %p\n", bitmap));
 	 	 
 	 /* Get direct access to the instance data (ugly, should
 	    go through private methods/attrs but we don't hav'em yet
 	 */
 	 bm_data = (struct bitmap_data *)INST_DATA(X11GfxBase->bitmapclass, bitmap);
 
-	 D(bug("bm_data: %p\n", bm_data));
 	 
 	 /* For the sake of speed we duplicate some info from the bitmap object */
 	 data->xwindow = bm_data->xwindow;
@@ -100,13 +114,11 @@ static Object *gc_new(Class *cl, Object *o, struct pRoot_New *msg)
 	 gcval.plane_mask = 0xFFFFFFFF; /*BlackPixel(data->display, data->screen); */ /* bm_data->sysplanemask; */
 	 gcval.graphics_exposures = True;
 	 
-	 D(bug("Creating X11 GC\n"));
 	 data->gc = XCreateGC( data->display
 	 	, DefaultRootWindow( data->display )
 		, GCPlaneMask | GCGraphicsExposures
 		, &gcval
 	 );
-	 D(bug("GC: %p\n", data->gc));
 	 if (!data->gc)
 	     ok = FALSE;
 	 
@@ -173,7 +185,7 @@ static VOID gc_set(Class *cl, Object *o, struct pRoot_Set *msg)
         }
     }
     
-    
+    DoSuperMethod(cl, o, (Msg)msg);
     
     return;
 }
@@ -182,9 +194,16 @@ static VOID gc_set(Class *cl, Object *o, struct pRoot_Set *msg)
 static VOID gc_writepixeldirect(Class *cl, Object *o, struct pHidd_GC_WritePixelDirect *msg)
 {
      struct gc_data *data = INST_DATA(cl, o);
+     ULONG old_fg;
+     
+     GetAttr(o, aHidd_GC_Foreground, &old_fg);
      
      XSetForeground(data->display, data->gc, data->hidd2x11cmap[msg->val]);
      XDrawPoint(data->display, data->xwindow, data->gc, msg->x, msg->y);
+     
+     /* Reset GC to old value */
+     XSetForeground(data->display, data->gc, data->hidd2x11cmap[old_fg]);
+     
      XFlush(data->display);
      return;
 }
@@ -207,10 +226,12 @@ static ULONG gc_readpixel(Class *cl, Object *o, struct pHidd_GC_ReadPixel *msg)
     
     if (!image)
     	return -1L;
+	
     pixel = XGetPixel(image, 0, 0);
-    XDestroyImage(image);
+    XFree(image);
     
     /* Get pen number from colortab */
+
     for (i = 0; i < 256; i ++)
     {
         if (pixel == data->hidd2x11cmap[i])
@@ -242,19 +263,89 @@ static ULONG gc_writepixel(Class *cl, Object *o, struct pHidd_GC_WritePixel *msg
 static VOID gc_fillrect(Class *cl, Object *o, struct pHidd_GC_DrawRect *msg)
 {
     struct gc_data *data = INST_DATA(cl, o);
-    
+    ULONG mode;
 #warning Handle different drawmodes
     EnterFunc(bug("X11Gfx.GC::FillRect(%d,%d,%d,%d)\n",
     	msg->minX, msg->minY, msg->maxX, msg->maxY));
 	
-    XFillRectangle(data->display
-    	, data->xwindow
-	, data->gc
-	, msg->minX
-	, msg->minY
-	, msg->maxX - msg->minX + 1
-	, msg->maxY - msg->minY + 1
-    );
+    GetAttr(o, aHidd_GC_DrawMode, &mode);
+    
+    D(bug("Drawmode: %d\n", mode));
+    
+    
+    if (mode == vHIDD_GC_DrawMode_Copy)
+    {
+    	
+	XFillRectangle(data->display
+		, data->xwindow
+		, data->gc
+		, msg->minX
+		, msg->minY
+		, msg->maxX - msg->minX + 1
+		, msg->maxY - msg->minY + 1
+	);
+    }
+    else
+    {
+    	XImage *image;
+	WORD x, y, width, height;
+	ULONG src;
+	GetAttr(o, aHidd_GC_Foreground, &src);
+	
+	width  = msg->maxX - msg->minX + 1;
+	height = msg->maxY - msg->minY + 1;
+    	/* Special drawmode */
+	image = XGetImage(data->display
+		, data->xwindow
+		, msg->minX, msg->minY
+		, width, height
+		, AllPlanes
+		, ZPixmap);
+		
+	if (!image)
+	    ReturnVoid("X11Gfx.GC::FillRect(Couldn't get XImage)");
+	    
+	for (y = 0; y < width; y ++)
+	{
+	    for (x = 0; x < height; x ++)
+	    {
+	        ULONG dest;
+		ULONG val = 0UL;
+		
+		dest = map_x11_to_hidd(data, XGetPixel(image, x, y));
+		    
+		/* Apply drawmodes to pixel */
+	   	if(mode & 1) val = ( src &  dest);
+	   	if(mode & 2) val = ( src & ~dest) | val;
+	   	if(mode & 4) val = (~src &  dest) | val;
+	   	if(mode & 8) val = (~src & ~dest) | val;
+		
+		D(bug("Putting pixel %d\n", val));
+		
+		XPutPixel(image, x, y, data->hidd2x11cmap[val]);
+
+	    }
+	    
+	}  
+	D(bug("Putting image at (%d, %d), w=%d, h=%d\n",
+		msg->minX, msg->minY, width, height ));
+		
+	/* Put image back into display */
+	XPutImage(data->display
+    		, data->xwindow
+		, data->gc
+		, image
+		, 0, 0
+		, msg->minX, msg->minY
+		, width, height);
+	    
+	D(bug("image put\n"));
+
+	XFree(image);
+	D(bug("image destroyed\n"));
+    }
+   
+    D(bug("Flushing\n"));
 
     XFlush(data->display);
     ReturnVoid("X11Gfx.GC::FillRect");
@@ -265,21 +356,93 @@ static VOID gc_fillrect(Class *cl, Object *o, struct pHidd_GC_DrawRect *msg)
 /*********  GC::CopyArea()  *************************************/
 static VOID gc_copyarea(Class *cl, Object *o, struct pHidd_GC_CopyArea *msg)
 {
+    ULONG mode;
     struct gc_data *data = INST_DATA(cl, o);
+    GetAttr(o, aHidd_GC_DrawMode, &mode);
     EnterFunc(bug("X11Gfx.GC::CopyArea( %d,%d to %d,%d of dim %d,%d\n",
     	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
+
 #warning Does not handle copying between different windows.
-    XCopyArea(data->display
-    	, data->xwindow	/* src	*/
-	, data->xwindow /* dest */
-	, data->gc
-	, msg->srcX
-	, msg->srcY
-	, msg->width
-	, msg->height
-	, msg->destX
-	, msg->destY
-    );
+
+    if (mode == vHIDD_GC_DrawMode_Copy) /* Optimize this drawmode */
+    {
+    	XCopyArea(data->display
+    		, data->xwindow	/* src	*/
+		, data->xwindow /* dest */
+		, data->gc
+		, msg->srcX
+		, msg->srcY
+		, msg->width
+		, msg->height
+		, msg->destX
+		, msg->destY
+    	);
+    
+    }
+    else
+    {
+	XImage *src_image, *dst_image;
+	WORD x, y;
+	
+	src_image = XGetImage(data->display
+		, data->xwindow
+		, msg->srcX, msg->srcY
+		, msg->width, msg->height
+		, AllPlanes
+		, ZPixmap);
+		
+	if (!src_image)
+	    ReturnVoid("X11Gfx.GC::CopyArea(Couldn't get source XImage)");
+	    
+	dst_image = XGetImage(data->display
+		, data->xwindow
+		, msg->destX, msg->destY
+		, msg->width, msg->height
+		, AllPlanes
+		, ZPixmap);
+		
+	if (!dst_image)
+	{
+	    XDestroyImage(src_image);
+	    ReturnVoid("X11Gfx.GC::CopyArea(Couldn't get destination XImage)");
+	}
+     	   
+	for (y = 0; y < msg->height; y ++)
+	{
+	    for (x = 0; x < msg->width; x ++)
+	    {
+    		/* Drawmodes make things more complicated */
+		ULONG src;
+		ULONG dest;
+		ULONG val = 0;
+		
+		src  = map_x11_to_hidd(data, XGetPixel(src_image, x, y));
+		dest = map_x11_to_hidd(data, XGetPixel(dst_image, x, y));
+		    
+		/* Apply drawmodes to pixel */
+	   	if(mode & 1) val = ( src &  dest);
+	   	if(mode & 2) val = ( src & ~dest) | val;
+	   	if(mode & 4) val = (~src &  dest) | val;
+	   	if(mode & 8) val = (~src & ~dest) | val;
+		
+		XPutPixel(dst_image, x, y, data->hidd2x11cmap[val]);
+	    }
+	}
+	/* Put image back into display */
+	XPutImage(data->display
+    		, data->xwindow
+		, data->gc
+		, dst_image
+		, 0, 0
+		, msg->destX, msg->destY
+		, msg->width, msg->height);
+	
+
+	XFree(src_image);
+	XFree(dst_image);
+	
+    }
+    
     
     XFlush(data->display);
     ReturnVoid("X11Gfx.GC::CopyArea");
@@ -320,13 +483,135 @@ static VOID gc_clear(Class *cl, Object *o, struct pHidd_GC_Clear *msg)
     
 }
 
+static VOID gc_readpixelarray(Class *cl, Object *o, struct pHidd_GC_ReadPixelArray *msg)
+{
+    /* Read an X image from which we can faster get the pixels, since the
+       X image resides in the client.
+    */
+    WORD x, y;
+    ULONG *pixarray = msg->pixelArray;
+    struct gc_data *data;
+    XImage *image;
+    
+    EnterFunc(bug("X11Gfx.GC::ReadPixelArray(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
+    	msg->pixelArray, msg->x, msg->y, msg->width, msg->height));
+	
+    data = INST_DATA(cl, o);
+
+    image = XGetImage(data->display
+    	, data->xwindow
+	, msg->x, msg->y
+	, msg->width, msg->height
+	, AllPlanes
+	, ZPixmap);
+	
+    if (!image)
+    	ReturnVoid("X11Gfx.GC::ReadPixelArray(couldn't get XImage)");
+	
+    for (y = 0; y < msg->height; y ++)
+    {
+	for (x = 0; x < msg->width; x ++)
+	{
+	    *pixarray ++ = map_x11_to_hidd(data, XGetPixel(image, x, y));
+	}
+	
+    }
+    XFree(image);
+    
+    ReturnVoid("X11Gfx.GC::ReadPixelArray");
+    
+}
+
+static VOID gc_writepixelarray(Class *cl, Object *o, struct pHidd_GC_WritePixelArray *msg)
+{
+    ULONG mode;
+    WORD x, y;
+    ULONG *pixarray = msg->pixelArray;
+    struct gc_data *data;
+    XImage *image;
+
+    EnterFunc(bug("X11Gfx.GC::WritePixelArray(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
+    	msg->pixelArray, msg->x, msg->y, msg->width, msg->height));
+	
+    data = INST_DATA(cl, o);
+    GetAttr(o, aHidd_GC_DrawMode, &mode);
+    
+    image = XGetImage(data->display
+    	, data->xwindow
+	, msg->x, msg->y
+	, msg->width, msg->height
+	, AllPlanes
+	, ZPixmap
+    );
+    if (!image)
+    	ReturnVoid("X11Gfx.GC::WritePixelArray(couldn't get XImage)");
+    	
+    D(bug("drawmode: %d\n", mode));
+    if (mode == vHIDD_GC_DrawMode_Copy)
+    {
+        D(bug("Drawmode COPY\n"));
+    	/* Do plain copy, optimized */
+	for (y = 0; y < msg->height; y ++)
+	{
+	    for (x = 0; x < msg->width; x ++)
+	    {
+		
+		XPutPixel(image, x, y, data->hidd2x11cmap[*pixarray ++]);
+		
+	    }
+	    
+	}
+	
+    }
+    else
+    {
+     	   
+	for (y = 0; y < msg->height; y ++)
+	{
+	    for (x = 0; x < msg->width; x ++)
+	    {
+    		/* Drawmodes make things more complicated */
+		ULONG src;
+		ULONG dest;
+		ULONG val = 0;
+
+		src  = *pixarray ++;
+		dest = map_x11_to_hidd(data, XGetPixel(image, x, y));
+		    
+		/* Apply drawmodes to hidd pen */
+	   	if(mode & 1) val = ( src &  dest);
+	   	if(mode & 2) val = ( src & ~dest) | val;
+	   	if(mode & 4) val = (~src &  dest) | val;
+	   	if(mode & 8) val = (~src & ~dest) | val;
+		
+		XPutPixel(image, x, y, data->hidd2x11cmap[val]);
+	    }
+	}
+    }
+    /* Put image back into display */
+    XPutImage(data->display
+    	, data->xwindow
+	, data->gc
+	, image
+	, 0, 0
+	, msg->x, msg->y
+	, msg->width, msg->height);
+	
+	
+   XFree(image);
+
+   XFlush(data->display);
+   ReturnVoid("X11Gfx.GC::WritePixelArray");
+
+   
+}
 /****************  init_gcclass()  **************************/
 #undef X11GfxBase
 
 
 
 #define NUM_ROOT_METHODS	3
-#define NUM_GC_METHODS 		6
+#define NUM_GC_METHODS 		8
 
 
 Class *init_gcclass(struct x11gfxbase *X11GfxBase)
@@ -347,6 +632,8 @@ Class *init_gcclass(struct x11gfxbase *X11GfxBase)
     	{(IPTR (*)())gc_writepixel,		moHidd_GC_WritePixel},
     	{(IPTR (*)())gc_fillrect,		moHidd_GC_FillRect},
     	{(IPTR (*)())gc_copyarea,		moHidd_GC_CopyArea},
+    	{(IPTR (*)())gc_readpixelarray,		moHidd_GC_ReadPixelArray},
+    	{(IPTR (*)())gc_writepixelarray,	moHidd_GC_WritePixelArray},
 	{NULL, 0UL}
     };
     

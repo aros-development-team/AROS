@@ -276,6 +276,7 @@ static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 	}		
     }
     
+    
     ReturnBool("X11Gfx.BitMap::SetColors",  TRUE);
 
 }

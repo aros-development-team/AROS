@@ -198,7 +198,9 @@ enum
     moHidd_GC_DrawText,
     moHidd_GC_FillText,
     moHidd_GC_FillSpan,
-    moHidd_GC_Clear
+    moHidd_GC_Clear,
+    moHidd_GC_ReadPixelArray,
+    moHidd_GC_WritePixelArray
 };
 
 enum
@@ -309,6 +311,22 @@ struct pHidd_GC_Clear
     MethodID    mID;
 };
 
+struct pHidd_GC_ReadPixelArray
+{
+    MethodID mID;
+    ULONG	*pixelArray;
+    WORD	x, y;
+    WORD	width, height;
+};
+
+struct pHidd_GC_WritePixelArray
+{
+    MethodID mID;
+    ULONG 	*pixelArray;
+    WORD	x, y;
+    WORD	width, height;
+};
+
 
 /* Predeclarations of stubs in libhiddgraphicsstubs.h */
 
@@ -342,5 +360,7 @@ VOID     HIDD_GC_FillText        (Object *obj, WORD x, WORD y, STRPTR text, UWOR
 VOID     HIDD_GC_FillSpan        (Object *obj);
 VOID     HIDD_GC_Clear           (Object *obj);
 
+VOID     HIDD_GC_ReadPixelArray	 (Object *obj, ULONG *pixelArray, WORD x, WORD y, WORD width, WORD height);
+VOID	 HIDD_GC_WritePixelArray (Object *obj, ULONG *pixelArray, WORD x, WORD y, WORD width, WORD height);
 
 #endif /* HIDD_GRAPHICS_H */

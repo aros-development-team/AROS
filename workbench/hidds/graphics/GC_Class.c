@@ -22,9 +22,9 @@
 #include "graphics_intern.h"
 
 #undef  SDEBUG
-#define SDEBUG 1
+#define SDEBUG 0
 #undef  DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 static VOID gc_set(Class *cl, Object *obj, struct pRoot_Set *msg);
@@ -1184,6 +1184,45 @@ static VOID gc_clear_q(Class *cl, Object *obj, struct pHidd_GC_Clear *msg)
     ReturnVoid("GC::Clear_Q");
 }
 
+static VOID gc_readpixelarray(Class *cl, Object *o, struct pHidd_GC_ReadPixelArray *msg)
+{
+    WORD x, y;
+    ULONG *pixarray = msg->pixelArray;
+    
+    for (y = 0; y < msg->height; y ++)
+    {
+    	for (x = 0; x < msg->width; x ++)
+    	{
+	    *pixarray ++ = HIDD_GC_ReadPixel(o, x + msg->x , y + msg->y);
+	}
+    }
+    return;
+}
+
+static VOID gc_writepixelarray(Class *cl, Object *o, struct pHidd_GC_WritePixelArray *msg)
+{
+    WORD x, y;
+    ULONG *pixarray = msg->pixelArray;
+    ULONG old_fg;
+    struct HIDDGCData *data = INST_DATA(cl, o);
+    
+    /* Preserver old fg pen */
+    old_fg = data->fg;
+    
+    
+    
+    for (y = 0; y < msg->height; y ++)
+    {
+    	for (x = 0; x < msg->width; x ++)
+    	{
+	    data->fg = *pixarray ++;
+	    HIDD_GC_WritePixel(o, x + msg->x , y + msg->y);
+	}
+    }
+    data->fg = old_fg;
+    return;
+}
+
 /*** init_gcclass *************************************************************/
 
 #undef OOPBase
@@ -1195,7 +1234,7 @@ static VOID gc_clear_q(Class *cl, Object *obj, struct pHidd_GC_Clear *msg)
 #define UtilityBase (csd->utilitybase)
 
 #define NUM_ROOT_METHODS   4
-#define NUM_GC_METHODS    15
+#define NUM_GC_METHODS    17
 
 Class *init_gcclass(struct class_static_data *csd)
 {
@@ -1225,6 +1264,8 @@ Class *init_gcclass(struct class_static_data *csd)
         {(IPTR (*)())gc_drawfilltext_q    , moHidd_GC_FillText},
         {(IPTR (*)())gc_fillspan_q        , moHidd_GC_FillSpan},
         {(IPTR (*)())gc_clear_q           , moHidd_GC_Clear},
+        {(IPTR (*)())gc_readpixelarray    , moHidd_GC_ReadPixelArray},
+        {(IPTR (*)())gc_writepixelarray   , moHidd_GC_WritePixelArray},
         {NULL, 0UL}
     };
     

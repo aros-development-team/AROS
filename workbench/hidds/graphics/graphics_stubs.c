@@ -343,3 +343,42 @@ VOID HIDD_GC_Clear (Object *obj)
 
     DoMethod(obj, (Msg) &p);
 }
+
+/***************************************************************/
+
+VOID     HIDD_GC_ReadPixelArray	 (Object *obj, ULONG *pixelArray, WORD x, WORD y, WORD width, WORD height)
+{
+    static MethodID mid = 0;
+    struct pHidd_GC_ReadPixelArray p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_GC, moHidd_GC_ReadPixelArray);
+        
+    p.mID    = mid;
+    p.pixelArray = pixelArray;
+    p.x = x;
+    p.y = y;
+    p.width  = width;
+    p.height = height;
+    
+
+    DoMethod(obj, (Msg) &p);
+}
+
+/***************************************************************/
+
+VOID     HIDD_GC_WritePixelArray	 (Object *obj, ULONG *pixelArray, WORD x, WORD y, WORD width, WORD height)
+{
+    static MethodID mid = 0;
+    struct pHidd_GC_WritePixelArray p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_GC, moHidd_GC_WritePixelArray);
+        
+    p.mID    = mid;
+    p.pixelArray = pixelArray;
+    p.x = x;
+    p.y = y;
+    p.width  = width;
+    p.height = height;
+
+    DoMethod(obj, (Msg) &p);
+}

@@ -111,6 +111,16 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     
     ReturnPtr("X11Gfx::NewBitMap", Object *, NewObject(X11GfxBase->bitmapclass, NULL, msg->attrList));
 }
+
+/*
+static VOID gfxhidd_disposebitmap(Class *cl, Object *o, struct pHidd_Gfx_DisposeBitMap *msg)
+{
+    EnterFunc(bug("X11Gfx::DisposeBitMap()\n"));
+    
+    DisposeObject(msg->bitMap);
+    ReturnVoid("X11Gfx::DisposeBitMap");
+}
+*/
 /**********  GfxHidd::CreateGC()  ****************************/
 
 static Object *gfxhidd_newgc(Class *cl, Object *o, struct pHidd_Gfx_NewGC *msg)
