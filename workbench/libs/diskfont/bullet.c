@@ -287,7 +287,7 @@ static BOOL OTAG_SetupFontEngine(struct TTextAttr *ta,
     *xdpi_ptr = xdpi;
     *ydpi_ptr = ydpi;
 
-    pointheight = ta->tta_YSize << 16;
+    pointheight = ra->tta_YSize << 16;
     xdot = ydot = 100;
 
     sizetags[0].ti_Data = pointheight;

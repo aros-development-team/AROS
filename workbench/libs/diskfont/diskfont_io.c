@@ -498,11 +498,24 @@ struct TextFont *ReadDiskFont(
     if ((seglist = LoadSeg(filename)) != 0)
     {
 	dfh = ConvDiskFont(seglist, realfontname, DiskfontBase);
-
 	UnLoadSeg(seglist);
-    }
 
-    ReturnPtr("ReadDiskFont", struct TextFont *, &dfh->dfh_TF);	
+	if (dfh != NULL)
+	{
+	    D(bug("ReadDiskFont: dfh=0x%lx\n"));
+	    ReturnPtr("ReadDiskFont", struct TextFont *, &dfh->dfh_TF);
+	}
+	else
+	{
+	    D(bug("ReadDiskFont: error converting seglist\n"));
+	    ReturnPtr("ReadDiskFont", struct TextFont *, NULL);
+	}
+    }
+    else
+    {
+	D(bug("Could not load segment list\n"));
+	ReturnPtr("ReadDiskFont", struct TextFont *, NULL);
+    }
 }
 
 /****************************************************************************************/

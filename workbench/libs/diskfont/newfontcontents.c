@@ -180,7 +180,7 @@ struct contentsBuffer
 	    
 	    if(cNode == NULL)
 	    {
-		DisposeConvDiskFont(dfh, DiskfontBase);
+		DisposeConvDiskFont(dfh, DFB(DiskfontBase));
 		FreeBuffers((struct List *)&contentsList);
 		UnLock(lock);
 		FreeDosObject(DOS_FIB, fib);
@@ -193,9 +193,6 @@ struct contentsBuffer
 	    strcpy(cNode->fc.fc_FileName, name);
 	    strcat(cNode->fc.fc_FileName, "/");
 	    strcat(cNode->fc.fc_FileName, fib->fib_FileName);
-
-	    /* TODO: Factor out the code in diskfont_io.c that extracts
-	             tags and make it a function... */
 
 	    /* Embedded tags? */
 	    if(dfh->dfh_TF.tf_Style & FSF_TAGGED)
@@ -244,7 +241,7 @@ struct contentsBuffer
 	    
 	    fch.fch_NumEntries++;
 	    
-	    DisposeConvDiskFont(dfh, DiskfontBase);
+	    DisposeConvDiskFont(dfh, DFB(DiskfontBase));
 	} /* while(there are files left in the directory) */
 	
 	if(IoErr() == ERROR_NO_MORE_ENTRIES)
