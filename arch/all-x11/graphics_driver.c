@@ -1756,3 +1756,21 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
 {
     return 0;
 }
+
+VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
+		LONG xMax, LONG yMax, ULONG byteCnt, struct GfxBase *GfxBase)
+{
+    return;
+}
+
+VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
+    		, LONG xSrc, LONG ySrc
+		, struct RastPort *destRP
+		, LONG xDest, LONG yDest
+		, ULONG xSize, ULONG ySize
+		, ULONG minterm
+		, PLANEPTR bltMask
+		, struct GfxBase *GfxBase )
+{
+    return;
+}
