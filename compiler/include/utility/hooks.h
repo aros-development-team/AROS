@@ -80,4 +80,13 @@ typedef IPTR (*HOOKFUNC)(struct Hook *, APTR, APTR);
 
 */
 
+#define CALLHOOKPKT(hook, object, message)     \
+    AROS_UFC3                                  \
+    (                                          \
+        IPTR, ((struct Hook *) hook)->h_Entry, \
+	AROS_UFCA(struct Hook *, hook,    A0), \
+	AROS_UFCA(APTR,          object,  A2), \
+	AROS_UFCA(APTR,          message, A1)  \
+    )
+
 #endif /* UTILITY_HOOKS_H */
