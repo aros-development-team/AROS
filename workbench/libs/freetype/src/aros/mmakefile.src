@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM contrib-freetype-ftmanager
+#MM contrib-freetype-ftmanager : contrib-freetype-module
 
 EXEDIR := $(CONTRIBDIR)/Freetype
 
