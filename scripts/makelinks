@@ -9,7 +9,7 @@ else
     tfilter="$3"
 fi
 
-function regexptowildcard() {
+regexptowildcard() {
     gawk 'BEGIN { \
 	str=ARGV[1]; \
 	gsub (/\./, "\\.", str); \
