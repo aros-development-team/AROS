@@ -167,6 +167,9 @@
 		CallHookPkt(bestmatch_hook, &fhc, DFB(DiskfontBase) );
 		tf = fhc.fhc_TextFont;
 		
+		ExtendFont(tf, NULL);
+		
+		
 	}
 
 	if (best_so_far.tta_Tags)
