@@ -84,7 +84,7 @@ BDID := $(BDID)_
 
 #------------------------------------------------------------------------------
 # Copy file %(from) to %(to) in a makefile rule
-%define rule_copy from=\A to=\A
+%define rule_copy from=/A to=/A
 %(to) : %(from)
 	@$(CP) $< $@
 %end
@@ -96,7 +96,7 @@ BDID := $(BDID)_
 # be displayed.
 # Restriction: at the moment when using a non-empty target dir %(from) may
 # not have 
-%define rule_join to=\A from=\A text=
+%define rule_join to=/A from=/A text=
 
 %(to) : %(from)
 ifneq (%(text),)
@@ -108,14 +108,44 @@ endif
 
 
 #------------------------------------------------------------------------------
+# Include the dependency files and add some internal rules
+# When depstargets is provided the depencies will only be included when one of
+# these targets is the $(TARGET). Otherwise the dependencies will only be
+# include when the $(TARGET) is not for setup or clean 
+%define include_deps deps=$(DEPS)/M depstargets=
+ifneq (%(deps),)
+  ifneq (%(depstargets),)
+    ifneq ($(findstring $(TARGET),%(depstargets)),)
+      -include %(deps)
+    endif
+  else
+    ifeq (,$(filter clean% %clean %clean% setup% includes% %setup,$(TARGET)))
+      -include %(deps)
+    endif
+  endif
+endif
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
 # Create the directories %(dirs). The creation will be done by adding rules to
 # the %(setuptarget) make target with setup as the default. 
-%define rule_makedirs dirs=\A setuptarget=setup
+%define rule_makedirs dirs=/A setuptarget=setup
 
 %(setuptarget) :: %(dirs)
 
-%(dirs) :
+# Only add a rule for a directory for which there is no rule yet.
+
+TOCREATE_TMP := $(filter-out $(CREATED_DIRS_GLOB),%(dirs))
+
+ifdef TOCREATE_TMP
+$(TOCREATE_TMP) :
+	@$(ECHO) "Creating directory $@"
 	%mkdir_q dir=$@
+
+CREATED_DIRS_GLOB += $(TOCREATE_TMP)
+endif
 %end
 #------------------------------------------------------------------------------
 
@@ -132,7 +162,7 @@ endif
 #   the same value as cflags will be used
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .c file
-%define rule_compile basename=\A cflags=$(CFLAGS) dflags= targetdir=
+%define rule_compile basename=/A cflags=$(CFLAGS) dflags= targetdir=
 
 ifeq (%(targetdir),)
 %(basename).o : %(basename).c
@@ -165,10 +195,21 @@ endif
 #------------------------------------------------------------------------------
 
 
+
 #------------------------------------------------------------------------------
-# The %(objs) and %(endobj) to %(module) with errors in %(err) and using the
-# libraries in use_libs
-%define rule_linkmodule module=\A objs=\A endobj=\A err=\A extradeps= uselibs=
+# Link the %(objs) to the library %(libdir)/lib%(libname).a in
+%define rule_link_linklib libname=/A objs=/A libdir=$(LIBDIR)
+
+%(libdir)/lib%(libname).a : %(objs)
+	%mklib_q from=$^
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Link the %(objs) and %(endobj) to %(module) with errors in %(err) and using
+# the libraries in use_libs
+%define rule_linkmodule module=/A objs=/A endobj=/A err=/A extradeps= uselibs=
 
 %(module) : %(objs) %(endobj) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
 	%link_module_q err="%(err)" endtag="%(endobj)" objs="%(objs)" \
@@ -188,7 +229,7 @@ endif
 # - targetdir: the directory to put the generated .ref file. By default the
 #   .ref file will be put in the same directory as the .c file.
 # - includefile: This file will be included at the head of the source file
-%define rule_ref basename=\A cflags=$(CFLAGS) targetdir= includefile=
+%define rule_ref basename=/A cflags=$(CFLAGS) targetdir= includefile=
 
 ifeq (%(targetdir),)
 GENFILE_TMP := %(basename).ref
@@ -210,7 +251,7 @@ endif
 
 #------------------------------------------------------------------------------
 # Generate the libdefs.h include file for a module.
-%define rule_genlibdefs modname=\A modtype=\A conffile=\A targetdir=\A
+%define rule_genlibdefs modname=/A modtype=/A conffile=/A targetdir=/A
 
 %(targetdir)/%(modname)_libdefs.h : %(conffile) $(GENLIBDEFS)
 	@$(ECHO) "Generating $(notdir $@)"
@@ -222,7 +263,7 @@ endif
 #------------------------------------------------------------------------------
 # Generate dummy support files so cxref when used on the a module source file
 # will find something to include.
-%define rule_genmodule_dummy modname=\A modtype=\A conffile=\A targetdir=\A
+%define rule_genmodule_dummy modname=/A modtype=/A conffile=/A targetdir=/A
 
 %(targetdir)/clib/%(modname)_protos.h %(targetdir)/defines/%(modname).h \
 %(targetdir)/proto/%(modname).h : %(conffile) $(GENMODULEDUMMY)
@@ -236,7 +277,7 @@ endif
 #------------------------------------------------------------------------------
 # Generate the support files for compiling a module. This includes include
 # files and source files.
-%define rule_genmodule modname=\A modtype=\A objdir=\A conffile=\A reffile=\A
+%define rule_genmodule modname=/A modtype=/A objdir=/A conffile=/A reffile=/A
 
 GENFILES_TMP := %(objdir)/%(modname)_start.c %(objdir)/%(modname)_end.c
 
@@ -272,7 +313,7 @@ endif
 #------------------------------------------------------------------------------
 # Build a module
 # Explanation of this macro is done in the developer's manual
-%define build_module mmake=\A modname=\A modtype=\A \
+%define build_module mmake=/A modname=/A modtype=/A \
   conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" \
   linklibfiles= cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) \
   reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID)).ref \
@@ -372,9 +413,13 @@ BD_DEPS$(BDID)      += $(BD_LINKLIBDEPS$(BDID))
 
 # What are the files that need to be generated before the .d and .ref files
 # can be generated ?
+BD_REFFILE_DEPS$(BDID) := $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
+ifeq ($(BD_MODTYPE$(BDID)),library)
+  BD_REFFILE_DEPS$(BDID) += $(addprefix $(BD_OBJDIR$(BDID))/dummyinc/,$(BD_GENINCS$(BDID)))
+endif
 BD_DFILE_DEPS$(BDID) := $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
 ifeq ($(BD_MODTYPE$(BDID)),library)
-  BD_DFILE_DEPS$(BDID) += $(addprefix $(BD_OBJDIR$(BDID))/dummyinc/,$(BD_GENINCS$(BDID)))
+  BD_DFILE_DEPS$(BDID) += $(addprefix $(INCDIR)/,$(BD_GENINCS$(BDID)))
 endif
 
 #MM %(mmake) : %(mmake)-setup
@@ -404,7 +449,7 @@ endif
 %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end   targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 
 # Some include files need to be generated before the .c can be parsed.
-$(BD_REFFILES$(BDID)) : $(BD_DFILE_DEPS$(BDID))
+$(BD_REFFILES$(BDID)) : $(BD_REFFILE_DEPS$(BDID))
 $(BD_DEPS$(BDID)) : $(BD_DFILE_DEPS$(BDID))
 
 # Generation of the autogenerated .c and .h files.
@@ -441,18 +486,70 @@ endif
 
 # For a shared library also build a static link lib
 ifeq ($(BD_MODTYPE$(BDID)),library)
-$(LIBDIR)/lib%(linklibname).a : $(BD_LINKLIBOBJS$(BDID))
-	%mklib_q from=$^
+%rule_link_linklib libname=%(linklibname) objs=$(BD_LINKLIBOBJS$(BDID))
 endif
 
+%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_OBJDIR$(BDID))/dummyinc/defines $(BD_OBJDIR$(BDID))/dummyinc/proto $(BD_OBJDIR$(BDID))/dummyinc/clib" \
+	       setuptarget=setup-module$(BDID)
 
-%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_OBJDIR$(BDID))/dummyinc/defines $(BD_OBJDIR$(BDID))/dummyinc/proto $(BD_OBJDIR$(BDID))/dummyinc/clib" setuptarget=setup-module$(BDID)
-
-ifneq ($(TARGET),%(mmake)-setup)
-%include_deps deps=$(BD_DEPS$(BDID))
-endif
+%include_deps deps=$(BD_DEPS$(BDID)) depstargets=%(mmake)
 %end
 
+
+#------------------------------------------------------------------------------
+# Build a linklib.
+# - mmake is the mmaketarget
+# - libname is the baselibname e.g. lib%(libname).a will be created
+# - files are the C source files to include in the lib
+# - cflags are the flags to compile the source (default $(CFLAGS))
+# - dflags are the flags use during makedepend (default equal to cflags)
+# - objdir is where the .o are generated
+# - libdir is the directory where the linklib will be placed (default $(LIBDIR))
+%define build_linklib mmake=/A libname=/A files="$(basename $(wildcard *.c))" \
+  cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) libdir=$(LIBDIR)
+
+%buildid
+
+# assign and generate the local variables used in this macro
+BD_LIBNAME$(BDID)    := %(libname)
+OBJDIR               ?= $(GENDIR)/$(CURDIR)
+BD_OBJDIR$(BDID)     := %(objdir)
+BD_LIBDIR$(BDID)     := %(libdir)
+
+BD_FILES$(BDID)      := %(files)
+BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
+BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)))))
+BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)))
+
+BD_CFLAGS$(BDID)     := %(cflags)
+ifeq (%(dflags),)
+BD_DFLAGS$(BDID)     := $(BD_CFLAGS$(BDID))
+else
+BD_DFLAGS$(BDID)     := %(dflags)
+endif
+
+BD_LINKLIB$(BDID)    := $(BD_LIBDIR$(BDID))/lib$(BD_LIBNAME$(BDID)).a
+
+.PHONY : setup-linklib$(BDID)
+
+#MM %(mmake) : %(mmake)-setup
+
+%(mmake) : $(BD_LINKLIB$(BDID))
+
+#MM
+%(mmake)-setup : setup-linklib$(BDID)
+
+%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_LIBDIR$(BDID))" \
+	       setuptarget=setup-linklib$(BDID)
+
+%rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
+	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+
+%rule_link_linklib libname=%(libname) objs=$(BD_OBJS$(BDID)) libdir=$(BD_LIBDIR$(BDID))
+
+%include_deps deps=$(BD_DEPS$(BDID)) depstargets=%(mmake)
+%end
+#------------------------------------------------------------------------------
 
 
 
@@ -715,18 +812,6 @@ clean ::
 
 include $(TOP)/config/make.tail
 
-%end
-
-#------------------------------------------------------------------------------
-# Include the dependency files and add some internal rules
-%define include_deps deps=$(DEPS)/M nodepstargets=
-# Include these files but only if the current target is neither
-# setup nor clean.
-ifeq (,$(filter clean% %clean %clean% setup% includes% %(nodepstargets),$(TARGET)))
-  ifneq (%(deps),)
-    -include %(deps)
-  endif
-endif
 %end
 
 #------------------------------------------------------------------------------
