@@ -30,14 +30,7 @@ struct MUI_IconListviewData
     struct Hook *layout_hook;
 };
 
-#ifndef __AROS__
-__asm ULONG IconListview_Layout_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 struct MUI_LayoutMsg *lm)
-#else
-AROS_UFH3(ULONG,IconListview_Layout_Function,
-	AROS_UFHA(struct Hook *, hook,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(struct MUI_LayoutMsg *, lm,  A1))
-#endif
+ULONG IconListview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_LayoutMsg *lm)
 {
     struct MUI_IconListviewData *data = (struct MUI_IconListviewData *)hook->h_Data;
     switch (lm->lm_Type)
@@ -148,14 +141,7 @@ AROS_UFH3(ULONG,IconListview_Layout_Function,
 }
 
 
-#ifndef __AROS__
-__asm ULONG IconListview_Function(register __a0 struct Hook *hook, register __a1 void **msg)
-#else
-AROS_UFH3(ULONG,IconListview_Function,
-	AROS_UFHA(struct Hook *, hook,  A0),
-	AROS_UFHA(APTR, dummy, A2),
-	AROS_UFHA(void **, msg,  A1))
-#endif
+ULONG IconListview_Function(struct Hook *hook, APTR dummyobj, void **msg)
 {
     struct MUI_IconListviewData *data = (struct MUI_IconListviewData *)hook->h_Data;
     int type = (int)msg[0];
@@ -201,7 +187,8 @@ static ULONG IconListview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!usewinborder) button = ScrollbuttonObject, End;
     else button = NULL;
 
-    layout_hook->h_Entry = (HOOKFUNC)IconListview_Layout_Function;
+    layout_hook->h_Entry = HookEntry;
+    layout_hook->h_SubEntry = (HOOKFUNC)IconListview_Layout_Function;
 
     obj = (Object *)DoSuperNew(cl, obj,
     	MUIA_Group_Horiz, FALSE,
@@ -218,7 +205,7 @@ static ULONG IconListview_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    	End,
 	    usewinborder?TAG_IGNORE:Child, button,
 	    End,
-	TAG_DONE);
+       TAG_DONE);
 
     if (!obj)
     {
@@ -232,7 +219,8 @@ static ULONG IconListview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->button = button;
     data->iconlist = iconlist;
 
-    data->hook.h_Entry = (HOOKFUNC)IconListview_Function;
+    data->hook.h_Entry = HookEntry;
+    data->hook.h_SubEntry = (HOOKFUNC)IconListview_Function;
     data->hook.h_Data = data;
     data->layout_hook = layout_hook;
     layout_hook->h_Data = data;
