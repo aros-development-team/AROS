@@ -13,7 +13,7 @@ AROS_LP0(void, RawIOInit,
     struct ExecBase *, SysBase, 84, Exec)
 
 AROS_LP0(LONG, RawMayGetChar,
-    struct ExecBase *, SysBase, 84, Exec)
+    struct ExecBase *, SysBase, 85, Exec)
 
 AROS_LP1(void, RawPutChar,
     AROS_LPA(UBYTE, chr, D0),
