@@ -5,33 +5,44 @@
     Desc: Init of mathieeesingbas.library
     Lang: english
 */
-#include <utility/utility.h> /* this must be before icon_intern.h */
 
+#define AROS_ALMOST_COMPATIBLE
+//#include <utility/utility.h>
 #include "mathieeesingbas_intern.h"
 #include "libdefs.h"
 
+#ifdef SysBase
+#   undef SysBase
+#endif
+#ifdef ExecBase
+#   undef ExecBase
+#endif
+
+/* Customize libheader.c */
+#define LC_SYSBASE_FIELD(lib)	(((struct LIBBASETYPEPTR       )(lib))->misb_SysBase)
+#define LC_SEGLIST_FIELD(lib)   (((struct LIBBASETYPEPTR       )(lib))->misb_SegList)
+#define LC_RESIDENTNAME		Mathieeesingbas_resident
+#define LC_RESIDENTFLAGS	RTF_AUTOINIT|RTF_COLDSTART
+#define LC_RESIDENTPRI		101
+#define LC_LIBBASESIZE		sizeof(struct LIBBASETYPE)
+#define LC_LIBHEADERTYPEPTR	struct LIBBASETYPEPTR
+#define LC_LIB_FIELD(lib)       (((struct LIBBASETYPEPTR)(lib))->LibNode)
+
+#define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB
 #define LC_NO_EXPUNGELIB
-#define LC_RESIDENTPRI	    -120
+#define LC_STATIC_INITLIB
 
 #include <libcore/libheader.c>
-
-#define DEBUG 0
-#include <aros/debug.h>
-#undef kprintf
 
 struct ExecBase   * SysBase; /* global variable */
 
 ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
 {
-    SysBase = lh->lh_SysBase;
+    SysBase = lh->misb_SysBase;
 
     return TRUE;
 } /* L_InitLib */
 
-ULONG SAVEDS L_OpenLib (LC_LIBHEADERTYPEPTR lh)
-{
-    return TRUE;
-} /* L_OpenLib */
 
 

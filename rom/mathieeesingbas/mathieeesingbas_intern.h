@@ -2,6 +2,10 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1998/04/19 14:05:38  bergers
+    Fixed the library to become a resident one. Someone please take a look at its
+    priority ( currently 101).
+
     Revision 1.3  1998/02/02 21:07:21  bergers
     Changed the LONGs to float. The define in mathieeesingbas_intern.h does the trick.
 
@@ -40,6 +44,9 @@
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
+#ifndef EXEC_EXECBASE_H
+#   include <exec/execbase.h>
+#endif
 #ifndef DOS_DOS_H
 #   include <dos/dos.h>
 #endif
@@ -56,8 +63,9 @@ extern struct ExecBase * SysBase;
 
 struct MathIeeeSingBasBase
 {
-    struct Library   library;
-    BPTR	     seglist;
+    struct Library   LibNode;
+    BPTR	     misb_SegList;
+    struct ExecBase  *misb_SysBase;
 };
 
 
