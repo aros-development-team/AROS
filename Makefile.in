@@ -4,14 +4,15 @@
 # $Id$
 
 MMAKE=@MMAKE@
-
 ifeq ($(MMAKE),)
 MMAKE=./mmake
-all: mmake genmf archtool
-else
-all: genmf archtool
 endif
+
+all: $(MMAKE) genmf archtool
 	$(MMAKE)
+
+docs: $(MMAKE)
+	$(MMAKE) .docs
 
 mmake:
 	cd tools/MetaMake; ./configure
@@ -26,4 +27,6 @@ archtool:
 
 clean:
 	$(MMAKE) AROS.clean
+
+.PHONY: all docs clean
 
