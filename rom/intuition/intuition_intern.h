@@ -121,6 +121,7 @@ struct IntIntuitionBase
 #endif
     struct Library	   	* KeymapBase;
     struct Library         	* DOSBase;
+    struct Library          	* InputBase;
     struct Library	   	* TimerBase;
     struct MsgPort	   	* TimerMP;
     struct timerequest	   	* TimerIO;
@@ -255,6 +256,11 @@ struct IntRequestUserData
 #undef KeymapBase
 #endif
 #define KeymapBase (GetPrivIBase(IntuitionBase)->KeymapBase)
+
+#ifdef InputBase
+#undef InputBase
+#endif
+#define InputBase (GetPrivIBase(IntuitionBase)->InputBase)
 
 #ifdef TimerBase
 #undef TimerBase
