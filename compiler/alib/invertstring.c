@@ -95,6 +95,9 @@ extern struct Library *CxBase;
 	    case '\\':
 		ansiCode = '\\';
 		break;
+	    default  :
+#warning FIXME: What to do if "\x" comes?
+		break;
 	    }
 
 	    if(InvertKeyMap(ansiCode, ie, km) == FALSE)
