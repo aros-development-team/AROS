@@ -73,26 +73,18 @@
     while( seg != NULL )
     {
 	/* ??? How do we match system? */
-	if( ( system == TRUE && seg->seg_UC == CMD_SYSTEM )
-         || ( system == FALSE && seg->seg_UC != CMD_SYSTEM ) )
+	if
+	(
+	    ((system == TRUE  && seg->seg_UC == CMD_SYSTEM) ||
+             (system == FALSE && seg->seg_UC >=0))          &&
+	     strcasecmp( name, AROS_BSTR_ADDR(seg->seg_Name)) == 0
+	)
 	{
-	    if( strncasecmp( name, AROS_BSTR_ADDR(seg->seg_Name),
-		    AROS_BSTR_strlen(seg->seg_Name) ) == 0 )
-	    {
 		/* We have a matching segment */
 		return seg;
-	    }
 	}
 	seg = BADDR(seg->seg_Next);
-
-	if( strncmp( name, AROS_BSTR_ADDR(seg->seg_Name), 
-		     AROS_BSTR_strlen(seg->seg_Name) ) == 0 )
-	{
-	    /* We have a matching segment */
-	    return seg;
-	}
-	seg = BADDR(seg->seg_Next);
-    }			
+    }
 
     return NULL;
     AROS_LIBFUNC_EXIT
