@@ -230,6 +230,7 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
     ULONG 			style = FS_NORMAL;
     struct Line 		*line;
     ULONG 			yoffset = 0;
+    ULONG			linelength, max_linelength = 0;
     UBYTE 			fgpen = 1;
     UBYTE 			bgpen = 0;
     ULONG 			tabspace;
@@ -349,6 +350,9 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 			    line->ln_Style = style;
 			    line->ln_Data = NULL;
 
+			    linelength = line->ln_Width + line->ln_XOffset;
+			    if (linelength > max_linelength) max_linelength = linelength;
+			    
 			    /* Add the line to the list */
 			    AddTail(linelist, (struct Node *) line);
 
@@ -377,27 +381,36 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 
                         /* Check to see if layout has been aborted */
                         bsig = CheckSignal (SIGBREAKF_CTRL_C);
-                    }
+			
+                    } /* if (newseg) */
+		    
                 }
-            }
+		
+            } /* if (wrap || gpl->gpl_Initial) */
             else
             {
                 /* No layout to perform */
-                total = si->si_TotVert;
+                total  = si->si_TotVert;
+		max_linelength = si->si_TotHoriz * si->si_HorizUnit;
             }
 	    
 	    DeinitRastPort(&trp);
-        }
+	    
+        } /* if (buffer) */
 
         /* Compute the lines and columns type information */
         si->si_VertUnit  = font->tf_YSize;
         si->si_VisVert   = visible = domain->Height / si->si_VertUnit;
         si->si_TotVert   = total;
 
-        si->si_HorizUnit = hunit = 1;
+/*        si->si_HorizUnit = hunit = 1;
         si->si_VisHoriz  = (LONG) domain->Width / hunit;
-        si->si_TotHoriz  = domain->Width;
-
+        si->si_TotHoriz  = domain->Width;*/
+	
+	si->si_HorizUnit = hunit = font->tf_XSize;
+	si->si_VisHoriz  = domain->Width / hunit;
+	si->si_TotHoriz  = max_linelength / hunit;
+								   
         /* Release the global data lock */
         ReleaseSemaphore (&si->si_Lock);
 
@@ -413,8 +426,8 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
                                DTA_NominalVert	, nomheight				,
                                DTA_VertUnit	, font->tf_YSize			,
 
-                               DTA_VisibleHoriz	, (IPTR) (domain->Width / hunit)	,
-                               DTA_TotalHoriz	, domain->Width				,
+                               DTA_VisibleHoriz	, (domain->Width / hunit)		,
+                               DTA_TotalHoriz	, max_linelength / hunit		,
                                DTA_NominalHoriz	, nomwidth				,
                                DTA_HorizUnit	, hunit					,
 
