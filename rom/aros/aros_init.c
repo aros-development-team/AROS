@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-97 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: aros.library Resident and initialization.
@@ -71,11 +71,11 @@ AROS_LH2(struct LIBBASETYPE *, init,
     /* Set up ArosBase */
     LIBBASE->aros_LibNode.lib_Node.ln_Pri = 0;
     LIBBASE->aros_LibNode.lib_Node.ln_Type = NT_LIBRARY;
-    (const)ArosBase->aros_LibNode.lib_Node.ln_Name = name;
+    (UBYTE const *)ArosBase->aros_LibNode.lib_Node.ln_Name = name;
     LIBBASE->aros_LibNode.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
     LIBBASE->aros_LibNode.lib_Version = LIBVERSION;
     LIBBASE->aros_LibNode.lib_Revision = LIBREVISION;
-    (const)LIBBASE->aros_LibNode.lib_IdString = &version[6];
+    (UBYTE const *)LIBBASE->aros_LibNode.lib_IdString = &version[6];
 
     D(bug("aros.library starting...\n"));
 

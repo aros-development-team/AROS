@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Functions for reading disk font files.
@@ -63,7 +63,7 @@ BPTR LoadSeg_AOS(BPTR file)
   ULONG hunktype, count = 0, first, last, offset, curhunk = 0, numhunks;
   LONG t;
   UBYTE name_buf[255];
-  register i;
+  register int i;
   BPTR last_p = 0;
   static STRPTR segtypes[] = { "CODE", "DATA", "BSS", };
 
@@ -291,7 +291,7 @@ struct TextFont *ConvDiskFont(
 	struct DiskfontBase_intern *DiskfontBase)
 {
 	UWORD count, numchars, id;
-	register i;
+	register int i;
 	
 	UBYTE *ptr;
 	
