@@ -7,6 +7,8 @@
     C Standard Library: locale.h
 */
 
+#include <aros/system.h>
+
 /*
     struct lconv contains members relating to the formatting of numerical
     values. The comments show the default values, ie those used by the "C"
