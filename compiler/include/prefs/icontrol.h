@@ -21,9 +21,7 @@
 
 #define ID_ICTL MAKE_ID('I','C','T','L')
 
-
-struct IControlPrefs
-{
+struct IControlPrefs {
     LONG  ic_Reserved[4];
     UWORD ic_TimeOut;
     WORD  ic_MetaDrag;
@@ -34,6 +32,7 @@ struct IControlPrefs
     UBYTE ic_ReqFalse;
 };
 
+/* Values for ic_Flags */
 #define ICB_COERCE_COLORS 0
 #define ICB_COERCE_LACE   1
 #define ICB_STRGAD_FILTER 2
