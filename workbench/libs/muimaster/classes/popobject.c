@@ -38,9 +38,9 @@ struct MUI_PopobjectData
 };
 
 #ifndef _AROS
-static __asm ULONG Open_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
+static __asm ULONG Popobject_Open_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
 #else
-AROS_UFH3(ULONG,Open_Function,
+AROS_UFH3(ULONG,Popobject_Open_Function,
 	AROS_UFHA(struct Hook *, hook,  A0),
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(void **, msg,  A1))
@@ -85,9 +85,9 @@ AROS_UFH3(ULONG,Open_Function,
 
 
 #ifndef _AROS
-static __asm ULONG Close_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
+static __asm ULONG Popobject_Close_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
 #else
-AROS_UFH3(ULONG,Close_Function,
+AROS_UFH3(ULONG,Popobject_Close_Function,
 	AROS_UFHA(struct Hook *, hook,  A0),
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(void **, msg,  A1))
@@ -159,9 +159,9 @@ static IPTR Popobject_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	}
     }
 
-    data->open_hook.h_Entry = (HOOKFUNC)Open_Function;
+    data->open_hook.h_Entry = (HOOKFUNC)Popobject_Open_Function;
     data->open_hook.h_Data = data;
-    data->close_hook.h_Entry = (HOOKFUNC)Close_Function;
+    data->close_hook.h_Entry = (HOOKFUNC)Popobject_Close_Function;
     data->close_hook.h_Data = data;
 
     SetAttrs(obj,
