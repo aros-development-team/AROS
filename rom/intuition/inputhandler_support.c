@@ -437,7 +437,7 @@ void HandleSysGadgetVerify(struct GadgetInfo *gi, struct Gadget *gadget,
 	    break;
 
 	case GTYP_WDEPTH:
-	    if (NULL == gi->gi_Window->WLayer->front)
+	    if (FALSE == IsLayerHiddenBySibling(gi->gi_Window->WLayer,FALSE))
 	    {
 		/* Send window to back */
 		WindowToBack(gi->gi_Window);
