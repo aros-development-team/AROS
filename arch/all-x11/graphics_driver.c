@@ -528,29 +528,6 @@ int driver_InitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
     return TRUE;
 }
 
-int driver_CreateRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
-{
-    XGCValues gcval;
-    GC gc;
-
-    gcval.plane_mask = sysPlaneMask;
-    gcval.graphics_exposures = True;
-
-    gc = XCreateGC (sysDisplay
-	, DefaultRootWindow (sysDisplay)
-	, GCPlaneMask
-	    | GCGraphicsExposures
-	, &gcval
-    );
-
-    if (!gc)
-	return FALSE;
-
-    SetGC (rp, gc);
-
-    return TRUE;
-}
-
 int driver_CloneRastPort (struct RastPort * newRP, struct RastPort * oldRP,
 			struct GfxBase * GfxBase)
 {
@@ -571,12 +548,15 @@ int driver_CloneRastPort (struct RastPort * newRP, struct RastPort * oldRP,
     return TRUE;
 }
 
-void driver_FreeRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
+void driver_DeinitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
 {
     GC gc;
 
-    gc = GetGC (rp);
+    if ((gc = GetGC (rp)))
+    {
+	XFreeGC (sysDisplay, gc);
 
-    XFreeGC (sysDisplay, gc);
+	SetGC (rp, NULL);
+    }
 }
 
