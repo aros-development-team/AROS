@@ -39,9 +39,8 @@ void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg)
 		   strlen(EG(o)->GadgetText->IText), &te);
         PrintIText(rp,
 	    EG(o)->GadgetText,
-	    container.Left + (container.Width - te.te_Width)/2,
-	    container.Top + container.Height - 1 -
-	    (container.Height - te.te_Height)/2);
+	    container.Left,
+	    container.Top);
 	break; }
 
     case GFLG_LABELSTRING:
