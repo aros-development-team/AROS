@@ -17,7 +17,6 @@ FILES := amiga2date \
 	ilbmtoc \
 	localetest \
 	matchtest \
-	mathffp \
 	messagetest \
 	newmatch \
         keymaptest \
