@@ -126,8 +126,6 @@ static void *const functable[] =
 };
 
 
-static OOP_AttrBase HiddKbdAB = 0;
-
 /****************************************************************************************/
 
 #if NEWSTYLE_DEVICE

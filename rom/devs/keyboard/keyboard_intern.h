@@ -45,6 +45,8 @@ struct KeyboardBase
     
     OOP_Object	   *kb_Hidd;	        /* Hidd object to use */
     struct Library *kb_OOPBase;
+    
+    OOP_AttrBase    HiddKbdAB_;
 };
 
 
@@ -86,6 +88,8 @@ AROS_LC0(BPTR, expunge, struct KeyboardBase *, KBBase, 3, Keyboard)
 #undef OOPBase
 #endif
 #define OOPBase KBBase->kb_OOPBase
+
+#define HiddKbdAB KBBase->HiddKbdAB_
 
 #endif /* KEYBOARD_INTERN_H */
 
