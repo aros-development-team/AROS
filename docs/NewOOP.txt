@@ -710,9 +710,10 @@ A - TODO
 
 3) Have a deeper look at the exceptions handling
 
-4) Write anything that has not been written until now and that needs to :)
+4) Figure out how to handle attributes. The idea is to use set/get methods for each
+   attribute
 
-
+n) Write anything that has not been written until now and that needs to :)
 
 
 B - Contributors
@@ -725,8 +726,8 @@ Fabio Alemagna <falemagn@studenti.unina.it> - The ideator
 C - ChangeLog
 
 $Log$
-Revision 1.8  2001/12/11 19:39:25  falemagn
-Fixed some types and added a little section about how to implement exceptions in AROS
+Revision 1.9  2001/12/11 19:50:10  falemagn
+Added another item to the TODO list
 
 Revision 1.7  2001/12/11 18:55:25  falemagn
 Corrected some typos
