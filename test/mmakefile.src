@@ -20,6 +20,12 @@ FILES := amiga2date \
 	mathffp \
 	messagetest \
 	newmatch \
+        keymaptest \
+        layerstest \
+        inquire \
+        mathtest \
+        cctest \
+        librarytest \
 	scantest \
 	semaphoretest \
 	showvisregion \
