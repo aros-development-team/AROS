@@ -10,7 +10,6 @@ FUNCTIONS := readbattclock resetbattclock writebattclock
   modname=battclock modtype=resource \
   funcs=$(FUNCTIONS) \
   conffile=lib.conf \
-  genshlinklib=$(SHARED_BATTCLOCK) \
   genincludes=yes
 
 %common

@@ -10,9 +10,7 @@ FUNCS := abortio addtime beginio cmptime getsystime subtime
 %build_module_macro mmake=kernel-timer \
   modname=timer modtype=device \
   funcs=$(FUNCS) files=$(FILES) \
-  conffile=lib.conf \
-  genshlinklib=$(SHARED_TIMER)
-  
+  conffile=lib.conf
 
 #MM includes-copy
 

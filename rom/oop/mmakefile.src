@@ -28,8 +28,7 @@ USER_CFLAGS := -DAROS_USE_OOP
   modname=oop modtype=library \
   funcs=$(FUNCS) files=$(FILES) \
   conffile=lib.conf \
-  uselibs=arosc \
-  genshlinklib=$(SHARED_OOP)
+  uselibs=arosc
 
 #MM includes-copy
 

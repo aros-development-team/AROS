@@ -9,8 +9,7 @@ USER_INCLUDES := -I$(TOP)/rom/devs
   modname=gameport modtype=device \
   objdir=$(GENDIR)/rom/gameport \
   initfile=gameport \
-  conffile=lib.conf \
-  genshlinklib=$(SHARED_GAMEPORT)
+  conffile=lib.conf
 
 #MM includes-copy
 

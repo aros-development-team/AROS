@@ -13,7 +13,6 @@ FUNCS := askkeymapdefault mapansi maprawkey setkeymapdefault
 %build_module_macro mmake=kernel-keymap \
   modname=keymap modtype=library \
   funcs=$(FUNCS) files=$(FILES) \
-  conffile=lib.conf \
-  genshlinklib=$(SHARED_KEYMAP)
+  conffile=lib.conf
 
 %common

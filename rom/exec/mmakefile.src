@@ -34,11 +34,9 @@ ALL_FUNCTIONS	:= \
 INIT_FILE   := exec_init
 SYS_FILES   := execfunctions prepareexecbase
 FILES	    := traphandler exec_util idletask
-GENSHLIB    := $(SHARED_EXEC)
 
 ifeq ($(FLAVOUR),palmnative)
 #basically the same as 'not native' a few lines above except for LIB:=.
-GENSHLIB    := no
 FILES	    += romtagscanner
 endif
 
@@ -61,7 +59,7 @@ USER_CFLAGS := -I. -I$(GENINCDIR) -idirafter /usr/include
   files=$(FILES) \
   conffile=lib.conf \
   uselibs=$(DEPLIBS) \
-  genshlinklib=$(GENSHLIB) genfunctable=no
+  genfunctable=no
   
 %common
 

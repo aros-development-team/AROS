@@ -13,7 +13,7 @@ FUNCS	:=  cdinputhandler rawkeyconvert
   conffile=lib.conf \
   uselibs="amiga rom" \
   objdir=$(GENDIR)/rom/console \
-  genshlinklib=$(SHARED_CONSOLE) genfunctable=no genincludes=no
+  genfunctable=no genincludes=no
 
 #MM includes-copy
 

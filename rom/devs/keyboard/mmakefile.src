@@ -8,7 +8,6 @@ USER_INCLUDES := -I$(TOP)/rom/devs
 %build_module_macro mmake=kernel-keyboard \
   modname=keyboard modtype=device \
   initfile=keyboard \
-  conffile=lib.conf \
-  genshlinklib=$(SHARED_KEYBOARD)
+  conffile=lib.conf
 
 %common

@@ -15,7 +15,6 @@ include $(TOP)/config/make.cfg
 %build_module_macro mmake=kernel-aros \
   modname=aros modtype=library \
   funcs=arosinquirea \
-  conffile=lib.conf \
-  genshlinklib=$(SHARED_AROS)
+  conffile=lib.conf
 
 %common
