@@ -54,116 +54,55 @@
 #include <exec/memory.h>
 #include <exec/types.h>
 #include <utility/tagitem.h>
+#include "shcommands.h"
 
-#define ARG_TEMPLATE    "NAME"
-#define ARG_NAME        0
-#define TOTAL_ARGS      1
-
-static const char version[] = "$VER: Unsetenv 41.0 (27.07.1997)\n";
-
-int __nocommandline;
-
-int main(void)
+AROS_SH1(Unsetenv, 41.0, 27.07.1997,
+AROS_SHA(,NAME,,NULL))
 {
-    struct RDArgs       * rda;
-    struct ExAllControl * eac;
-    struct ExAllData    * ead;
-    struct ExAllData    * eaData;
-    IPTR                * args[TOTAL_ARGS] = { NULL };
-    int                   Return_Value;
-    BOOL                  Success;
-    BOOL                  More;
-    BPTR                  Lock;
+    AROS_SHCOMMAND_INIT
 
-    Return_Value = RETURN_OK;
-
-    rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
-    if (rda)
+    if (SHArg(NAME) != NULL)
     {
-        if (args[ARG_NAME] != NULL)
-        {
-            /* Add the new global variable to the list.
+            /* Delete the global variable from the list.
              */
-            Success = DeleteVar((STRPTR)args[ARG_NAME],
-                                GVF_GLOBAL_ONLY
-            );
-            if (Success == FALSE)
-            {
-                PrintFault(IoErr(), "Unsetenv");
-                Return_Value = RETURN_ERROR;
-            }
-        }
-        else
-        {
-            /* Display a list of global variables.
-             */
-            Lock = Lock("ENV:", ACCESS_READ);
-            if (Lock)
-            {
-                eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
-                if (eac)
-                {
-                    eaData = AllocMem(4096, MEMF_ANY | MEMF_CLEAR);
-                    if (eaData)
-                    {
-                        eac->eac_LastKey = 0;
-                        
-                        do
-                        {
-                            More = ExAll(Lock, eaData, 4096, ED_TYPE, eac);
-                            if ((!More) && (IoErr() != ERROR_NO_MORE_ENTRIES))
-                            {
-                                /* Failed abnormally
-                                 */
-                                break;
-                            }
-
-                            if (eac->eac_Entries == 0)
-                            {
-                                /* Failed normally.
-                                 */
-                                continue;
-                            }
-
-                            ead = (struct ExAllData *)eaData;
-                            do
-                            {
-                                if (ead->ed_Type < 0)
-                                {
-                                    FPuts(Output(), ead->ed_Name);
-                                    FPutC(Output(), '\n');
-                                }
-                                ead = ead->ed_Next;
-                            }
-                            while (ead);
-                        }
-                        while (More);
-                        
-                        FreeMem(ead, 4096);
-                    }
-                
-                    FreeDosObject(DOS_EXALLCONTROL, eac);
-                }
-            
-                UnLock(Lock);
-            }
-            else
-            {
-                PrintFault(IoErr(), "Unsetenv");
-
-                Return_Value = RETURN_FAIL;
-            }
-        }
+        if (!DeleteVar((STRPTR)SHArg(NAME), GVF_GLOBAL_ONLY))
+            SHReturn(RETURN_FAIL);
     }
     else
     {
-        PrintFault(IoErr(), "Unsetenv");
+        /* Display a list of global variables.
+         */
+        BPTR lock                 = NULL;
+	struct FileInfoBlock *FIB = NULL;
 
-        Return_Value = RETURN_ERROR;
+	if
+	(
+	    !(lock = Lock("ENV:", ACCESS_READ))    ||
+	    !(FIB = AllocDosObject(DOS_FIB, NULL)) ||
+	    (Examine(lock, FIB) == DOSFALSE)
+	)
+	{
+	    if (FIB) FreeDosObject(DOS_FIB, FIB);
+	    if (lock) UnLock(lock);
+
+	    SHReturn(RETURN_FAIL);
+	}
+
+        while (ExNext(lock, FIB))
+        {
+	    /* don't show dirs */
+            if (FIB->fib_DirEntryType < 0)
+	    {
+                FPuts(Output(),&FIB->fib_FileName);
+		FPuts(Output(),"\n");
+ 	    }
+	}
+
+	FreeDosObject(DOS_FIB, FIB);
+	UnLock(lock);
     }
 
-    if (rda) FreeArgs(rda);
+    SHReturn(RETURN_OK);
 
-    return (Return_Value);
-
+    AROS_SHCOMMAND_EXIT
 } /* main */
