@@ -163,6 +163,8 @@ struct MUI_AreaData
     STRPTR             mad_FrameTitle;     /* for groups. Req. mad_Frame > 0 */
     WORD               mad_HardHeight;     /* if harcoded dim (see flags)  */
     WORD               mad_HardWidth;      /* if harcoded dim (see flags)  */
+    STRPTR  	       mad_HardWidthTxt;
+    STRPTR  	       mad_HardHeightTxt;
     struct MUI_ImageSpec *mad_Background;  /* bg setting */
     struct MUI_ImageSpec *mad_SelBack;     /* selected state background */
     WORD               mad_HardILeft;      /* hardcoded inner values */
