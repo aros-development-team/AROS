@@ -182,12 +182,10 @@ static VOID gc_set(Class *cl, Object *o, struct pRoot_Set *msg)
 static VOID gc_writepixeldirect(Class *cl, Object *o, struct pHidd_GC_WritePixelDirect *msg)
 {
      struct gc_data *data = INST_DATA(cl, o);
-     EnterFunc(bug("X11Gfx.GC::WritePixelDirect(x=%d, y=%d, val=%d)\n",
-     	msg->x, msg->y, msg->val));
      
      XSetForeground(data->display, data->gc, data->hidd2x11cmap[msg->val]);
      XDrawPoint(data->display, data->xwindow, data->gc, msg->x, msg->y);
-     ReturnVoid("X11Gfx.GC::WritePixelDirect");   
+     return;
 }
 
 /*********  GC::ReadPixel()  *********************************/
@@ -198,8 +196,6 @@ static ULONG gc_readpixel(Class *cl, Object *o, struct pHidd_GC_ReadPixel *msg)
     
     XImage *image;
 
-    EnterFunc(bug("X11Gfx.GC::ReadPixel(x=%d, y=%d)\n", msg->x, msg->y));
-
     
     image = XGetImage(data->display
     	, data->xwindow
@@ -209,7 +205,7 @@ static ULONG gc_readpixel(Class *cl, Object *o, struct pHidd_GC_ReadPixel *msg)
 	, ZPixmap);
     
     if (!image)
-    	ReturnInt("X11Gfx.GC::ReadPixel", ULONG, -1L);
+    	return -1L;
     pixel = XGetPixel(image, 0, 0);
     XDestroyImage(image);
     
@@ -217,10 +213,10 @@ static ULONG gc_readpixel(Class *cl, Object *o, struct pHidd_GC_ReadPixel *msg)
     for (i = 0; i < 256; i ++)
     {
         if (pixel == data->hidd2x11cmap[i])
-    	    ReturnInt("X11Gfx.GC::ReadPixel", ULONG, i);		
+    	    return i;
     }
     
-    ReturnInt("X11Gfx.GC::ReadPixel", ULONG, -1L);
+    return -1L;
     
     
 }
@@ -241,8 +237,48 @@ static ULONG gc_writepixel(Class *cl, Object *o, struct pHidd_GC_WritePixel *msg
 
     
 }
+/*********  GC::FillRect()  *************************************/
+static VOID gc_fillrect(Class *cl, Object *o, struct pHidd_GC_DrawRect *msg)
+{
+    struct gc_data *data = INST_DATA(cl, o);
+    
+#warning Handle different drawmodes
+    EnterFunc(bug("X11Gfx.GC::FillRect(%d,%d,%d,%d)\n",
+    	msg->minX, msg->minY, msg->maxX, msg->maxY));
+	
+    XFillRectangle(data->display
+    	, data->xwindow
+	, data->gc
+	, msg->minX
+	, msg->minY
+	, msg->maxX - msg->minX + 1
+	, msg->maxY - msg->minY + 1
+    );
+    ReturnVoid("X11Gfx.GC::FillRect");
+    
 
+}
 
+/*********  GC::CopyArea()  *************************************/
+static VOID gc_copyarea(Class *cl, Object *o, struct pHidd_GC_CopyArea *msg)
+{
+    struct gc_data *data = INST_DATA(cl, o);
+    EnterFunc(bug("X11Gfx.GC::CopyArea( %d,%d to %d,%d of dim %d,%d\n",
+    	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
+#warning Does not handle copying between different windows.
+    XCopyArea(data->display
+    	, data->xwindow	/* src	*/
+	, data->xwindow /* dest */
+	, data->gc
+	, msg->srcX
+	, msg->srcY
+	, msg->width
+	, msg->height
+	, msg->destX
+	, msg->destY
+    );
+    ReturnVoid("X11Gfx.GC::CopyArea");
+}
 /*********  GC::Clear()  *************************************/
 static VOID gc_clear(Class *cl, Object *o, struct pHidd_GC_Clear *msg)
 {
@@ -284,7 +320,7 @@ static VOID gc_clear(Class *cl, Object *o, struct pHidd_GC_Clear *msg)
 
 
 #define NUM_ROOT_METHODS	3
-#define NUM_GC_METHODS 		4
+#define NUM_GC_METHODS 		6
 
 
 Class *init_gcclass(struct x11gfxbase *X11GfxBase)
@@ -303,6 +339,8 @@ Class *init_gcclass(struct x11gfxbase *X11GfxBase)
     	{(IPTR (*)())gc_clear,			moHidd_GC_Clear},
     	{(IPTR (*)())gc_readpixel,		moHidd_GC_ReadPixel},
     	{(IPTR (*)())gc_writepixel,		moHidd_GC_WritePixel},
+    	{(IPTR (*)())gc_fillrect,		moHidd_GC_FillRect},
+    	{(IPTR (*)())gc_copyarea,		moHidd_GC_CopyArea},
 	{NULL, 0UL}
     };
     
