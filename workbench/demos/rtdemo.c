@@ -15,6 +15,7 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/intuition.h>
 
 #include <aros/rt.h>
 
