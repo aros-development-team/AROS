@@ -6,6 +6,7 @@
     Lang: English
 */
 
+#include <aros/debug.h>
 #include "dos_intern.h"
 #include <proto/exec.h>
 

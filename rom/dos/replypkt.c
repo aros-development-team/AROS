@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#include <proto/exec.h>
 #include "dos_intern.h"
 
 /*****************************************************************************

@@ -11,6 +11,7 @@
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
 #include <proto/dos.h>
+#include <proto/utility.h>
 #include "dos_intern.h"
 
 #define  DEBUG  0

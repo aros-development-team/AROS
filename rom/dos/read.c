@@ -5,6 +5,7 @@
     Desc: Read a couple of bytes from a file.
     Lang: english
 */
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>

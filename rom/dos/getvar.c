@@ -5,6 +5,7 @@
     Desc: GetVar - Return the value of a local or global variable.
     Lang: English
 */
+#include <aros/debug.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
 #include "dos_intern.h"

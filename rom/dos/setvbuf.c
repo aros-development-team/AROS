@@ -2,7 +2,9 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 */
+#include <aros/debug.h>
 #include "dos_intern.h"
+#include <proto/exec.h>
 
 /*****************************************************************************
 

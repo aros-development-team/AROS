@@ -6,6 +6,8 @@
     Lang: english
 */
 #include "dos_intern.h"
+#include <proto/exec.h>
+#include <proto/utility.h>
 
 /*****************************************************************************
 

@@ -8,6 +8,7 @@
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
 #include "dos_intern.h"
+#include <proto/exec.h>
 
 /*****************************************************************************
 
