@@ -9,6 +9,7 @@ FILES	:= \
     Alias \
     Break \
     ChangeTaskPri \
+    ConClip \
     Copy \
     Else \
     EndIf \
