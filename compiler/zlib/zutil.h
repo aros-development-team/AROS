@@ -138,10 +138,6 @@ extern const char *z_errmsg[10]; /* indexed by 2-zlib_error */
 #  define fdopen(fd,type)  _fdopen(fd,type)
 #endif
 
-#ifdef AROS
-#  define fdopen(fd,type) NULL /* No fdopen() */
-#endif
-
         /* Common defaults */
 
 #ifndef OS_CODE
