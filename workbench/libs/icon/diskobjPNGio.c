@@ -282,6 +282,8 @@ STATIC BOOL MakePlanarImage(struct NativeIcon *icon, struct Image **img,
 		
     } /* for(y = 0; y < icon->iconPNG.height; y++) */
     
+    return TRUE;
+    
 }
 
 /****************************************************************************************/
@@ -929,7 +931,7 @@ BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
     struct NativeIcon 	*nativeicon = NATIVEICON(dobj);
     struct IconPNG  	*iconpng = &nativeicon->iconPNG;
     UBYTE   	    	*mempos = iconpng->filebuffer;
-    BOOL    	    	 retval = TRUE, done = FALSE;
+    BOOL    	    	 done = FALSE;
     
     /* Write PNG header */
     if (Write(file, iconpng->filebuffer, 8) != 8) return FALSE;
