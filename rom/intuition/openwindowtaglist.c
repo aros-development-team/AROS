@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  1999/01/03 21:49:09  nlorentz
+    Added handling of WA_Zoom tag
+
     Revision 1.7  1998/10/20 16:46:01  hkiel
     Amiga Research OS
 
@@ -137,6 +140,7 @@
 	case WA_SizeBBottom:	MODIFY_FLAG(WFLG_SIZEBBOTTOM);      break;
 	case WA_GimmeZeroZero:	MODIFY_FLAG(WFLG_GIMMEZEROZERO);    break;
 	case WA_NewLookMenus:	MODIFY_FLAG(WFLG_NEWLOOKMENUS);     break;
+	case WA_Zoom:		MODIFY_FLAG(WFLG_HASZOOM);	    break;
 
 	case WA_DetailPen:
 	    if (nw.DetailPen == 0xFF)
@@ -173,7 +177,6 @@
 	case WA_PubScreenFallBack:
 	case WA_WindowName:
 	case WA_Colors:
-	case WA_Zoom:
 	case WA_MouseQueue:
 	case WA_RptQueue:
 	case WA_BackFill:
