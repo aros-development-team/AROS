@@ -39,6 +39,8 @@
 #define MUIM_Application_SetMenuCheck		(METHOD_USER|0x0042a707) /* MUI: V4  */
 #define MUIM_Application_SetMenuState		(METHOD_USER|0x00428bef) /* MUI: V4  */
 #define MUIM_Application_ShowHelp		(METHOD_USER|0x00426479) /* MUI: V4  */
+#define MUIM_Application_SetConfigdata		(METHOD_USER|0x00425ba3) /* Zune 20030407 */
+#define MUIM_Application_OpenWindows		(METHOD_USER|0x00425ba4) /* Zune 20030407 */
 
 /* Method Structures */
 struct MUIP_Application_AboutMUI		{ ULONG MethodID; Object *refwindow; };
@@ -59,6 +61,8 @@ struct MUIP_Application_SetConfigItem		{ ULONG MethodID; ULONG item; APTR data; 
 struct MUIP_Application_SetMenuCheck		{ ULONG MethodID; ULONG MenuID; LONG stat; };
 struct MUIP_Application_SetMenuState		{ ULONG MethodID; ULONG MenuID; LONG stat; };
 struct MUIP_Application_ShowHelp		{ ULONG MethodID; Object *window; char *name; char *node; LONG line; };
+struct MUIP_Application_SetConfigdata		{ ULONG MethodID; APTR configdata; };
+struct MUIP_Application_OpenWindows		{ ULONG MethodID; };
 
 /* Attributes */
 #define MUIA_Application_Active             	(TAG_USER|0x004260ab) /* MUI: V4  isg BOOL              */
@@ -92,6 +96,7 @@ struct MUIP_Application_ShowHelp		{ ULONG MethodID; Object *window; char *name; 
 #define MUIA_Application_Version            	(TAG_USER|0x0042b33f) /* MUI: V4  i.g STRPTR            */
 #define MUIA_Application_Window             	(TAG_USER|0x0042bfe0) /* MUI: V4  i.. Object *          */
 #define MUIA_Application_WindowList         	(TAG_USER|0x00429abe) /* MUI: V13 ..g struct List *     */
+#define MUIA_Application_Configdata         	(TAG_USER|0x00425ba3) /* Zune 20030407 .s. Object *     */
 
 /* MUI Obsolette tags */
 #ifdef MUI_OBSOLETE

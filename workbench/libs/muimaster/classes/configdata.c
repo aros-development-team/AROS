@@ -7,6 +7,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include <exec/types.h>
 #include <prefs/prefhdr.h>
@@ -36,54 +37,6 @@ struct MUI_ConfigdataData
     int test;
 };
 
-
-/*
- * Get the content of the file into the supplied Dataspace object.
- */
-static BOOL LoadPrefs(STRPTR filename, Object *obj)
-{
-    struct IFFHandle *iff;
-    BOOL res = TRUE;
-
-    if ((iff = AllocIFF()))
-    {
-	if ((iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE)))
-	{
-	    InitIFFasDOS(iff);
-
-	    if (!OpenIFF(iff, IFFF_READ))
-	    {
-		StopChunk( iff, MAKE_ID('P','R','E','F'), MAKE_ID('M','U','I','C'));
-
-		while (!ParseIFF(iff, IFFPARSE_SCAN))
-		{
-		    struct ContextNode *cn;
-		    if (!(cn = CurrentChunk(iff)))
-			continue;
-		    if (cn->cn_ID == MAKE_ID('M','U','I','C'))
-			DoMethod(obj, MUIM_Dataspace_ReadIFF, (IPTR)iff);
-		}
-
-		CloseIFF(iff);
-	    }
-	    else
-	    {
-		res = FALSE;
-	    }
-	    Close((BPTR)iff->iff_Stream);
-	}
-	else
-	{
-	    res = FALSE;
-	}
-	FreeIFF(iff);
-    }
-    else
-    {
-	res = FALSE;
-    }
-    return res;
-}
 
 static CONST_STRPTR GetConfigString(Object *obj, ULONG id)
 {
@@ -166,7 +119,7 @@ static void init_imspecs (Object *obj, struct MUI_ConfigdataData *data)
 	data->prefs.imagespecs[img->muiv] = imspec;
 	if (!data->prefs.imagespecs[img->muiv])
 	{
-	    D(bug("*** init_imspecs: null imagespec %ld\n", img->muiv));
+/*  	    D(bug("*** init_imspecs: null imagespec %ld\n", img->muiv)); */
 	}
     }
 }
@@ -261,6 +214,7 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ConfigdataData *data;
     struct TagItem *tags,*tag;
+    STRPTR appbase;
     //APTR cdata;
     int i;
 
@@ -275,13 +229,31 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-	    case    MUIA_Configdata_Application:
-		    data->app = (Object *)tag->ti_Data;
-		    break;
+	    case MUIA_Configdata_Application:
+		data->app = (Object *)tag->ti_Data;
+		break;
 	}
     }
 
-    LoadPrefs("env:zune/global.prefs", obj);
+    if (!DoMethod(obj, MUIM_Configdata_Load, (IPTR)"ENV:zune/global.prefs"))
+    {
+	DoMethod(obj, MUIM_Configdata_Load, (IPTR)"ENVARC:zune/global.prefs");
+    }
+
+    if (data->app)
+    {
+	get(data->app, MUIA_Application_Base, &appbase);
+	if (appbase)
+	{
+	    char filename[255];
+	    snprintf(filename, 255, "ENV:zune/%s.prefs", appbase);
+	    if (!DoMethod(obj, MUIM_Configdata_Load, (IPTR)filename))
+	    {
+		snprintf(filename, 255, "ENVARC:zune/%s.prefs", appbase);
+		DoMethod(obj, MUIM_Configdata_Load, (IPTR)filename);
+	    }
+	}
+    }
 
     /*---------- fonts stuff ----------*/
 
@@ -500,8 +472,8 @@ static IPTR Configdata_SetImspec(struct IClass *cl, Object * obj,
 
     if (!msg->imspec || !*msg->imspec || *msg->imspec == '6')
     {
-	D(bug("Configdata_SetImspec(%p) : id %08lx, val invalid\n",
-	      obj, msg->id));
+/*  	D(bug("Configdata_SetImspec(%p) : id %08lx, val invalid\n", */
+/*  	      obj, msg->id)); */
 	return 0;
     }
 
@@ -510,8 +482,8 @@ static IPTR Configdata_SetImspec(struct IClass *cl, Object * obj,
 	if (DefImspecValues[i].cfgid == msg->id)
 	    if (!strcmp(DefImspecValues[i].defspec, msg->imspec))
 	    {
-		D(bug("Configdata_SetImspec(%p) : set to def, id %08lx, val %s\n",
-		      obj, msg->id, msg->imspec));
+/*  		D(bug("Configdata_SetImspec(%p) : set to def, id %08lx, val %s\n", */
+/*  		      obj, msg->id, msg->imspec)); */
 		DoMethod(obj, MUIM_Dataspace_Remove, msg->id);		
 		return 0;
 	    }
@@ -531,8 +503,8 @@ static IPTR Configdata_SetFramespec(struct IClass *cl, Object * obj,
 
     if (!msg->framespec || !*msg->framespec)
     {
-	D(bug("Configdata_SetFramespec(%p) : id %08lx, val invalid\n",
-	      obj, msg->id));
+/*  	D(bug("Configdata_SetFramespec(%p) : id %08lx, val invalid\n", */
+/*  	      obj, msg->id)); */
 	return 0;
     }
 
@@ -541,8 +513,8 @@ static IPTR Configdata_SetFramespec(struct IClass *cl, Object * obj,
 	if (DefFramespecValues[i].cfgid == msg->id)
 	    if (!strcmp(DefFramespecValues[i].defspec, msg->framespec))
 	    {
-		D(bug("Configdata_SetFramespec(%p) : set to def, id %08lx, val %s\n",
-		      obj, msg->id, msg->framespec));
+/*  		D(bug("Configdata_SetFramespec(%p) : set to def, id %08lx, val %s\n", */
+/*  		      obj, msg->id, msg->framespec)); */
 		DoMethod(obj, MUIM_Dataspace_Remove, msg->id);		
 		return 0;
 	    }
@@ -563,8 +535,8 @@ static IPTR Configdata_SetFont(struct IClass *cl, Object * obj,
 
     if (!msg->font || !*msg->font)
     {
-	D(bug("Configdata_SetFont(%p) : id %08lx, val invalid\n",
-	      obj, msg->id));
+/*  	D(bug("Configdata_SetFont(%p) : id %08lx, val invalid\n", */
+/*  	      obj, msg->id)); */
 	DoMethod(obj, MUIM_Dataspace_Remove, msg->id);
 	return 0;
     }
@@ -614,15 +586,15 @@ static ULONG Configdata_SetULong(struct IClass *cl, Object * obj,
 	if (DefULValues[i].id == msg->id)
 	    if (DefULValues[i].val == v)
 	    {
-		D(bug("Configdata_SetULong(%p) : set to def, id %08lx, val %ld\n",
-		      obj, msg->id, v));
+/*  		D(bug("Configdata_SetULong(%p) : set to def, id %08lx, val %ld\n", */
+/*  		      obj, msg->id, v)); */
 		DoMethod(obj, MUIM_Dataspace_Remove, msg->id);		
 		return 0;
 	    }
     }
 
     v = AROS_LONG2BE(v);
-    D(bug("Configdata_SetULong(%p): adding %08lx to %08lx chunk\n", obj, v, msg->id));
+/*      D(bug("Configdata_SetULong(%p): adding %08lx to %08lx chunk\n", obj, v, msg->id)); */
     DoMethod(obj, MUIM_Dataspace_Add, (IPTR)vp, 4, msg->id);
     return 0;
 }
@@ -701,13 +673,17 @@ static ULONG Configdata_Save(struct IClass *cl, Object * obj,
 
 /**************************************************************************
  MUIM_Configdata_Load
+ Get the content of the file into the object.
 **************************************************************************/
 static ULONG Configdata_Load(struct IClass *cl, Object * obj,
 			     struct MUIP_Configdata_Load *msg)
 {
     struct IFFHandle *iff;
+    ULONG res = TRUE;
+
     if ((iff = AllocIFF()))
     {
+	D(bug("loading prefs from %s\n", msg->filename));
 	if ((iff->iff_Stream = (IPTR)Open(msg->filename,MODE_OLDFILE)))
 	{
 	    InitIFFasDOS(iff);
@@ -726,11 +702,23 @@ static ULONG Configdata_Load(struct IClass *cl, Object * obj,
 
 		CloseIFF(iff);
 	    }
+	    else
+	    {
+		res = FALSE;
+	    }
 	    Close((BPTR)iff->iff_Stream);
+	}
+	else
+	{
+	    res = FALSE;
 	}
 	FreeIFF(iff);
     }
-    return 0;
+    else
+    {
+	res = FALSE;
+    }
+    return TRUE;
 }
 
 
