@@ -143,12 +143,12 @@ do                                        \
 #   define GetSucc(n)                                                                          \
     (                                                                                          \
         ((struct Node *)n)->ln_Succ->ln_Succ ? ((struct Node *)n)->ln_Succ : (struct Node *)0; \
-    }
+    )
 
 #   define GetPred(n)                                                                          \
     (                                                                                          \
         ((struct Node *)n)->ln_Pred->ln_Pred ? ((struct Node *)n)->ln_Pred : (struct Node *)0; \
-    }
+    )
 #endif
 
 #define REMTAIL(_l)                           \
