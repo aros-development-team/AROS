@@ -52,7 +52,7 @@ static int postopen(void)
     userdata->usersize           = sizeof(struct AroscUserData);
 
     /* Tell the library it can now initialize its internal stuff */
-    ret = syscall(arosc_internalinit, userdata);
+    ret = syscall(SYS_arosc_internalinit, userdata);
 
     if (!ret)
     {
@@ -74,7 +74,7 @@ static void preclose(void)
       with the memory we've allocated and so this code
       will always work
     */
-    syscall(arosc_internalexit);
+    syscall(SYS_arosc_internalexit);
 }
 
 ADD2LIBS(AROSCNAME, 39, LIBSET_AROSC_PRI, struct Library *, aroscbase, postopen, preclose);
