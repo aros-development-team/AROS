@@ -13,10 +13,6 @@
 #include <intuition/intuition.h>
 #include "asl_intern.h"
 
-#ifndef __MORPHOS__
-extern struct ExecBase *SysBase;
-#endif
-
 struct LayoutData *AllocCommon(ULONG, struct IntReq *, APTR, struct AslBase_intern *);
 VOID FreeCommon(struct LayoutData *, struct AslBase_intern *);
 BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_intern *);
