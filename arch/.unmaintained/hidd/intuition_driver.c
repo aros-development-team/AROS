@@ -28,6 +28,7 @@
 #include <proto/arossupport.h>
 /* #include <proto/alib.h> */
 #include "intuition_intern.h"
+#include "inputhandler_support.h"
 #include "gadgets.h"
 
 #undef GfxBase
@@ -916,7 +917,7 @@ kprintf("Window %s already has a refresh message pending!!\n",w->Title);
 kprintf("Sending a refresh message to window %s!!\n",w->Title);
   if (!found)
   {
-    IM = alloc_intuimessage(IntuitionBase);
+    IM = alloc_intuimessage(w, IntuitionBase);
     if (NULL != IM)
     {
       IM->Class = IDCMP_REFRESHWINDOW;

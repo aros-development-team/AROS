@@ -23,6 +23,7 @@
 #include "gadgets.h"
 
 #include "intuition_intern.h"
+#include "inputhandler_support.h"
 
 #undef SDEBUG
 #undef DEBUG
@@ -1077,7 +1078,7 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		    
 		    /* Send an IDCMP_CLOSEWINDOW message to the application */
 		    /* Get an empty intuimessage */
-		    imsg = alloc_intuimessage(IntuitionBase);
+		    imsg = alloc_intuimessage(msg->gpi_GInfo->gi_Window, IntuitionBase);
 		    if (imsg)
 		    {
 			/* Fill it in */
