@@ -1030,7 +1030,8 @@ static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos, int y)
 	{
             /* Could be made simpler, as we don't really need the bounds */
 	    zune_text_get_bounds(text, obj);
-	    SetAPen(_rp(obj), muiRenderInfo(obj)->mri_Pens[MPEN_SHADOW]);
+	    /* Note, this was MPEN_SHADOW before */
+	    SetAPen(_rp(obj), muiRenderInfo(obj)->mri_Pens[MPEN_TEXT]);
 	    zune_text_draw(text, obj, x1, x2, y); /* totally wrong! */
 	    zune_text_destroy(text);
 	}
