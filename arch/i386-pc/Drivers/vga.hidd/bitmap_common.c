@@ -295,6 +295,7 @@ static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
             i--;
         }
         buff += add;
+	s_start += (msg->modulo - msg->width);
         cnt--;
     }
     if (data->disp)
@@ -342,6 +343,7 @@ static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
             i--;
         }
         buff += add;
+	s_start += (msg->modulo - msg->width);
         cnt--;
     }
 }
@@ -376,6 +378,7 @@ static VOID MNAME(putimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
             i--;
         }
         buff += add;
+	s_start += (msg->modulo - msg->width);
         cnt--;
     }
     if (data->disp)
