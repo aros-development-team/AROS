@@ -33,7 +33,7 @@ all : depend $(OBJDIR) $(ADFLIB)
 # to define LITT_ENDIAN on little endian machines (intel)
 # checks for sizeof(long)=4, sizeof(short)=2, sizeof(int)=4
 $(OBJDIR)/defendian.h: myconf.aros
-	myconf.aros >> $@
+	./myconf.aros >> $@
 
 $(ADFLIB) : $(foreach f,$(SRC),$(OBJDIR)/$(f).o)
 	@$(MECHO) "Creating adflib/$(notdir $@)..."
