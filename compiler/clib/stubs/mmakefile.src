@@ -7,7 +7,7 @@ FILES		:= $(foreach f,$(FILES), $(STUBSDIR)/$(f))
 OBJS		:= $(foreach f,$(FILES), $(f).o)
 GENSTUBS	:= genstubs
 
-#MM
+#MM clib-stubs : setup
 clib-stubs : $(OBJS)
 
 #MM
@@ -17,6 +17,10 @@ clib-stubs-clean : clean
 clean ::
 	-$(RM) $(STUBSDIR)
 
+#MM
+setup :
+	%mkdirs_q $(STUBSDIR)
+
 $(STUBSDIR)/%.o : $(STUBSDIR)/%.S
 	%compile_q
 
@@ -25,7 +29,6 @@ $(STUBSDIR)/%.S: $(STUBSDIR)/$(GENSTUBS)
 	@$(STUBSDIR)/$(GENSTUBS) $(basename $(notdir $@)) >$@
 
 $(STUBSDIR)/$(GENSTUBS) : $(GENSTUBS).c $(AROS_INCLUDES)/sys/syscall.def $(AROS_INCLUDES)/aros/machine.h
-	%mkdirs_q $(STUBSDIR)
 	@$(HOST_CC) $(HOST_CFLAGS) -I$(AROS_INCLUDES) $< -o $@
 
 %common
