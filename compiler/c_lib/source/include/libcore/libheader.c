@@ -162,28 +162,40 @@ const char ALIGNED LC_BUILDNAME(Copyright) [] = COPYRIGHT_STRING;
 /* Use supplied functions to initialize the non-standard parts of the
    library */
 #ifndef LC_NO_INITLIB
-ULONG SAVEDS STDARGS L_InitLib	(LC_LIBHEADERTYPEPTR lh);
+#   ifdef LC_STATIC_INITLIB
+static
+#   endif
+ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh);
+#   define __L_InitLib LC_BUILDNAME(L_InitLib)
 #else
-#   undef L_InitLib
-#   define L_InitLib(x)         1
+#   define __L_InitLib(x)         1
 #endif
 #ifndef LC_NO_OPENLIB
-ULONG SAVEDS STDARGS L_OpenLib	(LC_LIBHEADERTYPEPTR lh);
+#   ifdef LC_STATIC_OPENLIB
+static
+#   endif
+ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh);
+#   define __L_OpenLib LC_BUILDNAME(L_OpenLib)
 #else
-#   undef L_OpenLib
-#   define L_OpenLib(x)         1
+#   define __L_OpenLib(x)         1
 #endif
 #ifndef LC_NO_CLOSELIB
-void  SAVEDS STDARGS L_CloseLib (LC_LIBHEADERTYPEPTR lh);
+#   ifdef LC_STATIC_CLOSELIB
+static
+#   endif
+void  SAVEDS STDARGS LC_BUILDNAME(L_CloseLib) (LC_LIBHEADERTYPEPTR lh);
+#   define __L_CloseLib LC_BUILDNAME(L_CloseLib)
 #else
-#   undef L_CloseLib
-#   define L_CloseLib(x)        /* eps */
+#   define __L_CloseLib(x)        /* eps */
 #endif
 #ifndef LC_NO_EXPUNGELIB
-void  SAVEDS STDARGS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh);
+#   ifdef LC_STATIC_EXPUNGELIB
+static
+#   endif
+void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh);
+#   define __L_ExpungeLib LC_BUILDNAME(L_ExpungeLib)
 #else
-#   undef L_ExpungeLib
-#   define L_ExpungeLib(x)        /* eps */
+#   define __L_ExpungeLib(x)        /* eps */
 #endif
 
 #ifndef SysBase
@@ -211,10 +223,10 @@ AROS_LH2 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
     LC_SEGLIST_FIELD(lh) = segList;
 
 #ifndef LC_NO_INITLIB
-    if (L_InitLib (lh))
+    if (__L_InitLib (lh))
 	return (lh);
 
-    L_ExpungeLib (lh);
+    __L_ExpungeLib (lh);
 
     {
 	ULONG negsize, possize, fullsize;
@@ -256,7 +268,7 @@ AROS_LH1 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(OpenLib),
     InitModules();
 #endif
 
-    if (L_OpenLib (lh))
+    if (__L_OpenLib (lh))
     {
 #ifndef NOEXPUNGE
 	LC_LIB_FIELD(lh).lib_OpenCnt++;
@@ -266,7 +278,7 @@ AROS_LH1 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(OpenLib),
 
 	LC_LIB_FIELD(lh).lib_Flags &= ~LIBF_DELEXP;
 
-	return(lh);
+	return (lh);
     }
 
     return NULL;
@@ -292,7 +304,7 @@ AROS_LH0 (BPTR, LC_BUILDNAME(CloseLib),
 #ifndef NOEXPUNGE
     LC_LIB_FIELD(lh).lib_OpenCnt--;
 
-    L_CloseLib (lh);
+    __L_CloseLib (lh);
 
     if(!LC_LIB_FIELD(lh).lib_OpenCnt)
     {
@@ -339,7 +351,7 @@ AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
 
 	Remove((struct Node *)lh);
 
-	L_ExpungeLib (lh);
+	__L_ExpungeLib (lh);
 
 	negsize  = LC_LIB_FIELD(lh).lib_NegSize;
 	possize  = LC_LIB_FIELD(lh).lib_PosSize;
