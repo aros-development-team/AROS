@@ -1,0 +1,36 @@
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Basic help functions.
+    Lang: English.
+*/
+
+#include "icon_intern.h"
+
+
+/****************************************/
+/* Copy the deficon name of type	*/
+/* supplied into the mem supplied	*/
+/* (GetDefDiskObject & PutDefDiskObject */
+/****************************************/
+
+VOID GetDefIconName (LONG def_type, UBYTE * deficonname)
+{
+    UBYTE * extname;
+
+    strcpy (deficonname,"ENV:Sys/def_");
+
+    switch(def_type)
+    {
+    case WBDISK   : extname = "Disk";     break;
+    case WBDRAWER : extname = "Drawer";   break;
+    case WBTOOL   : extname = "Tool";     break;
+    case WBPROJECT: extname = "Project";  break;
+    case WBGARBAGE: extname = "Trashcan"; break;
+    case WBKICK   : extname = "Kick";     break;
+    }
+
+    strcat (deficonname, extname);
+} /* GetDefIconName */
+
