@@ -77,7 +77,7 @@
 	{
 	    /* Read mode. Just reinit the buffers. We can't call
 	       Flush() in this case as that would end up in recursion. */
-	    fh->fh_Pos = fh->fh_Buf;
+	    fh->fh_Pos = fh->fh_End = fh->fh_Buf;
 	}
     }
 
