@@ -55,6 +55,11 @@ AROS_LH1(void, FreeIntuiMessage,
 
     if (imsg)
     {
+    	if ((imsg->Class == IDCMP_IDCMPUPDATE) && (imsg->IAddress))
+	{
+            FreeTagItems((struct TagItem *)imsg->IAddress);
+	}
+	
         if (EIM(imsg)->eim_TabletData)
         {
             if (EIM(imsg)->eim_TabletData->td_TagList) FreeTagItems(EIM(imsg)->eim_TabletData->td_TagList);

@@ -197,7 +197,7 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
 
     while ((im = (struct IntuiMessage *)GetMsg(iihdata->IntuiReplyPort)))
     {
-        if (IW(im->IDCMPWindow))
+        if (im->IDCMPWindow && ResourceExisting(im->IDCMPWindow, RESOURCE_WINDOW, IntuitionBase))
         {
             struct IntWindow *win = (struct IntWindow *)im->IDCMPWindow;
 
@@ -216,11 +216,6 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
                 break;
 
             case IDCMP_IDCMPUPDATE:
-                if (im->IAddress)
-                {
-                    FreeTagItems((struct TagItem *)im->IAddress);
-                }
-
                 IW(im->IDCMPWindow)->num_idcmpupdate--;
 
                 if (!(IW(im->IDCMPWindow)->num_idcmpupdate) && IW(im->IDCMPWindow)->messagecache)
