@@ -19,6 +19,9 @@
 #include "support.h"
 #include "prefs.h"
 
+/*  #define MYDEBUG 1 */
+#include "debug.h"
+
 extern struct Library *MUIMasterBase;
 
 struct MUI_PropData
@@ -204,7 +207,7 @@ static ULONG Prop_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 
     if (data->horiz)
     {
-	msg->MinMaxInfo->MinWidth += 12;
+	msg->MinMaxInfo->MinWidth += 6;
 	msg->MinMaxInfo->DefWidth += 50;
 	msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
 
@@ -218,11 +221,14 @@ static ULONG Prop_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 	msg->MinMaxInfo->DefWidth += 6;
 	msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
 
-	msg->MinMaxInfo->MinHeight += 12;
+	msg->MinMaxInfo->MinHeight += 6;
 	msg->MinMaxInfo->DefHeight += 50;
 	msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
     }
-    return TRUE;
+    D(bug("Prop %p minheigh=%d\n",
+	  obj, msg->MinMaxInfo->MinHeight));
+
+   return TRUE;
 }
 
 /**************************************************************************
