@@ -13,7 +13,7 @@ LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS -laros
 
 SUBDIRS = $(KERNEL) aros exec dos utility graphics intuition \
-	filesys libs c
+	filesys libs devs c
 DIST_FILES = makefile arosshell.c README.CVS make.cfg crypt.c \
 	configure scripts/cint2.awk scripts/makefunctable.awk \
 	scripts/genprotos.h
@@ -91,11 +91,7 @@ subdirs:
 	@for dir in $(SUBDIRS) ; do \
 	    echo "Making all in $$dir..." ; \
 	    if ( cd $$dir ; \
-		$(MAKE) $(MFLAGS) \
-		    TOP=".." CURDIR="$(CURDIR)/$$dir" ARCH=$(ARCH) \
-		    CC="$(CC)" COMMON_CFLAGS="$(COMMON_CFLAGS)" \
-		    RM="$(RM)" \
-		    all ) ; \
+		$(MAKE) $(MFLAGS) CURDIR="$(CURDIR)/$$dir" all ) ; \
 	    then echo -n ; else exit 1 ; fi \
 	done
 
@@ -115,27 +111,32 @@ includes: include/clib/exec_protos.h \
 	    include/clib/dos_protos.h \
 	    include/clib/utility_protos.h \
 	    include/clib/graphics_protos.h \
-	    include/clib/intuition_protos.h
+	    include/clib/intuition_protos.h \
+	    include/clib/console_protos.h
 
-include/clib/exec_protos.h: .FORCE
+include/clib/exec_protos.h: $(wildcard $(KERNEL)/*.s $(KERNEL)/*.c exec/*.c)
 	gawk -f scripts/genprotos.h --assign lib=Exec \
 	$(KERNEL)/*.s $(KERNEL)/*.c exec/*.c
 
-include/clib/dos_protos.h: .FORCE
+include/clib/dos_protos.h: $(wildcard dos/*.c)
 	gawk -f scripts/genprotos.h --assign lib=Dos \
 	dos/*.c
 
-include/clib/utility_protos.h: .FORCE
+include/clib/utility_protos.h: $(wildcard utility/*.c)
 	gawk -f scripts/genprotos.h --assign lib=Utility \
 	utility/*.c
 
-include/clib/graphics_protos.h: .FORCE
+include/clib/graphics_protos.h: $(wildcard graphics/*.c)
 	gawk -f scripts/genprotos.h --assign lib=Graphics \
 	graphics/*.c
 
-include/clib/intuition_protos.h: .FORCE
+include/clib/intuition_protos.h: $(wildcard intuition/*.c)
 	gawk -f scripts/genprotos.h --assign lib=Intuition \
 	intuition/*.c
+
+include/clib/console_protos.h: devs/cdinputhandler.c devs/rawkeyconvert.c
+	gawk -f scripts/genprotos.h --assign lib=Console \
+	devs/cdinputhandler.c devs/rawkeyconvert.c
 
 .FORCE:
 
