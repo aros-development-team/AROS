@@ -101,7 +101,7 @@ struct MinList
 #   define SetNodeName(node,name)   \
 	(((struct Node *)(node))->ln_Name = (char *)(name))
 #   define GetNodeName(node)        \
-	(((struct Node *)(node))->ln_Name
+	(((struct Node *)(node))->ln_Name)
 
 #   define ListLength(list,count)   \
 	do {				    \
