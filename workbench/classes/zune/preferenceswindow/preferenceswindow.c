@@ -27,7 +27,7 @@
 #include <aros/debug.h>
 
 /*** Locale functions *******************************************************/
-STRPTR MSG(struct Catalog *catalog, ULONG id)
+CONST_STRPTR MSG(struct Catalog *catalog, ULONG id)
 {
     if (catalog != NULL)
     {
@@ -42,7 +42,7 @@ STRPTR MSG(struct Catalog *catalog, ULONG id)
 #define _(id) MSG(catalog, id)
 
 /*** Methods ****************************************************************/
-IPTR PreferencesWindow__OM_NEW
+Object *PreferencesWindow__OM_NEW
 (
     Class *CLASS, Object *self, struct opSet *message 
 )
@@ -50,8 +50,6 @@ IPTR PreferencesWindow__OM_NEW
     struct PreferencesWindow_DATA *data = NULL; 
     struct TagItem *tag        = NULL;    
     struct Catalog *catalog    = NULL;
-    BPTR            lock       = NULL;
-    BOOL            enableSave = TRUE;
     Object         *contents   = NULL;
     Object         *testButton, *revertButton, 
                    *saveButton, *useButton, *cancelButton;
@@ -159,7 +157,7 @@ IPTR PreferencesWindow__OM_NEW
         if (catalog != NULL) CloseCatalog(catalog);
     }
     
-    return (IPTR) self;
+    return self;
 }
 
 IPTR PreferencesWindow__OM_DISPOSE
