@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/21 15:47:33  digulla
+    Use Amiga types
+
     Revision 1.3  1996/09/11 16:50:52  digulla
     Moved PurgeChunk() to here to avoid problems during link
 
@@ -37,7 +40,7 @@ extern void PurgeChunk (ULONG *, ULONG);
 	void NastyFreeMem (
 
 /*  SYNOPSIS */
-	void * mem,
+	APTR  mem,
 	ULONG size)
 
 /*  FUNCTION
