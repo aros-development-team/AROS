@@ -25,6 +25,9 @@ VAR struct Library              *AslBase;
 VAR struct Library              *GadToolsBase;
 VAR struct Library  	    	*IFFParseBase;
 VAR struct Library  	    	*CyberGfxBase;
+#if USE_SHARED_COOLIMAGES
+VAR struct Library  	    	*CoolImagesBase;
+#endif
 
 VAR struct MsgPort  	    	*InputMP;
 VAR struct timerequest	    	*InputIO;
