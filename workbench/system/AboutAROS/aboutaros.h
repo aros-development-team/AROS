@@ -12,9 +12,6 @@
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *AboutAROS_CLASS;
 
-/*** Methods ****************************************************************/
-#define MUIM_Application_Execute (TAG_USER | 0x20000001)
-
 /*** Macros *****************************************************************/
 #define AboutAROSObject BOOPSIOBJMACRO_START(AboutAROS_CLASS->mcc_Class)
 
