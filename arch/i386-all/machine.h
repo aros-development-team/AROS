@@ -46,6 +46,28 @@ struct JumpVec
 #define __AROS_INITVEC(lib,n)		__AROS_SETVECADDR(lib,n,_aros_not_implemented)
 
 /*
+   Code to use to generate stub functions.
+   It must be *printed* with a function like printf in a file
+   to be compiled with gcc.
+
+   - The first parameter is the function name,
+   - The second parameter is the basename,
+   - The third parameter is the library vector to be called.
+     It's value must be computed by the stub generator with this code:
+     &(__AROS_GETJUMPVEC(0, n+1)->vec), where n is the library vector position in
+     the library vectors list.
+
+*/
+
+#define STUBCODE                                       \
+		"#define EMITSTUB(fname, bname, vec) " \
+		".globl fname ; "                      \
+		"fname : "                             \
+		"movl bname , %%eax; "                 \
+		"jmp *vec(%%eax);\n"                   \
+		"EMITSTUB(%s, %s, %d) "
+
+/*
    We want to activate the execstubs and preserve all registers
    when calling obtainsemaphore, obtainsemaphoreshared, releasesemaphore,
    getcc, permit, forbid, enable, disable
