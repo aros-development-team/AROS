@@ -6,24 +6,24 @@ MSG_TITLE
 Om AROS
 ; About AROS
 ;
-MSG_PERSONAL_BUILD
-** Personal Build
+;MSG_PERSONAL_BUILD
+;** Personal Build
 ; Personal Build
 ;
-MSG_NIGHTLY_BUILD
-** Nightly Build
+;MSG_NIGHTLY_BUILD
+;** Nightly Build
 ; Nightly Build
 ;
-MSG_SNAPSHOT
-** Snapshot
+;MSG_SNAPSHOT
+;** Snapshot
 ; Snapshot
 ;
-MSG_MILESTONE
-** Milestone
+;MSG_MILESTONE
+;** Milestone
 ; Milestone
 ;
-MSG_RELEASE
-** Release
+;MSG_RELEASE
+;** Release
 ; Release
 ;
 MSG_COPYRIGHT
@@ -58,3 +58,6 @@ MSG_PAGE_ACKNOWLEDGEMENTS
 Erkännanden
 ; Acknowledgements
 ;
+MSG_SECTION_TOOLS
+Verktyg
+; Tools
