@@ -43,6 +43,10 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
+
+static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
+static VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
+
 enum {
     DRAGBAR = 0,
     CLOSEGAD,
@@ -57,14 +61,14 @@ struct IntWindow
 {
     struct Window window;
     
-    /* Some direct-pointers to the window system gadgets */
+    /* Some direct-pointers to the window system gadgets 
+       (They are put in windows glist too)
+    */
     Object * sysgads[NUM_SYSGADS];
-    
 
 };
 
 #define IW(x) ((struct IntWindow *)x)
-#define SYSGAD(w, idx) (IW(w)->sysgads[idx])
 
 static struct GfxBase *GfxBase = NULL;
 static struct IntuitionBase * IntuiBase;
@@ -127,6 +131,8 @@ int intui_GetWindowSize (void)
     return sizeof (struct IntWindow);
 }
 
+
+#define TITLEBAR_HEIGHT 14
 int intui_OpenWindow (struct Window * w,
 	struct IntuitionBase * IntuitionBase)
 {
@@ -135,6 +141,10 @@ int intui_OpenWindow (struct Window * w,
     
     D(bug("screen: %p\n", w->WScreen));
     D(bug("bitmap: %p\n", w->WScreen->RastPort.BitMap));
+    
+    /* Just insert some default values, should be taken from
+       w->WScreen->WBorxxxx */
+       
     
     w->WLayer = CreateUpfrontLayer( &w->WScreen->LayerInfo
     		, w->WScreen->RastPort.BitMap
@@ -148,107 +158,16 @@ int intui_OpenWindow (struct Window * w,
      D(bug("Layer created: %p\n", w->WLayer));
     if (w->WLayer)
     {
-        struct DrawInfo *dri;
+	/* Window needs a rastport */
+	w->RPort = w->WLayer->rp;
 	
-	dri = GetScreenDrawInfo(w->WScreen);
-	if (dri)
+	if (createsysgads(w, IntuitionBase))
 	{
 	
-	    struct TagItem dragbar_tags[] = {
-		{GA_Left,	1},
-		{GA_Top,	1},
-		{GA_Width,	w->Width - 12 },
-		{GA_Height,	10 },
-		{TAG_DONE,	0UL}
-	    };
-	
-	    BOOL sysgads_ok = TRUE;
-	
-	
-	
-            /* Window needs a rastport */
-	    w->RPort = w->WLayer->rp;
-	
-	    /* Now find out what gadgets the window want */
-	    if (    w->Flags & WFLG_CLOSEGADGET 
-	     	 || w->Flags & WFLG_DEPTHGADGET
-	     	 || w->Flags & WFLG_HASZOOM
-	    )
-	    {
-	    	/* If any of titlebar gadgets are present, me might as well just
-	       	insert a dragbar too */
-	       
-	    	w->Flags |= WFLG_DRAGBAR;
-	    }
-	
-	    /* Now try to create the various gadgets */
-	    if (w->Flags & WFLG_DRAGBAR)
-	    {
+	    RefreshWindowFrame(w);
 
-	    	SYSGAD(w, DRAGBAR) = NewObjectA(
-	     			GetPrivIBase(IntuitionBase)->dragbarclass
-				, NULL
-				, dragbar_tags );
-				
-	    	if (!SYSGAD(w, DRAGBAR))
-	    	    sysgads_ok = FALSE;
-				
-	    }
-	
-	    if (w->Flags & WFLG_DEPTHGADGET)
-	    {
-	    	struct TagItem depth_tags[] = {
-	            {GA_RelRight,	- 11 		},
-		    {GA_Top,		1  		},
-		    {GA_Width,		10 		},
-		    {GA_Height,		10		},
-		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
-		    {GA_SysGadget,	TRUE		},
-		    {GA_SysGType,	GTYP_WDEPTH 	},
-		    {TAG_DONE,		0UL }
-	    	};
-	    
-	        SYSGAD(w, DEPTHGAD) = NewObjectA(
-	     			GetPrivIBase(IntuitionBase)->tbbclass
-				, NULL
-				, depth_tags );
-
-	    	if (!SYSGAD(w, DEPTHGAD))
-	    	    sysgads_ok = FALSE;
-	    
-	    
-	    }  
-	    
-
-	    D(bug("Dragbar: %p\n",  SYSGAD(w, DRAGBAR) ));
-	    D(bug("Depthgad: %p\n", SYSGAD(w, DEPTHGAD) ));
-	    
-	    /* Don't need drawinfo anymore */
-	    FreeScreenDrawInfo(w->WScreen, dri);
-	
-	
-	    if (sysgads_ok)
-	    {
-		UWORD i;
-	
-	
-	    	/* Refresh window frame */
-	    	D(bug("Adding gadgets\n"));
-		for (i = 0; i < NUM_SYSGADS; i ++)
-		{
-		    if (SYSGAD(w, i))
-	    	    	AddGList(w, (struct Gadget *)SYSGAD(w, i), 0, 1, NULL);
-		}
-	    
-	    	D(bug("Refreshing frame\n"));
-	    	RefreshWindowFrame(w);
-
-	    	ReturnBool("intui_OpenWindow", TRUE);
-	    
-	    }
-	
-	
-	} /* if (got DrawInfo) */
+    	    ReturnBool("intui_OpenWindow", TRUE);
+	}
 	
 	/* Not OK. Free resources */
 	intui_CloseWindow(w, IntuitionBase);
@@ -261,15 +180,7 @@ int intui_OpenWindow (struct Window * w,
 void intui_CloseWindow (struct Window * w,
 	    struct IntuitionBase * IntuitionBase)
 {
-    /* Free system gadges */
-    UWORD i;
-    
-    for (i = 0; i < NUM_SYSGADS; i ++)
-    {
-        if (SYSGAD(w, i))
-	    DisposeObject( SYSGAD(w, i) );
-    }
-    
+    disposesysgads(w, IntuitionBase);
     if (w->WLayer)
     	DeleteLayer(0, w->WLayer);
 }
@@ -358,3 +269,188 @@ void intui_EndRefresh (struct Window * win, BOOL free,
 
 
 
+#define SYSGAD(w, idx) (IW(w)->sysgads[idx])
+
+
+static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
+{
+
+    struct DrawInfo *dri;
+    EnterFunc(bug("createsysgads(w=%p)\n", w));
+	
+    dri = GetScreenDrawInfo(w->WScreen);
+    if (dri)
+    {
+	LONG db_left, db_width, relright; /* dragbar sizes */
+	BOOL sysgads_ok = TRUE;
+	
+	    
+	db_left = 0; db_width = w->Width;
+	
+	
+	
+	
+	/* Now find out what gadgets the window want */
+	if (    w->Flags & WFLG_CLOSEGADGET 
+	     || w->Flags & WFLG_DEPTHGADGET
+	     || w->Flags & WFLG_HASZOOM
+	)
+	{
+	/* If any of titlebar gadgets are present, me might as well just
+	insert a dragbar too */
+	       
+	    w->Flags |= WFLG_DRAGBAR;
+
+	    w->BorderTop = TITLEBAR_HEIGHT;
+	}
+	
+	/* Relright of rightmost button */
+	relright = - (TITLEBAR_HEIGHT - 1);
+	
+	if (w->Flags & WFLG_DEPTHGADGET)
+	{
+	    struct TagItem depth_tags[] = {
+	            {GA_RelRight,	relright	},
+		    {GA_Top,		0  		},
+		    {GA_Width,		TITLEBAR_HEIGHT	},
+		    {GA_Height,		TITLEBAR_HEIGHT	},
+		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
+		    {GA_SysGadget,	TRUE		},
+		    {GA_SysGType,	GTYP_WDEPTH 	},
+		    {TAG_DONE,		0UL }
+	    };
+		
+	    relright -= TITLEBAR_HEIGHT;
+		
+	    db_width -= TITLEBAR_HEIGHT;
+	    
+	    SYSGAD(w, DEPTHGAD) = NewObjectA(
+			GetPrivIBase(IntuitionBase)->tbbclass
+			, NULL
+			, depth_tags );
+
+	    if (!SYSGAD(w, DEPTHGAD))
+		sysgads_ok = FALSE;
+	    
+	    
+	}  
+
+	if (w->Flags & WFLG_HASZOOM)
+	{
+	    struct TagItem zoom_tags[] = {
+	            {GA_RelRight,	relright	},
+		    {GA_Top,		0  		},
+		    {GA_Width,		TITLEBAR_HEIGHT	},
+		    {GA_Height,		TITLEBAR_HEIGHT	},
+		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
+		    {GA_SysGadget,	TRUE		},
+		    {GA_SysGType,	GTYP_WZOOM 	},
+		    {TAG_DONE,		0UL }
+	    };
+		
+	    relright -= TITLEBAR_HEIGHT;
+	    db_width -= TITLEBAR_HEIGHT;
+	    
+	    SYSGAD(w, ZOOMGAD) = NewObjectA(
+			GetPrivIBase(IntuitionBase)->tbbclass
+			, NULL
+			, zoom_tags );
+
+	    if (!SYSGAD(w, ZOOMGAD))
+		sysgads_ok = FALSE;
+	}  
+
+	if (w->Flags & WFLG_CLOSEGADGET)
+	{
+	    struct TagItem close_tags[] = {
+	            {GA_Left,		0		},
+		    {GA_Top,		0  		},
+		    {GA_Width,		TITLEBAR_HEIGHT	},
+		    {GA_Height,		TITLEBAR_HEIGHT	},
+		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
+		    {GA_SysGadget,	TRUE		},
+		    {GA_SysGType,	GTYP_CLOSE 	},
+		    {TAG_DONE,		0UL }
+	    };
+		
+	    db_left  += TITLEBAR_HEIGHT;
+	    db_width -= TITLEBAR_HEIGHT;
+	    
+	    SYSGAD(w, CLOSEGAD) = NewObjectA(
+			GetPrivIBase(IntuitionBase)->tbbclass
+			, NULL
+			, close_tags );
+
+	    if (!SYSGAD(w, CLOSEGAD))
+		sysgads_ok = FALSE;
+	}  
+
+	/* Now try to create the various gadgets */
+	if (w->Flags & WFLG_DRAGBAR)
+	{
+
+	    struct TagItem dragbar_tags[] = {
+			{GA_Left,	db_left		},
+			{GA_Top,	0		},
+			{GA_Width,	db_width 	},
+			{GA_Height,	TITLEBAR_HEIGHT },
+			{TAG_DONE,	0UL}
+	    };
+	    SYSGAD(w, DRAGBAR) = NewObjectA(
+			GetPrivIBase(IntuitionBase)->dragbarclass
+			, NULL
+			, dragbar_tags );
+				
+	    if (!SYSGAD(w, DRAGBAR))
+		sysgads_ok = FALSE;
+				
+	}
+	    
+
+	D(bug("Dragbar:  %p\n", SYSGAD(w, DRAGBAR ) ));
+	D(bug("Depthgad: %p\n", SYSGAD(w, DEPTHGAD) ));
+	D(bug("Zoomgad:  %p\n", SYSGAD(w, ZOOMGAD ) ));
+	D(bug("Closegad: %p\n", SYSGAD(w, CLOSEGAD) ));
+	D(bug("Sizegad:  %p\n", SYSGAD(w, SIZEGAD ) ));
+	    
+	/* Don't need drawinfo anymore */
+	FreeScreenDrawInfo(w->WScreen, dri);
+	
+	if (sysgads_ok)
+	{
+	    UWORD i;
+	
+	
+	    D(bug("Adding gadgets\n"));
+	    for (i = 0; i < NUM_SYSGADS; i ++)
+	    {
+		if (SYSGAD(w, i))
+		    AddGList(w, (struct Gadget *)SYSGAD(w, i), 0, 1, NULL);
+	    }
+	    
+	    D(bug("Refreshing frame\n"));
+
+
+	    ReturnBool("createsysgads", TRUE);
+	    
+	} /* if (sysgads created) */
+	
+	disposesysgads(w, IntuitionBase);
+	
+    } /* if (got DrawInfo) */
+    ReturnBool("createsysgads", FALSE);
+
+}
+
+static VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
+{
+    /* Free system gadges */
+    UWORD i;
+    
+    for (i = 0; i < NUM_SYSGADS; i ++)
+    {
+        if (SYSGAD(w, i))
+	    DisposeObject( SYSGAD(w, i) );
+    }
+
+}
