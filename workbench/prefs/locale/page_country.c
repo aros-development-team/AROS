@@ -55,10 +55,10 @@ static LONG country_init(void)
 	    	GetDTAttrs(entry->dto, PDTA_BitMap, (IPTR *)&entry->flagbm, TAG_DONE);
 	    }
 	    
-	    GetDTAttrs(entry->dto, DTA_NominalHoriz, &val);
+	    GetDTAttrs(entry->dto, DTA_NominalHoriz, &val, TAG_DONE);
 	    entry->flagw = (WORD)val;
 	    
-	    GetDTAttrs(entry->dto, DTA_NominalVert, &val);
+	    GetDTAttrs(entry->dto, DTA_NominalVert, &val, TAG_DONE);
 	    entry->flagh = (WORD)val;
 	    
 	    if (entry->flagbm)
