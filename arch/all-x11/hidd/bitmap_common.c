@@ -503,7 +503,9 @@ static void getimage_xshm(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
     LONG    	    	 current_y;
     LONG    	    	 maxlines;
     OOP_Object      	*pf;
-	
+
+    ASSERT(width > 0 && height > 0);
+    
     data = OOP_INST_DATA(cl, o);
     
     OOP_GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)&pf);
@@ -525,6 +527,8 @@ static void getimage_xshm(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
     	ReturnVoid("X11Gfx.BitMap::PutImage(XShmCreateImage failed)");
 
     bperline = image->bytes_per_line;
+    
+    ASSERT(image->bytes_per_line > 0);
     
     /* Calculate how many scanline can be stored in the buffer */
     maxlines = XSHM_MEMSIZE / image->bytes_per_line; 
@@ -625,6 +629,8 @@ static void getimage_xlib(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
 
 static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {    
+    ASSERT(msg->width > 0 && msg->height > 0);
+    
 #if USE_XSHM
     if (XSD(cl)->use_xshm)
     {
@@ -643,6 +649,7 @@ static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
 
 static VOID MNAME(getimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
 {
+    ASSERT(msg->width != 0 && msg->height != 0);
 #if USE_XSHM
     if (XSD(cl)->use_xshm)
     {
