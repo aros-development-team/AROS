@@ -152,7 +152,7 @@ endif
 
 # Allways generate module in Sys:Hidds/
 
-#MM- workbench-hidds-unix : hidd-parallel-unix-module
+#MM- workbench-hidd-unix : hidd-parallel-unix-module
 
 	
 #MM hidd-parallel-unix-linklib : setup includes hidd-parallel-$(ARCH)-$(CPU)
