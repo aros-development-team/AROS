@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.12  2001/03/04 12:44:49  SDuvan
+    Added debug stuff and made the code somewhat more readable
+
     Revision 1.11  2000/03/24 17:54:38  bernie
     add const qualifier to function paramenters where appropriate
 
@@ -36,11 +39,15 @@
     Added standard header for all files
 
     Desc:
-    Lang: english
+    Lang: English
 */
+
 #include <dos/dosextens.h>
 #include <proto/utility.h>
 #include "dos_intern.h"
+
+# define  DEBUG  0
+# include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -96,26 +103,39 @@
     { 0, LDF_DEVICES, LDF_ASSIGNS, LDF_VOLUMES, LDF_ASSIGNS, LDF_ASSIGNS };
 
     /* Determine the size of the name (-1 if the last character is a ':') */
-    CONST_STRPTR end=name;
+    CONST_STRPTR end = name;
     ULONG size;
-    while(*end++)
+
+    while (*end++)
 	;
-    size=~(name-end);
-    if(size&&end[-2]==':')
+
+    size = ~(name-end);
+
+    if (size && end[-2] == ':')
+    {
 	size--;
+    }
 
     /* Follow the list */   
-    for(;;)
+    for (;;)
     {
 	/* Get next entry. Return NULL if there is none. */
-	dlist=dlist->dol_Next;
-	if(dlist==NULL)
+	dlist = dlist->dol_Next;
+
+	if (dlist == NULL)
+	{
 	    return NULL;
+	}
+	
+	D(bug("Found list entry %s\n", dlist->dol_DevName));
 
 	/* Check type and name */
-	if(flags&flagarray[dlist->dol_Type+1]&&
-	   !Strnicmp(name,dlist->dol_DevName,size)&&!dlist->dol_DevName[size])
+	if (flags & flagarray[dlist->dol_Type + 1] &&
+	    !Strnicmp(name, dlist->dol_DevName, size) && 
+	    !dlist->dol_DevName[size])
+	{
 	    return dlist;
+	}
     }
     AROS_LIBFUNC_EXIT
 } /* FindDosEntry */
