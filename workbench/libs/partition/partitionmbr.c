@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+*/
 
 #include <proto/exec.h>
 #include <proto/partition.h>
@@ -235,6 +240,55 @@ UBYTE i;
 	return 1;
 }
 
+void PartitionMBRSetDosEnvec
+	(
+		struct PartitionHandle *root,
+		struct PCPartitionTable *entry,
+		struct DosEnvec *de
+	)
+{
+ULONG end;
+ULONG track;
+ULONG cyl;
+
+	entry->first_sector =
+		de->de_LowCyl*de->de_Surfaces*de->de_BlocksPerTrack;
+	entry->count_sector =
+		(de->de_HighCyl-de->de_LowCyl+1)*
+		de->de_Surfaces*
+		de->de_BlocksPerTrack;
+	track = entry->first_sector/root->de.de_BlocksPerTrack;
+	cyl = track/root->de.de_Surfaces;
+	if (cyl<255)
+	{
+		entry->start_head = track % root->de.de_Surfaces;
+		entry->start_sector=(entry->first_sector % root->de.de_BlocksPerTrack)+1;
+		entry->start_cylinder = cyl;
+	}
+	else
+	{
+		entry->start_head = 0xFF;
+		entry->start_sector = 0xFF;
+		entry->start_cylinder = 0xFF;
+	}
+	end = entry->first_sector+entry->count_sector;
+	track = end/root->de.de_BlocksPerTrack;
+	cyl = track/root->de.de_Surfaces-1;
+	if (cyl<255)
+	{
+		entry->end_head = (track-1) % root->de.de_Surfaces;
+		entry->end_sector = end - ((track-1)*root->de.de_BlocksPerTrack);
+		entry->end_cylinder = cyl;
+	}
+	else
+	{
+		entry->end_head = 0xFF;
+		entry->end_sector = 0xFF;
+		entry->end_cylinder = 0xFF;
+	}
+}
+
+
 struct PartitionHandle *PartitionMBRAddPartition
 	(
 		struct Library *PartitionBase,
@@ -265,36 +319,7 @@ struct TagItem *tag;
 				entry->status = 0;
 			tag = findTagItem(PT_TYPE, taglist);
 			entry->type = tag ? tag->ti_Data : 0;
-			entry->first_sector =
-				de->de_LowCyl*de->de_Surfaces*de->de_BlocksPerTrack;
-			entry->count_sector =
-				(de->de_HighCyl-de->de_LowCyl+1)*
-				de->de_Surfaces*
-				de->de_BlocksPerTrack;
-			if (de->de_LowCyl<255)
-			{
-				entry->start_head = 0;
-				entry->start_sector = 1;
-				entry->start_cylinder = de->de_LowCyl;
-			}
-			else
-			{
-				entry->start_head = 0xFF;
-				entry->start_sector = 0xFF;
-				entry->start_cylinder = 0xFF;
-			}
-			if (de->de_HighCyl<255)
-			{
-				entry->end_head = de->de_Surfaces-1;
-				entry->end_sector = de->de_BlocksPerTrack;
-				entry->end_cylinder = de->de_HighCyl;
-			}
-			else
-			{
-				entry->end_head = 0xFF;
-				entry->end_sector = 0xFF;
-				entry->end_cylinder = 0xFF;
-			}
+			PartitionMBRSetDosEnvec(root, entry, de);
 			ph = PartitionMBRNewHandle(PartitionBase,	root, pos, entry);
 			if (ph)
 				Enqueue(&root->table->list, &ph->ln);
@@ -425,6 +450,7 @@ LONG PartitionMBRSetPartitionAttrs
 			struct DosEnvec *de;
 				de = (struct DosEnvec *)taglist[0].ti_Data;
 				CopyMem(de, &ph->de, sizeof(struct DosEnvec));
+				PartitionMBRSetDosEnvec(ph->root, data->entry, de);
 			}
 			break;
 		case PT_TYPE:
