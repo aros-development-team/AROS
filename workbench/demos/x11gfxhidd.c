@@ -69,12 +69,6 @@ int main(int argc, char **argv)
 struct Screen * openscreen(void)
 {
   struct Screen * screen;
-  /* 
-    CHEAT!!!
-    OpenScreen() unfortunately does not open any screen so far.
-    So we have to put all the necessary info from the windows
-    rastport into the screen's rastport so we can draw into the screen!
-   */
    
   printf("Opening screen\n");
   screen = OpenScreenTags(NULL,
@@ -82,12 +76,15 @@ struct Screen * openscreen(void)
                           SA_Width, 800,
                           TAG_END);
 
-  printf("Opening window\n");
+  printf("Opening window, screen=%p\n", screen);
 
   window = OpenWindowTags(NULL,
 			  WA_IDCMP, IDCMP_RAWKEY,
-                          WA_Height, 600,
-                          WA_Width, 800,
+			  WA_Left,	100,
+			  WA_Top,	100,
+                          WA_Height, 200,
+                          WA_Width, 200,
+			  WA_CustomScreen, screen,
                           TAG_END);
 
   printf("Window opened\n");
