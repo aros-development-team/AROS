@@ -89,7 +89,8 @@ BOOL set_pixelformat(Object *bm
 #warning Is the below correct in all cases ?
     pf_tags[9].ti_Data = size;
     
-    pf = NewObject(NULL, CLID_Hidd_PixFmt, pf_tags);
+    
+    pf = HIDD_BM_SetPixelFormat(bm, pf_tags);
     if (NULL == pf) {
 	return FALSE;
     }
@@ -97,6 +98,8 @@ BOOL set_pixelformat(Object *bm
 #define PF(x) ((HIDDT_PixelFormat *)x)    
 
 /*
+kprintf("PF: %p\n", pf);
+
 kprintf("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n"
 	, PF(pf)->red_shift
 	, PF(pf)->green_shift
@@ -110,9 +113,8 @@ kprintf("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n"
 	, PF(pf)->size
 	, PF(pf)->depth
 	, PF(pf)->stdpixfmt);
-*/
-    BM_PIXFMT(bm) = pf;
-    
+
+*/    
     return TRUE;
 
 }
@@ -165,12 +167,14 @@ VOID releaseattrbases(struct abdescr *abd, struct Library * OOPBase)
     return;
 }
 
+#undef SysBase
 BOOL obtainattrbases(struct abdescr *abd, struct Library *OOPBase)
 {
     struct abdescr *d;
     for (d = abd; d->interfaceid; d ++)
     {
-        *(d->attrbase) = ObtainAttrBase(abd->interfaceid);
+        *(d->attrbase) = ObtainAttrBase(d->interfaceid);
+	
 	if ( *(d->attrbase) == 0 )
 	{
 	    releaseattrbases(abd, OOPBase);

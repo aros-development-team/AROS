@@ -58,7 +58,7 @@ static struct abdescr attrbases[] =
  (except the DRAWABLE) */
 
 #define SDEBUG 0
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
  
 #include "bitmap_common.c"
@@ -91,10 +91,9 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	
 	/* Get some info passed to us by the x11gfxhidd class */
 	data->display = (Display *)GetTagData(aHidd_X11Gfx_SysDisplay, 0, msg->attrList);
-	data->screen  = GetTagData(aHidd_X11Gfx_SysScreen, 0, msg->attrList);
-	data->cursor = (Cursor)GetTagData(aHidd_X11Gfx_SysCursor, 0, msg->attrList);
-	data->colmap = (Colormap)GetTagData(aHidd_X11Gfx_ColorMap, 0, msg->attrList);
-		
+	data->screen  =            GetTagData(aHidd_X11Gfx_SysScreen,  0, msg->attrList);
+	data->cursor  = (Cursor)   GetTagData(aHidd_X11Gfx_SysCursor,  0, msg->attrList);
+	data->colmap  = (Colormap) GetTagData(aHidd_X11Gfx_ColorMap,   0, msg->attrList);
 	
 	/* Get attr values */
 	GetAttr(o, aHidd_BitMap_Width,		&width);
@@ -121,20 +120,20 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    
 	/* Use backing store for now. (Uses lots of mem) */
 	winattr.backing_store = Always;
+
 LX11	
     
 	winattr.cursor = GetSysCursor();
 	winattr.save_under = True;
+	
 	winattr.background_pixel = WhitePixel(GetSysDisplay(), GetSysScreen());
 	rootwin = DefaultRootWindow (GetSysDisplay());
-	    
 	D(bug("Creating XWindow: root win=%p\n", rootwin));
 	depth = DefaultDepth(GetSysDisplay(), GetSysScreen());
 	
 	/* Update the depth to the one we use */
 	depth_tags[0].ti_Data = depth;
 	SetAttrs(o, depth_tags);
-	
 	DRAWABLE(data) = XCreateWindow( GetSysDisplay()
 	    		, rootwin
 			, 0	/* leftedge 	*/
@@ -188,7 +187,6 @@ UX11
 	    if (NULL != port && NULL != msg) {
 	 
 	    	XGCValues gcval;
-		
 		/* Send a message to the x11 task that the window has been created */
 		msg->notify_type = NOTY_WINCREATE;
 		msg->xwindow = DRAWABLE(data);
@@ -220,7 +218,6 @@ kprintf("WAITING FOR MAPWINDOW REPLY\n");
 kprintf("DONE WAITING FOR MAPWINDOW REPLY\n");
 		GetMsg(port);
 
-kprintf("CREATING GC\n");
 		
 	    	gcval.plane_mask = AllPlanes;
 	    	gcval.graphics_exposures = False;
@@ -236,8 +233,10 @@ UX11
 	    	{
 		    	/* Set the bitmap pixel format in the superclass */
 		    
-		    	if (!set_pixelformat(o, XSD(cl), DRAWABLE(data)))
+		    	if (!set_pixelformat(o, XSD(cl), DRAWABLE(data))) {
+kprintf("!!! SETTING PIXELFORMAT FAILED\n");
 			    ok = FALSE;
+			}
 		    
 	    	} else {
 		    ok = FALSE;
@@ -272,7 +271,7 @@ UX11
 
 
     } /* if (object allocated by superclass) */
-    
+
     ReturnPtr("X11Gfx.BitMap::New()", Object *, o);
 }
 
@@ -324,12 +323,6 @@ LX11
 UX11
 	
     }
-    
-    if (BM_PIXFMT(o)) {
-    	DisposeObject((Object *)BM_PIXFMT(o));
-	BM_PIXFMT(o) = NULL;
-    }
-    	
     
     DoSuperMethod(cl, o, msg);
     

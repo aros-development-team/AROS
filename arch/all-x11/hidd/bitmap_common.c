@@ -57,6 +57,8 @@ static HIDDT_Pixel MNAME(mapcolor)(Class *cl, Object *o, struct pHidd_BitMap_Map
     HIDDT_Pixel blue	= msg->color->blue;
     
     
+    
+    
 
     /* This code assumes that sizeof (HIDDT_Pixel is a multimple of sizeof(col->#?)
        which should be true for most (all ?) systems. (I have never heard
@@ -72,8 +74,9 @@ static HIDDT_Pixel MNAME(mapcolor)(Class *cl, Object *o, struct pHidd_BitMap_Map
     pixel |= (green >> XSD(cl)->green_shift ) & XSD(cl)->vi.green_mask;
     pixel |= (blue  >> XSD(cl)->blue_shift  ) & XSD(cl)->vi.blue_mask;
 #endif    
+    msg->color->pixval = MAP_RGB(red, green, blue, pf);
 
-    return MAP_RGB(red, green, blue, pf);
+    return msg->color->pixval;
 }
 
 static VOID MNAME(unmappixel)(Class *cl, Object *o, struct pHidd_BitMap_UnmapPixel *msg)
@@ -99,6 +102,9 @@ static VOID MNAME(unmappixel)(Class *cl, Object *o, struct pHidd_BitMap_UnmapPix
     msg->color->red	= RED_COMP( msg->pixel, pf);
     msg->color->green	= GREEN_COMP( msg->pixel, pf);
     msg->color->blue	= BLUE_COMP( msg->pixel, pf);
+    
+    /* Unnecesart, but ... */
+    msg->color->pixval	= msg->pixel;
 }
 
 static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
@@ -107,47 +113,55 @@ static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors
     
     
     struct bitmap_data *data = INST_DATA(cl, o);
+    HIDDT_PixelFormat *pf;
     
     ULONG xc_i, col_i;
     
     XColor xc;
     
     /* We assume TruColor display */
-    return TRUE;
+    pf = BM_PIXFMT(pf);
     
+    /* Setting the palette makes no sense for StaticPalette and TrueColor */
+    
+    if (    vHidd_GT_StaticPalette == HIDD_PF_GRAPHTYPE(pf)
+    	 || vHidd_GT_TrueColor == HIDD_PF_GRAPHTYPE(pf) ) {
+
+#warning This could possibly be handled by the superclass instead
+	 for (xc_i = msg->firstColor, col_i = 0;
+	 	col_i < msg->numColors; xc_i ++, col_i ++) {
+		msg->colors[col_i].pixval = HIDD_BM_MapColor(o, &msg->colors[col_i]);
+	 }
+	 return TRUE;
+    }
+	
+    
+    /* Ve have a vHidd_GT_Palette bitmap */    
     
     EnterFunc(bug("X11Gfx.BitMap::SetColors(num=%d, first=%d)\n",
     		msg->numColors, msg->firstColor));
     
     for ( xc_i = msg->firstColor, col_i = 0;
-    		col_i < msg ->numColors; 
+    		col_i < msg->numColors; 
 		xc_i ++, col_i ++ )
     {
+        Bool success;
 	xc.red   = msg->colors[col_i].red;
 	xc.green = msg->colors[col_i].green;
 	xc.blue	 = msg->colors[col_i].blue;
 	
 LX11	
-
-	if (XAllocColor(data->display, data->colmap, &xc))
-	{
-/*	*((ULONG *)0) = 0;
-*/		D(bug("Successfully allocated color (%x, %x, %x)\n",
-			xc.red, xc.green, xc.blue));
-			
-	    /* Remember the color */
-        			
-	}
+	success = XAllocColor(data->display, data->colmap, &xc);
 UX11	
+	if (!success)
+	    return FALSE;
+	
+	msg->colors[col_i].pixval = xc.pixel;
 
-/*	*((ULONG *)0) = 0;
-*/    }
-    
-    
-    ReturnBool("X11Gfx.BitMap::SetColors",  TRUE);
+    }
 
+    return TRUE;
 }
-
 /*********  BitMap::PutPixel()  ***************************/
 
 static VOID MNAME(putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *msg)

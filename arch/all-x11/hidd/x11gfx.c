@@ -45,13 +45,15 @@
 /* Some attrbases needed as global vars.
   These are write-once read-many */
 
-static AttrBase HiddBitMapAttrBase = 0;  
-static AttrBase HiddX11GfxAB = 0;
+static AttrBase HiddBitMapAttrBase	= 0;  
+static AttrBase HiddX11GfxAB		= 0;
+static AttrBase HiddGfxModeAttrBase	= 0;
 
 static struct abdescr attrbases[] =
 {
-    { IID_Hidd_BitMap, &HiddBitMapAttrBase },
-    { IID_Hidd_X11Gfx, &HiddX11GfxAB },
+    { IID_Hidd_BitMap,  &HiddBitMapAttrBase },
+    { IID_Hidd_X11Gfx,  &HiddX11GfxAB },
+    { IID_Hidd_GfxMode, &HiddGfxModeAttrBase },
     { NULL, NULL }
 };
 
@@ -79,10 +81,28 @@ static BOOL initx11stuff(struct gfx_data *data, struct x11_staticdata *xsd);
 static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
 
-    
+
+    struct TagItem pftags[] = {
+    	{ aHidd_PixFmt_RedShift,	0	}, /* 0 */
+	{ aHidd_PixFmt_GreenShift,	0	}, /* 1 */
+	{ aHidd_PixFmt_BlueShift,  	0	}, /* 2 */
+	{ aHidd_PixFmt_AlphaShift,	0	}, /* 3 */
+	{ aHidd_PixFmt_RedMask,		0	}, /* 4 */
+	{ aHidd_PixFmt_GreenMask,	0	}, /* 5 */
+	{ aHidd_PixFmt_BlueMask,	0	}, /* 6 */
+	{ aHidd_PixFmt_AlphaMask,	0	}, /* 7 */
+	{ aHidd_PixFmt_GraphType,	0	}, /* 8 */
+	{ aHidd_PixFmt_Depth,		0	}, /* 9 */
+	{ aHidd_PixFmt_BytesPerPixel,	0	}, /* 10 */
+	{ aHidd_PixFmt_BitsPerPixel,	0	}, /* 11 */
+	{ aHidd_PixFmt_StdPixFmt,	0	}, /* 12 */
+	{ TAG_DONE, 0UL }
+    };
+        
     struct TagItem tags_640_480[] = {
     	{ aHidd_GfxMode_Width,		640	},
 	{ aHidd_GfxMode_Height,		480	},
+	{ aHidd_GfxMode_PixFmtTags,	(IPTR)pftags	},
 	{ TAG_DONE, 0UL }
     };
 
@@ -90,6 +110,7 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
     struct TagItem tags_800_600[] = {
     	{ aHidd_GfxMode_Width,		800	},
 	{ aHidd_GfxMode_Height,		600	},
+	{ aHidd_GfxMode_PixFmtTags,	(IPTR)pftags	},
 	{ TAG_DONE, 0UL }
     };
     
@@ -116,6 +137,22 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 	{
 	
 	    /* Register gfxmodes */
+	    pftags[0].ti_Data = XSD(cl)->red_shift;
+	    pftags[1].ti_Data = XSD(cl)->green_shift;
+	    pftags[2].ti_Data = XSD(cl)->blue_shift;
+	    pftags[3].ti_Data = 0;
+	    
+	    pftags[4].ti_Data = XSD(cl)->vi.red_mask;
+	    pftags[5].ti_Data = XSD(cl)->vi.green_mask;
+	    pftags[6].ti_Data = XSD(cl)->vi.blue_mask;
+	    pftags[7].ti_Data = 0x00000000;
+	    
+	    pftags[8].ti_Data = vHidd_GT_TrueColor;
+	    pftags[9].ti_Data = XSD(cl)->size;
+	    pftags[10].ti_Data = XSD(cl)->bytes_per_pixel;
+	    pftags[11].ti_Data = XSD(cl)->size;
+	    pftags[12].ti_Data = vHidd_PixFmt_Native;
+	    
 	    if (HIDD_Gfx_RegisterGfxModes(o, mode_tags)) {
 
 		ReturnPtr("X11Gfx::New", Object *, o);
@@ -150,7 +187,8 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
 {
 
     BOOL displayable;
-    Object *bm;
+    
+    struct pHidd_Gfx_NewBitMap p;
     
     struct gfx_data *data;
     struct TagItem tags[] =
@@ -172,21 +210,26 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     tags[3].ti_Data = data->colmap;
     tags[4].ti_Data = (IPTR)msg->attrList;
     
+    
+    
 
     /* Displayeable bitmap ? */
     
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
-    if (displayable)
-    {
-    	bm = NewObject(XSD(cl)->onbmclass, NULL, tags);
-    }
-    else
-    {
-	bm = NewObject(XSD(cl)->offbmclass, NULL, tags);
+    if (displayable) {
+    	p.classPtr = XSD(cl)->onbmclass;
+    } else {
+	p.classPtr = XSD(cl)->offbmclass;
     }
     
     
-    ReturnPtr("X11Gfx::NewBitMap", Object *, bm);
+    /* !!! IMPORTANT !!! */
+    p.classID = NULL;
+    p.mID = msg->mID;
+    p.attrList = tags;
+    
+    
+    ReturnPtr("X11Gfx::NewBitMap", Object *, (Object *)DoSuperMethod(cl, o, (Msg)&p));
 }
 
 /******* X11Gfx::Set()  ********************************************/

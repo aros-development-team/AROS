@@ -68,11 +68,9 @@ struct Task *create_x11task( struct x11task_params *params, struct ExecBase *Exe
 VOID x11task_entry(struct x11task_params *xtp);
 
 AttrBase HiddPixFmtAttrBase = 0;
-AttrBase HiddGfxModeAttrBase = 0;
 
 struct abdescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
-	{ IID_Hidd_GfxMode,	&HiddGfxModeAttrBase	},
 	{ NULL, NULL }
 };
 

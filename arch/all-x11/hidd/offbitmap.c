@@ -97,9 +97,9 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	
 	/* Get some info passed to us by the x11gfxhidd class */
 	data->display = (Display *)GetTagData(aHidd_X11Gfx_SysDisplay, 0, msg->attrList);
-	data->screen  = GetTagData(aHidd_X11Gfx_SysScreen, 0, msg->attrList);
-	data->cursor = (Cursor)GetTagData(aHidd_X11Gfx_SysCursor, 0, msg->attrList);
-	data->colmap = (Colormap)GetTagData(aHidd_X11Gfx_ColorMap, 0, msg->attrList);
+	data->screen  =            GetTagData(aHidd_X11Gfx_SysScreen,  0, msg->attrList);
+	data->cursor  = (Cursor)   GetTagData(aHidd_X11Gfx_SysCursor,  0, msg->attrList);
+	data->colmap  = (Colormap) GetTagData(aHidd_X11Gfx_ColorMap,   0, msg->attrList);
 		
 	
 	/* Get attr values */
@@ -242,11 +242,6 @@ LX11
 	XFlush( GetSysDisplay() );
 UX11
 	
-    }
-    
-    if (BM_PIXFMT(o)) {
-    	DisposeObject((Object *)BM_PIXFMT(o));
-	BM_PIXFMT(o) = NULL;
     }
     
     DoSuperMethod(cl, o, msg);
