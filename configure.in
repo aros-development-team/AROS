@@ -226,14 +226,31 @@ case "$target_os" in
 
     amiga*)
 	aros_arch="amiga"
-	aros_cpu="m68k"
-	aros_flavour="nativecompat"
-	strip_prog=strip	# We actually strip binaries here
+	case "$target_cpu" in
+	*m68k*)
+	    aros_cpu="m68k"
+	    aros_flavour="nativecompat"
+	    # strip_prog=strip	# We actually strip binaries here
 
-	aros_common_cflags="-Wall -Wno-uninitialized -O2 -m68020 -m68881 -fomit-frame-pointer -fbuiltin -ffreestanding"
-	aros_mkdepend="$aros_mkdepend -D__GNUC__ -D_AMIGA -DAMIGA"
-	aros_common_aflags="-m68060 -x assembler-with-cpp"
-	aros_shared_default="no"
+	    aros_common_cflags="-Wall -Wno-uninitialized -O2 -m68020 -m68881 -fomit-frame-pointer -fbuiltin -ffreestanding"
+	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -D_AMIGA -DAMIGA"
+	    aros_common_aflags="-m68060 -x assembler-with-cpp"
+	    aros_shared_default="no"
+	    ;;
+	*ppc*)
+	    aros_cpu="ppc"
+	    aros_flavour="native"
+	    strip_prog=strip	# We actually strip binaries here
+
+	    aros_common_cflags="-Wall -Wno-uninitialized -O2 -mpowerpc -mcpu=603e -fomit-frame-pointer -fbuiltin -ffreestanding"
+	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -D_AMIGA -DAMIGA"
+	    aros_common_aflags="-m603e -x assembler-with-cpp"
+	    aros_shared_default="no"
+	    ;;
+	*)
+	    echo "Unknown CPU for Amiga --- $target_cpu"
+	    ;;
+	esac
 	;;
     *)
 	AC_MSG_ERROR([Unsupported target architecture '$target'])
@@ -267,7 +284,17 @@ case "$host_os" in
 
     amiga*)
 	host_arch="amiga"
-	host_cpu="m68k"
+	case "$host_cpu" in
+	*m68k*)
+	    host_cpu="m68k"
+	    ;;
+	*powerpc*)
+	    host_cpu="ppc"
+	    ;;
+	*)
+	    echo "Unknown CPU for Amiga --- $host_cpu"
+	    ;;
+	esac
 	;;
     *)
 	AC_MSG_ERROR([Unsupported target architecture '$host'])
@@ -439,3 +466,4 @@ else
     fi
     mv config/config.h $out
 fi
+

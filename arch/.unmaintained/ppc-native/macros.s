@@ -27,11 +27,12 @@
 
 # very long jump macro
 .macro ljmp
-	push	scr
-	lwz     scr,\1(0)
-	mtlr	scr
-	pop	scr
-	bl
+       push     scr
+       addis    scr,0,\1@h
+       ori      scr,scr,\1@l
+       mtlr     scr
+       pop      scr
+       blr
 .endm
 
 # stack macros
@@ -56,6 +57,21 @@
     mtlr   scr
     pop    scr
     blr
+.endm
+
+# return from supervisor. _Super_ret_addr will point to a global address
+# in the area of exception handler.
+.macro rfs
+	# recall return address
+	pop	scr
+	# push it to srr0, so we can rfi
+	mtsrr0	scr
+	# recall scr, which is put on the stack in the beginning of Supervisor()
+	isync
+	pop	scr
+	sync
+	# return to user context
+	rfi
 .endm
 
 # btst.x macros
