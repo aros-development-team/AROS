@@ -5,7 +5,11 @@
 
 #include <string.h>
 
+#ifdef __AROS__
 #include <proto/alib.h>
+#else
+#include <clib/alib_protos.h>
+#endif
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
