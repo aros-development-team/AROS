@@ -7,6 +7,8 @@
 */
 #include "intuition_intern.h"
 
+void aros_print_not_implemented (char * name);
+
 /*****************************************************************************
 
     NAME */
@@ -49,7 +51,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    return -1;
+    aros_print_not_implemented("EasyRequestArgs");
 
+    return 0;
     AROS_LIBFUNC_EXIT
 } /* EasyRequestArgs */
