@@ -1,3 +1,6 @@
+#ifndef _MUI_CLASSES_GROUP_H
+#define _MUI_CLASSES_GROUP_H
+
 /* 
     Copyright © 1999, David Le Corfec.
     Copyright © 2002-2003, The AROS Development Team.
@@ -6,12 +9,13 @@
     $Id$
 */
 
-#ifndef _MUI_CLASSES_GROUP_H
-#define _MUI_CLASSES_GROUP_H
+/*** Name *******************************************************************/
+#define MUIC_Group                 "Group.mui"
 
-#define MUIC_Group "Group.mui"
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Group                 (MUIB_ZUNE | 0x00001000)
 
-/* Group methods */
+/*** Methods ****************************************************************/
 #define MUIM_Group_ExitChange      (MUIB_MUI|0x0042d1cc) /* MUI: V11 */
 #define MUIM_Group_InitChange      (MUIB_MUI|0x00420887) /* MUI: V11 */
 #define MUIM_Group_Sort            (MUIB_MUI|0x80427417) /* MUI: V4  */
@@ -19,7 +23,7 @@ struct MUIP_Group_ExitChange       {ULONG MethodID;};
 struct MUIP_Group_InitChange       {ULONG MethodID;};
 struct MUIP_Group_Sort             {ULONG MethodID; Object *obj[1];};
 
-/* Group attributes */
+/*** Attributes *************************************************************/
 #define MUIA_Group_ActivePage      (MUIB_MUI|0x00424199) /* MUI: V5  isg LONG          */
 #define MUIA_Group_Child           (MUIB_MUI|0x004226e6) /* MUI: V4  i.. Object *      */
 #define MUIA_Group_ChildList       (MUIB_MUI|0x00424748) /* MUI: V4  ..g struct List * */
@@ -75,6 +79,7 @@ enum
 #define MUIM_Group_DoMethodNoForward (MUIB_MUI|0x1042e1c1)
 struct MUIP_Group_DoMethodNoForward {ULONG MethodID; ULONG DoMethodID; }; /* msg stuff follows */
 
+
 extern const struct __MUIBuiltinClass _MUI_Group_desc; /* PRIV */
 
-#endif
+#endif /* _MUI_CLASSES_GROUP_H */

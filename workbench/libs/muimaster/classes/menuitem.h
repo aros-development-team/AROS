@@ -1,31 +1,44 @@
+#ifndef _MUI_CLASSES_MENUITEM_H
+#define _MUI_CLASSES_MENUITEM_H
+
 /*
     Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef _MUI_CLASSES_MENUSTRIP_H
-#define _MUI_CLASSES_MENUSTRIP_H
+/****************************************************************************/
+/*** Name *******************************************************************/
+#define MUIC_Menustrip         "Menustrip.mui"
 
-/**************************************************************************
- Menustrip
-**************************************************************************/
-#define MUIC_Menustrip "Menustrip.mui"
-/* Menustrip attributes */
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Menustrip         (MUIB_ZUNE | 0x00001a00)
+
+/*** Attributes *************************************************************/
 #define MUIA_Menustrip_Enabled (MUIB_MUI|0x0042815b) /* MUI: V8  isg BOOL */
 
-/**************************************************************************
- Menu
-**************************************************************************/
-#define MUIC_Menu "Menu.mui"
-/* Menu attributes */
+
+
+/****************************************************************************/
+/*** Name *******************************************************************/
+#define MUIC_Menu         "Menu.mui"
+
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Menu         (MUIB_ZUNE | 0x00001b00)  
+
+/*** Attributes *************************************************************/
 #define MUIA_Menu_Enabled (MUIB_MUI|0x0042ed48) /* MUI: V8  isg BOOL   */
 #define MUIA_Menu_Title   (MUIB_MUI|0x0042a0e3) /* MUI: V8  isg STRPTR */
 
-/**************************************************************************
- Menuitem
-**************************************************************************/
-#define MUIC_Menuitem "Menuitem.mui"
-/* Menuitem attributes */
+
+
+/****************************************************************************/
+/*** Name *******************************************************************/
+#define MUIC_Menuitem               "Menuitem.mui"
+
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Menuitem               (MUIB_ZUNE | 0x00001c00)
+
+/*** Attributes *************************************************************/
 #define MUIA_Menuitem_Checked       (MUIB_MUI|0x0042562a) /* MUI: V8  isg BOOL              */
 #define MUIA_Menuitem_Checkit       (MUIB_MUI|0x00425ace) /* MUI: V8  isg BOOL              */
 #define MUIA_Menuitem_CommandString (MUIB_MUI|0x0042b9cc) /* MUI: V16 isg BOOL              */
@@ -46,5 +59,4 @@ extern const struct __MUIBuiltinClass _MUI_Menuitem_desc; /* PRIV */
 extern const struct __MUIBuiltinClass _MUI_Menu_desc; /* PRIV */
 extern const struct __MUIBuiltinClass _MUI_Menustrip_desc; /* PRIV */
 
-#endif
-
+#endif /* _MUI_CLASSES_MENUITEM_H */

@@ -1,16 +1,18 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #ifndef _MUI_CLASSES_BOOPSI_H
 #define _MUI_CLASSES_BOOPSI_H
 
-#define MUIC_Boopsi "Boopsi.mui"
+/*** Name *******************************************************************/
+#define MUIC_Boopsi             "Boopsi.mui"
 
-/* Boopsi attributes */
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Boopsi             (MUIB_ZUNE | 0x00000600)
+
+/*** Attributes *************************************************************/
 #define MUIA_Boopsi_Class       (MUIB_MUI|0x00426999) /* V4  isg struct IClass * */
 #define MUIA_Boopsi_ClassID     (MUIB_MUI|0x0042bfa3) /* V4  isg char *          */
 #define MUIA_Boopsi_MaxHeight   (MUIB_MUI|0x0042757f) /* V4  isg ULONG           */
@@ -27,6 +29,7 @@
 /* The following tag is Zune Private */
 #define MUIA_Boopsi_OnlyTrigger (MUIB_MUI|0x1042e11e) /* ZV1 PRIV (for notification) */
 
+
 extern const struct __MUIBuiltinClass _MUI_Boopsi_desc; /* PRIV */
 
-#endif
+#endif /* _MUI_CLASSES_BOOPSI_H */

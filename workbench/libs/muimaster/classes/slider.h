@@ -1,3 +1,6 @@
+#ifndef _MUI_CLASSES_SLIDER_H
+#define _MUI_CLASSES_SLIDER_H
+
 /* 
     Copyright © 1999, David Le Corfec.
     Copyright © 2002-2003, The AROS Development Team.
@@ -6,12 +9,13 @@
     $Id$
 */
 
-#ifndef _MUI_CLASSES_SLIDER_H
-#define _MUI_CLASSES_SLIDER_H
+/*** Name *******************************************************************/
+#define MUIC_Slider          "Slider.mui"
 
-#define MUIC_Slider "Slider.mui"
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Slider          (MUIB_ZUNE | 0x00003300)
 
-/* Slider attributes */
+/*** Attributes *************************************************************/
 #define MUIA_Slider_Horiz    (MUIB_MUI|0x0042fad1) /* V11 isg BOOL */
 #define MUIA_Slider_Quiet    (MUIB_MUI|0x00420b26) /* V6  i.. BOOL */
 
@@ -22,6 +26,7 @@
 #define MUIA_Slider_Reverse  (MUIB_MUI|0x0042f2a0) /* V4  isg BOOL */
 #endif /* MUI_OBSOLETE */
 
+
 extern const struct __MUIBuiltinClass _MUI_Slider_desc; /* PRIV */
 
-#endif
+#endif /* _MUI_CLASSES_SLIDER_H */

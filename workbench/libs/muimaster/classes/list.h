@@ -1,14 +1,19 @@
+#ifndef _MUI_CLASSES_LIST_H
+#define _MUI_CLASSES_LIST_H
+
 /*
     Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef _MUI_CLASSES_LIST_H
-#define _MUI_CLASSES_LIST_H
+/****************************************************************************/
+/*** Name *******************************************************************/
+#define MUIC_List                     "List.mui"
 
-#define MUIC_List "List.mui"
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_List                     (MUIB_ZUNE | 0x00001400)  
 
-/* List methods */
+/*** Methods ****************************************************************/
 #define MUIM_List_Clear               (MUIB_MUI|0x0042ad89) /* MUI: V4  */
 #define MUIM_List_CreateImage         (MUIB_MUI|0x00429804) /* MUI: V11 */
 #define MUIM_List_DeleteImage         (MUIB_MUI|0x00420f58) /* MUI: V11 */
@@ -40,7 +45,7 @@ struct MUIP_List_Select               {ULONG MethodID; LONG pos; LONG seltype; L
 struct MUIP_List_Sort                 {ULONG MethodID;};
 struct MUIP_List_TestPos              {ULONG MethodID; LONG x; LONG y; struct MUI_List_TestPos_Result *res;};
 
-/* List attributes */
+/*** Attributes *************************************************************/
 #define MUIA_List_Active              (MUIB_MUI|0x0042391c) /* MUI: V4  isg LONG          */
 #define MUIA_List_AdjustHeight        (MUIB_MUI|0x0042850d) /* MUI: V4  i.. BOOL          */
 #define MUIA_List_AdjustWidth         (MUIB_MUI|0x0042354a) /* MUI: V4  i.. BOOL          */
@@ -209,39 +214,54 @@ struct MUIP_List_InsertSingleAsTree   {ULONG MethodID; APTR entry; LONG parent; 
 
 extern const struct __MUIBuiltinClass _MUI_List_desc; /* PRIV */
 
-/**************************************************************************
- Floattext
-**************************************************************************/
-#define MUIC_Floattext "Floattext.mui"
 
-/* Floattext attributes */
+
+/****************************************************************************/
+/*** Name *******************************************************************/
+#define MUIC_Floattext           "Floattext.mui"
+
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Floattext           (MUIB_ZUNE | 0x00001500)
+
+/*** Attributes *************************************************************/
 #define MUIA_Floattext_Justify   (MUIB_MUI|0x0042dc03) /* MUI: V4  isg BOOL   */
 #define MUIA_Floattext_SkipChars (MUIB_MUI|0x00425c7d) /* MUI: V4  is. STRPTR */
 #define MUIA_Floattext_TabSize   (MUIB_MUI|0x00427d17) /* MUI: V4  is. LONG   */
 #define MUIA_Floattext_Text      (MUIB_MUI|0x0042d16a) /* MUI: V4  isg STRPTR */
 
 
-/**************************************************************************
- Volumelist
-**************************************************************************/
+
+/****************************************************************************/
+/*** Name *******************************************************************/
 #define MUIC_Volumelist "Volumelist.mui"
 
-/**************************************************************************
- Scrmodelist
-**************************************************************************/
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Volumelist (MUIB_ZUNE | 0x00001600)  
+
+
+
+/****************************************************************************/
+/*** Name *******************************************************************/
 #define MUIC_Scrmodelist "Scrmodelist.mui"
 
-/**************************************************************************
- Dirlist
-**************************************************************************/
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Scrmodelist (MUIB_ZUNE | 0x00001700)
+
+
+
+/****************************************************************************/
+/*** Name *******************************************************************/
 #define MUIC_Dirlist "Dirlist.mui"
 
-/* Dirlist methods */
+/*** Identifer base (for Zune extensions) ***********************************/
+#define MUIB_Dirlist (MUIB_ZUNE | 0x00001800)  
+
+/*** Methods ****************************************************************/
 
 #define MUIM_Dirlist_ReRead         (MUIB_MUI|0x00422d71) /* MUI: V4  */
 struct  MUIP_Dirlist_ReRead         {ULONG MethodID;};
 
-/* Dirlist attributes */
+/*** Attributes *************************************************************/
 #define MUIA_Dirlist_AcceptPattern  (MUIB_MUI|0x0042760a) /* MUI: V4  is. STRPTR        */
 #define MUIA_Dirlist_Directory      (MUIB_MUI|0x0042ea41) /* MUI: V4  isg STRPTR        */
 #define MUIA_Dirlist_DrawersOnly    (MUIB_MUI|0x0042b379) /* MUI: V4  is. BOOL          */
@@ -261,7 +281,7 @@ struct  MUIP_Dirlist_ReRead         {ULONG MethodID;};
 #define MUIA_Dirlist_Status         (MUIB_MUI|0x004240de) /* MUI: V4  ..g LONG          */
 
 enum {
-	  MUIV_Dirlist_SortDirs_First = 0,
+    MUIV_Dirlist_SortDirs_First = 0,
     MUIV_Dirlist_SortDirs_Last,
     MUIV_Dirlist_SortDirs_Mix,
 };
@@ -279,4 +299,4 @@ enum {
 };
 
 
-#endif
+#endif /* _MUI_CLASSES_LIST_H */

@@ -1,14 +1,18 @@
+#ifndef _MUI_CLASSES_SEMAPHORE_H
+#define _MUI_CLASSES_SEMAPHORE_H
+
 /*
     Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef _MUI_CLASSES_SEMAPHORE_H
-#define _MUI_CLASSES_SEMAPHORE_H
-
+/*** Name *******************************************************************/
 #define MUIC_Semaphore "Semaphore.mui"
 
-/* Semaphore methods */
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Semaphore (MUIB_ZUNE | 0x00003000)
+
+/*** Methods ****************************************************************/
 #define MUIM_Semaphore_Attempt       (MUIB_MUI|0x00426ce2) /* MUI: V11 */
 #define MUIM_Semaphore_AttemptShared (MUIB_MUI|0x00422551) /* MUI: V11 */
 #define MUIM_Semaphore_Obtain        (MUIB_MUI|0x004276f0) /* MUI: V11 */
@@ -20,6 +24,7 @@ struct MUIP_Semaphore_Obtain         {ULONG MethodID;};
 struct MUIP_Semaphore_ObtainShared   {ULONG MethodID;};
 struct MUIP_Semaphore_Release        {ULONG MethodID;};
 
+
 extern const struct __MUIBuiltinClass _MUI_Semaphore_desc; /* PRIV */
 
-#endif
+#endif /* _MUI_CLASSES_SEMAPHORE_H */

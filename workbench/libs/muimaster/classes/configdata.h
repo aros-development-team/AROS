@@ -6,7 +6,11 @@
 #ifndef _MUI_CLASSES_CONFIGDATA_H
 #define _MUI_CLASSES_CONFIGDATA_H
 
-#define MUIC_Configdata "Configdata.mui"
+/*** Name *******************************************************************/
+#define MUIC_Configdata  "Configdata.mui"
+
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Configdata  (MUIB_ZUNE | 0x00000900)
 
 /* The config items for MUIM_GetConfigItem */
 #define MUICFG_Invalid                  (-1L)
@@ -98,6 +102,7 @@
 #define MUICFG_Background_ReadList      0x96
 
 
+/*** Methods ****************************************************************/
 #define MUIM_Configdata_GetString      (MUIB_MUI|0x00426621) /* Zune 20030319 */
 #define MUIM_Configdata_GetULong       (MUIB_MUI|0x00427253) /* Zune 20030319 */
 #define MUIM_Configdata_SetULong       (MUIB_MUI|0x00427224) /* Zune 20030320 */
@@ -115,11 +120,12 @@ struct MUIP_Configdata_SetFont         {ULONG MethodID; ULONG id; CONST_STRPTR f
 struct MUIP_Configdata_Save            {ULONG MethodID; CONST_STRPTR filename; };
 struct MUIP_Configdata_Load            {ULONG MethodID; CONST_STRPTR filename; };
 
-
+/*** Attributes *************************************************************/
 #define MUIA_Configdata_Application (MUIB_MUI|0x10203453) /* ZV1: i..  Object * */
 #define MUIA_Configdata_ZunePrefs   (MUIB_MUI|0x10203454) /* ZV1: PRIV .g.  struct ZunePrefsNew * */
 #define MUIA_Configdata_ApplicationBase (MUIB_MUI|0x10203455) /* ZV1: i..  Object * */
 
+
 extern const struct __MUIBuiltinClass _MUI_Configdata_desc; /* PRIV */
 
-#endif
+#endif /* _MUI_CLASSES_CONFIGDATA_H */
