@@ -48,7 +48,7 @@ static unsigned int a = 1;
 /*****************************************************************************
 
     NAME */
-#include <stdlib.h>
+	#include <stdlib.h>
 
 	void srand (
 

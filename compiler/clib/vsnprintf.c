@@ -31,7 +31,7 @@ static int _vsnprintf_uc (int c, struct data * data)
 /*****************************************************************************
 
     NAME */
-#include <stdio.h>
+	#include <stdio.h>
 #include <stdarg.h>
 
 	int vsnprintf (
