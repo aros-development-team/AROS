@@ -33,7 +33,7 @@
 #include "kbd.h"
 #include "keys.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 /****************************************************************************************/
@@ -92,7 +92,11 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     BOOL    	    has_kbd_hidd = FALSE;
     
     EnterFunc(bug("Kbd::New()\n"));
- 
+
+#if 1 /* FIXME: REMOVEME: just a debugging thing for the weird s-key problem */
+    SysBase->ex_Reserved2[1] = (ULONG)std_keytable;
+#endif
+     
     ObtainSemaphoreShared( &XSD(cl)->sema);
 
     if (XSD(cl)->kbdhidd)
