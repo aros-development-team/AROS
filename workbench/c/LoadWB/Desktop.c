@@ -30,9 +30,20 @@ extern APTR vi;
 struct Window  * wbwindow;
 struct Menu *    menus = NULL;
 
+
+#define WBWINDOW_MINWIDTH	160
+#define WBWINDOW_MINHEIGHT	120
+WORD wbwindowZoom[4] =
+{
+    0, 0,
+    WBWINDOW_MINWIDTH, WBWINDOW_MINHEIGHT
+};
+/* WBZoom points to wbwindowZoom unless in Backdrop mode */ 
+WORD *WBZoom = NULL;
+
 struct Desktop Desktop =
 {
-    TRUE
+    TRUE	/* Backdrop */
 };
 
 static struct NewMenu nm[] =
@@ -105,6 +116,7 @@ ULONG WinFlags;
 	    backdropitem->Flags |= CHECKED;
 	}
 	WinFlags |= (WFLG_BACKDROP | WFLG_BORDERLESS);
+	WBZoom = NULL;
     }
     else
     {
@@ -113,20 +125,26 @@ ULONG WinFlags;
 	    struct MenuItem *backdropitem = ItemAddress( menus, FULLMENUNUM(0,0,0) );
 	    backdropitem->Flags &= ~CHECKED;
 	}
-	WinFlags |= (WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SIZEBRIGHT);
+	WinFlags |= (WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SIZEGADGET);
+	WBZoom = wbwindowZoom;
     }
 
     if(what & DESKTOP_Main)
     {
 	wbwindow = OpenWindowTags(NULL,
-	WA_ScreenTitle, "AROS Workbench Alpha 0.1 (No file navigation) FreeMem-xxxxxxx",
-		WA_Title,	    "AROS Workbench Alpha Version 0.1 (No file navigation)",
-		WA_Flags,	   WinFlags,
-		WA_IDCMP,	   (IDCMP_MENUPICK | IDCMP_CLOSEWINDOW),
-		WA_Left,	   0,
-		WA_Top,		   wbscreen->BarHeight + 1,
-		WA_Width,	   wbscreen->Width,
-		WA_Height,	   wbscreen->Height - wbscreen->BarHeight -1,
+		WA_ScreenTitle, "AROS Workbench Alpha 0.1 (No file navigation) FreeMem-xxxxxxx",
+		WA_Title,	"AROS Workbench Alpha Version 0.1 (No file navigation)",
+		WA_Flags,	WinFlags,
+		WA_IDCMP,	(IDCMP_MENUPICK | IDCMP_CLOSEWINDOW),
+		WA_Left,	0,
+		WA_Top,		wbscreen->BarHeight + 1,
+		WA_Width,	wbscreen->Width,
+		WA_Height,	wbscreen->Height - wbscreen->BarHeight -1,
+		WA_MinWidth,	WBWINDOW_MINWIDTH,
+		WA_MinHeight,	WBWINDOW_MINHEIGHT,
+		WA_MaxWidth,	wbscreen->Width,
+		WA_MaxHeight,	wbscreen->Height,
+		WA_Zoom,	WBZoom,
 		TAG_DONE
 		);
 
