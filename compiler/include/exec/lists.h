@@ -41,7 +41,7 @@ struct List
 struct MinList
 {
     struct MinNode * mlh_Head,
-		   * mlh_Tail,
+                   * mlh_Tail,
 		   * mlh_TailPred;
 };
 
@@ -56,95 +56,102 @@ struct MinList
       ( (((struct MsgPort *)(mp))->mp_MsgList.lh_TailPred) \
 	    == (struct Node *)(&(((struct MsgPort *)(mp))->mp_MsgList)) )
 
-#define NEWLIST(_l)                              \
-do                                               \
-{                                                \
-    struct List *__l = (struct List *)(_l);        \
-                                                 \
-    __l->lh_TailPred = (struct Node *)__l;           \
-    __l->lh_Tail     = 0;                          \
-    __l->lh_Head     = (struct Node *)&__l->lh_Tail; \
+#define NEWLIST(_l)                                     \
+do                                                      \
+{                                                       \
+    struct List *__aros_list_tmp = (struct List *)(_l), \
+                *l = __aros_list_tmp;                   \
+                                                        \
+    l->lh_TailPred = (struct Node *)l;                  \
+    l->lh_Tail     = 0;                                 \
+    l->lh_Head     = (struct Node *)&l->lh_Tail;        \
 } while (0)
 
-#define ADDHEAD(_l,_n)                                \
-do                                                    \
-{                                                     \
-    struct Node *__n = (struct Node *)(_n);             \
-    struct List *__l = (struct List *)(_l);             \
-                                                      \
-    __n->ln_Succ          = __l->lh_Head;                 \
-    __n->ln_Pred          = (struct Node *)&__l->lh_Head; \
-    __l->lh_Head->ln_Pred = __n;                          \
-    __l->lh_Head          = __n;                          \
+#define ADDHEAD(_l,_n)                                  \
+do                                                      \
+{                                                       \
+    struct Node *__aros_node_tmp = (struct Node *)(_n), \
+                *n = __aros_node_tmp;                   \
+    struct List *__aros_list_tmp = (struct List *)(_l), \
+                *l = __aros_list_tmp;                   \
+                                                        \
+    n->ln_Succ          = l->lh_Head;                   \
+    n->ln_Pred          = (struct Node *)&l->lh_Head;   \
+    l->lh_Head->ln_Pred = n;                            \
+    l->lh_Head          = n;                            \
 } while (0)
 
 #define ADDTAIL(_l,_n)                                    \
 do                                                        \
 {                                                         \
-    struct Node *__n = (struct Node *)(_n);                 \
-    struct List *__l = (struct List *)(_l);                 \
+    struct Node *__aros_node_tmp = (struct Node *)(_n),   \
+                *n = __aros_node_tmp;                     \
+    struct List *__aros_list_tmp = (struct List *)(_l),   \
+                *l = __aros_list_tmp;                     \
                                                           \
-    __n->ln_Succ              = (struct Node *)&__l->lh_Tail; \
-    __n->ln_Pred              = __l->lh_TailPred;             \
-    __l->lh_TailPred->ln_Succ = __n;                          \
-    __l->lh_TailPred          = __n;                          \
+    n->ln_Succ              = (struct Node *)&l->lh_Tail; \
+    n->ln_Pred              = l->lh_TailPred;             \
+    l->lh_TailPred->ln_Succ = n;                          \
+    l->lh_TailPred          = n;                          \
 } while (0)
 
-#define REMOVE(_n)                            \
-({                                            \
-    struct Node *__n = (struct Node *)(_n);   \
-                                              \
-    __n->ln_Pred->ln_Succ = __n->ln_Succ;     \
-    __n->ln_Succ->ln_Pred = __n->ln_Pred;     \
-    __n;                                      \
+#define REMOVE(_n)                                      \
+({                                                      \
+    struct Node *__aros_node_tmp = (struct Node *)(_n), \
+                *n = __aros_node_tmp;                   \
+                                                        \
+    n->ln_Pred->ln_Succ = n->ln_Succ;                   \
+    n->ln_Succ->ln_Pred = n->ln_Pred;                   \
+                                                        \
+    n;                                                  \
 })
 
-#define GetHead(_l)                                         \
-({                                                          \
-   struct List *__l = (struct List *)(_l);                  \
-                                                            \
-   __l->lh_Head->ln_Succ ? __l->lh_Head : (struct Node *)0; \
+#define GetHead(_l)                                     \
+({                                                      \
+    struct List *__aros_list_tmp = (struct List *)(_l), \
+                *l = __aros_list_tmp;                   \
+                                                        \
+   l->lh_Head->ln_Succ ? l->lh_Head : (struct Node *)0; \
 })
 
-#define GetTail(_l)                                                  \
-({                                                                   \
-    struct List *__l = (struct List *)(_l);                          \
-                                                                     \
-    __l->lh_TailPred->ln_Pred ? __l->lh_TailPred : (struct Node *)0; \
+#define GetTail(_l)                                              \
+({                                                               \
+    struct List *__aros_list_tmp = (struct List *)(_l),          \
+                *l = __aros_list_tmp;                            \
+                                                                 \
+    l->lh_TailPred->ln_Pred ? l->lh_TailPred : (struct Node *)0; \
 })
 
-#define GetSucc(_n)                                          \
-({                                                           \
-    struct Node *__n = (struct Node *)(_n);                  \
-                                                             \
-    __n->ln_Succ->ln_Succ ? __n->ln_Succ : (struct Node *)0; \
+#define GetSucc(_n)                                      \
+({                                                       \
+    struct Node *__aros_node_tmp = (struct Node *)(_n),  \
+                *n = __aros_node_tmp;                    \
+                                                         \
+    n->ln_Succ->ln_Succ ? n->ln_Succ : (struct Node *)0; \
 })
 
-#define GetPred(_n)                                          \
-({                                                           \
-    struct Node *__n = (struct Node *)(_n);                  \
-                                                             \
-    __n->ln_Pred->ln_Pred ? __n->ln_Pred : (struct Node *)0; \
+#define GetPred(_n)                                      \
+({                                                       \
+    struct Node *__aros_node_tmp = (struct Node *)(_n),  \
+                *n = __aros_node_tmp;                    \
+                                                         \
+    n->ln_Pred->ln_Pred ? n->ln_Pred : (struct Node *)0; \
 })
 
-#define REMHEAD(_l)                         \
-({                                          \
-    struct List *__l = (struct List *)(_l); \
-                                            \
-     __l->lh_Head->ln_Succ    ?             \
-        REMOVE(__l->lh_Head) :              \
-        (struct Node *)0                    \
-    ;                                       \
+#define REMHEAD(_l)                                               \
+({                                                                \
+    struct List *__aros_list_tmp = (struct List *)(_l),           \
+                *l = __aros_list_tmp;                             \
+                                                                  \
+     l->lh_Head->ln_Succ ? REMOVE(l->lh_Head) : (struct Node *)0; \
 })
 
-#define REMTAIL(_l)                         \
-({                                          \
-    struct List *__l = (struct List *)(_l); \
-                                            \
-    __l->lh_TailPred->ln_Pred    ?          \
-        REMOVE(__l->lh_TailPred) :          \
-        (struct Node *)0                    \
-    ;                                       \
+#define REMTAIL(_l)                                                      \
+({                                                                       \
+    struct List *__aros_list_tmp = (struct List *)(_l),                  \
+                *l = __aros_list_tmp;                                    \
+                                                                         \
+    l->lh_TailPred->ln_Pred ? REMOVE(l->lh_TailPred) : (struct Node *)0; \
 })
 
 #define ForeachNode(l,n)                       \
