@@ -13,7 +13,11 @@
 #endif
 
 #ifndef INTUITION_CLASSUSR_H
-#include "intuition/classusr.h"
+#include <intuition/classusr.h>
+#endif
+
+#ifndef INTUITION_CLASSES_H
+#include <intuition/classes.h>
 #endif
 
 #ifndef CLIB_MACROS_H
@@ -35,20 +39,7 @@
 #define mui_free(x) FreeVec(x)
 
 int isRegionWithinBounds(struct Region *r, int left, int top, int width, int height);
-struct IClass *GetPublicClass(CONST_STRPTR className, struct Library *mb);
-BOOL DestroyClasses(struct Library *MUIMasterBase);
-struct IClass *CreateBuiltinClass(CONST_STRPTR className, struct Library *MUIMasterBase);
 ULONG ConvertKey(struct IntuiMessage *imsg);
-
-#ifdef __AROS__
-AROS_UFP3(IPTR, metaDispatcher,
-	AROS_UFPA(struct IClass  *, cl,  A0),
-	AROS_UFPA(Object *, obj, A2),
-	AROS_UFPA(Msg     , msg, A1));
-#else
-__asm ULONG metaDispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg);
-#endif
-
 
 ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...);
 
