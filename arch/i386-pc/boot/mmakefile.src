@@ -36,7 +36,7 @@ BOOT_TAR_FILES := \
     Devs.info \
     Devs/DataTypes Devs/Keymaps Devs/ramdrive.device Devs/clipboard.device \
     Devs/parallel.device Devs/serial.device Devs/Mountlist \
-	Devs/pipefs.handler Devs/zero.handler \
+    Devs/pipefs.handler Devs/zero.handler \
     Fonts/fixed/8 Fonts/arial/13 Fonts/ttcourier/14 Fonts.info \
     Libs/arosc.library Libs/asl.library Libs/commodities.library Libs/datatypes.library \
     Libs/diskfont.library Libs/gadtools.library Libs/icon.library Libs/iffparse.library \
@@ -84,6 +84,15 @@ $(BINDIR)/boot/aros-pc-i386 : $(OBJS)
 	    -o $@ $(OBJS) -L$(LIBDIR) $(LIBS)
 	@strip --strip-unneeded -R .note -R .comment $@
 
+$(BINDIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386
+	@gzip -9 -f $^
+
+$(BINDIR)/boot/grub/menu.lst : $(TOP)/config/i386-native/boot/menu.lst
+	@$(CP) $^ $@
+
+$(BOOT_DEST_DIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386.gz
+	@$(CP) $^ $@
+
 #MM workbench-boot-pc-i386
 workbench-boot-pc-i386:
 	@$(NOP)
@@ -92,13 +101,10 @@ $(BINDIR)/boot/grub/% : %
 	@$(CP) $< $@
 
 #MM bootdisk-pc-i386 : software-pc-i386 test
-bootdisk-pc-i386: \
-	$(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.pkg \
-	$(BINDIR)/boot/aros-pc-i386 install
+bootdisk-pc-i386: $(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.pkg \
+                  $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz $(BINDIR)/boot/grub/menu.lst \
+                  install
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence.DEMOFLOPPY $(BOOT_DEST_DIR)/S/Startup-Sequence
-	@$(CP) $(TOP)/config/i386-native/boot/menu.lst $(AROSDIR)/boot/grub/
-	@$(CP) $(BINDIR)/boot/aros-pc-i386 $(BOOT_DEST_DIR)/boot
-	@gzip -9 -f $(BOOT_DEST_DIR)/boot/aros-pc-i386
 	@$(TOOLDIR)/createhdfile $(OSGENDIR)/boot/aros.bin floppy1440 $(BOOT_DEST_DIR)
 	@./install $(OSGENDIR)/boot/aros.bin
 
