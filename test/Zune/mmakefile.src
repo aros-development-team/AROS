@@ -4,7 +4,11 @@
 
 include $(TOP)/config/make.cfg
 
-FILES  := test virttest gradient
+FILES  := test      	    \
+    	  virttest  	    \
+	  gradient  	    \
+	  volumelist	    \
+	  dirlist
 
 EXEDIR := $(AROSDIR)/test/Zune
 
