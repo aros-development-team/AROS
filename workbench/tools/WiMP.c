@@ -293,8 +293,6 @@ struct Node *node;
 char tmp[1024];
 char *string;
 
-  NewList ( list );
-
   /* Get Intuition's first Screen */
   lock = LockIBase ( 0 );
   scr = IntuitionBase->FirstScreen;
@@ -313,7 +311,7 @@ char *string;
 		scr->Title,
 		scr->DefaultTitle
 	    );
-    string = strdup ( tmp );
+    string = StrDup ( tmp );
     node = (struct Node *) AllocMem ( sizeof(struct Node), MEMF_CLEAR );
     AddTail ( list, node );
     SetNodeName ( node, string );
@@ -336,7 +334,7 @@ char *string;
 		(IS_CHILD(win)?' ':0),
 		win->parent
 	      );
-      string = strdup ( tmp );
+      string = StrDup ( tmp );
       node = (struct Node *) AllocMem ( sizeof(struct Node), MEMF_CLEAR );
       AddTail ( list, node );
       SetNodeName ( node, string );
@@ -356,7 +354,7 @@ struct Node *popnode;
   {
     popnode = RemTail ( list );
 
-    free ( popnode->ln_Name );
+    FreeVec ( popnode->ln_Name );
     FreeMem ( popnode, sizeof ( struct Node ) );
   }
 
@@ -402,7 +400,7 @@ IPTR getsw(int *type)
 IPTR gadget;
 IPTR xptr = 0;
 struct Screen *scr;
-struct Window *win;
+struct Window *win = NULL;
 
   GT_GetGadgetAttrs ( screenlistg, Window, NULL,
       GTLV_Selected, (IPTR)&gadget,
@@ -559,6 +557,7 @@ struct NewGadget *buttons[] =
     buttons[i]->ng_TopEdge += topborder;
   }
     
+  freelvnodes( &lv_list );
   initlvnodes ( &lv_list );
   gad = CreateGadget ( LISTVIEW_KIND, gad, &listviewgad,
 		GTLV_Labels,		(IPTR)&lv_list,
@@ -592,7 +591,7 @@ return gad;
 VOID open_window()
 {
   Window = OpenWindowTags ( NULL
-	, WA_Title,	    TITLE_TXT
+	, WA_Title,	    (Tag)TITLE_TXT
 	, WA_Left,	    0
 	, WA_Top,	    0
 	, WA_InnerWidth,    580
@@ -618,8 +617,10 @@ return;
 
 VOID close_window()
 {
-  CloseWindow ( InfoWindow );
+  ClearMenuStrip ( Window );
+  FreeMenus ( menus );
   CloseWindow ( Window );
+  freelvnodes ( &lv_list );
   FreeGadgets ( glist );
   FreeVisualInfo ( vi );
   UnlockPubScreen ( NULL, Screen );
@@ -641,7 +642,7 @@ struct NewGadget swinfogad =
 };
 
   InfoWindow = OpenWindowTags ( NULL
-	, WA_Title,		INFOTITLE_TXT
+	, WA_Title,		(Tag)INFOTITLE_TXT
 	, WA_Left,		0
 	, WA_Top,		0
 	, WA_InnerWidth,	580
@@ -680,16 +681,20 @@ return;
 
 VOID close_infowindow()
 {
-  CloseWindow ( InfoWindow );
-  FreeGadgets ( igads );
-  InfoWindow = NULL;
-  iw_sigbit = 0L;
+  if ( InfoWindow != NULL)
+  {
+    freelvnodes ( &lv_infolist );
+    FreeGadgets ( igads );
+    CloseWindow ( InfoWindow );
+    InfoWindow = NULL;
+    iw_sigbit = 0L;
+  }
 
 return;
 }
 
 #define APPENDLIST()							\
-    string = strdup ( tmp );						\
+    string = StrDup ( tmp );						\
     node = (struct Node *) AllocMem ( sizeof(struct Node), MEMF_CLEAR );\
     AddTail ( &lv_infolist, node );					\
     SetNodeName ( node, string );
@@ -709,7 +714,6 @@ char *string;
   }
 
   freelvnodes ( &lv_infolist );
-  NewList ( &lv_infolist );
 
   sprintf ( tmp, "NextWindow    = %p", win->NextWindow );	APPENDLIST();
   sprintf ( tmp, "LeftEdge      = %d", win->LeftEdge );		APPENDLIST();
@@ -774,7 +778,6 @@ char *string;
   }
 
   freelvnodes ( &lv_infolist );
-  NewList ( &lv_infolist );
 
   sprintf ( tmp, "Screen: %p \"%s\"", scr,scr->Title );		APPENDLIST();
   sprintf ( tmp, "LeftEdge     = %d", scr->LeftEdge );		APPENDLIST();
@@ -896,7 +899,8 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 
   open_window();
 
-  NewList (&lv_infolist);
+  NewList ( &lv_list );
+  NewList ( &lv_infolist );
 
   CurrentTime ( &sec1, &msec1 );
   sel1 = -1;
@@ -1353,9 +1357,8 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
       ReplyMsg ( (struct Message *)msg );
     }
   }
-  freelvnodes( &lv_list );
-  freelvnodes ( &lv_infolist );
 
+  close_infowindow();
   close_window();
   return ( 0 );
 }
