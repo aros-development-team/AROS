@@ -107,7 +107,9 @@
 	if (header->mwh_magicid != MUNGWALL_HEADER_ID)
 	{
 	    struct Task *__t = FindTask(NULL);	\
-	    kprintf("\x07MUNGWALL_HEADER_ID mismatch (" __FUNCTION__ ") mem = %x  allocsize = %d  freesize = %d   Task: 0x%x, Name: %s\n",	\
+	    kprintf("\x07MUNGWALL_HEADER_ID mismatch (%s) mem = %x"
+		    "allocsize = %d  freesize = %d   Task: 0x%x, Name: %s\n", \
+		    __FUNCTION__,
 		    memoryBlock + MUNGWALL_SIZE + MUNGWALLHEADER_SIZE,
 		    *(ULONG *)memoryBlock,
 		    origsize,
@@ -118,7 +120,9 @@
 	if (header->mwh_allocsize != origsize)
 	{
 	    struct Task *__t = FindTask(NULL);	\
-	    kprintf("\x07FreeMem size mismatches AllocMem size (" __FUNCTION__ ") mem = %x  allocsize = %d  freesize = %d   Task: 0x%x, Name: %s\n",	\
+	    kprintf("\x07FreeMem size mismatches AllocMem size (%s) mem = %x"
+		    "allocsize = %d  freesize = %d   Task: 0x%x, Name: %s\n", \
+		    __FUNCTION__,
 		    memoryBlock + MUNGWALL_SIZE + MUNGWALLHEADER_SIZE,
 		    *(ULONG *)memoryBlock,
 		    origsize,
