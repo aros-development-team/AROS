@@ -338,9 +338,9 @@ aros_kernel_ldflags="-Wl,-rpath,./lib"
 aros_compiler_libs=
 
 # These are the flags to pass when compiling debugged programs
-aros_debug_cflags="-g3 -O0 -DADEBUG=1 -DMDEBUG=1"
+aros_debug_cflags="-g -O0 -DADEBUG=1 -DMDEBUG=1"
 aros_debug_aflags=""
-aros_debug_ldflags="-g3"
+aros_debug_ldflags="-g"
 aros_target_genmap="-Wl,-Map -Xlinker"
 
 # Native flavour stuff
@@ -597,9 +597,9 @@ case "$target_os" in
 		aros_static_aflags="-mc68000"
 		aros_static_ldflags=""
 		aros_kernel_ldflags="-Wl,-rpath,./lib"
-		aros_debug_cflags="-Wall -Werror-implicit-function-declaration -g3 -DADEBUG=1 -DMDEBUG=1 -mc68000 -Wa,-mc68000"
+		aros_debug_cflags="-Wall -Werror-implicit-function-declaration -g -DADEBUG=1 -DMDEBUG=1 -mc68000 -Wa,-mc68000"
 		aros_debug_aflags=""
-		aros_debug_ldflags="-g3"
+		aros_debug_ldflags="-g"
 		aros_mungwall_debug="0"
 		aros_modules_debug="0"
 		gcc_target_cpu="mc68000"
