@@ -8,6 +8,10 @@
 #ifndef _DRAGNDROP_H
 #define _DRAGNDROP_H
 
+#ifndef _MUIMASTER_SUPPORT_H
+#include "support.h"
+#endif
+
 /* Tags for GUI_CreateBitMapNodeA() */
 #define GUI_BitMap				(TAG_USER+1)	/* struct BitMap * */
 #define GUI_Mask					(TAG_USER+2)	/* APTR */
