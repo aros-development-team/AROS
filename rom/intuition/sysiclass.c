@@ -362,6 +362,11 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     {
     case CHECKIMAGE:
     {
+        WORD right = left + width - 1;
+	WORD bottom = top + height - 1;
+	WORD h_spacing = width / 4;
+	WORD v_spacing = height / 4;
+	
         /* Draw frame */
         DrawImageState(rport, data->frame,
                        msg->imp_Offset.X, msg->imp_Offset.Y,
@@ -370,13 +375,16 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
         /* Draw checkmark (only if image is in selected state) */
         if (msg->imp_State == IDS_SELECTED)
         {
+	    left += h_spacing;right -= h_spacing;width -= h_spacing * 2;
+	    top += v_spacing;bottom -= v_spacing;height -= v_spacing * 2;
+	    
             SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
        	    SetDrMd(rport, JAM1);
 
-            draw_thick_line(cl, rport, left + width/4, top + height/2, left + width/2, top + width*3/4, 2);
-            draw_thick_line(cl, rport, left + width/2, top + height/4*3, left + width/4*3, top + height/4, 3);
-            Move(rport, left + width/4*3, top + height/4);
-            Draw(rport, left + width/8*7, top + height/4);
+            draw_thick_line(cl, rport, left, top + height/2, left + width/3, bottom, 0);
+            draw_thick_line(cl, rport, left + width/3, bottom, right - 2, top, 0);
+            Move(rport, right -1 , top);
+            Draw(rport, right, top);
 
         }
         break;
