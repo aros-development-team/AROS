@@ -397,7 +397,7 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
 	    }
 	    ret = err_u2a();
 	}
-	free(fh);
+	free_lock(fh);
     } else
 	ret = ERROR_NO_FREE_STORE;
 
@@ -408,7 +408,7 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh,
 			  STRPTR file)
 {
     LONG ret = 0;
-    char *filename;
+    char *filename = NULL;
     struct stat st;
 
     ret = makefilename(emulbase, &filename, fh->name, file);
@@ -420,14 +420,19 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh,
 	    {
 		if (rmdir(filename))
 		    ret = err_u2a();
+                else
+                    free_lock(fh);
 	    }
 	    else
 	    {
 		if (unlink(filename))
 		    ret = err_u2a();
+                else
+                    free_lock(fh);
 	    }
 	} else
 	    ret = err_u2a();
+        free(filename);
     }
 
     return ret;
@@ -670,6 +675,35 @@ static LONG examine_all(struct filehandle *fh,struct ExAllData *ead,ULONG size,U
 }
 
 
+static LONG create_hardlink(struct filehandle **handle,STRPTR name,struct filehandle *oldfile)
+{
+    LONG error=0L;
+    struct filehandle *fh;
+
+    link();
+    fh = malloc(sizeof(struct filehandle));
+    if (!fh)
+    {
+        error = makefilename(emulbase, &fh->name, (*handle)->name, name);
+        if (!error)
+        {
+            if (!link(oldfile->name, fh->name))
+                *handle = fh;
+            else
+                error = err_u2a();
+        } else
+        {
+            error = ERROR_NO_FREE_STORE;
+            free(fh);
+        }
+    } else
+        error = ERROR_NO_FREE_STORE;
+
+    return error;
+}
+
+/************************ Library entry points ************************/
+
 AROS_LH2(struct emulbase *, init,
  AROS_LHA(struct emulbase *, emulbase, D0),
  AROS_LHA(BPTR,              segList,   A0),
@@ -793,27 +827,9 @@ AROS_LH1(void, beginio,
                         iofs->io_Union.io_OPEN.io_FileMode);
 	    break;
 
-	case FSA_OPEN_FILE:
-	    error=open_file(emulbase,
-			    (struct filehandle **)&iofs->IOFS.io_Unit,
-			    iofs->io_Union.io_OPEN_FILE.io_Filename,
-			    iofs->io_Union.io_OPEN_FILE.io_FileMode,
-			    iofs->io_Union.io_OPEN_FILE.io_Protection);
-	    break;
-
 	case FSA_CLOSE:
 	    error=free_lock((struct filehandle *)iofs->IOFS.io_Unit);
 	    break;
-
-	case FSA_IS_INTERACTIVE:
-	{
-	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
-	    if(fh->type==FHD_FILE)
-		iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive=isatty(fh->fd);
-	    else
-		iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive=0;
-	    break;
-	}
 
 	case FSA_READ:
 	{
@@ -884,6 +900,38 @@ AROS_LH1(void, beginio,
 	    break;
 	}
 
+        case FSA_SET_FILE_SIZE:
+            /* We could manually change the size, but this is currently not
+               implemented. */
+        case FSA_WAIT_CHAR:
+            /* We could manually wait for a character to arrive, but this is
+               currently not implemented. */
+        case FSA_FILE_MODE:
+            /* !!! not supported yet !!! */
+            error=ERROR_ACTION_NOT_KNOWN;
+            break;
+
+	case FSA_IS_INTERACTIVE:
+	{
+	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
+	    if(fh->type==FHD_FILE)
+		iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive=isatty(fh->fd);
+	    else
+		iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive=0;
+	    break;
+	}
+
+	case FSA_SAME_LOCK: {
+	    struct filehandle *lock1 = iofs->io_Union.io_SAME_LOCK.io_Lock[0],
+			      *lock2 = iofs->io_Union.io_SAME_LOCK.io_Lock[1];
+
+	    if (strcmp(lock1->name, lock2->name))
+		iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_DIFFERENT;
+	    else
+		iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_SAME;
+	    break;
+	}
+
 	case FSA_EXAMINE:
 	    error=examine((struct filehandle *)iofs->IOFS.io_Unit,
 			  iofs->io_Union.io_EXAMINE.io_ead,
@@ -898,16 +946,17 @@ AROS_LH1(void, beginio,
                               iofs->io_Union.io_EXAMINE_ALL.io_Mode);
 	    break;
 
-	case FSA_SAME_LOCK: {
-	    struct filehandle *lock1 = iofs->io_Union.io_SAME_LOCK.io_Lock[0],
-			      *lock2 = iofs->io_Union.io_SAME_LOCK.io_Lock[1];
+        case FSA_EXAMINE_ALL_END:
+            error=0;
+            break;
 
-	    if (strcmp(lock1->name, lock2->name))
-		iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_DIFFERENT;
-	    else
-		iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_SAME;
+	case FSA_OPEN_FILE:
+	    error=open_file(emulbase,
+			    (struct filehandle **)&iofs->IOFS.io_Unit,
+			    iofs->io_Union.io_OPEN_FILE.io_Filename,
+			    iofs->io_Union.io_OPEN_FILE.io_FileMode,
+			    iofs->io_Union.io_OPEN_FILE.io_Protection);
 	    break;
-	}
 
 	case FSA_CREATE_DIR:
 	    error = create_dir(emulbase,
@@ -916,11 +965,34 @@ AROS_LH1(void, beginio,
 			       iofs->io_Union.io_CREATE_DIR.io_Protection);
 	    break;
 
+        case FSA_CREATE_HARDLINK:
+            error = create_hardlink((struct filehandle **)&iofs->IOFS.io_Unit,
+                                    iofs->io_Union.io_CREATE_HARDLINK.io_Filename,
+                                    (struct filehandle *)iofs->io_Union.io_CREATE_HARDLINK.io_OldFile);
+            break;
+
+        case FSA_CREATE_SOFTLINK:
+        case FSA_RENAME:
+        case FSA_READ_SOFTLINK:
+            /* !!! not supported yet !!! */
+            error=ERROR_ACTION_NOT_KNOWN;
+            break;
+
 	case FSA_DELETE_OBJECT:
 	    error = delete_object(emulbase,
 				  (struct filehandle *)iofs->IOFS.io_Unit,
 				  iofs->io_Union.io_DELETE_OBJECT.io_Filename);
 	    break;
+
+        case FSA_SET_COMMENT:
+        case FSA_SET_PROTECT:
+        case FSA_SET_OWNER:
+        case FSA_SET_DATE:
+        case FSA_IS_FILESYSTEM:
+        case FSA_MORE_CACHE:
+        case FSA_FORMAT:
+        case FSA_MOUNT_MODE:
+            /* !!! not supported yet !!! */
 
 	default:
 	    error=ERROR_ACTION_NOT_KNOWN;
