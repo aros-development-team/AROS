@@ -282,11 +282,13 @@ STATIC IPTR IconWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (is_root)
     {
-	iconlist = MUI_NewObject(MUIC_IconVolumeList, TAG_DONE);
+	iconlist = MUI_NewObject(MUIC_IconVolumeList, MUIA_Background, MUII_RegisterBack, TAG_DONE);
     } else
     {
 	char *drw = (char*)GetTagData(MUIA_IconWindow_Drawer,NULL,msg->ops_AttrList);
-	iconlist = MUI_NewObject(MUIC_IconDrawerList, MUIA_IconDrawerList_Drawer, drw, TAG_DONE);
+	iconlist = MUI_NewObject(MUIC_IconDrawerList,
+				 MUIA_Background, MUII_PageBack,
+				 MUIA_IconDrawerList_Drawer, drw, TAG_DONE);
     }
 
     /* Now call the super methods new method with additional tags */
@@ -295,6 +297,7 @@ STATIC IPTR IconWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	MUIA_Window_Height,300,
 	MUIA_Window_ScreenTitle, GetScreenTitle(),
 	WindowContents, VGroup,
+		InnerSpacing(0,0),
 		MUIA_Group_Child, MUI_NewObject(MUIC_IconListview, MUIA_IconListview_UseWinBorder, TRUE, MUIA_IconListview_IconList, iconlist, TAG_DONE),
 		End,
 	TAG_MORE, (IPTR)msg->ops_AttrList);
@@ -972,16 +975,18 @@ int main(void)
 	    MUIA_UserData, 1,
 	    MUIA_Window_TopEdge, MUIV_Window_TopEdge_Delta(0), /* place the window below the bar layer */
 	    MUIA_Window_LeftEdge, 0,
-	    MUIA_Window_Width,   85,
+	    MUIA_Window_Width,  MUIV_Window_Width_Screen(100),
 	    MUIA_Window_Height, MUIV_Window_Height_Screen(100), /* won't take the barlayer into account */
 	    MUIA_Window_Menustrip, root_menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
 	    MUIA_Window_ScreenTitle, GetScreenTitle(),
             MUIA_IconWindow_IsRoot, TRUE,
+	    MUIA_IconWindow_IsBackdrop, TRUE,
 	    MUIA_IconWindow_ActionHook, &hook_action,
 	    End,
 	SubWindow, execute_wnd = WindowObject,
 	    MUIA_Window_Title, "Execute a file",
 	    WindowContents, VGroup,
+	    MUIA_Background, MUII_GroupBack,
 		Child, TextObject, MUIA_Text_Contents,"Enter command and its arguments:",End,
 		Child, HGroup,
 		    Child, Label("Command:"),
