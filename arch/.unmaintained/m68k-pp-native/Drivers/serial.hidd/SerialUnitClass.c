@@ -8,8 +8,6 @@
 
 #define AROS_ALMOST_COMPATIBLE 1
 
-#include <registers.h>
-
 /* the rest are Amiga includes */
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -29,7 +27,7 @@
 #include <devices/serial.h>
 
 #include "serial_intern.h"
-#include <registers.h>
+#include <asm/registers.h>
 
 #undef  SDEBUG
 #undef  DEBUG
@@ -546,9 +544,9 @@ UWORD get_ustcnt(struct HIDDSerialUnitData * data)
 		}
 	}
 
-	if (baudrate < 1200) {
+	if (data->baudrate < 1200) {
 		ustcnt |= /*RXFE|RXHE|*/ RXRE | /* TXEE|*/ TXHE;
-	} else if (baudrate < 9600) {
+	} else if (data->baudrate < 9600) {
 		ustcnt |= /* RXHE|*/ RXRE | /* TXEE|*/ TXHE;
 	} else {
 		ustcnt |= RXRE|TXHE;
