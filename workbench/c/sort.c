@@ -304,7 +304,6 @@ int main (int argc, char **argv)
   struct RDArgs *rda;
   ULONG error = 0;
 
-#if 1
   LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 0);
   if (!LocaleBase)
   {
@@ -318,7 +317,7 @@ int main (int argc, char **argv)
     printf("Could not open locale!\n");
     return -1;
   }
-#endif
+
   rda = ReadArgs(TEMPLATE, args, NULL);
   if (rda)
   {
@@ -370,6 +369,8 @@ int main (int argc, char **argv)
     
   if (error)
     PrintFault(IoErr(), "sort");
+  
+  CloseLibrary((struct Library *)LocaleBase);
    
   return error; 
 }
