@@ -65,8 +65,7 @@ static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_GaugeData   *data;
     struct TagItem  	    *tag, *tags;
     
-    obj = (Object *)DoSuperNew(cl, obj, msg->ops_AttrList);
-    
+    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return FALSE;
     
     data = INST_DATA(cl, obj);
@@ -119,7 +118,7 @@ static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
 #endif
     } else data->buf[0] = 0;
 
-    D(bug("muimaster.library/gauge.c: Gauge Object created at 0x%lx\n",obj));
+/*      D(bug("Gauge_New(0x%lx, %d)\n",obj,muiAreaData(obj)->mad_Frame)); */
 
     return (IPTR)obj;
 }
@@ -353,7 +352,8 @@ static IPTR Gauge_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     ULONG val;
 
     DoSuperMethodA(cl,obj,(Msg)msg);
-    D(bug("muimaster.library/gauge.c: Draw Gauge Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
+
+/*      D(bug("Gauge_Draw(0x%lx) %ldx%ldx%ldx%ld :: %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj), _mleft(obj),_mtop(obj), _mright(obj), _mbottom(obj))); */
 
     if (data->horiz)
     {
