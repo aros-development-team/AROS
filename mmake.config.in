@@ -13,3 +13,4 @@ genglobalvarfile sh $(TOP)/configure
 ignoredir CVS
 ignoredir bin
 ignoredir intuition.morphos
+ignoredir .svn
