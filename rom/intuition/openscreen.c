@@ -6,9 +6,12 @@
     Lang: english
 */
 #include "intuition_intern.h"
+#include <string.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
 #include <intuition/screens.h>
+#include <intuition/imageclass.h>
+#include <intuition/gadgetclass.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/layers.h>

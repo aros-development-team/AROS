@@ -207,6 +207,8 @@ struct IntRequestUserData
 
 /*extern struct IntuitionBase * IntuitionBase;*/
 
+#define IW(x) ((struct IntWindow *)x)    
+
 #define GetPubIBase(ib)   ((struct IntuitionBase *)ib)
 #define GetPrivIBase(ib)  ((struct IntIntuitionBase *)ib)
 

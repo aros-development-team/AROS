@@ -7,6 +7,7 @@
 */
 #include "intuition_intern.h"
 #include <intuition/preferences.h>
+#include <string.h>
 
 /*****************************************************************************
 

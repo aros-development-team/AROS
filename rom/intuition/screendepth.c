@@ -6,11 +6,12 @@
     Lang: English
 */
 #include "intuition_intern.h"
+#include <proto/graphics.h>
 
 /*****************************************************************************
 
     NAME */
-	#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	AROS_LH3(void, ScreenDepth,
 

@@ -11,7 +11,7 @@
 #include "intuition_intern.h"
 #include <stdio.h>
 #include <stdarg.h>
-#include <strings.h>
+#include <string.h>
 #include <clib/macros.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -37,6 +37,8 @@
 #define BUTTONBORDER_Y 		4
 
 /**********************************************************************************************/
+
+extern UWORD BgPattern[2];
 
 struct sysreqdims
 {

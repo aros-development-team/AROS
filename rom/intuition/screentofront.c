@@ -10,7 +10,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	AROS_LH1(void, ScreenToFront,
 

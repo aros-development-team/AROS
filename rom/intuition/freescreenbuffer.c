@@ -7,6 +7,7 @@
 */
 #include "intuition_intern.h"
 #include <graphics/rastport.h>
+#include <proto/graphics.h>
 
 /*****************************************************************************
 

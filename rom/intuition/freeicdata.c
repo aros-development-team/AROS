@@ -18,6 +18,7 @@
 #include <intuition_private.h>
 
 #include "maybe_boopsi.h"
+#include "icclass.h"
 
 	AROS_LH1(void, FreeICData,
 

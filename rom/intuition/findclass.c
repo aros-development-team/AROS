@@ -5,6 +5,7 @@
     Desc: Find a BOOPSI Class in the class list.
     Lang: english
 */
+#include <string.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
 
