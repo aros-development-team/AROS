@@ -50,9 +50,10 @@ ILDFLAGS="-nostartfiles -nostdlib"
 case "$type" in
 "Linux" )
 	# The main compiler
-	CC="gcc"
+	CC="gcc -pipe"
 	# The CFLAGS usually to use (in addition to the includes and use flags)
 	COMMON_CFLAGS="-Wall -O0"
+	DEBUG_CFLAGS="-g"
 	# CFLAGS to be used to link applications
 	ILDFLAGS="-nostartfiles -nostdlib -Xlinker -i"
 	# Which OS ?
@@ -85,6 +86,7 @@ case "$type" in
 	;;
 "HP-UX" )
 	COMMON_CFLAGS="-Aa"
+	DEBUG_CFLAGS="-g"
 	RANLIB="true"
 	ARCH="hppa"
 	CPU="hppa-emul"
@@ -103,6 +105,7 @@ case "$type" in
 	GUI_LIBFLAGS="-lX11"
 	AS="gcc -pipe"
 	CC="gcc -pipe"
+	DEBUG_CFLAGS="-g"
 	COMMON_AFLAGS="-x assembler-with-cpp"
 	MKDEPEND="makedepend -D__GNUC__ -Di386"
 	AWK="awk"
@@ -113,6 +116,7 @@ case "$type" in
 "AmigaOS" )
 	CC="gcc"
 	COMMON_CFLAGS="-Wall -Wno-uninitialized -O2 -m68020 -fomit-frame-pointer"
+	DEBUG_CFLAGS="-g"
 	ARCH="amiga"
 	CPU="m68k"
 	MKDEPEND="makedepend -D__GNUC__ -D_AMIGA -DAMIGA"
@@ -161,7 +165,8 @@ case "$1" in
     echo >> $out
     echo "SYS_CC := $CC" >> $out
     echo "COMMON_CFLAGS := $COMMON_CFLAGS" >> $out
-    echo "ILDFLAGS := \$(CFLAGS) $ILDFLAGS" >> $out
+    echo "DEBUG_CFLAGS := $DEBUG_CFLAGS" >> $out
+    echo "ILDFLAGS = \$(CFLAGS) $ILDFLAGS" >> $out
     echo "RANLIB := $RANLIB" >> $out
     echo "ARCH := $ARCH" >> $out
     echo "CPU := $CPU" >> $out
