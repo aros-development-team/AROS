@@ -28,7 +28,7 @@
 #define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
 #define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->library)
 
-#define LC_NO_INITLIB
+#define LC_NO_OPENLIB
 #define LC_NO_EXPUNGELIB
 #define LC_NO_CLOSELIB
 
@@ -37,9 +37,10 @@
 
 struct irqbase
 {
-    struct Library library;
-    struct ExecBase *sysbase;
-    BPTR	seglist;
+    struct Library 		library;
+    struct ExecBase 		*sysbase;
+    BPTR			seglist;
+    struct irq_staticdata 	*isd;
 };
 
 #include <libcore/libheader.c>
@@ -49,15 +50,24 @@ struct irqbase
 #define DEBUG 1
 #include <aros/debug.h>
 
+void timer_handler(int cpl, void *dev_id, struct pt_regs *regs) { }
 
-ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
+struct irqaction timer_int = { timer_handler, 0, 0, "timer", NULL, NULL};
+struct irqaction kbd_int = { timer_handler, 0, 0, "keyboard", NULL, NULL};
+struct irqaction rtc_int = { timer_handler, 0, 0, "rtc", NULL, NULL};
+struct irqaction ide0_int = { timer_handler, 0, 0, "ide0", NULL, NULL};
+struct irqaction ide1_int = { timer_handler, 0, 0, "ide1", NULL, NULL};
+
+#undef SysBase
+
+ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
     struct irq_staticdata *isd;
-    int i;
 
     D(bug("IRQ: Initializing\n"));
 
     isd = AllocMem( sizeof (struct irq_staticdata), MEMF_CLEAR|MEMF_PUBLIC );
+    lh->isd = isd;
     if (isd)
     {
         isd->sysbase = SysBase;
@@ -67,6 +77,14 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	    isd->utilitybase = OpenLibrary(UTILITYNAME, 37);
 	    if (isd->utilitybase)
 	    {
+		init_IRQ();
+		D(bug("    Adding timer interrupt\n"));
+		setup_x86_irq(0, &timer_int);
+		setup_x86_irq(1, &kbd_int);
+		setup_x86_irq(8, &rtc_int);
+		setup_x86_irq(14, &ide0_int);
+		setup_x86_irq(15, &ide1_int);
+		D(bug("    Init OK\n"));
 		return TRUE;
 	    }
 	    CloseLibrary(isd->oopbase);

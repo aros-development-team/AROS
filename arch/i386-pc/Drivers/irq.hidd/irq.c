@@ -338,6 +338,8 @@ asmlinkage void do_IRQ(struct pt_regs regs)
 	 */
 	int irq = regs.orig_eax & 0xff; /* subtle, see irq.h */
 
+//	kprintf("IRQ: do_IRQ%d\n",irq);
+
 	irq_desc[irq].count++;
 	irq_desc[irq].handler->handle(irq, &regs);
 }
@@ -351,6 +353,7 @@ int setup_x86_irq(unsigned int irq, struct irqaction * new)
 	 * The following block of code has to be executed atomically
 	 */
 	p = &irq_desc[irq].action;
+
 	if ((old = *p) != NULL) {
 		/* add new interrupt at end of irq queue */
 		do {
@@ -443,7 +446,9 @@ __initfunc(void init_IRQ(void))
 {
 	int i;
 
+	kprintf("IRQ: Init routine\n");
 	init_ISA_irqs();
+	kprintf("     ISA irqs done.\n");
 
 	/*
 	 * Cover the whole vector space, no vector can escape
@@ -455,6 +460,7 @@ __initfunc(void init_IRQ(void))
 		if (vector != SYSCALL_VECTOR) 
 			set_intr_gate(vector, interrupt[i]);
 	}
+	kprintf("     Int vectors updated.\n");
 
 	/*
 	 * Set the clock to 50 Hz, we already have a valid
@@ -463,9 +469,13 @@ __initfunc(void init_IRQ(void))
 	outb_p(0x34,0x43);		/* binary, mode 2, LSB/MSB, ch 0 */
 	outb_p(LATCH & 0xff , 0x40);	/* LSB */
 	outb(LATCH >> 8 , 0x40);	/* MSB */
+	kprintf("     Clock updated and set to 50Hz\n");
 
 	setup_x86_irq(2, &irq2);
+	kprintf("     Cascade interrupt added.\n");
 	setup_x86_irq(13, &irq13);
+	kprintf("     FPU err interrupt added.\n");
+	kprintf("IRQ: Init done.\n");
 }
 
 /*
@@ -488,7 +498,7 @@ int get_irq_list(char *buf)
 		if (!action) 
 			continue;
 		p += sprintf(p, "%3d: ",i);
-		p += sprintf(p, "%10u ", irq_decs[i].count);
+		p += sprintf(p, "%10u ", irq_desc[i].count);
 		p += sprintf(p, " %14s", irq_desc[i].handler->typename);
 		p += sprintf(p, "  %s", action->name);
 

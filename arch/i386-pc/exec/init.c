@@ -266,6 +266,7 @@ int main()
 
 /* Here goes test area... */
 
+    kprintf("irq.hidd = %08.8lx\n",OpenLibrary("irq.hidd",0));
     kprintf("pci.hidd = %08.8lx\n",OpenLibrary("pci.hidd",0));
 
     kprintf("Starting SAD\n");

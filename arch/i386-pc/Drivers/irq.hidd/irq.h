@@ -54,7 +54,7 @@ VOID free_irqclass  ( struct irq_staticdata * );
  */
 #define FIRST_EXTERNAL_VECTOR	0x20
 
-#define SYSCALL_VECTOR		0x80
+#define SYSCALL_VECTOR		0x30
 
 /* interrupt control.. */
 #define __sti() __asm__ __volatile__ ("sti": : :"memory")
@@ -66,21 +66,20 @@ VOID free_irqclass  ( struct irq_staticdata * );
    stack during a system call. */
 
 struct pt_regs {
-	long ebx;
-	long ecx;
-	long edx;
-	long esi;
 	long edi;
+	long esi;
 	long ebp;
+	long dummy;
+	long ebx;
+	long edx;
+	long ecx;
 	long eax;
-	int  xds;
-	int  xes;
 	long orig_eax;
 	long eip;
 	int  xcs;
 	long eflags;
-	long esp;
-	int  xss;
+//	long esp;
+//	int  xss;
 };
 
 /*
@@ -139,49 +138,29 @@ typedef struct {
 
 #define SAVE_ALL \
 	"cld\n\t" \
-	"pushl %es\n\t" \
-	"pushl %ds\n\t" \
-	"pushl %eax\n\t" \
-	"pushl %ebp\n\t" \
-	"pushl %edi\n\t" \
-	"pushl %esi\n\t" \
-	"pushl %edx\n\t" \
-	"pushl %ecx\n\t" \
-	"pushl %ebx\n\t" \
-	"movl $" STR(KERNEL_DS) ",%edx\n\t" \
-	"movl %dx,%ds\n\t" \
-	"movl %dx,%es\n\t" \
+	"pushal\n\t" \
 	"movl %esp,esp\n\t"
 
 #define RESTORE_ALL \
 	"movl esp,%esp\n\t" \
-	"popl %ebx\n\t" \
-	"popl %ecx\n\t" \
-	"popl %edx\n\t" \
-	"popl %esi\n\t" \
-	"popl %edi\n\t" \
-	"popl %ebp\n\t" \
-	"popl %eax\n\t" \
-	"popl %ds\n\t" \
-	"popl %es\n\t" \
-	"addl $4,%esp\n\t" \
-	"iret \n\t"    
+	"popal\n\t" \
+	"addl $4,%esp\n\t"
 
 #define SUPER \
 	"cmpb $0,supervisor\n\t" \
 	"jne 1f\n\t" \
 	"movl %esp,usp\n\t" \
 	"movl ssp,%esp\n\t" \
-	"movb $1,supervisor\n\t" \
-	"1:\n\t"
+	"movb $1,supervisor\n" \
+	"1:"
 
 #define USER \
 	"cmpb $0,supervisor\n\t" \
 	"je 1f\n\t" \
 	"movl %esp,ssp\n\t" \
 	"movl usp,%esp\n\t" \
-	"movb $0,supervisor\n\t" \
-	"1:\n\t"
+	"movb $0,supervisor\n" \
+	"1:"
 
 #define IRQ_NAME2(nr) nr##_interrupt(void)
 #define IRQ_NAME(nr) IRQ_NAME2(IRQ##nr)
@@ -193,7 +172,8 @@ __asm__( \
 	SAVE_ALL \
 	"call "SYMBOL_NAME_STR(do_IRQ)"\n\t" \
 	RESTORE_ALL \
-	USER);
+	USER \
+	"iret");
 
 /*
  * subtle. orig_eax is used by the signal code to distinct between
