@@ -76,7 +76,8 @@
 #define IS_HIDD_BM(bitmap) (((bitmap)->Flags & BMF_AROS_HIDD) == BMF_AROS_HIDD)
 
 
-#define BM_PIXEL(bitmap, pen) (IS_HIDD_BM(bitmap) ? HIDD_CM_GetPixel(HIDD_BM_COLMAP(bitmap), pen) : (pen))
+#define BM_PIXEL(bitmap, pen) ((!IS_HIDD_BM(bitmap) || !HIDD_BM_COLMAP(bitmap)) ? (pen) :  \
+    	    	    	       HIDD_CM_GetPixel(HIDD_BM_COLMAP(bitmap), pen))
 
 
 /* Minterms and GC drawmodes are in opposite order */
@@ -725,7 +726,6 @@ void driver_SetAPen (struct RastPort * rp, ULONG pen,
 	};
 	
 	col_tags[0].ti_Data = BM_PIXEL(rp->BitMap, pen & PEN_MASK);
-
 	OOP_SetAttrs( dd->dd_GC, col_tags );
 	
     }
@@ -2339,7 +2339,7 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
     	    {
     	    
     		OOP_Object *pf;
-    		OOP_Object *colmap;
+    		OOP_Object *colmap = 0;
     		HIDDT_ColorModel colmod;
     		BOOL ok = FALSE;
 		IPTR width, height;
@@ -2435,7 +2435,7 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
     			}
 
     			
-    		    }
+    		    } else ok = TRUE;
     		}
     		
     		if (ok) {
@@ -2703,7 +2703,6 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 
     EnterFunc(bug("driver_BltBitMap()\n"));
 	
-
 /* kprintf("BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d, %x)\n"
 		,srcBitMap, xSrc, ySrc, dstBitMap, xDest, yDest, xSize, ySize, minterm);
 
@@ -2765,8 +2764,7 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 	OOP_Object *srcbm_obj;
     
     	srcbm_obj = OBTAIN_HIDD_BM(srcBitMap);
-	if (NULL != srcbm_obj) {
-	
+	if (NULL != srcbm_obj) {	
 	    OOP_Object *dstbm_obj;
 	    
 	    dstbm_obj = OBTAIN_HIDD_BM(dstBitMap);
@@ -2822,7 +2820,7 @@ LOCK_BLIT
         if (IS_HIDD_BM(bsa->bsa_SrcBitMap)) {
             if (NULL != HIDD_BM_COLMAP(bsa->bsa_SrcBitMap))
     	        srcflags |= FLG_HASCOLMAP;
-    	    dstflags |= GET_COLMOD_FLAGS(bsa->bsa_SrcBitMap);
+    	    srcflags |= GET_COLMOD_FLAGS(bsa->bsa_SrcBitMap);
         } else {
              /* Amiga BM */
              srcflags |= FLG_PALETTE;
@@ -2943,24 +2941,33 @@ LOCK_BLIT
 
     /* Try to get a CLUT for the bitmaps */
     if (IS_HIDD_BM(srcBitMap)) {
+    	//kprintf("driver_intbltbitmap: source is hidd bitmap\n");
     	if (NULL != HIDD_BM_COLMAP(srcBitMap))
+    	{
+    	    //kprintf("driver_intbltbitmap: source has colormap\n");
     	    srcflags |= FLG_HASCOLMAP;
-    	dstflags |= GET_COLMOD_FLAGS(srcBitMap);
+    	}
+    	srcflags |= GET_COLMOD_FLAGS(srcBitMap);
     } else {
+    	//kprintf("driver_intbltbitmap: source is amiga bitmap\n");
     	/* Amiga BM */
     	srcflags |= FLG_PALETTE;
     }
 
     if (IS_HIDD_BM(dstBitMap)) {
+    	//kprintf("driver_intbltbitmap: dest is hidd bitmap\n");
     	if (NULL != HIDD_BM_COLMAP(dstBitMap))
+    	{
+    	    //kprintf("driver_intbltbitmap: dest has colormap\n");
     	    dstflags |= FLG_HASCOLMAP;
+    	}
     	dstflags |= GET_COLMOD_FLAGS(dstBitMap);
     } else {
+    	//kprintf("driver_intbltbitmap: dest is amiga bitmap\n");
     	/* Amiga BM */
     	dstflags |= FLG_PALETTE;
     }
     	
-
     if (    (srcflags == FLG_PALETTE || srcflags == FLG_STATICPALETTE)) {
     	/* palettized with no colmap. Neew to get a colmap from dest*/
     	if (dstflags == FLG_TRUECOLOR) {
@@ -2974,16 +2981,17 @@ LOCK_BLIT
     	    /* Use the dest colmap for src */
     	    HIDD_BM_SetColorMap(srcbm_obj, HIDD_BM_COLMAP(dstBitMap));
 
+	    src_colmap_set = TRUE;
+
 /* 		
 kprintf("Colormap:\n");
 {
 ULONG idx;
 for (idx = 0; idx < 256; idx ++)
 	kprintf("[%d]=%d ", idx, HIDD_CM_GetPixel(HIDD_BM_COLMAP(dstBitMap), idx));
-			src_colmap_set = TRUE;
 }
 */
-		    }
+	}
     }
 
     if (   (dstflags == FLG_PALETTE || dstflags == FLG_STATICPALETTE)) {
@@ -4202,7 +4210,7 @@ static inline OOP_Object *get_planarbm_object(struct BitMap *bitmap, struct GfxB
 {
     OOP_Object *pbm_obj;
 
-kprintf("get_planarbm_object()\n");    
+//kprintf("get_planarbm_object()\n");    
     pbm_obj = obtain_cache_object(SDD(GfxBase)->planarbm_cache, GfxBase);
     
     if (NULL != pbm_obj) {
