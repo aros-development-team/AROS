@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -38,12 +38,16 @@
 #include <proto/iffparse.h>
 #include <proto/datatypes.h>
 
-#include "compilerspecific.h"
+#include <aros/symbolsets.h>
+
 #include "debug.h"
 
 #include "methods.h"
 #include "gifclass.h"
 #include "codec.h"
+
+/* Open superclass */
+ADD2LIBS("datatypes/picture.datatype", 0, struct Library *, PictureBase);
 
 /**************************************************************************************************/
 
@@ -442,14 +446,14 @@ static BOOL LoadGIF(struct IClass *cl, Object *o)
 	WriteChunkyPixels(&rp, leftedge, topedge, leftedge+width-1, topedge+height-1, gifhandle->linebuf, width);
 #else
 	if(!DoSuperMethod(cl, o,
-			PDTM_WRITEPIXELARRAY,		// Method_ID
-			(IPTR)gifhandle->linebuf,	// PixelData
-			PBPAFMT_LUT8,			// PixelFormat
-			width,				// PixelArrayMod (number of bytes per row)
-			leftedge,			// Left edge
-			topedge,			// Top edge
-			width,				// Width
-			height))			// Height
+			PDTM_WRITEPIXELARRAY,		/* Method_ID */
+			(IPTR)gifhandle->linebuf,	/* PixelData */
+			PBPAFMT_LUT8,			/* PixelFormat */
+			width,				/* PixelArrayMod (number of bytes per row) */
+			leftedge,			/* Left edge */
+			topedge,			/* Top edge */
+			width,				/* Width */
+			height))			/* Height */
 	{
 	    D(bug("gif.datatype/LoadGIF() --- WRITEPIXELARRAY failed !\n"));
 	    GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
@@ -469,14 +473,14 @@ static BOOL LoadGIF(struct IClass *cl, Object *o)
 	    WriteChunkyPixels(&rp, leftedge, topedge+line, leftedge+width-1, topedge+line, gifhandle->linebuf+i, width);
 #else
 	    if(!DoSuperMethod(cl, o,
-			    PDTM_WRITEPIXELARRAY,	// Method_ID
-			    (IPTR)gifhandle->linebuf+i,	// PixelData
-			    PBPAFMT_LUT8,		// PixelFormat
-			    width,			// PixelArrayMod (number of bytes per row)
-			    leftedge,			// Left edge
-			    topedge+line,		// Top edge
-			    width,			// Width
-			    1))				// Height (here: one line)
+			    PDTM_WRITEPIXELARRAY,	/* Method_ID */
+			    (IPTR)gifhandle->linebuf+i,	/* PixelData */
+			    PBPAFMT_LUT8,		/* PixelFormat */
+			    width,			/* PixelArrayMod (number of bytes per row) */
+			    leftedge,			/* Left edge */
+			    topedge+line,		/* Top edge */
+			    width,			/* Width */
+			    1))				/* Height (here: one line) */
 	    {
 		D(bug("gif.datatype/LoadGIF() --- WRITEPIXELARRAY failed !\n"));
 		GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
@@ -654,14 +658,14 @@ static BOOL SaveGIF(struct IClass *cl, Object *o, struct dtWrite *dtw )
     gifhandle->linebufpos = gifhandle->linebuf;
 #else
     if(!DoSuperMethod(cl, o,
-		    PDTM_READPIXELARRAY,	// Method_ID
-		    (IPTR)gifhandle->linebuf,	// PixelData
-		    PBPAFMT_LUT8,		// PixelFormat
-		    width,			// PixelArrayMod (number of bytes per row)
-		    0,				// Left edge
-		    0,				// Top edge
-		    width,			// Width
-		    height))			// Height
+		    PDTM_READPIXELARRAY,	/* Method_ID */
+		    (IPTR)gifhandle->linebuf,	/* PixelData */
+		    PBPAFMT_LUT8,		/* PixelFormat */
+		    width,			/* PixelArrayMod (number of bytes per row) */
+		    0,				/* Left edge */
+		    0,				/* Top edge */
+		    width,			/* Width */
+		    height))			/* Height */
     {
 	D(bug("gif.datatype/SaveGIF() --- READPIXELARRAY failed !\n"));
 	GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
@@ -696,94 +700,39 @@ static BOOL SaveGIF(struct IClass *cl, Object *o, struct dtWrite *dtw )
 
 /**************************************************************************************************/
 
-#ifdef __AROS__
-AROS_UFH3S(IPTR, DT_Dispatcher,
-       AROS_UFHA(Class *, cl, A0),
-       AROS_UFHA(Object *, o, A2),
-       AROS_UFHA(Msg, msg, A1))
-#else
-ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, register __a1 Msg msg)
-#endif
+IPTR GIF__OM_NEW(Class *cl, Object *o, Msg msg)
 {
-#ifdef __AROS__
-    AROS_USERFUNC_INIT
-#endif
-
-    IPTR retval;
-    struct dtWrite *dtw;
-
-    putreg(REG_A4, (long) cl->cl_Dispatcher.h_SubEntry);        /* Small Data */
-
-//    D(bug("gif.datatype/DT_Dispatcher: Entering\n"));
-
-    switch(msg->MethodID)
+    Object *newobj;
+    
+    D(bug("gif.datatype: Method OM_NEW\n"));
+    newobj = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
+    if (newobj)
     {
-	case OM_NEW:
-	    D(bug("gif.datatype/DT_Dispatcher: Method OM_NEW\n"));
-	    retval = DoSuperMethodA(cl, o, (Msg)msg);
-	    if (retval)
-	    {
-		if (!LoadGIF(cl, (Object *)retval))
-		{
-		    CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
-		    retval = 0;
-		}
-	    }
-	    break;
-    
-	case DTM_WRITE:
-	    D(bug("gif.datatype/DT_Dispatcher: Method DTM_WRITE\n"));
-	    dtw = (struct dtWrite *)msg;
-	    if( (dtw -> dtw_Mode) == DTWM_RAW )
-	    {
-		/* Local data format requested */
-		retval = SaveGIF(cl, o, dtw );
-	    }
-	    else
-	    {
-		/* Pass msg to superclass (which writes an IFF ILBM picture)... */
-		retval = DoSuperMethodA( cl, o, msg );
-	    }
-	    break;
-    
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-    
-    } /* switch(msg->MethodID) */
-
-//    D(bug("gif.datatype/DT_Dispatcher: Leaving\n"));
-
-    return retval;
-    
-#ifdef __AROS__
-    AROS_USERFUNC_EXIT
-#endif
-}
-
-/**************************************************************************************************/
-
-struct IClass *DT_MakeClass(struct Library *gifbase)
-{
-    struct IClass *cl;
-    
-    cl = MakeClass("gif.datatype", "picture.datatype", 0, 0, 0);
-
-    D(bug("gif.datatype/DT_MakeClass: DT_Dispatcher 0x%lx\n", (unsigned long) DT_Dispatcher));
-
-    if (cl)
-    {
-#ifdef __AROS__
-    cl->cl_Dispatcher.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(DT_Dispatcher);
-#else
-    cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;
-#endif
-    cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC) getreg(REG_A4);
-    cl->cl_UserData = (IPTR)gifbase; /* Required by datatypes (see disposedtobject) */
+	if (!LoadGIF(cl, newobj))
+	{
+	    CoerceMethod(cl, newobj, OM_DISPOSE);
+	    newobj = NULL;
+	}
     }
 
-    return cl;
+    return (IPTR)newobj;
+}
+    
+/**************************************************************************************************/
+
+IPTR GIF__DTM_WRITE(Class *cl, Object *o, struct dtWrite *dtw)
+{
+    D(bug("gif.datatype: Method DTM_WRITE\n"));
+    if( (dtw -> dtw_Mode) == DTWM_RAW )
+    {
+	/* Local data format requested */
+	return SaveGIF(cl, o, dtw );
+    }
+    else
+    {
+	/* Pass msg to superclass (which writes an IFF ILBM picture)... */
+	return DoSuperMethodA( cl, o, (Msg)dtw );
+    }
 }
 
 /**************************************************************************************************/
-

@@ -24,7 +24,6 @@
 #include <proto/dos.h>
 #include <proto/utility.h>
 
-#include "compilerspecific.h"
 #include "debug.h"
 
 #include "gifclass.h"

@@ -1,16 +1,13 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := gifclass codeclzw libfunc
-
-FUNCS := obtainengine
+FILES := gifclass codeclzw
 
 #MM workbench-datatypes-gif : includes linklibs
 
 USER_CFLAGS   := -DMYDEBUG
 
-%build_module_macro mmake=workbench-datatypes-gif modname=gif \
-  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
-  uselibs=amiga
+%build_module mmake=workbench-datatypes-gif \
+    modname=gif modtype=datatype \
+    files=$(FILES)
 
-%common
