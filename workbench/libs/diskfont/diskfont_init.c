@@ -16,7 +16,7 @@
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/alib.h>
+//#include <proto/alib.h>
 #include <proto/graphics.h>
 
 #include <stddef.h>
@@ -31,11 +31,13 @@
 
 /****************************************************************************************/
 
+#undef DEBUG
+#define DEBUG 0
 #include <aros/debug.h>
 
 /****************************************************************************************/
 #ifdef __MORPHOS__
-    unsigned long __amigappc__ = 1;
+    unsigned long __abox__ = 1;
 #endif
 
 struct inittable;
@@ -71,7 +73,7 @@ const struct Resident resident=
     (struct Resident *)&resident,
     (APTR)&LIBEND,
 #ifdef __MORPHOS__
-    RTF_PPC |RTF_AUTOINIT,
+    RTF_PPC | RTF_EXTENDED | RTF_AUTOINIT,
 #else
     RTF_AUTOINIT,
 #endif
@@ -80,7 +82,11 @@ const struct Resident resident=
     -120,	/* priority */
     (char *)name,
     (char *)&version[6],
-    (ULONG *)inittabl
+    (ULONG *)inittabl,
+#ifdef __MORPHOS__
+    REVISION_NUMBER,	/* Revision */
+    NULL /* Tags */
+#endif
 };
 
 const char name[]=NAME_STRING;
@@ -157,11 +163,11 @@ AROS_UFH3(struct DiskfontBase_intern *, AROS_SLIB_ENTRY(init,BASENAME),
 
     LIBBASE->seglist = segList;
 
-    NewList(&LIBBASE->diskfontlist);
-    
+    NEWLIST(&LIBBASE->diskfontlist);
+
     /* You would return NULL here if the init failed. */
     return LIBBASE;
-    
+
     AROS_USERFUNC_EXIT
 }
 
@@ -233,7 +239,7 @@ AROS_LH1(struct DiskfontBase_intern *, open,
 
     /* You would return NULL if the open failed. */
     return LIBBASE;
-    
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -242,7 +248,7 @@ AROS_LH1(struct DiskfontBase_intern *, open,
 AROS_LH0(BPTR, close, struct DiskfontBase_intern *, LIBBASE, 2, BASENAME)
 {
     AROS_LIBFUNC_INIT
-    
+
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -262,9 +268,9 @@ AROS_LH0(BPTR, close, struct DiskfontBase_intern *, LIBBASE, 2, BASENAME)
 	    /* Then expunge the library */
 	    return expunge();
     }
-    
+
     return 0;
-    
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -275,7 +281,7 @@ AROS_LH0(BPTR, expunge, struct DiskfontBase_intern *, LIBBASE, 3, BASENAME)
     AROS_LIBFUNC_INIT
 
     struct DiskFontHeader *dfh, *dfh2;
-    
+
     BPTR ret;
     /*
 	This function is single-threaded by exec by calling Forbid.
@@ -284,25 +290,25 @@ AROS_LH0(BPTR, expunge, struct DiskfontBase_intern *, LIBBASE, 3, BASENAME)
 
     ForeachNodeSafe(&LIBBASE->diskfontlist, dfh, dfh2)
     {
-    	if (dfh->dfh_TF.tf_Accessors < 1)
+	if (dfh->dfh_TF.tf_Accessors < 1)
 	{
 	    /* Possible paranoia check */
 	    if (!(dfh->dfh_TF.tf_Flags & FPF_REMOVED))
 	    {
-	    	/* Unlink from GfxBase->TextFonts */
-	    	Remove(&dfh->dfh_TF.tf_Message.mn_Node);
-		
+		/* Unlink from GfxBase->TextFonts */
+		Remove(&dfh->dfh_TF.tf_Message.mn_Node);
+
 		StripFont(&dfh->dfh_TF);
-		
+
 		/* Unlink from DiskfontBase->diskfontlist */
-		
+
 		Remove(&dfh->dfh_DF);
-		
+
 		UnLoadSeg(dfh->dfh_Segment);
 	    }
 	}
     }
-    
+
     /* Test for openers. */
 #if ALWAYS_ZERO_LIBCOUNT
     if (LIBBASE->realopencount)
@@ -338,7 +344,7 @@ AROS_LH0(BPTR, expunge, struct DiskfontBase_intern *, LIBBASE, 3, BASENAME)
 	LIBBASE->library.lib_NegSize+LIBBASE->library.lib_PosSize);
 
     return ret;
-    
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -347,9 +353,9 @@ AROS_LH0(BPTR, expunge, struct DiskfontBase_intern *, LIBBASE, 3, BASENAME)
 AROS_LH0I(int, null, struct DiskfontBase_intern *, LIBBASE, 4, BASENAME)
 {
     AROS_LIBFUNC_INIT
-    
+
     return 0;
-    
+
     AROS_LIBFUNC_EXIT
 }
 

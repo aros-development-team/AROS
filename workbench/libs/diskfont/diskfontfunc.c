@@ -13,7 +13,7 @@
 #include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/arossupport.h>
-#include <proto/alib.h>
+//#include <proto/alib.h>
 #include <string.h>
 
 #include "diskfont_intern.h"  
@@ -271,7 +271,7 @@ STATIC struct DFHData *AllocResources(struct DiskfontBase_intern *DiskfontBase)
     {
     	struct DevProc *dp = NULL;
 	
-    	NewList((struct List *)&dfhd->DirList);
+    	NEWLIST((struct List *)&dfhd->DirList);
 	
 	dfhd->OldDirLock = CurrentDir(0);
 	CurrentDir(dfhd->OldDirLock);
@@ -344,12 +344,15 @@ AROS_UFH3(IPTR, DiskFontFunc,
     struct FileInfoBlock *fib;
 
     STRPTR filename;
-            
+
+    (void)h;
+
     D(bug("DiskFontFunc(hook=%p, fhc=%p)\n", h, fhc));
 
     switch (fhc->fhc_Command)
     {
         case FHC_AF_INIT:
+	    D(bug("DiskFontFunc: FHC_AF_INIT\n"));
             
             if (!(fhc->fhc_UserData = dfhd = AllocResources( DFB(DiskfontBase) )))
 	    {
@@ -363,6 +366,7 @@ AROS_UFH3(IPTR, DiskFontFunc,
             break;
         
         case FHC_AF_READFONTINFO:
+	    D(bug("DiskFontFunc: FHC_AF_READFONTINFO\n"));
             
             dfhd = fhc->fhc_UserData;
             
@@ -422,7 +426,8 @@ AROS_UFH3(IPTR, DiskFontFunc,
             break;
             
         case FHC_AF_CLEANUP:
-        
+       	    D(bug("DiskFontFunc: FHC_AF_CLEANUP\n"));
+
             dfhd = fhc->fhc_UserData;
             
             /* If a .font file has been loaded, free it */
@@ -436,7 +441,7 @@ AROS_UFH3(IPTR, DiskFontFunc,
             break;
 
         case FHC_AF_GETDATE:
-
+	    D(bug("DiskFontFunc: FHC_AF_GETDATE\n"));
             ds = fhc->fhc_UserData;
             retval = FALSE;
             
@@ -459,6 +464,7 @@ AROS_UFH3(IPTR, DiskFontFunc,
             break;
 		
 	case FHC_ODF_INIT:
+	    D(bug("DiskFontFunc: FHC_ODF_INIT\n"));
 	    dfhd = AllocMem(sizeof (struct DFHData), MEMF_ANY|MEMF_CLEAR);
 	    if (dfhd)
 	    {
@@ -496,6 +502,7 @@ AROS_UFH3(IPTR, DiskFontFunc,
 	    break;
 
 	case FHC_ODF_GETMATCHINFO:
+	    D(bug("DiskFontFunc: FHC_ODF_GETMATCHINFO\n"));
 	    dfhd = (struct DFHData*)fhc->fhc_UserData;
 
 	    fdh = dfhd->CurrentFDH;
@@ -559,6 +566,7 @@ AROS_UFH3(IPTR, DiskFontFunc,
 	    break;
 
 	case FHC_ODF_CLEANUP:
+	    D(bug("DiskFontFunc: FHC_ODF_CLEANUP\n"));
 	    dfhd = (struct DFHData*)fhc->fhc_UserData;
 
 	    if (dfhd)
@@ -571,6 +579,7 @@ AROS_UFH3(IPTR, DiskFontFunc,
 	    break;
 
 	case FHC_ODF_OPENFONT:
+	    D(bug("DiskFontFunc: FHC_ODF_OPENFONT\n"));
 	    dfhd = (struct DFHData*)fhc->fhc_UserData;
 	    if ((fhc->fhc_DestTAttr.tta_Flags & FONTTYPE_FLAGMASK) == FONTTYPE_OUTLINEFONT)
 	    {

@@ -27,6 +27,9 @@
 #ifndef UTILITY_HOOKS_H
 #   include <utility/hooks.h>
 #endif
+#ifndef DOS_DOS_H
+#   include <dos/dos.h>
+#endif
 #include <aros/libcall.h>
 
 /* Options */
@@ -80,7 +83,7 @@
 #define FHC_AF_CLEANUP		2
 #define FHC_AF_GETDATE		3
 #define FHC_ODF_INIT		4
-#define FHC_ODF_CLEANUP 	5
+#define FHC_ODF_CLEANUP		5
 #define FHC_ODF_GETMATCHINFO	6
 #define FHC_ODF_OPENFONT	7
 
@@ -94,12 +97,12 @@
 /* Structure for storing TAvailFonts elements */
 struct FontInfoNode
 {
-    struct MinNode 	NodeHeader;
+    struct MinNode	NodeHeader;
 
     struct TAvailFonts	TAF;
 
     /* or-ed combo of FDF_REUSENAME and FDF_REUSETAGS  */
-    UBYTE   		Flags;
+    UBYTE		Flags;
 
     STRPTR		NameInBuf;
     UWORD		NameLength; /* !!!! Includes 0 terminator */
@@ -136,7 +139,7 @@ struct FontHookCommand
 
     /* Used by OpenDiskFont only */
     struct TTextAttr	*fhc_ReqAttr;
-    struct TextFont 	*fhc_TextFont;
+    struct TextFont	*fhc_TextFont;
 
     /* This field can be filled out by the hook. It will not be changed outside the hook */
     APTR		fhc_UserData;
@@ -145,18 +148,18 @@ struct FontHookCommand
 
 struct OTagList
 {
-    STRPTR  	    	filename;
-    struct TagItem  	tags[1];
+    STRPTR		filename;
+    struct TagItem	tags[1];
 };
 
 struct FontDescrHeader
 {
-    UWORD   	    	NumOutlineEntries;
-    UWORD   	    	NumEntries;
-    UWORD   	    	ContentsID;
-    BOOL    	    	Tagged;
-    struct  TTextAttr 	*TAttrArray;
-    struct  OTagList   	*OTagList;
+    UWORD		NumOutlineEntries;
+    UWORD		NumEntries;
+    UWORD		ContentsID;
+    BOOL		Tagged;
+    struct  TTextAttr	*TAttrArray;
+    struct  OTagList	*OTagList;
 };
 
 
@@ -173,7 +176,7 @@ struct FontDescrHeader
 struct CopyState
 {
     /* What node was currently being written when buffer was full ? */
-    struct FontInfoNode      	*BufferFullNode;
+    struct FontInfoNode		*BufferFullNode;
 
     /* What state were we in when the buffer was full ? */
     UWORD			BufferFullState;
@@ -185,6 +188,16 @@ struct CopyState
 };
 
 
+
+struct AADiskFontHeader
+{
+    struct Node			dfh_DF;
+    UWORD			dfh_FileID;
+    UWORD			dfh_Revision;
+    LONG			dfh_Segment;
+    char			dfh_Name[MAXFONTNAME];
+    struct ColorTextFont	dfh_TF;
+};
 
 
 
@@ -304,20 +317,20 @@ BOOL WriteTags(BPTR, struct TagItem *, struct DiskfontBase_intern *);
 
 struct DiskfontBase_intern
 {
-    struct Library    	library;
+    struct Library	library;
     /* struct ExecBase * sysbase; */
-    BPTR	      	seglist;
+    BPTR		seglist;
 
 /*    struct Library	 * dosbase; */
     struct GfxBase	* gfxbase;
     struct Library	* utilitybase;
 
     /* dosstreamhandler hook neede for endian io funcs */
-    struct Hook 	dsh;
-    struct AFHookDescr 	hdescr[NUMFONTHOOKS];
-    struct List     	diskfontlist;
+    struct Hook		dsh;
+    struct AFHookDescr	hdescr[NUMFONTHOOKS];
+    struct List		diskfontlist;
 #if ALWAYS_ZERO_LIBCOUNT
-    UWORD   	    	realopencount;
+    UWORD		realopencount;
 #endif
 };
 
