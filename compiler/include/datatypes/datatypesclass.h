@@ -2,7 +2,7 @@
 #define DATATYPES_DATATYPESCLASS_H
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    Copyright (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -22,15 +22,12 @@
 #include <intuition/imageclass.h>
 #endif
 
-// #warning "No printer stuff yet"
-/*
 #ifndef	DEVICES_PRINTER_H
 #include <devices/printer.h>
 #endif
 #ifndef	DEVICES_PRTBASE_H
 #include <devices/prtbase.h>
 #endif
-*/
 
 #define  DATATYPESCLASS         "datatypesclass"
 
@@ -389,10 +386,9 @@ struct dtTrigger
 /* Printer IO request */
 union printerIO
 {
-    struct IOStdReq ios;
-    /* TODO: No printer stuff yet.
-       struct IODRPReq iodrp;
-       struct IOPrtCmdReq iopc; */
+    struct IOStdReq 	ios;
+    struct IODRPReq 	iodrp;
+    struct IOPrtCmdReq  iopc;
 };
 
 
