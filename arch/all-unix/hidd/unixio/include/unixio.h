@@ -36,7 +36,7 @@ struct uioMessage
 enum {
     moHidd_UnixIO_Wait = 0,	/* LONG M ( uioMsg *)		*/
     moHidd_UnixIO_AsyncIO,	/* 	*/
-    
+    moHidd_UnixIO_AbortAsyncIO,
     num_Hidd_UnixIO_Attrs
     
 };
@@ -58,14 +58,22 @@ struct uioMsgAsyncIO
     struct MsgPort * um_ReplyPort;
 };
 
+struct uioMsgAbortAsyncIO
+{
+    STACKULONG um_MethodID;
+    STACKULONG um_Filedesc;
+};
+
 /* UnixIO HIDD Values */
 #define vHidd_UnixIO_Read       0x1
 #define vHidd_UnixIO_Write      0x2
+#define vHidd_UnixIO_Abort	0x4
 
 /* Stubs */
 IPTR Hidd_UnixIO_Wait(HIDD *h, ULONG fd, ULONG mode, APTR callback,  APTR callbackdata);
 HIDD *New_UnixIO(struct Library * /* OOPBase */);
 IPTR Hidd_UnixIO_AsyncIO(HIDD *h, ULONG fd, struct MsgPort *port, ULONG mode);
+VOID Hidd_UnixIO_AbortAsyncIO(HIDD *h, ULONG fd);
 
 #endif /* HIDD_UNIXIO_H */
 

@@ -172,12 +172,34 @@ static void WaitForIO (void)
 
 	while ((msg = (struct uioMessage *)GetMsg (ud->ud_Port)))
 	{
-	    D(bug("wfio: Got msg fd=%ld mode=%ld\n", msg->fd, msg->mode));
-	    AddTail (&waitList, (struct Node *)msg);
+	    if (msg->mode != vHidd_UnixIO_Abort)
+	    {
+	
+	      D(bug("wfio: Got msg fd=%ld mode=%ld\n", msg->fd, msg->mode));
+	      AddTail (&waitList, (struct Node *)msg);
 
-	    fcntl (msg->fd, F_SETOWN, getpid());
-	    flags = fcntl (msg->fd, F_GETFL);
-	    fcntl (msg->fd, F_SETFL, flags | FASYNC);
+	      fcntl (msg->fd, F_SETOWN, getpid());
+	      flags = fcntl (msg->fd, F_GETFL);
+	      fcntl (msg->fd, F_SETFL, flags | FASYNC);
+	    }
+	    else
+	    {
+	      /*
+	      ** I must look for all messages that tell me to watch on this
+	      ** filedescriptor.
+	      */
+	      struct uioMessage * umsg,  *_umsg;
+	      
+	      ForeachNodeSafe(&waitList, umsg, _umsg)
+	      {
+	        if (umsg->fd = msg->fd)
+	        {
+	          Remove((struct Node *)umsg);
+	          FreeMem(umsg, sizeof(struct uioMessage));
+	        }
+	      }
+	      ReplyMsg((struct Message *)msg);
+	    }
 	}
 
 	FD_ZERO (&rfds);
@@ -409,6 +431,37 @@ static IPTR unixio_asyncio(Class *cl, Object *o, struct uioMsgAsyncIO *msg)
 }
 
 
+/*****************************
+**  UnixIO::AbortAsyncIO()  **
+*****************************/
+static VOID unixio_abortasyncio(Class *cl, Object *o, struct uioMsgAbortAsyncIO *msg)
+{
+    struct UnixIOData *id = INST_DATA(cl, o);
+    struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
+    struct uio_data *ud = (struct uio_data *)cl->UserData;
+    struct MsgPort  * port = CreatePort(NULL, 0);
+
+    if (umsg  && port)
+    {
+	umsg->Message.mn_ReplyPort = port;
+	umsg->fd   = ((struct uioMsg *)msg)->um_Filedesc;
+	umsg->mode = vHidd_UnixIO_Abort;
+
+	PutMsg (ud->ud_Port, (struct Message *)umsg);
+
+	WaitPort (port);
+	GetMsg (port);
+
+    }
+    
+    if (umsg)
+	FreeMem (umsg, sizeof (struct uioMessage));
+
+    if (port)
+        DeletePort(port);
+}
+
+
 
 /* This is the initialisation code for the HIDD class itself. */
 #undef OOPBase
@@ -416,7 +469,7 @@ static IPTR unixio_asyncio(Class *cl, Object *o, struct uioMsgAsyncIO *msg)
 
 
 #define NUM_ROOT_METHODS 2
-#define NUM_UNIXIO_METHODS 2
+#define NUM_UNIXIO_METHODS 3
 
 AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
     AROS_UFHA(ULONG, dummy1, D0),
@@ -444,6 +497,7 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
     {
     	{ (IPTR (*)())unixio_wait,	moHidd_UnixIO_Wait		},
     	{ (IPTR (*)())unixio_asyncio,	moHidd_UnixIO_AsyncIO		},
+    	{ (IPTR (*)())unixio_abortasyncio,moHidd_UnixIO_AbortAsyncIO	},
     	{ NULL, 0UL }
     };
     
@@ -616,6 +670,18 @@ IPTR Hidd_UnixIO_AsyncIO(HIDD *o, ULONG fd, struct MsgPort * port, ULONG mode)
      p.um_Mode	   = mode;
      
      return DoMethod((Object *)o, (Msg)&p);
+}
+
+VOID Hidd_UnixIO_AbortAsyncIO(HIDD *o, ULONG fd)
+{
+     static MethodID mid = 0UL;
+     struct uioMsgAbortAsyncIO p;
+     
+     if (!mid) mid = GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_AbortAsyncIO);
+     p.um_MethodID = mid;
+     p.um_Filedesc = fd;
+     
+     DoMethod((Object *)o, (Msg)&p);
 }
 
 
