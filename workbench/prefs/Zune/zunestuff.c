@@ -87,7 +87,7 @@ Object *MakePopframe(void)
 
 ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
 {
-    return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
+    return (DoSuperMethod(cl, obj, OM_NEW, (IPTR) &tag1, NULL));
 }
 
 #endif
