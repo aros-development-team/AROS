@@ -45,10 +45,6 @@
 #include "debug.h"
 
 #ifdef _AROS
-extern struct Library *LayersBase;
-#endif
-
-#ifdef _AROS
 #define NO_PRINTER 1
 #else
 #define NO_PRINTER 0
