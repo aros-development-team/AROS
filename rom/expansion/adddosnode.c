@@ -110,10 +110,8 @@
 		iofs->io_Union.io_OpenDevice.io_Environ    = (IPTR *)BADDR(fssm->fssm_Environ);
 		iofs->io_Union.io_OpenDevice.io_DosName    = deviceNode->dn_NewName;
 
-		kprintf("ADDSOSNODE: trying to open filesystem %S\n", handler);
 		if (!OpenDevice(handler, 0, &iofs->IOFS, fssm->fssm_Flags))
 		{
-		    kprintf("ADDDOSNODE: Ok, I did it!\n");
 		    /*
 		      Ok, this means that the handler was able to open,
 		      the old mount command just left the device hanging?
@@ -125,8 +123,6 @@
 		    deviceNode->dn_Unit = iofs->IOFS.io_Unit;
 		    ok = TRUE;
 		}
-		else
-		    kprintf("ADDDOSNODE: Failed!!\n");
 
 		DeleteIORequest(&iofs->IOFS);
 	    }
