@@ -1,0 +1,86 @@
+##begin defines
+#ifdef AddClass
+#   undef AddClass
+#endif
+#ifdef DisposeObject
+#   undef DisposeObject
+#endif
+#ifdef FreeClass
+#   undef FreeClass
+#endif
+#ifdef GetAttr
+#   undef GetAttr
+#endif
+#ifdef MakeClass
+#   undef MakeClass
+#endif
+#ifdef NewObjectA
+#   undef NewObjectA
+#endif
+#ifdef NextObject
+#   undef NextObject
+#endif
+#ifdef RemoveClass
+#   undef RemoveClass
+#endif
+#ifdef SetAttrsA
+#   undef SetAttrsA
+#endif
+##end defines
+
+##begin clib
+#ifndef INTUITION_INTUITION_H
+#   include <intuition/intuition.h>
+#endif
+#ifndef INTUITION_INTUITIONBASE_H
+#   include <intuition/intuitionbase.h>
+#endif
+#ifndef INTUITION_SCREENS_H
+#   include <intuition/screens.h>
+#endif
+#ifndef INTUITION_CLASSES_H
+#   include <intuition/classes.h>
+#endif
+
+#ifndef IntuitionBase
+extern struct IntuitionBase * IntuitionBase;
+#endif
+
+/* Prototypes for stubs in amiga.lib */
+IPTR DoGadgetMethod (struct Gadget * gad, struct Window * win,  
+                    struct Requester * req, ULONG MethodID, ...);
+ULONG SetGadgetAttrs (struct Gadget * gad, struct Window * win,
+                    struct Requester * req, Tag tag1, ...);
+
+#ifndef CLIB_BOOPSI_PROTOS_H /* Prevent name clashes */
+ULONG SetAttrs (APTR obj, Tag tag1, ...);
+ULONG SetSuperAttrs (Class * cl, Object * obj, Tag tag1, ...);
+APTR NewObject (Class * classPtr, UBYTE * classID, Tag tag1, ...);
+#ifndef USE_BOOPSI_STUBS
+IPTR DoMethodA (Object * obj, Msg message);
+IPTR DoMethod (Object * obj, ULONG MethodID, ...);
+IPTR DoSuperMethodA (Class * cl, Object * obj, Msg message);
+IPTR DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...);
+IPTR CoerceMethodA (Class * cl, Object * obj, Msg message);
+IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
+#endif /* !USE_BOOPSI_STUBS */
+#endif
+
+#ifndef CLIB_BOOPSI_PROTOS_H /* Prevent name clashes */
+IPTR CallHookA (struct Hook * hook, APTR obj, APTR param);
+IPTR CallHook (struct Hook * hook, APTR obj, ...);
+#endif
+
+struct Window * OpenWindowTags (struct NewWindow * newWindow, Tag tag1, ...);
+struct Screen * OpenScreenTags (struct NewScreen * newScreen, Tag tag1, ...);
+
+LONG EasyRequest (struct Window * window, struct EasyStruct * easyStruct, ULONG * idcmpPtr, ...);
+
+##end clib
+
+##begin proto
+#ifndef IntuitionBase
+extern struct IntuitionBase * IntuitionBase;
+#endif
+
+##end proto
