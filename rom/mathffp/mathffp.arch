@@ -14,16 +14,17 @@
 #include <aros/libcall.h>
 #include <exec/types.h>
 #include "mathffp_intern.h"
+#/Local
 #/Header
 
-#Function LHA float SPAbs
+#Function float SPAbs
 #Parameter float fnum1 D0
+    FFP number
+#/Parameter
 #LibOffset 9
 #AutoDoc
     FUNCTION
         Calculate the absolute value of a given floating point number
-    INPUTS
-        fnum1  - ffp number
 
     RESULT
         absolute value of fnum1
@@ -62,19 +63,17 @@
 #/Function
 
 
-#Function LHA float SPAdd
+#Function float SPAdd
 #Parameter float fnum1 D1
+    FFP number
+#/Parameter
 #Parameter float fnum2 D0
+    FFP number
+#/Parameter
 #LibOffset 11
 #AutoDoc
     FUNCTION
         Calculate the sum of two ffp numbers
-
-    INPUTS
-	<DL>
-	<DT>fnum1</DT><DD>ffp number to add</DD>
-        <DT>fnum2</DT><DD>ffp number to add</DD>
-	</DL>
 
     RESULT
         sum of fnum1 and fnum2.
@@ -233,17 +232,15 @@ kprintf("SPAdd(%x,%x)=%x\n",fnum1,fnum2,Res);
 #/Function
 
 
-#Function LHA float SPCeil
+#Function float SPCeil
 #Parameter float y D0
+    FFP number
+#/Parameter
 #LibOffset 16
 #AutoDoc
     FUNCTION
         Calculate the least integer ffp-number greater than or equal to
         fnum1
-
-
-    INPUTS
-        y  - ffp number
 
     RESULT
 
@@ -277,17 +274,17 @@ kprintf("SPAdd(%x,%x)=%x\n",fnum1,fnum2,Res);
 #/Function
 
 
-#Function LHA LONG SPCmp
+#Function LONG SPCmp
 #Parameter float fnum1 D0
+    FFP number
+#/Parameter
 #Parameter float fnum2 D1
+    FFP number
+#/Parameter
 #LibOffset 7
 #AutoDoc
     FUNCTION
         Compares two ffp numbers
-
-    INPUTS
-        fnum1  - ffp number
-        fnum2  - ffp number
 
     RESULT
        +1 : fnum1 > fnum2
@@ -383,21 +380,20 @@ kprintf("SPAdd(%x,%x)=%x\n",fnum1,fnum2,Res);
 #/Function
 
 
-#Function LHA float SPDiv
+#Function float SPDiv
 #Parameter float fnum1 D1
+    FFP number
+#/Parameter
 #Parameter float fnum2 D0
+    FFP number
+#/Parameter
 #LibOffset 14
 #AutoDoc
     FUNCTION
         Divide two ffp numbers
         fnum = fnum2 / fnum1;
 
-    INPUTS
-        fnum1  - ffp number
-        fnum2  - ffp number
-
     RESULT
-
         Flags:
           zero     : result is zero
           negative : result is negative
@@ -500,15 +496,14 @@ kprintf("%x / %x =%x\n",fnum2,fnum1,Res);
 #/Function
 
 
-#Function LHA LONG SPFix
+#Function LONG SPFix
 #Parameter float fnum D0
+    FFP number
+#/Parameter
 #LibOffset 5
 #AutoDoc
     FUNCTION
         Convert ffp-number to integer
-
-    INPUTS
-        fnum   - ffp number
 
     RESULT
         absolute value of fnum1
@@ -578,20 +573,18 @@ kprintf("SPFix(%x)=%d\n",fnum,Res);
 #/Function
 
 
-#Function LHA float SPFloor
+#Function float SPFloor
 #Parameter float y D0
+    FFP number
+#/Parameter
 #LibOffset 15
 #AutoDoc
     FUNCTION
         Calculate the largest integer ffp-number less than or equal to
         fnum
 
-
-    INPUTS
-        y  - ffp number
-
     RESULT
-             ffp number
+	FFP number
 
         Flags:
           zero     : result is zero
@@ -668,18 +661,16 @@ kprintf("SPFix(%x)=%d\n",fnum,Res);
 #/Function
 
 
-#Function LHA float SPFlt
+#Function float SPFlt
 #Parameter LONG inum D0
+    Signed integer to convert
+#/Parameter
 #LibOffset 6
 #AutoDoc
     FUNCTION
 
-
-    INPUTS
-        inum  - signed integer number
-
     RESULT
-
+	FFP number
 
         Flags:
           zero     : result is zero
@@ -694,13 +685,7 @@ kprintf("SPFix(%x)=%d\n",fnum,Res);
 
     SEE ALSO
 
-
     INTERNALS
-
-    HISTORY
-
-/*
-    ALGORITHM
         Return zero for x == 0.
         If x < 0 set the sign-bit and calculate the absolute value
         of x.
@@ -712,7 +697,9 @@ kprintf("SPFix(%x)=%d\n",fnum,Res);
         Otherwise rotate the given integer by
         (32 - (number of highes set bit + 1)) bits to the left and
         calculate the result from that.
-*/
+
+    HISTORY
+
 #/AutoDoc
 #Code
   BYTE Exponent = 0;
@@ -766,20 +753,21 @@ kprintf("%x\n",Res);
 #/Function
 
 
-#Function LHA float SPMul
+#Function float SPMul
 #Parameter float fnum1 D1
+    FFP number
+#/Parameter
 #Parameter float fnum2 D0
+    FFP number
+#/Parameter
 #LibOffset 13
 #AutoDoc
     FUNCTION
         Multiply two ffp numbers
         fnum = fnum1 * fnum2;
 
-    INPUTS
-        fnum1  - ffp number
-        fnum2  - ffp number
-
     RESULT
+	FFP number
 
         Flags:
           zero     : result is zero
@@ -848,15 +836,14 @@ kprintf("%x * %x = %x\n",fnum1,fnum2,Res);
 #/Function
 
 
-#Function LHA float SPNeg
+#Function float SPNeg
 #Parameter float fnum1 D0
+    FFP number
+#/Parameter
 #LibOffset 10
 #AutoDoc
     FUNCTION
         Calculate fnum1*(-1)
-
-    INPUTS
-        fnum1  - ffp number
 
     RESULT
         -fnum1
@@ -905,20 +892,21 @@ kprintf("%x * %x = %x\n",fnum1,fnum2,Res);
 #/Function
 
 
-#Function LHA float SPSub
+#Function float SPSub
 #Parameter float fnum1 D0
+    FFP number
+#/Parameter
 #Parameter float fnum2 D1
+    FFP number
+#/Parameter
 #LibOffset 12
 #AutoDoc
     FUNCTION
         Subtract two floating point numbers
         fnum = fnum2 - fnum1;
 
-    INPUTS
-        fnum1  - ffp number
-        fnum2  - ffp number
-
     RESULT
+	FFP number
 
         Flags:
           zero     : result is zero
@@ -949,19 +937,16 @@ kprintf("%x * %x = %x\n",fnum1,fnum2,Res);
 #/Function
 
 
-#Function LHA LONG SPTst
+#Function LONG SPTst
 #Parameter float fnum D1
+    FFP number
+#/Parameter
 #LibOffset 8
 #AutoDoc
     FUNCTION
         Compare a ffp-number against zero.
 
-
-    INPUTS
-        fnum  - ffp number
-
     RESULT
-
         +1 : fnum > 0.0
          0 : fnum = 0.0
         -1 : fnum < 0.0

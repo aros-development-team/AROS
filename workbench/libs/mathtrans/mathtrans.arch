@@ -17,16 +17,15 @@
 #/Header
 
 
-#Function LHA float SPAtan
+#Function float SPAtan
 #Parameter float fnum1 D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 5
 #AutoDoc
     FUNCTION
       Calculates the angle of a given number representing the tangent
       of that angle. The angle will be in radians.
-
-    INPUTS
-      fnum1   - Motorola fast floating point number
 
     RESULT
       Motorola fast floating point number
@@ -126,15 +125,14 @@
 #/Function
 
 
-#Function LHA float SPSin
+#Function float SPSin
 #Parameter float fnum1 D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 6
 #AutoDoc
     FUNCTION
       Calculate the sine of a given FFP number in radians
-
-    INPUTS
-      y - Motorola fast floating point number
 
     RESULT
       Motorola fast floating point number
@@ -227,15 +225,14 @@
 #/Function
 
 
-#Function LHA float SPCos
+#Function float SPCos
 #Parameter float fnum1 D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 7
 #AutoDoc
     FUNCTION
       Calculate the cosine of a given ffp number in radians
-
-    INPUTS
-      y - Motorola fast floating point number
 
     RESULT
       Motorola fast floating point number
@@ -331,15 +328,14 @@
 #/Function
 
 
-#Function LHA float SPTan
+#Function float SPTan
 #Parameter float fnum1 D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 8
 #AutoDoc
     FUNCTION
       Calculate the tangens of a given FFP number in radians
-
-    INPUTS
-      y - Motorola fast floating point number
 
     RESULT
       Motorola fast floating point number
@@ -431,9 +427,13 @@
 #/Function
 
 
-#Function LHA float SPSincos
+#Function float SPSincos
 #Parameter IPTR * pfnum2 D1
+    Pointer to a Motorola fast floating point number
+#/Parameter
 #Parameter float fnum1 D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 9
 #AutoDoc
     FUNCTION
@@ -442,10 +442,6 @@
       returns the sine of that number as a result and puts
       the cosine of that number into *pfnum2 which must represent
       a valid pointer to a ffp-number.
-
-    INPUTS
-      pfnum2  - pointer to a Motorola fast floating point number
-      fnum1   - Motorola fast floating point number
 
     RESULT
       *pfnum2       - Motorola fast floating point number
@@ -471,15 +467,14 @@
 #/Function
 
 
-#Function LHA float SPSinh
+#Function float SPSinh
 #Parameter float fnum1 D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 10
 #AutoDoc
     FUNCTION
       Calculate the hyperbolic sine of the ffp number
-
-    INPUTS
-      fnum1 - Motorola fast floating point number
 
     RESULT
       Motorola fast floating point number
@@ -548,15 +543,14 @@ LONG tmp;
 #/Function
 
 
-#Function LHA float SPCosh
+#Function float SPCosh
 #Parameter float fnum1 D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 11
 #AutoDoc
     FUNCTION
       Calculate the hyperbolic cosine of the ffp number
-
-    INPUTS
-      fnum - Motorola fast floating point number
 
     RESULT
       Motorola fast floating point number
@@ -618,15 +612,14 @@ LONG tmp;
 #/Function
 
 
-#Function LHA float SPTanh
+#Function float SPTanh
 #Parameter float fnum1 D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 12
 #AutoDoc
     FUNCTION
       Calculate hyperbolic tangens of the ffp number
-
-    INPUTS
-      fnum1 - Motorola fast floating point number
 
     RESULT
       Motorola fast floating point number
@@ -692,15 +685,14 @@ LONG tmp;
 #/Function
 
 
-#Function LHA float SPExp
+#Function float SPExp
 #Parameter float fnum1 D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 13
 #AutoDoc
     FUNCTION
       Calculate e^x
-
-    INPUTS
-      fnum1 - Motorola fast floating point number
 
     RESULT
       Motorola fast floating point number
@@ -807,15 +799,14 @@ char Exponent;
 #/Function
 
 
-#Function LHA float SPLog
+#Function float SPLog
 #Parameter float fnum1 D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 14
 #AutoDoc
     FUNCTION
       Calculate logarithm (base 10) of the given ffp number
-
-    INPUTS
-      fnum1 - Motorola floating point number
 
     RESULT
       ffp-number
@@ -914,17 +905,17 @@ char Exponent;
 #/Function
 
 
-#Function LHA float SPPow
+#Function float SPPow
 #Parameter float fnum1 D1
+    Motorola fast floating point number
+#/Parameter
 #Parameter float fnum2 D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 15
 #AutoDoc
     FUNCTION
       Calculate fnum2 raised to the fnum1 power (fnum2^fnum1)
-
-    INPUTS
-      fnum1 - Motorola fast floating point number
-      fnum2 - Motorola fast floating point number
 
     RESULT
       Motorola fast floating point number
@@ -969,15 +960,14 @@ char Exponent;
 #/Function
 
 
-#Function LHA float SPSqrt
+#Function float SPSqrt
 #Parameter float fnum1 D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 16      
 #AutoDoc      
     FUNCTION
       Calculate square root of ffp number
-
-    INPUTS
-      fnum1 - Motorola fast floating point number
 
     RESULT
       Motorola fast floating point number
@@ -1103,15 +1093,14 @@ char Exponent;
 #/Function
 
 
-#Function LHA float SPTieee
+#Function float SPTieee
 #Parameter float fnum D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 17
 #AutoDoc
     FUNCTION
        Convert FFP number to single precision ieee number
-
-    INPUTS
-       fnum - Motorola fast floting point number
 
     RESULT
        IEEE Single Precision Floating Point
@@ -1159,15 +1148,14 @@ char Exponent;
 #/Function
 
 
-#Function LHA float SPFieee
+#Function float SPFieee
 #Parameter float ieeenum D0
+    IEEE Single Precision floating point number
+#/Parameter
 #LibOffset 18
 #AutoDoc
     FUNCTION
       Convert single precision ieee number to FFP number
-
-    INPUTS
-      ieeenum - IEEE Single Precision floating point number
 
     RESULT
       Motorola fast floating point number
@@ -1225,15 +1213,14 @@ char Exponent;
 #/Function
 
 
-#Function LHA float SPAsin
+#Function float SPAsin
 #Parameter float fnum1 D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 19
 #AutoDoc
     FUNCTION
       Calculate arcussin of the given number
-
-    INPUTS
-      fnum1 - Motorola fast floating point number
 
     RESULT
       Motorola fast floating point number
@@ -1342,15 +1329,14 @@ char Exponent;
 #/Function
 
 
-#Function LHA float SPAcos
+#Function float SPAcos
 #Parameter float fnum1 D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 20
 #AutoDoc
     FUNCTION
       Calculate arcuscos of the given number
-
-    INPUTS
-      fnum - Motorola fast floating point number
 
     RESULT
       Motorola fast floating point number
@@ -1469,15 +1455,14 @@ char Exponent;
 #/Function
 
 
-#Function LHA float SPLog10
+#Function float SPLog10
 #Parameter float fnum1 D0
+    Motorola fast floating point number
+#/Parameter
 #LibOffset 21
 #AutoDoc
     FUNCTION
       Calculate logarithm (base 10) of the given ffp number
-
-    INPUTS
-      fnum1 - Motorola floating point number
 
     RESULT
       ffp number
