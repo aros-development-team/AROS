@@ -61,8 +61,20 @@ __asm Object *MUI_NewObjectA(register __a0 char *classname,register __a1 struct 
 #ifndef __MAXON__
 #warning FIXME: I should increase the open count of library (use cl->hook->data)
 #endif
-	return NewObjectA(cl, NULL, tags);
+	Object *obj = NewObjectA(cl, NULL, tags);
+
+#ifndef _AROS
+	if (!obj)
+	{
+	    printf("Could create object of %s\n",classname);
+	}
+#endif
+	return obj;
     }
+
+#ifndef _AROS
+printf("Couldn't find %s\n",classname);
+#endif
 
     return NULL;
 
