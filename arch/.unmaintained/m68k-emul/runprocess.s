@@ -15,13 +15,14 @@
 
 	#include "machine.i"
 
-	FirstArg	= 4+(2*4)	/* Return-address + registers */
-	proc		= FirstArg
-	sss		= proc+4
-	argptr		= sss+4
-	argsize		= argptr+4
-	entry		= argsize+4
-	DOSBase		= entry+4
+	.set FirstArg,	4+(2*4)	/* Return-address + registers */
+	.set proc,	FirstArg
+	.set sss,	proc+4
+	.set argptr,	sss+4
+	.set argsize,	argptr+4
+	.set entry,	argsize+4
+
+#define	DOSBase		entry+4
 
 	.text
 	.balign 16
