@@ -49,8 +49,8 @@ int main(int argc, char **argv)
     	struct Window *window = OpenWindowTags(NULL,
 		WA_Width,	200,
     		WA_Height,	100,
-    		WA_Title,	"Stringgadget Demo",
-    		WA_Gadgets,	&strgad,
+    		WA_Title,	(IPTR)"Stringgadget Demo",
+    		WA_Gadgets,	(IPTR)&strgad,
     		WA_IDCMP,	IDCMP_GADGETUP|IDCMP_RAWKEY,
     		TAG_END);
     	if (window)
