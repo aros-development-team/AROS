@@ -174,4 +174,53 @@
 #define SDCTRL		0xfffffc00
 #define SDPWDN		0xfffffc00
 
+/*
+ * Flags used by the Interrupt controller - again the dragonball 
+ * doc is all wrong - have a look at the xcopilot sources.
+ */
+ 
+/* Flags for IMR, ISR, IPR */
+#define SPI2_F		(0x01 << 0)
+#define TMR2_F		(0x01 << 1)
+#define UART1_F		(0x01 << 2)
+#define WDT_F		(0x01 << 3)
+#define RTC_F		(0x01 << 4)
+#define LCDC_F		(0x01 << 5)
+#define KB_F		(0x01 << 6)
+#define PWM1_F		(0x01 << 7)
+#define INT0_F		(0x01 << 8)
+#define INT1_F		(0x01 << 9)
+#define INT2_F		(0x01 << 10)
+#define INT3_F		(0x01 << 11)
+#define INT4_F		(0x01 << 12)
+#define INT5_F		(0x01 << 13)
+#define INT6_F		(0x01 << 14)
+#define INT7_F		(0x01 << 15)
+#define IRQ1_F		(0x01 << 16)
+#define IRQ2_F		(0x01 << 17)
+#define IRQ3_F		(0x01 << 18)
+#define IRQ6_F		(0x01 << 19)
+#define PEN_F		(0x01 << 20)
+#define SPIS_F		(0x01 << 21)
+#define TMR1_F		(0x01 << 22)
+#define IRQ7_F		(0x01 << 23)
+
+/* Flags for ICR */
+#define POL5_F		(0x01 << 7)
+#define ET6_F		(0x01 << 8)
+#define ET3_F		(0x01 << 9)
+#define ET2_F		(0x01 << 10)
+#define ET1_F		(0x01 << 11)
+#define POL6_F		(0x01 << 12)
+#define POL3_F		(0x01 << 13)
+#define POL2_F		(0x01 << 14)
+#define POL1_F		(0x01 << 15)
+#define POL1_F		(0x01 << 15)
+#define POL1_F		(0x01 << 15)
+#define POL1_F		(0x01 << 15)
+#define POL1_F		(0x01 << 15)
+#define POL1_F		(0x01 << 15)
+#define POL1_F		(0x01 << 15)
+#define POL1_F		(0x01 << 15)
+
 #endif
