@@ -67,7 +67,14 @@ struct vfp
 
 LONG DoName(struct IOFileSys *iofs, STRPTR name, struct DosLibrary * DOSBase);
 LONG DevName(STRPTR name, struct Device **devptr, struct DosLibrary * DOSBase);
+
 BOOL writeFullPath(struct AnchorPath * AP);
+LONG followpattern(struct AnchorPath * AP, 
+                   struct AChain * AC,
+                   struct DosLibrary * DOSBase);
+LONG createresult(struct AnchorPath * AP,
+                  struct AChain * AC,
+                  struct DosLibrary * DOSBase);
 
 struct marker
 {

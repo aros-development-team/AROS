@@ -60,8 +60,11 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-  /* If the user says I am supposed to enter the directory then I first check
-     whether it is a directory... */
+  /* 
+  ** If the user says I am supposed to enter the directory then I first check
+  ** whether it is a directory... 
+  */
+  
   struct AChain * AC = AP->ap_Current;
   BOOL success;
   
@@ -73,6 +76,19 @@
 
       /* Ok, it seems to be a directory so I will enter it. */
       /* See whether there's a AnchorChain for that dir... */
+      if (NULL == AC->an_Child)
+      {
+        AC->an_Child = (struct AChain *)
+           AllocVec(sizeof(struct AChain)+1, MEMF_CLEAR);
+        
+        AC->an_Child->an_Parent = AC;
+        
+        AC->an_Child->an_String[0] = P_ANY;
+        AC->an_Child->an_Flags = DDF_PatternBit;
+        
+//kprintf("Created temporary AChain structure!\n");
+      }
+      
       if (NULL != AC->an_Child)
       {
         BPTR newdir;
@@ -81,6 +97,7 @@
         AP->ap_Current = AC->an_Child;
         
         newdir = Lock(AC->an_Info.fib_FileName, ACCESS_READ);
+//kprintf("Locking dir %s\n",AC->an_Info.fib_FileName);
         (void)CurrentDir(newdir);
 
         AC = AC->an_Child;
@@ -88,37 +105,38 @@
         Examine(AC->an_Lock, &AC->an_Info);
       }
       else
-      {
-        AP->ap_Flags |= APF_DIDDIR;
-        AP->ap_Flags &= ~APF_DODIR;
-
-        return 0;
-      }
+        return ERROR_NO_FREE_STORE;
     }
   }
+  
   AP->ap_Flags &= ~(BYTE)(APF_DODIR|APF_DIDDIR);
 
 
-
-  /* AC points to the current AnchorChain */
+  /* 
+  ** AC points to the current AnchorChain 
+  */
   while (TRUE)
   {
-    success = ExNext (AC->an_Lock, &AC->an_Info);
+    do
+    {
+      success = ExNext (AC->an_Lock, &AC->an_Info);
 
+//kprintf("%s : Skipping dir/file %s\n",__FUNCTION__,AC->an_Info.fib_FileName);
+
+    }
     while (DOSTRUE == success &&
            DOSFALSE == MatchPatternNoCase(AC->an_String,
-                                          AC->an_Info.fib_FileName))
-    {
-      success = ExNext(AC->an_Lock, &AC->an_Info);
-    }
+                                          AC->an_Info.fib_FileName));
 
 
     if (DOSFALSE == success)
     {
-      /* No more entries in this dir that match. So I might have to
-         step back one directory. Unlock the current dir first, 
-         !!!!!???? but only if it is not the one from where I started
+      /* 
+      ** No more entries in this dir that match. So I might have to
+      ** step back one directory. Unlock the current dir first, 
       */
+
+//kprintf("Couldn't find a matching file.!\n");
 
       if (AP->ap_Base == AC)
       {
@@ -127,7 +145,9 @@
         return ERROR_NO_MORE_ENTRIES;
       }
 
-      /* Are there any previous directories??? */
+      /* 
+      ** Are there any previous directories??? 
+      */
       if (NULL != AC->an_Parent && NULL != AC)
       {
         LONG retval = 0;
@@ -137,19 +157,27 @@
 
         AC             = AC->an_Parent;
         AP->ap_Current = AC;
-                
+        
+        if (AC->an_Child->an_Flags & DDF_PatternBit)
+        {
+          FreeVec(AC->an_Child);
+          AC->an_Child = NULL;
+        }
+        else
+          if (0 == (AC->an_Flags & DDF_PatternBit))
+          {
+            /*
+            ** In this case I must silently follow the pattern again...
+            */
+            return followpattern(AP, AC, DOSBase);
+          }
+        
+        AP->ap_Flags |= APF_DIDDIR;
         /* 
         ** I show this dir again as I come back from searching it 
         */
-        CopyMem(&AC->an_Info, &AP->ap_Info, sizeof(struct FileInfoBlock));
         
-        AP->ap_Flags |= APF_DIDDIR;
-
-        if (0 != AP->ap_Strlen && NULL != AC->an_Parent)
-        {
-          if (FALSE == writeFullPath(AP))
-            retval = ERROR_BUFFER_OVERFLOW;
-        }
+        retval = createresult(AP, AC, DOSBase);
 
         /* 
         ** Step back to this directory and go on searching here 
@@ -171,13 +199,7 @@
     else
     {
       /* Alright, I found a match... */
-      CopyMem(&AC->an_Info, &AP->ap_Info, sizeof(struct FileInfoBlock));
-      if (0 != AP->ap_Strlen)
-      {
-        if (FALSE == writeFullPath(AP))
-          return ERROR_BUFFER_OVERFLOW;
-      }
-      return 0;
+      return createresult(AP, AC, DOSBase);
     }
   } /* while (TRUE) */
   return 0;
