@@ -120,9 +120,8 @@ FUNCTIONS	:= \
 	writepixelarray8 \
 	xorrectregion
 
-FSRCS := $(foreach f,$(FUNCTIONS),$(f).c)
-
 PRE_FUNCS := $(FUNCTIONS)
+ALL_FUNCTIONS := $(FUNCTIONS)
 %prepare_replace rom/graphics
 %filter_replace FUNCTIONS
 ALL_FILES := $(INIT_FILE) $(FILES) $(ADDITIONAL_OBJS) $(END_FILE)
@@ -150,12 +149,7 @@ setup :
 	%mkdirs_q $(OBJDIR)
 
 #MM includes-generate : setup-clib
-includes-generate : setup $(OBJDIR)/headers.stamp
-
-$(OBJDIR)/headers.stamp : $(FSRCS)
-	@$(SCRIPTDIR)/genshared -clib -prefix $(TOP)/compiler/include $(FSRCS)
-	@$(SCRIPTDIR)/genshared -defines -prefix $(TOP)/compiler/include $(FSRCS)
-	@$(TOUCH) $@
+%genlibincludes
 
 #MM
 clean ::
