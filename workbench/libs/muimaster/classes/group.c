@@ -459,6 +459,8 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     		case MUIA_ShowMe:
     		case MUIA_VertWeight:
     		case MUIA_Weight:
+		case MUIA_Virtgroup_Left:
+		case MUIA_Virtgroup_Top:		
 	    	    tag->ti_Tag = TAG_IGNORE;
 		    break;
     		case MUIA_Selected:
@@ -911,9 +913,10 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    struct Rectangle rect;
             struct Rectangle *clip_rect = &muiRenderInfo(obj)->mri_ClipRect;
 
+    	    data->update = 0;
+	    
 	    if (!diff_virt_offx && !diff_virt_offy)
 	    {
-	    	data->update = 0;
 		return 1;
 	    }
 
@@ -2751,6 +2754,7 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 			    /* scroll right */
 			    new_virt_offx += 4;
 			    if (new_virt_offx > data->virt_mwidth - _mwidth(obj)) new_virt_offx = data->virt_mwidth - _mwidth(obj);
+			    if (new_virt_offx < 0) new_virt_offx = 0;
 	            	}
 
 	            	if (msg->imsg->MouseY < _mtop(obj))
@@ -2764,10 +2768,11 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 			    /* scroll bottom */
 			    new_virt_offy += 4;
 			    if (new_virt_offy > data->virt_mheight - _mheight(obj)) new_virt_offy = data->virt_mheight - _mheight(obj);
+			    if (new_virt_offy < 0) new_virt_offy = 0;
 			}
 
 			if (new_virt_offx != data->virt_offx || new_virt_offy != data->virt_offy)
-			{
+			{					
 			    SetAttrs(obj,
 				MUIA_Virtgroup_Left, new_virt_offx,
 				MUIA_Virtgroup_Top, new_virt_offy,
