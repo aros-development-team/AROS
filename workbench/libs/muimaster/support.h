@@ -13,6 +13,10 @@
 #ifndef AROS_ASMCALL_H
 #include <aros/asmcall.h>
 #endif
+#else
+#ifndef _COMPILER_H
+#include "compiler.h"
+#endif
 #endif
 
 #define mui_alloc(x) AllocVec(x,MEMF_CLEAR)
