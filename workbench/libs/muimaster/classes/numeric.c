@@ -61,7 +61,7 @@ static IPTR  Numeric_New(struct IClass *cl, Object * obj, struct opSet *msg)
     data->min    =   0;
     data->flags  =   0;
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags));)
     {
 	switch (tag->ti_Tag)
 	{
@@ -98,6 +98,7 @@ static IPTR  Numeric_New(struct IClass *cl, Object * obj, struct opSet *msg)
     }
 
     data->value = CLAMP(value_set ? data->value : data->defvalue, data->min, data->max);
+
     return (ULONG)obj;
 }
 
@@ -118,7 +119,7 @@ static IPTR Numeric_Set(struct IClass *cl, Object * obj, struct opSet *msg)
     oldmin = data->min;
     oldmax = data->max;
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags));)
     {
 	switch (tag->ti_Tag)
 	{
@@ -148,12 +149,12 @@ static IPTR Numeric_Set(struct IClass *cl, Object * obj, struct opSet *msg)
 		_handle_bool_tag(data->flags, tag->ti_Data, NUMERIC_REVUPDOWN);
 		break;
 	    case MUIA_Numeric_Value:
-	        tag->ti_Data = CLAMP(tag->ti_Data, data->min, data->max);
+	        tag->ti_Data = CLAMP((LONG)tag->ti_Data, data->min, data->max);
 		
-		if (data->value == tag->ti_Data)
+		if (data->value == (LONG)tag->ti_Data)
 		    tag->ti_Tag = TAG_IGNORE;
 		else
-		    data->value = tag->ti_Data;
+		    data->value = (LONG)tag->ti_Data;
 		
 		break;
 	}
@@ -373,6 +374,7 @@ static ULONG Numeric_Increase(struct IClass *cl, Object * obj, struct MUIP_Numer
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
     LONG newval = CLAMP(data->value + msg->amount, data->min, data->max);
+
     if (newval != data->value) set(obj,MUIA_Numeric_Value, newval);
     return 1;
 }
@@ -401,7 +403,7 @@ static ULONG Numeric_ScaleToValue(struct IClass *cl, Object * obj, struct MUIP_N
         val /= d;
     
     val += min;
-    
+
     return val;
 }
 
@@ -453,6 +455,7 @@ static LONG  Numeric_ValueToScale(struct IClass *cl, Object * obj, struct MUIP_N
     }
     
     val = CLAMP(val, min, max);
+
     return val;
 }
 
@@ -480,6 +483,7 @@ static LONG  Numeric_ValueToScaleExt(struct IClass *cl, Object * obj, struct MUI
     }
     
     scale = CLAMP(scale, min, max);
+
     return scale;
 }
 
