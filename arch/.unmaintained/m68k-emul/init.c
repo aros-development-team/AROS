@@ -1,21 +1,6 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.5  2000/08/13 13:21:55  hkiel
-    AROS is Amiga Research OS, not Replacement ;-)  Updated Copyright string.
-
-    Revision 1.4  1996/12/09 11:55:52  aros
-    No longer used
-
-    Revision 1.3  1996/10/19 17:07:31  aros
-    Include <aros/machine.h> instead of machine.h
-
-    Revision 1.2  1996/08/01 17:41:31  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
 */
 
 #include <exec/execbase.h>

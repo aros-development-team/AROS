@@ -1,9 +1,9 @@
 /*
-     (C) 1995-96 AROS - The Amiga Research OS
-     $Id$
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
 
-     Desc: Exec function Dispatch()
-     Lang: english
+    Desc: Exec function Dispatch()
+    Lang: english
 */
 
 /******************************************************************************

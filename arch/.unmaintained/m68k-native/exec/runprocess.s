@@ -1,9 +1,8 @@
 /*
-     (C) 1995-96 AROS - The Amiga Research OS
-     $Id$
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
  
-     Desc: Run a process ( invoked by dos/Runcommand() )
-     Lang:
+    Desc: Run a process ( invoked by dos/Runcommand() )
  
   LONG RunProcess ( struct Process         * proc,
  		    struct StackSwapStruct * sss,
