@@ -26,6 +26,7 @@ CLASSES := \
     iconlistview \
     image \
     imageadjust \
+    imagedisplay \
     list \
     listview \
     menuitem \
@@ -59,6 +60,8 @@ FILES := \
     support \
     textengine \
     frame \
+    penspec \
+    imspec_vector \
     imspec \
     dragndrop \
     menu \
