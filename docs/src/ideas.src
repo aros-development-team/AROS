@@ -193,6 +193,31 @@ if there is already one in the queue, then it should be removed first).
 \end{new}
 
 \item
+\begin{new}{5.3.1998}
+By Denis Bucher:
+|OpenLibrary()|, etc. should check for libraries in various places.
+It should be possible to add paths for these and similar functions
+and there should be a tool which checks and tells which library, etc.
+would be opened (eg. the path is \shell{libs,PROGDIR:libs,libs:} and there
+is a \filename{x.library} in \filename{libs} and \filename{libs:}. The tool
+should tell which one
+is opened and why (ie. \shell{loading libs:x.library over libs/x.library
+because: libs:x.library has version 41.0 and libs/x.library has
+39.20}).
+\end{new}
+
+\begin{new}{5.3.1998}
+By Aaron Digulla:
+It should be possible to protect some files (like libraries) so
+that you need to call a specific OS/FS function to replace them.
+This would allow to fix all problems with tools replacing libraries
+with old versions. Maybe even a patch to |Open()| would be enough
+which checks if someone tries to write in a specific directory
+and calls a tool which checks if the write is ok. This is of course
+a bit dangerous.
+\end{new}
+
+\item
 \begin{new}{05.03.1998}
 By Henning Kiel:
 The original Amiga Includes used to have an intuition/iobsolete.h
@@ -204,7 +229,7 @@ code will be converted. (Maybe in multiple passes)
 This conversion-tool should do: (open, unordered list)
 \begin{itemize}
 \item convert old defines to new ones
-\item convert old storage types (e.g. SHORT to BYTE)
+\item convert old storage types (e.g. SHORT to WORD)
 \end{itemize}
 \end{new}
 
