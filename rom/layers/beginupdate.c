@@ -73,10 +73,19 @@
   LockLayer(0, l);
 
   /*
+  ** SIMPLE REFRESH:
   ** Only those parts of the damage list that are really visible right
   ** now may be refreshed. There might be parts in the damage list that
   ** belong areas where cliprects are currently hidden. For example,
   ** intuition adds those parts to the damage list.
+  **
+  ** SMART REFRESH:
+  ** When a smart refresh layer is resized (enlarged) it will have a
+  ** damage list. The damage list must be converted to a list of
+  ** cliprects. However those areas that are currently hidden need
+  ** to be represented as cliprects with bitmaps attached to them
+  ** whereas the visible ones can just be cliprects w/o bitmaps.
+  ** 
   */
   if (NULL != (R = NewRegion()))
   {
@@ -92,16 +101,14 @@
       ** (the latter is necessary as SizeLayer() changes the DamageList
       ** also for SMART REFRESH layers)
       */
-      if ( NULL == CR->lobs || 
-          (LAYERSMART == (l->Flags & (LAYERSMART|LAYERSUPER)) &&
-           NULL != CR->lobs ))
+      if ( NULL == CR->lobs )
       {
         struct Rectangle Rect = CR->bounds;
         Rect.MinX -= l->bounds.MinX;
         Rect.MinY -= l->bounds.MinY;
         Rect.MaxX -= l->bounds.MinX;
         Rect.MaxY -= l->bounds.MinY;
-      
+
         if (FALSE == OrRectRegion(R, &Rect))
         {
           DisposeRegion(R);
@@ -150,7 +157,7 @@
 	}
 	
 	/* stegerg: don't unlock here, because endupdate unlocks always */
-	/* UnlockLayer(l); */
+
 	DisposeRegion(R);
         return FALSE;
       } /* else */
