@@ -395,17 +395,6 @@ $(OBJDIR)/rom/%.d : %.c
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q flags=$(CFLAGS)
 
-#MM linklibs-startup : includes includes-copy
-
-STARTUP_FILES := nixmain
-STARTUP_OBJS  := $(STARTUP_FILES:%=$(LIBDIR)/%.o)
-linklibs-startup: $(STARTUP_OBJS)
-
-$(LIBDIR)/%.o : %.c
-        %compile_q
-
-.PHONY: linklibs-startup
-
 #MM
 setup-clib :
 	%mkdirs_q $(AROS_INCLUDES)/sys $(OBJDIR)
