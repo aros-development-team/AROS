@@ -10,6 +10,9 @@
 
     NAME */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include "cxintern.h"
 #include <libraries/commodities.h>
 #include <proto/commodities.h>
@@ -67,6 +70,8 @@
 
     LONG temp;
 
+    D(bug("Enter ActivateCxObj(cxobj = %p, true = %d)\n", co, true));
+    
     if (co == NULL)
     {
 	return 0;

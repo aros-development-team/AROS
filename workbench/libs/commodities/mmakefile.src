@@ -39,10 +39,17 @@ FUNCS := activatecxobj \
 	 setfilterix \
 	 settranslate
 
-#MM- workbench-libs-commodities : includes linklibs workbench-libs-commodities-module
+#MM workbench-libs-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-keymap-includes \
+#MM     kernel-timer-includes \
+#MM     kernel-utility-includes \
+#MM     includes-copy
+#MM- workbench-libs-commodities : linklibs
 
-%build_module_macro mmake=workbench-libs-commodities modname=commodities \
-  modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="arossupport rom" \
-  conffile=lib.conf
+%build_module mmake=workbench-libs-commodities \
+    modname=commodities modtype=library \
+    files="$(FUNCS) $(FILES) commodities_init" \
+    uselibs="arossupport rom"
 
 %common

@@ -19,11 +19,7 @@ enum { CX_OBJECT, CX_MESSAGE, CX_INPUTEVENT };
 enum { CXM_SINGLE, CXM_DOUBLE };
 
 #define  AROS_ALMOST_COMPATIBLE
-#define CxObj void
-#define CxMsg void
 #include <exec/lists.h>
-#undef CxObj
-#undef CxMsg
 
 #include <exec/types.h>
 #include <exec/io.h>
@@ -43,6 +39,7 @@ enum { CXM_SINGLE, CXM_DOUBLE };
 #ifndef PROTO_EXEC_H
 #   include <proto/exec.h>
 #endif
+#include <libcore/base.h>
 
 struct BrokerExt
 {
@@ -133,13 +130,10 @@ struct BrokerCopy
 
 struct CommoditiesBase
 {
-    struct Library          cx_LibNode;
-    
-    BPTR                    cx_SegList;
+    struct LibHeader   cx_lh;
     
     struct Library         *cx_KeyMapBase;
     struct Library         *cx_UtilityBase;
-    struct ExecBase        *cx_SysBase;
     struct Library         *cx_TimerBase;
     
     struct IOStdReq         cx_IORequest;     /* To set up input handler */
@@ -183,7 +177,7 @@ ULONG CheckStatus(CxObj *broker, ULONG command, struct Library *CxBase);
 #undef TimerBase
 #endif
 
-#define SysBase ((struct CommoditiesBase *)CxBase)->cx_SysBase
+#define SysBase ((struct LibHeader *)CxBase)->lh_SysBase
 #define KeymapBase ((struct CommoditiesBase *)CxBase)->cx_KeyMapBase
 #define UtilityBase ((struct CommoditiesBase *)CxBase)->cx_UtilityBase
 #define TimerBase ((struct CommoditiesBase *)CxBase)->cx_TimerBase
@@ -192,9 +186,6 @@ ULONG CheckStatus(CxObj *broker, ULONG command, struct Library *CxBase);
 #define CXOBJType(co)           (co->co_Node.ln_Type)
 
 #define GPB(x) ((struct CommoditiesBase *)x)
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct CommoditiesBase *, CxBase, 3, Commodities)
 
 #ifndef __MORPHOS__
 #define dprintf bug
