@@ -63,7 +63,7 @@ struct NewGadget
     WORD ng_Width;
     WORD ng_Height;
 
-    STRPTR            ng_GadgetText;
+    CONST_STRPTR      ng_GadgetText;
     struct TextAttr * ng_TextAttr;
 
     UWORD ng_GadgetID;
