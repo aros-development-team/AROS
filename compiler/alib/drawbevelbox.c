@@ -5,6 +5,8 @@
     Desc: Draw a bevel box
     Lang: english
 */
+
+
 #define AROS_TAGRETURNTYPE void
 #define AROS_TAGRETURNTYPEVOID
 
@@ -18,6 +20,8 @@ extern struct Library * GadToolsBase;
 #include <graphics/rastport.h>
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/gadtools.h>
+
+#include <utility/tagitem.h>
 
 	void DrawBevelBox (
 
@@ -55,3 +59,5 @@ extern struct Library * GadToolsBase;
     DrawBevelBoxA (rp, left, top, width, height, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* DrawBevelBox */
+
+
