@@ -49,7 +49,7 @@ IPTR iconConObsNew(Class * cl, Object * obj, struct opSet * msg)
                 break;
 
             default:
-                continue;       /* Don't supress non-processed tags */
+                continue; /* Don't supress non-processed tags */
         }
 
         tag->ti_Tag = TAG_IGNORE;
@@ -146,7 +146,6 @@ IPTR iconConObsAddIcons(Class * cl, Object * obj, struct icoAddIcon * msg)
     IPTR            retval = 0;
     ULONG           i;
     Object         *newIcon;
-    struct TagItem *iconTags;
     ULONG           kind;
     struct IconContainerObserverClassData *data;
     Object         *desktop = NULL;
@@ -157,78 +156,59 @@ IPTR iconConObsAddIcons(Class * cl, Object * obj, struct icoAddIcon * msg)
 
     for (i = 0; i < msg->wsr_Results; i++)
     {
-
-        iconTags = AllocVec(18 * sizeof(struct TagItem), MEMF_ANY);
-
-        iconTags[0].ti_Tag = IA_DiskObject;
-        iconTags[0].ti_Data = msg->wsr_ResultsArray[i].sr_DiskObject;
-        iconTags[1].ti_Tag = IA_Label;
-        iconTags[1].ti_Data = msg->wsr_ResultsArray[i].sr_Name;
-        iconTags[2].ti_Tag = IOA_Name;
-        iconTags[2].ti_Data = msg->wsr_ResultsArray[i].sr_Name;
-        iconTags[3].ti_Tag = IOA_Directory;
-        iconTags[3].ti_Data = data->directory;
-        iconTags[4].ti_Tag = IOA_Comment;
-        iconTags[4].ti_Data = msg->wsr_ResultsArray[i].sr_Comment;
-        iconTags[5].ti_Tag = IOA_Script;
-        iconTags[5].ti_Data = msg->wsr_ResultsArray[i].sr_Script;
-        iconTags[6].ti_Tag = IOA_Pure;
-        iconTags[6].ti_Data = msg->wsr_ResultsArray[i].sr_Pure;
-        iconTags[7].ti_Tag = IOA_Readable;
-        iconTags[7].ti_Data = msg->wsr_ResultsArray[i].sr_Read;
-        iconTags[8].ti_Tag = IOA_Writeable;
-        iconTags[8].ti_Data = msg->wsr_ResultsArray[i].sr_Write;
-        iconTags[9].ti_Tag = IOA_Archived;
-        iconTags[9].ti_Data = msg->wsr_ResultsArray[i].sr_Archive;
-        iconTags[10].ti_Tag = IOA_Executable;
-        iconTags[10].ti_Data = msg->wsr_ResultsArray[i].sr_Execute;
-        iconTags[11].ti_Tag = IOA_Deleteable;
-        iconTags[11].ti_Data = msg->wsr_ResultsArray[i].sr_Delete;
-        iconTags[12].ti_Tag = MUIA_Draggable;
-        iconTags[12].ti_Data = TRUE;
-        iconTags[13].ti_Tag = IA_Size;
-        iconTags[13].ti_Data = msg->wsr_ResultsArray[i].sr_Size;
-        iconTags[14].ti_Tag = IA_LastModified;
-        iconTags[14].ti_Data = &msg->wsr_ResultsArray[i].sr_LastModified;
-        iconTags[15].ti_Tag = IA_Type;
-        iconTags[15].ti_Data = msg->wsr_ResultsArray[i].sr_Type;
-        iconTags[16].ti_Tag = IA_Desktop;
-        iconTags[16].ti_Data = desktop;
-        iconTags[17].ti_Tag = TAG_END;
-        iconTags[17].ti_Data = 0;
-
         switch (msg->wsr_ResultsArray[i].sr_DiskObject->do_Type)
         {
             case WBDISK:
                 kind = CDO_DiskIcon;
                 break;
+            
             case WBDRAWER:
                 kind = CDO_DrawerIcon;
                 break;
+            
             case WBTOOL:
                 kind = CDO_ToolIcon;
                 break;
+            
             case WBPROJECT:
                 kind = CDO_ProjectIcon;
                 break;
+            
             case WBGARBAGE:
                 kind = CDO_TrashcanIcon;
                 break;
+            
             case WBDEVICE:
-                break;
             case WBKICK:
-                break;
             case WBAPPICON:
-                break;
             default:
-            // something serious has gone wrong here
-                break;
+                continue; /* skip unknown disk object types */
         }
-
-
-        newIcon = CreateDesktopObjectA(kind, iconTags);
-
-        FreeVec(iconTags);
+        
+        newIcon = CreateDesktopObject
+        (
+            kind,
+            
+            IOA_Name,         msg->wsr_ResultsArray[i].sr_Name,
+            IOA_Directory,    data->directory,
+            IOA_Comment,      msg->wsr_ResultsArray[i].sr_Comment,
+            IOA_Script,       msg->wsr_ResultsArray[i].sr_Script,
+            IOA_Pure,         msg->wsr_ResultsArray[i].sr_Pure,
+            IOA_Readable,     msg->wsr_ResultsArray[i].sr_Read,
+            IOA_Writeable,    msg->wsr_ResultsArray[i].sr_Write,
+            IOA_Archived,     msg->wsr_ResultsArray[i].sr_Archive,
+            IOA_Executable,   msg->wsr_ResultsArray[i].sr_Execute,
+            IOA_Deleteable,   msg->wsr_ResultsArray[i].sr_Delete,
+            IA_DiskObject,    msg->wsr_ResultsArray[i].sr_DiskObject,
+            IA_Label,         msg->wsr_ResultsArray[i].sr_Name,
+            IA_Size,          msg->wsr_ResultsArray[i].sr_Size,
+            IA_LastModified, &msg->wsr_ResultsArray[i].sr_LastModified,
+            IA_Type,          msg->wsr_ResultsArray[i].sr_Type,
+            IA_Desktop,       desktop,
+            MUIA_Draggable,   TRUE,
+            
+            TAG_DONE
+        );
 
         DoMethod(_presentation(obj), OM_ADDMEMBER, newIcon);
     }
