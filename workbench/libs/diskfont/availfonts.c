@@ -179,7 +179,7 @@ STATIC struct BufferInfo *BufferInfoCreate(STRPTR buffer, LONG bufBytes, BOOL ta
 
 STATIC VOID BufferInfoAdd(struct BufferInfo *bi, UWORD type, struct TTextAttr *tattr, BOOL tagged, struct DiskfontBase_intern *DiskfontBase)
 {
-    if (tagged)
+    if (tagged && tattr->tta_Tags!=NULL)
 	bi->space -= sizeof(struct TAvailFonts) + strlen(tattr->tta_Name)+1 + NumTags(tattr->tta_Tags, DiskfontBase)*sizeof(struct TagItem);
     else
 	bi->space -= sizeof(struct AvailFonts) + strlen(tattr->tta_Name)+1;
@@ -199,10 +199,16 @@ STATIC VOID BufferInfoAdd(struct BufferInfo *bi, UWORD type, struct TTextAttr *t
 	    bi->u.taf->taf_Attr.tta_Style = tattr->tta_Style;
 	    bi->u.taf->taf_Attr.tta_Flags = tattr->tta_Flags;
 	    
-	    size = NumTags(tattr->tta_Tags, DiskfontBase)*sizeof(struct TagItem);
-	    bi->endptr -= size;
-	    memcpy(bi->endptr, tattr->tta_Tags, size);
-	    bi->u.taf->taf_Attr.tta_Tags = (struct TagItem *)bi->endptr;
+	    if (tattr->tta_Tags!=NULL)
+	    {
+	        size = NumTags(tattr->tta_Tags, DiskfontBase)*sizeof(struct TagItem);
+	        bi->endptr -= size;
+	        memcpy(bi->endptr, tattr->tta_Tags, size);
+	        bi->u.taf->taf_Attr.tta_Tags = (struct TagItem *)bi->endptr;
+	    }
+	    else
+	        bi->u.taf->taf_Attr.tta_Tags = NULL;
+	   
 	    bi->u.taf++;
 	}
 	else
