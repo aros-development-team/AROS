@@ -309,6 +309,8 @@ static int load_hunk
 
     }
 
+    SetIoErr(ERROR_NO_FREE_STORE);
+    
     return 0;
 }
 
@@ -438,7 +440,7 @@ BPTR InternalLoadSeg_ELF
     }
 
     /*
-        Load Symbol Table(s).
+        Load Symbol Table(s) and fix common symbols.
 
         NOTICE: the ELF standard, at the moment (Nov 2002) explicitely states
                 that only one symbol table per file is allowed. However, it
@@ -449,9 +451,29 @@ BPTR InternalLoadSeg_ELF
     {
         if (sh[i].type == SHT_SYMTAB)
         {
+            struct symbol *sym ;
+            ULONG numsyms;
+            ULONG j;
+
             sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
             if (!sh[i].addr)
                 goto error;
+
+            sym     = (struct symbol *)sh[i].addr;
+            numsyms = sh[i].size / sh[i].entsize;
+
+            for (j = 0; j < numsyms; j++, sym++)
+            {
+                if (sym->shindex == SHN_COMMON)
+                {
+                    offset       = (offset + sym->value-1) & ~(sym->value-1);
+                    sym->value   = offset;
+                    sym->shindex = eh.shnum; /* The common section's index */
+
+                    offset += sym->size;
+                }
+            }
+
         }
     }
 
@@ -465,29 +487,7 @@ BPTR InternalLoadSeg_ELF
         }
     }
 
-    /* Allocate space for common symbols */
-    for (i = 0; i < eh.shnum; i++)
-    {
-        if (sh[i].type == SHT_SYMTAB)
-        {
-            struct symbol *sym = (struct symbol *)sh[i].addr;
-            ULONG numsyms = sh[i].size / sh[i].entsize;
-            ULONG j;
-
-            for (j = 0; j < numsyms; j++, sym++)
-            {
-                if (sym->shindex == SHN_COMMON)
-                {
-                    offset       = (offset + sym->value-1) & ~(sym->value-1);
-                    sym->value   = offset;
-                    sym->shindex = eh.shnum; /* The common section's index */
-
-                    offset += sym->size;
-                }
-            }
-        }
-    }
-
+    /* Create a hunk for the COMMON symbols, it necessary */
     sh[eh.shnum].size  = offset;
     sh[eh.shnum].type  = SHT_NOBITS;
     sh[eh.shnum].addr  = NULL;
@@ -524,7 +524,6 @@ BPTR InternalLoadSeg_ELF
             sh[i].addr = NULL;
         }
     }
-
 
     /* No errors, deallocate only the symbol tables */
     for (i = 0; i < eh.shnum; i++)
