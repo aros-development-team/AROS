@@ -1,51 +1,99 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-99 AROS - The Amiga Research OS
     $Id$
 
     Desc:
-    Lang: english
+    Lang: English
 */
+
+#include "locale_intern.h"
 #include <exec/types.h>
 #include <utility/hooks.h>
+#include <utility/date.h>
 #include <proto/utility.h>
-#include "locale_intern.h"
+#include <proto/alib.h>
 
+#include <stdio.h>
 
-AROS_UFH3(VOID, rec_putCharFunc,
-  AROS_UFHA(struct Hook *,   rec_putCharFunc,            A0),
-  AROS_UFHA(char,            c,                          A1),
-  AROS_UFHA(struct Locale *, locale,                     A2))
-{
-  struct Hook * recHook = (struct Hook *)rec_putCharFunc->h_Data;
-  if (recHook && recHook->h_Entry)
-  {
-     AROS_UFC3(VOID, recHook->h_Entry,
-       AROS_UFCA(struct Hook *,   recHook,                   A0),
-       AROS_UFCA(char,            c,                         A1),
-       AROS_UFCA(struct Locale *, locale,                    A2)
-     );
-  }
-}
+VOID PrintDigits(UWORD number, char fill, UWORD len, struct Hook *hook,
+		 struct Locale *locale);
+VOID _WriteChar(char token, struct Hook *hook, struct Locale *locale);
+VOID _WriteString(STRPTR string, struct Hook *hook, struct Locale *locale);
+
+ULONG dayspermonth[13] = {0,0,31,59,90,120,151,181,212,243,273,304,334};
 
 /*****************************************************************************
 
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH4(void, FormatDate,
+	AROS_LH4(VOID, FormatDate,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Locale    *, locale, A0),
-	AROS_LHA(STRPTR            , fmtTemplate, A1),
+	AROS_LHA(STRPTR            , formatString, A1),
 	AROS_LHA(struct DateStamp *, date, A2),
-	AROS_LHA(struct Hook      *, putCharFunc, A3),
+	AROS_LHA(struct Hook      *, hook, A3),
 
 /*  LOCATION */
 	struct Locale *, LocaleBase, 10, Locale)
 
 /*  FUNCTION
 
+    Generate a date string based on a template. The bytes generated are sent
+    to a user specified callback function.
+
     INPUTS
+
+    locale        --  the locale to use when formatting the string
+    formatString  --  the formatting template string; this is much like the
+                      printf() formatting style, i.e. a % followed by a
+		      formatting command. The following commands exist:
+
+		      %a -- abbreviated weekday name
+		      %A -- weekday name
+		      %b -- abbreviated month name
+		      %B -- month name
+		      %c -- the same as "%a %b %d %H:%M:%S %Y"
+		      %C -- the same as "%a %b %e %T %Z %Y"
+		      %d -- day number with leading zeros
+		      %D -- the same as "%m/%d/%y"
+		      %e -- day number with leading spaces
+		      %h -- abbreviated month name
+		      %H -- hour using 24 hour style with leading zeros
+		      %I -- hour using 12 hour style with leading zeros
+		      %j -- julian date
+		      %m -- month number with leading zeros
+		      %M -- the number of minutes with leading zeros
+		      %n -- linefeed
+		      %p -- AM or PM string
+		      %q -- hour using 24 hour style
+		      %Q -- hour using 12 hour style
+		      %r -- the same as "%I:%M:%S %p"
+		      %R -- the same as "%H:%M"
+		      %S -- the number of seconds with leading zeros
+		      %t -- tab
+		      %T -- the same as "%H:%M:%S"
+		      %U -- the week number, taking Sunday as the first day
+		            of the week
+		      %w -- the weekday number
+		      %W -- the week number, taking Monday as the first day
+		            of the week
+		      %x -- the same as "%m/%d/%y"
+		      %X -- the same as "%H:%M:%S"
+		      %y -- the year using two digits with leading zeros
+		      %Y -- the year using four digits with leading zeros
+
+		      If the template parameter is NULL, a single null byte
+		      is sent to the callback function.
+
+    date          --  the current date
+    hook          --  callback function; this is called for every character
+                      generated with the following arguments:
+
+		      * pointer to hook structure
+		      * character
+		      * pointer to locale
 
     RESULT
 
@@ -57,394 +105,265 @@ AROS_UFH3(VOID, rec_putCharFunc,
 
     SEE ALSO
 
+    ParseDate(), <libraries/locale.h>
+
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    locale_lib.fd and clib/locale_protos.h
+
+    17.01.2000  bergers implemented U & W, j is still missing
+    07.07.1999  SDuvan  implemented (U, W, j not done yet)
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct Library *,LocaleBase)
+    AROS_LIBFUNC_INIT
 
-  enum {OUTPUT = 0,
-        FOUND_FORMAT};
-  
-  ULONG template_pos = 0;      /* Current position in the template string */
-  ULONG state        = OUTPUT; /* current state of parsing */
-  BOOL  end          = FALSE;
-  struct Hook recursion_hook;
-  
-  recursion_hook.h_Entry = (VOID *)rec_putCharFunc;
-  recursion_hook.h_Data  = putCharFunc;
-  
-  
-  if (NULL == fmtTemplate)
-  {
-     AROS_UFC3(VOID, putCharFunc->h_Entry,
-       AROS_UFCA(struct Hook *,   putCharFunc,                A0),
-       AROS_UFCA(char,            '\0',                       A1),
-       AROS_UFCA(struct Locale *, locale,                     A2)
-     );
-     return;
-  }
+    struct ClockData cData;
+    ULONG week, days, tmp;
 
-  while (FALSE == end)
-  {
-    /*
-    ** A format description starts here?
-    */
-    if ('%' == fmtTemplate[template_pos])
-      state = FOUND_FORMAT;
-    
-    switch (state)
+    if(/* locale == NULL || */ hook == NULL)
+	return;
+
+    if(formatString == NULL)
     {
-      case OUTPUT:
-        /*
-        ** Call the hook for this character
-        */
-        AROS_UFC3(VOID, putCharFunc->h_Entry,
-            AROS_UFCA(struct Hook *,   putCharFunc,                A0),
-            AROS_UFCA(char,            fmtTemplate[template_pos],  A1),
-            AROS_UFCA(struct Locale *, locale,                     A2));
-
-        /*
-        ** End of template string? -> End of this function.
-        */
-        if ('\0' == fmtTemplate[template_pos])
-            end = TRUE;
-        else
-          template_pos++;
-
-      break;
-      
-      case FOUND_FORMAT:
-      {
-        char  buf[256];
-        char * buffer = &buf[0];
-        ULONG width = 0;
-        BOOL printit = TRUE;
-        ULONG hours;
-        ULONG minutes;
-        ULONG seconds;
-        ULONG day;
-        ULONG week;
-        ULONG year;
-        int i;
-        
-        template_pos++;
-        
-        switch (fmtTemplate[template_pos])
-        {
-          case 'a':
-            buffer = GetLocaleStr(locale, calendar_weekday(date) + DAY_1);
-            width = strlen(buffer);
-          break;
-          
-          case 'A':
-            buffer = GetLocaleStr(locale, calendar_weekday(date) + ABDAY_1);
-            width = strlen(buffer);
-          break;
-          
-          case 'b':
-            buffer = GetLocaleStr(locale, calendar_month(date) + ABMON_1);
-            width = strlen(buffer);
-          break;
-          
-          case 'B':
-            buffer = GetLocaleStr(locale ,calendar_month(date) + MON_1);
-            width = strlen(buffer);
-          break;
-          
-          case 'c':
-            FormatDate(locale, 
-                       "%a %b %d %H:%M:%S %Y", 
-                       date,
-                       &recursion_hook);
-            printit = FALSE;
-          break;
-          
-          case 'C':
-            FormatDate(locale, 
-                       "%a %b %e %T %Z %Y", 
-                       date,
-                       &recursion_hook);
-            printit = FALSE;
-          break;
-          
-          case 'd':
-            day = calendar_day(date);
-            buf[0] = day / 10 + '0';
-            buf[1] = day % 10 + '0';
-            width = 2;
-          break;
-          
-          case 'D':
-            FormatDate(locale, 
-                       "%m/%d/%y", 
-                       date,
-                       &recursion_hook);
-            printit = FALSE;
-
-          break;
-          
-          case 'e':
-            day = calendar_day(date);
-            if (day > 9)
-              buf[0] = day / 10 + '0';
-            else
-              buf[0] = ' ';
-              
-            buf[1] = day % 10 + '0';
-            width = 2;
-          break;
-          
-          case 'h':
-            buffer = GetLocaleStr(locale, calendar_month(date) + ABMON_1);
-            width = strlen(buffer);
-          break;
-          
-          case 'H': /* hour using 24-hour style with leading 0s */
-          {
-            hours   = date->ds_Minute / 60;
-            
-            buf[0]  = hours / 10 + '0';
-            buf[1]  = hours % 10 + '0';
-            width   = 2;
-          }
-          break;
-          
-          case 'I': /* hour using 12-hour style with leading 0s */
-          {
-            hours   = date->ds_Minute / 60;
-            if (hours > 12)
-              hours -= 12;
-              
-            minutes = date->ds_Minute % 60;
-            
-            buf[0]  = hours / 10 + '0';
-            buf[1]  = hours % 10 + '0';
-
-            width = 2;
-          }
-          break;
-          
-          case 'j':
-          break;
-          
-          case 'm':
-            day = calendar_month(date) + 1;
-            buf[0] = day / 10 + '0';
-            buf[1] = day % 10 + '0';
-            width = 2;
-          break;
-          
-          case 'M':
-          {
-            minutes = date->ds_Minute % 60;
-            
-            buf[0] = minutes / 10 + '0';
-            buf[1] = minutes % 10 + '0';
-            width = 2;
-          }
-          break;
-          
-          case 'n':
-          {
-            width = 1;
-            buf[0] = '\n';
-          }
-          break;
-          
-          case 'p':
-          {
-            hours   = date->ds_Minute / 60;
-            if (hours > 12)
-            {
-              /* PM */
-              buffer = GetLocaleStr(locale, PM_STR);
-            }
-            else
-            {
-              /* AM */
-              buffer = GetLocaleStr(locale, AM_STR);
-            }
-            width = strlen(buffer);
-          }
-          break;
-          
-          case 'q':
-          {
-            i = 0;
-            hours   = date->ds_Minute / 60;
-            
-            if (hours > 9)
-            {
-              buf[0]  = hours / 10 + '0';
-              i = 1;
-            }
-            buf[i++]  = hours % 10 + '0';
-            
-            width = i;
-          }
-          break;
-          
-          case 'Q':
-            i = 0;
-            hours   = date->ds_Minute / 60;
-            if (hours > 12)
-              hours -= 12;
-              
-            if (hours > 9)
-            {
-              buf[0]  = hours / 10 + '0';
-              i = 1;
-            }
-            buf[i++]  = hours % 10 + '0';
-            
-            width = i;
-            
-          break;
-          
-          case 'r':
-            FormatDate(locale, 
-                       "%I:%M:%S %p", 
-                       date,
-                       &recursion_hook);
-            printit = FALSE;
-          break;
-          
-          case 'R':
-            FormatDate(locale, 
-                       "%H:%M",
-                       date,
-                       &recursion_hook);
-            printit = FALSE;
-          break;
-          
-          case 'S':
-            seconds = date->ds_Tick / 50;
-            
-            buf[0] = seconds / 10 + '0';
-            buf[1] = seconds % 10 + '0';
-            width = 2;
-          break;
-          
-          case 't':
-            buf[0] = '\t';
-            width = 1;
-          break;
-          
-          case 'T':
-            FormatDate(locale, 
-                       "%H:%M:%S",
-                       date,
-                       &recursion_hook);
-            printit = FALSE;
-          break;
-          
-          case 'U':
-            i = 0;
-            week = calendar_week(date);
-            if (week > 9)
-            {
-              buf[0] = day / 10 + '0';
-              i = 1;
-            }
-              
-            buf[i++] = day % 10 + '0';
-            width = i;
-          break;
-          
-          case 'w':
-            day = calendar_weekday(date);
-            buf[0] = day + '0';
-            width = 1;
-          break;
-          
-          case 'W':
-            i = 0;
-            week = calendar_weekmonday(date);
-            if (week > 9)
-            {
-              buf[0] = day / 10 + '0';
-              i = 1;
-            }
-              
-            buf[i++] = day % 10 + '0';
-            width = i;
-          break;
-          
-          case 'x':
-            FormatDate(locale, 
-                       "%m/%d/%y",
-                       date,
-                       &recursion_hook);
-            printit = FALSE;
-          break;
-          
-          case 'X':
-            FormatDate(locale, 
-                       "%H:%M:%S",
-                       date,
-                       &recursion_hook);
-            printit = FALSE;
-          break;
-          
-          case 'y':
-          {
-            buf[0] = buf[1] = '0';
-            year = calendar_year(date);
-            year = year % 1000;
-            year = year % 100;
-
-            buf[2] = year / 10 + '0';
-            year = year % 10;
-            buf[3] = year + '0';
-           
-            width = 4;
-          }
-          break;
-          
-          case 'Y':
-          {
-            year = calendar_year(date);
-            buf[0] = year / 1000 + '0';
-            year = year % 1000;
-            buf[1] = year / 100 + '0';
-            year = year % 100;
-            buf[2] = year / 10 + '0';
-            year = year % 10;
-            buf[3] = year + '0';
-           
-            width = 4;
-          }          
-          break;
-          
-          default: 
-            printit = FALSE;
-        }
-        
-        if (TRUE == printit)
-        {
-          for (i = 0; i < width; i++)
-            AROS_UFC3(VOID, putCharFunc->h_Entry,
-              AROS_UFCA(struct Hook *,   putCharFunc,                A0),
-              AROS_UFCA(char,            buffer[i],                  A1),
-              AROS_UFCA(struct Locale *, locale,                     A2)
-            );
-          
-        }
-        
-        template_pos++;
-        state = OUTPUT;
-      }
-      break;
+	_WriteChar(0, hook, locale);
+	return;
     }
-  }
-  
+    
+    Amiga2Date(date->ds_Days*86400 + date->ds_Minute*60 + date->ds_Tick / 50,
+	       &cData);
 
+    while(*formatString != 0)
+    {
+    	if(*formatString == '%')
+	{
+	    switch(*(++formatString))
+	    {
+	    case 'a':
+		_WriteString(GetLocaleStr(locale, ABDAY_1 + cData.wday), hook,
+			     locale);
+		break;
+		
+	    case 'A':
+		_WriteString(GetLocaleStr(locale, DAY_1 + cData.wday), hook,
+			     locale);
+		break;
+		
+	    case 'b':
+		_WriteString(GetLocaleStr(locale, ABMON_1 + cData.month),
+			    hook, locale);
+		break;
+		
+	    case 'B':
+		_WriteString(GetLocaleStr(locale, MON_1 + cData.month), hook,
+			     locale);
+		break;
+		
+	    case 'c':
+		FormatDate(locale, "%a %b %d %H:%M:%S %Y", date, hook);
+		break;
+		
+	    case 'C':
+		FormatDate(locale, "%a %b %e %T %Z %Y", date, hook);
+		break;
+		
+	    case 'd':
+		PrintDigits(cData.mday, '0', 2, hook, locale);
+		break;
+		
+	    case 'x':
+	    case 'D':
+		FormatDate(locale, "%m/%d/%y", date, hook);
+		break;
+		
+	    case 'e':
+		PrintDigits(cData.mday, ' ', 2, hook, locale);
+		break;
+		
+	    case 'h':
+		_WriteString(GetLocaleStr(locale, ABMON_1 + cData.month),
+			     hook, locale);
+		break;
+		
+	    case 'H':
+		PrintDigits(cData.hour, '0', 2, hook, locale);
+		break;
+		
+	    case 'I':
+		PrintDigits(cData.hour % 12, '0', 2, hook, locale);
+		break;
+		
+	    case 'j':
+	        /* TODO */
+		_WriteString("unimplemented!", hook, locale);
+		break;
+		
+	    case 'm':
+		PrintDigits(cData.month, '0', 2, hook, locale);
+		break;
+		
+	    case 'M':
+		PrintDigits(cData.min, '0', 2, hook, locale);
+		break;
+		
+	    case 'n':
+		_WriteChar('\n', hook, locale);
+		break;
+		
+	    case 'p':
+		_WriteString(GetLocaleStr(locale,
+					  cData.hour < 12 ? AM_STR : PM_STR),
+			     hook, locale);
+		break;
+		
+	    case 'q':
+		PrintDigits(cData.hour, -1, 2, hook, locale);
+		break;
+		
+	    case 'Q':
+		PrintDigits(cData.hour % 12, -1, 2, hook, locale);
+		break;
+		
+	    case 'r':
+		FormatDate(locale, "%I:%M:%S %p", date, hook);
+		break;
+		
+	    case 'R':
+		FormatDate(locale, "%H:%M", date, hook);
+		break;
+		
+	    case 'S':
+		PrintDigits(cData.sec, '0', 2, hook, locale);
+		break;
+		
+	    case 't':
+		_WriteChar('\t', hook, locale);
+		break;
+		
+	    case 'X':
+	    case 'T':
+		FormatDate(locale, "%H:%M:%S", date, hook);
+		break;
+		
+	    case 'W': /* week number, Monday first day of week */
+	    case 'U': /* week number, Sunday first day of week */
+	        days = cData.mday + dayspermonth[cData.month]; 
+		
+		/* leap year ? */
+		if ((0 == cData.year % 4 && 2100 != cData.year)  && cData.month > 2)
+		  days++;
+		
+		/* 
+		** If January 1st is a Monday then the first week
+		** will start with a Sunday January 7th if Sunday is the first day of the week
+		** but if Monday is the first day of the week then Jan 1st will also be the
+		** first day of the first week.
+		*/
+		/* 
+		** Go to Saturday = last day of week if Sunday is first day of week
+                ** Go to Sunday   = last day of week if Monday is first day of week
+		*/
+		if ('U' == *formatString)
+		{
+		  /* Sunday is first day of the week */
+  		  tmp = days + (6 - cData.wday);
+  		}
+  		else
+  		{
+  		  /* Monday is first day of week */
+  		  if (0 != cData.wday)
+  		    tmp = days + (7 - cData.wday);
+  		  else
+  		    tmp = days;
+		}
 
-  AROS_LIBFUNC_EXIT
+		if (tmp < 7)
+		  week = 0;
+		else
+		{
+		  /* cut off the few days that belong to week 0 */
+		  tmp -= (tmp % 7);
+		  /* Calculate the full amount of weeks */
+		  week = tmp / 7;
+		}
+		
+                PrintDigits(week, '0', 2, hook, locale);
+	    break;
+		
+	    case 'w':
+		PrintDigits(cData.wday, -1, 1, hook, locale);
+		break;
+		
+	    case 'y':
+		PrintDigits(cData.year % 100, '0', 2, hook, locale);
+		break;
+		
+	    case 'Y':
+		PrintDigits(cData.year, '0', 4, hook, locale);
+		break;
+		
+	    case 0:
+		break;
+		
+	    default:
+		_WriteChar(*formatString, hook, locale);
+		break;
+	    }
+	}
+	else
+	{
+	    _WriteChar(*formatString, hook, locale);
+	}
+	
+	formatString++;
+    }
+
+    _WriteChar(0, hook, locale);	/* Write null terminator */
+
+    AROS_LIBFUNC_EXIT
 } /* FormatDate */
+
+
+VOID _WriteString(STRPTR string, struct Hook *hook, struct Locale *locale)
+{
+    while(*string != 0)
+    {
+	_WriteChar(*string++, hook, locale);
+    }
+}
+
+
+VOID _WriteChar(char token, struct Hook *hook, struct Locale *locale)
+{
+     AROS_UFC3(VOID, hook->h_Entry,
+       AROS_UFCA(struct Hook *,   hook,   A0),
+       AROS_UFCA(char,            token,  A1),
+       AROS_UFCA(struct Locale *, locale, A2)
+     );
+}
+
+
+VOID PrintDigits(UWORD number, char fill, UWORD len, struct Hook *hook,
+		 struct Locale *locale)
+{
+    char  buf[7];
+    char *ptr = &buf[6];
+    int   i   = 0;
+    
+    buf[6] = 0;
+    
+    while(number && i < len)
+    {
+	*--ptr = number % 10 + '0';
+	number /= 10;
+	i++;
+    }
+
+    while(len - i > 0  && -1 != fill)
+    {
+      len--;
+      _WriteChar(fill, hook, locale);
+    }
+
+    _WriteString((char *)ptr, hook, locale);
+}
