@@ -135,7 +135,7 @@ _xstrdup (const char * str, const char * file, int line)
 
     if (!str)
     {
-	fprintf (stderr, "NULL string passed to strdup from %s:%d", file, line);
+	fprintf (stderr, "NULL string passed to strdup from %s:%d\n", file, line);
 	cleanup (20);
     }
 
@@ -143,7 +143,7 @@ _xstrdup (const char * str, const char * file, int line)
 
     if (!nstr)
     {
-	fprintf (stderr, "Out of memory in %s:%d", file, line);
+	fprintf (stderr, "Out of memory in %s:%d\n", file, line);
 	cleanup (20);
     }
 
