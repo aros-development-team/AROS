@@ -261,7 +261,7 @@ member of this union.
 	in the file. The command will also return the old position in the
 	file.
 
-	Note: A command with io_Negative = io_Offset = 0, and 
+	Note: A command with io_Offset = 0, and 
 	      io_SeekMode = OFFSET_CURRENT is a NOP in terms of seeking
 	      and will simply return the current file position.
 
@@ -272,8 +272,7 @@ member of this union.
 
 \heading{INPUT}
 	io_Unit		-	Filehandle
-	io_Negative	-	upper half of offset (bits 63-32)
-	io_Offset	-	lower half of offset (bits 31-0)
+	io_Offset	-	offset
 	io_SeekMode	-	mode
 
 		OFFSET_BEGINNING	- offset is relative to the
@@ -284,8 +283,7 @@ member of this union.
 					  end of the file
 
 \heading{OUTPUT}
-	io_Negative	-	upper half of old position (bits 63-32)
-	io_Offset	-	lower half of old position (bits 31-0)
+	io_Offset	-	old position
 	io_DosError	-	dos error code or 0 for no error
 
 
@@ -304,8 +302,7 @@ member of this union.
 
 \heading{INPUT}
 	io_Unit		- filehandle
-	io_Negative	- upper half of offset (bits 63-32)
-	io_Offset	- lower half of offset (bits 31-0)
+	io_Offset	- offset
 	io_SeekMode	- mode
 
 		OFFSET_BEGINNING	- offset is relative to the
