@@ -72,28 +72,23 @@ AROS_CDEFNAME(linux_sighandler):
 	movea.l	iet_Context(%a1),%a1
 	/* Save all registers in
 	   SysBase->ThisTask->tc_UnionETask->iet_Context */
-	move.l	sc_d0(%a0),(%a1)+
-	move.l	sc_d1(%a0),(%a1)+
-	move.l	sc_a0(%a0),(%a1)+
-	move.l	sc_a1(%a0),(%a1)+
-	move.w	sc_sr(%a0),(%a1)+
-	addq.w	#2,%a1
-	move.w	sc_formatvec(%a0),(%a1)+
-	addq.w	#2,%a1
-	move.l	%d2,(%a1)+
-	move.l	%d3,(%a1)+
-	move.l	%d4,(%a1)+
-	move.l	%d5,(%a1)+
-	move.l	%d6,(%a1)+
-	move.l	%d7,(%a1)+
-	move.l	%a2,(%a1)+
-	move.l	%a3,(%a1)+
-	move.l	%a4,(%a1)+
+#if !UseRegisterArgs
+	pea	sc_size.w
+#else
+	move.l	#sc_size,%d0
+#endif
+	move.l	%a1,-(%sp)
+	move.l	%a0,-(%sp)
+	jsr	CopyMem(%a6)
+	movea.l	(%sp)+,%a0
+	movea.l	(%sp)+,%a1
+#if !UseRegisterArgs
+	addq.w	#4,%sp
+#endif
 	movem.l	(%sp)+,%a5-%a6
-	move.l	%a5,(%a1)+
-	move.l	%a6,(%a1)+
-	move.l	sc_pc(%a0),(%a1)+
+	movem.l	%d2-%d7/%a2-%a6,regs(%a1)
 	movem.l	%a5-%a6,-(%sp)
+	fmovem.x	%fp2-%fp7,fpregs(%a1)
 #ifdef __PIC__
 	lea	(%pc,_GLOBAL_OFFSET_TABLE_@GOTPC),%a5
 	movea.l	SysBase@GOT(%a5),%a6
@@ -121,51 +116,57 @@ AROS_CDEFNAME(linux_sighandler):
 	/* We have switched tasks, restore the registers */
 	movea.l	ThisTask(%a6),%a1
 	movea.l	tc_UnionETask(%a1),%a1
-	movea.l	iet_Context(%a1),%a1
-	movea.l	sc(%sp),%a0
-	move.l	(%a1)+,sc_d0(%a0)
-	move.l	(%a1)+,sc_d1(%a0)
-	move.l	(%a1)+,sc_a0(%a0)
-	move.l	(%a1)+,sc_a1(%a0)
-	move.w	(%a1)+,sc_sr(%a0)
-	addq.w	#2,%a1
-	move.w	(%a1)+,sc_formatvec(%a0)
-	addq.w	#2,%a1
-	move.l	(%a1)+,%d2
-	move.l	(%a1)+,%d3
-	move.l	(%a1)+,%d4
-	move.l	(%a1)+,%d5
-	move.l	(%a1)+,%d6
-	move.l	(%a1)+,%d7
-	movea.l	(%a1)+,%a2
-	movea.l	(%a1)+,%a3
-	movea.l	(%a1)+,%a4
-	move.l	(%a1)+,%a5
-	move.l	(%a1)+,%a6
+	movea.l	iet_Context(%a1),%a0
+	movea.l	sc(%sp),%a1
+	/* Is this the first time? */ 
+	tst.l	sc_usp(%a0)
+	jbeq	.nocopy
+#if !UseRegisterArgs
+	pea	sc_size.w
+#else
+	move.l	#sc_size,%d0
+#endif
+	move.l	%a1,-(%sp)
+	move.l	%a0,-(%sp)
+	jsr	CopyMem(%a6)
+	move.l	(%sp)+,%a0
+	move.l	(%sp)+,%a1
+#if !UseRegisterArgs
+	addq.w	#4,%sp
+#endif
+	fmovem.x	fpregs(%a0),%fp2-%fp7
+	jbra	.cont
+.nocopy:
+	move.l	sc_d0(%a0),sc_d0(%a1)
+	move.l	sc_d1(%a0),sc_d1(%a1)
+	move.l	sc_a0(%a0),sc_a0(%a1)
+	move.l	sc_a1(%a0),sc_a1(%a1)
+	move.l	sc_pc(%a0),sc_pc(%a1)
+.cont:
+	movem.l	regs(%a0),%d2-%d7/%a2-%a6
 	addq.w	#8,%sp
 	movem.l	%a5-%a6,-(%sp)
-	move.l	(%a1)+,sc_pc(%a0)
 #ifdef __PIC__
 	lea	(%pc,_GLOBAL_OFFSET_TABLE_@GOTPC),%a5
-	movea.l	SysBase@GOT(%a5),%a1
-	movea.l	(%a1),%a6
+	movea.l	SysBase@GOT(%a5),%a0
+	movea.l	(%a0),%a6
 #else
 	movea.l	SysBase,%a6
 #endif
-	move.l	ThisTask(%a6),%a1
-	move.l	tc_SPReg(%a1),sc_usp(%a0)
+	move.l	ThisTask(%a6),%a0
+	move.l	tc_SPReg(%a0),sc_usp(%a1)
 	/* Are interrupts enabled or disable for this task? */
 	tst.b	IDNestCnt(%a6)
 	jblt	.unmask
 	moveq.l	#-1,%d0
-	move.l	%d0,sc_mask(%a0)
+	move.l	%d0,sc_mask(%a1)
 	jbra	.except
 .unmask:
-	clr.l	sc_mask(%a0)
+	clr.l	sc_mask(%a1)
 .except:
 	/* Is there an exception to be processed? */
 #ifndef TEST
-	btst	#TB_EXCEPT,tc_Flags(%a1)
+	btst	#TB_EXCEPT,tc_Flags(%a0)
 	jbeq	.exitsup
 #  if !UseRegisterArgs
 	move.l  %a6,-(%sp)

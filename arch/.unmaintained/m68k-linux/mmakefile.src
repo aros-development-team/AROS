@@ -1,0 +1,39 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+OS_INCLUDES	:= -I$(GENINCDIR)
+USER_INCLUDES	:= -I$(TOP)/rom/exec
+SUBDIRS 	:= clib exec utility
+INCFILES	:= $(GENINCDIR)/aros/machine.h \
+		   $(INCDIR)/aros/machine.h \
+		   $(GENINCDIR)/sigcore.h \
+		   $(GENINCDIR)/jmpdefs.h
+MACHINE_H	:= $(GENINCDIR)/aros/machine.h
+SIGCORE_H	:= $(GENINCDIR)/sigcore.h
+
+#MM
+setup-linux-m68k : $(INCFILES) machine.i
+
+#MM
+clean::
+	$(RM) $(INCFILES) $(TESTS) machine.i geninc
+
+$(INCDIR)/aros/%.h : %.h
+	%mkdirs_q $(INCDIR)/aros
+	cp $< $@
+
+$(GENINCDIR)/aros/%.h : %.h
+	%mkdirs_q $(GENINCDIR)/aros
+	cp $< $@
+
+$(GENINCDIR)/%.h : %.h
+	%mkdirs_q $(GENINCDIR)
+	cp $< $@
+
+machine.i: geninc.c $(MACHINE_H) $(SIGCORE_H)
+	@echo "CFLAGS=$(CFLAGS)"
+	@echo "Creating geninc..."
+	@$(CC) $(CFLAGS) -o geninc $<
+	./geninc > machine.i
+
+%common
