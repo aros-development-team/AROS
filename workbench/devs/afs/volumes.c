@@ -220,6 +220,7 @@ struct Volume *volume;
 		volume->ah.header_block=volume->rootblock;
 		volume->ah.volume=volume;
 	}
+	volume->ioport->mp_SigTask=afsbase->port.mp_SigTask;
 	return volume;
 }
 
