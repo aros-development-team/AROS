@@ -50,13 +50,13 @@ extern struct IntuitionBase * IntuitionBase;
 IPTR DoGadgetMethod (struct Gadget * gad, struct Window * win,  
                     struct Requester * req, ULONG MethodID, ...);
 ULONG SetGadgetAttrs (struct Gadget * gad, struct Window * win,
-                    struct Requester * req, ULONG tag1, ...);
+                    struct Requester * req, Tag tag1, ...);
 
 #ifndef AROS_USE_OOP
 #ifndef CLIB_BOOPSI_PROTOS_H /* Prevent name clashes */
-ULONG SetAttrs (APTR obj, ULONG tag1, ...);
-ULONG SetSuperAttrs (Class * cl, Object * obj, ULONG tag1, ...);
-APTR NewObject (Class * classPtr, UBYTE * classID, ULONG tag1, ...);
+ULONG SetAttrs (APTR obj, Tag tag1, ...);
+ULONG SetSuperAttrs (Class * cl, Object * obj, Tag tag1, ...);
+APTR NewObject (Class * classPtr, UBYTE * classID, Tag tag1, ...);
 #ifndef USE_BOOPSI_STUBS
 IPTR DoMethodA (Object * obj, Msg message);
 IPTR DoMethod (Object * obj, ULONG MethodID, ...);
@@ -73,8 +73,8 @@ IPTR CallHookA (struct Hook * hook, APTR obj, APTR param);
 IPTR CallHook (struct Hook * hook, APTR obj, ...);
 #endif
 
-struct Window * OpenWindowTags (struct NewWindow * newWindow, ULONG tag1, ...);
-struct Screen * OpenScreenTags (struct NewScreen * newScreen, ULONG tag1, ...);
+struct Window * OpenWindowTags (struct NewWindow * newWindow, Tag tag1, ...);
+struct Screen * OpenScreenTags (struct NewScreen * newScreen, Tag tag1, ...);
 
 LONG EasyRequest (struct Window * window, struct EasyStruct * easyStruct, ULONG * idcmpPtr, ...);
 
