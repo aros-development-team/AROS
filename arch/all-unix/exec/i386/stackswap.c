@@ -1,11 +1,12 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Change the stack of a task.
     Lang: english
 */
 #include <setjmp.h>
+#include <aros/config.h>
 
 static jmp_buf env;
 
@@ -21,7 +22,6 @@ static jmp_buf env;
 #endif
 
 #define DEBUG 0
-#define STACKSNOOP
 
 #ifdef TEST
 /*******************************************************
@@ -171,7 +171,7 @@ struct ExecBase * SysBase = (struct ExecBase *)0x0BAD0BAD;
 
 	newSP -= t; /* Make room for 20 elements */
 
-    #ifdef STACKSNOOP
+    #if AROS_STACK_DEBUG
         
 	{
 	    UBYTE *startfill = sss->stk_Lower;
