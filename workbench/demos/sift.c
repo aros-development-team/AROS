@@ -111,7 +111,7 @@ void main(int argc, char **argv)
 	/* if not enough args or '?', print usage */
 	if(((argc)&&(argc<MINARGS))||(argv[argc-1][0]=='?'))
 		{
-		printf("%s\n",usage);
+		Printf("%s\n", (LONG)usage);
 		goto bye;
 		}
 
@@ -215,8 +215,8 @@ void main(int argc, char **argv)
 	if (error == IFFERR_EOF)
 		puts ("File scan complete.");
 	else
-		printf ("File scan aborted, error %ld: %s\n",
-			error, errormsgs[-error - 1]);
+		Printf ("File scan aborted, error %ld: %s\n",
+			error, (LONG)errormsgs[-error - 1]);
 
 bye:
 	if (iff) {
@@ -261,10 +261,9 @@ struct IFFHandle *iff;
 	 * This will cause nested chunks to be printed out indented.
 	 */
 	for (i = iff->iff_Depth;  i--; )
-		printf (". ");
+		Printf (". ");
 
 	/* Print out the current chunk's ID and size. */
-	printf ("%s %ld ", IDtoStr (top->cn_ID, idbuf), top->cn_Size);
 
 	/* Print the current chunk's type, with a newline. */
 	puts (IDtoStr (top->cn_Type, idbuf));

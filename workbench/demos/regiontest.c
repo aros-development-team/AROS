@@ -58,20 +58,20 @@ void newregion(void)
 	    break;
     if (i < 10) {
 	if ((regions[i] = NewRegion())) {
-	    printf("New Region created, id: %d\n", i);
+	    Printf("New Region created, id: %d\n", i);
 	} else {
-	    printf("Sorry, not enough mem\n");
+	    Printf("Sorry, not enough mem\n");
 	}
     } else {
-	printf("Sorry, no more regions possible\n");
+	Printf("Sorry, no more regions possible\n");
     }
 }
 
 void disposeregion(void)
 {
     int i;
-    printf("Enter Region id: ");
-    fflush(stdout);
+    Printf("Enter Region id: ");
+    Flush((BPTR)stdout);
     scanf("%d", &i);
     if (i >= 0 && i < 10)
 	if (regions[i]) {
@@ -79,7 +79,7 @@ void disposeregion(void)
 	    regions[i] = NULL;
 	    return;
 	}
-    printf("Region with id %d does not exist\n", i);
+    Printf("Region with id %d does not exist\n", i);
 }
 
 void DrawRectangle(struct Rectangle *r, int offsetx, int offsety)
@@ -104,10 +104,10 @@ void FillRectangle(struct Rectangle *r, int offsetx, int offsety)
 void showregions(void)
 {
     int i;
-    printf("The following Region id's are currently in use:\n");
+    Printf("The following Region id's are currently in use:\n");
     for (i = 0; i < 10; i++)
 	if (regions[i]) {
-	    printf("\t%d - bounds: (%d,%d) - (%d,%d)\n", i,
+	    Printf("\t%d - bounds: (%d,%d) - (%d,%d)\n", i,
 		   regions[i]->bounds.MinX, regions[i]->bounds.MinY,
 		   regions[i]->bounds.MaxX, regions[i]->bounds.MaxY);
 	    SetAPen(win->RPort, 3);
@@ -118,40 +118,40 @@ void showregions(void)
 void showrects(void)
 {
     int i;
-    printf("Enter Region id: ");
-    fflush(stdout);
+    Printf("Enter Region id: ");
+    Flush((BPTR)stdout);
     scanf("%d", &i);
     if (i >= 0 && i < 10)
 	if (regions[i]) {
 	    struct RegionRectangle *current;
 	    for (current = regions[i]->RegionRectangle; current; current = current->Next) {
-		printf("\tbounds: (%d,%d) - (%d,%d)\n", current->bounds.MinX,
+		Printf("\tbounds: (%d,%d) - (%d,%d)\n", current->bounds.MinX,
 		       current->bounds.MinY, current->bounds.MaxX, current->bounds.MaxY);
 		SetAPen(win->RPort, 1);
 		DrawRectangle(&current->bounds, regions[i]->bounds.MinX, regions[i]->bounds.MinY);
 		SetAPen(win->RPort, 2);
 		FillRectangle(&current->bounds, regions[i]->bounds.MinX, regions[i]->bounds.MinY);
-		printf("press a key\n");
+		Printf("press a key\n");
 		Wait(1L << win->UserPort->mp_SigBit);
 	    }
 	    return;
 	}
-    printf("Region with id %d does not exist\n", i);
+    Printf("Region with id %d does not exist\n", i);
 }
 
 void getrectangle(struct Rectangle *rect)
 {
     int val;
-    printf("Rectangle left edge: ");
+    Printf("Rectangle left edge: ");
     scanf("%d", &val);
     rect->MinX = val;
-    printf("Rectangle top edge: ");
+    Printf("Rectangle top edge: ");
     scanf("%d", &val);
     rect->MinY = val;
-    printf("Rectangle right edge: ");
+    Printf("Rectangle right edge: ");
     scanf("%d", &val);
     rect->MaxX = val;
-    printf("Rectangle lower edge: ");
+    Printf("Rectangle lower edge: ");
     scanf("%d", &val);
     rect->MaxY = val;
 }
@@ -159,90 +159,90 @@ void getrectangle(struct Rectangle *rect)
 void orrectregion(void)
 {
     int i;
-    printf("Enter Region id: ");
-    fflush(stdout);
+    Printf("Enter Region id: ");
+    Flush((BPTR)stdout);
     scanf("%d", &i);
     if (i >= 0 && i < 10)
 	if (regions[i]) {
 	    struct Rectangle rect;
 	    getrectangle(&rect);
 	    if (OrRectRegion(regions[i], &rect))
-		printf("Done.\n");
+		Printf("Done.\n");
 	    else
-		printf("Out of memory\n");
+		Printf("Out of memory\n");
 	    return;
 	}
-    printf("Region with id %d does not exist\n", i);
+    Printf("Region with id %d does not exist\n", i);
 }
 
 void andrectregion(void)
 {
     int i;
-    printf("Enter Region id: ");
-    fflush(stdout);
+    Printf("Enter Region id: ");
+    Flush((BPTR)stdout);
     scanf("%d", &i);
     if (i >= 0 && i < 10)
 	if (regions[i]) {
 	    struct Rectangle rect;
 	    getrectangle(&rect);
 	    AndRectRegion(regions[i], &rect);
-	    printf("Done.\n");
+	    Printf("Done.\n");
 	    return;
 	}
-    printf("Region with id %d does not exist\n", i);
+    Printf("Region with id %d does not exist\n", i);
 }
 
 void clearrectregion(void)
 {
     int i;
-    printf("Enter Region id: ");
-    fflush(stdout);
+    Printf("Enter Region id: ");
+    Flush((BPTR)stdout);
     scanf("%d", &i);
     if (i >= 0 && i < 10)
 	if (regions[i]) {
 	    struct Rectangle rect;
 	    getrectangle(&rect);
 	    if (ClearRectRegion(regions[i], &rect))
-		printf("Done.\n");
+		Printf("Done.\n");
 	    else
-		printf("Out of memory\n");
+		Printf("Out of memory\n");
 	    return;
 	}
-    printf("Region with id %d does not exist\n", i);
+    Printf("Region with id %d does not exist\n", i);
 }
 
 void xorrectregion(void)
 {
     int i;
-    printf("Enter Region id: ");
-    fflush(stdout);
+    Printf("Enter Region id: ");
+    Flush((BPTR)stdout);
     scanf("%d", &i);
     if (i >= 0 && i < 10)
 	if (regions[i]) {
 	    struct Rectangle rect;
 	    getrectangle(&rect);
 	    if (XorRectRegion(regions[i], &rect))
-		printf("Done.\n");
+		Printf("Done.\n");
 	    else
-		printf("Out of memory\n");
+		Printf("Out of memory\n");
 	    return;
 	}
-    printf("Region with id %d does not exist\n", i);
+    Printf("Region with id %d does not exist\n", i);
 }
 
 void clearregion(void)
 {
     int i;
-    printf("Enter Region id: ");
-    fflush(stdout);
+    Printf("Enter Region id: ");
+    Flush((BPTR)stdout);
     scanf("%d", &i);
     if (i >= 0 && i < 10)
 	if (regions[i]) {
 	    ClearRegion(regions[i]);
-	    printf("Done.\n");
+	    Printf("Done.\n");
 	    return;
 	}
-    printf("Region with id %d does not exist\n", i);
+    Printf("Region with id %d does not exist\n", i);
 }
 
 
@@ -251,18 +251,18 @@ void doall(void)
     char buf[80];
 
     for (;;) {
-	printf("> ");
-	fflush(stdout);
+	Printf("> ");
+	Flush((BPTR)stdout);
 	scanf("%s", buf);
 
 	if (!strcmp(buf, "quit")) {
 	    freeregions();
 	    return;
 	} else if (!strcmp(buf, "help")) {
-	    printf("quit help newregion disposeregion clearregion\n");
-	    printf("andrectregion orrectregion xorrectregion clearrectregion\n");
-	    printf("andregionregion orregionregion xorregionregion\n");
-	    printf("showregions showrects clear\n");
+	    Printf("quit help newregion disposeregion clearregion\n");
+	    Printf("andrectregion orrectregion xorrectregion clearrectregion\n");
+	    Printf("andregionregion orregionregion xorregionregion\n");
+	    Printf("showregions showrects clear\n");
 	} else if (!strcmp(buf, "newregion")) {
 	    newregion();
 	} else if (!strcmp(buf, "disposeregion")) {
@@ -284,6 +284,6 @@ void doall(void)
 	} else if (!strcmp(buf, "clear")) {
 	    SetRast(win->RPort, 0);
 	} else
-	    printf("Unknown command. Try 'help'.\n");
+	    Printf("Unknown command. Try 'help'.\n");
     }
 }

@@ -6,7 +6,11 @@
     Lang: english
 */
 
+#include <aros/config.h>
+
+#if (AROS_FLAVOUR != AROS_FLAVOUR_NATIVE)
 #define ENABLE_RT 1
+#endif
 
 #include <stdio.h>
 #include <proto/exec.h>
@@ -52,12 +56,12 @@ BOOL openlibs()
     GadToolsBase = OpenLibrary("gadtools.library", 0);
     if (!IntuitionBase)
     {
-        printf("GTDemo: Error opening intuition.library\n");
+        Printf("GTDemo: Error opening intuition.library\n");
         return FALSE;
     }
     if (!GadToolsBase)
     {
-        printf("GTDemo: Error opening gadtools.library\n");
+        Printf("GTDemo: Error opening gadtools.library\n");
         return FALSE;
     }
     return TRUE;
@@ -66,7 +70,7 @@ BOOL openlibs()
 void closelibs()
 {
     CloseLibrary(GadToolsBase);
-    CloseLibrary(IntuitionBase);
+    CloseLibrary((struct Library *)IntuitionBase);
 }
 
 
@@ -114,7 +118,7 @@ BOOL openwin()
                          TAG_DONE);
     if (!win)
     {
-        printf("GTDemo: Error opening window\n");
+        Printf("GTDemo: Error opening window\n");
         return FALSE;
     }
     return TRUE;
@@ -125,7 +129,7 @@ struct Gadget * makegadgets(struct Gadget *gad)
 {
     gad = CreateGadgetA(BUTTON_KIND, gad, &buttongad, NULL);
     if (!gad)
-        printf("GTDemo: Error creating gadgets\n");
+        Printf("GTDemo: Error creating gadgets\n");
     return gad;
 }
 

@@ -6,13 +6,12 @@
     Lang:
 */
 
-#include <defines/aros.h>
-#include <clib/aros_protos.h>
 #include <aros/inquire.h>
 #include <aros/arosbase.h>
 #include <dos/dos.h>
 
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/aros.h>
 
 #include <stdio.h>
@@ -32,14 +31,14 @@ int main(int argc, char **argv)
 
     if(!(ArosBase = OpenLibrary(AROSLIBNAME, AROSLIBVERSION)))
     {
-	fprintf(stderr, "Couldn't open "AROSLIBNAME"\n");
+	FPrintf((BPTR)stderr, "Couldn't open "AROSLIBNAME"\n");
 	return RETURN_FAIL;
     }
 
     if(AROSLIBREVISION < ArosBase->lib_Revision)
     {
 	CloseLibrary(ArosBase);
-	fprintf(stderr,
+	FPrintf((BPTR)stderr,
 	    AROSLIBNAME" is too old! Need at least version %ld.%ld\n",
 		(ULONG)AROSLIBVERSION, (ULONG)AROSLIBREVISION);
 	return RETURN_FAIL;
@@ -55,20 +54,20 @@ int main(int argc, char **argv)
 	AI_KickstartRevision,	(IPTR)&kickrev,
 	TAG_DONE);
 
-    printf("AROS release = %ld.%ld\n", relMajor, relMinor);
-    printf("AROS module major version = V%ld\n", vers);
+    Printf("AROS release = %ld.%ld\n", relMajor, relMinor);
+    Printf("AROS module major version = V%ld\n", vers);
 
     if (kickbase)
     {
-	printf("Kickstart base address = $%lx\n", kickbase);
+	Printf("Kickstart base address = $%lx\n", kickbase);
 
-	printf("Kickstart size = $%lx (%ld kB)\n", kicksize, kicksize/1024);
+	Printf("Kickstart size = $%lx (%ld kB)\n", kicksize, kicksize/1024);
 
-	printf("Kickstart version = %d.%d\n", kickver, kickrev);
+	Printf("Kickstart version = %d.%d\n", kickver, kickrev);
     }
     else
     {
-	printf("This machine has no Kickstart ROM.\n");
+	Printf("This machine has no Kickstart ROM.\n");
     }
 
     CloseLibrary(ArosBase);
