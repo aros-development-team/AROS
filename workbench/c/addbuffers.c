@@ -29,22 +29,22 @@ int main (int argc, char ** argv)
     rda = ReadArgs(ARG_STRING, args, NULL);
     if (rda != NULL)
     {
-        bufsptr = (ULONG *)args[ARG_BUFFERS];
-        if (bufsptr != NULL) buffers = *bufsptr;
-        result = AddBuffers((char *)args[ARG_DRIVE], buffers);
-        if (result == -1)
-            Printf("%s has %ld buffers\n", (LONG)(char *)args[ARG_DRIVE], IoErr());
-        else if(result > 0)
-            Printf("%s has %ld buffers\n", (LONG)(char *)args[ARG_DRIVE], (LONG)result);
-        else
+	bufsptr = (ULONG *)args[ARG_BUFFERS];
+	if (bufsptr != NULL) buffers = *bufsptr;
+	result = AddBuffers((char *)args[ARG_DRIVE], buffers);
+	if (result == -1)
+	    printf("%s has %ld buffers\n", (char *)args[ARG_DRIVE], IoErr());
+	else if(result > 0)
+	    printf("%s has %ld buffers\n", (char *)args[ARG_DRIVE], (LONG)result);
+	else
 	{
-            PrintFault(IoErr(), "AddBuffers");
-            error = RETURN_FAIL;
-        }
-        FreeArgs(rda);
+	    PrintFault(IoErr(), "AddBuffers");
+	    error = RETURN_FAIL;
+	}
+	FreeArgs(rda);
     } else
     {
-        PrintFault(IoErr(), "AddBuffers");
+	PrintFault(IoErr(), "AddBuffers");
 	error = RETURN_FAIL;
     }
     return(error);
