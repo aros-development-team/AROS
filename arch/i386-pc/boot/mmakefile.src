@@ -72,7 +72,6 @@ kernel-link-native : $(OSGENDIR)/boot/kernel
 OBJS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) \
 	$(OSGENDIR)/graphics/graphics_driver.o \
 	$(OSGENDIR)/graphics/objcache.o \
-	$(OSGENDIR)/graphics/activescreen.o \
 	$(OSGENDIR)/graphics/dispinfo.o \
 	$(OSGENDIR)/intuition/intuition_driver.o
 
