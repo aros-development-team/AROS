@@ -27,6 +27,7 @@ enum
     M_Console_Right,
     M_Console_Up,
     M_Console_Down,
+    M_Console_GetDefaultParams
     
 };
 
@@ -80,6 +81,13 @@ struct P_Console_Down
     UWORD Num;
 };
 
+struct P_Console_GetDefaultParams
+{
+    ULONG MethodID;
+    BYTE Command;
+    UBYTE *Params;
+};
+
 
 #define Console_DoCommand(o, cmd, params)	\
 ({						\
@@ -121,6 +129,15 @@ struct P_Console_Down
     p.MethodID	= M_Console_Down;	\
     p.Num	= num;			\
     DoMethodA((o), (Msg)&p);		\
+})
+
+#define Console_GetDefaultParams(o, cmd, params)	\
+({							\
+    struct P_Console_GetDefaultParams p;		\
+    p.MethodID	= M_Console_GetDefaultParams;		\
+    p.Command	= cmd;					\
+    p.Params	= params;				\
+    DoMethodA((o), (Msg)&p);				\
 })
 
 

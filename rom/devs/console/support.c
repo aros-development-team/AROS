@@ -13,19 +13,22 @@
 #include <exec/memory.h>
 
 #include <proto/boopsi.h>
+#include <intuition/classes.h>
 
 #include <devices/conunit.h>
 #include <string.h>
+#include <stdio.h>
+
 #include "console_gcc.h"
 
 #include "consoleif.h"
 
-#define SDEBUG 0
-#define DEBUG 0
+#define SDEBUG 1
+#define DEBUG 1
 #include <aros/debug.h>
 
-static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE **writestr_ptr, UBYTE *str_end, UBYTE *p_tab);
-static BOOL string2command(BYTE *cmd_ptr, UBYTE **writestr_ptr, UBYTE *str_end, UBYTE *p_tab, struct ConsoleBase *ConsoleDevice);
+static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE **writestr_ptr, LONG toparse, UBYTE *p_tab, Object *unit, struct ConsoleBase *ConsoleDevice);
+static BOOL string2command(BYTE *cmd_ptr, UBYTE **writestr_ptr, LONG toparse, UBYTE *p_tab, Object *unit, struct ConsoleBase *ConsoleDevice);
 
 #define ESC 0x1B
 #define CSI 0x9B
@@ -51,38 +54,63 @@ static BOOL string2command(BYTE *cmd_ptr, UBYTE **writestr_ptr, UBYTE *str_end, 
 **  writeToConsole()  **
 ***********************/
 
-#define PARAM_BUF_SIZE 10
+/* SGR is the command with most params: 4 */
+#define MAX_COMMAND_PARAMS 4
+
 
 ULONG writeToConsole(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice)
 {
-    UBYTE param_tab[PARAM_BUF_SIZE];
+    UBYTE param_tab[MAX_COMMAND_PARAMS];
+    
     BYTE command;
-    UBYTE *write_str_end;
     struct ConUnit *unit = (struct ConUnit *)ioreq->io_Unit;
-    UBYTE *write_str = (UBYTE *)ioreq->io_Data;
-    ULONG towrite = ioreq->io_Length;
+    UBYTE *orig_write_str, *write_str;
+    LONG towrite = (LONG)ioreq->io_Length;
+    LONG written, orig_towrite;
+
+    write_str = orig_write_str = (UBYTE *)ioreq->io_Data;
+    
     
     EnterFunc(bug("WriteToConsole(ioreq=%p)\n"));
     
     if (towrite == -1L)
     	towrite = strlen(write_str);
+	
+    orig_towrite = towrite;
     
     D(bug("Number of chars to write %d\n", towrite));
     
-    write_str_end = write_str + towrite - 1;
     
     /* Interpret string into a command and execute command */
     
-    while (write_str <= write_str_end)
+    /* DEBUG aid */
+
+#if DEBUG
+{
+    UWORD i;    
+    for (i = 0; i < towrite; i ++)
+    	kprintf("%x", write_str[i]);
+	
+    kprintf("\n");
+    
+}    
+#endif
+    
+    while (towrite > 0)
     {
-    	if (!string2command(&command, &write_str, write_str_end, param_tab, ConsoleDevice))
+    	if (!string2command(&command, &write_str, towrite, param_tab, (Object *)ioreq->io_Unit, ConsoleDevice))
     	    break;
     	
+	
 	Console_DoCommand((Object *)unit, command, param_tab);
+	
+	towrite = orig_towrite - (write_str - orig_write_str);
     	
     } /* while (characters left to interpret) */
     
-    ReturnInt("WriteToConsole", LONG, towrite);
+    written = write_str - orig_write_str;
+    
+    ReturnInt("WriteToConsole", LONG, written);
 }
 
 
@@ -109,24 +137,70 @@ static const struct special_cmd_descr
 
 };
 
+#if DEBUG
+static UBYTE *cmd_names[NUM_CONSOLE_COMMANDS] =
+{
+	
+    "Ascii",		/* C_ASCII = 0	*/
+    
+    "Esc",		/* C_ESC	*/
+    "Bell",		/* C_BELL,	*/
+    "Backspace",	/* C_BACKSPACE,	*/
+    "HTab",		/* C_HTAB,	*/
+    "Linefeed",		/* C_LINEFEED,	*/
+    "VTab",		/* C_VTAB,	*/
+    "Formefeed",	/* C_FORMFEED,	*/
+    "Carriage return",	/* C_CARRIAGE_RETURN,	*/
+    "Shift In",		/* C_SHIFT_IN,	*/
+    "Shift Out",	/* C_SHIFT_OUT,	*/
+    "Index",		/* C_INDEX,	*/
+    "Nex Line",		/* C_NEXT_LINE,	*/
+    "Tab set",		/* C_H_TAB_SET, */
+    "Reverse Idx",	/* C_REVERSE_IDX, */
+    "Set LF Mode",	/* C_SET_LF_MODE, */
+    "Reset Newline Mode",	/* C_RESET_NEWLINE_MODE,	*/
+    "Device Status Report",	/* C_DEVICE_STATUS_REPORT,	*/
+    
+    "Insert Char",	/* C_INSERT_CHAR, */
+    "Cursor Up",	/* C_CURSOR_UP,		*/
+    "Cursor Down",	/* C_CURSOR_DOWN,	*/
+    "Cursor Forward",	/* C_CURSOR_FORWARD,	*/
+    "Cursor Backward",	/* C_CURSOR_BACKWARD,	*/
+    "Cursor Next Line",	/* C_CURSOR_NEXT_LINE,	*/
+    "Cursor Prev Line",	/* C_CURSOR_PREV_LINE,	*/
+    "Cursor Pos",	/* C_CURSOR_POS,	*/
+    "Cursor HTab",	/* C_CURSOR_HTAB,	*/
+    "Erase In Display",	/* C_ERASE_IN_DISPLAY,	*/
+    "Erase In Line",	/* C_ERASE_IN_LINE,	*/
+    "Insert Line",	/* C_INSERT_LINE,	*/
+    "Delete Line",	/* C_DELETE_LINE,	*/
+    "Delete Char",	/* C_DELETE_CHAR,	*/
+    "Scroll Up",	/* C_SCROLL_UP,		*/
+    "Scroll Down",	/* C_SCROLL_DOWN,	*/
+    "Cursor Tab Ctrl",	/*C_CURSOR_TAB_CTRL,	*/
+    "Cursor Backtab",	/* C_CURSOR_BACKTAB	*/
+    "Select Graphic Rendation"
+};
+#endif
 
 static BOOL string2command( BYTE 	*cmd_ptr
 		, UBYTE 		**writestr_ptr
-		, UBYTE 		*str_end
+		, LONG			toparse
 		, UBYTE 		*p_tab
+		, Object		*unit
 		, struct ConsoleBase 	*ConsoleDevice)
 {
     UBYTE *write_str = *writestr_ptr;
 
     UBYTE *csi_str = write_str;
+    LONG csi_toparse;
     
     BOOL found = FALSE,
     	 csi   = FALSE;
+
     	 
-    EnterFunc(bug("StringToCommand(cmd_ptr=%p, writestr_ptr=%p, str_end=%p, p_tab=%p)\n",
-    		cmd_ptr, writestr_ptr, str_end));
+    EnterFunc(bug("StringToCommand(toparse=%d)\n", toparse));
     		
-    D(bug("write_str: %p, %s \n", write_str, write_str));
     
     /* Look for <CSI> */
     if (*write_str == CSI)
@@ -134,33 +208,64 @@ static BOOL string2command( BYTE 	*cmd_ptr
 
 	csi_str ++;
 	csi = TRUE;
+	csi_toparse = toparse - 1;
     }
-    else if (str_end > write_str)
+    else if (toparse >= 2)
     {
     	if ( (write_str[0] == ESC) && (write_str[1] == '[') )
     	{
 	    csi_str += 2;
+	    csi_toparse = toparse - 2;
 	    csi = TRUE;
     	}
     }
     
     if (csi)
     {
+        D(bug("CSI found, getting command\n"));
+	
+	/* Search for the longest commands first */
+
+#define SGR_COMMAND_LEN	9
+	
+	/* SGR needs special handling because of the '>' separator */
+	if (csi_toparse >= SGR_COMMAND_LEN)
+	{
+	    if (    ( csi_str[1] == ';' )
+		 && ((csi_str[2] & 0x30) == 0x30)
+		 && ( csi_str[3] == ';' )
+		 && ((csi_str[4] & 0x40) == 0x40)
+		 && ( csi_str[5] == ';')
+		 && ( csi_str[6] == '>')
+		 && ( csi_str[8] == 0x6D) )
+	    {
+	    	p_tab[0] = csi_str[0];
+		p_tab[1] = csi_str[2] & 0x0F;
+		p_tab[2] = csi_str[4] & 0x0F;
+		p_tab[3] = csi_str[7];
+		
+		*cmd_ptr = C_SELECT_GRAPHIC_RENDATION;
+		
+		found = TRUE;
+	    }
+	}
+	
+	
 	/* A parameter command ? (Ie. one of the commands that takes parameters) */
-	found = getparamcommand(cmd_ptr, &write_str, str_end, p_tab);
-	    
+	if (!found)
+	    found = getparamcommand(cmd_ptr, &csi_str, csi_toparse, p_tab, unit, ConsoleDevice);
+
 	if (!found)
 	{
 	    BYTE i;
 	    /* Look for some special commands */
 	    for (i = 0; ((i < NUM_SPECIAL_COMMANDS) && (!found)) ; i ++ )
 	    {
-	    	D(bug("str_end; %p, csi_str %p\n", str_end, csi_str));
 	    	/* Check whether command sequence is longer than input */
-	    	if (str_end < csi_str + scd_tab[i].Length - 1)
+	    	if (scd_tab[i].Length > csi_toparse)
 	    	    continue; /* if so, check next command sequence */
 	    	
-		D(bug("Comparing for special command %d, idx %d, cmdstr %s, len %d, csistr %s \n", 
+		D(bug("Comparing for special command %d, idx %d, cmdstr %p, len %d, csistr %p \n", 
 			scd_tab[i].Command, i, scd_tab[i].CommandStr, scd_tab[i].Length, csi_str));
  		/* Command match ? */    
 	    	if (0 == strncmp(csi_str, scd_tab[i].CommandStr, scd_tab[i].Length))
@@ -260,6 +365,7 @@ static BOOL string2command( BYTE 	*cmd_ptr
     	if (found)
     	{
     	    /* Found special char. Increase pointer */
+
 	    write_str ++;
     	}
     	
@@ -268,12 +374,13 @@ static BOOL string2command( BYTE 	*cmd_ptr
     if (!found) /* Still not any found ? Try to print as plain ASCII */
     {
     	*cmd_ptr = C_ASCII;
-    	p_tab[0] = *write_str ++;
+	
+	p_tab[0] = *write_str ++;
     	
     	found = TRUE;
     }
-    
-    	
+
+    D(bug("FOUND CMD: %s\n", cmd_names[*cmd_ptr]));    
     
     /* Return pointer to first character AFTER last interpreted char */
     *writestr_ptr = write_str;
@@ -286,6 +393,10 @@ static BOOL string2command( BYTE 	*cmd_ptr
 **  getparamcommand()  **
 ************************/
 
+/* !!! IMPORTANT !!!
+   If you add a command her, you should also add default values for
+   its parameters in Console::GetDefaultParams()
+*/
 static const struct Command
 {
     BYTE Command;
@@ -324,7 +435,58 @@ static const struct Command
 };
 
 
-static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr, UBYTE *str_end, UBYTE *p_tab)
+#define PARAM_BUF_SIZE 2
+/* Parameters for commands are parsed and filled into this one */
+struct cmd_params
+{
+    UBYTE numparams; /* Parameters stored */
+    
+    /* Since parameters may be optional, only supplied parameters
+    are saved, along with their number. For example
+    for the command CURSOR POSITION, if only the sencond parameter
+    (column) is specified in the write stream, then
+    numparams will be 1 and for the one entry, paramno will be 1 (C counting)
+    and val will be <column>.
+    Row will have to be set to some default value.
+    */
+    struct cmd_param
+    {
+    	UBYTE paramno; /* Starts counting at 0 */
+	UBYTE val;
+    } tab[PARAM_BUF_SIZE];
+};
+
+
+#define SAVEPARAM()						\
+    	    num_params ++;					\
+	    if (num_params > MAX_COMMAND_PARAMS)		\
+	    {							\
+	    	done = TRUE;					\
+		break;						\
+	    }							\
+	    							\
+	    if (!next_can_be_param)				\
+	    {							\
+		done = TRUE;					\
+		break;						\
+	    }							\
+	    							\
+	    params.tab[p_tab_idx].paramno = num_params - 1;	\
+    	    params.tab[p_tab_idx].val = *write_str;		\
+	    							\
+	    p_tab_idx ++;					\
+								\
+	    next_can_be_param = FALSE;				\
+	    next_can_be_separator = TRUE;			\
+	    next_can_be_commandid = TRUE;
+
+
+static BOOL getparamcommand(BYTE 	*cmd_ptr
+		, UBYTE 		**writestr_ptr
+		, LONG 			toparse
+		, UBYTE 		*p_tab
+		, Object 		*unit
+		, struct ConsoleBase 	*ConsoleDevice)
 {
     /* This function checks for a command with parameters in
     ** the string. The problem is that the parameters come
@@ -335,7 +497,7 @@ static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr, UBYTE *str_end
     ** even if we found a command ID.
     */
     
-    #define MAX_COMMAND_PARAMS 4
+    struct cmd_params params;
     
     UBYTE p_tab_idx = 0;
     
@@ -349,11 +511,20 @@ static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr, UBYTE *str_end
     
     BOOL done  = FALSE,
     	 found = FALSE;
+	 
+    BOOL next_can_be_separator = TRUE,
+    	next_can_be_param = TRUE,
+	next_can_be_commandid = TRUE;
+
+    UBYTE num_separators_found = 0;
     
     while (!done)
     {
     	/* In case it's a parameter */
-    	p_tab[p_tab_idx] = *write_str;
+	
+	if (toparse <= 0)
+    	    done = TRUE;
+
     	
     	switch (*write_str)
     	{
@@ -366,43 +537,77 @@ static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr, UBYTE *str_end
     	case 0x46:
     	case 0x48:
     	case 0x49:
+	
+	case 0x4A:
+	case 0x4B:
+	case 0x4C:
+	case 0x4D:
+	
     	case 0x50:
     	case 0x53:
     	case 0x54:
     	case 0x57:
     	case 0x5A: {
     	    UBYTE idx = *write_str - FIRST_CSI_CMD;
-    	    
-    	    if (num_params <= csi2command[idx].MaxParams) /* Valid command ? */
-    	    {
-    	    	cmd = csi2command[idx].Command;
-    	    	cmd_next_idx = write_str - *writestr_ptr;
+	    UBYTE maxparams = csi2command[idx].MaxParams;
+	    
+
+	    if (next_can_be_commandid)
+	    {
+#warning Should also do a MinParams compare    	    
+		if (num_params <= maxparams) /* Valid command ? */
+		{
+
+		    /* Assure that there are not to many separators in a command  */
+		    if ((num_separators_found < maxparams)
+#warning 0-param commands can be moved to special-command-handlin in string2command()
+		       || ((num_separators_found == 0) && (maxparams == 0)))
+		    {
+			cmd = csi2command[idx].Command;
+		
+			/* Save index to where the next command will start */
+			cmd_next_idx = write_str - *writestr_ptr + 1;
+		
+			params.numparams = num_params;
+		    }
+		}
     	    }
+	    
+	    /* Even if we have founf a command ID, this could actually
+	      be a parameter of a longer command */
+	      
+	    SAVEPARAM();
     	    
-    	    /* Could be a parameter for another command */
-    	    num_params ++;
-    	    p_tab[p_tab_idx ++] = *write_str;
+
     	} break;
     	    
-    	case ';': /* parameter separator */
-    	case '>': /* Used in SGR command */
+    	case ';': /* parameter separator, skip it */
+
+	    if (!next_can_be_separator)
+	    {
+	        /* Error */
+	    	done = TRUE;
+		break;
+	    }
+	    
+	    next_can_be_separator = FALSE;
+	    next_can_be_param = TRUE;
+	    next_can_be_commandid = FALSE;
+	    
+	    num_separators_found ++;
+	    
     	    break;
     	    
     	default:
-    	    p_tab[p_tab_idx ++] = *write_str;
+	    /* Have we reached the max limit ? */
+	    SAVEPARAM();
     	    break;
 
     	} /* switch */
 
-    	if (num_params > MAX_COMMAND_PARAMS)
-    	{
-    	    done = TRUE;
-    	}
     	
     	write_str ++;
     	
-    	if (write_str > str_end)
-    	    done = TRUE;
 
     } /* while (!done) */
     
@@ -414,7 +619,28 @@ static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr, UBYTE *str_end
 	/* Continue parsing on the first byte after the command */
     	*writestr_ptr += cmd_next_idx;
     }
-    return (found);
+    
+    if (found)
+    {
+        UBYTE i;
+    	/* First fill in some default values in p_tab */
+	Console_GetDefaultParams(unit, *cmd_ptr, p_tab);
+	
+	for (i = 0; i < params.numparams; i ++)
+	{
+	    /* Override with parsed values */
+	    
+
+	    D(bug("CMD %s: Setting param %d to %d\n"
+	    	, cmd_names[*cmd_ptr]
+		, params.tab[i].paramno
+		, params.tab[i].val));
+		
+	    p_tab[params.tab[i].paramno] = params.tab[i].val;
+	}
+    }
+    
+    return found;
 }
 
 

@@ -15,8 +15,8 @@
 #include "consoleif.h"
 #include "console_gcc.h"
 
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 VOID normalizecoords(Object *o, WORD *x_ptr, WORD *y_ptr);
@@ -92,7 +92,7 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 	unit->cu_YCCP = DEF_CHAR_YMIN;
 	
 	ICU(o)->conFlags = 0UL;
-	    
+
 	
     }
     ReturnPtr("Console::New", Object *, o);
@@ -213,6 +213,45 @@ static VOID console_docommand(Class *cl, Object *o, struct P_Console_DoCommand *
     ReturnVoid("Console::DoCommand");
 }
 
+static VOID console_getdefaultparams(Class *cl, Object *o, struct P_Console_GetDefaultParams *msg)
+{
+    switch (msg->Command)
+    {
+	case C_INSERT_CHAR:
+	case C_CURSOR_UP:
+	case C_CURSOR_DOWN:
+	case C_CURSOR_FORWARD:
+	case C_CURSOR_BACKWARD:
+	case C_CURSOR_NEXT_LINE:
+	case C_CURSOR_PREV_LINE:
+	    msg->Params[0] = 1;
+	    break;
+	case C_CURSOR_POS:
+	    msg->Params[0] = XCCP;
+	    msg->Params[1] = YCCP;
+	    break;
+
+#warning Autodocs state commands in between here, has params RKRM: Devs saye the do not
+	case C_CURSOR_HTAB:
+	case C_DELETE_CHAR:
+	case C_SCROLL_UP:
+	case C_SCROLL_DOWN:
+	    msg->Params[0] = 1;
+	    break;
+	    
+	case C_CURSOR_TAB_CTRL:
+	    msg->Params[0] = 0; /* set tab */
+	    break;
+	    
+	    
+	case C_CURSOR_BACKTAB:
+	    msg->Params[0] = 1;
+	    break;
+    }
+    
+    return;
+}
+
 /********* Console class dispatcher **********************************/
 AROS_UFH3S(IPTR, dispatch_consoleclass,
     AROS_UFHA(Class *,  cl,  A0),
@@ -246,6 +285,10 @@ AROS_UFH3S(IPTR, dispatch_consoleclass,
 	
     case M_Console_DoCommand:
     	console_docommand(cl, o, (struct P_Console_DoCommand *)msg);
+	break;
+
+    case M_Console_GetDefaultParams:
+    	console_getdefaultparams(cl, o, (struct P_Console_GetDefaultParams *)msg);
 	break;
 	
     default:

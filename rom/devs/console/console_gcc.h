@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  1999/03/18 20:16:11  nlorentz
+    Reworked escape sequence parsing. Microemacs does not crash anymore, but it sends some strange undocumented sequences
+
     Revision 1.6  1998/11/07 10:41:21  nlorentz
     Various small bugfixes
 
@@ -91,6 +94,7 @@ struct ConsoleBase;
 
 #define ICU(x) ((struct intConUnit *)x)
 
+
 /* Console write commands */
 enum 
 {
@@ -132,12 +136,17 @@ enum
     C_SCROLL_UP,
     C_SCROLL_DOWN,
     C_CURSOR_TAB_CTRL,
-    C_CURSOR_BACKTAB
+    C_CURSOR_BACKTAB,
+    
+    C_SELECT_GRAPHIC_RENDATION,
+    
+    NUM_CONSOLE_COMMANDS
 };
 
 /**************
 **  structs  **
 **************/
+
 struct coTaskParams
 {
     struct ConsoleBase *consoleDevice;
@@ -150,6 +159,7 @@ struct intConUnit
 {
     struct ConUnit unit;
     ULONG conFlags;
+
     UBYTE inputBuf[CON_INPUTBUF_SIZE];
         
 };
