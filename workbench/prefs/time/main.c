@@ -512,7 +512,6 @@ static void MakeGUI(void)
 	    	monthlabels[i] = GetLocaleStr(locale, MON_1 + i);
 	    }
 	    
-	    firstweekday = locale->loc_CalendarType;
 	    CloseLocale(locale);
 	}
 	
