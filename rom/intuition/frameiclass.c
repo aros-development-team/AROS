@@ -468,10 +468,6 @@ AROS_UFH3(static IPTR, dispatch_frameiclass,
 	    fid->fid_Recessed  = FALSE;
 	    fid->fid_FrameType = FRAME_DEFAULT;
 
-	    /* Set some default images sizes so things wont blow up later. */
-	    IM(retval)->Width  = 12;
-	    IM(retval)->Height = 12;
-
 	    /* Handle our special tags - overrides defaults */
 	    set_frameiclass(cl, (Object*)retval, (struct opSet *)msg);
 	}
