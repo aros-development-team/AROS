@@ -22,18 +22,20 @@
     | 0x000000a8 | 0x0000004 | INT server!                     cached_irq_mask |
     | 0x000000ac | 0x0000004 | INT server!                        io_apic_irqs |
     | 0x00000100 | 0x0000800 |                           256 interrupt vectors |
-    | 0x00000900 | 0x0000040 |                         Global Descriptor Table |
+    | 0x00000900 | 0x0000040 |                         Global Descriptor Table |<---- needs changed! - must have space for GDT x No CPUs (NicJA)
     | 0x00000940 | 0x0000001 | INT server!                           softblock |
     | 0x00000a00 | 0x0000200 | INT server!                          irq_desc[] |
     +------------+-----------+-------------------------------------------------+
     | 0x00001000 | 0x0001000 |                           MultiBoot information |
     | 0x00002000 | ......... |                                      System RAM |
     | .......... | ......... |        Temporary stack frame for bootup process |
+......0x0009e000   0x0001000                                                            SMP Trampoline  (NicJA)
     | 0x000a0000 | 0x0060000 | Data reserved for BIOS, VGA and some MMIO cards |
-    | 0x00100000 | ......... |                                     AROS KERNEL |
+......0x000f7070                                                                        ACPI<-
+ 1MB| 0x00100000 | ......... |                                     AROS KERNEL |
     | .......... | ......... |           System RAM divided into DMA and rest. |
     +------------+-----------+-------------------------------------------------+ 
-
+        0fef7f80
     WARNING!
 
         AROS Kernel will not be placed in first 1MB of ram anymore. Instead it
@@ -60,6 +62,11 @@
 #include <aros/arossupportbase.h>
 #include <aros/asmcall.h>
 #include <aros/config.h>
+
+#ifndef DEBUG
+#   define DEBUG    1
+#endif
+
 #include <aros/debug.h>
 #include <aros/multiboot.h>
 
@@ -74,6 +81,12 @@
 #include "etask.h"
 #include "exec_util.h"
 #include "traps.h"
+
+#define SMP_SUPPORT
+
+#ifdef SMP_SUPPORT
+    extern void prepare_primary_cpu(struct ExecBase *SysBase);      /* FUNCTION FROM "cpu.resource"!!!!!!! */
+#endif
 
 /* As long as we don't have CPU detection routine, assume FPU to be present */
 
@@ -98,7 +111,7 @@ void    exec_cinit() __no_ret;      /* c-style init NEVER returns */
 int     exec_check_base();
 void    exec_DefaultTrap();
 void    exec_DefaultTaskExit();
-void    exec_GetCPU();
+//void    exec_CheckCPU();
 int 	exec_RamCheck_fast();
 int 	exec_RamCheck_dma();
 
@@ -168,7 +181,9 @@ char tab[127];
  * it :)
  */
 
-asm(        ".globl SysBase     \n\t"
+asm(        ".globl aros_intern\n\t"
+            ".globl SysBase     \n\t"
+            ".set   aros_intern,0\n\t"
             ".set   SysBase,4       ");
 
 /*
@@ -232,17 +247,16 @@ const short exec_Revision __text    = 11;
  */
 const struct Resident Exec_resident __text=
 {
-    RTC_MATCHWORD,      /* Magic value used to find resident */
-    &Exec_resident,     /* Points to Resident itself */
-    &Exec_end,          /* Where could we find next Resident? */
-    0,                  /* There are no flags!! */
-    41,                 /* Version */
-    NT_LIBRARY,         /* Type */
-    126,                /* Very high startup priority. */
-    (char *)exec_name,  /* Pointer to name string */
-    (char *)exec_idstring, /* Ditto */
-    exec_init           /* Library initializer. Whatever...
-                           We've jumped there at the begining */
+    RTC_MATCHWORD,          /* Magic value used to find resident */
+    &Exec_resident,         /* Points to Resident itself */
+    &Exec_end,              /* Where could we find next Resident? */
+    0,                      /* There are no flags!! */
+    41,                     /* Version */
+    NT_LIBRARY,             /* Type */
+    126,                    /* Very high startup priority. */
+    (char *)exec_name,      /* Pointer to name string */
+    (char *)exec_idstring,  /* Ditto */
+    exec_init               /* Library initializer (for exec this value is irrelevant since we've jumped there at the begining to bring the system up */
 };
 
 struct view { unsigned char sign; unsigned char attr; };
@@ -262,15 +276,17 @@ void IdleTask()
  * We have to use asm creature because there is no stack at the moment
  */
 asm("\nexec_init:                \n\t"
-	    "movl    $0x93000,%esp\n\t"     /* Start with setting up a temporary stack */
-	    "pushl   %ebx        \n\t"      /* Then store the MultiBoot info pointer   */
-	    "pushl   %eax        \n\t"      /* Store multiboot magic cookie            */
-	    "pushl   $0x0        \n\t"      /* And fake a C code call                  */
+	        "movl    $0x93000,%esp\n\t"     /* Start with setting up a temporary stack */
+	        "pushl   %ebx        \n\t"      /* Then store the MultiBoot info pointer   */
+	        "pushl   %eax        \n\t"      /* Store multiboot magic cookie            */
+	        "pushl   $0x0        \n\t"      /* And fake a C code call                  */
+
             "cld                 \n\t"      /* At the startup it's very important   */
             "cli                 \n\t"      /* to lock all interrupts. Both on the  */
             "movb    $-1,%al     \n\t"      /* CPU side and hardwre side. We don't  */
             "outb    %al,$0x21   \n\t"      /* have proper structures in RAM yet.   */
             "outb    %al,$0xa1 \n\n\t"
+
             "jmp     exec_cinit");          /* Jump to C function :))) */
 
 /*
@@ -331,19 +347,19 @@ asm(".globl cached_irq_mask\n\t"
  * more human-readable
  */
 struct _tss {
-    ULONG   link,               /* link to previous task - UNUSED */
-            ssp,                /* Supervisor Stack Pointer */
-            ssp_seg,            /* SSP descriptor */
-            t0,t1,              /* Stack for CPL1 code - USE IN FUTURE */
-            t2,t3,              /* Stack for CPL2 code - UNUSED */
-            cr3,                /* used in paging */
-            eip,                /* Instruction pointer */
-            eflags,             /* Flags for given task */
-            r0,r1,r2,r3,        /* 8 general purpouse registers */
+    ULONG   link,               /* link to previous task        - UNUSED        */
+            ssp,                /* Supervisor Stack Pointer                     */
+            ssp_seg,            /* SSP descriptor                               */
+            t0,t1,              /* Stack for CPL1 code          - USE IN FUTURE */
+            t2,t3,              /* Stack for CPL2 code          - UNUSED        */
+            cr3,                /* used in paging                               */
+            eip,                /* Instruction pointer                          */
+            eflags,             /* Flags for given task                         */
+            r0,r1,r2,r3,        /* 8 general purpouse registers                 */
             r4,r5,r6,r7,
-            es,cs,ss,ds,fs,gs,  /* segment descriptors */
-            ldt;                /* LocalDescriptorTable - UNUSED */
-    UWORD   trap,iomap;         /* trap flag and iomap pointer */
+            es,cs,ss,ds,fs,gs,  /* segment descriptors                          */
+            ldt;                /* LocalDescriptorTable         - UNUSED        */
+    UWORD   trap,iomap;         /* trap flag and iomap pointer                  */
 };
 
 /*
@@ -443,54 +459,57 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     arosmb = (struct arosmb *)0x1000;
     if (arosmb->magic != MBRAM_VALID)
     {
-	if (magic == 0x2badb002)
-	{
-	    rkprintf("Copying multiboot information into storage\n");
-	    arosmb->magic = MBRAM_VALID;
-	    arosmb->flags = 0L;
-	    mbinfo = (struct multiboot *)addr;
-	    if (mbinfo->flags & MB_FLAGS_MEM)
+	    if (magic == 0x2badb002)
 	    {
-		arosmb->flags |= MB_FLAGS_MEM;
-		arosmb->mem_lower = mbinfo->mem_lower;
-		arosmb->mem_upper = mbinfo->mem_upper;
-	    }
-	    if (mbinfo->flags & MB_FLAGS_LDRNAME)
-	    {
-		arosmb->flags |= MB_FLAGS_LDRNAME;
-		snprintf(arosmb->ldrname,29,"%s",mbinfo->loader_name);
-	    }
-	    if (mbinfo->flags & MB_FLAGS_CMDLINE)
-	    {
-		arosmb->flags |= MB_FLAGS_CMDLINE;
-		snprintf(arosmb->cmdline,199,"%s",mbinfo->cmdline);
-	    }
-	    if (mbinfo->flags & MB_FLAGS_MMAP)
-	    {
-		arosmb->flags |= MB_FLAGS_MMAP;
-		arosmb->mmap_addr = (struct mb_mmap *)((ULONG)(0x1000 + sizeof(struct arosmb)));
-		arosmb->mmap_len = mbinfo->mmap_length;
-		memcpy((void *)arosmb->mmap_addr,(void *)mbinfo->mmap_addr,mbinfo->mmap_length);
-	    }
-	    if (mbinfo->flags & MB_FLAGS_DRIVES)
-	    {
-		if (mbinfo->drives_length > 0)
-		{
-		    arosmb->flags |= MB_FLAGS_DRIVES;
-		    arosmb->drives_addr = ((ULONG)(arosmb->mmap_addr + arosmb->mmap_len));
-		    arosmb->drives_len = mbinfo->drives_length;
-		    memcpy((void *)arosmb->drives_addr,(void *)mbinfo->drives_addr,mbinfo->drives_length);
-		}
-	    }
-	    if (mbinfo->flags & MB_FLAGS_GFX)
-	    {
-		arosmb->flags |= MB_FLAGS_GFX;
-		arosmb->vbe_mode = mbinfo->vbe_mode;
-		memcpy((void *)&arosmb->vmi,(void *)mbinfo->vbe_mode_info,sizeof(struct vbe_mode));
-		memcpy((void *)&arosmb->vci,(void *)mbinfo->vbe_control_info,sizeof(struct vbe_controller));
+	        rkprintf("Copying multiboot information into storage\n");
+	        arosmb->magic = MBRAM_VALID;
+	        arosmb->flags = 0L;
+	        mbinfo = (struct multiboot *)addr;
+	        if (mbinfo->flags & MB_FLAGS_MEM)
+	        {
+		        arosmb->flags |= MB_FLAGS_MEM;
+		        arosmb->mem_lower = mbinfo->mem_lower;
+		        arosmb->mem_upper = mbinfo->mem_upper;
+	        }
+	        if (mbinfo->flags & MB_FLAGS_LDRNAME)
+	        {
+		        arosmb->flags |= MB_FLAGS_LDRNAME;
+		        snprintf(arosmb->ldrname,29,"%s",mbinfo->loader_name);
+	        }
+	        if (mbinfo->flags & MB_FLAGS_CMDLINE)
+	        {
+		        arosmb->flags |= MB_FLAGS_CMDLINE;
+		        snprintf(arosmb->cmdline,199,"%s",mbinfo->cmdline);
+	        }
+	        if (mbinfo->flags & MB_FLAGS_MMAP)
+	        {
+		        arosmb->flags |= MB_FLAGS_MMAP;
+		        arosmb->mmap_addr = (struct mb_mmap *)((ULONG)(0x1000 + sizeof(struct arosmb)));
+		        arosmb->mmap_len = mbinfo->mmap_length;
+		        memcpy((void *)arosmb->mmap_addr,(void *)mbinfo->mmap_addr,mbinfo->mmap_length);
+	        }
+	        if (mbinfo->flags & MB_FLAGS_DRIVES)
+	        {
+		        if (mbinfo->drives_length > 0)
+		        {
+		            arosmb->flags |= MB_FLAGS_DRIVES;
+		            arosmb->drives_addr = ((ULONG)(arosmb->mmap_addr + arosmb->mmap_len));
+		            arosmb->drives_len = mbinfo->drives_length;
+		            memcpy((void *)arosmb->drives_addr,(void *)mbinfo->drives_addr,mbinfo->drives_length);
+		        }
+	        }
+	        if (mbinfo->flags & MB_FLAGS_GFX)
+	        {
+		        arosmb->flags |= MB_FLAGS_GFX;
+		        arosmb->vbe_mode = mbinfo->vbe_mode;
+		        memcpy((void *)&arosmb->vmi,(void *)mbinfo->vbe_mode_info,sizeof(struct vbe_mode));
+		        memcpy((void *)&arosmb->vci,(void *)mbinfo->vbe_control_info,sizeof(struct vbe_controller));
             }
-	}
+	    }
     }
+    rkprintf("Done\n");
+
+#warning TODO: WE MUST PARSE THE BIOS MEMORY MAP HERE AND PROTECT NECESSARY STRUCTS (i.e ACPI stores its data in the last few meg of physical ram..)
 
     rkprintf("Clearing system area...");
 
@@ -608,8 +627,10 @@ void exec_cinit(unsigned long magic, unsigned long addr)
             /* Now we will clear FAST memory. */
 	    /* Disabled due to taking to much time on P4 machines */
 	    rkprintf("Clearing FastMem...");
-            
-	    bzero((void *)0x01000000, extmem - 0x01000000);
+
+/************* NICJA - Fix this code so that only unused meory is flushed, and protect certain ares - ie acpi */
+        
+	    bzero((void *)0x01000000, extmem - 0x01000000 - 0x500000);
         }
 
         /*
@@ -683,8 +704,6 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     ExecBase->MaxExtMem = (APTR)extmem;
 
 #warning TODO: Write first step of alert.hook here!!!
-
-    exec_GetCPU();
 
     /*
      * Initialize exec lists. This is done through information table which consist
@@ -802,6 +821,13 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 
     ExecBase->DebugAROSBase = PrepareAROSSupportBase();
 
+#ifdef SMP_SUPPORT
+    /* Early Boot CPU preperation.. */
+    prepare_primary_cpu( ExecBase );
+#endif
+
+    rkprintf( "[CPU] Primary CPU Probed ..\n" );
+
     for (i=0; i<16; i++)
     {
         if( (1<<i) & (INTF_PORTS|INTF_COPER|INTF_VERTB|INTF_EXTER|INTF_SETCLR))
@@ -851,7 +877,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
         }
     }
 
-#warning TODO: Write CPU detailed detection scheme. Patch proper functions
+#warning TODO: Write CPU detailed detection scheme. Patch proper functions??
 
     Init_Traps();
     irqSetup();
@@ -922,12 +948,10 @@ void exec_cinit(unsigned long magic, unsigned long addr)
         t->tc_SPLower = 0;	    /* This is the system's stack */
         t->tc_SPUpper = (APTR)~0UL;
         t->tc_Flags |= TF_ETASK;
+
         if (t->tc_Flags & TF_ETASK)
         {
-            t->tc_UnionETask.tc_ETask = AllocTaskMem(t
-                , sizeof(struct IntETask)
-                , MEMF_ANY|MEMF_CLEAR
-            );
+            t->tc_UnionETask.tc_ETask = AllocTaskMem(t, sizeof(struct IntETask), MEMF_ANY|MEMF_CLEAR);
 
             if (!t->tc_UnionETask.tc_ETask)
             {
