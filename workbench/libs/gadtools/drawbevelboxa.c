@@ -5,6 +5,7 @@
     Draw a bevelled box.
 */
 #include <proto/exec.h>
+#include <proto/graphics.h>
 #include <intuition/classusr.h>
 #include <intuition/imageclass.h>
 #include <intuition/screens.h>
@@ -81,12 +82,14 @@
     tags[3].ti_Data = GetTagData(GTBB_FrameType, BBFT_BUTTON, taglist);
     tags[4].ti_Tag = TAG_DONE;
     
+    if (rport->Layer) LockLayerRom(rport->Layer);
     ObtainSemaphore(&GTB(GadToolsBase)->bevelsema);
     SetAttrsA(GTB(GadToolsBase)->bevel, tags);
     DrawImageState(rport, GTB(GadToolsBase)->bevel,
                    left, top,
                    IDS_NORMAL, vi->vi_dri);
     ReleaseSemaphore(&GTB(GadToolsBase)->bevelsema);
+    if (rport->Layer) UnlockLayerRom(rport->Layer);
 
     AROS_LIBFUNC_EXIT
     
