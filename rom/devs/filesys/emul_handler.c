@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.11  1996/10/10 13:23:55  digulla
+    Make handler work with timer (Fleischer)
+
     Revision 1.10  1996/09/13 17:57:07  digulla
     Use IPTR
 
@@ -36,6 +39,7 @@
     Desc:
     Lang:
 */
+#define DEVICES_TIMER_H /* avoid redefinition of struct timeval */
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <clib/exec_protos.h>
@@ -61,6 +65,7 @@
 #else
 #include <sys/stat.h>
 #endif
+#include <sys/time.h>
 #ifdef __GNUC__
     #include "emul_handler_gcc.h"
 #endif
@@ -139,7 +144,6 @@ LONG u2a[][2]=
 {
   { ENOMEM, ERROR_NO_FREE_STORE },
   { ENOENT, ERROR_OBJECT_NOT_FOUND },
-  { EINTR,  -1 }, /*ada 30.8.96 This is a REALLY BAD hack !! */
   { 0, 0 }
 };
 
@@ -586,6 +590,8 @@ __AROS_LH1(void, beginio,
     /* WaitIO will look into this */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_MESSAGE;
 
+    Disable();
+
     /*
 	Do everything quick no matter what. This is possible
 	because I never need to Wait().
@@ -624,6 +630,21 @@ __AROS_LH1(void, beginio,
 	    {
 		if(fh->fd==STDOUT_FILENO)
 		    fh->fd=STDIN_FILENO;
+	        for(;;)
+	        {
+	            fd_set rfds;
+	            struct timeval tv;
+	            FD_ZERO(&rfds);
+	            FD_SET(fh->fd,&rfds);
+	            tv.tv_sec=0;
+	            tv.tv_usec=100000;
+	            if(select(fh->fd+1,&rfds,NULL,NULL,&tv))
+	                break;
+	            SysBase->ThisTask->tc_State=TS_READY;
+	            AddTail(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
+	            Switch();
+	        }
+	        
 		iofs->io_Args[1]=read(fh->fd,(APTR)iofs->io_Args[0],iofs->io_Args[1]);
 		if(iofs->io_Args[1]<0)
 		    error=err_u2a();
@@ -681,21 +702,14 @@ __AROS_LH1(void, beginio,
 	    break;
     }
 
+    Enable();
+
     /* Set error code */
     iofs->io_DosError=error;
 
     /* If the quick bit is not set send the message to the port */
     if(!(iofs->IOFS.io_Flags&IOF_QUICK))
 	ReplyMsg(&iofs->IOFS.io_Message);
-
-    /* Trigger a rescedule every now and then */
-    if(SysBase->TaskReady.lh_Head->ln_Pri==SysBase->ThisTask->tc_Node.ln_Pri&&
-       SysBase->TDNestCnt<0&&SysBase->IDNestCnt<0)
-    {
-	SysBase->ThisTask->tc_State=TS_READY;
-	Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
-	Switch();
-    }
 
     __AROS_FUNC_EXIT
 }
