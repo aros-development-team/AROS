@@ -141,11 +141,20 @@ printf("In runprocess! %lx , %lx\n", (IPTR)entry, (IPTR)*entry);
     /* Call the function with the new stack. */
 /*    *retptr = (*entry)(argptr, argsize, DOSBase->dl_SysBase);
 */
+#ifdef __mc68000__
+	*retptr = AROS_UFC3R(ULONG, entry,
+		    AROS_UFCA(STRPTR, argptr  ,A0),
+		    AROS_UFCA(ULONG,  argsize ,D0),
+		    AROS_UFCA(struct ExecBase *, SysBase, A6),
+		    &proc->pr_ReturnAddr
+		  );
+#else
 	*retptr = AROS_UFC3(ULONG, entry,
 		    AROS_UFCA(STRPTR, argptr  ,A0),
 		    AROS_UFCA(ULONG,  argsize ,D0),
 		    AROS_UFCA(struct ExecBase *, SysBase, A6)
 		  );
+#endif
 
 #if 0
 	/* Call the specified routine */
