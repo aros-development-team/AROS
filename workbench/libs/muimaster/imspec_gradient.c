@@ -29,7 +29,7 @@ extern struct Library *MUIMasterBase;
    does not incurr in overflow problems for the integer part, for the way
    we use fractional numbers in this algorithm. Basically, we first scale up
    a number A, and then we divide A by the number B. Successively,
-   the only operations we do on the number A is adding it to the number C,
+   the only operation we do on the number A is adding it to the number C,
    initially equal to 0, _at maximum_ B times, which means that overflow
    never happens.
 
