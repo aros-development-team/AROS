@@ -16,7 +16,7 @@
 struct FreeLevel
 {
     struct MinNode   node;
-    IPTR	   * sd;
+    const IPTR	   * sd;
     UBYTE	   * s;
     ULONG	     size;
     int 	     pos;

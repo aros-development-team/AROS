@@ -16,7 +16,7 @@
 struct ReadLevel
 {
     struct MinNode   node;
-    IPTR	   * sd;
+    const IPTR	   * sd;
     UBYTE	   * s;
     int 	     pos;
 };
