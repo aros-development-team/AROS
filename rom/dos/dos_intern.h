@@ -76,6 +76,9 @@ inline void InitIOFS(struct IOFileSys *iofs, ULONG type,
 struct Device *GetDevice(CONST_STRPTR name, struct Unit **unit,
 			 struct DosLibrary *DOSBase);
 
+struct Device *GetVolume(CONST_STRPTR name, struct Unit **unit,
+			 struct DosLibrary *DOSBase);
+
 BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 		 BPTR output, struct TagItem *tl, struct DosLibrary *DOSBase);
 
