@@ -17,7 +17,7 @@ void readconfig(void)
 
     if (!fileopen(conffile))
     {
-	fprintf(stderr, "Could not open %s\n", line);
+	fprintf(stderr, "Could not open %s\n", conffile);
 	exit(20);
     }
 
@@ -191,7 +191,6 @@ static void readsectionconfig(void)
 		else if (strcmp(s, "registermacro")==0)
 		{
 		    libcall = REGISTERMACRO;
-		    exitfileerror(20, "registermacro libcall not supported yet\n");
 		}
 		else if (strcmp(s, "autoregister")==0)
 		{
@@ -348,6 +347,9 @@ static void readsectionfunctionlist(void)
     if (basename==NULL)
 	exitfileerror(20, "section functionlist has to come after section config\n");
 
+    if (libcall==REGISTERMACRO)
+	exitfileerror(20, "No functionlist allowed for registermacro libcall");
+    
     while (!atend)
     {
 	line = readline();

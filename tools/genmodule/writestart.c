@@ -76,6 +76,10 @@ void writestart(void)
 	    fprintf(out, ");\n}\n\n");
 	    break;
 	    
+	case REGISTERMACRO:
+	    fprintf(out, "int LC_BUILDNAME(%s)();\n", funclistit->name);
+	    break;
+
 	default:
 	    fprintf(stderr, "Internal error: unhandled libcall in writestart\n");
 	    exit(20);
@@ -107,6 +111,7 @@ void writestart(void)
 	    break;
 	    
 	case REGISTER:
+	case REGISTERMACRO:
 	    fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n", funclistit->name, basename);
 	    break;
 	    
