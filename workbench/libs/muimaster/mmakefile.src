@@ -7,6 +7,7 @@ MODNAME := muimaster
 MODTYPE := library
 
 CLASSES := \
+    aboutmui \
     application \
     area \
     bitmap \
