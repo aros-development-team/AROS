@@ -156,6 +156,10 @@ struct pdtScale
 	ULONG ps_Flags;
 };
 
+/* Flags for ps_Flags, for AROS only */
+#define PScale_KeepAspect	0x10	/* Keep aspect ratio when scaling, fit inside given x,y coordinates */
+
+
 #define PBPAFMT_RGB     0
 #define PBPAFMT_RGBA    1
 #define PBPAFMT_ARGB    2
