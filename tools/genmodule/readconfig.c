@@ -76,6 +76,25 @@ void readconfig(void)
 	    filewarning("warning line outside section ignored\n");
     }
     fileclose();
+    
+    if (modtype == MCC)
+    {
+        struct functionlist *function;
+        
+        function = malloc(sizeof(struct functionlist));
+        function->next = funclist;
+        function->name = "MCC_Query";
+        function->type = NULL;
+        function->lvo = firstlvo - 1;
+        function->argcount = 1;
+        function->arguments = malloc(sizeof(struct arglist));
+        function->arguments->next = NULL;
+        function->arguments->type = NULL;
+        function->arguments->name = NULL;
+        function->arguments->reg  = "D0";
+        
+        funclist = function;
+    }
 }
 
 
