@@ -56,10 +56,6 @@
 	4.5.2001 falemagn created
 
 ******************************************************************************/
-
-#include <unistd.h>
-
-int ftruncate(int fd, off_t length)
 {
     ULONG oldpos;
     size_t size;
