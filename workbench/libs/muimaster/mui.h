@@ -125,10 +125,7 @@ struct __MUIBuiltinClass {
 
 /* the following prototypes here are only temporary so it can be compiled without problems */
 #ifndef __AROS__
-
-#ifndef _COMPILER_H
-#include "compiler.h"
-#endif
+#include "support_amigaos.h"
 
 __asm APTR MUI_AddClipping(register __a0 struct MUI_RenderInfo *mri, register __d0 WORD left, register __d1 WORD top, register __d2 WORD width, register __d3 WORD height);
 __asm APTR MUI_AddClipRegion(register __a0 struct MUI_RenderInfo *mri, register __a1 struct Region *r);
@@ -181,7 +178,7 @@ __inline static LONG MUI_Request(APTR app, APTR win, LONGBITS flags, char *title
     return MUI_RequestA(app,win,flags,title,gadgets,format,(((ULONG*)&format)+1));
 }
 
-#endif
+#endif /* !__AROS__ */
 
 
 /**************************************************************************

@@ -21,7 +21,6 @@
 
 #include <string.h>
 
-#include "compiler.h"
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
