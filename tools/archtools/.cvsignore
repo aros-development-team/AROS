@@ -1,5 +1,8 @@
+extractfiles
 genfunctable
 genautodocs
+gensource
+mergearch
 *.o
 *.adoc
 functable.c

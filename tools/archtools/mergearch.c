@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 FILE *fd1, *fd2, *fdo;
 char *line = 0;
 char *word, **words;
-int in_archive, in_function, in_autodoc, in_header;
+int in_archive, in_header, in_function, in_autodoc, in_code;
 int num,i;
 char **name1 = NULL, **name2 = NULL;
 int num1, num2, *rep = NULL;
@@ -49,27 +49,32 @@ int replace_function;
   num1 = 0;
   words = NULL;
   in_archive = 0;
+  in_header = 0;
   in_function = 0;
   in_autodoc = 0;
-  in_header = 0;
+  in_code = 0;
   while( (line = get_line(fd1)) )
   {
     word = keyword(line);
-    if( word && (tolower(word[0])!=word[0] || tolower(word[1])!=word[1]) )
+    if( word && (isupper(word[0]) || isupper(word[1])) )
     {
       if( strcmp(word,"Archive")==0 && !in_archive )
         in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && !in_autodoc && !in_function )
+      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
         break;
+      if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
+        in_code = 1;
+      if( strcmp(word,"/Code")==0 && in_code )
+        in_code = 0;
       if( strcmp(word,"Header")==0 && in_archive && !in_header && !in_function )
         in_header = 1;
-      if( strcmp(word,"/Header")==0 && in_archive && in_header )
+      if( strcmp(word,"/Header")==0 && in_header )
         in_header = 0;
-      if( strcmp(word,"AutoDoc")==0 && in_archive && in_function && !in_autodoc )
+      if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
         in_autodoc = 1;
       if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
         in_autodoc = 0;
-      if( strcmp(word,"Function")==0 && in_archive && !in_function )
+      if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
       {
         in_function = 1;
         num = get_words(line,&words);
@@ -77,7 +82,7 @@ int replace_function;
         name1 = realloc( name1, num1 * sizeof(char *) );
         name1[num1-1] = strdup(words[num-1]);
       }
-      if( strcmp(word,"/Function")==0 && in_archive && in_function && !in_autodoc )
+      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
         in_function = 0;
 
       free(word);
@@ -96,20 +101,21 @@ int replace_function;
   in_function = 0;
   in_autodoc = 0;
   in_header = 0;
+  in_code = 0;
   while( (line = get_line(fd2)) )
   {
     word = keyword(line);
-    if( word && (tolower(word[0])!=word[0] || tolower(word[1])!=word[1]) )
+    if( word && (isupper(word[0]) || isupper(word[1])) )
     {
       if( strcmp(word,"Archive")==0 && !in_archive )
         in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && !in_autodoc && !in_function )
+      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
         break;
       if( strcmp(word,"Header")==0 && in_archive && !in_header && !in_function )
         in_header = 1;
-      if( strcmp(word,"/Header")==0 && in_archive && in_header )
+      if( strcmp(word,"/Header")==0 && in_header )
         in_header = 0;
-      if( strcmp(word,"AutoDoc")==0 && in_archive && in_function && !in_autodoc )
+      if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
         in_autodoc = 1;
       if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
         in_autodoc = 0;
@@ -121,7 +127,7 @@ int replace_function;
         name2 = realloc( name2, num2 * sizeof(char *) );
         name2[num2-1] = strdup(words[num-1]);
       }
-      if( strcmp(word,"/Function")==0 && in_archive && in_function && !in_autodoc )
+      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
         in_function = 0;
 
       free(word);
@@ -141,23 +147,25 @@ int replace_function;
   num = 0;
   words = NULL;
   in_archive = 0;
+  in_header = 0;
   in_function = 0;
   in_autodoc = 0;
+  in_code = 0;
   replace_function = 0;
   while( (line = get_line(fd1)) )
   {
     word = keyword(line);
-    if( word )
+    if( word && (isupper(word[0]) || isupper(word[1])) )
     {
       if( strcmp(word,"Archive")==0 && !in_archive )
         in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && !in_autodoc && !in_function )
+      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
         break;
       if( strcmp(word,"Header")==0 && in_archive && !in_header && !in_function )
         in_header = 1;
-      if( strcmp(word,"/Header")==0 && in_archive && in_header )
+      if( strcmp(word,"/Header")==0 && in_header )
         in_header = 0;
-      if( strcmp(word,"AutoDoc")==0 && in_archive && in_function && !in_autodoc )
+      if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
         in_autodoc = 1;
       if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
         in_autodoc = 0;
@@ -175,7 +183,7 @@ int replace_function;
         }
         num++;
       }
-      if( strcmp(word,"/Function")==0 && in_archive && in_function && !in_autodoc )
+      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
       {
         in_function = 0;
         if( !replace_function )
@@ -193,23 +201,25 @@ int replace_function;
   num = 0;
   words = NULL;
   in_archive = 0;
+  in_header = 0;
   in_function = 0;
   in_autodoc = 0;
+  in_code = 0;
   replace_function = 0;
   while( (line = get_line(fd2)) )
   {
     word = keyword(line);
-    if( word )
+    if( word && (isupper(word[0]) || isupper(word[1])) )
     {
       if( strcmp(word,"Archive")==0 && !in_archive )
         in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && !in_autodoc && !in_function )
+      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
         break;
       if( strcmp(word,"Header")==0 && in_archive && !in_header && !in_function )
         in_header = 1;
-      if( strcmp(word,"/Header")==0 && in_archive && in_header )
+      if( strcmp(word,"/Header")==0 && in_header )
         in_header = 0;
-      if( strcmp(word,"AutoDoc")==0 && in_archive && in_function && !in_autodoc )
+      if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
         in_autodoc = 1;
       if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
         in_autodoc = 0;
@@ -222,7 +232,7 @@ int replace_function;
           replace_function = 0;
         num++;
       }
-      if( strcmp(word,"/Function")==0 && in_archive && in_function && !in_autodoc )
+      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
       {
         in_function = 0;
         if( !replace_function )
@@ -245,7 +255,7 @@ return 0;
 
 void replace( FILE *in, FILE *out, int num )
 {
-int in_archive = 0, in_function = 0, in_autodoc = 0, in_header = 0;
+int in_archive = 0, in_header = 0, in_function = 0, in_autodoc = 0, in_code = 0;
 int i = 0, writefunc = 0;
 char *word, *line;
 
@@ -257,13 +267,13 @@ char *word, *line;
     {
       if( strcmp(word,"Archive")==0 && !in_archive )
         in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && !in_autodoc && !in_function )
+      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
         break;
       if( strcmp(word,"Header")==0 && in_archive && !in_header && !in_function )
         in_header = 1;
-      if( strcmp(word,"/Header")==0 && in_archive && in_header )
+      if( strcmp(word,"/Header")==0 && in_header )
         in_header = 0;
-      if( strcmp(word,"AutoDoc")==0 && in_archive && in_function && !in_autodoc )
+      if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
         in_autodoc = 1;
       if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
         in_autodoc = 0;
@@ -278,7 +288,7 @@ char *word, *line;
           return;
         i++;
       }
-      if( strcmp(word,"/Function")==0 && in_archive && in_function && !in_autodoc )
+      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
       {
         in_function = 0;
         if( writefunc )
@@ -292,3 +302,4 @@ char *word, *line;
     free(line);
   }
 }
+

@@ -17,27 +17,27 @@ all   : $(EXES)
 
 genfunctable : line.o genfunctable.o
 	@$(ECHO) "Linking $@..."
-	@$(CC) $(CFLAGS) $(DEBUG) line.o genfunctable.o -o $@
+	@$(CC) $(CFLAGS) $(DEBUG) $? -o $@
 	@$(STRIP) $@
 
 gensource : line.o gensource.o
 	@$(ECHO) "Linking $@..."
-	@$(CC) $(CFLAGS) $(DEBUG) line.o gensource.o -o $@
+	@$(CC) $(CFLAGS) $(DEBUG) $? -o $@
 	@$(STRIP) $@
 
 genautodocs : line.o genautodocs.o
 	@$(ECHO) "Linking $@..."
-	@$(CC) $(CFLAGS) $(DEBUG) line.o genautodocs.o -o $@
+	@$(CC) $(CFLAGS) $(DEBUG) $? -o $@
 	@$(STRIP) $@
 
 extractfiles : line.o extractfiles.o
 	@$(ECHO) "Linking $@..."
-	@$(CC) $(CFLAGS) $(DEBUG) line.o extractfiles.o -o $@
+	@$(CC) $(CFLAGS) $(DEBUG) $? -o $@
 	@$(STRIP) $@
 
 mergearch : line.o mergearch.o
 	@$(ECHO) "Linking $@..."
-	@$(CC) $(CFLAGS) $(DEBUG) line.o mergearch.o -o $@
+	@$(CC) $(CFLAGS) $(DEBUG) $? -o $@
 	@$(STRIP) $@
 
 %.o : %.c

@@ -12,8 +12,8 @@ int main(int argc, char **argv)
 FILE *fd, *fdo = NULL;
 char *line = 0;
 char *word, **words;
-int in_archive, in_function, in_autodoc;
-int num;
+int in_archive, in_header, in_function, in_autodoc, in_afunc, in_code ;
+int num, i;
 char **name = NULL, **type = NULL;
 int numparams = 0;
 
@@ -32,59 +32,52 @@ int numparams = 0;
 
   words = NULL;
   in_archive = 0;
+  in_header = 0;
   in_function = 0;
   in_autodoc = 0;
+  in_afunc = 0;
+  in_code = 0;
   while( (line = get_line(fd)) )
   {
     word = keyword(line);
     if( word )
     {
-      if( strcmp(word,"Archive")==0 )
+      if( strcmp(word,"Archive")==0 && !in_archive )
       {
-        if( !in_archive )
-        {
-          in_archive = 1;
-        }
+        in_archive = 1;
       }
-      if( strcmp(word,"/Archive")==0 )
+      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
+        break;
+      if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
       {
-        if( in_archive && !in_autodoc && ! in_function )
-          break;
-      }
-      if( strcmp(word,"AutoDoc")==0 )
-      {
-        if( in_archive && in_function && !in_autodoc )
-        {
-        char *filename;
-        int i;
+      char *filename;
 
-          if(fdo)
-            fclose(fdo);
-          filename = malloc( (strlen(name[0])+6)*sizeof(char) );
-          sprintf( filename, "%s.adoc", name[0] );
-          in_autodoc = 1;
-          fdo = fopen(filename,"w");
-          if(!fdo)
-          {
-            fprintf( stderr, "Couldn't open file %s\n", filename );
-            exit(-1);
-          }
-          free(filename);
-          fprintf( fdo, "NAME\n    %s %s( ", type[0], name[0] );
-          for( i = 1 ; i <= numparams ; i++ )
-          {
-            if( i != 1 )
-              fprintf( fdo, ", " );
-            fprintf( fdo, "%s %s", type[i], name[i] );
-          }
-          fprintf( fdo, " )\n" );
+        if(fdo)
+          fclose(fdo);
+        filename = malloc( (strlen(name[0])+6)*sizeof(char) );
+        sprintf( filename, "%s.adoc", name[0] );
+        in_autodoc = 1;
+        fdo = fopen(filename,"w");
+        if(!fdo)
+        {
+          fprintf( stderr, "Couldn't open file %s\n", filename );
+          exit(-1);
         }
+        free(filename);
+        fprintf( fdo, "NAME\n    %s %s( ", type[0], name[0] );
+        for( i = 1 ; i <= numparams ; i++ )
+        {
+          if( i != 1 )
+            fprintf( fdo, ", " );
+          fprintf( fdo, "%s %s", type[i], name[i] );
+        }
+        fprintf( fdo, " )\n" );
       }
-      if( strcmp(word,"/AutoDoc")==0 )
+      if( strcmp(word,"/AutoDoc")==0 && in_autodoc && !in_afunc )
         in_autodoc = 0;
       if( strcmp(word,"Function")==0 )
       {
-        if( in_archive && !in_function && !in_autodoc )
+        if( in_archive && !in_function && !in_autodoc && !in_code )
         {
           in_function = 1;
           num = get_words(line,&words);
@@ -94,15 +87,20 @@ int numparams = 0;
           type = realloc( type, sizeof(char *) );
           type[0] = strdup(words[2]);
         }
-        if( in_archive && in_function && in_autodoc )
+        else if( in_autodoc && !in_afunc )
+        {
           fprintf( fdo, "\nFUNCTION\n" );
+          in_afunc = 1;
+        }
       }
       if( strcmp(word,"/Function")==0 )
       {
-        if( in_archive && in_function && !in_autodoc )
+        if( in_function && !in_autodoc )
           in_function = 0;
+        else if( in_afunc )
+          in_afunc = 0;
       }
-      if( strcmp(word,"Parameter")==0 && in_archive && in_function && !in_autodoc )
+      if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
       {
         numparams++;
         num = get_words(line,&words);
@@ -111,46 +109,24 @@ int numparams = 0;
         type = realloc( type, (numparams+1)*sizeof(char *) );
         type[numparams] = strdup(words[1]);
       }
-      if( strcmp(word,"Inputs")==0 )
-      {
-        if( in_archive && in_function && in_autodoc )
-          fprintf( fdo, "\nINPUTS\n" );
-      }
-      if( strcmp(word,"Result")==0 )
-      {
-        if( in_archive && in_function && in_autodoc )
-          fprintf( fdo, "\nRESULT\n" );
-      }
-      if( strcmp(word,"Notes")==0 )
-      {
-        if( in_archive && in_function && in_autodoc )
-          fprintf( fdo, "\nNOTES\n" );
-      }
-      if( strcmp(word,"Example")==0 )
-      {
-        if( in_archive && in_function && in_autodoc )
-          fprintf( fdo, "\nEXAMPLE\n" );
-      }
-      if( strcmp(word,"Bugs")==0 )
-      {
-        if( in_archive && in_function && in_autodoc )
-          fprintf( fdo, "\nBUGS\n" );
-      }
-      if( strcmp(word,"SeeAlso")==0 )
-      {
-        if( in_archive && in_function && in_autodoc )
-          fprintf( fdo, "\nSEE ALSO\n" );
-      }
-      if( strcmp(word,"Internals")==0 )
-      {
-        if( in_archive && in_function && in_autodoc )
-          fprintf( fdo, "\nINTERNALS\n" );
-      }
-      if( strcmp(word,"History")==0 )
-      {
-        if( in_archive && in_function && in_autodoc )
-          fprintf( fdo, "\nHISTORY\n" );
-      }
+      if( strcmp(word,"Inputs")==0 && in_autodoc )
+        fprintf( fdo, "\nINPUTS\n" );
+      if( strcmp(word,"Result")==0 && in_autodoc )
+        fprintf( fdo, "\nRESULT\n" );
+      if( strcmp(word,"Notes")==0 && in_autodoc )
+        fprintf( fdo, "\nNOTES\n" );
+      if( strcmp(word,"Example")==0 && in_autodoc )
+        fprintf( fdo, "\nEXAMPLE\n" );
+      if( strcmp(word,"Bugs")==0 && in_autodoc )
+        fprintf( fdo, "\nBUGS\n" );
+      if( strcmp(word,"SeeAlso")==0 && in_autodoc )
+        fprintf( fdo, "\nSEE ALSO\n" );
+      if( strcmp(word,"Internals")==0 && in_autodoc )
+        fprintf( fdo, "\nINTERNALS\n" );
+      if( strcmp(word,"History")==0 && in_autodoc )
+        fprintf( fdo, "\nHISTORY\n" );
+      if( strcmp(word,"Item")==0 && in_autodoc )
+        fprintf( fdo, "<Item>%s\n", &line[6] );
 
       free(word);
     }
@@ -167,3 +143,4 @@ int numparams = 0;
 
 return 0;
 }
+

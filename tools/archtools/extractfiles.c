@@ -14,8 +14,8 @@ int main(int argc, char **argv)
 FILE *fd, *fdo = NULL;
 char *line = 0;
 char *word, **words;
-int in_archive, in_function, in_autodoc, in_header, in_code;
-int num;
+int in_archive, in_header, in_function, in_autodoc, in_code;
+int num, i;
 char **name = NULL, **type = NULL, **reg = NULL, *header = NULL, *code = NULL;
 int numparams=0;
 
@@ -45,35 +45,23 @@ int numparams=0;
     {
       if( strcmp(word,"Archive")==0 && !in_archive )
         in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && !in_autodoc && ! in_function )
+      if( strcmp(word,"/Archive")==0 && in_archive && ! in_function && !in_header )
         break;
-      if( strcmp(word,"AutoDoc")==0 )
+      if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc )
         in_autodoc = 1;
-      if( strcmp(word,"/AutoDoc")==0 )
+      if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
         in_autodoc = 0;
-      if( strcmp(word,"Parameter")==0 && in_archive && in_function && !in_autodoc && !in_code )
-      {
-        numparams++;
-        num = get_words( line, &words );
-        name = realloc( name, (numparams+1)*sizeof(char *) );
-        name[numparams] = strdup( words[2] );
-        type = realloc( type, (numparams+1)*sizeof(char *) );
-        type[numparams] = strdup( words[1] );
-        reg = realloc( reg, (numparams+1)*sizeof(char *) );
-        reg[numparams] = strdup( words[3] );
-      }
+      if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
+        in_code = 1;
+      if( strcmp(word,"/Code")==0 && in_code )
+        in_code = 0;
       if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
         in_header = 1;
-      if( strcmp(word,"/Header")==0 && in_archive && !in_function && in_header )
+      if( strcmp(word,"/Header")==0 && in_header )
         in_header = 0;
-      if( strcmp(word,"Code")==0 && in_archive && in_function && !in_code && !in_autodoc )
-        in_code = 1;
-      if( strcmp(word,"/Code")==0 && in_archive && in_function && in_code && !in_autodoc )
-        in_code = 0;
-      if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_autodoc )
+      if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
       {
       char *filename;
-      int i;
 
         num = get_words(line,&words);
         name = realloc( name, sizeof(char *) );
@@ -94,16 +82,15 @@ int numparams=0;
           exit(-1);
         }
         in_function = 1;
+        fprintf( fdo, "#include \"libdefs.h\"\n\n" );
       }
-      if( strcmp(word,"/Function")==0 && in_archive && in_function && !in_autodoc && !in_code )
+      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
       {
-      int i;
         fprintf( fdo, "%s\n", header);
         fprintf( fdo, "AROS_LH%d(%s, %s,\n", numparams, type[0], name[0] );
         for( i = 1 ; i <= numparams ; i++ )
           fprintf( fdo, "AROS_LHA(%s, %s, %s),\n", type[i], name[i], reg[i] );
-#warning TODO: get LibraryBase, etc. from lib.conf
-        fprintf( fdo, "%s, %s, %s, %s)\n", "struct Library *", "LibraryBase", reg[0], "Library" );
+        fprintf( fdo, "struct LIBBASETYPE *, LIBBASE, %s, BASENAME)\n", reg[0] );
         fprintf( fdo, "%s\n", code );
         in_function = 0;
         free(code);
@@ -115,7 +102,18 @@ int numparams=0;
         name = NULL;
         code = NULL;
       }
-      if( strcmp(word,"LibOffset")==0 && in_archive && in_function && !in_autodoc && !in_code )
+      if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
+      {
+        numparams++;
+        num = get_words( line, &words );
+        name = realloc( name, (numparams+1)*sizeof(char *) );
+        name[numparams] = strdup( words[2] );
+        type = realloc( type, (numparams+1)*sizeof(char *) );
+        type[numparams] = strdup( words[1] );
+        reg = realloc( reg, (numparams+1)*sizeof(char *) );
+        reg[numparams] = strdup( words[3] );
+      }
+      if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
       {
         num = get_words(line,&words);
         reg = realloc( reg, (numparams+1)*sizeof(char *) );
@@ -128,14 +126,12 @@ int numparams=0;
     {
       if(in_header)
       {
-      int i;
         i = (header?strlen(header):0);
         header = realloc( header, (i+strlen(line)+2)*sizeof(char) );
         sprintf( &header[i], "%s\n", line );
       }
       if(in_code)
       {
-      int i;
         i = (code?strlen(code):0);
         code = realloc( code, (i+strlen(line)+2)*sizeof(char) );
         sprintf( &code[i], "%s\n", line );
@@ -149,3 +145,4 @@ int numparams=0;
 
 return 0;
 }
+
