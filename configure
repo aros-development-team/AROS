@@ -6523,9 +6523,13 @@ TARGET_CC="${TOPDIR}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${a
 TARGET_AS=$TARGET_CC
 TARGET_LD=$TARGET_CC
 
+NOSTDINC_CFLAGS=-nostdinc
+
 NOSTARTUP_LDFLAGS=-nostartfiles
 NIX_LDFLAGS=-nix
 DETACH_LDFLAGS=-detach
+NOSTDLIB_LDFLAGS=-nostdlib
+
 
 
 
@@ -7947,9 +7951,11 @@ s,@CCACHE@,$CCACHE,;t t
 s,@TARGET_CC@,$TARGET_CC,;t t
 s,@TARGET_AS@,$TARGET_AS,;t t
 s,@TARGET_LD@,$TARGET_LD,;t t
+s,@NOSTDINC_CFLAGS@,$NOSTDINC_CFLAGS,;t t
 s,@NOSTARTUP_LDFLAGS@,$NOSTARTUP_LDFLAGS,;t t
 s,@NIX_LDFLAGS@,$NIX_LDFLAGS,;t t
 s,@DETACH_LDFLAGS@,$DETACH_LDFLAGS,;t t
+s,@NOSTDLIB_LDFLAGS@,$NOSTDLIB_LDFLAGS,;t t
 s,@aros_cc_pre@,$aros_cc_pre,;t t
 s,@SHARED_LD@,$SHARED_LD,;t t
 s,@KERNEL_LD@,$KERNEL_LD,;t t
