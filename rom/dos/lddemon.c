@@ -107,7 +107,7 @@ LDLoad(
 	caller, caller->pr_Task.tc_Node.ln_Name, name, basedir
     ));
 
-    if( caller->pr_Task.tc_Node.ln_Type == NT_PROCESS )
+    if (__is_process(caller))
     {
     	/* Try the current directory of the caller */
 

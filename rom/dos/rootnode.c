@@ -124,16 +124,17 @@ void removefromrootnode(struct Process *process, struct DosLibrary *DOSBase)
     struct CLIInfo  *cliNode;
     struct RootNode *root = DOSBase->dl_Root;
 
-    if(process->pr_Task.tc_Node.ln_Type != NT_PROCESS ||
-       process->pr_CLI == NULL)
+    if (!__is_process(process) || process->pr_CLI == NULL)
+    {
 	return;
+    }
     
     ObtainSemaphore(&root->rn_RootLock);
   
     /* Remove node from CliList */
     ForeachNodeSafe(&root->rn_CliList, (struct Node *)cliNode, temp)
     {
-	if(cliNode->ci_Process == process)
+	if (cliNode->ci_Process == process)
 	{
 	    Remove((struct Node *)cliNode);
 	    FreeVec(cliNode);
@@ -146,7 +147,7 @@ void removefromrootnode(struct Process *process, struct DosLibrary *DOSBase)
   
     i = 1;
 
-    while(i <= size)
+    while (i <= size)
     {
 	if (taskarray[i] == (ULONG)&process->pr_MsgPort)
 	{
