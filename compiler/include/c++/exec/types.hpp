@@ -231,5 +231,134 @@ typedef BYTE  LEBYTE;
 typedef BYTE  BEBYTE;
 typedef UBYTE LEUBYTE;
 typedef UBYTE BEUBYTE;
+
+namespace aros
+{
+    namespace __private
+    {    
+        /* A IPTR-lookalike class, which does everything IPTR 
+	   does, except forcing you to cast pointers to IPTR.
+	   
+	   Comes very handy with the inline tag-based functions.  */	          
+        template <typename T>
+        class IntPtr
+        {
+            T data;
+        
+            template <typename T2>
+            friend class IntPtr;
+        
+          public:
+            
+            IntPtr() : data(0) {}
+            
+            IntPtr(T v) : data(v) {}
+            
+            template <typename T2>
+            IntPtr(T2 *v) : data((T)v) {}
+            
+            template <typename T2>
+            IntPtr(const IntPtr<T2> &v) : data(v.data) {}
+            
+            IntPtr &operator =(T v)
+            {
+                data = v;
+                return *this;
+            }
+                
+            template <typename T2>
+            IntPtr &operator =(T2 *v)
+            {
+                data = (T)v;
+                return *this;
+            }
+            
+            template <typename T2>
+            IntPtr &operator =(const IntPtr<T2> &v)
+            {
+                data = v.data;
+            }
+                
+            operator T() const
+            {
+                return data;
+            }
+            
+            operator APTR() const
+            {
+                return (APTR)data;
+            }
+            
+            IntPtr &operator +=(unsigned long v)
+            {
+                data += v;
+                
+                return *this;
+            }    
+            
+            IntPtr &operator -=(unsigned long v)
+            {
+                data -= v;
+                
+                return *this;
+            }    
+        
+            IntPtr &operator ++()
+            {
+                ++data;
+                
+                return *this;
+            }    
+        
+            IntPtr &operator --()
+            {
+                --data;
+                
+                return *this;
+            }    
+            
+            template <typename T2>
+            friend IntPtr<T2> operator ++(IntPtr<T2> &v, int);
+        
+            template <typename T2>
+            friend IntPtr<T2> operator --(IntPtr<T2> &v, int);
+        };        
+        
+	template <typename T>
+        IntPtr<T> operator ++(IntPtr<T> &v, int)
+        {
+            IntPtr<T> old = v.data;
+        
+            ++v.data;
+            
+            return old;
+        }
+        
+        template <typename T>
+        IntPtr<T> operator --(IntPtr<T> &v, int)
+        {
+            IntPtr<T> old = v.data;
+        
+            --v.data;
+            
+            return old;
+        }
+    }
+}
+
+#ifndef __typedef_IPTR
+#    define __typedef_IPTR
+     typedef aros::__private::IntPtr<unsigned AROS_INTPTR_TYPE> IPTR;
+#endif
+
+#ifndef __typedef_SIPTR
+#    define __typedef_SIPTR
+     typedef aros::__private::IntPtr<signed AROS_INTPTR_TYPE> SIPTR;
+#endif
                
+#ifndef __typedef_STACKIPTR
+#    define __typedef_STACKIPTR
+     typedef aros::__private::IntPtr<signed AROS_INTPTR_STACKTYPE> STACKIPTR;
+#endif
+
 #endif /* AROS_CXX_EXEC_TYPES_HPP  */
