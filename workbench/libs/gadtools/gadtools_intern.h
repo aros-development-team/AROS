@@ -51,6 +51,8 @@
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 
+#include <libcore/base.h>
+
 /****************************************************************************************/
 
 struct VisualInfo;
@@ -264,9 +266,7 @@ BOOL layoutsubitems(struct MenuItem * motheritem,
 
 struct GadToolsBase_intern
 {
-    struct Library    		library;
-    struct ExecBase 		* sysbase;
-    BPTR	      		seglist;
+    struct LibHeader              libheader;
 
     struct IntuitionBase 	* intuibase;
     struct Library	 	* dosbase;
@@ -404,9 +404,6 @@ extern struct ExecBase * SysBase;
 #define LayersBase 		(GTB(GadToolsBase)->layersbase)
 #undef UtilityBase
 #define UtilityBase 		(GTB(GadToolsBase)->utilitybase)
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct GadToolsBase_intern *, GadToolsBase, 3, GadTools)
 
 #ifdef __MORPHOS__
 #define DeinitRastPort(x) ((void)0)

@@ -32,10 +32,20 @@ FUNCS	:=  createcontext \
 	    layoutmenuitemsa \
 	    layoutmenusa
 
-#MM- workbench-libs-gadtools : includes linklibs
+#MM workbench-libs-gadtools-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-layers-includes \
+#MM     includes-copy
+#MM- workbench-libs-gadtools : linklibs
 
-%build_module_macro mmake=workbench-libs-gadtools modname=gadtools modtype=library \
-  funcs=$(FUNCS) files=$(FILES) conffile=lib.conf uselibs="rom amiga"
+%build_module mmake=workbench-libs-gadtools \
+    modname=gadtools modtype=library \
+    files="gadtools_init $(FUNCS) $(FILES)" \
+    uselibs="rom amiga"
 
 # (bernie) this hack disables optimization on classes.c to fix a problem in the
 # current Amiga version of gcc and egcs. Using inline asm macros to perform
