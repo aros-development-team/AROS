@@ -96,7 +96,7 @@
 		str = ptr;
 	}
 
-	if (*str == '-')
+	if (*copy == '-')
 	{
 	    if ((signed long)val > 0)
 	    {
