@@ -426,6 +426,7 @@ static const struct NVDevice {
     { 0x10de, 0x0309, NV30,	NV_ARCH_30, NV20Init },
     { 0x10de, 0x0311, NV31,	NV_ARCH_30, NV20Init },
     { 0x10de, 0x0312, NV31,	NV_ARCH_30, NV20Init },
+    { 0x10de, 0x0314, NV31,	NV_ARCH_30, NV20Init },
     { 0x10de, 0x0316, NV31,	NV_ARCH_30, NV20Init },
     { 0x10de, 0x0317, NV31,	NV_ARCH_30, NV20Init },
     { 0x10de, 0x031a, NV31,	NV_ARCH_30, NV20Init },
