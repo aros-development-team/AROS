@@ -51,17 +51,20 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    if( ShowIt )
+    if (screen->BarLayer)
     {
-	screen->Flags |= SHOWTITLE;
-    }
-    else
-    {
-	screen->Flags &= ~SHOWTITLE;
-    }
+	struct DeferedActionMessage * msg;
 
-    /* Redisplay screen */
-#warning FIXME: Redisplay screen and its windows
+	msg = AllocMem(sizeof(struct DeferedActionMessage), MEMF_CLEAR);
 
+	if (NULL != msg)
+	{
+	    msg->Code        = AMCODE_SCREENSHOWTITLE;
+	    msg->Gadget      = (struct Gadget *)screen;
+	    msg->dx          = ShowIt ? TRUE : FALSE;
+	    SendDeferedActionMsg(msg, IntuitionBase); 
+	}   
+    }
+    
     AROS_LIBFUNC_EXIT
 } /* ShowTitle */
