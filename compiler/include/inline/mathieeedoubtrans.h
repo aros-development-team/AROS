@@ -1,0 +1,80 @@
+#ifndef _INLINE_MATHIEEEDOUBTRANS_H
+#define _INLINE_MATHIEEEDOUBTRANS_H
+
+#ifndef __INLINE_MACROS_H
+#include <inline/macros.h>
+#endif
+
+#ifndef MATHIEEEDOUBTRANS_BASE_NAME
+#define MATHIEEEDOUBTRANS_BASE_NAME MathIeeeDoubTransBase
+#endif
+
+#define IEEEDPAcos(parm) \
+	LP1(0x78, DOUBLE, IEEEDPAcos, DOUBLE, parm, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPAsin(parm) \
+	LP1(0x72, DOUBLE, IEEEDPAsin, DOUBLE, parm, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPAtan(parm) \
+	LP1(0x1e, DOUBLE, IEEEDPAtan, DOUBLE, parm, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPCos(parm) \
+	LP1(0x2a, DOUBLE, IEEEDPCos, DOUBLE, parm, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPCosh(parm) \
+	LP1(0x42, DOUBLE, IEEEDPCosh, DOUBLE, parm, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPExp(parm) \
+	LP1(0x4e, DOUBLE, IEEEDPExp, DOUBLE, parm, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPFieee(single) \
+	LP1(0x6c, DOUBLE, IEEEDPFieee, FLOAT, single, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPLog(parm) \
+	LP1(0x54, DOUBLE, IEEEDPLog, DOUBLE, parm, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPLog10(parm) \
+	LP1(0x7e, DOUBLE, IEEEDPLog10, DOUBLE, parm, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPPow(exp, arg) \
+	LP2(0x5a, DOUBLE, IEEEDPPow, DOUBLE, exp, d2, DOUBLE, arg, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPSin(parm) \
+	LP1(0x24, DOUBLE, IEEEDPSin, DOUBLE, parm, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPSincos(pf2, parm) \
+	LP2(0x36, DOUBLE, IEEEDPSincos, DOUBLE *, pf2, a0, DOUBLE, parm, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPSinh(parm) \
+	LP1(0x3c, DOUBLE, IEEEDPSinh, DOUBLE, parm, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPSqrt(parm) \
+	LP1(0x60, DOUBLE, IEEEDPSqrt, DOUBLE, parm, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPTan(parm) \
+	LP1(0x30, DOUBLE, IEEEDPTan, DOUBLE, parm, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPTanh(parm) \
+	LP1(0x48, DOUBLE, IEEEDPTanh, DOUBLE, parm, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#define IEEEDPTieee(parm) \
+	LP1(0x66, FLOAT, IEEEDPTieee, DOUBLE, parm, d0, \
+	, MATHIEEEDOUBTRANS_BASE_NAME)
+
+#endif /* _INLINE_MATHIEEEDOUBTRANS_H */
