@@ -34,7 +34,7 @@ $(GENINCDIR)/%.h : %.h
 machine.i: geninc.c $(MACHINE_H)
 	@echo "CFLAGS=$(CFLAGS)"
 	@echo "Creating geninc..."
-	@$(CC) $(CFLAGS) -o geninc $<
+	@$(HOST_CC) $(CFLAGS) -o geninc $<
 	./geninc > machine.i
 
 %common
