@@ -216,7 +216,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
                      struct IntuitionBase *IntuitionBase)
 {
     /* Free everything except the applications messageport */
-    struct Window   *window, *win2;
+    struct Window   *window, *win2e;
     struct Screen   *screen;
     struct MsgPort  *userport;
     struct IIHData  *iihd;
@@ -313,16 +313,28 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     */
 
     if (window->Descendant)
-    {
         window->Descendant->Parent = window->Parent;
-    }
     if (window->Parent)
-    {
         window->Parent->Descendant = window->Descendant;
-
-        if (!IntuitionBase->ActiveWindow && window->Parent)
+    
+    /* Was this the active window? */
+    if (!IntuitionBase->ActiveWindow)
+    {
+        /* If so, we need to find out which window to make
+	   active now. We first check whether we have a "parent",
+	   which is a window that was open before the one we're closing. */
+        if (window->Parent)
             ActivateWindow (window->Parent);
-    }
+	else
+	/* Otherwise, we find out which was the latest one, and activate it.
+	   It's debatable whether this is the best policy, but this is how
+	   AmigaOS(TM) does it.  */
+	if ((win2 = window->Descendant))
+	{
+	    for (;win2->Descendant; win2 = win2->Descendant);
+                ActivateWindow (win2);
+	}
+    }       
 
     /* Make sure the Screen's window list is still valid */
 
@@ -409,7 +421,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
 
     /* jDc: trash the screen pointer to avoid unnecessary checks in WindowValid() and
        memory corruption */
-    window->WScreen = (struct Window *)0xC0DEBAD0;
+    window->WScreen = (struct Screen *)0xC0DEBAD0;
 
     /* Free memory for the window */
     FreeMem (window, sizeof(struct IntWindow));
