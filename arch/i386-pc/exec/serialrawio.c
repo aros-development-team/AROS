@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: functions for serial RawIOInit/RawPutChar
@@ -9,6 +9,16 @@
 */
 #include <proto/exec.h>
 #include <asm/io.h>
+
+#undef __save_flags
+#undef __restore_flags
+#undef __cli
+#undef __sti
+
+#define __save_flags(x)		__asm__ __volatile__("pushfl ; popl %0":"=g" (x): /* no input */)
+#define __restore_flags(x) 	__asm__ __volatile__("pushl %0 ; popfl": /* no output */ :"g" (x):"memory", "cc")
+#define __cli() 		__asm__ __volatile__("cli": : :"memory")
+#define __sti()			__asm__ __volatile__("sti": : :"memory")
 
 #define SER_ERRSIGNALS 0x0300
 
@@ -213,17 +223,28 @@ int ser_IsWritingPossible(short);
 	AROS_LIBFUNC_INIT
 	AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
-	Disable();
+    	/* stegerg: Don't use Disable/Enable, because we want
+	            interrupt enabled flag to stay the same as
+		    it was before the Disable() call */
+		    
+    	unsigned long flags;
+	
+	__save_flags(flags);
+	__cli();
+	
+	/* Disable(); */
     
-    /* Don't write 0 bytes */
+    	/* Don't write 0 bytes */
 	if (chr)
 	{
-//		if (chr==0x0A)
-//			ser_WriteByte(0x2F8, 0x0D, 1, 0, 0);
-		ser_WriteByte(0x2F8, chr, 0, 0, 0);
+    	    //if (chr==0x0A)
+    	    //	ser_WriteByte(0x2F8, 0x0D, 1, 0, 0);
+	    ser_WriteByte(0x2F8, chr, 0, 0, 0);
 	}
 
-	Enable();
+    	__restore_flags(flags);
+	
+	/* Enable(); */
     
 	AROS_LIBFUNC_EXIT
 } /* RawPutChar */
