@@ -132,18 +132,18 @@ struct MUI_WindowData
 #endif
 
 /* wd_Flags */
-#define MUIWF_OPENED          (1<<0) /* window currently opened */
-#define MUIWF_ICONIFIED       (1<<1) /* window currently iconified */
-#define MUIWF_ACTIVE          (1<<2) /* window currently active */
-#define MUIWF_RESIZING        (1<<4) /* window currently resizing, for simple refresh */
-#define MUIWF_DONTACTIVATE    (1<<7) /* do not activate the window when opening */
-#define MUIWF_USERIGHTSCROLLER (1<<8) /* window should have a right scroller */
+#define MUIWF_OPENED            (1<<0) /* window currently opened */
+#define MUIWF_HIDDEN            (1<<1) /* window currently iconified */
+#define MUIWF_ACTIVE            (1<<2) /* window currently active */
+#define MUIWF_RESIZING          (1<<4) /* window currently resizing, for simple refresh */
+#define MUIWF_DONTACTIVATE      (1<<7) /* do not activate the window when opening */
+#define MUIWF_USERIGHTSCROLLER  (1<<8) /* window should have a right scroller */
 #define MUIWF_USEBOTTOMSCROLLER (1<<9) /* window should have a bottom scroller */
-#define MUIWF_ERASEAREA       (1<<10) /* Erase area after a window resize */
-#define MUIWF_ISAPPWINDOW     (1<<11) /* Is an app window (user can drop icons on it) */
-#define MUIWF_ISSUBWINDOW     (1<<12) /* Dont get automatically disposed with app */
-#define MUIWF_BUBBLEMODE      (1<<13) /* Quick bubble mode. Bubbles appear quick when moving */
-#define MUIWF_OPENONDEICONIFY (1<<14) /* Open the window when deiconifying */
+#define MUIWF_ERASEAREA         (1<<10) /* Erase area after a window resize */
+#define MUIWF_ISAPPWINDOW       (1<<11) /* Is an app window (user can drop icons on it) */
+#define MUIWF_ISSUBWINDOW       (1<<12) /* Dont get automatically disposed with app */
+#define MUIWF_BUBBLEMODE        (1<<13) /* Quick bubble mode. Bubbles appear quick when moving */
+#define MUIWF_OPENONUNHIDE      (1<<14) /* Open the window when unhiding */
 
 #define BUBBLEHELP_TICKER_FIRST 10
 #define BUBBLEHELP_TICKER_LATER 3
@@ -2592,8 +2592,8 @@ static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Window_Open:
 		if (tag->ti_Data)
 		{
-		    if (data->wd_Flags & MUIWF_ICONIFIED)
-		        data->wd_Flags |= MUIWF_OPENONDEICONIFY;
+		    if (data->wd_Flags & MUIWF_HIDDEN)
+		        data->wd_Flags |= MUIWF_OPENONUNHIDE;
 		    else
 		    if (!(data->wd_Flags & MUIWF_OPENED))
 		        WindowOpen(cl, obj);
@@ -2604,8 +2604,8 @@ static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    }
 		}
 		else
-  	        if (data->wd_Flags & MUIWF_ICONIFIED)
-		    data->wd_Flags &= ~MUIWF_OPENONDEICONIFY;
+  	        if (data->wd_Flags & MUIWF_HIDDEN)
+		    data->wd_Flags &= ~MUIWF_OPENONUNHIDE;
 		else
 		if (data->wd_Flags & MUIWF_OPENED)
 		    WindowClose(cl, obj);
@@ -2616,13 +2616,13 @@ static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		{
 		    /* Deiconify */
 		    
-		    if (data->wd_Flags & MUIWF_ICONIFIED)
+		    if (data->wd_Flags & MUIWF_HIDDEN)
 		    {
-			data->wd_Flags &= ~MUIWF_ICONIFIED;
+			data->wd_Flags &= ~MUIWF_HIDDEN;
 			
-		        if (data->wd_Flags & MUIWF_OPENONDEICONIFY)
+		        if (data->wd_Flags & MUIWF_OPENONUNHIDE)
 			{
-			    data->wd_Flags &=  ~MUIWF_OPENONDEICONIFY;
+			    data->wd_Flags &=  ~MUIWF_OPENONUNHIDE;
 			    set(obj, MUIA_Window_Open, TRUE);
 			}
 		    }
@@ -2633,12 +2633,12 @@ static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    
 		    if (data->wd_Flags & MUIWF_OPENED)
 		    {
-		        data->wd_Flags |= MUIWF_OPENONDEICONIFY;
+		        data->wd_Flags |= MUIWF_OPENONUNHIDE;
 			
 			set(obj, MUIA_Window_Open, FALSE);
 		    }
 			
-		    data->wd_Flags |= MUIWF_ICONIFIED;
+		    data->wd_Flags |= MUIWF_HIDDEN;
 		}
 	    
 	    case MUIA_Window_RootObject:
