@@ -60,12 +60,12 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
 
     *SysBasePtr = SysBase;
     *MUIMasterBasePtr = MUIMasterBase;
-    
+
     if (!DOSBase)
         (struct Library *)DOSBase = OpenLibrary("dos.library", 37);
     if (!DOSBase)
         return FALSE;
-    
+
     if (!UtilityBase)
         (struct Library *)UtilityBase = OpenLibrary("utility.library", 37);
     if (!UtilityBase)
@@ -80,12 +80,12 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
     	(struct Library *)GfxBase = OpenLibrary("graphics.library", 37);
     if (!GfxBase)
     	return FALSE;
- 
+
     if (!LayersBase)
     	LayersBase = OpenLibrary("layers.library", 37);
     if (!LayersBase)
     	return FALSE;
-	
+
     if (!IntuitionBase)
     	(struct Library *)IntuitionBase = OpenLibrary("intuition.library", 37);
     if (!IntuitionBase)
@@ -95,15 +95,22 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
     	CxBase = OpenLibrary("commodities.library", 37);
     if (!CxBase)
     	return FALSE;
-	
+
+#ifdef _AROS
+    if (!GadToolsBase)
+    	GadToolsBase = OpenLibrary("gadtools.library", 37);
+    if (!GadToolsBase)
+    	return FALSE;
+#endif
+
     KeymapBase = OpenLibrary("keymap.library", 37);
     if (!KeymapBase)
     	return FALSE;
-	
+
     MUIMB(MUIMasterBase)->intuibase = IntuitionBase;
-    
+
     __zune_prefs_init(&__zprefs);
-    
+
     return TRUE;
 }
 
@@ -133,25 +140,30 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR MUIMasterBa
 
     CloseLibrary((struct Library *)DOSBase);
     DOSBase = NULL;
-    
+
     CloseLibrary((struct Library *)UtilityBase);
     UtilityBase = NULL;
-    
+
     CloseLibrary(AslBase);
     AslBase = NULL;
-    
+
     CloseLibrary((struct Library *)GfxBase);
     GfxBase = NULL;
 
     CloseLibrary(LayersBase);
     LayersBase = NULL;
-    
+
     CloseLibrary((struct Library *)MUIMB(MUIMasterBase)->intuibase);
     MUIMB(MUIMasterBase)->intuibase = IntuitionBase = NULL;
-    
+
     CloseLibrary(CxBase);
     CxBase = NULL;
-    
+
+#ifdef _AROS
+    CloseLibrary(GadToolsBase);
+    GadToolsBase = NULL;
+#endif
+
     CloseLibrary(KeymapBase);
     KeymapBase = NULL;
 }
