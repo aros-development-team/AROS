@@ -75,11 +75,12 @@
 
     handle = MUI_AddClipRegion(mri, r);
 
+#if 0 /* MUI_AddClipRegion frees region itself upon failure */
     if (handle == (APTR)-1)
     {
     	DisposeRegion(r);
     }
-    
+#endif    
     return handle;
     
     AROS_LIBFUNC_EXIT
