@@ -105,6 +105,8 @@
 #define HVSpace           MUI_NewObject(MUIC_Rectangle,TAG_DONE)
 #define HSpace(x)         MUI_MakeObject(MUIO_HSpace,x)
 #define VSpace(x)         MUI_MakeObject(MUIO_VSpace,x)
+#define HBar(x)           MUI_MakeObject(MUIO_HBar,x)
+#define VBar(x)           MUI_MakeObject(MUIO_VBar,x)
 #define HCenter(obj)      (HGroup, GroupSpacing(0), Child, (IPTR)HSpace(0), Child, (IPTR)(obj), Child, (IPTR)HSpace(0), End)
 #define VCenter(obj)      (VGroup, GroupSpacing(0), Child, (IPTR)VSpace(0), Child, (IPTR)(obj), Child, (IPTR)VSpace(0), End)
 #define InnerSpacing(h,v) MUIA_InnerLeft,(h),MUIA_InnerRight,(h),MUIA_InnerTop,(v),MUIA_InnerBottom,(v)
