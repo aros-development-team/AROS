@@ -22,7 +22,8 @@ FILES = helloworld \
 	shadowborder \
 	readicon \
 	sift \
-	regiontest
+	regiontest \
+	inquire
 
 IMAGES = ArrowUp ArrowDown ArrowLeft ArrowRight ImageButton
 IMAGEFILES = $(foreach f,$(IMAGES),images/$(f)0.h images/$(f)1.h)
