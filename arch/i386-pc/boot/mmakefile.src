@@ -11,18 +11,105 @@ OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) 	\
 	   $(OSGENDIR)/graphics/dispinfo.o					\
 	   $(OSGENDIR)/graphics/fakegfxhidd.o
 
+BOOT_C := \
+	Alias assign avail cd Copy date delete dir echo execute FailAt \
+	Info List makedir mount newshell path Prompt Protect Relabel rename \
+	run Set Setenv shell Stack type
+BOOT_Gadgets := \
+	aroscheckbox.gadget aroscycle.gadget aroslist.class aroslistview.gadget \
+	arosmutualexclude.gadget arospalette.gadget colorwheel.gadget gradientslider.gadget
+BOOT_Aminet := Format64
+BOOT_Demos := gtdemo menudemo
+BOOT_Devs := Mountlist nil.handler ram.handler
+BOOT_Libs := \
+	amigaguide arosc asl commodities datatypes diskfont gadtools iffparse \
+	locale lowlevel mathieeedoubbas mathieeedoubtrans mathieeesingtrans \
+	mathtrans nonvolatile nvdisk realtime
+BOOT_S := hidd.prefs Shell-Startup Startup-Sequence
+BOOT_Tools := Debug/sashimi HDToolBox
+BOOT_grub := stage1 stage2 menu.lst
+
+BOOT_SRC_DIR := $(AROSDIR)
+BOOT_SRC_C := $(foreach f, $(BOOT_C), $(AROS_DIR)/C/$(f))
+BOOT_SRC_Gadgets := $(foreach f, $(BOOT_Gadgets), $(BOOT_SRC_DIR)/Classes/Gadgets/$(f))
+BOOT_SRC_Aminet := $(foreach f, $(BOOT_Aminet), $(BOOT_SRC_DIR)/contrib/aminet/$(f))
+BOOT_SRC_Demos := $(foreach f, $(BOOT_Demos), $(BOOT_SRC_DIR)/Demos/$(f))
+BOOT_SRC_Devs := $(foreach f, $(BOOT_Devs), $(BOOT_SRC_DIR)/Devs/$(f))
+BOOT_SRC_Libs := $(foreach f, $(BOOT_Libs), §(BOOT_SRC_DIR)/Libs/$(f).library)
+BOOT_SRC_S := $(foreach f, $(BOOT_S), $(BOOT_SRC_DIR)/S/$(f))
+BOOT_SRC_Tools := $(foreach f, $(BOOT_Tools), $(BOOT_SRC_DIR)/Tools/$(f))
+BOOT_SRC_grub := $(foreach f, $(BOOT_grub), $(BOOT_SRC_DIR)/boot/grub/$(f))
+
+BOOT_DEST_DIR := $(OSGENDIR)/bootdisk
+BOOT_DEST_C := $(foreach f, $(BOOT_C), $(BOOT_DEST_DIR)/C/$(f))
+BOOT_DEST_Gadgets := $(foreach f, $(BOOT_Gadgets), $(BOOT_DEST_DIR)/Classes/Gadgets/$(f))
+BOOT_DEST_Aminet := $(foreach f, $(BOOT_Aminet), $(BOOT_DEST_DIR)/contrib/aminet/$(f))
+BOOT_DEST_Demos := $(foreach f, $(BOOT_Demos), $(BOOT_DEST_DIR)/Demos/$(f))
+BOOT_DEST_Devs := $(foreach f, $(BOOT_Devs), $(BOOT_DEST_DIR)/Devs/$(f))
+BOOT_DEST_Libs := $(foreach f, $(BOOT_Libs), $(BOOT_DEST_DIR)/Libs/$(f).library)
+BOOT_DEST_S := $(foreach f, $(BOOT_S), $(BOOT_DEST_DIR)/S/$(f))
+BOOT_DEST_Tools := $(foreach f, $(BOOT_Tools), $(BOOT_DEST_DIR)/Tools/$(f))
+BOOT_DEST_grub := $(foreach f, $(BOOT_grub), $(BOOT_DEST_DIR)/boot/grub/$(f))
+
 #MM
 setup-native :
 	%mkdirs_q $(OSGENDIR)/boot
 	%mkdirs_q $(BINDIR)/boot
+	%mkdirs_q $(BINDIR)/boot/grub
+	%mkdirs_q $(BOOT_DEST_DIR)
+	%mkdirs_q $(BOOT_DEST_DIR)/C
+	%mkdirs_q $(BOOT_DEST_DIR)/Classes
+	%mkdirs_q $(BOOT_DEST_DIR)/Classes/Gadgets
+	%mkdirs_q $(BOOT_DEST_DIR)/contrib
+	%mkdirs_q $(BOOT_DEST_DIR)/contrib/aminet
+	%mkdirs_q $(BOOT_DEST_DIR)/Demos
+	%mkdirs_q $(BOOT_DEST_DIR)/Devs
+	%mkdirs_q $(BOOT_DEST_DIR)/Libs
+	%mkdirs_q $(BOOT_DEST_DIR)/S
+	%mkdirs_q $(BOOT_DEST_DIR)/Tools
+	%mkdirs_q $(BOOT_DEST_DIR)/Tools/Debug
+	%mkdirs_q $(BOOT_DEST_DIR)/boot/grub
+
+#MM
+workbench-s : Startup-Sequence
+	@$(CP) $< $(SDIR)
+	@$(NOP)
 
 #MM kernel-link-native : setup
 kernel-link-native : $(BINDIR)/boot/aros-native-i386
+	@$(NOP)
 
 $(BINDIR)/boot/aros-native-i386 : $(OBJS)
 	@ld -N -e kernel_startup -Ttext 0x00100000 -Map $(OSGENDIR)/boot/aros.map \
 	    -o $@ $(OBJS) -L$(LIBDIR) $(LIBS)
 	@strip --strip-unneeded -R .note -R .comment $@
+
+#MM workbench-boot-native-i386
+workbench-boot-native-i386: \
+	$(BINDIR)/boot/grub/stage1 \
+	$(BINDIR)/boot/grub/stage2 \
+	$(BINDIR)/boot/grub/menu.lst
+	@$(NOP)
+
+$(BINDIR)/boot/grub/% : %
+	@$(CP) $< $@
+	
+# software-native-i386
+#MM boot-disk:
+boot-disk: \
+	$(BOOT_DEST_C) $(BOOT_DEST_Gadgets) $(BOOT_DEST_Aminet) $(BOOT_DEST_Demos) \
+	$(BOOT_DEST_Devs) $(BOOT_DEST_Libs) $(BOOT_DEST_S) $(BOOT_DEST_Tools) \
+	$(BOOT_DEST_grub) $(BINDIR)/boot/aros-native-i386 install
+	@$(CP) $(BINDIR)/boot/aros-native-i386 $(BOOT_DEST_DIR)/Devs
+	@gzip -f $(BOOT_DEST_DIR)/Devs/aros-native-i386
+	@$(TOOLDIR)/createhdfile $(OSGENDIR)/boot/aros.bin floppy1440 $(BOOT_DEST_DIR)
+	@./install $(OSGENDIR)/boot/aros.bin
+
+install: install.c
+	@$(HOST_CC) install.c -o install
+
+$(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
+	@$(CP) $< $@
 
 #MM
 clean ::
