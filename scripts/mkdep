@@ -1,0 +1,52 @@
+#!/bin/sh
+
+while [ $# != 0 ]; do
+    case "$1" in
+	-o)
+	    dest="$2"
+	    shift
+	    ;;
+	-o*)
+	    dest="`echo $1 | cut -c3-`"
+	    ;;
+	-g|-Wall|-O*)
+	    ;;
+	-D|-I)
+	    args="$args '$1' '$2'"
+	    shift
+	    ;;
+	-f)
+	    depfile="$2"
+	    shift
+	    ;;
+	-f*)
+	    depfile="`echo $1 | cut -c3-`"
+	    ;;
+	*.c)
+	    files="$files '$1'"
+	    ;;
+	*)
+	    args="$args '$1'"
+	    ;;
+    esac
+    shift
+done
+
+if [ "x$files" = x ]; then
+    exit 0
+fi
+
+if [ "x$dest" = x ]; then
+    echo "$0: Error: -o missing"
+    exit 1
+fi
+
+if [ "x$depfile" = x ]; then
+    depfile="`dirname "$dest"`/`basename "$dest" .o`.d"
+fi
+
+CMD="gcc -M $args $files | sed 's#^.*\.o:#$dest:#'"
+echo $CMD
+echo "depfile=$depfile"
+
+eval $CMD > $depfile
