@@ -21,6 +21,7 @@
 #include <intuition/gadgetclass.h>
 #include <intuition/cghooks.h>
 #include <intuition/imageclass.h>
+#include <intuition/extensions.h>
 #include <aros/asmcall.h>
 
 #include "gadgets.h"
@@ -57,10 +58,10 @@ on screen.
 
 */
 
-#ifdef __MORPHOS__
-#define OPAQUESIZE (w->MoreFlags & WMFLG_IAMMUI)
+#if USE_OPAQUESIZE
+#   define OPAQUESIZE (w->MoreFlags & WMFLG_IAMMUI)
 #else
-#define OPAQUESIZE 0
+#   define OPAQUESIZE 0
 #endif
 
 #define DELAYEDDRAG
@@ -463,6 +464,7 @@ static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
             } else {
                 if (MOVEHACK)
                 {
+#ifdef __MORPHOS__
                     data->movetask =
                         NewCreateTask(TASKTAG_CODETYPE, CODETYPE_PPC, TASKTAG_PC, (ULONG)MoveTask,
                                         TASKTAG_PRI, 0,
@@ -471,6 +473,10 @@ static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
                                         TASKTAG_PPC_ARG3,(ULONG)w->WScreen,
                                         TASKTAG_PPC_ARG4,(ULONG)IntuitionBase,
                                         TAG_DONE);
+#else
+// FIXME!
+#warning Implemente MOVEHACK support for AROS (?)
+#endif
                 }
             }
 
@@ -1197,9 +1203,9 @@ static IPTR sizebutton_goactive(Class *cl, Object *o, struct gpInput *msg)
         data->drag_refreshed = TRUE;
         data->drag_ticks = 2;
 
+#ifdef SKINS
         data->drag_type = 0;
 
-#ifdef SKINS
         if (w->MouseX < IW(w)->sizeimage_width)
         {
             if (w->MouseY < IW(w)->sizeimage_height) data->drag_type = SIZETYPE_LEFTTOP;
@@ -1563,6 +1569,7 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
             }
             #endif
 
+#if USE_OPAQUESIZE
             if (OPAQUESIZE)
             {
                 data->drag_ticks --;
@@ -1573,6 +1580,7 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
                     data->drag_ticks = 2;
                 }
             }
+#endif /* USE_OPAQUESIZE */
 
             break;
 
