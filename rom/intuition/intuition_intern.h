@@ -61,9 +61,21 @@
 
 /* Options */
 
-#define MENUS_AMIGALOOK  1 /*0 for 3D, 1 for Black and White */
-#define MENUS_UNDERMOUSE 0 /*0 for normal menus, 1 for magic menus */
-#define FRAME_SIZE       0 /* 0 = 1:1 thin,  1 = 2:1 medres like AmigaOS,  2 = 1:1 thick */
+#define MENUS_AMIGALOOK		(GetPrivIBase(IntuitionBase)->MenuLook)
+/* --- Values --- */
+#define MENULOOK_3D		0
+#define MENULOOK_CLASSIC	1
+
+#define MENUS_UNDERMOUSE	(GetPrivIBase(IntuitionBase)->MenusUnderMouse)
+/* --- Values --- */
+/* TRUE, FALSE */
+
+#define FRAME_SIZE		(GetPrivIBase(IntuitionBase)->FrameSize)
+/* --- Values --- */
+#define FRAMESIZE_THIN		0 /* 1:1 thin */
+#define FRAMESIZE_MEDRES	1 /* 2:1 medres like AmigaOS */
+#define FRAMESIZE_THICK		2 /* 1:1 thick */
+
 
 #define INTERNAL_BOOPSI  1
 
@@ -165,6 +177,11 @@ struct IntIntuitionBase
 #endif
 
     struct MinList  	    	ResourceList[RESOURCELIST_HASHSIZE];
+
+/* Menu Look Settings */
+    int				MenusUnderMouse;
+    int				MenuLook;
+    int				FrameSize;
 };
 
 struct IntScreen
