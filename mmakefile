@@ -45,8 +45,8 @@ checkerr :
 # \item{crypt} Create the file crypt to create a password for CVS access
 #
 # END_DESC{target}
-crypt : crypt.c
-	$(CC) -o crypt crypt.c
+crypt : tools/crypt.c
+	$(CC) -o crypt tools/crypt.c
 
 # BEGIN_DESC{localmakevar}
 # \item{BINARCHIVE} Basename of the binary archive
@@ -103,53 +103,8 @@ dist-src :
 #MM
 clean:
 	-$(RM) $(ARCHDIR) mmake Makefile mmake.cache config.cache config.status config.log \
-	    errors crypt
+		errors crypt
 
-# BEGIN_DESC{internaltarget}
-# \item{$(LIBDIR)/libAmigaOS.a} Recreate the kernel if any kernel function
-#	has been recompiled.
-#
-# END_DESC{internaltarget}
-LIBOBJS=$(wildcard $(OSGENDIR)/*.o)
-ifneq ("$(SHARED_AR)","")
-ifeq ("$(SHARED_EXEC)","yes")
-DEPLIBEXEC=$(LIBDIR)/libexec.so
-LIBEXEC=-lexec
-endif
-ifeq ("$(SHARED_DOS)","yes")
-DEPLIBDOS=$(LIBDIR)/libdos.so
-LIBDOS=-ldos
-endif
-ifeq ("$(SHARED_UTILITY)","yes")
-DEPLIBUTILITY=$(LIBDIR)/libutility.so
-LIBUTILITY=-lutility
-endif
-ifeq ("$(SHARED_GRAPHICS)","yes")
-DEPLIBGRAPHICS=$(LIBDIR)/libgraphics.so
-LIBGRAPHICS=-lgraphics
-endif
-ifeq ("$(SHARED_INTUITION)","yes")
-DEPLIBINTUITION=$(LIBDIR)/libintuition.so
-LIBINTUITION=-lintuition
-endif
-
-LIBLIBS=$(DEPLIBEXEC) $(DEPLIBDOS) $(DEPLIBUTILITY) \
-	$(DEPLIBGRAPHICS) $(DEPLIBINTUITION) $(DEPLIBAROS)
-LIBPATH=$(shell cd $(LIBDIR) ; pwd)
-endif
-$(DEPLIB_AMIGAOS) : $(LIBOBJS) $(LIBLIBS) $(LIBDIR)/libamiga.a
-	@echo "Recreating library"
-ifeq ("$(SHARED_AR)","")
-	@$(AR) $@ $?
-	@$(RANLIB) $@
-else
-	@$(SHARED_AR) $@ $(LIBOBJS) -L$(LIBDIR) \
-		$(LIBINTUITION) $(LIBGRAPHICS) $(LIBDOS) \
-		$(LIBAROS) $(LIBUTILITY) $(LIBEXEC) -lamiga
-endif
-
-$(GENDIR)/aros.o : aros.c
-	$(CC) $(CFLAGS) -Dmain=submain $< -c -o $@
 
 $(GENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@
