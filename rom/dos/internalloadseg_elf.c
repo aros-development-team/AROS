@@ -5,7 +5,7 @@
     Desc: Code to dynamically load ELF executables
     Lang: english
 
-    1997/12/13: Changed filename to internalloadseg_aout.c
+    1997/12/13: Changed filename to internalloadseg_elf.c
                 Original file was created by digulla.
 */
 #include <exec/memory.h>
@@ -26,11 +26,11 @@ extern struct DosLibrary * DOSBase;
 #define PRINT_SECTION_NAMES     0
 #define PRINT_STRINGTAB         0
 #define PRINT_SYMBOLTABLE       0
-#define PRINT_SYMBOLS           1
+#define PRINT_SYMBOLS           0
 #define LOAD_DEBUG_HUNKS        0
 #define PRINT_SECTIONS          0
 #define PRINT_HUNKS             0
-#define DEBUG_HUNKS             1
+#define DEBUG_HUNKS             0
 
 #define SHT_PROGBITS    1
 #define SHT_SYMTAB      2
