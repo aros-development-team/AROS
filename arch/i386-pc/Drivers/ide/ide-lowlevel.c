@@ -93,7 +93,7 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ide_Unit *unit)
 	    pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC | MEMF_CHIP;
 	    pp[DE_MAXTRANSFER + 4] = 0x00200000;
 	    pp[DE_MASK + 4] = 0x7FFFFFFE;
-	    pp[DE_BOOTPRI + 4] = 0;  
+	    pp[DE_BOOTPRI + 4] = 0;
 	    pp[DE_DOSTYPE + 4] = 0x444F5301;
 	    pp[DE_BOOTBLOCKS + 4] = 2;
 	    devnode = MakeDosNode(pp);
@@ -118,7 +118,7 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ide_Unit *unit)
 		}
 	    }
 	}
-	
+
 	CloseLibrary((struct Library *)ExpansionBase);
     }
 
@@ -137,7 +137,7 @@ void RDBInfo(struct ide_Unit *unit)
 
     /* For now we will only deal with harddisks */
     if (unit->au_DevType != DG_DIRECT_ACCESS)
-      return;      
+      return;
 
     mbr = AllocMem(512,MEMF_PUBLIC | MEMF_CLEAR);
     if (mbr)
@@ -155,8 +155,20 @@ void RDBInfo(struct ide_Unit *unit)
                 pe = (struct PartEntry *)(&mbr[count]);
                 SSecs = pe->StartS & 0x3f;
                 SCyls = ((pe->StartS & 0xc0) << 2) + pe->StartC;
-                ESecs = pe->EndS &0x3f;
+		if (SCyls == 1023)
+		{
+		    SCyls = pe->LBAStart/unit->au_Heads/unit->au_SectorsT;
+		    SSecs = 1;
+		    pe->StartH = 0;
+		}
+
+		ESecs = pe->EndS &0x3f;
                 ECyls = ((pe->EndS & 0xc0) << 2) + pe->EndC;
+		if (ECyls == 1023)
+		{
+		    ECyls = SCyls -1 + pe->LBACount/unit->au_Heads/unit->au_SectorsT;
+		}
+
                 D(bug(" %02x  %02x   %3d    %3d   %4d   %4d  %3d  %3d %8d %8d\n",
                     pe->Status,pe->PartType,SCyls,pe->StartH,SSecs,
                     ECyls,pe->EndH,ESecs,pe->LBAStart,pe->LBACount));
@@ -164,6 +176,7 @@ void RDBInfo(struct ide_Unit *unit)
                 /* If this is an AROS partition, add a BootNode */
                 if (pe->PartType == 0x30)
                    AddVolume(SCyls,ECyls,unit);
+		   //AddVolume(2006,ECyls,unit);
             }
             FreeMem(mbr,512);
         }
@@ -274,7 +287,7 @@ struct ide_Unit *InitUnit(ULONG num, struct ideBase *ib)
         unit->au_WriteSub   = &ata_Write;
 
         NEWLIST(&unit->au_SoftList);
-        
+
         dev = ib->ide_DevMaskArray[num];
 
         unit->au_NumLoop = ATA_TimeOut * 8;
@@ -319,16 +332,16 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
    /* For now we will only deal with fixed harddisks */
    if ( (unit->au_DevType != DG_DIRECT_ACCESS) && !(unit->au_Flags & AF_Removable) )
       return;
-   
+
    /* For starters, assume the drive is smaller then 8Gb */
    unit->au_Cylinders = id->idev_Cylinders;
    unit->au_Heads     = id->idev_Heads;
    unit->au_SectorsT  = id->idev_Sectors;
    unit->au_SectorsC  = id->idev_Sectors * id->idev_Heads;
    unit->au_Blocks    = id->idev_Cylinders * unit->au_SectorsC;
-   
+
    D(bug("-Drive says PCHS capacity is %d (%d MB)\n",unit->au_Blocks,unit->au_Blocks/2048));
-   
+
    /* If we are capable of LBA, get LBA size */
    if (unit->au_Flags & AF_LBAMode)
    {
@@ -337,7 +350,7 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
    }
    else
       LBACapacity = 0;
-   
+
    /* If the translated CHS fields is valid, get them */
    if (id->idev_NextAvail & ATAF_AVAIL_TCHS)
    {
@@ -351,14 +364,14 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
    MAXCapacity = unit->au_Blocks;
    if (CHSCapacity > MAXCapacity) MAXCapacity = CHSCapacity;
    if (LBACapacity > MAXCapacity) MAXCapacity = LBACapacity;
-   
+
    /* Now we read the partition table, and guess the geometry used */
    MBRCyls = MBRHeads = MBRSecs = 0;
    mbr = AllocMem(512,MEMF_PUBLIC | MEMF_CLEAR);
    if (mbr)
    {
       ULONG count,i,ESecs,ECyls,temp;
-      
+
       /* Read the MBR Sector */
       count = ReadBlocks(0,1,mbr,unit,&temp);
       if (!count)
@@ -373,7 +386,7 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
                pe = (struct PartEntry *)(&mbr[count]);
                ESecs = pe->EndS &0x3f;
                ECyls = ((pe->EndS & 0xc0) << 2) + pe->EndC;
-               
+
                if (ECyls > MBRCyls) MBRCyls = ECyls;
                if (pe->EndH > MBRHeads) MBRHeads = pe->EndH;
                if (ESecs > MBRSecs) MBRSecs = ESecs;
@@ -382,12 +395,12 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
             MBRCyls++;
             MBRHeads++;
             MBRCapacity = MBRCyls*MBRHeads*MBRSecs;
-            
+
             D(bug("-MBR says the CHS is %d/%d/%d (%d sectors, %d MB)\n",MBRCyls,MBRHeads,MBRSecs,MBRCapacity,MBRCapacity/2048));
-            
+
             /* Do the values from MBR appear valid? */
             if ((MBRHeads != 0) && (MBRSecs != 0))
-            {      
+            {
                /* If so, adjust the values used */
                unit->au_Heads = MBRHeads;
                unit->au_SectorsT = MBRSecs;
@@ -397,7 +410,7 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
             }
          }
          else
-         {       
+         {
             /* No valid MBR signature found. Assume new HDD, and use own method */
             if (MAXCapacity != unit->au_Blocks)
             {
