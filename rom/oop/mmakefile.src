@@ -112,10 +112,10 @@ includes-copy : $(DEST_INC) $(GEN_INC)
 	@$(NOP)
 
 $(INCDIR)/oop/%.h : include/%.h
-	$(CP) include/$(notdir $<) $@
+	@$(CP) include/$(notdir $<) $@
 
 $(GENINCDIR)/oop/%.h : include/%.h
-	$(CP) include/$(notdir $<) $@
+	@$(CP) include/$(notdir $<) $@
 
 #MM kernel-oop-linklib : setup includes kernel-oop-$(ARCH)-$(CPU)
 kernel-oop-linklib : $(LIB)

@@ -6,13 +6,13 @@ workbench-s : $(SDIR)/Startup-Sequence $(SDIR)/hidd.prefs $(SDIR)/Shell-Startup
 	@$(NOP)
 
 $(SDIR)/Startup-Sequence : Startup-Sequence
-	$(CP) $^ $@
+	@$(CP) $^ $@
 
 $(SDIR)/Shell-Startup : Shell-Startup
-	$(CP) $^ $@
+	@$(CP) $^ $@
 
 $(SDIR)/hidd.prefs : hidd.prefs
-	$(CP) $^ $@
+	@$(CP) $^ $@
 
 #MM
 setup :

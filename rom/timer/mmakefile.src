@@ -99,10 +99,10 @@ includes-copy : $(foreach f, $(wildcard include/*.h), \
 	@$(NOP)
 
 $(INCDIR)/hidd/%.h : include/%.h
-	$(CP) include/$(notdir $<) $@
+	@$(CP) include/$(notdir $<) $@
 
 $(GENINCDIR)/hidd/%.h : include/%.h
-	$(CP) include/$(notdir $<) $@
+	@$(CP) include/$(notdir $<) $@
 
 %asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(ALL_FILES) $(END_FILE)"
 %ctoasm_q

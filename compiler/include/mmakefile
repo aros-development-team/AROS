@@ -39,10 +39,10 @@ includes-copy : $(DEST_INCLUDES) $(GEN_INCLUDES)
 	@$(NOP)
 
 $(INCDIR)/%.h : %.h
-	$(CP) $< $@
+	@$(CP) $< $@
 
 $(GENINCDIR)/%.h : %.h
-	$(CP) $< $@
+	@$(CP) $< $@
 
 #MM
 setup-includes :

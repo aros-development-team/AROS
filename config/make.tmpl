@@ -690,10 +690,10 @@ $(OBJDIR)/headers.stamp : mmakefile.src $(wildcard headers.tmpl) libdefs.h \
 	@$(TOUCH) $@
 
 $(INCDIR)/clib/%(name)_protos.h : $(GENINCDIR)/clib/%(name)_protos.h
-	$(CP) $< $@
+	@$(CP) $< $@
 
 $(INCDIR)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
-	$(CP) $< $@
+	@$(CP) $< $@
 %end
 
 #------------------------------------------------------------------------------
@@ -777,16 +777,16 @@ $(GENINCDIR)/proto/%(name).h : $(_HEADER_DEPS)
 	@$(SCRIPTDIR)/genshared -proto %(hasrt) -prefix $(GENINCDIR) $(FSRCS)
 
 $(INCDIR)/clib/%(name)_protos.h : $(GENINCDIR)/clib/%(name)_protos.h
-	$(CP) $< $@
+	@$(CP) $< $@
 
 $(INCDIR)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
-	$(CP) $< $@
+	@$(CP) $< $@
 
 $(INCDIR)/inline/%(name).h : $(GENINCDIR)/inline/%(name).h
-	$(CP) $< $@
+	@$(CP) $< $@
 
 $(INCDIR)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
-	$(CP) $< $@
+	@$(CP) $< $@
 
 %end
 
