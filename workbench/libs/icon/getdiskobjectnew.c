@@ -8,9 +8,6 @@
 #include <proto/dos.h>
 #include "icon_intern.h"
 
-#define DEBUG 1
-#include <aros/debug.h>
-
 /*****************************************************************************
 
     NAME */

@@ -49,8 +49,13 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
+    
+    if (icon->do_Gadget.Flags & GFLG_GADGIMAGE)
+    {
+	DrawImage(rp,(struct Image*)icon->do_Gadget.GadgetRender,leftEdge,topEdge);
+    }
 
-#warning DrawIconStateA() very limited implemented
+#warning DrawIconStateA() is only very limited implemented
 
     AROS_LIBFUNC_EXIT
 } /* FreeFreeList */

@@ -13,6 +13,9 @@
 #ifndef PROTO_EXEC_H
 #   include <proto/exec.h>
 #endif
+#ifndef PROTO_INTUITION_H
+#   include <proto/intuition.h>
+#endif
 #ifndef DOS_DOS_H
 #   include <dos/dos.h>
 #endif
@@ -77,10 +80,13 @@ struct IconBase
     /* Private parts */
     struct Library  * utilitybase;
     struct Hook       dsh;
+    struct Library * intuitionbase;
 };
 
 #define LB(icon)        ((struct IconBase *)icon)
 #undef UtilityBase
 #define UtilityBase	(((struct IconBase *)IconBase)->utilitybase)
+#undef IntuitionBase
+#define IntuitionBase	(((struct IconBase *)IconBase)->intuitionbase)
 
 #endif /* ICON_INTERN_H */
