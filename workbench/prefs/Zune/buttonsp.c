@@ -41,6 +41,7 @@ static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
 #define FindConfig(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
 #define AddConfig(data,len,id) DoMethod(msg->configdata,MUIM_Dataspace_Add,data,len,id)
 #define AddConfigStr(str,id) if(str && *str){DoMethod(msg->configdata,MUIM_Dataspace_Add,str,strlen(str)+1,id);}
+#define AddConfigImgStr(str,id) if(str && *str && *str != '6'){DoMethod(msg->configdata,MUIM_Dataspace_Add,str,strlen(str)+1,id);}
 
 static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -77,9 +78,15 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static IPTR ButtonsP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
     struct MUI_ButtonsPData *data = INST_DATA(cl, obj);
+    char *spec;
+
 //    setstring(data->text_font_string,FindConfig(MUICFG_Buttons_Font));
-    set(data->text_background_popimage,MUIA_Imagedisplay_Spec,FindConfig(MUICFG_Background_Button));
-    set(data->text_selbackground_popimage,MUIA_Imagedisplay_Spec,FindConfig(MUICFG_Background_Selected));
+    spec = FindConfig(MUICFG_Background_Button);
+    set(data->text_background_popimage,MUIA_Imagedisplay_Spec,
+	spec ? spec : MUII_ButtonBack);
+    spec = FindConfig(MUICFG_Background_Selected);
+    set(data->text_selbackground_popimage,MUIA_Imagedisplay_Spec,
+	spec ? spec : MUII_SelectedBack);
     return 1;    
 }
 
@@ -97,10 +104,10 @@ static IPTR ButtonsP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP
     AddConfigStr(str,MUICFG_Font_Big);*/
 
     str = (char*)xget(data->text_background_popimage,MUIA_Imagedisplay_Spec);
-    AddConfigStr(str,MUICFG_Background_Button);
+    AddConfigImgStr(str,MUICFG_Background_Button);
 
     str = (char*)xget(data->text_selbackground_popimage,MUIA_Imagedisplay_Spec);
-    AddConfigStr(str,MUICFG_Background_Selected);
+    AddConfigImgStr(str,MUICFG_Background_Selected);
 
     return TRUE;
 }
