@@ -89,17 +89,26 @@ D\0Save As Defaults
 MSG_MEN_PICT (//)
 Picture
 ;
-MSG_MEN_PICT_FIT_WIN (//)
- \0Fit to Window
-;
 MSG_MEN_PICT_ZOOM_IN (//)
-Z\0Zoom in
+ \0Zoom in
 ;
 MSG_MEN_PICT_ZOOM_OUT (//)
  \0Zoom out
 ;
 MSG_MEN_PICT_RESET (//)
  \0Reset Size
+;
+MSG_MEN_PICT_FIT_WIN (//)
+ \0Fit to Window
+;
+MSG_MEN_PICT_KEEP_ASPECT (//)
+ \0Keep Aspect Ratio
+;
+MSG_MEN_PICT_FORCE_MAP (//)
+ \0Force Palette Mapping
+;
+MSG_MEN_PICT_DITHER (//)
+ \0Dithering
 ;
 MSG_MEN_TEXT (//)
 Text
