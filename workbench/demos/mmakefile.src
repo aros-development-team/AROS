@@ -54,6 +54,7 @@ FILES	:= \
     palettedemo \
     readicon \
     regiontest \
+    register \
     realtdemo \
     roundshape \
     rtdemo \
