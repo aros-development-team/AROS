@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/10 13:19:33  digulla
+    Several IPTR/BPTR-Casts (Fleischer)
+
     Revision 1.6  1996/09/21 14:15:05  digulla
     Number TagList
     New tag: NP_UserData
@@ -161,13 +164,13 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
     {
 	input=Open("NIL:",MODE_OLDFILE);
 	ERROR_IF(!input);
-	defaults[2].ti_Data=input;
+	defaults[2].ti_Data=(IPTR)input;
     }
     if(defaults[4].ti_Data==~0ul)
     {
 	output=Open("NIL:",MODE_NEWFILE);
 	ERROR_IF(!output);
-	defaults[4].ti_Data=output;
+	defaults[4].ti_Data=(IPTR)output;
     }
     if(defaults[8].ti_Data==~0ul)
     {
@@ -175,7 +178,7 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
 	{
 	    curdir=Lock("",SHARED_LOCK);
 	    ERROR_IF(!curdir);
-	    defaults[8].ti_Data=curdir;
+	    defaults[8].ti_Data=(IPTR)curdir;
 	}else
 	    defaults[8].ti_Data=0;
     }
@@ -204,18 +207,18 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
     process->pr_MsgPort.mp_SigBit=SIGB_DOS;
     process->pr_MsgPort.mp_SigTask=process;
     NEWLIST(&process->pr_MsgPort.mp_MsgList);
-    process->pr_SegList=defaults[0].ti_Data;
+    process->pr_SegList=(BPTR)defaults[0].ti_Data;
     process->pr_StackSize=defaults[9].ti_Data;
     process->pr_GlobVec=NULL;
     Forbid();
     process->pr_TaskNum=DOSBase->dl_ProcCnt++;
     Permit();
-    process->pr_StackBase=(IPTR)process->pr_Task.tc_SPUpper;
+    process->pr_StackBase=MKBADDR(process->pr_Task.tc_SPUpper);
     process->pr_Result2=0;
-    process->pr_CurrentDir=defaults[8].ti_Data;
-    process->pr_CIS=defaults[2].ti_Data;
-    process->pr_COS=defaults[4].ti_Data;
-    process->pr_CES=defaults[6].ti_Data;
+    process->pr_CurrentDir=(BPTR)defaults[8].ti_Data;
+    process->pr_CIS=(BPTR)defaults[2].ti_Data;
+    process->pr_COS=(BPTR)defaults[4].ti_Data;
+    process->pr_CES=(BPTR)defaults[6].ti_Data;
 
     process->pr_Task.tc_UserData = (APTR)defaults[15].ti_Data;
 
@@ -237,8 +240,8 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
     process->pr_ShellPrivate=0;
 
     if(AddProcess(process,argptr,argsize,defaults[0].ti_Data?
-		  (APTR)BADDR(defaults[0].ti_Data+1):
-		  (APTR)defaults[1].ti_Data,KillCurrentProcess,
+		  (BPTR *)BADDR(defaults[0].ti_Data)+1:
+		  (BPTR *)defaults[1].ti_Data,KillCurrentProcess,
 		  DOSBase)!=NULL)
 	return process;
 
