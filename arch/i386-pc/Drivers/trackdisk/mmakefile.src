@@ -17,9 +17,6 @@ kernel-devs-$(ARCH)-$(CPU) : $(LIB)
 $(LIB) : $(OBJS)
 	%mklib_q
 
-#MM kernel-devs : setup includes linklibs kernel-devs-$(ARCH)-$(CPU)
-kernel-devs : show-flags $(DEVS)
-
 #MM
 clean ::
 	$(RM) $(OBJS) $(LIB) $(OSGENDIR)
