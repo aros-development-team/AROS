@@ -166,7 +166,7 @@ check : $(TESTS)
 clean:
 	$(RM) $(ARCHDIR) host.cfg
 	@for dir in $(SUBDIRS) ; do \
-	    ( echo "Cleaning in $$dir..." ;
+	    ( echo "Cleaning in $$dir..." ; \
 	      if [ "$$dir" = "apps/compiler" ]; then \
 		  top="../.." ; else top=".." ; \
 	      fi ; \
