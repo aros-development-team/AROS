@@ -259,7 +259,7 @@ DemoIText =
 {
     1, 2, /* Pens */
     JAM1, /* Drawmode */
-    10, 10, /* Left, Top */
+    0, 0, /* Left, Top */
     NULL, /* TextAttr */
     "None", /* Text */
     NULL /* Next */
@@ -393,7 +393,7 @@ DemoGadget6 =
 {
     &DemoGadget7, /* NextGadget */
     BORDER, -((GAD_HEI+BORDER)*3),
-    -(2*BORDER+2*ARROWLEFT0_WIDTH), ARROWLEFT0_HEIGHT, /* hit box */
+    -(1+2*BORDER+2*ARROWLEFT0_WIDTH), ARROWLEFT0_HEIGHT, /* hit box */
     GFLG_GADGHIMAGE
 	| GFLG_RELBOTTOM
 	| GFLG_RELWIDTH
@@ -603,7 +603,8 @@ int main (int argc, char ** argv)
 
     DemoIText.LeftEdge = GAD_WID/2 - rp->Font->tf_XSize*2;
     DemoIText.TopEdge = GAD_HEI/2 - rp->Font->tf_YSize/2;
-
+    RefreshGList(&DemoGadget4,win,NULL,1);
+    
     if (!gadget)
 	printf ("Warning: Couldn't create gadget\n");
 
