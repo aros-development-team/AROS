@@ -42,7 +42,7 @@
 
 static const char version[] = "$VER: demowin 41.1 (14.3.1997)\n";
 
-struct Library *ConsoleDevice;
+struct Device *ConsoleDevice;
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
 Object * frame, * gadget;
@@ -548,9 +548,9 @@ int main (int argc, char ** argv)
     cioreq.io_Message.mn_Length = sizeof(struct IOStdReq);
     
     OpenDevice ("console.device", -1, (struct IORequest *)&cioreq, 0);
-    ConsoleDevice = (struct Library *)cioreq.io_Device;
+    ConsoleDevice = cioreq.io_Device;
     printf ("Opening console.device=%p (%s)\n", ConsoleDevice,
-	ConsoleDevice && ConsoleDevice->lib_Node.ln_Name ? ConsoleDevice->lib_Node.ln_Name : "(NULL)");
+	ConsoleDevice && ConsoleDevice->dd_Library.lib_Node.ln_Name ? ConsoleDevice->dd_Library.lib_Node.ln_Name : "(NULL)");
 
     if (!ConsoleDevice)
     {
