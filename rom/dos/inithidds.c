@@ -19,10 +19,10 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <proto/dos.h>
+#include <proto/intuition.h>
 #include <oop/oop.h>
 #include <string.h>
 
-#include "../intuition/intuition_private.h"	/* LateIntuiInit proto	*/
 #include "devs_private.h"
 
 #ifdef __AROS__
