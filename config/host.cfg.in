@@ -46,5 +46,5 @@ CAT	 := @CAT@
 TEST	 := @TEST@
 STRIP	 := @STRIP@
 CHECKUDS := @aros_check_uds@
-MKDEPEND := @aros_mkdepend@
+MKDEPEND := $(TOP)/scripts/mkdep
 LITE	 := @LITE@
