@@ -22,6 +22,7 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "textengine.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -562,6 +563,8 @@ static ULONG Text_GoActive(struct IClass * cl, Object * o, Msg msg)
   struct MUI_TextData *data = (struct MUI_TextData*) INST_DATA(cl, o);
   if (!(data->mtd_Flags & MTDF_EDITABLE)) return DoSuperMethodA(cl,o,msg);
 
+  D(bug("Text_GoActive(%p)\n", o));
+
   DoMethod(_win(o), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
   data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
   DoMethod(_win(o), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
@@ -578,6 +581,8 @@ static ULONG Text_GoInactive(struct IClass * cl, Object * o, Msg msg)
 {
   struct MUI_TextData *data = (struct MUI_TextData*) INST_DATA(cl, o);
   if (!(data->mtd_Flags & MTDF_EDITABLE)) return DoSuperMethodA(cl,o,msg);
+
+  D(bug("Text_GoInactive(%p)\n", o));
 
   DoMethod(_win(o), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
   data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;

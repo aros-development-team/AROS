@@ -20,6 +20,7 @@
 
 #include "mui.h"
 #include "muimaster_intern.h"
+#include "textengine.h"
 #include "support.h"
 #include "support_classes.h"
 #include "scale_private.h"
