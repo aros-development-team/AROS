@@ -155,7 +155,12 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 
             } /* if (port) */
             FreeMem(iihdata, sizeof (struct IIHData));
-
+            
+            iihdata->MouseBoundsLeft = 0;
+	    iihdata->MouseBoundsTop = 0;
+	    iihdata->MouseBoundsRight = 0;
+	    iihdata->MouseBoundsBottom = 0;
+	        
         } /* if (iihdata) */
         FreeMem(iihandler, sizeof (struct Interrupt));
 
@@ -1579,7 +1584,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             if (ie->ie_Y < 0) ie->ie_Y = 0;
                         }
                         //UnlockIBase(lock);
-
                     }
                     else
                     {
@@ -1608,6 +1612,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
                     }
 #endif
+                    /* Do Mouse Bounding - mouse will be most restrictive of screen size or mouse bounds */
+                    if (ie->ie_X < iihdata->MouseBoundsLeft) ie->ie_X = iihdata->MouseBoundsLeft;
+                    else
+                        if (ie->ie_X > iihdata->MouseBoundsRight) ie->ie_X = iihdata->MouseBoundsRight;
+                    
+                    if (ie->ie_Y < iihdata->MouseBoundsTop) ie->ie_Y = iihdata->MouseBoundsTop;
+                    else
+                        if (ie->ie_Y > iihdata->MouseBoundsBottom) ie->ie_Y = iihdata->MouseBoundsBottom;
 
     	    	    #if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
 			SetPointerPos(ie->ie_X, ie->ie_Y);
