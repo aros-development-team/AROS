@@ -70,7 +70,7 @@ int main (int argc, char ** argv)
     /* This is valid */
     FreeVec (NULL);
 
-    mem = IntuitionBase = OpenLibrary (INTUITIONNAME, 0);
+    mem = IntuitionBase = (struct IntuitionBase *) OpenLibrary (INTUITIONNAME, 0);
 
     printf ("Bug 12: Open a window and forget about it\n");
     OpenWindowTags (NULL, TAG_END);
@@ -78,7 +78,7 @@ int main (int argc, char ** argv)
     printf ("Bug 6: OverWriting IntuitionBase (%p)\n", IntuitionBase);
     IntuitionBase = (struct IntuitionBase *)23;
 
-    CloseLibrary (IntuitionBase);
+    CloseLibrary ((struct Library *) IntuitionBase);
 
     IntuitionBase = mem;
 
