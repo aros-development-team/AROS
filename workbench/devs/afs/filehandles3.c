@@ -251,7 +251,7 @@ ULONG error,i,block;
 	}
 	last->ed_Next = NULL;
 	headerblock->flags &= ~BCF_USED;
-	return 0;
+	return ERROR_NO_MORE_ENTRIES;
 }
 
 ULONG examineNext
