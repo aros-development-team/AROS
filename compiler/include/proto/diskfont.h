@@ -9,6 +9,10 @@
 #include <aros/system.h>
 #endif
 
+#ifndef DiskfontBase
+extern struct Library * DiskFontBase;
+#endif
+
 #include <clib/diskfont_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)

@@ -9,7 +9,11 @@
 #include <aros/system.h>
 #endif
 
-#define BOOPSINAME  "boopsi.library" /* TODO */
+#define BOOPSINAME  "boopsi.library"
+
+#ifndef BOOPSIBase
+extern struct Library * BOOPSIBase;
+#endif
 
 #include <clib/boopsi_protos.h>
 

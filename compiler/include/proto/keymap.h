@@ -9,6 +9,10 @@
 #include <aros/system.h>
 #endif
 
+#ifndef KeymapBase
+extern struct Library * KeymapBase;
+#endif
+
 #include <clib/keymap_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)

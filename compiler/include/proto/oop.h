@@ -9,7 +9,11 @@
 #include <aros/system.h>
 #endif
 
-#define OOPNAME  "oop.library" /* TODO */
+#define OOPNAME  "oop.library"
+
+#ifndef OOPBase
+extern struct Library * OOPBase;
+#endif
 
 #include <clib/oop_protos.h>
 

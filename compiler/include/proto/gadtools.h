@@ -9,6 +9,8 @@
 #include <aros/system.h>
 #endif
 
+extern struct Library * GadToolsBase;
+
 #include <clib/gadtools_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)

@@ -9,6 +9,10 @@
 #include <aros/system.h>
 #endif
 
+#ifndef DOSBase
+extern struct DosLibrary * DOSBase;
+#endif
+
 #include <clib/dos_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)

@@ -9,6 +9,10 @@
 #include <aros/system.h>
 #endif
 
+#ifndef UtilityBase
+  extern struct Library * UtilityBase;
+#endif
+
 #include <clib/utility_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)

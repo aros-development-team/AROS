@@ -9,6 +9,10 @@
 #include <aros/system.h>
 #endif
 
+#ifndef IntuitionBase
+extern struct IntuitionBase * IntuitionBase;
+#endif
+
 #include <clib/intuition_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)

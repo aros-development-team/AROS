@@ -9,6 +9,10 @@
 #include <aros/system.h>
 #endif
 
+#ifndef ArosBase
+extern struct Library * ArosBase;
+#endif
+
 #include <clib/aros_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)

@@ -9,6 +9,10 @@
 #include <aros/system.h>
 #endif
 
+#ifndef LocaleBase
+extern struct Library * LocaleBase;
+#endif
+
 #include <clib/locale_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)

@@ -9,6 +9,10 @@
 #include <aros/system.h>
 #endif
 
+#ifndef IconBase
+extern struct Library * IconBase;
+#endif
+
 #include <clib/icon_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)

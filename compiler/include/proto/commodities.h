@@ -9,6 +9,10 @@
 #include <aros/system.h>
 #endif
 
+#ifndef CxBase
+extern struct Library * CxBase;
+#endif
+
 #include <clib/commodities_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)

@@ -9,6 +9,10 @@
 #include <aros/system.h>
 #endif
 
+#ifndef RTBase
+extern struct Library * RTBase;
+#endif
+
 #include <clib/reqtools_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)

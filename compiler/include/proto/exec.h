@@ -8,6 +8,10 @@
 #   include <aros/system.h>
 #endif
 
+#ifndef SysBase
+extern struct ExecBase * SysBase;
+#endif
+
 #include <clib/exec_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)

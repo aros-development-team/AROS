@@ -9,6 +9,10 @@
 #include <aros/system.h>
 #endif
 
+#ifndef LayersBase
+extern struct Library * LayersBase;
+#endif
+
 #include <clib/layers_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)

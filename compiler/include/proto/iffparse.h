@@ -10,6 +10,10 @@
 #include <aros/system.h>
 #endif
 
+#ifndef IFFParseBase
+extern struct Library * IFFParseBase;
+#endif
+
 #include <clib/iffparse_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)

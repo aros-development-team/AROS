@@ -10,6 +10,10 @@
 #   include <aros/system.h>
 #endif
 
+#ifndef GfxBase
+extern struct GfxBase * GfxBase;
+#endif
+
 #include <clib/graphics_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)
