@@ -19,6 +19,7 @@
 #include <intuition/cghooks.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/icclass.h>
+#include <graphics/gfxbase.h>
 #include <aros/asmcall.h>
 #include <string.h>
 #include <gadgets/aroslistview.h>
@@ -35,7 +36,7 @@
 #include <aros/debug.h>
 
 #undef AROSListviewBase
-#define AROSListviewBase ((struct LVBase *)(cl->cl_UserData))
+#define AROSListviewBase ((struct LVBase_intern *)(cl->cl_UserData))
 
 
 
@@ -68,20 +69,49 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     {
     	switch (tag->ti_Tag)
     	{
-    	    /* [I.?] only tags */
     	    case AROSA_Listview_DisplayHook:
     	    	data->lvd_DisplayHook = (struct Hook *)tag->ti_Data;
     	    	retval = 1UL;
     	    	break;
     	    	
+    	    case AROSA_Listview_Visible:
+    	    case AROSA_Listview_Total:
+    	    {
+    	    	struct TagItem tags[] =
+    	    	{
+    	    	    {tag->ti_Tag,	tag->ti_Data},
+    	    	    {TAG_END}
+    	    	};
+    	    	
+    	    	NotifyAttrs(o, msg, tags);
+    	    } break;
+    	    	
     	    case AROSA_Listview_List:
+    	    {
+		
+		ULONG numentries;
+    		
+    		struct TagItem tags[] =
+    		{
+    		    {AROSA_Listview_First,	0},
+    		    {AROSA_Listview_Total,	0},
+    		    {TAG_END}
+    		};
+
     	    	data->lvd_List = (Object *)tag->ti_Data;
-    	        UpdatePGATotal(data, msg->ops_GInfo, LVB(AROSListviewBase));
+
+    		GetAttr(AROSA_List_Entries, data->lvd_List, &numentries);
+    	    	SetAttrs(data->lvd_List,
+    	    		AROSA_List_Active, AROSV_List_Active_None,
+    	    		TAG_END);
+    		
+		tags[1].ti_Data = numentries;
+		DoMethod(o, OM_SET, tags, msg->ops_GInfo);
+
           	retval = 1UL;
-    	    	break;
-    	    	
-    	    /* [IS?] tags */
-    	    	
+    	    } break;
+    	    
+    	    
     	    case AROSA_Listview_HorSpacing:
     	    	data->lvd_HorSpacing = (UBYTE)tag->ti_Data;
     	    	retval = 1UL;
@@ -89,62 +119,125 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     	    	
     	    case AROSA_Listview_VertSpacing:
     	    	data->lvd_VertSpacing = (UBYTE)tag->ti_Data;
-    	    	retval = 1UL;
-    	    	break;
     	    	
-    	    case AROSA_Listview_RenderHook:
-    	    	data->lvd_RenderHook = (struct Hook *)tag->ti_Data;
+    	    	ReCalcEntryHeight(data);
+    	    	retval = 1UL;
     	    	break;
     	    	
     	    case AROSA_Listview_Format:
+    	    {
+    	    	struct ColumnAttrs *colattrs = data->lvd_ColAttrs;
+		ULONG colattrsz = UB(&colattrs[data->lvd_MaxColumns]) - UB(&colattrs[0]);
+		
+		memset(colattrs, 0, colattrsz);
     	    	ParseFormatString((STRPTR)tag->ti_Data, data, LVB(AROSListviewBase));
     	    	retval = 1UL;
-    	    	break;
+    	    } break;
     	    
     	    case AROSA_Listview_First:
-    	    	/* TODO: When this is OM_UPDATEd we should do some fancy scrolling
-    	    	 * stuff 
-    	    	 */
-    	    	data->lvd_First = tag->ti_Data;
+    	    {
+    	    	struct TagItem tags[] = 
+    	    	{
+    	    	    {AROSA_Listview_First, tag->ti_Data},
+    	    	    {TAG_END}
+    	    	};
+    	    	
+    	    	LONG old = data->lvd_First;
+    	    	
+    	    	#if (DEBUG == 1)
+    	    	if (msg->MethodID == OM_SET)
+    	    		D(bug("_First OM_SET\n"));
+    	    	else
+    	    		D(bug("_First OM_UPDATEd, lvd_NC=%d\n",
+    	    			data->lvd_NotifyCount));
+    	    	#endif
+
+   	    	retval = 1UL;
+    	    	data->lvd_First = (LONG)tag->ti_Data;
+
+    	    	if (	( msg->MethodID == OM_UPDATE       )
+    	    	     && ( old  != data->lvd_First ))
+    	    	{
+    	    	    struct RastPort *rp;
+    	    	    WORD steps;
+		    UWORD visible, abs_steps;
+    	    	    struct IBox box;
+
+    	            steps = tag->ti_Data - old;    	    	
+    	            abs_steps = abs(steps);
+
+    	    	    GetGadgetIBox(o, msg->ops_GInfo, &box);   	    	    
+    	    	    visible = NumVisible(&box, data->lvd_EntryHeight);
+
+    	    	    if (abs_steps < visible >> 1)
+    	    	    {
+    	    	    	if ((rp = ObtainGIRPort(msg->ops_GInfo)) != NULL)
+    	    	    	{
+    	    	    	    LONG dy;
+    	    	    	    /* We make the assumption that the listview
+    	    	    	    ** is alvays 'full'. If it isn't, the
+    	    	    	    ** Scroll gadget won't be scrollable, and
+    	    	    	    ** we won't receive any OM_UPDATEs.
+    	    	    	    */
+
+    	    	    	    dy = steps * data->lvd_EntryHeight;
+    	    	    	
+    	    	    	
+    	    	    	    ScrollRaster(rp, 0, dy,
+    	    	    	    	box.Left + LV_BORDERWIDTH_X,
+    	    	    	    	box.Top  + LV_BORDERWIDTH_Y,
+    	    	    	    	box.Left + box.Width  - 1 - LV_BORDERWIDTH_X,
+    	    	    	    	box.Top  + LV_BORDERWIDTH_Y + visible * data->lvd_EntryHeight);
+
+			    data->lvd_DamageOffset = ((steps > 0) ?
+			    		visible - abs_steps : 0);
+			    
+			    data->lvd_NumDamaged = abs_steps;
+			
+    	    	    	    DoMethod(o, GM_RENDER, msg->ops_GInfo, rp, GREDRAW_UPDATE);	
+    	    	    	    ReleaseGIRPort(rp);
+    	    	    	    retval = 0UL;
+
+    	    	    	
+    	    	    	
+    	    	    	} /* if (ObtainGIRPort succeed) */
+    	    	    	
+    	    	    } /* if (at most half the visible entries scrolled out) */
+    	    	    
+    	    	} /* if (msg is of type OM_UPDATE) */
+    	    	
+    	    	
+    	    	/* Notify change */
+    	    	NotifyAttrs(o, msg, tags);
+
+    	    } break;
+    	   
+    	    case AROSA_Listview_RenderHook:
+    	    	data->lvd_RenderHook = (struct Hook *)data->lvd_RenderHook;
     	    	retval = 1UL;
     	    	break;
-    	    	
-    	    case GA_Top:
-    	    case GA_RelBottom:
-    	    {
-    	    	struct TagItem wtags[2];
-
-    	    	/* The prop's topedge origin is the same as the listview's.
-    	    	 * We could use OM_NOTIFY for this, but OM_UPDATE directly is faster.
-    	    	 */
-    	    	  
-    	    	wtags[0].ti_Tag	 = tag->ti_Tag;
-    	    	wtags[0].ti_Data = tag->ti_Data;
-    	    	wtags[1].ti_Tag  = TAG_END;
-    	    	
-		/* Notify the prop about our change in width */
-    	    	DoMethod(data->lvd_Prop, OM_UPDATE, wtags, msg->ops_GInfo, 0);
-    	    	
-    	    } break;
     	    
-    	    /* Capture LV's GA_Width because it also includes the propgadget */
-       	    case GA_RelWidth:
-    	    case GA_Width:
+    	    case AROSA_Listview_MultiSelect:
+    	    	SETFLAG(data->lvd_Flags, tag->ti_Data, LVFLG_MULTISELECT);
+    	    	break;
+    	    	
+    	    case GA_TextAttr:
     	    {
-    	    	struct TagItem wtags[2];
+    	    	struct TextFont *tf;
+    	    	
+    	    	tf = OpenFont((struct TextAttr *)tag->ti_Data);
+    	    	if (tf)
+    	    	{
+    	    	    if (data->lvd_Font)
+    	    	    {
+    	    	    	CloseFont(data->lvd_Font);
+    	    	    }
+    	    	    data->lvd_Font = tf;
+    	    	}
+		ReCalcEntryHeight(data);    	    	
 
-    	    	EG(o)->Width -= LV_PROPWIDTH;
-    	    	retval = 1UL;
-    	    	
-    	    	/* Set the prop's origin according to the listview's width/relwidth */
-    	    	wtags[0].ti_Tag	 = (tag->ti_Tag == GA_Width) ? GA_Left : GA_RelRight;
-    	    	wtags[0].ti_Data = EG(o)->LeftEdge + EG(o)->Width,
-    	    	wtags[1].ti_Tag  = TAG_END;
-    	    	
-		/* Notify the prop about our change in width */
-    	    	DoMethod(data->lvd_Prop, OM_UPDATE, wtags, msg->ops_GInfo, 0);
-    	    	
-    	    } break;
+	     } break;
+		    	    
 		
 	    default:
 	    	break;
@@ -153,28 +246,30 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     	
     } /* while (more tags to iterate) */
     
-    ReturnPtr("listview_set", IPTR, retval);
+    return (retval);
 }
 
 /**********************
 **  Listview::New()  **
 **********************/
 
-STATIC const struct TagItem prop2lv[] = 
-{
-    {PGA_Top, AROSA_Listview_First},
-    {TAG_END}
-};
-
-STATIC const struct TagItem lv2prop[] =
-{
-    {AROSA_Listview_First,	PGA_Top},
-    {TAG_END}
-};
 
 STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
 {
-    o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
+    struct opSet ops;
+    struct TagItem tags[] =
+    {
+    	{GA_RelSpecial, TRUE},
+    	{TAG_MORE, NULL}
+    };
+    
+    ops.MethodID	= OM_NEW;
+    ops.ops_AttrList	= &tags[0];
+    ops.ops_GInfo	= NULL; 
+    
+    tags[1].ti_Data = (IPTR)msg->ops_AttrList;
+    D(bug("Left: %d\n", GetTagData(GA_Left, 0, tags)));
+    o = (Object *)DoSuperMethodA(cl, o, (Msg)&ops);
 
     if (o)
     {
@@ -183,6 +278,7 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
     	STRPTR *dharray;
    	ULONG colattrsz;
    	
+   	D(bug("lv: obj created\n"));
     	data = INST_DATA(cl, o);
 	memset(data, 0, sizeof (struct LVData));
 	
@@ -200,8 +296,6 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
    	    goto failure;
 	data->lvd_ColAttrs = colattrs;   	    
 
-	/* Reset the colattrs */
-	memset(colattrs, 0L, colattrsz);
 	
 	/* Only view first column */
 	data->lvd_ViewedColumns = 1;
@@ -213,39 +307,39 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
    	    goto failure;
    	data->lvd_DHArray = dharray;
 	
-	/* Create gadget's prop owbject. Only set width for now */
-	data->lvd_Prop = NewObject(NULL, PROPGCLASS,
-						GA_Width, LV_PROPWIDTH,
-						PGA_Top,  	0,
-						PGA_Visible,	1,
-						PGA_Total,	0,
-						ICA_TARGET,	o,
-						ICA_MAP,	&prop2lv,
-						TAG_END);
-	if (!data->lvd_Prop)
-	    goto failure;
-	
-	SetAttrs(o, 	ICA_TARGET,	data->lvd_Prop,
-			ICA_MAP,	&lv2prop,
-			TAG_END);
-	    
-	
+
     	/* Set some defaults */
     	data->lvd_HorSpacing  = LV_DEFAULTHORSPACING;
     	data->lvd_VertSpacing = LV_DEFAULTVERTSPACING;
 	
-	/* Only view first column */
-		
     	/* Handle our special tags - overrides defaults */
    	listview_set(cl, o, msg);
+
+    	/* If not font has been set, use our own. */
+    	if (!data->lvd_Font)
+    	{
+    	    struct TextAttr tattr;
+    	    struct TextFont *tf = ((GraphicsBase *)GfxBase)->DefaultFont;
+    	    
+    	    memset(&tattr, 0, sizeof (struct TextAttr));
+    	    tattr.ta_Name  = tf->tf_Message.mn_Node.ln_Name;
+    	    tattr.ta_YSize = tf->tf_YSize;
+    	    tattr.ta_Style = tf->tf_Style;
+    	    tattr.ta_Flags = tf->tf_Flags;
+    	    
+    	    if ((data->lvd_Font = OpenFont(&tattr)) == NULL)
+    	    	goto failure;
+    	    	
+    	    ReCalcEntryHeight(data);
+    	}
  	  	   
 	return ((IPTR)o);
     } /* if (object created) */
 
         
-    failure:
-    	DisposeObject(o);
-    	return (NULL);
+failure:
+    DisposeObject(o);
+    return (NULL);
 }
 
 /**********************
@@ -272,6 +366,11 @@ STATIC IPTR listview_get(Class *cl, Object *o, struct opGet *msg)
     	    *(msg->opg_Storage) = (IPTR)data->lvd_List;
     	    break;
     	    
+    	case AROSA_Listview_DoubleClick:
+    	    *(msg->opg_Storage) = (IPTR)(data->lvd_Flags & LVFLG_DOUBLECLICK) ?
+    	    					TRUE : FALSE;
+    	    break;
+    	    
     	default:
     	    retval = DoSuperMethodA(cl, o, (Msg)msg);
     	    break;
@@ -289,27 +388,159 @@ STATIC VOID listview_dispose(Class *cl, Object *o, Msg msg)
     
     data = INST_DATA(cl, o);
     
-    D(bug("lv: Freeing DHArray\n"));
     if (data->lvd_DHArray)
     	FreeVec(data->lvd_DHArray);
-    D(bug("lv: Freeing CollAttrs\n"));    	
+
     if (data->lvd_ColAttrs)
     	FreeVec(data->lvd_ColAttrs);
-    D(bug("lv: Freeing Propgadget\n"));    	
-    if (data->lvd_Prop)
-    	DisposeObject(data->lvd_Prop);
+
+    if (data->lvd_Font)
+    	CloseFont(data->lvd_Font);
     	
    return;
 }
+
+/**************************
+**  Listview::HitTest()  **
+**************************/
 
 /***************************
 **  Listview::GoActive()  **
 ***************************/
 
+
 STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
 {
     IPTR retval = GMR_NOREUSE;
-	    
+    
+    struct LVData *data = INST_DATA(cl, o);
+    struct IBox container;
+    ULONG numentries;
+    UWORD shown;
+    /* pos of the selected inside the listview. Eg the first viewed has clickpos 0 */
+    UWORD clickpos;
+    LONG active;
+    UWORD activepos;
+    
+    WORD updateoldactive = -1;
+    
+    BOOL rerender = FALSE;
+    
+
+    if (data->lvd_Flags & LVFLG_READONLY)
+    	goto exit;
+
+    if (!msg->gpi_IEvent)
+    	goto exit;
+    
+    GetGadgetIBox(o, msg->gpi_GInfo, &container);
+    	
+    GetAttr(AROSA_List_Entries, data->lvd_List, &numentries);
+    	
+    /* How many entries are currently shown in the listview ? */
+    shown = ShownEntries(data, &container, AROSListviewBase);
+    
+    /* offset from top of listview of the entry clicked */
+    clickpos = (msg->gpi_Mouse.Y - (container.Top + LV_BORDERWIDTH_Y))
+	    	 / data->lvd_EntryHeight;
+    
+    data->lvd_Flags &= ~LVFLG_DOUBLECLICK;	    	 
+	
+    if (clickpos < shown)
+    {
+    	GetAttr(AROSA_List_Active, data->lvd_List, &active);
+
+    	/* Check for a doubleclick */
+   	activepos = active - data->lvd_First;
+   	if (activepos == clickpos)
+   	{
+   	    if (DoubleClick(data->lvd_StartSecs,
+   	    		    data->lvd_StartMicros,
+   	    		    msg->gpi_IEvent->ie_TimeStamp.tv_secs,	
+   	    		    msg->gpi_IEvent->ie_TimeStamp.tv_micro))
+   	    {
+   	    	data->lvd_Flags |= LVFLG_DOUBLECLICK;
+   	    	D(bug("\tlv: doubleclick at pos %d\n", clickpos));
+   	    }
+   	}
+   	else
+   	{
+   	    data->lvd_StartSecs   = msg->gpi_IEvent->ie_TimeStamp.tv_secs;
+   	    data->lvd_StartMicros = msg->gpi_IEvent->ie_TimeStamp.tv_micro;
+   	    
+   	}
+    	
+        if (data->lvd_Flags & LVFLG_MULTISELECT)
+        {
+       	    DoMethod(data->lvd_List,
+    	     	AROSM_List_Select,
+    	     	data->lvd_First + clickpos,
+    	     	AROSV_List_Select_Toggle,
+    	     	NULL);
+	
+	    data->lvd_DamageOffset = clickpos;
+	    data->lvd_NumDamaged = 1;
+
+	    rerender = TRUE;
+    	}
+    	else
+    	{
+D(bug("\tGA:Singleselect\n"));
+   	    if (activepos != clickpos)
+   	    {
+D(bug("\tGA:Not reclick\n"));
+
+    	   	/* Active entry inside lv ? */
+    	    	if (    active >= data->lvd_First
+    	    	   	&&  active < (data->lvd_First + shown))
+    	    	{
+
+D(bug("\tGA:old active inside visible\n"));
+	    	    
+    	    	    updateoldactive = activepos;
+    	    	}
+		    
+	    	data->lvd_DamageOffset = clickpos;
+	    	data->lvd_NumDamaged = 1;
+		    
+		rerender = TRUE;    	 
+    	    } /* if (not user reclicked on active entry) */
+    	    	
+    	} /* if (lv is simple or multiselect) */
+
+	/* Render the selected-imagery of the new active item */
+	active = data->lvd_First + clickpos;
+	SetAttrs(data->lvd_List,
+	    	    AROSA_List_Active, active,
+		    TAG_END);
+		    
+	*(msg->gpi_Termination) = IDCMP_GADGETUP;
+	D(bug("\t GMR_VERIFY retval set\n"));
+	retval = GMR_NOREUSE|GMR_VERIFY;
+	
+
+    	if (rerender)
+    	{
+    	    struct RastPort *rp;
+    	    rp = ObtainGIRPort(msg->gpi_GInfo);
+    	    if (rp)
+    	    {
+    	    	DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+    	    	if (updateoldactive != -1)
+    	    	{
+    	    	    data->lvd_DamageOffset = updateoldactive;
+    	    	    data->lvd_NumDamaged   = 1;
+		    DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+    	    	}
+    	    	
+    	    	ReleaseGIRPort(rp);
+    	    }
+    	}
+
+    } /* if (entry is shown) */
+   
+    
+exit:
     return (retval);
 } 
 
@@ -332,31 +563,13 @@ STATIC IPTR listview_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 {
-    struct LVData *data;
     struct IBox container;
-    UWORD entryheight, numvisible;
-    
-    data = INST_DATA(cl, o);
+    struct LVData *data = INST_DATA(cl, o);
 
     switch (msg->gpr_Redraw)
     {
     	case GREDRAW_REDRAW:
-    	     
-    	    /* If the propgadget hasn't been added to the windows glist yet, 
-    	     * then add it.
-    	     */
-    	    if (!(data->lvd_Flags & LVFLG_PROPADDED))
-    	    {
-    	    	AddGList(msg->gpr_GInfo->gi_Window,
-    	    		(struct Gadget *)data->lvd_Prop,
-    	    		-1, 1,
-    	    		NULL); 
-    	    	RefreshGList(	(struct Gadget *)data->lvd_Prop,
-    	    			msg->gpr_GInfo->gi_Window,
-    	    			NULL, 1);
-    	    	data->lvd_Flags |= LVFLG_PROPADDED;
-    	    }
-    	      
+
     	    /* Calculate the old bounding box */
     	    GetGadgetIBox(o, msg->gpr_GInfo, &container);
     	    
@@ -369,57 +582,99 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
     	    SetAPen(msg->gpr_RPort, 
     	    	    msg->gpr_GInfo->gi_DrInfo->dri_Pens[BACKGROUNDPEN]);
     	    	    
-    	    D(bug("lv::Render: l=%d, w=%d, r=%d\n",
-    	    	container.Left, container.Width, 
-    	    	container.Left + container.Width - 1));
     	    	    
     	    RectFill(msg->gpr_RPort,
 	    	container.Left,
 	    	container.Top,
 	    	container.Left + container.Width - 1,
 	    	container.Top + container.Height - 1);
-    
-    	     /* Do some resize calculations so that its height 
-    	      * exactly fits x number of lines. Will also change
-    	      * the supplied IBox's size
-    	      */
-    	     DoResizeStuff( o,
-			    msg,
-    	     		    &entryheight,
-    	     		    &numvisible,
-    	     		    &container);
-    	     
-	     DrawListBorder(msg->gpr_RPort, 
-	     		    msg->gpr_GInfo->gi_DrInfo->dri_Pens,
-	     		    &container,
-	     		    TRUE,
-	     		    LVB(AROSListviewBase));
+	    	
+	    DrawListBorder(msg->gpr_RPort, 
+	     	msg->gpr_GInfo->gi_DrInfo->dri_Pens,
+	     	&container,
+	     	(data->lvd_Flags & LVFLG_READONLY),
+	     	AROSListviewBase);
 
-    	     /* Render the text entries */
-    	     RenderEntries( o,
-    	     		    msg,
-    	     		    entryheight,
-    	     		    numvisible,
-    	     		    &container,
-    	     		    LVB(AROSListviewBase));
-    	     
-    	     /* Update the prop gadget */
-    	     SetAttrs(	(struct Gadget *)data->lvd_Prop,
-			GA_Height,  container.Height,
-			PGA_Visible, numvisible,
-			TAG_END);
-
-   	     
-    	     /* Rerender prop gadget */
-    	     DoMethodA(data->lvd_Prop, (Msg)msg);
+	    	     
+    	    RenderEntries(o,
+    	    	msg,
+    	    	data->lvd_First,
+		ShownEntries(data, &container, AROSListviewBase),
+		FALSE,
+    	    	AROSListviewBase);
+    	    		    
+  	    break;
    
     	case GREDRAW_UPDATE:
-    	    break;
+    	{
+    	    /* Redraw all damaged entries */
+    	    UWORD offset;
+    	    
+    	    for (offset = data->lvd_DamageOffset; data->lvd_NumDamaged --; offset ++)
+    	    {
+    	    	RenderEntries(o,
+    	    		msg,
+    	    		data->lvd_First + offset,
+    	    		1,
+    	    		TRUE,
+    	    		AROSListviewBase);
+    	    			
+    	    }
+    	    
+    	} break;
     	
     }
     	
     return (1UL);
 }
+
+/*************************
+**  Listview::Layout()  **
+**************************/
+STATIC VOID listview_layout(Class *cl, Object *o, struct gpLayout *msg)
+{
+    #undef RELFLAGS
+    #define RELFLAGS (GFLG_RELRIGHT|GFLG_RELWIDTH|GFLG_RELHEIGHT|GFLG_RELBOTTOM)
+    struct IBox container;
+    struct LVData *data = INST_DATA(cl, o);
+    
+
+    D(bug("Listview::Layout()\n"));     
+
+    
+    /* Only recalculate dimensions if this is the first layout, or we
+     * are a GFLG_xxx gadget 
+     */
+    if (msg->gpl_Initial || EG(o)->Flags & RELFLAGS)
+    {
+    	struct GadgetInfo *gi = msg->gpl_GInfo;
+    	if (gi)
+    	{
+    	    struct TagItem tags[] =
+    	    {
+    	    	{AROSA_Listview_Visible, 0},
+	    	{TAG_END}
+    	    };
+    	
+    	    
+    	    GetGadgetIBox(o, gi, &container);
+
+    	    /* Compute widths of each column */
+    	    ComputeColumnWidths(container.Width, data, LVB(AROSListviewBase));
+    
+    	    /* Compute left and right offsets for each column */
+    	    ComputeColLeftRight(container.Left, data);
+    	
+    	
+    	    tags[0].ti_Data  = ShownEntries(data, &container, AROSListviewBase);
+D(bug("Layot: notifying visible=%d, gi=%d\n", tags[0].ti_Data, gi));
+    	    DoMethod(o, OM_SET, tags, gi);
+    	} /* if (gadgetinfo supplied) */
+    	
+    } /* if (GFLG_xxx or first layout) */
+    ReturnVoid("Listview::Layout");
+}
+
 
 /*****************************
 **  Listview::GoInActive()  **
@@ -432,8 +687,10 @@ STATIC IPTR listview_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 }
 
 
-/* listviewgclass boopsi dispatcher
-*/
+/*****************
+**  Dispatcher  **
+*****************/
+
 AROS_UFH3(STATIC IPTR, dispatch_listviewclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
@@ -473,7 +730,10 @@ AROS_UFH3(STATIC IPTR, dispatch_listviewclass,
 	     * The check of cl == OCLASS(o) should fail if we have been
 	     * subclassed, and we have gotten here via DoSuperMethodA().
 	     */
-	    if ( retval && ( msg->MethodID == OM_UPDATE ) && ( cl == OCLASS(o) ) )
+	    if (    retval
+	    	 && (msg->MethodID == OM_UPDATE)
+	    	 && (cl == OCLASS(o))
+	    	 && (!LVD(INST_DATA(cl, o))->lvd_NotifyCount) )
 	    {
 	    	struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
 	    	if (gi)
@@ -481,8 +741,20 @@ AROS_UFH3(STATIC IPTR, dispatch_listviewclass,
 		    struct RastPort *rp = ObtainGIRPort(gi);
 		    if (rp)
 		    {
-		    	DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
-		    	ReleaseGIRPort(rp);
+		        struct LVData *data = INST_DATA(cl, o);
+		        struct IBox ibox;
+		    	
+		        GetGadgetIBox(o, gi, &ibox);
+		        data->lvd_DamageOffset = 0;
+		        data->lvd_NumDamaged = NumVisible(&ibox, data->lvd_EntryHeight);
+		    	
+		    	
+		        D(bug("Major rerender: o=%d, n=%d\n",
+		    		data->lvd_DamageOffset, data->lvd_NumDamaged));
+		    	
+		        DoMethod(o, GM_RENDER, gi, rp, GREDRAW_UPDATE);
+		        ReleaseGIRPort(rp);
+
 		    } /* if */
 	    	} /* if */
 	    } /* if */
@@ -496,18 +768,22 @@ AROS_UFH3(STATIC IPTR, dispatch_listviewclass,
 	case OM_DISPOSE:
 	    listview_dispose(cl, o, msg);
 	    break;
+	
+	case GM_LAYOUT:
+	    listview_layout(cl, o, (struct gpLayout *)msg);
+	    break;
 	    
 	case AROSM_Listview_Insert:
 	{
+
 	
 	    #undef LIP
 	    #define LIP(msg) ((struct AROSP_Listview_Insert *)msg)
 	    struct LVData *data = INST_DATA(cl, o);
-	    DoMethod(	data->lvd_List, 
+	    retval = (IPTR)DoMethod(	data->lvd_List, 
 	    		AROSM_List_Insert,
 	    		LIP(msg)->ItemArray,
 	    		LIP(msg)->Position);
-    	    UpdatePGATotal(data, LIP(msg)->GInfo, LVB(AROSListviewBase));
 	 } break;
 	    		
 
@@ -517,12 +793,11 @@ AROS_UFH3(STATIC IPTR, dispatch_listviewclass,
 	    #define LISP(msg) ((struct AROSP_Listview_InsertSingle *)msg)
 	    
 	    struct LVData *data = INST_DATA(cl, o);
-	    DoMethod(	data->lvd_List, 
+	    retval = (IPTR)DoMethod(	data->lvd_List, 
 	    		AROSM_List_InsertSingle,
 	    		LISP(msg)->Item,
 	    		LISP(msg)->Position);
 
-    	    UpdatePGATotal(data, LISP(msg)->GInfo, LVB(AROSListviewBase));
 	} break;
 	
 	case AROSM_Listview_Remove:
@@ -531,20 +806,19 @@ AROS_UFH3(STATIC IPTR, dispatch_listviewclass,
 	    #define LRP(msg) ((struct AROSP_Listview_Insert *)msg)
 	    
 	    struct LVData *data = INST_DATA(cl, o);
-	    DoMethod(	data->lvd_List, 
+	    retval = (IPTR)DoMethod(	data->lvd_List, 
 	    		AROSM_List_InsertSingle,
 	    		LRP(msg)->Position);
-
-    	    UpdatePGATotal(data, LRP(msg)->GInfo, LVB(AROSListviewBase));
 	    
 	} break;
+	
 	default:
 	    retval = DoSuperMethodA(cl, o, msg);
 	    break;
     } /* switch */
     
 
-    return retval;
+    return (retval);
 }  /* dispatch_listviewclass */
 
 

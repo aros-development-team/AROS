@@ -19,23 +19,17 @@
 
 #include "aroslistview_intern.h"
 
+#define TURN_OFF_DEBUG
+
 #ifndef TURN_OFF_DEBUG
 #define DEBUG 1
 #endif
 
 #include <aros/debug.h>
 
-STATIC VOID ComputeColLeftRight(UWORD gadleft, struct LVData *data);
 STATIC VOID HandleSpecialMinWidth( struct ColumnAttrs		*colattrs,
-				   struct RastPort		*rp,
 				   struct LVData		*data,
 				   struct LVBase_intern		*AROSListviewBase);
-STATIC VOID ComputeColumnWidths(UWORD 			    listwidth,
-				struct RastPort 	    *rp,
-				struct LVData 		    *data,
-				struct LVBase_intern  *AROSListviewBase);
-
-
 
 #define ForeachViewedCol(iterator, numcols) \
 	for (iterator = 0; iterator < numcols; iterator ++)
@@ -70,28 +64,33 @@ BOOL ParseFormatString(	STRPTR			formatstr,
     {
     	UWORD curcol = 0;
     	BOOL morecolumns = TRUE;
-    	
+
+        
     	/* Reset the as-big-as-biggest-text property */
     	data->lvd_Flags &= ~LVFLG_SPECIALCOLWIDTH;
-        
+
         do
         {
-
             UWORD len  = 0;
-            STRPTR str = formatstr;
             
+            STRPTR str = formatstr;            	            
             IPTR argsarray[NUMPARAMS];
+            memset(argsarray, 0, UB(&argsarray[NUMPARAMS]) - UB(&argsarray[0]));
             
-            /* An example of format string is ",PREPARSE=c9", ," */
+            /* An example of format string is ",PREPARSE=c9, ," */
+D(bug("Template str=%s\n", str));            
             while (*str && *str != ',')
             {
             	len ++;
             	str ++;
             }
-            
+D(bug("PFS: len=%d\n", len));
             if (!*str)
             	morecolumns = FALSE;
-            
+            	
+            /* Skip comma */
+            str ++;
+
     	    rdarg->RDA_Source.CS_Buffer = formatstr;
     	    rdarg->RDA_Source.CS_Length = len;
     	    rdarg->RDA_Source.CS_CurChr = 0;
@@ -108,10 +107,10 @@ BOOL ParseFormatString(	STRPTR			formatstr,
     	    {
     	    
     	    	/* Insert parsed info into colattr array */
-    	    	
+D(bug("curcol=%d\n", curcol));
     	    	/* A COL argument specified ? */
     	    	colattrs[curcol].ca_DHIndex = (UBYTE)((argsarray[0]) ? *((ULONG *)argsarray[0]) : curcol);
-    	    	
+D(bug("PFS: idx=%d, argsarray[0]=%p\n", colattrs[curcol].ca_DHIndex, argsarray[0]));
     	    	if (argsarray[1]) /* BAR */
     	    	    colattrs[curcol].ca_Flags |= CAFLG_BAR;
     	    	if (argsarray[2]) /* PREPARSE */
@@ -119,7 +118,7 @@ BOOL ParseFormatString(	STRPTR			formatstr,
     	    	    /* Parse the preparse string */
     	    	    str = (STRPTR)argsarray[2];
     	    	    
-
+D(bug("Preparse string found: %s\n", str));
     	    	    while (*str)
     	    	    {
     	    	    	if (*str == 'c') /* Centre align text */
@@ -160,7 +159,7 @@ BOOL ParseFormatString(	STRPTR			formatstr,
     	    	}   
     	    	  
 		curcol ++;
-		formatstr += len;
+		formatstr += len + 1;
 	    }
     	}
     	while (morecolumns);
@@ -174,7 +173,7 @@ BOOL ParseFormatString(	STRPTR			formatstr,
 }
 
 /********************
-**  GetGdagetIBox  **
+**  GetGadgetIBox  **
 ********************/
 
 /* Figure out the size of the gadget rectangle, taking relative
@@ -203,150 +202,174 @@ VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox)
     }
 }
 
-/*****************
-**  RenderLine  **
-*****************/
-
-struct Pos
+/**********************
+**  RenderEntries()  **
+**********************/
+VOID RenderEntries( Object 		    *o,
+		    struct gpRender	    *msg,
+		    LONG		    startpos,
+		    UWORD		    num,
+		    BOOL		    erase,
+		    struct LVBase_intern    *AROSListviewBase)
 {
-    WORD Left;
-    WORD Top;
-};
+    struct AROSP_List_GetEntry getentry_msg;
+    APTR item;
+    struct IBox container;
+    struct TextFont *oldfont;
+    WORD top;
+    LONG activepos;
+    LONG pos;
 
-VOID RenderLine(struct Pos 		    *pos,
-		struct AROSP_List_GetEntry  *getentry_msg,
-		struct RastPort 	    *rp,
-		struct LVData 		    *data,
-		struct LVBase_intern 	    *AROSListviewBase)
-{
-    register UWORD col;
-    struct TextExtent te;
-    struct ColumnAttrs *colattrs = data->lvd_ColAttrs;
+    struct LVData *data = INST_DATA(OCLASS(o), o);
+    UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
+        
+    GetGadgetIBox(o, msg->gpr_GInfo, &container);
 
-    DoMethodA(data->lvd_List, (Msg)getentry_msg);
-    if (!*(getentry_msg->ItemPtr))
-       return;;
-     	
-    CallHookPkt( data->lvd_DisplayHook,
-	         data->lvd_DHArray,
-		 *(getentry_msg->ItemPtr));
-    	    	
-    ForeachViewedCol(col, data->lvd_ViewedColumns)
+    top = container.Top + LV_BORDERWIDTH_Y 
+    		+ (startpos - data->lvd_First) * data->lvd_EntryHeight;
+
+    
+    SetAPen(msg->gpr_RPort, pens[TEXTPEN]);
+    SetDrMd(msg->gpr_RPort, JAM1);
+    oldfont = msg->gpr_RPort->Font;
+    SetFont(msg->gpr_RPort, data->lvd_Font);
+    
+    if (!(data->lvd_Flags & (LVFLG_READONLY|LVFLG_MULTISELECT)))
+    	GetAttr(AROSA_List_Active, data->lvd_List, &activepos);
+
+    getentry_msg.MethodID  = AROSM_List_GetEntry;
+    getentry_msg.ItemPtr   = &item;
+
+     /* Start rendering the listview entries */
+    for (pos = startpos; num --; pos ++)
     {
-        UWORD idx, len;
-	        	    
-        /* Get the index into DisplayHookArray for getting text for this column */
-        idx = colattrs[col].ca_DHIndex;
-/*      D(bug("idx=%d, col = %d\n", idx, col));
- */   	    
-        /* How many characters of the string 
-	 * returned by DispHook are we able to view ?
-	 */
+    
+    
+    	register UWORD col;
+    	struct TextExtent te;
+    	struct ColumnAttrs *colattrs = data->lvd_ColAttrs;
+    	
+    	BOOL erase_this_entry = erase;
+	UWORD erasepen = BACKGROUNDPEN;
+	
+	if (!(data->lvd_Flags & LVFLG_READONLY))
+	{
+	    if (data->lvd_Flags & LVFLG_MULTISELECT)
+	    {
+	    	LONG state;
+		DoMethod(data->lvd_List,
+			AROSM_List_Select,
+			pos,
+			AROSV_List_Select_Ask,
+			&state);
+	    	if (state)
+	    	{
+	    	    erase_this_entry = TRUE;
+	    	    erasepen = FILLPEN;
+	    	}
+	    }
+	    else
+	    {
+	    	if (pos == activepos)
+	    	{
+	    	    erase_this_entry = TRUE;
+	    	    erasepen = FILLPEN;
+	    	}
+	    }
+    	}
+    	
+	if (erase_this_entry)
+	{
+    	     /* Erase the old text line */
+    	    SetAPen(msg->gpr_RPort, pens[erasepen]);
+    	    	    
+    	    RectFill(msg->gpr_RPort,
+	    	container.Left + LV_BORDERWIDTH_X,
+	    	top,
+	    	container.Left + container.Width - LV_BORDERWIDTH_X - 1,
+		top + data->lvd_EntryHeight - 1);
 
-    	len = TextFit(	rp,
-    		       	data->lvd_DHArray[idx],
+    	    SetAPen(msg->gpr_RPort, pens[TEXTPEN]);
+
+	}
+	
+	getentry_msg.Position = pos;
+   	DoMethodA(data->lvd_List, (Msg)&getentry_msg);
+    	if (!item)
+       	    break;
+
+    	CallHookPkt( data->lvd_DisplayHook,
+	             data->lvd_DHArray,
+		     item);
+    	ForeachViewedCol(col, data->lvd_ViewedColumns)
+    	{
+            UWORD idx, len;
+            WORD left;
+	        	    
+            /* Get the index into DisplayHookArray for getting text for this column */
+            idx = colattrs[col].ca_DHIndex;
+D(bug("Render: idx=%d, col=%d\n", idx, col));
+            /* How many characters of the string 
+	     * returned by DispHook are we able to view ?
+	     */
+    	    len = TextFit(msg->gpr_RPort,
+			data->lvd_DHArray[idx],
 	    	 	strlen(data->lvd_DHArray[idx]),
     	    		&te,
     	    		NULL,
     	    		1,
     	    		colattrs[col].ca_Width,
     	    		10000); /* We allready know that the height fit */
-    	    		   
-    	/* Where do we place the len characters ? */
-    	switch (colattrs[col].ca_Flags & CA_ALIGN_MASK)
-    	{
-    	    case CA_ALIGN_LEFT:
-    	        pos->Left = colattrs[col].ca_Left;
-    	        break;
+D(bug("Textfit len: %d\n", len));
+    	    /* Where do we place the len characters ? */
+    	    switch (colattrs[col].ca_Flags & CA_ALIGN_MASK)
+    	    {
+    	    	case CA_ALIGN_LEFT:
+    	            left = colattrs[col].ca_Left;
+    	            break;
     	    	    
-    	    case CA_ALIGN_RIGHT:
-    	        pos->Left = colattrs[col].ca_Right - te.te_Width;
-    	        break;
+    		case CA_ALIGN_RIGHT:
+    	            left = colattrs[col].ca_Right - te.te_Width;
+    	            break;
     	    	    
-    	    case CA_ALIGN_CENTRE:
-    	        pos->Left = colattrs[col].ca_Left + ((colattrs[col].ca_Width - te.te_Width) >> 1);
-    	        break;
-    	}
+    	    	case CA_ALIGN_CENTRE:
+    	            left = colattrs[col].ca_Left + ((colattrs[col].ca_Width - te.te_Width) >> 1);
+    	            break;
+    	    }
     	    
-/*    	D(bug("Rendering entry at (%d,%d)\n", left, top));
-*/	Move(rp, pos->Left, pos->Top);
-    	Text(rp, data->lvd_DHArray[idx], len);
-    }
-    
-    return;
-}
+D(bug("Render: left=%d,idx=%d,text=%s\n", left, idx, data->lvd_DHArray[idx]));
 
-/**********************
-**  RenderEntries()  **
-**********************/
-VOID RenderEntries( Object 		    *o,
-		    struct gpRender	    *msg,
-		    UWORD		    entryheight,
-		    UWORD		    numvisible,
-		    struct IBox		    *container,
-		    struct LVBase_intern    *AROSListviewBase)
-{
-    UWORD width;
-    struct AROSP_List_GetEntry getentry_msg;
-    APTR item;
-    struct LVData *data;
-    
-    struct Pos pos;
-
-    UWORD *pens;
-        
-    data = INST_DATA(OCLASS(o), o);
-
-    pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
-    
-    width  = container->Width - 2 * LV_BORDERWIDTH_X;
-    pos.Top	   = container->Top   + LV_BORDERWIDTH_Y 
-    			     - ( msg->gpr_RPort->Font->tf_YSize 
-    			       - msg->gpr_RPort->Font->tf_Baseline);
-    pos.Left   = container->Left  + LV_BORDERWIDTH_X;
-
-    /* Compute widths of each column */
-    ComputeColumnWidths(width - (data->lvd_ViewedColumns + 1) * data->lvd_HorSpacing,
-    			msg->gpr_RPort, 
-    			data,
-    			LVB(AROSListviewBase));
-    
-    /* Compute left and right offsets for each column */
-    ComputeColLeftRight(pos.Left, data);
-
-        
-    getentry_msg.MethodID  = AROSM_List_GetEntry;
-    getentry_msg.ItemPtr   = &item;
-         	    
-     /* Start rendering the listview entries */
-    SetAPen(msg->gpr_RPort, pens[TEXTPEN]);
-    for (getentry_msg.Position = data->lvd_First; numvisible --; getentry_msg.Position ++)
-    {
-	pos.Top += entryheight;
-
-    	RenderLine( &pos,
-    		    &getentry_msg,
-    		    msg->gpr_RPort,
-    		    data,
-    		    LVB(AROSListviewBase));
-
-    }	    
+	    Move(msg->gpr_RPort, left, top + data->lvd_Font->tf_Baseline);
+    	    Text(msg->gpr_RPort, data->lvd_DHArray[idx], len);
+    	
+    	} /* ForeachViewedCol */
+    	
+	top += data->lvd_EntryHeight;
+	
+    } /* for (entries to view) */
+    SetFont(msg->gpr_RPort, oldfont);
 
     return;
 }
+
 
 /******************************
 **  HandleSpecialMinWidth()  **
 ******************************/
 
 STATIC VOID HandleSpecialMinWidth( struct ColumnAttrs		*colattrs,
-				   struct RastPort		*rp,
 				   struct LVData		*data,
 				   struct LVBase_intern	*AROSListviewBase)
 {
     register UWORD i;
     register LONG pos;
     APTR item;
+    struct RastPort rp;
+    
+    InitRastPort(&rp);
+    
+    SetFont(&rp, data->lvd_Font);
+    
   
     /* Initialize the minwidths to 0 */
     ForeachViewedCol(i, data->lvd_ViewedColumns)
@@ -366,13 +389,15 @@ STATIC VOID HandleSpecialMinWidth( struct ColumnAttrs		*colattrs,
             
 	ForeachViewedCol(i, data->lvd_ViewedColumns)
 	{
+	    UWORD idx = colattrs[i].ca_DHIndex;
+	    
     	    if (colattrs[i].ca_Flags & CAFLG_SPECIALCOLWIDTH)
     	    {
     		UWORD length;
 
-    		length = TextLength(rp,
-    				    data->lvd_DHArray[i],
-    		    		    strlen(data->lvd_DHArray[i]));
+    		length = TextLength(&rp,
+    				    data->lvd_DHArray[idx],
+    		    		    strlen(data->lvd_DHArray[idx]));
     		    
     		if (length > colattrs[i].ca_MinWidth)
     		     colattrs[i].ca_MinWidth = length;
@@ -390,10 +415,9 @@ STATIC VOID HandleSpecialMinWidth( struct ColumnAttrs		*colattrs,
 ** ComputeColumnWidts  **
 ************************/
 
-STATIC VOID ComputeColumnWidths(UWORD 			    listwidth,
-				struct RastPort 	    *rp,
-				struct LVData 		    *data,
-				struct LVBase_intern	    *AROSListviewBase)
+VOID ComputeColumnWidths(UWORD 			    listwidth,
+			struct LVData 		    *data,
+			struct LVBase_intern	    *AROSListviewBase)
 {
 
     /* First handle columns that want their minwidth to be the 
@@ -405,9 +429,13 @@ STATIC VOID ComputeColumnWidths(UWORD 			    listwidth,
     UWORD remainder;
     WORD on_each_col, pixels2divide;
     register UWORD i;
+    
+    /* Find number of pixels to divide between columns */
+    listwidth -=  LV_BORDERWIDTH_X * 2 
+    		+ data->lvd_HorSpacing * (data->lvd_ViewedColumns + 1);
      
     if (data->lvd_Flags & LVFLG_SPECIALCOLWIDTH)
-	HandleSpecialMinWidth(colattrs, rp, data, LVB(AROSListviewBase));
+	HandleSpecialMinWidth(colattrs, data, LVB(AROSListviewBase));
     
     /* Compute the sum of the minwidths and the number of columns to be  */
     ForeachViewedCol(i, data->lvd_ViewedColumns)
@@ -476,13 +504,13 @@ STATIC VOID ComputeColumnWidths(UWORD 			    listwidth,
 **  ComputeColLeftRight  **
 **************************/
 
-STATIC VOID ComputeColLeftRight(UWORD gadleft, struct LVData *data)
+VOID ComputeColLeftRight(UWORD gadleft, struct LVData *data)
 {
     struct ColumnAttrs *colattrs;
     register UWORD i;
     register UWORD left;
     
-    left = gadleft;
+    left = gadleft + LV_BORDERWIDTH_X;
     colattrs = data->lvd_ColAttrs;
     
     ForeachViewedCol(i, data->lvd_ViewedColumns)
@@ -510,7 +538,7 @@ VOID DrawListBorder( struct RastPort	    	    *rp,
     
     /* right */
     RectFill (rp
-	    , bbox->Left + bbox->Width	- LV_BORDERWIDTH_X - 1
+	    , bbox->Left + bbox->Width	- LV_BORDERWIDTH_X
 	    , bbox->Top
 	    , bbox->Left + bbox->Width	- 1
 	    , bbox->Top	 + bbox->Height - 1
@@ -548,60 +576,50 @@ VOID DrawListBorder( struct RastPort	    	    *rp,
     return;
 }
 
-/********************
-**  DoResizeStuff  **
-********************/
 
-VOID DoResizeStuff( Object 		    *o,
-		    struct gpRender	    *msg,
-		    UWORD 		    *entryheightptr,
-		    UWORD 		    *numvisibleptr,
-		    struct IBox		    *container)
+/*******************
+**  ShownEntries  **		    
+*******************/
+UWORD ShownEntries(struct LVData 	*data,
+		   struct IBox		*container,
+		   struct LVBase_intern *AROSListviewBase)
+		   
 {
-    UWORD height;
-    UWORD vertspacing = LVD(INST_DATA(OCLASS(o), o))->lvd_VertSpacing;
+    ULONG numentries;
+    UWORD shown;
     
-    /* We have to set our sizes according to the font */
-    *entryheightptr = msg->gpr_RPort->Font->tf_YSize + vertspacing;
-    	    
-    /* Find the height we have to divide among the entrys */
-    height =   container->Height - vertspacing - (LV_BORDERWIDTH_Y * 2);
-    	    
-    /* We should only have wholly visible entries */
-    *numvisibleptr = height / *entryheightptr;
-    EG(o)->Height -= height % *entryheightptr; /* Remove superfluous height */
-    
-    /* Recalulate container width */
-    container->Height = EG(o)->Height + 
-    			((EG(o)->Flags & GFLG_RELHEIGHT) ? 
-    				msg->gpr_GInfo->gi_Domain.Height : 0);
-    
-    return;
+    GetAttr(AROSA_List_Entries, data->lvd_List, &numentries);
 
+    /* This formula has a little "bug": The height of the rendered texts
+    ** are ibox.Height - height of 2 borders  - 1 horizontal spacing line, but
+    ** since hor sp. always is < entryheight, the formula provides the right result
+    */
+
+    shown = (container->Height - LV_BORDERWIDTH_Y * 2) / data->lvd_EntryHeight;
+
+    shown = MIN(shown, numentries - data->lvd_First);
+    
+    return (shown);
 }
 
-/*********************
-**  UpdatePGATotal  **
-*********************/
+/******************
+**  NotifyAttrs  **
+******************/
 
-VOID UpdatePGATotal(struct LVData	    *data,
-		    struct GadgetInfo	    *ginfo,
-		    struct LVBase_intern    *AROSListviewBase)
+VOID NotifyAttrs(Object *o, struct opSet *msg, struct TagItem *tags)
 {
-    /* Updates the propgadget's PGA_Total to the current
-     * numbers of entries in the list. 
-     * (Can't use notification for this since List is subclass
-     * of rootclass.
-     */
-     
-    struct TagItem tags[2];
-   
-    tags[0].ti_Tag = PGA_Total;
-    GetAttr(AROSA_List_Entries, data->lvd_List, &(tags[0].ti_Data));
-    tags[1].ti_Tag  = TAG_END;
+    struct TagItem idtags[] =
+    {
+    	{GA_ID,			(IPTR)EG(o)->GadgetID},
+    	{TAG_MORE,		(IPTR)tags}
+    };
     
-    DoMethod(data->lvd_Prop, OM_UPDATE, tags, ginfo, 0);
+    struct opUpdate nmsg =  {OM_NOTIFY, idtags, msg->ops_GInfo, 0};
+    struct LVData *data = INST_DATA(OCLASS(o), o);
     
+    data->lvd_NotifyCount ++;
+    DoSuperMethodA(OCLASS(o), o,  (Msg)&nmsg);
+    data->lvd_NotifyCount --;
     return;
 }
-		    
+

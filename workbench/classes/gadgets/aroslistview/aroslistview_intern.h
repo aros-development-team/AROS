@@ -35,6 +35,7 @@ struct LVBase_intern;
 
 #define GLOBAL_INTUIBASE
 
+
 struct LVData
 {
     struct Hook *lvd_DisplayHook;
@@ -42,7 +43,15 @@ struct LVData
     Object	*lvd_List;
     STRPTR	*lvd_DHArray;
     struct ColumnAttrs *lvd_ColAttrs;
+    struct TextFont *lvd_Font;
     LONG	lvd_First; /* The nuber of the first item showed in list */
+    UWORD	lvd_EntryHeight;
+
+    /* Damage area */
+
+    UWORD 	lvd_DamageOffset;
+    UWORD	lvd_NumDamaged;
+        
     UBYTE	lvd_HorSpacing;
     UBYTE	lvd_VertSpacing;
     UBYTE	lvd_Flags;
@@ -52,16 +61,23 @@ struct LVData
     /* Number of colomns to view. Depends on AROSA_List_Format */
     UBYTE	lvd_ViewedColumns;
     
-    Object	*lvd_Prop;
+    /* To prevent 'echo' OM_UPDATEs (double redraws) */
+    UBYTE	lvd_NotifyCount;
+    
+    /* For testting for doubleclicks */
+    ULONG	lvd_StartSecs;
+    ULONG	lvd_StartMicros;
     
 };
 
+
+
 /* The minwitdh of one or more colums is as large as the biggest entry */
 #define LVFLG_SPECIALCOLWIDTH	(1 << 0)
-/* Has the PropGadget been added to the listview ? */
-#define LVFLG_PROPADDED		(1 << 1)
 
-
+#define LVFLG_READONLY  	(1 << 1)
+#define LVFLG_MULTISELECT	(1 << 2)
+#define LVFLG_DOUBLECLICK	(1 << 3)
 
 /* Macros */
 #undef LVD
@@ -73,14 +89,26 @@ struct LVData
 #undef EG
 #define EG(o) ((struct ExtGadget *)o)
 
+#undef MIN
+#define MIN(a,b) ((a < b) ? a : b)
+
+#define ReCalcEntryHeight(data) \
+    	    	data->lvd_EntryHeight =   data->lvd_Font->tf_YSize  \
+    	    				+ data->lvd_VertSpacing; 
+
+#undef NumVisible
+#define NumVisible(ibox, eh) \
+	(((ibox)->Height - LV_BORDERWIDTH_Y * 2) / eh)
+	
+
+
+	
 /* Constants */
 #define LV_BORDERWIDTH_X 2
 #define LV_BORDERWIDTH_Y 2
 
 #define LV_DEFAULTHORSPACING 2
 #define LV_DEFAULTVERTSPACING 1
-
-#define LV_PROPWIDTH 20
 
 struct ColumnAttrs
 {
@@ -111,17 +139,19 @@ struct ColumnAttrs
 #define CAFLG_SPECIALCOLWIDTH	(1 << 4)
 
 
-
-
-
 /* Prototypes */
 BOOL ParseFormatString(STRPTR, struct LVData *, struct LVBase_intern *);
 
-VOID RenderEntries(Object *, struct gpRender *, UWORD, UWORD, struct IBox *, struct LVBase_intern *);
-VOID DoResizeStuff(Object *, struct gpRender *, UWORD *, UWORD *, struct IBox *);
+VOID RenderEntries(   Object *, struct gpRender *, LONG, UWORD, BOOL, struct LVBase_intern *);
+
 VOID GetGadgetIBox(Object *, struct GadgetInfo *, struct IBox *);
 VOID DrawListBorder(struct RastPort *, UWORD *, struct IBox *, BOOL, struct LVBase_intern *);
-VOID UpdatePGATotal(struct LVData *, struct GadgetInfo *, struct LVBase_intern *);
+VOID ComputeColumnWidths(UWORD,	struct LVData *, struct LVBase_intern *);
+VOID ComputeColLeftRight(UWORD, struct LVData *);
+UWORD ShownEntries(struct LVData *, struct IBox *, struct LVBase_intern *);
+VOID NotifyAttrs(Object *, struct opSet *, struct TagItem *);
+
+
 
 /* Library stuff */
 struct LVBase_intern
