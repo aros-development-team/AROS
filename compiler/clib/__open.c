@@ -104,6 +104,7 @@ LONG __oflags2amode(int flags)
     if (flags & O_TRUNC)    openmode |= FMF_CLEAR;
     if (flags & O_CREAT)    openmode |= FMF_CREATE;
     if (flags & O_NONBLOCK) openmode |= FMF_NONBLOCK;
+    if (flags & O_APPEND)   openmode |= FMF_APPEND;
 
     return openmode;
 }
@@ -162,7 +163,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 	if (!Examine(lock, fib))
     	{
 	   /* The filesystem in which the files resides doesn't support
-	      This the EXAMINE action. It might be broken or migth also
+	      the EXAMINE action. It might be broken or migth also
 	      not be a filesystem at all. So let's assume the file is
 	      not a diretory
 	   */
@@ -197,8 +198,6 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 	errno = IoErr2errno (IoErr ());
 	goto err;
     }
-    
-    if (flags & O_APPEND) Seek( fh, 0, OFFSET_END );
 
     if (lock) UnLock(lock);
 
