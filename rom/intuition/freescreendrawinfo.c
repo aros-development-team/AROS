@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.6  1999/01/16 23:19:48  hkiel
+    Added aros_print_not_implemented()
+
     Revision 1.5  1998/10/20 16:45:55  hkiel
     Amiga Research OS
 
@@ -18,7 +21,7 @@
     New functions to handle Public Screens
 
 
-    Desc:
+    Desc: Intuition function FreeScreenDrawInfo()
     Lang: english
 */
 #include "intuition_intern.h"
@@ -38,10 +41,15 @@
 	struct IntuitionBase *, IntuitionBase, 116, Intuition)
 
 /*  FUNCTION
+	Tell intuition that you have finished work with struct DrawInfo
+	returned by GetScreenDrawInfo()
 
     INPUTS
+	screen - The screen you passed to GetScreenDrawInfo()
+	drawInfo - The DrawInfo structure returned by GetScreenDrawInfo()
 
     RESULT
+	None.
 
     NOTES
 
@@ -50,6 +58,7 @@
     BUGS
 
     SEE ALSO
+	GetScreenDrawInfo()
 
     INTERNALS
 
@@ -61,5 +70,9 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
+#warning TODO: Write intuition/FreeScreenDrawInfo()
+    aros_print_not_implemented ("FreeScreenDrawInfo");
+
     AROS_LIBFUNC_EXIT
 } /* FreeScreenDrawInfo */

@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Move a screen in front of all other screens.
     Lang: english
 */
 #include "intuition_intern.h"
@@ -48,7 +48,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    /* Not yet */
+#warning TODO: Write intuition/ScreenToFront()
+    aros_print_not_implemented ("ScreenToFront");
 
     AROS_LIBFUNC_EXIT
 } /* ScreenToFront */

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
     Desc: Move a screen behind all other screens.
@@ -42,6 +42,7 @@
     BUGS
 
     SEE ALSO
+	ScreenToFront()
 
     INTERNALS
 
@@ -52,7 +53,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    /* not yet */
+#warning TODO: Write intuition/ScreenToBack()
+    aros_print_not_implemented ("ScreenToBack");
 
     AROS_LIBFUNC_EXIT
 } /* ScreenToBack */

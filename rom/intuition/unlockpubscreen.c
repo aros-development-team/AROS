@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.6  1999/01/16 23:19:48  hkiel
+    Added aros_print_not_implemented()
+
     Revision 1.5  1998/10/20 16:46:07  hkiel
     Amiga Research OS
 
@@ -18,7 +21,7 @@
     New functions to handle Public Screens
 
 
-    Desc:
+    Desc: Intuition function UnlockPubScreen()
     Lang: english
 */
 #include "intuition_intern.h"
@@ -38,18 +41,27 @@
 	struct IntuitionBase *, IntuitionBase, 86, Intuition)
 
 /*  FUNCTION
+	Release a lock to a screen locked by LockPubScreen().
+	Identify screen by the pointer returned from LockPubScreen()
+	and pass NULL name in normal cases.
+	Sometimes it might be useful to specify the name string. In
+	this case the screen pointer will be ignored.
 
     INPUTS
+	name - Name of the public screen to unlock
+	screen - Pointer to the screen to unlock
 
     RESULT
 
     NOTES
+	The screen parameter will be ignored if name is non-NULL
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+	LockPubScreen()
 
     INTERNALS
 
@@ -61,5 +73,17 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
+
+    if( name != NULL )
+    {
+	/* Get '(struct Screen*)screen' by its name */
+    }
+
+    /* Unlock screen */
+
+#warning TODO: Write intuition/UnlockPubScreen()
+    aros_print_not_implemented ("UnlockPubScreen");
+
     AROS_LIBFUNC_EXIT
 } /* UnlockPubScreen */

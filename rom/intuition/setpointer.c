@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Intuition function SetPointer()
     Lang: english
 */
 #include "intuition_intern.h"
@@ -55,6 +55,14 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
+#warning TODO: Write intuition/SetPointer()
+    aros_print_not_implemented ("SetPointer");
+
+    if( window )
+    {
+	window->Pointer = pointer;
+    }
 
     /* Call driver's function */
 

@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Intuition function MoveScreen()
     Lang: english
 */
 #include "intuition_intern.h"
@@ -33,6 +33,7 @@
 	dy - Move it by this amount along the Y axis (> 0 down, < 0 up)
 
     RESULT
+	None.
 
     NOTES
 	Depending on other restrictions, the screen may not move as far
@@ -44,6 +45,7 @@
     BUGS
 
     SEE ALSO
+	RethinkDisplay()
 
     INTERNALS
 
@@ -57,6 +59,8 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     /* Don't move screens by now */
+#warning TODO: Write intuition/MoveScreen()
+    aros_print_not_implemented ("MoveScreen");
 
     AROS_LIBFUNC_EXIT
 } /* MoveScreen */

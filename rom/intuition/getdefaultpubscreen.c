@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.6  1999/01/16 23:19:48  hkiel
+    Added aros_print_not_implemented()
+
     Revision 1.5  1998/10/20 16:45:57  hkiel
     Amiga Research OS
 
@@ -18,7 +21,7 @@
     New functions to handle Public Screens
 
 
-    Desc:
+    Desc: Intuition function GetDefaultPubScreen()
     Lang: english
 */
 #include "intuition_intern.h"
@@ -37,18 +40,26 @@
 	struct IntuitionBase *, IntuitionBase, 97, Intuition)
 
 /*  FUNCTION
+	Returns the name of the current default public screen.
+	This will be "Workbench" if there is no default public screen.
 
     INPUTS
+	nameBuffer - A buffer of length MAXPUBSCREENNAME
 
     RESULT
+	None.
 
     NOTES
+	Only Public Screen Manager utilities want to use this function
+	since it is easy to open a window on the default public screen
+	without specifying a name.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+	SetDefaultPubScreen(), OpenWindow()
 
     INTERNALS
 
@@ -60,5 +71,9 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
+#warning TODO: Write intuition/GetDefaultPubScreen()
+    aros_print_not_implemented ("GetDefaultPubScreen");
+
     AROS_LIBFUNC_EXIT
 } /* GetDefaultPubScreen */
