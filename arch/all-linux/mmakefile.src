@@ -7,6 +7,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 CFLAGS2 	:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec \
 		   $(CFLAGS)
 
+
 #MM- AROS-linux : setup setup-linux includes compiler kernel workbench \
 #MM	    demos games shell
 
@@ -44,7 +45,7 @@ setup-linux :
 	%add_objects rom/boot/strap_emul
 
 # These are the targets to get mmake to do what I want...
-#MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-x11
+#MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-$(GFXSYSTEM)
 
 #MM setup-exec-linux : setup-exec-unix setup-exec-$(CPU)
 setup-exec-linux : $(GENINCDIR)/sigcore.h
@@ -72,9 +73,9 @@ exec-linux : $(OSGENDIR)/exec/init.o
 
 #MM- setup-battclock-linux : setup-battclock-unix
 
-#MM- kernel-graphics-linux : graphics-x11 kernel-graphics-linklib
+#MM- kernel-graphics-linux : graphics-$(GFXSYSTEM) kernel-graphics-linklib
 
-#MM- kernel-intuition-linux : intuition-x11 kernel-intuition-linklib
+#MM- kernel-intuition-linux : intuition-$(GFXSYSTEM) kernel-intuition-linklib
 
 #MM- kernel-hidd-linux : kernel-hidd-linklib
 
