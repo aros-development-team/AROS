@@ -87,6 +87,7 @@ struct MUIP_Application_ShowHelp		{ ULONG MethodID; Object *window; char *name; 
 #define MUIA_Application_Sleep              	(TAG_USER|0x00425711) /* MUI: V4  .s. BOOL              */
 #define MUIA_Application_Title              	(TAG_USER|0x004281b8) /* MUI: V4  i.g STRPTR            */
 #define MUIA_Application_UseCommodities     	(TAG_USER|0x00425ee5) /* MUI: V10 i.. BOOL              */
+#define MUIA_Application_UsedClasses            (TAG_USER|0x0042e9a7) /* MUI undoc: V20 i.. STRPTR [] */
 #define MUIA_Application_UseRexx            	(TAG_USER|0x00422387) /* MUI: V10 i.. BOOL              */
 #define MUIA_Application_Version            	(TAG_USER|0x0042b33f) /* MUI: V4  i.g STRPTR            */
 #define MUIA_Application_Window             	(TAG_USER|0x0042bfe0) /* MUI: V4  i.. Object *          */
