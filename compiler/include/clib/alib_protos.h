@@ -44,20 +44,12 @@
 */
 IPTR DoMethodA (Object * obj, Msg message);
 IPTR DoMethod (Object * obj, ULONG MethodID, ...);
-IPTR DoGadgetMethod (struct Gadget * gad, struct Window * win,
-		    struct Requester * req, ULONG MethodID, ...);
 IPTR DoSuperMethodA (Class  * cl, Object * obj, Msg message);
 IPTR DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...);
-IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
 IPTR CoerceMethodA (Class * cl, Object * obj, Msg msg);
-ULONG SetAttrs (Object * obj, ULONG tag1, ...);
-ULONG SetSuperAttrs (Class * cl, Object * obj, ULONG tag1, ...);
-APTR NewObject (struct IClass * classPtr, UBYTE * classID, ULONG tag1, ...);
+IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
 IPTR CallHookA (struct Hook * hook, APTR obj, APTR param);
 IPTR CallHook (struct Hook * hook, APTR obj, ...);
-
-struct Window * OpenWindowTags (struct NewWindow * newWindow, ULONG tag1, ...);
-struct Screen * OpenScreenTags (struct NewScreen * newScreen, ULONG tag1, ...);
 
 /* Exec support */
 struct IORequest * CreateExtIO (struct MsgPort * port, ULONG iosize);
