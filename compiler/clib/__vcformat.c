@@ -14,9 +14,15 @@
 #include <math.h>
 #include <float.h>
 
+#include <aros/config.h>
+
 /* AROS doesn't need a special math lib -lm */
 #define isinf(v)    0   /* TODO */
+
+/* Prevent 'missing function' problem on AROSfA */
+#if (AROS_FLAVOUR != AROS_FLAVOUR_NATIVE)
 #define FULL_SPECIFIERS
+#endif
 
 #ifndef BITSPERBYTE
 #   define BITSPERBYTE 8
