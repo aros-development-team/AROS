@@ -1,0 +1,23 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-devs-midi : setup includes linklibs
+workbench-devs-midi: $(DEVSDIR)/Midi/debugdriver
+	@$(NOP)
+
+#MM
+clean ::
+	$(RM) *.err *.o
+
+#MM
+setup :
+	%mkdirs_q $(DEVSDIR)/Midi
+
+
+$(DEVSDIR)/Midi/debugdriver: debugdriver.o
+	$(CC) -nostartfiles -nostdlib -Xlinker -i $(LIBDIR)/startup.o debugdriver.o -o $(DEVSDIR)/Midi/debugdriver -L$(LIBDIR) -larossupport -lamiga -larosc -larosm
+
+debugdriver.o: debugdriver.c
+	$(CC) debugdriver.c -I$(INCDIR) -c
+
+%common
