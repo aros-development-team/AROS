@@ -35,7 +35,7 @@ BOOL StartHandler(struct WorkbenchBase *WorkbenchBase)
     }
 }
 
-void AddHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase)
+void __AddHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase)
 {
     /* Make sure we got valid pointers... */
     if ((name == NULL) || (WorkbenchBase == NULL))
@@ -61,7 +61,7 @@ void AddHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase)
     }
 }
 
-void RemoveHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase)
+void __RemoveHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase)
 {
     struct Node *deviceName;
 
