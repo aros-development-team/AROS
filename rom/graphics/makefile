@@ -20,6 +20,7 @@ FUNCTIONS = \
 	getdrmd \
 	getoutlinepen \
 	initrastport \
+	loadrgb32 \
 	loadrgb4 \
 	move \
 	openfont \

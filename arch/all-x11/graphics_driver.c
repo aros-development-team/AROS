@@ -736,3 +736,63 @@ void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count,
 	sysPlaneMask |= sysCMap[t];
 
 } /* driver_LoadRGB4 */
+
+void driver_LoadRGB32 (struct ViewPort * vp, ULONG * table,
+	    struct GfxBase * GfxBase)
+{
+    int t;
+    XColor xc;
+    Colormap cm;
+    UWORD count, first;
+
+    cm = DefaultColormap (sysDisplay, sysScreen);
+
+    while (*table)
+    {
+	count = (*table) >> 16;
+	first = *table & 0xFFFF;
+
+	table ++;
+
+	t = (count+first < maxPen) ? count : maxPen-first;
+
+	/* Return colors */
+	if (t > 0)
+	    XFreeColors (sysDisplay, cm, &sysCMap[first], t, 0L);
+
+	/* Allocate new colors */
+	for (t=0; t<count; t++)
+	{
+	    xc.flags = DoRed | DoGreen | DoBlue;
+	    xc.red = *table++ >> 16;
+	    xc.green = *table++ >> 16;
+	    xc.blue = *table++ >> 16;
+
+	    if (!XAllocColor (sysDisplay, cm, &xc))
+	    {
+		fprintf (stderr, "Couldn't allocate color %s\n",
+			sysColName[t]);
+		sysCMap[t] = !(t & 1) ?
+			WhitePixel(sysDisplay, sysScreen) :
+			BlackPixel(sysDisplay, sysScreen);
+	    }
+	    else
+		sysCMap[t+first] = xc.pixel;
+
+    /* printf ("Color(1) %d = %04x %04x %04x flags=%04x pixel=%08lx\n",
+	t, xc.red, xc.green, xc.blue, xc.flags, xc.pixel); */
+	}
+    }
+
+    XSync (sysDisplay, False);
+
+    if (count > maxPen)
+	maxPen = count;
+
+/* printf ("maxPen = %d\n", maxPen); */
+
+    for (t=0,sysPlaneMask=0; t<maxPen; t++)
+	sysPlaneMask |= sysCMap[t];
+
+} /* driver_LoadRGB4 */
+
