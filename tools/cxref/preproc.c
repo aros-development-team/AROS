@@ -14,7 +14,7 @@
   ***************************************/
 
 /*+ Control the output of debugging information for this file. +*/
-#define DEBUG 0
+#define DEBUG 0 
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -76,7 +76,7 @@ void SeenInclude(char *name)
  printf("#Preproc.c# #include %s\n",name);
 #endif
 
- if(!inc_type || inc_depth==0 || inc_type[inc_depth-1]==LOCAL)
+ if(!inc_type || inc_depth==0 || (inc_depth > 0 && inc_type[inc_depth-1]==LOCAL))
    {
     Include inc,*t=&CurFile->includes;
     int inc_scope=(*name=='"')?LOCAL:GLOBAL;
@@ -154,7 +154,9 @@ char *SeenFileChange(char *name,int flag)
 
  /* Special gcc-3.x fake names for built-in #defines. */
 
- if(!strcmp(name,"<built-in>") || !strcmp(name,"<command line>"))
+/* jmj: the fake names differ from locale to locale, but are always bracketed like this */
+/* old: if(!strcmp(name,"<built-in>") || !strcmp(name,"<command line>"))*/
+ if (*name == '<' && name[strlen(name) - 1] == '>')
    {
     in_header=1;
     return(NULL);
@@ -184,7 +186,7 @@ char *SeenFileChange(char *name,int flag)
 
  /* Store the information. */
 
- if(flag&2 && (!inc_type || inc_depth==0 || inc_type[inc_depth-1]==LOCAL))
+ if(flag&2 && (!inc_type || inc_depth==0 || (inc_depth > 0 && inc_type[inc_depth-1]==LOCAL)))
    {
     if(!cur_inc)
       {
@@ -218,7 +220,7 @@ char *SeenFileChange(char *name,int flag)
 
     if(inc_depth>1 && inc_type[inc_depth-2]==GLOBAL)
        inc_type[inc_depth-1]=GLOBAL;
-    else
+    else if (inc_depth > 0)
        inc_type[inc_depth-1]=cur_inc?cur_inc->scope:(flag&8)?GLOBAL:LOCAL;
 
     inc_name[inc_depth-1]=CopyString(name);
@@ -259,7 +261,7 @@ void SeenDefine(char* name)
 
  def->lineno=parse_line;
 
- AddToLinkedList(CurFile->defines,Define,def);
+ AddToLinkedList(CurFile->defines,Define,def); 
 
  cur_def=def;
 }
