@@ -45,9 +45,19 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    
+    struct FileHandle *fh1, *fh2;
+    
+    if (lock1 == NULL || lock2 == NULL)
+    	return DOSFALSE;
+	
+    fh1 = (struct FileHandle *)BADDR(lock1);
+    fh2 = (struct FileHandle *)BADDR(lock2);
 
-#warning TODO: Write dos/SameDevice()
-    aros_print_not_implemented ("SameDevice");
+#warning Is this check good enough ?
+    if (fh1->fh_Device == fh2->fh_Device)
+    	return DOSTRUE;
+    
 
     return DOSFALSE;
     AROS_LIBFUNC_EXIT

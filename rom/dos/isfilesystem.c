@@ -57,6 +57,7 @@
     struct Process *me=(struct Process *)FindTask(NULL);
     struct DosList *dl;
     BOOL success=0;
+    
 
     dl=LockDosList(LDF_DEVICES|LDF_READ);
     dl=FindDosEntry(dl,devicename,LDF_DEVICES);
@@ -79,8 +80,9 @@
         DoIO(&iofs->IOFS);
         
         /* Set return code */
-        if(!iofs->io_DosError)
+        if(!iofs->io_DosError) {
             success=iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem;
+	}
     }
     /* All Done. */
     UnLockDosList(LDF_DEVICES|LDF_READ);
