@@ -39,6 +39,9 @@ VOID Cleanup(CONST_STRPTR error)
     }
 }
 
+int __nocommandline       = 1;
+int __forceerrorrequester = 1;
+
 int main()
 {
     Object *application;
