@@ -151,7 +151,7 @@ struct AROS_cpu_context
 
     Update: We store the registers now in out own structure
 */
-/* #   define NO_FPU */
+#   define NO_FPU
 
 /*
     Size of the FPU stackframe in stack units (one stack unit is
