@@ -1,34 +1,26 @@
 alib/ - The source for the amiga.lib. This link library
-	contains small utility functions which didn't made it
-	into a shared library.
+        contains small utility functions which didn't made it
+        into a shared library.
 
-aros/ -The source for aros.lib. This link library
-	contains special functions which allow to write
-	portable code.
+aros/ - The source for aros.lib. This link library
+        contains special functions which allow to write
+        portable code.
 
 clib/ - The source for AROS' c.lib. This link library
-	contains the standard ANSI C (and some more)
-	library functions like |printf()|, |strcpy()|, etc.
+        contains the standard ANSI C (and some more)
+        library functions like |printf()|, |strcpy()|, etc.
 
-	The directory also contains the includes for ANSI C.
+        The directory also contains the includes for ANSI C.
 
 include/ - This directory contains all AROS specific
-	includes as well as all Amiga includes which have
-	been modified for AROS. Note that these files are
-	searched *before* the files in
-	\filename{amiga/include/}. Most people will notice
-	this when they compile some program which uses a
-	function which has not yet been implemented in
-	AROS. The compiler will complain about a function
-	without a prototype despite the fact that it is in
-	\filename{amiga/include/clib/*_protos.h}. That's
-	because it doesn't look there and if you ever get
-	an error like this, have a look into include first.
-
-vbcc/ - The source for AROS' own C compiler (not that we
-	own it, but this compiler is used inside the AROS
-	shell to compile programs).
-
-vcpp/ - The source for the C preprocessor for AROS'
-	C compiler.
-
+        includes as well as all Amiga includes which have
+        been modified for AROS. Note that these files are
+        searched *before* the files in
+        \filename{amiga/include/}. Most people will notice
+        this when they compile some program which uses a
+        function which has not yet been implemented in
+        AROS. The compiler will complain about a function
+        without a prototype despite the fact that it is in
+        \filename{amiga/include/clib/*_protos.h}. That's
+        because it doesn't look there and if you ever get
+        an error like this, have a look into include first.
