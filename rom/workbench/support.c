@@ -8,31 +8,25 @@
 #define DEBUG 1
 
 #include <dos/dostags.h>
+#include <string.h>
 
 #include "workbench_intern.h"
 #include "handler.h"
 
-BOOL StartHandler(struct WorkbenchBase *WorkbenchBase)
+BOOL __StartHandler(struct WorkbenchBase *WorkbenchBase)
 {
     struct Process *proc;
-    struct TagItem  procTags[] =
-    {
-        { NP_Entry,      (IPTR) WorkbenchHandler    },
-        { NP_StackSize,  8192                       },
-        { NP_Name,       (IPTR) "Workbench Handler" },
-        { TAG_DONE,      NULL                       }
-    };
+    
+    proc = CreateNewProcTags
+    (
+        NP_Entry,     (IPTR) WorkbenchHandler,
+        NP_StackSize,        8129,
+        NP_Name,      (IPTR) "Workbench Handler",
+        NP_UserData,  (IPTR) WorkbenchBase,
+        TAG_DONE
+    );
 
-    if ((proc = CreateNewProc( procTags )))
-    {
-        D(bug("Workbench: Started Workbench Handler.\n"));
-        return TRUE;
-    }
-    else
-    {
-        D(bug("Workbench: Could not start Workbench Handler!\n"));
-        return FALSE;
-    }
+    return proc != NULL ? TRUE : FALSE;
 }
 
 void __AddHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase)
@@ -128,4 +122,18 @@ STRPTR __AllocateNameFromLock(BPTR lock, struct WorkbenchBase *WorkbenchBase)
         if (buffer != NULL) FreeVec(buffer);
         return NULL;
     }
+}
+
+STRPTR __StrDup(CONST_STRPTR str, struct WorkbenchBase *WorkbenchBase)
+{
+    STRPTR dup;
+    ULONG  len;
+
+    if (str == NULL) return NULL;
+    
+    len = strlen(str);
+    dup = AllocVec(len + 1, MEMF_PUBLIC);
+    if (dup != NULL) CopyMem(str, dup, len + 1);
+    
+    return dup;
 }
