@@ -39,6 +39,7 @@ struct MUI_AreaData
     UWORD              mad_VertWeight;
     STRPTR             mad_ShortHelp;      /* bubble help */
     struct MUI_EventHandlerNode mad_ehn;
+    struct MUI_InputHandlerNode mad_Timer;
     ULONG              mad_Timeval;       /* just to trigger notifications */
     struct MUI_EventHandlerNode mad_ccn;  /* gross hack for control char */
     Object            *mad_ContextMenu;   /* menu strip */
@@ -227,6 +228,8 @@ enum {
     MUIM_GoInactive      = 0x80422c0c,
     MUIM_CustomBackfill  = 0x80428d73,
 };
+
+#define MUIM_Timer 0x90092032 /* PRIV */
 
 struct  MUIP_CustomBackfill  { ULONG MethodID; LONG left; LONG top; LONG right; LONG bottom; LONG xoffset; LONG yoffset; };
 struct  MUIP_DeleteDragImage { ULONG MethodID; struct MUI_DragImage *di; };              /* Custom Class */
