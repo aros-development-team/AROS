@@ -67,6 +67,7 @@ OBJS	    := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 #MM
 kernel-dos-linux-$(CPU) : show-flags $(LIB)
+	@$(NOP)
 
 show-flags :
 	@echo "CFLAGS=$(CFLAGS)"
