@@ -34,47 +34,6 @@
 #include "wanderer.h"
 #include "support.h"
 
-extern struct Hook hook_action;
-
-VOID DoAllMenuNotifies(Object *strip, char *path);
-VOID LoadPrefs(VOID);
-
-AROS_UFP3(void, hook_func_action,
-    AROS_UFPA(struct Hook *, h, A0),
-    AROS_UFPA(Object *, obj, A2),
-    AROS_UFPA(struct IconWindow_ActionMsg *, msg, A1));
-
-AROS_UFP3
-(
-    void, hook_func_standard,
-    AROS_UFPA(struct Hook *, h, A0),
-    AROS_UFPA(void *, dummy, A2),
-    AROS_UFPA(void **, funcptr, A1)
-);
-
-/**************************************************************************
- This is the standard_hook for easy MUIM_CallHook callbacks
- It is initialized at the very beginning of the main program
-**************************************************************************/
-struct Hook hook_standard;
-
-
-AROS_UFH3
-(
-    void, hook_func_standard,
-    AROS_UFHA(struct Hook *, h, A0),
-    AROS_UFHA(void *, dummy, A2),
-    AROS_UFHA(void **, funcptr, A1)
-)
-{
-    void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
-
-    if (func) func((ULONG *)(funcptr + 1));
-}
-
-
-
-
 /* Our global variables */
 
 Object *app;
@@ -176,58 +135,19 @@ VOID FreePrefs()
     if (rootBG != NULL) FreeVec(rootBG);
     if (dirsBG != NULL) FreeVec(dirsBG);
 }
-extern struct Hook hook_action;
 
-/**************************************************************************
- Our main entry
-**************************************************************************/
 int main(void)
 {
-    hook_standard.h_Entry = (HOOKFUNC)hook_func_standard;
-    hook_action.h_Entry = (HOOKFUNC)hook_func_action;
-
     LoadPrefs();
 
     app = WandererObject,
-	MUIA_Application_Title, (IPTR) "Wanderer",
-	MUIA_Application_Base, (IPTR) "WANDERER",
-	MUIA_Application_Version, (IPTR) "$VER: Wanderer 0.1 (10.12.02)",
-	MUIA_Application_Description, (IPTR) "The AROS filesystem GUI",
-	MUIA_Application_SingleTask, TRUE,
-    	SubWindow, root_iconwnd = IconWindowObject,
-	    MUIA_UserData, 1,
-	    //MUIA_Window_Menustrip, root_menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
-	    MUIA_Window_ScreenTitle, NULL,//GetScreenTitle(),
-            MUIA_IconWindow_IsRoot, TRUE,
-	    MUIA_IconWindow_IsBackdrop, TRUE,
-	    MUIA_IconWindow_ActionHook, &hook_action,
-	    End,
-	End;
+    End;
 
-    if (app)
+    if (app != NULL)
     {
-	ULONG sigs = 0;
-
-	//DoMethod(root_iconwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 3, MUIM_CallHook, &hook_standard, wanderer_quit);
-
-	/* If "Execute Command" entry is clicked open the execute window */
-	DoAllMenuNotifies(root_menustrip,"RAM:");
-
-	/* And now open it */
-	DoMethod(root_iconwnd, MUIM_IconWindow_Open);
-
 	DoDetach();
-
-	while((LONG) DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
-	{
-	    if (sigs)
-	    {
-		sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
-		if (sigs & SIGBREAKF_CTRL_C) break;
-		if (sigs & SIGBREAKF_CTRL_D) break;
-	    }
-	}
-
+	DoMethod(app, MUIM_Application_Execute);
+        
 	MUI_DisposeObject(app);
     }
 
