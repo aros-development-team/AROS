@@ -34,7 +34,6 @@
 #include <aros/debug.h>
 
 /*** Locale functions *******************************************************/
-
 STRPTR MSG(struct Catalog *catalog, ULONG id)
 {
     if (catalog != NULL)
@@ -254,15 +253,20 @@ IPTR AboutWindow__OM_NEW
     /* Setup image ---------------------------------------------------------*/
     if (imageObject == NULL)
     {
-        TEXT path[1024], program[1024]; path[0] = '\0'; program[0] = '\0';
+        TEXT path[512], program[1024]; path[0] = '\0'; program[0] = '\0';
         
-        strlcat(path, "PROGDIR:", 1024);
         if (GetProgramName(program, 1024))
         {
-            strlcat(path, program, 1024);
+            strlcat(path, "PROGDIR:", 512);
+            strlcat(path, FilePart(program), 512);
             imageObject = IconImageObject,
                 MUIA_IconImage_File, (IPTR) path,
             End;
+        }
+        
+        if (imageObject == NULL)
+        {
+            imageObject = HVSpace;
         }
     }
 
@@ -292,6 +296,8 @@ IPTR AboutWindow__OM_NEW
             GroupSpacing(6),
             
             Child, (IPTR) imageGroup = HGroup,
+                MUIA_Weight,  0,
+                
                 Child, (IPTR) HVSpace,
                 Child, (IPTR) imageObject,
                 Child, (IPTR) HVSpace,
