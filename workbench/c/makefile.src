@@ -46,6 +46,7 @@ DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 all: setup $(EXES)
 
 setup :
+	@echo "CFLAGS=$(CFLAGS)"
 	%mkdirs_q $(EXEDIR) $(OBJDIR)
 
 clean::
