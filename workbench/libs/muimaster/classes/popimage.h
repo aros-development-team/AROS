@@ -13,8 +13,8 @@
 #define MUIB_Popimage              (MUIB_ZUNE | 0x00002300)  
 
 /*** Methods ****************************************************************/
-#define MUIM_Popimage_OpenWindow   (MUIB_MUI|0x0042a548)     /* PRIV */
-#define MUIM_Popimage_CloseWindow  (MUIB_MUI|0x0042a549)     /* PRIV */
+#define MUIM_Popimage_OpenWindow   (MUIB_Popimage | 0x00000000)     /* PRIV */
+#define MUIM_Popimage_CloseWindow  (MUIB_Popimage | 0x00000001)     /* PRIV */
 struct MUIP_Popimage_OpenWindow    {ULONG MethodID;};           /* PRIV */
 struct MUIP_Popimage_CloseWindow   {ULONG MethodID; LONG ok;};  /* PRIV */
 

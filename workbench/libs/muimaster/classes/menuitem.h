@@ -49,10 +49,10 @@
 #define MUIA_Menuitem_Toggle        (MUIB_MUI|0x00424d5c) /* MUI: V8  isg BOOL              */
 #define MUIA_Menuitem_Trigger       (MUIB_MUI|0x00426f32) /* MUI: V8  ..g struct MenuItem * */
 
-#define MUIV_Menuitem_Shortcut_Check (-1)
+#define MUIA_Menuitem_NewMenu       (MUIB_Menuitem | 0x00000000) /* Zune: V1 ..g struct NewMenu *  */
 
-/* The following is Zune Private */
-#define MUIA_Menuitem_NewMenu       (MUIB_MUI|0x10426f33) /* Zune: V1 ..g struct NewMenu *  */
+
+#define MUIV_Menuitem_Shortcut_Check (-1)
 
 
 extern const struct __MUIBuiltinClass _MUI_Menuitem_desc; /* PRIV */

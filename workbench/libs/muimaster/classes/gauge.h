@@ -19,7 +19,7 @@
 #define MUIA_Gauge_InfoText (MUIB_MUI|0x0042bf15) /* MUI: V7  isg STRPTR  */
 #define MUIA_Gauge_Max      (MUIB_MUI|0x0042bcdb) /* MUI: V4  isg LONG    */
 
-#define MUIA_Gauge_DupInfoText (MUIB_MUI|0x1000e302) /* ZUNE: V1  i.. BOOL - defaults to FALSE */
+#define MUIA_Gauge_DupInfoText (MUIB_Gauge | 0x00000000) /* ZUNE: V1  i.. BOOL - defaults to FALSE */
 
 
 extern const struct __MUIBuiltinClass _MUI_Gauge_desc; /* PRIV */

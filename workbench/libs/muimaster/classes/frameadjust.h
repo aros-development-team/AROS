@@ -13,7 +13,7 @@
 #define MUIB_Frameadjust      (MUIB_ZUNE | 0x00000d00)
 
 /*** Attributes *************************************************************/
-#define MUIA_Frameadjust_Spec (MUIB_MUI|0x004225b7) /* Zune 20030330 ig. CONST_STRPTR */
+#define MUIA_Frameadjust_Spec (MUIB_Frameadjust | 0x00000000) /* Zune 20030330 ig. CONST_STRPTR */
 
 
 extern const struct __MUIBuiltinClass _MUI_Frameadjust_desc; /* PRIV */

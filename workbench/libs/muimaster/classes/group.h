@@ -23,6 +23,9 @@ struct MUIP_Group_ExitChange       {ULONG MethodID;};
 struct MUIP_Group_InitChange       {ULONG MethodID;};
 struct MUIP_Group_Sort             {ULONG MethodID; Object *obj[1];};
 
+#define MUIM_Group_DoMethodNoForward (MUIB_Group | 0x00000000)
+struct MUIP_Group_DoMethodNoForward  {ULONG MethodID; ULONG DoMethodID; }; /* msg stuff follows */
+
 /*** Attributes *************************************************************/
 #define MUIA_Group_ActivePage      (MUIB_MUI|0x00424199) /* MUI: V5  isg LONG          */
 #define MUIA_Group_Child           (MUIB_MUI|0x004226e6) /* MUI: V4  i.. Object *      */
@@ -39,6 +42,8 @@ struct MUIP_Group_Sort             {ULONG MethodID; Object *obj[1];};
 #define MUIA_Group_SameWidth       (MUIB_MUI|0x0042b3ec) /* MUI: V4  i.. BOOL          */
 #define MUIA_Group_Spacing         (MUIB_MUI|0x0042866d) /* MUI: V4  is. LONG          */
 #define MUIA_Group_VertSpacing     (MUIB_MUI|0x0042e1bf) /* MUI: V4  isg LONG          */
+
+#define MUIA_Group_Virtual         (MUIB_Group | 0x00000000) /* Zune: V1 i.. BOOL  */
 
 enum {
     MUIV_Group_ActivePage_First = 0,
@@ -71,13 +76,6 @@ enum
 };
 
 #define MUILM_UNKNOWN  -1  /* should be returned if the hook function doesn't understand lm_Type */
-
-/* The following tag is Zune only, it should not be used in MUI Programs */
-#define MUIA_Group_Virtual  (MUIB_MUI|0x1042e1c0) /* Zune: V1 i.. BOOL  */
-
-/* Zune methods, used privatly */
-#define MUIM_Group_DoMethodNoForward (MUIB_MUI|0x1042e1c1)
-struct MUIP_Group_DoMethodNoForward {ULONG MethodID; ULONG DoMethodID; }; /* msg stuff follows */
 
 
 extern const struct __MUIBuiltinClass _MUI_Group_desc; /* PRIV */

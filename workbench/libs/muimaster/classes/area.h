@@ -42,13 +42,13 @@
 #define MUIM_DoDrag		    (MUIB_MUI|0x004216bb) /* MUI: V18 */ /* For Custom Classes only */ /* Undoc */
 #define MUIM_DragBegin	            (MUIB_MUI|0x0042c03a) /* MUI: V11 */
 #define MUIM_DragDrop	            (MUIB_MUI|0x0042c555) /* MUI: V11 */
-#define MUIM_DragFinish	    (MUIB_MUI|0x004251f0) /* MUI: V11 */
+#define MUIM_DragFinish	            (MUIB_MUI|0x004251f0) /* MUI: V11 */
 #define MUIM_DragQuery	            (MUIB_MUI|0x00420261) /* MUI: V11 */
-#define MUIM_DragReport	    (MUIB_MUI|0x0042edad) /* MUI: V11 */
+#define MUIM_DragReport	            (MUIB_MUI|0x0042edad) /* MUI: V11 */
 #define MUIM_Draw		    (MUIB_MUI|0x00426f3f) /* MUI: V4  */ /* For Custom Classes only */ 
 #define MUIM_DrawBackground	    (MUIB_MUI|0x004238ca) /* MUI: V11 */
 #define MUIM_GoActive		    (MUIB_MUI|0x0042491a) /* Undoc */
-#define MUIM_GoInactive	    (MUIB_MUI|0x00422c0c) /* Undoc */
+#define MUIM_GoInactive	            (MUIB_MUI|0x00422c0c) /* Undoc */
 #define MUIM_HandleEvent	    (MUIB_MUI|0x00426d66) /* MUI: V16 */ /* For Custom Classes only */ 
 #define MUIM_HandleInput	    (MUIB_MUI|0x00422a1a) /* MUI: V4  */ /* For Custom Classes only */ 
 #define MUIM_Hide		    (MUIB_MUI|0x0042f20f) /* MUI: V4  */ /* For Custom Classes only */ 
@@ -80,6 +80,15 @@ struct MUIP_HandleInput             {ULONG MethodID; struct IntuiMessage *imsg; 
 struct MUIP_Hide                    {ULONG MethodID;};
 struct MUIP_Setup                   {ULONG MethodID; struct MUI_RenderInfo *RenderInfo;};
 struct MUIP_Show                    {ULONG MethodID;};
+
+#define MUIM_Layout                 (MUIB_Area | 0x00000000)
+#define MUIM_DrawParentBackground   (MUIB_Area | 0x00000001)
+#define MUIM_DragQueryExtended      (MUIB_Area | 0x00000002) /* PRIV - returns a object or NULL */
+#define MUIM_Timer                  (MUIB_Area | 0x00000003) /* PRIV */
+struct  MUIP_Layout                 {ULONG MethodID;};
+struct  MUIP_DrawParentBackground   {ULONG MethodID; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
+struct  MUIP_DragQueryExtended      {ULONG MethodID; Object *obj; LONG x; LONG y;}; /* PRIV */
+struct  MUIP_Timer                  {ULONG MethodID; }; /* PRIV */
 
 struct MUI_DragImage
 {
@@ -137,7 +146,7 @@ struct MUI_DragImage
 #define MUIA_Window             	(MUIB_MUI|0x00421591) /* MUI: V4  ..g struct Window *   */
 #define MUIA_WindowObject       	(MUIB_MUI|0x0042669e) /* MUI: V4  ..g Object *          */
 
-#define MUIA_NestedDisabled           	(MUIB_MUI|0x0045cb11) /* Zune 20030530  isg BOOL        */
+#define MUIA_NestedDisabled             (MUIB_Area | 0x00000000) /* Zune 20030530  isg BOOL        */
 
 #ifdef MUI_OBSOLETE	 		
 #define MUIA_ExportID (MUIB_MUI|0x0042d76e) /* V4  isg ULONG */
@@ -270,20 +279,6 @@ enum {
 };
 
 #define MUIV_CreateBubble_DontHidePointer (1<<0)
-
-
-/* The following stuff is Zune only and can is used by some zune subclasses */
-#define MUIM_Layout                 (MUIB_MUI|0x10429abb)
-#define MUIM_DrawParentBackground	(MUIB_MUI|0x10429abc)
-struct  MUIP_Layout                 {ULONG MethodID;};
-struct  MUIP_DrawParentBackground   {ULONG MethodID; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
-
-/* The following is considered as private and Zune only! */
-#define MUIM_DragQueryExtended	    (MUIB_MUI|0x10092033) /* PRIV - returns a object or NULL */
-#define MUIM_Timer		    (MUIB_MUI|0x10092032) /* PRIV */
-
-struct  MUIP_DragQueryExtended	    {ULONG MethodID; Object *obj; LONG x; LONG y;}; /* PRIV */
-struct  MUIP_Timer 		    {ULONG MethodID; }; /* PRIV */
 
 /* A private functions and macros */
 void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo);
