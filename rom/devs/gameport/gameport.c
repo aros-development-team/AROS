@@ -519,8 +519,13 @@ AROS_LH1(void, beginio,
 	D(bug("gameport.device: Received CMD_HIDDINIT, hiddname=\"%s\"\n",
 	      (STRPTR)ioStd(ioreq)->io_Data ));
 	
+	if (GPBase->gp_Hidd != NULL)
+	    OOP_DisposeObject(GPBase->gp_Hidd);
 	GPBase->gp_Hidd = OOP_NewObject(NULL, (STRPTR)ioStd(ioreq)->io_Data, tags);
-	
+	{
+		struct pHidd_Mouse_Event event;
+		OOP_GetAttr(GPBase->gp_Hidd, aHidd_Mouse_State, &event);
+	}
 	if (!GPBase->gp_Hidd)
 	{
 	    D(bug("gameport.device: Failed to open hidd\n"));
