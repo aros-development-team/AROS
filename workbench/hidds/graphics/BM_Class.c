@@ -1405,21 +1405,6 @@ static VOID bitmap_clear(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_Cle
     ReturnVoid("BitMap::Clear");
 }
 
-static VOID bitmap_getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
-{
-    WORD x, y;
-    ULONG *pixarray = (ULONG *)msg->pixels;
-    
-    for (y = 0; y < msg->height; y ++)
-    {
-    	for (x = 0; x < msg->width; x ++)
-    	{
-	    *pixarray ++ = HIDD_BM_GetPixel(o, x + msg->x , y + msg->y);
-	}
-    }
-    return;
-}
-
 static LONG inline getpixfmtbpp(OOP_Class *cl, OOP_Object *o, HIDDT_StdPixFmt stdpf)
 {
     OOP_Object *pf;
@@ -1449,6 +1434,113 @@ static LONG inline getpixfmtbpp(OOP_Class *cl, OOP_Object *o, HIDDT_StdPixFmt st
     return bpp;
 }
 
+#if 0
+static VOID bitmap_getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
+{
+    WORD x, y;
+    ULONG *pixarray = (ULONG *)msg->pixels;
+    
+    for (y = 0; y < msg->height; y ++)
+    {
+    	for (x = 0; x < msg->width; x ++)
+    	{
+	    *pixarray ++ = HIDD_BM_GetPixel(o, x + msg->x , y + msg->y);
+	}
+    }
+    return;
+}
+#endif
+
+static VOID bitmap_getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
+{
+    WORD x, y;
+    UBYTE *pixarray = (UBYTE *)msg->pixels;
+    LONG bpp;
+    struct HIDDBitMapData *data;
+    
+    data = OOP_INST_DATA(cl, o);
+    
+    EnterFunc(bug("BitMap::GetImage(x=%d, y=%d, width=%d, height=%d)\n"
+    		, msg->x, msg->y, msg->width, msg->height));
+    
+    
+    bpp = getpixfmtbpp(cl, o, msg->pixFmt);
+    if (-1 == bpp) {
+	D(bug("!!! INVALID PIXFMT IN BitMap::PutImage(): %d !!!\n", msg->pixFmt));
+	return;
+    }
+    
+        
+    switch(msg->pixFmt)
+    {
+    	case vHidd_StdPixFmt_Native:
+	case vHidd_StdPixFmt_Native32:
+	    for (y = 0; y < msg->height; y ++)
+	    {
+    		for (x = 0; x < msg->width; x ++)
+    		{
+		    register HIDDT_Pixel pix;
+		    
+		    pix = HIDD_BM_GetPixel(o, x + msg->x , y + msg->y);
+		    
+		    switch (bpp)
+		    {
+	    		case 1: *((UBYTE *)pixarray)++ = pix; break;
+			case 2: *((UWORD *)pixarray)++ = pix; break;
+			case 3: D(bug("GETIMAGE: 3  BYTESPERPIX NOT HANDLED YET\n")); break;
+			case 4: *((ULONG *)pixarray)++ = pix; break;
+		    }
+		    
+		}
+		
+		pixarray += (msg->modulo - msg->width * bpp);
+	    }
+	    
+	    break;
+	    
+	default:
+	    {
+		OOP_Object *dstpf;
+	    	APTR 	    buf, srcPixels;
+		
+		dstpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+		
+		buf = srcPixels = AllocVec(msg->width * sizeof(HIDDT_Pixel), MEMF_PUBLIC);
+		if (buf)
+		{
+		    for(y = 0; y < msg->height; y++)
+		    {
+		    	HIDD_BM_GetImage(o,
+					 buf,
+					 0,
+					 msg->x,
+					 msg->y + y,
+					 msg->width,
+					 1,
+					 vHidd_StdPixFmt_Native);
+
+		    	HIDD_BM_ConvertPixels(o,
+			    	    	      &srcPixels,
+					      data->prot.pixfmt,
+					      0,
+			    	    	      &pixarray,
+					      (HIDDT_PixelFormat *)dstpf,
+			    	    	      msg->modulo,
+					      msg->width,
+					      1,
+					      NULL);
+					      
+		    }
+		    FreeVec(buf);
+		}
+	    }
+	    break;
+	    
+    } /* switch(msg->pixFmt) */
+        
+    ReturnVoid("BitMap::GetImage");
+}
+
 static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     WORD x, y;
@@ -1471,34 +1563,81 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 	return;
     }
     
-    
-    /* Preserve old fg pen */
-    old_fg = GC_FG(gc);
-    
-    
-    for (y = 0; y < msg->height; y ++)
+        
+    switch(msg->pixFmt)
     {
-    	for (x = 0; x < msg->width; x ++)
-    	{
-	    register HIDDT_Pixel pix;
-	    switch (bpp) {
-	    	case 1: pix = *((UBYTE *)pixarray) & 0x000000FF; pixarray ++; break;
-		case 2: pix = *((UWORD *)pixarray) & 0x0000FFFF; pixarray += 2; break;
-		case 3: D(bug("PUTIMAGE: 3  BYTESPERPIX NOT HANDLED YET\n")); break;
-		case 4: pix = *((ULONG *)pixarray); pixarray += 4; break;
-		  
+    	case vHidd_StdPixFmt_Native:
+	case vHidd_StdPixFmt_Native32:
+	
+	    /* Preserve old fg pen */
+	    old_fg = GC_FG(gc);
+    
+	    for (y = 0; y < msg->height; y ++)
+	    {
+    		for (x = 0; x < msg->width; x ++)
+    		{
+		    register HIDDT_Pixel pix;
+		    switch (bpp) {
+	    		case 1: pix = *((UBYTE *)pixarray) & 0x000000FF; pixarray ++; break;
+			case 2: pix = *((UWORD *)pixarray) & 0x0000FFFF; pixarray += 2; break;
+			case 3: D(bug("PUTIMAGE: 3  BYTESPERPIX NOT HANDLED YET\n")); break;
+			case 4: pix = *((ULONG *)pixarray); pixarray += 4; break;
+
+		    }
+
+		    GC_FG(gc) = pix;
+
+		    HIDD_BM_DrawPixel(o, gc, x + msg->x , y + msg->y);
+		}
+		pixarray += (msg->modulo - msg->width * bpp);
 	    }
 	    
-	    GC_FG(gc) = pix;
-
-	    HIDD_BM_DrawPixel(o, gc, x + msg->x , y + msg->y);
-	}
-    }
-    
-    GC_FG(gc) = old_fg;
-    
+	    GC_FG(gc) = old_fg;
+	    break;
+	    
+	default:
+	    {
+		OOP_Object *srcpf;
+	    	APTR 	    buf, destPixels;
+		
+		srcpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+		
+		buf = destPixels = AllocVec(msg->width * sizeof(HIDDT_Pixel), MEMF_PUBLIC);
+		if (buf)
+		{
+		    for(y = 0; y < msg->height; y++)
+		    {
+		    	HIDD_BM_ConvertPixels(o,
+			    	    	      &pixarray,
+					      (HIDDT_PixelFormat *)srcpf,
+			    	    	      msg->modulo,
+					      &destPixels,
+					      data->prot.pixfmt,
+					      0,
+					      msg->width,
+					      1,
+					      NULL);
+					      
+		    	HIDD_BM_PutImage(o,
+			    	    	 msg->gc,
+					 buf,
+					 0,
+					 msg->x,
+					 msg->y + y,
+					 msg->width,
+					 1,
+					 vHidd_StdPixFmt_Native);
+		    }
+		    FreeVec(buf);
+		}
+	    }
+	    break;
+	    
+    } /* switch(msg->pixFmt) */
+        
     ReturnVoid("BitMap::PutImage");
 }
+
 /*** BitMap::BlitColorExpansion() **********************************************/
 static VOID bitmap_blitcolexp(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
 {
