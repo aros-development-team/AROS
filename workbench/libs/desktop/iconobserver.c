@@ -174,11 +174,9 @@ IPTR iconObserverSet(Class * cl, Object * obj, struct opSet * msg)
             /*
                was this OM_SET triggered by a notify? 
              */
-//kprintf("io3\n");
 				if (strcmp(_comment(_presentation(obj)), data->comment))
                     DoMethod(_presentation(obj), MUIM_NoNotifySet, AIA_Comment,
                              data->comment);
-//kprintf("io4\n");
 				break;
             // TODO: When one of these bits is set, send a request to the
             // handler to do the change

@@ -95,7 +95,7 @@ IPTR containerIconObserverExecute(Class * cl, Object * obj, Msg msg)
     menuDat = BuildDesktopMenus();
 
     GetAttr(IA_Desktop, _presentation(obj), &desktop);
-   
+
     iconcontainer = CreateDesktopObject
     (
         CDO_IconContainer, 
