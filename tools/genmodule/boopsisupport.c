@@ -7,6 +7,16 @@
 #include "config.h"
 #include "functionhead.h"
 
+/* gettype remove the variable name from a variable definition and leave return
+ * the type of the variable
+ * [] at the end will be added as * in the variable type
+ * e.g. char *var[] => type: char **, name: var
+ * This is a destructive function and will change to string pointed to by def
+ * to only contain the type afterwards.
+ * Function return 0 when it did not understand the input, 1 otherwise
+ */
+static int gettype(char *def);
+
 void writeboopsidispatcher(FILE *out, struct config *cfg, struct functions *functions)
 {
     struct functionhead *methlistit;
@@ -35,6 +45,8 @@ void writeboopsidispatcher(FILE *out, struct config *cfg, struct functions *func
             methlistit = methlistit->next
 	)
         {
+	    char *type;
+	    
             fprintf(out, "        case %s: ", methlistit->name);
 	    if (strcmp(methlistit->type, "void") != 0)
 		fprintf(out, "return (IPTR)");
@@ -48,57 +60,37 @@ void writeboopsidispatcher(FILE *out, struct config *cfg, struct functions *func
             
             arglistit = methlistit->arguments;
             fprintf(out, "CLASS, ");
-            arglistit = arglistit->next;
-            fprintf(out, "self, ");
-            arglistit = arglistit->next;
 
-	    /* Split the argument spefication into type and name
-	     * replace any [] at the end with * added to spec
-	     * char *s[] => type == "char **", name == "s"
-	     */
+            arglistit = arglistit->next;
+	    type = strdup(arglistit->type);
+	    if (!gettype(type))
 	    {
-		char *begin = strdup(arglistit->type), *end;
-		unsigned int brackets = 0;
-		
-		/* Count the [] at the end of the argument */
-		end = begin+strlen(begin);
-		while (isspace(*(end-1))) end--;
-		while (*(end-1)==']')
-		{
-		    brackets++;
-		    end--;
-		    while (isspace(*(end-1))) end--;
-		    if (*(end-1)!='[')
-		    {
-			fprintf(stderr,
-				"Argument \"%s\" not understood for function %s\n",
-				begin, methlistit->name
-			);
-			exit(20);
-		    }
-		    end--;
-		    while (isspace(*(end-1))) end--;
-		}
-			
-		/* Skip over the argument name and duplicate it */
-		while (!isspace(*(end-1)) && *(end-1)!='*') end--;
-
-		/* Add * for the brackets */
-		while (isspace(*(end-1))) end--;
-		for (i=0; i<brackets; i++)
-		{
-		    *end='*';
-		    end++;
-		}
-		*end='\0';
-		fprintf(out, "(%s) message);", begin);
-		free(begin);
-		
-		if (strcmp(methlistit->type, "void") == 0)
-		    fprintf(out, " break;");
-
-		fprintf(out, "\n");
+		fprintf(stderr,
+			"Argument \"%s\" not understood for function %s\n",
+			arglistit->type, methlistit->name
+		);
+		exit(20);
 	    }
+            fprintf(out, "(%s)self, ", type);
+	    free(type);
+	    
+            arglistit = arglistit->next;
+	    type = strdup(arglistit->type);
+	    if (!gettype(type))
+	    {
+		fprintf(stderr,
+			"Argument \"%s\" not understood for function %s\n",
+			arglistit->type, methlistit->name
+		);
+		exit(20);
+	    }
+	    fprintf(out, "(%s) message);", type);
+	    free(type);
+		
+	    if (strcmp(methlistit->type, "void") == 0)
+		fprintf(out, " break;");
+
+	    fprintf(out, "\n");
         }
         
         fprintf
@@ -254,4 +246,38 @@ void writeclassinit(FILE *out, struct config *cfg, struct functions *functions)
         "ADD2EXPUNGELIB(BOOPSI_Shutdown, 1);\n",
         cfg->classname, cfg->superclass, cfg->basename, cfg->basename
     );
+}
+
+static int gettype(char *def)
+{
+    char *begin = def, *end;
+    unsigned int brackets = 0, i;
+		
+    /* Count the [] at the end of the argument */
+    end = begin+strlen(begin);
+    while (isspace(*(end-1))) end--;
+    while (*(end-1)==']')
+    {
+	brackets++;
+	end--;
+	while (isspace(*(end-1))) end--;
+	if (*(end-1)!='[')
+	    return 0;
+	end--;
+	while (isspace(*(end-1))) end--;
+    }
+			
+    /* Skip over the argument name */
+    while (!isspace(*(end-1)) && *(end-1)!='*') end--;
+
+    /* Add * for the brackets */
+    while (isspace(*(end-1))) end--;
+    for (i=0; i<brackets; i++)
+    {
+	*end='*';
+	end++;
+    }
+    *end='\0';
+
+    return 1;
 }

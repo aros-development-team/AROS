@@ -60,6 +60,11 @@ void writestart(struct config *cfg, struct functions *functions)
     {
 	writeclassinit(out, cfg, functions);
     }
+    else if (cfg->modtype == DATATYPE)
+    {
+	writeclassinit(out, cfg, functions);
+	writeobtainengine(out, cfg);
+    }
     
     fclose(out);
 }
@@ -184,6 +189,7 @@ static void writeresident(FILE *out, struct config *cfg)
     case MCC:
     case MCP:
     case GADGET:
+    case DATATYPE:
 	fprintf(out, "    NT_LIBRARY,\n");
 	break;
     case DEVICE:
@@ -239,6 +245,7 @@ static void writeresident(FILE *out, struct config *cfg)
     case MCC:
     case MCP:
     case GADGET:
+    case DATATYPE:
 	fprintf(out, "    INITBYTE(OFFSET(Node, ln_Type), NT_LIBRARY),\n");
 	break;
     case DEVICE:
@@ -664,9 +671,9 @@ writefunctable(FILE *out,
 		);
 	    }
 	    fprintf(out,
-		    "         %s, %s, %u, %s\n"
+		    "         LIBBASETYPEPTR, %s, %u, %s\n"
 		    ");\n",
-		    cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename
+		    cfg->libbase, funclistit->lvo, cfg->basename
 	    );
 	    break;
 

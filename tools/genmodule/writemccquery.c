@@ -27,7 +27,7 @@ void writemccquery(FILE *out, struct config *cfg)
         "\n"
         "AROS_LH1(IPTR, MCC_Query,\n"
         "         AROS_LHA(LONG, what, D0),\n"
-        "         struct Library *, %s, 5, %s\n"
+        "         LIBBASETYPEPTR, %s, 5, %s\n"
         ")\n"
         "{\n"
         "    AROS_LIBFUNC_INIT\n"

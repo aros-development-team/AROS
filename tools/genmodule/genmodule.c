@@ -17,6 +17,7 @@ int main(int argc, char **argv)
 	|| cfg->modtype == DEVICE
 	|| cfg->modtype == RESOURCE
 	|| cfg->modtype == GADGET
+	|| cfg->modtype == DATATYPE
     )
     {
         writeincproto(cfg);

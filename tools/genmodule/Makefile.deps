@@ -2,6 +2,7 @@ GENMODULE_SRCS := \
     genmodule.c \
     boopsisupport.c \
     config.c \
+    dtsupport.c \
     fileread.c \
     functionhead.c \
     readref.c \
