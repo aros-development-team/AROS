@@ -232,9 +232,10 @@ int intui_GetWindowSize (void)
 int intui_OpenWindow (struct IntWindow * iw,
 	struct IntuitionBase * IntuitionBase)
 {
-    XGCValues gcval;
     XSetWindowAttributes winattr;
-    GC gc;
+
+    if (!GetGC (iw->iw_Window.RPort))
+	return FALSE;
 
     winattr.event_mask = 0;
 
@@ -305,34 +306,11 @@ int intui_OpenWindow (struct IntWindow * iw,
 
     SetXWindow (iw->iw_Window.RPort, iw->iw_XWindow);
 
-    /*TODO __SetSizeHints (w); */
-
-    gcval.plane_mask = sysPlaneMask;
-    gcval.graphics_exposures = True;
-
-    gc = XCreateGC (sysDisplay
-	, iw->iw_XWindow
-	, GCPlaneMask
-	    | GCGraphicsExposures
-	, &gcval
-    );
-
-    if (!gc)
-    {
-	XDestroyWindow (sysDisplay, iw->iw_XWindow);
-	return FALSE;
-    }
-
-    /* XSetGraphicsExposures (sysDisplay, gc, TRUE); */
-
-    SetGC (iw->iw_Window.RPort, gc);
-
     iw->iw_Region = XCreateRegion ();
 
     if (!iw->iw_Region)
     {
 	XDestroyWindow (sysDisplay, iw->iw_XWindow);
-	XFreeGC (sysDisplay, gc);
 	return FALSE;
     }
 
@@ -354,8 +332,6 @@ void intui_CloseWindow (struct IntWindow * iw,
     XDestroyWindow (sysDisplay, iw->iw_XWindow);
 
     XDestroyRegion (iw->iw_Region);
-
-    XFreeGC (sysDisplay, GetGC(iw->iw_Window.RPort));
 
     XSync (sysDisplay, FALSE);
 }
