@@ -9,6 +9,7 @@
     Lang: english
 */
 #include <sys/_types.h>
+#include <sys/types.h>
 
 /*
  * What version of POSIX things do we implement. We must define this before
@@ -213,7 +214,7 @@ pid_t       getpid(void);
 /* NOTIMPL pid_t       getppid(void); */
 uid_t       getuid(void);
 int         isatty(int fd);
-/* NOTIMPL int         link(const char *name1, const char *name2); */
+int         link(const char *name1, const char *name2);
 off_t       lseek(int filedes, off_t offset, int whence);
 /* NOTIMPL long        pathconf(const char *path, int name); */
 /* NOTIMPL int         pause(void); */
@@ -262,7 +263,7 @@ ssize_t     readlink(const char * restrict path, char * restrict buf, int bufsiz
 #endif
 
 #if __POSIX_VISIBLE >= 200112 || __XSI_VISIBLE >= 402 || __BSD_VISIBLE
-/* NOTIMPL int         symlink(const char *name1, const char *name2); */
+int         symlink(const char *name1, const char *name2);
 #endif
 
 #if __XSI_VISIBLE
@@ -292,6 +293,8 @@ int         truncate(const char *path, off_t length);
 #if __POSIX_VERSION >= 200112
 /* NOTIMPL int         fdatasync(int fd); */
 #endif
+
+int mknod(const char *pathname, mode_t mode, dev_t dev);
 
 __END_DECLS
 
