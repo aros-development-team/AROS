@@ -54,8 +54,11 @@
 	/* Write char to stderr */
 	write (STDERR_FILENO, &chr, 1);
 
-	/* Make sure it makes it to the user. Slow but save. */
+	/* Make sure it makes it to the user. Slow but save.
+	   On Linux this gives an error (stderr is already unbuffered) */
+#if !defined(__linux__)
 	fsync (STDERR_FILENO);
+#endif
     }
 
     AROS_LIBFUNC_EXIT
