@@ -162,7 +162,12 @@ static IPTR NavigationP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	Child, (IPTR) VGroup,
 	GroupFrameT("Keyboard Control"),
 	Child, (IPTR) HGroup,
+	Child, (IPTR) VGroup,
+	MUIA_Group_VertSpacing, 0,
+	Child, (IPTR) VSpace(3),
 	Child, (IPTR) Label("Color of active object:"),
+	Child, (IPTR) VSpace(3),
+	End, // VGroup label
 	Child, (IPTR) (d.active_poppen = MakePoppen()),
 	End, // HGroup
 	Child, (IPTR) MakeScrollgroup(&d),
