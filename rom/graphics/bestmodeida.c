@@ -96,7 +96,7 @@
 	
 	if (NULL != vp->RasInfo->BitMap)
 	{
-	    depth = vp->RasInfo->BitMap->Depth;
+	    depth = GetBitMapAttr(vp->RasInfo->BitMap, BMA_DEPTH);
 	}
 	else
 	{
