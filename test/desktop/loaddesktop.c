@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -156,7 +156,7 @@ int main(void)
                         args[1].ti_Tag=TAG_END;
                         args[1].ti_Data=0;
 
-                        DoDesktopOperation(inputResult, args);
+                        DoDesktopOperationA(inputResult, args);
                     }
                     else if(inputResult & DOC_ICONOP)
                     {
@@ -170,7 +170,7 @@ int main(void)
                             args[1].ti_Tag=TAG_END;
                             args[1].ti_Data=0;
 
-                            DoDesktopOperation(inputResult, args);
+                            DoDesktopOperationA(inputResult, args);
                         }
                     }
                     else if(inputResult & DOC_WINDOWOP)
@@ -182,7 +182,7 @@ int main(void)
                         args[1].ti_Tag=TAG_END;
                         args[1].ti_Data=0;
 
-                        DoDesktopOperation(inputResult, args);
+                        DoDesktopOperationA(inputResult, args);
                     }
                 }
             }
@@ -204,8 +204,3 @@ int main(void)
 
     return 0;
 }
-
-
-
-
-
