@@ -456,8 +456,8 @@ static ULONG Register_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskM
     msg->MinMaxInfo->DefWidth = MAX(msg->MinMaxInfo->DefWidth, data->def_width);
 
     msg->MinMaxInfo->MinHeight += data->tab_height;
-    msg->MinMaxInfo->MaxHeight += data->tab_height;
     msg->MinMaxInfo->DefHeight += data->tab_height;
+    msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
 
     D(bug("Register_AskMinMax2 : %ld, %ld, %ld\n",
 	  msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->MaxWidth));
