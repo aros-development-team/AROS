@@ -4,14 +4,15 @@
 #
 include $(TOP)/config/make.cfg
 
-# This metatarget is so that the xxx-module and xxx-linklib both require
-# the same things to be built before running those targets.
-#MM- kernel-aros : includes linklibs
-#MM- kernel-aros-kobj : includes linklibs
+#MM- kernel-aros : linklibs
+#MM- kernel-aros-kobj : linklibs
 
-%build_module_macro mmake=kernel-aros \
+#MM- kernel-aros-includes : \
+#MM-     kernel-exec-includes \
+#MM-     kernel-utility-includes \
+#MM-     includes-copy
+
+%build_module mmake=kernel-aros \
   modname=aros modtype=library \
-  funcs=arosinquirea \
-  conffile=lib.conf
+  files="aros_init arosinquirea" \
 
-%common
