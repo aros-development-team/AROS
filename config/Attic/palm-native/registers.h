@@ -96,6 +96,7 @@
 #define IVR		0xfffff300
 #define ICR             0xfffff302
 #define IMR             0xfffff304
+#define IWR             0xfffff308
 #define ISR             0xfffff30c
 #define IPR             0xfffff310
 #define ILCR            0xfffff314
@@ -143,7 +144,7 @@
 #define LPXCD           0xfffffa25
 #define LCKCON          0xfffffa27
 #define LRRA            0xfffffa28
-
+#define LOTCR           0xfffffa2b
 #define LPOSR           0xfffffa2d
 #define LFRCM           0xfffffa31
 #define LGPMR           0xfffffa33
