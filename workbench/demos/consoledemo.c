@@ -7,6 +7,8 @@
 */
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#include <proto/dos.h>
+#include <dos/dosextens.h>
 #include <exec/io.h>
 #include <intuition/intuition.h>
 #include <devices/conunit.h>
@@ -36,7 +38,30 @@ VOID HandleEvents(struct Window *);
 *************/
 int main(int argc, char **argv)
 {
+    BPTR fh;
     SDInit();
+    
+    D(bug("Opening CON:\n"));
+    
+    fh = Open("CON:", MODE_NEWFILE);
+    if (fh)
+    {
+    	LONG ret;
+	ULONG i;
+	
+    	D(bug("Console file opened\n"));
+	for (i = 0; i < 100; i ++)
+	{
+    	    ret = FPuts(fh, "Test\n");
+	    D(bug("Got ret %ld\n", ret));
+	    Flush(fh);
+	}
+	
+	Close(fh);
+	
+    }
+    return 0;
+    
     
     if (Init())
     {
