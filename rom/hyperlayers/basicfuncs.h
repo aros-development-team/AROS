@@ -65,10 +65,10 @@ void _FreeLayer(struct Layer * l, struct LayersBase *LayersBase);
 /***************************************************************************/
 
 BOOL _AllocExtLayerInfo
-    (struct Layer_Info * li);
+    (struct Layer_Info * li, struct LayersBase *LayersBase);
 
 void _FreeExtLayerInfo
-    (struct Layer_Info * li);
+    (struct Layer_Info * li, struct LayersBase *LayersBase);
 
 ULONG _InitLIExtra
     (struct Layer_Info * li, struct LayersBase * LayersBase);

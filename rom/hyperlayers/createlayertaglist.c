@@ -155,10 +155,41 @@
   
   if ((flags & LAYERSUPER) && (NULL == superbitmap)) 
     return NULL;
-    
-  if (!parent)
-    parent = li->check_lp;
 
+  if (!parent)
+  {
+    parent = li->check_lp;
+    if (!parent)
+    {
+      /* Root layer not yet installed */
+      
+      if (!(flags & LAYER_ROOT_LAYER)) /* avoid endless recursion */
+      {
+        struct TagItem tags[] =
+	{
+	    {LA_Visible , FALSE     	},
+	    {LA_Priority, ROOTPRIORITY	},
+	    {TAG_DONE	    	    	}
+	};
+	
+        if (!(CreateLayerTagList(li,
+	    	    	    	 bm,
+				 0,
+				 0,
+				 GetBitMapAttr(bm, BMA_WIDTH) - 1,
+				 GetBitMapAttr(bm, BMA_HEIGHT) - 1,
+				 LAYER_ROOT_LAYER,
+				 tags)))
+	{
+	  li->check_lp = NULL;
+	  return NULL;
+	}
+	
+	parent = li->check_lp;
+      }
+    }
+  }
+  
   /*
    * User gives coordinates reltive to parent.
    * Adjust the shape to the absolute coordinates
