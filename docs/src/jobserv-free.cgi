@@ -40,7 +40,7 @@ if ($query_string != "")
 		$jobids = $jobids + " or ";
 	    }
 
-	    $jobids = $jobids + "jobid like '" + $area[1] + "%'";
+	    $jobids = $jobids + "jobid like '" + $area[1] + "0%'";
 	}
     }
 }
