@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: AROS propgclass implementation.
@@ -26,13 +26,15 @@
 #include "intuition_intern.h"
 #include "propgadgets.h"
 
+/****************************************************************************************/
+
 #undef IntuitionBase
-#define IntuitionBase ((struct IntuitionBase *)(cl->cl_UserData))
+#define IntuitionBase 	((struct IntuitionBase *)(cl->cl_UserData))
 
 #define EG(o)		((struct ExtGadget *)o)
 #define G(o)		((struct Gadget *)o)
 
-/*****************************************************************************/
+/****************************************************************************************/
 
 struct PropGData
 {
@@ -56,15 +58,15 @@ struct PropGData
     struct BBox 	*old_knobbox;
 };
 
+/****************************************************************************************/
+
 #define PGD(x) ((struct PropGData *)x)
 
 #define SetGadgetType(gad, type) \
 	EG(gad)->GadgetType &= ~GTYP_GTYPEMASK; \
 	EG(gad)->GadgetType |= type;
 
-#undef MAX
-#define MAX(a,b) \
- ((a) > (b)) ? (a) : (b);
+/****************************************************************************************/
 
 static VOID FindScrollerValues
 (
@@ -78,8 +80,11 @@ static VOID FindScrollerValues
 {
     UWORD hidden;
     
-    hidden = MAX(total - visible, 0);
-    
+    if (total > visible)
+        hidden = total - visible;
+    else
+        hidden = 0;
+	
     if (top > hidden)
     	top = hidden;
    	
@@ -92,16 +97,23 @@ static VOID FindScrollerValues
     return;
 }
 
+/****************************************************************************************/
+
 static UWORD FindScrollerTop(UWORD total, UWORD visible, UWORD pot)
 {
     UWORD top, hidden;
     
-    hidden = MAX(total - visible, 0);
+    if (total > visible)
+        hidden = total - visible;
+    else
+        hidden = 0;
     
     top = (((ULONG) hidden * pot) + (MAXPOT / 2)) >> 16;
     
     return (top);
 }
+
+/****************************************************************************************/
 
 static VOID NotifyTop(Class *cl, Object *o, struct GadgetInfo *gi, UWORD top, BOOL final)
 {
@@ -111,7 +123,7 @@ static VOID NotifyTop(Class *cl, Object *o, struct GadgetInfo *gi, UWORD top, BO
     {
 
     	struct opUpdate notifymsg;
-    	struct TagItem notifyattrs[3];
+    	struct TagItem  notifyattrs[3];
 	
 	D(bug("NotifyTop(top=%d, final=%d)\n",
 		top, final));
@@ -133,14 +145,16 @@ static VOID NotifyTop(Class *cl, Object *o, struct GadgetInfo *gi, UWORD top, BO
     return;
 }
 
+/****************************************************************************************/
+
 static VOID UpdateTop(Class *cl, Object *o, struct GadgetInfo *gi, BOOL final)
 {
     /* Updates the PGA_Top attribute accordin to the Bofy/Pot vars.
     ** Also triggers notifcation if PGA_Top has changed.
     */
 
-    UWORD top, pot;
-    struct PropGData *data = (struct PropGData *)INST_DATA(cl, o);
+    struct PropGData 	*data = (struct PropGData *)INST_DATA(cl, o);
+    UWORD 		top, pot;
     
     D(bug("UpdateTop()\n"));
     
@@ -163,6 +177,7 @@ static VOID UpdateTop(Class *cl, Object *o, struct GadgetInfo *gi, BOOL final)
     return;
 }
 
+/****************************************************************************************/
 
 #define SETFLAG(flagvar, boolvar, flag) \
     if (boolvar)			\
@@ -170,11 +185,14 @@ static VOID UpdateTop(Class *cl, Object *o, struct GadgetInfo *gi, BOOL final)
     else				\
     	flagvar &= ~flag;
 
+/****************************************************************************************/
+
 static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
 {
     struct TagItem 	*tag, *tstate;
     struct PropGData 	*data;
     struct BBox		old_knobbox;
+    UWORD		newtop;
     BOOL 		set_flag = FALSE;
     BOOL		old_knobbox_ok = FALSE;
 
@@ -191,16 +209,19 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
     	old_knobbox_ok = CalcKnobSize(G(o), &old_knobbox);
     }
     
+    newtop = data->top; /* !! */
+    
     /* Set to 1 to signal visual changes */
     while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
     {
     	switch (tag->ti_Tag)
     	{
     	    case PGA_Top:
-		NotifyTop(cl, o, msg->ops_GInfo, tag->ti_Data, TRUE);
-		/* Set this afterwards, since NotifyTop checks top != data->top */
-		data->top = tag->ti_Data;
- 	    	set_flag= TRUE;
+	    	newtop = (UWORD)tag->ti_Data;
+		/* This will be poked into data->top later below, because the
+		   value might have to be adjusted. It depends on PGA_Total
+		   and PGA_Visible which might be also set later in the taglist */
+	    	set_flag= TRUE;
 		retval += 1UL;
 		break;
     	
@@ -214,7 +235,6 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
 		data->total = tag->ti_Data;
     		set_flag = TRUE;
 		retval += 1UL;
-
 		break;
 
 	    /* When one of the four next ones is set, what should then happen
@@ -282,11 +302,28 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
     	
     } /* while ((tag = NextTagItem(&tstate)) != NULL) */
     
-    /* Top, Visible or Total set */
+    /* Top, Visible or Total set? */
+    
     if (set_flag)
     {
     	UWORD *bodyptr, *potptr;
     	
+	/* fix top  value if necessary */
+	
+	if (data->total > data->visible)
+	{
+	    if (newtop > (data->total - data->visible))
+		newtop = data->total - data->visible;
+	}
+	else
+	{
+	    newtop = 0;
+	}
+	
+	NotifyTop(cl, o, msg->ops_GInfo, newtop, TRUE);
+	/* Set this afterwards, since NotifyTop checks top != data->top */
+	data->top = newtop;
+ 	
     	if (data->propinfo.Flags & FREEVERT)
     	{
     	    bodyptr = &(data->propinfo.VertBody);
@@ -326,6 +363,8 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
     return (retval);
 }
 
+/****************************************************************************************/
+
 static IPTR new_propgclass(Class *cl, Object *o, struct opSet *msg)
 {
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
@@ -355,13 +394,16 @@ static IPTR new_propgclass(Class *cl, Object *o, struct opSet *msg)
    	set_propgclass(cl, o, msg);
 	    
     } /* if (object created) */
+    
     return ((IPTR)o);
 }
 
+/****************************************************************************************/
+
 static IPTR get_propgclass(Class *cl, Object *o,struct opGet *msg)
 {
-    IPTR retval = 1UL;
-    struct PropGData *data;
+    struct PropGData 	*data;
+    IPTR 		retval = 1UL;
     
     data = INST_DATA(cl, o);
     
@@ -401,6 +443,8 @@ static IPTR get_propgclass(Class *cl, Object *o,struct opGet *msg)
     }
     return (retval);    
 }
+
+/****************************************************************************************/
 
 static IPTR goactive_propgclass(Class *cl, Object *o, struct gpInput *msg)
 {
@@ -453,13 +497,15 @@ static IPTR goactive_propgclass(Class *cl, Object *o, struct gpInput *msg)
     return (retval);
 } 
 
+/****************************************************************************************/
+
 static IPTR handleinput_propgclass(Class *cl, Object *o, struct gpInput *msg)
 {
-    struct InputEvent *ie;
+    struct InputEvent 	*ie;
+    struct PropGData  	*data = INST_DATA(cl, o);
 	    
     /* Default: stay active */
-    IPTR retval = GMR_MEACTIVE;
-    struct PropGData *data = INST_DATA(cl, o);
+    IPTR 		retval = GMR_MEACTIVE;
 	    
     ie = msg->gpi_IEvent;
     if (ie->ie_Class == IECLASS_RAWMOUSE)
@@ -525,6 +571,8 @@ static IPTR handleinput_propgclass(Class *cl, Object *o, struct gpInput *msg)
     return (retval);    
 }
 
+/****************************************************************************************/
+
 static IPTR render_propgclass(Class *cl, Object *o, struct gpRender *msg)
 {
     struct PropGData *data = INST_DATA(cl, o);
@@ -560,10 +608,12 @@ static IPTR render_propgclass(Class *cl, Object *o, struct gpRender *msg)
 
 }
 
+/****************************************************************************************/
+
 static IPTR goinactive_propgclass(Class *cl, Object *o, struct gpGoInactive *msg)
 {
-
     /* Gadget cancelled by intuition ? */
+    
     if (msg->gpgi_Abort == 1)
     {
     	SetGadgetType(o, GTYP_PROPGADGET);
@@ -584,9 +634,8 @@ static IPTR goinactive_propgclass(Class *cl, Object *o, struct gpGoInactive *msg
     return (0UL);   	    	
 }
 
+/****************************************************************************************/
 
-/* propgclass boopsi dispatcher
- */
 AROS_UFH3S(IPTR, dispatch_propgclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
@@ -630,15 +679,18 @@ AROS_UFH3S(IPTR, dispatch_propgclass,
 	default:
 	    retval = DoSuperMethodA(cl, o, msg);
 	    break;
+	    
     } /* switch */
 
     return (retval);
+    
 }  /* dispatch_propgclass */
 
+/****************************************************************************************/
 
 #undef IntuitionBase
 
-/****************************************************************************/
+/****************************************************************************************/
 
 /* Initialize our propg class. */
 struct IClass *InitPropGClass (struct IntuitionBase * IntuitionBase)
@@ -658,4 +710,6 @@ struct IClass *InitPropGClass (struct IntuitionBase * IntuitionBase)
 
     return (cl);
 }
+
+/****************************************************************************************/
 
