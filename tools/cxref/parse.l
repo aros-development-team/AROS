@@ -233,6 +233,7 @@ void ResetLexer(void)
 
 <CPP_DEFINE_ARGS>{L}({L}|{D})*              { if(!in_header) SeenDefineFunctionArg(yytext); }
 <CPP_DEFINE_ARGS>{L}({L}|{D})*"..."         { if(!in_header) SeenDefineFunctionArg(yytext); }
+<CPP_DEFINE_ARGS>"..."                      { if(!in_header) SeenDefineFunctionArg("__VA_ARGS__"); }
 <CPP_DEFINE_ARGS>","                        { }
 <CPP_DEFINE_ARGS>{W}+                       { }
 <CPP_DEFINE_ARGS>\\{N}                      { parse_line++; }
