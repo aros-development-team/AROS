@@ -161,6 +161,24 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 
     for (i = 0; files[i] != NULL; i++)
     {
+	/* Index for last character in the current file name (pattern name) */
+	int lastIndex = strlen(files[i]) - 1;
+
+	if (files[i][lastIndex] == ':')
+	{
+	    struct DosList *dl = LockDosList(LDF_ALL | LDF_READ);
+	    
+	    if (FindDosEntry(dl, (CONST_STRPTR)files[i], LDF_ALL | LDF_READ))
+	    {
+		MatchEnd(ap);
+		UnLockDosList(LDF_ALL | LDF_READ);
+		
+		printf("%s is a device and cannot be deleted\n", files[i]);
+		
+		return RETURN_FAIL;
+	    }
+	}
+
 	for (match = MatchFirst(files[i], ap); match == 0;
 	     match = MatchNext(ap))
 	{
@@ -173,7 +191,6 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 
 		return  RETURN_ERROR;
 	    }
-
 
 	    /* If this is a directory, we enter it regardless if the ALL
 	       switch is set. */
