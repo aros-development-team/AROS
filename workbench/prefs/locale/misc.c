@@ -99,9 +99,8 @@ void SetMenuFlags(void)
 
 /*********************************************************************************************/
 
-STRPTR GetFile(void)
+STRPTR GetFile(STRPTR title, STRPTR dir, BOOL savemode)
 {
-    static UBYTE         pathbuffer[300];
     static UBYTE         filebuffer[300];
     struct FileRequester *req;
     STRPTR               retval = NULL;
@@ -109,8 +108,10 @@ STRPTR GetFile(void)
     AslBase = OpenLibrary("asl.library", 39);
     if (AslBase)
     {
-	req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText    , (IPTR)MSG(MSG_ASL_OPEN_TITLE),
-						   ASLFR_DoPatterns   , TRUE                         ,
+	req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText    , (IPTR)title,
+						   ASLFR_DoPatterns   , TRUE       ,
+						   ASLFR_InitialDrawer, (IPTR)dir  ,
+						   ASLFR_DoSaveMode   , savemode   ,
 						   TAG_DONE);
 	if (req)
 	{

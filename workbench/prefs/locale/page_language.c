@@ -144,10 +144,27 @@ static void clear_languages(void)
 
 /*********************************************************************************************/
 
+static void update_prefs(void)
+{
+    struct LanguageEntry *entry;
+    WORD    	    	 i = 0;
+    
+    ForeachNode(&pref_language_list, entry)
+    {
+    	strcpy(localeprefs.lp_PreferredLanguages[i], entry->lve.realname);
+	i++;
+	if (i == 10) break;	       
+    }
+    
+    if (i < 10) localeprefs.lp_PreferredLanguages[i][0] = '\0';
+}
+
+/*********************************************************************************************/
+
 static LONG language_input(struct IntuiMessage *msg)
 {
     struct Node *node;
-    LONG retval = FALSE;
+    LONG    	retval = FALSE;
     
     if (msg->Class == IDCMP_GADGETUP)
     {
@@ -164,7 +181,10 @@ static LONG language_input(struct IntuiMessage *msg)
 		    AddTail(&pref_language_list, node);
 
     	    	    reset_listviews();
+		    
+		    update_prefs();
 		}
+		retval = TRUE;
 	    	break;
 
 	    case MSG_GAD_PREF_LANGUAGES:
@@ -176,13 +196,19 @@ static LONG language_input(struct IntuiMessage *msg)
 		    SortInNode(&language_list, node);
 
     	    	    reset_listviews();
+
+		    update_prefs();
 		}
+		retval = TRUE;
 	    	break;
 		
 	    case MSG_GAD_CLEAR_LANGUAGES:
 	    	empty_listviews();
 	    	clear_languages();
 		reset_listviews();
+
+		update_prefs();
+		retval = TRUE;
 	    	break;
 	}
     }

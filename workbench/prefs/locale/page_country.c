@@ -56,6 +56,35 @@ static void country_cleanup(void)
 
 /*********************************************************************************************/
 
+static LONG country_input(struct IntuiMessage *msg)
+{
+    struct CountryEntry *entry;    
+    LONG    	retval = FALSE;
+    
+    if (msg->Class == IDCMP_GADGETUP)
+    {
+    	struct Gadget *gad = (struct Gadget *)msg->IAddress;
+	
+	switch(gad->GadgetID)
+	{
+	    case MSG_GAD_TAB_COUNTRY:
+	    	if ((entry = (struct CountryEntry *)FindListNode(&country_list, msg->Code)))
+		{
+		    strcpy(localeprefs.lp_CountryName, entry->lve.realname);
+		    LoadCountry(localeprefs.lp_CountryName, &localeprefs.lp_CountryData);
+		}
+		retval = TRUE;
+		break;
+		
+	} /* switch(gad->GadgetID) */
+	
+    } /* if (msg->Class == IDCMP_GADGETUP) */
+    
+    return retval;
+}
+
+/*********************************************************************************************/
+
 static void country_prefs_changed(void)
 {
     struct CountryEntry *entry;
@@ -151,7 +180,7 @@ LONG page_country_handler(LONG cmd, IPTR param)
 	    break;
 	    
 	case PAGECMD_HANDLEINPUT:
-	    retval = FALSE;
+	    retval = country_input((struct IntuiMessage *)param);
 	    break;
 	    
 	case PAGECMD_CLEANUP:
