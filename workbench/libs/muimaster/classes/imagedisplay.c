@@ -197,21 +197,15 @@ static IPTR Imagedisplay_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_A
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
-    if (data->img)
-    {
-	struct MUI_MinMax minmax;
-
-	zune_imspec_askminmax(data->img, &minmax);
-
-	msg->MinMaxInfo->MinWidth += minmax.MinWidth;
-	msg->MinMaxInfo->MinHeight += minmax.MinHeight;
+    msg->MinMaxInfo->MinWidth += 3;
+    msg->MinMaxInfo->MinHeight += 3;
    
-	msg->MinMaxInfo->DefWidth += minmax.DefWidth;
-	msg->MinMaxInfo->DefHeight += minmax.DefHeight;
+    msg->MinMaxInfo->DefWidth += 16;
+    msg->MinMaxInfo->DefHeight += 16;
 
-	msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
-	msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
-    }
+    msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+    msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
+
     return 1;
 }
 
@@ -263,6 +257,7 @@ static IPTR Imagedisplay_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *m
 	width = _mwidth(obj);
 	height = _mheight(obj);
 
+	/* if either horiz or vert is not rescalable, center it at def size */
 	if (!(data->flags & MIF_FREEVERT) || !(data->flags & MIF_FREEHORIZ))
 	{
 	    struct MUI_MinMax minmax;
