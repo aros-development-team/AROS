@@ -7,6 +7,7 @@
 # Things of interest.
 SRC	:=  flexcat.c
 SDFILES	:=  C_c_orig.sd C_h_orig.sd
+SD_OUT	:=  $(foreach f,$(SDFILES),$(TOOLDIR)/$(f))
 
 -include $(TOP)/config/make.cfg
 
@@ -23,7 +24,7 @@ TOOLDIR	    ?= .
 STRIP	    ?= strip
 MECHO	    ?= echo
 
-all : $(FLEXCAT)
+all : $(FLEXCAT) copy_sd_files
 
 real-all: $(FLEXCAT) copy_sd_files
 
@@ -32,11 +33,9 @@ $(FLEXCAT) : flexcat.c
 	@$(CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@
 	@$(STRIP) $@
 
-SD_OUT := $(foreach f,$(SDFILES),$(TOOLDIR)/$(f))
-
 copy_sd_files : $(SD_OUT)
 
-$(SD_OUT) : $(SDFILES)
+$(TOOLDIR)/%.sd : %.sd
 	@$(CP) $< $@
 
 clean:
