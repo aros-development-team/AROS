@@ -67,8 +67,8 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct IOFileSys io,*iofs=&io;
-    struct Process *pr = (struct Process *)FindTask(NULL);
-    
+    struct Process *me = (struct Process *)FindTask(NULL);
+
     /* Prepare I/O request */
     iofs->IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
     iofs->IOFS.io_Message.mn_ReplyPort	  = &me->pr_MsgPort;
