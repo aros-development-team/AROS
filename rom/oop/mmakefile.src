@@ -55,6 +55,7 @@ FUNCTIONS := 	addclass		\
 		newobject		\
 		obtainattrbase		\
 		obtainattrbases		\
+		parseattrs		\
 		releaseattrbase		\
 		releaseattrbases	\
 		removeclass		\
