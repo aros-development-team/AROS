@@ -1850,6 +1850,10 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
 	data->pixtime = attrs[SYAO(PixelTime)];
     } else if (GOT_SYNC_ATTR(PixelClock)) {
 #if !AROS_BOCHS_HACK
+#if AROS_NOFPU
+#warning Write code for non-FPU!
+	data->pixtime = 0x12345678;
+#else
 	/* Something in there makes Bochs freeze */
 	DOUBLE pixclock, pixtime;
 		    
@@ -1858,6 +1862,7 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
 	pixtime = 1 / pixclock;
 	pixtime *= 1000000000000;
 	data->pixtime = (ULONG)pixtime;
+#endif
 #else
 	data->pixtime = 0x12345678;
 #endif	

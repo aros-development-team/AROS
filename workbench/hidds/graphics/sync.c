@@ -78,6 +78,10 @@ static VOID sync_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		break;
 		
 	    case aoHidd_Sync_PixelClock: {
+#if AROS_NOFPU
+#warning Find code for non-FPU!
+		*msg->storage = (ULONG)0x12345678;
+#else
 		DOUBLE pixtime, pixclock;
 		
 		pixtime = (DOUBLE)data->pixtime;
@@ -85,6 +89,7 @@ static VOID sync_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		pixtime /= 1000000000000;	/* pixtime is in 10E-12 secs */
 		pixclock = 1 / pixtime;		/* convert to Hz */
 		*msg->storage = (ULONG)pixclock;
+#endif
 		break;
 	    }
 		
