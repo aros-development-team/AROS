@@ -138,7 +138,7 @@ struct IFS_IS_INTERACTIVE
 struct IFS_SAME_LOCK
 {
     APTR io_Lock[2]; /* The two locks to compare. */
-    LONG io_Same;    /* This set to one of LOCK_DIFFERENT or LOCK_SAME (see
+    LONG io_Same;    /* This is set to one of LOCK_DIFFERENT or LOCK_SAME (see
                         <dos/dos.h>). */
 };
 
@@ -238,7 +238,7 @@ struct IFS_DELETE_OBJECT
 #define FSA_SET_COMMENT 22
 struct IFS_SET_COMMENT
 {
-    STRPTR io_Filename; /* The file of the file to be commented. */
+    STRPTR io_Filename; /* The name of the file to be commented. */
     STRPTR io_Comment;  /* The new filecomment. May be NULL, in which case the
                            current filecomment is deleted. */
 };
@@ -281,7 +281,7 @@ struct IFS_IS_FILESYSTEM
 };
 
 /* Changes the number of buffers for the filesystem. The current number of
-   buffers is returned. The size of the buffers is filesystem-dependend. */
+   buffers is returned. The size of the buffers is filesystem-dependent. */
 #define FSA_MORE_CACHE 27
 struct IFS_MORE_CACHE
 {
@@ -317,7 +317,16 @@ struct IFS_MOUNT_MODE
 #if 0
 #define FSA_SERIALIZE_DISK  30
 #define FSA_FLUSH	    31
+#endif
+
 #define FSA_INHIBIT	    32
+struct IFS_INHIBIT
+{
+    BOOL  io_Inhibit;
+};
+
+
+#if 0
 #define FSA_WRITE_PROTECT   33
 #define FSA_DISK_CHANGE     34
 #define FSA_ADD_NOTIFY	    35
@@ -429,6 +438,7 @@ struct IOFileSys
         struct IFS_MORE_CACHE      io_MORE_CACHE;     /* FSA_MORE_CACHE */
         struct IFS_FORMAT          io_FORMAT;         /* FSA_FORMAT */
         struct IFS_MOUNT_MODE      io_MOUNT_MODE;     /* FSA_MOUNT_MODE */
+	struct IFS_INHIBIT         io_INHIBIT;        /* FSA_INHIBIT */
         struct IFS_PARENT_DIR      io_PARENT_DIR;     /* FSA_PARENT_DIR */
 	struct IFS_CONSOLE_MODE	   io_CONSOLE_MODE;   /* FSA_CONSOLE_MODE */
     } io_Union;
