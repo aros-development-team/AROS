@@ -64,31 +64,31 @@ BPTR LoadSeg_AOUT(BPTR file);
     BPTR file, segs=0;
 
     /* Open the file */
-    file = Open(name,MODE_OLDFILE);
+    file = Open (name,MODE_OLDFILE);
 
-    if(file)
+    if (file)
     {
 D(bug("Loading \"%s\"...\n", name));
 	/* Then try to load the different file formats */
-	if(!segs)
+	if (!segs)
 	{
-	    segs=LoadSeg_AOS(file);
+	    segs = LoadSeg_AOS (file);
 #if DEBUG > 1
 	    if (segs)
 		bug("Loaded as AmigaOS exe\n");
 #endif
 	}
-	if(!segs)
+	if (!segs)
 	{
-	    segs=LoadSeg_ELF(file);
+	    segs = LoadSeg_ELF (file);
 #if DEBUG > 1
 	    if (segs)
 		bug("Loaded as ELF exe\n");
 #endif
 	}
-	if(!segs)
+	if (!segs)
 	{
-	    segs=LoadSeg_AOUT(file);
+	    segs = LoadSeg_AOUT (file);
 #if DEBUG > 1
 	    if (segs)
 		bug("Loaded as a.out exe\n");
@@ -96,11 +96,11 @@ D(bug("Loading \"%s\"...\n", name));
 	}
 
 	/* Clean up */
-	Close(file);
+	Close (file);
     }
 
     if (segs)
-	SetIoErr(0);
+	SetIoErr (0);
 #if DEBUG > 1
     else
 	bug ("Loading failed\n");
