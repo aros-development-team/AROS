@@ -43,7 +43,14 @@ OSMODULE  := cybergraphics.library
 FILES	  :=	
 	
 FUNCTIONS := 	\
-	writelutpixelarray
+	fillpixelarray		\
+	invertpixelarray	\
+	readpixelarray		\
+	readrgbpixel		\
+	writelutpixelarray	\
+	writepixelarray		\
+	writergbpixel		
+	
 
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of extra libraries that you want included during
@@ -100,11 +107,11 @@ $(GENINCDIR)/cybergraphx/%.h : include/%.h
 	$(CP) include/$(notdir $<) $@
 
 #MM kernel-cgfx-linklib : setup includes kernel-cgfx-$(ARCH)-$(CPU)
-kernel-cgfx-linklib : $(LIB)
+kernel-cgfx-linklib : show-flags $(LIB)
 	@$(NOP)
 
 #MM kernel-cgfx-module : setup includes kernel-cgfx-$(ARCH)-$(CPU)
-kernel-cgfx-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-cgfx-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 
@@ -118,7 +125,7 @@ kernel-cgfx-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 #   make -f TOP=/dh1/AROS CURDIR=rom/cgfx mmakefile kernel-cgfx-module-quick
 
 #MM kernel-cgfx-module-quick : kernel-cgfx-$(ARCH)-$(CPU)
-kernel-cgfx-module-quick : $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-cgfx-module-quick : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM kernel-cgfx-includes-quick : hidd-cgfx-$(ARCH)-$(CPU)
@@ -126,7 +133,7 @@ kernel-cgfx-includes-quick : setup-includes includes-generate includes-copy
 	$(NOP)
 
 #MM kernel-cgfx-linklib-quick : kernel-cgfx-$(ARCH)-$(CPU)
-kernel-cgfx-linklib-quick : $(LIB)
+kernel-cgfx-linklib-quick : show-flags $(LIB)
 	@$(NOP)
 
 # --- QUICK HACKS END ---

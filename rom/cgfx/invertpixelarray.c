@@ -15,11 +15,11 @@
 	AROS_LH5(ULONG, InvertPixelArray,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, , A1),
-	AROS_LHA(UWORD            , , D0),
-	AROS_LHA(UWORD            , , D1),
-	AROS_LHA(UWORD            , , D2),
-	AROS_LHA(UWORD            , , D3),
+	AROS_LHA(struct RastPort *, rp		, A1),
+	AROS_LHA(UWORD            , destx	, D0),
+	AROS_LHA(UWORD            , desty	, D1),
+	AROS_LHA(UWORD            , width	, D2),
+	AROS_LHA(UWORD            , height	, D3),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 24, Cybergraphics)
@@ -48,9 +48,12 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
-
-    aros_print_not_implemented ("InvertPixelArray");
+    
+    return driver_InvertPixelArray(rp
+    	, destx, desty
+	, width, height
+	, CyberGfxBase
+    );
 
     AROS_LIBFUNC_EXIT
 } /* InvertPixelArray */

@@ -15,9 +15,9 @@
 	AROS_LH3(ULONG, ReadRGBPixel,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, , A1),
-	AROS_LHA(UWORD            , , D0),
-	AROS_LHA(UWORD            , , D1),
+	AROS_LHA(struct RastPort *, rp	, A1),
+	AROS_LHA(UWORD            , x	, D0),
+	AROS_LHA(UWORD            , y	, D1),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 18, Cybergraphics)
@@ -46,9 +46,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
-
-    aros_print_not_implemented ("ReadRGBPixel");
+    
+    return driver_ReadRGBPixel(rp, x, y, CyberGfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* ReadRGBPixel */

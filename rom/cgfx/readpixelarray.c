@@ -15,16 +15,16 @@
 	AROS_LH10(ULONG, ReadPixelArray,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR             , , A0),
-	AROS_LHA(UWORD            , , D0),
-	AROS_LHA(UWORD            , , D1),
-	AROS_LHA(UWORD            , , D2),
-	AROS_LHA(struct RastPort *, , A1),
-	AROS_LHA(UWORD            , , D3),
-	AROS_LHA(UWORD            , , D4),
-	AROS_LHA(UWORD            , , D5),
-	AROS_LHA(UWORD            , , D6),
-	AROS_LHA(UBYTE            , , D7),
+	AROS_LHA(APTR             , dst		, A0),
+	AROS_LHA(UWORD            , destx	, D0),
+	AROS_LHA(UWORD            , desty	, D1),
+	AROS_LHA(UWORD            , dstmod	, D2),
+	AROS_LHA(struct RastPort *, rp		, A1),
+	AROS_LHA(UWORD            , srcx	, D3),
+	AROS_LHA(UWORD            , srcy	, D4),
+	AROS_LHA(UWORD            , width	, D5),
+	AROS_LHA(UWORD            , height	, D6),
+	AROS_LHA(UBYTE            , dstformat	, D7),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 20, Cybergraphics)
@@ -53,9 +53,16 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
-
-    aros_print_not_implemented ("ReadPixelArray");
-
+    
+    return driver_ReadPixelArray(dst
+    	, destx, desty
+	, dstmod
+	, rp
+	, srcx, srcy
+	, width, height
+	, dstformat
+	, CyberGfxBase
+    );
+    
     AROS_LIBFUNC_EXIT
 } /* ReadPixelArray */

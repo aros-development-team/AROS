@@ -15,10 +15,10 @@
 	AROS_LH4(LONG, WriteRGBPixel,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, , A1),
-	AROS_LHA(UWORD            , , D0),
-	AROS_LHA(UWORD            , , D1),
-	AROS_LHA(ULONG            , , D2),
+	AROS_LHA(struct RastPort *, rp		, A1),
+	AROS_LHA(UWORD            , x		, D0),
+	AROS_LHA(UWORD            , y		, D1),
+	AROS_LHA(ULONG            , pixel	, D2),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 19, Cybergraphics)
@@ -47,9 +47,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
-
-    aros_print_not_implemented ("WriteRGBPixel");
+    
+    return driver_WriteRGBPixel(rp, x, y, pixel, CyberGfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* WriteRGBPixel */
