@@ -1,0 +1,27 @@
+#   $Id$
+#
+#   Generate the amiga.lib library (normally called libamiga.a).
+#
+include $(TOP)/config/make.cfg
+
+#MM- linklibs: linklibs-startup
+#MM linklibs-startup : includes includes-copy
+
+FILES :=        \
+	startup \
+	detach
+
+OBJS  := $(FILES:%=$(LIBDIR)/%.o)
+
+linklibs-startup: $(OBJS)
+
+%copy_includes includes=startup.h path=aros dir=
+
+USER_CFLAGS := -I $(TOP)/rom/exec
+
+$(LIBDIR)/%.o : %.c
+	%compile_q 
+
+.PHONY: linklibs-startup
+
+%common
