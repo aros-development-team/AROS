@@ -10,6 +10,7 @@
 
 # define  DEBUG  1
 # include <aros/debug.h>
+#include <aros/macros.h>
 
 #include <exec/types.h>
 #include <exec/nodes.h>
@@ -22,6 +23,9 @@
 #include <libraries/expansionbase.h>
 #include <aros/asmcall.h>
 #include <string.h>
+#include <dos/filehandler.h>
+#include <dos/filesystem.h>
+#include <devices/trackdisk.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -44,6 +48,11 @@ AROS_UFH3(void, intBoot,
 	ULONG len;
 
 
+	/* HACK: Wait for LDDemon to signal us that it has finished
+	   initializing itself
+	*/
+	Wait(SIGBREAKF_CTRL_F);
+
 	DOSBase = OpenLibrary("dos.library", 0);
 	if( DOSBase == NULL)
 		Alert(AT_DeadEnd| AG_OpenLib | AN_DOSLib | AO_DOSLib);
@@ -59,9 +68,7 @@ AROS_UFH3(void, intBoot,
 	   have a Process in DOSBoot yet, and we need a process
 	   to create locks etc.
 	*/
-
 	bn = (struct BootNode *)ExpansionBase->MountList.lh_Head;
-
 	s1 = ((struct DosList *)bn->bn_DeviceNode)->dol_DevName;
 	while (*s1++)
 		;
@@ -74,6 +81,68 @@ AROS_UFH3(void, intBoot,
 		bootname, len);
 	bootname[len-1] = ':';
 	bootname[len] = '\0';
+
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+	/* only do this in native/standalone mode
+		because in hosted AROS emul_handler is already
+		initialized at this point
+	*/
+	if (((struct DosList *)bn->bn_DeviceNode)->dol_Device==0)
+	{
+		struct DeviceNode *dn = (struct DeviceNode *)bn->bn_DeviceNode;
+		struct FileSysStartupMsg *fssm= BADDR(dn->dn_Startup);
+		struct Resident *filesys;
+		struct MsgPort *mp=CreateMsgPort();
+		struct IOFileSys *iofs;
+		filesys = FindResident((STRPTR)((ULONG)BADDR(dn->dn_Handler)+1));
+		if (filesys) {
+			InitResident(filesys,0);
+			if (mp)
+			{
+				iofs = (struct IOFileSys *)CreateIORequest(mp,sizeof(struct IOFileSys));
+				if (iofs)
+				{
+					struct IOExtTD *iotd=(struct IOExtTD *)CreateIORequest(mp,sizeof(struct IOExtTD));
+					ULONG *buf = (ULONG *)AllocMem(512,MEMF_ANY);
+					if ((iotd) && (buf))
+					{
+						if (!OpenDevice(fssm->fssm_Device+1,fssm->fssm_Unit, (struct IORequest *)&iotd->iotd_Req,0))
+						{
+							do
+							{
+								kprintf("Insert bootable disk\n");
+								for (;;)
+								{
+									iotd->iotd_Req.io_Command=CMD_READ;
+									iotd->iotd_Req.io_Offset=0;
+									iotd->iotd_Req.io_Data=buf;
+									iotd->iotd_Req.io_Length=512;
+									DoIO((struct IORequest *)&iotd->iotd_Req);
+									if ((iotd->iotd_Req.io_Error) || ((AROS_BE2LONG(buf[0]) & 0xFFFFFF00)!=0x444F5300))
+										Delay(200);
+									else
+										break;
+								}
+								iofs->io_Union.io_OpenDevice.io_DeviceName=fssm->fssm_Device+1;
+								iofs->io_Union.io_OpenDevice.io_Unit = fssm->fssm_Unit;
+								iofs->io_Union.io_OpenDevice.io_Environ = BADDR(fssm->fssm_Environ);
+							} while (OpenDevice((STRPTR)((ULONG)BADDR(dn->dn_Handler)+1),fssm->fssm_Unit,&iofs->IOFS,0));
+							dn->dn_Unit = iofs->IOFS.io_Unit;
+							dn->dn_Device = iofs->IOFS.io_Device;
+							CloseDevice((struct IORequest *)&iotd->iotd_Req);
+						}
+					}
+					if (iotd) DeleteIORequest((struct IORequest *)&iotd->iotd_Req);
+					if (buf) FreeMem(buf,512);
+					DeleteIORequest(&iofs->IOFS);
+				}
+				DeleteMsgPort(mp);
+			}
+		}
+		else
+			D(bug("filesys not found!!!\n"));
+	}
+#endif
 	CloseLibrary((struct Library *)ExpansionBase);
 
 	D(bug("Locking primary boot device %s\n", bootname));
@@ -115,11 +184,6 @@ AROS_UFH3(void, intBoot,
 	/* Late binding ENVARC: assign, only if used */
 	AssignLate("ENVARC", "SYS:Prefs/env-archive");
 	
-	/* HACK: Wait for LDDemon to signal us that it has finished
-	   initializing itself
-	*/
-	Wait(SIGBREAKF_CTRL_F);
-
 	/* Initialize HIDDs */
 	init_hidds(SysBase, (struct DosLibrary *)DOSBase);
 
@@ -174,3 +238,5 @@ void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
 	}
 	CloseLibrary((struct Library*)ExpansionBase);
 }
+
+
