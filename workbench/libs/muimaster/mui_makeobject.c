@@ -418,10 +418,10 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 	    return MUI_NewObject(MUIC_Image,
 	    	ImageButtonFrame,
 		MUIA_Background, MUII_ButtonBack,
-	    	MUIA_Weight,0,
 		MUIA_Image_Spec, params[0],
 		MUIA_InputMode, MUIV_InputMode_RelVerify,
 		MUIA_Image_FreeVert, TRUE,
+		MUIA_Image_FreeHoriz, FALSE,
 		TAG_DONE);
 	    break;
 
