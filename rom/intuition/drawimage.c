@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/08/29 13:33:30  digulla
+    Moved common code from driver to Intuition
+    More docs
+
     Revision 1.1  1996/08/23 17:28:18  digulla
     Several new functions; some still empty.
 
@@ -30,10 +34,15 @@
 	struct IntuitionBase *, IntuitionBase, 19, Intuition)
 
 /*  FUNCTION
+	Draw an image.
 
     INPUTS
+	rp - The RastPort to render into
+	image - The image to render
+	leftOffset, topOffset - Where to place the image.
 
     RESULT
+	None.
 
     NOTES
 

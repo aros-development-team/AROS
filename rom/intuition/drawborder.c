@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/08/29 13:33:30  digulla
+    Moved common code from driver to Intuition
+    More docs
+
     Revision 1.1  1996/08/23 17:28:18  digulla
     Several new functions; some still empty.
 
@@ -31,14 +35,47 @@
 	struct IntuitionBase *, IntuitionBase, 18, Intuition)
 
 /*  FUNCTION
+	Draws one or more borders in the specified RastPort. Rendering
+	will start at the position which you get when you add the offsets
+	leftOffset and topOffset to the LeftEdge and TopEdge specified
+	in the Border structure. All subsequent adresses in the Border
+	structure are relative to the previous position.
 
     INPUTS
+	rp - The RastPort to render into
+	border - Information what and how to render
+	leftOffset, topOffset - Initial starting position
 
     RESULT
+	None.
 
     NOTES
 
     EXAMPLE
+	// Draw a house with one stroke
+	WORD XY[] =
+	{
+	    +10, +10,
+	    -10,   0,	// Top
+	    +10, -10,
+	    -10,   0,	// Bottom
+	      0, -10,	// Left
+	     +5,  +5,	// Roof
+	     +5,  -5,
+	      0, +10	// Right
+	};
+	struct Border demo =
+	{
+	    100, 100,	// Position
+	    1, 2,	// Pens
+	    JAM1,	// Drawmode
+	    8,		// Number of pairs in XY
+	    XY, 	// Vector offsets
+	    NULL	// No next border
+	};
+
+	// Render the house with the bottom left edge at 150, 50
+	DrawBorder (rp, &demo, 50, -50);
 
     BUGS
 
@@ -61,32 +98,40 @@
     WORD   x, y;
     int    t;
 
+    /* Store important variables of the RastPort */
     apen = GetAPen (rp);
     bpen = GetBPen (rp);
     drmd = GetDrMd (rp);
 
+    /* For all borders... */
     for ( ; border; border=border->NextBorder)
     {
+	/* Change RastPort to the colors/mode specified */
 	SetAPen (rp, border->FrontPen);
 	SetBPen (rp, border->BackPen);
 	SetDrMd (rp, border->DrawMode);
 
+	/* Move to initial position */
 	Move (rp
 	    , x = border->LeftEdge + leftOffset
 	    , y = border->TopEdge + topOffset
 	);
 
+	/* Start of vector offsets */
 	ptr = border->XY;
 
 	for (t=0; t<border->Count; t++)
 	{
+	    /* Add vector offset to current position */
 	    x += *ptr ++;
 	    y += *ptr ++;
 
+	    /* Stroke */
 	    Draw (rp, x, y);
 	}
     }
 
+    /* Restore RastPort */
     SetAPen (rp, apen);
     SetBPen (rp, bpen);
     SetDrMd (rp, drmd);

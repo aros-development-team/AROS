@@ -4,6 +4,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/29 13:33:31  digulla
+    Moved common code from driver to Intuition
+    More docs
+
     Revision 1.2  1996/08/28 17:55:37  digulla
     Proportional gadgets
     BOOPSI
@@ -34,6 +38,7 @@ struct IntIntuitionBase
     struct GfxBase  * GfxBase;
     struct ExecBase * SysBase;
     struct MinList    ClassList;
+    struct Screen   * WorkBench;
 };
 
 extern struct IntuitionBase * IntuitionBase;

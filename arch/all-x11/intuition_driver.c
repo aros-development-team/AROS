@@ -13,16 +13,12 @@
 #include <string.h>
 #include <exec/memory.h>
 #include <dos/dos.h>
-#include <dos/dostags.h>
 #include <utility/tagitem.h>
 #include <clib/exec_protos.h>
-#include <clib/dos_protos.h>
 #include <clib/intuition_protos.h>
 #include <clib/graphics_protos.h>
 #include <clib/aros_protos.h>
 #include "intuition_intern.h"
-
-extern struct DosBase * DOSBase;
 
 static struct IntuitionBase * IntuiBase;
 
@@ -30,8 +26,6 @@ extern Display * sysDisplay;
 extern long sysCMap[];
 extern unsigned long sysPlaneMask;
 extern Cursor sysCursor;
-
-static struct Screen WB;
 
 Display * GetSysDisplay (void);
 int	  GetSysScreen (void);
@@ -159,29 +153,14 @@ static int MySysErrorHandler (Display * display)
     exit (10);
 }
 
-static void intui_ProcessXEvents (void);
-struct Process * inputDevice;
-
 int intui_init (struct IntuitionBase * IntuitionBase)
 {
     int t;
-    struct TagItem inputTask[]=
-    {
-	{ NP_Entry,	(ULONG)intui_ProcessXEvents },
-	{ NP_Input,	0L },
-	{ NP_Output,	0L },
-	{ NP_Name,	(ULONG)"input.device" },
-	{ NP_StackSize, 20000 },
-	{ NP_Priority,	50 },
-	{ TAG_END, 0 }
-    };
 
-    memset (&WB, 0, sizeof(struct Screen));
-
-    WB.Width = DisplayWidth (GetSysDisplay (), GetSysScreen ());
-    WB.Height = DisplayHeight (GetSysDisplay (), GetSysScreen ());
-
-    IntuitionBase->FirstScreen = IntuitionBase->ActiveScreen = &WB;
+    IntuitionBase->ActiveScreen->Width =
+	DisplayWidth (GetSysDisplay (), GetSysScreen ());
+    IntuitionBase->ActiveScreen->Height =
+	DisplayHeight (GetSysDisplay (), GetSysScreen ());
 
     for (t=0; keytable[t].amiga != -1; t++)
 	keytable[t].keycode = XKeysymToKeycode (sysDisplay,
@@ -191,8 +170,6 @@ int intui_init (struct IntuitionBase * IntuitionBase)
     XSetIOErrorHandler (MySysErrorHandler);
 
     IntuiBase = IntuitionBase;
-
-    inputDevice = CreateNewProc (inputTask);
 
     return True;
 }
@@ -232,74 +209,31 @@ void intui_SetWindowTitles (struct Window * win, char * text, char * screen)
 	    None, NULL, 0, &hints);
 }
 
-struct Window * intui_OpenWindow (struct NewWindow * nw,
+int intui_GetWindowSize (void)
+{
+    return sizeof (struct IntWindow);
+}
+
+int intui_OpenWindow (struct IntWindow * iw,
 	struct IntuitionBase * IntuitionBase)
 {
-    struct Window * w;
-    struct IntWindow * iw;
-    struct RastPort * rp;
     XGCValues gcval;
     GC gc;
 
-    iw = AllocMem (sizeof (struct IntWindow), MEMF_CLEAR);
-    rp = AllocMem (sizeof (struct RastPort), MEMF_CLEAR);
+    iw->iw_XWindow = XCreateSimpleWindow (GetSysDisplay ()
+	, DefaultRootWindow (GetSysDisplay ())
+	, iw->iw_Window.LeftEdge
+	, iw->iw_Window.TopEdge
+	, iw->iw_Window.Width
+	, iw->iw_Window.Height
+	, 15
+	, sysCMap[1]
+	, sysCMap[0]
+    );
 
-    if (!iw || !rp)
-    {
-	if (iw) FreeMem (iw, sizeof (struct IntWindow));
-	if (rp) FreeMem (rp, sizeof (struct RastPort));
-
-	return NULL;
-    }
-
-    w = &iw->iw_Window;
-
-    if (nw->IDCMPFlags)
-    {
-	w->UserPort = CreateMsgPort ();
-
-	if (!w->UserPort)
-	{
-	    FreeMem (iw, sizeof (struct IntWindow));
-	    FreeMem (rp, sizeof (struct RastPort));
-
-	    return NULL;
-	}
-    }
-
-    w->LeftEdge = nw->LeftEdge;
-    w->TopEdge = nw->TopEdge;
-    w->Width = nw->Width;
-    w->Height = nw->Height;
-    w->RPort = rp;
-    w->IDCMPFlags = nw->IDCMPFlags;
-    w->FirstGadget = nw->FirstGadget;
-
-    if (nw->DetailPen == 0xff) nw->DetailPen = 1;
-    if (nw->BlockPen == 0xff) nw->BlockPen = 0;
-
-    iw->iw_XWindow = XCreateSimpleWindow (GetSysDisplay (),
-	    DefaultRootWindow (GetSysDisplay ()),
-	    nw->LeftEdge, nw->TopEdge, nw->Width, nw->Height, 15,
-	    sysCMap[1], sysCMap[0]);
-
-    intui_SetWindowTitles (w, nw->Title, (STRPTR)-1);
-
-    SetXWindow (rp, iw->iw_XWindow);
+    SetXWindow (iw->iw_Window.RPort, iw->iw_XWindow);
 
     XSetGraphicsExposures (sysDisplay, gc, TRUE);
-
-    w->BorderLeft = 2;
-    w->BorderTop = GfxBase->DefaultFont->tf_YSize + 3;
-    w->BorderRight = 2;
-    w->BorderBottom = 2;
-
-    w->WScreen = &WB;
-
-    w->MinWidth  = nw->MinWidth;
-    w->MinHeight = nw->MinHeight;
-    w->MaxWidth  = nw->MaxWidth;
-    w->MaxHeight = nw->MaxHeight;
 
     /*TODO __SetSizeHints (w); */
 
@@ -307,24 +241,26 @@ struct Window * intui_OpenWindow (struct NewWindow * nw,
 
     gc = XCreateGC (sysDisplay, iw->iw_XWindow, GCPlaneMask, &gcval);
 
-    SetGC (rp, gc);
+    if (!gc)
+    {
+	XDestroyWindow (sysDisplay, iw->iw_XWindow);
+	return FALSE;
+    }
 
-    SetFont (rp, GfxBase->DefaultFont);
-    SetAPen (rp, nw->DetailPen);
-    SetBPen (rp, nw->BlockPen);
-    SetDrMd (rp, JAM2);
-
-    w->Parent = NULL;
-    w->NextWindow = w->Descendant = WB.FirstWindow;
-    WB.FirstWindow = (struct Window *)iw;
-
-    if (nw->Flags & ACTIVATE)
-	IntuitionBase->ActiveWindow = (struct Window *)iw;
+    SetGC (iw->iw_Window.RPort, gc);
 
     iw->iw_Region = XCreateRegion ();
 
-    XSelectInput (sysDisplay, iw->iw_XWindow,
-	    ExposureMask
+    if (!iw->iw_Region)
+    {
+	XDestroyWindow (sysDisplay, iw->iw_XWindow);
+	XFreeGC (sysDisplay, gc);
+	return FALSE;
+    }
+
+    XSelectInput (sysDisplay
+	, iw->iw_XWindow
+	, ExposureMask
 	    | ButtonPressMask
 	    | ButtonReleaseMask
 	    | PointerMotionMask
@@ -335,70 +271,26 @@ struct Window * intui_OpenWindow (struct NewWindow * nw,
 	    | StructureNotifyMask
     );
 
-    ModifyIDCMP (w, w->IDCMPFlags);
-
     XDefineCursor (sysDisplay, iw->iw_XWindow, sysCursor);
     XMapRaised (sysDisplay, iw->iw_XWindow);
 
-    RefreshGadgets (w->FirstGadget, w, NULL);
-
     XSync (sysDisplay, FALSE);
-
-    Signal ((struct Task *)inputDevice, SIGBREAKF_CTRL_F);
 
     Diow(bug("Opening Window %08lx (X=%ld)\n", w, iw->iw_XWindow));
 
-    return (w);
+    return 1;
 }
 
-void intui_CloseWindow (struct Window * win,
+void intui_CloseWindow (struct IntWindow * iw,
 	    struct IntuitionBase * IntuitionBase)
 {
-    struct IntWindow * iw;
-    struct Window * wptr;
-    struct IntuiMessage * im;
-
-    iw = (struct IntWindow *)win;
-
-    Dicw(bug("Closing Window %08lx (X=%ld)\n", win, iw->iw_XWindow));
-
-    if (win->Descendant)
-	win->Descendant->Parent = win->Parent;
-    if (win->Parent)
-	win->Parent->NextWindow = win->Parent->Descendant = win->Descendant;
-
-    if (win == WB.FirstWindow)
-	WB.FirstWindow = win->NextWindow;
-
-    IntuitionBase->ActiveWindow = wptr;
+    Dicw(bug("Closing Window %08lx (X=%ld)\n", iw, iw->iw_XWindow));
 
     XDestroyWindow (sysDisplay, iw->iw_XWindow);
 
-    if (iw->iw_Region)
-	XDestroyRegion (iw->iw_Region);
+    XDestroyRegion (iw->iw_Region);
 
-    CloseFont (win->RPort->Font);
-
-    XFreeGC (sysDisplay, GetGC(win->RPort));
-
-    FreeMem (win->RPort, sizeof (struct RastPort));
-
-    if (win->UserPort)
-    {
-	/* Delete all pending messages */
-	Forbid ();
-
-	while ((im = (struct IntuiMessage *) GetMsg (win->UserPort)))
-	    ReplyMsg ((struct Message *)im);
-
-	Permit ();
-
-	/* Delete message port */
-	DeleteMsgPort (win->UserPort);
-    }
-
-    /* Free memory for the window */
-    FreeMem (iw, sizeof (struct IntWindow));
+    XFreeGC (sysDisplay, GetGC(iw->iw_Window.RPort));
 
     XSync (sysDisplay, FALSE);
 }
@@ -697,13 +589,14 @@ struct Gadget * FindGadget (struct Window * window, int x, int y)
 /* Use local copy of IntuitionBase */
 #define IntuitionBase IntuiBase
 
-void intui_ProcessXEvents (void)
+void intui_ProcessEvents (void)
 {
     struct IntuiMessage * im;
     struct Window	* w;
     struct IntWindow	* iw;
     struct Gadget	* gadget;
     struct MsgPort	* intuiReplyPort;
+    struct Screen	* screen;
     char * ptr;
     int    mpos_x, mpos_y;
     int    wait;
@@ -729,10 +622,14 @@ void intui_ProcessXEvents (void)
 		continue;
 	    }
 
-	    for (w=WB.FirstWindow; w; w=w->NextWindow)
+	    /* Search window */
+	    for (screen=IntuitionBase->FirstScreen; screen; screen=screen->NextScreen)
 	    {
-		if (((struct IntWindow *)w)->iw_XWindow == event.xany.window)
-		    break;
+		for (w=screen->FirstWindow; w; w=w->NextWindow)
+		{
+		    if (((struct IntWindow *)w)->iw_XWindow == event.xany.window)
+			break;
+		}
 	    }
 
 	    if (w)

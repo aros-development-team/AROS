@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/29 13:33:31  digulla
+    Moved common code from driver to Intuition
+    More docs
+
     Revision 1.3  1996/08/28 17:55:37  digulla
     Proportional gadgets
     BOOPSI
@@ -17,6 +21,7 @@
     Lang:
 */
 #define AROS_ALMOST_COMPATIBLE
+#include <string.h>
 #include <exec/lists.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
@@ -24,6 +29,8 @@
 #include <clib/exec_protos.h>
 #include <clib/intuition_protos.h>
 #include <dos/dos.h>
+#include <dos/dostags.h>
+#include <clib/dos_protos.h>
 #ifndef INTUITION_CLASSES_H
 #   include <intuition/classes.h>
 #endif
@@ -38,6 +45,7 @@ static const APTR inittabl[4];
 static void *const Intuition_functable[];
 struct IntuitionBase *Intuition_init();
 extern const char Intuition_end;
+extern struct DosBase * DOSBase;
 
 extern int  intui_init (struct IntuitionBase *);
 extern int  intui_open (struct IntuitionBase *);
@@ -94,23 +102,47 @@ static Class rootclass =
     0,		/* Flags */
 };
 
+void intui_ProcessEvents (void);
+static struct Screen WB;
+
+struct Process * inputDevice;
+
 __AROS_LH2(struct IntuitionBase *, init,
  __AROS_LHA(struct IntuitionBase *, IntuitionBase, D0),
  __AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, sysBase, 0, Intuition)
 {
     __AROS_FUNC_INIT
+    struct TagItem inputTask[]=
+    {
+	{ NP_Entry,	(ULONG)intui_ProcessEvents },
+	{ NP_Input,	0L },
+	{ NP_Output,	0L },
+	{ NP_Name,	(ULONG)"input.device" },
+	{ NP_StackSize, 20000 },
+	{ NP_Priority,	50 },
+	{ TAG_END, 0 }
+    };
 
     IntuiBase = IntuitionBase;
     SysBase = sysBase;
 
     NEWLIST (PublicClassList);
 
+    memset (&WB, 0, sizeof (struct Screen));
+
+    IntuitionBase->FirstScreen =
+	IntuitionBase->ActiveScreen = &WB;
+
+    GetPrivIBase(IntuitionBase)->WorkBench = &WB;
+
     if (!intui_init (IntuitionBase))
 	return NULL;
 
     /* The rootclass is created statically */
     AddClass (&rootclass);
+
+    inputDevice = CreateNewProc (inputTask);
 
     /* You would return NULL if the init failed */
     return IntuitionBase;
