@@ -158,7 +158,7 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     }
     else
     {
-	bm = NewObject(NULL, CLID_Hidd_BitMap, tags);
+	bm = NewObject(NULL, CLID_Hidd_PlanarBM, tags);
     }
     
     
