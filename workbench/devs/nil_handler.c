@@ -218,7 +218,11 @@ AROS_LH1(void, beginio,
 	case FSA_OPEN:
 	case FSA_OPEN_FILE:
 	    /* No names allowed on NIL: */
-	    if(stricmp(iofs->io_Union.io_NamedFile.io_Filename, "NIL:") != 0)
+	    if
+	    (
+	       stricmp(iofs->io_Union.io_NamedFile.io_Filename, "NIL:") != 0 &&
+	       iofs->io_Union.io_NamedFile.io_Filename[0]
+            )
 	    {
 		error=ERROR_OBJECT_NOT_FOUND;
 		break;
