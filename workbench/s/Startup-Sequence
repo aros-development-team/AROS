@@ -66,6 +66,11 @@ Run <NIL: >NIL: ScreenPattern
 
 PATH SYS:Demos ADD QUIET
 
+If exists C:RexxMast
+  assign REXX: S:
+  run <NIL: >NIL: C:RexxMast
+EndIf
+  
 ; -- END "AROS under construction" section ---------------------------
 
 
