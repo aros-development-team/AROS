@@ -54,6 +54,9 @@ endif
 kernel-hidd-unix : $(LIB)
 
 #MM
+kernel-unixio : $(LIB)
+
+#MM
 kernel-unixio-kobj : $(KOBJ)
 
 DEPS := $(foreach f, $(INIT_FILE) $(FILES) $(END_FILE), $(OBJDIR)/$(f).d)
