@@ -116,9 +116,7 @@ AROS_LH2(struct GadToolsBase_intern *, init,
     LIBBASE->sysbase=sysBase;
     LIBBASE->seglist=segList;
 
-    LIBBASE->aroscbbase = NULL;
     LIBBASE->aroscybase = NULL;
-    LIBBASE->arosmxbase = NULL;
     LIBBASE->arospabase = NULL;
 
     LIBBASE->buttonclass = NULL;
@@ -279,17 +277,9 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
 	    FreeClass(LIBBASE->paletteclass);
 	LIBBASE->paletteclass = NULL;
 
-	if (LIBBASE->arosmxbase)
-	    CloseLibrary(LIBBASE->arosmxbase);
-        LIBBASE->arosmxbase = NULL;
-
 	if (LIBBASE->aroscybase)
 	    CloseLibrary(LIBBASE->aroscybase);
         LIBBASE->aroscybase = NULL;
-
-	if (LIBBASE->aroscbbase)
-	    CloseLibrary(LIBBASE->aroscbbase);
-        LIBBASE->aroscbbase = NULL;
 
 	if (LIBBASE->arospabase)
 	    CloseLibrary(LIBBASE->arospabase);

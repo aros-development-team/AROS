@@ -25,8 +25,6 @@
 #include <utility/tagitem.h>
 #include <libraries/gadtools.h>
 #include <gadgets/aroscheckbox.h>
-#include <gadgets/aroscycle.h>
-#include <gadgets/arosmx.h>
 #include <gadgets/arospalette.h>
 
 #define SDEBUG 1
@@ -162,11 +160,11 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
     struct TagItem *tag, tags[] =
     {
 	{GA_Disabled		, FALSE			}, /* 0 */
-	{AROSMX_Labels		, (IPTR) NULL		}, /* 1 */
-	{AROSMX_Active		, 0			}, /* 2 */
-	{AROSMX_Spacing		, 1			}, /* 3 */
-        {AROSMX_TickHeight	, MX_HEIGHT		}, /* 4 */
-        {AROSMX_TickLabelPlace	, GV_LabelPlace_Right	}, /* 5 */
+	{GTMX_Labels		, (IPTR) NULL		}, /* 1 */
+	{GTMX_Active		, 0			}, /* 2 */
+	{GTMX_Spacing		, 1			}, /* 3 */
+        {GTMX_TickHeight	, MX_HEIGHT		}, /* 4 */
+        {GTMX_TickLabelPlace	, GV_LabelPlace_Right	}, /* 5 */
 	{GA_TextAttr	    	, 0 	    	    	}, /* 6 */
 	{TAG_MORE		, (IPTR) NULL		}  /* 7 */
     };
