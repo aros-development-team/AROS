@@ -1602,38 +1602,76 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
     
     if (unixpath)
     {
+    	char *sp;
+	
     	*unixpath++ = '\0';
 	
-	if (!stat(unixpath, &st))
+	if ((sp = strchr(unixpath, '~')))
 	{
-	    fhv=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
-	    if (fhv != NULL)
+	    char *home;
+	    char *newunixpath = 0;
+	    
+	    BOOL ok = FALSE;
+	    
+	    if ((home = getenv("HOME")))
 	    {
-		fhv->name       = ".";
-		fhv->type       = FHD_DIRECTORY;
-        	fhv->pathname   = NULL; /* just to make sure... */
-        	fhv->DIR        = NULL;
-    		fhv->volume     = unixpath;
-		fhv->volumename = iofs->io_Union.io_OpenDevice.io_DeviceName;
-
-		if ((doslist = MakeDosEntry(fhv->volumename, DLT_VOLUME)))
-		{
-		    doslist->dol_Unit=(struct Unit *)fhv;
-		    doslist->dol_Device=&emulbase->device;
-		    AddDosEntry(doslist);
-
-		    iofs->IOFS.io_Unit   = (struct Unit *)fhv;
-		    iofs->IOFS.io_Device = &emulbase->device;
-
-    		    ReleaseSemaphore(&emulbase->sem);
-
-		    return TRUE;
-		}
-
-		FreeMem(fhv, sizeof(struct filehandle));
+	    	newunixpath = AllocVec(strlen(unixpath) + strlen(home) + 1, MEMF_CLEAR);
+	    	if (newunixpath)
+	    	{
+		    strncpy(newunixpath, unixpath, sp - unixpath);
+		    strcat(newunixpath, home);
+		    strcat(newunixpath, sp + 1);
+		    
+		    ok = TRUE;
+		    unixpath = newunixpath;
+	    	}
+	    }
+	    
+	    if (!ok)
+	    {
+	    	unixpath = 0;
+		if (newunixpath) FreeVec(newunixpath);
 	    }
 	}
-    }
+	
+	if (unixpath)
+	{
+	    if (!stat(unixpath, &st))
+	    {
+		fhv=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
+		if (fhv != NULL)
+		{
+		    fhv->name       = ".";
+		    fhv->type       = FHD_DIRECTORY;
+        	    fhv->pathname   = NULL; /* just to make sure... */
+        	    fhv->DIR        = NULL;
+    		    fhv->volume     = unixpath;
+		    fhv->volumename = iofs->io_Union.io_OpenDevice.io_DeviceName;
+
+		    if ((doslist = MakeDosEntry(fhv->volumename, DLT_VOLUME)))
+		    {
+			doslist->dol_Unit=(struct Unit *)fhv;
+			doslist->dol_Device=&emulbase->device;
+			AddDosEntry(doslist);
+
+			iofs->IOFS.io_Unit   = (struct Unit *)fhv;
+			iofs->IOFS.io_Device = &emulbase->device;
+
+    			ReleaseSemaphore(&emulbase->sem);
+
+			return TRUE;
+
+		    } /* if ((doslist = MakeDosEntry(fhv->volumename, DLT_VOLUME))) */
+
+		    FreeMem(fhv, sizeof(struct filehandle));
+
+		} /* if (fhv != NULL)*/
+
+	    } /* if (!stat(unixpath, &st)) */
+	    
+	} /* if (unixpath) */
+
+    } /* if (unixpath) */
     
     ReleaseSemaphore(&emulbase->sem);
     
