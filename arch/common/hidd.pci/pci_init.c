@@ -54,7 +54,7 @@ const struct Resident Pci_Resident = {
     RTC_MATCHWORD,
     (struct Resident *)&Pci_Resident,
     &LIBEND,
-    RTF_SINGLETASK | RTF_AUTOINIT,
+    RTF_COLDSTART | RTF_AUTOINIT,
     VERSION_NUMBER,
     NT_LIBRARY,
     90,
