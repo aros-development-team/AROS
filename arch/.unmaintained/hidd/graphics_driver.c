@@ -298,9 +298,26 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
 	ULONG drmd, struct GfxBase * GfxBase)
 {
-    CorrectDriverData (rp, GfxBase);
-    apen &= PEN_MASK;
-    bpen &= PEN_MASK;
+    struct gfx_driverdata *dd;
+    if (!CorrectDriverData (rp, GfxBase))
+    	return;
+	
+	
+    dd = GetDriverData(rp);
+    if (dd)
+    {
+#warning Does not set DrMd yet.
+    	struct TagItem gc_tags[] = {
+    		{ aHidd_GC_Foreground,	apen & PEN_MASK},
+    		{ aHidd_GC_Background,	bpen & PEN_MASK},
+		{ TAG_DONE,	0}
+    	};
+    	SetAttrs(dd->dd_GC, gc_tags);
+	
+    }
+    return;
+	
+    
 }
 
 void driver_SetAPen (struct RastPort * rp, ULONG pen,
@@ -320,8 +337,6 @@ void driver_SetAPen (struct RastPort * rp, ULONG pen,
 		{ TAG_DONE,	0UL}
 	};
 
-	
-	
 	SetAttrs( dd->dd_GC, col_tags );
 	
     }
@@ -363,7 +378,25 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		    struct GfxBase * GfxBase)
 {
-    CorrectDriverData (rp, GfxBase);
+    EnterFunc(bug("driver_RectFill(%d, %d, %d, %d)\n", x1, y1, x2, y2));
+    if (CorrectDriverData(rp, GfxBase))
+    {
+    	/* Do the clipping slow but simple, WritePixel() which will take
+	care of it for us. */
+	LONG y;
+	   
+	for (y = y1; y <= y2; y ++)
+	{
+	    LONG x;
+	    
+	    for (x = x1; x <= x2; x ++)
+	    {
+	        WritePixel(rp, x, y);
+	    }
+
+	}
+    }
+    ReturnVoid("driver_RectFill");
 }
 
 #define SWAP(a,b)       { a ^= b; b ^= a; a ^= b; }
@@ -516,9 +549,6 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 	
   dd = GetDriverData(rp);
 
-  /*  nlorentz: Only rasports without layers (screen rastports) have bitmaps (for now) 
-      Width and Height may now contain bogus values they won't be used for anything critical.
-  */
   if (NULL == L)
   {
      Width = GetBitMapAttr(bm, BMA_WIDTH);  
@@ -800,9 +830,21 @@ int driver_InitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
 int driver_CloneRastPort (struct RastPort * newRP, struct RastPort * oldRP,
 			struct GfxBase * GfxBase)
 {
-    CorrectDriverData (newRP, GfxBase);
+    /* Let CorrectDriverData() have a bitmap to use for the GC */
+    newRP->BitMap = oldRP->BitMap;
     
-    return FALSE;
+    /* Creates a new GC. Hmmm, a general Copy method would've been nice */
+    
+    if (!CorrectDriverData (newRP, GfxBase))
+    	return FALSE;
+	
+    /* copy rastports attributes */
+    SetFont(newRP, oldRP->Font);
+    SetABPenDrMd(newRP, GetAPen(oldRP), GetBPen(oldRP), GetDrMd(oldRP));
+    Move(newRP, oldRP->cp_x, oldRP->cp_y);
+    
+#warning Some attributes not copied    
+    return TRUE;
 }
 
 void driver_DeinitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
