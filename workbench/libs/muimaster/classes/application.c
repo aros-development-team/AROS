@@ -279,7 +279,7 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     data->app_GlobalInfo.mgi_ApplicationObject = obj;
-    if (!(data->app_GlobalInfo.mgi_UserPort = CreateMsgPort()))
+    if (!(data->app_GlobalInfo.mgi_WindowsPort = CreateMsgPort()))
     {
 	CoerceMethod(cl,obj,OM_DISPOSE);
 	return 0;
@@ -321,7 +321,8 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
     get(data->app_GlobalInfo.mgi_Configdata,MUIA_Configdata_ZunePrefs,
 	&data->app_GlobalInfo.mgi_Prefs);
 
-//    D(bug("muimaster.library/application.c: Message Port created at 0x%lx\n",data->app_GlobalInfo.mgi_UserPort));
+//    D(bug("muimaster.library/application.c: Message Port created at 0x%lx\n",
+//    data->app_GlobalInfo.mgi_WindowPort));
 
     /* Setup timer stuff */
     if (!(data->app_TimerPort = CreateMsgPort()))
@@ -622,8 +623,8 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
     if (data->app_GlobalInfo.mgi_Configdata)
         MUI_DisposeObject(data->app_GlobalInfo.mgi_Configdata);
 
-    if (data->app_GlobalInfo.mgi_UserPort)
-    	DeleteMsgPort(data->app_GlobalInfo.mgi_UserPort);
+    if (data->app_GlobalInfo.mgi_WindowsPort)
+    	DeleteMsgPort(data->app_GlobalInfo.mgi_WindowsPort);
 
     if (data->app_Base)
 	FreeVec(data->app_Base);
@@ -892,7 +893,7 @@ static ULONG Application_InputBuffered(struct IClass *cl, Object *obj,
     while (application_do_pushed_method(data))
 	;
 
-    imsg = (struct IntuiMessage *)GetMsg(data->app_GlobalInfo.mgi_UserPort);
+    imsg = (struct IntuiMessage *)GetMsg(data->app_GlobalInfo.mgi_WindowsPort);
     if (imsg != NULL)
     {
         /* Let window object process message */
@@ -925,7 +926,7 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
 
     /* process all pushed methods */
     while (application_do_pushed_method(data))
-	;
+	/* nothing */ ;
 
     /* query the signal for the handlers */
     for (mn = data->app_IHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
@@ -935,17 +936,20 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
 	handler_mask |= ihn->ihn_Signals;
     }
 
-    signalmask = (1L << (data->app_GlobalInfo.mgi_UserPort->mp_SigBit)) | handler_mask | (1L << data->app_TimerPort->mp_SigBit);
-    if (data->app_Broker) signalmask |= (1L << data->app_BrokerPort->mp_SigBit);
+    signalmask = (1L << data->app_GlobalInfo.mgi_WindowsPort->mp_SigBit)
+	| (1L << data->app_TimerPort->mp_SigBit) | handler_mask;
+
+    if (data->app_Broker)
+	signalmask |= (1L << data->app_BrokerPort->mp_SigBit);
     
     if (signal & signalmask)
     {
-    	if (signal & (1L << (data->app_GlobalInfo.mgi_UserPort->mp_SigBit)))
+    	if (signal & (1L << data->app_GlobalInfo.mgi_WindowsPort->mp_SigBit))
     	{
 	    struct IntuiMessage *imsg;
 	    /* process all pushed methods */
 
-	    while ((imsg = (struct IntuiMessage *)GetMsg(data->app_GlobalInfo.mgi_UserPort)))
+	    while ((imsg = (struct IntuiMessage *)GetMsg(data->app_GlobalInfo.mgi_WindowsPort)))
 	    {
 		/* Let window object process message */
 		_zune_window_message(imsg); /* will reply the message */
@@ -1026,7 +1030,8 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
     }
 
     /* process all pushed methods - again */
-    while (application_do_pushed_method(data));
+    while (application_do_pushed_method(data))
+	/* nothing */ ;
 
     *msg->signal = signalmask | SIGBREAKF_CTRL_C;
 
@@ -1058,7 +1063,8 @@ static ULONG Application_Input(struct IClass *cl, Object *obj, struct MUIP_Appli
 	handler_mask |= ihn->ihn_Flags;
     }
 
-    signal = (1L << (data->app_GlobalInfo.mgi_UserPort->mp_SigBit)) | handler_mask | (1L << data->app_TimerPort->mp_SigBit);
+    signal = (1L << data->app_GlobalInfo.mgi_WindowsPort->mp_SigBit)
+	| (1L << data->app_TimerPort->mp_SigBit) | handler_mask;
     *msg->signal = signal;
     return Application_NewInput(cl, obj, (APTR)msg);
 }

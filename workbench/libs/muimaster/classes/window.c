@@ -32,22 +32,17 @@
 #include "classes/area.h"
 #include "imspec.h"
 #include "prefs.h"
+#include "dragndrop.h"
 
 #include "muimaster_intern.h"
 
-/*  #define MYDEBUG 1 */
+//#define MYDEBUG 1
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
 
 static const int __version = 1;
 static const int __revision = 1;
-
-static void handle_event(Object *win, struct IntuiMessage *event);
-
-#ifndef _DRAGNDROP_H
-#include "dragndrop.h"
-#endif
 
 #define IM(x) ((struct Image*)(x))
 #define G(x) ((struct Gadget*)(x))
@@ -72,8 +67,6 @@ struct MUI_WindowData
 {
     struct MUI_RenderInfo wd_RenderInfo;
     struct MUI_MinMax     wd_MinMax;
-    struct MsgPort       *wd_UserPort; /* IDCMP port */
-
     struct IBox    wd_AltDim;       /* zoomed dimensions */
     struct MinList wd_CycleChain;   /* objects activated with tab */
     struct MinList wd_EHList;       /* event handlers */
@@ -98,15 +91,15 @@ struct MUI_WindowData
     ULONG          wd_DisabledKeys;
     BOOL           wd_NoMenus;     /* MUIA_Window_NoMenus */
     
-    Object *       wd_DragObject; /* the object which is being dragged */
+    Object        *wd_DragObject; /* the object which is being dragged */
     struct Window *wd_DropWindow; /* the destination window, for faster access */
-    Object *       wd_DropObject; /* the destination object */
-    struct DragNDrop *wd_dnd;
+    Object        *wd_DropObject; /* the destination object */
+    struct DragNDrop     *wd_dnd;
     struct MUI_DragImage *wd_DragImage;
 
-    Object *      wd_Menustrip; /* The menustrip object which is actually is used (eighter apps or windows or NULL) */
-    Object *      wd_ChildMenustrip; /* If window has an own Menustrip */
-    struct Menu  *wd_Menu; /* the intuition menustrip */
+    Object        *wd_Menustrip; /* The menustrip object which is actually is used (eighter apps or windows or NULL) */
+    Object *       wd_ChildMenustrip; /* If window has an own Menustrip */
+    struct Menu   *wd_Menu; /* the intuition menustrip */
 
     Object *wd_VertProp;
     Object *wd_UpButton;
@@ -152,7 +145,6 @@ struct __dummyXFC3__
 };
 
 #define muiWindowData(obj)   (&(((struct __dummyXFC3__ *)(obj))->mwd))
-
 
 static ULONG DoHalfshineGun(ULONG a, ULONG b)
 {
@@ -337,11 +329,10 @@ static ULONG _zune_window_get_default_events (void)
          | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW;
 }
 
-static void _zune_window_change_events (struct MUI_WindowData *data)
+static void _zune_window_change_events (struct MUI_WindowData *data, ULONG new_events)
 {
     struct MinNode *mn;
     struct MUI_EventHandlerNode *ehn;
-    ULONG new_events = _zune_window_get_default_events();
     ULONG old_events = data->wd_Events;
 
     for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
@@ -782,7 +773,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         );
         
         win->UserData = (char*)data->wd_RenderInfo.mri_WindowObject;
-        win->UserPort = data->wd_UserPort; /* Same port for all windows */
+        win->UserPort = muiGlobalInfo(obj)->mgi_WindowsPort; /* Same port for all windows */
         ModifyIDCMP(win, data->wd_Events);
 
         data->wd_RenderInfo.mri_Window = win;
@@ -849,7 +840,9 @@ static void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
             Permit();
         }
 
+	D(bug("before CloseWindow\n"));
         CloseWindow(win);
+	D(bug("after CloseWindow\n"));
 
 #define DISPOSEGADGET(x) \
 	if (x)\
@@ -934,6 +927,177 @@ static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LO
 
 static ULONG window_Open(struct IClass *cl, Object *obj);
 static ULONG window_Close(struct IClass *cl, Object *obj);
+static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
+			     struct IntuiMessage *event);
+
+void HandleDragging (Object *oWin, struct MUI_WindowData *data,
+		     struct IntuiMessage *imsg)
+{
+    struct Window *iWin;
+    int finish_drag = 0;
+
+    iWin = imsg->IDCMPWindow;
+
+    if (imsg->Class == IDCMP_MOUSEMOVE)
+    {
+	struct Layer *layer;
+	layer = WhichLayer(&iWin->WScreen->LayerInfo, iWin->LeftEdge + imsg->MouseX, iWin->TopEdge + imsg->MouseY);
+
+	if (data->wd_DropObject)
+	{
+	    struct Window *wnd;
+	    WORD mousex = imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge;
+	    WORD mousey = imsg->MouseY + iWin->TopEdge  - data->wd_DropWindow->TopEdge;
+
+	    wnd = _window(data->wd_DropObject);
+	    if
+                (
+		    mousex < _left(data->wd_DropObject) 
+                    || mousex > _right(data->wd_DropObject) 
+                    || mousey < _top(data->wd_DropObject) 
+                    || mousey > _bottom(data->wd_DropObject) 
+                    || layer != wnd->WLayer
+		    )
+	    {
+		/* We have left the object */
+		UndrawDragNDrop(data->wd_dnd);
+		DoMethod(data->wd_DropObject, MUIM_DragFinish,(IPTR)data->wd_DragObject);
+		data->wd_DropObject = NULL;
+	    }
+	} /* if (data->wd_DropObject) */
+
+	if (!data->wd_DropObject)
+	{
+	    Object *dest_wnd = NULL;
+
+	    /* Find out if app has an openend window at this position */
+	    if (layer)
+	    {
+		Object                *cstate;
+		Object                *child;
+		struct MinList        *ChildList;
+
+		get(_app(oWin), MUIA_Application_WindowList, (ULONG *)&(ChildList));
+		cstate = (Object *)ChildList->mlh_Head;
+		while ((child = NextObject(&cstate)))
+		{
+		    struct Window *wnd;
+		    get(child, MUIA_Window_Window,(ULONG*)&wnd);
+		    if (!wnd) continue;
+
+		    if (wnd->WLayer == layer)
+		    {
+			data->wd_DropWindow = wnd;
+			dest_wnd = child;
+			break;
+		    }
+		}
+	    } /* if (layer) */
+
+	    if (dest_wnd)
+	    {
+		Object *root;
+		get(dest_wnd, MUIA_Window_RootObject, &root);
+
+		if (root)
+		{
+		    if
+                        (
+                            (
+                                data->wd_DropObject = (Object*) DoMethod
+                                (
+                                    root, MUIM_DragQueryExtended, 
+                                    (IPTR) data->wd_DragObject,
+                                    imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
+                                    imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge
+				    )
+				)
+			    )
+		    {
+			UndrawDragNDrop(data->wd_dnd);
+			DoMethod(data->wd_DropObject, MUIM_DragBegin,(IPTR)data->wd_DragObject);
+		    }
+		}
+	    } /* if (dest_wnd) */
+	} /* if (!data->wd_DropObject) */
+
+	if (data->wd_DropObject)
+	{
+	    LONG update = 0;
+	    LONG i;
+	    for (i=0;i<2;i++)
+	    {
+		LONG res = DoMethod
+                    (
+                        data->wd_DropObject, MUIM_DragReport, 
+                        (IPTR) data->wd_DragObject,
+                        imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
+                        imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge,update
+			);
+		switch (res)
+		{
+		    case MUIV_DragReport_Abort:
+			UndrawDragNDrop(data->wd_dnd);
+			DoMethod(data->wd_DropObject, MUIM_DragFinish,(IPTR)data->wd_DragObject);
+			data->wd_DropObject = NULL;
+			i = 1;
+			break;
+
+		    case MUIV_DragReport_Continue: break;
+		    case MUIV_DragReport_Lock: break; /* NYI */
+		    case MUIV_DragReport_Refresh:
+			UndrawDragNDrop(data->wd_dnd);
+			update = 1;
+			break;
+		}
+	    }
+	} /* if (data->wd_DropObject) */
+	DrawDragNDrop(data->wd_dnd, imsg->MouseX + iWin->LeftEdge , imsg->MouseY + iWin->TopEdge);
+    } /* if (imsg->Class == IDCMP_MOUSEMOVE) */
+
+    if (imsg->Class == IDCMP_MOUSEBUTTONS)
+    {
+	if ((imsg->Code == MENUDOWN)  || (imsg->Code == SELECTUP))
+	{
+	    if (imsg->Code == SELECTUP && data->wd_DropObject)
+	    {
+		UndrawDragNDrop(data->wd_dnd);
+		DoMethod(data->wd_DropObject, MUIM_DragFinish, (IPTR)data->wd_DragObject);
+		DoMethod
+                    (
+                        data->wd_DropObject, MUIM_DragDrop, (IPTR)data->wd_DragObject,
+                        imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
+                        imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge
+			);
+		data->wd_DropObject = NULL;
+	    }
+	    finish_drag = 1;
+	}
+    }
+
+    if (imsg->Class == IDCMP_CLOSEWINDOW)
+	finish_drag = 1;
+
+    if (finish_drag)
+    {
+	UndrawDragNDrop(data->wd_dnd);
+	if (data->wd_DropObject)
+	{
+	    DoMethod(data->wd_DropObject, MUIM_DragFinish,(IPTR)data->wd_DragObject);
+	    data->wd_DropObject = NULL;
+	}
+	DeleteDragNDrop(data->wd_dnd);
+	DoMethod(data->wd_DragObject,MUIM_DeleteDragImage, (IPTR)data->wd_DragImage);
+	muiAreaData(data->wd_DragObject)->mad_Flags &= ~MADF_DRAGGING;
+	data->wd_DragImage = NULL;
+	data->wd_DragObject = NULL;
+	data->wd_DropWindow = NULL;
+	data->wd_dnd = NULL;
+	/* stop listening to IDCMP_MOUSEMOVE */
+	_zune_window_change_events(data, _zune_window_get_default_events());
+    }
+}
+
 
 /* process window message, this does a ReplyMsg() to the message */
 /* Called from application.c */
@@ -945,171 +1109,16 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
     iWin = imsg->IDCMPWindow;
     oWin = (Object *)iWin->UserData;
-
     data = muiWindowData(oWin);
+
+/*      D(bug("win %p, imsg->Class = %d\n", oWin, imsg->Class)); */
 
     if (data->wd_DragObject)
     {
-    	int finish_drag = 0;
-
-    	if (imsg->Class == IDCMP_MOUSEMOVE)
-    	{
-	    struct Layer *layer;
-	    layer = WhichLayer(&iWin->WScreen->LayerInfo, iWin->LeftEdge + imsg->MouseX, iWin->TopEdge + imsg->MouseY);
-
-    	    if (data->wd_DropObject)
-    	    {
-		struct Window *wnd;
-    	    	WORD mousex = imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge;
-    	    	WORD mousey = imsg->MouseY + iWin->TopEdge  - data->wd_DropWindow->TopEdge;
-
-		wnd = _window(data->wd_DropObject);
-		if
-                (
-                       mousex < _left(data->wd_DropObject) 
-                    || mousex > _right(data->wd_DropObject) 
-                    || mousey < _top(data->wd_DropObject) 
-                    || mousey > _bottom(data->wd_DropObject) 
-                    || layer != wnd->WLayer
-                )
-		{
-		    /* We have left the object */
-		    UndrawDragNDrop(data->wd_dnd);
-		    DoMethod(data->wd_DropObject, MUIM_DragFinish,(IPTR)data->wd_DragObject);
-		    data->wd_DropObject = NULL;
-		}
-	    } /* if (data->wd_DropObject) */
-
-    	    if (!data->wd_DropObject)
-    	    {
-		Object *dest_wnd = NULL;
-
-		/* Find out if app has an openend window at this position */
-		if (layer)
-		{
-		    Object                *cstate;
-		    Object                *child;
-		    struct MinList        *ChildList;
-
-		    get(_app(oWin), MUIA_Application_WindowList, (ULONG *)&(ChildList));
-		    cstate = (Object *)ChildList->mlh_Head;
-		    while ((child = NextObject(&cstate)))
-		    {
-			struct Window *wnd;
-			get(child, MUIA_Window_Window,(ULONG*)&wnd);
-			if (!wnd) continue;
-
-			if (wnd->WLayer == layer)
-			{
-			    data->wd_DropWindow = wnd;
-			    dest_wnd = child;
-			    break;
-			}
-		    }
-		} /* if (layer) */
-
-		if (dest_wnd)
-		{
-		    Object *root;
-		    get(dest_wnd, MUIA_Window_RootObject, &root);
-
-		    if (root)
-		    {
-			if
-                        (
-                            (
-                                data->wd_DropObject = (Object*) DoMethod
-                                (
-                                    root, MUIM_DragQueryExtended, 
-                                    (IPTR) data->wd_DragObject,
-                                    imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
-                                    imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge
-                                )
-                            )
-                        )
-		    	{
-			    UndrawDragNDrop(data->wd_dnd);
-			    DoMethod(data->wd_DropObject, MUIM_DragBegin,(IPTR)data->wd_DragObject);
-		        }
-		    }
-		} /* if (dest_wnd) */
-	    } /* if (!data->wd_DropObject) */
-
-	    if (data->wd_DropObject)
-	    {
-	    	LONG update = 0;
-	    	LONG i;
-	    	for (i=0;i<2;i++)
-	    	{
-		    LONG res = DoMethod
-                    (
-                        data->wd_DropObject, MUIM_DragReport, 
-                        (IPTR) data->wd_DragObject,
-                        imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
-                        imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge,update
-                    );
-		    switch (res)
-		    {
-			case MUIV_DragReport_Abort:
-			    UndrawDragNDrop(data->wd_dnd);
-			    DoMethod(data->wd_DropObject, MUIM_DragFinish,(IPTR)data->wd_DragObject);
-			    data->wd_DropObject = NULL;
-			    i = 1;
-			    break;
-
-			case MUIV_DragReport_Continue: break;
-			case MUIV_DragReport_Lock: break; /* NYI */
-			case MUIV_DragReport_Refresh:
-			    UndrawDragNDrop(data->wd_dnd);
-			    update = 1;
-			    break;
-		    }
-	    	}
-	    } /* if (data->wd_DropObject) */
-	    DrawDragNDrop(data->wd_dnd, imsg->MouseX + iWin->LeftEdge , imsg->MouseY + iWin->TopEdge);
-    	} /* if (imsg->Class == IDCMP_MOUSEMOVE) */
-
-    	if (imsg->Class == IDCMP_MOUSEBUTTONS)
-    	{
-	    if ((imsg->Code == MENUDOWN)  || (imsg->Code == SELECTUP))
-	    {
-	    	if (imsg->Code == SELECTUP && data->wd_DropObject)
-	    	{
-		    UndrawDragNDrop(data->wd_dnd);
-		    DoMethod(data->wd_DropObject, MUIM_DragFinish, (IPTR)data->wd_DragObject);
-		    DoMethod
-                    (
-                        data->wd_DropObject, MUIM_DragDrop, (IPTR)data->wd_DragObject,
-                        imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
-                        imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge
-                    );
-		    data->wd_DropObject = NULL;
-	    	}
-		finish_drag = 1;
-	    }
-	}
-
-	if (imsg->Class == IDCMP_CLOSEWINDOW) finish_drag = 1;
-
-	if (finish_drag)
-	{
-	    UndrawDragNDrop(data->wd_dnd);
-	    if (data->wd_DropObject)
-	    {
-		DoMethod(data->wd_DropObject, MUIM_DragFinish,(IPTR)data->wd_DragObject);
-		data->wd_DropObject = NULL;
-	    }
-	    DeleteDragNDrop(data->wd_dnd);
-	    DoMethod(data->wd_DragObject,MUIM_DeleteDragImage, (IPTR)data->wd_DragImage);
-	    muiAreaData(data->wd_DragObject)->mad_Flags &= ~MADF_DRAGGING;
-	    data->wd_DragImage = NULL;
-	    data->wd_DragObject = NULL;
-	    data->wd_DropWindow = NULL;
-	    data->wd_dnd = NULL;
-    	}
-    	ReplyMsg((struct Message*)imsg);
-    	return;
-    } /* if (data->wd_DragObject) */
+	HandleDragging(oWin, data, imsg);
+	ReplyMsg((struct Message*)imsg);
+	return;
+    }
 
     data->wd_Flags |= MUIWF_HANDLEMESSAGE;
 
@@ -1337,7 +1346,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
     }
 
-    handle_event(oWin, imsg);
+    HandleInputEvent(oWin, data, imsg);
 
     data->wd_Flags &= ~MUIWF_HANDLEMESSAGE;
 
@@ -1354,8 +1363,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
 }
 
 
-static ULONG invoke_event_handler (struct MUI_EventHandlerNode *ehn,
-		      struct IntuiMessage *event, ULONG muikey)
+static ULONG InvokeEventHandler (struct MUI_EventHandlerNode *ehn,
+				 struct IntuiMessage *event, ULONG muikey)
 {
     ULONG res;
 
@@ -1415,16 +1424,16 @@ static ULONG invoke_event_handler (struct MUI_EventHandlerNode *ehn,
     return res;
 }
 
-static void handle_event(Object *win, struct IntuiMessage *event)
+static void HandleInputEvent(Object *win, struct MUI_WindowData *data, 
+			     struct IntuiMessage *event)
 {
-    struct MUI_WindowData *data = muiWindowData(win);
-    struct MinNode *mn;
+    struct MinNode              *mn;
     struct MUI_EventHandlerNode *ehn;
-    ULONG res;
-    LONG muikey = MUIKEY_NONE;
-    ULONG mask = event->Class;
-    Object *active_object = NULL;
-    IPTR disabled;
+    ULONG                        res;
+    LONG                         muikey = MUIKEY_NONE;
+    ULONG                        mask = event->Class;
+    Object                      *active_object = NULL;
+    IPTR                         disabled;
 
     if (mask == IDCMP_RAWKEY)
     {
@@ -1497,7 +1506,7 @@ static void handle_event(Object *win, struct IntuiMessage *event)
                 )
             ) /* the last condition ??? */
 	    {
-		res = invoke_event_handler(ehn, (struct IntuiMessage *)event, muikey);
+		res = InvokeEventHandler(ehn, (struct IntuiMessage *)event, muikey);
 		if (res & MUI_EventHandlerRC_Eat)
 		    return;
 
@@ -1505,8 +1514,8 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 		if (active_object != data->wd_ActiveObject)
 		    break;
 	    }
-	}
-    }
+	} /* for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ) */
+    } /* if (active_object && !disabled) */
 
     /* try DefaultObject */
     if (data->wd_DefaultObject)
@@ -1537,7 +1546,7 @@ static void handle_event(Object *win, struct IntuiMessage *event)
                 && (ehn->ehn_Events & mask)
             )
 	    {
-		res = invoke_event_handler(ehn, (struct IntuiMessage *)event, muikey);
+		res = InvokeEventHandler(ehn, (struct IntuiMessage *)event, muikey);
 		if (res & MUI_EventHandlerRC_Eat)
 		    return;
 	    }
@@ -1612,7 +1621,7 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 		/* non-active and non-default objects dont get the MUIKEY because
 		 * they dont have focus.
 		 */
-		res = invoke_event_handler(ehn, event, MUIKEY_NONE);
+		res = InvokeEventHandler(ehn, event, MUIKEY_NONE);
 		if (res & MUI_EventHandlerRC_Eat)
 		    return;
 	    }
@@ -2515,7 +2524,7 @@ static void deinstall_backbuffer (struct IClass *cl, Object *obj)
  * An expose event is already queued, it will trigger
  * MUIM_Draw for us when going back to main loop.
  */
-static void window_show (struct IClass *cl, Object *obj)
+static void window_Show (struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     struct Window *win = data->wd_RenderInfo.mri_Window;
@@ -2555,8 +2564,6 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
     window_minmax(obj,data);
     window_select_dimensions(data);
 
-    data->wd_UserPort = muiGlobalInfo(obj)->mgi_UserPort;
-
     /* Decide which menustrip should be used */
     if (!data->wd_ChildMenustrip) get(_app(obj), MUIA_Application_Menustrip, &data->wd_Menustrip);
     else data->wd_Menustrip = data->wd_ChildMenustrip;
@@ -2575,7 +2582,7 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
 
     data->wd_Flags |= MUIWF_OPENED;
 
-    window_show(cl, obj);
+    window_Show(cl, obj);
 
     {
 	LONG left,top,width,height;
@@ -2612,12 +2619,15 @@ static ULONG window_Close(struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
+    D(bug("in window_Close %ld\n", __LINE__));
+
     if (data->wd_Flags & MUIWF_HANDLEMESSAGE)
     {
 /*      	D(bug("Window should be closed while handling it's messages. Closing delayed.\n")); */
 	data->wd_Flags |= MUIWF_CLOSEME;
 	return TRUE;
     }
+    D(bug("in window_Close %ld\n", __LINE__));
 
     /* remove from window */
     DoMethod(data->wd_RootObject, MUIM_Hide);
@@ -2628,7 +2638,9 @@ static ULONG window_Close(struct IClass *cl, Object *obj)
     HideRenderInfo(&data->wd_RenderInfo);
 
     /* close here ... */
+    D(bug("in window_Close %ld\n", __LINE__));
     UndisplayWindow(obj,data);
+    D(bug("in window_Close %ld\n", __LINE__));
 
     data->wd_Flags &= ~MUIWF_OPENED;
     data->wd_Menustrip = NULL;
@@ -2665,7 +2677,7 @@ static ULONG Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wi
 
     install_backbuffer(cl, obj);
 
-    window_show(cl, obj);
+    window_Show(cl, obj);
 
 #if 0
     if (msg->originator && !resized)
@@ -2720,7 +2732,7 @@ static ULONG Window_AddEventHandler(struct IClass *cl, Object *obj,
 //    D(bug("muimaster.library/window.c: Add Eventhandler\n"));
 
     Enqueue((struct List *)&data->wd_EHList, (struct Node *)msg->ehnode);
-    _zune_window_change_events(data);
+    _zune_window_change_events(data, _zune_window_get_default_events());
     return TRUE;
 }
 
@@ -2735,7 +2747,7 @@ static ULONG Window_RemEventHandler(struct IClass *cl, Object *obj,
 //    D(bug("muimaster.library/window.c: Rem Eventhandler\n"));
 
     Remove((struct Node *)msg->ehnode);
-    _zune_window_change_events(data);
+    _zune_window_change_events(data, _zune_window_get_default_events());
     return TRUE;
 }
 

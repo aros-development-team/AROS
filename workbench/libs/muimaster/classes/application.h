@@ -190,9 +190,9 @@ struct MUI_GlobalInfo
     Object *mgi_ApplicationObject;
 
     /* The following data is private only, might be extented! */
-    struct MsgPort *mgi_UserPort; /* application-wide IDCMP port */ /* PRIV */
-    Object *mgi_Configdata; /* The config data */
-    struct ZunePrefsNew *mgi_Prefs; /* For faster access */
+    struct MsgPort      *mgi_WindowsPort; /* application-wide IDCMP port */ /* PRIV */
+    Object              *mgi_Configdata; /* The config data */ /* PRIV */
+    struct ZunePrefsNew *mgi_Prefs; /* For faster access */ /* PRIV */
 };
 
 
