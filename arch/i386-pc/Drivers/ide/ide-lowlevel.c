@@ -61,58 +61,65 @@ void ResumeError(ULONG port, struct ide_Unit *unit);
 /* Add a bootnode using expansion.library */
 BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ide_Unit *unit)
 {
-   struct ExpansionBase *ExpansionBase;
-   struct DeviceNode *devnode;
-   ULONG *pp;
-   static int volnum = 0;
-   
-   ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",40L);
-   if (ExpansionBase)
-   {
-      pp = AllocMem(24*4,MEMF_PUBLIC|MEMF_CLEAR);
-      if (pp)
-      {
-         {
-            pp[0]=(ULONG)"afs.handler";
-            pp[1]=(ULONG)name;
-            pp[2]=0;
-            pp[DE_TABLESIZE+4]=DE_BOOTBLOCKS;
-            pp[DE_SIZEBLOCK+4]=unit->au_SectSize/4;
-            pp[DE_NUMHEADS+4]=unit->au_Heads;
-            pp[DE_SECSPERBLOCK+4]=1;
-            pp[DE_BLKSPERTRACK+4]=unit->au_SectorsT;
-            pp[DE_RESERVEDBLKS+4]=2;
-            pp[DE_LOWCYL+4]=StartCyl;
-            pp[DE_HIGHCYL+4]=EndCyl;
-            pp[DE_NUMBUFFERS+4]=10;
-            pp[DE_BUFMEMTYPE+4]=MEMF_PUBLIC|MEMF_CHIP;
-            pp[DE_MAXTRANSFER+4]=0x00200000;
-            pp[DE_MASK+4]=0x7FFFFFFE;
-            pp[DE_BOOTPRI+4]=0;  
-            pp[DE_DOSTYPE+4]=0x444F5301;
-            pp[DE_BOOTBLOCKS+4]=2;
-            devnode = MakeDosNode(pp);
-            if (devnode)
-            {
-               if ((devnode->dn_NewName=AllocMem(5,MEMF_PUBLIC|MEMF_CLEAR)))
-               {
-                  devnode->dn_NewName[0]=3;
-                  devnode->dn_NewName[1]='D';
-                  devnode->dn_NewName[2]='H';
-                  devnode->dn_NewName[3]=volnum+'0';
-                  devnode->dn_OldName=MKBADDR(devnode->dn_NewName);
-                  devnode->dn_NewName += 1;
-                  D(bug("-Adding volume %s with SC=%d, EC=%d\n",&(devnode->dn_NewName[0]),StartCyl,EndCyl));
-                  AddBootNode(pp[DE_BOOTPRI+4],0,devnode,0);
-                  volnum++;
-                  return TRUE;
-               }
-            }
-         }
-      }
-      CloseLibrary((struct Library *)ExpansionBase);
-   }
-   return FALSE;
+    struct ExpansionBase *ExpansionBase;
+    struct DeviceNode *devnode;
+    ULONG *pp;
+    static int volnum = 0;
+    
+    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",
+							40L);
+
+    if (ExpansionBase)
+    {
+	pp = AllocMem(24*4, MEMF_PUBLIC | MEMF_CLEAR);
+
+	if (pp)
+	{
+	    pp[0] = (ULONG)"afs.handler";
+	    pp[1] = (ULONG)name;
+	    pp[2] = 0;
+	    pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
+	    pp[DE_SIZEBLOCK + 4] = unit->au_SectSize/4;
+	    pp[DE_NUMHEADS + 4] = unit->au_Heads;
+	    pp[DE_SECSPERBLOCK + 4] = 1;
+	    pp[DE_BLKSPERTRACK + 4] = unit->au_SectorsT;
+	    pp[DE_RESERVEDBLKS + 4] = 2;
+	    pp[DE_LOWCYL + 4] = StartCyl;
+	    pp[DE_HIGHCYL + 4] = EndCyl;
+	    pp[DE_NUMBUFFERS + 4] = 10;
+	    pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC | MEMF_CHIP;
+	    pp[DE_MAXTRANSFER + 4] = 0x00200000;
+	    pp[DE_MASK + 4] = 0x7FFFFFFE;
+	    pp[DE_BOOTPRI + 4] = 0;  
+	    pp[DE_DOSTYPE + 4] = 0x444F5301;
+	    pp[DE_BOOTBLOCKS + 4] = 2;
+	    devnode = MakeDosNode(pp);
+
+	    if (devnode)
+	    {
+		if ((devnode->dn_OldName =
+		     MKBADDR(AllocMem(5, MEMF_PUBLIC | MEMF_CLEAR))))
+		{
+		    AROS_BSTR_putchar(devnode->dn_OldName, 0, 'D');
+		    AROS_BSTR_putchar(devnode->dn_OldName, 1, 'H');
+		    AROS_BSTR_putchar(devnode->dn_OldName, 2, '0' + volnum);
+		    AROS_BSTR_setstrlen(devnode->dn_OldName, 3);
+		    devnode->dn_NewName = AROS_BSTR_ADDR(devnode->dn_OldName);
+
+		    D(bug("-Adding volume %s with SC=%d, EC=%d\n",
+			  &(devnode->dn_NewName[0]), StartCyl, EndCyl));
+		    AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, 0);
+		    volnum++;
+
+		    return TRUE;
+		}
+	    }
+	}
+	
+	CloseLibrary((struct Library *)ExpansionBase);
+    }
+
+    return FALSE;
 }
 
 /*
