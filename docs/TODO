@@ -12,7 +12,7 @@ when the mouse is moved every window of every screen
 window->MouseY,window->GZZMouseX,window->GZZMouseY updated,
 no matter if window is active or not, if screen is active
 or not, if window is gzz or not, if IDCMP_MOUSEMOVE and/or
-WFLG_REPORTMOUSE is set or not, ...
+WFLG_REPORTMOUSE is set or not, ...                            DONE (Stefan)
 
 during window dragging/resizing (= while the corresponding
 gadget is active) Intuition's InputHandler should not execute
