@@ -624,8 +624,10 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     
     D(bug("WriteIcon35\n"));
     
-    if (icon->icon35.img1.imagedata == NULL) return TRUE;
-    if (icon->icon35.img1.palette == NULL) return FALSE;
+    if (!GetNativeIcon(&icon->dobj, IconBase))
+    {
+    	return TRUE;
+    }
     
     iffhook.h_Entry    = (HOOKFUNC)HookEntry;
     iffhook.h_SubEntry = (HOOKFUNC)MyDOSStreamHandler;
