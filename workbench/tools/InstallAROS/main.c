@@ -6,7 +6,7 @@
 #define INTUITION_NO_INLINE_STDARG
 #define USE_FORMAT64
 
-//#define DEBUG 1
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <libraries/mui.h>
@@ -36,7 +36,7 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 
-#include <MUI/NFloattext_mcc.h>
+//#include <MUI/NFloattext_mcc.h>
 
 #include "install.h"
 
@@ -224,7 +224,8 @@ IPTR Install__OM_NEW
 			}
 			else
 			{
-				set( data->instc_options_main->opt_lic_file,MUIA_NFloattext_Text,data->instc_lic_buffer);
+				//set( data->instc_options_main->opt_lic_file,MUIA_NFloattext_Text,data->instc_lic_buffer);
+				set( data->instc_options_main->opt_lic_file,MUIA_Floattext_Text,data->instc_lic_buffer);
 			}
 			Close(from);
 		}
@@ -2430,7 +2431,8 @@ int main(int argc,char *argv[])
 
 /**/
 
-	LicenseMsg = NFloattextObject,
+	//LicenseMsg = NFloattextObject,
+	LicenseMsg = FloattextObject,
 			MUIA_Background, MUII_TextBack,
 			TextFrame,
 		End;
