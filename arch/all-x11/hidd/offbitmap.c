@@ -132,6 +132,8 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 		, depth
 	));
 	
+	assert (width != 0 && height != 0 && depth != 0);
+	
 	/* We must only create depths that are supported by the friend drawable
 	   Currently we only support the default depth, and depth 1
 	*/

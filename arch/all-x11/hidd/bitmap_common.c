@@ -1,7 +1,4 @@
 
-#include <sys/types.h>
-#include <signal.h>
-
 /**************  BitMap::Set()  *********************************/
 static VOID MNAME(set)(Class *cl, Object *o, struct pRoot_Set *msg)
 {
@@ -310,6 +307,10 @@ UX11
     
 }
 
+#undef DEBUG
+#define DEBUG 0
+#include <aros/debug.h>
+
 /*********  BitMap::PutImage()  *************************************/
 
 static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *msg)
@@ -319,6 +320,7 @@ static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
     ULONG *pixarray = msg->pixels;
     struct bitmap_data *data;
     XImage *image;
+    BOOL imdata_allocated_by_x;
 
     EnterFunc(bug("X11Gfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
     	msg->pixels, msg->x, msg->y, msg->width, msg->height));
@@ -326,32 +328,41 @@ static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
     data = INST_DATA(cl, o);
     GetAttr(o, aHidd_BitMap_DrawMode, &mode);
 
-LX11    
-    if (1 == data->depth) {
-    	XSetForeground(data->display, data->gc, WhitePixel(data->display, data->screen));
-    	XDrawLine(data->display
-		, DRAWABLE(data)
-		, data->gc
-		, 0, 0
-		, 7
-		, 7
-	);
-    }
-    image = XGetImage(data->display
-    	, DRAWABLE(data)
-	, msg->x, msg->y
-	, msg->width, msg->height
-	, data->depth == 1 ? 0x1 : AllPlanes
-	, data->depth == 1 ? XYPixmap : ZPixmap
-    );
-UX11
-    assert(image != 0);    
-    if (!image)
-    	ReturnVoid("X11Gfx.BitMap::PutImage(couldn't get XImage)");
 
     D(bug("drawmode: %d\n", mode));
     if (mode == vHidd_GC_DrawMode_Copy)
     {
+    	int bperline;
+	void *imdata;
+LX11	
+    	image = XCreateImage(data->display
+		, DefaultVisual(data->display, data->screen)
+		, data->depth
+		, ZPixmap
+		, 0
+		, NULL
+		, msg->width, msg->height
+		, 32
+		, 0
+	);
+UX11	
+	if (!image)
+    		ReturnVoid("X11Gfx.BitMap::PutImage(XCreateImage failed)");
+	    
+	bperline	= image->bytes_per_line;
+	
+	imdata = malloc((size_t)msg->height * bperline);
+	if (!imdata)
+	{
+	    XFree(image);
+    	    ReturnVoid("X11Gfx.BitMap::PutImage(malloc(image data) failed)");
+	}
+	
+	imdata_allocated_by_x = FALSE;
+	
+	image->data = (char *)imdata;
+	
+	
         D(bug("Drawmode COPY\n"));
     	/* Do plain copy, optimized */
 	for (y = 0; y < msg->height; y ++)
@@ -359,11 +370,7 @@ UX11
 	    for (x = 0; x < msg->width; x ++)
 	    {
 	    	if (data->depth == 1) {
-			if (*pixarray ++ == 0) {
-				XPutPixel(image, x, y, 0);
-			} else {
-				XPutPixel(image, x, y, 1);
-			}
+			XPutPixel(image, x, y, *pixarray ++);
 		} else {
 			XPutPixel(image, x, y, data->hidd2x11cmap[*pixarray ++]);
 		}
@@ -376,6 +383,19 @@ UX11
     }
     else
     {
+LX11    
+	image = XGetImage(data->display
+		, DRAWABLE(data)
+		, msg->x, msg->y
+		, msg->width, msg->height
+		, AllPlanes
+		, ZPixmap
+    	);
+UX11
+	if (!image)
+	    ReturnVoid("X11Gfx.BitMap::PutImage(couldn't get XImage)");
+
+	imdata_allocated_by_x = TRUE;
      	   
 	for (y = 0; y < msg->height; y ++)
 	{
@@ -411,7 +431,16 @@ LX11
 	, msg->x, msg->y
 	, msg->width, msg->height
     );
-    XDestroyImage(image);
+    
+    if (imdata_allocated_by_x)
+    {
+	XDestroyImage(image);
+    }
+    else
+    {
+    	free(image->data);
+	XFree(image);
+    }
     XFlush(data->display);
 UX11   
    ReturnVoid("X11Gfx.BitMap::PutImage");
@@ -419,6 +448,9 @@ UX11
    
 }
 
+#undef DEBUG
+#define DEBUG 0
+#include <aros/debug.h>
 
 /*** BitMap::BlitColorExpansion() **********************************************/
 static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
@@ -429,17 +461,22 @@ static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_
     ULONG fg, bg, fg_pixel, bg_pixel;
     LONG x, y;
     
-    Drawable d;
-    
+    Drawable d = 0;
     
     EnterFunc(bug("X11Gfx.BitMap::BlitColorExpansion(%p, %d, %d, %d, %d, %d, %d)\n"
     	, msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
     
-    /* Get the color expansion mode */
-    GetAttr(o, aHidd_BitMap_ColorExpansionMode, &cemd);
     
     GetAttr(msg->srcBitMap, aHidd_X11BitMap_Drawable, (IPTR *)&d);
+    
+    if (0 == d)
+    {
+    	/* We know nothing about the source bitmap. Let the superclass handle this */
+	DoSuperMethod(cl, o, (Msg)msg);
+	return;
+    }
 
+    GetAttr(o, aHidd_BitMap_ColorExpansionMode, &cemd);
     GetAttr(o, aHidd_BitMap_Foreground, &fg);
     GetAttr(o, aHidd_BitMap_Background, &bg);
     
@@ -453,6 +490,7 @@ static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_
     
     if (0 != d)
     {
+LX11    
 	XSetForeground(data->display, data->gc, fg_pixel);
     	if (cemd & vHidd_GC_ColExp_Opaque)  
 	{
@@ -469,12 +507,23 @@ static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_
 	    );
 	} else {
 	    /* Do transparent blit */
+	    
+	    XGCValues val;
+	    val.stipple		= d;
+	    val.ts_x_origin	= msg->destX - msg->srcX;
+	    val.ts_y_origin	= msg->destY - msg->srcY;
+	    val.fill_style	= FillStippled;
+	    
 
-#define USE_STIPPLE
 
-#ifdef USE_STIPPLE	    
 //	    kprintf(" XSS\n");
 
+	    XChangeGC(data->display
+	    	, data->gc
+		, GCStipple|GCTileStipXOrigin|GCTileStipYOrigin|GCFillStyle
+		, &val
+	    );
+/*
 	    XSetStipple(data->display, data->gc, d);
 	    XSetTSOrigin(data->display
 	    	, data->gc
@@ -482,7 +531,7 @@ static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_
 		, msg->destY - msg->srcY
 	    );
 	    XSetFillStyle(data->display, data->gc, FillStippled);
-
+*/
 	    XFillRectangle(data->display
 	    	, DRAWABLE(data)
 		, data->gc
@@ -491,32 +540,15 @@ static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_
 	    );
 	    
 	    XSetFillStyle(data->display, data->gc, FillSolid);
-
-#else
-//	    kprintf(" XSCM\n");
-	    XSetClipOrigin(data->display
-	    	, data->gc
-		, msg->destX - msg->srcX
-		, msg->destY - msg->srcY
-	    );
-	    XSetClipMask(data->display, data->gc, d);
-	    
-	    XFillRectangle(data->display
-	    	, DRAWABLE(data)
-		, data->gc
-		, msg->destX, msg->destY
-		, msg->width, msg->height
-	    );
-	    
-	    /* Reset clipmask and clip origin */
-	    XSetClipMask(data->display, data->gc, None);
-	    XSetClipOrigin(data->display, data->gc, 0, 0);
-
-#endif
 	}
+
+UX11	
     }
     else
     {
+    	/* We now nothing about the format of the source bitmap
+	   an must get single pixels
+	*/
 
 LX11    
 	dest_im = XGetImage(data->display
