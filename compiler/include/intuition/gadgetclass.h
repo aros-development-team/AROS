@@ -178,7 +178,8 @@
 
 /* The following attributes are AROS specific. */
   /* [IS.] (struct TextAttr *) TextAttr structure (see <graphics/text.h>) to
-     use for gadget rendering. */
+     use for gadget rendering. This attribute is not directly supported by
+     GadgetClass. */
 #define GA_TextAttr	 (GA_Dummy + 40)
   /* [] (BOOL) */
 #define GA_ReadOnly	 (GA_Dummy + 41)
@@ -252,7 +253,7 @@ struct gpInput
     struct InputEvent  * gpi_IEvent;
       /* Pointer to a variable that is to be set by the gadget class, if
          GMR_VERIFY is returned. The lower 16 bits of this value are returned
-         as Code fields in the IntuiMessage (see <intuition/intuition.h>)
+         in the Code field of the IntuiMessage (see <intuition/intuition.h>)
          passed back to the application. */
     LONG	       * gpi_Termination;
 
