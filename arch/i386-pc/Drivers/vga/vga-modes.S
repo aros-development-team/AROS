@@ -10,21 +10,40 @@ SetVGAMode:
 			pushl	%edx
 			pushl	%ebx
 			pushl	%edi
+
+			movl	$0x3c3,%edx
+			movb	$1,%al
+			outb	%al,%dx
+
 			movl	8(%ebp),%edi	/* Get modTable */
 			movl	$21,%ecx	/* 21 bytes */
-			movl	$0x20,%ebx
+			movb	$0,%bl
+			movl	$0x300,%edx
 l1:
-			movl	$0x3da,%edx	/* Magic sequence */
-			inb	%dx,%al
+			movb	$0xda,%dl	/* Magic sequence */
+			inb	%dx,%al		/* Reset Flip-flop */
+			
 			movb	$0xc0,%dl	/* Set register number */
 			movb	%bl,%al
 			outb	%al,%dx
 			nop
 			nop
 			nop
+			nop
 			movb	(%edi),%al
 			addl	$1,%edi
 			outb	%al,%dx
+
+			movb	$0xda,%dl	/* Keep the display on */
+			inb	%dx,%al
+
+			movb	$0xc0,%dl
+			movb	$0x20,%al
+			outb	%al,%dx
+
+			movb	$0xda,%dl
+			inb	%dx,%al
+			
 			addb	$1,%bl
 			subl	$1,%ecx
 			jne	l1
@@ -56,7 +75,7 @@ l2:
 			movb	(%edi),%al
 			incl	%edi
 			movb	$0xda,%dl
-			outb	%al,%dx
+    /*			outb	%al,%dx      */
 
 			movb	$9,%cl
 			movb	$0,%bl
