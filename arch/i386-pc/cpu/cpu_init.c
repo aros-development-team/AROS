@@ -6,147 +6,91 @@
     Lang: english
 */
 
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 #include "cpu_intern.h"
 #include LC_LIBDEFS_FILE
-
-#ifdef SysBase
-#undef SysBase
-#endif
-
-static const UBYTE name[];
-static const UBYTE version[];
-static const void * const LIBFUNCTABLE[];
-extern const char LIBEND;
-
-struct CPUBase *AROS_SLIB_ENTRY(init, BASENAME)();
 
 void i386_CheckCPU_Type( struct i386_compat_intern *CPU_intern );
 
 #define SMP_SUPPORT 1
 
-int CPU_entry(void)
-{
-    return -1;
-}
-
-const struct Resident CPU_resident =
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&CPU_resident,
-    (APTR)&LIBEND,
-    RTF_COLDSTART,
-    45,
-    NT_RESOURCE,
-    45,
-    (UBYTE *)name,
-    (UBYTE *)&version[6],
-    (ULONG *)&AROS_SLIB_ENTRY(init,BASENAME)
-};
-
-static const UBYTE name[] = NAME_STRING;
-static const UBYTE version[] = VERSION_STRING;
-
-static const void * const LIBFUNCTABLE[] =
-{
-    //&AROS_SLIB_ENTRY(ResetBattClock,BASENAME),
-    //&AROS_SLIB_ENTRY(ReadBattClock,BASENAME),
-    //&AROS_SLIB_ENTRY(WriteBattClock,BASENAME),
-    (void *)-1
-};
-
 static struct CPU_Definition *BootCPU;                      /* Pointer used by the exec launched boot cpu probe */ 
 
-AROS_UFH3(struct CPUBase *, AROS_SLIB_ENTRY(init,BASENAME),
-    AROS_UFHA(ULONG,	dummy,	D0),
-    AROS_UFHA(ULONG,	slist,	A0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, CPUBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_SET_LIBFUNC_INIT
 
     struct intel_mp_confblock       *mpcfb = NULL;
     struct CPU_Definition           *AvailCPUs = NULL;
     struct i386_compat_intern       *BootCPU_intern = NULL;
     struct  ACPIBase                *ACPIBase = NULL;
-    CPUBase = NULL;
 
-    UWORD neg = AROS_ALIGN(LIB_VECTSIZE * 3);
-    
-    CPUBase = (struct CPUBase *)(((UBYTE *)	AllocMem( neg + sizeof(struct CPUBase), MEMF_CLEAR | MEMF_PUBLIC)) + neg);
+    CPUBase->CPUB_UtilBase = OpenLibrary("utility.library", 0);
 
-    if( CPUBase )
+    CPUBase->CPUB_BOOT_Physical = -1;                                                   /* set to a single cpu for now          */
+    CPUBase->CPUB_BOOT_Logical = -1;
+
+    mpcfb = find_smp_config();
+
+    if ( mpcfb )
     {
-        CPUBase->CPUB_SysBase = SysBase;
-	    CPUBase->CPUB_Node.ln_Pri = 0;
-	    CPUBase->CPUB_Node.ln_Type = NT_RESOURCE;
-	    CPUBase->CPUB_Node.ln_Name = (STRPTR)name;
-        CPUBase->CPUB_UtilBase = OpenLibrary("utility.library", 0);
+	kprintf(DEBUG_NAME_STR ": Found SMP 1.4 MP table = 0x%p\n", mpcfb);
+	AllocAbs( 4096, mpcfb);
+	if (mpcfb->mpcf_physptr) AllocAbs( 4096, mpcfb->mpcf_physptr );
+	kprintf(DEBUG_NAME_STR ": SMP Table(s) protected\n");
+    }
+    else kprintf(DEBUG_NAME_STR ": NO compatable SMP hardware found.\n");
 
-        CPUBase->CPUB_BOOT_Physical = -1;                                                   /* set to a single cpu for now          */
-        CPUBase->CPUB_BOOT_Logical = -1;
+    AvailCPUs = AllocMem( sizeof(struct CPU_Definition), MEMF_CLEAR | MEMF_PUBLIC );    /* Create our new CPU List              */
 
-	    MakeFunctions( CPUBase, (APTR)LIBFUNCTABLE, NULL );
-	    AddResource( CPUBase );
+    if( AvailCPUs )
+    {
 
-        mpcfb = find_smp_config();
+	NEWLIST((struct List *)&(AvailCPUs->CPU_CPUList));
+	AvailCPUs->CPU_Physical = 1;
 
-        if ( mpcfb )
-        {
-            kprintf(DEBUG_NAME_STR ": Found SMP 1.4 MP table = 0x%p\n", mpcfb);
-            AllocAbs( 4096, mpcfb);
-	        if (mpcfb->mpcf_physptr) AllocAbs( 4096, mpcfb->mpcf_physptr );
-            kprintf(DEBUG_NAME_STR ": SMP Table(s) protected\n");
-        }
-        else kprintf(DEBUG_NAME_STR ": NO compatable SMP hardware found.\n");
-
-        AvailCPUs = AllocMem( sizeof(struct CPU_Definition), MEMF_CLEAR | MEMF_PUBLIC );    /* Create our new CPU List              */
-
-        if( AvailCPUs )
-        {
-
-            NEWLIST((struct List *)&(AvailCPUs->CPU_CPUList));
-            AvailCPUs->CPU_Physical = 1;
-
-            InitSemaphore( &CPUBase->CPUB_ListLock);
-            kprintf(DEBUG_NAME_STR ": Initialised CPU List Semaphore\n");
-        }
-        else
-        {
-            kprintf(DEBUG_NAME_STR ": ERROR - Couldnt allocate CPU list memory!\n");
-            return NULL;
-        }
+	InitSemaphore( &CPUBase->CPUB_ListLock);
+	kprintf(DEBUG_NAME_STR ": Initialised CPU List Semaphore\n");
+    }
+    else
+    {
+	kprintf(DEBUG_NAME_STR ": ERROR - Couldnt allocate CPU list memory!\n");
+	return FALSE;
+    }
 
 #warning TODO: Patch functions with suitable replacements (bug fixes/speed ups) - BEFORE SMP SETUP!
 
-        if ( mpcfb )  /* SMP? */
-        {
-            AllocAbs( 4096, smp_alloc_memory());                                    /* Create The Trampoline page..
-	                                                                                Has to be in very low memory so we can execute
-                                                                                    real-mode AP code.                               */
-            BootCPU->CPU_Private2 = mpcfb;                                          /* Store the pointer to the SMP config block        */
-            kprintf(DEBUG_NAME_STR ": SMP Trampoline page protected, SMP config stored.\n");
-        }
-
-        CPUBase->CPUB_Processors = AvailCPUs; // done !
-
-        AddTail(&AvailCPUs->CPU_CPUList,&BootCPU->CPU_CPUList);
-        kprintf(DEBUG_NAME_STR ": CPU List created = 0x%p, Boot CPU inserted..0x%p\n",AvailCPUs,BootCPU);
-
-	    /*  Parse the ACPI tables for possible boot-time SMP configuration. */
-	    CPUBase->CPUB_ACPIBase = OpenResource("acpi.resource");
-        kprintf(DEBUG_NAME_STR ": acpi.resource @ %p\n",CPUBase->CPUB_ACPIBase);
-        
-        ACPIBase = CPUBase->CPUB_ACPIBase;
-        ACPIBase->ACPIB_CPUBase = CPUBase;                                          /* pass our base poiner over   */
-
-        //ACPI_Init();                                                                /* make sure ACPI is online .. */
-
-        if (mpcfb) get_smp_config( mpcfb, CPUBase );
+    if ( mpcfb )  /* SMP? */
+    {
+	AllocAbs( 4096, smp_alloc_memory());                                    /* Create The Trampoline page..
+										 Has to be in very low memory so we can execute
+										 real-mode AP code.                               */
+	BootCPU->CPU_Private2 = mpcfb;                                          /* Store the pointer to the SMP config block        */
+	kprintf(DEBUG_NAME_STR ": SMP Trampoline page protected, SMP config stored.\n");
     }
-    return CPUBase;
 
-    AROS_USERFUNC_EXIT
+    CPUBase->CPUB_Processors = AvailCPUs; // done !
+
+    AddTail(&AvailCPUs->CPU_CPUList,&BootCPU->CPU_CPUList);
+    kprintf(DEBUG_NAME_STR ": CPU List created = 0x%p, Boot CPU inserted..0x%p\n",AvailCPUs,BootCPU);
+
+    /*  Parse the ACPI tables for possible boot-time SMP configuration. */
+    CPUBase->CPUB_ACPIBase = OpenResource("acpi.resource");
+    kprintf(DEBUG_NAME_STR ": acpi.resource @ %p\n",CPUBase->CPUB_ACPIBase);
+        
+    ACPIBase = CPUBase->CPUB_ACPIBase;
+    ACPIBase->ACPIB_CPUBase = CPUBase;                                          /* pass our base poiner over   */
+
+    //ACPI_Init();                                                                /* make sure ACPI is online .. */
+
+    if (mpcfb) get_smp_config( mpcfb, CPUBase );
+
+    return TRUE;
+
+    AROS_SET_LIBFUNC_EXIT
 }
+
+ADD2INITLIB(GM_UNIQUENAME(Init), 0)
 
 #ifdef SysBase  /* WARNING!!! THIS NEXT FUNCTION RUS IN KERNEL LAND _ NO DEBUG OUTPUT ETC>> BE CAREFULL! */
 #undef SysBase
