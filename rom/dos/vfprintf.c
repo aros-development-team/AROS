@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.10  2000/03/12 23:34:36  bernie
+    Format string made const
+
     Revision 1.9  1998/10/20 16:44:56  hkiel
     Amiga Research OS
 
@@ -70,9 +73,9 @@ AROS_UFH2(void,vfp_hook,
 	AROS_LH3(LONG, VFPrintf,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR,   file,     D1),
-	AROS_LHA(STRPTR, format,   D2),
-	AROS_LHA(IPTR *, argarray, D3),
+	AROS_LHA(BPTR,         file,     D1),
+	AROS_LHA(CONST_STRPTR, format,   D2),
+	AROS_LHA(IPTR *,       argarray, D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 59, Dos)
