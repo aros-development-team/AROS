@@ -12,9 +12,9 @@ OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) 	\
 	   $(OSGENDIR)/graphics/fakegfxhidd.o
 
 BOOT_FILES := \
-	C/Assign C/CD C/Copy C/Execute C/Mount C/Shell \
+	C/Assign C/CD C/Mount C/Shell \
 	Libs/arosc.library \
-	Devs/Mountlist Devs/nil.handler Devs/ram.handler \
+	Devs/Mountlist Devs/nil.handler Devs/ram.handler Devs/pipefs.handler \
 	S/Startup-Sequence S/hidd.prefs \
 	contrib/aminet/untar contrib/gnu/gzip \
 	boot/grub/stage1 boot/grub/stage2 boot/grub/menu.lst
@@ -37,7 +37,7 @@ BOOT_TAR_FILES := \
 	Tools \
 	Utilities/MultiView Utilities/More \
 	contrib/aminet/Format64
-		
+
 BOOT_SRC_DIR := $(AROSDIR)
 BOOT_SRC_FILES := $(foreach f, $(BOOT_FILES), $(AROS_DIR)/$(f))
 
@@ -83,7 +83,7 @@ workbench-boot-native-i386: \
 
 $(BINDIR)/boot/grub/% : %
 	@$(CP) $< $@
-	
+
 #MM bootdisk-native-i386 : software-native-i386
 bootdisk-native-i386: \
 	$(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.tgz \
@@ -96,9 +96,9 @@ bootdisk-native-i386: \
 install: install.c
 	@$(HOST_CC) install.c -o install
 
-$(BOOT_DEST_DIR)/AROS.tgz : 
+$(BOOT_DEST_DIR)/AROS.tgz :
 	@tar -czf $(BOOT_DEST_DIR)/AROS.tgz -C $(BOOT_SRC_DIR) $(BOOT_TAR_FILES)
-	
+
 $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 	@$(CP) $< $@
 
