@@ -15,22 +15,19 @@ precompiled binaries ready to run on an Amiga with a 68020 or better processor.
 
 For more info look at these pages on WorldWideWait:
 
-    http://www.aros.org/ (Alias for Main site, preferred)
-    http://aros.fh-konstanz.de/aros/ (Main site)
-    http://home.pages.de/~aros/ (Alias for Main site)
-    http://www.lysator.liu.se/amiga/aros/ (Sweden Mirror)
+    http://www.aros.org/ (Main site, preferred)
     http://www.xs4all.nl/~ldp/aros/ (AROS for Amiga)
 
 If you have FTP, you can also get the most recent version as tar.gz files
 (quite smaller than lha) from
 
-    ftp://aros.fh-konstanz.de/pub/aros/
+    ftp://ftp.aros.org/pub/aros/
 
 You can use these EMail addresses to send bug reports:
 
-    aros-bugs@aros.fh-konstanz.de
-    aros-linux-bugs@aros.fh-konstanz.de
-    aros-amiga-bugs@aros.fh-konstanz.de
+    aros-bugs@aros.org
+    aros-linux-bugs@aros.org
+    aros-amiga-bugs@aros.org
 
 
 This software is subject to the "AROS PUBLIC LICENSE" which can be found

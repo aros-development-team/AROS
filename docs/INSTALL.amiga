@@ -110,7 +110,7 @@ on the Amiga. Please address any comments and questions to
    Once you have a valid login and password, do the following to get
    a local copy of the full source tree:
 
-      > set CVSROOT :pserver:<login>@aros.fh-konstanz.de:/home/AROS/CVS
+      > set CVSROOT :pserver:<login>@cvs.aros.org:/home/cvs/aros
       > cvs login
          [enter your password at the prompt]
       > cvs update -d
