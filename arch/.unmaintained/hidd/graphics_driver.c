@@ -3636,8 +3636,8 @@ struct pattern_info
     struct RastPort *rp;
     LONG mask_bpr; /* Butes per row */
     
-    LONG orig_xmin;
-    LONG orig_ymin;
+/*    LONG orig_xmin;
+    LONG orig_ymin; */
     
     UBYTE dest_depth;
     
@@ -3676,8 +3676,8 @@ static VOID pattern_to_buf(struct pattern_info *pi
     
     if (pi->mask)
     {
-    	mask_x = x_src - pi->orig_xmin;
-	mask_y = y_src - pi->orig_ymin;
+    	mask_x = x_src; /* - pi->orig_xmin; */
+	mask_y = y_src; /* - pi->orig_ymin; */
     }
 
     EnterFunc(bug("pattern_to_buf(%p, %d, %d, %d, %d, %d, %d, %p)\n"
@@ -3771,8 +3771,8 @@ static ULONG bltpattern_render(APTR bpr_data
     
     amiga2hidd_fast( (APTR)bprd->pi
     	, dst_gc
-	, bprd->rsi.layer_rel_srcx
-	, bprd->rsi.layer_rel_srcy
+	, srcx /* bprd->rsi.layer_rel_srcx */
+	, srcy /* bprd->rsi.layer_rel_srcy */
 	, bprd->rsi.curbm
 	, x1, y1
 	, width, height
@@ -3811,8 +3811,12 @@ VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
     pi.mask_bpr = byteCnt;
     pi.dest_depth	= GetBitMapAttr(rp->BitMap, BMA_DEPTH);
 
+/*  stegerg: don't need this 
+
     pi.orig_xmin = xMin;
-    pi.orig_ymin = yMin;
+    pi.orig_ymin = yMin; 
+    
+*/
     
     bprd.pi = &pi;
 	
