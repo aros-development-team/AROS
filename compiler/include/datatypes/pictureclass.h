@@ -106,7 +106,7 @@ struct ColorRegister
  *
  *  Joerg Dietrich
  */
-
+#define DT_V44_SUPPORT 1
 #ifdef DT_V44_SUPPORT
 
 #define PMODE_V42 (0)
