@@ -136,7 +136,7 @@ IPTR buttong_set(Class *cl, Object *o, struct opSet *msg)
 	    
 	    if (rp)
 	    {
-		DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
+		DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_REDRAW);
 		ReleaseGIRPort(rp);
 	    }
 	} 
