@@ -1,42 +1,30 @@
-#ifndef  TRACKDISK_INTERN_H
-#define  TRACKDISK_INTERN_H
+#ifndef  TRACKDISK_HW_H
+#define  TRACKDISK_HW_H
+/*
+    Copyright © 2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Hardware defs for trackdisk
+    Lang: English
+*/
 
 #include <exec/types.h>
-#include <exec/devices.h>
-#include <exec/semaphores.h>
-#include <exec/interrupts.h>
-#include <exec/devices.h>
-#include <oop/oop.h>
+#include <asm/io.h>
 
-struct TrackDiskBase
-{
-    struct Device           td_device;
-    struct ExecBase         *sysbase;	/* Useless for native but... */
-    struct SignalSemaphore  io_lock;	/* Lock IO acces to floppy */
-	struct Message          *io_msg;	/* Message that is processed in interrupt*/
-	struct Message			io_msg_fill;
-    struct TDU      *units[4];	/* Up to four units allowed */
-    UBYTE			DOR;		/* Digital Output Register */
-	UBYTE			comsize;	/* RAW command size */
-	UBYTE			rawcom[9];	/* RAW command to send */
-    UBYTE			result[7];	/* Last set of bytes */
-	volatile UBYTE	timeout[4];	/* if 0 turn drive motor off */
-	volatile UBYTE	iotime;		/* Time counter for io operations */
-};
+/* Prototypes */
+void td_motoron(UBYTE,struct TrackDiskBase *);
+void td_select(UBYTE,struct TrackDiskBase *);
+void td_motoroff(UBYTE,struct TrackDiskBase *);
+UBYTE td_getprotstatus(UBYTE,struct TrackDiskBase *);
+int td_dinit(struct TrackDiskBase *);
+int td_recalibrate(unsigned char, char, int, struct TrackDiskBase *);
+int td_rseek(UBYTE , UBYTE , UBYTE , struct TrackDiskBase *);
+int td_read(struct IOExtTD *, struct TrackDiskBase *);
+int td_write(struct IOExtTD *, struct TrackDiskBase *);
+int td_update(struct TDU *, struct TrackDiskBase *);
+int td_waitint(struct TrackDiskBase *);
+UBYTE td_getDiskChange(void);
 
-struct TDU
-{
-    struct	TDU_PublicUnit pub;
-    UBYTE 	unitnum;		/* Unit number */
-    UBYTE 	unittype;		/* Unit type from BIOS setup */
-
-    APTR	dma_buffer;		/* Buffer for DMA transfers */
-	UBYTE	lastcyl;		/* last read cyl */
-	UBYTE	lasthd;			/* last read head */
-	UBYTE	flags;			/* 0x01=Write track */
-};
-
-#define TDUF_WRITE	(1<<0)
 
 /*
    Drive parameters.
@@ -139,51 +127,6 @@ struct TDU
 #define FD_RSEEK_OUT        0x8f    /* seek out (i.e. to lower tracks) */
 #define FD_RSEEK_IN     0xcf    /* seek in (i.e. to higher tracks) */
 #define FD_PDMODE       0x17    /* Configure powerdown mode */
-
-/* This part SHOULD BE somewhere else!!! */
-
-#define __SLOW_DOWN_IO "\noutb %%al,$0x80"
-#define __FULL_SLOW_DOWN_IO __SLOW_DOWN_IO
-
-/*
- * Talk about misusing macros..
- */
-#define __OUT1(s,x) \
-extern inline void out##s(unsigned x value, unsigned short port) {
-
-#define __OUT2(s,s1,s2) \
-__asm__ __volatile__ ("out" #s " %" s1 "0,%" s2 "1"
-
-#define __OUT(s,s1,x) \
-__OUT1(s,x) __OUT2(s,s1,"w") : : "a" (value), "Nd" (port)); } \
-__OUT1(s##_p,x) __OUT2(s,s1,"w") __FULL_SLOW_DOWN_IO : : "a" (value), "Nd" (port));} \
-
-#define __IN1(s) \
-extern inline RETURN_TYPE in##s(unsigned short port) { RETURN_TYPE _v;
-
-#define __IN2(s,s1,s2) \
-__asm__ __volatile__ ("in" #s " %" s2 "1,%" s1 "0"
-
-#define __IN(s,s1,i...) \
-__IN1(s) __IN2(s,s1,"w") : "=a" (_v) : "Nd" (port) ,##i ); return _v; } \
-__IN1(s##_p) __IN2(s,s1,"w") __FULL_SLOW_DOWN_IO : "=a" (_v) : "Nd" (port) ,##i ); return _v; } \
-
-#define RETURN_TYPE unsigned char
-__IN(b,"")
-#undef RETURN_TYPE
-#define RETURN_TYPE unsigned short
-__IN(w,"")
-#undef RETURN_TYPE
-#define RETURN_TYPE unsigned int
-__IN(l,"")
-#undef RETURN_TYPE
-
-__OUT(b,"b",char)
-__OUT(w,"w",short)
-__OUT(l,,int)
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct TrackDiskBase *, TDBase, 3, TrackDisk)
 
 /* DMA section based on linuxish /asm/dma.h */
 
@@ -362,12 +305,7 @@ static __inline__ void set_dma_count(unsigned int dmanr, unsigned int count)
         }
 }
 
-#ifdef	SysBase
-#undef	SysBase
-#endif	/* SysBase */
-#define	SysBase (*(APTR*)4L)
-
-#endif /* KEYBOARD_INTERN_H */
+#endif /* TRACKDISK_HW_H */
 
 
 
