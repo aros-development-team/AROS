@@ -1,0 +1,12 @@
+# FreeType2 demos graph/x11 Jamfile (c) 2001 David Turner
+#
+
+SubDir  FT2DEMO_TOP graph x11 ;
+
+SubDirHdrs  $(GRAPH_INCLUDE) ;
+
+GRAPH_LINKLIBS = -lX11 -L/usr/X11R6/lib ;
+
+Library  $(GRAPH_LIB) : grx11.c ;
+
+# end of graph/x11 Jamfile

@@ -1,0 +1,12 @@
+# FreeType2 demos graph/beos Jamfile (c) 2002 David Turner
+#
+
+SubDir  FT2DEMO_TOP graph beos ;
+
+SubDirHdrs  $(GRAPH_INCLUDE) ;
+
+GRAPH_LINKLIBS = -lbe -lstdc++.r4 ;
+
+Library  $(GRAPH_LIB) : grbeos.cpp ;
+
+# end of graph/beos Jamfile

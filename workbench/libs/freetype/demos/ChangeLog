@@ -1,0 +1,414 @@
+2002-06-23  Vincent Caron
+
+        * src/ftstring.c: adding support for gamma-corrected display
+
+2002-06-14  Werner Lemberg  <wl@gnu.org>
+
+	* Makefile, graph/rules.mk: s/TOP/TOP_DIR/, s/TOP2/TOP_DIR_2/.
+
+2002-06-10  Werner Lemberg  <wl@gnu.org>
+
+	* src/ftbench.c: s/index/idx/.
+	Fixed more gcc compiler warnings.
+
+2002-06-10  David Turner  <david@freetype.org>
+
+	* src/ftbench.c: Removing compiler warnings.
+
+	* src/ttdebug.c: Updating to latest internal changes.
+
+2002-06-07  David Turner  <david@freetype.org>
+
+	Adding Vincent Caron's benchmark program.
+
+	* src/ftbench.c: New file.
+	* Makefile, src/Jamfile: Updated.
+	Other minor fixes.
+
+	* src/ftview.c (Render_Text): Call get_glyph_index() conditionally.
+
+2002-05-20  Werner Lemberg  <wl@gnu.org>
+
+	* src/ftcommon.i (get_glyph_bitmap): Use `sbit->num_grays'.
+	Handle `sbit->buffer == 0' correctly.
+
+2002-05-17  Michael Pfeiffer  <michael.pfeiffer@utanet.at>
+
+	* graph/beos/Jamfile: New file.
+
+2002-05-12  Werner Lemberg  <wl@gnu.org>
+
+	* README: Updated.
+
+2002-05-12  Michael Pfeiffer  <michael.pfeiffer@utanet.at>
+
+	* graph/Jamfile: Add support for BeOS.
+
+2002-04-28  Werner Lemberg  <wl@gnu.org>
+
+	* src/ftview.c (Render_Text): Don't call `get_glyph_index'.  This
+	is done in `get_glyph_bitmap'.
+
+	* src/ftstring.c (encoding): New global variable, initialized to
+	`ft_encoding_unicode'.
+	(render_mode): Removed.
+	(make_tag): New utility function (copied from ftcommon.i).
+	(prepare_text): Call `FT_Select_Charmap'.
+	(Process_Event): Don't handle ` '.
+	(main): Add option -e to select encoding.
+	(usage): Document it.
+
+	* src/ftmulti.c (encoding): New global variable.
+	(make_tag): New utility function (copied from ftcommon.i).
+	(main): Add option -e to select encoding.
+	(usage): Document it.
+
+2002-04-28  Martin Zinser  <zinser@decus.de>
+
+	* descrip.mms: Add clean target.
+	Handle compiler options better.
+
+2002-04-17  David Turner  <david@freetype.org>
+
+
+	* Version 2.1.0 released.
+	=========================
+
+
+2002-04-01  Werner Lemberg  <wl@gnu.org>
+
+	* graph/x11/grx11.c: Use `c_class' instead of `class' if compiling
+	with C++.
+	* src/ftcommon.i (encoding): Use `FT_Encoding' type.  Update all
+	using code.
+	(done_glyph_bitmap): Use cast.
+	* src/ftview.c: Updated to changes in `ftcommon.i'.
+	(main): Use cast for `encoding'.
+
+2002-03-30  Werner Lemberg  <wl@gnu.org>
+
+	* src/ftdump.c (Print_Type): Use `%ld' for some fields.
+	* src/testnames.c (main): Exit if no parameter.
+
+2002-03-21  David Turner  <david@freetype.org>
+
+	* graph/grblit.c, graph/win32/grwin32.c, src/common.c,
+	src/ftcommon.i, src/ftdump.c: Getting rid of compiler warnings.
+
+2002-03-08  David Turner  <david@freetype.org>
+
+
+	* Version 2.0.9 released.
+	=========================
+
+
+2002-03-06  David Turner  <david@freetype.org>
+
+	* src/ftdump.c: Added display of ascender/descender/text height.
+
+	* Jamfile: Support the FT2_TOP environment variable to indicate
+	where the FreeType 2 sources are located.  This is very useful for
+	switching between the STABLE and HEAD branches of the library.
+
+2002-03-05  David Turner  <david@freetype.org>
+
+	* src/ftdump.c: Added the display of a font's Postscript name,
+	EM size and global Bbox.  Now supports the debugging mode of
+	2.1.x.
+
+	* src/ftview.c: Minor change to support debugging mode of 2.1.x.
+
+2002-02-14  Detlef Würkner  <tetisoft@apg.lahn.de>
+
+	* src/fttimer.c (ConvertRaster): Handle embedded bitmaps properly.
+	* src/ftstring.c (use_sbits): Default value is no 0.
+	(layout_glyphs): Handle `use_sbits'.
+	(Process_Event): Make friendlier error messages.
+
+2002-02-09  David Turner  <david@freetype.org>
+
+
+	* Version 2.0.8 released.
+	=========================
+
+
+2002-02-02  David Turner  <david@freetype.org>
+
+
+	* Version 2.0.7 released.
+	=========================
+
+
+2002-01-25  Martin Zinser  <zinser@decus.de>
+
+	* src/common.h ([VMS]): Alias stuff specific to getopt.
+	* graph/grinit.c ([DEVICE_X11]): Handle VMS.
+	* descrip.mms: New file for compiling the demo programs with
+	OpenVMS.
+
+2002-01-07  David Turner  <david@freetype.org>
+
+
+	* Version 2.0.6 released.
+	=========================
+
+
+2001-12-31  Werner Lemberg  <wl@gnu.org>
+
+	* graph/x11/rules.mk: Fix typo (wilcard -> wildcard).
+
+2001-12-30  David Turner  <david@freetype.org>
+
+	* README: Updated to version 2.0.6.
+
+	* graph/x11/rules.mk: Updated X11 detection rules: "/usr/X11R6" and
+	"/usr/local/X11R6" are now probed as a fallback.  This allows the
+	test programs to work automatically on Debian Linux systems (which
+	only use "/usr/bin/X11" in the path).
+
+2001-12-21  David Turner  <david@freetype.org>
+
+	* src/ftcommon.i (get_glyph_bitmap): Added a missing error check.
+	Make the function return an error code if necessary.
+	* src/testnames.c (main): Fix typo.
+
+2001-12-15  Werner Lemberg  <wl@gnu.org>
+
+	* Makefile: Add `testnames' program.
+	* src/testnames.c (main): Remove unused variable.
+	First command line parameter is now used as the font to be tested
+	instead of a fixed string.
+
+2001-12-14  David Turner  <david@freetype.org>
+
+	* src/ftstring.c (layout_glyphs): Fix centering bug.
+
+2001-12-12  David Turner  <david@freetype.org>
+
+	* src/testnames.c: New test program.
+
+2001-12-08  David Turner  <david@freetype.org>
+
+	Use new charmap cache.
+
+	* src/ftcommon.i: Include FT_CACHE_CHARMAP_H.
+	(cmap_cache): New global variable.
+	(encoding): Change type to FT_UInt32.
+	(init_freetype): Initialize charmap cache.
+	(get_glyph_index): New function.
+	(get_glyph_bitmap): Use it.
+	Increase pixel dimensions to 48 for sbit cache.
+	Add ftc_image_format_outline flag if not a bitmap glyph.
+	* src/ftview.c: Use `get_glyph_index'.
+
+2001-12-06  David Turner  <david@freetype.org>
+
+	An update to use the new cache manager code.
+
+	* src/ftcommon.i: s/FTC_Image_Cache/FTC_ImageCache/.
+	s/FTC_SBit_Cache/FTC_SBitCache/.
+	s/FTC_Image_Desc/FTC_ImageDesc/.
+	s/image_type/type/.
+	(done_glyph_bitmap): New function.
+	(get_glyph_bitmap): Add new argument.
+	Use sbits cache only of pixel size <= 32.
+	Other fixes.
+	* src/ftview.c (Render_All, Render_Text): Updated to changes in
+	ftcommon.i.
+
+2001-12-05  Werner Lemberg  <wl@gnu.org>
+
+	* src/ftcommon.i, src/ftview.c: s/manager/cache_manager/ to avoid
+	compiler warnings.
+
+2001-12-05  Taiji Yamada  <taiji@aihara.co.jp>
+
+	* src/graph/x11/grx11.c (done_surface): Free and reset color map.
+	(init_surface): Use private colormap if there are no more shared
+	colormap entries.
+
+2001-10-27  David Turner  <david@freetype.org>
+
+	* src/ftcommon.i (use_sbits_cache): Set to 1.
+
+2001-10-26  Leonard Rosenthol  <leonardr@lazerware.com>
+
+	* mac/codewarror/carbonprefix.h: New file to define building
+	the demos Carbonized.
+	* mac/codewarror/ftview.prj: Updated for CW7 and to build a
+	Carbonized version.
+	* mac/getargv.c: Updated to build Carbonized.
+	* mac/ftview_m.c: Updated to build Carbonized.
+
+2001-10-18  David Turner  <david@freetype.org>
+
+	* Jamrules: Define X11_LINKLIBS.
+	* README: Updated.
+	* graph/os2/Jamfile: Define GROS2_PATH and GRAPH_LINKLIBS.
+	* src/Jamfile (PROGRAMS): Add fttry.
+	Fix order of libraries.
+	* src/ftview.c (main): Update cache dump code.
+	* src/ftlint.c (main) [TEST_PSNAMES]: Add some debugging code.
+	* src/fttry.c (main) [DUMP_NAME]: Add some glyph name debugging code.
+
+2001-10-17  David Turner  <david@freetype.org>
+
+
+	* Version 2.0.5 released.
+	=========================
+
+
+2001-09-21  Eric Olson  <eric.olson@sympatico.ca>
+
+	* graph/os2/gros2pm.c: Remove global variable `window_created'.
+	(LOCK): Fix typo.
+	(refresh_rectangle): Use LOCK() and UNLOCK().
+	(init_surface): Don't use `window_created'.
+	Use LOCK() and UNLOCK().
+	(RunPMWindow): Use LOCK() and UNLOCK().
+	Fix typo.
+	Don't use `window_created'.
+	(Message_Process): Allow F9, F10, and others keys to pass through
+	the application.
+	Use LOCK() and UNLOCK().
+
+2001-09-10  Werner Lemberg  <wl@gnu.org>
+
+	* README: Slight update.
+
+2001-08-25  Werner Lemberg  <wl@gnu.org>
+
+	Added CMap support to ftview: The new flag `-e' accepts an encoding
+	tag as defined in freetype.h (e.g. `unic') to select a character
+	map.  Only fonts with a valid character map are selected.
+
+	* src/ftcommon.i: s/num_glyphs/num_indices/.
+	(encoding): New global variable.
+	(make_tag): New function.
+	(install_font_file): If a cmap tag has been specified, load
+	functions only which have a valid cmap.
+	(my_face_requester): Select cmap also if `encoding' is non-zero.
+	(get_glyph_bitmap): Map char index to glyph if `encoding' is
+	non-zero.
+
+	* src/ftview.c: s/first_glyph/first_index/.
+	(Help): Adjust help text.
+	(usage): Document -e switch.
+	(main): Implement -e switch.
+	Adjust `Header'.
+
+
+	* Version 2.0.4 released.
+	=========================
+
+
+2001-06-27  Werner Lemberg  <wl@gnu.org>
+
+	* src/ftmemchk.c: s/memtest/ftmemchk/.
+
+2001-06-27  David Turner  <david@freetype.org>
+
+	* src/ftcommon.i, src/ftmemchk.c: Changes due to the modification of
+	the FT_CALLBACK_DEF macro definition.
+
+2001-06-24  David Turner  <david@freetype.org>
+
+	Renamed the test program "memtest" to "ftmemchk".
+
+	* src/memtest.c: Renamed to ...
+	* src/ftmemchk.c: This file.
+	* Makefile, src/Jamfile: Updated.
+
+
+	* Version 2.0.3 released.
+	=========================
+
+
+2001-05-28  David Turner  <david@freetype.org>
+
+	* Jamfile, src/Jamfile, graph/os2/Jamfile, graph/win32/Jamfile,
+	graph/x11/Jamfile: Updating Jamfiles to correctly link the graphics
+	programs on all platforms with Jam.
+
+	* src/ftstring.c: Removing debugging output.
+
+2001-04-25  David Turner  <david@freetype.org>
+
+	* graph/beos/grbeos.cpp, graph/beos/grbeos.h, graph/beos/rules.mk,
+	graph/grinit.c: added BeOS graphics driver to MiGS.
+
+2001-04-04  Werner Lemberg  <wl@gnu.org>
+
+	* graph/allegro/gralleg.c, graph/mac/grmac.c, graph/os2/gros2pm.c,
+	graph/x11/grx11.c: Don't include system-specific header but
+	`grobjs.h'.
+	* graph/x11/grx11.c: Some structural reorderings.
+	Include `grdevice.h'.
+	* graph/grinit.c: Use subdirectories for #include.
+	* graph/rules.mk, graph/*/rules.mk (DEVICE_INCLUDE): Removed.
+
+	* Jamrules, Jamfile, */Jamfile: Updated.  It now compiles with
+	X11 also (no checking for X header and lib locations yet).
+
+2001-04-04  David Turner  <david@freetype.org>
+
+	* Jamrules, Jamfile, graph/Jamfile, graph/x11/Jamfile,
+	graph/win32/Jamfile, graph/os2/Jamfile, src/Jamfile: Added Jamfiles
+	to build the FreeType 2 demos with Jam.  Be careful, they probably
+	don't work on Unix and OS/2 yet.
+
+2000-03-24  David Turner  <david.turner@freetype.org>
+
+
+	* Version 2.0.2 released.
+	=========================
+
+
+2001-03-23  David Turner  <david@freetype.org>
+
+	* Makefile, src/*.c: Changed to new header inclusion scheme.
+
+2001-03-13  Werner Lemberg  <wl@gnu.org>
+
+	* graph/x11/grx11.c: Increase MAX_PIXEL_MODES to 100.
+
+2001-03-06  Werner Lemberg  <wl@gnu.org>
+
+	* src/memtest.c (my_memory): Add cast to remove C++ compiler error.
+
+2001-02-22  David Turner  <david.turner@freetype.org>
+
+	* src/memtest.c: Fixed the debug memory allocator.  The constant
+	"my_memory" was replaced by a function that allocates a new "memory
+	allocator through "my_alloc()" and returns it.
+
+2001-02-06  James H. Cloos Jr.  <cloos@jhcloos.com>
+
+	* src/ftview.c (Render_Text): Fix rendering of test string.
+
+2001-01-31  Werner Lemberg  <wl@gnu.org>
+
+	* src/ftstring.c (Help): Added `void' type.
+
+2000-12-09  Werner Lemberg  <wl@gnu.org>
+
+	* Makefile: Added $(LDFLAGS) variable for `unix' link target.
+
+2000-12-01  David Turner  <david.turner@freetype.org>
+
+
+	* Version 2.0.1 released.
+	=========================
+
+
+2000-11-09  David Turner  <david@freetype.org>
+
+
+	* Version 2.0 released.
+	=======================
+
+
+Local Variables:
+version-control: never
+coding: latin-1
+End:
