@@ -47,40 +47,21 @@ DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 all: setup $(EXES)
 
 setup :
-	@if [ ! -d $(EXEDIR) ]; then $(MKDIR) $(EXEDIR) ; else true ; fi
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
+	%mkdir_q $(EXEDIR)
+	%mkdir_q $(OBJDIR)
 
 clean:
 	-$(RM) $(EXES)
 
 $(EXEDIR)/%: $(OBJDIR)/%.o $(LIBDIR)/startup.o $(DEPLIBS)
-	@echo "Linking $@..."
-	@$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS) 2>&1|tee $*-x.err
-	@if test ! -s $*-x.err; then rm $*-x.err ; else true ; fi
+	%link_q
 
 $(OBJDIR)/%.o: %.c
-	@echo "Compiling $(CURDIR)/$<..."
-	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+	%compile_q $< $@ $*.err $(APPCFLAGS)
 
 $(OBJDIR)/%.d: %.c
-	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	@echo "Makedepend $(CURDIR)/$<..."
-	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $< > $@
+	%mkdepend_q
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
-all : makefile
-
-makefile : makefile.src $(TOP)/scripts/genmf.gawk \
-	    $(TOP)/config/make.tmpl
-	@echo "Regenerating makefile..."
-	@mv makefile makefile.bak
-	@gawk -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
-	    makefile.src > makefile
-
-ifneq ("$(TARGET)","clean")
-ifneq ("$(TARGET)","setup")
-include $(DEPS)    
-endif
-endif
+%include_deps
