@@ -5,7 +5,7 @@
     Copyright (C) 1998 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Definitions for the Gfx HIDD system.
+    Desc: Definitions for the Graphics HIDD system.
     Lang: english
 */
 #ifndef EXEC_TYPES_H
@@ -17,15 +17,18 @@
 #ifndef OOP_OOP_H
 #   include <oop/oop.h>
 #endif
-#include <utility/tagitem.h>
 
+#include <utility/utility.h>
 
 #define CLID_Hidd_Gfx           "gfx.hidd"
 #define CLID_Hidd_BitMap        "bitmap.hidd"
+#define CLID_Hidd_GCQuick       "gcquick.hidd"
+#define CLID_Hidd_GCClip        "gcclip.hidd"
 
-#define IID_Hidd_Gfx    "I_GfxHidd"
-#define IID_Hidd_GC     "I_HiddGC"
-#define IID_Hidd_BitMap "I_HiddBitMap"
+#define IID_Hidd_Gfx      "I_GfxHidd"
+#define IID_Hidd_BitMap   "I_HiddBitMap"
+#define IID_Hidd_GCQuick  "I_HiddGCQuick"
+#define IID_Hidd_GCClip   "I_HiddGCClip"
 
 typedef struct Object *HIDDT_BitMap;
 typedef struct Object *HIDDT_GC;
@@ -41,22 +44,63 @@ extern AttrBase HiddGfxAttrBase;
 extern AttrBase HiddBitMapAttrBase;
 
 
-/***************
-**  Gfx defs  **
-***************/
+/**** Graphics definitions ****************************************************/
 
-
-    /* Method offsets */
 enum
 {
+    /* Methods for a graphics hidd */
 
-    moHidd_SpeedTest = 0,         /* method for speedtest */
-    moHidd_Gfx_CreateGC,
-    moHidd_Gfx_DeleteGC,
+    moHidd_Gfx_NewGC = 0,       /* Its only allowd to use these methods   */
+    moHidd_Gfx_DisposeGC,       /* to create and to dispose a GC and      */
+    moHidd_Gfx_NewBitMap,       /* bitmap because only the graphics-hidd  */
+    moHidd_Gfx_DisposeBitMap    /* class knows which gc- and bitmap-class */
+                                /* works together.                        */
 };
 
 
-    /* Attr offsets */
+/* GC types */
+
+#define HIDDV_Gfx_GCType_Quick  0x1
+#define HIDDV_Gfx_GCType_Clip   0x2
+
+
+/* messages for a graphics hidd */
+
+struct pHidd_Gfx_NewGC
+{
+    MethodID       mID;
+    struct TagItem *attrList;
+    ULONG          gcType;
+};
+
+struct pHidd_Gfx_DisposeGC
+{
+    MethodID    mID;
+    Object      *gc;
+};
+
+struct pHidd_Gfx_NewBitMap
+{
+    MethodID       mID;
+    struct TagItem *attrList;
+};
+
+struct pHidd_Gfx_DisposeBitMap
+{
+    MethodID    mID;
+    Object      *bitMap;
+};
+
+
+/**** BitMap definitions ******************************************************/
+
+enum
+{
+    /* Methods for a bitmap */
+
+    moHidd_BitMap_PrivateSet
+};
+
 enum {
     /* Attributes for a bitmap */
     aoHidd_BitMap_BitMap,  /* [..G] pointer to bitmap structure        */
@@ -73,6 +117,7 @@ enum {
     aoHidd_BitMap_BestSize,      /* [..G] Best size for depth                */
     aoHidd_BitMap_LeftEdge,      /* [I.G] Left edge position of the bitmap   */
     aoHidd_BitMap_TopEdge,       /* [I.G] Top edge position of the bitmap    */
+    aoHidd_BitMap_ColorTab,      /* [ISG] Colormap of the bitmap             */
     
     num_Hidd_BitMap_Attrs
 };    
@@ -91,78 +136,30 @@ enum {
 #define aHidd_BitMap_BestSize      (HiddBitMapAttrBase + aoHidd_BitMap_BestSize)
 #define aHidd_BitMap_LeftEdge      (HiddBitMapAttrBase + aoHidd_BitMap_LeftEdge)
 #define aHidd_BitMap_TopEdge       (HiddBitMapAttrBase + aoHidd_BitMap_TopEdge)
+#define aHidd_BitMap_ColorTab      (HiddBitMapAttrBase + aoHidd_BitMap_ColorTab)
 
 
 /* BitMap formats */
+
 #define HIDDV_BitMap_Format_Planar   0x1
 #define HIDDV_BitMap_Format_Chunky   0x2
 
 
-/* Drawmodes for a graphics context */
-#define HIDDV_GC_DrawMode_Copy 0x03 /* Copy src into destination            */
-#define HIDDV_GC_DrawMode_XOR  0x06 /* XOR                                  */
+/* messages for a bitmap */
 
-
-
-
-/* Messages */
-struct hGfx_Point
+struct pHidd_BitMap_PrivateSet
 {
-    STACKULONG MethodID;
-    STACKWORD  x, y;        /* Position in hidd units */
+    MethodID       mID;
+    struct TagItem *attrList;
 };
 
 
-struct hGfx_PixelDirect
-{
-    STACKULONG MethodID;
-    STACKWORD  x, y;        /* Position in hidd units  */
-    STACKULONG val;         /* set pixel to this value */
-};
+/**** Graphics context definitions ********************************************/
 
-
-struct hGfx_2Coords
-{
-    STACKULONG MethodID;
-    STACKWORD  x1, y1;      /* eg. draw line from (x1, y1) to (x1,y2) */
-    STACKWORD  x2, y2;
-};
-
-
-/* Message for HIDDM_Gfx_SpeedTest */
-struct hGfx_SpeeTest
-{
-    STACKULONG  MethodID;
-    STACKULONG  val1;
-    STACKULONG  val2;
-    STACKULONG  val3;
-};
-
-
-struct pHidd_Gfx_CreateGC
-{
-     MethodID   mID;
-     Object     *bitMap;
-     UWORD      gcType;
-};
-struct pHidd_Gfx_DeleteGC
-{
-    MethodID    mID;
-    Object      *gc;
-};
-enum { GCTYPE_QUICK, GCTYPE_CLIPPING };
-
-
-/**************
-**  GC Defs  **
-**************/
-
-#define CLID_Hidd_QuickGC "quickgc.hidd"
-#define CLID_Hidd_ClipGC  "clipgc.hidd"
-
-    /* graphics context */
 enum
-{    
+{
+    /* Methods for a graphics context */
+
     moHidd_GC_CopyArea,
     moHidd_GC_WritePixelDirect,
     moHidd_GC_WritePixel,
@@ -177,12 +174,13 @@ enum
     moHidd_GC_DrawText,
     moHidd_GC_FillText,
     moHidd_GC_FillSpan,
-    moHidd_GC_Clear,
+    moHidd_GC_Clear
 };
 
 enum
 {
     /* Attributes for a graphics context */
+
     aoHidd_GC_UserData,            /* [.SG] User data                          */
     aoHidd_GC_BitMap,              /* [I.G] Bitmap which this gc uses          */
     aoHidd_GC_Foreground,          /* [.SG] Foreground color                   */
@@ -208,11 +206,25 @@ enum
 #define aHidd_GC_PlaneMask   (HiddGCAttrBase + aoHidd_GC_PlaneMask)
 
 
-    /* Messages */
-struct pHidd_GC_DrawLine
+/* Drawmodes for a graphics context */
+
+#define HIDDV_GC_DrawMode_Copy 0x03 /* Copy src into destination            */
+#define HIDDV_GC_DrawMode_XOR  0x06 /* XOR                                  */
+
+
+/* messages for a graphics context */
+
+struct pHidd_GC_WritePixelDirect
 {
-    MethodID    mID;
-    WORD        x1 ,y1, x2, y2;
+    MethodID  mID;
+    WORD x, y;
+    ULONG val;
+};
+
+struct pHidd_GC_ReadPixel
+{
+    MethodID  mID;
+    WORD x, y;
 };
 
 struct pHidd_GC_WritePixel
@@ -221,11 +233,10 @@ struct pHidd_GC_WritePixel
     WORD x, y;
 };
 
-struct pHidd_GC_WritePixelDirect
+struct pHidd_GC_DrawLine
 {
-    MethodID  mID;
-    WORD x, y;
-    ULONG val;
+    MethodID    mID;
+    WORD        x1 ,y1, x2, y2;
 };
 
 #endif /* HIDD_GRAPHICS_H */
