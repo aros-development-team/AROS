@@ -33,6 +33,10 @@ int main(void)
 	RunCommand (segs, AROS_STACKSIZE, "FROM S:Startup-Sequence", 23);
 	UnLoadSeg (segs);
     }
+    else
+    {
+	printf ("Unable to load c/shell\n");
+    }
 
     CloseLibrary ((struct Library *)IntuitionBase);
 
