@@ -165,8 +165,8 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *);
 				                  CurVSprite->Y,
 				                  CurVSprite->Width << 4,
 				                  CurVSprite->Height,
-				                  0x0c0);
-
+				                  0x0c0 /* should be 0xe0! */);
+#warning Wrong minterm is used. Need to implement mintern '0xe0'.
 				/*
 				 * I will need to know the vsprite's coordinates
 				 * that it has now the next time as well for clearing
