@@ -355,6 +355,17 @@ struct dtTrigger
     APTR               dtt_Data;
 };
 
+
+#define  STMF_METHOD_MASK    0x0000ffff
+#define  STMF_DATA_MASK      0x00ff0000
+#define  STMF_RESERVED_MASK  0xff000000
+
+#define  STMD_VOID           0x00010000
+#define  STMD_ULONG          0x00020000
+#define  STMD_STRPTR         0x00030000
+#define  STMD_TAGLIST        0x00040000
+
+#define  STM_DONE            0
 #define  STM_PAUSE           1
 #define  STM_PLAY            2
 #define  STM_CONTENTS        3
@@ -374,6 +385,8 @@ struct dtTrigger
 #define  STM_STOP            14
 #define  STM_RESUME          15
 #define  STM_LOCATE          16
+
+#define  STM_USER            100
 
 /* Printer IO request */
 union printerIO

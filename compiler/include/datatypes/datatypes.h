@@ -126,10 +126,29 @@ struct Tool
 };
 
 
+enum
+{ 
+    TW_MISC = 0,
+    TW_INFO,
+    TW_BROWSE,
+    TW_EDIT,
+    TW_PRINT,
+    TW_MAIL
+};
+
+
 #define  TF_LAUNCH_MASK       0x000F
 #define  TF_SHELL             0x0001
 #define  TF_WORKBENCH         0x0002
 #define  TF_RX                0x0003
+
+
+/* Tags for use with FindToolNodeA(), GetToolAttrsA() and so on */
+
+#define  TOOLA_Dummy          TAG_USER
+#define  TOOLA_Program        (TOOLA_Dummy + 1)
+#define  TOOLA_Which          (TOOLA_Dummy + 2)
+#define  TOOLA_LaunchType     (TOOLA_Dummy + 3)
 
 
 #define  ID_TAGS      MAKE_ID('D','T','T','G')

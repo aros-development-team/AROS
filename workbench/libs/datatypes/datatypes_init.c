@@ -61,7 +61,7 @@ static const APTR inittabl[4] =
 static BOOL openlibs(struct LIBBASETYPE *DTBase)
 {
     if(DTBase->dtb_IntuitionBase == NULL)
-	DTBase->dtb_IntuitionBase = OpenLibrary("intuition.library", 37);
+	DTBase->dtb_IntuitionBase = OpenLibrary("intuition.library", 39);
     if(DTBase->dtb_IntuitionBase == NULL)
 	return FALSE;
 
@@ -95,6 +95,11 @@ static BOOL openlibs(struct LIBBASETYPE *DTBase)
     if(DTBase->dtb_GfxBase == NULL)
 	return FALSE;
 
+    if(DTBase->dtb_IconBase == NULL)
+	DTBase->dtb_IconBase = OpenLibrary("icon.library", 37);
+    if(DTBase->dtb_IconBase == NULL)
+	return FALSE;
+
     return TRUE;
 }
 
@@ -120,6 +125,9 @@ static void closelibs(struct LIBBASETYPE *DTBase)
 
     if(DTBase->dtb_GfxBase != NULL)
 	CloseLibrary(DTBase->dtb_GfxBase);
+
+    if(DTBase->dtb_IconBase != NULL)
+	CloseLibrary(DTBase->dtb_IconBase);
 }
 
 

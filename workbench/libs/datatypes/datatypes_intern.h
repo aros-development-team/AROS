@@ -155,6 +155,7 @@ struct DataTypesBase
     struct Library  *dtb_IFFParseBase;
     struct Library  *dtb_RexxSysBase;
     struct Library  *dtb_LocaleBase;
+    struct Library  *dtb_IconBase;
     struct Catalog  *dtb_LibsCatalog;
     
     /* remember seglist */
@@ -240,6 +241,7 @@ typedef struct IntuitionBase IntuiBase;
 #define IFFParseBase ((struct DataTypesBase *)DTBase)->dtb_IFFParseBase
 #define LocaleBase (GPB(DTBase)->dtb_LocaleBase)
 #define GfxBase (GPB(DTBase)->dtb_GfxBase)
+#define IconBase (GPB(DTBase)->dtb_IconBase)
 
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct DataTypesBase *, DTBase, 3, DataTypes)
