@@ -99,7 +99,7 @@ AROS_LH1(BOOL, FreeClass,
 
     if (!classPtr->cl_SubclassCount && !classPtr->cl_ObjectCount)
     {
-        classPtr->cl_Super->cl_SubclassCount --;
+        AROS_ATOMIC_DECL(classPtr->cl_Super->cl_SubclassCount);
         
         FreeMem (classPtr, sizeof (Class));
 
