@@ -205,9 +205,12 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     	break;
 	
     case C_SCROLL_UP: {
+        UBYTE oldpen = rp->FgPen;
+	
     	D(bug("C_SCROLL_UP area (%d, %d) to (%d, %d), %d\n",
 		GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o), - rp->Font->tf_YSize));
 
+	SetAPen( rp, 0); //data->dri->dri_Pens[ CU(o)->cu_BgPen ] );
 #warning LockLayers problem here ?    
     	ScrollRaster(rp
 		, 0
@@ -216,7 +219,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 		, GFX_YMIN(o)
 		, GFX_XMAX(o)
 		, GFX_YMAX(o) );
-		
+	SetAPen(rp, oldpen);
 	break; }
 
 /*    case C_:
