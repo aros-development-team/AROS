@@ -43,11 +43,14 @@ extern void __calc_seed(unsigned short int xsubi[3]);
 
 ******************************************************************************/
 {
-  unsigned long int retval;
-  
-  __calc_seed(xsubi);
+	unsigned long int retval;
+	
+	__calc_seed(xsubi);
+#if (AROS_BIG_ENDIAN == 0)
+	retval = *(long int *)&xsubi[1];
+#else
+	retval = (unsigned long int)xsubi[1] | ((unsigned long int)xsubi[0] << 16);
+#endif
 
-  retval = *(long int *)&xsubi[1];
-
-  return retval>>1;
+	return retval>>1;
 } /* nrand48 */

@@ -50,21 +50,27 @@ extern unsigned short __crand;
 ******************************************************************************/
 {
 #if (AROS_BIG_ENDIAN == 0)
-  #define HIGH 4
-  #define MIDDLE 2
-  #define LOW 0
+  #define XHIGH 4
+  #define XMIDDLE 2
+  #define XLOW 0
+  #define AHIGH 4
+  #define AMIDDLE 2
+  #define ALOW 0
 #else
-  #define HIGH 2
-  #define MIDDLE 4
-  #define LOW 6
+  #define XHIGH 2
+  #define XMIDDLE 4
+  #define XLOW 6
+  #define AHIGH 0
+  #define AMIDDLE 2
+  #define ALOW 4
 #endif
-  *(unsigned short *)&__Xrand[HIGH]   = param[2];
-  *(unsigned short *)&__Xrand[MIDDLE] = param[1];
-  *(unsigned short *)&__Xrand[LOW]    = param[0];
+  *(unsigned short *)&__Xrand[XHIGH]   = param[2];
+  *(unsigned short *)&__Xrand[XMIDDLE] = param[1];
+  *(unsigned short *)&__Xrand[XLOW]    = param[0];
 
-  *(unsigned short *)&__arand[HIGH]   = param[5];
-  *(unsigned short *)&__arand[MIDDLE] = param[4];
-  *(unsigned short *)&__arand[LOW]    = param[3];
+  *(unsigned short *)&__arand[AHIGH]   = param[5];
+  *(unsigned short *)&__arand[AMIDDLE] = param[4];
+  *(unsigned short *)&__arand[ALOW]    = param[3];
 
   __crand = param[6];
 } /* lcong48 */
