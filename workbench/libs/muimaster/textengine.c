@@ -219,22 +219,14 @@ void zune_text_destroy (ZText *text)
 	while ((ztc = (struct ZTextChunk*)RemTail((struct List*)&ztl->chunklist)))
 	{
 	    if (ztc->str) mui_free(ztc->str);
-/*
- *
- *
- *
- *
- *
- * TBF : text_cleanup
- *
- *
- *
- *
- *
- *
- */
-#warning do text_cleanup, dammit
-	    if (ztc->spec) FreeVec((APTR)ztc->spec);
+	    if (ztc->spec)
+	    {
+		FreeVec((APTR)ztc->spec);
+		if (ztc->image)
+		{
+		    zune_imspec_cleanup(ztc->image);
+		}
+	    }
 	    mui_free(ztc);
 	}
 	mui_free(ztl);
@@ -493,7 +485,6 @@ static ZTextLine *zune_text_parse_line (CONST_STRPTR *s_ptr, struct zune_context
     *s_ptr = s;
     return ztl;
 }
-
 
 /************************************************************/
 /* Bounds */
@@ -853,7 +844,10 @@ int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y, struct ZTex
     struct ZTextChunk *chunk;
 
     /* find the line */
-    for (i=0,line = (ZTextLine *)text->lines.mlh_Head; line->node.mln_Succ && i<y; line = (ZTextLine*)line->node.mln_Succ,i++);
+    for (i = 0, line = (ZTextLine *)text->lines.mlh_Head;
+	 line->node.mln_Succ && i < y;
+	 line = (ZTextLine*)line->node.mln_Succ,i++)
+	;
 
     if (!line->node.mln_Succ) return 0;
     *line_ptr = line;
