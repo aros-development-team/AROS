@@ -126,8 +126,8 @@ struct x11_staticdata
 
     Class *x11class;    
     Class *gfxclass;
-    Class *bmclass;
-    Class *osbmclass;
+    Class *onbmclass;
+    Class *offbmclass;
     Class *mouseclass;
     Class *kbdclass;
     
@@ -140,19 +140,20 @@ struct x11_staticdata
     
 };
 
-Class *init_gfxclass  ( struct x11_staticdata * );
-Class *init_bmclass   ( struct x11_staticdata * );
-Class *init_osbmclass ( struct x11_staticdata * );
-Class *init_kbdclass  ( struct x11_staticdata * );
-Class *init_mouseclass( struct x11_staticdata * );
-Class *init_x11class  ( struct x11_staticdata * );
+Class *init_gfxclass	( struct x11_staticdata * );
+Class *init_onbmclass	( struct x11_staticdata * );
+Class *init_offbmclass	( struct x11_staticdata * );
+Class *init_kbdclass  	( struct x11_staticdata * );
+Class *init_mouseclass	( struct x11_staticdata * );
+Class *init_x11class	( struct x11_staticdata * );
 
-VOID free_gfxclass  ( struct x11_staticdata * );
-VOID free_bmclass   ( struct x11_staticdata * );
-VOID free_osbmclass ( struct x11_staticdata * );
-VOID free_kbdclass  ( struct x11_staticdata * );
-VOID free_mouseclass( struct x11_staticdata * );
-VOID free_x11class  ( struct x11_staticdata * );
+VOID free_gfxclass	( struct x11_staticdata * );
+VOID free_onbmclass	( struct x11_staticdata * );
+VOID free_offbmclass	( struct x11_staticdata * );
+VOID free_osbmclass	( struct x11_staticdata * );
+VOID free_kbdclass	( struct x11_staticdata * );
+VOID free_mouseclass	( struct x11_staticdata * );
+VOID free_x11class	( struct x11_staticdata * );
 
 
 #define XSD(cl) ((struct x11_staticdata *)cl->UserData)
@@ -162,24 +163,6 @@ VOID free_x11class  ( struct x11_staticdata * );
 #define SysBase		(XSD(cl)->sysbase)
 
 
-#define XTASK_NAME "x11hidd task"
-
-#warning Try to reduce below task priority.
-/* We need to have highest priotity for this task, because we
-are simulating an interrupt. Ie. an "interrupt handler" called
-but this task should NEVER be interrupted by a task (for example input.device),
-otherwize it will give strange effects, especially in the circular-buffer handling
-in gameport/keyboard. (Writing to the buffer is not atomic even
-from within the IRQ handler!)
-
- Instead of calling
-the irq handler directly from the task, we should instead 
-Cause() a software irq, but Cause() does not work at the moment..
-*/
-
-#define XTASK_PRIORITY 50
-
-#define XTASK_STACKSIZE 8192
 
 #define LX11 ObtainSemaphore (&XSD(cl)->x11sema);
 #define UX11 ReleaseSemaphore(&XSD(cl)->x11sema);

@@ -35,14 +35,11 @@ VOID free_ximage(XImage *image);
 
 #define CLID_Hidd_X11Gfx	"hidd.gfx.x11"
 
-#define IID_Hidd_X11Gfx "hidd.graphics.x11gfx"
-#define IID_Hidd_X11Osbm "hidd.graphics.x11osbm"
+#define IID_Hidd_X11Gfx "hidd.gfx.x11gfx"
 
 
 #define HiddX11GfxAB  __abHidd_X11Gfx
-#define HiddX11OsbmAB __abHidd_X11Osbm
 extern AttrBase HiddX11GfxAB;
-extern AttrBase HiddX11OsbmAB;
 
 enum {
     aoHidd_X11Gfx_SysDisplay,
@@ -61,13 +58,6 @@ enum {
 #define aHidd_X11Gfx_SysCursor		(HiddX11GfxAB + aoHidd_X11Gfx_SysCursor)
 #define aHidd_X11Gfx_ColorMap		(HiddX11GfxAB + aoHidd_X11Gfx_ColorMap)
 
-enum {
-    aoHidd_X11Osbm_XImage,
-    
-    num_Hidd_X11Osbm_Attrs
-};
-
-#define aHidd_X11Osbm_XImage		(HiddX11OsbmAB + aoHidd_X11Osbm_XImage)
 
 #define PEN_BITS    4
 #define NUM_COLORS  (1L << PEN_BITS)

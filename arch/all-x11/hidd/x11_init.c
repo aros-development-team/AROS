@@ -77,20 +77,19 @@ static BOOL initclasses(struct x11_staticdata *xsd)
     if (NULL == xsd->gfxclass)
     	goto failure;
 
-    xsd->bmclass = init_bmclass(xsd);
-    if (NULL == xsd->bmclass)
+    xsd->onbmclass = init_onbmclass(xsd);
+    if (NULL == xsd->onbmclass)
     	goto failure;
 
-    xsd->osbmclass = init_osbmclass(xsd);
-    if (NULL == xsd->osbmclass)
+    xsd->offbmclass = init_offbmclass(xsd);
+    if (NULL == xsd->offbmclass)
     	goto failure;
-D(bug("initining mouse\n"));
+
     xsd->mouseclass = init_mouseclass(xsd);
     if (NULL == xsd->mouseclass)
     	goto failure;
 
 
-D(bug("initining kbd\n"));
     xsd->kbdclass = init_kbdclass(xsd);
     if (NULL == xsd->kbdclass)
     	goto failure;
@@ -98,7 +97,6 @@ D(bug("initining kbd\n"));
     return TRUE;
         
 failure:
-D(bug("failure\n"));
     freeclasses(xsd);
 
     return FALSE;
@@ -113,19 +111,17 @@ static VOID freeclasses(struct x11_staticdata *xsd)
     	free_kbdclass(xsd);
 
 
-
     if (xsd->mouseclass)
     	free_mouseclass(xsd);
 
     if (xsd->gfxclass)
     	free_gfxclass(xsd);
 
+    if (xsd->offbmclass)
+    	free_offbmclass(xsd);
 
-    if (xsd->osbmclass)
-    	free_osbmclass(xsd);
-
-    if (xsd->bmclass)
-    	free_bmclass(xsd);
+    if (xsd->onbmclass)
+    	free_onbmclass(xsd);
 
     if (xsd->x11class)
     	free_x11class(xsd);

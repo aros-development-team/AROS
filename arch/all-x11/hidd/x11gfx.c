@@ -154,11 +154,11 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
     if (displayable)
     {
-    	bm = NewObject(XSD(cl)->bmclass, NULL, tags);
+    	bm = NewObject(XSD(cl)->onbmclass, NULL, tags);
     }
     else
     {
-	bm = NewObject(NULL, CLID_Hidd_PlanarBM, tags);
+	bm = NewObject(XSD(cl)->offbmclass, NULL, tags);
     }
     
     
@@ -186,6 +186,10 @@ static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
 	    	DoSuperMethod(cl, o, (Msg)msg);
 		break;
 	}
+    }
+    else
+    {
+    	DoSuperMethod(cl, o, (Msg)msg);
     }
     
     return;

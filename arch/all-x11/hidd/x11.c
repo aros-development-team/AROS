@@ -46,6 +46,26 @@
 #include <aros/debug.h>
 
 
+#define XTASK_NAME "x11hidd task"
+
+#warning Try to reduce below task priority.
+/* We need to have highest priotity for this task, because we
+are simulating an interrupt. Ie. an "interrupt handler" called
+but this task should NEVER be interrupted by a task (for example input.device),
+otherwize it will give strange effects, especially in the circular-buffer handling
+in gameport/keyboard. (Writing to the buffer is not atomic even
+from within the IRQ handler!)
+
+ Instead of calling
+the irq handler directly from the task, we should instead 
+Cause() a software irq, but Cause() does not work at the moment..
+*/
+
+#define XTASK_PRIORITY 50
+
+#define XTASK_STACKSIZE 8192
+
+
 struct x11_data
 {
     ULONG dummy;
@@ -210,11 +230,6 @@ VOID x11task_entry(struct x11task_params *xtp)
     	Signal(xtp->parent, xtp->fail_signal);
     }
     
-D(bug("Entering input loop, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
-	, xsd->x11sema.ss_Owner, FindTask(NULL), xsd->x11sema.ss_NestCount
-	, xsd->x11sema.ss_QueueCount));
-	
-
 
     for (;;)
     {
