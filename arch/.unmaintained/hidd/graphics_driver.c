@@ -1213,7 +1213,7 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
          area.
          Region R = damagelist AND scrollarea
       */
-      if (NULL == (R = copyregion(L->DamageList, GfxBase)))
+      if (NULL == (R = CopyRegion(L->DamageList)))
       { 
         /* not enough memory */
         DisposeRegion(R);
