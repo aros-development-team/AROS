@@ -35,20 +35,23 @@ void __exit_atexit(void)
 {
     GETUSER;
     AROS_GET_SYSBASE;
-  
-    struct AtExitNode *aen;
 
-    while ((aen = (struct AtExitNode *)RemHead((struct List *)&__atexit_list)))
-    {
-        switch (aen->node.ln_Type)
-        {
-	case AEN_VOID:
-	    aen->func.fvoid();
-	    break;
+    {  
+	struct AtExitNode *aen;
+
+	while ((aen = (struct AtExitNode *) RemHead(
+	                           (struct List *) &__atexit_list)))
+	{
+	    switch (aen->node.ln_Type)
+	    {
+	    case AEN_VOID:
+		aen->func.fvoid();
+		break;
 	  
-	case AEN_PTR:
-	    aen->func.fptr(__startup_error, aen->ptr);
-	    break;
+	    case AEN_PTR:
+		aen->func.fptr(__startup_error, aen->ptr);
+		break;
+	    }
 	}
     }
 }
