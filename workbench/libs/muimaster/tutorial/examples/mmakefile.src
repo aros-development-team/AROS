@@ -1,0 +1,40 @@
+# $Id$
+#
+# Makefile for Zune step by step examples
+
+include $(TOP)/config/make.cfg
+
+FILES  := \
+    HelloZune \
+    HGroup    \
+    VGroup    \
+    VHGroup   \
+    VHGroup2  \
+    HVGroup   \
+    Notify
+
+EXEDIR := $(AROSDIR)/Demos/Zune
+EXES   := $(foreach f,$(FILES),$(EXEDIR)/$(f))
+
+USE_CLIB_SHARED := yes
+USE_AMIGALIB    := yes
+USE_MUILIB      := yes
+USE_AROSLIB     := yes
+
+#MM workbench-libs-muimaster-examples : includes linklibs
+#MM workbench-libs-muimaster-examples-quick :
+
+%make_prog_setup mmake=workbench-libs-muimaster-examples
+
+workbench-libs-muimaster-examples : setup $(EXES)
+
+workbench-libs-muimaster-examples-quick : $(EXES)
+
+%make_prog_single dir=$(EXEDIR)
+
+#MM setup
+setup ::
+	%mkdirs_q $(EXEDIR)
+
+%common
+%include_deps
