@@ -603,6 +603,7 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
 	{WA_Height, 	mhd->scr->BarHeight + 1	},
 	{WA_AutoAdjust,	TRUE			},
 	{WA_Borderless,	TRUE			},
+	{WA_CustomScreen, (ULONG)mhd->scr	},
 	{WA_BackFill, 	(IPTR)LAYERS_NOBACKFILL	},
 	{TAG_DONE				}
     };
@@ -681,6 +682,7 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
 	{WA_Height, 	height			},
 	{WA_AutoAdjust,	TRUE			},
 	{WA_Borderless,	TRUE			},
+	{WA_CustomScreen, (ULONG)mhd->scr	},
 	{WA_BackFill, 	(IPTR)LAYERS_NOBACKFILL	},
 	{TAG_DONE				}
     };
@@ -777,6 +779,7 @@ static void MakeSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
 	{WA_Height, 	0			},
 	{WA_AutoAdjust,	TRUE			},
 	{WA_Borderless,	TRUE			},
+	{WA_CustomScreen, (ULONG)mhd->scr	},
 	{WA_BackFill, 	(IPTR)LAYERS_NOBACKFILL	},
 	{TAG_DONE				}
     };
