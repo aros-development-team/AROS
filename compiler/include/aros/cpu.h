@@ -209,6 +209,12 @@
 #   define  AROS_GET_SYSBASE_OK     extern struct ExecBase      *SysBase;
 #endif
 
+/*
+    The SP_OFFSET should be defined *ONLY* when not defined before.
+    Otherwise it would redefine daults from cpu-arch.h or machine.h file
+*/
+#ifndef SP_OFFSET
 #define SP_OFFSET       0
+#endif /* SP_OFFSET */
 
 #endif /* AROS_CPU_H */
