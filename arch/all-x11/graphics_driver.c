@@ -1,4 +1,5 @@
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 
 #define DEBUG_FreeMem 1
@@ -446,7 +447,32 @@ void driver_Draw (struct RastPort * rp, LONG x, LONG y,
 ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
 		    struct GfxBase * GfxBase)
 {
-    return 0;
+    XImage * image;
+    unsigned long pixel;
+    ULONG t;
+
+    XSync(sysDisplay, False);
+
+    image = XGetImage (sysDisplay
+	, GetXWindow(rp)
+	, x, y
+	, 1, 1
+	, AllPlanes
+	, ZPixmap
+    );
+
+    if (!image)
+	return ((ULONG)-1L);
+
+    pixel = XGetPixel (image, 0, 0);
+
+    XDestroyImage (image);
+
+    for (t=0; t<NUM_COLORS; t++)
+	if (pixel == sysCMap[t])
+	    return t;
+
+    return ((ULONG)-1L);
 }
 
 LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
