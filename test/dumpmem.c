@@ -124,8 +124,8 @@ int main(int argc, char **argv)
                         
                         if ( ( (offset/sizeof(unsigned int) ) % 6) == 0 ) 
                         {
-                            if (serial_out) kprintf("0x%8.8P        ",start_address+offset);
-                            else printf("0x%8.8P        ",start_address+offset);
+                            if (serial_out) kprintf("0x%8.8X        ",start_address+offset);
+                            else printf("0x%8.8X        ",start_address+offset);
                         }
                         
                         if (serial_out) kprintf("%8.8X", (unsigned int *)((IPTR *)start_address+offset)[0]); /* use kprintf so it is output on serial.. */
