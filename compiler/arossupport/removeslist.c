@@ -11,7 +11,7 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/arossupport.h>
+	#include <proto/arossupport.h>
 
 	APTR RemoveSList (
 
