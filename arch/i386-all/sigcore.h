@@ -14,7 +14,7 @@
     /* sigcontext_t is the type of the signals' context. Linux offers no way
 	to get this context in a legal way, so I have to use tricks. */
 #   ifdef i386
-#     if LINUX_VERSION_CODE > 131102
+#     if LINUX_VERSION_CODE > 131103
 	typedef struct sigcontext sigcontext_t;
 #     else
 	typedef struct sigcontext_struct sigcontext_t;
