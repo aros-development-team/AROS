@@ -5,6 +5,7 @@
 
 #include <intuition/classusr.h>
 #include <libraries/gadtools.h>
+#include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 
@@ -15,6 +16,9 @@
 
 #include "muimaster_intern.h"
 #include "mui.h"
+
+/*  #define MYDEBUG 1 */
+#include "debug.h"
 
 extern struct Library *MUIMasterBase;
 
