@@ -56,6 +56,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 asm
@@ -67,16 +68,13 @@ asm
 );
 #endif
 
-AROS_UFP3(LONG, __startup_entry,
-AROS_UFPA(char *,argstr,A0),
-AROS_UFPA(ULONG,argsize,D0),
-AROS_UFPA(struct ExecBase *,sysbase,A6));
-
 extern LONG            __detacher_must_wait_for_signal __attribute__((weak));
 extern struct Process *__detacher_process              __attribute__((weak));
 extern STRPTR          __detached_name                 __attribute__((weak));
 
-AROS_UFH3(LONG, __detach_entry,
+DECLARESET(PROGRAM_ENTRIES);
+
+AROS_UFH3(static LONG, __detach_entry,
 AROS_UFHA(char *,argstr,A0),
 AROS_UFHA(ULONG,argsize,D0),
 AROS_UFHA(struct ExecBase *,SysBase,A6))
@@ -104,12 +102,12 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     {
         struct TagItem tags[] =
         {
-	    { NP_Seglist,   (IPTR)mysegment       },
-	    { NP_Entry,     (IPTR)__startup_entry },
-	    { NP_Name,      (IPTR)__detached_name },
-	    { NP_Arguments, (IPTR)argstr          },
-	    { NP_Cli,       TRUE                  },
-            { TAG_DONE,     0                     }
+	    { NP_Seglist,   (IPTR)mysegment                                            },
+	    { NP_Entry,     (IPTR)SETELEM(__detach_entry, program_entries)[1] },
+	    { NP_Name,      (IPTR)__detached_name                                      },
+	    { NP_Arguments, (IPTR)argstr                                               },
+	    { NP_Cli,       TRUE                                                       },
+            { TAG_DONE,     0                                                          }
         };
 
 	__detacher_process = (struct Process *)FindTask(NULL);
@@ -131,3 +129,6 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 LONG            __detacher_must_wait_for_signal __attribute__((weak)) = 0;
 struct Process *__detacher_process              __attribute__((weak)) = NULL;
 STRPTR          __detached_name                 __attribute__((weak)) = NULL;
+
+DEFINESET(PROGRAM_ENTRIES);
+ADD2SET(__detach_entry, program_entries, 0);
