@@ -743,6 +743,14 @@ void realMain(struct ExchangeState *ec)
 		    case CXCMD_LIST_CHG:
 			redrawList(ec);
 			break;
+			
+		    case CXCMD_ENABLE:
+			ActivateCxObj(ec->ec_broker, TRUE);
+			break;
+
+		    case CXCMD_DISABLE:
+			ActivateCxObj(ec->ec_broker, FALSE);
+			break;
 		    }
 		}
 
@@ -848,7 +856,7 @@ void updateInfo(struct ExchangeState *ec)
 	setGadgetState(ec->ec_showBut, showHide, ec);
 
 	GT_SetGadgetAttrs(ec->ec_cycle, ec->ec_window, NULL,
-			  GTCY_Active, (broker->co_Flags & COF_ACTIVE) != 0,
+			  GTCY_Active, (broker->co_Flags & COF_ACTIVE) ? 0 : 1,
 			  GA_Disabled, FALSE,
 			  TAG_DONE);
 
