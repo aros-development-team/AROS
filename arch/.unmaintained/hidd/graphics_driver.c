@@ -2851,7 +2851,9 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 
 		if (bm_obj)
 		{
-		   /* 	It is possible that the HIDD had to allocate
+		    Object *pf;
+		    ULONG graphtype;
+		    /* 	It is possible that the HIDD had to allocate
 		   	a larger depth than that supplied, so
 		   	we should get back the correct depth.
 		   	This is because layers.library might
@@ -2859,8 +2861,12 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 		   	store obscured areas, and then those
 		   	offscreen bitmaps should be of the same depth as
 		   	the onscreen ones.
-		   */
-		    GetAttr(bm_obj, aHidd_BitMap_Depth, &depth);
+		    */
+		   
+		    pf = HIDD_BM_GetPixelFormat(bm_obj, vHidd_PixFmt_Native);
+		   
+		    GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+		    GetAttr(pf, aHidd_PixFmt_GraphType, &graphtype);
 	    	    
 		    /* Store it in plane array */
 		    BM_OBJ(nbm) = bm_obj;
@@ -2877,6 +2883,7 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 			if (NULL != BM_PIXTAB(nbm)) {
 			
 			    /* Set this palette to all black by default */
+			    
 			    HIDDT_Color col;
 			    HIDDT_Pixel black_pixel;
 			    ULONG i;
@@ -2886,12 +2893,32 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 			    col.blue	= 0;
 			    col.alpha	= 0;
 			    
-#warning This does not handle palettized displays as we would have to allocate the black color using HIDD_BM_SetColors
-			    black_pixel = HIDD_BM_MapColor(BM_OBJ(nbm), &col);
+			    if (vHidd_GT_Palette == graphtype) {
 			    
-			    for (i = 0; i < AROS_PALETTE_SIZE; i ++) {
-			    	BM_PIXTAB(nbm)[i] = black_pixel;
+				ULONG numcolors;
+			    
+				numcolors = 1L << depth;
+				if (numcolors > AROS_PALETTE_SIZE)
+				    numcolors = AROS_PALETTE_SIZE;
+				    
+				/* Set palette to all black */
+			    	for (i = 0; i < numcolors; i ++) {
+				    HIDD_BM_SetColors(nbm, &col, i, 1);
+				    BM_PIXTAB(nbm)[i] = col.pixval;
+				   
+				}
+				
+			    } else if (vHidd_GT_TrueColor == graphtype) {
+			    
+				/* Get index for first blackpixel */
+			    
+			    	black_pixel = HIDD_BM_MapColor(BM_OBJ(nbm), &col);
+			    
+			    	for (i = 0; i < AROS_PALETTE_SIZE; i ++) {
+			            BM_PIXTAB(nbm)[i] = black_pixel;
+			    	}
 			    }
+				
 			    ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
 			    
 			}
@@ -3549,6 +3576,8 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
 {
     struct BitMap *bm;
    HIDDT_Color hidd_col;
+   Object *pf;
+   ULONG graphtype;
    
    EnterFunc(bug("driver_SetRGB32(vp=%p, color=%d, r=%x, g=%x, b=%x)\n",
    		vp, color, red, green, blue));
@@ -3563,11 +3592,19 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
    hidd_col.green = green >> 16 ;
    hidd_col.blue  = blue  >> 16;
    
-   BM_PIXTAB(bm)[color] = HIDD_BM_MapColor(BM_OBJ(bm), &hidd_col);
+   pf = HIDD_BM_GetPixelFormat(BM_OBJ(bm), vHidd_PixFmt_Native);
+   
+   GetAttr(pf, aHidd_PixFmt_GraphType, &graphtype);
    
    
-#warning Handle palettized HIDDs through HIDD_BM_SetColors
-/*   HIDD_BM_SetColors(bm_obj, &hidd_col, color, 1); */
+   if (vHidd_GT_Palette == graphtype) {
+   	HIDD_BM_SetColors(bm, &hidd_col, color, 1);
+	BM_PIXTAB(bm)[color] = hidd_col.pixval;
+	
+   } else if (vHidd_GT_TrueColor == graphtype) {
+   	BM_PIXTAB(bm)[color] = HIDD_BM_MapColor(BM_OBJ(bm), &hidd_col);
+   }
+   
    ReturnVoid("driver_SetRGB32");
    
 
