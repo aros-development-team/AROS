@@ -185,32 +185,61 @@ static void IconList_GetIconRectangle(Object *obj, struct IconEntry *icon, struc
 
 /**************************************************************************
  Checks weather we can place a icon with the given dimesions at the
- suggested positions
+ suggested positions.
+
+ atx and aty are absolute positions
 **************************************************************************/
-static int IconList_CouldPlaceIcon(Object *obj, struct MUI_IconData *data, int atx, int aty, int width, int height)
+static int IconList_CouldPlaceIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *toplace, int atx, int aty)
 {
     struct IconEntry *icon;
+    struct Rectangle toplace_rect;
+
+    IconList_GetIconRectangle(obj, toplace, &toplace_rect);
+    toplace_rect.MinX += atx + data->view_x;
+    toplace_rect.MaxX += atx + data->view_x;
+    toplace_rect.MinY += aty + data->view_y;
+    toplace_rect.MaxY += aty + data->view_y;
 
     icon = List_First(&data->icon_list);
     while (icon)
     {
 	if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
 	{
-	    int icon_right = icon->x + icon->width - 1;
-	    int icon_bottom = icon->y + icon->height - 1;
-	    int at_right = atx + width - 1;
-	    int at_bottom = aty + height - 1;
+	    struct Rectangle icon_rect;
+	    IconList_GetIconRectangle(obj, icon, &icon_rect);
+	    icon_rect.MinX += icon->x + data->view_x;
+	    icon_rect.MaxX += icon->x + data->view_x;
+	    icon_rect.MinY += icon->y + data->view_y;
+	    icon_rect.MaxY += icon->y + data->view_y;
 
-	    /* also add the height of the icon's label */
-	    icon_bottom += _font(obj)->tf_YSize + 2;
-	    at_bottom += _font(obj)->tf_YSize + 2;
-
-	    if (!(atx >= icon_right || at_right <= icon->x || aty >= icon_bottom || at_bottom <= icon->y))
-		return 0;
+	    if (RectAndRect(&icon_rect, &toplace_rect))
+		return FALSE; /* There is already an icon on this place */
 	}
 	icon = Node_Next(icon);
     }
     return 1;
+}
+
+/**************************************************************************
+ Place the icon at atx and aty.
+
+ atx and aty are absolute positions
+**************************************************************************/
+static void IconList_PlaceIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *toplace, int atx, int aty)
+{
+    struct Rectangle toplace_rect;
+    IconList_GetIconRectangle(obj, toplace, &toplace_rect);
+    toplace_rect.MinX += atx + data->view_x;
+    toplace_rect.MaxX += atx + data->view_x;
+    toplace_rect.MinY += aty + data->view_y;
+    toplace_rect.MaxY += aty + data->view_y;
+
+    toplace->x = atx;
+    toplace->y = aty;
+
+    /* update our view */
+    if (toplace_rect.MaxX - data->view_x > data->width) data->width = toplace_rect.MaxX - data->view_x;
+    if (toplace_rect.MaxY - data->view_y > data->height) data->height = toplace_rect.MaxY - data->view_y;
 }
 
 /**************************************************************************
@@ -452,33 +481,32 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 
     /* At we see if there any Icons without proper position, this is the wrong place here,
      * it should be done after all icons have been loaded */
-    icon = List_First(&data->icon_list);
-    while (icon)
     {
-	if (icon->dob && icon->x == NO_ICON_POSITION && icon->y == NO_ICON_POSITION)
+	int cur_x = data->view_x + 36;
+	int cur_y = data->view_y + 4;
+
+	icon = List_First(&data->icon_list);
+	while (icon)
 	{
-	    struct Rectangle rect;
-
-	    int cur_x = data->view_x + 8;
-	    int cur_y = data->view_y + 8;
-	    int loops = 0;
-
-	    while (!IconList_CouldPlaceIcon(obj, data, cur_x, cur_y, icon->width, icon->height) && loops < 5000)
+	    if (icon->dob && icon->x == NO_ICON_POSITION && icon->y == NO_ICON_POSITION)
 	    {
-		cur_y += 10;
-		if (cur_y + icon->height > data->view_x + data->view_height) /* on both sides -1 */
-		{
-		    cur_x += 10;
-		    cur_y = data->view_y + 8;
-		}
-	    }
-	    icon->x = cur_x;
-	    icon->y = cur_y;
+		int loops = 0;
 
-	    if (icon->x + icon->width - data->view_x > data->width) data->width = icon->x + icon->width - data->view_x;
-	    if (icon->y + icon->height - data->view_y > data->height) data->height = icon->y + icon->height - data->view_y;
+		while (!IconList_CouldPlaceIcon(obj, data, icon, cur_x - icon->width/2, cur_y) && loops < 5000)
+		{
+		    cur_y++;
+
+		    if (cur_y + icon->height > data->view_x + data->view_height) /* on both sides -1 */
+		    {
+		        cur_x += 72;
+		        cur_y = data->view_y + 4;
+		    }
+	        }
+
+		IconList_PlaceIcon(obj, data, icon, cur_x - icon->width / 2, cur_y);
+	    }
+	    icon = Node_Next(icon);
 	}
-	icon = Node_Next(icon);
     }
 
     clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
@@ -610,7 +638,19 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
 	if (entry->y + entry->height - data->view_y > data->height) data->height = entry->y + entry->height - data->view_y;
     }
     strcpy(entry->filename,msg->filename);
-    AddTail((struct List*)&data->icon_list,(struct Node*)entry);
+
+    {
+    	struct IconEntry *icon1, *icon2=NULL;
+	icon1 = List_First(&data->icon_list);
+	while (icon1)
+	{
+	    if (Stricmp(entry->label,icon1->label)<0) break;
+	    icon2 = icon1;
+	    icon1 = Node_Next(icon1);
+	}
+	Insert((struct List*)&data->icon_list,(struct Node*)entry,(struct Node*)icon2);
+    }
+
     return 1;
 }
 
