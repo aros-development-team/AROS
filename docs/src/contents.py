@@ -137,7 +137,7 @@ def filterMakefile (p, item, tag):
 		
 		result.append (pElement)
 
-    result.dump (0)
+    #result.dump (0)
     return result
     
 def processItem (p, xmlfile, item):
@@ -190,12 +190,12 @@ def processItem (p, xmlfile, item):
 	if os.path.exists (filename):
 	    result.dirs.append ((dir, Contents (filename)))
 	else:
-	    print '%s missing' % filename
+	    #sys.stderr.write ('%s missing\n' % filename)
 	    result.dirs.append (dir)
 
 class Contents:
     def __init__ (self, filename):
-	sys.stderr.write ('Processing %s...\n' % filename)
+	#sys.stderr.write ('Processing %s...\n' % filename)
 	self.filename = filename
 	xmlfile = xmlsupport.XmlFile ()
 	xmlfile.parse (self.filename)
