@@ -153,7 +153,7 @@ struct MUI_InputHandlerNode
  Zune extensions. Note that the tag values of the Zune extensions
  might be changed in the future
 **************************************************************************/
-#define MUIM_Application_Iconify       0x80429ab8 /* Zune: V1  */
+#define MUIM_Application_Iconify       (METHOD_USER|0x00429ab8) /* Zune: V1  */
 
 extern const struct __MUIBuiltinClass _MUI_Application_desc; /* PRIV */
 
