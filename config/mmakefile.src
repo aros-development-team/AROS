@@ -14,6 +14,7 @@ machine :
 #MM- kernel : kernel-link-$(ARCH)-$(CPU)
 #MM- kernel-link-$(ARCH)-$(CPU) : kernel-objs
 #MM- kernel-objs : kernel-$(ARCH)-$(CPU)
+#MM- kernel-$(ARCH)-$(CPU) : linklibs
 
 #MM- AROS : workbench demos contrib
 #MM- workbench : workbench-$(ARCH)-$(CPU) kernel-objs
