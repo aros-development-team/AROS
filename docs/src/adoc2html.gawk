@@ -61,7 +61,7 @@ BEGIN {
 		gsub(/^.*\//,"",lib); # Strip off all leading dirs
 
 		# The filename of the resulting HTML file
-		out="../html/autodocs/" bn ".html";
+		out=CURDIR "/../html/autodocs/" bn ".html";
 
 		location=0; # The field LOCATION hasn't been read yet
 

@@ -5,19 +5,43 @@
 # are HTML pages are regenerated.
 #
 
+TOP="$1"
+CURDIR="$2"
+shift ; shift
+
+len=`echo $TOP | wc -c`
+len=`expr $len + 1`
+
+cd="`pwd`"
+cd "$TOP"
+dot=0
+
 for src in $* ; do
-    name="`echo $src | cut -d/ -f3- | cut -d. -f1`"
-    name="`basename $name`"
-    html="../html/autodocs/$name.html"
-    log="gen/$name.log"
+    dir="`echo $src | cut "-c$len-"`"
+    dir="`dirname $dir`"
+    name="`basename $src`"
+    bname="`echo $name | cut -d. -f1`"
+    html="$CURDIR/../html/autodocs/$bname.html"
+    log="$CURDIR/gen/$bname.log"
+    src="$dir/$name"
 
 # echo "Checking $html"
+# echo "Src=$src"
     if [ ! -e "$html" -o "$src" -nt "$html" ]; then
+	if [ $dot -ne 0 ]; then
+	    echo
+	    dot=0
+	fi
 	if [ ! -e "$log" -o "$src" -nt "$log" ]; then
 	    echo "Regenerating $log"
-	    cvs log $src | gawk -f cvslog2html.gawk > $log
+	    cvs log "$src" | gawk -f "$CURDIR/cvslog2html.gawk" > "$log"
 	fi
 	echo "Regenerating $html"
-	gawk -f adoc2html.gawk "$src" "$log"
+	gawk -f "$CURDIR/adoc2html.gawk" --assign "CURDIR=$CURDIR" "$src" "$html"
+    else
+	echo -n "."
+	dot=1
     fi
 done
+
+cd "$cd"
