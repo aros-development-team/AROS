@@ -44,6 +44,7 @@ struct SpecialResident
 struct Module *LoadModule(char *);
 void FreeModules(struct ModuleList *);
 BOOL BuildTagPtrs(struct ModuleList *);
+ULONG *AllocMoveCookie(ULONG *, ULONG);
 struct MemList *BuildMemList(struct ilsMemList *, ULONG *, ULONG);
 void StuffTags(struct MemList *, ULONG *, ULONG);
 void *FindResMod(struct ilsMemList *);
@@ -59,10 +60,10 @@ BOOL debug, quiet;
 ULONG ils_table[3];
 struct ilsMemList ils_mem;
 
-char cmlargs[] = "CONFIGFILE,CHIP/S,FAST/S,KICK/S,LOCAL/S,CLEAR/S,CLEARONLY/S,RESET/S,DEBUG/S,SIM=SIMULATE/S,QUIET/S";
+char cmlargs[] = "CONFIGFILE,CHIP/S,FAST/S,KICK/S,LOCAL/S,CLEAR/S,CO=CLEARONLY/S,RESET/S,DEBUG/S,SIM=SIMULATE/S,FORCE/S,QUIET/S";
 
 char usage[] =
-    "Configfile : config file to use, default is \"boot.config\"\n"
+    "Configfile : config file to use, default is \"arosboot.config\"\n"
     "Chip       : force modules to chip mem\n"
     "Fast       : force modules to fast mem\n"
     "Kick       : force modules to kick mem\n"
@@ -72,6 +73,7 @@ char usage[] =
     "Reset      : reset after installing new modules\n"
     "Debug      : output debugging information\n"
     "Simulate   : Simulate loading, do not actually install modules\n"
+    "Force      : Force loading if modules were already loaded\n"
     "Quiet      : Be quiet [debug mode will override this]\n"
     "\n"
     "Order of precedence of memory: kick->local->fast->chip\n"
@@ -88,10 +90,41 @@ char usage[] =
 #define CML_RESET      7
 #define CML_DEBUG      8
 #define CML_SIMULATE   9
-#define CML_QUIET      10
-#define CML_END        11
+#define CML_FORCE      10
+#define CML_QUIET      11
+#define CML_END        12
 
 LONG cmdvec[CML_END];
+
+/*
+rescookie:
+        dc.w    $4afc
+        dc.l    rescookie-*
+        dc.l    endskip-*
+        dc.b    0       ; flags
+        dc.b    41      ; version
+        dc.b    0       ; NT_UNKNOWN
+        dc.b    -120    ; priority
+        dc.l    name-*
+        dc.l    id-*
+        dc.l    init-*
+name:   dc.b    'arosboot.cookie',0
+id:     dc.b    'arosboot.cookie 41.1 (22.3.1997)',0
+        even
+init:   moveq.l #0,d0
+        rts
+
+    Relocate this by adding a field's contents to its address.
+    rt_MatchTag also contains a (negative) offset, but unsigned pointers
+    won't handle it correctly. Just set it to the base address.
+*/
+ULONG rescookie[] = {
+    0x4AFCFFFF, 0xFFFE0000, 0x004A0029, 0x00880000,
+    0x000C0000, 0x00180000, 0x00366172, 0x6F73626F,
+    0x6F742E63, 0x6F6F6B69, 0x65006172, 0x6F73626F,
+    0x6F742E63, 0x6F6F6B69, 0x65203431, 0x2E312028,
+    0x32322E33, 0x2E313939, 0x37290000, 0x70004E75
+};
 
 int main(int argc, char **argv)
 {
@@ -102,13 +135,19 @@ int main(int argc, char **argv)
     STRPTR modname;
     struct RDArgs *rdargs;
     int returnvalue = RETURN_OK;
-    BOOL reset = FALSE, simulate = FALSE;
+    BOOL reset, simulate, force;
 
-    debug = quiet = FALSE;
+    debug = quiet = reset = simulate = force = FALSE;
 
     if(SysBase->LibNode.lib_Version < 37)
     {
-	PutStr("This utility is for AmigaOS 2.04 (V37) and higher\n\n");
+	PutStr("This program is for AmigaOS 2.04 (V37) and higher.\n\n");
+	exit(RETURN_FAIL);
+    }
+
+    if(!(SysBase->AttnFlags & AFF_68020))
+    {
+	PutStr("This program requires a 68020 or better.\n\n");
 	exit(RETURN_FAIL);
     }
 
@@ -127,7 +166,7 @@ int main(int argc, char **argv)
     if( (rdargs = AllocDosObject(DOS_RDARGS, NULL)))
     {
 	/* set default config file name */
-	cmdvec[CML_CONFIGFILE] = (LONG)"boot.config";
+	cmdvec[CML_CONFIGFILE] = (LONG)"arosboot.config";
 
 	rdargs->RDA_ExtHelp = usage; /* FIX: why doesn't this work? */
 	rdargs->RDA_Buffer = NULL;
@@ -135,7 +174,7 @@ int main(int argc, char **argv)
 
 	if(!(ReadArgs(cmlargs, cmdvec, rdargs)))
 	{
-	    PrintFault(IoErr(), "AROS boot");
+	    PrintFault(IoErr(), "arosboot");
 	    FreeDosObject(DOS_RDARGS, rdargs);
 	    exit(RETURN_FAIL);
 	}
@@ -143,7 +182,7 @@ int main(int argc, char **argv)
     }
     else
     {
-	PrintFault(ERROR_NO_FREE_STORE, "AROS boot");
+	PrintFault(ERROR_NO_FREE_STORE, "arosboot");
 	exit(RETURN_FAIL);
     }
 
@@ -154,6 +193,7 @@ int main(int argc, char **argv)
 	exit(RETURN_WARN);
     }
 
+    if(cmdvec[CML_FORCE]) force = TRUE;
     if(cmdvec[CML_RESET]) reset = TRUE;
     if(cmdvec[CML_QUIET]) quiet = TRUE;
     if(cmdvec[CML_DEBUG])
@@ -178,6 +218,12 @@ int main(int argc, char **argv)
 	SysBase->KickTagPtr = NULL;
 	SysBase->KickCheckSum = NULL;
 	FreeRDArgsAll(rdargs);
+	if(reset)
+	{
+	    if(!quiet) PutStr("Resetting this machine...\n");
+	    Delay(100);
+	    ColdReboot(); /* never returns */
+	}
 	exit(RETURN_OK);
     }
     else if(cmdvec[CML_CLEAR]) /* no need to clear again if already done */
@@ -203,8 +249,31 @@ int main(int argc, char **argv)
 
     if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
     {
+	FreeRDArgsAll(rdargs);
 	PutStr("***Break\n");
 	exit(RETURN_WARN);
+    }
+
+    if( (FindResident("arosboot.cookie")))
+    {
+	if(!force)
+	{
+	    if(!quiet)
+	    {
+		PutStr("AROS modules already loaded.");
+		PutStr(" Exiting.\n");
+	    }
+	    FreeRDArgsAll(rdargs);
+	    exit(RETURN_OK);
+	}
+	else
+	{
+	    if(!quiet)
+	    {
+		PutStr("AROS modules already loaded.");
+		PutStr(" Overriding.\n");
+	    }
+	}
     }
 
     /*
@@ -264,8 +333,8 @@ int main(int argc, char **argv)
 	    */
 	    if( (BuildTagPtrs(&ModuleList)) )
 	    {
-		if(!quiet || !reset) PutStr("\nAll modules loaded successfully, reset to activate.\n\n");
-		else if(reset) PutStr("\nAll modules loaded successfully.\n\n");
+		if(!quiet & !reset) PutStr("\nAll modules loaded successfully, reset to activate.\n\n");
+		else if(!quiet & reset) PutStr("\nAll modules loaded successfully.\n\n");
 	    }
 	    else
 	    {
@@ -292,7 +361,7 @@ int main(int argc, char **argv)
 
     if(reset)
     {
-	if(!quiet) PutStr("Resetting in 2 seconds...");
+	if(!quiet) PutStr("Resetting this machine...");
 	Delay(100);
 	ColdReboot(); /* never returns */
     }
@@ -367,14 +436,16 @@ BOOL BuildTagPtrs(struct ModuleList *modlist)
     ULONG *modarray;
     ULONG i, nummods;
     struct Module *mod;
+    ULONG *cookieptr;
+    struct ilsMemNode *cookienode;
 
     D(bug("BuildTagPtrs()\n"));
 
     /*
 	Allocate memory for our KickTagPtr table:
-	number of modules loaded + 1 (table terminator)
+	number of modules loaded +2 (cookie and table terminator)
     */
-    if( (modarray = AllocVec((modlist->ml_Num+1)*sizeof(ULONG),
+    if( (modarray = AllocVec((modlist->ml_Num+2)*sizeof(ULONG),
 			     memtype|MEMF_CLEAR|MEMF_REVERSE)) )
     {
 	/*
@@ -386,29 +457,85 @@ BOOL BuildTagPtrs(struct ModuleList *modlist)
 	{
 	    modarray[i] = (ULONG)mod->m_Resident;
 	}
+	/* i will be incremented one last time before exiting */
 
-	/*
-	    Terminate the module array.
-	*/
-	modarray[i+1] = NULL;
-
-	/*
-	    Cache number of modules, since it will be modified in BuildMemList.
-	*/
-	nummods = modlist->ml_Num;
-
-	/*
-	    build a memlist to be put in KickMemPtr
-	*/
-	if( (memlist = BuildMemList(&ils_mem, modarray,
-				    (modlist->ml_Num+1)*sizeof(ULONG) )) )
+	if( (cookieptr = AllocMoveCookie(rescookie, sizeof(rescookie))))
 	{
-	    StuffTags(memlist, modarray, nummods);
-	    return TRUE;
+	    /*
+		Add the cookie module.
+	    */
+	    modarray[i] = (ULONG)cookieptr;
+
+	    /*
+		Terminate the module array.
+	    */
+	    modarray[i+1] = NULL;
+
+	    /*
+		Add the cookie's memory address + size on the memlist.
+	    */
+	    if( (cookienode = AllocMem(sizeof(struct ilsMemNode), MEMF_CLEAR)) )
+	    {
+		cookienode->imn_Addr = cookieptr;
+		cookienode->imn_Size = sizeof(rescookie);
+		AddHead((struct List *)&ils_mem, (struct Node *)cookienode);
+		ils_mem.iml_Num++;
+		ils_mem.iml_NewNum++;
+
+		/*
+		    Cache number of modules, since it will be modified in
+		    BuildMemList. +1 because of the cookie.
+		*/
+		nummods = modlist->ml_Num + 1;
+
+		/*
+		    build a memlist to be put in KickMemPtr
+		*/
+		if( (memlist = BuildMemList(&ils_mem, modarray,
+		    (modlist->ml_Num+1)*sizeof(ULONG) )) )
+		{
+		    StuffTags(memlist, modarray, nummods);
+		    return TRUE;
+		}
+
+	    }
+	    /* If we get here, something went wrong. Free stuff. */
+	    FreeMem(cookieptr, sizeof(rescookie));
 	}
 	FreeVec(modarray);
     }
     return FALSE;
+}
+
+ULONG *AllocMoveCookie(ULONG *cookie, ULONG size)
+{
+    struct Resident *res;
+
+    D(bug("AllocMoveCookie()\n"));
+
+    if( (res = AllocMem(size, memtype|MEMF_REVERSE)))
+    {
+	D(bug("  Moving cookie\n"));
+	/* Relocate the cookie. */
+	CopyMem(cookie, (APTR)res, size);
+
+	D(bug("  Relocating cookie pointers\n"));
+	/* Relocate pointers in cookie. */
+	res->rt_MatchTag  = res;
+	res->rt_EndSkip  += (ULONG)&res->rt_EndSkip;
+	res->rt_Name     += (ULONG)&res->rt_Name;
+	res->rt_IdString += (ULONG)&res->rt_IdString;
+	res->rt_Init     += (ULONG)&res->rt_Init;
+
+	D(bug("  res = $%lx, name = $%lx, idstring = $%lx\n",
+	    (ULONG)res, (ULONG)res->rt_Name, (ULONG)res->rt_IdString));
+
+	if(!quiet) Printf("\t%s\n", (ULONG)res->rt_IdString);
+
+	return (ULONG *)res;
+    }
+
+    return 0;
 }
 
 struct MemList *BuildMemList(struct ilsMemList *prelist,
@@ -496,7 +623,6 @@ void StuffTags(struct MemList *memlist, ULONG *modlist, ULONG nummods)
     D(bug("StuffTags(memlist $%08lx  modlist $%08lx  nummods %ld)\n",
      (ULONG)memlist, (ULONG)modlist, nummods));
 
-    /* Fix 970102 ldp: protect the Kick ptrs with Forbid/Permit */
     Forbid();
 
     if(SysBase->KickMemPtr)
@@ -553,7 +679,7 @@ void *FindResMod(struct ilsMemList *list)
     UWORD *ptr;
     ULONG num, counter;
 
-    D(bug("FindResMod() ... "));
+    D(bug("Finding Resident Module..."));
 
     /*
 	Search all memory blocks for the Resident struct. Only new nodes
@@ -579,34 +705,43 @@ void *FindResMod(struct ilsMemList *list)
 		*/
 		ils_mem.iml_NewNum = 0;
 
-		D(bug("found at $%08lx\n", (ULONG)ptr));
+		D(bug(" at $%08lx\n", (ULONG)ptr));
 		return((void *)ptr);
 	    }
 	}
     }
 
-    D(bug("not found\n"));
+    D(bug(" not found\n"));
     return 0;
 }
 
 void PrintTagPtrs(void)
 {
-    if(SysBase->KickTagPtr)
+    if(SumKickData() == (ULONG)SysBase->KickCheckSum)
     {
-	ULONG *list;
-
-	PutStr("Modules already in use:\n");
-
-	list = SysBase->KickTagPtr;
-
-	while(*list)
+	if(SysBase->KickTagPtr)
 	{
-	    Printf("\t$%08lx", *list);
-	    Printf("\t%s\n", (ULONG)((struct Resident *)*list)->rt_IdString);
+	    ULONG *list;
 
-	    list++;
-	    if(*list & 0x80000000) list = (ULONG *)(*list & 0x7fffffff);
+	    PutStr("Modules already in use:\n");
+
+	    list = SysBase->KickTagPtr;
+
+	    while(*list)
+	    {
+		Printf("\t$%08lx", *list);
+		Printf("\t%s\n", (ULONG)((struct Resident *)*list)->rt_IdString);
+
+		list++;
+		if(*list & 0x80000000) list = (ULONG *)(*list & 0x7fffffff);
+	    }
 	}
+    }
+    else
+    {
+	/* Don't print message if all vectors are NULL */
+	if(SysBase->KickMemPtr || SysBase->KickTagPtr || SysBase->KickCheckSum)
+	    Printf("Vectors have incorrect checksum.\n");
     }
 }
 
@@ -650,7 +785,7 @@ void PatchModule(struct Module *module, struct List *funclist)
 	    else
 	    {
 		if(!quiet)
-		    Printf("Function %ld (slot %ld) outside scope of library (max %ld, %ld). Ignored.\n",
+		    Printf("Function %ld (slot %ld) outside scope of module (max %ld, %ld). Ignored.\n",
 			funcnode->fn_Slot * -6,
 			funcnode->fn_Slot,
 			maxslot * -6,
