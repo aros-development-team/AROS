@@ -65,48 +65,12 @@ LONG itext_draw(Class *cl, Object *o, struct impDraw *msg)
         struct IntuiText    *iText = (struct IntuiText *)IM(o)->ImageData;
         int 	    	     leftOffset = msg->imp_Offset.X + IM(o)->LeftEdge;
         int 	    	     topOffset = msg->imp_Offset.Y + IM(o)->TopEdge;
-        struct TextFont     *newfont = NULL;
-        struct TextFont     *font;
-        UBYTE 	    	     style;
+ 
+        SetABPenDrMd(rp, IM(o)->PlanePick, 0 ,JAM1);
 
-        font = rp->Font;
-        style = rp->AlgoStyle;
-
-        SetDrMd(rp, JAM1);
-        SetAPen(rp, IM(o)->PlanePick);
-
-        /* For all borders... */
-        for ( ; iText; iText=iText->NextText)
-        {
-            if (iText->ITextFont)
-            {
-                newfont = OpenFont (iText->ITextFont);
-
-                if (newfont)
-                    SetFont (rp, newfont);
-
-                SetSoftStyle(rp, iText->ITextFont->ta_Style, AskSoftStyle(rp));
-            }
-
-            /* Move to initial position */
-            Move (rp
-                  , iText->LeftEdge + leftOffset
-                  , iText->TopEdge + topOffset + rp->Font->tf_Baseline
-                 );
-            Text (rp, iText->IText, strlen (iText->IText));
-
-            if (iText->ITextFont)
-            {
-                if (newfont)
-                {
-                    SetFont (rp, font);
-                    CloseFont (newfont);
-                }
-            }
-        }
+    	int_PrintIText(rp, iText, leftOffset, topOffset, TRUE, IntuitionBase);
+	
         retval = 1;
-
-        rp->AlgoStyle = style;
     }
 
     return retval;
