@@ -271,7 +271,7 @@ nlorentz@online.no
 String gadgets get coordinates relative to screen, but should
 get relative to window.
 
-BUG000041
+BUG000041 fixed
 nlorentz@online.no
 Cause() does not work from inside keyboard.device, so input.device
 never gets keyboard events.
