@@ -1320,11 +1320,6 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 	goto fail_exit;
     }
     
-    /* No one may interrupt me while I'm working with this layer */
-    /* But there is a problem: if this is called from a routine that 
-       already  locked  the layer is already I am stuck. 
-    */
-
     /* search the list of ClipRects. If the cliprect where the pixel
        goes into does not have an entry in lobs, we can directly
        draw it to the bitmap, otherwise we have to draw it into the
@@ -1506,14 +1501,6 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
 		CR->lobs));
 		
-	    /* Does this cliprect intersect with area to blit ?
-	    
-	    Theoretically this test shouldn't be necessary because
-	    we are setting the whole rastport, and all cliprects
-	    should be inside that rastport, but I do not know
-	    the internals of layers, so I'll do it anyway
-	    
-	    */
 	    if (andrectrect(&CR->bounds, &L->bounds, &intersect))
 	    {
 		
