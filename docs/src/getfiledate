@@ -4,18 +4,7 @@
 # if the file as parameter.
 #
 
-( /bin/ls -l $1 ; date ) | \
-gawk ' \
-    {				       \
-	if (length($8)==4)             \
-	{			       \
-	    print $7". "$6" "$8;       \
-	    getline;		       \
-	}			       \
-	else			       \
-	{			       \
-	    date=$7". "$6;             \
-	    getline;		       \
-	    print date" "$6;           \
-	}			       \
+/bin/ls -le $1 | \
+gawk ' { \
+    print $8". "$7" "$10;          \
 }'
