@@ -125,6 +125,7 @@ static const APTR inittabl[4] = {
 #define HiddPixFmtAttrBase	(sd->pixFmtAttrBase)
 #define HiddGfxAttrBase		(sd->gfxAttrBase)
 #define HiddSyncAttrBase	(sd->syncAttrBase)
+#define __IHidd_PlanarBM	(sd->planarAttrBase)
 
 static BOOL GenericInit(struct staticdata *sd)
 {
@@ -569,6 +570,7 @@ AROS_UFH3(LIBBASETYPEPTR, nv_init,
 		    { IID_Hidd_Sync,	    &HiddSyncAttrBase },
 		    { IID_Hidd_Gfx,	    &HiddGfxAttrBase },
 		    { IID_Hidd_nvBitMap,    &HiddNVidiaBitMapAttrBase },
+		    { IID_Hidd_PlanarBM,    &__IHidd_PlanarBM },
 		    { NULL, NULL }
 		};
 		
@@ -588,59 +590,11 @@ AROS_UFH3(LIBBASETYPEPTR, nv_init,
 				{
 				    if (init_offbitmapclass(sd))
 				    {
-#if 0
-	OOP_Object *nv = 
-	    OOP_NewObject(NULL, "hidd.gfx.x11", NULL);
-	
-	struct TagItem tags[] = {
-	    { aHidd_BitMap_FrameBuffer, TRUE },
-	    { aHidd_BitMap_ModeID, 0x00030000 },
-	    { TAG_DONE, 0UL }
-	};
-
-	struct pHidd_Gfx_NewBitMap __nbm = {
-	    mID: OOP_GetMethodID(CLID_Hidd_Gfx, moHidd_Gfx_NewBitMap),
-	    attrList: tags,
-	}, *newbitmap = &__nbm;
-
-	OOP_Object *bmp = OOP_DoMethod(nv, newbitmap);
-	OOP_Object *gc = OOP_NewObject(NULL, CLID_Hidd_GC, NULL);
-
-	GC_BG(gc) = 0x00f8020;
-
-	D(bug("gc_fg=%d, gc_bg=%d\n", GC_FG(gc),GC_BG(gc)));
-	
-	struct pHidd_BitMap_Clear __msgclr = {
-	    mID: OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_Clear),
-	    gc: gc,
-	}, *msgclr = &__msgclr;
-	
-	OOP_DoMethod(bmp, msgclr);
-
-	struct pHidd_BitMap_PutPixel __msgpix = {
-	    mID: OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutPixel),
-	    x: 100,
-	    y: 200,
-	    pixel: 0x00ffffff,
-	}, *msgpix = &__msgpix;
-	
-	OOP_DoMethod(bmp, msgpix);
-
-	struct pHidd_BitMap_DrawRect __msgfill = {
-	    mID: OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_FillRect),
-	    minX: 1,
-	    minY: 1,
-	    maxX: 798,
-	    maxY: 598,
-	    gc: gc,
-	}, *msgfill = &__msgfill;
-	
-	GC_DRMD(gc) = vHidd_GC_DrawMode_Invert;
-	GC_FG(gc) = 0xf7f777;
-	OOP_DoMethod(bmp, msgfill);
-#endif
-					D(bug("[NVidia] nvBase=%08x\n", LIBBASE));
-					return LIBBASE;
+					if (init_nvplanarbmclass(sd))
+					{
+					    D(bug("[NVidia] nvBase=%08x\n", LIBBASE));
+					    return LIBBASE;
+					}
 				    }
 				}
 			    }
