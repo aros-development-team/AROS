@@ -2,7 +2,7 @@ Outstanding bugs:
 BUG000021 BUG000026 BUG000037 BUG000058 BUG000063
 BUG000068 BUG000070 BUG000074 BUG000075 BUG000076
 BUG000077 BUG000078 BUG000079 BUG000081 BUG000082
-BUG000083 BUG000084 BUG000085 BUG000086
+BUG000083 BUG000084 BUG000085 
 
 
 
@@ -602,7 +602,7 @@ In the CLI, ^L (formfeed -> clears the screen and positions the cursor at (0,0))
 seems to end up in the command history, leading to "interesting" results when
 you press arrow up/down.
 
-BUG000086
+BUG000086 FIXED
 adam.chodorowski@chello.se
 The catalog rom/dos/catalogs/polski.ct is not an polish translation as the name
 suggests, but a german one.
