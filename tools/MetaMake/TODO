@@ -1,3 +1,9 @@
-* Option for mmake to run it in the current directory only for some
+- Option for mmake to run it in the current directory only for some
 target (still considering all deps).
+
+- Allow to continue #MM lines
+
+- Allow to specify a meta rule for which mmake doesn't call make
+(ie. mmake will not try to run make on the makefile which contains this
+metatarget) to avoid "Nothing known about <metatarget>".
 
