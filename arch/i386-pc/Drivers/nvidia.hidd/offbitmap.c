@@ -83,11 +83,12 @@ static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	  	 Currently we only support the default depth
 		*/
 
+		width=(width+15) & ~15;
+
 		data->width = width;
 		data->height = height;
 		data->bpp = depth;
 		data->disp = -1;
-		width=(width+15) & ~15;
 		
 		if (depth > 16)
 		{
