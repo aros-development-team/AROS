@@ -85,7 +85,9 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 %define subdirs_q text="Making %(target)" target=$(TARGET) dirs=$(SUBDIRS) curdir=$(CURDIR) mflags=$(MFLAGS) submf=makefile top=$(TOP)
 	@for dir in %(dirs) ; do \
 	    echo "%(text) in %(curdir)/$$dir..." ; \
-	    if test ! -e $$dir/%(submf) ; then \
+	    if test -e $$dir/%(submf).src \
+		-a ! -e $$dir/%(submf) \
+		-o $$dir/%(submf).src -nt $$dir/%(submf) ; then \
 		echo "Generating %(submf)..." ; \
 		$(AWK) -f $(TOP)/scripts/genmf.gawk \
 		--assign TOP="$(TOP)" \
@@ -178,19 +180,19 @@ asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES),$(f).s) all
 
 # Used to help with the function replacement mechanism. Use like
 #
-#       %prepare_replace module=os/exec
+#	%prepare_replace module=os/exec
 #
 # This will include the file contain information written out by the
 # $(TOP)/config makefiles which is used to filter out files that are
-# being replaced by machine dependant versions in the $(TOP)/config 
+# being replaced by machine dependant versions in the $(TOP)/config
 # subtree.
 #
 # You can also determine which group of files you wish to filter against
 # with the filter command. You pass it the variable to modify as var
 #
 # Eg:
-#       %prepare_replace module=os/foobar
-#       %filter_replace $(FUNCTIONS)
+#	%prepare_replace module=os/foobar
+#	%filter_replace $(FUNCTIONS)
 #
 # The variable $(ADDITIONAL_OBJS) will be available for you to link in
 # extra files.
