@@ -1,0 +1,71 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- * X_LZ_COPYRIGHT_BEGIN ***************************************************
+* Copyright 2001-2004 Laszlo Systems, Inc.  All Rights Reserved.              *
+* Use is subject to license terms.                                            *
+* X_LZ_COPYRIGHT_END ****************************************************** -->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Conditional Compilation</title>
+  </head>
+  <body>
+    <h1>Conditional Compilation</h1>
+    <p>
+    You can wrap a file:</p>
+    <pre>
+  if ($flash6) {
+    #include "LzView6.as"
+  } else {
+    #include "LzView5.as"
+  }
+</pre>
+
+a function within a file:
+<pre>
+  if ($flash6) {
+    LzView.prototype.construct = function () {...}
+  } else {
+    LzView.prototype.construct = function () {...}
+  }
+</pre>
+or a sequence of statements in a function:
+<pre>
+  function f() {
+    if ($flag6) {
+      ...
+    } else {
+      ...
+    }
+  }
+</pre>
+
+In all cases, the else clause is optional.
+
+<p>Compile-time conditionals can be nested, but the test must be a single identifier.  The compiler doesn't recognize these, even if both $krank and $debug are compile-time constants:</p>
+<pre>
+  if (!$debug) {...}
+</pre>
+(use "if ($debug) {} else {...}" instead)
+<pre>
+  if ($debug && $krank) {...}
+</pre>
+(use "if ($debug) {if ($krank) {...}}" instead)
+
+<p>Defining a compile-time constant doesn't define a runtime variable, so defining the compile-time constant $debug won't cause the following code to work:</p>
+<pre>
+  if (!$debug) {...} // this won't work correctly even at runtime
+  var foo = $debug;
+</pre>
+
+If you want this to work, add something like this to LaszloLibrary.as:
+<pre>
+  if ($debug) {
+    var $debug = true;
+  } else {
+    var $debug = false;
+  }
+</pre>
+
+If you leave this out, the debug build will give you debugger warnings about references that the compiler couldn't resolve.  This may be what you want.
+
+  </body>
+</html>

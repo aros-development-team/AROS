@@ -1,0 +1,841 @@
+/* ****************************************************************************
+ * Parser.jjt
+ *
+ * Copyright (c) 2002-2003 Laszlo Systems, Inc.
+ * All Rights Reserved.
+ *
+ * This software is the proprietary information of Laszlo Systems, Inc.
+ * Use is subject to license terms.
+ *
+ * ****************************************************************************/
+
+/* J_LZ_COPYRIGHT_BEGIN *******************************************************
+* Copyright 2001-2004 Laszlo Systems, Inc.  All Rights Reserved.              *
+* Use is subject to license terms.                                            *
+* J_LZ_COPYRIGHT_END *********************************************************/
+
+options {
+  STATIC = false;
+  DEBUG_PARSER = false;
+  DEBUG_TOKEN_MANAGER = false;
+  JAVA_UNICODE_ESCAPE = false;
+  MULTI=true;
+  NODE_DEFAULT_VOID=true;
+  NODE_PACKAGE = "org.openlaszlo.sc.parser";
+  NODE_SCOPE_HOOK=true;
+  VISITOR=false;
+  UNICODE_INPUT = true;
+}
+
+PARSER_BEGIN(Parser)
+
+package org.openlaszlo.sc.parser;
+
+import org.openlaszlo.sc.CompilerException;
+
+public class Parser {
+    /** Save the source location. */
+    void jjtreeOpenNodeScope(Node n) {
+        Token t = getToken(1);
+        if (t!= null) {
+            SimpleNode sn = (SimpleNode) n;
+            sn.setBeginLocation(token_source.pathname,
+                                t.beginLine, t.beginColumn);
+            // See tokenmanager.html in the javacc documentation.
+            if (t.specialToken != null) {
+                Token s = t.specialToken;
+                while (s.specialToken != null) {
+                    s = s.specialToken;
+                }
+                StringBuffer b = new StringBuffer();
+                while (s != null) {
+                    b.append(s.image);
+                    s = s.next;
+                }
+                sn.setComment(b.toString());
+            }
+        }
+    }
+    
+    /** Dummy routine, required because NODE_SCOPE_HOOK is true. */
+    void jjtreeCloseNodeScope(Node n) {
+        //Token t = getToken(1);
+        //if (t!= null) {
+        //    SimpleNode sn = (SimpleNode) n;
+        //    sn.setEndLocation(t.endLine, t.endColumn);
+        //}
+    }
+}
+PARSER_END(Parser)
+
+TOKEN_MGR_DECLS :
+{
+   String pathname;
+   int beginLine;
+}
+
+/* Whitespace */
+
+SKIP: {
+  " " | "\t" | "\r" | "\f"
+| < "#" ([" ", "\t"])* "file" ([" ", "\t"])* > : FILENAME
+| < "#" ([" ", "\t"])* "line" ([" ", "\t"])* > : LINE_NUMBER
+}
+
+<FILENAME> SKIP: {
+  < (~["\n","\r"])+ >
+  {pathname = image.toString();} : DEFAULT
+}
+
+<LINE_NUMBER> SKIP: {
+   < (["0"-"9"])+ >
+   {
+     try {
+       beginLine = Integer.parseInt(image.toString());
+     } catch(NumberFormatException e) {
+       throw new RuntimeException(e.getMessage());
+     }
+   } : LINE_DIRECTIVE
+}
+
+<LINE_DIRECTIVE> SKIP: {
+  "\n" : AFTER_LINE_DIRECTIVE
+| <~[]>
+}
+
+<AFTER_LINE_DIRECTIVE> SKIP: {
+  <~[]>
+  {
+    input_stream.adjustBeginLineColumn(beginLine - 1, 1);
+    input_stream.backup(1);
+  } : DEFAULT
+}
+
+SPECIAL_TOKEN: {
+  <EOL: (["\n","\r"])+ >
+}
+
+/* comments */
+
+MORE: {
+  "//" : IN_SINGLE_LINE_COMMENT
+| "/*" : IN_MULTI_LINE_COMMENT
+}
+
+<IN_SINGLE_LINE_COMMENT>
+SPECIAL_TOKEN: {
+  <SINGLE_LINE_COMMENT: "\n" | "\r" | "\r\n" > 
+  { input_stream.backup(1); } : DEFAULT
+}
+
+<IN_MULTI_LINE_COMMENT>
+SPECIAL_TOKEN: {
+  <MULTI_LINE_COMMENT: "*/" > : DEFAULT
+}
+
+<IN_SINGLE_LINE_COMMENT,IN_MULTI_LINE_COMMENT>
+MORE: {
+  < ~[] >
+}
+
+/* reserved words */
+
+TOKEN: {
+  < BREAK: "break" >
+| < CONTINUE: "continue" >
+| < DELETE: "delete" >
+| < ELSE: "else" >
+| < FOR: "for" >
+| < FUNCTION: "function" >
+| < IF: "if" >
+| < IN: "in" >
+| < INSTANCEOF: "instanceof" >
+| < NEW: "new" >
+| < RETURN: "return" >
+| < THIS: "this" >
+| < TYPEOF: "typeof" >
+| < VAR: "var" >
+| < VOID: "void" >
+| < WHILE: "while" >
+| < WITH: "with" >
+
+| < CASE: "case" >
+| < CATCH: "catch" >
+| < CLASS: "class" >
+| < CONST: "const" >
+| < DEBUGGER: "debugger" >
+| < _DEFAULT: "default" >
+| < DO: "do" >
+| < ENUM: "enum" >
+| < EXPORT: "export" >
+| < EXTENDS: "extends" >
+| < FINALLY: "finally" >
+| < IMPORT: "import" >
+| < SUPER: "super" >
+| < SWITCH: "switch" >
+| < THROW: "throw" >
+| < TRY: "try" >
+
+// These are not supposed to be keywords
+| < TRUE: "true" >
+| < FALSE: "false" >
+| < NULL: "null" >
+}
+
+/* literals */
+
+TOKEN: {
+  < DECIMAL_LITERAL: ["1"-"9"] (["0"-"9"])* >
+| < HEX_LITERAL: "0" ["x","X"] (["0"-"9","a"-"f","A"-"F"])+ >
+| < OCTAL_LITERAL: "0" (["0"-"7"])* >
+| < FLOATING_POINT_LITERAL:
+        (["0"-"9"])+ "." (["0"-"9"])* (<EXPONENT>)? 
+      | "." (["0"-"9"])+ (<EXPONENT>)? 
+      | (["0"-"9"])+ (<EXPONENT>)? 
+  >
+| < #EXPONENT: ["e","E"] (["+","-"])? (["0"-"9"])+ >
+| < STRING_LITERAL:
+        "\""
+        (   (~["\"","\\","\n","\r"])
+        | <ESCAPE_SEQUENCE>
+        )*
+        "\""
+      | "'"
+        (   (~["'","\\","\n","\r"])
+        | <ESCAPE_SEQUENCE>
+        )*
+        "'"
+  >
+|  // Maybe x and u could be x,X and u,U
+  < #ESCAPE_SEQUENCE:
+      "\\"
+        ( ["n","t","b","r","f","\\","'","\""]
+        | ["0"-"7"] ( ["0"-"7"] )?
+        | ["0"-"3"] ["0"-"7"] ["0"-"7"]
+        | ["x"] ["0"-"9","a"-"f","A"-"F"] ["0"-"9","a"-"f","A"-"F"]
+        | ["u"] ["0"-"9","a"-"f","A"-"F"] ["0"-"9","a"-"f","A"-"F"] ["0"-"9","a"-"f","A"-"F"] ["0"-"9","a"-"f","A"-"F"]
+        )
+  >
+| < UNTERMINATED_STRING_LITERAL:
+        "\""
+        (   (~["\"","\\","\n","\r"])
+        | <ESCAPE_SEQUENCE>
+        )*
+        (["\n","\r"])?
+      | "'"
+        (   (~["'","\\","\n","\r"])
+        | <ESCAPE_SEQUENCE>
+        )*
+        (["\n","\r"])?
+  >
+}
+
+/* identifiers */
+
+TOKEN: {
+  < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+| < #LETTER: ["a"-"z", "A"-"Z", "$", "_"] >
+| < #DIGIT: ["0"-"9"] >
+}
+
+/* punctuation */
+
+TOKEN: {
+  < LPAREN: "(" >
+| < RPAREN: ")" >
+| < LBRACE: "{" >
+| < RBRACE: "}" >
+| < LBRACKET: "[" >
+| < RBRACKET: "]" >
+| < SEMICOLON: ";" >
+| < COMMA: "," >
+| < DOT: "." >
+}
+
+/* operators */
+
+TOKEN: {
+  < ASSIGN: "=" >
+| < GT: ">" >
+| < LT: "<" >
+| < BANG: "!" >
+| < TILDE: "~" >
+| < HOOK: "?" >
+| < COLON: ":" >
+| < EQ: "==" >
+| < LE: "<=" >
+| < GE: ">=" >
+| < NE: "!=" >
+| < SEQ: "===" >
+| < SNE: "!==" >
+| < SC_OR: "||" >
+| < SC_AND: "&&" >
+| < INCR: "++" >
+| < DECR: "--" >
+| < PLUS: "+" >
+| < MINUS: "-" >
+| < STAR: "*" >
+| < SLASH: "/" >
+| < BIT_AND: "&" >
+| < BIT_OR: "|" >
+| < XOR: "^" >
+| < REM: "%" >
+| < LSHIFT: "<<" >
+| < RSIGNEDSHIFT: ">>" >
+| < RUNSIGNEDSHIFT: ">>>" >
+| < PLUSASSIGN: "+=" >
+| < MINUSASSIGN: "-=" >
+| < STARASSIGN: "*=" >
+| < SLASHASSIGN: "/=" >
+| < ANDASSIGN: "&=" >
+| < ORASSIGN: "|=" >
+| < XORASSIGN: "^=" >
+| < REMASSIGN: "%=" >
+| < LSHIFTASSIGN: "<<=" >
+| < RSIGNEDSHIFTASSIGN: ">>=" >
+| < RUNSIGNEDSHIFTASSIGN: ">>>=" >
+}
+
+void Literal() #Literal : {Token t;}
+{  t = <DECIMAL_LITERAL>
+     {jjtThis.setDecimalValue(t.image);}
+|  t = <OCTAL_LITERAL>
+     {jjtThis.setOctalValue(t.image);}
+|  t = <HEX_LITERAL>
+     {jjtThis.setHexValue(t.image);}
+|  t = <FLOATING_POINT_LITERAL>
+    {jjtThis.setFloatingPointValue(t.image);}
+|  t = <STRING_LITERAL>
+     {jjtThis.setStringValue(t.image.substring(1,t.image.length()-1));}
+|  t = <TRUE>
+     {jjtThis.setBooleanValue(true);}
+|  t = <FALSE>
+     {jjtThis.setBooleanValue(false);}
+|  t = <NULL>
+     {jjtThis.setNullValue();}
+|  t = <UNTERMINATED_STRING_LITERAL>
+     {throw new CompilerException("unterminated string");}
+}
+
+void StringLiteral() #Literal : {Token t;}
+{
+   t = <STRING_LITERAL>
+     {jjtThis.setStringValue(t.image.substring(1,t.image.length()-1));}
+|  t = <UNTERMINATED_STRING_LITERAL>
+     {throw new CompilerException("unterminated string");}
+}
+
+void NumericLiteral() #Literal : {Token t;}
+{  t = <DECIMAL_LITERAL>
+     {jjtThis.setDecimalValue(t.image);}
+|  t = <OCTAL_LITERAL>
+     {jjtThis.setOctalValue(t.image);}
+|  t = <HEX_LITERAL>
+     {jjtThis.setHexValue(t.image);}
+|  t = <FLOATING_POINT_LITERAL>
+     {jjtThis.setFloatingPointValue(t.image);}
+}
+
+void Identifier() #Identifier : {Token t;}
+{
+  t=<IDENTIFIER>
+    {jjtThis.setName(t.image);}
+}
+
+void IdentifierOrKeyword() #Identifier : {Token t;}
+{
+  t=<IDENTIFIER>
+    {jjtThis.setName(t.image);}
+| "class" {jjtThis.setName("class");}
+| "extends" {jjtThis.setName("extends");}
+}
+
+
+/* Grammar */
+
+/* Expressions */
+
+void PrimaryExpression() #void : {}
+{
+    (("this") #ThisReference)
+|   Identifier()
+|   Literal()
+|   ArrayLiteral()
+|   ObjectLiteral()
+|   "(" Expression() ")"
+//|   AllocationExpression()  
+|   FunctionExpression()
+}
+
+void PrimarySuffix() #void : {}
+{
+    ((Arguments()) #FunctionCallParameters)
+|   (("[" Expression() "]") #PropertyValueReference)
+|   (("." IdentifierOrKeyword()) #PropertyIdentifierReference)
+}
+
+void Arguments() # void: {}
+{
+    "(" [ArgumentList()] ")"
+}
+
+void ArgumentList() #void : {}
+{
+    AssignmentExpression() ("," AssignmentExpression())*
+}
+
+void ArrayLiteral() #ArrayLiteral : {}
+{
+  // This is tricky, because [] doesn't contain an empty expression,
+  // but [,] contains two.  Easiest to treat them as separate cases.
+  LOOKAHEAD("[" "]") "[" "]"
+ |  "[" [AssignmentExpression()] #EmptyExpression(jjtree.nodeArity()==0)
+        ("," [AssignmentExpression()] #EmptyExpression(jjtree.nodeArity()==0))* "]"
+}
+
+void ObjectLiteral() #ObjectLiteral : {}
+{
+    "{" [PropertyNameAndValue() ("," PropertyNameAndValue())*] "}"
+}
+
+void PropertyNameAndValue() #void : {}
+{
+    (Identifier() | StringLiteral() | NumericLiteral()) ":" AssignmentExpression()
+}
+
+void CallExpression() #CallExpression(>1) : {}
+{
+  PrimaryExpression() ((PrimarySuffix())*)
+| ("super" ((["." Identifier()]) #EmptyExpression(jjtree.nodeArity()==0))
+    (Arguments() #FunctionCallParameters)) #SuperCallExpression
+}
+
+void LeftHandSideExpression() #NewExpression(>1) : {}
+{
+//   LOOKAHEAD(3)
+   (("new" CallExpression()) #NewExpression) | CallExpression()
+//|  ("new" "super" (Arguments() #FunctionCallParameters))
+}
+
+void PostfixOp() #Operator : {Token t;}
+{
+  ("++" | "--")
+    {jjtThis.setOperator(getToken(0).kind);}
+}
+
+void PostfixExpression() #PostfixExpression(>1) : {}
+{
+    LeftHandSideExpression() [PostfixOp()] 
+}
+
+void UnaryOp() #Operator : {Token t;}
+{ 
+  ("delete" | "void" | "typeof" | "++" | "--" | "+" | "-" | "~" | "!")
+    {jjtThis.setOperator(getToken(0).kind);}
+}
+
+void UnaryExpression() #UnaryExpression(>1) : {}
+{ 
+    PostfixExpression()
+|   UnaryOp() UnaryExpression()
+}
+
+void MulOp() #Operator : {Token t;}
+{
+  ("*" | "/" | "%")
+    {jjtThis.setOperator(getToken(0).kind);}
+}
+
+void MultiplicativeExpression() #BinaryExpressionSequence(>1) : {}
+{  
+    UnaryExpression() (MulOp() UnaryExpression())*
+} 
+
+void AddOp() #Operator : {Token t;}
+{
+  ("+" | "-")
+    {jjtThis.setOperator(getToken(0).kind);}
+}
+
+void AdditiveExpression() #BinaryExpressionSequence(>1) : {}
+{
+    MultiplicativeExpression()(AddOp() MultiplicativeExpression())*
+} 
+
+void ShiftOp() #Operator : {Token t;}
+{
+  ("<<" | ">>" | ">>>") 
+    {jjtThis.setOperator(getToken(0).kind);}
+}
+
+void ShiftExpression() #BinaryExpressionSequence(>1) : {}
+{
+    AdditiveExpression()(ShiftOp() AdditiveExpression())*
+}
+
+void RelOp() #Operator : {Token t;}
+{
+  ("<" | ">" | "<=" | ">=" | "instanceof") 
+    {jjtThis.setOperator(getToken(0).kind);}
+}
+
+void RelationalExpression() #BinaryExpressionSequence(>1) : {}
+{
+    ShiftExpression() (RelOp() ShiftExpression())*
+}
+
+void EqualOp() #Operator : {Token t;}
+{
+  ("==" | "!=" | "===" | "!==")
+    {jjtThis.setOperator(getToken(0).kind);}
+}
+
+void EqualityExpression() #BinaryExpressionSequence(>1) : {}
+{
+    RelationalExpression() (EqualOp() RelationalExpression())*  
+}
+
+void BitwiseANDOp() #Operator : {Token t;}
+{
+  "&"
+    {jjtThis.setOperator(getToken(0).kind);}
+}
+
+void BitwiseANDExpression() #BinaryExpressionSequence(>1) : {}
+{
+    EqualityExpression() (BitwiseANDOp() EqualityExpression())*
+}
+
+void BitwiseXOROp() #Operator : {Token t;}
+{
+  "^"
+    {jjtThis.setOperator(getToken(0).kind);}
+}
+
+void BitwiseXORExpression() #BinaryExpressionSequence(>1) : {}
+{
+    BitwiseANDExpression() (BitwiseXOROp() BitwiseANDExpression())*
+}
+
+void BitwiseOROp() #Operator : {Token t;}
+{
+  "|"
+    {jjtThis.setOperator(getToken(0).kind);}
+}
+
+void BitwiseORExpression() #BinaryExpressionSequence(>1) : {}
+{
+    BitwiseXORExpression() (BitwiseOROp() BitwiseXORExpression())*
+}
+
+void LogicalANDExpression() #AndExpressionSequence(>1) : {}
+{
+    BitwiseORExpression() ("&&" BitwiseORExpression())*
+}
+
+void LogicalORExpression() #OrExpressionSequence(>1) : {}
+{
+    LogicalANDExpression() ("||" LogicalANDExpression())*
+}
+
+void ConditionalExpression() #ConditionalExpression(>1) : {}
+{
+    LogicalORExpression() ["?" Expression() ":" ConditionalExpression()]
+}
+
+void AssignmentOperator() #Operator : {Token t;}
+{
+    ("=" | "*=" | "/=" | "%=" | "+=" | "-=" | "<<=" | ">>=" | ">>>=" | "&=" | "^=" | "|=")
+      {jjtThis.setOperator(getToken(0).kind);}
+}
+
+void AssignmentExpression() #AssignmentExpression(>1) : {}
+{
+    ConditionalExpression() [AssignmentOperator() AssignmentExpression()]
+|   ("#beginAttribute" AssignmentExpression() "#endAttribute")
+}
+
+// Check that priority is ok, check with assigment
+SimpleNode Expression() #ExpressionList(>1) : {}
+{
+  AssignmentExpression() ("," AssignmentExpression())*
+  {return jjtThis;}
+}
+
+
+// Statements
+
+void ToplevelStatement() #void : {}
+{
+    EmptyStatement()
+ |  VariableStatement()
+ |  ExpressionStatement()
+ |  IterationStatement()
+ |  ContinueStatement()
+ |  BreakStatement()
+ |  ReturnStatement()
+ |  WithStatement()
+ |  SwitchStatement()
+ |  ThrowStatement()
+ |  TryStatement()
+}
+ 
+void Statement() #Statement : {}
+{
+    // Lookahead so that "{" starts a Block, not an ObjectLiteral
+    LOOKAHEAD("{") Block()
+ |  LOOKAHEAD(Identifier() ":") LabeledStatement()
+ |  ToplevelStatement()
+ |  IfStatement()
+}
+
+void Block() #void : {}
+{
+   LOOKAHEAD(3) 
+   "{" "}" #StatementList
+ | LOOKAHEAD(2) "{" "#beginContent" [StatementList()] "#endContent" "}"
+ | LOOKAHEAD(2) "{" "#beginAttributeStatements" [StatementList()] "#endAttributeStatements" "}"
+ | "{" [StatementList()] "}"
+}
+
+void VariableStatement() #VariableStatement : {}
+{
+    "var" VariableDeclarationList() Sc()
+}
+
+void VariableDeclarationList() #StatementList(>1) : {}
+{
+    VariableDeclaration() ("," VariableDeclaration())*
+}
+ 
+void VariableDeclaration() #VariableDeclaration : {}
+{
+    Identifier() [Initializer()]
+}
+ 
+void Initializer() #void : {}
+{
+ //    "=" Expression()
+     "=" AssignmentExpression()
+}
+ 
+void EmptyStatement() #void : {}
+{
+    ";"
+}
+ 
+void ExpressionStatement() #void : {}
+{
+    Expression() Sc() 
+}
+ 
+// Optional semicolon predicate
+JAVACODE boolean optionalSc(Token tok)
+{
+  return (tok.kind == SEMICOLON) 
+    || ((tok.specialToken != null) &&
+        ((tok.specialToken.kind == EOL) ||
+         (tok.specialToken.kind == SINGLE_LINE_COMMENT)))
+    || (tok.kind == EOF)
+    || (tok.kind == RBRACE);
+}
+
+// Required 'optional semicolon'
+JAVACODE void Sc()
+{
+    Token tok = getToken(1);
+    if (tok.kind == SEMICOLON) {
+       tok = getNextToken();
+    } else if (!optionalSc(tok)) {
+      throw generateParseException();
+    }
+}
+ 
+void IfStatement() #IfStatement : {}
+{
+  /*
+   * The disambiguating algorithm of JavaCC automatically binds dangling
+   * else's to the innermost if statement.  The LOOKAHEAD specification
+   * is to tell JavaCC that we know what we are doing.
+   */
+   "if" "(" Expression() ")" Statement() [LOOKAHEAD(1) "else" Statement()]
+}
+ 
+void IterationStatement() #void : {}
+{
+     ("while" "(" Expression() ")" Statement()) #WhileStatement
+ |   ("do" Statement() "while" "(" Expression() ")") #DoWhileStatement
+ |   LOOKAHEAD("for" "(" Expression() ";") ForStatement()
+ |   LOOKAHEAD("for" "(" ";") ForStatement()
+ |   LOOKAHEAD("for" "(" "var" VariableDeclarationList() ";") ForVarStatement()
+ |   LOOKAHEAD(3) ForInStatement()
+ |   LOOKAHEAD(3) ForVarInStatement()
+}
+ 
+void ForStatement() #ForStatement : {}
+{
+     "for" "(" ([Expression()]) #EmptyExpression(jjtree.nodeArity()==0) ";"  
+               ([Expression()]) #EmptyExpression(jjtree.nodeArity()==0) ";"  
+               ([Expression()]) #EmptyExpression(jjtree.nodeArity()==0) ")" 
+         Statement()
+}
+ 
+void ForVarStatement() #ForVarStatement : {}
+{
+     "for" "(" "var"  VariableDeclarationList()  ";"  
+               ([Expression()]) #EmptyExpression(jjtree.nodeArity()==0) ";"  
+               ([Expression()]) #EmptyExpression(jjtree.nodeArity()==0) ")" 
+         Statement()
+}
+ 
+void ForInStatement() #ForInStatement : {}
+{
+     "for" "(" Expression() "in" Expression() ")" Statement()
+}
+ 
+void ForVarInStatement() #ForVarInStatement : {}
+{
+     "for" "(" "var" Identifier() ([Initializer()]) #EmptyExpression(jjtree.nodeArity()==0) "in" Expression() ")" Statement()
+}
+ 
+void ContinueStatement() #ContinueStatement : {}
+{
+    "continue" [Identifier()] Sc()
+}
+ 
+void BreakStatement() #BreakStatement : {}
+{
+    "break" [Identifier()] Sc()
+}
+ 
+void ReturnStatement() #ReturnStatement : {}
+{
+     // Choose return with no value over gobbling the next expression
+     // in the case of an implicit ;
+     "return" ([LOOKAHEAD( { (! optionalSc(getToken(1))) } ) Expression()]) #EmptyExpression(jjtree.nodeArity()==0) Sc()
+}
+ 
+void WithStatement() #WithStatement : {}
+{
+    "with" "(" Expression() ")" Statement()
+}
+ 
+void SwitchStatement() #SwitchStatement : {}
+{
+   "switch" "(" Expression() ")"
+     "{" (CaseClause())* [DefaultClause() (CaseClause())*] "}"
+}
+
+void CaseClause() #CaseClause : {}
+{
+   "case" Expression() ":" [StatementList()]
+}
+
+void DefaultClause() #DefaultClause : {}
+{
+   "default" ":" [StatementList()]
+}
+
+void LabeledStatement() #LabeledStatement : {}
+{
+   Identifier() ":" Statement()
+}
+
+void ThrowStatement() #ThrowStatement : {}
+{
+   "throw" Expression() Sc()
+}
+
+void TryStatement() #TryStatement : {}
+{
+   "try" Block() (Catch() [Finally()] | Finally())
+}
+
+void Catch() #void : {}
+{
+   "catch" "(" Identifier() ")" Block()
+}
+
+void Finally() #void : {}
+{
+   "finally" Block()
+}
+
+// Function declaration
+
+void FunctionDeclaration() #FunctionDeclaration : {}
+{
+    "function" Identifier() ("(" [FormalParameterList()] ")") #FormalParameterList(jjtree.nodeArity()==0)
+    Block()
+}
+
+void FunctionExpression() #FunctionExpression : {}
+{
+    "function" (Identifier())?  ("(" [FormalParameterList()] ")") #FormalParameterList(jjtree.nodeArity()==0) Block()
+}
+
+SimpleNode FormalParameterList() #FormalParameterList : {Token t;}
+{
+   Identifier() ("," Identifier())*
+     { return jjtThis; }
+}
+
+
+// Program structuring/
+
+SimpleNode Program() #Program : {}
+{
+  (Directive())* <EOF>
+  { return jjtThis; }
+}
+
+void Directive() #void : {}
+{
+  // Lookahead so that 'function' begins a function declaration,
+  // not a function expression.
+  LOOKAHEAD(1)
+  FunctionDeclaration()
+| ClassDefinition()
+| LOOKAHEAD("{") DirectiveBlock()
+| (ToplevelStatement()) #Statement
+| LOOKAHEAD(2) IncludeDirective() Sc()
+| PragmaDirective() Sc()
+| ("if" "(" Expression() ")" DirectiveBlock() [LOOKAHEAD(1) "else" DirectiveBlock()]) #IfDirective
+}
+
+void DirectiveBlock() #DirectiveBlock: {}
+{
+  
+  "{" (Directive())* "}"
+}
+
+SimpleNode StatementList() #StatementList : {Token t;}
+{
+    (LOOKAHEAD(1) FunctionDeclaration() | Statement() | PragmaDirective())+
+      { return jjtThis; }
+}
+
+SimpleNode IncludeDirective() #IncludeDirective : {Token t;}
+{
+  "#include" /*NoLineBreak()*/ StringLiteral()
+  {return jjtThis;}
+}
+
+SimpleNode PragmaDirective() #PragmaDirective : {Token t;}
+{
+  "#pragma" /*NoLineBreak()*/ StringLiteral()
+  {return jjtThis;}
+}
+
+JAVACODE void NoLineBreak()
+{
+  // TBD: verify that the next token isn't a line break
+}
+
+SimpleNode ClassDefinition() #ClassDefinition : {Token t;}
+{
+  "class" Identifier()
+   ["extends" Identifier()] #Extends(jjtree.nodeArity()==0)
+   "{" (FunctionDeclaration() | VariableStatement())* "}"
+  {return jjtThis;}
+}
