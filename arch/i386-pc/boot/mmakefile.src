@@ -23,7 +23,7 @@ BOOT_Aminet := Format64
 BOOT_Demos := gtdemo menudemo
 BOOT_Devs := Mountlist nil.handler ram.handler cdrom.handler
 BOOT_Libs := \
-	amigaguide arosc asl commodities diskfont gadtools iffparse \
+	amigaguide arosc commodities diskfont gadtools iffparse \
 	icon locale lowlevel mathieeedoubbas mathieeedoubtrans \
 	mathieeesingtrans mathtrans nonvolatile nvdisk realtime
 BOOT_S := hidd.prefs Shell-Startup Startup-Sequence
