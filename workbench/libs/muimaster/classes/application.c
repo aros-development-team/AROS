@@ -266,13 +266,20 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return 0;
     }
 
-    data->app_GlobalInfo.mgi_Configdata = MUI_NewObject(MUIC_Configdata, MUIA_Configdata_Application, obj, TAG_DONE);
+
+    /* Parse prefs */
+    data->app_Base = (STRPTR)GetTagData(MUIA_Application_Base, NULL, msg->ops_AttrList);
+    if (data->app_Base && strpbrk(data->app_Base, " :/()#?*.,"))
+	data->app_Base = NULL;
+    data->app_GlobalInfo.mgi_Configdata =
+	MUI_NewObject(MUIC_Configdata, MUIA_Configdata_Application, obj, TAG_DONE);
     if (!data->app_GlobalInfo.mgi_Configdata)
     {
 	CoerceMethod(cl,obj,OM_DISPOSE);
 	return 0;
     }
-    get(data->app_GlobalInfo.mgi_Configdata,MUIA_Configdata_ZunePrefs,&data->app_GlobalInfo.mgi_Prefs);
+    get(data->app_GlobalInfo.mgi_Configdata,MUIA_Configdata_ZunePrefs,
+	&data->app_GlobalInfo.mgi_Prefs);
 
 //    D(bug("muimaster.library/application.c: Message Port created at 0x%lx\n",data->app_GlobalInfo.mgi_UserPort));
 
@@ -311,7 +318,7 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    data->app_Author = (STRPTR)tag->ti_Data;
 	    break;
 	case MUIA_Application_Base:
-	    data->app_Base = (STRPTR)tag->ti_Data;
+	    /* moved before config parsing */
 	    break;
 	case MUIA_Application_Copyright:
 	    data->app_Copyright = (STRPTR)tag->ti_Data;
@@ -513,6 +520,13 @@ static ULONG Application_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
+	    case    MUIA_Application_Configdata:
+		DoMethod(obj, MUIM_Application_PushMethod, obj, 2,
+			 MUIM_Application_SetConfigdata, tag->ti_Data);
+		break;
+		
+	    break;
+
 	    case    MUIA_Application_HelpFile:
 		    data->app_HelpFile = (STRPTR)tag->ti_Data;
 		    break;
@@ -1053,6 +1067,46 @@ static ULONG Application_AboutMUI(struct IClass *cl, Object *obj, struct MUIP_Ap
     return 0;
 }
 
+static ULONG Application_SetConfigdata(struct IClass *cl, Object *obj,
+				       struct MUIP_Application_SetConfigdata *msg)
+{
+    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+    struct MinList *children;
+    Object *cstate;
+    Object *child;
+
+    get(data->app_WindowFamily, MUIA_Family_List, &children);
+    cstate = (Object *)children->mlh_Head;
+    if ((child = NextObject(&cstate)))
+    {
+	D(bug("closing window %p\n", child));
+	set(child, MUIA_Window_Open, FALSE);
+    }
+    if (data->app_GlobalInfo.mgi_Configdata)
+	MUI_DisposeObject(data->app_GlobalInfo.mgi_Configdata);
+    data->app_GlobalInfo.mgi_Configdata = msg->configdata;
+    get(data->app_GlobalInfo.mgi_Configdata,MUIA_Configdata_ZunePrefs,
+	&data->app_GlobalInfo.mgi_Prefs);
+
+    DoMethod(obj, MUIM_Application_PushMethod, obj, 1, MUIM_Application_OpenWindows);
+    return 0;
+}
+
+static ULONG Application_OpenWindows(struct IClass *cl, Object *obj,
+				       struct MUIP_Application_OpenWindows *msg)
+{
+    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+    struct MinList *children;
+    Object *cstate;
+    Object *child;
+
+    get(data->app_WindowFamily, MUIA_Family_List, &children);
+    cstate = (Object *)children->mlh_Head;
+    if ((child = NextObject(&cstate)))
+    {
+	set(child, MUIA_Window_Open, TRUE);
+    }
+}
 
 /*
  * The class dispatcher
@@ -1099,6 +1153,10 @@ BOOPSI_DISPATCHER(IPTR, Application_Dispatcher, cl, obj, msg)
 	    return Application_SetUDataOnce(cl, obj, (APTR)msg);
 	case MUIM_Application_AboutMUI :
 	    return Application_AboutMUI(cl, obj, (APTR)msg);
+	case MUIM_Application_SetConfigdata :
+	    return Application_SetConfigdata(cl, obj, (APTR)msg);
+	case MUIM_Application_OpenWindows :
+	    return Application_OpenWindows(cl, obj, (APTR)msg);
     }
 
     return(DoSuperMethodA(cl, obj, msg));
