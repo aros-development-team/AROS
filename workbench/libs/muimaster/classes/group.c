@@ -23,7 +23,7 @@ extern struct Library *MUIMasterBase;
 #include "mui.h"
 #include "support.h"
 
-#define MYDEBUG 1
+//#define MYDEBUG 1
 #include "debug.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))

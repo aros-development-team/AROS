@@ -21,7 +21,7 @@ extern struct Library *MUIMasterBase;
 #include "mui.h"
 #include "support.h"
 
-#define MYDEBUG 1
+//#define MYDEBUG 1
 #include "debug.h"
 
 struct MUI_StringData

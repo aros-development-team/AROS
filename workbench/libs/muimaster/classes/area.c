@@ -35,7 +35,7 @@ extern struct Library *MUIMasterBase;
 #include "imspec.h"
 #include "menu.h"
 
-#define MYDEBUG 1
+//#define MYDEBUG 1
 #include "debug.h"
 
 #ifdef _AROS

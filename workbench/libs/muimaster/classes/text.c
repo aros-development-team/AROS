@@ -25,7 +25,7 @@
 
 extern struct Library *MUIMasterBase;
 
-#define MYDEBUG 0
+//#define MYDEBUG 0
 #include "debug.h"
 
 
