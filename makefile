@@ -89,8 +89,8 @@ crypt : crypt.c
 # \item{DEVARCHIVE} Basename of the source archive
 #
 # END_DESC{localmakevar}
-BINARCHIVE = AROS-$(ARCH)-$(KERNEL)-$(VERSION)
-DEVARCHIVE = AROSdev-$(VERSION)
+BINARCHIVE = AROS-$(ARCH)-$(KERNEL)-current
+DEVARCHIVE = AROSdev-current
 
 # BEGIN_DESC{target}
 # \item{dist} Create the distribution archives
