@@ -6,9 +6,6 @@
     Lang: english
 */
 
-#include <ctype.h>
-#include <stdio.h>
-
 /*****************************************************************************
 
     NAME */
@@ -56,4 +53,3 @@
 {
     return strtol (str, (char **)NULL, 10);
 } /* atol */
-

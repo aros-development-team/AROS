@@ -7,6 +7,7 @@
 */
 
 #include <exec/types.h>
+#include <libraries/arosc.h>
 #include <setjmp.h>
 
 #ifndef _CLIB_KERNEL_
