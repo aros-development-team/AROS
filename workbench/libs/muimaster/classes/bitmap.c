@@ -13,10 +13,6 @@
 #include "muimaster_intern.h"
 #include "support.h"
 
-#ifndef __MAXON__
-#warning TODO: MUIA_BitMap_Transparent handling (mask creation)
-#endif
-
 extern struct Library *MUIMasterBase;
 
 struct MUI_BitmapData
@@ -37,7 +33,7 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
     struct RastPort 	  temprp, bmrp, *scrrp;
     UBYTE   	    	  *linebuffer;
     LONG    	    	  bmflags = 0;
-    WORD    	    	  bmdepth, x, y;
+    WORD    	    	  bmdepth, bmwidth, bmheight, x, y;
 
     if (!data->mappingtable && !data->sourcecolors) return;
     if (!data->bm || (data->width < 1) || (data->height < 1)) return;
@@ -62,7 +58,6 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
     linebuffer = AllocVec(data->width + 16, MEMF_PUBLIC);
     if (!linebuffer) return;
 
-   
     bmdepth = GetBitMapAttr(scrrp->BitMap, BMA_DEPTH);
     if (bmdepth > 8) bmdepth = 8;
     
@@ -73,6 +68,15 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
     	FreeVec(linebuffer);
     	return;
     }
+
+    bmwidth = GetBitMapAttr(data->remapped_bm, BMA_WIDTH);
+    bmheight = GetBitMapAttr(data->remapped_bm, BMA_HEIGHT);
+
+    if (data->transparent != -1)
+    {
+	data->mask = AllocRaster(bmwidth,bmheight);
+    }
+
     
     InitRastPort(&temprp);
     temprp.BitMap = AllocBitMap(data->width, 1, 1, 0, NULL);
@@ -93,6 +97,22 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
 	    for(x = 0; x < data->width; x++)
 	    {
 	    	linebuffer[x] = ReadPixel(&bmrp, x, y);
+	    }
+	}
+
+	/* Build the mask, totaly slow but works */
+	if (data->mask)
+	{
+	    UBYTE *mask = data->mask;
+	    for(x = 0; x < data->width; x++)
+	    {
+	    	if (linebuffer[x] != data->transparent)
+	    	{
+		    mask[y*bmwidth/8+x/8] |= (1L << (7-x%8));
+	    	} else
+	    	{
+		    mask[y*bmwidth/8+x/8] &= ~(1L << (7-x%8));
+	    	}
 	    }
 	}
 	
@@ -182,7 +202,7 @@ static IPTR Bitmap_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -250,7 +270,7 @@ static IPTR Bitmap_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem          *tags  = msg->ops_AttrList;
     struct TagItem          *tag;
 
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem(&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -360,6 +380,15 @@ static IPTR Bitmap_Setup(struct IClass *cl, Object *obj, Msg msg)
 static IPTR Bitmap_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_BitmapData *data = INST_DATA(cl, obj);
+
+    if (data->mask)
+    {
+	LONG bmwidth = GetBitMapAttr(data->remapped_bm, BMA_WIDTH);
+	LONG bmheight = GetBitMapAttr(data->remapped_bm, BMA_HEIGHT);
+	FreeRaster(data->mask,bmwidth,bmheight);
+
+	data->mask = NULL;
+    }
 
     if (data->remapped_bm)
     {
