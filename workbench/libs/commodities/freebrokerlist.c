@@ -57,7 +57,7 @@
 
     struct BrokerCopy *brokerCopy;
 
-    while ((brokerCopy = (CxObj *)RemHead(brokerList)) != NULL)
+    while ((brokerCopy = (struct BrokerCopy *)RemHead(brokerList)) != NULL)
     {
         FreeVec(brokerCopy);
     }
