@@ -62,7 +62,7 @@
 	#include "machine.i"
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_CDEFNAME(longjmp)
 	.type	AROS_CDEFNAME(longjmp),@function
 

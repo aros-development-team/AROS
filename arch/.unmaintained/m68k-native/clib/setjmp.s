@@ -59,7 +59,7 @@
 	#include "machine.i"
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_CDEFNAME(setjmp)
 	.type	AROS_CDEFNAME(setjmp),@function
 
