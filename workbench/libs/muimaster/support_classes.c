@@ -197,17 +197,13 @@ Class *ZUNE_MakeBuiltinClass(ClassID classid, struct Library *MUIMasterBase)
             Class   *supercl;
             ClassID  superclid;
 
-	    /* This may seem strange, but opening muimaster.library here is done for 2 reasons:
+	    /* This may seem strange, but opening muimaster.library here is done in order to
+               increase muimaster.library's open count, so that it doesn't get expunged
+	       while some of its internal classes are still in use.  */
 
-	       1) increase muimaster.library's open count, so that it doesn't get expunged
-	          while some of its internal classes are still in use
-
-	       2) It makes the code in MUI_FreeClass() work correctly while being unaware of
-	          whether the class it has to free is builtin or not.
-	    */
 	    mb = OpenLibrary("muimaster.library", 0);
 
-	    /* It can't possibly fail, but well... */
+            /* It can't possibly fail, but well... */
 	    if (!mb) break;
 
 	    if (strcmp(builtins[i]->supername, ROOTCLASS) == 0)
