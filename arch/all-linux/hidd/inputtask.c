@@ -145,7 +145,7 @@ kprintf("FDS: %d, %d\n", lsd->kbdfd, lsd->mousefd);
     for (;;) {
 	LONG err_kbd, err_mouse;
 	
-	kprintf("GETTING INPUT FROM UNIXIO\n");
+	//kprintf("GETTING INPUT FROM UNIXIO\n");
 	/* Turn on kbd support */
 //	init_kbd(lsd);
 	
@@ -154,13 +154,13 @@ kprintf("FDS: %d, %d\n", lsd->kbdfd, lsd->mousefd);
 	
 //    	ret = (int)Hidd_UnixIO_Wait( unixio, lsd->kbdfd, vHidd_UnixIO_Read, NULL, NULL);
 //	cleanup_kbd(lsd);
-	kprintf("GOT INPUT FROM UNIXIO\n");
+//	kprintf("GOT INPUT FROM UNIXIO\n");
 	
 	sigs = Wait( kbdsig | mousesig );
 
 	if (sigs & kbdsig) {
 	
-kprintf("---------- GOT KBD INPUT --------------------\n");
+//kprintf("---------- GOT KBD INPUT --------------------\n");
  	    for (;;) {
 		UBYTE code;
 		size_t bytesread;
@@ -176,11 +176,11 @@ kprintf("---------- GOT KBD INPUT --------------------\n");
 	    	    /* Let the kbd hidd handle it */
 		    /* Key doewn ? */
 		    
-		    kprintf("## code %d\n", code);
+		    //kprintf("## code %d\n", code);
 		    if (code == lastcode)
 			break;
 		    
-	    	    if (!(code & 0x80)) kprintf("GOT SCANCODE %d from kbd hidd\n", code);
+	    	    // if (!(code & 0x80)) kprintf("GOT SCANCODE %d from kbd hidd\n", code);
 		    if (code == 88) /* F12 */
 		    {
 			    kill(getpid(), SIGTERM);
@@ -199,7 +199,8 @@ kprintf("---------- GOT KBD INPUT --------------------\n");
 	    free_unixio_message(kbd_port, lsd);
 	} /* if (sigs & kbdsig) */
 	
-	if (sigs & mousesig) {
+	if (sigs & mousesig)
+	{
 	    ULONG i;
 	    LONG bytesread;
 	    UBYTE buf[4];
@@ -207,7 +208,7 @@ kprintf("---------- GOT KBD INPUT --------------------\n");
 	    struct mouse_state newstate;
 	    
 	    /* Got mouse event */
-	    kprintf("------------- MOUSE EVENT ------------\n");
+	    //kprintf("------------- MOUSE EVENT ------------\n");
 	    for (i = 0; i < 4; i ++) {
 	    	bytesread = read(lsd->mousefd, &buf[i], 1);
 		if (-1 == bytesread)
@@ -224,7 +225,7 @@ kprintf("---------- GOT KBD INPUT --------------------\n");
 		if ((buf[0] & 8) != 8) i--;
 	    }
 	    
-	    kprintf("%02x: %02x: %02x\n", buf[0], buf[1], buf[2]);
+	    //kprintf("%02x: %02x: %02x\n", buf[0], buf[1], buf[2]);
 	    /* Get button states */
 	    newstate.buts[0] = (buf[0] & 0x01) ? 1 : 0;
 	    newstate.buts[1] = (buf[0] & 0x02) ? 1 : 0;
@@ -241,9 +242,9 @@ kprintf("---------- GOT KBD INPUT --------------------\n");
 	    newstate.dx = dx;
 	    newstate.dy = -dy;
 	    
-	    kprintf("EVENT: STATE 1:%d, 2:%d, 3:%d, dx:%d, dy:%d\n"
-		, newstate.buts[0], newstate.buts[1], newstate.buts[2]
-		, newstate.dx, newstate.dy);
+	    //kprintf("EVENT: STATE 1:%d, 2:%d, 3:%d, dx:%d, dy:%d\n"
+	    //	, newstate.buts[0], newstate.buts[1], newstate.buts[2]
+	    //	, newstate.dx, newstate.dy);
 		
             ObtainSemaphore(&lsd->sema);    
     	    if (lsd->mousehidd)
