@@ -7,14 +7,20 @@
 
 #include <exec/types.h>
 #include <exec/libraries.h>
+
+#ifdef __AROS__
 #include <aros/libcall.h>
+#endif
 
 #include <proto/exec.h>
 #include <clib/alib_protos.h>
 
 #include "muimaster_intern.h"
 #include "mui.h"
+
+#ifdef __AROS__
 #include LC_LIBDEFS_FILE
+#endif
 
 /****************************************************************************************/
 
@@ -32,14 +38,21 @@
 /* #define LC_NO_CLOSELIB   */
 /* #define LC_NO_EXPUNGELIB */
 
+#ifdef __AROS__
 #include <libcore/libheader.c>
+#endif
 
-#undef DEBUG
-#define DEBUG 0
-#include <aros/debug.h>
+/* #define MYDEBUG 1 */
+#include "debug.h"
 
 /* Global libbase vars */
 #undef IntuitionBase
+
+/* Undef the following bases because the casts struct Libaray * -> struct <Lib>Base * casts 
+ * would use them */
+#undef UtilityBase
+#undef DOSBase
+#undef GfxBase
 
 struct ExecBase      *SysBase;
 struct Library       *MUIMasterBase;
@@ -60,24 +73,27 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
     *SysBasePtr = SysBase;
     *MUIMasterBasePtr = MUIMasterBase;
 
-    if (!DOSBase)
-        (struct Library *)DOSBase = OpenLibrary("dos.library", 37);
-    if (!DOSBase)
-        return FALSE;
+    if (!MUIMB(MUIMasterBase)->dosbase)
+    {
+	if (!(MUIMB(MUIMasterBase)->dosbase = (struct DosLibrary*)OpenLibrary("dos.library", 37)))
+	    return FALSE;
+    }
 
-    if (!UtilityBase)
-        (struct Library *)UtilityBase = OpenLibrary("utility.library", 37);
-    if (!UtilityBase)
-        return FALSE;
+    if (!MUIMB(MUIMasterBase)->utilitybase)
+    {
+        if (!(MUIMB(MUIMasterBase)->utilitybase = (struct UtilityBase*)OpenLibrary("utility.library", 37)))
+	    return FALSE;
+    }
+
+    if (!MUIMB(MUIMasterBase)->gfxbase)
+    {
+        if (!(MUIMB(MUIMasterBase)->gfxbase = (struct GfxBase*)OpenLibrary("graphics.library", 39)))
+	    return FALSE;
+    }
 
     if (!AslBase)
     	AslBase = OpenLibrary("asl.library", 37);
     if (!AslBase)
-    	return FALSE;
-
-    if (!GfxBase)
-    	(struct Library *)GfxBase = OpenLibrary("graphics.library", 37);
-    if (!GfxBase)
     	return FALSE;
 
     if (!LayersBase)
@@ -86,7 +102,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
     	return FALSE;
 
     if (!IntuitionBase)
-    	(struct Library *)IntuitionBase = OpenLibrary("intuition.library", 37);
+    	IntuitionBase = (struct IntuitionBase*)OpenLibrary("intuition.library", 39);
     if (!IntuitionBase)
     	return FALSE;
 
@@ -166,17 +182,17 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR MUIMasterBa
 
     /* CloseLibrary() checks for NULL-pointers */
 
-    CloseLibrary((struct Library *)DOSBase);
-    DOSBase = NULL;
+    CloseLibrary((struct Library *)MUIMB(MUIMasterBase)->gfxbase);
+    MUIMB(MUIMasterBase)->gfxbase = NULL;
 
-    CloseLibrary((struct Library *)UtilityBase);
-    UtilityBase = NULL;
+    CloseLibrary((struct Library *)MUIMB(MUIMasterBase)->utilitybase);
+    MUIMB(MUIMasterBase)->utilitybase = NULL;
 
     CloseLibrary(AslBase);
-    AslBase = NULL;
+    CloseLibrary((struct Library *)MUIMB(MUIMasterBase)->dosbase);
+    MUIMB(MUIMasterBase)->dosbase = NULL;
 
-    CloseLibrary((struct Library *)GfxBase);
-    GfxBase = NULL;
+    AslBase = NULL;
 
     CloseLibrary(LayersBase);
     LayersBase = NULL;
