@@ -58,6 +58,9 @@ int WaitBusy(ULONG port, struct ide_Unit *unit);
 int WaitBusyLong(ULONG port, struct ide_Unit *unit);
 void ResumeError(ULONG port, struct ide_Unit *unit);
 
+
+static const char name[] = "ide.device";
+
 /* Add a bootnode using expansion.library */
 BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ide_Unit *unit)
 {
