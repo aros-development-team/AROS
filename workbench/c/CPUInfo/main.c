@@ -145,9 +145,9 @@ int     main ( void )
             CPUNode = (struct MinNode *)&FoundCPUs->CPU_CPUList.mlh_Head;
             FoundCPUs = (struct CPU_Definition *)CPUNode->mln_Succ;                         /* get the next cpu in the list .. */
 
-            if ( cpu_count > NR_CPUS )
+            if ( cpu_count > MAX_CPU )
             { 
-                 printf("WARNING: Number of CPUs in list exceeds MAX no of CPUS [%d]\n", NR_CPUS);
+                 printf("WARNING: Number of CPUs in list exceeds MAX no of CPUS [%d]\n", MAX_CPU);
                  error = RETURN_FAIL; 
                  break;
             }
