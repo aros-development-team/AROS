@@ -14,6 +14,7 @@ INCSUBDIRS :=	aros \
 		diskfont \
 		dos \
 		exec \
+		gadgets \
 		graphics \
 		hardware \
 		inline \
