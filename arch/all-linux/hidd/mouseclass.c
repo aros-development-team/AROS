@@ -46,10 +46,10 @@ static OOP_Object *mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 {
     BOOL has_mouse_hidd = FALSE;
 
-ObtainSemaphore(&LSD(cl)->sema);    
+    ObtainSemaphore(&LSD(cl)->sema);    
     if (LSD(cl)->mousehidd)
     	has_mouse_hidd = TRUE;
-ReleaseSemaphore(&LSD(cl)->sema);
+    ReleaseSemaphore(&LSD(cl)->sema);
     
     if (has_mouse_hidd) /* Cannot open twice */
     	return NULL; /* Should have some error code here */
@@ -82,9 +82,9 @@ ReleaseSemaphore(&LSD(cl)->sema);
 	} /* while (tags to process) */
 	
 	/* Install the mouse hidd */
-ObtainSemaphore(&LSD(cl)->sema);	
+    	ObtainSemaphore(&LSD(cl)->sema);	
 	LSD(cl)->mousehidd = o;
-ReleaseSemaphore(&LSD(cl)->sema);
+    	ReleaseSemaphore(&LSD(cl)->sema);
     }
     return o;
 }

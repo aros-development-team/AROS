@@ -175,20 +175,22 @@ kprintf("---------- GOT KBD INPUT --------------------\n");
 		} else {
 	    	    /* Let the kbd hidd handle it */
 		    /* Key doewn ? */
-		    if (code < 0x80 && code == lastcode)
+		    
+		    kprintf("## code %d\n", code);
+		    if (code == lastcode)
 			break;
 		    
-	    	    kprintf("GOT SCANCODE %d from kbd hidd\n", code);
-		    if (code == 1 || code == 81) {
+	    	    if (!(code & 0x80)) kprintf("GOT SCANCODE %d from kbd hidd\n", code);
+		    if (code == 88) /* F12 */
+		    {
 			    kill(getpid(), SIGTERM);
 		    }
 		
 		    /* Send code to the application */
-ObtainSemaphore(&lsd->sema);
-		    if (NULL != lsd->kbdhidd) {
-			HIDD_LinuxKbd_HandleEvent(lsd->kbdhidd, code);
-		    }
-ReleaseSemaphore(&lsd->sema);
+    	    	    ObtainSemaphore(&lsd->sema);
+		    if (lsd->kbdhidd) HIDD_LinuxKbd_HandleEvent(lsd->kbdhidd, code);
+    	    	    ReleaseSemaphore(&lsd->sema);
+
 		    lastcode = code;
 		}
 		break;
@@ -243,49 +245,48 @@ ReleaseSemaphore(&lsd->sema);
 		, newstate.buts[0], newstate.buts[1], newstate.buts[2]
 		, newstate.dx, newstate.dy);
 		
-    	    mouse_event.x = newstate.dx;
-	    mouse_event.y = newstate.dy;
-	    
-	    if (newstate.dx || newstate.dy)
+            ObtainSemaphore(&lsd->sema);    
+    	    if (lsd->mousehidd)
 	    {
-	    	mouse_event.button = vHidd_Mouse_NoButton;
-		mouse_event.type = vHidd_Mouse_Motion;
-		
-	    	HIDD_LinuxMouse_HandleEvent(lsd->mousehidd, &mouse_event);
-	    }
-		
-	    if (newstate.buts[0] != oldstate.buts[0])
-	    {
-	    	mouse_event.button = vHidd_Mouse_Button1;
-		mouse_event.type = newstate.buts[0] ? vHidd_Mouse_Press : vHidd_Mouse_Release;	
-			
-	    	HIDD_LinuxMouse_HandleEvent(lsd->mousehidd, &mouse_event);
-	    }
+    		mouse_event.x = newstate.dx;
+		mouse_event.y = newstate.dy;
 
-	    if (newstate.buts[1] != oldstate.buts[1])
-	    {
-	    	mouse_event.button = vHidd_Mouse_Button2;
-		mouse_event.type = newstate.buts[1] ? vHidd_Mouse_Press : vHidd_Mouse_Release;	
-			
-	    	HIDD_LinuxMouse_HandleEvent(lsd->mousehidd, &mouse_event);
+		if (newstate.dx || newstate.dy)
+		{
+	    	    mouse_event.button = vHidd_Mouse_NoButton;
+		    mouse_event.type = vHidd_Mouse_Motion;
+
+	    	    HIDD_LinuxMouse_HandleEvent(lsd->mousehidd, &mouse_event);
+		}
+
+		if (newstate.buts[0] != oldstate.buts[0])
+		{
+	    	    mouse_event.button = vHidd_Mouse_Button1;
+		    mouse_event.type = newstate.buts[0] ? vHidd_Mouse_Press : vHidd_Mouse_Release;	
+
+	    	    HIDD_LinuxMouse_HandleEvent(lsd->mousehidd, &mouse_event);
+		}
+
+		if (newstate.buts[1] != oldstate.buts[1])
+		{
+	    	    mouse_event.button = vHidd_Mouse_Button2;
+		    mouse_event.type = newstate.buts[1] ? vHidd_Mouse_Press : vHidd_Mouse_Release;	
+
+	    	    HIDD_LinuxMouse_HandleEvent(lsd->mousehidd, &mouse_event);
+		}
+
+		if (newstate.buts[2] != oldstate.buts[2])
+		{
+	    	    mouse_event.button = vHidd_Mouse_Button3;
+		    mouse_event.type = newstate.buts[2] ? vHidd_Mouse_Press : vHidd_Mouse_Release;	
+
+	    	    HIDD_LinuxMouse_HandleEvent(lsd->mousehidd, &mouse_event);
+		}
 	    }
-	    
-	    if (newstate.buts[2] != oldstate.buts[2])
-	    {
-	    	mouse_event.button = vHidd_Mouse_Button3;
-		mouse_event.type = newstate.buts[2] ? vHidd_Mouse_Press : vHidd_Mouse_Release;	
-			
-	    	HIDD_LinuxMouse_HandleEvent(lsd->mousehidd, &mouse_event);
-	    }
+    	    ReleaseSemaphore(&lsd->sema);
 	    
     	    oldstate = newstate;
-	    	    
-#if 0
-    	    ObtainSemaphore(&lsd->sema);
-	    HIDD_LinuxMouse_HandleEvent(lsd->mousehidd, &mouse_event);
-    	    ReleaseSemaphore(&lsd->sema);
-#endif
-	    
+	    	    	    
 end_mouse_event:
 	    free_unixio_message(mouse_port, lsd);
 	}

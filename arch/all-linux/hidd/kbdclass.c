@@ -16,6 +16,7 @@
 #include <hidd/hidd.h>
 #include <hidd/keyboard.h>
 #include <devices/inputevent.h>
+#include <devices/rawkeycodes.h>
 
 /* hack: prevent linux include header <bits/time.h> to re-define timeval struct */
 #  define _STRUCT_TIMEVAL 1
@@ -50,8 +51,8 @@ static OOP_AttrBase HiddKbdAB = 0;
 
 static struct OOP_ABDescr attrbases[] =
 {
-    { IID_Hidd_Kbd, &HiddKbdAB },
-    { NULL, NULL }
+    { IID_Hidd_Kbd, &HiddKbdAB  },
+    { NULL  	  , NULL    	}
 };
 
 static UBYTE scancode2rawkey[256];
@@ -62,17 +63,17 @@ static UWORD scancode2hidd(UBYTE scancode, struct linux_staticdata *lsd);
 /***** Kbd::New()  ***************************************/
 static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    BOOL has_kbd_hidd = FALSE;
+    BOOL    	    has_kbd_hidd = FALSE;
     struct TagItem *tag, *tstate;
-    APTR callback = NULL;
-    APTR callbackdata = NULL;
+    APTR    	    callback = NULL;
+    APTR    	    callbackdata = NULL;
     
     EnterFunc(bug("Kbd::New()\n"));
  
-ObtainSemaphore(&LSD(cl)->sema);
+    ObtainSemaphore(&LSD(cl)->sema);
     if (LSD(cl)->kbdhidd)
     	has_kbd_hidd = TRUE;
-ReleaseSemaphore(&LSD(cl)->sema);
+    ReleaseSemaphore(&LSD(cl)->sema);
  
     if (has_kbd_hidd) /* Cannot open twice */
     	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
@@ -110,12 +111,13 @@ ReleaseSemaphore(&LSD(cl)->sema);
     if (o)
     {
 	struct linuxkbd_data *data = OOP_INST_DATA(cl, o);
+
 	data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
 	data->callbackdata = callbackdata;
 	
-ObtainSemaphore(&LSD(cl)->sema);
+    	ObtainSemaphore(&LSD(cl)->sema);
 	LSD(cl)->kbdhidd = o;
-ReleaseSemaphore(&LSD(cl)->sema);
+    	ReleaseSemaphore(&LSD(cl)->sema);
     }
     ReturnPtr("Kbd::New", OOP_Object *, o);
 }
@@ -127,17 +129,16 @@ static VOID kbd_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     LSD(cl)->kbdhidd = NULL;
     ReleaseSemaphore(&LSD(cl)->sema);
     
-    OOP_DoSuperMethod(cl, o, msg);
-    
+    OOP_DoSuperMethod(cl, o, msg);  
 }
 
 /***** LinuxKbd::HandleEvent()  ***************************************/
 
 static VOID kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_LinuxKbd_HandleEvent *msg)
 {
-    struct linuxkbd_data * data;
-    UBYTE scancode;
-    UWORD hiddcode;
+    struct linuxkbd_data  *data;
+    UBYTE   	    	   scancode;
+    UWORD   	    	   hiddcode;
 
     EnterFunc(bug("linuxkbd_handleevent()\n"));
     
@@ -146,8 +147,8 @@ static VOID kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_LinuxKbd_
     scancode = msg->scanCode;
     hiddcode = scancode2hidd(scancode, LSD(cl));
     
-    if (hiddcode != 0xFF) {
-    
+    if (hiddcode != 0xFF)
+    {  
 	if (scancode >= 0x80)
 	    hiddcode |= IECODE_UP_PREFIX;
 
@@ -163,44 +164,167 @@ static VOID kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_LinuxKbd_
 
 /**************** scancode2hidd() ****************/
 #define DEF_TAB_SIZE 128
-const UBYTE deftable[] = {
-	  0xff, 0x43, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08
-	, 0x09, 0x0a, 0x0b, 0x0c, 0x41, 0x42, 0x10, 0x11, 0x12, 0x13
-	, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x44, 0x63
-	, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29
-	, 0x2a, 0xff, 0x60, 0xff, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36
-	, 0x37, 0x38, 0x39, 0x3a, 0x61, 0xff, 0x64, 0x40, 0x62, 0x50
-	, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0xff
-	, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
-	, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x4b, 0x6f, 0xff
-	, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
-	, 0x65, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
-	, 0x47, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
-	, 0xff, 0xff, 0xff, 0xff, 0xff, 0x66, 0x67, 0x67
+
+const UBYTE deftable[] =
+{
+    0xff,
+    RAWKEY_ESCAPE,
+    RAWKEY_1,
+    RAWKEY_2,
+    RAWKEY_3,
+    RAWKEY_4,
+    RAWKEY_5,
+    RAWKEY_6,
+    RAWKEY_7,
+    RAWKEY_8,
+    RAWKEY_9,
+    RAWKEY_0,
+    RAWKEY_MINUS,
+    RAWKEY_EQUAL,
+    RAWKEY_BACKSPACE,
+    RAWKEY_TAB,
+    RAWKEY_Q,
+    RAWKEY_W,
+    RAWKEY_E,
+    RAWKEY_R,
+    RAWKEY_T,
+    RAWKEY_Y,
+    RAWKEY_U,
+    RAWKEY_I,
+    RAWKEY_O,
+    RAWKEY_P,
+    RAWKEY_LBRACKET,
+    RAWKEY_RBRACKET,
+    RAWKEY_RETURN,
+    RAWKEY_CONTROL,
+    RAWKEY_A,
+    RAWKEY_S,
+    RAWKEY_D,
+    RAWKEY_F,
+    RAWKEY_G,
+    RAWKEY_H,
+    RAWKEY_J,
+    RAWKEY_K,
+    RAWKEY_L,
+    RAWKEY_SEMICOLON,
+    RAWKEY_QUOTE,
+    RAWKEY_TILDE,
+    RAWKEY_LSHIFT,
+    RAWKEY_2B,
+    RAWKEY_Z,
+    RAWKEY_X,
+    RAWKEY_C,
+    RAWKEY_V,
+    RAWKEY_B,
+    RAWKEY_N,
+    RAWKEY_M,
+    RAWKEY_COMMA,
+    RAWKEY_PERIOD,
+    RAWKEY_SLASH,
+    RAWKEY_RSHIFT,
+    0x5C,
+    RAWKEY_LALT,
+    RAWKEY_SPACE,
+    RAWKEY_CAPSLOCK,
+    RAWKEY_F1,
+    RAWKEY_F2,
+    RAWKEY_F3,
+    RAWKEY_F4,
+    RAWKEY_F5,
+    RAWKEY_F6,
+    RAWKEY_F7,
+    RAWKEY_F8,
+    RAWKEY_F9,
+    RAWKEY_F10,
+    0x5A,
+    0xff,
+    RAWKEY_KP_7,
+    RAWKEY_KP_8,
+    RAWKEY_KP_9,
+    0x5D,
+    RAWKEY_KP_4,
+    RAWKEY_KP_5,
+    RAWKEY_KP_6,
+    RAWKEY_KP_PLUS,
+    RAWKEY_KP_1,
+    RAWKEY_KP_2,
+    RAWKEY_KP_3,
+    RAWKEY_KP_0,
+    RAWKEY_KP_DECIMAL,
+    0xff,
+    0xff,
+    RAWKEY_LESSGREATER,
+    RAWKEY_F11,
+    RAWKEY_F12,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    RAWKEY_KP_ENTER,
+    RAWKEY_CONTROL,
+    0x5B,
+    0xff,
+    RAWKEY_RALT,
+    RAWKEY_PAUSE,
+    RAWKEY_HOME,
+    RAWKEY_UP,
+    RAWKEY_PAGEUP,
+    RAWKEY_LEFT,
+    RAWKEY_RIGHT,
+    RAWKEY_END,
+    RAWKEY_DOWN,
+    RAWKEY_PAGEDOWN,
+    RAWKEY_INSERT,
+    RAWKEY_DELETE,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    RAWKEY_PAUSE,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    RAWKEY_LAMIGA,
+    RAWKEY_RAMIGA,
+    0xff
 };
 static UWORD scancode2hidd(UBYTE scancode, struct linux_staticdata *lsd)
 {
     UWORD hiddcode;
+    
     if ((scancode & 0x80) == 0x80)
 	scancode &= ~0x80;
 	
-    if (havetable) {
+    if (havetable)
+    {
 	hiddcode = scancode2rawkey[scancode];
-    } else {
+    }
+    else
+    {
 	if (scancode >= DEF_TAB_SIZE)
 	    hiddcode = 0xFF;
 	else
 	    hiddcode = deftable[scancode];
     }
+    
     return hiddcode;
 }
 
+#if 0
 /****************  LoadScanCode2RawKeyTable()  ***************************/
 
 static void LoadScanCode2RawKeyTable(struct linux_staticdata *lsd)
 {
     char *filename = "DEVS:Keymaps/X11/keycode2rawkey.table";
-    BPTR fh;
+    BPTR  fh;
     
     if ((fh =Open(filename, MODE_OLDFILE)))
     {
@@ -208,11 +332,16 @@ static void LoadScanCode2RawKeyTable(struct linux_staticdata *lsd)
 	{
 	    bug("LoadKeyCode2RawKeyTable: keycode2rawkey.table successfully loaded!\n");
 	    havetable = TRUE;
-	} else {
+	}
+	else
+	{
             bug("LoadKeyCode2RawKeyTable: Reading from \"%s\" failed!\n", filename);
 	}
         Close(fh);
-    } else {
+	
+    }
+    else
+    {
 	bug("\nLoadKeyCode2RawKeyTable: Loading \"%s\" failed!\n"
 	    "\n"
 	    "This means that many/most/all keys on your keyboard won't work as you\n"
@@ -251,61 +380,74 @@ static void LoadScanCode2RawKeyTable(struct linux_staticdata *lsd)
 	    "\n", filename);
     }
 }
+#endif
 
 /********************  init_kbdclass()  *********************************/
 
 
-#define NUM_ROOT_METHODS 2
+#define NUM_ROOT_METHODS     2
 #define NUM_LINUXKBD_METHODS 1
 
 OOP_Class *init_linuxkbdclass (struct linux_staticdata *lsd)
 {
     OOP_Class *cl = NULL;
 
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = {
-    	{ OOP_METHODDEF(kbd_new),		moRoot_New },
-    	{ OOP_METHODDEF(kbd_dispose),	moRoot_Dispose },
-	{ NULL, 0UL }
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
+    {
+    	{ OOP_METHODDEF(kbd_new)    , moRoot_New    	},
+    	{ OOP_METHODDEF(kbd_dispose), moRoot_Dispose 	},
+	{ NULL	    	    	    , 0UL   	    	}
     };
     
     struct OOP_MethodDescr kbdhidd_descr[NUM_LINUXKBD_METHODS + 1] = 
     {
-    	{ OOP_METHODDEF(kbd_handleevent),	moHidd_LinuxKbd_HandleEvent },
-	{ NULL, 0UL }
+    	{ OOP_METHODDEF(kbd_handleevent), moHidd_LinuxKbd_HandleEvent 	},
+	{ NULL	    	    	    	, 0UL 	    	    	    	}
     };
     
-    struct OOP_InterfaceDescr ifdescr[] = {
-    	{ root_descr,	 IID_Root, 		NUM_ROOT_METHODS	},
-    	{ kbdhidd_descr, IID_Hidd_LinuxKbd, 	NUM_LINUXKBD_METHODS	},
-	{ NULL, NULL, 0 }
+    struct OOP_InterfaceDescr ifdescr[] =
+    {
+    	{ root_descr	, IID_Root  	    , NUM_ROOT_METHODS	    },
+    	{ kbdhidd_descr , IID_Hidd_LinuxKbd , NUM_LINUXKBD_METHODS  },
+	{ NULL	    	, NULL	    	    , 0     	    	    }
     };
     
     OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 	
-    struct TagItem tags[] = {
-	{ aMeta_SuperID,		(IPTR)CLID_Hidd 			},
-	{ aMeta_InterfaceDescr,		(IPTR)ifdescr				},
-	{ aMeta_InstSize,		(IPTR)sizeof (struct linuxkbd_data)	},
-	{ aMeta_ID,			(IPTR)CLID_Hidd_LinuxKbd		},
-	{TAG_DONE, 0UL}
+    struct TagItem tags[] =
+    {
+	{ aMeta_SuperID     	, (IPTR)CLID_Hidd 			},
+	{ aMeta_InterfaceDescr	, (IPTR)ifdescr				},
+	{ aMeta_InstSize    	, (IPTR)sizeof (struct linuxkbd_data)	},
+	{ aMeta_ID  	    	, (IPTR)CLID_Hidd_LinuxKbd		},
+	{ TAG_DONE  	    	, 0UL	    	    	    	    	}
     };
 
+#if 0
     LoadScanCode2RawKeyTable(lsd);
-    if (MetaAttrBase) {
+#endif
+
+    if (MetaAttrBase)
+    {
     
     	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	if (NULL != cl) {
+    	if (NULL != cl)
+	{
 	    
-	    if (OOP_ObtainAttrBases(attrbases)) {
+	    if (OOP_ObtainAttrBases(attrbases))
+	    {
 		cl->UserData = (APTR)lsd;
 		lsd->kbdclass = cl;
 		
 	    	OOP_AddClass(cl);
-	    } else {
+	    }
+	    else
+	    {
 	    	free_linuxkbdclass(lsd);
 		cl = NULL;
 	    }
 	}
+	
 	/* Don't need this anymore */
 	OOP_ReleaseAttrBase(IID_Meta);
     }
@@ -322,7 +464,8 @@ VOID free_linuxkbdclass(struct linux_staticdata *lsd)
     if(NULL != lsd)
     {
 	
-        if (NULL != lsd->kbdclass) {
+        if (NULL != lsd->kbdclass)
+	{
         	OOP_RemoveClass(lsd->kbdclass);
 	
 		OOP_DisposeObject((OOP_Object *) lsd->kbdclass);
@@ -340,15 +483,18 @@ VOID free_linuxkbdclass(struct linux_staticdata *lsd)
 int set_kbd_mode(int fd, int mode, int *oldmode)
 {
     /* Get and preserve the old kbd mode */
-    if (NULL != oldmode) {
-	if (-1 == ioctl(fd, KDGKBMODE, oldmode)) {
+    if (NULL != oldmode)
+    {
+	if (-1 == ioctl(fd, KDGKBMODE, oldmode))
+	{
 	    fprintf(stderr, "Unable to get old kbd mode: %s\n", strerror(errno));
 	    return 0;
 	}
     }
     
     /* Set the new mode */
-    if (-1 == ioctl(fd, KDSKBMODE, mode)) {
+    if (-1 == ioctl(fd, KDSKBMODE, mode))
+    {
 	fprintf(stderr, "Unable to set new kbd mode: %s\n", strerror(errno));
 	return 0;
     }
@@ -372,13 +518,17 @@ BOOL init_linuxkbd(struct linux_staticdata *lsd)
 {
     BOOL ret = TRUE;
     lsdata = lsd;
+
 kprintf("INIT_KBD\n");
     
     lsd->kbdfd = kbdfd = open(KBD_DEVNAME, O_RDONLY);
-    if (-1 == kbdfd) {
+    if (-1 == kbdfd)
+    {
 	kprintf("!!! Could not open keyboard device: %s\n", strerror(errno));
 	ret = FALSE;
-    } else {
+    }
+    else
+    {
 	/* Try to read some data from the keyboard */
 	struct termios newtio;
 	
@@ -388,36 +538,51 @@ kprintf("INIT_KBD\n");
 	setup_sighandling();
 
 kprintf("SIGNALS SETUP\n");	
-	if ( (-1 == tcgetattr(kbdfd, &oldtio)) || (-1 == tcgetattr(kbdfd, &newtio))) {
+
+	if ( (-1 == tcgetattr(kbdfd, &oldtio)) || (-1 == tcgetattr(kbdfd, &newtio)))
+	{
 	    kprintf("!!! Could not get old termios attrs: %s\n", strerror(errno));
 	    ret = FALSE;
-	} else {
+	}
+	else
+	{
 	    /* Set some new attrs */
 	    newtio.c_lflag = ~(ICANON | ECHO | ISIG);
 	    newtio.c_iflag = 0;
 	    newtio.c_cc[VMIN] = 1;
 	    newtio.c_cc[VTIME] = 0;
 	    
-	    if (-1 == tcsetattr(kbdfd, TCSAFLUSH, &newtio)) {
+	    if (-1 == tcsetattr(kbdfd, TCSAFLUSH, &newtio))
+	    {
 		kprintf("!!! Could not set new termio: %s\n", strerror(errno));
 		ret = FALSE;
-	    } else {
+	    }
+	    else
+	    {
 	    	termios_done = TRUE;
 kprintf("SET TERMIO ATTRS\n");
-		if (!set_kbd_mode(kbdfd, K_MEDIUMRAW, &oldkbdmode)) {
+
+		if (!set_kbd_mode(kbdfd, K_MEDIUMRAW, &oldkbdmode))
+		{
 		    kprintf("!!! Could not set kbdmode\n");
 		    ret = FALSE;
-		} else {
+		}
+		else
+		{
 kprintf("KBD MODE SET\n");
 		    mode_done = TRUE;
 		    ret = TRUE;
+		    
+		    ioctl(kbdfd, KDSETMODE, KD_GRAPHICS); /* stegerg */
+		    
 		}
 
 	    } /* if (termios attrs set) */
 	} /*  if (got old termios attrs) */
     }
     
-    if (!ret) {
+    if (!ret)
+    {
     	cleanup_linuxkbd(lsd);
     }
 
@@ -429,8 +594,12 @@ VOID cleanup_linuxkbd(struct linux_staticdata *lsd)
 {
     /* Reset the kbd mode */
     if (mode_done)
-	set_kbd_mode(kbdfd, oldkbdmode, NULL);
+    {
+	ioctl(kbdfd, KDSETMODE, KD_TEXT); /* stegerg */
 
+	set_kbd_mode(kbdfd, oldkbdmode, NULL);
+    }
+    
     if (termios_done)
 	tcsetattr(kbdfd, TCSAFLUSH, &oldtio);
    
@@ -442,10 +611,11 @@ VOID cleanup_linuxkbd(struct linux_staticdata *lsd)
     return;
 }
 
-const int signals[] = {
-	SIGHUP, SIGINT,	SIGQUIT, SIGILL,
-	SIGTRAP, SIGBUS, SIGFPE, SIGKILL,
-	/* SIGALRM, */  SIGSEGV , SIGTERM
+const int signals[] =
+{
+    SIGHUP, SIGINT,	SIGQUIT, SIGILL,
+    SIGTRAP, SIGBUS, SIGFPE, SIGKILL,
+    /* SIGALRM, */  SIGSEGV , SIGTERM
 };
 
 
@@ -467,7 +637,8 @@ void setup_sighandling(void)
     ULONG i;
     pid_t pid;
     
-    for (i = 0; i < sizeof (signals); i ++) {
+    for (i = 0; i < sizeof (signals); i ++)
+    {
     	signal(signals[i], kbdsighandler);
     }
     
@@ -478,13 +649,15 @@ void setup_sighandling(void)
       
     pid = fork();
     
-    switch (pid) {
+    switch (pid)
+    {
 	case -1:
 	    kprintf("!!!!!!!! ERROR FORKING !!!!!!!!!!!!!!\n");
 	    exit(1);
 
 	    
-	case 0: {
+	case 0:
+	{
 	    int *status = 0;
 	    /* We are the child */
 	    kprintf("----- CHILD GOING TO SLEEP ....\n");
@@ -505,7 +678,9 @@ void setup_sighandling(void)
 void cleanup_sighandling()
 {
     ULONG i;
-    for (i = 0; i < sizeof (signals); i ++) {
+    
+    for (i = 0; i < sizeof (signals); i ++)
+    {
 	signal(signals[i], SIG_DFL);
     }	
 }
@@ -516,8 +691,8 @@ void cleanup_sighandling()
 
 VOID HIDD_LinuxKbd_HandleEvent(OOP_Object *o, UBYTE scanCode)
 {
-    static OOP_MethodID mid = 0;
-    struct pHidd_LinuxKbd_HandleEvent p;
+    static OOP_MethodID     	    	mid;
+    struct pHidd_LinuxKbd_HandleEvent 	p;
     
     if (!mid)
 	mid = OOP_GetMethodID(IID_Hidd_LinuxKbd, moHidd_LinuxKbd_HandleEvent);
