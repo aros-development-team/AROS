@@ -24,13 +24,13 @@ AROS_LH1(void, SetDefaultScreenFont,
         Set the default Font.
  
     INPUTS
-	textfont - The Font to be used.
+    textfont - The Font to be used.
  
     RESULT
  
     NOTES
-    	PRIVATE(!!!!) Do not use
-	
+        PRIVATE(!!!!) Do not use
+    
     EXAMPLE
  
     BUGS
@@ -43,18 +43,18 @@ AROS_LH1(void, SetDefaultScreenFont,
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	if (textfont)
-	{
-		ASSERT_VALID_PTR(textfont);
+    if (textfont)
+    {
+        ASSERT_VALID_PTR(textfont);
 
-		Forbid();
-		GetPrivIBase(IntuitionBase)->ScreenFont = textfont;
-		Permit();
-	}
+        Forbid();
+        GetPrivIBase(IntuitionBase)->ScreenFont = textfont;
+        Permit();
+    }
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 
 } /* SetDefaultScreenFont */

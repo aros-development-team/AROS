@@ -22,7 +22,7 @@ AROS_LH0(void, unlockPubClass,
 
 /*  FUNCTION
  
-	Unlocks the public classes list.
+    Unlocks the public classes list.
  
     INPUTS
  
@@ -36,7 +36,7 @@ AROS_LH0(void, unlockPubClass,
  
     SEE ALSO
  
-	lockPubClass().
+    lockPubClass().
  
     INTERNALS
  
@@ -44,10 +44,10 @@ AROS_LH0(void, unlockPubClass,
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
+    ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* unlockPubClass */

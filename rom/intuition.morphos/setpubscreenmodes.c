@@ -28,9 +28,9 @@ AROS_LH1(UWORD, SetPubScreenModes,
  
     modes  --  The new set of flags to consider. Currently defined flags are:
                SHANGHAI       Workbench windows are opened on the default
-			      public screen.
-	       POPPUBSCREEN   When a visitor window opens on a public screen,
-			      the screen is brought to front.
+                  public screen.
+           POPPUBSCREEN   When a visitor window opens on a public screen,
+                  the screen is brought to front.
  
     RESULT
  
@@ -56,17 +56,17 @@ AROS_LH1(UWORD, SetPubScreenModes,
 #define GPB(x) GetPrivIBase(x)
 
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	UWORD retval;
+    UWORD retval;
 
-	Forbid();
-	retval = GPB(IntuitionBase)->pubScrGlobalMode;
-	GPB(IntuitionBase)->pubScrGlobalMode = modes;
-	Permit();
+    Forbid();
+    retval = GPB(IntuitionBase)->pubScrGlobalMode;
+    GPB(IntuitionBase)->pubScrGlobalMode = modes;
+    Permit();
 
-	return retval;
+    return retval;
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* SetPubScreenModes */

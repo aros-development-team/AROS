@@ -26,10 +26,10 @@ struct IntuitionBase *, IntuitionBase, 150, Intuition)
 
 #define DoNotify(cl, o, ic, msg) \
 AROS_LC4(IPTR, DoNotify, \
-AROS_LCA(Class *,		cl,	A0), \
-AROS_LCA(Object *,		o,	A1), \
-AROS_LCA(struct ICData *,	ic,	A2), \
-AROS_LCA(struct opUpdate *,	msg,	A3), \
+AROS_LCA(Class *,       cl, A0), \
+AROS_LCA(Object *,      o,  A1), \
+AROS_LCA(struct ICData *,   ic, A2), \
+AROS_LCA(struct opUpdate *, msg,    A3), \
 struct IntuitionBase *, IntuitionBase, 145, Intuition)
 
 #define FreeICData(icdata) \

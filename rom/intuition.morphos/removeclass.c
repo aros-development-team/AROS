@@ -25,15 +25,15 @@ AROS_LH1(void, RemoveClass,
          struct IntuitionBase *, IntuitionBase, 118, Intuition)
 
 /*  FUNCTION
-	Makes a public class inaccessible. This function may be called
-	several times on the same class and even if the class never was
-	in the public list.
+    Makes a public class inaccessible. This function may be called
+    several times on the same class and even if the class never was
+    in the public list.
  
     INPUTS
-	classPtr - Pointer to the result of MakeClass(). May be NULL.
+    classPtr - Pointer to the result of MakeClass(). May be NULL.
  
     RESULT
-	None.
+    None.
  
     NOTES
  
@@ -42,41 +42,41 @@ AROS_LH1(void, RemoveClass,
     BUGS
  
     SEE ALSO
-	MakeClass(), FreeClass(), AddClass(), "Basic Object-Oriented
-	Programming System for Intuition" and "boopsi Class Reference"
-	Dokument.
+    MakeClass(), FreeClass(), AddClass(), "Basic Object-Oriented
+    Programming System for Intuition" and "boopsi Class Reference"
+    Dokument.
  
     INTERNALS
  
     HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
+    29-10-95    digulla automatically created from
+                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
 #if INTERNAL_BOOPSI
 
-	ObtainSemaphore( &GetPrivIBase(IntuitionBase)->ClassListLock );
+    ObtainSemaphore( &GetPrivIBase(IntuitionBase)->ClassListLock );
 
-	/* Class there and still/already in the list ? */
-	if (classPtr && (classPtr->cl_Flags & CLF_INLIST))
-	{
-		Remove ((struct Node *)classPtr);
-		classPtr->cl_Flags &= ~CLF_INLIST;
-	}
+    /* Class there and still/already in the list ? */
+    if (classPtr && (classPtr->cl_Flags & CLF_INLIST))
+    {
+        Remove ((struct Node *)classPtr);
+        classPtr->cl_Flags &= ~CLF_INLIST;
+    }
 
-	ReleaseSemaphore( &GetPrivIBase(IntuitionBase)->ClassListLock );
+    ReleaseSemaphore( &GetPrivIBase(IntuitionBase)->ClassListLock );
 
 #else
 
-	/* Pass to boopsi.library */
-	RemoveClass(classPtr);
+    /* Pass to boopsi.library */
+    RemoveClass(classPtr);
 
 #endif
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 
 } /* RemoveClass */

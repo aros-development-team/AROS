@@ -1,9 +1,9 @@
 /*
-	Copyright (C) 1995-2001 AROS - The Amiga Research OS
-	$Id$
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    $Id$
  
-	Desc: 
-	Lang: english
+    Desc: 
+    Lang: english
 */
 
 #ifndef MENUTASK_H
@@ -32,78 +32,78 @@
 
 struct MenuTaskParams
 {
-	struct IntuitionBase    *intuitionBase;
-	struct Task             *Caller;
-	struct MsgPort          *MenuHandlerPort; /* filled in by MenuHandler task */
-	BOOL                     success;
+    struct IntuitionBase    *intuitionBase;
+    struct Task             *Caller;
+    struct MsgPort          *MenuHandlerPort; /* filled in by MenuHandler task */
+    BOOL                     success;
 };
 
 #ifdef SKINS
 struct MenuHandlerData
 {
-	struct Window             *win;
-	struct Screen             *scr;
-	struct IntDrawInfo        *dri;
-	struct Menu               *menu;
-	struct SmallMenuEntry     *entries;
-	struct SmallMenuKeeper     rootsmk;
-	struct IntuitionBase      *intuitionBase;
-	struct Hook                backfillhook;
-	struct HookData            hookdata;
+    struct Window             *win;
+    struct Screen             *scr;
+    struct IntDrawInfo        *dri;
+    struct Menu               *menu;
+    struct SmallMenuEntry     *entries;
+    struct SmallMenuKeeper     rootsmk;
+    struct IntuitionBase      *intuitionBase;
+    struct Hook                backfillhook;
+    struct HookData            hookdata;
 
-	WORD                       scrmousex;
-	WORD                       scrmousey;
-	UWORD                      firstmenupick;
-	UWORD                      lastmenupick;
-	ULONG                      openseconds;
-	ULONG                      openmicros;
+    WORD                       scrmousex;
+    WORD                       scrmousey;
+    UWORD                      firstmenupick;
+    UWORD                      lastmenupick;
+    ULONG                      openseconds;
+    ULONG                      openmicros;
 
-	ULONG                      delayedopenseconds;
-	ULONG                      delayedopenmicros;
-	struct SmallMenuEntry     *delayedopen;
-	
-	BOOL                       active;
-	BOOL                       keepmenuup;
-	BOOL                       isundermouse;
+    ULONG                      delayedopenseconds;
+    ULONG                      delayedopenmicros;
+    struct SmallMenuEntry     *delayedopen;
+    
+    BOOL                       active;
+    BOOL                       keepmenuup;
+    BOOL                       isundermouse;
 #ifdef USEWINDOWLOCK
-	BOOL                       windowlock;
+    BOOL                       windowlock;
 #endif
 };
 #else
 
 struct MenuHandlerData
 {
-	struct Window 	*win;
-	struct Screen 	*scr;
-	struct DrawInfo	*dri;
-	struct Window	*menubarwin;
-	struct Window 	*menuwin;
-	struct Window	*submenuwin;
-	struct Menu		*menu;
-	struct Menu		*activemenu;
-	struct MenuItem	*activeitem;
-	struct MenuItem	*activesubitem;
-	struct Rectangle	submenubox;
-	struct Image	*checkmark;
-	struct Image	*amigakey;
-	WORD		menubarwidth;
-	WORD		menubarheight;
-	WORD		menubaritemwidth;
-	WORD		menubaritemheight;
-	WORD		nummenubaritems;
-	WORD		activemenunum;
-	WORD		activeitemnum;
-	WORD		activesubitemnum;
-	WORD		maxcommkeywidth_menu;
-	WORD		maxcommkeywidth_submenu;
-	WORD		scrmousex;
-	WORD		scrmousey;
-	UWORD		firstmenupick;
-	UWORD		lastmenupick;
-	BOOL 		active;
-	BOOL		keepmenuup;
-	ULONG		openseconds;
-	ULONG		openmicros;
+    struct Window   *win;
+    struct Screen   *scr;
+    struct DrawInfo *dri;
+    struct Window   *menubarwin;
+    struct Window   *menuwin;
+    struct Window   *submenuwin;
+    struct Menu     *menu;
+    struct Menu     *activemenu;
+    struct MenuItem *activeitem;
+    struct MenuItem *activesubitem;
+    struct Rectangle    submenubox;
+    struct Image    *checkmark;
+    struct Image    *amigakey;
+    WORD        menubarwidth;
+    WORD        menubarheight;
+    WORD        menubaritemwidth;
+    WORD        menubaritemheight;
+    WORD        nummenubaritems;
+    WORD        activemenunum;
+    WORD        activeitemnum;
+    WORD        activesubitemnum;
+    WORD        maxcommkeywidth_menu;
+    WORD        maxcommkeywidth_submenu;
+    WORD        scrmousex;
+    WORD        scrmousey;
+    UWORD       firstmenupick;
+    UWORD       lastmenupick;
+    BOOL        active;
+    BOOL        keepmenuup;
+    ULONG       openseconds;
+    ULONG       openmicros;
 };
 
 #endif
@@ -114,6 +114,6 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams);
 void AddToSelection(struct MenuHandlerData *mhd, struct SmallMenuEntry *entry,struct IntuitionBase *IntuitionBase);
 
 BOOL HandleCheckItem(struct MenuHandlerData *mhd, struct SmallMenuEntry *entry,
-							struct IntuitionBase *IntuitionBase);
+                            struct IntuitionBase *IntuitionBase);
 
 #endif

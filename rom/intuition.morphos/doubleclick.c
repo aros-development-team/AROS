@@ -9,7 +9,7 @@
 #include "intuition_intern.h"
 
 #undef DoubleClick
-#define DEBUG_DOUBLECLICK(x)	;
+#define DEBUG_DOUBLECLICK(x)    ;
 
 /*****************************************************************************
 
@@ -29,15 +29,15 @@ AROS_LH4(BOOL, DoubleClick,
          struct IntuitionBase *, IntuitionBase, 17, Intuition)
 
 /*  FUNCTION
-	Check if two times are within the doubleclick intervall.
+    Check if two times are within the doubleclick intervall.
 
     INPUTS
-	sSeconds, sMicros - Seconds and microseconds of the first event.
-	cSeconds, cMicros - Seconds and microseconds of the second event.
+    sSeconds, sMicros - Seconds and microseconds of the first event.
+    cSeconds, cMicros - Seconds and microseconds of the second event.
 
     RESULT
-	TRUE if the times are within the doubleclick intervall, FALSE
-	otherwise.
+    TRUE if the times are within the doubleclick intervall, FALSE
+    otherwise.
 
     NOTES
 
@@ -53,31 +53,31 @@ AROS_LH4(BOOL, DoubleClick,
 
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	BOOL ret = FALSE;
+    BOOL ret = FALSE;
 
-	DEBUG_DOUBLECLICK(dprintf("DoubleClick: t1 %lu/%lu t2 %lu/%lu\n",
-				cSeconds, cMicros, sSeconds, sMicros));
+    DEBUG_DOUBLECLICK(dprintf("DoubleClick: t1 %lu/%lu t2 %lu/%lu\n",
+                cSeconds, cMicros, sSeconds, sMicros));
 
-	if (ABS(cSeconds - sSeconds) <= 4)
-	{
-		ULONG base;
+    if (ABS(cSeconds - sSeconds) <= 4)
+    {
+        ULONG base;
 
-		base = MIN(cSeconds, sSeconds);
+        base = MIN(cSeconds, sSeconds);
 
-		sMicros += 1000000 * (sSeconds - base);
-		cMicros += 1000000 * (cSeconds - base);
+        sMicros += 1000000 * (sSeconds - base);
+        cMicros += 1000000 * (cSeconds - base);
 
-		base = ABS((LONG)(sMicros - cMicros));
+        base = ABS((LONG)(sMicros - cMicros));
 
-		ret = (base <= GetPrivIBase(IntuitionBase)->ActivePreferences->DoubleClick.tv_micro +
-				1000000 * GetPrivIBase(IntuitionBase)->ActivePreferences->DoubleClick.tv_secs);
-	}
+        ret = (base <= GetPrivIBase(IntuitionBase)->ActivePreferences->DoubleClick.tv_micro +
+                1000000 * GetPrivIBase(IntuitionBase)->ActivePreferences->DoubleClick.tv_secs);
+    }
 
-	DEBUG_DOUBLECLICK(dprintf("DoubleClick: return %d\n", ret));
+    DEBUG_DOUBLECLICK(dprintf("DoubleClick: return %d\n", ret));
 
-	return ret;
-	AROS_LIBFUNC_EXIT
+    return ret;
+    AROS_LIBFUNC_EXIT
 } /* DoubleClick */

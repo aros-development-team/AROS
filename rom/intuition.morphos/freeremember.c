@@ -41,29 +41,29 @@ AROS_LH2(void, FreeRemember,
     INTERNALS
  
     HISTORY
-	27-11-96    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
+    27-11-96    digulla automatically created from
+                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-	struct Remember * next, * key;
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    struct Remember * next, * key;
 
-	DEBUG_REMEMBER(dprintf("FreeRemember: Key 0x%lx ReallyForget %d\n",
-	                       rememberKey, reallyForget));
+    DEBUG_REMEMBER(dprintf("FreeRemember: Key 0x%lx ReallyForget %d\n",
+                           rememberKey, reallyForget));
 
-	for (next=*rememberKey; (key=next); )
-	{
-		next = key->NextRemember;
+    for (next=*rememberKey; (key=next); )
+    {
+        next = key->NextRemember;
 
-		if (reallyForget)
-			FreeMem (key->Memory, key->RememberSize);
+        if (reallyForget)
+            FreeMem (key->Memory, key->RememberSize);
 
-		FreeMem (key, sizeof (struct Remember));
-	}
+        FreeMem (key, sizeof (struct Remember));
+    }
 
-	*rememberKey = NULL;
+    *rememberKey = NULL;
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* FreeRemember */

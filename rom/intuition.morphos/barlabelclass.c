@@ -1,9 +1,9 @@
 /*
-	(C) 1997-2001 AROS - The Amiga Research OS
-	$Id$
+    (C) 1997-2001 AROS - The Amiga Research OS
+    $Id$
  
-	Desc: AROS menubarlabelclass implementation (does not exist in AmigaOS)
-	Lang: english
+    Desc: AROS menubarlabelclass implementation (does not exist in AmigaOS)
+    Lang: english
  
 */
 
@@ -50,115 +50,115 @@
 #    undef IntuitionBase
 #endif
 
-#define IntuitionBase	((struct IntuitionBase *)(cl->cl_UserData))
+#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
 
 /*************************** BarLabelClass *****************************/
 
 struct MenuBarLabelData
 {
-	struct DrawInfo *dri;
+    struct DrawInfo *dri;
 };
 
 AROS_UFH3S(IPTR, dispatch_menubarlabelclass,
-		   AROS_UFHA(Class *, cl, A0),
-		   AROS_UFHA(Object *, obj, A2),
-		   AROS_UFHA(Msg, msg, A1)
-		  )
+           AROS_UFHA(Class *, cl, A0),
+           AROS_UFHA(Object *, obj, A2),
+           AROS_UFHA(Msg, msg, A1)
+          )
 {
-	AROS_USERFUNC_INIT
+    AROS_USERFUNC_INIT
 
-	struct MenuBarLabelData 	*data;
-	struct RastPort 		*rp;
-	struct TagItem 		*ti;
-	WORD 			x1, y1, x2, y2;
+    struct MenuBarLabelData     *data;
+    struct RastPort         *rp;
+    struct TagItem      *ti;
+    WORD            x1, y1, x2, y2;
 
-	IPTR 			retval = 0UL;
+    IPTR            retval = 0UL;
 
-	switch (msg->MethodID)
-	{
-	case OM_NEW:
-		obj = (Object *)DoSuperMethodA(cl, obj, msg);
-		if (obj)
-		{
-			data = INST_DATA(cl, obj);
-			data->dri = NULL;
+    switch (msg->MethodID)
+    {
+    case OM_NEW:
+        obj = (Object *)DoSuperMethodA(cl, obj, msg);
+        if (obj)
+        {
+            data = INST_DATA(cl, obj);
+            data->dri = NULL;
 
-			retval = (IPTR)obj;
-		}
-		break;
+            retval = (IPTR)obj;
+        }
+        break;
 
-	case OM_SET:
-		if ((ti = FindTagItem(SYSIA_DrawInfo, ((struct opSet *)msg)->ops_AttrList)))
-		{
-			data = INST_DATA(cl, obj);
+    case OM_SET:
+        if ((ti = FindTagItem(SYSIA_DrawInfo, ((struct opSet *)msg)->ops_AttrList)))
+        {
+            data = INST_DATA(cl, obj);
 
-			data->dri = (struct DrawInfo *)ti->ti_Data;
-		}
-		retval = DoSuperMethodA(cl, obj, msg);
-		break;
+            data->dri = (struct DrawInfo *)ti->ti_Data;
+        }
+        retval = DoSuperMethodA(cl, obj, msg);
+        break;
 
-	case OM_GET:
-		switch(((struct opGet *)msg)->opg_AttrID)
-		{
-		case IA_SupportsDisable:
+    case OM_GET:
+        switch(((struct opGet *)msg)->opg_AttrID)
+        {
+        case IA_SupportsDisable:
 #if MENUS_AMIGALOOK
-			*(((struct opGet *)msg)->opg_Storage) = 0;
+            *(((struct opGet *)msg)->opg_Storage) = 0;
 #else
 *(((struct opGet *)msg)->opg_Storage) = 1;
 #endif
-			retval = 1;
-			break;
+            retval = 1;
+            break;
 
-		default:
-			retval = DoSuperMethodA(cl, obj, msg);
-			break;
-		}
-		break;
+        default:
+            retval = DoSuperMethodA(cl, obj, msg);
+            break;
+        }
+        break;
 
-	case IM_DRAW:
-		data = INST_DATA(cl, obj);
+    case IM_DRAW:
+        data = INST_DATA(cl, obj);
 
-		if (data->dri)
-		{
-			rp = ((struct impDraw *)msg)->imp_RPort;
+        if (data->dri)
+        {
+            rp = ((struct impDraw *)msg)->imp_RPort;
 
-			if (!rp) break;
+            if (!rp) break;
 
-			SetDrMd(rp, JAM1);
+            SetDrMd(rp, JAM1);
 
-			x1 = ((struct Image *)obj)->LeftEdge + ((struct impDraw *)msg)->imp_Offset.X;
-			y1 = ((struct Image *)obj)->TopEdge  + ((struct impDraw *)msg)->imp_Offset.Y;
-			x2 = x1 + ((struct Image *)obj)->Width  - 1;
-			y2 = y1 + ((struct Image *)obj)->Height - 1;
+            x1 = ((struct Image *)obj)->LeftEdge + ((struct impDraw *)msg)->imp_Offset.X;
+            y1 = ((struct Image *)obj)->TopEdge  + ((struct impDraw *)msg)->imp_Offset.Y;
+            x2 = x1 + ((struct Image *)obj)->Width  - 1;
+            y2 = y1 + ((struct Image *)obj)->Height - 1;
 
 
 #if MENUS_AMIGALOOK
-			SetAPen(rp, data->dri->dri_Pens[BARDETAILPEN]);
-			RectFill(rp, x1, y1, x2, y2);
+            SetAPen(rp, data->dri->dri_Pens[BARDETAILPEN]);
+            RectFill(rp, x1, y1, x2, y2);
 #else
 /* Will only work if imageheight = 2 */
-			SetAPen(rp, data->dri->dri_Pens[SHADOWPEN]);
-			RectFill(rp, x1, y1, x2 - 1, y1);
-			WritePixel(rp, x1, y2);
+            SetAPen(rp, data->dri->dri_Pens[SHADOWPEN]);
+            RectFill(rp, x1, y1, x2 - 1, y1);
+            WritePixel(rp, x1, y2);
 
-			SetAPen(rp, data->dri->dri_Pens[SHINEPEN]);
-			RectFill(rp, x1 + 1, y2, x2, y2);
-			WritePixel(rp, x2, y1);
+            SetAPen(rp, data->dri->dri_Pens[SHINEPEN]);
+            RectFill(rp, x1 + 1, y2, x2, y2);
+            WritePixel(rp, x2, y1);
 
 #endif
 
-		}
-		break;
+        }
+        break;
 
-	default:
-		retval = DoSuperMethodA(cl, obj, msg);
-		break;
+    default:
+        retval = DoSuperMethodA(cl, obj, msg);
+        break;
 
-	} /* switch (msg->MethodID) */
+    } /* switch (msg->MethodID) */
 
-	return retval;
+    return retval;
 
-	AROS_USERFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************/
@@ -169,17 +169,17 @@ AROS_UFH3S(IPTR, dispatch_menubarlabelclass,
 
 struct IClass *InitMenuBarLabelClass (struct IntuitionBase * IntuitionBase)
 {
-	struct IClass *cl;
+    struct IClass *cl;
 
-	if ( (cl = MakeClass(MENUBARLABELCLASS, IMAGECLASS, NULL, sizeof(struct MenuBarLabelData), 0)) )
-	{
-		cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_menubarlabelclass);
-		cl->cl_Dispatcher.h_SubEntry = NULL;
-		cl->cl_UserData 	     = (IPTR)IntuitionBase;
+    if ( (cl = MakeClass(MENUBARLABELCLASS, IMAGECLASS, NULL, sizeof(struct MenuBarLabelData), 0)) )
+    {
+        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_menubarlabelclass);
+        cl->cl_Dispatcher.h_SubEntry = NULL;
+        cl->cl_UserData          = (IPTR)IntuitionBase;
 
-		AddClass (cl);
-	}
+        AddClass (cl);
+    }
 
-	return (cl);
+    return (cl);
 }
 

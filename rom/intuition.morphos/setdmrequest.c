@@ -1,109 +1,109 @@
 /*
-	(C) 1995-99 AROS - The Amiga Research OS
-	$Id$
+    (C) 1995-99 AROS - The Amiga Research OS
+    $Id$
  
-	Desc: Intuition function SetDMRequest
-	Lang: english
+    Desc: Intuition function SetDMRequest
+    Lang: english
 */
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"
 
 struct SetDMRequestActionMsg
 {
-	struct IntuiActionMsg msg;
-	struct Window *window;
-	struct Requester *dmrequest;
-	BOOL success;
+    struct IntuiActionMsg msg;
+    struct Window *window;
+    struct Requester *dmrequest;
+    BOOL success;
 };
 
 static VOID int_setdmrequest(struct SetDMRequestActionMsg *msg,
-							 struct IntuitionBase *IntuitionBase);
+                             struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
  
-	NAME */
+    NAME */
 #include <proto/intuition.h>
 
 AROS_LH2(BOOL, SetDMRequest,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(struct Window *   , window, A0),
-		 AROS_LHA(struct Requester *, dmrequest, A1),
+         /*  SYNOPSIS */
+         AROS_LHA(struct Window *   , window, A0),
+         AROS_LHA(struct Requester *, dmrequest, A1),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 43, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 43, Intuition)
 
 /*  FUNCTION
-	Try to set the DMRequest of a window.
-	A DMRequest is a requester that appears if the user double-clicks
-	with the menu button.
-	The new DMRequest will only be set if the old DMRequest is not in use.
-	The official way to change the DMRequest is to call ClearDMRequest()
-	until it returns TRUE and then call SetDMRequest().
+    Try to set the DMRequest of a window.
+    A DMRequest is a requester that appears if the user double-clicks
+    with the menu button.
+    The new DMRequest will only be set if the old DMRequest is not in use.
+    The official way to change the DMRequest is to call ClearDMRequest()
+    until it returns TRUE and then call SetDMRequest().
  
  
-	INPUTS
-	window - The window from which the DMRequest is to be set
-	dmrequest - Pointer to the requester
+    INPUTS
+    window - The window from which the DMRequest is to be set
+    dmrequest - Pointer to the requester
  
-	RESULT
-	TRUE if old DMRequest was not in use and therefore changed to
-	the new one, or FALSE if the old DMRequest was in use and could
-	not be set to the new one.
+    RESULT
+    TRUE if old DMRequest was not in use and therefore changed to
+    the new one, or FALSE if the old DMRequest was in use and could
+    not be set to the new one.
  
-	NOTES
-	If the DMRequest has the POINTREL flag set, the DMR will show up
-	as close to the pointer as possible. The RelLeft/Top fields are
-	used to fine-tune the positioning.
+    NOTES
+    If the DMRequest has the POINTREL flag set, the DMR will show up
+    as close to the pointer as possible. The RelLeft/Top fields are
+    used to fine-tune the positioning.
  
-	EXAMPLE
+    EXAMPLE
  
-	BUGS
+    BUGS
  
-	SEE ALSO
-	ClearDMRequest(), Request()
+    SEE ALSO
+    ClearDMRequest(), Request()
  
-	INTERNALS
+    INTERNALS
  
-	HISTORY
+    HISTORY
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	struct SetDMRequestActionMsg msg;
+    struct SetDMRequestActionMsg msg;
 
-	SANITY_CHECKR(window,FALSE)
-	SANITY_CHECKR(dmrequest,FALSE)
+    SANITY_CHECKR(window,FALSE)
+    SANITY_CHECKR(dmrequest,FALSE)
 
-	msg.window = window;
-	msg.dmrequest = dmrequest;
+    msg.window = window;
+    msg.dmrequest = dmrequest;
 
-	DoSyncAction((APTR)int_setdmrequest, &msg.msg, IntuitionBase);
+    DoSyncAction((APTR)int_setdmrequest, &msg.msg, IntuitionBase);
 
-	return msg.success;
+    return msg.success;
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* SetDMRequest */
 
 
 static VOID int_setdmrequest(struct SetDMRequestActionMsg *msg,
-							 struct IntuitionBase *IntuitionBase)
+                             struct IntuitionBase *IntuitionBase)
 {
-	struct Window *window = msg->window;
-	struct Requester *dmrequest = msg->dmrequest;
-	LONG result;
+    struct Window *window = msg->window;
+    struct Requester *dmrequest = msg->dmrequest;
+    LONG result;
 
-	if (window->DMRequest && window->DMRequest->Flags & REQACTIVE)
-	{
-		result = FALSE;
-	}
-	else
-	{
-		window->DMRequest = dmrequest;
-		result = TRUE;
-	}
+    if (window->DMRequest && window->DMRequest->Flags & REQACTIVE)
+    {
+        result = FALSE;
+    }
+    else
+    {
+        window->DMRequest = dmrequest;
+        result = TRUE;
+    }
 
-	msg->success = result;
+    msg->success = result;
 }

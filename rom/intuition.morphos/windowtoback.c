@@ -1,9 +1,9 @@
 /*
-	(C) 1995-96 AROS - The Amiga Research OS
-	$Id$
+    (C) 1995-96 AROS - The Amiga Research OS
+    $Id$
  
-	Desc: Move window behind all other windows.
-	Lang: english
+    Desc: Move window behind all other windows.
+    Lang: english
 */
 #include <proto/layers.h>
 #include "intuition_intern.h"
@@ -11,110 +11,110 @@
 
 struct WindowToBackActionMsg
 {
-	struct IntuiActionMsg msg;
-	struct Window *window;
+    struct IntuiActionMsg msg;
+    struct Window *window;
 };
 
 static VOID int_windowtoback(struct WindowToBackActionMsg *msg,
-							 struct IntuitionBase *IntuitionBase);
+                             struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
  
-	NAME */
+    NAME */
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
 AROS_LH1(void, WindowToBack,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(struct Window *, window, A0),
+         /*  SYNOPSIS */
+         AROS_LHA(struct Window *, window, A0),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 51, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 51, Intuition)
 
 /*  FUNCTION
-	Bring a window to the back (ie. behind any other window).
+    Bring a window to the back (ie. behind any other window).
  
-	INPUTS
-	window - Which window
+    INPUTS
+    window - Which window
  
-	RESULT
-	None.
+    RESULT
+    None.
  
-	NOTES
+    NOTES
  
-	EXAMPLE
+    EXAMPLE
  
-	BUGS
+    BUGS
  
-	SEE ALSO
+    SEE ALSO
  
-	INTERNALS
+    INTERNALS
  
-	HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
+    HISTORY
+    29-10-95    digulla automatically created from
+                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	struct WindowToBackActionMsg msg;
+    struct WindowToBackActionMsg msg;
 
-	DEBUG_WINDOWTOBACK(dprintf("WindowToBack: Window 0x%lx\n", window));
+    DEBUG_WINDOWTOBACK(dprintf("WindowToBack: Window 0x%lx\n", window));
 
-	if (!window)
-		return;
+    if (!window)
+        return;
 
-	msg.window = window;
-	DoASyncAction((APTR)int_windowtoback, &msg.msg, sizeof(msg), IntuitionBase);
+    msg.window = window;
+    DoASyncAction((APTR)int_windowtoback, &msg.msg, sizeof(msg), IntuitionBase);
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 
 } /* WindowToBack */
 
 
 static VOID int_windowtoback(struct WindowToBackActionMsg *msg,
-							 struct IntuitionBase *IntuitionBase)
+                             struct IntuitionBase *IntuitionBase)
 {
-	struct Window *window = msg->window;
-	struct Layer *layer = WLAYER(window);
-	struct Screen *screen = window->WScreen;
-	struct Requester *req;
+    struct Window *window = msg->window;
+    struct Layer *layer = WLAYER(window);
+    struct Screen *screen = window->WScreen;
+    struct Requester *req;
 
-	DEBUG_WINDOWTOBACK(dprintf("IntWindowToBack: Window 0x%lx\n", window));
+    DEBUG_WINDOWTOBACK(dprintf("IntWindowToBack: Window 0x%lx\n", window));
 
-	if (!(layer->Flags & LAYERBACKDROP))
-	{
-		//LOCK_REFRESH(screen);
-		LockLayers(&screen->LayerInfo);
+    if (!(layer->Flags & LAYERBACKDROP))
+    {
+        //LOCK_REFRESH(screen);
+        LockLayers(&screen->LayerInfo);
 
-		for (req = window->FirstRequest; req; req = req->OlderRequest)
-		{
-			if (req->ReqLayer)
-			{
-				BehindLayer(0, req->ReqLayer);
-			}
-		}
+        for (req = window->FirstRequest; req; req = req->OlderRequest)
+        {
+            if (req->ReqLayer)
+            {
+                BehindLayer(0, req->ReqLayer);
+            }
+        }
 
-		BehindLayer(0, layer);
+        BehindLayer(0, layer);
 
-		/* GZZ window or regular window? */
-		if (BLAYER(window))
-		{
-			/* move outer window behind! */
-			/* attention: layer->back would not be valid as
-			   layer already moved!!
-			   */
-			BehindLayer(0, BLAYER(window));
-		}
+        /* GZZ window or regular window? */
+        if (BLAYER(window))
+        {
+            /* move outer window behind! */
+            /* attention: layer->back would not be valid as
+               layer already moved!!
+               */
+            BehindLayer(0, BLAYER(window));
+        }
 
-		CheckLayers(screen, IntuitionBase);
+        CheckLayers(screen, IntuitionBase);
 
-		UnlockLayers(&screen->LayerInfo);
-		//UNLOCK_REFRESH(screen);
-	}
+        UnlockLayers(&screen->LayerInfo);
+        //UNLOCK_REFRESH(screen);
+    }
 
-	NotifyDepthArrangement(window, IntuitionBase);
+    NotifyDepthArrangement(window, IntuitionBase);
 }

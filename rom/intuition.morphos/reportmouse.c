@@ -1,67 +1,67 @@
 /*
-	(C) 1995-96 AROS - The Amiga Research OS
-	$Id$
+    (C) 1995-96 AROS - The Amiga Research OS
+    $Id$
  
-	Desc:
-	Lang: english
+    Desc:
+    Lang: english
 */
 #include "intuition_intern.h"
 
 /*****************************************************************************
  
-	NAME */
+    NAME */
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
 AROS_LH2(void, ReportMouse,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(LONG           , flag, D0),
-		 AROS_LHA(struct Window *, window, A0),
+         /*  SYNOPSIS */
+         AROS_LHA(LONG           , flag, D0),
+         AROS_LHA(struct Window *, window, A0),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 39, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 39, Intuition)
 
 /*  FUNCTION
-	Enable or disable the window flag REPORTMOUSE. If the flag is
-	set, you will receive IDCMP event every time the user moves
-	the mouse.
+    Enable or disable the window flag REPORTMOUSE. If the flag is
+    set, you will receive IDCMP event every time the user moves
+    the mouse.
  
-	INPUTS
-	flag - Enable (TRUE) or disable (FALSE) the reports.
-	window - Do it in this window.
+    INPUTS
+    flag - Enable (TRUE) or disable (FALSE) the reports.
+    window - Do it in this window.
  
-	RESULT
-	None.
+    RESULT
+    None.
  
-	NOTES
-	As you might have noticed, the arguments are twisted.
+    NOTES
+    As you might have noticed, the arguments are twisted.
  
-	EXAMPLE
+    EXAMPLE
  
-	BUGS
+    BUGS
  
-	SEE ALSO
+    SEE ALSO
  
-	INTERNALS
+    INTERNALS
  
-	HISTORY
+    HISTORY
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	DEBUG_REPORTMOUSE(dprintf("ReportMouse: Window 0x%lx Flag %d\n", window, flag));
+    DEBUG_REPORTMOUSE(dprintf("ReportMouse: Window 0x%lx Flag %d\n", window, flag));
 
-	SANITY_CHECK(window)
+    SANITY_CHECK(window)
 
-	Forbid();
-	if (flag)
-		window->Flags |= WFLG_REPORTMOUSE;
-	else
-		window->Flags &= ~WFLG_REPORTMOUSE;
-	Permit();
+    Forbid();
+    if (flag)
+        window->Flags |= WFLG_REPORTMOUSE;
+    else
+        window->Flags &= ~WFLG_REPORTMOUSE;
+    Permit();
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* ReportMouse */

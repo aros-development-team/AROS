@@ -1,9 +1,9 @@
 /*
-	(C) 1995-96 AROS - The Amiga Research OS
-	$Id$
+    (C) 1995-96 AROS - The Amiga Research OS
+    $Id$
 
-	Desc:
-	Lang: english
+    Desc:
+    Lang: english
 */
 #include <proto/graphics.h>
 #include <proto/timer.h>
@@ -24,269 +24,269 @@
 
 struct ActivateWindowActionMsg
 {
-	struct IntuiActionMsg msg;
-	struct Window *window;
+    struct IntuiActionMsg msg;
+    struct Window *window;
 };
 
 static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
-							   struct IntuitionBase *IntuitionBase);
+                               struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
 
-	NAME */
+    NAME */
 #include <proto/intuition.h>
 
 AROS_LH1(void, ActivateWindow,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(struct Window *, window, A0),
+         /*  SYNOPSIS */
+         AROS_LHA(struct Window *, window, A0),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 75, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 75, Intuition)
 
 /*  FUNCTION
-	Activates the specified window. The window gets the focus
-	and all further input it sent to that window. If the window
-	requested it, it will get a IDCMP_ACTIVEWINDOW message.
+    Activates the specified window. The window gets the focus
+    and all further input it sent to that window. If the window
+    requested it, it will get a IDCMP_ACTIVEWINDOW message.
 
-	INPUTS
-	window - The window to activate
+    INPUTS
+    window - The window to activate
 
-	RESULT
-	None.
+    RESULT
+    None.
 
-	NOTES
-	If the user has an autopointer tool (sunmouse), the call will
-	succeed, but the tool will deactivate the window right after
-	this function has activated it. It is no good idea to try to
-	prevent this by waiting for IDCMP_INACTIVEWINDOW and activating
-	the window again since that will produce an anoying flicker and
-	it will slow down the computer a lot.
+    NOTES
+    If the user has an autopointer tool (sunmouse), the call will
+    succeed, but the tool will deactivate the window right after
+    this function has activated it. It is no good idea to try to
+    prevent this by waiting for IDCMP_INACTIVEWINDOW and activating
+    the window again since that will produce an anoying flicker and
+    it will slow down the computer a lot.
 
-	EXAMPLE
+    EXAMPLE
 
-	BUGS
+    BUGS
 
-	SEE ALSO
-	ModiyIDCMP(), OpenWindow(), CloseWindow()
+    SEE ALSO
+    ModiyIDCMP(), OpenWindow(), CloseWindow()
 
-	INTERNALS
+    INTERNALS
 
-	HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
+    HISTORY
+    29-10-95    digulla automatically created from
+                intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	struct ActivateWindowActionMsg msg;
+    struct ActivateWindowActionMsg msg;
 
-	DEBUG_ACTIVATEWINDOW(dprintf("ActivateWindow: Window 0x%lx\n",
-				     window));
+    DEBUG_ACTIVATEWINDOW(dprintf("ActivateWindow: Window 0x%lx\n",
+                     window));
 
-	msg.window = window;
-	DoASyncAction((APTR)int_activatewindow, &msg.msg, sizeof(msg), IntuitionBase);
+    msg.window = window;
+    DoASyncAction((APTR)int_activatewindow, &msg.msg, sizeof(msg), IntuitionBase);
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 
 } /* ActivateWindow */
 
 /* This is called on the input.device's context */
 
 static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
-							   struct IntuitionBase *IntuitionBase)
+                               struct IntuitionBase *IntuitionBase)
 {
-	struct IIHData  *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+    struct IIHData  *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
-	/* On the Amiga ActivateWindow is delayed if there
-	   is an active gadget (altough this does not seem
-	   to be true for string gadgets). We just ignore
-	   ActivateWindow in such a case. */
+    /* On the Amiga ActivateWindow is delayed if there
+       is an active gadget (altough this does not seem
+       to be true for string gadgets). We just ignore
+       ActivateWindow in such a case. */
 
-	struct Window *window = msg->window;
-	ULONG lock;
-	struct Window *oldactive;
-	Object *pointer = NULL;
-	struct IntScreen *scr = NULL;
-	struct InputEvent *ie;
+    struct Window *window = msg->window;
+    ULONG lock;
+    struct Window *oldactive;
+    Object *pointer = NULL;
+    struct IntScreen *scr = NULL;
+    struct InputEvent *ie;
 
-	if ((!iihdata->ActiveGadget) || (iihdata->ActiveGadget && ((iihdata->ActiveGadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SDEPTH)))
-	{
+    if ((!iihdata->ActiveGadget) || (iihdata->ActiveGadget && ((iihdata->ActiveGadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SDEPTH)))
+    {
 
-		lock = LockIBase(0UL);
+        lock = LockIBase(0UL);
 
-		oldactive = IntuitionBase->ActiveWindow;
-		IntuitionBase->ActiveWindow = window;
+        oldactive = IntuitionBase->ActiveWindow;
+        IntuitionBase->ActiveWindow = window;
 
-		DEBUG_ACTIVATEWINDOW(dprintf("IntActivateWindow: Window 0x%lx OldActive 0x%lx\n",
-					     window, oldactive));
+        DEBUG_ACTIVATEWINDOW(dprintf("IntActivateWindow: Window 0x%lx OldActive 0x%lx\n",
+                         window, oldactive));
 
-		if (oldactive != window)
-		{
-			GetPrivIBase(IntuitionBase)->PointerDelay = 0;
+        if (oldactive != window)
+        {
+            GetPrivIBase(IntuitionBase)->PointerDelay = 0;
 
-			if (oldactive)
-			{
-				ih_fire_intuimessage(oldactive,
-						     IDCMP_INACTIVEWINDOW,
-						     0,
-						     oldactive,
-						     IntuitionBase);
-				scr = GetPrivScreen(oldactive->WScreen);
-				scr->Screen.Title = scr->Screen.DefaultTitle;
-			}
+            if (oldactive)
+            {
+                ih_fire_intuimessage(oldactive,
+                             IDCMP_INACTIVEWINDOW,
+                             0,
+                             oldactive,
+                             IntuitionBase);
+                scr = GetPrivScreen(oldactive->WScreen);
+                scr->Screen.Title = scr->Screen.DefaultTitle;
+            }
 
-			if (window)
-			{
-				/* App task is allowed to modify window->Flags, for example
-				   set/clear WFLG_RMBTRAP. It is noid said that every compiler
-				   on every machine produces an atomic instruction, so some
-				   kind of semaphore is needed */
+            if (window)
+            {
+                /* App task is allowed to modify window->Flags, for example
+                   set/clear WFLG_RMBTRAP. It is noid said that every compiler
+                   on every machine produces an atomic instruction, so some
+                   kind of semaphore is needed */
 
-				Forbid();
-				window->Flags |= WFLG_WINDOWACTIVE;
-				Permit();
+                Forbid();
+                window->Flags |= WFLG_WINDOWACTIVE;
+                Permit();
 
-				pointer = IW(window)->pointer;
-				if (IW(window)->busy)
-					pointer = GetPrivIBase(IntuitionBase)->BusyPointer;
+                pointer = IW(window)->pointer;
+                if (IW(window)->busy)
+                    pointer = GetPrivIBase(IntuitionBase)->BusyPointer;
 
-				scr = GetPrivScreen(window->WScreen);
-				if (window->ScreenTitle)
-					scr->Screen.Title = window->ScreenTitle;
-			}
+                scr = GetPrivScreen(window->WScreen);
+                if (window->ScreenTitle)
+                    scr->Screen.Title = window->ScreenTitle;
+            }
 
-			/* now set the ActiveScreen! */
-			if (scr)
-			{
-				struct Screen *old;
-				struct Window *win;
+            /* now set the ActiveScreen! */
+            if (scr)
+            {
+                struct Screen *old;
+                struct Window *win;
 
-				old = IntuitionBase->ActiveScreen;
+                old = IntuitionBase->ActiveScreen;
 
-				if (old && (old != (struct Screen *)scr))
-				{
+                if (old && (old != (struct Screen *)scr))
+                {
 
-					/* this avoids mouse "jump" effect */
-					scr->Screen.MouseX = old->MouseX;
-					scr->Screen.MouseY = old->MouseY;
+                    /* this avoids mouse "jump" effect */
+                    scr->Screen.MouseX = old->MouseX;
+                    scr->Screen.MouseY = old->MouseY;
 
-					win = scr->Screen.FirstWindow;
+                    win = scr->Screen.FirstWindow;
 
-					while (win)
-					{
-						UpdateMouseCoords(win);
-						win = win->NextWindow;
-					}
-				}
+                    while (win)
+                    {
+                        UpdateMouseCoords(win);
+                        win = win->NextWindow;
+                    }
+                }
 
-				IntuitionBase->ActiveScreen = (struct Screen *)scr;
+                IntuitionBase->ActiveScreen = (struct Screen *)scr;
 
-			}
+            }
 
-			if (scr)
-			{
-				struct SharedPointer *shared_pointer;
-				//ULONG tmp;
+            if (scr)
+            {
+                struct SharedPointer *shared_pointer;
+                //ULONG tmp;
 
-				if (!pointer)
-					pointer = GetPrivIBase(IntuitionBase)->DefaultPointer;
+                if (!pointer)
+                    pointer = GetPrivIBase(IntuitionBase)->DefaultPointer;
 
-				GetAttr(POINTERA_SharedPointer, pointer, (IPTR *)&shared_pointer);
+                GetAttr(POINTERA_SharedPointer, pointer, (IPTR *)&shared_pointer);
 
-				DEBUG_POINTER(dprintf("ActivateWindow: scr 0x%lx pointer 0x%lx sprite 0x%lx\n",
-						      scr, pointer, shared_pointer->sprite));
+                DEBUG_POINTER(dprintf("ActivateWindow: scr 0x%lx pointer 0x%lx sprite 0x%lx\n",
+                              scr, pointer, shared_pointer->sprite));
 
-				if (ChangeExtSpriteA(&scr->Screen.ViewPort,
-						     scr->Pointer->sprite, shared_pointer->sprite, NULL))
-				{
-					ObtainSharedPointer(shared_pointer, IntuitionBase);
-					ReleaseSharedPointer(scr->Pointer, IntuitionBase);
-					scr->Pointer = shared_pointer;
-					if (window)
-					{
-						window->XOffset = shared_pointer->xoffset;
-						window->YOffset = shared_pointer->yoffset;
-					}
+                if (ChangeExtSpriteA(&scr->Screen.ViewPort,
+                             scr->Pointer->sprite, shared_pointer->sprite, NULL))
+                {
+                    ObtainSharedPointer(shared_pointer, IntuitionBase);
+                    ReleaseSharedPointer(scr->Pointer, IntuitionBase);
+                    scr->Pointer = shared_pointer;
+                    if (window)
+                    {
+                        window->XOffset = shared_pointer->xoffset;
+                        window->YOffset = shared_pointer->yoffset;
+                    }
 
-					//jDc: fix some weird refresh pbs
-					SetPointerPos(scr->Screen.MouseX, scr->Screen.MouseY);
-				}
-				else
-				{
-					DEBUG_POINTER(dprintf("ActivateWindow: can't set pointer.\n"));
-				}
-			}
-		}
+                    //jDc: fix some weird refresh pbs
+                    SetPointerPos(scr->Screen.MouseX, scr->Screen.MouseY);
+                }
+                else
+                {
+                    DEBUG_POINTER(dprintf("ActivateWindow: can't set pointer.\n"));
+                }
+            }
+        }
 
-		UnlockIBase(lock);
-
-
-		if (oldactive && oldactive != window)
-		{
-			Forbid();
-			oldactive->Flags &= ~WFLG_WINDOWACTIVE;
-			Permit();
-
-			int_refreshwindowframe(oldactive, REFRESHGAD_BORDER, 0, IntuitionBase);
-			if (!window || oldactive->WScreen != window->WScreen)
-				RenderScreenBar(oldactive->WScreen, FALSE, IntuitionBase);
-		}
+        UnlockIBase(lock);
 
 
-		if (window && oldactive != window)
-		{
-			int_refreshwindowframe(window, REFRESHGAD_BORDER, 0, IntuitionBase);
-			RenderScreenBar(window->WScreen, FALSE, IntuitionBase);
-		}
+        if (oldactive && oldactive != window)
+        {
+            Forbid();
+            oldactive->Flags &= ~WFLG_WINDOWACTIVE;
+            Permit();
+
+            int_refreshwindowframe(oldactive, REFRESHGAD_BORDER, 0, IntuitionBase);
+            if (!window || oldactive->WScreen != window->WScreen)
+                RenderScreenBar(oldactive->WScreen, FALSE, IntuitionBase);
+        }
+
+
+        if (window && oldactive != window)
+        {
+            int_refreshwindowframe(window, REFRESHGAD_BORDER, 0, IntuitionBase);
+            RenderScreenBar(window->WScreen, FALSE, IntuitionBase);
+        }
 
 #ifdef TIMEVALWINDOWACTIVATION
-		if (window)
-		{
-			GetSysTime(&IW(window)->activationtime);
-		}
+        if (window)
+        {
+            GetSysTime(&IW(window)->activationtime);
+        }
 #endif
 
-		if ((ie = AllocInputEvent(iihdata)))
-		{
-			ie->ie_Class = IECLASS_EVENT;
-			ie->ie_Code = IECODE_NEWACTIVE;
-			ie->ie_EventAddress = window;
-			CurrentTime(&ie->ie_TimeStamp.tv_secs, &ie->ie_TimeStamp.tv_micro);
-		}
+        if ((ie = AllocInputEvent(iihdata)))
+        {
+            ie->ie_Class = IECLASS_EVENT;
+            ie->ie_Code = IECODE_NEWACTIVE;
+            ie->ie_EventAddress = window;
+            CurrentTime(&ie->ie_TimeStamp.tv_secs, &ie->ie_TimeStamp.tv_micro);
+        }
 
-		if (window)
-		{
-			ih_fire_intuimessage(window,
-					     IDCMP_ACTIVEWINDOW,
-					     0,
-					     window,
-					     IntuitionBase);
-		}
-	} else {
-		int_refreshwindowframe(window, REFRESHGAD_BORDER, 0, IntuitionBase);
-	}
+        if (window)
+        {
+            ih_fire_intuimessage(window,
+                         IDCMP_ACTIVEWINDOW,
+                         0,
+                         window,
+                         IntuitionBase);
+        }
+    } else {
+        int_refreshwindowframe(window, REFRESHGAD_BORDER, 0, IntuitionBase);
+    }
 
 #ifdef __MORPHOS__
-	Forbid();
-	if (window && window->UserPort)
-	{
-		struct Task *apptask = window->UserPort->mp_SigTask;
-		if (apptask && (!apptask->tc_SigWait) && (apptask->tc_State == TS_WAIT))
-		{
-			//task is DEAD!
-			//give some visual feedback to the user
-			IW(window)->specialflags |= SPFLAG_IAMDEAD;
+    Forbid();
+    if (window && window->UserPort)
+    {
+        struct Task *apptask = window->UserPort->mp_SigTask;
+        if (apptask && (!apptask->tc_SigWait) && (apptask->tc_State == TS_WAIT))
+        {
+            //task is DEAD!
+            //give some visual feedback to the user
+            IW(window)->specialflags |= SPFLAG_IAMDEAD;
 
-			int_refreshwindowframe(window,REFRESHGAD_TOPBORDER,0,IntuitionBase);
+            int_refreshwindowframe(window,REFRESHGAD_TOPBORDER,0,IntuitionBase);
 
-		} else {
-			IW(window)->specialflags &= ~SPFLAG_IAMDEAD;
-		}
-	}
-	Permit();
+        } else {
+            IW(window)->specialflags &= ~SPFLAG_IAMDEAD;
+        }
+    }
+    Permit();
 #endif
 
 }

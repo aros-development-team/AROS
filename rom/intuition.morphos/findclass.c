@@ -26,7 +26,7 @@
 AROS_LH1(struct IClass *, FindClass,
 
          /*  SYNOPSIS */
-         AROS_LHA(ClassID,	classID, A0),
+         AROS_LHA(ClassID,  classID, A0),
 
          /*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 112, Intuition)
@@ -51,43 +51,43 @@ AROS_LH1(struct IClass *, FindClass,
  
 ******************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *, IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *, IntuitionBase)
 
-	Class * classPtr = NULL;
+    Class * classPtr = NULL;
 
-	DEBUG_FINDCLASS(dprintf("FindClass: ClassID <%s>\n",
-	                        classID ? classID : (UBYTE*)"NULL"));
+    DEBUG_FINDCLASS(dprintf("FindClass: ClassID <%s>\n",
+                            classID ? classID : (UBYTE*)"NULL"));
 
-	EnterFunc(bug("intuition_boopsi::FindClass()\n"));
+    EnterFunc(bug("intuition_boopsi::FindClass()\n"));
 
-	if (!classID)
-		return NULL;
+    if (!classID)
+        return NULL;
 
-	D(bug("class to find: \"%s\"\n", classID));
+    D(bug("class to find: \"%s\"\n", classID));
 
-	/* Lock the list */
-	ObtainSemaphoreShared (&GetPrivIBase(IntuitionBase)->ClassListLock);
+    /* Lock the list */
+    ObtainSemaphoreShared (&GetPrivIBase(IntuitionBase)->ClassListLock);
 
-	/* Search for the class */
-	ForeachNode (&GetPrivIBase(IntuitionBase)->ClassList, classPtr)
-	{
-		D(bug("+\"%s\"\n", classPtr->cl_ID));
-		if (!strcmp (classPtr->cl_ID, classID))
-			goto found;
-	}
+    /* Search for the class */
+    ForeachNode (&GetPrivIBase(IntuitionBase)->ClassList, classPtr)
+    {
+        D(bug("+\"%s\"\n", classPtr->cl_ID));
+        if (!strcmp (classPtr->cl_ID, classID))
+            goto found;
+    }
 
-	classPtr = NULL; /* Nothing found */
-	D(bug("class not found!\n"));
+    classPtr = NULL; /* Nothing found */
+    D(bug("class not found!\n"));
 
 found:
-	/* Unlock list */
-	ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
+    /* Unlock list */
+    ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
 
-	DEBUG_FINDCLASS(dprintf("FindClass: return 0x%lx\n", classPtr));
+    DEBUG_FINDCLASS(dprintf("FindClass: return 0x%lx\n", classPtr));
 
-	ReturnPtr("intuition_boopsi::FindClass()", struct IClass *, classPtr);
+    ReturnPtr("intuition_boopsi::FindClass()", struct IClass *, classPtr);
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 

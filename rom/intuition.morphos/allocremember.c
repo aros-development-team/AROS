@@ -26,15 +26,15 @@ AROS_LH3(APTR, AllocRemember,
          struct IntuitionBase *, IntuitionBase, 66, Intuition)
 
 /*  FUNCTION
-	Allocate some memory and remeber it in the Remeber-List.
+    Allocate some memory and remeber it in the Remeber-List.
  
     INPUTS
-	rememberKey - Store information in this list
-	size - How many bytes to allocate
-	flags - Attributes (see AllocMem())
+    rememberKey - Store information in this list
+    size - How many bytes to allocate
+    flags - Attributes (see AllocMem())
  
     RESULT
-	Pointer to the allocated memory or NULL.
+    Pointer to the allocated memory or NULL.
  
     NOTES
  
@@ -50,36 +50,36 @@ AROS_LH3(APTR, AllocRemember,
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-	struct Remember * newKey;
-	APTR ptr = NULL;
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    struct Remember * newKey;
+    APTR ptr = NULL;
 
-	DEBUG_REMEMBER(dprintf("AllocRemember: Key 0x%lx Size 0x%lx Flags 0x%08lx\n",
-	                       rememberKey, size, flags));
+    DEBUG_REMEMBER(dprintf("AllocRemember: Key 0x%lx Size 0x%lx Flags 0x%08lx\n",
+                           rememberKey, size, flags));
 
-	newKey = AllocMem (sizeof (struct Remember), MEMF_ANY);
+    newKey = AllocMem (sizeof (struct Remember), MEMF_ANY);
 
-	if (newKey)
-	{
-		ptr = AllocMem (size, flags);
+    if (newKey)
+    {
+        ptr = AllocMem (size, flags);
 
-		if (ptr)
-		{
-			newKey->NextRemember = *rememberKey;
-			newKey->Memory = ptr;
-			newKey->RememberSize = size;
-			*rememberKey = newKey;
-		}
-		else
-		{
-			FreeMem (newKey, sizeof (struct Remember));
-		}
-	}
+        if (ptr)
+        {
+            newKey->NextRemember = *rememberKey;
+            newKey->Memory = ptr;
+            newKey->RememberSize = size;
+            *rememberKey = newKey;
+        }
+        else
+        {
+            FreeMem (newKey, sizeof (struct Remember));
+        }
+    }
 
-	DEBUG_REMEMBER(dprintf("AllocRemember: Ptr 0x%lx\n", ptr));
+    DEBUG_REMEMBER(dprintf("AllocRemember: Ptr 0x%lx\n", ptr));
 
-	return ptr;
+    return ptr;
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* AllocRemember */

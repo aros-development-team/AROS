@@ -1,9 +1,9 @@
 /*
-	(C) 1995-96 AROS - The Amiga Research OS
-	$Id$
+    (C) 1995-96 AROS - The Amiga Research OS
+    $Id$
  
-	Desc:
-	Lang: english
+    Desc:
+    Lang: english
 */
 #include <proto/graphics.h>
 #include <proto/layers.h>
@@ -17,7 +17,7 @@
 
 /*****************************************************************************
  
-	NAME */
+    NAME */
 #include <graphics/rastport.h>
 #include <graphics/rpattr.h>
 #include <intuition/intuition.h>
@@ -26,85 +26,85 @@
 
 AROS_LH4(void, EraseImage,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(struct RastPort *, rp, A0),
-		 AROS_LHA(struct Image    *, image, A1),
-		 AROS_LHA(LONG             , leftOffset, D0),
-		 AROS_LHA(LONG             , topOffset, D1),
+         /*  SYNOPSIS */
+         AROS_LHA(struct RastPort *, rp, A0),
+         AROS_LHA(struct Image    *, image, A1),
+         AROS_LHA(LONG             , leftOffset, D0),
+         AROS_LHA(LONG             , topOffset, D1),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 105, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 105, Intuition)
 
 /*  FUNCTION
-	Erase an image on the screen.
+    Erase an image on the screen.
  
-	INPUTS
-	rp - Render in this RastPort
-	image - Erase this image
-	leftOffset, topOffset - Add this offset the the position in the
-		image.
+    INPUTS
+    rp - Render in this RastPort
+    image - Erase this image
+    leftOffset, topOffset - Add this offset the the position in the
+        image.
  
-	RESULT
-	None.
+    RESULT
+    None.
  
-	NOTES
+    NOTES
  
-	EXAMPLE
+    EXAMPLE
  
-	BUGS
+    BUGS
  
-	SEE ALSO
-	DrawImage(), DrawImageState()
+    SEE ALSO
+    DrawImage(), DrawImageState()
  
-	INTERNALS
+    INTERNALS
  
-	HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
-	23-10.96    aldi    commited the code
+    HISTORY
+    29-10-95    digulla automatically created from
+                intuition_lib.fd and clib/intuition_protos.h
+    23-10.96    aldi    commited the code
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	EXTENDWORD(leftOffset);
-	EXTENDWORD(topOffset);
+    EXTENDWORD(leftOffset);
+    EXTENDWORD(topOffset);
 
-	SANITY_CHECK(rp)
-	SANITY_CHECK(image)
+    SANITY_CHECK(rp)
+    SANITY_CHECK(image)
 
-	if (rp->Layer) LockLayer(0,rp->Layer);
-	
-	if (image != NULL)
-	{
-		if (image->Depth == CUSTOMIMAGEDEPTH)
-		{
-			struct impErase method;
-			ULONG penmode;
+    if (rp->Layer) LockLayer(0,rp->Layer);
+    
+    if (image != NULL)
+    {
+        if (image->Depth == CUSTOMIMAGEDEPTH)
+        {
+            struct impErase method;
+            ULONG penmode;
 
-			GetRPAttrs(rp,RPTAG_PenMode,(ULONG)&penmode,TAG_DONE);
+            GetRPAttrs(rp,RPTAG_PenMode,(ULONG)&penmode,TAG_DONE);
 
-			method.MethodID = IM_ERASE;
-			method.imp_RPort = rp;
-			method.imp_Offset.X = leftOffset;
-			method.imp_Offset.Y = topOffset;
-			DoMethodA ((Object *)image, (Msg)&method);
+            method.MethodID = IM_ERASE;
+            method.imp_RPort = rp;
+            method.imp_Offset.X = leftOffset;
+            method.imp_Offset.Y = topOffset;
+            DoMethodA ((Object *)image, (Msg)&method);
 
-			SetRPAttrs(rp,RPTAG_PenMode,penmode,TAG_DONE);
-		}
-		else
-		{
-			EraseRect (rp,
-			           leftOffset + image->LeftEdge,
-			           topOffset  + image->TopEdge,
-			           leftOffset + image->LeftEdge + image->Width,
-			           topOffset  + image->TopEdge  + image->Height
-			          );
-		}
-	}
+            SetRPAttrs(rp,RPTAG_PenMode,penmode,TAG_DONE);
+        }
+        else
+        {
+            EraseRect (rp,
+                       leftOffset + image->LeftEdge,
+                       topOffset  + image->TopEdge,
+                       leftOffset + image->LeftEdge + image->Width,
+                       topOffset  + image->TopEdge  + image->Height
+                      );
+        }
+    }
 
-	if (rp->Layer) UnlockLayer(rp->Layer);
+    if (rp->Layer) UnlockLayer(rp->Layer);
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* EraseImage */

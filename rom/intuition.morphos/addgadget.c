@@ -1,106 +1,106 @@
 /*
-	(C) 1995-96 AROS - The Amiga Research OS
-	$Id$
+    (C) 1995-96 AROS - The Amiga Research OS
+    $Id$
  
-	Desc: Add a single gadget to a window.
-	Lang: english
+    Desc: Add a single gadget to a window.
+    Lang: english
 */
 #include <proto/layers.h>
 #include "intuition_intern.h"
 
 /*****************************************************************************
  
-	NAME */
+    NAME */
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
 AROS_LH3(UWORD, AddGadget,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(struct Window *, window, A0),
-		 AROS_LHA(struct Gadget *, gadget, A1),
-		 AROS_LHA(ULONG          , position, D0),
+         /*  SYNOPSIS */
+         AROS_LHA(struct Window *, window, A0),
+         AROS_LHA(struct Gadget *, gadget, A1),
+         AROS_LHA(ULONG          , position, D0),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 7, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 7, Intuition)
 
 /*  FUNCTION
-	Adds a single gadget to a window.
+    Adds a single gadget to a window.
  
-	INPUTS
-	window - Add gadget to this window
-	gadget - Add this gadget
-	position - The position to add the gadget in the list of
-		gadgets already in the window. Use 0 to insert the
-		gadget before all others or ~0 to append it to the
-		list.
+    INPUTS
+    window - Add gadget to this window
+    gadget - Add this gadget
+    position - The position to add the gadget in the list of
+        gadgets already in the window. Use 0 to insert the
+        gadget before all others or ~0 to append it to the
+        list.
  
-	RESULT
-	The position where the gadget was really inserted.
+    RESULT
+    The position where the gadget was really inserted.
  
-	NOTES
-	This just adds the gadget to the list. It will not be visible
-	until you refresh the window.
+    NOTES
+    This just adds the gadget to the list. It will not be visible
+    until you refresh the window.
  
-	EXAMPLE
+    EXAMPLE
  
-	BUGS
+    BUGS
  
-	SEE ALSO
+    SEE ALSO
  
-	INTERNALS
+    INTERNALS
  
-	HISTORY
+    HISTORY
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	struct Gadget * pred;
-	UWORD count;
+    struct Gadget * pred;
+    UWORD count;
 
-	EXTENDUWORD(position);
+    EXTENDUWORD(position);
 
-	DEBUG_ADDGADGET(dprintf("AddGadget: Window 0x%lx Gadget 0x%lx Pos %ld\n",
-	                        window, gadget, position));
+    DEBUG_ADDGADGET(dprintf("AddGadget: Window 0x%lx Gadget 0x%lx Pos %ld\n",
+                            window, gadget, position));
 
-	if (!window) return 0;
-	if (!gadget) return 0;
+    if (!window) return 0;
+    if (!gadget) return 0;
 
-	gadget->GadgetType &= ~GTYP_REQGADGET;
+    gadget->GadgetType &= ~GTYP_REQGADGET;
 
-	pred = (struct Gadget *)&window->FirstGadget;
-	count = 0;
+    pred = (struct Gadget *)&window->FirstGadget;
+    count = 0;
 
-	/* Send all GA_RelSpecial BOOPSI gadgets in the list the GM_LAYOUT msg */
-	DoGMLayout(gadget, window, NULL, 1, TRUE, IntuitionBase);
+    /* Send all GA_RelSpecial BOOPSI gadgets in the list the GM_LAYOUT msg */
+    DoGMLayout(gadget, window, NULL, 1, TRUE, IntuitionBase);
 
-	//obtain semaphore here. gadget list must NOT be accessed while it's being modified!
+    //obtain semaphore here. gadget list must NOT be accessed while it's being modified!
 #ifdef USEGADGETLOCK
-	LOCKGADGET
+    LOCKGADGET
 #else
-	LOCKWINDOWLAYERS(window);
+    LOCKWINDOWLAYERS(window);
 #endif
 
-	while (position && pred->NextGadget)
-	{
-		position --;
-		pred = pred->NextGadget;
-		count ++;
-	}
+    while (position && pred->NextGadget)
+    {
+        position --;
+        pred = pred->NextGadget;
+        count ++;
+    }
 
-	gadget->NextGadget = pred->NextGadget;
-	pred->NextGadget = gadget;
+    gadget->NextGadget = pred->NextGadget;
+    pred->NextGadget = gadget;
 
 #ifdef USEGADGETLOCK
-	UNLOCKGADGET
+    UNLOCKGADGET
 #else
-	UNLOCKWINDOWLAYERS(window);
+    UNLOCKWINDOWLAYERS(window);
 #endif
 
-	DEBUG_ADDGADGET(dprintf("AddGadget: Pos %ld\n", count));
+    DEBUG_ADDGADGET(dprintf("AddGadget: Pos %ld\n", count));
 
-	return count;
-	AROS_LIBFUNC_EXIT
+    return count;
+    AROS_LIBFUNC_EXIT
 } /* AddGadget */

@@ -1,61 +1,61 @@
 /*
-	(C) 1995-99 AROS - The Amiga Research OS
-	$Id$
+    (C) 1995-99 AROS - The Amiga Research OS
+    $Id$
  
-	Desc: Intuition function InitRequester()
-	Lang: English
+    Desc: Intuition function InitRequester()
+    Lang: English
 */
 #include "intuition_intern.h"
 
 /*****************************************************************************
  
-	NAME */
+    NAME */
 #include <proto/intuition.h>
 
 AROS_LH1(void, InitRequester,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(struct Requester *, requester, A0),
+         /*  SYNOPSIS */
+         AROS_LHA(struct Requester *, requester, A0),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 23, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 23, Intuition)
 
 /*  FUNCTION
-		This function is OBSOLETE and should not be called. To preserve
-	compatibility with old programs, calling this function is a no-op.
+        This function is OBSOLETE and should not be called. To preserve
+    compatibility with old programs, calling this function is a no-op.
  
-	INPUTS
-	requester - The struct Requester to be initialized
+    INPUTS
+    requester - The struct Requester to be initialized
  
-	RESULT
-	None.
+    RESULT
+    None.
  
-	NOTES
-		This function is obsolete.
+    NOTES
+        This function is obsolete.
  
-	EXAMPLE
+    EXAMPLE
  
-	BUGS
+    BUGS
  
-	SEE ALSO
-	Request(), EndRequest()
+    SEE ALSO
+    Request(), EndRequest()
  
-	INTERNALS
+    INTERNALS
  
-	HISTORY
+    HISTORY
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	DEBUG_REQUEST(dprintf("InitRequester: req 0x%lx\n", requester));
+    DEBUG_REQUEST(dprintf("InitRequester: req 0x%lx\n", requester));
 
-	IntuitionBase = IntuitionBase;  /* shut up the compiler */
+    IntuitionBase = IntuitionBase;  /* shut up the compiler */
 
-	SANITY_CHECK(requester)
+    SANITY_CHECK(requester)
 
-	memset(requester, 0, sizeof(struct Requester));
+    memset(requester, 0, sizeof(struct Requester));
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* InitRequester */

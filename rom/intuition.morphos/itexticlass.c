@@ -52,65 +52,65 @@
 #define IM(o) ((struct Image *)o)
 
 #undef IntuitionBase
-#define IntuitionBase	((struct IntuitionBase *)(cl->cl_UserData))
+#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
 
 /****************************************************************************/
 
 LONG itext_draw(Class *cl, Object *o, struct impDraw *msg)
 {
-	struct RastPort *rp = msg->imp_RPort;
-	LONG retval = 0;
+    struct RastPort *rp = msg->imp_RPort;
+    LONG retval = 0;
 
-	if (rp)
-	{
-		struct IntuiText *iText = (struct IntuiText *)IM(o)->ImageData;
-		int leftOffset = msg->imp_Offset.X + IM(o)->LeftEdge;
-		int topOffset = msg->imp_Offset.Y + IM(o)->TopEdge;
-		struct TextFont *newfont = NULL;
-		struct TextFont *font;
-		UBYTE style;
+    if (rp)
+    {
+        struct IntuiText *iText = (struct IntuiText *)IM(o)->ImageData;
+        int leftOffset = msg->imp_Offset.X + IM(o)->LeftEdge;
+        int topOffset = msg->imp_Offset.Y + IM(o)->TopEdge;
+        struct TextFont *newfont = NULL;
+        struct TextFont *font;
+        UBYTE style;
 
-		font = rp->Font;
-		style = rp->AlgoStyle;
+        font = rp->Font;
+        style = rp->AlgoStyle;
 
-		SetDrMd(rp, JAM1);
-		SetAPen(rp, IM(o)->PlanePick);
+        SetDrMd(rp, JAM1);
+        SetAPen(rp, IM(o)->PlanePick);
 
-		/* For all borders... */
-		for ( ; iText; iText=iText->NextText)
-		{
-			if (iText->ITextFont)
-			{
-				newfont = OpenFont (iText->ITextFont);
+        /* For all borders... */
+        for ( ; iText; iText=iText->NextText)
+        {
+            if (iText->ITextFont)
+            {
+                newfont = OpenFont (iText->ITextFont);
 
-				if (newfont)
-					SetFont (rp, newfont);
+                if (newfont)
+                    SetFont (rp, newfont);
 
-				SetSoftStyle(rp, iText->ITextFont->ta_Style, AskSoftStyle(rp));
-			}
+                SetSoftStyle(rp, iText->ITextFont->ta_Style, AskSoftStyle(rp));
+            }
 
-			/* Move to initial position */
-			Move (rp
-			      , iText->LeftEdge + leftOffset
-			      , iText->TopEdge + topOffset + rp->Font->tf_Baseline
-			     );
-			Text (rp, iText->IText, strlen (iText->IText));
+            /* Move to initial position */
+            Move (rp
+                  , iText->LeftEdge + leftOffset
+                  , iText->TopEdge + topOffset + rp->Font->tf_Baseline
+                 );
+            Text (rp, iText->IText, strlen (iText->IText));
 
-			if (iText->ITextFont)
-			{
-				if (newfont)
-				{
-					SetFont (rp, font);
-					CloseFont (newfont);
-				}
-			}
-		}
-		retval = 1;
+            if (iText->ITextFont)
+            {
+                if (newfont)
+                {
+                    SetFont (rp, font);
+                    CloseFont (newfont);
+                }
+            }
+        }
+        retval = 1;
 
-		rp->AlgoStyle = style;
-	}
+        rp->AlgoStyle = style;
+    }
 
-	return retval;
+    return retval;
 }
 
 /****************************************************************************/
@@ -121,32 +121,32 @@ AROS_UFH3S(IPTR, dispatch_itexticlass,
            AROS_UFHA(Msg,      msg, A1)
           )
 {
-	AROS_USERFUNC_INIT
+    AROS_USERFUNC_INIT
 
-	IPTR retval = 0UL;
+    IPTR retval = 0UL;
 
-	switch(msg->MethodID)
-	{
-	case IM_DRAW:
-		retval = itext_draw(cl, o, (struct impDraw *)msg);
-		break;
+    switch(msg->MethodID)
+    {
+    case IM_DRAW:
+        retval = itext_draw(cl, o, (struct impDraw *)msg);
+        break;
 
 #warning itexticlass/IM_DRAWFRAME not implemented
 #if 0
-	case IM_DRAWFRAME:
-		itext_drawframe(cl, o, (struct impDraw *)msg);
-		break;
+    case IM_DRAWFRAME:
+        itext_drawframe(cl, o, (struct impDraw *)msg);
+        break;
 #endif
 
-	default:
-		retval = DoSuperMethodA(cl, o, msg);
-		break;
+    default:
+        retval = DoSuperMethodA(cl, o, msg);
+        break;
 
-	} /* switch */
+    } /* switch */
 
-	return retval;
+    return retval;
 
-	AROS_USERFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }  /* dispatch_itexticlass */
 
 
@@ -156,20 +156,20 @@ AROS_UFH3S(IPTR, dispatch_itexticlass,
 
 struct IClass *InitITextIClass (struct IntuitionBase * IntuitionBase)
 {
-	struct IClass *cl = NULL;
+    struct IClass *cl = NULL;
 
-	/* This is the code to make the itexticlass...
-	*/
-	if ( (cl = MakeClass(ITEXTICLASS, IMAGECLASS, NULL, 0, 0)) )
-	{
-		cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_itexticlass);
-		cl->cl_Dispatcher.h_SubEntry = NULL;
-		cl->cl_UserData		     = (IPTR)IntuitionBase;
+    /* This is the code to make the itexticlass...
+    */
+    if ( (cl = MakeClass(ITEXTICLASS, IMAGECLASS, NULL, 0, 0)) )
+    {
+        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_itexticlass);
+        cl->cl_Dispatcher.h_SubEntry = NULL;
+        cl->cl_UserData          = (IPTR)IntuitionBase;
 
-		AddClass (cl);
-	}
+        AddClass (cl);
+    }
 
-	return (cl);
+    return (cl);
 }
 
 /****************************************************************************/

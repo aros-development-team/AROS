@@ -22,40 +22,40 @@ AROS_LH1(ULONG, LockIBase,
          struct IntuitionBase *, IntuitionBase, 69, Intuition)
 
 /*  FUNCTION
-	Locks Intuition. While you hold this lock, no fields of Intuition
-	will change. Please release this as soon as possible.
+    Locks Intuition. While you hold this lock, no fields of Intuition
+    will change. Please release this as soon as possible.
  
     INPUTS
-	What - Which fields of Intuition should be locked. The only allowed
-		value for this is currently 0 which means to lock everything.
+    What - Which fields of Intuition should be locked. The only allowed
+        value for this is currently 0 which means to lock everything.
  
     RESULT
-	The result of this function must be passed to UnlockIBase().
+    The result of this function must be passed to UnlockIBase().
  
     NOTES
-	You *must not* call this function if you have any locks on other
-	system resources like layers and LayerInfo locks.
+    You *must not* call this function if you have any locks on other
+    system resources like layers and LayerInfo locks.
  
     EXAMPLE
  
     BUGS
  
     SEE ALSO
-	UnLockIBase()
+    UnLockIBase()
  
     INTERNALS
  
     HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
+    29-10-95    digulla automatically created from
+                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	ObtainSemaphore (GetPrivIBase(IntuitionBase)->IBaseLock);
+    ObtainSemaphore (GetPrivIBase(IntuitionBase)->IBaseLock);
 
-	return What;
-	AROS_LIBFUNC_EXIT
+    return What;
+    AROS_LIBFUNC_EXIT
 } /* LockIBase */

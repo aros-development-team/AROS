@@ -1,9 +1,9 @@
 /*
-	(C) 2001 AROS - The Amiga Research OS
-	$Id$
+    (C) 2001 AROS - The Amiga Research OS
+    $Id$
  
-	Desc: Intuition function ChangeWindowShape()
-	Lang: english
+    Desc: Intuition function ChangeWindowShape()
+    Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE 1 /* NEWLIST macro */
 #include <proto/layers.h>
@@ -14,99 +14,99 @@
 
 struct ChangeWindowShapeActionMsg
 {
-	struct IntuiActionMsg msg;
-	struct Window *window;
-	struct Region *shape;
-	struct Hook *callback;
+    struct IntuiActionMsg msg;
+    struct Window *window;
+    struct Region *shape;
+    struct Hook *callback;
 };
 
 static VOID int_changewindowshape(struct ChangeWindowShapeActionMsg *msg,
-								  struct IntuitionBase *IntuitionBase);
+                                  struct IntuitionBase *IntuitionBase);
 
 #endif
 
 /*****************************************************************************
  
-	NAME */
+    NAME */
 #include <proto/intuition.h>
 
 AROS_LH3(struct Region *, ChangeWindowShape,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(struct Window *, window, A0),
-		 AROS_LHA(struct Region *, newshape, A1),
-		 AROS_LHA(struct Hook *, callback, A2),
+         /*  SYNOPSIS */
+         AROS_LHA(struct Window *, window, A0),
+         AROS_LHA(struct Region *, newshape, A1),
+         AROS_LHA(struct Hook *, callback, A2),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 143, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 143, Intuition)
 
 /*  FUNCTION
-		Make a window invisible.
+        Make a window invisible.
  
-	INPUTS
-	window - The window to affect.
+    INPUTS
+    window - The window to affect.
  
-	RESULT
+    RESULT
  
-	NOTES
+    NOTES
  
-	EXAMPLE
+    EXAMPLE
  
-	BUGS
+    BUGS
  
-	SEE ALSO
+    SEE ALSO
  
-	INTERNALS
+    INTERNALS
  
-	HISTORY
+    HISTORY
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
 #ifdef ChangeLayerShape
-	struct ChangeWindowShapeActionMsg msg;
+    struct ChangeWindowShapeActionMsg msg;
 
-	ASSERT_VALID_PTR(window);
+    ASSERT_VALID_PTR(window);
 
-	if (IS_GZZWINDOW(window)) return NULL;
+    if (IS_GZZWINDOW(window)) return NULL;
 
-	msg.window = window;
-	msg.shape = newshape;
-	msg.callback = callback;
-	DoSyncAction((APTR)int_changewindowshape, &msg.msg, IntuitionBase);
+    msg.window = window;
+    msg.shape = newshape;
+    msg.callback = callback;
+    DoSyncAction((APTR)int_changewindowshape, &msg.msg, IntuitionBase);
 
-	return msg.shape;
+    return msg.shape;
 #else
 
-	/* shut up the compiler */
-	IntuitionBase = IntuitionBase;
-	callback = callback;
-	newshape = newshape;
-	window = window;
+    /* shut up the compiler */
+    IntuitionBase = IntuitionBase;
+    callback = callback;
+    newshape = newshape;
+    window = window;
 
-	return NULL;
+    return NULL;
 #endif
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 
 } /* ChangeWindowShape */
 
 
 #ifdef ChangeLayerShape
 static VOID int_changewindowshape(struct ChangeWindowShapeActionMsg *msg,
-								  struct IntuitionBase *IntuitionBase)
+                                  struct IntuitionBase *IntuitionBase)
 {
-	struct Window *window = msg->window;
-	struct Region *shape = msg->shape;
-	struct Hook *callback = msg->callback;
-	struct Screen *screen = window->WScreen;
+    struct Window *window = msg->window;
+    struct Region *shape = msg->shape;
+    struct Hook *callback = msg->callback;
+    struct Screen *screen = window->WScreen;
 
-	LOCK_REFRESH(screen);
-	msg->shape = ChangeLayerShape(window->WLayer, shape, callback);
-	UNLOCK_REFRESH(screen);
+    LOCK_REFRESH(screen);
+    msg->shape = ChangeLayerShape(window->WLayer, shape, callback);
+    UNLOCK_REFRESH(screen);
 
-	CheckLayers(screen, IntuitionBase);
+    CheckLayers(screen, IntuitionBase);
 }
 #endif

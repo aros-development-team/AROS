@@ -58,13 +58,13 @@ AROS_LH1(void, AlohaWorkbench,
 
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	/* Save MsgPort into private IntuitionBase */
-	DEBUG_ALOHAWORKBENCH(dprintf("AlohaWorkbench: MsgPort %p\n",
-				     wbmsgport));
-	GetPrivIBase(IntuitionBase)->WorkBenchMP = wbmsgport;
+    /* Save MsgPort into private IntuitionBase */
+    DEBUG_ALOHAWORKBENCH(dprintf("AlohaWorkbench: MsgPort %p\n",
+                     wbmsgport));
+    GetPrivIBase(IntuitionBase)->WorkBenchMP = wbmsgport;
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* AlohaWorkbench */

@@ -22,14 +22,14 @@ AROS_LH1(void, UnlockIBase,
          struct IntuitionBase *, IntuitionBase, 70, Intuition)
 
 /*  FUNCTION
-	Release parts of Intuition which have been blocked with a prior
-	call to LockIBase().
+    Release parts of Intuition which have been blocked with a prior
+    call to LockIBase().
  
     INPUTS
-	ibLock - The result of LockIBase().
+    ibLock - The result of LockIBase().
  
     RESULT
-	None.
+    None.
  
     NOTES
  
@@ -38,22 +38,22 @@ AROS_LH1(void, UnlockIBase,
     BUGS
  
     SEE ALSO
-	LockIBase()
+    LockIBase()
  
     INTERNALS
  
     HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
+    29-10-95    digulla automatically created from
+                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	ibLock = ibLock;        /* shut up the compiler */
+    ibLock = ibLock;        /* shut up the compiler */
 
-	ReleaseSemaphore (GetPrivIBase(IntuitionBase)->IBaseLock);
+    ReleaseSemaphore (GetPrivIBase(IntuitionBase)->IBaseLock);
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* UnlockIBase */
