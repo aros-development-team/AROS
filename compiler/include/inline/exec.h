@@ -349,6 +349,10 @@
 	LP4FP(0x20a, APTR, RawDoFmt, UBYTE *, formatString, a0, APTR, dataStream, a1, __fpt, putChProc, a2, APTR, putChData, a3, \
 	, EXEC_BASE_NAME, void (*__fpt)())
 
+#define RawPutChar(char) \
+	LP1NR(0x204, RawPutChar, UBYTE, char, d0, \
+	, EXEC_BASE_NAME)
+
 #define ReleaseSemaphore(sigSem) \
 	LP1NR(0x23a, ReleaseSemaphore, struct SignalSemaphore *, sigSem, a0, \
 	, EXEC_BASE_NAME)
