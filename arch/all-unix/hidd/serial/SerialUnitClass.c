@@ -85,11 +85,11 @@ static Object *serialunit_new(Class *cl, Object *obj, ULONG *msg)
 
     D(bug("Opening %s.\n",unitname[data->unitnum]));
 
-Disable();
+//Disable();
 
-    data->filedescriptor = open(unitname[data->unitnum], O_RDWR);
+    data->filedescriptor = open(unitname[data->unitnum], O_NONBLOCK|O_RDWR);
 
-Enable();
+//Enable();
     D(bug("Opened %s on handle %d\n",unitname[data->unitnum], data->filedescriptor));
     
     if (-1 != data->filedescriptor)
@@ -198,9 +198,9 @@ static Object *serialunit_dispose(Class *cl, Object *obj, struct pRoot_New *msg)
   tcsetattr(data->filedescriptor, TCSANOW, &data->orig_termios);
   if (-1 != data->filedescriptor)
   { 
-//    HIDD_UnixIO_AbortAsyncIONotification(data->unixio_read,
-//                                         data->filedescriptor);
-//    HIDD_UnixIO_AbortAsyncIONotification(data->unixio_write,
+    Hidd_UnixIO_AbortAsyncIO(data->unixio_read,
+                             data->filedescriptor);
+//    Hidd_UnixIO_AbortAsyncIONotification(data->unixio_write,
 //                                         data->filedescriptor);
 
     close(data->filedescriptor);
