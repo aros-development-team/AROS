@@ -1,5 +1,4 @@
 *.[ch]
 makefile
-HISTORY
 arosboot.config
 arosboot.doc
