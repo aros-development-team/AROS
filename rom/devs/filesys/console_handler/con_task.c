@@ -68,10 +68,12 @@ static const struct NewWindow default_nw =
     1,				/* DetailPen */
     0,				/* BlockPen */
     0,		    	    	/* IDCMP */
-    WFLG_DEPTHGADGET |
-    WFLG_SIZEGADGET |
-    WFLG_DRAGBAR |
-    WFLG_SIZEBRIGHT |
+    WFLG_DEPTHGADGET   |
+    WFLG_SIZEGADGET    |
+    WFLG_DRAGBAR       |
+    WFLG_SIZEBRIGHT    |
+    WFLG_SMART_REFRESH |
+    WFLG_NOCAREREFRESH |
     WFLG_ACTIVATE,
     0,				/* FirstGadget */
     0,				/* CheckMark */
