@@ -320,8 +320,12 @@ AROS_LH2(struct Library *, OpenLibrary,
 	if (object)
 	{
 	    AddTail(&DOSBase->dl_LDObjectsList, (struct Node *)object);
-            object->ldon_AccessCount += 1;
 	}
+    }
+ 
+    if (object)
+    {
+    	object->ldon_AccessCount += 1;
     }
 #if CHECK_DEPENDENCY
     else
@@ -493,8 +497,12 @@ AROS_LH4(BYTE, OpenDevice,
 	if (object)
 	{
 	    AddTail(&DOSBase->dl_LDObjectsList, (struct Node*)object);
-	    object->ldon_AccessCount += 1;
 	}
+    }
+
+    if (object)
+    {
+    	object->ldon_AccessCount += 1;
     }
 #if CHECK_DEPENDENCY
     else
