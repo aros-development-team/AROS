@@ -4,35 +4,19 @@
 \section{More Related}
 
 \begin{itemize}
-\item \link{AROS FTP Server}{ftp://ftp.aros.org/pub/aros/} which
-contains the latest binary release for Linux as
-\begin{itemize}
-\item \link{tar.gz}{ftp://ftp.aros.org/pub/aros/AROS-lx86-bin.tgz}
-(\fileinfo{$(TOP)/../dist/AROS-lx86-bin.tgz})
-\item and the \link{readme}{ftp://ftp.aros.org/pub/aros/AROS-lx86-bin.readme}
-(\fileinfo{$(TOP)/../dist/AROS-lx86-bin.readme})
-\end{itemize}
-or the same for IBM compatible PCs (boots off a floppy disk)
-\begin{itemize}
-\item \link{tar.gz}{ftp://ftp.aros.org/pub/aros/AROS-ibmpc-bin.tgz}
-(\fileinfo{$(TOP)/../dist/AROS-ibmpc-bin.tgz})
-\item and the \link{readme}{ftp://ftp.aros.org/pub/aros/AROS-ibmpc-bin.readme}
-(\fileinfo{$(TOP)/../dist/AROS-ibmpc-bin.readme})
-\end{itemize}
-or a copy of this WWW site for offline reading:
-\begin{itemize}
-\item \link{tar.gz}{ftp://ftp.aros.org/pub/aros/AROS-docs.tgz}
-(\fileinfo{$(TOP)/../dist/AROS-docs.tgz})
-\item and the \link{readme}{ftp://ftp.aros.org/pub/aros/AROS-docs.readme}
-(\fileinfo{$(TOP)/../dist/AROS-docs.readme})
-\end{itemize}
-or the complete source
-\begin{itemize}
-\item \link{tar.gz}{ftp://ftp.aros.org/pub/aros/AROS-source.tgz}
-(\fileinfo{$(TOP)/../dist/AROS-source.tgz})
-\item and the \link{readme}{ftp://ftp.aros.org/pub/aros/AROS-source.readme}
-(\fileinfo{$(TOP)/../dist/AROS-source.readme})
-\end{itemize}
+\item The recent releases of AROS can be found on 
+the \link{AROS FTP Server}{ftp://ftp.aros.org/pub/aros/}.
+The latest snapshots (updated every night) are in
+\link{snapshots}{ftp://ftp.aros.org/pub/aros/snapshots/}.
+They are for the impatient and should not be expected to work.
+
+\item There a couple of mailing lists. One is
+\link{for users}{http://www.aros.org/mailman/listinfo/aros-user}
+and the other
+\link{for developers}{http://www.aros.org/mailman/listinfo/aros-dev}.
+Follow the links to subscribe yourself or to read the archives
+with the old postings. Please note that you must be subscribed
+to the developer list to access the archive.
 
 \item AROS in
 \link{Germany (Main site)}{http://ftp.aros.org/aros/},
@@ -40,11 +24,9 @@ or the complete source
 and
 \link{Sweden (Mirror site)}{http://www.lysator.liu.se/amiga/aros/}
 \item
-\begin{new}{15.9.1998}
 \link{Source for crypt tool}{ftp://ftp.aros.org/pub/aros/crypt.c}
 and a
 \link{binary for Amiga}{ftp://ftp.aros.org/pub/aros/AROS-crypt.lha}
-\end{new}
 \item \link{AROS for Amiga}{http://www.xs4all.nl/~ldp/aros/index.html}
 \item \link{AROS AutoDocs}{adoc_index.html}
 \item \link{The UAE Amiga Emulator}
@@ -64,6 +46,14 @@ A m68k PCI card for PCs.
 - Some great ideas for \link{OASYS}{http://www.netreach.net/~fleecy/oasys/}
 but they should be implemented in AmigaOS/AROS, too.
 
+\end{itemize}
+
+\section{AROS related material}
+
+\begin{itemize}
+\item \link{An article about AROS}{http://amiga.eden.it/dossier/aros/aros_eng.html}
+(\link{also in italian}{http://amiga.eden.it/dossier/aros/aros.html}).
+\item \link{An interview with A. Digulla}{http://elwoodb.free.fr/AROS}
 \end{itemize}
 
 \section{Homepages of AROS developers *Updated*}
