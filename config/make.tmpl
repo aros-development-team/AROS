@@ -679,12 +679,10 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	$(ECHO) YES > $@
 else
 $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
-	@echo ==== $$PATH
-	@echo ++++ $(PATH)
 	%mkdirs_q $(GENDIR)/$(CURDIR)
 	cd $(GENDIR)/$(CURDIR); \
 	    $(RM) config.cache; \
-	    CC="$(TARGET_CC) -nix" \
+	    CC="$(TARGET_CC) -nix" CC_FOR_BUILD="$(HOST_CC)" \
 	    %(configure) $(%(mmake)-aros_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
 	    $(%(mmake)-includedir) %(extraoptions) \
 	    --host=$(AROS_TARGET_CPU)-aros; \
