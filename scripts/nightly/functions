@@ -4,23 +4,28 @@
 # !!!   = Error
 # >>>   = Executing command
 
-print() {
+print()
+{
     echo $* | tee -a $LOG_ALL | tee -a $LOG_THIS
 }
 
-printi() {
+printi()
+{
     print '---' $*
 }
 
-printe() {
+printe()
+{
     print '!!!' $* 
 }
 
-printx() {
+printx()
+{
     print '>>>' $*
 }
 
-cd() {
+cd()
+{
     printx "cd" $*
     chdir $*
     if [ $? != 0 ]; then
@@ -29,7 +34,8 @@ cd() {
     fi
 }
 
-execute() {
+execute()
+{
     printx $*
     (
         $*
@@ -44,11 +50,13 @@ execute() {
     fi
 }
 
-resetl() {
+resetl()
+{
     LOG_THIS=/dev/null
 }
 
-setl() {
+setl()
+{
     LOG_THIS=$LOG_BASE/$1
     if [ ! -f $LOG_THIS ]; then
         touch $LOG_THIS >/dev/null
