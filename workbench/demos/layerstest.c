@@ -509,10 +509,10 @@ void GenerateLayers2(void)
   i = unusedlayer();
   layers[i] = CreateBehindLayer(&screen->LayerInfo, 
                                  screen->RastPort.BitMap,
-                                 10,
-                                 10,
-                                 100,
-                                 100,
+                                 110,
+                                 110,
+                                 200,
+                                 195,
                                  LAYERSMART,
                                  NULL);
   
@@ -530,10 +530,10 @@ void GenerateLayers2(void)
   i = unusedlayer();
   layers[i] = CreateBehindLayer(&screen->LayerInfo, 
                                  screen->RastPort.BitMap,
-                                 50,
-                                 50,
-                                 120,
-                                 120,
+                                 150,
+                                 150,
+                                 190,
+                                 190,
                                  LAYERSMART,
                                  NULL);
 
@@ -552,9 +552,9 @@ void GenerateLayers2(void)
   layers[i] = CreateBehindLayer(&screen->LayerInfo, 
                                  screen->RastPort.BitMap,
                                  70,
-                                 30,
+                                 130,
                                  140,
-                                 90,
+                                 190,
                                  LAYERSMART,
                                  NULL);
   /* 
@@ -571,10 +571,10 @@ void GenerateLayers2(void)
   i = unusedlayer();
   layers[i] = CreateBehindLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
-                                 20,
-                                 20,
+                                 120,
+                                 120,
                                  150,
-                                 60,
+                                 160,
                                  LAYERSMART,
                                  NULL);
 
@@ -1078,8 +1078,73 @@ void DemoD()
 
   printf("Resizing layer 1 to its full size\n");
   Delay(30);
-  SizeLayer(0, layers[0], 40, 40);
+  SizeLayer(0, layers[0], 50, 50);
+
+  printf("Shuffling layers...\n");
+  UpfrontLayer(0, layers[0]);
+  Delay(20);
+  UpfrontLayer(0, layers[1]);
+  Delay(20);
+  UpfrontLayer(0, layers[2]);
+  Delay(20);
+  UpfrontLayer(0, layers[3]);
+  Delay(20);
+  BehindLayer(0, layers[2]);
+  Delay(20);
+  BehindLayer(0,layers[1]);
+  Delay(20);
+  BehindLayer(0,layers[0]);
+  printf("Inviting a few smart friends...\n");
+  GenerateLayers2();
+  printf("Moving the layers...\n");
+  c = 0;
+  while (c < 40)
+  {
+    MoveLayer(0, layers[4], -1, -1);
+    MoveLayer(0, layers[0], 1,2);
+    MoveLayer(0, layers[2], 2,1);
+    MoveLayer(0, layers[5], -2, 0);
+    c++;
+  }
+
+  c = 0;
+  while (c < 30)
+  {
+    MoveLayer(0, layers[4], -1, -1);
+    MoveLayer(0, layers[5], -1, 0);
+    MoveLayer(0, layers[3], 3, 2);
+    MoveSizeLayer(layers[2], 2, -1, -1, -1);
+    c++;
+  }
+  c = 0;
+  while (c < 30)
+  {
+    MoveSizeLayer(layers[2], -2, 1, 1 ,1);
+    MoveSizeLayer(layers[1],  2, 0, -1 ,-1);
+    MoveLayer(0, layers[5], 2, 1);
+    c++;
+  }
   
+  c = 0;
+  while (c < 30)
+  {
+    MoveSizeLayer(layers[1], -1, -1 ,1 , 1);
+    c++;
+  }
+  
+  printf("Deleting the layers...\n");
+  i = 0;
+  while (i < 8)
+  {
+    while ((layers[i]->bounds.MaxX - layers[i]->bounds.MinX) >= 1 &&
+           (layers[i]->bounds.MaxY - layers[i]->bounds.MinY) >= 1)
+    {
+      MoveSizeLayer(layers[i], 2, 0, -1, -1);
+    }
+    DeleteLayer(0, layers[i]);
+    layers[i] = NULL;
+    i++;
+  }  
 }
 
 void doall(void)
