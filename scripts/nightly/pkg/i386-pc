@@ -9,8 +9,8 @@ ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
 printi "Creating AROS/i386-pc binary packages..."
 
 delete  $BUILD_BASE/AROS
-copy    $SOURCE_AROS    $BUILD_BASE/AROS
-copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
+copy    $SOURCE_AROS      $BUILD_BASE/AROS
+copy    $SOURCE_NECESSARY $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
 execute ./configure --target=pc-i386 --enable-build-type=nightly
@@ -37,20 +37,6 @@ cd      $BUILD_BASE
 archive $ARCHIVE $PACKAGE
 delete  $PACKAGE
 
-if [[ $CFG_CONTRIB_TYPE == "i386-pc" ]]; then
-    printi "Creating AROS/i386-all contrib package..."
-    
-    PACKAGE=$BASENAME-i386-all-contrib
-    ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
-    
-    move    $BUILD_BASE/AROS/bin/pc-i386/AROS/contrib $BUILD_BASE/$PACKAGE
-    cd      $BUILD_BASE
-    archive $ARCHIVE $PACKAGE
-    
-    delete  $PACKAGE
-fi
-
 cd      $ROOT
 delete  $BUILD_BASE/AROS
 resetl
-

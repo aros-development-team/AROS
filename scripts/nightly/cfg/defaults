@@ -1,10 +1,6 @@
 # Packages to build, as an array. 
-# Possible are: sources, hosted and i386-pc.
+# Possible are: sources, hosted, contrib and i386-pc.
 CFG_PACKAGES=( sources )
-
-# Which package should build the generic contrib archive.
-# Possible are: hosted, i386-pc or none.
-CFG_CONTRIB_TYPE=none       
 
 # Which C compiler to use.
 CFG_CC=gcc
