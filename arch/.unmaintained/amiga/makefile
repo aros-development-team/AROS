@@ -24,9 +24,6 @@ setup :
 clean:
 	$(RM) $(OSGENDIR) *.err
 
-config:
-	@echo "Configuring for AmigaOS..."
-
 $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $(GUI_CCFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi

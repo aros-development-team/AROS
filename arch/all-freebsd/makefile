@@ -18,9 +18,6 @@ setup :
 clean:
 	-$(RM) $(OSGENDIR) *.err
 
-config:
-	@echo "Configuring for FreeBSD..."
-
 graphics_driver.c intuition_driver.c:
 	$(TOP)/scripts/makelinks ../linux/ . $@
 

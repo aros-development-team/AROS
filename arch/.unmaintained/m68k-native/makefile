@@ -53,9 +53,6 @@ $(MACHINE_H): machine.h
 clean:
 	$(RM) $(MACHINE_H) machine.i geninc
 
-config:
-	@echo "Configuring for a m68k CPU..."
-
 machine.i: geninc.c
 	$(CC) $(CFLAGS) -o geninc geninc.c
 	./geninc > machine.i
