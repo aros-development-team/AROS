@@ -7,4 +7,6 @@ SPECIAL_AFLAGS := -I..
   asmfiles=execstubs \
   arch=i386
 
+#MM kernel-exec-i386 : kernel-i386-machine_i
+
 %common

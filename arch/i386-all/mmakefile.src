@@ -39,6 +39,9 @@ includes-cygwin-i386 : $(INCFILES) machine.i
 	@$(NOP)
 
 #MM
+kernel-i386-machine_i : machine.i
+
+#MM
 clean::
 	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i $(GENINC)
 
