@@ -17,7 +17,7 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 
-static const char version[] = "$VER: readicon 41.1 (14.3.1997)\n";
+static const char version[] = "$VER: readicon 41.2 (5.9.1997)\n";
 
 #define IM(x)       ((struct Image *)x)
 
@@ -37,7 +37,7 @@ void DoWindow (struct DiskObject * dobj)
 
     if (!GfxBase)
     {
-	printf ("Couldn't open %s\n", (LONG)GRAPHICSNAME);
+	printf ("Couldn't open %s\n", GRAPHICSNAME);
 	goto end;
     }
 
@@ -124,7 +124,7 @@ int main (int argc, char ** argv)
 
     if (!IconBase)
     {
-	printf ("Couldn't open %s\n", (LONG)ICONNAME);
+	printf ("Couldn't open %s\n", ICONNAME);
 	return RETURN_FAIL;
     }
 
@@ -134,7 +134,7 @@ int main (int argc, char ** argv)
     {
 	if (!(dobj = GetDiskObject (arg)) )
 	{
-	    printf ("Cannot open icon for %s: ", (LONG)arg);
+	    printf ("Cannot open icon for %s: ", arg);
 	    PrintFault (IoErr(), "");
 	    rc = 10;
 	}
@@ -199,13 +199,13 @@ int main (int argc, char ** argv)
 		printf ("SImage: none\n");
 	    }
 
-	    printf ("DefaultTool: %s\n", (LONG)dobj->do_DefaultTool);
+	    printf ("DefaultTool: %s\n", dobj->do_DefaultTool);
 
 	    printf ("ToolTypes:\n");
 
 	    if (dobj->do_ToolTypes)
 		for (t=0; dobj->do_ToolTypes[t]; t++)
-		    printf ("TT %d: %s\n", t, (ULONG)dobj->do_ToolTypes[t]);
+		    printf ("TT %d: %s\n", t, dobj->do_ToolTypes[t]);
 	    else
 		printf ("--- none ---\n");
 
