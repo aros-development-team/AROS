@@ -156,11 +156,11 @@ struct StackVars
 *
 */
 
-LONG main(void)
+int main(void)
 {
     struct StackVars  vars;
     struct StackVars *sv;
-    ULONG             result = RETURN_FAIL;
+    int    result = RETURN_FAIL;
 	
     memset(&vars, 0, sizeof(struct StackVars));
     sv = &vars;
