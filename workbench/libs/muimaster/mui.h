@@ -342,6 +342,13 @@ struct MUI_PenSpec {
     UBYTE ps_buf[32];
 };
 
+struct MUI_RGBcolor
+{
+    ULONG red;
+    ULONG green;
+    ULONG blue;
+};
+
 #ifndef _MUI_FRAME_H
 #include "frame.h"
 #endif
@@ -524,6 +531,10 @@ struct MUI_PenSpec {
 
 #ifndef _MUI_CLASSES_COLORADJUST_H
 #include "classes/coloradjust.h"
+#endif
+
+#ifndef _MUI_CLASSES_PENDISPLAY_H
+#include "classes/pendisplay.h"
 #endif
 
 /**************************************************************************
