@@ -5,7 +5,7 @@
 -lautoinit
 
 *link:
--m elf_i386 -L@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib
+-m elf_@aros_target_cpu@ -L@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib
 
 *lib:
 %{!static: -larosc_shared} %{static: -larosc} -larosm
@@ -16,11 +16,8 @@
 *startfile:
 %{detach:@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/detach.o} @TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/startup.o
 
-*signed_char:
-%{funsigned-char:-D__CHAR_UNSIGNED__}
-
 *predefines:
--D__ELF__ -Dunix -D__i386__ -Dlinux -Asystem(posix) -D__AROS__ -D__AROS
+-D__ELF__ -Dunix -D__@aros_target_cpu@__ -Dlinux -Asystem(posix) -D__AROS__ -D__AROS
 
 *cross_compile:
 1
