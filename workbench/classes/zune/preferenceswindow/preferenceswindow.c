@@ -41,6 +41,7 @@ STRPTR __MSG(struct Catalog *catalog, ULONG id)
 
 #define MSG(id) __MSG(catalog,id)
 
+
 /*** Instance data **********************************************************/
 
 struct PreferencesWindow_DATA
@@ -56,9 +57,11 @@ IPTR PreferencesWindow$OM_NEW
 )
 {
     struct PreferencesWindow_DATA *data = NULL; 
-    struct TagItem *tag      = NULL;    
-    struct Catalog *catalog  = NULL;
-    Object         *contents = NULL;
+    struct TagItem *tag        = NULL;    
+    struct Catalog *catalog    = NULL;
+    BPTR            lock       = NULL;
+    BOOL            enableSave = TRUE;
+    Object         *contents   = NULL;
     Object         *testButton, *revertButton, 
                    *saveButton, *useButton, *cancelButton;
     
@@ -69,7 +72,7 @@ IPTR PreferencesWindow$OM_NEW
         { TAG_MORE,                (IPTR) message->ops_AttrList }
     };
     
-    catalog = OpenCatalogA(NULL, "SYS/Zune/PreferencesWindow.catalog", NULL);
+    catalog = OpenCatalogA(NULL, "System/Classes/Zune/PreferencesWindow.catalog", NULL);
     
     tag = FindTagItem(WindowContents, message->ops_AttrList);
     if (tag != NULL)
@@ -106,6 +109,8 @@ IPTR PreferencesWindow$OM_NEW
         End,
     End;
     
+    if (tags[1].ti_Data == NULL) goto error;
+    
     message->ops_AttrList = tags;
           
     self = (Object *) DoSuperMethodA(CLASS, self, (Msg) message);
@@ -114,6 +119,33 @@ IPTR PreferencesWindow$OM_NEW
     data = INST_DATA(CLASS, self);
     data->pwd_Catalog = catalog;
 
+    /* Disable the save button if ENVARC: is write-protected */
+    lock = Lock("ENVARC:", SHARED_LOCK);
+    if (lock != NULL)
+    {
+        struct InfoData id;
+        
+        if (Info(lock, &id))
+        {
+            if (id.id_DiskState == ID_WRITE_PROTECTED)
+            {
+                enableSave = FALSE;
+            }
+        }
+        
+        UnLock(lock);
+    }
+    else
+    {
+        enableSave = FALSE;
+    }
+    
+    if (!enableSave)
+    {
+        set(saveButton, MUIA_Disabled, TRUE);
+    }
+
+    /* Setup notifications */
     DoMethod
     ( 
         self, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
