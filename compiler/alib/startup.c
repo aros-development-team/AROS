@@ -17,12 +17,14 @@
 #include <aros/symbolsets.h>
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
+#if 0
 asm("
 	.text
 
 	move.l	4.w,a6
-	jra	_entry(pc)
+	bra	_entry
 ");
+#endif
 #endif
 
 /* Don't define symbols before the entry point. */
