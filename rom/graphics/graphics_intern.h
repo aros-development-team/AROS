@@ -21,6 +21,9 @@
 #ifndef EXEC_NODES_H
 #   include <exec/nodes.h>
 #endif
+#ifndef EXEC_SEMAPHORE_H
+#   include <exec/semaphores.h>
+#endif
 #ifndef GRAPHICS_GFXBASE_H
 #   include <graphics/gfxbase.h>
 #endif
@@ -95,6 +98,9 @@ struct GfxBase_intern
     APTR    	    	    	regionpool;
     struct MinList              ChunkPoolList;
 #endif
+    ULONG                      *pixel_buf;   // used in graphics_driver
+    struct SignalSemaphore      pixbuf_sema;
+    struct SignalSemaphore      blit_sema;
 };
 
 
