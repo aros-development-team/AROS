@@ -394,6 +394,8 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 	    
  	} /* if (!OpenIFF(iff, IFFF_READ)) */
 	
+	FreeIFF(iff);
+	
     } /* if ((iff = AllocIFF())) */
     
     if (have_imag1)
