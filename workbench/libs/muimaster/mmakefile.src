@@ -49,6 +49,7 @@ CLASSES := \
     window
 
 CLASSFILES := $(foreach f, $(CLASSES), classes/$(f))
+CLASSINCLUDES := $(foreach f, $(CLASSES), classes/$(f).h)
 
 FILES := \
     support \
@@ -116,7 +117,7 @@ $(AROS_INCLUDES)/libraries/mui.h : $(GENINCDIR)/libraries/mui.h
 	@$(ECHO) Copying $< to $@
 	@$(CP) $< $@
 
-$(GENINCDIR)/libraries/mui.h : $(BUILDINCTOOL) mui.h
+$(GENINCDIR)/libraries/mui.h : $(BUILDINCTOOL) mui.h $(CLASSINCLUDES)
 	@$(ECHO) Rebuilding $@
 	@$(BUILDINCTOOL) > $@
 
