@@ -22,13 +22,14 @@
 #include <proto/muimaster.h>
 #endif
 
-#define MYDEBUG
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
 #include "imspec.h"
 #include "textengine.h"
+#include "listimage.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -62,6 +63,8 @@ struct ColumnInfo
 
     int entries_width; /* width of the entries (the maximum of the widths of all entries) */
 };
+
+struct MUI_ImageSpec_intern;
 
 struct MUI_ListData
 {
@@ -109,9 +112,9 @@ struct MUI_ListData
     int mouse_click; /* see below if mouse is hold down */
 
     /* Cursor images */
-    struct MUI_ImageSpec *list_cursor;
-    struct MUI_ImageSpec *list_select;
-    struct MUI_ImageSpec *list_selcur;
+    struct MUI_ImageSpec_intern *list_cursor;
+    struct MUI_ImageSpec_intern *list_select;
+    struct MUI_ImageSpec_intern *list_selcur;
 
     /* Render optimization */
     int update; /* 1 - update everything, 2 - redraw entry at update_pos, 3 - scroll to current entries_first (old value is is update_pos) */
@@ -129,6 +132,9 @@ struct MUI_ListData
     /* tree stuff */
     ULONG parent_space; /* full number of pixels a parent takes */
     ULONG treecolumn;
+
+    /* list images */
+    struct MinList images;
 };
 
 #define MOUSE_CLICK_ENTRY 1 /* on entry clicked */ 
@@ -527,6 +533,9 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data->parent_space = 10;
     data->treecolumn = 0;
+    NewList((struct List *)&data->images);
+
+    D(bug("List_New(%lx)\n", obj));
 
     return (IPTR)obj;
 }
@@ -542,9 +551,13 @@ static IPTR List_Dispose(struct IClass *cl, Object *obj, Msg msg)
 	/* Call destruct method for every entry and free the entries manual to avoid notification */
     }
 
-    if (data->intern_pool) DeletePool(data->intern_pool);
-    if (data->entries) FreeVec(data->entries - 1); /* title is currently before all other elements */
+    if (data->intern_pool)
+	DeletePool(data->intern_pool);
+    if (data->entries)
+	FreeVec(data->entries - 1); /* title is currently before all other elements */
+
     FreeListFormat(data);
+
     return DoSuperMethodA(cl,obj,msg);
 }
 
@@ -732,20 +745,27 @@ static ULONG List_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 static ULONG List_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    if (!DoSuperMethodA(cl, obj, (Msg) msg)) return 0;
+
+    if (!DoSuperMethodA(cl, obj, (Msg) msg))
+	return 0;
+
     CalcWidths(cl,obj);
-    if (data->title) data->title_height = data->entries[ENTRY_TITLE]->height + 2;
-    else data->title_height = 0;
+
+    if (data->title)
+    {
+	data->title_height = data->entries[ENTRY_TITLE]->height + 2;
+    }
+    else
+    {
+	data->title_height = 0;
+    }
 
     DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
-    data->list_cursor = zune_image_spec_to_structure(MUII_ListCursor,obj);
-    data->list_select = zune_image_spec_to_structure(MUII_ListSelect,obj);
-    data->list_selcur = zune_image_spec_to_structure(MUII_ListSelCur,obj);
+    data->list_cursor = zune_imspec_setup(MUII_ListCursor, muiRenderInfo(obj));
+    data->list_select = zune_imspec_setup(MUII_ListSelect, muiRenderInfo(obj));
+    data->list_selcur = zune_imspec_setup(MUII_ListSelCur, muiRenderInfo(obj));
 
-    zune_imspec_setup(&data->list_cursor, muiRenderInfo(obj));
-    zune_imspec_setup(&data->list_select, muiRenderInfo(obj));
-    zune_imspec_setup(&data->list_selcur, muiRenderInfo(obj));
     return 1;
 }
 
@@ -756,15 +776,20 @@ static ULONG List_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
-    zune_imspec_cleanup(&data->list_cursor, muiRenderInfo(obj));
-    zune_imspec_cleanup(&data->list_select, muiRenderInfo(obj));
-    zune_imspec_cleanup(&data->list_selcur, muiRenderInfo(obj));
+    struct ListImage *li = List_First(&data->images);
+    while (li)
+    {
+	struct ListImage *next = Node_Next(li);
+	DoMethod(obj, MUIM_List_DeleteImage, (IPTR)li);
+	li = next;
+    }
 
-    zune_imspec_free(data->list_cursor); data->list_cursor = NULL;
-    zune_imspec_free(data->list_select); data->list_select = NULL;
-    zune_imspec_free(data->list_selcur); data->list_selcur = NULL;
+    zune_imspec_cleanup(data->list_cursor);
+    zune_imspec_cleanup(data->list_select);
+    zune_imspec_cleanup(data->list_selcur);
 
     DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
@@ -784,6 +809,32 @@ static ULONG List_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *msg)
 
     return rc;
 }
+
+
+static ULONG List_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
+
+    D(bug("\nList_Show\n"));
+    zune_imspec_show(data->list_cursor, obj);
+    zune_imspec_show(data->list_select, obj);
+    zune_imspec_show(data->list_selcur, obj);
+    return rc;
+}
+
+
+static ULONG List_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+
+    zune_imspec_hide(data->list_cursor);
+    zune_imspec_hide(data->list_select);
+    zune_imspec_hide(data->list_selcur);
+
+    return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+
 
 /**************************************************************************
  Draw an entry at entry_pos at the given y location. To draw the title,
@@ -903,7 +954,7 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
         {
 	    if (entry_pos == data->entries_active)
 	    {
-	    	zune_draw_image(muiRenderInfo(obj), data-> list_cursor,
+	    	zune_imspec_draw(data->list_cursor, muiRenderInfo(obj),
 		    _mleft(obj),y,_mwidth(obj), data->entry_maxheight,
 		    0, y - data->entries_top_pixel,0);
 	    } else
@@ -1543,12 +1594,29 @@ STATIC ULONG List_SelectChange(struct IClass *cl, Object *obj, struct MUIP_List_
 
 /**************************************************************************
  MUIM_List_CreateImage
+Called by a List subclass in its Setup method.
+Connects an Area subclass object to the list, much like an object gets
+connected to a window. List call Setup and AskMinMax on that object,
+keeps a reference to it (that reference will be returned).
+Text engine will dereference that pointer and draw the object with its
+default size.
 **************************************************************************/
 STATIC IPTR List_CreateImage(struct IClass *cl, Object *obj, struct MUIP_List_CreateImage *msg)
 {
-    APTR image = NULL;
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    struct ListImage *li;
 
-    return image;
+    /* List must be already setup in Setup of your subclass */
+    if (!(_flags(obj) & MADF_SETUP))
+	return NULL;
+    li = AllocPooled(data->pool, sizeof(struct ListImage));
+    if (!li)
+	return NULL;
+    li->obj = msg->obj;
+    Enqueue((struct List *)&data->images, (struct Node *)li);
+    DoSetupMethod(li->obj, muiRenderInfo(obj));
+
+    return (IPTR)li;
 }
 
 /**************************************************************************
@@ -1556,6 +1624,15 @@ STATIC IPTR List_CreateImage(struct IClass *cl, Object *obj, struct MUIP_List_Cr
 **************************************************************************/
 STATIC ULONG List_DeleteImage(struct IClass *cl, Object *obj, struct MUIP_List_DeleteImage *msg)
 {
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    struct ListImage *li = (struct ListImage *)msg->listimg;
+
+    if (li)
+    {
+	DoMethod(li->obj, MUIM_Cleanup);
+	Remove((struct Node *)li);
+	FreePooled(data->pool, li, sizeof(struct ListImage));
+    }
 
     return 0;
 }
@@ -1573,6 +1650,8 @@ BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
 	case OM_GET: return List_Get(cl,obj,(struct opGet *)msg);
 	case MUIM_Setup: return List_Setup(cl,obj,(struct MUIP_Setup *)msg);
 	case MUIM_Cleanup: return List_Cleanup(cl,obj,(struct MUIP_Cleanup *)msg);
+	case MUIM_Show: return List_Show(cl,obj,(struct MUIP_Show *)msg);
+	case MUIM_Hide: return List_Hide(cl,obj,(struct MUIP_Hide *)msg);
 	case MUIM_Draw: return List_Draw(cl,obj,(struct MUIP_Draw *)msg);
 	case MUIM_Layout: return List_Layout(cl,obj,(struct MUIP_Layout *)msg);
 	case MUIM_HandleEvent: return List_HandleEvent(cl,obj,(struct MUIP_HandleEvent *)msg);
