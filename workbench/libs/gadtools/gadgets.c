@@ -83,15 +83,6 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
 
     EnterFunc(bug("makecheckbox()\n"));
 
-#if 0
-    if (!GadToolsBase->aroscbbase)
-        GadToolsBase->aroscbbase = OpenLibrary(AROSCHECKBOXNAME, 0);
-    if (!GadToolsBase->aroscbbase)
-        return NULL;
-
-    D(bug("GadToolsBase->aroscbbase: %p\n", GadToolsBase->aroscbbase));
-#endif
-
     tags[0].ti_Data = GetTagData(GA_Disabled, FALSE, taglist);
     tags[1].ti_Data = GetTagData(GTCB_Checked, FALSE, taglist);
     tags[2].ti_Data = (IPTR) stdgadtags;
@@ -100,10 +91,6 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
         stdgadtags[TAG_Width].ti_Data = CHECKBOX_WIDTH;
         stdgadtags[TAG_Height].ti_Data = CHECKBOX_HEIGHT;
     }
-
-#if 0
-    obj = (struct Gadget *) NewObjectA(NULL, AROSCHECKBOXCLASS, tags);
-#endif
 
     cl = makecheckboxclass(GadToolsBase);
     if (!cl)
@@ -676,20 +663,6 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 **  makescroller()  **
 *********************/
 
-#if 0
-const struct TagItem arrow_dec2scroller[] =
-{
-    {GA_ID,	GTA_Scroller_Dec},
-    {TAG_DONE, }
-};
-
-const struct TagItem arrow_inc2scroller[] =
-{
-    {GA_ID,	GTA_Scroller_Inc},
-    {TAG_DONE, }
-};
-#endif
-
 struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
@@ -805,15 +778,6 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     if (arrowdim) /* Scroller has arroes ? */
     {
     	Class *arrowcl;
-
-#if 0
-    	struct TagItem antags[] =
-    	{
-    	    {ICA_TARGET,	(IPTR)NULL},
-    	    {ICA_MAP,		(IPTR)NULL},
-    	    {TAG_DONE,}
-    	};
-#endif
     	
     	struct TagItem atags[] =
     	{
@@ -892,17 +856,6 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	    	
     	    	
     	} /* if (scroller is FREEVERT or FREEHORIZ) */
-
-#if 0    	
-    	/* Create notfications from arrows to scroller */
-    	antags[0].ti_Data = (IPTR)scroller;
-
-    	antags[1].ti_Data = (IPTR)arrow_dec2scroller;    	
-    	SetAttrsA((Object *)arrow_dec, antags);
-
-    	antags[1].ti_Data = (IPTR)arrow_inc2scroller;
-    	SetAttrsA((Object *)arrow_inc, antags);
-#endif
     	
     } /* if (scroller should have arrows attached) */
     
@@ -1127,20 +1080,20 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     
     struct TagItem *tag, lvtags[] =
     {
-    	{GA_Disabled,		FALSE},
-    	{GTLV_Top,		0L},
-    	{GTLV_MakeVisible,	0L},
-    	{GTLV_Labels,		(IPTR)NULL},
-    	{GTLV_Selected,		0L},
-    	{GTLV_ItemHeight,	0L},
-    	{GTLV_CallBack,		(IPTR)NULL},
-    	{GTLV_MaxPen,		0L},
-    	{GTLV_ReadOnly,		0L},
-    	{LAYOUTA_Spacing,	0L},    	
-    	{GA_TextAttr,		(IPTR)NULL},
-	{GA_RelVerify,		TRUE},
-	{GA_Bounds,		(IPTR)&bbox},
-	{TAG_MORE, 	(IPTR)NULL}
+    	{GA_Disabled		, FALSE		}, /* 0  */
+    	{GTLV_Top		, 0L		}, /* 1  */
+    	{GTLV_MakeVisible	, 0L		}, /* 2  */
+    	{GTLV_Labels		, (IPTR)NULL	}, /* 3  */
+    	{GTLV_Selected		, 0L		}, /* 4  */
+    	{GTLV_ItemHeight	, 0L		}, /* 5  */
+    	{GTLV_CallBack		, (IPTR)NULL	}, /* 6  */
+    	{GTLV_MaxPen		, 0L		}, /* 7  */
+    	{GTLV_ReadOnly		, 0L		}, /* 8  */
+    	{LAYOUTA_Spacing	, 0L		}, /* 9  */    	
+    	{GA_TextAttr		, (IPTR)NULL	}, /* 10 */
+	{GA_RelVerify		, TRUE		}, /* 11 */
+	{GA_Bounds		, (IPTR)&bbox	}, /* 12 */
+	{TAG_MORE		, (IPTR)NULL	}  /* 13*/
     };
     
     EnterFunc(bug("makelistview()\n"));
