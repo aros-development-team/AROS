@@ -1175,7 +1175,21 @@ D(bug("Window: %p\n", w));
                 break; }
                     
                 case IMCODE_SIZEWINDOW: {
-		
+		     /* correct dx, dy if necessary */
+		     
+		     if ((targetwindow->LeftEdge + targetwindow->Width + msg->dx) > targetwindow->WScreen->Width)
+		     {
+		     	msg->dx = targetwindow->WScreen->Width -
+				  targetwindow->Width -
+				  targetwindow->LeftEdge;
+		     }
+		     if ((targetwindow->TopEdge + targetwindow->Height + msg->dy) > targetwindow->WScreen->Height)
+		     {
+		     	msg->dy = targetwindow->WScreen->Height -
+				  targetwindow->Height -
+				  targetwindow->TopEdge;
+		     }
+		     
                      /* First erase the old frame on the right side and 
                         on the lower side if necessary, but only do this
                         for non-GZZ windows 
@@ -1291,11 +1305,14 @@ D(bug("Window: %p\n", w));
                          L = targetlayer->back;
                        }
                      }
-		     /* Send GM_LAYOUT to all GA_RelSpecial BOOPSI gadgets */
+		     /* Send GM_LAYOUT to all GA_RelS???? BOOPSI gadgets */
 		     DoGMLayout(targetwindow->FirstGadget, w, NULL, -1, FALSE, IntuitionBase);
 
                      /* and redraw the window frame */
-                     RefreshWindowFrame(targetwindow);
+                     if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+		     {
+		     	RefreshWindowFrame(targetwindow);
+	             }
 
 		     /* and refresh all gadgets except border gadgets */
 		     int_refreshglist(w->FirstGadget, w, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
@@ -1318,21 +1335,130 @@ D(bug("Window: %p\n", w));
                 break; }
                          
                 case IMCODE_ZIPWINDOW: {
-                     struct IntWindow * w = (struct IntWindow *)msg->Window;
-                     UWORD OldLeftEdge  = targetwindow->LeftEdge;
-                     UWORD OldTopEdge   = targetwindow->TopEdge;
-                     UWORD OldWidth     = targetwindow->Width;
-                     UWORD OldHeight    = targetwindow->Height;
-                    
+                     struct IntWindow * w = (struct IntWindow *)targetwindow;
+                     WORD OldLeftEdge  = targetwindow->LeftEdge;
+                     WORD OldTopEdge   = targetwindow->TopEdge;
+                     WORD OldWidth     = targetwindow->Width;
+                     WORD OldHeight    = targetwindow->Height;
+                     WORD NewLeftEdge, NewTopEdge, NewWidth, NewHeight;
+		     
+		     NewLeftEdge = OldLeftEdge;
+		     if (w->ZipLeftEdge != ~0) NewLeftEdge = w->ZipLeftEdge;
+		     
+		     NewTopEdge = OldTopEdge;
+		     if (w->ZipTopEdge != ~0) NewTopEdge = w->ZipTopEdge;
+		     
+		     NewWidth = OldWidth;
+		     if (w->ZipWidth != ~0) NewWidth = w->ZipWidth;
+		     
+		     NewHeight = OldHeight;
+		     if (w->ZipHeight != ~0) NewHeight = w->ZipHeight;
+
+                     /* correct new window coords if necessary */
+		     
+		     if (NewWidth > targetwindow->WScreen->Width)
+		         NewWidth = targetwindow->WScreen->Width;
+			 
+		     if (NewHeight > targetwindow->WScreen->Height)
+		         NewHeight = targetwindow->WScreen->Height;
+			 
+		     if ((NewLeftEdge + NewWidth) > targetwindow->WScreen->Width)
+		         NewLeftEdge = targetwindow->WScreen->Width - NewWidth;
+		
+		     if ((NewTopEdge + NewHeight) > targetwindow->WScreen->Height)
+		         NewTopEdge = targetwindow->WScreen->Height - NewHeight;
+		     	
+		     /* First erase the old frame on the right side and 
+        		on the lower side if necessary, but only do this
+        		for non-GZZ windows 
+		     */
+
+		     if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+		     {
+		       struct RastPort * rp = targetwindow->BorderRPort;
+		       struct Layer * L = rp->Layer;
+		       struct Rectangle rect;
+		       struct Region * oldclipregion;
+		       WORD ScrollX;
+		       WORD ScrollY;
+		       WORD dx = NewWidth - OldWidth;
+		       WORD dy = NewHeight - OldHeight;
+		       /* 
+		       ** In case a clip region is installed then I have to 
+		       ** install the regular cliprects of the layer
+		       ** first. Otherwise the frame might not get cleared correctly.
+		       */
+		       LockLayer(0, L);
+
+		       oldclipregion = InstallClipRegion(L, NULL);
+
+		       ScrollX = L->Scroll_X;
+		       ScrollY = L->Scroll_Y;
+
+		       L->Scroll_X = 0;
+		       L->Scroll_Y = 0;
+
+		       if ((dy > 0) && (targetwindow->BorderBottom > 0))
+
+		       {
+			 rect.MinX = targetwindow->BorderLeft;
+			 rect.MinY = targetwindow->Height - targetwindow->BorderBottom;
+			 rect.MaxX = targetwindow->Width - 1;
+			 rect.MaxY = targetwindow->Height - 1;
+
+        		 EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+
+			 if (L->Flags & LAYERSIMPLE)
+			 {
+			     OrRectRegion(L->DamageList, &rect);
+			 }
+		       }
+
+		       if ((dx > 0) && (targetwindow->BorderRight > 0))
+		       {
+			 rect.MinX = targetwindow->Width - targetwindow->BorderRight;
+			 rect.MinY = targetwindow->BorderTop;
+			 rect.MaxX = targetwindow->Width - 1;
+			 rect.MaxY = targetwindow->Height - targetwindow->BorderBottom;
+
+        		 EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+
+			 if (L->Flags & LAYERSIMPLE)
+			 {
+			     OrRectRegion(L->DamageList, &rect);
+			 }
+		       }
+
+		       /*
+		       ** Reinstall the clipregions rectangles if there are any.
+		       */
+		       if (NULL != oldclipregion)
+		       {
+        		 InstallClipRegion(L, oldclipregion);
+		       }
+
+		       L->Scroll_X = ScrollX;
+		       L->Scroll_Y = ScrollY;
+
+		       UnlockLayer(L);
+		     }
+		     
+		     if ((NewWidth != OldWidth) || (NewHeight != OldHeight))
+		     {
+			 /* Before resizing the layers eraserect the area of all
+			    GFLG_REL*** gadgets (except those in the window border */
+			 EraseRelGadgetArea(targetwindow, IntuitionBase);
+		     }
+		     
                      /* check for GZZ window */
                      if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
                      {
                        /* move outer window first */
                        MoveSizeLayer(targetwindow->BorderRPort->Layer,
-                                     w->ZipLeftEdge - OldLeftEdge,
-                                     w->ZipTopEdge  - OldTopEdge,
-                                     w->ZipWidth    - OldWidth,
-                                     w->ZipHeight   - OldHeight);
+                                     NewLeftEdge - OldLeftEdge,
+                                     NewTopEdge  - OldTopEdge,
+                                     NewWidth    - OldWidth,
+                                     NewHeight   - OldHeight);
                        RefreshWindowFrame(targetwindow);
                      }
 
@@ -1340,26 +1466,34 @@ D(bug("Window: %p\n", w));
                      CheckLayersBehind = TRUE;
 
                      MoveSizeLayer(targetlayer,
-                                   w->ZipLeftEdge - OldLeftEdge,
-                                   w->ZipTopEdge  - OldTopEdge,
-                                   w->ZipWidth    - OldWidth,
-                                   w->ZipHeight   - OldHeight);
+                                   NewLeftEdge - OldLeftEdge,
+                                   NewTopEdge  - OldTopEdge,
+                                   NewWidth    - OldWidth,
+                                   NewHeight   - OldHeight);
 
-                     targetwindow->LeftEdge = w->ZipLeftEdge;
-                     targetwindow->TopEdge  = w->ZipTopEdge;
-                     targetwindow->Width    = w->ZipWidth;
-                     targetwindow->Height   = w->ZipHeight; 
+                     targetwindow->LeftEdge = NewLeftEdge;
+                     targetwindow->TopEdge  = NewTopEdge;
+                     targetwindow->Width    = NewWidth;
+                     targetwindow->Height   = NewHeight; 
                     
-                     w->ZipLeftEdge = OldLeftEdge;
-                     w->ZipTopEdge  = OldTopEdge;
-                     w->ZipWidth    = OldWidth;
-                     w->ZipHeight   = OldHeight;
+                     if (w->ZipLeftEdge != ~0) w->ZipLeftEdge = OldLeftEdge;
+                     if (w->ZipTopEdge  != ~0) w->ZipTopEdge  = OldTopEdge;
+                     if (w->ZipWidth  != ~0) w->ZipWidth    = OldWidth;
+                     if (w->ZipHeight != ~0) w->ZipHeight   = OldHeight;
                     
 		     /* Change width of dragbar gadget */
 
-
-		     /* Send GM_LAYOUT to all GA_RelSpecial BOOPSI gadgets */
+		     /* Send GM_LAYOUT to all GA_Rel??? BOOPSI gadgets */
 		     DoGMLayout(targetwindow->FirstGadget, targetwindow, NULL, -1, FALSE, IntuitionBase);
+
+		     /* and redraw the window frame */
+		     if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+		     {
+		     	RefreshWindowFrame(targetwindow);
+		     }
+
+		     /* and refresh all gadgets except border gadgets */
+		     int_refreshglist(targetwindow->FirstGadget, targetwindow, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
 
 		     /* Send IDCMP_CHANGEWINDOW to resized window */
                      {
@@ -1371,7 +1505,7 @@ D(bug("Window: %p\n", w));
 			    Alert(AT_DeadEnd|AN_Intuition|AG_NoMemory);
 			}
 			imsg->Class = IDCMP_CHANGEWINDOW;
-
+			imsg->Code = CWCODE_MOVESIZE;
 			send_intuimessage(imsg, targetwindow, IntuitionBase);
                      }
                     
