@@ -99,7 +99,7 @@
     ULONG   	    	lock;
     ULONG               windowvisible = TRUE;
     BOOL    	    	driver_init_done = FALSE, have_helpgroup = FALSE;
-    const UBYTE         wbname[] = "Workbench";
+
 
     ASSERT_VALID_PTR(newWindow);
 
@@ -319,7 +319,7 @@
 	    break;
 	
 	case WBENCHSCREEN:
-	    nw.Screen = LockPubScreen(wbname);
+	    nw.Screen = LockPubScreen("Workbench");
 	    if (nw.Screen)
 	    {
 	        nw.Flags |= WFLG_VISITOR;
