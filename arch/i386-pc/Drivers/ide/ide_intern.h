@@ -152,42 +152,45 @@ struct ide_Bus
 };
 
 /* Unit flags */
-#define	AB_DiskPresent  31
-#define	AB_IntDisable   30
-#define	AB_Swapped      29
-#define	AB_SlowDevice   28
-#define	AB_FastRead     27
-#define	AB_FastWrite    26
-#define	AB_Used         25
-#define	AB_Removable    23
-#define AB_LBAMode      22
-#define	AB_AtapiDev     21
+#define	AB_DiskPresent      	31
+#define	AB_IntDisable       	30
+#define	AB_Swapped          	29
+#define	AB_SlowDevice       	28
+#define	AB_FastRead         	27
+#define	AB_FastWrite        	26
+#define	AB_Used             	25
+#define	AB_Removable        	23
+#define AB_LBAMode          	22
+#define	AB_AtapiDev         	21
+#define AB_DiskPresenceUnknown	20
 
-#define AF_DiskPresent  (1L << AB_DiskPresent)
-#define AF_IntDisable   (1L << AB_IntDisable)
-#define AF_Swapped      (1L << AB_Swapped)
-#define AF_SlowDevice   (1L << AB_SlowDevice)
-#define AF_FastRead     (1L << AB_FastRead)
-#define AF_FastWrite    (1L << AB_FastWrite)
-#define AF_Used         (1L << AB_Used)
-#define AF_Removable    (1L << AB_Removable)
-#define AF_LBAMode      (1L << AB_LBAMode)
-#define AF_AtapiDev     (1L << AB_AtapiDev)
+#define AF_DiskPresent      	(1L << AB_DiskPresent)
+#define AF_IntDisable       	(1L << AB_IntDisable)
+#define AF_Swapped          	(1L << AB_Swapped)
+#define AF_SlowDevice       	(1L << AB_SlowDevice)
+#define AF_FastRead         	(1L << AB_FastRead)
+#define AF_FastWrite        	(1L << AB_FastWrite)
+#define AF_Used             	(1L << AB_Used)
+#define AF_Removable        	(1L << AB_Removable)
+#define AF_LBAMode          	(1L << AB_LBAMode)
+#define AF_AtapiDev         	(1L << AB_AtapiDev)
+#define AF_DiskPresenceUnknown	(1L << AB_DiskPresenceUnknown)
 
 struct ideBase
 {
-    struct Device       ide_device;
-    struct ExecBase     *ide_SysLib;
-    BPTR                ide_SegList;
-    ULONG               ide_NumLoop;
-    struct timerequest  *ide_TimerIO;
-    struct MsgPort      *ide_TimerMP;
-    ULONG               ide_NumUnit;
-    struct TaskData     *ide_TaskData;       // Based on struct Task
-    struct DaemonData   *ide_DaemonData;
-    struct ide_Unit     *ide_Units[8];
-    ULONG               *ide_BoardAddr;
-    UBYTE               *ide_DevMaskArray;
+    struct Device           ide_device;
+    struct ExecBase         *ide_SysLib;
+    BPTR                    ide_SegList;
+    ULONG                   ide_NumLoop;
+    struct timerequest      *ide_TimerIO;
+    struct MsgPort          *ide_TimerMP;
+    ULONG                   ide_NumUnit;
+    struct TaskData         *ide_TaskData;       // Based on struct Task
+    struct DaemonData       *ide_DaemonData;
+    struct ide_Unit         *ide_Units[8];
+    ULONG                   *ide_BoardAddr;
+    UBYTE                   *ide_DevMaskArray;
+    struct SignalSemaphore  ide_HardwareLock;	 // stegerg: protect hw accesses
 };
 
 #define ata_Error       1
