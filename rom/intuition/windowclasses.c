@@ -457,13 +457,14 @@ AROS_UFH3S(IPTR, dispatch_dragbarclass,
 
 struct sizebutton_data
 {
-     /* Current right- and bottom edge of sized window. Ie when the user releases
-     the LMB after a windowdrag, the window's size will be changed
-     */
 
-     /* The current x and y coordinates relative to curleft/curtop */
-     LONG width;
-     LONG height;
+     /* The current width and height of the rubber band frame */
+     ULONG width;
+     ULONG height;
+     
+     /* the offset of the mouse pointer to the rubber band frame*/
+     LONG mouseoffsetx;
+     LONG mouseoffsety;
      
      /* Whether the dragframe is currently drawn or erased */
      BOOL isrendered;
@@ -567,6 +568,9 @@ static IPTR sizebutton_goactive(Class *cl, Object *o, struct gpInput *msg)
 	data->height = w->Height;
 	data->width  = w->Width;
         
+        data->mouseoffsetx = w->Width  - (ie->ie_X - w->LeftEdge);
+        data->mouseoffsety = w->Height - (ie->ie_Y - w->TopEdge);
+
 	data->rp = CloneRastPort(&w->WScreen->RastPort);
 	if (data->rp)
 	{
@@ -617,28 +621,34 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		
 	    
 	    	/* Can we move to the new position, or is window at edge of display ? */
-		new_width   = ie->ie_X - w->LeftEdge;
-		new_height  = ie->ie_Y - w->TopEdge;
+		new_width   = ie->ie_X - w->LeftEdge + data->mouseoffsetx;
+		new_height  = ie->ie_Y - w->TopEdge  + data->mouseoffsety;
 		
 		if (new_width < 0)
-		{
 		  new_width = 1;
-		}
+		
+		if (w->MinWidth != 0 && new_width < (ULONG)w->MinWidth)
+		  new_width = w->MinWidth;
+		  
+		if (w->MaxWidth != 0 && new_width > (ULONG)w->MaxWidth)
+		  new_width = w->MaxWidth;
 		
 		if (new_height < 0)
-		{
 		  new_height = 1;
-		}
 		
+		if (w->MinHeight != 0 && new_height < (ULONG)w->MinHeight)
+		  new_height = w->MinHeight;
+		  
+		if (w->MaxHeight != 0 && new_height > (ULONG)w->MaxHeight)
+		  new_height = w->MaxHeight;
+
+
+                /* limit dimensions so window fits on the screen */		
 		if (new_width + w->LeftEdge > scr->Width)
-		{
 		  new_width = scr->Width - w->LeftEdge;
-		}
 		
 		if (new_height + w->TopEdge > scr->Height)
-		{
 		  new_height = scr->Height - w->TopEdge;
-		}
 		
 
 		if (data->height != new_height || data->width != new_width)
