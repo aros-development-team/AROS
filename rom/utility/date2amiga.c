@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Convert a human understandable date to a machine form.
@@ -80,6 +80,26 @@
 	is after February, then I can add a leap year.
     */
 
+#if 1
+    /* stegerg: based on dos.library/strtodate */
+    
+    year = date->year;
+
+    if (((year % 400) == 0) || (((year % 4) == 0) && !((year % 100) == 0)))
+    {
+    	/* data->year is a leap year. So dayspermonth table was wrong if
+	   month >= March */
+	   
+	if (date->month >= 3) time += 86400;
+    }
+    
+    year--;
+    
+    leaps = ((year / 4) - (year / 100) + (year / 400) - (494 - 19 + 4));
+
+    time += leaps * 86400;
+    
+#else
     year++;
     leaps = year / 4;
     if( (year % 4 == 3) && (date->month > 2))
@@ -93,6 +113,7 @@
 	leaps--;
 
     time += leaps * 86400;
+#endif
 
     return time;
 
