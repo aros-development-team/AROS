@@ -54,7 +54,7 @@ Boston, MA 02111-1307, USA.  */
 #   include <netinet/in.h> /* for htonl/ntohl() */
 #endif
 
-#define ID	((0L << 24) | (5L << 16) | 2)
+#define ID	((0L << 24) | (6L << 16) | 0)
 
 /* Types */
 typedef struct _Node Node;
@@ -939,7 +939,7 @@ finddirnode (Project * prj, const char * path)
     node = prj->topdir;
 
     if (!*ptr)
-	return NULL;
+	return node;
 
     subdir = NULL;
 
