@@ -8,6 +8,7 @@
 #include <proto/exec.h>
 #include "muimaster_intern.h"
 #include "support_classes.h"
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -51,12 +52,19 @@
     /* CLF_INLIST tells us that this class is a builtin class */
     if (cl->cl_Flags & CLF_INLIST)
     {
+        Class *super = cl->cl_Super;
+
         ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
 
 	ZUNE_RemoveBuiltinClass(cl, MUIMasterBase);
 
         if (FreeClass(cl))
+	{
+	    bug ("Freed %s\n", cl->cl_ID);
             CloseLibrary(MUIMasterBase);
+	    if (strcmp(super->cl_ID, ROOTCLASS) != 0)
+	        MUI_FreeClass(super);
+	}
         else
 	    /* Re-add the class to the list since freeing it failed */
             ZUNE_AddBuiltinClass(cl, MUIMasterBase);
