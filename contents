@@ -65,6 +65,8 @@ makefile - This is the magic file which holds the whole thing together.
 
 	\exec{gawk -f makefile2html.gawk --assign secfilt="target" $(TOP)/makefile}
 
+make.opt - File with options for the make. Edit to you liking.
+
 rom/ - Things which are internal parts of the OS.
 
 scripts/ - Scripts which are used to generate code.

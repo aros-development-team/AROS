@@ -7,3 +7,4 @@ crypt.c
 makefile
 tpl.c
 contents
+make.opts

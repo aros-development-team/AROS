@@ -1,0 +1,3 @@
+# Some options for the make
+
+STATIC_EXEC = yes
