@@ -131,12 +131,11 @@ static void thinborder_draw (struct MUI_RenderInfo *mri,
     Draw(rp, left,             top);
     Draw(rp, left + width - 1, top);
 
-    /* FIXME: missing SetAPen() here? */
     Move(rp, left + width - 2, top + 2);
     Draw(rp, left + width - 2, top + height - 2);
     Draw(rp, left + 2,         top + height - 2);
 
-    rect_draw(mri, left+1, top+1, width-2, height-2, lr_preset);
+    rect_draw(mri, left+1, top+1, width-1, height-1, lr_preset);
 }
 
 /**************************************************************************
