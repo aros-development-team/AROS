@@ -14,17 +14,17 @@
 
 /* ------------------------------ prototypes ------------------------------ */
 
-static ULONG om_new(Class *cl, Object *obj, struct opSet *msg);
-static ULONG om_dispose(Class *cl, Object *obj, Msg msg);
+ULONG AmigaGuide__OM_NEW(Class *cl, Object *obj, struct opSet *msg);
+ULONG AmigaGuide__OM_DISPOSE(Class *cl, Object *obj, Msg msg);
 static ULONG om_set(Class *cl, Object *obj, struct opSet *msg);
 static ULONG om_update(Class *cl, Object *obj, struct opSet *msg);
 
-static ULONG gm_render(Class *cl, Object *obj, struct gpRender *msg);
-static ULONG gm_layout(Class *cl, Object *obj, struct gpLayout *msg);
-static ULONG gm_input(Class *cl, Object *obj, struct gpInput *msg);
+ULONG AmigaGuide__GM_RENDER(Class *cl, Object *obj, struct gpRender *msg);
+ULONG AmigaGuide__GM_LAYOUT(Class *cl, Object *obj, struct gpLayout *msg);
+ULONG AmigaGuide__GM_HANDLEINPUT(Class *cl, Object *obj, struct gpInput *msg);
 
-static ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg);
-static ULONG dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg);
+ULONG AmigaGuide__DTM_ASYNCLAYOUT(Class *cl, Object *obj, struct gpLayout *msg);
+ULONG AmigaGuide__DTM_TRIGGER(Class *cl, Object *obj, struct dtTrigger *msg);
 
 
 static void ActivateAGObject(Class *cl, Object *obj, struct GadgetInfo *ginfo,
@@ -89,7 +89,11 @@ BOOL UserClassBaseOpen(struct ClassBase *cb)
 
    return FALSE;
 }
+#ifdef __AROS__
+BOOL UserClassBaseClose(struct ClassBase *cb)
+#else
 void UserClassBaseClose(struct ClassBase *cb)
+#endif
 {
    if(cb->cb_Navigator != NULL)
       if(FreeNavigatorClass(cb, cb->cb_Navigator))
@@ -97,7 +101,18 @@ void UserClassBaseClose(struct ClassBase *cb)
    if(cb->cb_NodeClass != NULL)
       if(FreeNodeClass(cb, cb->cb_NodeClass))
          cb->cb_NodeClass = NULL;
+    
+#ifdef __AROS__
+    return TRUE;
+#endif
 }
+
+#ifdef __AROS__
+#include <aros/symbolsets.h>
+
+ADD2INITLIB(UserClassBaseOpen, -1);
+ADD2EXPUNGELIB(UserClassBaseClose, -1);
+#endif /* __AROS__ */
 
 /* ------------------------------ functions ------------------------------- */
 
@@ -154,12 +169,13 @@ void MakeNavGadget(Class *cl, Object *obj, struct IBox *domain)
 *
 */
 
-static
-ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
+
+ULONG AmigaGuide__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
-   ULONG rv = (ULONG) obj;
+   ULONG rv;
    CLASSBASE;
    INSTDATA;
+   Object *newobj;
 
    STRPTR nodename = "main";
    ULONG sourcetype;
@@ -167,6 +183,15 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
 
    struct TagItem *tstate = msg->ops_AttrList;
    struct TagItem *tag;
+
+   rv = DoSuperMethodA(cl, obj, msg);
+   if (rv == 0)
+	return rv;
+    else
+    {
+	obj = (Object *)rv;
+        data = (struct AmigaGuideData *)INST_DATA(cl, obj);
+    }
 
    /* initialize the instance data */
    data->ag_Pool = CreatePool(MEMF_CLEAR | MEMF_ANY, AG_PUDDLE_SIZE, AG_PUDDLE_SIZE);
@@ -221,9 +246,12 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
       {
          switch(sourcetype)
          {
+	     char s[1024];
          case DTST_FILE:
    	    data->ag_File->agf_Handle = handle;
             data->ag_File->agf_Lock = DupLockFromFH(handle);
+	     NameFromFH(handle, s, 1024);
+	     DB(("Scanning file %s\n", s));
    	    ScanFile(cl, obj, data->ag_File);
 
             if(data->ag_File->agf_OnOpen != NULL)
@@ -258,6 +286,9 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
       }
    }
 
+   if (rv == (ULONG)NULL)
+	CoerceMethod(cl, obj, OM_DISPOSE);
+
    return rv;
 }
 
@@ -281,8 +312,8 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
 *
 */
 
-static
-ULONG om_dispose(Class *cl,Object *obj,Msg msg)
+
+ULONG AmigaGuide__OM_DISPOSE(Class *cl,Object *obj,Msg msg)
 {
    CLASSBASE;
    INSTDATA;
@@ -358,8 +389,8 @@ ULONG om_dispose(Class *cl,Object *obj,Msg msg)
 *
 */
 
-static
-ULONG om_get(Class *cl,Object *obj,struct opGet *msg)
+
+ULONG AmigaGuide__OM_GET(Class *cl,Object *obj,struct opGet *msg)
 {
    ULONG rv;
    INSTDATA;
@@ -524,8 +555,8 @@ ULONG om_set(Class *cl,Object *obj,struct opSet *msg)
 }
 
 
-static
-ULONG gm_layout(Class *cl, Object *obj, struct gpLayout *msg)
+
+ULONG AmigaGuide__GM_LAYOUT(Class *cl, Object *obj, struct gpLayout *msg)
 {
    CLASSBASE;
    INSTDATA;
@@ -614,8 +645,8 @@ ULONG gm_layout(Class *cl, Object *obj, struct gpLayout *msg)
    return rc;
 }
 
-static
-ULONG gm_render(Class *cl, Object *obj, struct gpRender *msg)
+
+ULONG AmigaGuide__GM_RENDER(Class *cl, Object *obj, struct gpRender *msg)
 {
    CLASSBASE;
    INSTDATA;
@@ -718,8 +749,8 @@ ULONG gm_render(Class *cl, Object *obj, struct gpRender *msg)
 *
 */
 
-static
-ULONG gm_input(Class *cl, Object *obj, struct gpInput *msg)
+
+ULONG AmigaGuide__GM_HANDLEINPUT(Class *cl, Object *obj, struct gpInput *msg)
 {
    CLASSBASE;
    INSTDATA;
@@ -770,8 +801,8 @@ ULONG gm_input(Class *cl, Object *obj, struct gpInput *msg)
    return rv;
 }
 
-static
-ULONG dtm_removedtobject(Class *cl, Object *obj, Msg msg)
+
+ULONG AmigaGuide__DTM_REMOVEDTOBJECT(Class *cl, Object *obj, Msg msg)
 {
    INSTDATA;
 
@@ -791,8 +822,8 @@ ULONG dtm_removedtobject(Class *cl, Object *obj, Msg msg)
    return DoSuperMethodA(cl, obj, msg);
 }
 
-static
-ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
+
+ULONG AmigaGuide__DTM_ASYNCLAYOUT(Class *cl, Object *obj, struct gpLayout *msg)
 {
    CLASSBASE;
    INSTDATA;
@@ -977,8 +1008,8 @@ ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
 */
 
 
-static
-ULONG dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg)
+
+ULONG AmigaGuide__DTM_TRIGGER(Class *cl, Object *obj, struct dtTrigger *msg)
 {
    CLASSBASE;
    INSTDATA;
@@ -1275,8 +1306,8 @@ void ActivateAGObject(Class *cl, Object *obj, struct GadgetInfo *ginfo,
 */
 
 
-static
-ULONG dtm_goto(Class *cl, Object *obj, struct dtGoto *msg)
+
+ULONG AmigaGuide__DTM_GOTO(Class *cl, Object *obj, struct dtGoto *msg)
 {
    CLASSBASE;
    INSTDATA;
@@ -1553,6 +1584,83 @@ ULONG dtm_goto(Class *cl, Object *obj, struct dtGoto *msg)
    return rv;
 }
 
+#ifdef __AROS__
+IPTR AmigaGuide__OM_UPDATE(Class *cl, Object *obj, struct opSet *msg)
+{
+    ULONG rv;
+    
+    /* avoid update loops */
+    if(DoMethod(obj, ICM_CHECKLOOP))
+	return (IPTR)0;
+
+    rv = om_update(cl, obj, msg);
+    rv += om_set(cl, obj, msg);
+
+    rv += (ULONG)DoSuperMethodA(cl, obj, (Msg) msg);
+
+    DB(("set returned %ld\n", rv));
+    /* this class is derived from the gadgetclass, check
+     * if the gadget needs a refresh : */
+    if(rv != 0 && (OCLASS (obj) == cl))
+    {
+	struct RastPort *rp;
+	if((rp = ObtainGIRPort(CAST_SET(msg)->ops_GInfo)) != NULL)
+	{
+            struct gpRender render;
+            render.MethodID  = GM_RENDER;
+            render.gpr_GInfo = CAST_SET(msg)->ops_GInfo;
+            render.gpr_RPort = rp;
+            render.gpr_Redraw= GREDRAW_UPDATE;
+	    DoMethodA(obj, (Msg) &render);
+
+	    ReleaseGIRPort(rp);
+	}
+    }
+
+    return (IPTR)rv;
+}
+
+IPTR AmigaGuide__OM_SET(Class *cl, Object *obj, struct opSet *msg)
+{
+    ULONG rv = om_set(cl, obj, CAST_SET(msg));
+
+    rv += (ULONG)DoSuperMethodA(cl, obj, (Msg) msg);
+
+    DB(("set returned %ld\n", rv));
+    /* this class is derived from the gadgetclass, check
+     * if the gadget needs a refresh : */
+    if(rv != 0 && (OCLASS (obj) == cl))
+    {
+	struct RastPort *rp;
+	if((rp = ObtainGIRPort(CAST_SET(msg)->ops_GInfo)) != NULL)
+	{
+            struct gpRender render;
+            render.MethodID  = GM_RENDER;
+            render.gpr_GInfo = CAST_SET(msg)->ops_GInfo;
+            render.gpr_RPort = rp;
+            render.gpr_Redraw= GREDRAW_UPDATE;
+	    DoMethodA(obj, (Msg) &render);
+
+	    ReleaseGIRPort(rp);
+	}
+    }
+    
+    return (IPTR)rv;
+}
+
+IPTR AmigaGuide__GM_GOACTIVE(Class *cl, Object *obj, struct gpInput *msg)
+{
+    return AmigaGuide__GM_HANDLEINPUT(cl, obj, msg);
+}
+
+IPTR AmigaGuide__DTM_PROCLAYOUT(Class *cl, Object *obj, struct gpLayout *msg)
+{
+    DoSuperMethodA(cl, obj, (Msg)msg);
+    
+    return AmigaGuide__DTM_ASYNCLAYOUT(cl, obj, msg);
+}
+#endif /* __AROS__ */
+
 IPTR class_dispatcher(Class *cl, Object *obj, Msg msg)
 {
    CLASSBASE;
@@ -1561,20 +1669,14 @@ IPTR class_dispatcher(Class *cl, Object *obj, Msg msg)
    switch(msg->MethodID)
    {
    case OM_NEW:
-      if((rv = DoSuperMethodA(cl, obj, msg)) != 0)
-      {
-	 Object *newobj = (Object *) rv;
-
-	 if((rv = om_new(cl, newobj, CAST_SET(msg))) == (ULONG) NULL)
-	    CoerceMethod(cl, newobj, OM_DISPOSE);
-      }
+      rv = AmigaGuide__OM_NEW(cl, obj, CAST_SET(msg));
       break;
    case OM_DISPOSE:
-      rv = om_dispose(cl, obj, msg);
+      rv = AmigaGuide__OM_DISPOSE(cl, obj, msg);
       break;
 
    case OM_GET:
-      rv = om_get(cl,obj,(struct opGet *) msg);
+      rv = AmigaGuide__OM_GET(cl,obj,(struct opGet *) msg);
       break;
 
    case OM_UPDATE:
@@ -1608,29 +1710,29 @@ IPTR class_dispatcher(Class *cl, Object *obj, Msg msg)
       }
       break;
    case GM_LAYOUT:
-      rv = gm_layout(cl, obj, CAST_GPL(msg));
+      rv = AmigaGuide__GM_LAYOUT(cl, obj, CAST_GPL(msg));
       break;
    case GM_RENDER:
-      rv = gm_render(cl, obj, (struct gpRender *) msg);
+      rv = AmigaGuide__GM_RENDER(cl, obj, (struct gpRender *) msg);
       break;
    case GM_GOACTIVE:
    case GM_HANDLEINPUT:
-      rv = gm_input(cl, obj, (struct gpInput *) msg);
+      rv = AmigaGuide__GM_HANDLEINPUT(cl, obj, (struct gpInput *) msg);
       break;
    case DTM_REMOVEDTOBJECT:
-      rv = dtm_removedtobject(cl, obj, msg);
+      rv = AmigaGuide__DTM_REMOVEDTOBJECT(cl, obj, msg);
       break;
    case DTM_PROCLAYOUT:
       rv = DoSuperMethodA(cl, obj, msg);
       /* fall through */
    case DTM_ASYNCLAYOUT:
-      rv = dtm_asynclayout(cl, obj, CAST_GPL(msg));
+      rv = AmigaGuide__DTM_ASYNCLAYOUT(cl, obj, CAST_GPL(msg));
       break;
    case DTM_TRIGGER:
-      rv = dtm_trigger(cl, obj, (struct dtTrigger *) msg);
+      rv = AmigaGuide__DTM_TRIGGER(cl, obj, (struct dtTrigger *) msg);
       break;
    case DTM_GOTO:
-      rv = dtm_goto(cl, obj, (struct dtGoto *) msg);
+      rv = AmigaGuide__DTM_GOTO(cl, obj, (struct dtGoto *) msg);
       break;
    default:
       rv = DoSuperMethodA(cl,obj,msg);

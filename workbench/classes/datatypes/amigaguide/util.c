@@ -855,7 +855,6 @@ ULONG SystemCommand(Class *cl, Object *obj, STRPTR command)
    return rc;
 }
 
-#undef GfxBase
 BOOL GetFontDimension(Class *cl, Object *obj, STRPTR font, WORD *x, WORD *y)
 {
    CLASSBASE;
@@ -864,12 +863,11 @@ BOOL GetFontDimension(Class *cl, Object *obj, STRPTR font, WORD *x, WORD *y)
    struct TextAttr ta;
    if(font == NULL)
    {
-      tf = ((struct GfxBase *) cb->cb_GfxBase)->DefaultFont;
+      tf = GfxBase->DefaultFont;
       *x = tf->tf_XSize;
       *y = tf->tf_YSize;
       return TRUE;
    }
-#define GfxBase cb->cb_GfxBase
 
    ta.ta_Name = fontname;
    ParseFontLine(cl, obj, font, &ta);
