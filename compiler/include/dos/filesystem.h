@@ -408,11 +408,14 @@ struct IFS_RELABEL
 #define FMF_CREATE   (1L<<4)  /* Create file if it doesn't exist. */
 #define FMF_CLEAR    (1L<<5)  /* Truncate file on open. */
 #define FMF_RAW      (1L<<6)  /* Switch cooked to raw and vice versa. */
+#define FMF_NONBLOCK (1L<<7)  /* Don't block Open() in case it would
+                                 and return an error in case Write()/Read()
+				 would block */
 
 #define FMF_AMIGADOS (1L<<31) /* Identifies the old AmigaDOS modes */
-#define FMF_MODE_OLDFILE   FMF_AMIGADOS | FMF_WRITE | FMF_READ
-#define FMF_MODE_READWRITE FMF_MODE_OLDFILE | FMF_CREATE
-#define FMF_MODE_NEWFILE   FMF_MODE_READWRITE | FMF_LOCK | FMF_CLEAR
+#define FMF_MODE_OLDFILE   (FMF_AMIGADOS | FMF_WRITE | FMF_READ)
+#define FMF_MODE_READWRITE (FMF_MODE_OLDFILE | FMF_CREATE)
+#define FMF_MODE_NEWFILE   (FMF_MODE_READWRITE | FMF_LOCK | FMF_CLEAR)
 
 /* io_MountMode for FSA_MOUNT_MODE. These are flags and may be or'ed. */
 #define MMF_READ	(1L<<0) /* Mounted for reading. */
@@ -489,5 +492,10 @@ struct IOFileSys
 	struct IFS_CHANGE_SIGNAL   io_CHANGE_SIGNAL;  /* FSA_CHANGE_SIGNAL */
     } io_Union;
 };
+
+/* Define some AROS' specific errors */
+
+#define ERROR_BROKEN_PIPE   400  /* An attempt to write on a pipe without any reader has been made */
+#define ERROR_WOULD_BLOCK   401  /* A Read() or a Write() on a file opened with the FMF_NONBLOCK flag would block */
 
 #endif /* DOS_FILESYSTEM_H */
