@@ -18,10 +18,9 @@
 #include <unistd.h>
 
 #include "ldscript.h"
+#include "gensets.h"
 
 #define TMPTEMPLATE "aros-collect.XXXXXX"
-
-extern int gensets(FILE *in, FILE *out);
 
 static char *old_path;
 static char *compiler_path;
