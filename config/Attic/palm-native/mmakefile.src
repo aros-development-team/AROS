@@ -55,37 +55,49 @@ create-mf-inc-again :
 
 
 # Kernel
-#MM- kernel-palm : kernel-exec-palm \
-#MM	    kernel-expansion-linklib kernel-expansion-palm-m68000 \
-#MM	    kernel-utility-linklib
+#MM- kernel-palm :                    \
+#MM	kernel-exec-palm              \
+#MM	kernel-expansion-linklib      \
+#MM	kernel-expansion-palm-m68000  \
+#MM	kernel-utility-linklib        \
+#MM	kernel-aros-linklib           \
+#MM	kernel-oop-native-i386 kernel-oop-linklib            \
+#MM	kernel-hidd-linklib           \
+#MM	kernel-mathieeesingbas-linklib\
+#MM	kernel-timer-linklib          \
+#MM	kernel-misc-linklib kernel-misc-palm-m68000 \
+#MM	kernel-battclock-palm         \
+#MM	kernel-boot-linklib-quick     \
+#MM	kernel-dos-palm               \
+#MM	kernel-graphics-linklib       \
+#MM	graphics-gfxhidd              \
+#MM	kernel-graphics-palm-m68000   \
+#MM	kernel-layers-linklib         \
+#MM	kernel-intuition-palm         \
+#MM	kernel-mathffp-linklib        \
+#MM	kernel-workbench-linklib      \
+#MM	kernel-keymap-linklib         \
+#MM	kernel-keyboard-linklib       \
+#MM	kernel-gameport-linklib kernel-input-linklib kernel-console-linklib
 
 
-#MM	    kernel-dos-palm \
+## kernel-boot-linklib seems broken
+
+##MM kernel-devs = gamport+input+console
 #MM	    kernel-boot-linklib \
-#MM	    kernel-aros-linklib \
-#MM	    kernel-oop-linklib \
-#MM	    kernel-hidd-linklib \
-#MM	    kernel-graphics-linklib graphics-gfxhidd kernel-graphics-palm-m68000 \
-#MM	    kernel-layers-linklib \
-#MM	    kernel-timer-linklib \
-#MM	    kernel-misc-linklib kernel-misc-palm-m68000 \
-#MM	    kernel-battclock-palm \
 #MM	    kernel-devs \
-#MM         kernel-intuition-palm \
 #MM	    kernel-keymap-linklib \
 #MM		kernel-filesys-palm-m68000 \
 #MM		Drivers-irq \
 #MM		Drivers-kbd \
 #MM		Drivers-palm
-##MM	    kernel-mathieeesingbas-linklib \
-##MM	    kernel-mathffp-linklib \
-##MM	    kernel-workbench-linklib \
 
 
 # Setup
 #MM- setup-palm : setup-exec-$(ARCH)-$(CPU) \
 #MM	setup-mlib-$(ARCH)-$(CPU) \
-#MM	setup-clib-$(ARCH)-$(CPU)
+#MM	setup-clib-$(ARCH)-$(CPU) \
+#MM	setup-dos-native-$(ARCH)
 
 
 # MM		setup-intuition-$(CPU) \
@@ -112,7 +124,7 @@ create-mf-inc-again :
 
 #MM- kernel-battclock-palm : battclock-$(CPU) kernel-battclock-linklib
 
-#MM- kernel-dos-palm : dos-$(CPU) kernel-dos-linklib
+#MM- kernel-dos-palm : dos-native-palm kernel-dos-linklib
 
 # Setup libraries
 #MM kernel-exec-palm-m68000 :
