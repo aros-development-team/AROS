@@ -965,7 +965,7 @@ iffparse00036;2;nlorentz;Write CloseClipboard
 iffparse00037;2;nlorentz;Write GoodID
 iffparse00038;2;nlorentz;Write GoodType
 iffparse00039;2;nlorentz;Write IDtoStr
-input00000;1;SDuvan;Write PeekQualifier
+input00000;2;stegerg;Write PeekQualifier
 intuition00000;0;digulla;Write OpenIntuition
 intuition00001;0;digulla;Write Intuition
 intuition00002;2;digulla;Write AddGadget
