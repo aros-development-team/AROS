@@ -150,7 +150,7 @@ extern void _aros_not_implemented (char *);
 /* if this is defined, all AROS_LP*-macros will expand to nothing. */
 #define __AROS_USE_MACROS_FOR_LIBCALL
 
-#define __UFC3R(t,n,t1,n1,r1,t2,n2,r2,t3,n3,r3,p) \
+#define __UFC3R(_t,_n,t1,n1,r1,t2,n2,r2,t3,n3,r3,p) \
 ({\
     long _n1 = (long)(n1);\
     long _n2 = (long)(n2);\
@@ -169,9 +169,9 @@ extern void _aros_not_implemented (char *);
 	"lea    12(%%esp),%%esp\n\t"\
 	"movl   %%eax,%0"\
 	: "=g"(_re), "=m"(*(APTR *)p)\
-	: "ad"(n), "g"(_n1), "g"(_n2), "g"(_n3)\
+	: "ad"(_n), "g"(_n1), "g"(_n2), "g"(_n3)\
 	: "cc", "memory", "%eax" );\
-    (t)_re;\
+    (_t)_re;\
 })
 #define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
 
