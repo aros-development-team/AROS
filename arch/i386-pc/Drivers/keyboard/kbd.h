@@ -2,7 +2,7 @@
 #define HIDD_KBD_H
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    Copyright (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Include for the kbd HIDD.
