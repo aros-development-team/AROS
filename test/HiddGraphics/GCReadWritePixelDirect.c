@@ -76,8 +76,9 @@
 #include "gfxhiddtool.h"
 
 #undef  SDEBUG
+#define SDEBUG 0
 #undef  DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 struct DosLibrary    *DOSBase;
@@ -115,6 +116,7 @@ int main(int argc, char **argv)
 
     WORD  x, y;
     ULONG val;
+    char  wait;
 
     struct Args
     {
@@ -145,7 +147,7 @@ int main(int argc, char **argv)
 
                 HiddGfxAttrBase    = ObtainAttrBase(IID_Hidd_Gfx);
                 HiddBitMapAttrBase = ObtainAttrBase(IID_Hidd_BitMap);
-                HiddGCAttrBase     = ObtainAttrBase(IID_Hidd_GCQuick);
+                HiddGCAttrBase     = ObtainAttrBase(IID_Hidd_GC);
         
                 if(HiddGfxAttrBase && HiddBitMapAttrBase && HiddGCAttrBase)
                 {
@@ -175,10 +177,17 @@ int main(int argc, char **argv)
                             if(gc)
                             {
                                 msg_WritePixel.val = 0;
-                                msg_WritePixel.mID = GetMethodID(IID_Hidd_GCQuick, moHidd_GC_WritePixelDirect);
-                                msg_ReadPixel.mID  = GetMethodID(IID_Hidd_GCQuick, moHidd_GC_ReadPixel);
-        
-                                for(y = 0; y < 10; y++)
+                                msg_WritePixel.mID = GetMethodID(IID_Hidd_GC, moHidd_GC_WritePixelDirect);
+                                msg_ReadPixel.mID  = GetMethodID(IID_Hidd_GC, moHidd_GC_ReadPixel);
+
+                                for(x = 0; x < 30; x++)
+                                {
+                                    msg_WritePixel.x = x;
+                                    msg_WritePixel.y = 1;
+                                    DoMethod(gc, (Msg) &msg_WritePixel);
+                                }
+
+                                for(y = 1; y < 11; y++)
                                 {
                                     for(x = 0; x < 10; x++)
                                     {
@@ -203,7 +212,10 @@ int main(int argc, char **argv)
                                         msg_WritePixel.val++;
                                     }
                                 }
-        
+
+                                printf("Press enter to continue");
+                                scanf("%c", &wait);
+
                                 HIDD_Gfx_DisposeGC(gfxHidd, gc);
         
                                 ret = RETURN_OK;
@@ -218,7 +230,7 @@ int main(int argc, char **argv)
     
                 if(HiddGfxAttrBase)    ReleaseAttrBase(IID_Hidd_Gfx);
                 if(HiddBitMapAttrBase) ReleaseAttrBase(IID_Hidd_BitMap);
-                if(HiddGCAttrBase)     ReleaseAttrBase(IID_Hidd_GCQuick);
+                if(HiddGCAttrBase)     ReleaseAttrBase(IID_Hidd_GC);
 
                 CloseLibrary(HIDDGraphicsBase);
             } /* if(HIDDGraphicsBase) */

@@ -11,7 +11,14 @@ LIBS    = -L$(LIBDIR) -larossupport -lamiga -lhiddgraphicsstubs $(TOOL).a -laros
 FILES	    := \
 	BitMapNewDispose \
         GCNewDispose     \
-        GCReadWritePixelDirect
+        GCReadWritePixelDirect \
+	GCWritePixel \
+	GCDrawLine \
+	GCCopyArea \
+	GCDrawRect \
+	GCDrawPolygon \
+	GCDrawEllipse \
+	GCDrawText
 
 TOOL  := gfxhiddtool
 

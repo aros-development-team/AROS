@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 
                 HiddGfxAttrBase    = ObtainAttrBase(IID_Hidd_Gfx);
                 HiddBitMapAttrBase = ObtainAttrBase(IID_Hidd_BitMap);
-                HiddGCAttrBase     = ObtainAttrBase(IID_Hidd_GCQuick);
+                HiddGCAttrBase     = ObtainAttrBase(IID_Hidd_GC);
                 if(HiddGfxAttrBase && HiddBitMapAttrBase && HiddGCAttrBase)
                 {
                     gfxHidd = NewObject(NULL, args.hiddName, NULL);
@@ -167,7 +167,7 @@ int main(int argc, char **argv)
                     } /* if(gfxHidd) */
                 }  /* if(HiddGfxAttrBase && HiddBitMapAttrBase && HiddGCAttrBase) */
 
-                if(HiddGCAttrBase)     ReleaseAttrBase(IID_Hidd_GCQuick);
+                if(HiddGCAttrBase)     ReleaseAttrBase(IID_Hidd_GC);
                 if(HiddBitMapAttrBase) ReleaseAttrBase(IID_Hidd_BitMap);
                 if(HiddGfxAttrBase)    ReleaseAttrBase(IID_Hidd_Gfx);
 
