@@ -5,17 +5,18 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #ifdef _AROS
+#include <libraries/mui.h>
 #include <proto/muimaster.h>
 #endif
 #include <clib/alib_protos.h>
 #include <stdio.h>
 
-#include <mui.h>
-#undef SysBase
-
 struct Library       *MUIMasterBase;
 
 #ifndef _AROS
+
+#include <mui.h>
+#undef SysBase
 
 /* On AmigaOS we build a fake library base, because it's not compiled as sharedlibrary yet */
 #include "muimaster_intern.h"
