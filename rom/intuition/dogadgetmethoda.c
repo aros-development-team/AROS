@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.6  1999/05/01 05:19:36  bergers
+    All system gadgets are drawn into the BorderRPort of the window.
+
     Revision 1.5  1998/10/20 16:45:53  hkiel
     Amiga Research OS
 
@@ -129,11 +132,18 @@
 		/* Initialize the GadgetInfo data. */
 		gi->gi_Window	      = tw;
 		gi->gi_Screen	      = tw->WScreen;
-		gi->gi_RastPort       = tw->RPort;
 		gi->gi_Layer	      = tw->WLayer;
 		gi->gi_Pens.DetailPen = tw->DetailPen;
 		gi->gi_Pens.BlockPen  = tw->BlockPen;
 		gi->gi_DrInfo	      = GetScreenDrawInfo (gi->gi_Screen);
+
+                /* All system gadgets go into the BorderRPort of the
+                   window
+                */
+                if (gad->GadgetType & GTYP_SYSGADGET)
+                  gi->gi_RastPort = tw->BorderRPort;
+                else
+                  gi->gi_RastPort = tw->RPort;
 
 		switch (gad->GadgetType & GTYP_GTYPEMASK)
 		{
