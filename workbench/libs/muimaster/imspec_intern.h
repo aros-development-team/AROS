@@ -82,7 +82,7 @@ struct MUI_ImageSpec_intern /* _intern */
 	    LONG muiimg;                           /* index in prefs->imagespecs[] */
 	} cfg;
 	struct {
-            UBYTE orientation;
+            UWORD angle;                     /* integer values in [0,360) */
             Object *obj;
             ULONG start_rgb[3];
             ULONG end_rgb[3];

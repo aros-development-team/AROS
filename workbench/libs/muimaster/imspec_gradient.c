@@ -5,7 +5,9 @@
     $Id$
 */
 
+#include <math.h>
 #include <intuition/imageclass.h>
+#include <cybergraphx/cybergraphics.h>
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
 
@@ -121,6 +123,138 @@ STATIC VOID TrueDitherH
     }
 }
 
+struct myrgb
+{
+    int red,green,blue;
+};
+
+/*****************************************************************
+ Fill the given rectangle with a angle oriented gradient. The
+ unit angle uses are degrees
+******************************************************************/
+STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt, int xb, int yb, ULONG *start_rgb, ULONG *end_rgb, int angle)
+{
+    /* The basic idea of this algorithm is to calc the intersection between the
+     * diagonal of the rectangle (xs,ys) with dimension (xw,yw) a with the line starting
+     * at (x,y) (every pixel inside the rectangle) and angle angle with direction vector (vx,vy).
+     * 
+     * Having the intersection point we then know the color of the pixel.
+     * 
+     * TODO: Turn the algorithm into a incremental one
+     *       Remove the use of floating point variables
+     */
+
+    double rad = angle*PI/180;
+    double cosarc = cos(rad);
+    double sinarc = sin(rad);
+
+    struct myrgb startRGB,endRGB;
+    int diffR, diffG, diffB;
+
+    int l,y,c,x;
+    int x1,y1; /* The intersection point */
+    int xs,ys,xw,yw;
+    int xadd,ystart,yadd;
+    double vx = -cosarc;
+    double vy = sinarc;
+
+    int width = xb - xt + 1;
+    int height = yb - yt + 1;
+
+    UBYTE *buf = (UBYTE*)AllocVec(width*3,0);
+    if (!buf) return 0;
+
+    startRGB.red = start_rgb[0];
+    startRGB.green = start_rgb[1];
+    startRGB.blue = start_rgb[2];
+
+    endRGB.red = end_rgb[0];
+    endRGB.green = end_rgb[1];
+    endRGB.blue = end_rgb[2];
+
+    diffR = endRGB.red - startRGB.red;
+    diffG = endRGB.green - startRGB.green;
+    diffB = endRGB.blue - startRGB.blue;
+
+    /* Normalize the angle */
+    if (angle < 0) angle = 360 - ((-angle)%360);
+    if (angle >= 0) angle = angle % 360;
+
+    if (angle <= 90 || (angle > 180 && angle <= 270))
+    {
+	/* The to be intersected diagonal goes from the top left edge to the bottom right edge */
+	xs = 0;
+	ys = 0;
+	xw = width;
+	yw = height;
+    } else
+    {
+	/* The to be intersected diagonal goes from the bottom left edge to the top right edge */
+	xs = 0;
+	ys = height;
+	xw = width;
+	yw = -height;
+    }
+		
+    if (angle > 90 && angle <= 270)
+    {
+	/* for these angle we have y1 = height - y1. Instead of
+	 * 
+	 *  y1 = height - (-vy*(yw*  xs -xw*  ys)         + yw*(vy*  x -vx*  y))        /(-yw*vx + xw*vy);
+	 * 
+	 * we can write
+	 * 
+         *  y1 =          (-vy*(yw*(-xs)-xw*(-ys+height)) + yw*(vy*(-x)-vx*(-y+height)))/(-yw*vx + xw*vy);
+         * 
+         * so height - y1 can be expressed with the normal formular adapting some parameters.
+	 * 
+	 * Note that if one would exchanging startRGB/endRGB the values would only work
+	 * for linear color gradients
+	 */
+	xadd = -1;
+	yadd = -1;
+	ystart = height;
+
+	xs = -xs;
+	ys = -ys + height;
+    } else
+    {
+	xadd = 1;
+	yadd = 1;
+	ystart = 0;
+    }
+
+    for (l = 0, y = ystart; l < height; l++, y+=yadd)
+    {
+	UBYTE *bufptr = buf;
+	for (c = 0, x = 0; c < width; c++, x+=xadd)
+	{
+	    int red,green,blue;
+	    int e,f;
+
+	    /* Calculate the intersection of two lines, this is not the fastet way to do but
+	     * it is intuitive. Note: very slow! Will be optimzed later (remove FFP usage
+             * and making it incremental) */
+	    y1 = (int)((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));
+
+	    e = y1;
+	    f =  height;
+					
+	    red = startRGB.red + (int)(diffR*e/f);
+	    green = startRGB.green + (int)(diffG*e/f);
+	    blue = startRGB.blue + (int)(diffB*e/f);
+
+	    *bufptr++ = red;
+	    *bufptr++ = green;
+	    *bufptr++ = blue;
+	}
+	WritePixelArray(buf,0,0,width*3 /* srcMod */,
+			rp,xt,yt+l,width,1,RECTFMT_RGB);
+    }
+    FreeVec(buf);
+    return 1;
+}
+
 /***************************************************************************************************/
 
 VOID zune_gradient_draw
@@ -137,9 +271,9 @@ VOID zune_gradient_draw
     if (!(CyberGfxBase && (GetBitMapAttr(mri->mri_RastPort->BitMap, BMA_DEPTH) >= 15)))
         return;
 
-    switch(spec->u.gradient.orientation)
+    switch(spec->u.gradient.angle)
     {
-        case 'v':
+        case 0:
         {
             LONG oy1 = _mtop(spec->u.gradient.obj), oy2 = _mbottom(spec->u.gradient.obj);
             LONG delta_oy = oy2 - oy1;
@@ -194,7 +328,7 @@ VOID zune_gradient_draw
 
             break;
         }
-        case 'h':
+        case 90:
         {
             LONG ox1 = _mleft(spec->u.gradient.obj), ox2 = _mright(spec->u.gradient.obj);
             LONG delta_ox = ox2 - ox1;
@@ -249,43 +383,53 @@ VOID zune_gradient_draw
 
             break;
         }
-    } /* switch(orientation) */
+	default:
+	    FillPixelArrayGradient(mri->mri_RastPort, x1, y1, x2, y2, start_rgb, end_rgb, spec->u.gradient.angle);
+	    break;
+    } /* switch(angle) */
 }
 
 BOOL zune_gradient_string_to_intern(CONST_STRPTR str,
                                      struct MUI_ImageSpec_intern *spec)
 {
-    UBYTE orientation;
+    ULONG angle;
     ULONG start_r, start_g, start_b;
     ULONG end_r, end_g, end_b;
 
-    if
-    (
-        !str
-     || !spec
-     || (sscanf(str, "%c,%8lx,%8lx,%8lx-%8lx,%8lx,%8lx",
-                     &orientation, &start_r, &start_g, &start_b,
-                     &end_r, &end_g, &end_b) < 7)
-    )
+    if (!str || !spec) return FALSE;
+
+    if (str[0] == 'h' || str[0] == 'H' || str[0] == 'v' || str[0] == 'V')
     {
-        return FALSE;
+	UBYTE orientation;
+        if (sscanf(str, "%c,%8lx,%8lx,%8lx-%8lx,%8lx,%8lx",
+                         &orientation, &start_r, &start_g, &start_b,
+                         &end_r, &end_g, &end_b) < 7)
+	    return FALSE;
+
+ 	switch (orientation)
+	{
+            case 'H':
+            case 'h':
+		angle = 90;
+		break;
+
+	    case 'V':
+            case 'v':
+		angle = 0;
+		break;
+
+	    default:
+	    	return FALSE;
+	}
+    } else
+    {
+        if (sscanf(str, "%ld,%8lx,%8lx,%8lx-%8lx,%8lx,%8lx",
+                         &angle, &start_r, &start_g, &start_b,
+                         &end_r, &end_g, &end_b) < 7)
+	    return FALSE;
     }
 
-    switch (orientation)
-    {
-        case 'H':
-        case 'h':
-            spec->u.gradient.orientation = 'h';
-            break;
-
-        case 'V':
-        case 'v':
-            spec->u.gradient.orientation = 'v';
-            break;
-
-        default:
-            return FALSE;
-    }
+    spec->u.gradient.angle = angle;
 
     spec->u.gradient.start_rgb[0] = start_r>>24;
     spec->u.gradient.start_rgb[1] = start_g>>24;
@@ -303,8 +447,8 @@ BOOL zune_gradient_string_to_intern(CONST_STRPTR str,
 VOID zune_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
                                     STRPTR buf)
 {
-    sprintf(buf, "7:%c,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
-                 spec->u.gradient.orientation,
+    sprintf(buf, "7:%ld,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+                 spec->u.gradient.angle,
                  spec->u.gradient.start_rgb[0]*0x01010101,
                  spec->u.gradient.start_rgb[1]*0x01010101,
                  spec->u.gradient.start_rgb[2]*0x01010101,
