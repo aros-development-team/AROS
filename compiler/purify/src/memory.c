@@ -7,16 +7,21 @@
 #include "error.h"
 #include "util.h"
 
+#define ALIGN(x)    (char *)((((long)(x))+15) & -8)
+
 void * Purify_malloc (size_t size)
 {
-    PMemoryNode * node = xmalloc (sizeof (PMemoryNode) + size);
+    PMemoryNode * node = malloc (sizeof (PMemoryNode) + size);
     MemHash * hash;
+
+    if (!node)
+	return NULL;
 
     Purify_RememberCallers (&node->alloc);
 
     node->free.nstack = -1; /* Not freed yet */
 
-    node->memptr = (char *)((((long)(&node->mem[8])) + 7) & -8);
+    node->memptr = ALIGN(node->mem);
 
     hash = Purify_AddMemory (node->memptr, size,
 	PURIFY_MemFlag_Writable
@@ -34,11 +39,14 @@ void * Purify_calloc (size_t nemb, size_t size)
     PMemoryNode * node = calloc (1, sizeof (PMemoryNode) + nemb*size);
     MemHash * hash;
 
+    if (!node)
+	return NULL;
+
     Purify_RememberCallers (&node->alloc);
 
     node->free.nstack = -1; /* Not freed yet */
 
-    node->memptr = (char *)((((long)(&node->mem[8])) + 7) & -8);
+    node->memptr = ALIGN(node->mem);
 
     hash = Purify_AddMemory (node->memptr, nemb*size,
 	PURIFY_MemFlag_Readable
@@ -58,13 +66,16 @@ void * Purify_realloc (void * mem, size_t size)
 
     if (size)
     {
-	newnode = xmalloc (sizeof (PMemoryNode) + size);
+	newnode = malloc (sizeof (PMemoryNode) + size);
+
+	if (!newnode)
+	    return NULL;
 
 	Purify_RememberCallers (&newnode->alloc);
 
 	newnode->free.nstack = -1; /* Not freed yet */
 
-	newnode->memptr = (char *)((((long)(&newnode->mem[8])) + 7) & -8);
+	newnode->memptr = ALIGN(newnode->mem);
 
 	newmem = Purify_AddMemory (newnode->memptr, size,
 	    PURIFY_MemFlag_Writable
@@ -208,6 +219,29 @@ char * Purify_strcpy (char *dest, const char *src)
     return strcpy (dest, src);
 }
 
+char * Purify_strcat (char *dest, const char *src)
+{
+    int slen, dlen;
+
+    if (!Purify_CheckMemoryAccess (src, 1, PURIFY_MemAccess_Read))
+	Purify_PrintAccessError ("strcat (src)", src, 1);
+
+    slen = strlen (src)+1;
+
+    if (!Purify_CheckMemoryAccess (src, slen, PURIFY_MemAccess_Read))
+	Purify_PrintAccessError ("strcat (src)", src, slen);
+
+    if (!Purify_CheckMemoryAccess (src, 1, PURIFY_MemAccess_Read))
+	Purify_PrintAccessError ("strcat (dest)", dest, 1);
+
+    dlen = strlen (dest);
+
+    if (!Purify_CheckMemoryAccess (dest+dlen, slen, PURIFY_MemAccess_Write))
+	Purify_PrintAccessError ("strcat (dest)", dest+dlen, slen);
+
+    return strcpy (dest+dlen, src);
+}
+
 char * Purify_strncpy (char *dest, const char *src, size_t n)
 {
     if (!Purify_CheckMemoryAccess (src, n, PURIFY_MemAccess_Read))
@@ -219,3 +253,37 @@ char * Purify_strncpy (char *dest, const char *src, size_t n)
     return strncpy (dest, src, n);
 }
 
+char * Purify_strdup (char * src)
+{
+    PMemoryNode * node;
+    MemHash * hash;
+    int size;
+
+    if (!Purify_CheckMemoryAccess (src, 1, PURIFY_MemAccess_Read))
+	Purify_PrintAccessError ("strdup (src)", src, 1);
+
+    size = strlen (src) + 1;
+
+    node = malloc (sizeof (PMemoryNode) + size);
+
+    if (!node)
+	return NULL;
+
+    Purify_RememberCallers (&node->alloc);
+
+    node->free.nstack = -1; /* Not freed yet */
+
+    node->memptr = ALIGN(node->mem);
+
+    hash = Purify_AddMemory (node->memptr, size,
+	PURIFY_MemFlag_Writable
+	| PURIFY_MemFlag_Readable
+	, PURIFY_MemType_Heap
+    );
+
+    hash->data = node;
+
+    strcpy (node->memptr, src);
+
+    return node->memptr;
+}
