@@ -17,7 +17,10 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_ListData
 {
-    int dummy;
+    APTR intern_pool; /* The internal pool which the class has allocated */
+    LONG intern_puddle_size;
+    LONG intern_tresh_size;
+    APTR pool; /* the pool which is used to allocate list entries */
 };
 
 /**************************************************************************
@@ -33,17 +36,73 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
     
     data = INST_DATA(cl, obj);
 
-    /* parse initial taglist */
+    data->intern_puddle_size = 2008;
+    data->intern_tresh_size = 1024;
 
+    /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
+	    case    MUIA_List_Pool:
+		    data->pool = tag->ti_Data;
+		    break;
+
+	    case    MUIA_List_PoolPuddleSize:
+		    data->intern_puddle_size = tag->ti_Data;
+		    break;
+
+	    case    MUIA_List_PoolThreshSize:
+		    data->intern_tresh_size = tag->ti_Data;
+		    break;
     	}
+    }
+
+    if (!data->pool)
+    {
+	data->pool = data->intern_pool = CreatePool(0,data->intern_puddle_size,data->intern_tresh_size);
+	if (!data->pool)
+	{
+	    CoerceMethod(cl,obj,OM_DISPOSE);
+	    return NULL;
+	}
     }
     
     return (IPTR)obj;
 }
+
+/**************************************************************************
+ OM_DISPOSE
+**************************************************************************/
+static IPTR List_Dispose(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    if (data->intern_pool) DeletePool(data->intern_pool);
+    DoSuperMethodA(cl,obj,msg);
+    return 0;
+}
+
+/**************************************************************************
+ OM_GET
+**************************************************************************/
+static ULONG List_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+{
+/* small macro to simplify return value storage */
+#define STORE *(msg->opg_Storage)
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+
+    switch (msg->opg_AttrID)
+    {
+	case MUIA_List_Entries: STORE = 0; return 1;
+	case MUIA_List_First: STORE = 0; return 1;
+    }
+
+    if (DoSuperMethodA(cl, obj, (Msg) msg)) return 1;
+    return 0;
+#undef STORE
+}
+
+
 
 #ifndef _AROS
 __asm IPTR List_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
@@ -56,8 +115,9 @@ AROS_UFH3S(IPTR,List_Dispatcher,
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:
-	    return List_New(cl, obj, (struct opSet *)msg);
+	case OM_NEW: return List_New(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE: return List_Dispose(cl,obj, msg);
+	case OM_GET: return List_Get(cl,obj,(struct opGet *)msg);
 	    
     }
     
