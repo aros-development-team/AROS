@@ -41,9 +41,10 @@ struct pci_data
 
 /*** PCI::FindDevice() *******************************************/
 
-static HIDDT_PCI_Device *pci_finddevice(OOP_Class *cl, OOP_Object *obj, struct pHidd_PCI_FindDevice *msg)
+static HIDDT_PCI_Device **pci_finddevice(OOP_Class *cl, OOP_Object *obj, struct pHidd_PCI_FindDevice *msg)
 {
-	HIDDT_PCI_Device mask, *dev;
+	HIDDT_PCI_Device mask,*dev;
+	Noded_PCI_Device *ndev;
 	APTR *ret, *walk;
 	int length;
 	
@@ -58,56 +59,68 @@ static HIDDT_PCI_Device *pci_finddevice(OOP_Class *cl, OOP_Object *obj, struct p
 	mask.SubsystemVendorID	= GetTagData(tHidd_PCI_SubsystemVendorID, -1, msg->deviceTags);
 	mask.SubsystemID		= GetTagData(tHidd_PCI_SubsystemID, -1, msg->deviceTags);
 
+	D(bug("mask: %04.4lx:%$04.4lx %d %d/%d/%d %x %x\n", mask.VendorID, mask.DeviceID, mask.RevisionID, mask.Class,
+		mask.SubClass, mask.Interface, mask.SubsystemVendorID, mask.SubsystemID));
+
 	ListLength(&PSD(cl)->devices, length);
+
+	D(bug("List is %d long \n", length));
 	
 	ret = walk = AllocVec(sizeof(APTR)*length, MEMF_PUBLIC | MEMF_CLEAR);
 
-	ForeachNode(&PSD(cl)->devices, dev)
+	ForeachNode(&PSD(cl)->devices, ndev)
 	{
+		dev = &ndev->dev;
+	
+		D(bug("d: %04.4lx:%$04.4lx %d %d/%d/%d %x %x\n", dev->VendorID, dev->DeviceID, dev->RevisionID, dev->Class,
+			dev->SubClass, dev->Interface, dev->SubsystemVendorID, dev->SubsystemID));
+	
 		if (mask.VendorID != 0xffff)
 		{
 			if (mask.VendorID != dev->VendorID)
-				break;
+				continue;
 		}
 		if (mask.DeviceID != 0xffff)
 		{
 			if (mask.DeviceID != dev->DeviceID)
-				break;
+				continue;
 		}
 		if (mask.RevisionID != 0xff)
 		{
 			if (mask.RevisionID != dev->RevisionID)
-				break;
+				continue;
 		}
 		if (mask.Class != 0xff)
 		{
 			if (mask.Class != dev->Class)
-				break;
+				continue;
 		}
 		if (mask.SubClass != 0xff)
 		{
 			if (mask.SubClass != dev->SubClass)
-				break;
+				continue;
 		}
 		if (mask.Interface != 0xff)
 		{
 			if (mask.Interface != dev->Interface)
-				break;
+				continue;
 		}
 		if (mask.SubsystemVendorID != 0xffff)
 		{
 			if (mask.SubsystemVendorID != dev->SubsystemVendorID)
-				break;
+				continue;
 		}
 		if (mask.SubsystemID != 0xffff)
 		{
 			if (mask.SubsystemID != dev->SubsystemID)
-				break;
+				continue;
 		}
 		*walk++ = dev;
+		
+		D(bug("Found suitable device\n"));
 	}
 
-	ReturnPtr("PCI::FindDevice", HIDDT_PCI_Device *, ret);
+	ReturnPtr("PCI::FindDevice", HIDDT_PCI_Device **, ret);
 }
 
 /*** PCI::FreeQuery() ********************************************/

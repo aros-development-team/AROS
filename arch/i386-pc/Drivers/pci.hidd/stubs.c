@@ -35,7 +35,7 @@
 
 /***************************************************************/
 
-HIDDT_PCI_Device *HIDD_PCI_FindDevice(OOP_Object *obj, struct TagItem *tags)
+HIDDT_PCI_Device **HIDD_PCI_FindDevice(OOP_Object *obj, struct TagItem *tags)
 {
     STATIC_MID;
     struct pHidd_PCI_FindDevice p;
@@ -45,12 +45,12 @@ HIDDT_PCI_Device *HIDD_PCI_FindDevice(OOP_Object *obj, struct TagItem *tags)
     p.mID           = mid;
     p.deviceTags    = tags;
 
-    return((HIDDT_PCI_Device *) OOP_DoMethod(obj, (OOP_Msg) &p));
+    return((HIDDT_PCI_Device **) OOP_DoMethod(obj, (OOP_Msg) &p));
 }
 
 /***************************************************************/
 
-VOID HIDD_PCI_FreeQuery(OOP_Object *obj, HIDDT_PCI_Device *devices)
+VOID HIDD_PCI_FreeQuery(OOP_Object *obj, HIDDT_PCI_Device **devices)
 {
     STATIC_MID;
     struct pHidd_PCI_FreeQuery p;
