@@ -113,3 +113,15 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
     ReturnVoid("SerialHIDD_Expunge");
 }
 
+int __pthread_do_exit(void)
+{
+    kprintf("serial.hidd: __pthread_do_exit() was called\n");
+    return 0;
+}
+
+
+int __pthread_thread_self(void)
+{
+    kprintf("serial.hidd: __pthread_thread_self() was called\n");
+    return 0;
+}
