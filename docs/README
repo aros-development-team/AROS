@@ -11,11 +11,13 @@ New this time:
 - Some new functions
 - We have the first game for AROS: Moria3D runs after minor changes
 - All necessary includes to compile AROS
-- Added conditional muild (see make.defaults)
+- Added conditional build (see make.defaults)
 - Much faster linking on Unix
 - Makefiles are generated from templates
 - AROS has Resource Tracking now :-)
 - GadTools
+- AROS uses almost no assembler code anymore
+- Added a small mini kernel to ease porting
 
 HOW TO USE THIS
 ---------------
@@ -35,7 +37,7 @@ contains a ready-to-use copy of all binaries for AROS (not that there
 were many, yet ... :-). Unpack the archive, cd into AROS and run
 the arosshell (NOTE: For some systeme, there are shared versions of the
 libs to save disk space. On these systems, you must tell the loader to
-look into AROS/lib for additional libs. On linux, do "export
+look into AROS/lib for additional libs. On most systems, do "export
 LD_LIBRARY_PATH=lib:$LD_LIBRARY_PATH" (without the "")).
 
 Now you will get a prompt reading "Workbench:> ". Now type "dir all" and
@@ -53,8 +55,10 @@ WHERE TO FIND MORE INFOS ?
 
 Look at these pages on WorldWideWait:
 
+    http://aros.fh-konstanz.de/aros/ (Main site)
+    http://home.pages.de/~aros/ (Alias for main site)
+    http://www.aros.org/ (Alias for main site)
     http://www.lysator.liu.se/amiga/aros/ (Sweden Mirror)
-    http://aros.fh-konstanz.de/~digulla/ (German Mirror)
     http://home.worldonline.nl/~ldp/aros/ (AROS for Amiga)
 
 If you have FTP, you can also get the most recent version as tar.gz files
