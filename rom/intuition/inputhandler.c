@@ -159,12 +159,17 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     WORD mpos_x = iihdata->LastMouseX, mpos_y = iihdata->LastMouseY;
     struct GadgetInfo stackgi, *gi = &stackgi;
     BOOL reuse_event = FALSE;
-    struct Window *w = iihdata->ActiveWindow;
+    struct Window *w;
+    
+    lock = LockIBase(0L);
+    w = IntuitionBase->ActiveWindow;
+    UnlockIBase(lock);
     
     D(bug("Inside intuition inputhandler, active window=%p\n", w));
 
     for (ie = oldchain; ie; ie = ((reuse_event) ? ie : ie->ie_NextEvent))
     {
+    	D(bug("iih: Handling event of class %d\n", ie->ie_Class));
 	reuse_event = FALSE;
 	ptr = NULL;
 
@@ -180,9 +185,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	im->MouseY	= mpos_y;
 	im->IDCMPWindow = w;
 	
-	/* We may not have an active window yet, we must get one
-	** through IECLASS_ACITVEWINDOW
-	*/
 	if (w)
 	{
 	    screen = w->WScreen;
@@ -775,13 +777,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    break; /* case IECLASS_RAWKEY */
 
 	case IECLASS_ACTIVEWINDOW:
-	    D(bug("iih: Got IECLASS_ACTIVEWINDOW event\n"));
 	    im->Class = IDCMP_ACTIVEWINDOW;
 	    ptr = "ACTIVEWINDOW";
-
-	    /* This is a hack to make one-to-one mapping in x11 work. */
-	    w = (struct Window *)ie->ie_EventAddress;
-	    im->IDCMPWindow = w;
 	    break;
 
 	case IDCMP_INACTIVEWINDOW:
@@ -827,7 +824,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 
     iihdata->ActiveGadget = gadget;
-    iihdata->ActiveWindow = w;
+    lock = LockIBase(0L);
+    IntuitionBase->ActiveWindow = w;
+    UnlockIBase(lock);
 
     /* If IntuiMessages has been swallowed (im->Class = 0), there is a free IntuiMessage
     ** struct (eg. not sent to the apps messageport),

@@ -661,7 +661,7 @@ UX11
 VOID XETaskEntry(struct IntuitionBase *IntuitionBase)
 {
     XEvent	       event;
-    struct Window    * w = NULL, *oldw = NULL;
+    struct Window    * w = NULL;
     struct Screen    * screen;
     struct IntWindow * iw;
     struct MsgPort   * inputmp;
@@ -734,8 +734,6 @@ UX11
 
 	        lock = LockIBase (0L);
 
-  		/* Save old window, to see if active window has changed */
-  		oldw = w;
 
 	    	/* Search window */
 	    	for (screen=IntuitionBase->FirstScreen; screen; screen=screen->NextScreen)
@@ -749,6 +747,9 @@ UX11
 		    if (w)
 		    	break;
 	    	}
+	    	
+	    	/* Update active window (We are allready inside LockIBase()/UnlockIBase(). */
+	    	IntuitionBase->ActiveWindow = w;
 
 
 	    	if (w)
@@ -765,7 +766,8 @@ UX11
 
 	    	/* We unlock IBase now that we have assured that the window won't
 	    	** close while we are working on it. (IBase should be locked as little
-	    	** time as possible
+	    	** time as possible). The window will eventually be closed int
+	    	** the intuition inputhandler.
 	    	*/
 	    	UnlockIBase (lock);
 
@@ -775,18 +777,6 @@ UX11
 
 	    	iw = (struct IntWindow *)w;
 	    	
-	    	/* New window active ? */
-	    	if (w != oldw)
-	    	{
-	    	    ie->ie_Class = IECLASS_ACTIVEWINDOW;
-	    	    ie->ie_EventAddress  = (APTR)w;
-	    	    
-	    	    D(bug("Sending Active window event to id\n"));
-	    	    
-    		    /* Send the event to input device for processing */
-    		    DoIO((struct IORequest *)inputio);
-	    	}
-
 	    	ie->ie_Class = 0;
 
 	    	switch (event.type)
@@ -924,7 +914,6 @@ UX11
 		    ie->ie_X = xc->x;
 		    ie->ie_Y = xc->y;
 		    break; }
-
 
 	    	} /* switch (X11 event type) */
 
