@@ -20,7 +20,7 @@ clean::
 	%subdirs_q "Cleaning" clean
 	$(RM) $(MACHINE_H) $(TESTS) machine.i geninc
 
-machine.i: geninc.c
+machine.i: geninc.c $(MACHINE_H)
 	@echo "Creating geninc..."
 	@$(CC) $(CFLAGS) -o geninc $<
 	./geninc > machine.i

@@ -7,10 +7,30 @@ AMIGADIR=$(TOP)/amiga
 
 INCLUDES = $(wildcard *.h */*.h)
 DEST_INCLUDES = $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
+INCSUBDIRS = 	aros \
+		clib \
+		defines \
+		devices \
+		diskfont \
+		dos \
+		exec \
+		graphics \
+		hardware \
+		inline \
+		intuition \
+		libraries \
+		pragmas \
+		prefs \
+		proto \
+		utility \
+		workbench
 
 all: setup
 
-os-include: $(DEST_INCLUDES)
+os-include: $(DEST_INCLUDES) aros-include
+
+aros-include:
+	$(CP) $(TOP)/compiler/arossupport/include/*.h $(INCDIR)/aros/
 
 $(INCDIR)/%.h: %.h
 	$(CP) $< $@
@@ -19,23 +39,7 @@ setup: make-dirs os-include
 
 make-dirs:
 	@for dir in $(INCDIR)         \
-		$(INCDIR)/aros        \
-		$(INCDIR)/clib        \
-		$(INCDIR)/defines     \
-		$(INCDIR)/devices     \
-		$(INCDIR)/diskfont    \
-		$(INCDIR)/dos         \
-		$(INCDIR)/exec        \
-		$(INCDIR)/graphics    \
-		$(INCDIR)/hardware    \
-		$(INCDIR)/inline      \
-		$(INCDIR)/intuition   \
-		$(INCDIR)/libraries   \
-		$(INCDIR)/pragmas     \
-		$(INCDIR)/prefs       \
-		$(INCDIR)/proto       \
-		$(INCDIR)/utility     \
-		$(INCDIR)/workbench   \
+		$(foreach f,$(INCSUBDIRS),$(INCDIR)/$(f)) \
 	; do \
 	   if [ ! -d "$$dir" ]; then $(MKDIR) "$$dir" ; else true ; fi ;\
 	done
