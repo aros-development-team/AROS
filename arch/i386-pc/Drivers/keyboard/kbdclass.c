@@ -10,7 +10,7 @@
  * Define the following to have a combined mouse and keyboard hidd!
  * Has to come before include kbd.h!
  */
-#define MOUSE_ACTIVE 1
+#define MOUSE_ACTIVE 0
 
 #include <proto/exec.h>
 #include <proto/utility.h>
