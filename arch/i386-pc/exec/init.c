@@ -35,6 +35,7 @@ APTR ssp=(APTR)-1;      /* System stack pointer */
 APTR usp=(APTR)-1;      /* User stack pointer */
 APTR esp=(APTR)-1;      /* Points to register set on stack */
 char supervisor=0;	/* Supervisor mode flag */
+char softdisable=0;	/* =1 -> softints disabled */
 
 struct ExecBase *SysBase=NULL;
 struct MemHeader *mh;

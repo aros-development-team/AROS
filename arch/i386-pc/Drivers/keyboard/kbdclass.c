@@ -6,20 +6,38 @@
     Lang: English.
 */
 
+#include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
 
+#include <exec/alerts.h>
+#include <exec/memory.h>
+
 #include <hidd/hidd.h>
 #include <hidd/keyboard.h>
+
+#include <aros/system.h>
+#include <aros/machine.h>
+#include <aros/asmcall.h>
+
+#include <hardware/custom.h>
 
 #include <devices/inputevent.h>
 
 #include "kbd.h"
 #include "keys.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
+
+AROS_UFP2(int, kbd_keyint,
+    AROS_UFHA(Object *, o, A1),
+    AROS_UFHA(struct ExecBase *, SysBase, A6));
+
+void kbd_updateleds();
+int kbd_reset();
+long pckey2hidd (ULONG event);
 
 static AttrBase HiddKbdAB;
 
@@ -204,7 +222,25 @@ static Object * kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
 	struct kbd_data *data = INST_DATA(cl, o);
 	data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
 	data->callbackdata = callbackdata;
-	
+
+	{
+	    /* Install keyboard interrupt */
+	    struct Interrupt *is;
+	    is = (struct Interrupt *)AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
+	    if(!is)
+	    {
+		kprintf("ERROR: Cannot install Keyboard\n");
+		Alert( AT_DeadEnd | AN_IntrMem );
+	    }
+	    Disable();
+	    kbd_reset();		/* Reset the keyboard */
+	    Enable();
+	    is->is_Node.ln_Pri=127;		/* Set the highest pri */
+	    is->is_Code = (void (*)())&kbd_keyint;
+	    is->is_Data = (APTR)o;
+	    AddIntServer(0x80000001,is);	//<-- int_keyb
+	}
+	kbd_updateleds();
 	ObtainSemaphore( &XSD(cl)->sema);
 	XSD(cl)->kbdhidd = o;
 	ReleaseSemaphore( &XSD(cl)->sema);
@@ -219,10 +255,9 @@ static VOID kbd_handleevent(Class *cl, Object *o, struct pHidd_Kbd_HandleEvent *
     struct kbd_data * data;
     
     EnterFunc(bug("kbd_handleevent()\n"));
-
     data = INST_DATA(cl, o);
-    data->kbd_callback(data->callbackdata
-		,0);
+    kprintf("%lx ",pckey2hidd(msg->event));
+    data->kbd_callback(data->callbackdata,pckey2hidd(msg->event));
     ReturnVoid("Kbd::HandleEvent");
 }
 
@@ -311,4 +346,228 @@ VOID free_kbdclass(struct kbd_staticdata *xsd)
 	releaseattrbases(attrbases, OOPBase);
     }
     ReturnVoid("free_kbdclass");
+}
+
+/************************* Keyboard Interrupt ****************************/
+
+#define inb(port) \
+    ({	char __value;	\
+	__asm__ __volatile__ ("inb $" #port ",%%al":"=a"(__value));	\
+	__value;	})
+
+#define outb(val,port) \
+    ({	char __value=(val);	\
+	__asm__ __volatile__ ("outb %%al,$" #port::"a"(__value)); })
+
+#define WaitForInput			\
+	({  do				\
+	    {				\
+		info=inb(0x64);		\
+	    } while(!(info & 0x01)); })
+
+#define WaitForOutput			\
+	({  do				\
+	    {				\
+		info=inb(0x64);		\
+	    } while(info & 0x02); })
+
+ULONG kbd_keystate=0;
+#define LCTRL	0x00000008
+#define RCTRL	0x00000010
+#define LALT	0x00000020
+#define RALT	0x00000040
+#define	LSHIFT	0x00000080
+#define RSHIFT	0x00000100
+#define	LMETA	0x00000200
+#define RMETA	0x00000400
+
+int kbd_reset()
+{
+    UBYTE key,info;
+    do {
+	key=inb(0x60);		/* Empty keys queue */
+	info=inb(0x64);
+    } while (info & 0x01);
+    kbd_keystate=0;
+    WaitForOutput;
+    outb(0xaa,0x64);	/* Initialize and test keyboard */
+    key=inb(0x60);
+    if (key==0x55)	/* 0x55 means everything went OK */
+    {
+	WaitForOutput;
+	outb(0xf6,0x60);	/* Standard settings */
+	key=inb(0x60);
+	kbd_updateleds();	/* Turn all leds off */
+	return TRUE;
+    }
+    return FALSE;
+}
+
+
+void kbd_updateleds()
+{
+    UBYTE key,info;
+    WaitForOutput;
+    outb(0xed,0x60);	/* SetLeds command */
+    WaitForInput;
+    key=inb(0x60);
+    WaitForOutput;
+    outb(kbd_keystate & 0x07,0x60);
+    WaitForInput;
+    key=inb(0x60);
+}
+
+#undef SysBase
+
+AROS_UFH2(int, kbd_keyint,
+    AROS_UFHA(Object *, o, A1),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    UBYTE	keycode,	/* Recent Keycode get */
+		info;		/* Data from info reg */
+    UWORD	event;		/* Event sent to handleevent method */
+    static UWORD le;		/* Last event used to prevent from some reps */    
+
+    info=inb(0x64);	/* Get data from information port */
+    if (!(info & 0x20))	/* If bit 5 set data from mouse. Otherwise keyboard */
+    {
+	keycode=inb(0x60);
+	if (keycode==0xe0)	/* Special key */
+	{
+	    WaitForInput;
+	    keycode=inb(0x60);
+	    if (keycode==0x2a)	/* Shift modifier - we can skip it */
+	    {
+		WaitForInput;
+		keycode=inb(0x60);	/* This one HAS to be 0xe0 */
+		WaitForInput;
+		keycode=inb(0x60);	/* This is our key :-) */
+	    }
+	    event=0x4000|keycode;	/* set event to send */
+	    if (event==0x40aa)		/* If you get something like this... */
+	    {				/* Special Shift up.... */
+		return -1;		/* Treat it as NoKey and don't let */
+	    }				/* Other interrupts see it */
+	}
+	else if (keycode==0xe1)	/* Pause key */
+	{
+	    WaitForInput;		/* Read next 5 bytes from keyboard */
+	    keycode=inb(0x60);		/* This is hack, but I know there is */
+	    WaitForInput;		/* Only one key which starts with */
+	    keycode=inb(0x60);		/* 0xe1 code */
+	    WaitForInput;
+	    keycode=inb(0x60);
+	    WaitForInput;
+	    keycode=inb(0x60);
+	    WaitForInput;
+	    keycode=inb(0x60);
+	    event=K_Pause;
+	}
+	else if (keycode==0xfa)
+	{
+	    return -1;		/* Treat it as NoKey */
+	}	
+	else event=keycode;
+	if ((event==le) && (
+	    le==K_KP_Numl || le==K_Scroll_Lock || le==K_CapsLock ||
+	    le==K_LShift || le==K_RShift || le==K_LCtrl || le==K_RCtrl ||
+	    le==K_LAlt || le==K_RAlt || le==K_LMeta || le==K_RMeta))
+	{
+	    return -1;	/* Do not repeat shift pressed or something like this */
+	}		/* Just forgot about interrupt */
+	switch(event)
+	{
+	    case K_KP_Numl:
+		kbd_keystate^=0x02;	/* Turn Numlock bit on */
+		kbd_updateleds();
+		break;
+	    case K_Scroll_Lock:
+		kbd_keystate^=0x01;	/* Turn Scrolllock bit on */
+		kbd_updateleds();
+		break;
+	    case K_CapsLock:
+		kbd_keystate^=0x04;	/* Turn Capslock bit on */
+		kbd_updateleds();
+		break;
+	    case K_LShift:
+		kbd_keystate|=LSHIFT;
+		break;
+	    case (K_LShift|0x80):
+		kbd_keystate&=~LSHIFT;
+		break;
+	    case K_RShift:
+		kbd_keystate|=RSHIFT;
+		break;
+	    case (K_RShift|0x80):
+		kbd_keystate&=~RSHIFT;
+		break;
+	    case K_LCtrl:
+		kbd_keystate|=LCTRL;
+		break;
+	    case (K_LCtrl|0x80):
+		kbd_keystate&=~LCTRL;
+		break;
+	    case K_RCtrl:
+		kbd_keystate|=RCTRL;
+		break;
+	    case (K_RCtrl|0x80):
+		kbd_keystate&=~RCTRL;
+		break;
+	    case K_LMeta:
+		kbd_keystate|=LMETA;
+		break;
+	    case (K_LMeta|0x80):
+		kbd_keystate&=~LMETA;
+		break;
+	    case K_RMeta:
+		kbd_keystate|=RMETA;
+		break;
+	    case (K_RMeta|0x80):
+		kbd_keystate&=~RMETA;
+		break;
+	    case K_LAlt:
+		kbd_keystate|=LALT;
+		break;
+	    case (K_LAlt|0x80):
+		kbd_keystate&=~LALT;
+		break;
+	    case K_RAlt:
+		kbd_keystate|=RALT;
+		break;
+	    case (K_RAlt|0x80):
+		kbd_keystate&=~RALT;
+		break;
+	}
+	le=event;
+	if ((kbd_keystate & (LCTRL|LMETA|RMETA))==(LCTRL|LMETA|RMETA))
+	    event=K_ResetRequest;
+	if ((event & 0x7f7f)==(K_Scroll_Lock & 0x7f)) event|=0x4000;
+	Hidd_Kbd_HandleEvent(o,(ULONG) event);
+    }
+    return 0;	/* Enable processing other intServers */
+}
+
+long pckey2hidd (ULONG event)
+{
+    long result;
+    short t;
+    UBYTE KeyUpFlag;
+
+    KeyUpFlag=(UBYTE)event & 0x80;
+    event &= ~(0x80);
+
+    for (t=0; keytable[t].hiddcode != -1; t++)
+    {
+	if (event == keytable[t].keysym)
+	{
+	    result = keytable[t].hiddcode;
+	    result|= KeyUpFlag;
+	    ReturnInt ("xk2h", long, result);
+	}
+    }
+    D(bug("pk2h: Passing PC keycode\n", event & 0xffff));
+
+    result = event & 0xffff;
+    result |= KeyUpFlag;
+    ReturnInt ("xk2h", long, result);
 }

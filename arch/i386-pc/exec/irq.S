@@ -161,6 +161,27 @@ Irq_f:			SUPER
 			jmp	slave_irq
 
 
+/* Soft int */
+
+Irq_soft:		SUPER
+			REG_STORE
+			sti		/* Enable hardware interrupts */
+			cmpb	$0,softdisable
+			jne	1f	/* Softints disabled */
+
+			movl	(4),%eax
+			pushl	%eax			/* SysBase */
+			pushl	$SoftIntDispatch	/* intCode */
+			pushl	$0			/* intData */
+			pushl	$0			/* custom */
+			pushl	$0			/* intReady */
+			call	SoftIntDispatch
+			addl	$20,%esp
+			
+1:			REG_RESTR
+			USER
+			iret
+
 /* MakeInt routine. This pice of code writes temporary
 int table to IDT table. You should call this thing while
 system initialisation */
@@ -176,7 +197,7 @@ MakeInt:		pushl	%esi
 
 			movl	.aptr,%edi	/*start with vector 0x20, base 8 */
 			addl	$0x0100,%edi
-			movl	$16,%ecx
+			movl	$17,%ecx
 .mi_l1:			movl	(%esi),%eax
 			lea	4(%esi),%esi
 			movw	%ax,(%edi)
@@ -212,3 +233,4 @@ inttab:	.long	Irq_0
 	.long	Irq_d
 	.long	Irq_e
 	.long	Irq_f
+	.long	Irq_soft	/* Software interrupt */

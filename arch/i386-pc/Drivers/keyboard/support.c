@@ -54,7 +54,7 @@ VOID Hidd_Kbd_HandleEvent(Object *o, ULONG event)
     static MethodID mid = 0;
 
     if (!mid)
-    	mid = GetMethodID(IID_Hidd_Kbd, moHidd_Kbd_HandleEvent);
+    	mid = GetMethodID(IID_Hidd_HwKbd, moHidd_Kbd_HandleEvent);
 
     msg.mID = mid;
     msg.event = event;

@@ -14,7 +14,7 @@
     SYNOPSIS
 
     FUNCTION
-	This is asm version of IntServer wchich manages the interrupts
+	This is asm version of IntServer which manages the interrupts
 	
     INPUTS
 	Just nothing. It's an interrupt.
