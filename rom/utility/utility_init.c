@@ -5,6 +5,7 @@
     Desc: Utility Resident and initialization.
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE
 #include "intern.h"
 #include "libdefs.h"
 
@@ -40,6 +41,7 @@ extern ULONG AROS_SLIB_ENTRY(UDivMod32_020,Utility)();
 */
 
 #ifndef _DCC
+#undef SysBase
 #define SysBase GetIntUtilityBase(LIBBASE)->ub_SysBase
 #else
 struct ExecBase *SysBase = 0L;
@@ -62,7 +64,7 @@ ULONG SAVEDS STDARGS L_InitLib (LIBBASETYPEPTR LIBBASE)
 	Also makes this a little bit shorter. (In time and length).
     */
     InitSemaphore(&GetIntUtilityBase(LIBBASE)->ub_NameSpace.ns_Lock);
-    NewList((struct List *)&GetIntUtilityBase(LIBBASE)->ub_NameSpace.ns_List);
+    NEWLIST((struct List *)&GetIntUtilityBase(LIBBASE)->ub_NameSpace.ns_List);
     GetIntUtilityBase(LIBBASE)->ub_NameSpace.ns_Flags = NSF_NODUPS;
 
 #if defined(__mc68000__)

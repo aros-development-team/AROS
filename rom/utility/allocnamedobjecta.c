@@ -5,6 +5,7 @@
     Desc: AllocNamedObject() - allocate a NamedObject.
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE
 #include "intern.h"
 #include <proto/exec.h>
 #include <string.h>
@@ -132,7 +133,7 @@
 	    {
 		no->no_NameSpace->ns_Flags = GetTagData(ANO_Flags, 0, tagList);
 		InitSemaphore(&no->no_NameSpace->ns_Lock);
-		NewList((struct List *)&no->no_NameSpace->ns_List);
+		NEWLIST((struct List *)&no->no_NameSpace->ns_List);
 	    }
 	    else
 	    {
