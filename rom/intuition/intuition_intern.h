@@ -59,8 +59,11 @@
 
 #include <aros/asmcall.h>
 
+/* Options */
+
 #define MENUS_AMIGALOOK  0
 #define MENUS_UNDERMOUSE 1
+#define FRAME_SIZE       0 /* 0 = 1:1 thin,  1 = 2:1 medres like AmigaOS,  2 = 1:1 thick */
 
 /* ObtainGIRPort must install a 0 clipregion and
    set scrollx/scrolly of layer to 0. Since this
