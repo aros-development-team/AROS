@@ -8,6 +8,7 @@
 
 #include <exec/types.h>
 #include <aros/libcall.h>
+#include <exec/execbase.h>
 
 /*****i***********************************************************************
 
