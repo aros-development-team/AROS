@@ -51,7 +51,7 @@ struct _Object
 
 #define OCLASS(obj) ((_OBJECT(obj))->o_Class)
 
-#define INST_DATA(class, obj) ((VOID *)(obj) + (class)->cl_InstOffset)
+#define INST_DATA(class, obj) ((APTR)(((UBYTE *)(obj)) + (class)->cl_InstOffset))
 
 #define SIZEOF_INSTANCE(class) ((class)->cl_InstOffset + (class)->cl_InstSize \
                                + sizeof(struct _Object))
