@@ -818,29 +818,6 @@ AROS_TOOL(STRIP,$aros_target_strip,$aros_target_strip_flags)
 AROS_TOOL(OBJDUMP,$aros_target_objdump)
 AROS_TOOL(OBJCOPY,$aros_target_objcopy)
 
-#find sdl-config
-AC_PATH_PROG(SDL_CONFIG, sdl-config, not-found)
-
-if test "$SDL_CONFIG" = "not-found" ; then
-  HAVE_SDL_LIB=no
-else
-  HAVE_SDL_LIB=yes
-  SDL_CFLAGS=`$SDL_CONFIG --cflags`
-  SDL_LIBS=`$SDL_CONFIG --libs`
-fi
-
-dnl See if the user wants to use the SDL library
-AC_MSG_CHECKING([whether to use SDL])
-AC_ARG_WITH(sdl,[  --with-sdl              Use SDL library [default=no]], with_sdl=$withval, with_sdl=no)
-if test "$with_sdl" != "yes" -a "$with_sdl" != no; then
-    AC_MSG_ERROR("use either \'yes\' or \'no\' as arguments to --with-sdl")
-fi
-
-if test "$with_sdl" = "yes" -a "$HAVE_SDL_LIB" = "no"; then
-    AC_MSG_ERROR(["sdl-config was not found, cannot configure for use with SDL"])
-fi
-AC_MSG_RESULT($with_sdl)
-
 # See if we can compile SHM support
 HAVE_XSHM_SUPPORT=0
 if [[ "x$no_x" != "xyes" -a "x$ac_cv_header_sys_ipc_h" = "xyes" -a "x$ac_cv_header_sys_shm_h" = "xyes" ]]; then
