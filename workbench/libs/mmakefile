@@ -28,4 +28,6 @@
 #MM     workbench-libs-realtime \
 #MM     workbench-libs-nonvolatile \
 #MM     workbench-libs-nvdisk \
-#MM     workbench-libs-muimaster
+#MM     workbench-libs-muimaster \
+#MM     workbench-libs-coolimages
+
