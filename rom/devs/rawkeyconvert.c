@@ -8,7 +8,7 @@
 #include <exec/libraries.h>
 #include <devices/inputevent.h>
 #include <devices/keymap.h>
-#include <clib/console_protos.h>
+#include <proto/console.h>
 
 extern LONG intui_RawKeyConvert (struct InputEvent *, STRPTR, LONG,
 				struct KeyMap *);
@@ -18,7 +18,7 @@ extern LONG intui_RawKeyConvert (struct InputEvent *, STRPTR, LONG,
     NAME */
 #include <devices/inputevent.h>
 #include <devices/keymap.h>
-#include <clib/console_protos.h>
+#include <proto/console.h>
 
 	AROS_LH4(LONG, RawKeyConvert,
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1997/01/27 00:39:37  ldp
+    Include proto instead of clib
+
     Revision 1.4  1996/11/14 22:35:37  aros
     Fixed register conflict
 
@@ -22,8 +25,8 @@
 */
 #include <exec/resident.h>
 #include <devices/inputevent.h>
-#include <clib/exec_protos.h>
-#include <clib/console_protos.h>
+#include <proto/exec.h>
+#include <proto/console.h>
 #include <aros/libcall.h>
 #ifdef __GNUC__
 #    include "console_gcc.h"
