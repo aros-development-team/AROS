@@ -32,9 +32,10 @@
     #define MKBADDR(a)      (((BPTR)(a))>>2)
     #define BADDR(a)        (((APTR)(a))<<2)
 */
-#define AROS_BPTR_TYPE	APTR
-#define MKBADDR(a)      ((APTR)(a))
-#define BADDR(a)        (a)
+#define AROS_BPTR_TYPE	    APTR
+#define AROS_BSTR_TYPE	    STRPTR
+#define MKBADDR(a)          ((APTR)(a))
+#define BADDR(a)            (a)
 
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the

@@ -12,6 +12,10 @@
 #   define __typedef_BPTR
     typedef AROS_BPTR_TYPE BPTR;
 #endif
+#ifndef __typedef_BSTR
+#   define __typedef_BSTR
+    typedef AROS_BSTR_TYPE BSTR;
+#endif
 
 #define DOSNAME "dos.library"
 
