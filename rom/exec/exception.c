@@ -68,11 +68,22 @@
 	Enable ();
 
 	/* Call the Exception with the new AROS ASMCALL macros */
-	this->tc_SigExcept = AROS_UFC3(ULONG, this->tc_ExceptCode,
-	    AROS_UFCA(APTR, this->tc_ExceptData, A1),
-	    AROS_UFCA(ULONG, flags, D0),
-	    AROS_UFCA(struct ExecBase *, SysBase, A6));
+	if( this->tc_ExceptCode != NULL)
+	{
+	    this->tc_SigExcept = AROS_UFC3(ULONG, this->tc_ExceptCode,
+		AROS_UFCA(APTR, this->tc_ExceptData, A1),
+		AROS_UFCA(ULONG, flags, D0),
+		AROS_UFCA(struct ExecBase *, SysBase, A6));
+	}
+	else
+	{
+	    /*
+		We don't have an exception handler, we shouldn't have
+		any exceptions. Clear them.
+	    */
 
+	    this->tc_SigExcept = 0;
+	}
 	Disable ();
     }
 
