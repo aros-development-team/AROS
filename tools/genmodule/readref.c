@@ -1,7 +1,8 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
-
-    Desc: function to read in the function reference file. Part of genmodule.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
+    
+    Function to read in the function reference file. Part of genmodule.
 */
 #include "genmodule.h"
 #include "fileread.h"
@@ -278,12 +279,10 @@ void readref(void)
 
 void readrefmcc(void)
 {
-    struct linelist *linelistit = NULL;
-    char structname[512], dispatcher[512];
+    char dispatcher[512];
     char *line = NULL;
-    snprintf(structname, 511, "struct %s_DATA", modulename); 
+    
     snprintf(dispatcher, 511, "FUNCTION : %s_Dispatcher", modulename);
-    structname[511] = '\0';
     dispatcher[511] = '\0';
     
     if (!fileopen(reffile))
@@ -292,43 +291,14 @@ void readrefmcc(void)
 	exit(20);
     }
    
-    while ((line=readline())!=NULL)
+    while ((line = readline()) != NULL)
     {
         static char instruct = 0;
         
-        if (strcmp(line, structname) == 0)
-        {
-            instruct = 1;
-            readline(); /* Skip opening brace */
-            continue;
-        }
-        else if (strncmp(line, dispatcher, strlen(dispatcher)) == 0)
+        if (strncmp(line, dispatcher, strlen(dispatcher)) == 0)
         {
             customdispatcher = 1;
-            continue;
-        }
-        
-        if (instruct)
-        {
-            char *begin = line;
-            while (isspace(*begin)) begin++;
-            
-            if (strncmp(begin, "}", 1) == 0)
-                instruct = 0;
-            else
-            {
-                struct linelist *text = malloc(sizeof(struct linelist));
-                text->line = strdup(begin);
-                text->next = NULL;
-                
-                if (linelistit != NULL)
-                    linelistit->next = text;
-                
-                linelistit = text;
-                
-                if (datastruct == NULL)
-                    datastruct = linelistit;
-            }
+            break;
         }
     }
 }

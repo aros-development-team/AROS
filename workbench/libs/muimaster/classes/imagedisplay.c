@@ -26,17 +26,9 @@
 #include "support.h"
 #include "support_classes.h"
 #include "imspec.h"
+#include "imagedisplay_private.h" 
 
 extern struct Library *MUIMasterBase;
-
-struct Imagedisplay_DATA
-{
-    char *spec;
-    struct MUI_ImageSpec_intern *img;
-    ULONG flags;
-    WORD defwidth;
-    WORD defheight;
-};
 
 #define MIF_FREEVERT         (1<<0)
 #define MIF_FREEHORIZ        (1<<1)

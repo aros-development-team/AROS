@@ -28,6 +28,7 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "support_classes.h"
+#include "coloradjust_private.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
@@ -37,19 +38,6 @@ extern struct Library *MUIMasterBase;
 #define FLAG_FIXED_PEN 	    1
 #define FLAG_PEN_ALLOCATED  2
 #define FLAG_NO_PEN 	    4
-
-struct Coloradjust_DATA
-{
-    struct Library *colorwheelbase;
-    struct Library *gradientsliderbase;
-    struct IClass  *notifyclass;
-    struct Hook     sliderhook, wheelhook, gradhook;
-    Object  	   *rslider, *gslider, *bslider, *colfield, *wheel, *grad;       
-    ULONG   	    rgb[3];
-    UWORD    	    gradpenarray[3];
-    LONG    	    gradpen;
-    BOOL    	    truecolor;
-};
 
 #define ColorWheelBase data->colorwheelbase
 

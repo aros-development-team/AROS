@@ -18,6 +18,7 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "support_classes.h"
+#include "aboutmui_private.h"
 
 #if ZUNE_BUILTIN_ABOUTMUI
 #   define USE_INTERNAL_IMAGE 0
@@ -27,10 +28,6 @@
 
 extern struct Library *MUIMasterBase;
 
-struct Aboutmui_DATA
-{
-    Object *app;
-};
 
 #if USE_INTERNAL_IMAGE
 static const unsigned long colors[] =

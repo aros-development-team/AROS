@@ -58,28 +58,19 @@ void writemccinit(void)
     {
         fprintf(out, "%s\n", linelistit->line);
     }
-    
-    if (datastruct != NULL)
-    {
-        struct linelist *line = NULL;
-        
-        fprintf
-        (
-            out,
-            "\n"
-            "/*** Instance data structure ********************************************/\n"
-            "struct %s_DATA\n"
-            "{\n",
-            modulename
-        );
-        
-        for (line = datastruct; line != NULL; line = line->next)
-        {
-            fprintf(out, "    %s\n", line->line);
-        }
-        
-        fprintf(out, "};\n");
-    }
+
+    fprintf
+    (
+        out,
+        "\n"
+        "/*** Instance data structure size ***************************************/\n"
+        "#ifndef NO_CLASS_DATA\n"
+        "#   define %s_DATA_SIZE (sizeof(struct %s_DATA))\n"
+        "#else\n"
+        "#   define %s_DATA_SIZE (0)\n"
+        "#endif\n",
+        modulename, modulename, modulename
+    );
     
     fprintf
     (
@@ -223,19 +214,7 @@ void writemccinit(void)
         "    MUIMasterBase = OpenLibrary(\"muimaster.library\", 0);\n"
         "    if (MUIMasterBase == NULL) goto error;\n"
         "    \n"
-        "    MCC = MUI_CreateCustomClass((struct Library *) LIBBASE, \"%s\", NULL, ",
-        superclass
-    );
-    
-    if (datastruct == NULL)
-        fprintf(out, "0");
-    else
-        fprintf(out, "sizeof(struct %s_DATA)", modulename);
-    
-    fprintf
-    (
-        out,
-        ", %s_Dispatcher);\n"
+        "    MCC = MUI_CreateCustomClass((struct Library *) LIBBASE, \"%s\", NULL, %s_DATA_SIZE, %s_Dispatcher);\n"
         "    if (MCC == NULL) goto error;\n"
         "    \n"
         "    return TRUE;\n"
@@ -264,7 +243,7 @@ void writemccinit(void)
         "\n"
         "ADD2INITLIB(MCC_Startup, 0);\n"
         "ADD2EXPUNGELIB(MCC_Shutdown, 0);\n",
-        modulename            
+        superclass, modulename, modulename
     );
     
     fclose(out);

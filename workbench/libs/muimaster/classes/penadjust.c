@@ -28,17 +28,9 @@
 #include "support.h"
 #include "support_classes.h"
 #include "penspec.h"
+#include "penadjust_private.h"
 
 extern struct Library *MUIMasterBase;
-
-struct Penadjust_DATA
-{
-    struct MUI_PenSpec      	penspec;
-    struct MUI_PenSpec_intern	intpenspec;
-    Object  	    	    	*listobj;
-    Object  	    	    	*sliderobj;
-    Object  	    	    	*coloradjobj;
-};
 
 static void UpdateState(Object *obj, struct Penadjust_DATA *data)
 {  

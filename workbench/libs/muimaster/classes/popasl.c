@@ -5,6 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <string.h>
 #include <stdio.h>
 
 #include <graphics/gfx.h>
@@ -20,28 +21,13 @@
 #include <proto/dos.h>
 #include <proto/muimaster.h>
 
-#include <string.h>
-
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
 #include "support_classes.h"
+#include "popasl_private.h"
 
 extern struct Library *MUIMasterBase;
-
-struct Popasl_DATA
-{
-    int type;
-    APTR asl_req;
-
-    struct Hook open_hook;
-    struct Hook close_hook;
-    struct Hook *start_hook, *stop_hook;
-
-    struct TagItem tag_list[20]; /* According to docs we need at least 16 */
-
-    struct Process *asl_proc;
-};
 
 struct Asl_Startup
 {

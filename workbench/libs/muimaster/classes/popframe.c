@@ -18,15 +18,9 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "support_classes.h"
+#include "popframe_private.h"
 
 extern struct Library *MUIMasterBase;
-
-struct Popframe_DATA
-{
-    Object *wnd;
-    Object *frameadjust;
-    CONST_STRPTR wintitle;
-};
 
 IPTR Popframe__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
