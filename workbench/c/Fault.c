@@ -44,12 +44,12 @@
 #include <stdio.h> /* for sprintf() */
 #include <string.h>
 
-#include <aros/debug.h>
-
 #define ARG_TEMPLATE	"/N/M"
 #define ARG_CODE	0
 #define TOTAL_ARGS	1
 #define DEBUG 1
+
+#include <aros/debug.h>
 
 static const char version[] = "$VER: Fault 41.1 (3.1.1998)";
 static const char exthelp[] =

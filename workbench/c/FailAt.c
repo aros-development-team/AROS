@@ -70,7 +70,7 @@ static const char exthelp[] =
     "FailAt : Set the return code failure limit of the current script\n"
     "\tRCLIM/A/N   The new return code limit\n";
 
-int main(int argc, char *argv)
+int main(int argc, char **argv)
 {
     struct RDArgs *rd, *rda;
     IPTR args[TOTAL_ARGS] = { 0 };
