@@ -1,3 +1,11 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+    Lang: english
+*/
+
 #include <dos/dos.h>
 #include <dos/filesystem.h>
 #include <proto/dos.h>

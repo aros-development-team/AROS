@@ -1,11 +1,11 @@
 #ifndef HASH_H
 #define HASH_H
 /*
-   (C) 1997-98 AROS - The Amiga Research OS
-   $Id$
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
 
-   Desc: Demo of new OOP system - General hashing definitions.
-   Lang: english
+    Desc: Demo of new OOP system - General hashing definitions.
+    Lang: english
 */
 
 #ifndef EXEC_TYPES_H
