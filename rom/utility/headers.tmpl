@@ -3,16 +3,6 @@
 #   include <exec/types.h>
 #endif
 
-/* Prototypes for stubs in amiga.lib */
-struct NamedObject *AllocNamedObject(STRPTR name, ULONG tag1, ...);
-
-##end clib
-##begin proto
-
-#ifndef UtilityBase
-  extern struct UtilityBase * UtilityBase;
-#endif
-
 #ifndef  EXEC_PORTS_H
 #include <exec/ports.h>
 #endif
@@ -27,6 +17,17 @@ struct NamedObject *AllocNamedObject(STRPTR name, ULONG tag1, ...);
 #endif
 #ifndef  UTILITY_NAME_H
 #include <utility/name.h>
+#endif
+
+
+/* Prototypes for stubs in amiga.lib */
+struct NamedObject *AllocNamedObject(STRPTR name, ULONG tag1, ...);
+
+##end clib
+##begin proto
+
+#ifndef UtilityBase
+  extern struct UtilityBase * UtilityBase;
 #endif
 
 ##end proto
