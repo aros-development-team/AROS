@@ -274,8 +274,8 @@ clib00156;2;falemagn;Write umask
 clib00157;2;falemagn;Write unsetenv
 clib00158;2;falemagn;Write utime
 clib00159;2;falemagn;Write utimes
-clib00160;1;verhaegs;Write div
-clib00161;1;verhaegs;Write ldiv
+clib00160;2;verhaegs;Write div
+clib00161;2;verhaegs;Write ldiv
 c00000;2;srittau;Write C:AddBuffers
 c00001;2;laguest;Write C:Alias
 c00002;2;srittau;Write C:Ask
