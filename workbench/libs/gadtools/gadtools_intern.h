@@ -49,10 +49,15 @@ struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
 			    struct NewGadget *ng);
 void freeitext(struct GadToolsBase_intern *GadToolsBase,
 	       struct IntuiText *itext);
+	       
+BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
+		 struct Gadget *gad, struct RastPort *rport, LONG labelplace);
+	       
 Class *makebuttonclass(struct GadToolsBase_intern *GadToolsBase);
 Class *maketextclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makesliderclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makescrollerclass(struct GadToolsBase_intern *GadToolsBase);
+Class *makearrowclass(struct GadToolsBase_intern *GadToolsBase);
 
 struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
 			  struct TagItem stdgadtags[],
@@ -103,14 +108,19 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
 		      	  struct TagItem stdgadtags[],
 		      	  struct VisualInfo *vi,
-		      	  struct TextAttr *tattr,
 		      	  struct TagItem *taglist);
+
 
 /* Tags for the private gadtool classes */
 #define GT_Dummy (TAG_USER)
 
 #define GTA_Text_DispFunc	(GT_Dummy + 1)
 #define GTA_Text_Format		(GT_Dummy + 2)
+#define GTA_Arrow_Type		(GT_Dummy + 3)
+#define GTA_Arrow_Pulse		(GT_Dummy + 4)
+#define GTA_Arrow_Scroller	(GT_Dummy + 5)
+#define GTA_Scroller_Dec	(GT_Dummy + 6)
+#define GTA_Scroller_Inc	(GT_Dummy + 7)
 
 struct GadToolsBase_intern
 {
@@ -133,6 +143,7 @@ struct GadToolsBase_intern
     Class * textclass;
     Class * sliderclass;
     Class * scrollerclass;
+    Class * arrowclass;
     Class * stringclass;
 
     /* Semaphore to protect the bevel object. */

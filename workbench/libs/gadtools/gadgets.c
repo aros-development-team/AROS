@@ -26,13 +26,10 @@
 #include <gadgets/arospalette.h>
 #include "gadtools_intern.h"
 
-#define SDEBUG 1
-#define DEBUG 1
-#include <aros/debug.h>
 
-/******************
-**  makbutton()  **
-******************/
+/*******************
+**  makebutton()  **
+*******************/
 struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
 			  struct TagItem stdgadtags[],
 			  struct VisualInfo *vi,
@@ -299,9 +296,6 @@ struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
 	{TAG_MORE, (IPTR) NULL}
     };
 
-    EnterFunc(bug("maketext(stdadgadtags=%p, vi=%p, tattr=%p, taglist=%p)\n",
-    	stdgadtags, vi, tattr, taglist));
-    
     /* Could use GetTagData(), but this is faster */
     while ((tag = NextTagItem(&taglist)))
     {
@@ -333,7 +327,7 @@ struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
     	return (NULL);
     obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
 
-    ReturnPtr ("maketext", struct Gadget *, obj);
+    return (obj);
 }
 
 /*******************
@@ -362,8 +356,6 @@ struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
 	{TAG_MORE, (IPTR) NULL}
     };
     
-    EnterFunc(bug("makenumber(stdadgadtags=%p, vi=%p, tattr=%p, taglist=%p)\n",
-    	stdgadtags, vi, tattr, taglist));
    
     /* Could use GetTagData(), but this is faster */
     while ((tag = NextTagItem(&taglist)))
@@ -398,12 +390,20 @@ struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
     	return (NULL);
     obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
 
-    ReturnPtr ("maketest", struct Gadget *, obj);
+    return  (obj);
 }
 
 /*******************
 **  makeslider()  **
 *******************/
+
+/* This MUST be global, since the gadgetclass doesn't copy ICA_MAPPINGs */
+const struct TagItem slider2level[] =
+{
+    {GTSL_Level,	GTNM_Number},
+    {TAG_DONE }
+};
+
 struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
@@ -421,7 +421,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     	{GTSL_Min,	0},
     	{GTSL_Max,	15},
     	{GTSL_Level,	0},
-    	{PGA_Freedom,	LORIENT_HORIZ},
+    	{PGA_Freedom,	FREEHORIZ},
     	{TAG_MORE,	(IPTR)NULL}
     };
     
@@ -446,20 +446,14 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     UBYTE lplace = PLACETEXT_LEFT;
     WORD level = 0;
     
-    Class *slidercl, *textcl;
+    Class *slidercl;
     struct Gadget *slidergad, *levelgad;
-    
-    EnterFunc(bug("makeslider(stdadgadtags=%p, vi=%p, tattr=%p, taglist=%p)\n",
-    	stdgadtags, vi, tattr, taglist));
 
-    /* open needed classes */
+    /* open neede classes */
     slidercl = makesliderclass(GadToolsBase);
     if (!slidercl)
-    	ReturnPtr("makeslider", struct Gadget *, NULL);
+    	return (NULL);
 
-    textcl = maketextclass(GadToolsBase);
-    if (!textcl)
-    	ReturnPtr("makeslider", struct Gadget *, NULL);
     	
     /* Parse tags */
     while ((tag = NextTagItem(&taglist)))
@@ -499,18 +493,13 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     stags[7].ti_Data = (IPTR)stdgadtags;
     slidergad = NewObjectA(slidercl, NULL, stags);
     if (!slidergad)
-    	ReturnPtr("makeslider", struct Gadget *, NULL);
+    	return (NULL);
 
     if (lformat || lmaxlen || lmaxpixellen)
     {
 	WORD x, y;
 	UWORD ysize;
-	
-	struct TagItem slider2level[] =
-	{
-	    {GTSL_Level,	GTNM_Number},
-	    {TAG_DONE, }
-	};
+	Class *textcl;
 	
 	struct TagItem lntags[] =
 	{
@@ -583,12 +572,19 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     	ltags[8].ti_Data = (IPTR)slidergad;
     	ltags[9].ti_Data = (IPTR)vi->vi_dri;
     	ltags[10].ti_Data = (IPTR)level;
+
+	textcl = maketextclass(GadToolsBase);
+    	if (!textcl)
+    	{
+    	    DisposeObject((Object *)slidergad);
+    	    return (NULL);
+    	}
     	    
     	levelgad = (struct Gadget *)NewObjectA(textcl, NULL, ltags);
     	if (!levelgad)
     	{
     	    DisposeObject((Object *)slidergad);
-    	    ReturnPtr("makeslider", struct Gadget *, NULL);
+    	    return (NULL);
     	}
     	
     	/* Set up a notification from the slider to the level */
@@ -598,6 +594,226 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     	    
     } /* if (slider should have a level attached) */
     
-    ReturnPtr("makeslider", struct Gadget *, slidergad);
+    return (slidergad);
 
 }                         
+
+#ifdef SDEBUG
+#   undef SDEBUG
+#endif
+#ifdef DEBUG
+#   undef DEBUG
+#endif
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
+
+const struct TagItem arrow_dec2scroller[] =
+{
+    {GTA_Arrow_Pulse,	GTA_Scroller_Dec},
+    {TAG_DONE, }
+};
+
+const struct TagItem arrow_inc2scroller[] =
+{
+    {GTA_Arrow_Pulse,	GTA_Scroller_Inc},
+    {TAG_DONE, }
+};
+
+/*********************
+**  makescroller()  **
+*********************/
+struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
+                         struct TagItem stdgadtags[],
+                         struct VisualInfo *vi,
+                         struct TagItem *taglist)
+{
+    struct Gadget *scroller = NULL,
+    		  *arrow_dec = NULL,
+    		  *arrow_inc = NULL ;
+    Class *cl;
+
+    struct TagItem *tag, stags[] =
+    {
+    	{GTSC_Top,	0},
+    	{GTSC_Total,	0},
+    	{GTSC_Visible,	2},
+    	{PGA_Freedom,	FREEHORIZ},
+    	{GA_Disabled,	FALSE},
+    	{GA_RelVerify,	FALSE},
+    	{GA_Immediate,	FALSE},
+	{TAG_MORE, (IPTR) NULL}
+    };
+    
+    UWORD freedom = stags[3].ti_Data; /* default */
+    WORD arrowdim;
+    BOOL relverify, immediate;
+    
+    EnterFunc(bug("makescroller(stdgadtags=%p, vi=%p, taglist = %p)\n",
+    		stdgadtags, vi, taglist));
+    /* Could use GetTagData(), but this is faster */
+    while ((tag = NextTagItem(&taglist)))
+    {
+    	IPTR tidata = tag->ti_Data;
+    	
+    	switch (tag->ti_Tag)
+    	{
+    	case GTSC_Top:		stags[0].ti_Data = tidata; break;
+    	case GTSC_Total:	stags[1].ti_Data = tidata; break;
+    	case GTSC_Visible:	stags[2].ti_Data = tidata; break;
+    	case PGA_Freedom:
+    	    if (tidata == LORIENT_HORIZ)
+    	    	freedom = stags[3].ti_Data = FREEHORIZ;
+    	    else
+    	    	freedom = stags[3].ti_Data = FREEVERT;
+    	    break;
+    	case GA_Disabled:	stags[4].ti_Data = tidata; break;
+    	case GA_RelVerify:	relverify = stags[5].ti_Data = tidata; break;
+    	case GA_Immediate:	immediate = stags[6].ti_Data = tidata; break;
+    	
+    	case GTSC_Arrows:	arrowdim = (WORD)tidata;
+    	    
+    	}
+    	
+    } /* while (iterate taglist) */
+
+    stags[7].ti_Data = (IPTR)stdgadtags;
+
+    cl = makescrollerclass(GadToolsBase);
+    if (!cl)
+    	return (NULL);
+    scroller = (struct Gadget *) NewObjectA(cl, NULL, stags);
+
+    if (!scroller)
+    	return (NULL);
+    
+    if (arrowdim) /* Scroller has arroes ? */
+    {
+    	Class *arrowcl;
+    	struct TagItem antags[] =
+    	{
+    	    {ICA_TARGET,	(IPTR)NULL},
+    	    {ICA_MAP,		(IPTR)NULL},
+    	    {TAG_DONE,}
+    	};
+    	
+    	struct TagItem atags[] =
+    	{
+    	    {GA_Left,		0},
+    	    {GA_Top,		0},
+    	    {GA_Width,		0},
+    	    {GA_Height,		0},
+    	    {GTA_Arrow_Type,	0},
+    	    {GA_DrawInfo,	(IPTR)NULL},
+    	    {GA_Previous,	(IPTR)NULL},
+    	    {GTA_Arrow_Scroller, (IPTR)NULL},
+    	    {GA_RelVerify,	0},
+    	    {GA_Immediate,	0},
+    	    {GA_ID,		0},
+    	    {TAG_DONE}
+    	};
+    	
+    	atags[5].ti_Data = (IPTR)vi->vi_dri;    /* Set GA_DrawInfo */
+    	atags[6].ti_Data = (IPTR)scroller;	/* Set GA_Previous */
+    	atags[7].ti_Data = (IPTR)scroller;	/* Set GTA_Arrow_Scroller */
+
+    	/* These must be the same as for scroller */
+    	atags[8].ti_Data = (IPTR)relverify;
+    	atags[9].ti_Data = (IPTR)immediate;
+    	atags[10].ti_Data = (IPTR)GetTagData(GA_ID, 0, stdgadtags); 
+    	
+    	/* Open needed class */
+    	arrowcl = makearrowclass(GadToolsBase);
+    	if (!arrowcl)
+    	    goto failure;
+    	    
+    	if (freedom == FREEVERT)
+    	{
+    	    D(bug("Freedom=FREEVERT\n"));
+    	    atags[0].ti_Data = scroller->LeftEdge;
+    	    atags[1].ti_Data = scroller->TopEdge + scroller->Height;
+    	    atags[2].ti_Data = scroller->Width;
+    	    atags[3].ti_Data = arrowdim;
+    	    atags[4].ti_Data = UPIMAGE;
+    	    
+    	    arrow_dec = NewObjectA(arrowcl, NULL, atags);
+    	    if (!arrow_dec)
+    	    	goto failure;
+    	    
+    	    ((ULONG)atags[1].ti_Data) += arrowdim;
+    	    atags[4].ti_Data = DOWNIMAGE;
+    	    atags[6].ti_Data = (IPTR)arrow_dec;
+	
+	     D(bug("Creating arrow_inc with tags (%d,%d,%d,%d)\n",
+	     atags[0].ti_Data,atags[1].ti_Data,atags[2].ti_Data,atags[3].ti_Data));
+    	    arrow_inc = NewObjectA(arrowcl, NULL, atags);
+    	    if (!arrow_inc)
+    	    	goto failure;
+    	    
+    	}
+    	else
+    	{
+    	    D(bug("Freedom=FREEHORIZ\n"));
+
+    	    atags[0].ti_Data = scroller->LeftEdge + scroller->Width;;
+    	    atags[1].ti_Data = scroller->TopEdge;
+    	    atags[2].ti_Data = arrowdim;
+    	    atags[3].ti_Data = scroller->Height;
+    	    atags[4].ti_Data = LEFTIMAGE;
+    	    
+    	    arrow_dec = NewObjectA(arrowcl, NULL, atags);
+    	    if (!arrow_dec)
+    	    	goto failure;
+    	    
+    	    D(bug("Arrow_dec created\n"));
+    	    ((ULONG)atags[0].ti_Data) += arrowdim;
+    	    atags[4].ti_Data = RIGHTIMAGE;
+    	    atags[6].ti_Data = (IPTR)arrow_dec;
+
+    	    D(bug("creating arrow_inc\n"));
+    	    arrow_inc = NewObjectA(arrowcl, NULL, atags);
+    	    if (!arrow_inc)
+    	    	goto failure;
+    	    	
+    	    	
+    	} /* if (scroller is FREEVERT or FREEHORIZ) */
+
+    	    #define G(o) ((struct Gadget *)o)
+    	    D(bug("Arrow_inc created: (%d, %d, %d, %d)\n",
+    	    	arrow_inc->LeftEdge,arrow_inc->TopEdge,
+    	    	arrow_inc->Width,arrow_inc->Height));
+
+    	    D(bug("Arrow_dec created: (%d, %d, %d, %d)\n",
+    	    	arrow_dec->LeftEdge,arrow_dec->TopEdge,
+    	    	arrow_dec->Width,   arrow_dec->Height));
+
+    	
+    	/* Create notfications from arrows to scroller */
+    	antags[0].ti_Data = (IPTR)scroller;
+
+    	D(bug("Adding notification to arrow_dec\n"));
+
+    	antags[1].ti_Data = (IPTR)arrow_dec2scroller;    	
+    	SetAttrsA((Object *)arrow_dec, antags);
+    	
+    	D(bug("Adding notification to arrow_inc\n"));
+
+    	antags[1].ti_Data = (IPTR)arrow_inc2scroller;
+    	SetAttrsA((Object *)arrow_inc, antags);
+    	
+    } /* if (scroller should have arrows attached) */
+    
+    ReturnPtr ("makescroller", struct Gadget *, scroller);
+    
+failure:
+   if (scroller)
+   	DisposeObject((Object *)scroller);
+
+   if (arrow_dec)
+   	DisposeObject((Object *)arrow_dec);
+
+   if (arrow_inc)
+   	DisposeObject((Object *)arrow_inc);
+   
+   ReturnPtr("makescroller", struct Gadget *, NULL);
+}

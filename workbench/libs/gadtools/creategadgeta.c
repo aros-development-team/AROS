@@ -21,10 +21,6 @@
 #include <utility/tagitem.h>
 #include <libraries/gadtools.h>
 
-#define SDEBUG 1
-#define DEBUG 1
-#include <aros/debug.h>
-
         AROS_LH4(struct Gadget *, CreateGadgetA,
 
 /*  SYNOPSIS */
@@ -84,10 +80,8 @@
 	{TAG_END, 0L}
     };
 
-    EnterFunc(bug("CrateGadgetA()\n"));
-
     if (previous == NULL || ng == NULL || ng->ng_VisualInfo == NULL)
-	ReturnPtr ("CreateGadgetA", struct Gadget *,NULL);
+	return (NULL);
 
     stdgadtags[TAG_Left].ti_Data = ng->ng_LeftEdge;
     stdgadtags[TAG_Top].ti_Data = ng->ng_TopEdge;
@@ -150,7 +144,6 @@
                          (struct VisualInfo *)ng->ng_VisualInfo,
                          ng->ng_TextAttr,
                          taglist);
-            D(bug("Creating text gadget: %p\n", gad));
             break;
         case NUMBER_KIND:
             gad = makenumber((struct GadToolsBase_intern *)GadToolsBase,
@@ -158,7 +151,6 @@
                          (struct VisualInfo *)ng->ng_VisualInfo,
                          ng->ng_TextAttr,
                          taglist);
-            D(bug("Creating number gadget: %p\n", gad));
             break;
         case SLIDER_KIND:
             gad = makeslider((struct GadToolsBase_intern *)GadToolsBase,
@@ -167,9 +159,14 @@
                          ng->ng_TextAttr,
                          taglist);
 
-            D(bug("Creating slider gadget: %p\n", gad));                         
             break;
 
+        case SCROLLER_KIND:
+            gad = makescroller((struct GadToolsBase_intern *)GadToolsBase,
+                         stdgadtags,
+                         (struct VisualInfo *)ng->ng_VisualInfo,
+                         taglist);
+	break;
         }
     }
 
@@ -178,6 +175,6 @@
     else
         FreeVec((APTR)stdgadtags[TAG_IText].ti_Data);
 
-    ReturnPtr ("CreateGadgetA", struct Gadget *, gad);
+    return (gad);
     AROS_LIBFUNC_EXIT
 } /* CreateGadgetA */
