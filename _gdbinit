@@ -158,7 +158,7 @@ define findaddr
 
             while $nextseg && $cont
 	        if $arg0 >= $nextseg && $arg0 <= ($nextseg + *((ULONG *)$nextseg - 1) - sizeof(BPTR))
-                    printf "Hit found in %s, which is loaded at 0x%08x\n", $segnode->name, $segnode->seglist
+                    printf "Address found in %s, which is loaded at 0x%08x\n", $segnode->name, $segnode->seglist
 
                     set $cont = 0
                 end
