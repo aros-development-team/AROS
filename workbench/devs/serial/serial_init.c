@@ -757,10 +757,10 @@ AROS_LH1(void, beginio,
       {
         success = TRUE; // for now
 #if 0
-        success = HIDD_SerialUnit_SetDataProperties(SU->su_Hidd, 
-                                                    ioreq->io_ReadLen,
-                                                    ioreq->io_WriteLen,
-                                                    ioreq->io_StopBits);
+        success = HIDD_SerialUnit_SetParameters(SU->su_Hidd, 
+                                                ioreq->io_ReadLen,
+                                                ioreq->io_WriteLen,
+                                                ioreq->io_StopBits);
 #endif
         if (FALSE == success)
 	{
