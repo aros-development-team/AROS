@@ -2,3 +2,5 @@
 libdefs.h
 makefile
 mmakefile
+*.map
+functable.c
