@@ -1,15 +1,10 @@
 # $Id$
 
-# The workbench-classes target points back to config/$(ARCH)/mmakefile:
-#MM- workbench-classes : workbench-classes-$(ARCH)
-
 # A general catch-all target. You can use this if everything compiles on your
 # machine, and you want to save yourself some typing.
-#MM- workbench-classes-datatypes-complete : \
-#MM	    workbench-classes-datatypes-text \
-#MM	    workbench-classes-datatypes-ascii \
-#MM	    workbench-classes-datatypes-binary \
-#MM	    workbench-classes-datatypes-picture \
-#MM         workbench-classes-datatypes-ppm
-
-#MM- workbench-complete : workbench-classes-complete
+#MM- workbench-datatypes-complete : \
+#MM	    workbench-datatypes-text \
+#MM	    workbench-datatypes-ascii \
+#MM	    workbench-datatypes-binary \
+#MM	    workbench-datatypes-picture \
+#MM         workbench-datatypes-ppm
