@@ -21,10 +21,13 @@
 	struct Library *, RexxSysBase, 25, RexxSys)
 
 /*  FUNCTION
+         Deletes a RexxMsg structure
 
     INPUTS
+         packet - The RexxMsg to delete.
 
     RESULT
+         void
 
     NOTES
 
@@ -33,6 +36,7 @@
     BUGS
 
     SEE ALSO
+         CreateRexxMsg()
 
     INTERNALS
 
@@ -41,7 +45,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    FreeMem(packet, sizeof(struct RexxMsg));
+    FreeMem(packet, packet->rm_Node.mn_Length);
   
     ReturnVoid("DeleteRexxMsg");
     AROS_LIBFUNC_EXIT

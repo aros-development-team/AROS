@@ -21,10 +21,14 @@
 	struct Library *, RexxSysBase, 23, RexxSys)
 
 /*  FUNCTION
+        This will return the length of a string created with CreateArgstring
 
     INPUTS
+        argstring - Pointer to the string part of a RexxArg structure returned
+                    from CreateArgstring
 
     RESULT
+        length of the argstring
 
     NOTES
 
@@ -33,6 +37,7 @@
     BUGS
 
     SEE ALSO
+        CreateArgstring()
 
     INTERNALS
 

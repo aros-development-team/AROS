@@ -23,18 +23,41 @@
 	struct Library *, RexxSysBase, 27, RexxSys)
 
 /*  FUNCTION
+        This function will convert the value(s) provided in rm_Args of the
+        RexxMsg. The input can be either a string or a number.
 
     INPUTS
+        msgptr - RexxMsg to create the RexxArgs for.
+        count  - The number of ARGs in the rm_Args structure field that is
+                 filled with a value and has to be converted.
+        mask   - Bit 0-count from this mask indicate wether the value in
+                 rm_Args is a string or a number. When the bit is cleared the
+                 value is a pointer to a string. When it is set it is treated
+                 as a signed number.
 
     RESULT
+        Returns TRUE if succeeded, FALSE otherwise. When FALSE is returned all
+        memory already allocated will be Freed before returning.
 
     NOTES
 
     EXAMPLE
+        This code will convert a string and a number to RexxArgs:
+
+        struct RexxMsg *rm;
+
+        ...
+
+        rm->rm_Args[0] = "Test";
+        rm->rm_Args[1] = (UBYTE *)5;
+
+        if (!FillRexxMsg(rm, 2, 1<<1))
+        ...
 
     BUGS
 
     SEE ALSO
+        ClearRexxMsg(), CreateRexxMsg(), CreateArgstring()
 
     INTERNALS
 
