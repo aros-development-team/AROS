@@ -1,5 +1,5 @@
 *cpp:
-%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} -I@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/Include -nostdinc -isystem @aros_target_cc_includes@
+%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} -nostdinc -isystem @TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/Include -isystem @aros_target_cc_includes@
 
 *endfile:
 -lautoinit
