@@ -15,146 +15,148 @@
 
 /* This is a duplicate of the definition present in swappedtypes.hpp. 
    The reason for this is explained further below.  */
-template <typename T>
-struct TypeWrapper;
-
-/* Specialized versions of the TypeWrapper functor.  */
-template <>
-struct TypeWrapper<UWORD>
+namespace aros
 {
-    enum { isSigned = false };
+    template <typename T>
+    struct TypeWrapper;
 
-    UWORD bswap(const UWORD v) const
+    /* Specialized versions of the TypeWrapper functor.  */
+    template <>
+    struct TypeWrapper<UWORD>
     {
-        return AROS_SWAP_BYTES_WORD(v);
-    }
+        enum { isSigned = false };
     
-    UWORD ones() const
-    {
-        return (UWORD)-1;
-    }    
-};   
-
-template <>
-struct TypeWrapper<WORD>
-{
-    enum { isSigned = true };
-
-    WORD bswap(const WORD v) const
-    {
-        return AROS_SWAP_BYTES_WORD(v);
-    }
+        UWORD bswap(const UWORD v) const
+        {
+            return AROS_SWAP_BYTES_WORD(v);
+        }
+        
+        UWORD ones() const
+        {
+            return (UWORD)-1;
+        }    
+    };   
     
-    UWORD ones() const
+    template <>
+    struct TypeWrapper<WORD>
     {
-        return (UWORD)-1;
-    }    
-};   
-
-template<>
-struct TypeWrapper<ULONG>
-{
-    enum { isSigned = false };
+        enum { isSigned = true };
     
-    ULONG bswap(const ULONG v) const
-    {
-        return AROS_SWAP_BYTES_LONG(v);
-    }
+        WORD bswap(const WORD v) const
+        {
+            return AROS_SWAP_BYTES_WORD(v);
+        }
+        
+        UWORD ones() const
+        {
+            return (UWORD)-1;
+        }    
+    };   
     
-    ULONG ones() const
+    template<>
+    struct TypeWrapper<ULONG>
     {
-        return (ULONG)-1;
-    }    
-};
-
-template <>
-struct TypeWrapper<LONG>
-{
-    enum { isSigned = true };
-
-    LONG bswap(const LONG v) const
-    {
-       return AROS_SWAP_BYTES_LONG(v);
-    }
+        enum { isSigned = false };
+        
+        ULONG bswap(const ULONG v) const
+        {
+            return AROS_SWAP_BYTES_LONG(v);
+        }
+        
+        ULONG ones() const
+        {
+            return (ULONG)-1;
+        }    
+    };
     
-    ULONG ones() const
+    template <>
+    struct TypeWrapper<LONG>
     {
-        return (ULONG)-1;
-    }    
-};
+        enum { isSigned = true };
     
-template<>
-struct TypeWrapper<UQUAD>
-{
-    enum { isSigned = false };
+        LONG bswap(const LONG v) const
+        {
+           return AROS_SWAP_BYTES_LONG(v);
+        }
+        
+        ULONG ones() const
+        {
+            return (ULONG)-1;
+        }    
+    };
+        
+    template<>
+    struct TypeWrapper<UQUAD>
+    {
+        enum { isSigned = false };
+        
+        const UQUAD bswap(const UQUAD v) const
+        {
+            return AROS_SWAP_BYTES_QUAD(v);
+        }
+        
+        const UQUAD ones() const
+        {
+            return (UQUAD)-1;
+        }    
+    };
     
-    const UQUAD bswap(const UQUAD v) const
+    template<>
+    struct TypeWrapper<QUAD>
     {
-        return AROS_SWAP_BYTES_QUAD(v);
-    }
+        enum { isSigned = true };
+        
+        const QUAD bswap(const QUAD v) const
+        {
+            return AROS_SWAP_BYTES_QUAD(v);
+        }
+        
+        const UQUAD ones() const
+        {
+            return (UQUAD)-1;
+        }    
+    };
     
-    const UQUAD ones() const
-    {
-        return (UQUAD)-1;
-    }    
-};
-
-template<>
-struct TypeWrapper<QUAD>
-{
-    enum { isSigned = true };
+    template <typename T, unsigned int size>
+    struct TypeWrapperPtr;
     
-    const QUAD bswap(const QUAD v) const
+    template <typename T>
+    struct TypeWrapperPtr<T, sizeof(ULONG)>
     {
-        return AROS_SWAP_BYTES_QUAD(v);
-    }
+        T *bswap(const T *v) const
+        {
+            return (T *)AROS_SWAP_BYTES_LONG((ULONG)v);
+        }                
+    };    
     
-    const UQUAD ones() const
+    template <typename T>
+    struct TypeWrapperPtr<T, sizeof(UQUAD)>
     {
-        return (UQUAD)-1;
-    }    
-};
-
-template <typename T, unsigned int size>
-struct TypeWrapperPtr;
-
-template <typename T>
-struct TypeWrapperPtr<T, sizeof(ULONG)>
-{
-    T *bswap(const T *v) const
+        T *bswap(const T *v) const
+        {
+            return (T *)AROS_SWAP_BYTES_QUAD((UQUAD)v);
+        }                
+    };    
+    
+    template <typename T>
+    struct TypeWrapper<T *> : TypeWrapperPtr<T, sizeof(T *)> 
     {
-        return (T *)AROS_SWAP_BYTES_LONG((ULONG)v);
-    }                
-};    
-
-template <typename T>
-struct TypeWrapperPtr<T, sizeof(UQUAD)>
-{
-    T *bswap(const T *v) const
-    {
-        return (T *)AROS_SWAP_BYTES_QUAD((UQUAD)v);
-    }                
-};    
-
-template <typename T>
-struct TypeWrapper<T *> : TypeWrapperPtr<T, sizeof(T *)> 
-{
-    enum { isSigned = false };
-
-    T *ones() const
-    {
-        return (T *)(IPTR)-1;        
-    }        
-};
-
+        enum { isSigned = false };
+    
+        T *ones() const
+        {
+            return (T *)(IPTR)-1;        
+        }        
+    };
+}    
 /* For some odd reasons gcc will complain if I put this at the top, because it won't see that
    TypeWrapper<T *> inherits from TypeWrapperPtr<T, sizeof(T *)>.
-   
+       
    Is this a bug or a feature?!  */
 #include <c++/swappedtype.hpp>
-
-
-/* Some useful types, in their big and little endian version.
+    
+    
+    /* Some useful types, in their big and little endian version.
 
    You can use them just like normal types. Of course, though, it makes
    no much sense to declare, say, a BELONG variable, since that will only
@@ -177,15 +179,15 @@ struct TypeWrapper<T *> : TypeWrapperPtr<T, sizeof(T *)>
 
 #if AROS_BIG_ENDIAN
 
-typedef SwappedType<WORD>  LEWORD;
-typedef SwappedType<LONG>  LELONG;
-typedef SwappedType<QUAD>  LEQUAD;
+typedef aros::SwappedType<WORD>  LEWORD;
+typedef aros::SwappedType<LONG>  LELONG;
+typedef aros::SwappedType<QUAD>  LEQUAD;
 
-typedef SwappedType<UWORD> LEUWORD;
-typedef SwappedType<ULONG> LEULONG;
-typedef SwappedType<UQUAD> LEUQUAD;
+typedef aros::SwappedType<UWORD> LEUWORD;
+typedef aros::SwappedType<ULONG> LEULONG;
+typedef aros::SwappedType<UQUAD> LEUQUAD;
 
-typedef SwappedType<APTR>  LEAPTR;
+typedef aros::SwappedType<APTR>  LEAPTR;
 
 typedef WORD  BEWORD;               
 typedef LONG  BELONG;
@@ -198,19 +200,19 @@ typedef UQUAD BEUQUAD;
 typedef APTR  BEAPTR;
 
 #define BEPTR(type) type *
-#define LEPTR(type) SwappedType<type *>
+#define LEPTR(type) aros::SwappedType<type *>
 
 #else
 
-typedef SwappedType<WORD>  BEWORD;
-typedef SwappedType<LONG>  BELONG;
-typedef SwappedType<QUAD>  BEQUAD;
+typedef aros::SwappedType<WORD>  BEWORD;
+typedef aros::SwappedType<LONG>  BELONG;
+typedef aros::SwappedType<QUAD>  BEQUAD;
 
-typedef SwappedType<UWORD> BEUWORD;
-typedef SwappedType<ULONG> BEULONG;
-typedef SwappedType<UQUAD> BEUQUAD;
+typedef aros::SwappedType<UWORD> BEUWORD;
+typedef aros::SwappedType<ULONG> BEULONG;
+typedef aros::SwappedType<UQUAD> BEUQUAD;
 
-typedef SwappedType<APTR>  BEAPTR;
+typedef aros::SwappedType<APTR>  BEAPTR;
 
 typedef WORD  LEWORD;               
 typedef LONG  LELONG;               
@@ -222,7 +224,7 @@ typedef UQUAD LEUQUAD;
 
 typedef APTR  LEAPTR;
 
-#define BEPTR(type) SwappedType<type *>
+#define BEPTR(type) aros::SwappedType<type *>
 #define LEPTR(type) type *
 
 #endif
@@ -252,7 +254,8 @@ namespace aros
             
             IntPtr() : data(0) {}
             
-            IntPtr(T v) : data(v) {}
+            template <typename T2>
+            IntPtr(T2 v) : data(v) {}
             
             template <typename T2>
             IntPtr(T2 *v) : data((T)v) {}
