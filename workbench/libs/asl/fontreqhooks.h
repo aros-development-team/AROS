@@ -30,6 +30,8 @@ struct FOUserData
 {
     Object			*NameListview;
     Object  	    	    	*SizeListview;
+    Object  	    	    	*NameString;
+    Object  	    	    	*SizeString;
     Object			*OKBut;
     Object			*CancelBut;
  
