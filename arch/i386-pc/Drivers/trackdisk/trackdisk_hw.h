@@ -12,7 +12,7 @@
 #include <asm/io.h>
 
 /* Prototypes */
-void td_motoron(UBYTE,struct TrackDiskBase *);
+void td_motoron(UBYTE,struct TrackDiskBase *,BOOL);
 void td_select(UBYTE,struct TrackDiskBase *);
 void td_motoroff(UBYTE,struct TrackDiskBase *);
 UBYTE td_getprotstatus(UBYTE,struct TrackDiskBase *);
@@ -22,7 +22,7 @@ int td_rseek(UBYTE , UBYTE , UBYTE , struct TrackDiskBase *);
 int td_read(struct IOExtTD *, struct TrackDiskBase *);
 int td_write(struct IOExtTD *, struct TrackDiskBase *);
 int td_update(struct TDU *, struct TrackDiskBase *);
-int td_waitint(struct TrackDiskBase *);
+int td_waitint(struct TrackDiskBase *,UBYTE,BOOL);
 UBYTE td_getDiskChange(void);
 
 
@@ -43,31 +43,85 @@ UBYTE td_getDiskChange(void);
 #define DP_SPEC2	0x10	/* HLT=16ms, use DMA */
 #define	DP_SSIZE	0x02	/* SectSize=512b */
 
-/* TrackDisk i82072 commands */
+/* I/O ports used by the FDC */
+#define FDC_SRB	    0x3f1	/* Status register B */
+#define FDC_DOR	    0x3f2	/* Digital output register */
+#define FDC_TDR	    0x3f3	/* Tape drive register */
+#define FDC_MSR	    0x3f4	/* Main status register (R) */
+#define FDC_DSR	    0x3f4	/* Data rate select (W) */
+#define FDC_FIFO    0x3f5	/* FIFO */
+#define FDC_DIR	    0x3f7	/* Digital input register (R) */
+#define FDC_CCR	    0x3f7	/* Configuration control register (W) */
 
-#define i82_READ	0x06
-#define	i82_WRITE	0x05
-#define i82_FORMAT	0x0d
-#define i82_RECALIBRATE	0x07
-#define	i82_SEEK	0x0f
-#define i82_RELSEEK	0x8f
+/* Status register B bits */
+#define SRBB_IDLE	0x00
+#define SRBB_PD		0x01
+#define SRBB_IDLEMSK	0x02
 
-#define fd_inb(port)		inb_p(port)
-#define fd_outb(value,port)     outb_p(value,port)
+#define SRBF_IDLE	(1<<SRBB_IDLE)
+#define SRBF_PD		(1<<SRBB_PD)
+#define SRBF_IDLEMSK	(1<<SRBB_IDLEMSK)
 
+/* Digital output register bits */
+#define DORB_DSEL	0x00
+#define DORB_RESET	0x02
+#define DORB_DMA	0x03
+#define DORB_MOT0	0x04
+#define DORB_MOT1	0x05
 
-#define FD_STATUS   0x3f4
-#define FD_DATA     0x3f5
-#define FD_DOR      0x3f2       /* Digital Output Register */
-#define FD_DIR      0x3f7       /* Digital Input Register (read) */
-#define FD_DCR      0x3f7       /* Diskette Control Register (write)*/
+#define DORF_DSEL	(1<<DORB_DSEL)
+#define DORF_RESET	(1<<DORB_RESET)
+#define DORF_DMA	(1<<DORB_DMA)
+#define DORF_MOT0	(1<<DORB_MOT0)
+#define DORF_MOT1	(1<<DORB_MOT1)
 
-/* Bits of main status register */
-#define STATUS_BUSYMASK 0x0F        /* drive busy mask */
-#define STATUS_BUSY 0x10        /* FDC busy */
-#define STATUS_DMA  0x20        /* 0- DMA mode */
-#define STATUS_DIR  0x40        /* 0- cpu->fdc */
-#define STATUS_READY    0x80        /* Data reg ready */
+/* Tape drive register bits */
+#define TDRB_TS0	0x00
+#define TDRB_TS1	0x01
+#define TDRB_BSEL	0x02
+
+#define TDRF_TS0	(1<<TDRB_TS0)
+#define TDRF_TS1	(1<<TDRB_TS1)
+#define TDRF_BSEL	(1<<TDRB_BSEL)
+
+/* Main status register bits */
+#define MSRB_D0BSY	0x00
+#define MSRB_D1BSY	0x01
+#define MSRB_CMDBSY	0x04
+#define MSRB_NONDMA	0x05
+#define MSRB_DIO	0x06
+#define MSRB_RQM	0x07
+
+#define MSRF_D0BSY	(1<<MSRB_D0BSY)
+#define MSRF_D1BSY	(1<<MSRB_D1BSY)
+#define MSRF_CMDBSY	(1<<MSRB_CMDBSY)
+#define MSRF_NONDMA	(1<<MSRB_NONDMA)
+#define MSRF_DIO	(1<<MSRB_DIO)
+#define MSRF_RQM	(1<<MSRB_RQM)
+
+/* Datarate select bits */
+#define DSRB_DRATE0	0x00
+#define DSRB_DRATE1	0x01
+#define DSRB_PCOMP0	0x02
+#define DSRB_PCOMP1	0x03
+#define DSRB_PCOMP2	0x04
+#define DSRB_PDOSC	0x05
+#define DSRB_PDOWN	0x06
+#define DSRB_RESET	0x07
+
+#define DSRF_DRATE0	(1<<DSRB_DRATE0)
+#define DSRF_DRATE1	(1<<DSRB_DRATE1)
+#define DSRF_PCOMP0	(1<<DSRB_PCOMP0)
+#define DSRF_PCOMP1	(1<<DSRB_PCOMP1)
+#define DSRF_PCOMP2	(1<<DSRB_PCOMP2)
+#define DSRF_PDOSC	(1<<DSRB_PDOSC)
+#define DSRF_PDOWN	(1<<DSRB_PDOWN)
+#define DSRF_RESET	(1<<DSRB_RESET)
+
+/* Digital input register bits */
+#define DIRB_DCHG	0x07
+
+#define DIRF_DCHG	(1<<DIRB_DCHG)
 
 /* Bits of FD_ST0 */
 #define ST0_DS      0x03        /* drive select mask */
@@ -102,31 +156,33 @@ UBYTE td_getDiskChange(void);
 #define ST3_WP      0x40        /* Write Protect */
 #define ST3_FT      0x80        /* Drive Fault */
 
-/* Bits for FD_PDMODE */
-#define PDM_EREG    0x20        /* Extended register enable */
-#define PDM_FDITRI  0x04        /* Tristate FDC */
-#define PDM_MINDLY  0x02        /* Min delay for AutoPD, 0=10ms 1=0.5s */
-#define PDM_AUTOPD  0x01        /* Auto PD enable */
-
 /* Values for FD_COMMAND */
-#define FD_RECALIBRATE      0x07    /* move to track 0 */
-#define FD_SEEK         0x0F    /* seek track */
-#define FD_READ         0x66    /* read with MFM, SKip deleted */
-#define FD_WRITE        0x45    /* write with MFM */
-#define FD_SENSEI       0x08    /* Sense Interrupt Status */
-#define FD_SPECIFY      0x03    /* specify HUT etc */
-#define FD_FORMAT       0x4D    /* format one track */
-#define FD_VERSION      0x10    /* get version code */
+#define FD_RECALIBRATE	    0x07    /* move to track 0 */
+#define FD_SEEK		    0x0F    /* seek track */
+#define FD_READ		    0x66    /* read with MFM, SKip deleted */
+#define FD_WRITE	    0x45    /* write with MFM */
+#define FD_SENSEI	    0x08    /* Sense Interrupt Status */
+#define FD_SPECIFY	    0x03    /* specify HUT etc */
+#define FD_FORMAT	    0x4D    /* format one track */
+#define FD_VERSION	    0x10    /* get version code */
+#define FD_PARTID	    0x18    /* get part id */
 #define FD_CONFIGURE        0x13    /* configure FIFO operation */
 #define FD_PERPENDICULAR    0x12    /* perpendicular r/w mode */
 #define FD_GETSTATUS        0x04    /* read ST3 */
-#define FD_DUMPREGS     0x0E    /* dump the contents of the fdc regs */
-#define FD_READID       0x4A    /* prints the header of a sector */
-#define FD_UNLOCK       0x14    /* Fifo config unlock */
-#define FD_LOCK         0x94    /* Fifo config lock */
-#define FD_RSEEK_OUT        0x8f    /* seek out (i.e. to lower tracks) */
-#define FD_RSEEK_IN     0xcf    /* seek in (i.e. to higher tracks) */
-#define FD_PDMODE       0x17    /* Configure powerdown mode */
+#define FD_DUMPREGS	    0x0E    /* dump the contents of the fdc regs */
+#define FD_READID	    0x4A    /* prints the header of a sector */
+#define FD_UNLOCK	    0x14    /* Fifo config unlock */
+#define FD_LOCK		    0x94    /* Fifo config lock */
+#define FD_RSEEK_OUT        0x8F    /* seek out (i.e. to lower tracks) */
+#define FD_RSEEK_IN	    0xCF    /* seek in (i.e. to higher tracks) */
+#define FD_PDMODE	    0x17    /* Configure powerdown mode */
+
+
+
+/*
+ * This really should be somewhere else, like in a hidd.dma or so
+ * And it should not look like this, considering licenses etc.
+ */
 
 /* DMA section based on linuxish /asm/dma.h */
 

@@ -32,8 +32,8 @@ int td_waitUntilReady(void)
 
     for (i=0; i < 10000; i++)
     {
-	status = fd_inb(FD_STATUS);
-	if (status & STATUS_READY)
+	status = inb(FDC_MSR);
+	if (status & MSRF_RQM)
 	    return status;
     }
     return -1;
@@ -41,65 +41,42 @@ int td_waitUntilReady(void)
 
 
 /* Start motor and select drive */
-void td_motoron(UBYTE unitnum, struct TrackDiskBase *tdb)
+void td_motoron(UBYTE unitnum, struct TrackDiskBase *tdb, BOOL wait)
 {
     UBYTE dor;
 
     dor = tdb->td_dor & 0x30;
-    dor |= 0x0c;
-    dor |= (0x10 << unitnum);
-    dor |= unitnum;
+    dor |= 0x0c  | (0x10 << unitnum) | unitnum;
     tdb->td_dor = dor;
 
-    outb(dor,FD_DOR);
-    td_waitUntilReady();
+    outb(dor,FDC_DOR);
+    /* Did the user want to wait for spinup? */
+    if (wait)
+    {
+    	td_waitUntilReady();
+    }
 }
 
 /* Stop motor */
 void td_motoroff(UBYTE unitnum, struct TrackDiskBase *tdb)
 {
     tdb->td_dor = tdb->td_dor & ~(0x10 << unitnum);
-    outb(tdb->td_dor,FD_DOR);
-    td_waitUntilReady();
-}
-
-/* Just select a drive, leaving motorbits as is */
-void td_select(UBYTE unitnum, struct TrackDiskBase *tdb)
-{
-    UBYTE dor;
-
-    dor = tdb->td_dor;
-    dor &= 0xfc;
-    dor |= unitnum;
-    tdb->td_dor = dor;
-    outb(dor,FD_DOR);
-}
-
-/* Wait for interrupt */
-int td_waitint(struct TrackDiskBase *TDBase)
-{
-    TDBase->td_iotime = 150;	// Each IO command has 3s to complete before error occurs
-    Wait((1L << TDBase->td_IntBit));
-    if (TDBase->td_iotime)
-    {
-	TDBase->td_iotime = 0;
-	return 0;
-    }
-    return TDERR_NotSpecified;
+    outb(tdb->td_dor,FDC_DOR);
 }
 
 // Send byte to drive. Returns DriveInUse error if busy, 0 otherwise
 int td_sendbyte(unsigned char byte, struct TrackDiskBase *TDBase)
 {
-    TDBase->td_iotime=50;	//1s to send a command
-    do
+    int i;
+
+    for(i=0;i<100000;i++)
     {
-	if ((fd_inb(FD_STATUS) & 0xc0)==0x80)
+	if ((inb(FDC_MSR) & (MSRF_RQM | MSRF_DIO))==MSRF_RQM)
 	{
-	    fd_outb(byte, FD_DATA);
+	    outb(byte, FDC_FIFO);
 	    return 0;
 	}
-    } while (TDBase->td_iotime);
+    }
     D(bug("TD: sendbyte failed\n"));
     return TDERR_DriveInUse;
 
@@ -108,15 +85,16 @@ int td_sendbyte(unsigned char byte, struct TrackDiskBase *TDBase)
 // Get byte from drive. Returns the same as td_sendbyte
 int td_getbyte(unsigned char *byte, struct TrackDiskBase *TDBase)
 {
-    TDBase->td_iotime=50;
-    do
+    int i;
+
+    for(i=0;i<100000;i++)
     {
-	if ((fd_inb(FD_STATUS) & 0xc0)==0xc0)
+	if ((inb(FDC_MSR) & (MSRF_RQM | MSRF_DIO))==(MSRF_RQM | MSRF_DIO))
 	{
-	    *byte = fd_inb(FD_DATA);
+	    *byte = inb(FDC_FIFO);
 	    return 0;
 	}
-    } while (TDBase->td_iotime);
+    }
     return TDERR_DriveInUse;
 }
 
@@ -140,15 +118,43 @@ int td_sendcommand(struct TrackDiskBase *TDBase)
 
 	D(bug("TD: Resending command\n"));
 	err = 0;
-	fd_outb(0, FD_DOR);
-	fd_outb(0, FD_DOR);
-	fd_outb(4, FD_DOR);
 	td_dinit(TDBase);
 	// Resend command
 	for (i=0; (i < TDBase->td_comsize) && !err; i++)
 	    err = td_sendbyte(TDBase->td_rawcom[i], TDBase);
     }
     return err;
+}
+
+/* Wait for interrupt */
+int td_waitint(struct TrackDiskBase *TDBase, UBYTE results,BOOL sensei)
+{
+    int i;
+    ULONG sigs;
+
+    TDBase->td_inttmo = 150;	// Each IO command has 1s to complete before error occurs
+    sigs = Wait((1L << TDBase->td_IntBit)|(1L<<TDBase->td_TmoBit));
+    if (sigs & (1L << TDBase->td_IntBit))
+    {
+	TDBase->td_inttmo = 0;
+	if (results)
+	{
+	    i = 0;
+	    while ( (i<results) && (inb(FDC_MSR) & MSRF_CMDBSY) )
+	    {
+		td_getbyte(&TDBase->td_result[i],TDBase);
+	    }
+	}
+	/* Do we run a Sense Interrupt? */
+	if (sensei)
+	{
+	    td_sendbyte(FD_SENSEI,TDBase);
+	    td_getbyte(&TDBase->td_sr0,TDBase);
+	    td_getbyte(&TDBase->td_pcn,TDBase);
+	}
+	return 0;
+    }
+    return TDERR_NotSpecified;
 }
 
 // Read status bytes
@@ -171,7 +177,7 @@ int needMoreOutput(struct TrackDiskBase *TDBase)
 
     if ((status=td_waitUntilReady())<0)
 	return -1;
-    if ((status & (STATUS_READY|STATUS_DIR|STATUS_DMA)) == STATUS_READY)
+    if ((status & (MSRF_RQM|MSRF_DIO|MSRF_NONDMA)) == MSRF_RQM)
 	return MORE_OUTPUT;
     td_readstatus(TDBase, 7);
     return 0;
@@ -186,7 +192,7 @@ int td_configure(struct TrackDiskBase *TDBase)
     if (needMoreOutput(TDBase) == MORE_OUTPUT)
     {
 	td_sendbyte(0, TDBase);
-	td_sendbyte(0x5a, TDBase);
+	td_sendbyte(0x1a, TDBase);
 	td_sendbyte(0, TDBase);
 	return 1;
     }
@@ -208,18 +214,24 @@ UBYTE td_getprotstatus(UBYTE unitnum, struct TrackDiskBase *tdb)
 }
 
 
-// Initialize drive
+/*
+ * Reset FDC, and initialize it again
+ */
+
 int td_dinit(struct TrackDiskBase *TDBase)
 {
     int i;
 
+    // Assert RESET in DOR
+    outb(DORF_DMA, FDC_DOR);
+    outb(DORF_DMA, FDC_DOR);
     // deassert RESET signal
-    fd_outb(0x0c, FD_DOR);
+    outb(DORF_RESET | DORF_DMA, FDC_DOR);
+    td_waitint(TDBase,0,FALSE);
     /* Issue configure */
     td_configure(TDBase);
     // programm data rate
-    fd_outb(0,FD_DCR);
-    td_waitint(TDBase);
+    outb(0,FDC_DSR);
     // issue Sense Interrupt Status (loop 4 times)
     for (i=0; i<4; i++)
     {
@@ -243,7 +255,7 @@ int td_recalibrate(unsigned char unitn, char type, int sector, struct TrackDiskB
     int err;
 
     /* If we are not running already, this will spin up. */
-    td_motoron(unitn,TDBase);
+    td_motoron(unitn,TDBase,FALSE);
 
     if (type)
     {
@@ -273,17 +285,11 @@ int td_recalibrate(unsigned char unitn, char type, int sector, struct TrackDiskB
     if (!err)
     {
 	/* Wait for interrupt */
-	err = td_waitint(TDBase);
+	err = td_waitint(TDBase,0,TRUE);
 	if (!err)
 	{
-	    /* Issue Sense Interrupt Status command */
-	    TDBase->td_comsize = 1;
-	    TDBase->td_rawcom[0] = FD_SENSEI;
-	    td_sendcommand(TDBase);
-	    /* Get 2 bytes of status */
-	    td_readstatus(TDBase,2);
 	    /* if drive doesn't report any error return 0 */
-	    if (((TDBase->td_result[0] & 0xf0) == 0x20) && (TDBase->td_result[1] == sector))
+	    if (((TDBase->td_sr0 & 0xf0) == 0x20) && (TDBase->td_pcn == sector))
 	    {
 		return 0;
 	    }
@@ -299,7 +305,7 @@ int td_rseek(UBYTE unitn, UBYTE dir, UBYTE cyls, struct TrackDiskBase *TDBase)
     int err;
 
     /* Select the unit, start motor */
-    td_motoron(unitn,TDBase);
+    td_motoron(unitn,TDBase,FALSE);
 
     if (dir)
     {
@@ -321,17 +327,11 @@ int td_rseek(UBYTE unitn, UBYTE dir, UBYTE cyls, struct TrackDiskBase *TDBase)
     if (!err)
     {
 	/* Wait for interrupt */
-	err = td_waitint(TDBase);
+	err = td_waitint(TDBase,0,TRUE);
 	if (!err)
 	{
-	    /* Issue Sense Interrupt Status command */
-	    TDBase->td_comsize = 1;
-	    TDBase->td_rawcom[0] = FD_SENSEI;
-	    td_sendcommand(TDBase);
-	    /* Get 2 bytes of status */
-	    td_readstatus(TDBase,2);
 	    /* if drive doesn't report any error return 0 */
-	    if (((TDBase->td_result[0] & 0xf0) == 0x20))
+	    if (((TDBase->td_sr0 & 0xf0) == 0x20))
 	    {
 		return 0;
 	    }
@@ -352,7 +352,7 @@ int td_rseek(UBYTE unitn, UBYTE dir, UBYTE cyls, struct TrackDiskBase *TDBase)
 *************************************************/
 UBYTE td_getDiskChange( void )
 {
-    return(inb(FD_DIR)>>7);
+    return(inb(FDC_DIR)>>DIRB_DCHG);
 }
 
 
@@ -363,71 +363,68 @@ int td_readwritetrack(UBYTE unitnum, char cyl, char hd, char mode, struct TrackD
     char *buf;
     int err;		// Error
 
-    /* Enable drive & motor */
-    td_motoron(unitnum,TDBase);
-
     /* Program data rate */
-    fd_outb(0, FD_DCR);	// 500kbit/s only!
+    outb(0, FDC_DSR);	// 500kbit/s only!
     do
     {
 	rwcnt = 3;	// Max 3 retries of read/write
-
-	do
+	err = td_recalibrate(unitnum,0,(cyl*DP_SECTORS)<<1,TDBase);
+	if (!err)
 	{
-	    /* Clear err flag */
-	    err = 0;
-	    /* Set DMA up */
-	    clear_dma_ff(TD_DMA);
-	    // Should place some cache flush in future (when cache implemented)
-	    set_dma_addr(TD_DMA, (ULONG)(TDBase->td_Units[unitnum]->td_DMABuffer));
-	    set_dma_count(TD_DMA, DP_SECTORS*512);
-	    set_dma_mode(TD_DMA, (mode == FD_READ) ? DMA_MODE_READ : DMA_MODE_WRITE);
-	    enable_dma(TD_DMA);
-	    /* Issue read/write command */
-	    TDBase->td_comsize = 9;
-	    buf = TDBase->td_rawcom;
-	    *buf++ = mode;							// Command
-	    *buf++ = unitnum | (hd << 2);	// Drive Select
-	    *buf++ = cyl;					// Cylinder
-	    *buf++ = hd;					// Head
-	    *buf++ = 1;						// Sector
-	    *buf++ = DP_SSIZE;			// Sector size
-	    *buf++ = DP_SECTORS;			// End sector - the same as sec field for a while
-	    *buf++ = DP_GAP1;				// Gap length
-	    *buf++ = -1;					// DTL
-	    /* Command prepared, now send it */
-	    td_sendcommand(TDBase);
-	    /* Wait for end phase */
-	    err = td_waitint(TDBase);
-	    if (!err)
+	    do
 	    {
-		/* Read result bytes */
-		td_readstatus(TDBase, 7);
-		/* Check if everything went OK */
-		if (!(TDBase->td_result[0] & 0xc0))
+		/* Clear err flag */
+		err = 0;
+		/* Set DMA up */
+		clear_dma_ff(TD_DMA);
+		// Should place some cache flush in future (when cache implemented)
+		set_dma_addr(TD_DMA, (ULONG)(TDBase->td_Units[unitnum]->td_DMABuffer));
+		set_dma_count(TD_DMA, DP_SECTORS*512);
+		set_dma_mode(TD_DMA, (mode == FD_READ) ? DMA_MODE_READ : DMA_MODE_WRITE);
+		enable_dma(TD_DMA);
+		/* Issue read/write command */
+		TDBase->td_comsize = 9;
+		buf = TDBase->td_rawcom;
+		*buf++ = mode;							// Command
+		*buf++ = unitnum | (hd << 2);	// Drive Select
+		*buf++ = cyl;					// Cylinder
+		*buf++ = hd;					// Head
+		*buf++ = 1;						// Sector
+		*buf++ = DP_SSIZE;			// Sector size
+		*buf++ = DP_SECTORS;			// End sector - the same as sec field for a while
+		*buf++ = DP_GAP1;				// Gap length
+		*buf++ = -1;					// DTL
+		/* Command prepared, now send it */
+		td_sendcommand(TDBase);
+		/* Wait for end phase */
+		err = td_waitint(TDBase,7,FALSE);
+		if (!err)
 		{
-		    return 0;
+		    /* Check if everything went OK */
+		    if (!(TDBase->td_result[0] & 0xc0))
+		    {
+			return 0;
+		    }
 		}
-	    }
-	    /* Something went wrong. Let's see what. */
-	    /* if err != then timeout err. */
-	    if (!err)
-	    {	
-		err = TDERR_NotSpecified;
-		if (TDBase->td_result[1] & 0x80)
-		    err = TDERR_TooFewSecs;
-		else if (TDBase->td_result[1] & 0x20)
-		{
-		    err = TDERR_BadHdrSum;
-		    if (TDBase->td_result[2] & 0x20)
-			err = TDERR_BadSecSum;
+		/* Something went wrong. Let's see what. */
+		/* if err != then timeout err. */
+		if (!err)
+		{	
+		    err = TDERR_NotSpecified;
+		    if (TDBase->td_result[1] & 0x80)
+			err = TDERR_TooFewSecs;
+		    else if (TDBase->td_result[1] & 0x20)
+		    {
+			err = TDERR_BadHdrSum;
+			if (TDBase->td_result[2] & 0x20)
+			    err = TDERR_BadSecSum;
+		    }
+		    else if (TDBase->td_result[1] & 0x04)
+			err = TDERR_TooFewSecs;
 		}
-		else if (TDBase->td_result[1] & 0x04)
-		    err = TDERR_TooFewSecs;
-	    }
-	} while (--rwcnt);
+	    } while (--rwcnt);
+	}
     } while(--skcnt);	
-
     return err;
 }
 
@@ -439,6 +436,7 @@ int td_update(struct TDU *unit, struct TrackDiskBase *TDBase)
     {
 	if (td_getDiskChange())
 	    return TDERR_DiskChanged;	/* No disk in drive */
+	td_motoron(unit->tdu_UnitNum,TDBase,TRUE);
 	err=td_readwritetrack(unit->tdu_UnitNum, unit->tdu_lastcyl, unit->tdu_lasthd, FD_WRITE, TDBase);
 	if (err)
 	    return err;
@@ -484,7 +482,7 @@ int td_read(struct IOExtTD *iotd, struct TrackDiskBase *TDBase)
     }
 
     /* Gentlemen, start your engines */
-    td_motoron(unit->tdu_UnitNum,TDBase);
+    td_motoron(unit->tdu_UnitNum,TDBase,FALSE);
 
     sec = iotd->iotd_Req.io_Offset >> 9; // sector is wrong right now (LBA)
     cyl = (sec >> 1) / DP_SECTORS; // cyl contains real cyl number
@@ -529,7 +527,7 @@ int td_write(struct IOExtTD *iotd, struct TrackDiskBase *TDBase)
     }
 
     /* Gentlemen, start your engines */
-    td_motoron(unit->tdu_UnitNum,TDBase);
+    td_motoron(unit->tdu_UnitNum,TDBase,TRUE);
 
     sec = iotd->iotd_Req.io_Offset >> 9; // sector is wrong right now (LBA)
     cyl = (sec >> 1) / DP_SECTORS; // cyl contains real cyl number
