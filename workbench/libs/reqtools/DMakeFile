@@ -1,0 +1,48 @@
+#
+# Makefile for 'reqtools.library'
+#
+
+ASRC = reqtools.asm rtfuncs.asm checkstack.asm boopsi.asm misc.asm \
+       closewinsafely.asm gadstub.asm mem.asm
+CSRC = req.c boopsigads.c general.c \
+       filereq.c filereqalloc.c filereqextra.c filereqmain.c filereqsetup.c \
+       palettereq.c rtlocale.c
+SRC  = $(ASRC) $(CSRC)
+AOBJ = $(ASRC:*.asm:*.o)
+COBJ = $(CSRC:*.c:*.o)
+OBJ  = $(AOBJ) $(COBJ)
+
+LIBS =
+
+CD = /Catalogs/libcat/reqtools.cd
+CT = dansk deutsch español français italiano magyar nederlands norsk polski português \
+     russian srpski suomi svenska ãeótina
+
+CTOBJ = $(CT:*:/Catalogs/*/reqtools.catalog)
+CTSRC = $(CT:*:/Catalogs/libcat/*.ct)
+
+All : catalog.h reqtools.library $(CTOBJ)
+
+catalog.h: /Catalogs/libcat/reqtools.cd
+	Cat2Inc %(right) CFILE %(left)
+
+reqtools.library : $(OBJ)
+	BumpRev 38 reqtools_rev
+	GenAm QUIET -iDInclude:Amiga30/Genam -l reqtools.asm
+	SLink FROM %(right) TO %(left) ADDSYM QUIET SMALLCODE SMALLDATA NOICONS LIB Lib:reqtools.lib
+
+$(AOBJ) : $(ASRC)
+	GenAm -iINCLUDE:Genam -l %(right) TO %(left) QUIET
+
+$(COBJ) : $(CSRC)
+	Sc %(right)
+
+$(CTOBJ) : $(CTSRC)
+	CatComp /Catalogs/LibCat/ReqTools.cd %(right) CATALOG %(left)
+
+
+filereq.o filereqalloc.o filereqextra.o filereqmain.o filereqsetup.o : filereq.h
+
+
+Install :
+	SLink reqtools.library TO Libs:reqtools.library STRIPDEBUG NOICONS

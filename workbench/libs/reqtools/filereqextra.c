@@ -1169,10 +1169,10 @@ void REGARGS ShowFontSample (GlobData *glob, int refresh, int dowait)
 /****************************************************************************************/
 
 ULONG ASM myGetDisplayInfoData (
-    register __a1 UBYTE *buf,
-    register __d0 unsigned long size,
-    register __d1 unsigned long tagID,
-    register __d2 unsigned long displayID)
+    OPT_REGPARAM(a1, UBYTE *, buf),
+    OPT_REGPARAM(d0, unsigned long, size),
+    OPT_REGPARAM(d1, unsigned long, tagID),
+    OPT_REGPARAM(d2, unsigned long, displayID))
 {
     return (GetDisplayInfoData (FindDisplayInfo (displayID),
 		     		buf, size, tagID, displayID));

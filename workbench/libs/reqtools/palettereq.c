@@ -45,10 +45,12 @@ extern struct ReqToolsBase *ReqToolsBase;
 
 /****************************************************************************************/
 
-extern ULONG ASM LoopReqHandler (register __a1 struct rtHandlerInfo *);
-extern ULONG ASM myGetDisplayInfoData (register __a1 UBYTE *,
-	register __d0 unsigned long, register __d1 unsigned long,
-	register __d2 unsigned long);
+extern ULONG ASM LoopReqHandler (ASM_REGPARAM(a1, struct rtHandlerInfo *,));
+extern ULONG ASM myGetDisplayInfoData (
+        OPT_REGPARAM(a1, UBYTE *,),
+	OPT_REGPARAM(d0, unsigned long,),
+	OPT_REGPARAM(d1, unsigned long,),
+	OPT_REGPARAM(d2, unsigned long,));
 
 /****************************************************************************************/
 
@@ -166,10 +168,8 @@ struct RealHandlerInfo
 
 /****************************************************************************************/
 
-#ifndef _AROS
-extern ULONG ASM MakeColVal (register __d0 ULONG, register __d4 ULONG);
+extern ULONG ASM MakeColVal (ASM_REGPARAM(d0, ULONG,), ASM_REGPARAM(d4, ULONG,));
 extern void REGARGS SpreadColors (GlobData *, int, int, ULONG *);
-#endif
 
 static int REGARGS SetupPalWindow (GlobData *, char *);
 static void REGARGS SelectColor (GlobData *, int);
@@ -180,9 +180,9 @@ static void REGARGS UpdateWheel( GlobData *, ULONG * );
 static void REGARGS RestorePaletteFreeAll (GlobData *);
 static void REGARGS DoColorShortcut (GlobData *, int, int, int);
 static LONG ASM SAVEDS PalReqHandler (
-	register __a1 struct RealHandlerInfo *,
-	register __d0 ULONG,
-	register __a0 struct TagItem *);
+	REGPARAM(a1, struct RealHandlerInfo *,),
+	REGPARAM(d0, ULONG,),
+	REGPARAM(a0, struct TagItem *,));
 
 /****************************************************************************************/
 
@@ -194,11 +194,11 @@ static LONG ASM SAVEDS PalReqHandler (
 
 /****************************************************************************************/
 
-#ifdef _AROS
+#if !USE_ASM_FUNCS
 
 /****************************************************************************************/
 
-static ULONG MakeColVal(ULONG val, ULONG bits)                          
+ULONG MakeColVal(ULONG val, ULONG bits)                          
 {
     ULONG val2;
     
@@ -215,7 +215,7 @@ static ULONG MakeColVal(ULONG val, ULONG bits)
 
 /****************************************************************************************/
 
-static void SpreadColors (GlobData *glob, int from, int to, long *rgb2)
+void REGARGS SpreadColors (GlobData *glob, int from, int to, ULONG *rgb2)
 {
     LONG colstep;
     LONG step[3];
@@ -267,7 +267,7 @@ static void SpreadColors (GlobData *glob, int from, int to, long *rgb2)
 
 /****************************************************************************************/
 
-#endif
+#endif /* !USE_ASM_FUNCS */
 
 /****************************************************************************************/
 
@@ -297,9 +297,9 @@ ColBits( int num )
 /****************************************************************************************/
 
 LONG ASM SAVEDS PaletteRequestA (
-	register __a2 char *title,
-	register __a3 struct rtReqInfo *reqinfo,
-	register __a0 struct TagItem *taglist)
+	REGPARAM(a2, char *, title),
+	REGPARAM(a3, struct rtReqInfo *, reqinfo),
+	REGPARAM(a0, struct TagItem *, taglist))
 {
     GlobData 		*glob;
     struct DisplayInfo 	displayinfo;
@@ -507,9 +507,9 @@ retryopenwin:
 /****************************************************************************************/
 
 static LONG ASM SAVEDS PalReqHandler (
-    register __a1 struct RealHandlerInfo *glob,
-    register __d0 ULONG sigs,
-    register __a0 struct TagItem *taglist)
+    REGPARAM(a1, struct RealHandlerInfo *, glob),
+    REGPARAM(d0, ULONG, sigs),
+    REGPARAM(a0, struct TagItem *, taglist))
 {
     struct IntuiMessage *palmsg;
     struct Gadget 	*gad;

@@ -65,9 +65,9 @@ extern struct Library 		*UtilityBase;
 /****************************************************************************************/
 
 int ASM SAVEDS GetVScreenSize (
-	register __a0 struct Screen *scr,
-	register __a1 int *width,
-	register __a2 int *height)
+	REGPARAM(a0, struct Screen *, scr),
+	REGPARAM(a1, int *, width),
+	REGPARAM(a2, int *, height))
 {
     struct ViewPortExtra 	*vpe;
     struct Rectangle 		dispclip, *clip;
@@ -391,9 +391,9 @@ AROS_UFH3(void, WinBackFill,
     AROS_UFHA(struct BackFillMsg, *msg, A1))
 #else
 void SAVEDS ASM WinBackFill (
-	register __a0 struct Hook *hook,
-	register __a2 struct RastPort *the_rp,
-	register __a1 struct BackFillMsg *msg)
+	REGPARAM(a0, struct Hook *, hook),
+	REGPARAM(a2, struct RastPort *, the_rp),
+	REGPARAM(a1, struct BackFillMsg *, msg))
 #endif
 {
     struct RastPort rp;

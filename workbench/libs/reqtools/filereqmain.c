@@ -74,9 +74,9 @@ ExpandLink( GlobData *glob )
 /****************************************************************************************/
 
 ULONG ASM SAVEDS PropReqHandler (
-    register __a1 struct RealHandlerInfo *glob,
-    register __d0 ULONG sigs,
-    register __a0 struct TagItem *taglist)
+    REGPARAM(a1, struct RealHandlerInfo *, glob),
+    REGPARAM(d0, ULONG, sigs),
+    REGPARAM(a0, struct TagItem *, taglist))
 {
     struct IntuiMessage 	*reqmsg, *imsg, im;
     struct Gadget 		*gad;

@@ -68,12 +68,12 @@
 
 /****************************************************************************************/
 
-extern APTR ASM Dofmt (register __a3 char *, register __a0 char *, register __a1 APTR);
+extern APTR ASM Dofmt (ASM_REGPARAM(a3, char *,), ASM_REGPARAM(a0, char *,), ASM_REGPARAM(a1, APTR,));
 extern APTR STDARGS DofmtArgs (char *, char *,...);
-extern void REGARGS SetWinTitleFlash (struct Window *, char *);
-extern ULONG ASM LoopReqHandler (register __a1 struct rtHandlerInfo *);
+extern void SetWinTitleFlash (ASM_REGPARAM(a0, struct Window *,), ASM_REGPARAM(a1, char *,));
+extern ULONG ASM LoopReqHandler (ASM_REGPARAM(a1, struct rtHandlerInfo *,));
 extern ULONG CallHook (struct Hook *, APTR,...);
-extern void ASM StrCat (register __a0 char *, register __a1 char *);
+extern void ASM StrCat (ASM_REGPARAM(a0, char *,), ASM_REGPARAM(a1, char *,));
 extern void ShortDelay (void);
 
 /****************************************************************************************/
@@ -383,11 +383,11 @@ void REGARGS ShowFontSample (GlobData *, int, int);
 void REGARGS UnLockReqLock (GlobData *);
 void REGARGS NewDir (GlobData *);
 LONG REGARGS IntGadgetBounds (GlobData *, struct Gadget *, LONG, LONG);
-ULONG ASM SAVEDS PropReqHandler (register __a1 struct RealHandlerInfo *,
-				 register __d0 ULONG,
-				 register __a0 struct TagItem *);
+ULONG ASM SAVEDS PropReqHandler (REGPARAM(a1, struct RealHandlerInfo *,),
+				 REGPARAM(d0, ULONG,),
+				 REGPARAM(a0, struct TagItem *,));
 
-void ASM SAVEDS FreeReqBuffer (register __a1 APTR);
+void ASM SAVEDS FreeReqBuffer (REGPARAM(a1, APTR,));
 void REGARGS SetFileDirMode (struct BufferData *, ULONG);
 void BuildColStr (char *, LONG, ULONG);
 
@@ -401,10 +401,9 @@ AROS_UFP3(void, IntuiMsgFunc,
 
 #else
 void ASM SAVEDS IntuiMsgFunc (
-	register __a0 struct Hook *,
-	register __a2 APTR,
-	register __a1 struct IntuiMessage *
-);
+	REGPARAM(a0, struct Hook *,),
+	REGPARAM(a2, APTR,),
+	REGPARAM(a1, struct IntuiMessage *,));
 #endif
 
 int REGARGS FindEntryPos (GlobData *, char *, int);

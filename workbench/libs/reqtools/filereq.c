@@ -42,10 +42,10 @@ struct TextAttr topaz80 = { "topaz.font",8,FS_NORMAL,FPF_ROMFONT|FPF_DESIGNED };
 /* This is also FontRequestA and ScreenModeRequestA! */
 
 APTR ASM SAVEDS FileRequestA (
-    register __a1 struct RealFileRequester *freq,
-    register __a2 char *filename,
-    register __a3 char *title,
-    register __a0 struct TagItem *taglist)
+    REGPARAM(a1, struct RealFileRequester *, freq),
+    REGPARAM(a2, char *, filename),
+    REGPARAM(a3, char *, title),
+    REGPARAM(a0, struct TagItem *, taglist))
 {
     GlobData 				*glob;
     struct ReqEntry 			*entry;
@@ -573,9 +573,9 @@ AROS_UFH3(void, IntuiMsgFunc,
     AROS_UFHA(struct IntuiMessage *, imsg, A1))
 #else
 void ASM SAVEDS IntuiMsgFunc (
-    register __a0 struct Hook *hook,
-    register __a2 APTR req,
-    register __a1 struct IntuiMessage *imsg)
+    REGPARAM(a0, struct Hook *, hook),
+    REGPARAM(a2, APTR, req),
+    REGPARAM(a1, struct IntuiMessage *,imsg))
 #endif
 {
     GlobData *glob = (GlobData *)hook->h_Data;

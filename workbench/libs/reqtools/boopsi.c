@@ -4,7 +4,11 @@
 #include <intuition/intuition.h>
 #include <intuition/imageclass.h>
 #include <intuition/intuition.h>
+#ifdef _AROS
 #include <aros/asmcall.h>
+#else
+#define IPTR ULONG
+#endif
 
 #include "filereq.h"
 
@@ -12,8 +16,11 @@
 
 extern struct IClass *ButtonImgClass;
 
-extern ULONG ASM myTextLength (register __a1 char *,
-	register __a0 struct TextAttr *, register __a3 UBYTE *, register __a2 struct Image *, register __d7 ULONG);
+extern ULONG ASM myTextLength (ASM_REGPARAM(a1, char *,),
+    	    	    	       ASM_REGPARAM(a0, struct TextAttr *,),
+			       ASM_REGPARAM(a3, UBYTE *,),
+			       ASM_REGPARAM(a2, struct Image *,),
+			       ASM_REGPARAM(d7, ULONG,));
 
 const UWORD defaultpens[] =
 {
@@ -112,7 +119,10 @@ ULONG myTextLength(char *str, struct TextAttr *attr, UBYTE *underscore,
 
     } /* if (str) */
     
+#ifdef _AROS
     DeinitRastPort(&temprp);
+#endif
+
     if (font) CloseFont(font);
 
     return pixellen;
@@ -122,10 +132,16 @@ ULONG myTextLength(char *str, struct TextAttr *attr, UBYTE *underscore,
 
 #define imsg ((struct impDraw *)msg)
 
+#ifdef _AROS
 AROS_UFH3(IPTR, myBoopsiDispatch,
 	  AROS_UFHA(Class *, cl, A0),
 	  AROS_UFHA(struct Image *, im, A2),
 	  AROS_UFHA(Msg, msg, A1))
+#else
+IPTR myBoopsiDispatch(REGPARAM(a0, Class *, cl),
+    	    	      REGPARAM(a2, struct Image *, im),
+		      REGPARAM(a1, Msg, msg))
+#endif
 {
     struct LocalObjData *data;
     struct TextFont	*font, *oldfont;
@@ -206,13 +222,13 @@ AROS_UFH3(IPTR, myBoopsiDispatch,
 			     gad->LeftEdge + gad->Width - 1,
 			     gad->TopEdge + gad->Height -1 );
 					  
-		im->PlanePick = pens[(imsg->imp_State == IDS_SELECTED) ? FILLTEXTPEN : TEXTPEN]; 
+		im->PlanePick = (imsg->imp_State == IDS_SELECTED) ? FILLTEXTPEN : TEXTPEN; 
 	    }
 	    
 	    xpos += im->LeftEdge;
 	    ypos += im->TopEdge;
 
-	    SetAPen(rp, im->PlanePick);
+	    SetAPen(rp, pens[im->PlanePick]);
 	    
    	    Move(rp, xpos, ypos + rp->TxBaseline);
 	    

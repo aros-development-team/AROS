@@ -1,3 +1,6 @@
+#ifndef GENERAL_H
+#define GENERAL_H
+
 /* general.h */
 
 /* For req.c */
@@ -8,11 +11,62 @@
 #define ENTER_NUMBER			3
 #define IS_EZREQUEST			4
 
-#ifdef _AROS
+/* These are for AmigaOS. On AROS they are ignored */
+
+#define USE_ASM_FUNCS 	    	    	1
+#define USE_OPTASM_FUNCS    	    	1
+
+/* compiler/AmigaOS/AROS specific defines */
+
+#ifndef _AROS
+
+/* AmigaOS */
+
+#define REGPARAM(reg,type,name)     	register __ ## reg type name
+
+#if USE_ASM_FUNCS
+#   define ASM_REGPARAM(reg,type,name) 	register __ ## reg type name
+#else
+#   define ASM_REGPARAM(reg,type,name) 	type name
+#endif
+
+#if USE_OPTASM_FUNCS
+#   define OPT_REGPARAM(reg,type,name) 	register __ ## reg type name
+#else
+#   define OPT_REGPARAM(reg,type,name) 	type name
+#endif
+
+#undef 	REGARGS
+#define REGARGS     	    	    	__regargs
+
+#undef 	STDARGS
+#define STDARGS     	    	    	__stdargs
+
+#undef  ALIGNED
+#define ALIGNED     	    	    	__aligned
+
+#undef	CHIP
+#define CHIP	    	    	    	__chip
+
+#undef 	ASM
+#define ASM 	    	    	    	__asm
+
+#undef	SAVEDS
+#define SAVEDS	    	    	    	__saveds
+
+#else
+
+/* AROS */
+
+#undef USE_ASM_FUNCS
+#define USE_ASM_FUNCS 	    	    	0
+
+#undef USE_OPTASM_FUNCS
+#define USE_OPTASM_FUNCS    	    	0
 
 /* AROS: FIXME Hmm ... */
-#define MININT 0x80000000
-#define MAXINT 0x7FFFFFFF
+#define MININT      	    	    	0x80000000
+#define MAXINT      	    	    	0x7FFFFFFF
 
 #undef 	REGARGS
 #define REGARGS
@@ -26,57 +80,16 @@
 #undef	CHIP
 #define CHIP
 
-#undef 	register
-#define register
-
-#undef 	__a0
-#define __a0
-
-#undef 	__a1
-#define __a1
-
-#undef 	__a2
-#define __a2
-
-#undef 	__a3
-#define __a3
-
-#undef 	__a4
-#define __a4
-
-#undef 	__a5
-#define __a5
-
-#undef 	__d0
-#define __d0
-
-#undef 	__d1
-#define __d1
-
-#undef 	__d2
-#define __d2
-
-#undef 	__d3
-#define __d3
-
-#undef 	__d4
-#define __d4
-
-#undef 	__d5
-#define __d5
-
-#undef 	__d6
-#define __d6
-
-#undef	__d7
-#define	__d7
-
 #undef 	ASM
 #define ASM
 
 #undef	SAVEDS
 #define SAVEDS
 
+#define REGPARAM(reg,type,name)     	type name
+#define OPT_REGPARAM(reg,type,name) 	type name
+#define ASM_REGPARAM(reg,type,name) 	type name
+ 
 #endif
 
 struct BackFillMsg;
@@ -103,8 +116,8 @@ extern struct IntuiMessage *REGARGS ProcessWin_Msg (struct Window *,
 extern void REGARGS Reply_GT_Msg (struct IntuiMessage *);
 extern void REGARGS DoCloseWindow (struct Window *, int);
 extern void REGARGS mySetWriteMask (struct RastPort *, ULONG);
-void SAVEDS ASM WinBackFill (register __a0 struct Hook *,
-	register __a2 struct RastPort *, register __a1 struct BackFillMsg * );
+void SAVEDS ASM WinBackFill (REGPARAM(a0, struct Hook *,),
+	REGPARAM(a2, struct RastPort *,), REGPARAM(a1, struct BackFillMsg *,));
 struct Window *REGARGS OpenWindowBF (struct NewWindow *,
 				struct Hook *, UWORD *, ULONG *, WORD *, BOOL);
 int CheckReqPos (int, int, struct NewWindow *);
@@ -114,3 +127,5 @@ int CheckBoxHeight (struct NewGadget *);
 LONG BottomBorderHeight (struct Screen *);
 
 #define REQPOS_DEFAULT		(ULONG)0xFFFF
+
+#endif /* GENERAL_H */

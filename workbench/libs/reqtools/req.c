@@ -43,11 +43,14 @@ struct PWCallBackArgs
 
 /****************************************************************************************/
 
-extern ULONG ASM LoopReqHandler (register __a1 struct rtHandlerInfo *);
+extern ULONG ASM LoopReqHandler (ASM_REGPARAM(a1, struct rtHandlerInfo *,));
 extern void REGARGS SetWinTitleFlash (struct Window *, char *);
 extern void ShortDelay (void);
-extern ULONG ASM myTextLength (register __a1 char *,
-	register __a0 struct TextAttr *, register __a3 UBYTE *, register __a2 struct Image *, register __d7 ULONG);
+extern ULONG ASM myTextLength (ASM_REGPARAM(a1, char *,),
+	    	    	       ASM_REGPARAM(a0, struct TextAttr *,),
+			       ASM_REGPARAM(a3, UBYTE *,),
+			       ASM_REGPARAM(a2, struct Image *,),
+			       ASM_REGPARAM(d7, ULONG,));
 
 extern struct ReqToolsBase *ReqToolsBase;
 extern struct DosLibrary *DOSBase;
@@ -68,13 +71,15 @@ struct FmtBuff
 /****************************************************************************************/
 
 
-extern APTR ASM DofmtCount (register __a0 char *, register __a1 APTR,
-				register __a3 struct FmtBuff *, register __d0 int);
+extern APTR ASM DofmtCount (ASM_REGPARAM(a0, char *,),
+    	    	    	    ASM_REGPARAM(a1, APTR,),
+			    ASM_REGPARAM(a3, struct FmtBuff *,),
+			    ASM_REGPARAM(d0, int,));
 extern APTR STDARGS DofmtArgs (char *, char *,...);
 
 
-extern void ASM FillBarTable (register __a1 char **, register __a0 char *);
-extern void ASM FillNewLineTable (register __a1 char **, register __a0 char *);
+extern void ASM FillBarTable (ASM_REGPARAM(a1, char **,), ASM_REGPARAM(a0, char *,));
+extern void ASM FillNewLineTable (ASM_REGPARAM(a1, char **,), ASM_REGPARAM(a0, char *,));
 
 /****************************************************************************************/
 
@@ -122,8 +127,9 @@ static UWORD pattern[] = { 0xAAAA,0x5555 };
 static ULONG REGARGS ReqExit (Req_GlobData *, int);
 static struct Image * REGARGS CreateRectImage
 			(Req_GlobData *, struct Image *, int, int, int, int, int, int);
-static ULONG ASM SAVEDS myReqHandler (register __a1 Req_GlobData *,
-			register __d0 ULONG, register __a0 struct TagItem *);
+static ULONG ASM SAVEDS myReqHandler (REGPARAM(a1, Req_GlobData *,),
+			    	      REGPARAM(d0, ULONG,),
+				      REGPARAM(a0, struct TagItem *,));
 
 /****************************************************************************************/
 
@@ -134,14 +140,14 @@ static ULONG ASM SAVEDS myReqHandler (register __a1 Req_GlobData *,
 /****************************************************************************************/
 
 ULONG ASM SAVEDS GetString (
-	register __a1 UBYTE *stringbuff,		/* str in case of rtEZRequestA */
-	register __d0 LONG maxlen,			/* args in case of rtEZRequestA */
-	register __a2 char *title,			/* gadfmt in case of rtEZRequestA */
-	register __d1 ULONG checksum,
-	register __d2 ULONG *value,
-	register __d3 LONG mode,
-	register __d4 struct rtReqInfo *reqinfo,
-	register __a0 struct TagItem *taglist)
+	REGPARAM(a1, UBYTE *, stringbuff),		/* str in case of rtEZRequestA */
+	REGPARAM(d0, LONG, maxlen),			/* args in case of rtEZRequestA */
+	REGPARAM(a2, char *, title),			/* gadfmt in case of rtEZRequestA */
+	REGPARAM(d1, ULONG, checksum),
+	REGPARAM(d2, ULONG *, value),
+	REGPARAM(d3, LONG, mode),
+	REGPARAM(d4, struct rtReqInfo *, reqinfo),
+	REGPARAM(a0, struct TagItem *, taglist))
 {
 /* #define CLEARSIZE	(28+sizeof(struct NewWindow)+sizeof(struct IntuiText)+\
 				 sizeof(struct NewGadget)+2*sizeof(struct FmtBuff)) */
@@ -748,9 +754,9 @@ static struct Image * REGARGS CreateRectImage (Req_GlobData *glob,
 /****************************************************************************************/
 
 static ULONG ASM SAVEDS myReqHandler (
-	register __a1 Req_GlobData *glob,
-	register __d0 ULONG sigs,
-	register __a0 struct TagItem *taglist)
+	REGPARAM(a1, Req_GlobData *, glob),
+	REGPARAM(d0, ULONG, sigs),
+	REGPARAM(a0, struct TagItem *, taglist))
 {
     struct Gadget 	*tmpgad, *selgad;
     struct TagItem 	*tag, *tstate;

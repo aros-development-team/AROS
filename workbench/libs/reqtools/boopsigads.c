@@ -73,9 +73,9 @@ extern APTR STDARGS DofmtArgs (char *, char *,...);
 
 #ifndef _AROS
 extern ULONG ASM myBoopsiDispatch (
-    register __a0 Class *,
-    register __a2 struct Image *,
-    register __a1 struct impDraw *);
+    REGPARAM(a0, Class *,),
+    REGPARAM(a2, struct Image *,),
+    REGPARAM(a1, struct impDraw *,));
 #endif
 
 extern Class *ButtonImgClass;
@@ -169,9 +169,9 @@ AROS_UFH3(ULONG, StrEditHookEntry,
 #else
 ULONG ASM SAVEDS
 StrEditHookEntry (
-	register __a0 struct Hook *hook,
-	register __a2 struct SGWork *sgw,
-	register __a1 ULONG *msg)
+    REGPARAM(a0, struct Hook *, hook),
+    REGPARAM(a2, struct SGWork *, sgw),
+    REGPARAM(a1, ULONG *, msg) )
 #endif
 {
     struct StrGadUserData	*userdata;

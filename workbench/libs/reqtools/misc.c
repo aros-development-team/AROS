@@ -1,4 +1,6 @@
+#ifdef _AROS
 #include <aros/asmcall.h>
+#endif
 
 #include "filereq.h"
 
@@ -47,45 +49,50 @@ void FillBarTable (char **table, char *buff)
 
 /****************************************************************************************/
 
+#ifdef _AROS
 AROS_UFH2 (void, puttostr,
 	AROS_UFHA(UBYTE, chr, D0),
 	AROS_UFHA(STRPTR *,strPtrPtr,A3)
 )
+#else
+void puttostr(REGPARAM(d0, UBYTE, chr),
+    	      REGPARAM(a3, STRPTR *, strPtrPtr))
+#endif
 {
-    AROS_LIBFUNC_INIT
     *(*strPtrPtr)= chr;
     (*strPtrPtr) ++;
-    AROS_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
+#ifdef _AROS
 AROS_UFH2 (void, CountBarsAndChars,
 	AROS_UFHA(UBYTE, chr, D0),
 	AROS_UFHA(ULONG *,ptr,A3)
 )
+#else
+void CountBarsAndChars(REGPARAM(d0, UBYTE, chr),
+    	     	       REGPARAM(a3, ULONG *, ptr))
+#endif
 {
-    AROS_LIBFUNC_INIT
-    
     if (chr == '|') (ptr[0])++;
     (ptr[1])++;
-    
-    AROS_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
+#ifdef _AROS
 AROS_UFH2 (void, CountNewLinesAndChars,
 	AROS_UFHA(UBYTE, chr, D0),
 	AROS_UFHA(ULONG *,ptr,A3)
 )
+#else
+void CountNewLinesAndChars(REGPARAM(d0, UBYTE, chr),
+    	     	           REGPARAM(a3, ULONG *, ptr))
+#endif
 {
-    AROS_LIBFUNC_INIT
-    
     if (chr == '\n') (ptr[0])++;
     (ptr[1])++;
-    
-    AROS_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/

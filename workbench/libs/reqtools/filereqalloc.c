@@ -60,7 +60,7 @@ SetFileDirMode (struct BufferData *buff, ULONG flags)
 
 /****************************************************************************************/
 
-ASM struct BufferData *GetBufferDataPtr (register __a1 APTR req)
+ASM struct BufferData *GetBufferDataPtr (OPT_REGPARAM(a1, APTR, req))
 {
     switch (REQTYPE(req))
     {
@@ -82,8 +82,8 @@ ASM struct BufferData *GetBufferDataPtr (register __a1 APTR req)
 /****************************************************************************************/
 
 APTR ASM SAVEDS AllocRequestA (
-    register __d0 ULONG type,
-    register __a0 struct TagItem *taglist)
+    REGPARAM(d0, ULONG, type),
+    REGPARAM(a0, struct TagItem *,taglist))
 {
     struct BufferData 	*buff;
     ULONG 		*reqstruct;
@@ -134,7 +134,7 @@ APTR ASM SAVEDS AllocRequestA (
 * rtFreeReqBuffer() *
 ********************/
 
-void ASM SAVEDS FreeReqBuffer (register __a1 APTR req)
+void ASM SAVEDS FreeReqBuffer (REGPARAM(a1, APTR, req))
 {
     struct BufferData 	*buff;
     struct ReqEntry 	*entry, *temp;
@@ -158,7 +158,7 @@ void ASM SAVEDS FreeReqBuffer (register __a1 APTR req)
 * rtFreeRequest() *
 ******************/
 
-void ASM SAVEDS FreeRequest (register __a1 APTR req)
+void ASM SAVEDS FreeRequest (REGPARAM(a1, APTR, req))
 {
     struct BufferData *buff;
 
@@ -181,7 +181,8 @@ void ASM SAVEDS FreeRequest (register __a1 APTR req)
 *********************/
 
 LONG ASM SAVEDS
-ChangeReqAttrA (register __a1 APTR req, register __a0 struct TagItem *taglist)
+ChangeReqAttrA (REGPARAM(a1, APTR, req),
+    	        REGPARAM(a0, struct TagItem *, taglist))
 {
     UBYTE			fibspace[sizeof(struct FileInfoBlock)+4];
     struct FileInfoBlock	*fib = (struct FileInfoBlock *)(((LONG)&fibspace[3] >> 2) << 2);
@@ -300,7 +301,7 @@ ChangeReqAttrA (register __a1 APTR req, register __a0 struct TagItem *taglist)
 * rtFreeFileList() *
 *******************/
 
-void ASM SAVEDS FreeFileList (register __a0 struct rtFileList *selfile)
+void ASM SAVEDS FreeFileList (REGPARAM(a0, struct rtFileList *,selfile))
 {
     struct rtFileList *last;
 
