@@ -1044,7 +1044,7 @@ AC_SUBST(aros_stack_debug)
 AC_SUBST(aros_modules_debug)
 
 # Collect-aros stuff: "-ius" to ignore undefined symbols
-AC_SUBST(ignore_undefind_symbols)
+AC_SUBST(ignore_undefined_symbols)
 
 # C compiler related
 AC_SUBST(gcc_target_cpu)
