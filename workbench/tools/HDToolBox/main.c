@@ -197,12 +197,12 @@ BOOL running=TRUE;
 					current_partition = 0;
 					break;
 				case ID_PCP_EDIT_PARTITION :
-					det_Init(win, current_partition);
 					RemoveGList(win, pcpglist, ~0);
 					clearGadgets((struct ExtGadget *)pcpglist, win, -1);
 					AddGList(win, dglist, ~0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
 					GT_RefreshWindow(mainwin, NULL);
+					det_Init(win, current_partition);
 					break;
 				case ID_PCP_STARTCYL :
 						changeStartCyl
