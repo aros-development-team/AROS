@@ -5,7 +5,7 @@
     Desc: 
     Lang: English
 */
-
+#include <aros/debug.h>
 /******************************************************************************
 
 
@@ -94,28 +94,33 @@
 #include <proto/exec.h>
 #include <dos_commanderrors.h>
 
+#define SH_GLOBAL_DOSBASE 1
+struct UtilityBase *UtilityBase;
+
 #include <aros/shcommands.h>
+
+static BOOL doeval(STRPTR arg1, STRPTR arg2, BYTE op, IPTR numeric);
 
 AROS_SH10(If, 41.1,
 AROS_SHA(BOOL, ,NOT,/S, FALSE),
 AROS_SHA(BOOL, ,WARN,/S,FALSE),
 AROS_SHA(BOOL, ,ERROR,/S, FALSE),
 AROS_SHA(BOOL, ,FAIL,/S,FALSE),
-AROS_SHA(STRPTR *, , , ,NULL),
+AROS_SHA(STRPTR, , , ,NULL),
 AROS_SHA(STRPTR, ,EQ,/K,NULL),
 AROS_SHA(STRPTR, ,GT,/K,NULL),
 AROS_SHA(STRPTR, ,GE,/K,NULL),
 AROS_SHA(BOOL, ,VAL,/S,FALSE),
 AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
 {
+
     AROS_SHCOMMAND_INIT
 
     BOOL result = FALSE;
 
-    struct UtilityBase *UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
     struct CommandLineInterface *cli = Cli();
 
-
+    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
     if (!UtilityBase)
         return RETURN_FAIL;
 
@@ -125,139 +130,103 @@ AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
 	D(bug("Current input = %p, Standard input = %p\n",
 	      cli->cli_CurrentInput, cli->cli_StandardInput));
 
+	if(SHArg(WARN))
 	{
+	    if(cli->cli_ReturnCode >= RETURN_WARN)
+		result = TRUE;
+	}
+	else if(SHArg(ERROR))
+	{
+	    if(cli->cli_ReturnCode >= RETURN_ERROR)
+		result = TRUE;
+	}
+	else if(SHArg(FAIL))
+	{
+	    if(cli->cli_ReturnCode >= RETURN_FAIL)
+		result = TRUE;
+	}    
+	else if(SHArg(EQ))
+	{
+	    result = doeval(SHArg( ), SHArg(EQ), 0, SHArg(VAL));
+	}
+	else if (SHArg(GT))
+	{
+	    result = doeval(SHArg( ), SHArg(GT), 1, SHArg(VAL));	    	
+	}
+	else if (SHArg(GE))
+	{
+	    result = doeval(SHArg( ), SHArg(GE), 2, SHArg(VAL));
+	}
+	else if(SHArg(EXISTS))
+	{
+	    BPTR lock = Lock(SHArg(EXISTS), SHARED_LOCK);
 
-	    STRPTR *argArray  = SHArg( );
-	    STRPTR *argArray2 = argArray;
+	    if(lock != NULL)
+		result = TRUE;
 
-	    if(SHArg( ))		/* Multiple arguments... */
+	    UnLock(lock);
+	}
+
+	if(SHArg(NOT))		       /* NOT */
+	    result = !result;
+
+
+	/* We have determined the result -- now we've got to act on it. */
+
+	if(!result)
+	{
+	    char a;
+	    char buffer[256];
+	    int  level = 1;	    /* If block level */
+	    BOOL found = FALSE; /* Have we found a matching Else or
+				   EndIF? */
+
+	    SelectInput(cli->cli_CurrentInput);
+
+	    while(!found)
 	    {
-		int i = 0;
+		LONG status;
 
-		while(argArray2++ != NULL)
-		    i++;
+		status = ReadItem(buffer, sizeof(buffer), NULL);
 
-		if(i != 2)	/* ...there must be exactly two of them. */
+		if(status == ITEM_ERROR)
+		    break;
+
+		if(status == ITEM_NOTHING)
 		{
-		    PrintFault(ERROR_TOO_MANY_ARGS, "If");
-		    CloseLibrary((struct Library *)UtilityBase);
-		    return RETURN_ERROR;
-		}
-	    }
-
-	    if(SHArg(WARN))
-	    {
-		if(cli->cli_ReturnCode >= RETURN_WARN)
-		    result = TRUE;
-	    }
-	    else if(SHArg(ERROR))
-	    {
-		if(cli->cli_ReturnCode >= RETURN_ERROR)
-		    result = TRUE;
-	    }
-	    else if(SHArg(FAIL))
-	    {
-		if(cli->cli_ReturnCode >= RETURN_FAIL)
-		    result = TRUE;
-	    }
-	    else if(SHArg(EQ) || SHArg(GT) || SHArg(GE))	/* EQ, GT, GE */
-	    {
-		if(SHArg(VAL))
-		{
-		    LONG val1, val2;
-
-		    StrToLong(argArray[0], (LONG *)&val1);
-		    StrToLong(argArray[1], (LONG *)&val2);
-
-		    if(SHArg(EQ) && (val1 == val2))
-			result = TRUE;
-
-		    if(SHArg(GT) && (val1 > val2))
-			result = TRUE;
-
-		    if(SHArg(GE) && (val1 >= val2))
-			result = TRUE;
-		}
-		else
-		{
-		    LONG res = Stricmp(argArray[0], argArray[1]);
-
-		    result = (SHArg(EQ) && (res == 0)) ||
-		             (SHArg(GT) && (res >  0)) ||
-			     (SHArg(GE) && (res >= 0));
-		}
-	    }
-	    else if(SHArg(EXISTS))
-	    {
-		BPTR lock = Lock(SHArg(EXISTS), SHARED_LOCK);
-
-		if(lock != NULL)
-		    result = TRUE;
-
-		UnLock(lock);
-	    }
-
-	    if(SHArg(NOT))		       /* NOT */
-		result = !result;
-
-
-	    /* We have determined the result -- now we've got to act on it. */
-
-	    if(!result)
-	    {
-		char a;
-		char buffer[256];
-		int  level = 1;	    /* If block level */
-		BOOL found = FALSE; /* Have we found a matching Else or
-				       EndIF? */
-
-		SelectInput(cli->cli_CurrentInput);
-
-		while(!found)
-		{
-		    LONG status;
-
-		    status = ReadItem(buffer, sizeof(buffer), NULL);
-
-		    if(status == ITEM_ERROR)
+		    if(FGetC(Input()) == ENDSTREAMCH)
 			break;
-
-		    if(status == ITEM_NOTHING)
-		    {
-			if(FGetC(Input()) == ENDSTREAMCH)
-			    break;
-		    }
-
-		    switch(FindArg("IF,ELSE,ENDIF", buffer))
-		    {
-		    case 0:
-			level++;
-			//			printf("Found If\n");
-			break;
-
-		    case 1:
-			if(level == 0)
-			    found = TRUE;
-			break;
-
-		    case 2:
-			level--;
-
-			if(level == 0)
-			    found = TRUE;
-			break;
-		    }
-
-		    /* Take care of long lines */
-		    do
-		    {
-			a = FGetC(Input());
-		    } while (a != '\n' && a != ENDSTREAMCH);
 		}
 
-		if(!found)
-		    PrintFault(ERROR_NO_MATCHING_ELSEENDIF, "If");
+		switch(FindArg("IF,ELSE,ENDIF", buffer))
+		{
+		case 0:
+		    level++;
+		    //			printf("Found If\n");
+		    break;
+
+		case 1:
+		    if(level == 1)
+			found = TRUE;
+		    break;
+
+		case 2:
+		    level--;
+
+		    if(level == 0)
+			found = TRUE;
+		    break;
+		}
+
+		/* Take care of long lines */
+		do
+		{
+		    a = FGetC(Input());
+		} while (a != '\n' && a != ENDSTREAMCH);
 	    }
+
+	    if(!found)
+		PrintFault(ERROR_NO_MATCHING_ELSEENDIF, "If");
 	}
     }
     else
@@ -272,3 +241,63 @@ AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
 
     AROS_SHCOMMAND_EXIT
 }
+
+static BOOL doeval(STRPTR arg1, STRPTR arg2, BYTE op, IPTR numeric)
+{
+    STRPTR s1 = (STRPTR)arg1;
+    STRPTR s2 = (STRPTR)arg2;
+    BOOL result = FALSE;
+
+    if (s1 && s2)
+    {
+    	if (numeric)
+	{
+	    LONG val1, val2;
+	    
+	    StrToLong(s1, &val1);
+	    StrToLong(s2, &val2);
+	    
+	    switch(op)
+	    {
+	    	case 0:
+		    result = (val1 == val2);
+		    break;
+		    
+		case 1:
+		    result = (val1 > val2);
+		    break;
+		    
+		case 2:
+		    result = (val1 >= val2);
+		    break;		    
+	    }
+	    
+	} /* if (numeric) */
+	else
+	{
+	    LONG match;
+	    
+	    match = Stricmp(s1, s2);
+	    
+	    switch(op)
+	    {
+	    	case 0:
+		    result = (match == 0);
+		    break;
+		    
+		case 1:
+		    result = (match > 0);
+		    break;
+		    
+		case 2:
+		    result = (match >= 0);
+		    break;
+	    }
+	    
+	}
+	
+    } /* if (s1 && s2) */
+    
+    return result;    
+}
+
