@@ -1,8 +1,20 @@
+/*
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: 
+    Lang: english
+*/
+
+/****************************************************************************************/
+
 #include <devices/inputevent.h>
 #include "keymap_intern.h"
 #include <string.h>
 
 #include <aros/debug.h>
+
+/****************************************************************************************/
 
 #if DEBUG
     extern struct KeymapBase *DebugKeymapBase;
@@ -11,9 +23,8 @@
 
 #endif
 
-/**********************
-**  WriteToBuffer()  **
-**********************/
+/****************************************************************************************/
+
 BOOL WriteToBuffer(struct BufInfo *bufinfo, UBYTE *string, LONG numchars)
 {
     if (bufinfo->CharsWritten + numchars > bufinfo->BufLength)
@@ -25,15 +36,16 @@ BOOL WriteToBuffer(struct BufInfo *bufinfo, UBYTE *string, LONG numchars)
     return (TRUE);
 }
 
-/*******************
-**  GetKeyInfo()  **
-*******************/
+/****************************************************************************************/
+
 BOOL GetKeyInfo(struct KeyInfo *ki, UWORD code, UWORD qual, struct KeyMap *km)
 {
     BOOL valid = TRUE; /* valid code is default */
 
     if (code & IECODE_UP_PREFIX) /* Key pressed ? */
+    {
         valid = FALSE;
+    }
     else
     {
     	BYTE capsable;
@@ -94,18 +106,17 @@ BOOL GetKeyInfo(struct KeyInfo *ki, UWORD code, UWORD qual, struct KeyMap *km)
     return (valid);
 }
 
-/***********************
-** GetDeadKeyIndex()  **
-***********************/
+/****************************************************************************************/
+
 WORD GetDeadKeyIndex(UWORD code, UWORD qual, struct KeyMap *km)
 {
-    struct KeyInfo ki;
-    WORD retval = -1;
+    struct KeyInfo  ki;
+    WORD    	    retval = -1;
 
     /* Get the key info for the key */
+    
     if (GetKeyInfo(&ki, code, qual, km))
     {
-
     	if (ki.Key_MapType & KCF_DEAD)
     	{
     	    BYTE idx;
@@ -127,5 +138,9 @@ WORD GetDeadKeyIndex(UWORD code, UWORD qual, struct KeyMap *km)
 	    }
 	}
     }
+    
     return (retval);
 }
+
+/****************************************************************************************/
+

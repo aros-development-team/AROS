@@ -1,3 +1,11 @@
+/*
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: 
+    Lang: english
+*/
+
 #include <devices/keymap.h>
 
 
