@@ -1497,10 +1497,21 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
         
     switch (srcformat)
     {
-	case RECTFMT_RGB  : srcfmt_hidd = vHidd_StdPixFmt_RGB24;  break;
-	case RECTFMT_RGBA : srcfmt_hidd = vHidd_StdPixFmt_RGBA32; break;
-	case RECTFMT_ARGB : srcfmt_hidd = vHidd_StdPixFmt_ARGB32; break;
-	case RECTFMT_RAW  : srcfmt_hidd = vHidd_StdPixFmt_Native; break;
+    	case RECTFMT_RGB15  : srcfmt_hidd = vHidd_StdPixFmt_RGB15   ; break;
+    	case RECTFMT_BGR15  : srcfmt_hidd = vHidd_StdPixFmt_BGR15   ; break;
+    	case RECTFMT_RGB15PC: srcfmt_hidd = vHidd_StdPixFmt_RGB15_LE; break;
+    	case RECTFMT_BGR15PC: srcfmt_hidd = vHidd_StdPixFmt_BGR15_LE; break;
+    	case RECTFMT_RGB16  : srcfmt_hidd = vHidd_StdPixFmt_RGB16   ; break;
+    	case RECTFMT_BGR16  : srcfmt_hidd = vHidd_StdPixFmt_BGR16   ; break;
+    	case RECTFMT_RGB16PC: srcfmt_hidd = vHidd_StdPixFmt_RGB16_LE; break;
+    	case RECTFMT_BGR16PC: srcfmt_hidd = vHidd_StdPixFmt_BGR16_LE; break;
+	case RECTFMT_RGB24  : srcfmt_hidd = vHidd_StdPixFmt_RGB24   ; break;
+    	case RECTFMT_BGR24  : srcfmt_hidd = vHidd_StdPixFmt_BGR24   ; break;
+	case RECTFMT_ARGB32 : srcfmt_hidd = vHidd_StdPixFmt_ARGB32  ; break;
+    	case RECTFMT_BGRA32 : srcfmt_hidd = vHidd_StdPixFmt_BGRA32  ; break;
+	case RECTFMT_RGBA32 : srcfmt_hidd = vHidd_StdPixFmt_RGBA32  ; break;
+	case RECTFMT_ABGR32 : srcfmt_hidd = vHidd_StdPixFmt_ABGR32  ; break;
+	case RECTFMT_RAW    : srcfmt_hidd = vHidd_StdPixFmt_Native  ; break;
     }
 
     /* Compute the start of the array */
@@ -1624,10 +1635,21 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     
     switch (dstformat)
     {
-	case RECTFMT_RGB  : dstfmt_hidd = vHidd_StdPixFmt_RGB24;  break;
-	case RECTFMT_RGBA : dstfmt_hidd = vHidd_StdPixFmt_RGBA32; break;
-	case RECTFMT_ARGB : dstfmt_hidd = vHidd_StdPixFmt_ARGB32; break;
-	case RECTFMT_RAW  : dstfmt_hidd = vHidd_StdPixFmt_Native; break;
+    	case RECTFMT_RGB15  : dstfmt_hidd = vHidd_StdPixFmt_RGB15   ; break;
+    	case RECTFMT_BGR15  : dstfmt_hidd = vHidd_StdPixFmt_BGR15   ; break;
+    	case RECTFMT_RGB15PC: dstfmt_hidd = vHidd_StdPixFmt_RGB15_LE; break;
+    	case RECTFMT_BGR15PC: dstfmt_hidd = vHidd_StdPixFmt_BGR15_LE; break;
+    	case RECTFMT_RGB16  : dstfmt_hidd = vHidd_StdPixFmt_RGB16   ; break;
+    	case RECTFMT_BGR16  : dstfmt_hidd = vHidd_StdPixFmt_BGR16   ; break;
+    	case RECTFMT_RGB16PC: dstfmt_hidd = vHidd_StdPixFmt_RGB16_LE; break;
+    	case RECTFMT_BGR16PC: dstfmt_hidd = vHidd_StdPixFmt_BGR16_LE; break;
+	case RECTFMT_RGB24  : dstfmt_hidd = vHidd_StdPixFmt_RGB24   ; break;
+    	case RECTFMT_BGR24  : dstfmt_hidd = vHidd_StdPixFmt_BGR24   ; break;
+	case RECTFMT_ARGB32 : dstfmt_hidd = vHidd_StdPixFmt_ARGB32  ; break;
+    	case RECTFMT_BGRA32 : dstfmt_hidd = vHidd_StdPixFmt_BGRA32  ; break;
+	case RECTFMT_RGBA32 : dstfmt_hidd = vHidd_StdPixFmt_RGBA32  ; break;
+	case RECTFMT_ABGR32 : dstfmt_hidd = vHidd_StdPixFmt_ABGR32  ; break;
+	case RECTFMT_RAW    : dstfmt_hidd = vHidd_StdPixFmt_Native  ; break;
     }
 
 #warning Get rid of the below code ?
