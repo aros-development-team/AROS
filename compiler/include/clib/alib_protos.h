@@ -110,6 +110,18 @@ LONG GT_GetGadgetAttrs(	struct Gadget * gad,
 struct Menu * CreateMenus( struct NewMenu * newmenu, ULONG tag1, ...);
 BOOL LayoutMenus( struct Menu * menu, APTR vi, ULONG tag1, ...);
 
+/* Graphics */
+LONG ObtainBestPen( struct ColorMap * cm, LONG R, LONG G, LONG B, ULONG tag1, ...);
+
+/* Intuition */
+LONG SetWindowPointer( struct Window * window, ULONG tag1, ...);
+
+/* Locale */
+struct Catalog *OpenCatalog(	struct Locale * locale,
+				STRPTR name,
+				ULONG tag1,
+				...);
+
 /* Pools */
 APTR LibCreatePool (ULONG requirements, ULONG puddleSize, ULONG threshSize);
 void LibDeletePool (APTR poolHeader);
