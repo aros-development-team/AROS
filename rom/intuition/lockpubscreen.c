@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.10  2000/04/08 16:38:09  stegerg
+    type cast 2nd param of FindName to (UBYTE *) to avoid
+    compiler warning. Or Should instead 2nd arg of FindName()
+    func be of type CONST_STRPTR?????????????????
+
     Revision 1.9  2000/02/01 22:48:31  bernie
     Using CONST_STRPTR for screen name
 
@@ -123,7 +128,7 @@
 	ASSERT_VALID_PTR(name);
 
 	/* Browse the public screen list */
-	if ((psn = (struct PubScreenNode *)FindName(LockPubScreenList(), name)))
+	if ((psn = (struct PubScreenNode *)FindName(LockPubScreenList(), (UBYTE *)name)))
 	{
 	    ASSERT_VALID_PTR(psn);
 
