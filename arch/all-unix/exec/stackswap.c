@@ -14,6 +14,11 @@ static jmp_buf env;
 #   define FP(env)      ((APTR)(env[0].__bp))
 #   define PC(env)      ((APTR)(env[0].__pc))
 #endif
+#ifdef __FreeBSD__
+#   define SP(env)	((APTR)(env[0]._jb[2]))
+#   define FP(env)	((APTR)(env[0]._jb[3]))
+#   define PC(env)	((APTR)(env[0]._jb[0]))
+#endif
 
 #define DEBUG 0
 
