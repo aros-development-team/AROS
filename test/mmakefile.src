@@ -54,6 +54,7 @@ FILES := amiga2date \
 	obtainpentest \
 	readpixelarray \
 	writepixelarray \
+	writepixelarrayalpha \
 	rawtest \
 	camdtree \
 	mktime \
