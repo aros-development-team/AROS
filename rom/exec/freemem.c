@@ -83,15 +83,15 @@
 
     RT_Free (RTT_MEMORY, memoryBlock, byteSize);
 
-#if 0
-    /* stegerg: what's this??? */
+    /* The following two lines are necessary because of AllocAbs(),
+       were memoryBlock might not be aligned to a multiple of
+       MEMCHUNK_TOTAL!!!!  */
     
-    /* Align size to the requirements */
+    /* Align size to the requirements (needed because of AllocAbs) */
     byteSize+=(IPTR)memoryBlock&(MEMCHUNK_TOTAL-1);
 
-    /* Align the block as well */
+    /* Align the block as well (needed because of AllocAbs) */
     memoryBlock=(APTR)AROS_ROUNDDOWN2((IPTR)memoryBlock,MEMCHUNK_TOTAL);
-#endif
 
 #if MDEBUG
 	/* Add the size of mung walls and extra MemChunk room (for orig
