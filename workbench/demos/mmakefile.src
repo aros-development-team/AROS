@@ -48,6 +48,7 @@ FILES	:= \
     modelclassdemo \
     multiple_timers \
     mxgads \
+    notify \
     oopdemo \
     ooplib \
     palettedemo \
