@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function remove()
-    Lang: english
+    POSIX function getpid().
 */
 
 #include <proto/exec.h>
@@ -27,21 +26,15 @@
 
     NOTES
 
-
     EXAMPLE
 
     BUGS
 
     SEE ALSO
 
-
     INTERNALS
-
-    HISTORY
-	29.07.2002 falemagn created
 
 ******************************************************************************/
 {
     return (pid_t)FindTask(NULL);
-} /* remove */
-
+} /* getpid */
