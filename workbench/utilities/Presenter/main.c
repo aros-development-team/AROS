@@ -1,5 +1,13 @@
+/*
+    Copyright © 2003, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+#define MUIMASTER_YES_INLINE_STDARG
+
 #include <proto/intuition.h>
 #include <proto/exec.h>
+#include <proto/muimaster.h>
 
 #include <dos/dos.h>
 #include <libraries/mui.h>
@@ -13,31 +21,31 @@ int main( void )
     ImageSequence_Create();
     
     application = ApplicationObject,
-        SubWindow, window = WindowObject,
-            MUIA_Window_Title,    "Presenter",
-            MUIA_Window_Activate, TRUE,
+        SubWindow, (IPTR) window = WindowObject,
+            MUIA_Window_Title,    (IPTR) "Presenter",
+            MUIA_Window_Activate,        TRUE,
             
-            WindowContents, ImageSequenceObject,
-            End,
+            WindowContents, (IPTR) ImageSequenceObject,
+            EndBoopsi,
         End,
     End;
 
     if( application )
     {
-        ULONG signals = 0;
+        ULONG signals = 0L;
         
         DoMethod
         ( 
             window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-            application, 2, 
+            (IPTR) application, 2, 
             MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
         );
         
-        SetAttrs( window, MUIA_Window_Open, TRUE, TAG_DONE );
+        SET(window, MUIA_Window_Open, TRUE);
         
         while
         ( 
-               DoMethod( application, MUIM_Application_NewInput, &signals ) 
+               DoMethod( application, MUIM_Application_NewInput, (IPTR) &signals ) 
             != MUIV_Application_ReturnID_Quit
         )
         {
@@ -48,8 +56,8 @@ int main( void )
             }
         }
         
-        SetAttrs( window, MUIA_Window_Open, FALSE, TAG_DONE );
-        MUI_DisposeObject( application );
+        SET(window, MUIA_Window_Open, FALSE);
+        MUI_DisposeObject(application);
     }
     
     ImageSequence_Destroy();

@@ -3,17 +3,19 @@
     $Id$
 */
 
-#include <libraries/mui.h>
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <proto/intuition.h>
+#include <proto/muimaster.h>
+
+#include <libraries/mui.h>
 
 #include <string.h>
 #include <stdio.h>
 
 #include "imagesequence.h"
-#include "support.h"
 
-/*** Object data ************************************************************/
+/*** Instance data **********************************************************/
 
 #define ISD_BUFFERSIZE  128
 
@@ -32,16 +34,16 @@ static IPTR ImageSequence$OM_NEW
 )
 {
     struct ImageSequence_DATA *data;
-    struct TagItem            *tag, *tags;
+    // struct TagItem            *tag, *tags;
         
-    self = (Object *) DoSuperNew
+    self = (Object *) DoSuperNewTags
     ( 
-        CLASS, self,
+        CLASS, self, NULL,
         
         InnerSpacing( 0, 0 ),
-        MUIA_Image_Spec, "3:1",
+        MUIA_Image_Spec, (IPTR) "3:1",
         
-        TAG_MORE, message->ops_AttrList
+        TAG_MORE,        (IPTR) message->ops_AttrList
     );
 
     if( !self ) return FALSE;
@@ -56,7 +58,7 @@ static IPTR ImageSequence$OM_NEW
     SetAttrs( _win( self ), MUIA_Window_Title, data->isd_Buffer, TAG_DONE );
     */ 
     
-    return self;
+    return (IPTR) self;
 }
 
 
@@ -152,9 +154,9 @@ static ULONG ImageSequence$MUIM_HandleEvent
     if( update )
     {
         snprintf( data->isd_Buffer, ISD_BUFFERSIZE, "3:%ld", data->isd_CurrentImage );
-        SetAttrs( self, MUIA_Image_Spec, data->isd_Buffer, TAG_DONE );
+        SET(self, MUIA_Image_Spec, (IPTR) data->isd_Buffer);
         snprintf( data->isd_Buffer, ISD_BUFFERSIZE, "Presenter [%ld]", data->isd_CurrentImage );
-        SetAttrs( _win( self ), MUIA_Window_Title, data->isd_Buffer, TAG_DONE );
+        SET(_win( self ), MUIA_Window_Title, (IPTR) data->isd_Buffer);
     }
     
     return MUI_EventHandlerRC_Eat;
