@@ -15,7 +15,11 @@
 #endif
 
 /* System() */
-#define SYS_Dummy	(DOS_TAGBASE)
+#if AROS_FLAVOUR!=AROS_NATIVE
+#   define SYS_Dummy	   (DOS_TAGBASE)
+#else
+#   define SYS_Dummy	   (TAG_USER + 32)
+#endif
 #define SYS_Input	(SYS_Dummy + 1) /* input filehandle  */
 #define SYS_Output	(SYS_Dummy + 2) /* output filehandle */
 #define SYS_Asynch	(SYS_Dummy + 3) /* run asynchronous, close I/O on exit */
@@ -25,7 +29,11 @@
 /* CreateNewProc() */
 /* One of NP_Seglist or NP_Entry MUST be given. Everything else is optional.
    Defaults are in parenthese. */
-#define NP_Dummy	(DOS_TAGBASE + 1000)
+#if AROS_FLAVOUR!=AROS_NATIVE
+#   define NP_Dummy	   (DOS_TAGBASE + 1000)
+#else
+#   define NP_Dummy	   (TAG_USER + 1000)
+#endif
 #define NP_Seglist	(NP_Dummy + 1) /* seglist of code */
 #define NP_FreeSeglist	(NP_Dummy + 2) /* free seglist on exit (TRUE) */
 #define NP_Entry	(NP_Dummy + 3) /* entry point to run - mutually exclusive
@@ -62,7 +70,11 @@
 #define NP_UserData	(NP_Dummy + 26) /* IPTR to put into tc_UserData (NULL) */
 
 /* AllocDosObject() */
-#define ADO_Dummy	(DOS_TAGBASE + 2000)
+#if AROS_FLAVOUR!=AROS_NATIVE
+#   define ADO_Dummy	   (DOS_TAGBASE + 2000)
+#else
+#   define ADO_Dummy	   (TAG_USER + 2000)
+#endif
     /* DOS_FILEHANDLE */
 #define ADO_FH_Mode	(ADO_Dummy + 1) /* sets up FH to the specified mode. */
 
