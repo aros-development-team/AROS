@@ -69,6 +69,13 @@ char * stpblk( const char * str );   /* Supplemental (not ANSI C) */
 
 char * strrev(char * s); /* SAS C */
 int stch_l(const char * in, long * lvalue); /* SAS C */
+int stcd_l(const char * in, long * lvalue); /* SAS C */
+int stco_l(const char * in, long * lvalue); /* SAS C */
+
+int stcl_d(char * out, long lvalue); /* SAS C */
+int stcl_h(char * out, long lvalue); /* SAS C */
+int stcl_o(char * out, long lvalue); /* SAS C */
+
 int stcu_d(char * out, unsigned uivalue); /* SAS C */
 
 void * memccpy (void * restrict dest, const void * restrict src,
