@@ -1,6 +1,6 @@
 functions.[ch]
-graphics_functable.c
-graphics_endtag.c
+*functable.c
+*endtag.c
 libdefs.h
 makefile
 mmakefile
