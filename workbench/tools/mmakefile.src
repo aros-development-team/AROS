@@ -6,7 +6,8 @@ include $(TOP)/config/make.cfg
 
 FILES	:= \
     calculator \
-    WiMP
+    WiMP \
+    virushunter
 
 EXEDIR := $(AROSDIR)/Tools
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
