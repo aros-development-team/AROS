@@ -220,7 +220,7 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 		Disable();
 		
 		ForeachNodeSafe(&notify->nr_stuff.nr_Msg.nr_Port->mp_MsgList,
-				(struct Node *)nm, tempNode)
+				nm, tempNode)
 		{
 		    if (notify->nr_MsgCount == 0)
 		    {

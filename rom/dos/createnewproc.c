@@ -196,7 +196,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     ENOMEM_IF(memlist == NULL);
 
     /* NP_Cli */
-    if (defaults[13].ti_Data != NULL)
+    if (defaults[13].ti_Data != 0)
     {
         BPTR *oldpath = NULL;
         
@@ -508,8 +508,8 @@ static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase)
     struct LocalVar *varNode;
     struct Node     *tempNode;
     
-    ForeachNodeSafe((struct List *)&process->pr_LocalVars,
-		    (struct Node *)varNode, tempNode)
+    ForeachNodeSafe(&process->pr_LocalVars,
+		    varNode, tempNode)
     {
 	P(kprintf("Freeing variable %s with value %s at %p\n",
 		  varNode->lv_Node.ln_Name, varNode->lv_Value, varNode));
@@ -559,8 +559,7 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 	struct LocalVar *newVar;
 	
 	/* We use the same strategy as in the ***Var() functions */
-	ForeachNode((struct List *)&fromProcess->pr_LocalVars, 
-		    (struct Node *)varNode)
+	ForeachNode(&fromProcess->pr_LocalVars, varNode)
 	{
 	    LONG  copyLength = strlen(varNode->lv_Node.ln_Name) + 1 +
 		sizeof(struct LocalVar);

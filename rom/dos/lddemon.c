@@ -854,7 +854,7 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(Init, LDDemon),
     /* Then unlock the semaphore to allow other processes to run. */
     ReleaseSemaphore(&DOSBase->dl_LDObjectsListSigSem);
 
-    return NULL;
+    return 0;
 
     AROS_LIBFUNC_EXIT
 }

@@ -244,9 +244,8 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 		success = FALSE;
 		goto end;
 	    }
-end:
 	}
-    
+end:    
 	CloseLibrary(OOPBase);
     }
     
