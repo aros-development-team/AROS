@@ -1,0 +1,103 @@
+\chapter{History}
+
+\section{AROS 1.9}
+
+\begin{itemize}
+\item Real preemptive multitasking like on Amiga
+
+\item Many files were missing in the dev distribution :-(
+
+\item Some bugfixes
+
+\item FreeBSD/i386 support
+
+\item Amiga users can now participate. Read \filename{README.CVS} for
+more info.
+
+\item Much easier to port to a new hardware. Moved OS specific files from
+the various directories to \filename{AROS/config/$(ARCH)} and the CPU
+specific files to \filename{AROS/config/$(KERNEL)}.
+
+\end{itemize}
+
+\section{AROS 1.8}
+
+\begin{itemize}
+\item Renamed "\filename{openwin}" to
+"\filename{demowin}".
+
+\item Implemented PROPGADGETS
+
+\item Even more bugfixes (librarytest works now :)
+
+\item Many new README's. Developers should have a look at
+\filename{README.porting}, \filename{README.contents},
+\filename{README.CVS} and \filename{README.jobserv} depending on
+what they want to do.
+
+\item Many new function from M. Fleischer (we have now 236 funcions in all)
+
+\item Many new function from I. Templeton (Utility.library)
+
+\item \filename{NIL:} and \filename{RAM:} devices from M.
+Fleischer
+
+\item AROS now uses the AFD-COPYRIGHT
+
+\item ***Developers: If you update from 1.7, you *MUST* call "make
+clean" because some headers have been added.
+
+\item New CLI commands: \filename{Mount}, \filename{Assign},
+\filename{MakeDir}, \filename{Delete}
+
+\end{itemize}
+
+\section{AROS 1.7}
+
+\begin{itemize}
+\item The demo "\filename{openwin}" gets more and more complex
+
+\item First steps to introduce Ressource Tracking and Purify into the AmigaOS
+
+\item Intuition supports now Gadgets (well, only |GTYP_BOOLGADGET|
+for now)
+
+\item We have a console for |RawKeyConvert()|.
+
+\item Some small bugfixes
+
+\end{itemize}
+
+\section{AROS 1.6}
+
+\begin{itemize}
+\item First small steps on graphics and intuition.library.
+You can open a window and render in it -
+Due to a bug, the rendering won't be visible every time.
+A small demo is there which open a window, renders something
+(sometimes) and then waits for a key ress.
+
+\item The includes and scripts were missing. They are here now.
+
+\item More things are generated now (function tables and prototypes)
+
+\item Some bug fixes.
+
+\end{itemize}
+
+\section{AROS 1.5}
+
+\begin{itemize}
+\item Everything changed :) Throw away the 1.4 and below.
+
+\item Most of Exec and much of DOS
+
+\item A shell is available and some 10 commands to test it
+    (like \filename{Dir}, \filename{List},
+    \filename{Echo}, etc).
+
+\item CVS is used to allow multiple people to work on this at the same time. Look into \filename{README.CVS} for how to participate.
+
+\end{itemize}
+
+
