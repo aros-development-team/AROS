@@ -3,7 +3,7 @@
     $Id$
 
     Desc: AROS specific checkbox class implementation.
-    Lang: english
+    Lang: English
 */
 
 /****************************************************************************************/
