@@ -117,6 +117,8 @@
     struct BitMap * nbm;
     ULONG attributes;
 
+    ASSERT_VALID_PTR_OR_NULL(friend_bitmap);
+
     /*
 	If the depth is too large or the bitmap should be displayable or
 	there is a friend bitmap and that's not a normal bitmap, then
@@ -137,6 +139,7 @@
 	    , friend_bitmap
 	    , GfxBase
 	);
+	ASSERT_VALID_PTR(nbm);
     }
     else /* Otherwise init a plain Amiga bitmap */
     {

@@ -74,6 +74,8 @@
     /* Something to do? */
     if(library!=NULL)
     {
+	ASSERT_VALID_PTR(library);
+
 	/* Single-thread the close routine. */
 	Forbid();
 
