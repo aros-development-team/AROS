@@ -1,0 +1,11 @@
+#include "loaderRsc.h"
+
+FORM MainForm 1 1 158 158
+BEGIN
+    TITLE "AROS loader"
+END
+
+APPLICATIONICONNAME 1000 "AROS Ldr"
+ICON "loader.pbm"
+
+VERSION 1 "0.0.1"
