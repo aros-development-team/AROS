@@ -253,7 +253,7 @@ Class *init_kbdclass (struct kbd_staticdata *xsd)
     struct InterfaceDescr ifdescr[] =
     {
     	{root_descr, 	IID_Root, 		NUM_ROOT_METHODS},
-    	{kbdhidd_descr, IID_Hidd_Kbd,	 	NUM_KBD_METHODS},
+    	{kbdhidd_descr, IID_Hidd_HwKbd,	 	NUM_KBD_METHODS},
 	{NULL, NULL, 0}
     };
     
@@ -264,7 +264,7 @@ Class *init_kbdclass (struct kbd_staticdata *xsd)
 	{ aMeta_SuperID,		(IPTR)CLID_Hidd },
 	{ aMeta_InterfaceDescr,		(IPTR)ifdescr},
 	{ aMeta_InstSize,		(IPTR)sizeof (struct kbd_data) },
-	{ aMeta_ID,			(IPTR)CLID_Hidd_Kbd },
+	{ aMeta_ID,			(IPTR)CLID_Hidd_HwKbd },
 	{TAG_DONE, 0UL}
     };
 
