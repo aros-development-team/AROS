@@ -64,7 +64,7 @@ if [[ $1 == "initial" ]]; then
     # Setup directories if needed
     rm -rf $BUILD_BASE $ARCHIVE_BASE
     mkdir -p $BUILD_ROOT $BUILD_BASE
-    mkdir -p $ARCHIVE_ROOT $ARCHIVE_BASE
+    mkdir -p $ARCHIVE_BASE
     mkdir -p $LOG_BASE
     
     if [ ! -f $LOG_ALL ]; then
