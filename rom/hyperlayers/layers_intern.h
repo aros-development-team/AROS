@@ -40,9 +40,12 @@ struct IntLayer
 {
     struct Layer lay;
     struct Hook  *shapehook;
+    ULONG   	 intflags;
 };
 
 #define IL(x) ((struct IntLayer *)(x))
+
+#define INTFLAG_AVOID_BACKFILL 1
 
 struct LayerInfo_extra
 {
