@@ -137,7 +137,7 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
     }
 
     data->val_width = width;
-    data->knob_width = width + 2 * data->knob_frame->xthickness;
+    data->knob_width = width + 2 * data->knob_frame->xthickness + 2;
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
     return TRUE;
