@@ -1,16 +1,49 @@
 # Packages to build, as an array. 
-# Possible are: sources, documentation, sdk, hosted, contrib and i386-pc.
+# Allowed: sources, documentation, sdk, hosted, contrib, i386-pc,
+#          i386-pc-floppy, changelogs
 CFG_PACKAGES=( sources )
 
-# Which C compiler to use.
+# C compiler to use
 CFG_CC=gcc
 
-# The "Distribution Server" for the nightlies
+#-----------------------------------------------------------------------------
+#-- Mail ---------------------------------------------------------------------
+# Whether to send a mail when build finishes
+# Allowed: yes, no
+CFG_MAIL_ENABLE=no
+
+# Adressess
+CFG_MAIL_TO=aros-dev@lists.hepe.com
+CFG_MAIL_CC=MUST_BE_SET
+
+#=============================================================================
+#== File Transfers ===========================================================
+# Whether to upload archives to distribution and backup servers
+# Allowed: yes, no
+CFG_FT_ENABLE=no
+
+#-- Distribution Server ------------------------------------------------------
+# Hostname
 CFG_DS=aros.sf.net
 
-# Which Distribution Server's user is in charge of a determinate build
-# machine. Defaults to chodorowski (Adam Chodorowski)
-CFG_DS_USER=chodorowski
+# User to log in as
+CFG_DS_USER=MUST_BE_SET
 
-# Which directory on the DS is meant to store the nighlies
+# Private key to use to login
+CFG_DS_KEY=.ssh/id_dsa.aros-nightly-upload
+
+# Destination directory
 CFG_DS_DIRECTORY=aros/uploads/nightly/
+
+#-- Backup Server ------------------------------------------------------------
+# Hostname
+CFG_BS=thenostromo.com
+
+# User to log in as
+CFG_BS_USER=aroskity
+
+# Private key to use to login
+CFG_BS_KEY=.ssh/id_dsa.aros-nightly-backup
+
+# Destination directory
+CFG_BS_DIRECTORY=nightly/

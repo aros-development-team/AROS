@@ -64,56 +64,58 @@ chmod -R o-wx,g+wr Archive/
 find Archive/ -type d | xargs chmod a+s,g+rwx,o+x
 
 #-- Upload (backup and distribution) -----------------------------------------
-UPLOAD_START_TIME=$(date -u +"%H:%M")
-
-rsync -avz -e "ssh -i .ssh/id_dsa.aros-nightly-backup" Archive/ aroskity@thenostromo.com:nightly/
-rsync -avz -e "ssh -i .ssh/id_dsa.aros-nightly-upload" Archive/ $CFG_DS_USER@$CFG_DS:$CFG_DS_DIRECTORY
-
-UPLOAD_STOP_TIME=$(date -u +"%H:%M")
+if [ "$CFG_FT_ENABLE" = "yes" ]; then
+    UPLOAD_START_TIME=$(date -u +"%H:%M")    
+    rsync -avz -e "ssh -i $CFG_BS_KEY" Archive/ $CFG_BS_USER@$CFG_BS:$CFG_BS_DIRECTORY
+    rsync -avz -e "ssh -i $CFG_DS_KEY" Archive/ $CFG_DS_USER@$CFG_DS:$CFG_DS_DIRECTORY
+    UPLOAD_STOP_TIME=$(date -u +"%H:%M")
+fi
 
 #-- Generate report ----------------------------------------------------------
-if   [ -z $failed ]; then
-    RESULT="completed successfully"
-elif [ -z $succeeded ]; then
-    RESULT="FAILED COMPLETELY"
-else
-    RESULT="FAILED PARTLY"
+if [ "$CFG_MAIL_ENABLE" = "yes" ]; then
+    if   [ -z $failed ]; then
+        RESULT="completed successfully"
+    elif [ -z $succeeded ]; then
+        RESULT="FAILED COMPLETELY"
+    else
+        RESULT="FAILED PARTLY"
+    fi
+    
+    mail_start $RESULT
+    
+    ATTACH=()
+    if [ ! -z $failed ]; then
+        mail_write ""
+        mail_write "The following packages FAILED to build completely:"
+        for package in $failed; do
+            mail_write $package
+            bzcat $LOG_BASE/$package.log.bz2 | tail -100 - >/tmp/_aros_build_log_$package
+            ATTACH=( $ATTACH -a/tmp/_aros_build_log_$package )
+        done
+        mail_write ""
+        mail_write "Please see the attached shortened logs or the full logs at"
+        mail_write "http://www.aros.org/downloads/nightly/$VERSION/logs/ for details."
+    fi
+    if [ ! -z $succeeded ]; then
+        mail_write ""
+        mail_write "The following packages were built successfully:"
+        for package in $succeeded; do
+            mail_write "$package"
+        done
+        mail_write ""
+        mail_write "The following archives were created:"
+        mail_write "$(find $ARCHIVE_BASE -type f -not -path '*/logs/*' -not -name '*.md5' -printf '%f\n')"
+        mail_write ""
+        mail_write "The archives will be available for download from http://www.aros.org/download.php."
+    fi
+    
+    mail_send $ATTACH
+    
+    if [ ! -z $failed ]; then
+        rm -rf /tmp/_aros_build_log_*
+    fi
+    mail_stop
 fi
-
-mail_start $RESULT
-
-ATTACH=()
-if [ ! -z $failed ]; then
-    mail_write ""
-    mail_write "The following packages FAILED to build completely:"
-    for package in $failed; do
-        mail_write $package
-	bzcat $LOG_BASE/$package.log.bz2 | tail -100 - >/tmp/_aros_build_log_$package
-	ATTACH=( $ATTACH -a/tmp/_aros_build_log_$package )
-    done
-    mail_write ""
-    mail_write "Please see the attached shortened logs or the full logs at"
-    mail_write "http://www.aros.org/downloads/nightly/$VERSION/logs/ for details."
-fi
-if [ ! -z $succeeded ]; then
-    mail_write ""
-    mail_write "The following packages were built successfully:"
-    for package in $succeeded; do
-        mail_write "$package"
-    done
-    mail_write ""
-    mail_write "The following archives were created:"
-    mail_write "$(find $ARCHIVE_BASE -type f -not -path '*/logs/*' -not -name '*.md5' -printf '%f\n')"
-    mail_write ""
-    mail_write "The archives will be available for download from http://www.aros.org/download.php."
-fi
-
-mail_send $ATTACH
-
-if [ ! -z $failed ]; then
-    rm -rf /tmp/_aros_build_log_*
-fi
-mail_stop
 
 #-- Remove uploaded files ----------------------------------------------------
 rm -rf Archive/*
