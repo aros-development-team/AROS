@@ -35,16 +35,14 @@
 #include <proto/utility.h>
 #include <proto/cybergraphics.h>
 
-#ifdef _AROS
-
+#ifndef __MORPHOS__
 #include <aros/asmcall.h>
 #include <proto/alib.h>
 #include "intuition_intern.h"
 #include "maybe_boopsi.h"
 #include "intuition_customize.h"
 #include "intuition_extend.h"
-
-#endif
+#endif /* !__MORPHOS__ */
 
 #ifdef IntuitionBase
 #    undef IntuitionBase

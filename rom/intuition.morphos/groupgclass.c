@@ -31,12 +31,12 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
-#ifdef _AROS
+#ifndef __MORPHOS__
 #include <aros/asmcall.h>
 #include <proto/alib.h>
 #include "intuition_intern.h"
 #include "maybe_boopsi.h"
-#endif
+#endif /* !__MORPHOS__ */
 
 #ifdef IntuitionBase
 #    undef IntuitionBase
