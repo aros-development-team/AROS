@@ -465,6 +465,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 	{PGA_Borderless,TRUE},
 	{PGA_NewLook,	TRUE},
 	{GA_Bounds,	(IPTR)&bbox},
+	{GA_FollowMouse,TRUE},
     	{TAG_MORE,	(IPTR)NULL}
     };
     
@@ -551,7 +552,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     FindTagItem(GA_Height,stdgadtags)->ti_Data -= BORDERPROPSPACINGY * 2;
 
     /* Create slider gadget */
-    stags[10].ti_Data = (IPTR)stdgadtags;
+    stags[11].ti_Data = (IPTR)stdgadtags;
     slidergad = NewObjectA(slidercl, NULL, stags);
     if (!slidergad)
     	return (NULL);
@@ -711,6 +712,7 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
 	{PGA_Borderless,TRUE},
 	{PGA_NewLook,	TRUE},
 	{GA_Bounds,	(IPTR) &bbox},
+	{GA_FollowMouse,TRUE},
 	{TAG_MORE, (IPTR) NULL}
     };
     
@@ -762,7 +764,7 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     bbox.Width  = GetTagData(GA_Width, 0, stdgadtags);
     bbox.Height = GetTagData(GA_Height, 0, stdgadtags);
 
-    stags[11].ti_Data = (IPTR)stdgadtags;
+    stags[12].ti_Data = (IPTR)stdgadtags;
     
     /* Substract the arrow's total size from the sroller's size */
 
@@ -1287,7 +1289,9 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     	    	};
 
                 D(bug("Scroller gadget created: %p\n", scrollergad));
-                    	    
+                
+		scrollergad->Activation &= ~GACT_FOLLOWMOUSE;
+		    	    
     	    	/* Tell the listview about the scroller and the showselgad */
     	    	lvset_tags[0].ti_Data = (IPTR)scrollergad;
     	    	SetAttrsA((Object *)lvgad, lvset_tags);
