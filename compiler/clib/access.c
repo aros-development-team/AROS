@@ -10,6 +10,7 @@
 #include <dos/filesystem.h>
 
 #include "__errno.h"
+#include "__upath.h"
 
 /*****************************************************************************
 
@@ -72,7 +73,7 @@
     if (mode & W_OK) amode |= FMF_WRITE;
     if (mode & X_OK) amode |= FMF_EXECUTE;
 
-    if (!(fh = Open(path, amode)))
+    if (!(fh = Open(__path_u2a(path), amode)))
     {
 	errno = IoErr2errno(IoErr());
 	return -1;
