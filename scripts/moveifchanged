@@ -6,7 +6,7 @@
 #
 
 if cmp -s "$1" "$2"; then
-    true
+    echo "$2 is unchanged"
 else
     echo "Replacing $2 by $1"
     if [ -e "$2" ]; then
