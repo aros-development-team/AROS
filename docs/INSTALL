@@ -8,8 +8,8 @@ Basic Installation of AROS-SOURCES
 	As you can read this text, I assume that you already have the
 	sources from the CVS server, AmiNet or the AROS FTP server.
 
-	To obtain a recent version via cvs, do a "cvs update -d -P", so
-	you get all new files and directories.
+	To obtain a recent version via cvs, do a "cvs update -d -P",
+	so you get all new files and directories.
 
 	Locations are:
 
@@ -26,10 +26,10 @@ Basic Installation of AROS-SOURCES
 2. Install the tree, say in "/usr/src" or anything apropriate.
 
 	It is possible to build AROS in your main cvs-copy, as all
-	generated files should be ignored by the CVS server, but I think
-	it is better to leave your copy clean, if you can afford the disk
-	space. A complete compilation has over 6000 files (inodes) and
-	approx. 50 MegaByte for -O2 optimized binaries!
+	generated files should be ignored by the CVS server, but I
+	think it is better to leave your copy clean, if you can afford
+	the disk space.  A complete compilation has over 6000 files
+	(inodes) and approx. 50 MegaByte for -O2 optimized binaries!
 
 
 3. Make sure you have all the necessary tools for compilation.
@@ -44,14 +44,11 @@ Basic Installation of AROS-SOURCES
 
 5. Run "./configure" with possible options:
 
-	* '--enable-gfxhidd' / '--disable-gfxhidd'
-	  This determines whether you want to enable gfx via the
-	  graphics.hidd or old direct X11 calls.
-
-	  '--enable-gfxhidd' is the default. This value will be
-	  cached and can be overridden at any time running
-	  configure again with the new option (this will require
-	  to recompile major parts of AROS, though).
+	* '--with-resolution=XRESxYRES'
+	  This is the resolution of the initial Workbench Screen.
+	  The default resolution is 800x600 for X11 and 640x480
+	  for native-i386 (std. VGA resolution).  This value will
+	  be cached.
 
 	* Supported targets
 
@@ -74,8 +71,9 @@ Basic Installation of AROS-SOURCES
 	Copy this file to AROS/make.opts and edit it to your needs.
 	Options are documented in the default file.
 
-	If you want to create target=native-i386 , then you must set
-	all SHARED_* options to "no".
+	target=native-i386 requires all SHARED_* options to set to "no".
+	This will be done automatically in AROS/make.defaults, don't
+	change it.
 
 
 7. Compile your sources.
@@ -85,13 +83,13 @@ Basic Installation of AROS-SOURCES
 
 8. Install the package.
 
-	If you compiled AROS as an emulation then all binaries are placed
-	in AROS/bin/$(os)-$(cpu)/AROS. To start AROS 'cd' into this dir,
-	type 'aros' and enjoy!
+	If you compiled AROS as an emulation then all binaries are
+	placed in AROS/bin/$(os)-$(cpu)/AROS. To start AROS 'cd' into
+	this dir, type 'aros' and enjoy!
 
 	If you compiled AROS as stand alone (native), then do a
 	'make install' to write the boot image to a floppy disk.
-	Then leave the disk in /dev/fd0 (Drive A:) and reboot your
+	Then leave the disk in /dev/fd0 (Drive A:), reboot your
 	machine and enjoy!
 
 
