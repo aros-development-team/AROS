@@ -320,7 +320,7 @@
          were in(!)visible. If a part was not visible then add it to the 
          new layers damagelist 
       */
-      DisposeRegion(l->DamageList);
+      ClearRegion(l->DamageList);
       _CR = l_tmp->ClipRect;
       while (NULL != _CR)
       {
