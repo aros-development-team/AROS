@@ -89,7 +89,7 @@ __asm struct IClass *MUI_GetClass(register __a0 char *classname)
 	    struct MUI_CustomClass *mcc;
 	    UBYTE s[64];
 	    
-	    sprintf(s, "Zune/%s", classname);
+	    snprintf(s, 64, "Zune/%s", classname);
     	    if ((mcclib = OpenLibrary(s, 0)))
 	    {
 	    	/* call MCC_Query(0) */
