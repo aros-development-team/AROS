@@ -46,10 +46,11 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
-#ifndef __MAXON__
-#warning FIXME: I should decrease the open count of library (use cl->hook->data)
-#endif
+    Class *cl = OCLASS(obj);
+
     DisposeObject(obj);
+
+    MUI_FreeClass(cl);
 
     AROS_LIBFUNC_EXIT
 
