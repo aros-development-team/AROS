@@ -40,45 +40,52 @@ AROS_LHQUAD1(double, IEEEDPCosh,
 {
     AROS_LIBFUNC_INIT
     
-QUAD Res;
-  /* cosh(-x) = cosh(x) */
-  /* y &= ( IEEEDPMantisse_Mask + IEEEDPExponent_Mask ); */
-  AND64QC(y, (IEEEDPMantisse_Mask_Hi + IEEEDPExponent_Mask_Hi),
-             (IEEEDPMantisse_Mask_Lo + IEEEDPExponent_Mask_Lo) );
-
-  if ( is_eqC(y, IEEEDPPInfty_Hi, IEEEDPPInfty_Lo))
-  {
-    SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return y;
-  }
-
-  Res = IEEEDPExp(y);
-
-  if ( is_eqC(Res, IEEEDPPInfty_Hi, IEEEDPPInfty_Lo))
-  {
-    SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return  Res;
-  }
-
-  /* does adding of 1/(e^x) still change the result? */
-  if ( is_lessC(y, 0x40320000, 0x0 ))
-  {
-    QUAD One;
-    Set_Value64C(One, 0x3ff00000, 0x0);
-
-    Res = IEEEDPAdd(Res, IEEEDPDiv(One, Res));
-  }
-  /* Res = Res / 2 */
-  ADD64QC(Res, 0xFFF00000, 0x0);
-
-  if ( is_eqC   (Res, 0x0, 0x0) ||
-       is_lessSC(Res, 0x0, 0x0) )
-  {
-    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    Set_Value64C(Res, 0x0, 0x0);
+    QUAD Res;
+    /* cosh(-x) = cosh(x) */
+    /* y &= ( IEEEDPMantisse_Mask + IEEEDPExponent_Mask ); */
+    AND64QC
+    (
+        y, 
+        (IEEEDPMantisse_Mask_Hi + IEEEDPExponent_Mask_Hi),
+        (IEEEDPMantisse_Mask_Lo + IEEEDPExponent_Mask_Lo)
+    );
+    
+    if ( is_eqC(y, IEEEDPPInfty_Hi, IEEEDPPInfty_Lo))
+    {
+        SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return y;
+    }
+    
+    Res = IEEEDPExp(y);
+    
+    if ( is_eqC(Res, IEEEDPPInfty_Hi, IEEEDPPInfty_Lo))
+    {
+        SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return  Res;
+    }
+    
+    /* does adding of 1/(e^x) still change the result? */
+    if ( is_lessC(y, 0x40320000, 0x0 ))
+    {
+        QUAD One;
+        Set_Value64C(One, 0x3ff00000, 0x0);
+        
+        Res = IEEEDPAdd(Res, IEEEDPDiv(One, Res));
+    }
+    /* Res = Res / 2 */
+    ADD64QC(Res, 0xFFF00000, 0x0);
+    
+    if
+    (
+           is_eqC(Res, 0x0, 0x0) 
+        || is_lessSC(Res, 0x0, 0x0)
+    )
+    {
+        SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        Set_Value64C(Res, 0x0, 0x0);
+        return Res;
+    }
     return Res;
-  }
-  return Res;
 
     AROS_LIBFUNC_EXIT
 }
