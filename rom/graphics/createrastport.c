@@ -9,6 +9,7 @@
 #include <exec/memory.h>
 #include <graphics/rastport.h>
 #include <proto/exec.h>
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
