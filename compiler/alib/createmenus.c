@@ -9,7 +9,7 @@
 
 #include "alib_intern.h"
 
-extern struct GadToolsBase * GadToolsBase;
+extern struct Library * GadToolsBase;
 
 /*****************************************************************************
 
