@@ -3013,7 +3013,7 @@ int rewrite_function(FILE * fdo,
 	int i = 0;
 	char * ret_type;
 	char * argtype, * argval;
-	bzero(&output[0],1024);
+	memset(&output[0],0,1024);
 	
 	printf("must pick ???? from info in: \n%s\n",pattern);
 	ret_type = get_returntype(pattern,pd->funcname);
