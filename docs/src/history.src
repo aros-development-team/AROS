@@ -4,8 +4,10 @@
 \section{Project History}
 
 \begin{itemize}
-16.9.1997 First binary Amiga program ran on AROS on Linux/m68k
-15.9.1997 Got asl.library
+\item 6.10.1997 AROS is now built with own make tool
+\item 2.10.1997 Got first running version of VBCC for i386
+\item 16.9.1997 First binary Amiga program ran on AROS on Linux/m68k
+\item 15.9.1997 Got asl.library
 \end{itemize}
 \end{new}
 
@@ -20,7 +22,7 @@ The source is 6.5MB right now.
 
 \begin{itemize}
 \item Bugfixes (Do I really need to mention this every time ? ;-)
-\item New libs: layers, expansion
+\item New libs: layers, expansion, asl
 \item The following items are complete: iffparse, mathffp, mathieeesingbas,
     utility
 \item The following items are in work: alib_stdio, arp, asl, battclock,
@@ -31,6 +33,8 @@ The source is 6.5MB right now.
 \item New CLI tools
 \item Andreas Kleinert's CLib integrated
 \item A new standard: HIDD - Hardware Independend Device Driver
+\item AROS has its own build tool now: MetaMake
+\item AROS runs now on Linux/m68k. First Amiga programs can be run.
 \end{itemize}
 \end{new}
 
