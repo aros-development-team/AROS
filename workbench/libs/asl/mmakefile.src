@@ -1,12 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I..
+USER_INCLUDES := -I. -I..
 
 LIBNAME 	:= asl
 ULIBNAME	:= Asl
 
-FILES := $(LIBNAME)_functable filereqhooks basicfuncs dirlist fontreqhooks \
+FILES := functable filereqhooks basicfuncs dirlist fontreqhooks \
 	dirlistfuncs
 
 FUNCTIONS := \
@@ -19,7 +19,7 @@ FUNCTIONS := \
 
 %define_libs prelibs=-l$(LIBNAME)
 
-%genlib_old
+%genlib_cpak
 
 #MM workbench-libs-asl : setup includes linklibs
 workbench-libs-asl : show-flags $(SLIB)
