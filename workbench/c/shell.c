@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    (C) Copyright 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: The shell program.
@@ -78,6 +78,13 @@
 
  */
 
+/* This is 1, because it is at the moment handled here in the Shell itself.
+   Should it turn out that the correct place to do the CHANGE_SIGNAL is
+   newshell.c instead, change this define to 0 and in newshell.c set the
+   same define to 1. */
+ 
+#define DO_CHANGE_SIGNAL 1
+
 #define  DEBUG  1
 #include <aros/debug.h>
 
@@ -88,6 +95,7 @@
 #include <dos/dosextens.h>
 #include <dos/var.h>
 #include <dos/rdargs.h>
+#include <dos/filesystem.h>
 #include <proto/dos.h>
 #include <proto/alib.h>
 #include <proto/utility.h>
@@ -548,6 +556,33 @@ static void printPrompt(void)
     Flush(Output());
 }
 
+#if DO_CHANGE_SIGNAL
+
+static void changeSignalTo(BPTR filehandle, struct Task *task)
+{
+    struct FileHandle *fh;
+    struct IOFileSys  iofs;
+    
+    if (filehandle)
+    {
+    	fh = (struct FileHandle *)BADDR(filehandle);
+
+	iofs.IOFS.io_Message.mn_Node.ln_Type   = NT_REPLYMSG;
+	iofs.IOFS.io_Message.mn_ReplyPort      = &((struct Process *)task)->pr_MsgPort;
+	iofs.IOFS.io_Message.mn_Length         = sizeof(struct IOFileSys);
+	iofs.IOFS.io_Command                   = FSA_CHANGE_SIGNAL;
+	iofs.IOFS.io_Flags                     = 0;
+
+	iofs.IOFS.io_Device    	    	       = fh->fh_Device;
+	iofs.IOFS.io_Unit      	    	       = fh->fh_Unit;
+	iofs.io_Union.io_CHANGE_SIGNAL.io_Task = task;
+
+	DoIO(&iofs.IOFS);
+	
+    }    
+}
+
+#endif
 
 enum { ARG_FROM = 0, ARG_COMMAND, NOOFARGS };
 
@@ -568,6 +603,11 @@ int main(int argc, char **argv)
 	cli->cli_StandardInput  = cli->cli_CurrentInput  = Input();
 	cli->cli_StandardOutput = cli->cli_CurrentOutput = Output();
 	setPath(NULL);
+	
+#if DO_CHANGE_SIGNAL
+	changeSignalTo(cli->cli_StandardInput, FindTask(NULL));
+	changeSignalTo(cli->cli_StandardOutput, FindTask(NULL));
+#endif
 	
 	rda = ReadArgs("FROM,COMMAND/K/F", (IPTR *)args, NULL);
 	
