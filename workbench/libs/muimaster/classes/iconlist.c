@@ -435,7 +435,7 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
     struct IconEntry *entry;
     struct DiskObject *dob;
     struct Rectangle rect;
-    
+
 #ifndef _AROS
     if (!(dob = GetIconTagList(msg->filename,TAG_DONE)))
     {
@@ -808,23 +808,43 @@ static int ReadIcons(struct IClass *cl, Object *obj)
 	return 0;
     }
 
+/*
     ParsePatternNoCase("#?.info",pattern,sizeof(pattern));
     eac->eac_MatchString = pattern;
+*/
+#ifdef _AROS
+#warning AROS ExAll() doesnt support eac_MatchString
+#endif
+    eac->eac_MatchString = NULL;
     eac->eac_LastKey = 0;
 
     olddir = CurrentDir(lock);
 
     do
     {
-    	more = ExAll(lock,ead,1024,ED_TYPE,eac);
+	more = ExAll(lock,ead,1024,ED_TYPE,eac);
 	if ((!more) && (IoErr() != ERROR_NO_MORE_ENTRIES)) break;
 	if (eac->eac_Entries == 0) continue;
 
 	entry = ead;
 	do
 	{
+	    int len;
+
 	    strcpy(filename,ead->ed_Name);
+
+/*
+	    // if we only display icons
+
 	    filename[strlen(filename)-5]=0;
+*/
+            len = strlen(filename);
+	    if (len >= 5)
+	    {
+		/* reject all .info files, so we have a Show All mode */
+		if (!Stricmp(&filename[len-5],".info"))
+		    continue;
+	    }
 
 	    if (Stricmp(filename,"Disk")) /* skip disk.info */
 	    {
@@ -836,9 +856,7 @@ static int ReadIcons(struct IClass *cl, Object *obj)
 		{
 		}
 	    }
-
-	    ead = ead->ed_Next;
-	}   while (ead);
+	}   while ((ead = ead->ed_Next));
     } while (more);
 
     CurrentDir(olddir);
