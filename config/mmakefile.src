@@ -23,7 +23,7 @@ clean ::
 
 #MM
 machine :
-	$(CC) -I$(TOP)/compiler/include -I$(TOP)/compiler/arossupport/include -o machine machine.c
+	$(HOST_CC) -I$(TOP)/compiler/include -I$(TOP)/compiler/arossupport/include -o machine machine.c
 	./machine
 
 %common
