@@ -966,21 +966,34 @@ int genlibdefs(int argc, char **argv)
 {
 struct libconf *lc;
 FILE *fd;
-char *date;
+char *date, *filename, *conffile;
 struct tm *tm;
 time_t t;
-
+int i;
+    
+  filename = "libdefs.h";
+  conffile = "lib.conf";
+  for (i=2; i<=argc; i++)
+  {
+    if (strcmp(argv[i-1],"-o")==0)
+    {
+      filename = argv[i];
+      i++;
+    }
+    else
+      conffile = argv[i-1];
+  }
   time(&t);
   tm = localtime(&t);
   date = malloc( 11 * sizeof(char) );
   sprintf( date, "%02d.%02d.%4d", tm->tm_mday, tm->tm_mon+1, tm->tm_year+1900 );
-  fd = fopen("libdefs.h.new","w");
+  fd = fopen(filename,"w");
   if(!fd)
   {
     fprintf( stderr, "Couldn't open file %s!\n", "libdefs.h.new" );
     return -1;
   }
-  if(!(lc = parse_libconf((argc==2?NULL:argv[1]))) )
+  if(!(lc = parse_libconf(conffile)) )
     return(-1);
   if( lc->copyright == NULL )
   {
@@ -1064,7 +1077,6 @@ time_t t;
   fprintf( fd, "#endif /* %s */\n", lc->define );
 
   fclose(fd);
-  moveifchanged("libdefs.h","libdefs.h.new");
 
 return 0;
 }
