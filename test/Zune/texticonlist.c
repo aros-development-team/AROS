@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team.
-    All rights reserved.
-
+    Copyright © 2002-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -2448,6 +2446,7 @@ BOOPSI_DISPATCHER(IPTR,TextIconList_Dispatcher, cl, obj, msg)
     
     return DoSuperMethodA(cl, obj, msg);
 }
+BOOPSI_DISPATCHER_END
 
 /*================ TextIconListview class ===================*/
 
@@ -2716,12 +2715,15 @@ BOOPSI_DISPATCHER(IPTR,TextIconListview_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return TextIconListview__OM_NEW(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE: return TextIconListview__OM_DISPOSE(cl, obj, msg);
-	case MUIM_Show: return TextIconListview__MUIM_Show(cl, obj, (struct MUIP_Show*)msg);
+        case OM_NEW: return TextIconListview__OM_NEW(cl, obj, (struct opSet *) msg);
+        case OM_DISPOSE: return TextIconListview__OM_DISPOSE(cl, obj, msg);
+        case MUIM_Show: return TextIconListview__MUIM_Show(cl, obj, (struct MUIP_Show*)msg);
     }
+
     return DoSuperMethodA(cl, obj, msg);
+    
 }
+BOOPSI_DISPATCHER_END
 
 
 int main(void)
