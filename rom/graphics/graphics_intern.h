@@ -151,4 +151,8 @@ extern LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 			    struct GfxBase *);
 extern void driver_WaitTOF (struct GfxBase *);
 
+extern VOID driver_BltBitMapRastPort(struct BitMap *,  LONG, LONG,
+			    struct RastPort *, LONG, LONG , LONG, LONG,
+			    ULONG, struct GfxBase *);
+
 #endif /* GRAPHICS_INTERN_H */
