@@ -88,10 +88,10 @@ struct IFS_READ_WRITE
 #define FSA_SEEK 5
 struct IFS_SEEK
 {
-      /* Offset from position, specified as mode. This is filled by the
-         filehandler with the old position in the file. */
-      QUAD io_Offset; 
-      /* Seek mode as defined in <dos/dos.h> (OFFSET_#?). */
+    /* Offset from position, specified as mode. This is filled by the
+       filehandler with the old position in the file. */
+    QUAD io_Offset; 
+    /* Seek mode as defined in <dos/dos.h> (OFFSET_#?). */
     LONG io_SeekMode;
 };
 
@@ -346,12 +346,22 @@ struct IFS_INFO
 {
     struct InfoData *io_Info;
 };
-#if 0
 
+#if 0
 #define FSA_CHANGE_SIGNAL   38
-#define FSA_LOCK_RECORD     39
-#define FSA_UNLOCK_RECORD   40
 #endif
+
+#define FSA_LOCK_RECORD     39
+struct IFS_RECORD
+{
+    QUAD  io_Offset; 
+    LONG  io_Size;
+    ULONG io_RecordMode;
+    ULONG io_Timeout;
+};
+
+#define FSA_UNLOCK_RECORD   40
+
 
 #define FSA_PARENT_DIR      41
 #define FSA_PARENT_DIR_POST 42
@@ -463,6 +473,7 @@ struct IOFileSys
 	struct IFS_RELABEL         io_RELABEL;        /* FSA_RELABEL */
 	struct IFS_NOTIFY          io_NOTIFY;         /* FSA_ADD_NOTIFY */
 	struct IFS_INFO            io_INFO;           /* FSA_INFO */
+	struct IFS_RECORD          io_RECORD;         /* FSA_LOCK_RECORD */
     } io_Union;
 };
 
