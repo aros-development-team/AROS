@@ -5,14 +5,9 @@ FILES         := preferenceswindow
 INCLUDE_FILES := preferenceswindow.h
 
 #MM- workbench-classes-zune : workbench-classes-zune-preferenceswindow
-#MM- workbench-classes-zune-quick : workbench-classes-zune-preferenceswindow-quick
-
-#MM- workbench-classes-zune-preferenceswindow : includes workbench-classes-zune-preferenceswindow-module
-#MM- workbench-classes-zune-preferenceswindow-quick : workbench-classes-zune-preferenceswindow-module
-
-#MM workbench-classes-zune-preferenceswindow-module : workbench-classes-zune-preferenceswindow-catalogs
+#MM workbench-classes-zune-preferenceswindow : workbench-classes-zune-preferenceswindow-catalogs
 %build_module \
-    mmake=workbench-classes-zune-preferenceswindow-module \
+    mmake=workbench-classes-zune-preferenceswindow \
     modname=PreferencesWindow modtype=mcc \
     conffile=preferenceswindow.conf \
     uselibs="amiga arosc"

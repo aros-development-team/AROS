@@ -5,14 +5,9 @@ FILES         := aboutwindow
 INCLUDE_FILES := aboutwindow.h
 
 #MM- workbench-classes-zune : workbench-classes-zune-aboutwindow
-#MM- workbench-classes-zune-quick : workbench-classes-zune-aboutwindow-quick
-
-#MM- workbench-classes-zune-aboutwindow : includes workbench-classes-zune-aboutwindow-module
-#MM- workbench-classes-zune-aboutwindow-quick : workbench-classes-zune-aboutwindow-module
-
-#MM workbench-classes-zune-aboutwindow-module : workbench-classes-zune-aboutwindow-catalogs
+#MM workbench-classes-zune-aboutwindow : workbench-classes-zune-aboutwindow-catalogs
 %build_module \
-    mmake=workbench-classes-zune-aboutwindow-module \
+    mmake=workbench-classes-zune-aboutwindow \
     modname=AboutWindow modtype=mcc \
     conffile=aboutwindow.conf \
     uselibs="amiga arosc"
