@@ -6,8 +6,7 @@
 # broken files are not available for download.
 
 #-- Configuration ------------------------------------------------------------
-#ROOT=/home/groups/a/ar/aros
-ROOT=/home/adam/aros
+ROOT=/home/groups/a/ar/aros
 SRC=$ROOT/uploads/nightly
 DST=$ROOT/htdocs/downloads/nightly
 
