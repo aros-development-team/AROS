@@ -65,6 +65,7 @@ FILES	:= \
     libdeletepool \
     libfreepooled \
     lockbitmaptags \
+    newdtobject \
     newlist \
     newloadsegtags \
     newobject \
@@ -76,12 +77,15 @@ FILES	:= \
     openwindowtags \
     printf \
     rangerand \
+    refreshdtobject \
+    refreshdtobjects \
     removeamigaguidehost \
     sendamigaguidecmd \
     sendamigaguidecontext \
     setamigaguideattrs \
     setamigaguidecontext \
     setattrs \
+    setdtattrs \
     setgadgetattrs \
     setrpattrs \
     setsuperattrs \
