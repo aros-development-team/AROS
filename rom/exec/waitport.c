@@ -50,6 +50,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    ASSERT_VALID_PTR(port);
     /*
 	No Disable() necessary here since emptiness can be checked
 	without and nobody is allowed to change the signal bit as soon
