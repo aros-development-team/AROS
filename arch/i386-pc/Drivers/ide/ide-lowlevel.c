@@ -20,11 +20,13 @@
 #include <hardware/intbits.h>
 #include <devices/timer.h>
 #include <devices/trackdisk.h>
+#include <aros/bootloader.h>
 #include <libraries/expansion.h>
 #include <libraries/configvars.h>
 #include <proto/exec.h>
 #include <proto/expansion.h>
 #include <proto/timer.h>
+#include <proto/bootloader.h>
 
 #include "include/cd.h"
 #include "include/scsicmds.h"
@@ -33,7 +35,7 @@
 
 #include "ide_intern.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #undef kprintf
@@ -81,10 +83,10 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ide_Unit *unit)
 	    switch (unit->au_DevType)
 	    {
 		case DG_DIRECT_ACCESS:
-		    pp[0] = "afs.handler";
+		    pp[0] = (ULONG)"afs.handler";
 		    break;
 		case DG_CDROM:
-		    pp[0] = "cdrom.handler";
+		    pp[0] = (ULONG)"cdrom.handler";
 		    break;
 		default:
 		    D(bug("IDE: AddVolume called on unknown devicetype\n"));
@@ -143,67 +145,6 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ide_Unit *unit)
 
     return FALSE;
 }
-
-#if 0
-/*
-   This version will read the MBR and then add all partitions of type 0x30
-   as bootnodes. It could be a bit smarter though.
-*/
-void RDBInfo(struct ide_Unit *unit)
-{
-    UBYTE *mbr;
-    ULONG temp,count,i,SSecs,SCyls,ESecs,ECyls;
-    struct PartEntry *pe;
-
-    /* For now we will only deal with harddisks */
-    if (unit->au_DevType != DG_DIRECT_ACCESS)
-      return;
-
-    mbr = AllocMem(512,MEMF_PUBLIC | MEMF_CLEAR);
-    if (mbr)
-    {
-        /* Read the MBR Sector */
-        count = ReadBlocks(0,1,mbr,unit,&temp);
-        if (!count)
-        {
-            /* Print partition table and add BootNodes */
-            D(bug("====================== Partition table =======================\n"));
-            D(bug("Act Type StartC StartH StartS EndC EndH EndS LBAStart LBACount\n"));
-            for (i=0;i<=3;i++)
-            {
-                count = 0x1be + (i*16);
-                pe = (struct PartEntry *)(&mbr[count]);
-                SSecs = pe->StartS & 0x3f;
-                SCyls = ((pe->StartS & 0xc0) << 2) + pe->StartC;
-		if (SCyls == 1023)
-		{
-		    SCyls = pe->LBAStart/unit->au_Heads/unit->au_SectorsT;
-		    SSecs = 1;
-		    pe->StartH = 0;
-		}
-
-		ESecs = pe->EndS &0x3f;
-                ECyls = ((pe->EndS & 0xc0) << 2) + pe->EndC;
-		if (ECyls == 1023)
-		{
-		    ECyls = SCyls -1 + pe->LBACount/unit->au_Heads/unit->au_SectorsT;
-		}
-
-                D(bug(" %02x  %02x   %3d    %3d   %4d   %4d  %3d  %3d %8d %8d\n",
-                    pe->Status,pe->PartType,SCyls,pe->StartH,SSecs,
-                    ECyls,pe->EndH,ESecs,pe->LBAStart,pe->LBACount));
-
-                /* If this is an AROS partition, add a BootNode */
-                if (pe->PartType == 0x30)
-                   AddVolume(SCyls,ECyls,unit);
-		   //AddVolume(2006,ECyls,unit);
-            }
-            FreeMem(mbr,512);
-        }
-    }
-    return;
-}
-#endif
 
 /* Try to get CHS info from this drive */
 void SearchCHS(struct ide_Unit *unit)
@@ -338,20 +279,13 @@ struct ide_Unit *InitUnit(ULONG num, struct ideBase *ib)
 }
 
 /*
-  Attempt to calulate the geometry of the harddisk
-  This will use the MBR mainly to dig out how other
-  OSes see the drive.
-
-  If there is no valid partition table, we will use
-  the HDDs reported CHS but increase the number of
-  cylinders to match the size of the drive
+ * Very very icky stuff to try to figure out how the
+ * proper geometry translation for the disk.
+ * It does not work properly either, so sue me :)
 */
 void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
 {
-   UBYTE *mbr;
-   ULONG CHSCapacity,LBACapacity,MBRCapacity,MAXCapacity;
-   ULONG MBRCyls,MBRHeads,MBRSecs;
-   struct PartEntry *pe;
+   ULONG CHSCapacity,LBACapacity,MAXCapacity;
 
    /* For now we will only deal with fixed harddisks */
    if ( (unit->au_DevType != DG_DIRECT_ACCESS) && !(unit->au_Flags & AF_Removable) )
@@ -364,8 +298,6 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
    unit->au_SectorsC  = id->idev_Sectors * id->idev_Heads;
    unit->au_Blocks    = id->idev_Cylinders * unit->au_SectorsC;
 
-   D(bug("[IDE] Unit: -Drive says PCHS capacity is %d (%d MB)\n",unit->au_Blocks,unit->au_Blocks/2048));
-
    /* If we are capable of LBA, get LBA size */
    if (unit->au_Flags & AF_LBAMode)
    {
@@ -375,11 +307,17 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
    else
       LBACapacity = 0;
 
+   D(bug("[IDE] Unit: -Drive says PCHS is (%d/%d/%d) capacity %d (%d MB)\n",
+	       unit->au_Cylinders,unit->au_Heads,unit->au_SectorsC,
+	       unit->au_Blocks,unit->au_Blocks/2048));
+
    /* If the translated CHS fields is valid, get them */
    if (id->idev_NextAvail & ATAF_AVAIL_TCHS)
    {
       CHSCapacity = ((id->ideva_Capacity1)+(id->ideva_Capacity2 << 16));
-      D(bug("[IDE] Unit: -Drive says LCHS capacity is %d (%d MB)\n",CHSCapacity,CHSCapacity/2048));
+      D(bug("[IDE] Unit: -Drive says LCHS is (%d/%d/%d) capacity %d (%d MB)\n",
+		  id->ideva_Cylinders,id->ideva_Heads,id->ideva_Sectors,
+		  CHSCapacity,CHSCapacity/2048));
    }
    else
       CHSCapacity = 0;
@@ -404,6 +342,23 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
 	   unit->au_Cylinders = ( (MAXCapacity)/(unit->au_Heads*unit->au_SectorsT))-1;
        }
    }
+
+   /* Now to some serious fun
+    * We still might now have the proper stuff here even after the heavy guessworking above.
+    */
+   if (unit->au_Blocks < MAXCapacity)
+   {
+       /* Most likely we have a disk larger than 8.3 Gb here, so do the thing */
+       unit->au_SectorsT = 63;
+       unit->au_Heads = 255;
+       unit->au_Blocks = MAXCapacity;
+       unit->au_Cylinders = MAXCapacity / (255*63);
+       D(bug("[IDE] Unit: -Disk larger than 8.3Gb, readjusting to (%d/255/63) %d blocks\n",
+		   unit->au_Cylinders,(unit->au_Cylinders*255*63)));
+   }
+
+   /* Now readjust the au_SectorsC field, since au_SectorsT have most likely changed */
+   unit->au_SectorsC = unit->au_SectorsT * unit->au_Heads;
 
    /* Whew, finally done here */
    bug("[IDE] Unit: -Using L-CHS %d/%d/%d with the size %d blocks (%d MB)\n",
