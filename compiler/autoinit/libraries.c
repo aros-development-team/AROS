@@ -44,8 +44,8 @@ int set_open_libraries(void)
 	{
 	    __showerror
 	    (
-	        "Couldn't open version %ld of library \"%s\".",
-		*set->versionptr, set->name
+	        "Could not open version %ld or higher of library \"%s\".",
+		version, set->name
 	    );
 
 	    return 0;
