@@ -69,7 +69,7 @@
 #------------------------------------------------------------------------------
 %define link_q cmd=$(CC) opt=$(LDFLAGS) startup=$(STARTUP) from=$< to=$@ libs=$(LIBS) end=$()
 	@$(ECHO) "Linking %(to)..."
-	@$(IF) %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) %(end) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
+	@$(IF) %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) $(COMPILER_LIBS) %(end) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
 				$(ECHO) "%(to): %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) %(end)" >> $(GENDIR)/errors ; \
 				$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
@@ -169,7 +169,7 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 # Add section with all necessary libs and dependencies for linking
 %define define_libs prelibs=$(PRELIBS) postlibs= deplibs=
 STARTUP = $(LIBDIR)/startup.o
-LIBS = -L$(LIBDIR) %(prelibs) -larossupport -lamiga -larosc -larosm -lautoinit %(postlibs)
+LIBS = -L$(LIBDIR) %(prelibs) -larossupport -lamiga -larosc -larosm -lautoinit %(postlibs) $(COMPILER_LIBS)
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 	$(LIBDIR)/libarosc.a $(LIBDIR)/libarosm.a $(LIBDIR)/libautoinit.a %(deplibs)
 %end
@@ -337,7 +337,7 @@ SYS_OBJS := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
 
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(COMPILER_LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
 	@$(IF) $(TEST) ! -s $(LIBNAME)lib.err; then $(RM) $(LIBNAME)lib.err ; else $(NOP) ; fi
 	@$(STRIP) $@
 
@@ -416,7 +416,7 @@ $(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	    $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a)
 	@$(ECHO) "Building $(notdir $@) ..."
 	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(OSMODULE).map -L$(LIBDIR) \
-	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) \
+	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) $(COMPILER_LIBS) \
 	    -o $@ 2>&1 | tee $(OSMODULE).err
 	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else $(NOP); fi
 ifeq ($(FLAVOUR),native)
@@ -507,7 +507,7 @@ $(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	    $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a)
 	@$(ECHO) "Building $(notdir $@) ..."
 	@%(cc) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(OSMODULE).map -L$(LIBDIR) \
-	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) \
+	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) $(COMPILER_LIBS) \
 	    -o $@ 2>&1 | tee $(OSMODULE).err
 	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else $(NOP); fi
 ifeq ($(FLAVOUR),native)
@@ -595,7 +595,7 @@ $(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	    $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a)
 	@$(ECHO) "Building $(notdir $@) ..."
 	@%(cc) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(OSMODULE).map -L$(LIBDIR) \
-	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) \
+	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) $(COMPILER_LIBS) \
 	    -o $@ 2>&1 | tee $(OSMODULE).err
 	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else $(NOP); fi
 ifeq ($(FLAVOUR),native)
@@ -842,7 +842,7 @@ SYS_OBJS      := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
 
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(OBJS) $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(OBJS) $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(COMPILER_LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
 	@$(IF) $(TEST) ! -s $(LIBNAME)lib.err; then $(RM) $(LIBNAME)lib.err ; else $(NOP) ; fi
 	@$(STRIP) $@
 
@@ -902,7 +902,7 @@ DEPS          := $(DEPS) $(foreach f,$(INIT_FILE) functable functions $(FILES) $
 
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(COMPILER_LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
 	@$(IF) $(TEST) ! -s $(LIBNAME)lib.err; then $(RM) $(LIBNAME)lib.err ; else $(NOP) ; fi
 	@$(STRIP) $@
 
@@ -991,7 +991,7 @@ DESTDIRS := $(DESTDIRS) $(DESTDIR)
 
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(LIBS) $(ENDFUNC) $(EXTRA_LIBS) -o $@ 2>&1|tee $(LIBNAME)lib.err
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(LIBS) $(COMPILER_LIBS) $(ENDFUNC) $(EXTRA_LIBS) -o $@ 2>&1|tee $(LIBNAME)lib.err
 	@$(IF) $(TEST) ! -s $(LIBNAME)lib.err; then $(RM) $(LIBNAME)lib.err ; else $(NOP) ; fi
 	@$(STRIP) $@
 
@@ -1492,7 +1492,7 @@ clean ::
 	@$(ECHO) "Building $(notdir $@) ..."
 	@$(STATIC_LD) $(STATIC_LDFLAGS) $(LDFLAGS%(id)) \
 	    $(GENMAP) $(OBJDIR%(id))/$(MODULE%(id)).map \
-	    %(objs) $(LIBS%(id)) %(endtag) \
+	    %(objs) $(LIBS%(id)) %(endtag) $(COMPILER_LIBS) \
 	    -o $@ 2>&1 | tee $(OBJDIR%(id))/%(err)
 	@if $(TEST) ! -s $(OBJDIR%(id))/%(err) ; then $(RM) $(OBJDIR%(id))/%(err) ; fi
 	@$(STRIP) $@
