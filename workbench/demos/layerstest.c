@@ -945,6 +945,143 @@ void DemoC()
   }    
 }
 
+
+void DemoD()
+{
+  int i;
+  int c;
+  struct BitMap * sb;
+  printf("Deleting all previously generated layers...\n");
+  for (i = 0; i < 10; i++) 
+  {
+    if (layers[i])
+    {
+      DeleteLayer(0, layers[i]);
+      layers[i] = NULL;
+    }
+  }
+  i = 0;
+
+  printf("Creating 4 superbitmap layers\n");
+
+  sb = AllocBitMap(91,91,1,BMF_CLEAR,NULL);
+
+  layers[0] = CreateUpfrontLayer(&screen->LayerInfo, 
+                                 screen->RastPort.BitMap,
+                                 10,
+                                 10,
+                                 100,
+                                 100,
+                                 LAYERSMART|LAYERSUPER,
+                                 sb);
+  
+  frame(layers[0]);
+
+  sb = AllocBitMap(71,71,1,BMF_CLEAR,NULL);
+  layers[1] = CreateUpfrontLayer(&screen->LayerInfo, 
+                                 screen->RastPort.BitMap,
+                                 50,
+                                 50,
+                                 120,
+                                 120,
+                                 LAYERSMART|LAYERSUPER,
+                                 sb);
+
+  frame(layers[1]);
+
+  sb = AllocBitMap(71,61,1,BMF_CLEAR,NULL);
+  layers[2] = CreateUpfrontLayer(&screen->LayerInfo, 
+                                 screen->RastPort.BitMap,
+                                 70,
+                                 30,
+                                 140,
+                                 90,
+                                 LAYERSMART|LAYERSUPER,
+                                 sb);
+  frame(layers[2]);
+
+  sb = AllocBitMap(131,41,1,BMF_CLEAR,NULL);
+  layers[3] = CreateUpfrontLayer(&screen->LayerInfo,
+                                 screen->RastPort.BitMap,
+                                 20,
+                                 20,
+                                 150,
+                                 60,
+                                 LAYERSMART|LAYERSUPER,
+                                 sb);
+
+  frame(layers[3]);
+
+  printf("Resizing layer 4\n");
+  Delay(30);
+  SizeLayer(0, layers[3], -80, -10);
+  /* this leaves width = 51, height = 31 */
+  printf("Scrolling layer 4\n");
+  Delay(30);
+  c = 0;
+  while (c < 80)
+  {
+    c++;
+    Delay(5);
+    ScrollLayer(0, layers[3], 1, 0);
+  }
+  
+  c = 0;
+  while (c < 10)
+  {
+    c++;
+    Delay(5);
+    ScrollLayer(0, layers[3], 0 ,1);
+  }
+
+  c = 0;
+  while (c < 10)
+  {
+    c++;
+    Delay(5);
+    ScrollLayer(0, layers[3], -8 ,-1);
+  }
+  
+  printf("Resizing layer 4 to its full size\n");
+  Delay(30);
+  SizeLayer(0, layers[3], 80, 10);
+  
+  printf("Resizing layer 1\n");
+  SizeLayer(0, layers[0], -50, -50);
+
+  /* this leaves width = 41, height = 41 */
+  printf("Scrolling layer 1\n");
+  Delay(30);
+  c = 0;
+  while (c < 41)
+  {
+    c++;
+    Delay(5);
+    ScrollLayer(0, layers[0], 1, 0);
+  }
+  
+  c = 0;
+  while (c < 41)
+  {
+    c++;
+    Delay(5);
+    ScrollLayer(0, layers[0], 0 ,1);
+  }
+
+  c = 0;
+  while (c < 41)
+  {
+    c++;
+    Delay(5);
+    ScrollLayer(0, layers[0], -1 ,-1);
+  }
+
+  printf("Resizing layer 1 to its full size\n");
+  Delay(30);
+  SizeLayer(0, layers[0], 40, 40);
+  
+}
+
 void doall(void)
 {
   char buf[80];
@@ -1030,6 +1167,10 @@ void doall(void)
     else if (!strcmp(buf, "DemoC")) 
     {
       DemoC();
+    } 
+    else if (!strcmp(buf, "DemoD")) 
+    {
+      DemoD();
     } 
     else if (!strcmp(buf, "gl1")) 
     {
