@@ -24,18 +24,20 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
-static const char version[] = "$VER: Version 41.0 (14.6.1997)\n";
+static const char version[] = "$VER: version 41.1 (19.6.1997)\n";
 
 #define ERROR_HEADER "Version"
 
-#define ARGSTRING "NAME,FILE/S,FULL/S,RES/S"
+#define ARGSTRING "NAME,VERSION/N,REVISION/N,FILE/S,FULL/S,RES/S"
 struct
 {
     STRPTR name;
+    UWORD *version;
+    UWORD *revision;
     IPTR   file;
     IPTR   full;
     IPTR   res;
-} args = { NULL, 0L, 0L, 0L };
+} args = { NULL, NULL, NULL, 0L, 0L, 0L };
 
 struct
 {
@@ -68,7 +70,7 @@ int number2string(int number, STRPTR string)
     if (number == 0)
     {
 	string[0] = '0';
-	string[1] = 0x00;
+	string[1] = '\0';
 	return(1);
     }
 
@@ -82,7 +84,7 @@ int number2string(int number, STRPTR string)
 	string[length - len] = firstnum + 48;
 	number -= firstnum * pow;
     }
-    string[length] = 0x00;
+    string[length] = '\0';
 
     return(length);
 }
@@ -90,12 +92,9 @@ int number2string(int number, STRPTR string)
 /* skip all whitespace-characters (SPACE, TAB) */
 char *skipwhites(char *buffer)
 {
-    for(;;)
-    {
+    for(;; buffer++)
 	if ((buffer[0] != ' ' && buffer[0] != '\t') || buffer[0] == '\0')
-	    return buffer;
-	buffer++;
-    }
+	    return(buffer);
 }
 
 /* strip all whitespace-characters from the end of a string */
@@ -107,12 +106,12 @@ void stripwhites(char *buffer)
     {
 	if (buffer[len-1] != ' ' && buffer[len-1] != '\t')
 	{
-	    buffer[len] = 0x00;
+	    buffer[len] = '\0';
 	    return;
 	}
 	len--;
     }
-    buffer[len] = 0x00;
+    buffer[len] = '\0';
 }
 
 /* searches for a given string in a file and stores up to *lenptr characters
@@ -131,14 +130,14 @@ int findinfile(BPTR file, STRPTR string, STRPTR buffer, int *lenptr)
 	pos = 0;
 	while ((len - pos) >= stringlen)
 	{
-	    if (strncmp(buffer + pos, string, stringlen) == 0)
+	    if (strncmp(&buffer[pos], string, stringlen) == 0)
 	    {
 		int findstrlen; /* length of the string, after the string to
 				   find */
 		findstrlen = len - pos - stringlen;
 
-		memmove(buffer, buffer + pos + stringlen, findstrlen);
-		len = Read(file, buffer + findstrlen, buflen - findstrlen);
+		memmove(buffer, &buffer[pos+stringlen], findstrlen);
+		len = Read(file, &buffer[findstrlen], buflen - findstrlen);
 		if (len >= 0)
 		    *lenptr = findstrlen + len;
 		else
@@ -167,7 +166,7 @@ int findinfile(BPTR file, STRPTR string, STRPTR buffer, int *lenptr)
 int makedatefromstring(char *buffer)
 {
     /* !!! */
-    return RETURN_OK;
+    return(RETURN_OK);
 }
 
 /* Check whether the given string contains a version in the form
@@ -177,41 +176,41 @@ int makeversionfromstring(char *buffer)
     char numberbuffer[6];
     int pos;
 
-    for (pos=0;;pos++)
+    for (pos = 0;; pos++)
     {
-	if (((pos == 5) && (buffer[pos] != '.')) || (buffer[pos] == 0x00))
-	    return -1;
+	if (((pos == 5) && (buffer[pos] != '.')) || (buffer[pos] == '\0'))
+	    return(-1);
 	if (buffer[pos] == '.')
 	{
 	    if (pos == 0)
-		return -1;
-	    numberbuffer[pos] = 0x00;
+		return(-1);
+	    numberbuffer[pos] = '\0';
 	    break;
 	}
 	if ((buffer[pos] < '0') || (buffer[pos] > '9'))
-	    return -1;
+	    return(-1);
 	numberbuffer[pos] = buffer[pos];
     }
     parsedver.version = strtoul(numberbuffer, NULL, 10);
     buffer = &buffer[pos+1];
-    for (pos=0;;pos++)
+    for (pos = 0;; pos++)
     {
-	if ((pos == 5) && ((buffer[pos] != ' ') || (buffer[pos] != 0x00)))
-	    return -1;
-	if ((buffer[pos] == ' ') || (buffer[pos] == 0x00))
+	if ((pos == 5) && ((buffer[pos] != ' ') || (buffer[pos] != '\0')))
+	    return(-1);
+	if ((buffer[pos] == ' ') || (buffer[pos] == '\0'))
 	{
 	    if (pos == 0)
-		return -1;
-	    numberbuffer[pos] = 0x00;
+		return(-1);
+	    numberbuffer[pos] = '\0';
 	    break;
 	}
 	if ((buffer[pos] < '0') || (buffer[pos] > '9'))
-	    return -1;
+	    return(-1);
 	numberbuffer[pos] = buffer[pos];
     }
     parsedver.revision = strtoul(numberbuffer, NULL, 10);
 
-    return RETURN_OK;
+    return(RETURN_OK);
 }
 
 /* fill in parsedver from provided string */
@@ -220,7 +219,7 @@ int makedatafromstring(char *buffer)
     int error = RETURN_OK;
     int pos;
 
-    for (pos = 0; buffer[pos] != 0x00; pos++)
+    for (pos = 0; buffer[pos] != '\0'; pos++)
     {
 	if (buffer[pos] == ' ')
 	{
@@ -231,33 +230,34 @@ int makedatafromstring(char *buffer)
 		if (parsedver.name == NULL)
 		{
 		    PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
-		    return RETURN_FAIL;
+		    return(RETURN_FAIL);
 		}
 		CopyMem(buffer, parsedver.name, pos);
-		parsedver.name[pos] = 0x00;
+		parsedver.name[pos] = '\0';
 		makedatefromstring(&buffer[pos+1]);
 		break;
 	    /* Version is there */
 	    } else if ((buffer[pos+1] >= '0') && (buffer[pos+1] <='9'))
 	    {
 		/* Is it really a version at the current position? */
-		if ((error = makeversionfromstring(&buffer[pos+1])) == RETURN_OK)
+		error = makeversionfromstring(&buffer[pos+1]);
+		if (error == RETURN_OK)
 		{
 		    /* It is! */
 		    parsedver.name = AllocVec(pos + 1, MEMF_ANY);
 		    if (parsedver.name == NULL)
 		    {
 			PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
-			return RETURN_FAIL;
+			return(RETURN_FAIL);
 		    }
 		    CopyMem(buffer, parsedver.name, pos);
-		    parsedver.name[pos] = 0x00;
-		    for (; buffer[pos] != 0x00 && buffer[pos] != ' '; pos++);
+		    parsedver.name[pos] = '\0';
+		    for (; buffer[pos] != '\0' && buffer[pos] != ' '; pos++);
 		    pos = skipwhites(&buffer[pos]) - buffer;
 		    makedatefromstring(&buffer[pos]);
 		    break;
 		} else if (error != -1)
-		    return error;
+		    return(error);
 	    }
 	}
     }
@@ -265,7 +265,7 @@ int makedatafromstring(char *buffer)
     if (parsedver.name != NULL)
 	stripwhites(parsedver.name);
 
-    return error;
+    return(error);
 }
 
 /* build information from resident modules */
@@ -296,7 +296,7 @@ int makefilever(STRPTR name)
 	    {
 		char *startbuffer;
 
-		buffer[len] = 0x00;
+		buffer[len] = '\0';
 		startbuffer = skipwhites(buffer);
 		len = strlen(startbuffer);
 		verbuffer = AllocVec(len + 1, MEMF_ANY);
@@ -372,12 +372,12 @@ int makekickver()
     dt.dat_Format = FORMAT_DEF;
     dt.dat_Flags = 0;
     dt.dat_StrDay = NULL;
-    dt.dat_StrDate = verbuffer + len;
+    dt.dat_StrDate = &verbuffer[len];
     dt.dat_StrTime = NULL;
     DateToStr(&dt);
     len = strlen(verbuffer);
     verbuffer[len] = ')';
-    verbuffer[len + 1] = 0x00;
+    verbuffer[len+1] = '\0';
 
     return(RETURN_OK);
 }
@@ -429,7 +429,28 @@ void printstring()
 
 /******************************* main program ****************************/
 
-/* Check whether the arguments are correct */
+/* compare the version given as argument with the version from the object
+   return RETURN_WARN, if args-v>object-v, else return RETURN_OK */
+int cmpargsparsed()
+{
+    if (args.version != NULL)
+    {
+	if (*(args.version) > parsedver.version)
+	    return(RETURN_WARN);
+	else if (*(args.version) == parsedver.version && args.revision != NULL)
+	{
+	    if (*(args.revision) > parsedver.revision)
+		return(RETURN_WARN);
+	}
+    } else if (args.revision != NULL)
+    {
+	if (*(args.revision) > parsedver.revision)
+	    return(RETURN_WARN);
+    }
+    return(RETURN_OK);
+}
+
+/* check whether the arguments are correct */
 int verifyargs()
 {
     int error = RETURN_OK;
@@ -440,10 +461,7 @@ int verifyargs()
 	error = RETURN_FAIL;
 
     if (error == RETURN_FAIL)
-    {
 	PrintFault(ERROR_BAD_TEMPLATE, ERROR_HEADER);
-	error = RETURN_FAIL;
-    }
 
     return(error);
 }
@@ -468,6 +486,7 @@ int main (int argc, char ** argv)
 		    printparsedstring();
 		else
 		    printstring();
+		error = cmpargsparsed();
 	    }
 	    freeverstring();
 	}
