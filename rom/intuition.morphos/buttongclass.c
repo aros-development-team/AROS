@@ -77,6 +77,78 @@ VOID notifypressed(Class *cl, Object *o, struct GadgetInfo *ginfo, ULONG flags)
 
 /***********************************************************************************/
 
+IPTR buttong_new(Class *cl, Object *o, struct opSet *msg)
+{
+    struct TagItem *ti;
+    IPTR    	    retval;
+        
+    retval = DoSuperMethodA(cl, o, (Msg)msg);
+    if (retval)
+    {
+	ti = FindTagItem(GA_Image, msg->ops_AttrList);
+	if (ti)
+	{
+    	    struct Image *im = (struct Image *)G(retval)->GadgetRender;
+
+    	    if (im)
+	    {
+		G(retval)->Width  = im->Width;
+		G(retval)->Height = im->Height;
+	    }
+	};  
+    }
+    
+    return retval;
+}
+
+/***********************************************************************************/
+
+IPTR buttong_set(Class *cl, Object *o, struct opSet *msg)
+{
+    struct TagItem *ti;
+    IPTR    	    retval;
+        
+    retval = DoSuperMethodA(cl, o, (Msg)msg);
+
+    /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
+	* because it would circumvent the subclass from fully overriding it.
+	* The check of cl == OCLASS(o) should fail if we have been
+	* subclassed, and we have gotten here via DoSuperMethodA().
+	*/
+
+    ti = FindTagItem(GA_Image, msg->ops_AttrList);
+    if (ti)
+    {
+    	struct Image *im = (struct Image *)G(o)->GadgetRender;
+		
+    	if (im)
+	{
+	    G(o)->Width  = im->Width;
+	    G(o)->Height = im->Height;
+	}
+    };
+    
+    if ( retval && ( (msg->MethodID != OM_UPDATE) || (cl == OCLASS(o)) ) )
+    {
+    	struct GadgetInfo *gi = msg->ops_GInfo;
+	
+	if (gi)
+	{
+	    struct RastPort *rp = ObtainGIRPort(gi);
+	    
+	    if (rp)
+	    {
+		DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
+		ReleaseGIRPort(rp);
+	    }
+	} 
+    } 
+
+    return retval;
+}
+
+/***********************************************************************************/
+
 void buttong_render(Class *cl, Object *o, struct gpRender *msg)
 {
     /* We will let the AROS gadgetclass test if it is safe to render */
@@ -141,29 +213,21 @@ void buttong_render(Class *cl, Object *o, struct gpRender *msg)
             if ((EG(o)->SelectRender != NULL) &&
                 (EG(o)->Flags & GFLG_SELECTED)) /* render selected image */
             {
-                /* center image position, we assume image top and left is 0 */
-                ULONG x = container.Left/* + ((container.Width / 2) -
-                                (IM(EG(o)->SelectRender)->Width / 2))*/;
-                ULONG y = container.Top /*+ ((container.Height / 2) -
-                                (IM(EG(o)->SelectRender)->Height / 2))*/;
+	    	/* No centering of the image inside the gadget to be done! */
 
                 DrawImageState(rp,
                            IM(EG(o)->SelectRender),
-                           x, y,
+                           container.Left, container.Top,
                            state + IDS_SELECTED,
                            msg->gpr_GInfo->gi_DrInfo );
             }
             else if ( EG(o)->GadgetRender != NULL ) /* render normal image */
             {
-                /* center image position, we assume image top and left is 0 */
-                ULONG x = container.Left/* + ((container.Width / 2) -
-                                (IM(EG(o)->GadgetRender)->Width / 2))*/;
-                ULONG y = container.Top/* + ((container.Height / 2) -
-                                (IM(EG(o)->GadgetRender)->Height / 2))*/;
-
+	    	/* No centering of the image inside the gadget to be done! */
+		
                 DrawImageState(rp,
                            IM(EG(o)->GadgetRender),
-                           x, y,
+                           container.Left, container.Top,
                            state + ((EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
                            msg->gpr_GInfo->gi_DrInfo);
             }
@@ -454,6 +518,15 @@ AROS_UFH3S(IPTR, dispatch_buttongclass,
     DEBUG_BUTTON(dprintf("dispatch_buttongclass: Cl 0x%lx o 0x%lx msg 0x%lx MethodID 0x%lx\n",cl,o,msg,msg->MethodID));
     switch(msg->MethodID)
     {
+    case OM_NEW:
+        retval = buttong_new(cl, o, (struct opSet *)msg);
+        break;
+        
+    case OM_SET:
+    case OM_UPDATE:
+        retval = buttong_set(cl, o, (struct opSet *)msg);
+        break;
+
     case GM_RENDER:
         buttong_render(cl, o, (struct gpRender *)msg);
         break;
@@ -472,35 +545,6 @@ AROS_UFH3S(IPTR, dispatch_buttongclass,
 
     case GM_GOINACTIVE:
         retval = buttong_goinactive(cl, o, (struct gpGoInactive *)msg);
-        break;
-
-    case OM_SET:
-    case OM_UPDATE:
-        retval = DoSuperMethodA(cl, o, msg);
-
-        /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
-        * because it would circumvent the subclass from fully overriding it.
-        * The check of cl == OCLASS(o) should fail if we have been
-        * subclassed, and we have gotten here via DoSuperMethodA().
-        */
-        if ( retval && ( (msg->MethodID != OM_UPDATE) || (cl == OCLASS(o)) ) )
-        {
-            struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
-            if (gi)
-            {
-                struct RastPort *rp = ObtainGIRPort(gi);
-                if (rp)
-                {
-                    struct gpRender method;
-                    method.MethodID = GM_RENDER;
-                    method.gpr_GInfo = gi;
-                    method.gpr_RPort = rp;
-                    method.gpr_Redraw = GREDRAW_REDRAW;
-                    DoMethodA(o, (Msg)&method);
-                    ReleaseGIRPort(rp);
-                } /* if */
-            } /* if */
-        } /* if */
         break;
 
     default:
