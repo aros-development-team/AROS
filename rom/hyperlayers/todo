@@ -1,15 +1,5 @@
-- fix: create BACKDROP layer in same priority (not lower priority).
-       -> changes to CreatLayerTagList(), UpfrontLayer() and BehindLayer()!!!
+- fix: layers with clipping region are corrupted when moved.
 - fix: parent layer should get/use layer info hook
-- fix: add support for super bitmap layers everywhere.
-   - when layer is enlarged (might already work automatically when 
-     implemented in helper routines)
-   - in _BackupPartsOfLayer()
-   - in _ShowPartsOfLayer()
-   - in _ShowLayer()
-     - watch Scroll layer variable!!!
-- make _ShowPartsOfLayer call _CopyClipRectsToClipRects instead of
-  implementing the same routine again.
 - handling of errors: out of memory error!
 
 

@@ -98,7 +98,7 @@
     rectw.MinX = l->shape->bounds.MinX;
     rectw.MinY = l->shape->bounds.MinY;
     rectw.MaxX = l->shape->bounds.MaxX+dw;
-    rectw.MaxY = l->shape->bounds.MaxY+dh; /*stegerg: added +dh */
+    rectw.MaxY = l->shape->bounds.MaxY+dh;
     AndRectRegion(newshape, &rectw); 
   }
 
@@ -115,16 +115,16 @@
   {
     recth.MinX = l->shape->bounds.MinX;
     recth.MinY = l->shape->bounds.MinY;
-    recth.MaxX = l->shape->bounds.MaxX+dw; /*stegerg: added +dw */
+    recth.MaxX = l->shape->bounds.MaxX+dw;
     recth.MaxY = l->shape->bounds.MaxY+dh;
     AndRectRegion(newshape, &recth); 
   }
 
   if (dx || dy)
   {
-    TranslateRect(&newshape->bounds, dx, dy);
-    TranslateRect(&rectw, dx, dy);
-    TranslateRect(&recth, dx, dy);
+    _TranslateRect(&newshape->bounds, dx, dy);
+    _TranslateRect(&rectw, dx, dy);
+    _TranslateRect(&recth, dx, dy);
   }
 
   first = GetFirstFamilyMember(l);
@@ -192,7 +192,7 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
      * Effectively move the layer...
      */
      
-    TranslateRect(&_l->bounds, dx, dy);
+    _TranslateRect(&_l->bounds, dx, dy);
 
     /*
      * ...and also its cliprects.
@@ -200,14 +200,14 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
     cr = _l->ClipRect;
     while (cr)
     {
-      TranslateRect(&cr->bounds, dx, dy);
+      _TranslateRect(&cr->bounds, dx, dy);
       cr = cr->Next;
     }
 
     cr = _l->_cliprects;
     while (cr)
     {
-      TranslateRect(&cr->bounds, dx, dy);
+      _TranslateRect(&cr->bounds, dx, dy);
       cr = cr->Next;
     }
     
@@ -223,7 +223,7 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
       break;
     }
     
-    TranslateRect(&_l->shape->bounds, dx, dy);
+    _TranslateRect(&_l->shape->bounds, dx, dy);
       
     _l = _l->back;
   }
@@ -278,7 +278,9 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED (children)!\n",
 kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
         __FUNCTION__);
 #endif
-    if (IS_VISIBLE(_l) && DO_OVERLAP(&r.bounds, &_l->shape->bounds))
+    if (IS_VISIBLE(_l) && 
+         (DO_OVERLAP(&newshape->bounds, &_l->shape->bounds) ||
+          DO_OVERLAP(&oldshape->bounds, &_l->shape->bounds) ))
     {
       ClearRegion(_l->VisibleRegion);
       _ShowPartsOfLayer(_l, &r, LayersBase);
@@ -317,7 +319,7 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
   {
     if (lparent &&
         (IS_SIMPLEREFRESH(lparent) || IS_ROOTLAYER(lparent)))
-      _BackFillRegion(l->parent, oldshape, FALSE);
+      _BackFillRegion(l->parent, oldshape, TRUE);
   }
 
   DisposeRegion(oldshape);

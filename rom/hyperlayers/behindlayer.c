@@ -77,6 +77,9 @@
     return FALSE;
   }  
   _l = l->parent->front;
+
+  while (_l->priority < l->priority)
+    _l = _l->front;
   
   if (_l == l)
   {

@@ -91,12 +91,15 @@
 
   struct Region * lr = NewRegion();
   struct Rectangle r;
-  struct TagItem tagList[5] = {{LA_PRIORITY    , UPFRONTPRIORITY},
+  struct TagItem tagList[5] = {{LA_PRIORITY    , 0},
                                {LA_HOOK        , NULL},
                                {LA_SUPERBITMAP , NULL},
                                {LA_SHAPE       , NULL},
                                {TAG_DONE       , 0UL}};
 
+  tagList[0].ti_Data = (LAYERBACKDROP == (flags & LAYERBACKDROP)) ?
+                       BACKDROPPRIORITY:
+                       UPFRONTPRIORITY;
   tagList[1].ti_Data = (ULONG)hook;
   tagList[2].ti_Data = (ULONG)bm2; 
   tagList[3].ti_Data = (ULONG)lr;
@@ -106,7 +109,8 @@
   r.MinY = y0;
   r.MaxY = y1;
 
-  OrRectRegion(lr, &r);
+  if (FALSE == OrRectRegion(lr, &r))
+    return FALSE;
 
   return CreateLayerTagList(li,
                             bm,
