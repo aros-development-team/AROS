@@ -12,7 +12,7 @@ FILES   := $(foreach dir, $(SUBDIRS), $(filter-out $(dir)/CVS, $(wildcard $(dir)
 workbench-prefs-envarc : $(FILES:%=$(AROS_ENVARC)/%)
 
 $(AROS_ENVARC)/% : %
-	@if [ -f $< ]; then           \
+	@if [ -f $< ]; then      \
             $(MKDIR) $(dir $@) ; \
             $(CP) $< $@ ;        \
         fi
