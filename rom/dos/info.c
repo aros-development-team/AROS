@@ -10,6 +10,7 @@
 /*****************************************************************************
 
     NAME */
+
 #include <proto/dos.h>
 #include <dos/filesystem.h>
 
@@ -47,8 +48,6 @@
 
 #warning Add documentation
 
-    LONG error;
-
     struct IOFileSys iofs;
 
     /* Prepare I/O request. */
@@ -57,11 +56,12 @@
     iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(lock))->fh_Device;
     iofs.IOFS.io_Unit   = (struct Unit *)parameterBlock;
 
-    error = DoIO(&iofs.IOFS);
+    DoIO(&iofs.IOFS);
 
-    if(error != 0)
+    SetIoErr(iofs.io_DosError);
+
+    if(iofs.io_DosError != 0)
     {
-        SetIoErr(error);
 	return DOSFALSE;
     }
 
