@@ -190,9 +190,9 @@ extern void _aros_not_implemented (char *);
     long _n3 = (long)(n3);\
     long _re;\
     __asm__ __volatile__(\
-	"lwz    3,%3\n\t"    \
-	"lwz    4,%4\n\t"    \
-	"lwz    5,%5\n\t"    \
+	"mr     3,%3\n\t"    \
+	"mr     4,%4\n\t"    \
+	"mr     5,%5\n\t"    \
 	"stw    1,%1\n\t"    \
 	"mflr   0\n\t"       \
 	"stwu   1,-8(1)\n\t" \
@@ -200,7 +200,7 @@ extern void _aros_not_implemented (char *);
 	"lwz    0,%2\n\t"    \
 	"mtlr   0\n\t"       \
 	"blrl\n\t"           \
-	"stw    3,%0\n\t"    \
+	"mr     %0,3\n\t"    \
 	"lwz    11,0(1)\n\t" \
 	"lwz    0,4(11)\n\t" \
 	"mtlr   0\n\t"       \
