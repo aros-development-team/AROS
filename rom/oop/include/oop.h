@@ -92,7 +92,7 @@ struct _OOP_Object
 #define _OOP_OBJ(obj) ((struct _OOP_Object *)(obj))
 
 #define OOP_INST_DATA(cl, obj) \
-	((APTR)(((UBYTE *)obj)) + (cl)->InstOffset))
+	((APTR)(((UBYTE *)obj) + (cl)->InstOffset))
 
 #define OOP_OCLASS(obj) \
 	(_OOP_OBJECT(obj)->o_Class)
