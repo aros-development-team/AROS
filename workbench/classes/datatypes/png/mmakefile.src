@@ -1,0 +1,30 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.
+USER_CFLAGS   := -DMYDEBUG
+
+MODNAME := png
+MODTYPE := datatype
+
+FILES := pngclass libfunc
+FUNCS := obtainengine
+
+USE_AMIGALIB := yes
+USE_CLIB_STATIC := yes
+# USE_ALIB := yes
+USE_MLIB := yes
+USE_ZLIB := yes
+
+#MM- workbench-datatypes-complete: workbench-datatypes-png
+#MM workbench-datatypes-png : setup includes linklibs linklibs-png
+workbench-datatypes-png : workbench-datatypes-png-module
+
+%make_module_setup mmake=workbench-datatypes-png
+
+LIBS := -lpng  $(LIBS)
+
+%make_module mmake=workbench-datatypes-png
+
+%common
+%include_deps
