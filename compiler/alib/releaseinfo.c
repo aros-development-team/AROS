@@ -23,7 +23,7 @@ extern struct Library * BulletBase;
 
 /*  SYNOPSIS */
 	struct GlyphEngine *glyphEngine,
-	ULONG tag1,
+	Tag tag1,
 	...)
 
 /*  FUNCTION

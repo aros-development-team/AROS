@@ -25,7 +25,7 @@ extern struct IntuitionBase * IntuitionBase;
 
 /*  SYNOPSIS */
 	APTR  object,
-	ULONG tag1,
+	Tag   tag1,
 	...)
 
 /*  FUNCTION

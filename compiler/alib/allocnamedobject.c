@@ -22,7 +22,7 @@
 
 /*  SYNOPSIS */
 	STRPTR             name,
-	ULONG              tag1,
+	Tag                tag1,
 	...                )
 
 /*  FUNCTION

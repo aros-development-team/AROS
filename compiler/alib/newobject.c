@@ -26,7 +26,7 @@ extern struct IntuitionBase * IntuitionBase;
 /*  SYNOPSIS */
 	struct IClass * classPtr,
 	UBYTE	      * classID,
-	ULONG		tag1,
+	Tag		tag1,
 	...		)
 
 /*  FUNCTION

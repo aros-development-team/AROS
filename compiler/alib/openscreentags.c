@@ -22,8 +22,8 @@ extern struct IntuitionBase * IntuitionBase;
 	struct Screen * OpenScreenTags (
 
 /*  SYNOPSIS */
-	struct NewScreen * newScreen,
-	unsigned long	   tag1,
+	struct NewScreen *  newScreen,
+	Tag                 tag1,
 	...)
 
 /*  FUNCTION

@@ -24,7 +24,7 @@ extern struct IntuitionBase * IntuitionBase;
 
 /*  SYNOPSIS */
 	struct NewWindow * newWindow,
-	ULONG		   tag1,
+	Tag		   tag1,
 	...		   )
 
 /*  FUNCTION
