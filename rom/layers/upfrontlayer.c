@@ -75,10 +75,10 @@
     L->back = LI->top_layer;
     L->front = NULL;
     /* I am in front of the old top_layer */
+
     LI->top_layer->front = L;
     /* and now I am the top_layer */
     LI->top_layer = L;
-    
       
     /* get a new cliprect structure */
     L->ClipRect = (struct ClipRect *) AllocMem(sizeof(struct ClipRect), MEMF_CLEAR|MEMF_PUBLIC);
@@ -86,8 +86,10 @@
     /* and init. it with the layer's bounds */
     L->ClipRect->bounds = L->bounds;
     
-    /* and now we insert this layer at the top and split the
-       layers behind it */
+    /* 
+       and now we insert this layer at the top and split the
+       layers behind it 
+     */
 
     CreateClipRectsBehindLayer(L);
 
@@ -122,7 +124,7 @@
 
     /* Ok, I am done now. */
     UnlockLayers(LI);
-  }
+  } /* if not already topmost layer */
   
 
   return TRUE;

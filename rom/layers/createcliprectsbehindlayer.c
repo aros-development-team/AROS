@@ -38,14 +38,20 @@ void CreateClipRectsBehindLayer(struct Layer * L)
                  	(void *)&Case_15};
 
 
-      /* Now we have to examine all the layers behind this layer for overlapping
+     /* 
+       Now we have to examine all the layers behind this layer for overlapping
        cliprects. Overlapping cliprects mean, that the newly created layer L
        is overlaying a previously created layer or at least a part of it.
+       Parts of layers that were hidden before by something do not
+       have to be looked at.
      */
 
     while (NULL != L_behind)
     {
-      /* we can skip this layer if the new one does not overlap it at all! */
+      /* 
+         we can skip this whole layer if the new one does not 
+         overlap it at all! 
+       */
       if (x0 > L_behind->bounds.MaxX ||
           x1 < L_behind->bounds.MinX ||
           y0 > L_behind->bounds.MaxY ||
@@ -53,7 +59,8 @@ void CreateClipRectsBehindLayer(struct Layer * L)
       {
         /* skip this layer */
 
-        /* Do not leave a mark in this layer saying that nothing
+        /* 
+           Do not leave a mark in this layer saying that nothing
            has changed. We'll need this later.
         */
         L_behind -> reserved[0] = 0;
@@ -62,11 +69,15 @@ void CreateClipRectsBehindLayer(struct Layer * L)
       {
         struct ClipRect * CR_behind = L_behind -> ClipRect;
 
-        /* examine all cliprects of the behind-layer whether they are
-           overlapped somehow by the new layer */
+        /* 
+           examine all cliprects of the behind-layer whether they are
+           overlapped somehow by the new layer. Only treat those
+           layers that were not previously hidden by some other layer. 
+        */
         while (NULL != CR_behind)
         {
-          /* we can skip this cliprect if the new layer does not overlap
+          /* 
+             We can skip this cliprect if the new layer does not overlap
              it at all. This test is necessary for the tests further down.
            */
           if (x0 > CR_behind->bounds.MaxX ||
@@ -80,13 +91,22 @@ void CreateClipRectsBehindLayer(struct Layer * L)
           else
           {
             /* hm, it can also only be partially overlapped */
-            /* This is the really difficult case. If the new layer partially
+            /* 
+               This is the really difficult case. If the new layer partially
                overlaps a cliprect of a layer behind it this will cause the
                cliprect behind it to be split up into several other cliprects.
                Depending on how it is overlapping the cliprect the
                cliprect is split up into up to 5 cliprects.
                See further documentation for this in cliprectfunctions.c.
             */
+            /* 
+               Now I know that the new layer is overlapping the other
+               cliprect somehow. If the other cliprect was overlapped
+               before by some layer we may only change the lobs-entry,
+               no bitmaps may be copied! (Wrong results otherwise!)
+               The lobs entry will be pointing to the new layer.
+              This is handled in case_0!! 
+	     */
             int OverlapIndex = 0;
 
             if (x0 > CR_behind->bounds.MinX &&
@@ -105,17 +125,20 @@ void CreateClipRectsBehindLayer(struct Layer * L)
                 y1 < CR_behind->bounds.MaxY )
                OverlapIndex |= 1;
 
-            /* Leave a mark in thise layer saying that something
+            /* 
+               Leave a mark in thise layer saying that something
                has change. We'll need this later
              */
             L_behind->reserved[0] = 1;
-            /* let's call the routine that treats that particular case
+            /* let's call the routine that treats that particular case 
                The chain of ClipRects now looks like this:
                CR_behind->A->B->...
             */
             CR_behind = (struct ClipRect *)
-              FunctionArray[OverlapIndex](&L->bounds, CR_behind, bm, L);
-            /* CR_behind should point to the cliprect *BEFORE* the
+                FunctionArray[OverlapIndex](&L->bounds, CR_behind, bm, L);
+              
+            /* 
+               CR_behind should point to the cliprect *BEFORE* the
                next ClipRect that existed before the call to the
                FunctionArray-Function.
                If the chain of cliprects now looks like this
