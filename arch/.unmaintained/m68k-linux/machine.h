@@ -122,22 +122,27 @@ extern void _aros_not_implemented (void);
 #define __AROS_LH_BASE(basetype,basename)   basetype basename
 #define __AROS_LP_BASE(basetype,basename)   void *
 #define __AROS_LC_BASE(basetype,basename)   basename
+#define __AROS_LD_BASE(basetype,basename)   basetype
 
 /* How to transform an argument in header, prototype and call */
 #define __AROS_LHA(type,name,reg)     type name
 #define __AROS_LPA(type,name,reg)     type
 #define __AROS_LCA(type,name,reg)     name
+#define __AROS_LDA(type,name,reg)     type
 #define __AROS_UFHA(type,name,reg)    type name
 #define __AROS_UFPA(type,name,reg)    type
 #define __AROS_UFCA(type,name,reg)    name
+#define __AROS_UFDA(type,name,reg)    type
 
 /* Prefix for library function in header, prototype and call */
 #define __AROS_LH_PREFIX    /* eps */
 #define __AROS_LP_PREFIX    /* eps */
 #define __AROS_LC_PREFIX    /* eps */
+#define __AROS_LD_PREFIX    /* eps */
 #define __AROS_UFH_PREFIX   /* eps */
 #define __AROS_UFP_PREFIX   /* eps */
 #define __AROS_UFC_PREFIX   /* eps */
+#define __AROS_UFD_PREFIX   /* eps */
 
 /* if this is defined, all AROS_LP*-macros will expand to nothing. */
 #define __AROS_USE_MACROS_FOR_LIBCALL
