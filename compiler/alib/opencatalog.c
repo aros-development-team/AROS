@@ -8,13 +8,13 @@
 #define AROS_TAGRETURNTYPE  struct Catalog *
 #include <utility/tagitem.h>
 
-extern struct Library *LocaleBase;
 
 /*****************************************************************************
 
     NAME */
 #include <libraries/locale.h>
 #include <proto/locale.h>
+extern struct LocaleBase *LocaleBase;
 #undef OpenCatalog /* Get rid of the macro from inline/ */
 
 	struct Catalog * OpenCatalog (
