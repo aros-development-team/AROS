@@ -9,13 +9,16 @@
 /****************************************************************************************/
 
 #include <stdio.h>
-#include <proto/dos.h>
-#include <proto/graphics.h>
+#include <exec/execbase.h>
+#include <exec/initializers.h>
 #include <dos/doshunks.h>
 #include <dos/dosasl.h>
-#include <exec/execbase.h>
 #include <dos/dosextens.h>
 #include <string.h>
+
+#include <proto/dos.h>
+#include <proto/graphics.h>
+
 #include "diskfont_intern.h"
 
 /****************************************************************************************/
@@ -71,6 +74,31 @@ SKIPPTR(ptr);
 /* ConvDiskFont */
 /****************/
 
+#define MAKE_REAL_SEGMENT(x) (MKBADDR(((IPTR)(x)) - sizeof(BPTR)))
+
+/****************************************************************************************/
+
+static APTR AllocSegment(APTR prevsegment, ULONG segmentsize, ULONG memflags,
+    	    	    	 struct DiskfontBase_intern *DiskfontBase)
+{
+    UBYTE *mem;
+    
+    if ((mem = AllocMem(segmentsize + sizeof(ULONG) + sizeof(BPTR), memflags)))
+    {
+    	*((ULONG *)mem)++ = segmentsize + sizeof(ULONG) + sizeof(BPTR);
+	
+	if (prevsegment)
+	{
+	    ((BPTR *)prevsegment)[-1] = MKBADDR(mem);
+	}
+
+	*((BPTR *)mem)++ = NULL;
+		
+    }
+    
+    return (APTR)mem;
+}
+
 /****************************************************************************************/
 
 struct TextFont *ConvDiskFont(
@@ -78,14 +106,15 @@ struct TextFont *ConvDiskFont(
 	STRPTR fontname, 
 	struct DiskfontBase_intern *DiskfontBase)
 {
-    UWORD count, numchars, id;
+    UWORD count, numchars;
     register int i;
 
     UBYTE *ptr;
 
     UWORD *destptr;
     ULONG chardatasize;
-    struct TextFont tmp_tf, *tf = 0;
+    struct DiskFontHeader tmp_dfh, *dfh = 0;
+    struct TextFont *tf = 0;
 
     APTR ctf_chardata_ptrs[8] = {0};
     struct ColorFontColors *cfc_ptr = 0;
@@ -95,40 +124,37 @@ struct TextFont *ConvDiskFont(
 	    charloc_ptr  	= NULL,
 	    charspace_ptr 	= NULL,
 	    charkern_ptr 	= NULL,
-	    taglist_ptr 	= NULL;
-
-
+	    taglist_ptr 	= NULL,
+	    prevsegment     	= NULL;
+    BPTR    fontsegment = NULL;
+    BOOL    fontextended = FALSE;
+    
     EnterFunc(bug("ConvDiskFont(seglist=%p, fontname=%s)\n", seglist, fontname));		
+
+    /* Clear temporary diskfontheader struct */
+    memset(&tmp_dfh, 0, sizeof (struct DiskFontHeader));
 
     /* Get start of diskfontheader. (Go past the dummy exe header) */ 
     ptr = UB(BADDR(seglist)) + sizeof (ULONG) * 2;
 
     /* Skip the whole DiskFontHeader */
-    SKIPPTR(ptr);	/* dfh_DF.ln_Succ	*/
-    SKIPPTR(ptr);	/* dfh_DF.ln_Pred	*/
-    SKIPBYTE(ptr);	/* dfh_DF.ln_Type	*/	
-    SKIPBYTE(ptr);	/* dfh_DF.ln_Pri	*/
-    SKIPPTR(ptr);	/* dfh_DF.ln_Name	*/
-    CONVWORD(ptr, id);
+    SKIPPTR(ptr);	    	    	    /* dfh_TF.ln_Succ	*/
+    SKIPPTR(ptr);	    	    	    /* dfh_TF.ln_Pred	*/
+    CONVBYTE(ptr, tmp_dfh.dfh_DF.ln_Type);  /* dfh_TF.ln_Type	*/	
+    CONVBYTE(ptr, tmp_dfh.dfh_DF.ln_Pri);   /* dfh_TF.ln_Pri	*/
+    SKIPPTR(ptr);	    	    	    /* dfh_TF.ln_Name	*/
+    CONVWORD(ptr, tmp_dfh.dfh_FileID);	    /* dfh_FileID   	*/
 
-    if (id != DFH_ID)
+    if (tmp_dfh.dfh_FileID != DFH_ID)
 	goto failure;
 
-    SKIPWORD(ptr);
-    COPYPTR(ptr, taglist_ptr);
+    CONVWORD(ptr, tmp_dfh.dfh_Revision);    /* dfh_Revision */
+    
+    COPYPTR(ptr, taglist_ptr);	    	    /* dfh_Segment */
     ptr += MAXFONTNAME;
 
-    /* Clear temporary textfont struct */
-    memset(&tmp_tf, 0, sizeof (struct TextFont));
-
-#if 0
-    {
-	UWORD i;
-	for (i = 0; i < sizeof (struct TextFont); i ++)
-	    printf("%d\t%d\n", ((UBYTE *)&tmp_tf)[i], sizeof (struct TextFont));
-    }
-#endif	
-
+    /* dfh_TF starts */
+    
     /* Skip nodes successor and predecessor field */
     SKIPPTR(ptr);
     SKIPPTR(ptr);
@@ -136,54 +162,63 @@ struct TextFont *ConvDiskFont(
     /* skip type and pri */
     SKIPBYTE(ptr);
     SKIPBYTE(ptr);
-    tmp_tf.tf_Message.mn_Node.ln_Type = NT_FONT;
+    tmp_dfh.dfh_TF.tf_Message.mn_Node.ln_Type = NT_FONT;
 
     /* Skip name pointer, replyport and msg length */
     SKIPPTR(ptr);
     SKIPPTR(ptr);
     SKIPWORD(ptr);
 
-    CONVWORD(ptr, tmp_tf.tf_YSize);
-    CONVBYTE(ptr, tmp_tf.tf_Style);
-    CONVBYTE(ptr, tmp_tf.tf_Flags);
-    CONVWORD(ptr, tmp_tf.tf_XSize);
-    CONVWORD(ptr, tmp_tf.tf_Baseline);
-    CONVWORD(ptr, tmp_tf.tf_BoldSmear);
+    CONVWORD(ptr, tmp_dfh.dfh_TF.tf_YSize);
+    CONVBYTE(ptr, tmp_dfh.dfh_TF.tf_Style);
+    CONVBYTE(ptr, tmp_dfh.dfh_TF.tf_Flags);
+    CONVWORD(ptr, tmp_dfh.dfh_TF.tf_XSize);
+    CONVWORD(ptr, tmp_dfh.dfh_TF.tf_Baseline);
+    CONVWORD(ptr, tmp_dfh.dfh_TF.tf_BoldSmear);
     SKIPWORD(ptr); /* tf_Accessors */
-    CONVBYTE(ptr, tmp_tf.tf_LoChar);
-    CONVBYTE(ptr, tmp_tf.tf_HiChar);
+    CONVBYTE(ptr, tmp_dfh.dfh_TF.tf_LoChar);
+    CONVBYTE(ptr, tmp_dfh.dfh_TF.tf_HiChar);
     COPYPTR(ptr, chardata_ptr); /* tf_CharData */
-    CONVWORD(ptr, tmp_tf.tf_Modulo);
+    CONVWORD(ptr, tmp_dfh.dfh_TF.tf_Modulo);
     COPYPTR(ptr, charloc_ptr); /* tf_CharLoc		*/
     COPYPTR(ptr, charspace_ptr); /* tf_CharSpace	*/
     COPYPTR(ptr, charkern_ptr); /* tf_CharKern		*/
  
-D(bug("Textfont struct converted\n"));
-    D(bug("YSize:     %d\n",	tmp_tf.tf_YSize));
-    D(bug("Style:     %d\n",	tmp_tf.tf_Style));
-    D(bug("Flags:     %d\n",	tmp_tf.tf_Flags));
-    D(bug("XSize:     %d\n",	tmp_tf.tf_XSize));
-    D(bug("Baseline:  %d\n",	tmp_tf.tf_Baseline));
-    D(bug("Boldsmear: %d\n",	tmp_tf.tf_BoldSmear));
-    D(bug("LoChar:    %d\n",	tmp_tf.tf_LoChar));
-    D(bug("HiChar:    %d\n",	tmp_tf.tf_HiChar));
+    D(bug("Textfont struct converted\n"));
+    D(bug("YSize:     %d\n",	tmp_dfh.dfh_TF.tf_YSize));
+    D(bug("Style:     %d\n",	tmp_dfh.dfh_TF.tf_Style));
+    D(bug("Flags:     %d\n",	tmp_dfh.dfh_TF.tf_Flags));
+    D(bug("XSize:     %d\n",	tmp_dfh.dfh_TF.tf_XSize));
+    D(bug("Baseline:  %d\n",	tmp_dfh.dfh_TF.tf_Baseline));
+    D(bug("Boldsmear: %d\n",	tmp_dfh.dfh_TF.tf_BoldSmear));
+    D(bug("LoChar:    %d\n",	tmp_dfh.dfh_TF.tf_LoChar));
+    D(bug("HiChar:    %d\n",	tmp_dfh.dfh_TF.tf_HiChar));
     D(bug("chardara:  %p\n", 	chardata_ptr));
-    D(bug("Modulo:    %d\n", 	tmp_tf.tf_Modulo));
+    D(bug("Modulo:    %d\n", 	tmp_dfh.dfh_TF.tf_Modulo));
     D(bug("charloc:   %p\n", 	charloc_ptr));
     D(bug("charspace: %p\n", 	charspace_ptr));
     D(bug("charkern:  %p\n", 	charkern_ptr));
 
     /* Allocate memory for font */
-    tf = AllocVec( (tmp_tf.tf_Style & FSF_COLORFONT) ? 
-			    sizeof (struct ColorTextFont) : sizeof (struct TextFont)
-		  ,  MEMF_ANY|MEMF_CLEAR);
-    if (!tf)
-	goto failure;
 
-    D(bug("charkern in temp:  %p\n", 	tmp_tf.tf_CharKern));
+    i = sizeof(struct DiskFontHeader);
+    if (tmp_dfh.dfh_TF.tf_Style & FSF_COLORFONT)
+    {
+    	/* +8 should this calc. not work 100 % because of alignments */  	
+    	i += (sizeof(struct ColorTextFont) - sizeof(struct TextFont) + 8);
+    }
+    
+    dfh = prevsegment = AllocSegment(prevsegment, i, MEMF_ANY | MEMF_CLEAR, DiskfontBase);
+    if (!dfh) goto failure;
+
+    fontsegment = tmp_dfh.dfh_Segment = MAKE_REAL_SEGMENT(dfh);
+    
+    tf = &dfh->dfh_TF;
+    
+    D(bug("charkern in temp:  %p\n", 	tmp_dfh.dfh_TF.tf_CharKern));
 
     /*	Copy allready converted stuff into allocated mem */
-    CopyMem(&tmp_tf, tf, sizeof (struct TextFont));
+    CopyMem(&tmp_dfh, dfh, sizeof (struct DiskFontHeader));
 
     D(bug("tmp_tf copied, charkern=%p\n", tf->tf_CharKern));
 
@@ -220,8 +255,13 @@ D(bug("Textfont struct converted\n"));
 	/* Handle ColorFontColors structure */
 	#undef CFC
 	#define CFC(p) ((struct ColorFontColors*)p) 
-	if (!(CTF(tf)->ctf_ColorFontColors = AllocVec(sizeof (struct ColorFontColors), MEMF_ANY|MEMF_CLEAR)))
-	    goto failure;
+	
+	CTF(tf)->ctf_ColorFontColors = prevsegment = AllocSegment(prevsegment,
+	    	    	    	    	    	    	    	  sizeof(struct ColorFontColors),
+								  MEMF_ANY | MEMF_CLEAR,
+								  DiskfontBase);
+	
+	if (!CTF(tf)->ctf_ColorFontColors) goto failure;
 
 	temp_ptr = CTF(tf)->ctf_ColorFontColors;
 
@@ -235,8 +275,12 @@ D(bug("Textfont struct converted\n"));
 	count = CFC(temp_ptr)->cfc_Count;
 	ptr = (UBYTE *)colortable_ptr;
 
-	if (!(CFC(temp_ptr)->cfc_ColorTable = AllocVec(count * sizeof (UWORD), MEMF_ANY)))
-	    goto failure;
+	CFC(temp_ptr)->cfc_ColorTable = prevsegment = AllocSegment(prevsegment,
+	    	    	    	    	    	    	    	   count * sizeof (UWORD),
+								   MEMF_ANY,
+								   DiskfontBase);
+	
+	if (!CFC(temp_ptr)->cfc_ColorTable) goto failure;
 
 	for (i = 0; i < count; i ++)
 	{
@@ -247,11 +291,14 @@ D(bug("Textfont struct converted\n"));
 	/* Handle character bitmap data for colorfonts */
 	for (i = 0; i < 8; i ++)
 	{
-	    if (!ctf_chardata_ptrs[i])
-		continue;
+	    if (!ctf_chardata_ptrs[i]) continue;
 
-	    if (!(CTF(tf)->ctf_CharData[i] = AllocVec(chardatasize, MEMF_ANY)))
-		goto failure;
+	    CTF(tf)->ctf_CharData[i] = prevsegment = AllocSegment(prevsegment,
+	    	    	    	    	    	    	    	  chardatasize,
+								  MEMF_ANY,
+								  DiskfontBase);
+		
+	    if (!CTF(tf)->ctf_CharData[i]) goto failure;
 
 	    CopyMem(ctf_chardata_ptrs[i], CTF(tf)->ctf_CharData[i], chardatasize); 
 
@@ -261,22 +308,31 @@ D(bug("Textfont struct converted\n"));
     else
     {
     	D(bug("B&W font\t Chardatasize: %d\n", chardatasize));
+
 	/* Character data for B/W fonts */
-	if (!(tf->tf_CharData = AllocVec(chardatasize, MEMF_ANY)))
-	    goto failure;
-    	D(bug("chardataptr=%p\n",chardata_ptr));
+	tf->tf_CharData = prevsegment = AllocSegment(prevsegment,
+	    	    	    	    	    	     chardatasize,
+						     MEMF_ANY,
+						     DiskfontBase);
+	if (!tf->tf_CharData) goto failure;
+    	
+	
+	D(bug("chardataptr=%p\n",chardata_ptr));
 	CopyMem(chardata_ptr, tf->tf_CharData, chardatasize);
     	D(bug("Chardata copied\n"));
     }		
 
     /* ----------------------- */
     /* Add fontname */
-    if (!(tf->tf_Message.mn_Node.ln_Name = AllocVec( strlen(FilePart(fontname)) + 1, MEMF_ANY)))
-	goto failure;
-    strcpy(tf->tf_Message.mn_Node.ln_Name, FilePart(fontname));
-
-    D(bug("Fontname copied, %s\n", fontname));
-
+    
+    i = strlen(FilePart(fontname)) + 1;
+    if (i >= sizeof(dfh->dfh_Name)) i = sizeof(dfh->dfh_Name) - 1;
+    
+    CopyMem(FilePart(fontname), dfh->dfh_Name, i);
+    
+    tf->tf_Message.mn_Node.ln_Name = dfh->dfh_Name;
+    dfh->dfh_DF.ln_Name = dfh->dfh_Name;
+    
     /* ----------------------- */
     /* Handle taglist */
     if (tf->tf_Style & FSF_TAGGED)
@@ -304,7 +360,10 @@ D(bug("Textfont struct converted\n"));
 	while (tag != TAG_DONE);
 
 	/* Allocate memory for taglist */
-	taglist = (struct TagItem *)AllocVec(numtags * sizeof(struct TagItem), MEMF_ANY);
+	prevsegment = taglist = (struct TagItem *)AllocSegment(prevsegment,
+	    	    	    	    	    	    	       numtags * sizeof(struct TagItem),
+							       MEMF_ANY,
+							       DiskfontBase);
 	if (!taglist)
 	    goto failure;
 
@@ -316,9 +375,12 @@ D(bug("Textfont struct converted\n"));
 	    CONVLONG(ptr, taglist[i].ti_Data);
 	}
 
-	if (!ExtendFont(tf, taglist))
+	if (ExtendFont(tf, taglist))
 	{
-	    FreeVec(taglist);
+	    fontextended = TRUE;
+	}
+	else
+	{
 	    goto failure;
 	}
     }
@@ -326,15 +388,26 @@ D(bug("Textfont struct converted\n"));
     {
     	D(bug("No tags, extending it\n"));
 
-	if (!ExtendFont(tf, NULL))
+	if (ExtendFont(tf, NULL))
+	{
+	    fontextended = TRUE;
+	}
+	else
+	{
 	    goto failure;
+	}
     }
     /* ----------------------- */
     /* Allocate memory for charloc */
 
     D(bug("Doing charloc\n"));
-    if (!(tf->tf_CharLoc = AllocVec(numchars * sizeof (ULONG) , MEMF_ANY)))
-	goto failure;
+    
+    tf->tf_CharLoc = prevsegment = AllocSegment(prevsegment,
+    	    	    	    	    	    	numchars * sizeof (ULONG),
+						MEMF_ANY,
+						DiskfontBase);
+	
+    if (!tf->tf_CharLoc) goto failure;
 
     /* Convert charloc data */
     ptr = charloc_ptr;
@@ -346,15 +419,17 @@ D(bug("Textfont struct converted\n"));
     }
     D(bug("Charloc OK\n"));	
 
-    /* ----------------------- */
-    /* Only proportional fonts have a CharSpace array */
-
-    if (charspace_ptr/* tf->tf_Flags & FPF_PROPORTIONAL*/)
+    if (charspace_ptr)
     {
 
     	D(bug("Proportional font\n"));
-	if (!(tf->tf_CharSpace = AllocVec(numchars * sizeof (UWORD) , MEMF_ANY)))
-	    goto failure;
+	
+	tf->tf_CharSpace = prevsegment = AllocSegment(prevsegment,
+	    	    	    	    	    	      numchars * sizeof (UWORD) ,
+						      MEMF_ANY,
+						      DiskfontBase);
+	
+	if (!tf->tf_CharSpace) goto failure;
 
 	/* Convert charspace data */
 	ptr = charspace_ptr;
@@ -373,8 +448,11 @@ D(bug("Textfont struct converted\n"));
     D(bug("Doing Charkern, ptr =%p\n", charkern_ptr));	
     if (charkern_ptr)
     {
-	if (!(tf->tf_CharKern = AllocVec(numchars * sizeof (UWORD) , MEMF_ANY)))
-	    goto failure;
+	tf->tf_CharKern = prevsegment = AllocSegment(prevsegment,
+	    	    	    	    	    	     numchars * sizeof (UWORD),
+						     MEMF_ANY,
+						     DiskfontBase);
+	if (!tf->tf_CharKern) goto failure;
 
 	/* Convert charkern data */
 	ptr = charkern_ptr;
@@ -387,7 +465,6 @@ D(bug("Textfont struct converted\n"));
     	D(bug("Charkern OK\n"));	
     }
 
-
     D(bug("Charkern, ptr =%p\n", tf->tf_CharKern));	
     /* ----------------------- */
 
@@ -397,48 +474,11 @@ failure:
 
     D(bug("failure\n"));
 
-    if (tf)
+    if (fontsegment)
     {
-	if (tf->tf_Message.mn_Node.ln_Name)
-	    FreeVec(tf->tf_Message.mn_Node.ln_Name);
+    	if (fontextended) StripFont(tf);
 
-	if (ExtendFont(tf, 0L))
-	    StripFont(tf);
-
-	if  (tf->tf_Style & FSF_COLORFONT)
-	{
-	    struct ColorFontColors *cfc;
-
-	    for (i = 0; i < 8; i ++)
-		if (CTF(tf)->ctf_CharData[i])
-		    FreeVec(CTF(tf)->ctf_CharData[i]);
-
-	    cfc = CTF(tf)->ctf_ColorFontColors;
-	    if (cfc)
-	    {
-		if (cfc->cfc_ColorTable)
-		    FreeVec(cfc->cfc_ColorTable);
-
-		FreeVec(cfc);
-	    }
-	}
-	else
-	{
-	    if (tf->tf_CharData)
-		FreeVec(tf->tf_CharData);
-	}
-
-	if (tf->tf_CharLoc)
-	    FreeVec(tf->tf_CharLoc);
-
-	if (tf->tf_CharSpace)
-	    FreeVec(tf->tf_CharSpace);
-
-	if (tf->tf_CharKern)
-	    FreeVec(tf->tf_CharKern);
-
-	FreeVec(tf);
-
+    	UnLoadSeg(fontsegment);
     }
 
     ReturnPtr("ConvTextFont", struct TextFont *, 0);		
