@@ -1,7 +1,8 @@
 # $Id$
 TOP=../../..
 
-SPECIAL_CFLAGS = -D__AROS
+USER_DEFINES = -D__AROS
+USER_INCLUDES = -I$(TOP)/apps/compiler/clib/include
 
 include $(TOP)/config/make.cfg
 
