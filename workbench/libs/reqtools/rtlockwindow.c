@@ -15,6 +15,7 @@
 #include <exec/memory.h>
 #include <aros/libcall.h>
 #include "reqtools_intern.h"
+#include "general.h"
 #include "rtfuncs.h"
 
 /*****************************************************************************
