@@ -76,10 +76,6 @@
      in the colortable attached to the colormap structure
      are changed
   */
-  UWORD color = (r >> (28 - 8) & 0xf00) |
-                (g >> (28 - 4) & 0x0f0) |
-                (b >> (28 - 0) & 0x00f);
-
   struct PaletteExtra * pe = cm->PalExtra;
 
   ObtainSemaphore(&pe->pe_Semaphore);
@@ -148,7 +144,7 @@
              whether the color is the same.
              ??? Is this necessary for a shared pen?
           */
-          if (color == ((UWORD *)cm->ColorTable)[n])
+          if (TRUE == color_equal(cm,r,g,b,n))
           {
             /* increase the RefCnt */
             pe->pe_RefCnt[n]++;
@@ -246,7 +242,7 @@
         index = pe->pe_FirstShared;
         while (-1 != (BYTE)index)
         {
-          if (((UWORD *)cm->ColorTable)[index] == color)
+          if (TRUE == color_equal(cm,r,g,b,index))
           {
             /* That's a good one */
             retval = index;
