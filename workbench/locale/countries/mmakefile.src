@@ -1,11 +1,11 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-COUNTRIES := australia belgië belgique brasil canada canada_français \
-    	     danmark deutschland españa france great_britain \
-	     italia nederland norge österreich polska portugal \
-	     schweiz suisse suomi sverige svizzera united_kingdom \
-	     united_states magyarország
+COUNTRIES := australia belgië belgique brasil bulgarija canada canada_français \
+    	     danmark deutschland éire españa france great_britain iran ísland \
+	     italia lëtzebuerg lietuva nederland norge österreich polska \
+	     portugal românia rossija schweiz suisse suomi sverige svizzera \
+	     ukrajina united_kingdom united_states vaticano magyarország
 
 COUNTRYDIR   := $(AROS_LOCALE)/Countries
 MAKECOUNTRY  := $(OBJDIR)/makecountry
