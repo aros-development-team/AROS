@@ -326,7 +326,7 @@ static void getimage_xshm(OOP_Class *cl, OOP_Object *o
 {
      
 
-    ULONG depth;
+    IPTR depth;
     struct bitmap_data *data;
     XImage *image;
     ULONG  bperline;
@@ -416,7 +416,7 @@ static void getimage_xlib(OOP_Class *cl, OOP_Object *o
     ULONG *pixarray = (ULONG *)pixels;
     struct bitmap_data *data;
     XImage *image;
-    ULONG depth;
+    IPTR depth;
     OOP_Object *pf; 
  
     data = OOP_INST_DATA(cl, o);
@@ -727,7 +727,7 @@ static void putimage_xshm(OOP_Class *cl, OOP_Object *o, OOP_Object *gc
 	, APTR toimage_data)
 {
 
-    ULONG depth;
+    IPTR depth;
     struct bitmap_data *data;
     XImage *image;
     ULONG  bperline;
@@ -827,7 +827,7 @@ static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc
 	, APTR toimage_data)
 {
 
-    ULONG depth;
+    IPTR depth;
     struct bitmap_data *data;
     XImage *image;
     ULONG  bperline;
