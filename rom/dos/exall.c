@@ -9,6 +9,7 @@
 #include <proto/exec.h>
 #include <dos/filesystem.h>
 #include <dos/exall.h>
+#include <stddef.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -138,6 +139,134 @@
 
     /* Send the request. */
     DoIO(&iofs.IOFS);
+
+    if
+    (
+        iofs.io_DosError == ERROR_NOT_IMPLEMENTED ||
+	iofs.io_DosError == ERROR_ACTION_NOT_KNOWN
+    )
+    {
+
+	/* Try to emulate it */
+	struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+
+	STRPTR end  = (STRPTR)buffer + size;
+	STRPTR next;
+
+	struct ExAllData *last = buffer, *curr = buffer;
+
+	if
+	(
+	    control->eac_LastKey  == 0 &&
+	    fib                        &&
+	    Examine(lock, fib)         &&
+	    fib->fib_DirEntryType <= 0
+	)
+	{
+ 	    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+	}
+	else
+	{
+ 	    static const ULONG sizes[]=
+	    {
+    	        0,
+    		offsetof(struct ExAllData,ed_Type),
+    		offsetof(struct ExAllData,ed_Size),
+    		offsetof(struct ExAllData,ed_Prot),
+  		offsetof(struct ExAllData,ed_Days),
+		offsetof(struct ExAllData,ed_Comment),
+    		offsetof(struct ExAllData,ed_OwnerUID),
+    		sizeof(struct ExAllData)
+	    };
+
+	    #define ReturnOverflow()                         \
+	    {                                                \
+       		if (last == buffer)                          \
+		    SetIoErr(ERROR_BUFFER_OVERFLOW);         \
+		goto end;                                    \
+	    }
+
+	    #define CopyStringSafe(_source)              \
+	    {                                            \
+		STRPTR source = _source;                 \
+							 \
+		for (;;)                                 \
+	    	{                                        \
+		    if (next >= end)                     \
+			ReturnOverflow();                \
+		    if (!(*next++ = *source++))          \
+		    	 break;                          \
+	        }                                        \
+	    }
+
+	    if (data > ED_OWNER)
+	        SetIoErr(ERROR_BAD_NUMBER);
+	    else
+	    {
+	    	if (control->eac_LastKey)
+	            fib->fib_DiskKey = control->eac_LastKey;
+
+	    	while (ExNext(lock, fib))
+	    	{
+		    next = (STRPTR)curr + sizes[data];
+
+		    if (next>end)
+		        ReturnOverflow();
+
+		    switch(data)
+    		    {
+    		    	case ED_OWNER:
+			    curr->ed_OwnerUID = fib->fib_OwnerUID;
+			    curr->ed_OwnerGID = fib->fib_OwnerGID;
+
+			    /* Fall through */
+    		        case ED_COMMENT:
+			    curr->ed_Comment = next;
+			    CopyStringSafe(fib->fib_Comment);
+
+			    /* Fall through */
+    		        case ED_DATE:
+			    curr->ed_Days  = fib->fib_Date.ds_Days;
+			    curr->ed_Mins  = fib->fib_Date.ds_Minute;
+			    curr->ed_Ticks = fib->fib_Date.ds_Tick;
+
+			    /* Fall through */
+    		    	case ED_PROTECTION:
+			    curr->ed_Prot = fib->fib_Protection;
+
+			    /* Fall through */
+    		        case ED_SIZE:
+			    curr->ed_Size = fib->fib_Size;
+
+			    /* Fall through */
+    		    	case ED_TYPE:
+			    curr->ed_Type = fib->fib_DirEntryType;
+
+			    /* Fall through */
+    		    	case ED_NAME:
+			    curr->ed_Name = next;
+			    CopyStringSafe(fib->fib_FileName);
+
+			    /* Fall through */
+		    	case 0:
+			    curr->ed_Next = (struct ExAllData *)(((IPTR)next + AROS_PTRALIGN - 1) & ~(AROS_PTRALIGN - 1));
+		    }
+
+		    last = curr;
+		    curr = curr->ed_Next;
+	 	    control->eac_Entries++;
+	        }
+	    }
+	}
+end:
+	last->ed_Next = NULL;
+        control->eac_LastKey = fib->fib_DiskKey;
+
+	if (fib)
+	    FreeDosObject(DOS_FIB, fib);
+
+        return IoErr()?DOSFALSE:DOSTRUE;
+    }
 
     /* Set error code and return */
     SetIoErr(iofs.io_DosError);
