@@ -4,7 +4,7 @@ CURDIR=config
 
 include $(TOP)/config/make.cfg
 
-SUBDIRS=$(ARCH) $(CPU)
+SUBDIRS= $(CPU) $(ARCH)
 
 CONFIG_H = $(INCDIR)/aros/config.h
 
