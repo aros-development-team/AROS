@@ -143,6 +143,7 @@ void main(void)
     Object *context_menu;
 
     static char *pages[] = {"Groups","Colorwheel","Virtual Group",NULL};
+    static char *entries[] = {"Entry1","Entry2", "Entry3", "Entry4", "Entry5", "Entry6",NULL};
 
     struct Hook hook;
     struct Hook hook_wheel;
@@ -206,7 +207,7 @@ void main(void)
     	    	Child, ListviewObject,
     	    	    MUIA_Listview_List, ListObject,
     	    	    	InputListFrame,
-    	    	    	MUIA_List_SourceArray, pages,
+    	    	    	MUIA_List_SourceArray, entries,
     	    	    	End,
     	    	    End,
     	    	Child, RegisterGroup(pages),
