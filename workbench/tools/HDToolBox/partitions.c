@@ -37,15 +37,7 @@ void setPCPGadgetAttrs
 	)
 {
 
-	if (table->maxpartitions)
-	{
-		pcpaddpartitiontags[0].ti_Data =
-			countNodes(&table->pl)==table->maxpartitions ? TRUE : FALSE;
-	}
-	else
-	{
-		pcpaddpartitiontags[0].ti_Data = FALSE;
-	}
+	pcpaddpartitiontags[0].ti_Data = TRUE;
 	pcpdeletepartitiontags[0].ti_Data = TRUE;
 	pcpeditarospartitiontags[0].ti_Data = TRUE;
 	pcpstartcyltags[0].ti_Data = TRUE;
