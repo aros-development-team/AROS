@@ -2,10 +2,13 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/23 17:00:49  digulla
+    Another attempt to make kprintf() work, but to no avail :(
+
     Revision 1.2  1996/08/16 14:02:56  digulla
     Fixed some bugs.
     The v*printf() routines of linux have bugs that make them write into arbitrary
-    	memory.
+	memory.
 
     Revision 1.1  1996/08/15 13:24:20  digulla
     New function: kprintf() allows to print a text which is always shown to the
@@ -17,14 +20,19 @@
     Desc:
     Lang:
 */
-#include <stdio.h>
+#include <aros/arosbase.h>
 #include <stdarg.h>
-#include <errno.h>
 #include <ctype.h>
 #include <aros/system.h>
 #include <clib/dos_protos.h>
+#include <clib/aros_protos.h>
+#undef kprintf
+#include <stdio.h>
 
-extern struct DosBase * DOSBase;
+extern struct DosBase  * DOSBase;
+extern struct ExecBase * SysBase;
+
+#define AROSBase	((struct AROSBase *)(SysBase->DebugData))
 
 /*****************************************************************************
 
@@ -66,12 +74,13 @@ extern struct DosBase * DOSBase;
 ******************************************************************************/
 {
     va_list	 args;
+    int 	 ret;
+#if 0
     ULONG	 vpargs[10];
     int 	 t;
     const char * ptr;
-    int 	 ret;
 
-    if (0) /* DOSBase && Output ()) */
+    if (DOSBase && AROSBase && AROSBase->StdOut)
     {
 	va_start (args, fmt);
 
@@ -113,24 +122,19 @@ extern struct DosBase * DOSBase;
 	    }
 	}
 
-	ret = VPrintf ((char *)fmt, vpargs);
-	Flush (Output ());
+	ret = VFPrintf ((BPTR)AROSBase->StdOut, (char *)fmt, vpargs);
+	Flush ((BPTR)AROSBase->StdOut);
 
 	va_end (args);
     }
-    else
-    {
-	char buffer[1024];
+#else
+    va_start (args, fmt);
 
-	va_start (args, fmt);
+    ret = vfprintf (AROSBase->StdOut, (char *)fmt, args);
+    fflush (AROSBase->StdOut);
 
-	/* stderr stuerzt irgendwann ab :( */
-	ret = vsnprintf (buffer, sizeof (buffer), fmt, args);
-	fputs (buffer, stderr);
-	fflush (stderr);
-
-	va_end (args);
-    }
+    va_end (args);
+#endif
 
     return ret;
 } /* kprintf */
