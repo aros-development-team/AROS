@@ -2,6 +2,8 @@
 #
 include $(TOP)/config/make.cfg
 
+TARGET_CFLAGS := $(subst -O2,,$(TARGET_CFLAGS))
+
 LIB :=	arosm
 
 FILES := \
