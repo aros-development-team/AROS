@@ -1,43 +1,6 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.7  1997/01/27 00:36:19  ldp
-    Polish
-
-    Revision 1.6  1996/12/09 13:53:27  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.5  1996/11/21 10:49:47  aros
-    Created macros AROS_SLIB_ENTRY() for assembler files, too, to solve naming
-    problems.
-
-The #includes
-    makedepend will ignore them (GCC works, though).
-
-    Removed a couple of Logs
-
-    Revision 1.4  1996/10/24 15:50:27  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.3  1996/10/21 17:43:31  aros
-    Better way to create a TEST
-
-    Revision 1.2  1996/08/23 17:06:17  digulla
-Added #include
-
-    Revision 1.1  1996/08/20 11:58:36  digulla
-    FilePart by Martin Steigerwald
-
-    Revision 1.0    1996/08/01 14:14:00     steigerwald
-    Untested first version!!!
-    Revision 1.1    1996/08/07 00:24:00     steigerwald
-    Revision 1.2    1996/08/20 12:42:99     steigerwald
-    Finally tested! ;-) It works, but I am not quite happy about how
-    it gets the result ;-((
-    Only rudimentary tests.
 
     Desc: Returns a pointer to the first char of the filename in the given
 	  file part.
