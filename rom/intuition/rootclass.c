@@ -108,7 +108,7 @@ AROS_UFH3(IPTR, rootDispatcher,
         	iclass->cl_MemoryPool, _OBJECT(o), iclass->cl_ObjectSize
             );
             
-            AROS_ATOMIC_DEC(OCLASS(o)->cl_ObjectCount);
+            AROS_ATOMIC_DEC(iclass->cl_ObjectCount);
             break;
 
 	case OM_ADDTAIL:
