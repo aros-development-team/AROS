@@ -822,6 +822,11 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    }
 	}
     }
+
+    if (!volname && !cur && !DOSBase->dl_SYSLock)
+    {
+    	return ERROR_OBJECT_NOT_FOUND;
+    }
     
     dl = LockDosList(LDF_ALL | LDF_READ);
 
@@ -907,7 +912,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	device = fh->fh_Device;
 	unit = fh->fh_Unit;
     #endif
-     }
+    }
     
     iofs->IOFS.io_Device = device;
     iofs->IOFS.io_Unit = unit;

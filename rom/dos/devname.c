@@ -49,9 +49,18 @@ LONG DevName(CONST_STRPTR name, struct Device **devptr,
     	struct FileHandle *fh = (struct FileHandle *)BADDR(me->pr_CurrentDir);
 	
 	if (!fh) fh = (struct FileHandle *)BADDR(DOSBase->dl_SYSLock);
-	*devptr = fh->fh_Device;
-	return 0;
-    }
+
+	if (fh)
+	{
+	    *devptr = fh->fh_Device;
+	    return 0;
+ 	}
+	else
+	{
+	    *devptr = 0xBADC0DE;
+	    return ERROR_DEVICE_NOT_MOUNTED;
+	}
+   }
 
     /* Copy volume name */
     s1 = name;
@@ -82,9 +91,19 @@ LONG DevName(CONST_STRPTR name, struct Device **devptr,
     	struct FileHandle *fh = (struct FileHandle *)BADDR(me->pr_CurrentDir);
 	
 	if (!fh) fh = (struct FileHandle *)BADDR(DOSBase->dl_SYSLock);
-	*devptr = fh->fh_Device;
-	return 0;
-    }
+
+	if (fh)
+	{
+	    *devptr = fh->fh_Device;
+	    return 0;
+ 	}
+	else
+	{
+	    *devptr = 0xBADC0DE;
+	    return ERROR_DEVICE_NOT_MOUNTED;
+	}
+
+   }
     
     /* Get the device pointer from dos-list. */
     dl = LockDosList(LDF_ALL | LDF_READ);
