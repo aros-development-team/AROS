@@ -25,7 +25,9 @@ BOOT_TAR_FILES := \
 	Classes/Gadgets/arospalette.gadget \
 	Classes/Gadgets/colorwheel.gadget Classes/Gadgets/gradientslider.gadget \
 	Demos \
-	Devs \
+	Devs/DataTypes Devs/Keymaps Devs/cdrom.handler Devs/ramdrive.device Devs/clipboard.device \
+        Devs/parallel.device Devs/serial.device Devs/Mountlist Devs/fdsk.device Devs/pipefs.handler \
+        Devs/zero.handler \
 	Fonts/fixed/8 Fonts/arial/11 Fonts/ttcourier/12 \
 	Libs/arosc.library Libs/asl.library Libs/commodities.library Libs/datatypes.library \
 	Libs/diskfont.library Libs/gadtools.library Libs/icon.library Libs/iffparse.library \
@@ -36,7 +38,7 @@ BOOT_TAR_FILES := \
 	Prefs/Font Prefs/Locale Prefs/ReqTools Prefs/Serial \
 	S \
 	System \
-	Tools/Commodities Tools/Debug \
+	Tools/Commodities \
 	Tools/calculator Tools/WiMP Tools/HDToolBox \
 	Utilities/MultiView Utilities/More Utilities/Installer Utilities/test.script \
 	contrib/aminet/Format64
@@ -101,7 +103,7 @@ install: install.c
 	@$(HOST_CC) install.c -o install
 
 $(BOOT_DEST_DIR)/AROS.tgz :
-	@tar -czf $(BOOT_DEST_DIR)/AROS.tgz -C $(BOOT_SRC_DIR) $(BOOT_TAR_FILES) -C $(TOP) LICENSE
+	@tar -c -C $(BOOT_SRC_DIR) $(BOOT_TAR_FILES) -C $(TOP) LICENSE | gzip -9 > $(BOOT_DEST_DIR)/AROS.tgz
 
 $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 	@$(CP) $< $@
