@@ -5,9 +5,14 @@ FILES         := clock
 INCLUDE_FILES := clock.h
 
 #MM- workbench-classes-zune : workbench-classes-zune-clock 
-#MM workbench-classes-zune-clock : includes
+#MM- workbench-classes-zune-quick : workbench-classes-zune-clock-quick
+
+#MM- workbench-classes-zune-clock : includes workbench-classes-zune-clock-module
+#MM- workbench-classes-zune-clock-quick : workbench-classes-zune-clock-module
+
+#MM workbench-classes-zune-clock-module
 %build_module \
-    mmake=workbench-classes-zune-clock \
+    mmake=workbench-classes-zune-clock-module \
     modname=Clock modtype=mcc \
     conffile=clock.conf \
     uselibs="amiga m"

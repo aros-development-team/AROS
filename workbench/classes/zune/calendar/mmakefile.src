@@ -5,9 +5,14 @@ FILES         := calendar
 INCLUDE_FILES := calendar.h
 
 #MM- workbench-classes-zune : workbench-classes-zune-calendar
-#MM workbench-classes-zune-calendar : includes
+#MM- workbench-classes-zune-quick : workbench-classes-zune-calendar-quick
+
+#MM- workbench-classes-zune-calendar : includes workbench-classes-zune-calendar-module
+#MM- workbench-classes-zune-calendar-quick : workbench-classes-zune-calendar-module
+
+#MM workbench-classes-zune-calendar-module
 %build_module \
-    mmake=workbench-classes-zune-calendar \
+    mmake=workbench-classes-zune-calendar-module \
     modname=Calendar modtype=mcc \
     conffile=calendar.conf \
     uselibs="amiga arosc m"
