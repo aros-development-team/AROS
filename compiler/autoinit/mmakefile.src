@@ -5,6 +5,7 @@
 include $(TOP)/config/make.cfg
 
 LIBBASEFILES := \
+        __showerror \
 	aros \
 	asl \
 	arosc \
@@ -39,7 +40,9 @@ LIBHANDLINGFILES := \
 FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES)
 
 #MM- linklibs: linklibs-autoinit
-#MM linklibs-autoinit : includes
+#MM linklibs-autoinit : includes includes-copy
+
+%copy_includes includes=autoinit.h path=aros dir=
 
 %build_linklib mmake=linklibs-autoinit libname=autoinit files=$(FILES)
 
