@@ -49,7 +49,7 @@ BISONFLAGS=-d
 LEX=@LEX@
 
 LEXFLAGS=
-FLEXFLAGS=-pp -B -F -8 -s
+FLEXFLAGS=-B -F -8 -s
 
 # The Perl program
 
