@@ -180,19 +180,49 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
 
 #ifndef __AROS__
-    DrawIconState(_rp(obj),icon->dob,NULL,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, FALSE, TAG_DONE);
+    DrawIconState
+    (
+        _rp(obj), icon->dob, NULL,
+        _mleft(obj) - data->view_x + icon->x, 
+        _mtop(obj) - data->view_y + icon->y, 
+        icon->selected ? IDS_SELECTED : IDS_NORMAL, 
+        ICONDRAWA_EraseBackground, FALSE, 
+        TAG_DONE
+    );
 #else
-    DrawIconStateA(_rp(obj),icon->dob,NULL,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, NULL);
+    DrawIconStateA
+    (
+        _rp(obj), icon->dob, NULL,
+        _mleft(obj) - data->view_x + icon->x, 
+        _mtop(obj) - data->view_y + icon->y, 
+        icon->selected ? IDS_SELECTED : IDS_NORMAL, 
+        TAG_DONE
+    );
 #endif
 
     if (icon->entry.label)
     {
-    	SetFont(_rp(obj), _font(obj));
-	txwidth = TextLength(_rp(obj),icon->entry.label,strlen(icon->entry.label));
+    	ULONG nameLength = strlen(icon->entry.label);
+        
+        SetFont(_rp(obj), _font(obj));
+	txwidth = TextLength(_rp(obj), icon->entry.label, nameLength);
 	tx = _mleft(obj) - data->view_x + icon->x + (icon->width - txwidth)/2;
-	ty = _mtop(obj) - data->view_y + icon->y + icon->height + _font(obj)->tf_Baseline + 1;
-	Move(_rp(obj),tx,ty);
-	Text(_rp(obj),icon->entry.label,strlen(icon->entry.label));
+	ty = _mtop(obj)  - data->view_y + icon->y + icon->height + _font(obj)->tf_Baseline + 1;
+	
+        // FIXME: this isn't a very optimal to make an outline...
+        SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
+        Move(_rp(obj), tx - 1, ty - 1); Text(_rp(obj), icon->entry.label, nameLength);
+        Move(_rp(obj), tx - 1, ty    ); Text(_rp(obj), icon->entry.label, nameLength);
+        Move(_rp(obj), tx - 1, ty + 1); Text(_rp(obj), icon->entry.label, nameLength);
+        Move(_rp(obj), tx,     ty - 1); Text(_rp(obj), icon->entry.label, nameLength);
+        Move(_rp(obj), tx,     ty + 1); Text(_rp(obj), icon->entry.label, nameLength);
+        Move(_rp(obj), tx + 1, ty - 1); Text(_rp(obj), icon->entry.label, nameLength);
+        Move(_rp(obj), tx + 1, ty    ); Text(_rp(obj), icon->entry.label, nameLength);
+        Move(_rp(obj), tx + 1, ty + 1); Text(_rp(obj), icon->entry.label, nameLength);
+
+        SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+        Move(_rp(obj), tx, ty);
+	Text(_rp(obj), icon->entry.label, nameLength);
     }
 }
 
