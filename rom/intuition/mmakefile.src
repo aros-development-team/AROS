@@ -58,6 +58,7 @@ FUNCTIONS := \
 	closewindow \
 	closeworkbench \
 	currenttime \
+	displayalert \
 	displaybeep \
 	disposeobject \
 	dogadgetmethoda \
@@ -84,6 +85,7 @@ FUNCTIONS := \
 	lockibase \
 	lockpubscreen \
 	makeclass \
+	makescreen \
 	modifyidcmp \
 	modifyprop \
 	movescreen \
@@ -100,23 +102,27 @@ FUNCTIONS := \
 	openscreentaglist \
 	openwindow \
 	openwindowtaglist \
+	openworkbench \
 	pointinimage \
 	printitext \
 	refreshgadgets \
 	refreshglist \
 	refreshwindowframe \
 	releasegirport \
+	remakedisplay \
 	removeclass \
 	removegadget \
 	removeglist \
 	reportmouse \
 	request \
 	resetmenustrip \
+	rethinkdisplay \
 	screendepth \
 	screentoback \
 	screentofront \
 	setattrsa \
 	setdefaultpubscreen \
+	setdmrequest \
 	setedithook \
 	setgadgetattrsa \
 	setmenustrip \
