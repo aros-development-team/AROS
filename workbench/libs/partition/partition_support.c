@@ -15,7 +15,7 @@ extern struct PTFunctionTable PartitionMBR;
 struct PTFunctionTable *PartitionSupport[]={&PartitionMBR, 0};
 
 /* get geometry */
-LONG getGeometry
+LONG PartitionGetGeometry
    (
       struct Library *PartitionBase,
       struct IOExtTD *ioreq,
@@ -119,7 +119,7 @@ QUAD offset;
 	write a block
 	block is within partition ph
 */
-LONG writeBlock
+LONG PartitionWriteBlock
 	(
 		struct Library *PartitionBase,
 		struct PartitionHandle *ph,

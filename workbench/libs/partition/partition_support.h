@@ -27,12 +27,15 @@ struct PTFunctionTable {
 
 extern struct PTFunctionTable *PartitionSupport[];
 
-LONG getGeometry(struct Library *, struct IOExtTD *, struct DriveGeometry *);
+LONG PartitionGetGeometry(struct Library *, struct IOExtTD *, struct DriveGeometry *);
 void PartitionNsdCheck(struct Library *, struct PartitionHandle *);
 ULONG getStartBlock(struct PartitionHandle *);
 LONG readBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
-LONG writeBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
+LONG PartitionWriteBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
 struct TagItem *findTagItem(ULONG tag, struct TagItem *);
 void fillMem(BYTE *, LONG, BYTE);
+
+#define getGeometry PartitionGetGeometry
+#define writeBlock  PartitionWriteBlock
 
 #endif /* PARTITION_SUPPORT_H */
