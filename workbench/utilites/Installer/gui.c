@@ -67,7 +67,7 @@ struct Library *GadToolsBase = NULL;
 struct GfxBase * GfxBase = NULL;
 struct Window *GuiWin;
 struct RastPort *rp;
-struct IntuiMessage *msg;
+struct IntuiMessage *imsg;
 ULONG class;
 UWORD code;
 
@@ -596,7 +596,9 @@ int i;
 long int retval;
 char yes[] = "Yes", no[] = "No", *yesstring, *nostring;
 int finish = FALSE;
+#ifndef INTUIGUI
 char c;
+#endif
 
   retval = ( GetPL( pl, _DEFAULT ).intval != 0 );
   yesstring = yes;
@@ -646,6 +648,8 @@ char c;
     else
     {
 printf("glist=%p\n",glist);
+printf("glist->NextGadget=%p\n",glist->NextGadget);
+printf("GuiWin=%p\n",GuiWin);
 printf("Adding gads...\n");
         AddGList(GuiWin,glist,-1,-1,NULL);
 printf("Refreshing glist...\n");
@@ -686,14 +690,14 @@ printf("Finished...\n");
     }
     do
     {
-      Wait( 1L<<GuiWin->UserPort->mp_SigBit );
-      msg = (struct IntuiMessage *)GetMsg( GuiWin->UserPort );
-      class = msg->Class;
-      code = msg->Code;
+      WaitPort( GuiWin->UserPort );
+      imsg = (struct IntuiMessage *)GT_GetIMsg( GuiWin->UserPort );
+      class = imsg->Class;
+      code = imsg->Code;
       switch( class )
       {
         case IDCMP_GADGETUP:
-              switch( ( (struct Gadget *)(msg->IAddress) )->GadgetID )
+              switch( ( (struct Gadget *)(imsg->IAddress) )->GadgetID )
               {
                 case 1:
                   retval = 0;
@@ -724,7 +728,7 @@ printf("Finished...\n");
         default:
               break;
       }
-      ReplyMsg((struct Message *)msg);
+      GT_ReplyIMsg(imsg);
     } while( !finish );
 #else
     Delay( 100 );
