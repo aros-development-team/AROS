@@ -1,5 +1,5 @@
 /*
-    (C) 1998 - 2000 AROS - The Amiga Research OS
+    (C) 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics gc class implementation.
@@ -31,8 +31,10 @@ static VOID gc_set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg);
 
 #define IS_GC_ATTR(attr, idx) ( ( (idx) = (attr) - HiddGCAttrBase) < num_Hidd_GC_Attrs)
 
-static OOP_AttrBase HiddGCAttrBase = 0;
-static OOP_AttrBase HiddBitMapAttrBase = 0;
+/* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
+
+static OOP_AttrBase HiddGCAttrBase;
+static OOP_AttrBase HiddBitMapAttrBase;
 
 static struct OOP_ABDescr attrbases[] = {
     { IID_Hidd_GC,	&HiddGCAttrBase		},

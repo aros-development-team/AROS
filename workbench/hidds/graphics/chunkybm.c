@@ -1,3 +1,11 @@
+/*
+    (C) 1998-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Graphics chunky bitmap class implementation.
+    Lang: english
+*/
+
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -21,9 +29,11 @@ struct chunkybm_data {
     ULONG bytesperpixel;
 };
 
-static OOP_AttrBase HiddBitMapAttrBase	= 0;
-static OOP_AttrBase HiddGCAttrBase 	= 0;
-static OOP_AttrBase HiddPixFmtAttrBase	= 0;
+/* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
+
+static OOP_AttrBase HiddBitMapAttrBase;
+static OOP_AttrBase HiddGCAttrBase;
+static OOP_AttrBase HiddPixFmtAttrBase;
 
 static struct OOP_ABDescr attrbases[] = {
     { IID_Hidd_BitMap,	&HiddBitMapAttrBase	},

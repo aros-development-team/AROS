@@ -1,5 +1,5 @@
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    (C) 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Stubs for Parallel and ParallelUnit class
@@ -33,6 +33,7 @@
 #undef OOPBase
 #define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(obj)))->UserData)
 
+#define STATIC_MID static OOP_MethodID mid
 
 /* A small utility function for using varargs when setting attrs */
 
@@ -52,7 +53,7 @@ IPTR OOP_SetAttrsTags(OOP_Object *obj, IPTR tag1, ...)
 
 OOP_Object * HIDD_Parallel_NewUnit(OOP_Object *obj, ULONG unitnum)
 {
-    static OOP_MethodID mid = 0;
+    STATIC_MID;
     struct pHidd_Parallel_NewUnit p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_Parallel, moHidd_Parallel_NewUnit);
@@ -66,7 +67,7 @@ OOP_Object * HIDD_Parallel_NewUnit(OOP_Object *obj, ULONG unitnum)
 
 VOID HIDD_Parallel_DisposeUnit(OOP_Object *obj, OOP_Object *unit)
 {
-    static OOP_MethodID mid = 0;
+    STATIC_MID;
     struct pHidd_Parallel_DisposeUnit p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_Parallel, moHidd_Parallel_DisposeUnit);
@@ -84,7 +85,7 @@ VOID HIDD_Parallel_DisposeUnit(OOP_Object *obj, OOP_Object *unit)
 
 BOOL HIDD_ParallelUnit_Init(OOP_Object *obj, VOID * DataReceived, VOID * DataReceivedUserData, VOID * WriteData, VOID * WriteDataUserData)
 {
-    static OOP_MethodID mid = 0;
+    STATIC_MID;
     struct pHidd_ParallelUnit_Init p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Init);
@@ -101,7 +102,7 @@ BOOL HIDD_ParallelUnit_Init(OOP_Object *obj, VOID * DataReceived, VOID * DataRec
 
 ULONG HIDD_ParallelUnit_Write (OOP_Object *obj, UBYTE * data, ULONG length)
 {
-    static OOP_MethodID mid = 0;
+    STATIC_MID;
     struct pHidd_ParallelUnit_Write p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Write);
