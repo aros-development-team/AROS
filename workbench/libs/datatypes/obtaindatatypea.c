@@ -11,7 +11,6 @@
 #include <datatypes/datatypesclass.h>
 #include <libraries/iffparse.h>
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 /*****************************************************************************
