@@ -18,12 +18,12 @@
 
     NAME */
 
-      AROS_LHQUAD2(QUAD, IEEEDPPow,
+      AROS_LHQUAD2(double, IEEEDPPow,
 
 /*  SYNOPSIS */
 
-      AROS_LHAQUAD(QUAD, x, D2, D3),
-      AROS_LHAQUAD(QUAD, y, D0, D1),
+      AROS_LHAQUAD(double, x, D2, D3),
+      AROS_LHAQUAD(double, y, D0, D1),
 
 /*  LOCATION */
 

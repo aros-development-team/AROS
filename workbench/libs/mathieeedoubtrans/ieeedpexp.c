@@ -19,11 +19,11 @@
 
     NAME */
 
-      AROS_LHQUAD1(QUAD, IEEEDPExp,
+      AROS_LHQUAD1(double, IEEEDPExp,
 
 /*  SYNOPSIS */
 
-      AROS_LHAQUAD(QUAD, y, D0, D1),
+      AROS_LHAQUAD(double, y, D0, D1),
 
 /*  LOCATION */
 

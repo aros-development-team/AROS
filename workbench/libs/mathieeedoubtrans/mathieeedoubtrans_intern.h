@@ -8,6 +8,11 @@
 #ifndef __MATHIEEEDOUBTRANS_INTERN_H__
 #define __MATHIEEEDOUBTRANS_INTERN_H__
 
+/* the following line is necessary so that the function headers are
+   created correctly and the functions can be compiled properly */
+
+#define double QUAD
+
 /* This is a short file that contains a few things every mathieeedoubtrans
    function needs */
 
@@ -91,8 +96,17 @@ LONG intern_IEEEDPisodd(QUAD fnum);
 #define IEEESPSign_Mask        0x80000000 /*  1 bit for the sign     */
 
 
-#define pi      QuadData( 0x400921FB, 0x54442D18, 0x400921FB54442D18ULL )
-#define pio2_hi QuadData( 0x3FF921FB, 0x54442D18, 0x3FF921FB54442D18ULL )
+
+#define pi_Hi 0x400921FB
+#define pi_Lo 0x54442D18
+#define pi_64 0x400921FB54442D18ULL
+#define pi QuadData(pi_Hi, pi_Lo, pi_64 )
+
+#define pio2_hi_Hi 0x3FF921FB
+#define pio2_hi_Lo 0x54442D18
+#define pio2_hi_64 0x3FF921FB54442D18ULL
+#define pio2_hi QuadData( pio2_hi_Hi, pio2_hi_Lo, pio2_hi64 )
+
 #define pio2_lo QuadData( 0x3C91A626, 0x33145C07, 0x3C91A62633145C07ULL )
 #define pS0     QuadData( 0x3FC55555, 0x55555555, 0x3FC5555555555555ULL )
 #define pS1     QuadData( 0xBFD4D612, 0x03EB6F7D, 0xBFD4D61203EB6F7DULL )
@@ -104,6 +118,19 @@ LONG intern_IEEEDPisodd(QUAD fnum);
 #define qS2     QuadData( 0x40002AE5, 0x9C598AC8, 0x40002AE59C598AC8ULL )
 #define qS3     QuadData( 0xBFE6066C, 0x1B8D0159, 0xBFE6066C1B8D0159ULL )
 #define qS4     QuadData( 0x3FB3B8C5, 0xB12E9282, 0x3FB3B8C5B12E9282ULL )
+
+/* for IEEEDPAtan */
+#define one_Hi 0x3ff00000
+#define one_Lo 0x00000000
+#define one_64 0x3ff0000000000000ULL
+
+#define onethird_Hi 0x3fd55555
+#define onethird_Lo 0x55555555
+#define onethird_64 0x3fd5555555555555ULL
+
+#define onefifth_Hi 0x3fc99999
+#define onefifth_Lo 0x99999999
+#define onefifth_64 0x3fc9999999999999ULL
 
 
 #endif /* __MATHIEEEDOUBTRANS_INTERN_H__  */

@@ -19,11 +19,11 @@
 
     NAME */
 
-      AROS_LHQUAD1(QUAD, IEEEDPTanh,
+      AROS_LHQUAD1(double, IEEEDPTanh,
 
 /*  SYNOPSIS */
 
-      AROS_LHAQUAD(QUAD, y, D0, D1),
+      AROS_LHAQUAD(double, y, D0, D1),
 
 /*  LOCATION */
 
