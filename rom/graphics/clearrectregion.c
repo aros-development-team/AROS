@@ -148,7 +148,9 @@
 
 	}  /* IF (newrects) */
     }  /* IF (overlap) */
-
+    else /* no overlap at all */
+      return TRUE;
+     
     if (region->RegionRectangle)
 	disposerrects(region->RegionRectangle);
     region->RegionRectangle = lastrects;
