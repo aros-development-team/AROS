@@ -215,10 +215,14 @@ LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
 
     fh->window = OpenWindowTagList(&fh->nw, (struct TagItem *)win_tags);
 
+    if(fh->screenname != NULL && fh->window==NULL){
+      win_tags[2].ti_Tag=TAG_DONE;
+      fh->window = OpenWindowTagList(&fh->nw, (struct TagItem *)win_tags);
+    }
+
     if (fh->window)
     {
     	D(bug("contask: window opened\n"));
-
 	fh->conreadio->io_Data   = (APTR)fh->window;
 	fh->conreadio->io_Length = sizeof (struct Window);
 
