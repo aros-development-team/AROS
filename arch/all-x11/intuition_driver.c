@@ -122,7 +122,8 @@ keytable[] =
 };
 
 #define SHIFT	(IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)
-#define ALT	(IEQUALIFIER_LALT | IEQUALIFIER_RALT)
+#define LALT	IEQUALIFIER_LALT
+#define RALT	IEQUALIFIER_RALT
 #define CTRL	IEQUALIFIER_CONTROL
 #define CAPS	IEQUALIFIER_CAPSLOCK
 
@@ -322,10 +323,13 @@ long StateToQualifier (unsigned long state)
     if (state & LockMask)
 	result |= CAPS;
 
-    if (state & Mod1Mask)
-	result |= ALT;
+    if (state & Mod2Mask) /* Right Alt */
+	result |= LALT;
 
-    if (state & Mod2Mask)
+    if (state & 0x2000) /* Mode switch */
+	result |= RALT;
+
+    if (state & Mod1Mask) /* Left Alt */
 	result |= AMIGAKEYS;
 
     if (state & Button1Mask)
@@ -348,33 +352,7 @@ long XKeyToAmigaCode (XKeyEvent * xk)
     long result;
     short t;
 
-    result = 0;
-
-    if (xk->state & ShiftMask)
-	result |= SHIFT;
-
-    if (xk->state & ControlMask)
-	result |= CTRL;
-
-    if (xk->state & LockMask)
-	result |= CAPS;
-
-    if (xk->state & Mod1Mask)
-	result |= ALT;
-
-    if (xk->state & Mod2Mask)
-	result |= AMIGAKEYS;
-
-    if (xk->state & Button1Mask)
-	result |= IEQUALIFIER_LEFTBUTTON;
-
-    if (xk->state & Button2Mask)
-	result |= IEQUALIFIER_RBUTTON;
-
-    if (xk->state & Button3Mask)
-	result |= IEQUALIFIER_MIDBUTTON;
-
-    result <<= 16;
+    result = StateToQualifier (xk->state) << 16L;
 
     xk->state = 0;
     count = XLookupString (xk, buffer, 10, &ks, NULL);
@@ -448,11 +426,14 @@ LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
     if (ie->ie_Qualifier & CAPS)
 	xk.state |= LockMask;
 
-    if (ie->ie_Qualifier & ALT)
-	xk.state |= Mod1Mask;
+    if (ie->ie_Qualifier & RALT)
+	xk.state |= 0x2000;
+
+    if (ie->ie_Qualifier & LALT)
+	xk.state |= Mod2Mask;
 
     if (ie->ie_Qualifier & AMIGAKEYS)
-	xk.state |= Mod2Mask;
+	xk.state |= Mod1Mask;
 
     if (ie->ie_Qualifier & IEQUALIFIER_LEFTBUTTON)
 	xk.state |= Button1Mask;
