@@ -208,8 +208,8 @@ ULONG lastblock,key;
 struct BlockCache *blockbuffer, *priorbuffer;
 
 	D(bug("afs.handler: delete(ah,%s)\n",name));
-	blockbuffer=findBlock(afsbase, ah,name,&lastblock);
-	if (!blockbuffer)
+	blockbuffer=findBlock(afsbase, ah, name, &lastblock);
+	if (blockbuffer == NULL)
 		return error;
 	if (findHandle(ah->volume, blockbuffer->blocknum))
 		return ERROR_OBJECT_IN_USE;
@@ -231,7 +231,7 @@ struct BlockCache *blockbuffer, *priorbuffer;
 	}
 	blockbuffer->flags |= BCF_USED;
 	priorbuffer=getBlock(afsbase, ah->volume, lastblock);
-	if (!priorbuffer)
+	if (priorbuffer == NULL)
 	{
 		blockbuffer->flags &= ~BCF_USED;
 		return ERROR_UNKNOWN;
@@ -270,7 +270,7 @@ struct BlockCache *blockbuffer, *priorbuffer;
 						-1
 					);
 			}
-			if (!blockbuffer->buffer[BLK_EXTENSION(ah->volume)])
+			if (blockbuffer->buffer[BLK_EXTENSION(ah->volume)] == 0)
 				break;
 			// get next extensionblock
 			blockbuffer->flags &= ~BCF_USED;
@@ -280,7 +280,7 @@ struct BlockCache *blockbuffer, *priorbuffer;
 					ah->volume,
 					AROS_BE2LONG(blockbuffer->buffer[BLK_EXTENSION(ah->volume)])
 				);
-			if (!blockbuffer)
+			if (blockbuffer == NULL)
 			{
 				priorbuffer->flags &= ~BCF_USED;
 				return ERROR_UNKNOWN;
