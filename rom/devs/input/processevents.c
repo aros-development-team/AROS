@@ -268,53 +268,18 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	    /* Wit for some more events */
 	    SEND_KBD_REQUEST(kbdio, kbdie);
 	}
+
 	if (wakeupsigs & gpdsig)
 	{
 	    GetMsg(gpdmp); /* Only one message */
 	    if (gpdio->io_Error != 0)
 	    	continue;
 	    
-	    /* FIXME: Maybe this should be done in gameport.device */
-
-	#if 0
-	    /* this should work once qualifiers are handled by gameport.device */
-		 
-	    #define MOUSE_QUALIFIERS (IEQUALIFIER_LEFTBUTTON | IEQUALIFIER_RBUTTON | \
-	    			      IEQUALIFIER_MIDBUTTON)
-	
+#define MOUSE_QUALIFIERS (IEQUALIFIER_LEFTBUTTON | IEQUALIFIER_RBUTTON | \
+			  IEQUALIFIER_MIDBUTTON)
+		    
 	    InputDevice->ActQualifier &= ~MOUSE_QUALIFIERS;
 	    InputDevice->ActQualifier |= (((struct InputEvent *)gpdio->io_Data)->ie_Qualifier & MOUSE_QUALIFIERS);
-	#else
-	    
-	    switch( ((struct InputEvent *)gpdio->io_Data)->ie_Code )
-	    {
-	        case SELECTDOWN:
-		    InputDevice->ActQualifier |= IEQUALIFIER_LEFTBUTTON;
-		    break;
-		    
-		case SELECTUP:
-		    InputDevice->ActQualifier &= ~IEQUALIFIER_LEFTBUTTON;
-		    break;
-
-	        case MIDDLEDOWN:
-		    InputDevice->ActQualifier |= IEQUALIFIER_MIDBUTTON;
-		    break;
-		    
-		case MIDDLEUP:
-		    InputDevice->ActQualifier &= ~IEQUALIFIER_MIDBUTTON;
-		    break;
-
-	        case MENUDOWN:
-		    InputDevice->ActQualifier |= IEQUALIFIER_RBUTTON;
-		    break;
-		    
-		case MENUUP:
-		    InputDevice->ActQualifier &= ~IEQUALIFIER_RBUTTON;
-		    break;
-		    
-	    } /* switch( ((struct InputEvent *)gpdio->io_Data)->ie_Code) */
-	    
-	#endif
 
 	    /* Gameport just returns the frame count since the last
 	       report in ie_TimeStamp.tv_secs; we therefore must add
