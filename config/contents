@@ -58,7 +58,8 @@ host.cfg - This file is included by all makefiles and
 
 	\item{$(GUI_CCFLAGS)} Flags, which must be passed to
 		$(CC) when code is to be compiled which
-		uses the native GUI (eg. \shell{-I/usr/X11R6/include}).
+		uses the native GUI (eg. 
+                \shell{-I/usr/X11R6/include}).
 
 	\item{$(GUI_INCDIR)} Directory where the include files for
 		the native GUI can be found.
@@ -131,12 +132,13 @@ m68k-native/ - Assembler code for Amiga hardware.
 
 machine.c -
 
-make.cfg - Global settings for the Makefiles. Each makefile reads this file
-	before it does anything else (well, almost... most makefiles set a
-	path to this file first :-) ) It sets up some interesting paths:
+make.cfg - Global settings for the Makefiles. Each makefile reads this
+	file before it does anything else (well, almost... most 
+	makefiles set a path to this file first :-) ) It sets up some
+	interesting paths:
 
 	\begin{description}
-	\item{$(OSGENDIR)} Use this path for all files which should go into
-		the OS itself.
+	\item{$(OSGENDIR)} Use this path for all files which should go
+		into the OS itself.
 	\end{description}
 

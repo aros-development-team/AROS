@@ -38,7 +38,7 @@ extern struct UtilityBase * UtilityBase;
 
 /*  FUNCTION
 
-        There is a need in file/directory proecessing where an application
+        There is a need in file/directory processing where an application
         may need to determine whether a path is just a volume/device or
         assignment name.
 
