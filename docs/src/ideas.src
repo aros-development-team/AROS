@@ -158,8 +158,10 @@ rastport for it, and this will be send to window on Refresh (or in window's
 BackFill Hook) and when the Draw of All Buttons are finished, so you don't
 get "flickering" (I don't know the correct word) on the graphic, and uses
 almost the same memory of a Smart one.
+\end{new}
 
 \item
+\begin{new}{19.1.1998}
 By Paulo F. Zemek:
 The amiga need a function for opening windows into other windows like on
 windows. The "Requester" do this, but stops the functionality of the
@@ -174,13 +176,17 @@ IDCMP event loops and the same effect can be achieved when using
 clip regions; all we have to do is to make the gadgets public, which render a
 window, plus maybe a BOOPSI subwindow class which installs a clip region
 in another window.]
+\end{new}
 
 \item
+\begin{new}{19.1.1998}
 By Paulo F. Zemek:
 exec.library can have an EnqueueTail, and this
 is easy to do, so the Enqueue already exists.
+\end{new}
 
 \item
+\begin{new}{19.1.1998}
 By Paulo F. Zemek:
 Intuition should not sent more than one REFRESH message to a window (ie.
 if there is already one in the queue, then it should be removed first).
