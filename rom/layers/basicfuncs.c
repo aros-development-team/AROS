@@ -406,6 +406,7 @@ struct ClipRect * _AllocClipRect(struct Layer * L)
   {
    /* I want to access the list of free ClipRects alone */
     L->SuperSaveClipRects = CR->Next;
+    L->SuperSaveClipRectCounter--;
 
     CR->Flags  = 0;
     CR->Next   = NULL; 
@@ -425,9 +426,15 @@ struct ClipRect * _AllocClipRect(struct Layer * L)
 void _FreeClipRect(struct ClipRect   * CR,
                    struct Layer      * L)
 {
-  /* Add the ClipRect to the front of the list */
-  CR -> Next = L -> SuperSaveClipRects;
-  L -> SuperSaveClipRects = CR; 
+  if (MAXSUPERSAVECLIPRECTS < L->SuperSaveClipRectCounter)
+  {
+    /* Add the ClipRect to the front of the list */
+    CR -> Next = L -> SuperSaveClipRects;
+    L -> SuperSaveClipRects = CR;
+    L -> SuperSaveClipRectCounter++;
+  }
+  else
+    FreeMem(CR, sizeof(struct ClipRect));
 }
 
 /*
@@ -443,7 +450,13 @@ void _FreeClipRectListBM(struct Layer * L,
     isSmart = TRUE;
   else
     isSmart = FALSE;
-    
+ 
+  /*
+   * This function is not watching for the upper limit of 
+   * pre allocated cliprects.
+   */
+  L->SuperSaveClipRectCounter++;
+  
   while (TRUE)
   {
     if (NULL != _CR->BitMap && TRUE == isSmart)
@@ -452,7 +465,10 @@ void _FreeClipRectListBM(struct Layer * L,
       _CR->BitMap = NULL;
     }
     if (NULL != _CR->Next)
+    {
+      L->SuperSaveClipRectCounter++;
       _CR = _CR->Next;
+    }
     else
       break;
   }
