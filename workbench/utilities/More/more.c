@@ -15,6 +15,7 @@
 #include <intuition/gadgetclass.h>
 #include <libraries/locale.h>
 #include <libraries/gadtools.h>
+#include <devices/rawkeycodes.h>
 
 #include <graphics/gfx.h>
 #include <utility/hooks.h>
@@ -1194,8 +1195,8 @@ static BOOL HandleWin(void)
 {
     struct IntuiMessage *msg;
     struct MenuItem	*item;
-    WORD 		gadid;
-    UWORD		men;
+    WORD 		gadid, delta;
+    UWORD		men, code;
     UBYTE		key;
     BOOL 		pagescroll, maxscroll, quitme = FALSE;
 
@@ -1332,45 +1333,70 @@ static BOOL HandleWin(void)
 		pagescroll = (0 != (msg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)));
 		maxscroll  = (0 != (msg->Qualifier & (IEQUALIFIER_LALT | IEQUALIFIER_RALT | IEQUALIFIER_CONTROL)));
 
-		switch(msg->Code)
+    	    	code = msg->Code; delta = 1;
+		
+		switch(code)
+    	    	{
+		    case RAWKEY_NM_WHEEL_UP:
+		    	code = CURSORUP;
+			delta = 3;
+			break;
+			
+		    case RAWKEY_NM_WHEEL_DOWN:
+		    	code = CURSORDOWN;
+			delta = 3;
+			break;
+			
+		    case RAWKEY_NM_WHEEL_LEFT:
+		    	code = CURSORLEFT;
+			delta = 3;
+			break;
+			
+		    case RAWKEY_NM_WHEEL_RIGHT:
+		    	code = CURSORRIGHT;
+			delta = 3;
+			break;
+		}
+		
+		switch(code)
 		{
 		    case CURSORUP:
 			ScrollTo(GAD_VERTSCROLL, 
-				 maxscroll ? 0 : viewstarty - (pagescroll ? visibley - 1 : 1), 
+				 maxscroll ? 0 : viewstarty - (pagescroll ? visibley - 1 : delta), 
 				 TRUE);
 			break;
 
 		    case CURSORDOWN:
 			ScrollTo(GAD_VERTSCROLL, 
-				 maxscroll ? num_lines : viewstarty + (pagescroll ? visibley - 1 : 1), 
+				 maxscroll ? num_lines : viewstarty + (pagescroll ? visibley - 1 : delta), 
 				 TRUE);
 			break;
 
 		    case CURSORLEFT:
 			ScrollTo(GAD_HORIZSCROLL, 
-				 maxscroll ? 0 : viewstartx - (pagescroll ? visiblex - 1 : 1), 
+				 maxscroll ? 0 : viewstartx - (pagescroll ? visiblex - 1 : delta), 
 				 TRUE);
 			break;
 
 		    case CURSORRIGHT:
 			ScrollTo(GAD_HORIZSCROLL, 
-				 maxscroll ? max_textlen : viewstartx + (pagescroll ? visiblex - 1 : 1), 
+				 maxscroll ? max_textlen : viewstartx + (pagescroll ? visiblex - 1 : delta), 
 				 TRUE);
 			break;
 			
-		    case 0x70: /* HOME */
+		    case RAWKEY_HOME:
 		        ScrollTo(GAD_VERTSCROLL, 0, TRUE);
 			break;
 			
-		    case 0x71: /* END */
+		    case RAWKEY_END:
 		        ScrollTo(GAD_VERTSCROLL, num_lines, TRUE);
 			break;
 			
-		    case 0x48: /* PAGE UP */
+		    case RAWKEY_PAGEUP:
 		        ScrollTo(GAD_VERTSCROLL, viewstarty - (visibley - 1), TRUE);
 			break;
 			
-		    case 0x49: /* PAGE DOWN */
+		    case RAWKEY_PAGEDOWN:
 		        ScrollTo(GAD_VERTSCROLL, viewstarty + (visibley - 1), TRUE);
 			break;
 			
