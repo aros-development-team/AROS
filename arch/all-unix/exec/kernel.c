@@ -11,6 +11,7 @@
 #include <exec/execbase.h>
 #include <exec/alerts.h>
 #include <aros/asmcall.h>
+#include <aros/atomic.h>
 #include <hardware/intbits.h>
 
 #include <sigcore.h>
@@ -128,7 +129,7 @@ static void sighandler(int sig, sigcontext_t * sc)
     /* Has an interrupt told us to dispatch when leaving */
     if (SysBase->AttnResched & 0x8000)
     {
-	SysBase->AttnResched &= ~0x8000;
+    	AROS_ATOMIC_ANDW(SysBase->AttnResched, ~0x8000);
 
 	/* Save registers for this task (if there is one...) */
 	if (SysBase->ThisTask && SysBase->ThisTask->tc_State != TS_REMOVED)
