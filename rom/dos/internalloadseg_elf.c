@@ -315,7 +315,13 @@ static int load_hunk
     struct DosLibrary  *DOSBase
 )
 {
-    struct hunk *hunk = MyAlloc(sh->size + sizeof(struct hunk), MEMF_ANY | (sh->type == SHT_NOBITS) ? MEMF_CLEAR : 0);
+
+    struct hunk *hunk;
+     
+    if (!sh->size)
+        return 1;
+
+    hunk = MyAlloc(sh->size + sizeof(struct hunk), MEMF_ANY | (sh->type == SHT_NOBITS) ? MEMF_CLEAR : 0);
     if (hunk)
     {
         hunk->next = 0;
