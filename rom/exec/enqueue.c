@@ -1,30 +1,8 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.9  1997/01/01 03:46:09  ldp
-    Committed Amiga native (support) code
 
-    Changed clib to proto
-
-    Revision 1.8  1996/12/10 13:51:44  aros
-    Moved all #include's in the first column so makedepend can see it.
-
-    Revision 1.7  1996/10/24 15:50:48  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.6  1996/10/21 20:47:07  aros
-    Changed struct SysBase to struct ExecBase
-
-    Revision 1.5  1996/08/13 13:56:01  digulla
-    Replaced AROS_LA by AROS_LHA
-    Replaced some AROS_LH*I by AROS_LH*
-    Sorted and added includes
-
-    Revision 1.4  1996/08/01 17:41:10  digulla
-    Added standard header for all files
-
-    Desc:
+    Desc: Add a node into a sorted list
     Lang: english
 */
 /* I want the macros */
@@ -47,7 +25,7 @@
 	struct ExecBase *, SysBase, 45, Exec)
 
 /*  FUNCTION
-	Sort a node into a list. The sort-key the field node->ln_Pri.
+	Sort a node into a list. The sort-key is the field node->ln_Pri.
 
     INPUTS
 	list - Insert into this list. The list has to be in descending
@@ -56,6 +34,8 @@
 		be a complete node and not a MinNode !
 
     RESULT
+	The new node will be inserted before nodes with the same or lower
+	priority.
 
     NOTES
 	The list has to be in descending order in respect to the field
@@ -64,6 +44,8 @@
     EXAMPLE
 	struct List * list;
 	struct Node * node;
+
+	node->ln_Pri = 5;
 
 	// Sort the node at the correct place into the list
 	Enqueue (list, node);
@@ -88,38 +70,37 @@
     assert (node);
 
     /* Look through the list */
-    for (next=GetHead(list); next; next=GetSucc(next))
+    ForeachNode (list, node)
     {
 	/*
-	    if the NEXT node has lower prio than the new node, insert us
-	    before the next node
+	    Look for the first node with a lower pri as the node
+	    we have to insert into the list.
 	*/
-	if (node->ln_Pri >= next->ln_Pri)
-	{
-	    /* Same as insert but insert before instead of insert behind */
-	    node->ln_Succ = next;
-	    node->ln_Pred = next->ln_Pred;
-
-	    next->ln_Pred->ln_Succ = node;
-	    next->ln_Pred	   = node;
-
-	    /*
-		Done. We cannot simply break the loop because of the AddTail()
-		below.
-	    */
-	    return;
-	}
+	if (node->ln_Pri > next->ln_Pri)
+	    break;
     }
 
-    /*
-	If no nodes were in the list or our node has the lowest prio,
-	we add it as last node
-    */
-    node->ln_Succ	       = (struct Node *)&list->lh_Tail;
-    node->ln_Pred	       = list->lh_TailPred;
+    /* Insert the node. The situation looks like this:
 
-    list->lh_TailPred->ln_Succ = node;
-    list->lh_TailPred	       = node;
+	    A<->next<->B *<-node->*
+
+	ie. next->ln_Pred points to A, A->ln_Succ points to next,
+	next->ln_Succ points to B, B->ln_Pred points to next.
+	ln_Succ and ln_Pred of node contain illegal pointers.
+    */
+
+    /* Let node point to B: A<->next<->B *<->node->B */
+    node->ln_Pred	   = next->ln_Pred;
+
+    /* Let B point to node */
+    next->ln_Pred->ln_Succ = node;
+
+    /* Make next point to node: A<->next->node<->B */
+    next->ln_Pred	   = node;
+
+    /* Make node point to next: A<->next<->node<->B */
+    node->ln_Succ	   = next;
+
     AROS_LIBFUNC_EXIT
 } /* Enqueue */
 
