@@ -42,9 +42,21 @@ extern struct Library *MUIMasterBase;
 #define MYDEBUG 1
 #include "debug.h"
 
+#ifdef _AROS
+#define g_strdup(x) 	    	    	    	    \
+    ({	    	    	    	    	    	    \
+    	UBYTE *dup; 	    	    	    	    \
+	    	    	    	    	    	    \
+	dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC); \
+	if (dup) CopyMem((x), dup, strlen(x) + 1);  \
+	dup; 	    	    	    	    	    \
+    })
+    	
+#define g_free FreeVec
+#else
 #define g_strdup(x) strdup(x)
 #define g_free(x) free(x)
-
+#endif
 
 struct TextFont *zune_font_get (LONG preset)
 {
