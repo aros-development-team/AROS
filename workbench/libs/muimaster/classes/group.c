@@ -164,6 +164,7 @@ static void change_active_page (struct IClass *cl, Object *obj, LONG page)
 	data->active_page = newpage;
     	if (_flags(obj) & MADF_CANDRAW)
     	{
+    	    DoMethod(obj,MUIM_Layout);
 	    Group_Show(cl,obj,NULL);
 	    data->update = 1;
 	    MUI_Redraw(obj, MADF_DRAWUPDATE);
