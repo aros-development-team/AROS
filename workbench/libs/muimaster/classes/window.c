@@ -93,7 +93,7 @@ struct MUI_WindowData
     struct MUI_ImageSpec_intern *wd_Background;
     ULONG          wd_DisabledKeys;
     BOOL           wd_NoMenus;     /* MUIA_Window_NoMenus */
-    
+
     Object        *wd_DragObject; /* the object which is being dragged */
     struct Window *wd_DropWindow; /* the destination window, for faster access */
     Object        *wd_DropObject; /* the destination object */
@@ -445,23 +445,23 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     win = OpenWindowTags
     (
         NULL,
-        
+
         WA_Left,                (IPTR) data->wd_X,
         WA_Top,                 (IPTR) data->wd_Y,
         WA_Flags,               (IPTR) flags,
         data->wd_Title ?
-            WA_Title   : 
+            WA_Title   :
             TAG_IGNORE,         (IPTR) data->wd_Title,
-        data->wd_ScreenTitle ? 
-            WA_ScreenTitle   : 
+        data->wd_ScreenTitle ?
+            WA_ScreenTitle   :
             TAG_IGNORE,         (IPTR) data->wd_ScreenTitle,
         WA_CustomScreen,        (IPTR) data->wd_RenderInfo.mri_Screen,
         WA_InnerWidth,          (IPTR) data->wd_Width,
         WA_InnerHeight,         (IPTR) data->wd_Height,
         WA_AutoAdjust,          (IPTR) TRUE,
         WA_NewLookMenus,        (IPTR) TRUE,
-        data->wd_NoMenus ? 
-            WA_RMBTrap   : 
+        data->wd_NoMenus ?
+            WA_RMBTrap   :
             TAG_IGNORE,         (IPTR) TRUE,
         WA_Gadgets,             (IPTR) data->wd_VertProp,
         WA_Zoom,                (IPTR) &altdims,
@@ -486,7 +486,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
             data->wd_MinMax.MaxWidth  + hborders,
             data->wd_MinMax.MaxHeight + vborders
         );
-        
+
         win->UserData = (char*)data->wd_RenderInfo.mri_WindowObject;
         win->UserPort = muiGlobalInfo(obj)->mgi_WindowsPort; /* Same port for all windows */
         ModifyIDCMP(win, data->wd_Events);
@@ -993,7 +993,7 @@ void HandleDragging (Object *oWin, struct MUI_WindowData *data,
 	    wnd = _window(data->wd_DropObject);
 	    if
                 (
-		    mousex < _left(data->wd_DropObject) 
+		    mousex < _left(data->wd_DropObject)
                     || mousex > _right(data->wd_DropObject) 
                     || mousey < _top(data->wd_DropObject) 
                     || mousey > _bottom(data->wd_DropObject) 
@@ -2329,8 +2329,16 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
             
             case MUIA_Window_NoMenus:
                 data->wd_NoMenus = (BOOL) tag->ti_Data;
+		if (data->wd_RenderInfo.mri_Window)
+		{
+		    if (data->wd_NoMenus)
+		        data->wd_RenderInfo.mri_Window->Flags |= WFLG_RMBTRAP;
+		    else
+		        data->wd_RenderInfo.mri_Window->Flags &= ~WFLG_RMBTRAP;
+		}
+
                 break;
-                
+
 	    case MUIA_Window_UseBottomBorderScroller:
 		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USEBOTTOMSCROLLER);
 		break;
