@@ -555,7 +555,7 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 			{
 			    struct MUI_PenSpec *penspec;
 
-			    get(data->color_group, MUIA_Penadjust_Spec, (IPTR)&penspec);
+			    get(data->color_group, MUIA_Penadjust_Spec, &penspec);
 			    if (penspec)
 			    {
 				LONG len;
