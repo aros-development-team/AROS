@@ -1766,10 +1766,8 @@ struct FileRequester *fr;
 #if 1
   if ((fr = (struct FileRequester *) AllocAslRequest(ASL_FileRequest, frtags)))
   {
-DMSG("A\n");
     if (AslRequest(fr, NULL) != FALSE)
     {
-DMSG("B\n");
       printf("PATH=%s  FILE=%s\n", fr->rf_Dir, fr->rf_File);
 /*
 	To combine the path and filename, copy the path to a buffer,
@@ -1780,7 +1778,6 @@ DMSG("B\n");
   }
   else printf("User Cancelled\n");
 #endif
-DMSG("C\n");
 
   string = GetPL( pl, _DEFAULT ).arg[0];
   retval = addquotes( string );

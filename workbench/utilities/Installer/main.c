@@ -205,7 +205,7 @@ int nextarg, endoffile, count;
       preferences.nopretend = TRUE;
     }
     preferences.transcriptfile = StrDup( ArgString( tooltypes, "LOGFILE", "install_log_file" ) );
-    ttemp = ArgString( tooltypes, "DEFUSER", "NOVICE" );
+    ttemp = ArgString( tooltypes, "MINUSER", "NOVICE" );
     tstring = NULL;
     preferences.minusrlevel = _NOVICE;
     if ( strcasecmp( "average", ttemp ) == 0 )
@@ -238,6 +238,10 @@ int nextarg, endoffile, count;
       preferences.defusrlevel = preferences.minusrlevel;
     }
     FreeVec( tstring );
+    if(preferences.defusrlevel < preferences.minusrlevel)
+    {
+      preferences.defusrlevel = preferences.minusrlevel;
+    }
   }
 
   preferences.copyfail = COPY_FAIL;
