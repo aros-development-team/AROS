@@ -38,10 +38,13 @@
 
 ******************************************************************************/
 {
-#warning TODO: implement sigaddset()
-
-    return -1; /* return failure */
-
+	if (NULL != set) {
+		ULONG i = (signum >> 5);
+		set->__val[i] |= (1 << (signum & 0x1f));
+		return 0;
+	}
+	
+	return -1;
 } /* sigaddset */
 
 #endif
