@@ -14,7 +14,7 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 copy    $SOURCE_NECESSARY $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
-execute ./configure
+execute ./configure --enable-build-type=nightly
 make
 make    default-x11keymaptable
 
@@ -34,7 +34,7 @@ if [[ $CFG_CONTRIB_TYPE == "hosted" ]]; then
     copy    $SOURCE_CONTRIB $BUILD_BASE/Contrib
     
     cd      $BUILD_BASE/AROS
-    execute ./configure
+    execute ./configure --enable-build-type=nightly
     make
     
     cd      $BUILD_BASE/AROS/bin/$HOST_OS-$HOST_CPU/AROS
