@@ -245,6 +245,58 @@ void clearregion(void)
     printf("Region with id %d does not exist\n", i);
 }
 
+void xorregionregion(void)
+{
+  int i1,i2;
+  printf("Enter Region1 id: ");
+  fflush(stdout);
+  scanf("%d", &i1);
+  printf("Enter Region2 (destination) id: ");
+  fflush(stdout);
+  scanf("%d", &i2);
+  if (i1 >= 0 && i1 <= 10 && i2 >= 0 && i2 <= 10)
+       if (regions[i1] && regions[i2]) {
+          XorRegionRegion(regions[i1],regions[i2]);
+          printf("Done.\n");
+          return;
+       }
+  printf("Region with id %d or %d does not exist\n",i1,i2);
+}
+
+void andregionregion(void)
+{
+  int i1,i2;
+  printf("Enter Region1 id: ");
+  fflush(stdout);
+  scanf("%d", &i1);
+  printf("Enter Region2 (destination) id: ");
+  fflush(stdout);
+  scanf("%d", &i2);
+  if (i1 >= 0 && i1 <= 10 && i2 >= 0 && i2 <= 10)
+       if (regions[i1] && regions[i2]) {
+          AndRegionRegion(regions[i1],regions[i2]);
+          printf("Done.\n");
+          return;
+       }
+  printf("Region with id %d or %d does not exist\n",i1,i2);
+}
+void orregionregion(void)
+{
+  int i1,i2;
+  printf("Enter Region1 id: ");
+  fflush(stdout);
+  scanf("%d", &i1);
+  printf("Enter Region2 (destination) id: ");
+  fflush(stdout);
+  scanf("%d", &i2);
+  if (i1 >= 0 && i1 <= 10 && i2 >= 0 && i2 <= 10)
+       if (regions[i1] && regions[i2]) {
+          OrRegionRegion(regions[i1],regions[i2]);
+          printf("Done.\n");
+          return;
+       }
+  printf("Region with id %d or %d does not exist\n",i1,i2);
+}
 
 void doall(void)
 {
@@ -281,6 +333,12 @@ void doall(void)
 	    clearrectregion();
 	} else if (!strcmp(buf, "xorrectregion")) {
 	    xorrectregion();
+	} else if (!strcmp(buf, "xorregionregion")) {
+	    xorregionregion();
+	} else if (!strcmp(buf, "orregionregion")) {
+	    orregionregion();
+	} else if (!strcmp(buf, "andregionregion")) {
+	    andregionregion();
 	} else if (!strcmp(buf, "clear")) {
 	    SetRast(win->RPort, 0);
 	} else
