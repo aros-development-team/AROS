@@ -30,7 +30,7 @@
 #define CATCOMP_ARRAY
 #include "strings.h"
 
-/*** Locale functions *******************************************************/
+/*** Locale Functions *******************************************************/
 CONST_STRPTR MSG(struct Catalog *catalog, ULONG id)
 {
     if (catalog != NULL)
@@ -45,6 +45,7 @@ CONST_STRPTR MSG(struct Catalog *catalog, ULONG id)
 
 #define _(id) MSG(catalog,id)
 
+/*** Macros and Defines *****************************************************/
 #define IGNORE ((APTR)(1UL))
 
 /*** Utility ****************************************************************/
