@@ -402,7 +402,7 @@ static int relocate
     return 1;
 }
 
-BPTR InternalLoadSeg_ELF_relexe
+BPTR InternalLoadSeg_ELF_AROS
 (
     BPTR               file,
     BPTR               table __unused,

@@ -87,7 +87,7 @@
     }
     if (!segs && IoErr()==ERROR_NOT_EXECUTABLE)
     {
-      segs = InternalLoadSeg_ELF_relexe (fh, MKBADDR(NULL), functionarray, NULL, DOSBase);
+      segs = InternalLoadSeg_ELF_AROS (fh, MKBADDR(NULL), functionarray, NULL, DOSBase);
 #if DEBUG > 1
       if (segs)
         bug("Loaded as ELF exe\n");
