@@ -456,7 +456,6 @@ class Archive:
 		elif line[:8] == '#AutoDoc':
 		    # Now read the data in the header
 		    mode = 'autodoc'
-		    func.section = {}
 		    # Clean autodoc section
 		    for s in self.sections:
 			func.section[s] = ''
