@@ -17,8 +17,7 @@ OBJDIR	    := $(GENDIR)/$(CURDIR)
 
 FILES       := 
 	       
-	       
-EXTRA_LIBS  := -L$(LIBDIR) -lhidd$(LIBNAME)stubs
+#EXTRA_LIBS  := -L$(LIBDIR) -lhidd$(LIBNAME)stubs
 
 
 STUBS       := $(LIBNAME)_stubs
@@ -30,35 +29,16 @@ DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
 GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
 
 
-ifeq ($(FLAVOUR),native)
-DEPLIBS := $(LIBDIR)/libhiddparallelstubs.a
-else
-DEPLIBS := $(LIBDIR)/libhiddparallelstubs.a
-endif
-
-LIBS := -lhiddparallelstubs
-
-
-#Generate the shared object
-#%genwblib   <--------------------- COMMENTED OUT !!!
-
-
 # Allways generate module in Sys:Hidds/
 
-#MM- workbench-complete : workbench-hidds
-#MM- workbench-hidds : hidd-parallel-module
-#MM workbench-hidd-setup :
-workbench-hidd-setup : setup
+
+#MM workbench-hidd-parallel-setup :
+workbench-hidd-parallel-setup :
 	%mkdirs_q $(OBJDIR)
 
-#MM hidd-parallel-linklib : workbench-hidd-setup includes hidd-parallel-$(ARCH)-$(CPU)
-#hidd-parallel-linklib : $(LIB) $(STUB_FILE)   <--------------------- COMMENTED OUT !!!
-hidd-parallel-linklib : $(STUB_FILE)
+#MM workbench-hidd-parallel-stubs : workbench-hidd-parallel-setup
+workbench-hidd-parallel-stubs : $(STUB_FILE)
 	@$(NOP)
-
-#MM hidd-parallel-module : workbench-hidd-setup includes hidd-parallel-$(ARCH)-$(CPU)
-#hidd-parallel-module : $(SLIB) $(STUB_FILE)   <--------------------- COMMENTED OUT !!!
-hidd-parallel-module : $(STUB_FILE)
 
 # --- QUICK HACKS BEGIN --- 
 # These are hacks for faster execution of "mmake" and "make". Use them
@@ -69,15 +49,6 @@ hidd-parallel-module : $(STUB_FILE)
 #   mmake AROS.hidd-parallel-quick
 #   make -f TOP=/dh1/AROS CURDIR=workbench/hidds/parallel mmakefile hidd-parallel-quick
 
-
-
-#MM hidd-parallel-module-quick : kernel-oop-$(ARCH)-$(CPU)
-hidd-parallel-module-quick : $(LIB) $(SLIB)
-	@$(NOP)
-
-#MM hidd-parallel-includes-quick : hidd-oop-$(ARCH)-$(CPU)
-hidd-parallel-includes-quick : setup-includes includes-copy 
-	$(NOP)
 
 # --- QUICK HACKS END ---
 
