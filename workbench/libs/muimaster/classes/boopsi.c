@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <exec/memory.h>
 #include <intuition/icclass.h>
@@ -15,11 +15,12 @@
 #include <proto/muimaster.h>
 
 #include "mui.h"
+#include "support_classes.h"
 #include "muimaster_intern.h"
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_BoopsiData
+struct Boopsi_DATA
 {
     struct TagItem *remember;
     LONG remember_len;
@@ -43,7 +44,7 @@ struct MUI_BoopsiData
 **************************************************************************/
 static ULONG Boopsi_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_BoopsiData *data;
+    struct Boopsi_DATA *data;
     struct TagItem *tags,*tag;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
@@ -138,7 +139,7 @@ static ULONG Boopsi_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static ULONG Boopsi_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_BoopsiData *data = INST_DATA(cl, obj);
+    struct Boopsi_DATA *data = INST_DATA(cl, obj);
 
     if (data->boopsi_taglist) FreeTagItems(data->boopsi_taglist);
     if (data->remember) FreeVec(data->remember);
@@ -151,7 +152,7 @@ static ULONG Boopsi_Dispose(struct IClass *cl, Object *obj, Msg msg)
 static ULONG Boopsi_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem *tags,*tag;
-    struct MUI_BoopsiData *data = INST_DATA(cl, obj);
+    struct Boopsi_DATA *data = INST_DATA(cl, obj);
     int only_trigger = 0;
     int no_notify = 0;
 
@@ -234,7 +235,7 @@ static ULONG Boopsi_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 #define STORE *(msg->opg_Storage)
 static ULONG Boopsi_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
-    struct MUI_BoopsiData *data = INST_DATA(cl, obj);
+    struct Boopsi_DATA *data = INST_DATA(cl, obj);
     switch (msg->opg_AttrID)
     {
     	case MUIA_Boopsi_Object: STORE = (LONG)data->boopsi_object;
@@ -286,7 +287,7 @@ static ULONG Boopsi_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 **************************************************************************/
 static ULONG Boopsi_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
-    struct MUI_BoopsiData *data = INST_DATA(cl, obj);
+    struct Boopsi_DATA *data = INST_DATA(cl, obj);
 
     /*
     ** let our superclass first fill in what it thinks about sizes.
@@ -308,7 +309,7 @@ static ULONG Boopsi_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMin
 **************************************************************************/
 static ULONG Boopsi_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
-    struct MUI_BoopsiData *data = INST_DATA(cl, obj);
+    struct Boopsi_DATA *data = INST_DATA(cl, obj);
     ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
     if (!rc) return 0;
 
@@ -322,7 +323,7 @@ static ULONG Boopsi_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
 **************************************************************************/
 static ULONG Boopsi_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
-    struct MUI_BoopsiData *data = INST_DATA(cl, obj);
+    struct Boopsi_DATA *data = INST_DATA(cl, obj);
     DoMethod(_win(obj),MUIM_Window_RemEventHandler,(IPTR)&data->ehn);
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
@@ -332,7 +333,7 @@ static ULONG Boopsi_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup 
 **************************************************************************/
 static ULONG Boopsi_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
-    struct MUI_BoopsiData *data = INST_DATA(cl, obj);
+    struct Boopsi_DATA *data = INST_DATA(cl, obj);
     ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
     struct TagItem *tag;
 
@@ -358,7 +359,7 @@ static ULONG Boopsi_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 **************************************************************************/
 static ULONG Boopsi_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
-    struct MUI_BoopsiData *data = INST_DATA(cl, obj);
+    struct Boopsi_DATA *data = INST_DATA(cl, obj);
     DoSuperMethodA(cl, obj, (Msg)msg);
 
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) return 1;
@@ -371,7 +372,7 @@ static ULONG Boopsi_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 **************************************************************************/
 static ULONG Boopsi_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
-    struct MUI_BoopsiData *data = INST_DATA(cl, obj);
+    struct Boopsi_DATA *data = INST_DATA(cl, obj);
     if (data->boopsi_object)
     {
         struct TagItem *tags,*tag;
@@ -395,7 +396,7 @@ static ULONG Boopsi_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 **************************************************************************/
 static ULONG Boopsi_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
-    //struct MUI_BoopsiData *data = INST_DATA(cl, obj);
+    //struct Boopsi_DATA *data = INST_DATA(cl, obj);
     
     if (msg->imsg)
     {
@@ -422,7 +423,7 @@ static ULONG Boopsi_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-
+#if ZUNE_BUILTIN_BOOPSI
 BOOPSI_DISPATCHER(IPTR, Boopsi_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -440,7 +441,7 @@ BOOPSI_DISPATCHER(IPTR, Boopsi_Dispatcher, cl, obj, msg)
 	case MUIM_HandleEvent: return Boopsi_HandleEvent(cl, obj, (APTR)msg);
     }
     {
-	struct MUI_BoopsiData *data = INST_DATA(cl, obj);
+	struct Boopsi_DATA *data = INST_DATA(cl, obj);
 	if (((msg->MethodID >> 16) != ((TAG_USER >> 16) | 0x0042)) && data->boopsi_object)
 	{
 	    return DoMethodA(data->boopsi_object, msg);
@@ -449,13 +450,10 @@ BOOPSI_DISPATCHER(IPTR, Boopsi_Dispatcher, cl, obj, msg)
     }
 }
 
-
-/*
- * Class descriptor.
- */
 const struct __MUIBuiltinClass _MUI_Boopsi_desc = { 
     MUIC_Boopsi, 
     MUIC_Area, 
-    sizeof(struct MUI_BoopsiData), 
+    sizeof(struct Boopsi_DATA), 
     (void*)Boopsi_Dispatcher 
 };
+#endif /* ZUNE_BUILTIN_BOOPSI */

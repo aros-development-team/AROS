@@ -22,6 +22,7 @@
 #include "muimaster_intern.h"
 #include "textengine.h"
 #include "support.h"
+#include "support_classes.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
