@@ -35,56 +35,54 @@ ULONG xget(Object *obj, Tag attr)
   GetAttr(attr, obj, &storage);
   return storage;
 }
-
-Object *MakeLabel(STRPTR str)
-{
-  return (MUI_MakeObject(MUIO_Label, str, 0));
-}
-
 int main(void)
 {
     Object *wnd;
-    Object *img;
-    Object *a, *b, *c, *d;
+    static char *radio_entries2[] = {"Paris","London",NULL};
 
     app = ApplicationObject,
    	SubWindow, wnd = WindowObject,
-    	    MUIA_Window_Title, "col",
-	    MUIA_Window_Activate, TRUE,
-    	    WindowContents, d = VGroup,
-		   GroupFrameT("Background"),
-			       Child, c = VGroup,
-		   Child, a = PopimageObject, End,
-		   Child, b = MakeLabel("Window"),
-			       End,
-			       Child, VGroup,
-		   Child, PopimageObject, End,
-		   Child, MakeLabel("Requester"),
-			       End,
+    	    WindowContents, VGroup,
+	Child, HGroup,
+	    MUIA_InputMode, MUIV_InputMode_Immediate,
+/*              MUIA_ShowSelState, FALSE, */
+	    Child, ImageObject,
+                MUIA_ShowSelState, FALSE,
+	        MUIA_Image_FontMatch, TRUE,
+	        MUIA_Image_Spec, MUII_RadioButton,
+	        MUIA_Frame, MUIV_Frame_None,
+   	        End,
+	    Child, TextObject,
+                MUIA_ShowSelState, FALSE,
+	        MUIA_Text_Contents, "London",
+	        MUIA_Frame, MUIV_Frame_None,
+	        MUIA_Text_PreParse, "\33l",
+	        End,
 	End,
-	End,
+		End,
+	    End,
 	End;
 
     if (app)
     {
 	ULONG sigs = 0;
-	ULONG hw;
-
+/*  #if 0 */
 	DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-	set(wnd, MUIA_Window_Open, TRUE);
-	get(b, MUIA_HorizWeight, &hw);
-	
-	printf("%d[%p] %d[%p] (%d) %d[%p] %d\n", _maxwidth(a), a, _maxwidth(b), b, hw, _maxwidth(c), c, _maxwidth(d));
 
+/*  #endif */
+	set(wnd, MUIA_Window_Open, TRUE);
+
+/*  #if 0 */
 	while((LONG) DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
 	{
 	    if (sigs)
 	    {
 		sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
 		if (sigs & SIGBREAKF_CTRL_C) break;
-		
+		if (sigs & SIGBREAKF_CTRL_D) break;
 	    }
 	}
+/*  #endif */
 	set(wnd, MUIA_Window_Open, FALSE);
 	MUI_DisposeObject(app);
     }
