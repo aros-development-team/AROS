@@ -12,12 +12,13 @@ typedef struct node
 {
     char *secname;
     int   off_setname;
+    unsigned long pri;
     struct node *next;
 } node;
 
 
 
-node *new_node(char *name, int off){
+node *new_node(char *name, node *next, int off, unsigned long pri){
    node *n;
 
    if (!(n          = calloc(1, sizeof(node))) ||
@@ -29,23 +30,39 @@ node *new_node(char *name, int off){
    }
 
    n->off_setname = off;
+   n->pri = pri;
+   n->next = next;
 
    return n;
 }
 
-node *get_node(node **list, char *name, int off)
+node *get_node(node **list, char *name, int off, unsigned long pri)
 {
     node **curr = list;
 
     while (*curr)
     {
 	if (strcmp((*curr)->secname, name) == 0)
-	    return *curr;
+	{
+	    do
+	    {
+ 	        if ((*curr)->pri == pri)
+	            return *curr;
 
-	curr = &((*curr)->next);
+	        if ((*curr)->pri > pri)
+	            break;
+
+                curr = &(*curr)->next;
+
+            } while (*curr && strcmp((*curr)->secname, name) == 0);
+
+	    break;
+	}
+
+	curr = &(*curr)->next;
     }
 
-    return (*curr = new_node(name, off));
+    return (*curr = new_node(name, *curr, off, pri));
 }
 
 int emit_sets(node *setlist, FILE *out)
@@ -57,6 +74,8 @@ int emit_sets(node *setlist, FILE *out)
     {
         i = 0;
 
+        node *oldnode = setlist;
+
         do
         {
             setname_big[i] = toupper(setlist->secname[setlist->off_setname + i]);
@@ -66,16 +85,32 @@ int emit_sets(node *setlist, FILE *out)
         (
             out,
             "    __%s_LIST__ = .;\n"
-            "    LONG((__%s_END__ - __%s_LIST__) / %d - 2)\n"
-            "    KEEP(*(SORT(%s.*)))\n"
+            "    LONG((__%s_END__ - __%s_LIST__) / %d - 2)\n",
+	    setname_big, setname_big, setname_big, sizeof(long)
+	);
+
+	do
+	{
+	    fprintf
+	    (
+	        out,
+		"    KEEP(*(%s.%lu))\n",
+		setlist->secname, setlist->pri
+	    );
+
+	    setlist = setlist->next;
+	} while (setlist && (strcmp(oldnode->secname, setlist->secname) == 0));
+
+
+	fprintf
+	(
+	    out,
             "    KEEP(*(%s))\n"
             "    LONG(0)\n"
             "    __%s_END__ = .;\n",
-	    setname_big, setname_big, setname_big, sizeof(long),
-            setlist->secname, setlist->secname, setname_big
+            oldnode->secname, setname_big
         );
 
-        setlist = setlist->next;
     }
 
     return 1;
@@ -95,8 +130,9 @@ int gensets(FILE *in, FILE *out)
 
     while (fscanf(in, " %200s ", sec)>0)
     {
-        char *idx;
-	int   off;
+        char          *idx;
+	int            off;
+	unsigned long  pri;
 
 	if (strncmp(sec, ".aros.set.", 10) == 0)
 	    off = 10;
@@ -113,8 +149,18 @@ int gensets(FILE *in, FILE *out)
         if (idx)
             *idx = '\0';
 
-	get_node(&setlist, sec, off);
+	pri = strtoul(&idx[1], NULL, 10);
+
+	get_node(&setlist, sec, off, pri);
     }
 
     return emit_sets(setlist, out);
 }
+
+#ifdef GENSETS_TEST
+int main(void)
+{
+    return gensets(stdin, stdout);
+}
+#endif
+
