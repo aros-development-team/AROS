@@ -15,13 +15,14 @@ int main()
 {
     struct timeval  tv_start, 
                     tv_end;
-    int             count   = 1000000;
+    int             count   = 100000000;
     double          elapsed = 0.0;
     int             i;
     APTR            pool;
     APTR            memory;
     
     pool = CreatePool(MEMF_ANY, 4 * 100, 100);
+    AllocPooled(pool, 100); // Avoid bad behaviour of FreePooled()
     
     gettimeofday(&tv_start, NULL);
     
