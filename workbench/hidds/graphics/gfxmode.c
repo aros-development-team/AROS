@@ -295,8 +295,10 @@ Class *init_gfxmodeclass(struct class_static_data *csd)
     EnterFunc(bug("init_gfxmodeclass(csd=%p)\n", csd));
 
     if(MetaAttrBase) {
-	if (ObtainAttrBases(attrbases)) {
-
+#ifndef AROS_CREATE_ROM_BUG
+	if (ObtainAttrBases(attrbases)) 
+#endif
+	{
     	    cl = NewObject(NULL, CLID_HiddMeta, tags);
     	    if(NULL != cl) {
         	D(bug("GfxMode class ok\n"));
@@ -328,7 +330,9 @@ void free_gfxmodeclass(struct class_static_data *csd)
             csd->gfxmodeclass = NULL;
 	}
     }
+#ifndef AROS_CREATE_ROM_BUG
     ReleaseAttrBases(attrbases);
+#endif
 
     ReturnVoid("free_gfxmodeclass");
 }

@@ -224,7 +224,10 @@ OOP_Class *init_gcclass(struct class_static_data *csd)
     EnterFunc(bug("init_gcclass(csd=%p)\n", csd));
 
     if(MetaAttrBase) {
-        if(OOP_ObtainAttrBases(attrbases))  {
+#ifndef AROS_CREATE_ROM_BUG
+        if(OOP_ObtainAttrBases(attrbases))  
+#endif
+        {
             cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
             if(NULL != cl) {
                 D(bug("GC class ok\n"));
@@ -258,9 +261,9 @@ void free_gcclass(struct class_static_data *csd)
     	    csd->gcclass = NULL;
 	}
     }
-    
+#ifndef AROS_CREATE_ROM_BUG    
     OOP_ReleaseAttrBases(attrbases);
-
+#endif
     ReturnVoid("free_gcclass");
 }
 

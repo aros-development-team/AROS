@@ -2074,7 +2074,10 @@ OOP_Class *init_bitmapclass(struct class_static_data *csd)
     EnterFunc(bug("init_bitmapclass(csd=%p)\n", csd));
 
     if(MetaAttrBase)   {
-	if (OOP_ObtainAttrBases(attrbases)) {
+#ifndef AROS_CREATE_ROM_BUG
+	if (OOP_ObtainAttrBases(attrbases)) 
+#endif
+	{
     	    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     	    if(NULL != cl) {
         	D(bug("BitMap class ok\n"));
@@ -2105,8 +2108,9 @@ void free_bitmapclass(struct class_static_data *csd)
     	    OOP_DisposeObject((OOP_Object *) csd->bitmapclass);
     	    csd->bitmapclass = NULL;
 	}
-	
+#ifndef AROS_CREATE_ROM_BUG	
 	OOP_ReleaseAttrBases(attrbases);
+#endif
     }
 
     ReturnVoid("free_bitmapclass");
