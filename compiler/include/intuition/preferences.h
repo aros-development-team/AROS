@@ -2,11 +2,10 @@
 #define INTUITION_PREFERENCES_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Old-style preferences structures and defines
-    Lang: english
+    Old-style preferences structures and defines.
 */
 
 #ifndef EXEC_TYPES_H
@@ -277,4 +276,4 @@ struct Preferences
 #define DIMENSIONS_MASK	    (BOUNDED_DIMENSIONS|ABSOLUTE_DIMENSIONS|PIXEL_DIMENSIONS|MULTIPLY_DIMENSIONS)
 #define DITHERING_MASK	    (HALFTONE_DITHERING|FLOYD_DITHERING)
 
-#endif /* INTUITION_PREFERNCES_H */
+#endif /* INTUITION_PREFERENCES_H */
