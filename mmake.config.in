@@ -7,8 +7,8 @@ defaultmakefilename mmakefile
 defaulttarget AROS
 # Uncomment this if you want/have to use gawk
 #genmakefilescript gawk -f $(TOP)/scripts/genmf.gawk --assign "TOP=$(TOP)" < mmakefile.src > mmakefile
-genmakefilescript $(TOP)/local/genmf/genmf $(TOP)/config/make.tmpl < mmakefile.src > mmakefile
-genmakefiledeps $(TOP)/scripts/genmf.gawk $(TOP)/config/make.tmpl
+genmakefilescript $(TOP)/tools/genmf/genmf $(TOP)/config/make.tmpl < mmakefile.src > mmakefile
+genmakefiledeps $(TOP)/tools/genmf $(TOP)/config/make.tmpl
 globalvarfile $(TOP)/config/host.cfg
 genglobalvarfile sh $(TOP)/configure -m $(TOP)/config/host.cfg
 
