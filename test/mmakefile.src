@@ -70,7 +70,8 @@ FILES := amiga2date \
 	printnativekeytable \
 	textbug \
 	testide \
-	playoss
+	playoss \
+	openlib
 
 EXEDIR := $(AROSDIR)/test
 
