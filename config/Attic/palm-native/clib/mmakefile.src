@@ -16,10 +16,12 @@ SFILES := \
 	__vcscan \
 	difftime \
 	drand48 \
+	erand48 \
 	atof \
 	isinf \
 	sscanf \
 	strtol \
+	strtod \
 	strtoul
 
 ASMFILES  := setjmp longjmp
