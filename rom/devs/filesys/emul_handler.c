@@ -5,7 +5,10 @@
     Desc: Filesystem that accesses an underlying unix filesystem.
     Lang: english
 */
+/* AROS includes */
 #include <aros/system.h>
+#include <aros/options.h>
+#include <aros/libcall.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <exec/types.h>
@@ -16,7 +19,7 @@
 #include <dos/exall.h>
 #include <dos/dosasl.h>
 #include <proto/dos.h>
-#include <aros/libcall.h>
+/* Unix includes */
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
@@ -120,8 +123,12 @@ LONG err_u2a(void)
     ULONG i;
     for(i=0;i<sizeof(u2a)/sizeof(u2a[0]);i++)
 	if(u2a[i][0]==errno)
-	    break;
-    return u2a[i][1];
+	    return u2a[i][1];
+#if PassThroughErrnos
+    return errno+PassThroughErrnos;
+#else
+    return ERROR_UNKNOWN;
+#endif
 }
 
 

@@ -2,9 +2,13 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Fault()
+    Desc: dos.library function Fault()
     Lang: english
 */
+#include <aros/options.h>
+#if PassThroughErrnos
+#   include <errno.h>
+#endif
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -82,6 +86,14 @@
     }
 
     theString = DosGetString(code);
+#if PassThroughErrnos
+    if ((!theString) && (code & PassThroughErrnos))
+    {
+        int errcode = code - PassThroughErrnos;
+        if ((errcode > 0) && (errcode < sys_nerr))
+            theString = sys_errlist[errcode];
+    }
+#endif
     if(theString)
     {
 	while((index < len) && *theString)
