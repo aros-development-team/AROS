@@ -1,6 +1,7 @@
 /*  Code generator for Intel 80386 or higher.			*/
 
 #include "supp.h"
+#include "stab.h"
 
 static char FILE_[]=__FILE__;
 
@@ -306,11 +307,13 @@ void emitdebugline (FILE *f, int line)
 #   define PATH_MAX  1024
 #endif
 
+static int next_free_typeid = 32;
+
 void begin_file (FILE *f, char *name)
 {
     char * ptr;
     char path[PATH_MAX];
-    int len1, len2;
+    int len1, len2, t;
 
     ptr = strrchr (name, '/');
     if (!ptr)
@@ -333,33 +336,74 @@ void begin_file (FILE *f, char *name)
 
     /* Emit absolute path to source file and the filename with any
 	path the user gave to the frontend */
-    fprintf (f, "\t.stabs \"%s\",100,0,0,.Ltext0\n", path);
-    fprintf (f, "\t.stabs \"%s\",100,0,0,.Ltext0\n", name);
+    fprintf (f, "\t.stabs \"%s\",%d,0,0,.Ltext0\n", path, N_SO);
+    fprintf (f, "\t.stabs \"%s\",%d,0,0,.Ltext0\n", name, N_SO);
     fprintf (f, ".text\n.Ltext0:\n");
+    fprintf (f, "\t.stabs  \"vbcc_compiled.\", 0x3c, 0, 0, 0\n");
 
     /* Emit types. Format is:
 
-	"<name>:<t#1>=<r#2><;min;max;>",128,0,0,0
+	"<name>:<t#1>=<r#2;min;max;>",128,0,0,0
 
 	128,0,0,0 tells GDB this is a type definition
 	<name> is the name of the symbol.
-	<t#1> is the name of the type
-	<r#2> is an alias
-	<;min;max;> min and max values for this type (can be omitted)
+	<t#1> is the name of the type and it's number
+	<r#2;min;max;> is a range. The min and max values are in the format
+		of the type #2. min and max values for this type can be
+		omitted.
+	void is defined by <t#1=#1>.
     */
-    fprintf (f, ".stabs \"int:t1=r1;-2147483648;2147483647;\",128,0,0,0\n");
-    fprintf (f, ".stabs \"int:t1=r1;-2147483648;2147483647;\",128,0,0,0\n");
+    for (t=CHAR; t<=LONG; t++)
+    {
+	fprintf (f, ".stabs \"%s:t%d=r%d;%d;%d;\",%d,0,0,0\n", typname[t],t,t==CHAR ? CHAR:INT,
+	    t_min[t],t_max[t],N_LSYM);
+	fprintf (f, ".stabs \"unsigned %s:t%d=r%d;%d;%d;\",%d,0,0,0\n", typname[t],
+	    t|UNSIGNED, INT,
+	    t_min[t|UNSIGNED],t_max[t|UNSIGNED], N_LSYM);
+    }
+
+    fprintf (f, ".stabs \"float:t%d=r%d;%d;0;\",%d,0,0,0\n",
+	FLOAT,INT,sizeof(float),N_LSYM);
+    fprintf (f, ".stabs \"double:t%d=r%d;%d;0;\",%d,0,0,0\n",
+	DOUBLE,INT,sizeof(double),N_LSYM);
+    fprintf (f, ".stabs \"void:t%d=r%d\",%d,0,0,0\n",
+	VOID,VOID,N_LSYM);
+
+/*
     fprintf (f, ".stabs \"char:t2=r2;0;127;\",128,0,0,0\n");
+    fprintf (f, ".stabs \"int:t1=r1;-2147483648;2147483647;\",128,0,0,0\n");
     fprintf (f, ".stabs \"long int:t3=r1;-2147483648;2147483647;\",128,0,0,0\n");
     fprintf (f, ".stabs \"unsigned int:t4=r1;0;-1;\",128,0,0,0\n");
     fprintf (f, ".stabs \"long unsigned int:t5=r1;0;-1;\",128,0,0,0\n");
     fprintf (f, ".stabs \"void:t19=19\",128,0,0,0\n");
+*/
+}
+
+static void debug_print_stab_type (FILE *f, struct Typ *typ)
+{
+    int t = typ->flags & NU;
+
+    if (t <= VOID)
+	fprintf (f, "%d", t);
+    else if (t == ARRAY || t == POINTER)
+    {
+	fprintf (f, "%d=*", next_free_typeid++);
+	debug_print_stab_type (f, typ->next);
+    }
+    else
+    {
+	fprintf (stderr, "debug_print_stab_type() doesn't support type %s, yet\n",
+	    typname[t]);
+	raus();
+    }
 }
 
 static void function_top(FILE *f,struct Var *v,long offset)
 /*  erzeugt Funktionskopf			*/
 {
     int i;
+    struct struct_declaration *p;
+
     if(section!=CODE){fprintf(f,codename);section=CODE;}
 
     /*ADA*/
@@ -376,7 +420,19 @@ static void function_top(FILE *f,struct Var *v,long offset)
 
 	Right now, all functions return void.
     */
-    fprintf (f, ".stabs \"%s:F19\",36,0,%d,%s%s\n", v->identifier, fline, idprefix,v->identifier);
+    fprintf (f, ".stabs \"%s:F", v->identifier);
+    debug_print_stab_type (f, v->vtyp->next);
+    fprintf (f, "\",%d,0,%d,%s%s\n", N_FUN, fline, idprefix,v->identifier);
+
+    p=v->vtyp->exact;
+    for (i=0; i<p->count-1; i++)
+    {
+	fprintf (f, ".stabs \"%s:p", (*p->sl)[i].identifier);
+	debug_print_stab_type (f, (*p->sl)[i].styp);
+	/* TODO i*4+4 is a crude method to find the offset of a parameter on
+	    the stack */
+	fprintf (f, "\",%d,0,0,%d\n", N_PSYM, i*4+4);
+    }
 
     if(v->storage_class==EXTERN) fprintf(f,"\t.globl\t%s%s\n",idprefix,v->identifier);
     fprintf(f,"%s%s:\n",idprefix,v->identifier);
