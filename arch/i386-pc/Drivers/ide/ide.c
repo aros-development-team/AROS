@@ -1,5 +1,5 @@
 /*
-    (C) 1998-2001 AROS - The Amiga Research OS
+    Copyright (C) 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: IDE device
@@ -255,9 +255,11 @@ ULONG InitTask(struct ideBase *ib)
 
         /* Init MsgPort */
         NEWLIST(&t->td_Port.mp_MsgList);
-        t->td_Port.mp_Node.ln_Type = NT_MSGPORT;
-        t->td_Port.mp_Flags = PA_IGNORE;
-        t->td_Port.mp_SigTask = &t->td_Task;
+        t->td_Port.mp_Node.ln_Type  = NT_MSGPORT;
+        t->td_Port.mp_Flags 	    = PA_SIGNAL;
+	t->td_Port.mp_SigBit 	    = SIGBREAKB_CTRL_F;
+        t->td_Port.mp_SigTask 	    = &t->td_Task;
+	
 	    t->td_Port.mp_Node.ln_Name = "ide.device";
 
         /* Init MemList */
@@ -1041,13 +1043,22 @@ void TaskCode(struct ideBase *ib)
     // UNIT_MICROHZ!!!!!!!!!
     OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)ib->ide_TimerIO, 0);
 
+#if 0
+    /* stegerg: commented out, because we now don't allocate a signal, but
+     *          use always SIGBREAKB_CTRL_F. 
+     */
+     
     /*
      * Allocate signal for port. Since this is freshly created task we can
      * do it without any check
      */
+
     td->td_Port.mp_SigBit = AllocSignal(-1);
-    td->td_Port.mp_Flags = 0;
-    
+    td->td_Port.mp_Flags  = PA_SIGNAL;
+      
+#endif
+
+   
     sig = 1L << td->td_Port.mp_SigBit;
 
     /* Endles task loop */
