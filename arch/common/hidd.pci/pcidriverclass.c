@@ -34,6 +34,7 @@
 
 #define SysBase (PSD(cl)->sysbase)
 #define UtilityBase (PSD(cl)->utilitybase)
+#define OOPBase (PSD(cl)->oopbase)
 
 typedef union _pcicfg
 {
@@ -240,7 +241,11 @@ static APTR pcidriver_map(OOP_Class *cl, OOP_Object *o,
 
     if (instance->DirectBus)
     {
-	return msg->PCIAddress;
+	struct pHidd_PCIDriver_PCItoCPU mmsg;
+	mmsg.mID = OOP_GetMethodID(CLID_Hidd_PCIDriver, moHidd_PCIDriver_PCItoCPU);
+	mmsg.address = msg->PCIAddress;
+	
+	return ((APTR)OOP_DoMethod(o, (OOP_Msg)&mmsg));
     } else return (APTR)0xffffffff;
 }
 
