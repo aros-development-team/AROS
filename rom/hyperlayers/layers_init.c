@@ -34,11 +34,7 @@
 #undef GfxBase
 #undef UtilityBase
 
-#ifdef CREATE_ROM
-#	define SysBase LIBBASE->lb_SysBase
-#else
-	struct ExecBase * SysBase; /* global variable */
-#endif
+#define SysBase LIBBASE->lb_SysBase
 
 ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR LIBBASE)
 {
@@ -49,10 +45,6 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR LIBBASE)
 
   if (NULL == LIBBASE->lb_GfxBase)
     LIBBASE->lb_GfxBase = (struct GfxBase *) OpenLibrary("graphics.library",0);
-
-#ifndef CREATE_ROM
-  SysBase = LIBBASE->lb_SysBase;
-#endif
 
   if (NULL == LIBBASE->lb_UtilityBase)
      LIBBASE->lb_UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library",0);
