@@ -1,10 +1,25 @@
 #ifndef _INSTALLER_H
 #define _INSTALLER_H
 
+#define DEBUG 1
+
+#ifdef LINUX
+#define FALSE 0
+#define TRUE 1
+#define PrintFault(x,y) /* */
+#define IoErr() /* */
+#endif /* LINUX */
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef LINUX
+#include <dos/dos.h>
+#include <proto/dos.h>
+#endif /* !LINUX */
+
 
 typedef struct ScriptArg
 {
@@ -18,6 +33,10 @@ typedef struct ScriptArg
 
 } ScriptArg;
 
+typedef struct InstallerPrefs
+{
+  char * transcriptfile;
+} InstallerPrefs;
 
 #define SEMICOLON	0x3B
 #define LINEFEED	0x0A

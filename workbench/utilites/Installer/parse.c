@@ -1,17 +1,14 @@
 /* parse.c -- Here are all functions used to parse the input file */
-#include <dos/dos.h>
-#include <proto/dos.h>
 
 #include "Installer.h"
 
-extern char buffer[];
+extern char buffer[MAXARGSIZE];
 extern FILE *inputfile;
 extern int error;
 
 void parse_file( ScriptArg *first )
 {
 ScriptArg *current;
-char buffer[MAXARGSIZE];
 int count, i, ready;
 
   ready = FALSE;
@@ -153,7 +150,4 @@ int count, i, ready;
       exit(-1);
     }
   } while( !ready );
-#ifdef DEBUG
-  printf("Sucessfully parsed file!\n");
-#endif
 }

@@ -1,4 +1,3 @@
-#define DEBUG 1
 /*
     (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
@@ -6,8 +5,6 @@
     Desc: Installer
     Lang: english
 */
-#include <dos/dos.h>
-#include <proto/dos.h>
 
 #include "Installer.h"
 #include "main.h"
@@ -25,11 +22,12 @@ extern void parse_file( ScriptArg * );
 extern void execute_script( ScriptArg * , int );
 extern void free_script(ScriptArg * );
 
-
+InstallerPrefs preferences;
+ScriptArg script;
 
 int main( int argc, char *argv[] )
 {
-ScriptArg script, *currentarg;
+ScriptArg *currentarg, *dummy;
 int nextarg, endoffile, count;
 
 char *filename;
@@ -51,6 +49,9 @@ char *filename;
     PrintFault( IoErr(), "Installer" );
     exit(-1);
   }
+
+
+  preferences.transcriptfile = NULL;
 
   endoffile = FALSE;
   script.arg = NULL;
@@ -119,7 +120,12 @@ char *filename;
                               printf("Couldn't malloc memory!\n");
                               exit(-1);
                             }
-                            currentarg->cmd->parent = currentarg;
+			    dummy = currentarg->cmd;
+                            dummy->parent = currentarg;
+			    dummy->arg = NULL;
+			    dummy->cmd = NULL;
+			    dummy->next = NULL;
+			    dummy->value = NULL;
 	                    parse_file( currentarg->cmd );
 	                    nextarg = TRUE;
 	                    break;
@@ -136,9 +142,9 @@ char *filename;
   fclose( inputfile );
 
   /* execute parsed script */
-  execute_script( &script ,0 );
+  execute_script( &script, 0 );
 
-  free_script( script.cmd );
+/*  free_script( script.cmd ); */
 
 return error;
 }

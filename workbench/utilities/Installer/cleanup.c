@@ -7,6 +7,8 @@ void free_script( ScriptArg *first )
   {
     free_script( first->cmd );
     free_script( first->next );
+    free( first->arg );
+    free( first->value );
+    free( first );
   }
-  free( first );
 }

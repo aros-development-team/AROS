@@ -27,3 +27,11 @@
 - added commands.h which contains the strings of known commands
 - added texts.h which contains the default values of some variables
 
+0008
+- moved content of commands.h into execute.h and deleted commands.h :-(
+
+0009
+- added support for LINUX only compilation
+  (for testing issues only - will go away soon)
+- added preliminary code for some functions (abort,exit,transcript)
+
