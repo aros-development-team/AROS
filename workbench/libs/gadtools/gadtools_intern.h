@@ -2,7 +2,7 @@
 #define GADTOOLS_INTERN_H
 
 /*
-    (C) 1997-2001 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Internal definitions for gadtools.library.
@@ -248,8 +248,6 @@ struct GadToolsBase_intern
     struct GfxBase	 	* gfxbase;
     struct Library		* layersbase;
     struct Library	 	* utilitybase;
-
-    struct Library		* arospabase;
 
     Class 			* buttonclass;
     Class 			* textclass;

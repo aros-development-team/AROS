@@ -1,5 +1,5 @@
 /*
-    (C) 1997 - 2000 AROS - The Amiga Research OS
+    Copyright (C) 1997 - 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: GadTools initialization code.
@@ -115,8 +115,6 @@ AROS_LH2(struct GadToolsBase_intern *, init,
     SysBase = sysBase;
     LIBBASE->sysbase=sysBase;
     LIBBASE->seglist=segList;
-
-    LIBBASE->arospabase = NULL;
 
     LIBBASE->buttonclass = NULL;
     LIBBASE->textclass	 = NULL;
@@ -275,10 +273,6 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
 	if (LIBBASE->paletteclass)
 	    FreeClass(LIBBASE->paletteclass);
 	LIBBASE->paletteclass = NULL;
-
-	if (LIBBASE->arospabase)
-	    CloseLibrary(LIBBASE->arospabase);
-        LIBBASE->arospabase = NULL;
 	    
 	if (UtilityBase)
 	    CloseLibrary(UtilityBase);

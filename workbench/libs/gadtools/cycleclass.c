@@ -24,7 +24,6 @@
 #include <devices/inputevent.h>
 #include <proto/alib.h>
 #include <proto/utility.h>
-#include <gadgets/aroscycle.h>
 
 #include <string.h> /* memset() */
 

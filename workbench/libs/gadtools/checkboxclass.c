@@ -24,7 +24,6 @@
 #include <devices/inputevent.h>
 #include <proto/alib.h>
 #include <proto/utility.h>
-#include <gadgets/aroscheckbox.h>
 
 #include <string.h> /* memset() */
 
