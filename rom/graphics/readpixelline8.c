@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -48,13 +48,15 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    return driver_ReadPixelLine8(rp
-    	, xstart, ystart
-	, width
-	, array, tempRP
-	, GfxBase
-    );
+
+    return ReadPixelArray8(rp,
+    	    	    	   xstart,
+			   ystart,
+			   xstart + width - 1,
+			   ystart,
+			   array,
+			   tempRP);
 
     AROS_LIBFUNC_EXIT
+    
 } /* ReadPixelLine8 */

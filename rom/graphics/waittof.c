@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -64,4 +64,5 @@
     Enable();
 
     AROS_LIBFUNC_EXIT
+    
 } /* WaitTOF */

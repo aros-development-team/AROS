@@ -1,5 +1,5 @@
 /*
-    (C) 1995 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$    $Log
 
     Desc: Graphics function OpenFont()
@@ -7,6 +7,8 @@
 */
 #include "graphics_intern.h"
 #include <graphics/text.h>
+
+#include <string.h>
 
 /*****************************************************************************
 
@@ -46,15 +48,50 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
-    struct TextFont * font;
 
-    font = driver_OpenFont (textAttr, GfxBase);
-
-    if (font)
+    struct TextFont *tf, *best_so_far = NULL;
+    WORD    	    bestmatch = 0;
+   
+    ASSERT_VALID_PTR(textAttr);
+    
+    if (!textAttr->ta_Name) return NULL;
+	
+    /* Search for font in the fontlist */
+    Forbid();
+    ForeachNode(&GfxBase->TextFonts, tf)
     {
-	font->tf_Accessors ++;
+	if (0 == strcmp(tf->tf_Message.mn_Node.ln_Name, textAttr->ta_Name))
+	{
+	    UWORD   	    match;
+	    struct TagItem  *tags = NULL;
+	    struct TextAttr match_ta =
+	    {
+	    	tf->tf_Message.mn_Node.ln_Name,
+		tf->tf_YSize,
+		tf->tf_Style,
+		tf->tf_Flags
+	    };
+	    
+	    if (ExtendFont(tf, NULL))
+	    {
+	        tags = ((struct TextFontExtension *)tf->tf_Extension)->tfe_Tags;		
+	    }
+	    
+	    match = WeighTAMatch(textAttr, &match_ta, tags);
+	    if (match > bestmatch)
+	    {
+	    	bestmatch = match;
+		best_so_far = tf;
+	    }
+	}
     }
+    
+    if (best_so_far) best_so_far->tf_Accessors ++;
+    
+    Permit();
+   
+    return best_so_far;
 
-    return font;
     AROS_LIBFUNC_EXIT
+    
 } /* OpenFont */

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Set one color register for this Viewport
@@ -64,9 +64,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    if (vp->ColorMap) SetRGB4CM(vp->ColorMap, n, r, g, b);
-        
-    driver_SetRGB4 (vp, n, r, g, b, GfxBase);
+    SetRGB32(vp, n, r * 0x11111111,
+    	    	    g * 0x11111111,
+		    b * 0x11111111);
 
     /************************************************************
     / This is the code that works correctly on the real thing
@@ -93,4 +93,4 @@
 
     AROS_LIBFUNC_EXIT
     
-} /* SetRGB32 */
+} /* SetRGB4 */

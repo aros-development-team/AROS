@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function InitView()
@@ -60,9 +60,10 @@ static const struct View defaultView =
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
+    ASSERT_VALID_PTR(view);
+    
     CopyMem ((UBYTE *)&defaultView, view, sizeof (struct View));
 
-    driver_InitView(view, GfxBase);
-
     AROS_LIBFUNC_EXIT
+    
 } /* InitView */

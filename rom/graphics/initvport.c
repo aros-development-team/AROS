@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function InitVPort()
@@ -68,9 +68,10 @@ static const struct ViewPort defaultViewPort =
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
+    ASSERT_VALID_PTR(vp);
+    
     CopyMem ((UBYTE *)&defaultViewPort, vp, sizeof (struct ViewPort));
 
-    driver_InitVPort(vp, GfxBase);
-
     AROS_LIBFUNC_EXIT
-} /* InitView */
+    
+} /* InitViewPort */

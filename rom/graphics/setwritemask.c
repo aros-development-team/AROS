@@ -1,5 +1,5 @@
 /*
-    (C) 1995 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$    $Log
 
     Desc: Graphics function SetWriteMask()
@@ -46,13 +46,15 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
-    ULONG ret;
 
-    ret = driver_SetWriteMask (rp, mask, GfxBase);
-
-    if (ret)
-	rp->Mask = mask;
-
-    return ret;
+#if 0
+    rp->Mask = mask;
+    return TRUE;
+#else
+#warning SetWriteMask not yet implemented
+    return FALSE;
+#endif
+ 
     AROS_LIBFUNC_EXIT
+    
 } /* SetWriteMask */
