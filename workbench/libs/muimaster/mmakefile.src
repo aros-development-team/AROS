@@ -55,7 +55,6 @@ FILES := \
     support \
     textengine \
     frame \
-    prefs \
     imspec \
     dragndrop \
     menu \
