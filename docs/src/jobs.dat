@@ -183,7 +183,7 @@ c/join;1;chodorowski;Write C:Join
 c/lab;2;SDuvan;Write C:Lab
 c/librarytest;1;matthias;librarytest
 c/list;1;matthias,bergers;Write C:List
-c/makelink;0;srittau;Write C:MakeLink
+c/makelink;2;SDuvan;Write C:MakeLink
 c/makedir;2;matthias;Write C:MakeDir
 c/mount;2;matthias;Write C:Mount
 c/newshell;1;matthias;Write C:NewShell
@@ -191,7 +191,7 @@ c/path;2;matthias;Write C:Path
 c/prompt;2;SDuvan;Write C:Prompt
 c/protect;1;laguest;Write C:Protect
 c/quit;2;SDuvan;Write C:Quit
-c/relabel;0;digulla;Write C:Relabel
+c/relabel;2;SDuvan;Write C:Relabel
 c/rename;1;laguest;Write C:Rename
 c/requestchoice;2;laguest;Write C:RequestChoice
 c/requestfile;2;laguest;Write C:RequestFile
@@ -538,7 +538,7 @@ dos00108;2;matthias;Write MakeDosEntry
 dos00109;2;matthias;Write FreeDosEntry
 dos00110;2;matthias;Write IsFileSystem
 dos00111;2;matthias;Write Format
-dos00112;0;digulla;Write Relabel
+dos00112;2;SDuvan;Write Relabel
 dos00113;2;SDuvan;Write Inhibit
 dos00114;2;matthias;Write AddBuffers
 dos00115;2;digulla;Write CompareDates
