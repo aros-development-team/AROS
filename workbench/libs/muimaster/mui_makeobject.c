@@ -18,7 +18,7 @@
 
     NAME */
 #ifndef _AROS
-__asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 ULONG *params)
+__asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *params)
 #else
 	AROS_LH2(Object *, MUI_MakeObjectA,
 
