@@ -125,6 +125,12 @@
 #   define AROS_HAVE_LONG_LONG
 #endif
 
+#if __GNUC__ <= 2
+#   define __deprecated
+#endif
+#if __GNUC__ > 2
+#   define __deprecated    __attribute__((__deprecated__))
+#endif
 
 
 /* 5. Sytem-specific files */
