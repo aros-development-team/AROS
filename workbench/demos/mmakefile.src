@@ -33,6 +33,7 @@ FILES	:= \
     filereq \
     forkbomb \
     font2c \
+    fontreq \
     gtdemo \
     gtmultiselect \
     helloworld \
