@@ -6,7 +6,8 @@ INC = -I $(AROS_INCLUDES)
 OBJS := $(OSGENDIR)/graphics/graphics_driver.o				\
 	$(OSGENDIR)/graphics/objcache.o					\
 	$(OSGENDIR)/graphics/dispinfo.o					\
-	$(OSGENDIR)/graphics/fakegfxhidd.o
+	$(OSGENDIR)/graphics/fakegfxhidd.o				\
+	$(OSGENDIR)/boot/hidd_graphics.o
 
 LIBS = -L$(LIBDIR)    \
 	-lexec        \
