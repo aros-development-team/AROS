@@ -252,6 +252,9 @@ EOF
     *:[Aa]miga[Oo][Ss]:*:*)
         echo ${UNAME_MACHINE}-unknown-amigaos
         exit 0 ;;
+    *:MorphOS:*:*)
+		echo ${UNAME_MACHINE}-unknown-morphos
+		exit 0 ;;
     arc64:OpenBSD:*:*)
         echo mips64el-unknown-openbsd${UNAME_RELEASE}
         exit 0 ;;
