@@ -124,7 +124,8 @@ void CopyAndFreeClipRectsClipRects(struct Layer * L,
 int _CopyClipRectsToClipRects(struct Layer * l,
                               struct ClipRect * oldcr,
                               struct ClipRect * newcr,
-                              int dx,
+                              int srcdx,
+			      int destdx,
                               int backupmode,
                               int freelist,
                               int addtodamagelist);
@@ -177,6 +178,7 @@ struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
 
 int _SetRegion(struct Region *, struct Region *);
 
-struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region, WORD dx,
+struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region,
+    	    	    	    	    	  WORD srcdx, WORD destdx,
     	    	    	    	    	  struct LayersBase *LayersBase);
 

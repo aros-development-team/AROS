@@ -63,7 +63,7 @@
   
   LockLayer(0, l);
     
-  OldRegion = _InternalInstallClipRegion(l, region, 0, LayersBase);
+  OldRegion = _InternalInstallClipRegion(l, region, 0, 0, LayersBase);
   
   UnlockLayer(l);
 

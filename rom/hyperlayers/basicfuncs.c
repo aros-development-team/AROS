@@ -495,7 +495,8 @@ kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
 int _CopyClipRectsToClipRects(struct Layer * l,
                               struct ClipRect * oldcr,
                               struct ClipRect * newcr,
-                              int dx,
+                              int srcdx,
+			      int destdx,
                               int backupmode,
                               int freelist,
                               int addtodamagelist)
@@ -665,16 +666,16 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
                  * oldcr is further to the left
                  */
                 xSize += xSrc;
-                xSrc = -xSrc + ALIGN_OFFSET(oldcr->bounds.MinX);
-                xDest = ALIGN_OFFSET((_cr->bounds.MinX + dx));
+                xSrc = -xSrc + ALIGN_OFFSET(oldcr->bounds.MinX + srcdx);
+                xDest = ALIGN_OFFSET((_cr->bounds.MinX + destdx));
               }
               else
               {
                 /*
                  * oldcr is further to the right
                  */
-                xDest = xSrc + ALIGN_OFFSET((_cr->bounds.MinX + dx));
-                xSrc = ALIGN_OFFSET(oldcr->bounds.MinX);
+                xDest = xSrc + ALIGN_OFFSET((_cr->bounds.MinX + destdx));
+                xSrc = ALIGN_OFFSET(oldcr->bounds.MinX + srcdx);
               }
               
               ySrc = (oldcr->bounds.MinY - _cr->bounds.MinY);
@@ -703,7 +704,7 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
                 if (IS_SUPERREFRESH(l))
                   xDest = (oldcr->bounds.MinX - _cr->bounds.MinX) SCROLLSIGN l->Scroll_X;
                 else
-                  xDest = (oldcr->bounds.MinX - _cr->bounds.MinX) + ALIGN_OFFSET((_cr->bounds.MinX + dx));
+                  xDest = (oldcr->bounds.MinX - _cr->bounds.MinX) + ALIGN_OFFSET((_cr->bounds.MinX + destdx));
               }
               else
               {
@@ -712,7 +713,7 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
                 if (IS_SUPERREFRESH(l))
                   xDest = SCROLLSIGN l->Scroll_X;
                 else 
-                  xDest = ALIGN_OFFSET((_cr->bounds.MinX + dx));
+                  xDest = ALIGN_OFFSET((_cr->bounds.MinX + destdx));
               }
               
               if (oldcr->bounds.MinY > _cr->bounds.MinY)
@@ -893,7 +894,7 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n",
                    * old cr is further to the left
                    */
                   xSize += xSrc;
-                  xSrc   = -xSrc + ALIGN_OFFSET(oldcr->bounds.MinX);
+                  xSrc   = -xSrc + ALIGN_OFFSET(oldcr->bounds.MinX + srcdx);
                   xDest  = _cr->bounds.MinX;
                 }
                 else
@@ -902,7 +903,7 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n",
                    * oldcr is further to the right
                    */
                   xDest = oldcr->bounds.MinX;
-                  xSrc  = ALIGN_OFFSET(oldcr->bounds.MinX);
+                  xSrc  = ALIGN_OFFSET(oldcr->bounds.MinX + srcdx);
                 }
                 
                 ySrc = (oldcr->bounds.MinY - _cr->bounds.MinY);
@@ -1063,7 +1064,7 @@ int _BackupPartsOfLayer(struct Layer * l,
    * area of the layer.
    */
 
-  clipregion = _InternalInstallClipRegion(l, NULL, 0, LayersBase);  
+  clipregion = _InternalInstallClipRegion(l, NULL, 0, 0, LayersBase);  
   
   ClearRegionRegion(hide_region,l->VisibleRegion);
   _SetRegion(l->VisibleRegion, &r);
@@ -1075,6 +1076,7 @@ int _BackupPartsOfLayer(struct Layer * l,
   _CopyClipRectsToClipRects(l,
                             l->ClipRect /* source */,
                             newcr  /* destination */,
+			    0,
                             dx,
                             backupsimplerefresh,
                             TRUE,
@@ -1089,7 +1091,7 @@ int _BackupPartsOfLayer(struct Layer * l,
    * regular list of cliprects is still maintained.
    */
   if (clipregion)
-    _InternalInstallClipRegion(l, clipregion, dx, LayersBase);
+    _InternalInstallClipRegion(l, clipregion, dx, dx, LayersBase);
     
   return TRUE;
 }
@@ -1134,6 +1136,7 @@ int _ShowPartsOfLayer(struct Layer * l,
                             l->ClipRect /* source */,
                             newcr /* destination */,
                             0,
+			    0,
                             FALSE,
                             TRUE,
                             FALSE);
@@ -1407,7 +1410,8 @@ int _SetRegion(struct Region * src, struct Region * dest)
   return TRUE;
 }
 
-struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region, WORD dx,
+struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region,
+    	    	    	    	    	  WORD srcdx, WORD destdx,
     	    	    	    	    	  struct LayersBase *LayersBase)
 {
   struct Region * OldRegion;
@@ -1440,7 +1444,8 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
 	  _CopyClipRectsToClipRects(l,
 	                            l->ClipRect,
 	                            l->_cliprects,
-	                            dx,
+	                            srcdx,
+				    destdx,
 	                            FALSE,
 	                            TRUE,
 				    FALSE);
@@ -1485,7 +1490,8 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
       _CopyClipRectsToClipRects(l,
                                 l->_cliprects,
                                 l->ClipRect,
-                                dx,
+                                srcdx,
+				destdx,
                                 FALSE,
                                 FALSE,
 				TRUE); /* stegerg: should be FALSE. but that does not work??? */
