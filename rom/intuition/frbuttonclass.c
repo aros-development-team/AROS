@@ -103,6 +103,10 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
 		ULONG y = container.Top + ((container.Height / 2) -
 		    (IM(EG(o)->SelectRender)->Height / 2));
 
+                SetAttrs(EG(o)->SelectRender,
+                         IA_Width, EG(o)->Width,
+                         IA_Height, EG(o)->Height,
+                         TAG_DONE);
 		DrawImageState(rp,
 		    IM(EG(o)->SelectRender),
 		    x, y,
@@ -117,6 +121,10 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
 		ULONG y = container.Top + ((container.Height / 2) -
 		    (IM(EG(o)->GadgetRender)->Height / 2));
 
+                SetAttrs(EG(o)->GadgetRender,
+                         IA_Width, EG(o)->Width,
+                         IA_Height, EG(o)->Height,
+                         TAG_DONE);
 		DrawImageState(rp,
 		    IM(EG(o)->GadgetRender),
 		    x, y,
