@@ -79,7 +79,7 @@ AROS_CDEFNAME(en):
 	move.l	#-1,-(%sp)
 	clr.l	-(%sp)
 	pea	4(%sp)
-	move.l	#1,-(%sp)
+	move.l	#SIG_UNBLOCK,-(%sp)
 	jbsr	AROS_CSYMNAME(sigprocmask)
 	addq.w	#8,%sp
 	addq.w	#8,%sp
