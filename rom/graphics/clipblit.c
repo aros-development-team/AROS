@@ -317,11 +317,7 @@ void internal_ClipBlit(struct RastPort * srcRP,
           crX1 = srcCR->bounds.MaxX - srcLayer->bounds.MinX;
           crY0 = srcCR->bounds.MinY - srcLayer->bounds.MinY;
           crY1 = srcCR->bounds.MaxY - srcLayer->bounds.MinY;
-/*
-kprintf("CB: found source cliprect with rastport-rel. coords:\n");
-kprintf("X0: %d, Y0: %d, X1: %d, Y1: %d\n",crX0,crY0,crX1,crY1);
-kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
-*/
+
           /* the only case that must not happen is that
              this ClipRect is outside the destination area.  */
           if (!(crX0 > (xSrc+xSize-1) ||
@@ -329,9 +325,6 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
                 crY0 > (ySrc+ySize-1) ||
                 crY1 <  ySrc))
           {
-	    /*
-            kprintf("This cliprect will be used as source!\n");
-	    */
             /* this cliprect contains bitmap data that need to be copied */
             /* 
               get the pointer to the bitmap structure and fill out
@@ -339,9 +332,6 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
              */
             if (NULL != srcCR->BitMap)
 	    {
-	      /*
-              kprintf("this cliprect is hidden!\n");
-	      */
               if (0 == (srcLayer->Flags & LAYERSUPER))
 	      {
                 /* no superbitmap */
@@ -351,14 +341,12 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
                   bltSrcX = xSrc - crX0 + SrcOffsetX;
                 else
                   bltSrcX = SrcOffsetX;
-            
+
                 if (ySrc > crY0)
                   bltSrcY   = ySrc - crY0;
                 else
                   bltSrcY   = 0;
-	        /*
-                kprintf("bltSrcX: %d, bltSrcY: %d\n",bltSrcX,bltSrcY);
-	        */
+
                 srcBM     = srcCR->BitMap;
 	      }
               else
@@ -373,9 +361,7 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
                   bltSrcY   = ySrc + srcLayer->Scroll_Y;
                 else
                   bltSrcY   = crY0 + srcLayer->Scroll_Y;
-	        /*
-                kprintf("bltSrcX: %d, bltSrcY: %d\n",bltSrcX,bltSrcY);
-	        */
+
                 srcBM     = srcCR->BitMap;
 	      }
 
@@ -393,16 +379,12 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
               if (xSrc <= crX0)
                 bltSrcX = srcCR->bounds.MinX;
               else  
-                bltSrcX = xSrc + srcCR->bounds.MinX;
+                bltSrcX = xSrc + srcLayer->bounds.MinX;
                 
               if (ySrc <= crY0)
                 bltSrcY = srcCR->bounds.MinY;
               else
-                bltSrcY = ySrc + srcCR->bounds.MinY;
-	      /*
-              kprintf("this cliprect is not hidden. I use the Rastport's bitmap\n");
-              kprintf("bltSrcX: %d, bltSrcY: %d\n",bltSrcX,bltSrcY);
-	      */
+                bltSrcY = ySrc + srcLayer->bounds.MinY;
 	    }
 
             if (crX0 > xSrc)
@@ -424,10 +406,6 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
               destRect.MaxY = crY1 - ySrc + yDest;
             else
               destRect.MaxY = yDest+ySize-1;
-  	    /*
-            kprintf("destRect: MinX: %d, MinY: %d,MaxX: %d, MaxY: %d\n",
-                 destRect.MinX,destRect.MinY,destRect.MaxX,destRect.MaxY);
-	    */
     
             if ((0 != (srcLayer->Flags & LAYERSIMPLE) &&
                 (NULL != srcCR->lobs ||
@@ -452,11 +430,6 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
       destRect.MaxY = yDest+ySize-1;
       
       useminterm = minterm;
-      /*
-      kprintf("The source rastport has no layer!\n");
-          kprintf("destRect: MinX: %d, MinY: %d,MaxX: %d, MaxY: %d\n",
-               destRect.MinX,destRect.MinY,destRect.MaxX,destRect.MaxY);
-      */ 
     }
 
     destCR = destLayer -> ClipRect;
@@ -525,7 +498,7 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
               destBM      = destRP->BitMap;
               
               DestOffsetX = destCR->bounds.MinX;
-              DestOffsetY = destCR->bounds.MinY ;           
+              DestOffsetY = destCR->bounds.MinY;           
 	    }
 
             if (destRect.MinX > destRect2.MinX)
@@ -555,14 +528,6 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
 
             if (destRect.MaxY > destRect2.MaxY)
               bltHeight -= (destRect.MaxY - destRect2.MaxY);
-	  /*
-          kprintf("bltSrcX:  %d, bltSrcY  : %d\n",bltSrcX_tmp,bltSrcY_tmp);
-          kprintf("bltDstX:  %d, bltDstY  : %d\n",bltDstX,bltDstY);
-          kprintf("bltWidth: %d, bltHeight: %d\n",bltWidth,bltHeight);
-          kprintf("bltMask : %d\n",bltMask);
-          kprintf("srcBM   : %x\n",srcBM);
-	  */
-	  
 	      
             BltBitMap(srcBM,
                       bltSrcX_tmp,
@@ -582,9 +547,6 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
     } /* if (NULL != destRP->Layer) */
     else
     {
-      /*
-      kprintf("Destination does not have a layer!\n");
-      */
       /* the destination does not have a layer. So I copy from srcBM
          the whole rectangle that is given in destRect to the rastport's
          bitmap */
