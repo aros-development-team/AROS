@@ -6,8 +6,8 @@ USER_INCLUDES := -I.
 FILES	:=	kbd_init functable kbdclass support endtag
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 
-#MM Drivers-native :
-Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+#MM Drivers-native-kbd :
+Drivers-native-kbd : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	%add_objects rom/boot/kbd_driver
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
 	    -o $(OSGENDIR)/boot/kbd_driver.o

@@ -29,7 +29,7 @@
 #include "kbd.h"
 #include "keys.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 void kbd_keyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
@@ -264,7 +264,7 @@ static VOID kbd_handleevent(Class *cl, Object *o, struct pHidd_Kbd_HandleEvent *
 {
     struct kbd_data * data;
     UWORD key;
-    
+
     EnterFunc(bug("kbd_handleevent()\n"));
     data = INST_DATA(cl, o);
     key = pckey2hidd(msg->event);
@@ -563,9 +563,15 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         if ((event & 0x7f7f)==(K_Scroll_Lock & 0x7f)) event|=0x4000;
         Hidd_Kbd_HandleEvent((Object *)irq->h_Data,(ULONG) event);
     }
+
     //return 0;	/* Enable processing other intServers */
     return;
 }
+
+#ifdef SysBase
+#undef SysBase
+#endif /* SysBase */
+#define SysBase (*(struct ExecBase **)4UL)
 
 long pckey2hidd (ULONG event)
 {
