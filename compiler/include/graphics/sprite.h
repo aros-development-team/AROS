@@ -28,6 +28,9 @@ struct ExtSprite
 	struct SimpleSprite es_SimpleSprite;
 	UWORD	es_wordwidth;
 	UWORD	es_flags;
+
+	/* New in AROS */
+	struct BitMap * es_BitMap;  // Actual image data.
 };
 
 
