@@ -1,6 +1,6 @@
 functions.[ch]
-functable.c
-endtag.c
+mathffp_functable.c
+mathffp_endtag.c
 libdefs.h
 makefile
 mmakefile

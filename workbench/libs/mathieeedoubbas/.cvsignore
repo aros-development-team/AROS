@@ -1,6 +1,7 @@
 libdefs.h
 mmakefile
-functable.c
-endtag.c
+*functable.c
+*endtag.c
+functions.[ch]
 *.map
 *.err

@@ -1,6 +1,6 @@
-functable.c
-endtag.c
-mathtrans_endtag.c
+*functable.c
+*endtag.c
+functions.[ch]
 libdefs.h
 makefile
 *.map
