@@ -5,7 +5,10 @@ USER_INCLUDES	:= -I..
 
 LIBNAME 	:= gadtools
 ULIBNAME	:= GadTools
-FILES		:= functable basicfuncs classes gadgets menus
+CLASSFILES	:= buttonclass textclass sliderclass arrowclass scrollerclass \
+		   stringclass listviewclass checkboxclass cycleclass mxclass paletteclass
+		   
+FILES		:= functable basicfuncs gadgets menus $(CLASSFILES)
 FUNCTIONS	:= \
 	createcontext \
 	creategadgeta \
@@ -57,10 +60,12 @@ $(OBJDIR)/%.d : %.c
 # where one of the registers involved in the inline asm macro gets spilled on
 # the frame.
 #
-ifeq ($(ARCH),amiga)
-$(OBJDIR)/classes.o : classes.c
-	%compile_q opt="$(filter-out -O%,$(CFLAGS)) -O0"
-endif
+# stegerg: classes.c file was split into one c file per class. sorry :(
+#
+#ifeq ($(ARCH),amiga)
+#$(OBJDIR)/classes.o : classes.c
+#	%compile_q opt="$(filter-out -O%,$(CFLAGS)) -O0"
+#endif
 
 %common
 %include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
