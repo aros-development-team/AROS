@@ -1,0 +1,70 @@
+;
+MSG_CANT_OPEN_LIB (//)
+Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_APP (//)
+Can't create application object!
+;
+MSG_WINTITLE (//)
+IControl Preferences
+;
+MSG_MEN_PROJECT (//)
+Project
+;
+MSG_MEN_PROJECT_OPEN (//)
+O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS (//)
+A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT (//)
+Q\0Quit
+;
+MSG_MEN_EDIT (//)
+Edit
+;
+MSG_MEN_EDIT_DEFAULT (//)
+D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED (//)
+L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE (//)
+R\0Restore
+;
+MSG_MEN_SETTINGS (//)
+Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS (//)
+I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE (//)
+Load IControl Preferences
+;
+MSG_ASL_SAVE_TITLE (//)
+Save IControl Preferences
+;
+MSG_OK (//)
+Ok
+;
+MSG_MENUS_GROUP (//)
+Menus
+;
+MSG_MENUS_TYPE (//)
+Type
+;
+MSG_MENUS_TYPE_PULLDOWN (//)
+Pull-Down
+;
+MSG_MENUS_TYPE_POPUP (//)
+Pop-Up
+;
+MSG_MENUS_LOOK (//)
+Look
+;
+MSG_MENUS_LOOK_CLASSIC (//)
+Classic
+;
+MSG_MENUS_LOOK_3D (//)
+3D
+;
