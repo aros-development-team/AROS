@@ -1,3 +1,11 @@
+/*
+    (C) 2000 AROS - The Amiga Research OS
+    $Id$
+
+    Desc:
+    Lang: English
+*/
+
 /**************************************************************
 *                                                             *
 *      File/Font/Screenmode requester                         *
@@ -6,6 +14,19 @@
 **************************************************************/
 
 #include "filereq.h"
+
+
+#ifdef   _AROS
+
+    #define  DEBUG  0
+    #include <aros/debug.h>
+
+#else
+
+    #define  D(x)  
+
+#endif
+
 
 /****************************************************************************************/
 
@@ -109,20 +130,35 @@ void REGARGS UpdateDisplayList (GlobData *glob)
     int 		i;
 
     i = 0;
+
     if (glob->buff->currentnum &&
 	(entry = (struct ReqEntry *)glob->firstentry->re_Next))
     {
 	while (i < glob->buff->pos)
 	{
-	    if (!(entry->re_Flags & ENTRYF_HIDDEN)) i++;
+	    if (!(entry->re_Flags & ENTRYF_HIDDEN))
+	    {
+		i++;
+	    }
+	    
 	    entry = (struct ReqEntry *)entry->re_Next;
 	}
+
 	
-	for (i = 0; entry && (i < glob->numentries); entry = (struct ReqEntry *)entry->re_Next)
-	    if (!(entry->re_Flags & ENTRYF_HIDDEN)) glob->displaylist[i++] = entry;
+	for (i = 0; entry && (i < glob->numentries); 
+	     entry = (struct ReqEntry *)entry->re_Next)
+	{
+	    if (!(entry->re_Flags & ENTRYF_HIDDEN))
+	    {
+		glob->displaylist[i++] = entry;
+	    }
+	}
     }
 	
-    while (i < glob->numentries) glob->displaylist[i++] = NULL;
+    while (i < glob->numentries)
+    {
+	glob->displaylist[i++] = NULL;
+    }
 }
 
 /****************************************************************************************/
@@ -646,13 +682,44 @@ BOOL REGARGS FindVolume (GlobData *glob, UBYTE *str, struct ReqEntry *curr)
 /****************************************************************************************/
 
 static BOOL
-IsDosVolume( struct DosList *dlist )
+IsDosVolume(struct DosList *dlist)
 {
 #ifdef _AROS
-#warning IsDosVolume must be fixed for AROS. Actually just returning TRUE
-    return TRUE;
+    struct InfoData id;
+    BPTR            lock;
+    STRPTR          volName = AllocVec(strlen(dlist->dol_DevName) + 2,
+				       MEMF_ANY);
+
+    /* Create a colon ended volume name, lock it and call Info() */
+
+    if (volName == NULL)
+    {
+	return FALSE;
+    }
+
+    strcpy(volName, dlist->dol_DevName);
+    strcat(volName, ":");
+
+    lock = Lock(volName, SHARED_LOCK);
+
+    if (lock != NULL)
+    {
+	BOOL result = Info(lock, &id);
+
+	UnLock(lock);
+	FreeVec(volName);
+
+	return result;
+    } 
+    else
+    {
+	FreeVec(volName);
+
+	return FALSE;
+    }
 
 #else
+
     BOOL	isdev = FALSE;
     D_S( struct InfoData,id );
 
@@ -663,6 +730,7 @@ IsDosVolume( struct DosList *dlist )
 
     return (isdev);
 #endif
+
 }
 
 /****************************************************************************************/
@@ -758,14 +826,26 @@ AddDisk(
 	    size = SIZE_NONE;
 
 #ifdef _AROS
-#warning Fix disk size calculation for AROS
+	    {
+		BPTR lock = Lock(&deventry->name, SHARED_LOCK);
+
+		if (lock != NULL)
+		{
+		    if (Info(lock, infodata))
+		    {
+			size = ( infodata->id_NumBlocksUsed * 100 +
+				 infodata->id_NumBlocks / 2 ) /
+			    infodata->id_NumBlocks;
+		    }
+		}
+	    }
 #else
 	    if( deventry->task &&
 		    DoPkt1( deventry->task, ACTION_DISK_INFO, MKBADDR( infodata ) ) )
 	    {
 		size = ( infodata->id_NumBlocksUsed * 100 +
-			infodata->id_NumBlocks / 2 ) /
-			infodata->id_NumBlocks;
+			 infodata->id_NumBlocks / 2 ) /
+		    infodata->id_NumBlocks;
 	    }
 #endif
 	}
@@ -814,6 +894,26 @@ AllocDevEntry( GlobData *glob, struct DosList *dlist, STRPTR name )
 static void
 GetVolName( BSTR bstr, STRPTR cstr )
 {
+#ifdef _AROS
+    /* In AROS, BPTR:s are handled differently on different systems
+       (to be binary compatible on Amiga) */
+
+    if (bstr != NULL)
+    {
+	LONG    length = AROS_BSTR_strlen(bstr);
+	LONG    i;		/* Loop variable */
+
+	for (i = 0; i < length - 1; i++)
+	{
+	    cstr[i] = AROS_BSTR_getchar(bstr, i + 1);
+	}
+	
+	cstr[i++] = ':';
+	cstr[i] = 0;
+
+	D(bug("Found volume %s\n", cstr));
+    }
+#else
     STRPTR str;
 
     *cstr = 0;
@@ -830,6 +930,8 @@ GetVolName( BSTR bstr, STRPTR cstr )
 	*cstr++ = ':';
 	*cstr = 0;
     }
+#endif
+
 }
 
 /****************************************************************************************/
@@ -851,26 +953,27 @@ AddDiskNames( GlobData *glob, ULONG volreqflags )
     while( ( dlist = NextDosEntry( dlist, LDF_VOLUMES | LDF_ASSIGNS | LDF_READ ) ) )
     {
 #ifdef _AROS
-	GetVolName( dlist->dol_DevName, name );
+	GetVolName(dlist->dol_OldName, name);
 #else
-	GetVolName( dlist->dol_Name, name );
+	GetVolName(dlist->dol_Name, name);
 #endif
-	if( dlist->dol_Type == DLT_VOLUME )
+	if (dlist->dol_Type == DLT_VOLUME)
 	{
-	    if( IsDosVolume( dlist ) && !( volreqflags & VREQF_NODISKS ) )
+	    if (IsDosVolume(dlist) && !(volreqflags & VREQF_NODISKS))
 	    {
-		if( ( deventry = AllocDevEntry( glob, dlist, name ) ) )
+		if ((deventry = AllocDevEntry(glob, dlist, name)))
 		{
 		    deventry->next = lastdeventry;
 		    lastdeventry = deventry;
 		}
 	    }
 	}
-	else if ( dlist->dol_Type == DLT_DIRECTORY || dlist->dol_Type == DLT_NONBINDING )
+	else if (dlist->dol_Type == DLT_DIRECTORY ||
+		 dlist->dol_Type == DLT_NONBINDING)
 	{
-	    if( !( volreqflags & VREQF_NOASSIGNS ) )
+	    if (!(volreqflags & VREQF_NOASSIGNS))
 	    {
-		AddEntry( glob, glob->buff, name, -1, ASSIGN );
+		AddEntry(glob, glob->buff, name, -1, ASSIGN);
 	    }
 	}
     }
@@ -900,7 +1003,7 @@ AddDiskNames( GlobData *glob, ULONG volreqflags )
 #endif
 	    {
 #ifdef _AROS
-		GetVolName( dlist->dol_DevName, devname );
+		GetVolName( dlist->dol_OldName, devname );
 #else
 		GetVolName( dlist->dol_Name, devname );
 #endif
@@ -919,7 +1022,7 @@ AddDiskNames( GlobData *glob, ULONG volreqflags )
 	     * volume requester.
 	     */
 #ifdef _AROS
-	    GetVolName( dlist->dol_DevName, devname );
+	    GetVolName( dlist->dol_OldName, devname );
 #else
 	    GetVolName( dlist->dol_Name, devname );
 #endif
@@ -1016,8 +1119,9 @@ void REGARGS NewDir (GlobData *glob)
 
 /****************************************************************************************/
 
-void REGARGS ShowDisks (GlobData *glob)
+void REGARGS ShowDisks(GlobData *glob)
 {
+
     if (!glob->disks)
     {
 	UnLockReqLock (glob);
