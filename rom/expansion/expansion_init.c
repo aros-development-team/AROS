@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1996 AROS - The Amiga Replacement OS
     $Id$
-    
+
     Desc: Expansion Resident and initialization.
     Lang: english
 */
@@ -62,11 +62,11 @@ AROS_LH2(struct LIBBASETYPE *, init,
     struct ExecBase *, sysBase, 0, Expansion)
 {
     AROS_LIBFUNC_INIT
-    
+
     /* Store arguments */
     IntExpBase(LIBBASE)->eb_SegList = (ULONG)segList;
     IntExpBase(LIBBASE)->eb_SysBase = sysBase;
-    
+
     LIBBASE->LibNode.lib_Node.ln_Pri = 0;
     LIBBASE->LibNode.lib_Node.ln_Type = NT_LIBRARY;
     LIBBASE->LibNode.lib_Node.ln_Name = (STRPTR)name;
@@ -74,14 +74,14 @@ AROS_LH2(struct LIBBASETYPE *, init,
     LIBBASE->LibNode.lib_Version = LIBVERSION;
     LIBBASE->LibNode.lib_Revision = LIBREVISION;
     LIBBASE->LibNode.lib_IdString = (STRPTR)&version[6];
-   
+
     NEWLIST(&LIBBASE->MountList);
- 
+
 #if 0
     /* See what expansion hardware we can detect. */
     ConfigChain();
 #endif
-    
+
     return LIBBASE;
     AROS_LIBFUNC_EXIT
 }
@@ -138,7 +138,7 @@ AROS_LH0(BPTR, expunge,
 	}
 
 #ifdef DISK_BASED
-	/* Get rid of the library. Remove from the library list. */	
+	/* Get rid of the library. Remove from the library list. */
 	Remove(&LIBBASE->LibNode);
 
 	/* Save returncode here, FreeMem() will destroy the field. */
