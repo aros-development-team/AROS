@@ -424,28 +424,28 @@ ULONG serialunit_setparameters(OOP_Class *cl, OOP_Object *o, struct pHidd_Serial
   BOOL valid = TRUE;
   int i = 0;
   struct TagItem * tags = msg->tags;
-  
+
   while (TAG_END != tags[i].ti_Tag && TRUE == valid)
   {
     switch (tags[i].ti_Tag)
     {
       case TAG_DATALENGTH:
-      
         if ((UBYTE)tags[i].ti_Data != data->datalength)
         {
-          int i = 0;
+          int j = 0;
           BOOL found = FALSE;
-          while (TRUE == valid && -1 != (BYTE)valid_datalengths[i])
+          while (-1 != (BYTE)valid_datalengths[j])
           {
-            if ((UBYTE)tags[i].ti_Data == valid_datalengths[i])
+            if ((UBYTE)tags[i].ti_Data == valid_datalengths[j])
             {
               found = TRUE;
-              data->datalength = unix_datalengths[i];
+              data->datalength = unix_datalengths[j];
+              break;
             }
 
-            valid = found;
-            i++;
+            j++;
           }
+          valid = found;
           
         }
       break;
