@@ -8,6 +8,7 @@
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <dos/dostags.h>
+#include <libraries/asl.h>
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
