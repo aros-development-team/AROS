@@ -13,11 +13,10 @@
 
 #define CallMethod(cl, o, msg) 				\
 {				    			\
-    ULONG idx;						\
-    struct Bucket *b;					\
-    idx = CalcHash(msg->MethodID, cl->HashTableSize);	\
-    b = cl->HashTable[idx];				\
-    while (b)						\
+    register struct Bucket *b;				\
+							\
+    for (b = cl->HashTable[CalcHash(msg->MethodID, cl->HashTableSize)]; \
+              b; b = b->Next)						\
     {							\
        	if (b->MethodID == msg->MethodID)		\
 	{						\
@@ -25,7 +24,6 @@
 	    method = b->MethodFunc;			\
 	    return (method(cl, o, msg));		\
 	}    						\
-	b = b->Next;					\
     }							\
     return (NULL);					\
 }

@@ -17,6 +17,11 @@ extern struct List ClassList;
 
 #define NUM_ITERATIONS (10000000)
 
+IPTR TestFunc(Class *cl, Object *o, Msg msg)
+{
+     return (12345678);
+}
+
 int main(int argc, char **argv)
 {
    
@@ -55,6 +60,8 @@ int main(int argc, char **argv)
     	
 		printf ("Doing ten billion calls to test method...\n");
 		
+		
+		/*  Normal ivocation test */
 		printf ("Using normal invocation\n");
 
 		Timer_Start(timer);
@@ -69,6 +76,7 @@ int main(int argc, char **argv)
 		Timer_PrintElapsed(timer);
 
 
+		/*  Fast ivocation test */
 		printf ("\nUsing fast invocation\n");
 		
 		test_m = GetMethod(timer, M_Timer_TestMethod);
@@ -78,6 +86,37 @@ int main(int argc, char **argv)
     	    	for (i = 0; i < NUM_ITERATIONS; i ++)
 		{
 		    CallMethodFast(timer, test_m, &methodid);
+		}
+		    
+		Timer_Stop(timer);
+		printf("Time elapsed: ");
+		Timer_PrintElapsed(timer);
+
+
+		/*  Function test */
+		
+		printf("\nTen billion calls to empty *function*\n");
+		Timer_Start(timer);
+    	    	
+    	    	for (i = 0; i < NUM_ITERATIONS; i ++)
+		{
+		    TestFunc(timercl, timer, (Msg)&methodid);
+		}
+		    
+		Timer_Stop(timer);
+		printf("Time elapsed: ");
+		Timer_PrintElapsed(timer);
+		
+
+		/*  Loop test */
+		
+		printf("\nLooping ten billion times\n");
+		Timer_Start(timer);
+    	    	
+    	    	for (i = 0; i < NUM_ITERATIONS; i ++)
+		{
+		    ULONG retval;
+		    retval = 12345678;
 		}
 		    
 		Timer_Stop(timer);
