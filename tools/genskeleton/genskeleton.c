@@ -304,6 +304,7 @@ static void make_mmakefilesrc(void)
 
     fprintf(f, "LIBNAME   := %s\n", lowername);
     fprintf(f, "ULIBNAME  := %s\n", name);
+    fprintf(f, "BASENAME  := %s\n", basename);
     fprintf(f, "LIBPOST   := %s\n", typeinfo[type].lowertypestring);
     fprintf(f, "DESTDIR   := %s\n", typeinfo[type].destdir);
     fprintf(f, "\n");
