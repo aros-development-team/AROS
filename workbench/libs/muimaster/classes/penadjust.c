@@ -192,16 +192,6 @@ static IPTR Penadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 /**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-STATIC IPTR Penadjust_Dispose(struct IClass *cl, Object *obj, Msg msg)
-{
-    //struct MUI_PenadjustData *data = INST_DATA(cl, obj);
-
-    return DoSuperMethodA(cl,obj,msg);
-}
-
-/**************************************************************************
  OM_SET
 **************************************************************************/
 STATIC IPTR Penadjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
@@ -254,10 +244,8 @@ BOOPSI_DISPATCHER(IPTR, Penadjust_Dispatcher, cl, obj, msg)
     switch (msg->MethodID)
     {
 	case OM_NEW: return Penadjust_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Penadjust_Dispose(cl,obj,(APTR)msg);
 	case OM_SET: return Penadjust_Set(cl, obj, (struct opSet *)msg);
 	case OM_GET: return Penadjust_Get(cl,obj,(APTR)msg);
-
     }
     
     return DoSuperMethodA(cl, obj, msg);
