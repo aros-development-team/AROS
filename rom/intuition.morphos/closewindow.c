@@ -228,6 +228,8 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     D(bug("CloseWindow (%p)\n", window));
 
     window = msg->window;
+    
+    RemoveResourceFromList(window, RESOURCE_WINDOW, IntuitionBase);
 
     iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
