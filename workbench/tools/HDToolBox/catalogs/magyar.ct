@@ -1,0 +1,127 @@
+## version $VER: hdtoolbox.catalog 1.0 (22.05.2003)
+## codeset 0
+## language hungarian
+;
+WORD_Active
+Aktív
+;
+WORD_AddEntry
+Hozzáadás
+;
+WORD_All
+Mind
+;
+WORD_Automount
+Automount
+;
+WORD_Bootable
+Bootolható
+;
+WORD_BootPri
+Bootprioritás
+;
+WORD_Cancel
+Mégsem
+;
+WORD_Changed
+Megváltoztatva
+;
+WORD_Change_Type
+Típus csere
+;
+WORD_Create_Table
+Táblázat létrehozása
+;
+WORD_Devices
+Eszközök
+;
+WORD_DosEnvec
+DosEnvec
+;
+WORD_Exit
+Kilépés
+;
+WORD_Geometry
+Méret
+;
+WORD_Name
+Név
+;
+WORD_Switches
+Kapcsolók
+;
+WORD_Parent
+Szülõ
+;
+WORD_Ok
+Ok
+;
+WORD_Partitions
+Partíciók
+;
+WORD_Partition_Table
+Partíciós tábla
+;
+WORD_Partition_Table_Type
+Partíciós tábla típusa
+;
+WORD_Partition_Type
+Partíció típusa
+;
+WORD_RemoveEntry
+Eltávolítás
+;
+WORD_Rename
+Átnevezés
+;
+WORD_Resize_Move
+Átméretez/Mozgat
+;
+WORD_Save_Changes
+Változtatások elmentése
+;
+WORD_Size
+Méret
+;
+WORD_Unit
+Egység
+;
+WORD_Units
+Egységek
+;
+WORD_Unknown
+Ismeretlen
+;
+WORD_MENU_Project
+Projekt
+;
+WORD_MENU_About
+About
+;
+WORD_MENU_Quit
+Kilépés
+;
+MSG_ASK_SAVE
+A módosított partíción minden adat törlõdik!\nBiztos, hogy írni akarja a '%s' partíciós táblázatát?
+;
+MSG_NO_MEMORY
+Nincs elég memória a mûvelet végrehajtásához
+;
+MSG_PARTITION_TABLE_FULL
+A partíció megtelt
+;
+MSG_Select_Empty_Area
+Válasszon szabad területet
+;
+MSG_Select_Partition_Resize_Move
+Válasszon egy partíciót az átméretezéshez vagy mozgatáshoz
+;
+MSG_Welcome
+Üdvözöljük a Partíciószerkesztõben
+;
+MSG_WriteTableError
+Hiba a partíciós tábla írásakor
+;
+MSG_CreateTableError
+Hiaba a partíciós tábla létrehozásakor
+;
