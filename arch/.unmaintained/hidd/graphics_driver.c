@@ -1518,7 +1518,7 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
 
 void driver_CloseFont (struct TextFont * tf, struct GfxBase * GfxBase)
 {
-    /* None using the fint anymore ? */
+    /* Nobody using the font anymore ? */
     if (    tf->tf_Accessors == 0
          && (tf->tf_Flags & FPF_ROMFONT) == 0) /* Don't free ROM fonts */
     {
@@ -1533,6 +1533,7 @@ void driver_CloseFont (struct TextFont * tf, struct GfxBase * GfxBase)
 	/* !!! NOTE. FreeXXX functions has to match AllocXXX in
 	   workbench/libs/diskfont/diskfont_io.c
 	*/
+
 	if (tf->tf_Style & FSF_COLORFONT)
 	{
 	    UWORD i;
@@ -1559,7 +1560,6 @@ void driver_CloseFont (struct TextFont * tf, struct GfxBase * GfxBase)
 	    /* Not a colortextfont, only one plane */
 	    FreeVec(tf->tf_CharData);
 	}
-
 	StripFont(tf);
 	
 	if (tf->tf_CharSpace)
