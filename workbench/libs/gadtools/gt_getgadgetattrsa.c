@@ -59,8 +59,16 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
+    LONG count = 0;
+    struct TagItem *tag, *mytags = taglist;
 
-    return 0L;
+    if (gad == NULL || taglist == NULL)
+        return 0L;
 
+    while ((tag = NextTagItem(&mytags)))
+        if (GetAttr(tag->ti_Tag, (Object *)gad, (IPTR *)tag->ti_Data))
+	    count++;
+
+    return count;
     AROS_LIBFUNC_EXIT
 } /* GT_GetGadgetAttrsA */
