@@ -1,0 +1,38 @@
+#   $Id$
+#
+#
+#
+include $(TOP)/config/make.cfg
+
+LIB :=	coolimages
+
+INCLUDE_FILES	:= include/coolimages.h
+
+FILES := saveimage \
+    	 loadimage \
+	 useimage \
+	 cancelimage \
+	 dotimage \
+	 warnimage \
+	 diskimage \
+	 switchimage \
+	 monitorimage \
+	 infoimage \
+	 askimage \
+	 keyimage \
+	 buttonclass
+
+USER_CFLAGS := -Iinclude
+
+#MM- linklibs : linklibs-coolimages
+#MM linklibs-coolimages : includes
+#MM includes-copy
+
+%copy_includes path=linklibs
+
+%make_linklib_setup mmake=linklibs-coolimages
+%make_vpath
+%make_linklib
+
+%common
+%include_deps
