@@ -157,6 +157,13 @@ IPTR Poppen__MUIM_Poppen_CloseWindow(struct IClass *cl, Object *obj,
     return 1;
 }
 
+IPTR Poppen__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
+				   struct MUIP_DisconnectParent *msg)
+{
+    DoMethod(obj, MUIM_Poppen_CloseWindow, FALSE);
+    return DoSuperMethodA(cl, obj, msg);
+}
+
 #if ZUNE_BUILTIN_POPPEN
 BOOPSI_DISPATCHER(IPTR, Poppen_Dispatcher, cl, obj, msg)
 {
@@ -166,6 +173,7 @@ BOOPSI_DISPATCHER(IPTR, Poppen_Dispatcher, cl, obj, msg)
 	case MUIM_Hide: return Poppen__MUIM_Hide(cl, obj, (APTR)msg);
 	case MUIM_Poppen_OpenWindow: return Poppen__MUIM_Poppen_OpenWindow(cl, obj, (APTR)msg);
 	case MUIM_Poppen_CloseWindow: return Poppen__MUIM_Poppen_CloseWindow(cl, obj, (APTR)msg);
+	case MUIM_DisconnectParent: return Poppen__MUIM_DisconnectParent(cl, obj, (APTR)msg);
         default: return DoSuperMethodA(cl, obj, msg);
     }
 }
