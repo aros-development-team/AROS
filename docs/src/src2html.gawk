@@ -4,36 +4,36 @@ BEGIN {
     skip=0;
     mode="text";
 
-    special_items["LONG"] = "<A HREF=\"../../include/exec/types.h\">LONG</A>";
-    special_items["ULONG"] = "<A HREF=\"../../include/exec/types.h\">ULONG</A>";
-    special_items["IPTR"] = "<A HREF=\"../../include/exec/types.h\">IPTR</A>";
-    special_items["WORD"] = "<A HREF=\"../../include/exec/types.h\">WORD</A>";
-    special_items["UWORD"] = "<A HREF=\"../../include/exec/types.h\">UWORD</A>";
-    special_items["BYTE"] = "<A HREF=\"../../include/exec/types.h\">BYTE</A>";
-    special_items["UBYTE"] = "<A HREF=\"../../include/exec/types.h\">UBYTE</A>";
-    special_items["QUAD"] = "<A HREF=\"../../include/exec/types.h\">QUAD</A>";
-    special_items["UQUAD"] = "<A HREF=\"../../include/exec/types.h\">UQUAD</A>";
-    special_items["APTR"] = "<A HREF=\"../../include/exec/types.h\">APTR</A>";
+    special_items["LONG"] = "<A HREF=\"srcs/include/exec/types.h\">LONG</A>";
+    special_items["ULONG"] = "<A HREF=\"srcs/include/exec/types.h\">ULONG</A>";
+    special_items["IPTR"] = "<A HREF=\"srcs/include/exec/types.h\">IPTR</A>";
+    special_items["WORD"] = "<A HREF=\"srcs/include/exec/types.h\">WORD</A>";
+    special_items["UWORD"] = "<A HREF=\"srcs/include/exec/types.h\">UWORD</A>";
+    special_items["BYTE"] = "<A HREF=\"srcs/include/exec/types.h\">BYTE</A>";
+    special_items["UBYTE"] = "<A HREF=\"srcs/include/exec/types.h\">UBYTE</A>";
+    special_items["QUAD"] = "<A HREF=\"srcs/include/exec/types.h\">QUAD</A>";
+    special_items["UQUAD"] = "<A HREF=\"srcs/include/exec/types.h\">UQUAD</A>";
+    special_items["APTR"] = "<A HREF=\"srcs/include/exec/types.h\">APTR</A>";
 
-    special_items["TagItem"] = "<A HREF=\"../../include/utility/tagitem.h\">TagItem</A>";
-    special_items["ti_Tag"] = "<A HREF=\"../../include/utility/tagitem.h\">ti_Tag</A>";
-    special_items["ti_Data"] = "<A HREF=\"../../include/utility/tagitem.h\">ti_Data</A>";
-    special_items["USER_TAG"] = "<A HREF=\"../../include/utility/tagitem.h\">USER_TAG</A>";
+    special_items["TagItem"] = "<A HREF=\"srcs/include/utility/tagitem.h\">TagItem</A>";
+    special_items["ti_Tag"] = "<A HREF=\"srcs/include/utility/tagitem.h\">ti_Tag</A>";
+    special_items["ti_Data"] = "<A HREF=\"srcs/include/utility/tagitem.h\">ti_Data</A>";
+    special_items["USER_TAG"] = "<A HREF=\"srcs/include/utility/tagitem.h\">USER_TAG</A>";
 
-    special_items["CreateRastPort()"] = "<A HREF=\"../../graphics/createrastport.c\">CreateRastPort()</A>";
-    special_items["FreeRastPort()"] = "<A HREF=\"../../graphics/freerastport.c\">FreeRastPort()</A>";
-    special_items["InitRastPort()"] = "<A HREF=\"../../graphics/initrastport.c\">InitRastPort()</A>";
-    special_items["DeinitRastPort()"] = "<A HREF=\"../../graphics/deinitrastport.c\">DeinitRastPort()</A>";
-    special_items["CloneRastPort()"] = "<A HREF=\"../../graphics/clonerastport.c\">CloneRastPort()</A>";
+    special_items["CreateRastPort()"] = "<A HREF=\"srcs/graphics/createrastport.c\">CreateRastPort()</A>";
+    special_items["FreeRastPort()"] = "<A HREF=\"srcs/graphics/freerastport.c\">FreeRastPort()</A>";
+    special_items["InitRastPort()"] = "<A HREF=\"srcs/graphics/initrastport.c\">InitRastPort()</A>";
+    special_items["DeinitRastPort()"] = "<A HREF=\"srcs/graphics/deinitrastport.c\">DeinitRastPort()</A>";
+    special_items["CloneRastPort()"] = "<A HREF=\"srcs/graphics/clonerastport.c\">CloneRastPort()</A>";
 
-    special_items["DoMethod()"] = "<A HREF=\"../../alib/boopsi.c\">DoMethod()</A>";
-    special_items["DoMethodA()"] = "<A HREF=\"../../alib/boopsi.c\">DoMethodA()</A>";
+    special_items["DoMethod()"] = "<A HREF=\"srcs/alib/boopsi.c\">DoMethod()</A>";
+    special_items["DoMethodA()"] = "<A HREF=\"srcs/alib/boopsi.c\">DoMethodA()</A>";
 
-    special_items["ReadArgs()"] = "<A HREF=\"../../dos/readargs.c\">ReadArgs()</A>";
-    special_items["VPrintf()"] = "<A HREF=\"../../dos/vprintf.c\">VPrintf()</A>";
-    special_items["VFPrintf()"] = "<A HREF=\"../../dos/vfprintf.c\">VFPrintf()</A>";
+    special_items["ReadArgs()"] = "<A HREF=\"srcs/dos/readargs.c\">ReadArgs()</A>";
+    special_items["VPrintf()"] = "<A HREF=\"srcs/dos/vprintf.c\">VPrintf()</A>";
+    special_items["VFPrintf()"] = "<A HREF=\"srcs/dos/vfprintf.c\">VFPrintf()</A>";
 
-    special_items["SMult64()"] = "<A HREF=\"../../utility/smult64.c\">SMult64()</A>";
+    special_items["SMult64()"] = "<A HREF=\"srcs/utility/smult64.c\">SMult64()</A>";
 
     cmd="date \"+%d %b %Y\""
     cmd | getline today;
@@ -206,7 +206,7 @@ BEGIN {
 
 			if (prefix=="AROS")
 			{
-			    file="<A HREF=\"../../"substr(file,6)"\">"file"</A>"
+			    file="<A HREF=\"srcs/"substr(file,6)"\">"file"</A>"
 			}
 		    }
 		}
