@@ -111,7 +111,7 @@ endif
 # of your library, plus the flag that says whether to build the module as
 # shared or not, eg
 
-%prepare_shlib expansion
+%prepare_shlib expansion $(SHARED_EXPANSION)
 
 OBJ_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
 DEP_FILES = $(INIT_FILE) $(FILES) $(ALL_FUNCTIONS) $(END_FILE)
