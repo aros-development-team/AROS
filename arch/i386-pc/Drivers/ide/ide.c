@@ -849,12 +849,14 @@ void cmd_Eject(struct IORequest *iorq, struct ide_Unit *unit, struct TaskData *t
 void cmd_ScsiDirect(struct IORequest *iorq, struct ide_Unit *unit, struct TaskData *td)
 {
     ioStd(iorq)->io_Actual = sizeof (struct SCSICmd);
-#if 0
     if (unit->au_Flags & AF_AtapiDev)
+#if 0
         atapi_ScsiCmd((struct SCSICmd *)ioStd(iorq)->io_Data, unit);
-    else
-        ata_ScsiCmd((struct SCSICmd *)ioStd(iorq)->io_Data, unit);
+#else
+        ioStd(iorq)->io_Error = IOERR_BADADDRESS;
 #endif
+    else
+        ioStd(iorq)->io_Error = ata_ScsiCmd((struct SCSICmd *)ioStd(iorq)->io_Data, unit);
 }
 
 void cmd_TestChanged(struct IORequest *iorq, struct ide_Unit *unit, struct TaskData *td)
