@@ -90,6 +90,7 @@ checkerr :
 	@if test -e $(TOP)/errors ; then \
 	    $(RM) $(TOP)/errors ; \
 	    $(ECHO) "There have been errors" ; \
+	    find . -name "*.err" -print ; \
 	else \
 	    true ; \
 	fi
