@@ -12,7 +12,7 @@ all: makedirs tools mmake
 
 makedirs:
 	@$(RM) $(TOP)/errors
-	@$(FOR) dir in $(AROSDIR) $(GENDIR) $(TOOLDIR) ; do \
+	$(FOR) dir in $(AROSDIR) $(GENDIR) $(TOOLDIR) ; do \
 	    $(IF) [ ! -d $$dir ]; then \
 		$(MECHO) $(MKDIR) "$$dir" ; \
 		$(MKDIR) "$$dir" ; \
@@ -28,7 +28,7 @@ $(TOP)/make.opts:
 	@$(NOP)
 
 # Create the tools that are used to build AROS.
-tools : $(TOOLLIB) $(GENMF) $(MODTOOL) $(CPAK) $(ARCHTOOL) $(FLEXCAT)
+tools : makedirs $(TOOLLIB) $(GENMF) $(MODTOOL) $(CPAK) $(ARCHTOOL) $(FLEXCAT)
 
 $(TOOLLIB) : $(wildcard $(TOP)/tools/toollib/*.[ch])
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/toollib TOP=$(TOP)
@@ -85,10 +85,15 @@ dist-clean: arch-clean
 	@$(RM) Makefile configure config.* make.defaults make.opts \
 		mmake.cache mmake.config
 
-# Map MetaTargets to make targets : Call mmake with AROS.target
-# Standard targets: install docs all-docs
-.DEFAULT : mmake
-	@$(MMAKE) AROS.$@
+# Dependencies don't work with .DEFAULT :-(
+docs : makedirs tools mmake
+	@$(MMAKE) AROS.docs
+
+all-docs : makedirs tools mmake
+	@$(MMAKE) AROS.all-docs
+
+install : makedirs tools mmake
+	@$(MMAKE) AROS.install
 
 # targets which do not generate files or for which a file/directory exists
 .PHONY: default all makedirs tools docs clean arch-clean dist-clean \
