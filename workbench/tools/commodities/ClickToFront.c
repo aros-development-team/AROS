@@ -170,7 +170,7 @@ STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
 
     if (catalogPtr)
     {
-        string = GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+        string = (STRPTR)GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
     }
     else
     {
@@ -485,7 +485,7 @@ static void clicktoFront(CxMsg *cxm, CxObj *co)
 		    ActivateWindow(cfInfo.ci_thisWindow);
 		}
 
-		DisposeCxMsg(cxm);
+		//DisposeCxMsg(cxm);
 
 		D(bug("Put window %s to front.\n",
 		      cfInfo.ci_thisWindow->Title));
