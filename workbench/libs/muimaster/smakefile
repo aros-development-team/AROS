@@ -66,6 +66,28 @@ CLASSESOBJS= \
   objs/classes/virtgroup.o \
   objs/classes/window.o
 
+NLISTOBJS= \
+  //classes/nlist/NList_mcc/NList_mcc.o \
+  //classes/nlist/NList_mcc/NList_mcc0.o \
+  //classes/nlist/NList_mcc/NList_mcc1.o \
+  //classes/nlist/NList_mcc/NList_mcc2.o \
+  //classes/nlist/NList_mcc/NList_mcc3.o \
+  //classes/nlist/NList_mcc/NList_mcc4.o \
+  //classes/nlist/NList_mcc/NList_mcc5.o \
+  //classes/nlist/NList_mcc/NList_mcc6.o \
+  //classes/nlist/NList_mcc/move.o \
+  //classes/nlist/NList_mcc/cbio.o \
+  //classes/nlist/NList_mcc/NList_func.o \
+  //classes/nlist/NList_mcc/NList_func2.o \
+  //classes/nlist/NList_mcc/NList_func3.o \
+  //classes/nlist/NList_mcc/NList_func4.o \
+  //classes/nlist/NList_mcc/NList_grp.o \
+  //classes/nlist/NList_mcc/NList_img.o \
+  //classes/nlist/NList_mcc/NList_img2.o
+
+NLISTVIEWOBJS= \
+  //classes/nlist/NListview_mcc/NListview.o
+
 all: dirs all.gst test
 
 dirs:
@@ -270,11 +292,13 @@ objs/test.o: test.c
 
 muimaster.lib: $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
   -delete muimaster.lib
-  oml muimaster.lib A $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
+  oml muimaster.lib A $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS) $(NLISTOBJS) ${NLISTVIEWOBJS)
 
 test: objs/test.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
   sc link lib lib:debug.lib to test with <<
 objs/test.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
+//classes/nlist/NListview_mcc/nlistview.mcc.lib
+//classes/nlist/NList_mcc/nlist.mcc.lib
 <
 
 demos: muimaster.lib
