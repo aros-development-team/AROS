@@ -29,6 +29,8 @@ struct emulbase
     struct DosLibrary 		* dosbase;
     struct Library   		* oopbase;
     struct SignalSemaphore 	  sem;
+    struct SignalSemaphore	  memsem;
+    APTR			  mempool;
     HIDD			  unixio;
     BPTR 			  seglist;
 };
