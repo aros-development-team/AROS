@@ -24,8 +24,10 @@ setup :
 	@echo "CFLAGS=$(CFLAGS)"
 
 $(LIB) : $(OBJS) $(DEPLIBS)
-	$(CC) $(ILDFLAGS) -o $@ $(OBJS) $(LIBS)
-	$(CHECKUDS) $@
+	@echo "Creating $@..."
+	@$(CC) $(ILDFLAGS) -o $@ $(OBJS) $(LIBS)
+	@echo "Checking $@..."
+	@$(CHECKUDS) $@
 
 libheader.o : $(LIBHEADER_SRC) libdefs.h
 	@echo "Compiling $<..."
