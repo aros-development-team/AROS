@@ -1,5 +1,6 @@
 GENMODULE_SRCS := \
     genmodule.c \
+    variables.c \
     fileread.c \
     readconfig.c \
     readref.c \
@@ -17,6 +18,7 @@ GENMODULE_DEPS := $(GENMODULE_SRCS) $(GENMODULE_INCS)
 
 GENLIBDEFS_SRCS := \
     genlibdefs.c \
+    variables.c \
     fileread.c \
     readconfig.c \
     writeinclibdefs.c
@@ -24,6 +26,7 @@ GENLIBDEFS_DEPS := $(GENLIBDEFS_SRCS) $(GENMODULE_INCS)
 
 GENMODULEDUMMY_SRCS := \
     genmoduledummy.c \
+    variables.c \
     fileread.c \
     readconfig.c \
     writeincproto.c \
