@@ -9,40 +9,41 @@
 #ifndef _MUI_IMSPEC_H
 #define _MUI_IMSPEC_H
 
-char *zune_image_spec_duplicate(IPTR in);
-void zune_image_spec_free(char *spec);
+/* API change on Feb-2003 by dlc :
+ * MUIM_Setup
+   {
+      imspec = zune_imspec_setup(spec, mri);
+      MUIM_Show
+      {
+          zune_imspec_show(imspec, obj);
+          MUIM_Draw
+          {
+              zune_imspec_draw(imspec, ...)
+          }
+          zune_imspec_hide(imspec);
+      }
+      MUIM_Hide
+      zune_imspec_cleanup(imspec);
+      imspec = NULL;
+   }
+   MUIM_Cleanup
+ *
+ *
+ * zune_imspec_setup() (called in MUIM_Setup) will create and return an internal
+ * structure from an external specification.
+ * zune_imspec_cleanup() (called in MUIM_Cleanup) will free an internal specification.
+ */
 
-struct MUI_ImageSpec *zune_image_spec_to_structure(IPTR in, Object *obj);
-void zune_image_spec_parse_string (STRPTR s, struct MUI_ImageSpec **out);
-STRPTR zune_imspec_to_string (struct MUI_ImageSpec *spec);
-struct MUI_ImageSpec *zune_get_pattern_spec(LONG muiipatt);
-struct MUI_ImageSpec *zune_get_muipen_spec(LONG muipen);
-LONG zune_imspec_get_width (struct MUI_ImageSpec *img);
-LONG zune_imspec_get_height (struct MUI_ImageSpec *img);
-void zune_imspec_set_width (struct MUI_ImageSpec *img, LONG w);
-void zune_imspec_set_height (struct MUI_ImageSpec *img, LONG w);
-void zune_imspec_set_scaled_size (struct MUI_ImageSpec *img, LONG w, LONG h);
-//struct MUI_ImageSpec *zune_imspec_copy(struct MUI_ImageSpec *spec);
-void zune_imspec_free(struct MUI_ImageSpec *spec);
-void zune_imspec_setup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri);
-void zune_imspec_cleanup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri);
-void zune_imspec_show(struct MUI_ImageSpec *spec, Object *obj);
-void zune_imspec_hide(struct MUI_ImageSpec *spec);
-void zune_draw_image (struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img,
+struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s, struct MUI_RenderInfo *mri);
+void zune_imspec_cleanup(struct MUI_ImageSpec_intern *spec);
+BOOL zune_imspec_askminmax(struct MUI_ImageSpec_intern *spec, struct MUI_MinMax *minmax);
+void zune_imspec_show(struct MUI_ImageSpec_intern *spec, Object *obj);
+void zune_imspec_hide(struct MUI_ImageSpec_intern *spec);
+void zune_imspec_draw (struct MUI_ImageSpec_intern *img, struct MUI_RenderInfo *mri,
 		 LONG left, LONG top, LONG width, LONG height,
-		 LONG xoffset, LONG yoffset, LONG flags);
-
-/****/
-
-int zune_imspec_get_minwidth(struct MUI_ImageSpec *spec);
-int zune_imspec_get_minheight(struct MUI_ImageSpec *spec);
-
-/***************/
-
-/* Bitnums used for the flags for zune_draw_image() */
-#define IMSPEC_SELECTED (0)
-
-/* Flags for zune_draw_image() */
-#define IMSPECF_SELECTED (1<<IMSPEC_SELECTED) 
+		 LONG xoffset, LONG yoffset, LONG state);
+/*  const char *zune_imspec_to_string(struct MUI_ImageSpec_intern *spec); */
+STRPTR zune_image_spec_duplicate(IPTR in);
+void zune_image_spec_free(CONST_STRPTR spec);
 
 #endif
