@@ -1,0 +1,69 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(cxref.c)
+
+dnl Specify the autoconf file.
+AC_CONFIG_HEADER(autoconfig.h)
+
+dnl Check the page size
+PAGE=A4
+AC_ARG_ENABLE(us-paper,
+[  --enable-us-paper      use US paper instead of A4],
+[if test "$enableval" = "yes"; then PAGE=US; fi])
+AC_SUBST(PAGE)
+
+dnl Check if we are forced to use the cxref-cpp
+WITH_CXREF_CPP=test
+AC_ARG_WITH(cxref-cpp,
+[  --with-cxref-cpp       use the supplied cpp instead of trying to use gcc],
+[if test "$withval" = "yes"; then WITH_CXREF_CPP=yes; fi])
+
+dnl Checks for programs.
+AC_PROG_CC
+AC_PROG_AWK
+AC_PROG_YACC
+AC_PROG_CPP
+AC_PROG_LEX
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+AC_CHECK_PROG(PERL, perl, perl, )
+AC_CHECK_PROG(LATEX, latex, latex, )
+AC_CHECK_PROG(DVIPS, dvips, dvips, )
+
+dnl Checks for libraries.
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+AC_CHECK_HEADERS(malloc.h unistd.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_PID_T
+
+dnl Checks for library functions.
+AC_FUNC_ALLOCA
+AC_CHECK_FUNCS(getcwd mkdir strerror strstr)
+
+AC_TRY_COMPILE([
+#include <varargs.h>
+],[
+int foo(void *s, ...)
+{
+ va_list ap;
+ va_start(ap);
+}
+],
+USE_STD_ARG=0,
+USE_STD_ARG=1)
+
+AC_DEFINE_UNQUOTED(USE_STD_ARG,$USE_STD_ARG)
+
+objdir=`pwd`
+AC_SUBST(objdir)
+
+dnl Check the cpp directory
+AC_CONFIG_SUBDIRS(cpp)
+
+dnl Create the output files.
+AC_OUTPUT(Makefile doc/Makefile query/Makefile)

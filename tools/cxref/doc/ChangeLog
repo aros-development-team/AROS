@@ -1,0 +1,163 @@
+2002-05-05  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5d of cxref released.
+
+2001-03-18  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in:
+	Allow the cxref programs to be compiled in a directory different from the source.
+
+Sat Apr 28 15:45:00 2001  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5c of cxref released.
+
+Sun Sep 26 10:00:00 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5b of cxref released.
+
+Fri Jun 18 19:15:00 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5a of cxref released.
+
+Sun Feb 21 12:00:00 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5 of cxref released.
+
+Tue Jan 26 19:40:12 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in:
+	Produce an HTML version of the source file with links into it.
+
+Sat Jan 16 11:10:57 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in: Initial revision
+
+Mon Dec 28 14:25:28 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile: Include the rtf and sgml files in the make clean target.
+
+Tue Dec 22 14:24:57 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile: Add in RTF and SGML formats.
+
+Sat Jul  5 18:30:00 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.4 of cxref released
+
+Sat Jul  5 18:28:53 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README: Updated to version 1.4.
+
+Wed Apr 23 20:00:00 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.3a of cxref completed.
+
+Sun Dec  8 10:30:00 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.3 of cxref released
+
+Sat Nov 16 16:30:00 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Beta Version 1.3 of cxref released
+
+Sat Nov 16 16:16:33 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README: Changed the names of the files in the description.
+
+Tue Oct 29 19:52:36 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile: Automated makefile, uses separate configuration file.
+
+Sun Oct 27 15:27:32 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* page.style:
+	Made the distinction between A4 and US paper sizes more obvious.
+
+	* cxref.style:
+	Added LaTeX commands to stop warning messages about under/overfull hboxes.
+
+	* renamed *.sty to *.style so that they can be configured automatically.
+
+Sat Oct  5 12:30:00 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.2b of cxref released
+
+Thu Oct  3 18:23:27 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* page.sty:
+	Made the text fit on the page with a 1 inch margin properly.
+
+Sat Jul  6 20:00:00 1996  Andrew M. Bishop  (amb@gedanken)
+
+        Version 1.2 of cxref released
+
+Sat Jul  6 19:49:10 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* README: Reformatted, and spell-checked.
+
+Sat Jun 29 16:42:24 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* Makefile:
+	Don't assume that . is on the path, so use ./cxref not just cxref.
+
+Sat Jun  8 15:04:29 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* cxref.sty: Initial revision
+
+	* page.sty, fonts.sty: Improved the comment at the top of the file.
+
+	* README:
+	Added quite a lot of new information, and reference to cxref.sty.
+
+	* Makefile:
+	Needed to change 'clean' target since rm cxref.* would delete cxref.sty.
+
+Wed May 22 19:00:00 1996  Andrew M. Bishop  (amb@gedanken)
+
+        Version 1.1 of cxref released
+
+Sat Feb 24 16:30:00 1996  Andrew M. Bishop  (amb@gedanken)
+
+        Version 1.0 of cxref released
+
+Sat Feb 24 14:53:08 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* Makefile: Version 1.0 Released (First release version).
+
+Tue Oct 17 20:14:16 1995  Andrew Bishop  (amb@dan)
+
+	* page.sty, fonts.sty: Now works with LaTeX2e version.
+
+Sat Jul 29 18:31:03 1995  Andrew Bishop  (amb@dan)
+
+	* page.sty: Added comments about a4 and US paper sizes.
+
+	* README:
+	Renamed a4.sty to page.sty and described both .sty files better.
+
+Wed Jul 12 19:01:45 1995  Andrew Bishop  (amb@dan)
+
+	* Makefile: Changed the rule for all etc (from ':' to '').
+
+Sun Jul  2 11:01:48 1995  Andrew Bishop  (amb@dan)
+
+	* Makefile: Added HTML option.
+
+Sat Jul  1 15:37:47 1995  Andrew Bishop  (amb@dan)
+
+	* Makefile: Header added and source and final output separated.
+
+Wed Jun 28 20:38:36 1995  Andrew Bishop  (amb@dan)
+
+	* README: Added title.
+
+	* a4.sty: Added a comment at the top to explain it.
+
+Wed May  3 20:20:06 1995  Andrew Bishop  (amb@dan)
+
+	* Makefile: New version with appendix.
+
+Wed Apr 26 22:00:44 1995  Andrew Bishop  (amb@dan)
+
+	* Makefile, README, a4.sty, fonts.sty: Initial revision
+

@@ -1,0 +1,99 @@
+    C Cross Referencing & Documenting tool. Version 1.5d - cxref
+    ============================================================
+
+Cxref is a program that will produce documentation (in LaTeX, HTML, RTF or SGML)
+including cross-references from C program source code.
+
+Works for ANSI C, including most gcc extensions.
+
+The documentation for the program is produced from comments in the code that
+are appropriately formatted. The cross referencing comes from the code itself
+and requires no extra work.
+
+The documentation is produced for each of the following:
+
+Files            - A comment that applies to the whole file.
+Functions        - A comment for the function, including a description of
+                   each of the arguments and the return value.
+Variables        - A comment for each of a group of variables and/or
+                   individual variables.
+#include         - A comment for each included file.
+#define          - A comment for each pre-processor symbol definition, and
+                   for macro arguments.
+Type definitions - A comment for each defined type and for each element of a
+                   structure or union type.
+
+Any or all of these comments can be present in suitable places in the
+source code.
+
+
+The cross referencing is performed for the following items
+
+Files           - The files that the current file is included in
+                  (even when included via other files).
+
+#includes       - Files included in the current file.
+                - Files included by these files etc.
+
+Variables       - The location of the definition of external variables.
+                - The files that have visibility of global variables.
+                - The files / functions that use the variable.
+
+Functions       - The file that the function is prototyped in.
+                - The functions that the function calls.
+                - The functions that call the function.
+                - The files and functions that reference the function.
+                - The variables that are used in the function.
+
+Each of these items is cross referenced in the output.
+
+Includes extensive README and FAQ with details and examples on how to use the
+program.
+
+
+Changes
+-------
+
+Since version 1.5c:
+
+Bug fixes
+  Fixes to HTML and SGML outputs (invalid character entities). Fix bug that
+  stopped -R/ from working.  Fix links to HTML source files in certain cases.
+  Keep the sign of negative numbers in #define output.  Improve the lex code
+  (flex -s).  Add some missing ';' to yacc code.  Fix the bison debugging
+  output.
+
+Configure/Make changes
+  Fix Makefile to compile using non-GNU make programs.
+  Add flex specific options to the Makefile if using it.
+  Fixes for build/configure outside the source tree.
+  Include DESTDIR in the Makefile to help installation.
+  Configure makes a guess what to do with cxref-cpp if gcc is not installed.
+
+GCC changes
+  Accept the gcc-3.0 __builtin_va_list type as-if it were a valid C type.
+  Handle the GCC __builtin_va_arg extension keyword.
+  Handle the GCC floating point hex extension data format.
+  Allow the use of gcc-3.x instead of the cxref-cpp program.
+
+
+Availability
+------------
+
+Previous versions of this program have been tested on the following systems:
+Linux 1.[123].x, Linux 2.[01234].x, SunOS 4.1.x, Solaris 2.x, HPUX 10.x
+
+FTP server: ftp://ftp.demon.co.uk/pub/unix/tools/cxref-1.5d.tgz
+FTP server: ftp://ftp.ibiblio.org/pub/Linux/devel/lang/c/cxref-1.5d.tgz
+
+Web page: http://www.gedanken.demon.co.uk/cxref/
+
+
+Author & Copyright
+------------------
+
+This program is copyright Andrew M. Bishop 1995,96,97,98,99,2000,01,02
+(amb@gedanken.demon.co.uk) and distributed under GPL.
+
+email: amb@gedanken.demon.co.uk
+[Please put cxref in the subject line]

@@ -1,0 +1,59 @@
+.TH cxref-query 1 "July 5, 1997"
+.SH NAME
+cxref-query - A program to query the cross reference database from cxref.
+
+.SH SYNOPSIS
+.B  cxref-query
+.I  [name \ [ \ ... \ name]]
+.BI [\-O dirname ]
+.BI [\-N basename ]
+.B  [\-xref[\-all][\-file][\-func][\-var][\-type]]
+
+.SH DESCRIPTION
+A very simple program to query the cross-reference database that is created by
+the cxref program. This is intended to be an example of the information that is
+in the database and how to use it rather than a fully featured tool.
+
+.SH OPTIONS
+
+.TP 
+.BR name
+Names of objects to query.
+The names that it looks up are the names of:
+Files,
+Variables,
+Functions,
+Typedefs
+
+If there are no names on the command line then the program
+enters interactive mode and prompts for names until an end of
+file (^D) is seen.
+.TP
+.BR \-Odirname
+Use dirname as the input directory
+.TP
+.BR \-Nbasename
+Use basename.* as the input filenames
+.TP
+.BR \-xref
+Produce cross referencing information (see below).
+ -all    All cross references.
+ -file   Cross references for files.
+ -func   Cross references for functions.
+ -var    Cross references for variables.
+ -type   Cross references for types.
+
+.LP
+The output depends on the -xref options but basically gives what is seen in the
+section of the document for the named object.
+
+.SH SEE ALSO
+
+cxref(1)
+
+.SH BUGS
+If you wish to submit bug reports or other comments about the program then email
+the author amb@gedanken.demon.co.uk and put cxref in the subject line.
+
+.SH AUTHOR
+The cxref-query program is copyright Andrew M. Bishop 1995,96,97.

@@ -1,0 +1,168 @@
+2002-05-05  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5d of cxref released.
+
+2002-04-21  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in: Bug fix for 'make install'.
+
+2002-04-14  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in:
+	Change the rule for compiling .c to .o for versions of make that don't understand '%.o:%.c'.
+
+	* Makefile.in:
+	Include a DESTDIR in the Makefiles to allow installing in a different place to the compile options.
+
+2001-03-18  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in:
+	Allow the cxref programs to be compiled in a directory different from the source.
+
+Sat Apr 28 15:45:00 2001  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5c of cxref released.
+
+Sun Sep 26 10:00:00 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5b of cxref released.
+
+Sun Aug 22 08:16:43 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in: Add CFLAGS and LDFLAGS to the Makefile.in.
+
+Fri Jun 25 18:09:44 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* input.c:
+	Fix the problem if NAME_MAX is not defined even if PATH_MAX is.
+
+Fri Jun 18 19:15:00 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5a of cxref released.
+
+Fri May  7 18:38:20 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* input.c:
+	Increase the size of the statically allocated memory for filenames, function names and typenames.
+
+Sun Feb 21 12:00:00 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5 of cxref released.
+
+Sat Jan 16 12:20:11 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in: Add a new install target for Win32.
+
+Sat Jan 16 11:11:05 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in: Initial revision
+
+Thu Nov 20 20:30:00 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.4a of cxref released
+
+Sat Aug 23 15:18:56 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* input.c: Created some string lists that were lost in the changes.
+	Added in more cross referencing.
+
+Sat Jul  5 18:30:00 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.4 of cxref released
+
+Sat Jul  5 18:28:12 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README.man, README: Updated to version 1.4.
+
+Thu Jun 19 16:26:04 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* query.c:
+	Allow the -N and -O options to be used either as -Odirname or -O dirname.
+
+Sun May 11 15:23:10 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* output.c, input.c:
+	Major changes to the internals of the program:
+	  Changed StringList and StringList2 to be pointers.
+	  Added more options to the AddToStringList() functions.
+	  Lists of xrefs use StringList2 with separate function and filename.
+	  Added in constructors and destructors for the main datatypes.
+	  Added in functions to reset the lexer/parser/analysers when finished.
+
+Wed Apr 23 20:00:00 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.3a of cxref completed.
+
+Sun Dec  8 10:30:00 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.3 of cxref released
+
+Sun Dec  8 10:07:45 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README.man: Initial revision
+
+Sat Nov 16 16:30:00 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Beta Version 1.3 of cxref released
+
+Tue Oct 29 19:52:59 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile: Automated makefile, uses separate configuration file.
+
+Sat Oct  5 12:30:00 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.2b of cxref released
+
+Mon Aug 19 18:45:53 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* input.c: Fixed seg fault on certain database features.
+
+Sat Jul  6 20:00:00 1996  Andrew M. Bishop  (amb@gedanken)
+
+        Version 1.2 of cxref released
+
+Sat Jul  6 19:43:35 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* README: Reformatted, spell-checked, and small change to wording.
+
+Sat Jul  6 19:17:03 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* input.c: More cross-referencing done.
+
+	* output.c: Better formatted and more useful output.
+
+Mon Jul  1 19:10:10 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* Makefile: Removed redundant targets.
+
+Wed May 22 19:00:00 1996  Andrew M. Bishop  (amb@gedanken)
+
+        Version 1.1 of cxref released
+
+Sat Feb 24 16:30:00 1996  Andrew M. Bishop  (amb@gedanken)
+
+        Version 1.0 of cxref released
+
+Sat Feb 24 14:53:52 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* README: Initial revision
+
+	* query.h, query.c, output.c, input.c, Makefile:
+	Version 1.0 Released (First release version).
+
+Sun Feb  4 15:45:32 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* query.h: Now has fewer function prototypes.
+
+	* query.c: Small changes to make a working version.
+
+	* output.c, input.c:
+	Extensive modifications, to make a working version.
+
+	* Makefile:
+	Added default values for CC & CFLAGS, added rules to make ../memory.o and ../slist.o.
+
+Tue Nov 28 22:09:52 1995  Andrew Bishop  (amb@dan)
+
+	* query.h, Makefile, query.c, input.c, output.c: Initial revision
+
