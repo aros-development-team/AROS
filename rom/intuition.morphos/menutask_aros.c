@@ -123,7 +123,7 @@ struct Task *CreateMenuHandlerTask(APTR taskparams, struct IntuitionBase *Intuit
         if(stack != NULL)
         {
             task->tc_SPLower=stack;
-            task->tc_SPUpper=(BYTE *)stack + MENUTASK_STACKSIZE;
+            task->tc_SPUpper=(UBYTE *)stack + MENUTASK_STACKSIZE;
 
     #ifdef __MORPHOS__
             task->tc_SPReg = task->tc_SPUpper;
@@ -151,20 +151,26 @@ struct Task *CreateMenuHandlerTask(APTR taskparams, struct IntuitionBase *Intuit
                 }
             }
     #else
+    	    {
+	    	struct TagItem tags[] =
+		{
+		    {TASKTAG_ARG1, (IPTR)taskparams },
+		    {TAG_DONE	    	    	    }
+		};
+		
+    	    #if AROS_STACK_GROWS_DOWNWARDS
+    		task->tc_SPReg = (UBYTE *)task->tc_SPUpper-SP_OFFSET;
+    	    #else
+        	task->tc_SPReg=(UBYTE *)task->tc_SPLower+SP_OFFSET;
+    	    #endif
 
-    	#if AROS_STACK_GROWS_DOWNWARDS
-    	    task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET - sizeof(APTR);
-            ((APTR *)task->tc_SPUpper)[-1] = taskparams;
-    	#else
-            task->tc_SPReg=(BYTE *)task->tc_SPLower-SP_OFFSET + sizeof(APTR);
-            *(APTR *)task->tc_SPLower = taskparams;
-    	#endif
-
-            if(AddTask(task, DefaultMenuHandler, NULL) != NULL)
-            {
-                /* Everything went OK */
-                return (task);
-            }
+        	if(NewAddTask(task, DefaultMenuHandler, NULL, tags) != NULL)
+        	{
+                    /* Everything went OK */
+                    return (task);
+        	}
+	    
+	    }
     #endif
             FreeMem(stack, MENUTASK_STACKSIZE);
 

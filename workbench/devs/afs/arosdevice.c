@@ -120,16 +120,20 @@ AROS_UFH3(struct AFSBase *, AROS_SLIB_ENTRY(init,afsdev),
 				stack = AllocMem(AROS_STACKSIZE, MEMF_PUBLIC);
 				if (stack != NULL)
 				{
+				    	struct TagItem tags[] =
+					{
+					    {TASKTAG_ARG1, (IPTR)afsbase},
+					    {TAG_DONE	    	    	}
+					};
+					
 					task->tc_SPLower = stack;
 					task->tc_SPUpper = (BYTE *)stack+AROS_STACKSIZE;
-#if AROS_STACK_GROWS_DOWNWARDS
-					task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET-sizeof(APTR);
-					((APTR *)task->tc_SPUpper)[-1] = afsbase;
-#else
-					task->tc_SPReg = (BYTE *)task->tc_SPLower-SP_OFFSET+sizeof(APTR);
-					*(APTR *)task->tc_SPLower = afsbase;
-#endif
-					if (AddTask(task,AFS_work,NULL) != NULL)
+    	    	    	    	    #if AROS_STACK_GROWS_DOWNWARDS
+					task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET;
+    	    	    	    	    #else
+					task->tc_SPReg = (BYTE *)task->tc_SPLower+SP_OFFSET;
+   	    	    	    	    #endif
+					if (NewAddTask(task,AFS_work,NULL,tags) != NULL)
 						return afsbase;
 					FreeMem(stack, AROS_STACKSIZE);
 				}
