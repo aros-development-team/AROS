@@ -204,7 +204,7 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 ifeq ("%(shflag)","yes")
 LIB    := $(LIBDIR)/lib%(lib).so%(lib_suffix)
 RMLIB  := $(LIBDIR)/lib%(lib).a
-AR     := $(SHARED_AR)
+AR     := $(SHARED_LD) $(SHARED_LDFLAGS) -o
 RANLIB := $(NOP)
 else
 LIB    := $(LIBDIR)/lib%(lib).a
