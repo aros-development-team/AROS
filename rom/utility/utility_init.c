@@ -43,7 +43,7 @@ const struct Resident Utility_resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&Utility_resident,
-    (APTR)&Utility_end,
+    (APTR)&END,
     RTF_AUTOINIT|RTF_COLDSTART,
     LIBVERSION,
     NT_LIBRARY,
