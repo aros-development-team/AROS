@@ -200,7 +200,7 @@ autodocs : autodoc.inc gen/htmlpages
 
 gen/htmlpages : $(AUTODOC_SRCS)
 	@echo "Regenerating the HTML AutoDocs"
-	@makeadocs "$(TOP)" "$(CURDIR)" $(AUTODOC_SRCS)
+	@./makeadocs "$(TOP)" "$(CURDIR)" $(AUTODOC_SRCS)
 	@touch gen/htmlpages
 
 autodoc.inc : gen/adoc_index.tmp adocpost.gawk adoc_header.html
