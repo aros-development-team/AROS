@@ -141,47 +141,23 @@ AROS_UFH4(int, Dispatcher,
 	else
 	    SysBase->AttnResched |= 0x80;
     }
-/*
-    else
-    {
-      kprintf("Dispatcher: no taskswitch necessary\n");
-      kprintf("%s remains active\n",SysBase->ThisTask->tc_Node.ln_Name);
-      kprintf("current task pri: %i\n",SysBase->ThisTask->tc_Node.ln_Pri);
-      if (SysBase->TaskReady.lh_Head->ln_Succ != NULL)
-      {
-        kprintf("There's another task ready!\n");
-        kprintf("Other task's (%s) pri: %i\n",SysBase->TaskReady.lh_Head->ln_Name,((struct Node *)SysBase->TaskReady.lh_Head)->ln_Pri);
-      }
-      else
-      {
-        kprintf("There's no other task ready!!\n"); 
-      }
-    }
-*/
 
     /* This make the int handler continue with the rest of the ints. */
     return 0;
 } /* Dispatcher */
 
+
+
+
 void idleTask(struct ExecBase *SysBase)
 {
-/*
-    struct Task *inputDevice = FindTask("input.device");
-    struct Task *idle = FindTask (NULL);
-*/
     while(1)
     {
-    /*
-       if (inputDevice)
-         Signal(inputDevice, SIGBREAKF_CTRL_F);
-       Disable ();
-       idle->tc_State = TS_READY;
-       AddTail (&SysBase->TaskReady, &idle->tc_Node);
-       Enable ();
-       Switch();
-    */
+      /* not really much to do here. */
     }
 }
+
+
 
 AROS_UFH1(void, idleCount,
     AROS_UFHA(struct ExecBase *, SysBase, A6))
@@ -192,6 +168,8 @@ AROS_UFH1(void, idleCount,
     */
     SysBase->IdleCount++;
 }
+
+extern SoftIntDispatch();
 
 AROS_LH2(struct LIBBASETYPE *, init,
     AROS_LHA(ULONG, dummy, D0),
@@ -327,6 +305,27 @@ SysBase->VBlankFrequency = 50;
 		is->is_Data = sil;
 		NEWLIST((struct List *)sil);
 		SetIntVector(i,is);
+	    }
+	    else
+	    {
+	      struct Interrupt * is;
+	      switch(i)
+	      {
+	        case INTB_SOFTINT:
+	          is = AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
+	          if (NULL == is)
+	          {
+	            kprintf("Error: Cannot install Interrupt Handler!\n");
+	            Alert( AT_DeadEnd | AN_IntrMem );
+	          }
+	          is->is_Node.ln_Type = NT_INTERRUPT;
+	          is->is_Node.ln_Pri = 0;
+	          is->is_Node.ln_Name = "SW Interrupt Dispatcher";
+	          is->is_Data = NULL;
+	          is->is_Code = (void *)SoftIntDispatch;
+	          SetIntVector(i,is);
+	        break;
+	      }
 	    }
     }
 
