@@ -67,7 +67,7 @@
 		          xSize,
 		          ySize,
 		          minterm,
-		          NULL,
+		          ~0,
 		          NULL);
 	} else {
 		struct BitMap * srcBM = srcRastPort->BitMap;
