@@ -6,14 +6,16 @@
     Lang: english
 */
 
-/* !!! */
 #include <stdio.h>
 #include <proto/exec.h>
+#include <exec/errors.h>
+#include <exec/io.h>
 #include <proto/dos.h>
 #include <dos/dos.h>
 #include <dos/datetime.h>
+#include <devices/timer.h>
 
-static const char version[] = "$VER: Date 1.0 (19.2.1997)\n";
+static const char version[] = "$VER: Date 1.1 (5.3.1997)\n";
 
 #define ARG_STRING "DAY,DATE,TIME,TO=VER/K"
 #define ARG_DAY 0
@@ -21,6 +23,28 @@ static const char version[] = "$VER: Date 1.0 (19.2.1997)\n";
 #define ARG_TIME 2
 #define ARG_VER 3
 #define ARG_COUNT 4
+
+int setdate(STRPTR day, STRPTR date, STRPTR time)
+{
+    int error = RETURN_OK;
+    BYTE timererror;
+    struct timerequest timerreq;
+
+    timererror = OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)&timerreq, 0L);
+    if (timererror == 0)
+    {
+        /* !!! */
+        printf("Function not implemented, yet\n");
+        error = RETURN_FAIL;
+        CloseDevice((struct IORequest *)&timerreq);
+    } else
+    {
+        printf("Date: Error opening timer.device\n");
+        error = RETURN_FAIL;
+    }
+
+    return(error);
+}
 
 int printdate(STRPTR filename)
 {
@@ -82,11 +106,11 @@ int main(int argc, char **argv)
     {
         if (args[ARG_DAY] != NULL || args[ARG_DATE] != NULL || args[ARG_TIME] != NULL)
         {
-            /* !!! */
-            if (args[ARG_VER] != NULL)
-                printdate(args[ARG_VER]);
-            printf("Date: Function not implemented, yet\n"); /* !!! */
-            error = RETURN_FAIL; /* !!! */
+            if ((error = setdate(args[ARG_DAY], args[ARG_DATE], args[ARG_TIME])) == RETURN_OK)
+            {
+                if (args[ARG_VER] != NULL)
+                    printdate(args[ARG_VER]);
+            }
         } else
             error = printdate(args[ARG_VER]);
         FreeArgs(rda);
