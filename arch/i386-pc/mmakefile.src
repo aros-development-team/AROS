@@ -107,6 +107,10 @@ kernel-expansion-native-i386 :
 kernel-boopsi-native-i386 :
 	%add_objects rom/boot/libboopsi
 
+#MM kernel-boot-native-i386 :
+kernel-boot-native-i386 :
+	%add_objects rom/boot/libboot
+
 #MM kernel-oop-native-i386 :
 kernel-oop-native-i386 :
 	%add_objects rom/boot/liboop
