@@ -148,7 +148,7 @@ STATIC VOID MNAME(dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 #define XSD(cl) xsd
 
 #define NUM_ROOT_METHODS   3
-#define NUM_BITMAP_METHODS 7
+#define NUM_BITMAP_METHODS 8
 
 OOP_Class *init_vesagfxonbmclass(struct VesaGfx_staticdata *xsd)
 {
@@ -168,6 +168,7 @@ OOP_Class *init_vesagfxonbmclass(struct VesaGfx_staticdata *xsd)
 	{(IPTR (*)())MNAME(getimage)	    	, moHidd_BitMap_GetImage    	    },
     	{(IPTR (*)())MNAME(putimagelut)     	, moHidd_BitMap_PutImageLUT 	    },
     	{(IPTR (*)())MNAME(blitcolorexpansion)	, moHidd_BitMap_BlitColorExpansion  },
+    	{(IPTR (*)())MNAME(puttemplate)	    	, moHidd_BitMap_PutTemplate 	    },
 	{NULL	    	    	    	    	, 0UL	    	    	    	    }
     };
     struct OOP_InterfaceDescr ifdescr[] =
