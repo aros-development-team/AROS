@@ -5,7 +5,8 @@
 include $(TOP)/config/make.cfg
 
 FILES	:= \
-    calculator_gt
+    calculator_gt \
+    WiMP
 
 EXEDIR := $(AROSDIR)/Tools
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
