@@ -7,6 +7,8 @@
 */
 #include "graphics_intern.h"
 #include <proto/utility.h>
+#include <proto/oop.h>
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -50,9 +52,10 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    struct TagItem * tag, *tstate = tags;
-
-    while ((tag = NextTagItem (&tstate)))
+    struct TagItem *tag, *tstate = tags;
+    BOOL    	    havedriverdata = FALSE;
+    
+    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
     {
 	switch (tag->ti_Tag)
 	{
@@ -86,9 +89,61 @@
 	    case RPTAG_DrawBounds:
 		break;
 	    
+	    case RPTAG_FgColor:
+	    case RPTAG_BgColor:
+	    {
+	    	IPTR attr;
+		
+	    	if (tag->ti_Tag == RPTAG_FgColor)
+		{
+		    attr = aHidd_GC_Foreground;
+		    RP_FGCOLOR(rp) = (ULONG)tag->ti_Data;
+		}
+		else
+		{
+		    attr = aHidd_GC_Background;
+		    RP_BGCOLOR(rp) = (ULONG)tag->ti_Data;
+		}
+		
+		if (!rp->BitMap) break;
+		if (!IS_HIDD_BM(rp->BitMap)) break;
+		
+	    	if (!havedriverdata)
+		{
+		    havedriverdata = OBTAIN_DRIVERDATA(rp, GfxBase);
+		}
+		
+		if (havedriverdata)
+		{
+		    struct TagItem col_tags[] =
+		    {
+		    	{ attr, 0   },
+			{ TAG_DONE  }
+		    };
+		    HIDDT_Color col;
+		    ULONG rgb = (ULONG)tag->ti_Data;
+		    
+		    /* HIDDT_ColComp are 16 Bit */
+		    col.alpha	= (HIDDT_ColComp)((rgb >> 16) & 0x0000FF00);
+		    col.red	= (HIDDT_ColComp)((rgb >> 8) & 0x0000FF00);
+		    col.green	= (HIDDT_ColComp)(rgb & 0x0000FF00);
+		    col.blue	= (HIDDT_ColComp)((rgb << 8) & 0x0000FF00);
+
+		    col_tags[0].ti_Data = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
+    	    	    OOP_SetAttrs(RP_DRIVERDATA(rp)->dd_GC, col_tags);		    		    		    
+		}		
+		break;
+		
+	    } /**/
+		
 	} /* switch (tag) */
 	
     } /* while (tag) */
 
+    if (havedriverdata)
+    {
+    	RELEASE_DRIVERDATA(rp, GfxBase);
+    }
+    
     AROS_LIBFUNC_EXIT
 } /* SetRPAttrsA */

@@ -11,6 +11,8 @@
 #include "graphics_intern.h"
 #include <proto/utility.h>
 
+#include "gfxfuncsupport.h"
+
 /*****************************************************************************
 
     NAME */
@@ -128,6 +130,14 @@
 	    	((struct Rectangle *)tag->ti_Data)->MaxY = 0;
 	    	break;
 
+    	    case RPTAG_FgColor:
+	    	*((IPTR *)tag->ti_Data) = RP_FGCOLOR(rp);
+		break;
+		
+	    case RPTAG_BgColor:
+	    	*((IPTR *)tag->ti_Data) = RP_BGCOLOR(rp);
+		break;
+		
 	} /* switch(tag->ti_Tag) */
 	
     } /* while ((tag = NextTagItem ((const struct TagItem **)&tstate))) */
