@@ -320,7 +320,7 @@ ifndef INIT_FILE
 INIT_FILE := $(LIBNAME)_init
 endif
 ifndef END_FILE
-END_FILE := endtag
+END_FILE := $(OBJDIR)/endtag
 endif
 ifndef OBJDIR
 OBJDIR := $(GENDIR)/$(CURDIR)
@@ -329,7 +329,7 @@ ifndef INITFUNC
 INITFUNC := $(OBJDIR)/$(INIT_FILE).o
 endif
 ifndef ENDFUNC
-ENDFUNC := $(OBJDIR)/$(END_FILE).o
+ENDFUNC := $(END_FILE).o
 endif
 SYS_FILES := $(SYS_FILES) $(INIT_FILE) functable
 ifndef OBJS
@@ -378,7 +378,7 @@ FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 
 %mkfunctable_q
 
-endtag.c :
+$(OBJDIR)/endtag.c :
 	@$(ECHO) "Generating $@..."
 	@$(ECHO) "#include <libcore/libtail.c>" > $@
 
@@ -585,7 +585,7 @@ ifndef INIT_FILE
 INIT_FILE := $(LIBNAME)_init
 endif
 ifndef END_FILE
-END_FILE := endtag
+END_FILE := $(OBJDIR)/endtag
 endif
 ifndef OBJDIR
 OBJDIR := $(GENDIR)/$(CURDIR)
@@ -594,7 +594,7 @@ ifndef INITFUNC
 INITFUNC := $(OBJDIR)/$(INIT_FILE).o
 endif
 ifndef ENDFUNC
-ENDFUNC := $(OBJDIR)/$(END_FILE).o
+ENDFUNC := $(END_FILE).o
 endif
 ifndef OSMODULE
 OSMODULE := $(LIBNAME).library
@@ -642,6 +642,9 @@ $(LIB) : $(ALL_OBJS)
 
 $(OBJDIR)/%.o : %.c
 %compile_q
+
+$(OBJDIR)/%.o : $(OBJDIR)/%.c
+%compile_q opt="$(CFLAGS) -I$(OBJDIR)"
 
 # Rule to create a .library in the local dir
 libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
@@ -855,10 +858,10 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 SLIB	      := $(SLIBDIR)/$(LIBNAME).library
 LIB	      := $(LIBDIR)/lib$(LIBNAME).a
 INIT_FILE     := $(LIBNAME)_init
-END_FILE      := $(LIBNAME)_endtag
+END_FILE      := $(OBJDIR)/endtag
 OBJDIR        := $(GENDIR)/$(CURDIR)
 INITFUNC      := $(OBJDIR)/$(INIT_FILE).o
-ENDFUNC       := $(OBJDIR)/$(END_FILE).o
+ENDFUNC       := $(END_FILE).o
 SYS_FILES     := $(SYS_FILES) $(INIT_FILE) functable
 OBJS	      := $(foreach f,$(FILES) functions $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 SYS_OBJS      := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
@@ -897,9 +900,16 @@ ALL_FUNCTIONS := $(FUNCTIONS)
 $(OBJDIR)/%.o : %.c
 %compile_q
 
+$(END_FILE).c :
+	@$(ECHO) "Generating $@..."
+	@$(ECHO) "#include <libcore/libtail.c>" > $@
+
+$(ENDFUNC) : $(END_FILE).c
+%compile_q
+
 %mkfunctable_arch
 
-$(END_FILE).c : $(TOP)/scripts/makeendtag.awk
+$(OBJDIR)/$(END_FILE).c : $(TOP)/scripts/makeendtag.awk
 	@$(ECHO) "Regenerating $@..."
 	@$(AWK) -f $(TOP)/scripts/makeendtag.awk \
 		-v lib=$(ULIBNAME)
