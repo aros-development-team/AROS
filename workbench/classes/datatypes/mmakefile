@@ -7,4 +7,5 @@
 #MM	    workbench-datatypes-ascii \
 #MM	    workbench-datatypes-binary \
 #MM	    workbench-datatypes-picture \
-#MM         workbench-datatypes-ppm
+#MM         workbench-datatypes-ppm \
+#MM         workbench-datatypes-ilbm
