@@ -267,6 +267,21 @@ $(END_FILE).d : $(END_FILE).c
 clean ::
 	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
 
+$(GENMODULE) : $(wildcard $(TOP)/tools/genmodule/*.[hc])
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmodule TOP=$(TOP)
+
+$(TOP)/tools/cxref/configure : $(TOP)/tools/cxref/configure.in
+	cd $(TOP)/tools/cxref ; aclocal ; autoconf
+
+$(TOP)/tools/cxref/Makefile : $(TOP)/tools/cxref/configure \
+		$(TOP)/tools/cxref/Makefile.in
+	cd $(TOP)/tools/cxref ; ./configure --prefix=$(TOOLDIR)
+
+$(CXREF): $(TOP)/tools/cxref/*.[ch] $(TOP)/tools/cxref/cpp/*.[ch] $(TOP)/tools/cxref/query/*.[ch] \
+		$(TOP)/tools/cxref/Makefile
+	$(MAKE) $(MKARGS) -C $(TOP)/tools/cxref
+	cp $(TOP)/tools/cxref/cxref$(HOST_EXE_SUFFIX) $(CXREF)
+
 %end
 
 #------------------------------------------------------------------------------
@@ -275,7 +290,9 @@ clean ::
 # Include these files but only if the current target is neither
 # setup nor clean.
 ifeq (,$(filter clean% %clean %clean% setup% includes% %(nodepstargets),$(TARGET)))
--include %(deps)
+  ifneq (%(deps),)
+    -include %(deps)
+  endif
 endif
 %end
 
@@ -1036,6 +1053,122 @@ $(OBJDIR)/%.d : %.c
 %end
 
 #------------------------------------------------------------------------------
+# Some new macro's added by Staf (verhaegs) for new build system of modules
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Generate a unique id for each of the %build... rules
+%define buildid
+BDID := $(BDID)_
+%end
+
+
+#------------------------------------------------------------------------------
+# Generate a rule to compile a C source file to an object file and generate
+# the dependency file. Basename may contain a directory part, then the source
+# file has to be in that directory. The generated file will be put in the
+# object directory without the directory.
+# options
+# - basename: the basename of the file to compile. Use % for a wildcard rule
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - dflags: the flags used during creation of dependency file. If not specified
+#   the same value as cflags will be used
+# - objdir (default: $(OBJDIR)): the directory to put the .o file and the .d
+#   file
+%define rule_compile basename=\A cflags=$(CFLAGS) dflags= objdir=$(OBJDIR)
+
+%(objdir)/$(notdir %(basename)).o : %(basename).c
+	%compile_q opt=%(cflags)
+
+ifeq (%(dflags),)
+%(objdir)/$(notdir %(basename)).d : %(basename).c
+	%mkdepend_q flags=%(cflags)
+else
+%(objdir)/$(notdir %(basename)).d : %(basename).c
+	%mkdepend_q flags=%(dflags)
+endif
+
+%end
+
+#------------------------------------------------------------------------------
+# Build a module
+# options:
+# - conffile (default: $(MODULE).conf): The name of the config file.
+# - cflags (default: $(CFLAGS)): The C options used during compilation
+%define build_module mmake=\A modname=\A modtype=\A conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID)).ref
+
+%buildid
+
+ifeq (%(modname),)
+$(error using %build_module: modname may not be empty)
+endif
+ifeq (%(modtype),)
+$(error using %build_module: $(MODTYPE) has to be defined with the type of the module
+endif
+OBJDIR               ?= $(GENDIR)/$(CURDIR)
+BD_MODNAME$(BDID)    := %(modname)
+BD_MODTYPE$(BDID)    := %(modtype)
+BD_CONFFILE$(BDID)   := %(conffile)
+BD_FILES$(BDID)      := %(files)
+BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
+BD_OBJDIR$(BDID)     := %(objdir)
+BD_CFLAGS$(BDID)     := %(cflags) -I$(BD_OBJDIR$(BDID))
+ifeq (%(dflags),)
+BD_DFLAGS$(BDID)     := $(BD_CFLAGS$(BDID))
+else
+BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_OBJDIR$(BDID))
+endif
+BD_OBJS$(BDID)       := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.o $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)))))
+BD_ENDOBJ$(BDID)     := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end.o
+BD_GENINCS$(BDID)    := proto/$(BD_MODNAME$(BDID)).h clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h
+BD_DEPS$(BDID)       := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)))))
+BD_REFFILE$(BDID)    := %(reffile)
+
+%rule_compile basename=% objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+%rule_compile basename=$(BD_OBJDIR$(BDID))/% objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+BD_MODDIR$(BDID)     := bollocks
+
+ifeq ($(BD_MODTYPE$(BDID)),library)
+  BD_MODDIR$(BDID)     := $(AROS_LIBS)
+endif
+
+ifeq ($(BD_MODDIR$(BDID)),bollocks)
+$(error unhandled MODTYPE %(modtype))
+endif
+
+BD_MODULE$(BDID)   := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BDID))
+
+#MM
+%(mmake) : $(BD_MODULE$(BDID)) $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID)))
+
+#MM
+%(mmake)-clean :
+	@echo "Cleaning up for module $(BD_MODNAME$(BDID))"
+	@$(RM) $(BD_OBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_REFFILE$(BDID))\
+	    $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .c,$(BD_GENFILES$(BDID)))) \
+	    $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) \
+	    $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID)))
+
+$(BD_REFFILE$(BDID)) : $(BD_SRCS$(BDID)) $(CXREF)
+	@echo "Generating function reference file for module $(BD_MODNAME$(BDID))"
+	@$(CXREF) -raw -CPP "gcc $(strip $(BD_CFLAGS$(BDID))) -E -C -dD" $(subst $(CXREF),,$^) >$@
+
+$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.c $(BD_OBJDIR$(BDID))/libdefs.h $(subst .o,.c,$(BD_ENDOBJ$(BDID))) \
+$(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) : $(BD_CONFFILE$(BDID)) $(GENMODULE) $(BD_REFFILE$(BDID))
+	@echo "Generating functable and includes for module $(BD_MODNAME$(BDID))"
+	@$(GENMODULE) $(BD_MODNAME$(BDID)) $(BD_MODTYPE$(BDID)) $(BD_CONFFILE$(BDID)) $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(BD_REFFILE$(BDID))
+
+$(BD_MODULE$(BDID)) : $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))
+	%link_module_q err=$(BD_MODNAME$(BDID)).err endtag=$(BD_ENDOBJ$(BDID)) objs="$(subst $(BD_ENDOBJ$(BDID)),,$^)"
+
+$(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) : $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID)))
+	@cd $(GENINCDIR); $(CP) $(BD_GENINCS$(BDID)) $(AROS_INCLUDES)
+
+%include_deps deps=$(BD_DEPS$(BDID))
+%end
+
+
+#------------------------------------------------------------------------------
 # NOTE: The following are all part of Iain's build changes, please don't use
 # or change anything below this line until you know what you are doing. This
 # is so that I don't conflict with the semantics of any of the above macros.
@@ -1501,20 +1634,20 @@ clean ::
 # Link a module based upon a number of arguments and the standard $(LIBS)
 # and $(DEPLIBS) make variables.
 #
-%define link_module_q err="$(notdir $@).err" objs=/A endtag= id=
+%define link_module_q err="$(notdir $@).err" objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@if $(STATIC_LD) $(STATIC_LDFLAGS) $(LDFLAGS%(id)) \
-	    $(GENMAP) $(OBJDIR%(id))/$(MODULE%(id)).map \
-	    %(objs) $(LIBS%(id)) %(endtag) $(COMPILER_LIBS) \
-	    -o $@ 2>&1 > $(OBJDIR%(id))/%(err); \
+	@if $(STATIC_LD) $(STATIC_LDFLAGS) %(ldflags) \
+	    $(GENMAP) %(objdir)/%(module).map \
+	    %(objs) %(libs) %(endtag) $(COMPILER_LIBS) \
+	    -o $@ 2>&1 > %(objdir)/%(err); \
 	then \
-	    cat $(OBJDIR%(id))/%(err); \
+	    cat %(objdir)/%(err); \
 	else \
-	    cat $(OBJDIR%(id))/%(err); \
+	    cat %(objdir)/%(err); \
 	    exit 1; \
 	fi
 
-	@if $(TEST) ! -s $(OBJDIR%(id))/%(err) ; then $(RM) $(OBJDIR%(id))/%(err) ; fi
+	@if $(TEST) ! -s %(objdir)/%(err) ; then $(RM) %(objdir)/%(err) ; fi
 	@$(STRIP) $@
 %end
 
@@ -1674,7 +1807,7 @@ $(MOD_DIR%(id))/$(MODULE%(id)) :
 	$(error You cannot make $(MODULE%(id)) into a module)
 else
 $(MOD_DIR%(id))/$(MODULE%(id)) : $(INIT_OBJ) $(FUNC_OBJ) $(OBJS) $(END_OBJ) $(DEPLIBS)
-	%link_module_q objs="$(INIT_OBJ) $(FUNC_OBJ) $(OBJS)" endtag="$(END_OBJ)" id=%(id)
+	%link_module_q objs="$(INIT_OBJ) $(FUNC_OBJ) $(OBJS)" endtag="$(END_OBJ)" objdir=$(OBJDIR%(id)) libs=$(LIBS%(id)) module=$(MODULE%(id)) ldflags=$(LDFLAGS%(id))
 endif
 
 # Make a library. Not sure about the RHS yet.
