@@ -598,7 +598,7 @@ BDID := $(BDTARGETID)
 # already contains either a '/' (slash) or a ':' (colon), thus simply attach it
 # to the name which has to follow it.
 
-%define build_with_configure mmake=/A configure=$(TOP)/$(CURDIR)/configure prefix= \
+%define build_with_configure mmake=/A srcdir=$(TOP)/$(CURDIR) prefix= \
     aros_prefix= bindir= libdir= includedir= extraoptions= nix=no host=no \
     install_target=install
 
@@ -678,8 +678,8 @@ endif
         $(%(mmake)-install_command)
 
 $(TOP)/$(CURDIR)/.files-touched:
-	@find . -print0 | xargs -0 $(TOUCH) -r configure; \
-	$(ECHO) YES > $@
+	-find %(srcdir) -name \*.in -or -name \*.am -or -name \*.m4 -print0 | \
+	    xargs -0 $(TOUCH) -r %(srcdir)/configure && $(TOUCH) $@
 
 #MM
 %(mmake)-uninstall :
@@ -691,7 +691,7 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	cd $(GENDIR)/$(CURDIR); \
 	    $(RM) config.cache; \
 	    if CC="$(HOST_CC)" \
-	        %(configure) $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
+	        %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
 	        $(%(mmake)-includedir) %(extraoptions); then \
 	        $(TOUCH) $@; \
 	    fi
@@ -701,7 +701,7 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	cd $(GENDIR)/$(CURDIR); \
 	    $(RM) config.cache; \
 	    if CC="$(TARGET_CC) -nix" CC_FOR_BUILD="$(HOST_CC)" \
-	        %(configure) $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
+	        %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
 	        $(%(mmake)-includedir) %(extraoptions) --host=$(AROS_TARGET_CPU)-aros; then \
 	        $(TOUCH) $@; \
   	    fi
