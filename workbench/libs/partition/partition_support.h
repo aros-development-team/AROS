@@ -40,6 +40,7 @@ LONG readBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
 LONG PartitionWriteBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
 struct TagItem *findTagItem(ULONG tag, struct TagItem *);
 void fillMem(BYTE *, LONG, BYTE);
+ULONG strlen(STRPTR);
 
 #define getGeometry PartitionGetGeometry
 #define writeBlock  PartitionWriteBlock
