@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.35  2000/12/25 22:52:35  bergers
+    Bugfix for child windows.
+
     Revision 1.34  2000/12/25 12:59:42  hkiel
     Immediately return on NULL argument.
 
@@ -230,7 +233,6 @@ void LateCloseWindow(struct MsgPort *userport,
       {
         struct Window * _cw;
         _cw = cw->nextchild;
-        window->firstchild = _cw;
         CloseWindow(cw);
         cw = _cw;
       }
