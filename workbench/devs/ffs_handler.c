@@ -1,15 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.4  1997/01/27 00:22:40  ldp
-    Include proto instead of clib
-
-    Revision 1.3  1996/12/10 13:59:49  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.2  1996/11/22 12:29:01  aros
-    More complete filesystem: Readonly and makedir.
 
     Desc:
     Lang:
@@ -233,7 +224,7 @@ const struct Resident resident=
 
 const char name[]="ffs.handler";
 
-const char version[]="$VER: ffs handler 1.0 (28.3.96)\n\015";
+const char version[]="$VER: ffs-handler 41.1 (28.3.96)\n\015";
 
 const APTR inittabl[4]=
 {

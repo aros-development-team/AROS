@@ -1,27 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.7  1997/01/27 00:22:40  ldp
-    Include proto instead of clib
-
-    Revision 1.6  1996/12/10 13:59:49  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.5  1996/11/14 22:33:52  aros
-    Fixed register conflict
-
-    Revision 1.4  1996/10/24 15:50:21  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.3  1996/10/10 13:14:54  digulla
-    ? (Fleischer)
-
-    Revision 1.2  1996/09/12 14:52:00  digulla
-    Use correct way to access external names (was missing)
-
-    Revision 1.1  1996/09/11 12:52:54  digulla
-    Two new devices by M. Fleischer: RAM: and NIL:
 
     Desc:
     Lang:
@@ -74,7 +53,7 @@ const struct Resident nil_handler_resident=
 
 static const char name[]="nil.handler";
 
-static const char version[]="$VER: nil_handler 1.0 (8.6.96)\n\015";
+static const char version[]="$VER: nil-handler 41.1 (8.6.96)\n\015";
 
 static const APTR inittabl[4]=
 {

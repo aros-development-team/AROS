@@ -1,19 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.4  1997/01/27 00:22:40  ldp
-    Include proto instead of clib
-
-    Revision 1.3  1996/12/10 13:59:49  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.2  1996/11/16 01:18:18  aros
-    Fixed register usage (register used twice)
-
-    Revision 1.1  1996/11/14 08:53:29  aros
-    First attempt for a real fastfilesystem
-    (only directoryscans for now)
 
     Desc:
     Lang:
@@ -73,7 +60,7 @@ const struct Resident resident=
 
 const char name[]="fdsk.device";
 
-const char version[]="$VER: file-disk device 1.0 (10.9.96)\n\015";
+const char version[]="$VER: file-disk device 41.1 (10.9.96)\n\015";
 
 const APTR inittabl[4]=
 {

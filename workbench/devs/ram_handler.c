@@ -167,7 +167,7 @@ const struct Resident resident=
 
 const char name[]="ram.handler";
 
-const char version[]="$VER: ram handler 1.0 (28.3.96)\n\015";
+const char version[]="$VER: ram-handler 41.1 (28.3.96)\n\015";
 
 const APTR inittabl[4]=
 {
