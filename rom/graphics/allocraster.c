@@ -22,7 +22,7 @@
 	AROS_LHA(ULONG          , height, D1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 153, Graphics)
+	struct GfxBase *, GfxBase, 82, Graphics)
 
 /*  FUNCTION
 	Allocates memory for a single bitplane with the specified size in
