@@ -102,8 +102,8 @@ extern const char *z_errmsg[10]; /* indexed by 2-zlib_error */
      fopen((name), (mode), "mbc=60", "ctx=stm", "rfm=fix", "mrs=512")
 #endif
 
-/*AROSFIXME */
-#if defined(AMIGA) || defined(__AROS__)
+#ifdef AMIGA
+#  warning FIXME: Should AROS have it's own OS_CODE?
 #  define OS_CODE  0x01
 #endif
 
