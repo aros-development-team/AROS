@@ -60,15 +60,10 @@
 
     if (!str) str = "(null)";
 
-    while (*str)
+    if (FPuts((BPTR)fdesc->fh, str) == -1)
     {
-	if (FPutC((BPTR)fdesc->fh, *str) == EOF)
-	{
-    	    errno = IoErr2errno(IoErr());
-	    return EOF;
-        }
-
-	str++;
+	errno = IoErr2errno(IoErr());
+	return EOF;
     }
 
     return 0;
