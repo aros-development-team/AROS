@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Start an IO request and wait until it completes.
-    Lang: english
+    Lang: English
 */
 #include <exec/execbase.h>
 #include <exec/io.h>
@@ -24,7 +24,7 @@
 	struct ExecBase * SysBase)
 
 /*  FUNCTION
-	It's liek the exec's DoIO, but this one handles CTRLC.
+	It's like the exec's DoIO, but this one handles CTRL-C.
 
     INPUTS
 	iORequest - Pointer to iorequest structure.
@@ -102,5 +102,5 @@ loop:
     /* All done. Get returncode. */
     return iORequest->io_Error;
     AROS_LIBFUNC_EXIT
-} /* DoIO */
+} /* DosDoIO */
 
