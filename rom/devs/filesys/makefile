@@ -17,6 +17,7 @@ $(OBJDIR)/%.o: %.c
 	if test ! -s $*.err; then rm $*.err; fi
 
 $(OBJDIR)/%.d: %.c
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
 	@$(RM) $@
 	@touch $@
 	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^

@@ -53,6 +53,7 @@ $(OSGENDIR)/%.o: %.c
 	if test ! -s $*.err; then rm $*.err; fi
 
 $(OSGENDIR)/%.d: %.c
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
 	@$(RM) $@
 	@touch $@
 	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^

@@ -33,11 +33,13 @@ $(DEVSDIR)/%.handler: $(OBJDIR)/%_handler.o
 	$(CC) $(ILDFLAGS) $< -o $@
 
 $(OSGENDIR)/%.d: %.c
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
 	@$(RM) $@
 	@touch $@
 	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
 
 $(OBJDIR)/%.d: %.c
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
 	@$(RM) $@
 	@touch $@
 	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
