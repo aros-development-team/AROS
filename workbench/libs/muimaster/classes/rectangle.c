@@ -22,7 +22,7 @@
 #include "textengine.h"
 #include "prefs.h"
 
-//#define MYDEBUG 1
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
@@ -199,9 +199,6 @@ static ULONG Rectangle_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
     ** now add the values specific to our object. note that we
     ** indeed need to *add* these values, not just set them!
     */
-    /* not adding 1 pixel will fubar zune prefs and possibly others */
-    msg->MinMaxInfo->MinWidth  += 1;
-    msg->MinMaxInfo->MinHeight += 1;
 
     if (!data->BarTitle)
     {
@@ -234,6 +231,7 @@ static ULONG Rectangle_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
 
     msg->MinMaxInfo->MaxWidth  = MUI_MAXMAX;
     msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
+
     return TRUE;
 }
 
@@ -269,6 +267,8 @@ static ULONG  Rectangle_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *m
 	return 0;
 
 
+D(bug("Draw Rectangle(0x%lx) %ldx%ldx%ldx%ld mw=%ld mh=%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj), _mwidth(obj), _mheight(obj)));
+
     if (_mwidth(obj) < 1 || _mheight(obj) < 1)
 	return TRUE;
 
@@ -288,7 +288,7 @@ static ULONG  Rectangle_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *m
 	int x2;
 	int yt;
 
-        D(bug("muimaster.library/rectangle.c: Draw Rectangle Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
+        /*  D(bug("muimaster.library/rectangle.c: Draw Rectangle Object at 0x%lx %ldx%ldx%ldx%ld\n mw=%ld mh=%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj), _mwidth(obj), _mheight(obj))); */
 
 	SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
 	if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
@@ -372,6 +372,16 @@ static ULONG  Rectangle_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *m
 
 	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
 	    draw_line(_rp(obj), x, _mtop(obj), x, _mbottom(obj));
+	}
+	else
+	{
+#ifdef MYDEBUG
+	    WORD pnts[] = { _mleft(obj), _mtop(obj),  _mleft(obj), _mbottom(obj),
+		_mright(obj), _mbottom(obj), _mright(obj),  _mtop(obj) };
+	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
+	    Move(_rp(obj), _mright(obj),  _mtop(obj));
+	    PolyDraw(_rp(obj), 4, pnts);
+#endif
 	}
     }
     return TRUE;
