@@ -28,10 +28,10 @@ extern char MUIC_List[];
 #define MUIM_List_Select                    0x804252d8 /* V4  */
 #define MUIM_List_Sort                      0x80422275 /* V4  */
 #define MUIM_List_TestPos                   0x80425f48 /* V11 */
-#define MUIM_List_Construct                 0x9d5100A1 /* ZV1 GM same like NList */
-#define MUIM_List_Destruct                  0x9d5100A2 /* ZV1 GM same like NList */
-#define MUIM_List_Compare                   0x9d5100A3 /* Zv1 GM same like NList */
-#define MUIM_List_Display                   0x9d5100A4 /* Zv1 GM same like NList */
+#define MUIM_List_Construct                 0x9d5100A1 /* ZV1 GM same like NList, PRIV for now! */
+#define MUIM_List_Destruct                  0x9d5100A2 /* ZV1 GM same like NList, PRIV for now! */
+#define MUIM_List_Compare                   0x9d5100A3 /* Zv1 GM same like NList, PRIV for now! */
+#define MUIM_List_Display                   0x9d5100A4 /* Zv1 GM same like NList, PRIV for now! */
 
 struct  MUIP_List_Clear                     { ULONG MethodID; };
 struct  MUIP_List_CreateImage               { ULONG MethodID; Object *obj; ULONG flags; };
