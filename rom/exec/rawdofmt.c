@@ -312,15 +312,23 @@
 
 			/* Get address, but align datastream first */
 			if(AROS_PTRALIGN>AROS_WORDALIGN)
-			    stream=(stream+AROS_PTRALIGN-1)&~(AROS_PTRALIGN-1);
-			buf=*(UBYTE **)stream;
-			stream+=sizeof(UBYTE *);
+			    stream = (stream+AROS_PTRALIGN-1)&~(AROS_PTRALIGN-1);
+		
+                  	buf     = *(UBYTE **)stream;
+			stream +=  sizeof(UBYTE *);
 
-			/* width=strlen(buf) */
-			buffer=buf;
-			while(*buffer++)
-			    ;
-			width=~(buf-buffer);
+                        if (!buf)
+                        {
+                            buf   = "(null)";
+                            width = 7;
+                        }
+                        else
+                        {
+			    /* width=strlen(buf) */
+			    buffer=buf;
+			    while(*buffer++);
+			    width=~(buf-buffer);
+                        }
 
 			/* Strings may be modified with the maxwidth modifier */
 			if(width>maxwidth)
