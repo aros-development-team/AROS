@@ -8,6 +8,9 @@
 
 /****************************************************************************************/
 
+/* IMPORTANT: The order of these must match the order of the vHidd_StdPixFmt
+              enum in <hidds/graphics.h> !!! */
+
 const HIDDT_PixelFormat stdpfs[] = 
 {
     {

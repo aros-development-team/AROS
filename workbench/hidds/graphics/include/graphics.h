@@ -358,23 +358,23 @@ enum
 	
     num_Hidd_PseudoStdPixFmt,
 	
-    /* Chunky formats */
+    /* Chunky formats. The order here must match those in ../stdpixfmts_??.h array !! */
     vHidd_StdPixFmt_RGB24 = num_Hidd_PseudoStdPixFmt,
     vHidd_StdPixFmt_BGR24,
     vHidd_StdPixFmt_RGB16,
-    vHidd_StdPixFmt_BGR16,
     vHidd_StdPixFmt_RGB16_LE,
+    vHidd_StdPixFmt_BGR16,
     vHidd_StdPixFmt_BGR16_LE,
     vHidd_StdPixFmt_RGB15,
-    vHidd_StdPixFmt_BGR15,
     vHidd_StdPixFmt_RGB15_LE,
+    vHidd_StdPixFmt_BGR15,
     vHidd_StdPixFmt_BGR15_LE,
     vHidd_StdPixFmt_ARGB32,
-    vHidd_StdPixFmt_RGBA32,
     vHidd_StdPixFmt_BGRA32,
+    vHidd_StdPixFmt_RGBA32,
     vHidd_StdPixFmt_0RGB32,
-    vHidd_StdPixFmt_RGB032,
     vHidd_StdPixFmt_BGR032,
+    vHidd_StdPixFmt_RGB032,
     vHidd_StdPixFmt_LUT8,
     vHidd_StdPixFmt_Plane,
 
