@@ -25,15 +25,14 @@ struct Errors
     STRPTR  string;
 };
 
-extern const UBYTE Alerthook_name[];
-extern const UBYTE Alerthook_version[];
+static const UBYTE Alerthook_name[];
+static const UBYTE Alerthook_version[];
 #ifdef _DCC
-extern ULONG AROS_SLIB_ENTRY(init,Alerthook)(__a6 struct ExecBase *);
+static ULONG AROS_SLIB_ENTRY(init,Alerthook)(__a6 struct ExecBase *);
 #else
-extern ULONG AROS_SLIB_ENTRY(init,Alerthook)();
+static ULONG AROS_SLIB_ENTRY(init,Alerthook)();
 #endif
-extern const char Alerthook_end;
-extern const struct Resident Alerthook_resident;
+static const char Alerthook_end;
 
 STRPTR getGuruString(ULONG, STRPTR);
 
@@ -43,7 +42,7 @@ int Alerthook_entry(void)
     return -1;
 }
 
-const struct Resident Alerthook_resident =
+const struct Resident Alerthook_resident __attribute__((section(".text"))) =
 {
     RTC_MATCHWORD,
     (struct Resident *)&Alerthook_resident,
@@ -57,15 +56,15 @@ const struct Resident Alerthook_resident =
     (APTR)&AROS_SLIB_ENTRY(init,Alerthook)
 };
 
-const UBYTE Alerthook_name[] = "alert.hook\r\n";
-const UBYTE Alerthook_version[] = "$VER: alert.hook 41.7 (2.4.1997)";
-UBYTE *const nomem = "\x38\x0f" "Not Enough Memory! ";
-UBYTE *const sfail = "\x38\x0f" "Software Failure! ";
-UBYTE *const recov = "\x38\x0f" "Recoverable Alert! ";
-UBYTE *const mouse = "\x01\x50\x0f" "Press mouse button to continue.";
-UBYTE *const fmtstring = "\xa8\x2a" "Task:   %08lx - ";
-UBYTE *const errstring = "\x1e" "Error  %04x %04x - ";
-UBYTE *const tasknotfound = "--task not found--";
+static const UBYTE Alerthook_name[] = "alert.hook\r\n";
+static const UBYTE Alerthook_version[] = "$VER: alert.hook 41.8 (6.3.2001)";
+static UBYTE *const nomem = "\x38\x0f" "Not Enough Memory! ";
+static UBYTE *const sfail = "\x38\x0f" "Software Failure! ";
+static UBYTE *const recov = "\x38\x0f" "Recoverable Alert! ";
+static UBYTE *const mouse = "\x01\x50\x0f" "Press mouse button to continue.";
+static UBYTE *const fmtstring = "\xa8\x2a" "Task:   %08lx - ";
+static UBYTE *const errstring = "\x1e" "Error  %04x %04x - ";
+static UBYTE *const tasknotfound = "--task not found--";
 
 /* This is the callback for RawDoFmt() */
 AROS_UFH2(void, putChProc,
@@ -82,7 +81,8 @@ AROS_UFH2(void, putChProc,
 
    Note len == -1 is equivalent to strcpy(dest,src).
 */
-STRPTR mystrcpy(STRPTR dest, STRPTR src, LONG len)
+static STRPTR
+mystrcpy(STRPTR dest, STRPTR src, LONG len)
 {
     while(len && *src)
     {
@@ -230,6 +230,10 @@ static const struct Errors subsystems[] =
     { 0x32,     "diskcopy " },
     { 0x33,     "gadtools " },
     { 0x34,     "utility " },
+
+    { 0x40,	"aros " },
+    { 0x41,	"oop " },
+    { 0x42,	"hidd " },
 
     /* This takes in 0x35 as well... */
     { 0x00,     "unknown " }
@@ -454,6 +458,21 @@ static const struct Errors gadtoolsstrings[] =
     {0, "unknown gadtools.library error" }
 };
 
+static const struct Errors arosstrings[] =
+{
+    {0, "unknown aros.library error" }
+};
+
+static const struct Errors oopstrings[] =
+{
+    {0, "unknown oop.library error" }
+};
+
+static const struct Errors hiddstrings[] =
+{
+    {0, "unknown Hidd system error" }
+};
+
 static const struct Errors *const stringlist[] =
 {
     /* 0x00 */
@@ -526,7 +545,12 @@ static const struct Errors *const stringlist[] =
     unknownstrings,
     unknownstrings,
     unknownstrings,
-    unknownstrings
+    unknownstrings,
+
+    /* 0x40 */
+    arosstrings,
+    oopstrings,
+    hiddstrings
 };
 
 /* Decode the alert number, and try and work out what string to get */
@@ -554,7 +578,7 @@ STRPTR getGuruString(ULONG alertnum, STRPTR buf)
     {
         UBYTE subsys = (alertnum & 0x7f000000) >> 24;
 
-        if(subsys < 0x40)
+        if(subsys < 0x80)
             buf = getString(buf, alertnum, stringlist[subsys]);
         else
             buf = mystrcpy(buf, "unknown error", -1);
@@ -563,4 +587,4 @@ STRPTR getGuruString(ULONG alertnum, STRPTR buf)
     return buf;
 }
 
-const char Alerthook_end = 1;
+static const char Alerthook_end = 1;
