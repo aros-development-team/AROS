@@ -109,7 +109,7 @@ static VOID mouseCallback(struct GameportBase *GPBase,
 			  struct pHidd_Mouse_Event *ev);
 AROS_UFP3S(VOID, gpSendQueuedEvents,
 	   AROS_UFPA(struct GameportBase *, GPBase, A1),
-	   AROS_UFPA(APTR, thisfunc, A1),
+	   AROS_UFPA(APTR, thisfunc, A5),
 	   AROS_UFPA(struct ExecBase *, SysBase, A6));
 
 
