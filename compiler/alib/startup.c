@@ -9,12 +9,12 @@
 #include <setjmp.h>
 #include <dos/dos.h>
 #include <exec/memory.h>
-#include <exec/semaphores.h>
 #include <workbench/startup.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <aros/asmcall.h>
 #include <aros/debug.h>
+#include <aros/symbolsets.h>
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 asm("
@@ -30,11 +30,12 @@ extern struct ExecBase * SysBase;
 extern struct WBStartup *WBenchMsg;
 extern int main (int argc, char ** argv);
 
-extern struct DateStamp __startup_datestamp;
-extern struct SignalSemaphore __startup_memsem;
-extern APTR __startup_mempool; /* malloc() and free() */
 extern jmp_buf __startup_jmp_buf;
 extern LONG __startup_error;
+
+typedef void (* fptr)(void);
+extern fptr __INIT_LIST__[];
+extern fptr __EXIT_LIST__[];
 
 /*
     This won't work for normal AmigaOS because you can't expect SysBase to be
@@ -46,6 +47,8 @@ extern LONG __startup_error;
     970314 ldp: It will now work because of the asm-stub above.
 
 */
+
+
 #warning TODO: reset and initialize the FPU
 #warning TODO: resident startup
 AROS_UFH3(LONG, entry,
@@ -54,27 +57,21 @@ AROS_UFH3(LONG, entry,
     AROS_UFHA(struct ExecBase *,sysbase,A6)
 )
 {
-    char * args = NULL,
-	** argv,
-	 * ptr;
-    int    argc,
-	   argmax;
+    char * args = NULL,	** argv, * ptr;
+    int    argc, argmax;
     LONG   namlen = 64;
     int    done = 0;
     struct Process *myproc;
 
-
     __startup_error = RETURN_FAIL;
-    
-    SysBase = sysbase;
 
-    InitSemaphore(&__startup_memsem);
+    SysBase = sysbase;
 
     if (!(DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39)))
 	return -1;
 
-    DateStamp(&__startup_datestamp);
-    
+	call_funcs(__INIT_LIST__, 1);
+
     myproc = (struct Process *)FindTask(NULL);
 
     /* Do we have a CLI structure? */
@@ -180,7 +177,7 @@ AROS_UFH3(LONG, entry,
 	do {
 	    if (!(argv[0] = AllocVec(namlen, MEMF_ANY)))
 		goto error;
-      
+
 	    if (!(GetProgramName(argv[0], namlen)))
 	    {
 		if (IoErr() == ERROR_LINE_TOO_LONG)
@@ -235,8 +232,7 @@ error:
 	    FreeMem(args, argsize+1);
     }
 
-    if (__startup_mempool)
-	DeletePool(__startup_mempool);
+	call_funcs(__EXIT_LIST__, -1);
 
     CloseLibrary((struct Library *)DOSBase);
 
@@ -252,15 +248,32 @@ error:
     return __startup_error;
 } /* entry */
 
+static void call_funcs(fptr list[], int order)
+{
+	int n;
+
+	if (order>=0)
+	{
+		n = 1;
+		while(list[n])
+			list[n++]();
+   	}
+	else
+	{
+		n = ((int *)list)[0];
+
+		while (n)
+			list[n--]();
+	}
+}
+
 struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 struct WBStartup *WBenchMsg;
-
-struct DateStamp __startup_datestamp;
-struct SignalSemaphore __startup_memsem;
-APTR __startup_mempool = NULL;
 jmp_buf __startup_jmp_buf;
 LONG __startup_error;
+fptr __INIT_LIST__[] __attribute__((weak))={0,0};
+fptr __EXIT_LIST__[] __attribute__((weak))={0,0};
 
 /*	Stub function for GCC __main().
 
