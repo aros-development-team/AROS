@@ -72,6 +72,10 @@
   struct ClipRect * CR;
   struct RastPort * RP;
   struct Layer_Info * LI = l->LayerInfo;
+  struct BitMap * SimpleBackupBM = NULL;
+  struct Rectangle Rect;  /* The area with the backed up data if it is a
+                             simple layer */
+  BOOL retVal; 
 
   /* Check coordinates as there's no suport for layers outside the displayed
      bitmap. I might add this feature later. */
@@ -86,8 +90,10 @@
   if (0 == dx && 0 == dy && 0 == dw && 0 == dh)
     return TRUE;  
 
-  /* Lock all other layers while I am moving this layer */
+  /* Lock all other layers while I am moving and resizing this layer */
   LockLayers(LI);
+
+
 
   /* 
      Here's how I do it:
@@ -99,6 +105,106 @@
      data to the newly created structure and connect the cliprects to it,
      of course.
    */
+
+  /*
+    Is it a simple layer and will areas overlap with the layer at the new
+    position?
+  */
+  
+  if (0 != (l->Flags & LAYERSIMPLE))
+  {
+    LONG abs_dx, abs_dy, _dw, _dh;
+    abs_dx =((LONG)dx >= 0) ? dx : -dx;
+    abs_dy =((LONG)dy >= 0) ? dy : -dy;
+    
+    _dw = ((LONG)dx >= 0) ? 0 : dw;
+    _dh = ((LONG)dy >= 0) ? 0 : dh;
+    
+    if ((l->bounds.MaxX - l->bounds.MinX + 1) > (abs_dx - _dw) &&
+        (l->bounds.MaxY - l->bounds.MinY + 1) > (abs_dy - _dh) )
+    {
+      /* it will overlap! */
+      struct ClipRect * _CR;
+      /* and start backing up right here in case it is needed at all 
+         (the whole area might be hidden)
+         Determine the rectangle with the overlapping area. 
+      */
+      Rect.MinX = (dx >= 0) ? l->bounds.MinX + dx 
+                            : l->bounds.MinX;   
+      Rect.MinY = (dy >= 0) ? l->bounds.MinY + dy
+                            : l->bounds.MinY;
+      Rect.MaxX = (dx <= 0) ? l->bounds.MaxX + dx + dw
+                            : l->bounds.MaxX + dw;
+      
+      if (Rect.MaxX > l->bounds.MaxX) 
+        Rect.MaxX = l->bounds.MaxX;
+        
+      Rect.MaxY = (dy <= 0) ? l->bounds.MaxY + dy + dh
+                            : l->bounds.MaxY + dh;
+                            
+      if (Rect.MaxY > l->bounds.MaxY) 
+        Rect.MaxY = l->bounds.MaxY;
+        
+      /* Walk throught the layer's cliprects and copy bitmap data
+         to the backup bitmap. The backup bitmap, however, is only
+         allocated if really needed 
+      */
+      _CR = l->ClipRect;
+      while (NULL != _CR)
+      {
+        struct BitMap * BM = l->rp->BitMap;
+        /* Check whether this is a ClipRect to be considered */
+        if (NULL == _CR->lobs &&
+            !(Rect.MinX >= _CR->bounds.MaxX ||
+              Rect.MaxX <= _CR->bounds.MinX ||
+              Rect.MinY >= _CR->bounds.MaxY ||
+              Rect.MaxY <= _CR->bounds.MinY   ))
+        {
+          struct Rectangle CopyRect;
+          if (NULL == SimpleBackupBM)
+          {
+            /* Now get the bitmap as there is a real reason */
+            SimpleBackupBM = AllocBitMap(Rect.MaxX - Rect.MinX + 1,
+                                         Rect.MaxY - Rect.MinY + 1,
+                                         GetBitMapAttr(BM, BMA_DEPTH),
+                                         BMF_CLEAR,
+                                         BM);
+            if (NULL == SimpleBackupBM)
+            {
+              /* not enough memory!! */
+              UnlockLayers(LI);
+              return FALSE;
+            }
+          }
+          /* Copy the correct part from the screen's rastport 
+             to the backup bitmap
+          */
+          CopyRect.MinX = (Rect.MinX >= _CR->bounds.MinX) ? Rect.MinX 
+                                                          : _CR->bounds.MinX;
+          CopyRect.MinY = (Rect.MinY >= _CR->bounds.MinY) ? Rect.MinY
+                                                          : _CR->bounds.MinY;
+          CopyRect.MaxX = (Rect.MaxX <= _CR->bounds.MaxX) ? Rect.MaxX
+                                                          : _CR->bounds.MaxX;
+          CopyRect.MaxY = (Rect.MaxY <= _CR->bounds.MaxY) ? Rect.MaxY
+                                                          : _CR->bounds.MaxY;
+          
+          BltBitMap(BM,
+                    CopyRect.MinX,
+                    CopyRect.MinY,
+                    SimpleBackupBM,
+                    CopyRect.MinX - Rect.MinX,
+                    CopyRect.MinY - Rect.MinY,
+                    CopyRect.MaxX - CopyRect.MinX + 1,
+                    CopyRect.MaxY - CopyRect.MinY + 1,
+                    0x0c0, /* copy */
+                    ~0,
+                    NULL);                    
+        }
+        _CR = _CR->Next;
+      }
+    } /* if (overlapping) */
+  } /* if (simple layer) */
+
   
   l_tmp = (struct Layer *)AllocMem(sizeof(struct Layer)  , MEMF_CLEAR|MEMF_PUBLIC);
   CR = _AllocClipRect(l);
@@ -208,6 +314,31 @@
              width,
              height,
              0x0c0);
+
+    if (NULL != SimpleBackupBM)
+    {
+      /* adjust the Rectangle Rect to the position of the new layer */
+      Rect.MinX += dx;
+      Rect.MinY += dy;
+      Rect.MaxX += dx;
+      Rect.MaxY += dy;
+      /* now walk through all the cliprects again and check whether they
+         have a part of this rectangle and if yes then copy it into the 
+         bitmap of the screen.
+         -> simpler: copy bitmap to the rastport w/ BltBitMapRastPort
+      */
+      BltBitMapRastPort(SimpleBackupBM,
+                        0,
+                        0,
+                        l->rp,
+                        Rect.MinX - l->bounds.MinX,
+                        Rect.MinY - l->bounds.MinY,
+                        Rect.MaxX - Rect.MinX + 1,
+                        Rect.MaxY - Rect.MinY + 1,
+                        0x0c0 /* copy */
+                        );
+      FreeBitMap(SimpleBackupBM);
+    }
 
     /*
       If the layer is a superbitmapped layer and the width or
@@ -480,18 +611,21 @@
     /* That's it folks! */
     CleanupLayers(LI);
 
-    /* Now everybody else may play with the layers again */
-    UnlockLayers(LI);
-    return TRUE;
+    retVal = TRUE;
   } 
   else /* not enough memory */
   {
     if (NULL != CR   ) _FreeClipRect(CR, l);
     if (NULL != RP   ) FreeRastPort(RP);
     if (NULL != l_tmp) FreeMem(l_tmp, sizeof(struct Layer));
+    if (NULL != SimpleBackupBM) FreeBitMap(SimpleBackupBM);
+    retVal = FALSE;
   }
 
-  return FALSE;
+  /* Now everybody else may play with the layers again */
+  UnlockLayers(LI);
+
+  return retVal;
    
   AROS_LIBFUNC_EXIT
 } /* MoveSizeLayer */

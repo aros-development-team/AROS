@@ -94,8 +94,7 @@
   
     - If we take out the very first layer then the new top layer
       doesn't have to have several cliprects. It just needs to have
-      one single layer.
-      !!!This is not implemented yet
+      one single cliprect.
 
   Ok, here we go: 
   */
@@ -278,7 +277,7 @@
                   0x0c0, /* copy */
                   0xff,
                   NULL);
-                CR->BitMap = NULL; /* as this part is visible now. */              
+//                CR->BitMap = NULL; /* as this part is visible now. */              
 	      }
 	    }
 	    else
@@ -374,14 +373,14 @@
   
   if (NULL != (CR = LD->SuperSaveClipRects))
   {
-
     /* Free the list of allocated ClipRects */
-    while (NULL != CR)
+    do
     {
       _CR = CR->Next;
       FreeMem(CR, sizeof(struct ClipRect));
       CR = _CR;
     }
+    while (NULL != CR);
   }
 
   FreeMem(LD, sizeof(struct Layer));

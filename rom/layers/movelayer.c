@@ -67,10 +67,10 @@
   struct ClipRect * CR;
   struct RastPort * RP;
   struct Layer_Info * LI = l->LayerInfo;
-  BOOL   SimpleAndOverlapping = FALSE;
   struct BitMap * SimpleBackupBM = NULL;
   struct Rectangle Rect;  /* The area with the backed up data if it is a
                              simple layer */
+  BOOL retVal;
 
   /* Check coordinates as there's no support for layers outside the displayed
      bitmap. I might add this feature later. */
@@ -82,6 +82,9 @@
 
   if (0 == dx && 0 == dy)
     return TRUE;
+
+  /* Lock all other layers while I am moving this layer */
+  LockLayers(LI);
   
   /* 
      Here's how I do it:
@@ -115,7 +118,6 @@
     {
       /* it will overlap! */
       struct ClipRect * _CR;
-      SimpleAndOverlapping = TRUE;
       /* and start backing up right here in case it is needed at all 
          (the whole area might be hidden)
          Determine the rectangle with the overlapping area. 
@@ -155,6 +157,7 @@
             if (NULL == SimpleBackupBM)
             {
               /* not enough memory!! */
+              UnlockLayers(LI);
               return FALSE;
             }
           }
@@ -196,8 +199,6 @@
     struct CR_tmp;
     struct Layer * l_behind; 
 
-    /* Lock all other layers while I am moving this layer */
-    LockLayers(LI);
 
     /* link the temporary layer behind the layer to move */
     l_tmp -> front = l;
@@ -283,7 +284,7 @@
              l->bounds.MaxY - l->bounds.MinY + 1,
              0x0c0);
     
-    if (TRUE == SimpleAndOverlapping)
+    if (NULL != SimpleBackupBM)
     {
       /* adjust the Rectangle Rect to the position of the new layer */
       Rect.MinX += dx;
@@ -367,10 +368,7 @@
 
     /* That's it folks! */
     CleanupLayers(LI);
-
-    /* Now everybody else may play with the layers again */
-    UnlockLayers(LI);
-    return TRUE;
+    retVal = TRUE;
   } 
   else /* not enough memory */
   {
@@ -378,9 +376,12 @@
     if (NULL != RP   ) FreeRastPort(RP);
     if (NULL != l_tmp) FreeMem(l_tmp, sizeof(struct Layer));
     if (NULL != SimpleBackupBM) FreeBitMap(SimpleBackupBM);
+    retVal = FALSE;
   }
 
-  return FALSE;
+  /* Now everybody else may play with the layers again */
+  UnlockLayers(LI);
+  return retVal;
 
   AROS_LIBFUNC_EXIT
 } /* MoveLayer */
