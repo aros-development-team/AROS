@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  1999/07/21 21:38:07  stegerg
+    fixes for gzz gadgets
+
     Revision 1.7  1999/05/06 17:41:11  nlorentz
     Use macro to set gadgetinfo rastport correctly (win->RPort/BorderPort)
 
@@ -140,13 +143,11 @@
 		gi->gi_Pens.BlockPen  = tw->BlockPen;
 		gi->gi_DrInfo	      = GetScreenDrawInfo (gi->gi_Screen);
 
-                /* All system gadgets go into the BorderRPort of the
-                   window
-                */
-		
 		SET_GI_RPORT(gi, tw, gad);
-
-		switch (gad->GadgetType & GTYP_GTYPEMASK)
+		
+		gi->gi_Layer	      = gi->gi_RastPort->Layer;
+		
+		switch (gad->GadgetType & (GTYP_GADGETTYPE & ~GTYP_SYSGADGET))
 		{
 		case GTYP_SCRGADGET:
 		    gi->gi_Window	 = NULL;
@@ -158,11 +159,13 @@
 		    break;
 
 		case GTYP_GZZGADGET:
-		    gi->gi_Domain.Left	 = tw->BorderLeft;
-		    gi->gi_Domain.Top	 = tw->BorderTop;
-		    gi->gi_Domain.Width  = tw->Width  - tw->BorderLeft - tw->BorderRight;
-		    gi->gi_Domain.Height = tw->Height - tw->BorderTop  - tw->BorderBottom;
-
+		    /* stegerg: this means gadget is in window border! */
+		    
+		    gi->gi_Domain.Left	 = 0;
+		    gi->gi_Domain.Top	 = 0;
+		    gi->gi_Domain.Width  = tw->Width;
+		    gi->gi_Domain.Height = tw->Height;
+		    
 		    break;
 
 		case GTYP_REQGADGET:
@@ -174,11 +177,25 @@
 		    break;
 
 		default:
-		    gi->gi_Domain.Left	 = 0;
-		    gi->gi_Domain.Top	 = 0;
-		    gi->gi_Domain.Width  = tw->Width;
-		    gi->gi_Domain.Height = tw->Height;
-
+		    if (tw->Flags & WFLG_GIMMEZEROZERO)
+		    {
+		        /* stegerg: domain.left and domain.top must not be added
+			   to gadget position when it is rendered, because gadgets
+			   in the innerlayer of a gzz gadget are already shifted
+			   thanks to the innerlayer. */
+			   
+		        gi->gi_Domain.Left   = tw->BorderLeft;
+		        gi->gi_Domain.Top    = tw->BorderTop;
+			
+		        gi->gi_Domain.Width  = tw->Width - tw->BorderLeft - tw->BorderRight;
+		        gi->gi_Domain.Height = tw->Height - tw->BorderTop - tw->BorderBottom;
+		    } else {		    	
+			gi->gi_Domain.Left   = 0;
+			gi->gi_Domain.Top    = 0;
+			gi->gi_Domain.Width  = tw->Width;
+			gi->gi_Domain.Height = tw->Height;
+		    }
+		    
 		    break;
 
 		} /* switch (gadgettype) */
