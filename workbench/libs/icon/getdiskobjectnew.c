@@ -68,12 +68,12 @@
 
 	if ( (lock = Lock (name, ACCESS_READ)) )
 	{
-	    /* Can we get the parent of the lock or Does the file have
-	       .info at the end of it ? */
-	    if ((!(parentlock=ParentDir (lock)) )
-		&& !strcmp (name + strlen (name) - 4, "Disk")
-	    )
-		def_type = WBDISK;
+		/* If the parent is NULL then we are looking at a root,
+		   OR if we are looking at a 'Disk' in the root, then
+		   it is also a root*/
+		if ((!(parentlock=ParentDir(lock))) ||
+			strcasecmp(name + strlen(name)-5, ":Disk")==0)
+			def_type=WBDISK;
 	    else
 	    {
 		/* We do not need the lock of the parent anymore */
@@ -103,10 +103,12 @@
 	    }
 
 	    UnLock(lock);
-	} else
+	}
+	else
 	{
-	    if (Stricmp("Disk",FilePart(name)))
-		return NULL;
+		/* It can only be a disk if the file is in the root */
+		if(strcasecmp(name+strlen(name)-5, ":Disk")!=0)
+			return NULL;
 
 	    def_type = WBDISK;
 	}
@@ -118,3 +120,8 @@
     return (FALSE);
     AROS_LIBFUNC_EXIT
 } /* GetDiskObjectNew */
+
+
+
+
+
