@@ -11,8 +11,8 @@
 
 struct NewWindow MyWin =
   {
-    20,20,300,200,-1,-1,CLOSEWINDOW,
-    WINDOWCLOSE|WINDOWDRAG|WINDOWDEPTH|WINDOWSIZING|WFLG_SMART_REFRESH,
+    20,20,300,200,-1,-1,IDCMP_CLOSEWINDOW|/*IDCMP_DELTAMOVE|*/IDCMP_MOUSEMOVE,
+    WINDOWCLOSE|WINDOWDRAG|WINDOWDEPTH|WINDOWSIZING|WFLG_SMART_REFRESH|WFLG_REPORTMOUSE,
     NULL,NULL,(char *)"Testwindow",
     NULL,NULL,0,0,0,0,WBENCHSCREEN 
   };
@@ -30,6 +30,9 @@ void installClipRegion(struct Window * w)
   scanf("%i",&width);
   printf("Height of ClipRegion Rectangles: ");
   scanf("%i",&height);
+  
+  if (height == 0 || width == 0)
+    return;
   y = 0;
   line = 0;
   while (y < w->Height)
@@ -97,14 +100,17 @@ void main(void)
         AreaEnd(rp);
 */
 
+/**/
         AreaMove(rp,10,20);
         AreaDraw(rp,110,30);
         AreaDraw(rp,110,100);
         AreaDraw(rp,10,50);
         AreaEnd(rp);
-
+/**/
+/*
         AreaEllipse(rp, 110, 30, 50, 20);
         AreaEnd(rp);        
+*/
 /*
         Move(rp,0,0);
         Draw(rp,0,100);
@@ -140,6 +146,10 @@ void main(void)
           Msg = (struct IntuiMessage *)GetMsg(TheDude->UserPort);
           if (IDCMP_CLOSEWINDOW == Msg->Class)
             break;
+          if (IDCMP_MOUSEMOVE == Msg->Class)
+          {
+            printf("Received a delta move message! (%i,%i)\n",Msg->MouseX,Msg->MouseY);
+          }
           ReplyMsg((struct Message *)Msg);
         }
         uninstallClipRegion(TheDude);
