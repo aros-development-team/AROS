@@ -4,4 +4,4 @@ grub-image
 mbchk
 grub-md5-crypt
 grub-install
-
+grub-terminfo

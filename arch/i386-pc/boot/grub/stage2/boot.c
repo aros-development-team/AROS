@@ -1,8 +1,7 @@
 /* boot.c - load and bootstrap a kernel */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1996  Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,8 +28,7 @@
 static int cur_addr;
 entry_func entry_addr;
 static struct mod_list mll[99];
-
-unsigned long mb_header_flags;
+static int linux_mem_size;
 
 /*
  *  The next two functions, 'load_image' and 'load_module', are the building
@@ -45,7 +43,7 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
   int len, i, exec_type = 0, align_4k = 1;
   entry_func real_entry_addr = 0;
   kernel_t type = KERNEL_TYPE_NONE;
-  unsigned long text_len = 0, data_len = 0, bss_len = 0;
+  unsigned long flags = 0, text_len = 0, data_len = 0, bss_len = 0;
   char *str = 0, *str2 = 0;
   struct linux_kernel_header *lh;
   union
@@ -58,6 +56,10 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
   /* presuming that MULTIBOOT_SEARCH is large enough to encompass an
      executable header */
   unsigned char buffer[MULTIBOOT_SEARCH];
+
+  /* sets the header pointer to point to the beginning of the
+     buffer by default */
+  pu.aout = (struct exec *) buffer;
 
   if (!grub_open (kernel))
     return KERNEL_TYPE_NONE;
@@ -76,9 +78,8 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
     {
       if (MULTIBOOT_FOUND ((int) (buffer + i), len - i))
 	{
-         pu.mb = (struct multiboot_header *) (buffer + i);
-         mb_header_flags = pu.mb->flags;
-         if (mb_header_flags & MULTIBOOT_UNSUPPORTED)
+	  flags = ((struct multiboot_header *) (buffer + i))->flags;
+	  if (flags & MULTIBOOT_UNSUPPORTED)
 	    {
 	      grub_close ();
 	      errnum = ERR_BOOT_FEATURES;
@@ -96,17 +97,13 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
       mbi.vbe_mode = 0x03;
     }
 
-  /* sets the header pointer to point to the beginning of the
-     buffer by default */
-  pu.aout = (struct exec *) buffer;
-
-
   /* Use BUFFER as a linux kernel header, if the image is Linux zImage
      or bzImage.  */
   lh = (struct linux_kernel_header *) buffer;
   
   /* ELF loading supported if multiboot, FreeBSD and NetBSD.  */
   if ((type == KERNEL_TYPE_MULTIBOOT
+       || pu.elf->e_ident[EI_OSABI] == ELFOSABI_FREEBSD
        || grub_strcmp (pu.elf->e_ident + EI_BRAND, "FreeBSD") == 0
        || suggested_type == KERNEL_TYPE_NETBSD)
       && len > sizeof (Elf32_Ehdr)
@@ -144,15 +141,25 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	    }
 	}
     }
-  else if (mb_header_flags & MULTIBOOT_AOUT_KLUDGE)
+  else if (flags & MULTIBOOT_AOUT_KLUDGE)
     {
       pu.mb = (struct multiboot_header *) (buffer + i);
       entry_addr = (entry_func) pu.mb->entry_addr;
       cur_addr = pu.mb->load_addr;
       /* first offset into file */
       grub_seek (i - (pu.mb->header_addr - cur_addr));
+
+      /* If the load end address is zero, load the whole contents.  */
+      if (! pu.mb->load_end_addr)
+	pu.mb->load_end_addr = cur_addr + filemax;
+      
       text_len = pu.mb->load_end_addr - cur_addr;
       data_len = 0;
+
+      /* If the bss end address is zero, assume that there is no bss area.  */
+      if (! pu.mb->bss_end_addr)
+	pu.mb->bss_end_addr = pu.mb->load_end_addr;
+      
       bss_len = pu.mb->bss_end_addr - pu.mb->load_end_addr;
 
       if (pu.mb->header_addr < pu.mb->load_addr
@@ -226,6 +233,13 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	  big_linux = (lh->loadflags & LINUX_FLAG_BIG_KERNEL);
 	  lh->type_of_loader = LINUX_BOOT_LOADER_TYPE;
 
+	  /* Put the real mode part at as a high location as possible.  */
+	  linux_data_real_addr
+	    = (char *) ((mbi.mem_lower << 10) - LINUX_SETUP_MOVE_SIZE);
+	  /* But it must not exceed the traditional area.  */
+	  if (linux_data_real_addr > (char *) LINUX_OLD_REAL_MODE_ADDR)
+	    linux_data_real_addr = (char *) LINUX_OLD_REAL_MODE_ADDR;
+
 	  if (lh->version >= 0x0201)
 	    {
 	      lh->heap_end_ptr = LINUX_HEAP_END_OFFSET;
@@ -233,22 +247,23 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	    }
 
 	  if (lh->version >= 0x0202)
-	    lh->cmd_line_ptr = CL_MY_LOCATION;
+	    lh->cmd_line_ptr = linux_data_real_addr + LINUX_CL_OFFSET;
 	  else
 	    {
-	      lh->cl_magic = CL_MAGIC;
-	      lh->cl_offset = CL_MY_LOCATION - CL_BASE_ADDR;
-	      lh->setup_move_size
-		= (unsigned short) (CL_MY_END_ADDR - CL_BASE_ADDR + 1);
+	      lh->cl_magic = LINUX_CL_MAGIC;
+	      lh->cl_offset = LINUX_CL_OFFSET;
+	      lh->setup_move_size = LINUX_SETUP_MOVE_SIZE;
 	    }
 	}
       else
 	{
 	  /* Your kernel is quite old...  */
-	  lh->cl_magic = CL_MAGIC;
-	  lh->cl_offset = CL_MY_LOCATION - CL_BASE_ADDR;
+	  lh->cl_magic = LINUX_CL_MAGIC;
+	  lh->cl_offset = LINUX_CL_OFFSET;
 	  
 	  setup_sects = LINUX_DEFAULT_SETUP_SECTS;
+
+	  linux_data_real_addr = (char *) LINUX_OLD_REAL_MODE_ADDR;
 	}
       
       /* If SETUP_SECTS is not set, set it to the default (4).  */
@@ -258,21 +273,22 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
       data_len = setup_sects << 9;
       text_len = filemax - data_len - SECTOR_SIZE;
       
-      if (! big_linux && text_len > LINUX_KERNEL_MAXLEN)
+      linux_data_tmp_addr = (char *) LINUX_BZIMAGE_ADDR + text_len;
+      
+      if (! big_linux
+	  && text_len > linux_data_real_addr - (char *) LINUX_ZIMAGE_ADDR)
 	{
 	  grub_printf (" linux 'zImage' kernel too big, try 'make bzImage'\n");
-	  grub_close ();
 	  errnum = ERR_WONT_FIT;
-	  return KERNEL_TYPE_NONE;
 	}
-
+      else if (linux_data_real_addr + LINUX_SETUP_MOVE_SIZE
+	       > RAW_ADDR ((char *) (mbi.mem_lower << 10)))
+	errnum = ERR_WONT_FIT;
+      else
+	{
       grub_printf ("   [Linux-%s, setup=0x%x, size=0x%x]\n",
 		   (big_linux ? "bzImage" : "zImage"), data_len, text_len);
 
-      /* FIXME: SETUP_SECTS should be supported up to 63.
-	 But do you know there are >640KB conventional memory machines?  */
-      if (mbi.mem_lower >= 608 && setup_sects < 60)
-	{
 	  /* Video mode selection support. What a mess!  */
 	  /* NOTE: Even the word "mess" is not still enough to
 	     represent how wrong and bad the Linux video support is,
@@ -309,12 +325,76 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	      }
 	  }
 		
-	  memmove ((char *) LINUX_SETUP, buffer, data_len + SECTOR_SIZE);
+	  /* Check the mem= option to limit memory used for initrd.  */
+	  {
+	    char *mem;
+	
+	    mem = grub_strstr (arg, "mem=");
+	    if (mem)
+	      {
+		char *value = mem + 4;
+	    
+		safe_parse_maxint (&value, &linux_mem_size);
+		switch (errnum)
+		  {
+		  case ERR_NUMBER_OVERFLOW:
+		    /* If an overflow occurs, use the maximum address for
+		       initrd instead. This is good, because MAXINT is
+		       greater than LINUX_INITRD_MAX_ADDRESS.  */
+		    linux_mem_size = LINUX_INITRD_MAX_ADDRESS;
+		    errnum = ERR_NONE;
+		    break;
+		
+		  case ERR_NONE:
+		    {
+		      int shift = 0;
+		  
+		      switch (grub_tolower (*value))
+			{
+			case 'g':
+			  shift += 10;
+			case 'm':
+			  shift += 10;
+			case 'k':
+			  shift += 10;
+			default:
+			  break;
+			}
+		  
+		      /* Check an overflow.  */
+		      if (linux_mem_size > (MAXINT >> shift))
+			linux_mem_size = LINUX_INITRD_MAX_ADDRESS;
+		      else
+			linux_mem_size <<= shift;
+		    }
+		    break;
+		
+		  default:
+		    linux_mem_size = 0;
+		    errnum = ERR_NONE;
+		    break;
+		  }
+	      }
+	    else
+	      linux_mem_size = 0;
+	  }
+      
+	  /* It is possible that DATA_LEN is greater than MULTIBOOT_SEARCH,
+	     so the data may have been read partially.  */
+	  if (data_len <= MULTIBOOT_SEARCH)
+	    grub_memmove (linux_data_tmp_addr, buffer,
+			  data_len + SECTOR_SIZE);
+	  else
+	    {
+	      grub_memmove (linux_data_tmp_addr, buffer, MULTIBOOT_SEARCH);
+	      grub_read (linux_data_tmp_addr + MULTIBOOT_SEARCH,
+			 data_len + SECTOR_SIZE - MULTIBOOT_SEARCH);
+	    }
 
 	  if (lh->header != LINUX_MAGIC_SIGNATURE ||
 	      lh->version < 0x0200)
 	    /* Clear the heap space.  */
-	    grub_memset ((char *) LINUX_SETUP + ((setup_sects - 1) << 9),
+	    grub_memset (linux_data_tmp_addr + ((setup_sects + 1) << 9),
 			 0,
 			 (64 - setup_sects - 1) << 9);
 
@@ -328,24 +408,25 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	     avoid to copy spaces unnecessarily. Hell.  */
 	  {
 	    char *src = skip_to (0, arg);
-	    char *dest = (char *) CL_MY_LOCATION;
+	    char *dest = linux_data_tmp_addr + LINUX_CL_OFFSET;
 
-	    while (((int) dest) < CL_MY_END_ADDR && *src)
+	    while (dest < linux_data_tmp_addr + LINUX_CL_END_OFFSET && *src)
 	      *(dest++) = *(src++);
 	    
 	    /* Add a mem option automatically only if the user doesn't
 	       specify it explicitly.  */
 	    if (! grub_strstr (arg, "mem=")
-		&& ! (load_flags & KERNEL_LOAD_NO_MEM_OPTION))
+		&& ! (load_flags & KERNEL_LOAD_NO_MEM_OPTION)
+		&& dest + 15 < linux_data_tmp_addr + LINUX_CL_END_OFFSET)
 	      {
-		if (dest != (char *) CL_MY_LOCATION)
-		  *(dest++) = ' ';
-		
-		grub_memmove (dest, "mem=", 4);
-		dest += 4;
+		*dest++ = ' ';
+		*dest++ = 'm';
+		*dest++ = 'e';
+		*dest++ = 'm';
+		*dest++ = '=';
 		
 		dest = convert_to_ascii (dest, 'u', (extended_memory + 0x400));
-		*(dest++) = 'K';
+		*dest++ = 'K';
 	      }
 
 	    *dest = 0;
@@ -354,9 +435,10 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	  /* offset into file */
 	  grub_seek (data_len + SECTOR_SIZE);
 
-	  cur_addr = LINUX_STAGING_AREA + text_len;
-	  if (grub_read ((char *) LINUX_STAGING_AREA, text_len)
-	      >= (text_len - 16))
+	  cur_addr = (int) linux_data_tmp_addr + LINUX_SETUP_MOVE_SIZE;
+	  grub_read ((char *) LINUX_BZIMAGE_ADDR, text_len);
+      
+	  if (errnum == ERR_NONE)
 	    {
 	      grub_close ();
 
@@ -374,11 +456,7 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	      
 	      return big_linux ? KERNEL_TYPE_BIG_LINUX : KERNEL_TYPE_LINUX;
 	    }
-	  else if (! errnum)
-	    errnum = ERR_EXEC_FORMAT;
 	}
-      else
-	errnum = ERR_WONT_FIT;
     }
   else				/* no recognizable format */
     errnum = ERR_EXEC_FORMAT;
@@ -407,7 +485,7 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 
   if (exec_type)		/* can be loaded like a.out */
     {
-      if (mb_header_flags & MULTIBOOT_AOUT_KLUDGE)
+      if (flags & MULTIBOOT_AOUT_KLUDGE)
 	str = "-and-data";
 
       printf (", loadaddr=0x%x, text%s=0x%x", cur_addr, str, text_len);
@@ -417,7 +495,7 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	{
 	  cur_addr += text_len;
 
-	  if (!(mb_header_flags & MULTIBOOT_AOUT_KLUDGE))
+	  if (!(flags & MULTIBOOT_AOUT_KLUDGE))
 	    {
 	      /* we have to align to a 4K boundary */
 	      if (align_4k)
@@ -714,7 +792,8 @@ load_initrd (char *initrd)
 {
   int len;
   unsigned long moveto;
-  struct linux_kernel_header *lh;
+  struct linux_kernel_header *lh
+    = (struct linux_kernel_header *) (cur_addr - LINUX_SETUP_MOVE_SIZE);
   
 #ifndef NO_DECOMPRESSION
   no_decompression = 1;
@@ -730,7 +809,12 @@ load_initrd (char *initrd)
       goto fail;
     }
 
-  moveto = ((mbi.mem_upper + 0x400) * 0x400 - len) & 0xfffff000;
+  if (linux_mem_size)
+    moveto = linux_mem_size;
+  else
+    moveto = (mbi.mem_upper + 0x400) << 10;
+  
+  moveto = (moveto - len) & 0xfffff000;
   if (moveto + len >= LINUX_INITRD_MAX_ADDRESS)
     moveto = (LINUX_INITRD_MAX_ADDRESS - len) & 0xfffff000;
   
@@ -744,7 +828,6 @@ load_initrd (char *initrd)
   printf ("   [Linux-initrd @ 0x%x, 0x%x bytes]\n", moveto, len);
 
   /* FIXME: Should check if the kernel supports INITRD.  */
-  lh = (struct linux_kernel_header *) LINUX_SETUP;
   lh->ramdisk_image = RAW_ADDR (moveto);
   lh->ramdisk_size = len;
 
@@ -810,8 +893,14 @@ bsd_boot (kernel_t type, int bootdev, char *arg)
 		clval |= RB_CONFIG;
 	      if (*str == 'd')
 		clval |= RB_KDB;
+	      if (*str == 'D')
+		clval |= RB_MULTIPLE;
+	      if (*str == 'g')
+		clval |= RB_GDB;
 	      if (*str == 'h')
 		clval |= RB_SERIAL;
+	      if (*str == 'm')
+		clval |= RB_MUTE;
 	      if (*str == 'r')
 		clval |= RB_DFLTROOT;
 	      if (*str == 's')

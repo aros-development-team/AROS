@@ -1,8 +1,7 @@
 /* builtins.c - the GRUB builtin commands */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1996  Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,13 +26,16 @@
 
 #include <shared.h>
 #include <filesys.h>
+#include <term.h>
 
 #ifdef SUPPORT_NETBOOT
+# define GRUB	1
 # include <etherboot.h>
 #endif
 
 #ifdef SUPPORT_SERIAL
 # include <serial.h>
+# include <terminfo.h>
 #endif
 
 #ifdef GRUB_UTIL
@@ -47,8 +49,6 @@
 # include <md5.h>
 #endif
 
-/* Terminal types.  */
-int terminal = TERMINAL_CONSOLE;
 /* The type of kernel loaded.  */
 kernel_t kernel_type;
 /* The boot device.  */
@@ -70,9 +70,6 @@ char *password;
 password_t password_type;
 /* The flag for indicating that the user is authoritative.  */
 int auth = 0;
-/* Color settings.  */
-int normal_color;
-int highlight_color;
 /* The timeout.  */
 int grub_timeout = -1;
 /* Whether to show the menu or not.  */
@@ -99,8 +96,6 @@ void
 init_config (void)
 {
   default_entry = 0;
-  normal_color = A_NORMAL;
-  highlight_color = A_REVERSE;
   password = 0;
   fallback_entry = -1;
   grub_timeout = -1;
@@ -229,7 +224,7 @@ static struct builtin builtin_blocklist =
 {
   "blocklist",
   blocklist_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "blocklist FILE",
   "Print the blocklist notation of the file FILE."
 };
@@ -243,6 +238,11 @@ boot_func (char *arg, int flags)
      not KERNEL_TYPE_NONE. Is this assumption is bad?  */
   if (kernel_type != KERNEL_TYPE_NONE)
     unset_int15_handler ();
+  
+#ifdef SUPPORT_NETBOOT
+  /* Shut down the networking.  */
+  cleanup_net ();
+#endif
   
   switch (kernel_type)
     {
@@ -289,39 +289,6 @@ boot_func (char *arg, int flags)
       
       gateA20 (0);
       boot_drive = saved_drive;
-      
-      /* Copy the boot partition information to 0x7be-0x7fd, if
-	 BOOT_DRIVE is a hard disk drive.  */
-      if (boot_drive & 0x80)
-	{
-	  char *dst, *src;
-	  int i;
-	  
-	  /* Read the MBR here, because it might be modified
-	     after opening the partition.  */
-	  if (! rawread (boot_drive, boot_part_offset,
-			 0, SECTOR_SIZE, (char *) SCRATCHADDR))
-	    {
-	      /* This should never happen.  */
-	      errnum = ERR_READ;
-	      return 0;
-	    }
-
-	  /* Need only the partition table.
-	     XXX: We cannot use grub_memmove because BOOT_PART_TABLE
-	     (0x07be) is less than 0x1000.  */
-	  dst = (char *) BOOT_PART_TABLE;
-	  src = (char *) SCRATCHADDR + BOOTSEC_PART_OFFSET;
-	  while (dst < (char *) BOOT_PART_TABLE + BOOTSEC_PART_LENGTH)
-	    *dst++ = *src++;
-	  
-	  /* Set the active flag of the booted partition.  */
-	  for (i = 0; i < 4; i++)
-	    PC_SLICE_FLAG (BOOT_PART_TABLE, i) = 0;
-
-	  *((unsigned char *) boot_part_addr) = PC_SLICE_FLAG_BOOTABLE;
-	}
-      
       chain_stage1 (0, BOOTSEC_LOCATION, boot_part_addr);
       break;
 
@@ -353,7 +320,7 @@ static struct builtin builtin_boot =
 {
   "boot",
   boot_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "boot",
   "Boot the OS/chain-loader which has been loaded."
 };
@@ -396,7 +363,7 @@ static struct builtin builtin_bootp =
 {
   "bootp",
   bootp_func,
-  BUILTIN_CMDLINE | BUILTIN_MENU,
+  BUILTIN_CMDLINE | BUILTIN_MENU | BUILTIN_HELP_LIST,
   "bootp [--with-configfile]",
   "Initialize a network device via BOOTP. If the option `--with-configfile'"
   " is given, try to load a configuration file specified by the 150 vendor"
@@ -415,7 +382,14 @@ cat_func (char *arg, int flags)
     return 1;
 
   while (grub_read (&c, 1))
+    {
+      /* Because running "cat" with a binary file can confuse the terminal,
+	 print only some characters as they are.  */
+      if (grub_isspace (c) || (c >= ' ' && c <= '~'))
     grub_putchar (c);
+      else
+	grub_putchar ('?');
+    }
 
   grub_close ();
   return 0;
@@ -425,7 +399,7 @@ static struct builtin builtin_cat =
 {
   "cat",
   cat_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "cat FILE",
   "Print the contents of the file FILE."
 };
@@ -497,7 +471,7 @@ static struct builtin builtin_chainloader =
 {
   "chainloader",
   chainloader_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "chainloader [--force] FILE",
   "Load the chain-loader FILE. If --force is specified, then load it"
   " forcibly, whether the boot loader signature is present or not."
@@ -698,8 +672,9 @@ color_func (char *arg, int flags)
 	return 1;
     }
 
-  normal_color = new_normal_color;
-  highlight_color = new_highlight_color;
+  if (current_term->setcolor)
+    current_term->setcolor (new_normal_color, new_highlight_color);
+  
   return 0;
 }
 
@@ -707,7 +682,7 @@ static struct builtin builtin_color =
 {
   "color",
   color_func,
-  BUILTIN_CMDLINE | BUILTIN_MENU,
+  BUILTIN_CMDLINE | BUILTIN_MENU | BUILTIN_HELP_LIST,
   "color NORMAL [HIGHLIGHT]",
   "Change the menu colors. The color NORMAL is used for most"
   " lines in the menu, and the color HIGHLIGHT is used to highlight the"
@@ -757,7 +732,7 @@ static struct builtin builtin_configfile =
 {
   "configfile",
   configfile_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "configfile FILE",
   "Load FILE as the configuration file."
 };
@@ -855,7 +830,7 @@ static struct builtin builtin_device =
 {
   "device",
   device_func,
-  BUILTIN_MENU | BUILTIN_CMDLINE,
+  BUILTIN_MENU | BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "device DRIVE DEVICE",
   "Specify DEVICE as the actual drive for a BIOS drive DRIVE. This command"
   " can be used only in the grub shell."
@@ -876,7 +851,7 @@ static struct builtin builtin_dhcp =
 {
   "dhcp",
   dhcp_func,
-  BUILTIN_CMDLINE | BUILTIN_MENU,
+  BUILTIN_CMDLINE | BUILTIN_MENU | BUILTIN_HELP_LIST,
   "dhcp",
   "Initialize a network device via DHCP."
 };
@@ -889,15 +864,15 @@ displayapm_func (char *arg, int flags)
 {
   if (mbi.flags & MB_INFO_APM_TABLE)
     {
-      grub_printf ("APM BIOS information:
- Version:          0x%x
- 32-bit CS:        0x%x
- Offset:           0x%x
- 16-bit CS:        0x%x
- 16-bit DS:        0x%x
- 32-bit CS length: 0x%x
- 16-bit CS length: 0x%x
- 16-bit DS length: 0x%x\n",
+      grub_printf ("APM BIOS information:\n"
+		   " Version:          0x%x\n"
+		   " 32-bit CS:        0x%x\n"
+		   " Offset:           0x%x\n"
+		   " 16-bit CS:        0x%x\n"
+		   " 16-bit DS:        0x%x\n"
+		   " 32-bit CS length: 0x%x\n"
+		   " 16-bit CS length: 0x%x\n"
+		   " 16-bit DS length: 0x%x\n",
 		   (unsigned) apm_bios_info.version,
 		   (unsigned) apm_bios_info.cseg,
 		   apm_bios_info.offset,
@@ -919,7 +894,7 @@ static struct builtin builtin_displayapm =
 {
   "displayapm",
   displayapm_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "displayapm",
   "Display APM BIOS information."
 };
@@ -955,7 +930,7 @@ displaymem_func (char *arg, int flags)
 	  else
 	    str = "Reserved";
 	  grub_printf ("   %s:  Base Address:  0x%x X 4GB + 0x%x,\n"
-		       "      Length:   %u X 4GB + %u bytes\n",
+		       "      Length:   0x%x X 4GB + 0x%x bytes\n",
 		       str,
 		       (unsigned long) (map->BaseAddr >> 32),
 		       (unsigned long) (map->BaseAddr & 0xFFFFFFFF),
@@ -973,11 +948,71 @@ static struct builtin builtin_displaymem =
 {
   "displaymem",
   displaymem_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "displaymem",
   "Display what GRUB thinks the system address space map of the"
   " machine is, including all regions of physical RAM installed."
 };
+
+
+/* dump FROM TO */
+#ifdef GRUB_UTIL
+static int
+dump_func (char *arg, int flags)
+{
+  char *from, *to;
+  FILE *fp;
+  char c;
+  
+  from = arg;
+  to = skip_to (0, arg);
+  if (! *from || ! *to)
+    {
+      errnum = ERR_BAD_ARGUMENT;
+      return 1;
+    }
+
+  nul_terminate (from);
+  nul_terminate (to);
+  
+  if (! grub_open (from))
+    return 1;
+
+  fp = fopen (to, "w");
+  if (! fp)
+    {
+      errnum = ERR_WRITE;
+      return 1;
+    }
+
+  while (grub_read (&c, 1))
+    if (fputc (c, fp) == EOF)
+      {
+	errnum = ERR_WRITE;
+	fclose (fp);
+	return 1;
+      }
+
+  if (fclose (fp) == EOF)
+    {
+      errnum = ERR_WRITE;
+      return 1;
+    }
+
+  grub_close ();
+  return 0;
+}
+
+static struct builtin builtin_dump =
+  {
+    "dump",
+    dump_func,
+    BUILTIN_CMDLINE,
+    "dump FROM TO",
+    "Dump the contents of the file FROM to the file TO. FROM must be"
+    " a GRUB file and TO must be an OS file."
+  };
+#endif /* GRUB_UTIL */
 
 
 static char embed_info[32];
@@ -1020,6 +1055,7 @@ embed_func (char *arg, int flags)
       
       char mbr[SECTOR_SIZE];
       char ezbios_check[2*SECTOR_SIZE];
+      int i;
 
       /* Open the partition.  */
       if (! open_partition ())
@@ -1044,9 +1080,10 @@ embed_func (char *arg, int flags)
 	}
 
       /* Check if the disk can store the Stage 1.5.  */
-      if (PC_SLICE_START (mbr, 0) - 1 < size)
+      for (i = 0; i < 4; i++)
+	if (PC_SLICE_TYPE (mbr, i) && PC_SLICE_START (mbr, i) - 1 < size)
 	{
-	  errnum = ERR_DEV_VALUES;
+	    errnum = ERR_NO_DISK_SPACE;
 	  return 1;
 	}
 
@@ -1063,7 +1100,7 @@ embed_func (char *arg, int flags)
 	  /* The space after the MBR is used by EZ-BIOS which we must 
 	   * not overwrite.
 	   */
-	  errnum = ERR_DEV_VALUES;
+	  errnum = ERR_NO_DISK_SPACE;
 	  return 1;
 	}
 
@@ -1238,7 +1275,7 @@ static struct builtin builtin_find =
 {
   "find",
   find_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "find FILENAME",
   "Search for the filename FILENAME in all of partitions and print the list of"
   " the devices which contain the file."
@@ -1360,7 +1397,7 @@ static struct builtin builtin_geometry =
 {
   "geometry",
   geometry_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "geometry DRIVE [CYLINDER HEAD SECTOR [TOTAL_SECTOR]]",
   "Print the information for a drive DRIVE. In the grub shell, you can"
   "set the geometry of the drive arbitrarily. The number of the cylinders,"
@@ -1388,7 +1425,7 @@ static struct builtin builtin_halt =
 {
   "halt",
   halt_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "halt [--no-apm]",
   "Halt your system. If APM is avaiable on it, turn off the power using"
   " the APM BIOS, unless you specify the option `--no-apm'."
@@ -1402,6 +1439,14 @@ static struct builtin builtin_halt =
 static int
 help_func (char *arg, int flags)
 {
+  int all = 0;
+  
+  if (grub_memcmp (arg, "--all", sizeof ("--all") - 1) == 0)
+    {
+      all = 1;
+      arg = skip_to (0, arg);
+    }
+  
   if (! *arg)
     {
       /* Invoked with no argument. Print the list of the short docs.  */
@@ -1413,9 +1458,14 @@ help_func (char *arg, int flags)
 	  int len;
 	  int i;
 
-	  /* If this cannot be run in the command-line interface,
+	  /* If this cannot be used in the command-line interface,
 	     skip this.  */
 	  if (! ((*builtin)->flags & BUILTIN_CMDLINE))
+	    continue;
+
+	  /* If this doesn't need to be listed automatically and "--all"
+	     is not specified, skip this.  */
+	  if (! all && ! ((*builtin)->flags & BUILTIN_HELP_LIST))
 	    continue;
 
 	  len = grub_strlen ((*builtin)->short_doc);
@@ -1434,6 +1484,11 @@ help_func (char *arg, int flags)
 
 	  left = ! left;
 	}
+
+      /* If the last entry was at the left column, no newline was printed
+	 at the end.  */
+      if (! left)
+	grub_putchar ('\n');
     }
   else
     {
@@ -1498,9 +1553,10 @@ static struct builtin builtin_help =
 {
   "help",
   help_func,
-  BUILTIN_CMDLINE,
-  "help [PATTERN ...]",
-  "Display helpful information about builtin commands."
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
+  "help [--all] [PATTERN ...]",
+  "Display helpful information about builtin commands. Not all commands"
+  " aren't shown without the option `--all'."
 };
 
 
@@ -1541,7 +1597,7 @@ static struct builtin builtin_hide =
 {
   "hide",
   hide_func,
-  BUILTIN_CMDLINE | BUILTIN_MENU,
+  BUILTIN_CMDLINE | BUILTIN_MENU | BUILTIN_HELP_LIST,
   "hide PARTITION",
   "Hide PARTITION by setting the \"hidden\" bit in"
   " its partition type code."
@@ -1595,7 +1651,7 @@ static struct builtin builtin_ifconfig =
 {
   "ifconfig",
   ifconfig_func,
-  BUILTIN_CMDLINE | BUILTIN_MENU,
+  BUILTIN_CMDLINE | BUILTIN_MENU | BUILTIN_HELP_LIST,
   "ifconfig [--address=IP] [--gateway=IP] [--mask=MASK] [--server=IP]",
   "Configure the IP address, the netmask, the gateway and the server"
   " address or print current network configuration."
@@ -1655,7 +1711,7 @@ static struct builtin builtin_initrd =
 {
   "initrd",
   initrd_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "initrd FILE [ARG ...]",
   "Load an initial ramdisk FILE for a Linux format boot image and set the"
   " appropriate parameters in the Linux setup area in memory."
@@ -2313,7 +2369,7 @@ static struct builtin builtin_kernel =
 {
   "kernel",
   kernel_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "kernel [--no-mem-option] [--type=TYPE] FILE [ARG ...]",
   "Attempt to load the primary boot image from FILE. The rest of the"
   "line is passed verbatim as the \"kernel command line\".  Any modules"
@@ -2362,7 +2418,7 @@ static struct builtin builtin_makeactive =
 {
   "makeactive",
   makeactive_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "makeactive",
   "Set the active partition on the root disk to GRUB's root device."
   " This command is limited to _primary_ PC partitions on a hard disk."
@@ -2425,7 +2481,7 @@ static struct builtin builtin_map =
 {
   "map",
   map_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "map TO_DRIVE FROM_DRIVE",
   "Map the drive FROM_DRIVE to the drive TO_DRIVE. This is necessary"
   " when you chain-load some operating systems, such as DOS, if such an"
@@ -2485,7 +2541,7 @@ static struct builtin builtin_md5crypt =
 {
   "md5crypt",
   md5crypt_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "md5crypt",
   "Generate a password in MD5 format."
 };
@@ -2530,7 +2586,7 @@ static struct builtin builtin_module =
 {
   "module",
   module_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "module FILE [ARG ...]",
   "Load a boot module FILE for a Multiboot format boot image (no"
   " interpretation of the file contents is made, so users of this"
@@ -2563,10 +2619,42 @@ static struct builtin builtin_modulenounzip =
 {
   "modulenounzip",
   modulenounzip_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "modulenounzip FILE [ARG ...]",
   "The same as `module', except that automatic decompression is"
   " disabled."
+};
+
+
+/* pager [on|off] */
+static int
+pager_func (char *arg, int flags)
+{
+  /* If ARG is empty, toggle the flag.  */
+  if (! *arg)
+    use_pager = ! use_pager;
+  else if (grub_memcmp (arg, "on", 2) == 0)
+    use_pager = 1;
+  else if (grub_memcmp (arg, "off", 3) == 0)
+    use_pager = 0;
+  else
+    {
+      errnum = ERR_BAD_ARGUMENT;
+      return 1;
+    }
+
+  grub_printf (" Internal pager is now %s\n", use_pager ? "on" : "off");
+  return 0;
+}
+
+static struct builtin builtin_pager =
+{
+  "pager",
+  pager_func,
+  BUILTIN_CMDLINE | BUILTIN_MENU | BUILTIN_HELP_LIST,
+  "pager [FLAG]",
+  "Toggle pager mode with no argument. If FLAG is given and its value"
+  " is `on', turn on the mode. If FLAG is `off', turn off the mode."
 };
 
 
@@ -2682,7 +2770,7 @@ static struct builtin builtin_partnew =
 {
   "partnew",
   partnew_func,
-  BUILTIN_CMDLINE | BUILTIN_MENU,
+  BUILTIN_CMDLINE | BUILTIN_MENU | BUILTIN_HELP_LIST,
   "partnew PART TYPE START LEN",
   "Create a primary partition at the starting address START with the"
   " length LEN, with the type TYPE. START and LEN are in sector units."
@@ -2760,7 +2848,7 @@ static struct builtin builtin_parttype =
 {
   "parttype",
   parttype_func,
-  BUILTIN_CMDLINE | BUILTIN_MENU,
+  BUILTIN_CMDLINE | BUILTIN_MENU | BUILTIN_HELP_LIST,
   "parttype PART TYPE",
   "Change the type of the partition PART to TYPE."
 };
@@ -2826,7 +2914,7 @@ static struct builtin builtin_password =
 {
   "password",
   password_func,
-  BUILTIN_MENU | BUILTIN_CMDLINE | BUILTIN_HIDDEN,
+  BUILTIN_MENU | BUILTIN_CMDLINE | BUILTIN_NO_ECHO,
   "password [--md5] PASSWD [FILE]",
   "If used in the first section of a menu file, disable all"
   " interactive editing control (menu entry editor and"
@@ -2857,7 +2945,7 @@ static struct builtin builtin_pause =
 {
   "pause",
   pause_func,
-  BUILTIN_CMDLINE | BUILTIN_HIDDEN,
+  BUILTIN_CMDLINE | BUILTIN_NO_ECHO,
   "pause [MESSAGE ...]",
   "Print MESSAGE, then wait until a key is pressed."
 };
@@ -2878,7 +2966,7 @@ static struct builtin builtin_quit =
 {
   "quit",
   quit_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "quit",
   "Exit from the GRUB shell."
 };
@@ -2907,7 +2995,7 @@ static struct builtin builtin_rarp =
 {
   "rarp",
   rarp_func,
-  BUILTIN_CMDLINE | BUILTIN_MENU,
+  BUILTIN_CMDLINE | BUILTIN_MENU | BUILTIN_HELP_LIST,
   "rarp",
   "Initialize a network device via RARP."
 };
@@ -2952,7 +3040,7 @@ static struct builtin builtin_reboot =
 {
   "reboot",
   reboot_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "reboot",
   "Reboot your system."
 };
@@ -2993,7 +3081,7 @@ print_root_device (void)
 }
       
 static int
-root_func (char *arg, int flags)
+real_root_func (char *arg, int attempt_mount)
 {
   int hdbias = 0;
   char *biasptr;
@@ -3012,31 +3100,56 @@ root_func (char *arg, int flags)
     return 1;
 
   /* Ignore ERR_FSYS_MOUNT.  */
+  if (attempt_mount)
+    {
   if (! open_device () && errnum != ERR_FSYS_MOUNT)
     return 1;
+    }
+  else
+    {
+      /* This is necessary, because the location of a partition table
+	 must be set appropriately.  */
+      if (open_partition ())
+	{
+	  set_bootdev (0);
+	  if (errnum)
+	    return 1;
+	}
+    }
 
   /* Clear ERRNUM.  */
   errnum = 0;
   saved_partition = current_partition;
   saved_drive = current_drive;
 
+  if (attempt_mount)
+    {
   /* BSD and chainloading evil hacks !!  */
   biasptr = skip_to (0, next);
   safe_parse_maxint (&biasptr, &hdbias);
   errnum = 0;
   bootdev = set_bootdev (hdbias);
+      if (errnum)
+	return 1;
 
   /* Print the type of the filesystem.  */
   print_fsys_type ();
+    }
 
   return 0;
+}
+
+static int
+root_func (char *arg, int flags)
+{
+  return real_root_func (arg, 1);
 }
 
 static struct builtin builtin_root =
 {
   "root",
   root_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "root [DEVICE [HDBIAS]]",
   "Set the current \"root device\" to the device DEVICE, then"
   " attempt to mount it to get the partition size (for passing the"
@@ -3055,27 +3168,14 @@ static struct builtin builtin_root =
 static int
 rootnoverify_func (char *arg, int flags)
 {
-  /* If ARG is empty, just print the current root device.  */
-  if (! *arg)
-    {
-      print_root_device ();
-      return 0;
-    }
-  
-  if (! set_device (arg))
-    return 1;
-
-  saved_partition = current_partition;
-  saved_drive = current_drive;
-  current_drive = -1;
-  return 0;
+  return real_root_func (arg, 0);
 }
 
 static struct builtin builtin_rootnoverify =
 {
   "rootnoverify",
   rootnoverify_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "rootnoverify [DEVICE [HDBIAS]]",
   "Similar to `root', but don't attempt to mount the partition. This"
   " is useful for when an OS is outside of the area of the disk that"
@@ -3161,7 +3261,7 @@ static struct builtin builtin_savedefault =
 static int
 serial_func (char *arg, int flags)
 {
-  unsigned short port = serial_get_port (0);
+  unsigned short port = serial_hw_get_port (0);
   unsigned int speed = 9600;
   int word_len = UART_8BITS_WORD;
   int parity = UART_NO_PARITY;
@@ -3186,7 +3286,7 @@ serial_func (char *arg, int flags)
 	      return 1;
 	    }
 
-	  port = serial_get_port (unit);
+	  port = serial_hw_get_port (unit);
 	}
       else if (grub_memcmp (arg, "--speed=", sizeof ("--speed=") - 1) == 0)
 	{
@@ -3273,7 +3373,7 @@ serial_func (char *arg, int flags)
 	    *q++ = *p++;
 	  
 	  *q = 0;
-	  set_serial_device (dev);
+	  serial_set_device (dev);
 	}
 # endif /* GRUB_UTIL */
       else
@@ -3283,7 +3383,7 @@ serial_func (char *arg, int flags)
     }
 
   /* Initialize the serial unit.  */
-  if (! serial_init (port, speed, word_len, parity, stop_bit_len))
+  if (! serial_hw_init (port, speed, word_len, parity, stop_bit_len))
     {
       errnum = ERR_BAD_ARGUMENT;
       return 1;
@@ -3296,7 +3396,7 @@ static struct builtin builtin_serial =
 {
   "serial",
   serial_func,
-  BUILTIN_MENU | BUILTIN_CMDLINE,
+  BUILTIN_MENU | BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "serial [--unit=UNIT] [--port=PORT] [--speed=SPEED] [--word=WORD] [--parity=PARITY] [--stop=STOP] [--device=DEV]",
   "Initialize a serial device. UNIT is a digit that specifies which serial"
   " device is used (e.g. 0 == COM1). If you need to specify the port number,"
@@ -3539,7 +3639,7 @@ static struct builtin builtin_setkey =
 {
   "setkey",
   setkey_func,
-  BUILTIN_CMDLINE | BUILTIN_MENU,
+  BUILTIN_CMDLINE | BUILTIN_MENU | BUILTIN_HELP_LIST,
   "setkey [TO_KEY FROM_KEY]",
   "Change the keyboard map. The key FROM_KEY is mapped to the key TO_KEY."
   " A key must be an alphabet, a digit, or one of these: escape, exclam,"
@@ -3651,11 +3751,12 @@ setup_func (char *arg, int flags)
   struct stage1_5_map stage1_5_map[] =
   {
     {"ext2fs",   "/e2fs_stage1_5"},
-    {"ffs",      "/ffs_stage1_5"},
     {"fat",      "/fat_stage1_5"},
+    {"ffs",      "/ffs_stage1_5"},
+    {"jfs",      "/jfs_stage1_5"},
     {"minix",    "/minix_stage1_5"},
     {"reiserfs", "/reiserfs_stage1_5"},
-    {"jfs",      "/jfs_stage1_5"},
+    {"vstafs",   "/vstafs_stage1_5"},
     {"xfs",      "/xfs_stage1_5"}
   };
 
@@ -3790,8 +3891,8 @@ setup_func (char *arg, int flags)
      arguments.  */
   sprint_device (installed_drive, installed_partition);
   
-#ifdef NO_BUGGY_BIOS_IN_THE_WORLD
-  /* I prefer this, but...  */
+#if 1
+  /* Don't embed a drive number unnecessarily.  */
   grub_sprintf (cmd_arg, "%s%s%s%s %s%s %s p %s %s",
 		is_force_lba? "--force-lba" : "",
 		stage2_arg? stage2_arg : "",
@@ -3802,11 +3903,14 @@ setup_func (char *arg, int flags)
 		stage2,
 		config_filename,
 		real_config_filename);
-#else /* ! NO_BUGGY_BIOS_IN_THE_WORLD */
-  /* Actually, there are several buggy BIOSes in the world, so we
-     may not expect that your BIOS will pass a booting drive to stage1
-     correctly. Thus, always specify the option `d', whether
-     INSTALLED_DRIVE is identical with IMAGE_DRIVE or not. *sigh*  */
+#else /* NOT USED */
+  /* This code was used, because we belived some BIOSes had a problem
+     that they didn't pass a booting drive correctly. It turned out,
+     however, stage1 could trash a booting drive when checking LBA support,
+     because some BIOSes modified the register %dx in INT 13H, AH=48H.
+     So it becamed unclear whether GRUB should use a pre-defined booting
+     drive or not. If the problem still exists, it would be necessary to
+     switch back to this code.  */
   grub_sprintf (cmd_arg, "%s%s%s%s d %s %s p %s %s",
 		is_force_lba? "--force-lba " : "",
 		stage2_arg? stage2_arg : "",
@@ -3816,7 +3920,7 @@ setup_func (char *arg, int flags)
 		stage2,
 		config_filename,
 		real_config_filename);
-#endif /* ! NO_BUGGY_BIOS_IN_THE_WORLD */
+#endif /* NOT USED */
   
   /* Notify what will be run.  */
   grub_printf (" Running \"install %s\"... ", cmd_arg);
@@ -3842,7 +3946,7 @@ static struct builtin builtin_setup =
 {
   "setup",
   setup_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "setup [--prefix=DIR] [--stage2=STAGE2_FILE] [--force-lba] INSTALL_DEVICE [IMAGE_DEVICE]",
   "Set up the installation of GRUB automatically. This command uses"
   " the more flexible command \"install\" in the backend and installs"
@@ -3862,6 +3966,7 @@ setvbe_func (char *arg, int flags)
     int count = 1;
     int mode = 0x03;
     int width,height,depth;
+    unsigned short *mode_list;
 
     if (! *arg)
     {
@@ -3989,16 +4094,26 @@ static struct builtin builtin_setvbe =
 static int
 terminal_func (char *arg, int flags)
 {
-  int default_terminal = 0;
+  /* The index of the default terminal in TERM_TABLE.  */
+  int default_term = -1;
+  struct term_entry *prev_term = current_term;
   int to = -1;
-  int dumb = 0;
-  int saved_terminal = terminal;
+  int lines = 0;
+  int no_message = 0;
+  unsigned long term_flags = 0;
+  /* XXX: Assume less than 32 terminals.  */
+  unsigned long term_bitmap = 0;
 
   /* Get GNU-style long options.  */
   while (1)
     {
       if (grub_memcmp (arg, "--dumb", sizeof ("--dumb") - 1) == 0)
-	dumb = 1;
+	term_flags |= TERM_DUMB;
+      else if (grub_memcmp (arg, "--no-echo", sizeof ("--no-echo") - 1) == 0)
+	/* ``--no-echo'' implies ``--no-edit''.  */
+	term_flags |= (TERM_NO_ECHO | TERM_NO_EDIT);
+      else if (grub_memcmp (arg, "--no-edit", sizeof ("--no-edit") - 1) == 0)
+	term_flags |= TERM_NO_EDIT;
       else if (grub_memcmp (arg, "--timeout=", sizeof ("--timeout=") - 1) == 0)
 	{
 	  char *val = arg + sizeof ("--timeout=") - 1;
@@ -4006,6 +4121,22 @@ terminal_func (char *arg, int flags)
 	  if (! safe_parse_maxint (&val, &to))
 	    return 1;
 	}
+      else if (grub_memcmp (arg, "--lines=", sizeof ("--lines=") - 1) == 0)
+	{
+	  char *val = arg + sizeof ("--lines=") - 1;
+
+	  if (! safe_parse_maxint (&val, &lines))
+	    return 1;
+
+	  /* Probably less than four is meaningless....  */
+	  if (lines < 4)
+	    {
+	      errnum = ERR_BAD_ARGUMENT;
+	      return 1;
+	    }
+	}
+      else if (grub_memcmp (arg, "--silent", sizeof ("--silent") - 1) == 0)
+	no_message = 1;
       else
 	break;
 
@@ -4015,73 +4146,56 @@ terminal_func (char *arg, int flags)
   /* If no argument is specified, show current setting.  */
   if (! *arg)
     {
-      if (terminal & TERMINAL_CONSOLE)
-	grub_printf ("console%s\n",
-		     terminal & TERMINAL_DUMB ? " (dumb)" : "");
-#ifdef SUPPORT_HERCULES
-      else if (terminal & TERMINAL_HERCULES)
-	grub_printf ("hercules%s\n",
-		     terminal & TERMINAL_DUMB ? " (dumb)" : "");
-#endif /* SUPPORT_HERCULES */
-#ifdef SUPPORT_SERIAL
-      else if (terminal & TERMINAL_SERIAL)
-	grub_printf ("serial%s\n",
-		     terminal & TERMINAL_DUMB ? " (dumb)" : " (vt100)");
-#endif /* SUPPORT_SERIAL */
-      
+      grub_printf ("%s%s%s%s\n",
+		   current_term->name,
+		   current_term->flags & TERM_DUMB ? " (dumb)" : "",
+		   current_term->flags & TERM_NO_EDIT ? " (no edit)" : "",
+		   current_term->flags & TERM_NO_ECHO ? " (no echo)" : "");
       return 0;
     }
 
-  /* Clear current setting.  */
-  terminal = dumb ? TERMINAL_DUMB : 0;
-  
   while (*arg)
     {
-      if (grub_memcmp (arg, "console", sizeof ("console") - 1) == 0)
+      int i;
+      char *next = skip_to (0, arg);
+      
+      nul_terminate (arg);
+
+      for (i = 0; term_table[i].name; i++)
 	{
-	  terminal |= TERMINAL_CONSOLE;
-	  if (! default_terminal)
-	    default_terminal = TERMINAL_CONSOLE;
-	}
-#ifdef SUPPORT_HERCULES
-      else if (grub_memcmp (arg, "hercules", sizeof ("hercules") - 1) == 0)
-	{
-	  terminal |= TERMINAL_HERCULES;
-	  if (! default_terminal)
-	    default_terminal = TERMINAL_HERCULES;
-	}
-#endif /* SUPPORT_HERCULES */
-#ifdef SUPPORT_SERIAL
-      else if (grub_memcmp (arg, "serial", sizeof ("serial") - 1) == 0)
-	{
-	  if (serial_exists ())
+	  if (grub_strcmp (arg, term_table[i].name) == 0)
 	    {
-	      terminal |= TERMINAL_SERIAL;
-	      if (! default_terminal)
-		default_terminal = TERMINAL_SERIAL;
-	    }
-	  else
+	      if (term_table[i].flags & TERM_NEED_INIT)
 	    {
-	      terminal = saved_terminal;
-	      errnum = ERR_NEED_SERIAL;
+		  errnum = ERR_DEV_NEED_INIT;
 	      return 1;
 	    }
+	      
+	      if (default_term < 0)
+		default_term = i;
+
+	      term_bitmap |= (1 << i);
+	      break;
 	}
-#endif /* SUPPORT_SERIAL */
-      else
+	}
+
+      if (! term_table[i].name)
 	{
-	  terminal = saved_terminal;
 	  errnum = ERR_BAD_ARGUMENT;
 	  return 1;
 	}
 
-      arg = skip_to (0, arg);
+      arg = next;
     }
 
-  /* If a seial console is turned on, wait until the user pushes any key.  */
-  if (terminal & TERMINAL_SERIAL)
+  /* If multiple terminals are specified, wait until the user pushes any
+     key on one of the terminals.  */
+  if (term_bitmap & ~(1 << default_term))
     {
       int time1, time2 = -1;
+      
+      /* XXX: Disable the pager.  */
+      count_lines = -1;
       
       /* Get current time.  */
       while ((time1 = getrtsecs ()) == 0xFF)
@@ -4090,39 +4204,62 @@ terminal_func (char *arg, int flags)
       /* Wait for a key input.  */
       while (to)
 	{
-	  if ((terminal & TERMINAL_CONSOLE) && console_checkkey () != -1)
-	    {
-	      terminal &= (TERMINAL_CONSOLE | TERMINAL_DUMB);
-	      (void) getkey ();
-	      return 0;
-	    }
-	  else if ((terminal & TERMINAL_SERIAL) && serial_checkkey () != -1)
-	    {
-	      terminal &= (TERMINAL_SERIAL | TERMINAL_DUMB);
-	      (void) getkey ();
+	  int i;
 
-	      /* If the interface is currently the command-line, restart
-		 it to repaint the screen.  */
-	      if (flags & BUILTIN_CMDLINE)
-		grub_longjmp (restart_cmdline_env, 0);
+	  for (i = 0; term_table[i].name; i++)
+	    {
+	      if (term_bitmap & (1 << i))
+	    {
+		  if (term_table[i].checkkey () >= 0)
+		    {
+		      (void) term_table[i].getkey ();
+		      default_term = i;
 	      
-	      return 0;
+		      goto end;
+		    }
+		}
 	    }
 
 	  /* Prompt the user, once per sec.  */
 	  if ((time1 = getrtsecs ()) != time2 && time1 != 0xFF)
 	    {
-	      grub_printf ("Press any key to continue.\n");
+	      if (! no_message)
+		{
+		  /* Need to set CURRENT_TERM to each of selected
+		     terminals.  */
+		  for (i = 0; term_table[i].name; i++)
+		    if (term_bitmap & (1 << i))
+		      {
+			current_term = term_table + i;
+			grub_printf ("\rPress any key to continue.\n");
+		      }
+		  
+		  /* Restore CURRENT_TERM.  */
+		  current_term = prev_term;
+		}
+	      
 	      time2 = time1;
 	      if (to > 0)
 		to--;
 	    }
 	}
-
-      /* Expired.  */
-      terminal &= (default_terminal | TERMINAL_DUMB);
     }
 
+ end:
+  current_term = term_table + default_term;
+  current_term->flags = term_flags;
+  
+  if (lines)
+    max_lines = lines;
+  else
+    /* 24 would be a good default value.  */
+    max_lines = 24;
+  
+  /* If the interface is currently the command-line,
+     restart it to repaint the screen.  */
+  if (current_term != prev_term && (flags & BUILTIN_CMDLINE))
+    grub_longjmp (restart_cmdline_env, 0);
+  
   return 0;
 }
 
@@ -4130,18 +4267,112 @@ static struct builtin builtin_terminal =
 {
   "terminal",
   terminal_func,
-  BUILTIN_MENU | BUILTIN_CMDLINE,
-  "terminal [--dumb] [--timeout=SECS] [console] [serial]",
-  "Select a terminal. When serial is specified, wait until you push any key"
-  " to continue. If both console and serial are specified, the terminal"
-  " to which you input a key first will be selected. If no argument is"
-  " specified, print current setting. The option --dumb speicifies that"
-  " your terminal is dumb, otherwise, vt100-compatibility is assumed."
+  BUILTIN_MENU | BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
+  "terminal [--dumb] [--no-echo] [--no-edit] [--timeout=SECS] [--lines=LINES] [--silent] [console] [serial] [hercules]",
+  "Select a terminal. When multiple terminals are specified, wait until"
+  " you push any key to continue. If both console and serial are specified,"
+  " the terminal to which you input a key first will be selected. If no"
+  " argument is specified, print current setting. The option --dumb"
+  " specifies that your terminal is dumb, otherwise, vt100-compatibility"
+  " is assumed. If you specify --no-echo, input characters won't be echoed."
+  " If you specify --no-edit, the BASH-like editing feature will be disabled."
   " If --timeout is present, this command will wait at most for SECS"
-  " seconds."
+  " seconds. The option --lines specifies the maximum number of lines."
+  " The option --silent is used to suppress messages."
 };
 #endif /* SUPPORT_SERIAL || SUPPORT_HERCULES */
 
+
+#ifdef SUPPORT_SERIAL
+static int
+terminfo_func (char *arg, int flags)
+{
+  struct terminfo term;
+
+  if (*arg)
+    {
+      struct
+      {
+	const char *name;
+	char *var;
+      }
+      options[] =
+	{
+	  {"--name=", term.name},
+	  {"--cursor-address=", term.cursor_address},
+	  {"--clear-screen=", term.clear_screen},
+	  {"--enter-standout-mode=", term.enter_standout_mode},
+	  {"--exit-standout-mode=", term.exit_standout_mode}
+	};
+
+      grub_memset (&term, 0, sizeof (term));
+      
+      while (*arg)
+	{
+	  int i;
+	  char *next = skip_to (0, arg);
+	      
+	  nul_terminate (arg);
+	  
+	  for (i = 0; i < sizeof (options) / sizeof (options[0]); i++)
+	    {
+	      const char *name = options[i].name;
+	      int len = grub_strlen (name);
+	      
+	      if (! grub_memcmp (arg, name, len))
+		{
+		  grub_strcpy (options[i].var, arg + len);
+		  break;
+		}
+	    }
+
+	  if (i == sizeof (options) / sizeof (options[0]))
+	    {
+	      errnum = ERR_BAD_ARGUMENT;
+	      return errnum;
+	    }
+
+	  arg = next;
+	}
+
+      if (term.name[0] == 0 || term.cursor_address[0] == 0)
+	{
+	  errnum = ERR_BAD_ARGUMENT;
+	  return errnum;
+	}
+
+      ti_set_term (term);
+    }
+  else
+    {
+      /* No option specifies printing out current settings.  */
+      term = ti_get_term ();
+
+      grub_printf ("name=%s\n", term.name);
+      grub_printf ("cursor_address=%s\n", term.cursor_address);
+      grub_printf ("clear_screen=%s\n", term.clear_screen);
+      grub_printf ("enter_standout_mode=%s\n", term.enter_standout_mode);
+      grub_printf ("exit_standout_mode=%s\n", term.exit_standout_mode);
+    }
+
+  return 0;
+}
+
+static struct builtin builtin_terminfo =
+{
+  "terminfo",
+  terminfo_func,
+  BUILTIN_MENU | BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
+  "terminfo [--name=NAME --cursor-address=SEQ [--clear-screen=SEQ]"
+  " [--enter-standout-mode=SEQ] [--exit-standout-mode=SEQ]]",
+  
+  "Define the capabilities of your terminal. Use this command to"
+  " define escape sequences, if it is not vt100-compatible."
+  " You may use \\e for ESC and ^X for a control character."
+  " If no option is specified, the current settings are printed."
+};
+#endif /* SUPPORT_SERIAL */
+	  
 
 /* testload */
 static int
@@ -4236,6 +4467,8 @@ static int
 testvbe_func (char *arg, int flags)
 {
   int mode_number;
+  struct vbe_controller controller;
+  struct vbe_mode mode;
 
   if (! *arg)
     {
@@ -4246,22 +4479,26 @@ testvbe_func (char *arg, int flags)
   if (! safe_parse_maxint (&arg, &mode_number))
     return 1;
 
-  if (! (mbi.flags & MB_INFO_VIDEO_INFO))
+  /* Preset `VBE2'.  */
+  grub_memmove (controller.signature, "VBE2", 4);
+
+  /* Detect VBE BIOS.  */
+  if (get_vbe_controller_info (&controller) != 0x004F)
     {
       grub_printf (" VBE BIOS is not present.\n");
       return 0;
     }
   
-  if (vbe_info_block.version < 0x0200)
+  if (controller.version < 0x0200)
     {
       grub_printf (" VBE version %d.%d is not supported.\n",
-		   (int) (vbe_info_block.version >> 8),
-		   (int) (vbe_info_block.version & 0xFF));
+		   (int) (controller.version >> 8),
+		   (int) (controller.version & 0xFF));
       return 0;
     }
 
-  if (get_vbe_mode_info (mode_number, &mode_info_block) != 0x004F
-      || (mode_info_block.mode_attributes & 0x0091) != 0x0091)
+  if (get_vbe_mode_info (mode_number, &mode) != 0x004F
+      || (mode.mode_attributes & 0x0091) != 0x0091)
     {
       grub_printf (" Mode 0x%x is not supported.\n", mode_number);
       return 0;
@@ -4276,13 +4513,13 @@ testvbe_func (char *arg, int flags)
 
   /* Draw something on the screen...  */
   {
-    unsigned char *base_buf = (unsigned char *) mode_info_block.phys_base;
-    int scanline = vbe_info_block.version >= 0x0300
-      ? mode_info_block.linear_bytes_per_scanline : mode_info_block.bytes_per_scanline;
+    unsigned char *base_buf = (unsigned char *) mode.phys_base;
+    int scanline = controller.version >= 0x0300
+      ? mode.linear_bytes_per_scanline : mode.bytes_per_scanline;
     /* FIXME: this assumes that any depth is a modulo of 8.  */
-    int bpp = mode_info_block.bits_per_pixel / 8;
-    int width = mode_info_block.x_resolution;
-    int height = mode_info_block.y_resolution;
+    int bpp = mode.bits_per_pixel / 8;
+    int width = mode.x_resolution;
+    int height = mode.y_resolution;
     int x, y;
     unsigned color = 0;
 
@@ -4324,7 +4561,7 @@ static struct builtin builtin_testvbe =
 {
   "testvbe",
   testvbe_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "testvbe MODE",
   "Test the VBE mode MODE. Hit any key to return."
 };
@@ -4349,7 +4586,7 @@ static struct builtin builtin_tftpserver =
 {
   "tftpserver",
   tftpserver_func,
-  BUILTIN_CMDLINE | BUILTIN_MENU,
+  BUILTIN_CMDLINE | BUILTIN_MENU | BUILTIN_HELP_LIST,
   "tftpserver IPADDR",
   "Override the TFTP server address."
 };
@@ -4417,7 +4654,7 @@ static struct builtin builtin_unhide =
 {
   "unhide",
   unhide_func,
-  BUILTIN_CMDLINE | BUILTIN_MENU,
+  BUILTIN_CMDLINE | BUILTIN_MENU | BUILTIN_HELP_LIST,
   "unhide PARTITION",
   "Unhide PARTITION by clearing the \"hidden\" bit in its"
   " partition type code."
@@ -4439,7 +4676,7 @@ static struct builtin builtin_uppermem =
 {
   "uppermem",
   uppermem_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "uppermem KBYTES",
   "Force GRUB to assume that only KBYTES kilobytes of upper memory are"
   " installed.  Any system address range maps are discarded."
@@ -4450,8 +4687,19 @@ static struct builtin builtin_uppermem =
 static int
 vbeprobe_func (char *arg, int flags)
 {
+  struct vbe_controller controller;
+  unsigned short *mode_list;
   int mode_number = -1;
-  int count = 1;
+  
+  auto unsigned long vbe_far_ptr_to_linear (unsigned long);
+  
+  unsigned long vbe_far_ptr_to_linear (unsigned long ptr)
+    {
+      unsigned short seg = (ptr >> 16);
+      unsigned short off = (ptr & 0xFFFF);
+
+      return (seg << 4) + off;
+    }
 
   if (*arg)
     {
@@ -4459,44 +4707,49 @@ vbeprobe_func (char *arg, int flags)
 	return 1;
     }
   
-  if (! (mbi.flags & MB_INFO_VIDEO_INFO))
+  /* Set the signature to `VBE2', to obtain VBE 3.0 information.  */
+  grub_memmove (controller.signature, "VBE2", 4);
+  
+  if (get_vbe_controller_info (&controller) != 0x004F)
     {
       grub_printf (" VBE BIOS is not present.\n");
       return 0;
     }
 
   /* Check the version.  */
-  if (vbe_info_block.version < 0x0200)
+  if (controller.version < 0x0200)
     {
       grub_printf (" VBE version %d.%d is not supported.\n",
-		   (int) (vbe_info_block.version >> 8),
-		   (int) (vbe_info_block.version & 0xFF));
+		   (int) (controller.version >> 8),
+		   (int) (controller.version & 0xFF));
       return 0;
     }
 
   /* Print some information.  */
   grub_printf (" VBE version %d.%d\n",
-	       (int) (vbe_info_block.version >> 8),
-	       (int) (vbe_info_block.version & 0xFF));
+	       (int) (controller.version >> 8),
+	       (int) (controller.version & 0xFF));
 
   /* Iterate probing modes.  */
   for (mode_list
-         = (unsigned short *) VBE_FAR_PTR (vbe_info_block.video_mode);
+	 = (unsigned short *) vbe_far_ptr_to_linear (controller.video_mode);
        *mode_list != 0xFFFF;
        mode_list++)
     {
-      if (get_vbe_mode_info (*mode_list, &mode_info_block) != 0x004F)
+      struct vbe_mode mode;
+      
+      if (get_vbe_mode_info (*mode_list, &mode) != 0x004F)
 	continue;
 
       /* Skip this, if this is not supported or linear frame buffer
 	 mode is not support.  */
-      if ((mode_info_block.mode_attributes & 0x0081) != 0x0081)
+      if ((mode.mode_attributes & 0x0081) != 0x0081)
 	continue;
 
       if (mode_number == -1 || mode_number == *mode_list)
 	{
 	  char *model;
-	  switch (mode_info_block.memory_model)
+	  switch (mode.memory_model)
 	    {
 	    case 0x00: model = "Text"; break;
 	    case 0x01: model = "CGA graphics"; break;
@@ -4512,22 +4765,12 @@ vbeprobe_func (char *arg, int flags)
 	  grub_printf ("  0x%x: %s, %ux%ux%u\n",
 		       (unsigned) *mode_list,
 		       model,
-		       (unsigned) mode_info_block.x_resolution,
-		       (unsigned) mode_info_block.y_resolution,
-		       (unsigned) mode_info_block.bits_per_pixel);
+		       (unsigned) mode.x_resolution,
+		       (unsigned) mode.y_resolution,
+		       (unsigned) mode.bits_per_pixel);
 	  
 	  if (mode_number != -1)
 	    break;
-
-	  count++;
-
-	  /* XXX: arbitrary.  */
-	  if (count == 22)
-	    {
-	      grub_printf ("\nHit any key to continue.\n");
-	      count = 0;
-	      getkey ();
-	    }
 	}
     }
 
@@ -4541,10 +4784,10 @@ static struct builtin builtin_vbeprobe =
 {
   "vbeprobe",
   vbeprobe_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "vbeprobe [MODE]",
-  "Probe VBE information. If the mode number MODE is specified, show"
-  "information about that mode only."
+  "Probe VBE information. If the mode number MODE is specified, show only"
+  " the information about only the mode."
 };
   
 
@@ -4571,6 +4814,9 @@ struct builtin *builtin_table[] =
 #endif /* SUPPORT_NETBOOT */
   &builtin_displayapm,
   &builtin_displaymem,
+#ifdef GRUB_UTIL
+  &builtin_dump,
+#endif /* GRUB_UTIL */
   &builtin_embed,
   &builtin_fallback,
   &builtin_find,
@@ -4596,6 +4842,7 @@ struct builtin *builtin_table[] =
 #endif /* USE_MD5_PASSWORDS */
   &builtin_module,
   &builtin_modulenounzip,
+  &builtin_pager,
   &builtin_partnew,
   &builtin_parttype,
   &builtin_password,
@@ -4620,6 +4867,9 @@ struct builtin *builtin_table[] =
 #if defined(SUPPORT_SERIAL) || defined(SUPPORT_HERCULES)
   &builtin_terminal,
 #endif /* SUPPORT_SERIAL || SUPPORT_HERCULES */
+#ifdef SUPPORT_SERIAL
+  &builtin_terminfo,
+#endif /* SUPPORT_SERIAL */
   &builtin_testload,
   &builtin_testvbe,
 #ifdef SUPPORT_NETBOOT
