@@ -33,18 +33,18 @@ USER_INCLUDES := -I. -IGeneric
 
 
 #MM
-includes-copy : $(INCDIR)/adflib.h \
-		$(INCDIR)/defendian.h \
-		$(INCDIR)/adf_blk.h \
-		$(INCDIR)/adf_defs.h \
-		$(INCDIR)/adf_err.h \
-		$(INCDIR)/adf_hd.h \
-		$(INCDIR)/adf_str.h
+includes-copy : $(AROS_INCLUDES)/adflib.h \
+		$(AROS_INCLUDES)/defendian.h \
+		$(AROS_INCLUDES)/adf_blk.h \
+		$(AROS_INCLUDES)/adf_defs.h \
+		$(AROS_INCLUDES)/adf_err.h \
+		$(AROS_INCLUDES)/adf_hd.h \
+		$(AROS_INCLUDES)/adf_str.h
 
-$(INCDIR)/%.h : %.h
-	$(CP) $< $(INCDIR)
+$(AROS_INCLUDES)/%.h : %.h
+	$(CP) $< $(AROS_INCLUDES)
 
-$(INCDIR)/defendian.h : myconf.aros
+$(AROS_INCLUDES)/defendian.h : myconf.aros
 	@./myconf.aros >> $@
 
 %common
