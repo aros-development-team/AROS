@@ -47,6 +47,9 @@ struct JumpVec
     unsigned char vec[4];
 };
 
+/* Any jump to an unimplemented vector will cause an access to this address */
+#define _aros_empty_vector		0xc0edbabe
+
 /* Internal macros */
 #define __AROS_ASMJMP			0x4EF9
 #define __AROS_SET_VEC(v,a)             (*(ULONG*)(v)->vec=(ULONG)(a))
@@ -58,7 +61,7 @@ struct JumpVec
 #define __AROS_GETVECADDR(lib,n)        (__AROS_GET_VEC(__AROS_GETJUMPVEC(lib,n)))
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_SET_VEC(__AROS_GETJUMPVEC(lib,n),(APTR)(addr)))
 #define __AROS_INITVEC(lib,n)           __AROS_GETJUMPVEC(lib,n)->jmp = __AROS_ASMJMP, \
-					__AROS_SETVECADDR(lib,n,_aros_not_implemented)
+					__AROS_SETVECADDR(lib,n,_aros_empty_vector)
 
 /*
     The following AROS_LVO_CALLs are not protected by #ifdef/#endif pairs.
@@ -287,9 +290,6 @@ struct JumpVec
    }							\
 })
 
-/* ??? */
-#define RDFCALL(hook,data,dptr) ((void(*)(UBYTE,APTR))(hook))(data,dptr);
-
 /*
     Find the next valid alignment for a structure if the next x bytes must
     be skipped.
@@ -338,6 +338,9 @@ extern void _aros_not_implemented (void);
 #define __a5 __asm("a5")
 #define __a6 __asm("a6")
 #endif
+
+/* RawDoFmt hook */
+#define RDFCALL(hook,data,dptr) ((void(*)(UBYTE __d0,APTR __a3))(hook))(data,dptr);
 
 /* What to do with the library base in header, prototype and call */
 #define __AROS_LH_BASE(basetype,basename)   basetype basename __asm("a6")
