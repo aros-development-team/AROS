@@ -72,7 +72,7 @@
 	/* search for the first RegionRectangle that intersects */
 	/* with 'inside'                                        */
 	for (rr = region->RegionRectangle; rr; rr = rr2) {
-	    if (AndRectRect(&rr->bounds, &inside, &intersection))
+	    if (_AndRectRect(&rr->bounds, &inside, &intersection))
 		break;
 	    else {  /* no intersection -> dispose current RegionRectangle */
 		rr2 = rr->Next;
@@ -101,7 +101,7 @@
 	     * more intersections
 	     */
 	    for (rr = rr->Next; rr; rr = rr2) {
-		if (AndRectRect(&rr->bounds, &inside, &intersection)) {
+		if (_AndRectRect(&rr->bounds, &inside, &intersection)) {
 		    /* cut to intersection */
 		    rr->bounds = intersection;
 		    /* adjust new 'region' bounds */
