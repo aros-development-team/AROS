@@ -51,3 +51,22 @@ one from the system. The file include/utility/tagitem.h now contains the
 basic offsets for the various parts of the OS. In the future, it might be
 possible for users to allocate ranges of tags for specific uses.
 
+* DoMethod() or the stack is all wrong !
+
+Don't use DoMethod(), use DoMethodA().
+
+There are CPUs around which don't care that the rest of the world have
+stacks which grow from large to small adresses. HPPA is an example for
+this. While it might look neat to the engineers who did it, it breaks our
+code. Another thing which breaks the code are small data types (eg. WORD,
+UBYTE, etc), because most systems put only integers or longs and pointers
+on the stack. So if some Msg structure expects WORD (see
+intuition/gadgetclass.h), this fails on every system but the Amiga. To
+overcome this, we introduce this rule:
+
+    If you want to pass a structure with DoMethod() and DoMethodA()
+    or similar functions, you must prepend "STCK" to each type, like
+    this: WORD becomes STCKWORD, ULONG becomes STCKULONG, etc.
+
+If you want to be save: Don't use DoMethod() at all. It's very likely
+that the final AROS release will not support it at all.
