@@ -468,3 +468,15 @@ digulla@hepe.com
 When you change headers.tmpl and someone else does an update, the
 headers are not regenerated.
 
+BUG000069
+Stefan.Berger@att.net
+c/sort seems to have a problem on SYS:. The Examine() command causes a
+crash (not immediately but at some later point in execution). Sort works
+on files in ram:, though.
+
+BUG000070
+henning@tilt.prima.de
+Running contrib/Demos/Voxel/voxel without ./aros --memsize 16 gives
+"voxel:Object is of wrong type" instead of "voxel:Could not open object: Out of
+memory"
+
