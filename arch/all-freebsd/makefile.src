@@ -8,20 +8,21 @@ USER_INCLUDES= \
 
 include $(TOP)/config/make.cfg
 
-LINUXFILES= graphics_driver intuition_driver \
-	    gawioinit rawmaygetchar rawputchar
-
-NONLINUXFILES=
-
-FILES= $(NONLINUXFILES) $(LINUXFILES)
+FILES=
+DIRS= unix x11
 
 DEPS = $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+SUBDIRS= $(foreach f,$(DIRS),../$(f))
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
+	%subdirs_q target=setup top=..
+
+stage2:
+	%subdirs_q target=all top=..
 
 clean::
 	-$(RM) $(OSGENDIR) *.err
@@ -34,8 +35,4 @@ $(OSGENDIR)/%.o: %.c
 $(OSGENDIR)/%.d: %.c
 	%mkdepend_q flags=$(CFLAGS2)
 
-$(LINUXFILES): ../linux/$(LINUXFILES)
-	$(TOP)/scripts/makelinks ../linux . $@
-
 %common
-%include_deps
