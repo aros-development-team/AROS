@@ -75,12 +75,6 @@ extern void _aros_not_implemented (void);
 /* How much stack do we need ? Lots :-) */
 #define AROS_STACKSIZE	100000
 
-/* How to map function arguments to CPU registers */
-/*
-    The library base is mapped to the last argument so that it can be
-    ignored by the function.
-*/
-
 /* The registers */
 #define D0 "d0"
 #define D1 "d1"
