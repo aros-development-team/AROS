@@ -211,6 +211,13 @@ Most elements can be used everywhere. Here is a table:</p>
     <td valign="top">Often used in &lt;example&gt; elements</td>
 </tr>
 <tr>
+    <td valign="top">prompt</td>
+    <td valign="top">Use this empty element if you need a shell
+	prompt.
+    </td>
+    <td valign="top">Often used in &lt;example&gt; elements</td>
+</tr>
+<tr>
     <td valign="top">code</td>
     <td valign="top">The &lt;code&gt; element is used to mark source code (C source in this
 	case). An HTML converter can use syntax highlighting on the
