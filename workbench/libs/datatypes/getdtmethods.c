@@ -15,7 +15,7 @@
     NAME */
 #include <proto/datatypes.h>
 
-	AROS_LH1(ULONG, GetDTMethods,
+	AROS_LH1(ULONG *, GetDTMethods,
 
 /*  SYNOPSIS */
 	AROS_LHA(Object *, object, A0),
@@ -54,13 +54,16 @@
 {
     AROS_LIBFUNC_INIT
 
-    ULONG retval = NULL;
+    ULONG *retval = NULL;
    
     struct opGet opGet;
    
+    if(object == NULL)
+	return NULL;
+
     opGet.MethodID    = OM_GET;
     opGet.opg_AttrID  = DTA_Methods;
-    opGet.opg_Storage = &retval;
+    opGet.opg_Storage = (IPTR *)&retval;
     
     if(!DoMethodA(object, (Msg)&opGet))
 	retval = NULL;

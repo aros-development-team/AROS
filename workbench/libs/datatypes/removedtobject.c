@@ -71,10 +71,10 @@
 	{
 	    Delay(50);
 	}
-	
-	DoMethod(object, DTM_REMOVEDTOBJECT, 0);
-	
+		
 	retval = RemoveGList(window, (struct Gadget *)object, 1);
+
+	DoMethod(object, DTM_REMOVEDTOBJECT, 0);
     }
     
     return retval;
