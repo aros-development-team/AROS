@@ -108,7 +108,7 @@
 
 extern struct UtilityBase *UtilityBase;
 
-static const char version[] = "$VER: shell 41.5 (9.1.2000)\n";
+static const char version[] = "$VER: shell 41.6 (" __DATE__ ")\n";
 
 #define SET_HOMEDIR 1
 
@@ -608,6 +608,7 @@ int main(void)
 	 else
 	 {
 	    error = interact((STRPTR)args[ARG_FROM]);
+	    kprintf("error = %d\n");
 	 }
 
 	 FreeArgs(rda);
@@ -618,7 +619,7 @@ int main(void)
 	error = RETURN_FAIL;
     }
 
-    P(kprintf("Exiting shell\n"));
+    kprintf("Exiting shell\n");
     P(kprintf("USERDATA 2 = %p\n", FindTask(0)->tc_UserData));
 
     return error;
@@ -756,17 +757,17 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	    result = TRUE;
 	    goto exit;
 	}
-	
+
 	/* stegerg: Set redirection to default in/out handles */
 
 	rd->oldIn  = SelectInput(cli->cli_StandardInput);
 	rd->oldOut = SelectOutput(cli->cli_StandardOutput);
-	
+
 	if(rd->haveOutRD)
 	{
 	    P(kprintf("Redirecting output to file %s\n", rd->outFileName));
 
-	    rd->newOut = Open(rd->outFileName, MODE_NEWFILE);
+	    rd->newOut = Open(rd->outFileName, MODE_NEWFILE /*FMF_WRITE|FMF_CREATE*/);
 
 	    P(kprintf("Output stream opened\n"));
 
@@ -774,6 +775,7 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	    {
 		goto exit;
 	    }
+
 
 #if 1 /* stegerg */
     	    SelectOutput(rd->newOut);
@@ -785,15 +787,13 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 
 	if(rd->haveAppRD)
 	{
-	    rd->newOut = Open(rd->outFileName, MODE_OLDFILE);
+	    rd->newOut = Open(rd->outFileName, FMF_MODE_OLDFILE | FMF_CREATE | FMF_APPEND & ~FMF_AMIGADOS);
 
 	    if(BADDR(rd->newOut) == NULL)
 	    {
 	        goto exit;
 	    }
-	    
-	    Seek(rd->newOut, 0, OFFSET_END);
-	    
+
 #if 1 /* stegerg */
     	    SelectOutput(rd->newOut);
 #else
@@ -804,7 +804,7 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 
 	if(rd->haveInRD)
 	{
-	    rd->newIn = Open(rd->inFileName, MODE_OLDFILE);
+	    rd->newIn = Open(rd->inFileName, MODE_OLDFILE/*FMF_READ*/);
 
 	    if(BADDR(rd->newIn) == NULL)
 	    {
@@ -889,7 +889,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 	    result = ReadItem(rd->inFileName, FILENAME_LEN, cs);
 
 	    P(kprintf("Found input redirection\n"));
-	    
+
 	    if(result == ITEM_ERROR || result == ITEM_NOTHING)
 		return FALSE;
 
@@ -902,7 +902,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 		return FALSE;
 
 	    advance(1);
-	    
+
 	    if(item == '>')
 	    {
 		/* Multiple redirections not allowed */
