@@ -2,7 +2,7 @@
 #define EXEC_TYPES_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Data typing - must be included before any other file.
@@ -30,13 +30,23 @@
     typedef const void *			CONST_APTR;	/* const memory pointer */
 #endif
 
-/* An integer which can store a pointer */
+/* An unsigned integer which can store a pointer */
 #ifndef __typedef_IPTR
 #   define __typedef_IPTR
 #   ifdef AROS_IPTR_TYPE
 	typedef AROS_IPTR_TYPE			IPTR;
 #   else
 	typedef unsigned long			IPTR;
+#   endif
+#endif
+
+/* A signed type that can store a pointer */
+#ifndef __typedef_SIPTR
+#   define __typedef_SIPTR
+#   ifdef AROS_SIPTR_TYPE
+	typedef AROS_SIPTR_TYPE			SIPTR;
+#   else
+	typedef long				SIPTR;
 #   endif
 #endif
 
