@@ -402,7 +402,7 @@ $(AROS_LIBS)/$(MODULE) : $(MODULE_OBJ) $(OBJDIR)/libarosccommon.a
 	%link_module_q \
 	    objs="$(OBJDIR)/shared/arosc_init.o $(OBJDIR)/shared/arosc_functable.o $(MODULE_OBJ)" \
 	    endtag="$(OBJDIR)/shared/arosc_endtag.o" \
-	    ldflags="$(LDFLAGS) -L$(OBJDIR) -nostdlib" \
+	    ldflags="$(LDFLAGS) -L$(OBJDIR) $(NOSTDLIB_LDFLAGS)" \
 	    libs="$(LIBS) -larosccommon"
 
 $(OBJDIR)/static/%.o : %.c
