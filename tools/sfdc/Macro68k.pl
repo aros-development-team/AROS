@@ -10,6 +10,9 @@ BEGIN {
 	my $proto  = shift;
 	my $class  = ref($proto) || $proto;
 	my $self   = $class->SUPER::new( @_ );
+
+	$self->{a4a5} = 0;
+	
 	bless ($self, $class);
 	return $self;
     }
@@ -28,9 +31,8 @@ BEGIN {
 	    my $a5        = $regs =~ /a5/;
 	    my $fp        = $argtypes =~ /\(\*\)/;
 
-	    if ($a4 && $a5 && !$quiet) {
-		print STDERR "$$prototype{'funcname'} uses both a4 and a5 " .
-		    "for arguments. This is not going to work.\n";
+	    if ($a4 && $a5) {
+	        $self->{a4a5} = 1;
 	    }
 	    
 	    $self->{FUNCARGTYPE} = '';
@@ -70,7 +72,7 @@ BEGIN {
 	    my $argname   = $params{'argname'};
 	    my $argreg    = $params{'argreg'};
 	    
-	    if ($argreg eq 'a4' || $argreg eq 'a5') {
+	    if (!$self->{a4a5} && ($argreg eq 'a4' || $argreg eq 'a5')) {
 		$argreg = 'd7';
 	    }
 	    
