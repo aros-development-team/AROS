@@ -178,7 +178,7 @@ static const int __revision = 1;
 //#ifdef DEBUG
 //static STRPTR zune_area_to_string (Object *area);
 //#endif
-static void area_update_data(struct MUI_AreaData *data);
+static void area_update_data(Object *obj, struct MUI_AreaData *data);
 static void setup_control_char (struct MUI_AreaData *data, Object *obj,
 				struct IClass *cl);
 static void cleanup_control_char (struct MUI_AreaData *data, Object *obj);
@@ -592,34 +592,29 @@ static ULONG Area_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_HorizWeight:
 	    STORE = (ULONG)data->mad_HorizWeight;
 	    return(TRUE);
-	case MUIA_InnerBottom:
-	    if (data->mad_Flags & MADF_INNERBOTTOM)
-		STORE = (ULONG)data->mad_HardIBottom;
-	    else
-		STORE = (ULONG)__zprefs.frames[data->mad_Frame].innerBottom;
-	    break;
-	case MUIA_InnerLeft:
-	    if (data->mad_Flags & MADF_INNERLEFT)
-		STORE = (ULONG)data->mad_HardILeft;
-	    else if (data->mad_Flags & MADF_FRAMEPHANTOM)
-		STORE = 0;
-	    else
-		STORE = (ULONG)__zprefs.frames[data->mad_Frame].innerLeft;
-	    break;
-	case MUIA_InnerRight:
-	    if (data->mad_Flags & MADF_INNERRIGHT)
-		STORE = (ULONG)data->mad_HardIRight;
-	    else if (data->mad_Flags & MADF_FRAMEPHANTOM)
-		STORE = 0;
-	    else
-		STORE = (ULONG)__zprefs.frames[data->mad_Frame].innerRight;
-	    break;
-	case MUIA_InnerTop:
-	    if (data->mad_Flags & MADF_INNERTOP)
-		STORE = (ULONG)data->mad_HardITop;
-	    else
-		STORE = (ULONG)__zprefs.frames[data->mad_Frame].innerTop;
-	    break;
+
+	case    MUIA_InnerBottom:
+		if (data->mad_Flags & MADF_INNERBOTTOM) STORE = (ULONG)data->mad_HardIBottom;
+		else STORE = (ULONG)muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame].innerBottom;
+	        break;
+
+	case    MUIA_InnerLeft:
+		if (data->mad_Flags & MADF_INNERLEFT) STORE = (ULONG)data->mad_HardILeft;
+		else if (data->mad_Flags & MADF_FRAMEPHANTOM) STORE = 0;
+		else STORE = (ULONG)muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame].innerLeft;
+		break;
+
+	case    MUIA_InnerRight:
+		if (data->mad_Flags & MADF_INNERRIGHT) STORE = (ULONG)data->mad_HardIRight;
+		else if (data->mad_Flags & MADF_FRAMEPHANTOM) STORE = 0;
+		else STORE = (ULONG)muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame].innerRight;
+		break;
+
+	case	MUIA_InnerTop:
+		if (data->mad_Flags & MADF_INNERTOP) STORE = (ULONG)data->mad_HardITop;
+		else STORE = (ULONG)muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame].innerTop;
+		break;
+
 	case MUIA_LeftEdge:
 	    STORE = (ULONG)_left(obj);
 	    return(TRUE);
@@ -693,7 +688,7 @@ static ULONG Area_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 	_subheight(obj) = _subheight(obj) - _addtop(obj) + data->mad_TitleText->height + 1;
 	_addtop(obj) = data->mad_TitleText->height + 1;
 
-	if (__zprefs.group_title_color == GROUP_TITLE_COLOR_3D)
+	if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
 	{
 	    _subheight(obj) += 1;
 	    _addtop(obj) += 1;
@@ -802,7 +797,7 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 //	return 0;
 //    }
 
-    zframe = zune_zframe_get (&__zprefs.frames[data->mad_Frame]);
+    zframe = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame]);
 
     /* Background drawing */
     if (data->mad_Flags & MADF_FILLAREA)
@@ -840,7 +835,7 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     /* Frame drawing */
     if (!(data->mad_Flags & MADF_FRAMEPHANTOM))
     {
-	int state = __zprefs.frames[data->mad_Frame].state;
+	int state = muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame].state;
 	if ((data->mad_Flags & MADF_SELECTED) && (data->mad_Flags & MADF_SHOWSELSTATE))
 	    state ^= 1;
 
@@ -857,10 +852,10 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    int width;
 
 	    width = data->mad_TitleText->width;
-	    if (__zprefs.group_title_color == GROUP_TITLE_COLOR_3D)
+	    if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
 		width += 1;
 
-            switch (__zprefs.group_title_position)
+            switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_position)
             {
 		case GROUP_TITLE_POSITION_RIGHT: x = _mright(obj) - width - 3;  break;
 		case GROUP_TITLE_POSITION_CENTERED: x = _mleft(obj) + (_mwidth(obj) - width) / 2; break;
@@ -907,16 +902,20 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 					   _mwidth(obj) - 4, data->mad_TitleText->height);
 
 	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-	    if (__zprefs.group_title_color == GROUP_TITLE_COLOR_3D)
+	    if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
 	    {
 		zune_text_draw(data->mad_TitleText, obj, x + 1, x + width, _top(obj) + 1);
 		SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
 		zune_text_draw(data->mad_TitleText, obj, x, x + width - 1, _top(obj));
+	    }   else
+	    {
+		if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_WHITE)
+		{
+		    SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+		}
 	    }
-	    else if (__zprefs.group_title_color == GROUP_TITLE_COLOR_WHITE)
-		SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
 
-	    if (__zprefs.group_title_color != GROUP_TITLE_COLOR_3D)
+	    if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color != GROUP_TITLE_COLOR_3D)
 	    {
 		x++;
 		zune_text_draw(data->mad_TitleText, obj, x, x + width - 1, _top(obj));
@@ -1030,7 +1029,7 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 
     muiRenderInfo(obj) = msg->RenderInfo;
 
-    area_update_data(data);
+    area_update_data(obj,data);
 
     if (data->mad_Flags & MADF_OWNBG) data->mad_Background = zune_image_spec_to_structure((IPTR)data->mad_BackgroundSpec,obj);
     zune_imspec_setup(&data->mad_Background, muiRenderInfo(obj));
@@ -1603,7 +1602,7 @@ static ULONG Area_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_Cr
     	struct ZuneFrameGfx *zframe;
 	LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap,BMA_DEPTH);
 
-	zframe = zune_zframe_get(&__zprefs.frames[MUIV_Frame_Drag]);
+	zframe = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Drag]);
 
     	img->width = _width(obj) + 2*zframe->xthickness;
     	img->height = _height(obj) + 2*zframe->ythickness;
@@ -1687,58 +1686,46 @@ ULONG Area_DragFinish(struct IClass *cl, Object *obj, struct MUIP_DragFinish *ms
  * Because of BYTE storage, all values are clamped to 0..127
  * Inner dimensions being clamped to 0..32, it shouldnt cause too much harm
  */
-static void area_update_data(struct MUI_AreaData *data)
+static void area_update_data(Object *obj, struct MUI_AreaData *data)
 {
     struct ZuneFrameGfx *zframe;
+    struct MUI_FrameSpec *frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
 
-    zframe = zune_zframe_get (&__zprefs.frames[data->mad_Frame]);
+    zframe = zune_zframe_get(frame);
 
     if (data->mad_Flags & MADF_FRAMEPHANTOM)
     {
-	data->mad_addleft = ((data->mad_Flags & MADF_INNERLEFT) ?
-			     data->mad_HardILeft : 0);
-
-	data->mad_subwidth = data->mad_addleft +
-	    ((data->mad_Flags & MADF_INNERRIGHT) ? data->mad_HardIRight : 0);
-    }
-    else
+	data->mad_addleft = ((data->mad_Flags & MADF_INNERLEFT) ? data->mad_HardILeft : 0);
+	data->mad_subwidth = data->mad_addleft + ((data->mad_Flags & MADF_INNERRIGHT) ? data->mad_HardIRight : 0);
+    }   else
     {
-	if (data->mad_Flags & MADF_INNERLEFT)
-	    data->mad_addleft =
-		CLAMP(data->mad_HardILeft + zframe->xthickness, 0, 127);
-	else
-	    data->mad_addleft =
-		CLAMP(__zprefs.frames[data->mad_Frame].innerLeft
-		      + zframe->xthickness, 0, 127);
+	if (data->mad_Flags & MADF_INNERLEFT) data->mad_addleft = CLAMP(data->mad_HardILeft + zframe->xthickness, 0, 127);
+	else data->mad_addleft = CLAMP(frame->innerLeft + zframe->xthickness, 0, 127);
 
 	if (data->mad_Flags & MADF_INNERRIGHT)
-	    data->mad_subwidth =
-		CLAMP(data->mad_addleft + data->mad_HardIRight
-		      + zframe->xthickness, 0, 127);
-	else
-	    data->mad_subwidth =
-		CLAMP(data->mad_addleft
-		      + __zprefs.frames[data->mad_Frame].innerRight
-		      + zframe->xthickness, 0, 127);
+	{
+	    data->mad_subwidth = CLAMP(data->mad_addleft + data->mad_HardIRight  + zframe->xthickness, 0, 127);
+	} else
+	{
+	    data->mad_subwidth = CLAMP(data->mad_addleft + frame->innerRight + zframe->xthickness, 0, 127);
+	}
     }
 
     if (data->mad_Flags & MADF_INNERTOP)
-	data->mad_addtop = CLAMP(data->mad_HardITop + zframe->ythickness,
-				 0, 127);
-    else
-	data->mad_addtop =
-	    CLAMP(__zprefs.frames[data->mad_Frame].innerTop
-		  + zframe->ythickness, 0, 127);
+    {
+	data->mad_addtop = CLAMP(data->mad_HardITop + zframe->ythickness, 0, 127);
+    }   else
+    {
+	data->mad_addtop = CLAMP(frame->innerTop + zframe->ythickness, 0, 127);
+    }
 
     if (data->mad_Flags & MADF_INNERBOTTOM)
-	data->mad_subheight =
-	    CLAMP(data->mad_addtop + data->mad_HardIBottom
-		  + zframe->ythickness, 0, 127);
-    else
-	data->mad_subheight =
-	    CLAMP(data->mad_addtop
-		  + __zprefs.frames[data->mad_Frame].innerBottom
-		  + zframe->ythickness, 0, 127);
+    {
+	data->mad_subheight = CLAMP(data->mad_addtop + data->mad_HardIBottom + zframe->ythickness, 0, 127);
+    }   else
+    {
+	data->mad_subheight = CLAMP(data->mad_addtop + frame->innerBottom  + zframe->ythickness, 0, 127);
+    }
 }
 
 #ifndef _AROS

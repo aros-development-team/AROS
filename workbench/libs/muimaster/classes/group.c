@@ -148,8 +148,8 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return 0;
     }
 
-    data->horiz_spacing = __zprefs.group_hspacing;
-    data->vert_spacing = __zprefs.group_vspacing;
+    data->horiz_spacing = -1;
+    data->vert_spacing = -1;
     data->columns = 1;
     data->rows = 1;
 
@@ -158,53 +158,66 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-	case MUIA_Group_Child:
-	    if (tag->ti_Data) DoMethod(obj, OM_ADDMEMBER, tag->ti_Data);
-	    else  bad_childs = TRUE;
-	    break;
-	case MUIA_Group_ActivePage:
-	    change_active_page(cl, obj, (LONG)tag->ti_Data);
-	    break;
-	case MUIA_Group_Columns:
-	    data->columns = (tag->ti_Data)>1?tag->ti_Data:1;
-	    data->rows = 0;
-	    break;
-	case MUIA_Group_Horiz:
-	    _handle_bool_tag(data->flags, tag->ti_Data, GROUP_HORIZ);
-	    break;
-	case MUIA_Group_HorizSpacing:
-	    data->horiz_spacing = tag->ti_Data;
-	    break;
-	case MUIA_Group_LayoutHook:
-	    data->layout_hook = (struct Hook *)tag->ti_Data;
-	    break;
-	case MUIA_Group_PageMode:
-	    _handle_bool_tag(data->flags, tag->ti_Data, GROUP_PAGEMODE);
-	    break;
-	case MUIA_Group_Rows:
-	    data->rows = MAX((ULONG)tag->ti_Data, 1);
-	    data->columns = 0;
-	    break;
-	case MUIA_Group_SameHeight:
-	    _handle_bool_tag(data->flags, tag->ti_Data, GROUP_SAME_HEIGHT);
-	    break;
-	case MUIA_Group_SameSize:
-	    _handle_bool_tag(data->flags, tag->ti_Data, GROUP_SAME_HEIGHT);
-	    _handle_bool_tag(data->flags, tag->ti_Data, GROUP_SAME_WIDTH);
-	    break;
-	case MUIA_Group_SameWidth:
-	    _handle_bool_tag(data->flags, tag->ti_Data, GROUP_SAME_WIDTH);
-	    break;
-	case MUIA_Group_Spacing:
-	    data->horiz_spacing = tag->ti_Data;
-	    data->vert_spacing = tag->ti_Data;
-	    break;
-	case MUIA_Group_VertSpacing:
-	    data->vert_spacing = tag->ti_Data;
-	    break;
-	case MUIA_Group_Virtual:
-	    _handle_bool_tag(data->flags, tag->ti_Data, GROUP_VIRTUAL);
-	    break;
+	    case    MUIA_Group_Child:
+		    if (tag->ti_Data) DoMethod(obj, OM_ADDMEMBER, tag->ti_Data);
+		    else  bad_childs = TRUE;
+		    break;
+
+	    case    MUIA_Group_ActivePage:
+		    change_active_page(cl, obj, (LONG)tag->ti_Data);
+		    break;
+
+	    case    MUIA_Group_Columns:
+		    data->columns = (tag->ti_Data)>1?tag->ti_Data:1;
+		    data->rows = 0;
+		    break;
+
+	    case    MUIA_Group_Horiz:
+		    _handle_bool_tag(data->flags, tag->ti_Data, GROUP_HORIZ);
+		    break;
+
+	    case    MUIA_Group_HorizSpacing:
+		    data->horiz_spacing = tag->ti_Data;
+		    break;
+
+	    case    MUIA_Group_LayoutHook:
+		    data->layout_hook = (struct Hook *)tag->ti_Data;
+		    break;
+
+	    case    MUIA_Group_PageMode:
+		    _handle_bool_tag(data->flags, tag->ti_Data, GROUP_PAGEMODE);
+		    break;
+
+	    case    MUIA_Group_Rows:
+		    data->rows = MAX((ULONG)tag->ti_Data, 1);
+		    data->columns = 0;
+		    break;
+
+	    case    MUIA_Group_SameHeight:
+		    _handle_bool_tag(data->flags, tag->ti_Data, GROUP_SAME_HEIGHT);
+		    break;
+
+	    case    MUIA_Group_SameSize:
+		    _handle_bool_tag(data->flags, tag->ti_Data, GROUP_SAME_HEIGHT);
+		    _handle_bool_tag(data->flags, tag->ti_Data, GROUP_SAME_WIDTH);
+		    break;
+
+	    case    MUIA_Group_SameWidth:
+		    _handle_bool_tag(data->flags, tag->ti_Data, GROUP_SAME_WIDTH);
+		    break;
+
+	    case    MUIA_Group_Spacing:
+		    data->horiz_spacing = tag->ti_Data;
+		    data->vert_spacing = tag->ti_Data;
+		    break;
+
+	    case    MUIA_Group_VertSpacing:
+		    data->vert_spacing = tag->ti_Data;
+		    break;
+
+	    case    MUIA_Group_Virtual:
+		    _handle_bool_tag(data->flags, tag->ti_Data, GROUP_VIRTUAL);
+		    break;
 	}
     }
 
@@ -430,6 +443,10 @@ static ULONG Group_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Con
     struct MinList       *ChildList;
 
     DoSuperMethodA(cl,obj,(Msg)msg);
+
+    /* Now we can access muiGlobalData() */
+    if (data->horiz_spacing == -1) data->horiz_spacing = muiGlobalInfo(obj)->mgi_Prefs->group_hspacing;
+    if (data->vert_spacing == -1) data->vert_spacing = muiGlobalInfo(obj)->mgi_Prefs->group_vspacing;
 
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;

@@ -521,6 +521,10 @@ End,
 		    MUIA_Rectangle_BarTitle,"Enter a string",
 		    End,
 
+		Child, CycleObject,
+		    MUIA_Cycle_Entries, pages,
+		    End,
+
 		Child, StringObject,
 		    StringFrame,
 		    MUIA_CycleChain,1,

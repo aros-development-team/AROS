@@ -15,6 +15,7 @@
 #include <proto/utility.h>
 #include <proto/iffparse.h>
 #include <proto/dos.h>
+#include <proto/commodities.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -30,7 +31,17 @@ struct MUI_ConfigdataData
 {
     char *appname;
     struct ZunePrefsNew prefs;
+    int test;
 };
+
+static char *StrDup(char *x)
+{
+    char *dup;
+    if (!x) return NULL;
+    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
+    if (dup) CopyMem((x), dup, strlen(x) + 1);
+    return dup;
+}
 
 static void *GetConfigData(Object *obj, ULONG id, void *def)
 {
@@ -73,6 +84,7 @@ static void LoadPrefs(STRPTR filename, Object *obj)
 static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ConfigdataData *data;
+    struct MUI_FrameSpec *frame;
     struct TagItem *tags,*tag;
     APTR cdata;
     int i;
@@ -141,6 +153,188 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prefs.imagespecs[MUII_TapeDown] = "0:128";
     data->prefs.imagespecs[MUII_PageBack] = (char*)GetConfigData(obj,MUICFG_Background_Page,"0:128");
     data->prefs.imagespecs[MUII_ReadListBack] = "0:128";
+
+    /* frame stuff */
+
+    /* invisible frame */
+    frame = &data->prefs.frames[MUIV_Frame_None];
+    frame->type = FST_NONE;
+    frame->state = 0;
+    frame->innerLeft = frame->innerRight =
+	frame->innerTop = frame->innerBottom = 0;
+
+    /* text button */
+    frame = &data->prefs.frames[MUIV_Frame_Button];
+    frame->type = FST_BEVEL;
+    frame->state = 0;
+    frame->innerLeft = frame->innerRight =
+	frame->innerTop = frame->innerBottom = 2;
+
+    /* image button */
+    frame = &data->prefs.frames[MUIV_Frame_ImageButton];
+    frame->type = FST_BEVEL;
+    frame->state = 0;
+    frame->innerLeft = frame->innerRight =
+	frame->innerTop = frame->innerBottom = 0;
+
+    /* textfield without input */
+    frame = &data->prefs.frames[MUIV_Frame_Text];
+    frame->type = FST_BEVEL;
+    frame->state = 1;
+    frame->innerLeft = frame->innerRight =
+	frame->innerTop = frame->innerBottom = 2;
+
+    /* string gadget */
+    frame = &data->prefs.frames[MUIV_Frame_String];
+    frame->type = FST_THIN_BORDER;
+    frame->state = 0;
+    frame->innerLeft = frame->innerRight =
+	frame->innerTop = frame->innerBottom = 2;
+
+    /* list without input */
+    frame = &data->prefs.frames[MUIV_Frame_ReadList];
+    frame->type = FST_BEVEL;
+    frame->state = 1;
+    frame->innerLeft = frame->innerRight =
+	frame->innerTop = frame->innerBottom = 2;
+
+    /* list with input */
+    frame = &data->prefs.frames[MUIV_Frame_InputList];
+    frame->type = FST_BEVEL;
+    frame->state = 0;
+    frame->innerLeft = frame->innerRight =
+	frame->innerTop = frame->innerBottom = 2;
+
+    /* scrollbar container */
+    frame = &data->prefs.frames[MUIV_Frame_Prop];
+    frame->type = FST_BEVEL;
+    frame->state = 0;
+    frame->innerLeft = frame->innerRight =
+	frame->innerTop = frame->innerBottom = 2;
+
+    /* gauge */
+    frame = &data->prefs.frames[MUIV_Frame_Gauge];
+    frame->type = FST_BEVEL;
+    frame->state = 1;
+    frame->innerLeft = frame->innerRight =
+	frame->innerTop = frame->innerBottom = 0;
+
+    /* normal group */
+    frame = &data->prefs.frames[MUIV_Frame_Group];
+    frame->type = FST_THIN_BORDER;
+    frame->state = 1;
+    frame->innerLeft = frame->innerRight =
+	frame->innerTop = frame->innerBottom = 2;
+
+    /* cycle menu, popup window */
+    frame = &data->prefs.frames[MUIV_Frame_PopUp];
+    frame->type = FST_THIN_BORDER;
+    frame->state = 0;
+    frame->innerLeft = frame->innerRight =
+	frame->innerTop = frame->innerBottom = 2;
+
+    /* virt group */
+    frame = &data->prefs.frames[MUIV_Frame_Virtual];
+    frame->type = FST_BEVEL;
+    frame->state = 1;
+    frame->innerLeft = frame->innerRight =
+	frame->innerTop = frame->innerBottom = 2;
+
+    /* slider container */
+    frame = &data->prefs.frames[MUIV_Frame_Slider];
+    frame->type = FST_THICK_BORDER;
+    frame->state = 0;
+    frame->innerLeft = frame->innerRight =
+	frame->innerTop = frame->innerBottom = 0;
+
+    /* slider knob - perhaps one day added to the array ? */
+    frame = &data->prefs.frames[MUIV_Frame_Knob];
+    frame->type = FST_BEVEL;
+    frame->state = 0;
+    frame->innerLeft = frame->innerRight =
+	frame->innerTop = frame->innerBottom = 1;
+
+    /* dnd frame */
+    frame = &data->prefs.frames[MUIV_Frame_Drag];
+    frame->type = FST_THIN_BORDER;
+    frame->state = 0;
+    frame->innerLeft = frame->innerRight =
+	frame->innerTop = frame->innerBottom = 0;
+
+    data->prefs.group_title_position = GROUP_TITLE_POSITION_CENTERED;
+    data->prefs.group_title_color = GROUP_TITLE_COLOR_BLACK;
+    data->prefs.group_hspacing = 2;
+    data->prefs.group_vspacing = 2;
+
+    data->prefs.window_inner_left = 2;
+    data->prefs.window_inner_right = 2;
+    data->prefs.window_inner_top = 2;
+    data->prefs.window_inner_bottom = 2;
+    data->prefs.window_position = WINDOW_POSITION_FORGET_ON_EXIT;
+
+    /* pens */
+    data->prefs.muipens[MPEN_SHINE].red = 0xffffffff;
+    data->prefs.muipens[MPEN_SHINE].green = 0xffffffff;
+    data->prefs.muipens[MPEN_SHINE].blue = 0xffffffff;
+
+    data->prefs.muipens[MPEN_HALFSHINE].red = 0xd0000000;
+    data->prefs.muipens[MPEN_HALFSHINE].green = 0xd0000000;
+    data->prefs.muipens[MPEN_HALFSHINE].blue = 0xd0000000;
+
+    data->prefs.muipens[MPEN_BACKGROUND].red = 0xa0000000;
+    data->prefs.muipens[MPEN_BACKGROUND].green = 0xa0000000;
+    data->prefs.muipens[MPEN_BACKGROUND].blue = 0xa0000000;
+
+    data->prefs.muipens[MPEN_HALFSHADOW].red = 0x50000000;
+    data->prefs.muipens[MPEN_HALFSHADOW].green = 0x50000000;
+    data->prefs.muipens[MPEN_HALFSHADOW].blue = 0x50000000;
+
+    data->prefs.muipens[MPEN_SHADOW].red = 0x00000000;
+    data->prefs.muipens[MPEN_SHADOW].green = 0x00000000;
+    data->prefs.muipens[MPEN_SHADOW].blue = 0x00000000;
+
+    data->prefs.muipens[MPEN_TEXT].red = 0x00000000;
+    data->prefs.muipens[MPEN_TEXT].green = 0x00000000;
+    data->prefs.muipens[MPEN_TEXT].blue = 0x00000000;
+
+    data->prefs.muipens[MPEN_FILL].red = 0x05000000;
+    data->prefs.muipens[MPEN_FILL].green = 0x84000000;
+    data->prefs.muipens[MPEN_FILL].blue = 0xc4000000;
+
+    data->prefs.muipens[MPEN_MARK].red = 0xf4000000;
+    data->prefs.muipens[MPEN_MARK].green = 0xb5000000;
+    data->prefs.muipens[MPEN_MARK].blue = 0x8b000000;
+
+    /* mui keys */
+    data->prefs.muikeys[MUIKEY_PRESS].readable_hotkey = StrDup("-upstroke return");
+    data->prefs.muikeys[MUIKEY_TOGGLE].readable_hotkey = StrDup("-repeat space");
+    data->prefs.muikeys[MUIKEY_UP].readable_hotkey = StrDup("-repeat up");
+    data->prefs.muikeys[MUIKEY_DOWN].readable_hotkey = StrDup("-repeat down");
+    data->prefs.muikeys[MUIKEY_PAGEUP].readable_hotkey = StrDup("-repeat shift up");
+    data->prefs.muikeys[MUIKEY_PAGEDOWN].readable_hotkey = StrDup("-repeat shift down");
+    data->prefs.muikeys[MUIKEY_TOP].readable_hotkey = StrDup("control up");
+    data->prefs.muikeys[MUIKEY_BOTTOM].readable_hotkey = StrDup("control down");
+    data->prefs.muikeys[MUIKEY_LEFT].readable_hotkey = StrDup("-repeat left");
+    data->prefs.muikeys[MUIKEY_RIGHT].readable_hotkey = StrDup("-repeat right");
+    data->prefs.muikeys[MUIKEY_WORDLEFT].readable_hotkey = StrDup("-repeat control left");
+    data->prefs.muikeys[MUIKEY_WORDRIGHT].readable_hotkey = StrDup("-repeat control right");
+    data->prefs.muikeys[MUIKEY_LINESTART].readable_hotkey = StrDup("shift left");
+    data->prefs.muikeys[MUIKEY_LINEEND].readable_hotkey = StrDup("shift right");
+    data->prefs.muikeys[MUIKEY_GADGET_NEXT].readable_hotkey = StrDup("-repeat tab");
+    data->prefs.muikeys[MUIKEY_GADGET_PREV].readable_hotkey = StrDup("-repeat shift tab");
+    data->prefs.muikeys[MUIKEY_GADGET_OFF].readable_hotkey = StrDup("control tab");
+    data->prefs.muikeys[MUIKEY_WINDOW_CLOSE].readable_hotkey = StrDup("esc");
+    data->prefs.muikeys[MUIKEY_WINDOW_NEXT].readable_hotkey = StrDup("-repeat alt tab");
+    data->prefs.muikeys[MUIKEY_WINDOW_PREV].readable_hotkey = StrDup("-repeat alt shift tab");
+    data->prefs.muikeys[MUIKEY_HELP].readable_hotkey = StrDup("help");
+    data->prefs.muikeys[MUIKEY_POPUP].readable_hotkey = StrDup("control p");
+
+    for (i = 0; i < MUIKEY_COUNT; i++)
+    {
+    	if (data->prefs.muikeys[i].readable_hotkey)
+	    data->prefs.muikeys[i].ix_well = !ParseIX(data->prefs.muikeys[i].readable_hotkey, &data->prefs.muikeys[i].ix);
+	else data->prefs.muikeys[i].ix_well = 0;
+    }
 
 
     return (ULONG)obj;
