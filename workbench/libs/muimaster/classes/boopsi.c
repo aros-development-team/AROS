@@ -360,7 +360,7 @@ static ULONG Boopsi_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct MUI_BoopsiData *data = INST_DATA(cl, obj);
     DoSuperMethodA(cl, obj, (Msg)msg);
 
-    if (!(msg->flags & MADF_DRAWOBJECT)) return 1;
+    if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) return 1;
     if (data->boopsi_object) RefreshGList((struct Gadget*)data->boopsi_object, _window(obj), NULL, 1);
     return 1;
 }
