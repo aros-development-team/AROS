@@ -3,15 +3,19 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES	:= -I..
 
+LIBNAME 	:= diskfont
+ULIBNAME	:= Diskfont
+
+# BEGIN_DESC{makefile}
 # Main function for diskfont.library. Need this apart as an anchor for the link:
-INIT_FILE	:= diskfont_init
+# END_DESC{makefile}
+
 FILES		:= \
-	diskfont_functable af_copyfontstobuffer af_scanfontinfo \
-	af_fontcache_io af_fontdescr_io memoryfontfunc diskfontfunc \
-	dosstreamhook af_helpfuncs diskfont_io
+	$(LIBNAME)_functable af_copyfontstobuffer af_scanfontinfo \
+	af_fontcache_io af_fontdescr_io memoryfontfunc $(LIBNAME)func \
+	dosstreamhook af_helpfuncs $(LIBNAME)_io
 
 # Guarantee that this will go at the end of the file:
-END_FILE	:= diskfont_endtag
 FUNCTIONS	:= \
 	opendiskfont	    \
 	availfonts	    \
@@ -19,79 +23,15 @@ FUNCTIONS	:= \
 	disposefontcontents \
 	newscaleddiskfont
 
-OBJDIR		:= $(GENDIR)/$(CURDIR)
-OBJS		:= $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+%define_libs prelibs=-l$(LIBNAME)
 
-# The init and endskip object filenames
-INITFUNC := $(OBJDIR)/$(INIT_FILE).o
-ENDFUNC  := $(OBJDIR)/$(END_FILE).o
+%genlib_old
 
 #MM workbench : setup includes linklibs
-workbench : show-flags $(SLIBDIR)/diskfont.library
+workbench : show-flags $(SLIB)
 
-# ***** Native ***************
-ifeq ($(FLAVOUR),native)
-
-# Generate a map file
-MAPGEN	:= -Xlinker -M
-
-# Strip resulting binary
-STRIP	:= strip
-
-# ***** Not Native ***************
-else
-
-MAPGEN	:=
-STRIP	:= true
-
-# ***** END ***************
-endif
-
-%define_libs prelibs=-ldiskfont
-
-# The filename of the linklib
-LIB := $(LIBDIR)/libdiskfont.a
-
-$(SLIBDIR)/diskfont.library : $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
-	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(MAPGEN) $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee diskfontlib.map
-	%checkuds
-	@$(IF) $(TEST) ! -s diskfontlib.map; then $(RM) diskfontlib.map ; else $(NOP) ; fi
-	@$(STRIP) $@
-
-# Collect all functions in a linklib for fast linking:
-$(LIB) : $(OBJS)
-	@$(ECHO) "Adding functions to $(notdir $@) ..."
-	@$(AR) $@ $?
-	@$(RANLIB) $@
-
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(SLIBDIR)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-diskfont_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
-	    $(TOP)/scripts/makefunctable.awk
-	%mkfunctable_q Diskfont
-
-diskfont_endtag.c : $(TOP)/scripts/makeendtag.awk
-	%mkendtag_q Diskfont
-
-$(OBJDIR)/diskfont_init.o : libdefs.h
-
-%libdefs_rule
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM clean
+#MM setup
 
 %common
 %include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)

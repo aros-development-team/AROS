@@ -87,16 +87,18 @@ DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(PRE_FUNC) $(END_FILE),$(OBJDIR)/$(f)
 OBJS := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 #MM kernel : setup includes graphics-$(ARCH)
-kernel : $(LIB)
+kernel : show-flags $(LIB)
 
 $(LIB) : $(OBJS)
 	%mklib_q
 	@$(RM) $(RMLIB)
 
+show-flags :
+	@echo "CFLAGS=$(CFLAGS)"
+
 #MM
 setup :
 	%mkdirs_q $(OBJDIR)
-	@echo "CFLAGS=$(CFLAGS)"
 
 #MM
 clean ::

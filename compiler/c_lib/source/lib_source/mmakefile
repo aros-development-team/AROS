@@ -13,14 +13,12 @@ SRCS		:= LibInit.c SampleFuncs.c
 OBJS		:= libheader.o LibInit.o functable.o SampleFuncs.o libtail.o
 LIB		:= $(SLIBDIR)/example.library
 
-
 #MM
 clean :
 	$(RM) *.o $(LIB)
 
 #MM
 setup : make-dirs copy-scripts
-	@echo "CFLAGS=$(CFLAGS)"
 
 make-dirs :
 	@if test ! -d $(SCRIPTDIR) ; then $(MKDIR) $(SCRIPTDIR) ; else true ; fi
@@ -31,7 +29,10 @@ $(SCRIPTDIR)/% : %
 	$(CP) $< $@
 
 #MM
-libs : setup $(LIB)
+libs : show-flags $(LIB)
+
+show-flags :
+	@echo "CFLAGS=$(CFLAGS)"
 
 $(LIB) : $(OBJS) $(DEPLIBS)
 	@echo "Creating $@..."

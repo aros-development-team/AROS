@@ -77,7 +77,7 @@ $(OSMODDIR)/aros.library : $(INITFUNC) $(ENDFUNC) $(OBJS) $(LIBDEPS)
 else
 
 #MM kernel : setup includes
-kernel : $(LIB)
+kernel : show-flags $(LIB)
 
 OBJS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 
@@ -91,6 +91,8 @@ $(LIB) : $(OBJS)
 #MM
 setup :
 	%mkdirs_q $(OSGENDIR) $(OBJDIR)
+
+show-flags :
 	@echo "CFLAGS=$(CFLAGS)"
 
 #MM

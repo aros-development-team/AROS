@@ -3,6 +3,9 @@ include $(TOP)/config/make.cfg
 
 OBJDIR		:= $(GENDIR)/$(CURDIR)
 
+LIBNAME 	:= utility
+ULIBNAME	:= Utility
+
 # Use OS's own includes over the ones from AROS
 ifeq ("$(SHARED_UTILITY)","yes")
 SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I/usr/include
@@ -11,7 +14,7 @@ SPECIAL_CFLAGS	:= -I/usr/include
 endif
 
 USER_INCLUDES	:= -I.
-USER_DEFINES	:= -D_AROS
+#USER_DEFINES	 := -D_AROS
 
 # BEGIN_DESC{makefile}
 # This is the makefile for utility.library. Use it if you want to compile
@@ -31,10 +34,8 @@ USER_DEFINES	:= -D_AROS
 # END_DESC{localmakevar}
 
 # Main function for exec.strap. Need this apart as an anchor for the link:
-INIT_FILE	:= utility_init
 # Guarantee that this will go at the end of the file:
-END_FILE	:= endtag
-FILES		:= functable getnamespace intfindnamedobj
+FILES		:= getnamespace intfindnamedobj
 FUNCTIONS	:= \
 	applytagchanges callhookpkt findtagitem nexttagitem stricmp strnicmp\
 	tolower toupper getuniqueid date2amiga amiga2date allocatetagitems  \
@@ -54,72 +55,25 @@ ALL_FUNCTIONS	:= $(FUNCTIONS)
 %filter_replace FUNCTIONS
 %filter_replace FILES
 
-DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)
-
 # The filename of the linklib or shared Linux lib
+EXTRA_LIBS    := -L$(LIBDIR) -larosc
+EXTRA_DEPLIBS := $(LIBDIR)/libarosc.a
+
 %prepare_shlib utility $(SHARED_UTILITY)
 
-# ***** Native ***************
-ifeq ($(FLAVOUR),native)
+%genromlib
 
-kernel : $(OSMODDIR)/utility.library
+#MM kernel : setup includes linklibs
+kernel : show-flags $(LIB)
 
-# The options for the linker
-LIBS	    := -L$(LIBDIR) -lutility -larosc
-
-# The names of the linklibs utility.library depends on
-LIBLIST     := utility arosc
-
-# The filenames of the linklibs utility.library depends on
-LIBDEPS     := $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
-
-OBJS	    := $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
-INITFUNC    := $(OBJDIR)/$(INIT_FILE).o
-ENDFUNC     := $(OBJDIR)/$(END_FILE).o
-
-$(OSMODDIR)/utility.library: $(INITFUNC) $(ENDFUNC) $(LIBDEPS)
-	@echo "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee utilitylib.map
-	@if test ! -s utilitylib.map; then rm utilitylib.map ; else true ; fi
-	@strip $@
-
-# ***** Not Native ***************
-else
-
-#MM
-kernel : $(LIB)
-
-OBJS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
-
-# ***** END ***************
-endif
-
-$(LIB) : $(OBJS)
-	%mklib_q
-	@$(RM) $(RMLIB)
-
-#MM
-setup :
-	%mkdirs_q $(OSGENDIR) $(OBJDIR)
-	@echo "CFLAGS=$(CFLAGS)"
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) *.err $(LIB)
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
+#MM setup
+#MM clean
 
 %asm_rule "$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES)"
 
 %ctoasm_q
 
-%additional_objs_rule
-
-%genlib
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+DEPS := $(foreach f,$(SYS_FILES) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
 
 %common
 %include_deps

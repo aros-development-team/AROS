@@ -67,12 +67,14 @@ ALL_FILES   := $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
 OBJS	    := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 #MM kernel : setup includes kernel-setup dos-$(ARCH)
-kernel : $(LIB)
+kernel : show-flags $(LIB)
+
+show-flags :
+	@echo "CFLAGS=$(CFLAGS)"
 
 #MM
 setup :
 	%mkdirs_q $(OBJDIR) $(LIBDIR)
-	@echo "CFLAGS=$(CFLAGS)"
 
 #MM
 clean ::
