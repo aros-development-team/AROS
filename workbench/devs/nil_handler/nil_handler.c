@@ -16,84 +16,25 @@
 #include <dos/filesystem.h>
 #include <proto/dos.h>
 #include <aros/libcall.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #include "nil_handler_gcc.h"
 #endif
 
+#include LC_LIBDEFS_FILE
+
 #include <string.h>
 
-static const char name[];
-static const char version[];
-static const APTR inittabl[4];
-static void *const functable[];
-struct nilbase *AROS_SLIB_ENTRY(init,nil_handler)();
-void AROS_SLIB_ENTRY(open,nil_handler)();
-BPTR AROS_SLIB_ENTRY(close,nil_handler)();
-BPTR AROS_SLIB_ENTRY(expunge,nil_handler)();
-int AROS_SLIB_ENTRY(null,nil_handler)();
-void AROS_SLIB_ENTRY(beginio,nil_handler)();
-LONG AROS_SLIB_ENTRY(abortio,nil_handler)();
-static const char end;
+static int OpenDev(LIBBASETYPEPTR nilbase, struct IOFileSys *iofs);
 
-int nil_handler_zentry(void)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, nilbase)
 {
-    /* If the handler was executed by accident return error code. */
-    return -1;
-}
+    AROS_SET_LIBFUNC_INIT
 
-const struct Resident nil_handler_resident=
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&nil_handler_resident,
-    (APTR)&end,
-    RTF_AUTOINIT | RTF_AFTERDOS,
-    41,
-    NT_DEVICE,
-    -127,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl
-};
-
-static const char name[]="nil.handler";
-
-static const char version[]="$VER: nil-handler 41.1 (8.6.96)\r\n";
-
-static const APTR inittabl[4]=
-{
-    (APTR)sizeof(struct nilbase),
-    (APTR)functable,
-    NULL,
-    &AROS_SLIB_ENTRY(init,nil_handler)
-};
-
-static void *const functable[]=
-{
-    &AROS_SLIB_ENTRY(open,nil_handler),
-    &AROS_SLIB_ENTRY(close,nil_handler),
-    &AROS_SLIB_ENTRY(expunge,nil_handler),
-    &AROS_SLIB_ENTRY(null,nil_handler),
-    &AROS_SLIB_ENTRY(beginio,nil_handler),
-    &AROS_SLIB_ENTRY(abortio,nil_handler),
-    (void *)-1
-};
-
-AROS_UFH3(struct nilbase *, AROS_SLIB_ENTRY(init,nil_handler),
-    AROS_UFHA(struct nilbase *, nilbase, D0),
-    AROS_UFHA(BPTR,             segList, A0),
-    AROS_UFHA(struct ExecBase *, sysBase, A6)
-)
-{
-    AROS_USERFUNC_INIT
-
-    /* Store arguments */
-    nilbase->sysbase=sysBase;
-    nilbase->seglist=segList;
     nilbase->dosbase=(struct DosLibrary *)OpenLibrary("dos.library",39);
     if(nilbase->dosbase!=NULL)
     {
-	if (!segList) /* Are we a ROM module? */
+	if (nilbase->seglist==NULL) /* Are we a ROM module? */
 	{
 	    struct DeviceNode *dn;
             /* Install NIL: handler into device list
@@ -105,15 +46,11 @@ AROS_UFH3(struct nilbase *, AROS_SLIB_ENTRY(init,nil_handler),
 	    {
 	        struct IOFileSys dummyiofs;
 
-	        AROS_LC3(void, open,
-	        AROS_UFHA(struct IOFileSys *, &dummyiofs, A1),
-    	        AROS_UFHA(ULONG,              0, D0),
-	        AROS_UFHA(ULONG,              0, D1),
-	     	         struct nilbase *, nilbase, 1, nil_handler);
-
-  	        if (!dummyiofs.IOFS.io_Error)
-	        {
+		if (OpenDev(nilbase, &dummyiofs))
+		{
 		    STRPTR s = (STRPTR)(((IPTR)dn + sizeof(struct DeviceNode) + 4) & ~3);
+
+		    nilbase->device.dd_Library.lib_OpenCnt++;
 
 	    	    AROS_BSTR_putchar(s, 0, 'N');
 	    	    AROS_BSTR_putchar(s, 1, 'I');
@@ -129,131 +66,92 @@ AROS_UFH3(struct nilbase *, AROS_SLIB_ENTRY(init,nil_handler),
 	    	    dn->dn_NewName = AROS_BSTR_ADDR(dn->dn_OldName);
 
 		    if (AddDosEntry((struct DosList *)dn))
-		        return nilbase;
+		        return TRUE;
 	        }
 
 	        FreeMem(dn, sizeof (struct DeviceNode));
 	    }
 	}
         else
-	    return nilbase;
+	    return TRUE;
     }
 
-    return NULL;
-    AROS_USERFUNC_EXIT
+    return FALSE;
+    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_LH3(void, open,
- AROS_LHA(struct IOFileSys *, iofs, A1),
- AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D1),
-	   struct nilbase *, nilbase, 1, nil_handler)
+AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
+		     LIBBASETYPE, nilbase,
+		     struct IOFileSys, iofs,
+		     unitnum,
+		     flags
+)
 {
-    AROS_LIBFUNC_INIT
-    ULONG *dev;
-
-    /* Get compiler happy */
-    unitnum=flags=0;
-
-    /* I have one more opener. */
-    nilbase->device.dd_Library.lib_OpenCnt++;
+    AROS_SET_DEVFUNC_INIT
 
     /* Mark Message as recently used. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
 
+    if (OpenDev(nilbase, iofs))
+	return TRUE;
+
+    iofs->IOFS.io_Error=IOERR_OPENFAIL;
+
+    return FALSE;
+
+    AROS_SET_DEVFUNC_EXIT
+}
+
+static int OpenDev(LIBBASETYPEPTR nilbase, struct IOFileSys *iofs)
+{
+    ULONG *dev;
+    
     dev=AllocMem(sizeof(ULONG),MEMF_PUBLIC|MEMF_CLEAR);
     if(dev!=NULL)
     {
         iofs->IOFS.io_Unit   = (struct Unit *)dev;
         iofs->IOFS.io_Device = &nilbase->device;
-    	nilbase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
     	iofs->IOFS.io_Error = 0;
-    	return;
-    }else
+    	return TRUE;
+    }
+    else
+    {
 	iofs->io_DosError=ERROR_NO_FREE_STORE;
-
-    iofs->IOFS.io_Error=IOERR_OPENFAIL;
-    nilbase->device.dd_Library.lib_OpenCnt--;
-
-    AROS_LIBFUNC_EXIT
+	return FALSE;
+    }
 }
 
-AROS_LH1(BPTR, close,
- AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct nilbase *, nilbase, 2, nil_handler)
+
+AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
+		      LIBBASETYPE, nilbase,
+		      struct IOFileSys, iofs
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
     ULONG *dev;
 
     dev=(ULONG *)iofs->IOFS.io_Unit;
     if(*dev)
     {
 	iofs->io_DosError=ERROR_OBJECT_IN_USE;
-	return 0;
+	return FALSE;
     }
 
     /* Let any following attemps to use the device crash hard. */
-    iofs->IOFS.io_Device=(struct Device *)-1;
     FreeMem(dev,sizeof(ULONG));
     iofs->io_DosError=0;
 
-    /* I have one fewer opener. */
-    if(!--nilbase->device.dd_Library.lib_OpenCnt)
-    {
-	/* Delayed expunge pending? */
-	if(nilbase->device.dd_Library.lib_Flags&LIBF_DELEXP)
-	    /* Then expunge the device */
-	    return expunge();
-    }
-    return 0;
-    AROS_LIBFUNC_EXIT
+    return TRUE;
+    AROS_SET_DEVFUNC_EXIT
 }
 
-AROS_LH0(BPTR, expunge, struct nilbase *, nilbase, 3, nil_handler)
-{
-    AROS_LIBFUNC_INIT
-
-    BPTR ret;
-    /*
-	This function is single-threaded by exec by calling Forbid.
-	Never break the Forbid() or strange things might happen.
-    */
-
-    /* Test for openers. */
-    if(nilbase->device.dd_Library.lib_OpenCnt || !nilbase->seglist)
-    {
-	/* Set the delayed expunge flag and return. */
-	nilbase->device.dd_Library.lib_Flags|=LIBF_DELEXP;
-	return 0;
-    }
-
-    /* Free all resources */
-    CloseLibrary((struct Library *)nilbase->dosbase);
-
-    /* Get rid of the device. Remove it from the list. */
-    Remove(&nilbase->device.dd_Library.lib_Node);
-
-    /* Get returncode here - FreeMem() will destroy the field. */
-    ret=nilbase->seglist;
-
-    /* Free the memory. */
-    FreeMem((char *)nilbase-nilbase->device.dd_Library.lib_NegSize,
-	    nilbase->device.dd_Library.lib_NegSize+nilbase->device.dd_Library.lib_PosSize);
-
-    return ret;
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0I(int, null, struct nilbase *, nilbase, 4, nil_handler)
-{
-    AROS_LIBFUNC_INIT
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
+ADD2INITLIB(GM_UNIQUENAME(Init),0)
+ADD2OPENDEV(GM_UNIQUENAME(Open),0)
+ADD2CLOSEDEV(GM_UNIQUENAME(Close),0)
 
 AROS_LH1(void, beginio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct nilbase *, nilbase, 5, nil_handler)
+	   struct nilbase *, nilbase, 5, Nil)
 {
     AROS_LIBFUNC_INIT
     LONG error=0;
@@ -326,12 +224,10 @@ AROS_LH1(void, beginio,
 
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct nilbase *, nilbase, 6, nil_handler)
+	   struct nilbase *, nilbase, 6, Nil)
 {
     AROS_LIBFUNC_INIT
     /* Everything already done. */
     return 0;
     AROS_LIBFUNC_EXIT
 }
-
-static const char end=0;

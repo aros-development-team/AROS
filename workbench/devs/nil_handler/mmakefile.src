@@ -6,8 +6,7 @@ include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -DDEBUG=0
 
-%build_module_macro mmake=workbench-fs-nil modname=nil \
-  modtype=handler initfile=nil_handler funcs= files= \
-  uselibs="amiga rom"
+%build_module mmake=workbench-fs-nil \
+    modname=nil modtype=device modsuffix=handler \
+    files=nil_handler uselibs="amiga rom"
 
-%common

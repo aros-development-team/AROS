@@ -20,9 +20,6 @@ struct nilbase
     BPTR seglist;
 };
 
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct nilbase *, nilbase, 3, nil_handler)
-
 #ifdef SysBase
     #undef SysBase
 #endif
