@@ -60,6 +60,9 @@ struct MUI_RenderInfo;
 #ifndef __AROS__
 char *StrDup(char *x);
 #define AROS_LONG2BE(x) (x)
+int snprintf(char *buf, int size, const char *fmt, ...);
+int strlcat(char *buf, char *src, int len);
+
 #endif
 
 ULONG DoSetupMethod(Object *obj, struct MUI_RenderInfo *info);

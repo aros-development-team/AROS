@@ -166,11 +166,27 @@ void *List_First(APTR list)
 
 int snprintf(char *buf, int size, const char *fmt, ...)
 {
-	int ret;
-	va_list argptr;
-	va_start(argptr,fmt);
-	ret = vsprintf(buf,fmt,argptr);
-	va_end(argptr);
-	return ret;
+    int ret;
+    va_list argptr;
+    va_start(argptr,fmt);
+    ret = vsprintf(buf,fmt,argptr);
+    va_end(argptr);
+    return ret;
 }
+
+int strlcat(char *buf, char *src, int len)
+{
+    int l = strlen(buf);
+    buf += l;
+    len -= l;
+
+    if (len>0)
+    {
+	int i;
+	for (i=0; i < len - 1 && *src; i++)
+	    *buf++ = *src++;
+	*buf = 0;
+    }
+}
+
 #endif
