@@ -111,6 +111,11 @@ extern LONG driver_BltBitMap ( struct BitMap * srcBitMap, LONG xSrc,
 			LONG ySrc, struct BitMap * destBitMap, LONG xDest,
 			LONG yDest, LONG xSize, LONG ySize, ULONG minterm,
 			ULONG mask, PLANEPTR tempA, struct GfxBase *);
+extern VOID driver_BltBitMapRastPort(struct BitMap *,  LONG, LONG,
+			    struct RastPort *, LONG, LONG , LONG, LONG,
+			    ULONG, struct GfxBase *);
+VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort * destRP,
+	LONG xDest, LONG yDest, LONG xSize, LONG ySize, struct GfxBase *GfxBase);
 extern int driver_CloneRastPort (struct RastPort *, struct RastPort *,
 			struct GfxBase *);
 extern void driver_CloseFont (struct TextFont *, struct GfxBase *);
@@ -132,6 +137,14 @@ extern struct TextFont * driver_OpenFont (struct TextAttr *,
 extern void driver_PolyDraw (struct RastPort *, LONG, WORD *,
 			    struct GfxBase *);
 extern ULONG driver_ReadPixel (struct RastPort *, LONG, LONG,
+			    struct GfxBase *);
+extern LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
+			    ULONG ystart, ULONG xstop, ULONG ystop,
+			    UBYTE * array, struct RastPort * temprp,
+			    struct GfxBase *);
+extern LONG driver_ReadPixelLine8 (struct RastPort * rp, ULONG xstart,
+			    ULONG ystart, ULONG width,
+			    UBYTE * array, struct RastPort * temprp,
 			    struct GfxBase *);
 extern void driver_RectFill (struct RastPort *, LONG, LONG, LONG, LONG,
 			    struct GfxBase *);
@@ -155,16 +168,21 @@ extern ULONG driver_SetWriteMask (struct RastPort *, ULONG, struct GfxBase *);
 extern void driver_Text (struct RastPort *, STRPTR, LONG, struct GfxBase *);
 extern WORD driver_TextLength (struct RastPort *, STRPTR, ULONG,
 			    struct GfxBase *);
+extern VOID driver_WriteChunkyPixels(struct RastPort *rp,
+		ULONG, ULONG, ULONG, ULONG,
+		UBYTE *, LONG, struct GfxBase *);
 extern LONG driver_WritePixel (struct RastPort *, LONG, LONG,
 			    struct GfxBase *);
 extern LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 			    ULONG ystart, ULONG xstop, ULONG ystop,
 			    UBYTE * array, struct RastPort * temprp,
 			    struct GfxBase *);
+extern LONG driver_WritePixelLine8 (struct RastPort * rp, ULONG xstart,
+			    ULONG ystart, ULONG width,
+			    UBYTE * array, struct RastPort * temprp,
+			    struct GfxBase *);
+			    
 extern void driver_WaitTOF (struct GfxBase *);
 
-extern VOID driver_BltBitMapRastPort(struct BitMap *,  LONG, LONG,
-			    struct RastPort *, LONG, LONG , LONG, LONG,
-			    ULONG, struct GfxBase *);
 
 #endif /* GRAPHICS_INTERN_H */

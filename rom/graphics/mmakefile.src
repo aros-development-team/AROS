@@ -55,6 +55,7 @@ FUNCTIONS := \
 	bltbitmap \
 	bltbitmaprastport \
 	bltclear \
+	blttemplate \
 	clearrectregion \
 	clearregion \
 	clipblit \
@@ -112,6 +113,8 @@ FUNCTIONS := \
 	orregionregion \
 	polydraw \
 	readpixel \
+	readpixelarray8 \
+	readpixelline8 \
 	rectfill \
 	remfont \
 	remvsprite \
@@ -141,8 +144,10 @@ FUNCTIONS := \
 	ucopperlistinit \
 	waittof \
 	weightamatch \
+	writechunkypixels \
 	writepixel \
 	writepixelarray8 \
+	writepixelline8 \
 	xorrectregion \
 	xorregionregion
 
