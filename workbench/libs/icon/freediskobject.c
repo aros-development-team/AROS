@@ -45,8 +45,12 @@ extern const IPTR IconDesc[];
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
-
-    FreeStruct ((APTR)diskobj, IconDesc);
+    
+    void **mem = (void**)diskobj;
+    mem--;
+    
+    /* It's enough to free our pool */
+    DeletePool(mem[0]);
 
     AROS_LIBFUNC_EXIT
 } /* FreeDiskObject */
