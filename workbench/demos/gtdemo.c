@@ -1,10 +1,10 @@
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
-    $Id$
+   (C) 1997 AROS - The Amiga Replacement OS
+   $Id$
 
-    Desc: Demo for gadtools.library
-    Lang: english
-*/
+   Desc: Demo for gadtools.library
+   Lang: english
+ */
 
 #include <aros/config.h>
 
@@ -35,15 +35,16 @@
 struct IntuitionBase *IntuitionBase;
 struct Library *GadToolsBase;
 
-APTR		vi;
-struct Screen * scr;
-struct Window * win;
-struct Gadget * glist;
+APTR vi;
+struct Screen *scr;
+struct Window *win;
+struct Gadget *glist = NULL;
 
-struct Gadget * button;
+struct Gadget *button;
 
 #define ID_BUTTON 1
 #define ID_CHECKBOX 2
+#define ID_MX 3
 
 struct NewGadget buttongad =
 {
@@ -59,19 +60,32 @@ struct NewGadget checkbox =
     ID_CHECKBOX, PLACETEXT_RIGHT, NULL, NULL
 };
 
+struct NewGadget mxgad =
+{
+    210, 40, 0, 0,
+    "Mutual Exclude (3)", NULL,
+    ID_MX, PLACETEXT_ABOVE, NULL, NULL
+};
+
+STRPTR mxlabels[] =
+{
+    "Label 1",
+    "Label 2",
+    "Label 3",
+    NULL
+};
+
 
 BOOL openlibs()
 {
-    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
+    IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 37);
     GadToolsBase = OpenLibrary("gadtools.library", 0);
-    if (!IntuitionBase)
-    {
+    if (!IntuitionBase) {
 	printf("GTDemo: Error opening intuition.library\n");
 	return FALSE;
     }
-    if (!GadToolsBase)
-    {
-	printf("GTDemo: Error opening gadtools.library\n");
+    if (!GadToolsBase) {
+        printf("GTDemo: Error opening gadtools.library\n");
 	return FALSE;
     }
     return TRUE;
@@ -80,15 +94,14 @@ BOOL openlibs()
 void closelibs()
 {
     CloseLibrary(GadToolsBase);
-    CloseLibrary((struct Library *)IntuitionBase);
+    CloseLibrary((struct Library *) IntuitionBase);
 }
 
 
-struct Gadget * gt_init()
+struct Gadget *gt_init()
 {
-    struct Gadget * gad = NULL;
+    struct Gadget *gad = NULL;
 
-    glist = NULL;
     scr = LockPubScreen(NULL);
     vi = GetVisualInfoA(scr, NULL);
     if (vi != NULL)
@@ -116,7 +129,8 @@ BOOL openwin()
 			 WA_IDCMP,
 			     BUTTONIDCMP |
 			     CHECKBOXIDCMP |
-			     IDCMP_GADGETUP |
+			     MXIDCMP |
+                             IDCMP_GADGETUP |
 			     IDCMP_RAWKEY |
 			     IDCMP_CLOSEWINDOW |
 			     IDCMP_REFRESHWINDOW,
@@ -125,8 +139,7 @@ BOOL openwin()
 			 WA_DragBar, TRUE,
 			 WA_CloseGadget, TRUE,
 			 TAG_DONE);
-    if (!win)
-    {
+    if (!win) {
 	printf("GTDemo: Error opening window\n");
 	return FALSE;
     }
@@ -134,23 +147,28 @@ BOOL openwin()
 }
 
 
-struct Gadget * makegadgets(struct Gadget *gad)
+struct Gadget *makegadgets(struct Gadget *gad)
 {
-    struct Gadget *glist = gad;
-
     buttongad.ng_VisualInfo = vi;
     checkbox.ng_VisualInfo = vi;
+    mxgad.ng_VisualInfo = vi;
+
     gad = CreateGadget(BUTTON_KIND, gad, &buttongad,
-		       GA_Immediate, TRUE,
-		       TAG_DONE);
+                       GA_Immediate, TRUE,
+                       TAG_DONE);
     button = gad;
     gad = CreateGadget(CHECKBOX_KIND, gad, &checkbox,
-		       GTCB_Checked, FALSE,
-		       GTCB_Scaled, TRUE, TAG_DONE);
-    if (!gad)
-    {
-	FreeGadgets(glist);
-	printf("GTDemo: Error creating gadgets\n");
+                       GTCB_Checked, FALSE,
+                       GTCB_Scaled, TRUE,
+                       TAG_DONE);
+    gad = CreateGadget(MX_KIND, gad, &mxgad,
+		       GTMX_Labels, &mxlabels,
+		       TAG_DONE);
+
+
+    if (!gad) {
+        FreeGadgets(glist);
+        printf("GTDemo: Error creating gadgets\n");
     }
     return gad;
 }
@@ -158,41 +176,38 @@ struct Gadget * makegadgets(struct Gadget *gad)
 void draw_bevels(struct Window *win, APTR vi)
 {
     DrawBevelBox(win->RPort, 10, 10, 80, 80,
-		 GT_VisualInfo, (IPTR)vi, TAG_DONE);
+                 GT_VisualInfo, (IPTR) vi, TAG_DONE);
     DrawBevelBox(win->RPort, 110, 10, 80, 80,
-		 GTBB_Recessed, TRUE,
-		 GT_VisualInfo, (IPTR)vi, TAG_DONE);
+                 GTBB_Recessed, TRUE,
+                 GT_VisualInfo, (IPTR) vi, TAG_DONE);
     DrawBevelBox(win->RPort, 10, 110, 80, 80,
-		 GTBB_FrameType, BBFT_RIDGE,
-		 GT_VisualInfo, (IPTR)vi, TAG_DONE);
+                 GTBB_FrameType, BBFT_RIDGE,
+                 GT_VisualInfo, (IPTR) vi, TAG_DONE);
     DrawBevelBox(win->RPort, 110, 110, 80, 80,
-		 GTBB_FrameType, BBFT_RIDGE, GTBB_Recessed, TRUE,
-		 GT_VisualInfo, (IPTR)vi, TAG_DONE);
+                 GTBB_FrameType, BBFT_RIDGE, GTBB_Recessed, TRUE,
+                 GT_VisualInfo, (IPTR) vi, TAG_DONE);
     DrawBevelBox(win->RPort, 10, 210, 80, 80,
-		 GTBB_FrameType, BBFT_ICONDROPBOX,
-		 GT_VisualInfo, (IPTR)vi, TAG_DONE);
+                 GTBB_FrameType, BBFT_ICONDROPBOX,
+                 GT_VisualInfo, (IPTR) vi, TAG_DONE);
     DrawBevelBox(win->RPort, 110, 210, 80, 80,
-		 GTBB_FrameType, BBFT_ICONDROPBOX, GTBB_Recessed, TRUE,
-		 GT_VisualInfo, (IPTR)vi, TAG_DONE);
+                 GTBB_FrameType, BBFT_ICONDROPBOX, GTBB_Recessed, TRUE,
+                 GT_VisualInfo, (IPTR) vi, TAG_DONE);
 }
 
 void handlewin()
 {
     BOOL ready = FALSE;
-    struct IntuiMessage * msg;
+    struct IntuiMessage *msg;
 
-    while (ready == FALSE)
-    {
+    while (ready == FALSE) {
 	WaitPort(win->UserPort);
 	msg = GT_GetIMsg(win->UserPort);
-	if (msg != NULL)
-	{
-	    switch(msg->Class)
-	    {
+	if (msg != NULL) {
+	    switch (msg->Class) {
 	    case IDCMP_REFRESHWINDOW:
 		GT_BeginRefresh(win);
-		draw_bevels(win,vi);
-		GT_EndRefresh(win,TRUE);
+		draw_bevels(win, vi);
+		GT_EndRefresh(win, TRUE);
 		break;
 	    case IDCMP_CLOSEWINDOW:
 	    case IDCMP_RAWKEY:
@@ -200,30 +215,49 @@ void handlewin()
 		break;
 	    case IDCMP_GADGETDOWN:
 		printf("Gadget %d pressed",
-		       ((struct Gadget *)msg->IAddress)->GadgetID);
+		       ((struct Gadget *) msg->IAddress)->GadgetID);
+                switch (((struct Gadget *) msg->IAddress)->GadgetID) {
+                case ID_MX:{
+                    IPTR active;
+                    struct TagItem gettags[] =
+                    {
+                        {GTMX_Active, (IPTR) NULL},
+                        {TAG_DONE, 0UL}};
+                    gettags[0].ti_Data = (IPTR) & active;
+
+                    GT_GetGadgetAttrs((struct Gadget *) msg->IAddress, win, NULL,
+                                      GTMX_Active, (IPTR) & active, TAG_DONE);
+                    printf(" (%ld)", active);
+                    break;
+                }
+                }
+                printf("\n");
+                break;
 	    case IDCMP_GADGETUP:
 		printf("Gadget %d released",
-		       ((struct Gadget *)msg->IAddress)->GadgetID);
-		switch (((struct Gadget *)msg->IAddress)->GadgetID)
-		{
+		       ((struct Gadget *) msg->IAddress)->GadgetID);
+		switch (((struct Gadget *) msg->IAddress)->GadgetID) {
 		case ID_BUTTON:
 		    ready = TRUE;
 		    break;
-		case ID_CHECKBOX: {
-		    IPTR checked;
-		    struct TagItem gettags[] = {{GTCB_Checked, (IPTR)NULL}, {TAG_DONE, 0}};
-		    gettags[0].ti_Data = (IPTR)&checked;
+		case ID_CHECKBOX:{
+                    IPTR checked;
+                    struct TagItem gettags[] =
+                    {
+                        {GTCB_Checked, (IPTR) NULL},
+                        {TAG_DONE, 0UL}};
+                    gettags[0].ti_Data = (IPTR) & checked;
 
-		    printf(" (%ld)", GT_GetGadgetAttrs((struct Gadget *)msg->IAddress,
-				      win, NULL,
-				      GTCB_Checked, (IPTR)&checked, TAG_DONE));
-		    if (checked)
-			printf(" (checked)");
-		    else
-			printf(" (not checked)");
-		    GT_SetGadgetAttrs(button, win, NULL,
-				      GA_Disabled, checked, TAG_DONE);
-		    break; }
+                    GT_GetGadgetAttrs((struct Gadget *) msg->IAddress, win, NULL,
+                                      GTCB_Checked, (IPTR) & checked, TAG_DONE);
+                    if (checked)
+                        printf(" (checked)");
+                    else
+                        printf(" (not checked)");
+                    GT_SetGadgetAttrs(button, win, NULL,
+                                      GA_Disabled, checked, TAG_DONE);
+                    break;
+                }
 		}
 		printf("\n");
 		break;
@@ -240,17 +274,14 @@ int main()
 
     RT_Init();
 
-    if (openlibs() != FALSE)
-    {
+    if (openlibs() != FALSE) {
 	struct Gadget *gad;
 
 	gad = gt_init();
 	gad = makegadgets(gad);
-	if (gad != NULL)
-	{
-	    if (openwin() != FALSE)
-	    {
-		draw_bevels(win,vi);
+	if (gad != NULL) {
+	    if (openwin() != FALSE) {
+		draw_bevels(win, vi);
 		handlewin();
 		CloseWindow(win);
 	    } else
@@ -264,5 +295,5 @@ int main()
 
     RT_Exit();
 
-    return(error);
+    return (error);
 }
