@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
-    Lang: english
+    Lang: English
 */
 #include "dos_intern.h"
 
@@ -23,11 +23,18 @@
 
 /*  FUNCTION
 
+    Set up a process to be a shell.
+
     INPUTS
+
+    dp  --  startup arguments specified as a packet
 
     RESULT
 
     NOTES
+
+    This function is obsolete for the same reasons as CliInitNewCli()
+    and should not be used.
 
     EXAMPLE
 
@@ -35,20 +42,18 @@
 
     SEE ALSO
 
+    CliInitNewCli()
+
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-#warning TODO: Write dos/CliInitRun()
-    aros_print_not_implemented ("CliInitRun");
+    return 0;
 
-    return 0L;
     AROS_LIBFUNC_EXIT
 } /* CliInitRun */

@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
-    Lang: english
+    Lang: English
 */
 #include "dos_intern.h"
 
@@ -23,11 +23,20 @@
 
 /*  FUNCTION
 
+    Set up a process to be a shell using a startup packet.
+
     INPUTS
+
+    packet  --  startup arguments passed as a packet
 
     RESULT
 
     NOTES
+
+    This function is obsolete as AROS don't use packets. There is no need
+    for this function as functionality is added in other places to deal
+    with things taken care of by this function. Furthermore, the Amiga
+    startup packet interface was a pile of crap.
 
     EXAMPLE
 
@@ -35,20 +44,18 @@
 
     SEE ALSO
 
+    CliInitRun()
+
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-#warning TODO: Write dos/CliInitNewcli()
-    aros_print_not_implemented ("CliInitNewcli");
+    return 0;
 
-    return 0L;
     AROS_LIBFUNC_EXIT
 } /* CliInitNewcli */
