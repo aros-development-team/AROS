@@ -20,9 +20,11 @@ int strlcat(char *buf, char *src, int len);
 #ifdef __MAXON__
 #   define __asm
 #   define __inline
-#   define __saveds
+#   define SAVEDS
 #   define const
-#endif /* __MAXON__ */
+#else
+#   define SAVEDS __saveds
+#endif 
 
 /*** AROS types *************************************************************/
 #ifndef __AROS_TYPES_DEFINED__
