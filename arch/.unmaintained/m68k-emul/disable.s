@@ -1,33 +1,67 @@
-#    (C) 1995-96 AROS - The Amiga Replacement OS
-#    $Id$
-#    $Log$
-#    Revision 1.3  1996/12/05 15:30:59  aros
-#    Patches by Geert Uytterhoeven integrated
-#
-#    Revision 1.2  1996/08/01 17:41:30  digulla
-#    Added standard header for all files
-#
-#    Desc:
-#    Lang:
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
 
-	.include "machine.i"
+    Desc: Exec function Disable
+    Lang: english
+*/
 
-	.globl	_Exec_Disable
-	.type	_Exec_Disable,@function
-_Exec_Disable:
-	# increment nesting count and return
-	addqb	#1,%a6@(IDNestCnt)
+/******************************************************************************
+
+    NAME
+        AROS_LH0(void, Disable,
+
+    LOCATION
+        struct ExecBase *, SysBase, 20, Exec)
+
+    FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
+	#include "machine.i"
+
+	.text
+	.balign 16
+	.globl	AROS_SLIB_ENTRY(Disable,Exec)
+	.type	AROS_SLIB_ENTRY(Disable,Exec),@function
+
+AROS_SLIB_ENTRY(Disable,Exec):
+	bsr.w	AROS_CDEFNAME(disable)
+	linkw	%fp,#0
+	move.l	%a2,-(%sp)
+	/* Get SysBase */
+	move.l	8(%fp),%a2
+	/* increment nesting count and return */
+	addq.b	#1,IDNestCnt(%a2)
+	move.l	-4(%fp),%a2
+	unlk	%fp
 	rts
 
-	.globl	disable
-	.type	disable,@function
-disable:
-	moveq	#-1,%d0
-	movel	%d0,%sp@-
-	moveq	#0,%d0
-	movel	%d0,%sp@-
-	pea	%sp@(4)
-	movel	%d0,%sp@-
-	jsr	sigprocmask
-	lea	%sp@(16),%sp
+	.globl	AROS_CDEFNAME(disable)
+	.type	AROS_CDEFNAME(disable),@function
+AROS_CDEFNAME(disable):
+	linkw	%fp,#0
+	move.l	#-1,-(%sp)
+	clr.l	-(%sp)
+	pea	4(%sp)
+	clr.l	-(%sp)
+	jbsr	AROS_CSYMNAME(sigprocmask)
+	unlk	%fp
 	rts
+
