@@ -4,3 +4,6 @@
 *.lnk
 SCOPTIONS
 mmakefile
+Zune.map
+Zune
+Zune.debug
