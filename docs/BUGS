@@ -2,7 +2,7 @@ Outstanding bugs:
 BUG000021 BUG000026 BUG000037 BUG000058 BUG000063
 BUG000068 BUG000070 BUG000074 BUG000075 BUG000076
 BUG000077 BUG000078 BUG000079 BUG000081 BUG000082
-BUG000083
+BUG000083 BUG000087
 
 
 
@@ -607,5 +607,11 @@ adam.chodorowski@chello.se
 The catalog rom/dos/catalogs/polski.ct is not an polish translation as the name
 suggests, but a german one.
 
+BUG000087 
+adam.chodorowski@chello.se
+The mouse handling in native/i386 is buggy. If you hold a mouse button pressed, 
+it doesn't stay pressed. After about one second, the OS thinks the button has
+been released and quickly pressed again. So you have problems moving windows or
+get automatic doubleclick (bad for filerequesters and save buttons...).
 
 !! Keep the list of outstanding bugs at the top up-to-date
