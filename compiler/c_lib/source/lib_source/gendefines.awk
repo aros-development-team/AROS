@@ -206,6 +206,53 @@ function emit_struct(tname)
 	}
         print ")\n"
 
+        #emit variadic macros for tag-based functions
+        do_emit_vararg = 0
+        if (fname ~ /A$/)
+        {
+            vname = sprintf("%.*s", length(fname)-1, fname)
+            do_emit_vararg = 1
+        }
+        else
+        if (fname ~ /TagList$/)
+        {
+            vname = sprintf("%.*sTags", length(fname)-7, fname)
+            do_emit_vararg = 1
+        }
+        else
+        if (fname ~ /Args$/ && (tolower(arg[narg-1, 2]) == "args") || (tolower(arg[narg-1, 2]) == "arglist"))
+        {
+            vname = sprintf("%.*s", length(fname)-4, fname)
+            do_emit_vararg = 1
+        }
+        else
+        if (arg[narg-1, 1] ~ /struct[ \t]+TagItem[ \t]*[*]/)
+        {
+            vname = fname "Tags"
+            do_emit_vararg = 1
+        }
+
+        if (do_emit_vararg)
+        {
+            print "#if !defined(NO_INLINE_STDARG) && !defined(" BASENAME "_NO_INLINE_STDARG)"
+
+            printf "#define %s(", vname
+            for (t=0; t<narg-1; t++)
+	    {
+                printf "%s, ", arg[t, 2]
+	    }
+            print "args...) \\"
+            print "({ \\"
+            print "     IPTR __args[] = { args }; \\"
+            printf "     %s(", fname
+            for (t=0; t<narg-1; t++)
+	    {
+                printf "(%s), ", arg[t, 2]
+	    }
+            printf "(%s)__args); \\\n", arg[narg-1, 1]
+            print "})"
+            print "#endif /* !NO_INLINE_STDARG */\n"
+        }
    }
     narg=0;
 }
