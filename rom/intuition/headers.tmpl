@@ -66,6 +66,9 @@ IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
 #endif /* !USE_BOOPSI_STUBS */
 #endif
 
+IPTR DoSuperNewA(Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, struct TagItem *tags);
+IPTR DoSuperNewTags(Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, ULONG methodID, ...);
+
 #ifndef CLIB_BOOPSI_PROTOS_H /* Prevent name clashes */
 IPTR CallHookA (struct Hook * hook, APTR obj, APTR param);
 IPTR CallHook (struct Hook * hook, APTR obj, ...);
