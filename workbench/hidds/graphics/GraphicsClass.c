@@ -1118,7 +1118,7 @@ static BOOL hiddgfx_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 
 static VOID hiddgfx_copybox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBox *msg)
 {
-    UWORD x, y;
+    WORD x, y;
     WORD  srcX = msg->srcX, destX = msg->destX;
     WORD  srcY = msg->srcY, destY = msg->destY;
     WORD  startX, endX, deltaX, startY, endY, deltaY;
@@ -1150,20 +1150,20 @@ static VOID hiddgfx_copybox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
     
     if (srcX < destX)
     {
-    	startX = msg->width - 1;  endX = 0; deltaX = -1;
+    	startX = msg->width - 1;  endX = -1; deltaX = -1;
     }
     else
     {
-    	startX = 0; endX = msg->width - 1;  deltaX = 1;
+    	startX = 0; endX = msg->width;  deltaX = 1;
     }
  
     if (srcY < destY)
     {
-	startY = msg->height - 1; endY = 0; deltaY = -1;
+	startY = msg->height - 1; endY = -1; deltaY = -1;
     }
     else
     {
-	startY = 0; endY = msg->height - 1; deltaY = 1;
+	startY = 0; endY = msg->height; deltaY = 1;
     }
     
     /* Get the source pixel format */
