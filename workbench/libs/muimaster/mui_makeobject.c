@@ -201,6 +201,7 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 ULONG *para
 
 	case MUIO_Menuitem: /* STRPTR label, STRPTR shortcut, ULONG flags, ULONG data  */
 	    break;
+#endif
 
 	case MUIO_BarTitle: /* STRPTR label */
 	    return MUI_NewObject(MUIC_Rectangle,
@@ -211,7 +212,6 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 ULONG *para
 
 	case MUIO_NumericButton: /* STRPTR label, LONG min, LONG max, STRPTR format */
 	    break;
-#endif
     }
 
 
