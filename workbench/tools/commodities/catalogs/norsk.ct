@@ -1,0 +1,164 @@
+## version $VER: Commodities.catalog 1.0 (14.10.2001)
+## language norsk
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Kan ikke åpne %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Kan ikke låse offentlig skjerm!\n
+; Can't lock public screen!\n
+;
+MSG_CANT_GET_VI
+Kan ikke hente VisualInfo!\n
+; Can't get VisualInfo!\n
+;
+MSG_CANT_CREATE_GADGET
+Kan ikke lage knapper!\n
+; Can't create gadgets!\n
+;
+MSG_CANT_CREATE_MENUS
+Kan ikke lage menyer!\n
+; Can't create menus!\n
+;
+MSG_CANT_LAYOUT_MENUS
+Kan ikke plassere menyer!\n
+; Can't layout menus!\n
+;
+MSG_CANT_CREATE_WIN
+Kan ikke åpne vindu!\n
+; Can't create window!\n
+;
+MSG_CANT_ALLOCATE_MEM
+Kan ikke allokere programminne!\n
+; Can't allocate application memory!\n
+;
+MSG_CANT_CREATE_MSGPORT
+Kan ikke lage meldingsport!\n
+; Can't create message port!\n
+;
+MSG_CANT_CREATE_BROKER
+Kan ikke lage CxBroker-objekt!\n
+; Can't create CxBroker object!\n
+;
+MSG_CANT_CREATE_CUSTOM
+Kan ikke lage CxCustom-objekt!\n
+; Can't create CxCustom object!\n
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_MEN_PROJECT
+Prosjekt
+; Project
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Avslutt
+; Q\0Quit
+;
+MSG_EXCHANGE_CXNAME
+Exchange
+; Exchange
+;
+MSG_EXCHANGE_CXTITLE
+Commodities Exchange
+; Commodities Exchange
+;
+MSG_EXCHANGE_CXDESCR
+Kontrollerer systemets commodities
+; Controls system commodities
+;
+MSG_EXCHANGE_WINTITLE
+Exchange
+; Exchange
+;
+MSG_EXCHANGE_LISTVIEW
+Tilgjengelige commodities
+; Available commodities
+;
+MSG_EXCHANGE_INFO
+Informasjon
+; Information
+;
+MSG_EXCHANGE_GAD_SHOW
+Vise
+; Show
+;
+MSG_EXCHANGE_GAD_HIDE
+Gjem
+; Hide
+;
+MSG_EXCHANGE_GAD_REMOVE
+Ta bort
+; Remove
+;
+MSG_EXCHANGE_CYCLE_ACTIVE
+Aktiv
+; Active
+;
+MSG_EXCHANGE_CYCLE_INACTIVE
+Inaktiv
+; Inactive
+;
+MSG_BLANKER_CXNAME
+Blanker
+; Blanker
+;
+MSG_BLANKER_CXTITLE
+Systemets skjermsparer
+; System Screen Blanker
+;
+MSG_BLANKER_CXDESCR
+Blanker skjermen ved inaktivitet
+; Blanks screen when system inactive
+;
+MSG_CLICK2FNT_CXNAME
+ClickToFront
+; ClickToFront
+;
+MSG_CLICK2FNT_CXTITLE
+Klikk til Front-verktøy
+; Click To Front Utility
+;
+MSG_CLICK2FNT_CXDESCR
+Løfter vinduer til front
+; Click windows to front
+;
+MSG_OPAQUE_CXNAME
+Opaque
+; Opaque
+;
+MSG_OPAQUE_CXTITLE
+Solide vinduer
+; Opaque windows
+;
+MSG_OPAQUE_CXDESCR
+Sanntids vindusflytting
+; Realtime moving of windows
+;
+MSG_AUTOPOINT_CXNAME
+AutoPoint
+; AutoPoint
+;
+MSG_AUTOPOINT_CXTITLE
+Autopeker
+; Automatic window activator
+;
+MSG_AUTOPOINT_CXDESCR
+Aktiverer vinduet under muspilen
+; Activates the window under the mouse
+;
+MSG_STARTMENU_CXNAME
+StartMenu
+; StartMenu
+;
+MSG_STARTMENU_CXTITLE
+Systemets programstarter
+; System Program Starter
+;
+MSG_STARTMENU_CXDESCR
+Startar program fra meny
+; Program launch commodity
