@@ -16,9 +16,10 @@ LINKLIBS	:= \
 	$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a \
 	$(LIBDIR)/libarosm.a $(LIBDIR)/libarossupport.a
 
-#MM
+#MM boot-native-i386 : setup header-native-i386 Drivers-native \
+#MM		kernel-aros-linklib
 boot-native-i386 : setup $(OSGENDIR)/boot/bootsect $(OSGENDIR)/boot/setup \
-		    header-native-i386 $(LIB)
+		    $(LIB)
 	@$(NOP)
 
 #MM
@@ -32,8 +33,9 @@ clean ::
 setup ::
 	%mkdirs_q $(OBJDIR) $(LIBDIR)/boot
 
-$(LIB) : $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-	%mklib_q
+LIBOBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+$(LIB) : $(LIBOBJS)
+	%mklib_q from=$(LIBOBJS)
 
 $(OSGENDIR)/boot/bootsect : bootsect.S $(GENINCDIR)/aros/boot.h
 	%mkdirs_q $(OBJDIR)
@@ -64,16 +66,19 @@ $(OBJDIR)/%.d : %.c
 
 -include $(OSGENDIR)/boot/mf.inc
 
-#MM kernel-link-native : setup
-kernel-link-native : $(foreach f,$(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o)
+#MM kernel-link-native : setup Drivers-native
+kernel-link-native : $(OSGENDIR)/boot/kernel
+
+OBJS := $(foreach f,$(ADDITIONAL_OBJS) $(FILES),$(OSGENDIR)/boot/$(f).o) \
+	$(OSGENDIR)/graphics/graphics_driver.o \
+	$(OSGENDIR)/intuition/intuition_driver.o
+
+$(OSGENDIR)/boot/kernel : $(OBJS)
 	@$(LLINK) -o $(OSGENDIR)/boot/kernel.o \
-	    $(foreach f,$(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) \
-	    $(OSGENDIR)/graphics/graphics_driver.o \
-	    $(OSGENDIR)/intuition/intuition_driver.o \
-	    $(LINKLIBS)
-	@$(BLINK) -o $(OSGENDIR)/boot/kernel \
+	    $(OBJS) $(LINKLIBS)
+	$(BLINK) -o $(OSGENDIR)/boot/kernel \
 	    $(OSGENDIR)/boot/kernel.o $(LINKLIBS)
-	@objcopy -O binary $(OSGENDIR)/boot/kernel
+	objcopy -O binary $(OSGENDIR)/boot/kernel
 
 $(OSGENDIR)/boot/%.o : $(LIBDIR)/%.a
 	@$(LLINK) --whole-archive $< -o $@

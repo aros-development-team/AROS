@@ -7,7 +7,9 @@ FILES	:=	graphics_init functable endtag
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 
 #MM Drivers-native : hidd-graphics-module
-Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+Drivers-native : $(OSGENDIR)/boot/hidd_graphics.o
+
+$(OSGENDIR)/boot/hidd_graphics.o : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	%add_objects rom/boot/hidd_graphics
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
 	    -o $(OSGENDIR)/boot/hidd_graphics.o
