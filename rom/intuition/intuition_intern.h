@@ -232,7 +232,9 @@ extern struct IntuitionBase * IntuitionBase;
 
 
 
+
 /* Driver prototypes */
+
 extern int  intui_init (struct IntuitionBase *);
 extern int  intui_open (struct IntuitionBase *);
 extern void intui_close (struct IntuitionBase *);
@@ -257,11 +259,11 @@ void intui_ScrollWindowRaster(struct Window * win, WORD dx, WORD dy, WORD xmin,
 void intrequest_freelabels(STRPTR *gadgetlabels, struct IntuitionBase *IntuitionBase);
 void intrequest_freegadgets(struct Gadget *gadgets, struct IntuitionBase *IntuitionBase);
 
-void windowneedsrefresh(struct Window * w, struct IntuitionBase * IntuitionBase);
-
+/* intuition_misc protos */
+extern void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
 extern void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2); 
-
-void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
+extern BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
+extern VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
 
 /* Replacement for dos.library/DisplayError() */
 AROS_UFP3(LONG, Intuition_DisplayError,
@@ -292,7 +294,18 @@ VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBa
 VOID int_refreshglist(struct Gadget *gadgets, struct Window *window,
 		      struct Requester *requester, LONG numGad, LONG mustbe, LONG mustnotbe,
 		      struct IntuitionBase *IntuitionBase);
-		      
+
+enum {
+    DRAGBAR = 0,
+    CLOSEGAD,
+    DEPTHGAD,
+    SIZEGAD,
+    ZOOMGAD,
+    NUM_SYSGADS
+};
+
+#define SYSGAD(w, idx) (((struct IntWindow *)(w))->sysgads[idx])
+	      
 struct IntWindow
 {
     struct Window window;
@@ -304,6 +317,7 @@ struct IntWindow
     */
        
     struct closeMessage *closeMessage;
+    Object * sysgads[NUM_SYSGADS];
     
     /* When the Zoom gadget is pressed the window will have the
        dimensions stored here. The old dimensions are backed up here
