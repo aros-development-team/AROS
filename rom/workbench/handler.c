@@ -192,9 +192,10 @@ static VOID __handleLaunch
     BPTR              cd      = NULL;
     struct Process   *process = NULL;
     
+    D(bug("Workbench Handler: handleLaunch: name = %s\n", name));
+    
     /* Free memory of launch message (don't need it anymore) */
     FreeMem(message, sizeof(struct LaunchMessage));
-    
     
     /* Change directory to where the program resides */
     cd = CurrentDir(lock);
@@ -231,6 +232,7 @@ static VOID __handleLaunch
     }
     else
     {
+        D(bug("Workbench Handler: handleLaunch: Failed to load segment\n"));
         //FIXME: handle error
     }
     
