@@ -1,7 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM kernel-exec-includes : compiler-includes kernel-exec-includes-$(ARCH)-$(CPU)
+#MM kernel-exec-includes : \
+#MM     compiler-includes \
+#MM     kernel-exec-includes-$(ARCH)-$(CPU) \
+#MM     includes-$(ARCH)-$(CPU)
 
 ALL_FUNCTIONS	:= \
 	abortio adddevice addhead addintserver addlibrary addmemhandler \
