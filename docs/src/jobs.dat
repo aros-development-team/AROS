@@ -432,9 +432,9 @@ dos00035;1;SDuvan;Write WaitPkt
 dos00036;1;SDuvan;Write ReplyPkt
 dos00037;1;SDuvan;Write AbortPkt
 dos00038;2;SDuvan;Write LockRecord
-dos00039;0;;Write LockRecords
+dos00039;2;bergers,SDuvan;Write LockRecords
 dos00040;2;SDuvan;Write UnLockRecord
-dos00041;0;;Write UnLockRecords
+dos00041;2;bergers,SDuvan;Write UnLockRecords
 dos00042;2;matthias;Write SelectInput
 dos00043;2;matthias;Write SelectOutput
 dos00044;2;matthias;Write FGetC
