@@ -261,16 +261,17 @@ AROS_LH2(struct TrackDiskBase *, init,
     	ReturnPtr("Trackdisk",struct TrackDiskBase *,NULL);
     }
     
+#if 0
     /* Now lets verify that there really is a controller present */
     outb(0,FDC_DOR);
     outb(0,FDC_DOR);
     outb(DORF_RESET,FDC_DOR);
 
     /* Wait for the controller to report OK */
-    for (i=0;i<2000;i++)
+    for (i=0;i<10000;i++)
     {
 	drives = inb(FDC_MSR);
-	if ((drives & (MSRF_RQM | MSRF_CMDBSY) == MSRF_RQM))
+	if (drives & MSRF_RQM)
 	    goto foundctrlr;
     }
 
@@ -278,7 +279,9 @@ AROS_LH2(struct TrackDiskBase *, init,
     ReturnPtr("Trackdisk",struct TrackDiskBase *,NULL);
 
 foundctrlr:
-    D(bug("TD: Floppy controller version %x\n",temp));
+    D(bug("TD: Floppy controller found\n"));
+#endif
+
     /* Set up the IRQ system */
     OOPBase = OpenLibrary(AROSOOP_NAME, 0);
 
