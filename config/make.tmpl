@@ -675,7 +675,6 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	%mkdirs_q $(GENDIR)/$(CURDIR)
 	cd $(GENDIR)/$(CURDIR); \
 	    $(RM) config.cache; \
-	    $(%(mmake)-PATH); \
 	    CC="$(HOST_CC)" \
 	    %(configure) $(%(mmake)-prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
 	    $(%(mmake)-includedir) %(extraoptions); \
