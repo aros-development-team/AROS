@@ -14,15 +14,14 @@
 	int puts (
 
 /*  SYNOPSIS */
-	const char * str,
-	FILE * fh)
+	const char * str)
 
 /*  FUNCTION
-	Print a string to fh. A newline ('\n') is emmitted after the string.
+	Print a string to stdout. A newline ('\n') is emmitted after the
+	string.
 
     INPUTS
 	str - Print this string
-	fh - Write to this stream
 
     RESULT
 	> 0 on success and EOF on error. On error, the reason is put in
@@ -50,10 +49,10 @@
 
 ******************************************************************************/
 {
-    if (fputs (str, fh) == EOF)
+    if (fputs (str, stdout) == EOF)
 	return EOF;
 
-    if (putc ('\n', fh) == EOF)
+    if (putc ('\n', stdout) == EOF)
 	return EOF;
 
     if (fflush (stdout) == EOF)
