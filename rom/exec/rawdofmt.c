@@ -8,6 +8,7 @@
 #include <dos/dos.h>
 #include <aros/machine.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 #include <proto/exec.h>
 
 /*****************************************************************************
@@ -366,12 +367,18 @@
 #ifdef FIX_EXEC_BUGS
 	    /* Print '-' (if there is one and the pad character is no space) */
 	    if(minus&&fill!=' ')
-		RDFCALL(PutChProc,'-',PutChData);
+		AROS_UFC2(void, PutChProc,
+		   AROS_UFCA(STRPTR, '-'      , D0),
+		   AROS_UFCA(APTR  , PutChData, A3)
+		);
 #endif
 	    /* Pad left if not left aligned */
 	    if(!left)
 		for(i=width+minus;i<minwidth;i++)
-		    RDFCALL(PutChProc,fill,PutChData);
+		    AROS_UFC2(void, PutChProc,
+		       AROS_UFCA(int , fill     , D0),
+		       AROS_UFCA(APTR, PutChData, A3)
+		    );
 
 	    /* Print '-' (if there is one and the pad character is a space) */
 #ifdef FIX_EXEC_BUGS
@@ -379,12 +386,19 @@
 #else
 	    if(minus)
 #endif
-		RDFCALL(PutChProc,'-',PutChData);
+		AROS_UFC2(void, PutChProc,
+		   AROS_UFCA(char, '-'      , D0),
+		   AROS_UFCA(APTR, PutChData, A3)
+		);
 
 	    /* Print body upto width */
 	    for(i=0;i<width;i++)
 	    {
-		RDFCALL(PutChProc,*buf,PutChData);
+		AROS_UFC2(void, PutChProc,
+		   AROS_UFCA(UBYTE, *buf      , D0),
+		   AROS_UFCA(APTR , PutChData , A3)
+		);
+		
 		buf++;
 	    }
 
@@ -392,16 +406,27 @@
 	    if(left)
 		for(i=width+minus;i<minwidth;i++)
 		    /* Pad right with '0'? Sigh - if the user wants to! */
-		    RDFCALL(PutChProc,fill,PutChData);
+ 		    AROS_UFC2(void, PutChProc,
+		       AROS_UFCA(int , fill      , D0),
+		       AROS_UFCA(APTR, PutChData , A3)
+		    );
+		    
 	}else
 	{
 	    /* No '%' sign? Put the formatstring out */
-	    RDFCALL(PutChProc,*FormatString,PutChData);
+  	    AROS_UFC2(void, PutChProc,
+	 	AROS_UFCA(STRPTR, *FormatString,  D0),
+		AROS_UFCA(APTR  , PutChData    , A3)
+	    );
 	    FormatString++;
 	}
     }
     /* All done. Put the terminator out. */
-    RDFCALL(PutChProc,'\0',PutChData);
+    AROS_UFC2(void, PutChProc,
+	AROS_UFCA(STRPTR, '\0'      , D0),
+	AROS_UFCA(APTR  , PutChData , A3)
+    );
+
 
     /* Return the rest of the datastream. */
     return (APTR)stream;
