@@ -21,6 +21,7 @@
 #define MUICFG_Buttons_SelBackground  0x3e
 #define MUICFG_Background_Register    0x54
 #define MUICFG_Background_Framed      0x5a
+#define MUICFG_Font_Button            0x80
 #define MUICFG_Background_Page			  0x95
 
 #define MUIA_Configdata_Application (TAG_USER|0x10203453) /* ZV1: PRIV i.g  Object * */
