@@ -495,7 +495,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     EnterFunc(bug("Listview::Set: Data 0x%lx\n",data));
 
     tstate = msg->ops_AttrList;
-    while ((tag = NextTagItem(&tstate)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -840,6 +840,14 @@ STATIC IPTR listview_get(Class *cl, Object *o, struct opGet *msg)
 	    *(msg->opg_Storage) = (IPTR)data->ld_Top;
 	    break;
 
+    	case GTLV_Visible: /* AROS Extension */
+	    *(msg->opg_Storage) = (IPTR)NumItemsFit(o, data);
+	    break;
+	    
+	case GTLV_Total: /* AROS Extension */
+	    *(msg->opg_Storage) = (IPTR)data->ld_NumEntries;
+	    break;
+	    
 	case GTLV_Selected:
 	    *(msg->opg_Storage) = (IPTR)data->ld_Selected;
 	    break;
