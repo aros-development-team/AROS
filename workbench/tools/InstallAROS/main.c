@@ -34,7 +34,7 @@
 #define kSrcDir  "SYS:"
 #define kDstDir  "DH0:"
 #define kDstDev  "DH0"
-#define kDstName "System"
+#define kDstName "AROS"
 
 IPTR Install__OM_NEW
 (
@@ -70,36 +70,54 @@ IPTR Install__OM_NEW
     return (IPTR) self;
 }
 
+BOOL FindPartition(struct PartitionHandle *root, CONST_STRPTR nameToFind)
+{
+    struct PartitionHandle *partition = NULL;
+    BOOL   success = FALSE;
+    
+    ForeachNode(&root->table->list, partition)
+    {
+        if (OpenPartitionTable(partition) == 0)
+        {
+            success = FindPartition(partition, nameToFind);
+            ClosePartitionTable(partition);
+        
+            if (success) break;
+        }
+        else
+        {
+            TEXT name[32] = {0};
+            
+            GetPartitionAttrsTags
+            (
+                partition, PT_NAME, (IPTR) name, TAG_DONE
+            );
+            
+            if (stricmp(name, nameToFind) == 0)
+            {
+                success = TRUE;
+                break;
+            }
+        }
+    }
+    
+    return success;
+}
+
 IPTR Install__MUIM_DH0
 (     
     Class *CLASS, Object *self, Msg message 
 )
 {
-    BOOL result=FALSE;
-    struct PartitionHandle* root = NULL;
-
-    root = OpenRootPartition("ide.device", 0);
-    if(root)
+    struct PartitionHandle *root;
+    BOOL                    result = FALSE;
+    
+    if((root = OpenRootPartition("ide.device", 0)) != NULL)
     {
         if (OpenPartitionTable(root) == 0)
         {
-            struct PartitionHandle *partition = NULL;
-            
-            ForeachNode(&root->table->list, partition)
-            {
-                TEXT name[32] = { 0 }; /* clear the array */
-                
-                GetPartitionAttrsTags
-                (
-                    partition, PT_NAME, (IPTR) name, TAG_DONE
-                );
-                
-                if (stricmp(name, kDstDev) == 0)
-                {
-                    result = TRUE;
-                    break;
-                }
-            }
+            result = FindPartition(root, kDstDev);            
+            ClosePartitionTable(root);
         }
         
         CloseRootPartition(root);
@@ -138,94 +156,11 @@ IPTR Install__MUIM_Continue
 }
 
 IPTR Install__MUIM_Partition
-(     
- Class *CLASS, Object *self, Msg message 
+(
+    Class *CLASS, Object *self, Msg message 
 )
 {
-    struct PartitionHandle *root = NULL,
-                           *rdbp = NULL;
-    struct DosEnvec         tableDE,
-                            partitionDE;
-    struct DriveGeometry    tableDG;
-    struct PartitionType    ptype = {"DOS\1", 4};
-    LONG                    rc;
-    LONG                    reserved = 0;
-    
-    memset(&tableDG, 0, sizeof(struct DriveGeometry));
-    
-    /* Step 1: Destroy the existing partitiontable, if any exists. */
-    root = OpenRootPartition("ide.device", 0);
-    if (root == NULL)
-    {
-        D(bug("*** ERROR: Could not open root partition! Aborting.\n"));
-        return RETURN_FAIL;
-    }
-    DestroyPartitionTable(root);
-    
-    /* Step 2: Create a root RDB partition table. */
-    rc = CreatePartitionTable(root, PHPTT_RDB);
-    if (rc != 0)
-    {
-        D(bug("*** ERROR: Creating partition table failed. Aborting.\n"));
-        CloseRootPartition(root);
-        return RETURN_FAIL;
-        //exit(RETURN_FAIL); /* FIXME: take care of allocated resources... */
-    }
-    
-    /* Step 3: Create a RDB partition in the table. */
-    memset(&tableDE, 0, sizeof(struct DosEnvec));
-    memset(&partitionDE, 0, sizeof(struct DosEnvec));
-    
-    GetPartitionAttrsTags
-    (
-        root, 
-        
-        PT_DOSENVEC, (IPTR) &tableDE, 
-        PT_GEOMETRY, (IPTR) &tableDG,
-        
-        TAG_DONE
-    );
-    GetPartitionTableAttrsTags(root, PTT_RESERVED, (IPTR) &reserved, TAG_DONE);
-    
-    CopyMem(&tableDE, &partitionDE, sizeof(struct DosEnvec));
-    
-    partitionDE.de_SizeBlock      = 512 >> 2;
-    partitionDE.de_Surfaces       = tableDG.dg_Heads;
-    partitionDE.de_BlocksPerTrack = tableDG.dg_TrackSectors;
-    partitionDE.de_BufMemType     = tableDG.dg_BufMemType;
-       
-    partitionDE.de_TableSize      = DE_DOSTYPE;
-    partitionDE.de_Reserved       = 2;
-    partitionDE.de_HighCyl        = tableDE.de_HighCyl;
-    partitionDE.de_LowCyl         = reserved 
-                                  / (tableDG.dg_Heads * tableDG.dg_TrackSectors);
-    partitionDE.de_NumBuffers     = 100;
-    partitionDE.de_MaxTransfer    = 0xFFFFFF;
-    partitionDE.de_Mask           = 0xFFFFFFFE;
-    
-    D(bug("* highcyl = %ld\n", partitionDE.de_HighCyl));
-    D(bug("* lowcyl = %ld\n", partitionDE.de_LowCyl));
-    D(bug("* table lowcyl = %ld\n", tableDE.de_LowCyl));
-    D(bug("* table reserved = %ld\n", reserved));
-    
-    rdbp = AddPartitionTags
-    (
-        root,
-        
-        PT_DOSENVEC, (IPTR) &partitionDE,
-        PT_TYPE,     (IPTR) &ptype,
-        PT_NAME,     (IPTR) kDstDev,
-        PT_BOOTABLE,        TRUE,
-        PT_AUTOMOUNT,       TRUE,
-        
-        TAG_DONE
-    );
-    
-    WritePartitionTable(root);
-    ClosePartitionTable(root);
-    CloseRootPartition(root);
-
-    return RETURN_OK;
+    return SystemTagList("C:Partition FORCE QUIET", NULL);
 }
 
 IPTR Install__MUIM_Install
