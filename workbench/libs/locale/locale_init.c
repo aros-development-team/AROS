@@ -13,6 +13,7 @@
 #include <exec/resident.h>
 #include <aros/libcall.h>
 #include <exec/semaphores.h>
+#include <aros/asmcall.h>
 
 #include <proto/exec.h>
 
@@ -83,13 +84,14 @@ struct LocaleBase *globallocalebase;
 #ifdef __MORPHOS__
 LIBBASETYPE *LIB_init(LIBBASETYPE *LIBBASE, BPTR segList, struct ExecBase *sysBase)
 #else
-AROS_LH2(LIBBASETYPE *, init,
-    AROS_LHA(LIBBASETYPE *,  LIBBASE, D0),
-    AROS_LHA(BPTR,                  segList, A0),
-    struct ExecBase *, sysBase, 0, Locale)
+AROS_UFH3(LIBBASETYPE *, AROS_SLIB_ENTRY(init,Locale),
+    AROS_UFHA(LIBBASETYPE *,  LIBBASE, D0),
+    AROS_UFHA(BPTR,                  segList, A0),
+    AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 #endif
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     struct IntLocale *def;
 
@@ -147,7 +149,7 @@ AROS_LH2(LIBBASETYPE *, init,
     return NULL;
 
 #ifndef __MORPHOS__
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 #endif
 }
 

@@ -13,6 +13,7 @@
 #include <exec/libraries.h>
 #include <exec/resident.h>
 #include <exec/execbase.h>
+#include <aros/asmcall.h>
 #include <proto/exec.h>
 #include <proto/expansion.h>
 
@@ -56,12 +57,13 @@ static const APTR inittabl[4]=
     &AROS_SLIB_ENTRY(init,BASENAME)
 };
 
-AROS_LH2(LIBBASETYPEPTR, init,
-    AROS_LHA(LIBBASETYPEPTR, LIBBASE, D0),
-    AROS_LHA(BPTR, segList, A0),
-    struct ExecBase *, sysBase, 0, Expansion)
+AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Expansion),
+    AROS_UFHA(LIBBASETYPEPTR, LIBBASE, D0),
+    AROS_UFHA(BPTR, segList, A0),
+    AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     /* Store arguments */
     IntExpBase(LIBBASE)->eb_SegList = (ULONG)segList;
@@ -83,7 +85,7 @@ AROS_LH2(LIBBASETYPEPTR, init,
 #endif
 
     return LIBBASE;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 AROS_LH1(LIBBASETYPEPTR, open,

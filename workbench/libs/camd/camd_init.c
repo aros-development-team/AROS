@@ -11,6 +11,7 @@
 #include <exec/libraries.h>
 #ifdef _AROS
 #  include <aros/libcall.h>
+#  include <aros/asmcall.h>
 #endif
 
 #include <proto/exec.h>

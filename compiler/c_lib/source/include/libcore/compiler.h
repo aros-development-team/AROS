@@ -137,6 +137,7 @@ Therefore ASM must be used. */
 
 #ifdef _AROS
 #   include <aros/libcall.h>
+#   include <aros/asmcall.h>
 #else
 #   define D0 d0
 #   define D1 d1
@@ -157,6 +158,8 @@ Therefore ASM must be used. */
 
 #   define _AROS_LHA(t,n,r) REG(r) t n GNUCREG (# r)
 #   define AROS_LHA(t,n,r)  _AROS_LHA(t,n,r)
+#   define _AROS_UFHA(t,n,r) REG(r) t n GNUCREG (# r)
+#   define AROS_UFHA(t,n,r)  _AROS_UFHA(t,n,r)
 
 #   define AROS_LH0(rettype,name,libBaseType,libBase,offset,libName) \
     rettype SAVEDS ASM name (\
@@ -184,7 +187,45 @@ Therefore ASM must be used. */
 	AROS_LHA(libBaseType,libBase,A6) \
     )
 
-#   define AROS_LP3 AROS_LH3
+#   define AROS_LP0	AROS_LH0
+#   define AROS_LP1	AROS_LH1
+#   define AROS_LP2	AROS_LH2
+#   define AROS_LP3	AROS_LH3
+#   define AROS_UFP0	AROS_UFH0
+#   define AROS_UFP1	AROS_UFH1
+#   define AROS_UFP2	AROS_UFH2
+#   define AROS_UFP3	AROS_UFH3
+
+#   define AROS_UFH0(rettype,name) \
+    rettype SAVEDS ASM name ( \
+    )
+
+#   define AROS_UFH1(rettype,name,a1) \
+    rettype SAVEDS ASM name (\
+	a1 \
+    )
+
+#   define AROS_UFH2(rettype,name,a1,a2) \
+    rettype SAVEDS ASM name (\
+	a1, \
+	a2 \
+    )
+
+#   define AROS_UFH3(rettype,name,a1,a2,a3) \
+    rettype SAVEDS ASM name (\
+	a1, \
+	a2, \
+	a3 \
+    )
+
+#   define AROS_LP0	AROS_LH0
+#   define AROS_LP1	AROS_LH1
+#   define AROS_LP2	AROS_LH2
+#   define AROS_LP3	AROS_LH3
+#   define AROS_UFP0	AROS_UFH0
+#   define AROS_UFP1	AROS_UFH1
+#   define AROS_UFP2	AROS_UFH2
+#   define AROS_UFP3	AROS_UFH3
 
 #   define AROS_SLIB_ENTRY(n,s)     n
 

@@ -74,12 +74,13 @@ static const APTR Dos_inittabl[4]=
 
 #undef SysBase
 
-AROS_LH2(LIBBASETYPEPTR, init,
- AROS_LHA(LIBBASETYPEPTR, LIBBASE, D0),
- AROS_LHA(BPTR,               segList,   A0),
-	   struct ExecBase *, SysBase, 0, BASENAME)
+AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Dos),
+ AROS_UFHA(LIBBASETYPEPTR,	LIBBASE,    D0),
+ AROS_UFHA(BPTR,		segList,    A0),
+ AROS_UFHA(struct ExecBase *,	SysBase,    A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
     ULONG * taskarray;
 
@@ -175,7 +176,7 @@ AROS_LH2(LIBBASETYPEPTR, init,
 
     return NULL;
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 #define SysBase     (LIBBASE->dl_SysBase)

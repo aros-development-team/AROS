@@ -652,12 +652,13 @@ static BOOL examine(struct rootfsbase *rootfsbase, struct IOFileSys *iofs)
 #endif
 
 
-AROS_LH2(struct rootfsbase *, init,
- AROS_LHA(struct rootfsbase *, rootfsbase, D0),
- AROS_LHA(BPTR,                segList,    A0),
-	   struct ExecBase *, sysBase, 0, rootfs_handler)
+AROS_UFH3(struct rootfsbase *, AROS_SLIB_ENTRY(init,rootfs_handler),
+ AROS_UFHA(struct rootfsbase *, rootfsbase, D0),
+ AROS_UFHA(BPTR,                segList,    A0),
+ AROS_UFHA(struct ExecBase *,	sysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     /* Store arguments */
     rootfsbase->sysbase=sysBase;
@@ -684,7 +685,7 @@ AROS_LH2(struct rootfsbase *, init,
     }
 
     return NULL;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 AROS_LH3(void, open,

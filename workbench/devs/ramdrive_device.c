@@ -162,12 +162,13 @@ static void FormatOFS(UBYTE *mem, ULONG number, struct unit *unit);
 
 /****************************************************************************************/
 
-AROS_LH2(struct ramdrivebase *, init, 
-    AROS_LHA(struct ramdrivebase *, ramdrivebase, D0), 
-    AROS_LHA(BPTR, segList, A0), 
-    struct ExecBase *, sysbase, 0, ramdrive)
+AROS_UFH3(struct ramdrivebase *, AROS_SLIB_ENTRY(init,ramdrive),
+    AROS_UFHA(struct ramdrivebase *, ramdrivebase, D0),
+    AROS_UFHA(BPTR, segList, A0),
+    AROS_UFHA(struct ExecBase *, sysbase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     /* Store arguments */
     SysBase = sysbase;
@@ -194,7 +195,7 @@ AROS_LH2(struct ramdrivebase *, init,
     
     return NULL;
     
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

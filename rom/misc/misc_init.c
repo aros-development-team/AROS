@@ -71,6 +71,8 @@ AROS_UFH3(struct MiscBase *, AROS_SLIB_ENTRY(init, Misc),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
+    AROS_USERFUNC_INIT
+
     UWORD neg = AROS_ALIGN(LIB_VECTSIZE * 3);
     struct MiscBase *MiscBase = NULL;
     
@@ -92,4 +94,6 @@ AROS_UFH3(struct MiscBase *, AROS_SLIB_ENTRY(init, Misc),
     }
 
     return MiscBase;
+
+    AROS_USERFUNC_EXIT
 }

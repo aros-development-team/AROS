@@ -29,6 +29,7 @@
 #include <dos/exall.h>
 #include <dos/filesystem.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 
 #ifdef __GNUC__
 #include "ram_handler_gcc.h"
@@ -260,12 +261,13 @@ static const UBYTE datatable = 0;
 #define SysBase rambase->sysbase
 #define DOSBase rambase->dosbase
 
-AROS_LH2(struct rambase *, init,
- AROS_LHA(struct rambase *, rambase, D0),
- AROS_LHA(BPTR,             segList,   A0),
-	   struct ExecBase *, sysBase, 0, ramdev)
+AROS_UFH3(struct rambase *, AROS_SLIB_ENTRY(init,ramdev),
+ AROS_UFHA(struct rambase *, rambase, D0),
+ AROS_UFHA(BPTR,             segList,   A0),
+ AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     /* This function is single-threaded by exec by calling Forbid. */
 
@@ -342,9 +344,9 @@ AROS_LH2(struct rambase *, init,
 	    			    struct IOFileSys dummyiofs;
 
 	   			    AROS_LC3(void, open,
-	   			    AROS_LHA(struct IOFileSys *, &dummyiofs, A1),
-    	    			    AROS_LHA(ULONG,              0, D0),
-	   			    AROS_LHA(ULONG,              0, D1),
+	   			    AROS_UFHA(struct IOFileSys *, &dummyiofs, A1),
+    	    			    AROS_UFHA(ULONG,              0, D0),
+	   			    AROS_UFHA(ULONG,              0, D1),
 	     	    		    struct rambase *, rambase, 1, ram_handler);
 
 	   			    if (!dummyiofs.IOFS.io_Error)
@@ -396,7 +398,7 @@ AROS_LH2(struct rambase *, init,
 
     return NULL;
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 #ifdef UtilityBase

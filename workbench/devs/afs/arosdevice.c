@@ -16,6 +16,7 @@
 #include <dos/dos.h>
 
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 #include <aros/debug.h>
 
 #include "afshandler.h"
@@ -85,12 +86,13 @@ void *const afsfunctable[]=
 
 const UBYTE afsdatatable = 0;
 
-AROS_LH2(struct afsbase *, init,
- AROS_LHA(struct afsbase *, afsbase, D0),
- AROS_LHA(BPTR,             segList, A0),
-      struct ExecBase *, SysBase, 0, afsdev)
+AROS_UFH3(struct afsbase *, AROS_SLIB_ENTRY(init,afsdev),
+ AROS_UFHA(struct afsbase *, afsbase, D0),
+ AROS_UFHA(BPTR,             segList, A0),
+ AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
 {
-	AROS_LIBFUNC_INIT
+	AROS_USERFUNC_INIT
 
 	struct Task *task;
 	APTR stack;
@@ -142,7 +144,7 @@ AROS_LH2(struct afsbase *, init,
 		CloseLibrary((struct Library *)afsbase->dosbase);
 	}
 	return NULL;
-	AROS_LIBFUNC_EXIT
+	AROS_USERFUNC_EXIT
 }
 
 #include "baseredef.h"

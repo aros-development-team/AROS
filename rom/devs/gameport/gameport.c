@@ -151,12 +151,13 @@ AROS_UFP3S(VOID, gpSendQueuedEvents,
 
 /****************************************************************************************/
 
-AROS_LH2(struct GameportBase *,  init,
-	 AROS_LHA(struct GameportBase *, GPBase , D0),
-	 AROS_LHA(BPTR                 , segList, A0),
-	 struct ExecBase *, sysBase, 0, Gameport)
+AROS_UFH3(struct GameportBase *, AROS_SLIB_ENTRY(init,Gameport),
+	AROS_UFHA(struct GameportBase *, GPBase,    D0),
+	AROS_UFHA(BPTR,			segList,    A0),
+	AROS_UFHA(struct ExecBase *,	sysBase,    A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     int i;
 
@@ -180,10 +181,10 @@ AROS_LH2(struct GameportBase *,  init,
     GPBase->gp_Interrupt.is_Node.ln_Pri  = 0;
     GPBase->gp_Interrupt.is_Data 	 = (APTR)GPBase;
     GPBase->gp_Interrupt.is_Code 	 = gpSendQueuedEvents;
-    
+
     return GPBase;
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

@@ -156,12 +156,13 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase);
     
 /****************************************************************************************/
 
-AROS_LH2(struct KeyboardBase *,  init,
- AROS_LHA(struct KeyboardBase *, KBBase, D0),
- AROS_LHA(BPTR,         segList, A0),
-	  struct ExecBase *, sysBase, 0, Keyboard)
+AROS_UFH3(struct KeyboardBase *, AROS_SLIB_ENTRY(init,Keyboard),
+ AROS_UFHA(struct KeyboardBase *,   KBBase,	D0),
+ AROS_UFHA(BPTR,		    segList,	A0),
+ AROS_UFHA(struct ExecBase *,	    sysBase,	A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     /* reset static data */
     HiddKbdAB = 0;
@@ -175,7 +176,7 @@ AROS_LH2(struct KeyboardBase *,  init,
     NEWLIST(&KBBase->kb_PendingQueue);
     
     return KBBase;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

@@ -77,12 +77,13 @@ struct KeymapBase *DebugKeymapBase;
 
 /****************************************************************************************/
 
-AROS_LH2(LIBBASETYPEPTR, init,
-    AROS_LHA(LIBBASETYPEPTR, LIBBASE, D0),
-    AROS_LHA(BPTR, segList, A0),
-    struct ExecBase *, sysBase, 0, Keymap)
+AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Keymap),
+    AROS_UFHA(LIBBASETYPEPTR, LIBBASE, D0),
+    AROS_UFHA(BPTR, segList, A0),
+    AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     SysBase = sysBase;
 
 #if DEBUG
@@ -118,7 +119,7 @@ AROS_LH2(LIBBASETYPEPTR, init,
     /* You would return NULL if the init failed */
     return LIBBASE;
     
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

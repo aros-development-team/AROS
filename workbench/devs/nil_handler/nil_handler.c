@@ -16,6 +16,7 @@
 #include <dos/filesystem.h>
 #include <proto/dos.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 #ifdef __GNUC__
 #include "nil_handler_gcc.h"
 #endif
@@ -78,12 +79,13 @@ static void *const functable[]=
     (void *)-1
 };
 
-AROS_LH2(struct nilbase *, init,
-AROS_LHA(struct nilbase *, nilbase, D0),
-AROS_LHA(BPTR,             segList, A0),
-         struct ExecBase *, sysBase, 0, nil_handler)
+AROS_UFH3(struct nilbase *, AROS_SLIB_ENTRY(init,nil_handler),
+    AROS_UFHA(struct nilbase *, nilbase, D0),
+    AROS_UFHA(BPTR,             segList, A0),
+    AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     /* Store arguments */
     nilbase->sysbase=sysBase;
@@ -106,9 +108,9 @@ AROS_LHA(BPTR,             segList, A0),
 	        struct IOFileSys dummyiofs;
 
 	        AROS_LC3(void, open,
-	        AROS_LHA(struct IOFileSys *, &dummyiofs, A1),
-    	        AROS_LHA(ULONG,              0, D0),
-	        AROS_LHA(ULONG,              0, D1),
+	        AROS_UFHA(struct IOFileSys *, &dummyiofs, A1),
+    	        AROS_UFHA(ULONG,              0, D0),
+	        AROS_UFHA(ULONG,              0, D1),
 	     	         struct nilbase *, nilbase, 1, nil_handler);
 
   	        if (!dummyiofs.IOFS.io_Error)
@@ -140,7 +142,7 @@ AROS_LHA(BPTR,             segList, A0),
     }
 
     return NULL;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 AROS_LH3(void, open,

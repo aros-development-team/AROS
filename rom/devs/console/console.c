@@ -27,6 +27,7 @@
 #include <intuition/classusr.h>
 #include <graphics/rastport.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 
 #include <graphics/rastport.h>
 
@@ -129,12 +130,13 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-AROS_LH2(struct ConsoleBase *, init,
- AROS_LHA(struct ConsoleBase *, ConsoleDevice, D0),
- AROS_LHA(BPTR,              segList,   A0),
-	   struct ExecBase *, sysBase, 0, Console)
+AROS_UFH3(struct ConsoleBase *, AROS_SLIB_ENTRY(init,Console),
+ AROS_UFHA(struct ConsoleBase *,    ConsoleDevice,  D0),
+ AROS_UFHA(BPTR,		    segList,	    A0),
+ AROS_UFHA(struct ExecBase *,	    sysBase,	    A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     
     /* Store arguments */
     ConsoleDevice->sysBase = sysBase;
@@ -214,7 +216,7 @@ AROS_LH2(struct ConsoleBase *, init,
 
     Alert(AT_DeadEnd | AN_ConsoleDev | AG_NoMemory);
     return NULL;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

@@ -143,12 +143,13 @@ static void *const functable[]=
     (void *)-1
 };
 
-AROS_LH2(struct pipefsbase *, init,
-AROS_LHA(struct pipefsbase *, pipefsbase, D0),
-AROS_LHA(BPTR,              segList,  A0),
-	 struct ExecBase *, sysBase, 0, pipefs_handler)
+AROS_UFH3(struct pipefsbase *, AROS_SLIB_ENTRY(init,pipefs_handler),
+    AROS_UFHA(struct pipefsbase *, pipefsbase, D0),
+    AROS_UFHA(BPTR,              segList,  A0),
+    AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     /* Store arguments */
     SysBase =  sysBase;
@@ -174,7 +175,7 @@ AROS_LHA(BPTR,              segList,  A0),
     }
 
     return NULL;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 AROS_LH3(void, open,

@@ -122,18 +122,11 @@
 	    */
 	    if(init->init)
 	    {
-/*
-		THIS IS WRONG:
-
 		library = AROS_UFC3(struct Library *, init->init,
 		    AROS_UFCA(struct Library *,  library, D0),
 		    AROS_UFCA(BPTR,              segList, A0),
 		    AROS_UFCA(struct ExecBase *, SysBase, A6)
-*/
-		library = AROS_CALL2(struct Library *, init->init,
-		                     AROS_UFCA(struct Library *,  library, D0),
-		                     AROS_UFCA(BPTR,              segList, A0),
-		                     struct ExecBase *, SysBase);
+		);
 	    }
 
 	    /*
@@ -151,6 +144,7 @@
 			AddDevice((struct Device *)library);
 			break;
 		    case NT_LIBRARY:
+		    case NT_HIDD:   /* XXX Remove when new Hidd system ok. */
 			AddLibrary(library);
 			break;
 		    case NT_RESOURCE:
@@ -163,22 +157,14 @@
 	return library;
     }
     else
+    {
 	/* ...or let the library do it. */
-
-	/*
-	THIS IS WRONG:
-
 	return AROS_UFC3(struct Library *, resident->rt_Init,
 	    AROS_UFCA(ULONG,             0L,      D0),
 	    AROS_UFCA(BPTR,              segList, A0),
 	    AROS_UFCA(struct ExecBase *, SysBase, A6)
 	);
-	*/
-	return AROS_CALL2(struct Library *, resident->rt_Init,
-	    AROS_LCA(ULONG,    0L,      D0),
-	    AROS_LCA(BPTR,     segList, A0),
-	    struct ExecBase *, SysBase
-	);
+    }
 
     AROS_LIBFUNC_EXIT
 } /* InitResident */
