@@ -72,8 +72,6 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

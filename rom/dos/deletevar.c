@@ -63,10 +63,6 @@
     INTERNALS
         XXX: Find out whether GVF_SAVE_VAR does actually effect this function.
 
-    HISTORY
-        27-11-96    digulla automatically created from
-                            dos_lib.fd and clib/dos_protos.h
-
 *****************************************************************************/
 {
   AROS_LIBFUNC_INIT

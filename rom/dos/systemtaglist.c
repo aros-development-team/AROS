@@ -99,11 +99,6 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-	9.1.2000    SDuvan  implemented
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

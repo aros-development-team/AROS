@@ -49,11 +49,6 @@
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-	29-09-97    turrican implemented
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

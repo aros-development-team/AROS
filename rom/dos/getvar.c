@@ -83,8 +83,6 @@
     INTERNALS
         Redo the RESULT documentation.
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

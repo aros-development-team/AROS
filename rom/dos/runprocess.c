@@ -71,8 +71,6 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 
     INTERNALS
 
-    HISTORY
-
 **************************************************************************/
 {
     APTR *	oldSP;

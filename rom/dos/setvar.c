@@ -95,8 +95,6 @@
     	See FindVar() for a description of the inner workings of local
 	variables.
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -48,10 +48,6 @@
     The error value in case of a filesystem error will be reported in
     the io_MORE_CACHE.io_NumBuffers field.
 
-    HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-
 *****************************************************************************/
 
 {

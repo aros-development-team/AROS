@@ -78,8 +78,6 @@
 	lv_Len
 	is the length of lv_Value
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

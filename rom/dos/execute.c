@@ -66,11 +66,6 @@
     finish. This is not the way AmigaOS does it as NP_Synchronous is not
     implemented (but defined).
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-	2x-12-99    SDuvan  implemented
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

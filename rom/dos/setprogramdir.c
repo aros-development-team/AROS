@@ -47,11 +47,6 @@
 
     INTERNALS
 
-    HISTORY
-	27-11-1996  digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-	17-02-1997  iaint   Implemented. Need it for locale.
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

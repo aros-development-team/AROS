@@ -47,8 +47,6 @@
     INTERNALS
 	This is dosPrivate4()
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -48,11 +48,6 @@
 
     INTERNALS
 
-    HISTORY
-
-    02.12.2000  SDuvan  --  rewrote to use rootnode rn_TaskArray instead of
-                            hacking the process lists
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
