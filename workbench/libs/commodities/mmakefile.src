@@ -7,8 +7,8 @@ ifeq ($(TARGET_ARCH),morphos)
 OS_INCLUDES 	:= -I$(AROSDIR)/Include -I/ade/morphos/emulinclude/includegcc -I/ade/morphos/emulinclude/includestd -I/ade/morphos/include
 FORCE_DEPLIBS 	:=
 FORCE_LIBS 		:= /ade/morphos/lib/libc.a /ade/morphos/lib/libsyscall.a
-USE_CPAK 		:= no
 endif
+USE_CPAK 		:= no
 
 MODNAME 	:= commodities
 MODTYPE		:= library
