@@ -57,7 +57,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    BOOL success=1;
+    BOOL success=DOSTRUE;
     struct DosList *dl, *newdl=NULL;
     struct Process *me=(struct Process *)FindTask(NULL);
     struct FileHandle *fh=(struct FileHandle *)BADDR(lock);
@@ -67,7 +67,7 @@
 	newdl=MakeDosEntry(name,DLT_DIRECTORY);
 	if(newdl==NULL)
 	{
-	    return 0;
+	    return DOSFALSE;
 	}
 	newdl->dol_Unit  =fh->fh_Unit;
 	newdl->dol_Device=fh->fh_Device;
@@ -86,7 +86,7 @@
 	dl=NULL;
 	FreeDosEntry(newdl);
 	me->pr_Result2=ERROR_OBJECT_EXISTS;
-	success=0;
+	success=DOSFALSE;
     }else
     {
 	RemDosEntry(dl);

@@ -59,14 +59,14 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    BOOL result = 1;
+    BOOL result = DOSTRUE;
     struct DosList *dl, *newdl;
     STRPTR s2, pathcopy;
     ULONG namelen;
 
     newdl = MakeDosEntry(name, DLT_LATE);
     if (newdl == NULL)
-	return 0;
+	return DOSFALSE;
 
     s2 = path;
     while (*s2++)
@@ -78,7 +78,7 @@
     {
 	FreeDosEntry(newdl);
 	SetIoErr(ERROR_NO_FREE_STORE);
-	return 0;
+	return DOSFALSE;
     }
 
     CopyMem(path, pathcopy, namelen);
@@ -93,7 +93,7 @@
 	FreeVec(newdl->dol_misc.dol_assign.dol_AssignName);
 	FreeDosEntry(newdl);
 	SetIoErr(ERROR_OBJECT_EXISTS);
-	result = 0;
+	result = DOSFALSE;
     }
     else
     {

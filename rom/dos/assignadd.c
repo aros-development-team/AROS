@@ -64,7 +64,7 @@
     struct AssignList **al, *newal;
 
     if (!lock)
-	return 0;
+	return DOSFALSE;
 
     dl = LockDosList(LDF_ASSIGNS|LDF_WRITE);
     dl = FindDosEntry(dl, name, LDF_ASSIGNS);
@@ -72,7 +72,7 @@
     {
 	UnLockDosList(LDF_ASSIGNS|LDF_WRITE);
 	SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-	return 0;
+	return DOSFALSE;
     }
 
     newal = AllocVec(sizeof(struct AssignList), MEMF_PUBLIC|MEMF_CLEAR);
@@ -80,7 +80,7 @@
     {
 	UnLockDosList(LDF_ASSIGNS|LDF_WRITE);
 	SetIoErr(ERROR_NO_FREE_STORE);
-	return 0;
+	return DOSFALSE;
     }
 
     newal->al_Lock = lock;
@@ -88,6 +88,6 @@
 
     *al = newal;
     UnLockDosList(LDF_ASSIGNS|LDF_WRITE);
-    return 1;
+    return DOSTRUE;
     AROS_LIBFUNC_EXIT
 } /* AssignAdd */
