@@ -12,9 +12,9 @@ OBJS	 = parse_html.o html.o main.o var.o db.o html_filter.o expr.o func.o
 
 FOBJS	 = format.o db.o var.o
 
-all : hpp format
+all : $(HPP) format
 
-hpp : $(OBJS) $(DEPLIBS)
+$(HPP) : $(OBJS) $(DEPLIBS)
 	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LIBS)
 
 format : $(FOBJS)
@@ -35,31 +35,31 @@ test_%.o : %.c
 test : all ctest.html background.html background.ps ctest.ps AddHead.c \
 	lists.c lists.html
 
-%.html : srcs/%.src
+%.html : srcs/%.src $(HPP) tohtml.inc
 	$(HPP) $(HPPFLAGS) tohtml.inc $< > $@
 
-lists.html : srcs/lists.src hpp
+lists.html : srcs/lists.src $(HPP)
 	$(HPP) $(HPPFLAGS) -set functiontmpl=amigafunc.tmpl tohtml.inc $< -o $@
 
-AddHead.c : srcs/lists.src toc.inc ssrc.tmpl hpp
+AddHead.c : srcs/lists.src toc.inc ssrc.tmpl $(HPP)
 	$(HPP) $(HPPFLAGS) -set functiontmpl=ssrc.tmpl toc.inc $< -o $@
 
-lists.c : srcs/lists.src toc.inc msrc.tmpl hpp
+lists.c : srcs/lists.src toc.inc msrc.tmpl $(HPP)
 	-rm lists.h
 	$(HPP) $(HPPFLAGS) -set functiontmpl=msrc.tmpl toc.inc $< -o $@
 	sed -f toc.filter lists.h > lists.tmp
 	mv lists.tmp lists.h
 
-ctest.html : srcs/ctest.c ctohtml tohtml.inc hpp
+ctest.html : srcs/ctest.c ctohtml tohtml.inc $(HPP)
 	ctohtml $<
 
-ctest.tex : srcs/ctest.c ctolatex tolatex.inc hpp ctolatex.filter
+ctest.tex : srcs/ctest.c ctolatex tolatex.inc $(HPP) ctolatex.filter
 	ctolatex $<
 
-%.html : %.c ctohtml hpp tohtml.inc
+%.html : %.c ctohtml $(HPP) tohtml.inc
 	ctohtml $< > $@
 
-%.tex : srcs/%.src hpp tolatex.inc
+%.tex : srcs/%.src $(HPP) tolatex.inc
 	$(HPP) $(HPPFLAGS) tolatex.inc $< > $@
 
 %.dvi : %.tex
