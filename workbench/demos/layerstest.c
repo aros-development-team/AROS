@@ -1101,7 +1101,7 @@ void DumpCliprects(void)
     return;
   }
   
-  printf("Layer at %x is a ",layers[i]);
+  printf("Layer at %px is a ",layers[i]);
   if (0 != (layers[i]->Flags & LAYERSIMPLE))
     printf("simple layer\n");
   else if (0 != (layers[i]->Flags & LAYERSUPER))
@@ -1117,7 +1117,7 @@ void DumpCliprects(void)
     
     printf("Bounds: (%i,%i)-(%i,%i)\n",CR->bounds.MinX,CR->bounds.MinY,CR->bounds.MaxX,CR->bounds.MaxY);
     if (NULL != CR->lobs)
-      printf("This cliprect is hidden by layer %x !\n",CR->lobs);
+      printf("This cliprect is hidden by layer %px !\n",CR->lobs);
     else
       printf("This cliprect is visible!\n");
     c++;
