@@ -58,19 +58,11 @@
 #   define SET_ERRORTAGITEM(value) STORE(errorTagItem, (value))
 
     /* The following tags need to be setup early ---------------------------*/
-    tag = FindTagItem(ICONA_ErrorCode, tags);
-    if (tag != NULL)
-    {
-        errorCode = (LONG *) tag->ti_Data;
-        SET_ERRORCODE(0);
-    }
+    errorCode = (LONG *) GetTagData(ICONA_ErrorCode, NULL, tags);
+    SET_ERRORCODE(0);
     
-    tag = FindTagItem(ICONA_ErrorTagItem, tags);
-    if (tag != NULL)
-    {
-        errorTagItem = (struct TagItem **) tag->ti_Data;
-        SET_ERRORTAGITEM(NULL);
-    }
+    errorTagItem = (struct TagItem **) GetTagData(ICONA_ErrorTagItem, NULL, tags);
+    SET_ERRORTAGITEM(NULL);
 
     /* Parse taglist -------------------------------------------------------*/
     while ((tag = NextTagItem(&tstate)) != NULL)
