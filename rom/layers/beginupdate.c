@@ -65,131 +65,15 @@
   ** to a cliprect list. 
   */
 
-  struct Region * R;
-  struct ClipRect * CR;
-  struct ClipRect * FirstCR = NULL;
-  struct RegionRectangle * RR;
-
   LockLayer(0, l);
 
+  l->saveClipRects = InstallClipRegion(l, l->DamageList);
+
   /*
-  ** SIMPLE REFRESH:
-  ** Only those parts of the damage list that are really visible right
-  ** now may be refreshed. There might be parts in the damage list that
-  ** belong areas where cliprects are currently hidden. For example,
-  ** intuition adds those parts to the damage list.
-  **
-  ** SMART REFRESH:
-  ** When a smart refresh layer is resized (enlarged) it will have a
-  ** damage list. The damage list must be converted to a list of
-  ** cliprects. However those areas that are currently hidden need
-  ** to be represented as cliprects with bitmaps attached to them
-  ** whereas the visible ones can just be cliprects w/o bitmaps.
-  ** 
+  ** Must not set flag before InstallClipRegion!!! Keep this order!!!
   */
-  if (NULL != (R = NewRegion()))
-  {
-    BOOL success;
-
-    CR = l->ClipRect;
-
-    while (NULL != CR)
-    {
-      /*
-      ** visible cliprect ?
-      ** or invisible cliprect of a SMART REFRESH layer?
-      ** (the latter is necessary as SizeLayer() changes the DamageList
-      ** also for SMART REFRESH layers)
-      */
-      if ( NULL == CR->lobs )
-      {
-        struct Rectangle Rect = CR->bounds;
-        Rect.MinX -= l->bounds.MinX;
-        Rect.MinY -= l->bounds.MinY;
-        Rect.MaxX -= l->bounds.MinX;
-        Rect.MaxY -= l->bounds.MinY;
-
-        if (FALSE == OrRectRegion(R, &Rect))
-        {
-          DisposeRegion(R);
-          return FALSE;
-        }
-      }
-      CR = CR->Next;
-    }
-    if (FALSE == AndRegionRegion(l->DamageList, R))
-    {
-      DisposeRegion(R);
-      return FALSE;
-    }
-
-    RR = R->RegionRectangle;
-    /* process all region rectangles */
-    while (NULL != RR)
-    {
-      CR = _AllocClipRect(l);
-
-      /* was allocation successful? */
-      if (NULL != CR)
-      {
-        /* init. ClipRect */
-        CR->Next = FirstCR;
-        FirstCR  = CR;
-        /* That's what we need in any case */
-        CR->bounds = RR->bounds;
-        
-        CR->bounds.MinX += R->bounds.MinX + l->bounds.MinX;
-        CR->bounds.MinY += R->bounds.MinY + l->bounds.MinY;
-        CR->bounds.MaxX += R->bounds.MinX + l->bounds.MinX;
-        CR->bounds.MaxY += R->bounds.MinY + l->bounds.MinY;
-        
-        /* anything else? */
-      }
-      else
-      {
-        /* free the whole list of allocated ClipRects and return FALSE */
-        CR = FirstCR;
-        while (NULL != CR)
-	{
-          FirstCR = CR->Next;
-          _FreeClipRect(CR, l);
-          CR = FirstCR;
-	}
-	
-	/* stegerg: don't unlock here, because endupdate unlocks always */
-
-	DisposeRegion(R);
-        return FALSE;
-      } /* else */
-
-      /* go to next regionrectangle and build next cliprect */
-      RR = RR->Next;
-    } /* while (NULL != RR) */
-    DisposeRegion(R);
-  }
-  else
-    return FALSE;
-
-  /*
-    Now exchange the two ClipRect lists. The converted damage list
-    will be placed in the position of the regular ClipRect list
-    and the regular one will be kept in l->cr until
-    EndUpdate() is called.
-    For the freeing of the damage list I will wait until 
-    EndUpdate(.., TRUE) is called and then free it. 
-   */
-
-  l->cr         = l->ClipRect;
-  l->ClipRect   = FirstCR;
-  
-  if (NULL == FirstCR)
-  {
-    l->Flags &= ~LAYERREFRESH;
-    return FALSE;
-  }
-
   l-> Flags |= LAYERUPDATING;
-  
+
   return TRUE;
 
   AROS_LIBFUNC_EXIT

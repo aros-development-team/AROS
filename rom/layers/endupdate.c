@@ -60,31 +60,20 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-  struct ClipRect * FirstCR = l->ClipRect;
-  struct ClipRect * CR;
+  /*
+  ** must reset the flag NOW !! Keep this order!!
+  */
+  l->Flags &= ~LAYERUPDATING;
+
+  InstallClipRegion(l, l->saveClipRects);
+  l->saveClipRects = NULL;
 
   if (FALSE != flag)
   {
     /* the update was complete so I free the damage list */
     ClearRegion(l->DamageList);
   } 
-
-  /* In any case I free the list of temporary cliprects that represent
-     the damage list */
-
-  CR = FirstCR;
-  while (NULL != CR)
-  {
-    FirstCR = CR->Next;
-    _FreeClipRect(CR, l);
-    CR = FirstCR;
-  }
   
-  /* now I reinstall the regular ClipRects. */
-  l->ClipRect = l->cr;
-
-  l->Flags &= ~LAYERUPDATING;
-
   UnlockLayer(l);
 
   AROS_LIBFUNC_EXIT
