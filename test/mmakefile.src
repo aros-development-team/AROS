@@ -53,7 +53,8 @@ FILES := amiga2date \
 	writepixelarray \
 	rawtest \
 	camdtree \
-	mktime
+	mktime \
+	rexxsyslibtest
 
 EXEDIR := $(AROSDIR)/test
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
