@@ -29,6 +29,11 @@ FUNCTIONS	:= \
 workbench-libs-icon : $(SLIB)
 	@$(NOP)
 
+
+#MM workbench-libs-icon-quick : 
+workbench-libs-icon-quick : $(SLIB)
+	@$(NOP)
+
 #MM
 setup :
 	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
