@@ -14,6 +14,10 @@
 /*
     Defines
 */
+#define Dispatch() \
+    AROS_LC0(void, Dispatch, \
+    struct ExecBase *, SysBase, 10, Exec)
+
 #define CacheClearE(address, length, caches) \
     AROS_LC3(void, CacheClearE, \
     AROS_LCA(APTR,  address, A0), \
@@ -41,10 +45,6 @@
     AROS_LC0(void, Disable, \
     struct ExecBase *, SysBase, 20, Exec)
 
-#define Dispatch() \
-    AROS_LC0(void, Dispatch, \
-    struct ExecBase *, SysBase, 10, Exec)
-
 #define Enable() \
     AROS_LC0(void, Enable, \
     struct ExecBase *, SysBase, 21, Exec)
@@ -58,15 +58,24 @@
     struct ExecBase *, SysBase, 22, Exec)
 
 #define GetCC() \
-    AROS_LC0(void, GetCC, \
+    AROS_LC0(ULONG, GetCC, \
     struct ExecBase *, SysBase, 88, Exec)
 
 #define Permit() \
     AROS_LC0(void, Permit, \
     struct ExecBase *, SysBase, 23, Exec)
 
-#define SetSR() \
-    AROS_LC0(void, SetSR, \
+#define PrepareContext(stackPointer, entryPoint, fallBack) \
+    AROS_LC3I(APTR, PrepareContext, \
+    AROS_LCA(APTR, stackPointer, A0), \
+    AROS_LCA(APTR, entryPoint,   A1), \
+    AROS_LCA(APTR, fallBack,     A2), \
+    struct ExecBase *, SysBase, 6, Exec)
+
+#define SetSR(newSR, mask) \
+    AROS_LC2(ULONG, SetSR, \
+    AROS_LCA(ULONG, newSR, D0), \
+    AROS_LCA(ULONG, mask, D1), \
     struct ExecBase *, SysBase, 24, Exec)
 
 #define StackSwap(sss) \
@@ -90,13 +99,6 @@
 #define UserState() \
     AROS_LC0(void, UserState, \
     struct ExecBase *, SysBase, 26, Exec)
-
-#define PrepareContext(stackPointer, entryPoint, fallBack) \
-    AROS_LC3I(APTR, PrepareContext, \
-    AROS_LCA(APTR, stackPointer, A0), \
-    AROS_LCA(APTR, entryPoint,   A1), \
-    AROS_LCA(APTR, fallBack,     A2), \
-    struct ExecBase *, SysBase, 6, Exec)
 
 #define AbortIO(iORequest) \
     AROS_LC1I(LONG, AbortIO, \

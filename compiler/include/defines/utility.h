@@ -105,9 +105,9 @@
     struct UtilityBase *, UtilityBase, 13, Utility)
 
 #define GetTagData(tagValue, defaultVal, tagList) \
-    AROS_LC3(ULONG, GetTagData, \
+    AROS_LC3(IPTR, GetTagData, \
     AROS_LCA(Tag             , tagValue, D0), \
-    AROS_LCA(ULONG           , defaultVal, D1), \
+    AROS_LCA(IPTR            , defaultVal, D1), \
     AROS_LCA(struct TagItem *, tagList, A0), \
     struct UtilityBase *, UtilityBase, 6, Utility)
 

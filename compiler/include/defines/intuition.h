@@ -376,6 +376,11 @@
     AROS_LCA(struct Window *, window, A0), \
     struct IntuitionBase *, IntuitionBase, 39, Intuition)
 
+#define ScreenToBack(screen) \
+    AROS_LC1(void, ScreenToBack, \
+    AROS_LCA(struct Screen *, screen, A0), \
+    struct IntuitionBase *, IntuitionBase, 41, Intuition)
+
 #define ScreenToFront(screen) \
     AROS_LC1(void, ScreenToFront, \
     AROS_LCA(struct Screen *, screen, A0), \
@@ -393,7 +398,7 @@
     struct IntuitionBase *, IntuitionBase, 90, Intuition)
 
 #define SetGadgetAttrsA(gadget, window, requester, tagList) \
-    AROS_LC4(ULONG, SetGadgetAttrsA, \
+    AROS_LC4(IPTR, SetGadgetAttrsA, \
     AROS_LCA(struct Gadget *,    gadget,    A0), \
     AROS_LCA(struct Window *,    window,    A1), \
     AROS_LCA(struct Requester *, requester, A2), \

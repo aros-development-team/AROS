@@ -404,4 +404,5 @@
     AROS_LCA(struct Rectangle *, rectangle, A1), \
     struct GfxBase *, GfxBase, 93, Graphics)
 
+
 #endif /* DEFINES_GRAPHICS_H */
