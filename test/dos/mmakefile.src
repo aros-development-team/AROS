@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES           := getenv
+FILES           := getenv namefromfh
 EXEDIR          := $(AROS_TESTS)/dos
 
 #MM- test : test-dos
