@@ -9,6 +9,7 @@ EXE    := $(EXEDIR)/Partition
 
 USE_CLIB_STATIC := yes
 USE_AMIGALIB    := yes
+USE_MLIB    := yes
 NO_AUTOINIT     := yes
 
 #MM- workbench-c : workbench-c-partition
