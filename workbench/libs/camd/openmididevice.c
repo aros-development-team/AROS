@@ -135,7 +135,6 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 			    }
 			    driver->seglist=seglist;
 			    driver->mididevicedata=mididevicedata;
-			    driver->numports=mididevicedata->NPorts;
 			    
 			    ObtainSemaphore(CB(CamdBase)->CLSemaphore);
 			    driver->next=CB(CamdBase)->drivers;

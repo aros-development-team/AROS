@@ -239,6 +239,8 @@ void LoadDriver(char *name,
 		driver=driver->next;
 	}
 
+	driver->numports=mididevicedata->NPorts;
+
 	if(AllocDriverData(driver,mididevicedata,CamdBase)==FALSE){
 		FreeDriverData(driver,CamdBase);
 		CloseMidiDevice(mididevicedata);
