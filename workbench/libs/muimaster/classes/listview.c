@@ -30,14 +30,7 @@ struct MUI_ListviewData
     struct Hook hook;
 };
 
-#ifndef __AROS__
-__asm ULONG Listview_Layout_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 struct MUI_LayoutMsg *lm)
-#else
-AROS_UFH3(ULONG,Listview_Layout_Function,
-	AROS_UFHA(struct Hook *, hook,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(struct MUI_LayoutMsg *, lm,  A1))
-#endif
+ULONG Listview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_LayoutMsg *lm)
 {
     struct MUI_ListviewData *data = (struct MUI_ListviewData *)hook->h_Data;
     switch (lm->lm_Type)
@@ -107,14 +100,7 @@ AROS_UFH3(ULONG,Listview_Layout_Function,
 #define LIST_VERT_VISIBLE 5
 #define LIST_VERT_ENTRIES 6
 
-#ifndef __AROS__
-__asm ULONG Listview_Function(register __a0 struct Hook *hook, register __a1 void **msg)
-#else
-AROS_UFH3(ULONG,Listview_Function,
-	AROS_UFHA(struct Hook *, hook,  A0),
-	AROS_UFHA(APTR, dummy, A2),
-	AROS_UFHA(void **, msg,  A1))
-#endif
+ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
 {
     struct MUI_ListviewData *data = (struct MUI_ListviewData *)hook->h_Data;
     int type = (int)msg[0];
@@ -158,7 +144,8 @@ static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     layout_hook = mui_alloc_struct(struct Hook);
     if (!layout_hook) return NULL;
 
-    layout_hook->h_Entry = (HOOKFUNC)Listview_Layout_Function;
+    layout_hook->h_Entry = HookEntry;
+    layout_hook->h_SubEntry = (HOOKFUNC)Listview_Layout_Function;
 
     obj = (Object *)DoSuperNew(cl, obj,
 	MUIA_Group_Horiz, FALSE,
@@ -190,7 +177,8 @@ static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->group = group;
     data->layout_hook = layout_hook;
 
-    data->hook.h_Entry = (HOOKFUNC)Listview_Function;
+    data->hook.h_Entry = HookEntry;
+    data->hook.h_SubEntry = (HOOKFUNC)Listview_Function;
     data->hook.h_Data = data;
 
     /* parse initial taglist */
