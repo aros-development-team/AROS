@@ -417,10 +417,10 @@ char * readText (FILE * fh, char * delim)
     int textLen = 0;
     int delimLen = strlen (delim);
     int n;
-    
+
     while ( (line = get_line (fh)) )
     {
-	if (line[0] == '#' && line[1] == '/' 
+	if (line[0] == '#' && line[1] == '/'
 	    && !strncmp (line+2, delim, delimLen))
 	{
 	    free (line);
@@ -526,13 +526,14 @@ Parameter * newParameter (FILE * fh, int num, char ** header)
 	node->name[2] = 0;
 	// printf ("Reg %s\n", node->name);
 	AddTail (&par->registers, node);
-	
+
 	ptr += 2;
 	if (*ptr == '/')
 	    ptr ++;
     }
-    
+
     if (strlen (header[num-1]) == 5)
+    //if (num == 5)
 	par->macro = "LHAQUAD";
     else
 	par->macro = "LHA";
@@ -1089,7 +1090,7 @@ void writeFunctionToFile (FILE * fh, Function * func)
     Parameter * par;
     Node * reg;
     char str[128], * ptr;
-    
+
     writeFuncHeader (fh, func, "AROS_LH");
     ForeachNode (&func->parameters, par)
     {
@@ -1103,7 +1104,7 @@ void writeFunctionToFile (FILE * fh, Function * func)
 	}
 	//printf ("Reg '%s'\n", str);
 
-	fprintf (fh, "    AROS_%s(%s, %s, %s), \\\n", 
+	fprintf (fh, "    AROS_%s(%s, %s, %s), \\\n",
 	    par->macro, par->type, par->node.name, str
 	);
     }
@@ -1351,7 +1352,7 @@ int gensource(int argc, char **argv)
     Function * func;
     char * filename;
     FILE * fh;
-    
+
     if(argc != 3)
     {
 	fprintf( stderr, "Usage: %s <destfile> <archfiles...>\n", argv[0] );
@@ -1377,7 +1378,7 @@ int gensource(int argc, char **argv)
     fclose (fh);
     moveifchanged (argv[1], filename);
     free (filename);
-    
+
     return 0;
 }
 
@@ -1950,7 +1951,7 @@ int firstlvo;
     fprintf( fdo, "\n" );
   }
   fprintf( fdo, "\n/* Defines */\n" );
-  
+
   macro[0] = strdup("LC");
   macro[1] = strdup("LCA");
   in_archive = 0;
@@ -1979,12 +1980,13 @@ int firstlvo;
       else if( strcmp(word,"Options")==0 && in_function && !in_code && !in_autodoc )
       {
         num = get_words ( line, &words );
-        if(strcmp(words[1],"LHAQUAD")==0)
+        if(strcmp(words[1],"QUAD")==0)
         {
           free ( macro[0] );
           free ( macro[1] );
           macro[0] = strdup("LCQUAD");
           macro[1] = strdup("LCAQUAD");
+	  numregs = 2;
         }
       }
       else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
@@ -2051,28 +2053,39 @@ int firstlvo;
         numparams++;
         num = get_words( line, &words );
         name = realloc( name, (numparams+1) * sizeof(char *) );
-        name[numparams] = strdup( words[num-1-numregs] );
+        name[numparams] = strdup( words[num-2] );
         type = realloc( type, (numparams+1) * sizeof(char *) );
         len = 0;
-        for( i=1 ; i < num-1-numregs ; i++ )
+        for( i=1 ; i < num-2 ; i++ )
           len += strlen(words[i]);
-        type[numparams] = malloc( (len+num-2-numregs) * sizeof(char) );
+        type[numparams] = malloc( (len+num-3) * sizeof(char) );
         strcpy( type[numparams], words[1]);
-        for( i=2 ; i < num-1-numregs ; i++ )
+        for( i=2 ; i < num-2 ; i++ )
         {
           strcat( type[numparams], " " );
           strcat( type[numparams], words[i] );
         }
-        reg = realloc( reg, (numparams+1)*sizeof(char *) );
-        reg[numparams] = strdup( words[num-numregs] );
-        len = strlen( words[num-numregs] );
-        for( i = numregs-1 ; i > 0 ; i-- )
-        {
-          len += strlen( words[num-i] ) + 2;
-          reg[numparams] = realloc( reg[numparams], (len+1) * sizeof(char) );
-          strcat( reg[numparams], ", " );
-          strcat( reg[numparams], words[num-i] );
-        }
+
+	reg = realloc( reg, (numparams+1)*sizeof(char *) );
+        reg[numparams] = malloc(4*numregs - 1);
+	reg[numparams][4*numregs -1] = '\0';
+	strncpy(reg[numparams], words[num-1], 2);
+	reg[numparams][4*numregs -1] = 	reg[numparams][2] = '\0';
+	for (i = 2 ; words[num-1][i]; )
+	{
+	    if (words[num-1][i++] == '/')
+	    {
+		strcat(reg[numparams], ", ");
+		strncat(reg[numparams], &words[num-1][i], 2);
+		i+=2;
+		len += 4;
+            }
+	    else
+	    {
+	        fprintf(stderr, "Error: register name not known '%s'\n", &words[num-1][i]);
+		exit(1);
+            }
+	}
         do
         {
           free ( line );
@@ -2199,7 +2212,7 @@ int firstlvo;
     fprintf( fdo, "\n" );
   }
   fprintf( fdo, "\n/* Prototypes */\n" );
-  
+
   macro[0] = strdup("LP");
   macro[1] = strdup("LPA");
   in_archive = 0;
@@ -2228,7 +2241,7 @@ int firstlvo;
       else if( strcmp(word,"Options")==0 && in_function && !in_code && !in_autodoc )
       {
         num = get_words ( line, &words );
-        if(strcmp(words[1],"LHAQUAD")==0)
+        if(strcmp(words[1],"QUAD")==0)
         {
           free ( macro[0] );
           free ( macro[1] );
@@ -2296,28 +2309,39 @@ int firstlvo;
         numparams++;
         num = get_words( line, &words );
         name = realloc( name, (numparams+1) * sizeof(char *) );
-        name[numparams] = strdup( words[num-1-numregs] );
+        name[numparams] = strdup( words[num-2] );
         type = realloc( type, (numparams+1) * sizeof(char *) );
         len = 0;
-        for( i=1 ; i < num-1-numregs ; i++ )
+        for( i=1 ; i < num-2 ; i++ )
           len += strlen(words[i]);
-        type[numparams] = malloc( (len+num-2-numregs) * sizeof(char) );
+        type[numparams] = malloc( (len+num-3) * sizeof(char) );
         strcpy( type[numparams], words[1]);
-        for( i=2 ; i < num-1-numregs ; i++ )
+        for( i=2 ; i < num-2 ; i++ )
         {
           strcat( type[numparams], " " );
           strcat( type[numparams], words[i] );
         }
-        reg = realloc( reg, (numparams+1)*sizeof(char *) );
-        reg[numparams] = strdup( words[num-numregs] );
-        len = strlen( words[num-numregs] );
-        for( i = numregs-1 ; i > 0 ; i-- )
-        {
-          len += strlen( words[num-i] ) + 2;
-          reg[numparams] = realloc( reg[numparams], (len+1) * sizeof(char) );
-          strcat( reg[numparams], ", " );
-          strcat( reg[numparams], words[num-i] );
-        }
+
+	reg = realloc( reg, (numparams+1)*sizeof(char *) );
+        reg[numparams] = malloc(4*numregs - 1);
+	reg[numparams][4*numregs -1] = '\0';
+	strncpy(reg[numparams], words[num-1], 2);
+	reg[numparams][4*numregs -1] = 	reg[numparams][2] = '\0';
+	for (i = 2 ; words[num-1][i]; )
+	{
+	    if (words[num-1][i++] == '/')
+	    {
+		strcat(reg[numparams], ", ");
+		strncat(reg[numparams], &words[num-1][i], 2);
+		i+=2;
+		len += 4;
+            }
+	    else
+	    {
+	        fprintf(stderr, "Error: register name not known '%s'\n", &words[num-1][i]);
+		exit(1);
+            }
+	}
         do
         {
           free ( line );
@@ -3484,7 +3508,7 @@ int firstlvo;
       else if( strcmp(word,"Options")==0 && in_function && !in_code && !in_autodoc )
       {
         num = get_words ( line, &words );
-        if(strcmp(words[1],"LHAQUAD")==0)
+        if(strcmp(words[1],"QUAD")==0)
         {
           numregs = 2;
         }
@@ -3584,28 +3608,39 @@ int firstlvo;
         numparams++;
         num = get_words( line, &words );
         name = realloc( name, (numparams+1) * sizeof(char *) );
-        name[numparams] = strdup( words[num-1-numregs] );
+        name[numparams] = strdup( words[num-2] );
         type = realloc( type, (numparams+1) * sizeof(char *) );
         len = 0;
-        for( i=1 ; i < num-1-numregs ; i++ )
+        for( i=1 ; i < num-2 ; i++ )
           len += strlen(words[i]);
-        type[numparams] = malloc( (len+num-2-numregs) * sizeof(char) );
+        type[numparams] = malloc( (len+num-3) * sizeof(char) );
         strcpy( type[numparams], words[1]);
-        for( i=2 ; i < num-1-numregs ; i++ )
+        for( i=2 ; i < num-2 ; i++ )
         {
           strcat( type[numparams], " " );
           strcat( type[numparams], words[i] );
         }
-        reg = realloc( reg, (numparams+1)*sizeof(char *) );
-        reg[numparams] = strdup( words[num-numregs] );
-        len = strlen( words[num-numregs] );
-        for( i = numregs-1 ; i > 0 ; i-- )
-        {
-          len += strlen( words[num-i] ) + 2;
-          reg[numparams] = realloc( reg[numparams], (len+1) * sizeof(char) );
-          strcat( reg[numparams], ", " );
-          strcat( reg[numparams], words[num-i] );
-        }
+
+	reg = realloc( reg, (numparams+1)*sizeof(char *) );
+        reg[numparams] = malloc(4*numregs - 1);
+	reg[numparams][4*numregs -1] = '\0';
+	strncpy(reg[numparams], words[num-1], 2);
+	reg[numparams][4*numregs -1] = 	reg[numparams][2] = '\0';
+	for (i = 2 ; words[num-1][i]; )
+	{
+	    if (words[num-1][i++] == '/')
+	    {
+		strcat(reg[numparams], ", ");
+		strncat(reg[numparams], &words[num-1][i], 2);
+		i+=2;
+		len += 4;
+            }
+	    else
+	    {
+	        fprintf(stderr, "Error: register name not known '%s'\n", &words[num-1][i]);
+		exit(1);
+            }
+	}
         strlower(reg[numparams]);
         do
         {
@@ -3863,7 +3898,7 @@ int firstlvo;
       else if( strcmp(word,"Options")==0 && in_function && !in_code && !in_autodoc )
       {
         num = get_words ( line, &words );
-        if(strcmp(words[1],"LHAQUAD")==0)
+        if(strcmp(words[1],"QUAD")==0)
         {
           free ( macro[0] );
           free ( macro[1] );
@@ -3986,29 +4021,41 @@ int firstlvo;
         numparams++;
         num = get_words( line, &words );
         name = realloc( name, (numparams+1) * sizeof(char *) );
-        name[numparams] = strdup( words[num-1-numregs] );
+        name[numparams] = strdup( words[num-2] );
         type = realloc( type, (numparams+1) * sizeof(char *) );
         len = 0;
-        for( i=1 ; i < num-1-numregs ; i++ )
+        for( i=1 ; i < num-2 ; i++ )
           len += strlen(words[i]);
-        type[numparams] = malloc( (len+num-2-numregs) * sizeof(char) );
+        type[numparams] = malloc( (len+num-3) * sizeof(char) );
         strcpy( type[numparams], words[1]);
-        for( i=2 ; i < num-1-numregs ; i++ )
+        for( i=2 ; i < num-2 ; i++ )
         {
           strcat( type[numparams], " " );
           strcat( type[numparams], words[i] );
         }
-        reg = realloc( reg, (numparams+1)*sizeof(char *) );
-        reg[numparams] = strdup( words[num-numregs] );
-        len = strlen( words[num-numregs] );
-        for( i = numregs-1 ; i > 0 ; i-- )
-        {
-          len += strlen( words[num-i] ) + 2;
-          reg[numparams] = realloc( reg[numparams], (len+1) * sizeof(char) );
-          strcat( reg[numparams], ", " );
-          strcat( reg[numparams], words[num-i] );
-        }
-        do
+
+	reg = realloc( reg, (numparams+1)*sizeof(char *) );
+        reg[numparams] = malloc(4*numregs - 1);
+	reg[numparams][4*numregs -1] = '\0';
+	strncpy(reg[numparams], words[num-1], 2);
+	reg[numparams][4*numregs -1] = 	reg[numparams][2] = '\0';
+	for (i = 2 ; words[num-1][i]; )
+	{
+	    if (words[num-1][i++] == '/')
+	    {
+		strcat(reg[numparams], ", ");
+		strncat(reg[numparams], &words[num-1][i], 2);
+		i+=2;
+		len += 4;
+            }
+	    else
+	    {
+	        fprintf(stderr, "Error: register name not known '%s'\n", &words[num-1][i]);
+		exit(1);
+            }
+	}
+
+	do
         {
           free ( line );
           line = get_line( fd );
