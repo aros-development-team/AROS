@@ -20,6 +20,8 @@
 
 #include <hidd/graphics.h>
 
+#include <string.h>
+
 #include "display.h"
 #include "displayclass.h"
 
