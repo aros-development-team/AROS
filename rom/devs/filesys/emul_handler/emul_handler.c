@@ -273,7 +273,7 @@ ULONG prot_u2a(mode_t protect)
 
 
 /* Free a filehandle */
-static LONG free_lock(struct filehandle *current)
+static LONG free_lock(struct emulbase *emulbase, struct filehandle *current)
 {
     switch(current->type)
     {
@@ -305,7 +305,7 @@ static LONG free_lock(struct filehandle *current)
 	        free(current->name);
 	    break;
     }
-    free(current);
+    FreeMem(current, sizeof(struct filehandle));
     return 0;
 }
 
@@ -316,7 +316,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
     struct filehandle *fh;
     struct stat st;
     long flags;
-    fh=(struct filehandle *)malloc(sizeof(struct filehandle));
+    fh=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
     if(fh!=NULL)
     {
         fh->pathname = NULL; /* just to make sure... */
@@ -372,7 +372,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
 	    if (!ret)
 		ret = err_u2a();
 	}
-	free(fh);
+	FreeMem(fh, sizeof(struct filehandle));
     } else
 	ret = ERROR_NO_FREE_STORE;
     return ret;
@@ -384,7 +384,7 @@ static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRP
     struct filehandle *fh;
     mode_t prot;
     long flags;
-    fh=(struct filehandle *)malloc(sizeof(struct filehandle));
+    fh=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
     if(fh!=NULL)
     {
         fh->pathname = NULL; /* just to make sure... */
@@ -422,7 +422,7 @@ static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRP
 	    ret=err_u2a();
 	    free(fh->name);
 	}
-	free(fh);
+	FreeMem(fh, sizeof(struct filehandle));
     }
     return ret;
 }
@@ -434,7 +434,7 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
     LONG ret = 0;
     struct filehandle *fh;
 
-    fh = (struct filehandle *)malloc(sizeof(struct filehandle));
+    fh = (struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
     if (fh)
     {
         fh->pathname = NULL; /* just to make sure... */
@@ -456,7 +456,7 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
 	    }
 	    ret = err_u2a();
 	}
-	free_lock(fh);
+	free_lock(emulbase, fh);
     } else
 	ret = ERROR_NO_FREE_STORE;
 
@@ -504,24 +504,24 @@ static LONG startup(struct emulbase *emulbase)
     ExpansionBase = OpenLibrary("expansion.library",0);
     if(ExpansionBase != NULL)
     {
-	fhi=(struct filehandle *)malloc(sizeof(struct filehandle));
+	fhi=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
 	if(fhi!=NULL)
 	{
             fhi->pathname = NULL; /* just to make sure... */
             fhi->DIR      = NULL;
 	
-	    fho=(struct filehandle *)malloc(sizeof(struct filehandle));
+	    fho=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
 	    if(fho!=NULL)
 	    {
                 fho->pathname = NULL; /* just to make sure... */
                 fho->DIR      = NULL;
 
-		fhe=(struct filehandle *)malloc(sizeof(struct filehandle));
+		fhe=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
 		if(fhe!=NULL)
 		{
                     fhe->pathname = NULL; /* just to make sure... */
                     fhe->DIR      = NULL;
-		    fhv=(struct filehandle *)malloc(sizeof(struct filehandle));
+		    fhv=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
 		    if(fhv != NULL)
 		    {
 			struct stat st;
@@ -591,13 +591,13 @@ static LONG startup(struct emulbase *emulbase)
 			    */
 			    Alert(AT_DeadEnd|AO_Unknown|AN_Unknown );
 			}
-			free_lock(fhv);
+			free_lock(emulbase, fhv);
 		    }
-		    free(fhe);
+		    FreeMem(fhe, sizeof(struct filehandle));
 		}
-		free(fho);
+		FreeMem(fho, sizeof(struct filehandle));
 	    }
-	    free(fhi);
+	    FreeMem(fhi, sizeof(struct filehandle));
 	}
     }
     CloseLibrary(ExpansionBase);
@@ -923,7 +923,7 @@ static LONG create_hardlink(struct emulbase *emulbase,
     LONG error=0L;
     struct filehandle *fh;
 
-    fh = malloc(sizeof(struct filehandle));
+    fh = AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
     if (!fh)
       return ERROR_NO_FREE_STORE;
 
@@ -940,7 +940,7 @@ static LONG create_hardlink(struct emulbase *emulbase,
     } else
     {
         error = ERROR_NO_FREE_STORE;
-        free(fh);
+        FreeMem(fh, sizeof(struct filehandle));
     }
 
     return error;
@@ -953,7 +953,7 @@ static LONG create_softlink(struct emulbase * emulbase,
     LONG error=0L;
     struct filehandle *fh;
 
-    fh = malloc(sizeof(struct filehandle));
+    fh = AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
     if(!fh)
       return ERROR_NO_FREE_STORE;
 
@@ -970,7 +970,7 @@ static LONG create_softlink(struct emulbase * emulbase,
     } else
     {
         error = ERROR_NO_FREE_STORE;
-        free(fh);
+        FreeMem(fh, sizeof(struct filehandle));
     }
 
     return error;
@@ -1128,7 +1128,7 @@ AROS_LH1(void, beginio,
 	    break;
 
 	case FSA_CLOSE:
-	    error=free_lock((struct filehandle *)iofs->IOFS.io_Unit);
+	    error=free_lock(emulbase, (struct filehandle *)iofs->IOFS.io_Unit);
 	    break;
 
 	case FSA_READ:
