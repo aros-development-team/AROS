@@ -86,7 +86,7 @@ DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(PRE_FUNCS) $(END_FILE),$(OBJDIR)/$(f
 OBJS := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 #MM
-kernel-graphics-linux-$(CPU) : show-flags $(LIB)
+kernel-graphics-linklib : show-flags $(LIB)
 	@$(NOP)
 
 $(LIB) : $(OBJS)
@@ -97,7 +97,7 @@ show-flags :
 	@echo "CFLAGS=$(CFLAGS)"
 
 # MetaMake targets
-#MM kernel-graphics : setup includes graphics-$(ARCH) kernel-graphics-$(ARCH)-$(CPU)
+#MM kernel-graphics : setup includes kernel-graphics-$(ARCH)-$(CPU)
 kernel-graphics :
 	@$(NOP)
 
