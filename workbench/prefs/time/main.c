@@ -433,7 +433,7 @@ static void ClockFunc(struct Hook *hook, Object *obj, IPTR *param)
 	    IPTR number = 0;
 	    
 	    set(obj, MUIA_Clock_Frozen, TRUE);
-	    get(obj, MUIA_Clock_Time, (IPTR)&cd);
+	    get(obj, MUIA_Clock_Time, &cd);
 	    
 	    cd2 = *cd;
 	    

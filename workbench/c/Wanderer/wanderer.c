@@ -711,7 +711,7 @@ void wanderer_about(void)
     STRPTR base;
     STRPTR params[] = { NULL, NULL };
 
-    get(app, MUIA_Application_Base, (IPTR)&base);
+    get(app, MUIA_Application_Base, &base);
     params[0] = base;
 
     MUI_RequestA(app,NULL,0,"About Wanderer", "*Better than ever",

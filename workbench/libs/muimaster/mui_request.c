@@ -220,7 +220,7 @@ AROS_UFH2S(void, len_func,
 	    // COLLECT_RETURNIDS;
 
 	    set(req_wnd, MUIA_Window_Open, TRUE);
-	    get(req_wnd, MUIA_Window_Open, (IPTR)&isopen);
+	    get(req_wnd, MUIA_Window_Open, &isopen);
 
 	    if (isopen)
 	    {
