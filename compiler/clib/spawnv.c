@@ -147,13 +147,19 @@ static char *join_args(char * const *argv);
 	    if (!childdata.command)
 	        goto err_wait;
 
+	    D(bug("Command loaded = %s\n", apath));
+
 	    tags[4].ti_Data = (IPTR)join_args(&argv[1]);
 	    if (!tags[4].ti_Data)
 	        goto err_wait;
 
+	    D(bug("Args joined = %s\n", (char *)tags[4].ti_Data));
+
 	    in  = DupFHFromfd(STDIN_FILENO,  FMF_READ);
 	    out = DupFHFromfd(STDOUT_FILENO, FMF_WRITE);
 	    err = DupFHFromfd(STDERR_FILENO, FMF_WRITE);
+
+	    D(bug("in = %p - out = %p - err = %p\n", BADDR(in), BADDR(out), BADDR(err)))
 
 	    if (in)  tags[1].ti_Data = (IPTR)in;
 	    else     tags[1].ti_Tag  = TAG_IGNORE;
@@ -168,11 +174,14 @@ static char *join_args(char * const *argv);
 	    else
 	        ret = -1;
 
+	    D(bug("Process created successfully: %s\n", ret == -1 ? "NO" : "YES"))
+
 	    Close(in); Close(out); Close(err);
 
 	    err_wait:
             UnLoadSeg(childdata.command);
 
+	    D(bug("Command unloaded\n"));
             break;
 	}
 
@@ -251,15 +260,13 @@ static char *join_args(char * const *argv)
       return argv[0];
 
 
-
   for (argc = 0; argv[argc] != NULL; argc++)
       size += strlen(argv[argc]);
 
-  args = __get_arosc_privdata()->acpd_joined_args = realloc_nocopy(args, size+argc);
+  #define __args (__get_arosc_privdata()->acpd_joined_args)
+  args = __args = realloc_nocopy(__args, size+argc);
   if (!args)
       return NULL;
-
-  args[0] = '\0';
 
   last_arg_ptr = args;
   for (argc = 0; argv[argc] != NULL; argc++)
@@ -273,7 +280,7 @@ static char *join_args(char * const *argv)
       last_arg_ptr[-1] = ' ';
   }
 
-  last_arg_ptr[0] = '\0';
+  last_arg_ptr[-1] = '\0';
 
   return args;
 }
