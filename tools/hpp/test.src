@@ -1,19 +1,4 @@
-<EDEF NAME="filename" BEGIN="<B><I><TT>" END="</TT></I></B>">
-<EDEF NAME="code" BEGIN="<PRE>" END="</PRE>">
-<EDEF NAME="stdfunc" BEGIN="<FONT COLOR="orange"><B>" END="</B></FONT>">
-<EDEF NAME="ckeyword" BEGIN="<FONT COLOR="black"><B>" END="</B></FONT>">
-<EDEF NAME="cppkeyword" BEGIN="<FONT COLOR="green"><B>" END="</B></FONT>">
-<EDEF NAME="ccomment" BEGIN="<FONT COLOR="green"><I>" END="</I></FONT>">
-<EDEF NAME="cidentifier" BEGIN="<FONT COLOR="black"><I>" END="</I></FONT>">
-<EDEF NAME="cpunctuation" BEGIN="<FONT COLOR="black"><TT>" END="</TT></FONT>">
-
-<DEF NAME="filename" OPTION="text"><
-    IF COND="$checkdb(filenames,$text)"><
-	filename><LINK NAME="$text" REF="$querydb(filenames,$text)"></filename><
-    ELSE><
-	filename>$text</filename><
-    /IF><
-/DEF>
+<INCLUDE FILE="test.inc">
 
 &lt;
 &gt;
@@ -22,23 +7,15 @@
 <filename>This is a filename</filename>
 
 This is a filename <filename text="test.src">.
-
-<BDEF NAME="code" OPTION="type">
-<   ENV NAME="code"><
-    FILTER CMD="format -type $type -outformat $outputFormat $infilename"
-	VerbatimInput InputFile ProcessOutput><
-    /ENV><
-/BDEF>
+<P>
 
 <code type="c">
 #include <stdio.h>
 
 int a;
-
 char * str[] = "this is a string";
 
 /* This is a comment */
-
 {
     indentation works + 5;
 
