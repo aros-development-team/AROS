@@ -789,11 +789,22 @@ enum
 /* Drawmodes for a graphics context */
 
 
-#define vHidd_GC_DrawMode_Clear 	0x00 /* 0 */
-#define vHidd_GC_DrawMode_And 		0x01 /* src AND dst	*/
-#define vHidd_GC_DrawMode_Copy 		0x03 /* src		*/
-#define vHidd_GC_DrawMode_Xor  		0x06 /* src XOR dst	*/
-#define vHidd_GC_DrawMode_Invert  	0x0A /* NOT dst		*/
+#define vHidd_GC_DrawMode_Clear 	0x00 /* 0   	    	    */
+#define vHidd_GC_DrawMode_And 		0x01 /* src AND dst	    */
+#define vHidd_GC_DrawMode_AndReverse	0x02 /* src AND NOT dst     */
+#define vHidd_GC_DrawMode_Copy 		0x03 /* src		    */
+#define vHidd_GC_DrawMode_AndInverted	0x04 /* NOT src AND dst     */
+#define vHidd_GC_DrawMode_NoOp	    	0x05 /* dst 	    	    */
+#define vHidd_GC_DrawMode_Xor  		0x06 /* src XOR dst	    */
+#define vHidd_GC_DrawMode_Or	    	0x07 /* src OR dst  	    */
+#define vHidd_GC_DrawMode_Nor	    	0x08 /* NOT src AND NOT dst */
+#define vHidd_GC_DrawMode_Equiv     	0x09 /* NOT src XOR dst     */
+#define vHidd_GC_DrawMode_Invert  	0x0A /* NOT dst		    */
+#define vHidd_GC_DrawMode_OrReverse 	0x0B /* src OR NOT dst	    */
+#define vHidd_GC_DrawMode_CopyInverted  0x0C /* NOT src     	    */
+#define vHidd_GC_DrawMode_OrInverted	0x0D /* NOT src OR dst	    */
+#define vHidd_GC_DrawMode_Nand	    	0x0E /* NOT src OR NOT dst  */
+#define vHidd_GC_DrawMode_Set	    	0x0F /* 1   	    	    */
 
 
 #define vHidd_GC_ColExp_Transparent	(1 << 0)
