@@ -1,0 +1,36 @@
+#   Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+#   $Id$
+#
+#   Desc: target.cfg - an autoconf output file for make variables.
+#
+
+# -------------------------------------------------------------------------- 
+# TARGET SECTION
+# -------------------------------------------------------------------------- 
+#TARGET_ARCH	:= @aros_target_arch@
+#TARGET_CPU	:= @aros_target_cpu@
+FLAVOUR		:= @aros_flavour@
+SHARED_MOD	:= @aros_shared_default@
+SYS_INCLUDES	:= @aros_target_incl@
+
+TARGET_CC	:= @TARGET_CC@
+TARGET_AS	:= @TARGET_AS@
+STATIC_LD	:= @STATIC_LD@
+SHARED_LD	:= @SHARED_LD@
+KERNEL_LD	:= @KERNEL_LD@
+GENMAP		:= @aros_target_genmap@
+
+TARGET_CFLAGS	:= @aros_target_cflags@
+TARGET_AFLAGS	:= @aros_target_aflags@
+TARGET_LDFLAGS	:= @aros_target_ldflags@
+STATIC_CFLAGS	:= @aros_static_cflags@
+STATIC_AFLAGS	:= @aros_static_aflags@
+STATIC_LDFLAGS	:= @aros_static_ldflags@
+SHARED_CFLAGS	:= @aros_shared_cflags@
+SHARED_AFLAGS	:= @aros_shared_aflags@
+SHARED_LDFLAGS	:= @aros_shared_ldflags@
+KERNEL_LDFLAGS	:= @aros_kernel_ldflags@
+DEBUG_CFLAGS	:= @aros_debug_cflags@
+DEBUG_AFLAGS	:= @aros_debug_aflags@
+DEBUG_LDFLAGS	:= @aros_debug_ldflags@
+
