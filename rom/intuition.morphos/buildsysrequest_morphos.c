@@ -23,7 +23,6 @@
 #include <graphics/gfxmacros.h>
 #include <utility/tagitem.h>
 #include "intuition_intern.h"
-#include "maybe_boopsi.h"
 #include "requesters.h"
 
 /**********************************************************************************************

@@ -31,7 +31,6 @@
 #ifdef __MORPHOS__
 #include "intuition_extend.h"
 #endif
-#include "maybe_boopsi.h"
 
 #include "gadgets.h" /* Some handy rendering funtions */
 

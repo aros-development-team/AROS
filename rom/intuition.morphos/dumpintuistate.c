@@ -60,9 +60,7 @@ AROS_LH0(void, DumpIntuiState,
     ShowSemaphore("MenuLock", &IBase->MenuLock);
     ShowSemaphore("IntuiActionLock", &IBase->IntuiActionLock);
     ShowSemaphore("InputHandlerLock", &IBase->InputHandlerLock);
-#if INTERNAL_BOOPSI
     ShowSemaphore("ClassListLock", &IBase->ClassListLock);
-#endif
 
     dprintf("\nScreens:\n");
 

@@ -20,8 +20,6 @@
 
 #define DEBUG_NOTIFY(x) ;
 
-#if INTERNAL_BOOPSI
-
 /*
     Note: This file is essentially the contents of the file
     rom/intuition/notify.c which contained code used by the icclass
@@ -72,12 +70,9 @@ static struct IntuiMessage *SendIDCMPUpdate(
     return imsg;
 }
 
-#endif
-
 /*****i***********************************************************************
  
     NAME */
-#include "maybe_boopsi.h"
 
 AROS_LH4(IPTR, DoNotify,
 
@@ -118,14 +113,10 @@ AROS_LH4(IPTR, DoNotify,
  
     INTERNALS
  
-    HISTORY
- 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *, IntuitionBase)
-
-#if INTERNAL_BOOPSI
 
     DEBUG_NOTIFY(dprintf("DoNotify: cl 0x%lx o 0x%lx ICData 0x%lx opUpdate 0x%lx\n",cl,o,ic,msg));
 
@@ -214,14 +205,6 @@ AROS_LH4(IPTR, DoNotify,
     }
     return 1UL;
 
-#else
-
-/* call boopsi.library function */
-    return DoNotify(cl, o, ic, msg);
-
-#endif
-
     AROS_LIBFUNC_EXIT
-
 } /* DoNotify() */
 

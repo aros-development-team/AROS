@@ -30,7 +30,6 @@
 #include "intuition_customize.h"
 #endif
 
-#include "maybe_boopsi.h"
 #include "menus.h"
 #include "menutask.h"
 #include <cybergraphx/cybergraphics.h>

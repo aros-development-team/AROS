@@ -16,8 +16,6 @@
 #include <intuition/classes.h>
 #include <proto/intuition.h>
 
-#include "maybe_boopsi.h"
-
 AROS_LH1(APTR, NextObject,
 
          /*  SYNOPSIS */
@@ -60,8 +58,6 @@ AROS_LH1(APTR, NextObject,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#if INTERNAL_BOOPSI
-
     struct _Object *nextobject;
     APTR            oldobject;
 
@@ -85,12 +81,5 @@ AROS_LH1(APTR, NextObject,
 
     return oldobject;
 
-#else
-    /* Pass call to the boopsi.library */
-    return NextObject(objectPtrPtr);
-
-#endif
-
     AROS_LIBFUNC_EXIT
-
-} /* NextObject */
+} /* NextObject() */

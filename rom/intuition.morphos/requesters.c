@@ -17,7 +17,6 @@
 #include <intuition/imageclass.h>
 #include <graphics/rpattr.h>
 #include "intuition_intern.h"
-#include "maybe_boopsi.h"
 #include "requesters.h"
 
 #define DEBUG_REQUESTER(x)  ;

@@ -32,7 +32,6 @@
 #include "strgadgets.h"
 #include "gadgets.h"
 #include "intuition_intern.h" /* EWFLG_xxx */
-#include "maybe_boopsi.h"
 #include "inputhandler_support.h"
 #include "inputhandler_actions.h"
 #include "menus.h"

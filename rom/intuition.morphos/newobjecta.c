@@ -19,8 +19,6 @@
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
 
-#include "maybe_boopsi.h"
-
 AROS_LH3(APTR, NewObjectA,
 
          /*  SYNOPSIS */
@@ -63,18 +61,10 @@ AROS_LH3(APTR, NewObjectA,
     "Basic Object-Oriented Programming System for Intuition" and
     "boopsi Class Reference" Dokument.
 
-    INTERNALS
-
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-
-#if INTERNAL_BOOPSI
 
     Object * object;
     struct opSet method;
@@ -140,13 +130,5 @@ AROS_LH3(APTR, NewObjectA,
 
     ReturnPtr("intuition::NewObjectA()", Object *, object);
 
-#else
-
-/* Pass call to the BOOPSI.library */
-    return NewObjectA(classPtr, classID, tagList);
-
-#endif
-
     AROS_LIBFUNC_EXIT
-
-} /* NewObjectA */
+} /* NewObjectA() */

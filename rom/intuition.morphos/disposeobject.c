@@ -14,8 +14,6 @@
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
 
-#include "maybe_boopsi.h"
-
 AROS_LH1(void, DisposeObject,
 
          /*  SYNOPSIS */
@@ -53,16 +51,10 @@ AROS_LH1(void, DisposeObject,
  
     INTERNALS
  
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-
-#if INTERNAL_BOOPSI
 
     STACKULONG MethodID = OM_DISPOSE;
 
@@ -75,14 +67,7 @@ AROS_LH1(void, DisposeObject,
 
     DEBUG_DISPOSEOBJECT(dprintf("DisposeObject: 0x%lx deleted\n", object));
 
-#else
-
-/* pass to boopsi.library */
-    DisposeObject(object);
-
-#endif
-
     DEBUG_DISPOSEOBJECT(dprintf("DisposeObject: done\n"));
+    
     AROS_LIBFUNC_EXIT
-
-} /* DisposeObject */
+} /* DisposeObject() */

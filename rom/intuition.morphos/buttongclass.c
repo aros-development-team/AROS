@@ -27,7 +27,6 @@
 #include <utility/hooks.h>
 
 #include <clib/macros.h>
-
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
@@ -35,7 +34,6 @@
 
 #ifndef __MORPHOS__
 #include "intuition_intern.h"
-#include "maybe_boopsi.h"
 #include <aros/asmcall.h>
 #include <proto/alib.h>
 #include "gadgets.h"

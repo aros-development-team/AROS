@@ -23,7 +23,6 @@
 
 #include "intuition_intern.h"
 #include "inputhandler.h"
-#include "maybe_boopsi.h"
 #include "propgadgets.h"
 
 #define DEBUG_PROP(x)   ;

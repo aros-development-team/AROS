@@ -32,7 +32,6 @@
 #include "intuition_customize.h"
 #include "intuition_extend.h"
 #include "renderwindowframe.h"
-#include "maybe_boopsi.h"
 
 #include "gadgets.h" /* Some handy rendering funtions */
 

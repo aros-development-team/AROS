@@ -25,7 +25,6 @@
 #include "inputhandler.h"
 #include "intuition_intern.h"
 #include "intuition_customize.h"
-#include "maybe_boopsi.h"
 #include "menus.h"
 #include "menutask.h"
 #include "smallmenu.h"
