@@ -6,6 +6,8 @@
     Lang: English.
 */
 
+#include <string.h>
+
 #include <proto/graphics.h>
 #include <proto/dos.h>
 #include <graphics/text.h>
@@ -14,7 +16,6 @@
 
 #define DEBUG 0
 #include <aros/debug.h>
-#include <string.h>
 
 /****************************************************************************************/
 
@@ -46,6 +47,9 @@ AROS_UFH3(IPTR, MemoryFontFunc,
     struct TextFont             *curfont;
 
     struct TTextAttr *tattr = &(fhc->fhc_DestTAttr);
+
+    (void)h;
+
     D(bug("MemoryFontFunc(hook=%p, fhc=%p)\n", h, fhc));
         
     /* What command do we have */

@@ -46,7 +46,11 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,DiskfontBase)
 
-	return (0L);
+    (void)sourceFont;
+    (void)destTextAttr;
+    (void)DiskfontBase;
+
+    return (0L);
 
     AROS_LIBFUNC_EXIT
 } /* NewScaledDiskFont */

@@ -53,6 +53,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,DiskfontBase)
 
+    (void)DiskfontBase;
+
     FreeVec(fontContentsHeader);
 
     AROS_LIBFUNC_EXIT

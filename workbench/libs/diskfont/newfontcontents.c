@@ -114,7 +114,9 @@ struct contentsBuffer
 
     struct FileInfoBlock      *fib;
     struct FontContentsHeader *ret = NULL;
-    
+
+    (void) DiskfontBase;
+
     NEWLIST(&contentsList);
     oldDir = CurrentDir(fontsLock);
 
