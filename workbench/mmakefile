@@ -9,5 +9,6 @@
 #MM	    workbench-classes-complete \
 #MM	    workbench-s	\
 #MM	    workbench-hidds \
-#MM	    workbench-locale
+#MM	    workbench-locale \
+#MM	    tools
 
