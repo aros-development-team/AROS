@@ -72,8 +72,8 @@ ScriptArg *current, *dummy = NULL;
 struct ParameterList *parameter;
 struct ProcedureList *usrproc;
 int cmd_type, slen;
-long int i, j;
-char *clip, **mclip, *string;
+long int i = 0, j;
+char *clip = NULL, **mclip = NULL, *string = NULL;
 void *params;
 
   current = commands;
