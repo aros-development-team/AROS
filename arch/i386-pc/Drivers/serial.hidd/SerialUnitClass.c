@@ -33,7 +33,7 @@
 
 #include <devices/serial.h>
 
-
+#include <aros/asmcall.h>
 
 #include "serial_intern.h"
 
