@@ -207,7 +207,7 @@ static void emit_html_toc (void)
 		emit_special ("</UL>\n");
 		s = 0;
 	    }
-	    emit_special ("<LI><FONT SIZE=\"+3\"><B><A HREF=\"%s#%d\">Appendix %s %s (%s)</A></B></FONT>\n",
+	    emit_special ("<LI><FONT SIZE=\"+1\"><B><A HREF=\"%s#%d\">Appendix %s %s (%s)</A></B></FONT>\n",
 		filename,
 		label,
 		num,
@@ -227,7 +227,7 @@ static void emit_html_toc (void)
 		emit_special ("</UL>\n");
 		s = 0;
 	    }
-	    emit_special ("<LI><FONT SIZE=\"+3\"><B><A HREF=\"%s#%d\">Chapter %s %s (%s)</A></B></FONT>\n",
+	    emit_special ("<LI><FONT SIZE=\"+1\"><B><A HREF=\"%s#%d\">Chapter %s %s (%s)</A></B></FONT>\n",
 		filename,
 		label,
 		num,
@@ -247,7 +247,7 @@ static void emit_html_toc (void)
 		emit_special ("</UL>\n");
 		ss = 0;
 	    }
-	    emit_special ("<LI><FONT SIZE=\"+2\"><B><A HREF=\"%s#%d\">%s %s (%s)</A></B></FONT>\n",
+	    emit_special ("<LI><B><A HREF=\"%s#%d\">%s %s (%s)</A></B>\n",
 		filename,
 		label,
 		num,
@@ -262,7 +262,7 @@ static void emit_html_toc (void)
 		emit_special ("<UL>\n");
 	    }
 	    ss++;
-	    emit_special ("<LI><FONT SIZE=\"+1\"><B><A HREF=\"%s#%d\">%s %s (%s)</A></B></FONT>\n\n",
+	    emit_special ("<LI><FONT SIZE=\"-1\"><B><A HREF=\"%s#%d\">%s %s (%s)</A></B></FONT>\n\n",
 		filename,
 		label,
 		num,
