@@ -1,8 +1,10 @@
-#   $Id$
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
 include $(TOP)/config/make.cfg
 
 DTDIR 		:= $(DEVSDIR)/DataTypes
-FILES 		:= FTXT PPM PPM_ASCII ILBM GIF BMP JPEG PNG
+FILES 		:= FTXT PPM PPM_ASCII ILBM GIF BMP JPEG PNG ELF ELF_EXE
 DTFILES		:= $(foreach f, $(FILES), $(DTDIR)/$(f))
 
 #MM- workbench-devs-complete : workbench-devs-datatypes
