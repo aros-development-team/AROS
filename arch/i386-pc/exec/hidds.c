@@ -12,6 +12,9 @@
 #include <intuition/intuition.h>
 
 #include <exec/memory.h>
+#include <exec/types.h>
+
+#include <devices/trackdisk.h>
 
 #include <proto/exec.h>
 #include <graphics/gfx.h>
@@ -23,14 +26,15 @@
 #include <hidd/serial.h>
 
 #include "../speaker.h"
-
+#include "msdos_di.h"
+ 
 #define ioStd(x) ((struct IOStdReq *)x)
 
 void hidd_demo()
 {
     kprintf("graphics.hidd = %08.8lx\n",OpenLibrary("graphics.hidd",0));
     kprintf("vga.hidd = %08.8lx\n",OpenLibrary("vga.hidd",0));
-    
+
     {
 	struct GfxBase *GfxBase;
 	BOOL success = FALSE;
@@ -99,12 +103,14 @@ void hidd_demo()
 
     {
         struct IntuitionBase *IntuitionBase;
+        struct GfxBase *GfxBase;
         struct Window * win;
         int x = 100;
         int y = 100;
 
 
 	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
+        GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
 	if (IntuitionBase)
 	{
 	    struct TagItem tags[] = {
@@ -156,6 +162,69 @@ void hidd_demo()
 	  }
 	}
 
+	if(win)
+	{
+        	struct DriveGeometry MyDG;
+        	struct IOExtTD *MyIO;
+        	struct MsgPort *trackport;
+        	struct fat_boot_sector *fb;
+        	UBYTE *buf;
+
+        	trackport=CreateMsgPort();
+
+        	MyIO = (struct IOExtTD *)CreateExtIO(trackport, sizeof(struct IOExtTD));
+
+        	if (OpenDevice("trackdisk.device", 0, (struct IORequest*)MyIO,0))
+        	{
+			BlackPrint(&win->WScreen->RastPort, "Can't open trackdisk.device unit 0 !", 40);
+        	}
+        	else
+        	{
+			char TempString[60];
+
+                	buf = AllocVec (2 * 512, MEMF_CHIP);
+
+                	MyIO->iotd_Req.io_Command=TD_GETGEOMETRY;
+                	MyIO->iotd_Req.io_Data= &MyDG;
+                	MyIO->iotd_Req.io_Length=sizeof(struct DriveGeometry);
+                	DoIO((struct IORequest *)MyIO);
+
+//                	kprintf("SectorSize=%ld,\nTotalSectors=%ld,\nCylinders=%ld,\nCylSectors=%ld,\nHeads=%ld,\nTrackSectors=%ld,\nBufMemType=%ld,\nDeviceType=%ld,\n",\
+                                MyDG.dg_SectorSize,MyDG.dg_TotalSectors,MyDG.dg_Cylinders,\
+                                MyDG.dg_CylSectors,MyDG.dg_Heads,MyDG.dg_TrackSectors,MyDG.dg_BufMemType,MyDG.dg_DeviceType);
+
+                	MyIO->iotd_Req.io_Command=CMD_READ;
+                	MyIO->iotd_Req.io_Offset=0;
+                	MyIO->iotd_Req.io_Data= buf;
+                	MyIO->iotd_Req.io_Length=512;
+                	DoIO((struct IORequest *)MyIO);
+
+                	fb = (struct fat_boot_sector *)buf;
+
+                	sprintf(TempString, "system_id  : %s\n", fb->system_id);
+                        BlackPrint(&win->WScreen->RastPort, TempString, 40);
+                 	sprintf(TempString, "fats       : %d\n", fb->fats);
+                        BlackPrint(&win->WScreen->RastPort, TempString, 50);
+                	sprintf(TempString, "dir_entries: %d\n", fb->dir_entries[1]);
+                        BlackPrint(&win->WScreen->RastPort, TempString, 60);
+			sprintf(TempString, "sectors    : %d\n", fb->sectors[1]);
+                        BlackPrint(&win->WScreen->RastPort, TempString, 70);
+                	sprintf(TempString, "fat_length : %d\n", fb->fat_length);
+                        BlackPrint(&win->WScreen->RastPort, TempString, 80);
+                	sprintf(TempString, "secs_track : %d\n", fb->secs_track);
+                        BlackPrint(&win->WScreen->RastPort, TempString, 90);
+                	sprintf(TempString, "total_sect : %d\n", fb->total_sect);
+                        BlackPrint(&win->WScreen->RastPort, TempString, 100);
+
+                	FreeVec(buf);
+        	}
+        	CloseDevice((struct IORequest *)MyIO);
+        	DeleteExtIO((struct IORequest *)MyIO);
+        	DeleteMsgPort(trackport);
+	}
+
+#ifdef 0
+	if (IntuitionBase)
 	{
 	    ULONG i, dummy;
 
@@ -182,24 +251,17 @@ void hidd_demo()
 	    for (i=0; i<300000000; dummy = i*i, i++);  
 	    SpkOff();
 	}
+#endif
 
 	if (IntuitionBase)
 	{
 	  struct Screen	 *screen;
-	  struct DrawInfo  *drawinfo;
 	  struct Window	 *win2;
 	  struct IntuiMessage *msg;
-	  struct IntuiText  myIText;
-	  struct TextAttr   myTextAttr;
-	  char MyText[512];
-
-	  ULONG myTEXTPEN;
-	  ULONG myBACKGROUNDPEN;
+	  char ScreenInfo[40];
 
 	  if ((screen = LockPubScreen(NULL)))
 	  {
-	    if ((drawinfo = GetScreenDrawInfo(screen)))
-	    {
 	      struct TagItem tags[] = {
 		{WA_Width,			640},
 		{WA_Height,			100},
@@ -214,28 +276,11 @@ void hidd_demo()
 		{TAG_DONE,			 0}};
 	      win2 = OpenWindowTagList(0, tags);
 
-	      myTEXTPEN = drawinfo->dri_Pens[TEXTPEN];
-	      myBACKGROUNDPEN = drawinfo->dri_Pens[BACKGROUNDPEN];
-
-	      myTextAttr.ta_Name  = drawinfo->dri_Font->tf_Message.mn_Node.ln_Name;
-	      myTextAttr.ta_YSize = drawinfo->dri_Font->tf_YSize;
-	      myTextAttr.ta_Style = drawinfo->dri_Font->tf_Style;
-	      myTextAttr.ta_Flags = drawinfo->dri_Font->tf_Flags;
-
-	      sprintf(MyText,"ScreenWidth: %d, ScreenHeight: %d", screen->Width, screen->Height);
+	      sprintf(ScreenInfo,"ScreenWidth: %d, ScreenHeight: %d\n", screen->Width, screen->Height);
 
 	      if (win2)
 	      {
-		myIText.FrontPen    = myTEXTPEN;
-		myIText.BackPen     = myBACKGROUNDPEN;
-		myIText.DrawMode    = JAM2;
-		myIText.LeftEdge    = 0;
-		myIText.TopEdge     = 0;
-		myIText.ITextFont   = &myTextAttr;
-		myIText.IText	    = MyText;
-		myIText.NextText    = NULL;
-
-		PrintIText(win2->RPort,&myIText,10,30);
+		BlackPrint(win2->RPort, ScreenInfo, 40);
 
 		for(;;)
 		{
@@ -260,11 +305,7 @@ void hidd_demo()
 			  s[6] = hex[(msg->Code >> 4) & 0xF];
 			  s[7] = hex[(msg->Code >> 0) & 0xF];
 			  
-			  Move(win2->RPort, 20, 60);
-			  SetAPen(win2->RPort, 2);
-			  SetBPen(win2->RPort, 1);
-			  SetDrMd(win2->RPort, JAM2);
-			  Text(win2->RPort, s, 8);
+			  BlackPrint(win2->RPort, s, 60);
 			  
 			  if (msg->Code == 0x45) quitme = TRUE;
 			}
@@ -275,9 +316,11 @@ void hidd_demo()
 			  WORD mx = win2->WScreen->MouseX;
 			  WORD my = win2->WScreen->MouseY;
 
-			  static char hex[] = "0123456789ABCDEF";
+//			  static char hex[] = "0123456789ABCDEF";
 			  char s[15];
-			  
+
+			  sprintf(s, "Mouse: %ld, %ld\n", mx, my);
+#ifdef 0			  
 			  s[0] = 'M';
 			  s[1] = 'o';
 			  s[2] = 'u';
@@ -293,12 +336,8 @@ void hidd_demo()
 			  s[12] = hex[(my >> 8) & 0xF];
 			  s[13] = hex[(my >> 4) & 0xF];
 			  s[14] = hex[(my >> 0) & 0xF];
-			  
-			  Move(win2->RPort, 20, 80);
-			  SetAPen(win2->RPort, 1);
-			  SetBPen(win2->RPort, 2);
-			  SetDrMd(win2->RPort, JAM2);
-			  Text(win2->RPort, s, 15);
+#endif			  
+			  WhitePrint(win2->RPort, s, 80);
 			  
 			  mx &= 511;
 			  my &= 255;
@@ -316,14 +355,47 @@ void hidd_demo()
 		  if (quitme) break;
 		}
 		CloseWindow(win2);
-	      }
-	      FreeScreenDrawInfo(screen,drawinfo);
 	    }
 	    UnlockPubScreen(NULL,screen);
 	  }
 	}
     }
 }
+
+void BlackPrint(struct RastPort *RPort, char *String, UWORD height)
+{
+        SetAPen(RPort, 2);
+        SetBPen(RPort, 1);
+        SetDrMd(RPort, JAM2);
+        Move(RPort,20,height);
+        Text(RPort, String, strlen(String));
+}
+
+void WhitePrint(struct RastPort *RPort, char *String, UWORD height)
+{
+        SetAPen(RPort, 1);
+        SetBPen(RPort, 2);
+        SetDrMd(RPort, JAM2);
+        Move(RPort,20,height);
+        Text(RPort, String, strlen(String));
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

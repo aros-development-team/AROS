@@ -11,6 +11,8 @@
 #include <asm/ptrace.h>
 #include "etask.h"
 
+#include "../speaker.h"
+
 #define Prompt kprintf("SAD(%ld,%ld)>",SysBase->TDNestCnt,SysBase->IDNestCnt)
 char	GetK();
 void	UnGetK();
@@ -274,7 +276,7 @@ int	get_irq_list(char *buf);
 		    "SR - show all available resources (resbase : resname)\n"
 		    "SD - show all available devices (devbase : devname)\n"
 		    "ST - show tasks (T - this, R - ready, W - wait)\n"
-		    "TE - test\n"
+		    "BE - beep\n"
 		    "HE - this help.\n");
 	}
 	/* AllocMem command */
@@ -358,9 +360,35 @@ int	get_irq_list(char *buf);
 	    }
 	    kprintf(" \n");
 	}
-	else if (strcmp(comm,"TE")==0)
+	else if (strcmp(comm,"BE")==0)
 	{
-		kprintf("Test\n");
+            ULONG i, dummy;
+
+	    kprintf("Beeping...\n");
+
+            SetSpkFreq (400);
+            SpkOn();
+            for (i=0; i<100000000; dummy = i*i, i++);
+            SpkOff();
+            for (i=0; i< 50000000; dummy = i*i, i++);
+
+            SetSpkFreq (500);
+            SpkOn();
+            for (i=0; i<100000000; dummy = i*i, i++);
+            SpkOff();
+            for (i=0; i< 50000000; dummy = i*i, i++);
+
+            SetSpkFreq (592);
+            SpkOn();
+            for (i=0; i<100000000; dummy = i*i, i++);
+            SpkOff();
+            for (i=0; i< 50000000; dummy = i*i, i++);
+
+            SetSpkFreq (788);
+            SpkOn();
+            for (i=0; i<300000000; dummy = i*i, i++);
+            SpkOff();
+
 	}
 	else if (strcmp(comm,"QT")==0 && strcmp(dat,"00000000")==0)
 	{

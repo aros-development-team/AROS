@@ -121,17 +121,17 @@ static const struct Resident *romtagList[] =
     &Battclock_resident,            /* ColdStart,   45	 */
     &Keyboard_resident,             /* ColdStart,   44	 */
     &Gameport_resident,             /* ColdStart,   43	 */
-    &Keymap_resident,			    /* ColdStart,   40	 */
+    &Keymap_resident,		    /* ColdStart,   40	 */
     &Input_resident,                /* ColdStart,   30	 */
     &Intuition_resident,            /* ColdStart,   10   */	
-    &hiddgraphics_resident,		    /* ColdStart,   9    */
+    &hiddgraphics_resident,	    /* ColdStart,   9    */
     &kbdHidd_resident,              /* ColdStart,   9    */
-    &vgaHidd_resident,			    /* ColdStart,   9    */
-    &hiddserial_resident,		    /* ColdStart,   9    */
-    &pciHidd_resident,                      /* ColdStart,   9    */
+    &vgaHidd_resident,		    /* ColdStart,   9    */
+    &hiddserial_resident,	    /* ColdStart,   9    */
+    &pciHidd_resident,              /* ColdStart,   9    */
     &Console_resident,              /* ColdStart,   5	 */
-    &TrackDisk_resident,		    /* Coldsatrt,   4    */	//Trackdisk		
-    &ide_resident,                  /* Coldsatrt,   4    */	//IDE device
+    &TrackDisk_resident,	    /* ColdStart,   4    */	//Trackdisk		
+    &ide_resident,                  /* ColdStart,   4    */	//IDE device
 
 //    &emul_handler_resident,		    /* ColdStart,   0	 */
     &Workbench_resident,		    /* ColdStart,  -120  */
@@ -144,7 +144,7 @@ static const struct Resident *romtagList[] =
     */
 //    &boot_resident,			    /* ColdStart,  -50	 */
 //    &Dos_resident,			    /* None,	   -120  */
-//    &LDDemon_resident,			    /* AfterDOS,   -125  */
+//    &LDDemon_resident,		    /* AfterDOS,   -125  */
 //    &con_handler_resident,		    /* AfterDOS,   -126  */
 
 
@@ -285,7 +285,7 @@ int main()
 	    ioStd(io)->io_Data=data;
 	    ioStd(io)->io_Length=strlen(data);
 	    DoIO(io);
-	    kprintf("Got io_ERROR=%d",ioStd(io)->io_Error);
+	    kprintf("Got io_ERROR=%d\n",ioStd(io)->io_Error);
 	    kprintf("Doing kbd reads...\n");
 	}
     }

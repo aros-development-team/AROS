@@ -300,6 +300,22 @@ ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR use
 	    e.type = vHidd_Mouse_Motion;
 	    
 	    mousedata->mouse_callback(mousedata->callbackdata, &e);
+
+	    if((inbuf[0] & 0x20)>>5)
+	    {
+		e.button = vHidd_Mouse_Button1;
+		e.type = vHidd_Mouse_Press;
+
+		mousedata->mouse_callback(mousedata->callbackdata, &e);
+	    }
+
+            if((inbuf[0] & 0x10)>>4)
+            {
+                e.button = vHidd_Mouse_Button2;
+                e.type = vHidd_Mouse_Press;
+
+                mousedata->mouse_callback(mousedata->callbackdata, &e);
+            }
 #endif
 	}
     }

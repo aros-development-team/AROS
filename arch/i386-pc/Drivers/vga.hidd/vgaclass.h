@@ -12,9 +12,9 @@
 #include <exec/types.h>
 #include <exec/nodes.h>
 
-#define only640 1
+#define ONLY640 1
 
-#ifdef only640
+#ifdef ONLY640
 #define NUM_MODES 1
 #else
 #define NUM_MODES 3

@@ -64,7 +64,7 @@ struct vgaModeDesc
 		0,
 		640,664,760,800,0,
 		480,491,493,525}	//,
-#ifndef only640 
+#ifndef ONLY640 
 		{"768x576x4 @ 54Hz",	// h: 32.5 kHz v: 54Hz
 		768,576,4,1,
 		0,
@@ -154,7 +154,7 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
     };
 
     struct TagItem sync_640_480[NUM_SYNC_TAGS];
-#ifndef only640 
+#ifndef ONLY640 
     struct TagItem sync_758_576[NUM_SYNC_TAGS];
     struct TagItem sync_800_600[NUM_SYNC_TAGS];
 #endif
@@ -162,7 +162,7 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
     struct TagItem modetags[] = {
 	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags		},
 	{ aHidd_Gfx_SyncTags,	(IPTR)sync_640_480	},
-#ifndef only640
+#ifndef ONLY640
 	{ aHidd_Gfx_SyncTags,	(IPTR)sync_758_576	},
 	{ aHidd_Gfx_SyncTags,	(IPTR)sync_800_600	},
 #endif
@@ -198,7 +198,7 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
     
     /* First init the sync tags */
     init_sync_tags(sync_640_480, &vgaDefMode[0]);
-#ifndef only640
+#ifndef ONLY640
     init_sync_tags(sync_758_576, &vgaDefMode[1]);
     init_sync_tags(sync_800_600, &vgaDefMode[2]);
 #endif
