@@ -1,4 +1,4 @@
-## version $VER: executecommand.catalog 1.0 (12.8.2003)
+## version $VER: executecommand.catalog 1.1 (13.8.2003)
 ## language deutsch
 ## codeset 0
 ;
@@ -18,4 +18,32 @@ A_usführen
 MSG_BUTTON_CANCEL
 _Abbrechen
 ; _Cancel
+;
+MSG_CONSOLE_TITLE
+Ausgabe des Kommandos
+; Command Output
+;
+MSG_ERROR_HEADER
+FEHLER
+; ERROR
+;
+MSG_ERROR_OK
+*OK
+; *OK
+;
+MSG_ERROR_LOCALE
+Kann Locale nicht initialisieren.
+; Can't initialize locale.
+;
+MSG_ERROR_CLASSES
+Kann Klassen nicht initialisieren.
+; Can't initialize classes.
+;
+MSG_ERROR_OPEN_CONSOLE
+Kann Konsolen-Fenster nicht öffnen.
+; Can't open console window.
+;
+MSG_ERROR_EXECUTE
+Kann Kommando nicht ausführen.
+; Can't execute command.
 ;
