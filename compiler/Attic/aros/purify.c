@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1997/03/07 21:55:16  ldp
+    Fix makedepend warnings
+
     Revision 1.4  1997/01/28 13:41:55  digulla
     Use string.h instead of memory.h
 
@@ -55,7 +58,7 @@ extern void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-#include <aros/purify.h>
+	#include <aros/purify.h>
 
 	void Purify_Init (
 
@@ -94,7 +97,7 @@ extern void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-#include <aros/purify.h>
+	#include <aros/purify.h>
 
 	void Purify_AddMemory (
 
@@ -148,7 +151,7 @@ extern void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-#include <aros/purify.h>
+	#include <aros/purify.h>
 
 	void Purify_SetState (
 
@@ -243,7 +246,7 @@ extern void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-#include <aros/purify.h>
+	#include <aros/purify.h>
 
 	void Purify_CheckAccess (
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1997/03/07 21:55:16  ldp
+    Fix makedepend warnings
+
     Revision 1.4  1997/01/27 00:17:41  ldp
     Include proto instead of clib
 
@@ -26,7 +29,7 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/aros.h>
+	#include <proto/aros.h>
 
 	APTR RemoveSList (
 
