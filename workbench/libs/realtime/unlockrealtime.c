@@ -1,6 +1,6 @@
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -55,10 +55,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    if(lockHandle == NULL)
+    if (lockHandle == NULL)
+    {
 	return;
+    }
 
     ReleaseSemaphore((struct SignalSemaphore *)lockHandle);
 
     AROS_LIBFUNC_EXIT
-} /* LockRealTime */
+} /* UnlockRealTime */
