@@ -104,6 +104,10 @@ AROS_LH2(struct GadToolsBase_intern *, init,
     LIBBASE->sysbase=sysBase;
     LIBBASE->seglist=segList;
 
+    LIBBASE->buttonclass = NULL;
+    LIBBASE->checkclass = NULL;
+    LIBBASE->mxclass = NULL;
+
     /* You would return NULL here if the init failed. */
     return LIBBASE;
     AROS_LIBFUNC_EXIT
@@ -124,9 +128,6 @@ AROS_LH1(struct GadToolsBase_intern *, open,
 
     /* Keep compiler happy */
     version=0;
-
-    GadToolsBase->buttonclass = NULL;
-    GadToolsBase->checkclass = NULL;
 
     if (!IntuitionBase)
 	IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 36);
@@ -169,10 +170,13 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
     /* I have one fewer opener. */
     if(!--LIBBASE->library.lib_OpenCnt)
       {
+        if (GadToolsBase->mxclass)
+            FreeClass(GadToolsBase->mxclass);
 	if (GadToolsBase->checkclass)
 	    FreeClass(GadToolsBase->checkclass);
 	if (GadToolsBase->buttonclass)
 	    FreeClass(GadToolsBase->buttonclass);
+
 	if (UtilityBase)
 	    CloseLibrary(UtilityBase);
 	if (GfxBase)

@@ -53,6 +53,7 @@ void drawbevelsbyhand(struct GadToolsBase_intern *GadToolsBase,
 
 Class *makebuttonclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makecheckclass(struct GadToolsBase_intern *GadToolsBase);
+Class *makemxclass(struct GadToolsBase_intern *GadToolsBase);
 
 struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
                           struct TagItem stdgadtags[],
@@ -62,6 +63,10 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
                             struct TagItem stdgadtags[],
 			    struct VisualInfo *vi,
 			    struct TagItem *taglist);
+struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
+                      struct TagItem stdgadtags[],
+                      struct VisualInfo *vi,
+                      struct TagItem *taglist);
 
 struct GadToolsBase_intern
 {
@@ -76,6 +81,7 @@ struct GadToolsBase_intern
 
     Class * buttonclass;
     Class * checkclass;
+    Class * mxclass;
 };
 
 /* The following typedefs are necessary, because the names of the global

@@ -2,7 +2,7 @@
     (C) 1997 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: gadtools.library function CreateGadgetA()
     Lang: english
 */
 #include <exec/memory.h>
@@ -36,14 +36,15 @@
 
     INPUTS
 
-        kind -     kind of gadget. See <libraries/gadtools.h> for a list of
-                   all kinds
-	previous - previous gadget
+        kind -     Kind of gadget. See <libraries/gadtools.h> for a list of
+                   all possible kinds.
+	previous - Pointer to the previous gadget in gadget-list. Create the
+	           first "gadget" with CreateContext().
         ng -       pointer to struct NewGadget
         taglist -  additional tags
 
     RESULT
-        A point to a gadget or NULL to indicate an error.
+        A pointer to a gadget or NULL to indicate an error.
 
     NOTES
 
@@ -52,6 +53,7 @@
     BUGS
 
     SEE ALSO
+        CreateContext(), FreeGadgets()
 
     INTERNALS
 
@@ -97,6 +99,10 @@
         break;
     case CHECKBOX_KIND:
         gad = makecheckbox((struct GadToolsBase_intern *)GadToolsBase,
+            stdgadtags, (struct VisualInfo *)ng->ng_VisualInfo, taglist);
+        break;
+    case MX_KIND:
+        gad = makemx((struct GadToolsBase_intern *)GadToolsBase,
             stdgadtags, (struct VisualInfo *)ng->ng_VisualInfo, taglist);
         break;
     default:
