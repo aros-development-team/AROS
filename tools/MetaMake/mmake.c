@@ -1578,9 +1578,11 @@ readvars (Project * prj)
 	    }
 	    else
 		fh = fopen (fn, "r");
+
+	    xfree (gen);
 	}
 
-	free (fn);
+	xfree (fn);
 
 	if (!fh)
 	{
