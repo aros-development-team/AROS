@@ -292,14 +292,14 @@ static VOID __HandleLaunch_WB
         if (process != NULL)
         {
             D(bug("Workbench Handler: HandleLaunch: Process created successfully\n"));
-                        
+            
             /* Setup startup message */
             startup->sm_Process              = &process->pr_MsgPort;
             startup->sm_Message.mn_ReplyPort = hc->hc_StartupReplyPort;
             
             /* Send startup message to program */ 
             PutMsg(startup->sm_Process, (struct Message *) startup);
-        
+            
             success = TRUE;
         }
         else
