@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Diskfont initialization code.
@@ -16,9 +16,15 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+/****************************************************************************************/
+
 #define INIT	AROS_SLIB_ENTRY(init,Diskfont)
 
+/****************************************************************************************/
+
 #include <aros/debug.h>
+
+/****************************************************************************************/
 
 struct inittable;
 extern const char name[];
@@ -33,6 +39,8 @@ extern BPTR AROS_SLIB_ENTRY(expunge,Diskfont)();
 extern int AROS_SLIB_ENTRY(null,Diskfont)();
 extern const char LIBEND;
 
+/****************************************************************************************/
+
 #if (defined(__mc68000__) && (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE))
 const LONG entry = 0x70FF4E75;
 #else
@@ -42,6 +50,8 @@ int entry(void)
     return -1;
 }
 #endif
+
+/****************************************************************************************/
 
 const struct Resident resident=
 {
@@ -93,11 +103,17 @@ const struct inittable datatable=
   I_END ()
 };
 
+/****************************************************************************************/
 
 struct ExecBase * SysBase;
 struct Library *DOSBase;
+
+/****************************************************************************************/
+
 /* #undef O
 #undef SysBase */
+
+/****************************************************************************************/
 
 AROS_LH2(struct DiskfontBase_intern *, init,
     AROS_LHA(struct DiskfontBase_intern *, LIBBASE, D0),
@@ -108,19 +124,24 @@ AROS_LH2(struct DiskfontBase_intern *, init,
 
     /* This function is single-threaded by exec by calling Forbid. */
 
-    SysBase=sysBase;
+    SysBase = sysBase;
 
     D(bug("Inside initfunc\n"));
 
-    LIBBASE->seglist=segList;
+    LIBBASE->seglist = segList;
 
     /* You would return NULL here if the init failed. */
     return LIBBASE;
+    
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 /* Use This from now on * /
 #define SysBase LIBBASE->sysbase */
+
+/****************************************************************************************/
 
 AROS_LH1(struct DiskfontBase_intern *, open,
     AROS_LHA(ULONG, version, D0),
@@ -136,14 +157,14 @@ AROS_LH1(struct DiskfontBase_intern *, open,
     /* Hook descriptions */
     struct AFHookDescr hdescrdef[] =
     {
-	{AFF_MEMORY,	{{0L, 0L}, (void*)MemoryFontFunc, 0L, 0L}},
-	{AFF_DISK,		{{0L, 0L}, (void*)DiskFontFunc, 0L,     0L}}
+	{AFF_MEMORY	, {{0L, 0L}, (void*)MemoryFontFunc	, 0L, 0L}},
+	{AFF_DISK	, {{0L, 0L}, (void*)DiskFontFunc	, 0L, 0L}}
     };
 
 	UWORD idx;
 
     /* Keep compiler happy */
-    version=0;
+    version = 0;
 
     D(bug("Inside openfunc\n"));
 
@@ -160,7 +181,7 @@ AROS_LH1(struct DiskfontBase_intern *, open,
     if (!UtilityBase)
 	UtilityBase = OpenLibrary("utility.library", 37);
     if (!UtilityBase)
-		return(NULL);
+	return(NULL);
 
     /* Insert the fonthooks into the DiskfontBase */
 
@@ -178,12 +199,16 @@ AROS_LH1(struct DiskfontBase_intern *, open,
 
     /* You would return NULL if the open failed. */
     return LIBBASE;
+    
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
 
 AROS_LH0(BPTR, close, struct DiskfontBase_intern *, LIBBASE, 2, BASENAME)
 {
     AROS_LIBFUNC_INIT
+    
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -205,9 +230,13 @@ AROS_LH0(BPTR, close, struct DiskfontBase_intern *, LIBBASE, 2, BASENAME)
 	    /* Then expunge the library */
 	    return expunge();
     }
+    
     return 0;
+    
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
 
 AROS_LH0(BPTR, expunge, struct DiskfontBase_intern *, LIBBASE, 3, BASENAME)
 {
@@ -223,7 +252,7 @@ AROS_LH0(BPTR, expunge, struct DiskfontBase_intern *, LIBBASE, 3, BASENAME)
     if(LIBBASE->library.lib_OpenCnt)
     {
 	/* Set the delayed expunge flag and return. */
-	LIBBASE->library.lib_Flags|=LIBF_DELEXP;
+	LIBBASE->library.lib_Flags |= LIBF_DELEXP;
 	return 0;
     }
 
@@ -238,12 +267,19 @@ AROS_LH0(BPTR, expunge, struct DiskfontBase_intern *, LIBBASE, 3, BASENAME)
 	LIBBASE->library.lib_NegSize+LIBBASE->library.lib_PosSize);
 
     return ret;
+    
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
 
 AROS_LH0I(int, null, struct DiskfontBase_intern *, LIBBASE, 4, BASENAME)
 {
     AROS_LIBFUNC_INIT
+    
     return 0;
+    
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/

@@ -1,10 +1,12 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Functions for readin .font files
     Lang: English.
 */
+
+/****************************************************************************************/
 
 #include <proto/arossupport.h>
 #include <proto/dos.h>
@@ -18,10 +20,13 @@
 
 #include <aros/debug.h>
 
+/****************************************************************************************/
+
 /******************/
 /* ReadFontDescr  */
 /******************/
 
+/****************************************************************************************/
 
 struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_intern *DiskfontBase)
 {
@@ -33,17 +38,19 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
     
     struct TTextAttr *tattr;
 
-	UBYTE strbuf[MAXFONTNAME];
-	   
-	BPTR fh;
+    UBYTE strbuf[MAXFONTNAME];
+
+    BPTR fh;
+    
     D(bug("ReadFontDescr(filename=%s\n", filename));
     
     /* Allocate the FontDescrHeader */
     if (!(fh = Open(filename, MODE_OLDFILE)))
     	goto failure;
-    	
+
     if (!(fdh = AllocMem(sizeof (struct FontDescrHeader), MEMF_ANY|MEMF_CLEAR)) )
         goto failure;
+
 
     /* First read the file id (FCH_ID or TFCH_ID) */
     if (!ReadWord( &DFB(DiskfontBase)->dsh, &aword, fh ))
@@ -81,23 +88,23 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
         
         do
         {
-        	if (!ReadByte( &DFB(DiskfontBase)->dsh, strptr, fh))
-        		goto failure;
+       	    if (!ReadByte( &DFB(DiskfontBase)->dsh, strptr, fh))
+        	goto failure;
         		
-        	oldstrlen ++;
+            oldstrlen ++;
         }
         while (*strptr ++);
-        
      
         /* We don't want a "topaz/9" like name here, but "topaz.font" */
        	strptr = strpbrk(strbuf, "/");
+
        	/* End string at '/' */
        	*strptr = 0;
        	
        	
        	/* Allocate space for fontname */
        	if ( !(tattr->tta_Name = AllocVec(strptr - strbuf + sizeof(".font") + 1, MEMF_ANY)))
-       		goto failure;
+            goto failure;
      	
      	strcpy(tattr->tta_Name, strbuf);
      
@@ -112,7 +119,7 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
             OFFSET_CURRENT
         );
             
-        
+       
         /* Do special stuff for files with tags in them */
         if (fdh->Tagged)
         {
@@ -125,7 +132,7 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
             if (numtags)
             {
                 
-	              /* Seek back and read the tags */
+	        /* Seek back and read the tags */
                 Flush(fh);
                 Seek
                 (
@@ -173,10 +180,13 @@ failure:
 
 }
 
+/****************************************************************************************/
+
 /******************/
 /* FreeFontDescr  */
 /******************/
 
+/****************************************************************************************/
 
 VOID FreeFontDescr(struct FontDescrHeader *fdh, struct DiskfontBase_intern *DiskfontBase)
 {
@@ -213,3 +223,5 @@ VOID FreeFontDescr(struct FontDescrHeader *fdh, struct DiskfontBase_intern *Disk
     
     ReturnVoid("FreeFontDescr");
 }
+
+/****************************************************************************************/

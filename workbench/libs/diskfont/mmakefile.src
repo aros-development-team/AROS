@@ -31,6 +31,10 @@ FUNCTIONS	:= \
 workbench-libs-diskfont : $(SLIB)
 	@$(NOP)
 
+#MM workbench-libs-diskfont-quick :
+workbench-libs-diskfont-quick : $(SLIB)
+	@$(NOP)
+
 #MM
 setup :
 	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)

@@ -1,38 +1,47 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Misc helpfuncs needed in AvailFonts()
     Lang: English.
 */
 
+/****************************************************************************************/
+
 #include <proto/utility.h>
 #include "diskfont_intern.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
+/****************************************************************************************/
 
 /****************/
-/* AllocFIN		*/
+/* AllocFIN	*/
 /****************/
+
+/****************************************************************************************/
 
 struct FontInfoNode *AllocFIN(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase)
 {
-	struct FontInfoNode *finode;
+    struct FontInfoNode *finode;
 
-	D(bug("AllocFIN(filist=%p)\n", filist));
-	
-	finode = AllocMem(sizeof (struct FontInfoNode), MEMF_ANY|MEMF_CLEAR);
-	if (finode)
-		AddTail( (struct List*)filist, (struct Node*)finode );
-		
-	ReturnPtr("AllocFIN", struct FontInfoNode *, finode);
+    D(bug("AllocFIN(filist=%p)\n", filist));
+
+    finode = AllocMem(sizeof (struct FontInfoNode), MEMF_ANY|MEMF_CLEAR);
+    if (finode)
+	AddTail( (struct List*)filist, (struct Node*)finode );
+
+    ReturnPtr("AllocFIN", struct FontInfoNode *, finode);
 }
 
+/****************************************************************************************/
+
 /************/
-/* FreeFIN	*/
+/* FreeFIN  */
 /************/
+
+/****************************************************************************************/
 
 VOID FreeFIN(struct FontInfoNode *finode, struct DiskfontBase_intern *DiskfontBase)
 {
@@ -44,9 +53,13 @@ VOID FreeFIN(struct FontInfoNode *finode, struct DiskfontBase_intern *DiskfontBa
 	ReturnVoid("FreeFIN");
 }
 
+/****************************************************************************************/
+
 /**************/
 /* NumTags    */
 /**************/
+
+/****************************************************************************************/
 
 ULONG NumTags(struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
 /* Counts the number of tags in at taglist including TAG_DONE */
@@ -64,15 +77,20 @@ ULONG NumTags(struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
   
     ReturnInt ("NumTags", ULONG, numtags);
 }
+
+/****************************************************************************************/
+
 /****************/
 /* CopyTagItems */
 /****************/
 
+/****************************************************************************************/
+
 ULONG CopyTagItems
 (
-	struct TagItem *desttaglist, 
-	struct TagItem* sourcetaglist, 
-	struct DiskfontBase_intern *DiskfontBase
+    struct TagItem *desttaglist, 
+    struct TagItem *sourcetaglist, 
+    struct DiskfontBase_intern *DiskfontBase
 )
 /* Copies tags from a taglist to another memory location, returning
   the number of tags copied */
@@ -104,18 +122,19 @@ ULONG CopyTagItems
     ReturnInt ("CopyTagItems", ULONG, numtags);
 }
 
-
-  
+/****************************************************************************************/
 
 /**********************/
 /* FreeFontList       */
 /**********************/
 
+/****************************************************************************************/
+
 VOID FreeFontList(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase)
 {
  
-    struct MinNode *node, *nextnode;
-  	struct TTextAttr	*tattr;
+    struct MinNode 	*node, *nextnode;
+    struct TTextAttr	*tattr;
   	
     /* Free the fontinfolist */
     D(bug("FreeFontList(filist=%p)\n", filist));
@@ -143,7 +162,10 @@ VOID FreeFontList(struct MinList *filist, struct DiskfontBase_intern *DiskfontBa
     }
       
   
-  ReturnVoid ("FreeFontList");
-  }
+    ReturnVoid ("FreeFontList");
+  
+}
+
+/****************************************************************************************/
 
 

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Hook for getting font descriptions from memory font list in mem
@@ -14,6 +14,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/****************************************************************************************/
+
 /* Userdata needed by the MemoryFontHook */
 struct MFHData
 {
@@ -21,7 +23,11 @@ struct MFHData
     struct TextFont *CurrentFont;
 };
 
+/****************************************************************************************/
+
 /* Hook for reading fonts from memory */
+
+/****************************************************************************************/
 
 AROS_UFH3(IPTR, MemoryFontFunc,
     AROS_UFHA(struct Hook *,				h, 				A0),
@@ -50,8 +56,8 @@ AROS_UFH3(IPTR, MemoryFontFunc,
             {
             	/* GFX library allready open */
  			
- 				/* To prevent race conditions */
-				Forbid();
+ 		/* To prevent race conditions */
+		Forbid();
 					
                 /* Get the first font */
                 mfhd->CurrentFont = (struct TextFont*)DFB(DiskfontBase)->gfxbase->TextFonts.lh_Head;
@@ -60,8 +66,7 @@ AROS_UFH3(IPTR, MemoryFontFunc,
                 fhc->fhc_UserData = mfhd;
 
                 retval = FH_SUCCESS;
-            }
-          
+            }         
             break;
             
         /* ---------------------- */            
@@ -77,11 +82,15 @@ AROS_UFH3(IPTR, MemoryFontFunc,
            
             /* Get a pointer to the next font. Are we at the end of the list ? */
             if (!(mfhd->CurrentFont = (struct TextFont*)curfont->tf_Message.mn_Node.ln_Succ))
-            	{ retval |= FH_SCANFINISHED; break; }
+            {
+	        retval |= FH_SCANFINISHED;
+		break;
+	    }
             
             /* Insert font info into the supplied tattr */
             tattr->tta_Tags = NULL; /* Defaults to NULL */
-              
+            
+	    tattr->tta_Name =  curfont->tf_Message.mn_Node.ln_Name;
             tattr->tta_YSize = curfont->tf_YSize;
             tattr->tta_Style = curfont->tf_Style;
             tattr->tta_Flags = curfont->tf_Flags;
@@ -91,7 +100,7 @@ AROS_UFH3(IPTR, MemoryFontFunc,
             	tattr->tta_Tags = TFE(curfont->tf_Extension)->tfe_Tags;
             
 
-			retval |= FH_SUCCESS;
+	    retval |= FH_SUCCESS;
             break;
 
         /* ---------------------- */                        
@@ -110,12 +119,13 @@ AROS_UFH3(IPTR, MemoryFontFunc,
             break;
         
         case FHC_ODF_OPENFONT:
-        	fhc->fhc_TextFont = OpenFont((struct TextAttr*)fhc->fhc_ReqAttr);
-    		retval = (fhc->fhc_TextFont != NULL);
-    		
-    		break;
+            fhc->fhc_TextFont = OpenFont((struct TextAttr*)fhc->fhc_ReqAttr);
+    	    retval = (fhc->fhc_TextFont != NULL);
+    	    break;
+	    
     }
     
     ReturnInt ("MemoryFontFunc", ULONG, retval);
 }
  
+/****************************************************************************************/

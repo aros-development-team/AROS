@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Functions for fontcache i/o
@@ -12,8 +12,9 @@
 
 #include "diskfont_intern.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
+
 /* Structure on disk 
 
 FIN->TAF.taf_Type;
@@ -21,26 +22,31 @@ FIN->TAF.taf_Attr.tta_YSize;
 FIN->TAF.taf_Attr.tta_Style;
 FIN->TAF.taf_Attr.tta_Flags;
 FIN->Flags;
-evt. FontName.
-evt. FontTags.
+if not FNF_REUSENAME: FontName. 
+if not FNF_REUSETAGS: NumTags, FontTags.
 
 */
 
 /* A local define */
 
+/****************************************************************************************/
+
 #define NUMENTRIES_OFFSET sizeof(CACHE_IDSTR) + sizeof(struct  DateStamp)
 
+/****************************************************************************************/
 
 /************/
 /* ReadTags */
 /************/
+
+/****************************************************************************************/
 
 struct TagItem *ReadTags(BPTR fh, ULONG numtags, struct DiskfontBase_intern *DiskfontBase)
 {
     struct TagItem  *taglist,
                     *tagptr;
 
-	D(bug("ReadTags(fh=%p, numtags=%d)\n", fh, numtags));
+    D(bug("ReadTags(fh=%p, numtags=%d)\n", fh, numtags));
 	
     /* Allocate memory for the tags */
     
@@ -77,16 +83,20 @@ rt_failure:
     
 }
 
+/****************************************************************************************/
+
 /**************/
 /* WriteTags  */
 /**************/
+
+/****************************************************************************************/
 
 BOOL WriteTags(BPTR fh, struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
 {
 
     struct TagItem *tag;
 
-   	D(bug("WriteTags(fh=%p, taglists=%p)\n", fh, taglist));
+    D(bug("WriteTags(fh=%p, taglists=%p)\n", fh, taglist));
 
     for (; (tag = NextTagItem((const struct TagItem **)&taglist)); )
     {
@@ -103,11 +113,13 @@ wt_failure:
     ReturnBool ("WriteTags", FALSE);
 }
 
+/****************************************************************************************/
 
 /************/
 /* WriteFIN */
 /************/
 
+/****************************************************************************************/
 
 STATIC BOOL WriteFIN(BPTR fh, struct FontInfoNode *finode, struct DiskfontBase_intern *DiskfontBase)
 {
@@ -115,7 +127,7 @@ STATIC BOOL WriteFIN(BPTR fh, struct FontInfoNode *finode, struct DiskfontBase_i
     
     struct TAvailFonts *taf;
 
-   	D(bug("WriteFIN(fh=%p, finode=%p)\n", fh, finode));
+    D(bug("WriteFIN(fh=%p, finode=%p)\n", fh, finode));
 
     taf = &(finode->TAF);
     
@@ -141,11 +153,13 @@ wf_failure:
     
 }
 
+/****************************************************************************************/
 
 /***********/
 /* ReadFIN */
 /***********/
 
+/****************************************************************************************/
 
 STATIC BOOL ReadFIN(BPTR fh, struct FontInfoNode *finode, struct DiskfontBase_intern *DiskfontBase)
 {
@@ -178,13 +192,17 @@ rf_failure:
     ReturnBool ("ReadFIN", FALSE);
 }
 
+/****************************************************************************************/
+
 /**************/
 /* ReadDate   */
 /**************/
 
+/****************************************************************************************/
+
 BOOL ReadDate(BPTR fh, struct DateStamp *ds, struct DiskfontBase_intern *DiskfontBase)
 {
-	D(bug("ReadDate(fh=%p, datestamp=%p)\n", fh, ds));
+    D(bug("ReadDate(fh=%p, datestamp=%p)\n", fh, ds));
 
     if (!ReadLong(&DFB(DiskfontBase)->dsh, ((ULONG*)&ds->ds_Days), fh))
         goto rd_failure;
@@ -201,13 +219,17 @@ rd_failure:
     ReturnBool ("ReadDate", FALSE);
 }
 
+/****************************************************************************************/
+
 /**************/
 /* WriteDate  */
 /**************/
 
+/****************************************************************************************/
+
 BOOL WriteDate(BPTR fh, struct DateStamp *ds, struct DiskfontBase_intern *DiskfontBase)
 {
-	D(bug("WriteDate(fh=%p, datestamp=%p)\n", fh, ds));
+    D(bug("WriteDate(fh=%p, datestamp=%p)\n", fh, ds));
 
     if (!WriteLong(&DFB(DiskfontBase)->dsh, ds->ds_Days, fh))
         goto wd_failure;
@@ -224,9 +246,13 @@ wd_failure:
     ReturnBool ("WriteDate", FALSE);
 }
 
+/****************************************************************************************/
+
 /**************/
 /* ReadCache  */
 /**************/
+
+/****************************************************************************************/
 
 BOOL ReadCache(ULONG userflags, struct MinList *filist, struct DiskfontBase_intern *DiskfontBase)
 {
@@ -239,7 +265,7 @@ BOOL ReadCache(ULONG userflags, struct MinList *filist, struct DiskfontBase_inte
     
     struct FontInfoNode *finode = 0;
     
-  	D(bug("ReadCache(userflags=%d, filist=%p)\n", userflags, filist));
+    D(bug("ReadCache(userflags=%d, filist=%p)\n", userflags, filist));
 
     
     /* Open the cache file */
@@ -260,10 +286,9 @@ BOOL ReadCache(ULONG userflags, struct MinList *filist, struct DiskfontBase_inte
       
     for (; numentries --; )
     {
-		finode = AllocFIN(filist, DFB(DiskfontBase) );
-		if (!finode)
-			goto rc_failure;
-
+	finode = AllocFIN(filist, DFB(DiskfontBase) );
+	if (!finode)
+	    goto rc_failure;
                 
         /* Read info into the finode */
         if (!ReadFIN(fh, finode, DFB(DiskfontBase) ))
@@ -276,42 +301,44 @@ BOOL ReadCache(ULONG userflags, struct MinList *filist, struct DiskfontBase_inte
             finode->NameLength = strlen(finode->TAF.taf_Attr.tta_Name) + 1;
         }          
 
-		D(bug("\tRCache: Name=%s, YSize=%d\n",
-			finode->TAF.taf_Attr.tta_Name,
-			finode->TAF.taf_Attr.tta_YSize)); 
+	D(bug("\tRCache: Name=%s, YSize=%d\n",
+		finode->TAF.taf_Attr.tta_Name,
+		finode->TAF.taf_Attr.tta_YSize)); 
             
         /* Should we read tags ? */
-        
-        if (userflags & AFF_TAGGED)
-        {
-            
-            if ( !(finode->Flags & FDF_REUSETAGS) )
+
+        if ( !(finode->Flags & FDF_REUSETAGS) )
+        {                   
+ 
+            /* Read the number of tags */
+            if (!ReadWord(&DFB(DiskfontBase)->dsh, &numtags, fh))
+        	goto rc_failure;
+
+            if (numtags)
             {
-                
-                /* Read the number of tags */
-                if (!ReadWord(&DFB(DiskfontBase)->dsh, &numtags, fh))
-                    goto rc_failure;
-                    
                 /* Read the tags themselves */
+
                 if (!(taglist = ReadTags(fh, numtags, DFB(DiskfontBase))))
                     goto rc_failure;
-                    
-                if (!(finode->TAF.taf_Attr.tta_Tags = CloneTagItems(taglist)))
-                {
-                    FreeVec(taglist);
-                    goto rc_failure;
+
+		if (userflags & AFF_TAGGED)
+		{
+                    if (!(finode->TAF.taf_Attr.tta_Tags = CloneTagItems(taglist)))
+                    {
+                	FreeVec(taglist);
+                	goto rc_failure;
+                    }
+
+                    finode->NumTags = NumTags(finode->TAF.taf_Attr.tta_Tags, DFB(DiskfontBase));
                 }
-                
+
                 /* Since AllocFontTagsNode clones the taglist we must free the original one */
 
                 FreeVec(taglist);
-                
-                finode->NumTags = NumTags(finode->TAF.taf_Attr.tta_Tags, DFB(DiskfontBase));
-
-            }
-          
-            
-        } /* if (flags & AFF_TAGGED) */
+	
+            } /* if (numtags) */
+	    	    
+	} /* if ( !(finode->Flags & FDF_REUSETAGS) ) */
         
     } /* for (; numentries--; ); */
     
@@ -326,14 +353,19 @@ rc_failure:
     ReturnBool ("ReadCache", FALSE);
 }
 
+/****************************************************************************************/
+
 /****************/
 /* WriteCache   */
 /****************/
+
+/****************************************************************************************/
 
 BOOL WriteCache(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase)
 {
     ULONG numentries  = 0;
     BPTR  fh          = 0;
+    WORD  numtags;
     
     /* FontInfoNode->Flags */
     UBYTE flags;
@@ -342,16 +374,16 @@ BOOL WriteCache(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase
     
     struct DateStamp now;
     
-   	D(bug("WriteCache(filist=%p)\n", filist));
+    D(bug("WriteCache(filist=%p)\n", filist));
 
     /* Open the font file for writing */
     
     if (!(fh = Open(CACHE_FILE,MODE_NEWFILE)))
         goto wc_failure;
 
-	/* Write the cache ID */
-	if (!WriteString(&DFB(DiskfontBase)->dsh,CACHE_IDSTR, fh))
-    	goto wc_failure;
+    /* Write the cache ID */
+    if (!WriteString(&DFB(DiskfontBase)->dsh,CACHE_IDSTR, fh))
+        goto wc_failure;
             
     /* Get the current time */
     DateStamp(&now);
@@ -370,7 +402,7 @@ BOOL WriteCache(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase
         /* Only write fonts residing on disk to the cache */
         if ( node->TAF.taf_Type & AFF_DISK)
         {
-        	D(bug("\tWCache: Diskfont found\n"));
+            D(bug("\tWCache: Diskfont found\n"));
         	
             flags = FIN(node)->Flags;
             numentries ++;
@@ -388,12 +420,23 @@ BOOL WriteCache(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase
             
             /* Write tags if present */ 
         
-            if ( node->TAF.taf_Attr.tta_Tags )
-            {
-                if (!WriteTags(fh, node->TAF.taf_Attr.tta_Tags, DFB(DiskfontBase) ))
-                    goto wc_failure;
+	    if ( !(flags & FDF_REUSETAGS) )
+	    {
+        	if ( node->TAF.taf_Attr.tta_Tags )
+                    numtags = NumTags(node->TAF.taf_Attr.tta_Tags, DFB(DiskfontBase));
+		else
+	            numtags = 0;
+
+    		if (!WriteWord( &DFB(DiskfontBase)->dsh, numtags, fh))
+		    goto wc_failure;
+
+		if (numtags)
+		{    
+                    if (!WriteTags(fh, node->TAF.taf_Attr.tta_Tags, DFB(DiskfontBase) ))
+                	goto wc_failure;
+        	}
             }
-                
+	    
         } /* Diskfont ? */
             
     } /* ForeachNode */
@@ -419,6 +462,8 @@ wc_failure:
 
 }
 
+/****************************************************************************************/
+
 /******************/
 /* OKToReadCache  */
 /******************/
@@ -427,9 +472,12 @@ wc_failure:
   the cache file even exists
 */
 
+/****************************************************************************************/
 
 /* The array of hooks is in diskfont_init.c */
 extern struct AFHookDescr hdescr[];
+
+/****************************************************************************************/
 
 BOOL OKToReadCache(struct DiskfontBase_intern *DiskfontBase)
 {
@@ -442,14 +490,14 @@ BOOL OKToReadCache(struct DiskfontBase_intern *DiskfontBase)
     struct AFHookDescr      *afhd;
     struct FontHookCommand  fhc;
 
-   	UWORD idx;
+    UWORD idx;
    
     /* Last time a font source was updated */
     struct DateStamp fontsourcedate;
     
     struct DateStamp cachedate;
     
-   	D(bug("OKToReadCache(void)\n"));
+    D(bug("OKToReadCache(void)\n"));
 
     if ((fh = Open(CACHE_FILE,MODE_OLDFILE)) != 0)
     {
@@ -478,13 +526,20 @@ BOOL OKToReadCache(struct DiskfontBase_intern *DiskfontBase)
                             if (CompareDates(&cachedate, &fontsourcedate) > 0)
                                 cacheok = FALSE;
                         }
+			
                     }
-                }
-            }
+		    
+                } /* if (ReadDate(fh, &cachedate, DFB(DiskfontBase) )) */
+		
+            } /* if (strcmp(idstr, CACHE_IDSTR) == 0) */
             FreeVec(idstr);
-        }
+	    
+        } /* if (ReadString(&DFB(DiskfontBase)->dsh, &idstr, fh)) */
         Close(fh);
-    }
+	
+    } /* if ((fh = Open(CACHE_FILE,MODE_OLDFILE)) != 0) */
     
     ReturnBool ("OKToReadCache", retval && cacheok);
 }
+
+/****************************************************************************************/

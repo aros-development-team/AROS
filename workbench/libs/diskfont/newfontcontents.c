@@ -6,6 +6,8 @@
     Lang: English
 */
 
+/****************************************************************************************/
+
 #include <aros/debug.h>
 #include "diskfont_intern.h"
 #include <diskfont/diskfont.h>
@@ -15,18 +17,26 @@
 #include <proto/exec.h>
 #include <string.h>
 
+/****************************************************************************************/
+
 /* Should move this one to an include file */
 extern BPTR LoadSeg_AOS(BPTR file);
+
+/****************************************************************************************/
 
 /* Test */
 #define  GetByte(x)  ((x)[0])
 #define  GetWord(x)  ((x)[1] | ((x)[0] << 8))
 #define  GetPtr(x)   (((x)[0] << 24) | ((x)[1] << 16) | ((x)[2] << 8) | ((x)[3]))
 
+/****************************************************************************************/
+
 VOID  CopyContents(struct List *list, APTR mem);
 VOID  FreeBuffers(struct List *list);
 ULONG Get4Bytes(UBYTE *bytes);
 struct TagItem *myNextTagItem(struct TagItem **ti);
+
+/****************************************************************************************/
 
 struct contentsBuffer
 {
@@ -34,6 +44,7 @@ struct contentsBuffer
     struct FontContents fc;
 };
 
+/****************************************************************************************/
 
 #define TFC(node) ((struct TFontContents *)(&node->fc))
 
@@ -146,8 +157,6 @@ struct contentsBuffer
 	    UBYTE                 *fileDfh;  /* struct DiskFontHeader */ 
 	    struct contentsBuffer *cNode;
 	    
-	    // kprintf("Name: %s\n", fib->fib_FileName);
-
 	    /* Skip directories */
 	    if(fib->fib_DirEntryType >= 0)
 		continue;
@@ -189,7 +198,14 @@ struct contentsBuffer
 	    
 	    AddTail((struct List *)&contentsList, (struct Node *)cNode);
 	    
+#if 1
+	    strcpy(cNode->fc.fc_FileName, name);
+	    strcat(cNode->fc.fc_FileName, "/");
+	    strcat(cNode->fc.fc_FileName, fib->fib_FileName);
+#else
 	    strcpy(cNode->fc.fc_FileName, (char *)(fileDfh + 14+2+2+4)); /* dfh_Name */	 
+#endif
+
 
 #if 0	    /* TODO: Factor out the code in diskfont_io.c that extracts
 	             tags and make it a function... */
@@ -268,8 +284,10 @@ struct contentsBuffer
     return ret;
     
     AROS_LIBFUNC_EXIT
+    
 } /* NewFontContents */
 
+/****************************************************************************************/
 
 VOID FreeBuffers(struct List *list)
 {
@@ -282,6 +300,7 @@ VOID FreeBuffers(struct List *list)
     }
 }
 
+/****************************************************************************************/
 
 VOID CopyContents(struct List *list, APTR mem)
 {
@@ -294,6 +313,7 @@ VOID CopyContents(struct List *list, APTR mem)
     }
 }
 
+/****************************************************************************************/
 
 struct TagItem *myNextTagItem(struct TagItem **ti)
 {
@@ -308,8 +328,11 @@ struct TagItem *myNextTagItem(struct TagItem **ti)
     return *ti;
 }
 
+/****************************************************************************************/
 
 ULONG Get4Bytes(UBYTE *bytes)
 {
     return bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3];
 }
+
+/****************************************************************************************/

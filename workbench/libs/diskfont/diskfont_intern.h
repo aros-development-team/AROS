@@ -79,20 +79,21 @@
 /* Path to the cachefile */
 #define CACHE_FILE "FONTS:cachefile"
 #define FONTSDIR "FONTS:"
+
 /* Structure for storing TAvailFonts elements */
 struct FontInfoNode
 {
-    struct MinNode NodeHeader;
+    struct MinNode 	NodeHeader;
 
     struct TAvailFonts	TAF;
 
     /* or-ed combo of FDF_REUSENAME and FDF_REUSETAGS  */
-    UBYTE   Flags;
+    UBYTE   		Flags;
 
-    STRPTR			NameInBuf;
-    UWORD			NameLength; /* !!!! Includes 0 terminator */
+    STRPTR		NameInBuf;
+    UWORD		NameLength; /* !!!! Includes 0 terminator */
     struct TagItem	*TagsInBuf;
-	UWORD			NumTags;
+    UWORD		NumTags;
 };
 
 
@@ -117,17 +118,17 @@ the font description reading routines */
 
 struct FontHookCommand
 {
-    ULONG				fhc_Command;
+    ULONG		fhc_Command;
 
-	/* Used both by OpenDiskFont and AvailFonts for returning font descriptions from th hook */
-	struct TTextAttr	fhc_DestTAttr;
+    /* Used both by OpenDiskFont and AvailFonts for returning font descriptions from th hook */
+    struct TTextAttr	fhc_DestTAttr;
 
-	/* Used by OpenDiskFont only */
-	struct TTextAttr	*fhc_ReqAttr;
-	struct TextFont 	*fhc_TextFont;
+    /* Used by OpenDiskFont only */
+    struct TTextAttr	*fhc_ReqAttr;
+    struct TextFont 	*fhc_TextFont;
 
     /* This field can be filled out by the hook. It will not be changed outside the hook */
-    APTR				fhc_UserData;
+    APTR		fhc_UserData;
 
 };
 struct FontDescrHeader
@@ -151,15 +152,15 @@ struct FontDescrHeader
 struct CopyState
 {
     /* What node was currently being written when buffer was full ? */
-    struct FontInfoNode      *BufferFullNode;
+    struct FontInfoNode      	*BufferFullNode;
 
     /* What state were we in when the buffer was full ? */
-    UWORD		BufferFullState;
+    UWORD			BufferFullState;
 
     /* Pointer into where we should start simulating copying into the buffer
     for reading bytes needed
     */
-    APTR		BufferFullPtr;
+    APTR			BufferFullPtr;
 };
 
 
@@ -251,17 +252,17 @@ AROS_UFP3(LONG, dosstreamhook,
 
 struct DiskfontBase_intern
 {
-    struct Library    library;
+    struct Library    	library;
     /* struct ExecBase * sysbase; */
-    BPTR	      seglist;
+    BPTR	      	seglist;
 
 /*    struct Library	 * dosbase; */
-    struct GfxBase	 * gfxbase;
-    struct Library	 * utilitybase;
+    struct GfxBase	* gfxbase;
+    struct Library	* utilitybase;
 
     /* dosstreamhandler hook neede for endian io funcs */
     struct Hook 	dsh;
-    struct AFHookDescr hdescr[NUMFONTHOOKS];
+    struct AFHookDescr 	hdescr[NUMFONTHOOKS];
 };
 
 /* The following typedefs are necessary, because the names of the global

@@ -1,19 +1,24 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Hook used by endian funcs to read from a dos file.
     Lang: english
 */
 
+/****************************************************************************************/
 
 #include <proto/dos.h>
 #include <aros/debug.h>
 #include <aros/asmcall.h>
 #include <aros/bigendianio.h>
+
+/****************************************************************************************/
 	
 #undef DOSBase
 #define DOSBase     ((struct DOSLibrary *)(hook->h_Data))
+
+/****************************************************************************************/
 
 AROS_UFH3(LONG, dosstreamhook,
     AROS_UFHA(struct Hook *, hook, A0),
@@ -49,4 +54,7 @@ kprintf ("dsh: Skip %d\n", ((struct BEIOM_Ignore *)msg)->Count);
     }
 
     return rc;
+    
 } /* dosstreamhook */
+
+/****************************************************************************************/

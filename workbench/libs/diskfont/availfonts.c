@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Main fileof diskfont function AvailFonts()
@@ -91,7 +91,7 @@
     NEWLIST( &filist );
     
     /* Shall we read fonts from disk ? If so, read from cache */
-    
+
     if (flags & AFF_DISK)
     {
         /* OK to read cahce ? */
@@ -127,7 +127,7 @@
         !ScanFontInfo
         (
         	/* If the cache is going to be rebuilt we should scan for tags too */
-            rebuild_cache ? flags | AFF_TAGGED : flags,
+            (rebuild_cache ? (flags | AFF_TAGGED) : flags),
             &filist,
             DFB(DiskfontBase)
         )
@@ -173,6 +173,7 @@
             /* Update the pointers to fontnames and tags inside the buffer */
             UpdatePointers( UB(buffer), flags, &filist, DFB(DiskfontBase) );
             retval = 0L;
+
         }
             
     }
@@ -183,4 +184,5 @@
     ReturnInt ("AvailFonts", ULONG, retval);
 
     AROS_LIBFUNC_EXIT
+    
 } /* AvailFonts */

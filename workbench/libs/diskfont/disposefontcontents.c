@@ -1,5 +1,5 @@
 /*
-    (C) 1997-99 AROS - The Amiga Research OS
+    (C) 1997-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -56,4 +56,5 @@
     FreeVec(fontContentsHeader);
 
     AROS_LIBFUNC_EXIT
+    
 } /* DisposeFontContents */
