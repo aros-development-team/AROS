@@ -37,6 +37,7 @@ CLASSES := \
     popasl \
     popimage \
     popobject \
+    poppen \
     popstring \
     prop \
     radio \
