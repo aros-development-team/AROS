@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -93,28 +93,33 @@ struct CollectPixelsMsg
 				/*
  				 * Find out what both layers have in common.
 				 */
+				struct Region * _r;
 				D(bug("l->shape=%p\n",l->shape));
-				struct Region * _r = AndRegionRegionND(r,l->shape);
+			        _r = AndRegionRegionND(r,l->shape);
 				/*
 				 * Try to find the relevant parts in the
 				 * layer l and on those parts of the
 				 * bitmap that are relevant to call the callback hook
 				 */
 				if (IS_SIMPLEREFRESH(l)) {
+				    struct RegionRectangle * _rr;
 					D(bug("SIMPLEFRESH layer found! %d/%d - %d/%d\n",
 					      l->bounds.MinX,
 					      l->bounds.MinY,
 					      l->bounds.MaxX,
 					      l->bounds.MaxY));
-					struct RegionRectangle * _rr = _r->RegionRectangle;
+				        _rr = _r->RegionRectangle;
 					while (NULL != _rr) {
-						struct Rectangle _rect = _rr->bounds;
+						struct Rectangle _rect;
+						struct ClipRect * cr = l->ClipRect;
+
+					        _rect = _rr->bounds;
 						_rect.MinX += _r->bounds.MinX;
 						_rect.MinY += _r->bounds.MinY;
 						_rect.MaxX += _r->bounds.MinX;
 						_rect.MaxY += _r->bounds.MinY;
 
-						struct ClipRect * cr = l->ClipRect;
+					        cr = l->ClipRect;
 						while (NULL != cr) {
 							struct Rectangle intersect;
 							/*
@@ -144,10 +149,13 @@ struct CollectPixelsMsg
 					}
 				} else 
 				if (IS_SMARTREFRESH(l)) {
-					D(bug("SMARTREFRESH layer found!\n"));
 					struct RegionRectangle * _rr = _r->RegionRectangle;
+					D(bug("SMARTREFRESH layer found!\n"));
 					while (NULL != _rr) {
-						struct Rectangle _rect = _rr->bounds;
+						struct Rectangle _rect;
+						struct ClipRect * cr;
+
+						_rect = _rr->bounds;
 						_rect.MinX += _r->bounds.MinX;
 						_rect.MinY += _r->bounds.MinY;
 						_rect.MaxX += _r->bounds.MinX;
@@ -157,7 +165,7 @@ struct CollectPixelsMsg
 						/*
 						 * Compare this rr against all hidden cliprects...
 						 */
-						struct ClipRect * cr = l->ClipRect;
+						cr = l->ClipRect;
 						while (NULL != cr) {
 							struct Rectangle intersect;
 							/*

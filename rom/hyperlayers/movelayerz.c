@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -15,7 +15,7 @@
 
 int _MoveLayerBehind(struct Layer *l,
                      struct Layer *lfront,
-                     struct LayersBase * LayersBase)
+                     LIBBASETYPEPTR LayersBase)
 {
   struct Layer * lbackold, *_l, *first;
   struct Region * hide = NewRegion(), show;
@@ -127,7 +127,7 @@ int _MoveLayerBehind(struct Layer *l,
 
 int _MoveLayerToFront(struct Layer * l,
                       struct Layer * lbehind,
-                      struct LayersBase * LayersBase)
+                      LIBBASETYPEPTR LayersBase)
 {
   struct Layer * lfront, * first, * _l;
   struct Region r, * backupr = NULL;

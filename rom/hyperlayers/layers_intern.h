@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information for layers.library.
@@ -84,10 +84,6 @@ struct ResourceNode
 };
 
 
-/* digulla again... Needed for close() */
-#define expunge() \
- AROS_LC0(BPTR, expunge, LIBBASETYPEPTR, LIBBASE, 3, BASENAME)
-
 #define SysBase         LIBBASE->lb_SysBase
 #define GfxBase		LIBBASE->lb_GfxBase
 #define UtilityBase	LIBBASE->lb_UtilityBase
@@ -103,10 +99,10 @@ struct ResourceNode
 
 int _MoveLayerBehind(struct Layer *l,
                      struct Layer *lfront,
-                     struct LayersBase * LayersBase);
+                     LIBBASETYPEPTR LayersBase);
 int _MoveLayerToFront(struct Layer * l,
                       struct Layer * lbehind,
-                      struct LayersBase * LayersBase);
+                      LIBBASETYPEPTR LayersBase);
 
 
 #endif /* _LAYERS_INTERN_H */
