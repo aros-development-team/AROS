@@ -1,33 +1,26 @@
 #include <stdio.h>
 #include <string.h>
+#include "test.h"
 
-int main() {
+int main() 
+{
     char *string = "test";
     char *p;
 
-    p = strchr( string, '\0' );	
-    if( p != NULL ) 
-        printf( "OK, found the NULL char.\n" );
-    else
-        printf( "ERROR, didn't find NULL char.\n" );
-
+    TEST( strchr( string, '\0' ) != NULL );
+    
     p = strchr( string, 't' );
-    if( *p == 't' && p == &string[0] ) 
-        printf( "OK, found first 't'\n" );
-    else
-        printf( "ERROR, didn't find first 't'\n" );
-
+    TEST( *p == 't' && p == &string[0] );
+    
     p = strchr( ++p, 't' );
-    if( *p == 't' && p == &string[3] ) 
-        printf( "OK, found second 't'\n" );
-    else 
-        printf( "ERROR, didn't find second 't'\n" );
+    TEST( *p == 't' && p == &string[3] );
+    
+    TEST( strchr( ++p, 't' ) == NULL );
 
-    p = strchr( ++p, 't' );
-    if( p == NULL ) 
-        printf( "OK, didn't find any more chars.\n" );
-    else
-        printf( "ERROR, found char '%c'\n", *p );
+    return OK;
+}
 
-    return 0;
+void cleanup() 
+{
+    /* Nothing to clean up */
 }
