@@ -16,6 +16,7 @@
 #
 
 rel=${rel-`date '+%Y%m%d'`}
+fail=0
 
 if [ ! -f AROS-source-$rel.tgz ]; then
     # Create source dist
@@ -37,10 +38,14 @@ if [ ! -f AROS-lx86-bin-$rel.tgz ]; then
     ) > AROS-lx86-bin-$rel.log 2>&1
     if [ $? -ne 0 ]; then
 	( 
-	    echo "Building Linux/i386 failed:"
+	    echo "Building Linux/i386 failed. See the complete log at"
+	    echo "ftp://www.aros.org/pub/aros/snapshots/AROS-lx86-bin-$rel.log"
 	    echo "..."
 	    tail -50 AROS-lx86-bin-$rel.log
+	    echo
+	    echo
 	) 1>&2
+	fail=1
     else
 	tar czf AROS-lx86-bin-$rel.tgz AROS/bin/linux-i386/AROS
     fi
@@ -60,10 +65,14 @@ if [ ! -f AROS-ibmpc-bin-$rel.tgz ]; then
     ) > AROS-ibmpc-bin-$rel.log 2>&1
     if [ $? -ne 0 ]; then
 	( 
-	    echo "Building Native/i386 failed:"
+	    echo "Building Native/i386 failed. See the complete log at"
+	    echo "ftp://www.aros.org/pub/aros/snapshots/AROS-ibmpc-bin-$rel.log"
 	    echo "..."
 	    tail -50 AROS-ibmpc-bin-$rel.log
+	    echo
+	    echo
 	) 1>&2
+	fail=1
     else
 	rm -rf AROS/bin/native-i386/AROS
 	mkdir -p AROS/bin/native-i386/AROS
@@ -72,3 +81,9 @@ if [ ! -f AROS-ibmpc-bin-$rel.tgz ]; then
 		tar czf AROS-ibmpc-bin-$rel.tgz AROS/bin/native-i386/AROS
     fi
 fi
+
+if [ $fail -eq 0 ]; then
+    echo "Whopee !! All builds were ok !"
+fi
+
+exit $fail
