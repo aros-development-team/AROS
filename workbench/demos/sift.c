@@ -159,7 +159,9 @@ void main(int argc, char **argv)
 */
 		if (!(iff->iff_Stream = (IPTR)Open (argv[1], MODE_OLDFILE)))
 			{
-			puts ("File open failed.");
+			/*
+			    AROS NOTE: Show what error it was */
+			PrintFault (IoErr (), "File open failed");
 			goto bye;
 			}
 		InitIFFasDOS (iff);
