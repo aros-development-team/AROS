@@ -1274,7 +1274,7 @@ clean ::
 #   be changed later on to support that kind of thing.
 #
 
-%define make_use_linklibs libs=LIBS deps=DEPLIBS prelibs=$(PRELIBS) lib_cflags=LIB_CFLAGS postlibs= startup=$(AROS_LIB)/startup.o
+%define make_use_linklibs libs=LIBS deps=DEPLIBS prelibs=$(PRELIBS) lib_cflags=LIB_CFLAGS postlibs= startup=$(AROS_LIB)/startup.o module=MODULE
 %(libs)       := -L$(LIBDIR) %(prelibs)
 %(deps)       :=
 %(lib_cflags) :=
@@ -1365,7 +1365,7 @@ endif
 
 # These must always be linked if we are NOT building a module,
 # otherwise strange things might happen.
-ifndef MODULE
+ifndef %(module)
 ifndef NO_AUTOINIT
 %(libs) := $(%(libs)) -lautoinit
 %(deps) := $(%(deps)) $(LIBDIR)/libautoinit.a
@@ -1388,12 +1388,12 @@ endif
 #MM
 %(mmake)-clean : clean
 
-%make_use_linklibs libs=LIBS%(id)
-%make_common_setup id=%(id)
-
 %safe_define var=MODULE%(id) value="$(MODNAME).$(MODTYPE)"
 %safe_define var=USE_FUNCTABLE value="yes"
 %safe_define var=USE_CPAK value="$(USE_CPAK_DEFAULT)"
+
+%make_use_linklibs libs=LIBS%(id) module=MODULE%(id)
+%make_common_setup id=%(id)
 
 # Depending upon the value of MODTYPE, much changes...
 MOD_DIR%(id) := bollocks
