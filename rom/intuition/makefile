@@ -1,5 +1,7 @@
 TOP=..
 
+SPECIAL_CFLAGS = -I/usr/include
+
 include $(TOP)/make.cfg
 
 FILES = intuition_init intuition_functable intui_x11 gadgets \
