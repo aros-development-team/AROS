@@ -72,6 +72,7 @@ ULONG RangeRand (ULONG maxValue);
 ULONG FastRand (ULONG seed);
 LONG TimeDelay (LONG unit, ULONG secs, ULONG microsecs);
 void waitbeam (LONG pos);
+void __sprintf(UBYTE *buffer, UBYTE *format, ...);
 
 /* Commodities */
 CxObj  *HotKey (STRPTR description, struct MsgPort *port, LONG id);
@@ -80,7 +81,7 @@ UBYTE **ArgArrayInit(ULONG argc, UBYTE **argv);
 VOID    ArgArrayDone(VOID);
 LONG    ArgInt(UBYTE **tt, STRPTR entry, LONG defaultVal);
 STRPTR  ArgString(UBYTE **tt, STRPTR entry, STRPTR defaultstring);
-struct InputEvent *InvertString(STRPTR str, struct KeyMap *km);
+struct  InputEvent *InvertString(STRPTR str, struct KeyMap *km);
 
 /* Gadtools */
 APTR GetVisualInfo (struct Screen * screen, ULONG tag1, ...);
