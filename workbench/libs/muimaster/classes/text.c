@@ -342,44 +342,37 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     D(bug("muimaster.library/text.c: Draw Text Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
 
     DoSuperMethodA(cl,obj,(Msg)msg);
-    if (!(msg->flags & MADF_DRAWOBJECT))
-	return(0);
+
+    if ((msg->flags & MADF_DRAWUPDATE) && !data->update)
+	return 0;
+
+    if (msg->flags & MADF_DRAWUPDATE && data->update == 1)
+    {
+	DoMethod(obj,MUIM_DrawBackground, _mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj));
+    }
 
     clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
 			   _mwidth(obj), _mheight(obj));
 
     SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
 
-    zune_text_draw(data->ztext, obj,
-		   _mleft(obj), _mright(obj),
-		   _mtop(obj) + (_mheight(obj) - data->ztext->height) / 2);
-
     get(_win(obj),MUIA_Window_ActiveObject,&act);
 
     if (act == obj && (data->mtd_Flags & MTDF_EDITABLE))
     {
-	struct ZTextLine *line;
-	struct ZTextChunk *chunk;
-	int offx,len;
-
-        /* Cursor drawing should be done inside zune_text_draw() */
-	if (zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len))
-	{
-            int cursor_width;
-
-            if (chunk && chunk->str && chunk->str[len]) cursor_width = TextLength(_rp(obj),&chunk->str[len],1);
-            else cursor_width = _font(obj)->tf_XSize;
-
-	    SetAPen(_rp(obj), _dri(obj)->dri_Pens[FILLPEN]);
-	    RectFill(_rp(obj), _mleft(obj) + offx, _mtop(obj), _mleft(obj) + offx + cursor_width - 1, _mtop(obj)+_font(obj)->tf_YSize-1);
-	}
+	zune_text_draw_cursor(data->ztext, obj,
+		   _mleft(obj), _mright(obj),
+		   _mtop(obj) + (_mheight(obj) - data->ztext->height) / 2,
+		   data->xpos,data->ypos);
+    } else
+    {
+	zune_text_draw(data->ztext, obj,
+		   _mleft(obj), _mright(obj),
+		   _mtop(obj) + (_mheight(obj) - data->ztext->height) / 2);
     }
 
-/*      zune_text_draw(data->ztext, obj, */
-/*  		   _mleft(obj), */
-/*  		   _mtop(obj) + (_mheight(obj) - data->ztext->height) / 2); */
-
     MUI_RemoveClipping(muiRenderInfo(obj), clip);
+    data->update = 0;
     return TRUE;
 }
 
@@ -435,7 +428,8 @@ static ULONG Text_GoActive(struct IClass * cl, Object * o, Msg msg)
   data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
   DoMethod(_win(o), MUIM_Window_AddEventHandler, &data->ehn);
 
-  MUI_Redraw(o, MADF_DRAWOBJECT);
+  data->update = 1;
+  MUI_Redraw(o, MADF_DRAWUPDATE);
   return 0;
 }
 
@@ -451,7 +445,8 @@ static ULONG Text_GoInactive(struct IClass * cl, Object * o, Msg msg)
   data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
   DoMethod(_win(o), MUIM_Window_AddEventHandler, &data->ehn);
 
-  MUI_Redraw(o, MADF_DRAWOBJECT);
+  data->update = 1;
+  MUI_Redraw(o, MADF_DRAWUPDATE);
   return 0;
 }
 
@@ -497,6 +492,13 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 
     if (code == 127) /* del */
     {
+    	if (zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len))
+    	{
+	    if (chunk->str && chunk->str[len])
+	    {
+		strcpy(&chunk->str[len],&chunk->str[len+1]);
+	    }
+    	}
 	return 1;
     }
 
@@ -560,7 +562,7 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
 {
     struct MUI_TextData *data = (struct MUI_TextData*) INST_DATA(cl, obj);
     ULONG retval = 0;
-    BOOL redraw = FALSE;
+    int update = 0;
 
     if (!(data->mtd_Flags & MTDF_EDITABLE)) return 0;
 
@@ -599,7 +601,7 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
 				    if (data->xpos)
 				    {
 					data->xpos--;
-					redraw = 1;
+					update = 1;
 				    }
 				    retval = MUI_EventHandlerRC_Eat;
 				    break;
@@ -608,7 +610,7 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
 				    if (data->xpos < zune_text_get_line_len(data->ztext,obj,data->ypos))
 				    {
 					data->xpos++;
-					redraw = 1;
+					update = 1;
 				    }
 				    retval = MUI_EventHandlerRC_Eat;
 				    break;
@@ -618,7 +620,7 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
 					unsigned char code = ConvertKey(msg->imsg);
 					if (code)
 					{
-					    redraw = Text_HandleVanillakey(cl,obj,code);
+					    update = Text_HandleVanillakey(cl,obj,code);
 				            retval = MUI_EventHandlerRC_Eat;
 				        }
 				    }
@@ -725,7 +727,11 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
 #endif
 
 
-    if (redraw) MUI_Redraw(obj, MADF_DRAWOBJECT);
+    if (update)
+    {
+    	data->update = update;
+    	MUI_Redraw(obj, MADF_DRAWUPDATE);
+    }
     return retval;
 }
 

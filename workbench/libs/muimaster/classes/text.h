@@ -14,8 +14,10 @@ struct MUI_TextData {
     LONG xpos;
     LONG ypos;
     struct MUI_EventHandlerNode ehn;
+
+    LONG update; /* type of update 1 - everything */
 };
- 
+
 #define MTDF_SETMIN    (1<<0)
 #define MTDF_SETMAX    (1<<1)
 #define MTDF_SETVMAX   (1<<2)

@@ -853,6 +853,76 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
     }
 }
 
+void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WORD top, LONG cursorx, LONG cursory)
+{
+    struct RastPort *rp;
+    ULONG style = FS_NORMAL;
+
+    ZTextLine *line_node;
+    ZTextChunk *chunk_node;
+
+    if (!text || !obj) return;
+
+    rp = _rp(obj);
+    SetFont(rp,_font(obj));
+
+    top += _font(obj)->tf_Baseline;
+
+    for (line_node = (ZTextLine *)text->lines.mlh_Head; line_node->node.mln_Succ ; line_node = (ZTextLine*)line_node->node.mln_Succ)
+    {
+	LONG x;
+
+	if (line_node->align == ZTL_CENTER) x = (left + right - line_node->lwidth) / 2;
+	else if (line_node->align == ZTL_RIGHT) x = right - line_node->lwidth;
+	else x = left;
+
+	for (chunk_node = (ZTextChunk *)line_node->chunklist.mlh_Head; chunk_node->node.mln_Succ ; chunk_node = (ZTextChunk*)chunk_node->node.mln_Succ)
+	{
+	    char *str = chunk_node->str;
+	    ULONG newstyle = FS_NORMAL;
+	    if (!str) str = "";
+
+
+	    if (chunk_node->style & ZTC_STYLE_BOLD) newstyle |= FSF_BOLD;
+	    if (chunk_node->style & ZTC_STYLE_UNDERLINE) newstyle |= FSF_UNDERLINED;
+	    if (newstyle != style)
+	    {
+		SetSoftStyle(rp, newstyle, 0xff);
+		style = newstyle;
+	    }
+
+	    if (!cursory && (cursorx <= strlen(str) && cursorx >= 0))
+	    {
+	    	int offx = TextLength(_rp(obj),str,cursorx);
+	    	int cursor_width;
+
+		if (str[cursorx]) cursor_width = TextLength(_rp(obj),&str[cursorx],1);
+		else cursor_width = _font(obj)->tf_XSize;
+
+		SetAPen(_rp(obj), _dri(obj)->dri_Pens[FILLPEN]);
+		RectFill(_rp(obj), x + offx, top - _font(obj)->tf_Baseline, x + offx + cursor_width - 1, top - _font(obj)->tf_Baseline + _font(obj)->tf_YSize-1);
+		cursorx = -1;
+	    }
+	    
+	    Move(rp,x,top);
+	    SetABPenDrMd(rp, _dri(obj)->dri_Pens[chunk_node->dripen],0,JAM1);
+
+	    Text(rp,chunk_node->str,strlen(chunk_node->str));
+	    x += chunk_node->cwidth;
+	}
+
+	if (!cursory && cursorx != -1)
+	{
+	    /* Cursor has not been drawn yet */
+	    SetAPen(_rp(obj), _dri(obj)->dri_Pens[FILLPEN]);
+	    RectFill(_rp(obj), x, top - _font(obj)->tf_Baseline, x + _font(obj)->tf_XSize - 1, top - _font(obj)->tf_Baseline + _font(obj)->tf_YSize-1);
+	}
+
+	top += line_node->lheight;
+	cursory--;
+    }
+}
+
 int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y, struct ZTextLine **line_ptr, struct ZTextChunk **chunk_ptr, int *offset_ptr, int *len_ptr)
 {
     int i,j;
