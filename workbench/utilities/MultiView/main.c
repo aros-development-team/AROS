@@ -78,22 +78,28 @@ static void KillWindow(void);
 
 /*********************************************************************************************/
 
+WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
+{
+    struct EasyStruct es;
+    
+    es.es_StructSize   = sizeof(es);
+    es.es_Flags        = 0;
+    es.es_Title        = title;
+    es.es_TextFormat   = text;
+    es.es_GadgetFormat = gadtext;
+   
+    return EasyRequestArgs(win, &es, NULL, NULL);  
+}
+
+/*********************************************************************************************/
+
 void Cleanup(STRPTR msg)
 {
     if (msg)
     {
-        if (IntuitionBase)
+        if (IntuitionBase && !((struct Process *)FindTask(NULL))->pr_CLI)
 	{
-	    struct EasyStruct es;
-	    
-	    es.es_StructSize 	= sizeof(es);
-	    es.es_Flags 	= 0;
-	    es.es_Title 	= "MultiView";
-	    es.es_TextFormat 	= msg;
-	    es.es_GadgetFormat 	= "Ok";
-	    
-	    EasyRequestArgs(NULL, &es, NULL, NULL);
-	    
+	    ShowMessage("MultiView", msg, MSG(MSG_OK));	    
 	} else {
 	    printf("MultiView: %s\n", msg);
 	}
@@ -674,6 +680,22 @@ static void HandleAll(void)
 			case CURSORRIGHT:
 			case CURSORLEFT:
 			    ScrollTo(msg->Code, msg->Qualifier);
+			    break;
+			
+			case 0x70: /* HOME */
+			    ScrollTo(CURSORUP, IEQUALIFIER_LALT);
+			    break;
+			    
+			case 0x71: /* END */
+			    ScrollTo(CURSORDOWN, IEQUALIFIER_LALT);
+			    break;
+			    
+			case 0x48: /* PAGE UP */
+			    ScrollTo(CURSORUP, IEQUALIFIER_LSHIFT);
+			    break;
+			    
+			case 0x49: /* PAGE DOWN */
+			    ScrollTo(CURSORDOWN, IEQUALIFIER_LSHIFT);
 			    break;
 			    
 		    } /* switch(msg->Code) */
