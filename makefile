@@ -111,29 +111,29 @@ dist : dist-dir dist-tar dist-lha dist-src
 	cp README dist/$(BINARCHIVE).readme
 	cp README dist/$(DEVARCHIVE).readme
 
-dist-dir : FORCE
+dist-dir : .FORCE
 	@if [ ! -d dist ]; then $(MKDIR) dist ; else true ; fi
 	@echo "Correcting access flags"
 	@chmod -R ug=rwX,o=rX .
 
-dist-tar : FORCE
+dist-tar : .FORCE
 	cd $(ARCHDIR) ; \
 	    $(RM) ../../dist/$(BINARCHIVE).tgz ; \
 	    tar chvvzf ../../dist/$(BINARCHIVE).tgz AROS
 
-dist-lha : FORCE
+dist-lha : .FORCE
 	cd $(ARCHDIR) ; \
 	    $(RM) ../../dist/$(BINARCHIVE).lha ; \
 	    lha a ../../dist/$(BINARCHIVE).lha AROS
 
-dist-src : FORCE
+dist-src : .FORCE
 	$(TOP)/scripts/makedist src $(DEVARCHIVE)
 
 # BEGIN_DESC{internaltarget}
-# \item{FORCE} Alwaye remake rules that depend on this one
+# \item{.FORCE} Alwaye remake rules that depend on this one
 #
 # END_DESC{internaltarget}
-FORCE :
+.FORCE :
 
 # BEGIN_DESC{internaltarget}
 # \item{setup} Check the setup and create all directories and files which
@@ -275,3 +275,10 @@ $(GENDIR)/%.o: %.c
 # END_DESC{target}
 cleandep:
 	find $(GENDIR) -name "*.d" -exec $(RM) "{}" \;
+
+# BEGIN_DESC{target}
+# \item{docs} Compile the documentation for AROS.
+#
+# END_DESC{target}
+docs: .FORCE
+	cd $(TOP)/docs/src ; make
