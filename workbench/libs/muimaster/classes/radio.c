@@ -12,6 +12,7 @@
 
 #include <string.h>
 
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 
 #include "mui.h"
@@ -89,15 +90,18 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	state = (entries_active == i) ? TRUE : FALSE;
 
 	buttons[i] = HGroup,
-            MUIA_InputMode, MUIV_InputMode_Immediate,
-    	    MUIA_Selected, state,
-            MUIA_ShowSelState, FALSE,
 	    Child, (IPTR)ImageObject,
+	        MUIA_Image_FontMatch, TRUE,
+	        MUIA_InputMode, MUIV_InputMode_Immediate,
+	        MUIA_Selected, state,
+	        MUIA_ShowSelState, FALSE,
 	        MUIA_Image_Spec, MUII_RadioButton,
-    		MUIA_Frame, MUIV_Frame_None,
+	        MUIA_Frame, MUIV_Frame_None,
    	        End,
 	    Child, (IPTR)TextObject,
+	        MUIA_InputMode, MUIV_InputMode_Immediate,
                 MUIA_ShowSelState, FALSE,
+	        MUIA_Selected, state,
 	        MUIA_Text_Contents, entries[i],
 	        MUIA_Frame, MUIV_Frame_None,
 	        MUIA_Text_PreParse, (IPTR)"\33l",
@@ -125,12 +129,12 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->entries_num = entries_num;
     data->buttons = buttons;
 
-    
     for (i=0;entries[i];i++)
     {
 	DoMethod(buttons[i], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
 		 (IPTR)obj, 3, MUIM_Set, MUIA_Radio_Active, i);
     }
+/*      set(obj, MUIA_Radio_Active, entries_active); */
 
     return (IPTR)obj;
 }
@@ -160,6 +164,8 @@ static IPTR Radio_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_Radio_Active:
+		D(bug("Radio_Set(%p) MUIA_Radio_Active %ld\n",
+		      obj, tag->ti_Data));
 		    if (tag->ti_Data >= 0 && tag->ti_Data < data->entries_num &&
 			tag->ti_Data != data->entries_active)
 		    {
@@ -213,6 +219,10 @@ BOOPSI_DISPATCHER(IPTR, Radio_Dispatcher, cl, obj, msg)
 	case OM_SET: return Radio_Set(cl, obj, (struct opSet *)msg);
 	case OM_GET: return Radio_Get(cl, obj, (struct opGet *)msg);
 	case MUIM_Setup: return Radio_Setup(cl, obj, msg);
+	case MUIM_Draw:
+	    D(bug("Radio_Dispatcher: MUIM_Draw 0x%08lx\n",
+		  ((struct MUIP_Draw *)msg)->flags));
+	    break;
     }
 
     return DoSuperMethodA(cl, obj, msg);
