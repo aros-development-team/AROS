@@ -10,13 +10,17 @@
 
 /****************************************************************************************/
 
+#define MATCHFUNCS_NO_DUPLOCK	0
+
+/****************************************************************************************/
+
 #define COMPTYPE_NORMAL  1 
 #define COMPTYPE_PATTERN 2
 #define COMPTYPE_UNKNOWN 3
 
 /****************************************************************************************/
 
-LONG My_MatchNext(struct AnchorPath *ap);
+LONG My_MatchNext(struct AnchorPath *AP);
 
 /****************************************************************************************/
 
@@ -95,14 +99,14 @@ static void RemoveTrailingSlash(STRPTR s)
 
 /****************************************************************************************/
 
-static struct AChain *AllocAChain(LONG extrasize)
+static struct AChain *Match_AllocAChain(LONG extrasize, struct DosLibrary *DOSBase)
 {
     return AllocVec(sizeof(struct AChain) + extrasize, MEMF_PUBLIC | MEMF_CLEAR);
 }
 
 /****************************************************************************************/
 
-static void FreeAChain(struct AChain *ac)
+static void Match_FreeAChain(struct AChain *ac, struct DosLibrary *DOSBase)
 {
     if (ac)
     {
@@ -112,7 +116,7 @@ static void FreeAChain(struct AChain *ac)
 
 /*****************************************************************************************
 
-The job of Build_AChainList is to split the pattern string passed to MatchFirst into
+The job of BuildAChainList is to split the pattern string passed to MatchFirst into
 path components. Most imporant rules (as found out after hours of testing on Amiga):
 
   - Each path component containing a pattern string is put into a single AChain
@@ -134,7 +138,8 @@ Examples: [<???>] is one AChain
   
 *****************************************************************************************/
 
-static LONG Build_AChainList(STRPTR pattern, struct AnchorPath *ap, struct AChain **retac)
+static LONG BuildAChainList(STRPTR pattern, struct AnchorPath *AP,
+			    struct AChain **retac, struct DosLibrary *DOSBase)
 {
     struct AChain 	*baseac = 0, *prevac = 0, *ac;
     STRPTR 		patterncopy = 0;
@@ -142,7 +147,7 @@ static LONG Build_AChainList(STRPTR pattern, struct AnchorPath *ap, struct AChai
     LONG 		len, error = 0;
     WORD		comptype = COMPTYPE_UNKNOWN;
     WORD		compcount = 0;
-    WORD		i, i2;
+    WORD		i;
     UBYTE		c;
 
     *retac = 0;
@@ -150,8 +155,12 @@ static LONG Build_AChainList(STRPTR pattern, struct AnchorPath *ap, struct AChai
     len = strlen(pattern);
 
     patterncopy = AllocVec(len + 1, MEMF_PUBLIC);
-    if (!patterncopy) goto done;
-
+    if (!patterncopy)
+    {
+        error = ERROR_NO_FREE_STORE;
+	goto done;
+    }
+    
     strcpy(patterncopy, pattern);
 
     RemoveTrailingSlash(patterncopy);
@@ -179,37 +188,37 @@ static LONG Build_AChainList(STRPTR pattern, struct AnchorPath *ap, struct AChai
 	    c = *patternpos;
 	    if (c == '/')
 	    {
-		    if (comptype == COMPTYPE_UNKNOWN)
-		    {
-			    comptype = COMPTYPE_NORMAL;
-			    patternend = patternpos;
-		    }
-		    else if (comptype == COMPTYPE_NORMAL)
-		    {
-			    patternend = patternpos;
-			    compcount++;
-		    }
-		    if (comptype == COMPTYPE_PATTERN)
-		    {
-			    patternend = patternpos;
-			    break;		
-		    }
+		if (comptype == COMPTYPE_UNKNOWN)
+		{
+		    comptype = COMPTYPE_NORMAL;
+		    patternend = patternpos;
+		}
+		else if (comptype == COMPTYPE_NORMAL)
+		{
+		    patternend = patternpos;
+		    compcount++;
+		}
+		if (comptype == COMPTYPE_PATTERN)
+		{
+		    patternend = patternpos;
+		    break;		
+		}
 	    }
 	    else if (c == '\0')
 	    {
-		    if (comptype == COMPTYPE_UNKNOWN)
-		    {
-			    comptype = COMPTYPE_NORMAL;
-			    patternend = patternpos;
-			    break;
-		    }
-		    if (comptype == COMPTYPE_NORMAL)
-		    {
-			    compcount++;
-			    break;
-		    }
+		if (comptype == COMPTYPE_UNKNOWN)
+		{
+		    comptype = COMPTYPE_NORMAL;
 		    patternend = patternpos;
 		    break;
+		}
+		if (comptype == COMPTYPE_NORMAL)
+		{
+		    compcount++;
+		    break;
+		}
+		patternend = patternpos;
+		break;
 	    }
 	    else if ((c == '#') ||
 		     (c == '~') ||
@@ -219,17 +228,16 @@ static LONG Build_AChainList(STRPTR pattern, struct AnchorPath *ap, struct AChai
 		     (c == '*') ||
 		     (c == '(') ||
 		     (c == ')') ||
-		     (c == '|'))
+		     (c == '|') ||
+		     (c == '%'))
 	    {
-		ap->ap_Flags |= APF_ITSWILD;
-
 		if (comptype == COMPTYPE_NORMAL)
 		{
 		    break;
 		}
 		comptype = COMPTYPE_PATTERN;
 	    }
-
+	    
 	    patternpos++;
 
 	} /* for(;;) */
@@ -237,7 +245,7 @@ static LONG Build_AChainList(STRPTR pattern, struct AnchorPath *ap, struct AChai
 	len = (LONG)(patternend - patternstart + 2);
 	if (comptype == COMPTYPE_PATTERN) len = len * 2 + 2;
 
-	ac = AllocAChain(len);
+	ac = Match_AllocAChain(len, DOSBase);
 	if (!ac)
 	{
 	    error = ERROR_NO_FREE_STORE;
@@ -255,31 +263,45 @@ static LONG Build_AChainList(STRPTR pattern, struct AnchorPath *ap, struct AChai
 		strcpy(ac->an_String, patternstart);
 		patternend[1] = c;
 	    }
-	} else {
+	    
+	} /* if (comptype == COMPTYPE_NORMAL) */
+	else
+	{
 	    if (*patternend == '\0')
 	    {
 		i = ParsePatternNoCase(patternstart, ac->an_String, len);
-	    } else {
+	    }
+	    else
+	    {
 		c = patternend[1];
 		patternend[1] = '\0';
 		i = ParsePatternNoCase(patternstart, ac->an_String, len);
 		patternend[1] = c;
 	    }
+	    
 	    if (i == -1)
 	    {
 		error = ERROR_BAD_TEMPLATE;
-		FreeAChain(ac);ac = 0;
+		Match_FreeAChain(ac, DOSBase);ac = 0;
 		goto done;
 	    }
-	    ac->an_Flags |= DDF_PatternBit;
-	}
+	    
+	    if (i)
+	    {
+	        ac->an_Flags |= DDF_PatternBit;
+		AP->ap_Flags |= APF_ITSWILD;
+	    }
+	    
+	} /* if (comptype == COMPTYPE_NORMAL) else ... */
 
 	RemoveTrailingSlash(ac->an_String);
 
 	if (!prevac)
 	{
 	    baseac = ac;
-	} else {
+	}
+	else
+	{
 	    prevac->an_Child = ac;
 	    ac->an_Parent = prevac;
 	}
@@ -298,18 +320,33 @@ done:
 
     if (!error)
     {
+#if MATCHFUNCS_NO_DUPLOCK
+        /*
+	** No DupLock() here, because then we would have to UnLock it in MatchEnd
+	** and we would not know any valid lock to which we could CurrentDir after,
+	** because we must make sure there is a valid CurrentDir after MatchEnd.
+	*/
+	
+        baseac->an_Lock = CurrentDir(0);
+	CurrentDir(baseac->an_Lock);
+#endif
 	*retac = baseac;
     }
-    else if (baseac)
+    else
     {
-#define nextac prevac
-
-	ac = baseac;
-	while(ac)
+        AP->ap_Flags |= APF_NOMEMERR;
+	
+     	if (baseac)
 	{
-	    nextac = ac->an_Child;
-	    FreeAChain(ac);
-	    ac = nextac;
+	    #define nextac prevac /* to not have to add another variable */
+
+	    ac = baseac;
+	    while(ac)
+	    {
+		nextac = ac->an_Child;
+		Match_FreeAChain(ac, DOSBase);
+		ac = nextac;
+	    }
 	}
     }
 
@@ -318,17 +355,17 @@ done:
 
 /****************************************************************************************/
 
-static LONG MakeResult(struct AnchorPath *ap)
+static LONG Match_MakeResult(struct AnchorPath *AP, struct DosLibrary *DOSBase)
 {
     LONG error = 0;
 
-    ap->ap_Info = ap->ap_Current->an_Info;
-    if (ap->ap_Strlen)
+    AP->ap_Info = AP->ap_Current->an_Info;
+    if (AP->ap_Strlen)
     {
-	ap->ap_Buf[0] = 0;
-	if (NameFromLock(ap->ap_Current->an_Lock, ap->ap_Buf, ap->ap_Strlen))
+	AP->ap_Buf[0] = 0;
+	if (NameFromLock(AP->ap_Current->an_Lock, AP->ap_Buf, AP->ap_Strlen))
 	{
-	    if (!AddPart(ap->ap_Buf, ap->ap_Current->an_Info.fib_FileName, ap->ap_Strlen))
+	    if (!AddPart(AP->ap_Buf, AP->ap_Current->an_Info.fib_FileName, AP->ap_Strlen))
 	    {
 		error = IoErr();
 	    }
@@ -342,31 +379,23 @@ static LONG MakeResult(struct AnchorPath *ap)
 
 /****************************************************************************************/
 
-LONG My_MatchFirst(STRPTR pattern, struct AnchorPath *ap)
+LONG My_MatchFirst(STRPTR pat, struct AnchorPath *AP)
 {
     struct AChain 	*ac;
     LONG 		error;
-    LONG 		success;
-    BPTR 		origdir;
 
-    ap->ap_Flags = 0;
-    ap->ap_Base = 0;
-    ap->ap_Current = 0;
+    AP->ap_Flags = 0;
+    AP->ap_Base = 0;
+    AP->ap_Current = 0;
 
-    origdir = CurrentDir(0);
-    CurrentDir(origdir);
-
-    error = Build_AChainList(pattern, ap, &ac);
+    error = BuildAChainList(pat, AP, &ac, DOSBase);
     if (error == 0)
     {
-	ap->ap_Base = ap->ap_Current = ac;
+	AP->ap_Base = AP->ap_Current = ac;
 
-	error = My_MatchNext(ap);
+	error = My_MatchNext(AP);
 
     } /* if (error == 0) */
-
-done:
-    CurrentDir(origdir);
 
     printf("My_MatchFirst: returning %ld. Ac = %lx\n", error, ac);
 
@@ -377,40 +406,52 @@ done:
 
 /****************************************************************************************/
 
-LONG My_MatchNext(struct AnchorPath *ap)
+LONG My_MatchNext(struct AnchorPath *AP)
 {
-    struct AChain 	*ac = ap->ap_Current;
-    BPTR 		origdir;
+    struct AChain 	*ac = AP->ap_Current;
+    BPTR 		origdir, old_current_lock;
     LONG 		error = 0;
 
     origdir = CurrentDir(0);
     CurrentDir(origdir);
 
-    ap->ap_Flags &= ~APF_DIDDIR;
+    old_current_lock = ac->an_Lock;
     
-    /* Check if we are asked to enter a directory, but only do this
-       if it is really possible */
+    AP->ap_Flags &= ~APF_DIDDIR;
+    
+    /*
+    ** Check if we are asked to enter a directory, but only do this
+    ** if it is really possible
+    */
        
-    if ((ap->ap_Flags & APF_DODIR) &&
+    if ((AP->ap_Flags & APF_DODIR) &&
         (ac->an_Flags & DDF_ExaminedBit) &&
 	(ac->an_Info.fib_DirEntryType > 0) &&
 	(ac->an_Child == NULL))
     {
-        /* Alloc a new AChain. Make it the active one. Set its string to "#?" and
-	   mark it with DDF_AllBit Flag to indicate that this is a "APF_DODIR-AChain".
-	   This is important for "back steppings", because "APF_DODIR-AChains" must
-	   be removed and freed then. */
+        /*
+	** Alloc a new AChain. Make it the active one. Set its string to "#?" and
+	** mark it with DDF_AllBit Flag to indicate that this is a "APF_DODIR-AChain".
+	** This is important for "back steppings", because "APF_DODIR-AChains" must
+	** be removed and freed then and the user must be notified about the leaving
+	** of a APF_DODIR-AChain with APF_DIDDIR.
+	*/
 	   
-        if ((ac->an_Child = AllocAChain(1)))
+        if ((ac->an_Child = Match_AllocAChain(1, DOSBase)))
 	{
 	    ac->an_Child->an_Parent = ac;
 	    ac = ac->an_Child;
-	    ap->ap_Current = ac;
+	    AP->ap_Current = ac;
 	    
 	    ac->an_String[0] = P_ANY;
 	    ac->an_String[1] = 0;
 	    ac->an_Flags = DDF_PatternBit | DDF_AllBit;	    
 	}
+	
+	/*
+	** If the allocation did not work, we simple ignore APF_DODIR. Just like if
+	** the user did not set this flag. Good idea or bad idea?
+	*/
     }
 
     
@@ -422,10 +463,10 @@ LONG My_MatchNext(struct AnchorPath *ap)
 	
 	/* Check for user breaks (CTRL_C, ...) */
 	 
-	if (ap->ap_BreakBits)
+	if (AP->ap_BreakBits)
 	{
-	    ap->ap_FoundBreak = CheckSignal(ap->ap_BreakBits);
-	    if (ap->ap_FoundBreak)
+	    AP->ap_FoundBreak = CheckSignal(AP->ap_BreakBits);
+	    if (AP->ap_FoundBreak)
 	    {
 	        error = ERROR_BREAK;
 		goto done;
@@ -436,27 +477,50 @@ LONG My_MatchNext(struct AnchorPath *ap)
 	
 	if (!(ac->an_Flags & DDF_ExaminedBit))
 	{
-	    /* This AChain must be "setup". First AChain->an_Lock must point
-	       to the parent directory! */
+	    /*
+	    ** This AChain must be "setup". First AChain->an_Lock must point
+	    ** to the parent directory, that is the directory where this
+	    ** AChain is "in". !
+	    */
 	   
 	    if (ac->an_Parent)
 	    {
 		CurrentDir(ac->an_Parent->an_Lock);
 		ac->an_Lock = Lock(ac->an_Parent->an_Info.fib_FileName, SHARED_LOCK);
-	    } else {
-		ac->an_Lock = DupLock(origdir);
-	    }
 
-	    if (!ac->an_Lock)
+		if (!ac->an_Lock)
+		{
+		    error = IoErr();
+		    goto done;
+		}
+
+	    }
+#if !MATCHFUNCS_NO_DUPLOCK
+	    else
 	    {
-		error = IoErr();
-		goto done;
+	        ac->an_Lock = DupLock(origdir);
+		if (!ac->an_Lock)
+		{
+		    error = IoErr();
+		    goto done;
+		}		
 	    }
-
+#else
+	    /*
+	    ** If there was no ac->an_Parent then we are dealing with the
+	    ** first AChain whose lock was already setup in BuildAChainList
+	    */
+#endif
 	    CurrentDir(ac->an_Lock);
 	    
 	    if (ac->an_Flags & DDF_PatternBit)
 	    {
+	        /*
+		** If this is a pattern AChain we first Examine here our
+		** parent directory, so that it then can be traversed with
+		** ExNext
+		*/
+		  
 		if (!Examine(ac->an_Lock, &ac->an_Info))
 		{
 		    error = IoErr();
@@ -470,14 +534,24 @@ LONG My_MatchNext(struct AnchorPath *ap)
 		BPTR lock;
 		LONG success;
 		
+		/*
+		** This is a normal AChain (no pattern). Try to lock it
+		** to see if it exists.
+		*/
+		   
 		if (!(lock = Lock(ac->an_String, SHARED_LOCK)))
 		{
+		    /* It does not exist, so if possible go back one step */
+		    
 		    if (ac->an_Parent)
 		    {
+		        /* [2] */
+			
 		        must_go_back = TRUE;
 		    }
 		    else
 		    {
+		        /* if going back is not possible get error code and exit */
 		        error = IoErr();
 		        goto done;
 		    }
@@ -485,59 +559,80 @@ LONG My_MatchNext(struct AnchorPath *ap)
 		} /* if (!(lock = Lock(ac->an_String, SHARED_LOCK))) */
 		else
 		{
+		    /* The File/Direcory ac->an_String exists */
+		    
 		    success = Examine(lock, &ac->an_Info);
 		    UnLock(lock);
 
 		    if (!success)
 		    {
+		        /*
+			** Examine()ing the file/directory did not
+			** work, although the lock was successful!?.
+			** Get error code and exit
+			*/
+			   
 			error = IoErr();
 			goto done;
 		    }
 
-		    /* This strcpy is necessary, because in case
-		       of empty ac->an_String("") fib_FileName would
-		       get directory name which it must not! */
+		    /*
+		    ** This strcpy is necessary, because in case
+		    ** of empty ac->an_String("") fib_FileName would
+		    ** get parent directory name which it must not!
+		    */
 		       
 		    strcpy(ac->an_Info.fib_FileName, ac->an_String);
 		    
 		    ac->an_Flags |= DDF_ExaminedBit;
 
-		    /* if this is a file, but there are still more path components to
-		       follow then we have to go back one step (AChain) */
-
+		    /*
+		    ** If this is a file, but there are still more path components to
+		    ** follow then we have to go back one step (AChain)
+		    */
+		    
 		    if (ac->an_Child && (ac->an_Info.fib_DirEntryType < 0))
 		    {
+		        /* [1] */
+			
 			must_go_back = TRUE;
 		    }
 		
+		    /*
+		    ** Here we either have found a matching file/directory (result)
+		    ** or, if ac->an_Child != NULL we have still to continue walking
+		    ** through the AChains until we are in the last one. This all
+		    ** happens further below 
+		    */
+		    
 		} /* if (!(lock = Lock(ac->an_String, SHARED_LOCK))) else ... */
 		
-	    } /*  /* if (ac->an_Flags & DDF_PatternBit) else ... */ 
+	    } /* if (ac->an_Flags & DDF_PatternBit) else ... */ 
 
  	} /* if (!(ac->an_Flags & DDF_ExaminedBit)) */
 	else
 	{
-	    /* When an AChain which is *not* a pattern already had DDF_PatternBit
-	       set, then this means ERROR_NO_MORE_ENTRIES, unless the AChain
-	       has a parent. In this case go back one step */
+	    /*
+	    ** This AChain was already setup.
+	    **
+	    ** When an AChain which is *not* a pattern already had DDF_PatternBit
+	    ** set, then this means ERROR_NO_MORE_ENTRIES, so we try to go back
+	    ** one step
+	    */
 	       
 	    if (!(ac->an_Flags & DDF_PatternBit))
 	    {
-	        if (ac->an_Parent)
-		{
-		    must_go_back = TRUE;
-		}
-		else
-		{
-	            error = ERROR_NO_MORE_ENTRIES;
-		    goto done;
-		}
+	        /* [4] */
+		
+		must_go_back = TRUE;
 	    }
 	}
 	
-	/* Here we can be sure that the actual AChain is setup, ie: it will
-	   have ac->an_Lock set correctly and to indicate this DDF_ExaminedBit
-	   was set */
+	/*
+	** Here we can be sure that the actual AChain is setup, ie: it will
+	** have ac->an_Lock set correctly and to indicate this DDF_ExaminedBit
+	** was set
+	*/
 	   
 	CurrentDir(ac->an_Lock);
 	
@@ -547,66 +642,121 @@ LONG My_MatchNext(struct AnchorPath *ap)
 	    {
 	        if (MatchPatternNoCase(ac->an_String, ac->an_Info.fib_FileName))
 		{
-		    /* this file matches the pattern in ac->an_String. If there
-		       are no more AChains to follow then we have found a result
-		       --> break. */
-		       
+		    /*
+		    ** This file matches the pattern in ac->an_String. If there
+		    ** are no more AChains to follow then we have found a matching
+		    ** file/directory (a result)  --> break.
+		    */	
+		    	       
 		    if (!ac->an_Child) break;
 
 		} else {
-		    /* did not match. Go to top of "for(;;)" loop */
+		    /* Did not match. Go to top of "for(;;)" loop */
 		    continue;
 		}
-	    } else {
+	    }
+	    else
+	    {
 	        error = IoErr();
 		if (error != ERROR_NO_MORE_ENTRIES) goto done;
+		
+		/* [3] */
+		
 		must_go_back = TRUE;
 	    }
-	}
+	    
+	} /* if (ac->an_Flags & DDF_PatternBit) */
+	
+	/*
+	** Handle the cases where we must (try to) go back to the previous AChain.
+	** This can happen if the actual AChain turned out to be a file although
+	** there are still more AChains to follow [1]. Or if the actual AChain did not
+	** exist at all [2]. Or if in a pattern AChain ExNext() told us that there are
+	** no more entries [3]. Or if we were getting to a normal (no pattern) AChain
+	** which was already setup (DDF_ExaminedBit) [4].
+	*/
 	
 	if (must_go_back)
 	{
+	    /* Check if going back is possible at all */
+	    
 	    if (!ac->an_Parent)
 	    {
 	        error = ERROR_NO_MORE_ENTRIES;
 		goto done;
 	    }
 	    
-	    UnLock(ac->an_Lock);
-	    ac->an_Lock = NULL;
-	    ac->an_Flags &= ~(DDF_ExaminedBit);
+	    /* Yep. It is possible. So let's cleanup the AChain. */
 	    
-	    ap->ap_Current = ac->an_Parent;
+	    CurrentDir(ac->an_Parent->an_Lock);
+	    
+	    UnLock(ac->an_Lock);
+	    
+	    ac->an_Lock = NULL;
+	    ac->an_Flags &= ~DDF_ExaminedBit;
+	    
+	    /* Make ac and AP->ap_Current point to the previous AChain */
+	    
+	    AP->ap_Current = ac->an_Parent;
+	    
+	    /*
+	    ** If this was an APF_DODIR Achain (indicated by DDF_AllBit)
+	    ** then the AChain must be unlinked and freed. And the user
+	    ** must be informed about the leaving with APF_DIDDIR and
+	    ** a "result" in AnchorPath which points to the directory which
+	    ** was leaved.
+	    */
 	    
 	    if (ac->an_Flags & DDF_AllBit)
 	    {
-	        ap->ap_Current->an_Child = NULL;
-		FreeAChain(ac);
-		ap->ap_Flags |= APF_DIDDIR;
+	        AP->ap_Current->an_Child = NULL;
+		Match_FreeAChain(ac, DOSBase);
+		AP->ap_Flags |= APF_DIDDIR;
+		
+		/* go out of for(;;) loop --> MakeResult */
+		
 		break;
 	    }
 	    
-	    ac = ap->ap_Current;
+	    ac = AP->ap_Current;
 	    
 	} /* if (must_go_back) */
 	else
 	{
-	    if (!ac->an_Child) break;
-
+	    if (!ac->an_Child)
+	    {
+	        /*
+		** We have reached the last AChain. And this means that
+		** we have found a matching file/directory :-)). Go out of
+		** for(;;) loop --> MakeResult 
+		*/
+		
+	        break;
+	    }
+	    
 	    ac = ac->an_Child;
-	    ap->ap_Current = ac;
+	    AP->ap_Current = ac;
 	}
 
     } /* for(;;) */
 
-    error = MakeResult(ap);
+    error = Match_MakeResult(AP, DOSBase);
     
 done:
     CurrentDir(origdir);
+    
+    AP->ap_Flags &= ~APF_DODIR;
+    
+    if (old_current_lock != AP->ap_Current->an_Lock)
+    {
+        AP->ap_Flags |= APF_DirChanged;
+    }
+    else
+    {
+        AP->ap_Flags &= ~APF_DirChanged;
+    }
 
     SetIoErr(error);
-    
-    ap->ap_Flags &= ~APF_DODIR;
     
     return error;
 	
@@ -614,22 +764,48 @@ done:
 
 /****************************************************************************************/
 
-void My_MatchEnd(struct AnchorPath *ap)
+void My_MatchEnd(struct AnchorPath *AP)
 {
-    struct AChain *ac = ap->ap_Base, *acnext;
+    struct AChain *ac = AP->ap_Base, *acnext;
 
-    while(ac)
+    if (ac)
     {
-	acnext = ac->an_Child;
 
-	if (ac->an_Lock) UnLock(ac->an_Lock);
-	FreeAChain(ac);
+#if MATCHFUNCS_NO_DUPLOCK
+        /*
+	** CurrentDir to a valid lock, ie. one that will not be
+	** killed further below
+	*/
+	
+        CurrentDir(ac->an_Lock);
+#endif	
+	while(ac)
+	{
+	    acnext = ac->an_Child;
 
-	ac = acnext;
+	    /*
+	    ** Dont unlock lock in first AChain because it is the same
+	    ** as the current directory when MatchFirst was called. And
+	    ** this lock was not DupLock()ed!!!
+	    */
+	    
+	    if (ac->an_Lock
+#if MATCHFUNCS_NO_DUPLOCK
+	        && (ac != AP->ap_Base)
+#endif
+	        )
+	    {
+	        UnLock(ac->an_Lock);
+	    }
+	    
+	    Match_FreeAChain(ac, DOSBase);
+
+	    ac = acnext;
+	}
     }
     
-    ap->ap_Current = NULL;
-    ap->ap_Base = NULL;
+    AP->ap_Current = NULL;
+    AP->ap_Base = NULL;
 }
 
 /****************************************************************************************/
@@ -683,15 +859,15 @@ static void getarguments(void)
 
 static void my_matchme(char *pattern, BOOL all)
 {
-    struct AnchorPath stackap[2], *ap;
+    struct AnchorPath stackap[2], *AP;
     struct AChain *ac;
     LONG error = 0;
 
-    ap = (struct AnchorPath *)((((ULONG)stackap) + 3) & ~3);
+    AP = (struct AnchorPath *)((((ULONG)stackap) + 3) & ~3);
 
-    memset(ap, 0, sizeof(struct AnchorPath));
+    memset(AP, 0, sizeof(struct AnchorPath));
 
-    error =  My_MatchFirst(pattern, ap);
+    error =  My_MatchFirst(pattern, AP);
 
     if (error != 0)
     {
@@ -699,40 +875,40 @@ static void my_matchme(char *pattern, BOOL all)
     }
     else
     {
-        printf("direntrytype = %d\n", ap->ap_Info.fib_DirEntryType);
-        if (!(ap->ap_Flags & APF_ITSWILD) &&
-	     (ap->ap_Info.fib_DirEntryType > 0))
+        printf("direntrytype = %d\n", AP->ap_Info.fib_DirEntryType);
+        if (!(AP->ap_Flags & APF_ITSWILD) &&
+	     (AP->ap_Info.fib_DirEntryType > 0))
 	{
 	     /* pattern was an explicitely named directory */
-	     ap->ap_Flags |= APF_DODIR;
+	     AP->ap_Flags |= APF_DODIR;
 	}
 	
-	printf("ap_Flags = %lx\n", ap->ap_Flags);
-	NameFromLock(ap->ap_Current->an_Lock, s, 300);
+	printf("ap_Flags = %lx\n", AP->ap_Flags);
+	NameFromLock(AP->ap_Current->an_Lock, s, 300);
 	printf("BaseLock = \"%s\"\n", s);
 
-	showaclist(ap->ap_Base);
+	showaclist(AP->ap_Base);
 
 	while(error == 0)
 	{
-	    if (ap->ap_Flags & APF_DIDDIR)
+	    if (AP->ap_Flags & APF_DIDDIR)
 	    {
 	        printf("DIDDIR: ");
 	    } else {
-	        if (all && (ap->ap_Info.fib_DirEntryType > 0))
+	        if (all && (AP->ap_Info.fib_DirEntryType > 0))
 		{
-		    ap->ap_Flags |= APF_DODIR;
+		    AP->ap_Flags |= APF_DODIR;
 		    printf("DOING DIR: ");
 		}
 	    }
-	    printf("fib_FileName = \"%s\"\n", ap->ap_Info.fib_FileName);
+	    printf("fib_FileName = \"%s\"\n", AP->ap_Info.fib_FileName);
 
-	    error = My_MatchNext(ap);
+	    error = My_MatchNext(AP);
 	}
 
     }
 
-    My_MatchEnd(ap);
+    My_MatchEnd(AP);
     
 }
 
