@@ -274,6 +274,7 @@ int	get_irq_list(char *buf);
 		    "SR - show all available resources (resbase : resname)\n"
 		    "SD - show all available devices (devbase : devname)\n"
 		    "ST - show tasks (T - this, R - ready, W - wait)\n"
+		    "TE - test\n"
 		    "HE - this help.\n");
 	}
 	/* AllocMem command */
@@ -356,6 +357,10 @@ int	get_irq_list(char *buf);
 		if(!(t%70)) kprintf(" \n");
 	    }
 	    kprintf(" \n");
+	}
+	else if (strcmp(comm,"TE")==0)
+	{
+		kprintf("Test\n");
 	}
 	else if (strcmp(comm,"QT")==0 && strcmp(dat,"00000000")==0)
 	{

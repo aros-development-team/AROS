@@ -153,5 +153,70 @@ void hidd_demo()
 	    y--;
 	  }
 	}
+
+	if (IntuitionBase)
+	{
+	  struct Screen	 *screen;
+	  struct DrawInfo  *drawinfo;
+	  struct Window	 *win2;
+	  struct IntuiText  myIText;
+	  struct TextAttr   myTextAttr;
+	  char MyText[512];
+
+	  ULONG myTEXTPEN;
+	  ULONG myBACKGROUNDPEN;
+
+	  if ((screen = LockPubScreen(NULL)))
+	  {
+	    if ((drawinfo = GetScreenDrawInfo(screen)))
+	    {
+	      struct TagItem tags[] = {
+		{WA_Width,			640},
+		{WA_Height,			100},
+		{WA_Left,			  0},
+		{WA_Top,			379},
+		{WA_Title,  (ULONG)"AROS Text"     },
+		{WA_Activate,			  1},
+		{WA_SizeGadget,                TRUE},
+		{WA_DepthGadget,               TRUE},
+		{TAG_DONE,			 0}};
+	      win2 = OpenWindowTagList(0, tags);
+
+	      myTEXTPEN = drawinfo->dri_Pens[TEXTPEN];
+	      myBACKGROUNDPEN = drawinfo->dri_Pens[BACKGROUNDPEN];
+
+	      myTextAttr.ta_Name  = drawinfo->dri_Font->tf_Message.mn_Node.ln_Name;
+	      myTextAttr.ta_YSize = drawinfo->dri_Font->tf_YSize;
+	      myTextAttr.ta_Style = drawinfo->dri_Font->tf_Style;
+	      myTextAttr.ta_Flags = drawinfo->dri_Font->tf_Flags;
+
+	      sprintf(MyText,"ScreenWidth: %d, ScreenHeight: %d", screen->Width, screen->Height);
+
+	      if (win2)
+	      {
+		myIText.FrontPen    = myTEXTPEN;
+		myIText.BackPen     = myBACKGROUNDPEN;
+		myIText.DrawMode    = JAM2;
+		myIText.LeftEdge    = 0;
+		myIText.TopEdge     = 0;
+		myIText.ITextFont   = &myTextAttr;
+		myIText.IText	    = MyText;
+		myIText.NextText    = NULL;
+
+		PrintIText(win2->RPort,&myIText,10,30);
+
+		/* Wait for keypress */
+		Wait (1L << win2->UserPort->mp_SigBit);
+
+		CloseWindow(win2);
+	      }
+	      FreeScreenDrawInfo(screen,drawinfo);
+	    }
+	    UnlockPubScreen(NULL,screen);
+	  }
+	}
     }
 }
+
+
+
