@@ -6,13 +6,13 @@
 */
 #include "genmodule.h"
 
-void writeincclib(struct config *cfg)
+void writeincclib(struct config *cfg, struct functions *functions)
 {
     FILE *out;
     char line[256];
     struct functionhead *funclistit;
     struct functionarg *arglistit;
-    struct linelist *linelistit;
+    struct stringlist *linelistit;
     
     snprintf(line, 255, "%s/clib/%s_protos.h", cfg->genincdir, cfg->modulename);
     out = fopen(line, "w");
@@ -31,23 +31,43 @@ void writeincclib(struct config *cfg)
 	    "*/\n"
 	    "\n"
 	    "#include <aros/libcall.h>\n",
-	    cfg->modulenameupper, cfg->modulenameupper);
+	    cfg->modulenameupper, cfg->modulenameupper
+    );
     for (linelistit = cfg->cdeflines; linelistit!=NULL; linelistit = linelistit->next)
-	fprintf(out, "%s\n", linelistit->line);
-    if (cfg->command!=DUMMY && cfg->libcall!=STACK)
+	fprintf(out, "%s\n", linelistit->s);
+    if (cfg->command!=DUMMY)
     {
-	for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
+	for (funclistit = functions->funclist;
+	     funclistit!=NULL;
+	     funclistit = funclistit->next
+	)
 	{
-	    if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo))
+	    if (!funclistit->priv
+		&& (funclistit->libcall != STACK)
+		&& (funclistit->lvo >= cfg->firstlvo)
+	    )
 	    {
-		fprintf(out, "\nAROS_LP%d(%s, %s,\n", funclistit->argcount, funclistit->type, funclistit->name);
+		fprintf(out,
+			"\nAROS_LP%d(%s, %s,\n",
+			funclistit->argcount, funclistit->type, funclistit->name
+		);
 		
-		for (arglistit = funclistit->arguments; arglistit!=NULL; arglistit = arglistit->next)
-		    fprintf(out, "        AROS_LPA(%s, %s, %s),\n",
-			    arglistit->type, arglistit->name, arglistit->reg);
+		for (arglistit = funclistit->arguments;
+		     arglistit!=NULL;
+		     arglistit = arglistit->next
+		)
+		{
+		    fprintf(out,
+			    "        AROS_LPA(%s, %s, %s),\n",
+			    arglistit->type, arglistit->name, arglistit->reg
+		    );
+		}
 
-		fprintf(out, "        %s, %s, %u, %s)\n",
-			cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename);
+		fprintf(out,
+			"        %s, %s, %u, %s)\n",
+			cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo,
+			cfg->basename
+		);
 	    }
 	}
     }

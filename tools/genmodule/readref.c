@@ -12,18 +12,45 @@
 struct _parseinfo
 {
     char infunction;
-    char newarg;
-    struct functionarg *funcarg;
+    struct stringlist *currreg;
     struct functionhead *currentfunc;
 };
 
-void readref(struct config *cfg)
+/* Prototypes of static functions */
+static int parsemuimethodname(char *name,
+			      struct _parseinfo *parseinfo,
+			      struct config *cfg,
+			      struct functions *functions
+);
+static int parsemacroname(char *name,
+			  struct _parseinfo *parseinfo,
+			  struct config *cfg,
+			  struct functions *functions
+);
+static int parsefunctionname(char *name,
+			     struct _parseinfo *parseinfo,
+			     struct config *cfg,
+			     struct functions *functions
+);
+
+void readref(struct config *cfg, struct functions *functions)
 {
     struct functionhead *funclistit = NULL;
     struct functionhead *currentfunc = NULL; /* will be either funclistit or methlistit */
     struct _parseinfo parseinfo;
     unsigned int funcnamelength;
     char *begin, *end, *line;
+
+    
+    if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
+    {
+        struct functionhead *function = newfunctionhead("MCC_Query", REGISTER);
+	function->lvo = cfg->firstlvo - 1;
+	funcaddarg(function, "LONG", "what", "D0");
+
+        function->next = functions->funclist;
+        functions->funclist = function;
+    }
 
     if (!fileopen(cfg->reffile))
     {
@@ -52,10 +79,10 @@ void readref(struct config *cfg)
 		 strncmp(line, "VARIABLE", 8)==0 ||
 		 strncmp(line, "FUNCTION", 8)==0
 		) &&
-		cfg->libcall==REGISTER)
+		parseinfo.currentfunc->libcall==REGISTER)
 	    {
 		/* About to leave function */
-		if (parseinfo.funcarg!=NULL)
+		if (parseinfo.currreg!=NULL)
 		{
 		    fprintf(stderr, "Error: too many registers specified for function \"%s\"\n",
 			    parseinfo.currentfunc->name);
@@ -64,13 +91,13 @@ void readref(struct config *cfg)
 	    }
 
 	    /* End of function header ? */
-	    if (parseinfo.infunction &&
-		(strncmp(line, "FILE", 4)==0 ||
-		 strncmp(line, "INCLUDES", 8)==0 ||
-		 strncmp(line, "DEFINES", 7)==0 ||
-		 strncmp(line, "VARIABLE", 8)==0
+	    if (parseinfo.infunction
+		&& (strncmp(line, "FILE", 4)==0
+		    || strncmp(line, "INCLUDES", 8)==0
+		    || strncmp(line, "DEFINES", 7)==0
+		    || strncmp(line, "VARIABLE", 8)==0
 		)
-	       )
+	    )
 		parseinfo.infunction = 0;
 
 	    /* Start of a new function header ? */
@@ -97,9 +124,9 @@ void readref(struct config *cfg)
 		
 		parseinfo.infunction =
 		(
-		       parsemuimethodname(begin, &parseinfo, cfg)
-		    || parsemacroname(begin, &parseinfo, cfg)
-		    || parsefunctionname(begin, &parseinfo, cfg)
+		       parsemuimethodname(begin, &parseinfo, cfg, functions)
+		    || parsemacroname(begin, &parseinfo, cfg, functions)
+		    || parsefunctionname(begin, &parseinfo, cfg, functions)
 		);
 	    }
 	    else if (parseinfo.infunction)
@@ -121,7 +148,7 @@ void readref(struct config *cfg)
 		    /* for libcall == STACK the whole argument is the type
 		     * otherwise split the argument in type and name
 		     */
-		    if (cfg->libcall != STACK)
+		    if (parseinfo.currentfunc->libcall != STACK)
 		    {
 			/* Count the [] specification at the end of the argument */
 			end = begin+strlen(begin);
@@ -133,8 +160,10 @@ void readref(struct config *cfg)
 			    while (isspace(*(end-1))) end--;
 			    if (*(end-1)!='[')
 			    {
-				fprintf(stderr, "Argument \"%s\" not understood for function %s\n",
-					begin, parseinfo.currentfunc->name);
+				fprintf(stderr,
+					"Argument \"%s\" not understood for function %s\n",
+					begin, parseinfo.currentfunc->name
+				);
 				exit(20);
 			    }
 			    end--;
@@ -158,35 +187,47 @@ void readref(struct config *cfg)
 
 		    if (strcasecmp(begin, "void")==0)
 		    {
-			if (cfg->libcall != STACK)
+			if (parseinfo.currentfunc->libcall != STACK)
 			    free(name);
 		    }
 		    else
 		    {
-			if (parseinfo.newarg)
-			    parseinfo.funcarg = funcaddarg(parseinfo.currentfunc, NULL, NULL, "");
-			else
+			switch (parseinfo.currentfunc->libcall)
 			{
-			    if (parseinfo.funcarg==NULL)
+			case STACK:
+			    funcaddarg(parseinfo.currentfunc, NULL, begin, NULL);
+			    break;
+			case REGISTER:
+			    if (parseinfo.currreg == NULL)
 			    {
-				fprintf(stderr, "Error: argument count mismatch for funtion \"%s\"\n",
-                                            parseinfo.currentfunc->name);
+				fprintf(stderr,
+					"Error: argument count mismatch for funtion \"%s\"\n",
+					parseinfo.currentfunc->name
+				);
 				exit(20);
 			    }
+			    funcaddarg(parseinfo.currentfunc, name, begin,
+				       parseinfo.currreg->s
+			    );
+			    parseinfo.currreg = parseinfo.currreg->next;
+			    break;
+			case REGISTERMACRO:
+			    {
+				char *reg = name + strlen(name) - 1;
+				while (reg != name && *reg != '_') reg--;
+		
+				*reg = '\0';
+				reg++;
+
+				funcaddarg(parseinfo.currentfunc, name, begin, reg);
+			    }
+			    break;
+			default:
+			    fprintf(stderr,
+				    "Internal error: Unhandled modtype in readref\n"
+			    );
+			    break;
 			}
-			
-			if (cfg->libcall == STACK)
-			{
-			    parseinfo.funcarg->type = strdup(begin);
-			    parseinfo.funcarg->name = NULL;
-			}
-			else
-			{
-			    parseinfo.funcarg->type = strdup(begin);
-			    parseinfo.funcarg->name = name;
-			}
-			
-			parseinfo.funcarg = parseinfo.funcarg->next;
 		    }
 		}
 		else if (strncmp(line, "Type", 4)==0)
@@ -208,42 +249,10 @@ void readref(struct config *cfg)
     };
     fileclose();
 
-    /* For REGISTERMACRO libcall the name of the register is still in the parametername
-     * so go over the function and fix this
-     */
-    if (cfg->libcall == REGISTERMACRO)
-    {
-	struct functionarg * arglistit;
-	char *s;
-	
-	for
-	(
-	    funclistit = funclist;
-	    funclistit != NULL;
-	    funclistit = funclistit->next
-	)
-	{
-	    for
-	    (
-	        arglistit = funclistit->arguments;
-	        arglistit != NULL;
-	        arglistit = arglistit->next
-	    )
-	    {
-		s = arglistit->name + strlen(arglistit->name) - 1;
-		while (s != arglistit->name && *s != '_') s--;
-		
-		*s = '\0';
-		
-		arglistit->reg = strdup(s+1);
-	    }
-	}
-    }
-	    
     /* Checking to see if every function has a prototype */
     for 
     (
-        funclistit =  funclist; 
+        funclistit = functions->funclist; 
         funclistit != NULL; 
         funclistit =  funclistit->next
     )
@@ -283,9 +292,11 @@ void readref(struct config *cfg)
 }
 
 
-int parsemuimethodname(char *name,
-		       struct _parseinfo *parseinfo,
-		       struct config *cfg)
+static int parsemuimethodname(char *name,
+			      struct _parseinfo *parseinfo,
+			      struct config *cfg,
+			      struct functions *functions
+)
 {
     int ok = 0;
     
@@ -314,23 +325,21 @@ int parsemuimethodname(char *name,
 	{
 	    struct functionhead *method, *it;
 
-	    method = newfunctionhead(sep+2, NULL, 0);
+	    method = newfunctionhead(sep+2, STACK);
 	    
-	    if (methlist == NULL )
-		methlist = method;
+	    if (functions->methlist == NULL )
+		functions->methlist = method;
 	    else
 	    {
-		it = methlist;
+		it = functions->methlist;
 		
 		while (it->next != NULL) it = it->next;
 		
 		it->next = method;
 	    }
                     
-	    parseinfo->funcarg = method->arguments;
 	    parseinfo->currentfunc = method;
 	    ok = 1;
-	    parseinfo->newarg = 1;
 	}
     }
 
@@ -338,9 +347,11 @@ int parsemuimethodname(char *name,
 }
 
 
-int parsemacroname(char *name,
-		   struct _parseinfo *parseinfo,
-		   struct config *cfg)
+static int parsemacroname(char *name,
+			  struct _parseinfo *parseinfo,
+			  struct config *cfg,
+			  struct functions *functions
+)
 {
     if
     (
@@ -388,20 +399,21 @@ int parsemacroname(char *name,
 	begin = end+1;
 	sscanf(begin, "%d", &lvo);
 
-	func = newfunctionhead(funcname, NULL, lvo);
+	func = newfunctionhead(funcname, REGISTERMACRO);
+	func->lvo      = lvo;
 	func->novararg = novararg;
 	func->priv     = priv;
 
-	if (funclist == NULL || funclist->lvo > func->lvo)
+	if (functions->funclist == NULL || functions->funclist->lvo > func->lvo)
 	{
-	    func->next = funclist;
-	    funclist = func;
+	    func->next = functions->funclist;
+	    functions->funclist = func;
 	}
 	else
 	{
 	    for
 	    (
-	        funclistit = funclist;
+	        funclistit = functions->funclist;
 	        funclistit->next != NULL && funclistit->next->lvo < func->lvo;
 	        funclistit = funclistit->next
 	    )
@@ -409,8 +421,10 @@ int parsemacroname(char *name,
 	 
 	    if (funclistit->next != NULL && funclistit->next->lvo == func->lvo)
 	    {
-		fprintf(stderr, "Function '%s' and '%s' have the same LVO number\n",
-			funclistit->next->name, func->name);
+		fprintf(stderr,
+			"Function '%s' and '%s' have the same LVO number\n",
+			funclistit->next->name, func->name
+		);
 		exit(20);
 	    }
 		
@@ -419,8 +433,6 @@ int parsemacroname(char *name,
 	}
 
 	parseinfo->currentfunc = func;
-	parseinfo->newarg = 1;
-	parseinfo->funcarg = func->arguments;
 	
 	return 1;
     }
@@ -428,43 +440,66 @@ int parsemacroname(char *name,
 	return 0;
 }
 
-int parsefunctionname(char *name,
-		      struct _parseinfo *parseinfo,
-		      struct config *cfg)
+static int parsefunctionname(char *name,
+			     struct _parseinfo *parseinfo,
+			     struct config *cfg,
+			     struct functions *functions
+)
 {
-    struct functionhead *funclistit;
+    struct conffuncinfo *conffuncit;
     
     if (cfg->libcall == REGISTERMACRO)
 	return 0;
     
-    for (funclistit = funclist;
-	 funclistit!=NULL && strcmp(funclistit->name, name)!=0;
-	 funclistit = funclistit->next)
+    for (conffuncit = cfg->conffunclist;
+	 conffuncit!=NULL && strcmp(conffuncit->name, name)!=0;
+	 conffuncit = conffuncit->next
+    )
 	;
-    
-    if (funclistit==NULL)
+
+    /* Add function in the list ordered by lvo number */
+    if (conffuncit==NULL)
 	return 0;
     else
     {
-	parseinfo->funcarg = funclistit->arguments;
-	parseinfo->currentfunc = funclistit;
-	
-	switch (cfg->libcall)
+	struct functionhead *func, *funclistit;
+
+	func = newfunctionhead(name, cfg->libcall);
+	func->lvo      = conffuncit->lvo;
+	func->novararg = 1;
+	func->priv     = 0;
+
+	if (functions->funclist == NULL || functions->funclist->lvo > func->lvo)
 	{
-	case STACK:
-	    parseinfo->newarg = 1;
-	    break;
-                                
-	case REGISTER:
-	    parseinfo->newarg = 0;
-	    break;
-                                
-	default:
-	    fprintf(stderr, "Internal error: unhandled libcall type in parsefunctionname\n");
-	    exit(20);
-	    break;
+	    func->next = functions->funclist;
+	    functions->funclist = func;
+	}
+	else
+	{
+	    for
+	    (
+	        funclistit = functions->funclist;
+	        funclistit->next != NULL && funclistit->next->lvo < func->lvo;
+	        funclistit = funclistit->next
+	    )
+		;
+	 
+	    if (funclistit->next != NULL && funclistit->next->lvo == func->lvo)
+	    {
+		fprintf(stderr,
+			"Function '%s' and '%s' have the same LVO number\n",
+			funclistit->next->name, func->name
+		);
+		exit(20);
+	    }
+		
+	    func->next = funclistit->next;
+	    funclistit->next = func;
 	}
 
+	parseinfo->currreg = conffuncit->regs;
+	parseinfo->currentfunc = func;
+	
 	return 1;
     }
 }

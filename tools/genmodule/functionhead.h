@@ -4,10 +4,17 @@
     Desc: global include for genmodule. Defines global variables and
           the function prototypes.
 */
+#ifndef FUNCTIONHEAD_H
+#define FUNCTIONHEAD_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+#include "stringlist.h"
+
+#include "config.h" /* FIXME: remove me when enum libcall is moved to this file */
 
 struct functionarg {
     struct functionarg *next;
@@ -16,37 +23,39 @@ struct functionarg {
     char *reg;
 };
 
-struct functionalias {
-    struct functionalias *next;
-    char *alias;
-};
-
 struct functionhead {
     struct functionhead *next;
     char *name;
     char *type;
+    enum libcall libcall;
     unsigned int argcount;
     struct functionarg *arguments;
-    struct functionalias *aliases;
+    struct stringlist *aliases;
     unsigned int lvo;
-    int novararg : 1;
-    int priv     : 1;
+    int novararg : 1; /* Are varargs allowed for this functio ? */
+    int priv     : 1; /* Is function private */
 };
 
-/* In funclist the information of all the functions of the module will be stored.
- * The list has to be sorted on the lvonum field
- */
-extern struct functionhead *funclist;
+struct functions {
+    /* In funclist the information of all the functions of the module will be stored.
+     * The list has to be sorted on the lvonum field
+     */
+    struct functionhead *funclist;
 
-/* In methlist the information of all the methods of the class will be 
- * stored. We (mis)use struct functionlist for this, but don't use certain
- * fields (like lvo and reg (in struct arglist)).
- */
-extern struct functionhead *methlist;
+    /* In methlist the information of all the methods of the class will be 
+     * stored. We (mis)use struct functionlist for this, but don't use certain
+     * fields (like lvo and reg (in struct arglist)).
+     */
+    struct functionhead *methlist;
+};
 
-struct functionhead *newfunctionhead(const char *name, const char *type, unsigned int lvo);
+struct functionhead *newfunctionhead(const char *name, enum libcall libcall);
 struct functionarg *funcaddarg(
     struct functionhead *funchead,
     const char *name, const char *type, const char *reg
 );
-struct functionalias *funcaddalias(struct functionhead *funchead, const char *alias);
+struct stringlist *funcaddalias(struct functionhead *funchead, const char *alias);
+
+struct functions *functionsinit(void);
+
+#endif //FUNCTIONHEAD_H

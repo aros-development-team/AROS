@@ -6,13 +6,12 @@
 */
 #include "genmodule.h"
 
-void writestubs(struct config *cfg)
+void writestubs(struct config *cfg, struct functions *functions)
 {
     FILE *out;
     char line[256];
     struct functionhead *funclistit;
     struct functionarg *arglistit;
-    struct functionalias *aliasesit;
 
     snprintf(line, 255, "%s/%s_stubs.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
@@ -48,7 +47,10 @@ void writestubs(struct config *cfg)
         "\n"
     );
     
-    for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
+    for (funclistit = functions->funclist;
+	 funclistit!=NULL;
+	 funclistit = funclistit->next
+    )
     {
         if (funclistit->lvo >= cfg->firstlvo)
 	{

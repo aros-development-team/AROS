@@ -10,7 +10,7 @@ void writeinclibdefs(struct config *cfg)
 {
     FILE *out;
     char line[1024];
-    struct linelist *linelistit;
+    struct stringlist *linelistit;
     char *_libbasetype = (cfg->libbasetype==NULL) ? "struct GM_LibHeader" : cfg->libbasetype;
     char *residentflags;
 
@@ -69,7 +69,7 @@ void writeinclibdefs(struct config *cfg)
     );
 
     for (linelistit = cfg->cdefprivatelines; linelistit!=NULL; linelistit = linelistit->next)
-	fprintf(out, "%s\n", linelistit->line);
+	fprintf(out, "%s\n", linelistit->s);
     
     if (cfg->libbasetype == NULL && !(cfg->options & OPTION_NORESIDENT))
     {

@@ -6,13 +6,13 @@
 */
 #include "genmodule.h"
 
-void writestart(struct config *cfg)
+void writestart(struct config *cfg, struct functions *functions)
 {
     FILE *out;
     char line[256];
     struct functionhead *funclistit;
     struct functionarg *arglistit;
-    struct linelist *linelistit;
+    struct stringlist *linelistit;
     unsigned int lvo;
     int i;
     
@@ -515,12 +515,12 @@ void writestart(struct config *cfg)
     if (cfg->libcall == REGISTER)
     {
 	for (linelistit = cfg->cdeflines; linelistit!=NULL; linelistit = linelistit->next)
-	    fprintf(out, "%s\n", linelistit->line);
+	    fprintf(out, "%s\n", linelistit->s);
     }
     
-    for (funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
+    for (funclistit = functions->funclist; funclistit != NULL; funclistit = funclistit->next)
     {
-	switch (cfg->libcall)
+	switch (funclistit->libcall)
 	{
 	case STACK:
 	    fprintf(out, "int %s();\n", funclistit->name);
@@ -530,20 +530,26 @@ void writestart(struct config *cfg)
 	    fprintf(out, "%s %s(", funclistit->type, funclistit->name);
 	    for (arglistit = funclistit->arguments;
 		 arglistit!=NULL;
-		 arglistit = arglistit->next)
+		 arglistit = arglistit->next
+	    )
 	    {
 		if (arglistit!=funclistit->arguments)
 		    fprintf(out, ", ");
 		fprintf(out, "%s %s", arglistit->type, arglistit->name);
 	    }
-	    fprintf(out, ");\nAROS_LH%d(%s, %s,\n",
-		    funclistit->argcount, funclistit->type, funclistit->name);
+	    fprintf(out,
+		    ");\nAROS_LH%d(%s, %s,\n",
+		    funclistit->argcount, funclistit->type, funclistit->name
+	    );
 	    for (arglistit = funclistit->arguments;
 		 arglistit!=NULL;
-		 arglistit = arglistit->next)
+		 arglistit = arglistit->next
+	    )
 	    {
-		fprintf(out, "         AROS_LHA(%s, %s, %s),\n",
-			arglistit->type, arglistit->name, arglistit->reg);
+		fprintf(out,
+			"         AROS_LHA(%s, %s, %s),\n",
+			arglistit->type, arglistit->name, arglistit->reg
+		);
 	    }
 	    fprintf(out,
 		    "         %s, %s, %u, %s)\n"
@@ -555,7 +561,8 @@ void writestart(struct config *cfg)
 	    );
 	    for (arglistit = funclistit->arguments;
 		 arglistit!=NULL;
-		 arglistit = arglistit->next)
+		 arglistit = arglistit->next
+	    )
 	    {
 		if (arglistit!=funclistit->arguments)
 		    fprintf(out, ", ");
@@ -595,7 +602,7 @@ void writestart(struct config *cfg)
 		    cfg->basename, cfg->basename, cfg->basename, cfg->basename
 	    );
 	}
-	funclistit = funclist;
+	funclistit = functions->funclist;
     }
     else /* NORESIDENT */
     {
@@ -604,7 +611,7 @@ void writestart(struct config *cfg)
 	    int neednull = 0;
 	    struct functionhead *funclistit2;
 	
-	    funclistit = funclist;
+	    funclistit = functions->funclist;
 	    if (funclistit->lvo != 1)
 	    {
 		fprintf(stderr, "Module without a generated resident structure has to provide the Open function (LVO==1)\n");
@@ -645,7 +652,7 @@ void writestart(struct config *cfg)
 			cfg->modulename
 		);
 	
-	    funclistit = funclist;
+	    funclistit = functions->funclist;
 	    funclistit2 = funclistit->next;
 	    fprintf(out,
 		    "\n"
@@ -687,7 +694,7 @@ void writestart(struct config *cfg)
 	    fprintf(out, "    NULL,\n");
 	lvo = funclistit->lvo;
 	
-	switch (cfg->libcall)
+	switch (funclistit->libcall)
 	{
 	case STACK:
 	    fprintf(out, "    &%s,\n", funclistit->name);
