@@ -188,7 +188,8 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
               error = Hidd_UnixIO_AsyncIO(data->unixio_read,
                                           data->filedescriptor,
                                           data->replyport_read,
-                                          vHidd_UnixIO_Read);
+                                          vHidd_UnixIO_Read,
+                                          SysBase);
               goto exit;
 
             }
@@ -239,7 +240,8 @@ static OOP_Object *serialunit_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg ms
   if (-1 != data->filedescriptor)
   { 
     Hidd_UnixIO_AbortAsyncIO(data->unixio_read,
-                             data->filedescriptor);
+                             data->filedescriptor,
+                             SysBase);
 //    Hidd_UnixIO_AbortAsyncIONotification(data->unixio_write,
 //                                         data->filedescriptor);
 
@@ -307,7 +309,8 @@ ULONG serialunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Wri
     error = Hidd_UnixIO_AsyncIO(data->unixio_write,
                                 data->filedescriptor,
                                 data->replyport_write,
-                                vHidd_UnixIO_Write);
+                                vHidd_UnixIO_Write,
+                                SysBase);
 
   }
 
@@ -613,7 +616,8 @@ AROS_UFH3(void, serialunit_receive_data,
   error = Hidd_UnixIO_AsyncIO(data->unixio_read,
                               data->filedescriptor,
                               data->replyport_read,
-                              vHidd_UnixIO_Read);
+                              vHidd_UnixIO_Read,
+                              SysBase);
   AROS_USERFUNC_EXIT
 }
 

@@ -137,6 +137,10 @@ AROS_UFH5 (void, SigIO_IntServer,
 /******************
 **  UnixIO task  **
 ******************/
+#ifdef SysBase
+stop
+#undef SysBase
+#endif
 static void WaitForIO (void)
 {
     struct uio_data * ud = FindTask(NULL)->tc_UserData;
@@ -683,7 +687,7 @@ AROS_LH2(static void *, init,
 
 #define OOPBase ( ((struct uio_data *)OOP_OCLASS(o)->UserData)->ud_OOPBase )
 
-IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode, APTR callback, APTR callbackdata)
+IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode, APTR callback, APTR callbackdata, struct ExecBase * SysBase)
 {
      static OOP_MethodID mid = 0UL;
      struct uioMsg p;
@@ -700,7 +704,7 @@ IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode, APTR callback, APTR callbac
      return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
 }
 
-IPTR Hidd_UnixIO_AsyncIO(HIDD *o, ULONG fd, struct MsgPort * port, ULONG mode)
+IPTR Hidd_UnixIO_AsyncIO(HIDD *o, ULONG fd, struct MsgPort * port, ULONG mode, struct ExecBase * SysBase)
 {
      static OOP_MethodID mid = 0UL;
      struct uioMsgAsyncIO p;
@@ -715,7 +719,7 @@ IPTR Hidd_UnixIO_AsyncIO(HIDD *o, ULONG fd, struct MsgPort * port, ULONG mode)
      return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
 }
 
-VOID Hidd_UnixIO_AbortAsyncIO(HIDD *o, ULONG fd)
+VOID Hidd_UnixIO_AbortAsyncIO(HIDD *o, ULONG fd, struct ExecBase * SysBase)
 {
      static OOP_MethodID mid = 0UL;
      struct uioMsgAbortAsyncIO p;
@@ -736,7 +740,7 @@ VOID Hidd_UnixIO_AbortAsyncIO(HIDD *o, ULONG fd)
 */
 
 #undef OOPBase
-HIDD *New_UnixIO(struct Library *OOPBase)
+HIDD *New_UnixIO(struct Library *OOPBase, struct ExecBase * SysBase)
 {
    struct TagItem tags[] = {{ TAG_END, 0 }};
    return (HIDD)OOP_NewObject (NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);

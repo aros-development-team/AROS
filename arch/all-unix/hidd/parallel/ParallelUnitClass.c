@@ -141,9 +141,10 @@ static OOP_Object *parallelunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot
 							D(bug("Creating UnixIO AsyncIO command!\n"));
 
 							error = Hidd_UnixIO_AsyncIO(data->unixio_read,
-																					data->filedescriptor,
-																					data->replyport_read,
-																					vHidd_UnixIO_Read);
+							                            data->filedescriptor,
+							                            data->replyport_read,
+							                            vHidd_UnixIO_Read,
+							                            SysBase);
 							goto exit;
 
 						}
@@ -192,7 +193,8 @@ static OOP_Object *parallelunit_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg 
 
 	if (-1 != data->filedescriptor) { 
 		Hidd_UnixIO_AbortAsyncIO(data->unixio_read,
-		                         data->filedescriptor);
+		                         data->filedescriptor,
+		                         SysBase);
 //		Hidd_UnixIO_AbortAsyncIONotification(data->unixio_write,
 //                                                   data->filedescriptor);
 
@@ -255,7 +257,8 @@ ULONG parallelunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit
 		error = Hidd_UnixIO_AsyncIO(data->unixio_write,
 		                            data->filedescriptor,
                                             data->replyport_write,
-		                            vHidd_UnixIO_Write);
+		                            vHidd_UnixIO_Write,
+		                            SysBase);
 	}
 
 	ReturnInt("ParallelUnit::Write()",ULONG, len);
@@ -346,7 +349,8 @@ AROS_UFH3(void, parallelunit_receive_data,
 	error = Hidd_UnixIO_AsyncIO(data->unixio_read,
 	                            data->filedescriptor,
 	                            data->replyport_read,
-	                            vHidd_UnixIO_Read);
+	                            vHidd_UnixIO_Read,
+	                            SysBase);
 
 	AROS_USERFUNC_EXIT
 }

@@ -70,10 +70,10 @@ struct uioMsgAbortAsyncIO
 #define vHidd_UnixIO_Abort	0x4
 
 /* Stubs */
-IPTR Hidd_UnixIO_Wait(HIDD *h, ULONG fd, ULONG mode, APTR callback,  APTR callbackdata);
-HIDD *New_UnixIO(struct Library * /* OOPBase */);
-IPTR Hidd_UnixIO_AsyncIO(HIDD *h, ULONG fd, struct MsgPort *port, ULONG mode);
-VOID Hidd_UnixIO_AbortAsyncIO(HIDD *h, ULONG fd);
+IPTR Hidd_UnixIO_Wait(HIDD *h, ULONG fd, ULONG mode, APTR callback,  APTR callbackdata, struct ExecBase *);
+HIDD *New_UnixIO(struct Library * /* OOPBase */, struct ExecBase *);
+IPTR Hidd_UnixIO_AsyncIO(HIDD *h, ULONG fd, struct MsgPort *port, ULONG mode, struct ExecBase *);
+VOID Hidd_UnixIO_AbortAsyncIO(HIDD *h, ULONG fd, struct ExecBase *);
 
 #endif /* HIDD_UNIXIO_H */
 
