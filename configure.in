@@ -315,6 +315,8 @@ aros_static_aflags=""
 aros_static_ldflags=""
 aros_kernel_ldflags="-Wl,-rpath,./lib"
 
+aros_compiler_libs=
+
 # These are the flags to pass when compiling debugged programs
 aros_debug_cflags="-g3 -O0 -DADEBUG=1 -DMDEBUG=1"
 aros_debug_aflags=""
