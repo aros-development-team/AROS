@@ -37,20 +37,25 @@ So the work began and AROS was born.
 AROS' goal is it to create an OS which
 
 <ul>
-<LI>is as compatible as possible to AmigaOS 3.1
+<LI>is as compatible as possible to AmigaOS 3.1. If possible, it
+will be compatible to AmigaOS 3.5 as well.
 
 <LI>can be ported to different kinds of CPUs, for example Intel x86,
-PowerPC, Alpha, Sparc, HPPA and more.
+PowerPC, Alpha, Sparc, HPPA and more and also on the original Amiga.
 
 <LI>should be binary compatible on Amiga and source compatible on any
-other hardware
+other hardware.
 
 <LI>can run as a standalone version which boots directly from hard disk,
 as an emulation which opens a window on an existing OS to develop software
 and run Amiga and native applications at the same time and as a link
 library which allows to create native applications with the comfort of the
-AmigaOS
+AmigaOS.
 </UL>
+
+The goal for the first final release is to make development easier and
+faster. For later versions its possible to increase the compability to
+AmigaOS if its necessary.
 
 To reach this goal, we use a number of techniques.  First of all, we make
 heavy use of the Internet.  You can participate in our project even if you
@@ -63,7 +68,7 @@ doing something twice.
 
 Currently, there are 71 developers registered and a group of about 5
 people commits code regularly. When I write this, the code is about
-30MB, about 56% have been finished and 13% is in work.
+29MB, about 56% have been finished and 13% is in work.
 
 We are working hard on finishing graphics, layers and intuition based on
 our new HIDD system. The HIDD system will allow us to put any kind of
@@ -76,10 +81,10 @@ and X11 also allows to manipulate them. The time-frame for this is May.
 
 Michael Schulz has committed very promising code which can be compiled,
 saved on a floppy and then be used to boot a small part of AROS on a bare
-PC. When the new graphics system is ready, writing a VGA driver should take
-some hours (if not less) and AROS should be able to open a workbench screen
-and windows on it. No workbench yet, though :-) AROS does already boot but
-it doesn't do much, yet.
+IBM compatible PC. When the new graphics system is ready, writing a VGA
+driver should take a day (if not less) and AROS should be able to open a
+workbench screen and windows on it. No workbench yet, though :-) AROS does
+already boot but it doesn't do much, yet.
 
 The next step would be to finish the console.device (half of it is already
 finished) and put the input.device on top of the HIDD system. This should
@@ -88,13 +93,13 @@ allowing to open a shell on an AROS screen. This will be done by Nils and
 Johan Alfredsson, who is also working on the Commodities. This should take
 about one month.
 
-When the HIDDs for PC hardware are finished (done by Stefan Berger and
-Michael Schulz), it should be possible to boot AROS from a diskette and use
-a shell to enter some commands. An FFS file system also seems at the brink
-of completion, so creating an Amiga partition and installing it on the
-hard disk will then soon be possible. No time frame has been set for all
-this, yet. It mainly depends on how much (correct) information books about
-PC hardware contain, how the code for Linux looks like and such.
+When the HIDDs for PC hardware are finished (mostly done by Michael
+Schulz), it should be possible to boot AROS from a diskette and use a shell
+to enter some commands. An FFS file system also seems at the brink of
+completion, so creating an Amiga partition and installing it on the hard
+disk will then soon be possible. No time frame has been set for all this,
+yet. It mainly depends on how much (correct) information books about PC
+hardware contain, how the code for Linux looks like and such.
 
 Branko Collin is meanwhile working on improving the documentation (the
 web pages are not exactly ... "sexy" :-), fixing the many typos and writing
@@ -124,25 +129,26 @@ Graphics and Layers.
 The future will hopefully see a commercial version of AROS (so that we can
 pay Amiga Inc. some money so they keep calm), a free version of AROS (just
 like Linux: free without support or commercial with support), many more
-HIDDs, the integration of the HIDD system into Linux (so that we can get
-much more drivers with less headache), a port of AROS to PPC.
+HIDDs, a port of AROS to PPC.
 
 But that doesn't mean that you can sit back, relax and watch our progress
 (which is now updated daily on http://www.aros.org/progress.gif). We need
 you !
 
-Currently, more and more parts of AROS are being finished and we need
-some code to test AROS. What code would that be ? Here are the criteria:
+Currently, more and more parts of AROS are being finished and we need some
+real-world code to test AROS. What code would that be ? Here are the
+criteria:
 
 <UL>
 <LI>It must only use pure AmigaOS calls (no MUI or such)
 <LI>No hardware banging or calls to things like MrgCop(), CWait() or
 the like (usually functions which directly relate to some Amiga
-hardware specific feature).
+hardware specific feature). Most Blitter-Functions are ok, however.
 <LI>NO ASSEMBLER CODE !
-<LI>It should compile with recent versions of SAS/C.
-<LI>They should be small and simple (ie. don't send word processors
-or projects with more than 10 source files).
+<LI>It should compile with recent versions of SAS/C, gcc, StormC or another
+ANSI-C compiler.
+<LI>They should be not too big (don't send in 1.5MB of source code, yet).
+</UL>
 
 If you happen to have such a gem, then send it to:
 
