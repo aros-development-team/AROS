@@ -817,7 +817,7 @@ void CopyAndFreeClipRectsClipRects(struct Layer * L,
   struct ClipRect * sCR = srcCR;
 
   /* if it's a SUPERBITMAP layer then just free the cliprects */  
-  if (LAYERSMART != (L->Flags & (LAYERSMART|LAYERSUPER)))
+  if (LAYERSUPER == (L->Flags & (LAYERSMART|LAYERSUPER)))
   {
     _FreeClipRectListBM(L, L->ClipRect);
     return;

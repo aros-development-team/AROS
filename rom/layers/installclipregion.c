@@ -69,10 +69,13 @@
      *  cliprects if layer is a SMARTLAYER. Also free the list of 
      *  region cliprects.
      */
-    if (LAYERSMART == (l->Flags & (LAYERSMART|LAYERSUPER)))
-      CopyAndFreeClipRectsClipRects(l, l->ClipRect, l->_cliprects);
-    else
-      _FreeClipRectListBM(l, l->ClipRect);
+    if (NULL != l->ClipRect)
+    {
+      if (LAYERSMART == (l->Flags & (LAYERSMART|LAYERSUPER)))
+        CopyAndFreeClipRectsClipRects(l, l->ClipRect, l->_cliprects);
+      else
+        _FreeClipRectListBM(l, l->ClipRect);
+    }
     
     /* restore the regular ClipRects */
     l->ClipRect = l->_cliprects;
@@ -92,7 +95,7 @@
   /* if there's no new region to install then there's nothing else to do */
   if (NULL == region)
     return OldRegion;
-
+  
   /* install the new clipregion */
   l->ClipRegion = region;
     

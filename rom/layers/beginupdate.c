@@ -117,6 +117,10 @@
 
   l->cr         = l->ClipRect;
   l->ClipRect   = FirstCR;
+  
+  if (NULL == FirstCR)
+    return FALSE;
+  
   return TRUE;
 
   AROS_LIBFUNC_EXIT

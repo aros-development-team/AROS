@@ -78,6 +78,8 @@
   struct Rectangle Rect;  /* The area with the backed up data if it is a
                              simple layer */
   
+  struct Region * oldclipregion;
+  
   /* Check coordinates as there's no suport for layers outside the displayed
      bitmap. I might add this feature later. */
   if (l->bounds.MaxX - l->bounds.MinX + 1 + dx <= 0 ||
@@ -106,17 +108,6 @@
      this area has to be backed up prior to creating the layer at the
      new position.
    */
-  
-  /* restore the regular ClipRects in case this one has a ClipRegion
-     (and a ClipRect list) installed
-   */
-
-  if (NULL != l->ClipRegion)
-  {
-    CopyAndFreeClipRectsClipRects(l, l->ClipRect, l->_cliprects);
-    l->ClipRect = l->_cliprects;
-    l->_cliprects = NULL;
-  }
 
 
   /*
@@ -169,11 +160,8 @@
               
               /* if there's clipregion then try to get the clipregion
                  cliprects back */
-              if (NULL != l->ClipRegion)
-              {
-                l->_cliprects = l->ClipRect;
-                l->ClipRect = CopyClipRectsInRegion(l, l->_cliprects, l->ClipRegion);
-              }
+              if (NULL != oldclipregion)
+                InstallClipRegion(l, oldclipregion);
               return FALSE;
             }
           }
@@ -205,6 +193,23 @@
       }
     } /* if (overlapping) */
   } /* if (simple layer) */
+
+  
+  /* restore the regular ClipRects in case this one has a ClipRegion
+     (and a ClipRect list) installed
+   */
+
+  oldclipregion = InstallClipRegion(l, NULL);
+
+/*
+  if (NULL != l->ClipRegion && NULL != l->_cliprects)
+  {
+    CopyAndFreeClipRectsClipRects(l, l->ClipRect, l->_cliprects);
+    l->ClipRect = l->_cliprects;
+    l->_cliprects = NULL;
+  }
+*/
+
   
   l_tmp = (struct Layer *)AllocMem(sizeof(struct Layer)   , MEMF_CLEAR|MEMF_PUBLIC);
   CR = _AllocClipRect(l);
@@ -626,8 +631,11 @@
     /* That's it folks! */
     CleanupLayers(LI);
 
+    if (NULL != oldclipregion)
+      InstallClipRegion(l, oldclipregion);
+/*
     InstallClipRegionClipRects(LI);
-
+*/
     /* Now everybody else may play with the layers again */
     UnlockLayers(LI);
     return TRUE;
@@ -637,7 +645,11 @@
     if (NULL != CR   ) _FreeClipRect(CR, l);
     if (NULL != RP   ) FreeRastPort(RP);
     if (NULL != l_tmp) FreeMem(l_tmp, sizeof(struct Layer));
+    
   }
+
+  if (NULL != oldclipregion)
+    InstallClipRegion(l, oldclipregion); 
 
   return FALSE;
    
