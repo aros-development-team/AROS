@@ -107,6 +107,9 @@
     if (NULL == R)
       return;
 
+    if (NULL != srcRP->Layer)
+      LockLayerRom(srcRP->Layer);
+
     /* define the rectangle of the destination */
     Rect.MinX = xDest;
     Rect.MaxX = xDest+xSize;
@@ -162,12 +165,22 @@
         RR = RR->Next;
       } /* while */
       /* That's all */
-      return ;
+      if (NULL != srcRP->Layer)
+        UnlockLayerRom(srcRP->Layer);
     } /* if (NULL != RR)*/
     
     DisposeRegion(R);
+    return;
   } /* if (destRP == srcRP) */
+  
+  
   /* here: process all cases that don't overlap */
+
+  if (NULL != srcRP->Layer)
+    LockLayerRom( srcRP->Layer);
+
+  if (srcRP!=destRP  && NULL != destRP->Layer)
+    LockLayerRom(destRP->Layer);
 
   internal_ClipBlit(srcRP,
                     xSrc,
@@ -179,6 +192,12 @@
                     ySize,
                     minterm,
                     GfxBase);
+  
+  if (NULL != srcRP->Layer)
+    UnlockLayerRom( srcRP->Layer);
+
+  if (srcRP!=destRP && NULL != destRP->Layer)
+    UnlockLayerRom(destRP->Layer);
                     
   AROS_LIBFUNC_EXIT
 } /* ClipBlit */
