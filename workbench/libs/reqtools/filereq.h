@@ -108,8 +108,6 @@ extern void ShortDelay (void);
 
 /****************************************************************************************/
 
-#ifndef _AROS
-
 extern struct Library		*GadToolsBase;
 extern struct DosLibrary	*DOSBase;
 extern struct IntuitionBase	*IntuitionBase;
@@ -122,8 +120,6 @@ extern struct UtilityBase	*UtilityBase;
 extern struct Library		*UtilityBase;
 #endif
 extern struct Library		*WorkbenchBase;
-
-#endif
 
 extern char TOPAZSTR[];
 #define DOTFONTSTR      &TOPAZSTR[5]

@@ -28,8 +28,12 @@
 
 #include "filereq.h"
 
+/****************************************************************************************/
+
 /* Use ColorMap.Count to find out number of palette entried on screen */
 //#define DO_CM_DEPTH
+
+/****************************************************************************************/
 
 UWORD CHIP waitpointer[] =
 {
@@ -41,12 +45,20 @@ UWORD CHIP waitpointer[] =
     0x0000,0x0000,
 };
 
-extern struct Library *GadToolsBase;
-extern struct DosLibrary *DOSBase;
-extern struct IntuitionBase *IntuitionBase;
-extern struct GfxBase *GfxBase;
-extern struct ReqToolsBase *ReqToolsBase;
-extern struct UtilityBase *UtilityBase;
+/****************************************************************************************/
+
+extern struct Library 		*GadToolsBase;
+extern struct DosLibrary 	*DOSBase;
+extern struct IntuitionBase 	*IntuitionBase;
+extern struct GfxBase 		*GfxBase;
+extern struct ReqToolsBase 	*ReqToolsBase;
+#ifdef _AROS
+extern struct UtilityBase 	*UtilityBase;
+#else
+extern struct Library 		*UtilityBase;
+#endif
+
+/****************************************************************************************/
 
 int ASM SAVEDS GetVScreenSize (
 	register __a0 struct Screen *scr,
@@ -89,8 +101,12 @@ int ASM SAVEDS GetVScreenSize (
     return ((ht >= 400) ? 4 : 2);
 }
 
+/****************************************************************************************/
+
 #undef ThisProcess()
 #define ThisProcess()		( ( APTR ) FindTask( NULL ) )
+
+/****************************************************************************************/
 
 struct Screen *REGARGS GetReqScreen (
 	struct NewWindow *nw, struct Window **prwin, struct Screen *scr, char *pubname)
@@ -121,6 +137,7 @@ struct Screen *REGARGS GetReqScreen (
     return (nw->Screen = scr);
 }
 
+/****************************************************************************************/
 
 #ifndef DO_CM_DEPTH
 static int VpDepth (struct ViewPort *vp)
@@ -142,6 +159,7 @@ static int VpDepth (struct ViewPort *vp)
 }
 #endif
 
+/****************************************************************************************/
 
 int REGARGS
 GetVpCM( struct ViewPort *vp, APTR *cmap)
@@ -190,6 +208,7 @@ GetVpCM( struct ViewPort *vp, APTR *cmap)
     }
 }
 
+/****************************************************************************************/
 
 void REGARGS
 RefreshVpCM( struct ViewPort *vp, APTR cmap )
@@ -217,6 +236,7 @@ RefreshVpCM( struct ViewPort *vp, APTR cmap )
     }
 }
 
+/****************************************************************************************/
 
 void REGARGS LoadCMap (struct ViewPort *vp, APTR cmap)
 {
@@ -228,11 +248,15 @@ void REGARGS LoadCMap (struct ViewPort *vp, APTR cmap)
 #endif
 }
 
+/****************************************************************************************/
+
 void REGARGS FreeVpCM (struct ViewPort *vp, APTR cmap, BOOL restore)
 {
     if (restore && cmap) LoadCMap (vp, cmap);
     FreeVec (cmap);
 }
+
+/****************************************************************************************/
 
 void REGARGS InitNewGadget (struct NewGadget *ng,
 		int x, int y, int w, int h, char *s, UWORD id)
@@ -240,6 +264,8 @@ void REGARGS InitNewGadget (struct NewGadget *ng,
     ng->ng_LeftEdge = x; ng->ng_TopEdge = y; ng->ng_Width = w; ng->ng_Height = h;
     ng->ng_GadgetText = s; ng->ng_GadgetID = id;
 }
+
+/****************************************************************************************/
 
 struct TextFont * REGARGS GetReqFont (struct TextAttr *attr,
 		struct TextFont *deffont, int *fontheight, int *fontwidth, int allowprop)
@@ -273,9 +299,7 @@ struct TextFont * REGARGS GetReqFont (struct TextAttr *attr,
     return (ft);
 }
 
-/*********
-* GETMSG *
-*********/
+/****************************************************************************************/
 
 struct IntuiMessage *REGARGS GetWin_GT_Msg (struct Window *win,
 					    struct Hook *hook, APTR req)
@@ -287,6 +311,8 @@ struct IntuiMessage *REGARGS GetWin_GT_Msg (struct Window *win,
 	
     return (NULL);
 }
+
+/****************************************************************************************/
 
 struct IntuiMessage *REGARGS ProcessWin_Msg (struct Window *win,
 					    struct IntuiMessage *imsg, struct Hook *hook, APTR req)
@@ -308,15 +334,14 @@ struct IntuiMessage *REGARGS ProcessWin_Msg (struct Window *win,
     return (NULL);
 }
 
+/****************************************************************************************/
+
 void REGARGS Reply_GT_Msg (struct IntuiMessage *reqmsg)
 {
     ReplyMsg ((struct Message *)GT_PostFilterIMsg (reqmsg));
 }
 
-
-/****************
-* SCREENTOFRONT *
-****************/
+/****************************************************************************************/
 
 void REGARGS DoScreenToFront (struct Screen *scr, int nopop, int popup)
 {
@@ -335,9 +360,7 @@ void REGARGS DoScreenToFront (struct Screen *scr, int nopop, int popup)
 }
 
 
-/**************
-* CLOSEWINDOW *
-**************/
+/****************************************************************************************/
 
 void REGARGS DoCloseWindow (struct Window *win, int idcmpshared)
 {
@@ -345,9 +368,7 @@ void REGARGS DoCloseWindow (struct Window *win, int idcmpshared)
     else CloseWindow (win);
 }
 
-/*************
-* OPENWINDOW *
-*************/
+/****************************************************************************************/
 
 struct BackFillMsg
 {
@@ -356,6 +377,8 @@ struct BackFillMsg
     LONG offsetx;
     LONG offsety;
 };
+
+/****************************************************************************************/
 
 void SAVEDS ASM WinBackFill (
 	register __a0 struct Hook *hook,
@@ -372,11 +395,15 @@ void SAVEDS ASM WinBackFill (
 		   msg->bounds.MaxX, msg->bounds.MaxY);
 }
 
+/****************************************************************************************/
+
 void REGARGS mySetWriteMask (struct RastPort *rp, ULONG mask)
 {
     if (GfxBase->LibNode.lib_Version >= 39) SetWriteMask (rp, mask);
     else SetWrMsk (rp, (UBYTE)mask);
 }
+
+/****************************************************************************************/
 
 struct Window *REGARGS OpenWindowBF (struct NewWindow *nw,
 			struct Hook *hook, UWORD *pens, ULONG *maskptr, WORD *zoom )
@@ -436,6 +463,8 @@ kprintf("--++OpenWindowBF 10: returning %x\n", win);
 
 }
 
+/****************************************************************************************/
+
 int CheckReqPos (int reqpos, int reqdefnum, struct NewWindow *newwin)
 {
     struct ReqDefaults *reqdefs;
@@ -462,9 +491,13 @@ int CheckReqPos (int reqpos, int reqdefnum, struct NewWindow *newwin)
     return (reqpos);
 }
 
+/****************************************************************************************/
+
 /*********
 * Layout *
 *********/
+
+/****************************************************************************************/
 
 int REGARGS StrWidth_noloc (struct IntuiText *itxt, UBYTE *str)
 {
@@ -483,6 +516,8 @@ int REGARGS StrWidth_noloc (struct IntuiText *itxt, UBYTE *str)
     return (IntuiTextLength (itxt));
 }
 
+/****************************************************************************************/
+
 static int ObjectWidth (struct NewGadget *ng, int normalw, int normalh)
 {
     if ((GadToolsBase->lib_Version >= 39) && (ng->ng_TextAttr->ta_YSize > normalh))
@@ -490,6 +525,8 @@ static int ObjectWidth (struct NewGadget *ng, int normalw, int normalh)
 	
     return (normalw);
 }
+
+/****************************************************************************************/
 
 static int ObjectHeight (struct NewGadget *ng, int normalh)
 {
@@ -499,15 +536,21 @@ static int ObjectHeight (struct NewGadget *ng, int normalh)
     return (normalh);
 }
 
+/****************************************************************************************/
+
 int CheckBoxWidth (struct NewGadget *ng)
 {
     return (ObjectWidth (ng, CHECKBOX_WIDTH, CHECKBOX_HEIGHT));
 }
 
+/****************************************************************************************/
+
 int CheckBoxHeight (struct NewGadget *ng)
 {
     return (ObjectHeight (ng, CHECKBOX_HEIGHT));
 }
+
+/****************************************************************************************/
 
 /*
  * SIZEGAD HEIGHT
@@ -534,3 +577,5 @@ LONG BottomBorderHeight (struct Screen *scr)
     }
     return (h);
 }
+
+/****************************************************************************************/

@@ -22,18 +22,26 @@
 
 #include "rtlocale.h"
 
+/****************************************************************************************/
+
 #ifndef _AROS
 #pragma libcall ReqToolsBase rtLockPrefs a8 00
 #pragma libcall ReqToolsBase rtUnlockPrefs ae 00
 #endif
 
+/****************************************************************************************/
+
 #define ThisProcess()	( ( struct Process * ) FindTask( NULL ) )
+
+/****************************************************************************************/
 
 struct PWCallBackArgs
 {
     char 	*buffer;
     ULONG 	lastchecksum, verify, retcode;
 };
+
+/****************************************************************************************/
 
 extern ULONG ASM LoopReqHandler (register __a1 struct rtHandlerInfo *);
 extern void REGARGS SetWinTitleFlash (struct Window *, char *);
@@ -47,6 +55,8 @@ extern struct IntuitionBase *IntuitionBase;
 extern struct Library *GadToolsBase;
 extern struct GfxBase *GfxBase;
 
+/****************************************************************************************/
+
 struct FmtBuff
 {
     long numlines, bufflen;
@@ -54,6 +64,8 @@ struct FmtBuff
 
 #define DOFMT_COUNTNEWLINES		0
 #define DOFMT_COUNTBARS			1
+
+/****************************************************************************************/
 
 /*
 extern APTR ASM DofmtCount (register __a0 char *, register __a1 APTR,
@@ -63,6 +75,8 @@ extern void STDARGS DofmtArgs (char *, char *,...);
 
 extern void ASM FillBarTable (register __a1 char **, register __a0 char *);
 extern void ASM FillNewLineTable (register __a1 char **, register __a0 char *);
+
+/****************************************************************************************/
 
 typedef struct Req_RealHandlerInfo	Req_GlobData;
 #define STRINGGADID			32
@@ -101,6 +115,8 @@ struct Req_RealHandlerInfo
     ULONG 			*value, *lenptr;
 };
 
+/****************************************************************************************/
+
 static UWORD pattern[] = { 0xAAAA,0x5555 };
 
 static ULONG REGARGS ReqExit (Req_GlobData *, int);
@@ -109,9 +125,13 @@ static struct Image * REGARGS CreateRectImage
 static ULONG ASM SAVEDS myReqHandler (register __a1 Req_GlobData *,
 			register __d0 ULONG, register __a0 struct TagItem *);
 
+/****************************************************************************************/
+
 #define GETSTRINGLONG_FLAGS	(GSREQF_CENTERTEXT|GSREQF_HIGHLIGHTTEXT)
 #define EZREQ_FLAGS		(EZREQF_NORETURNKEY|EZREQF_LAMIGAQUAL|EZREQF_CENTERTEXT)
 
+
+/****************************************************************************************/
 
 ULONG ASM SAVEDS GetString (
 	register __a1 UBYTE *stringbuff,		/* str in case of rtEZRequestA */
@@ -686,6 +706,8 @@ printf("--++ ----------------> creating TEXT_KING wiht GTTX_Text = \"%s\"\n", gl
     return (LoopReqHandler ((struct rtHandlerInfo *)glob));
 }
 
+/****************************************************************************************/
+
 static struct Image * REGARGS CreateRectImage (Req_GlobData *glob,
 	struct Image *previmg, int x, int y, int w, int h, int pen, int bgpen)
 {
@@ -708,6 +730,8 @@ static struct Image * REGARGS CreateRectImage (Req_GlobData *glob,
     return (img);
 }
 
+/****************************************************************************************/
+
 #define RETURN_KEY	13
 #define ESC_KEY		27
 #define SHIFT_KEY	0x60
@@ -717,6 +741,8 @@ static struct Image * REGARGS CreateRectImage (Req_GlobData *glob,
 #define QUALS_CONSIDERED	( IEQUALIFIER_LCOMMAND | IEQUALIFIER_RCOMMAND | IEQUALIFIER_LSHIFT | \
 				IEQUALIFIER_RSHIFT | IEQUALIFIER_LALT | IEQUALIFIER_RALT | \
 				IEQUALIFIER_CONTROL )
+
+/****************************************************************************************/
 
 static ULONG ASM SAVEDS myReqHandler (
 	register __a1 Req_GlobData *glob,
@@ -922,6 +948,8 @@ static ULONG ASM SAVEDS myReqHandler (
     return (CALL_HANDLER);
 }
 
+/****************************************************************************************/
+
 static ULONG REGARGS ReqExit (Req_GlobData *glob, int cpystr)
 {
     ULONG 		ret = glob->arg.retcode;
@@ -964,3 +992,5 @@ static ULONG REGARGS ReqExit (Req_GlobData *glob, int cpystr)
     
     return (ret);
 }
+
+/****************************************************************************************/

@@ -1,4 +1,4 @@
-/**************************************************************
+/**f************************************************************
 *                                                             *
 *      File/Font/Screenmode requester                         *
 *                                                             *
@@ -9,9 +9,7 @@
 
 #include "filereq.h"
 
-#ifdef _AROS
-#define ReqToolsBase (&(GPB(RTBase)->rt))
-#endif
+/****************************************************************************************/
 
 struct Library		*WorkbenchBase;
 
@@ -20,6 +18,8 @@ char DOTINFOSTR[] = ".info";
 
 struct TextAttr topaz80 = { "topaz.font",8,FS_NORMAL,FPF_ROMFONT|FPF_DESIGNED };
 
+
+/****************************************************************************************/
 
 #define FILEREQ_FLAGS \
 	(FREQF_NOBUFFER|FREQF_DOWILDFUNC|FREQF_MULTISELECT|FREQF_SAVE|FREQF_NOFILES|\
@@ -30,6 +30,8 @@ struct TextAttr topaz80 = { "topaz.font",8,FS_NORMAL,FPF_ROMFONT|FPF_DESIGNED };
 #define SCREENMODEREQ_FLAGS \
 	(SCREQF_SIZEGADS|SCREQF_DEPTHGAD|SCREQF_NONSTDMODES|SCREQF_GUIMODES|\
 	 SCREQF_AUTOSCROLLGAD|SCREQF_OVERSCANGAD)
+
+/****************************************************************************************/
 
 /********************
 *                   *
@@ -367,6 +369,8 @@ retryopenwin:
     return ((APTR)LoopReqHandler ((struct rtHandlerInfo *)glob));
 }
 
+/****************************************************************************************/
+
 /**************
 *             *
 *  MAIN LOOP  *
@@ -389,16 +393,22 @@ void STDARGS SAVEDS FreeReqToolsFonts (void)
     ReqToolsBase->FontsAssignList = NULL;
 }
 
+/****************************************************************************************/
+
 int REGARGS CalcClicked (GlobData *glob, struct IntuiMessage *im)
 {
     return ((im->MouseY - glob->boxtop) / glob->entryheight);
 }
+
+/****************************************************************************************/
 
 void REGARGS CompClicked (GlobData *glob)
 {
     glob->displaylist[glob->clicked]->re_Flags ^= ENTRYF_SELECTED|ENTRYF_HIGHLIGHTED;
     PrintEntry (glob, glob->clicked);
 }
+
+/****************************************************************************************/
 
 /* TIMER STUFF */
 
@@ -436,6 +446,8 @@ void REGARGS StopTimer (GlobData *glob)
     }
 }
 
+/****************************************************************************************/
+
 void REGARGS StartTimer (GlobData *glob, int micros)
 {
     StopTimer (glob);
@@ -447,6 +459,8 @@ void REGARGS StartTimer (GlobData *glob, int micros)
     
     glob->timerstarted = TRUE;
 }
+
+/****************************************************************************************/
 
 void REGARGS EndQuiet (GlobData *glob)
 {
@@ -488,6 +502,8 @@ void REGARGS EndQuiet (GlobData *glob)
     }
 }
 
+/****************************************************************************************/
+
 /* MAIN LOOP */
 
 struct IntuiMessage *REGARGS ProcessWin_Msg_Freq (GlobData *glob, struct IntuiMessage *imsg)
@@ -514,6 +530,7 @@ struct IntuiMessage *REGARGS ProcessWin_Msg_Freq (GlobData *glob, struct IntuiMe
     return (NULL);
 }
 
+/****************************************************************************************/
 
 void REGARGS SetDrawerAndFileFields (GlobData *glob)
 {
@@ -529,6 +546,8 @@ void REGARGS SetDrawerAndFileFields (GlobData *glob)
     }
 }
 
+/****************************************************************************************/
+
 void REGARGS ResetDrawerAndFileFields (GlobData *glob)
 {
     if (REQTYPE(glob->req) == RT_FILEREQ)
@@ -538,6 +557,8 @@ void REGARGS ResetDrawerAndFileFields (GlobData *glob)
 		strcpy (glob->freq->filename, glob->tempfname);
     }
 }
+
+/****************************************************************************************/
 
 void ASM SAVEDS IntuiMsgFunc (
     register __a0 struct Hook *hook,
@@ -557,6 +578,8 @@ void ASM SAVEDS IntuiMsgFunc (
 	ResetDrawerAndFileFields (glob);
     }
 }
+
+/****************************************************************************************/
 
 /* Improve this function to handle:
  * 1) Volume lists in the file requester
@@ -598,6 +621,8 @@ int REGARGS FindEntryPos (GlobData *glob, char *name, int entry_id)
     return (i);
 }
 
+/****************************************************************************************/
+
 void REGARGS DeselectFiles (GlobData *glob, int clicked, int dirsonly)
 {
     int i;
@@ -620,6 +645,8 @@ void REGARGS DeselectFiles (GlobData *glob, int clicked, int dirsonly)
 	}
     }
 }
+
+/****************************************************************************************/
 
 int REGARGS
 ClickDown( GlobData *glob, int clicked, struct IntuiMessage *reqmsg, int qual )
@@ -767,6 +794,7 @@ nodirselect:
     return( FALSE );
 }
 
+/****************************************************************************************/
 
 /*****************
 * Requester exit *
@@ -824,6 +852,8 @@ ULONG REGARGS LeaveReq (GlobData *glob, char *filename)
     return ((ULONG)selfile);
 }
 
+/****************************************************************************************/
+
 static void REGARGS CloseWinFreeRest (GlobData *glob)
 {
     StopTimer (glob);
@@ -859,6 +889,8 @@ static void REGARGS CloseWinFreeRest (GlobData *glob)
     FreeVec (glob);
 }
 
+/****************************************************************************************/
+
 void REGARGS FreeAllCheckBuffer (GlobData *glob)
 {
     if (glob->lock || (glob->disks && !glob->volumerequest)
@@ -867,12 +899,16 @@ void REGARGS FreeAllCheckBuffer (GlobData *glob)
     else CloseWinFreeRest (glob);
 }
 
+/****************************************************************************************/
+
 void REGARGS FreeAll (GlobData *glob)
 {
     FreeReqBuffer (glob->req);
     UnLockReqLock (glob);
     CloseWinFreeRest (glob);
 }
+
+/****************************************************************************************/
 
 struct rtFileList *REGARGS AllocSelectedFiles (GlobData *glob)
 {
@@ -930,3 +966,5 @@ struct rtFileList *REGARGS AllocSelectedFiles (GlobData *glob)
     
     return (selfile);
 }
+
+/****************************************************************************************/
