@@ -51,7 +51,7 @@ AROS_LH1(float, SPAsin,
     LONG t,w,p,q,c,r,s,ix;
     ix = fnum1 & (FFPMantisse_Mask | FFPExponent_Mask); /* ix = |fnum| */
     
-    if (one == ix) /* |fnum1| = 1 -> result = +-(pi/2) */
+    if ((LONG)one == ix) /* |fnum1| = 1 -> result = +-(pi/2) */
     {
         return (pio2 | (fnum1 & FFPSign_Mask  ));
     }

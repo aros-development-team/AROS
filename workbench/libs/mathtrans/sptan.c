@@ -40,7 +40,7 @@ AROS_LH1(float, SPTan,
     LONG z,SIN,Res,ysquared,yabs,tmp;
     yabs = fnum1 & (FFPMantisse_Mask + FFPExponent_Mask);
     
-    if (FFP_Pinfty == yabs)
+    if ((LONG)FFP_Pinfty == yabs)
     {
         SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
         return FFP_NAN;

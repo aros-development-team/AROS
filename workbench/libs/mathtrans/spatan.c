@@ -37,7 +37,7 @@ AROS_LH1(float, SPAtan,
     LONG fnumsquared, fnumcubed;
     
     /* check for +- infinity -> output: +-pi/2 */
-    if (FFP_Pinfty == fnumabs ) return (pio2 | (fnum1 & FFPSign_Mask));
+    if ((LONG)FFP_Pinfty == fnumabs ) return (pio2 | (fnum1 & FFPSign_Mask));
     
     /* atan(0) = 0 */
     if (0 == fnumabs)
