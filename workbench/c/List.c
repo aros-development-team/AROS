@@ -1,9 +1,9 @@
 /*
-    Copyright (C) 1995-97 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: List the contents of a directory
-    Lang: english
+    Lang: English
 */
 /*****************************************************************************
 
@@ -13,11 +13,13 @@
 
     FORMAT
 
-        List [<directory>]
+        List [(dir | pattern | filename)] [ PAT (pattern)] [KEYS] [DATES]
+	     [NODATES] [TO (name)] [SUB (string)] [SINCE (date)] [UPTO (date)]
+	     [QUICK] [BLOCK] [NOHEAD] [FILES] [DIRS] [LFORMAT (string)] [ALL]
 		
     TEMPLATE
 
-	DIR/M,P=PAT/K,DATES/S,NODATES/S,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/S
+	DIR/M,P=PAT/K,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S
 
     LOCATION
 
@@ -38,9 +40,41 @@
         
     INPUTS
 
-        DIR - The directory to list. If left out, the current directory
-              will be listed.
+        DIR           --  The directory to list. If left out, the current
+	                  directory will be listed.
+        PAT           --  Display only files matching 'string'
+        KEYS          --  Display the block number of each file or directory
+        DATES         --  Display the creation date of files and directories
+        NODATES       --  Don't display dates
+        TO (name)     --  Write the listing to a file instead of stdout
+        SUB (string)  --  Display only files, a substring of which matches
+	                  the substring 'string'
+    	SINCE (date)  --  Display only files newer than 'date'
+        UPTO (date)   --  Display only files older than 'date'
+    	QUICK         --  Display only the names of files
+    	BLOCK         --  File sizes are in blocks of 512 bytes
+    	NOHEAD        --  Don't print any header information
+    	FILES         --  Display files only
+    	DIRS          --  Display directories only
+    	LFORMAT       --  Specify the list output in printf-style
+	ALL           --  List the contents of directories recursively
 
+	The following attributes of the LFORMAT strings are available
+
+	%A  --  file attributes
+	%B  --  size of file in blocks rather than bytes
+	%C  --  file comment
+	%D  --  creation date
+	%E  --  file extension
+	%F  --  volume name
+	%K  --  file key block number
+	%L  --  size of file in bytes
+	%M  --  file name without extension
+	%N  --  file name
+	%P  --  file path
+	%S  --  superceded by %N and %P; obsolete
+	%T  --  creation time
+	
     RESULT
 
         Standard DOS return codes.
@@ -70,7 +104,14 @@
 
     HISTORY
 
+    Dec 2000  SDuvan  --  Added options KEYS, SINCE, UPTO, SUB, and TO.
+                          Reworked and corrected the behaviour of LFORMAT and
+			  restructured most of the code.
+
 ******************************************************************************/
+
+#define  DEBUG  0
+#include <aros/debug.h>
 
 #include <clib/macros.h>
 #include <exec/memory.h>
@@ -85,290 +126,319 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
-static const char version[] = "$VER: list 41.4 (11.10.1997)\n";
+static const char version[] = "$VER: list 41.5 (3.12.2000)\n";
 
-#define TEMPLATE "DIR/M,P=PAT/K,DATES/S,NODATES/S,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K"
-
-
-#define ARG_DIR		0
-#define ARG_PAT		1
-#define ARG_DATES	2
-#define ARG_NODATES	3
-#define ARG_QUICK 	4
-#define ARG_BLOCK	5
-#define ARG_NOHEAD	6
-#define ARG_FILES	7
-#define ARG_DIRS	8
-#define ARG_LFORMAT     9
-
-#define ARG_NUM 	10
+#define ARG_TEMPLATE "DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K"
 
 
-#define BLOCKSIZE 	1024
+enum
+{
+    ARG_DIR = 0,
+    ARG_PAT,
+    ARG_KEYS,
+    ARG_DATES,
+    ARG_NODATES,
+    ARG_TO,
+    ARG_SUB,
+    ARG_SINCE,
+    ARG_UPTO,
+    ARG_QUICK,
+    ARG_BLOCK,
+    ARG_NOHEAD,
+    ARG_FILES,
+    ARG_DIRS,
+    ARG_LFORMAT,
+    ARG_ALL,
+    NOOFARGS
+};
 
+#define  MAX_PATH_LEN  1024
 
-int printdirheader(STRPTR dirname, IPTR * mainargs)
+#define  BLOCKSIZE  512
+
+int printDirHeader(STRPTR dirname, BOOL noHead)
 {
     struct DateTime dt;
-    char datestr[LEN_DATSTRING], dow[LEN_DATSTRING];
-    IPTR args[] = { (IPTR)dirname, (IPTR)dow, (IPTR)datestr };
 
-    if (!mainargs[ARG_NOHEAD])
+    char  datestr[LEN_DATSTRING];
+    char  dow[LEN_DATSTRING];
+    
+    if (!noHead)
     {
-      DateStamp((struct DateStamp *)&dt);
-      dt.dat_Format = FORMAT_DEF;
-      dt.dat_Flags = 0;
-      dt.dat_StrDay = dow;
-      dt.dat_StrDate = datestr;
-      dt.dat_StrTime = NULL;
-      DateToStr(&dt);
-
-      if (VPrintf("Directory \"%s\" on %s %s:\n", args) < 0)
-         return RETURN_ERROR;
+	DateStamp((struct DateStamp *)&dt);
+	dt.dat_Format = FORMAT_DEF;
+	dt.dat_Flags = 0;
+	dt.dat_StrDay = dow;
+	dt.dat_StrDate = datestr;
+	dt.dat_StrTime = NULL;
+	DateToStr(&dt);
+	
+	printf("Directory \"%s\" on %s %s:\n", dirname, dow, datestr);
     }
+
     return RETURN_OK;
 }
 
-/*
- Formatted output.
- This function knows:
-    %d: Date
-    %c: Comment
-    %t: Time
-    %b: Blocks
-    %c: ???
-    %f: label of device
-    %a: flags
-    %k: keys
-    %l: size
-    %m: name  (.-names are suppressed; x.info is printed as x)
-    %s: name
-    %n: name
-    %e: name  (ending of name; x.info is printed as info)
+
+/* Possible printf-type switches
+
+	%A  --  file attributes
+	%B  --  size of file in blocks rather than bytes
+	%C  --  file comment
+	%D  --  file date
+	%E  --  file extension
+	%F  --  volume name
+	%K  --  file key block number
+	%L  --  size of file in bytes
+	%M  --  file name without extension
+	%N  --  file name
+	%P  --  file path
+	%S  --  the same as %N
+	%T  --  creation date
 */
 
 struct lfstruct
 {
-  BOOL isdir;
-  STRPTR date;
-  STRPTR time;
-  STRPTR flags;
-  STRPTR filename;
-  STRPTR comment;
-  ULONG size;
+    BOOL    isdir;
+    STRPTR  date;
+    STRPTR  time;
+    STRPTR  flags;
+    STRPTR  filename;
+    STRPTR  comment;
+    ULONG   size;
+    ULONG   key;
 };
 
 
-int print_lformat(STRPTR format,
-                  struct lfstruct * lf)
-{
-  char c;
-  while ('\0' != (c = *format++))
-  {
-    if ('%' == c)
-    {
-      ULONG pos;
-      BOOL right = TRUE;
-      char buf[80];
-      char * buf_ptr = &buf[80];
-      ULONG width = 0, size;
-      ULONG tmp;
-      
-      buf[80] = '\0';
-      
-      if ('-' == *format)
-      {
-        right = FALSE;
-        format++;
-      }
-      
-      while (*format >= '0' && *format <= '9')
-        width = width * 10 + (*format++) - '0';
-      
-      switch (*format++)
-      {
-        case 'C':
-        case 'c':  buf_ptr = lf->comment;
-        break;
-        
-        case 'D':
-        case 'd':  buf_ptr = lf->date;
-        break;
-        
-        case 'T':
-        case 't':  buf_ptr = lf->time;
-        break;
-        
-        case 'B':
-        case 'b':  if (TRUE == lf->isdir)
-                   {
-                     buf_ptr = "Dir";
-                     break;
-                   }
-                   
-                   tmp = (lf->size + BLOCKSIZE - 1) / BLOCKSIZE;
-                  
-                   if (0 == tmp)
-                     buf_ptr = "empty";
-                   else
-                     do
-                     {
-                       *--buf_ptr = (tmp % 10) + '0';
-                       tmp /= 10;
-                     }
-                     while(tmp);
-        break;
-        
-        case 'F':
-        case 'f':
-        break;
-        
-        case 'A':
-        case 'a':  buf_ptr = lf->flags;
-        break;
-        
-        case 'K':
-        case 'k':
-        break;
-        
-        case 'L':
-        case 'l':  if (TRUE == lf->isdir)
-                   {
-                     buf_ptr = "Dir";
-                     break;
-                   }
-                   
-                   tmp = lf->size;
-                  
-                   if (0 == tmp)
-                     buf_ptr = "empty";
-                   else
-                     do
-                     {
-                       *--buf_ptr = (tmp % 10) + '0';
-                       tmp /= 10;
-                     }
-                     while(tmp);
-        break;
-        
-        case 'M':
-        case 'm':  if (!(*lf->filename == '.'))
-                   {
-                     buf_ptr = &buf[0];
-                     size = strlen(lf->filename);
-                     CopyMem(lf->filename, buf_ptr, size+1);
-                     
-                     while (size > 0)
-                     {
-                       if ('.' == buf[size])
-                       {
-                         buf[size] = '\0';
-                         break;
-                       }
-                       size --;
-                     }
-                     
-                   }
-        break;
-        
-        case 'S':
-        case 's':  buf_ptr = lf->filename;
-        break;
-        
-        case 'N':
-        case 'n':  buf_ptr = lf->filename;
-        break;
-        
-        case 'E':
-        case 'e': size = strlen(lf->filename);
-                  pos = size;
-                  while (pos > 0)
-                  {
-                    if ('.' == lf->filename[pos])
-                    {
-                      if (size != pos)
-                      {
-                        buf_ptr = &buf[0];
-                        CopyMem(&lf->filename[pos+1], buf_ptr, size-pos);
-                        break;
-                      }
-                    }
-                    pos--;
-                  }
-        break;
-        
-        case '\0':
-          return 0;
-        break;
-        
-        default:
-          *--buf_ptr = *(format-1);
-          *--buf_ptr = '%';
-      }
-      
-      
-      size = strlen(buf_ptr);
-      
-      /* print the string */
-      
-      pos = 0;
-      
-        /* right aligned ? */
-      if (TRUE == right && width > size)
-      {
-        while (pos < (width - size))
-        { 
-          pos++;
-          printf(" ");
-        }
-      }
-      
-      /* the string itself */
-      while (*buf_ptr)
-      {
-        pos++;
-        printf("%c",*buf_ptr++);
-      }
-      
-      /* left aligned? */
-      if (FALSE == right || pos < width)
-        while(pos++ < width)
-          printf(" ");
-    }
-    else
-    {
-      printf("%c",c);
-    }
-  }
+#define  roundUp(x, bSize) ((x + bSize - 1)/bSize)
 
-  return 0;
+int printLformat(STRPTR format, struct lfstruct *lf)
+{
+    STRPTR filename = FilePart(lf->filename);
+    char c;
+    
+    while ('\0' != (c = *format++))
+    {
+	if ('%' == c)
+	{
+	    switch (toupper(*format++))
+	    {
+		/* File comment */
+	    case 'C':
+		printf(lf->comment);
+		break;
+		
+		/* Creation date */
+	    case 'D':
+		printf(lf->date);
+		break;
+		
+		/* Creation time */
+	    case 'T':
+		printf(lf->time);
+		break;
+		
+		/* File size in blocks of BLOCKSIZE bytes */
+	    case 'B':
+		if (lf->isdir)
+		{
+		    printf("Dir");
+		}
+		else
+		{
+		    ULONG tmp = roundUp(lf->size, BLOCKSIZE);
+		
+		    /* File is 0 bytes? */
+		    if (tmp == 0)
+		    {
+			printf("empty");
+		    }
+		    else
+		    {
+			printf("%lu", tmp);
+		    }		    
+		}
+
+		break;
+
+		/* Volume name */
+	    case 'F':
+		{
+		    STRPTR pEnd = PathPart(lf->filename);
+		    UBYTE  token;
+
+		    if (pEnd != NULL)
+		    {
+			token = pEnd[2];
+			pEnd[1] = 0;
+		    }
+		    
+		    printf(lf->filename);
+
+		    /* Restore filename */
+		    if (pEnd != NULL)
+		    {
+			pEnd[1] = token;
+		    }
+		}
+
+		break;
+
+		/* File attributes (flags) */
+	    case 'A':
+		printf(lf->flags);
+		break;
+
+		/* Disk block key */
+	    case 'K':
+		printf("[%ld]", lf->key);
+		break;
+		
+		/* File size */
+	    case 'L':
+		if (lf->isdir)
+		{
+		    printf("Dir");
+		}
+		else
+		{
+		    if (lf->size == 0)
+		    {
+			printf("empty");
+		    }
+		    else
+		    {
+			printf("%lu", lf->size);
+		    }
+		}
+
+		break;
+		
+		/* File name without extension */
+	    case 'M':
+		{
+		    STRPTR lastPoint = strrchr(filename, '.');
+
+		    if (lastPoint != NULL)
+		    {
+			*lastPoint = 0;
+		    }
+		    
+		    printf(filename);
+
+		    /* Resurrect filename in case we should print it once
+		       more */
+		    if (lastPoint != NULL)
+		    {
+			*lastPoint = '.';
+		    }
+		}
+
+		break;
+		
+		/* Filename */
+	    case 'S':
+		/* Fall through */
+	    case 'N':
+		printf(filename);
+		break;
+		
+		/* File extension */
+	    case 'E':
+		{
+		    STRPTR extension = strrchr(filename, '.');
+
+		    if (extension != NULL)
+		    {
+			printf(extension);
+		    }
+		}
+
+		break;
+
+	    case 'P':
+		{
+		    STRPTR end = PathPart(lf->filename) + 1;
+		    STRPTR start = strchr(lf->filename, ':');
+		    UBYTE  token = *end;
+		    
+		    *end = 0;
+
+		    if (start == NULL)
+		    {
+			printf(lf->filename);
+		    }
+		    else
+		    {
+			printf(start + 1);
+		    }
+		    
+		    /* Restore pathname */
+		    *end = token;
+		}
+
+		break;
+
+	    case 0:
+		return 0;
+		break;
+		
+	    default:
+		printf("%%%c", *format);
+		break;
+	    }
+	}
+	else
+	{
+	    printf("%c",c);
+	}
+    }
+    
+    return 0;
 }
 
 
-int printfiledata(STRPTR filename, 
-                  BOOL dir, 
-                  struct DateStamp *ds, 
-                  ULONG protection, 
-                  ULONG size, 
-                  STRPTR filenote,
-                  IPTR * args,
-                  BOOL show_files,
-                  BOOL show_dirs,
-                  STRPTR pattern,
-                  ULONG * files,
-                  ULONG * dirs,
-                  ULONG * blocks)
+int printFileData(STRPTR filename, BOOL isDir, struct DateStamp *ds, 
+                  ULONG protection, ULONG size, STRPTR filenote, LONG diskKey,
+                  BOOL showFiles, BOOL showDirs, STRPTR parsedPattern,
+                  ULONG *files, ULONG *dirs, ULONG *nBlocks, STRPTR lFormat,
+		  BOOL quick, BOOL dates, BOOL noDates, BOOL block,
+		  struct DateStamp *sinceDate, struct DateStamp *uptoDate,
+		  BOOL doSince, BOOL doUpto, STRPTR subpatternStr,
+		  BOOL keys)
 {
     int error = RETURN_OK;
+
     UBYTE date[LEN_DATSTRING];
     UBYTE time[LEN_DATSTRING];
-    struct DateTime dt;
-    char flags[8];
+    UBYTE flags[8];
 
-    if (args[ARG_PAT] && 
-        FALSE == MatchPatternNoCase(pattern, filename))
-      return 0;      
+    struct DateTime dt;
+
+    /* Do the file match the time interval we are looking for?
+       (ARG_SINCE and ARG_UPTO) -- any combination of these may be
+       specified */
+    if ((doSince && (CompareDates(sinceDate, ds) < 0)) ||
+	(doUpto && (CompareDates(uptoDate, ds) > 0)))
+    {
+	return 0;
+    }
+
+    /* Does the filename match a certain pattern? (ARG_PAT) */
+    if (parsedPattern != NULL &&
+	!MatchPatternNoCase(parsedPattern, FilePart(filename)))
+    {
+	return 0;
+    }
+    
+    /* Does a substring of the filename match a certain pattern? (ARG_SUB) */
+    if (subpatternStr != NULL && 
+	!MatchPatternNoCase(subpatternStr, FilePart(filename)))
+    {
+	return 0;
+    }
 
     CopyMem(ds, &dt.dat_Stamp, sizeof(struct DateStamp));
     dt.dat_Format  = FORMAT_DOS;
@@ -378,274 +448,474 @@ int printfiledata(STRPTR filename,
     dt.dat_StrTime = time;
     DateToStr(&dt); /* returns 0 if invalid */
 
-    flags[0] = protection&FIBF_SCRIPT?'s':'-';
-    flags[1] = protection&FIBF_PURE?'p':'-';
-    flags[2] = protection&FIBF_ARCHIVE?'a':'-';
+    /* Convert the protection bits to a string */
+    flags[0] = protection & FIBF_SCRIPT  ? 's' : '-';
+    flags[1] = protection & FIBF_PURE    ? 'p' : '-';
+    flags[2] = protection & FIBF_ARCHIVE ? 'a' : '-';
+
     /* The following flags are high-active! */
-    flags[3] = protection&FIBF_READ?'-':'r';
-    flags[4] = protection&FIBF_WRITE?'-':'w';
-    flags[5] = protection&FIBF_EXECUTE?'-':'e';
-    flags[6] = protection&FIBF_DELETE?'-':'d';
+    flags[3] = protection & FIBF_READ    ? '-' : 'r';
+    flags[4] = protection & FIBF_WRITE   ? '-' : 'w';
+    flags[5] = protection & FIBF_EXECUTE ? '-' : 'e';
+    flags[6] = protection & FIBF_DELETE  ? '-' : 'd';
     flags[7] = 0x00;
 
-    if (dir) {
-      if (show_dirs) {
-      
-        if (args[ARG_LFORMAT])
+    if (isDir)
+    {
+	if (showDirs)
+	{
+      	    if (lFormat != NULL)
+	    {
+		struct lfstruct lf = { isDir, date, time, flags, filename,
+				       filenote, size, diskKey};
+
+		printLformat(lFormat, &lf);
+		printf("\n");
+		
+		*dirs += 1;
+	    }
+	    else
+	    {
+		D(bug("Found file %s\n", filename));
+
+		printf("%-25s ", FilePart(filename));
+
+		if (!quick)
+		{
+		    printf("  <Dir> %7s ", flags);
+		}
+		
+		if (dates || 
+		    (!quick && !noDates))
+		{
+		    printf("%-11s %s", date, time);
+		}
+			
+		printf("\n");
+		
+		*dirs += 1;
+	    }
+	}
+    }
+    else if (showFiles)
+    {
+	if (lFormat != NULL)
         {
-          struct lfstruct lf = {dir, date, time, flags, filename, filenote, size};
-          print_lformat((STRPTR)args[ARG_LFORMAT], &lf);
-          VPrintf("\n", NULL);
-          
-          *dirs += 1;
+	    struct lfstruct lf = { isDir, date, time, flags, filename,
+				   filenote, size, diskKey };
+
+	    printLformat(lFormat, &lf);
+	    printf("\n");
+	    
+	    *files += 1;
+	    *nBlocks += size;
         }
         else
         {
-          IPTR argv[2];
-          
-          if (VPrintf("%-25.s ",(IPTR *)&filename) < 0)
-            error = RETURN_ERROR;
-        
-          if (!args[ARG_QUICK])
-          {
-            argv[0] = (IPTR)flags;
-            VPrintf("  <Dir> %7.s ",argv); // don't try &flags!!
-          }
+	    printf("%-25s ", FilePart(filename));
 
-          if (args[ARG_DATES] || (!args[ARG_QUICK] && !args[ARG_NODATES]))
-          {
-            argv[0] = (IPTR)date;
-            argv[1] = (IPTR)time;
-            VPrintf("%-11.s %s",argv);
-          }
+	    if (!quick)
+	    {
+		if(keys)
+		{
+		    char key[16];
+		    int  fill;
+		    int  i;	/* Loop variable */
 
-          
-          VPrintf("\n",NULL);
-          
-          *dirs += 1;
-        }
-      }
-    } else if (show_files) {
+		    sprintf(key, "%ld", diskKey);
+		    fill = 7 - strlen(key) - 2;
 
-        if (args[ARG_LFORMAT])
-        {
-          struct lfstruct lf = {dir, date, time, flags, filename, filenote, size};
-          print_lformat((STRPTR)args[ARG_LFORMAT], &lf);
-          VPrintf("\n", NULL);
+		    for (i = 0; i < fill; i++)
+		    {
+			printf(" ");
+		    }
 
-          *files += 1;
-          *blocks += size;
+		    printf("[%ld] ", diskKey);
+		}
+		else
+		{
+		    if (0 != size)
+		    {
+			printf("%7ld ", 
+			       block ? roundUp(size, BLOCKSIZE) : size);
+		    }
+		    else
+		    {
+			printf("  empty ");
+		    }
+		}
+		
+		printf("%7s ", flags);
+	    }
+	    
+	    if (dates || (!quick && !noDates))
+	    {
+		printf("%-11s %s", date, time);
+	    }
 
-        }
-        else
-        {
-
-          IPTR argv[2];
-        
-          if (VPrintf("%-25.s ",(IPTR *)&filename) < 0)
-            error = RETURN_ERROR;
-        
-          if (!args[ARG_QUICK])
-          {
-            if (0 != size)
-            {
-              if (args[ARG_BLOCK])
-                argv[0] = (IPTR)(size + BLOCKSIZE - 1) / BLOCKSIZE;
-              else
-                argv[0] = (IPTR)size;
-              
-              argv[1] = (IPTR)flags;
-              VPrintf("%7.ld %7.s ",argv);
-            }
-            else
-            {
-              argv[0] = (IPTR)flags;
-              VPrintf("  empty %7.s ",argv);
-            }
-          }
-        
-          if (args[ARG_DATES] || (!args[ARG_QUICK] && !args[ARG_NODATES]))
-          {
-            argv[0] = (IPTR)date;
-            argv[1] = (IPTR)time;
-            VPrintf("%-11.s %s",argv);
-          }
-
-          if (!args[ARG_QUICK] && '\0' != filenote[0])
-          {
-            argv[0] = (IPTR)filenote;
-            VPrintf("\n: %s",argv);
-          }
-
-          VPrintf("\n",NULL);
-          *files  += 1;
-          *blocks += size;
+	    if (!quick && (*filenote != 0))
+	    {
+		printf("\n: %s", filenote);
+	    }
+	    
+	    printf("\n");
+	    *files  += 1;
+	    *nBlocks += size;
         }
     }
-
+    
     return error;
 }
 
 
-/* print directory summary information */
-int printsummary(int files, int dirs, int blocks, IPTR * args)
+/* Print directory summary information */
+void printSummary(int files, int dirs, int nBlocks, BOOL noHead)
 {
-    int error = RETURN_OK;
-
-    if (!args[ARG_NOHEAD])
+    if (noHead)
     {
-
-      if ((files == 0) && (dirs == 0)) {
-          if (VPrintf("Directory is empty\n", NULL) < 0)
-              error = RETURN_ERROR;
-      } else {
-          if ((files)) {
-              if (VPrintf("%ld files - ", (IPTR *)&files) < 0)
-                  error = RETURN_ERROR;
-          }
-          if ((dirs) && (!error)) {
-              if (VPrintf("%ld directories - ", (IPTR *)&dirs) < 0)
-                  error = RETURN_ERROR;
-          }
-          if (!error) {
-              if (VPrintf("%ld bytes used\n", (IPTR *)&blocks) < 0)
-                  error = RETURN_ERROR;
-          }
-      }
+	return;
     }
-    return error;
+
+    if ((files == 0) && (dirs == 0))
+    {
+	printf("Directory is empty\n");
+    }
+    else
+    {
+	if (files != 0)
+	{
+	    printf("%d files - ", files);
+	}
+	
+	if (dirs != 0)
+	{
+	    printf("%d directories - ", dirs);
+	}
+	
+	printf("%d bytes used\n", nBlocks);
+    }
 }
 
 
-int listfile(STRPTR filename, 
-             IPTR * args, 
-             BOOL show_files, 
-             BOOL show_dirs,
-             STRPTR pattern)
+int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
+             STRPTR parsedPattern, BOOL noHead, STRPTR lFormat, BOOL quick,
+	     BOOL dates, BOOL noDates, BOOL block, struct DateStamp *sinceDate,
+	     struct DateStamp *uptoDate, BOOL doSince, BOOL doUpto,
+	     STRPTR subpatternStr, BOOL all, BOOL keys)
 {
-  struct AnchorPath ap;
-  ULONG files = 0, dirs = 0, blocks = 0;
-  ULONG error;
+    struct AnchorPath *ap;
 
-//kprintf("List: listfile(\"%s\")\n", filename);
+    ULONG  files = 0;
+    ULONG  dirs = 0;
+    ULONG  nBlocks = 0;
+    ULONG  error;
 
-  memset(&ap, 0x0, sizeof(struct AnchorPath));
-  error = MatchFirst(filename, &ap);
+    ap = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN, MEMF_CLEAR);
 
-  /* explicitely named directory and not a pattern? --> enter dir */
-  
-  if (0 == error)
-  {
-    if (!(ap.ap_Flags & APF_ITSWILD))
+    if (ap == NULL)
     {
-      if (ap.ap_Info.fib_DirEntryType >= 0)
-      {
-	error = printdirheader(filename, args);
-	ap.ap_Flags |= APF_DODIR;
-	if (0 == error) error = MatchNext(&ap);
-      }
+	return RETURN_ERROR;
     }
-  }
+
+    ap->ap_Strlen = MAX_PATH_LEN;
+
+    error = MatchFirst(filename, ap);
+
+    /* Explicitely named directory and not a pattern? --> enter dir */
   
-  if (0 == error)
-  {
-    do
+    if (0 == error)
     {
-      /*
-      ** There's something to show.
-      */
-      if (0 == (ap.ap_Flags & APF_DIDDIR))
-      {
+	if (!(ap->ap_Flags & APF_ITSWILD))
+	{
+	    if (ap->ap_Info.fib_DirEntryType >= 0)
+	    {
+		error = printDirHeader(filename, noHead);
+		ap->ap_Flags |= APF_DODIR;
 
-        error = printfiledata(ap.ap_Info.fib_FileName,
-                              ap.ap_Info.fib_DirEntryType >= 0 ? TRUE:FALSE,
-                              &ap.ap_Info.fib_Date,
-                              ap.ap_Info.fib_Protection,
-                              ap.ap_Info.fib_Size,
-                              ap.ap_Info.fib_Comment,
-                              args,
-                              show_files,
-                              show_dirs,
-                              pattern,
-                              &files,
-                              &dirs,
-                              &blocks);
-      }
-      else
-      {
-        ap.ap_Flags &= ~APF_DIDDIR;
-        error = printsummary(files, dirs, blocks, args);
-        files = 0;
-        dirs = 0;
-        blocks = 0;
-      }
-      
+		if (0 == error)
+		{
+		    error = MatchNext(ap);
+		}
+	    }
+	}
     }
-    while (0 == MatchNext(&ap));
-  }
-  
-  MatchEnd(&ap);
+    
+    if (0 == error)
+    {
+	do
+	{
+	    /*
+	    ** There's something to show.
+	    */
+	    if (!(ap->ap_Flags & APF_DIDDIR))
+	    {
+		error = printFileData(ap->ap_Buf,
+				      ap->ap_Info.fib_DirEntryType >= 0,
+				      &ap->ap_Info.fib_Date,
+				      ap->ap_Info.fib_Protection,
+				      ap->ap_Info.fib_Size,
+				      ap->ap_Info.fib_Comment,
+				      ap->ap_Info.fib_DiskKey,
+				      showFiles,
+				      showDirs,
+				      parsedPattern,
+				      &files,
+				      &dirs,
+				      &nBlocks,
+				      lFormat,
+				      quick,
+				      dates,
+				      noDates,
+				      block,
+				      sinceDate,
+				      uptoDate,
+				      doSince,
+				      doUpto,
+				      subpatternStr,
+				      keys);
+	    }
+	    else
+	    {
+		ap->ap_Flags &= ~APF_DIDDIR;
+		printSummary(files, dirs, nBlocks, noHead);
+		files = 0;
+		dirs = 0;
+		nBlocks = 0;
+	    }
+	} while (0 == MatchNext(ap));
+    }
+    
+    MatchEnd(ap);
+    
+    FreeVec(ap);
 
-  printsummary(files, dirs, blocks, args);
-  return 0;
+    printSummary(files, dirs, nBlocks, noHead);
+
+    return 0;
 }
 
 
-int main (int argc, char **argv)
+int main(int argc, char **argv)
 {
-    IPTR args[ARG_NUM] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
-    struct RDArgs *rda;
-    LONG error = RETURN_OK;
-    STRPTR *filelist;
-    BOOL show_files = TRUE;
-    BOOL show_dirs  = TRUE;
-    STRPTR pattern = NULL;
-    LONG i;
+    IPTR args[NOOFARGS] = { NULL,          // ARG_DIR
+			    NULL,          // ARG_PAT
+			    (IPTR)FALSE,   // ARG_KEYS
+			    (IPTR)FALSE,   // ARG_DATES
+			    (IPTR)FALSE,   // ARG_NODATES
+			    NULL,          // ARG_TO
+			    NULL,          // ARG_SUB
+			    NULL,          // ARG_SINCE
+			    NULL,          // ARG_UPTO
+			    (IPTR)FALSE,   // ARG_QUICK
+			    (IPTR)FALSE,   // ARG_BLOCK
+			    (IPTR)FALSE,   // ARG_NOHEAD
+			    (IPTR)FALSE,   // ARG_FILES
+			    (IPTR)FALSE,   // ARG_DIRS
+			    (IPTR)FALSE,   // ARG_LFORMAT
+                            (IPTR)FALSE }; // ARG_ALL
+    struct RDArgs *rda;		       
 
-    rda = ReadArgs(TEMPLATE, args, NULL);
+    LONG     error = RETURN_OK;
+    STRPTR   parsedPattern = NULL;
+    STRPTR   subpatternStr = NULL;
 
-    if (rda)
+    BPTR     oldOutput = NULL;
+
+    rda = ReadArgs(ARG_TEMPLATE, args, NULL);
+
+    if (rda != NULL)
     {
-      if (args[ARG_DIRS])
-        if (!args[ARG_FILES])
-          show_files = FALSE;
-    
-      if (args[ARG_FILES])
-        if (!args[ARG_DIRS])
-          show_dirs = FALSE;    
-    
-      if (args[ARG_PAT])
-      {
-        i = strlen((STRPTR)args[ARG_PAT]) * 2 + 2;
-        pattern = AllocVec(i, MEMF_ANY);
-        ParsePatternNoCase((STRPTR)args[ARG_PAT],pattern, i);
-      }
-    
-      filelist = (STRPTR *)args[ARG_DIR];
-      if ((filelist) && (*filelist)) 
-      {
-        while ((*filelist) && (!error)) 
-        {
-          error = listfile(filelist[0],args,show_files,show_dirs,pattern);
-          filelist++;
-          if ((filelist[0]) && (!error))
-            VPrintf("\n", NULL);
-        }
-      } 
-      else
-        /* No file to list given. Just list the current directory */
-        error = listfile("#?",args,show_files,show_dirs,pattern);
-      
-      FreeArgs(rda);
+	STRPTR *directories = (STRPTR *)args[ARG_DIR];
+	STRPTR  lFormat = (STRPTR)args[ARG_LFORMAT];
+	STRPTR  pattern = (STRPTR)args[ARG_PAT];
+	STRPTR  toFile = (STRPTR)args[ARG_TO];
+	STRPTR  subStr = (STRPTR)args[ARG_SUB];
+	STRPTR  since = (STRPTR)args[ARG_SINCE];
+	STRPTR  upto = (STRPTR)args[ARG_UPTO];
+	BOOL    files = (BOOL)args[ARG_FILES];
+	BOOL    dirs  = (BOOL)args[ARG_DIRS];
+	BOOL    noDates = (BOOL)args[ARG_NODATES];
+	BOOL    dates = (BOOL)args[ARG_DATES];
+	BOOL    quick = (BOOL)args[ARG_QUICK];
+	BOOL    noHead = (BOOL)args[ARG_NOHEAD];
+	BOOL    block = (BOOL)args[ARG_BLOCK];
+	BOOL    all = (BOOL)args[ARG_ALL];
+	BOOL    keys = (BOOL)args[ARG_KEYS];
+
+	struct DateTime  sinceDatetime;
+	struct DateTime  uptoDatetime;
+
+	ULONG   i;		/* Loop variable */	    
+
+	if (since != NULL)
+	{
+	    sinceDatetime.dat_StrDate = since;
+	    sinceDatetime.dat_StrTime = NULL;
+	    sinceDatetime.dat_Format = FORMAT_DEF;
+	    sinceDatetime.dat_Flags = 0;
+
+	    kprintf("Found SINCE parameter %s\n", since);
+
+	    if (StrToDate(&sinceDatetime) == DOSFALSE)
+	    {
+		FreeArgs(rda);
+		printf("*** Illegal 'SINCE' parameter\n");
+
+		return RETURN_FAIL;
+	    }
+	}
+
+	if (upto != NULL)
+	{
+	    uptoDatetime.dat_StrDate = upto;
+	    uptoDatetime.dat_StrTime = NULL;
+	    uptoDatetime.dat_Format = FORMAT_DEF;
+	    uptoDatetime.dat_Flags = 0;
+
+	    if (StrToDate(&uptoDatetime) == DOSFALSE)
+	    {
+		FreeArgs(rda);
+		printf("*** Illegal 'UPTO' parameter\n");
+
+		return RETURN_FAIL;
+	    }
+	}
+
+
+	if (subStr != NULL)
+	{
+	    STRPTR  subStrWithPat;
+	    ULONG   length = (strlen(subStr) + sizeof("#?#?"))*2 + 2;
+
+	    subStrWithPat = AllocVec(length, MEMF_ANY);
+
+	    if (subStrWithPat == NULL)
+	    {
+		FreeArgs(rda);
+		PrintFault(IoErr(), "List");
+
+		return RETURN_FAIL;
+	    }
+
+	    strcpy(subStrWithPat, "#?");
+	    strcat(subStrWithPat, subStr);
+	    strcat(subStrWithPat, "#?");
+
+	    subpatternStr = AllocVec(length, MEMF_ANY);
+
+	    if (subpatternStr == NULL || 
+		ParsePatternNoCase(subStrWithPat, subpatternStr, length) == -1)
+	    {
+		FreeVec(subStrWithPat);
+		FreeArgs(rda);
+		PrintFault(IoErr(), "List");
+		
+		return RETURN_FAIL;		
+	    }
+
+	    FreeVec(subStrWithPat);
+	}
+
+
+	if (pattern != NULL)
+	{
+	    ULONG length = strlen(pattern)*2 + 2;
+
+	    parsedPattern = AllocVec(length, MEMF_ANY);
+
+	    if (parsedPattern == NULL ||
+		ParsePatternNoCase(pattern, parsedPattern, length) == -1)
+	    {
+		FreeVec(subpatternStr);
+		FreeArgs(rda);
+
+		return RETURN_FAIL;
+	    }
+	}
+
+	if (toFile != NULL)
+	{
+	    BPTR file = Open(toFile, MODE_NEWFILE);
+
+	    if (file == NULL)
+	    {
+		FreeVec(subpatternStr);
+		FreeVec(parsedPattern);
+		FreeArgs(rda);
+		PrintFault(IoErr(), "List");
+
+		return RETURN_FAIL;
+	    }
+
+	    kprintf("Output file %s opened\n", toFile);
+	    oldOutput = SelectOutput(file);
+	}
+
+	if (!files && !dirs)
+	{
+	    files = TRUE;
+	    dirs = TRUE;
+	}
+
+	if (!dates && !noDates)
+	{
+	    dates = TRUE;
+	}
+
+	if (*directories == NULL)
+	{
+	    /* No file to list given. Just list the current directory */
+	    error = listFile("#?", files, dirs, parsedPattern, noHead,
+			     lFormat, quick, dates, noDates, block,
+			     &sinceDatetime.dat_Stamp, &uptoDatetime.dat_Stamp,
+			     since != NULL, upto != NULL, subpatternStr, all,
+			     keys);
+	}
+	else
+	{
+	    for (i = 0; directories[i] != NULL; i++)
+	    {
+		error = listFile(directories[i], files, dirs, parsedPattern,
+				 noHead, lFormat, quick, dates, noDates,
+				 block, &sinceDatetime.dat_Stamp,
+				 &uptoDatetime.dat_Stamp, since != NULL,
+				 upto != NULL, subpatternStr, all, keys);
+		
+		if (error != RETURN_OK)
+		{
+		    break;
+		}
+		    
+		printf("\n");
+	    } 
+	}
+	
+	FreeArgs(rda);
     } 
     else
-      error=RETURN_FAIL;
+    {
+	error = RETURN_FAIL;
+    }
 
-    if (error)
-      PrintFault(IoErr(),"List");
+    if (error != RETURN_OK)
+    {
+	PrintFault(IoErr(), "List");
+    }
+    
+    if (parsedPattern != NULL)
+    {
+	FreeVec(parsedPattern);
+    }
 
-    if (pattern)
-      FreeVec(pattern);
+    if (subpatternStr != NULL)
+    {
+	FreeVec(subpatternStr);
+    }
 
+    if (oldOutput != NULL)
+    {
+	Close(SelectOutput(oldOutput));
+    }
+    
     return error;
 }
