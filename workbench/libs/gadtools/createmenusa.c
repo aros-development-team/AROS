@@ -168,6 +168,24 @@
           goto failexit;
         }
 
+	if (!curitem->SubItem)
+	{
+	    /* First sub item */
+	    curitem->Flags &= ~COMMSEQ;
+	    if (curitem->Flags & ITEMTEXT)
+	    {
+	        struct IntuiText *it = (struct IntuiText *)curitem->ItemFill;
+		
+		if (!it->NextText)
+		{
+		    struct IntuiText *it2 = it + 1;
+		    
+		    it->NextText = it2;
+		    it2->IText = "»";
+		}
+	    }
+	}
+	
         cursubitem = makemenuitem(newmenu,
                                   is_image,
                                   tagList,
