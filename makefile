@@ -1,6 +1,8 @@
 ARCH=linux
 KERNEL=i386-emul
 
+VERSION = 1.5
+
 TOP=.
 CURDIR=.
 
@@ -8,13 +10,12 @@ SPECIAL_CFLAGS = -Dmain=submain
 
 include $(TOP)/make.cfg
 
-DEP_LIBS=$(LIBDIR)/libkernel.a $(LIBDIR)/libexec.a $(LIBDIR)/libkernel.a \
-    $(LIBDIR)/libdos.a $(OBJDIR)/filesys/emul_handler.o \
-    $(LIBDIR)/libutility.a $(LIBDIR)/libaros.a
+DEP_LIBS= $(LIBDIR)/libAmigaOS.a \
+    $(GENDIR)/filesys/emul_handler.o \
+    $(LIBDIR)/libaros.a
 
-LIBS=-L$(LIBDIR) -lkernel \
-	$(OBJDIR)/filesys/emul_handler.o \
-	-lutility -ldos -lexec -laros -lkernel
+LIBS=-L$(LIBDIR) \
+	$(GENDIR)/filesys/emul_handler.o -lAmigaOS -laros
 
 TESTDIR = $(BINDIR)/test
 TESTS = $(TESTDIR)/tasktest \
@@ -27,24 +28,34 @@ TESTS = $(TESTDIR)/tasktest \
 	$(TESTDIR)/devicetest \
 	$(TESTDIR)/filetest
 
-all : setup subdirs $(BINDIR)/arosshell apps
+all : setup subdirs $(LIBDIR)/libAmigaOS.a $(BINDIR)/s/Startup-Sequence \
+	    $(BINDIR)/arosshell apps
 
 crypt : crypt.c
 	$(CC) -o crypt crypt.c
 
+dist :
+	@if [ ! -d dist ]; then $(MKDIR) dist ; fi
+	cd bin/$(ARCH) ; tar cvvzf ../../AROS_$(ARCH)_bin-$(VERSION).tar.gz \
+		AROS
+	tar cvvzf AROS-$(VERSION).tar.gz \
+		README.CVS aros arosshell.c c crypt.c \
+		devs dos dummy exec filesys gendef.awk \
+		i386-emul include libs m68k-emul m68k-native \
+		make.cfg makefile s test utility
+
 setup :
-	@echo "Setting up"
 	@if [ ! -d bin ]; then $(MKDIR) bin ; fi
+	@if [ ! -d bin/$(ARCH) ]; then $(MKDIR) bin/$(ARCH) ; fi
 	@if [ ! -d $(BINDIR) ]; then $(MKDIR) $(BINDIR) ; fi
+	@if [ ! -d $(SDIR) ]; then $(MKDIR) $(SDIR) ; fi
 	@if [ ! -d $(EXEDIR) ]; then $(MKDIR) $(EXEDIR) ; fi
 	@if [ ! -d $(LIBDIR) ]; then $(MKDIR) $(LIBDIR) ; fi
 	@if [ ! -d $(SLIBDIR) ]; then $(MKDIR) $(SLIBDIR) ; fi
 	@if [ ! -d $(TESTDIR) ]; then $(MKDIR) $(TESTDIR) ; fi
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
-	@if [ ! -d $(OBJDIR)/test ]; then $(MKDIR) $(OBJDIR)/test ; fi
-	@if [ ! -d $(OBJDIR)/filesys ]; then $(MKDIR) $(OBJDIR)/filesys ; fi
-	$(CP) s $(BINDIR)
-	@touch setup
+	@if [ ! -d $(GENDIR) ]; then $(MKDIR) $(GENDIR) ; fi
+	@if [ ! -d $(GENDIR)/test ]; then $(MKDIR) $(GENDIR)/test ; fi
+	@if [ ! -d $(GENDIR)/filesys ]; then $(MKDIR) $(GENDIR)/filesys ; fi
 
 check : $(TESTS)
 	@for test in $(TESTS) ; do \
@@ -58,7 +69,7 @@ clean:
 	    $(MAKE) $(MFLAGS) clean ) ; \
 	done
 
-$(BINDIR)/arosshell: $(OBJDIR)/arosshell.o $(DEP_LIBS)
+$(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
 	$(CC) $(CFLAGS) $< $(LIBS) -o $@
 
 apps:
@@ -76,6 +87,13 @@ subdirs:
 		RM="$(RM)" \
 		all ) ; \
 	done
+
+$(LIBDIR)/libAmigaOS.a : $(wildcard $(OSGENDIR)/*.o)
+	$(AR) $@ $^
+	$(RANLIB) $@
+
+$(SDIR)/Startup-Sequence : s/Startup-Sequence
+	$(CP) $^ $@
 
 includes: include/aros/config/gnuc/exec_defines.h \
 	include/aros/config/gnuc/dos_defines.h \
@@ -112,15 +130,15 @@ include/aros/config/gnuc/utility_defines.h: utility/*.c
 	gawk -f gendef.awk $^ >>$@
 	echo "#endif" >>$@
 
-$(OBJDIR)/test/%.o: test/%.c
+$(GENDIR)/test/%.o: test/%.c
 	$(CC) $(CFLAGS) -I ./libs $^ -c -o $@
 
-$(OBJDIR)/%.o: %.c
+$(GENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@
 
-$(TESTDIR)/devicetest: $(OBJDIR)/test/devicetest.o $(OBJDIR)/test/dummydev.o $(DEP_LIBS)
-	$(CC) $(CFLAGS) $(OBJDIR)/test/devicetest.o $(OBJDIR)/test/dummydev.o $(LIBS) -o $@
+$(TESTDIR)/devicetest: $(GENDIR)/test/devicetest.o $(GENDIR)/test/dummydev.o $(DEP_LIBS)
+	$(CC) $(CFLAGS) $(GENDIR)/test/devicetest.o $(GENDIR)/test/dummydev.o $(LIBS) -o $@
 
-$(TESTDIR)/% : $(OBJDIR)/test/%.o $(DEP_LIBS)
+$(TESTDIR)/% : $(GENDIR)/test/%.o $(DEP_LIBS)
 	$(CC) $(CFLAGS) $< $(LIBS) -o $@
 
