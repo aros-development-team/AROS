@@ -226,6 +226,7 @@ static void _zune_focus_destroy(Object *obj, int type)
 	}
 	
     }
+
 }
 
 
@@ -921,7 +922,7 @@ static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data,
 
 
 /*
- * draw object frame + title if ! MADF_FRAMEPHANTOM.
+ * draw object frame + title if not MADF_FRAMEPHANTOM.
  */
 static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data,
 				    struct ZuneFrameGfx *zframe, WORD frame_top)
@@ -1290,7 +1291,11 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	if (_parent(obj) != NULL && _parent(obj) != _win(obj))
 	    data->mad_Font = _font(_parent(obj));
 	else
+	{
+	    D(bug("Area_Setup %p: getting normal font\n", obj));
 	    data->mad_Font = zune_font_get(obj, MUIV_Font_Normal);
+	    D(bug("Area_Setup %p: got normal font %p\n", obj, data->mad_Font));
+	}
     }
     else
     {
@@ -1587,13 +1592,13 @@ static ULONG event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 		    if ((data->mad_InputMode != MUIV_InputMode_Toggle) && (data->mad_Flags & MADF_SELECTED))
 			break;
 		    nnset(obj,MUIA_Timer,0);
-		    handle_press(cl, obj);
 		    if (data->mad_InputMode == MUIV_InputMode_RelVerify)
 		    {
 			if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
 			data->mad_ehn.ehn_Events |= IDCMP_MOUSEMOVE | IDCMP_RAWKEY;
 	                DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
 	            }
+		    handle_press(cl, obj);
 		    return MUI_EventHandlerRC_Eat;
 		}
 
@@ -1719,11 +1724,11 @@ static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 	    case    MUIKEY_PRESS:
 		    if (data->mad_Flags & MADF_SELECTED)
 			break;
-		    handle_press(cl, obj);
 		    if (data->mad_ehn.ehn_Events)
 			DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
 		    data->mad_ehn.ehn_Events |= IDCMP_RAWKEY;
 		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+		    handle_press(cl, obj);
 		    return MUI_EventHandlerRC_Eat;
 
 	    case    MUIKEY_TOGGLE:
@@ -1732,11 +1737,11 @@ static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 		    return MUI_EventHandlerRC_Eat;
 
 	    case    MUIKEY_RELEASE:
-		    handle_release(cl, obj, FALSE /* cancel */);
 		    if (data->mad_ehn.ehn_Events)
 			DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
 		    data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
 		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+		    handle_release(cl, obj, FALSE /* cancel */);
 		    return MUI_EventHandlerRC_Eat;
 	}
 	return 0;
