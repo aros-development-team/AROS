@@ -12,6 +12,7 @@ $Id$
 #MM    kernel-pc-i386-vga-kobj \
 #MM    kernel-pci-kobj \
 #MM    kernel-pci-pcipc-kobj \
+#MM    kernel-ata-kobj \
 #MM    kernel-hidd-nvidia-kobj
 
 # Disabled kernel-pc-i386-driver
