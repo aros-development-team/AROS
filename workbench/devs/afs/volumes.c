@@ -15,6 +15,7 @@
 #include "extstrings.h"
 #include "error.h"
 #include "afsblocks.h"
+#include "baseredef.h"
 
 extern LONG error;
 
@@ -25,7 +26,7 @@ extern LONG error;
          rootblock  - cacheblock of the rootblock
  Output: DOSTRUE for success; DOSFALSE otherwise
 ********************************************/
-LONG initDeviceList(struct Volume *volume,struct BlockCache *rootblock) {
+LONG initDeviceList(struct afsbase *afsbase, struct Volume *volume,struct BlockCache *rootblock) {
 char *name;
 
 	name=(char *)((ULONG)rootblock->buffer+(BLK_DISKNAME_START(volume)*4));
@@ -56,7 +57,7 @@ char *name;
  Input : volume - volume to add
  Output: DOSTRUE for success; DOSFALSE otherwise
 ********************************************/
-LONG addDosVolume(struct Volume *volume) {
+LONG addDosVolume(struct afsbase *afsbase, struct Volume *volume, LONG init) {
 struct DosList *doslist, *dl=0;
 char string[32];
 char *bname;
@@ -65,16 +66,21 @@ char *bname;
 	CopyMem(bname+1,string,bname[0]);
 	string[(LONG)bname[0]]=0;
 	// do we have that volume ?
-	if ((doslist=LockDosList(LDF_WRITE | LDF_VOLUMES))) {
-		if ((dl=FindDosEntry(doslist,string,LDF_VOLUMES)))
-			if (dl->dol_misc.dol_volume.dol_LockList) {
-				volume->locklist=dl->dol_misc.dol_volume.dol_LockList;
-			}
-		UnLockDosList(LDF_WRITE | LDF_VOLUMES);
+	if (!init)
+	{
+		if ((doslist=LockDosList(LDF_WRITE | LDF_VOLUMES))) {
+			if ((dl=FindDosEntry(doslist,string,LDF_VOLUMES)))
+				if (dl->dol_misc.dol_volume.dol_LockList) {
+					volume->locklist=dl->dol_misc.dol_volume.dol_LockList;
+				}
+			UnLockDosList(LDF_WRITE | LDF_VOLUMES);
+		}
 	}
 	// if not create a new doslist
-	if (!dl) {
-		if (!(doslist=MakeDosEntry(string,DLT_VOLUME))) return DOSFALSE;
+	if (!dl)
+	{
+		if (!(doslist=MakeDosEntry(string,DLT_VOLUME)))
+			return DOSFALSE;
 		doslist->dol_Unit=(struct Unit *)&volume->ah;
 		doslist->dol_Device=volume->device;
 		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Days=volume->devicelist.dl_VolumeDate.ds_Days;
@@ -95,7 +101,7 @@ char *bname;
  Note  : displays a message if volume couldn't
          be found in the system
 ********************************************/
-void remDosVolume(struct Volume *volume) {
+void remDosVolume(struct afsbase *afsbase, struct Volume *volume) {
 struct DosList *doslist,*dl;
 char *bname;
 char string[32];
@@ -114,48 +120,47 @@ char string[32];
 					FreeDosEntry(dl);
 				}
 			else
-				showText("doslist not in chain");
+				showText(afsbase, "doslist not in chain");
 			UnLockDosList(LDF_WRITE | LDF_VOLUMES);
 		}
 	}
 }
 
-LONG newMedium(struct Volume *volume) {
+LONG newMedium(struct afsbase *afsbase, struct Volume *volume) {
 struct BlockCache *blockbuffer;
 UWORD i;
 
-	if ((blockbuffer=getBlock(volume,0))==0)
+	if ((blockbuffer=getBlock(afsbase, volume,0))==0)
 		return ERROR_UNKNOWN;
 	volume->flags=AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
 	volume->dostype=AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
 	if (volume->dostype!=0x444F5300) {
 		return ERROR_NOT_A_DOS_DISK;
 	}
-	if ((blockbuffer=getBlock(volume,volume->rootblock))==0)
+	if ((blockbuffer=getBlock(afsbase, volume,volume->rootblock))==0)
 		return ERROR_UNKNOWN;
 	for (i=0;i<=24;i++)
 		volume->bitmapblockpointers[i]=AROS_BE2LONG(blockbuffer->buffer[BLK_BITMAP_POINTERS_START(volume)+i]);
 	volume->bitmapextensionblock=AROS_BE2LONG(blockbuffer->buffer[BLK_BITMAP_EXTENSION(volume)]);
 	if (!blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)]) {
 		volume->usedblockscount=0;
-		showError(ERR_DISKNOTVALID);
+		showError(afsbase, ERR_DISKNOTVALID);
 	}
 	else
-		volume->usedblockscount=countUsedBlocks(volume);
-	if (initDeviceList(volume,blockbuffer)==0) {
+		volume->usedblockscount=countUsedBlocks(afsbase, volume);
+	if (initDeviceList(afsbase, volume,blockbuffer)==0) {
 		return ERROR_NO_FREE_STORE;
 	}
-	if (!(addDosVolume(volume))) {
-		showError(ERR_DOSENTRY);
+	if (!(addDosVolume(afsbase, volume, 1))) {
+		showError(afsbase, ERR_DOSENTRY);
 		return ERROR_UNKNOWN;
 	}
 	return 0;
 }
 
-struct Volume *initVolume(struct Device *device, STRPTR blockdevice, ULONG unit, struct DosEnvec *devicedef) {
+struct Volume *initVolume(struct afsbase *afsbase, struct Device *device, STRPTR blockdevice, ULONG unit, struct DosEnvec *devicedef) {
 struct Volume *volume;
 
-	D(bug("afs.handler: initVolume\n"));
 	if (!(volume=AllocMem(sizeof(struct Volume),MEMF_PUBLIC | MEMF_CLEAR))) {
 		error=ERROR_NO_FREE_STORE;
 		return 0;
@@ -168,13 +173,13 @@ struct Volume *volume;
 		volume->bootblocks=devicedef->de_BootBlocks;
 	else
 		volume->bootblocks=devicedef->de_Reserved;
-	if (!(volume->blockcache=initCache(volume, devicedef->de_NumBuffers))) {
+	if (!(volume->blockcache=initCache(afsbase, volume, devicedef->de_NumBuffers))) {
 		error=ERROR_NO_FREE_STORE;
 		FreeMem(volume,sizeof(struct Volume));
 		return 0;
 	}
 	if (!(volume->ioport=CreateMsgPort())) {
-		showError(ERR_IOPORT);
+		showError(afsbase, ERR_IOPORT);
 		FreeMem(volume,sizeof(struct Volume));
 		return 0;
 	}
@@ -186,7 +191,7 @@ struct Volume *volume;
 	volume->istrackdisk=StrCmp(volume->blockdevice,"trackdisk.device");
 	if (OpenDevice(volume->blockdevice,volume->unit,(struct IORequest *)&volume->iorequest->iotd_Req,0)!=0)
 	{
-		showError(ERR_DEVICE);
+		showError(afsbase, ERR_DEVICE);
 		FreeMem(volume,sizeof(struct Volume));
 		return 0;
 	}
@@ -202,10 +207,10 @@ struct Volume *volume;
 			devicedef->de_LowCyl*
 			devicedef->de_Surfaces*
 			devicedef->de_BlocksPerTrack;
-	error=newMedium(volume);
+	error=newMedium(afsbase, volume);
 	if (error)
 	{
-		uninitVolume(volume);
+		uninitVolume(afsbase, volume);
 		volume=0;
 	}
 	else
@@ -218,11 +223,11 @@ struct Volume *volume;
 	return volume;
 }
 
-void uninitVolume(struct Volume *volume) {
+void uninitVolume(struct afsbase *afsbase, struct Volume *volume) {
 
-	remDosVolume(volume);
+	remDosVolume(afsbase, volume);
 	if (volume->blockcache)
-		freeCache(volume->blockcache);
+		freeCache(afsbase, volume->blockcache);
 	if (volume->devicelist.dl_OldName)
 		FreeVec(BADDR(volume->devicelist.dl_OldName));
 	if (volume->iorequest) {

@@ -30,10 +30,6 @@ extern LONG AROS_SLIB_ENTRY(abortio,afsdev)();
 extern void work();
 extern const char endhandler;
 
-struct IntuitionBase *IntuitionBase;
-struct DosLibrary *DOSBase;
-struct ExecBase *SysBase;
-
 int entry(void)
 {
 	/* If the device was executed by accident return error code. */
@@ -81,7 +77,7 @@ const UBYTE datatable = 0;
 AROS_LH2(struct afsbase *, init,
  AROS_LHA(struct afsbase *, afsbase, D0),
  AROS_LHA(BPTR,             segList, A0),
-      struct ExecBase *, sysBase, 0, afsdev)
+      struct ExecBase *, SysBase, 0, afsdev)
 {
 	AROS_LIBFUNC_INIT
 
@@ -89,12 +85,12 @@ AROS_LH2(struct afsbase *, init,
 	APTR stack;
 
 	afsbase->seglist = segList;
-	SysBase = sysBase;
-	DOSBase = (struct DosLibrary *)OpenLibrary("dos.library",39);
-	if (DOSBase != NULL)
+	afsbase->sysbase = SysBase;
+	afsbase->dosbase = (struct DosLibrary *)OpenLibrary("dos.library",39);
+	if (afsbase->dosbase != NULL)
 	{
-		IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",39);
-		if (IntuitionBase)
+		afsbase->intuitionbase = (struct IntuitionBase *)OpenLibrary("intuition.library",39);
+		if (afsbase->intuitionbase)
 		{
 			NEWLIST(&afsbase->port.mp_MsgList);
 			afsbase->port.mp_Node.ln_Type = NT_MSGPORT;
@@ -129,27 +125,15 @@ AROS_LH2(struct afsbase *, init,
 				}
 				FreeMem(task, sizeof(struct Task));
 			}
-			CloseLibrary((struct Library *)IntuitionBase);
+			CloseLibrary((struct Library *)afsbase->intuitionbase);
 		}
-		CloseLibrary((struct Library *)DOSBase);
+		CloseLibrary((struct Library *)afsbase->dosbase);
 	}
 	return NULL;
 	AROS_LIBFUNC_EXIT
 }
 
-/*#ifdef SysBase
-	#undef SysBase
-#endif
-#ifdef DOSBase
-	#undef DOSBase
-#endif
-#ifdef IntuitionBase
-	#undef IntuitionBase
-#endif
-#define SysBase afsbase->sysbase
-#define DOSBase afsbase->dosbase
-#define IntuitionBase afsbase->intuitionbase
-*/
+#include "baseredef.h"
 
 AROS_LH3(void, open,
  AROS_LHA(struct IOFileSys *, iofs, A1),

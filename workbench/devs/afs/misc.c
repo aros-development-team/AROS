@@ -7,8 +7,9 @@
 #include "afsblocks.h"
 #include "blockaccess.h"
 #include "checksums.h"
+#include "baseredef.h"
 
-ULONG writeHeader(struct Volume *volume, struct BlockCache *blockbuffer) {
+ULONG writeHeader(struct afsbase *afsbase, struct Volume *volume, struct BlockCache *blockbuffer) {
 struct DateStamp ds;
 
 	DateStamp(&ds);
@@ -20,8 +21,8 @@ struct DateStamp ds;
 		if (!blockbuffer->buffer[BLK_PARENT(volume)])
 			break;
 		blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock, blockbuffer->buffer));
-		writeBlock(volume,blockbuffer);
-		blockbuffer=getBlock(volume, AROS_LONG2BE(blockbuffer->buffer[BLK_PARENT(volume)]));
+		writeBlock(afsbase, volume,blockbuffer);
+		blockbuffer=getBlock(afsbase, volume, AROS_LONG2BE(blockbuffer->buffer[BLK_PARENT(volume)]));
 		if (!blockbuffer)
 			return ERROR_UNKNOWN;
 	}
@@ -31,6 +32,6 @@ struct DateStamp ds;
 	blockbuffer->buffer[BLK_VOLUME_MINS(volume)]=AROS_LONG2BE(ds.ds_Minute);
 	blockbuffer->buffer[BLK_VOLUME_TICKS(volume)]=AROS_LONG2BE(ds.ds_Tick);
 	blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock, blockbuffer->buffer));
-	writeBlock(volume,blockbuffer);
+	writeBlock(afsbase, volume,blockbuffer);
 	return 0;
 }

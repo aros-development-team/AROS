@@ -6,15 +6,15 @@
 
 #include "blockaccess.h"
 
-struct AfsHandle	*openf(struct AfsHandle *, STRPTR, ULONG);
-void	closef(struct AfsHandle *);
-LONG	read(struct AfsHandle *, void *, ULONG);
-LONG	write(struct AfsHandle *, void *, ULONG);
-LONG	seek(struct AfsHandle *, LONG, LONG);
-struct AfsHandle *openfile(struct AfsHandle *, STRPTR, ULONG, ULONG);
+struct AfsHandle	*openf(struct afsbase *, struct AfsHandle *, STRPTR, ULONG);
+void	closef(struct afsbase *, struct AfsHandle *);
+LONG	read(struct afsbase *, struct AfsHandle *, void *, ULONG);
+LONG	write(struct afsbase *, struct AfsHandle *, void *, ULONG);
+LONG	seek(struct afsbase *, struct AfsHandle *, LONG, LONG);
+struct AfsHandle *openfile(struct afsbase *, struct AfsHandle *, STRPTR, ULONG, ULONG);
 
-struct BlockCache *getHeaderBlock(struct Volume *,STRPTR, struct BlockCache *, ULONG *);
-struct BlockCache *findBlock(struct AfsHandle *, STRPTR name, ULONG *);
-struct AfsHandle *getHandle(struct Volume *, struct BlockCache *, ULONG);
+struct BlockCache *getHeaderBlock(struct afsbase *, struct Volume *,STRPTR, struct BlockCache *, ULONG *);
+struct BlockCache *findBlock(struct afsbase *, struct AfsHandle *, STRPTR name, ULONG *);
+struct AfsHandle *getHandle(struct afsbase *, struct Volume *, struct BlockCache *, ULONG);
 struct AfsHandle *findHandle(struct Volume *, ULONG);
 #endif

@@ -3,21 +3,22 @@
 #include <intuition/intuition.h>
 
 #include "error.h"
+#include "baseredef.h"
 
-void showPtrArgsText(char *string, ULONG *args) {
+void showPtrArgsText(struct afsbase *afsbase, char *string, ULONG *args) {
 struct EasyStruct es[]={sizeof (struct EasyStruct),0,"AFFS",0,"Cancel"};
 
 	es->es_TextFormat=string;
 	EasyRequestArgs(0,es,0,args);
 }
 
-void showText(char *string, ...) {
+void showText(struct afsbase *afsbase, char *string, ...) {
 
-	showPtrArgsText(string,(ULONG *)(&string+1));
+	showPtrArgsText(afsbase, string,(ULONG *)(&string+1));
 }
 
-void showError(ULONG error, ...) {
-char *texts[]={0,
+void showError(struct afsbase *afsbase, ULONG error, ...) {
+char *texts={0,
 				"No ioport",
 				"No device",
 				"Couldn't add disk as dosentry",
@@ -32,8 +33,8 @@ char *texts[]={0,
 };
 	if (error==ERR_ALREADY_PRINTED) return;
 	if (error>=ERR_UNKNOWN) {
-		showPtrArgsText(texts[ERR_UNKNOWN],(ULONG *)&error);
+		showPtrArgsText(afsbase, texts[ERR_UNKNOWN],(ULONG *)&error);
 	}
 	else
-		showPtrArgsText(texts[error],(ULONG *)(&error+1));
+		showPtrArgsText(afsbase, texts[error],(ULONG *)(&error+1));
 }
