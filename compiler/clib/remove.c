@@ -1,46 +1,48 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Delete a file.
+    Desc: ANSI C function remove()
     Lang: english
 */
+
 #include <proto/dos.h>
 #include "__errno.h"
 
 /*****************************************************************************
 
     NAME */
-#include <string.h>
+#include <stdio.h>
 
-	int unlink (
+	int remove (
 
 /*  SYNOPSIS */
 	const char * pathname)
 
 /*  FUNCTION
-	Delete a file from disk.
+	Deletes a file or directory.
 
     INPUTS
-	pathname - Complete path to the file
+	pathname - Complete path to the file or directory.
 
     RESULT
 	0 on success and -1 on error. In case of an error, errno is set.
-
+	
     NOTES
-    	Identical to remove
+    	Identical to unlink
 
     EXAMPLE
-	// Delete the file xyz in the current directory
-	unlink ("xyz");
 
     BUGS
+    	Does not set errno
 
     SEE ALSO
+    	unlink
 
     INTERNALS
 
     HISTORY
+	04.04.2001 stegerg created
 
 ******************************************************************************/
 {
@@ -51,4 +53,6 @@
     }
 
     return 0;
-} /* unlink */
+    
+} /* remove */
+
