@@ -233,7 +233,21 @@ inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelFormat *pf)
        which should be true for most (all ?) systems. (I have never heard
        of any system with for example 3 byte types.
     */
-    color->pixval = MAP_RGB(red, green, blue, pf);
+
+    if (HIDD_PF_SWAPPIXELBYTES(pf))
+    {
+	#warning "int_map_truecolor assuming that SwapPixelBytes flag only set for 2-byte/16-bit pixel formats"
+
+    	HIDDT_Pixel pixel = MAP_RGB(red, green, blue, pf);
+	
+	SWAPBYTES_WORD(pixel);
+	
+	color->pixval = pixel;
+    }
+    else
+    {
+    	color->pixval = MAP_RGB(red, green, blue, pf);
+    }
 
     return color->pixval;
 }
