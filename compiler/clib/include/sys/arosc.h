@@ -3,12 +3,14 @@
 
 #include <sys/cdefs.h>
 
+struct __sFILE;
+
 struct arosc_userdata
 {
     /* stdio.h */
-    void *acud_stdin;
-    void *acud_stdout;
-    void *acud_stderr;
+    struct __sFILE *acud_stdin;
+    struct __sFILE *acud_stdout;
+    struct __sFILE *acud_stderr;
 
     /* errno.h */
     int acud_errno;
@@ -32,5 +34,14 @@ struct arosc_userdata *__get_arosc_userdata(void) __pure;
 int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[]);
 
 __END_DECLS
+
+enum
+{ 
+    #undef  SYSTEM_CALL
+    #define SYSTEM_CALL(x, y...) __arosc_enum_version_ ## x,
+    #include <sys/syscall.def>
+    AROSC_VERSION
+    #undef SYSTEM_CALL
+};
 
 #endif /* !_SYS_AROSC_H */

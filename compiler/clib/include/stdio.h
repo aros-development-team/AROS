@@ -73,9 +73,9 @@ typedef __off_t fpos_t;
 #define SEEK_CUR    1
 #define SEEK_END    2
 
-#define stdin  ((FILE *)__get_arosc_userdata()->acud_stdin)
-#define stdout ((FILE *)__get_arosc_userdata()->acud_stdout)
-#define stderr ((FILE *)__get_arosc_userdata()->acud_stderr)
+#define stdin  (__get_arosc_userdata()->acud_stdin)
+#define stdout (__get_arosc_userdata()->acud_stdout)
+#define stderr (__get_arosc_userdata()->acud_stderr)
 
 __BEGIN_DECLS
 
