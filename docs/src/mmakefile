@@ -225,9 +225,9 @@ $(DEST)inc_index.html : $(INCLUDE_SRCS)
 includes : $(DOCGENDIR)/devlist.inc \
 	$(DOCGENDIR)/contents.inc \
 	$(DOCGENDIR)/status.inc \
-	$(DEST)progress.png
+	$(DEST)progress.gif
 
-$(DEST)progress.png : size2plot.in $(AROS_SIZE)
+$(DEST)progress.gif : size2plot.in $(AROS_SIZE)
 	sed -e "s;@DOCGENDIR@;$(DOCGENDIR);" \
 	    -e "s;@AROS-SIZE@;$(AROS_SIZE);" \
 	    size2plot.in > $(DOCGENDIR)/size2plot.gp
