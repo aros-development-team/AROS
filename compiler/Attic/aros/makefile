@@ -8,7 +8,8 @@ FILES = calcchecksum strcmp \
 	    strlen strcpy qsort \
 	    kprintf nastyfreemem \
 	    rt purify strdup \
-	    stricmp removeslist
+	    stricmp removeslist \
+	    _kprintf
 
 all: setup $(LIBDIR)/libaros.a
 
