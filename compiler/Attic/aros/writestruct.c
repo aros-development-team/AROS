@@ -88,7 +88,7 @@ struct WriteLevel
     AddTail (list, (struct Node *)curr);
 
     curr->sd  = sd;
-    curr->pos = 0;
+    curr->pos = 1; /* Ignore size */
     curr->s   = data;
 
 #   define DESC     (curr->sd[curr->pos])
@@ -165,7 +165,7 @@ struct WriteLevel
 
 	    AddTail (list, (struct Node *)next);
 	    next->sd  = desc;
-	    next->pos = 0;
+	    next->pos = 1; /* Ignore size */
 	    next->s   = ptr;
 
 	    curr = next;
@@ -191,7 +191,7 @@ struct WriteLevel
 
 		AddTail (list, (struct Node *)next);
 		next->sd  = desc;
-		next->pos = 0;
+		next->pos = 1;
 		next->s   = ptr;
 
 		curr = next;
@@ -330,16 +330,17 @@ struct MainLevel
     struct Level1 * ml_Level1Ptr;
 };
 
-IPTR ByteDesc[] = { SDM_UBYTE(0), SDM_END };
-IPTR WordDesc[] = { SDM_UWORD(0), SDM_END };
-IPTR LongDesc[] = { SDM_ULONG(0), SDM_END };
-IPTR FloatDesc[] = { SDM_FLOAT(0), SDM_END };
-IPTR DoubleDesc[] = { SDM_DOUBLE(0), SDM_END };
-IPTR StringDesc[] = { SDM_STRING(0), SDM_END };
+IPTR ByteDesc[]   = { sizeof(UBYTE),  SDM_UBYTE(0),  SDM_END };
+IPTR WordDesc[]   = { sizeof(UWORD),  SDM_UWORD(0),  SDM_END };
+IPTR LongDesc[]   = { sizeof(ULONG),  SDM_ULONG(0),  SDM_END };
+IPTR FloatDesc[]  = { sizeof(FLOAT),  SDM_FLOAT(0),  SDM_END };
+IPTR DoubleDesc[] = { sizeof(DOUBLE), SDM_DOUBLE(0), SDM_END };
+IPTR StringDesc[] = { sizeof(STRPTR), SDM_STRING(0), SDM_END };
 
 #define O(x)        offsetof(struct Level1,x)
 IPTR Level1Desc[] =
 {
+    sizeof (struct Level1),
     SDM_UBYTE(O(l1_Byte)),
     SDM_ULONG(O(l1_Long)),
     SDM_END
@@ -349,6 +350,7 @@ IPTR Level1Desc[] =
 #define O(x)        offsetof(struct MainLevel,x)
 IPTR MainDesc[] =
 {
+    sizeof (struct MainLevel),
     SDM_UBYTE(O(ml_Byte)),
     SDM_UBYTE(O(ml_UByte)),
     SDM_UWORD(O(ml_Word)),
