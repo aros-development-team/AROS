@@ -122,4 +122,4 @@ SYSTEM_CALL (difftime)
 SYSTEM_CALL (ftruncate)
 SYSTEM_CALL (umask)
 SYSTEM_CALL (unsetenv)
-
+SYSTEM_CALL (asctime)
