@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Free a BOOPSI Class (obs)
@@ -102,9 +102,10 @@
 
 	FreeMem (classPtr, sizeof (Class));
 
-	return (TRUE);
+	return TRUE;
     }
 
+    return FALSE;
 #else
 
     /* call boopsi.library function */
