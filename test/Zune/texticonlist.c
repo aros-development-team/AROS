@@ -71,6 +71,7 @@ struct MUI_CustomClass *CL_TextIconList, *CL_TextIconListview;
 #define HEADERENTRY_SPACING_RIGHT   	4
 #define HEADERENTRY_EXTRAWIDTH	    	(HEADERENTRY_SPACING_LEFT + HEADERENTRY_SPACING_RIGHT)
 
+#define AUTOSCROLL_MILLIS  	    	20
 
 struct TextIconEntry
 {
@@ -101,6 +102,7 @@ struct TextIconList_DATA
     struct RastPort 	    	temprp;
     struct Rectangle	    	view_rect;
     struct Rectangle	    	header_rect;
+    struct Rectangle	    	lasso_rect;
     struct Rectangle	    	*update_rect1, *update_rect2;
     LONG    	    	    	num_entries;
     LONG    	    	    	num_selected;
@@ -121,8 +123,11 @@ struct TextIconList_DATA
     BOOL    	    	    	show_header;
     BOOL    	    	    	is_setup;
     BOOL    	    	    	is_shown;
+    BOOL    	    	    	lasso_active;
+    BOOL    	    	    	lasso_paint;
     
     struct MUI_EventHandlerNode ehn;    
+    struct MUI_InputHandlerNode thn;
 };
 
 #define UPDATE_SCROLL	    	2
@@ -134,6 +139,7 @@ struct TextIconList_DATA
 #define INPUTSTATE_PAN	    	    1
 #define INPUTSTATE_COL_RESIZE 	    2
 #define INPUTSTATE_COL_HEADER_CLICK 3
+#define INPUTSTATE_LASSO    	    4
 
 #define MUIB_TextIconList   	    (MUIB_AROS | 0x00000700)
 
@@ -146,6 +152,7 @@ struct TextIconList_DATA
 
 #define MUIM_TextIconList_Clear     (MUIB_TextIconList | 0x00000000)
 #define MUIM_TextIconList_Add	    (MUIB_TextIconList | 0x00000001)
+#define MUIM_TextIconList_AutoScroll (MUIB_TextIconList | 0x00000002)
 
 struct MUIP_TextIconList_Clear      {STACKULONG MethodID;};
 struct MUIP_TextIconList_Add        {STACKULONG MethodID; struct FileInfoBlock *fib;};
@@ -592,6 +599,105 @@ static BOOL MustRenderRect(struct TextIconList_DATA *data, struct Rectangle *rec
     return TRUE;
 }
 
+static void GetAbsoluteLassoRect(struct TextIconList_DATA *data, struct Rectangle *lasso_rect)
+{
+    WORD minx = data->lasso_rect.MinX;
+    WORD miny = data->lasso_rect.MinY;
+    WORD maxx = data->lasso_rect.MaxX;
+    WORD maxy = data->lasso_rect.MaxY;
+    
+    if (minx > maxx)
+    {
+    	/* Swap minx, maxx */
+    	minx ^= maxx;
+	maxx ^= minx;
+	minx ^= maxx;
+    }
+    
+    if (miny > maxy)
+    {
+    	/* Swap miny, maxy */
+    	miny ^= maxy;
+	maxy ^= miny;
+	miny ^= maxy;
+    }
+    
+    lasso_rect->MinX = data->view_rect.MinX - data->view_x + minx;
+    lasso_rect->MinY = data->view_rect.MinY - data->view_y + miny;
+    lasso_rect->MaxX = data->view_rect.MinX - data->view_x + maxx;
+    lasso_rect->MaxY = data->view_rect.MinY - data->view_y + maxy;
+}
+
+static void EnableMouseMoveEvents(Object *obj, struct TextIconList_DATA *data)
+{
+    if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
+    {
+	DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+	data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+	DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);			    
+    }
+}
+
+static void DisableMouseMoveEvents(Object *obj, struct TextIconList_DATA *data)
+{
+    if (data->ehn.ehn_Events & IDCMP_MOUSEMOVE)
+    {
+	DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+	data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+	DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);			    
+    }
+}
+
+static void EnableAutoScrollTimer(Object *obj, struct TextIconList_DATA *data)
+{
+    if (!data->thn.ihn_Millis)
+    {
+    	data->thn.ihn_Millis = AUTOSCROLL_MILLIS;
+	DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR)&data->thn);
+    }    
+}
+
+static void DisableAutoScrollTimer(Object *obj, struct TextIconList_DATA *data)
+{
+    if (data->thn.ihn_Millis)
+    {
+    	data->thn.ihn_Millis = 0;
+	DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->thn);
+    }
+}
+
+static BOOL OrRectOutlineRegion(struct Region *reg, struct Rectangle *rect)
+{
+    struct Rectangle r;
+    BOOL result;
+    
+    r.MinX = rect->MinX;
+    r.MinY = rect->MinY;
+    r.MaxX = rect->MaxX;
+    r.MaxY = rect->MinY;
+    result = OrRectRegion(reg, &r);
+
+    r.MinX = rect->MaxX;
+    r.MinY = rect->MinY;
+    r.MaxX = rect->MaxX;
+    r.MaxY = rect->MaxY;
+    result = result && OrRectRegion(reg, &r);
+
+    r.MinX = rect->MinX;
+    r.MinY = rect->MaxY;
+    r.MaxX = rect->MaxX;
+    r.MaxY = rect->MaxY;
+    result = result && OrRectRegion(reg, &r);
+
+    r.MinX = rect->MinX;
+    r.MinY = rect->MinY;
+    r.MaxX = rect->MinX;
+    r.MaxY = rect->MaxY;
+    result = result && OrRectRegion(reg, &r);
+
+    return result;
+}
+
 static void RenderHeaderField(Object *obj, struct TextIconList_DATA *data,
     	    	    	    struct Rectangle *rect, LONG index)
 {
@@ -737,7 +843,7 @@ static void RenderEntryField(Object *obj, struct TextIconList_DATA *data,
     
     selected = (entry && data->column_clickable[index]) ? entry->selected : FALSE;
 
-    SetABPenDrMd(_rp(obj), _pens(obj)[selected ? MPEN_FILL : MPEN_SHINE], 0, JAM1);
+    SetABPenDrMd(_rp(obj), _pens(obj)[selected ? MPEN_FILL : data->lasso_paint ? MPEN_BACKGROUND : MPEN_SHINE], 0, JAM1);
     RectFill(_rp(obj), rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
     
     rect->MinX += ENTRY_SPACING_LEFT;
@@ -834,7 +940,7 @@ static void RenderEntry(Object *obj, struct TextIconList_DATA *data, LONG index)
 	
 	if (MustRenderRect(data, &linerect))
 	{
-    	    SetABPenDrMd(_rp(obj), _pens(obj)[MPEN_SHINE], 0, JAM1);
+    	    SetABPenDrMd(_rp(obj), _pens(obj)[data->lasso_paint ? MPEN_BACKGROUND : MPEN_SHINE], 0, JAM1);
 	    RectFill(_rp(obj), linerect.MinX, linerect.MinY, linerect.MaxX, linerect.MaxY);
 	}
     }
@@ -906,7 +1012,7 @@ static IPTR TextIconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->sort_column = INDEX_NAME;
     data->sort_direction = SORT_DIRECTION_UP;
     data->sort_dirs = SORT_DRAWERS_FIRST;
-    
+        
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
@@ -927,6 +1033,10 @@ static IPTR TextIconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Flags    = 0;
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = cl;
+
+    data->thn.ihn_Flags = MUIIHNF_TIMER;
+    data->thn.ihn_Method = MUIM_TextIconList_AutoScroll;
+    data->thn.ihn_Object = obj;
 
     return (IPTR)obj;
 }
@@ -1118,7 +1228,7 @@ static IPTR TextIconList_Show(struct IClass *cl, Object *obj, struct MUIP_Show *
     SetFont(_rp(obj), _font(obj));
     
     data->is_shown = TRUE;
-    
+
     return rc;
 }
 
@@ -1187,6 +1297,20 @@ static void DrawHeaderLine(Object *obj, struct TextIconList_DATA *data)
 
 	MUI_RemoveClipping(muiRenderInfo(obj),clip);
     }
+}
+
+static void DrawLassoOutline(Object *obj, struct TextIconList_DATA *data)
+{
+    struct Rectangle lasso;
+    
+    GetAbsoluteLassoRect(data, &lasso);
+    
+    SetABPenDrMd(_rp(obj), _pens(obj)[MPEN_SHADOW], 0, JAM1);
+    Move(_rp(obj), lasso.MinX, lasso.MinY);
+    Draw(_rp(obj), lasso.MaxX, lasso.MinY);
+    Draw(_rp(obj), lasso.MaxX, lasso.MaxY);
+    Draw(_rp(obj), lasso.MinX, lasso.MaxY);
+    Draw(_rp(obj), lasso.MinX, lasso.MinY);
 }
 
 /**************************************************************************
@@ -1349,35 +1473,92 @@ static IPTR TextIconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *
 	} /* if (data->update == UPDATE_SCROLL) */
 	else if (data->update == UPDATE_DIRTY_ENTRIES)
 	{
+	    struct Region *clipregion;
 	    LONG first, numvisible, index = 0;
 
 	    data->update = 0;
+
+	    clipregion = NewRectRegion(data->view_rect.MinX,
+	    	    	    	       data->view_rect.MinY,
+				       data->view_rect.MaxX,
+				       data->view_rect.MaxY);
 	    
-	    clip = MUI_AddClipping(muiRenderInfo(obj), data->view_rect.MinX,
-    	    	    	    	    		       data->view_rect.MinY,
-						       data->view_width,
-						       data->view_height);
-
-	    first = FirstVisibleLine(data);
-	    numvisible = NumVisibleLines(data);
-
-	    ForeachNode(&data->entries_list, entry)
+	    if (clipregion)
 	    {
-	    	if (entry->dirty)
+		if (data->lasso_active)
 		{
-		    entry->dirty = FALSE;
-		    
-		    if ((index >= first) && (index < first + numvisible))
+	    	    struct Rectangle lasso_rect;
+
+		    GetAbsoluteLassoRect(data, &lasso_rect);
+	    	    ClearRectRegion(clipregion, &lasso_rect);
+    		}		
+
+		clip = MUI_AddClipRegion(muiRenderInfo(obj), clipregion);
+
+		first = FirstVisibleLine(data);
+		numvisible = NumVisibleLines(data);
+
+		ForeachNode(&data->entries_list, entry)
+		{
+	    	    if (entry->dirty)
 		    {
-		    	RenderEntry(obj, data, index);
+			if ((index >= first) && (index < first + numvisible))
+			{
+		    	    RenderEntry(obj, data, index);
+			}
 		    }
+		    index++;
 		}
-		index++;
+
+    	    	if (data->lasso_active)
+		{
+	    	    struct Rectangle lasso_rect;
+	    	    struct Rectangle vis_lasso_rect;
+
+		    GetAbsoluteLassoRect(data, &lasso_rect);
+
+		    if (AndRectRect(&data->view_rect, &lasso_rect, &vis_lasso_rect))
+		    {
+	    		MUI_RemoveClipRegion(muiRenderInfo(obj),clip);
+
+			clipregion = NewRectRegion(vis_lasso_rect.MinX,
+	    	    	    			   vis_lasso_rect.MinY,
+						   vis_lasso_rect.MaxX,
+						   vis_lasso_rect.MaxY);
+
+    	    		data->lasso_paint = TRUE;
+
+			clip = MUI_AddClipRegion(muiRenderInfo(obj), clipregion);
+
+    	    	    	index = 0;
+			ForeachNode(&data->entries_list, entry)
+			{
+	    		    if (entry->dirty)
+			    {
+				if ((index >= first) && (index < first + numvisible))
+				{
+		    		    RenderEntry(obj, data, index);
+				}
+			    }
+			    index++;
+			}
+			
+			data->lasso_paint = FALSE;
+			
+			DrawLassoOutline(obj, data);
+
+		    } /* if (AndRectRect(&data->view_rect, &lasso_rect, &vis_lasso_rect)) */
+		    
+		} /* if (data->lasso_active) */
+		
+		MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+
+		ForeachNode(&data->entries_list, entry)
+    	    	{
+		    if (entry->dirty) entry->dirty = FALSE;
+		}
+		return 0;
 	    }
-	    
-	    MUI_RemoveClipping(muiRenderInfo(obj),clip);
-	    
-	    return 0;
 	    
 	} /* else if (data->update == UPDATE_DIRTY_ENTRIES) */
 	else if (data->update == UPDATE_HEADER)
@@ -1393,20 +1574,129 @@ static IPTR TextIconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *
 
     if (MustRenderRect(data, &data->view_rect))
     {
-	clip = MUI_AddClipping(muiRenderInfo(obj), data->view_rect.MinX,
-    	    	    	    	    		   data->view_rect.MinY,
-						   data->view_width,
-						   data->view_height);
+    	struct Region *clipregion;
+	
+	clipregion = NewRectRegion(data->view_rect.MinX,
+	    	    	    	   data->view_rect.MinY,
+				   data->view_rect.MaxX,
+				   data->view_rect.MaxY);
+					    
+    	if (clipregion)
+	{
+	    if (data->lasso_active)
+	    {
+	    	struct Rectangle lasso_rect;
 
-	RenderAllEntries(obj, data);
+		GetAbsoluteLassoRect(data, &lasso_rect);
+	    	ClearRectRegion(clipregion, &lasso_rect);
+    	    }		
+		
+	    clip = MUI_AddClipRegion(muiRenderInfo(obj), clipregion);
 
-	MUI_RemoveClipping(muiRenderInfo(obj),clip);
-    }
+	    RenderAllEntries(obj, data);
+
+    	    if (data->lasso_active)
+	    {
+	    	struct Rectangle lasso_rect;
+	    	struct Rectangle vis_lasso_rect;
+		
+		GetAbsoluteLassoRect(data, &lasso_rect);
+		
+		if (AndRectRect(&data->view_rect, &lasso_rect, &vis_lasso_rect))
+		{
+	    	    MUI_RemoveClipRegion(muiRenderInfo(obj),clip);
+
+		    clipregion = NewRectRegion(vis_lasso_rect.MinX,
+	    	    	    		       vis_lasso_rect.MinY,
+					       vis_lasso_rect.MaxX,
+					       vis_lasso_rect.MaxY);
+
+    	    	    data->lasso_paint = TRUE;
+		    
+		    clip = MUI_AddClipRegion(muiRenderInfo(obj), clipregion);
+
+		    RenderAllEntries(obj, data);
+		    
+		    data->lasso_paint = FALSE;
+
+		    DrawLassoOutline(obj, data);
+		    	    	
+		}
+	    }
+	    
+	    MUI_RemoveClipRegion(muiRenderInfo(obj),clip);
+	    
+	} /* if (clipregion) */
+	
+    } /* if (MustRenderRect(data, &data->view_rect)) */
     
     DrawHeaderLine(obj, data);
     
     data->update = 0;
 
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_Draw
+**************************************************************************/
+static IPTR TextIconList_AutoScroll(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct TextIconList_DATA *data = INST_DATA(cl, obj);
+
+    if (data->lasso_active)
+    {
+	LONG new_view_x, new_view_y;
+		    
+	new_view_x = data->view_x;
+	new_view_y  = data->view_y;
+		    
+	if (data->click_x < data->view_rect.MinX)
+	{
+	    new_view_x -= (data->view_rect.MinX - data->click_x) / 4;
+	}
+	else if (data->click_x > data->view_rect.MaxX)
+	{
+	    new_view_x += (data->click_x - data->view_rect.MaxX) / 4;
+	}
+	
+	if (data->click_y < data->view_rect.MinY)
+	{
+	    new_view_y -= (data->view_rect.MinY - data->click_y) / 4;
+	}
+	else if (data->click_y > data->view_rect.MaxY)
+	{
+	    new_view_y += (data->click_y - data->view_rect.MaxY) / 4;
+	}
+	
+	if (new_view_x + data->view_width > data->width)
+	{
+	    new_view_x = data->width - data->view_width;
+	}
+	if (new_view_x < 0) new_view_x = 0;
+
+	if (new_view_y + data->view_height > data->height)
+	{
+	    new_view_y = data->height - data->view_height;
+	}
+	if (new_view_y < 0) new_view_y = 0;
+
+	if ((new_view_x != data->view_x) || (new_view_y != data->view_y))
+	{
+	    data->lasso_rect.MaxX += new_view_x - data->view_x;
+	    data->lasso_rect.MaxY += new_view_y - data->view_y;
+	    
+	    SetAttrs(obj, MUIA_TextIconList_Left, new_view_x,
+			  MUIA_TextIconList_Top, new_view_y,
+			  TAG_DONE);
+	}
+
+    }
+    else
+    {
+    	DisableAutoScrollTimer(obj, data);
+    }
+    
     return 0;
 }
 
@@ -1492,6 +1782,21 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 				    } /* if (data->active_entry != line) */
 				    
 				} /* if (data->column_clickable[col]) */
+				else
+				{
+				    data->lasso_rect.MinX = mx - data->view_rect.MinX + data->view_x;
+				    data->lasso_rect.MinY = my - data->view_rect.MinY + data->view_y;
+				    data->lasso_rect.MaxX = mx - data->view_rect.MinX + data->view_x;
+				    data->lasso_rect.MaxY = my - data->view_rect.MinY + data->view_y;
+				    
+				    data->inputstate = INPUTSTATE_LASSO;
+				    data->lasso_active = TRUE;	
+
+				    data->click_x = mx;
+				    data->click_y = my;
+				    
+				    EnableMouseMoveEvents(obj, data);			    
+				}
 				
 			    } /* if click on entry */
 			    else if ((col = ColumnResizeHandleUnderMouse(data, mx, my)) >= 0)
@@ -1500,12 +1805,7 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 				data->click_column = col;
 				data->click_x = mx - data->column_width[col];
 
-    	    	    		if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
-				{
-			    	    DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-			    	    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-			    	    DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);			    
-				}
+    	    	    	    	EnableMouseMoveEvents(obj, data);
 				
 			    } /* else if click on column header entry resize handle */
 			    else if ((col = ColumnHeaderUnderMouse(data, mx, my)) >= 0)
@@ -1515,12 +1815,7 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 				data->click_x = mx;
 				data->click_y = my;
 
-    	    	    		if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
-				{
-			    	    DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-			    	    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-			    	    DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);			    
-				}
+    	    	    	    	EnableMouseMoveEvents(obj, data);
 
     	    	    	    	data->update = UPDATE_HEADER;
 				MUI_Redraw(obj, MADF_DRAWUPDATE);
@@ -1532,24 +1827,14 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 		    case SELECTUP:
 		    	if (data->inputstate == INPUTSTATE_COL_RESIZE)
 			{
-		    	    if (data->ehn.ehn_Events & IDCMP_MOUSEMOVE)
-			    {
-				DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-				data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
-				DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);			    
-			    }
+			    DisableMouseMoveEvents(obj, data);
 			    
 			    data->inputstate = INPUTSTATE_NONE;
 			}
 			else if (data->inputstate == INPUTSTATE_COL_HEADER_CLICK)
 			{
-		    	    if (data->ehn.ehn_Events & IDCMP_MOUSEMOVE)
-			    {
-				DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-				data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
-				DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);			    
-			    }
-
+			    DisableMouseMoveEvents(obj, data);
+			
 			    data->inputstate = INPUTSTATE_NONE;
 			    
 			    if (ColumnHeaderUnderMouse(data, data->click_x, data->click_y) == data->click_column)
@@ -1582,6 +1867,17 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 			    } /* mouse still over column header */
 			    
 			} /* else if (data->inputstate == INPUTSTATE_COL_HEADER_CLICK) */
+			else if (data->inputstate == INPUTSTATE_LASSO)
+			{
+			    DisableMouseMoveEvents(obj, data);
+			    DisableAutoScrollTimer(obj, data);
+			    
+			    data->inputstate = INPUTSTATE_NONE;
+			    data->lasso_active = FALSE;
+			    
+			    data->update = UPDATE_ALL;
+			    MUI_Redraw(obj, MADF_DRAWUPDATE);
+			}			
 			break;
 		    	
 		    case MIDDLEDOWN:
@@ -1592,12 +1888,7 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 			    data->click_x = mx - data->view_rect.MinX + data->view_x;
 			    data->click_y = my - data->view_rect.MinY + data->view_y;
 
-    	    	    	    if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
-			    {
-			    	DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-			    	data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-			    	DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);			    
-			    }
+    	    	    	    EnableMouseMoveEvents(obj, data);
 
 			}
 		    	break;
@@ -1605,12 +1896,7 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 		    case MIDDLEUP:
 		    	if (data->inputstate == INPUTSTATE_PAN)
 			{
-		    	    if (data->ehn.ehn_Events & IDCMP_MOUSEMOVE)
-			    {
-				DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-				data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
-				DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);			    
-			    }
+			    DisableMouseMoveEvents(obj, data);
 			    
 			    data->inputstate = INPUTSTATE_NONE;
 			}
@@ -1629,13 +1915,13 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 		    
 		    if (new_view_x + data->view_width > data->width)
 		    {
-			    new_view_x = data->width - data->view_width;
+			new_view_x = data->width - data->view_width;
 		    }
 		    if (new_view_x < 0) new_view_x = 0;
 			
 		    if (new_view_y + data->view_height > data->height)
 		    {
-			    new_view_y = data->height - data->view_height;
+			new_view_y = data->height - data->view_height;
 		    }
 		    if (new_view_y < 0) new_view_y = 0;
 
@@ -1704,6 +1990,55 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 			MUI_Redraw(obj, MADF_DRAWUPDATE);
 		    }
 		}
+		else if (data->inputstate == INPUTSTATE_LASSO)
+		{
+		    struct Rectangle 	 old_lasso, new_lasso;
+		    struct Region   	*region;
+		    APTR    	    	 clip;
+		    
+		    data->click_x = mx;
+		    data->click_y = my;
+		    
+		    GetAbsoluteLassoRect(data, &old_lasso);
+		    data->lasso_rect.MaxX = mx - data->view_rect.MinX + data->view_x;
+		    data->lasso_rect.MaxY = my - data->view_rect.MinY + data->view_y;
+		    GetAbsoluteLassoRect(data, &new_lasso);
+		    
+		    region = NewRectRegion(new_lasso.MinX, new_lasso.MinY, new_lasso.MaxX, new_lasso.MaxY);
+    	    	    if (region)
+		    {
+		    	struct Rectangle render_range;
+			
+		    	XorRectRegion(region, &old_lasso);
+			OrRectOutlineRegion(region, &old_lasso);
+			OrRectOutlineRegion(region, &new_lasso);
+			
+			render_range = region->bounds;
+			
+		    	clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
+			
+		    	data->update = UPDATE_ALL;
+			data->update_rect1 = &render_range;
+		    	MUI_Redraw(obj, MADF_DRAWUPDATE);
+			data->update_rect1 = 0;
+			
+			MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+		    }
+		    
+		    if ((mx >= data->view_rect.MinX) &&
+		        (my >= data->view_rect.MinY) &&
+			(mx <= data->view_rect.MaxX) &&
+			(my <= data->view_rect.MaxY))
+		    {
+		    	DisableAutoScrollTimer(obj, data);
+		    }
+		    else
+		    {
+		    	EnableAutoScrollTimer(obj, data);
+		    }
+		    
+		}
+		
 		break;
 		
     	} /* switch (msg->imsg->Class) */
@@ -1847,6 +2182,7 @@ BOOPSI_DISPATCHER(IPTR,TextIconList_Dispatcher, cl, obj, msg)
 //	case MUIM_TextIconList_NextSelected: return TextIconList_NextSelected(cl,obj,(APTR)msg);
 //	case MUIM_TextIconList_UnselectAll: return TextIconList_UnselectAll(cl,obj,(APTR)msg);
 
+    	case MUIM_TextIconList_AutoScroll: return TextIconList_AutoScroll(cl,obj,(APTR)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
