@@ -13,13 +13,17 @@ TESTS		:=
 exec-linux-i386 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
 
 #MM
-exec-freebsd : $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
+exec-freebsd-i386 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
 
 #MM
 setup-exec-linux-i386 :
 	%mkdirs_q $(OBJDIR)
 	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
 
+#MM
+setup-exec-freebsd-i386 :
+	%mkdirs_q $(OBJDIR)
+	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
 
 #MM
 clean ::
