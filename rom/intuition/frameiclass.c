@@ -1,6 +1,12 @@
-/* AROS frameiclass implementation
- * 10/24/96 caldi@usa.nai.net
- */
+/*
+    (C) 1996-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: AROS frameiclass implementation
+    Lang: english
+
+    Original version 10/24/96 by caldi@usa.nai.net
+*/
 
 #include <exec/types.h>
 
@@ -285,11 +291,32 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 	    break;
 
 	case FRAME_ICONDROPBOX:
-	    toffset = 6;
-	    loffset = 10;
-	    /* not supported yet */
-	    break;
+	    toffset = 2;
+	    loffset = 4;
 
+	    /* render outer pen-inverted thick bevel */
+	    DrawFrame(
+		cl,
+		msg->imp_RPort,
+		shine, shadow,
+		left, top,
+		IM(o)->Width, IM(o)->Height,
+		TRUE
+	    );
+
+	    /* render inner thick bevel */
+	    DrawFrame(
+		cl,
+		msg->imp_RPort,
+		shadow, shine,
+		left + loffset, top + toffset,
+		IM(o)->Width - (loffset + loffset), IM(o)->Height - (toffset + toffset),
+		TRUE
+	    );
+
+	    toffset += 2;
+	    loffset += 4;
+	    break;
 	} /* switch */
 
 	if(fid->fid_EdgesOnly == FALSE)
