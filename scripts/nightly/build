@@ -64,7 +64,7 @@ chmod -R o-wx,g+wr Archive/
 find Archive/ -type d | xargs chmod a+s,g+rwx,o+x
 
 #-- Upload (backup and distribution) -----------------------------------------
-if [ "$CFG_FT_ENABLE" = "yes" ]; then
+if [ "$CFG_UPLOAD_ENABLE" = "yes" ]; then
     UPLOAD_START_TIME=$(date -u +"%H:%M")    
     rsync -avz -e "ssh -i $CFG_BS_KEY" Archive/ $CFG_BS_USER@$CFG_BS:$CFG_BS_DIRECTORY
     rsync -avz -e "ssh -i $CFG_DS_KEY" Archive/ $CFG_DS_USER@$CFG_DS:$CFG_DS_DIRECTORY

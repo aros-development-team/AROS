@@ -20,7 +20,7 @@ CFG_MAIL_CC=MUST_BE_SET
 #== File Transfers ===========================================================
 # Whether to upload archives to distribution and backup servers
 # Allowed: yes, no
-CFG_FT_ENABLE=no
+CFG_UPLOAD_ENABLE=no
 
 #-- Distribution Server ------------------------------------------------------
 # Hostname
