@@ -190,12 +190,15 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
     mri->mri_ScreenWidth  = mri->mri_Screen->Width;
     mri->mri_ScreenHeight = mri->mri_Screen->Height;
 
-    /* TODO: set MUIMRI_TRUECOLOR */
-    /* TODO: set MUIMRI_THINFRAMES */
+    if (mri->mri_ScreenWidth / mri->mri_ScreenHeight < 2)
+    {
+	mri->mri_Flags |= MUIMRI_THINFRAMES;
+    }
 
-#if 0
-    mri->mri_FocusPixel = MUI_ObtainPen (mri, &__zprefs.active_object_color, 0);
-#endif
+    if (GetBitMapAttr(mri->mri_Screen->RastPort.BitMap, BMA_DEPTH) >= 15)
+    {
+	mri->mri_Flags |= MUIMRI_TRUECOLOR;
+    }
 
     mri->mri_PensStorage[MPEN_SHINE] = mri->mri_DrawInfo->dri_Pens[SHINEPEN];
     mri->mri_PensStorage[MPEN_BACKGROUND] = mri->mri_DrawInfo->dri_Pens[BACKGROUNDPEN];
