@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  1999/09/20 17:33:09  stegerg
+    GFX_XMAX/GFX_YMAX macro fixed
+
     Revision 1.7  1999/03/18 20:16:11  nlorentz
     Reworked escape sequence parsing. Microemacs does not crash anymore, but it sends some strange undocumented sequences
 
@@ -80,8 +83,8 @@ struct ConsoleBase;
 #define GFX_XMIN(o) (GFX_X((o), CHAR_XMIN(o)))
 #define GFX_YMIN(o) (GFX_Y((o), CHAR_YMIN(o)))
 
-#define GFX_XMAX(o) (GFX_X((o), CHAR_XMAX(o) + 1))
-#define GFX_YMAX(o) (GFX_Y((o), CHAR_YMAX(o) + 1))
+#define GFX_XMAX(o) ((GFX_X((o), CHAR_XMAX(o) + 1)) - 1)
+#define GFX_YMAX(o) ((GFX_Y((o), CHAR_YMAX(o) + 1)) - 1)
 
 
 
