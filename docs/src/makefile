@@ -3,7 +3,8 @@ TOP=../..
 
 include $(TOP)/config/make.cfg
 
-DEST=../html.test/
+DEST=../html/
+#DEST=../html.test/
 JOBDEST=$(DEST)jobserver/
 
 FILES = main.src
@@ -93,9 +94,10 @@ src2html : conv/src2html
 
 $(DEST)index.html : main.src doc_header.html doc_footer.html autodoc.inc \
 	    includes src2html
-	src2html --html --output index.html main.src
-	src2html --html --output index.html main.src
-	src2html --html --output index.html main.src
+	export TOP="$(TOP)" ; \
+	src2html --html --output index.html main.src ; \
+	src2html --html --output index.html main.src ; \
+	src2html --html --output index.html main.src ; \
 	mv index* $(DEST)
 
 jobserver : jobserver-setup \
