@@ -122,7 +122,7 @@ static OOP_Object *nv__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ aHidd_PixFmt_ColorModel,	vHidd_ColorModel_TrueColor }, /* 8 */
 	{ aHidd_PixFmt_Depth,		24	}, /* 9 */
 	{ aHidd_PixFmt_BytesPerPixel,	4	}, /* 10 */
-	{ aHidd_PixFmt_BitsPerPixel,	32	}, /* 11 */
+	{ aHidd_PixFmt_BitsPerPixel,	24	}, /* 11 */
 	{ aHidd_PixFmt_StdPixFmt,	vHidd_StdPixFmt_BGR032 }, /* 12 Native */
 	{ aHidd_PixFmt_BitMapType,	vHidd_BitMapType_Chunky }, /* 15 */
 	{ TAG_DONE, 0UL }
@@ -158,7 +158,7 @@ static OOP_Object *nv__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ aHidd_PixFmt_ColorModel,	vHidd_ColorModel_TrueColor }, /* 8 */
 	{ aHidd_PixFmt_Depth,		15	}, /* 9 */
 	{ aHidd_PixFmt_BytesPerPixel,	2	}, /* 10 */
-	{ aHidd_PixFmt_BitsPerPixel,	16	}, /* 11 */
+	{ aHidd_PixFmt_BitsPerPixel,	15	}, /* 11 */
 	{ aHidd_PixFmt_StdPixFmt,	vHidd_StdPixFmt_RGB15_LE }, /* 12 */
 	{ aHidd_PixFmt_BitMapType,	vHidd_BitMapType_Chunky }, /* 15 */
 	{ TAG_DONE, 0UL }
