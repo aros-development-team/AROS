@@ -63,6 +63,8 @@ VAR UBYTE                       dto_supports_activate_field;
 VAR UBYTE                       dto_supports_next_field;
 VAR UBYTE                       dto_supports_prev_field;
 VAR UBYTE                       dto_supports_retrace;
+VAR UBYTE                       dto_supports_browse_prev;
+VAR UBYTE                       dto_supports_browse_next;
 VAR UBYTE                       dto_supports_search;
 VAR UBYTE                       dto_supports_search_prev;
 VAR UBYTE                       dto_supports_search_next;
