@@ -87,14 +87,12 @@ case "$type" in
 	ARCH="freebsd"
 	KERNEL="i386"
 	COMMON_CFLAGS="-Wall -O2"
-	ILDFLAGS="-nostartfiles -nostdlib -Xlinker -r -Xlinker -n -Xlinker -e -Xlinker _entry"
+	ILDFLAGS="-nostartfiles -nostdlib -Wl,-r,-n,-e,_entry"
 	GUI_BASEDIR="/usr/X11R6"
 	GUI_LIBFLAGS="-lX11"
 	AS="gcc"
 	CC="gcc"
 	COMMON_AFLAGS="-x assembler-with-cpp"
-	SHARED_CFLAGS=""
-	SHARED_AR=""
 	MKDEPEND="makedepend -D__GNUC__ -Di386"
 	;;
 "AmigaOS" )
