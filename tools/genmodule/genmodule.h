@@ -41,7 +41,7 @@ enum optionflags { OPTION_NOAUTOLIB = 1<<BIT_NOAUTOLIB, OPTION_NOEXPUNGE = 1<<BI
 extern int options;
 
 extern char *modulename, *basename, *modulenameupper, *libbase, *libbasetype, 
-            *libbasetypeextern, *datestring, *superclass;
+            *libbasetypeextern, *datestring, *superclass, *sysbase_field, *seglist_field;
 extern int residentpri;
 extern unsigned int majorversion, minorversion, firstlvo;
 extern struct linelist *cdeflines, *cdefprivatelines, *protolines;

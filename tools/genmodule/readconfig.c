@@ -112,7 +112,7 @@ static void readsectionconfig(void)
             {
                 "basename", "libbase", "libbasetype", "libbasetypeextern", 
                 "version", "date", "libcall", "forcebase", "superclass",
-		"residentpri", "options"
+		"residentpri", "options", "sysbase_field", "seglist_field"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -220,6 +220,7 @@ static void readsectionconfig(void)
 		    }
 		}
 		break;
+
 	    case 11: /* options */
 		do {
 		    static const char *optionnames[] =
@@ -259,6 +260,14 @@ static void readsectionconfig(void)
 		    while (isspace(*s)) s++;
 		} while(*s !='\0');
 		break;
+
+	    case 12: /* sysbase_field */
+		sysbase_field = strdup(s);
+		break;
+		
+	    case 13: /* seglist_field */
+		seglist_field = strdup(s);
+		break;
 	    }
 	}
 	else /* Line starts with ## */
@@ -296,8 +305,11 @@ static void readsectionconfig(void)
 	libbase = malloc(len);
 	snprintf(libbase, len, "%sBase", basename);
     }
-    if (libbasetype==NULL)
-	libbasetype = "struct LibHeader";
+    if (sysbase_field != NULL && libbasetype == NULL)
+	exitfileerror(20, "sysbase_field specified when no libbasetype is given\n");
+    if (seglist_field != NULL && libbasetype == NULL)
+	exitfileerror(20, "seglist_field specified when no libbasetype is given\n");
+
     if (libbasetypeextern==NULL)
 	libbasetypeextern = "struct Library";
 }
