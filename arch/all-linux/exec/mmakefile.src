@@ -4,9 +4,9 @@ include $(TOP)/config/make.cfg
 #MM
 kernel-linux-sigcore : $(GENINCDIR)/sigcore.h
 
-$(GENINCDIR)/sigcore.h : sigcore.h.src
+$(GENINCDIR)/sigcore.h : sigcore.h.src mksigcore.sh
 	%mkdirs_q $(GENINCDIR)
-	$(SHELL) ./mksigcore.sh $(TOP)/$(CURDIR) $(GENINCDIR)/sigcore.h
+	CPU=$(AROS_TARGET_CPU) $(SHELL) ./mksigcore.sh $(TOP)/$(CURDIR) $(GENINCDIR)/sigcore.h
 
 USER_INCLUDES := -I$(TOP)/rom/exec -I$(GENINCDIR)
 %build_archspecific \
