@@ -12,7 +12,7 @@
 #include <aros/debug.h>
 #include "dos_intern.h"
 
-#if AROS_MODULES_DEBUG
+#ifdef AROS_MODULES_DEBUG
 #include <exec/nodes.h>
 #include <exec/lists.h>
 #include <exec/memory.h>
@@ -89,7 +89,7 @@ q        IoErr() gives additional information in that case.
 
 	if (segs)
         {
-#if AROS_MODULES_DEBUG
+#ifdef AROS_MODULES_DEBUG
             struct debug_segnode *segnode;
 
             segnode = AllocMem(sizeof(struct debug_segnode), MEMF_ANY);

@@ -58,7 +58,7 @@ extern void Exec_FreeMem();
 
     if (seglist)
     {
-#if AROS_MODULES_DEBUG
+#ifdef AROS_MODULES_DEBUG
         extern struct MinList debug_seglist;
         struct debug_segnode *segnode;
 
