@@ -1,37 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
-    $Log$
-    Revision 1.9  1999/03/19 10:38:08  nlorentz
-    Bugfix (fixes memleak in Open/CloseWindow(): Only create new window->UserPort when window->UserPort == NULL
-
-    Revision 1.8  1998/10/20 16:45:59  hkiel
-    Amiga Research OS
-
-    Revision 1.7  1997/01/27 00:36:40  ldp
-    Polish
-
-    Revision 1.6  1996/12/10 14:00:05  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.5  1996/11/08 11:28:03  aros
-    All OS function use now Amiga types
-
-    Moved intuition-driver protos to intuition_intern.h
-
-    Revision 1.4  1996/10/24 15:51:22  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.3  1996/08/29 13:33:31  digulla
-    Moved common code from driver to Intuition
-    More docs
-
-    Revision 1.2  1996/08/23 17:25:30  digulla
-    Added include intuition/intuition.h to user-docs
-
-    Revision 1.1  1996/08/13 15:37:27  digulla
-    First function for intuition.library
-
 
     Desc:
     Lang: english
@@ -122,12 +91,17 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+    Forbid();
+
     if (!window->IDCMPFlags && flags && !window->UserPort)
     {
 	window->UserPort = CreateMsgPort ();
 
 	if (!window->UserPort)
+	{
+	    Permit();
 	    return FALSE;
+	}
     }
 
     window->IDCMPFlags = flags;
@@ -141,6 +115,9 @@
 	}
     }
 
+    Permit();
+    
     return TRUE;
+    
     AROS_LIBFUNC_EXIT
 } /* ModifyIDCMP */
