@@ -15,7 +15,6 @@ FILES	:= \
     Else \
     EndIf \
     EndSkip \
-    Eval \
     FailAt \
     Fault \
     Filenote \
@@ -94,14 +93,13 @@ USE_AROSLIB := yes
 #MM workbench-c : includes linklibs
 
 %make_prog_setup mmake=workbench-c
-%make_vpath
 
 workbench-c : setup $(EXES)
 
 %make_prog_single dir=$(AROS_C)
 
 $(OBJDIR)/evalParser.tab.c : evalParser.y
-	$(BISON) $< -o $@
+	$(BISON) -o $@ $<
 
 $(OBJDIR)/Eval.o : $(OBJDIR)/evalParser.tab.c Eval.c
 	%compile_q from=Eval.c opt="$(CFLAGS) -I$(OBJDIR)"
