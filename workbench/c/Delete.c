@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Delete CLI Command
-    Lang: English
+    Delete CLI Command.
 */
 
 /*****************************************************************************
@@ -60,10 +59,6 @@
 
     Shows a good usage of the pattern matching capabilities.
 
-    HISTORY
-
-    25.11.2000  SDuvan  --  (Re)Implemented (the old version didn't no much)
-
 ******************************************************************************/
 
 #include <proto/dos.h>
@@ -105,11 +100,8 @@ int main(void)
 {
     struct RDArgs      *rda;
     struct AnchorPath  *ap;
-    IPTR                args[NOOFARGS] = { NULL,
-					   (IPTR)FALSE,
-					   (IPTR)FALSE,
-					   (IPTR)FALSE };
-    int	 retval = RETURN_OK;
+    IPTR                args[NOOFARGS] = { (IPTR) NULL, FALSE, FALSE, FALSE };
+    int	                retval         = RETURN_OK;
 
     ap = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN,
 		  MEMF_ANY | MEMF_CLEAR);
