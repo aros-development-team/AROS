@@ -1,6 +1,4 @@
 # $Id$
-#
-# Makefile for Zune Demos
 
 include $(TOP)/config/make.cfg
 
@@ -12,7 +10,7 @@ FILES := \
     mui_notify2 \
     mui_input1
 
-EXEDIR := $(AROSDIR)/Demos
+EXEDIR := $(AROSDIR)/Demos/Zune
 EXES   := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
 USE_CLIB     := yes
