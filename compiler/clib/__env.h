@@ -20,7 +20,7 @@ typedef struct __env_item
 extern __env_item *__env_list;
 #endif
 
-__env_item *__env_getvar(char *varname, int valuesize);
-void __env_delvar(char *varname);
+__env_item *__env_getvar(const char *varname, int valuesize);
+void __env_delvar(const char *varname);
 
 #endif /* ___ENV_H */

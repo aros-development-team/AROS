@@ -2,8 +2,8 @@
     Copyright 2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc: internal functions for environment variables handling
-    Lang: english
+    Desc: Internal functions for environment variables handling
+    Lang: English
 */
 
 #include <stdlib.h>
@@ -16,7 +16,7 @@
 __env_item *__env_list;
 #endif
 
-static __env_item *__env_newvar(char *name, int valuesize)
+static __env_item *__env_newvar(const char *name, int valuesize)
 {
     __env_item *item;
 
@@ -41,7 +41,7 @@ err1:
     return NULL;
 }
 
-static __env_item ** internal_findvar(register char *name)
+static __env_item **internal_findvar(register const char *name)
 {
    GETUSER;
 
@@ -58,11 +58,12 @@ static __env_item ** internal_findvar(register char *name)
 
 /*
   Allocates space for a variable with name 'name' returning a pointer to it.
-  If a variable with this name already exists then returns a pointer to that variable.
+  If a variable with this name already exists then returns a pointer to that
+  variable.
 
   Returns NULL on error.
 */
-__env_item *__env_getvar(char *name, int valuesize)
+__env_item *__env_getvar(const char *name, int valuesize)
 {
     register __env_item **curr;
 
@@ -89,7 +90,7 @@ __env_item *__env_getvar(char *name, int valuesize)
     return *curr;
 }
 
-void __env_delvar(char *name)
+void __env_delvar(const char *name)
 {
     register __env_item **curr;
 
