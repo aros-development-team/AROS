@@ -62,13 +62,19 @@ AROS_UFH2(struct InputEvent *, CxTree,
     CxMsg *tempMsg, *msg;
     struct Node *node, *succ;
 
-    if(events == NULL)
+    if (events == NULL)
+    {
 	return NULL;
+    }
     
-    if(IsListEmpty(&CxBase->cx_BrokerList))
-	return events;
-
     ObtainSemaphore(&CxBase->cx_SignalSemaphore);
+
+    if (IsListEmpty(&CxBase->cx_BrokerList))
+    {
+	ReleaseSemaphore(&CxBase->cx_SignalSemaphore);
+
+	return events;
+    }
 
     /* Take care of the processed input events */
     ForeachNodeSafe(&CxBase->cx_GeneratedInputEvents, node, succ)
@@ -84,12 +90,10 @@ AROS_UFH2(struct InputEvent *, CxTree,
     NEWLIST(&CxBase->cx_GeneratedInputEvents);
 
     /* Free all the replied messages */
-    while((tempMsg = (CxMsg *)GetMsg(&CxBase->cx_MsgPort)) != NULL)
+    while ((tempMsg = (CxMsg *)GetMsg(&CxBase->cx_MsgPort)) != NULL)
+    {
 	FreeCxStructure(tempMsg, CX_MESSAGE, (struct Library *)CxBase);
-
-    /* Route all messages to the first broker */
-
-    tempMsg = (CxMsg *)CxBase->cx_MessageList.lh_Head;
+    }
 
 #if SUPERDEBUG
     {
@@ -99,13 +103,19 @@ AROS_UFH2(struct InputEvent *, CxTree,
 
 	ForeachNode(&CxBase->cx_BrokerList, node)
 	{
-	    if(node->co_Node.ln_Type == CX_BROKER)
+	    if (CXOBJType(node) == CX_BROKER)
+	    {
 		kprintf("B: %s\n", node->co_Ext.co_BExt->bext_Name);
+	    }
 	    else
+	    {
 		kprintf("Something else\n");
+	    }
 	}
     }
 #endif
+
+    /* Route all messages to the first broker */
 
     co = (CxObj *)GetHead(&CxBase->cx_BrokerList);
 
@@ -113,10 +123,9 @@ AROS_UFH2(struct InputEvent *, CxTree,
     kprintf("Initial broker: %s\n", co->co_Ext.co_BExt->bext_Name);
 #endif
 
-    while(tempMsg != NULL)
+    ForeachNode(&CxBase->cx_MessageList, tempMsg)
     {
 	ROUTECxMsg(tempMsg, co);
-	tempMsg = (CxMsg *)tempMsg->cxm_Message.mn_Node.ln_Succ;
     }
 
     AddIEvents(events); /* Add the new events (incapsulated in commodtity
@@ -126,110 +135,79 @@ AROS_UFH2(struct InputEvent *, CxTree,
 
     /* Process the new events */
 
-    while((msg = (CxMsg *)GetHead(&CxBase->cx_MessageList)) != NULL)
+    while ((msg = (CxMsg *)GetHead(&CxBase->cx_MessageList)) != NULL)
     {
-	//	if(msg->cxm_Data->ie_Class == IECLASS_RAWMOUSE)
-	//	    kprintf("Getting message %p\n", msg);
-
 	co = msg->cxm_Routing;
 
 	// kprintf("Object %p\n", co);
 
-	if(co == NULL)
+	if (co == NULL)
 	{
-	    //  kprintf("Co was NULL, level = %i\n", msg->cxm_Level);
-
-	    if(msg->cxm_Level != 0)
+	    if (msg->cxm_Level != 0)
 	    {
-		//		kprintf("Next level %i\n", msg->cxm_Level-1);
+		// kprintf("Next level %i\n", msg->cxm_Level - 1);
 		
 		msg->cxm_Level--;
 		co = msg->cxm_retObj[msg->cxm_Level];
-		co = (CxObj *)co->co_Node.ln_Succ;
+		co = (CxObj *)GetSucc(&co->co_Node);
 
 		// kprintf("Found return object %p\n", co);
+
+		// if (CXOBJType(co) == CX_BROKER)
+		// {
+		//     kprintf("Returnobj (broker) = %s\n",
+		//	       co->co_Ext.co_BExt->bext_Name);
+		// }
 	    }
 	}
 
-	if(co != NULL)
+	if (co != NULL)
 	{
-	    if(co->co_Node.ln_Succ == NULL)
-	    {
-		// kprintf("The succ was NULL\n");
+	    /* Route the message to the next object */
+	    CxObj *nextObject = (CxObj *)GetSucc(&co->co_Node);
 
-		if(msg->cxm_Level != 0)
-		{
-		    // kprintf("Next level %i\n", msg->cxm_Level-1);
-
-		    msg->cxm_Level--;
-		    co = msg->cxm_retObj[msg->cxm_Level];
-		    co = (CxObj *)co->co_Node.ln_Succ;
-		}		
-		/* Neither successor broker nor return object exists => done */
-		else
-		{
-		    co = NULL;
-		}
-	    }
-	    else
-	    /* Route the message to the next broker */
-	    {
-#if DEBUG
-
-		if(msg->cxm_Data->ie_Class == IECLASS_RAWMOUSE)
-		{
-		    if(co->co_Node.ln_Type == CX_BROKER)
-			kprintf("Broker: %s\n", co->co_Ext.co_BExt->bext_Name);
-
-		    if(co->co_Node.ln_Succ != NULL &&
-		       co->co_Node.ln_Succ->ln_Type == CX_BROKER)
-			kprintf("Routing to next broker %s (this broker=%s) %p\n",
-				((CxObj *)(co->co_Node.ln_Succ))->co_Ext.co_BExt->bext_Name,
-				co->co_Ext.co_BExt->bext_Name,
-				co);
-		}
-#endif
-
-
-		// kprintf ("This: %p, that %p\n", co, co->co_Node.ln_Succ);
-		ROUTECxMsg(msg, (CxObj *)co->co_Node.ln_Succ);
-	    }
+	    ROUTECxMsg(msg, nextObject);
 	}
 
 	/* If there are no more objects that shall process the event, we
 	   link it in to the list of ready input events */
 
-	if(co == NULL)
+	if (co == NULL)
 	{
 	    ProduceEvent(msg, CxBase);
 	    continue;
 	}
-
-	if(!(co->co_Flags & COF_ACTIVE))
+	
+	if (!(co->co_Flags & COF_ACTIVE))
+	{
 	    continue;
+	}
 
-	// kprintf("Active: %i\n", co->co_Node.ln_Type);
+	D(bug("Active object (type %i)\n", CXOBJType(co)));
 
-	switch(co->co_Node.ln_Type)
+	switch (CXOBJType(co))
 	{
 	case CX_INVALID:
 	    break;
 	    
 	case CX_FILTER:
-	    if(msg->cxm_Type == CXM_IEVENT)
+	    if (msg->cxm_Type == CXM_IEVENT)
 	    {
 		// kprintf("Filtering...");
-		if(MatchIX(msg->cxm_Data, co->co_Ext.co_FilterIX) != 0)
+		if (MatchIX(msg->cxm_Data, co->co_Ext.co_FilterIX) != 0)
 		{
 		    DivertCxMsg(msg, co, co);
 		    //  kprintf("matched!");
 		}
 	    }
+
 	    break;
 	    
 	case CX_TYPEFILTER:
-	    if((msg->cxm_Type & co->co_Ext.co_TypeFilter) != 0)
+	    if ((msg->cxm_Type & co->co_Ext.co_TypeFilter) != 0)
+	    {
 		DivertCxMsg(msg, co, co);
+	    }
 	    
 	    break;
 	    
@@ -247,7 +225,7 @@ AROS_UFH2(struct InputEvent *, CxTree,
 	    break;
 	    
 	case CX_BROKER:
-	    // kprintf("Broker diverting message...\n");
+	    D(bug("Broker diverting message...\n"));
 	    DivertCxMsg(msg, co, co);
 	    break;
 	    
@@ -278,7 +256,7 @@ static void ProduceEvent(CxMsg *msg, struct CommoditiesBase *CxBase)
 {
     struct GeneratedInputEvent *temp;
 
-    if((temp = (struct GeneratedInputEvent *)AllocCxStructure(CX_INPUTEVENT, 0,
+    if ((temp = (struct GeneratedInputEvent *)AllocCxStructure(CX_INPUTEVENT, 0,
 	       (struct Library *)CxBase)) != NULL)
     {
         CopyInputEvent(msg->cxm_Data, &temp->ie, CxBase);
@@ -286,7 +264,7 @@ static void ProduceEvent(CxMsg *msg, struct CommoditiesBase *CxBase)
 	/* Put the input event last in the ready list and update bookkeeping */
 	temp->ie.ie_NextEvent = NULL;
 
-	if(CxBase->cx_IEvents != NULL)
+	if (CxBase->cx_IEvents != NULL)
 	{
 	    *(CxBase->cx_EventExtra) = &temp->ie;
 	}
@@ -294,6 +272,7 @@ static void ProduceEvent(CxMsg *msg, struct CommoditiesBase *CxBase)
 	{
 	    CxBase->cx_IEvents = &temp->ie;
 	}
+
 	CxBase->cx_EventExtra = &temp->ie.ie_NextEvent;
 	
 	AddTail((struct List *)&CxBase->cx_GeneratedInputEvents,
@@ -308,14 +287,18 @@ static void SendFunc(CxMsg *msg, CxObj *co, struct CommoditiesBase *CxBase)
 {
     CxMsg  *tempMsg;
     
-    if(co->co_Ext.co_SendExt->sext_MsgPort == NULL)
+    if (co->co_Ext.co_SendExt->sext_MsgPort == NULL)
+    {
 	return;
+    }
     
     tempMsg = (CxMsg *)AllocCxStructure(CX_MESSAGE, CXM_DOUBLE,
 					(struct Library *)CxBase);
     
-    if(tempMsg == NULL) 
+    if (tempMsg == NULL) 
+    {
 	return;
+    }
     
     CopyMem(msg, tempMsg, sizeof(CxMsg));
     
@@ -332,17 +315,20 @@ static void TransFunc(CxMsg *msg, CxObj *co, struct CommoditiesBase *CxBase)
     struct  InputEvent *event;
     CxMsg              *msg2;
     
-    if(co->co_Ext.co_IE != NULL)
+    if (co->co_Ext.co_IE != NULL)
     {
         event = co->co_Ext.co_IE;
 	
-	do {
+	do
+	{
 	    struct InputEvent *saveIE;  /* To save the InputEvent pointer
 					   from being destroyed by CopyMem() */
 	    
-	    if((msg2 = (CxMsg *)AllocCxStructure(CX_MESSAGE, CXM_DOUBLE,
+	    if ((msg2 = (CxMsg *)AllocCxStructure(CX_MESSAGE, CXM_DOUBLE,
 			        (struct Library *)CxBase)) == NULL)
+	    {
 		break;
+	    }
 	    
 	    saveIE = msg2->cxm_Data;
 	    CopyMem(msg, msg2, sizeof(CxMsg));
@@ -353,9 +339,9 @@ static void TransFunc(CxMsg *msg, CxObj *co, struct CommoditiesBase *CxBase)
 	    
 	    AddHead(&CxBase->cx_MessageList, (struct Node *)msg2);
 	    
-	} while((event = event->ie_NextEvent) != NULL);
+	} while ((event = event->ie_NextEvent) != NULL);
     }
-
+    
     DisposeCxMsg(msg);
 }
 
@@ -367,8 +353,10 @@ static void DebugFunc(CxMsg *msg, CxObj *co, struct CommoditiesBase *CxBase)
 	    co, co->co_Ext.co_DebugID, msg->cxm_Routing, msg->cxm_Data,
 	    msg->cxm_Type);
     
-    if(msg->cxm_Type != CXM_IEVENT)
+    if (msg->cxm_Type != CXM_IEVENT)
+    {
 	return;
+    }
     
     kprintf("dump IE: %lx\n"
 	    "\tClass %lx"
@@ -385,32 +373,38 @@ static BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to,
 {
     *to = *from;
     
-    if(from->ie_Class == IECLASS_NEWPOINTERPOS)
+    if (from->ie_Class == IECLASS_NEWPOINTERPOS)
     {
-	switch(from->ie_SubClass)
+	switch (from->ie_SubClass)
 	{
 	case IESUBCLASS_PIXEL :
-	    if((to->ie_EventAddress = AllocVec(sizeof(struct IEPointerPixel),
-					       MEMF_ANY)) == NULL)
+	    if ((to->ie_EventAddress = AllocVec(sizeof(struct IEPointerPixel),
+						MEMF_ANY)) == NULL)
+	    {
 		return FALSE;
+	    }
 	    
 	    *((struct IEPointerPixel *)to->ie_EventAddress) =
 		*((struct IEPointerPixel *)from->ie_EventAddress);
 	    break;
 	    
 	case IESUBCLASS_TABLET :
-	    if((to->ie_EventAddress = AllocVec(sizeof(struct IEPointerTablet),
-					       MEMF_ANY)) == NULL)
+	    if ((to->ie_EventAddress = AllocVec(sizeof(struct IEPointerTablet),
+						MEMF_ANY)) == NULL)
+	    {
 		return FALSE;
+	    }
 	    
 	    *((struct IEPointerTablet *)to->ie_EventAddress) =
 		*((struct IEPointerTablet *)from->ie_EventAddress);
 	    break;
 	    
 	case IESUBCLASS_NEWTABLET :
-	    if((to->ie_EventAddress = AllocVec(sizeof(struct IENewTablet),
-					       MEMF_ANY)) == NULL)
+	    if ((to->ie_EventAddress = AllocVec(sizeof(struct IENewTablet),
+						MEMF_ANY)) == NULL)
+	    {
 		return FALSE;
+	    }
 	    
 	    *((struct IENewTablet *)to->ie_EventAddress) =
 		*((struct IENewTablet *)from->ie_EventAddress);
@@ -420,7 +414,7 @@ static BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to,
 	    break;
 	}
     }
-
+    
     return TRUE;
 }
 
