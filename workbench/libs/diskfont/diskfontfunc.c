@@ -10,6 +10,7 @@
 
 #include <proto/dos.h>
 #include <proto/graphics.h>
+#include <proto/arossupport.h>
 #include <dos/exall.h>
 #include <string.h>
 
@@ -28,7 +29,7 @@
 struct FileEntry
 {
     struct FileEntry 	*Next;
-    STRPTR 		FileName;
+    UBYTE 		FileName[1];
 };	
 
 struct DFHData /*DiskFontHookData */
@@ -63,12 +64,8 @@ STATIC VOID FreeFileList(struct FileEntry *feptr, struct DiskfontBase_intern *Di
 	/* Preserve pointer to next element */
 	nextfeptr = feptr->Next;
 
-	/* Free filename */
-	if (feptr->FileName)
-	    FreeVec(feptr->FileName);
-
 	/* Free FileEntry */
-	FreeMem(feptr, sizeof (struct FileEntry));
+	FreeVec(feptr);
 
 	feptr = nextfeptr;	
     }
@@ -86,82 +83,68 @@ STATIC VOID FreeFileList(struct FileEntry *feptr, struct DiskfontBase_intern *Di
 
 /* Build the list of .font file names using ExAll() */
 STATIC struct FileEntry *GetFileList(BPTR fontslock, struct DiskfontBase_intern *DiskfontBase)
-{
-	
-    struct FileEntry	felisthead = {0, 0},	/* Dummy list head */
-			*feptr,
-			*felist = NULL;
-
-    BOOL success = TRUE;
-
-    struct ExAllControl *eac;
-    struct ExAllData *ead;
-
-    /* Buffer to put ExAll() file in */
-    static UBYTE buffer[4096];
-
+{	
+    struct FileInfoBlock *fib;
+    struct FileEntry 	 *felist = NULL, *prevfe = NULL, *fe;
+    BPTR    	    	 lock;
+    
     D(bug("GetFileList(fontslock=%p)\n", fontslock));
 
-    if ( !(eac = AllocDosObject(DOS_EXALLCONTROL, NULL)) )
-	success = FALSE;
-    else
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (fib)
     {
-	/* Important to clear this field */
-	eac->eac_LastKey = 0;
-
-	feptr = &felisthead;
-
-	while (ExAll(fontslock, (struct ExAllData *)buffer, sizeof (buffer), ED_TYPE, eac) )
+    	if ((lock = DupLock(fontslock)))
 	{
-
-	    /* Get first ExallData element */
-	    ead = (struct ExAllData *)buffer;
-
-	    /* We should continue to ExAll() even if memoryalloc failed */
-	    while (ead && success && eac->eac_Entries != 0)
+	    if (Examine(lock, fib) == DOSTRUE)
 	    {
-		/* Is this a file ? */
-		if (ead->ed_Type < 0)
+	    	while(ExNext(lock, fib))
 		{
-
-		    /* Allocate a list entry */
-		    if ( !( feptr->Next = AllocMem(sizeof (struct FileEntry), MEMF_ANY|MEMF_CLEAR)))
+		    LONG namelen;
+		    
+		    if (fib->fib_DirEntryType >= 0) continue;
+		    
+		    namelen = strlen(fib->fib_FileName) + 1;
+		    
+		    fe = AllocVec(sizeof(struct FileEntry) + namelen, MEMF_ANY);
+		    if (!fe)
 		    {
-		        success = FALSE;
+		    	SetIoErr(ERROR_NO_FREE_STORE);
 			break;
 		    }
-
-		    feptr = feptr->Next;
-
-		    /* Allocate space for filename string */
-		    if ( !(feptr->FileName = AllocVec( strlen(ead->ed_Name) + 1, MEMF_ANY)))
+		    
+		    strcpy(fe->FileName, fib->fib_FileName);
+		    fe->Next = NULL;
+		    
+		    if (prevfe)
 		    {
-		        success = FALSE;
-			break;
+		    	prevfe->Next = fe;
 		    }
-
-		    strcpy(feptr->FileName, ead->ed_Name);
+		    else
+		    {
+		    	felist = fe;
+		    }
+		    
+		    prevfe = fe;
+		    
+		} /* while(ExNext(lock, fib)) */
+		
+		if ((IoErr() != ERROR_NO_MORE_ENTRIES) && (IoErr() != 0))
+		{
+		    if (felist)
+		    {
+		    	FreeFileList(felist, DiskfontBase);
+			felist = NULL;
+		    }
 		}
-		ead = ead->ed_Next;
-
-	    } /* while (ead && success && eac->eac_Entries) */
-
-	} /* While ExAll() */
-
-	/* Skip the dummy filelist head */
-	felist = felisthead.Next;
-
-	/* Was the whole directory scanned ? */
-	if (IoErr() != ERROR_NO_MORE_ENTRIES)
-	    success = FALSE;
-
-	FreeDosObject(DOS_EXALLCONTROL, eac);
-    }
-
-    if (!success) 
-	FreeFileList(felist, DFB(DiskfontBase)); 
-
-
+		
+	    } /* if (Examine(lock, fib) == DOSTRUE) */
+	    UnLock(lock);
+	    
+	} /* if ((lock = DupLock(fontslock))) */
+    	FreeDosObject(DOS_FIB, fib);
+	
+    } /* if (fib) */
+    
     ReturnPtr ("GetFileList", struct FileEntry *, felist);
 }
 
@@ -187,7 +170,6 @@ STATIC BOOL LoadNext(struct DFHData *dfhd, struct DiskfontBase_intern *DiskfontB
         
     curfile = dfhd->CurrentFileEntry;
 
-	
     if (!curfile)
 	ReturnInt ("LoadNext", ULONG, FALSE);
 
@@ -219,9 +201,9 @@ STATIC VOID FreeResources(struct DFHData *dfhd, struct DiskfontBase_intern *Disk
 {
     D(bug("FreeResources(dfhd=%p)\n", dfhd));
 
-    CurrentDir( dfhd->OldDirLock);
-    if ( dfhd->FileList		) FreeFileList	( dfhd->FileList, DFB(DiskfontBase)	);		
-    if ( dfhd->DirLock		) UnLock        ( dfhd->DirLock    			);
+    if ( dfhd->DirLock	) CurrentDir	( dfhd->OldDirLock  	    	    );
+    if ( dfhd->FileList ) FreeFileList	( dfhd->FileList, DFB(DiskfontBase) );		
+    if ( dfhd->DirLock	) UnLock        ( dfhd->DirLock    		    );
     
     FreeMem(dfhd, sizeof (struct DFHData));
   
@@ -404,7 +386,14 @@ AROS_UFH3(IPTR, DiskFontFunc,
 		    MEMF_ANY);
 		if (filename)
 		{
-		    strcpy(filename, FONTSDIR);
+		    if (!(strchr(fhc->fhc_ReqAttr->tta_Name, ':')))
+		    {
+		    	strcpy(filename, FONTSDIR);
+		    }
+		    else
+		    {
+		    	filename[0] = 0;
+		    }
 		    strcat(filename, fhc->fhc_ReqAttr->tta_Name);
 
 
