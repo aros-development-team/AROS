@@ -398,11 +398,11 @@ AROS_UFH2 (void, EasyReqPutChar,
            AROS_UFHA(UBYTE **,buffer,A3)
           )
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     *(*buffer)++=chr;
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /**********************************************************************************************/
@@ -412,14 +412,14 @@ AROS_UFH2 (void, EasyReqCountChar,
            AROS_UFHA(ULONG *,counter,A3)
           )
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     /* shut up the compiler */
     chr = chr;
 
     (*counter)++;
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /**********************************************************************************************/

@@ -16,7 +16,7 @@ AROS_UFH2(void,vfp_hook,
 	  AROS_UFHA(UBYTE,        chr, D0),
 	  AROS_UFHA(struct vfp *, vfp, A3))
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     struct DosLibrary *DOSBase = vfp->DOSBase;
 
@@ -32,7 +32,7 @@ AROS_UFH2(void,vfp_hook,
 	vfp->count++;
     }
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /*****************************************************************************
