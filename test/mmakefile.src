@@ -19,19 +19,19 @@ FILES := amiga2date \
 	matchtest \
 	messagetest \
 	newmatch \
-        keymaptest \
-        layerstest \
-        inquire \
-        mathtest \
-        cctest \
-        clippingtest \
-        helloworld \
-        oopdemo \
-        scrollerwin \
-        serialmousetest \
-        serialtest \
-        unixio \
-        librarytest \
+    keymaptest \
+    layerstest \
+    inquire \
+    mathtest \
+    cctest \
+    clippingtest \
+    helloworld \
+    oopdemo \
+    scrollerwin \
+    serialmousetest \
+    serialtest \
+    unixio \
+    librarytest \
 	partition \
 	scantest \
 	semaphoretest \
@@ -67,7 +67,7 @@ USE_MLIB := yes
 USE_AROSLIB := yes
 USE_COOLIMAGESLIB := yes
 
-#MM test : test-clib
+#MM test : test-clib test-zune
 
 %make_prog_setup mmake=test
 
