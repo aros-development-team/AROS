@@ -296,7 +296,7 @@ int main(int argc, char **argv)
       else
       if (!strcmp(argv[i], "--hostmem"))
       {
-        use_hostmem = TRUE;
+        _use_hostmem = TRUE;
         i++;
       }
       else
