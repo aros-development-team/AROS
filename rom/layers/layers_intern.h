@@ -49,6 +49,13 @@ struct LayerInfo_extra
     UBYTE          lie_pad[4];
 };
 
+/*
+ * These are special types of ResData resources. If layers finds one of
+ * these values in ResData->Size, it performs some special handling to
+ * properly dispose of the allocated Region or BitMap, respectively
+ * (throught DisposeRegion or FreeBitMap). In all other cases,
+ * ResData->Size is an argument for a freemem operation.
+ */
 #define RD_REGION -1
 #define RD_BITMAP -2
 
