@@ -18,11 +18,9 @@ void showText(char *string, ...) {
 
 void showError(ULONG error, ...) {
 char *texts[]={0,
-				"No Memory",
 				"No ioport",
 				"No device",
-				"Wrong dostype for that disk",
-				"Couldnt add disk as dosentry",
+				"Couldn't add disk as dosentry",
 				"Disk is not validated!\n",
 				"Wrong data block %ld",
 				"Wrong checksum on block %ld",
