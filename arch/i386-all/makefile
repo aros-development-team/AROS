@@ -66,5 +66,7 @@ $(OSGENDIR)/%.d: %.c $(MACHINE_H)
 	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 ifneq ("$(TARGET)","clean")
+ifneq ("$(TARGET)","setup")
 include $(DEPS)
+endif
 endif
