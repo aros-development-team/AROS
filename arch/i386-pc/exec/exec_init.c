@@ -430,7 +430,7 @@ void exec_cinit()
      * propertly)
      */
 
-#if 1
+#if 0
     asm("rep\n\tstosl"
         :
         :"eax"(0),              /* Fill with 0 */
