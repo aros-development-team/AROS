@@ -9,8 +9,6 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
-extern void Exec_Switch();
-
 /*****************************************************************************
 
     NAME */
