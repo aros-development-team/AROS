@@ -27,7 +27,7 @@ STRIP  = $(CROSS_COMPILE)strip
 # Change these as required
 OPTIMIZE = -O3
 DEBUG = -g#-ggdb # -g -DDEBUG
-INC = -I include
+INC = -I include -I .
 CFLAGS = -D__AMIGAOS4__ -DNDEBUG -D__USE_INLINE__ -DCoerceMethod=ICoerceMethod -DDoMethod=IDoMethod -DDoMethodA=IDoMethod -DDoSuperMethod=IDoSuperMethod -DDoSuperMethodA=IDoSuperMethodA -Wall -fno-strict-aliasing -c $(OPTIMIZE) $(DEBUG) $(INC)
 
 # Flags passed to gcc during linking
@@ -46,7 +46,64 @@ VERSION = 0
 
 ASRCS= #amiga-mui/hookentry.S amiga-mui/muidispatcherentry.S
 
-CLASSSRCS=\
+CLASSSRCS=aboutmui.c\
+	application.c \
+	area.c \
+	balance.c \
+	bitmap.c \
+	bodychunk.c \
+	boopsi.c \
+	chunkyimage.c \
+	coloradjust.c \
+	colorfield.c \
+	configdata.c \
+	crawling.c \
+	cycle.c \
+	dataspace.c \
+	dirlist.c \
+	family.c \
+	frameadjust.c \
+	framedisplay.c \
+	gauge.c \
+	group.c \
+	iconlist.c \
+	iconlistview.c \
+	image.c \
+	imageadjust.c \
+	imagedisplay.c \
+	knob.c \
+	levelmeter.c \
+	list.c \
+	listview.c \
+	mccprefs.c \
+	menuitem.c \
+	notify.c \
+	numeric.c \
+	numericbutton.c \
+	penadjust.c \
+	pendisplay.c \
+	popasl.c \
+	popframe.c \
+	popimage.c \
+	poplist.c \
+	popobject.c \
+	poppen.c \
+	popscreen.c \
+	popstring.c \
+	prop.c \
+	radio.c \
+	rectangle.c \
+	register.c \
+	scale.c \
+	scrollbar.c \
+	scrollbutton.c \
+	scrollgroup.c \
+	semaphore.c \
+	settings.c \
+	text.c \
+	virtgroup.c \
+	volumelist.c \
+	window.c
 
 BASEARCHSRCS=\
 	bubbleengine.c \
