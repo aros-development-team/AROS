@@ -28,8 +28,6 @@ AC_CANONICAL_HOST
 # useful on some systems.
 
 AC_MSG_CHECKING([for AROS style target])
-AC_CACHE_VAL(aros_cv_target,[aros_cv_target=$target])
-target=`eval echo '$''{'aros_cv_target'}'`
 
 if test "$target" = "NONE" ; then
     target=$host_os-$host_cpu
@@ -563,11 +561,9 @@ fi
 # used if we don't get it correct. The default is to use /usr/include.
 # Which is set in the aros_target_incl_def variable.
 
-AROS_CACHE_CHECK(for the system include path,target_incl,[
 AC_ARG_ENABLE(includes,
 [  --enable-includes=dir   Alternative system include directory],
 [aros_target_incl=$enable_includes], [aros_target_incl=$aros_target_incl_def])
-])
 
 dnl Check if user specified --with-resolution=XRESxYRESxDEPTH
 AC_MSG_CHECKING([for default resolution of WBScreen])
@@ -583,14 +579,6 @@ if test "$resolution" != "none" ; then
     aros_default_wbwidth=`echo $resolution | cut -d'x' -f1`
     aros_default_wbheight=`echo $resolution | cut -d'x' -f2`
     aros_default_wbdepth=`echo $resolution | cut -d'x' -f3`
-else
-    # If "--with-resolution" is not given, check cache...
-    AC_CACHE_VAL(aros_cv_default_wbwidth,aros_cv_default_wbwidth=$aros_default_wbwidth)
-    AC_CACHE_VAL(aros_cv_default_wbheight,aros_cv_default_wbheight=$aros_default_wbheight)
-    AC_CACHE_VAL(aros_cv_default_wbdepth,aros_cv_default_wbdepth=$aros_default_wbdepth)    
-    aros_default_wbwidth=$aros_cv_default_wbwidth
-    aros_default_wbheight=$aros_cv_default_wbheight
-    aros_default_wbdepth=$aros_cv_default_wbdepth    
 fi
 AC_MSG_RESULT("$aros_default_wbwidth x $aros_default_wbheight x $aros_default_wbdepth")
 aros_cv_default_wbwidth=$aros_default_wbwidth
@@ -770,12 +758,33 @@ else
     fi
 fi
 
-if test ! -d bin/${aros_target_arch}-${aros_target_cpu}/AROS/Include/aros ; then
-    ${MKDIR} bin/${aros_target_arch}-${aros_target_cpu}/AROS/Include/aros
+aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
+aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/config"
+aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}/AROS/Include/aros"
+aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/include/aros"
+
+if test ! -d ${aros_inc_dir} ; then
+    ${MKDIR} ${aros_inc_dir}
+fi
+if test ! -d ${aros_geninc_dir} ; then
+    ${MKDIR} ${aros_geninc_dir}
+fi
+if test ! -d ${aros_hostcfg_dir} ; then
+    ${MKDIR} ${aros_hostcfg_dir}
+fi
+if test ! -d ${aros_targetcfg_dir} ; then
+    ${MKDIR} ${aros_targetcfg_dir}
 fi
 
-AC_OUTPUT(Makefile config/config.h config/host.cfg mmake.config
-    make.defaults)
+cp config/config.h.in ${aros_inc_dir}
+cp config/config.h.in ${aros_geninc_dir}
+cp config/host.cfg.in ${aros_hostcfg_dir}
+cp config/target.cfg.in ${aros_targetcfg_dir}
+
+AC_OUTPUT(Makefile ${aros_inc_dir}/config.h ${aros_geninc_dir}/config.h
+	${aros_hostcfg_dir}/host.cfg ${aros_targetcfg_dir}/target.cfg
+	mmake.config make.defaults)
+
 
 dnl This is in order to not defined SHARED_CFLAGS sometimes
 dnl We don't always do aros_shared_ar, aros_shared_cflags
@@ -784,22 +793,7 @@ dnl We don't always do aros_shared_ar, aros_shared_cflags
 aros_shared_ar="$aros_shared_ld $aros_shared_ldflags -o"
 
 if test -n "$aros_shared_cflags" ; then
-    echo "SHARED_CFLAGS := $aros_shared_cflags" >> config/host.cfg
-    echo "SHARED_AR := $aros_shared_ar" >> config/host.cfg
+    echo "SHARED_CFLAGS := $aros_shared_cflags" >> ${aros_hostcfg_dir}/host.cfg
+    echo "SHARED_AR := $aros_shared_ar" >> ${aros_hostcfg_dir}/host.cfg
 fi
 
-# Sometimes, configure will not create config/config.h; in that case,
-# assume that it has not changed.
-if test -f config/config.h ; then
-    out=bin/$aros_target_arch-$aros_target_cpu/AROS/Include/aros/config.h
-    if cmp -s "$out" "config/config.h"; then
-        echo "config/config.h is unchanged."
-        rm $out
-    else
-        echo "Replacing $out by config/config.h"
-        if test -f $out ; then
-	    mv $out ${out}.bak
-        fi
-        mv config/config.h $out
-    fi
-fi

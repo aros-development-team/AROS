@@ -390,11 +390,17 @@ char *
 getvar (Project * prj, const char * varname)
 {
     static char buffer[256];
+    char *env_val;
     Var * var = FindNode (&prj->vars, varname);
 
     if (var)
 	return var->value;
 
+    env_val = getenv(varname);
+    if(env_val)
+    {
+	return env_val;
+    }
     sprintf (buffer, "?$(%s)", varname);
     return buffer;
 }
