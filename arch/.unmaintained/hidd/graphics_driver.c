@@ -137,7 +137,6 @@ struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * G
 
 	    /* We can use this rastport. Allocate driverdata */
     	    dd = AllocMem (sizeof(struct gfx_driverdata), MEMF_CLEAR);
-	    if (!dd) bug("********* Init Driver Data Allocmem faaiiiiiiiiiiiiiiiiiiiiiiiled!\n");
     	    if (dd)
     	    {
 	        struct shared_driverdata *sdd;
@@ -161,9 +160,9 @@ struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * G
     		    dd->dd_RastPort = rp;
     		    SetDriverData(rp, dd);
     		    rp->Flags |= RPF_DRIVER_INITED;
-		    bug(";;;;;;;;;;;;;;;;;; GC %x\n",rp->BitMap);
+
 		    ReturnPtr("InitDriverData", struct gfx_driverdata *, dd);
-	        } bug(";;;;;;;;;;;;;;;;;; no GC %x\n",rp->BitMap);
+	        }
 		
 		FreeMem(dd, sizeof (struct gfx_driverdata));
 	
@@ -240,7 +239,6 @@ BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 	}
     }
     
-    bug("======== correctdriverdata rp = %x dd = %x  RC = %ld\n",rp,GetDriverData(rp),retval);
     return retval;
 }
 
