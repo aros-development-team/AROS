@@ -1,18 +1,18 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1998-99 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Get the SoftStyle bits of the current font
-    Lang: english
+    Desc: Graphics function AskSoftStyle()
+    Lang: English
 */
-#include "graphics_intern.h"
 
 /*****************************************************************************
 
     NAME */
-	#include <clib/graphics_protos.h>
+#include <graphics/rastport.h>
+#include <proto/graphics.h>
 
-	AROS_LH1(ULONG, AskSoftStyle,
+	AROS_LH1I(ULONG, AskSoftStyle,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A1),
@@ -21,15 +21,17 @@
 	struct GfxBase *, GfxBase, 14, Graphics)
 
 /*  FUNCTION
-	Returns the style bits of the current font which are not instrinsic
-	to the font and therefore valid to be set with SetSoftStyle().
+
+    Query algorithmically generated style attributes. These are the bits
+    valid to set via SetSoftStyle().
 
     INPUTS
-	rp - The RastPort from which the font's SoftStyle bits will be extracted
+
+    pr   --  pointer to rastport
 
     RESULT
-	The bits of the style which are algorithmically generated.
-	Bits which are unsupported by the font are also set.
+
+    Algorithmically generated style bits (bits not defined are also set).
 
     NOTES
 
@@ -38,22 +40,26 @@
     BUGS
 
     SEE ALSO
-	SetSoftStyle()
+
+    SetSoftStyle(), graphics/text.h
 
     INTERNALS
 
     HISTORY
 
+    24.7.98  SDuvan  implemented
+
 *****************************************************************************/
+
+
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
-
-
-#warning TODO: Write graphics/AskSoftStyle()
-    aros_print_not_implemented ("AskSoftStyle");
-
-    return 0L;
-
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *, GfxBase)
+      
+    if(rp->Font == NULL)
+	return 0;
+    
+    return ~rp->Font->tf_Style;
+    
     AROS_LIBFUNC_EXIT
 } /* AskSoftStyle */
