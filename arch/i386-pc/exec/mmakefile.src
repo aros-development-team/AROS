@@ -16,7 +16,7 @@ FILES		:= \
 	permit wait remtask settaskpri signal setexcept superstate userstate
 	
 COREFILES	:= \
-	core corelow traps execstubs getcpu screen hidds serialrawio
+	core corelow traps execstubs getcpu screen serialrawio
 
 REPLFILES	:= \
 	exec_init execfunctions prepareexecbase
