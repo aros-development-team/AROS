@@ -158,6 +158,7 @@ SHARED	:= \
 	fsetpos \
 	fstat \
 	ftell \
+    ftime \
 	ftruncate \
 	fwrite \
 	gcvt \
