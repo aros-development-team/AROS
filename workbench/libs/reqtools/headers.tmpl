@@ -11,6 +11,9 @@ extern struct ReqToolsBase * ReqToolsBase;
 #   include <libraries/reqtools.h>
 #endif
 
+struct PWCallBackArgs;
+typedef char * (*PWCALLBACKFUNPTR) (long, long, struct PWCallBackArgs *);
+
 /* Prototypes for stubs in reqtoolsstubs.lib */
 
 APTR rtAllocRequest (ULONG type, Tag tag1, ...);
