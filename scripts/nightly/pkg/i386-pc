@@ -11,7 +11,7 @@ copy    $SOURCE_AROS    $BUILD_BASE/AROS
 copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
-execute ./configure --target=pc-i386
+execute ./configure --target=pc-i386 --enable-build-type=nightly
 make
 
 PACKAGE=$BASENAME-i386-pc-boot-floppy
