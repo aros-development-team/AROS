@@ -10,7 +10,7 @@
 #include <exec/execbase.h>
 
 #include <stdlib.h>
-#include <sys/signal.h>
+#include <signal.h>
 
 void idleTask(struct ExecBase *sysBase)
 {

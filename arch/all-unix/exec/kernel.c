@@ -17,7 +17,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <sys/signal.h>
+#include <signal.h>
 #define timeval sys_timeval
 #include <sys/time.h>
 #undef timeval
@@ -212,8 +212,8 @@ void InitCore(void)
     /* We only want signal that we can handle at the moment */
     sigfillset(&sa.sa_mask);
     sigfillset(&sig_int_mask);
-#ifdef __linux__
     sa.sa_flags = SA_RESTART;
+#ifdef __linux__
     sa.sa_restorer = NULL;
 #endif
 
