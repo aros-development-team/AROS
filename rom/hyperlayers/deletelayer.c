@@ -12,6 +12,8 @@
 #include <proto/graphics.h>
 #include <graphics/layers.h>
 #include <graphics/regions.h>
+#define DEBUG 0
+#include <aros/debug.h>
 #include "layers_intern.h"
 #include "basicfuncs.h"
 
@@ -70,9 +72,7 @@
   
   if (l != GetFirstFamilyMember(l))
   {
-    kprintf("%s: There are still children around! Cannot destroy layer %p\n",
-            __FUNCTION__,
-            l);
+    bug("[Layers] DeleteLayer: There are still children around! Cannot destroy layer %p\n",l);
     UnlockLayers(l->LayerInfo);
     return FALSE;
   }
@@ -126,13 +126,13 @@
 
     if (!IS_EMPTYREGION(l->shape))
     {
-kprintf("lparent: %p, l->parent: %p\n",lparent,l->parent);
+	D(bug("[Layers] DeleteLayer: lparent: %p, l->parent: %p\n",lparent,l->parent));
       if (lparent && 
           (IS_SIMPLEREFRESH(lparent) || IS_ROOTLAYER(lparent)))
         _BackFillRegion(lparent, l->shape, FALSE, LayersBase);
     }
     else
-      kprintf("NOTHING TO CLEAR!\n");
+      D(bug("[Layers] DeleteLayer: NOTHING TO CLEAR!\n"));
   }
   
   
