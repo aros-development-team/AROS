@@ -2,6 +2,5 @@
 *.bak
 *.o
 mmakefile
-BitMapNewDispose
-GCNewDispose
-GCReadWritePixelDirect
+gfxhiddtool.a
+
