@@ -6,6 +6,7 @@ USER_INCLUDES := -I.
 LIBNAME  := boopsi
 ULIBNAME := BOOPSI
 
+OSMODFILE := boopsi.library
 FILES := rootclass icclass
 FUNCTIONS := addclass disposeobject donotify findclass freeclass freeicdata \
 	     getattr makeclass newobjecta nextobject removeclass setattrsa
@@ -21,8 +22,11 @@ EXTRA_DEPLIBS :=
 kernel-boopsi :
 	@$(NOP)
 
-#MM kernel-boopsi-linklib : setup
+#MM kernel-boopsi-linklib : setup includes kernel-boopsi-$(ARCH)-$(CPU)
 kernel-boopsi-linklib : show-flags $(LIB)
+
+#MM kernel-boopsi-module : setup includes kernel-boopsi-$(ARCH)-$(CPU)
+kernel-boopsi-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
 
 #MM setup
 #MM clean
