@@ -2,7 +2,7 @@
 #define _STDIO_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI-C header file stdio.h
@@ -113,7 +113,7 @@ extern int __vcscan (void * data, int (*getc)(void *),
 #define putc fputc
 #define getc fgetc
 #define getchar()   getc(stdin)
-#define putchar(c)  putc(c,stdin)
+#define putchar(c)  putc(c,stdout)
 #define gets(s)     fgets(s, BUFSIZ, stdin)
 
 #endif /* _STDIO_H */
