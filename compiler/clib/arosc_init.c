@@ -69,7 +69,7 @@ const APTR inittabl[4]=
 };
 
 DECLARESET(CTORS);
-DECLARESET(CTORS);
+DECLARESET(DTORS);
 
 AROS_UFH3(struct aroscbase *, AROS_SLIB_ENTRY(init,arosc),
  AROS_UFHA(struct aroscbase *, aroscbase, D0),
@@ -215,4 +215,4 @@ int arosc_internalexit(void)
 
 
 DEFINESET(CTORS);
-DEFINESET(CTORS);
+DEFINESET(DTORS);
