@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Dir CLI command
-    Lang: English
+    Dir CLI command.
 */
 
 #define  DEBUG  1
@@ -79,12 +78,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-
-    XY.11.2000  SDuvan  added pattern matching support and support for
-                        FILES/S, DIRS/S and OPT/K and some support for
-			INTER/S. Complete interactive support is still missing.
 
 ******************************************************************************/
 
@@ -262,12 +255,15 @@ enum
 int main(int argc, char **argv)
 {
     struct RDArgs *rda;
-    IPTR           args[] = { NULL,
-			      NULL,
-			      (IPTR)FALSE,
-			      (IPTR)FALSE,
-			      (IPTR)FALSE,
-                              (IPTR)FALSE };
+    IPTR           args[] =
+    {
+        (IPTR) NULL,
+	    (IPTR) NULL,
+			   FALSE,
+			   FALSE,
+			   FALSE,
+               FALSE
+    };
 
     LONG  error = RETURN_FAIL;
 
@@ -285,7 +281,7 @@ int main(int argc, char **argv)
 	/* Convert the OPT arguments (if any) into the regular switches */
 	if (opt != NULL)
 	{
-	    while (*opt != NULL)
+	    while (*opt != (IPTR) NULL)
 	    {
 		switch (ToUpper(*opt))
 		{
@@ -563,7 +559,7 @@ static int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
 	    break;
 	}
 	
-	if(eac->eac_Entries != NULL)
+	if(eac->eac_Entries != 0)
 	{
 	    do
 	    {
