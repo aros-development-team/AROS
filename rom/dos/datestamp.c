@@ -67,8 +67,6 @@
 
     gettimeofday (&stv, NULL);
 
-    stv.tv_sec =
-
     date->ds_Days = stv.tv_sec / SECONDS_PER_DAY - AMIGA_UNIX_OFFSET;
     stv.tv_sec %= SECONDS_PER_DAY;
     date->ds_Minute = stv.tv_sec / SECONDS_PER_MINUTE;
