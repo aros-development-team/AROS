@@ -166,6 +166,10 @@ enum {
     aoHidd_BitMap_GC,           /* [ISG]  bitmaps GC                       */
     aoHidd_BitMap_ColorExpansionMode,	/* [ISG] Mode for color expansion operations */
     
+    
+    aoHidd_BitMap_Friend,	/* [I..] Friend bitmap. The bitmap will be allocated so that it
+    				   is optimized for blitting to this bitmap */
+    
     num_Hidd_BitMap_Attrs
 };    
 
@@ -195,6 +199,8 @@ enum {
 #define aHidd_BitMap_PlaneMask   (HiddBitMapAttrBase + aoHidd_BitMap_PlaneMask)
 #define aHidd_BitMap_GC		 (HiddBitMapAttrBase + aoHidd_BitMap_GC)
 #define aHidd_BitMap_ColorExpansionMode	 (HiddBitMapAttrBase + aoHidd_BitMap_ColorExpansionMode)
+
+#define aHidd_BitMap_Friend		 (HiddBitMapAttrBase + aoHidd_BitMap_Friend)
 
 
 
