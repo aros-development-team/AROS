@@ -59,7 +59,7 @@
 
     if (region->RectPoolList)
     {
-        while ((Pool = RemHead(region->RectPoolList)))
+        while ((Pool = (struct RegionRectanglePool *)RemHead((struct List *)region->RectPoolList)))
         {
 
             ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
