@@ -137,21 +137,45 @@ void main(void)
 			End,
 		    End,
 
-		Child, RectangleObject,
-		    MUIA_VertWeight,0, /* Seems to be not supported properly as orginal MUI doesn't allow to alter the height of the window */
-		    MUIA_Rectangle_HBar, TRUE,
-		    MUIA_Rectangle_BarTitle,"Enter a string",
-		    End,
+		Child, HGroup,
+		    Child, VGroup,
+			Child, RectangleObject,
+			    MUIA_VertWeight,0, /* Seems to be not supported properly as orginal MUI doesn't allow to alter the height of the window */
+			    MUIA_Rectangle_HBar, TRUE,
+			    MUIA_Rectangle_BarTitle,"Enter a string",
+			    End,
 
-		Child, StringObject,
-		    StringFrame,
-		    MUIA_CycleChain,1,
-		    MUIA_String_AdvanceOnCR, TRUE,
-		    End,
+			Child, StringObject,
+			    StringFrame,
+			    MUIA_CycleChain,1,
+			    MUIA_String_AdvanceOnCR, TRUE,
+			    End,
 
-    	    	Child, SliderObject,
-    	    	    MUIA_Group_Horiz, TRUE,
-    	    	    MUIA_CycleChain,1,
+	    	    	Child, SliderObject,
+    		    	    MUIA_Group_Horiz, TRUE,
+    	    		    MUIA_CycleChain,1,
+			    End,
+			End,
+
+		    Child, wheel = BoopsiObject,  /* MUI and Boopsi tags mixed */
+		        GroupFrame,
+		        MUIA_Boopsi_ClassID  , "colorwheel.gadget",
+		        MUIA_Boopsi_MinWidth , 30, /* boopsi objects don't know */
+		        MUIA_Boopsi_MinHeight, 30, /* their sizes, so we help   */
+		        MUIA_Boopsi_Remember , WHEEL_Saturation, /* keep important values */
+		        MUIA_Boopsi_Remember , WHEEL_Hue,        /* during window resize  */
+		        MUIA_Boopsi_TagScreen, WHEEL_Screen, /* this magic fills in */
+		        WHEEL_Screen         , NULL,         /* the screen pointer  */
+		        GA_Left     , 0,
+		        GA_Top      , 0, /* MUI will automatically     */
+		        GA_Width    , 0, /* fill in the correct values */
+		        GA_Height   , 0,
+		        ICA_TARGET  , ICTARGET_IDCMP, /* needed for notification */
+		        WHEEL_Saturation, 0, /* start in the center */
+		        MUIA_FillArea, TRUE, /* use this because it defaults to FALSE 
+					     for boopsi gadgets but the colorwheel
+					     doesnt bother about redrawing its backgorund */
+		        End,
 		    End,
 
     	    	Child, HGroup,
@@ -166,26 +190,6 @@ void main(void)
 			MUIA_Text_Contents, "Quit",
 			End,
     	    	    End,
-
-		Child, wheel = BoopsiObject,  /* MUI and Boopsi tags mixed */
-		    GroupFrame,
-		    MUIA_Boopsi_ClassID  , "colorwheel.gadget",
-		    MUIA_Boopsi_MinWidth , 30, /* boopsi objects don't know */
-		    MUIA_Boopsi_MinHeight, 30, /* their sizes, so we help   */
-		    MUIA_Boopsi_Remember , WHEEL_Saturation, /* keep important values */
-		    MUIA_Boopsi_Remember , WHEEL_Hue,        /* during window resize  */
-		    MUIA_Boopsi_TagScreen, WHEEL_Screen, /* this magic fills in */
-		    WHEEL_Screen         , NULL,         /* the screen pointer  */
-		    GA_Left     , 0,
-		    GA_Top      , 0, /* MUI will automatically     */
-		    GA_Width    , 0, /* fill in the correct values */
-		    GA_Height   , 0,
-		    ICA_TARGET  , ICTARGET_IDCMP, /* needed for notification */
-		    WHEEL_Saturation, 0, /* start in the center */
-		    MUIA_FillArea, TRUE, /* use this because it defaults to FALSE 
-					     for boopsi gadgets but the colorwheel
-					     doesnt bother about redrawing its backgorund */
-		    End,
     	        End,
     	    End,
     	SubWindow, second_wnd = WindowObject,
