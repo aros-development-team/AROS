@@ -9,33 +9,40 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 
-#undef DEBUG
-#define DEBUG 1
-#include <aros/debug.h>
+#include "compilerspecific.h"
+#include "debug.h"
 
 /**************************************************************************************************/
 
-struct IClass 		*dt_class;
+struct IClass           *dt_class;
 
-struct ExecBase 	*SysBase;
-struct IntuitionBase 	*IntuitionBase;
-struct GfxBase	 	*GfxBase;
+struct ExecBase         *SysBase;
+struct IntuitionBase    *IntuitionBase;
+struct GfxBase          *GfxBase;
 #ifdef _AROS
-struct UtilityBase	*UtilityBase;
+struct UtilityBase      *UtilityBase;
 #else
-struct Library		*UtilityBase;
+struct Library          *UtilityBase;
 #endif
-struct DosLibrary 	*DOSBase;
-struct Library 		*DataTypesBase;
-struct Library 		*IFFParseBase;
-struct Library		*TextBase;
+struct DosLibrary       *DOSBase;
+struct Library          *DataTypesBase;
+struct Library          *IFFParseBase;
+struct Library          *TextBase;
 
 /* inside binaryclass.c */
 struct IClass *DT_MakeClass(struct Library *binarybase);
 
+#ifdef _AROS
+#undef  register
+#define register
+
+#undef __a6
+#define __a6
+#endif
+
 /**************************************************************************************************/
 
-int __UserLibInit(struct Library *libbase )
+ASM SAVEDS int __UserLibInit( register __a6 struct Library *libbase )
 {
 #ifndef _AROS
     SysBase = *(struct ExecBase**)4;
@@ -65,7 +72,7 @@ int __UserLibInit(struct Library *libbase )
 				{
 				    AddClass(dt_class);
 
-   				    D(bug("binary.datatype/__UserLibInit: Returning success\n"));
+				    D(bug("binary.datatype/__UserLibInit: Returning success\n"));
 
 				    return 0;
 				}
@@ -84,7 +91,7 @@ int __UserLibInit(struct Library *libbase )
 
 /**************************************************************************************************/
 
-void __UserLibCleanup(struct Library *libbase )
+ASM SAVEDS void __UserLibCleanup( register __a6 struct Library *libbase )
 {
     D(bug("binary.datatype/__UserLibCleanup\n"));
 
@@ -113,7 +120,7 @@ void __UserLibCleanup(struct Library *libbase )
 
 /**************************************************************************************************/
 
-struct IClass *ObtainEngine(void)
+SAVEDS STDARGS struct IClass *ObtainEngine(void)
 {
     D(bug("binary.datatype/ObtainEngine: returning %x\n", dt_class));
 
