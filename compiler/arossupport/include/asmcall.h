@@ -84,6 +84,11 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1)\
     )
+#define AROS_UFH2S(t,n,a1,a2) \
+    __AROS_UFH_PREFIX static t n (\
+    __AROS_UFHA(a1),\
+    __AROS_UFHA(a2)\
+    )
 #define AROS_UFH2(t,n,a1,a2) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\
