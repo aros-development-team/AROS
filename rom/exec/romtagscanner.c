@@ -60,7 +60,7 @@ ULONG **AROS_SLIB_ENTRY(RomTagScanner,Exec)
     NEWLIST(&rtList);
 
     /* Look in whole kernel for resident modules */
-    while (*ranges != -1)
+    while (*ranges != (UWORD *)~0)
     {
 	ptr = *ranges++;
 	end = *ranges++;
