@@ -147,7 +147,16 @@ static ULONG Prop_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     struct MUI_PropData *data = INST_DATA(cl, obj);
     switch (msg->opg_AttrID)
     {
-    	case    MUIA_Prop_First: STORE = data->first; return 1;
+    	case    MUIA_Prop_First:
+		{
+		    if (data->prop_object)
+		    {
+			/* So we can get a more current value */
+		        GetAttr(PGA_Top,data->prop_object,&data->first);
+		    }
+		    STORE = data->first;
+		    return 1;
+		}
     	case    MUIA_Prop_Entries: STORE = data->entries; return 1;
     	case    MUIA_Prop_Visible: STORE = data->visible; return 1;
     	default:
