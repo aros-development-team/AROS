@@ -18,7 +18,9 @@
 #ifndef EXEC_PORTS_H
 #   include <exec/ports.h>
 #endif
-
+#ifndef UTILITY_TAGITEM_H
+#   include <utility/tagitem.h>
+#endif
 
 /* You must use Exec functions to modify task structure fields. */
 struct Task
@@ -151,5 +153,18 @@ struct ETask
 #define CHILD_NOTFOUND 2 /* Child not found */
 #define CHILD_EXITED   3 /* Child has exited */
 #define CHILD_ACTIVE   4 /* Child is currently active and running */
+
+/* Tags for NewAddTask() */
+
+#define TASKTAG_Dummy	(TAG_USER + 0x100000)
+#define TASKTAG_ARG1	(TASKTAG_Dummy + 16)
+#define TASKTAG_ARG2	(TASKTAG_Dummy + 17)
+#define TASKTAG_ARG3	(TASKTAG_Dummy + 18)
+#define TASKTAG_ARG4	(TASKTAG_Dummy + 19)
+#define TASKTAG_ARG5	(TASKTAG_Dummy + 20)
+#define TASKTAG_ARG6	(TASKTAG_Dummy + 21)
+#define TASKTAG_ARG7	(TASKTAG_Dummy + 22)
+#define TASKTAG_ARG8	(TASKTAG_Dummy + 23)
+
 
 #endif /* EXEC_TASKS_H */
