@@ -69,6 +69,7 @@
 #include <proto/locale.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #define  DEBUG 0
 #include <aros/debug.h>
@@ -195,7 +196,7 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
 
     memset(cs, 0, sizeof(CFState));
 
-    LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40L);
+    LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40);
 
     if (LocaleBase != NULL)
     {
@@ -264,7 +265,8 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
     
     cfInfo.ci_thisWindow = IntuitionBase->ActiveWindow;
     
-    inputIO = CreateIORequest(cs->cs_msgPort, sizeof(struct IOStdReq));
+    inputIO = (struct IOStdReq *)CreateIORequest(cs->cs_msgPort,
+						 sizeof(struct IOStdReq));
 
     if (inputIO == NULL)
     {
@@ -273,10 +275,10 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
 	return FALSE;
     }
 
-    if ((OpenDevice("input.device", 0, inputIO, 0)) != 0)
+    if ((OpenDevice("input.device", 0, (struct IORequest *)inputIO, 0)) != 0)
     {
 	printf("%s %s %i\n", getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), 
-	       "input.device", 0L);
+	       "input.device", 0);
 
 	return FALSE;
     }
@@ -385,8 +387,8 @@ static void freeResources(CFState *cs)
 
     if (inputIO != NULL)
     {
-	CloseDevice(inputIO);
-	DeleteIORequest(inputIO);
+	CloseDevice((struct IORequest *)inputIO);
+	DeleteIORequest((struct IORequest *)inputIO);
     }
 
     if (LocaleBase != NULL)
