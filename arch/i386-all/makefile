@@ -3,8 +3,8 @@ TOP=../..
 
 include $(TOP)/config/make.cfg
 
-SPECIAL_CFLAGS = -I/usr/include -I$(TOP)/exec
-CLIBDIR = $(GENDIR)/clib
+SPECIAL_CFLAGS =$(SHARED_CFLAGS) -I/usr/include -I$(TOP)/exec
+CLIBDIR = $(GENDIR)/compiler/clib
 CFLAGS2 = $(SHARED_CFLAGS) $(CFLAGS)
 
 MACHINE_H = $(INCDIR)/aros/machine.h
@@ -42,9 +42,10 @@ all: setup $(MACHINE_H) machine.i \
 	$(foreach f,$(CLIBFILES),$(CLIBDIR)/$(f).o)
 
 setup :
+	@for dir in $(OSGENDIR) $(CLIBDIR) ; do \
+	    if [ ! -d $$dir ]; then $(MKDIR) $$dir ; else true ; fi ; \
+	done
 	@echo "CFLAGS=$(CFLAGS)"
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
-	@if [ ! -d $(CLIBDIR) ]; then $(MKDIR) $(CLIBDIR) ; else true ; fi
 
 $(MACHINE_H): machine.h
 	cp $< $@
@@ -53,41 +54,45 @@ clean:
 	$(RM) $(MACHINE_H) machine.i geninc
 
 machine.i: geninc.c
-	@echo "Creating gening..."
+	@echo "Creating geninc..."
 	@$(CC) $(CFLAGS) -o geninc $<
 	./geninc > machine.i
 
 $(CLIBDIR)/%.o: %.s machine.i
-	@echo "Assembling $(CURDIR)/$<..."
+	@$(ECHO) "Assembling $(CURDIR)/$<..."
 	@$(AS) $(AFLAGS) -c $< -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OSGENDIR)/%.o: %.s machine.i
-	@echo "Assembling $(CURDIR)/$<..."
+	@$(ECHO) "Assembling $(CURDIR)/$<..."
 	@$(AS) $(AFLAGS) -c $< -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OSGENDIR)/%.o: %.c
-	@echo "Compiling $(CURDIR)/$<..."
-	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(CC) $(CFLAGS2) -c $< -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OSGENDIR)/%.d: %.c $(MACHINE_H)
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	@echo "Makedepend $(CURDIR)/$<..."
-	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $< > $@
+	@$(ECHO) "Makedepend $(CURDIR)/$<..."
+	@$(MKDEPEND) -f- -p$(@D)/  -- $(CFLAGS) -- $< > $@
 
+# Also check if the makefile itself must be remade
 all : makefile
 
+# Remake makefile
 makefile : makefile.src $(TOP)/scripts/genmf.gawk \
 	    $(TOP)/config/make.tmpl
-	@echo "Regenerating makefile..."
-	@mv makefile makefile.bak
-	@gawk -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
-	    makefile.src > makefile
+	@$(ECHO) "Regenerating makefile..."
+	@$(MV) $@ $@.bak
+	@$(AWK) -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
+	    $< > $@
 
+# Include these files but only if the current target is neither
+# setup nor clean.
 ifneq ("$(TARGET)","clean")
 ifneq ("$(TARGET)","setup")
-include $(DEPS)    
+include $(DEPS)
 endif
 endif

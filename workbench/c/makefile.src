@@ -10,9 +10,12 @@ INCLUDES = -I$(BINDIR)/include -I$(TOP)/amiga/include
 #CC=$(PURIFY) $(SYS_CC)
 
 OBJDIR = $(GENDIR)/workbench/c
-LIBS = -L$(LIBDIR) -larosc -lamiga -larossupport
-DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
-	$(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
+
+%define_libs
+
+#LIBS = -L$(LIBDIR) -larosc -lamiga -larossupport
+#DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
+#	 $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
 
 FILES = \
 	addbuffers \
@@ -47,8 +50,7 @@ DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 all: setup $(EXES)
 
 setup :
-	%mkdir_q $(EXEDIR)
-	%mkdir_q $(OBJDIR)
+	%mkdirs_q $(EXEDIR) $(OBJDIR)
 
 clean:
 	-$(RM) $(EXES)
@@ -57,11 +59,9 @@ $(EXEDIR)/%: $(OBJDIR)/%.o $(LIBDIR)/startup.o $(DEPLIBS)
 	%link_q
 
 $(OBJDIR)/%.o: %.c
-	%compile_q $< $@ $*.err $(APPCFLAGS)
+	%compile_q opt=$(APPCFLAGS)
 
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q
-	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 %include_deps

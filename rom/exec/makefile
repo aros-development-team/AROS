@@ -2,7 +2,11 @@
 TOP=../..
 
 # Use OS's own includes over the ones from AROS
+ifeq ("$(SHARED_EXEC"),"yes")
+SPECIAL_CFLAGS=$(SHARED_CFLAGS) -I/usr/include
+else
 SPECIAL_CFLAGS=-I/usr/include
+endif
 
 include $(TOP)/config/make.cfg
 
@@ -42,6 +46,7 @@ ASMFUNCTIONS = forbid disable getcc cacheclearu cachepredma cachepostdma
 # ***** Not Native ***************
 else
 
+OBJDIR=$(OSGENDIR)/exec
 ifeq ("$(SHARED_EXEC)","yes")
 LIB=$(LIBDIR)/libexec.so
 RMLIB=$(LIBDIR)/libexec.a
@@ -122,40 +127,45 @@ all: setup $(LIB)
 endif
 
 setup :
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
-	@if [ ! -d $(OSMODDIR) ]; then $(MKDIR) $(OSMODDIR) ; else true ; fi
+	@for dir in $(OBJDIR) $(OSMODDIR) ; do \
+	    if [ ! -d $$dir ]; then $(MKDIR) $$dir ; else true ; fi ; \
+	done
 	@echo "CFLAGS=$(CFLAGS)"
 
 clean:
-	$(RM) $(OBJDIR) *.err $(LIBDIR)/libexec.a
+	$(RM) $(OBJDIR) *.err $(LIB)
 
 $(LIB): $(OBJS)
-	@echo "Recreating $@..."
+	@$(ECHO) "Creating library $@..."
 	@$(AR) $@ $(OBJS)
 	@$(RANLIB) $@
 	@$(RM) $(RMLIB)
 
 $(OBJDIR)/%.o: %.c
-	@echo "Compiling $(CURDIR)/$<..."
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
 	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	@echo "Makedepend $(CURDIR)/$<..."
-	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $< > $@
+	@$(ECHO) "Makedepend $(CURDIR)/$<..."
+	@$(MKDEPEND) -f- -p$(@D)/  -- $(CFLAGS) -- $< > $@
 
+# Also check if the makefile itself must be remade
 all : makefile
 
+# Remake makefile
 makefile : makefile.src $(TOP)/scripts/genmf.gawk \
 	    $(TOP)/config/make.tmpl
-	@echo "Regenerating makefile..."
-	@mv makefile makefile.bak
-	@gawk -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
-	    makefile.src > makefile
+	@$(ECHO) "Regenerating makefile..."
+	@$(MV) $@ $@.bak
+	@$(AWK) -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
+	    $< > $@
 
+# Include these files but only if the current target is neither
+# setup nor clean.
 ifneq ("$(TARGET)","clean")
 ifneq ("$(TARGET)","setup")
-include $(DEPS)    
+include $(DEPS)
 endif
 endif

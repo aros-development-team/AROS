@@ -10,9 +10,15 @@ INCLUDES = -I$(BINDIR)/include -I$(TOP)/amiga/include
 #CC=$(PURIFY) $(SYS_CC)
 
 OBJDIR = $(GENDIR)/workbench/c
-LIBS = -L$(LIBDIR) -larosc -lamiga -larossupport
-DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
-	$(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
+
+STARTUP = $(LIBDIR)/startup.o
+LIBS = -L$(LIBDIR)  -lamiga -larossupport -larosc $(postlibs)
+DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
+	$(LIBDIR)/libarosc.a 
+
+#LIBS = -L$(LIBDIR) -larosc -lamiga -larossupport
+#DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
+#	 $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
 
 FILES = \
 	addbuffers \
@@ -47,40 +53,43 @@ DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 all: setup $(EXES)
 
 setup :
-	@if [ ! -d $(EXEDIR) ]; then $(MKDIR) $(EXEDIR) ; else true ; fi
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
+	@for dir in $(EXEDIR) $(OBJDIR) ; do \
+	    if [ ! -d $$dir ]; then $(MKDIR) $$dir ; else true ; fi ; \
+	done
 
 clean:
 	-$(RM) $(EXES)
 
 $(EXEDIR)/%: $(OBJDIR)/%.o $(LIBDIR)/startup.o $(DEPLIBS)
-	@echo "Linking $@..."
-	@$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS) 2>&1|tee $*-x.err
-	@if test ! -s $*-x.err; then rm $*-x.err ; else true ; fi
+	@$(ECHO) "Linking $@..."
+	@$(CC) $(ILDFLAGS) $(STARTUP) $< -o $@ $(LIBS) 2>&1|tee $(@F)-x.err
+	@if test ! -s $(@F)-x.err; then rm $(@F)-x.err ; else true ; fi
 
 $(OBJDIR)/%.o: %.c
-	@echo "Compiling $(CURDIR)/$<..."
-	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(APPCFLAGS) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	@echo "Makedepend $(CURDIR)/$<..."
-	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $< > $@
-	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
+	@$(ECHO) "Makedepend $(CURDIR)/$<..."
+	@$(MKDEPEND) -f- -p$(@D)/  -- $(CFLAGS) -- $< > $@
 
+# Also check if the makefile itself must be remade
 all : makefile
 
+# Remake makefile
 makefile : makefile.src $(TOP)/scripts/genmf.gawk \
 	    $(TOP)/config/make.tmpl
-	@echo "Regenerating makefile..."
-	@mv makefile makefile.bak
-	@gawk -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
-	    makefile.src > makefile
+	@$(ECHO) "Regenerating makefile..."
+	@$(MV) $@ $@.bak
+	@$(AWK) -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
+	    $< > $@
 
+# Include these files but only if the current target is neither
+# setup nor clean.
 ifneq ("$(TARGET)","clean")
 ifneq ("$(TARGET)","setup")
-include $(DEPS)    
+include $(DEPS)
 endif
 endif

@@ -1,0 +1,73 @@
+# $Id$
+TOP=../..
+
+include $(TOP)/config/make.cfg
+
+OBJDIR=$(GENDIR)/compiler/arossupport
+
+FILES = calcchecksum kprintf nastyfreemem \
+	purify removeslist debugmem \
+	_kprintf hexdump \
+	freestruct \
+	readbyte \
+	readdouble \
+	readfloat \
+	readlong \
+	readstring \
+	readstruct \
+	readword \
+	writebyte \
+	writedouble \
+	writefloat \
+	writelong \
+	writestring \
+	writestruct \
+	writeword \
+	strrncasecmp \
+	rawputchars
+
+DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+
+INCLUDE_FILES = $(wildcard include/*.h)
+DEST_INCLUDE_FILES = $(subst include,$(INCDIR)/aros,$(INCLUDE_FILES))
+
+all: setup $(LIBDIR)/libarossupport.a
+
+setup : make-dirs os-include
+
+os-include: $(DEST_INCLUDE_FILES)
+
+$(INCDIR)/aros/%.h: include/%.h
+	$(CP) $< $@
+
+make-dirs :
+	%mkdirs_q $(OBJDIR) $(INCDIR)
+	@echo "CFLAGS=$(CFLAGS)"
+
+clean:
+	-$(RM) $(OBJDIR) *.err $(LIBDIR)/libarossupport.a
+
+$(OBJDIR)/%.o: %.c
+	%compile_q
+
+CFLAGS2 = $(CFLAGS) -I$(TOP)/rom/exec
+
+$(OBJDIR)/kprintf.o: kprintf.c
+	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
+
+$(OBJDIR)/rawputchars.o: rawputchars.c
+	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
+
+$(OBJDIR)/_kprintf.o: _kprintf.c
+	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
+
+$(OBJDIR)/rt_stubs.o: rt_stubs.s
+	%assemble_q cmd=$(SYS_AS)
+
+$(LIBDIR)/libarossupport.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+	%mklib_q
+
+$(OBJDIR)/%.d: %.c
+	%mkdepend_q flags=$(CFLAGS2)
+
+%include_deps

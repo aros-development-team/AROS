@@ -6,11 +6,20 @@ USER_INCLUDES = -I$(TOP)/compiler/clib/include
 
 include $(TOP)/config/make.cfg
 
-OBJDIR=$(GENDIR)/alib
+OBJDIR=$(GENDIR)/compiler/alib
 EXEDIR=$(BINDIR)/test
-LIBS = -L$(LIBDIR) -larosc -lamiga -larossupport -larosc
-DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
-	$(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
+
+LIB = $(LIBDIR)/libamiga.a
+STARTUP = $(LIBDIR)/startup.o
+
+STARTUP = $(LIBDIR)/startup.o
+LIBS = -L$(LIBDIR)  -lamiga -larossupport -larosc $(postlibs)
+DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
+	$(LIBDIR)/libarosc.a 
+
+#LIBS = -L$(LIBDIR) -larosc -lamiga -larossupport -larosc
+#DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
+#	 $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
 
 FILES = alib_util \
 	allocnamedobject \
@@ -42,47 +51,73 @@ FILES = alib_util \
 	setattrs \
 	setsuperattrs
 
-all: setup $(LIBDIR)/libamiga.a $(LIBDIR)/startup.o
+OBJS = $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+
+all: setup $(LIB) $(STARTUP)
 
 setup :
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
+	@for dir in $(OBJDIR) $(LIBDIR) ; do \
+	    if [ ! -d $$dir ]; then $(MKDIR) $$dir ; else true ; fi ; \
+	done
 
 clean:
-	-$(RM) $(OBJDIR) *.err $(LIBDIR)/libamiga.a
+	-$(RM) $(OBJDIR) *.err $(LIB) $(STARTUP)
 
 test: $(EXEDIR)/betest $(EXEDIR)/wstest $(EXEDIR)/rstest
 
+TEST_ILDFLAGS = -DTEST $(ILDFLAGS)
+
 $(EXEDIR)/rstest: readstruct.c $(LIBDIR)/startup.o $(DEPLIBS)
-	$(CC) -DTEST $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
+	@$(ECHO) "Linking $@..."
+	@$(CC) $(TEST_ILDFLAGS) $(STARTUP) $< -o $@ $(LIBS) 2>&1|tee $(@F)-x.err
+	@if test ! -s $(@F)-x.err; then rm $(@F)-x.err ; else true ; fi
 
 $(EXEDIR)/wstest: writestruct.c $(LIBDIR)/startup.o $(DEPLIBS)
-	$(CC) -DTEST $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
+	@$(ECHO) "Linking $@..."
+	@$(CC) $(TEST_ILDFLAGS) $(STARTUP) $< -o $@ $(LIBS) 2>&1|tee $(@F)-x.err
+	@if test ! -s $(@F)-x.err; then rm $(@F)-x.err ; else true ; fi
 
 $(EXEDIR)/betest: betest.c $(LIBDIR)/startup.o $(DEPLIBS)
-	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
+	@$(ECHO) "Linking $@..."
+	@$(CC) $(TEST_ILDFLAGS) $(STARTUP) $< -o $@ $(LIBS) 2>&1|tee $(@F)-x.err
+	@if test ! -s $(@F)-x.err; then rm $(@F)-x.err ; else true ; fi
 
 $(OBJDIR)/%.o: %.c
-	$(SYS_CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(SYS_CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(LIBDIR)/%.o: %.c
-	$(SYS_CC) $(CFLAGS) -c $< -o $@
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(SYS_CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
+	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
-$(LIBDIR)/libamiga.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-	$(AR) $@ $?
-	$(RANLIB) $@
+$(LIB): $(OBJS)
+	@$(ECHO) "Creating library $@..."
+	@$(AR) $@ $(OBJS)
+	@$(RANLIB) $@
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	$(MKDEPEND) -f- -p$(@D)/ -- $(APPCFLAGS) -- $^ > $@
+	@$(ECHO) "Makedepend $(CURDIR)/$<..."
+	@$(MKDEPEND) -f- -p$(@D)/  -- $(CFLAGS) -- $< > $@
 
-ifneq ($(TARGET),clean)
-NODEPS:=yes
-endif
-ifneq ($(TARGET),setup)
-NODEPS:=yes
-endif
+# Also check if the makefile itself must be remade
+all : makefile
 
-ifndef NODEPS
-include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+# Remake makefile
+makefile : makefile.src $(TOP)/scripts/genmf.gawk \
+	    $(TOP)/config/make.tmpl
+	@$(ECHO) "Regenerating makefile..."
+	@$(MV) $@ $@.bak
+	@$(AWK) -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
+	    $< > $@
+
+# Include these files but only if the current target is neither
+# setup nor clean.
+ifneq ("$(TARGET)","clean")
+ifneq ("$(TARGET)","setup")
+include $(DEPS)
+endif
 endif

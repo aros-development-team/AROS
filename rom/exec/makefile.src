@@ -2,7 +2,11 @@
 TOP=../..
 
 # Use OS's own includes over the ones from AROS
+ifeq ("$(SHARED_EXEC"),"yes")
+SPECIAL_CFLAGS=$(SHARED_CFLAGS) -I/usr/include
+else
 SPECIAL_CFLAGS=-I/usr/include
+endif
 
 include $(TOP)/config/make.cfg
 
@@ -42,15 +46,7 @@ ASMFUNCTIONS = forbid disable getcc cacheclearu cachepredma cachepostdma
 # ***** Not Native ***************
 else
 
-ifeq ("$(SHARED_EXEC)","yes")
-LIB=$(LIBDIR)/libexec.so
-RMLIB=$(LIBDIR)/libexec.a
-AR=$(SHARED_AR)
-RANLIB=true
-else
-LIB=$(LIBDIR)/libexec.a
-RMLIB=$(LIBDIR)/libexec.so
-endif
+%prepare_shlib exec $(SHARED_EXEC)
 
 FILES = init execfunctions
 
@@ -122,17 +118,14 @@ all: setup $(LIB)
 endif
 
 setup :
-	%mkdir_q $(OBJDIR)
-	%mkdir_q $(OSMODDIR)
+	%mkdirs_q $(OBJDIR) $(OSMODDIR)
 	@echo "CFLAGS=$(CFLAGS)"
 
 clean:
-	$(RM) $(OBJDIR) *.err $(LIBDIR)/libexec.a
+	$(RM) $(OBJDIR) *.err $(LIB)
 
 $(LIB): $(OBJS)
-	@echo "Recreating $@..."
-	@$(AR) $@ $(OBJS)
-	@$(RANLIB) $@
+	%mklib_q
 	@$(RM) $(RMLIB)
 
 $(OBJDIR)/%.o: %.c

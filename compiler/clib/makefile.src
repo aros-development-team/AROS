@@ -10,10 +10,7 @@ INCDIR=$(BINDIR)/include
 
 LIB = $(LIBDIR)/libarosc.a
 
-STARTUP = $(LIBDIR)/startup.o
-LIBS = -L$(LIBDIR)  -lamiga -larossupport -larosc $(postlibs)
-DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
-	$(LIBDIR)/libarosc.a 
+%define_libs
 
 #LIBS = -L$(LIBDIR) -larosc -lamiga -larossupport -larosc
 #DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
@@ -120,9 +117,7 @@ all: setup $(LIB)
 setup: make-dirs update-includes
 
 make-dirs:
-	@for dir in $(INCDIR)/sys $(OBJDIR) ; do \
-	    if [ ! -d $$dir ]; then $(MKDIR) $$dir ; else true ; fi ; \
-	done
+	%mkdirs_q $(INCDIR)/sys $(OBJDIR)
 
 test: $(TESTDIR)/snprint
 
@@ -138,41 +133,18 @@ clean:
 	-$(RM) $(OBJDIR) *.err $(LIB)
 
 $(OBJDIR)/%.o: %.c
-	@$(ECHO) "Compiling $(CURDIR)/$<..."
-	@$(SYS_CC) $(APPCFLAGS) -c $< -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+	%compile_q cmd=$(SYS_CC) opt=$(APPCFLAGS)
 
 $(LIB): $(OBJS)
-	@$(ECHO) "Creating library $@..."
-	@$(AR) $@ $(OBJS)
-	@$(RANLIB) $@
+	%mklib_q
 
 #	 $(AR) $@ $?
 #	 $(RANLIB) $@
 
 $(OBJDIR)/%.d: %.c
-	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	@$(ECHO) "Makedepend $(CURDIR)/$<..."
-	@$(MKDEPEND) -f- -p$(@D)/  -- $(APPCFLAGS) -- $< > $@
+	%mkdepend_q flags=$(APPCFLAGS)
 
 #	 @if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 #	 $(MKDEPEND) -f- -p$(@D)/ -- $(APPCFLAGS) -- $^ > $@
 
-# Also check if the makefile itself must be remade
-all : makefile
-
-# Remake makefile
-makefile : makefile.src $(TOP)/scripts/genmf.gawk \
-	    $(TOP)/config/make.tmpl
-	@$(ECHO) "Regenerating makefile..."
-	@$(MV) $@ $@.bak
-	@$(AWK) -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
-	    $< > $@
-
-# Include these files but only if the current target is neither
-# setup nor clean.
-ifneq ("$(TARGET)","clean")
-ifneq ("$(TARGET)","setup")
-include $(DEPS)
-endif
-endif
+%include_deps

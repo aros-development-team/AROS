@@ -13,21 +13,9 @@ include $(TOP)/config/make.cfg
 EXEDIR=$(BINDIR)/test
 TESTOBJDIR = $(GENDIR)/rom/dos
 
-STARTUP = $(LIBDIR)/startup.o
-LIBS = -L$(LIBDIR)  -lamiga -larossupport -larosc $(postlibs)
-DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
-	$(LIBDIR)/libarosc.a 
+%define_libs
 
-OBJDIR=$(OSGENDIR)/dos
-ifeq ("$(SHARED_DOS)","yes")
-LIB=$(LIBDIR)/libdos.so
-RMLIB=$(LIBDIR)/libdos.a
-AR=$(SHARED_AR)
-RANLIB=true
-else
-LIB=$(LIBDIR)/libdos.a
-RMLIB=$(LIBDIR)/libdos.so
-endif
+%prepare_shlib dos $(SHARED_DOS)
 
 FILES = dos_init dos_functable lddemon errorlist loadseg_elf doname \
 	loadseg_aout
@@ -69,9 +57,7 @@ DEPS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
 all: setup $(LIB)
 
 setup :
-	@for dir in $(OBJDIR) $(LIBDIR) ; do \
-	    if [ ! -d $$dir ]; then $(MKDIR) $$dir ; else true ; fi ; \
-	done
+	%mkdirs_q $(OBJDIR) $(LIBDIR)
 	@echo "CFLAGS=$(CFLAGS)"
 
 clean:
@@ -82,58 +68,29 @@ TESTS = datetostr strtodate splitname readargs
 test: setup-test $(foreach f,$(TESTS),$(EXEDIR)/$(f))
 
 $(LIB) : $(OBJS)
-	@$(ECHO) "Creating library $@..."
-	@$(AR) $@ $(OBJS)
-	@$(RANLIB) $@
+	%mklib_q
 	@$(RM) $(RMLIB)
 
 TEST_LDFLAGS = $(ILDFLAGS) -DTEST $(COMMON_CFLAGS)
 
 $(EXEDIR)/%: %.c $(DEPLIBS)
-	@$(ECHO) "Linking $@..."
-	@$(CC) $(TEST_LDFLAGS) $(STARTUP) $< -o $@ $(LIBS) 2>&1|tee $(@F)-x.err
-	@if test ! -s $(@F)-x.err; then rm $(@F)-x.err ; else true ; fi
+	%link_q opt=$(TEST_LDFLAGS)
 
 setup-test :
-	@for dir in $(TESTOBJDIR) $(EXEDIR) ; do \
-	    if [ ! -d $$dir ]; then $(MKDIR) $$dir ; else true ; fi ; \
-	done
+	%mkdirs_q $(TESTOBJDIR) $(EXEDIR)
 
 $(OBJDIR)/%.o: %.c
-	@$(ECHO) "Compiling $(CURDIR)/$<..."
-	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+	%compile_q
 
 dos_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
-	@echo "Regenerating $(to)..."
-	@gawk -f $(TOP)/scripts/makefunctable.awk \
-	    --assign lib="Dos" $^
+	%mkfunctable_q Dos
 
 $(OBJDIR)/%.d: %.c
-	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	@$(ECHO) "Makedepend $(CURDIR)/$<..."
-	@$(MKDEPEND) -f- -p$(@D)/  -- $(CFLAGS) -- $< > $@
+	%mkdepend_q
 
 #	 @if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 #	 @echo "Makedepend $(CURDIR)/$<..."
 #	 @$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
-# Also check if the makefile itself must be remade
-all : makefile
-
-# Remake makefile
-makefile : makefile.src $(TOP)/scripts/genmf.gawk \
-	    $(TOP)/config/make.tmpl
-	@$(ECHO) "Regenerating makefile..."
-	@$(MV) $@ $@.bak
-	@$(AWK) -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
-	    $< > $@
-
-# Include these files but only if the current target is neither
-# setup nor clean.
-ifneq ("$(TARGET)","clean")
-ifneq ("$(TARGET)","setup")
-include $(DEPS)
-endif
-endif
+%include_deps

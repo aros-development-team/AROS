@@ -3,7 +3,7 @@ TOP=../..
 
 include $(TOP)/config/make.cfg
 
-OBJDIR=$(GENDIR)/arossupport
+OBJDIR=$(GENDIR)/compiler/arossupport
 
 FILES = calcchecksum kprintf nastyfreemem \
 	purify removeslist debugmem \
@@ -26,6 +26,8 @@ FILES = calcchecksum kprintf nastyfreemem \
 	strrncasecmp \
 	rawputchars
 
+DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+
 INCLUDE_FILES = $(wildcard include/*.h)
 DEST_INCLUDE_FILES = $(subst include,$(INCDIR)/aros,$(INCLUDE_FILES))
 
@@ -39,55 +41,66 @@ $(INCDIR)/aros/%.h: include/%.h
 	$(CP) $< $@
 
 make-dirs :
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
-	@if [ ! -d $(INCDIR) ]; then $(MKDIR) $(INCDIR) ; else true ; fi
+	@for dir in $(OBJDIR) $(INCDIR) ; do \
+	    if [ ! -d $$dir ]; then $(MKDIR) $$dir ; else true ; fi ; \
+	done
 	@echo "CFLAGS=$(CFLAGS)"
 
 clean:
 	-$(RM) $(OBJDIR) *.err $(LIBDIR)/libarossupport.a
 
 $(OBJDIR)/%.o: %.c
-	@echo "Compiling $(CURDIR)/$<..."
-	@$(SYS_CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err; else true ; fi
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
+	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+
+CFLAGS2 = $(CFLAGS) -I$(TOP)/rom/exec
 
 $(OBJDIR)/kprintf.o: kprintf.c
-	@echo "Compiling $(CURDIR)/$<..."
-	@$(SYS_CC) $(CFLAGS) -I$(TOP)/rom/exec $< -c -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err; else true ; fi
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(SYS_CC) $(CFLAGS2) -c $< -o $@ 2>&1|tee $*.err
+	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OBJDIR)/rawputchars.o: rawputchars.c
-	@echo "Compiling $(CURDIR)/$<..."
-	@$(SYS_CC) $(CFLAGS) -I$(TOP)/rom/exec $< -c -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err; else true ; fi
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(SYS_CC) $(CFLAGS2) -c $< -o $@ 2>&1|tee $*.err
+	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OBJDIR)/_kprintf.o: _kprintf.c
-	@echo "Compiling $(CURDIR)/$<..."
-	@$(SYS_CC) $(CFLAGS) -I$(TOP)/rom/exec $< -c -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err; else true ; fi
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(SYS_CC) $(CFLAGS2) -c $< -o $@ 2>&1|tee $*.err
+	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OBJDIR)/rt_stubs.o: rt_stubs.s
-	@echo "Assembling $(CURDIR)/$<..."
-	@$(SYS_AS) $(AFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err; else true ; fi
+	@$(ECHO) "Assembling $(CURDIR)/$<..."
+	@$(SYS_AS) $(AFLAGS) -c $< -o $@ 2>&1|tee $*.err
+	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(LIBDIR)/libarossupport.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-	@echo "Updating $@..."
-	@$(AR) $@ $?
+	@$(ECHO) "Creating library $@..."
+	@$(AR) $@ $(OBJS)
 	@$(RANLIB) $@
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	@echo "Makedepend $(CURDIR)/$<..."
-	@$(MKDEPEND) -f- -p$(@D)/ -- $(APPCFLAGS) -I$(TOP)/rom/exec -- $^ > $@
+	@$(ECHO) "Makedepend $(CURDIR)/$<..."
+	@$(MKDEPEND) -f- -p$(@D)/  -- $(CFLAGS2) -- $< > $@
 
-ifeq ($(TARGET),clean)
-NODEPS:=yes
-endif
-ifeq ($(TARGET),setup)
-NODEPS:=yes
-endif
+# Also check if the makefile itself must be remade
+all : makefile
 
-ifndef NODEPS
-include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+# Remake makefile
+makefile : makefile.src $(TOP)/scripts/genmf.gawk \
+	    $(TOP)/config/make.tmpl
+	@$(ECHO) "Regenerating makefile..."
+	@$(MV) $@ $@.bak
+	@$(AWK) -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
+	    $< > $@
+
+# Include these files but only if the current target is neither
+# setup nor clean.
+ifneq ("$(TARGET)","clean")
+ifneq ("$(TARGET)","setup")
+include $(DEPS)
+endif
 endif

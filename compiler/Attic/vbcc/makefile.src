@@ -1,0 +1,88 @@
+# $Id$
+TOP=../..
+
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES = -I. -I./machines/$(KERNEL) -I$(TOP)/compiler/clib/include
+
+OBJDIR = $(GENDIR)/compiler/vbcc
+
+%define_libs
+
+#LIBS = -L$(LIBDIR) -larosc -lamiga -larossupport  #-lm
+#DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
+#	 $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
+
+BASIC_FILES = main vars declaration parse_expr type_expr ic machine \
+	    statements preproc
+CC_FILES = opt av rd regs flow cse cp loop alias
+CCS_FILES = opts regss
+
+CC_OBJS = $(foreach f,$(BASIC_FILES) $(CC_FILES),$(OBJDIR)/$(f).o)
+CCS_OBJS = $(foreach f,$(BASIC_FILES) $(CCS_FILES),$(OBJDIR)/$(f).o)
+DEPS = $(foreach f,$(BASIC_FILES) $(CC_FILES),$(OBJDIR)/$(f).d)
+
+EXES = $(EXEDIR)/vc $(EXEDIR)/vbcc$(KERNEL) $(EXEDIR)/vbccs$(KERNEL)
+
+all : setup $(EXES)
+
+local-gcc :
+	$(MAKE) $(MFLAGS) BINDIR=bin-gcc OBJDIR=obj-gcc -f mf.local
+
+local-vc :
+	$(MAKE) $(MFLAGS) -f mf.local \
+	    BINDIR=bin-vcc OBJDIR=obj-vcc \
+	    CC="bin-gcc/vc +vc-local.config" \
+	    APPCFLAGS="-v -I. -Imachines/$(KERNEL)" \
+	    ILDFLAGS=
+
+local-vc-test :
+	$(MAKE) $(MFLAGS) -f mf.local \
+	    BINDIR=bin-vcc2 OBJDIR=obj-vcc2 \
+	    CC="bin-vcc/vc +vc-localtest.config" \
+	    APPCFLAGS="-v -I. -Imachines/$(KERNEL)" \
+	    ILDFLAGS=
+
+local-vc-test2 :
+	$(MAKE) $(MFLAGS) -f mf.local \
+	    BINDIR=bin-vcc3 OBJDIR=obj-vcc3 \
+	    CC="bin-vcc2/vc +vc-localtest2.config" \
+	    APPCFLAGS="-v -I. -Imachines/$(KERNEL)" \
+	    ILDFLAGS=
+
+$(EXEDIR)/vc : vc.c $(DEPLIBS)
+	%link_q
+
+$(EXEDIR)/vbcc$(KERNEL) : $(CC_OBJS) $(DEPLIBS)
+	%link_q from=$(CC_OBJS)
+
+$(EXEDIR)/vbccs$(KERNEL) : $(CCS_OBJS) $(DEPLIBS)
+	%link_q from=$(CCS_OBJS)
+
+setup :
+	%mkdirs_q $(OBJDIR) $(OBJDIR)-vc $(EXEDIR)
+
+clean :
+	$(RM) $(EXES) $(OBJDIR)
+
+$(OBJDIR)/%.o: %.c
+	%compile_q opt=$(APPCFLAGS)
+
+$(OBJDIR)/machine.o: ./machines/$(KERNEL)/machine.c
+	%compile_q opt=$(APPCFLAGS)
+
+APPCFLAGS2 = -DNO_OPTIMIZER $(APPCFLAGS)
+
+$(OBJDIR)/regss.o: regs.c
+	%compile_q opt=$(APPCFLAGS2)
+
+$(OBJDIR)/opts.o: opt.c
+	%compile_q opt=$(APPCFLAGS2)
+
+$(OBJDIR)/machine.d: ./machines/$(KERNEL)/machine.c
+	%mkdepend_q flags=$(APPCFLAGS)
+
+$(OBJDIR)/%.d: %.c
+	%mkdepend_q flags=$(APPCFLAGS)
+
+%include_deps

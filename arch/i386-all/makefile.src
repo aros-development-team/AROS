@@ -3,8 +3,8 @@ TOP=../..
 
 include $(TOP)/config/make.cfg
 
-SPECIAL_CFLAGS = -I/usr/include -I$(TOP)/exec
-CLIBDIR = $(GENDIR)/clib
+SPECIAL_CFLAGS =$(SHARED_CFLAGS) -I/usr/include -I$(TOP)/exec
+CLIBDIR = $(GENDIR)/compiler/clib
 CFLAGS2 = $(SHARED_CFLAGS) $(CFLAGS)
 
 MACHINE_H = $(INCDIR)/aros/machine.h
@@ -42,9 +42,8 @@ all: setup $(MACHINE_H) machine.i \
 	$(foreach f,$(CLIBFILES),$(CLIBDIR)/$(f).o)
 
 setup :
+	%mkdirs_q $(OSGENDIR) $(CLIBDIR)
 	@echo "CFLAGS=$(CFLAGS)"
-	%mkdir_q $(OSGENDIR)
-	%mkdir_q $(CLIBDIR)
 
 $(MACHINE_H): machine.h
 	cp $< $@
@@ -53,7 +52,7 @@ clean:
 	$(RM) $(MACHINE_H) machine.i geninc
 
 machine.i: geninc.c
-	@echo "Creating gening..."
+	@echo "Creating geninc..."
 	@$(CC) $(CFLAGS) -o geninc $<
 	./geninc > machine.i
 
@@ -64,9 +63,9 @@ $(OSGENDIR)/%.o: %.s machine.i
 	%assemble_q
 
 $(OSGENDIR)/%.o: %.c
-	%compile_q $< $@ $*.err $(CFLAGS2))
+	%compile_q opt=$(CFLAGS2)
 
 $(OSGENDIR)/%.d: %.c $(MACHINE_H)
-	%mkdepend_q $< $@ $(@D)
+	%mkdepend_q
 
 %include_deps
