@@ -380,6 +380,7 @@ a window is moved. Probably also the same problem that causes the lines to
 be drawn into the window in fish/304_clines.
 
 BUG000055 fixed
+bergers@aros.org
 newshell draws the window but then segfaults
 
 BUG000056 fixed
@@ -389,3 +390,8 @@ the strings are only partially displayed in their correct colors (for
 active/inactive window): The strings first part is in the correct color
 but then they swap fg and bg color.
 
+BUG000057 
+bergers@aros.org
+Demos/filereq is a simple refreshed (is this the reason ??) window and has a 
+few problems. The slider bar is incorrectly drawn, no reaction on pushed
+buttons etc.
