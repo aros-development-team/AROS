@@ -124,7 +124,7 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 		    D(bug("[DOS] InitHidds: Parsing %s\n",node->ln_Name));
 		    if (0 == strncmp(node->ln_Name,"gfx=",4))
 		    {
-			D(bug("[DOS] InitHidds: Using %s as grpahics driver\n"));
+			D(bug("[DOS] InitHidds: Using %s as graphics driver\n"));
 			strncpy(gfxname,&(node->ln_Name[4]),BUFSIZE-1);
 		    }
 		    if (0 == strncmp(node->ln_Name,"lib=",4))
@@ -151,7 +151,7 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 		{
 		    /* Nope, bootloader failed to set vesa mode */
 		    strcpy(gfxname,"hidd.gfx.vga");
-		    bug("[DOS] InitHidds: VESA graphics requestes, but not found. Falling back to VGA\n");
+		    bug("[DOS] InitHidds: VESA graphics requested, but not found. Falling back to VGA\n");
 		}
 	    }
 	}
