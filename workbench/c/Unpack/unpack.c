@@ -8,10 +8,12 @@
 
 #include "modes.h"
 #include "package.h"
-#include "support.h"
+#include "gui.h"
 
 int main()
 {
+    if( !GUI_Open() ) goto error;
+    
     APTR pkg = PKG_Open( "/test.pkg", MODE_READ );
     if( pkg == NULL ) goto error;
     
@@ -19,9 +21,9 @@ int main()
     
     PKG_Close( pkg );
 
-    return 0;
-
 error:
-    return 1;
+    GUI_Close();
+
+    return 0;
 }
 
