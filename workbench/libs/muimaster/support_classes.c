@@ -82,6 +82,7 @@ static const struct __MUIBuiltinClass * const builtins[] =
     ZUNE_VOLUMELIST_DESC
     ZUNE_DIRLIST_DESC
     ZUNE_NUMERICBUTTON_DESC
+    ZUNE_POPLIST_DESC
 };
 
 Class *ZUNE_GetExternalClass(ClassID classname, struct Library *MUIMasterBase)

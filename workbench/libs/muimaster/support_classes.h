@@ -170,6 +170,12 @@
 #   define ZUNE_NUMERICBUTTON_DESC
 #endif
 
+#if ZUNE_BUILTIN_POPLIST
+#   define ZUNE_POPLIST_DESC (&_MUI_Poplist_desc),
+#else
+#   define ZUNE_POPLIST_DESC
+#endif
+
 Class *ZUNE_GetBuiltinClass(ClassID className, struct Library *mb);
 Class *ZUNE_GetExternalClass(ClassID className, struct Library *mb);
 Class *ZUNE_FindBuiltinClass(ClassID className, struct Library *mb);
