@@ -1,0 +1,17 @@
+# $Id$
+#
+# Makefile for Mason's workbench icons
+
+include $(TOP)/config/make.cfg
+
+ICONS     := Multiview
+ICONFILES := $(foreach f, $(ICONS), $(AROSDIR)/Utilities/$(f).info)
+
+#MM- masonicons : masonworkbenchicons
+
+#MM
+masonworkbenchicons : $(ICONFILES)
+	@$(NOP)
+	
+$(AROSDIR)/Utilities/%.info : %.info.src %_N.png %_S.png
+	%makeicon2
