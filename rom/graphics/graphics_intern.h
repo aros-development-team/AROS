@@ -38,13 +38,12 @@ extern struct GfxBase * GfxBase;
 extern int driver_CloneRastPort (struct RastPort *, struct RastPort *,
 			struct GfxBase *);
 extern void driver_CloseFont (struct TextFont *, struct GfxBase *);
-extern int driver_CreateRastPort (struct RastPort *, struct GfxBase *);
+extern void driver_DeinitRastPort (struct RastPort *, struct GfxBase *);
 extern void driver_Draw (struct RastPort *, LONG, LONG, struct GfxBase *);
 extern void driver_DrawEllipse (struct RastPort *, LONG x, LONG y,
 			LONG rx, LONG ry, struct GfxBase *);
 extern void driver_EraseRect (struct RastPort *, LONG, LONG, LONG, LONG,
 			    struct GfxBase *);
-extern void driver_FreeRastPort (struct RastPort *, struct GfxBase *);
 extern int  driver_InitRastPort (struct RastPort *, struct GfxBase *);
 extern void driver_Move (struct RastPort *, LONG, LONG, struct GfxBase *);
 extern struct TextFont * driver_OpenFont (struct TextAttr *,
