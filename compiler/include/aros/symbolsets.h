@@ -50,7 +50,7 @@ void * SETNAME(set)[] __attribute__((weak))={0,0};
   be open
 */
 #define ADD2LIBS(name, ver, pri, btype, bname, postopenfunc, preclosefunc)   \
-btype bname;                                                                 \
+btype bname = NULL;                                                                  \
 extern int __includelibrarieshandling;                                               \
 const int *__setincludelibrarieshandling __attribute__((weak)) = &__includelibrarieshandling; \
 const ULONG bname##_version __attribute__((weak)) = ver;                     \
