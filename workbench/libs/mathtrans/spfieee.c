@@ -38,35 +38,36 @@ AROS_LH1(float, SPFieee,
 {
     AROS_LIBFUNC_INIT
     
-  LONG Res;
-  /* check for ieeenum == 0 */
-  if (0 == ieeenum)
-  {
-    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 0;
-  }
-
-  /* calculate the exponent  */
-  Res = (ieeenum & IEEESPExponent_Mask) >> 23;
-  Res = Res - 126 + 0x40;
-
-  /* exponent too big / small */
-  if ((char) Res < 0)
-  {
-    SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    LONG Res;
+    
+    /* check for ieeenum == 0 */
+    if (0 == ieeenum)
+    {
+        SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return 0;
+    }
+    
+    /* calculate the exponent  */
+    Res = (ieeenum & IEEESPExponent_Mask) >> 23;
+    Res = Res - 126 + 0x40;
+    
+    /* exponent too big / small */
+    if ((char) Res < 0)
+    {
+        SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return Res;
+    }
+    
+    Res |= (ieeenum << 8) | 0x80000000;
+    
+    /* check ieeenum-number for a sign */
+    if (ieeenum < 0)
+    {
+        Res |= FFPSign_Mask;
+        SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    }
+    
     return Res;
-  }
-
-  Res |= (ieeenum << 8) | 0x80000000;
-
-  /* check ieeenum-number for a sign */
-  if (ieeenum < 0)
-  {
-    Res |= FFPSign_Mask;
-    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-  }
-
-  return Res;
 
     AROS_LIBFUNC_EXIT
 }

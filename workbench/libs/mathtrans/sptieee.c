@@ -37,26 +37,26 @@ AROS_LH1(float, SPTieee,
 {
     AROS_LIBFUNC_INIT
     
-  LONG Res;
-  LONG Exponent;
-  if (0 == fnum)
-  {
-    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 0;
-  }
-
-  Exponent = (fnum & FFPExponent_Mask) - 0x40 + 126;
-
-  Res = ( Exponent << (30-7) );
-  Res |= (((ULONG)fnum & 0x7fffff00) >> 8);
-
-  if ((char) fnum < 0)
-  {
-    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    Res |= IEEESPSign_Mask;
-  }
-
-  return Res;
+    LONG Res;
+    LONG Exponent;
+    if (0 == fnum)
+    {
+        SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return 0;
+    }
+    
+    Exponent = (fnum & FFPExponent_Mask) - 0x40 + 126;
+    
+    Res = ( Exponent << (30-7) );
+    Res |= (((ULONG)fnum & 0x7fffff00) >> 8);
+    
+    if ((char) fnum < 0)
+    {
+        SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        Res |= IEEESPSign_Mask;
+    }
+    
+    return Res;
 
     AROS_LIBFUNC_EXIT
 }

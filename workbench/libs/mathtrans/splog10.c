@@ -66,50 +66,56 @@ AROS_LH1(float, SPLog10,
 {
     AROS_LIBFUNC_INIT
     
-  LONG ld_M, Exponent, Mask = 0x40, i, Sign;
-  /* check for negative sign */
-  if ((char) fnum1 < 0)
-  {
-    SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 0;
-  }
-
-  if (0 == fnum1)
-    return 0xde5bd8fe; /* result of the orig. library */
-
-  /* convert the Exponent of the argument (fnum1) to the ffp-format */
-  Exponent = (fnum1 & FFPExponent_Mask) - 0x40;
-  if (Exponent < 0 )
-  {
-    Exponent = -Exponent;
-    Sign = FFPSign_Mask;
-  }
-  else
-    Sign = 0;
-
-  /* find the number of the highest set bit in the exponent */
-  if (Exponent != 0)
-  {
-    i = 0;
-    while ( (Mask & Exponent) == 0)
+    LONG ld_M, Exponent, Mask = 0x40, i, Sign;
+    
+    /* check for negative sign */
+    if ((char) fnum1 < 0)
     {
-      i ++;
-      Mask >>= 1;
+        SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return 0;
     }
-
-  Exponent <<= (25 + i);
-  Exponent |= (0x47 - i + Sign);
-  }
-
-  ld_M = intern_SPLd((struct MathTransBase *)MathTransBase, 
-                     (fnum1 & FFPMantisse_Mask) | 0x40);
-
-  /*               ld M + E
-  ** log(fnum1) =  --------
-  **                 ld e
-  */
-
-  return SPMul( SPAdd(ld_M, Exponent), InvLd10);
+    
+    if (0 == fnum1) return 0xde5bd8fe; /* result of the orig. library */
+    
+    /* convert the Exponent of the argument (fnum1) to the ffp-format */
+    Exponent = (fnum1 & FFPExponent_Mask) - 0x40;
+    if (Exponent < 0 )
+    {
+        Exponent = -Exponent;
+        Sign = FFPSign_Mask;
+    }
+    else
+    {
+        Sign = 0;
+    }
+    
+    /* find the number of the highest set bit in the exponent */
+    if (Exponent != 0)
+    {
+        i = 0;
+        while ( (Mask & Exponent) == 0)
+        {
+            i ++;
+            Mask >>= 1;
+        }
+        
+        Exponent <<= (25 + i);
+        Exponent |= (0x47 - i + Sign);
+    }
+    
+    ld_M = intern_SPLd
+    (
+        (struct MathTransBase *) MathTransBase, 
+        (fnum1 & FFPMantisse_Mask) | 0x40
+    );
+    
+    /*               
+                      ld M + E
+        log(fnum1) =  --------
+                        ld e
+    */
+    
+    return SPMul( SPAdd(ld_M, Exponent), InvLd10);
 
     AROS_LIBFUNC_EXIT
 }
