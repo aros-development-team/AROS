@@ -1048,7 +1048,7 @@ $(BD_OBJS$(BDID)) \
 $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end.o
 	@$(ECHO) "Linking $@"
 	@$(COLLECT-AROS) -ius -o $@ $^
-	$(OBJCOPY) $@ `nm $@ | $(AWK) '$$3 ~ /^__.*_LIST__$$/ {print "-L " $$3;}'`
+	@$(OBJCOPY) $@ `nm $@ | $(AWK) '$$3 ~ /^__.*_LIST__$$/ {print "-L " $$3;}'`
 
 %include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(BD_DEPS$(BDID))
 %end
