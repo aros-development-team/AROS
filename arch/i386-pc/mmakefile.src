@@ -43,6 +43,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-mathieeesingbas-linklib		\
 #MM	kernel-mathffp-linklib			\
 #MM	kernel-devs				\
+#MM	kernel-filesys				\
 #MM	kernel-graphics-linklib			\
 #MM	graphics-gfxhidd			\
 #MM	kernel-graphics-native-i386 		\
@@ -157,7 +158,7 @@ kernel-intuition-native-i386 :
 
 #MM kernel-filesys-native-i386 :
 kernel-filesys-native-i386 :
-	%add_objects rom/boot/libcon_handler
+	%add_objects rom/boot/libcon
 
 #MM kernel-cgfx-native-i386 :
 kernel-cgfx-native-i386 :
