@@ -50,8 +50,6 @@
     LONG i;
     WORD x, y;
 
-    if (count < 2) return;
-    
     for(i = 0; i < count; i++)
     {
     	x = *polyTable++;
