@@ -69,7 +69,7 @@ MSG_ASL_SAVE_TITLE
 Välj fil att spara till
 ;
 MSG_ABOUT 
-More V%ld.%ld\n (%s)\nCopyright (C) %s av %s
+More V%ld.%ld\n (%s)\nCopyright © %s av %s
 ;
 MSG_ABOUT_TITLE 
 More
