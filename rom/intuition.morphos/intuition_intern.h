@@ -172,8 +172,12 @@ void * memclr(APTR, ULONG);
 #define FRAMESIZE_THICK        2 /* 1:1 thick */
 
 
+#ifdef __AROS__
+/* FIXME: possibly enable this, once gadtools has been updated */
+#else
 #define GADTOOLSCOMPATIBLE
 //enables some gadtools-weirdo-code, MUST be set in both gadtools & intui to work!!!
+#endif
 
 #ifdef SKINS
 //#define USEGETIPREFS
