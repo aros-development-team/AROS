@@ -24,7 +24,15 @@
 #define RPTAG_BgColor	 0x80000082
 
 /* Extensions invented by AROS */
-#define RPTAG_PatternOriginX 0x800000C0
-#define RPTAG_PatternOriginY 0x800000C1
+#define RPTAG_PatternOriginX 	    0x800000C0 /* WORD */
+#define RPTAG_PatternOriginY 	    0x800000C1 /* WORD */
+#define RPTAG_ClipRectangle  	    0x800000C2 /* struct Rectangle *. Clones *rectangle. */
+#define RPTAG_ClipRectangleFlags    0x800000C3 /* ULONG */
+
+
+/* Flags for ClipRectangleFlags */
+#define RPCRF_RELRIGHT	    	    0x01       /* ClipRectangle.MaxX is relative to right of layer/bitmap */
+#define RPCRF_RELBOTTOM     	    0x02       /* ClipRectangle.MaxY is relative to bottom of layer/bitmap */
+#define RPCRF_VALID 	    	    0x04       /* private */
 
 #endif /* GRAPHICS_RPATTR_H */
