@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-   $Id$
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    $Id$
 
-   Desc: GadTools gadget creation functions
-   Lang: English
+    GadTools gadget creation functions
 */
 
 /****************************************************************************************/
@@ -273,16 +272,16 @@ struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
 
     struct TagItem *tag, tags[] =
     {
-    	{GA_RelVerify,		TRUE		}, /* 0 */
-	{GA_Disabled,		FALSE		}, /* 1 */
-	{GTPA_Depth,		1		}, /* 2 */
+        {GA_RelVerify,		TRUE	}, /* 0 */
+        {GA_Disabled,		FALSE	}, /* 1 */
+        {GTPA_Depth,		1		}, /* 2 */
         {GTPA_Color,		0		}, /* 3 */
         {GTPA_ColorOffset,	0		}, /* 4 */
-        {GTPA_IndicatorWidth,	0		}, /* 5 */
-        {GTPA_IndicatorHeight,	0		}, /* 6 */
+        {GTPA_IndicatorWidth,	0	}, /* 5 */
+        {GTPA_IndicatorHeight,	0	}, /* 6 */
         {GTPA_NumColors,	2		}, /* 7 */
         {GTPA_ColorTable,	0		}, /* 8 */
-	{TAG_MORE, 		(IPTR)NULL	}
+        {TAG_MORE, 		(IPTR)NULL	}
     };
     
     /* Could use GetTagData(), but this is faster */

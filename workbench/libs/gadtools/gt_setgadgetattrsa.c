@@ -75,8 +75,9 @@
     {
     	/* must be GENERIC_KIND gadget */
 
-    	struct TagItem *tag, *tstate = tagList;
-	BOOL	    	redraw = FALSE;
+    struct TagItem       *tag;
+    const struct TagItem *tstate = tagList;
+	BOOL	    	      redraw = FALSE;
 	
 	while((tag = NextTagItem(&tstate)))
 	{
