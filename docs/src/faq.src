@@ -114,7 +114,7 @@ Linux) and of course on the Amiga version.
 UAE is an A500 emulator. It's goals differ somewhat from that of AROS: UAE
 wants to be able to be binary compatible even for games and hardware
 banging code while AROS wants to have native applications. Therefore AROS
-is much fast than UAE but UAE has more software.
+is much faster than UAE but UAE has more software.
 
 We are in loose contact with the author of UAE and there is a good chance
 that code for UAE will appear in AROS and vice versa. For example, UAE is
