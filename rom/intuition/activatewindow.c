@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.16  2000/12/25 13:41:37  hkiel
+    Bugfix: ActivateWindow(activewin); caused the active win to be rendered inactive.
+
     Revision 1.15  2000/08/03 18:30:49  stegerg
     renamed DeferedAction??? to IntuiAction???. The IntuiActionMessage
     structure (formerly called DeferedActionMessage) now contains an
@@ -142,7 +145,7 @@ VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBa
     
     UnlockIBase(lock);
     
-    if (oldactive)
+    if (oldactive && oldactive != window)
     {
         Forbid();
 	oldactive->Flags &= ~WFLG_WINDOWACTIVE;
