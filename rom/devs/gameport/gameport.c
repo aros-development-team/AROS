@@ -18,6 +18,7 @@
 #include <devices/inputevent.h>
 #include <devices/gameport.h>
 #include <devices/newstyle.h>
+#include <devices/rawkeycodes.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/oop.h>
@@ -51,6 +52,7 @@
 #define ALIGN(x)  ((((x) + (__AROS_STRUCTURE_ALIGNMENT - 1)) / \
 		  __AROS_STRUCTURE_ALIGNMENT) * __AROS_STRUCTURE_ALIGNMENT)
 
+#define IECODE_DUMMY_WHEEL 0xFE
 
 /****************************************************************************************/
 
@@ -593,31 +595,33 @@ static VOID mouseCallback(struct GameportBase *GPBase,
     
     /* Convert the event */
     switch (ev->button)
-    {
-	
-    case vHidd_Mouse_Button1:
-	amigacode = IECODE_LBUTTON;
-	break;
-	
-    case vHidd_Mouse_Button2:
-	amigacode = IECODE_RBUTTON;
-	break;
-	
-    case vHidd_Mouse_Button3:
-	amigacode = IECODE_MBUTTON;
-	break;
-	
+    {	
+	case vHidd_Mouse_Button1:
+	    amigacode = IECODE_LBUTTON;
+	    break;
+
+	case vHidd_Mouse_Button2:
+	    amigacode = IECODE_RBUTTON;
+	    break;
+
+	case vHidd_Mouse_Button3:
+	    amigacode = IECODE_MBUTTON;
+	    break;	
     }
     
     switch (ev->type)
     {
-    case vHidd_Mouse_Release:
-	amigacode |= IECODE_UP_PREFIX;
-	break;
-	
-    case vHidd_Mouse_Motion:
-	amigacode = IECODE_NOBUTTON;
-	break;
+	case vHidd_Mouse_Release:
+	    amigacode |= IECODE_UP_PREFIX;
+	    break;
+
+	case vHidd_Mouse_Motion:
+	    amigacode = IECODE_NOBUTTON;
+	    break;
+	    
+	case vHidd_Mouse_WheelMotion:
+	    amigacode = IECODE_DUMMY_WHEEL;
+	    break;
     }
     
     Disable();
@@ -708,7 +712,7 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged,
 			struct GameportBase *GPBase)
 {
     BOOL   moreevents = TRUE;
-    BOOL   down, up;
+    BOOL   down, up, wheel;
     int    i;			     /* Loop variable */
     int    nEvents;                  /* Number of struct InputEvent that there
 					is room for in memory pointed to by
@@ -742,7 +746,7 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged,
 	x = GPBase->gp_eventBuffer[gpUn->gpu_readPos++];
 	y = GPBase->gp_eventBuffer[gpUn->gpu_readPos++];
 	
-	down = up = FALSE;	/* Reset states */
+	down = up = wheel = FALSE;	/* Reset states */
 
 	/* Take care of the qualifiers */
 	switch (code)
@@ -776,6 +780,31 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged,
 		gpUn->gpu_Qualifiers &= ~IEQUALIFIER_RBUTTON;
 		up = TRUE;
 		break;
+		
+	    case IECODE_DUMMY_WHEEL:
+	    	wheel = TRUE;
+	    	if (y < 0)
+		{
+		    code = RAWKEY_NM_WHEEL_UP;
+		}
+		else if (y > 0)
+		{
+		    code = RAWKEY_NM_WHEEL_DOWN;
+		}
+		else if (x < 0)
+		{
+		    code = RAWKEY_NM_WHEEL_LEFT;
+		}
+		else if (x > 0)
+		{
+		    code = RAWKEY_NM_WHEEL_RIGHT;
+		}
+		else
+		{
+	    	    wheel = FALSE;
+		}
+		x = y = 0;
+		break;
 	}
 	
 	if (gpUn->gpu_readPos == GP_NUMELEMENTS)
@@ -795,7 +824,8 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged,
 	   (up   && (gpUn->gpu_trigger.gpt_Keys & GPTF_UPKEYS))   ||
 	   (ABS(gpUn->gpu_lastX - x) > gpUn->gpu_trigger.gpt_XDelta) ||
 	   (ABS(gpUn->gpu_lastY - y) > gpUn->gpu_trigger.gpt_YDelta) ||
-	   (GPBase->gp_nTicks > gpUn->gpu_trigger.gpt_Timeout))
+	   (GPBase->gp_nTicks > gpUn->gpu_trigger.gpt_Timeout) ||
+	   (wheel))
 #endif
 
 	{
@@ -810,9 +840,9 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged,
 	        *trigged = TRUE;
 	    }
 	    
-	    event->ie_Class = IECLASS_RAWMOUSE;
-	    event->ie_SubClass = 0;          /* Only port 0 for now */
-	    event->ie_Code = code;
+	    event->ie_Class 	= (wheel ? IECLASS_NEWMOUSE : IECLASS_RAWMOUSE);
+	    event->ie_SubClass  = 0;          /* Only port 0 for now */
+	    event->ie_Code  	= code;
 	    event->ie_Qualifier = gpUn->gpu_Qualifiers;
 	    
 	    event->ie_X = x;
