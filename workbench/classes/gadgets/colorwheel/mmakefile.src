@@ -11,6 +11,6 @@ FUNCS := \
 
 %build_module_macro mmake=workbench-gadgets-colorwheel modname=colorwheel \
   modtype=gadget funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
-  uselibs="amiga m"
+  uselibs="amiga m arosc"
 
 %common

@@ -25,5 +25,6 @@ USER_CFLAGS := -DDEBUG=0
 
 %build_module_macro mmake=workbench-fs-afs modname=afs \
   modtype=handler initfile=arosdevice funcs= files=$(FILES) \
+  uselibs="arosc"
 
 %common
