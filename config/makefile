@@ -26,7 +26,7 @@ subdirs :
 	    then true ; else exit 1 ; fi ; \
 	done
 
-$(CONFIG_H): make-dirs $(TOP)/configure
+$(CONFIG_H): $(TOP)/configure
 	sh $(TOP)/configure -h $@
 
 clean:
