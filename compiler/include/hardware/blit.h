@@ -24,4 +24,17 @@
 /* common minterm operations */
 #define A_XOR_C   NABC|ABNC|NANBC|ANBNC
 
+struct bltnode
+{
+  struct bltnode * n;
+  int    (*function) ();
+  char   stat;
+  short  bltsize;
+  short  beamsync;
+  int    (*cleanup) ();
+};
+
+#define CLEANUP 0x40
+#define CLEANME 0x40
+
 #endif /* HARDWARE_BLIT_H */
