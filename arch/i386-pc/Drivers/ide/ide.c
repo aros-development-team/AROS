@@ -173,75 +173,82 @@ AROS_LH2(struct ideBase *,  init,
         {
             D(bug("ide_init: Got ide_DevMaskArray=%p\n", IBase->ide_DevMaskArray));
             
-            /* Open timer.device */
-            IBase->ide_TimerIO = AllocMem(sizeof(struct timerequest),
-                                            MEMF_PUBLIC|MEMF_CLEAR);
-            if (IBase->ide_TimerIO)
+            IBase->ide_TimerMP = CreateMsgPort();
+            if (IBase->ide_TimerMP)
             {
+                /* Open timer.device */
+                IBase->ide_TimerIO = (struct timerequest *)CreateIORequest(IBase->ide_TimerMP,sizeof(struct timerequest));
+                if (IBase->ide_TimerIO)
+                {
         	    D(bug("ide_init: Got ide_TimerIO=%p\n", IBase->ide_TimerIO));
 
-                if (!OpenDevice("timer.device", UNIT_VBLANK,
-                                (struct IORequest*)IBase->ide_TimerIO, 0))
-                {
-                    ULONG	devID;
-                    int	    cunit = 0;
+                    if (!OpenDevice("timer.device", UNIT_VBLANK,
+                                    (struct IORequest*)IBase->ide_TimerIO, 0))
+                    {
+                        ULONG	devID;
+                        int	cunit = 0;
 			
-                    D(bug("ide_init: Got timer.device\n"));
+                    	D(bug("ide_init: Got timer.device\n"));
 
-                    /* Find all drives */
-                    for (i=0; i < MAX_PORTS; i++)
-                    {
-                        /* Test if MASTER is connected */
-                        devID = TestDevice(IBase->ide_TimerIO, 0x00, Ports[i]);
-                        if (devID)
-                        {
-                            IBase->ide_BoardAddr[cunit] = Ports[i];
-                            IBase->ide_DevMaskArray[cunit++] = (UBYTE)devID;
-                            D(bug("ide_init: device (%x) found at port 0%x\n",
-                                                    (UBYTE)devID, Ports[i]));
-                        }
-                        /* Check for SLAVE drive */
-                        if (!devID)
-                            devID = TestDevice(IBase->ide_TimerIO, 0x10, Ports[i]);
-                        else if(!TestMirror(Ports[i]))
-                            devID = 0;
-                        else devID = TestDevice(IBase->ide_TimerIO, 0x10, Ports[i]);
-                        /* Something found? */
-                        if (devID)
-                        {
-                            /* Great! We have another ide device. Add it to
-                             * list of available devices */
-                            IBase->ide_BoardAddr[cunit] = Ports[i];
-                            IBase->ide_DevMaskArray[cunit++] = (UBYTE)devID;
-                            D(bug("ide_init: device (%x) found at port 0%x\n",
-                                                    (UBYTE)devID, Ports[i]));
-                        }
-                    }
-                    /* Store number of available units */
-                    IBase->ide_NumUnit = cunit;
-		
-                    /* Close timer.device */
-                    CloseDevice((struct IORequest*)IBase->ide_TimerIO);
-                    FreeMem(IBase->ide_TimerIO, sizeof(struct timerequest));
-                    IBase->ide_TimerIO = NULL;
-
-                    /* If there are valid units */
-                    if (cunit)
-                    {
-                        /* Init device task */
-                        if (InitTask(IBase))
-                        {
-                            /* Init device daemon */
-                            if(InitDaemon(IBase))
+                    	/* Find all drives */
+                    	for (i=0; i < MAX_PORTS; i++)
+                    	{
+                            /* Test if MASTER is connected */
+                            devID = TestDevice(IBase->ide_TimerIO, 0x00, Ports[i]);
+                            if (devID)
                             {
-                                ReturnPtr("ide_init", struct ideBase *, IBase);
+                                IBase->ide_BoardAddr[cunit] = Ports[i];
+                                IBase->ide_DevMaskArray[cunit++] = (UBYTE)devID;
+                                D(bug("ide_init: Master (%x) found at port 0%x\n",
+                                                        (UBYTE)devID, Ports[i]));
+                            }
+                            /* Check for SLAVE drive */
+                            if (!devID)
+                                devID = TestDevice(IBase->ide_TimerIO, 0x10, Ports[i]);
+                            else if(!TestMirror(Ports[i]))
+                                devID = 0;
+                            else devID = TestDevice(IBase->ide_TimerIO, 0x10, Ports[i]);
+                            /* Something found? */
+                            if (devID)
+                            {
+                                /* Great! We have another ide device. Add it to
+                                 * list of available devices */
+                                IBase->ide_BoardAddr[cunit] = Ports[i];
+                                IBase->ide_DevMaskArray[cunit++] = (UBYTE)devID;
+                                D(bug("ide_init: Slave (%x) found at port 0%x\n",
+                                                        (UBYTE)devID, Ports[i]));
+                            }
+                        }
+                        /* Store number of available units */
+                        IBase->ide_NumUnit = cunit;
+	  	
+                        /* Close timer.device */
+                        CloseDevice((struct IORequest*)IBase->ide_TimerIO);
+                        DeleteIORequest((struct IORequest *)IBase->ide_TimerIO);
+                        IBase->ide_TimerIO = NULL;
+                        DeleteMsgPort(IBase->ide_TimerMP);
+                        IBase->ide_TimerMP = NULL;
+
+                        /* If there are valid units */
+                        if (cunit)
+                        {
+                            /* Init device task */
+                            if (InitTask(IBase))
+                            {
+                                /* Init device daemon */
+                                if(InitDaemon(IBase))
+                                {
+                                    ReturnPtr("ide_init", struct ideBase *, IBase);
+                                }
                             }
                         }
                     }
+                    /* Free timerequest memory */
+                    if (IBase->ide_TimerIO)
+                        DeleteIORequest(IBase->ide_TimerIO);
                 }
-                /* Free timerequest memory */
-                if (IBase->ide_TimerIO)
-                    FreeMem(IBase->ide_TimerIO, sizeof(struct timerequest));
+                if (IBase->ide_TimerMP)
+                    DeleteMsgPort(IBase->ide_TimerMP);
             }
             FreeMem(IBase->ide_DevMaskArray, MAX_UNIT);
         }
