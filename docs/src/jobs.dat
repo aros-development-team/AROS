@@ -1097,8 +1097,8 @@ intuition00012;2;digulla;Write DoubleClick
 intuition00013;2;digulla;Write DrawBorder
 intuition00014;2;digulla;Write DrawImage
 intuition00015;0;digulla;Write EndRequest
-intuition00016;1;bergers;Write GetDefPrefs
-intuition00017;1;bergers;Write GetPrefs
+intuition00016;2;bergers;Write GetDefPrefs
+intuition00017;2;bergers;Write GetPrefs
 intuition00018;2;SDuvan;Write InitRequester
 intuition00019;2;hkiel;Write ItemAddress
 intuition00020;2;digulla;Write ModifyIDCMP
