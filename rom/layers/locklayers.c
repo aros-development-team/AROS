@@ -6,6 +6,8 @@
     Lang: english
 */
 #include <aros/libcall.h>
+#include <graphics/layers.h>
+#include <graphics/clip.h>
 #include <proto/exec.h>
 
 #define DEBUG 0
@@ -29,7 +31,11 @@
 
 /*  FUNCTION
 
+        First locks the Layer_Info then all the layers that are
+        found in the list of layers.
+
     INPUTS
+        li - pointer to a Layer_Info structure
 
     RESULT
 
@@ -49,11 +55,22 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
+ 
+  struct Layer * l = li->top_layer;
 
-    D(bug("LockLayers(li @ $%lx)\n", li));
+  D(bug("LockLayers(li @ $%lx)\n", li));
 
-    AROS_LIBFUNC_EXIT
+  LockLayerInfo(li);
+  
+  while (NULL != l)
+  {
+    LockLayer(NULL, l);
+    l = l->Next;
+  }
+    
+
+  AROS_LIBFUNC_EXIT
 } /* LockLayers */
 

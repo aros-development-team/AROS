@@ -49,6 +49,7 @@ FUNCTIONS := \
 	movelayer			\
 	movelayerinfrontof		\
 	movesizelayer			\
+	scrolllayer			\
 	unlocklayer			\
 	unlocklayerinfo 		\
 	unlocklayers			\
