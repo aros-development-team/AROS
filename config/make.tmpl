@@ -1,3 +1,361 @@
+#############################################################################
+#############################################################################
+##                                                                         ##
+## Here are the mmakefile macro's that are used as commands in a make rule.##
+## They are used to help the portability of mmakefile to different         ##
+## platforms.                                                              ##
+##                                                                         ##
+#############################################################################
+#############################################################################
+
+#------------------------------------------------------------------------------
+# Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
+# and use the options in %(opt).
+%define compile_q cmd=$(TARGET_CC) opt=$(CFLAGS) from=$< to=$@ path=$(CURDIR)/
+	@$(ECHO) "Compiling $(strip $(if $(filter /%,%(from)),%(from),\
+	%(path)$(patsubst %(path)/,,%(from))))..."
+	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "%(path)%(from): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Compile failed: %(cmd) %(opt) -c %(from) -o %(to)" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Create the dependency file %(to) for %(from)
+%define mkdepend_q flags=$(CFLAGS) from=$< to=$@
+	%mkdir_q dir="$(dir %(to))"
+	@$(ECHO) "Makedepend $(CURDIR)/$(notdir %(from))..."
+	@$(MKDEPEND) %(flags) %(from) -o %(to)
+%end
+#------------------------------------------------------------------------------
+
+
+#############################################################################
+#############################################################################
+##                                                                         ##
+## Here are the mmakefile macro's that are used to do certain tasks in a   ##
+## mmakefile. They consist of one or more makefile rules.                  ##
+## In general the files generated in these macro's are also defined as     ##
+## make targets so that they can be used a dependency in other rules       ##
+##                                                                         ##
+#############################################################################
+#############################################################################
+
+#------------------------------------------------------------------------------
+# Generate a unique id for each of the %build... rules
+%define buildid
+BDID := $(BDID)_
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Copy file %(from) to %(to) in a makefile rule
+%define rule_copy from=\A to=\A
+%(to) : %(from)
+	@$(CP) $< $@
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Create the directories %(dirs). The creation will be done by adding rules to
+# the %(setuptarget) make target with setup as the default. 
+%define rule_makedirs dirs=\A setuptarget=setup
+
+%(setuptarget) :: %(dirs)
+
+%(dirs) :
+	%mkdir_q dir=$@
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate a rule to compile a C source file to an object file and generate
+# the dependency file. Basename may contain a directory part, then the source
+# file has to be in that directory. The generated file will be put in the
+# object directory without the directory.
+# options
+# - basename: the basename of the file to compile. Use % for a wildcard rule
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - dflags: the flags used during creation of dependency file. If not specified
+#   the same value as cflags will be used
+# - targetdir: the directory to put the .o file and the .d file. By default
+#   it is put in the same directory as the .c file
+%define rule_compile basename=\A cflags=$(CFLAGS) dflags= targetdir=
+
+ifeq (%(targetdir),)
+%(basename).o : %(basename).c
+	%compile_q opt=%(cflags)
+
+ifeq (%(dflags),)
+%(basename).d : %(basename).c
+	%mkdepend_q flags=%(cflags)
+else
+%(basename).d : %(basename).c
+	%mkdepend_q flags=%(dflags)
+endif
+
+else
+
+%(targetdir)/$(notdir %(basename)).o : %(basename).c
+	%compile_q opt=%(cflags)
+
+ifeq (%(dflags),)
+%(targetdir)/$(notdir %(basename)).d : %(basename).c
+	%mkdepend_q flags=%(cflags)
+else
+%(targetdir)/$(notdir %(basename)).d : %(basename).c
+	%mkdepend_q flags=%(dflags)
+endif
+
+endif
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate a rule to generate a function reference file from a C source file.
+# Basename may contain a directory part, then the source file has to be in that
+# directory. The generated file will be put in the object directory without the
+# directory.
+# options
+# - basename: the basename of the file to compile. Use % for a wildcard rule
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - targetdir: the directory to put the generated .ref file. By default the
+#   .ref file will be put in the same directory as the .c file.
+# - includefile: This file will be included at the head of the source file
+%define rule_ref basename=\A cflags=$(CFLAGS) targetdir= includefile=
+
+ifeq (%(targetdir),)
+GENFILE_TMP := %(basename).ref
+else
+GENFILE_TMP := %(targetdir)/$(notdir %(basename)).ref
+endif
+
+$(GENFILE_TMP) : %(basename).c $(CXREF) %(includefile)
+	@$(ECHO) "Generating $(notdir $@)..."
+ifeq (%(includefile),)
+	@$(CXREF) -raw -CPP 'gcc %(cflags) -E -C -dD' $< >$@
+else
+	@$(CXREF) -raw -CPP 'gcc %(cflags) -include %(includefile) -E -C -dD' $< >$@
+endif
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate the support files for compiling a module. This includes include
+# files and source files.
+%define rule_genmodule modname=\A modtype=\A objdir=\A conffile=\A reffile=\A
+
+GENFILES_TMP := %(objdir)/%(modname)_start.c %(objdir)/%(modname)_end.c \
+$(GENINCDIR)/clib/%(modname)_protos.h $(GENINCDIR)/defines/%(modname).h \
+$(GENINCDIR)/proto/%(modname).h
+
+# Some of the generated files are dependent on the module type.
+ifeq (%(modtype),library)
+GENFILES_TMP += %(objdir)/%(modname)_autoinit.c %(objdir)/%(modname)_stubs.c
+endif
+
+$(GENFILES_TMP) : %(conffile) $(GENMODULE) %(reffile)
+	@$(ECHO) "Generating functable and includes for module $(BD_MODNAME$(BDID))"
+ifneq (%(conffile),lib.conf)
+	@$(IF) $(TEST) -f lib.conf; then \
+	  $(ECHO) "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
+	fi
+endif
+	@$(IF) $(TEST) -f libdefs.h; then \
+	  $(ECHO) "WARNING !!! $(CURDIR)/libdefs.h may probably be removed"; \
+	fi
+	@$(GENMODULE) %(modname) %(modtype) %(conffile) %(objdir) $(GENINCDIR) %(reffile)
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Build a module
+# Explanation of this macro is done in the developer's manual
+%define build_module mmake=\A modname=\A modtype=\A \
+  conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" \
+  linklibfiles= cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) \
+  reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID)).ref \
+  linklibname=$(BD_MODNAME$(BDID)) uselibs=
+
+%buildid
+
+.PHONY : setup-module$(BDID)
+
+ifeq (%(modname),)
+$(error using %build_module: modname may not be empty)
+endif
+ifeq (%(modtype),)
+$(error using %build_module: $(MODTYPE) has to be defined with the type of the module)
+endif
+
+# assign and generate the local variables used in this macro
+BD_MODNAME$(BDID)    := %(modname)
+BD_MODTYPE$(BDID)    := %(modtype)
+BD_CONFFILE$(BDID)   := %(conffile)
+OBJDIR               ?= $(GENDIR)/$(CURDIR)
+BD_OBJDIR$(BDID)     := %(objdir)
+
+BD_FILES$(BDID)      := %(files)
+BD_LIBFILES$(BDID)   := %(linklibfiles)
+BD_STARTFILE$(BDID)  := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start
+BD_ENDFILE$(BDID)    := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end
+
+BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
+BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)))))
+BD_STARTOBJ$(BDID)   := $(addsuffix .o,$(BD_STARTFILE$(BDID)))
+BD_ENDOBJ$(BDID)     := $(addsuffix .o,$(BD_ENDFILE$(BDID)))
+
+BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)) $(BD_STARTOBJ$(BDID)) $(BD_ENDOBJ$(BDID)))
+
+BD_REFFILES$(BDID)   := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .ref, $(notdir $(BD_FILES$(BDID)))))
+BD_REFFILE$(BDID)    := %(reffile)
+
+BD_GENINCS$(BDID)    := clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h proto/$(BD_MODNAME$(BDID)).h
+BD_LIBDEFSINC$(BDID) := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
+
+BD_LIBS$(BDID)       := $(addprefix -l,%(uselibs)) -llibinit -lautoinit
+BD_DEPLIBS$(BDID)    := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
+
+BD_CFLAGS$(BDID)     := %(cflags) -I$(BD_OBJDIR$(BDID)) -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
+#Add extra flag if shared AROS C library is used
+ifneq ($(strip $(filter arosc_shared,%(uselibs))),)
+BD_CFLAGS$(BDID)     += -D_CLIB_LIBRARY_ -I$(TOP)/rom/exec
+endif
+ifeq (%(dflags),)
+BD_DFLAGS$(BDID)     := $(BD_CFLAGS$(BDID))
+else
+BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_OBJDIR$(BDID)) -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
+endif
+
+%rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+%rule_ref     basename=% targetdir=$(BD_OBJDIR$(BDID)) cflags="$(strip $(BD_CFLAGS$(BDID)))"
+%rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+%rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end   targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+
+# Add additional files depending the module type
+ifeq ($(BD_MODTYPE$(BDID)),library)
+  BD_MODDIR$(BDID)       := $(AROS_LIBS)
+  BD_EXTRAFILES$(BDID)   := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.c \
+			    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.c
+  BD_EXTRAOBJS$(BDID)    := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .o,$(BD_LIBFILES$(BDID)))) \
+  	                    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.o \
+			    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.o
+  BD_EXTRADEPS$(BDID)    := $(patsubst %.o,%.d,$(BD_EXTRAOBJS$(BDID))) 
+  BD_EXTRAGENFILES$(BDID):= $(LIBDIR)/lib%(linklibname).a
+  %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit \
+  		targetdir=$(BD_OBJDIR$(BDID)) \
+		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+  %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs \
+  		targetdir=$(BD_OBJDIR$(BDID)) \
+		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+else
+$(error unhandled MODTYPE %(modtype))
+endif
+
+BD_MODULE$(BDID)    := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BDID))
+BD_GENFILES$(BDID)  := $(BD_MODULE$(BDID)) $(BD_EXTRAGENFILES$(BDID))
+BD_DEPS$(BDID)      += $(BD_EXTRADEPS$(BDID))
+
+#MM %(mmake) : %(mmake)-setup
+
+#MM
+%(mmake) : $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) $(BD_GENFILES$(BDID))
+
+#MM
+%(mmake)-clean :
+	@$(ECHO) "Cleaning up for module $(BD_MODNAME$(BDID))"
+	@$(RM) $(BD_OBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_REFFILE$(BDID)) \
+	    $(BD_REFFILES$(BDID))\
+	    $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .c,$(BD_GENFILES$(BDID)))) \
+	    $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) \
+	    $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) \
+	    $(BD_EXTRAFILES$(BDID)) $(BD_EXTRAOBJS$(BDID)) $(BD_LIBDEFSINC$(BDID)) \
+	    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h \
+	    $(addsuffix .c,$(BD_STARTFILE$(BDID)) $(BD_ENDFILE$(BDID))) \
+	    $(BD_STARTOBJ$(BDID)) $(BD_ENDOBJ$(BDID))
+
+#MM
+%(mmake)-setup : setup-module$(BDID)
+
+$(BD_LIBDEFSINC$(BDID)) : $(BD_CONFFILE$(BDID)) $(GENLIBDEFS)
+	@$(ECHO) "Generating $(notdir $@)"
+	%mkdir_q dir=$(BD_OBJDIR$(BDID))
+	@$(GENLIBDEFS) $(BD_MODNAME$(BDID)) $(BD_MODTYPE$(BDID)) $(BD_CONFFILE$(BDID)) $(BD_OBJDIR$(BDID))
+
+$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h :
+	@$(ECHO) "generating $@"
+	%mkdir_q dir=$(BD_OBJDIR$(BDID))
+	@$(ECHO) "#define LC_LIBDEFS_FILE \"$(BD_LIBDEFSINC$(BDID))\"" >$@
+
+$(BD_REFFILE$(BDID)) : $(BD_REFFILES$(BDID))
+	@$(ECHO) "Generating function reference file for module $(BD_MODNAME$(BDID))"
+	@$(CAT) $(BD_REFFILES$(BDID)) >$@
+
+$(BD_REFFILES$(BDID)) : $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
+
+%rule_genmodule modname=$(BD_MODNAME$(BDID)) modtype=$(BD_MODTYPE$(BDID)) \
+		objdir=$(BD_OBJDIR$(BDID)) conffile=$(BD_CONFFILE$(BDID)) \
+		reffile=$(BD_REFFILE$(BDID))
+
+$(BD_MODULE$(BDID)) : $(BD_OBJS$(BDID)) $(BD_STARTOBJ$(BDID)) $(BD_ENDOBJ$(BDID)) $(BD_DEPLIBS$(BDID))
+	%link_module_q err=$(BD_MODNAME$(BDID)).err endtag=$(BD_ENDOBJ$(BDID)) \
+	    objs="$(BD_OBJS$(BDID)) $(BD_STARTOBJ$(BDID))" libs=$(BD_LIBS$(BDID))
+
+%rule_copy from=$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h to=$(INCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h
+%rule_copy from=$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/defines/$(BD_MODNAME$(BDID)).h
+%rule_copy from=$(GENINCDIR)/inline/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/inline/$(BD_MODNAME$(BDID)).h
+%rule_copy from=$(GENINCDIR)/pragmas/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/pragmas/$(BD_MODNAME$(BDID)).h
+%rule_copy from=$(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/proto/$(BD_MODNAME$(BDID)).h
+
+# For a shared library also build a static link lib
+ifeq ($(BD_MODTYPE$(BDID)),library)
+$(LIBDIR)/lib%(linklibname).a : $(BD_EXTRAOBJS$(BDID))
+	%mklib_q from=$^
+endif
+
+$(BD_DEPS$(BDID)) : \
+  $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
+
+%rule_makedirs dirs=$(BD_OBJDIR$(BDID)) setuptarget=setup-module$(BDID)
+
+%include_deps deps=$(BD_DEPS$(BDID))
+%end
+
+
+
+
+
+
+
+
+
+
+
+
+# ======================
+# Old stuff, will probably be removed in the future
+
+
+
+
 # GNU Make automatic variables
 # $@ current target
 # $< First dependency
@@ -47,25 +405,6 @@
 	fi
 %end
 
-#------------------------------------------------------------------------------
-# Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
-# and use the options in %(opt).
-%define compile_q cmd=$(CC) opt=$(CFLAGS) from=$< to=$@ path=$(CURDIR)/
-	@$(ECHO) "Compiling $(strip $(if $(filter /%,%(from)),%(from),\
-	%(path)$(patsubst %(path)/,,%(from))))..."
-	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
-	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-		$(ECHO) "%(path)%(from): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
-		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
-	    else \
-		$(NOP) ; \
-	    fi ; \
-	else \
-	    $(ECHO) "Compile failed: %(cmd) %(opt) -c %(from) -o %(to)" 1>&2 ; \
-	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
-	    exit 1 ; \
-	fi
-%end
 
 #------------------------------------------------------------------------------
 %define link_q cmd=$(CC) opt=$(LDFLAGS) startup=$(STARTUP) from=$< to=$@ libs=$(LIBS) end=$()
@@ -152,14 +491,6 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 %end
 
 #------------------------------------------------------------------------------
-# Create the dependency file %(to) for %(from) in the directory %(dir)
-%define mkdepend_q flags=$(CFLAGS) from=$< to=$@ dir=$(@D) opt=
-	@$(IF) [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else $(NOP) ; fi
-	@$(ECHO) "Makedepend $(CURDIR)/$(notdir %(from))..."
-	@$(MKDEPEND) %(flags) %(from) -o %(to)
-%end
-
-#------------------------------------------------------------------------------
 # Same but more noisy
 %define mkdepend flags=$(CFLAGS) from=$< to=$@ dir=$(@D) opt=
 	@$(IF) [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else $(NOP) ; fi
@@ -218,7 +549,7 @@ endif
 # Compile function table
 %define compilefunctable
 $(OBJDIR)/functable.d : $(OBJDIR)/functable.c
-%mkdepend_q opt="$(MKDEPEND_FLAGS) -I."
+%mkdepend_q flags="$(CFLAGS) -I."
 
 $(OBJDIR)/functable.o : $(OBJDIR)/functable.c
 %compile_q opt="$(CFLAGS) -I$(OBJDIR) -I."
@@ -257,7 +588,7 @@ $(ENDFUNC) : $(END_FILE).c libdefs.h
 %compile_q path=""
 
 $(END_FILE).d : $(END_FILE).c
-%mkdepend_q opt="$(MKDEPEND_CFLAGS) -I."
+%mkdepend_q flags="$(MKDEPEND_CFLAGS) -I."
 %end
 
 #------------------------------------------------------------------------------
@@ -382,7 +713,7 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-%mkdepend_q opt=$(MKDEPEND_FLAGS)
+%mkdepend_q
 %end
 
 #------------------------------------------------------------------------------
@@ -464,7 +795,7 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-%mkdepend_q opt=$(MKDEPEND_FLAGS)
+%mkdepend_q
 %end
 
 #------------------------------------------------------------------------------
@@ -544,7 +875,7 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-%mkdepend_q opt=$(MKDEPEND_FLAGS)
+%mkdepend_q
 
 # Generate include files
 %genlibincludes_arch
@@ -636,7 +967,7 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-%mkdepend_q opt=$(MKDEPEND_FLAGS)
+%mkdepend_q
 
 # Generate include files
 %genlibincludesinline hasrt=%(hasrt)
@@ -958,7 +1289,7 @@ $(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
 %libdefs_rule
 
 $(OBJDIR)/%.d : %.c
-%mkdepend_q opt=$(MKDEPEND_FLAGS)
+%mkdepend_q
 
 %include_deps
 
@@ -1049,7 +1380,7 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-%mkdepend_q opt=$(MKDEPEND_FLAGS)
+%mkdepend_q
 
 %include_deps
 %end
@@ -1064,222 +1395,6 @@ $(OBJDIR)/%.d : %.c
 	@$(PNGTOPNM) %(img2) | $(PPMTOILBM) -maxplanes 8 >$(GENDIR)/genicon2.iff
 	@$(ILBMTOICON) %(from) $(GENDIR)/genicon1.iff $(GENDIR)/genicon2.iff %(to)
 %end
-
-#------------------------------------------------------------------------------
-# Some new macro's added by Staf (verhaegs) for new build system of modules
-#------------------------------------------------------------------------------
-
-#------------------------------------------------------------------------------
-# Generate a unique id for each of the %build... rules
-%define buildid
-BDID := $(BDID)_
-%end
-
-
-#------------------------------------------------------------------------------
-# Generate a rule to compile a C source file to an object file and generate
-# the dependency file. Basename may contain a directory part, then the source
-# file has to be in that directory. The generated file will be put in the
-# object directory without the directory.
-# options
-# - basename: the basename of the file to compile. Use % for a wildcard rule
-# - cflags (default $(CFLAGS)): the C flags to use for compilation
-# - dflags: the flags used during creation of dependency file. If not specified
-#   the same value as cflags will be used
-# - objdir (default: $(OBJDIR)): the directory to put the .o file and the .d
-#   file
-%define rule_compile basename=\A cflags=$(CFLAGS) dflags= objdir=$(OBJDIR)
-
-%(objdir)/$(notdir %(basename)).o : %(basename).c
-	%compile_q opt=%(cflags)
-
-ifeq (%(dflags),)
-%(objdir)/$(notdir %(basename)).d : %(basename).c
-	%mkdepend_q flags=%(cflags)
-else
-%(objdir)/$(notdir %(basename)).d : %(basename).c
-	%mkdepend_q flags=%(dflags)
-endif
-
-%end
-
-#------------------------------------------------------------------------------
-# Generate a rule to generate a function reference file from a C source file.
-# Basename may contain a directory part, then the source file has to be in that
-# directory. The generated file will be put in the object directory without the
-# directory.
-# options
-# - basename: the basename of the file to compile. Use % for a wildcard rule
-# - cflags (default $(CFLAGS)): the C flags to use for compilation
-# - objdir (default: $(OBJDIR)): the directory to put the .o file and the .d
-#   file
-%define rule_ref basename=\A cflags=$(CFLAGS) objdir=$(OBJDIR)
-
-%(objdir)/$(notdir %(basename)).ref : %(basename).c $(CXREF)
-	@$(ECHO) "Generating $(notdir $@)..."
-	@$(CXREF) -raw -CPP 'gcc %(cflags) -E -C -dD' $< >$@
-
-%end
-
-#------------------------------------------------------------------------------
-# Build a module
-# options:
-# - conffile (default: $(MODULE).conf): The name of the config file.
-# - cflags (default: $(CFLAGS)): The C options used during compilation
-%define build_module mmake=\A modname=\A modtype=\A \
-  conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" \
-  linklibfiles= cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) \
-  reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID)).ref \
-  linklibname=$(BD_MODNAME$(BDID)) uselibs=
-
-%buildid
-
-ifeq (%(modname),)
-$(error using %build_module: modname may not be empty)
-endif
-ifeq (%(modtype),)
-$(error using %build_module: $(MODTYPE) has to be defined with the type of the module)
-endif
-OBJDIR               ?= $(GENDIR)/$(CURDIR)
-BD_MODNAME$(BDID)    := %(modname)
-BD_MODTYPE$(BDID)    := %(modtype)
-BD_CONFFILE$(BDID)   := %(conffile)
-BD_FILES$(BDID)      := %(files)
-BD_LIBFILES$(BDID)   := %(linklibfiles)
-BD_OBJDIR$(BDID)     := %(objdir)
-BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
-BD_REFFILES$(BDID)   := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .ref, $(notdir $(BD_FILES$(BDID)))))
-BD_CFLAGS$(BDID)     := %(cflags) -I$(BD_OBJDIR$(BDID)) -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
-ifeq (%(dflags),)
-BD_DFLAGS$(BDID)     := $(BD_CFLAGS$(BDID))
-else
-BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_OBJDIR$(BDID)) -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
-endif
-BD_STARTFILE$(BDID)  := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start
-BD_ENDFILE$(BDID)    := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end
-BD_OBJS$(BDID)       := $(addsuffix .o,$(BD_STARTFILE$(BDID)) $(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)))))
-BD_ENDOBJ$(BDID)     := $(addsuffix .o,$(BD_ENDFILE$(BDID)))
-BD_GENINCS$(BDID)    := clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h proto/$(BD_MODNAME$(BDID)).h
-BD_LIBDEFSINC$(BDID) := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
-BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID)))
-BD_REFFILE$(BDID)    := %(reffile)
-BD_LIBS$(BDID)       := $(addprefix -l,%(uselibs)) -llibinit -lautoinit
-BD_DEPLIBS$(BDID)    := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
-
-#Add extra flag if shared AROS C library is used
-ifneq ($(strip $(filter arosc_shared,%(uselibs))),)
-BD_CFLAGS$(BDID)     += -D_CLIB_LIBRARY_ -I$(TOP)/rom/exec
-endif
-
-%rule_compile basename=% objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
-%rule_ref     basename=% objdir=$(BD_OBJDIR$(BDID)) cflags="$(strip $(BD_CFLAGS$(BDID)))"
-%rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
-%rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end   objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
-
-BD_MODDIR$(BDID)     := bollocks
-
-ifeq ($(BD_MODTYPE$(BDID)),library)
-  BD_MODDIR$(BDID)       := $(AROS_LIBS)
-  BD_EXTRAFILES$(BDID)   := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.c \
-			    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.c
-  BD_EXTRAOBJS$(BDID)    := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .o,$(BD_LIBFILES$(BDID)))) \
-  	                    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.o \
-			    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.o
-  BD_EXTRADEPS$(BDID)    := $(patsubst %.o,%.d,$(BD_EXTRAOBJS$(BDID))) 
-  BD_EXTRAGENFILES$(BDID):= $(LIBDIR)/lib%(linklibname).a
-  %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
-  %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs    objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
-endif
-
-ifeq ($(BD_MODDIR$(BDID)),bollocks)
-$(error unhandled MODTYPE %(modtype))
-endif
-
-BD_MODULE$(BDID)    := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BDID))
-BD_GENFILES$(BDID)  := $(BD_MODULE$(BDID)) $(BD_EXTRAGENFILES$(BDID))
-BD_DEPS$(BDID)      += $(BD_EXTRADEPS$(BDID))
-
-#MM
-%(mmake) : $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) $(BD_GENFILES$(BDID))
-
-#MM
-%(mmake)-clean :
-	@$(ECHO) "Cleaning up for module $(BD_MODNAME$(BDID))"
-	@$(RM) $(BD_OBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_REFFILE$(BDID)) \
-	    $(BD_REFFILES$(BDID))\
-	    $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .c,$(BD_GENFILES$(BDID)))) \
-	    $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) \
-	    $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) \
-	    $(BD_EXTRAFILES$(BDID)) $(BD_EXTRAOBJS$(BDID)) $(BD_LIBDEFSINC$(BDID)) \
-	    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h \
-	    $(addsuffix .c,$(BD_STARTFILE$(BDID)) $(BD_ENDFILE$(BDID))) $(BD_ENDOBJ$(BDID))
-
-$(BD_LIBDEFSINC$(BDID)) : $(BD_CONFFILE$(BDID)) $(GENLIBDEFS)
-	@$(ECHO) "Generating $(notdir $@)"
-	%mkdir_q dir=$(BD_OBJDIR$(BDID))
-	@$(GENLIBDEFS) $(BD_MODNAME$(BDID)) $(BD_MODTYPE$(BDID)) $(BD_CONFFILE$(BDID)) $(BD_OBJDIR$(BDID))
-
-$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h :
-	@$(ECHO) "generating $@"
-	%mkdir_q dir=$(BD_OBJDIR$(BDID))
-	@$(ECHO) "#define LC_LIBDEFS_FILE \"$(BD_LIBDEFSINC$(BDID))\"" >$@
-
-$(BD_REFFILE$(BDID)) : $(BD_REFFILES$(BDID))
-	@$(ECHO) "Generating function reference file for module $(BD_MODNAME$(BDID))"
-	@$(CAT) $(BD_REFFILES$(BDID)) >$@
-
-$(BD_REFFILES$(BDID)) : $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
-
-$(addsuffix .c,$(BD_STARTFILE$(BDID)) $(BD_ENDFILE$(BDID))) \
-$(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) $(BD_EXTRAFILES$(BDID)) \
-: $(BD_CONFFILE$(BDID)) $(GENMODULE) $(BD_REFFILE$(BDID))
-	@$(ECHO) "Generating functable and includes for module $(BD_MODNAME$(BDID))"
-ifneq ($(BD_CONFFILE$(BDID)),lib.conf)
-	@$(IF) $(TEST) -f lib.conf; then \
-	  $(ECHO) "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
-	fi
-endif
-	@$(IF) $(TEST) -f libdefs.h; then \
-	  $(ECHO) "WARNING !!! $(CURDIR)/libdefs.h may probably be removed"; \
-	fi
-	@$(GENMODULE) $(BD_MODNAME$(BDID)) $(BD_MODTYPE$(BDID)) $(BD_CONFFILE$(BDID)) $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(BD_REFFILE$(BDID))
-
-$(BD_MODULE$(BDID)) : $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID)) $(BD_DEPLIBS$(BDID))
-	%link_module_q err=$(BD_MODNAME$(BDID)).err endtag=$(BD_ENDOBJ$(BDID)) \
-	    objs=$(BD_OBJS$(BDID)) libs=$(BD_LIBS$(BDID))
-
-$(INCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h : $(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h
-	@$(CP) $< $@
-
-$(INCDIR)/defines/$(BD_MODNAME$(BDID)).h : $(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h
-	@$(CP) $< $@
-
-$(INCDIR)/inline/$(BD_MODNAME$(BDID)).h : $(GENINCDIR)/inline/$(BD_MODNAME$(BDID)).h
-	@$(CP) $< $@
-
-$(INCDIR)/pragmas/$(BD_MODNAME$(BDID)).h : $(GENINCDIR)/pragmas/$(BD_MODNAME$(BDID)).h
-	@$(CP) $< $@
-
-$(INCDIR)/proto/$(BD_MODNAME$(BDID)).h : $(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h
-	@$(CP) $< $@
-
-ifeq ($(BD_MODTYPE$(BDID)),library)
-$(LIBDIR)/lib%(linklibname).a : $(BD_EXTRAOBJS$(BDID))
-	%mklib_q from=$^
-
-#$(BD_EXTRAOBJS$(BDID)) : $(addprefix $(AROS_INCLUDES)/, $(BD_GENINCS$(BDID)))
-#$(BD_EXTRADEPS$(BDID)) : $(addprefix $(AROS_INCLUDES)/, $(BD_GENINCS$(BDID)))
-endif
-
-$(BD_OBJDIR$(BDID)) :
-	%mkdir_q dir=$@
-
-$(BD_DEPS$(BDID)) : \
-  $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
-
-%include_deps deps=$(BD_DEPS$(BDID))
-%end
-
 
 #------------------------------------------------------------------------------
 # NOTE: The following are all part of Iain's build changes, please don't use
