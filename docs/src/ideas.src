@@ -191,5 +191,22 @@ By Paulo F. Zemek:
 Intuition should not send more than one REFRESH message to a window (ie.
 if there is already one in the queue, then it should be removed first).
 \end{new}
+
+\item
+\begin{new}{05.03.1998}
+By Henning Kiel:
+The original Amiga Includes used to have an intuition/iobsolete.h
+AROS wants to get rid of obsolete stuff, and therefore we are not going
+to include iobsolete.h in our distribution. However, we are intersted in
+getting software for AROS and this may be old, but useful.
+So we need a way to support old sources, but in such a way, that the old
+code will be converted. (Maybe in multiple passes)
+This conversion-tool should do: (open, unordered list)
+\begin{itemize}
+\item convert old defines to new ones
+\item convert old storage types (e.g. SHORT to BYTE)
+\end{itemize}
+\end{new}
+
 \end{itemize}
 \end{new}
