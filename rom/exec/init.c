@@ -330,16 +330,16 @@ int main(int argc,char *argv[])
 	struct Library * lib;
 
 	lib = (struct Library *)InitResident((struct Resident *)&Utility_resident,0);
-	if (lib) AddLibrary(lib);
+	/* if (lib) AddLibrary(lib); */
 
 	DOSBase = (struct DosLibrary *)InitResident((struct Resident *)&Dos_resident,0);
 
-	if (DOSBase) AddLibrary((struct Library *)DOSBase);
+	/* if (DOSBase) AddLibrary((struct Library *)DOSBase); */
 
 	lib = (struct Library *)InitResident((struct Resident *)&Graphics_resident,0);
-	if (lib) AddLibrary(lib);
+	/* if (lib) AddLibrary(lib); */
 	lib = (struct Library *)InitResident((struct Resident *)&Intuition_resident,0);
-	if (lib) AddLibrary(lib);
+	/* if (lib) AddLibrary(lib); */
     }
 
     {
@@ -351,7 +351,7 @@ int main(int argc,char *argv[])
 	struct consolebase *conbase;
 
 	conbase=(struct consolebase *)InitResident((struct Resident *)&Console_resident,0);
-	AddDevice (&conbase->device);
+	/* AddDevice (&conbase->device); */
     }
 
     DOSBase = (struct DosLibrary *)OpenLibrary (DOSNAME, 39);
@@ -393,7 +393,7 @@ int main(int argc,char *argv[])
 	    (struct Resident *)&emul_handler_resident,
 	    0
 	);
-	AddDevice (&emulbase->eb_device);
+	/* AddDevice (&emulbase->eb_device); */
 
 	AssignLock ("C",    Lock ("SYS:c",    SHARED_LOCK));
 	AssignLock ("S",    Lock ("SYS:s",    SHARED_LOCK));
