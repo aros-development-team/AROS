@@ -41,7 +41,7 @@ int main(int argc, char ** argv)
 	afh = (struct AvailFontsHeader *)AllocMem(afsize, MEMF_ANY);
 	if (afh)
 	{
-	    afshortage = AvailFonts((STRPTR)afh, afsize, AFF_MEMORY);
+	    afshortage = AvailFonts((STRPTR)afh, afsize, AFF_MEMORY|AFF_DISK);
 	    if (afshortage)
 	    {
 		FreeMem(afh, afsize);
