@@ -35,7 +35,7 @@
 //extern const char Exec_end;
 
 extern struct ExecBase * PrepareExecBase(struct MemHeader *);
-extern void switch_to_user_mode(void *, ULONG *);
+extern void switch_to_user_mode(void *, ULONG *, ULONG *);
 extern void Init_Hardware(void);
 extern void Init_IRQVectors(void);
 extern int main_init_cont(void);
@@ -97,7 +97,7 @@ static const struct Resident *romtagList[] =
 	&Keymap_resident,               /* ColdStart,   40       */
 	&Input_resident,                /* ColdStart,   30	 */
 	&Intuition_resident,            /* ColdStart,   10	 */	
-//	&hiddgraphics_resident,		/* ColdStart,   9	 */
+	&hiddgraphics_resident,		/* ColdStart,   9	 */
 //	&vgaHidd_resident,		/* ColdStart,   9	 */
 //	&hiddserial_resident,		/* ColdStart,   9	 */
 	&Console_resident,              /* ColdStart,   5	 */
