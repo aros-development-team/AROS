@@ -591,6 +591,7 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 	     || w->Flags & WFLG_DEPTHGADGET
 	     || w->Flags & WFLG_HASZOOM
 	     || w->Flags & WFLG_DRAGBAR /* To assure w->BorderTop being set correctly */
+             || w->Flags & WFLG_SIZEGADGET
 	)
 	{
 	/* If any of titlebar gadgets are present, me might just as well
@@ -606,6 +607,37 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 	
 	/* Relright of rightmost button */
 	relright = - (TITLEBAR_HEIGHT - 1);
+
+
+
+	if (w->Flags & WFLG_SIZEGADGET)
+	{
+	    /* this code must not change the 'relright' variable */
+#warning The sizegadget is probably placed at a wrong place
+	    LONG top = w->Height - (TITLEBAR_HEIGHT - 1);
+	    struct TagItem size_tags[] = {
+	            {GA_RelRight,	relright	},
+		    {GA_Top,		top  		},
+		    {GA_Width,		TITLEBAR_HEIGHT	},
+		    {GA_Height,		TITLEBAR_HEIGHT	},
+		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
+		    {GA_SysGadget,	TRUE		},
+		    {GA_SysGType,	GTYP_SIZING 	},
+		    {GA_BottomBorder,	TRUE		},
+		    {GA_GZZGadget,	is_gzz		},
+		    {TAG_DONE,		0UL }
+	    };
+kprintf("Creating Size Gadget!\n");		
+	    SYSGAD(w, SIZEGAD) = NewObjectA(
+			GetPrivIBase(IntuitionBase)->sizebuttonclass
+			, NULL
+			, size_tags );
+
+	    if (!SYSGAD(w, SIZEGAD))
+		sysgads_ok = FALSE;
+	    
+	    
+	}  
 	
 	if (w->Flags & WFLG_DEPTHGADGET)
 	{
