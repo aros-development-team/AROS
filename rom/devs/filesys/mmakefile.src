@@ -5,7 +5,10 @@ USER_INCLUDES	:= -I/usr/include
 OBJDIR		:= $(GENDIR)/filesys
 
 #MM kernel : setup includes
-kernel : $(OBJDIR)/emul_handler.o
+kernel : show-flags $(OBJDIR)/emul_handler.o
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 #MM
 setup :

@@ -50,7 +50,7 @@ EXTRA_DEPLIBS = $(LIB)
 %genlib
 
 #MM workbench : setup includes linklibs
-workbench : $(SLIB)
+workbench : show-flags $(SLIB)
 
 #MM setup
 #MM clean
