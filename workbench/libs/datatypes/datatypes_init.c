@@ -7,54 +7,16 @@
 #include <exec/lists.h>
 #include <exec/memory.h>
 #include <exec/resident.h>
-#include <aros/libcall.h>
 #include <exec/semaphores.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 
 #include <proto/exec.h>
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "datatypes_intern.h"
 #include LC_LIBDEFS_FILE
-
-#define INIT AROS_SLIB_ENTRY(init, DataTypes)
-static const char name[];
-static const char version[];
-static const APTR inittabl[4];
-static const void * const LIBFUNCTABLE[];
-struct DataTypesBase * INIT();
-extern const char LIBEND;
-
-int entry(void)
-{
-    return -1;
-}
-
-const struct Resident DataTypes_resident =
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&DataTypes_resident,
-    (APTR)&LIBEND,
-    RTF_AUTOINIT,
-    VERSION_NUMBER,
-    NT_LIBRARY,
-    -120,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl
-};
-
-static const char name[]=NAME_STRING;
-static const char version[]=VERSION_STRING;
-
-static const APTR inittabl[4] =
-{
-    (APTR)sizeof(struct DataTypesBase),
-    (APTR)LIBFUNCTABLE,
-    NULL,
-    &INIT
-};
 
 static void closelibs(struct DataTypesBase *DataTypesBase)
 {
@@ -81,24 +43,15 @@ static void closelibs(struct DataTypesBase *DataTypesBase)
 }
 
 
-AROS_UFH3(struct DataTypesBase *, AROS_SLIB_ENTRY(init,DataTypes),
-    AROS_UFHA(struct DataTypesBase *,  DataTypesBase, D0),
-    AROS_UFHA(BPTR,                  segList, A0),
-    AROS_UFHA(struct ExecBase *, sysBase, A6)
-)
+AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
-    AROS_USERFUNC_INIT
     int i;
 
-    DataTypesBase->dtb_SysBase = sysBase;
-#undef SysBase
-    SysBase = (struct Library *)sysBase;
-#define SysBase ((struct DataTypesBase *)DataTypesBase)->dtb_SysBase
-    DataTypesBase->dtb_SegList = segList;
+    LIBBASE->dtb_SysBase = SysBase;
     
     for (i = 0; i < SEM_MAX; i++)
     {
-	InitSemaphore(&DataTypesBase->dtb_Semaphores[i]);
+	InitSemaphore(&LIBBASE->dtb_Semaphores[i]);
     }
 
     /*
@@ -110,35 +63,37 @@ AROS_UFH3(struct DataTypesBase *, AROS_SLIB_ENTRY(init,DataTypes),
      * system unnecessarily.
      */
 
-    if ((DataTypesBase->dtb_UtilityBase =
+    D(bug("Inside init of datatypes.library\n"));
+    
+    if ((LIBBASE->dtb_UtilityBase =
 	    OpenLibrary("utility.library", 39L)) == NULL)
     {
 	D(bug("datatypes.library: Cannot open utility.library\n"));
 	goto error;
     }
 
-    if ((DataTypesBase->dtb_GfxBase =
+    if ((LIBBASE->dtb_GfxBase =
 	    OpenLibrary("graphics.library", 39L)) == NULL)
     {
 	D(bug("datatypes.library: Cannot open graphics.library\n"));
 	goto error;
     }
 
-    if ((DataTypesBase->dtb_LayersBase = 
+    if ((LIBBASE->dtb_LayersBase = 
 	    OpenLibrary("layers.library", 39L)) == NULL)
     {
 	D(bug("datatypes.library: Cannot open layers.library\n"));
 	goto error;
     }
 
-    if ((DataTypesBase->dtb_IntuitionBase =
+    if ((LIBBASE->dtb_IntuitionBase =
 	    OpenLibrary("intuition.library", 39L)) == NULL)
     {
 	D(bug("datatypes.library: Cannot open intuition.library\n"));
 	goto error;
     }
 
-    if ((DataTypesBase->dtb_DOSBase =
+    if ((LIBBASE->dtb_DOSBase =
 	    OpenLibrary("dos.library", 37L)) == NULL)
     {
 	D(bug("datatypes.library: Cannot open dos.library\n"));
@@ -146,14 +101,14 @@ AROS_UFH3(struct DataTypesBase *, AROS_SLIB_ENTRY(init,DataTypes),
     }
 
     /* We may not have these libraries, but try anyway */
-    if ((DataTypesBase->dtb_IFFParseBase =
+    if ((LIBBASE->dtb_IFFParseBase =
 	    OpenLibrary("iffparse.library", 37L)) == NULL)
     {
 	D(bug("datatypes.library: Cannot open iffparse.library\n"));
 	goto error;
     }
 
-    if ((DataTypesBase->dtb_LocaleBase =
+    if ((LIBBASE->dtb_LocaleBase =
 	    OpenLibrary("locale.library", 0L)) == NULL)
     {
 	D(bug("datatypes.library: Cannot open locale.library\n"));
@@ -161,18 +116,16 @@ AROS_UFH3(struct DataTypesBase *, AROS_SLIB_ENTRY(init,DataTypes),
     }
 
     /* Get the list of datatypes */
-    DataTypesBase->dtb_DTList = GetDataTypesList(DataTypesBase);
+    LIBBASE->dtb_DTList = GetDataTypesList(LIBBASE);
 
-    if(!InstallClass((struct Library *)DataTypesBase))
-    {
-	return NULL;
-    }
+    if(!InstallClass((struct Library *)LIBBASE))
+	return FALSE;
 
     /* Try opening the catalog, don't worry if we fail, just keep trying. */
-    DataTypesBase->dtb_LibsCatalog =
+    LIBBASE->dtb_LibsCatalog =
 	opencatalog
 	(
-	    (struct Library *)DataTypesBase,
+	    (struct Library *)LIBBASE,
 	    NULL,
 	    "Sys/libs.catalog",
 	    OC_BuiltInLanguage,
@@ -180,25 +133,20 @@ AROS_UFH3(struct DataTypesBase *, AROS_SLIB_ENTRY(init,DataTypes),
 	    TAG_DONE
 	);
 
-    return DataTypesBase;
+    D(bug("datatypes.library correctly initialized\n"));
+
+    return TRUE;
 
 error:
-    closelibs(DataTypesBase);
+    closelibs(LIBBASE);
 
-    return NULL;
-
-    AROS_USERFUNC_EXIT
+    return FALSE;
 }
 
 
-AROS_LH1(struct DataTypesBase *, open,
-    AROS_LHA(ULONG, version, D0),
-    struct DataTypesBase *, DataTypesBase, 1, DataTypes)
+AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
 {
-    AROS_LIBFUNC_INIT
-
-    /* Keep the compiler happy */
-    version = 0;
+    D(bug("Inside open of datatypes.library\n"));
 
     /* Try opening the catalog again. */
     if(DataTypesBase->dtb_LibsCatalog == NULL)
@@ -215,41 +163,14 @@ AROS_LH1(struct DataTypesBase *, open,
 	    );
     }
 
-    /* What else do we have to do? */
-    DataTypesBase->dtb_LibNode.lib_OpenCnt++;
-    DataTypesBase->dtb_LibNode.lib_Flags &= ~LIBF_DELEXP;
+    D(bug("Return from open of datatypes.library\n"));
 
-    return DataTypesBase;
-    AROS_LIBFUNC_EXIT
+    return TRUE;
 }
 
 
-AROS_LH0(BPTR, close,
-    struct DataTypesBase *, DataTypesBase, 2, DataTypes)
+AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
-    AROS_LIBFUNC_INIT
-
-    --DataTypesBase->dtb_LibNode.lib_OpenCnt;
-
-    /*
-	We can never exit because of the system patches,
-	But we can try and free some memory.
-    */
-    AROS_LC0(BPTR, expunge, LIBBASETYPE *, DataTypesBase, 3, DataTypes);
-
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
-
-
-AROS_LH0(BPTR, expunge,
-    struct DataTypesBase *, DataTypesBase, 3, DataTypes)
-{
-    AROS_LIBFUNC_INIT
-
-    /* As I said above, we cannot remove ourselves. */
-    DataTypesBase->dtb_LibNode.lib_Flags &= ~LIBF_DELEXP;
-
 #if 0
     /* stegerg: if later someone else re-opens datatypes.library, then
                 the datatypes.class would have to be re-added with
@@ -261,17 +182,8 @@ AROS_LH0(BPTR, expunge,
 #endif
 
     return 0;
-    AROS_LIBFUNC_EXIT
 }
 
-
-AROS_LH0I(int, null,
-    struct DataTypesBase *, LIBBASE, 4, DataTypes)
-{
-    AROS_LIBFUNC_INIT
-
-    return 0;
-
-    AROS_LIBFUNC_EXIT
-}
-
+ADD2INITLIB(Init, 0);
+ADD2OPENLIB(Open, 0);
+ADD2EXPUNGELIB(Expunge, 0);

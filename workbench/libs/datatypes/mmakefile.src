@@ -33,11 +33,12 @@ FUNCS := adddtobject \
 	 setdtattrsa \
 	 startdragselect
 
-#MM- workbench-libs-datatypes : includes linklibs
+#MM- workbench-libs-datatypes : linklibs
 
-%build_module_macro mmake=workbench-libs-datatypes modname=datatypes \
-  modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="amiga rom" \
-  conffile=lib.conf
+%build_module mmake=workbench-libs-datatypes \
+    modname=datatypes modtype=library \
+    files="datatypes_init $(FUNCS) $(FILES)" \
+    uselibs="amiga rom"
 
 
 INCLUDE_FILES := $(wildcard include/*.h)
