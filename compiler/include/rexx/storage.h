@@ -37,9 +37,9 @@ struct RexxMsg
 };
 
 /* Shortcuts for the arguments */
-#define ARG0(msg) (msg->rm_Args[0])
-#define ARG1(msg) (msg->rm_Args[1])
-#define ARG2(msg) (msg->rm_Args[2])
+#define ARG0(msg) ((UBYTE *)msg->rm_Args[0])
+#define ARG1(msg) ((UBYTE *)msg->rm_Args[1])
+#define ARG2(msg) ((UBYTE *)msg->rm_Args[2])
 
 /* The command for in rm_Action */
 #define RXCOMM   0x01000000
