@@ -89,7 +89,7 @@ BEGIN {
     print "/* Prototypes */"
 }
 
-/AROS_LH(A|(QUAD)?[0-9])/ {
+/AROS_LH(A|(QUAD)?[0-9]+)/ {
     line  = $0;
     isarg = match(line,/AROS_LHA/);
     gsub(/^[ \t]+/,"",line);
@@ -104,8 +104,11 @@ BEGIN {
         match(line,/^[a-zA-Z_0-9]*/);
         macro = substr(line, RSTART, RLENGTH);
 
+        # remove 'I' if present
+        sub(/I$/,"",macro);
+
         # extract return type and function name
-        sub(/^LP[0-9]\(/,"",line);
+        sub(/^LP[0-9]*I?\(/,"",line);
         split(line, a, ",");
         rtype = a[1];
         gsub(/[\t]+/, "", rtype);
