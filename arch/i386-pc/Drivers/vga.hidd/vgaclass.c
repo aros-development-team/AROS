@@ -116,12 +116,12 @@ UBYTE shape[] =
 **  GfxHidd::New()  **
 *********************/
 
-#define NUM_SYNC_TAGS 10
+#define NUM_SYNC_TAGS 11
 #define SET_SYNC_TAG(taglist, idx, tag, val) 	\
     taglist[idx].ti_Tag  = aHidd_Sync_ ## tag;	\
     taglist[idx].ti_Data = val
 
-VOID init_sync_tags(struct TagItem *tags, struct vgaModeDesc *md)
+VOID init_sync_tags(struct TagItem *tags, struct vgaModeDesc *md, STRPTR name)
 {
     ULONG clock = (md->clock == 1) ? 28322000 : 25175000;
 	SET_SYNC_TAG(tags, 0, PixelClock, 	clock	);
@@ -133,7 +133,8 @@ VOID init_sync_tags(struct TagItem *tags, struct vgaModeDesc *md)
     SET_SYNC_TAG(tags, 6, VSyncStart,	md->VSyncStart	);
     SET_SYNC_TAG(tags, 7, VSyncEnd, 	md->VSyncEnd	);
     SET_SYNC_TAG(tags, 8, VTotal, 	md->VTotal	);
-    tags[9].ti_Tag = TAG_DONE;
+    SET_SYNC_TAG(tags, 9, Description,  (IPTR)name  	);
+    tags[10].ti_Tag = TAG_DONE;
 }
 
 static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -202,10 +203,10 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     
     /* First init the sync tags */
-    init_sync_tags(sync_640_480, &vgaDefMode[0]);
+    init_sync_tags(sync_640_480, &vgaDefMode[0], "VGA:640x480");
 #ifndef ONLY640
-    init_sync_tags(sync_758_576, &vgaDefMode[1]);
-    init_sync_tags(sync_800_600, &vgaDefMode[2]);
+    init_sync_tags(sync_758_576, &vgaDefMode[1], "VGA:758x576");
+    init_sync_tags(sync_800_600, &vgaDefMode[2], "VGA:800x600");
 #endif
     
     /* init mytags. We use TAG_MORE to attach our own tags before we send them
@@ -229,7 +230,6 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     EnterFunc(bug("VGAGfx::New()\n"));
     
-
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
