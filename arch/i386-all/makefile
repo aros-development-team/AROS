@@ -1,20 +1,29 @@
 TOP=..
-RM=rm -rf
-CFLAGS=$(COMMON_CFLAGS) -I $(TOP)/include -I $(TOP)/amiga/include
 
-all: libkernel.a
+include $(TOP)/make.cfg
+
+ODIR=$(OBJDIR)/i386-emul
+
+all: setup $(LIBDIR)/libkernel.a
+
+setup :
+	@echo "Setting up"
+	@if [ ! -d $(ODIR) ]; then $(MKDIR) $(ODIR) ; fi
+	@$(TOUCH) setup
 
 clean:
-	$(RM) *.o *.a
+	$(RM) $(ODIR) $(LIBDIR)/libkernel.a setup
 
-%.o: %.s
+$(ODIR)/%.o: %.s
 	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
-%.o: %.c
+$(ODIR)/%.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
-libkernel.a: init.o supervisor.o switch.o dispatch.o disable.o \
-	     enable.o forbid.o permit.o preparecontext.o special.o
-	ar -r $@ $^
+$(LIBDIR)/libkernel.a: $(ODIR)/init.o $(ODIR)/supervisor.o $(ODIR)/switch.o \
+	    $(ODIR)/dispatch.o $(ODIR)/disable.o $(ODIR)/enable.o \
+	    $(ODIR)/forbid.o $(ODIR)/permit.o $(ODIR)/preparecontext.o \
+	    $(ODIR)/special.o
+	$(AR) $@ $^

@@ -1,21 +1,29 @@
 TOP=..
-RM=rm -rf
-CFLAGS=$(COMMON_CFLAGS) -I $(TOP)/include -I $(TOP)/amiga/include
 
-all: libutility.a
+include $(TOP)/make.cfg
+
+ODIR=$(OBJDIR)/utility
+
+all: setup $(LIBDIR)/libutility.a
+
+setup :
+	@echo "Setting up"
+	@if [ ! -d $(ODIR) ]; then $(MKDIR) $(ODIR) ; fi
+	@$(TOUCH) setup
 
 clean:
-	$(RM) *.o *.a
+	$(RM) $(ODIR) *.err $(LIBDIR)/libutility.a setup
 
-%.o: %.s
+$(ODIR)/%.o: %.s
 	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
-%.o: %.c
+$(ODIR)/%.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
-libutility.a: utility_init.o \
-	  stricmp.o strnicmp.o applytagchanges.o findtagitem.o tolower.o \
-	  utility_functable.o
-	ar -r $@ $^
+$(LIBDIR)/libutility.a: $(ODIR)/utility_init.o \
+	    $(ODIR)/stricmp.o $(ODIR)/strnicmp.o $(ODIR)/applytagchanges.o \
+	    $(ODIR)/findtagitem.o $(ODIR)/tolower.o \
+	    $(ODIR)/utility_functable.o
+	$(AR) $@ $^

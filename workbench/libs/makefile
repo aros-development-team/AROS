@@ -1,11 +1,11 @@
 TOP=..
-RM=rm -rf
-CFLAGS=$(COMMON_CFLAGS) -Dmain=submain -I $(TOP)/include -I $(TOP)/amiga/include
 
-all: dummy.library
+include $(TOP)/make.cfg
+
+all: $(SLIBDIR)/dummy.library
 
 clean:
-	$(RM) *.o *.a dummy.library
+	$(RM) $(SLIBDIR)/dummy.library
 
-dummy.library: dummylib.c
-	$(CC) $(CFLAGS) -I .. $^ -c -o $@
+$(SLIBDIR)/dummy.library: dummylib.c
+	$(CC) $(CFLAGS) -I $(TOP) $^ -c -o $@
