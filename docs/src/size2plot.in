@@ -10,7 +10,7 @@ set format y "%6.2f"
 set timefmt "%d.%m.%Y"
 set grid
 set terminal pbm small color
-set size 0.5,0.5
+set size 1,0.5
 set output "@DOCGENDIR@/plot.pbm"
 set xrange ["01.11.1999":]
 set xtics nomirror "01.03.1999", 1209600
