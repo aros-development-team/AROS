@@ -1104,6 +1104,7 @@ int _ShowLayer(struct Layer * l)
   r.RegionRectangle = NULL;
   _SetRegion(l->VisibleRegion, &r);
   AndRegionRegion(l->shape, &r);
+  AndRegionRegion(l->parent->shape, &r);
 
   while (1)
   {
