@@ -13,6 +13,8 @@
 #include <exec/resident.h>
 #include <proto/exec.h>
 
+#include "exec_intern.h"
+
 #define DEBUG 0
 #include <aros/debug.h>
 /*
