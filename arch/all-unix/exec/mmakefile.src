@@ -11,7 +11,7 @@ USER_INCLUDES   := -I$(TOP)/rom/exec -I..
   arch=unix compiler=host \
   files=$(FILES)
 
-#MM kernel-exec-unix : setup-exec-$(ARCH)
+#MM kernel-exec-unix : kernel-$(ARCH)-sigcore
 
 TESTS		:= stackswap coretest
 

@@ -38,16 +38,6 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM     aminet-disk-cdrom-amicdrom-kobj \
 #MM	kernel-pc-i386-drivers
 
-#
-# Setup
-#
-
-#MM- setup-pc-i386 :				\
-#MM	setup-exec-pc-i386			\
-#MM	setup-battclock-pc-i386		\
-#MM	setup-bootloader-pc-i386	\
-#MM	setup-dos-pc-i386
-
 #MM- includes-pc-i386 : includes-copy-pc-i386 includes-copy
 
 #MM
