@@ -24,6 +24,7 @@ FILES	:= \
     Join \
     Lab \
     List \
+    LoadWB \
     Lock \
     MakeLink \
     Prompt \
