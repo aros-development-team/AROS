@@ -43,32 +43,40 @@
 	.globl	AROS_SLIB_ENTRY(Permit,Exec)
 	.type	AROS_SLIB_ENTRY(Permit,Exec),@function
 AROS_SLIB_ENTRY(Permit,Exec):
+#if !UseRegisterArgs
 	/* Preserve used registers */
 	move.l	%a6,-(%sp)
 
 	/* Get SysBase */
 	move.l	8(%sp),%a6
+#endif
 
 	/* Decrement and test TDNestCnt */
 	subq.b	#1,TDNestCnt(%a6)
-	jpl	.noswch
+	jbpl	.noswch
 
 	/* return if there are no delayed switches pending. */
 	btst	#7,AttnResched+1(%a6)
-	jeq	.noswch
+	jbeq	.noswch
 
 	/* if IDNestCnt is not -1 taskswitches are still forbidden */
 	tst.b	IDNestCnt(%a6)
-	jpl	.noswch
+	jbpl	.noswch
 
 	/* Unset delayed switch bit and do the delayed switch */
 	bclr	#7,AttnResched+1(%a6)
+#if !UseRegisterArgs
 	move.l	%a6,-(%sp)
+#endif
 	jsr	Switch(%a6)
+#if !UseRegisterArgs
 	addq	#4,%sp
-	
+#endif
+
 	/* all done. */
 .noswch:
+#if !UseRegisterArgs
 	move.l	(%sp)+,%a6
+#endif
 	rts
 
