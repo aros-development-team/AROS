@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/boopsi.h>
