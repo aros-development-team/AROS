@@ -93,7 +93,7 @@ AROS_SHA(,NAME,,NULL))
 	    /* don't show dirs */
             if (FIB->fib_DirEntryType < 0)
 	    {
-                FPuts(Output(),&FIB->fib_FileName);
+                FPuts(Output(),FIB->fib_FileName);
 		FPuts(Output(),"\n");
  	    }
 	}
