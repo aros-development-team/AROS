@@ -39,6 +39,8 @@
 #include <exec/lists.h>
 #include <exec/memory.h>
 #include <aros/asmcall.h>
+#include <stddef.h>
+
 #define  DEBUG 1
 #include <aros/debug.h>
 
@@ -57,7 +59,7 @@ AROS_UFH2(struct InputEvent *, CxTree,
 {
     CxObj *co;
     CxMsg *tempMsg, *msg;
-    struct InputEvent *tempEvent, *nextEvent;
+    struct Node *node, *succ;
 
     if(events == NULL)
 	return NULL;
@@ -68,16 +70,18 @@ AROS_UFH2(struct InputEvent *, CxTree,
     ObtainSemaphore(&CxBase->cx_SignalSemaphore);
 
     /* Take care of the processed input events */
-    for(tempEvent = CxBase->cx_IEvents; tempEvent != NULL;)
+    ForeachNodeSafe(&CxBase->cx_GeneratedInputEvents, node, succ)
     {
-	nextEvent = tempEvent->ie_NextEvent;
-	FreeMem(tempEvent, sizeof(struct InputEvent));
-	tempEvent = nextEvent;
+        struct GeneratedInputEvent *tempEvent;
+
+        tempEvent = (struct GeneratedInputEvent *)(((UBYTE *)node) - offsetof(struct GeneratedInputEvent, node));
+        FreeCxStructure(tempEvent, CX_INPUTEVENT, (struct Library *)CxBase);
     }
 
     CxBase->cx_IEvents = NULL;
     CxBase->cx_EventExtra = NULL;
-
+    NEWLIST(&CxBase->cx_GeneratedInputEvents);
+    
     /* Free all the replied messages */
     while((tempMsg = (CxMsg *)GetMsg(&CxBase->cx_MsgPort)) != NULL)
 	FreeCxStructure(tempMsg, CX_MESSAGE, (struct Library *)CxBase);
@@ -211,25 +215,27 @@ AROS_UFH2(struct InputEvent *, CxTree,
     
 static void ProduceEvent(CxMsg *msg, struct CommoditiesBase *CxBase)
 {
-    struct InputEvent *temp;
+    struct GeneratedInputEvent *temp;
   
-    if((temp = (struct InputEvent *)AllocCxStructure(CX_INPUTEVENT, 0,
+    if((temp = (struct GeneratedInputEvent *)AllocCxStructure(CX_INPUTEVENT, 0,
 	       (struct Library *)CxBase)) != NULL)
     {
-        CopyInputEvent(msg->cxm_Data, temp, CxBase);
+        CopyInputEvent(msg->cxm_Data, &temp->ie, CxBase);
 
 	/* Put the input event last in the ready list and update bookkeeping */
-	temp->ie_NextEvent = NULL;
+	temp->ie.ie_NextEvent = NULL;
 
 	if(CxBase->cx_IEvents != NULL)
 	{
-	    *(CxBase->cx_EventExtra) = temp;
+	    *(CxBase->cx_EventExtra) = &temp->ie;
 	}
 	else
 	{
-	    CxBase->cx_IEvents = temp;
+	    CxBase->cx_IEvents = &temp->ie;
 	}
-	CxBase->cx_EventExtra = &temp->ie_NextEvent;
+	CxBase->cx_EventExtra = &temp->ie.ie_NextEvent;
+	
+	AddTail((struct List *)&CxBase->cx_GeneratedInputEvents, (struct Node *)&temp->node);
     }
 
     DisposeCxMsg(msg);
