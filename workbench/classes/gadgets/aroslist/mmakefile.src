@@ -3,10 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES := listclass helpfuncs
 
-#MM workbench-gadgets-aroslist : includes linklibs
+##MM workbench-gadgets-aroslist : includes linklibs
 
-%build_module_macro mmake=workbench-gadgets-aroslist \
-  modname=aroslist modtype=gadget files=$(FILES) \
-  conffile=lib.conf uselibs="amiga rom"
+%build_module mmake=workbench-gadgets-aroslist \
+  modname=aroslist modtype=gadget \
+  files=$(FILES) uselibs="amiga rom"
 
-%common

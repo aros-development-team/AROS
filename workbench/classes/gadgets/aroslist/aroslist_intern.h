@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,9 +23,6 @@
 #ifndef UTILTY_HOOKS_H
 #   include <utility/hooks.h>
 #endif
-
-/* Predeclaration */
-struct ListBase_intern;
 
 struct ListEntry
 {
@@ -81,41 +78,8 @@ l = l->le_Next;
 /* Prototypes */
 /**************/
 
-struct ListEntry **AllocEntries(ULONG, struct ListData *, struct ListBase_intern *);
-ULONG InsertItems(APTR *, struct ListEntry **, LONG, struct ListData *, struct ListBase_intern *);
+struct ListEntry **AllocEntries(ULONG, struct ListData *);
+ULONG InsertItems(APTR *, struct ListEntry **, LONG, struct ListData *);
 ULONG CountItems(APTR *);
-
-struct ListBase_intern
-{
-    struct Library 	library;
-    struct ExecBase	*sysbase;
-    BPTR		seglist;	
-
-    struct Library	*utilitybase;
-    struct IntuitionBase *intuitionbase;
-    struct IClass	*classptr;
-
-};
-
-typedef struct IntuitionBase IntuiBase;
-
-#undef LB
-#define LB(b) ((struct ListBase_intern *)b)
-#undef UtilityBase
-#define UtilityBase 	LB(AROSListBase)->utilitybase
-
-/* On Linux-M68k SysBase has to be global! */
-extern struct ExecBase * SysBase;
-
-/*
-#undef SysBase
-#define SysBase		LB(AROSListBase)->sysbase
-*/
-
-#undef IntuitionBase
-#define IntuitionBase	LB(AROSListBase)->intuitionbase
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct ListBase_intern *, AROSListBase, 3, AROSList)
 
 #endif /* AROSLIST_INTERN_H */
