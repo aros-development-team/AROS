@@ -33,7 +33,6 @@ int set_open_libraries(void)
 	{
 	    __showerror
 	    (
-	        "Library error",
 	        "Couldn't open version %ld of library \"%s\".",
 		*set[n]->versionptr, set[n]->name
 	    );
@@ -48,7 +47,6 @@ int set_open_libraries(void)
 	    {
 	    	__showerror
                 (
-		    "Library error",
 	            "Couldn't initialize library \"%s\".",
 		    set[n]->name
 		);

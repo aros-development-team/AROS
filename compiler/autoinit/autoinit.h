@@ -12,7 +12,7 @@ __BEGIN_DECLS
    To make it always open a requester define a global variable like this:
 
        int __forceerrorrequester = 1;  */
-void __showerror __P((char *title, char *format, ...));
+void __showerror __P((char *format, ...));
 
 /* Returns the name of the running program. In case of error NULL is returned
    and an IoError is set accordingly.  */
