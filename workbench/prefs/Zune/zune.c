@@ -524,7 +524,7 @@ void test_prefs(void)
     save_prefs(appname, FALSE);
 /*      load_prefs(); */
     cfg = MUI_NewObject(MUIC_Configdata, MUIA_Configdata_Application, (IPTR)app, TAG_DONE);
-    set(app, MUIA_Application_Configdata, cfg);
+    set(app, MUIA_Application_Configdata, (IPTR)cfg);
 }
 
 void restore_prefs(CONST_STRPTR name)
