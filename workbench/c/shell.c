@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/23 17:05:58  digulla
+    Increased the stack.
+
     Revision 1.2  1996/08/01 17:40:46  digulla
     Added standard header for all files
 
@@ -250,7 +253,7 @@ LONG execute(STRPTR com)
 	last=s2;
 	while(*last++)
 	    ;
-	RunCommand(seglist,4096,s2,last-s2-1);
+	RunCommand(seglist,20000,s2,last-s2-1);
 	UnLoadSeg(seglist);
     }else if(infile==NULL&&outfile==NULL)
     {
