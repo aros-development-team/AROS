@@ -415,7 +415,7 @@ if test -z "$aros_gui_basedir" ; then
     else
 	aros_gui_ldflags="-L $x_libraries"
     fi
-    aros_gui_libflags="-lX11"
+    aros_gui_libflags="-lX11 -lXext"
     aros_gui_incdir="$x_includes"
     if test -z "$x_includes" ; then
 	aros_gui_ccflags=""
