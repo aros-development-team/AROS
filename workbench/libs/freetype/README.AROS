@@ -1,0 +1,33 @@
+To make freetype link lib:
+
+   mmake .contrib-freetype-linklib:
+
+To make freetype graph lib (linklib used by freetype demo programs)
+
+   mmake .contrib-freetype-graph
+
+To install some demo truetype fonts in contrib/Freetype:
+
+   mmake .contrib-freetype-fonts
+
+To make two of the Freetype demo programs:
+
+   mmake .contrib-freetype-demos
+   
+   
+TODO : o make shared freetype library based on link lib
+
+       o install freetype includes
+       
+       o fix buggy graph AROS driver (only used by demo progs)
+       
+
+BUGS : o ftstring crashes if you rotate/scale for some time the
+         string with cursor keys/pageup/pagedown. When directly
+	 compiled for Linux/X11 this does not seem to happen.
+	 It segfaults in Exec_FreePooled so it probably happens
+	 in free (<-> malloc). Maybe some mem trashing.
+
+       o ftstring and ftview seem to eat memory and not free it
+         again.
+
