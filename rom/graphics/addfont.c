@@ -50,7 +50,10 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
+    Forbid();
     AddHead (&GfxBase->TextFonts, (struct Node *)textFont);
+    Permit();
+    
 
     AROS_LIBFUNC_EXIT
 } /* AddFont */
