@@ -276,6 +276,8 @@ BOOL HandleRegisterTabInput(struct RegisterTab *reg, struct IntuiMessage *msg)
 		(x <= reg->items[i].x2) &&
 		(y <= reg->items[i].y2))
 	    {
+	    	retval = TRUE;
+		
 	    	if (reg->active != i)
 		{
 		    WORD oldactive = reg->active;

@@ -35,15 +35,17 @@ static struct libinfo
     APTR        var;
     STRPTR      name;
     WORD        version;
+    BOOL    	required;
 }
 libtable[] =
 {
-    {&IntuitionBase     , "intuition.library"           , 39    },
-    {&GfxBase           , "graphics.library"            , 39    },
-    {&GadToolsBase      , "gadtools.library"            , 39    },
-    {&UtilityBase       , "utility.library"             , 39    },
-    {&IFFParseBase      , "iffparse.library"            , 39    },
-    {NULL                                                       }
+    {&IntuitionBase     , "intuition.library"	 , 39, TRUE  },
+    {&GfxBase           , "graphics.library" 	 , 39, TRUE  },
+    {&GadToolsBase      , "gadtools.library" 	 , 39, TRUE  },
+    {&UtilityBase       , "utility.library"  	 , 39, TRUE  },
+    {&IFFParseBase      , "iffparse.library" 	 , 39, TRUE  },
+    {&CyberGfxBase  	, "cybergraphics.library", 39, FALSE },
+    {NULL                                            	     }
 };
 
 #define NUM_PAGES 3
@@ -51,7 +53,7 @@ libtable[] =
 static struct page
 {
     LONG nameid;
-    LONG (*handler)(LONG, LONG);
+    LONG (*handler)(LONG, IPTR);
     LONG minw;
     LONG minh;
 }
@@ -129,8 +131,11 @@ static void OpenLibs(void)
     {
 	if (!((*(struct Library **)li->var) = OpenLibrary(li->name, li->version)))
 	{
-	    sprintf(s, MSG(MSG_CANT_OPEN_LIB), li->name, li->version);
-	    Cleanup(s);
+	    if (li->required)
+	    {
+	    	sprintf(s, MSG(MSG_CANT_OPEN_LIB), li->name, li->version);
+	    	Cleanup(s);
+	    }
 	}       
     }
        
@@ -269,9 +274,14 @@ static void LayoutGUI(void)
 
 static void MakeWin(void)
 {
+    WORD wx, wy;
+    
+    wx = (scr->Width - (winwidth + scr->WBorLeft + scr->WBorTop)) / 2;
+    wy = (scr->Height - (winheight + scr->WBorTop + scr->Font->ta_YSize + 1 + scr->WBorBottom)) / 2;
+    
     win = OpenWindowTags(0, WA_PubScreen, (IPTR)scr,
-    	    	    	    WA_Left, 0,
-			    WA_Top, scr->WBorTop + scr->Font->ta_YSize + 2,
+    	    	    	    WA_Left, wx,
+			    WA_Top, wy,
 			    WA_InnerWidth, winwidth,
 			    WA_InnerHeight, winheight,
 			    WA_Title, (IPTR)MSG(MSG_WINTITLE),
@@ -285,6 +295,8 @@ static void MakeWin(void)
 				      IDCMP_CLOSEWINDOW,
 			    TAG_DONE);
 
+    SetMenuStrip(win, menus);
+    
     RenderRegisterTab(win->RPort, &reg, TRUE);
 }
 
@@ -299,6 +311,24 @@ static void KillWin(void)
 
 /*********************************************************************************************/
 
+static void ActivatePage(WORD which)
+{
+    if (which == activetab) return;
+    
+    pagetable[activetab].handler(PAGECMD_REMGADGETS, 0);
+    
+    SetDrMd(win->RPort, JAM1),
+    SetAPen(win->RPort, dri->dri_Pens[BACKGROUNDPEN]);
+    RectFill(win->RPort, pages_left, pages_top, pages_left + pages_width - 1, pages_top + pages_height - 1);
+    
+    activetab = which;
+
+    pagetable[activetab].handler(PAGECMD_ADDGADGETS, 0);
+    
+}
+
+/*********************************************************************************************/
+
 static void HandleAll(void)
 {
     struct IntuiMessage *msg;
@@ -309,16 +339,15 @@ static void HandleAll(void)
     while (!quitme)
     {
 	WaitPort(win->UserPort);
+	
 	while((msg = GT_GetIMsg(win->UserPort)))
 	{
 	    if (HandleRegisterTabInput(&reg, msg))
 	    {
-	    	if (reg.active != activetab)
-		{
-		    pagetable[activetab].handler(PAGECMD_REMGADGETS, 0);
-		    activetab = reg.active;
-		    pagetable[activetab].handler(PAGECMD_ADDGADGETS, 0);
-		}
+	    	ActivatePage(reg.active);
+	    }
+	    else if (pagetable[activetab].handler(PAGECMD_HANDLEINPUT, (IPTR)msg))
+	    {
 	    }
 	    else switch (msg->Class)
 	    {
