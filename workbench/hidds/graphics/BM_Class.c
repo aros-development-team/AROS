@@ -185,7 +185,6 @@ static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *
 	    } /* displayable */
 	} /* if (ok) */
 	
-	/* Try to create the colormap */
 	if (ok) {
 	    /* initialize the direct method calling */
 	    
@@ -211,9 +210,25 @@ static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *
 	    if (NULL == data->drawpixel)
 		ok = FALSE;
 #endif
-	    data->colmap = OOP_NewObject(NULL, CLID_Hidd_ColorMap, colmap_tags);
-	    if (NULL == data->colmap)
-		ok = FALSE;
+	    /* Try to create the colormap */
+
+    	    /* stegerg: Only add a ColorMap for a visible bitmap (screen). This
+	                is important because one can create for example a bitmap
+			in PIXFMT_LUT8 without friend bitmap and then copy this
+			bitmap to a 16 bit screen. During copy the screen bitmap
+			CLUT must be used, which would not happen if our PIXFMT_LUT8
+			also had a colormap itself because then bltbitmap would use the
+			colormap of the PIXFMT_LUT8 bitmap as lookup, which in this
+			case would just cause everything to become black in the
+			destination (screen) bitmap, because noone ever sets up the
+			colormap of the PIXFMT_LUT8 bitmap */
+			
+    	    if (data->displayable)
+	    {
+		data->colmap = OOP_NewObject(NULL, CLID_Hidd_ColorMap, colmap_tags);
+		if (NULL == data->colmap)
+		    ok = FALSE;
+	    }
 	}
 	
 	
@@ -324,6 +339,7 @@ static BOOL bitmap_setcolors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_S
     /* Subclass has initialized HIDDT_Color->pixelVal field and such.
        Just copy it into the colortab.
     */
+
     if (NULL == data->colmap) {
 	struct TagItem colmap_tags[] = {
     	    { aHidd_ColorMap_NumEntries,	0 },
