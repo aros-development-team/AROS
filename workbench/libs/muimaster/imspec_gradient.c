@@ -63,13 +63,13 @@ STATIC VOID TrueDitherV
     LONG step_g = (delta_g << SHIFT)/max_delta_y;
     LONG step_b = (delta_b << SHIFT)/max_delta_y;
 
-    LONG red   = ((1 << SHIFT) >> 1) + (start_rgb[0] << SHIFT) + (y1 - oy1)*step_r;
-    LONG green = ((1 << SHIFT) >> 1) + (start_rgb[1] << SHIFT) + (y1 - oy1)*step_g;
-    LONG blue  = ((1 << SHIFT) >> 1) + (start_rgb[2] << SHIFT) + (y1 - oy1)*step_b;
+    LONG y, offset_y = y1 - oy1;
 
-    LONG y;
+    LONG red   = ((1 << SHIFT) >> 1) + (start_rgb[0] << SHIFT) + offset_y*step_r;
+    LONG green = ((1 << SHIFT) >> 1) + (start_rgb[1] << SHIFT) + offset_y*step_g;
+    LONG blue  = ((1 << SHIFT) >> 1) + (start_rgb[2] << SHIFT) + offset_y*step_b;
 
-    for(y = y1; y <=y2; y++)
+    for(y = y1; y <= y2; y++)
     {
         FillPixelArray(rp, x1, y, width, 1,
                        ((red >> SHIFT) << 16) + ((green >> SHIFT) << 8) + (blue >> SHIFT));
@@ -99,16 +99,16 @@ STATIC VOID TrueDitherH
     LONG step_g = (delta_g << SHIFT)/max_delta_x;
     LONG step_b = (delta_b << SHIFT)/max_delta_x;
 
+    LONG x, offset_x = x1 - ox1;
+
     /* 1 << (SHIFT - 1) is 0.5 in fixed point math. We add it to the variable
        so that, at the moment in which the variable is converted to integer,
        rounding is done properly. That is, a+x, with 0 < x < 0.5, is rounded
        down to a, and a+x, with 0.5 <= x < 1, is rounded up to a+1. */
 
-    LONG red   = ((1 << SHIFT) >> 1) + (start_rgb[0] << SHIFT) + (x1 - ox1)*step_r;
-    LONG green = ((1 << SHIFT) >> 1) + (start_rgb[1] << SHIFT) + (x1 - ox1)*step_g;
-    LONG blue  = ((1 << SHIFT) >> 1) + (start_rgb[2] << SHIFT) + (x1 - ox1)*step_b;
-
-    LONG x;
+    LONG red   = ((1 << SHIFT) >> 1) + (start_rgb[0] << SHIFT) + offset_x*step_r;
+    LONG green = ((1 << SHIFT) >> 1) + (start_rgb[1] << SHIFT) + offset_x*step_g;
+    LONG blue  = ((1 << SHIFT) >> 1) + (start_rgb[2] << SHIFT) + offset_x*step_b;
 
     for(x = x1; x <= x2; x++)
     {
@@ -131,30 +131,124 @@ VOID zune_gradient_draw
     WORD xoff, WORD yoff
 )
 {
+    ULONG *start_rgb = spec->u.gradient.start_rgb;
+    ULONG *end_rgb   = spec->u.gradient.end_rgb;
+
     if (!(CyberGfxBase && (GetBitMapAttr(mri->mri_RastPort->BitMap, BMA_DEPTH) >= 15)))
         return;
 
     switch(spec->u.gradient.orientation)
     {
         case 'v':
+        {
+            LONG oy1 = _mtop(spec->u.gradient.obj), oy2 = _mbottom(spec->u.gradient.obj);
+            LONG delta_oy = oy2 - oy1;
+            LONG hh = (delta_oy + 1)*2;
+            LONG mid_y;
+
+            yoff %= hh;
+
+            if (yoff < 0)
+                yoff += hh;
+
+            oy1 -= yoff; oy2 -= yoff;
+
+            if (y2 > oy2)
+            {
+                mid_y = y1 + delta_oy - yoff;
+
+                if (yoff > delta_oy)
+                {
+                    ULONG *tmp = start_rgb;
+                    start_rgb  = end_rgb;
+                    end_rgb    = tmp;
+
+                    mid_y += delta_oy;
+                    oy1   += delta_oy;
+                    oy2   += delta_oy;
+                }
+            }
+            else
+            {
+                mid_y = y2;
+            }
+
             TrueDitherV
             (
                 mri->mri_RastPort,
-                x1, y1, x2, y2,
-                spec->u.gradient.y1, spec->u.gradient.y2,
-                spec->u.gradient.start_rgb, spec->u.gradient.end_rgb
+                x1, y1, x2, mid_y,
+                oy1, oy2,
+                start_rgb, end_rgb
             );
-            break;
 
+            if (mid_y < y2)
+            {
+                TrueDitherV
+                (
+                    mri->mri_RastPort,
+                    x1, mid_y+1, x2, y2,
+                    oy1+delta_oy, oy2+delta_oy,
+                    end_rgb, start_rgb
+                );
+            }
+
+            break;
+        }
         case 'h':
+        {
+            LONG ox1 = _mleft(spec->u.gradient.obj), ox2 = _mright(spec->u.gradient.obj);
+            LONG delta_ox = ox2 - ox1;
+            LONG ww = (delta_ox + 1)*2;
+            LONG mid_x;
+
+
+            xoff %= ww;
+            if (xoff < 0)
+                xoff += ww;
+
+            ox1 -= xoff; ox2 -= xoff;
+
+            if (x2 > ox2)
+            {
+                mid_x = x1 + delta_ox - xoff;
+
+                if (xoff > delta_ox)
+                {
+                    ULONG *tmp = start_rgb;
+                    start_rgb  = end_rgb;
+                    end_rgb    = tmp;
+
+                    mid_x += delta_ox;
+                    ox1   += delta_ox;
+                    ox2   += delta_ox;
+                }
+            }
+            else
+            {
+                mid_x = x2;
+            }
+
             TrueDitherH
             (
                 mri->mri_RastPort,
-                x1, y1, x2, y2,
-                spec->u.gradient.x1, spec->u.gradient.x2,
-                spec->u.gradient.start_rgb, spec->u.gradient.end_rgb
+                x1, y1, mid_x, y2,
+                ox1, ox2,
+                start_rgb, end_rgb
             );
+
+            if (mid_x < x2)
+            {
+                TrueDitherH
+                (
+                    mri->mri_RastPort,
+                    mid_x+1, y1, x2, y2,
+                    ox1+delta_ox, ox2+delta_ox,
+                    end_rgb, start_rgb
+                );
+            }
+
             break;
+        }
     } /* switch(orientation) */
 }
 
