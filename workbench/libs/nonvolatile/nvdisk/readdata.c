@@ -59,7 +59,7 @@ AROS_LH2(APTR, ReadData,
 {
     AROS_LIBFUNC_INIT    
 
-    APTR  mem;
+    APTR  mem = NULL;
     BPTR  lock, lock2;
     BPTR  oldCDir;
 
@@ -67,35 +67,49 @@ AROS_LH2(APTR, ReadData,
        file containing the data. */
     struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
 
-    if(fib == NULL)
-	return NULL;
-
-    oldCDir = CurrentDir(GPB(nvdBase)->nvd_location);
-    lock = Lock(appName, SHARED_LOCK);
-
-    if(lock == NULL)
+    if(fib)
     {
+
+	oldCDir = CurrentDir(GPB(nvdBase)->nvd_location);
+	lock = Lock(appName, SHARED_LOCK);
+
+	if(lock)
+	{
+	    CurrentDir(lock);
+
+	    lock2 = Lock(itemName, SHARED_LOCK);
+
+	    if(lock2)
+	    {
+		// We have now found the file -- check how big it is
+		Examine(lock2, fib);
+
+		mem = AllocVec(fib->fib_Size, MEMF_ANY);
+
+		if(mem)
+		{
+		    if (Read(lock2, mem, fib->fib_Size) != fib->fib_Size)
+		    {
+		        FreeVec(mem);
+			mem = NULL;
+		    }
+		    
+		} /* if(mem) */
+		
+		UnLock(lock2);
+		
+	    } /* if(lock2) */
+	    
+	    CurrentDir(oldCDir);
+	    UnLock(lock);
+	    
+	} /* if(lock) */
+	
 	CurrentDir(oldCDir);
-	return NULL;
-    }
-
-    CurrentDir(lock);
-
-    lock2 = Lock(itemName, SHARED_LOCK);
-
-    // We have now found the file -- check how big it is
-    Examine(lock2, fib);
-
-    mem = AllocVec(fib->fib_Size, MEMF_ANY);
-
-    Read(lock2, mem, fib->fib_Size);
-
-    // Release resources and restore the old state
-    FreeDosObject(DOS_FIB, fib);
-    UnLock(lock2);
-    UnLock(lock);
-    CurrentDir(oldCDir);
-
+	FreeDosObject(DOS_FIB, fib);
+	
+    } /* if(fib) */
+    
     return mem;
 
     AROS_LIBFUNC_EXIT
