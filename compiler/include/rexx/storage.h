@@ -12,6 +12,9 @@
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
+#ifndef EXEC_PORTS_H
+#   include <exec/ports.h>
+#endif
 
 struct RexxMsg
 {
