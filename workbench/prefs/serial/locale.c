@@ -55,7 +55,7 @@ VOID LocalizeLabels( STRPTR * labels)
     STRPTR local;
     
     while (*labels) {
-        local = MSG(*labels);
+        local = MSG((ULONG) *labels);
         *labels++ = local;
     }
 }

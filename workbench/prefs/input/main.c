@@ -199,7 +199,7 @@ static void OpenInputDev(void)
 {
     if ((InputMP = CreateMsgPort()))
     {
-    	if ((InputIO = (struct IOStdReq *)CreateIORequest(InputMP, sizeof(struct IOStdReq))))
+    	if ((InputIO = (struct timerequest *) CreateIORequest(InputMP, sizeof(struct IOStdReq))))
 	{
 	    OpenDevice("input.device", 0, (struct IORequest *)InputIO, 0);
 	}

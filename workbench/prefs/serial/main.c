@@ -330,7 +330,6 @@ WORD MaxStringsWidth(struct RastPort * rp, STRPTR * strings)
 static void LayoutGUI(void)
 {
     WORD w;
-    WORD h;
     WORD maxw;
     struct RastPort temprp;
     
@@ -426,7 +425,6 @@ VOID RefreshDataBitsGadget(VOID)
 /*********************************************************************************************/
 VOID RefreshParityGadget(VOID)
 {
-	ULONG i = 0;
 	GT_SetGadgetAttrs(parity, win, NULL, GTCY_Active , serialprefs.sp_Parity,
 	                                     TAG_DONE);
 }
@@ -434,7 +432,6 @@ VOID RefreshParityGadget(VOID)
 /*********************************************************************************************/
 VOID RefreshStopBitsGadget(VOID)
 {
-	ULONG i = 0;
 	GT_SetGadgetAttrs(parity, win, NULL, GTCY_Active , serialprefs.sp_StopBits,
 	                                     TAG_DONE);
 }
@@ -483,22 +480,22 @@ VOID RefreshOutputBufferSizeGadget(VOID)
 VOID ReadGadgets(VOID)
 {
 	ULONG index;
-	GT_GetGadgetAttrs(baudrate, win, NULL, GTCY_Active, &index, TAG_DONE);
+	GT_GetGadgetAttrs(baudrate, win, NULL, GTCY_Active, (IPTR) &index, TAG_DONE);
 	serialprefs.sp_BaudRate = atol(BaudrateLabels[index]);
 
-	GT_GetGadgetAttrs(databits, win, NULL, GTCY_Active, &index, TAG_DONE);
+	GT_GetGadgetAttrs(databits, win, NULL, GTCY_Active, (IPTR) &index, TAG_DONE);
 	serialprefs.sp_BitsPerChar = index;
 
-	GT_GetGadgetAttrs(parity  , win, NULL, GTCY_Active, &index, TAG_DONE);
+	GT_GetGadgetAttrs(parity  , win, NULL, GTCY_Active, (IPTR) &index, TAG_DONE);
 	serialprefs.sp_Parity = index;
 
-	GT_GetGadgetAttrs(stopbits, win, NULL, GTCY_Active, &index, TAG_DONE);
+	GT_GetGadgetAttrs(stopbits, win, NULL, GTCY_Active, (IPTR) &index, TAG_DONE);
 	serialprefs.sp_StopBits = index;
 
-	GT_GetGadgetAttrs(inputbuffersize , win, NULL, GTCY_Active, &index, TAG_DONE);
+	GT_GetGadgetAttrs(inputbuffersize , win, NULL, GTCY_Active, (IPTR) &index, TAG_DONE);
 	serialprefs.sp_InputBuffer  = atol(BufferSizeLabels[index]);
 
-	GT_GetGadgetAttrs(outputbuffersize, win, NULL, GTCY_Active, &index, TAG_DONE);
+	GT_GetGadgetAttrs(outputbuffersize, win, NULL, GTCY_Active, (IPTR) &index, TAG_DONE);
 	serialprefs.sp_OutputBuffer = atol(BufferSizeLabels[index]);
 	
 }
@@ -570,7 +567,7 @@ static void MakeGadgets(void)
     ng.ng_GadgetText = MSG(MSG_GAD_BAUDRATE);
     ng.ng_Flags      = PLACETEXT_LEFT;
 
-    gad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, BaudrateLabels,
+    gad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, (IPTR) BaudrateLabels,
                                              GTCY_Active, 0,
                                              TAG_END);
 
@@ -580,7 +577,7 @@ static void MakeGadgets(void)
     ng.ng_GadgetID   = MSG_GAD_STOPBITS;
     ng.ng_GadgetText = MSG(MSG_GAD_STOPBITS);
 
-    gad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, StopBitsLabels,
+    gad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, (IPTR) StopBitsLabels,
                                              GTCY_Active, 0,
                                              TAG_END);
 
@@ -590,7 +587,7 @@ static void MakeGadgets(void)
     ng.ng_GadgetID   = MSG_GAD_DATABITS;
     ng.ng_GadgetText = MSG(MSG_GAD_DATABITS);
 
-    gad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, DataBitsLabels,
+    gad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, (IPTR) DataBitsLabels,
                                              GTCY_Active, 0,
                                              TAG_END);
 
@@ -600,7 +597,7 @@ static void MakeGadgets(void)
     ng.ng_GadgetID   = MSG_GAD_PARITY;
     ng.ng_GadgetText = MSG(MSG_GAD_PARITY);
 
-    gad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, ParityLabels,
+    gad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, (IPTR) ParityLabels,
                                              GTCY_Active, 0,
                                              TAG_END);
 
@@ -610,7 +607,7 @@ static void MakeGadgets(void)
     ng.ng_GadgetID   = MSG_GAD_INPUTBUFFERSIZE;
     ng.ng_GadgetText = MSG(MSG_GAD_INPUTBUFFERSIZE);
 
-    gad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, BufferSizeLabels,
+    gad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, (IPTR) BufferSizeLabels,
                                              GTCY_Active, 0,
                                              TAG_END);
 
@@ -620,7 +617,7 @@ static void MakeGadgets(void)
     ng.ng_GadgetID   = MSG_GAD_OUTPUTBUFFERSIZE;
     ng.ng_GadgetText = MSG(MSG_GAD_OUTPUTBUFFERSIZE);
 
-    gad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, BufferSizeLabels,
+    gad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, (IPTR) BufferSizeLabels,
                                              GTCY_Active, 0,
                                              TAG_END);
 

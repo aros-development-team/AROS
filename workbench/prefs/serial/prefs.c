@@ -50,8 +50,6 @@ static APTR 	    	    mempool;
 
 void InitPrefs(STRPTR filename, BOOL use, BOOL save)
 {
-    struct LanguageEntry *entry;
-           
     mempool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR, 2048, 2048);
     if (!mempool) Cleanup("Out of memory!");
 
@@ -260,9 +258,6 @@ BOOL SavePrefs(STRPTR filename)
 
 BOOL DefaultPrefs(void)
 {
-    BOOL retval = FALSE;
-    WORD i;
-    
     TellGUI(PAGECMD_PREFS_CHANGING);
     
     serialprefs.sp_Reserved[0]     = 0;
