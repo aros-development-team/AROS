@@ -12,7 +12,7 @@
 extern struct CommandList internal_commands[];
 
 /* External function prototypes */
-extern void end_malloc();
+extern void end_alloc();
 extern void cleanup();
 
 /* Internal function prototypes */
@@ -48,10 +48,10 @@ int i = 0, j = 0, inc = -1;
   if ( i == numactiveusrprocs )
   {
     numactiveusrprocs++;
-    activeusrprocs = realloc( activeusrprocs, sizeof(struct ProcedureList *) * numactiveusrprocs );
+    activeusrprocs = ReAllocVec( activeusrprocs, sizeof(struct ProcedureList *) * numactiveusrprocs, MEMF_PUBLIC );
     if ( activeusrprocs == NULL )
     {
-      end_malloc();
+      end_alloc();
     }
   }
   activeusrprocs[i] = &((usrprocs[j]));
@@ -108,10 +108,10 @@ long int incarnation = 0;
 
   /* Enlarge list for one additional element */
   numusrprocs++;
-  usrprocs = realloc( usrprocs, sizeof(struct ProcedureList) * numusrprocs );
+  usrprocs = ReAllocVec( usrprocs, sizeof(struct ProcedureList) * numusrprocs, MEMF_PUBLIC );
   if ( usrprocs == NULL )
   {
-    end_malloc();
+    end_alloc();
   }
   usrprocs[i].procbody = cmd;
   usrprocs[i].procname = name;
@@ -131,8 +131,8 @@ int i;
 
   for ( i = 0 ; i < numusrprocs ; i++ )
   {
-    free( usrprocs[i].procname );
+    FreeVec( usrprocs[i].procname );
   }
-  free( usrprocs );
+  FreeVec( usrprocs );
 }
 

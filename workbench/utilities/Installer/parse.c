@@ -15,7 +15,7 @@ extern int line;
 extern InstallerPrefs preferences;
 
 /* External function prototypes */
-extern void end_malloc();
+extern void end_alloc();
 extern long int set_procedure( char **, int, ScriptArg * );
 extern void show_parseerror( char *, int );
 extern void cleanup();
@@ -80,10 +80,10 @@ char **mclip;
 			 break;
 
 	case LBRACK    : /* Open bracket: recurse into next level */
-			 current->cmd = (ScriptArg *)malloc( sizeof(ScriptArg) );
+			 current->cmd = AllocVec( sizeof(ScriptArg), MEMF_PUBLIC );
 			 if( current->cmd == NULL )
 			 {
-			   end_malloc();
+			   end_alloc();
 			 }
 			 /* Set initial values */
 			 current->cmd->parent = current;
@@ -93,10 +93,10 @@ char **mclip;
 			 current->cmd->intval = 0;
 			 current->cmd->ignore = 0;
 			 parse_file( current->cmd );
-			 current->next = (ScriptArg *)malloc( sizeof(ScriptArg) );
+			 current->next = AllocVec( sizeof(ScriptArg), MEMF_PUBLIC );
 			 if( current->next == NULL )
 			 {
-			   end_malloc();
+			   end_alloc();
 			 }
 			 current->next->parent = current->parent;
 			 /* Set initial values */
@@ -117,7 +117,7 @@ char **mclip;
 			   {
 			     current = current->next;
 			   }
-			   free( current->next );
+			   FreeVec( current->next );
 			   current->next = NULL;
 			 }
 			 else
@@ -186,10 +186,10 @@ char **mclip;
 			     }
 			     count = Read( inputfile, &buffer[i], 1 );
 			   } while ( masquerade || ( buffer[i] != buffer[0] && count != 0 ) );
-			   current->arg = (char *)malloc( sizeof(char)*(i+2) );
+			   current->arg = AllocVec( sizeof(char)*(i+2), MEMF_PUBLIC );
 			   if( current->arg == NULL )
 			   {
-			     end_malloc();
+			     end_alloc();
 			   }
 			   buffer[i+1] = 0;
 			   strncpy( current->arg, buffer, i+2 );
@@ -239,10 +239,10 @@ char **mclip;
 					    }
 					    else
 					    {
-					      current->arg = (char *)malloc( sizeof(char)*(i+1) );
+					      current->arg = AllocVec( sizeof(char)*(i+1), MEMF_PUBLIC );
 					      if( current->arg == NULL )
 					      {
-						end_malloc();
+						end_alloc();
 					      }
 					      strncpy( current->arg, buffer, i+1 );
 					    }
@@ -251,10 +251,10 @@ char **mclip;
 					    ScriptArg *proc, *uproc;
 					    int finish;
 					      /* Save procedure in ProcedureList */
-					      proc = malloc( sizeof( ScriptArg ) );
+					      proc = AllocVec( sizeof( ScriptArg ), MEMF_PUBLIC );
 					      if( proc == NULL )
 					      {
-						end_malloc();
+						end_alloc();
 					      }
 					      uproc = proc;
 					      proc->parent = NULL;
@@ -262,10 +262,10 @@ char **mclip;
 					      proc->arg = NULL;
 					      proc->intval = 0;
 					      proc->ignore = 0;
-					      proc->cmd = malloc( sizeof( ScriptArg ) );
+					      proc->cmd = AllocVec( sizeof( ScriptArg ), MEMF_PUBLIC );
 					      if( proc->cmd == NULL )
 					      {
-						end_malloc();
+						end_alloc();
 					      }
 					      proc->cmd->parent = proc;
 					      proc->cmd->next = NULL;
@@ -273,10 +273,10 @@ char **mclip;
 					      proc->cmd->intval = 0;
 					      proc->cmd->ignore = 0;
 					      proc = proc->cmd;
-					      proc->cmd = malloc( sizeof( ScriptArg ) );
+					      proc->cmd = AllocVec( sizeof( ScriptArg ), MEMF_PUBLIC );
 					      if( proc->cmd == NULL )
 					      {
-						end_malloc();
+						end_alloc();
 					      }
 					      proc->cmd->parent = proc;
 					      proc->cmd->next = NULL;
@@ -352,15 +352,15 @@ char **mclip;
 						  }
 						  buffer[i] = 0;
 						  j++;
-						  mclip = realloc( mclip, sizeof( char * ) * j );
+						  mclip = ReAllocVec( mclip, sizeof( char * ) * j, MEMF_PUBLIC );
 						  if( mclip == NULL )
 						  {
-						    end_malloc();
+						    end_alloc();
 						  }
-						  mclip[j-1] = strdup( buffer );
+						  mclip[j-1] = StrDup( buffer );
 						  if( mclip[j-1] == NULL )
 						  {
-						    end_malloc();
+						    end_alloc();
 						  }
 						}
 						else
@@ -399,10 +399,10 @@ char **mclip;
 						}
 						else if( buffer[0] == LBRACK )
 						{
-						  proc->next = malloc( sizeof( ScriptArg ) );
+						  proc->next = AllocVec( sizeof( ScriptArg ), MEMF_PUBLIC );
 						  if( proc->next == NULL )
 						  {
-						    end_malloc();
+						    end_alloc();
 						  }
 						  proc->next->parent = proc->parent;
 						  proc->next->next = NULL;
@@ -410,10 +410,10 @@ char **mclip;
 						  proc->next->intval = 0;
 						  proc->next->ignore = 0;
 						  proc = proc->next;
-						  proc->cmd = malloc( sizeof( ScriptArg ) );
+						  proc->cmd = AllocVec( sizeof( ScriptArg ), MEMF_PUBLIC );
 						  if( proc->cmd == NULL )
 						  {
-						    end_malloc();
+						    end_alloc();
 						  }
 						  proc->cmd->parent = proc;
 						  proc->cmd->next = NULL;
@@ -434,10 +434,10 @@ char **mclip;
 						  exit(-1);
 						}
 					      } while (!finish);
-					      current->next = (ScriptArg *)malloc( sizeof(ScriptArg) );
+					      current->next = AllocVec( sizeof(ScriptArg), MEMF_PUBLIC );
 					      if( current->next == NULL )
 					      {
-						end_malloc();
+						end_alloc();
 					      }
 					      current->next->parent = current->parent;
 					      current = current->next;
@@ -460,10 +460,10 @@ char **mclip;
 					    break;
 			   }
 			 }
-			 current->next = (ScriptArg *)malloc( sizeof(ScriptArg) );
+			 current->next = AllocVec( sizeof(ScriptArg), MEMF_PUBLIC );
 			 if( current->next == NULL )
 			 {
-			   end_malloc();
+			   end_alloc();
 			 }
 			 current->next->parent = current->parent;
 			 current = current->next;

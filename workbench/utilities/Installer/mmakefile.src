@@ -8,7 +8,7 @@ include $(TOP)/config/make.cfg
 FILES := main misc procedure parse variables gui more execute cleanup
 
 EXEDIR := $(AROSDIR)/Utilities
-EXE := $(EXEDIR)/Installer
+EXE := $(EXEDIR)/Installer_new
 SCRIPT := test.script
 
 USE_CLIB_SHARED := yes

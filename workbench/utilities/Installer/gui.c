@@ -33,7 +33,7 @@ extern void set_variable( char *, char *, long int );
 #ifdef DEBUG
 extern void dump_varlist();
 #endif /* DEBUG */
-extern void end_malloc();
+extern void end_alloc();
 extern void outofmem( void * );
 extern void traperr( char *, char * );
 
@@ -406,7 +406,7 @@ int finish = FALSE;
     RefreshGList(stdglist,GuiWin,NULL,-1);
     GT_RefreshWindow(GuiWin,NULL);
 
-    text = strdup( "Aborting Installation:" );
+    text = StrDup( "Aborting Installation:" );
     outofmem( text );
 #ifdef USE_INTUITEXT
     itext.IText = text;
@@ -415,8 +415,8 @@ int finish = FALSE;
     Move( rp, 15, 25 );
     Text( rp, text, strlen(text) );
 #endif
-    free( text );
-    out = malloc( sizeof( char * ) );
+    FreeVec( text );
+    out = AllocVec( sizeof( char * ), MEMF_PUBLIC );
     outofmem( out );
     out[0] = NULL;
     m = strtostrs( msg, &out );
@@ -429,9 +429,9 @@ int finish = FALSE;
       Move( rp, 15, 15*n+45 );
       Text( rp, out[n], strlen(out[n]) );
 #endif
-      free( out[n] );
+      FreeVec( out[n] );
     }
-    free( out );
+    FreeVec( out );
 #ifdef DEBUG
       printf( "%s\n", msg );
 #endif /* DEBUG */
@@ -473,10 +473,10 @@ void show_complete( long int percent )
 {
 char *text;
 
-  text = malloc( strlen( GuiWinTitle ) + 13);
+  text = AllocVec( strlen( GuiWinTitle ) + 13, MEMF_PUBLIC );
   if( text == NULL )
   {
-    end_malloc();
+    end_alloc();
   }
   sprintf( text, "%s (Done %3ld%c)", GuiWinTitle, percent, PERCENT );
   SetWindowTitles( GuiWin, text, NULL);
@@ -497,7 +497,7 @@ int n, m;
   RefreshGList(stdglist,GuiWin,NULL,-1);
   GT_RefreshWindow(GuiWin,NULL);
 
-  text = strdup( "Aborting Installation:" );
+  text = StrDup( "Aborting Installation:" );
   outofmem( text );
 #ifdef USE_INTUITEXT
   itext.IText = text;
@@ -506,8 +506,8 @@ int n, m;
   Move( rp, 15, 25 );
   Text( rp, text, strlen(text) );
 #endif
-  free( text );
-  out = malloc( sizeof( char * ) );
+  FreeVec( text );
+  out = AllocVec( sizeof( char * ), MEMF_PUBLIC );
   outofmem( out );
   out[0] = NULL;
   m = strtostrs( msg, &out );
@@ -520,13 +520,13 @@ int n, m;
     Move( rp, 15, 15*n+45 );
     Text( rp, out[n], strlen(out[n]) );
 #endif
-    free( out[n] );
+    FreeVec( out[n] );
   }
-  free( out );
+  FreeVec( out );
 #ifdef DEBUG
   printf( "%s\n", msg );
 #endif /* DEBUG */
-  text = strdup( "Done with Installation." );
+  text = StrDup( "Done with Installation." );
   outofmem( text );
 #ifdef USE_INTUITEXT
   itext.IText = text;
@@ -535,7 +535,7 @@ int n, m;
   Move( rp, 15, 15*n+45 );
   Text( rp, text, strlen(text) );
 #endif
-  free( text );
+  FreeVec( text );
 #ifdef DEBUG
   printf( "\nDone with installation.\n\n" );
 #endif /* DEBUG */
@@ -602,7 +602,7 @@ int n, m;
   RefreshGList(stdglist,GuiWin,NULL,-1);
   GT_RefreshWindow(GuiWin,NULL);
 
-  text = strdup( "Working on Installation:" );
+  text = StrDup( "Working on Installation:" );
   outofmem( text );
 #ifdef USE_INTUITEXT
   itext.IText = text;
@@ -614,8 +614,8 @@ int n, m;
 #ifdef DEBUG
   printf( "%s\n", text );
 #endif /* DEBUG */
-  free( text );
-  out = malloc( sizeof( char * ) );
+  FreeVec( text );
+  out = AllocVec( sizeof( char * ), MEMF_PUBLIC );
   outofmem( out );
   out[0] = NULL;
   m = strtostrs( msg, &out );
@@ -628,9 +628,9 @@ int n, m;
     Move( rp, 15, 15*n+45 );
     Text( rp, out[n], strlen(out[n]) );
 #endif
-    free( out[n] );
+    FreeVec( out[n] );
   }
-  free( out );
+  FreeVec( out );
 #ifdef DEBUG
   printf( "%s\n", msg );
 #endif /* DEBUG */
@@ -657,7 +657,7 @@ int finish = FALSE;
     RefreshGList(stdglist,GuiWin,NULL,-1);
     GT_RefreshWindow(GuiWin,NULL);
 
-    out = malloc( sizeof( char * ) );
+    out = AllocVec( sizeof( char * ), MEMF_PUBLIC );
     outofmem( out );
     out[0] = NULL;
     m = strtostrs( msg, &out );
@@ -670,9 +670,9 @@ int finish = FALSE;
       Move( rp, 15, 15*n+30 );
       Text( rp, out[n], strlen(out[n]) );
 #endif
-      free( out[n] );
+      FreeVec( out[n] );
     }
-    free( out );
+    FreeVec( out );
 #ifdef DEBUG
     printf( "%s\n", msg );
 #endif /* DEBUG */
@@ -743,10 +743,10 @@ void show_help_logfile()
 char *helptext;
 
 #warning TODO: help for logfile-requester
-  helptext = malloc( 512 * sizeof(char) );
+  helptext = AllocVec( 512 * sizeof(char), MEMF_PUBLIC );
   sprintf( helptext, LOG_HELP, preferences.transcriptfile );
   moremain( HELP_ON_LOGFILES, helptext );
-  free(helptext);
+  FreeVec(helptext);
 }
 
 
@@ -768,10 +768,10 @@ void show_help_installer( )
 char *helptext;
 
 #warning TODO: help/about for Installer
-  helptext = malloc( 512 * sizeof(char) );
+  helptext = AllocVec( 512 * sizeof(char), MEMF_PUBLIC );
   sprintf( helptext, ABOUT_INSTALLER, INSTALLER_VERSION, INSTALLER_REVISION );
   moremain( ABOUT_ON_INSTALLER, helptext );
-  free(helptext);
+  FreeVec(helptext);
 }
 
 
@@ -790,7 +790,7 @@ char welcome[1024];
   int n,m;
   char **out;
 
-    out = malloc( sizeof( char * ) );
+    out = AllocVec( sizeof( char * ), MEMF_PUBLIC );
     outofmem( out );
     out[0] = NULL;
     m = strtostrs( msg, &out );
@@ -803,9 +803,9 @@ char welcome[1024];
       Move( rp, 15, 15*n+30 );
       Text( rp, out[n], strlen(out[n]) );
 #endif
-      free( out[n] );
+      FreeVec( out[n] );
     }
-    free( out );
+    FreeVec( out );
 #ifdef DEBUG
     printf( "%s\n", msg );
 #endif /* DEBUG */
@@ -825,17 +825,17 @@ char welcome[1024];
 #endif /* DEBUG */
   }
 
-  mxlabels = malloc( 4*sizeof(STRPTR) );
-  mxlabels[0] = strdup( NOVICE_NAME );
-  mxlabels[1] = strdup( ADVANCED_NAME );
-  mxlabels[2] = strdup( EXPERT_NAME );
+  mxlabels = AllocVec( 4 * sizeof(STRPTR), MEMF_PUBLIC );
+  mxlabels[0] = StrDup( NOVICE_NAME );
+  mxlabels[1] = StrDup( ADVANCED_NAME );
+  mxlabels[2] = StrDup( EXPERT_NAME );
   mxlabels[3] = NULL;
 
   gad = CreateContext( &mxglist );
   if(gad==NULL)
     fprintf( stderr, "CreateContext() failed\n");
 
-  gt_mxgad.ng_GadgetText = strdup( USERLEVEL_REQUEST );
+  gt_mxgad.ng_GadgetText = StrDup( USERLEVEL_REQUEST );
   gt_mxgad.ng_LeftEdge = 150;
 
   gad = CreateGadget( MX_KIND, gad, &gt_mxgad,
@@ -922,7 +922,7 @@ char welcome[1024];
   GT_RefreshWindow( GuiWin, NULL );
   FreeGadgets( mxglist );
   freestrlist( mxlabels );
-  free( gt_mxgad.ng_GadgetText );
+  FreeVec( gt_mxgad.ng_GadgetText );
   gt_mxgad.ng_GadgetText = NULL;
 
   set_variable( "@user-level", NULL, usrlevel );
@@ -939,10 +939,10 @@ char welcome[1024];
     Text( rp, LOG_QUESTION, strlen(LOG_QUESTION) );
 #endif
 
-    mxlabels = malloc( 4*sizeof(STRPTR) );
-    mxlabels[0] = strdup( LOG_FILE_TEXT );
-    mxlabels[1] = strdup( LOG_PRINT_TEXT );
-    mxlabels[2] = strdup( LOG_NOLOG_TEXT );
+    mxlabels = AllocVec( 4 * sizeof(STRPTR), MEMF_PUBLIC );
+    mxlabels[0] = StrDup( LOG_FILE_TEXT );
+    mxlabels[1] = StrDup( LOG_PRINT_TEXT );
+    mxlabels[2] = StrDup( LOG_NOLOG_TEXT );
     mxlabels[3] = NULL;
 
     gad = CreateContext( &mxglist );
@@ -979,11 +979,11 @@ char welcome[1024];
 		      case 0: /* Log to file */
 			break;
 		      case 1: /* Log to printer */
-			free( preferences.transcriptfile );
-			preferences.transcriptfile = strdup ("PRT:");
+			FreeVec( preferences.transcriptfile );
+			preferences.transcriptfile = StrDup ("PRT:");
 			break;
 		      case 2: /* No Log */
-			free( preferences.transcriptfile );
+			FreeVec( preferences.transcriptfile );
 			preferences.transcriptfile = NULL;
 			break;
 		      default:
@@ -1028,7 +1028,7 @@ char welcome[1024];
       GT_RefreshWindow( GuiWin, NULL );
       FreeGadgets( mxglist );
       freestrlist( mxlabels );
-      free( gt_mxgad.ng_GadgetText );
+      FreeVec( gt_mxgad.ng_GadgetText );
       gt_mxgad.ng_GadgetText = NULL;
 #ifdef USE_INTUITEXT
       itext.IText = PRETEND_QUESTION;
@@ -1038,9 +1038,9 @@ char welcome[1024];
       Text( rp, PRETEND_QUESTION, strlen(PRETEND_QUESTION) );
 #endif
 
-      mxlabels = malloc( 3*sizeof(STRPTR) );
-      mxlabels[0] = strdup( NOPRETEND_TEXT );
-      mxlabels[1] = strdup( PRETEND_TEXT );
+      mxlabels = AllocVec( 3 * sizeof(STRPTR), MEMF_PUBLIC );
+      mxlabels[0] = StrDup( NOPRETEND_TEXT );
+      mxlabels[1] = StrDup( PRETEND_TEXT );
       mxlabels[2] = NULL;
 
       gad = CreateContext( &mxglist );
@@ -1198,7 +1198,7 @@ int finish = FALSE;
 #ifdef DEBUG
       printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
 #endif /* DEBUG */
-      out = malloc( sizeof( char * ) );
+      out = AllocVec( sizeof( char * ), MEMF_PUBLIC );
       outofmem( out );
       out[0] = NULL;
       m = strtostrs( GetPL( pl, _PROMPT ).arg[i], &out );
@@ -1211,10 +1211,10 @@ int finish = FALSE;
 	Move( rp, 18, 15*j+22 );
 	Text( rp, out[n], strlen(out[n]) );
 #endif
-	free( out[n] );
+	FreeVec( out[n] );
 	j++;
       }
-      free( out );
+      FreeVec( out );
     }
     do
     {
@@ -1353,7 +1353,7 @@ int finish = FALSE;
 #ifdef DEBUG
       printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
 #endif /* DEBUG */
-      out = malloc( sizeof( char * ) );
+      out = AllocVec( sizeof( char * ), MEMF_PUBLIC );
       outofmem( out );
       out[0] = NULL;
       m = strtostrs( GetPL( pl, _PROMPT ).arg[i], &out );
@@ -1366,10 +1366,10 @@ int finish = FALSE;
 	Move( rp, 18, 15*j+22 );
 	Text( rp, out[n], strlen(out[n]) );
 #endif
-	free( out[n] );
+	FreeVec( out[n] );
 	j++;
       }
-      free( out );
+      FreeVec( out );
     }
 
     finish = FALSE;
@@ -1526,7 +1526,7 @@ int finish = FALSE;
 #ifdef DEBUG
       printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
 #endif /* DEBUG */
-      out = malloc( sizeof( char * ) );
+      out = AllocVec( sizeof( char * ), MEMF_PUBLIC );
       outofmem( out );
       out[0] = NULL;
       m = strtostrs( GetPL( pl, _PROMPT ).arg[i], &out );
@@ -1539,10 +1539,10 @@ int finish = FALSE;
 	Move( rp, 18, 15*j+22 );
 	Text( rp, out[n], strlen(out[n]) );
 #endif
-	free( out[n] );
+	FreeVec( out[n] );
 	j++;
       }
-      free( out );
+      FreeVec( out );
     }
 
     finish = FALSE;
@@ -1657,10 +1657,10 @@ int max, finish = FALSE;
     RefreshGList(stdglist,GuiWin,NULL,-1);
     GT_RefreshWindow(GuiWin,NULL);
 
-    mxlabels = malloc( (max+1)*sizeof(STRPTR) );
+    mxlabels = AllocVec( (max+1)*sizeof(STRPTR), MEMF_PUBLIC );
     for( i = 0 ; i < max ; i ++ )
     {
-      mxlabels[i] = strdup(GetPL( pl, _CHOICES ).arg[i] );
+      mxlabels[i] = StrDup(GetPL( pl, _CHOICES ).arg[i] );
     }
     mxlabels[i] = NULL;
 
@@ -1687,7 +1687,7 @@ int max, finish = FALSE;
 #ifdef DEBUG
       printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
 #endif /* DEBUG */
-      out = malloc( sizeof( char * ) );
+      out = AllocVec( sizeof( char * ), MEMF_PUBLIC );
       outofmem( out );
       out[0] = NULL;
       m = strtostrs( GetPL( pl, _PROMPT ).arg[i], &out );
@@ -1700,10 +1700,10 @@ int max, finish = FALSE;
 	Move( rp, 18, 15*j+22 );
 	Text( rp, out[n], strlen(out[n]) );
 #endif
-	free( out[n] );
+	FreeVec( out[n] );
 	j++;
       }
-      free( out );
+      FreeVec( out );
     }
 
     finish = FALSE;
@@ -1943,7 +1943,7 @@ char **out;
 #ifdef DEBUG
       printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
 #endif /* DEBUG */
-      out = malloc( sizeof( char * ) );
+      out = AllocVec( sizeof( char * ), MEMF_PUBLIC );
       outofmem( out );
       out[0] = NULL;
       m = strtostrs( GetPL( pl, _PROMPT ).arg[i], &out );
@@ -1956,10 +1956,10 @@ char **out;
 	Move( rp, 15, 15*j+22 );
 	Text( rp, out[n], strlen(out[n]) );
 #endif
-	free( out[n] );
+	FreeVec( out[n] );
 	j++;
       }
-      free( out );
+      FreeVec( out );
     }
 
     finish = FALSE;

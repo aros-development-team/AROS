@@ -30,10 +30,10 @@ char **out = *outarr;
   while (*in)
   {
     i++;
-    /* malloc space for next string */
-    out = realloc( out, ( i + 1 ) * sizeof( char *) );
+    /* allocate space for next string */
+    out = ReAllocVec( out, ( i + 1 ) * sizeof( char *), MEMF_PUBLIC );
     for ( j = 0 ; in[j] && in[j]!=LINEFEED ; j++ );
-    out[i-1] = malloc( ( j + 1 ) * sizeof( char ) );
+    out[i-1] = AllocVec( ( j + 1 ) * sizeof( char ), MEMF_PUBLIC );
     outofmem( out[i-1] );
     for ( k = 0 ; k < j ; k++ )
     {
@@ -67,7 +67,7 @@ int len = 0, i, j, k;
        plus additional LINEFEED (NULL for last item ) */
     len += strlen ( instrs[i] ) + 1;
   }
-  retval = malloc ( sizeof( char ) * len );
+  retval = AllocVec ( sizeof( char ) * len, MEMF_PUBLIC );
   if ( retval != NULL )
   {
     j = 0;
@@ -100,7 +100,7 @@ int c;
 
   /* Add surrounding quotes */
   c = ( string == NULL ) ? 0 : strlen( string );
-  retval = malloc( c + 3 );
+  retval = AllocVec( c + 3, MEMF_PUBLIC );
   outofmem( retval );
   retval[0] = DQUOTE;
   strcpy( retval + 1, string );
@@ -111,7 +111,7 @@ return retval;
 }
 
 /*
- * free() array of strings ( eg. allocated by strtostrs() )
+ * FreeVec() array of strings ( eg. allocated by strtostrs() )
  */
 void freestrlist( STRPTR *array )
 {
@@ -119,9 +119,9 @@ int i=0;
 
   while (array[i])
   {
-    free(array[i]);
+    FreeVec(array[i]);
     i++;
   }
-  free(array);
+  FreeVec(array);
 }
 

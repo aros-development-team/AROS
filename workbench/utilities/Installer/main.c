@@ -23,7 +23,7 @@ extern void set_preset_variables( int );
 extern void *get_variable( char *name );
 extern long int get_var_int( char *name );
 extern void set_variable( char *name, char *text, long int intval );
-extern void end_malloc();
+extern void end_alloc();
 #ifdef DEBUG
 extern void dump_varlist();
 #endif /* DEBUG */
@@ -87,17 +87,17 @@ int nextarg, endoffile, count;
   if (args[ARG_SCRIPT])
   {
     printf( "Using script %s.\n", (STRPTR)args[ARG_SCRIPT] );
-    filename = strdup( (STRPTR)args[ARG_SCRIPT] );
+    filename = StrDup( (STRPTR)args[ARG_SCRIPT] );
   }
   else
   {
     printf( "Using default script.\n" );
-    filename = strdup( "SYS:Utilities/test.script" );
+    filename = StrDup( "SYS:Utilities/test.script" );
   }
 #else /* DEBUG */
   if (argc)
   {
-    filename = strdup( (STRPTR)args[ARG_SCRIPT] );
+    filename = StrDup( (STRPTR)args[ARG_SCRIPT] );
   }
   else
   {
@@ -111,7 +111,7 @@ int nextarg, endoffile, count;
       CloseLibrary( (struct Library *)IconBase);
       exit(-1);
     }
-    filename = strdup( ttemp );
+    filename = StrDup( ttemp );
   }
 #endif /* DEBUG */
 
@@ -138,7 +138,7 @@ int nextarg, endoffile, count;
     {
       preferences.novicelog = TRUE;
     }
-    preferences.transcriptfile = strdup( ( args[ARG_LOGFILE] ) ? (char *)args[ARG_LOGFILE] : "install_log_file" );
+    preferences.transcriptfile = StrDup( ( args[ARG_LOGFILE] ) ? (char *)args[ARG_LOGFILE] : "install_log_file" );
     preferences.nopretend = (int)args[ARG_NOPRETEND];
     if (args[ARG_MINUSER])
     {
@@ -208,23 +208,23 @@ int nextarg, endoffile, count;
     {
       preferences.nopretend = TRUE;
     }
-    preferences.transcriptfile = strdup( ArgString( tooltypes, "LOGFILE", "install_log_file" ) );
+    preferences.transcriptfile = StrDup( ArgString( tooltypes, "LOGFILE", "install_log_file" ) );
     ttemp = ArgString( tooltypes, "DEFUSER", "NOVICE" );
     tstring = NULL;
     preferences.minusrlevel = _NOVICE;
     if ( strcasecmp( "average", ttemp ) == 0 )
     {
       preferences.minusrlevel = _AVERAGE;
-      tstring = strdup( "AVERAGE" );
+      tstring = StrDup( "AVERAGE" );
     }
     else if ( strcasecmp( "expert", ttemp ) == 0 )
     {
       preferences.minusrlevel = _EXPERT;
-      tstring = strdup( "EXPERT" );
+      tstring = StrDup( "EXPERT" );
     }
     if ( tstring == NULL )
     {
-      tstring = strdup( "NOVICE" );
+      tstring = StrDup( "NOVICE" );
     }
 
     ttemp = ArgString( tooltypes, "DEFUSER", tstring );
@@ -241,7 +241,7 @@ int nextarg, endoffile, count;
     {
       preferences.defusrlevel = preferences.minusrlevel;
     }
-    free( tstring );
+    FreeVec( tstring );
   }
 
   preferences.copyfail = COPY_FAIL;
@@ -281,20 +281,20 @@ int nextarg, endoffile, count;
     /* Allocate space for script cmd and save first one to scriptroot */
     if ( script.cmd == NULL )
     {
-      script.cmd = (ScriptArg *)malloc( sizeof(ScriptArg) );
+      script.cmd = (ScriptArg *)AllocVec( sizeof(ScriptArg), MEMF_PUBLIC );
       if ( script.cmd == NULL )
       {
-	end_malloc();
+	end_alloc();
       }
       currentarg = script.cmd;
       currentarg->parent = &script;
     }
     else
     {
-      currentarg->next = (ScriptArg *)malloc( sizeof(ScriptArg) );
+      currentarg->next = (ScriptArg *)AllocVec( sizeof(ScriptArg), MEMF_PUBLIC );
       if ( currentarg->next == NULL )
       {
-	end_malloc();
+	end_alloc();
       }
       currentarg->next->parent = currentarg->parent;
       currentarg = currentarg->next;
@@ -329,10 +329,10 @@ int nextarg, endoffile, count;
 			    break;
 
 	  case LBRACK	  : /* A command (...) , parse the content of braces */
-			    currentarg->cmd = (ScriptArg *)malloc( sizeof(ScriptArg) );
+			    currentarg->cmd = (ScriptArg *)AllocVec( sizeof(ScriptArg), MEMF_PUBLIC );
 			    if ( currentarg->cmd == NULL )
 			    {
-			      end_malloc();
+			      end_alloc();
 			    }
 			    dummy = currentarg->cmd;
 			    dummy->parent = currentarg;
@@ -371,11 +371,11 @@ int nextarg, endoffile, count;
     {
       currentarg = currentarg->next;
     }
-    free( currentarg->next );
+    FreeVec( currentarg->next );
     currentarg->next = NULL;
   }
 
-  free( filename );
+  FreeVec( filename );
   Close( inputfile );
 
   if ( preferences.transcriptfile != NULL )
