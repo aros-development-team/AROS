@@ -9,6 +9,10 @@
     Lang: English
 */
 
+#ifndef EXEC_EXECBASE_H
+#include <exec/execbase.h>
+#endif
+
 #ifndef REXX_STORAGE_H
 #include <rexx/storage.h>
 #endif
@@ -28,7 +32,7 @@ struct RxsLib
 	struct Library     rl_Node;
 	UBYTE              rl_Flags;
 	UBYTE              rl_Shadow;
-	struct Library *   rl_SysBase;
+	struct ExecBase *  rl_SysBase;
 	struct DOSBase *   rl_DOSBase;
 	struct Library *   rl_Unused1; /* rl_IeeeCDBase */
 	BPTR               rl_SegList;
