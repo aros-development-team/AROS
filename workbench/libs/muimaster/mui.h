@@ -444,6 +444,10 @@ struct MUI_PenSpec {
 #include "classes/configdata.h"
 #endif
 
+#ifndef _MUI_CLASSES_IMAGEADJUST_H
+#include "classes/imageadjust.h"
+#endif
+
 /**************************************************************************
  Zune/MUI Image and Backgriund definition
 **************************************************************************/

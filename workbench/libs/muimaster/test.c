@@ -328,6 +328,7 @@ void main(void)
 			    Child, DropTextObject, MUIA_Dropable, TRUE, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drop Here", MUIA_Dropable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, TextObject, TextFrame, MUIA_Background, MUII_MARKHALFSHINE, MUIA_CycleChain, 1, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Pattern", End,
 			   End,
+			Child, MUI_NewObject(MUIC_Imageadjust, TAG_DONE),
 		       End,
 
 		    Child, VGroup,
