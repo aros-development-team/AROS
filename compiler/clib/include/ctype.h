@@ -1,5 +1,5 @@
-#ifndef CTYPE_H
-#define CTYPE_H
+#ifndef _CTYPE_H_
+#define _CTYPE_H_
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
@@ -29,7 +29,7 @@ extern const int *const __ctype_tolower;
 #define _istype(c,type) \
     (__ctype_b[(int) (c)] & (unsigned short int) (type))
 
-#define isascii(c)      ((c) & 0x80)
+#define isascii(c)      (((c) & ~0x7F) == 0)
 #define toascii(c)      ((c) & 0x7F)
 
 #define isupper(c)      _istype(c,_ISupper)
@@ -50,4 +50,4 @@ extern const int *const __ctype_tolower;
 #define toupper(c)      (__ctype_toupper[(int)(c)])
 #define tolower(c)      (__ctype_tolower[(int)(c)])
 
-#endif /* CTYPE_H */
+#endif /* _CTYPE_H_ */
