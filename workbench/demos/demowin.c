@@ -602,7 +602,7 @@ int main (int argc, char ** argv)
     rp = win->RPort;
 
     DemoIText.LeftEdge = GAD_WID/2 - rp->Font->tf_XSize*2;
-    DemoIText.TopEdge = GAD_HEI/2 - rp->Font->tf_YSize/2 + rp->Font->tf_Baseline;
+    DemoIText.TopEdge = GAD_HEI/2 - rp->Font->tf_YSize/2;
 
     if (!gadget)
 	printf ("Warning: Couldn't create gadget\n");
