@@ -411,3 +411,8 @@ BUG000059
 bergers@aros.org
 Once the window of fish/watchman is clicked on with the left mouse button
 nothing can be done with other windows. (Locking error?)
+
+BUG000060
+bergers@aros.org
+Newshell creates two (?) simple refresh windows. When moving these windows
+the result is garbage on the screen.
