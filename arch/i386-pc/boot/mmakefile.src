@@ -12,46 +12,74 @@ OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) 	\
 	   $(OSGENDIR)/graphics/fakegfxhidd.o
 
 BOOT_C := \
-	Avail Copy Date Delete Dir Info Install List MakeDir Mount NewShell \
-	Protect Relabel Rename Shell Type
+	AddDatatypes Avail Copy Date Delete Dir Info IPrefs Install List \
+	MakeDir Mount Protect Relabel Rename SetKeyboard
 BOOT_C_SHELL := \
-	Alias Assign CD Echo Execute FailAt Path Prompt Resident Run Set Setenv Stack
+	Alias Assign CD Echo EndIf Execute FailAt If NewShell Path Prompt \
+	Resident Run Set Setenv Shell Stack
+BOOT_DataTypes := \
+	ascii binary text
 BOOT_Gadgets := \
 	aroscheckbox.gadget aroscycle.gadget aroslist.class aroslistview.gadget \
-	arosmutualexclude.gadget arospalette.gadget colorwheel.gadget gradientslider.gadget
-BOOT_Aminet := Format64
-BOOT_Demos := gtdemo menudemo
-BOOT_Devs := Mountlist nil.handler ram.handler cdrom.handler
+	arosmutualexclude.gadget arospalette.gadget 
+#	colorwheel.gadget gradientslider.gadget
+BOOT_Devs := \
+	DataTypes/FTXT \
+	Keymaps/pc105_d Keymaps/pc105_i Keymaps/pc105_s \
+	Mountlist nil.handler ram.handler
 BOOT_Libs := \
-	amigaguide arosc commodities diskfont gadtools iffparse \
-	icon locale lowlevel mathieeedoubbas mathieeedoubtrans \
-	mathieeesingtrans mathtrans nonvolatile nvdisk realtime
-BOOT_S := hidd.prefs Shell-Startup Startup-Sequence
-BOOT_Tools := Debug/sashimi HDToolBox
+	arosc asl datatypes diskfont gadtools icon iffparse locale 
+BOOT_Locale := \
+	Countries/united_states.country Countries/deutschland.country \
+	Countries/españa.country Countries/italia.country \
+	Languages/deutsch.language Languages/español.language \
+	Languages/italiano.language \
+	Catalogs/deutsch/Sys/LocalePrefs.catalog Catalogs/deutsch/Sys/MultiView.catalog	\
+	Catalogs/deutsch/Sys/asl.catalog Catalogs/deutsch/Sys/dos.catalog
+BOOT_Prefs := \
+	Font Locale
+#	Env-Archive/Sys/font.prefs 
+BOOT_S := \
+	hidd.prefs Shell-Startup Startup-Sequence
+BOOT_Tools := \
+	HDToolBox 
+#	Commodities/Blanker Commodities/Exchange 
+#	Debug/sashimi 
+BOOT_Utilities := MultiView
+BOOT_Aminet := Format64
+BOOT_Demos := 
 BOOT_grub := stage1 stage2 menu.lst
 
 BOOT_SRC_DIR := $(AROSDIR)
 BOOT_SRC_C := $(foreach f, $(BOOT_C), $(AROS_DIR)/C/$(f))
 BOOT_SRC_C_SHELL := $(foreach f, $(BOOT_C_SHELL), $(AROS_DIR)/C/$(f))
+BOOT_SRC_DataTypes := $(foreach f, $(BOOT_DataTypes), $(BOOT_SRC_DIR)/Classes/DataTypes/$(f).datatype)
 BOOT_SRC_Gadgets := $(foreach f, $(BOOT_Gadgets), $(BOOT_SRC_DIR)/Classes/Gadgets/$(f))
-BOOT_SRC_Aminet := $(foreach f, $(BOOT_Aminet), $(BOOT_SRC_DIR)/contrib/aminet/$(f))
-BOOT_SRC_Demos := $(foreach f, $(BOOT_Demos), $(BOOT_SRC_DIR)/Demos/$(f))
 BOOT_SRC_Devs := $(foreach f, $(BOOT_Devs), $(BOOT_SRC_DIR)/Devs/$(f))
 BOOT_SRC_Libs := $(foreach f, $(BOOT_Libs), §(BOOT_SRC_DIR)/Libs/$(f).library)
+BOOT_SRC_Locale := $(foreach f, $(BOOT_Locale), $(BOOT_SRC_DIR)/Locale/$(f))
+BOOT_SRC_Prefs := $(foreach f, $(BOOT_Prefs), $(BOOT_SRC_DIR)/Prefs/$(f))
 BOOT_SRC_S := $(foreach f, $(BOOT_S), $(BOOT_SRC_DIR)/S/$(f))
 BOOT_SRC_Tools := $(foreach f, $(BOOT_Tools), $(BOOT_SRC_DIR)/Tools/$(f))
+BOOT_SRC_Utilities := $(foreach f, $(BOOT_Utilities), $(BOOT_SRC_DIR)/Utilities/$(f))
+BOOT_SRC_Aminet := $(foreach f, $(BOOT_Aminet), $(BOOT_SRC_DIR)/contrib/aminet/$(f))
+BOOT_SRC_Demos := $(foreach f, $(BOOT_Demos), $(BOOT_SRC_DIR)/Demos/$(f))
 BOOT_SRC_grub := $(foreach f, $(BOOT_grub), $(BOOT_SRC_DIR)/boot/grub/$(f))
 
 BOOT_DEST_DIR := $(OSGENDIR)/bootdisk
 BOOT_DEST_C := $(foreach f, $(BOOT_C), $(BOOT_DEST_DIR)/C/$(f))
 BOOT_DEST_C_SHELL := $(foreach f, $(BOOT_C_SHELL), $(BOOT_DEST_DIR)/C/$(f))
+BOOT_DEST_DataTypes := $(foreach f, $(BOOT_DataTypes), $(BOOT_DEST_DIR)/Classes/DataTypes/$(f).datatype)
 BOOT_DEST_Gadgets := $(foreach f, $(BOOT_Gadgets), $(BOOT_DEST_DIR)/Classes/Gadgets/$(f))
-BOOT_DEST_Aminet := $(foreach f, $(BOOT_Aminet), $(BOOT_DEST_DIR)/contrib/aminet/$(f))
-BOOT_DEST_Demos := $(foreach f, $(BOOT_Demos), $(BOOT_DEST_DIR)/Demos/$(f))
 BOOT_DEST_Devs := $(foreach f, $(BOOT_Devs), $(BOOT_DEST_DIR)/Devs/$(f))
 BOOT_DEST_Libs := $(foreach f, $(BOOT_Libs), $(BOOT_DEST_DIR)/Libs/$(f).library)
+BOOT_DEST_Locale := $(foreach f, $(BOOT_Locale), $(BOOT_DEST_DIR)/Locale/$(f))
+BOOT_DEST_Prefs := $(foreach f, $(BOOT_Prefs), $(BOOT_DEST_DIR)/Prefs/$(f))
 BOOT_DEST_S := $(foreach f, $(BOOT_S), $(BOOT_DEST_DIR)/S/$(f))
 BOOT_DEST_Tools := $(foreach f, $(BOOT_Tools), $(BOOT_DEST_DIR)/Tools/$(f))
+BOOT_DEST_Utilities := $(foreach f, $(BOOT_Utilities), $(BOOT_DEST_DIR)/Utilities/$(f))
+BOOT_DEST_Aminet := $(foreach f, $(BOOT_Aminet), $(BOOT_DEST_DIR)/contrib/aminet/$(f))
+BOOT_DEST_Demos := $(foreach f, $(BOOT_Demos), $(BOOT_DEST_DIR)/Demos/$(f))
 BOOT_DEST_grub := $(foreach f, $(BOOT_grub), $(BOOT_DEST_DIR)/boot/grub/$(f))
 
 #MM
@@ -59,18 +87,33 @@ setup-native :
 	%mkdirs_q $(OSGENDIR)/boot
 	%mkdirs_q $(BINDIR)/boot
 	%mkdirs_q $(BINDIR)/boot/grub
+	-$(RM) -r $(BOOT_DEST_DIR)/*
 	%mkdirs_q $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)/C
 	%mkdirs_q $(BOOT_DEST_DIR)/Classes
+	%mkdirs_q $(BOOT_DEST_DIR)/Classes/DataTypes
 	%mkdirs_q $(BOOT_DEST_DIR)/Classes/Gadgets
 	%mkdirs_q $(BOOT_DEST_DIR)/contrib
 	%mkdirs_q $(BOOT_DEST_DIR)/contrib/aminet
-	%mkdirs_q $(BOOT_DEST_DIR)/Demos
 	%mkdirs_q $(BOOT_DEST_DIR)/Devs
+	%mkdirs_q $(BOOT_DEST_DIR)/Devs/DataTypes
+	%mkdirs_q $(BOOT_DEST_DIR)/Devs/Keymaps
 	%mkdirs_q $(BOOT_DEST_DIR)/Libs
+	%mkdirs_q $(BOOT_DEST_DIR)/Locale
+	%mkdirs_q $(BOOT_DEST_DIR)/Locale/Catalogs
+	%mkdirs_q $(BOOT_DEST_DIR)/Locale/Catalogs/deutsch
+	%mkdirs_q $(BOOT_DEST_DIR)/Locale/Catalogs/deutsch/Sys
+	%mkdirs_q $(BOOT_DEST_DIR)/Locale/Countries
+	%mkdirs_q $(BOOT_DEST_DIR)/Locale/Languages
+	%mkdirs_q $(BOOT_DEST_DIR)/Prefs
+	%mkdirs_q $(BOOT_DEST_DIR)/Prefs/Env-Archive
+	%mkdirs_q $(BOOT_DEST_DIR)/Prefs/Env-Archive/Sys
 	%mkdirs_q $(BOOT_DEST_DIR)/S
+	%mkdirs_q $(BOOT_DEST_DIR)/System
 	%mkdirs_q $(BOOT_DEST_DIR)/Tools
+	%mkdirs_q $(BOOT_DEST_DIR)/Tools/Commodities
 	%mkdirs_q $(BOOT_DEST_DIR)/Tools/Debug
+	%mkdirs_q $(BOOT_DEST_DIR)/Utilities	
 	%mkdirs_q $(BOOT_DEST_DIR)/boot/grub
 
 #MM
@@ -99,8 +142,10 @@ $(BINDIR)/boot/grub/% : %
 	
 #MM bootdisk-native-i386 : software-native-i386
 bootdisk-native-i386: \
-	$(BOOT_DEST_C) $(BOOT_DEST_C_SHELL) $(BOOT_DEST_Gadgets) $(BOOT_DEST_Aminet) $(BOOT_DEST_Demos) \
-	$(BOOT_DEST_Devs) $(BOOT_DEST_Libs) $(BOOT_DEST_S) $(BOOT_DEST_Tools) \
+	$(BOOT_DEST_C) $(BOOT_DEST_C_SHELL) $(BOOT_DEST_DataTypes) $(BOOT_DEST_Gadgets) \
+	$(BOOT_DEST_Devs) $(BOOT_DEST_Libs) $(BOOT_DEST_Locale) $(BOOT_DEST_Prefs) \
+	$(BOOT_DEST_S) $(BOOT_DEST_Tools) $(BOOT_DEST_Utilities) \
+	$(BOOT_DEST_Aminet) $(BOOT_DEST_Demos) \
 	$(BOOT_DEST_grub) $(BINDIR)/boot/aros-native-i386 install
 	@$(CP) $(BINDIR)/boot/aros-native-i386 $(BOOT_DEST_DIR)/Devs
 	@gzip -f $(BOOT_DEST_DIR)/Devs/aros-native-i386
