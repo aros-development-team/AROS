@@ -68,6 +68,7 @@ FILES	:= \
     path \
     reslist \
     run \
+    screenpattern \
     setclock \
     setlocale \
     shell \
