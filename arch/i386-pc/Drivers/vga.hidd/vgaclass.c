@@ -149,7 +149,6 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 	{ TAG_DONE, 0UL }
     };
 
-#if 1 
     struct TagItem sync_640_480[NUM_SYNC_TAGS];
     struct TagItem sync_758_576[NUM_SYNC_TAGS];
     struct TagItem sync_800_600[NUM_SYNC_TAGS];
@@ -212,34 +211,6 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
     
 	
     msg = &mymsg;
-#else
-
-   
-    struct TagItem tags_640_480[] = {
-    	{ aHidd_GfxMode_Width,		640	},
-	{ aHidd_GfxMode_Height,		480	},
-	{ aHidd_GfxMode_PixFmtTags,	(IPTR)pftags	},
-	{ TAG_DONE, 0UL }
-    };
-
-    struct TagItem tags_768_576[] = {
-    	{ aHidd_GfxMode_Width,		768	},
-	{ aHidd_GfxMode_Height,		576	},
-	{ aHidd_GfxMode_PixFmtTags,	(IPTR)pftags	},
-	{ TAG_DONE, 0UL }
-    };
-
-    struct TagItem tags_800_600[] = {
-    	{ aHidd_GfxMode_Width,		800	},
-	{ aHidd_GfxMode_Height,		600	},
-	{ aHidd_GfxMode_PixFmtTags,	(IPTR)pftags	},
-	{ TAG_DONE, 0UL }
-    };
-    
-    struct TagItem *mode_tags[] = {
-	tags_640_480, tags_768_576, tags_800_600, NULL
-    };
-#endif
 
     EnterFunc(bug("VGAGfx::New()\n"));
     
@@ -250,14 +221,6 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
     {
 	D(bug("Got object from super\n"));
 
-#if 0
-       /* nlorentz: This is only needed for hidds that run on a window system */
-       
-          
-	XSD(cl)->activecallback = (VOID (*)())GetTagData(aHidd_Gfx_ActiveBMCallBack, (IPTR)NULL, msg->attrList);
-	XSD(cl)->callbackdata = (APTR)GetTagData(aHidd_Gfx_ActiveBMCallBackData, (IPTR)NULL, msg->attrList);
-
-#endif
 
 	XSD(cl)->mouseW = 11;
 	XSD(cl)->mouseH = 11;
@@ -288,7 +251,7 @@ static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
 static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
 
-    BOOL displayable;
+    BOOL displayable, framebuffer;
     struct vga_data *data;
     Class *classptr = NULL;
     struct TagItem mytags[2];
@@ -296,17 +259,18 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     
     EnterFunc(bug("VGAGfx::NewBitMap()\n"));
     
-    
-    
     data = INST_DATA(cl, o);
-    
-    
     
     /* Displayable bitmap ? */
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
-    if (displayable) {
-	/* If the user asks for a displayable bitmap we must ALLWAYS supply a class */
-    	classptr = XSD(cl)->onbmclass;
+    framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
+    
+    if (framebuffer) {
+	/* If the user asks for a framebuffer map we must ALLWAYS supply a class */ 
+	classptr = XSD(cl)->onbmclass;
+	
+    } else if (displayable) {
+    	classptr = XSD(cl)->offbmclass;
     } else {
 	HIDDT_ModeID modeid;
 	/* 
