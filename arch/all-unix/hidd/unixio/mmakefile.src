@@ -34,7 +34,7 @@ LIBDEPS := $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
 
 OBJS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 
-$(OSMODDIR)/unixio.class: $(OBJS)
+$(AROS_MODULES)/unixio.class: $(OBJS)
 	@$(ECHO) "Building $(notdir $@)..."
 	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(ENDFUNC) $(LIBS) \
 	    -o $@ 2>&1 |tee unixiocl.map
