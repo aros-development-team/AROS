@@ -13,10 +13,10 @@
 #include <intuition/intuition.h>
 #include <graphics/rastport.h>
 #include <graphics/text.h>
-#include <proto/utility.h>
 #include <utility/tagitem.h>
 #include <devices/inputevent.h>
 #include <proto/alib.h>
+#include <proto/utility.h>
 
 #include "gadtools_intern.h"
 

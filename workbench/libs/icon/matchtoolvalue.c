@@ -5,8 +5,8 @@
     Desc:
     Lang: english
 */
-#include <proto/utility.h>
 #include "icon_intern.h"
+#include <proto/utility.h>
 
 /*****************************************************************************
 

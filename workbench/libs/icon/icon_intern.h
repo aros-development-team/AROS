@@ -2,11 +2,11 @@
 #define ICON_INTERN_H
 
 /* Include files */
+#ifndef CLIB_ALIB_PROTOS_H
+#   include <proto/alib.h>
+#endif
 #ifndef PROTO_EXEC_H
 #   include <proto/exec.h>
-#endif
-#ifndef CLIB_ALIB_PROTOS_H
-#   include <clib/alib_protos.h>
 #endif
 #ifndef DOS_DOS_H
 #   include <dos/dos.h>
