@@ -399,7 +399,7 @@ void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
 	}	
 	else if (drmd & COMPLEMENT)
 	{
-	    gc_tags[3].ti_Data = vHidd_GC_DrawMode_XOR;
+	    gc_tags[3].ti_Data = vHidd_GC_DrawMode_Xor;
 	}
 	else if ((drmd & (~INVERSVID)) == JAM1)
 	{
@@ -486,7 +486,7 @@ void driver_SetDrMd (struct RastPort * rp, ULONG mode,
     }	
     else if (mode & COMPLEMENT)
     {
-	drmd_tags[1].ti_Data = vHidd_GC_DrawMode_XOR;
+	drmd_tags[1].ti_Data = vHidd_GC_DrawMode_Xor;
     }
     else if ((mode & (~INVERSVID)) == JAM1)
     {
@@ -1362,7 +1362,6 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
     if (0 != (L->Flags & LAYERSIMPLE) &&
         TRUE == UpdateDamageList)
     {
-//      struct Rectangle blank;
       /* the following could possibly lead to problems when the region
          R is moved to negative coordinates. Maybe and maybe not.
       */
@@ -1374,61 +1373,6 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
       /* make this region valid again */
       AndRectRegion(R, &ScrollRect);
 
-//      /* hm, add the blank parts to the region as well! */
-//
-//      if (dx != 0)
-//      {
-//        if (dx < 0)
-//        {
-//          /* scrolling to the right, so there's a blank on the left */
-//          blank.MinX = xleft;
-//          blank.MaxX = xleft - dx;
-//        }
-//        else
-//        {
-//          /* scrolling to the left, so there's a blank on the right */
-//          blank.MinX = xright - dx;
-//          blank.MaxX = xright;
-//        }
-//        
-//        blank.MinY = y1;
-//        blank.MaxY = y2;
-//
-//        /* Add this blank rectangle to the damaged part */        
-//        if (FALSE == OrRectRegion(R, &blank))
-//        {
-//          DisposeRegion(R);
-//          UnlockLayerRom(L);
-//          goto failexit;
-//        }
-//      }
-//      
-//      if (dy != 0)
-//      {
-//        if (dy < 0)
-//        {
-//          /* scrolling down, so there's a blank on the top */
-//          blank.MinY = yup;
-//          blank.MaxY = yup - dy;
-//        }
-//        else
-//        {
-//          /* scrolling up, so there's a blank on the bottom */
-//          blank.MinY = ydown - dy;
-//          blank.MaxY = ydown;
-//        }
-//        
-//        blank.MinX = x1;
-//        blank.MaxX = x2;
-//        
-//        if (FALSE == OrRectRegion(R, &blank))
-//        {
-//          DisposeRegion(R);
-//          UnlockLayerRom(L);
-//          goto failexit;
-//        }
-//      }
-//      
     }
 
     xleft  -= dx;
