@@ -9,8 +9,8 @@ include $(TOP)/config/make.cfg
 # Main function for asl.library. Need this apart as an anchor for the link:
 INIT_FILE = asl_init
 
-FILES = asl_functable filereqhooks basicfuncs volumeslist filelist \
-	fontreqhooks
+FILES = asl_functable filereqhooks basicfuncs dirlist fontreqhooks \
+	dirlistfuncs
 
 # Guarantee that this will go at the end of the file:
 END_FILE = asl_endtag
