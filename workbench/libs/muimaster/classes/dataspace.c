@@ -44,9 +44,8 @@ static struct MinNode *List_First(APTR list)
 struct Dataspace_Node
 {
     struct MinNode node;
-    ULONG len;
-
     ULONG id;
+    ULONG len;
     /* len bytes data follows */
 };
 
@@ -160,9 +159,58 @@ static ULONG Dataspace_Merge(struct IClass *cl, Object *obj, struct MUIP_Dataspa
     return 1;
 }
 
-static ULONG Dataspace_ReadIFF(struct IClass *cl, Object *obj, struct MUIP_Dataspace_ReadIFF *msg)
+static LONG Dataspace_ReadIFF(struct IClass *cl, Object *obj, struct MUIP_Dataspace_ReadIFF *msg)
 {
-    return 1;
+    struct ContextNode *cn;
+    UBYTE *buffer, *p;
+    LONG read;
+
+    LONG len;
+    ULONG id;
+
+    cn = CurrentChunk(msg->handle);
+    if (!cn) return IFFERR_EOF;
+
+    if (!(buffer = AllocVec(cn->cn_Size,0)))
+	return IFFERR_NOMEM;
+
+    read = ReadChunkBytes(msg->handle,buffer,cn->cn_Size);
+    if (read < 0)
+    {
+    	FreeVec(buffer);
+    	return read;
+    }
+
+    p = buffer;
+
+    while (p < buffer + read)
+    {
+#ifndef _AROS /* The check should be better processor depend */
+
+        /* Since data can be stored on uneven addresses we must read
+        ** them byte by byte as MC68000 doesn't like this
+        */
+        id = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
+        p+=4;
+        len = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
+        p+=4;
+
+        /* p might be uneven but MUIM_Dataspace_Add use CopyMem() */
+#else
+        {
+	    /* Don't know about x86, but because of endianess it's probably better to read them by long */
+	    ULONG *pl = (ULONG*)p;
+	    id = *pl++;
+	    len = *pl++;
+	    p = (UBYTE*)pl;
+        }
+#endif
+
+	/* Now add the data */
+        DoMethod(obj,MUIM_Dataspace_Add,p,len,id);
+        p += len;
+    }
+    return 0;
 }
 
 static ULONG Dataspace_Remove(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Remove *msg)
@@ -170,9 +218,23 @@ static ULONG Dataspace_Remove(struct IClass *cl, Object *obj, struct MUIP_Datasp
     return 1;
 }
 
-static ULONG Dataspace_WriteIFF(struct IClass *cl, Object *obj, struct MUIP_DatatspacE_WriteIFF *msg)
+static LONG Dataspace_WriteIFF(struct IClass *cl, Object *obj, struct MUIP_Dataspace_WriteIFF *msg)
 {
-    return 1;
+    struct MUI_DataspaceData *data = INST_DATA(cl, obj);
+    struct Dataspace_Node *iter;
+    LONG rc;
+
+    if ((rc = PushChunk(msg->handle,msg->type,msg->id,IFFSIZE_UNKNOWN))) return rc;
+
+    iter = (struct Dataspace_Node *)List_First(&data->list);
+    while (iter)
+    {
+    	rc = WriteChunkBytes(msg->handle,&iter->id,iter->len); /* ID - LEN - DATA */
+    	if (rc < 0) return rc;
+	iter = (struct Dataspace_Node*)Node_Next(iter);
+    }
+    if ((rc = PopChunk(msg->handle))) return rc;
+    return 0;
 }
 
 
@@ -199,9 +261,9 @@ AROS_UFH3S(IPTR, Dataspace_Dispatcher,
 	case MUIM_Dataspace_Clear: return Dataspace_Clear(cl, obj, (APTR)msg);
 	case MUIM_Dataspace_Find: return Dataspace_Find(cl, obj, (APTR)msg);
 	case MUIM_Dataspace_Merge: return Dataspace_Merge(cl, obj, (APTR)msg);
-	case MUIM_Dataspace_ReadIFF: return Dataspace_ReadIFF(cl, obj, (APTR)msg);
+	case MUIM_Dataspace_ReadIFF: return (IPTR)Dataspace_ReadIFF(cl, obj, (APTR)msg);
 	case MUIM_Dataspace_Remove: return Dataspace_Remove(cl, obj, (APTR)msg);
-	case MUIM_Dataspace_WriteIFF: return Dataspace_WriteIFF(cl, obj, (APTR)msg);
+	case MUIM_Dataspace_WriteIFF: return (IPTR)Dataspace_WriteIFF(cl, obj, (APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
