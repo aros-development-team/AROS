@@ -230,8 +230,10 @@ AROS_UFP3
 				    struct Library *, mcclib, 5, lib);
 #else
 
+#ifdef __SASC
 struct MUI_CustomClass *MCC_Query(ULONG d0);
 #pragma  libcall mcclib MCC_Query 01e 001
+#endif
 
 #endif
 
