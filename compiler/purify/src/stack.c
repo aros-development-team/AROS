@@ -83,7 +83,8 @@ void Purify_Push (char * stackBase, long pushSize)
 	stackBase, pushSize, (&offset)-1, Purify_CurrentStackNode->mem);
 #endif
 
-    stackBase += 4 - pushSize;
+    stackBase += 4;
+    stackBase -= pushSize;
 
     offset = (long)stackBase - (long)(Purify_CurrentStackNode->mem);
 
@@ -123,9 +124,19 @@ void Purify_Alloca (char * stackBase, long allocSize)
     passert (Purify_CurrentStackNode);
     passert (Purify_CurrentStackNode->mem);
 
-    stackBase += 4 - allocSize;
+#if 0
+    printf ("alloca(): sp=%p, size=%ld fp=%p  stackBase=%p\n",
+	stackBase, allocSize, (&offset)-1, Purify_CurrentStackNode->mem);
+#endif
+
+    stackBase += 4;
+    stackBase -= allocSize;
 
     offset = (long)stackBase - (long)(Purify_CurrentStackNode->mem);
+
+#if 0
+    printf ("offset=%ld\n", offset);
+#endif
 
     passert (offset >= 0);
 
