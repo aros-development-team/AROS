@@ -299,21 +299,55 @@ ULONG Boopsi__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
     ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
     struct TagItem *tag;
+    BOOL completely_visible = TRUE;
 
-    if ((tag = FindTagItem(GA_Left,data->boopsi_taglist))) tag->ti_Data = _mleft(obj);
-    if ((tag = FindTagItem(GA_Top,data->boopsi_taglist))) tag->ti_Data = _mtop(obj);
-    if ((tag = FindTagItem(GA_Width,data->boopsi_taglist))) tag->ti_Data = _mwidth(obj);
-    if ((tag = FindTagItem(GA_Height,data->boopsi_taglist))) tag->ti_Data = _mheight(obj);
-    if (data->boopsi_tagscreen && (tag = FindTagItem(data->boopsi_tagscreen,data->boopsi_taglist))) tag->ti_Data = (ULONG)_screen(obj);
-    if (data->boopsi_tagwindow && (tag = FindTagItem(data->boopsi_tagwindow,data->boopsi_taglist))) tag->ti_Data = (ULONG)_window(obj);
-    if (data->boopsi_tagdrawinfo && (tag = FindTagItem(data->boopsi_tagdrawinfo,data->boopsi_taglist))) tag->ti_Data = (ULONG)_dri(obj);
-
-    if ((data->boopsi_object = NewObjectA(data->boopsi_class, data->boopsi_classid, data->boopsi_taglist)))
+kprintf("boopsi_show: obj coord %d,%d - %d,%d\n",
+_mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
+    
+    if (_flags(obj) & MADF_INVIRTUALGROUP)
     {
-    	SetAttrsA(data->boopsi_object,data->remember);
-    	AddGadget(_window(obj),(struct Gadget*)data->boopsi_object,~0);
+    	Object *wnd, *parent;
+	
+    	get(obj, MUIA_WindowObject,&wnd);
+	parent = obj;
+	while (get(parent,MUIA_Parent,&parent))
+	{
+	    if (!parent) break;
+	    if (parent == wnd) break;
+	
+	    if (_flags(parent) & MADF_ISVIRTUALGROUP)
+	    {
+	    	if ((_mleft(obj) < _mleft(parent)) ||
+		    (_mright(obj) > _mright(parent)) ||
+		    (_mtop(obj) < _mtop(parent)) ||
+		    (_mbottom(obj) > _mbottom(parent)))
+		{
+		    completely_visible = FALSE;
+		    kprintf("=== boopsi object: completely visible FALSE for obj %x at %d,%d - %d,%d\n",
+		    	     obj, _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
+		    break;
+		}
+	    }
+	}
     }
+    
+    if (completely_visible)
+    {
+	if ((tag = FindTagItem(GA_Left,data->boopsi_taglist))) tag->ti_Data = _mleft(obj);
+	if ((tag = FindTagItem(GA_Top,data->boopsi_taglist))) tag->ti_Data = _mtop(obj);
+	if ((tag = FindTagItem(GA_Width,data->boopsi_taglist))) tag->ti_Data = _mwidth(obj);
+	if ((tag = FindTagItem(GA_Height,data->boopsi_taglist))) tag->ti_Data = _mheight(obj);
+	if (data->boopsi_tagscreen && (tag = FindTagItem(data->boopsi_tagscreen,data->boopsi_taglist))) tag->ti_Data = (ULONG)_screen(obj);
+	if (data->boopsi_tagwindow && (tag = FindTagItem(data->boopsi_tagwindow,data->boopsi_taglist))) tag->ti_Data = (ULONG)_window(obj);
+	if (data->boopsi_tagdrawinfo && (tag = FindTagItem(data->boopsi_tagdrawinfo,data->boopsi_taglist))) tag->ti_Data = (ULONG)_dri(obj);
 
+	if ((data->boopsi_object = NewObjectA(data->boopsi_class, data->boopsi_classid, data->boopsi_taglist)))
+	{
+    	    SetAttrsA(data->boopsi_object,data->remember);
+    	    AddGadget(_window(obj),(struct Gadget*)data->boopsi_object,~0);
+	}
+    }
+    
     return rc;
 }
 

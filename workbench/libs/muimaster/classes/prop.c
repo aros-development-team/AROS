@@ -254,29 +254,59 @@ IPTR Prop__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 
     if (!data->usewinborder)
     {
-	BOOL isnewlook;
+	BOOL isnewlook, completely_visible = TRUE;;
 
-	if (muiGlobalInfo(obj)->mgi_Prefs->scrollbar_type == SCROLLBAR_TYPE_NEWLOOK)
-	    isnewlook = TRUE;
-	else
-	    isnewlook = FALSE;
-
-	if ((data->prop_object = NewObject(NULL, "propgclass",
-			GA_Left, _mleft(obj),
-			GA_Top, _mtop(obj),
-			GA_Width, _mwidth(obj),
-			GA_Height, _mheight(obj),
-			GA_ID, data->gadgetid,
-			PGA_Freedom, data->horiz?FREEHORIZ:FREEVERT,
-			PGA_Total, data->entries,
-			PGA_Visible, data->visible,
-			PGA_Top, data->first,
-    			PGA_NewLook, isnewlook,
-    			PGA_Borderless, TRUE,
-		        ICA_TARGET  , ICTARGET_IDCMP, /* needed for notification */
-    			TAG_DONE)))
+	if (_flags(obj) & MADF_INVIRTUALGROUP)
 	{
-    	    AddGadget(_window(obj),(struct Gadget*)data->prop_object,~0);
+    	    Object *wnd, *parent;
+
+    	    get(obj, MUIA_WindowObject,&wnd);
+	    parent = obj;
+	    while (get(parent,MUIA_Parent,&parent))
+	    {
+		if (!parent) break;
+		if (parent == wnd) break;
+
+		if (_flags(parent) & MADF_ISVIRTUALGROUP)
+		{
+	    	    if ((_mleft(obj) < _mleft(parent)) ||
+			(_mright(obj) > _mright(parent)) ||
+			(_mtop(obj) < _mtop(parent)) ||
+			(_mbottom(obj) > _mbottom(parent)))
+		    {
+			completely_visible = FALSE;
+			kprintf("=== prop object: completely visible FALSE for obj %x at %d,%d - %d,%d\n",
+		    		 obj, _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
+			break;
+		    }
+		}
+	    }
+	}
+    
+    	if (completely_visible)
+	{
+	    if (muiGlobalInfo(obj)->mgi_Prefs->scrollbar_type == SCROLLBAR_TYPE_NEWLOOK)
+		isnewlook = TRUE;
+	    else
+		isnewlook = FALSE;
+
+	    if ((data->prop_object = NewObject(NULL, "propgclass",
+			    GA_Left, _mleft(obj),
+			    GA_Top, _mtop(obj),
+			    GA_Width, _mwidth(obj),
+			    GA_Height, _mheight(obj),
+			    GA_ID, data->gadgetid,
+			    PGA_Freedom, data->horiz?FREEHORIZ:FREEVERT,
+			    PGA_Total, data->entries,
+			    PGA_Visible, data->visible,
+			    PGA_Top, data->first,
+    			    PGA_NewLook, isnewlook,
+    			    PGA_Borderless, TRUE,
+		            ICA_TARGET  , ICTARGET_IDCMP, /* needed for notification */
+    			    TAG_DONE)))
+	    {
+    		AddGadget(_window(obj),(struct Gadget*)data->prop_object,~0);
+	    }
 	}
     } else
     {
