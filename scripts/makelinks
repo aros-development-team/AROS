@@ -1,6 +1,8 @@
 #!/bin/sh
 # $0 from to filter
 
+scriptdir="`dirname $0`"
+
 from="$1"
 to="$2"
 if [ -z "$3" ]; then
@@ -9,16 +11,12 @@ else
     tfilter="$3"
 fi
 
-regexptowildcard() {
-    gawk 'BEGIN { \
+filter="`gawk 'BEGIN { \
 	str=ARGV[1]; \
-	gsub (/\./, "\\.", str); \
-	gsub(/\*/,".*",str); \
+	gsub (/\\./, "\\\\.", str); \
+	gsub(/\\*/,".*",str); \
 	print str; \
-    }' "$1"
-}
-
-filter="`regexptowildcard "$tfilter"`"
+}' $tfilter`"
 
 echo -n "Creating links from $from/ to $to/ "
 
@@ -36,10 +34,11 @@ for direntry in $from/* ; do
 	    $0 "$direntry" "$to/$entry" "$tfilter"
 	fi
     else
-	if echo "$entry" | grep -q -e "$filter"; then
+	if echo "$entry" | egrep -q -e "$filter"; then
+	    rp="`$scriptdir/relpath $to $from`"
 	    #echo "Link $from/$entry to $to/$entry"
-	    rm -f $to/$entry
-	    ln $from/$entry $to/$entry
+	    #echo "Link $rp/$entry to $entry"
+	    ( cd $to ; rm -f $entry ; ln -s $rp/$entry $entry )
 	fi
     fi
 done
