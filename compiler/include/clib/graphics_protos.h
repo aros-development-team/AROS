@@ -351,4 +351,5 @@ AROS_LP2(BOOL, XorRectRegion,
     AROS_LPA(struct Rectangle *, rectangle, A1),
     struct GfxBase *, GfxBase, 93, Graphics)
 
+
 #endif /* CLIB_GRAPHICS_PROTOS_H */
