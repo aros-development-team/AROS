@@ -65,7 +65,20 @@
 
 ******************************************************************************/
 {
-    va_list	 args;
+    va_list	 ap;
+    int		 result;
+
+    va_start (ap, fmt);
+    result = vkprintf (fmt, ap);
+    va_end (ap);
+
+    return result;
+} /* kprintf */
+
+
+
+int vkprintf (const UBYTE * fmt, va_list args)
+{
     int 	 ret;
     static const char uhex[] = "0123456789ABCDEF";
     static const char lhex[] = "0123456789abcdef";
@@ -78,8 +91,6 @@
 	RawPutChars ("(null)", 6);
 	return 6;
     }
-
-    va_start (args, fmt);
 
     ret = 0;
 
@@ -297,8 +308,6 @@ print_int:
 	fmt ++; /* Next char */
     } /* while (*fmt); */
 
-    va_end (args);
-
     return ret;
-} /* kprintf */
+} /* vkprintf */
 

@@ -7,8 +7,8 @@
 struct AROSSupportBase
 {
     void * StdOut;
-    void (*kprintf)(const char *, ...);
-    void (*rkprintf)(const char *, const char *, int, const char *, ...);
+    int (*kprintf)(const char *, ...);
+    int (*rkprintf)(const char *, const char *, int, const char *, ...);
     void * DebugConfig;
 };
 
