@@ -613,26 +613,33 @@ int REGARGS CountAllDeselect (GlobData *glob, int dirsonly)
 void REGARGS SelectAll (GlobData *glob, char *pattern)
 {
     struct ReqEntry 	*entry;
-    char 		selpat[124];
-
-    ParsePatternNoCase (pattern, selpat, 124);
+    char 		*selpat;
+    LONG    	    	pattern_len;
     
-    for (entry = (struct ReqEntry *)glob->firstentry->re_Next;
-	 entry;
-	 entry = (struct ReqEntry *)entry->re_Next)
-    { 
-	if (!(entry->re_Flags & (ENTRYF_HIDDEN|ENTRYF_GHOSTED)))
-	{
-	    if ((entry->re_Type == glob->file_id) ||
-	        (entry->re_Type == glob->directory_id && (glob->flags & FREQF_SELECTDIRS)))
+    pattern_len = strlen(pattern) * 2 + 2;
+    selpat = AllocVec(pattern_len, MEMF_PUBLIC);
+    if (selpat)
+    {
+	ParsePatternNoCase (pattern, selpat, pattern_len);
+
+	for (entry = (struct ReqEntry *)glob->firstentry->re_Next;
+	     entry;
+	     entry = (struct ReqEntry *)entry->re_Next)
+	{ 
+	    if (!(entry->re_Flags & (ENTRYF_HIDDEN|ENTRYF_GHOSTED)))
 	    {
-		if (MatchPatternNoCase (selpat, entry->re_Name))
+		if ((entry->re_Type == glob->file_id) ||
+	            (entry->re_Type == glob->directory_id && (glob->flags & FREQF_SELECTDIRS)))
 		{
-		    if (!(entry->re_Flags & ENTRYF_SELECTED)) glob->numselected++;
-		    entry->re_Flags |= ENTRYF_SELECTED;
+		    if (MatchPatternNoCase (selpat, entry->re_Name))
+		    {
+			if (!(entry->re_Flags & ENTRYF_SELECTED)) glob->numselected++;
+			entry->re_Flags |= ENTRYF_SELECTED;
+		    }
 		}
 	    }
 	}
+	FreeVec(selpat);
     }
     
     UpdateNumSelGad (glob);
@@ -837,6 +844,7 @@ AddDisk(
 				 infodata->id_NumBlocks / 2 ) /
 			    infodata->id_NumBlocks;
 		    }
+		    UnLock(lock);
 		}
 	    }
 #else
