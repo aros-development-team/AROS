@@ -53,8 +53,9 @@
     LONG            *errorCode    = NULL;
     struct TagItem **errorTagItem = NULL;
     
-#   define SET_ERRORCODE(value)    (errorCode    != NULL ? *errorCode    = (value) : (value))
-#   define SET_ERRORTAGITEM(value) (errorTagItem != NULL ? *errorTagItem = (value) : (value))
+#   define STORE(pointer, value)   (pointer != NULL ? *pointer = (value) : (value))
+#   define SET_ERRORCODE(value)    STORE(errorCode, (value))
+#   define SET_ERRORTAGITEM(value) STORE(errorTagItem, (value))
 
     /* The following tags need to be setup early ---------------------------*/
     tag = FindTagItem(ICONA_ErrorCode, tags);
@@ -78,52 +79,82 @@
         {
             /* Global tags -------------------------------------------------*/
             case ICONCTRLA_SetGlobalScreen:
+                IconBase->ib_Screen = (struct Screen *) tag->ti_Data;
+                processed++;
                 break;
                 
             case ICONCTRLA_GetGlobalScreen:
+                STORE((struct Screen **) tag->ti_Data, IconBase->ib_Screen);
+                processed++;
                 break;
                 
             case ICONCTRLA_SetGlobalPrecision:
             case OBP_Precision:
+                IconBase->ib_Precision = tag->ti_Data;
+                processed++;
                 break;
                 
             case ICONCTRLA_GetGlobalPrecision:
+                STORE((LONG *) tag->ti_Data, IconBase->ib_Precision);
+                processed++;
                 break;
                 
             case ICONCTRLA_SetGlobalEmbossRect:
+                // FIXME
                 break;
                 
             case ICONCTRLA_GetGlobalEmbossRect:
+                // FIXME
                 break;
                 
             case ICONCTRLA_SetGlobalFrameless:
+                IconBase->ib_Frameless = tag->ti_Data;
+                processed++;
                 break;
                 
             case ICONCTRLA_GetGlobalFrameless:
+                STORE((LONG *) tag->ti_Data, IconBase->ib_Frameless);
+                processed++;
                 break;
                 
             case ICONCTRLA_SetGlobalIdentifyHook:
+                IconBase->ib_IdentifyHook = (struct Hook *) tag->ti_Data;
+                processed++;
                 break;
                 
             case ICONCTRLA_GetGlobalIdentifyHook:
+                STORE((struct Hook **) tag->ti_Data, IconBase->ib_IdentifyHook);
+                processed++;
                 break;
                 
             case ICONCTRLA_SetGlobalMaxNameLength:
+                IconBase->ib_MaxNameLength = tag->ti_Data;
+                processed++;
                 break;
             
             case ICONCTRLA_GetGlobalMaxNameLength:
+                STORE((LONG *) tag->ti_Data, IconBase->ib_MaxNameLength);
+                processed++;
                 break;
                 
             case ICONCTRLA_SetGlobalNewIconsSupport:
+                IconBase->ib_NewIconsSupport = tag->ti_Data;
+                processed++;
                 break;
                 
             case ICONCTRLA_GetGlobalNewIconsSupport:
+                STORE((LONG *) tag->ti_Data, IconBase->ib_NewIconsSupport);
+                processed++;
                 break;
                 
             case ICONCTRLA_SetGlobalColorIconSupport:
+                IconBase->ib_ColorIconSupport = tag->ti_Data;
+                processed++;
                 break;
                 
             case ICONCTRLA_GetGlobalColorIconSupport:
+                STORE((LONG *) tag->ti_Data, IconBase->ib_ColorIconSupport);
+                processed++;
                 break;
             
             
@@ -235,4 +266,9 @@
     return processed;
     
     AROS_LIBFUNC_EXIT
+    
+#   undef STORE
+#   undef SET_ERRORCODE
+#   undef SET_ERRORTAGITEM
+    
 } /* IconControlA() */
