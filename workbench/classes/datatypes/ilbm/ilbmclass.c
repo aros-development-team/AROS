@@ -477,7 +477,7 @@ static BOOL ReadILBM(Class *cl, Object *o)
     bmhd->bmh_Transparent = file_bmhd->bmh_Transparent[0] * 256 + file_bmhd->bmh_Transparent[1];
     
     {
-    	IPTR name = NULL;
+    	IPTR name = (IPTR) NULL;
 	
 	GetDTAttrs(o, DTA_Name, (IPTR)&name, TAG_DONE);
 	
