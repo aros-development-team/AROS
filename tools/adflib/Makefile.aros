@@ -5,7 +5,7 @@
 
 include $(TOP)/config/make.cfg
 
-SILENT := no
+SILENT := yes
 
 SRCS   := \
     adf_hd adf_disk adf_raw adf_bitm adf_dump adf_util adf_env \
