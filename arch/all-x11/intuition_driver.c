@@ -222,6 +222,7 @@ int intui_open (struct IntuitionBase * IntuitionBase)
     
     if (!GetPrivIBase(IntuitionBase)->DriverData) /* First time opened ? */
     {
+    	inputDevice = FindTask("input.device");
 
     	
         /* Create the X11 event task */
@@ -231,7 +232,6 @@ int intui_open (struct IntuitionBase * IntuitionBase)
     	    success = TRUE;
     	}
     	
-    	inputDevice = FindTask("input.device");
 
     } /* if (first time opened) */
     else
