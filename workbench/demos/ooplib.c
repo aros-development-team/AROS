@@ -91,7 +91,7 @@ int main (int argc, char **argv)
 
 
 
-    OOPBase = OpenLibrary(OOPNAME, 0);
+    OOPBase = OpenLibrary(AROSOOP_NAME, 0);
     if (OOPBase)
     {
 	D(bug("Got OOPBase\n"));
