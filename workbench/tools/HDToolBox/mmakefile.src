@@ -1,0 +1,37 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES = \
+		main \
+		gadgets \
+		layoutmain \
+		layoutpcp \
+		layoutap \
+		workmain \
+		workpcp \
+		listfunctions
+		
+
+EXEDIR = $(AROSDIR)/Tools
+EXE = $(EXEDIR)/HDToolBox
+
+USE_CLIB := yes
+USE_MLIB := yes
+USE_AMIGALIB := yes
+
+USER_CFLAGS := -Wunused -Wall #-Werror
+
+#MM workbench-tools:
+#MM workbench-tools-quick:
+
+%make_prog_setup mmake=workbench-tools
+
+workbench-tools: setup $(EXE)
+workbench-tools-quick: setup $(EXE)
+
+%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+
+%common
+%include_deps
+
