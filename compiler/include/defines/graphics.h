@@ -85,6 +85,12 @@
     AROS_LCA(struct RastPort *, rp, A1), \
     struct GfxBase *, GfxBase, 33, Graphics)
 
+#define LoadRGB32(vp, table) \
+    AROS_LC2(void, LoadRGB32, \
+    AROS_LCA(struct ViewPort *, vp, A0), \
+    AROS_LCA(ULONG           *, table, A1), \
+    struct GfxBase *, GfxBase, 147, Graphics)
+
 #define LoadRGB4(vp, colors, count) \
     AROS_LC3(void, LoadRGB4, \
     AROS_LCA(struct ViewPort *, vp, A0), \

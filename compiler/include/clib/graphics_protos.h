@@ -78,6 +78,11 @@ AROS_LP1(BOOL, InitRastPort,
     AROS_LPA(struct RastPort *, rp, A1),
     struct GfxBase *, GfxBase, 33, Graphics)
 
+AROS_LP2(void, LoadRGB32,
+    AROS_LPA(struct ViewPort *, vp, A0),
+    AROS_LPA(ULONG           *, table, A1),
+    struct GfxBase *, GfxBase, 147, Graphics)
+
 AROS_LP3(void, LoadRGB4,
     AROS_LPA(struct ViewPort *, vp, A0),
     AROS_LPA(UWORD           *, colors, A1),

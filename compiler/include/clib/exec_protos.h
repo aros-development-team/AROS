@@ -534,10 +534,6 @@ AROS_LP1(void, SumLibrary,
     AROS_LPA(struct Library *, library,A1),
     struct ExecBase *, SysBase, 71, Exec)
 
-AROS_LP1(APTR, TaggedOpenLibrary,
-    AROS_LPA(LONG, tag, D0),
-    struct ExecBase *, SysBase, 135, Exec)
-
 AROS_LP1(ULONG, TypeOfMem,
     AROS_LPA(APTR, address, A1),
     struct ExecBase *, SysBase, 89, Exec)

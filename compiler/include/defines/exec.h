@@ -98,19 +98,6 @@
     AROS_LCA(APTR, fallBack,     A2), \
     struct ExecBase *, SysBase, 6, Exec)
 
-#define RawIOInit() \
-    AROS_LC0(void, RawIOInit, \
-    struct ExecBase *, SysBase, 84, Exec)
-
-#define RawMayGetChar() \
-    AROS_LC0(LONG, RawMayGetChar, \
-    struct ExecBase *, SysBase, 85, Exec)
-
-#define RawPutChar(chr) \
-    AROS_LC1(void, RawPutChar, \
-    AROS_LCA(UBYTE, chr, D0), \
-    struct ExecBase *, SysBase, 86, Exec)
-
 #define AbortIO(iORequest) \
     AROS_LC1I(LONG, AbortIO, \
     AROS_LCA(struct IORequest *, iORequest, A1), \
@@ -654,11 +641,6 @@
     AROS_LC1(void, SumLibrary, \
     AROS_LCA(struct Library *, library,A1), \
     struct ExecBase *, SysBase, 71, Exec)
-
-#define TaggedOpenLibrary(tag) \
-    AROS_LC1(APTR, TaggedOpenLibrary, \
-    AROS_LCA(LONG, tag, D0), \
-    struct ExecBase *, SysBase, 135, Exec)
 
 #define TypeOfMem(address) \
     AROS_LC1(ULONG, TypeOfMem, \
