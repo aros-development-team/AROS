@@ -529,36 +529,3 @@ struct ZuneFrameGfx *zune_zframe_get (struct MUI_FrameSpec *frameSpec)
     if (frameSpec->type >= FST_COUNT) return &__builtinFrameGfx[FST_RECT];
     return &__builtinFrameGfx[frameSpec->type];
 }
-
-
-/**************************************************************************
-
-**************************************************************************/
-STRPTR zune_framespec_to_string (struct MUI_FrameSpec *frame)
-{
-#if 0
-    static char buf[300];
-
-    g_snprintf(buf, 300, "%hu,%hu,%hu,%hu,%hu,%hu",
-	       frame->type, frame->state,
-	       frame->innerLeft, frame->innerRight,
-	       frame->innerTop, frame->innerBottom);
-    return buf;
-#endif
-    return NULL;
-}
-
-/**************************************************************************
-
-**************************************************************************/
-BOOL zune_string_to_framespec (STRPTR str, struct MUI_FrameSpec *frame)
-{
-#if 0
-    if (str && frame && sscanf(str, "%hu,%hu,%hu,%hu,%hu,%hu",
-			       &frame->type, &frame->state,
-			       &frame->innerLeft, &frame->innerRight,
-			       &frame->innerTop, &frame->innerBottom) == 6)
-	return TRUE;
-#endif
-    return FALSE;
-}
