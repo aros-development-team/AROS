@@ -34,7 +34,7 @@
 
 /*** Locale functions *******************************************************/
 
-STRPTR __MSG(struct Catalog *catalog, ULONG id)
+STRPTR MSG(struct Catalog *catalog, ULONG id)
 {
     if (catalog != NULL)
     {
@@ -46,7 +46,7 @@ STRPTR __MSG(struct Catalog *catalog, ULONG id)
     }
 }
 
-#define MSG(id) __MSG(catalog,id)
+#define _(id) MSG(catalog,id)
 
 
 /*** Instance data **********************************************************/
@@ -82,10 +82,10 @@ STRPTR Section2Name(struct Catalog *catalog, ULONG section)
     switch (section)
     {
         case SID_PROGRAMMING:
-            return MSG(MSG_SECTION_PROGRAMMING);
+            return _(MSG_SECTION_PROGRAMMING);
             
         case SID_TRANSLATING:
-            return MSG(MSG_SECTION_TRANSLATING);
+            return _(MSG_SECTION_TRANSLATING);
             
         default:
             return NULL;
@@ -292,7 +292,7 @@ IPTR AboutWindow__OM_NEW
         {
             strlcat(path, program, 1024);
             imageObject = IconImageObject,
-                MUIA_IconImage_File, path,
+                MUIA_IconImage_File, (IPTR) path,
             End;
         }
     }
@@ -300,13 +300,13 @@ IPTR AboutWindow__OM_NEW
     /* Setup pages */
     if (authors != NULL)
     {
-        pages[nextPage] = MSG(MSG_AUTHORS);
+        pages[nextPage] = _(MSG_AUTHORS);
         nextPage++;
     }
     
     if (sponsors != NULL)
     {
-        pages[nextPage] = MSG(MSG_SPONSORS);
+        pages[nextPage] = _(MSG_SPONSORS);
         nextPage++;
     }
     
@@ -319,54 +319,54 @@ IPTR AboutWindow__OM_NEW
         MUIA_Window_Height,   MUIV_Window_Height_Visible(25),
         MUIA_Window_Width,    MUIV_Window_Width_Visible(25),
         
-        WindowContents, VGroup,
+        WindowContents, (IPTR) VGroup,
             GroupSpacing(6),
             
-            Child, imageGroup = HGroup,
-                Child, HVSpace,
-                Child, imageObject,
-                Child, HVSpace,
+            Child, (IPTR) imageGroup = HGroup,
+                Child, (IPTR) HVSpace,
+                Child, (IPTR) imageObject,
+                Child, (IPTR) HVSpace,
             End,
-            Child, versionObject = TextObject,
-                MUIA_Text_PreParse, MUIX_C,
+            Child, (IPTR) versionObject = TextObject,
+                MUIA_Text_PreParse, (IPTR) MUIX_C,
                 MUIA_Text_Contents, NULL,
             End,
-            Child, copyrightObject = TextObject,
-                MUIA_Text_PreParse, MUIX_C,
+            Child, (IPTR) copyrightObject = TextObject,
+                MUIA_Text_PreParse, (IPTR) MUIX_C,
                 MUIA_Text_Contents, NULL,
             End,
-            Child, descriptionGroup = VGroup,
-                Child, VSpace(6),
-                Child,  descriptionObject = TextObject,
-                    MUIA_Text_PreParse, MUIX_I MUIX_C,
+            Child, (IPTR) descriptionGroup = VGroup,
+                Child, (IPTR) VSpace(6),
+                Child, (IPTR) descriptionObject = TextObject,
+                    MUIA_Text_PreParse, (IPTR) MUIX_I MUIX_C,
                     MUIA_Text_Contents, NULL,
                 End,
             End,
-            Child, VSpace(6),
-            Child, RegisterGroup(pages),
-                Child, VGroup,
-                    Child, ScrollgroupObject,
-                        MUIA_Scrollgroup_Contents, VGroupV,
+            Child, (IPTR) VSpace(6),
+            Child, (IPTR) RegisterGroup(pages),
+                Child, (IPTR) VGroup,
+                    Child, (IPTR) ScrollgroupObject,
+                        MUIA_Scrollgroup_Contents, (IPTR) VGroupV,
                             TextFrame,
                             
-                            Child, TextObject,
-                                MUIA_Text_PreParse, MUIX_L,
-                                MUIA_Text_Contents, authors,
+                            Child, (IPTR) TextObject,
+                                MUIA_Text_PreParse, (IPTR) MUIX_L,
+                                MUIA_Text_Contents, (IPTR) authors,
                             End,
-                            Child, HVSpace,
+                            Child, (IPTR) HVSpace,
                         End,
                     End,
                 End,
-                Child, VGroup,
-                    Child, ScrollgroupObject,
-                        MUIA_Scrollgroup_Contents, VGroupV,
+                Child, (IPTR) VGroup,
+                    Child, (IPTR) ScrollgroupObject,
+                        MUIA_Scrollgroup_Contents, (IPTR) VGroupV,
                             TextFrame,
                             
-                            Child, TextObject,
-                                MUIA_Text_PreParse, MUIX_L,
-                                MUIA_Text_Contents, sponsors,
+                            Child, (IPTR) TextObject,
+                                MUIA_Text_PreParse, (IPTR) MUIX_L,
+                                MUIA_Text_Contents, (IPTR) sponsors,
                             End,
-                            Child, HVSpace,
+                            Child, (IPTR) HVSpace,
                         End,
                     End,
                 End,
@@ -404,7 +404,7 @@ IPTR AboutWindow__OM_NEW
         (IPTR) self, 2, MUIA_Window_Open, FALSE
     );
         
-    return self;
+    return (IPTR) self;
     
 error:
     if (catalog != NULL) CloseCatalog(catalog);
@@ -423,7 +423,6 @@ IPTR AboutWindow__MUIM_Window_Setup
     struct AboutWindow_DATA *data    = INST_DATA(CLASS, self);
     struct Catalog          *catalog = data->awd_Catalog;
     STRPTR                   string  = NULL;
-    Object                  *object  = NULL;
     IPTR                     rc      = NULL;
     
     rc = DoSuperMethodA(CLASS, self, message);
@@ -448,13 +447,13 @@ IPTR AboutWindow__MUIM_Window_Setup
                 
                 if (string != NULL)
                 {
-                    length = strlen(string) + strlen(MSG(MSG_ABOUT)) + 2; /* space + newline */
+                    length = strlen(string) + strlen(_(MSG_ABOUT)) + 2; /* space + newline */
                     buffer = AllocVec(length, MEMF_ANY);
                     
                     if (buffer != NULL)
                     {
                         buffer[0] = '\0';
-                        strlcat(buffer, MSG(MSG_ABOUT), length);
+                        strlcat(buffer, _(MSG_ABOUT), length);
                         strlcat(buffer, " ", length);
                         strlcat(buffer, string, length);
                         
@@ -470,7 +469,7 @@ IPTR AboutWindow__MUIM_Window_Setup
     /*= Setup image ========================================================*/
     if (data->awd_ImageObject == NULL)
     {
-        DoMethod(data->awd_RootGroup, OM_REMMEMBER, data->awd_ImageGroup);
+        DoMethod(data->awd_RootGroup, OM_REMMEMBER, (IPTR) data->awd_ImageGroup);
     }
     
     /*= Setup version ======================================================*/ 
@@ -579,7 +578,7 @@ IPTR AboutWindow__MUIM_Window_Setup
             {
                 DoMethod
                 (
-                    data->awd_RootGroup, OM_REMMEMBER, data->awd_VersionObject
+                    data->awd_RootGroup, OM_REMMEMBER, (IPTR) data->awd_VersionObject
                 );
             }
         }
@@ -597,7 +596,7 @@ IPTR AboutWindow__MUIM_Window_Setup
     }
     else
     {
-        DoMethod(data->awd_RootGroup, OM_REMMEMBER, data->awd_CopyrightObject);
+        DoMethod(data->awd_RootGroup, OM_REMMEMBER, (IPTR) data->awd_CopyrightObject);
     }
     
     /*= Setup description ==================================================*/
@@ -618,7 +617,7 @@ IPTR AboutWindow__MUIM_Window_Setup
     {
         DoMethod
         (
-            data->awd_RootGroup, OM_REMMEMBER, data->awd_DescriptionGroup
+            data->awd_RootGroup, OM_REMMEMBER, (IPTR) data->awd_DescriptionGroup
         );
     }
     
@@ -630,7 +629,7 @@ IPTR AboutWindow__MUIM_Window_Setup
     if (data->awd_Copyright == IGNORE) data->awd_Copyright = NULL;
     if (data->awd_Description == IGNORE) data->awd_Description = NULL;
     
-    return rc;
+    return (IPTR) rc;
 }
 
 IPTR AboutWindow__OM_DISPOSE
