@@ -49,6 +49,7 @@ BOOT_TAR_FILES := \
     Classes/Gadgets/colorwheel.gadget Classes/Gadgets/gradientslider.gadget \
     Classes/Zune/AboutWindow.mcc Classes/Zune/Calendar.mcc \
     Classes/Zune/IconImage.mcc Classes/Zune/PrefsWindow.mcc \
+    Classes/Zune/PrefsEditor.mcc Classes/Zune/SystemPrefsWindow.mcc \
     Classes/Zune/Clock.mcc \
     Devs.info \
     Devs/DataTypes/ELF Devs/DataTypes/ELF_EXE Devs/DataTypes/ILBM Devs/DataTypes/FTXT \
@@ -69,7 +70,7 @@ BOOT_TAR_FILES := \
     System/About System/FixFonts System/FixFonts.info System/Themes \
     System/Wanderer System.info \
     Tools/Editor Tools/HDToolBox Tools/HDToolBox.info Tools.info \
-    Tools/Commodities/Opaque Tools/Commodities/Opaque.info \
+    Tools/Commodities/Opaque Tools/Commodities/Opaque.info Tools/Debug \
     Utilities/MultiView Utilities/Multiview.info Utilities.info 
 
 BOOT_SRC_DIR    := $(AROSDIR)
