@@ -75,7 +75,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 
 		for(
 			addr+=sizeof(BPTR)+sizeof(ULONG),
-			  size-=sizeof(BPTR)-sizeof(ULONG);		// Is this a bug? (- -> + ?)
+			  size-=sizeof(BPTR)+sizeof(ULONG);		// Is this a bug? (- -> + ?)
 			size>=sizeof(struct MidiDeviceData);
 			size-=AROS_PTRALIGN,addr+=AROS_PTRALIGN
 		){
@@ -160,7 +160,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize){
 		addr=(STRPTR)((LONG)BADDR(seglist)-sizeof(ULONG));
 		size=*(ULONG *)addr;
 		addr+=sizeof(BPTR)+sizeof(ULONG);
-		size-=sizeof(BPTR)-sizeof(ULONG);
+		size-=sizeof(BPTR)+sizeof(ULONG);
 		if((STRPTR)pointer>=addr && (STRPTR)pointer<=addr+size-minsize){
 			return TRUE;
 		}
@@ -169,4 +169,5 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize){
 
 	return FALSE;
 }
+
 
