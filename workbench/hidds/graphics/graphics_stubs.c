@@ -225,6 +225,42 @@ BOOL HIDD_Gfx_SetCursor(Object *obj, struct TagItem *cursorTags)
 
 /***************************************************************/
 
+BOOL HIDD_Gfx_SetMode(Object *obj, HIDDT_ModeID modeID)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_SetMode p;
+
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetMode);
+        
+    p.mID = mid;
+    
+    p.modeID = modeID;
+
+    return (BOOL)DoMethod(obj, (Msg) &p);
+    
+}
+
+
+/***************************************************************/
+
+Object *HIDD_Gfx_Show(Object *obj, Object *bitMap, ULONG flags)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_Show p;
+
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_Show);
+        
+    p.mID = mid;
+    
+    p.bitMap	= bitMap;
+    p.flags	= flags;
+
+    return (Object *)DoMethod(obj, (Msg) &p);
+    
+}
+
+/***************************************************************/
+
 BOOL HIDD_BM_SetColors (Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors)
 {
     static MethodID mid = 0;
@@ -822,3 +858,17 @@ HIDDT_Pixel HIDD_CM_GetPixel(Object *obj, ULONG pixelNo) /* Starts at 0 */
     return (HIDDT_Pixel)DoMethod(obj, (Msg)&p);
 }
 
+
+BOOL HIDD_CM_GetColor(Object *obj, ULONG colorNo, HIDDT_Color *colorReturn) /* Starts at 0 */
+{
+    static MethodID mid = 0;
+    struct pHidd_ColorMap_GetColor p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_ColorMap, moHidd_ColorMap_GetColor);
+        
+    p.mID = mid;
+    p.colorNo	  = colorNo;
+    p.colorReturn = colorReturn;
+    
+    return (BOOL)DoMethod(obj, (Msg)&p);
+}

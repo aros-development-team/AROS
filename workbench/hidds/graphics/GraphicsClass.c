@@ -45,6 +45,9 @@ static struct pfnode *find_pixfmt(struct MinList *pflist
 
 static Object *find_stdpixfmt(HIDDT_PixelFormat *tofind
 	, struct class_static_data *csd);
+static VOID copy_bm_and_colmap(struct HIDDGraphicsData *data, Object *src_bm
+	, Object *dst_bm, Object *dims_bm
+	, struct class_static_data *csd);
 
 /*static AttrBase HiddGCAttrBase;*/
 
@@ -53,12 +56,14 @@ static AttrBase HiddBitMapAttrBase	= 0;
 static AttrBase HiddGfxAttrBase		= 0;
 static AttrBase HiddSyncAttrBase	= 0;
 static AttrBase HiddGCAttrBase		= 0;
+static AttrBase HiddColorMapAttrBase	= 0;
 static struct ABDescr attrbases[] = {
-    { IID_Hidd_PixFmt, 	&HiddPixFmtAttrBase	},
-    { IID_Hidd_BitMap,	&HiddBitMapAttrBase	},
-    { IID_Hidd_Gfx,	&HiddGfxAttrBase	},
-    { IID_Hidd_Sync,	&HiddSyncAttrBase	},
-    { IID_Hidd_GC,	&HiddGCAttrBase		},
+    { IID_Hidd_PixFmt, 		&HiddPixFmtAttrBase	},
+    { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
+    { IID_Hidd_Gfx,		&HiddGfxAttrBase	},
+    { IID_Hidd_Sync,		&HiddSyncAttrBase	},
+    { IID_Hidd_GC,		&HiddGCAttrBase		},
+    { IID_Hidd_ColorMap,	&HiddColorMapAttrBase	},
     { NULL, NULL }
 };
     
@@ -94,6 +99,7 @@ static Object *root_new(Class *cl, Object *o, struct pRoot_New *msg)
     
     InitSemaphore(&data->mdb.sema);
     InitSemaphore(&data->pfsema);
+    data->curmode = vHidd_ModeID_Invalid;
     
     /* Get the mode tags */
     modetags = (struct TagItem *)GetTagData(aHidd_Gfx_ModeTags, NULL, msg->attrList);
@@ -223,13 +229,16 @@ static Object * hiddgfx_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitM
     STRPTR classid = NULL;
     Class *classptr = NULL;
     BOOL displayable = FALSE; /* Default attr value */
+    BOOL framebuffer = FALSE;
     Object *pf = NULL, *sync;
     HIDDT_ModeID modeid;
+    Object *bm;
+    struct HIDDGraphicsData *data;
     
     DECLARE_ATTRCHECK(bitmap);
     
     BOOL gotclass = FALSE;
-    
+    data = INST_DATA(cl, o);
     
     if (0 != ParseAttrs(msg->attrList, attrs, num_Total_BitMap_Attrs
     	, &ATTRCHECK(bitmap), HiddBitMapAttrBase)) {
@@ -256,6 +265,11 @@ static Object * hiddgfx_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitM
     if (GOT_BM_ATTR(Displayable))
 	displayable = (BOOL)attrs[BMAO(Displayable)];
 
+    if (GOT_BM_ATTR(FrameBuffer)) {
+    	framebuffer = (BOOL)attrs[BMAO(FrameBuffer)];
+	if (framebuffer) displayable = TRUE;
+    }
+
     if (GOT_BM_ATTR(ModeID)) {
 	modeid = attrs[BMAO(ModeID)];
 	/* Check that it is a valid mode */
@@ -267,8 +281,9 @@ static Object * hiddgfx_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitM
     /* First argument is gfxhidd */    
     SET_BM_TAG(bmtags, 0, GfxHidd, o);
     SET_BM_TAG(bmtags, 1, Displayable, displayable);
+    
 	
-    if (displayable) {
+    if (displayable || framebuffer) {
 	/* The user has to supply a modeid */
 	if (!GOT_BM_ATTR(ModeID)) {
 	    kprintf("!!! Gfx::NewBitMap: USER HAS NOT PASSED MODEID FOR DISPLAYABLE BITMAP !!!\n");
@@ -281,7 +296,13 @@ static Object * hiddgfx_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitM
 	}
 	
 	SET_BM_TAG(bmtags, 2, ModeID, modeid);
-	SET_TAG(bmtags, 3, TAG_MORE, msg->attrList);
+	SET_BM_TAG(bmtags, 3, PixFmt, pf);
+	if (framebuffer) {
+	    SET_BM_TAG(bmtags, 4, FrameBuffer, TRUE);
+	} else {
+	    SET_TAG(bmtags, 4, TAG_IGNORE, 0UL);
+	}
+	SET_TAG(bmtags, 5, TAG_MORE, msg->attrList);
 	
     } else { /* if (displayable) */
 	ULONG width, height;
@@ -352,7 +373,12 @@ static Object * hiddgfx_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitM
     } /* if (!displayable) */
     
 
-    return NewObject(classptr, classid, bmtags);
+    bm = NewObject(classptr, classid, bmtags);
+    if (framebuffer)
+    	data->framebuffer = bm;
+	
+    return bm;
+    
 }
 
 
@@ -513,7 +539,6 @@ static BOOL register_modes(Class *cl, Object *o, struct TagItem *modetags)
     struct HIDDGraphicsData *data;
     
     DECLARE_ATTRCHECK(sync);
-//    DECLARE_ATTRCHECK(pixfmt);
     
     struct mode_db *mdb;
     
@@ -652,6 +677,7 @@ static HIDDT_ModeID *querymode(struct modequery *mq) {
     register Object *sync;
     BOOL mode_ok = FALSE;
     Class *cl = mq->cl;
+    ULONG syncidx, pfidx;
     
     mq->dims_ok	  = FALSE;
     mq->stdpfs_ok = FALSE;
@@ -662,24 +688,28 @@ static HIDDT_ModeID *querymode(struct modequery *mq) {
 	mq->pfidx = 0;
 	mq->syncidx ++;
     }
-	
+
     if (mq->syncidx >= mq->mdb->num_syncs) {
-	/* We have reached the end of the recursion. Allocate memory and go back */
+	/* We have reached the end of the recursion. Allocate memory and go back 
+	*/
+	
 	modeids = AllocVec(sizeof (HIDDT_ModeID) * (mq->numfound + 1), MEMF_ANY);
 	/* Get the end of the array */
 	modeids += mq->numfound;
-	*modeids -- = vHidd_ModeID_Invalid;
+	*modeids = vHidd_ModeID_Invalid;
 	
 	return modeids;
     }
-	
+
+    syncidx = mq->syncidx;
+    pfidx   = mq->pfidx;
     /* Get the pf and sync objects */
-    pf   = mq->mdb->pixfmts[mq->pfidx];
-    sync = mq->mdb->syncs[mq->syncidx];
+    pf   = mq->mdb->pixfmts[syncidx];
+    sync = mq->mdb->syncs[pfidx];
     
 
     /* Check that the mode is really usable */
-    if (is_valid_mode(&mq->mdb->checked_mode_bm, mq->syncidx, mq->pfidx)) {
+    if (is_valid_mode(&mq->mdb->checked_mode_bm, syncidx, pfidx)) {
 	mq->check_ok = TRUE;
     
     
@@ -713,6 +743,8 @@ static HIDDT_ModeID *querymode(struct modequery *mq) {
 	mq->numfound ++;
     }
     
+    mq->pfidx ++;
+    
     modeids = querymode(mq);
 
     if (NULL == modeids)
@@ -720,7 +752,8 @@ static HIDDT_ModeID *querymode(struct modequery *mq) {
 	
     if (mode_ok) {
 	/* The mode is OK. Add it to the list */
-	*modeids -- = COMPUTE_HIDD_MODEID(mq->syncidx, mq->pfidx);
+	modeids --;
+	*modeids = COMPUTE_HIDD_MODEID(syncidx, pfidx);
     }
     
     return modeids;
@@ -1018,6 +1051,93 @@ static BOOL hiddgfx_setcursor(Class *cl, Object *o, struct pHidd_Gfx_SetCursor *
     return TRUE;
 }
 
+/*** HIDDGfx::SetMode() ************************************************/
+
+static BOOL hiddgfx_setmode(Class *cl, Object *o, struct pHidd_Gfx_SetMode *msg)
+{
+    struct HIDDGraphicsData *data;
+    Object *sync, *pf;
+    
+    data = INST_DATA(cl, o);
+
+#if 0    
+    /* Check if we have a valid modeid */
+    if (HIDD_Gfx_GetMode(o, msg->modeID, &sync, &pf)) {
+
+    	/* Mode exists. */
+    	curmode = msg->modeID;
+	
+	/* Do we have a framebuffer yet ? */
+	if (NULL == data->framebuffer) {
+	    /* No framebuffer. We should init one. */
+	} else {
+	    /* Framebuffer created. Check if framebuffer is large enough
+	    for mode. */
+	    
+	    
+	} 
+    }
+
+#endif    
+    return FALSE;
+}
+
+/*** HIDDGfx::Show() **************************************************/
+
+static Object *hiddgfx_show(Class *cl, Object *o, struct pHidd_Gfx_Show *msg)
+{
+    struct HIDDGraphicsData *data;
+    Object *bm;
+    IPTR displayable;
+    
+    data = INST_DATA(cl, o);
+    bm = msg->bitMap;
+    
+    /* We have to do some consistency checking */
+    GetAttr(bm, aHidd_BitMap_Displayable, &displayable);
+
+kprintf("----------- Gfx:Show(bm=%p): displayable.: %d\n", bm, displayable);
+    
+    if (!displayable)
+    	/* We cannot show a non-displayable bitmap */
+	return NULL;
+	
+    /* Check that the gfx mode seems reasonable */
+    if (NULL == data->framebuffer) {
+    	struct TagItem fbtags[] = {
+	    { aHidd_BitMap_ModeID,	0UL	},
+	    { aHidd_BitMap_FrameBuffer,	TRUE	},
+	    { TAG_DONE, 0UL }
+	};
+
+	GetAttr(bm, aHidd_BitMap_ModeID, &fbtags[0].ti_Data);
+	
+    	/* No framebuffer has been created, we need to create one. */
+	
+
+kprintf("---------- Gfx::Show() CREATING FRAMEBUFFER\n");
+	data->framebuffer = HIDD_Gfx_NewBitMap(o, fbtags);
+	if (NULL == data->framebuffer)
+	    return NULL;
+	
+    }
+    
+    if (NULL != data->shownbm && (msg->flags & fHidd_Gfx_Show_CopyBack)) {
+    	
+kprintf("---------- Gfx::Show() RESTORING FRAMEBUFFER DATA\n");
+    	/* Copy the framebuffer data back into the old shown bitmap */
+	copy_bm_and_colmap(data, data->framebuffer, data->shownbm, data->shownbm, CSD(cl));
+    }
+    
+kprintf("---------- Gfx::Show() COPYING IN NEW BITMAP\n");
+    copy_bm_and_colmap(data, bm, data->framebuffer, bm, CSD(cl));
+    data->shownbm = bm;
+    
+
+    return data->framebuffer;
+   
+}
+
 /*** HIDDGfx::RegisterPixFmt() ********************************************/
 
 static Object *hiddgfx_registerpixfmt(Class *cl, Object *o, struct pHidd_Gfx_RegisterPixFmt *msg)
@@ -1181,7 +1301,7 @@ static Object *hiddgfx_getpixfmt(Class *cl, Object *o, struct pHidd_Gfx_GetPixFm
 #define UtilityBase (csd->utilitybase)
 
 #define NUM_ROOT_METHODS	3
-#define NUM_GFXHIDD_METHODS	13
+#define NUM_GFXHIDD_METHODS	15
 
 Class *init_gfxhiddclass (struct class_static_data *csd)
 {
@@ -1209,6 +1329,8 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
         {(IPTR (*)())hiddgfx_releasepixfmt, 	moHidd_Gfx_ReleasePixFmt	},
 	{(IPTR (*)())hiddgfx_getpixfmt, 	moHidd_Gfx_GetPixFmt		},
 	{(IPTR (*)())hiddgfx_setcursor, 	moHidd_Gfx_SetCursor		},
+	{(IPTR (*)())hiddgfx_setmode,		moHidd_Gfx_SetMode		},
+	{(IPTR (*)())hiddgfx_show, 		moHidd_Gfx_Show			},
         {NULL, 0UL}
     };
     
@@ -1770,6 +1892,43 @@ static VOID draw_cursor(struct HIDDGraphicsData *data, BOOL draw, struct class_s
 	);
     }
     return;
+}
+
+static VOID copy_bm_and_colmap(struct HIDDGraphicsData *data, Object *src_bm
+	, Object *dst_bm, Object *dims_bm
+	, struct class_static_data *csd)
+{
+    struct TagItem gctags[] = {
+    	{ aHidd_GC_DrawMode,	vHidd_GC_DrawMode_Copy	},
+	{ TAG_DONE, 0UL }
+    };
+    IPTR width, height;
+    ULONG i, numentries;
+    Object *src_colmap;
+    
+    /* Copy the displayable bitmap into the framebuffer */
+    GetAttr(dims_bm, aHidd_BitMap_Width,	&width);
+    GetAttr(dims_bm, aHidd_BitMap_Height,	&height);
+    
+    /* We have to copy the colormap into the framebuffer bitmap */
+    GetAttr(src_bm, aHidd_BitMap_ColorMap, (IPTR *)&src_colmap);
+    GetAttr(src_colmap, aHidd_ColorMap_NumEntries, &numentries);
+    
+    for (i = 0; i < numentries; i ++) {
+    	HIDDT_Color col;
+	HIDD_CM_GetColor(src_colmap, i, &col);
+	HIDD_BM_SetColors(data->framebuffer, &col, i, 1);
+    }    
+    
+    SetAttrs(data->gc, gctags);
+/* kprintf("---------- Gfx::Show() COPYING FROM BM %p TO %p\n"
+	, bm, data->framebuffer);
+*/	
+    HIDD_BM_CopyBox(src_bm, data->gc, 0, 0
+    	, dst_bm
+	, 0, 0
+	, width, height
+    );
 }
 
 

@@ -79,6 +79,10 @@ enum
     moHidd_Gfx_GetPixFmt,
     moHidd_Gfx_SetCursor,
     
+    moHidd_Gfx_SetMode,
+    moHidd_Gfx_Show,
+    
+    
     
     num_Hidd_Gfx_Methods
 };
@@ -86,9 +90,10 @@ enum
 enum {
     aoHidd_Gfx_IsWindowed,	/* [..G] (BOOL) - Whether the HIDD is using a window 
 						  system to render its gfx */
+#if 0
     aoHidd_Gfx_ActiveBMCallBack,
     aoHidd_Gfx_ActiveBMCallBackData,
-    
+#endif    
     aoHidd_Gfx_DPMSLevel,	/* [ISG] (ULONG) - DPMS level	*/
     
     /* Used in gfxmode registering */
@@ -102,8 +107,12 @@ enum {
 };
 
 #define aHidd_Gfx_IsWindowed 		(HiddGfxAttrBase + aoHidd_Gfx_IsWindowed		)
+
+#if 0
 #define aHidd_Gfx_ActiveBMCallBack	(HiddGfxAttrBase + aoHidd_Gfx_ActiveBMCallBack		)
 #define aHidd_Gfx_ActiveBMCallBackData	(HiddGfxAttrBase + aoHidd_Gfx_ActiveBMCallBackData	)
+#endif
+
 #define aHidd_Gfx_DPMSLevel		(HiddGfxAttrBase + aoHidd_Gfx_DPMSLevel			)
 #define aHidd_Gfx_PixFmtTags		(HiddGfxAttrBase + aoHidd_Gfx_PixFmtTags		)
 #define aHidd_Gfx_SyncTags		(HiddGfxAttrBase + aoHidd_Gfx_SyncTags			)
@@ -222,6 +231,28 @@ struct pHidd_Gfx_SetCursor {
     MethodID mID;
     struct TagItem *cursorTags;
 };
+
+struct pHidd_Gfx_Show {
+    MethodID mID;
+    Object *bitMap;
+    ULONG flags;
+};
+
+/* Flags */
+
+/* This will make the gfx hidd, copy back from the framebuffer into
+   the old bitmap you were using. Use this option with extreme
+   prejudice:  YOU MUST BE TOTALLY SURE THAT THE BITMAP
+   YOU CALLED SHOW ON BEFORE THIS CALL HAS NOT BEEN DISPOSED
+*/
+#define fHidd_Gfx_Show_CopyBack 0x01
+
+
+struct pHidd_Gfx_SetMode {
+    MethodID mID;
+    HIDDT_ModeID modeID;
+};
+
 
 enum {
     tHidd_Cursor_BitMap,	/* Object *, cursor shape bitmap */
@@ -425,6 +456,7 @@ enum {
     aoHidd_BitMap_LeftEdge,      /* [I.G] Left edge position of the bitmap     */
     aoHidd_BitMap_TopEdge,       /* [I.G] Top edge position of the bitmap      */
 #endif
+    aoHidd_BitMap_FrameBuffer,	/* [I.G] BOOL - Allocate framebuffer ? */
     
     num_Hidd_BitMap_Attrs
 };    
@@ -458,6 +490,7 @@ enum {
 #define aHidd_BitMap_ClassPtr	   (HiddBitMapAttrBase + aoHidd_BitMap_ClassPtr)
 #define aHidd_BitMap_ClassID	   (HiddBitMapAttrBase + aoHidd_BitMap_ClassID)
 #define aHidd_BitMap_PixFmtTags	   (HiddBitMapAttrBase + aoHidd_BitMap_PixFmtTags)
+#define aHidd_BitMap_FrameBuffer   (HiddBitMapAttrBase + aoHidd_BitMap_FrameBuffer)
 
 #define IS_BITMAP_ATTR(attr, idx) \
 	( ( ( idx ) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
@@ -756,6 +789,8 @@ BOOL HIDD_Gfx_GetMode(Object *obj, HIDDT_ModeID modeID, Object **syncPtr, Object
 HIDDT_ModeID HIDD_Gfx_NextModeID(Object *obj, HIDDT_ModeID modeID, Object **syncPtr, Object **pixFmtPtr);
 BOOL HIDD_Gfx_SetCursor(Object *obj, struct TagItem *cursorTags);
 
+Object *HIDD_Gfx_Show(Object *obj, Object *bitMap, ULONG flags);
+BOOL HIDD_Gfx_SetMode(Object *obj, HIDDT_ModeID modeID);
 
 VOID HIDD_GC_SetClipRect(Object *gc, LONG x1, LONG y1, LONG x2, LONG y2);
 VOID HIDD_GC_UnsetClipRect(Object *gc);
@@ -1038,7 +1073,8 @@ extern AttrBase HiddColorMapAttrBase;
 /* Methods */
 enum {
     moHidd_ColorMap_SetColors,
-    moHidd_ColorMap_GetPixel
+    moHidd_ColorMap_GetPixel,
+    moHidd_ColorMap_GetColor
 };
 
 struct pHidd_ColorMap_SetColors {
@@ -1054,8 +1090,15 @@ struct pHidd_ColorMap_GetPixel {
     ULONG pixelNo;
 };
 
+struct pHidd_ColorMap_GetColor {
+    MethodID mID;
+    ULONG colorNo;
+    HIDDT_Color *colorReturn;
+};
+
 BOOL HIDD_CM_SetColors(Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors, Object *pixFmt);
 HIDDT_Pixel HIDD_CM_GetPixel(Object *obj, ULONG pixelNo);
+BOOL HIDD_CM_GetColor(Object *obj, ULONG colorNo, HIDDT_Color *colorReturn);
 
 /* Attrs */
 enum {

@@ -58,9 +58,6 @@
 #define PUTPIX32(d, pix)	\
 	*((ULONG *)d) ++ = pix;
 
-//	kprintf("R: 0x%02x ", ((UBYTE *)d)[0]);		\
-//	kprintf("G: 0x%02x ", ((UBYTE *)d)[1]);		\
-//	kprintf("B: 0x%02x\n", ((UBYTE *)d)[2]);		\
 
 #if AROS_BIG_ENDIAN	
 #define PUTPIX24(d, pix)	\

@@ -46,7 +46,7 @@ static Object *colormap_new(Class *cl, Object *o, struct pRoot_New *msg)
     
     numentries = 256;
     
-    for (tstate = msg->attrList; (tag = NextTagItem(&tstate)); ) {
+    for (tstate = msg->attrList; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
     	ULONG idx;
 	
     	if (IS_COLORMAP_ATTR(tag->ti_Tag, idx)) {
@@ -133,7 +133,7 @@ static BOOL colormap_setcolors(Class *cl, Object *o, struct pHidd_ColorMap_SetCo
     ULONG i, col_idx;
     HIDDT_Color *col;
     HIDDT_PixelFormat *pf;
-     
+
     data = INST_DATA(cl, o);
 
      numnew = msg->firstColor + msg->numColors;
@@ -204,7 +204,7 @@ static HIDDT_Pixel colormap_getpixel(Class *cl, Object *o, struct pHidd_ColorMap
      
     data = INST_DATA(cl, o);
      
-    if (msg->pixelNo < 0 || msg->pixelNo > data->clut.entries) {
+    if (msg->pixelNo < 0 || msg->pixelNo >= data->clut.entries) {
 	kprintf("!!! Unvalid msg->pixelNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
 		msg->pixelNo,
 		data->clut.entries);
@@ -215,10 +215,23 @@ static HIDDT_Pixel colormap_getpixel(Class *cl, Object *o, struct pHidd_ColorMap
     }
     
     return data->clut.colors[msg->pixelNo].pixval;
-     
 }
 
-
+static BOOL colormap_getcolor(Class *cl, Object *o, struct pHidd_ColorMap_GetColor *msg)
+{
+    struct colormap_data *data;
+    
+    data = INST_DATA(cl, o);
+    if (msg->colorNo < 0 || msg->colorNo >= data->clut.entries) {
+	kprintf("!!! Unvalid msg->colorNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
+		msg->colorNo,
+		data->clut.entries);
+	return FALSE;
+    }
+    *msg->colorReturn = data->clut.colors[msg->colorNo];
+    
+    return TRUE;
+}
 
 /*** init_colormapclass *********************************************************/
 
@@ -229,7 +242,7 @@ static HIDDT_Pixel colormap_getpixel(Class *cl, Object *o, struct pHidd_ColorMap
 #define SysBase (csd->sysbase)
 
 #define NUM_ROOT_METHODS   3
-#define NUM_COLORMAP_METHODS 2
+#define NUM_COLORMAP_METHODS 3
 
 Class *init_colormapclass(struct class_static_data *csd)
 {
@@ -245,6 +258,7 @@ Class *init_colormapclass(struct class_static_data *csd)
     {
         {(IPTR (*)())colormap_setcolors, 	moHidd_ColorMap_SetColors	},
         {(IPTR (*)())colormap_getpixel, 	moHidd_ColorMap_GetPixel	},
+        {(IPTR (*)())colormap_getcolor, 	moHidd_ColorMap_GetColor	},
         {NULL, 0UL}
     };
     

@@ -117,6 +117,8 @@ struct HIDDGraphicsData
 	*/
 	struct SignalSemaphore pfsema;
 	struct MinList pflist;
+	
+	/* Software cursor stuff */
 	Object *curs_bm;
 	BOOL curs_on;
 	ULONG curs_x;
@@ -125,8 +127,12 @@ struct HIDDGraphicsData
 	
 	Object *framebuffer;
 	
+	Object *shownbm;
+	
 	/* gc used for stuff like rendering cursor */
 	Object *gc;
+	
+	/* The mode currently used */
 	HIDDT_ModeID curmode;
 };
 
@@ -178,8 +184,8 @@ struct HIDDBitMapData
     ULONG format;        /* planar or chunky              */
     ULONG bytesPerRow;   /* bytes per row                 */
     ULONG bytesPerPixel; /* bytes per pixel               */
-#endif
     Object *bitMap;
+#endif
     /* WARNING: structure could be extented in the future                */
     
     Object *friend;	/* Friend bitmap */
@@ -187,6 +193,9 @@ struct HIDDBitMapData
     Object *gfxhidd;
     
     Object *colmap;
+    
+    HIDDT_ModeID modeid;
+    
 
     /* Optimize these two method calls */
 #if USE_FAST_PUTPIXEL    

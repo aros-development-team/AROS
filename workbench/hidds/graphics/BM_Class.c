@@ -117,6 +117,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
         data->reqdepth	  = 8;
         data->displayable = FALSE;
 	data->pf_registered = FALSE;
+	data->modeid = vHidd_ModeID_Invalid;
 
 	if (0 != ParseAttrs(msg->attrList, attrs, num_Total_BitMap_Attrs
 			, &ATTRCHECK(bitmap), HiddBitMapAttrBase)) {
@@ -126,7 +127,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
 	}
 
 	if (ok) {
-	    if (!GOT_BM_ATTR(GfxHidd) || !GOT_BM_ATTR(Displayable)) {
+	    if (   !GOT_BM_ATTR(GfxHidd) || !GOT_BM_ATTR(Displayable)) {
     	    	kprintf("!!!! BM CLASS DID NOT GET GFX HIDD !!!\n");
 	    	kprintf("!!!! The reason for this is that the gfxhidd subclass NewBitmap() method\n");
 	    	kprintf("!!!! has not left it to the baseclass to avtually create the object,\n");
@@ -165,6 +166,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
 			GetAttr(sync, aHidd_Sync_VDisp, &height);
 			data->width = width;
 			data->height = height;
+			data->displayable = TRUE;
 
 		        /* The PixFmt is allready registered and locked in the PixFmt database */
 			data->prot.pixfmt = pf;
@@ -195,6 +197,10 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
 	/* Try to create the colormap */
 	if (ok) {
 	    /* initialize the direct method calling */
+	    
+	    if (GOT_BM_ATTR(ModeID))
+	    	data->modeid = attrs[AO(ModeID)];
+		
 #if USE_FAST_PUTPIXEL
 	    data->putpixel = (IPTR (*)(Class *, Object *, struct pHidd_BitMap_PutPixel *))
 				    GetMethod(obj, CSD(cl)->putpixel_mid);
@@ -293,6 +299,7 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 #endif
 		
 	    case aoHidd_BitMap_GfxHidd	: *msg->storage = (IPTR)data->gfxhidd; break;
+	    case aoHidd_BitMap_ModeID   : *msg->storage = data->modeid; break;
 
 	    case aoHidd_BitMap_BytesPerRow: {
 	    	HIDDT_PixelFormat *pf;
