@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <c_iff.h>
 
@@ -153,7 +154,32 @@ int main(int argc, char **argv)
     fprintf(stdout, "Mask=");
     for(i=1; i<=DTH->dth_MaskLen; i++)
     {
-     fputc((int) *((char *) (((long) DTHDBuffer) + ((long) DTH->dth_Mask) + (2*i-1))), stdout);
+    #if 1
+    	unsigned short mask;
+	
+	mask = *((unsigned char *) (((long) DTHDBuffer) + ((long) DTH->dth_Mask) + (2*i-2)));
+	mask *= 256;
+	mask += *((unsigned char *) (((long) DTHDBuffer) + ((long) DTH->dth_Mask) + (2*i-1)));
+	
+	if ((short)mask < 0)
+	{
+	    fprintf(stdout, "ANY ");
+	}
+	else if (mask > 255)
+	{
+	    fprintf(stdout, "0x%x ", mask);
+	}
+	else if (isalnum(mask))
+	{
+	    fprintf(stdout, "'%c' ", mask);
+	}
+	else
+	{
+	    fprintf(stdout, "0x%x ", mask);
+	}
+    #else
+     	fputc((int) *((char *) (((long) DTHDBuffer) + ((long) DTH->dth_Mask) + (2*i-1))), stdout);
+    #endif
     }
     fprintf(stdout, "\n");
 

@@ -35,9 +35,15 @@ Currently the following 9 Keywords are defined:
 		createdtdesc does this too, if Pattern is ommited.
 
 5)  Mask        Comparision mask to identify a file by its constant parts.
-		Backslash-sequences are not yet supported, but will be
-		in future.
-
+		To be specified as white space separated list of any
+		of the following items:
+		
+		- specific char (ASCII)     : 'A' 'B' '1' '2'
+		
+		- specific char (numeric)   : 10 100 12 0xd8 
+		
+		- wildcard matching any char: ANY
+		
 6)  GroupID     GroupID of the DataTypes group. This ID must complain to the rules.
 		createdtdesc doesn't check the validity. See <datatypes/datatypes.h>
 		for details.

@@ -131,6 +131,63 @@ int HandleMask(struct DTDesc *TheDTDesc)
 
  DataPtr=TheDTDesc->ReadBuffer+KeywordLength[Mask];
 
+#if 1
+ {
+  CARD8 *NewDataPtr;
+  int done = 0;
+  
+  TheDTDesc->DTH.dth_MaskLen = 0;
+  
+  while(!done)
+  {
+   CARD8 c = *DataPtr++;
+
+   switch(c)
+   {
+    case '\0':
+     done = 1;
+     break;
+     
+    case '\'':
+     c = *DataPtr++;
+     TheDTDesc->Mask[TheDTDesc->DTH.dth_MaskLen++] = c;
+     if (c) c = *DataPtr++;
+     if (!c) done = 1;
+     break;
+     
+    case 'A':
+     c = *DataPtr++;
+     if (!c) done = 1;
+     if (c != 'N') break;
+     c = *DataPtr++;
+     if (!c) done = 1;
+     if (c != 'Y') break;
+     TheDTDesc->Mask[TheDTDesc->DTH.dth_MaskLen++] = 0xFFFF;
+     break;
+     
+    case ' ':
+    case '\t':
+     break;
+     
+    default:
+     DataPtr--;
+     i = strtol(DataPtr, &NewDataPtr, 0);
+     if (DataPtr != NewDataPtr)
+     {
+      DataPtr = NewDataPtr;
+      TheDTDesc->Mask[TheDTDesc->DTH.dth_MaskLen++] = i;      
+     }
+     else
+     {
+      DataPtr++;
+     }
+     break;
+     
+   }
+  }
+ }
+ 
+#else
  TheDTDesc->DTH.dth_MaskLen=(CARD16) strlen(DataPtr);
  if(!TheDTDesc->DTH.dth_MaskLen)
  {
@@ -141,6 +198,7 @@ int HandleMask(struct DTDesc *TheDTDesc)
  {
   TheDTDesc->Mask[i] = (DataPtr[i]==0xFF) ? 0xFFFF : (CARD16) DataPtr[i];
  }
+#endif
 
  TheDTDesc->DTH.dth_Mask=TheDTDesc->Mask;
 
