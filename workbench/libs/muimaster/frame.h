@@ -23,6 +23,8 @@ struct MUI_FrameSpec
     UWORD innerBottom;
 };
 
+struct MUI_RenderInfo;
+
 typedef void (*ZFDrawFunc)(struct MUI_RenderInfo *mri,
 			   int left, int top, int width, int height);
 
