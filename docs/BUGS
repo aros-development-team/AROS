@@ -332,6 +332,7 @@ BUG000048
 bergers@aros.org
 When the window is enlarged via ChangeWindowBox() the enlarged area is not
 cleared, it's black.
+I assume that this error is the same one as BUG000046.
 
 BUG000049
 bergers@aros.org
