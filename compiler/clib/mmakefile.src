@@ -124,6 +124,7 @@ SHARED	:= \
 	drand48 \
 	dup \
 	dup2 \
+	endpwent \
 	erand48 \
         execvp \
 	exit \
@@ -164,6 +165,7 @@ SHARED	:= \
         getgid \
         getegid \
         getgrgid \
+        getpwent \
         getpwnam \
         getpwuid \
 	gmtime \
@@ -212,6 +214,7 @@ SHARED	:= \
 	setenv \
 	setlinebuf \
         setlocale \
+        setpwent \
 	setvbuf \
 	sigaction \
 	sigaddset \

@@ -48,9 +48,9 @@ struct passwd *getpwnam(const char *name);
 #endif
 
 #if __XSI_VISIBLE
-/* NOTIMPL void endpwent(void); */
-/* NOTIMPL struct passwd *getpwent(void); */
-/* NOTIMPL void setpwent(void); */
+void endpwent(void);
+struct passwd *getpwent(void);
+void setpwent(void);
 #endif
 
 __END_DECLS
