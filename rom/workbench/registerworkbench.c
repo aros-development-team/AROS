@@ -79,7 +79,6 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
     if( (msgport != NULL) && (WorkbenchBase->wb_AppPort == NULL) ) {
         AlohaWorkbench( msgport );
