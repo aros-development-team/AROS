@@ -236,6 +236,13 @@ static ULONG Numeric_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 
     if (msg->muikey != MUIKEY_NONE)
     {
+	LONG step;
+
+	if (data->max - data->min < 10)
+	    step = 1;
+	else
+	    step = 10;
+
 	switch(msg->muikey)
 	{
 	    case    MUIKEY_PRESS:
@@ -249,6 +256,7 @@ static ULONG Numeric_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 		    return MUI_EventHandlerRC_Eat;
 
 	    case    MUIKEY_TOP:
+	    case    MUIKEY_LINEEND:
 		    if (data->flags & NUMERIC_REVUPDOWN)
 		        set(obj, MUIA_Numeric_Value, data->min);
 		    else
@@ -256,6 +264,7 @@ static ULONG Numeric_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 		    return MUI_EventHandlerRC_Eat;
 
 	    case    MUIKEY_BOTTOM:
+	    case    MUIKEY_LINESTART:
 		    if (data->flags & NUMERIC_REVUPDOWN)
 			set(obj, MUIA_Numeric_Value, data->max);
 		    else
@@ -289,6 +298,23 @@ static ULONG Numeric_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 		    else
 			DoMethod(obj, MUIM_Numeric_Increase, 1);
 		    return MUI_EventHandlerRC_Eat;
+
+	    case MUIKEY_PAGEUP:
+	    case MUIKEY_WORDRIGHT:
+		if (data->flags & NUMERIC_REVUPDOWN)
+		    DoMethod(obj, MUIM_Numeric_Decrease, step);
+		else
+		    DoMethod(obj, MUIM_Numeric_Increase, step);
+		return MUI_EventHandlerRC_Eat;
+
+	    case MUIKEY_PAGEDOWN:
+	    case MUIKEY_WORDLEFT:
+		if (data->flags & NUMERIC_REVUPDOWN)
+		    DoMethod(obj, MUIM_Numeric_Increase, step);
+		else
+		    DoMethod(obj, MUIM_Numeric_Decrease, step);
+		return MUI_EventHandlerRC_Eat;
+
 	    default:
 		    return 0;
 	}
