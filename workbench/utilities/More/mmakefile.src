@@ -8,20 +8,12 @@ include $(TOP)/config/make.cfg
 FILES := more req locale misc
 
 EXEDIR := $(AROSDIR)/Utilities
-EXE := $(EXEDIR)/More
-
-USE_CLIB_SHARED := yes
-USE_AMIGALIB := yes
-USE_MLIB := yes
 
 #MM- workbench-utilities : workbench-utilities-more 
 #MM workbench-utilities-more : includes linklibs workbench-utilities-more-catalogs
 
-%make_prog_setup mmake=workbench-utilities-more
-
-workbench-utilities-more : setup $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+%build_prog mmake=workbench-utilities-more \
+    progname=More targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="amiga arosc_shared m"
 
 %common
-%include_deps

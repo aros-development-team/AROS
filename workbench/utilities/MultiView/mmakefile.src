@@ -8,21 +8,12 @@ include $(TOP)/config/make.cfg
 FILES := main misc vars locale
 
 EXEDIR := $(AROSDIR)/Utilities
-EXE := $(EXEDIR)/MultiView
-
-USE_AROSLIB := yes
-USE_CLIB_SHARED := yes
-USE_AMIGALIB := yes
-USE_MLIB := yes
 
 #MM- workbench-utilities : workbench-utilities-multiview
 #MM workbench-utilities-multiview : includes linklibs workbench-utilities-multiview-catalogs
 
-%make_prog_setup mmake=workbench-utilities-multiview
-
-workbench-utilities-multiview : setup $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+%build_prog mmake=workbench-utilities-multiview \
+    progname=MultiView targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="arossupport amiga arosc_shared m"
 
 %common
-%include_deps

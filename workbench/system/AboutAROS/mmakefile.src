@@ -5,24 +5,23 @@ include $(TOP)/config/make.cfg
 
 FILES 	    := main aboutaros locale
 EXEDIR      := $(AROS_SYSTEM)
-EXE 	    := $(EXEDIR)/About
-GENERATED   := authors.h sponsors.h acknowledgements.h
-
-USE_AROSLIB     := yes
-USE_CLIB_SHARED := yes
-USE_AMIGALIB    := yes
-USE_MLIB        := yes
 
 USER_CFLAGS     := -DDATE="\"$(shell date -I)\""
 
 #MM- workbench-system : workbench-system-aboutaros
-#MM workbench-system-aboutaros : includes linklibs workbench-system-aboutaros-catalogs 
+#MM workbench-system-aboutaros : includes linklibs \
+#MM     workbench-system-aboutaros-catalogs \
+#MM     workbench-system-aboutaros-generated
 
-%make_prog_setup mmake=workbench-system-aboutaros
+%build_prog mmake=workbench-system-aboutaros \
+    progname=About targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="arossupport amiga arosc_shared m"
 
-workbench-system-aboutaros : setup $(GENERATED) $(EXE)
 
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+GENERATED   := authors.h sponsors.h acknowledgements.h
+
+#MM
+workbench-system-aboutaros-generated : $(GENERATED)
 
 authors.h : db/credits scripts/authors2header.py
 	@$(ECHO) Generating $@
@@ -37,4 +36,3 @@ acknowledgements.h : $(TOP)/ACKNOWLEDGEMENTS scripts/acknowledgements2header.py
 	@$(PYTHON) scripts/acknowledgements2header.py <$< >$@
 
 %common
-%include_deps

@@ -5,26 +5,24 @@
 include $(TOP)/config/make.cfg
 
 FILES 	    := main vars locale misc prefs registertab page_mouse page_kbd
+EXEDIR      := $(AROSDIR)/Prefs
+
+#MM- workbench-prefs : workbench-prefs-input
+#MM workbench-prefs-input : includes linklibs \
+#MM     workbench-prefs-input-catalogs \
+#MM     workbench-prefs-input-images
+
+%build_prog mmake=workbench-prefs-input \
+    progname=Input targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="coolimagesstatic arossupport amiga arosc_shared m"
+
+
 IMAGES      := computermouse
 SRCIMAGES   := $(foreach f, $(IMAGES), pics/$(f).ilbm)
 C_IMAGES    := $(foreach f, $(IMAGES), $(f)_image.c)
-EXEDIR      := $(AROSDIR)/Prefs
-EXE 	    := $(EXEDIR)/Input
 
-USE_AROSLIB := yes
-USE_CLIB_SHARED := yes
-USE_AMIGALIB := yes
-USE_MLIB := yes
-USE_COOLIMAGESLIB := yes
-
-#MM- workbench-prefs : workbench-prefs-input
-#MM workbench-prefs-input : includes linklibs workbench-prefs-input-catalogs
-
-%make_prog_setup mmake=workbench-prefs-input
-
-workbench-prefs-input : setup $(C_IMAGES) $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+#MM
+workbench-prefs-input : $(C_IMAGES)
 
 ./%_image.c : pics/%.ilbm
 	@$(ILBMTOC) $< >$@    	

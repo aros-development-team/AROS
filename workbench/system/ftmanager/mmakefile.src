@@ -6,21 +6,11 @@ include $(TOP)/config/make.cfg
 
 FILES  := ftmanager
 EXEDIR := $(AROS_SYSTEM)
-EXE    := $(EXEDIR)/FTManager
-
-USE_AMIGALIB    := yes
-USE_CLIB_SHARED := yes
-USE_MUILIB      := yes
 
 USER_CFLAGS := -I$(TOP)/rom/exec
 
-workbench-system-ftmanager : setup $(EXE)
-
-%make_prog_setup mmake=workbench-system-ftmanager
-
-LIBS := -lfreetype2shared $(LIBS)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+%build_prog mmake=workbench-system-ftmanager \
+    progname=FTManager targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="freetype2shared mui amiga arosc_shared"
 
 %common
-%include_deps

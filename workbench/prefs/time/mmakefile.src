@@ -6,22 +6,12 @@ include $(TOP)/config/make.cfg
 
 FILES 	    := main vars locale misc prefs
 EXEDIR      := $(AROSDIR)/Prefs
-EXE 	    := $(EXEDIR)/Time
-
-USE_AROSLIB := yes
-USE_CLIB_SHARED := yes
-USE_AMIGALIB := yes
-USE_MLIB := yes
-USE_MUILIB := yes
 
 #MM- workbench-prefs : workbench-prefs-time
 #MM workbench-prefs-time : includes linklibs workbench-prefs-time-catalogs
 
-%make_prog_setup mmake=workbench-prefs-time
-
-workbench-prefs-time : setup $(C_IMAGES) $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+%build_prog mmake=workbench-prefs-time \
+    progname=Time targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc_shared m"
 
 %common
-%include_deps

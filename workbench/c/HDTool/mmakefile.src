@@ -12,18 +12,11 @@ FILES := \
 	setup
 
 EXEDIR := $(AROS_C)
-EXE := $(EXEDIR)/HDTool
-
-USE_CLIB_SHARED := yes
-USE_AROSLIB := yes
 
 #MM workbench-c : includes linklibs
 
-%make_prog_setup mmake=workbench-c
-
-workbench-c : setup $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+%build_prog mmake=workbench-c \
+    progname=HDTool targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="arossupport arosc_shared"
 
 %common
-%include_deps

@@ -8,21 +8,12 @@ include $(TOP)/config/make.cfg
 FILES := main locale
 
 EXEDIR := $(AROSDIR)/Utilities
-EXE := $(EXEDIR)/Clock
-
-USE_AROSLIB := yes
-USE_CLIB_SHARED := yes
-USE_AMIGALIB := yes
-USE_MLIB := yes
 
 #MM- workbench-utilities : workbench-utilities-clock 
 #MM workbench-utilities-clock : includes linklibs workbench-utilities-clock-catalogs
 
-%make_prog_setup mmake=workbench-utilities-clock
-
-workbench-utilities-clock : setup $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+%build_prog mmake=workbench-utilities-clock \
+    progname=Clock targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="arossupport amiga arosc_shared m"
 
 %common
-%include_deps

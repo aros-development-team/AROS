@@ -10,19 +10,11 @@ FILES := \
     read
 
 EXEDIR := $(AROSDIR)/Demos
-EXE := $(EXEDIR)/2View
-
-USE_CLIB_SHARED := yes
-USE_MLIB := yes
-USE_AMIGALIB := yes
 
 #MM demos : includes linklibs
 
-%make_prog_setup mmake=demos
-
-demos : setup $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+%build_prog mmake=demos \
+    progname=2View targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="amiga arosc_shared m"
 
 %common
-%include_deps

@@ -15,36 +15,28 @@ FILES = \
     prefs
 
 EXEDIR = $(AROSDIR)/Tools
-EXE = $(EXEDIR)/HDToolBox
+USER_CFLAGS := -DHAVE_COOLIMAGES
 
-USE_CLIB_SHARED := yes
-USE_MLIB := yes
-USE_MUILIB := yes
-USE_AMIGALIB := yes
-
-USER_CFLAGS := -Wunused -Wall -DHAVE_COOLIMAGES #-Werror
-
-#MM workbench-tools: workbench-tools-setup \
+#MM- workbench-tools: workbench-tools-hdtoolbox \
 #MM   workbench-tools-hdtoolbox-catalogs
-#MM workbench-tools-quick: workbench-tools-hdtoolbox-catalogs
+#MM workbench-tools-hdtoolbox : workbench-tools-hdtoolbox-prefs
 
-%make_prog_setup mmake=workbench-tools
+%build_prog mmake=workbench-tools-hdtoolbox \
+    progname=HDToolBox targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui amiga arosc_shared m"
 
-workbench-tools: setup $(EXE) copyfiles
-workbench-tools-quick: setup $(EXE) copyfiles
 
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
-
-#MM workbench-tools-setup
-%rule_makedirs dirs=$(BINDIR)/Prefs/Env-Archive \
-  setuptarget=workbench-tools-setup
-
-#MM
-copyfiles : setup $(BINDIR)/Prefs/Env-Archive/hdtoolbox.prefs
+#MM workbench-tools-hdtoolbox-prefs : workbench-tools-hdtoolbox-prefs-setup
+workbench-tools-hdtoolbox-prefs : $(BINDIR)/Prefs/Env-Archive/hdtoolbox.prefs
 
 $(BINDIR)/Prefs/Env-Archive/% : env-archive/%
 	@$(CP) $< $@
 
+
+#MM workbench-tools-hdtoolbox-prefs-setup
+%rule_makedirs dirs=$(BINDIR)/Prefs/Env-Archive \
+  setuptarget=workbench-tools-hdtoolbox-prefs-setup
+
 %common
-%include_deps
+
 
