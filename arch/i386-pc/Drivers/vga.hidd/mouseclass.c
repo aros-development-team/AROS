@@ -25,7 +25,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum);
+ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userdata);
+VOID free_mouseclass(struct vga_staticdata *xsd);
 
 static AttrBase HiddMouseAB;
 
@@ -37,7 +38,7 @@ static struct ABDescr attrbases[] =
 
 struct mouse_data
 {
-    VOID (*mouse_callback)(APTR, UWORD);
+    VOID (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
     APTR callbackdata;
     
     Object * Ser;
@@ -48,10 +49,7 @@ struct mouse_data
 static Object * mouse_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
     BOOL has_mouse_hidd = FALSE;
-    struct TagItem *tag, *tstate;
-    APTR callback = NULL;
-    APTR callbackdata = NULL;
-    
+   
     EnterFunc(bug("Mouse::New()\n"));
  
     ObtainSemaphoreShared( &XSD(cl)->sema);
@@ -80,7 +78,7 @@ static Object * mouse_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    	switch (idx)
 		{
 		    case aoHidd_Mouse_IrqHandler:
-		    	data->mouse_callback = (VOID (*)())tag->ti_Data;
+		    	data->mouse_callback = (APTR)tag->ti_Data;
 			break;
 			
 		    case aoHidd_Mouse_IrqHandlerData:
@@ -122,7 +120,7 @@ static Object * mouse_new(Class *cl, Object *o, struct pRoot_New *msg)
 		    i = 3000000;
 		    while (i) {i--;};
 
-		    HIDD_SerialUnit_Init(data->Unit, mouse_InterruptHandler, NULL);
+		    HIDD_SerialUnit_Init(data->Unit, mouse_InterruptHandler, data, NULL, NULL);
 		}
 	    }
 	}
@@ -242,19 +240,28 @@ VOID free_mouseclass(struct vga_staticdata *xsd)
 #undef OOPBase
 #define OOPBase (vsd->oopbase)
 
-ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum)
+#define OLD_GFXMOUSE_HACK 0
+
+ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userdata)
 {
     static UBYTE inbuf[3];
     static UBYTE cnt = 0;
 
+#if OLD_GFXMOUSE_HACK
     static MethodID mid = 0;
     static struct pHidd_Gfx_SetMouseXY p;
-  
+#else
+    static struct mouse_data *mousedata;
+    static struct pHidd_Mouse_Event e;
+#endif
+
+#if OLD_GFXMOUSE_HACK 
     if (!mid)
     {
 	mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetMouseXY);
 	p.mID = mid;
     }
+#endif
     
     /* Get bytes untill there is anything to get */
     while (length)
@@ -277,12 +284,25 @@ ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum)
 		    inbuf[2] = *data++;
 		    length--;
 	        }
-		else return;
+		else return 0;
 	    }
+#if OLD_GFXMOUSE_HACK
             p.dx = (char)(((inbuf[0] & 0x03) << 6) | (inbuf[1] & 0x3f));
 	    p.dy = (char)(((inbuf[0] & 0x0c) << 4) | (inbuf[2] & 0x3f));
-
             DoMethod(vsd->vgahidd, (Msg) &p);
+
+#else
+     	    mousedata = (struct mouse_data *)userdata;
+
+            e.x = (char)(((inbuf[0] & 0x03) << 6) | (inbuf[1] & 0x3f));
+	    e.y = (char)(((inbuf[0] & 0x0c) << 4) | (inbuf[2] & 0x3f));
+	    e.button = vHidd_Mouse_NoButton;
+	    e.type = vHidd_Mouse_Motion;
+	    
+	    mousedata->mouse_callback(mousedata->callbackdata, &e);
+#endif
 	}
     }
+    
+    return 0;
 }
