@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/11 14:03:56  digulla
+    Quick hack to make it work again.
+
     Revision 1.3  1996/08/13 14:11:54  digulla
     Replaced __AROS_LA by __AROS_LHA
 
@@ -15,8 +18,8 @@
 #include <clib/exec_protos.h>
 #include <aros/libcall.h>
 #include <dos/dos.h>
-#include <utility/utility.h>
 #include "utility_intern.h"
+/* #include <utility/utility.h> */
 
 static const char name[];
 static const char version[];
