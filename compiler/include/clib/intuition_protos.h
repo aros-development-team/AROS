@@ -15,9 +15,6 @@
 #ifndef INTUITION_INTUITIONBASE_H
 #   include <intuition/intuitionbase.h>
 #endif
-#ifndef INTUITION_CLASSUSR_H
-#   include <intuition/classusr.h>
-#endif
 #ifndef INTUITION_CLASSES_H
 #   include <intuition/classes.h>
 #endif
@@ -27,7 +24,7 @@ extern struct IntuitionBase * IntuitionBase;
 /* Prototypes for stubs in amiga.lib */
 IPTR DoGadgetMethod (struct Gadget * gad, struct Window * win,
 		    struct Requester * req, ULONG MethodID, ...);
-ULONG SetAttrs (Object * obj, ULONG tag1, ...);
+ULONG SetAttrs (APTR obj, ULONG tag1, ...);
 ULONG SetSuperAttrs (Class * cl, Object * obj, ULONG tag1, ...);
 APTR NewObject (Class * classPtr, UBYTE * classID, ULONG tag1, ...);
 
