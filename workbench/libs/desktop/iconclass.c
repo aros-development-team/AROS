@@ -103,8 +103,7 @@ IPTR iconSet(Class *cl, Object *obj, struct opSet *msg)
 			case IA_Selected:
 				data->selected=tag->ti_Data;
 				SetAttrs(data->imagePart, MUIA_Selected, tag->ti_Data, TAG_END);
-				if(tag->ti_Data)
-					retval=DoSuperMethodA(cl, obj, (Msg)msg);
+				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
 			case IA_Executed:
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);

@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef ICONCONTAINERCLASS_H
 #define ICONCONTAINERCLASS_H
 
@@ -8,13 +13,22 @@
 #define ICA_ScrollToHoriz ICA_BASE+3
 #define ICA_ScrollToVert  ICA_BASE+4
 #define ICA_JustSelected  ICA_BASE+5
+#define ICA_SelectedIcons ICA_BASE+6
 
-#define ICM_UnselectAll   ICA_BASE+10
+#define ICM_UnselectAll      ICA_BASE+10
+#define ICM_UpdateSelectList ICA_BASE+11
 
 struct MemberNode
 {
 	struct MinNode m_Node;
 	Object *m_Object;
+};
+
+struct opUpdateSelectList
+{
+	ULONG methodID;
+	Object *target;
+	ULONG selectState;
 };
 
 struct IconContainerClassData
@@ -24,6 +38,9 @@ struct IconContainerClassData
 	// and will start a new column when there is no room
 	// left (for icon view)
 	struct MinList memberList;
+
+	// list of selected icons
+	struct MinList selectedList;
 
 	// this is true if the user hasn't moved any icons about
 	// enables us to use a more optimized icon layouter if
