@@ -1,0 +1,154 @@
+Intro
+-----
+mmu.hidd will be the hardware interface for the MMU devices.
+It should be able to provide the following things:
+- Memory will be devided in memory pages and access restrictions are handled
+on a page by page basis. Page size should be adapdable to hardware used.
+- For a certain task a page can be unreadable, readable, readable and writable.
+- Tasks should be able to change access restrictions of a certain region and
+this for itself and other code
+- For speed reasons or for hardware reasons the mmu should be able to be
+disabled or to decide to only implement parts of the mmu specification. Feed
+back to the OS(es) should be given so they can adapt to the level of mmu
+implemented.
+- The mmu.hidd should be kept a low level a possible but still general
+enough so it is applicable for almost MMU implementation known.
+
+Optional features:
+- Implement virtual addresses which can be different from the real address.
+The same real address can be mapped to different virtual addresses for
+different tasks. The same virtual address can point to different real
+addresses for different tasks. (These two last features should be present
+for a real fork() or other OS emulation layers but will probably not be used
+by the AROS OS)
+- Provide virtual memory support: pages can swapped out and in and metrics
+for deciding which pages to swap out and in should be gathered. The swapping
+itself should be implemented by the OS and not this hidd.
+- Provide security features: the OS should be able through the use of the
+MMU to restrict the changing of access restrictions of pages on contexts.
+Malicious code should not be able to change an unwriteable page to a writeable
+one and then hack the contents of this page.
+- Provide support for special features of MMU implementations: supervisor
+context on amiga 68k which provide a fast switching between contexts without
+needing mmu cache flushes. I don't know enough about other MMU
+implementations (PPC, Alpha, Intel, HP, ...) to know if there are similar
+features present.
+- Provide support for cache control on pages and DMA support and those in so
+far this can be generalized. This will be most useable by other drivers.
+
+Implementation
+--------------
+To allow room for optimization different levels of mmu implementation can be
+implemented by the mmu.hidd programmer. The OS on top of the mmu.hidd
+(normally AROS) should be flexible enough to adapt itself to the level
+implemented by the mmu devices. Also for the same cpu maybe implementations
+for different levels can be made so the system administrator can decide at
+boot time which type of system it will run. A fast single user system or a
+little slower secure multi-user system.
+
+A Level 0: no mmu support
+.........................
+This is like it was in the classic OS: one address space with no memory
+protection. A basic hook can be installed which may be called when a memory
+access error occurs. This feature is optional so not needed to be implemented
+on hardware which doesn't support it. Also the implementation should not need
+the allocation of page tables, if this should be the case this feature should
+not be implemented. It should only be implemented if the hardware architecture
+signals such be access.
+At all times the mmu.hidd has to know how much physical memory there is in
+the system. Therefor two mechanisms are provided. First during
+initialization a list of available memory is provided. Second HIDD methods
+will be provided which allow the addition and removal of certain memory.
+(Removal can be handy for PCMCIA cards or not ?)
+Also every mmu implementation should implement and document an API to set
+caching policies. Drivers which need those should then be able to use these. 
+
+B Level 1: Basic access restrictions on one address space
+.........................................................
+Although in the intro there was talk about tasks in the implementation no
+tasks will be used but memory Contexts will be introduced in this level. These
+contexts are based on a proposal from Dave Haynei and the mmu.library from
+Thomas Richter for the classic AmigaOS.
+Tasks are at a higher level in the OS and will also include metrics related to
+task switching and the like. The OS can also decide what the relation is
+between contexts and task. The OS can decide to have different contexts
+related to one task and one context can be shared by different tasks.
+The address is divided in memory pages. In this level there is only one
+address space and an address corresponds with the real address. 
+All contexts have thus the same address space. Only a page can have
+different access restrictions in a different context. A page can be
+unexisting, unmapped (page exists but is not used until now), unreadable,
+readable, read-writeable. The mapped, unmapped flag is there to let the
+mmu.hidd page allocations coexist with the OS memory allocation. When the OS
+wants to allocate pages it needs to use pages which are unmapped and mark
+them as mapped. A convenience method 'ReservePages' can be provided which
+maps a certain amount of pages and gives the list back with these pages. By
+providing this method internally some optimizations can be performed so the
+number of page tables are minimizes. When creating new contexts the
+mmu.hidd can take pages which are unmapped and use them for the page tables.
+Hooks can be defined which are called when an access restriction on a page
+is violated. There is a list of hooks present in the mmu.hidd. When a hook
+gets calles it has to check if it applicable for the violation reported. If
+not it has to return false, otherwise it should handle the exception and
+return true.
+When no hook handles a certain exception the mmu.hidd internally will try to
+skip the offending instruction and let the program continue after this. Of
+course the OS is urged to (and AROS probably will) handle every exception
+generated.
+When the OS wants to change something on a context it should lock the
+context first. When everything is done it should unlock the context.
+An optimization can be done so that the page tables are only recomputed when
+the context is unlocked. Like in the mmu.library on the classic AmigaOS also
+a way to lock multiple contexts at once can be present.
+
+C Level 2: Virtual addresses
+............................
+Now the virtual address doesn't have to correspond anymore with the real
+address. Methods have to be provided for the mmu.hidd to get the amount of
+real memory on the system and the regions. Also to map/unmap a real page in
+a certain context or contexts. For hardware drivers and DMA sometimes the
+real address is needed so also methods have to be provided that translate a
+virtual address to a real address.
+
+D Level 3: Virtual memory support
+..................................
+This next level is basically the same the previous level only some additional
+flags are present for virtual memory support. First a flag which indicates if
+a page is swapped to disk or not. Other flags should help the OS to decide
+which pages to swap out. A flag should be present which indicates if a page
+is read, or is written to. The first flag can be used by the OS to decide
+which pages are accessed the least frequent and are a candidate to be swapped
+out. The second flag warns the OS when a page needs to be written to disk when
+it is swapped out. It is up the upper OS layer how often to read/clear these
+bits and what to calculate with these bits.
+Also a hook can be registered which is called when a program tries to access
+a swapped out memory region. The OS should then perform everything which is
+necessary to swap the page back in.
+Maybe this level can be joined with the previous level because MMUs which
+allow for virtual addresses I think will also implement virtual memory
+support. From the other side maybe an AROS version on a FPGA may only want
+to implement level 2 and not level 3. Comments wanted.
+
+E Security support
+..................
+Until now only features are present to make it possible to protect accesses
+from unprivileged regions. No provisions were taken to protect against
+malicious code. Code that on purpose wants to mix up things can do so.
+To prevent this some more hooks need to be added. These hooks are called 
+everytime before something wants to be changed on a context. So everytime
+code wants to change access restrictions, create a new context, switch
+contexts or something else to OS can intervene and not allow the change and
+even kill the offending program. When the kernel OS starts up it creates a
+context with the appropiate hooks so from then on everything can be secured.
+This security support can be optionally implemented when a mmu.hidd
+implements level 1, 2 or 3 support.
+So a mmu.hidd can implement the following support:
+- level 0
+- level 1 without security
+- level 1 with security
+- level 2 without security
+- level 2 with security
+- level 3 without security
+- level 3 with security
+Of course always the same level with security will be (somewhat) slower than
+the one without security.
