@@ -47,7 +47,7 @@ for src in $* ; do
 	if [ ! -e "$log" -o "$src" -nt "$log" ]; then
 	    echo "Regenerating $log"
 	    cvs log "$src" | gawk -f "$CURDIR/cvslog2html.gawk" > "$log"
-	    sleep 1
+	    sleep 2
 	fi
 	touch "$log"
 	echo "Regenerating $html"
