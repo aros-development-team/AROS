@@ -66,7 +66,7 @@ void _Exec_Permit(struct ExecBase * SysBase)
 	Task switches are allowed again, if a switch is pending, we
 	should allow it.
     */
-    if(    ( --SysBase->TDNestCnt < 0 )
+    if(    ( --SysBase->TDNestCnt < 1 )
 	&& ( SysBase->IDNestCnt < 0 )
 	&& ( SysBase->AttnResched & 0x80 ) )
     {
@@ -80,4 +80,4 @@ void _Exec_Permit(struct ExecBase * SysBase)
     }
 
     AROS_LIBFUNC_EXIT
-} /* Forbid() */
+} /* Permit() */
