@@ -16,6 +16,9 @@
 
 #include <proto/exec.h>
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include "datatypes_intern.h"
 #include "libdefs.h"
 
@@ -51,7 +54,7 @@ static const char version[]=VERSION_STRING;
 
 static const APTR inittabl[4] =
 {
-    (APTR)sizeof(LIBBASETYPE),
+    (APTR)sizeof(struct DataTypesBase),
     (APTR)LIBFUNCTABLE,
     NULL,
     &INIT
@@ -178,7 +181,9 @@ AROS_LH1(struct DataTypesBase *, open,
 						  OC_BuiltInLanguage,
 						  "english", TAG_DONE);
 
+kprintf("datatypes_init/open() 1: utilitybase = %x\n", UtilityBase);
 	DataTypesBase->dtb_DTList = GetDataTypesList(DataTypesBase);
+kprintf("datatypes_init/open() 2: utilitybase = %x\n", UtilityBase);
 
 	if(!InstallClass((struct Library *)DataTypesBase))
 	{
@@ -189,6 +194,8 @@ AROS_LH1(struct DataTypesBase *, open,
     /* What else do we have to do? */
     DataTypesBase->dtb_LibNode.lib_OpenCnt++;
     DataTypesBase->dtb_LibNode.lib_Flags &= ~LIBF_DELEXP;
+
+kprintf("datatypes_init/open() 3: utilitybase = %x\n", UtilityBase);
 
     return DataTypesBase;
     AROS_LIBFUNC_EXIT

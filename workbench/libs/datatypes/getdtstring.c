@@ -92,7 +92,7 @@ struct StringDef __dtStrings[]=
        (GPB(DataTypesBase)->dtb_LibsCatalog != NULL))
 	str = GetCatalogStr(GPB(DataTypesBase)->dtb_LibsCatalog, id, NULL);
    
-    if(str != NULL)
+    if(str == NULL)
     {
 	for(sd = __dtStrings; sd->sd_String; sd++)
 	{

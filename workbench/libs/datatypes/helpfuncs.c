@@ -148,42 +148,55 @@ struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
 				     struct Library *DataTypesBase)
 {
     struct CompoundDatatype *cdt = NULL;
+
+kprintf("ExamineLock: 1\n");
     
     ObtainSemaphoreShared(&getDTLIST->dtl_Lock);
+
+kprintf("ExamineLock: 2\n");
     
     if(Examine(lock, fib))
     {
+kprintf("ExamineLock: 31\n");
 	if (fib->fib_DirEntryType > 0)
 	{
+kprintf("ExamineLock: 4\n");
 	    cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, 
 							    &getDTLIST->dtl_MiscList,
 							    "directory");
+kprintf("ExamineLock: 5\n");
 	}
 	else
 	{
+kprintf("ExamineLock: 6\n");
 	    if (fib->fib_DirEntryType < 0)
 	    {
 		UBYTE namebuf[510];
 		
+kprintf("ExamineLock: 7\n");
 		if (NameFromLock(lock, namebuf, sizeof(namebuf)))
 		{
 		    BPTR file;
 		    
+kprintf("ExamineLock: 8\n");
 		    if((file = NewOpen(DataTypesBase, namebuf, DTST_FILE, 0)))
 		    {
 			UBYTE *CheckArray;
 			UWORD CheckSize = (getDTLIST->dtl_LongestMask > 64) ?
 			    getDTLIST->dtl_LongestMask : 64;
 			
+kprintf("ExamineLock: 10\n");
 			if((CheckArray = AllocVec((ULONG)(CheckSize)+1,
 						  MEMF_CLEAR)))
 			{
+kprintf("ExamineLock: 11\n");
 			    if((CheckSize = Read(file, CheckArray, 
 						 (ULONG)CheckSize)) > 0)
 			    {
 				struct DTHookContext dthc;
 				struct IFFHandle *iff;
 				
+kprintf("ExamineLock: 12\n");
 				Seek(file, 0, OFFSET_BEGINNING);
 				
 				dthc.dthc_SysBase = (struct Library *)SysBase;
@@ -195,16 +208,21 @@ struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
 				dthc.dthc_FileHandle = file;
 				dthc.dthc_Buffer = CheckArray;
 				dthc.dthc_BufferLength = CheckSize;
+kprintf("ExamineLock: 13 iffparsebase = %x\n", IFFParseBase);
 				
 				if(!(iff=dthc.dthc_IFF = AllocIFF()))
 				    SetIoErr(ERROR_NO_FREE_STORE);
 				else
 				{
+kprintf("ExamineLock: 14 iff = %x dthc_iff = %x\n", iff, dthc.dthc_IFF);
 				    iff->iff_Stream = (IPTR)file;   /* Hmm? */
+kprintf("ExamineLock: 15 iff = %x dthc_iff = %x\n", iff, dthc.dthc_IFF);
 				    InitIFFasDOS(iff);
+kprintf("ExamineLock: 16 iff = %x dthc_iff = %x\n", iff, dthc.dthc_IFF);
 				    
 				    if (!OpenIFF(iff, IFFF_READ))
 				    {
+kprintf("ExamineLock: 17 iff = %x dthc_iff = %x\n", iff, dthc.dthc_IFF);
 					cdt = ExamineData(DataTypesBase,
 							  &dthc,
 							  CheckArray,
@@ -212,10 +230,14 @@ struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
 							  fib->fib_FileName,
 							  fib->fib_Size);
 					
+kprintf("ExamineLock: 18 iff = %x dthc_iff = %x\n", iff, dthc.dthc_IFF);
 					CloseIFF(iff);
+kprintf("ExamineLock: 19 iff = %x dthc_iff = %x\n", iff, dthc.dthc_IFF);
 				    }
+kprintf("ExamineLock: 19_1: iff = %x cdt = %x iffparsebase = %x\n", dthc.dthc_IFF, cdt, IFFParseBase);
 				    
-				    FreeIFF(dthc.dthc_IFF);
+				    FreeIFF(iff); /* AROS BUG FIX: was dthc.dthc_IFF) */
+kprintf("ExamineLock: 20\n");
 				}
 			    }
 			    FreeVec(CheckArray);

@@ -2,11 +2,19 @@
 #ifndef INTUITION_CLASSES_H
 #   include <intuition/classes.h>
 #endif
+#ifndef INTUITION_INTUITION_H
+#   include <intuition/intuition.h>
+#endif
 
 #ifndef DataTypesBase
 extern struct Library * DataTypesBase;
 #endif
 
 ULONG GetDTAttrs (Object * o, Tag tag1, ...);
+ULONG SetDTAttrs (Object * o, struct Window * win, struct Requester *req, Tag tag1, ...);
+Object * NewDTObject (APTR name, Tag tag1, ...);
+void RefreshDTObject (Object * o, struct Window * win, struct Requester *req, Tag tag1, ...);
+void RefreshDTObjects (Object * o, struct Window * win, struct Requester *req, Tag tag1, ...);
+
 
 ##end clib

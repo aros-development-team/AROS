@@ -60,10 +60,10 @@ void DrawBox(struct Library *DataTypesBase, struct RastPort *rp,
 *
 */
 
-ULONG SetAttributes(struct Library *DataTypesBase, Class *class, Object *object,
+IPTR SetAttributes(struct Library *DataTypesBase, Class *class, Object *object,
 		    Msg msg)
 {
-    ULONG result = 0;
+    IPTR result = 0;
     struct DTObject *dto = INST_DATA(class, object);
     struct DTSpecialInfo *dtsi = ((struct Gadget *)object)->SpecialInfo;
    
@@ -267,13 +267,16 @@ ULONG SetAttributes(struct Library *DataTypesBase, Class *class, Object *object,
 *
 */
 
-ULONG Dispatcher(Class *class, Object *object, Msg msg)
+AROS_UFH3(IPTR, Dispatcher,
+	  AROS_UFHA(Class *, class, A0),
+	  AROS_UFHA(Object *, object, A2),
+	  AROS_UFHA(Msg, msg, A1))
 {
     struct DataTypesBase *DataTypesBase = (struct DataTypesBase *)class->cl_UserData;
     struct DTObject *dto = INST_DATA(class,object);
     struct DTSpecialInfo *dtsi = ((struct Gadget *)object)->SpecialInfo;
     
-    ULONG retval = 0;
+    IPTR retval = 0;
     
     switch(msg->MethodID)
     {
@@ -365,7 +368,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 		{
 		    SetAttributes((struct Library *)DataTypesBase, class,
 				  (Object *)newobject, msg);
-		    retval = (ULONG)newobject;
+		    retval = (IPTR)newobject;
 		}
 		else
 		    CoerceMethod(class, (Object *)newobject, OM_DISPOSE);
@@ -388,7 +391,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 	
     case OM_GET:
 	{
-	    ULONG *store = ((struct opGet *)msg)->opg_Storage;
+	    IPTR *store = ((struct opGet *)msg)->opg_Storage;
 	    retval = 1;
 	    
 	    switch(((struct opGet*)msg)->opg_AttrID)
@@ -403,27 +406,27 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 	    case DTA_TotalHoriz:    *store = dtsi->si_TotHoriz;  break;
 	    case DTA_HorizUnit:     *store = dtsi->si_HorizUnit; break;
 		
-	    case DTA_PrinterProc:   *store = (ULONG)dto->dto_PrinterProc; break;
-	    case DTA_LayoutProc:    *store = (ULONG)dto->dto_LayoutProc;  break;
+	    case DTA_PrinterProc:   *store = (IPTR)dto->dto_PrinterProc; break;
+	    case DTA_LayoutProc:    *store = (IPTR)dto->dto_LayoutProc;  break;
 		
-	    case DTA_Name:          *store = (ULONG)dto->dto_Name;     break;
+	    case DTA_Name:          *store = (IPTR)dto->dto_Name;     break;
 	    case DTA_SourceType:    *store = dto->dto_SourceType;      break;
-	    case DTA_Handle:        *store = (ULONG)dto->dto_Handle;   break;
-	    case DTA_DataType:      *store = (ULONG)dto->dto_DataType; break;
-	    case DTA_Domain:        *store = (ULONG)&dto->dto_Domain;  break;
+	    case DTA_Handle:        *store = (IPTR)dto->dto_Handle;   break;
+	    case DTA_DataType:      *store = (IPTR)dto->dto_DataType; break;
+	    case DTA_Domain:        *store = (IPTR)&dto->dto_Domain;  break;
 		
-	    case DTA_ObjName:       *store = (ULONG)dto->dto_ObjName;       break;
-	    case DTA_ObjAuthor:     *store = (ULONG)dto->dto_ObjAuthor;     break;
-	    case DTA_ObjAnnotation: *store = (ULONG)dto->dto_ObjAnnotation; break;
-	    case DTA_ObjCopyright:  *store = (ULONG)dto->dto_ObjCopyright;  break;
-	    case DTA_ObjVersion:    *store = (ULONG)dto->dto_ObjVersion;    break;
+	    case DTA_ObjName:       *store = (IPTR)dto->dto_ObjName;       break;
+	    case DTA_ObjAuthor:     *store = (IPTR)dto->dto_ObjAuthor;     break;
+	    case DTA_ObjAnnotation: *store = (IPTR)dto->dto_ObjAnnotation; break;
+	    case DTA_ObjCopyright:  *store = (IPTR)dto->dto_ObjCopyright;  break;
+	    case DTA_ObjVersion:    *store = (IPTR)dto->dto_ObjVersion;    break;
 	    case DTA_ObjectID:      *store = dto->dto_ObjectID;             break;
 	    case DTA_UserData:      *store = dto->dto_UserData;             break;
-	    case DTA_FrameInfo:     *store = (ULONG)&dto->dto_FrameInfo;    break;
+	    case DTA_FrameInfo:     *store = (IPTR)&dto->dto_FrameInfo;    break;
 		
 	    case DTA_SelectDomain:
 		if (dtsi->si_Flags & DTSIF_HIGHLIGHT)
-		    *store = (ULONG)&dto->dto_SelectDomain;
+		    *store = (IPTR)&dto->dto_SelectDomain;
 		else
 		    *store = NULL;
 		break;
@@ -479,7 +482,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 			SetDrMd(rp, COMPLEMENT);
 			SetAPen(rp, -1);
 			
-			GetAttr(DTA_Domain, object, (ULONG *)&domain);
+			GetAttr(DTA_Domain, object, (IPTR *)&domain);
 			
 			hunit = (dtsi->si_HorizUnit) ? (dtsi->si_HorizUnit) : 1;
 			vunit = (dtsi->si_VertUnit ) ? (dtsi->si_VertUnit ) : 1;
@@ -501,7 +504,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 					{
 					    struct IBox *sdomain;
 					    
-					    if(GetAttr(DTA_SelectDomain, object, (ULONG *)&sdomain))
+					    if(GetAttr(DTA_SelectDomain, object, (IPTR *)&sdomain))
 					    {
 						if(sdomain)
 						{

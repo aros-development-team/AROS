@@ -68,18 +68,24 @@
     AROS_LIBFUNC_INIT
 
     struct CompoundDatatype *cdt = NULL;
+
+kprintf("obtaindatatype: 1\n");
    
     ObtainSemaphoreShared(&(GPB(DataTypesBase)->dtb_DTList->dtl_Lock));
+kprintf("obtaindatatype: 2\n");
     
     switch(type)
     {
     case DTST_FILE:
 	{
 	    struct FileInfoBlock *fib;
+kprintf("obtaindatatype: 3\n");
 
 	    if((fib = AllocDosObject(DOS_FIB, TAG_DONE)) != NULL)
 	    {
+kprintf("obtaindatatype: 4\n");
 		cdt = ExamineLock((BPTR)handle, fib, DataTypesBase);
+kprintf("obtaindatatype: 5\n");
 		FreeDosObject(DOS_FIB, fib);
 	    }
 	    break;
@@ -145,6 +151,7 @@
     
     if(IoErr() == ERROR_OBJECT_NOT_FOUND)
 	SetIoErr(DTERROR_COULDNT_OPEN);
+kprintf("obtaindatatype: done\n");
     
     return (struct DataType *)cdt;
     

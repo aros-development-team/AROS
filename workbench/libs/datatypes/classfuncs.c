@@ -3,7 +3,10 @@
 #include <intuition/classusr.h>
 #include "datatypes_intern.h"
 
-extern ULONG Dispatcher(Class *class, Object *object, Msg msg);
+AROS_UFP3(IPTR, Dispatcher,
+	  AROS_UFHA(Class *, class, A0),
+	  AROS_UFHA(Object *, object, A2),
+	  AROS_UFHA(Msg, msg, A1));
 
 BOOL InstallClass(struct Library *DataTypesBase)
 {
@@ -14,8 +17,8 @@ BOOL InstallClass(struct Library *DataTypesBase)
 						    sizeof(struct DTObject),
 						    0)))
     {
-	GPB(DataTypesBase)->dtb_DataTypesClass->cl_Dispatcher.h_Entry = (ULONG (*)())&Dispatcher;
-	GPB(DataTypesBase)->dtb_DataTypesClass->cl_UserData = (ULONG)DataTypesBase;
+	GPB(DataTypesBase)->dtb_DataTypesClass->cl_Dispatcher.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(Dispatcher);
+	GPB(DataTypesBase)->dtb_DataTypesClass->cl_UserData = (IPTR)DataTypesBase;
 	
 	AddClass(GPB(DataTypesBase)->dtb_DataTypesClass);
 	
