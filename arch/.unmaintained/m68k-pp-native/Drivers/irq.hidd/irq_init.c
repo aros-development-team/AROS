@@ -40,10 +40,10 @@
 
 struct irqbase
 {
-    struct Library          library;
-    struct ExecBase         *sysbase;
-    BPTR                    seglist;
-    struct irq_staticdata   *isd;
+	struct Library          library;
+	struct ExecBase         *sysbase;
+	BPTR                    seglist;
+	struct irq_staticdata   *isd;
 };
 
 #include <libcore/libheader.c>
@@ -58,46 +58,46 @@ struct irqbase
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
-    struct irq_staticdata *isd;
+	struct irq_staticdata *isd;
 
-    D(bug("IRQ: Initializing\n"));
+	D(bug("IRQ: Initializing\n"));
 
-    isd = AllocMem( sizeof (struct irq_staticdata), MEMF_CLEAR|MEMF_PUBLIC );
-    lh->isd = isd;
-    if (isd)
-    {
-        isd->sysbase = SysBase;
-        isd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
-        if (isd->oopbase)
-        {
-            isd->utilitybase = OpenLibrary(UTILITYNAME, 37);
-            if (isd->utilitybase)
-            {
-                int i;
+	isd = AllocMem( sizeof (struct irq_staticdata), MEMF_CLEAR|MEMF_PUBLIC );
+	lh->isd = isd;
+	if (isd)
+	{
+		isd->sysbase = SysBase;
+		isd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
+		if (isd->oopbase)
+		{
+			isd->utilitybase = OpenLibrary(UTILITYNAME, 37);
+			if (isd->utilitybase)
+			{
+				int i;
 		
-                /* Initialize IRQ lists */
-                for (i = 0; i < vHidd_IRQ_NumIRQ; i++)
-                {
-                    NEWLIST(&isd->irqlist[i]);
-                }
+				/* Initialize IRQ lists */
+				for (i = 0; i < vHidd_IRQ_NumIRQ; i++)
+				{
+					NEWLIST(&isd->irqlist[i]);
+				}
 		
-                isd->irqclass = init_irqclass(isd);
+				isd->irqclass = init_irqclass(isd);
 
-                if(isd->irqclass)
-                {
-		    Disable();
-//                    init_Servers(isd);	/* Initialize all known IRQ servers */
-                    Enable();		/* Turn interrupts on */
+				if(isd->irqclass)
+				{
+					Disable();
+					init_Servers(isd);	/* Initialize all known IRQ servers */
+					Enable();		/* Turn interrupts on */
 
-                    D(bug("     Init OK\n"));
-                    return TRUE;
-                }
-            }
-            CloseLibrary(isd->oopbase);
-        }
-        FreeMem(isd, sizeof (struct irq_staticdata));
-    }
-    return FALSE;
+					D(bug("	 Init OK\n"));
+					return TRUE;
+				}
+			}
+			CloseLibrary(isd->oopbase);
+		}
+		FreeMem(isd, sizeof (struct irq_staticdata));
+	}
+	return FALSE;
 }
 
 #undef SysBase

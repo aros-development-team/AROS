@@ -25,22 +25,27 @@
 #include <proto/oop.h>
 
 #include "irq.h"
+#include <aros/core.h>
+
+# define  DEBUG  1
+# include <aros/debug.h>
+
 
 #ifdef SysBase
 #undef SysBase
 #endif /* SysBase */
 
-void global_server(int cpl, struct irq_staticdata *isd, struct pt_regs *regs);
+void global_server(int cpl, void *isd, struct pt_regs *);
 
-struct irqServer timer_int = { global_server, "timer", NULL};
-struct irqServer kbd_int = { global_server, "keyboard", NULL};
-struct irqServer com1_int = { global_server, "serial 1", NULL};
-struct irqServer com2_int = { global_server, "serial 2", NULL};
-struct irqServer floppy_int = { global_server, "floppy", NULL};
-struct irqServer rtc_int = { global_server, "rtc", NULL};
-struct irqServer mouse_int = { global_server, "ps/2 mouse", NULL};
-struct irqServer ide0_int = { global_server, "ide0", NULL};
-struct irqServer ide1_int = { global_server, "ide1", NULL};
+struct irqServer timer_int    = { global_server, "timer"     , NULL};
+struct irqServer kbd_int      = { global_server, "keyboard"  , NULL};
+struct irqServer com1_int     = { global_server, "serial 1"  , NULL};
+struct irqServer com2_int     = { global_server, "serial 2"  , NULL};
+//struct irqServer floppy_int = { global_server, "floppy"    , NULL};
+struct irqServer rtc_int      = { global_server, "rtc"       , NULL};
+//struct irqServer mouse_int  = { global_server, "ps/2 mouse", NULL};
+//struct irqServer ide0_int   = { global_server, "ide0"      , NULL};
+//struct irqServer ide1_int   = { global_server, "ide1"      , NULL};
 
 void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 
@@ -51,57 +56,32 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 
 void no_action(int cpl, void *dev_id, struct pt_regs *regs, struct irq_staticdata *isd) { }
 
-//static void math_error_irq(int cpl, void *dev_id, struct pt_regs *regs, struct irq_staticdata *isd)
-//{
-//	outb(0,0xF0);
-//}
-
 //static struct irqServer irq13 = { math_error_irq, "fpu", NULL};
 
 /*
  * IRQ2 is cascade interrupt to second interrupt controller
  */
 
-static struct irqServer irq2  = { no_action, "cascade", NULL};
+//static struct irqServer irq2  = { no_action, "cascade", NULL};
 
 #define SysBase (isd->sysbase)
-
-#warning !!!!!!!!! Activate again!
-#if 0
-void irqSet(int, struct irqServer *);
-#else
-#define irqSet(x,y)
-#endif
 
 void init_Servers(struct irq_staticdata *isd)
 {
 	HIDDT_IRQ_Handler	*timer;
+	
+	irqSet(0,  &timer_int , (void *)isd, SysBase);
+//	irqSet(1,  &kbd_int   , (void *)isd, SysBase);
+//	irqSet(2,  &irq2      , (void *)isd, SysBase);
+	irqSet(3,  &com2_int  , (void *)isd, SysBase);
+	irqSet(4,  &com1_int  , (void *)isd, SysBase);
+//	irqSet(6,  &floppy_int, (void *)isd, SysBase);
+	irqSet(8,  &rtc_int   , (void *)isd, SysBase);
+//	irqSet(12, &mouse_int , (void *)isd, SysBase);
+//	irqSet(13, &irq13     , (void *)isd, SysBase);
+//	irqSet(14, &ide0_int  , (void *)isd, SysBase);
+//	irqSet(15, &ide1_int  , (void *)isd, SysBase);
 
-#warning Currently breaks here!!!! Writing into ROM!
-	timer_int.is_UserData = isd;
-	irq2.is_UserData = isd;
-	kbd_int.is_UserData = isd;
-	com1_int.is_UserData = isd;
-	com2_int.is_UserData = isd;
-	floppy_int.is_UserData = isd;
-	rtc_int.is_UserData = isd;
-	mouse_int.is_UserData = isd;
-//	irq13.is_UserData = isd;
-	ide0_int.is_UserData = isd;
-	ide1_int.is_UserData = isd;
-
-	irqSet(0, &timer_int);
-	irqSet(1, &kbd_int);
-	irqSet(2, &irq2);
-	irqSet(3, &com2_int);
-	irqSet(4, &com1_int);
-	irqSet(6, &floppy_int);
-	irqSet(8, &rtc_int);
-	irqSet(12, &mouse_int);
-//	irqSet(13, &irq13);
-	irqSet(14, &ide0_int);
-	irqSet(15, &ide1_int);
-    
 	/* Install timer interrupt */
 	timer = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
 	if (timer) {
@@ -126,7 +106,6 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	struct IntVector *iv = irq->h_Data;
 
 	AROS_GET_SYSBASE;
-
 	if (iv->iv_Code)
 	{
 		/*  Call it. I call with all these parameters for a reason.
@@ -145,6 +124,7 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 			I must supply them here. Obviously I will dummy some of these
 			though.
 		*/
+D(bug("timer_interrupt: Calling iv->iv_Code = %p\n",iv->iv_Code));
 		AROS_UFC5(void, iv->iv_Code,
 		  AROS_UFCA(ULONG, 0, D1),
 		  AROS_UFCA(ULONG, 0, A0),
@@ -152,12 +132,14 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 		  AROS_UFCA(APTR, iv->iv_Code, A5),
 		  AROS_UFCA(struct ExecBase *, hw->sysBase, A6));
 	}
-
+#if 0
 	if (--SysBase->Elapsed == 0) {
 		SysBase->SysFlags |= 0x2000;
 		SysBase->AttnResched |= 0x80;
 	}
+#endif
 }
+
 
 /*******************************************************************************
     Global Interrupt Handler
@@ -177,20 +159,23 @@ HIDDT_IRQ_Id translation_table[] = {
 	vHidd_IRQ_Serial2,
 	vHidd_IRQ_Serial1,
 /* 5 */	-1,
-	vHidd_IRQ_Floppy,
+	-1, //vHidd_IRQ_Floppy,
 /* 7 */	-1,
 	vHidd_IRQ_RTC,
 /* 9 */	-1,
 	-1,
 	-1,
-	vHidd_IRQ_Mouse,
+	-1, //vHidd_IRQ_Mouse,
 /* 13 */-1,
-	vHidd_IRQ_HDD1,
-	vHidd_IRQ_HDD2};
+	-1, //vHidd_IRQ_HDD1,
+	-1  //vHidd_IRQ_HDD2
+};
 
 
-void global_server(int cpl, struct irq_staticdata *isd, struct pt_regs *regs)
+void global_server(int cpl, void *_isd, struct pt_regs *regs)
 {
+	struct irq_staticdata * isd = (struct irq_staticdata *)_isd;
+//D(bug("In global_server for cpl %d\n",cpl));
 	if (cpl >= 0 && cpl <= 15) {
 		HIDDT_IRQ_Id          id;
 		HIDDT_IRQ_HwInfo      hwinfo;
