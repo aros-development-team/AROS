@@ -1,0 +1,5 @@
+I want to set this up as a directry for generic drivers and sceleton drivers
+that only have to be extended to work for the target architecture. This will
+be especially interesting for hidds, since they all must have the same
+methods/function just differ in their implementation. - Stefan
+
