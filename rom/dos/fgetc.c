@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  2000/11/25 09:50:22  SDuvan
+    Updated layout
+
     Revision 1.7  1998/10/20 16:44:35  hkiel
     Amiga Research OS
 
@@ -78,70 +81,81 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Get pointer to filehandle */
-    struct FileHandle *fh=(struct FileHandle *)BADDR(file);
-    LONG *result=&((struct Process *)FindTask(NULL))->pr_Result2;
-    LONG size;
+    struct FileHandle *fh = (struct FileHandle *)BADDR(file);
+
+    LONG  size;
 
     /* If the file is in write mode... */
-    if(fh->fh_Flags&FHF_WRITE)
+    if(fh->fh_Flags & FHF_WRITE)
     {
-        /* write the buffer. (In many pieces if the first one isn't enough). */
-        UBYTE *pos=fh->fh_Buf;
-        while(pos!=fh->fh_Pos)
+        /* write the buffer (in many pieces if the first one isn't enough). */
+        UBYTE  *pos = fh->fh_Buf;
+
+        while(pos != fh->fh_Pos)
         {
-            size=Write(file,pos,fh->fh_Pos-pos);
+            size = Write(file, pos, fh->fh_Pos - pos);
+
             /* An error happened? Return it. */
-            if(size<0)
+            if(size < 0)
                 return EOF;
-            pos+=size;
+
+            pos += size;
         }
+
         /* Reinit filehandle. */
-        fh->fh_Flags&=~FHF_WRITE;
-        fh->fh_Pos=fh->fh_End=fh->fh_Buf;
+        fh->fh_Flags &= ~FHF_WRITE;
+        fh->fh_Pos = fh->fh_End = fh->fh_Buf;
     }
+
     /* No normal characters left. */
-    if(fh->fh_Pos>=fh->fh_End)
+    if(fh->fh_Pos >= fh->fh_End)
     {
         /* Check for a pushed back EOF. */
-        if(fh->fh_Pos>fh->fh_End)
+        if(fh->fh_Pos > fh->fh_End)
         {
             /* Reinit filehandle and return EOF. */
-            fh->fh_Pos=fh->fh_End;
-	    *result=0;
+            fh->fh_Pos = fh->fh_End;
+	    SetIoErr(0);
+
             return EOF;
         }
         
         /* Is there a buffer? */
-        if(fh->fh_Buf==NULL)
+        if(fh->fh_Buf == NULL)
         {
             /* No. Get one. */
-            fh->fh_Buf=AllocMem(IOBUFSIZE,MEMF_ANY);
-            if(fh->fh_Buf==NULL)
+            fh->fh_Buf = AllocMem(IOBUFSIZE, MEMF_ANY);
+
+            if(fh->fh_Buf == NULL)
             {
                 /* Couldn't get buffer. Return error. */
-                *result=ERROR_NO_FREE_STORE;
+                SetIoErr(ERROR_NO_FREE_STORE);
+
                 return EOF;
             }
+
             /* Got it. Use it. */
-            fh->fh_Flags|=FHF_BUF;
-            fh->fh_Size=IOBUFSIZE;
+            fh->fh_Flags |= FHF_BUF;
+            fh->fh_Size = IOBUFSIZE;
         }
         
         /* Fill the buffer. */
-        size=Read(file,fh->fh_Buf,fh->fh_Size);
+        size = Read(file, fh->fh_Buf, fh->fh_Size);
         
         /* Prepare filehandle for data. */
-        if(size<=0)
-            size=0;
-        fh->fh_Pos=fh->fh_Buf;
-        fh->fh_End=fh->fh_Buf+size;
+        if(size <= 0)
+            size = 0;
+
+        fh->fh_Pos = fh->fh_Buf;
+        fh->fh_End = fh->fh_Buf + size;
         
         /* No data read? Return EOF. */
-        if(!size)
+        if(size == 0)
             return EOF;
     }
     
     /* All OK. Get data. */
     return *fh->fh_Pos++;
+
     AROS_LIBFUNC_EXIT
 } /* FGetC */

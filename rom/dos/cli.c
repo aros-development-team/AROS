@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  2000/11/25 09:50:22  SDuvan
+    Updated layout
+
     Revision 1.7  1998/10/20 16:44:29  hkiel
     Amiga Research OS
 
@@ -71,9 +74,10 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Get pointer to process structure */
-    struct Process *me=(struct Process *)FindTask(NULL);
+    struct Process *me = (struct Process *)FindTask(NULL);
 
     /* Nothing spectacular */
     return (struct CommandLineInterface *)BADDR(me->pr_CLI);
+
     AROS_LIBFUNC_EXIT
 } /* Cli */
