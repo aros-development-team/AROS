@@ -30,5 +30,62 @@ Open questions: Will this interfere with the way Exec handles libraries now
 locking of the exec library list ? What happens if |libClose()| calls
 |libExpunge()| ?
 
+
+\item By Nils Henrik Lorentzen:
+Extend on the datatypes concept. Some datatypes-alike system where
+dataprocessing methods can be added to datatype classes. (Eg. for pictures
+one could add methods like |Rotate()|, |Flip()| and other typical image
+processing operators. Similarly one can add sound fx methods for sound data).
+For this to be usefull one should probably be able to add methods
+to a class one by one (so BOOPSI can probably not be used for this).
+
+The objects should contain the data in a raw format so that the methods
+can easily operate on it. One should be able to stream data in and out
+of the objects. One could have separate "converter objects" that
+can convert from a data format (eg. GIF->internal raw image format
+and back eg. raw->GIF.) So when you want to put a GIF file into
+a image object the system will automatically search for installed
+gif->internal raw converters and convert the GIF into a stream of
+raw image data passed to the image object.
+
+These data objects should of course have methods like |Show()|
+and |Edit()|. |Edit()| could invoke your favourite
+texteditor/paintprogram/drawprogram/etc depending on the
+object type. (text/image/structured drawing).
+
+Now, should these objects be able to show themselves,
+like the old datatypes ? Well, IMO they should not be bound to
+a single operating system/GUI system, but they could maybe show 
+themselves through some RTG system (?). 
+But the viewer could also stream out the data from
+the object to show. When the object's data has changed, the
+viewer could be notified and where in the stream the "damaged" data is.
+(If a text viewer GUI views the first 100 lines of a 100000 line
+text data object, and the last 100 lines are changed, it wouldn't
+need to rerender).
+
+As mentioned earlier one should be able to use this system
+on different OSes, and it should maybe also be possible to
+invoke methods on them over a network or even move the objects
+in a network (using CORBA ?). This way a heavy operation on
+the data object can be done on a faster machine while you are
+controlling it from a slower machine.
+
+By keeping functionality into small components, 3rd party
+programmers can easily write freeware additional functionality.
+(One can add methods operating on the data one at a time.)
+It will provide very much reuse of code. (Just look around on
+Aminet: There are whole bunch of different image processing
+programs that implement the same functionality. This
+should really only have to be written once).
+If the system can work on other platforms too, we get even
+more developers that can support it.
+
+I believe that if some system should have any chance at all
+of taking some market share from M$ it  a) has to be free.
+b) must be available on as many platforms as possible. c) must consist 
+of tiny components that can be added at run-time.=>This way it'll be 
+easier for developers to support it.
+
 \end{itemize}
 \end{new}
