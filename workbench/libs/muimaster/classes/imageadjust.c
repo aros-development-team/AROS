@@ -31,6 +31,8 @@ extern struct Library *MUIMasterBase;
 struct MUI_ImageadjustData
 {
     Object *bitmap_string;
+    Object *bitmap_image;
+    struct Hook bitmap_hook;
 
     Object *pattern_image[18];
     ULONG last_pattern_selected;
@@ -48,6 +50,21 @@ struct MUI_ImageadjustData
     char *imagespec;
     LONG adjust_type;
 };
+
+
+static void Bitmap_Function(struct Hook *hook, Object *obj, APTR msg)
+{
+    struct MUI_ImageadjustData *data = *(struct MUI_ImageadjustData **)msg;
+    char buf[255];
+    STRPTR name;
+    
+    get(data->bitmap_string, MUIA_String_Contents, &name);
+    if (name && strlen(name) > 0)
+    {
+	snprintf(buf, 255, "5:%s", name);
+	set(data->bitmap_image, MUIA_Image_Spec, (IPTR)buf);
+    }
+}
 
 
 static VOID Pattern_Select_Function(struct Hook *hook, Object *obj, void **msg)
@@ -215,6 +232,7 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct MUI_ImageadjustData *da
 
 	case	'5':
 		set(data->bitmap_string,MUIA_String_Contents,s+2);
+		Bitmap_Function(NULL, obj, &data);
 		if (data->adjust_type == MUIV_Imageadjust_Type_All)
 		    set(obj,MUIA_Group_ActivePage,4);
 		else
@@ -233,7 +251,6 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct MUI_ImageadjustData *da
     }
 }
 
-
 /**************************************************************************
  OM_NEW
 **************************************************************************/
@@ -248,6 +265,8 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     Object *pattern_group = NULL;
     Object *vector_group = NULL;
     Object *bitmap_string = NULL;
+    Object *bitmap_image = NULL;
+    Object *bitmap_popasl = NULL;
     Object *external_list = NULL;
     char *spec = NULL;
     LONG i;
@@ -276,10 +295,18 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     if (adjust_type == MUIV_Imageadjust_Type_All ||
 	adjust_type == MUIV_Imageadjust_Type_Background)
     {
-	bitmap_group = PopaslObject,
-	    MUIA_Popstring_String, bitmap_string =
-	    StringObject, StringFrame, MUIA_CycleChain, 1, End,
-	    MUIA_Popstring_Button, PopButton(MUII_PopFile),
+	bitmap_group = VGroup,
+	    Child, bitmap_image = ImageObject,
+	        TextFrame,
+	        InnerSpacing(4,4),
+	        MUIA_Image_FreeHoriz, TRUE,
+	        MUIA_Image_FreeVert, TRUE,
+	        End,
+	    Child, bitmap_popasl = PopaslObject,
+	        MUIA_Popstring_String, bitmap_string =
+	        StringObject, StringFrame, MUIA_CycleChain, 1, End,
+	        MUIA_Popstring_Button, PopButton(MUII_PopFile),
+	        End,
 	    End;
     }
 
@@ -384,8 +411,16 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	} /* if (adjust_type != MUIV_Imageadjust_Type_Background) */
 
 	if (adjust_type != MUIV_Imageadjust_Type_Image)
+	{
 	    data->bitmap_string = bitmap_string;
-
+	    data->bitmap_image = bitmap_image;
+	    data->bitmap_hook.h_Entry = HookEntry;
+	    data->bitmap_hook.h_SubEntry = (APTR)Bitmap_Function;
+	    DoMethod(bitmap_popasl, MUIM_Notify, MUIA_Popasl_Active, FALSE,
+		     (IPTR)obj, 3, MUIM_CallHook, (IPTR)&data->bitmap_hook, (IPTR)data);
+	    DoMethod(bitmap_string, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+		     (IPTR)obj, 3, MUIM_CallHook, (IPTR)&data->bitmap_hook, (IPTR)data);
+	}
     } /* if (adjust_type != MUIV_Imageadjust_Type_Pen) */
 
     /* parse initial taglist */
@@ -407,7 +442,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	data->external_display_hook.h_SubEntry = (HOOKFUNC)Imageadjust_External_Display;
 	set(data->external_list,MUIA_List_DisplayHook, &data->external_display_hook);
     }
-    /* Because we have many childs, we disbale the forwarding of the notify method */
+    /* Because we have many childs, we disable the forwarding of the notify method */
     DoMethod(obj, MUIM_Group_DoMethodNoForward, MUIM_Notify, MUIA_Group_ActivePage, 4, (IPTR)obj, 1, MUIM_Imageadjust_ReadExternal);
 
     Imageadjust_SetImagespec(obj,data,spec);
