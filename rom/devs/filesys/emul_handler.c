@@ -658,7 +658,7 @@ AROS_LH2(struct emulbase *, init,
     if (!BOOPSIBase)
 	return NULL;
 
-    emulbase->unixio = NewObjectA (NULL, UNIXIOCLASS, tags);
+    emulbase->unixio = NewObjectA (NULL, UNIXIOCLASS, (struct TagItem *)tags);
 
     if (!emulbase->unixio)
     {
