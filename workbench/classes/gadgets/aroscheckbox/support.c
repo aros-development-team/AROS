@@ -27,7 +27,8 @@ void drawdisabledpattern(struct CBBase_intern *AROSCheckboxBase,
     rport->AreaPtrn = disabledpattern;
     rport->AreaPtSz = 1;
     RectFill(rport, left, top, left+width-1, top+height-1);
-#warning FIXME: drawdisabledpattern
+
+#warning FIXME: drawdisabledpattern ??? Fix what?
     /*FIXME    for (y=0; y<(height-1); y++)
     {
         for (x=0; x<(width-1); x++)
@@ -52,44 +53,47 @@ void drawdisabledpattern(struct CBBase_intern *AROSCheckboxBase,
 }
 
 
-
 struct TextFont *preparefont(struct CBBase_intern *AROSCheckboxBase,
 			     struct RastPort *rport, struct IntuiText *itext,
 			     struct TextFont **oldfont)
 {
     struct TextFont *font;
 
-    if (itext->ITextFont)
+    if(itext->ITextFont)
     {
 	*oldfont = rport->Font;
 	font = OpenFont(itext->ITextFont);
-	if (font)
+	if(font != NULL)
 	{
 	    SetFont(rport, font);
-#warning FIXME:
-	    /* SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff) FIXME */
-	} else
+	    SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff);
+	}
+	else
 	    font = rport->Font;
-    } else
+    }
+    else
     {
 	*oldfont = NULL;
 	font = rport->Font;
     }
+
     SetABPenDrMd(rport, itext->FrontPen, itext->BackPen, itext->DrawMode);
 
     return font;
 }
 
+
 void closefont(struct CBBase_intern *AROSCheckboxBase,
 	       struct RastPort *rport,
 	       struct TextFont *font, struct TextFont *oldfont)
 {
-    if (oldfont)
+    if(oldfont)
     {
 	SetFont(rport, oldfont);
 	CloseFont(font);
     }
 }
+
 
 BOOL renderlabel(struct CBBase_intern *AROSCheckboxBase,
 		 struct Gadget *gad, struct RastPort *rport, LONG labelplace)

@@ -30,7 +30,6 @@ void drawdisabledpattern(struct MXBase_intern *AROSMutualExcludeBase,
 }
 
 
-
 struct TextFont *preparefont(struct MXBase_intern *AROSMutualExcludeBase,
 			     struct RastPort *rport, struct IntuiText *itext,
 			     struct TextFont **oldfont)
@@ -44,8 +43,7 @@ struct TextFont *preparefont(struct MXBase_intern *AROSMutualExcludeBase,
 	if (font)
 	{
 	    SetFont(rport, font);
-#warning FIXME:
-	    /* SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff) FIXME */
+	    SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff);
 	} else
 	    font = rport->Font;
     } else
@@ -58,6 +56,7 @@ struct TextFont *preparefont(struct MXBase_intern *AROSMutualExcludeBase,
     return font;
 }
 
+
 void closefont(struct MXBase_intern *AROSMutualExcludeBase,
 	       struct RastPort *rport,
 	       struct TextFont *font, struct TextFont *oldfont)
@@ -68,6 +67,7 @@ void closefont(struct MXBase_intern *AROSMutualExcludeBase,
 	CloseFont(font);
     }
 }
+
 
 BOOL renderlabel(struct MXBase_intern *AROSMutualExcludeBase,
 		 struct Gadget *gad, struct RastPort *rport,
@@ -143,5 +143,6 @@ BOOL renderlabel(struct MXBase_intern *AROSMutualExcludeBase,
             closefont(AROSMutualExcludeBase, rport, font, oldfont);
         }
     }
+
     return TRUE;
 }
