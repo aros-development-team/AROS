@@ -366,8 +366,7 @@ static int relocate
 (
     struct pheader       *ph,
     union aros_rel_entry *rel,
-    ULONG                 toreloc_idx,
-    struct DosLibrary    *DOSBase
+    ULONG                 toreloc_idx
 )
 {
     const char *contents = ph[toreloc_idx].paddr;
@@ -478,7 +477,7 @@ BPTR InternalLoadSeg_ELF_AROS
         if (sh[i].type == SHT_AROS_REL32)
         {
             sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
-            if (!sh[i].addr || !relocate(ph, sh[i].addr, sh[i].info, DOSBase))
+            if (!sh[i].addr || !relocate(ph, sh[i].addr, sh[i].info))
                 goto error;
             
             MyFree(sh[i].addr, sh[i].size);
