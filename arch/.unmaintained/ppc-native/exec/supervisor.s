@@ -1,35 +1,84 @@
-This is Supervisor function. Between lines there is exception handler part.
+/*
+    Copyright (C) 1995-1997 AROS - The Amiga Research OS
+    $Id$
 
-	push	scr
-	mflr	scr	/* save lr, so we can move it to srr0 later */
-	push	scr
+    Desc: Supervisor() - Execute some code in a priviledged environment.
+    Lang: english
+*/
+
+/*****************************************************************************
+
+    NAME
+
+	AROS_LH1(void, Supervisor,
+
+    SYNOPSIS
+	AROS_LHA(ULONG_FUNC, userFunction, A5),
+
+    LOCATION
+	struct ExecBase *, SysBase, 5, Exec)
+
+    FUNCTION
+	Supervisor will allow a short priviledged instruction sequence to
+	be called from user mode. This has very few uses, and it is probably
+	better to use any system supplied method to do anything.
+
+	The function supplied will be called as if it was a system interrupt,
+	notably this means that you must *NOT* make any system calls or
+	use any system data structures, and on certain systems you must
+	use special methods to leave the code.
+
+	The code will not be passed any parameters.
+
+    INPUTS
+	userFunc    -   The address of the code you want called in supervisor
+			mode.
+
+    RESULT
+	The code will be called.
+
+    NOTES
+	This function has completely different effects on different
+	processors and architectures.
+
+	Currently defined effects are:
+
+	Kernel                      Effect
+	-------------------------------------------------------------------
+	i386 (under emulation)      Runs the function in supervisor mode.
+				    The function MUST end with an IRET
+				    instruction. Just like on m68k.
+				    Nothing is passed via stack.
+	m68k (native)               Runs the process in supervisor mode.
+				    The process must end with an RTE
+				    instruction. It should save any
+				    registers which is uses.
+	m68k (under emulation)
+	ppc (native)                Runs the function in supervisor mode.
+				    There is no supervisor stack. The
+				    function must return with RFS
+
+    EXAMPLE
+
+    BUGS
+	You can very easily make the system unusable with this function.
+	In fact it is recommended that you do not use it at all.
+
+    SEE ALSO
+	SuperState(), UserState()
+
+    INTERNALS
+	You can do what you want with this function, even ignoring it if
+	you don't think it makes any sense. But it could be quite useful
+	to make it run something under different protection levels.
+
+	You should trust that the programmer know what they are doing :-)
+
+    HISTORY
+
+******************************************************************************/
 	/* try to cause a trap */
-_Supervisor_trp:
+.global _Supervisor_trp:
 	mfmsr	r0
-exception caused, so:
-------------------------------------------------------------------------
-exception handler
-	mfsrr0	scr
-	/* was it called from Supervisor function? (pseudocode) */
-	cmp	scr,_Supervisor_trp	/* supervisor */
-	beq	ok
-	/* was it called from Superstate function? (pseudocode) */
-	cmp	scr,_Superstate_trp	/* superstate */
-	beq	ok
-	.
-	.
-	.
-ok:
-	/* fetch the instruction that is after the one causing exception */
-	addi	scr,scr,4
-	mtlr	scr
-	blr
-exception handler
-------------------------------------------------------------------------
-next line of Supervisor  function
-	pop	scr	/* pop lr */
-	mtsrr0	scr
-	pop	scr
-	/* Jump to user procedure. It will return by rfi using value from lr */
- 	ljmp	arg0
-	/* user procedure returns by the means of rfi, so no rts */
+	/* no exception? we are in supervisor mode so continue */
+	ljmp	arg0
