@@ -67,7 +67,7 @@ $(DEST)devinfo-4.html : devinfo-4.src src2html.gawk page_header.html \
 	    page_footer.html collectcontents.sh contents2html.gawk \
 	    makefile2html.gawk
 
-$(DEST)background.html: stathtml.gawk
+$(DEST)background.html: stathtml.gawk $(HOME)/Mail/jobs
 
 $(DEST)links.html: $(TOP)/dist/AROS*.tgz
 
