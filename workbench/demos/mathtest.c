@@ -3,17 +3,20 @@
 #include <proto/dos.h>
 #include <proto/mathffp.h>
 #include <proto/mathtrans.h>
+#include <proto/mathieeesingtrans.h>
 
 #include <stdio.h>
 
 #include <exec/types.h>
 
 struct Library * MathBase;
-struct Library * MathTransBase;
+struct Library * MathtransBase;
+struct Library * MathIeeeSingTransBase;
 
 int main(int argc, char ** argv)
 {
     LONG FFPOne, FFPTwo, FFPOnehalf, FFPMinusOne, FFPNull;
+    LONG SPOne, SPTwo;
     LONG res;
 
     FFPOne	= 0x80000041UL;
@@ -21,6 +24,9 @@ int main(int argc, char ** argv)
     FFPMinusOne = 0x800000C1UL;
     FFPOnehalf	= 0x80000040UL;
     FFPNull	= 0x00000000UL;
+
+    SPOne       = 0x3f800000UL;
+    SPTwo       = 0x40000000UL;
 
 #define CHECK(func,args,cres) \
     res = func args; \
@@ -35,7 +41,7 @@ int main(int argc, char ** argv)
 	return (0);
     }
 
-    printf("Basic mathffp functionality test...\n");
+    printf("Very basic mathffp functionality test...\n");
 
     /* this should set the zero-bit*/
     CHECK(SPAbs,(0),FFPNull);
@@ -50,7 +56,7 @@ int main(int argc, char ** argv)
 
     CloseLibrary(MathBase);
 
-    if (!(MathTransBase = OpenLibrary("mathtrans.library", 0L)))
+    if (!(MathtransBase = OpenLibrary("mathtrans.library", 0L)))
     {
 	fprintf (stderr, "Couldn't open mathtrans.library\n");
 	return (0);
@@ -70,7 +76,33 @@ int main(int argc, char ** argv)
     CHECK (SPAsin,  (FFPOnehalf), 0x860a9240UL);
     CHECK (SPAcos,  (FFPOnehalf), 0x860a9241UL);
 
-    CloseLibrary(MathTransBase);
+    CloseLibrary(MathtransBase);
+
+    if (!(MathIeeeSingTransBase = OpenLibrary("mathieeesingtrans.library", 0L)))
+    {
+	printf ("Couldn't open mathieeesingtrans.library\n");
+	return (0);
+    }
+
+    printf("Very basic mathieeesingtrans functionality test...\n");
+
+
+    CHECK (IEEESPLog,   (SPTwo),      0x3f317218UL);
+    CHECK (IEEESPLog10, (SPTwo),      0x3e9a209aUL);
+    CHECK (IEEESPSin,   (SPOne),      0x3f576aa4UL);
+    CHECK (IEEESPCos,   (SPOne),      0x3f0a5140UL);
+/*    
+    CHECK (IEEESPTan,   (SPOne),      0xUL);
+*/
+    CHECK (IEEESPSinh,  (SPOne),      0x40681e7bUL);
+    CHECK (IEEESPCosh,  (SPOne),      0x4070c7d1UL);
+/*
+    CHECK (IEEESPTanh,  (SPOne),     0xc2f7d640UL);
+    CHECK (IEEESPExp,   (SPTwo),     0xec732543UL);
+    CHECK (IEEESPAsin,  (SPOnehalf), 0x860a9240UL);
+    CHECK (IEEESPAcos,  (SPOnehalf), 0x860a9241UL);
+*/
+    CloseLibrary(MathIeeeSingTransBase);
 
     return (0);
 }
