@@ -11,6 +11,13 @@ stage2/fsys_affs.c
 	added
 stage2/Makefile.am
 	added various *fsys_affs* + -DFSYS_AFFS=1
+stage2/boot.c
+stage2/builtins.c
+stage2/common.c
+	added support for setting VESA modes and passing info on them to
+	the kernel
+stage2/shared.h
+	likewise, plus affs support
 configure.in
 	added AFFS enable/disable support
 
