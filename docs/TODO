@@ -46,3 +46,5 @@ I found several places where this was wrong, and probably
 there are more.
 
 
+The random number generation function srand48(), seed48(), drand48()
+etc. have not been implemented for big endian CPUs.
