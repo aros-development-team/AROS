@@ -10,7 +10,7 @@ setup : make-dirs $(GENCONFIG_H)
 	@$(SORT) +1 $(GENDIR)/config.files -o $(GENDIR)/config.files.sort
 	@$(UNIQ) $(GENDIR)/config.files.sort $(GENDIR)/config.files
 	@$(AWK) -f $(TOP)/scripts/genreplace.gawk \
-		--assign TOP="$(TOP)" --assign GENDIR="$(GENDIR)" \
+		-v TOP="$(TOP)" -v GENDIR="$(GENDIR)" \
 		$(GENDIR)/config.files
 
 make-dirs :
