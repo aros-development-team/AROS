@@ -12,9 +12,19 @@
 #include <sys/_types.h>
 #include <sys/cdefs.h>
 
+#if __XSI_VISIBLE
+#include <unistd.h>
+#include <sys/stat.h>
+#endif
+
 #ifndef __AROS_PID_T_DECLARED
 #define __AROS_PID_T_DECLARED
 typedef __pid_t         pid_t;
+#endif
+
+#ifndef __AROS_MODE_T_DECLARED
+#define __AROS_MODE_T_DECLARED
+typedef __mode_t        mode_t;
 #endif
 
 #ifndef __AROS_OFF_T_DECLARED
@@ -89,13 +99,22 @@ typedef __off_t         off_t;
 #define F_EXLCK		4	/* or 3 */
 #define F_SHLCK		8	/* or 4 */
 
-#ifdef __USE_BSD
+#ifdef __BSD_VISIBLE
 /* operations for bsd flock(), also used by the kernel implementation */
 # define LOCK_SH	1	/* shared lock */
 # define LOCK_EX	2	/* exclusive lock */
 # define LOCK_NB	4	/* or'd with one of the above to prevent
 				   blocking */
 # define LOCK_UN	8	/* remove lock */
+#endif
+
+#if __POSIX_VERSION >= 200112
+#define POSIX_FADV_NORMAL       1
+#define POSIX_FADV_SEQUENTIAL   2
+#define POSIX_FADV_RANDOM       3
+#define POSIX_FADV_WILLNEED     4
+#define POSIX_FADV_DONTNEED     5
+#define POSIX_FADV_NOREUSE      6
 #endif
 
 struct flock
@@ -109,9 +128,16 @@ struct flock
 
 /* Prototypes */
 __BEGIN_DECLS
+
 int fcntl (int fd, int cmd, ...);
 int open  (const char * filename, int flags, ...);
 int creat (const char * filename, int mode);
+
+#if __POSIX_VERSION >= 200112
+/* NOTIMPL int posix_fadvise(int fd, off_t offset, size_t len, int advice); */
+/* NOTIMPL int posix_fallocate(int fd, off_t offset, size_t len); */
+#endif
+
 __END_DECLS
 
 #endif /* _FCNTL_H_ */

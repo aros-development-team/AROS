@@ -76,9 +76,14 @@ struct sigevent;
 
 #endif /* !_ANSI_SOURCE && _P1003_1B_VISIBLE */
 
+#if __XSI_VISIBLE
 #define __daylight (__get_arosc_userdata()->acud_daylight)
 #define __timezone (__get_arosc_userdata()->acud_timezone)
+#endif
+
+#if __POSIX_VISIBLE
 #define __tzname   (__get_arosc_userdata()->acud_tzname)
+#endif
 
 __BEGIN_DECLS
 char      *asctime(const struct tm *);
@@ -92,30 +97,34 @@ size_t     strftime(char *, size_t, const char *, const struct tm *);
 time_t     time(time_t *);
 
 #if !defined(_ANSI_SOURCE)
-void       tzset(void);
+/* NOTIMPL void       tzset(void); */
 #endif
 
-#if !defined(_ANSI_SOURCE) && !defined(_POSIX_SOURCE)
-char      *asctime_r(const struct tm *, char *);
-char      *ctime_r(const time_t *, char *);
-struct tm *getdate(const char *);
-struct tm *gmtime_r(const time_t *, struct tm *);
-struct tm *localtime_r(const time_t *, struct tm *);
-char      *strptime(const char *, const char *, struct tm *);
-#endif /* !_ANSI_SOURCE && !_POSIX_SOURCE */
+#if __POSIX_VISIBLE >= 199506
+/* NOTIMPL char      *asctime_r(const struct tm *, char *); */
+/* NOTIMPL char      *ctime_r(const time_t *, char *); */
+/* NOTIMPL struct tm *gmtime_r(const time_t *, struct tm *); */
+/* NOTIMPL struct tm *localtime_r(const time_t *, struct tm *); */
+#endif
 
-#if !defined(_ANSI_SOURCE) && defined(_P1003_1B_VISIBLE)
-int        clock_getres(clockid_t, struct timespec *);
-int        clock_gettime(clockid_t, struct timespec *);
-int        clock_settime(clockid_t, const struct timespec *);
-int        nanosleep(const struct timespec *, struct timespec *);
-int        timer_create(clockid_t, struct sigevent *, timer_t *);
-int        timer_delete(timer_t);
-int        timer_gettime(timer_t, struct itimerspec *);
-int        timer_getoverrun(timer_t);
-int        timer_settime(timer_t, int, const struct itimerspec *,
-               struct itimerspec *);
-#endif /* !_ANSI_SOURCE && _P1003_1B_VISIBLE */
+#if __XSI_VISIBLE
+/* NOTIMPL struct tm *getdate(const char *); */
+/* NOTIMPL char      *strptime(const char *, const char *, struct tm *); */
+#endif
+
+#if __POSIX_VISIBLE >= 199309
+/* NOTIMPL int        clock_getres(clockid_t, struct timespec *); */
+/* NOTIMPL int        clock_gettime(clockid_t, struct timespec *); */
+/* NOTIMPL int        clock_settime(clockid_t, const struct timespec *); */
+/* NOTIMPL int        nanosleep(const struct timespec *, struct timespec *); */
+
+/* NOTIMPL int        timer_create(clockid_t, struct sigevent *, timer_t *); */
+/* NOTIMPL int        timer_delete(timer_t); */
+/* NOTIMPL int        timer_gettime(timer_t, struct itimerspec *); */
+/* NOTIMPL int        timer_getoverrun(timer_t); */
+/* NOTIMPL int        timer_settime(timer_t, int, const struct itimerspec *,
+               struct itimerspec *); */
+#endif
 
 __END_DECLS
 

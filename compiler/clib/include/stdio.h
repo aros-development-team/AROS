@@ -22,12 +22,7 @@ typedef __off_t fpos_t;
     We are supposed to declare it, without including the file.
     This is too compiler specific to handle at the moment.
 */
-#if 0
-#ifdef	_AROS_VA_LIST_
-typedef	_AROS_VA_LIST_	va_list;
-#undef	_AROS_VA_LIST_
-#endif
-#else
+#if __XSI_VISIBLE
 #include <stdarg.h>
 #endif
 
@@ -47,9 +42,15 @@ typedef	_AROS_VA_LIST_	va_list;
 #define FILENAME_MAX	256		/* Amiga files are 256 */
 #define FOPEN_MAX	16		/* Must be > 8 */
 #define TMP_MAX		10240		/* Must be > 10000 */
-#define P_tmpdir	"T:"		/* Default temporary path */
 #define L_tmpnam	FILENAME_MAX	/* Max temporary filename */
+
+#if !defined(_ANSI_SOURCE)
 #define L_ctermid	FILENAME_MAX	/* Max filename for controlling tty */
+#endif
+
+#if __XSI_VISIBLE
+#define P_tmpdir	"T:"		/* Default temporary path */
+#endif
 
 #ifndef __typedef_FILE
 #   define __typedef_FILE
@@ -81,7 +82,7 @@ __BEGIN_DECLS
 
 int remove(const char *filename);
 int rename(const char *from, const char *to);
-FILE *tmpfile(void);
+/* NOTIMPL FILE *tmpfile(void); */
 char *tmpnam(char *s);
 int fclose(FILE *stream);
 int fflush(FILE *stream);
@@ -153,38 +154,43 @@ void updatestdio(void);
 #define gets(s)         fgets(s, BUFSIZ, stdin)
 
 #if !defined(_ANSI_SOURCE)
-FILE *fdopen (int filedes, const char *mode);
-
 /* Unix Specific */
-void     perror(const char *);
-char    *tempnam(const char *, const char *);
-FILE    *tmpfile(void);
-char    *tmpnam(char *);
-
+FILE    *fdopen (int filedes, const char *mode);
+int	 fileno(FILE *);
 int      pclose(FILE *);
 FILE    *popen(const char *, const char *);
-int	 fileno(FILE *);
+/* NOTIMPL FILE    *tmpfile(void); */
+char    *tmpnam(char *);
+#endif /* !_ANSI_SOURCE */
 
-void setlinebuf(FILE *stream);
-
-#if 0
-char	*ctermid(char *);
-char	*ctermid_r(char *);
-
-void     flockfile(FILE *);
-int      ftrylockfile(FILE *);
-void     funlockfile(FILE *);
-
-int      getc_unlocked(FILE *);
-int      getchar_unlocked(void);
-int      putc_unlocked(int, FILE *);
-int      putchar_unlocked(int);
-
-int      getw(FILE *);
-int      putw(int, FILE *);
+#if __BSD_VISIBLE
+void    setlinebuf(FILE *stream);
 #endif
 
-#endif /* !_ANSI_SOURCE */
+#if __XSI_VISIBLE
+/* NOTIMPL char    *tempnam(const char *, const char *); */
+#endif
+
+#if __POSIX_VISIBLE
+/* NOTIMPL char	*ctermid(char *); */
+/* NOTIMPL char	*ctermid_r(char *); */
+#endif
+
+#if __POSIX_VISIBLE >= 200112
+/* NOTIMPL void     flockfile(FILE *); */
+/* NOTIMPL int      ftrylockfile(FILE *); */
+/* NOTIMPL void     funlockfile(FILE *); */
+
+/* NOTIMPL int      getc_unlocked(FILE *); */
+/* NOTIMPL int      getchar_unlocked(void); */
+/* NOTIMPL int      putc_unlocked(int, FILE *); */
+/* NOTIMPL int      putchar_unlocked(int); */
+#endif
+
+#if __BSD_VISIBLE || __XSI_VISIBLE > 0 && __XSI_VISIBLE < 600
+/* NOTIMPL int      getw(FILE *); */
+/* NOTIMPL int      putw(int, FILE *); */
+#endif
 
 __END_DECLS
 

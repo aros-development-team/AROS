@@ -38,17 +38,15 @@ __BEGIN_DECLS
 int	setjmp (jmp_buf env);
 void	longjmp (jmp_buf env, int val) __noreturn ;
 
-#if !defined(_ANSI_SOURCE)
+#if __BSD_VISIBLE || __POSIX_VISIBLE || __XSI_VISIBLE
 /* Unix functions */
-void   siglongjmp(sigjmp_buf, int) __noreturn ;
-int    sigsetjmp(sigjmp_buf, int);
+/* NOTIMPL void   siglongjmp(sigjmp_buf, int) __noreturn ; */
+/* NOTIMPL int    sigsetjmp(sigjmp_buf, int); */
 
-#if !defined(_POSIX_SOURCE)
-void	_longjmp(jmp_buf, int) __noreturn ;
-int	_setjmp(jmp_buf);
-#endif
+/* NOTIMPL void	_longjmp(jmp_buf, int) __noreturn ; */
+/* NOTIMPL int	_setjmp(jmp_buf); */
 
-#endif /* !_ANSI_SOURCE */
+#endif /* __BSD_VISIBLE || __POSIX_VISIBLE || __XSI_VISIBLE */
 
 __END_DECLS
 
