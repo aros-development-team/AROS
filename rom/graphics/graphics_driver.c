@@ -687,7 +687,7 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	SetAPen(rp, (UBYTE)rp->BgPen);
 	RectFill(rp, rp->cp_x + te.te_Extent.MinX,
 	    	     rp->cp_y + te.te_Extent.MinY,
-		     rp->cp_x + te.te_Extent.MaxX,
+		     rp->cp_x + te.te_Extent.MaxX - 1,
 		     rp->cp_y + te.te_Extent.MaxY);
 	SetAPen(rp, old_apen);
     }
