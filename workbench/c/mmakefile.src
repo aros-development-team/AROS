@@ -31,6 +31,7 @@ FILES	:= \
     Relabel \
     RequestChoice \
     RequestFile \
+    Search \
     Set \
     SetDate \
     Setenv \
