@@ -12,7 +12,7 @@ FILES :=
 TESTS :=
 
 #MM
-aros-amiga-m68k : $(foreach f,$(FILES),$(OBJDIR)/$(f).o) 
+kernel-aros-amiga-m68k : $(foreach f,$(FILES),$(OBJDIR)/$(f).o) 
 	@$(NOP)
 
 #MM

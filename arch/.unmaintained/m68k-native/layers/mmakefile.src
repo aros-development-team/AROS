@@ -10,7 +10,7 @@ OBJDIR         := $(OSGENDIR)/layers
 FILES := basicasmfuncs
 
 #MM
-layers-amiga-m68k : $(foreach f,$(FILES),$(OBJDIR)/$(f).o) 
+kernel-layers-amiga-m68k : $(foreach f,$(FILES),$(OBJDIR)/$(f).o) 
 	@$(NOP)
 
 #MM
