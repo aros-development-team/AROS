@@ -223,7 +223,11 @@ endif
 
 $(SLIB) : $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
+ifeq ("$(GENMAP)","")
+	@$(CC) $(ILDFLAGS) $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
+else
 	@$(CC) $(ILDFLAGS) $(GENMAP) $(LIBNAME)lib.map $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
+endif
 	@$(ECHO) "Checking $@..."
 	@$(CHECKUDS) $@ > undefdsyms.list
 	@$(IF) $(TEST) -s undefdsyms.list ; then \
@@ -398,15 +402,34 @@ endif
 ifndef ENDFUNC
 ENDFUNC := $(OBJDIR)/$(END_FILE).o
 endif
+ifndef OSMODULE
+OSMODULE := $(LIBNAME).library
+endif
 SYS_FILES := $(SYS_FILES) $(INIT_FILE) functable
 ifndef OBJS
 OBJS := $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 endif
 SYS_OBJS := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
+ifndef DEPLIBS
+DEPLIBS :=
+endif
 
 ALL_OBJS := $(SYS_OBJS) $(OBJS) $(ENDFUNC)
 
-# Collect all functions in a linklib for fast linking:
+$(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
+	    $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a)
+	@echo "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(OSMODULE).map -L$(LIBDIR) \
+	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) \
+	    -o $@ 2>&1 | tee $(OSMODULE).err
+	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else true; fi
+ifeq ($(FLAVOUR),native)
+	@strip $@
+else
+	@strip -x $@
+endif
+
+# Collect all functions in a linklib for fast linking
 $(LIB) : $(ALL_OBJS)
 	@$(ECHO) "Creating library $@..."
 	@$(AR) $@ $(ALL_OBJS)
@@ -443,7 +466,7 @@ functable.c : $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfunctable.awk \
 	@$(ECHO) "Generating $@..."
 	@$(AWK) -f $(BINDIR)/scripts/genfunctable.awk $(FUNCTABLE_SRCS) > $@
 
-endtag.c :
+$(END_FILE).c :
 	@$(ECHO) "Generating $@..."
 	@$(ECHO) "#include <libcore/libtail.c>" > $@
 
