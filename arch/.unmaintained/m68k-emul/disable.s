@@ -42,30 +42,17 @@
 	.type	AROS_SLIB_ENTRY(Disable,Exec),@function
 
 AROS_SLIB_ENTRY(Disable,Exec):
-	bsr.w	AROS_CSYMNAME(disable)
+	jbsr	AROS_CSYMNAME(os_disable)
+#if !UseRegisterArgs
 	move.l	%a6,-(%sp)
 	
 	/* Get SysBase */
 	move.l	8(%sp),%a6
-	
+#endif
+
 	/* increment nesting count and return */
 	addq.b	#1,IDNestCnt(%a6)
+#if !UseRegisterArgs
 	move.l	(%sp)+,%a6
+#endif
 	rts
-
-	.globl	AROS_CDEFNAME(disable)
-	.type	AROS_CDEFNAME(disable),@function
-AROS_CDEFNAME(disable):
-	movem.l	%d0-%d1/%a0-%a1,-(%sp)
-
-	move.l	#-1,-(%sp)
-	clr.l	-(%sp)
-	pea	4(%sp)
-	move.l	#SIG_BLOCK,-(%sp)
-	jbsr	AROS_CSYMNAME(sigprocmask)
-	addq.w	#8,%sp
-	addq.w	#8,%sp
-
-	movem.l	(%sp)+,%d0-%d1/%a0-%a1
-	rts
-

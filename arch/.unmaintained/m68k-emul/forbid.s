@@ -41,16 +41,20 @@
 	.globl	AROS_SLIB_ENTRY(Forbid,Exec)
 	.type	AROS_SLIB_ENTRY(Forbid,Exec),@function
 AROS_SLIB_ENTRY(Forbid,Exec):
+#if !UseRegisterArgs
 	/* Preserve all registers */
 	move.l	%a6,-(%sp)
 
 	/* Get SysBase */
 	move.l	8(%sp),%a6
+#endif
 
 	/* Increase nesting count */
 	addq.b	#1,TDNestCnt(%a6)
 
 	/* All done */
+#if !UseRegisterArgs
 	move.l	(%sp)+,%a6
+#endif
 	rts
 

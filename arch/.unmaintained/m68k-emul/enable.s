@@ -41,48 +41,40 @@
 	.globl	AROS_SLIB_ENTRY(Enable,Exec)
 	.type	AROS_SLIB_ENTRY(Enable,Exec),@function
 AROS_SLIB_ENTRY(Enable,Exec):
+#if !UseRegisterArgs
 	/* Preserve all registers */
 	move.l	%a6,-(%sp)
 	
 	/* Get SysBase */
 	move.l	8(%sp),%a6
-	
+#endif
+
 	/* Decrement and test IDNestCnt */
 	subq.b	#1,IDNestCnt(%a6)
-	jpl	.noswch
-	bsr.w	AROS_CSYMNAME(en)
+	jbpl	.noswch
+	jbsr	AROS_CSYMNAME(os_enable)
 
 	/* return if there are no delayed switches pending. */
 	btst	#7,AttnResched+1(%a6)
-	jeq	.noswch
+	jbeq	.noswch
 
 	/* if TDNestCnt is not -1 taskswitches are still forbidden */
 	tst.b	TDNestCnt(%a6)
-	jpl	.noswch
+	jbpl	.noswch
 
 	/* Unset delayed switch bit and do the delayed switch */
 	bclr	#7,AttnResched+1(%a6)
+#if !UseRegisterArgs
 	move.l	%a6,-(%sp)
+#endif
 	jsr	Switch(%a6)
+#if !UseRegisterArgs
 	addq.w	#4,%sp
+#endif
 
 	/* all done. */
 .noswch:
+#if !UseRegisterArgs
 	move.l	(%sp)+,%a6
-	rts
-
-	.globl	AROS_CDEFNAME(en)
-	.type	AROS_CDEFNAME(en),@function
-AROS_CDEFNAME(en):
-	movem.l	%d0-%d1/%a0-%a1,-(%sp)
-
-	move.l	#-1,-(%sp)
-	clr.l	-(%sp)
-	pea	4(%sp)
-	move.l	#SIG_UNBLOCK,-(%sp)
-	jbsr	AROS_CSYMNAME(sigprocmask)
-	addq.w	#8,%sp
-	addq.w	#8,%sp
-
-	movem.l	(%sp)+,%d0-%d1/%a0-%a1
+#endif
 	rts
