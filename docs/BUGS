@@ -145,3 +145,11 @@ BUG000023
 berger@cip.e-technik.uni-erlangen.de
 Demos/sift kill the shell with a GURU-Meditation saying that memory was
 freed twice.
+
+BUG000024
+hkiel@aros.org
+The prompt of the shell does not show the complete path anymore, it just
+shows the last subdirectory of the path (ie. "Workbench:Locale/Countries"
+becomes "Countries"). This however is only on ffs_device, ram_device is okay.
+Maybe related to BUG000016.
+
