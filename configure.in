@@ -598,11 +598,19 @@ AC_MSG_RESULT("$bochs_hack")
 
 dnl See if the user wants the serial debug output for native flavour
 AC_MSG_CHECKING([if serial debug is enabled])
-AC_ARG_ENABLE(serial_debug,[  --enable-serial-debug   Enable serial debug output in native [default=no]],serial_debug="yes",serial_debug="no")
+AC_ARG_WITH(serial-debug,[  --with-serial-debug   Enable serial debug output in native [default=no]],serial_debug=$withval,serial_debug=none)
 if test "$serial_debug" = "yes" ; then
-    aros_serial_debug="2"
+    serial_debug="2"
 fi
-AC_MSG_RESULT("$serial_debug")
+if test "$serial_debug" = "no" ; then
+    serial_debug="none"
+fi
+if test "$serial_debug" != "none" ; then
+    aros_serial_debug=$serial_debug
+    AC_MSG_RESULT("on COM port $serial_debug")
+else
+    AC_MSG_RESULT("no")
+fi
 
 dnl See if the user wants the palm debug output hack for palm native flavour
 AC_MSG_CHECKING([if palm debug hack is enabled])
