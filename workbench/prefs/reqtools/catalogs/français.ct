@@ -1,0 +1,294 @@
+;
+; by Georges 'Melkor' Goncalves
+;
+## version $VER: ReqToolsPrefs.catalog 38.4 (11.12.95)
+## codeset 0
+## language français
+;
+MSG_WINDOW_TITLE
+Préférences : ReqTools
+; ReqTools Preferences
+;
+MSG_GENERAL
+Généralités
+; General
+;
+MSG_FILEREQUESTER
+Requête de fichiers
+; File Requester
+;
+MSG_SIZE
+Taille (% de la hauteur visible) :
+; Size (% of visible height):
+;
+MSG_SET
+Régler...
+; Set...
+;
+MSG_TEST
+Tester...
+; Test...
+;
+MSG_SAVE
+Sauver
+; Save
+;
+MSG_USE
+Utiliser
+; Use
+;
+MSG_CANCEL
+Annuler
+; Cancel
+;
+MSG_ABORT
+Annuler
+; Abort
+;
+MSG_OK
+Okay
+;  Ok
+;
+; * 2.7 *
+;
+MSG_INFORMATION
+Information
+; Information
+;
+MSG_PROJECT_MENU
+Projet
+; Project
+;
+MSG_PROJECT_OPEN
+O\0Ouvrir...
+; O\0Open...
+;
+MSG_PROJECT_SAVEAS
+A\0Sauver en...
+; A\0Save As...
+;
+MSG_PROJECT_ABOUT
+?\0A propos...
+; ?\0About...
+;
+MSG_PROJECT_QUIT
+Q\0Quitter
+; Q\0Quit
+;
+MSG_EDIT_MENU
+Editer
+; Edit
+;
+MSG_EDIT_RESET
+D\0Valeurs par défaut
+; D\0Reset To Defaults
+;
+MSG_EDIT_LASTSAVED
+L\0Dernières valeurs sauvées
+; L\0Last Saved
+;
+MSG_EDIT_RESTORE
+R\0Valeurs initiales
+; R\0Restore
+;
+MSG_OPTIONS_MENU
+Options
+; Options
+;
+MSG_OPTIONS_CREATEICONS
+I\0Créer icônes ?
+; I\0Create Icons?
+;
+MSG_POPSCREEN
+Passer l'écran en avant
+; Pop screen to front
+;
+MSG_IMMEDIATESORT
+Tri immédiat
+; Immediate sort
+;
+MSG_DRAWERSFIRST
+Montrer d'abord les tiroirs
+; Display drawers first
+;
+MSG_DRAWERSMIXED
+Mélanger fichiers et tiroirs
+; Mix files and drawers
+;
+MSG_LED
+LED d'activité disque
+; Disk activity LED
+;
+MSG_DEFAULTFONT
+Utiliser la police systême
+; Use system default font
+;
+MSG_FKEYS
+Utiliser touches de fonction
+; Use function keys
+;
+; * 2.5 *
+;
+MSG_DOWHEEL
+Roue colorée
+; Color wheel
+;
+; * 2.7 *
+;
+MSG_WHEEL_NONE
+No color wheel
+; No color wheel
+;
+MSG_WHEEL_SIMPLE
+Simple color wheel
+; Simple color wheel
+;
+MSG_WHEEL_FANCY
+Fancy color wheel
+; Fancy color wheel
+;
+; * 2.8 *
+;
+MSG_MMB_PARENT
+MMB gives parent
+; MMB gives parent
+;
+MSG_REQUESTER
+Défauts pour
+; Defaults for
+;
+MSG_FILEREQ
+Requête de fichiers
+; File Requester
+;
+MSG_FONTREQ
+Requête de police
+; Font Requester
+;
+MSG_PALETTEREQ
+Requête de palette
+; Palette Requester
+;
+MSG_SCRMODEREQ
+Requête de mode écran
+; Screen Mode Requester
+;
+MSG_VOLUMEREQ
+Requête de volume
+; Volume Requester
+;
+MSG_OTHERREQ
+Autres requêtes
+; Other Requesters
+;
+MSG_POSITION
+Position :
+; Position:
+;
+MSG_POINTER
+Pointeur souris
+; Mouse pointer
+;
+MSG_CENTERWIN
+Centre de la fenêtre
+; Center in window
+;
+MSG_CENTERSCR
+Centre de l'écran
+; Center on screen
+;
+MSG_TOPLEFTWIN
+Coin gauche de la fenêtre
+; Top left of window
+;
+MSG_TOPLEFTSCR
+Coin gauche de l'écran
+; Top left of screen
+;
+MSG_OFFSET
+Décalage :
+; Offset:
+;
+MSG_NR_OF_ENTRIES
+Nombre d'entrées visibles :
+; Number of visible entries:
+;
+MSG_MIN
+Minimum
+; Minimum
+;
+MSG_MAX
+Maximum
+; Maximum
+;
+MSG_YOU_NEED_REQTOOLS38
+La reqtools.library V38+ est nécessaire !
+; You need reqtools.library V38+!
+;
+MSG_WRONG_REQTOOLS_VERSION
+La version de reqtools.library que vous\n\
+possédez ne supporte pas les préférences !
+; The version of reqtools.library you have\ndoes not support preferences!
+;
+MSG_ALL_PREFS_NOT_SUPPORTED
+ATTENTION: Cette version de l'éditeur de préférences\n\
+ne supporte pas toutes les préférences de la\n\
+reqtools.library que vous avez installé !
+; WARNING: This version of the preference editor\ndoesn't support all the preferences of the\nreqtools.library you've got installed!
+;
+MSG_NO_WB_LIB
+Impossible d'ouvrir la workbench.library !
+; Couldn't open workbench.library!
+;
+MSG_NO_UTILITY_LIB
+Impossible d'ouvrir la utility.library !
+; Couldn't open utility.library!
+;
+MSG_NO_ICON_LIB
+Impossible d'ouvrir la icon.library !
+; Couldn't open icon.library!
+;
+MSG_COULDNT_LOCK_PUBSCREEN
+Impossible de vérouiller l'écran public !
+; Couldn't lock public screen!
+;
+MSG_ERROR_GETSCREENDRAWINFO
+Erreur lors de l'obtention du DrawInfo !
+; Error getting draw info!
+;
+MSG_ERROR_GETVISUALINFO
+Erreur lors de l'obtention du VisualInfo !
+; Error getting visual info!
+;
+MSG_COULDNT_OPEN_WINDOW
+Impossible d'ouvrir la fenêtre !
+; Couldn't open window!
+;
+MSG_ERROR_ACCESSING_FILE
+Erreur en accédant au fichier\n%s,\n%s
+; Error accessing file\n%s,\n%s
+;
+MSG_READ_ERROR
+Erreur de lecture !
+; Read error!
+;
+MSG_ERROR_SAVING_PREFS
+Erreur en sauvant les préférences !
+; Error saving preferences!
+;
+; * 2.7 *
+;
+MSG_ERROR_ARGS
+Argument error
+; Argument error
+;
+MSG_ERROR_LIBRARY
+Couldn't open %s\n\
+version %ld or higher!
+; Couldn't open %s\n\
+; version %ld or higher!
+;
+MSG_ERROR_MENUS
+Couldn't create menus!
+; Couldn't create menus!
+;

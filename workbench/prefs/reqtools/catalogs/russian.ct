@@ -1,0 +1,248 @@
+;**************************
+;
+;   ReqTools Preferences
+;
+;   Russian
+;
+;**************************
+;
+## version $VER: reqtoolsprefs.catalog 38.4 (26.1.97)
+## codeset 0
+## language russian
+;
+; Done by Oleg Sergeev
+;
+; *** Misc ***
+;
+MSG_WINDOW_TITLE
+Òנסaלםביח Reqtools
+;
+MSG_GENERAL
+Íאשחה
+;
+MSG_FILEREQUESTER
+Ïחיבהנסהן ףaטךםב
+;
+MSG_SIZE
+Ïaזכהן (ב % םס בחדחכםט בתנםסת)
+;
+MSG_SET
+Òנסaלםבחסû...
+;
+MSG_TEST
+Îןםאa...
+;
+MSG_SAVE
+Æaמחנû
+;
+MSG_USE
+Îןחל‏סû
+;
+MSG_CANCEL
+Íסכהלa
+;
+MSG_ABORT
+Îןהןבaסû
+;
+; Note: there are two spaces around the Ok string to make it 4 chars wide.
+MSG_OK
+ ÍÉ \
+;
+; * 2.7 *
+;
+MSG_INFORMATION
+Çלףםןכ¹ץח‏
+;
+; *** Menus ***
+;
+MSG_PROJECT_MENU
+Îןםהיס
+;
+MSG_PROJECT_OPEN
+O\0Íסיןתסû...
+;
+MSG_PROJECT_SAVEAS
+A\0Æaמחנaסû יaי...
+;
+MSG_PROJECT_ABOUT
+?\0O מןםגןaככה...
+;
+MSG_PROJECT_QUIT
+Q\0Áתפםד
+;
+MSG_EDIT_MENU
+Çזכהלחסû
+;
+MSG_EDIT_RESET
+D\0Òנס¹לםבחסû מם עכםךצ¹לח‎
+;
+MSG_EDIT_LASTSAVED
+L\0Îםנךהדל‏‏ זaמחנû
+;
+MSG_EDIT_RESTORE
+R\0Áםננסaלםבחסû
+;
+MSG_OPTIONS_MENU
+Íמץחח
+;
+MSG_OPTIONS_CREATEICONS
+I\0Ðםזדaבaסû חיםליח
+;
+; *** Switches ***
+;
+MSG_POPSCREEN
+Üיןaל במהן½ד
+;
+MSG_IMMEDIATESORT
+Ðןaזע נםןסחןםבaסû
+;
+MSG_DRAWERSFIRST
+Éaסaךםגח בלaצaךה
+;
+MSG_DRAWERSMIXED
+Áמהןהכהריע
+;
+MSG_LED
+Çלדחי¹סםן ן¹אםסת
+;
+MSG_DEFAULTFONT
+Ðסaלדaןסלתט רןחףס
+;
+; ** 2.3 **
+;
+MSG_FKEYS
+F-יךaבחרח
+;
+; ** 2.5 **
+;
+MSG_DOWHEEL
+Éםךהנם ג¹ככת
+;
+; ** 2.7 **
+;
+MSG_WHEEL_NONE
+Àהז יםךהנ¹ ג¹ככת
+;
+MSG_WHEEL_SIMPLE
+Îןםנסםה יםךהנם ג¹ככת
+;
+MSG_WHEEL_FANCY
+Îןםדבחלעסםה יםךהנם ג¹ככת
+;
+; ** 2.8 **
+;
+MSG_MMB_PARENT
+Ì¹ז¹ד מם נןהדלהט ילםמיה
+;
+; *** Requester Type ***
+;
+MSG_REQUESTER
+Òנסaלםביח:
+;
+MSG_FILEREQ
+Ïחיבהנסהן ףaטךםב
+;
+MSG_FONTREQ
+Ïחיבהנסהן רןחףסםב
+;
+MSG_PALETTEREQ
+Ïחיבהנסהן מaךחסןת
+;
+MSG_SCRMODEREQ
+Ïחיבהנסהן üיןaלםב
+;
+MSG_VOLUMEREQ
+Ïחיבהנסהן סםכםב
+;
+MSG_OTHERREQ
+Îןםצחה ןחיבהנסהןת
+;
+; *** Position ***
+;
+MSG_POSITION
+Îםזחץח‏:
+;
+MSG_POINTER
+Îם כתריה
+;
+MSG_CENTERWIN
+Á ץהלסןה םיל¹
+;
+MSG_CENTERSCR
+Á ץהלסןה üיןaל¹
+;
+MSG_TOPLEFTWIN
+Áהןפלחט ךהבתט עגםך םילa
+;
+MSG_TOPLEFTSCR
+Áהןפלחט ךהבתט עגםך üיןaלa
+;
+MSG_OFFSET
+Ðכהשהלחה:
+;
+; *** Entries ***
+;
+MSG_NR_OF_ENTRIES
+Öחנךם בחדחכתפ נסןםי
+;
+MSG_MIN
+Ëחלחכעכ
+;
+MSG_MAX
+Ëaינחכעכ
+;
+; *** Errors ***
+;
+MSG_YOU_NEED_REQTOOLS38
+Ñןהאעהסנ‏ אחאךחםסהיa reqtools.library V38+
+;
+MSG_WRONG_REQTOOLS_VERSION
+Çנמםךûזעהכa‏ בaכח בהןנח‏ reqtools.library\nלה מםדדהןוחבaהס מןםגןaככע ענסaלםבםי!
+;
+MSG_ALL_PREFS_NOT_SUPPORTED
+Áלחכaלחה! Üסa בהןנח‏ ןהדaיסםןa ענסaלםבםי לה\n\
+מםדדהןוחבaהס בנה בםזכםולםנסח חכה‎שהטנ‏ ב\n\
+בaרהט נחנסהכה אחאךחםסהיח reqtools.library!
+;
+MSG_NO_WB_LIB
+Ìה כםגע םסיןתסû אחאךחםסהיע workbench.library!
+;
+MSG_NO_UTILITY_LIB
+Ìה כםגע םסיןתסû אחאךחםסהיע utility.library!
+;
+MSG_NO_ICON_LIB
+Ìה כםגע םסיןתסû אחאךחםסהיע icon.library!
+;
+MSG_COULDNT_LOCK_PUBSCREEN
+Ìה כםגע זaאךםיחןםבaסû םאשחט üיןaל!
+;
+MSG_ERROR_GETSCREENDRAWINFO
+Ìהעדaצa ףעליץחח GetScreenDrawInfo()!
+;
+MSG_ERROR_GETVISUALINFO
+Ìהעדaצa ףעליץחח GetVisualInfo()!
+;
+MSG_COULDNT_OPEN_WINDOW
+Ìה כםגע םסיןתסû םילם!
+;
+MSG_ERROR_ACCESSING_FILE
+Íרחאיa דםנסעמa י ףaטךע\n%s,\n%s
+;
+MSG_READ_ERROR
+Íרחאיa צסהלח‏!
+;
+MSG_ERROR_SAVING_PREFS
+Íרחאיa זaמחנח ענסaלםבםי!
+;
+; * 2.7 *
+;
+MSG_ERROR_ARGS
+Íרחאםצלתט מ¹ן¹כהסן
+;
+MSG_ERROR_LIBRARY
+Ìה כםגע םסיןתסû %s\n\
+בהןנחח %ld חךח בתרה!
+;
+MSG_ERROR_MENUS
+Ìה כםגע נםזד¹סû כהל‎!
+;

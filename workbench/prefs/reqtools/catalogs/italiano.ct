@@ -1,0 +1,194 @@
+;******************
+;
+;   ReqToolsprefs
+;
+;   Italiano
+;
+;   by Michele Giorato
+;
+;******************
+;
+## version $VER: reqtoolsprefs.catalog 38.6 (16.12.95)
+## codeset 0
+## language italiano
+;
+MSG_WINDOW_TITLE
+Preferenze di ReqTools
+;
+MSG_GENERAL
+Generale
+;
+MSG_FILEREQUESTER
+Requester dei files
+;
+MSG_SIZE
+Dimensione (% dell'altezza utile):
+;
+MSG_SET
+Imposta...
+;
+MSG_TEST
+Prova...
+;
+MSG_SAVE
+Salva
+;
+MSG_USE
+Usa
+;
+MSG_CANCEL
+Annulla
+;
+MSG_ABORT
+Abbandona
+;
+MSG_OK
+ Ok
+;
+MSG_PROJECT_MENU
+Progetto
+;
+MSG_PROJECT_OPEN
+C\0Carica...
+;
+MSG_PROJECT_SAVEAS
+S\0Salva come...
+;
+MSG_PROJECT_ABOUT
+?\0Informazioni...
+;
+MSG_PROJECT_QUIT
+F\0Fine
+;
+MSG_EDIT_MENU
+Editor
+;
+MSG_EDIT_RESET
+P\0Ripristina valori predefiniti
+;
+MSG_EDIT_LASTSAVED
+U\0Ripristina ultimi valori
+;
+MSG_EDIT_RESTORE
+A\0Annulla modifiche
+;
+MSG_OPTIONS_MENU
+Opzioni
+;
+MSG_OPTIONS_CREATEICONS
+G\0Genera icone
+;
+MSG_POPSCREEN
+Porta schermo in 1° piano
+;
+MSG_IMMEDIATESORT
+Riordina subito
+;
+MSG_DRAWERSFIRST
+Mostra prima i cassetti
+;
+MSG_DRAWERSMIXED
+Mischia files e cassetti
+;
+MSG_LED
+LED attività disco
+;
+MSG_DEFAULTFONT
+Caratteri di sistema
+;
+; ** 2.2d **
+;
+MSG_FKEYS
+Usa tasti funzione
+;
+;
+MSG_REQUESTER
+Formato standard
+;
+MSG_FILEREQ
+Requester dei files
+;
+MSG_FONTREQ
+Requester dei caratteri
+;
+MSG_PALETTEREQ
+Requester dei colori
+;
+MSG_SCRMODEREQ
+Requester modo schermo
+;
+MSG_VOLUMEREQ
+Requester dei volumi
+;
+MSG_OTHERREQ
+Altri requester
+;
+MSG_POSITION
+Posizione
+;
+MSG_POINTER
+Puntatore del mouse
+;
+MSG_CENTERWIN
+Al centro della finestra
+;
+MSG_CENTERSCR
+Al centro dello schermo
+;
+MSG_TOPLEFTWIN
+In alto a sinistra finestra
+;
+MSG_TOPLEFTSCR
+In alto a sinistra schermo
+;
+MSG_OFFSET
+Margini:
+;
+MSG_NR_OF_ENTRIES
+Numero di righe visibili:
+;
+MSG_MIN
+Minimo
+;
+MSG_MAX
+Massimo
+;
+MSG_YOU_NEED_REQTOOLS38
+E' necessaria la reqtools.library V38+!
+;
+MSG_WRONG_REQTOOLS_VERSION
+La versione di reqtools.library presente in\nLIBS: non supporta le  preferenze!
+;
+MSG_ALL_PREFS_NOT_SUPPORTED
+ATTENZIONE: Questa versione di editor preferenze\nnon supporta tutte le preferenze della\nreqtools.library installata!
+;
+MSG_NO_WB_LIB
+Impossibile aprire la workbench.library!
+;
+MSG_NO_UTILITY_LIB
+Impossibile aprire l'utility.library!
+;
+MSG_NO_ICON_LIB
+Impossibile aprire l'icon.library!
+;
+MSG_COULDNT_LOCK_PUBSCREEN
+Impossibile accedere allo schermo pubblico!
+;
+MSG_ERROR_GETSCREENDRAWINFO
+Errore leggendo le draw info!
+;
+MSG_ERROR_GETVISUALINFO
+Errore leggendo le visual info!
+;
+MSG_COULDNT_OPEN_WINDOW
+Impossibile aprire una finestra!
+;
+MSG_ERROR_ACCESSING_FILE
+Errore accedendo al file\n%s,\n%s
+;
+MSG_READ_ERROR
+Errore di lettura!
+;
+MSG_ERROR_SAVING_PREFS
+Errore nel salvataggio delle preferenze!
+;

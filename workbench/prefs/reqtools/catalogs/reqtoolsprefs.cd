@@ -1,0 +1,240 @@
+;**************************
+;
+;   ReqTools Preferences
+;
+;**************************
+;
+; *** Misc ***
+;
+MSG_WINDOW_TITLE (1//)
+ReqTools Preferences
+;
+MSG_GENERAL (//)
+General
+;
+MSG_FILEREQUESTER (//)
+File Requester
+;
+MSG_SIZE (//)
+Size (% of visible height):
+;
+MSG_SET (//)
+Set...
+;
+MSG_TEST (//)
+Test...
+;
+MSG_SAVE (//)
+Save
+;
+MSG_USE (//)
+Use
+;
+MSG_CANCEL (//)
+Cancel
+;
+MSG_ABORT (//)
+Abort
+;
+; Note: there are two spaces around the Ok string to make it 4 chars wide.
+MSG_OK (//)
+ Ok
+;
+; * 2.7 *
+;
+MSG_INFORMATION (//)
+Information
+;
+; *** Menus ***
+;
+MSG_PROJECT_MENU (100//)
+Project
+;
+MSG_PROJECT_OPEN (//)
+O\0Open...
+;
+MSG_PROJECT_SAVEAS (//)
+A\0Save As...
+;
+MSG_PROJECT_ABOUT (//)
+?\0About...
+;
+MSG_PROJECT_QUIT (//)
+Q\0Quit
+;
+MSG_EDIT_MENU (//)
+Edit
+;
+MSG_EDIT_RESET (//)
+D\0Reset To Defaults
+;
+MSG_EDIT_LASTSAVED (//)
+L\0Last Saved
+;
+MSG_EDIT_RESTORE (//)
+R\0Restore
+;
+MSG_OPTIONS_MENU (//)
+Options
+;
+MSG_OPTIONS_CREATEICONS (//)
+I\0Create Icons?
+;
+; *** Switches ***
+;
+MSG_POPSCREEN (200//)
+Pop screen to front
+;
+MSG_IMMEDIATESORT (//)
+Immediate sort
+;
+MSG_DRAWERSFIRST (//)
+Display drawers first
+;
+MSG_DRAWERSMIXED (//)
+Mix files and drawers
+;
+MSG_LED (//)
+Disk activity LED
+;
+MSG_DEFAULTFONT (//)
+Use system default font
+;
+; ** 2.3 **
+;
+MSG_FKEYS (//)
+Use function keys
+;
+; ** 2.5 **
+;
+MSG_DOWHEEL (//)
+Color wheel
+;
+; ** 2.7 **
+;
+MSG_WHEEL_NONE (//)
+No color wheel
+;
+MSG_WHEEL_SIMPLE (//)
+Simple color wheel
+;
+MSG_WHEEL_FANCY (//)
+Fancy color wheel
+;
+; ** 2.8 **
+;
+MSG_MMB_PARENT  (//)
+MMB gives parent
+;
+; *** Requester Type ***
+;
+MSG_REQUESTER (300//)
+Defaults for
+;
+MSG_FILEREQ (//)
+File Requester
+;
+MSG_FONTREQ (//)
+Font Requester
+;
+MSG_PALETTEREQ (//)
+Palette Requester
+;
+MSG_SCRMODEREQ (//)
+Screen Mode Requester
+;
+MSG_VOLUMEREQ (//)
+Volume Requester
+;
+MSG_OTHERREQ (//)
+Other Requesters
+;
+; *** Position ***
+;
+MSG_POSITION (400//)
+Position:
+;
+MSG_POINTER (//)
+Mouse pointer
+;
+MSG_CENTERWIN (//)
+Center in window
+;
+MSG_CENTERSCR (//)
+Center on screen
+;
+MSG_TOPLEFTWIN (//)
+Top left of window
+;
+MSG_TOPLEFTSCR (//)
+Top left of screen
+;
+MSG_OFFSET (//)
+Offset:
+;
+; *** Entries ***
+;
+MSG_NR_OF_ENTRIES (500//)
+Number of visible entries:
+;
+MSG_MIN (//)
+Minimum
+;
+MSG_MAX (//)
+Maximum
+;
+; *** Errors ***
+;
+MSG_YOU_NEED_REQTOOLS38 (600//)
+You need reqtools.library V38+!
+;
+MSG_WRONG_REQTOOLS_VERSION (//)
+The version of reqtools.library you have\ndoes not support preferences!
+;
+MSG_ALL_PREFS_NOT_SUPPORTED (//)
+WARNING: This version of the preference editor\n\
+doesn't support all the preferences of the\n\
+reqtools.library you've got installed!
+;
+MSG_NO_WB_LIB (//)
+Couldn't open workbench.library!
+;
+MSG_NO_UTILITY_LIB (//)
+Couldn't open utility.library!
+;
+MSG_NO_ICON_LIB (//)
+Couldn't open icon.library!
+;
+MSG_COULDNT_LOCK_PUBSCREEN (//)
+Couldn't lock public screen!
+;
+MSG_ERROR_GETSCREENDRAWINFO (//)
+Error getting draw info!
+;
+MSG_ERROR_GETVISUALINFO (//)
+Error getting visual info!
+;
+MSG_COULDNT_OPEN_WINDOW (//)
+Couldn't open window!
+;
+MSG_ERROR_ACCESSING_FILE (//)
+Error accessing file\n%s,\n%s
+;
+MSG_READ_ERROR (//)
+Read error!
+;
+MSG_ERROR_SAVING_PREFS (//)
+Error saving preferences!
+;
+; * 2.7 *
+;
+MSG_ERROR_ARGS (//)
+Argument error
+;
+MSG_ERROR_LIBRARY (//)
+Couldn't open %s\n\
+version %ld or higher!
+;
+MSG_ERROR_MENUS (//)
+Couldn't create menus!
+;

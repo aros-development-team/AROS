@@ -1,0 +1,27 @@
+#   $Id$
+#
+#   Makefile to make More.
+
+include $(TOP)/config/make.cfg
+
+FILES := reqtools gui misc rtstrings ver
+
+EXEDIR := $(AROSDIR)/Prefs
+EXE := $(EXEDIR)/ReqTools
+
+USE_CLIB := yes
+USE_AMIGALIB := yes
+USE_MLIB := yes
+
+USER_CFLAGS := -O2 -Wunused -Wall
+
+#MM workbench-prefs : includes linklibs setup-prefs-reqtools-catalogs
+
+%make_prog_setup mmake=workbench-prefs
+
+workbench-prefs : setup $(EXE)
+
+%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+
+%common
+%include_deps

@@ -1,0 +1,256 @@
+;**************************
+;
+;   ReqTools Preferences
+;
+;   Suomi
+;
+;**************************
+;
+## version $VER: reqtoolsprefs.catalog 38.1387 (15.1.97)
+## codeset 0
+## language suomi
+;
+; *** Misc ***
+;
+MSG_WINDOW_TITLE
+ReqToolsin asetukset
+;
+MSG_GENERAL
+Yleistä
+;
+MSG_FILEREQUESTER
+Tiedostonvalitsija
+;
+MSG_SIZE
+Koko (% näkyvästä korkeudesta):
+;
+MSG_SET
+Aseta...
+;
+MSG_TEST
+Kokeile...
+;
+MSG_SAVE
+Tallenna
+;
+MSG_USE
+Käytä
+;
+MSG_CANCEL
+Peru
+;
+MSG_ABORT
+Keskeytä
+;
+; Note: there are two spaces around the Ok string to make it 4 chars wide.
+MSG_OK
+ Ok
+;
+; * 2.7 *
+;
+MSG_INFORMATION
+Information
+;Information
+;
+; *** Menus ***
+;
+MSG_PROJECT_MENU
+Projekti
+;
+MSG_PROJECT_OPEN
+O\0Avaa...
+;
+MSG_PROJECT_SAVEAS
+A\0Tallenna nimellä...
+;
+MSG_PROJECT_ABOUT
+?\0Tietoja...
+;
+MSG_PROJECT_QUIT
+Q\0Lopeta
+;
+MSG_EDIT_MENU
+Muokkaus
+;
+MSG_EDIT_RESET
+D\0Palauta oletusarvot
+;
+MSG_EDIT_LASTSAVED
+L\0Viimeksi tallennetut
+;
+MSG_EDIT_RESTORE
+R\0Palauta
+;
+MSG_OPTIONS_MENU
+Asetukset
+;
+MSG_OPTIONS_CREATEICONS
+I\0Luo ikonit?
+;
+; *** Switches ***
+;
+MSG_POPSCREEN
+Tuo näyttö eteen
+;
+MSG_IMMEDIATESORT
+Järjestä heti
+;
+MSG_DRAWERSFIRST
+Näytä hakemistot ensin
+;
+MSG_DRAWERSMIXED
+Sekoita tiedostot ja hakemistot
+;
+MSG_LED
+Levyn toimintavalo
+;
+MSG_DEFAULTFONT
+Käytä järjestelmän oletusfonttia
+;
+; ** 2.5 **
+;
+MSG_FKEYS
+Käytä funktionäppäimiä
+;
+MSG_DOWHEEL
+Väripyörä
+;
+; ** 2.7 **
+;
+MSG_WHEEL_NONE
+No color wheel
+;No color wheel
+;
+MSG_WHEEL_SIMPLE
+Simple color wheel
+;Simple color wheel
+;
+MSG_WHEEL_FANCY
+Fancy color wheel
+;Fancy color wheel
+;
+; ** 2.8 **
+;
+MSG_MMB_PARENT
+MMB gives parent
+;MMB gives parent
+;
+; *** Requester Type ***
+;
+MSG_REQUESTER
+Oletusarvot
+;
+MSG_FILEREQ
+Tiedostonvalitsija
+;
+MSG_FONTREQ
+Fontinvalitsija
+;
+MSG_PALETTEREQ
+Paletinvalitsija
+;
+MSG_SCRMODEREQ
+Näyttötilan valitsija
+;
+MSG_VOLUMEREQ
+Levyn valitsija
+;
+MSG_OTHERREQ
+Muut valitsijat
+;
+; *** Position ***
+;
+MSG_POSITION
+Paikka:
+;
+MSG_POINTER
+Hiiren osoitin
+;
+MSG_CENTERWIN
+Keskitä ikkunaan
+;
+MSG_CENTERSCR
+Keskitä näyttöön
+;
+MSG_TOPLEFTWIN
+Ikkunan vasen ylänurkka
+;
+MSG_TOPLEFTSCR
+Näytön vasen ylänurkka
+;
+MSG_OFFSET
+Siirto:
+;
+; *** Entries ***
+;
+MSG_NR_OF_ENTRIES
+Näkyvien rivien määrä:
+;
+MSG_MIN
+Minimi:
+;
+MSG_MAX
+Maksimi:
+;
+; *** Errors ***
+;
+MSG_YOU_NEED_REQTOOLS38
+Tarvitset reqtools.library V38+:n!
+;
+MSG_WRONG_REQTOOLS_VERSION
+Reqtools.library -versiosi\n\
+ei käytä asetuksia!
+;
+MSG_ALL_PREFS_NOT_SUPPORTED
+VAROITUS: Tämä versio asetusten muokkaajasta\n\
+ei käytä kaikkia reqtools.library:n\n\
+asetuksia, jotka olet asentanut!
+;
+MSG_NO_WB_LIB
+Workbench.library ei auennut!
+;
+MSG_NO_UTILITY_LIB
+Utility.library ei auennut!
+;
+MSG_NO_ICON_LIB
+Icon.library ei auennut!
+;
+MSG_COULDNT_LOCK_PUBSCREEN
+Julkinen näyttö ei lukkiutunut!
+;
+MSG_ERROR_GETSCREENDRAWINFO
+Virhe piirtotietoja haettaessa!
+;
+MSG_ERROR_GETVISUALINFO
+Virhe visuaalisia tietoja haettaessa!
+;
+MSG_COULDNT_OPEN_WINDOW
+Ikkuna ei auennut!
+;
+MSG_ERROR_ACCESSING_FILE
+Virhe osoitettaessa tiedostoa\n\
+%s,\n\
+%s
+;
+MSG_READ_ERROR
+Lukuvirhe!
+;
+MSG_ERROR_SAVING_PREFS
+Virhe asetuksia tallennettaessa!
+;
+; * 2.7 *
+;
+MSG_ERROR_ARGS
+Argument error
+;Argument error
+;
+MSG_ERROR_LIBRARY
+Couldn't open %s\n\
+version %ld or higher!
+;Couldn't open %s\n\
+;version %ld or higher!
+;
+MSG_ERROR_MENUS
+Couldn't create menus!
+;Couldn't create menus!
+;

@@ -1,0 +1,249 @@
+;**************************
+;
+;   ReqTools Preferences
+;
+;   Deutsch
+;
+;   von Steffen.Salzmann@frankfurt.netsurf.de
+;
+;**************************
+;
+## version $VER: reqtoolsprefs.catalog 38.8 (25.1.97)
+## codeset 0
+## language deutsch
+;
+; *** Misc ***
+;
+MSG_WINDOW_TITLE
+ReqTools-Voreinsteller
+;
+MSG_GENERAL
+Allgemeines
+;
+MSG_FILEREQUESTER
+Datei-Auswahlfenster
+;
+MSG_SIZE
+Größe (% der sichtbaren Höhe):
+;
+MSG_SET
+Einstellen...
+;
+MSG_TEST
+Testen...
+;
+MSG_SAVE
+Speichern
+;
+MSG_USE
+Benutzen
+;
+MSG_CANCEL
+Abbrechen
+;
+MSG_ABORT
+Abbruch
+;
+; Note: there are two spaces around the Ok string to make it 4 chars wide.
+MSG_OK
+ Ok 
+;
+; * 2.7 *
+;
+MSG_INFORMATION
+Information
+;
+; *** Menus ***
+;
+MSG_PROJECT_MENU
+Projekt
+;
+MSG_PROJECT_OPEN
+O\0Öffnen...
+;
+MSG_PROJECT_SAVEAS
+A\0Speichern als...
+;
+MSG_PROJECT_ABOUT
+?\0Über...
+;
+MSG_PROJECT_QUIT
+Q\0Beenden
+;
+MSG_EDIT_MENU
+Vorgaben
+;
+MSG_EDIT_RESET
+Z\0Auf Vorgaben zurücksetzen
+;
+MSG_EDIT_LASTSAVED
+L\0Auf zuletzt gespeichertes
+;
+MSG_EDIT_RESTORE
+S\0Auf vorherigen Stand
+;
+MSG_OPTIONS_MENU
+Optionen
+;
+MSG_OPTIONS_CREATEICONS
+I\0Piktogramme erzeugen?
+;
+; *** Switches ***
+;
+MSG_POPSCREEN
+Bildschirm nach vorne
+;
+MSG_IMMEDIATESORT
+Sofort sortieren
+;
+MSG_DRAWERSFIRST
+Schubladen zuerst anzeigen
+;
+MSG_DRAWERSMIXED
+Dateien und Schubl. mischen
+;
+MSG_LED
+Diskzugriffs-LED
+;
+MSG_DEFAULTFONT
+Standard-System-Zeichensatz
+;
+; ** 2.3 **
+;
+MSG_FKEYS
+Funktionstasten benutzen
+;
+; ** 2.5 **
+;
+MSG_DOWHEEL
+Farbrad benutzen
+;
+; ** 2.7 **
+;
+MSG_WHEEL_NONE
+Kein Farbrad
+;
+MSG_WHEEL_SIMPLE
+Einfaches Farbrad
+;
+MSG_WHEEL_FANCY
+Aufwendiges Farbrad
+;
+; ** 2.8 **
+;
+MSG_MMB_PARENT
+MMT für Mutterverzeichnis
+;
+; *** Requester Type ***
+;
+MSG_REQUESTER
+Vorgaben für
+;
+MSG_FILEREQ
+Datei-Auswahlfenster
+;
+MSG_FONTREQ
+Zeichensatz-Auswahlfenster
+;
+MSG_PALETTEREQ
+Farb-Dialogfenster
+;
+MSG_SCRMODEREQ
+Schirmmodus-Auswahlfenster
+;
+MSG_VOLUMEREQ
+Datenträger-Auswahlfenster
+;
+MSG_OTHERREQ
+Andere Dialogfenster
+;
+; *** Position ***
+;
+MSG_POSITION
+Position:
+;
+MSG_POINTER
+Mauspfeil
+;
+MSG_CENTERWIN
+Zentrieren im Fenster
+;
+MSG_CENTERSCR
+Zentrieren auf Bildschirm
+;
+MSG_TOPLEFTWIN
+Oben links vom Fenster
+;
+MSG_TOPLEFTSCR
+Oben links auf Bildschirm
+;
+MSG_OFFSET
+Abstand:
+;
+; *** Entries ***
+;
+MSG_NR_OF_ENTRIES
+Anzahl der sichtbaren Einträge:
+;
+MSG_MIN
+Minimum
+;
+MSG_MAX
+Maximum
+;
+; *** Errors ***
+;
+MSG_YOU_NEED_REQTOOLS38
+Sie benötigen reqtools.library V38+!
+;
+MSG_WRONG_REQTOOLS_VERSION
+Die Version der reqtools.library, die Sie benutzen,\n\
+unterstützt keine Voreinstellungen!
+;
+MSG_ALL_PREFS_NOT_SUPPORTED
+WARNUNG: Diese Version des Voreinstellers unterstützt\n\
+nicht alle Einstellungen der reqtools.library,\n\
+die Sie installiert haben!
+;
+MSG_NO_WB_LIB
+Konnte workbench.library nicht öffnen!
+;
+MSG_NO_UTILITY_LIB
+Konnte utility.library nicht öffnen!
+;
+MSG_NO_ICON_LIB
+Konnte icon.library nicht öffnen!
+;
+MSG_COULDNT_LOCK_PUBSCREEN
+Bekam keinen Lock auf öffentlichen Bildschirm!
+;
+MSG_ERROR_GETSCREENDRAWINFO
+Konnte kein DrawInfo bekommen!
+;
+MSG_ERROR_GETVISUALINFO
+Konnte kein VisualInfo bekommen!
+;
+MSG_COULDNT_OPEN_WINDOW
+Konnte Fenster nicht öffnen!
+;
+MSG_ERROR_ACCESSING_FILE
+Fehler beim Zugriff auf Datei\n%s,\n%s
+;
+MSG_READ_ERROR
+Lesefehler!
+;
+MSG_ERROR_SAVING_PREFS
+Fehler beim Speichern der Einstellungen!
+;
+; * 2.7 *
+;
+MSG_ERROR_ARGS
+Falsches Argument
+;
+MSG_ERROR_LIBRARY
+Konnte %s in der\n\
+Version %ld oder höher nicht öffnen!
+;
+MSG_ERROR_MENUS
+Konnte keine Menüs erzeugen!
+;
