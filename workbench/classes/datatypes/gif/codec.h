@@ -3,5 +3,9 @@
     $Id$
 */
 
-short DecompressInit(GifHandleType *gifhandle);
-short DecompressLine(GifHandleType *gifhandle);
+short DecodeInit(GifHandleType *gifhandle);
+short DecodeLines(GifHandleType *gifhandle);
+short DecodeEnd(GifHandleType *gifhandle);
+short EncodeInit(GifHandleType *gifhandle, short numplanes);
+short EncodeLines(GifHandleType *gifhandle);
+short EncodeEnd(GifHandleType *gifhandle);

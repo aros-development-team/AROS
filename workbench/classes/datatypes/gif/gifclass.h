@@ -15,7 +15,8 @@ typedef struct {
 	long					linebufbytes;
 	long					linebufsize;
 	
-	APTR					lzwdecode;
+	APTR					codecvars;
 } GifHandleType;
 
 BOOL LoadGIF_FillBuf(GifHandleType *gifhandle, long minbytes);
+BOOL SaveGIF_EmptyBuf(GifHandleType *gifhandle, long minbytes);
