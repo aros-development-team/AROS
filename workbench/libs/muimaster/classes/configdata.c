@@ -312,9 +312,15 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static ULONG Configdata_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
-    //struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
-    DoSuperMethodA(cl,obj,msg);
-    return NULL;
+    struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
+    int i;
+
+    for (i = 0; i < MUIKEY_COUNT; i++)
+    {
+    	if (data->prefs.muikeys[i].readable_hotkey)
+	    FreeVec(data->prefs.muikeys[i].readable_hotkey);
+    }
+    return DoSuperMethodA(cl,obj,msg);
 }
 
 /**************************************************************************
