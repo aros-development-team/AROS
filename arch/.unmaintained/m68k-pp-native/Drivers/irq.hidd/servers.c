@@ -77,6 +77,7 @@ void init_Servers(struct irq_staticdata *isd)
 {
 	HIDDT_IRQ_Handler	*timer;
 
+#warning Currently breaks here!!!! Writing into ROM!
 	timer_int.is_UserData = isd;
 	irq2.is_UserData = isd;
 	kbd_int.is_UserData = isd;
