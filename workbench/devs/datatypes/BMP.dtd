@@ -5,7 +5,7 @@ BaseName=bmp
 Pattern=#?
 Mask=BM
 GroupID=pict
-ID=bmp
+ID=_bmp
 Flags=DTF_BINARY,DTF_CASE
 Priority=0
 
