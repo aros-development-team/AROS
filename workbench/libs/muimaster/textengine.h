@@ -57,5 +57,6 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top);
 void zune_text_get_real_pos (ZText *text, Object *obj, WORD *left, WORD *right);
 
 int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y, struct ZTextLine **line_ptr, struct ZTextChunk **chunk_ptr, int *offset_ptr, int *len_ptr);
+int zune_text_get_line_len(ZText *text, Object *obj, LONG y);
 
 #endif
