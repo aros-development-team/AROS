@@ -44,7 +44,7 @@
      height as fontheight + spacing. Otherwise the ticks will overlap each
      other. Default is equal to MX_HEIGHT (see <libraries/gadtools.h>). */
 #define AROSMX_TickHeight (AROSMX_Dummy + 01)
-  /* [I..] (LONG) The placement of the tick labels. See <intuition/intuition.h>
+  /* [I..] (LONG) The placement of the tick labels. See <intuition/gadgetclass.h>
      for definitions (GV_LabelPlace_*). */
 #define AROSMX_TickLabelPlace (AROSMX_Dummy + 02)
 
