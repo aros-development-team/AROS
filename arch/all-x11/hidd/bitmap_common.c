@@ -635,20 +635,21 @@ UX11
      default: {
      
 	Object *srcpf, *dstpf, *gfxhidd;
-	
+	APTR srcPixels = buf, dstBuf = image->data;
+		
 	kprintf("DEFAULT PIXEL CONVERSION\n");
 	
 	GetAttr(bm, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 	srcpf = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
 	
-	GetAttr(dstpf, aHidd_BitMap_PixFmt, (IPTR *)&dstpf);
+	GetAttr(bm, aHidd_BitMap_PixFmt, (IPTR *)&dstpf);
 	
 	kprintf("CALLING ConvertPixels()\n");
 	
-     	HIDD_BM_ConvertPixels(bm, (APTR *)buf
+     	HIDD_BM_ConvertPixels(bm, &srcPixels
 		, (HIDDT_PixelFormat *)srcpf
 		, msg->modulo
-		, (APTR *)image->data
+		, &dstBuf
 		, (HIDDT_PixelFormat *)dstpf
 		, image->bytes_per_line
 		, msg->width, msg->height
