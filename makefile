@@ -13,7 +13,7 @@ LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS -laros
 
 SUBDIRS = $(KERNEL) aros exec dos utility graphics intuition \
-	alib filesys libs devs c
+	alib filesys libs devs c Demos
 DIST_FILES = makefile arosshell.c README* make.cfg crypt.c \
 	configure scripts/cint2.awk scripts/makefunctable.awk \
 	scripts/genprotos.h s/Startup-Sequence AFD-COPYRIGHT BUGS
