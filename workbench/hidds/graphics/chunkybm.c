@@ -99,9 +99,20 @@ static VOID chunkybm_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel
     {
 	case 1: *((UBYTE *) dest)   = (UBYTE) msg->val; break;
 	case 2: *((UWORD *) dest)   = (UWORD) msg->val; break;
-#warning FIXME: word acces on odd adress
-	case 3: *((UBYTE *) dest++) = (UBYTE) msg->val >> 16; break;
-		*((UWORD *) dest  ) = (UWORD) msg->val; break;
+	case 3: if (1 == ( ((IPTR)dest) & 1) )
+                {
+                  /* first is odd */
+                  *((UBYTE *) dest++) = (UBYTE) msg->val >> 16;
+                  *((UWORD *) dest  ) = (UWORD) msg->val;
+                }
+                else
+                {
+                  /* first is even */
+                  *((UWORD *) dest++) = (UWORD) msg->val >> 8; 
+                  *((UBYTE *) dest  ) = (UBYTE) msg->val;
+                }
+		break;
+
 	case 4: *((ULONG *) dest)   = (ULONG) msg->val; break;
     }
 	
