@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.31  2000/12/15 02:10:19  bergers
+    Removed ability to create child windows.
+
     Revision 1.30  2000/12/15 01:11:49  bergers
     Needed to do some more linking around with parent window (if exists).
 
@@ -200,40 +203,6 @@ void LateCloseWindow(struct MsgPort *userport,
     screen = window->WScreen;
     do_unlockscreen = MUST_UNLOCK_SCREEN(window, screen);
     
-    /* We take a very simple approach to avoid race conditions with the
-       intuition input handler running one input.device 's task:
-       We just send it a msg about closing the window
-    */
-    if (HAS_CHILDREN(window))
-    {
-      struct Window * cw = window->firstchild;
-      /*
-       * First close all its children, we could also return 
-       * a failure value which newer apps that use child windows
-       * have to look at.
-       */
-      while (cw)
-      {
-        struct Window * _cw;
-        _cw = cw->nextchild;
-        window->firstchild = _cw;
-        CloseWindow(cw);
-        cw = _cw;
-      }
-      
-       /*
-        * Does this window have a parent?
-        */
-      if (window->parent)
-      {
-        if (window->parent->firstchild == window)
-        {
-          window->parent->firstchild = window->nextchild;
-          window->nextchild->prevchild = NULL;
-        }
-      }
-    }
-
     msg = IW(window)->closeMessage;
     msg->Task = FindTask(NULL); /* !! */
     
