@@ -85,8 +85,10 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
 
 /**********************************************************************************/
 
-void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2)
+void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
+                   struct IntuitionBase * IntuitionBase)
 {
+
     if ((x2 >= x1) && (y2 >= y1))
     {
     	RectFill(rp, x1, y1, x2, y2);

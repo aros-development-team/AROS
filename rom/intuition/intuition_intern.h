@@ -398,7 +398,7 @@ void intrequest_freegadgets(struct Gadget *gadgets, struct IntuitionBase *Intuit
 
 /* intuition_misc protos */
 extern void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
-extern void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2); 
+extern void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, struct IntuitionBase * IntuitionBase); 
 extern BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
 extern VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
 extern void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase);
