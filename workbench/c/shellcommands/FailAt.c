@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: FailAt - Set the failure level of a process
@@ -71,11 +71,15 @@ AROS_SHAH(LONG *, , RCLIM,/M, NULL, "The new return code limit"))
 
     struct CommandLineInterface *cli = Cli();
 
-    if(cli == NULL)
+    (void)FailAt_version;
+
+    if (cli == NULL)
+    {
 	return RETURN_FAIL;
+    }
 
     /* Write current fail level */
-    if(SHArg(RCLIM) == NULL)
+    if (SHArg(RCLIM) == NULL)
     {
 	VPrintf("Fail limit: %ld\n", (IPTR *)&cli->cli_FailLevel);
     }

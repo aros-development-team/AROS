@@ -1,9 +1,9 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Fault - Display an informative message about an error number.
-    Lang: english
+    Lang: English
 */
 
 /**************************************************************************
@@ -40,10 +40,11 @@
 #include <dos/rdargs.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <utility/tagitem.h>
+
 #include <stdlib.h>
 #include <stdio.h> /* for sprintf() */
 #include <string.h>
-#include <utility/tagitem.h>
 
 #include <aros/shcommands.h>
 
@@ -52,17 +53,19 @@ AROS_SHAH(ULONG **, ,NUMBERS,/N/M, NULL, "The error numbers you wish to query"))
 {
     AROS_SHCOMMAND_INIT
 
-    UBYTE buffer[128];
-    BPTR outStream = Output();
-    ULONG **theNum = SHArg(NUMBERS), n;
+    ULONG **theNum = SHArg(NUMBERS);
+
+    (void)Fault_version;
 
     if (theNum)
-    while( *theNum != NULL )
     {
-	PutStr("Fault ");
-	VPrintf("%ld", *theNum);
-	PrintFault(**theNum, "");
-	theNum++;
+	while( *theNum != NULL )
+	{
+	    PutStr("Fault ");
+	    VPrintf("%ld", *theNum);
+	    PrintFault(**theNum, "");
+	    theNum++;
+	}
     }
 
     SetIoErr(0);

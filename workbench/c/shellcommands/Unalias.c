@@ -88,14 +88,16 @@ AROS_SHA(STRPTR, ,NAME, ,NULL))
     char              Buffer1[BUFFER_SIZE];
     char              Buffer2[BUFFER_SIZE];
 
+    (void)Unalias_version;
+
     if (SHArg(NAME) != NULL)
     {
-        Success = DeleteVar(SHArg(NAME),
-                             GVF_LOCAL_ONLY | LV_ALIAS
-        );
+        Success = DeleteVar(SHArg(NAME), GVF_LOCAL_ONLY | LV_ALIAS);
+
         if (Success == FALSE)
         {
             PrintFault(IoErr(), "Unalias");
+
 	    return RETURN_WARN;
         }
     }
@@ -119,17 +121,16 @@ AROS_SHA(STRPTR, ,NAME, ,NULL))
                     VarLength = GetVar(UnaliasNode->lv_Node.ln_Name,
                                        &Buffer1[0],
                                        BUFFER_SIZE,
-                                       GVF_LOCAL_ONLY | LV_ALIAS
-                    );
+                                       GVF_LOCAL_ONLY | LV_ALIAS);
+
                     if (VarLength != -1)
                     {
                         GetNewString(&Buffer1[0],
                                      &Buffer2[0],
-                                     VarLength
-                        );
+                                     VarLength);
 
                         Buffer2[VarLength] = NULL;
-
+			
                         OutArgs[0] = (IPTR)UnaliasNode->lv_Node.ln_Name;
                         OutArgs[1] = (IPTR)&Buffer2[0];
                         OutArgs[2] = (IPTR)NULL;

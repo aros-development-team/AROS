@@ -1,5 +1,5 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -70,9 +70,12 @@ AROS_SHA(BOOL,   , BACK, /S, FALSE))
     struct CommandLineInterface *cli = Cli();
     BOOL                  labelFound = FALSE;
 
+    (void)Skip_version;
+
     if(cli == NULL || cli->cli_CurrentInput == cli->cli_StandardInput)
     {
 	PrintFault(ERROR_SCRIPT_ONLY, "Skip");
+
 	return RETURN_FAIL;
     }
 
@@ -83,33 +86,35 @@ AROS_SHA(BOOL,   , BACK, /S, FALSE))
 
 	SelectInput(cli->cli_CurrentInput);
 
-	if(SHArg(BACK))
+	if (SHArg(BACK))
 	{
 	    Flush(Input());
 	    Seek(Input(), 0, OFFSET_BEGINNING);
 	}
 
-	while(!quit)
+	while (!quit)
 	{
 	    status = ReadItem(buffer, sizeof(buffer), NULL);
 
-	    if(status == ITEM_ERROR)
+	    if (status == ITEM_ERROR)
+	    {
 		break;
+	    }
 
-	    if(status == ITEM_NOTHING)
+	    if (status == ITEM_NOTHING)
 	    {
 		if(FGetC(Input()) == ENDSTREAMCH)
 		    break;
 	    }
 
-	    switch(FindArg("LAB,ENDSKIP", buffer))
+	    switch (FindArg("LAB,ENDSKIP", buffer))
 	    {
 	        case 0:
-		    if(SHArg(LABEL) != NULL)
+		    if (SHArg(LABEL) != NULL)
 		    {
 		        ReadItem(buffer, sizeof(buffer), NULL);
 
-		        if(FindArg(SHArg(LABEL), buffer) == 0)
+		        if (FindArg(SHArg(LABEL), buffer) == 0)
 		        {
 			    quit = TRUE;
 			    labelFound = TRUE;
@@ -126,17 +131,19 @@ AROS_SHA(BOOL,   , BACK, /S, FALSE))
 	    {
 		char a;
 
-		do {
+		do
+		{
 		    a = FGetC(Input());
 		} while (a != '\n' && a != ENDSTREAMCH);
 	    }
 	}
     }
 
-    if(!labelFound && SHArg(LABEL) != NULL)
+    if (!labelFound && SHArg(LABEL) != NULL)
     {
 	SetIoErr(ERROR_OBJECT_NOT_FOUND);
 	PrintFault(ERROR_OBJECT_NOT_FOUND, "Skip");
+
 	return RETURN_FAIL;
     }
 

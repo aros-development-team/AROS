@@ -1,9 +1,9 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Unset CLI command
-    Lang: english
+    Lang: English
 */
 
 /*****************************************************************************
@@ -74,13 +74,17 @@ AROS_SHA(STRPTR, ,NAME, ,NULL))
     char              Buffer1[BUFFER_SIZE];
     char              Buffer2[BUFFER_SIZE];
 
+    (void)Unset_version;
+
     if (SHArg(NAME) != NULL)
     {
         /* Delete the local Var from the list.
          */
 
 	 if (!DeleteVar(SHArg(NAME), GVF_LOCAL_ONLY))
+	 {
              return RETURN_FAIL;
+	 }
 
     }
     else
@@ -90,8 +94,7 @@ AROS_SHA(STRPTR, ,NAME, ,NULL))
         UnsetProc = (struct Process *)FindTask(NULL);
 
         ForeachNode((struct List *)&(UnsetProc->pr_LocalVars),
-                    (struct Node *)UnsetNode
-        )
+                    (struct Node *)UnsetNode)
         {
             if (UnsetNode->lv_Node.ln_Type == LV_VAR)
             {
@@ -102,14 +105,11 @@ AROS_SHA(STRPTR, ,NAME, ,NULL))
                  VarLength = GetVar(UnsetNode->lv_Node.ln_Name,
                                     &Buffer1[0],
                                     BUFFER_SIZE,
-                                    GVF_LOCAL_ONLY
-                 );
+                                    GVF_LOCAL_ONLY);
+
                  if (VarLength != -1)
                  {
-                     GetNewString(&Buffer1[0],
-                                  &Buffer2[0],
-                                   VarLength
-                     );
+                     GetNewString(&Buffer1[0], &Buffer2[0], VarLength);
 
                      Buffer2[VarLength] = NULL;
 
@@ -126,6 +126,7 @@ AROS_SHA(STRPTR, ,NAME, ,NULL))
 
     AROS_SHCOMMAND_EXIT
 } /* main */
+
 
 static void GetNewString(STRPTR s, STRPTR d, LONG l)
 {

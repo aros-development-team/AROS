@@ -1,9 +1,9 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Getenv CLI command
-    Lang: english
+    Lang: English
 */
 
 /*****************************************************************************
@@ -74,6 +74,8 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
     LONG            Var_Length;
     char            Var_Value[BUFFER_SIZE];
     IPTR            Display_Args[1];
+
+    (void)Getenv_version;
 
     Var_Length = GetVar(SHArg(NAME),
            &Var_Value[0],

@@ -114,11 +114,14 @@
 /* Prototypes */
 
 static int checkAssign(struct DosLibrary *DOSBase, STRPTR name);
-static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target, BOOL dismount, BOOL defer, BOOL path,
-	     BOOL add, BOOL remove);
-static void showAssigns(struct ExecBase *SysBase, struct DosLibrary *DOSBase, BOOL vols, BOOL dirs, BOOL devices);
+static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target,
+		    BOOL dismount, BOOL defer, BOOL path,
+		    BOOL add, BOOL remove);
+static void showAssigns(struct ExecBase *SysBase, struct DosLibrary *DOSBase,
+			BOOL vols, BOOL dirs, BOOL devices);
 static int removeAssign(struct DosLibrary *DOSBase, STRPTR name);
-static STRPTR GetFullPath(struct ExecBase *SysBase, struct DosLibrary *DOSBase, BPTR lock);
+static STRPTR GetFullPath(struct ExecBase *SysBase, struct DosLibrary *DOSBase,
+			  BPTR lock);
 
 AROS_SH12(Assign, 41.5,
 AROS_SHA(STRPTR, ,NAME, ,NULL),
@@ -136,30 +139,36 @@ AROS_SHA(BOOL, ,DEVICES,/S,FALSE))
 {
     AROS_SHCOMMAND_INIT
     int error = RETURN_OK;
-    int i;
-    if(SHArg(ADD) + SHArg(REMOVE) +SHArg(PATH) + SHArg(DEFER) > 1)
+
+    (void)Assign_version;
+
+    if (SHArg(ADD) + SHArg(REMOVE) + SHArg(PATH) + SHArg(DEFER) > 1)
     {
 	PutStr("Only one of ADD, REMOVE, PATH or DEFER is allowed\n");
+
 	return RETURN_FAIL;
     }
 
     /* If the EXISTS keyword is specified, we only care about NAME */
     if (SHArg(EXISTS))
+    {
         error = checkAssign(DOSBase, SHArg(NAME));
-    else
-    if (SHArg(NAME) != NULL)
+    }
+    else if (SHArg(NAME) != NULL)
     {
 	/* If a NAME is specified, our primary task is to add or
 	   remove an assign */
 
-        error = doAssign(DOSBase, SHArg(NAME), SHArg(TARGET), SHArg(DISMOUNT), SHArg(DEFER),
-	                 SHArg(PATH), SHArg(ADD), SHArg(REMOVE));
-        if(SHArg(LIST))
+        error = doAssign(DOSBase, SHArg(NAME), SHArg(TARGET), SHArg(DISMOUNT),
+			 SHArg(DEFER), SHArg(PATH), SHArg(ADD), SHArg(REMOVE));
+
+        if (SHArg(LIST))
 	{
 	    /* With the LIST keyword, the current assigns will be
 	       displayed also when (after) making an assign */
-
-	    showAssigns(SysBase, DOSBase, SHArg(VOLS), SHArg(DIRS), SHArg(DEVICES));
+	    
+	    showAssigns(SysBase, DOSBase, SHArg(VOLS), SHArg(DIRS),
+			SHArg(DEVICES));
 	}
     }
     else
@@ -167,7 +176,8 @@ AROS_SHA(BOOL, ,DEVICES,/S,FALSE))
 	/* If no NAME was given, we just show the current assigns
 	   as specified by the user (VOLS, DIRS, DEVICES) */
 
-	showAssigns(SysBase, DOSBase, SHArg(VOLS), SHArg(DIRS), SHArg(DEVICES));
+	showAssigns(SysBase, DOSBase, SHArg(VOLS), SHArg(DIRS),
+		    SHArg(DEVICES));
     }
 
     return error;
@@ -176,76 +186,79 @@ AROS_SHA(BOOL, ,DEVICES,/S,FALSE))
 }
 
 
-static void showAssigns(struct ExecBase *SysBase, struct DosLibrary *DOSBase, BOOL vols, BOOL dirs, BOOL devices)
+static void showAssigns(struct ExecBase *SysBase, struct DosLibrary *DOSBase,
+			BOOL vols, BOOL dirs, BOOL devices)
 {
     ULONG           lockBits = LDF_READ;
     struct DosList *dl;
-
+    
     /* If none of the parameters are specified, everything should be
        displayed */
-    if(!(vols || dirs || devices))
+    if (!(vols || dirs || devices))
     {
 	vols    = TRUE;
 	dirs    = TRUE;
 	devices = TRUE;
     }
-
+    
     lockBits |= vols    ? LDF_VOLUMES : 0;
     lockBits |= dirs    ? LDF_ASSIGNS : 0;
     lockBits |= devices ? LDF_DEVICES : 0;
-
+    
     dl = LockDosList(lockBits);
-
-    if(vols)
+    
+    if (vols)
     {
 	struct DosList *tdl = dl;	/* Loop variable */
-
+	
 	PutStr("Volumes:\n");
 
 	/* Print all mounted volumes */
-	while((tdl = NextDosEntry(tdl, LDF_VOLUMES)) != NULL)
+	while ((tdl = NextDosEntry(tdl, LDF_VOLUMES)) != NULL)
 	{
 	    VPrintf("%s [Mounted]\n", (IPTR *)&tdl->dol_DevName);
 	}
-
+	
 	PutStr("\n");
     }
-
-    if(dirs)
+    
+    if (dirs)
     {
 	struct DosList *tdl = dl;       /* Loop variable */
 	int             count;	        /* Loop variable */
-
+	
 	PutStr("Directories:\n");
-
+	
 	/* Print all assigned directories */
-	while((tdl = NextDosEntry(tdl, LDF_ASSIGNS)) != NULL)
+	while ((tdl = NextDosEntry(tdl, LDF_ASSIGNS)) != NULL)
 	{
 	    PutStr(tdl->dol_DevName);
-
+	    
 	    for(count = 15 - strlen(tdl->dol_DevName); count > 0; count--)
 	    {
 		PutStr(" ");
 	    }
-
-	    switch(tdl->dol_Type)
+	    
+	    switch (tdl->dol_Type)
 	    {
 	    case DLT_LATE:
-		VPrintf("<%s>\n", (IPTR *)&tdl->dol_misc.dol_assign.dol_AssignName);
+		VPrintf("<%s>\n",
+			(IPTR *)&tdl->dol_misc.dol_assign.dol_AssignName);
 		break;
-
+		
 	    case DLT_NONBINDING:
-		VPrintf("[%s]\n", (IPTR *)&tdl->dol_misc.dol_assign.dol_AssignName);
+		VPrintf("[%s]\n", 
+			(IPTR *)&tdl->dol_misc.dol_assign.dol_AssignName);
 		break;
-
+		
 	    default:
 		{
 		    STRPTR             dirName;     /* For NameFromLock() */
 		    struct AssignList *nextAssign;  /* For multiassigns */
-
+		    
 		    dirName = GetFullPath(SysBase, DOSBase, tdl->dol_Lock);
-
-		    if(dirName != NULL)
+		    
+		    if (dirName != NULL)
 		    {
 			VPrintf("%s\n", (IPTR *)&dirName);
 			FreeVec(dirName);
@@ -256,106 +269,109 @@ static void showAssigns(struct ExecBase *SysBase, struct DosLibrary *DOSBase, BO
 		    }
 
 		    nextAssign = tdl->dol_misc.dol_assign.dol_List;
-
-		    while(nextAssign != NULL)
+		    
+		    while (nextAssign != NULL)
 		    {
-			dirName = GetFullPath(SysBase, DOSBase, nextAssign->al_Lock);
-
-			if(dirName != NULL)
+			dirName = GetFullPath(SysBase, DOSBase,
+					      nextAssign->al_Lock);
+			
+			if (dirName != NULL)
 			{
 			    VPrintf("             + %s\n", (IPTR *)&dirName);
 			    FreeVec(dirName);
 			}
-
+			
 			nextAssign = nextAssign->al_Next;
 		    }
 		}
-
+		
 		break;
 	    }
 	} /* while(NextDosEntry() != NULL) */
-
+	
 	PutStr("\n");
     }
-
-    if(devices)
+    
+    if (devices)
     {
 	struct DosList *tdl = dl;     /* Loop variable */
 	int             count = 0;    /* Used to make sure that as most 5
 				         entries are printed per line */
-
+	
 	PutStr("Devices:\n");
-
+	
 	/* Print all assigned devices */
-	while((tdl = NextDosEntry(tdl, LDF_DEVICES)) != NULL)
+	while ((tdl = NextDosEntry(tdl, LDF_DEVICES)) != NULL)
 	{
 	    VPrintf("%s ", (IPTR *)&tdl->dol_DevName);
 	    count++;
-
-	    if(count == 5)
+	    
+	    if (count == 5)
 	    {
 		PutStr("\n");
 		count = 0;
 	    }
 	}
 
-	if(count <  5)
+	if (count <  5)
 	{
 	    PutStr("\n");
 	}
     }
-
+    
     UnLockDosList(lockBits);
 }
 
 
-static STRPTR GetFullPath(struct ExecBase *SysBase, struct DosLibrary *DOSBase, BPTR lock)
+static STRPTR GetFullPath(struct ExecBase *SysBase, struct DosLibrary *DOSBase,
+			  BPTR lock)
 {
     UBYTE  *buf;       /* Pointer to the memory allocated for the string */
     ULONG   size;      /* Holder of the (growing) size of the string */
-
-    for(size = 512; ; size += 512)
+    
+    for (size = 512; ; size += 512)
     {
 	buf = AllocVec(size, MEMF_ANY);
-
-	if(buf == NULL)
+	
+	if (buf == NULL)
 	{
 	    break;
 	}
-
-	if(NameFromLock(lock, buf, size))
+	
+	if (NameFromLock(lock, buf, size))
 	{
 	    return (STRPTR)buf;
 	}
-
+	
 	FreeVec(buf);
     }
-
+    
     return NULL;
 }
 
 
-static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target, BOOL dismount, BOOL defer, BOOL path,
-	     BOOL add, BOOL remove)
+static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target,
+		    BOOL dismount, BOOL defer, BOOL path, BOOL add,
+		    BOOL remove)
 {
     STRPTR colon;
     BPTR   lock = NULL;
     int    i;			/* Loop variable */
 
     int  error = RETURN_OK;
-
+    
     colon = strchr(name, ':');
-
+    
     /* Correct assign name construction? The rule is that the device name
        should end with a colon at the same time as no other colon may be
        in the name. */
-    if(colon == NULL || colon[1] != 0)
+    if (colon == NULL || colon[1] != 0)
     {
 	VPrintf("Invalid device name %s\n", (IPTR *)&name);
-
+	
 	return RETURN_FAIL;
     }
-
+    
     *colon = 0;		      /* Remove trailing colon; name[] is changed! */
 
     /* This is a little bit messy... We first remove the 'name' assign
@@ -367,20 +383,21 @@ static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target, BOO
 
     // The Loop over multiple targets starts here
 
-    for(i = 0; target[i] != NULL; i++)
+    for (i = 0; target[i] != NULL; i++)
     {
-	if(!(path || defer || dismount))
+	if (!(path || defer || dismount))
 	{
 	    lock = Lock(target[i], SHARED_LOCK);
-
-	    if(lock == NULL)
+	    
+	    if (lock == NULL)
 	    {
 		VPrintf("Can't find %s\n", (IPTR *)&target[i]);
+
 		return RETURN_FAIL;
 	    }
 	}
 
-	if(remove)
+	if (remove)
 	{
 	    removeAssign(DOSBase, target[i]);
 	}
@@ -394,27 +411,27 @@ static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target, BOO
 	    /* Note the ! for conversion to boolean value */
 	    success = !RemDosEntry(FindDosEntry(dl, name,
 						LDF_VOLUMES | LDF_DEVICES));
-
+	    
 	    UnLockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_WRITE);
 
 	    /* AmigaDOS doesn't use RETURN_WARN here... but it should? */
 	    error = success ? error : RETURN_WARN;
 	}
-	else if(path)
+	else if (path)
 	{
 	    error = AssignPath(name, target[i]) == DOSTRUE ? error : RETURN_FAIL;
 	}
-	else if(add)
+	else if (add)
 	{
-	    if(AssignAdd(name, lock) == DOSFALSE)
+	    if (AssignAdd(name, lock) == DOSFALSE)
 	    {
 		UnLock(lock);
 		error = RETURN_FAIL;
 	    }
 	}
-	else if(defer)
+	else if (defer)
 	{
-	    if(AssignLate(name, target[i]) == DOSFALSE)
+	    if (AssignLate(name, target[i]) == DOSFALSE)
 	    {
 		UnLock(lock);
 		error = RETURN_FAIL;
@@ -425,15 +442,15 @@ static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target, BOO
 	    /* If no extra parameters are specified we just do a regular
 	       assign (replacing any possible previous assign with that
 	       name. The case of target being NULL is taken care of above. */
-	    if(AssignLock(name, lock) == DOSFALSE)
+	    if (AssignLock(name, lock) == DOSFALSE)
 	    {
 		UnLock(lock);
 		error = RETURN_FAIL;
 	    }
 	}
-
+	
 	/* We break as soon as we get a serious error */
-	if(error == RETURN_FAIL)
+	if (error == RETURN_FAIL)
 	{
 	    return error;
 	}
@@ -457,7 +474,7 @@ static int removeAssign(struct DosLibrary *DOSBase, STRPTR name)
 
     element = FindDosEntry(dl, name, LDF_ASSIGNS);
 
-    if(element != NULL)
+    if (element != NULL)
     {
 	UnLock(element->dol_Lock);
     }

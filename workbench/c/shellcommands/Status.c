@@ -96,7 +96,8 @@
 
 #include <aros/shcommands.h>
 
-static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb, struct Process *process);
+static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb,
+			 struct Process *process);
 static void PrintF(struct DosLibrary *DOSBase, STRPTR format, ...);
 
 AROS_SH5(Status,41.1,
@@ -109,21 +110,26 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
     AROS_SHCOMMAND_INIT
 
     struct RootNode *root = ((struct DosLibrary *)DOSBase)->dl_Root;
-    int  retval = RETURN_OK;
-    BOOL   full    = SHArg(FULL);
-    BOOL   tcb     = SHArg(TCB);
-    BOOL   all     = SHArg(ALL);    /* It seems like this is not
-						    needed */
+    int    retval = RETURN_OK;
+    BOOL   full   = SHArg(FULL);
+    BOOL   tcb    = SHArg(TCB);
+    BOOL   all    = SHArg(ALL);
     ULONG  processNum = 0;
     STRPTR command    = SHArg(COMMAND);
 
-    if(SHArg(PROCESS) != NULL)
+    (void)Status_version;
+
+    if (SHArg(PROCESS) != NULL)
+    {
         processNum = *SHArg(PROCESS);
+    }
 
-    if(!full && !tcb && processNum == 0 && command == NULL)
+    if (!full && !tcb && processNum == 0 && command == NULL)
+    {
 	all = TRUE;
+    }
 
-    if(command != NULL)
+    if (command != NULL)
     {
  	struct List     *cliList;
 	struct CLIInfo  *ci;
@@ -138,9 +144,9 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
 	cliList = (struct List *)&root->rn_CliList;
 	ci = (struct CLIInfo *)FindName(cliList, command);
 
-	if(ci != NULL)
+	if (ci != NULL)
 	{
-	    if(ci->ci_Process->pr_TaskNum != 0)
+	    if (ci->ci_Process->pr_TaskNum != 0)
 	    {
 		PrintF(DOSBase," %ld\n", ci->ci_Process->pr_TaskNum);
 	    }
@@ -152,7 +158,7 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
 
 	ReleaseSemaphore(&root->rn_RootLock);
     }
-    else if(processNum != 0)
+    else if (processNum != 0)
     {
 	struct Process *process;
 
@@ -166,7 +172,7 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
 
 	ReleaseSemaphore(&root->rn_RootLock);
 
-	if(process != NULL)
+	if (process != NULL)
 	{
 	    printProcess(DOSBase, full, tcb, process);
 	}
@@ -207,19 +213,21 @@ static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb,
     struct CommandLineInterface *cli = BADDR(process->pr_CLI);
 
     /* This should never happen, I guess */
-    if(cli == NULL)
+    if (cli == NULL)
+    {
 	return;
+    }
 
     PrintF(DOSBase,"Process %ld ", process->pr_TaskNum);
 
-    if(tcb || full)
+    if (tcb || full)
     {
 	PrintF(DOSBase,"stk %lu, pri %lu ",
 	       (ULONG)cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
 	       (ULONG)process->pr_Task.tc_Node.ln_Pri);
     }
 
-    if(!tcb || full)
+    if (!tcb || full)
     {
 	STRPTR  name;
 

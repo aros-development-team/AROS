@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -26,6 +26,8 @@ AROS_SHA(BOOL, ,QUIET,/S,FALSE))
     STRPTR *names=SHArg(PATH);
     BPTR *cur, *next;
     struct CommandLineInterface *cli;
+
+    (void)Path_version;
 
     cli=Cli();
     if (*names)

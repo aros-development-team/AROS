@@ -1,5 +1,5 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -67,7 +67,9 @@ AROS_SH0(Else,41.1)
 
     struct CommandLineInterface *cli = Cli();
 
-    if((cli != NULL) && (cli->cli_CurrentInput != cli->cli_StandardInput))
+    (void)Else_version;
+
+    if ((cli != NULL) && (cli->cli_CurrentInput != cli->cli_StandardInput))
     {
 	BOOL found = FALSE;
 	int  level = 1;
@@ -75,17 +77,19 @@ AROS_SH0(Else,41.1)
 
 	SelectInput(cli->cli_CurrentInput);
 
-	while(!found)
+	while (!found)
 	{
 	    LONG status;
 	    int temp;
 
 	    status = ReadItem(buffer, sizeof(buffer), NULL);
 
-	    if(status == ITEM_ERROR || ITEM_NOTHING)
+	    if (status == ITEM_ERROR || ITEM_NOTHING)
+	    {
 		break;
+	    }
 
-	    switch((temp = FindArg("IF,ENDIF", buffer)))
+	    switch ((temp = FindArg("IF,ENDIF", buffer)))
 	    {
 	    case 0:
 		level++;
@@ -94,29 +98,36 @@ AROS_SH0(Else,41.1)
 	    case 1:
 		level--;
 
-		if(level == 0)
+		if (level == 0)
+		{
 		    found = TRUE;
+		}
+
 		break;
 	    }
 
 	    /* Take care of long lines */
 	    {
 		char a;
-		do {
+
+		do
+		{
 		    a = FGetC(Input());
 		} while(a != '\n' && a != ENDSTREAMCH);
 	    }
 	}
 
-	if(!found)
+	if (!found)
 	{
 	    PrintFault(ERROR_NO_MATCHING_ELSEENDIF, "Else");
+
 	    return RETURN_FAIL;
 	}
     }
     else
     {
 	PrintFault(ERROR_SCRIPT_ONLY, "Else");
+
 	return RETURN_ERROR;
     }
 
