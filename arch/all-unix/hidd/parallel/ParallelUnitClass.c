@@ -108,7 +108,7 @@ static OOP_Object *parallelunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot
     if (-1 != data->filedescriptor)
     {
       /*
-      ** Configure the tty driver ??!?!?!
+      ** Configure the tty driver ?!?!?!
       */
       {
         data->replyport_read = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC|MEMF_CLEAR);
