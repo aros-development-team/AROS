@@ -274,6 +274,7 @@ AROS_UFH3(struct rambase *, AROS_SLIB_ENTRY(init,ramdev),
     struct SignalSemaphore *semaphore;
     APTR stack;
 
+
     /* Store arguments */
     rambase->sysbase = sysBase;
     rambase->seglist = segList;
@@ -1631,12 +1632,12 @@ static LONG examine_all(struct filehandle *dir,
 	return ERROR_OBJECT_WRONG_TYPE;
     }
 
-    ent = (struct fnode *)dir->position;
+    ent = (struct fnode *)eac->eac_LastKey;
 
     if (ent == NULL)
     {
 	ent = (struct fnode *)dir->node->list.mlh_Head;
-	ent->usecount++;
+	if (ent->node.mln_Succ) ent->usecount++;
     }
  
     if (ent->node.mln_Succ == NULL)
@@ -1659,7 +1660,7 @@ static LONG examine_all(struct filehandle *dir,
 
 	    ent->usecount++;
 	    last->ed_Next = NULL;
-	    dir->position = (IPTR)ent;
+	    eac->eac_LastKey = (IPTR)ent;
 
 	    return 0;
 	}
@@ -1667,12 +1668,13 @@ static LONG examine_all(struct filehandle *dir,
 	last = ead;
 	ead = ead->ed_Next;
 	ent = (struct fnode *)ent->node.mln_Succ;
+
     } while (ent->node.mln_Succ != NULL);
 
     last->ed_Next = NULL;
-    dir->position = (IPTR)ent;
+    eac->eac_LastKey = (IPTR)ent;
 
-    return 0;
+    return ERROR_NO_MORE_ENTRIES;
 }
 
 
