@@ -211,7 +211,11 @@ $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
 subdirs:
 	@for dir in $(SUBDIRS) ; do \
 	    echo "Making $(TARGET) in $$dir..." ; \
-	    if test ! -e $$dir/makefile ; then \
+	    if test -e $$dir/makefile.src \
+		-a ! -e $$dir/makefile \
+		-o $$dir/makefile.src -nt $$dir/makefile \
+		-o $(TOP)/config/make.tmpl -nt $$dir/makefile \
+		; then \
 		echo "Generating makefile..." ; \
 		$(AWK) -f $(TOP)/scripts/genmf.gawk \
 		    --assign TOP="$(TOP)" \
