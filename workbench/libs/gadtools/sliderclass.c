@@ -48,8 +48,8 @@ struct SliderData
     WORD  	min;
     WORD  	max;
     WORD  	level;
+    WORD        freedom;
     UBYTE 	labelplace;
-    
 };
 
 /**********************************************************************************************/
@@ -112,7 +112,7 @@ STATIC IPTR slider_set(Class * cl, Object * o, struct opSet * msg)
     	    case GTSL_Level:	/* [ISN] */
     	    	if (tidata != data->level)
     	    	{
-    	    	    data->level = (WORD)tidata;
+    	    	    data->level = data->freedom==FREEHORIZ?(WORD)tidata:data->max-(WORD)tidata;
     	    	    notifylevel(cl, o, data->level, msg->ops_GInfo, GadToolsBase);
 		    val_set = TRUE;
 		    
@@ -169,9 +169,11 @@ STATIC IPTR slider_new(Class * cl, Object * o, struct opSet *msg)
 	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
 	if (data->frame)
 	{
+	    data->freedom=GetTagData(PGA_Freedom,FREEHORIZ,msg->ops_AttrList);
+
 	    data->min   = 0;
 	    data->max   = 15;
-	    data->level = 0;
+	    data->level = data->freedom==FREEHORIZ?data->min:data->max;
 
 	    slider_set(cl, o, msg);
 	    
@@ -218,8 +220,8 @@ STATIC IPTR slider_get(Class *cl, Object *o, struct opGet *msg)
 	    break;
 	
 	case GTSL_Level:
-	    *msg->opg_Storage = data->level;
-	    break;
+	  *msg->opg_Storage = data->freedom==FREEHORIZ?data->level:data->max-data->level;
+	  break;
 	
 	case GTSL_Max:
 	    *msg->opg_Storage = data->max;
