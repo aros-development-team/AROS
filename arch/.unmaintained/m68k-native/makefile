@@ -5,6 +5,11 @@ include $(TOP)/config/make.cfg
 
 SPECIAL_CFLAGS = -I $(TOP)/exec
 
+ifeq ($(FLAVOUR),native)
+FILES = \
+	forbid \
+	enqueue
+else
 FILES = \
 	supervisor \
 	switch \
@@ -29,6 +34,7 @@ FILES = \
 	stackswap \
 	runprocess \
 	initcore
+endif
 
 all: setup $(TOP)/include/aros/machine.h machine.i \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
