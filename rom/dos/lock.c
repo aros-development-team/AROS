@@ -69,6 +69,11 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct FileHandle *ret;
+    BPTR con = NULL, ast = NULL;
+    LONG error;
+
+    /* Get pointer to process structure */
+    struct Process *me = (struct Process *)FindTask(NULL);
 
     /* Create filehandle */
     ret = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE, NULL);
@@ -86,18 +91,69 @@
 	{
 	case EXCLUSIVE_LOCK:
 	    iofs.io_Union.io_OPEN.io_FileMode = FMF_LOCK | FMF_READ;
+	    con = me->pr_COS;
+	    ast = me->pr_CES ? me->pr_CES : me->pr_COS;
 	    break;
-	    
+
 	case SHARED_LOCK:
 	    iofs.io_Union.io_OPEN.io_FileMode = FMF_READ;
+	    con = ast = me->pr_CIS;
 	    break;
-	    
+
 	default:
 	    iofs.io_Union.io_OPEN.io_FileMode = accessMode;
+	    con = ast = me->pr_CIS;
 	    break;
 	}
 
-	if (!DoName(&iofs, name, DOSBase))
+	if(!Stricmp(name, "IN:") || !Stricmp(name, "STDIN:"))
+	{
+	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(me->pr_CIS))->fh_Device;
+	    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(me->pr_CIS))->fh_Unit;
+	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
+	    DosDoIO(&iofs.IOFS);
+	    error = me->pr_Result2 = iofs.io_DosError;
+	}
+	else
+	if(!Stricmp(name, "OUT:") || !Stricmp(name, "STDOUT:"))
+	{
+	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(me->pr_COS))->fh_Device;
+	    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(me->pr_COS))->fh_Unit;
+	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
+	    DosDoIO(&iofs.IOFS);
+	    error = me->pr_Result2 = iofs.io_DosError;
+	}
+	else
+	if(!Stricmp(name, "ERR:") || !Stricmp(name, "STDERR:"))
+	{
+	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(me->pr_CES ? me->pr_CES : me->pr_COS))->fh_Device;
+	    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(me->pr_CES ? me->pr_CES : me->pr_COS))->fh_Unit;
+	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
+	    DosDoIO(&iofs.IOFS);
+	    error = me->pr_Result2 = iofs.io_DosError;
+	}
+	else
+	if(!Stricmp(name, "CONSOLE:"))
+	{
+	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(con))->fh_Device;
+	    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(con))->fh_Unit;
+	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
+	    DosDoIO(&iofs.IOFS);
+	    error = me->pr_Result2 = iofs.io_DosError;
+	}
+	else
+	if(!Stricmp(name, "*"))
+	{
+	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(ast))->fh_Device;
+	    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(ast))->fh_Unit;
+	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
+	    DosDoIO(&iofs.IOFS);
+	    error = me->pr_Result2 = iofs.io_DosError;
+	}
+	else
+	    error = DoName(&iofs, name, DOSBase);
+
+	if (!error)
 	{
 	    ret->fh_Device = iofs.IOFS.io_Device;
 	    ret->fh_Unit   = iofs.IOFS.io_Unit;
