@@ -1,32 +1,11 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.8  1997/01/07 12:29:08  digulla
-    Removed AROS_LVO_CALL*NR() macros
-
-    Revision 1.7  1997/01/01 03:46:13  ldp
-    Committed Amiga native (support) code
-
-    Changed clib to proto
-
-    Revision 1.6  1996/12/10 13:51:49  aros
-    Moved all #include's in the first column so makedepend can see it.
-
-    Revision 1.5  1996/10/24 15:50:53  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.4  1996/08/13 13:56:05  digulla
-    Replaced AROS_LA by AROS_LHA
-    Replaced some AROS_LH*I by AROS_LH*
-    Sorted and added includes
-
-    Revision 1.3  1996/08/01 17:41:15  digulla
-    Added standard header for all files
 
     Desc:
     Lang: english
 */
+#include <aros/config.h>
 #include <exec/execbase.h>
 #include <exec/devices.h>
 #include <exec/io.h>
@@ -34,6 +13,16 @@
 #include <aros/libcall.h>
 #include <exec/libraries.h>
 #include <proto/exec.h>
+
+#ifndef DEBUG_SetFunction
+#   define DEBUG_SetFunction 0
+#endif
+#if DEBUG_SetFunction
+#   undef DEBUG
+#   define DEBUG 1
+#endif
+#include <aros/debug.h>
+#undef kprintf
 
 /*****************************************************************************
 
@@ -52,7 +41,7 @@
 
 /*  FUNCTION
 	Tries to open a device and fill the iORequest structure.
-	And error is returned if this fails, 0 if all went well.
+	An error is returned if this fails, 0 if all went well.
 
     INPUTS
 	devName    - Pointer to the devices's name.
@@ -87,6 +76,9 @@
     struct Device *device;
     BYTE ret=IOERR_OPENFAIL;
 
+    D(bug("OpenDevice $%lx $%lx $%lx %ld (\"%s\") by \"%s\"\n", devName, unitNumber, iORequest,
+	flags, (devName > (STRPTR)0x400) ? devName : (UBYTE *)"(null)", SysBase->ThisTask->tc_Node.ln_Name));
+
     /* Arbitrate for the device list */
     Forbid();
 
@@ -99,15 +91,14 @@
 	/* Init iorequest */
 	iORequest->io_Error=0;
 	iORequest->io_Device=device;
-	iORequest->io_Flags=flags;
-	iORequest->io_Message.mn_Node.ln_Type=NT_REPLYMSG;
+	iORequest->io_Unit = NULL;
 
 	/* Call Open vector. */
-	AROS_LVO_CALL3(void,
+	AROS_LVO_CALL3NR(
 	    AROS_LCA(struct IORequest *,iORequest,A1),
 	    AROS_LCA(ULONG,unitNumber,D0),
 	    AROS_LCA(ULONG,flags,D1),
-	    struct Device, device, 1,
+	    struct Device, device, 1, dev
 	);
 
 	/* Check for error */
