@@ -1,6 +1,10 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef X11HIDD_XSHM_H
 #define X11HIDD_XSHM_H
-
 
 #include <aros/config.h>
 

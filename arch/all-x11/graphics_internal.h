@@ -1,10 +1,11 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 specific Internal Information Management
     Lang: english
 */
+
 #ifndef _XLIB_H_
 #   include <X11/Xlib.h>
 #endif

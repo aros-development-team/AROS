@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 /* I have to put his in its own file because of include file
 conflicts between AROS includes and system includes */
 
