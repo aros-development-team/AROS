@@ -10,6 +10,8 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 
+#include "__time.h"
+
 long __gmtoffset;
 
 /*****************************************************************************
@@ -100,20 +102,12 @@ long __gmtoffset;
 
     DateStamp (&t); /* Get timestamp */
 
-    /*
-	2922 is the number of days between 1.1.1970 and 1.1.1978 (2 leap
-		years and 6 normal). The former number is the start value
-		for time(), the latter the start time for the AmigaOS
-		time functions.
-	1440 is the number of minutes per day
-	60 is the number of seconds per minute
-    */
     if (tv)
     {
-	tv->tv_sec = ((t.ds_Days + 2922) * 1440 + t.ds_Minute + __gmtoffset) * 60
-		+ t.ds_Tick / TICKS_PER_SECOND;
-	tv->tv_usec = (t.ds_Tick % TICKS_PER_SECOND)
-		* (1000000 / TICKS_PER_SECOND);
+	tv->tv_sec = (t.ds_Days * 24*60 + t.ds_Minute + __gmtoffset) * 60 +
+	             t.ds_Tick / TICKS_PER_SECOND + OFFSET_FROM_1970;
+	tv->tv_usec = (t.ds_Tick % TICKS_PER_SECOND) *
+		      (1000000 / TICKS_PER_SECOND);
     }
 
     if (tz)

@@ -45,6 +45,11 @@ void lcong48(unsigned short int param[7]);
 #   define RAND_MAX	   2147483647
 #endif
 
+long random(void);
+void srandom(unsigned seed);
+char *initstate(unsigned seed, char *state, int n);
+char *setstate(char *state);
+
 void qsort(void * array, size_t count, size_t elementsize,
 	int (*comparefunction)(const void * element1, const void * element2));
 void * bsearch(const void * key, const void * base, size_t count,
