@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Tell how many characters will fit into a box.
@@ -76,7 +76,7 @@
 
     if (constrainingExtent)
     {
-	constrainingBitWidth = constrainingExtent->te_Width;
+	constrainingBitWidth  = constrainingExtent->te_Width;
 	constrainingBitHeight = constrainingExtent->te_Height;
     }
 
@@ -86,19 +86,19 @@
 
     textExtent->te_Extent.MinX = 0;
     textExtent->te_Extent.MinY = 0;
-    textExtent->te_Extent.MaxY = rp->Font->tf_YSize-1;
+    textExtent->te_Extent.MaxY = rp->Font->tf_YSize - 1;
     textExtent->te_Height = rp->Font->tf_YSize;
 
     textExtent->te_Extent.MaxX = 0;
 
-    for (width=fit=0; strLen; strLen--)
+    for (width = fit = 0; strLen; strLen--)
     {
 	width += TextLength (rp, string, 1);
 
 	if (width > constrainingBitWidth)
 	    break;
 
-	textExtent->te_Extent.MaxX = width;
+	textExtent->te_Extent.MaxX = width - 1;
 	string += strDirection;
 	
 	fit ++;
@@ -107,7 +107,7 @@
     if (fit)
     {
 	textExtent->te_Width = textExtent->te_Extent.MaxX
-		- textExtent->te_Extent.MinX + 1;
+		             - textExtent->te_Extent.MinX + 1;
     }
 
     return fit;
