@@ -15,6 +15,7 @@ NOTE: This is beta. If you want this code, then have a look at our
 \item A *pre* alpha of VBCC with i386 support. This is only loosely
 	connected to AROS. See the README in the directory
 	\filename{AROS/compiler/vbcc/}.
+\item iffparse.library completed
 \end{itemize}
 
 Things we currently work on:
