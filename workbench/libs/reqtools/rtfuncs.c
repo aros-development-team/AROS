@@ -570,18 +570,23 @@ topleftscr:
 SAVEDS ASM void RTFuncs_CloseWindowSafely(REGPARAM(a0, struct Window *, window))
 {
     struct IntuiMessage *msg;
+    struct Node     	*succ;
 
     Forbid();
 
     if(window->UserPort != NULL)
     {
-	while((msg = (struct IntuiMessage *)GetMsg(window->UserPort)) != NULL)
+    	msg = (struct IntuiMessage *)window->UserPort->mp_MsgList.lh_Head;
+	
+	while((succ = msg->ExecMessage.mn_Node.ln_Succ))
 	{
 	    if(msg->IDCMPWindow == window)
 	    {
 		Remove((struct Node *)msg);
 		ReplyMsg((struct Message *)msg);
 	    }
+	    
+	    msg = (struct IntuiMessage *)succ;
 	}
     }
 
