@@ -53,6 +53,9 @@ struct ViewPort;
 #define expunge() \
     AROS_LC0(BPTR, expunge, struct GfxBase *, GfxBase, 3, Gfx)
 
+/* a function needed by GfxAssocate(), GfxLookUp(), GfxFree() */
+extern ULONG CalcHashIndex(ULONG n);
+
 /* Driver prototypes */
 extern struct BitMap * driver_AllocBitMap (ULONG, ULONG, ULONG, ULONG,
 			struct BitMap *, struct GfxBase *);
