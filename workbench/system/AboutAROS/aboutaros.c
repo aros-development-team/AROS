@@ -219,7 +219,7 @@ IPTR AboutAROS__MUIM_AboutAROS_ShowLicense
     Class *CLASS, Object *self, Msg message 
 )
 {
-    OpenWorkbenchObject("HELP:LICENSE");
+    OpenWorkbenchObject("HELP:LICENSE", TAG_DONE);
     
     return NULL;
 }
