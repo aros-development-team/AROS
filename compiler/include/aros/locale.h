@@ -43,8 +43,8 @@ struct CatalogStr
             CloseCatalog(catalog ## _catalog);             \
     }                                                      \
                                                            \
-    ADD2INIT(OpenCatalog_ ## catalog, 0);                  \
-    ADD2EXIT(CloseCatalog_ ## catalog, 0);              
+    ADD2INIT(OpenCatalog_ ## catalog,  10);                \
+    ADD2EXIT(CloseCatalog_ ## catalog, 10);              
 
 #define GetString(ID)                                                                   \
 ({                                                                                      \
