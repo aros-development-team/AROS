@@ -131,11 +131,11 @@ Enable();
             data->softint_write->is_Data = data;
             data->softint_write->is_Code = serialunit_write_more_data;
 
-            data->replyport_read->mp_SigBit = PA_SOFTINT;
-            data->replyport_read->mp_SigTask = data->softint_read;
+            data->replyport_read->mp_Flags = PA_SOFTINT;
+            data->replyport_read->mp_SoftInt = data->softint_read;
 
-            data->replyport_write->mp_SigBit = PA_SOFTINT;
-            data->replyport_write->mp_SigTask = data->softint_write;
+            data->replyport_write->mp_Flags = PA_SOFTINT;
+            data->replyport_write->mp_SoftInt = data->softint_write;
 
             data->unixio_read  = NewObject(NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
             data->unixio_write = NewObject(NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
