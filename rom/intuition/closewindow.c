@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.14  1999/03/19 20:21:35  nlorentz
+    Fixed race condition bug between CloseWindow()/inputhandler by doing most of window closing on inputhandlers context. Also Closewindow() was called direcly from inputhandler, that would cause FreeSignal() in DeleteMsgPort() to be called on the wrong task context
+
     Revision 1.13  1998/12/31 21:43:18  nlorentz
     Bugfix: CloseWindow should no longer free win->RPort as that is done in intui_CloseWindow()
 
@@ -109,19 +112,64 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    
+#define IW(x) ((struct IntWindow *)x)    
     struct IntuiMessage * im;
+
+    D(bug("CloseWindow (%p)\n", window));
+    
+    /* We take a very simple approach to avoid race conditions with the
+       intuition input handler running one input.device 's task:
+       We just send it a msg about closing the window
+    */
+
+    im = IW(window)->closeMessage;
+    im->Class    = IDCMP_WBENCHMESSAGE;
+    im->Code     = IMCODE_CLOSEWINDOW;
+    im->IAddress = window;
+    
+    PutMsg(window->WindowPort, (struct Message *)im);
+    
+
+
+    /* Obviously this should be done on the application's context.
+       (DeleteMsgPort() calls FreeSignal()
+    */
+
+    if (window->UserPort)
+    {
+	/* Delete all pending messages */
+	Forbid ();
+	
+
+	while ((im = (struct IntuiMessage *) GetMsg (window->UserPort)))
+	    ReplyMsg ((struct Message *)im);
+	    
+	Permit ();
+
+	/* Delete message port */
+	DeleteMsgPort (window->UserPort);
+    }
+    
+
+    ReturnVoid ("CloseWindow");
+    AROS_LIBFUNC_EXIT
+} /* CloseWindow */
+
+
+
+/* This is called from the intuition input handler */
+VOID int_closewindow(struct Window *window)
+{
+#define IW(x) ((struct IntWindow *)x)    
+
+    /* Free everything except the applications messageport */
     ULONG lock;
 
     D(bug("CloseWindow (%p)\n", window));
 
     lock = LockIBase (0);
-
-    if (window->MoreFlags & EWFLG_DELAYCLOSE)
-    {
-	window->MoreFlags |= EWFLG_CLOSEWINDOW;
-	ReturnVoid ("CloseWindow");
-    }
-
+    
     if (window == IntuitionBase->ActiveWindow)
 	IntuitionBase->ActiveWindow = NULL;
 
@@ -147,30 +195,21 @@
 
     UnlockIBase (lock);
 
-
     /* Free resources */
+    
     CloseFont (window->RPort->Font);
-
+    
     /* Let the driver clean up. Driver wil dealloc window's rastport */
     intui_CloseWindow (window, IntuitionBase);
 
-    if (window->UserPort)
-    {
-	/* Delete all pending messages */
-	Forbid ();
+    if (IW(window)->closeMessage)
+	free_intuimessage(IW(window)->closeMessage, IntuitionBase);
 
-	while ((im = (struct IntuiMessage *) GetMsg (window->UserPort)))
-	    ReplyMsg ((struct Message *)im);
-
-	Permit ();
-
-	/* Delete message port */
-	DeleteMsgPort (window->UserPort);
-    }
-
+    
     /* Free memory for the window */
     FreeMem (window, intui_GetWindowSize ());
-
-    ReturnVoid ("CloseWindow");
-    AROS_LIBFUNC_EXIT
+    
+    return;
+    
 } /* CloseWindow */
+

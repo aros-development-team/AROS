@@ -171,9 +171,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     BOOL reuse_event = FALSE;
     struct Window *w;
     
-    lock = LockIBase(0L);
-    w = IntuitionBase->ActiveWindow;
-    UnlockIBase(lock);
     
     
     D(bug("Inside intuition inputhandler, active window=%p\n", w));
@@ -183,6 +180,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     
 	struct Window *new_w;
 	BOOL swallow_event = FALSE;
+	BOOL new_active_window = FALSE;
     
     	D(bug("iih: Handling event of class %d, code %d\n", ie->ie_Class, ie->ie_Code));
 	reuse_event = FALSE;
@@ -194,48 +192,55 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
        
        /* Use event to find the active window */
        
+       
+        lock = LockIBase(0UL);
+       
+    	w = IntuitionBase->ActiveWindow;
 	new_w = intui_FindActiveWindow(ie, &swallow_event, IntuitionBase);
+	
 	D(bug("iih:New active window: %p\n", new_w));
 
-
-#warning Have a look at this later
-/* NOTE !! We can add an optimization here,
-  by checking if the mouseclick is at all inside the window.
-  If new_w is NULL here, then the mouseclick was outside
-  windows, and then there is not much point in trying to find
-  a gadget to send the event to !
-*/
-
-	if (!new_w)
+	if (new_w)
 	{
-	    if (!w)
-		continue;
-	  
-	}
-	else
-	{
-	    if (new_w != w)
+	    if ( new_w != w )
 	    {
 
 		D(bug("Activating new window (title %s)\n", new_w->Title));
-			
-		lock = LockIBase(0UL);
+		
 		IntuitionBase->ActiveWindow = new_w;
-		UnlockIBase(lock);
-			
-		RefreshWindowFrame(new_w);
 			
 		D(bug("Window activated\n"));
 		w = new_w;
-			
-		     
+		new_active_window = TRUE;
 	    }
+	}
+	
+	
+
+        if (NULL == w)
+	{
+	    /* We can't have an active gadget if we don't have an active window */
+	    iihdata->ActiveGadget = NULL;
+	    gadget = NULL;
+	    UnlockIBase(lock);
+	    continue;
+	}
+	    
+	UnlockIBase(lock);
+	
+	/* At this point w points to a valid active window */
+	
+	/* Now that we have locked this window (with EWFLG_DELAYCLOSE), and we can safely refresh it */
+	
+	if (new_active_window)
+	{
+	    kprintf("Refreshing new active window \"%s\"\n", FindTask(NULL)->tc_Node.ln_Name);
+	    RefreshWindowFrame(new_w);
 	}
 	
 	if (swallow_event)
 	    continue;
 		     
-	/* At this point w opoints to a valid active window */
 	
 	/* If the last InputEvent was swallowed, we can reuse the IntuiMessage.
 	 ** If it was sent to an app, then we have to get a new IntuiMessage
@@ -914,23 +919,11 @@ D(bug("Window: %p\n", w));
 	    {
 		im->ExecMessage.mn_ReplyPort = iihdata->IntuiReplyPort;
 
-		lock = LockIBase (0L);
-
-		w->MoreFlags &= ~EWFLG_DELAYCLOSE;
-
-		if (w->MoreFlags & EWFLG_CLOSEWINDOW)
-		    CloseWindow (w);
-		else
-		{
-		    D(bug("Putting msg to window %p\n"));
-kprintf("Putting msg %p to window %s\n", im, w->Title);
-		    send_intuimessage(im, w, IntuitionBase);
+		send_intuimessage(im, w, IntuitionBase);
 		    
-		    im = NULL;
-		    D(bug("Msg put\n"));
-		}
+		im = NULL;
+		D(bug("Msg put\n"));
 
-		UnlockIBase (lock);
 	    }
 	    else
 		im->Class = 0;
@@ -938,11 +931,7 @@ kprintf("Putting msg %p to window %s\n", im, w->Title);
 
     } /* for (each event in the chain) */
 
-
     iihdata->ActiveGadget = gadget;
-    lock = LockIBase(0L);
-    IntuitionBase->ActiveWindow = w;
-    UnlockIBase(lock);
 
 
     if (im)
@@ -959,8 +948,21 @@ kprintf("Putting msg %p to window %s\n", im, w->Title);
     
     while ((im = (struct IntuiMessage *)GetMsg (iihdata->IntuiReplyPort)))
     {
-kprintf("got msg %p\n", im);
-    	free_intuimessage(im, IntuitionBase);
+    	if (IDCMP_WBENCHMESSAGE == im->Class)
+	{
+	    switch (im->Code)
+	    {
+		case IMCODE_CLOSEWINDOW:
+		    int_closewindow((struct Window *)im->IAddress);
+		    break;
+		
+		/* ActivateWindow + other stuff goes here */
+	    }
+	}
+	else
+	{
+	    free_intuimessage(im, IntuitionBase);
+	}
     }
 
     D(bug("Outside pollingloop\n"));

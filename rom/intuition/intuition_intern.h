@@ -174,10 +174,6 @@ extern struct IntuitionBase * IntuitionBase;
 
 #define PublicClassList ((struct List *)&(GetPrivIBase(IntuitionBase)->ClassList))
 
-/* Window-Flags */
-#define EWFLG_DELAYCLOSE	0x00000001L /* Delay CloseWindow() */
-#define EWFLG_CLOSEWINDOW	0x00000002L /* Call CloseWindow() */
-
 /* Needed for close() */
 #define expunge() \
     AROS_LC0(BPTR, expunge, struct IntuitionBase *, IntuitionBase, 3, Intuition)
@@ -219,5 +215,29 @@ inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w, struc
 inline VOID free_intuimessage(struct IntuiMessage *imsg, struct IntuitionBase *IntuitionBase);
 inline struct IntuiMessage *alloc_intuimessage(struct IntuitionBase *IntuitionBase);
 
+
+/* Called by intuition to free a window */
+VOID int_closewindow(struct Window *window);
+struct IntWindow
+{
+    struct Window window;
+    
+    /* This message is sent to the intuition input handler when
+       a window should be closed
+    */
+       
+    struct IntuiMessage *closeMessage;
+    
+};
+
+
+
+/* IDCMP_WBENCHMESSAGE parameters */
+
+enum
+{
+	/* Sent from application task to intuition inside CloseWindow() */
+	IMCODE_CLOSEWINDOW = 0
+};
 
 #endif /* INTUITION_INTERN_H */

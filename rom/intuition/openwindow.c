@@ -80,6 +80,8 @@
 	, newWindow->Height
     ));
 
+#define IW(x) ((struct IntWindow *)x)
+
     w  = AllocMem (intui_GetWindowSize (), MEMF_CLEAR);
     
 /* nlorentz: For now, creating a rastport becomes the responiibility of
@@ -106,6 +108,10 @@
 
     if (!ModifyIDCMP (w, newWindow->IDCMPFlags))
 	goto failexit;
+	
+    IW(w)->closeMessage = alloc_intuimessage(IntuitionBase);
+    if (NULL == IW(w)->closeMessage)
+    	goto failexit;
 
     D(bug("modified IDCMP\n"));
 
@@ -214,6 +220,8 @@ failexit:
     }
 */
 
+	if (IW(w)->closeMessage)
+	    free_intuimessage(IW(w)->closeMessage, IntuitionBase);
 
 	if (driver_init_done)
 	    intui_CloseWindow(w, IntuitionBase);
