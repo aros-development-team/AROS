@@ -112,7 +112,7 @@ extern void _aros_not_implemented (void);
             __asm__ __volatile__("jsr (%0)"\
                 : /* no output */\
                 :"a"(hook),"r"(___data),"r"(___dptr)\
-                :A0,A1,D0,D1,"memory");\
+                :A0,A1,D0,D1,"memory","cc");\
         }\
 })
 #else
@@ -159,7 +159,7 @@ extern void _aros_not_implemented (void);
     __asm__(".text\n\t.balign 16\n\t"\
 	".globl "## AROS_SLIB_ENTRY_S(name,system) ##"\n\t"\
 	".type "## AROS_SLIB_ENTRY_S(name,system) ##",@function\n"\
-	AROS_SLIB_ENTRY_S(name,system) ##":\n\t"\
+	AROS_SLIB_ENTRY_S(name,system) ##":\n\t"
 
 #define __ASM_ARG(type, name, reg) \
 	"move.l "## reg ##",-(%sp)\n\t"
@@ -167,13 +167,17 @@ extern void _aros_not_implemented (void);
 #define __ASM_POSTFIX(type,name,system,argc) \
 	"jsr _"## AROS_SLIB_ENTRY_S(name,system) ##"\n\t"\
 	"add.w #4*" #argc "+4,%sp\n\t"\
-	"rts");\
+	"rts\n\t"\
+	".size "## AROS_SLIB_ENTRY_S(name,system) ##",.-"\
+	## AROS_SLIB_ENTRY_S(name,system) );\
     __AROS_LH_PREFIX type AROS_SLIB_ENTRY(name,_##system)(
 
 #define __ASM_POSTFIXI(type,name,system,argc) \
 	"jsr _"## AROS_SLIB_ENTRY_S(name,system) ##"\n\t"\
 	"add.w #4*" #argc ",%sp\n\t"\
-	"rts");\
+	"rts\n\t"\
+	".size "## AROS_SLIB_ENTRY_S(name,system) ##",.-"\
+	## AROS_SLIB_ENTRY_S(name,system) );\
     __AROS_LH_PREFIX type AROS_SLIB_ENTRY(name,_##system)(
 
 #define AROS_LH0(t,n,bt,bn,o,s) \
@@ -1065,7 +1069,7 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 #define __ASM_POSTFIX_U(type,name,argc) \
 	"jsr _" #name "\n\t"\
 	"add.w #4*" #argc ",%sp\n\t"\
-	"rts\n"\
+	"rts\n\t"\
 	".size " #name ",.-" #name);\
     __AROS_UFH_PREFIX type _##name (
 
