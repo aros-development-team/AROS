@@ -35,6 +35,24 @@ static void callback(char, char **);
 	execute_script(current->next->cmd, level + 1);	\
     }
 
+#define	GetString(arg)					\
+    if((arg)[0] == SQUOTE || (arg)[0] == DQUOTE)	\
+    {							\
+	string = strip_quotes(arg);			\
+    }							\
+    else						\
+    {							\
+	char *clip;					\
+	if((clip = get_var_arg(arg)) == NULL)		\
+	{						\
+	    string = StrDup(arg);			\
+	}						\
+	else						\
+	{						\
+	    string = strip_quotes(clip);		\
+	}						\
+    }
+
 int doing_abort = FALSE;
 char * callbackstring = NULL, * globalstring = NULL;
 
@@ -1423,7 +1441,7 @@ void *params;
 
 		    if (current->arg != NULL)
 		    {
-			string = strip_quotes(current->arg);
+			GetString(current->arg);
 		    }
 		    else
 		    {
@@ -1477,21 +1495,7 @@ void *params;
 		    if (current->arg != NULL)
 		    {
 		    char *tempnam;
-			if((current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE)
-			{
-			    string = strip_quotes(current->arg);
-			}
-			else
-			{
-			    if((clip = get_var_arg(current->arg)) == NULL)
-			    {
-				string = StrDup(current->arg);
-			    }
-			    else
-			    {
-				string = strip_quotes(clip);
-			    }
-			}
+			GetString(current->arg);
 			tempnam = FilePart(string);
 			i = strlen(tempnam);
 			clip = AllocVec(sizeof(char) * i + 3, MEMF_PUBLIC);
@@ -1514,21 +1518,7 @@ void *params;
 		    ExecuteCommand();
 		    if (current->arg != NULL)
 		    {
-			if((current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE)
-			{
-			    string = strip_quotes(current->arg);
-			}
-			else
-			{
-			    if((clip = get_var_arg(current->arg)) == NULL)
-			    {
-				string = StrDup(current->arg);
-			    }
-			    else
-			    {
-				  string = strip_quotes(clip);
-			    }
-			}
+			GetString(current->arg);
 			tempnam = PathPart(string);
 			clip = AllocVec(sizeof(char) * (tempnam - string + 3), MEMF_PUBLIC);
 			clip[0] = '"';
@@ -1552,21 +1542,7 @@ void *params;
 		    ExecuteCommand();
 		    if (current->arg != NULL)
 		    {
-			if((current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE)
-			{
-			    string = strip_quotes(current->arg);
-			}
-			else
-			{
-			    if((clip = get_var_arg(current->arg)) == NULL)
-			    {
-				string = StrDup(current->arg);
-			    }
-				else
-			    {
-				  string = strip_quotes(clip);
-			    }
-			}
+			GetString(current->arg);
 			file1 = string;
 		    }
 		    else
@@ -1579,21 +1555,7 @@ void *params;
 		    ExecuteCommand();
 		    if (current->arg != NULL)
 		    {
-			if((current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE)
-			{
-			    string = strip_quotes(current->arg);
-			}
-			else
-			{
-			    if((clip = get_var_arg(current->arg)) == NULL)
-			    {
-				string = StrDup(current->arg);
-			    }
-				else
-			    {
-				  string = strip_quotes(clip);
-			    }
-			}
+			GetString(current->arg);
 			file2 = string;
 		    }
 		    else
@@ -1654,6 +1616,8 @@ void *params;
 		    FreeDosObject(DOS_FIB, fib1);
 		    UnLock(lock2);
 		    UnLock(lock1);
+		    FreeVec(file1);
+		    FreeVec(file2);
 		}
 		else
 		{
@@ -1672,21 +1636,7 @@ void *params;
 		    ExecuteCommand();
 		    if (current->arg != NULL)
 		    {
-			if((current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE)
-			{
-			    string = strip_quotes(current->arg);
-			}
-			else
-			{
-			    if((clip = get_var_arg(current->arg)) == NULL)
-			    {
-				string = StrDup(current->arg);
-			    }
-				else
-			    {
-				string = strip_quotes(clip);
-			    }
-			}
+			GetString(current->arg);
 			current->parent->intval = -1;
 			if ((lock = Lock(string, SHARED_LOCK)) != NULL)
 			{
@@ -1698,6 +1648,40 @@ void *params;
 			}
 			FreeVec(string);
 		    }
+		}
+		break;
+
+	    case _GETSIZE: /* Get the size of a file in bytes */
+		if (current->next != NULL)
+		{
+		struct stat sb;
+
+		    current = current->next;
+		    ExecuteCommand();
+
+		    if (current->arg != NULL)
+		    {
+			GetString(current->arg);
+		    }
+		    else
+		    {
+			error = SCRIPTERROR;
+			traperr("<%s> requires a file string as argument!\n", current->parent->cmd->arg);
+		    }
+		    if(stat(string, &sb) == -1)
+		    {
+			current->parent->intval = 0;
+		    }
+		    else
+		    {
+			current->parent->intval = sb.st_size;
+		    }
+		    FreeVec(string);
+		}
+		else
+		{
+		    error = SCRIPTERROR;
+		    traperr("<%s> requires a string argument!\n", current->arg);
 		}
 		break;
 
@@ -1742,7 +1726,6 @@ void *params;
 	    case _FOREACH	:
 	    case _GETASSIGN	:
 	    case _GETDEVICE	:
-	    case _GETSIZE	:
 	    case _GETSUM	:
 	    case _GETVERSION	:
 	    case _ICONINFO	:
