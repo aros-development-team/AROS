@@ -23,7 +23,8 @@ if [ ! -f AROS-source-$rel.tgz ]; then
     rm -rf AROS
     cp -a AROS.source AROS
     find AROS -name CVS -prune -print0 | xargs -0 rm -r
-    tar czf AROS-source-$rel.tgz AROS
+    tar cz --exclude="AROS/contrib*" -f AROS-source-$rel.tgz AROS
+    tar cz -f AROS-contrib-$rel.tgz AROS/contrib
 fi
 
 if [ ! -f AROS-lx86-bin-$rel.tgz ]; then
