@@ -15,7 +15,8 @@ int options = 0;
 
 char *modulename = NULL, *basename = NULL, *modulenameupper = NULL, 
      *libbase = NULL, *libbasetype = NULL, *libbasetypeextern = NULL, 
-     *datestring = "00.00.0000", *superclass = NULL;
+     *datestring = "00.00.0000", *superclass = NULL,
+     *sysbase_field = NULL, *seglist_field = NULL;
 int residentpri = -128;
 unsigned int majorversion = 0, minorversion = 0, firstlvo = 0;
 struct linelist *cdeflines = NULL, *cdefprivatelines = NULL, *protolines = NULL;

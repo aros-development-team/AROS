@@ -17,6 +17,10 @@ void writeend(void)
 	fprintf(stderr, "Could not write %s\n", line);
 	exit(20);
     }
-    fprintf(out, "#include <libcore/libtail.c>\n");
+    fprintf(out,
+	    "#include \"%s_libdefs.h\"\n"
+	    "int GM_UNIQUENAME(End)(void) {return 0;}\n",
+	    modulename
+    );
     fclose(out);
 }

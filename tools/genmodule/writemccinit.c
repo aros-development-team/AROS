@@ -37,7 +37,6 @@ void writemccinit(void)
         "#include <dos/dosextens.h>\n"
         "#include <aros/libcall.h>\n"
         "#include <aros/debug.h>\n"
-        "#include <libcore/base.h>\n"
         "\n"
         "#include <intuition/classes.h>\n"
         "#include <intuition/classusr.h>\n"
@@ -50,8 +49,9 @@ void writemccinit(void)
         "#include <proto/muimaster.h>\n"
         "\n"
         "#include <aros/symbolsets.h>\n"
-        "#include LC_LIBDEFS_FILE\n"
-        "\n"
+        "#include \"%s_libdefs.h\"\n"
+        "\n",
+        modulename
     );
         
     for(linelistit = cdeflines; linelistit != NULL; linelistit = linelistit->next)
