@@ -1,9 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
-    Lang: english
+    Desc: BumpRevision() change a filename for Workbench copy function.
 */
 #include <stdio.h>
 #include "icon_intern.h"

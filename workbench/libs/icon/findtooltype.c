@@ -1,9 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
-    Lang: english
+    Desc: Find a tooltype entry from an array of tool types.
 */
 #include "icon_intern.h"
 
