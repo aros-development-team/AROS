@@ -1,4 +1,7 @@
-#include "text_intern.h"
+#include <exec/libraries.h>
+#include <intuition/classes.h>
+#include <proto/alib.h>
+#include "compilerspecific.h"
 
 #include "libdefs.h"
 

@@ -16,6 +16,7 @@
 #include <intuition/imageclass.h>
 #include <intuition/icclass.h>
 #include <intuition/gadgetclass.h>
+#include <intuition/cghooks.h>
 #include <datatypes/datatypesclass.h>
 #include <datatypes/textclass.h>
 
