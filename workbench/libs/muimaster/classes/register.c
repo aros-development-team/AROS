@@ -23,7 +23,7 @@
 #include "prefs.h"
 #include "font.h"
 
-/*  #define MYDEBUG 1 */
+/*#define MYDEBUG 1*/
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
@@ -63,7 +63,58 @@ struct MUI_RegisterData
     WORD    	    	     	fontb;
     WORD                        total_hspacing;
     WORD                        ty; /* text y origin - valid between setup/cleanup */
+    WORD                        columns; /* Number of register columns */
+    WORD                        rows; /* Number of register rows */
 };
+
+
+/**************************************************************************
+ Layout Tab Items
+**************************************************************************/
+static void LayoutTabItems(Object *obj, struct MUI_RegisterData *data)
+{
+    WORD extra_space;
+    WORD fitwidth;
+    WORD x;
+    WORD y = - data->tab_height;
+    WORD item_width; /* from vertical line left to v l right */
+    int i;
+    int tabs_on_bottom = 0;
+
+    item_width = (_width(obj) - data->total_hspacing) / data->columns;//data->numitems;
+    extra_space = (_width(obj) - data->total_hspacing) % data->columns;//data->numitems;
+
+    D(bug("LayoutTabItems(%lx) : width = %d, mwidth = %d, max item width = %d, remainder = %d\n",
+	  obj, _width(obj), _mwidth(obj), item_width, extra_space));
+
+    for (i = 0; i < data->numitems; i++)
+    {
+	struct RegisterTabItem *ri = &data->items[i];
+
+	if (i % data->columns == 0)
+	{
+	    x = INTERTAB - 1;
+	    if (i > data->active && !tabs_on_bottom)
+	    {
+		y = _height(obj) - muiAreaData(obj)->mad_HardIBottom;
+		tabs_on_bottom = 1;
+	    } else y += data->tab_height;
+	}
+
+    	ri->x1 = x;
+    	ri->x2 = ri->x1 + item_width - 1;
+	if (extra_space > 0)
+	{
+	    ri->x2++;
+	    extra_space--;
+	}
+	fitwidth = ri->x2 - ri->x1 + 1 - TEXTSPACING;
+	x += fitwidth + TEXTSPACING + INTERTAB;
+
+	ri->y1 = y;
+	ri->y2 = y + data->tab_height - 1;
+    }
+}
 
 /**************************************************************************
    Render one item
@@ -187,7 +238,6 @@ static void RenderRegisterTabItem(struct IClass *cl, Object *obj,  WORD item)
 static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
-    WORD i;
     WORD tabx;
 
 /*
@@ -201,14 +251,17 @@ static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
     else
     {
 	/* draw parent bg over oldactive */
+	IPTR method;
 	WORD old_left, old_top, old_width, old_height;
 	struct RegisterTabItem *ri = &data->items[data->oldactive];
+	if (data->oldactive >= data->columns) method = MUIM_DrawBackground;
+	else method = MUIM_DrawParentBackground;
 
 	old_left = _left(obj) + ri->x1 - 2;
 	old_top = _top(obj) + ri->y1;
 	old_width = ri->x2 - ri->x1 + 5;
 	old_height = data->tab_height - 1;
-	DoMethod(obj, MUIM_DrawParentBackground, old_left, old_top,
+	DoMethod(obj, method, old_left, old_top,
 		 old_width, old_height, old_left, old_top, 0);
 	SetDrMd(_rp(obj), JAM1);
 	SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
@@ -225,20 +278,31 @@ static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
  * Draw new graphics
  */
     /* register frame */
-    if (flags & MADF_DRAWOBJECT)
+    if (flags & MADF_DRAWOBJECT || (data->active / data->columns != data->oldactive / data->columns))
     {
+    	int i,y,tabs_on_bottom = 0;
+
     	SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
 	
 	RectFill(_rp(obj), data->left,
 	    	     data->top + data->tab_height - 1,
 		     data->left,
 		     data->top + data->tab_height + data->frameheight - 1);
-		     		     
-	RectFill(_rp(obj), data->left + 1,
-	    	     data->top + data->tab_height - 1,
-		     data->left + data->framewidth - 2,
-		     data->top + data->tab_height - 1);
-		     
+
+	y = data->top + data->tab_height - 1;     		     
+
+	for (i=0;i<data->rows;i++)
+	{
+	    if (!tabs_on_bottom && (i > data->active/data->columns))
+	    {
+		y = _bottom(obj) - muiAreaData(obj)->mad_HardIBottom + data->tab_height;
+		tabs_on_bottom = 1;
+	    }
+
+	    RectFill(_rp(obj), data->left + 1, y, data->left + data->framewidth - 2, y);
+	    y += data->tab_height;
+	}
+
 	SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
 	
 	RectFill(_rp(obj), data->left + data->framewidth - 1,
@@ -257,10 +321,26 @@ static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
     }
     else
     {
+    	/* If active register has been changed and is on same row we simply draw both registers only */
 	RenderRegisterTabItem(cl, obj, data->active);
 	RenderRegisterTabItem(cl, obj, data->oldactive);
     }
 
+}
+
+/**************************************************************************
+ Set the coordinates
+**************************************************************************/
+static void SetHardCoord(Object *obj, struct MUI_RegisterData *data)
+{
+    struct MUI_AreaData *adata = muiAreaData(obj);
+
+    adata->mad_HardILeft  	= REGISTER_FRAMEX;
+    adata->mad_HardITop   	= data->tab_height * (1 + data->active/data->columns) + REGISTER_FRAMETOP;
+    adata->mad_HardIRight  	= REGISTER_FRAMEX;
+    adata->mad_HardIBottom 	= data->tab_height * (data->rows - 1 - data->active/data->columns) +  REGISTER_FRAMEBOTTOM;
+
+    D(bug("Hardcoord %lx\n",adata->mad_HardITop));
 }
 
 /**************************************************************************
@@ -289,6 +369,10 @@ static ULONG Register_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     for(data->numitems = 0; data->labels[data->numitems]; data->numitems++)
 	;
+
+    data->columns = (WORD)GetTagData(MUIA_Register_Columns, data->numitems, msg->ops_AttrList);
+    if (data->columns <= 0) data->columns = 1;
+    data->rows = (data->numitems + data->columns - 1)/data->columns;
 
     get(obj, MUIA_Group_ActivePage, &tmp);
     data->active = (WORD)tmp;
@@ -364,11 +448,9 @@ static ULONG Register_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
     for(i = 0; i < data->numitems; i++)
     {
     	data->items[i].textlen = strlen(data->items[i].text);
-	data->items[i].y1 = 0;
-	data->items[i].y2 = data->tab_height - 1;
     }
 
-    data->total_hspacing = (data->numitems + 1) * INTERTAB - 2;
+    data->total_hspacing = (data->columns + 1) * INTERTAB - 2;
 /*      D(bug("Register_AskMinMax : data->total_hspacing = %d\n", data->total_hspacing)); */
 
     data->min_width = data->total_hspacing * 3;
@@ -395,10 +477,7 @@ static ULONG Register_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
         DeinitRastPort(&temprp);
     }
 
-    muiAreaData(obj)->mad_HardILeft  	= REGISTER_FRAMEX;
-    muiAreaData(obj)->mad_HardITop   	= data->tab_height + REGISTER_FRAMETOP;
-    muiAreaData(obj)->mad_HardIRight  	= REGISTER_FRAMEX;
-    muiAreaData(obj)->mad_HardIBottom 	= REGISTER_FRAMEBOTTOM;
+    SetHardCoord(obj,data);
     muiAreaData(obj)->mad_Flags     	|= (MADF_INNERLEFT | MADF_INNERTOP | MADF_INNERRIGHT | MADF_INNERBOTTOM);
         
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
@@ -454,15 +533,29 @@ static ULONG Register_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout 
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
     ULONG retval = 1;
-    
+    IPTR active;
+
+    get(obj, MUIA_Group_ActivePage, &active);
+
+    if (active != data->active)
+    {
+	data->oldactive = data->active;
+	data->active = active;
+    }
+    SetHardCoord(obj,data);
+    DoMethod(obj, MUIM_UpdateInnerSizes);
+
     DoSuperMethodA(cl, obj, (Msg)msg);
     
     data->left        = _left(obj);
     data->top         = _top(obj);
     data->framewidth  = _width(obj);
     data->frameheight = _height(obj) - data->tab_height;
-/*      D(bug("Register_Layout : left=%d, top=%d / framewidth=%d, frameheight=%d\n", */
-/*  	  data->left, data->top, data->framewidth, data->frameheight)); */
+
+    LayoutTabItems(obj,data);
+
+    D(bug("Register_Layout : left=%d, top=%d / framewidth=%d, frameheight=%d\n",
+ 	  data->left, data->top, data->framewidth, data->frameheight));
 
     return retval;
 }
@@ -472,38 +565,12 @@ static ULONG Register_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout 
 **************************************************************************/
 static ULONG Register_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
-    struct MUI_RegisterData *data = INST_DATA(cl, obj);
-    WORD i;
-    //WORD minwidth;
-    WORD extra_space;
-    WORD fitwidth;
-    WORD x;
-    WORD item_width; /* from vertical line left to v l right */
+/*    struct MUI_RegisterData *data = INST_DATA(cl, obj);*/
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
-    item_width = (_width(obj) - data->total_hspacing) / data->numitems;
-    extra_space = (_width(obj) - data->total_hspacing) % data->numitems;
-    D(bug("Register_Show(%lx) : width = %d, mwidth = %d, max item width = %d, remainder = %d\n",
-	  obj, _width(obj), _mwidth(obj), item_width, extra_space));
+    D(bug("Register_Show : left = %d, _left = %d, mleft = %d, \n", data->left, _left(obj), _mleft(obj)))
 
-/*      D(bug("Register_Show : left = %d, _left = %d, mleft = %d, \n", data->left, _left(obj), _mleft(obj))); */
-    x = INTERTAB - 1;
-
-    for(i = 0; i < data->numitems; i++)
-    {
-	struct RegisterTabItem *ri = &data->items[i];
-    	ri->x1 = x;
-    	ri->x2 = ri->x1 + item_width - 1;
-	if (extra_space > 0)
-	{
-	    ri->x2++;
-	    extra_space--;
-	}
-	fitwidth = ri->x2 - ri->x1 + 1 - TEXTSPACING;
-	x += fitwidth + TEXTSPACING + INTERTAB;
-    }
-    
     return TRUE;
 }
 
@@ -513,24 +580,48 @@ static ULONG Register_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg
 static ULONG Register_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
-    IPTR active;
+
+    /* Before all the current page is drawn erase the part of the area covered
+     * by tabs which is not erased (between _left(obj) and _mleft(obj) and so on */
+    if (data->oldactive != data->active && (msg->flags & MADF_DRAWUPDATE) && (data->active/data->columns != data->oldactive/data->columns))
+    {
+	int left,top,width,height;
+
+	left = _mright(obj)+1;
+	top = _mtop(obj);
+	width = _right(obj) - left; /* +1 - 1*/
+	height = _mheight(obj);
+
+	DoMethod(obj, MUIM_DrawBackground, left, top, width, height, left, top, 0);
+
+	left = _left(obj)+1; /* +1 because the register frame shouldn't be ereased */
+	width = _mleft(obj) - left; /* + 1 - 1 */
+
+	DoMethod(obj, MUIM_DrawBackground, left, top, width, height, left, top, 0);
+
+	top = _top(obj) + data->tab_height;
+	height = _mtop(obj) - top; /* + 1 - 1 */
+	width = _width(obj)-2;
+
+	if (height > 0 && width > 0)
+	    DoMethod(obj, MUIM_DrawBackground, left, top, width, height, left, top, 0);
+
+	top = _mbottom(obj);
+	height = _bottom(obj) - top; /* + 1 - 1 */
+
+	if (height > 0 && width > 0)
+	    DoMethod(obj, MUIM_DrawBackground, left, top, width, height, left, top, 0);
+    }
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
 /*      D(bug("Register_Draw : flags = %d\n", msg->flags)); */
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)))
 	return(0);
-
-    get(obj, MUIA_Group_ActivePage, &active);
-
-    if (active != data->active)
-    {
-	data->oldactive = data->active;
-	data->active = active;
-    }    
-    
+  
     RenderRegisterTab(cl, obj, msg->flags);
-    
+
+    data->oldactive = data->active;
     return TRUE;
 }
 
@@ -561,8 +652,7 @@ static ULONG Register_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 	    y = msg->imsg->MouseY - data->top;
 
 /*  	    D(bug("Register_HandleEvent : %d,%d,%d -- %d,%d,%d\n", 0, x, _width(obj), 0, y, data->tab_height)); */
-	    if (_between(0, x, _width(obj)) &&
-		_between(0, y, data->tab_height))
+	    if (_between(0, x, _width(obj)))
 	    {
 /*  		D(bug("Register_HandleEvent : in tab, %d,%d\n", x, y)); */
 		for(i = 0; i < data->numitems; i++)
