@@ -50,8 +50,15 @@ typedef signed AROS_8BIT_TYPE               int8_t;
 typedef unsigned AROS_8BIT_TYPE             uint8_t;
 #endif
 
+#ifndef __AROS_INTPTR_T_DECLARED
+#define __AROS_INTPTR_T_DECLARED
 typedef signed AROS_INTPTR_TYPE             intptr_t;
+#endif
+
+#ifndef __AROS_UINTPTR_T_DECLARED
+#define __AROS_UINTPTR_T_DECLARED
 typedef unsigned AROS_INTPTR_TYPE           uintptr_t;
+#endif
 
 /* Fast versions of these types */
 typedef signed AROS_64BIT_FASTTYPE          int_fast64_t;
