@@ -15,10 +15,12 @@
 #include <hidd/hidd.h>
 #include <hidd/mouse.h>
 
-#include "x11.h"
-
 #define DEBUG 0
 #include <aros/debug.h>
+
+
+#include "x11.h"
+
 
 struct x11mouse_data
 {

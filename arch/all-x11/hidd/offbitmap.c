@@ -29,12 +29,12 @@
 
 #include <hidd/graphics.h>
 
-#include "x11gfx_intern.h"
-#include "x11.h"
-
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
+
+#include "x11gfx_intern.h"
+#include "x11.h"
 
 #include "bitmap.h"
 

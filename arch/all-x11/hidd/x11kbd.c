@@ -26,14 +26,15 @@
 
 #include <devices/inputevent.h>
 
-#include "x11.h"
-
 #if X11_LOAD_KEYMAPTABLE
 #include <proto/dos.h>
 #endif
 
 //#define DEBUG 1
 #include <aros/debug.h>
+
+#include "x11.h"
+
 
 static UBYTE keycode2rawkey[256];
 static BOOL havetable;

@@ -19,6 +19,11 @@
 #include <oop/oop.h>
 #include <hidd/graphics.h>
 
+#undef  SDEBUG
+#undef  DEBUG
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include "x11.h"
 
 #undef SysBase
@@ -49,10 +54,6 @@ struct x11clbase
 
 #include <libcore/libheader.c>
 
-#undef  SDEBUG
-#undef  DEBUG
-#define DEBUG 0
-#include <aros/debug.h>
 
 #define SysBase      (LC_SYSBASE_FIELD(lh))
 
