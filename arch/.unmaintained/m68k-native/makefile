@@ -10,7 +10,8 @@ FILES = \
 	disable \
 	forbid \
 	getcc \
-	cacheclearu cachepredma cachepostdma
+	cacheclearu cachepredma cachepostdma \
+	sdivmod32 smult32 smult64 udivmod32 umult32 umult64
 else
 FILES = \
 	supervisor \
