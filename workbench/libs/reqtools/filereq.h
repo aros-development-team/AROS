@@ -65,7 +65,9 @@
 #pragma libcall DOSBase DoPkt1 f0 32103
 #else
 
+#ifndef __GNUC__
 #warning Fix DoPkt1 macro for your compiler
+#endif
 
 #endif
 
