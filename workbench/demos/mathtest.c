@@ -48,6 +48,7 @@ int main(int argc, char ** argv)
     #define DEF_DPOne		0x3ff0000000000000ULL
     #define DEF_DPMinusOne	0xbff0000000000000ULL
     #define DEF_DPTwo		0x4000000000000000ULL
+    #define DEF_DPThree		0x4008000000000000ULL
     
     ptr = (LONG *)&FFPOne; 	*ptr = DEF_FFPOne;
     ptr = (LONG *)&FFPTwo; 	*ptr = DEF_FFPTwo;
@@ -157,15 +158,27 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
 	return (0);
     }
     
+#undef double
+    {
+      QUAD *Q;
+      double d;
+      d = 20.0 * 20.0;
+      Q = (QUAD *)&d;
+      printf ("20:= 0x%08lx%08lx\n", (LONG)(((QUAD)*Q)>>32),*(((LONG *)Q)+1) ); \
+    }
+#define double QUAD
 
     CHECK_DOUBLE(IEEEDPFlt, (1), DEF_DPOne);
     CHECK_DOUBLE(IEEEDPFlt, (2), DEF_DPTwo);
+    CHECK_DOUBLE(IEEEDPFlt, (20), DEF_DPThree);
     CHECK_DOUBLE(IEEEDPAbs, ((QUAD)DEF_DPMinusOne), (QUAD)DEF_DPOne);
     CHECK_DOUBLE(IEEEDPNeg, ((QUAD)DEF_DPMinusOne), (QUAD)DEF_DPOne);
     CHECK_DOUBLE(IEEEDPAdd, ((QUAD)DEF_DPOne,  (QUAD)DEF_DPOne), (QUAD)DEF_DPTwo);
     CHECK_DOUBLE(IEEEDPAdd, (IEEEDPFlt(123456), IEEEDPFlt(654321)), IEEEDPFlt(777777));
     CHECK_DOUBLE(IEEEDPSub, (IEEEDPFlt(123456), IEEEDPFlt(654321)), IEEEDPFlt(-530865));
-    
+    CHECK_DOUBLE(IEEEDPMul, (IEEEDPFlt(123456), IEEEDPFlt(321)), IEEEDPFlt(39629376));
+    CHECK_DOUBLE(IEEEDPMul, (IEEEDPFlt(2), IEEEDPFlt(2)), IEEEDPFlt(4));
+    CHECK_DOUBLE(IEEEDPMul, (IEEEDPFlt(20), IEEEDPFlt(20)), IEEEDPFlt(400));
     
     CloseLibrary(MathIeeeDoubBasBase);
 
@@ -177,6 +190,10 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     CHECK_DOUBLE(IEEEDPSqrt, (IEEEDPFlt(4)), DEF_DPTwo);
     CHECK_DOUBLE(IEEEDPSqrt, (IEEEDPFlt(9)), IEEEDPFlt(3));
+    CHECK_DOUBLE(IEEEDPCos, (IEEEDPFlt(1)), 0x3fe14a280fb5068b);
+    CHECK_DOUBLE(IEEEDPSin, (IEEEDPFlt(1)), 0x3feaed548f090cee);
+    
+
 
     CloseLibrary(MathIeeeDoubTransBase);
 
