@@ -405,12 +405,14 @@ AROS_UFH2(struct ResourceNode *, AddLayersResourceNode,
 /*
  * Allocate memory for a ClipRect.
  */
+/*
 AROS_UFH2(struct ClipRect *, AllocClipRect,
     AROS_UFHA(struct Layer_Info *, li,         A0),
     AROS_UFHA(struct LayersBase *, LayersBase, A6))
 {
   return AllocLayerStruct(sizeof(struct ClipRect), MEMF_PUBLIC|MEMF_CLEAR, li, LayersBase);
 }
+*/
 
 /*
  * Dispose of a ClipRect, free its BitMap if it has one.
