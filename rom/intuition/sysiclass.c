@@ -28,7 +28,6 @@
 #include <aros/asmcall.h>
 #include "intuition_intern.h"
 
-
 /* Image data */
 #define ARROWDOWN_WIDTH    18
 #define ARROWDOWN_HEIGHT   11
@@ -270,6 +269,13 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
         break;
     }
 
+    /* Just to prevent it from reaching default: */
+    case LEFTIMAGE:
+    case UPIMAGE:
+    case RIGHTIMAGE:
+    case DOWNIMAGE:
+    break;
+    
     default:
         CoerceMethod(cl, obj, OM_DISPOSE);
         obj = NULL;
@@ -345,7 +351,43 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
         }
         break;
     }
-    }
+    
+    #define SPACING 3
+    case LEFTIMAGE:
+    	SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
+    	SetDrMd(rport, JAM1);
+    	Move(rport, left + width - SPACING - 1, top + SPACING); /* Move to upper right */
+    	Draw(rport, left + SPACING, top + ((height - 2 * SPACING) / 2));     /* Render '/' */
+    	Move(rport, rport->cp_x, rport->cp_y + 1);
+    	Draw(rport, left + width - SPACING - 1, top + height - SPACING - 1); /* Render '\' */
+    	break;
+    	
+    case UPIMAGE:
+    	SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
+    	SetDrMd(rport, JAM1);
+    	Move(rport, left + SPACING, top + height - SPACING - 1); /* Move to lower left */
+    	Draw(rport, left + ((width - SPACING * 2) / 2), top + SPACING);	 /* Render '/' */
+    	Move(rport, rport->cp_x + 1, rport->cp_y);
+    	Draw(rport, left + width - SPACING - 1, top + height - SPACING - 1); /* Render '\' */
+    	break;
+    	
+    case RIGHTIMAGE:
+    	SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
+    	SetDrMd(rport, JAM1);
+    	Move(rport, left + SPACING, top + SPACING); /* Move to upper left */
+    	Draw(rport, left + width - SPACING - 1, top + ((height - 2 * SPACING) / 2)); /* Render '\' */
+    	Move(rport, rport->cp_x, rport->cp_y + 1);
+    	Draw(rport, left + SPACING, top + height - SPACING - 1);		 /* Render '/' */
+    	break;
+    case DOWNIMAGE:
+    	SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
+    	SetDrMd(rport, JAM1);
+    	Move(rport, left + SPACING, top + SPACING);	/* Move to upper left */
+    	Draw(rport, left + ((width - SPACING * 2) / 2), top + height - SPACING - 1);
+    	Move(rport, rport->cp_x + 1, rport->cp_y);
+    	Draw(rport, left + width - SPACING - 1, top + SPACING);
+    	break;
+    } /* switch (image type) */
     return;
 }
 
@@ -377,6 +419,7 @@ AROS_UFH3(static IPTR, dispatch_sysiclass,
         if (data->frame)
             DoMethodA((Object *)data->frame, msg);
         retval = DoSuperMethodA(cl, obj, msg);
+        break;
 
     case IM_DRAW:
         sysi_draw(cl, obj, (struct impDraw *)msg);
