@@ -1,12 +1,10 @@
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Reschedule() - Put a task back into the ready or waiting list.
     Lang: english
 */
-
-/* Hah - this is an internal function.. no looking. */
 
 #include <exec/types.h>
 #include <exec/execbase.h>
@@ -32,7 +30,11 @@
 	event to awaken it.
 
 	It is possible that in the future, more efficient schedulers
-	will be implemented.
+	will be implemented. In which case this is the function that they
+	need to implement.
+
+	You should not do any costly calculations since you will be
+	running in interupt mode.
 
     INPUTS
 	task    -   The task to insert into the list.
@@ -79,7 +81,7 @@
 	need a variable to store the original prio).
     */
 
-    /* Somebody had better have set the tasks state properly */
+   /* Somebody had better have set the tasks state properly */
 
     switch(task->tc_State)
     {
@@ -91,8 +93,13 @@
 	    Enqueue(&SysBase->TaskReady, (struct Node *)task);
 	    break;
 
+	/*
+	    We don't need to Enqueue() onto the TaskWait list,
+	    as it is not sorted - saves quite a few cycles in
+	    the long run.
+	*/
 	case TS_WAIT:
-	    Enqueue(&SysBase->TaskWait, (struct Node *)task);
+	    AddTail(&SysBase->TaskWait, (struct Node *)task);
 	    break;
 
 	case TS_REMOVED:
@@ -104,7 +111,6 @@
 	case TS_INVALID:
 	case TS_EXCEPT:
 	case TS_RUN:
-
 	    /* We should never be called with this state. */
 	    break;
     }
