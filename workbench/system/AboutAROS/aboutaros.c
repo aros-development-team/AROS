@@ -19,13 +19,19 @@
 
 #include <zune/aboutwindow.h>
 
+#include <string.h>
+
 #include "aboutaros.h"
 #include "locale.h"
 #include "logotype.h"
 
+#include "authors.h"
+#include "sponsors.h"
+#include "acknowledgements.h"
+
 #define WINDOW_BG   ((IPTR) "2:00000000,00000000,00000000")
-#define REGISTER_BG ((IPTR) "7:V,00000000,82000000,81000000-00000000,62000000,61000000")
-#define LIST_BG     ((IPTR) "2:00000000,62000000,61000000")
+#define REGISTER_BG ((IPTR) "7:V,00000000,92000000,91000000-00000000,82000000,81000000")
+#define LIST_BG     ((IPTR) "2:00000000,82000000,81000000")
           
 /*** Private methods ********************************************************/
 #define MUIM_AboutAROS_ShowLicense (TAG_USER | 0x20000000)
@@ -34,7 +40,159 @@
 struct AboutAROS_DATA
 {
     Object *aad_Window;
+    APTR    aad_Pool;
 };
+
+/*** Utility functions ******************************************************/
+STRPTR Section2Name(ULONG section)
+{
+    switch (section)
+    {
+        case SID_COORDINATION:
+            return _(MSG_SECTION_COORDINATION);
+        
+        case SID_EVANGELISM:
+            return _(MSG_SECTION_EVANGELISM);
+        
+        case SID_HIDD:
+            return _(MSG_SECTION_HIDD);
+        
+        case SID_INTUITION:
+            return _(MSG_SECTION_INTUITION);
+        
+        case SID_GRAPHICS:
+            return _(MSG_SECTION_GRAPHICS);
+        
+        case SID_SHELL_COMMANDS:
+            return _(MSG_SECTION_SHELL_COMMANDS);
+        
+        case SID_WORKBENCH:
+            return _(MSG_SECTION_WORKBENCH);
+        
+        case SID_TOOLS:
+            return _(MSG_SECTION_TOOLS);
+        
+        case SID_PREFERENCES:
+            return _(MSG_SECTION_PREFERENCES);
+        
+        case SID_BGUI:
+            return _(MSG_SECTION_BGUI);
+        
+        case SID_ZUNE:
+            return _(MSG_SECTION_ZUNE);
+        
+        case SID_KERNEL:
+            return _(MSG_SECTION_KERNEL);
+        
+        case SID_DOS:
+            return _(MSG_SECTION_DOS);
+        
+        case SID_LIBC_POSIX:
+            return _(MSG_SECTION_LIBC_POSIX);
+        
+        case SID_DOCUMENTATION:
+            return _(MSG_SECTION_DOCUMENTATION);
+        
+        case SID_TRANSLATION:
+            return _(MSG_SECTION_TRANSLATION);
+        
+        case SID_ARTISTRY:
+            return _(MSG_SECTION_ARTISTRY);
+        
+        case SID_WEBSITE:
+            return _(MSG_SECTION_WEBSITE);
+        
+        default:
+            return NULL;
+    }
+}
+
+BOOL NamesToList
+(
+    Object *list, struct TagItem *tags, struct AboutAROS_DATA *data
+)
+{
+    struct TagItem *tstate       = tags,
+                   *tag          = NULL;
+    BOOL            success      = TRUE;
+    IPTR            section      = SID_NONE;
+    STRPTR          sectionName;
+    BOOL            sectionFirst = TRUE;
+    STRPTR          name;
+    STRPTR          buffer;
+    ULONG           length       = 0;
+    
+    if (tags == NULL) return FALSE;
+    
+    while ((tag = NextTagItem(&tstate)) != NULL && success == TRUE)
+    {
+        switch (tag->ti_Tag)
+        {
+            case SECTION_ID:
+                section     = tag->ti_Data;
+                sectionName = Section2Name(section);
+                
+                if (sectionName != NULL)
+                {
+                    sectionFirst 
+                        ? sectionFirst = FALSE
+                        : DoMethod(list, MUIM_List_InsertSingle, (IPTR) "");
+                    
+                    length = strlen(MUIX_B) + strlen(sectionName) + 1;
+                    buffer = AllocPooled(data->aad_Pool, length);
+                    if (buffer != NULL)
+                    {
+                        buffer[0] = '\0';
+                        strcat(buffer, MUIX_B);
+                        strcat(buffer, sectionName);
+                        
+                        DoMethod
+                        (
+                            list, MUIM_List_InsertSingle, 
+                            (IPTR) buffer, MUIV_List_Insert_Bottom
+                        );
+                    }
+                    else
+                    {
+                        success = FALSE;
+                        break;
+                    }
+                }
+                
+                break;
+                
+            case NAME_STRING:
+                name   = (STRPTR) tag->ti_Data;
+                
+                length = strlen(name) + 1;
+                if (sectionName != NULL) length += 4;
+                
+                buffer = AllocPooled(data->aad_Pool, length);
+                if (buffer != NULL)
+                {
+                    buffer[0] = '\0';
+                    if (sectionName != NULL) strcat(buffer, "    ");
+                    strcat(buffer, name);
+                    
+                    DoMethod
+                    (
+                        list, MUIM_List_InsertSingle, 
+                        (IPTR) buffer, MUIV_List_Insert_Bottom
+                    );
+                }
+                else
+                {
+                    success = FALSE;
+                    break;
+                }
+                
+                break;
+        }
+    }
+    
+    return success;
+}
+
 
 /*** Methods ****************************************************************/
 IPTR AboutAROS__OM_NEW
@@ -47,12 +205,17 @@ IPTR AboutAROS__OM_NEW
                           *licenseButton,
                           *authorsList,
                           *sponsorsList,
-                          *acksList;
+                          *acknowledgementsList;
     
     STRPTR                 pages[4]       = { NULL };
     BOOL                   showLogotype;
     BPTR                   lock;
-    
+    APTR                   pool;
+
+    /* Allocate memory pool ------------------------------------------------*/
+    pool = CreatePool(MEMF_ANY, 4096, 4096);
+    if (pool == NULL) return NULL;
+        
     /* Check if the logotype is available ----------------------------------*/
     if ((lock = Lock(LOGOTYPE_IMAGE, ACCESS_READ)) != NULL)
     {
@@ -157,7 +320,6 @@ IPTR AboutAROS__OM_NEW
                     MUIA_Text_Contents,        __(MSG_MORE_INFORMATION),
                 End,
                 Child, (IPTR) VSpace(4),
-                /* FIXME
                 Child, (IPTR) VGroup,
                     InnerSpacing(4,4),
                     
@@ -176,10 +338,14 @@ IPTR AboutAROS__OM_NEW
                                 MUIA_Background, LIST_BG,
                             End,
                         End,
-                        Child, (IPTR) HVSpace,
+                        Child, (IPTR) ListviewObject,
+                            MUIA_Listview_List, (IPTR) acknowledgementsList = ListObject,
+                                TextFrame,
+                                MUIA_Background, LIST_BG,
+                            End,
+                        End,
                     End,
                 End,
-                */
             End,
         End,
         
@@ -190,7 +356,19 @@ IPTR AboutAROS__OM_NEW
     
     data = INST_DATA(CLASS, self);
     data->aad_Window = window;
+    data->aad_Pool   = pool;
     
+    /*-- Initialize lists --------------------------------------------------*/
+    NamesToList(authorsList, AUTHORS, data);
+    NamesToList(sponsorsList, SPONSORS, data);
+    
+    DoMethod
+    (
+        acknowledgementsList, MUIM_List_Insert,
+        (IPTR) ACKNOWLEDGEMENTS, ACKNOWLEDGEMENTS_SIZE, MUIV_List_Insert_Top
+    );
+    
+    /*-- Setup notifications -----------------------------------------------*/
     DoMethod
     ( 
         window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
@@ -209,6 +387,19 @@ error:
     
     return NULL;
 }
+
+IPTR AboutAROS__OM_DISPOSE
+(
+    Class *CLASS, Object *self, Msg message 
+)
+{
+    struct AboutAROS_DATA *data   = INST_DATA(CLASS, self);
+    
+    if (data->aad_Pool != NULL) DeletePool(data->aad_Pool);
+    
+    return DoSuperMethodA(CLASS, self, message);
+}
+
 
 IPTR AboutAROS__MUIM_Application_Execute
 (     
@@ -255,6 +446,9 @@ BOOPSI_DISPATCHER(IPTR, AboutAROS_Dispatcher, CLASS, self, message)
     {
         case OM_NEW: 
             return AboutAROS__OM_NEW(CLASS, self, (struct opSet *) message);
+        
+        case OM_DISPOSE:
+            return AboutAROS__OM_DISPOSE(CLASS, self, message);
         
         case MUIM_Application_Execute:
             return AboutAROS__MUIM_Application_Execute(CLASS, self, message);

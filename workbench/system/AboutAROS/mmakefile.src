@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 FILES 	    := main aboutaros locale
 EXEDIR      := $(AROS_SYSTEM)
 EXE 	    := $(EXEDIR)/About
+GENERATED   := authors.h sponsors.h acknowledgements.h
 
 USE_AROSLIB     := yes
 USE_CLIB_SHARED := yes
@@ -19,9 +20,21 @@ USER_CFLAGS     := -DDATE="\"$(shell date -I)\""
 
 %make_prog_setup mmake=workbench-system-aboutaros
 
-workbench-system-aboutaros : setup $(EXE)
+workbench-system-aboutaros : setup $(GENERATED) $(EXE)
 
 %make_prog_multi dir=$(EXEDIR) target=$(EXE)
+
+authors.h : db/credits scripts/authors2header.py
+	@$(ECHO) Generating $@
+	@$(PYTHON) scripts/authors2header.py <$< >$@
+
+sponsors.h : db/sponsors scripts/sponsors2header.py
+	@$(ECHO) Generating $@
+	@$(PYTHON) scripts/sponsors2header.py <$< >$@
+
+acknowledgements.h : $(TOP)/ACKNOWLEDGEMENTS scripts/acknowledgements2header.py
+	@$(ECHO) Generating $@
+	@$(PYTHON) scripts/acknowledgements2header.py <$< >$@
 
 %common
 %include_deps

@@ -41,3 +41,57 @@ Sponsors
 MSG_PAGE_ACKNOWLEDGEMENTS (//)
 Acknowledgements
 ;
+MSG_SECTION_COORDINATION (//)
+Coordination
+;
+MSG_SECTION_EVANGELISM (//)
+Evangelism
+;
+MSG_SECTION_HIDD (//)
+HIDD subsystem
+;
+MSG_SECTION_INTUITION (//)
+Intuition
+;
+MSG_SECTION_GRAPHICS (//)
+Graphics
+;
+MSG_SECTION_SHELL_COMMANDS (//)
+Shell Commands
+;
+MSG_SECTION_WORKBENCH (//)
+Workbench
+;
+MSG_SECTION_TOOLS (//)
+Tools
+;
+MSG_SECTION_PREFERENCES (//)
+Preferences
+;
+MSG_SECTION_BGUI (//)
+BGUI
+;
+MSG_SECTION_ZUNE (//)
+Zune
+;
+MSG_SECTION_KERNEL (//)
+Kernel
+;
+MSG_SECTION_DOS (//)
+DOS
+;
+MSG_SECTION_LIBC_POSIX (//)
+C link library and POSIX layer
+;
+MSG_SECTION_DOCUMENTATION (//)
+Documentation
+;
+MSG_SECTION_TRANSLATION (//)
+Translation
+;
+MSG_SECTION_ARTISTRY (//)
+Artistry
+;
+MSG_SECTION_WEBSITE (//)
+Website
+;
