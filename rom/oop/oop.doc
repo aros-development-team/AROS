@@ -73,8 +73,8 @@ Method Name - A string with the name of a method.
 Method Object - An Object used to store a Method to allow to invoke
 the method fast.
 
-Interface Object - An object used to store a Method of an Interface
-to invoke it fast.
+Interface Object - An object used to store a Interface
+and allows you to invoke all methods of that interface fast.
 
 
 Possible solutions to design goals w/pros & cons
