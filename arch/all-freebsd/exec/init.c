@@ -33,6 +33,7 @@ extern const struct Resident
     HIDD_resident,
     UnixIO_resident,
     Graphics_resident,
+    Layers_resident,
     Timer_resident,
     Battclock_resident,
     Keymap_resident,
@@ -54,24 +55,25 @@ static const struct Resident *romtagList[] =
     &Expansion_resident,                    /* SingleTask,  110  */
     &Exec_resident,                         /* SingleTask,  105  */
     &Utility_resident,                      /* ColdStart,   103  */
-    &Aros_resident,							/* ColdStart,   102  */
-    &BOOPSI_resident,			    		/* ColdStart,   95   */
-    &OOP_resident,			    			/* ColdStart,   ??	 */
-    &HIDD_resident,			    			/* ColdStart,   92   */
-    &UnixIO_resident,			    		/* ColdStart,   91   */
+    &Aros_resident,			    /* ColdStart,   102  */
+    &BOOPSI_resident,			    /* ColdStart,   95   */
+    &OOP_resident,			    /* ColdStart,   ??	 */
+    &HIDD_resident,			    /* ColdStart,   92   */
+    &UnixIO_resident,			    /* ColdStart,   91   */
     &Graphics_resident,                     /* ColdStart,   65   */
-    &Timer_resident,			    		/* ColdStart,   50   */
-    &Battclock_resident,		    		/* ColdStart,   45   */
-    &Keymap_resident,			    		/* ColdStart,   40   */
-    &Input_resident,			    		/* ColdStart,   30   */
+    &Layers_resident,			    /* ColdStart,   60   */
+    &Timer_resident,			    /* ColdStart,   50   */
+    &Battclock_resident,		    /* ColdStart,   45   */
+    &Keymap_resident,			    /* ColdStart,   40   */
+    &Input_resident,			    /* ColdStart,   30   */
     &Intuition_resident,                    /* ColdStart,   10   */
     &Console_resident,                      /* ColdStart,   5    */
     &emul_handler_resident,                 /* ColdStart,   0    */
-    &boot_resident,			    			/* ColdStart,  -50   */
-    &Mathffp_resident,			    		/* ColdStart,  -120  */
+    &boot_resident,			    /* ColdStart,  -50   */
+    &Mathffp_resident,			    /* ColdStart,  -120  */
     &Dos_resident,                          /* None,       -120  */
-    &LDDemon_resident,			    		/* AfterDOS,   -125  */
-	&con_handler_resident,					/* AfterDOS,   -126 */
+    &LDDemon_resident,			    /* AfterDOS,   -125  */
+    &con_handler_resident,		    /* AfterDOS,   -126 */
     NULL
 };
 

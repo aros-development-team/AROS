@@ -34,6 +34,7 @@ extern const struct Resident
     HIDD_resident,
     UnixIO_resident,
     Graphics_resident,
+    Layers_resident,
     Timer_resident,
     Battclock_resident,
     Keymap_resident,
@@ -63,6 +64,7 @@ static const struct Resident *romtagList[] =
     &HIDD_resident,			    /* ColdStart,   92	 */
     &UnixIO_resident,			    /* ColdStart,   91	 */
     &Graphics_resident, 		    /* ColdStart,   65	 */
+    &Layers_resident,			    /* ColdStart,   60   */
     &Timer_resident,			    /* ColdStart,   50	 */
     &Battclock_resident,		    /* ColdStart,   45	 */
     &Keymap_resident,			    /* ColdStart,   40	 */
