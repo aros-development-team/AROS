@@ -22,9 +22,17 @@
 #   include <X11/Xlib.h>
 #endif
 
+#ifndef _XUTIL_H
+#   include <X11/Xutil.h>
+#endif
+
 #ifndef EXEC_SEMAPHORES_H
 #   include <exec/semaphores.h>
 #endif
+
+#include "xshm.h"
+
+
 
 /****** X11 hidd  *****************************/
 
@@ -110,7 +118,6 @@ struct xwinnode
 };
 
 
-
 struct x11_staticdata
 {
     struct SignalSemaphore sema; /* Protecting this whole struct */
@@ -137,11 +144,23 @@ struct x11_staticdata
     
     struct MinList xwindowlist;
     struct SignalSemaphore winlistsema;
+
+#if USE_XSHM
+    struct SignalSemaphore shm_sema;	/* singlethread access to shared mem */
+    BOOL use_xshm;			/* May we use Xshm ?	*/
+    void *xshm_info;
+#endif    
     
     /* This window is used as a frien drawable for pixmaps. The window is
        never mapped, ie. it is never shown onscreen.
     */
     Window dummy_window_for_creating_pixmaps;
+    
+    XVisualInfo vi;
+    ULONG red_shift;
+    ULONG green_shift;
+    ULONG blue_shift;
+    
     
 };
 

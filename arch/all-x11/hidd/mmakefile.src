@@ -12,7 +12,7 @@ USER_INCLUDES := -I.
 FILES	   := x11 support x11gfx onbitmap offbitmap functable endtag x11_init support x11kbd x11mouse
 
 OBJDIR := $(GENDIR)/$(CURDIR)
-OBJS	:= $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+OBJS	:= $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o) $(OBJDIR)/xshm.o
 LIB	:= $(LIBDIR)/libx11cl.a
 
 
@@ -41,6 +41,9 @@ $(OBJDIR)/%.o : %.c
 
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
+	
+$(OBJDIR)/xshm.o	: xshm.c
+	$(CC) $(COMMON_CFLAGS)  -c -I$(SYS_INCLUDES) xshm.c -o $(OBJDIR)/xshm.o
 	
 libdefs.h : lib.conf
 	@$(ECHO) "Generating $@..."

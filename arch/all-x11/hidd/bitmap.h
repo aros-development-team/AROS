@@ -43,10 +43,9 @@ struct bitmap_data
     } drawable;
     
     Cursor	cursor;
-    long 	maxpen;
+//    long 	maxpen;
     unsigned long sysplanemask;
     Colormap	colmap;
-    long	*hidd2x11cmap;
     GC 		gc;	/* !!! This is an X11 GC, NOT a HIDD gc */
     Display	*display;
     int		screen;

@@ -97,7 +97,6 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	/* Get some info passed to us by the x11gfxhidd class */
 	data->display = (Display *)GetTagData(aHidd_X11Gfx_SysDisplay, 0, msg->attrList);
 	data->screen  = GetTagData(aHidd_X11Gfx_SysScreen, 0, msg->attrList);
-	data->hidd2x11cmap = (long *)GetTagData(aHidd_X11Gfx_Hidd2X11CMap, 0, msg->attrList);
 	data->cursor = (Cursor)GetTagData(aHidd_X11Gfx_SysCursor, 0, msg->attrList);
 	data->colmap = (Colormap)GetTagData(aHidd_X11Gfx_ColorMap, 0, msg->attrList);
 		
@@ -122,6 +121,8 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    
 	/* We must allways have this one */
 	winattr.event_mask |= StructureNotifyMask;
+	
+	winattr.event_mask |= FocusChangeMask;
 	    
 	/* Use backing store for now. (Uses lots of mem) */
 	winattr.backing_store = Always;
@@ -193,6 +194,9 @@ UX11
 		    AddTail( (struct List *)&XSD(cl)->xwindowlist, (struct Node *)node );
 		    
 		    ReleaseSemaphore( &XSD(cl)->winlistsema);
+		    
+		    /* Set the bitmap pixel format in the superclass */
+		    set_pixelformat(o, XSD(cl));
 		}
 		else
 		{
@@ -271,7 +275,8 @@ UX11
 /*********  BitMap::Clear()  *************************************/
 static VOID onbitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
 {
-    ULONG width, height, bg;
+    ULONG width, height;
+    HIDDT_Pixel bg;
     struct bitmap_data *data = INST_DATA(cl, o);
     
     XSetWindowAttributes winattr;
@@ -285,7 +290,8 @@ static VOID onbitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
     GetAttr(o, aHidd_BitMap_Height, &height);
     
     /* Change background color of X window to bg color of HIDD bitmap  */
-    winattr.background_pixel = data->hidd2x11cmap[bg];
+    winattr.background_pixel = bg;
+kprintf("BM_CLEAR: BG pixel: %p\n", bg);
 LX11    
     XChangeWindowAttributes(data->display
     		, DRAWABLE(data)
@@ -312,7 +318,7 @@ UX11
 #define XSD(cl) xsd
 
 #define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 10
+#define NUM_BITMAP_METHODS 14
 
 
 Class *init_onbmclass(struct x11_staticdata *xsd)
@@ -338,6 +344,10 @@ Class *init_onbmclass(struct x11_staticdata *xsd)
     	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
     	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
     	{(IPTR (*)())MNAME(blitcolorexpansion),	moHidd_BitMap_BlitColorExpansion},
+    	{(IPTR (*)())MNAME(mapcolor),		moHidd_BitMap_MapColor},
+    	{(IPTR (*)())MNAME(unmappixel),		moHidd_BitMap_UnmapPixel},
+    	{(IPTR (*)())MNAME(putimagelut),	moHidd_BitMap_PutImageLUT},
+    	{(IPTR (*)())MNAME(getimagelut),	moHidd_BitMap_GetImageLUT},
         {NULL, 0UL}
     };
     

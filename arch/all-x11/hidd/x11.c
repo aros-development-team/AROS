@@ -27,11 +27,10 @@
 
 #include <utility/utility.h>
 
-
-
 #include <aros/asmcall.h>
 
 #include <sys/types.h>
+#include <signal.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,7 +47,6 @@
 
 #define XTASK_NAME "x11hidd task"
 
-#warning Try to reduce below task priority.
 /* We need to have highest priotity for this task, because we
 are simulating an interrupt. Ie. an "interrupt handler" called
 but this task should NEVER be interrupted by a task (for example input.device),
@@ -259,6 +257,7 @@ D(bug("Got input from unixio\n"));
 
 
 LX11	
+D(bug("Calling XPending\n"));
 	    pending = XPending (xsd->display);
 UX11	    
 	    if (pending == 0)
@@ -319,14 +318,31 @@ UX11
 			Hidd_X11Mouse_HandleEvent(xsd->mousehidd, &event);
 		    ReleaseSemaphore( &xsd->sema );
 		    break;
+		    
+		case FocusOut:
+		    XAutoRepeatOn(xsd->display);
+		    break;
+			
 
-	    	case KeyPress: 
-	    	case KeyRelease:
-		    D(bug("Keypress/keyreleas\n"));
+	    	case KeyPress:
+    		    XAutoRepeatOff(XSD(cl)->display);
+		    
 	    	    ObtainSemaphoreShared( &xsd->sema );
 		    if (xsd->kbdhidd)
 		    {
-		        D(bug("kbdhidd present, calling it\n"));
+			Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &event);
+		    }
+	    	
+		    ReleaseSemaphore( &xsd->sema );
+		    break;
+		
+		 
+	    	case KeyRelease:
+		    XAutoRepeatOn(XSD(cl)->display);
+		    
+	    	    ObtainSemaphoreShared( &xsd->sema );
+		    if (xsd->kbdhidd)
+		    {
 			Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &event);
 		    }
 	    	

@@ -98,7 +98,6 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	/* Get some info passed to us by the x11gfxhidd class */
 	data->display = (Display *)GetTagData(aHidd_X11Gfx_SysDisplay, 0, msg->attrList);
 	data->screen  = GetTagData(aHidd_X11Gfx_SysScreen, 0, msg->attrList);
-	data->hidd2x11cmap = (long *)GetTagData(aHidd_X11Gfx_Hidd2X11CMap, 0, msg->attrList);
 	data->cursor = (Cursor)GetTagData(aHidd_X11Gfx_SysCursor, 0, msg->attrList);
 	data->colmap = (Colormap)GetTagData(aHidd_X11Gfx_ColorMap, 0, msg->attrList);
 		
@@ -185,6 +184,9 @@ LX11
 UX11		
 	    if (data->gc)
 	    {
+		/* Set the bitmap pixel format in the superclass */
+		set_pixelformat(o, XSD(cl));
+	    
 LX11	    
 	    	XFlush(data->display);
 UX11		
@@ -265,13 +267,13 @@ static VOID offbitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg
     
 
 LX11 
-    XSetForeground(data->display, data->gc, data->hidd2x11cmap[bg]);
+    XSetForeground(data->display, data->gc, bg);
     XFillRectangle(data->display, DRAWABLE(data), data->gc
     	, 0 , 0
 	, width, height
     );
     
-    XSetForeground(data->display, data->gc, data->hidd2x11cmap[old_fg]);
+    XSetForeground(data->display, data->gc, old_fg);
     
     XFlush(data->display);
 UX11
@@ -295,7 +297,7 @@ UX11
 #define XSD(cl) xsd
 
 #define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 10
+#define NUM_BITMAP_METHODS 14
 
 
 Class *init_offbmclass(struct x11_staticdata *xsd)
@@ -321,6 +323,10 @@ Class *init_offbmclass(struct x11_staticdata *xsd)
     	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
     	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
     	{(IPTR (*)())MNAME(blitcolorexpansion),	moHidd_BitMap_BlitColorExpansion},
+    	{(IPTR (*)())MNAME(mapcolor),		moHidd_BitMap_MapColor},
+    	{(IPTR (*)())MNAME(unmappixel),		moHidd_BitMap_UnmapPixel},
+    	{(IPTR (*)())MNAME(putimagelut),	moHidd_BitMap_PutImageLUT},
+    	{(IPTR (*)())MNAME(getimagelut),	moHidd_BitMap_GetImageLUT},
         {NULL, 0UL}
     };
     
