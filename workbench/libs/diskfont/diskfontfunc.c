@@ -120,11 +120,11 @@ STATIC struct FileEntry *ReadFileEntry(struct ExAllData *ead, struct DiskfontBas
 	{
 	    tagcount = NumTags(fdh->TAttrArray[i].tta_Tags, DiskfontBase);
 	    CopyTagItems(tagitems, fdh->TAttrArray[i].tta_Tags, DiskfontBase);
-	    fdh->TAttrArray[i].tta_Tags = tagitems;
+	    retval->Attrs[i].tta_Tags = tagitems;
 	    tagitems += tagcount;
 	}
 	else
-	    fdh->TAttrArray[i].tta_Tags = NULL;
+	    retval->Attrs[i].tta_Tags = NULL;
     }
     
     FreeFontDescr(fdh, DiskfontBase);

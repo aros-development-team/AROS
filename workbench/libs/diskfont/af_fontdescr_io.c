@@ -190,7 +190,9 @@ struct FontDescrHeader *ReadFontDescr(CONST_STRPTR filename, struct DiskfontBase
         } /* if (fdh->Tagged) */
 	else
 	    tattr->tta_Tags = NULL;
-        
+
+        D(bug("ReadFontDescr: font \"%s\" tags %p\n", tattr->tta_Name, tattr->tta_Tags));
+	
         /* Read the rest of the info */
         if (!ReadWord( &DFB(DiskfontBase)->dsh, &(tattr->tta_YSize), (void *)fh ))
             goto failure;
@@ -248,10 +250,11 @@ struct FontDescrHeader *ReadFontDescr(CONST_STRPTR filename, struct DiskfontBase
 	    tattr->tta_Flags = flags;
 	    tattr->tta_Style = style;
 	    tattr->tta_Tags  = NULL;
+
+	    D(bug("ReadFontDescr: font \"%s\" tags %p\n", tattr->tta_Name, tattr->tta_Tags));
 	    
 	    tattr++;
-	    
-	} /* while(numoutlineentries--) */
+ 	} /* while(numoutlineentries--) */
 	
     } /* if (numoutlineentries) */
     
@@ -304,8 +307,8 @@ VOID FreeFontDescr(struct FontDescrHeader *fdh, struct DiskfontBase_intern *Disk
                 if (tattr->tta_Name)
                     FreeVec(tattr->tta_Name);
 
-		//if (tattr->tta_Tags)
-		//    FreeVec(tattr->tta_Tags);
+		if (tattr->tta_Tags)
+		    FreeVec(tattr->tta_Tags);
                 
                 tattr ++;
             }
