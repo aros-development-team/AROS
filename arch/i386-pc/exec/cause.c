@@ -18,6 +18,7 @@
 
 #include <asm/linkage.h>
 #include <asm/ptrace.h>
+#include <asm/irq.h>
 
 #include "etask.h"
 
@@ -50,6 +51,9 @@ AROS_LH1(void, Cause,
         softint->is_Node.ln_Type = NT_SOFTINT;
         SysBase->SysFlags |= SFF_SoftInt;
 
+    	/* If we are in usermode the software interrupt will end up
+	   being triggered in Enable(). See Enable() code */
+#if 0
 	if (!softblock)
             if (get_cs())
                 __asm__ __volatile__ ("movl $0,%%eax\n\tint $0x80":::"eax","memory");
@@ -70,6 +74,8 @@ AROS_LH1(void, Cause,
                      );
                  }
              }
+#endif
+	     
     }
     Enable();
 
@@ -82,10 +88,13 @@ AROS_LH1(void, Cause,
 #endif
 #define SysBase (*(struct ExecBase **)4UL)
 
+/*
 #define SC_ENABLE(regs)		(regs.eflags |= 0x200)
 #define SC_DISABLE(regs)	(regs.eflags &= ~0x200)
+*/
 
-asmlinkage void sys_Cause(struct pt_regs regs)
+// asmlinkage void sys_Cause(struct pt_regs regs)
+asmlinkage void sys_Cause(void)
 {
     struct IntVector *iv;
 
@@ -112,7 +121,7 @@ asmlinkage void sys_Cause(struct pt_regs regs)
         AROS_UFC5(void, iv->iv_Code,
             AROS_UFCA(ULONG, 0, D1),
             AROS_UFCA(ULONG, 0, A0),
-            AROS_UFCA(APTR, &regs, A1),
+            AROS_UFCA(APTR, 0, A1),
             AROS_UFCA(APTR, iv->iv_Code, A5),
             AROS_UFCA(struct ExecBase *, SysBase, A6)
         );
@@ -144,11 +153,44 @@ AROS_UFH5(void, SoftIntDispatch,
 {
     AROS_USERFUNC_INIT
 
-    struct Interrupt *intr;
+    struct Interrupt *intr = 0;
     BYTE i;
 
     if( SysBase->SysFlags & SFF_SoftInt )
     {
+#if 1
+        /* Clear the Software interrupt pending flag. */
+        SysBase->SysFlags &= ~(SFF_SoftInt);
+
+    	for(;;)
+	{
+            for(i=4; i>=0; i--)
+            {
+	    	__cli();
+        	intr = (struct Interrupt *)RemHead(&SysBase->SoftInts[i].sh_List);
+		
+		if (intr)		
+        	{
+        	    intr->is_Node.ln_Type = NT_INTERRUPT;
+
+    	    	    __sti();
+		    
+        	    /* Call the software interrupt. */
+        	    AROS_UFC3(void, intr->is_Code,
+                    AROS_UFCA(APTR, intr->is_Data, A1),
+                    AROS_UFCA(APTR, intr->is_Code, A5),
+                    AROS_UFCA(struct ExecBase *, SysBase, A6));
+		    
+		    /* Get out and start loop *all* over again *from scratch*! */
+		    break;
+        	}
+            }
+	    
+	    if (!intr) break; 
+	}
+	
+	
+#else
         /* Disable software interrupts */
         softblock = 1;
 
@@ -171,6 +213,8 @@ AROS_UFH5(void, SoftIntDispatch,
 
         /* We now re-enable software interrupts. */
         softblock = 0;
+#endif
+	
     }
     return;
     AROS_USERFUNC_EXIT

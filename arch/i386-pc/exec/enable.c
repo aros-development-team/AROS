@@ -11,7 +11,9 @@
 #include <aros/libcall.h>
 #include <aros/atomic.h>
 #include <aros/debug.h>
+#include <asm/segments.h>
 #include <proto/exec.h>
+#include "exec_intern.h"
 
 void Exec_Permit_Supervisor();
 
@@ -40,7 +42,16 @@ AROS_LH0(void, Enable,
 	   
 	if ((SysBase->TDNestCnt < 0) && (SysBase->AttnResched & 0x80))
 	{
-	    Supervisor(Exec_Permit_Supervisor);	    
+	    if (IN_USER_MODE) Supervisor(Exec_Permit_Supervisor);	    
+	}
+	
+	if (SysBase->SysFlags & SFF_SoftInt)
+	{
+	    if (IN_USER_MODE)
+	    {
+	    	/* sys_Cause */
+                __asm__ __volatile__ ("movl $0,%%eax\n\tint $0x80":::"eax","memory");
+	    }
 	}
     }
 
