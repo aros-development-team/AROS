@@ -219,6 +219,11 @@ BOOL areafillpolygon(struct RastPort  * rp,
                      UWORD              bytesperrow,
                      struct GfxBase   * GfxBase);
 
+void areafillellipse(struct RastPort   * rp,
+                     WORD              * CurVctr,
+                     UWORD               BytesPerRow,
+                     struct GfxBase    * GfxBase);
+                     
 
 #endif /* GRAPHICS_INTERN_H */
 
