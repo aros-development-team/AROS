@@ -80,7 +80,7 @@
         /* see if there is the dot */
 	if(*str == '.')
 	{
-            *str++;
+            str++;
 	    /* scan the numbers behind the dot */
             precision = 0.1;
 	    while (isdigit (*str))
