@@ -25,6 +25,9 @@
 #   define EOF (-1)
 #endif
 
+/* for tmpnam() */
+#define L_tmpnam 20
+
 /* Buffering methods that can be specified with setvbuf() */
 #define _IOFBF 0 /* Fully buffered. */
 #define _IOLBF 1 /* Line buffered. */
@@ -125,9 +128,12 @@ extern int __vcscan (void * data, int (*getc)(void *),
 			int (*ungetc)(int, void *),
 			const char * format, va_list args);
 
+extern char *tmpnam(char *name_buf);
+
 #define putc fputc
 #define getc fgetc
 #define getchar()   getc(stdin)
 #define gets(s)     fgets(s, BUFSIZ, stdin)
+
 
 #endif /* _STDIO_H */
