@@ -35,35 +35,6 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 
     NEWLIST(&((struct IntLocaleBase *)LIBBASE)->lb_CatalogList);
 
-    /* We have to open some libraries. */
-    if( IntLB(LIBBASE)->lb_DosBase == NULL )
-    {
-	if(!( IntLB(LIBBASE)->lb_DosBase = 
-		    (struct DosLibrary *)OpenLibrary("dos.library", 37L)))
-	{
-	    return FALSE;
-	}
-
-	if(!( IntLB(LIBBASE)->lb_UtilityBase =
-		    OpenLibrary("utility.library", 37L)))
-	{
-	    CloseLibrary((struct Library *)IntLB(LIBBASE)->lb_DosBase);
-	    IntLB(LIBBASE)->lb_DosBase = NULL;
-	    return FALSE;
-	}
-
-	if(!( IntLB(LIBBASE)->lb_IFFParseBase =
-		    OpenLibrary("iffparse.library", 37L)))
-	{
-	    CloseLibrary((struct Library *)IntLB(LIBBASE)->lb_DosBase);
-	    CloseLibrary(IntLB(LIBBASE)->lb_UtilityBase);
-	    IntLB(LIBBASE)->lb_DosBase = NULL;
-	    return FALSE;
-	}
-	
-	IntLB(LIBBASE)->lb_RexxSysBase = OpenLibrary("rexxsyslib.library", 36L);
-    }
-
     IntLB(LIBBASE)->lb_DefaultLocale = def = AllocMem(sizeof(struct IntLocale), MEMF_CLEAR|MEMF_ANY);
     if(def != NULL)
     {

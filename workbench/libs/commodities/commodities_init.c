@@ -45,14 +45,6 @@ AROS_SET_LIBFUNC(Init, struct CommoditiesBase, CxBase)
     
     D(bug("commodities_open: Entering...\n"));
     
-    CxBase->cx_UtilityBase = OpenLibrary(UTILITYNAME, 37);
-    if (CxBase->cx_UtilityBase == NULL)
-	return FALSE;
-    
-    CxBase->cx_KeyMapBase = OpenLibrary("keymap.library", 37);
-    if (CxBase->cx_KeyMapBase == NULL)
-	return FALSE;
-    
     CxBase->cx_TimerMP.mp_Node.ln_Type = NT_MSGPORT;
     CxBase->cx_TimerMP.mp_Flags = PA_IGNORE;
     NEWLIST(&CxBase->cx_TimerMP.mp_MsgList);

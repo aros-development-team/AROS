@@ -8,31 +8,28 @@
 
 #include <aros/symbolsets.h>
 
+#define __ICON_NOLIBBASE__
+
 #include "icon_intern.h"
 #include "identify.h"
 
+#include <proto/datatypes.h>
+
 #include LC_LIBDEFS_FILE
+
+LONG IFFParseBase_version = -39,
+    GfxBase_version = -39,
+    CyberGfxBase_version = -39;
+
+LIBBASETYPE *IconBase;
 
 /****************************************************************************************/
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, lh)
 {
     LONG i;
-    
-    if (!(LB(lh)->ib_UtilityBase = OpenLibrary (UTILITYNAME, 39)))
-    {
-        return FALSE;
-    }
-    
-    if (!(LB(lh)->ib_IntuitionBase = OpenLibrary("intuition.library", 39)))
-    {
-        return FALSE;
-    }
-    
-    if (!(LB(lh)->ib_DataTypesBase = OpenLibrary("datatypes.library", 41)))
-    {
-        return FALSE;
-    }
+
+    IconBase = lh;
     
     /* Initialize memory pool ----------------------------------------------*/
     if (!(LB(lh)->ib_MemoryPool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 8194, 8194)))
@@ -40,15 +37,6 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, lh)
         return FALSE;
     }
     
-    /* 
-        Following libraries needed only for 3.5 style icons. If the libraries
-        cannot be opened, we simply don't support 3.5 icons.
-    */
-       
-    LB(lh)->ib_IFFParseBase = OpenLibrary("iffparse.library", 39);
-    LB(lh)->ib_GfxBase      = OpenLibrary("graphics.library", 39);
-    LB(lh)->ib_CyberGfxBase = OpenLibrary("cybergraphics.library", 39);
-
     LB(lh)->dsh.h_Entry = (void *)AROS_ASMSYMNAME(dosstreamhook);
     LB(lh)->dsh.h_Data  = lh;
 
@@ -60,7 +48,7 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, lh)
 
     /* Setup default identify hook -----------------------------------------*/
     LB(lh)->ib_DefaultIdentifyHook.h_Entry = (HOOKFUNC) FindDefaultIcon;
-    LB(lh)->ib_DefaultIdentifyHook.h_Data  = LB(lh)->ib_DataTypesBase;
+    LB(lh)->ib_DefaultIdentifyHook.h_Data  = DataTypesBase;
     
     /* Setup default global settings ---------------------------------------*/
     LB(lh)->ib_Screen               = NULL; // FIXME: better default
@@ -80,11 +68,7 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, lh)
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, lh)
 {
-    if (LB(lh)->ib_GfxBase)       CloseLibrary(LB(lh)->ib_GfxBase);
-    if (LB(lh)->ib_IFFParseBase)  CloseLibrary(LB(lh)->ib_IFFParseBase);
-    if (LB(lh)->ib_CyberGfxBase)  CloseLibrary(LB(lh)->ib_CyberGfxBase);
-    if (LB(lh)->ib_IntuitionBase) CloseLibrary(LB(lh)->ib_IntuitionBase);
-    if (LB(lh)->ib_UtilityBase)   CloseLibrary(LB(lh)->ib_UtilityBase);
+    DeletePool(LB(lh)->ib_MemoryPool);
 }
 
 

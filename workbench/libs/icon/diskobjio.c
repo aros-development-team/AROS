@@ -277,11 +277,6 @@ const IPTR OldDrawerDataDesc[] =
 
 /****************************************************************************************/
 
-//#undef DOSBase
-//#define DOSBase     ((struct DOSLibrary *)(hook->h_Data))
-
-/****************************************************************************************/
-
 AROS_UFH3(LONG, dosstreamhook,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(BPTR,          fh,   A2),
@@ -325,9 +320,6 @@ kprintf ("dsh: Skip %d\n", ((struct BEIOM_Ignore *)msg)->Count);
 /****************************************************************************************/
 
 #define DO(x)       ((struct DiskObject *)x)
-
-//#undef DOSBase
-//#define DOSBase     ((struct DOSLibrary *)(streamhook->h_Data))
 
 /****************************************************************************************/
 

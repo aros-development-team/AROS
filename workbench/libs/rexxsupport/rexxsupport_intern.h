@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -35,9 +35,6 @@
 #include <rexx/rxslib.h>
 
 /* Some external stuff (rexxsupport_init.c) */
-extern struct RxsLib *RexxSysBase;
-extern struct DosLibrary *DOSBase;
-
 struct RexxSupportBase_intern; /* prereference */
 
 /************************/
@@ -49,9 +46,6 @@ struct RexxSupportBase_intern
     struct LibHeader library;
     struct List openports;
 };
-
-#undef SysBase
-#define SysBase (((struct LibHeader *)RexxSupportBase)->lh_SysBase)
 
 #define RSBI(base) ((struct RexxSupportBase_intern *)base)
 

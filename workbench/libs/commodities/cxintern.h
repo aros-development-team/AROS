@@ -132,8 +132,6 @@ struct CommoditiesBase
 {
     struct LibHeader   cx_lh;
     
-    struct Library         *cx_KeyMapBase;
-    struct Library         *cx_UtilityBase;
     struct Library         *cx_TimerBase;
     
     struct IOStdReq         cx_IORequest;     /* To set up input handler */
@@ -164,22 +162,10 @@ ULONG CheckStatus(CxObj *broker, ULONG command, struct Library *CxBase);
 
 /* Locate library bases */
 
-#ifdef SysBase
-#undef SysBase
-#endif
-#ifdef KeymapBase
-#undef KeymapBase
-#endif
-#ifdef UtilityBase
-#undef UtilityBase
-#endif
 #ifdef TimerBase
 #undef TimerBase
 #endif
 
-#define SysBase ((struct LibHeader *)CxBase)->lh_SysBase
-#define KeymapBase ((struct CommoditiesBase *)CxBase)->cx_KeyMapBase
-#define UtilityBase ((struct CommoditiesBase *)CxBase)->cx_UtilityBase
 #define TimerBase ((struct CommoditiesBase *)CxBase)->cx_TimerBase
 
 #define ROUTECxMsg(msg, obj)    msg->cxm_Routing = obj

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -41,17 +41,12 @@ void AsyncPrinter(void)
     struct MsgPort       *ReplyPort;
     ULONG                 result = 0;
     
-/* Use the global, used to be __dt_GlobalSysBase */
-#undef SysBase
-    
     struct Process *MyProc = (struct Process *)FindTask(NULL);
     
     WaitPort(&MyProc->pr_MsgPort);
     pm = (struct PrintMessage *)GetMsg(&MyProc->pr_MsgPort);
    
     DataTypesBase = pm->pm_dtb;
-   
-#define SysBase (GPB(DataTypesBase)->dtb_SysBase)
    
     object = pm->pm_object;
     dtsi = ((struct Gadget *)object)->SpecialInfo;

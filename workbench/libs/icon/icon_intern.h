@@ -112,12 +112,6 @@ struct NativeIcon
 struct IconBase
 {
     struct LibHeader        LibHeader;
-    struct Library         *ib_UtilityBase;
-    struct Library         *ib_IntuitionBase;
-    struct Library         *ib_IFFParseBase;
-    struct Library         *ib_GfxBase;
-    struct Library         *ib_CyberGfxBase;
-    struct Library         *ib_DataTypesBase;
     
     struct Hook             dsh;
     struct SignalSemaphore  iconlistlock;
@@ -164,13 +158,6 @@ VOID FreeIcon35(struct NativeIcon *icon, struct IconBase *IconBase);
 
 
 #define LB(ib)          ((struct IconBase *) (ib))
-
-#define UtilityBase     (((struct IconBase *) IconBase)->ib_UtilityBase)
-#define IFFParseBase    (((struct IconBase *) IconBase)->ib_IFFParseBase)
-#define CyberGfxBase    (((struct IconBase *) IconBase)->ib_CyberGfxBase)
-#define DataTypesBase   (((struct IconBase *) IconBase)->ib_DataTypesBase)
-#define IntuitionBase   ((struct IntuitionBase *) ((struct IconBase *) IconBase)->ib_IntuitionBase)
-#define GfxBase	        ((struct GfxBase *)       ((struct IconBase *) IconBase)->ib_GfxBase)
 
 #define POOL            (((struct IconBase *) IconBase)->ib_MemoryPool)
 

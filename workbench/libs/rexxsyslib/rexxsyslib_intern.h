@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -56,9 +56,6 @@ struct RexxSysBase_intern
     char *                 rexxmsgid;
     struct SignalSemaphore semaphore;
 };
-
-#undef SysBase
-#define SysBase (((struct RxsLib *)RexxSysBase)->rl_SysBase)
 
 #define RSBI(base) ((struct RexxSysBase_intern *)base)
 

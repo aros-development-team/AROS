@@ -46,7 +46,7 @@ APTR MF_IteratorInit(struct DiskfontBase_intern *DiskfontBase)
     Forbid();
 					
     /* Get the first font */
-    mfdata->CurrentFont = (struct TextFont*)GetHead(&DiskfontBase->gfxbase->TextFonts);
+    mfdata->CurrentFont = (struct TextFont*)GetHead(&GfxBase->TextFonts);
 
     return (APTR)mfdata;
 }

@@ -43,12 +43,15 @@ FUNCS := allocfilerequest	\
 #MM     workbench-libs-coolimages-includes \
 #MM     includes-copy
 
-#MM- workbench-libs-asl : linklibs workbench-libs-asl-catalogs
+#MM workbench-libs-asl : \
+#MM     linklibs \
+#MM     workbench-libs-asl-catalogs \
+#MM     workbench-libs-coolimages
 
 
 %build_module mmake=workbench-libs-asl \
     modname=asl modtype=library \
     files="$(FUNCS) $(FILES)" \
-    uselibs="amiga rom m"
+    uselibs="coolimages amiga rom m"
 
 %common

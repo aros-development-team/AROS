@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -52,8 +52,6 @@ struct internal_RealTimeBase
 
     BPTR             rtb_SegList;
     struct ExecBase *rtb_SysBase;
-    struct Library  *rtb_UtilityBase;
-    struct Library  *rtb_DOSBase;
 
     struct SignalSemaphore rtb_Locks[RT_MAXLOCK];
 
@@ -62,13 +60,6 @@ struct internal_RealTimeBase
     struct Interrupt rtb_VBlank;
     struct Task     *rtb_PulseTask;
 };
-
-#define  UtilityBase  (GPB(RealTimeBase)->rtb_UtilityBase)
-#define  SysBase      (GPB(RealTimeBase)->rtb_SysBase)
-#define  DOSBase      (GPB(RealTimeBase)->rtb_DOSBase)
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct RealTimeBase *, RealTimeBase, 3, RealTime)
 
 #endif /* REALTIME_INTERN_H */
 

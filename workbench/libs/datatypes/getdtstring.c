@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -88,7 +88,7 @@ struct StringDef __dtStrings[]=
     STRPTR            str = NULL;
     struct StringDef *sd;
    
-    if((GPB(DataTypesBase)->dtb_LocaleBase != NULL) && 
+    if((LocaleBase != NULL) && 
        (GPB(DataTypesBase)->dtb_LibsCatalog != NULL))
 	str = GetCatalogStr(GPB(DataTypesBase)->dtb_LibsCatalog, id, NULL);
    

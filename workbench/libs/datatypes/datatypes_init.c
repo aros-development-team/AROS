@@ -18,37 +18,10 @@
 #include "datatypes_intern.h"
 #include LC_LIBDEFS_FILE
 
-static void closelibs(struct DataTypesBase *DataTypesBase)
-{
-    if(DataTypesBase->dtb_IntuitionBase != NULL)
-	CloseLibrary(DataTypesBase->dtb_IntuitionBase);
-
-    if(DataTypesBase->dtb_LayersBase != NULL)
-	CloseLibrary(DataTypesBase->dtb_LayersBase);
-
-    if(DataTypesBase->dtb_UtilityBase != NULL)
-	CloseLibrary(DataTypesBase->dtb_UtilityBase);
-
-    if(DataTypesBase->dtb_DOSBase != NULL)
-	CloseLibrary(DataTypesBase->dtb_DOSBase);
-
-    if(DataTypesBase->dtb_IFFParseBase != NULL)
-	CloseLibrary(DataTypesBase->dtb_IFFParseBase);
-
-    if(DataTypesBase->dtb_LocaleBase != NULL)
-	CloseLibrary(DataTypesBase->dtb_LocaleBase);
-
-    if(DataTypesBase->dtb_GfxBase != NULL)
-	CloseLibrary(DataTypesBase->dtb_GfxBase);
-}
-
-
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
     int i;
 
-    LIBBASE->dtb_SysBase = SysBase;
-    
     for (i = 0; i < SEM_MAX; i++)
     {
 	InitSemaphore(&LIBBASE->dtb_Semaphores[i]);
@@ -65,56 +38,6 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 
     D(bug("Inside init of datatypes.library\n"));
     
-    if ((LIBBASE->dtb_UtilityBase =
-	    OpenLibrary("utility.library", 39L)) == NULL)
-    {
-	D(bug("datatypes.library: Cannot open utility.library\n"));
-	goto error;
-    }
-
-    if ((LIBBASE->dtb_GfxBase =
-	    OpenLibrary("graphics.library", 39L)) == NULL)
-    {
-	D(bug("datatypes.library: Cannot open graphics.library\n"));
-	goto error;
-    }
-
-    if ((LIBBASE->dtb_LayersBase = 
-	    OpenLibrary("layers.library", 39L)) == NULL)
-    {
-	D(bug("datatypes.library: Cannot open layers.library\n"));
-	goto error;
-    }
-
-    if ((LIBBASE->dtb_IntuitionBase =
-	    OpenLibrary("intuition.library", 39L)) == NULL)
-    {
-	D(bug("datatypes.library: Cannot open intuition.library\n"));
-	goto error;
-    }
-
-    if ((LIBBASE->dtb_DOSBase =
-	    OpenLibrary("dos.library", 37L)) == NULL)
-    {
-	D(bug("datatypes.library: Cannot open dos.library\n"));
-	goto error;
-    }
-
-    /* We may not have these libraries, but try anyway */
-    if ((LIBBASE->dtb_IFFParseBase =
-	    OpenLibrary("iffparse.library", 37L)) == NULL)
-    {
-	D(bug("datatypes.library: Cannot open iffparse.library\n"));
-	goto error;
-    }
-
-    if ((LIBBASE->dtb_LocaleBase =
-	    OpenLibrary("locale.library", 0L)) == NULL)
-    {
-	D(bug("datatypes.library: Cannot open locale.library\n"));
-	goto error;
-    }
-
     /* Get the list of datatypes */
     LIBBASE->dtb_DTList = GetDataTypesList(LIBBASE);
 
@@ -138,8 +61,6 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     return TRUE;
 
 error:
-    closelibs(LIBBASE);
-
     return FALSE;
 }
 

@@ -31,11 +31,8 @@ AROS_UFH3(void, Pulse,
 	  AROS_UFHA(struct ExecBase *, sysBase, A6))
 {
     AROS_USERFUNC_INIT
-#undef SysBase
-#define SysBase sysBase
+
     struct internal_RealTimeBase *RealTimeBase = GPB(FindTask(NULL)->tc_UserData);
-#undef SysBase
-#define SysBase (RealTimeBase->rtb_SysBase)
 
     struct Conductor *conductor;
     struct Player    *player;

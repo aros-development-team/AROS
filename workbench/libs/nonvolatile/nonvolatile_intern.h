@@ -28,11 +28,6 @@ struct NVBase
 
 /* Locate library bases */
 
-#ifdef SysBase
-#undef SysBase
-#endif
-
-#define SysBase    ((struct LibHeader *)nvBase)->lh_SysBase
 #define nvdBase    ((struct NVBase *)nvBase)->nv_ImplementationLib
 
 #define GPB(x)     ((struct NVBase *)x)

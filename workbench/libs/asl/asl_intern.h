@@ -276,20 +276,6 @@ struct AslBase_intern
 {
     struct LibHeader            lh;
 
-    struct DosLibrary		*dosbase;
-    struct IntuitionBase 	*intuitionbase;
-
-    struct GfxBase		*gfxbase;
-    struct Library		*layersbase;
-    struct Library		*cybergfxbase;
-    struct Library		*utilitybase;
-    struct Library		*gadtoolsbase;
-    struct Library  	    	*diskfontbase;
-    struct Library  	    	*localebase;
-#if USE_SHARED_COOLIMAGES
-    struct Library  	    	*coolimagesbase;
-#endif
-
     struct MinList		ReqList;
     struct SignalSemaphore	ReqListSem;
     struct AslReqInfo		ReqInfo[3];
@@ -421,40 +407,7 @@ AROS_UFP3(ULONG, SMGadgetryHook,
 
 /*****************************************************************************************/
 
-/* The following typedefs are necessary, because the names of the global
-   variables storing the library base pointers	and the corresponding
-   structs are equal.
-   This is a hack, of course. */
-typedef struct GfxBase GraphicsBase;
-typedef struct IntuitionBase IntuiBase;
-
 #undef ASLB
 #define ASLB(b) ((struct AslBase_intern *)b)
-#undef UtilityBase
-#define UtilityBase	ASLB(AslBase)->utilitybase
-
-#define GadToolsBase	ASLB(AslBase)->gadtoolsbase
-
-#define CyberGfxBase	ASLB(AslBase)->cybergfxbase
-
-#define LayersBase	ASLB(AslBase)->layersbase
-
-#define DiskfontBase	ASLB(AslBase)->diskfontbase
-
-#define LocaleBase  	ASLB(AslBase)->localebase
-
-#define CoolImagesBase	ASLB(AslBase)->coolimagesbase
-
-#undef IntuitionBase
-#define IntuitionBase	ASLB(AslBase)->intuitionbase
-
-#undef GfxBase
-#define GfxBase 	ASLB(AslBase)->gfxbase
-
-#undef DOSBase
-#define DOSBase 	ASLB(AslBase)->dosbase
-
-#undef SysBase
-#define SysBase 	ASLB(AslBase)->lh.lh_SysBase
 
 #endif /* ASL_INTERN_H */

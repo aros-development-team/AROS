@@ -268,12 +268,6 @@ struct GadToolsBase_intern
 {
     struct LibHeader              libheader;
 
-    struct IntuitionBase 	* intuibase;
-    struct Library	 	* dosbase;
-    struct GfxBase	 	* gfxbase;
-    struct Library		* layersbase;
-    struct Library	 	* utilitybase;
-
     Class 			* buttonclass;
     Class 			* textclass;
     Class 			* sliderclass;
@@ -381,29 +375,7 @@ struct GT_GenericGadget
 
 /****************************************************************************************/
 
-/* The following typedefs are necessary, because the names of the global
-   variables storing the library base pointers	and the corresponding
-   structs are equal.
-   This is a hack, of course. */
-typedef struct IntuitionBase IntuiBase;
-typedef struct GfxBase GraphicsBase;
-
 #define GTB(gtb)        	((struct GadToolsBase_intern *)gtb)
-/*
-#undef SysBase
-#define SysBase (GTB(GadToolsBase)->sysbase)
-*/
-extern struct ExecBase * SysBase;
-#undef IntuitionBase
-#define IntuitionBase 		(GTB(GadToolsBase)->intuibase)
-#undef DOSBase
-#define DOSBase 		(GTB(GadToolsBase)->dosbase)
-#undef GfxBase
-#define GfxBase 		(GTB(GadToolsBase)->gfxbase)
-#undef LayersBase
-#define LayersBase 		(GTB(GadToolsBase)->layersbase)
-#undef UtilityBase
-#define UtilityBase 		(GTB(GadToolsBase)->utilitybase)
 
 #ifdef __MORPHOS__
 #define DeinitRastPort(x) ((void)0)

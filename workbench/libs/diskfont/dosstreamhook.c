@@ -15,11 +15,6 @@
 
 /****************************************************************************************/
 	
-#undef DOSBase
-#define DOSBase     ((struct DOSLibrary *)(hook->h_Data))
-
-/****************************************************************************************/
-
 AROS_UFH3(LONG, dosstreamhook,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(BPTR,          fh,   A2),

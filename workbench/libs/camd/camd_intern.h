@@ -201,9 +201,6 @@ struct MyMidiNode{
 struct CamdBase_intern{
     struct LibHeader		lh;
 
-/*    struct UtilityBase		*utilitybase;
-    struct DosLibrary *dosbase;*/
-
     struct Drivers *drivers;
     struct List mymidinodes;
     struct List midiclusters;
@@ -239,16 +236,6 @@ struct CamdBase_intern{
 
 #  undef CB
 #  define CB(b)		((struct CamdBase_intern *)b)
-/*
-#  undef SysBase
-#  define SysBase		(((struct LibHeader *)CamdBase)->lh_SysBase)
-
-#  undef UtilityBase
-#  define UtilityBase	(((struct CamdBase_intern *)CamdBase)->utilitybase)
-
-#  undef DOSBase
-#  define DOSBase	(((struct CamdBase_intern *)CamdBase)->dosbase)
-*/
 
 /****************************************************************************************/
 

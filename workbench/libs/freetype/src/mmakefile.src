@@ -51,7 +51,7 @@ USER_INCLUDES := -I. -I../include $(addprefix -I,$(DIRS))
     files=$(FILESDIR)
 
 %build_module mmake=workbench-libs-freetype-module modname=freetype2 \
-    modtype=library files="$(FILESDIR) freetype2_init" linklibname=freetype2shared \
+    modtype=library files=$(FILESDIR) linklibname=freetype2shared \
     linklibfiles=tagcall uselibs="amiga rom m"
  
 %common

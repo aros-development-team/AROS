@@ -33,6 +33,8 @@
 #endif
 #include <aros/libcall.h>
 
+#include <libcore/base.h>
+
 /* Options */
 
 #define ALWAYS_ZERO_LIBCOUNT 1
@@ -201,13 +203,7 @@ ULONG CopyTagItems(struct TagItem *, struct TagItem *, struct DiskfontBase_inter
 
 struct DiskfontBase_intern
 {
-    struct Library	   library;
-    /* struct ExecBase * sysbase; */
-    BPTR		   seglist;
-
-/*    struct Library	 * dosbase; */
-    struct GfxBase	  *gfxbase;
-    struct Library	  *utilitybase;
+    struct LibHeader	   libheader;
 
     /* dosstreamhandler hook neede for endian io funcs */
     struct Hook		   dsh;
@@ -220,20 +216,6 @@ struct DiskfontBase_intern
     struct Interrupt       memint;
 };
 
-/* The following typedefs are necessary, because the names of the global
-   variables storing the library base pointers	and the corresponding
-   structs are equal.
-   This is a hack, of course. */
-typedef struct GfxBase GraphicsBase;
-
 #define DFB(dfb)        ((struct DiskfontBase_intern *)dfb)
-/* #undef SysBase
-#define SysBase (DFB(DiskfontBase)->sysbase) */
-/* #undef DOSBase
-#define DOSBase (DFB(DiskfontBase)->dosbase) */
-#undef GfxBase
-#define GfxBase (DFB(DiskfontBase)->gfxbase)
-#undef UtilityBase
-#define UtilityBase (DFB(DiskfontBase)->utilitybase)
 
 #endif /* diskfont_intern.h */

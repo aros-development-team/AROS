@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -57,9 +57,6 @@ struct ReqToolsBase_intern {
     
     struct ExecBase *rt_SysBase;
 };
-
-/* Fix name clashes */
-typedef  struct IntuitionBase  IntuiBase;
 
 #define GPB(x) 		((struct ReqToolsBase *)x)
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Tell locale that the preferences have been changed.
@@ -10,6 +10,7 @@
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/utility.h>
 #include <dos/var.h>
 #include <utility/utility.h>
 #include "locale_intern.h"
@@ -110,8 +111,7 @@ static const char *langlist[] =
 			/* Check for american-english */
 			if (index == 1 && locale->loc_MeasuringSystem == MS_AMERICAN) --index;
 
-#undef UtilityBase
-			((struct UtilityBase *)IntLB(LocaleBase)->lb_UtilityBase)->ub_Language = index+1;
+			UtilityBase->ub_Language = index+1;
 			break;
 		}
 	}
