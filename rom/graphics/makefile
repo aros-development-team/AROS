@@ -2,8 +2,9 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-FILES = closefont draw initrastport move openfont rectfill scrollraster \
-	setapen setbpen setdrmd setfont setrast text textlength writepixel
+FILES = closefont draw getapen getbpen getdrmd initrastport move \
+	openfont rectfill scrollraster setapen setbpen setdrmd \
+	setfont setrast text textlength writepixel
 
 all: setup $(OSGENDIR)/graphics_init.o $(OSGENDIR)/graphics_functable.o \
 	$(OSGENDIR)/driver_x11.o \
