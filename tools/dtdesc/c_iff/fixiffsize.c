@@ -51,7 +51,7 @@
 
 void FixIFFSize(struct IFFHandle *TheHandle)
 {
- CARD32 Buffer;
+ uint32_t Buffer;
 
  if(!TheHandle)
  {
@@ -63,7 +63,7 @@ void FixIFFSize(struct IFFHandle *TheHandle)
   return;
  }
 
- if(fseek(TheHandle->TheFile, sizeof(CARD32), SEEK_SET))
+ if(fseek(TheHandle->TheFile, sizeof(uint32_t), SEEK_SET))
  {
   return;
  }
@@ -71,7 +71,7 @@ void FixIFFSize(struct IFFHandle *TheHandle)
  Buffer=TheHandle->IFFSize;
  Buffer=Swap32IfLE(Buffer);
 
- fwrite((void *) &Buffer, sizeof(CARD32), 1, TheHandle->TheFile);
+ fwrite((void *) &Buffer, sizeof(uint32_t), 1, TheHandle->TheFile);
 }
 
 

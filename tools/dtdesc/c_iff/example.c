@@ -30,7 +30,7 @@
  *  prototypes
  */
 
-void PrintID(CARD32 ID);
+void PrintID(uint32_t ID);
 
 /*
  *  the main-program
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
  return(0);
 }
 
-void PrintID(CARD32 ID)
+void PrintID(uint32_t ID)
 {
  char Buffer[5];
 

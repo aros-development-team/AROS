@@ -23,7 +23,7 @@
 *   SYNOPSIS
 *       Success = NewChunk( TheHandle,ID )
 *
-*       int NewChunk( struct IFFHandle *,CARD32 )
+*       int NewChunk( struct IFFHandle *,uint32_t )
 *
 *   FUNCTION
 *       Starts a new chunk, trough writing the chunk-header.
@@ -52,9 +52,9 @@
 *       Private notes:
 */
 
-int NewChunk(struct IFFHandle *TheHandle, CARD32 ID)
+int NewChunk(struct IFFHandle *TheHandle, uint32_t ID)
 {
- CARD32 Buffer[2];
+ uint32_t Buffer[2];
  struct ChunkNode *CN, *PN;
 
  if(!TheHandle)
@@ -74,7 +74,7 @@ int NewChunk(struct IFFHandle *TheHandle, CARD32 ID)
  Buffer[0]=Swap32IfLE(Buffer[0]);
  Buffer[1]=Swap32IfLE(Buffer[1]);
 
- if(!(fwrite((void *) Buffer, sizeof(CARD32), 2, TheHandle->TheFile)==2))
+ if(!(fwrite((void *) Buffer, sizeof(uint32_t), 2, TheHandle->TheFile)==2))
  {
   free((void *) CN);
   return(FALSE);
@@ -82,19 +82,19 @@ int NewChunk(struct IFFHandle *TheHandle, CARD32 ID)
 
  CN->Size=0;
  CN->FilePos=ftell(TheHandle->TheFile);
- CN->FilePos-=sizeof(CARD32);
+ CN->FilePos-=sizeof(uint32_t);
  CN->Previous=TheHandle->LastNode;
 
  PN=CN->Previous;
 
  while(PN)
  {
-  PN->Size+=2*sizeof(CARD32);
+  PN->Size+=2*sizeof(uint32_t);
 
   PN=PN->Previous;
  }
 
- TheHandle->IFFSize+=2*sizeof(CARD32);
+ TheHandle->IFFSize+=2*sizeof(uint32_t);
  TheHandle->LastNode=CN;
 
  return(TRUE);

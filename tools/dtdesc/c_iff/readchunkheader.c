@@ -55,14 +55,14 @@
 
 int ReadChunkHeader(struct IFFHandle *TheHandle)
 {
- CARD32 Buffer[2];
+ uint32_t Buffer[2];
 
  if(!TheHandle)
  {
   return(FALSE);
  }
 
- if(!(fread((void *) Buffer, sizeof(CARD32), 2, TheHandle->TheFile)==2))
+ if(!(fread((void *) Buffer, sizeof(uint32_t), 2, TheHandle->TheFile)==2))
  {
   return(FALSE);
  }

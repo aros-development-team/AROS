@@ -23,7 +23,7 @@
 *   SYNOPSIS
 *       Success = NewSubFORM( TheHandle,Type )
 *
-*       int NewSubFORM( struct IFFHandle *,CARD32 )
+*       int NewSubFORM( struct IFFHandle *,uint32_t )
 *
 *   FUNCTION
 *       Some IFF's, e.g. ANIM, have cascading FORM's, this means one or
@@ -54,9 +54,9 @@
 *       Private notes:
 */
 
-int NewSubFORM(struct IFFHandle *TheHandle, CARD32 Type)
+int NewSubFORM(struct IFFHandle *TheHandle, uint32_t Type)
 {
- CARD32 Buffer[3];
+ uint32_t Buffer[3];
  struct ChunkNode *CN, *PN;
 
  if(!TheHandle)
@@ -78,13 +78,13 @@ int NewSubFORM(struct IFFHandle *TheHandle, CARD32 Type)
  Buffer[1]=Swap32IfLE(Buffer[1]);
  Buffer[2]=Swap32IfLE(Buffer[2]);
 
- if(!(fwrite((void *) Buffer, sizeof(CARD32), 3, TheHandle->TheFile)==3))
+ if(!(fwrite((void *) Buffer, sizeof(uint32_t), 3, TheHandle->TheFile)==3))
  {
   free((void *) CN);
   return(FALSE);
  }
 
- CN->Size=sizeof(CARD32);
+ CN->Size=sizeof(uint32_t);
  CN->FilePos=ftell(TheHandle->TheFile);
  CN->FilePos-=8;
  CN->Previous=TheHandle->LastNode;
@@ -93,12 +93,12 @@ int NewSubFORM(struct IFFHandle *TheHandle, CARD32 Type)
 
  while(PN)
  {
-  PN->Size+=3*sizeof(CARD32);
+  PN->Size+=3*sizeof(uint32_t);
 
   PN=PN->Previous;
  }
 
- TheHandle->IFFSize+=3*sizeof(CARD32);
+ TheHandle->IFFSize+=3*sizeof(uint32_t);
  TheHandle->LastNode=CN;
 
  return(TRUE);

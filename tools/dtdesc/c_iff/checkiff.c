@@ -57,14 +57,14 @@
 
 int CheckIFF(struct IFFHandle *TheHandle)
 {
- CARD32 Buffer[3];
+ uint32_t Buffer[3];
 
  if(!TheHandle)
  {
   return(FALSE);
  }
 
- if(!(fread((void *) Buffer, sizeof(CARD32), 3, TheHandle->TheFile)==3))
+ if(!(fread((void *) Buffer, sizeof(uint32_t), 3, TheHandle->TheFile)==3))
  {
   return(FALSE);
  }
@@ -78,7 +78,7 @@ int CheckIFF(struct IFFHandle *TheHandle)
   return(FALSE);
  }
 
- if(!((Buffer[1] + 2*sizeof(CARD32))==FileSize(TheHandle->TheFile)))
+ if(!((Buffer[1] + 2*sizeof(uint32_t))==FileSize(TheHandle->TheFile)))
  {
   return(FALSE);
  }

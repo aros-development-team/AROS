@@ -35,23 +35,7 @@
  *  typedefs
  */
 
-/*
- *  support for multibyte numbers
- *  Do you have a non-Unix 32-bit machine?
- *  Then add it here!
- *  Do you have a non-Unix, non-32-bit machine?
- *  Then make your own typedefs!
- */
-#if defined amiga || defined __PPC__ || defined __AROS__
-typedef unsigned char  CARD8;
-typedef unsigned short CARD16;
-typedef unsigned int   CARD32;
-typedef signed char  INT8;
-typedef signed short INT16;
-typedef signed int   INT32;
-#else
-#include <X11/Xmd.h>
-#endif
+#include <stdint.h>
 
 /*
  *  Do you have a big-endain machine?
@@ -125,7 +109,7 @@ struct ChunkNode
 {
  struct ChunkNode *Previous; /* the previous chunk */
  long              Size;     /* size of the chunk */
- long              FilePos;  /* position of the size-CARD32 in the file */
+ long              FilePos;  /* position of the size-uint32_t in the file */
 };
 
 /*
@@ -135,8 +119,8 @@ struct ChunkNode
 struct IFFHandle
 {
  FILE             *TheFile;          /* filehandle of the IFF */
- CARD32            IFFType;          /* type of the IFF */
- CARD32            ChunkID;          /* chunk-ID of the current chunk */
+ uint32_t          IFFType;          /* type of the IFF */
+ uint32_t          ChunkID;          /* chunk-ID of the current chunk */
  long              BytesLeftInChunk; /* byte-counter for reading*/
  int               NewIFF;           /* marker for a IFF for writing */
  long              IFFSize;          /* size of the new IFF */
@@ -156,9 +140,9 @@ extern long ReadChunkData(struct IFFHandle *TheHandle,
 			  char *Buffer,
 			  size_t BufferSize);
 
-extern struct IFFHandle *NewIFF(char *Name, CARD32 IFFType);
-extern int NewChunk(struct IFFHandle *TheHandle, CARD32 ID);
-extern int NewSubFORM(struct IFFHandle *TheHandle, CARD32 Type);
+extern struct IFFHandle *NewIFF(char *Name, uint32_t IFFType);
+extern int NewChunk(struct IFFHandle *TheHandle, uint32_t ID);
+extern int NewSubFORM(struct IFFHandle *TheHandle, uint32_t Type);
 extern void EndChunk(struct IFFHandle *TheHandle);
 extern long WriteChunkData(struct IFFHandle *TheHandle,
 			   char *Buffer,
