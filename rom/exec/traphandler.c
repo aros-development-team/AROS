@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Default trap handler
@@ -7,6 +7,7 @@
 */
 #include <exec/tasks.h>
 #include <proto/exec.h>
+#include <proto/arossupport.h>
 
 AROS_LH0(void, TrapHandler,
     struct ExecBase *, SysBase, NONE, Exec)

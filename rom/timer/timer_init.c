@@ -20,6 +20,8 @@
 #include <proto/exec.h>
 #include <proto/timer.h>
 
+#include <proto/arossupport.h>
+
 #include "timer_intern.h"
 #include "libdefs.h"
 
