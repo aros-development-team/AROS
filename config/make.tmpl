@@ -205,27 +205,9 @@ ifndef OBJS
 OBJS := $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
 endif
 
-# ***** Native ***************
-ifeq ($(FLAVOUR),native)
-
-# Generate a map file
-MAPGEN	:= -Xlinker -M
-
-# Strip resulting binary
-STRIP	:= strip
-
-# ***** Not Native ***************
-else
-
-MAPGEN	:=
-STRIP	:= $(NOP)
-
-# ***** END ***************
-endif
-
 $(SLIB) : $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(MAPGEN) $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.map
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(LIBNAME)lib.map $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
 	@$(ECHO) "Checking $@..."
 	@$(CHECKUDS) $@ > undefdsyms.list
 	@$(IF) $(TEST) -s undefdsyms.list ; then \
@@ -234,7 +216,7 @@ $(SLIB) : $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
 	    $(CAT) undefdsyms.list ; \
 	else $(NOP) ; fi
 	@$(RM) undefdsyms.list
-	@$(IF) $(TEST) ! -s $(LIBNAME)lib.map; then $(RM) $(LIBNAME)lib.map ; else $(NOP) ; fi
+	@$(IF) $(TEST) ! -s $(LIBNAME)lib.err; then $(RM) $(LIBNAME)lib.err ; else $(NOP) ; fi
 	@$(STRIP) $@
 
 # Collect all functions in a linklib for fast linking:
