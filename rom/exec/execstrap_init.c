@@ -49,7 +49,7 @@ extern void AROS_SLIB_ENTRY(CachePostDMA_40,Exec)();
 
 int entry(void)
 {
-    return 0;
+    return -1;
 }
 
 extern const char name[];
