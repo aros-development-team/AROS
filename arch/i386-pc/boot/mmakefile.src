@@ -12,10 +12,10 @@ OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) 	\
 	   $(OSGENDIR)/graphics/fakegfxhidd.o
 
 BOOT_C := \
-	Alias Assign Avail Copy Date Delete Dir Execute FailAt Info Install \
-	List MakeDir Mount NewShell Path Protect Relabel Rename Run Shell Type
+	Avail Copy Date Delete Dir Info Install List MakeDir Mount NewShell \
+	Protect Relabel Rename Shell Type
 BOOT_C_SHELL := \
-	CD Echo Prompt Set Setenv Stack
+	Alias Assign CD Echo Execute FailAt Path Prompt Run Set Setenv Stack
 BOOT_Gadgets := \
 	aroscheckbox.gadget aroscycle.gadget aroslist.class aroslistview.gadget \
 	arosmutualexclude.gadget arospalette.gadget colorwheel.gadget gradientslider.gadget
