@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>

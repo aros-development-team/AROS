@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "exec_intern.h"
+#include <string.h>
 #include <exec/resident.h>
 #include <proto/exec.h>
 

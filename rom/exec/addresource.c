@@ -5,6 +5,7 @@
     Desc: Add a resource to the public list of resources.
     Lang: english
 */
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>

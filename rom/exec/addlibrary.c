@@ -5,6 +5,7 @@
     Desc: Add a library to the public list of libraries.
     Lang: english
 */
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>

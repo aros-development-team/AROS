@@ -5,6 +5,7 @@
     Desc: Abort an I/O request.
     Lang: english
 */
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <exec/io.h>
 #include <aros/libcall.h>

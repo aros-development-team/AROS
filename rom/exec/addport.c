@@ -5,6 +5,7 @@
     Desc: Add a port to the public list of ports.
     Lang: english
 */
+#include <aros/debug.h>
 #include <exec/ports.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
