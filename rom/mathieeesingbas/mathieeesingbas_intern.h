@@ -1,23 +1,6 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.5  1998/10/20 16:46:15  hkiel
-    Amiga Research OS
-
-    Revision 1.4  1998/04/19 14:05:38  bergers
-    Fixed the library to become a resident one. Someone please take a look at its
-    priority ( currently 101).
-
-    Revision 1.3  1998/02/02 21:07:21  bergers
-    Changed the LONGs to float. The define in mathieeesingbas_intern.h does the trick.
-
-    Revision 1.2  1997/09/28 11:31:46  bergers
-    updated version - again
-
-    Revision 1.1  1997/06/25 21:36:46  bergers
-    *** empty log message ***
-
 
     Desc:
     Lang: english
