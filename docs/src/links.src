@@ -6,111 +6,76 @@
 \begin{itemize}
 \item \link{AROS FTP Server}{ftp://aros.fh-konstanz.de/pub/aros/} with
 contains the latest binary release for linux as
-
 \begin{itemize}
 \item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386.tgz}
 (\fileinfo{$(TOP)/dist/AROS-linux-i386.tgz})
-
 \item \link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386.lha}
 (\fileinfo{$(TOP)/dist/AROS-linux-i386.lha})
-
 \item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386.readme}
 (\fileinfo{$(TOP)/dist/AROS-linux-i386.readme})
-
 \end{itemize}
-
 and the source as
-
 \begin{itemize}
 \item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev.tgz}
 (\fileinfo{$(TOP)/dist/AROSdev.tgz})
-
 \item \link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev.lha}
 (\fileinfo{$(TOP)/dist/AROSdev.lha})
-
 \item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev.readme}.
 (\fileinfo{$(TOP)/dist/AROSdev.readme})
-
 \end{itemize}
-
 Also available is the latest beta as binary for linux as
-
 \begin{itemize}
 \item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-current.tgz}
 (\fileinfo{$(TOP)/dist/AROS-linux-i386-current.tgz})
-
 \item \link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-current.lha}
 (\fileinfo{$(TOP)/dist/AROS-linux-i386-current.lha})
-
 \item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-current.readme}
 (\fileinfo{$(TOP)/dist/AROS-linux-i386-current.readme})
-
 \end{itemize}
-
 and the source of the beta as
-
 \begin{itemize}
 \item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-current.tgz}
 (\fileinfo{$(TOP)/dist/AROSdev-current.tgz})
-
 \item \link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-current.lha}
 (\fileinfo{$(TOP)/dist/AROSdev-current.lha})
-
 \item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-current.readme}
 (\fileinfo{$(TOP)/dist/AROSdev-current.readme}).
-
 \end{itemize}
-
 \item AROS in
 \link{Germany}{http://aros.fh-konstanz.de:8080/aros/} (Main site)
 and
 \link{Sweden}{http://www.lysator.liu.se/amiga/aros/} (Mirror)
-
 \item \link{AROS for Amiga}{http://home.worldonline.nl/~ldp/aros/}
 (Local copy of the
 \link{binary}{ftp://aros.fh-konstanz.de/pub/aros/AROS-m68k-bin.lha}
 (\fileinfo{~ftp/pub/aros/AROS-m68k-bin.lha}) and the
 \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-m68k-bin.readme}
 (\fileinfo{~ftp/pub/aros/AROS-m68k-bin.readme}) and
-
 \item \link{AROS AutoDocs}{adoc_index.html}
-
 \item \link{The Amiga OS Resurrection Project Info Pages}
-{http://colombo.telis-sc.fr/AmigOS/} - The roots of AROS
-
+{http://colombo.telis-sc.fr/AmigOS/} - The roots of AROS (down ?)
 \item \link{UAE - The Un*x Amiga Emulator}
 {http://www.schokola.de/~stepan/uae/}
 - Another attempt
-
 \item \link{Memory Protection for AmigaOS}
-{http://www.informatik.tu-muenchen.de/~stieber/AmigaOS-Speicherschutz}
-*New*, Only in German.
-
-\item \label{ADE}\link{ADE - Amiga Development Environment *New*}
+{http://www.informatik.tu-muenchen.de/~stieber/AmigaOS-Speicherschutz},
+Only in German.
+\item \label{ADE}\link{ADE - Amiga Development Environment}
 {http://www.ninemoons.com/ADE/ADE.html} on
 \link{Cronus}{http://www.ninemoons.com/}
-
 \end{itemize}
 
 \section{Hompages of AROS developers *Updated*}
 
 \begin{itemize}
 \item \link{Aaron Digulla}{http://www.lake.de/home/lake/home/}
-
 \item \link{Harald Frank (VMC)}{http://members.aol.com/ingriedel/index.htm}
-
 \item \link{Luke A. Guest}{http://www.student.comp.brad.ac.uk/~laguest/}
-
 \item \link{Lennard voor den Dag}{http://www.worldonline.nl/~ldp/}
-
 \item \link{Martin Steigerwald}{http://home.pages.de/~helios}
-
 \item \link{Sebastian Rittau}{http://www.in-berlin.de/User/jroger/index.html}
-
 \item \link{Johan Alfredsson}{http://www.dtek.chalmers.se/~d95duvan}
-
 \item \link{Wez Furlong}{http://www.twinklestar.demon.co.uk/}
-
 \end{itemize}
 
 \section{Less Related}
@@ -119,32 +84,20 @@ and
 \item \link{AmigaDOS Online Reference Manual}
 {http://www.concentric.net/~amigaman/dosref/dos1.shtml}
 \smallpic{pics/ados1.gif}
-
 \item \label{ADN}\link{Amiga Developer Network *New*}
 {http://www.amiga.org/developer/} on
 \link{World-Wide Amiga Online!}
 {http://www.amiga.org/}
-
 \item \link{Amiga Web Directory}{http://www.cucug.org/amiga.html} -
 Various Amiga related informations: News, Links, Mags, Docs
-
 \item \link{Amiga Technologies}{http://www.amiga.de/}
-
 \item \link{Semantic Dictionary Encoding (SDE)}
 {http://www.norconnect.no/SDE/} - Run the same binary on many different CPUs
 (Link is dead :-( )
-
 \item \link{Amiga Report Technical Journal}
 {http://www.warped.com/~artech/} - Amiga developer magazine
-
 \item \link{A new Amiga: A/Box by phase5}{http://www.phase5.de/}
-*New*
-
 \item \link{Another new Amiga: PIOS ONE by PIOS}{http://www.pios.de/}
-*New*
-
 \item \link{Another AmigaOS}{http://www.prodad.de/}
-*New*
-
 \end{itemize}
 

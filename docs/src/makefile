@@ -200,8 +200,7 @@ gen/htmlpages: $(AUTODOC_SRCS)
 	@makeadocs $(AUTODOC_SRCS)
 	@touch gen/htmlpages
 
-autodoc.inc: gen/adoc_index.tmp adocpost.gawk adoc_header.html \
-	    adoc_footer.html
+autodoc.inc: gen/adoc_index.tmp adocpost.gawk adoc_header.html
 	cat adoc_header.html > $@
 	gawk -F: -f adocpost.gawk --assign mode=pre_bylib gen/adoc_index.tmp | \
 	sort -f | \
@@ -209,7 +208,6 @@ autodoc.inc: gen/adoc_index.tmp adocpost.gawk adoc_header.html \
 	gawk -F: -f adocpost.gawk --assign mode=pre_byname gen/adoc_index.tmp | \
 	sort -f | \
 	gawk -F: -f adocpost.gawk --assign mode=post_byname >> $@
-	cat adoc_footer.html | sed "s/\\\\today/`date "+%d %b %Y"`/" >> $@
 	chmod a+r $@
 
 gen/adoc_index.tmp: $(AUTODOC_SRCS) adoc2html.gawk
