@@ -30,13 +30,16 @@
 #   define __LOp(x) *(int*)x
 #endif
 
+#if !defined(__FreeBSD__)
 /* Use non-standard matherr() and smart code */
 #define _LIB_VERSION	0
 #define _POSIX_ 	1
 #define _SVID_		2
 #define _IEEE_		3
+#endif
 
-#if !defined(__GLIBC__) || (__GLIBC__ < 2)
+/* We only include this section if we don't have glibc v2 or FreeBSD */
+#if (!defined(__GLIBC__) || (__GLIBC__ < 2)) && !defined(__FreeBSD__)
 struct exception
 {
     int    type;
@@ -54,6 +57,10 @@ struct exception
 #define UNDERFLOW	4
 #define TLOSS		5
 #define PLOSS		6
+
+#if defined(__FreeBSD__)
+#undef HUGE_VAL
+#endif
 
 extern double __kernel_standard (double, double, int);
 extern double __ieee754_pow	(double, double);
