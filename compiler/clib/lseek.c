@@ -85,5 +85,5 @@
     if (cnt == -1)
     	errno = IoErr2errno (IoErr ());
 
-    return cnt + offset;
+    return Seek((BPTR)fdesc->fh, 0, OFFSET_CURRENT);
 } /* lseek */
