@@ -20,6 +20,7 @@ FILES		:= $(LIBNAME)_functable intregions graphics_misc
 END_FILE	:= $(LIBNAME)_endtag
 
 FUNCTIONS	:= \
+	addbob \
 	addfont \
 	addvsprite \
 	allocbitmap \
@@ -76,6 +77,7 @@ FUNCTIONS	:= \
 	setrgb32 \
 	setrpattrsa \
 	setwritemask \
+	sortglist \
 	stripfont \
 	text \
 	textextent \
