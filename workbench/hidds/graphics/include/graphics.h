@@ -205,7 +205,8 @@ typedef struct {
 enum { 
 	vHidd_GT_TrueColor,
 	vHidd_GT_Palette,
-	vHidd_GT_StaticPalette
+	vHidd_GT_StaticPalette,
+	num_Hidd_GT
 };
 
 #define vHidd_GT_Mask 0x03
@@ -331,6 +332,7 @@ enum
     ONLY BY SUBCLASSES, to register available modes in the baseclass
     */
     moHidd_BitMap_SetPixelFormat,
+    moHidd_BitMap_SetColorMap,
     
     moHidd_BitMap_PrivateSet
 };
@@ -357,7 +359,7 @@ enum {
     aoHidd_BitMap_BestSize,      /* [..G] Best size for depth                  */
     aoHidd_BitMap_LeftEdge,      /* [I.G] Left edge position of the bitmap     */
     aoHidd_BitMap_TopEdge,       /* [I.G] Top edge position of the bitmap      */
-    aoHidd_BitMap_ColorTab,      /* [ISG] Colormap of the bitmap               */
+    aoHidd_BitMap_ColorMap,      /* [..G] Colormap of the bitmap               */
     
 
     aoHidd_BitMap_Friend,	/* [I.G] Friend bitmap. The bitmap will be allocated so that it
@@ -389,7 +391,7 @@ enum {
 #define aHidd_BitMap_BestSize      (HiddBitMapAttrBase + aoHidd_BitMap_BestSize)
 #define aHidd_BitMap_LeftEdge      (HiddBitMapAttrBase + aoHidd_BitMap_LeftEdge)
 #define aHidd_BitMap_TopEdge       (HiddBitMapAttrBase + aoHidd_BitMap_TopEdge)
-#define aHidd_BitMap_ColorTab	   (HiddBitMapAttrBase + aoHidd_BitMap_ColorTab)
+#define aHidd_BitMap_ColorMap	   (HiddBitMapAttrBase + aoHidd_BitMap_ColorMap)
 #define aHidd_BitMap_Friend	   (HiddBitMapAttrBase + aoHidd_BitMap_Friend)
 #define aHidd_BitMap_GfxHidd	   (HiddBitMapAttrBase + aoHidd_BitMap_GfxHidd)
 #define aHidd_BitMap_StdPixFmt	   (HiddBitMapAttrBase + aoHidd_BitMap_StdPixFmt)
@@ -598,6 +600,13 @@ struct pHidd_BitMap_SetPixelFormat {
     struct TagItem *pixFmtTags;
 };
 
+
+struct pHidd_BitMap_SetColorMap {
+    MethodID mID;
+    Object *colorMap;
+};
+
+
 /**** Graphics context definitions ********************************************/
     /* Methods for a graphics context */
     
@@ -729,6 +738,7 @@ VOID     HIDD_BM_ConvertPixels  (Object *obj
 );
 
 Object * HIDD_BM_SetPixelFormat(Object *o, struct TagItem *pixFmtTags);
+Object * HIDD_BM_SetColorMap(Object *o, Object *colorMap);
 
 /*******************************************************/
 /**  PROTECTED DATA 
@@ -894,6 +904,54 @@ enum {
 #define IS_PLANARBM_ATTR(attr, idx) \
 	( ( ( idx ) = (attr) - HiddPlanarBMAttrBase) < num_Hidd_PlanarBM_Attrs)
     
+
+
+/********** ColorMap *******************/
+
+#define CLID_Hidd_ColorMap "hidd.graphics.colormap"
+#define IID_Hidd_ColorMap  "hidd.graphics.colormap"
+
+#define HiddColorMapAttrBase __IHIDD_ColorMap
+
+extern AttrBase HiddColorMapAttrBase;
+
+/* Methods */
+enum {
+    moHidd_ColorMap_SetColors,
+    moHidd_ColorMap_GetPixel
+};
+
+struct pHidd_ColorMap_SetColors {
+    MethodID	mID;
+    HIDDT_Color	*colors;
+    ULONG	firstColor;
+    ULONG	numColors;
+    Object	*pixFmt;
+};
+
+struct pHidd_ColorMap_GetPixel {
+    MethodID mID;
+    ULONG pixelNo;
+};
+
+BOOL HIDD_CM_SetColors(Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors, Object *pixFmt);
+HIDDT_Pixel HIDD_CM_GetPixel(Object *obj, ULONG pixelNo);
+
+/* Attrs */
+enum {
+    aoHidd_ColorMap_NumEntries,	/* [I.G] ULONG */
+    
+    num_Hidd_ColorMap_Attrs
+};
+
+#define aHidd_ColorMap_NumEntries	(HiddColorMapAttrBase + aoHidd_ColorMap_NumEntries)
+#define aHidd_ColorMap_		(HiddColorMapAttrBase + aoHidd_ColorMap_)
+
+
+
+#define IS_COLORMAP_ATTR(attr, idx) \
+	( ( ( idx ) = (attr) - HiddColorMapAttrBase) < num_Hidd_ColorMap_Attrs)
+
 #endif /* HIDD_GRAPHICS_H */
 
 

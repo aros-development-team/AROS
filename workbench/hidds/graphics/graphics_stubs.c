@@ -291,7 +291,7 @@ VOID HIDD_BM_FillRect (Object *obj, Object *gc, WORD minX, WORD minY, WORD maxX,
 }
 /***************************************************************/
 
-VOID HIDD_BM_DrawEllipse (Object *obj, Object *gc, WORD x, WORD y, WORD ry, WORD rx)
+VOID HIDD_BM_DrawEllipse (Object *obj, Object *gc, WORD x, WORD y, WORD rx, WORD ry)
 {
     static MethodID mid = 0;
     struct pHidd_BitMap_DrawEllipse p;
@@ -648,6 +648,18 @@ Object * HIDD_BM_SetPixelFormat(Object *obj, struct TagItem *pixFmtTags)
     return (Object *)DoMethod(obj, (Msg)&p);
 }
 
+Object * HIDD_BM_SetColorMap(Object *obj, Object *colorMap)
+{
+    static MethodID mid = 0;
+    struct pHidd_BitMap_SetColorMap p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetColorMap);
+        
+    p.mID = mid;
+    p.colorMap = colorMap;
+    
+    return (Object *)DoMethod(obj, (Msg)&p);
+}
 
 /********* GC *****************************************/
 VOID HIDD_GC_SetClipRect(Object *obj, LONG x1, LONG y1, LONG x2, LONG y2)
@@ -690,5 +702,39 @@ VOID HIDD_PlanarBM_SetBitMap(Object *obj, struct BitMap *bitMap)
     p.mID = mid;
     p.bitMap = bitMap;
     
-    return (Object *)DoMethod(obj, (Msg)&p);
+    DoMethod(obj, (Msg)&p);
+    return;
 }
+
+
+/********* ColorMap *********************************/
+
+BOOL HIDD_CM_SetColors(Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors, Object *pixFmt)
+{
+    static MethodID mid = 0;
+    struct pHidd_ColorMap_SetColors p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_ColorMap, moHidd_ColorMap_SetColors);
+        
+    p.mID = mid;
+    p.colors	 = colors;
+    p.firstColor = firstColor;
+    p.numColors	 = numColors;
+    p.pixFmt	 = pixFmt;
+    
+    return DoMethod(obj, (Msg)&p);
+}
+
+HIDDT_Pixel HIDD_CM_GetPixel(Object *obj, ULONG pixelNo)
+{
+    static MethodID mid = 0;
+    struct pHidd_ColorMap_GetPixel p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_ColorMap, moHidd_ColorMap_GetPixel);
+        
+    p.mID = mid;
+    p.pixelNo = pixelNo;
+    
+    return (HIDDT_Pixel)DoMethod(obj, (Msg)&p);
+}
+

@@ -564,8 +564,8 @@ static VOID hiddgfx_releasepixfmt(Class *cl, Object *o, struct pHidd_Gfx_Release
     
     struct objectnode *n, *safe;
 
-    kprintf("release_pixfmt\n");
-    
+/*    kprintf("release_pixfmt\n");
+*/    
     data = INST_DATA(cl, o);
     
     /* Go through the pixfmt list trying to find the object */
@@ -701,6 +701,9 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
     if (NULL == csd->pixfmtclass)
     	goto failexit;
 	
+    csd->colormapclass = init_colormapclass(csd);
+    if (NULL == csd->colormapclass)
+    	goto failexit;
 	
     if (!create_std_pixfmts(csd))
     	goto failexit;
@@ -729,6 +732,7 @@ void free_gfxhiddclass(struct class_static_data *csd)
 	
 	delete_std_pixfmts(csd);
 	
+	free_colormapclass(csd);
 	free_pixfmtclass(csd);
 	free_gfxmodeclass(csd);
 	free_chunkybmclass(csd);

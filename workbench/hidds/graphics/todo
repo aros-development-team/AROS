@@ -22,4 +22,7 @@ DONE. Uses its own task to update active screen info
 some general HIDD_BM_ApplyClipping() method in
 the BM baseclass for ease of use by the subclasses.
 The clipping should be used for lines, ellipses etc.
+DONE. (No HIDD_BM_ApplyClipping though - not usefull)
 
+
+- Test fast rendering of lines to offscreen HIDD BMs

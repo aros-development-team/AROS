@@ -15,7 +15,7 @@ DESTDIR	    := $(HIDDSDIR)
 
 OBJDIR	    := $(GENDIR)/$(CURDIR)
 
-FILES       := GraphicsClass BM_Class GC_Class  \
+FILES       := GraphicsClass BM_Class CM_Class GC_Class  \
                planarbm chunkybm convertpixels	\
 	       gfxmode pixfmt
 	       

@@ -32,6 +32,15 @@
 static AttrBase HiddBitMapAttrBase = 0;
 static AttrBase HiddGCAttrBase = 0;
 static AttrBase HiddPixFmtAttrBase = 0;
+static AttrBase HiddColorMapAttrBase = 0;
+
+static struct ABDescr attrbases[] = {
+    { IID_Hidd_BitMap,	&HiddBitMapAttrBase	},
+    { IID_Hidd_GC,	&HiddGCAttrBase		},
+    { IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
+    { IID_Hidd_PixFmt,	&HiddColorMapAttrBase	},
+    { NULL, 0UL }
+};
 
 #define POINT_OUTSIDE_CLIP(gc, x, y)	\
 	(  (x) < GC_CLIPX1(gc)		\
@@ -61,6 +70,11 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
     if(obj)
     {
     	BOOL got_gfxhidd = FALSE;
+	BOOL ok = TRUE;
+	struct TagItem colmap_tags[] = {
+	    { aHidd_ColorMap_NumEntries,	16 },
+	    { TAG_DONE, 0UL }
+	};
 	
         data = INST_DATA(cl, obj);
     
@@ -70,15 +84,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
         data->height      = 200;
         data->reqdepth	  = 8;
         data->displayable = FALSE;
-#if 0	
-        data->fg        = 1;        /* foreground color                        */
-        data->bg        = 0;        /* background color                        */
-        data->drMode    = vHidd_GC_DrawMode_Copy;    /* drawmode               */
-        data->font      = NULL;     /* current fonts                           */
-        data->colMask   = ~0;       /* ColorMask prevents some color bits from changing*/
-        data->linePat   = ~0;       /* LinePattern                             */
-        data->planeMask = NULL;     /* Pointer to a shape bitMap               */
-#endif
+
         tstate = msg->attrList;
         while((tag = NextTagItem((const struct TagItem **)&tstate)))
         {
@@ -92,24 +98,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
                     case aoHidd_BitMap_Height      : data->height      = tag->ti_Data; break;
                     case aoHidd_BitMap_Depth       : data->reqdepth    = tag->ti_Data; break;
                     case aoHidd_BitMap_Displayable : data->displayable = (BOOL) tag->ti_Data; break;
-
-#if 0		    
-                    case aoHidd_BitMap_Format      : data->format      = tag->ti_Data; break;
-#endif		    
-
-
-#if 0		    
-		    case aoHidd_BitMap_GC	   : update_from_gc(cl, obj, (Object *)tag->ti_Data); break;
-		    case aoHidd_BitMap_Foreground  : data->fg		= tag->ti_Data; break;
-		    case aoHidd_BitMap_Background  : data->bg		= tag->ti_Data; break;
-		    case aoHidd_BitMap_DrawMode	   : data->drMode	= tag->ti_Data; break;
-		    case aoHidd_BitMap_LinePattern : data->linePat	= tag->ti_Data; break;
-		    case aoHidd_BitMap_ColorMask   : data->colMask	= tag->ti_Data; break;
-		    case aoHidd_BitMap_PlaneMask   : data->planeMask	= (APTR)tag->ti_Data; break;
-		    case aoHidd_BitMap_Font	   : data->font		= (APTR)tag->ti_Data; break;
-#endif		    
 		    case aoHidd_BitMap_Friend	   : data->friend	= (Object *)tag->ti_Data; break;
-		    
 		    case aoHidd_BitMap_GfxHidd	   : 
 		    	data->gfxhidd	= (Object *)tag->ti_Data;
 			got_gfxhidd = TRUE;
@@ -123,23 +112,33 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
 
 
 	if (!got_gfxhidd) {
-            ULONG dispose_mid;
 	
     	    kprintf("!!!! BM CLASS DID NOT GET GFX HIDD !!!\n");
 	    kprintf("!!!! The reason for this is that the gfxhidd subclass NewBitmap() method\n");
 	    kprintf("!!!! has not left it to the baseclass to avtually create the object,\n");
 	    kprintf("!!!! but rather done it itself. This MUST be corrected in the gfxhidd subclass\n");
+	    
+	    ok = FALSE;
+	    
+	}
 	
+	/* Try to create the colormap */
+	if (ok) {
+	    data->colmap = NewObject(NULL, CLID_Hidd_ColorMap, colmap_tags);
+	    if (NULL == data->colmap)
+		ok = FALSE;
+	}
+	
+	
+	if (!ok) {
+	    ULONG dispose_mid;	
 	    dispose_mid = GetMethodID(IID_Root, moRoot_Dispose);
 	
 	    CoerceMethod(cl, obj, (Msg)&dispose_mid);
 	
 	    obj = NULL;
     	} /* if(obj) */
-    
-    
     }
-
 
     ReturnPtr("BitMap::New", Object *, obj);
 }
@@ -153,11 +152,9 @@ static void bitmap_dispose(Class *cl, Object *obj, Msg *msg)
 
     EnterFunc(bug("BitMap::Dispose()\n"));
     
-    if (data->coltab)
-    {
-         D(bug("Has coltab %p\n", data->coltab));
-	 FreeVec(data->coltab);
-    }
+    if (NULL != data->colmap)
+    	DisposeObject(data->colmap);
+    
     D(bug("Calling super\n"));
     
     
@@ -190,19 +187,9 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
             case aoHidd_BitMap_Format      : *msg->storage = data->format; break;
 #endif
 
-#if 0
-	    case aoHidd_BitMap_GC	   : *msg->storage = (IPTR) data->gc; break;
-	    case aoHidd_BitMap_Foreground  : *msg->storage = data->fg; break;
-	    case aoHidd_BitMap_Background  : *msg->storage = data->bg; break;
-	    case aoHidd_BitMap_DrawMode	   : *msg->storage = data->drMode; break;
-	    case aoHidd_BitMap_LinePattern : *msg->storage = data->linePat; break;
-	    case aoHidd_BitMap_ColorMask   : *msg->storage = data->colMask; break;
-	    case aoHidd_BitMap_PlaneMask   : *msg->storage = (IPTR) data->planeMask; break;
-	    case aoHidd_BitMap_Font	   : *msg->storage = (IPTR) data->font; break;
-	    case aoHidd_BitMap_ColorExpansionMode  : *msg->storage = data->colExp; break;
-#endif
 
 	    case aoHidd_BitMap_Friend	   : *msg->storage = (IPTR)data->friend; break;
+	    case aoHidd_BitMap_ColorMap : *msg->storage = (IPTR)data->colmap; break;
 	    
             case aoHidd_BitMap_Depth:
 	    	if (NULL != data->prot.pixfmt) {
@@ -237,40 +224,28 @@ static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 {
     /* Copy the colors into the internal buffer */
     struct HIDDBitMapData *data = INST_DATA(cl, o);
-    ULONG copy_size;
-
-    EnterFunc(bug("GfxHIDD.CM::SetColors()\n"));
-    
     /* Subclass has initialized HIDDT_Color->pixelVal field and such.
        Just copy it into the colortab.
     */
-    if (!data->coltab)
-    {
-        /* For now palette is hardcoded to 256 colors */
-        ULONG coltab_size;
-	coltab_size = UB(&data->coltab[255]) - UB(&data->coltab[0]);
-	data->coltab = AllocVec(coltab_size, MEMF_ANY);
-	if (data->coltab)
-	{
-	    ULONG i;
-	    /* Init to unset, red = 0xFFFF */
-	    for (i = 0; i < 256; i ++)
-	    {
-	    	data->coltab[i].red = 0xFFFF;
-	    }
-	    
-	}
-	else
-   	    ReturnBool("GfxHIDD.CM::SetColors", TRUE);
-
+    if (NULL == data->colmap) {
+	struct TagItem colmap_tags[] = {
+    	    { aHidd_ColorMap_NumEntries,	0 },
+	    { TAG_DONE, 0UL }
+   	};
+	colmap_tags[0].ti_Data = msg->firstColor + msg->numColors;
+    	data->colmap = NewObject(NULL, CLID_Hidd_ColorMap, colmap_tags);
     }
     
-    copy_size = UB(&data->coltab[msg->numColors]) - UB(&data->coltab[0]);
-
-    /* Copy supplied colors into internal colortab [ CopyMem(src, dest, size) ] */
-    CopyMem(msg->colors, &data->coltab[msg->firstColor],  copy_size);
+    if (NULL == data->colmap) {
+    	return FALSE;
+    }
     
-    ReturnBool("GfxHIDD.CM::SetColors", TRUE);
+    /* Use the colormap class to set the colors */
+    return HIDD_CM_SetColors(data->colmap, msg->colors
+    	, msg->firstColor, msg->numColors
+	, data->prot.pixfmt
+    );
+    
 }
 
 
@@ -413,6 +388,8 @@ static VOID bitmap_drawline(Class *cl, Object *obj, struct pHidd_BitMap_DrawLine
     
     Object *gc;
 
+
+kprintf("BitMap::DrawLine()\n");
     EnterFunc(bug("BitMap::DrawLine() x1: %i, y1: %i x2: %i, y2: %i\n", msg->x1, msg->y1, msg->x2, msg->y2));
     
     gc = msg->gc;
@@ -632,8 +609,11 @@ static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *
     
     /* Get the source pixel format */
     data = INST_DATA(cl, obj);
-    srcpf = (HIDDT_PixelFormat *)&data->prot.pixfmt;
+    srcpf = (HIDDT_PixelFormat *)data->prot.pixfmt;
     
+kprintf("COPYBOX: SRC PF: %p, obj=%p, cl=%s, OCLASS: %s\n", srcpf, obj
+	, cl->ClassNode.ln_Name, OCLASS(obj)->ClassNode.ln_Name);
+
     dstpf = (HIDDT_PixelFormat *)HIDD_BM_GetPixelFormat(msg->dest, vHidd_PixFmt_Native);
     
     /* Compare graphtypes */
@@ -655,20 +635,91 @@ static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *
     gc = msg->gc;
     
     memFG = GC_FG(msg->gc);
+    
+    /* All else have failed, copy pixel by pixel */
 
-    for(y = 0; y < msg->height; y++)
-    {
-        srcX  = memSrcX;
-        destX = memDestX;
-
-        for(x = 0; x < msg->width; x++)
-        {
-	    GC_FG(gc) = HIDD_BM_GetPixel(obj, srcX++, srcY);
+    if (HIDD_PF_GRAPHTYPE(srcpf) == HIDD_PF_GRAPHTYPE(dstpf)) {
+    	if (IS_TRUECOLOR(srcpf)) {
+kprintf("COPY FROM TRUECOLOR TO TRUECOLOR\n");
+	    for(y = 0; y < msg->height; y++) {
+#warning Maybe do a special case if both pixel formats are the same; no need for MapColor/UnmapPixel    
+		HIDDT_Color col;
+		
+		srcX  = memSrcX;
+		destX = memDestX;
+		
+		for(x = 0; x < msg->width; x++) {
+		    HIDDT_Pixel pix;
 	    
-            HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
-        }
+		    pix = HIDD_BM_GetPixel(obj, srcX++, srcY);
+		    HIDD_BM_UnmapPixel(obj, pix, &col);
+		    
+		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, &col);
+		    
+		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
+		}
+            	srcY++; destY++;
+	    }
+	    
+        } else {
+	     /* Two palette bitmaps.
+	        For this case we do NOT convert through RGB,
+		but copy the pixel indexes directly
+	     */
+kprintf("COPY FROM PALETTE TO PALETTE\n");
+#warning This might not work very well with two StaticPalette bitmaps
+	    for(y = 0; y < msg->height; y++) {
+		srcX  = memSrcX;
+		destX = memDestX;
+		
+		for(x = 0; x < msg->width; x++) {
+		    GC_FG(gc) = HIDD_BM_GetPixel(obj, srcX++, srcY);
+		    
+		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
+		    
+		}
+            	srcY++; destY++;
+	    }
+	     
+	}
 
-        srcY++; destY++;
+    } else {
+    	/* Two unlike bitmaps */
+	if (IS_TRUECOLOR(srcpf)) {
+#warning Implement this
+	     kprintf("!! DEFAULT COPYING FROM TRUECOLOR TO PALETTIZED NOT IMPLEMENTED IN BitMap::CopyBox\n");
+	} else if (IS_TRUECOLOR(dstpf)) {
+	    /* Get the colortab */
+	    HIDDT_Color *ctab = ((HIDDT_ColorLUT *)data->colmap)->colors;
+kprintf("COPY FROM PALETTE TO TRUECOLOR, DRAWMODE %d, CTAB %p\n", GC_DRMD(gc), ctab);
+
+	    
+	    for(y = 0; y < msg->height; y++) {
+		
+		srcX  = memSrcX;
+		destX = memDestX;
+		for(x = 0; x < msg->width; x++) {
+		    register HIDDT_Pixel pix;
+		    register HIDDT_Color *col;
+		    
+// kprintf("%d:%d", x, y);
+		    pix = HIDD_BM_GetPixel(obj, srcX++, srcY);
+// kprintf(":%d", pix);
+		    col = &ctab[pix];
+// kprintf(":%p", col);
+	
+		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, col);
+// kprintf(":%d ", GC_FG(gc));
+/*		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, &ctab[HIDD_BM_GetPixel(obj, srcX++, srcY)]);
+*/		    
+		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
+		    
+		}
+            	srcY++; destY++;
+	    }
+	
+	}
+	
     }
     
     GC_FG(gc) = memFG;
@@ -827,6 +878,7 @@ static VOID bitmap_fillrect(Class *cl, Object *obj, struct pHidd_BitMap_DrawRect
     HISTORY
 ***************************************************************************/
 
+#warning Try to opimize clipping here
 static VOID bitmap_drawellipse(Class *cl, Object *obj, struct pHidd_BitMap_DrawEllipse *msg)
 {
     WORD   x = msg->rx, y = 0;     /* ellipse points */
@@ -838,17 +890,37 @@ static VOID bitmap_drawellipse(Class *cl, Object *obj, struct pHidd_BitMap_DrawE
     LONG t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
     LONG d1 = t2 - t7 + (t4 >> 1);    /* error terms */
     LONG d2 = (t1 >> 1) - t8 + t5;
+    
+    BOOL doclip = GC_DOCLIP(gc);
+    
 
     EnterFunc(bug("BitMap::DrawEllipse()"));
 
     while (d2 < 0)                  /* til slope = -1 */
     {
         /* draw 4 points using symmetry */
-        HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
-        HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
-        HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
-        HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
-    
+	
+	if  (doclip) {
+	
+	    if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y + y))
+		HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
+		
+	    if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y - y))
+		HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
+		
+	    if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y + y))
+		HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
+		
+	    if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y - y))
+		HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
+	     
+	} else {
+	    HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
+            HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
+            HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
+            HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
+        }
+	
         y++;            /* always move up here */
         t9 = t9 + t3;
         if (d1 < 0)     /* move straight up */
@@ -868,11 +940,35 @@ static VOID bitmap_drawellipse(Class *cl, Object *obj, struct pHidd_BitMap_DrawE
     do                              /* rest of top right quadrant */
     {
         /* draw 4 points using symmetry */
+#if 1
+	if  (doclip) {
+	
+	    if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y + y))
+		HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
+		
+	    if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y - y))
+		HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
+		
+	    if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y + y))
+		HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
+		
+	    if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y - y))
+		HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
+	     
+	} else {
+	
+	    HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
+            HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
+            HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
+            HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
+        }
+#else
+	
         HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
         HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
         HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
         HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
-    
+#endif
         x--;            /* always move left here */
         t8 = t8 - t6;
         if (d2 < 0)     /* move up and left */
@@ -1558,7 +1654,9 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
 #endif
 
 
+#if 0
                 case aoHidd_BitMap_ColorTab      : data->colorTab      = (APTR) tag->ti_Data; break;
+#endif
 		case aoHidd_BitMap_BitMap	 : data->bitMap	       = (Object *)tag->ti_Data;
 
 #if 0
@@ -1607,6 +1705,80 @@ static Object * bitmap_setpixelformat(Class *cl, Object *o, struct pHidd_BitMap_
      
 }
 
+static Object *bitmap_setcolormap(Class *cl, Object *o, struct pHidd_BitMap_SetColorMap *msg)
+{
+    struct HIDDBitMapData *data;
+    Object *old;
+    
+    data = INST_DATA(cl, o);
+    
+    old = data->colmap;
+    data->colmap = msg->colorMap;
+    
+    return old;
+}
+
+static HIDDT_Pixel bitmap_mapcolor(Class *cl, Object *o, struct pHidd_BitMap_MapColor *msg)
+{
+
+    HIDDT_PixelFormat *pf = BM_PIXFMT(o);
+    
+    HIDDT_Pixel red	= msg->color->red;
+    HIDDT_Pixel green	= msg->color->green;
+    HIDDT_Pixel blue	= msg->color->blue;
+    
+    
+    
+    /* This code assumes that sizeof (HIDDT_Pixel is a multimple of sizeof(col->#?)
+       which should be true for most (all ?) systems. (I have never heard
+       of any system with for example 3 byte types.
+    */
+
+    if (IS_TRUECOLOR(pf)) {
+    	msg->color->pixval = MAP_RGB(red, green, blue, pf);
+    } else {
+    	struct HIDDBitMapData *data = INST_DATA(cl, o);
+	HIDDT_Color *ctab;
+	
+	ctab = ((HIDDT_ColorLUT *)data->colmap)->colors;
+	/* Search for the best match in the color table */
+#warning Implement this
+	
+    }
+
+    return msg->color->pixval;
+}
+
+static VOID bitmap_unmappixel(Class *cl, Object *o, struct pHidd_BitMap_UnmapPixel *msg)
+{
+
+    HIDDT_PixelFormat *pf = BM_PIXFMT(o);
+    
+    if (IS_TRUECOLOR(pf)) {
+
+    	msg->color->red		= RED_COMP	(msg->pixel, pf);
+    	msg->color->green	= GREEN_COMP	(msg->pixel, pf);
+    	msg->color->blue	= BLUE_COMP	(msg->pixel, pf);
+    } else {
+    	struct HIDDBitMapData *data = INST_DATA(cl, o);
+	
+	HIDDT_ColorLUT *clut;
+	
+	clut = (HIDDT_ColorLUT *)data->colmap;
+	
+	
+	
+#warning Use CLUT shift and CLUT mask here
+	if (msg->pixel < 0 || msg->pixel >= clut->entries)
+	    return;
+	    
+	*msg->color = clut->colors[msg->pixel];
+    	
+    }
+    /* Unnecesart, but ... */
+    msg->color->pixval	= msg->pixel;
+}
+
 /*** init_bitmapclass *********************************************************/
 
 #undef OOPBase
@@ -1616,7 +1788,7 @@ static Object * bitmap_setpixelformat(Class *cl, Object *o, struct pHidd_BitMap_
 #define SysBase (csd->sysbase)
 
 #define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 21
+#define NUM_BITMAP_METHODS 24
 
 Class *init_bitmapclass(struct class_static_data *csd)
 {
@@ -1652,6 +1824,10 @@ Class *init_bitmapclass(struct class_static_data *csd)
         {(IPTR (*)())bitmap_bytesperline	, moHidd_BitMap_BytesPerLine	},
 	{(IPTR (*)())bitmap_convertpixels	, moHidd_BitMap_ConvertPixels	},
 	{(IPTR (*)())bitmap_setpixelformat	, moHidd_BitMap_SetPixelFormat	},
+	{(IPTR (*)())bitmap_setcolormap		, moHidd_BitMap_SetColorMap	},
+	{(IPTR (*)())bitmap_mapcolor		, moHidd_BitMap_MapColor	},
+	{(IPTR (*)())bitmap_unmappixel		, moHidd_BitMap_UnmapPixel	},
+	
         {NULL, 0UL}
     };
     
@@ -1686,12 +1862,8 @@ Class *init_bitmapclass(struct class_static_data *csd)
             csd->bitmapclass = cl;
             cl->UserData     = (APTR) csd;
             
-            /* Get attrbase for the BitMap interface */
-            HiddBitMapAttrBase 	= ObtainAttrBase(IID_Hidd_BitMap);
-	    HiddGCAttrBase 	= ObtainAttrBase(IID_Hidd_GC);
-	    HiddPixFmtAttrBase 	= ObtainAttrBase(IID_Hidd_PixFmt);
 	    
-            if(HiddBitMapAttrBase && HiddGCAttrBase && HiddPixFmtAttrBase)
+            if(ObtainAttrBases(attrbases))
             {
                 AddClass(cl);
             }
@@ -1719,19 +1891,8 @@ void free_bitmapclass(struct class_static_data *csd)
         RemoveClass(csd->bitmapclass);
         if(csd->bitmapclass) DisposeObject((Object *) csd->bitmapclass);
         csd->bitmapclass = NULL;
-        if(HiddBitMapAttrBase) {
-		ReleaseAttrBase(IID_Hidd_BitMap);
-		HiddBitMapAttrBase = 0;
-	}
-	if (HiddGCAttrBase) {
-		ReleaseAttrBase(IID_Hidd_GC);
-		HiddGCAttrBase = 0;
-	}
 	
-	if (HiddPixFmtAttrBase) {
-		ReleaseAttrBase(IID_Hidd_PixFmt);
-		HiddPixFmtAttrBase = 0;
-	}
+	ReleaseAttrBases(attrbases);
     }
 
     ReturnVoid("free_bitmapclass");

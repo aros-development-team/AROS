@@ -128,11 +128,9 @@ struct HIDDBitMapData
     Object *friend;	/* Friend bitmap */
     
     Object *gfxhidd;
+    
+    Object *colmap;
 
-
-#warning Both these are not necessary
-    APTR  colorTab;      /* color table of the bitmap     */
-    HIDDT_Color *coltab;
 
 };
 
@@ -233,6 +231,8 @@ void   free_gfxmodeclass(struct class_static_data *csd);
 Class *init_pixfmtclass(struct class_static_data *csd);
 void   free_pixfmtclass(struct class_static_data *csd);
 
+Class *init_colormapclass(struct class_static_data *csd);
+void free_colormapclass(struct class_static_data *csd);
 
 
 VOID  bitmap_putpixel(Class *cl, Object *obj, struct pHidd_BitMap_PutPixel *msg);
@@ -245,6 +245,9 @@ void   free_planarbmclass(struct class_static_data *csd);
 
 Class *init_chunkybmclass(struct class_static_data *csd);
 void   free_chunkybmclass(struct class_static_data *csd);
+
+inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelFormat *pf);
+
 
 
 #endif /* GRAPHICS_HIDD_INTERN_H */

@@ -32,11 +32,13 @@ struct planarbm_data {
 static AttrBase HiddBitMapAttrBase	= 0;
 static AttrBase HiddGCAttrBase		= 0;
 static AttrBase HiddPlanarBMAttrBase	= 0;
+static AttrBase HiddPixFmtAttrBase	= 0;
 
 static struct ABDescr attrbases[] = {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
     { IID_Hidd_GC,		&HiddGCAttrBase		},
     { IID_Hidd_PlanarBM,	&HiddPlanarBMAttrBase	},
+    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
     { NULL, 0UL }
 };
 
@@ -49,10 +51,20 @@ static Object *planarbm_new(Class *cl, Object *o, struct pRoot_New *msg)
     UBYTE alignoffset	= 15;
     UBYTE aligndiv	= 2;
     BOOL ok = TRUE;    
+    	/* Set the bitmaps' pixelformat */
+    struct TagItem pf_tags[] = {
+      	    { aHidd_PixFmt_GraphType,	   vHidd_GT_Palette	}, /* 0 */
+      	    { aHidd_PixFmt_Depth,	   0			}, /* 1 */
+      	    { aHidd_PixFmt_BytesPerPixel,  0			}, /* 2 */
+      	    { aHidd_PixFmt_BitsPerPixel,   0			}, /* 3 */
+      	    { aHidd_PixFmt_StdPixFmt,	   0			}, /* 4 */
+      	    { aHidd_PixFmt_CLUTShift,	   0			}, /* 5 */
+	    { aHidd_PixFmt_CLUTMask,	   0x000000FF		}, /* 6 */
+	    { TAG_DONE, 0UL }
+    };
     
     struct planarbm_data *data;
 
-kprintf("planarbm::new()\n");    
     o =(Object *)DoSuperMethod(cl, o, (Msg)msg);
     if (NULL == o)
     	return NULL;
@@ -73,29 +85,46 @@ kprintf("planarbm::new()\n");
     data->depth		  = depth;
     
     data->planes_alloced = (BOOL)GetTagData(aHidd_PlanarBM_AllocPlanes, TRUE, msg->attrList);
-    
-    if (!data->planes_alloced) {
-    	/* Nothing more to do */
-	return o;
+
+    pf_tags[1].ti_Data = depth;
+    pf_tags[2].ti_Data = 1;
+    pf_tags[3].ti_Data = depth;
+    pf_tags[4].ti_Data = vHidd_PixFmt_Unknown;
+	
+	
+    if (NULL == HIDD_BM_SetPixelFormat(o, pf_tags)) {
+kprintf("!!! PlanarBM::New(): Could not allocate pixel format\n");
+	ok = FALSE;
     }
     
-    /* Allocate memory for plane array */
-    data->planes = AllocVec(sizeof (UBYTE *) * depth, MEMF_ANY|MEMF_CLEAR);
-    if (NULL == data->planes)
-    	ok = FALSE;
-    else
-    {
+    if (ok) {
     
-	UBYTE i;
-	
-	data->planebuf_size = depth;
-	
-    	/* Allocate all the planes */
-	for ( i = 0; i < depth && ok; i ++)
+	if (!data->planes_alloced) {
+    	    /* Nothing more to do */
+	    return o;
+	}
+    }
+    
+    
+    if (ok) {
+	/* Allocate memory for plane array */
+	data->planes = AllocVec(sizeof (UBYTE *) * depth, MEMF_ANY|MEMF_CLEAR);
+	if (NULL == data->planes)
+	    ok = FALSE;
+	else
 	{
-	    data->planes[i] = AllocVec(height * data->bytesperrow, MEMF_ANY|MEMF_CLEAR);
-	    if (NULL == data->planes[i])
-	    	ok = FALSE;
+
+	    UBYTE i;
+
+	    data->planebuf_size = depth;
+
+	    /* Allocate all the planes */
+	    for ( i = 0; i < depth && ok; i ++)
+	    {
+	    	data->planes[i] = AllocVec(height * data->bytesperrow, MEMF_ANY|MEMF_CLEAR);
+	    	if (NULL == data->planes[i])
+	    	    ok = FALSE;
+	    }
 	}
     }
     
@@ -162,7 +191,7 @@ static VOID planarbm_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel
     notpixel  = ~pixel;
     mask      = 1;
 
-    for(i = 0; i < data->depth; i++)
+    for(i = 0; i < data->depth; i++, mask <<=1, plane ++)
     {
     	if ((*plane != NULL) && (*plane != (UBYTE *)-1))
 	{
@@ -192,6 +221,8 @@ static ULONG planarbm_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixe
     
     struct planarbm_data *data;
     
+// kprintf("PlanarBM::GetPixel()\n");
+    
     data = INST_DATA(cl, o);
 
     plane     = data->planes;
@@ -199,9 +230,23 @@ static ULONG planarbm_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixe
     pixel     = 128 >> (msg->x % 8);
     retval    = 0;
 
-    for(i = 0; i < data->depth; i++)
+    for(i = 0; i < data->depth; i++, plane ++)
     {
+<<<<<<< planarbm.c
+#warning Discuss this
+        /* This is because of a "feature" of intuition/DrawImage(), where
+	   all bitmaps are set to depth 8 even if they have lower depth.
+	   Maybe we could just count all planes that are non-null
+	   and set depth according to this. Or may there be "holes"?
+	   Eg. planes 0, 1 and 3 contains data, while plane 2 is NULL.
+	*/
+	if (NULL == *plane)
+	    continue;
+	    
+	if(*(*plane + offset) & pixel)
+=======
         if (*plane == (UBYTE *)-1)
+>>>>>>> 1.7
 	{
 	    retval = retval | (1 << i);
 	} else if (*plane != NULL)
@@ -211,7 +256,6 @@ static ULONG planarbm_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixe
 		retval = retval | (1 << i);
 	    }
 	}
-	plane++;
     }
     return retval; 
 }
@@ -230,7 +274,6 @@ BOOL planarbm_setbitmap(Class *cl, Object *o, struct pHidd_PlanarBM_SetBitMap *m
     };
 	
     ULONG i;
-kprintf("PlanarBM::SetBitMap()\n");
     
     data = INST_DATA(cl, o);
     bm = msg->bitMap;
@@ -246,6 +289,7 @@ kprintf("PlanarBM::SetBitMap()\n");
 	    FreeVec(data->planes);
 	    data->planes = NULL;
 	}
+
     }
     
     if (NULL == data->planes) {
@@ -258,8 +302,8 @@ kprintf("PlanarBM::SetBitMap()\n");
 
     }
     
+    
     /* Update the planes */
-   kprintf("Setting planes: planebuf_size=%d\n", data->planebuf_size);
     for (i = 0; i < data->planebuf_size; i ++) {
     	if (i < bm->Depth) 
    	    data->planes[i] = bm->Planes[i];
