@@ -1,9 +1,8 @@
 /*
-    (C) 2001 AROS - The Amiga Research OS
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
     $Id$
-
-    Desc: MUIMaster initialization code.
-    Lang: English
 */
 
 #include <exec/types.h>

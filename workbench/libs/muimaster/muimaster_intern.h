@@ -1,13 +1,12 @@
+/*
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
+    $Id$
+*/
+
 #ifndef MUIMASTER_INTERN_H
 #define MUIMASTER_INTERN_H
-
-/*
-    (C) 2001 AROS - The Amiga Research OS
-    $Id$
-
-    Desc: Internal definitions for muimaster.library
-    Lang: English
-*/
 
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>

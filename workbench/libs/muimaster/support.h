@@ -1,3 +1,10 @@
+/*
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
+    $Id$
+*/
+
 #ifndef _MUIMASTER_SUPPORT_H
 #define _MUIMASTER_SUPPORT_H
 
