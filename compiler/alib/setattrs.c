@@ -9,14 +9,14 @@
 #include <intuition/intuitionbase.h>
 #include "alib_intern.h"
 
-extern struct Library * BOOPSIBase;
+extern struct IntuitionBase * IntuitionBase;
 
 /*****************************************************************************
 
     NAME */
 #include <intuition/classusr.h>
 #define NO_INLINE_STDARG /* turn off inline def */
-#include <proto/boopsi.h>
+#include <proto/intuition.h>
 
 	IPTR SetAttrs (
 
