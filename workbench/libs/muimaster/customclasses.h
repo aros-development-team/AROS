@@ -5,6 +5,7 @@
 #include <dos/dos.h>
 #include <aros/symbolsets.h>
 #include <aros/autoinit.h>
+#include <aros/debug.h>
 
 #define __ZUNE_CUSTOMCLASS_START(name)                                \
 BOOPSI_DISPATCHER(IPTR, name ## _Dispatcher, __class, __self, __msg); \
@@ -56,7 +57,11 @@ ADD2EXIT(name ## _Deinitialize, 100);                                 \
 
 #define __ZUNE_CUSTOMCLASS_METHOD(mname, mid, m_msg_type) \
     case mid:                                             \
-        return mname(__class, __self, (m_msg_type)__msg)
+                                                          \
+        D(bug("[ZCC] ENTERING "__AROS_STR(mname)          \
+          "("__AROS_STR(m_msg_type)")\n"));               \
+                                                          \
+        return mname(__class, __self, (m_msg_type)__msg)  \
 
 /******************************************************************/
 
