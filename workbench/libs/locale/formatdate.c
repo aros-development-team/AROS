@@ -1,5 +1,5 @@
 /*
-    (C) 1997-99 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -132,7 +132,7 @@ ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,212,243,273,30
     
     Amiga2Date(date->ds_Days*86400 + date->ds_Minute*60 + date->ds_Tick / 50,
 	       &cData);
-
+    
     while(*formatString != 0)
     {
     	if(*formatString == '%')
@@ -150,12 +150,12 @@ ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,212,243,273,30
 		break;
 		
 	    case 'b':
-		_WriteString(GetLocaleStr(locale, ABMON_1 + cData.month),
+		_WriteString(GetLocaleStr(locale, ABMON_1 + cData.month - 1),
 			    hook, locale);
 		break;
 		
 	    case 'B':
-		_WriteString(GetLocaleStr(locale, MON_1 + cData.month), hook,
+		_WriteString(GetLocaleStr(locale, MON_1 + cData.month - 1), hook,
 			     locale);
 		break;
 		
@@ -181,7 +181,7 @@ ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,212,243,273,30
 		break;
 		
 	    case 'h':
-		_WriteString(GetLocaleStr(locale, ABMON_1 + cData.month),
+		_WriteString(GetLocaleStr(locale, ABMON_1 + cData.month - 1),
 			     hook, locale);
 		break;
 		
