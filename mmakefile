@@ -76,6 +76,11 @@ DEPLIB_HIDDCLASS=$(LIBDIR)/libhiddcl.so
 else
 DEPLIB_HIDDCLASS=$(LIBDIR)/libhiddcl.a
 endif
+ifeq ("$(SHARED_UNIXIOCLASS)","yes")
+DEPLIB_UNIXIOCLASS=$(LIBDIR)/libunixiocl.so
+else
+DEPLIB_UNIXIOCLASS=$(LIBDIR)/libunixiocl.a
+endif
 
 DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(GENDIR)/filesys/emul_handler.o \
@@ -89,13 +94,14 @@ DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(DEPLIB_MATHFFP) \
     $(DEPLIB_BOOPSI) \
     $(DEPLIB_HIDDCLASS) \
+    $(DEPLIB_UNIXIOCLASS) \
     $(LIBDIR)/libconsole.a \
     $(LIBDIR)/libaros.a
 
 LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS \
 	-lintuition -lgraphics -ldos -lexec -lconsole \
-	-lhiddcl -lboopsi -lutility \
+	-lhiddcl -lunixiocl -lboopsi -lutility \
 	-laros -lmathffp \
 	-lamiga -larossupport
 
