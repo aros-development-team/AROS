@@ -42,7 +42,7 @@ void InitMenus(void)
 	if (actnm->nm_Label != NM_BARLABEL)
 	{
 	    ULONG  id = (ULONG)actnm->nm_Label;
-	    STRPTR str = MSG(id);
+	    CONST_STRPTR str = MSG(id);
 	    
 	    if (actnm->nm_Type == NM_TITLE)
 	    {
@@ -88,7 +88,7 @@ void KillMenus(void)
 
 /*********************************************************************************************/
 
-STRPTR GetFile(STRPTR title, STRPTR dir, BOOL savemode)
+STRPTR GetFile(CONST_STRPTR title, CONST_STRPTR dir, BOOL savemode)
 {
     static UBYTE         filebuffer[300];
     struct FileRequester *req;
