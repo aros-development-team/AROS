@@ -18,8 +18,11 @@
 **************************************/
 /* 1. Analyze system: Specify a definitive define for each system */
 #if defined(_AMIGA) || defined(AMIGA)
-#   ifndef _AMIGA /* One define for each system */
+#   ifndef _AMIGA 
 #	define _AMIGA
+#   endif
+#   ifndef AMIGA
+#       define AMIGA
 #   endif
 #endif
 
