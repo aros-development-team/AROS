@@ -95,7 +95,7 @@ const struct Resident Keyboard_resident =
 
 static const char name[] = "keyboard.device";
 
-static const char version[] = "$VER: keyboard.device 41.0 (13.4.98)\r\n";
+static const char version[] = "$VER: keyboard.device 41.0 (13.4.1998)\r\n";
 
 static const APTR inittabl[4] =
 {
