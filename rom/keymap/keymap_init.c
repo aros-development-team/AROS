@@ -78,11 +78,29 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
     LIBBASE->DefaultKeymap = &def_km;
 
+    /* Initialize and add the keymap.resource */
+    
+    LIBBASE->DefKeymapNode = AllocMem(sizeof (struct KeyMapNode), MEMF_PUBLIC);
+    if (!LIBBASE->DefKeymapNode)
+    	return (NULL);
+
     /* Initialise the keymap.resource */
     LIBBASE->KeymapResource.kr_Node.ln_Type = NT_RESOURCE;
     LIBBASE->KeymapResource.kr_Node.ln_Name = "keymap.resource";
     NEWLIST( &(LIBBASE->KeymapResource.kr_List) );
     AddResource(&LIBBASE->KeymapResource);
+    	
+    /* Copy default keymap into DefKeymapNode */
+    CopyMem(&def_km, &(LIBBASE->DefKeymapNode->kn_KeyMap), sizeof (struct KeyMap));
+    
+    LIBBASE->DefKeymapNode->kn_Node.ln_Name = "default keymap";
+
+    /*
+	We are being called under Forbid(), so I don't have to arbitrate
+	That notwithstanding, if keymap resource or exec library loading
+	ever become semaphore based, there may be some problems.
+     */
+    AddTail( &(LIBBASE->KeymapResource.kr_List), &(LIBBASE->DefKeymapNode->kn_Node));
 
     /* You would return NULL if the init failed */
     return LIBBASE;
@@ -102,25 +120,6 @@ AROS_LH1(struct LIBBASETYPE *, open,
     LIBBASE->LibNode.lib_OpenCnt++;
     LIBBASE->LibNode.lib_Flags&=~LIBF_DELEXP;
     
-    /* Initialize and add the keymap.resource */
-    
-    if (!LIBBASE->DefKeymapNode)
-    	LIBBASE->DefKeymapNode = AllocMem(sizeof (struct KeyMapNode), MEMF_PUBLIC);
-    if (!LIBBASE->DefKeymapNode)
-    	return (NULL);
-    	
-    /* Copy default keymap into DefKeymapNode */
-    CopyMem(&def_km, &(LIBBASE->DefKeymapNode->kn_KeyMap), sizeof (struct KeyMap));
-    
-    LIBBASE->DefKeymapNode->kn_Node.ln_Name = "default keymap";
-
-    /*
-	We are being called under Forbid(), so I don't have to arbitrate
-	That notwithstanding, if keymap resource or exec library loading
-	ever become semaphore based, there may be some problems.
-     */
-    AddTail( &(LIBBASE->KeymapResource.kr_List), &(LIBBASE->DefKeymapNode->kn_Node));
-
     /* You would return NULL if the open failed. */
     return LIBBASE;
     AROS_LIBFUNC_EXIT
