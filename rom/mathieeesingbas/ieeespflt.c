@@ -17,27 +17,27 @@
 
     NAME */
 
-	AROS_LH1(LONG, IEEESPFlt,
+        AROS_LH1(LONG, IEEESPFlt,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, y, D0),
+        AROS_LHA(LONG, y, D0),
 
 /*  LOCATION */
-	struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 6, Mathieeesingbas)
+        struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 6, Mathieeesingbas)
 
 /*  FUNCTION
 
 
     INPUTS
-	y  - signed integer number
+        y  - signed integer number
 
     RESULT
 
 
-	Flags:
-	  zero	   : result is zero
-	  negative : result is negative
-	  overflow : ffp is not exactly the integer
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : ffp is not exactly the integer
 
     NOTES
 
@@ -55,6 +55,7 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
   LONG Exponent = 0;
   LONG TestMask = 0xFFFFFFFF;
   LONG Res = 0;
@@ -105,5 +106,6 @@
     SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;
+AROS_LIBFUNC_EXIT
 } /* IEEESPFlt */
 

@@ -17,26 +17,26 @@
 
     NAME */
 
-	AROS_LH1(LONG, IEEESPAbs,
+        AROS_LH1(LONG, IEEESPAbs,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, y, D0),
+        AROS_LHA(LONG, y, D0),
 
 /*  LOCATION */
-	struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 9, Mathieeesingbas)
+        struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 9, Mathieeesingbas)
 
 /*  FUNCTION
-	Calculate the absolute value of a given floating point number
+        Calculate the absolute value of a given floating point number
     INPUTS
-	y  - ieeesp number
+        y  - ieeesp number
 
     RESULT
-	absolute value of y
+        absolute value of y
 
-	Flags:
-	  zero	   : result is zero
-	  negative : result is negative
-	  overflow : 0
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : 0
 
     NOTES
 
@@ -49,13 +49,14 @@
 
     INTERNALS
       ALGORITHM:
-	set the sign-bit to zero
+        set the sign-bit to zero
 
     HISTORY
 
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
     if (0 == y)
       /* value is 0 -> set the Zero Flag */
       SetSR( Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
@@ -66,5 +67,6 @@
       SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
     }
     return y;
+AROS_LIBFUNC_EXIT
 } /* IEEESPAbs */
 

@@ -17,27 +17,27 @@
 
     NAME */
 
-	AROS_LH1(LONG, IEEESPNeg,
+        AROS_LH1(LONG, IEEESPNeg,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, y, D0),
+        AROS_LHA(LONG, y, D0),
 
 /*  LOCATION */
-	struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 10, Mathieeesingbas)
+        struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 10, Mathieeesingbas)
 
 /*  FUNCTION
-	Switch the sign of the given ieeesp number
+        Switch the sign of the given ieeesp number
 
     INPUTS
-	y  - IEEE single precision floating point
+        y  - IEEE single precision floating point
 
     RESULT
-	-y
+        -y
 
-	Flags:
-	  zero	   : result is zero
-	  negative : result is negative
-	  overflow : 0
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : 0
 
     NOTES
 
@@ -50,14 +50,15 @@
 
     INTERNALS
       ALGORITHM:
-	Return -0 if y == 0.
-	Otherwise flip the sign-bit.
+        Return -0 if y == 0.
+        Otherwise flip the sign-bit.
 
     HISTORY
 
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
   if (0 == y || 0x80000000 == y)
   {
     SetSR( Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
@@ -75,5 +76,6 @@
     SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
 
   return y;
+AROS_LIBFUNC_EXIT
 } /* IEEESPNeg */
 

@@ -20,29 +20,29 @@
 
     NAME */
 
-	AROS_LH2(LONG, IEEESPMul,
+        AROS_LH2(LONG, IEEESPMul,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, y, D0),
-	AROS_LHA(LONG, z, D1),
+        AROS_LHA(LONG, y, D0),
+        AROS_LHA(LONG, z, D1),
 
 /*  LOCATION */
-	struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 13, Mathieeesingbas)
+        struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 13, Mathieeesingbas)
 
 /*  FUNCTION
-	Multiply two ffp numbers
-	res = y * z;
+        Multiply two ffp numbers
+        res = y * z;
 
     INPUTS
-	y  - IEEE single precision floating point
-	z  - IEEE single precision floating point
+        y  - IEEE single precision floating point
+        z  - IEEE single precision floating point
 
     RESULT
 
-	Flags:
-	  zero	   : result is zero
-	  negative : result is negative
-	  overflow : result is out of range
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : result is out of range
 
     NOTES
 
@@ -55,21 +55,22 @@
 
     INTERNALS
       ALGORITHM
-	  Pen and paper algorithm of multiplication
+          Pen and paper algorithm of multiplication
 
     HISTORY
 
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
   ULONG Mant1H = ((y & 0x00fff000) >> 12 ) | 0x00000800;
   ULONG Mant2H = ((z & 0x00fff000) >> 12 ) | 0x00000800;
   ULONG Mant1L = y & 0x00000fff;
   ULONG Mant2L = z & 0x00000fff;
   LONG Res;
   LONG Exponent =((( y & IEEESPExponent_Mask)) +
-		  (( z & IEEESPExponent_Mask)) -
-		  0x3f800000 );
+                  (( z & IEEESPExponent_Mask)) -
+                  0x3f800000 );
 
   if (0 == y || 0 == z)
   {
@@ -109,4 +110,5 @@
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;
+AROS_LIBFUNC_EXIT
 } /* IEEESPMul */

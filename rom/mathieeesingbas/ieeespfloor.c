@@ -17,29 +17,29 @@
 
     NAME */
 
-	AROS_LH1(LONG, IEEESPFloor,
+        AROS_LH1(LONG, IEEESPFloor,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, y, D0),
+        AROS_LHA(LONG, y, D0),
 
 /*  LOCATION */
-	struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 15, Mathieeesingbas)
+        struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 15, Mathieeesingbas)
 
 /*  FUNCTION
-	Calculate the largest integer ieeesp-number less than or equal to
-	fnum
+        Calculate the largest integer ieeesp-number less than or equal to
+        fnum
 
 
     INPUTS
-	y  - IEEE single precision floating point
+        y  - IEEE single precision floating point
 
     RESULT
-	     IEEE single precision floating point
+             IEEE single precision floating point
 
-	Flags:
-	  zero	   : result is zero
-	  negative : result is negative
-	  overflow : 0 (???)
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : 0 (???)
 
     NOTES
 
@@ -61,10 +61,11 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
   LONG Mask = 0x80000000;
 
   if (0x7f880000 == y)
-	return y;
+        return y;
 
   if ((y & IEEESPExponent_Mask)  < 0x3f800000)
   {
@@ -96,5 +97,6 @@
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return y & Mask;
+AROS_LIBFUNC_EXIT
 } /* IEEESPFloor */
 

@@ -17,29 +17,29 @@
 
     NAME */
 
-	AROS_LH2(LONG, IEEESPDiv,
+        AROS_LH2(LONG, IEEESPDiv,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, y, D0),
-	AROS_LHA(LONG, z, D1),
+        AROS_LHA(LONG, y, D0),
+        AROS_LHA(LONG, z, D1),
 
 /*  LOCATION */
-	struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 14, Mathieeesingbas)
+        struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 14, Mathieeesingbas)
 
 /*  FUNCTION
-	Divide two IEEE single precision floating point numbers
-	x = y / z;
+        Divide two IEEE single precision floating point numbers
+        x = y / z;
 
     INPUTS
-	y  - IEEE single precision floating point
-	z  - IEEE single precision floating point
+        y  - IEEE single precision floating point
+        z  - IEEE single precision floating point
 
     RESULT
 
-	Flags:
-	  zero	   : result is zero
-	  negative : result is negative
-	  overflow : result is out of range
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : result is out of range
 
     NOTES
 
@@ -52,24 +52,25 @@
 
     INTERNALS
       ALGORITHM:
-	Check if fnum2 == 0: result = 0;
-	Check if fnum1 == 0: result = overflow;
-	The further algorithm comes down to a pen & paper division.
+        Check if fnum2 == 0: result = 0;
+        Check if fnum1 == 0: result = overflow;
+        The further algorithm comes down to a pen & paper division.
     HISTORY
 
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
   LONG Res = 0;
   LONG Exponent = (y & IEEESPExponent_Mask) -
-		  (z & IEEESPExponent_Mask) + 0x3f800000;
+                  (z & IEEESPExponent_Mask) + 0x3f800000;
 
   LONG Mant2 = ((y & IEEESPMantisse_Mask) | 0x00800000) << 8;
   LONG Mant1 = ((z & IEEESPMantisse_Mask) | 0x00800000) << 8;
   ULONG Bit_Mask = 0x80000000;
 
-	if (0 == z && 0 == y)
-		return 0x7f880000;
+        if (0 == z && 0 == y)
+                return 0x7f880000;
 
   /* check if the dividend is zero */
   if (0 == z)
@@ -94,14 +95,14 @@
 
       while (Mant2 > 0)
       {
-	Mant2 <<= 1;
-	Bit_Mask >>= 1;
+        Mant2 <<= 1;
+        Bit_Mask >>= 1;
       }
 
       while (Mant1 > 0)
       {
-	Mant1 <<=1;
-	Bit_Mask <<=1;
+        Mant1 <<=1;
+        Bit_Mask <<=1;
       }
     } /* if */
     else
@@ -118,10 +119,10 @@
     Exponent -=0x00800000;
   }
 
-	if ((char) Res < 0)
+        if ((char) Res < 0)
     Res += 0x00000100;
 
-	Res >>= 8;
+        Res >>= 8;
 
   Res &= IEEESPMantisse_Mask;
   Res |= Exponent;
@@ -134,5 +135,6 @@
     SetSR(Overflow_Bit, Negative_Bit | Overflow_Bit);
 
   return Res;
+AROS_LIBFUNC_EXIT
 } /* IEEESPDiv */
 
