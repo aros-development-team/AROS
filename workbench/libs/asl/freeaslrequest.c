@@ -58,6 +58,7 @@
     	StripRequester(requester, reqnode->rn_IntReq->ir_ReqType, ASLB(AslBase));
     	
 	FreeVec(requester);
+	DeletePool(reqnode->rn_IntReq->ir_MemPool);
 	FreeVec(reqnode->rn_IntReq);
 	
 	ObtainSemaphore( &(ASLB(AslBase)->ReqListSem) );
