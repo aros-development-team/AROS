@@ -51,49 +51,34 @@ struct MUI_ImageadjustData
     LONG adjust_type;
 };
 
-#ifndef __AROS__
-static __asm VOID Pattern_Select_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
-#else
-AROS_UFH3(VOID,Pattern_Select_Function,
-	AROS_UFHA(struct Hook *, hook,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(void **, msg,  A1))
-#endif
+
+static VOID Pattern_Select_Function(struct Hook *hook, Object *obj, void **msg)
 {
     struct MUI_ImageadjustData *data = (struct MUI_ImageadjustData *)hook->h_Data;
     int new_selected = (int)msg[0];
 
-    if (data->last_pattern_selected != -1) set(data->pattern_image[data->last_pattern_selected],MUIA_Selected,FALSE);
+    if (data->last_pattern_selected != -1)
+	set(data->pattern_image[data->last_pattern_selected],MUIA_Selected,FALSE);
     data->last_pattern_selected = new_selected;
 }
 
-#ifndef __AROS__
-static __asm VOID Vector_Select_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
-#else
-AROS_UFH3(VOID,Vector_Select_Function,
-	AROS_UFHA(struct Hook *, hook,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(void **, msg,  A1))
-#endif
+
+static VOID Vector_Select_Function(struct Hook *hook, Object *obj, void **msg)
 {
     struct MUI_ImageadjustData *data = (struct MUI_ImageadjustData *)hook->h_Data;
     int new_selected = (int)msg[0];
 
-    if (data->last_vector_selected != -1) set(data->vector_image[data->last_vector_selected],MUIA_Selected,FALSE);
+    if (data->last_vector_selected != -1)
+	set(data->vector_image[data->last_vector_selected],MUIA_Selected,FALSE);
     data->last_vector_selected = new_selected;
 }
 
-#ifndef __AROS__
-static __saveds __asm void Imageadjust_External_Display(register __a0 struct Hook *h, register __a2 char **strings, register __a1 char *filename)
-#else
-AROS_UFH3(VOID,Imageadjust_External_Display,
-	AROS_UFHA(struct Hook *, h,  A0),
-	AROS_UFHA(char **strings, , A2),
-	AROS_UFHA(char *, filename,  A1))
-#endif
+
+static void Imageadjust_External_Display(struct Hook *h, char **strings, char *filename)
 {
     if (filename) *strings = FilePart(filename);
 }
+
 
 /**************************************************************************
  Adds a directory to the list
@@ -271,7 +256,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     adjust_type = GetTagData(MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All,
 			     msg->ops_AttrList);
 
-    color_group = HVSpace;
+    color_group = MUI_NewObject(MUIC_Penadjust, TAG_DONE);
 
     if (adjust_type == MUIV_Imageadjust_Type_All ||
 	adjust_type == MUIV_Imageadjust_Type_Image)
@@ -341,7 +326,8 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	data->last_pattern_selected = -1;
 	data->pattern_select_hook.h_Data = data;
-	data->pattern_select_hook.h_Entry = (HOOKFUNC)Pattern_Select_Function;
+	data->pattern_select_hook.h_Entry = HookEntry;
+	data->pattern_select_hook.h_SubEntry = (HOOKFUNC)Pattern_Select_Function;
 
 	for (i=0;i<18;i++)
 	{
@@ -368,7 +354,8 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	{
 	    data->last_vector_selected = -1;
 	    data->vector_select_hook.h_Data = data;
-	    data->vector_select_hook.h_Entry = (HOOKFUNC)Vector_Select_Function;
+	    data->vector_select_hook.h_Entry = HookEntry;
+	    data->vector_select_hook.h_SubEntry = (HOOKFUNC)Vector_Select_Function;
 
 	    for (i=0;i<24;i++)
 	    {
@@ -414,7 +401,8 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	adjust_type != MUIV_Imageadjust_Type_Pen)
     {
 	data->external_list = external_list;
-	data->external_display_hook.h_Entry = (HOOKFUNC)Imageadjust_External_Display;
+	data->external_display_hook.h_Entry = HookEntry;
+	data->external_display_hook.h_SubEntry = (HOOKFUNC)Imageadjust_External_Display;
 	set(data->external_list,MUIA_List_DisplayHook, &data->external_display_hook);
     }
     /* Because we have many childs, we disbale the forwarding of the notify method */
