@@ -76,7 +76,7 @@ struct Node n2C={&n2D,&n2B, unknowntxt, 0, 0};
 struct Node n2D={&n2E,&n2C, unknowntxt, 0, 0};
 struct Node n2E={&n2F,&n2D, unknowntxt, 0, 0};
 struct Node n2F={&n30,&n2E, unknowntxt, 0, 0};
-struct Node n30={&n31,&n2F, unknowntxt, 0, 0};
+struct Node n30={&n31,&n2F, "AROS", 0, 0};
 struct Node n31={&n32,&n30, unknowntxt, 0, 0};
 struct Node n32={&n33,&n31, unknowntxt, 0, 0};
 struct Node n33={&n34,&n32, unknowntxt, 0, 0};
@@ -391,8 +391,8 @@ struct creategadget pcpgadgets[] =
 	{
 		INTEGER_KIND,
 		{
-			155,180,50,15,
-			"Start Cyl", NULL,
+			155,180,80,15,
+			"Start Sec", NULL,
 			ID_PCP_STARTCYL, PLACETEXT_LEFT, NULL, NULL
 		},
 		pcpstartcyltags
@@ -400,8 +400,8 @@ struct creategadget pcpgadgets[] =
 	{
 		INTEGER_KIND,
 		{
-			155,200,50,15,
-			"End Cyl", NULL,
+			155,200,80,15,
+			"End Sec", NULL,
 			ID_PCP_ENDCYL, PLACETEXT_LEFT, NULL, NULL
 		},
 		pcpendcyltags
@@ -409,8 +409,8 @@ struct creategadget pcpgadgets[] =
 	{
 		INTEGER_KIND,
 		{
-			155,220,50,15,
-			"Total Cyl", NULL,
+			155,220,80,15,
+			"Total Sec", NULL,
 			ID_PCP_TOTALCYL, PLACETEXT_LEFT, NULL, NULL
 		},
 		pcptotalcyltags
