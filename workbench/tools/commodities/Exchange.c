@@ -103,7 +103,7 @@
 
 #include "commodities_strings.h"
 
-#define  P(x)   x
+#define  P(x)   
 
 #define BORDERY      4
 #define SPACEY       4
@@ -120,6 +120,7 @@ struct ExchangeState
     struct List     ec_brokerList;   /* Current list of brokers
 					(struct BrokerCopy nodes */
 
+    struct Screen  *ec_screen;
     struct VisualInfo *ec_visualInfo; /* Visualinfo for the gadgets */
     
     struct Window  *ec_window;	     /* The Exchange window */
@@ -325,7 +326,6 @@ static struct NewMenu nm[] =
 
 BOOL getResources(struct ExchangeState *ec)
 {
-    struct Screen    *screen;
     struct DrawInfo  *drawInfo;
     LONG              topOffset;
     LONG    	      fontHeight;
@@ -423,16 +423,16 @@ BOOL getResources(struct ExchangeState *ec)
     /* Start our broker */
     ActivateCxObj(ec->ec_broker, TRUE);
 
-    screen = LockPubScreen(NULL);
+    ec->ec_screen = LockPubScreen(NULL);
 
-    if (screen == NULL)
+    if (ec->ec_screen == NULL)
     {
 	showSimpleMessage(ec, getCatalog(ec->ec_catalog, MSG_CANT_LOCK_SCR));
 
 	return FALSE;
     }
 
-    ec->ec_visualInfo = GetVisualInfoA(screen, NULL);
+    ec->ec_visualInfo = GetVisualInfoA(ec->ec_screen, NULL);
 
     if (ec->ec_visualInfo == NULL)
     {
@@ -441,12 +441,12 @@ BOOL getResources(struct ExchangeState *ec)
 	return FALSE;
     }
 
-    drawInfo = GetScreenDrawInfo(screen);
+    drawInfo = GetScreenDrawInfo(ec->ec_screen);
     fontHeight = drawInfo->dri_Font->tf_YSize;
-    topOffset = fontHeight + screen->WBorTop;
-    FreeScreenDrawInfo(screen, drawInfo);
+    topOffset = fontHeight + ec->ec_screen->WBorTop;
+    FreeScreenDrawInfo(ec->ec_screen, drawInfo);
 
-    if (!initGadgets(ec, screen, fontHeight))
+    if (!initGadgets(ec, ec->ec_screen, fontHeight))
     {
 	return FALSE;
     }
@@ -472,8 +472,8 @@ BOOL getResources(struct ExchangeState *ec)
     winHeight = BORDERY * 2 + fontHeight + LABELSPACEY +
     	    	(fontHeight + EXTRAHEIGHT) * 4 + 
 		SPACEY * 3 +
-		screen->WBorTop + fontHeight + 1 +
-		screen->WBorBottom;
+		ec->ec_screen->WBorTop + fontHeight + 1 +
+		ec->ec_screen->WBorBottom;
     
     ec->ec_window = OpenWindowTags(NULL,
 				   WA_PubScreen,    NULL,
@@ -487,11 +487,13 @@ BOOL getResources(struct ExchangeState *ec)
 				                    LISTVIEWIDCMP | 
 				                    IDCMP_CLOSEWINDOW |
 				                    IDCMP_GADGETUP |
-				                    IDCMP_MENUPICK,
+				                    IDCMP_MENUPICK |
+						    IDCMP_VANILLAKEY,
 				   WA_DragBar,      TRUE,
 				   WA_CloseGadget,  TRUE,
 				   WA_DepthGadget,  TRUE,
 				   WA_SmartRefresh, TRUE,
+				   WA_Activate	  , TRUE,
 				   TAG_DONE);
     
     if (ec->ec_window == NULL)
@@ -503,7 +505,8 @@ BOOL getResources(struct ExchangeState *ec)
 
     SetMenuStrip(ec->ec_window, ec->ec_menus);
 
-    UnlockPubScreen(NULL, screen);
+    UnlockPubScreen(NULL, ec->ec_screen);
+    ec->ec_screen = NULL;
 
     return TRUE;
 }
@@ -624,6 +627,7 @@ STRPTR strings[3];
 
 BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
 {
+    struct Gadget *gad;
     LONG y, h;
     
     listView.ng_VisualInfo = ec->ec_visualInfo;
@@ -643,7 +647,7 @@ BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
     strings[1] = getCatalog(ec->ec_catalog, MSG_EXCHANGE_CYCLE_INACTIVE);
     strings[2] = NULL;
 
-    CreateContext(&ec->ec_context);
+    gad = CreateContext(&ec->ec_context);
 
     y = scr->WBorTop + fontHeight + 1 + BORDERY + fontHeight + LABELSPACEY;
     h = fontHeight + EXTRAHEIGHT;
@@ -669,78 +673,52 @@ BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
     textGad2.ng_TopEdge = y + 1 * (h + SPACEY);
     textGad2.ng_Height  = h;
     
-    if (ec->ec_context == NULL)
-    {
-	return FALSE;
-    }
+    ec->ec_listView = gad =  CreateGadget(LISTVIEW_KIND, gad,
+					  &listView,
+					  GTLV_Labels, NULL,
+					  GTLV_ShowSelected, NULL,
+					  TAG_DONE);
+    
+    ec->ec_showBut = gad = CreateGadget(BUTTON_KIND, gad,
+					&showBut,
+					GA_Disabled, TRUE,
+					TAG_DONE);
 
-    if ((ec->ec_listView = CreateGadget(LISTVIEW_KIND, ec->ec_context,
-					&listView,
-					GTLV_Labels, NULL,
-					GTLV_ShowSelected, NULL,
-					TAG_DONE)) == NULL)
-    {
-	return FALSE;
-    }
+    ec->ec_hideBut = gad = CreateGadget(BUTTON_KIND, gad,
+					&hideBut,
+					GA_Disabled, TRUE,
+					TAG_DONE);
+
+    ec->ec_killBut = gad = CreateGadget(BUTTON_KIND, gad,
+					&killBut,
+					GA_Disabled, TRUE,
+					TAG_DONE);
     
-    if ((ec->ec_showBut = CreateGadget(BUTTON_KIND, ec->ec_context,
-				       &showBut,
-				       GA_Disabled, TRUE,
-				       TAG_DONE)) == NULL)
-    {
-	return FALSE;
-    }
-    
-    if ((ec->ec_hideBut = CreateGadget(BUTTON_KIND, ec->ec_context,
-				       &hideBut,
-				       GA_Disabled, TRUE,
-				       TAG_DONE)) == NULL)
-    {
-	return FALSE;
-    }
-    
-    if ((ec->ec_killBut = CreateGadget(BUTTON_KIND, ec->ec_context,
-				       &killBut,
-				       GA_Disabled, TRUE,
-				       TAG_DONE)) == NULL)
-    {
-	return FALSE;
-    }
-    
-    if ((ec->ec_cycle = CreateGadget(CYCLE_KIND, ec->ec_context,
-				     &cycleBut,
-				     GA_Disabled, TRUE,
-				     GTCY_Labels, strings,  /* Temporary */
-				     TAG_DONE)) == NULL)
-    {
-	return FALSE;
-    }
+    ec->ec_cycle = gad = CreateGadget(CYCLE_KIND, gad,
+				      &cycleBut,
+				      GA_Disabled, TRUE,
+				      GTCY_Labels, strings,  /* Temporary */
+				      TAG_DONE);
     
     /* NOTE! GadTools bug: The disabled state for cycle gadgets is not
        changed when doing a GT_SetGadgetAttrs() */
 
     /* Information window */
-    if ((ec->ec_textGad = CreateGadget(TEXT_KIND, ec->ec_context,
-				       &textGad,
-				       //GTTX_Text    , "Exchange",
-				       //GTTX_CopyText, TRUE,
-				       GTTX_Border  , TRUE,
-				       TAG_DONE)) == NULL)
-    {
-	return FALSE;
-    }
-    
-    if ((ec->ec_textGad2 = CreateGadget(TEXT_KIND, ec->ec_context,
-					&textGad2,
-					//GTTX_Text    , "Test message",
+    ec->ec_textGad = gad = CreateGadget(TEXT_KIND, gad,
+					&textGad,
+					//GTTX_Text    , "Exchange",
 					//GTTX_CopyText, TRUE,
 					GTTX_Border  , TRUE,
-					TAG_DONE)) == NULL)
-    {
-	return FALSE;
-    }
+					TAG_DONE);
+    
+    ec->ec_textGad2 = gad = CreateGadget(TEXT_KIND, gad,
+					 &textGad2,
+					 //GTTX_Text    , "Test message",
+					 //GTTX_CopyText, TRUE,
+					 GTTX_Border  , TRUE,
+					 TAG_DONE);
 
-    return TRUE;
+    return gad ? TRUE : FALSE;
 }
 
 
@@ -766,6 +744,8 @@ void freeResources(struct ExchangeState *ec)
 	FreeMenus(ec->ec_menus);
 	FreeGadgets(ec->ec_context);
 	FreeVisualInfo(ec->ec_visualInfo);
+
+    	UnlockPubScreen(NULL, ec->ec_screen);
 	
 	P(kprintf("Freed visualinfo\n"));
     }
@@ -827,6 +807,10 @@ void realMain(struct ExchangeState *ec)
 		    quitNow = TRUE;
 		    break;
 
+    	    	case IDCMP_VANILLAKEY:
+		    if (msg->Code == 27) quitNow = TRUE;
+		    break;
+		    
 		case IDCMP_GADGETUP:
 		    {		
 			struct Gadget *gadget = (struct Gadget *)msg->IAddress;
@@ -854,8 +838,6 @@ void realMain(struct ExchangeState *ec)
 			    break;
 			}
 			
-			GT_ReplyIMsg(msg);
-
 		    } /* case IDCMP_GADGETUP: */
 		    break;
 
@@ -892,6 +874,9 @@ void realMain(struct ExchangeState *ec)
 
 		    break;
 		} /* switch(msg->Class) */
+		
+		GT_ReplyIMsg(msg);
+
 	    } /* while(GT_GetIMsg()) */
 	} /* if(signals & winSig) */
 	
