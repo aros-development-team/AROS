@@ -127,12 +127,10 @@ static void _zune_focus_new(Object *obj, int type)
     struct RastPort *rp;
     UWORD oldDrPt;
 
-    D(bug("_zune_focus_new 1 %p\n", obj));
+    //bug("_zune_focus_new 1 %p\n", obj);
 
     if (NULL == obj || !(_flags(obj) & MADF_CANDRAW))
 	return;
-
-    D(bug("_zune_focus_new 2 %p\n", obj));
 
     parent = _parent(obj);
     rp = _rp(obj);
@@ -169,12 +167,10 @@ static void _zune_focus_destroy(Object *obj, int type)
 {
     Object *parent;
 
-    D(bug("_zune_focus_destroy 1 %p\n", obj));
+    //bug("_zune_focus_destroy 1 %p\n", obj);
 
     if (NULL == obj || !(_flags(obj) & MADF_CANDRAW))
 	return;
-
-    D(bug("_zune_focus_destroy %p\n", obj));
 
     parent = _parent(obj);
     int x1 = _left(obj);
@@ -395,11 +391,6 @@ static IPTR Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	data->mad_Flags &= ~MADF_SELECTED;
     }
 
-    if (data->mad_FrameTitle != NULL)
-    {
-    	data->mad_FrameTitle = StrDup(data->mad_FrameTitle);
-    }
-
     data->mad_ehn.ehn_Events = 0; /* Will be filled on demand */
     data->mad_ehn.ehn_Priority = -5;
     /* Please also send mui key events to us, no idea if mui handles this like this */
@@ -422,11 +413,6 @@ static IPTR Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static IPTR Area_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
-
-    if (data->mad_FrameTitle != NULL)
-    {
-	FreeVec((APTR)data->mad_FrameTitle);
-    }
 
     zune_image_spec_free(data->mad_BackgroundSpec); /* Safe to call this with NULL */
 
@@ -1268,11 +1254,7 @@ static IPTR Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	if ((Object*)rootobj == obj)
 	{
 	    data->mad_Frame = MUIV_Frame_None;
-	    if (data->mad_FrameTitle)
-	    {
-		FreeVec((APTR)data->mad_FrameTitle);
-		data->mad_FrameTitle = NULL;
-	    }
+	    data->mad_FrameTitle = NULL;
 	}
     }
 
@@ -1437,7 +1419,7 @@ static IPTR Area_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 **************************************************************************/
 static IPTR Area_GoActive(struct IClass *cl, Object *obj, Msg msg)
 {
-    D(bug("Area_GoActive %p\n", obj));
+    //bug("Area_GoActive %p\n", obj);
     if (_flags(obj) & MADF_CANDRAW)
 	_zune_focus_new(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
     return TRUE;
@@ -1448,7 +1430,7 @@ static IPTR Area_GoActive(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 static IPTR Area_GoInactive(struct IClass *cl, Object *obj, Msg msg)
 {
-    D(bug("Area_GoInactive %p\n", obj));
+    //bug("Area_GoInactive %p\n", obj);
     if (_flags(obj) & MADF_CANDRAW)
 	_zune_focus_destroy(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
     return TRUE;
@@ -1698,6 +1680,7 @@ static IPTR Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleE
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
+    //bug("Area_HandleEvent [%p] imsg=%p muikey=%ld\n", obj, msg->imsg, msg->muikey);
     if (data->mad_DisableCount) return 0;
     if (data->mad_InputMode == MUIV_InputMode_None && !data->mad_ContextMenu) return 0;
 
@@ -1762,6 +1745,7 @@ static IPTR Area_HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleI
     /* Actually a dummy, but real MUI does handle here the input stuff which Zune
     ** has in Area_HandleEvent. For compatibility we should do this too
     **/
+    //bug("Area_HandleEvent [%p] imsg=%p muikey=%ld\b", obj, msg->imsg, msg->muikey);
     return 0;
 }
 
@@ -2035,6 +2019,14 @@ static IPTR Area_UpdateInnerSizes(struct IClass *cl, Object *obj, struct MUIP_Up
     return 1;
 }
 
+static IPTR Area_FindAreaObject(struct IClass *cl, Object *obj,
+				struct MUIP_FindAreaObject *msg)
+{
+    if (msg->obj == obj)
+	return (IPTR)obj;
+    else
+	return (IPTR)NULL;
+}
 
 BOOPSI_DISPATCHER(IPTR, Area_Dispatcher, cl, obj, msg)
 {
@@ -2076,6 +2068,7 @@ BOOPSI_DISPATCHER(IPTR, Area_Dispatcher, cl, obj, msg)
 	case MUIM_DeleteDragImage: return Area_DeleteDragImage(cl, obj, (APTR)msg);
 	case MUIM_DragQueryExtended: return Area_DragQueryExtended(cl, obj, (APTR)msg);
 	case MUIM_HandleInput: return Area_HandleInput(cl, obj, (APTR)msg);
+	case MUIM_FindAreaObject: return Area_FindAreaObject(cl, obj, (APTR)msg);
 
 	case MUIM_Export: return Area_Export(cl, obj, (APTR)msg);
 	case MUIM_Import: return Area_Import(cl, obj, (APTR)msg);
