@@ -1,5 +1,5 @@
 /*
-    (C) 1998-2000 AROS - The Amiga Research OS
+    (C) 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Gameport device
@@ -599,7 +599,14 @@ static VOID mouseCallback(struct GameportBase *GPBase,
     {
         D(bug("doing software irq, node type=%d\n", GPBase->gp_Interrupt.is_Node.ln_Type));
 
+#if 1
 	Cause(&GPBase->gp_Interrupt);	
+#else
+AROS_UFC3(VOID, gpSendQueuedEvents,
+	   AROS_UFCA(struct GameportBase *, GPBase  , A1),
+	   AROS_UFCA(APTR                 , NULL, A5),
+	   AROS_UFCA(struct ExecBase *    , SysBase , A6));
+#endif
     }
     
     Enable();
@@ -725,6 +732,11 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportB
 	    gpUn->gpu_readPos = 0;	
 	
 	D(bug("gpd: Adding event of code %d\n", code));
+
+#if 0
+
+#warning This needs to be fixed. And needs different handling, depending on whether coords are relative (x86-native) or not (x86-linux)!!!!
+
 	
 	/* Should we report this event? */    
 	if((down && (gpUn->gpu_trigger.gpt_Keys & GPTF_DOWNKEYS)) ||
@@ -732,6 +744,8 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportB
 	   (ABS(gpUn->gpu_lastX - x) > gpUn->gpu_trigger.gpt_XDelta) ||
 	   (ABS(gpUn->gpu_lastY - y) > gpUn->gpu_trigger.gpt_YDelta) ||
 	   (GPBase->gp_nTicks > gpUn->gpu_trigger.gpt_Timeout))
+#endif
+
 	{
 	    i++;
 	    
