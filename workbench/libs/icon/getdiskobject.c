@@ -50,10 +50,10 @@ extern const IPTR IconDesc[];
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
-    struct DiskObject * dobj;
+    struct DiskObject * dobj, *dup_dobj;
     char * iconname;
     BPTR   icon;
-    
+
     /* Name with correct extension ? */
     if (strrncasecmp (name, ".info", 5))
     {
@@ -83,8 +83,16 @@ extern const IPTR IconDesc[];
     if (!ReadStruct (&LB(IconBase)->dsh, (APTR *)&dobj, icon, IconDesc))
 	dobj = NULL;
 
+    /* Make the icon "native" so it can be free'd with FreeDiskObject() */
+    if (dobj)
+	dup_dobj = DupDiskObjectA(dobj,NULL);
+    else
+ 	dup_dobj = NULL;
+
+    FreeStruct ((APTR)dobj, IconDesc);
+
     Close (icon);
 
-    return dobj;
+    return dup_dobj;
     AROS_LIBFUNC_EXIT
 } /* GetDiskObject */

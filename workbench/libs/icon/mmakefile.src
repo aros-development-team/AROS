@@ -16,7 +16,7 @@ USE_CPAK 		:= no
 endif
 
 FILES	:=  basicfuncs diskobjio
-FUNCS	:=  addfreelist bumprevision deletediskobject drawiconstate findtooltype \
+FUNCS	:=  addfreelist bumprevision deletediskobject dupdiskobject drawiconstate findtooltype \
 	    freediskobject freefreelist getdefdiskobject getdiskobject \
 	    getdiskobjectnew geticonrectangle matchtoolvalue putdefdiskobject putdiskobject
 
