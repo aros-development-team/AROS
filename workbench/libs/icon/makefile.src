@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 
 OBJDIR=$(GENDIR)/workbench/libs/icon
 
-%define_libs
+%define_libs postlibs=-lamiga
 
 FILES = icon_init icon_functable basicfuncs diskobjio
 FUNCTIONS = \
