@@ -47,14 +47,12 @@ COMMON	:= \
 	div \
 	ldiv \
 	lldiv \
-	longjmp \
 	memchr \
 	memcmp \
 	memcpy \
 	memmove \
 	memset \
 	putchar \
-	setjmp \
 	stccpy \
 	stpblk \
 	stpcpy \
@@ -85,6 +83,9 @@ COMMON	:= \
 	strupr \
 	swab
 
+COMMON_ARCH := \
+	longjmp \
+	setjmp
 
 #   - Shared are in either the shared linklib, or the arosc.library module
 SHARED	:= \
@@ -267,13 +268,11 @@ ROM_COMMON := \
 	div \
 	ldiv \
 	lldiv \
-	longjmp \
 	memchr \
 	memcmp \
 	memcpy \
 	memmove \
 	memset \
-	setjmp \
 	stpblk \
 	stpcpy \
 	strcasecmp \
@@ -294,6 +293,10 @@ ROM_COMMON := \
 	strstr \
 	strtod \
 	strtok
+
+ROM_COMMON_ARCH := \
+	longjmp \
+	setjmp
 
 # Objects for rom.lib, from the static build.
 ROM_STATIC := \
@@ -327,13 +330,17 @@ DEPS := $(foreach f,$(COMMON),$(OBJDIR)/$(f).d) \
 	$(OBJDIR)/shared/arosc_init.d $(OBJDIR)/shared/arosc_functable.d $(OBJDIR)/shared/arosc_endtag.d
 
 STATIC_OBJ :=	$(foreach f,$(COMMON),$(OBJDIR)/$(f).o) \
+	   	$(foreach f,$(COMMON_ARCH),$(OBJDIR)/arch/$(f).o) \
 		$(foreach f,$(SHARED),$(OBJDIR)/static/$(f).o)
 SHARED_OBJ :=	$(foreach f,$(COMMON),$(OBJDIR)/$(f).o) \
+	   	$(foreach f,$(COMMON_ARCH),$(OBJDIR)/arch/$(f).o) \
 		$(STUBS)
-MODULE_OBJ :=	$(foreach f,$(COMMON) $(SHARED),$(OBJDIR)/shared/$(f).o)
+MODULE_OBJ :=	$(foreach f,$(COMMON) $(SHARED),$(OBJDIR)/shared/$(f).o) \
+	   	$(foreach f,$(COMMON_ARCH),$(OBJDIR)/arch/$(f).o)
 
 ROM_OBJ	   :=	$(foreach f,$(ROM_ONLY),$(OBJDIR)/rom/$(f).o) \
 		$(foreach f,$(ROM_COMMON),$(OBJDIR)/$(f).o) \
+		$(foreach f,$(ROM_COMMON_ARCH),$(OBJDIR)/arch/$(f).o) \
 		$(foreach f,$(ROM_STATIC),$(OBJDIR)/static/$(f).o)
 
 # These are added to the link step of arosc.library
@@ -342,7 +349,7 @@ DEP_LIBS := arosm autoinit
 
 #MM- linklibs : linklibs-clib
 #MM linklibs-clib : setup-clib includes linklibs-mlib linklibs-autoinit \
-#MM			clib-$(ARCH)-$(CPU) clib-stubs
+#MM			clib-stubs
 
 #MM
 linklibs-clib-quick : linklibs-clib
