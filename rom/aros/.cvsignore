@@ -1,4 +1,5 @@
-aros_functable.c
-libdefs.h
 *.s
 *.map
+makefile
+aros_functable.c
+aros_endtag.c
