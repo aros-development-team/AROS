@@ -238,7 +238,7 @@ struct Volume* adfCreateVol( struct Device* dev, long start, long len,
     vol->dev = dev;
     vol->firstBlock = (dev->heads * dev->sectors)*start;
     vol->lastBlock = (vol->firstBlock + (dev->heads * dev->sectors)*len)-1;
-    vol->rootBlock = (vol->lastBlock - vol->firstBlock+1)/2;
+    vol->rootBlock = ((vol->lastBlock - vol->firstBlock+1)-1+2)/2;
 /*printf("first=%ld last=%ld root=%ld\n",vol->firstBlock,
  vol->lastBlock, vol->rootBlock);
 */

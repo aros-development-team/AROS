@@ -156,7 +156,7 @@ RETCODE adfMountHdFile(struct Device *dev)
 
     size = dev->size + 512-(dev->size%512);
 //printf("size=%ld\n",size);
-    vol->rootBlock = (size/512)/2;
+    vol->rootBlock = ((size/512)-1+2)/2;
 //printf("root=%ld\n",vol->rootBlock);
     do {
         adfReadDumpSector(dev, vol->rootBlock, 512, buf);
