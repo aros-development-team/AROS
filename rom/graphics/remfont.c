@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Remove a font from the list of public available fonts.
@@ -50,7 +50,22 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    Remove ((struct Node *)textFont);
-
+    ASSERT_VALID_PTR(textFont);
+    
+    Forbid();
+    if (!(textFont->tf_Flags & FPF_REMOVED))
+    {
+	textFont->tf_Flags |= FPF_REMOVED;
+	Remove (&textFont->tf_Message.mn_Node);
+    }
+#if DEBUG
+    else
+    {
+    	D(bug("Someone tried to remove font which is already removed!"));
+    }
+#endif
+    Permit();
+    
     AROS_LIBFUNC_EXIT
+    
 } /* RemFont */
