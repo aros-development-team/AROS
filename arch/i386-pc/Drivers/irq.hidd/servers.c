@@ -147,12 +147,11 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	);
     }
 
-    if (SysBase->Elapsed == 0)
+    if (--SysBase->Elapsed == 0)
     {
 	SysBase->SysFlags |= 0x2000;
 	SysBase->AttnResched |= 0x80;
     }
-    else SysBase->Elapsed--;
 }
 
 /*******************************************************************************
