@@ -2,8 +2,8 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.10  1996/11/14 08:54:18  aros
-    Some more changes
+    Revision 1.11  1996/11/22 12:28:16  aros
+    Fixed bug for Open("CONSOLE:") to make run work again
 
     Revision 1.9  1996/10/24 15:50:33  aros
     Use the official AROS macros over the __AROS versions.
@@ -144,6 +144,7 @@
 	    iofs->IOFS.io_Unit	=((struct FileHandle *)BADDR(con))->fh_Unit;
 	    iofs->io_Args[0]=(IPTR)"";
 	    (void)DoIO(&iofs->IOFS);
+	    error=me->pr_Result2=iofs->io_DosError;
 	}else if(!Stricmp(name,"*"))
 	{
 	    iofs->IOFS.io_Device=((struct FileHandle *)BADDR(ast))->fh_Device;
