@@ -98,6 +98,6 @@ END {
     print "    (void *)-1L" >> oname;
     print "};" >> oname;
 
-    print "\nchar " lib "_end;" >> oname;
+    print "\nchar " lib "_end = 0;" >> oname;
 }
 
