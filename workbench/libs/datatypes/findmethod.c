@@ -21,7 +21,7 @@
 	AROS_LHA(ULONG  , searchmethodid, A1),
 
 /*  LOCATION */
-	struct Library *, DTBase, 43, DataTypes)
+	struct Library *, DataTypesBase, 43, DataTypes)
 
 /*  FUNCTION
 

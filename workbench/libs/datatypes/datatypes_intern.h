@@ -194,57 +194,57 @@ struct IntDataTypesList
 
 
 /* Prototypes for help functions */
-struct Node *FindNameNoCase(struct Library *DTBase, struct List *list,
+struct Node *FindNameNoCase(struct Library *DataTypesBase, struct List *list,
 			    STRPTR name);
-struct DataTypesList *GetDataTypesList(struct DataTypesBase *DTBase);
-struct CompoundDatatype *ExamineData(struct Library *DTBase,
+struct DataTypesList *GetDataTypesList(struct DataTypesBase *DataTypesBase);
+struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
 				     struct DTHookContext *dthc,
 				     UBYTE *CheckArray, UWORD CheckSize,
 				     UBYTE *Filename, ULONG Size);
 struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
-				     struct Library *DTBase);
-void dt_sprintf(struct Library *DTBase, UBYTE *buffer, UBYTE *format, ...);
+				     struct Library *DataTypesBase);
+void dt_sprintf(struct Library *DataTypesBase, UBYTE *buffer, UBYTE *format, ...);
 
-ULONG setattrs(struct Library *DTBase, Object *object, Tag firstTag,...);
-ULONG Do_OM_NOTIFY(struct Library *DTBase, Object *object, struct GadgetInfo *ginfo, ULONG flags, Tag firstTag,...);
-ULONG DoGad_OM_NOTIFY(struct Library *DTBase, Object *object,
+ULONG setattrs(struct Library *DataTypesBase, Object *object, Tag firstTag,...);
+ULONG Do_OM_NOTIFY(struct Library *DataTypesBase, Object *object, struct GadgetInfo *ginfo, ULONG flags, Tag firstTag,...);
+ULONG DoGad_OM_NOTIFY(struct Library *DataTypesBase, Object *object,
 		      struct Window *window, struct Requester *req,
 		      ULONG flags, Tag firstTag, ...);
-ULONG dogadgetmethod(struct Library *DTBase, struct Gadget *gad,
+ULONG dogadgetmethod(struct Library *DataTypesBase, struct Gadget *gad,
 		     struct Window *win, struct Requester *req,
 		     ULONG MethodID, ...);
-struct Catalog *opencatalog(struct Library *DTBase, struct Locale *locale,
+struct Catalog *opencatalog(struct Library *DataTypesBase, struct Locale *locale,
 			    STRPTR name, Tag firstTag, ...);
-BPTR NewOpen(struct Library *DTBase, STRPTR name, ULONG SourceType,
+BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
 	     ULONG Length);
 
 
-BOOL InstallClass(struct Library *DTBase);
-BOOL TryRemoveClass(struct Library *DTBase);
+BOOL InstallClass(struct Library *DataTypesBase);
+BOOL TryRemoveClass(struct Library *DataTypesBase);
 
 
 typedef struct IntuitionBase IntuiBase;
 
 #ifndef GLOBAL_INTUIBASE
 #undef IntuitionBase
-#define IntuitionBase ((struct DataTypesBase *)DTBase)->dtb_IntuitionBase
+#define IntuitionBase ((struct DataTypesBase *)DataTypesBase)->dtb_IntuitionBase
 #endif
 
 #define GPB(x) ((struct DataTypesBase *)x)
 
 
-#define UtilityBase ((struct DataTypesBase *)DTBase)->dtb_UtilityBase
-#define DOSBase ((struct DataTypesBase *)DTBase)->dtb_DOSBase
+#define UtilityBase ((struct DataTypesBase *)DataTypesBase)->dtb_UtilityBase
+#define DOSBase ((struct DataTypesBase *)DataTypesBase)->dtb_DOSBase
 /* We cannot define this t */
-/* #define IntuitionBase ((struct DataTypesBase *)DTBase)->dtb_IntuitionBase */
-#define SysBase ((struct DataTypesBase *)DTBase)->dtb_SysBase
-#define IFFParseBase ((struct DataTypesBase *)DTBase)->dtb_IFFParseBase
-#define LocaleBase (GPB(DTBase)->dtb_LocaleBase)
-#define GfxBase (GPB(DTBase)->dtb_GfxBase)
-#define IconBase (GPB(DTBase)->dtb_IconBase)
+/* #define IntuitionBase ((struct DataTypesBase *)DataTypesBase)->dtb_IntuitionBase */
+#define SysBase ((struct DataTypesBase *)DataTypesBase)->dtb_SysBase
+#define IFFParseBase ((struct DataTypesBase *)DataTypesBase)->dtb_IFFParseBase
+#define LocaleBase (GPB(DataTypesBase)->dtb_LocaleBase)
+#define GfxBase (GPB(DataTypesBase)->dtb_GfxBase)
+#define IconBase (GPB(DataTypesBase)->dtb_IconBase)
 
 #define expunge() \
-AROS_LC0(BPTR, expunge, struct DataTypesBase *, DTBase, 3, DataTypes)
+AROS_LC0(BPTR, expunge, struct DataTypesBase *, DataTypesBase, 3, DataTypes)
      
 
 #endif /* DATATYPES_INTERN_H */

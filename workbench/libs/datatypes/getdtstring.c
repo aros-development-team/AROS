@@ -55,7 +55,7 @@ struct StringDef __dtStrings[]=
 	AROS_LHA(ULONG, id, D0),
 
 /*  LOCATION */
-	struct Library *, DTBase, 23, DataTypes)
+	struct Library *, DataTypesBase, 23, DataTypes)
 
 /*  FUNCTION
 
@@ -88,9 +88,9 @@ struct StringDef __dtStrings[]=
     STRPTR            str = NULL;
     struct StringDef *sd;
    
-    if((GPB(DTBase)->dtb_LocaleBase != NULL) && 
-       (GPB(DTBase)->dtb_LibsCatalog != NULL))
-	str = GetCatalogStr(GPB(DTBase)->dtb_LibsCatalog, id, NULL);
+    if((GPB(DataTypesBase)->dtb_LocaleBase != NULL) && 
+       (GPB(DataTypesBase)->dtb_LibsCatalog != NULL))
+	str = GetCatalogStr(GPB(DataTypesBase)->dtb_LibsCatalog, id, NULL);
    
     if(str != NULL)
     {

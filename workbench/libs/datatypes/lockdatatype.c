@@ -21,7 +21,7 @@
 	AROS_LHA(struct DataType *, dt, A0),
 
 /*  LOCATION */
-	struct Library *, DTBase, 40, DataTypes)
+	struct Library *, DataTypesBase, 40, DataTypes)
 
 /*  FUNCTION
 
@@ -60,11 +60,11 @@
     if(dt == NULL || dt->dtn_Length == 0)
 	return;
 
-    ObtainSemaphoreShared(&(GPB(DTBase)->dtb_DTList)->dtl_Lock);
+    ObtainSemaphoreShared(&(GPB(DataTypesBase)->dtb_DTList)->dtl_Lock);
    
     ((struct CompoundDatatype *)dt)->OpenCount++;
     
-    ReleaseSemaphore(&(GPB(DTBase)->dtb_DTList)->dtl_Lock);
+    ReleaseSemaphore(&(GPB(DataTypesBase)->dtb_DTList)->dtl_Lock);
 
     AROS_LIBFUNC_EXIT
 } /* LockDataType */

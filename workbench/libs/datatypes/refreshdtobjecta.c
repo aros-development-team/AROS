@@ -23,7 +23,7 @@
 	AROS_LHA(struct TagItem   *, attrs , A3),
 
 /*  LOCATION */
-	struct Library *, DTBase, 13, DataTypes)
+	struct Library *, DataTypesBase, 13, DataTypes)
 
 /*  FUNCTION
 

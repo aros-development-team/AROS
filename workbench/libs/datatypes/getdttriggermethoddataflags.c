@@ -20,7 +20,7 @@
 
 
 /*  LOCATION */
-	struct Library *, DTBase, 48, DataTypes)
+	struct Library *, DataTypesBase, 48, DataTypes)
 
 /*  FUNCTION
 

@@ -27,7 +27,7 @@
 	AROS_LHA(Object        *, object, A1),
 
 /*  LOCATION */
-	struct Library *, DTBase, 16, DataTypes)
+	struct Library *, DataTypesBase, 16, DataTypes)
 
 /*  FUNCTION
 

@@ -19,7 +19,7 @@
 	AROS_LHA(APTR, methods, A0),
 
 /*  LOCATION */
-	struct Library *, DTBase, 47, DataTypes)
+	struct Library *, DataTypesBase, 47, DataTypes)
 
 /*  FUNCTION
 

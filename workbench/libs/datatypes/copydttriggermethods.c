@@ -20,7 +20,7 @@
 	AROS_LHA(struct DTMethod *, exclude, A2),
 
 /*  LOCATION */
-	struct Library *, DTBase, 46, DataTypes)
+	struct Library *, DataTypesBase, 46, DataTypes)
 
 /*  FUNCTION
 

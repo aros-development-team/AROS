@@ -24,7 +24,7 @@
 	AROS_LHA(struct TagItem *, attrs, A0),
 
 /*  LOCATION */
-	struct Library *, DTBase, 8, DataTypes)
+	struct Library *, DataTypesBase, 8, DataTypes)
 
 /*  FUNCTION
 
@@ -222,7 +222,7 @@
 	    UBYTE libname[120];
 	    struct Library *DTClassBase;
 	    
-	    dt_sprintf(DTBase, libname,"datatypes/%s.datatype", BaseName);
+	    dt_sprintf(DataTypesBase, libname,"datatypes/%s.datatype", BaseName);
 	    
 	    if(!(DTClassBase = OpenLibrary(libname, 0)))
 		SetIoErr(DTERROR_UNKNOWN_DATATYPE);

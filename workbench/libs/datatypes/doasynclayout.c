@@ -90,7 +90,7 @@ void AsyncLayouter(void)
 }
 
 #undef SysBase
-#define SysBase GPB(DTBase)->dtb_SysBase
+#define SysBase GPB(DataTypesBase)->dtb_SysBase
 
 
 /*****************************************************************************
@@ -105,7 +105,7 @@ void AsyncLayouter(void)
 	AROS_LHA(struct gpLayout *, gpl   , A1),
 
 /*  LOCATION */
-	struct Library *, DTBase, 14, Datatypes)
+	struct Library *, DataTypesBase, 14, Datatypes)
 
 /*  FUNCTION
 
@@ -141,7 +141,7 @@ void AsyncLayouter(void)
     struct DTSpecialInfo *dtsi=((struct Gadget *)object)->SpecialInfo;
     struct Process *LayoutProc;
     
-    ObtainSemaphore(&(GPB(DTBase)->dtb_Semaphores[SEM_ASYNC]));
+    ObtainSemaphore(&(GPB(DataTypesBase)->dtb_Semaphores[SEM_ASYNC]));
     
     if(dtsi->si_Flags & DTSIF_LAYOUT)
     {
@@ -161,7 +161,7 @@ void AsyncLayouter(void)
 	
 	dtsi->si_Flags |= (DTSIF_LAYOUT | DTSIF_LAYOUTPROC);
 	
-	Do_OM_NOTIFY(DTBase, object, gpl->gpl_GInfo, 0, DTA_Data, NULL,
+	Do_OM_NOTIFY(DataTypesBase, object, gpl->gpl_GInfo, 0, DTA_Data, NULL,
 		     TAG_DONE);
 	
 	if((lm = AllocVec(sizeof(struct LayoutMessage),
@@ -171,7 +171,7 @@ void AsyncLayouter(void)
 	    
 	    lm->lm_Msg.mn_Node.ln_Type = NT_MESSAGE;
 	    lm->lm_Msg.mn_Length = sizeof(struct LayoutMessage);
-	    lm->lm_dtb = (struct DataTypesBase *)DTBase;
+	    lm->lm_dtb = (struct DataTypesBase *)DataTypesBase;
 	    lm->lm_object = object;
 	    lm->lm_window = gpl->gpl_GInfo->gi_Window;
 	    lm->lm_gplayout = *gpl;
@@ -192,7 +192,7 @@ void AsyncLayouter(void)
 	    {
 		PutMsg(&LayoutProc->pr_MsgPort, &lm->lm_Msg);
 	    
-		setattrs(DTBase, object, DTA_LayoutProc, LayoutProc, TAG_DONE);
+		setattrs(DataTypesBase, object, DTA_LayoutProc, LayoutProc, TAG_DONE);
 		retval = TRUE;
 	    }
 	    else
@@ -200,7 +200,7 @@ void AsyncLayouter(void)
 	}
     }
     
-    ReleaseSemaphore(&(GPB(DTBase)->dtb_Semaphores[SEM_ASYNC]));
+    ReleaseSemaphore(&(GPB(DataTypesBase)->dtb_Semaphores[SEM_ASYNC]));
     
     return retval;
 

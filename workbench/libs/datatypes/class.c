@@ -35,7 +35,7 @@
 
 /*****************************************************************************/
 
-void DrawBox(struct Library *DTBase, struct RastPort *rp,
+void DrawBox(struct Library *DataTypesBase, struct RastPort *rp,
 	     LONG x1, LONG y1, LONG x2, LONG y2);
 
 
@@ -60,7 +60,7 @@ void DrawBox(struct Library *DTBase, struct RastPort *rp,
 *
 */
 
-ULONG SetAttributes(struct Library *DTBase, Class *class, Object *object,
+ULONG SetAttributes(struct Library *DataTypesBase, Class *class, Object *object,
 		    Msg msg)
 {
     ULONG result = 0;
@@ -269,7 +269,7 @@ ULONG SetAttributes(struct Library *DTBase, Class *class, Object *object,
 
 ULONG Dispatcher(Class *class, Object *object, Msg msg)
 {
-    struct DataTypesBase *DTBase = (struct DataTypesBase *)class->cl_UserData;
+    struct DataTypesBase *DataTypesBase = (struct DataTypesBase *)class->cl_UserData;
     struct DTObject *dto = INST_DATA(class,object);
     struct DTSpecialInfo *dtsi = ((struct Gadget *)object)->SpecialInfo;
     
@@ -326,7 +326,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 				case DTF_IFF:
 				    if((newdto->dto_Handle = (APTR)AllocIFF()))
 				    {
-					if((((struct IFFHandle *)newdto->dto_Handle)->iff_Stream = (IPTR)NewOpen((struct Library *)DTBase, newdto->dto_Name, DTST_FILE, 0)))
+					if((((struct IFFHandle *)newdto->dto_Handle)->iff_Stream = (IPTR)NewOpen((struct Library *)DataTypesBase, newdto->dto_Name, DTST_FILE, 0)))
 					{
 					    InitIFFasDOS((struct IFFHandle*)newdto->dto_Handle);
 					    
@@ -344,7 +344,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 				    break;
 				    
 				default:
-				    if((newdto->dto_Handle = (APTR)NewOpen((struct Library *)DTBase, newdto->dto_Name, DTST_FILE, 0)))
+				    if((newdto->dto_Handle = (APTR)NewOpen((struct Library *)DataTypesBase, newdto->dto_Name, DTST_FILE, 0)))
 					Success = TRUE;
 				    
 				    UnLock((BPTR)handle);
@@ -363,7 +363,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 		
 		if(Success)
 		{
-		    SetAttributes((struct Library *)DTBase, class,
+		    SetAttributes((struct Library *)DataTypesBase, class,
 				  (Object *)newobject, msg);
 		    retval = (ULONG)newobject;
 		}
@@ -383,7 +383,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 	/* Let superclass see the new attributes... */
 	retval  = DoSuperMethodA(class, object, msg);
 	/* ...and set our own new attributes. */
-	retval += SetAttributes((struct Library *)DTBase, class, object, msg);
+	retval += SetAttributes((struct Library *)DataTypesBase, class, object, msg);
 	break;
 	
     case OM_GET:
@@ -535,7 +535,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 					    dto->dto_StartY = dto->dto_MouseY = dto->dto_MouseY + ((struct Gadget *)object)->TopEdge;
 					    
 					    dto->dto_LinePtrn = rp->LinePtrn = 0xff00;
-					    DrawBox((struct Library *)DTBase, rp, (LONG)dto->dto_StartX, (LONG)dto->dto_StartY, (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
+					    DrawBox((struct Library *)DataTypesBase, rp, (LONG)dto->dto_StartX, (LONG)dto->dto_StartY, (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
 					} /* if(DRAGSELECT) */
 				    } /* if(IECODE_LBUTTON) */
 				    break;
@@ -559,7 +559,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 				    if(dtsi->si_Flags & DTSIF_DRAGSELECT)
 				    {
 					rp->LinePtrn = dto->dto_LinePtrn;
-					DrawBox((struct Library *)DTBase, rp, (LONG)dto->dto_StartX, (LONG)dto->dto_StartY, (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
+					DrawBox((struct Library *)DataTypesBase, rp, (LONG)dto->dto_StartX, (LONG)dto->dto_StartY, (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
 					
 					dto->dto_MouseX=((struct gpInput *)msg)->gpi_Mouse.X;
 					dto->dto_MouseY=((struct gpInput *)msg)->gpi_Mouse.Y;
@@ -594,7 +594,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 					dto->dto_SelectRect.MaxY = dto->dto_MouseY + dtsi->si_TopVert * vunit;
 					dto->dto_MouseY = dto->dto_MouseY + ((struct Gadget*)object)->TopEdge;
 					
-					DrawBox((struct Library *)DTBase, rp, (LONG)dto->dto_StartX, (LONG)dto->dto_StartY, (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
+					DrawBox((struct Library *)DataTypesBase, rp, (LONG)dto->dto_StartX, (LONG)dto->dto_StartY, (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
 				    } /* if(DRAGSELECT) */
 				    break;
 				} /* switch(ievent->ie_Code) */
@@ -642,7 +642,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 				    if (dtsi->si_Flags & DTSIF_DRAGSELECT)
 				    {
 					rp->LinePtrn = dto->dto_LinePtrn;
-					DrawBox((struct Library *)DTBase, rp, (LONG)dto->dto_StartX, (LONG)dto->dto_StartY, (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
+					DrawBox((struct Library *)DataTypesBase, rp, (LONG)dto->dto_StartX, (LONG)dto->dto_StartY, (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
 				    }
 				    
 				    dtsi->si_TopHoriz = NewTopHoriz;
@@ -666,7 +666,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 					else if(dto->dto_StartY >= (domain->Top  + domain->Height))
 					    dto->dto_StartY = domain->Top  + domain->Height - 1;
 					
-					DrawBox((struct Library *)DTBase, rp, (LONG)dto->dto_StartX, (LONG)dto->dto_StartY, (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
+					DrawBox((struct Library *)DataTypesBase, rp, (LONG)dto->dto_StartX, (LONG)dto->dto_StartY, (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
 				    } /* if(DRAGSELECT) */
 				} /* if(vert or horiz have changed) */
 				
@@ -674,7 +674,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 				{
 				    UWORD pattern = (dto->dto_LinePtrn << 4) | ((dto->dto_LinePtrn & 0xf000) >> 12);
 				    rp->LinePtrn = dto->dto_LinePtrn ^ pattern;
-				    DrawBox((struct Library *)DTBase, rp, (LONG)dto->dto_StartX, (LONG)dto->dto_StartY, (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
+				    DrawBox((struct Library *)DataTypesBase, rp, (LONG)dto->dto_StartX, (LONG)dto->dto_StartY, (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
 				    dto->dto_LinePtrn = pattern;
 				}
 			    } /* case IECLASS_TIMER: */
@@ -702,7 +702,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 		    SetAPen(rp, -1);
 		    
 		    rp->LinePtrn = dto->dto_LinePtrn;
-		    DrawBox((struct Library *)DTBase, rp, 
+		    DrawBox((struct Library *)DataTypesBase, rp, 
 			    (LONG)dto->dto_StartX, (LONG)dto->dto_StartY,
 			    (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
 		    
@@ -738,7 +738,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 			DoMethodA(object, (Msg)&dts);
 		    }
 		    
-		    Do_OM_NOTIFY((struct Library *)DTBase, object,
+		    Do_OM_NOTIFY((struct Library *)DataTypesBase, object,
 				 ((struct gpInput *)msg)->gpi_GInfo, 0, GA_ID,
 				 (ULONG)((struct Gadget *)object)->GadgetID,
 				 DTA_Busy, FALSE, TAG_DONE );
@@ -746,7 +746,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 		
 		if (dto->dto_Flags & DTOFLGF_HAS_MOVED)
 		{
-		    Do_OM_NOTIFY((struct Library *)DTBase, object,
+		    Do_OM_NOTIFY((struct Library *)DataTypesBase, object,
 				 ((struct gpInput *)msg)->gpi_GInfo, 0, GA_ID,
 				 (ULONG)((struct Gadget *)object)->GadgetID,
 				 DTA_Sync, TRUE,
@@ -955,7 +955,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 *
 */
 
-void DrawBox(struct Library *DTBase, struct RastPort *rp,
+void DrawBox(struct Library *DataTypesBase, struct RastPort *rp,
 	     LONG x1, LONG y1, LONG x2, LONG y2)
 {
     rp->Flags |= FRST_DOT;

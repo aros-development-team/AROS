@@ -20,7 +20,7 @@
 	AROS_LHA(ULONG            , method , D0),
 
 /*  LOCATION */
-	struct Library *, DTBase, 44, DataTypes)
+	struct Library *, DataTypesBase, 44, DataTypes)
 
 /*  FUNCTION
 

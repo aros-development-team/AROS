@@ -26,7 +26,7 @@
 	AROS_LHA(struct TagItem *, attrs, A1),
 
 /*  LOCATION */
-	struct Library *, DTBase, 6, DataTypes)
+	struct Library *, DataTypesBase, 6, DataTypes)
 
 /*  FUNCTION
 
@@ -69,7 +69,7 @@
 
     struct CompoundDatatype *cdt = NULL;
    
-    ObtainSemaphoreShared(&(GPB(DTBase)->dtb_DTList->dtl_Lock));
+    ObtainSemaphoreShared(&(GPB(DataTypesBase)->dtb_DTList->dtl_Lock));
     
     switch(type)
     {
@@ -79,7 +79,7 @@
 
 	    if((fib = AllocDosObject(DOS_FIB, TAG_DONE)) != NULL)
 	    {
-		cdt = ExamineLock((BPTR)handle, fib, DTBase);
+		cdt = ExamineLock((BPTR)handle, fib, DataTypesBase);
 		FreeDosObject(DOS_FIB, fib);
 	    }
 	    break;
@@ -122,7 +122,7 @@
 		    dthc.dthc_Buffer = CheckArray;
 		    dthc.dthc_BufferLength = cbh->cbh_Req.io_Actual;
 		    
-		    cdt = ExamineData(DTBase,
+		    cdt = ExamineData(DataTypesBase,
 				      &dthc,
 				      CheckArray,
 				      (UWORD)cbh->cbh_Req.io_Actual,
@@ -141,7 +141,7 @@
     if(cdt)
 	cdt->OpenCount++;
     
-    ReleaseSemaphore(&(GPB(DTBase)->dtb_DTList->dtl_Lock));
+    ReleaseSemaphore(&(GPB(DataTypesBase)->dtb_DTList->dtl_Lock));
     
     if(IoErr() == ERROR_OBJECT_NOT_FOUND)
 	SetIoErr(DTERROR_COULDNT_OPEN);

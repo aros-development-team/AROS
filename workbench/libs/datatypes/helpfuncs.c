@@ -44,7 +44,7 @@ UBYTE const BinaryTable[256]=
 
 
 
-struct DataTypesList *GetDataTypesList(struct DataTypesBase *DTBase)
+struct DataTypesList *GetDataTypesList(struct DataTypesBase *DataTypesBase)
 {
     struct NamedObject   *no;
     struct DataTypesList *dtl = NULL;
@@ -59,7 +59,7 @@ struct DataTypesList *GetDataTypesList(struct DataTypesBase *DTBase)
 }
 
 
-struct Node *FindNameNoCase(struct Library *DTBase, struct List *list,
+struct Node *FindNameNoCase(struct Library *DataTypesBase, struct List *list,
 			    STRPTR name)
 {
     struct Node *node;
@@ -79,7 +79,7 @@ struct Node *FindNameNoCase(struct Library *DTBase, struct List *list,
 
 
 
-BPTR NewOpen(struct Library *DTBase, STRPTR name, ULONG SourceType,
+BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
 	     ULONG Length)
 {
     BPTR returnfh = NULL;
@@ -96,7 +96,7 @@ BPTR NewOpen(struct Library *DTBase, STRPTR name, ULONG SourceType,
 	    if(xpkfib = AllocVec(sizeof(struct XpkFib), 
 				  MEMF_PUBLIC|MEMF_CLEAR))
 	    {
-		if(!xpkexaminetags(DTBase, xpkfib, XPK_InFH, dosfile,
+		if(!xpkexaminetags(DataTypesBase, xpkfib, XPK_InFH, dosfile,
 				   TAG_DONE))
 		{
 		    switch (xpkfib->Type)
@@ -106,16 +106,16 @@ BPTR NewOpen(struct Library *DTBase, STRPTR name, ULONG SourceType,
 			break;
 			
 		    case XPKTYPE_PACKED:
-			Message(DTBase,"file is XPK packed","okay");
+			Message(DataTypesBase,"file is XPK packed","okay");
 			
 			if (xpkfib->Flags&XPKFLAGS_PASSWORD)
-			    Message(DTBase,"file needs password","okay");
+			    Message(DataTypesBase,"file needs password","okay");
 			
 			if (xpkfib->Flags&XPKFLAGS_NOSEEK)
-			    Message(DTBase,"file does not support seeking",
+			    Message(DataTypesBase,"file does not support seeking",
 				    "okay");
 			if (xpkfib->Flags&XPKFLAGS_NONSTD)
-			    Message(DTBase,"file is non standard","okay");
+			    Message(DataTypesBase,"file is non standard","okay");
 
 			SetIoErr(ERROR_NOT_IMPLEMENTED);
 			break;
@@ -142,10 +142,10 @@ BPTR NewOpen(struct Library *DTBase, STRPTR name, ULONG SourceType,
 
 
 
-#define getDTLIST (GPB(DTBase)->dtb_DTList)
+#define getDTLIST (GPB(DataTypesBase)->dtb_DTList)
 
 struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
-				     struct Library *DTBase)
+				     struct Library *DataTypesBase)
 {
     struct CompoundDatatype *cdt = NULL;
     
@@ -155,7 +155,7 @@ struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
     {
 	if (fib->fib_DirEntryType > 0)
 	{
-	    cdt = (struct CompoundDatatype *)FindNameNoCase(DTBase, 
+	    cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, 
 							    &getDTLIST->dtl_MiscList,
 							    "directory");
 	}
@@ -169,7 +169,7 @@ struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
 		{
 		    BPTR file;
 		    
-		    if((file = NewOpen(DTBase, namebuf, DTST_FILE, 0)))
+		    if((file = NewOpen(DataTypesBase, namebuf, DTST_FILE, 0)))
 		    {
 			UBYTE *CheckArray;
 			UWORD CheckSize = (getDTLIST->dtl_LongestMask > 64) ?
@@ -205,7 +205,7 @@ struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
 				    
 				    if (!OpenIFF(iff, IFFF_READ))
 				    {
-					cdt = ExamineData(DTBase,
+					cdt = ExamineData(DataTypesBase,
 							  &dthc,
 							  CheckArray,
 							  CheckSize,
@@ -234,7 +234,7 @@ struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
 }
 
 
-struct CompoundDatatype *ExamineData(struct Library *DTBase,
+struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
 				     struct DTHookContext *dthc,
 				     UBYTE *CheckArray, UWORD CheckSize,
 				     UBYTE *Filename, ULONG Size)
@@ -388,17 +388,17 @@ struct CompoundDatatype *ExamineData(struct Library *DTBase,
 	    switch(type)
 	    {
 	    case DTF_BINARY:
-		cdt = (struct CompoundDatatype *)FindNameNoCase(DTBase, list,
+		cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, list,
 								"binary");
 		break;
 		
 	    case DTF_ASCII:
-		cdt = (struct CompoundDatatype *)FindNameNoCase(DTBase, list,
+		cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, list,
 							       "ascii");
 		break;
 		
 	    case DTF_IFF:
-		cdt = (struct CompoundDatatype *)FindNameNoCase(DTBase, list,
+		cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, list,
 								"iff");
 		break;
 	    }
@@ -424,42 +424,42 @@ AROS_UFH2(void, putchr,
 }
 
 
-void dt_sprintf(struct Library *DTBase, UBYTE *buffer, UBYTE *format, ...)
+void dt_sprintf(struct Library *DataTypesBase, UBYTE *buffer, UBYTE *format, ...)
 {
     RawDoFmt(format, &format+1, (VOID_FUNC)putchr, &buffer);
 }
 
 
-ULONG setattrs(struct Library *DTBase, Object *object, Tag firstTag,...)
+ULONG setattrs(struct Library *DataTypesBase, Object *object, Tag firstTag,...)
 {
     return SetAttrsA(object, (struct TagItem *)&firstTag);
 }
 
 
-ULONG Do_OM_NOTIFY(struct Library *DTBase, Object *object,
+ULONG Do_OM_NOTIFY(struct Library *DataTypesBase, Object *object,
 		   struct GadgetInfo *ginfo, ULONG flags, Tag firstTag,...)
 {
     return DoMethod(object, OM_NOTIFY, &firstTag, ginfo, flags);
 }
 
 
-ULONG DoGad_OM_NOTIFY(struct Library *DTBase, Object *object,
+ULONG DoGad_OM_NOTIFY(struct Library *DataTypesBase, Object *object,
 		      struct Window *win, struct Requester *req,
 		      ULONG flags, Tag firstTag, ...)
 {
-    return(dogadgetmethod(DTBase, (struct Gadget*)object, win, req, OM_NOTIFY,
+    return(dogadgetmethod(DataTypesBase, (struct Gadget*)object, win, req, OM_NOTIFY,
 			  &firstTag, NULL, flags));
 }
 
 
-ULONG dogadgetmethod(struct Library *DTBase, struct Gadget *gad,
+ULONG dogadgetmethod(struct Library *DataTypesBase, struct Gadget *gad,
 		     struct Window *win, struct Requester *req,
 		     ULONG MethodID, ...)
 {
     return(DoGadgetMethodA(gad, win, req, (Msg)&MethodID));
 }
 
-struct Catalog *opencatalog(struct Library *DTBase, struct Locale *locale,
+struct Catalog *opencatalog(struct Library *DataTypesBase, struct Locale *locale,
 			    STRPTR name, Tag firstTag, ...)
 {
     return(OpenCatalogA(locale, name, (struct TagItem *)&firstTag));

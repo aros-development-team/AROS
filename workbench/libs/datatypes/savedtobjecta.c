@@ -14,7 +14,7 @@
 #include <workbench/workbench.h>
 #include <utility/tagitem.h>
 
-STRPTR CreateIconName(STRPTR name, struct Library *DTBase);
+STRPTR CreateIconName(STRPTR name, struct Library *DataTypesBase);
 
 /*****************************************************************************
 
@@ -32,7 +32,7 @@ STRPTR CreateIconName(STRPTR name, struct Library *DTBase);
 	AROS_LHA(struct TagItem   *, attrs   , A4),
 
 /*  LOCATION */
-	struct Library *, DTBase, 49, DataTypes)
+	struct Library *, DataTypesBase, 49, DataTypes)
 
 /*  FUNCTION
 
@@ -126,7 +126,7 @@ STRPTR CreateIconName(STRPTR name, struct Library *DTBase);
     if(saveicon == TRUE)
     {
 	struct DiskObject *dObj;
-	STRPTR             iconName = CreateIconName(file, DTBase);
+	STRPTR             iconName = CreateIconName(file, DataTypesBase);
 
 	dObj = GetDiskObjectNew(iconName);
 
@@ -145,7 +145,7 @@ STRPTR CreateIconName(STRPTR name, struct Library *DTBase);
 } /* SaveDTObjectA */
 
 
-STRPTR CreateIconName(STRPTR name, struct Library *DTBase)
+STRPTR CreateIconName(STRPTR name, struct Library *DataTypesBase)
 {
     ULONG  len;
     STRPTR iconName;

@@ -32,7 +32,7 @@ struct PrintMessage
 
 void AsyncPrinter(void)
 {
-    struct DataTypesBase *DTBase;
+    struct DataTypesBase *DataTypesBase;
     struct PrintMessage  *pm;
     struct DTSpecialInfo *dtsi;
     Object               *object;
@@ -47,10 +47,10 @@ void AsyncPrinter(void)
     WaitPort(&MyProc->pr_MsgPort);
     pm = (struct PrintMessage *)GetMsg(&MyProc->pr_MsgPort);
    
-    DTBase = pm->pm_dtb;
+    DataTypesBase = pm->pm_dtb;
    
 #undef SysBase
-#define SysBase (GPB(DTBase)->dtb_SysBase)
+#define SysBase (GPB(DataTypesBase)->dtb_SysBase)
    
     object = pm->pm_object;
     dtsi = ((struct Gadget *)object)->SpecialInfo;
@@ -101,10 +101,10 @@ void AsyncPrinter(void)
 	DeleteMsgPort(ReplyPort);
     }
 
-    setattrs((struct Library *)DTBase, object, DTA_PrinterProc, NULL,
+    setattrs((struct Library *)DataTypesBase, object, DTA_PrinterProc, NULL,
 	     TAG_DONE);
    
-    DoGad_OM_NOTIFY((struct Library *)DTBase, object, pm->pm_window,
+    DoGad_OM_NOTIFY((struct Library *)DataTypesBase, object, pm->pm_window,
 		    pm->pm_requester, 0, GA_ID, 
 		    (ULONG)((struct Gadget*)object)->GadgetID,
 		    DTA_PrinterStatus, result, TAG_DONE);
@@ -134,7 +134,7 @@ void AsyncPrinter(void)
 	AROS_LHA(struct dtPrint   *, msg      , A3),
 
 /*  LOCATION */
-	struct Library *, DTBase, 19, DataTypes)
+	struct Library *, DataTypesBase, 19, DataTypes)
 
 /*  FUNCTION
 
@@ -176,7 +176,7 @@ void AsyncPrinter(void)
     struct DTSpecialInfo *dtsi = ((struct Gadget *)object)->SpecialInfo;
     struct PrintMessage  *pm;
    
-    ObtainSemaphore(&(GPB(DTBase)->dtb_Semaphores[SEM_ASYNC]));
+    ObtainSemaphore(&(GPB(DataTypesBase)->dtb_Semaphores[SEM_ASYNC]));
    
     if(!(dtsi->si_Flags & DTSIF_PRINTING))
     {
@@ -190,7 +190,7 @@ void AsyncPrinter(void)
 	    
 	    pm->pm_Msg.mn_Node.ln_Type = NT_MESSAGE;
 	    pm->pm_Msg.mn_Length = sizeof(struct PrintMessage);
-	    pm->pm_dtb = (struct DataTypesBase *)DTBase;
+	    pm->pm_dtb = (struct DataTypesBase *)DataTypesBase;
 	    pm->pm_object = object;
 	    pm->pm_window = window;
 	    pm->pm_requester = requester;
@@ -210,7 +210,7 @@ void AsyncPrinter(void)
 	    {
 		PutMsg(&PrintProcess->pr_MsgPort, &pm->pm_Msg);
 		
-		setattrs(DTBase, object, DTA_PrinterProc, PrintProcess,
+		setattrs(DataTypesBase, object, DTA_PrinterProc, PrintProcess,
 			 TAG_DONE);
 		
 		retval = TRUE;
@@ -220,7 +220,7 @@ void AsyncPrinter(void)
 	}
     }
     
-    ReleaseSemaphore(&(GPB(DTBase)->dtb_Semaphores[SEM_ASYNC]));
+    ReleaseSemaphore(&(GPB(DataTypesBase)->dtb_Semaphores[SEM_ASYNC]));
     
     return retval;
 

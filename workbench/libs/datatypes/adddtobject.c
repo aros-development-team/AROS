@@ -23,7 +23,7 @@
 	AROS_LHA(LONG              , pos, D0),
 
 /*  LOCATION */
-	struct Library *, DTBase, 12, DataTypes)
+	struct Library *, DataTypesBase, 12, DataTypes)
 
 /*  FUNCTION
 
@@ -64,7 +64,7 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,DTBase)
+    AROS_LIBBASE_EXT_DECL(struct Library *,DataTypesBase)
 
     if(obj == NULL || win == NULL)
 	return -1;

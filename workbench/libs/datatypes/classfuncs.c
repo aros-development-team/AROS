@@ -5,38 +5,38 @@
 
 extern ULONG Dispatcher(Class *class, Object *object, Msg msg);
 
-BOOL InstallClass(struct Library *DTBase)
+BOOL InstallClass(struct Library *DataTypesBase)
 {
     BOOL Success = FALSE;
 
-    if((GPB(DTBase)->dtb_DataTypesClass = MakeClass(DATATYPESCLASS, 
+    if((GPB(DataTypesBase)->dtb_DataTypesClass = MakeClass(DATATYPESCLASS, 
 						    GADGETCLASS, NULL,
 						    sizeof(struct DTObject),
 						    0)))
     {
-	GPB(DTBase)->dtb_DataTypesClass->cl_Dispatcher.h_Entry = (ULONG (*)())&Dispatcher;
-	GPB(DTBase)->dtb_DataTypesClass->cl_UserData = (ULONG)DTBase;
+	GPB(DataTypesBase)->dtb_DataTypesClass->cl_Dispatcher.h_Entry = (ULONG (*)())&Dispatcher;
+	GPB(DataTypesBase)->dtb_DataTypesClass->cl_UserData = (ULONG)DataTypesBase;
 	
-	AddClass(GPB(DTBase)->dtb_DataTypesClass);
+	AddClass(GPB(DataTypesBase)->dtb_DataTypesClass);
 	
 	Success = TRUE;
     }
     
     if(!Success)
-	TryRemoveClass(DTBase);
+	TryRemoveClass(DataTypesBase);
     
     return Success;
 }
 
 
-BOOL TryRemoveClass(struct Library *DTBase)
+BOOL TryRemoveClass(struct Library *DataTypesBase)
 {
    BOOL Success = FALSE;
    
-   if(GPB(DTBase)->dtb_DataTypesClass != NULL)
+   if(GPB(DataTypesBase)->dtb_DataTypesClass != NULL)
    {
-       if((Success = FreeClass(GPB(DTBase)->dtb_DataTypesClass)))
-	   GPB(DTBase)->dtb_DataTypesClass = NULL;
+       if((Success = FreeClass(GPB(DataTypesBase)->dtb_DataTypesClass)))
+	   GPB(DataTypesBase)->dtb_DataTypesClass = NULL;
    }
 
    return Success;

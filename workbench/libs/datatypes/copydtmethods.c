@@ -20,7 +20,7 @@
 	AROS_LHA(ULONG *, exclude, A2),
 
 /*  LOCATION */
-	struct Library *, DTBase, 45, DataTypes)
+	struct Library *, DataTypesBase, 45, DataTypes)
 
 /*  FUNCTION
 

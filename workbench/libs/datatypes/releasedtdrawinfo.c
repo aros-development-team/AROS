@@ -24,7 +24,7 @@
 	AROS_LHA(APTR    , handle, A1),
 
 /*  LOCATION */
-	struct Library *, DTBase, 22, DataTypes)
+	struct Library *, DataTypesBase, 22, DataTypes)
 
 /*  FUNCTION
 
