@@ -12,7 +12,15 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <utility/hooks.h>
+
+#include "../graphics/intregions.h"
 #include "basicfuncs.h"
+
+#define DEBUG 1
+#include <aros/debug.h>
+
+#define MAX(a,b)    ((a) > (b) ? (a) : (b))
+#define MIN(a,b)    ((a) < (b) ? (a) : (b))
 
 struct CollectPixelsMsg
 {
@@ -23,7 +31,7 @@ struct CollectPixelsMsg
 
     NAME */
 #include <proto/layers.h>
-	AROS_LH3(BOOL, CollectPixelsLayer,
+	AROS_LH3(void, CollectPixelsLayer,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Layer  *, l        , A0),
@@ -66,49 +74,197 @@ struct CollectPixelsMsg
 *****************************************************************************/
 {
 	LockLayers(l->LayerInfo);
-	while (NULL != l && FALSE == IS_EMPTYREGION(r)) {
+	D(bug("%s: layer=%p,region=%p\n",
+	      __FUNCTION__,
+	      l,
+	      r));
+	while (NULL != l && !IS_ROOTLAYER(l) && FALSE == IS_EMPTYREGION(r)) {
 		if (IS_VISIBLE(l)) {
 			/*
- 			 * Find out what both layers have in common.
+			 * For every layer check whether its parent is
+			 * overlapping with the area of r at all. If it
+			 * does not, can immediately jump to the layer
+			 * behind the parent.
 			 */
-			struct Region * _r = AndRegionRegionND(r,l->ClipRegion);
-			/*
-			 * Try to find the relevant parts in the
-			 * layer l and on those parts of the
-			 * bitmap that are relevant to call the callback hook
-			 */
-			// TODO
-			if (NULL != callback) {
-				struct CollectPixelsMsg cpm;
-//				cpm.rect = r;
-				CallHookPkt(callback,l, &cpm);
+			if (DO_OVERLAP(&l->parent->shape->bounds,&r->bounds)) {
+				/*
+ 				 * Find out what both layers have in common.
+				 */
+				D(bug("l->shape=%p\n",l->shape));
+				struct Region * _r = AndRegionRegionND(r,l->shape);
+				/*
+				 * Try to find the relevant parts in the
+				 * layer l and on those parts of the
+				 * bitmap that are relevant to call the callback hook
+				 */
+				if (IS_SIMPLEREFRESH(l)) {
+					D(bug("SIMPLEFRESH layer found! %d/%d - %d/%d\n",
+					      l->bounds.MinX,
+					      l->bounds.MinY,
+					      l->bounds.MaxX,
+					      l->bounds.MaxY));
+					struct RegionRectangle * _rr = _r->RegionRectangle;
+					while (NULL != _rr) {
+						struct Rectangle _rect = _rr->bounds;
+						_rect.MinX += _r->bounds.MinX;
+						_rect.MinY += _r->bounds.MinY;
+						_rect.MaxX += _r->bounds.MinX;
+						_rect.MaxY += _r->bounds.MinY;
+
+						struct ClipRect * cr = l->ClipRect;
+						while (NULL != cr) {
+							struct Rectangle intersect;
+							/*
+							 * Check for overlap with _rect
+							 * Call callback with overlapping area!
+							 */
+							if (_AndRectRect(&_rect,&cr->bounds,&intersect)) {
+								struct CollectPixelsLayerMsg cplm;
+								cplm.xSrc    = intersect.MinX;
+								cplm.ySrc    = intersect.MinY;
+								cplm.width   = intersect.MaxX - intersect.MinX + 1;
+								cplm.height  = intersect.MaxY - intersect.MinY + 1;
+								cplm.xDest   = intersect.MinX;
+								cplm.yDest   = intersect.MinY;
+								cplm.bm      = l->rp->BitMap;
+								cplm.layer   = l;
+								cplm.minterm = 0x0;
+								D(bug("SimpleRefresh: Calling callback now! bm=%p\n",cplm.bm));
+								CallHookPkt(callback,l,&cplm);
+							}
+
+							cr  = cr->Next;
+						}
+
+						_rr = _rr->Next;
+					}
+				} else 
+				if (IS_SMARTREFRESH(l)) {
+					D(bug("SMARTREFRESH layer found!\n"));
+					struct RegionRectangle * _rr = _r->RegionRectangle;
+					while (NULL != _rr) {
+						struct Rectangle _rect = _rr->bounds;
+						_rect.MinX += _r->bounds.MinX;
+						_rect.MinY += _r->bounds.MinY;
+						_rect.MaxX += _r->bounds.MinX;
+						_rect.MaxY += _r->bounds.MinY;
+						//Following does not work for some reason!
+						//_TranslateRect(&_rect,_r->bounds.MinX,_r->bounds.MinY);
+						/*
+						 * Compare this rr against all hidden cliprects...
+						 */
+						struct ClipRect * cr = l->ClipRect;
+						while (NULL != cr) {
+							struct Rectangle intersect;
+							/*
+							 * Check for overlap with _rect
+							 * Call callback with overlapping area!
+							 */
+							if (_AndRectRect(&_rect,&cr->bounds,&intersect)) {
+								struct CollectPixelsLayerMsg cplm;
+								D(bug("Overlapping: %d/%d-%d/%d\n",
+								      intersect.MinX,
+								      intersect.MinY,
+								      intersect.MaxX,
+								      intersect.MaxY));
+								D(bug("CR: %d/%d-%d/%d\n",
+								      cr->bounds.MinX,
+								      cr->bounds.MinY,
+								      cr->bounds.MaxX,
+								      cr->bounds.MaxY));
+								D(bug("Rect: %d/%d-%d/%d\n",
+								      _rect.MinX,
+								      _rect.MinY,
+								      _rect.MaxX,
+								      _rect.MaxY));
+								D(bug("Visible: %s\n",
+								      (NULL == cr->lobs) ? "TRUE"
+								                         : "FALSE" ));
+
+								if (NULL == cr->lobs) {
+									/*
+									 * Take data from sceen's bitmap
+									 */
+									cplm.xSrc  = intersect.MinX;
+									cplm.ySrc  = intersect.MinY;
+									cplm.width = intersect.MaxX - intersect.MinX + 1;
+									cplm.height= intersect.MaxY - intersect.MinY + 1;
+									cplm.xDest = intersect.MinX;
+									cplm.yDest = intersect.MinY;
+									cplm.bm    = l->rp->BitMap;
+								} else {
+									cplm.xSrc  = intersect.MinX - cr->bounds.MinX + ALIGN_OFFSET(intersect.MinX);
+									cplm.ySrc  = intersect.MinY - cr->bounds.MinY;
+									cplm.width = intersect.MaxX - intersect.MinX + 1;
+									cplm.height= intersect.MaxY - intersect.MinY + 1;
+									cplm.xDest = intersect.MinX;
+									cplm.yDest = intersect.MinY;
+									cplm.bm    = cr->BitMap;
+								}
+								cplm.layer   = l;
+								cplm.minterm = 0x0c0;
+								D(bug("SmartRefresh: Calling callback now! bm=%p\n",cplm.bm));
+								CallHookPkt(callback,l,&cplm);
+
+							}
+							cr = cr->Next;
+						}
+						_rr = _rr->Next;
+					}
+				} else 
+				if (IS_SUPERREFRESH(l)) {
+				}
+				/*
+				 * Region _r was treated. No need to look at it somewhere else.
+				 * Could call this function again, but better in a loop...
+				 */
+				ClearRegionRegion(_r,r);
+				DisposeRegion(_r);
+				if (IS_EMPTYREGION(r)) {
+					D(bug("Got empty region now!\n"));
+				}
+			} else {
+				/*
+				 * Jump to the parent layer.
+				 */
+				l = l->parent;
 			}
-			/*
-			 * Region _r was treated. No need to look at it somewhere else.
-			 * Could call this function again, but better in a loop...
-			 */
-			ClearRegionRegion(r,_r);
-			DisposeRegion(_r);
 		}
 		l = l->back;
+	}
+	
+	if (!IS_EMPTYREGION(r)) {
+		struct RegionRectangle * _rr = r->RegionRectangle;
+		while (NULL != _rr) {
+			struct CollectPixelsLayerMsg cplm;
+			struct Rectangle _rect = _rr->bounds;
+			_rect.MinX += r->bounds.MinX;
+			_rect.MinY += r->bounds.MinY;
+			_rect.MaxX += r->bounds.MinX;
+			_rect.MaxY += r->bounds.MinY;
+			D(bug("Rect: %d/%d-%d/%d\n",
+			      _rect.MinX,
+			      _rect.MinY,
+			      _rect.MaxX,
+			      _rect.MaxY));
+			D(bug("Directly from screen background!\n"));
+			_rr = _rr->Next;
+			
+			cplm.xSrc  = _rect.MinX;
+			cplm.xSrc  = _rect.MinY;
+			cplm.width = _rect.MaxX - _rect.MinX + 1;
+			cplm.height= _rect.MaxY - _rect.MinY + 1;
+			cplm.xDest = _rect.MinX;
+			cplm.yDest = _rect.MaxY;
+			cplm.bm    = NULL;
+			cplm.layer = NULL;
+			D(bug("Calling callback now!\n"));
+			CallHookPkt(callback,NULL,&cplm);
+		}
+		
+	} else {
+		D(bug("Complete region handled! - Nothing to take from screen!\n"));
 	}
 	UnlockLayers(l->LayerInfo);
 }
 
-#if 0
-DefaultCollectPixelsCallback(...)
-{
-	LONG xDest, yDest;
-	BltBitMap(srcBm,
-	          rect->MinX,
-	          rect->MinY,
-                  destBm,
-	          xDest,
-                  yDest,
-	          rect->MaxX - rect->MinX + 1,
-	          rect->MaxY - rect->MinY + 1,
-	          0x0c0,
-	          ~0,
-	          NULL);
-}
-#endif
