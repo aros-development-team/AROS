@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,13 +8,8 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 
-#ifdef __AROS__
-#include <aros/asmcall.h>
-#include <proto/alib.h>
-#endif
-
 #include "mui.h"
-
+#include "support.h"
 #include "muimaster_intern.h"
 
 extern struct Library *MUIMasterBase;

@@ -56,24 +56,15 @@
 
 	if (!obj)
 	{
-    	#ifndef __AROS__
-	    printf("Could not create object of %s\n",classname);
-	#else
-	    kprintf("  *** Could not create object of %s\n",classname);
-	#endif 
-	}
+            bug("*** Could not create object of %s\n", classname);
+        }
 
 	return obj;
     }
 
-#ifndef __AROS__
-    printf("Couldn't find %s\n",classname);
-#else
-    kprintf(" *** Couldn't find %s\n",classname);
-#endif
+    bug("*** Couldn't find %s\n", classname);
 
     return NULL;
 
     AROS_LIBFUNC_EXIT
-
 } /* MUIA_NewObjectA */

@@ -157,9 +157,6 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *params)
-#else
 	AROS_LH2(Object *, MUI_MakeObjectA,
 
 /*  SYNOPSIS */
@@ -168,7 +165,6 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 20, MUIMaster)
-#endif
 
 /*  FUNCTION
 
