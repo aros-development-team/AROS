@@ -58,7 +58,11 @@ ifeq ($(FLAVOUR),native)
 LIBS = -L$(LIBDIR) -lexpansion
 
 # The filename of the linklib
+ifeq ("$(SHARED_EXPANSION)","yes")
+LIB=$(LIBDIR)/libexpansion.so
+else
 LIB=$(LIBDIR)/libexpansion.a
+endif
 
 # The names of the linklibs this depends on - should track $(LIBS)
 LIBLIST = expansion
@@ -121,17 +125,20 @@ $(LIB) : $(OBJS)
 # ***** END ***************
 endif
 
-#MM kernel-expansion : setup includes
-kernel-expansion : setup $(OSMODDIR)/expansion.library
+#MM kernel-expansion-module : setup includes
+kernel-expansion-module : setup show-flags $(OSMODDIR)/expansion.library
 
 #MM kernel-expansion-linklib : setup includes
-kernel-expansion-linklib : setup $(LIB)
+kernel-expansion-linklib : setup show-flags $(LIB)
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+	@$(ECHO) "LIB=$(LIB)"
 
 #MM
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
-	@echo "CFLAGS=$(CFLAGS)"
 
 #MM
 clean ::
