@@ -14,14 +14,15 @@
 #include <proto/intuition.h>
 #include <proto/dos.h>
 #include <stdarg.h>
+#include <stdlib.h>
 
-DEFINESET(LIBS);
+DECLARESET(LIBS);
 
 int __forceerrorrequester __attribute__((weak)) = 0;
 
 int __includelibrarieshandling;
 
-void __showerror(int code, char *title, char *format, ...)
+static void __showerror(char *title, char *format, ...)
 {
     AROS_GET_SYSBASE_OK
     struct Process *me = (struct Process *)FindTask(0);
@@ -32,14 +33,11 @@ void __showerror(int code, char *title, char *format, ...)
 
     if (me->pr_CLI && !__forceerrorrequester)
     {
-	if (DOSBase)
-	{
-	    PutStr(title);
-	    PutStr(": ");
+        PutStr(title);
+        PutStr(": ");
 #warning This next line might break on bizarre architectures.
-	    VPrintf(format, args);
-	    PutStr("\n");
-        }
+        VPrintf(format, args);
+        PutStr("\n");
     }
     else
     {
@@ -58,8 +56,6 @@ void __showerror(int code, char *title, char *format, ...)
 	}
     }
 
-    if (!IoErr()) SetIoErr(code);
-
     va_end(args);
 }
 
@@ -68,19 +64,19 @@ int set_open_libraries(void)
     AROS_GET_SYSBASE_OK
     struct libraryset **set = (struct libraryset **)SETNAME(LIBS);
     int n = 1;
-#if 0
-    struct Process *me = (struct Process *)FindTask(0);
-#endif
 
     while(set[n])
     {
 	*(set[n]->baseptr) = OpenLibrary(set[n]->name, *set[n]->versionptr);
 	if (!*(set[n]->baseptr))
 	{
-	    __showerror(ERROR_INVALID_RESIDENT_LIBRARY,
-	                "Library error",
-	                "Couldn't open version %ld of library \"%s\".",
-		        *set[n]->versionptr, set[n]->name);
+	    __showerror
+	    (
+	        "Library error",
+	        "Couldn't open version %ld of library \"%s\".",
+		*set[n]->versionptr, set[n]->name
+	    );
+
 	    return 20;
 	}
 
@@ -89,16 +85,20 @@ int set_open_libraries(void)
 	    int ret = set[n]->postopenfunc();
 	    if (ret)
 	    {
-	    	__showerror(ERROR_INVALID_RESIDENT_LIBRARY,
-		            "Library error",
-	                    "Couldn't initialize library \"%s\".",
-		            set[n]->name);
+	    	__showerror
+                (
+		    "Library error",
+	            "Couldn't initialize library \"%s\".",
+		    set[n]->name
+		);
+
 	        return ret;
 	    }
         }
 
         n++;
     }
+
     return 0;
 }
 

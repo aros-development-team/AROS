@@ -6,33 +6,36 @@ include $(TOP)/config/make.cfg
 
 LIB	:= autoinit
 
-# libraries_nolibs must come BEFORE than libraries
-
-FILES	:= \
-	libraries_nolibs \
+LIBBASEFILES := \
 	aros \
 	asl \
 	arosc \
-	commandline \
 	cybergraphics \
         datatypes \
-	diskfont \
 	dos \
+	diskfont \
 	expansion \
-	functions \
 	gadtools \
 	graphics \
 	icon \
 	iffparse \
 	intuition \
 	layers \
-	libraries \
 	locale \
 	realtime \
 	utility \
 	workbench \
-	muimaster
+	muimaster 
 
+
+# libraries_nolibs must come BEFORE libraries
+LIBHANDLINGFILES := \
+	functions \
+	commandline \
+	libraries_nolibs \
+	libraries 
+
+FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES)
 
 #MM- linklibs: linklibs-autoinit
 #MM linklibs-autoinit : includes
