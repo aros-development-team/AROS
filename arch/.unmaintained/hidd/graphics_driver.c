@@ -1960,6 +1960,34 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     if (!CorrectDriverData (rp, GfxBase))
     	return;
 
+    if ((rp->DrawMode & ~INVERSVID) == JAM2)
+    {
+    	struct TextExtent te;
+    	UBYTE 	    	  old_apen = (UBYTE)rp->FgPen;
+
+    	/* This is actually needed, because below only the
+	   part of the glyph which contains data is rendered:
+	   
+	   ...1100...
+	   ...1100...
+	   ...1100...
+	   ...1111...
+	   
+	   '.' at left side can be there because of kerning.
+	   '.' at the right side can be there because of
+	   CharSpace being bigger than glyph bitmap data
+	   width.
+	*/
+	
+	TextExtent(rp, string, len, &te);
+	SetAPen(rp, (UBYTE)rp->BgPen);
+	RectFill(rp, rp->cp_x + te.te_Extent.MinX,
+	    	     rp->cp_y + te.te_Extent.MinY,
+		     rp->cp_x + te.te_Extent.MaxX,
+		     rp->cp_y + te.te_Extent.MaxY);
+	SetAPen(rp, old_apen);
+    }
+    
     /* does this rastport have a layer. If yes, lock the layer it.*/
     if (NULL != rp->Layer)
       LockLayerRom(rp->Layer);	
