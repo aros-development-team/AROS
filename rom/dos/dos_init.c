@@ -124,8 +124,8 @@ AROS_LH2(struct LIBBASETYPE *, init,
 #define SysBase     (LIBBASE->dl_SysBase)
 
 AROS_LH1(struct LIBBASETYPE *, open,
- AROS_LHA(ULONG, version, D0),
-	   struct LIBBASETYPE *, LIBBASE, 1, BASENAME)
+    AROS_LHA(ULONG, version, D0),
+    struct LIBBASETYPE *, LIBBASE, 1, BASENAME)
 {
     AROS_LIBFUNC_INIT
     /*
