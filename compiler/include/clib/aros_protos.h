@@ -43,7 +43,7 @@ void	QSort	     (APTR array, ULONG count, ULONG size,
 			int (*cmp)(const APTR e1, const APTR e2));
 int	kprintf      (const UBYTE *, ...);
 void	NastyFreeMem (APTR, ULONG);
-
+APTR	RemoveSList  (APTR *, APTR);
 
 #define kprintf     (((struct AROSBase *)(SysBase->DebugData))->kprintf)
 
