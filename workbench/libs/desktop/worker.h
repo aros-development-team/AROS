@@ -1,18 +1,20 @@
 /*
-   Copyright © 1995-2002, The AROS Development Team. All rights reserved.
-   $Id$ 
- */
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$ 
+*/
 
 #ifndef WORKER_H
-#    define WORKER_H
+#define WORKER_H
 
-#    define WM_START    1
-#    define WM_STOP     2
-#    define WM_RESUME   3
+#include <dos/dos.h>
 
-#    define WA_SCANNER  1
+#define WM_START    1
+#define WM_STOP     2
+#define WM_RESUME   3
 
-#    define SCAN_BUFFER 400
+#define WA_SCANNER  1
+
+#define SCAN_BUFFER 400
 
 struct WorkerContext
 {
@@ -74,4 +76,4 @@ struct WorkerScanRequest
     STRPTR          wsr_ExAllBuffer;
 };
 
-#endif
+#endif /* WORKER_H */
