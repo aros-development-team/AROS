@@ -298,17 +298,17 @@ struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
     
     struct TagItem *tag, tags[] =
     {
-    	{GTTX_Text		, (IPTR)"Blah"	},
-    	{GTTX_CopyText		, FALSE		},
-    	{GTTX_Clipped		, FALSE		},
-    	{GTTX_Border		, FALSE		},
-    	{GTTX_FrontPen		, TEXTPEN	},
-    	{GTTX_BackPen		, BACKGROUNDPEN	},
-    	{GTTX_Justification	, GTJ_LEFT	},
-    	{GTA_Text_Format	, (IPTR)"%s"	},
-    	{GA_TextAttr		, (IPTR)NULL	},
-	{GTA_GadgetKind		, TEXT_KIND	},
-	{TAG_MORE		, (IPTR) NULL	}
+    	{GTTX_Text		, 0			},
+    	{GTTX_CopyText		, FALSE			},
+    	{GTTX_Clipped		, FALSE			},
+    	{GTTX_Border		, FALSE			},
+    	{GTTX_FrontPen		, TEXTPEN		},
+    	{GTTX_BackPen		, BACKGROUNDPEN		},
+    	{GTTX_Justification	, GTJ_LEFT		},
+    	{GTA_Text_Format	, (IPTR)"%s"		},
+    	{GA_TextAttr		, (IPTR)NULL		},
+	{GTA_GadgetKind		, TEXT_KIND		},
+	{TAG_MORE		, (IPTR) NULL		}
     };
 
     /* Could use GetTagData(), but this is faster */
@@ -461,7 +461,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     	 {GA_Top		, 0		},
     	 {GA_Width		, 0		},
     	 {GA_Height		, 0		},
-    	 {GA_TextAttr		, (IPTR)NULL	},
+    	 {GA_TextAttr		, (IPTR)tattr	},
     	 {GTNM_Format		, (IPTR)NULL	},
     	 {GTNM_Justification	, GTJ_LEFT	},
 	 {GTA_Text_DispFunc	, (IPTR)NULL	},
@@ -523,7 +523,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     /* if there is a bounding box the label position
        will be calculated based on this box and not
        the gadget coords */
-       
+
     bbox.Left   = GetTagData(GA_Left, 0, stdgadtags);
     bbox.Top    = GetTagData(GA_Top,  0, stdgadtags);
     bbox.Width  = GetTagData(GA_Width, 0, stdgadtags);
@@ -540,13 +540,14 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     /* Create slider gadget */
     stags[11].ti_Data = (IPTR)stdgadtags;
     slidergad = NewObjectA(slidercl, NULL, stags);
+
     if (!slidergad)
     	return (NULL);
 
     if (lformat || lmaxlen || lmaxpixellen)
     {
 	WORD x, y;
-	UWORD ysize;
+	UWORD ysize = 8;
 	Class *textcl;
 	
 	struct TagItem lntags[] =
@@ -1317,6 +1318,7 @@ struct Gadget *makegeneric(struct GadToolsBase_intern *GadToolsBase,
 		      	  struct TagItem *taglist)
 {
     struct GT_GenericGadget *gad;
+    struct Gadget	    *prevgad;
     
     gad = AllocMem(sizeof(struct GT_GenericGadget), MEMF_PUBLIC | MEMF_CLEAR);
     if (gad)
@@ -1343,6 +1345,9 @@ struct Gadget *makegeneric(struct GadToolsBase_intern *GadToolsBase,
 	gad->magic 		= GENERIC_MAGIC;
 	gad->magic2 		= GENERIC_MAGIC2;
 	gad->itext 		= (struct IntuiText *)stdgadtags[TAG_IText].ti_Data;
+	
+	prevgad = (struct Gadget *)stdgadtags[TAG_Previous].ti_Data;
+	prevgad->NextGadget = (struct Gadget *)gad;
     }
     
     ReturnPtr ("makegeneric", struct Gadget *, (struct Gadget *)gad);
