@@ -3,6 +3,7 @@
 include $(TOP)/config/make.cfg
 
 MAKE_BUILTIN_ABOUTMUI := no
+MAKE_BUILTIN_BOOPSI   := yes
 MAKE_BUILTIN_GAUGE    := yes
 
 CLASSES := \
@@ -11,7 +12,6 @@ CLASSES := \
     balance \
     bitmap \
     bodychunk \
-    boopsi \
     chunkyimage \
     coloradjust \
     colorfield \
@@ -57,9 +57,6 @@ CLASSES := \
     virtgroup \
     window
 
-CLASSFILES    := $(foreach f, $(CLASSES), classes/$(f))
-CLASSINCLUDES := $(foreach f, $(CLASSES), classes/$(f).h)
-
 FILES := \
     datatypescache \
     dragndrop \
@@ -72,8 +69,7 @@ FILES := \
     penspec \
     support \
     support_classes \
-    textengine \
-    $(CLASSFILES)
+    textengine 
     	    
 FUNCS := \
     mui_addclipping \
@@ -102,7 +98,7 @@ FUNCS := \
     mui_requestidcmp \
     mui_seterror
 
-USER_CFLAGS := -DHAVE_COOLIMAGES -DZUNE_EVERYTHING_BUILTIN=0
+USER_CFLAGS := -DHAVE_COOLIMAGES
 
 ifeq ($(MAKE_BUILTIN_ABOUTMUI),yes)
     CLASSES     := $(CLASSES) aboutmui
@@ -111,12 +107,23 @@ else
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_ABOUTMUI=0
 endif
 
+ifeq ($(MAKE_BUILTIN_BOOPSI),yes)
+    CLASSES     := $(CLASSES) boopsi
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_BOOPSI=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_BOOPSI=0
+endif
+
 ifeq ($(MAKE_BUILTIN_GAUGE),yes)
     CLASSES     := $(CLASSES) gauge
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_GAUGE=1
 else
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_GAUGE=0
 endif
+
+CLASSFILES    := $(foreach f, $(CLASSES), classes/$(f))
+CLASSINCLUDES := $(foreach f, $(CLASSES), classes/$(f).h)
+FILES         := $(FILES) $(CLASSFILES)
 
 #MM- workbench-libs-muimaster : setup includes linklibs
 

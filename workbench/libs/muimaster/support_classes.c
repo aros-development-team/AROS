@@ -92,7 +92,7 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Numeric_desc,
     &_MUI_Slider_desc,
     &_MUI_String_desc,
-    &_MUI_Boopsi_desc,
+    ZUNE_BOOPSI_DESC
     &_MUI_Prop_desc,
     &_MUI_Scrollbar_desc,
     &_MUI_Register_desc,
