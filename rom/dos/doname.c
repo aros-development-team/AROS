@@ -15,7 +15,7 @@
 #include <string.h>
 #include "dos_intern.h"
 
-# define  DEBUG  0
+# define  DEBUG  1
 # include <aros/debug.h>
 
 
@@ -55,7 +55,7 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
 	{
 	    if (*s1++ == ':')
 	    {
-		volname = (STRPTR)AllocMem(s1-name, MEMF_ANY);
+		volname = (STRPTR)AllocMem(s1 - name, MEMF_ANY);
 
 		if (volname == NULL)
 		{
