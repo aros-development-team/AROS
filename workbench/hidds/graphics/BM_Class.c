@@ -1861,6 +1861,9 @@ static VOID bitmap_putalphaimage(OOP_Class *cl, OOP_Object *o,
     buf = AllocVec(msg->width * sizeof(ULONG), MEMF_PUBLIC);    
     if (buf)
     {
+    	HIDDT_DrawMode old_drmd = GC_DRMD(msg->gc);	
+	GC_DRMD(msg->gc) = vHidd_GC_DrawMode_Copy;
+	
     	for(y = msg->y; y < msg->y + msg->height; y++)
 	{
 	    HIDD_BM_GetImage(o,
@@ -1932,6 +1935,8 @@ static VOID bitmap_putalphaimage(OOP_Class *cl, OOP_Object *o,
 	    ((UBYTE *)pixarray) += (msg->modulo - msg->width * 4);
 
 	} /* for(y = msg->y; y < msg->y + msg->height; y++) */
+
+	GC_DRMD(msg->gc) = old_drmd;
 	
     	FreeVec(buf);
 	
@@ -2039,6 +2044,9 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
     buf = AllocVec(msg->width * sizeof(ULONG), MEMF_PUBLIC);    
     if (buf)
     {
+    	HIDDT_DrawMode old_drmd = GC_DRMD(msg->gc);	
+	GC_DRMD(msg->gc) = vHidd_GC_DrawMode_Copy;
+
     	for(y = msg->y; y < msg->y + msg->height; y++)
 	{
 	    if (type < 4)
@@ -2126,11 +2134,33 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
 		    break;
 
     	    	case 2: /* COMPLEMENT */
-		    #warning "Implement PutAlphaTemplate COMPLEMENT mode"
+		    for(x = 0; x < msg->width; x++)
+		    {
+	    		ULONG	    destpix;
+    	    	    	UBYTE	    alpha;
+
+    	    		alpha = *pixarray++;
+
+    	    	    	destpix = buf[x];
+    	    	    	if (alpha >= 0x80) destpix = ~destpix;
+			buf[x] = destpix;
+
+		    } /* for(x = 0; x < msg->width; x++) */
 		    break;
 
 		case 3: /* COMPLEMENT | INVERSVID*/
-		    #warning "Implement PutAlphaTemplate COMPLEMENT|INVERSVID mode"
+		    for(x = 0; x < msg->width; x++)
+		    {
+	    		ULONG	    destpix;
+    	    	    	UBYTE	    alpha;
+
+    	    		alpha = *pixarray++;
+
+    	    	    	destpix = buf[x];
+    	    	    	if (alpha < 0x80) destpix = ~destpix;
+			buf[x] = destpix;
+
+		    } /* for(x = 0; x < msg->width; x++) */
 		    break;
 		    
 	    	case 4:	/* JAM2 */	    
@@ -2194,6 +2224,8 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
 	    pixarray += msg->modulo - msg->width;
 
 	} /* for(y = msg->y; y < msg->y + msg->height; y++) */
+	
+	GC_DRMD(msg->gc) = old_drmd;
 	
     	FreeVec(buf);
 	
