@@ -10,7 +10,11 @@
 #include <errno.h>
 #include <fcntl.h>
 
+#ifndef __FreeBSD__ = 5 
+/* FreeBSD 5 souncard.h include deps already include this */
 #include <sys/ioctl.h>
+#endif /* FreeBSD */
+
 #include <sys/soundcard.h>
 //#include <sys/mman.h>
 
