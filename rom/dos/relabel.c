@@ -69,11 +69,11 @@
     iofs.io_Union.io_RELABEL.io_NewName = newname;
     iofs.io_Union.io_RELABEL.io_Result  = FALSE;
 
-    error = DoIO(&iofs.IOFS);
+    DoIO(&iofs.IOFS);
 
-    SetIoErr(error);
+    SetIoErr(iofs.io_DosError);
 
-    if(error != 0)
+    if(iofs.io_DosError != 0)
     {
 	return DOSFALSE;
     }
