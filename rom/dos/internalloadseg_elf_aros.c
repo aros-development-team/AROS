@@ -372,37 +372,16 @@ static int relocate
 {
     const char *contents = ph[toreloc_idx].paddr;
 
-    int num_segments;
+    int num_segments = (rel++)->num_entries;
     
-    for
-    (
-        num_segments = (rel++)->num_entries;
-        num_segments--;
-    )
+    while (num_segments--)
     {
         const struct pheader *fromreloc   = &ph[(rel++)->segment];
         const ULONG           addr_to_add = fromreloc->paddr - fromreloc->vaddr;
-        const ULONG           num_relocs  = (rel++)->num_entries;
+        ULONG                 num_relocs  = (rel++)->num_entries;
 
-        /* 
-           Use the Duff's device to do the relocation, in order to improve
-           performances. More info here: http://www.lysator.liu.se/c/duffs-device.html
-        */ 
-         
-        register long j = (num_relocs + 7) / 8;
-            
-        switch (num_relocs % 8)
-        {
-            case 0: do {    *((ULONG *)&contents[rel++->offset]) += addr_to_add;
-            case 7:         *((ULONG *)&contents[rel++->offset]) += addr_to_add;
-            case 6:         *((ULONG *)&contents[rel++->offset]) += addr_to_add;
-            case 5:         *((ULONG *)&contents[rel++->offset]) += addr_to_add;
-            case 4:         *((ULONG *)&contents[rel++->offset]) += addr_to_add;
-            case 3:         *((ULONG *)&contents[rel++->offset]) += addr_to_add;
-            case 2:         *((ULONG *)&contents[rel++->offset]) += addr_to_add;
-            case 1:         *((ULONG *)&contents[rel++->offset]) += addr_to_add;
-                       } while (--j > 0);
-        }
+        while (num_relocs--)
+            *((ULONG *)&contents[rel++->offset]) += addr_to_add;  
     }
     
     return 1;
@@ -496,10 +475,7 @@ BPTR InternalLoadSeg_ELF_AROS
     /* Relocate the segments */
     for (i = 0; i < eh.shnum; i++)
     {
-        if
-        (
-            sh[i].type == SHT_AROS_REL32
-        )
+        if (sh[i].type == SHT_AROS_REL32)
         {
             sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
             if (!sh[i].addr || !relocate(ph, sh[i].addr, sh[i].info, DOSBase))
