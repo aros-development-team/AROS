@@ -17,10 +17,18 @@
 #endif
 
 /* Defines */
+
+#define AddAnimOb(anOb, anKey, rp) \
+	AROS_LC3(void, AddAnimOb, \
+	AROS_LCA(struct AnimOb *  , anOb,  A0), \
+	AROS_LCA(struct AnimOb ** , anKey, A1), \
+	AROS_LCA(struct RastPort *, rp ,   A2), \
+	struct GfxBase *, GfxBase, 26, Graphics)
+
 #define AddBob(Bob, rp) \
 	AROS_LC2(void, AddBob, \
-	AROS_LCA(struct Bob *, Bob, A0), \
-	AROS_LCA(struct RastPort *, rp, A1), \
+	AROS_LCA(struct Bob *     , Bob, A0), \
+	AROS_LCA(struct RastPort *, rp , A1), \
 	struct GfxBase *, GfxBase, 16, Graphics)
 
 #define AddFont(textFont) \
@@ -49,17 +57,34 @@
 	AROS_LCA(ULONG          , height, D1), \
 	struct GfxBase *, GfxBase, 82, Graphics)
 
+#define AllocSpriteDataA(bitmap, taglist) \
+	AROS_LC2(struct ExtSprite *, AllocSpriteDataA, \
+	AROS_LCA(struct BitMap * , bitmap , A2), \
+	AROS_LCA(struct TagItem *, taglist, A1), \
+	struct GfxBase *, GfxBase, 170, Graphics)
+
 #define AndRectRegion(region, rectangle) \
 	AROS_LC2(void, AndRectRegion, \
 	AROS_LCA(struct Region    *, region, A0), \
 	AROS_LCA(struct Rectangle *, rectangle, A1), \
 	struct GfxBase *, GfxBase, 84, Graphics)
 
+#define Animate(anKey, rp) \
+	AROS_LC2(void, Animate, \
+	AROS_LCA(struct AnimOb ** , anKey, A0), \
+	AROS_LCA(struct RastPort *, rp   , A1), \
+	struct GfxBase *, GfxBase, 27, Graphics)
+
 #define AskFont(rp, textAttr) \
 	AROS_LC2(void, AskFont, \
 	AROS_LCA(struct RastPort *, rp, A1), \
 	AROS_LCA(struct TextAttr *, textAttr, A0), \
 	struct GfxBase *, GfxBase, 79, Graphics)
+
+#define BitMapScale(bitScaleArgs) \
+	AROS_LC1(void, BitMapScale, \
+	AROS_LCA(struct BitScaleArgs *, bitScaleArgs, A0), \
+	struct GfxBase *, GfxBase, 113, Graphics)
 
 #define BltBitMap(srcBitMap, xSrc, ySrc, destBitMap, xDest, yDest, xSize, ySize, minterm, mask, tempA) \
 	AROS_LC11(LONG, BltBitMap, \
@@ -75,6 +100,13 @@
 	AROS_LCA(ULONG          , mask, D7), \
 	AROS_LCA(PLANEPTR       , tempA, A2), \
 	struct GfxBase *, GfxBase, 5, Graphics)
+
+#define BltClear(memblock, bytecount, flags) \
+	AROS_LC3(void, BltClear, \
+	AROS_LCA(void *, memblock , A1), \
+	AROS_LCA(ULONG , bytecount, D0), \
+	AROS_LCA(ULONG , flags    , D1), \
+	struct GfxBase *, GfxBase, 50, Graphics)
 
 #define ClearRectRegion(region, rectangle) \
 	AROS_LC2(BOOL, ClearRectRegion, \
@@ -147,6 +179,18 @@
 	AROS_LCA(struct BitMap *, bm, A0), \
 	struct GfxBase *, GfxBase, 154, Graphics)
 
+#define FreeColorMap(colormap) \
+	AROS_LC1(void, FreeColorMap, \
+	AROS_LCA(struct ColorMap *, colormap, A0), \
+	struct GfxBase *, GfxBase, 96, Graphics)
+
+#define FreeGBuffers(anOb, rp, db) \
+	AROS_LC3(void, FreeGBuffers, \
+	AROS_LCA(struct AnimOb *  , anOb, A0), \
+	AROS_LCA(struct RastPort *, rp  , A1), \
+	AROS_LCA(BOOL             , db  , D0), \
+	struct GfxBase *, GfxBase, 100, Graphics)
+
 #define FreeRaster(p, width, height) \
 	AROS_LC3(void, FreeRaster, \
 	AROS_LCA(PLANEPTR, p,      A0), \
@@ -158,6 +202,16 @@
 	AROS_LC1(void, FreeRastPort, \
 	AROS_LCA(struct RastPort *, rp, A1), \
 	struct GfxBase *, GfxBase, 180, Graphics)
+
+#define FreeSprite(pick) \
+	AROS_LC1(void, FreeSprite, \
+	AROS_LCA(WORD, pick, D0), \
+	struct GfxBase *, GfxBase, 69, Graphics)
+
+#define FreeSpriteData(extsp) \
+	AROS_LC1(void, FreeSpriteData, \
+	AROS_LCA(struct ExtSprite *, extsp, A2), \
+	struct GfxBase *, GfxBase, 172, Graphics)
 
 #define GetAPen(rp) \
 	AROS_LC1(ULONG, GetAPen, \
@@ -175,15 +229,39 @@
 	AROS_LCA(struct RastPort *, rp, A0), \
 	struct GfxBase *, GfxBase, 144, Graphics)
 
+#define GetColorMap(entries) \
+	AROS_LC1(struct ColorMap *, GetColorMap, \
+	AROS_LCA(ULONG, entries, D0), \
+	struct GfxBase *, GfxBase, 95, Graphics)
+
 #define GetDrMd(rp) \
 	AROS_LC1(ULONG, GetDrMd, \
 	AROS_LCA(struct RastPort *, rp, A0), \
 	struct GfxBase *, GfxBase, 145, Graphics)
 
+#define GetExtSpriteA(sprite, tags) \
+	AROS_LC2(BOOL, GetExtSpriteA, \
+	AROS_LCA(struct ExtSprite *, sprite, A2), \
+	AROS_LCA(struct TagItem   *, tags  , A1), \
+	struct GfxBase *, GfxBase, 155, Graphics)
+
+#define GetGBuffers(anOb, rp, db) \
+	AROS_LC3(BOOL, GetGBuffers, \
+	AROS_LCA(struct AnimOb *  , anOb, A0), \
+	AROS_LCA(struct RastPort *, rp  , A1), \
+	AROS_LCA(BOOL             , db  , D0), \
+	struct GfxBase *, GfxBase, 28, Graphics)
+
 #define GetOutlinePen(rp) \
 	AROS_LC1(ULONG, GetOutlinePen, \
 	AROS_LCA(struct RastPort *, rp, A0), \
 	struct GfxBase *, GfxBase, 146, Graphics)
+
+#define GetSprite(sprite, pick) \
+	AROS_LC2(void, GetSprite, \
+	AROS_LCA(struct SimpleSprite *, sprite, A0), \
+	AROS_LCA(WORD                 , pick  , D0), \
+	struct GfxBase *, GfxBase, 68, Graphics)
 
 #define GfxAssociate(pointer, node) \
 	AROS_LC2( void , GfxAssociate, \
@@ -206,12 +284,29 @@
 	AROS_LCA( ULONG, node_type, D0), \
 	struct GfxBase *, GfxBase, 110, Graphics)
 
+#define InitArea(areainfo, buffer, maxvectors) \
+	AROS_LC3(void, InitArea, \
+	AROS_LCA(struct AreaInfo *, areainfo,   A0), \
+	AROS_LCA(void *           , buffer,     A1), \
+	AROS_LCA(SHORT            , maxvectors, D0), \
+	struct GfxBase *, GfxBase, 47, Graphics)
+
 #define InitGels(head, tail, GInfo) \
 	AROS_LC3(void, InitGels, \
-	AROS_LCA(struct VSprite *, head, A0), \
-	AROS_LCA(struct VSprite *, tail, A1), \
+	AROS_LCA(struct VSprite * , head , A0), \
+	AROS_LCA(struct VSprite * , tail , A1), \
 	AROS_LCA(struct GelsInfo *, GInfo, A2), \
 	struct GfxBase *, GfxBase, 20, Graphics)
+
+#define InitGMasks(anOb) \
+	AROS_LC1(void, InitGMasks, \
+	AROS_LCA(struct AnimOb *, anOb, A0), \
+	struct GfxBase *, GfxBase, 29, Graphics)
+
+#define InitMasks(vs) \
+	AROS_LC1(void, InitMasks, \
+	AROS_LCA(struct VSprite *, vs, A0), \
+	struct GfxBase *, GfxBase, 21, Graphics)
 
 #define InitRastPort(rp) \
 	AROS_LC1(BOOL, InitRastPort, \
@@ -326,6 +421,13 @@
 	AROS_LCA(struct RastPort *, rp, A1), \
 	AROS_LCA(ULONG            , pen, D0), \
 	struct GfxBase *, GfxBase, 58, Graphics)
+
+#define SetCollision(num, routine, GInfo) \
+	AROS_LC3(void, SetCollision, \
+	AROS_LCA(ULONG            , num          , D0), \
+	AROS_LCA(void             , (* routine)(), A0), \
+	AROS_LCA(struct GelsInfo *, GInfo        , A1), \
+	struct GfxBase *, GfxBase, 24, Graphics)
 
 #define SetDrMd(rp, drawMode) \
 	AROS_LC2(void, SetDrMd, \
