@@ -3,7 +3,7 @@ TOP = ../../../..
 
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -D_AROS -I../include/example
+USER_INCLUDES = -D_AROS -I../include
 
 LIBS = -L$(LIBDIR) -lamiga -larossupport -larosc
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a \
@@ -25,12 +25,15 @@ $(LIB) : $(OBJS) $(DEPLIBS)
 	$(CHECKUDS) $@
 
 StartUp.o : StartUp.c SampleFuncs.h compiler.h
-	$(CC) $(CFLAGS) -c StartUp.c
+	@echo "Compiling $<..."
+	@$(CC) $(CFLAGS) -c StartUp.c
 
 LibInit.o : LibInit.c compiler.h
-	$(CC) $(CFLAGS) -c LibInit.c
+	@echo "Compiling $<..."
+	@$(CC) $(CFLAGS) -c LibInit.c
 
 SampleFuncs.o : SampleFuncs.c SampleFuncs.h compiler.h
-	$(CC) $(CFLAGS) -c SampleFuncs.c
+	@echo "Compiling $<..."
+	@$(CC) $(CFLAGS) -c SampleFuncs.c
 
 
