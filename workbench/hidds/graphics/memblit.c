@@ -819,7 +819,7 @@ VOID bitmap_getmem32image16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
 
 	while(w--)
 	{
-	    *(ULONG *)dst_start++ = (ULONG)(*(UWORD *)src_start);
+	    *(ULONG *)dst_start = (ULONG)(*(UWORD *)src_start);
 	    dst_start += 4; src_start += 2;
 	}
 	src_start += src_start_add;
