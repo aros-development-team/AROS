@@ -128,6 +128,8 @@ UBYTE i;
 		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Tick=
 			volume->devicelist.dl_VolumeDate.ds_Tick;
 		AddDosEntry(doslist);
+		/* if we re-use "volume" clear locklist */
+		volume->locklist = 0;
 	}
 	return DOSTRUE;
 }
