@@ -33,7 +33,7 @@ STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Li
     	if (newmenu[i].nm_Type == NM_TITLE)
     	{
 	    menu = MenuitemObject, MUIA_Menuitem_Title, newmenu[i].nm_Label, MUIA_UserData, newmenu[i].nm_UserData, End;
-	    if (menu) DoMethod(menustrip, MUIM_Family_AddTail, menu);
+	    if (menu) DoMethod(menustrip, MUIM_Family_AddTail, (IPTR)menu);
 	    menuitem = NULL;
 	} else
 	{
@@ -62,7 +62,7 @@ STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Li
 		    MUIA_Menuitem_Toggle, !!(newmenu[i].nm_Flags & MENUTOGGLE),
 		    MUIA_UserData, newmenu[i].nm_UserData,
 	            End;
-	        if (menuitem) DoMethod(menu, MUIM_Family_AddTail, menuitem);
+	        if (menuitem) DoMethod(menu, MUIM_Family_AddTail, (IPTR)menuitem);
 	    } else
 	    if (newmenu[i].nm_Type == NM_SUB)
 	    {
@@ -76,7 +76,7 @@ STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Li
 		    MUIA_Menuitem_Toggle, !!(newmenu[i].nm_Flags & MENUTOGGLE),
 		    MUIA_UserData, newmenu[i].nm_UserData,
 	            End;
-		if (subitem) DoMethod(menuitem, MUIM_Family_AddTail, subitem);
+		if (subitem) DoMethod(menuitem, MUIM_Family_AddTail, (IPTR)subitem);
 	    }
 	}
     }
