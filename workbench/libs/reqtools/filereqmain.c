@@ -1,3 +1,11 @@
+/*
+    (C) 2000 AROS - The Amiga Research OS
+    $Id$
+
+    Desc:
+    Lang: English
+*/
+
 /**************************************************************
 *                                                             *
 *      File/Font/Screenmode requester                         *
@@ -6,6 +14,17 @@
 **************************************************************/
 
 #include "filereq.h"
+
+#ifdef  _AROS
+
+    #define   DEBUG  1
+    #include  <aros/debug.h>
+#else
+
+    #define   D(x)  
+
+#endif
+
 
 /****************************************************************************************/
 
@@ -32,20 +51,23 @@ static const IPTR ezreqtags[] = { RT_Underscore,'_',RTEZ_Flags,EZREQF_NORETURNKE
 BOOL
 ExpandLink( GlobData *glob )
 {
-#ifdef _AROS
-
-#warning For AROS we just return FALSE in ExpandLink. Dont have a FileLock struct 
-    return FALSE;
-    
-#else
-
-    struct FileLock	*fl;
-    BOOL		rc = FALSE;
+#ifndef _AROS
+    struct FileLock  *fl;
+#endif
+    BOOL              rc = FALSE;
+    LONG              res;
 
     *glob->winaddr = ( APTR ) -1;
-    fl = BADDR( glob->lock );
 
-    if( ReadLink( fl->fl_Task, glob->lock, glob->fib.fib_FileName, glob->linkbuf, sizeof( glob->linkbuf ) ) )
+#ifdef _AROS
+    res = ReadLink(NULL, glob->lock, glob->fib.fib_FileName, glob->linkbuf,
+		   sizeof(glob->linkbuf));
+#else
+    fl = BADDR( glob->lock );
+    res = ReadLink(fl->fl_Task, glob->lock, glob->fib.fib_FileName, glob->linkbuf, sizeof(glob->linkbuf));
+#endif
+
+    if(res != 0)
     {
 	BPTR lock;
 
@@ -67,8 +89,6 @@ ExpandLink( GlobData *glob )
     *glob->winaddr = glob->reqwin;
 
     return( rc );
-    
-#endif
 }
 
 /****************************************************************************************/
