@@ -9,6 +9,7 @@ args=""
 objs=""
 cflags=""
 cpu=`uname -m`
+puredir=".pure"
 
 #echo "$@"
 
@@ -47,8 +48,17 @@ if [ $debug -ne 0 ]; then
     echo "args=$args"
 fi
 
+if [ ! -d $puredir ]; then
+    if [ -e $puredir ]; then
+	echo "$0: Error: $puredir is no directory"
+	exit 10
+    else
+	mkdir $puredir
+    fi
+fi
+
 for cfile in $csrcs ; do
-    name=tmp/`basename $cfile .c`
+    name=$puredir/`basename $cfile .c`
 
     if [ $debug -ne 0 ]; then
 	echo cc -Wall -g -S $cflags "$cfile" -o "$name".S
