@@ -23,7 +23,7 @@
      Const64
 #else
 #define QuadData(Const64_Hi, Const64_Lo, Const64) \
-     Const64_Hi, Const64_Lo  
+     {Const64_Hi, Const64_Lo}  
 #endif
 
 
