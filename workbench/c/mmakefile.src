@@ -13,7 +13,6 @@ FILES	    := \
 	assign \
 	avail \
 	cd \
-	copy \
 	date \
 	delete \
 	devlist \
@@ -35,6 +34,7 @@ FILES	    := \
 	wait \
 	why \
 	Alias \
+	Copy \
 	Filenote \
 	Get \
 	Getenv \
