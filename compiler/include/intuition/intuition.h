@@ -697,6 +697,8 @@ struct ExtNewWindow
 #define WFLG_ZOOMED	    (1L<<28)
 #define WFLG_HASZOOM	    (1L<<29)
 
+#define DEFAULTMOUSEQUEUE 5
+
 #define HC_GADGETHELP 1
 
 			   /***** Images *****/
