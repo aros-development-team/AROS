@@ -4,15 +4,14 @@ TOP=..
 include $(TOP)/config/make.cfg
 
 AMIGADIR=$(TOP)/amiga
-OBJDIR=$(GENDIR)/include
 INCDIR=$(BINDIR)/include
 
-INCLUDES = $(wildcard include/*.h include/*/*.h)
-DEST_INCLUDES = $(foreach f,$(INCLUDES),$(BINDIR)/$(f))
+INCLUDES = $(wildcard *.h */*.h)
+DEST_INCLUDES = $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
 
-all: setup $(OBJDIR)/os-include
+all: setup os-include
 
-$(OBJDIR)/os-include: $(DEST_INCLUDES)
+os-include: $(DEST_INCLUDES)
 
 $(INCDIR)/%.h: %.h
 	$(CP) $< $@
