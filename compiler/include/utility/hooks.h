@@ -22,7 +22,7 @@ struct Hook
     struct MinNode  h_MinNode;
     IPTR          (*h_Entry)();     /* Main entry point */
     IPTR          (*h_SubEntry)();  /* Secondary entry point */
-    IPTR            h_Data;         /* Whatever you want */
+    APTR            h_Data;         /* Whatever you want */
 };
 
 /* You can use this if you want for casting function pointers. */
