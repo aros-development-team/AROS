@@ -1,0 +1,6 @@
+# $Id$
+#
+include $(TOP)/config/make.cfg
+
+#MM- linklibs-arosm-ppc : linklibs-arosm-hasfpu
+
