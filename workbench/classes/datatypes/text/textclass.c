@@ -1308,14 +1308,17 @@ static int HandleMouse(struct Text_Data *td, struct RastPort *rp, LONG x, LONG y
         	LONG txtstart, txtend;
         	struct Line *newline = NewFindWordBegin(td, x, y, &xstart, &txtstart);
         	NewFindWordEnd(td, x, y, &xend, &txtend);
-        	if (newline->ln_Text[txtstart] != '\0')
-        	{
-                    strcpy(td->word, "link ");
-                    strncpy(&td->word[5], &newline->ln_Text[txtstart], txtend-txtstart);
-                    td->word[5+txtend-txtstart] = 0;
-                    D(bug("%ld %ld %s\n", txtstart, txtend, td->word));
-                    TriggerWord(td, td->word);
-        	}
+
+		if (newline != NULL) { /* if below all text, NewFindWordBegin returns \0 */
+        	    if (newline->ln_Text[txtstart] != '\0')
+        	    {
+                        strcpy(td->word, "link ");
+                        strncpy(&td->word[5], &newline->ln_Text[txtstart], txtend-txtstart);
+                        td->word[5+txtend-txtstart] = 0;
+                        D(bug("%ld %ld %s\n", txtstart, txtend, td->word));
+                        TriggerWord(td, td->word);
+        	    }
+		}
 #else
  
 		struct Line *newline = NewFindWordBegin(td, x, y, &xstart);
