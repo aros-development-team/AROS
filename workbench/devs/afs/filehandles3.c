@@ -160,13 +160,25 @@ ULONG error,i,block;
 	headerblock=getBlock(afsbase, ah->volume, ah->header_block);
 	if (!headerblock)
 		return ERROR_UNKNOWN;
-	headerblock->flags |= BCF_USED;
-	if (AROS_BE2LONG(headerblock->buffer[BLK_SECONDARY_TYPE(ah->volume)])<0) // is it a file ?
+	/* is it a file? */
+	if (AROS_BE2LONG(headerblock->buffer[BLK_SECONDARY_TYPE(ah->volume)])<0)
 		return examineEAD(afsbase, ah->volume, ead, headerblock, size, mode);
-	error=getNextExamineBlock(afsbase, ah,&ah->dirpos,&i);
+	error=getNextExamineBlock(afsbase, ah, &ah->dirpos, &i);
+#warning "if ah->dirpos is a entry stored in a hashchain we return entries twice"
 	if (error)
 		return error;
 	last=ead;
+	/*
+		the contents of headerblock may have changed
+		by getNextExamineBlock
+	*/
+	if (headerblock->blocknum != ah->header_block)
+	{
+		headerblock=getBlock(afsbase, ah->volume, ah->header_block);
+		if (!headerblock)
+			return ERROR_UNKNOWN;
+	}
+	headerblock->flags &= ~BCF_USED;
 	for (;i<=BLK_TABLE_END(ah->volume);i++)
 	{
 		if (headerblock->buffer[i])
@@ -176,18 +188,21 @@ ULONG error,i,block;
 			{
 				entryblock=getBlock(afsbase, ah->volume, block);
 				if (!entryblock)
+				{
+					headerblock->flags &= ~BCF_USED;
 					return ERROR_UNKNOWN;
+				}
 				error=examineEAD(afsbase, ah->volume, ead, entryblock, size, mode);
 				if (error)
 				{
-				    	/* stegerg: CHECK CHECK CHECK CHECK CHECK */
-				    	if (error == ERROR_BUFFER_OVERFLOW)
+				    /* stegerg: CHECK CHECK CHECK CHECK CHECK */
+					if (error == ERROR_BUFFER_OVERFLOW)
 					{
-					    ah->dirpos=AROS_BE2LONG(headerblock->buffer[i]);
-					    error=0;
+						ah->dirpos=AROS_BE2LONG(headerblock->buffer[i]);
+						error=0;
 					}
-				    	/* stegerg: END CHECK CHECK CHECK CHECK CHECK */
-					
+				   /* stegerg: END CHECK CHECK CHECK CHECK CHECK */
+
 					ead->ed_Next=0;
 					headerblock->flags &= ~BCF_USED;
 					return error;
