@@ -1200,8 +1200,8 @@ updatemakefile (Project * prj, const char * path)
 
 	if (!execute (prj, prj->genmakefilescript,"-","-",""))
 	{
-	    fprintf (stderr, "Error while regenerating makefile %s\n", dest);
 	    unlink (dest);
+	    error ("Error while regenerating makefile %s", dest);
 	    exit (10);
 	}
     }
@@ -1381,7 +1381,7 @@ buildmflist (Project * prj)
 
 		if (stat (path, &st) == -1 && errno == ENOENT)
 		{
-#if 1
+#if 0
     printf ("Removing %s from cache (%s)\n", path, subdir->node.name);
     printdirtree (prj);
 #endif
@@ -1906,47 +1906,6 @@ callmake (Project * prj, const char * tname, const char * mforig)
 	chdir (dir);
     }
 
-#if 0
-    if (ext && !strcmp (ext, "src"))
-    {
-	char * src, * dest;
-	struct stat sst, dst;
-
-	ext[-1] = 0;
-	dest = xstrdup (file);
-	ext[-1] = '.';
-
-	src = file;
-	stat (src, &sst);
-
-	if (stat (dest, &dst) == -1
-	    || sst.st_mtime > dst.st_mtime
-	    || checkdeps (prj, dst.st_mtime)
-	)
-	{
-	    printf ("(Re)generating %s because ", dest);
-	    if (stat (dest, &dst) == -1)
-		printf ("%s doesn't exist\n", dest);
-	    else if (sst.st_mtime > dst.st_mtime)
-		printf ("%s.src is newer\n", dest);
-	    else
-		printf ("config.deps is newer\n");
-
-	    if (!execute (prj, prj->genmakefilescript,"-","-",""))
-	    {
-		fprintf (stderr, "Error while regenerating makefile %s\n", dest);
-		unlink (dest);
-		exit (10);
-	    }
-	}
-
-	xfree (dest);
-    }
-
-    if (ext)
-	ext[-1] = 0;
-#endif
-
     setvar (prj, "CURDIR", dir);
     setvar (prj, "TARGET", tname);
 
@@ -1971,7 +1930,7 @@ callmake (Project * prj, const char * tname, const char * mforig)
 
     if (!execute (prj, prj->maketool, "-", "-", buffer))
     {
-	fprintf (stderr, "Error while running make in %s\n", dir);
+	error ("Error while running make in %s", dir);
 	exit (10);
     }
 
