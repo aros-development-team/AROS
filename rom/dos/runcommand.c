@@ -1,8 +1,11 @@
 /*
     $Id$
     $Log$
-    Revision 1.1  1996/07/28 16:37:23  digulla
-    Initial revision
+    Revision 1.2  1996/08/01 13:18:31  digulla
+    Ignore RELO_EXEC flag
+
+    Revision 1.1.1.1  1996/07/28 16:37:23  digulla
+    First CVS version of AROS
 
     Desc:
     Lang: english
@@ -70,18 +73,18 @@ STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct DosLibrary *DOSBase);
 
     stack=(UBYTE *)AllocMem(stacksize,MEMF_ANY);
     if(stack==NULL)
-        return -1;
-        
+	return -1;
+
     sss.stk_Lower=stack;
     sss.stk_Upper=(ULONG)stack+stacksize;
 
     oldresult=me->pr_Result2;
     if(me->pr_CIS)
-        Flush(me->pr_CIS);
+	Flush(me->pr_CIS);
     if(me->pr_COS)
-        Flush(me->pr_COS);
+	Flush(me->pr_COS);
     if(me->pr_CES)
-        Flush(me->pr_CES);
+	Flush(me->pr_CES);
     me->pr_Result2=oldresult;
 
     oldargs=me->pr_Arguments;
@@ -91,13 +94,13 @@ STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct DosLibrary *DOSBase);
 
     oldresult=me->pr_Result2;
     if(me->pr_CIS)
-        Flush(me->pr_CIS);
+	Flush(me->pr_CIS);
     if(me->pr_COS)
-        Flush(me->pr_COS);
+	Flush(me->pr_COS);
     if(me->pr_CES)
-        Flush(me->pr_CES);
+	Flush(me->pr_CES);
     me->pr_Result2=oldresult;
-    
+
     FreeMem(stack,stacksize);
     return ret;
     __AROS_FUNC_EXIT

@@ -192,6 +192,7 @@ BPTR LoadSeg_ELF(BPTR file)
 			    *(ULONG *)&loaded[reltab[i].addr]+=
 				(ULONG)hunks[symbol->shindex].memory+symbol->value;
 			    break;
+			case RELO_EXEC: break;
 			default:
 			    ERROR(ERROR_BAD_HUNK);
 		    }
