@@ -1,5 +1,4 @@
 mmakefile
 *.bak
 libdefs.h
-functions.[ch]
 endtag.c

@@ -2,6 +2,4 @@ functable.c
 endtag.c
 libdefs.h
 *.s
-*.map
 mmakefile
-functions.[ch]

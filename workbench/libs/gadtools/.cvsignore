@@ -1,9 +1,6 @@
 functable.c
-functions.c
-functions.h
 libdefs.h
 makefile
 gadtools_functable.c
 gadtools_endtag.c
-*.map
 mmakefile

@@ -1,6 +1,3 @@
 mmakefile
 libdefs.h
-*.map
 functable.c
-functions.c
-functions.h

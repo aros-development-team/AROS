@@ -1,7 +1,6 @@
 makefile
 mmakefile
 *.s
-*.map
 libdefs.h
 layers_functable.c
 endtag.c

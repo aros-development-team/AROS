@@ -2,6 +2,5 @@ aroscycle_functable.c
 aroscycle_endtag.c
 libdefs.h
 mmakefile
-*.map
 *_end.c
 functable.c

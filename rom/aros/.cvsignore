@@ -1,8 +1,6 @@
 *.s
-*.map
 makefile
 libdefs.h
 *functable.c
 *endtag.c
 mmakefile
-functions.[ch]

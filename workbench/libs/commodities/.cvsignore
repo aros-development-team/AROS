@@ -1,7 +1,4 @@
 functable.c
-functions.c
-functions.h
 commodities_endtag.c
-*.map
 libdefs.h
 mmakefile

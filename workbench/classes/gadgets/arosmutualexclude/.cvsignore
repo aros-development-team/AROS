@@ -2,6 +2,5 @@ arosmutualexclude_functable.c
 arosmutualexclude_endtag.c
 libdefs.h
 mmakefile
-*.map
 *_end.c
 functable.c

@@ -1,9 +1,7 @@
 *.s
-*.map
 makefile
 mmakefile
 makefile.bak
 libdefs.h
 exec_endtag.c
 endtag.c
-functions.[ch]

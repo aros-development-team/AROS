@@ -2,7 +2,5 @@
 mmakefile
 graphics_end.c
 functable.c
-graphics.hidd.map
-graphicslib.map
 libdefs.h
 CHANGES

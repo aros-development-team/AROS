@@ -306,7 +306,7 @@ SYS_OBJS := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
 
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) $(LIBNAME)lib.map $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
 	@$(ECHO) "Checking $@..."
 	@$(CHECKUDS) $@ > undefdsyms.list
 	@$(IF) $(TEST) -s undefdsyms.list ; then \
@@ -400,7 +400,7 @@ ALL_OBJS := $(SYS_OBJS) $(OBJS) $(ENDFUNC)
 $(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	    $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) $(OSMODULE).map -L$(LIBDIR) \
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(OSMODULE).map -L$(LIBDIR) \
 	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) \
 	    -o $@ 2>&1 | tee $(OSMODULE).err
 	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else $(NOP); fi
@@ -499,7 +499,7 @@ ALL_OBJS := $(SYS_OBJS) $(OBJS) $(OBJDIR)/functions.o $(ENDFUNC)
 $(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	    $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@%(cc) $(ILDFLAGS) $(GENMAP) $(OSMODULE).map -L$(LIBDIR) \
+	@%(cc) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(OSMODULE).map -L$(LIBDIR) \
 	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) \
 	    -o $@ 2>&1 | tee $(OSMODULE).err
 	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else $(NOP); fi
@@ -596,7 +596,7 @@ ALL_OBJS := $(SYS_OBJS) $(OBJS) $(OBJDIR)/functions.o $(ENDFUNC)
 $(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	    $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@%(cc) $(ILDFLAGS) $(GENMAP) $(OSMODULE).map -L$(LIBDIR) \
+	@%(cc) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(OSMODULE).map -L$(LIBDIR) \
 	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) \
 	    -o $@ 2>&1 | tee $(OSMODULE).err
 	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else $(NOP); fi
@@ -845,7 +845,7 @@ SYS_OBJS      := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
 
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) $(LIBNAME)lib.map $(OBJS) $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(OBJS) $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
 	@$(ECHO) "Checking $@..."
 	@$(CHECKUDS) $@ > undefdsyms.list
 	@$(IF) $(TEST) -s undefdsyms.list ; then \
@@ -913,7 +913,7 @@ DEPS          := $(foreach f,$(INIT_FILE) functable functions $(FILES) $(END_FIL
 
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) $(LIBNAME)lib.map $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
 	@$(ECHO) "Checking $@..."
 	@$(CHECKUDS) $@ > undefdsyms.list
 	@$(IF) $(TEST) -s undefdsyms.list ; then \
@@ -1012,7 +1012,7 @@ DESTDIRS := $(DESTDIRS) $(DESTDIR)
 
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) $(LIBNAME)lib.map $(SYS_OBJS) $(LIBS) $(ENDFUNC) $(EXTRA_LIBS) -o $@ 2>&1|tee $(LIBNAME)lib.err
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(LIBS) $(ENDFUNC) $(EXTRA_LIBS) -o $@ 2>&1|tee $(LIBNAME)lib.err
 	@$(ECHO) "Checking $@..."
 	@$(CHECKUDS) $@ > undefdsyms.list
 	@$(IF) $(TEST) -s undefdsyms.list ; then \

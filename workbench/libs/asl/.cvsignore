@@ -2,9 +2,6 @@ libdefs.h
 makefile
 asl_functable.c
 asl_endtag.c
-*.map
 mmakefile
 functable.c
-functions.c
-functions.h
 *.err
