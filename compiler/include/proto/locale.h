@@ -10,7 +10,7 @@
 #endif
 
 #ifndef LocaleBase
-extern struct Library * LocaleBase;
+extern struct LocaleBase * LocaleBase;
 #endif
 
 #include <clib/locale_protos.h>
