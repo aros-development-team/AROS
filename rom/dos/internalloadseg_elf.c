@@ -432,17 +432,23 @@ static int relocate
                 return 0;
 
             case SHN_ABS:
-                if
-                (
-                    (SysBase_sym == sym) || 
-                    (strncmp((STRPTR)sh[shsymtab->link].addr + sym->name, "SysBase", 8) == 0)
-                )
-                {
-                        SysBase_sym = sym;
-                        s = (ULONG)&SysBase;
-                }
-                else
-		    s = sym->value;
+	        if (SysBase_sym == NULL)
+		{
+		    if (strncmp((STRPTR)sh[shsymtab->link].addr + sym->name, "SysBase", 8) == 0)
+		    {
+		        SysBase_sym = sym;
+			goto SysBase_yes;
+	            }
+		    else
+		        goto SysBase_no;
+	        }
+		else
+		if (SysBase_sym == sym)
+		{
+		    SysBase_yes: s = (ULONG)&SysBase;
+		}
+		else
+		    SysBase_no:  s = sym->value;
                 break;
 
   	    default:
