@@ -447,6 +447,11 @@ elif test "$debug" = "yes"; then
     debug="all"
 fi
 
+# Need to initialise some of the debug types to zero.
+for d in $all_debug_types; do
+    export aros_${d}_debug="0"
+done
+
 if test "$debug" = "none"; then
     for d in $all_debug_types; do
         export aros_${d}_debug="0"
@@ -477,9 +482,13 @@ AC_MSG_RESULT($debug)
 
 if test "$aros_messages_debug" = "1"; then
     aros_messages_debug="-DADEBUG=1 -DMDEBUG=1"
+else
+    aros_messages_debug=""
 fi
 if test "$aros_symbols_debug" = "1"; then
     aros_symbols_debug="-g"
+else
+    aros_symbols_debug=""
 fi
 
 # These are the flags to pass when compiling debugged programs
