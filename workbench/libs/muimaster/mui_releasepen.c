@@ -58,9 +58,11 @@ __asm VOID MUI_ReleasePen(register __a0 struct MUI_RenderInfo *mri, register __d
     if (pen == -1)
         return;
 
-    if ((pen & MUIPEN_HIMASK) == MUIPEN_HIMASK)
-        ReleasePen(mri->mri_Colormap, pen);
-
+    if (mri->mri_Colormap && ((pen & MUIPEN_HIMASK) == 0x10000))
+    {
+        ReleasePen(mri->mri_Colormap, MUIPEN(pen));
+    }
+    
     AROS_LIBFUNC_EXIT
 
 } /* MUIA_ReleasePen */
