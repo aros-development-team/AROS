@@ -69,7 +69,7 @@ const struct Resident LDDemon_resident =
 };
 
 static const char name[] = "LDDemon";
-static const char version[] = "$VER: LDDemon 41.1 (26.12.1997)";
+static const char version[] = "$VER: LDDemon 41.1 (26.12.1997)\r\n";
 static const char ldDemonName[] = "Lib & Dev Loader Daemon";
 
 /*
