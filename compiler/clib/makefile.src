@@ -40,6 +40,7 @@ FILES = \
 	creat \
 	errno \
 	exit \
+	fabs \
 	fclose \
 	feof \
 	ferror \
