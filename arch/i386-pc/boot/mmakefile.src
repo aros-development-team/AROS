@@ -35,7 +35,7 @@ BOOT_TAR_FILES := \
 	S \
 	System \
 	Tools \
-	Utilities/MultiView Utilities/More Utilities/Installer \
+	Utilities/MultiView Utilities/More Utilities/Installer Utilities/test.script \
 	contrib/aminet/Format64
 
 BOOT_SRC_DIR := $(AROSDIR)
