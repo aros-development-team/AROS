@@ -266,8 +266,9 @@ ULONG gm_input(Class *cl, Object *obj, struct gpInput *msg)
 
 	    domethod = TRUE;
 	    data->nd_Selected = -1;
-
+#ifndef __AROS__ /* debug output requires sysbase */
 	    DB(("should do action for button : %ld\n",data->nd_Pressed));
+#endif
 	 }
 	 rv = GMR_NOREUSE;
 	 break;
@@ -400,7 +401,9 @@ ULONG nvm_changestatus(Class *cl,Object *obj,struct npChangeStatus *msg)
 
    for(i = 0; i < msg->np_NumCommands ; i++)
    {
+#ifndef __AROS__ /* debug output requires sysbase */   
       DB(("change status for %ld\n", msg->np_Commands[i].ns_Command));
+#endif
 
       button = data->nd_Buttons;
       while(button->nb_Text != NULL)
@@ -410,8 +413,10 @@ ULONG nvm_changestatus(Class *cl,Object *obj,struct npChangeStatus *msg)
 	    BOOL render = FALSE;
 	    LONG status = msg->np_Commands[i].ns_Status;
 
+#ifndef __AROS__ /* debug output requires sysbase */   
 	    DB(("%ld[%ld] flags : %ld , change to %ld\n",
 		msg->np_Commands[i].ns_Command, i, button->nb_Flags, status));
+#endif
 
 	    if((status & NVS_MASK) == NVS_ENABLE)
 	    {
@@ -423,8 +428,10 @@ ULONG nvm_changestatus(Class *cl,Object *obj,struct npChangeStatus *msg)
 	       button->nb_Flags |= NBF_DISABLED;
 	    }
 
+#ifndef __AROS__ /* debug output requires sysbase */   
 	    DB(("render : %ld flags now : %ld\n",
 		render, button->nb_Flags));
+#endif
 
 	    if(render != FALSE)
 	    {
@@ -438,8 +445,10 @@ ULONG nvm_changestatus(Class *cl,Object *obj,struct npChangeStatus *msg)
 		  ++rv;
 	       }
 
+#ifndef __AROS__ /* debug output requires sysbase */   
 	       DB(("nav button need rendering : \"%s\"%s rendered !\n",
 		   button->nb_Text, (rv == 1) ? "" : " not"));
+#endif
 	    }
 	    break;
 	 }

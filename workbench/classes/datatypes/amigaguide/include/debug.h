@@ -23,11 +23,13 @@ extern "C" {
 #define DEBUGFUNC
 #endif
 
+#define DEBUG 1
 #ifdef DEBUG
 
 #define KPrintF kprintf
 #ifdef __AROS__
 #include <aros/debug.h>
+#include <exec/execbase.h>
 #else
 void KPrintF(const char *fmt, ...);
 #endif
