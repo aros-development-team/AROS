@@ -95,7 +95,8 @@ STATIC WORD MaxDispPos(struct StringInfo *strinfo, struct BBox *bbox,
     	max_disppos --;
   */  
 
-    D(bug("Numchars w/cursor: %d, Numfit: %d, maxdisppos=%d\n", numchars, numfit, max_disppos));
+    D(bug("Numchars w/cursor: %d, Numfit: %d, maxdisppos=%d  bbox->Width = %d  te->te_Width = %d\n",
+     numchars, numfit, max_disppos, bbox->Width, te.te_Width));
 
     ReturnInt("MaxDispPos", WORD, max_disppos);
 }
@@ -212,6 +213,9 @@ STATIC UWORD GetTextLeft(struct Gadget		*gad,
     UWORD  text_left;
     STRPTR dispstr = &(strinfo->Buffer[strinfo->DispPos]);
     UWORD dispstrlen;
+    BOOL cursor_at_end;
+    
+    cursor_at_end = (strinfo->BufferPos == strinfo->NumChars);
     
     dispstrlen = strinfo->NumChars - strinfo->DispPos;
     
@@ -224,11 +228,15 @@ STATIC UWORD GetTextLeft(struct Gadget		*gad,
 
     case GACT_STRINGCENTER: {
     	WORD textwidth = TextLength(rp, dispstr, dispstrlen);
+	
+	if (cursor_at_end) textwidth += TextLength(rp, " ", 1);	
         text_left = bbox->Left + ((bbox->Width - textwidth) / 2);
        	} break;
 
     case GACT_STRINGRIGHT: {
     	WORD textwidth = TextLength(rp, dispstr, dispstrlen);
+	
+	if (cursor_at_end) textwidth += TextLength(rp, " ", 1);
     	text_left =  bbox->Left + (bbox->Width - 1 - textwidth);
     	} break;
     }
@@ -249,6 +257,9 @@ STATIC UWORD GetTextRight(struct Gadget		*gad,
     UWORD  text_right;
     STRPTR dispstr = &(strinfo->Buffer[strinfo->DispPos]);
     UWORD dispstrlen;
+    BOOL cursor_at_end;
+    
+    cursor_at_end = (strinfo->BufferPos == strinfo->NumChars);
     
     dispstrlen = strinfo->NumChars - strinfo->DispPos;
     
@@ -261,7 +272,8 @@ STATIC UWORD GetTextRight(struct Gadget		*gad,
 
     case GACT_STRINGCENTER: {
     	WORD textwidth = TextLength(rp, dispstr, dispstrlen);
-    	
+
+	if (cursor_at_end) textwidth += TextLength(rp, " ", 1);	    	
     	text_right = bbox->Left + bbox->Width - 1 - ((bbox->Width - textwidth) / 2);
        	} break;
 
@@ -351,7 +363,7 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
     struct StringInfo *strinfo = (struct StringInfo *)gad->SpecialInfo;
     struct StringExtend *strext = NULL;
     ULONG command = 0;
-
+	
     EnterFunc(bug("HandleStrInput(gad=%p, ginfo=%p, ievent=%p)\n",
     	gad, ginfo, ievent));
     	
