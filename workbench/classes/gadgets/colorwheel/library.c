@@ -190,6 +190,12 @@ ULONG __saveds  LibClose(REG(a6, struct ColorWheelBase_intern *ColorWheelBase) )
 
 /****************************************************************************/
 
+struct GfxBase *GfxBase;
+struct IntuitionBase *IntuitionBase;
+struct Library *LayersBase;
+struct UtilityBase *UtilityBase;
+struct Library *CyberGfxBase;
+
 BOOL __regargs L_OpenLibs( struct ColorWheelBase_intern *ColorWheelBase )
 {
 	if(	( GfxBase = OpenLibrary( "graphics.library", 39L ) ) &&
@@ -214,6 +220,78 @@ void __regargs L_CloseLibs( struct ColorWheelBase_intern *ColorWheelBase )
 	CloseLibrary( UtilityBase );
 	CloseLibrary( CyberGfxBase );
 	CloseLibrary( LayersBase );
+}
+
+/***************************************************************************************************/
+
+IPTR dispatch_colorwheelclass( REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg ) )
+{
+    IPTR retval = 0UL;
+    
+    switch(msg->MethodID)
+    {
+	case GM_HANDLEINPUT:
+	    retval = colorwheel_handleinput(cl, o, (struct gpInput *)msg);
+	    break;
+	
+	case GM_RENDER:
+	    colorwheel_render(cl, o, (struct gpRender *)msg);
+	    break;
+	
+	case OM_SET:
+	case OM_UPDATE:
+	    retval = colorwheel_set(cl, o, (struct opSet *)msg);
+	    break;
+
+	case GM_HITTEST:
+	    retval = colorwheel_hittest(cl, o, (struct gpHitTest *)msg);
+	    break;
+	    
+	case GM_GOACTIVE:
+	    retval = colorwheel_goactive(cl, o, (struct gpInput *)msg);
+	    break;
+
+	case OM_GET:
+	    retval = colorwheel_get(cl, o, (struct opGet *)msg);
+	    break;
+
+	case GM_DOMAIN:
+	    retval = colorwheel_domain(cl, o, (struct gpDomain *)msg);
+	    break;
+		    
+	case OM_NEW:
+	    retval = (IPTR)colorwheel_new(cl, o, (struct opSet *)msg);
+	    break;
+	
+	case OM_DISPOSE:
+	    colorwheel_dispose(cl, o, msg);
+	    break;
+		    
+	default:
+	    retval = DoSuperMethodA(cl, o, (Msg)msg);
+	    break;
+	    
+    } /* switch */
+
+    return (retval);
+}  /* dispatch_colorwheelclass */
+
+/***************************************************************************************************/
+
+struct IClass *InitColorWheelClass (struct ColorWheelBase_intern * ColorWheelBase)
+{
+    struct IClass *cl = NULL;
+
+    if ((cl = MakeClass("colorwheel.gadget", GADGETCLASS, NULL, sizeof(struct ColorWheelData), 0)))
+    {
+	cl->cl_Dispatcher.h_Entry    = (HOOKFUNC) dispatch_colorwheelclass;
+	cl->cl_Dispatcher.h_SubEntry = NULL;
+	cl->cl_UserData 	     = (IPTR)ColorWheelBase;
+
+	AddClass (cl);
+    }
+
+    return (cl);
 }
 
 /****************************************************************************/

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for the colorwheel class
@@ -118,9 +118,6 @@ void kprintf( STRPTR FormatStr, ... )
 #endif
 
 /***************************************************************************************************/
-
-#undef ColorWheelBase
-extern struct ColorWheelBase *ColorWheelBase;
 
 #if FIXED_MATH
 BOOL CalcWheelColor(LONG x, LONG y, LONG cx, LONG cy, ULONG *hue, ULONG *sat)
@@ -242,7 +239,8 @@ STATIC VOID CalcKnobPos(struct ColorWheelData *data, WORD *x, WORD *y)
 /***************************************************************************************************/
 
 STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *box,
-		      struct ColorWheelBase_intern *ColorWheelBase)
+		      struct Library *ColorWheelBase
+)
 {
     struct ColorWheelHSB 	hsb;
     struct ColorWheelRGB 	rgb;
@@ -371,7 +369,8 @@ STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
 /****************************************************************************/
 
 STATIC VOID ClutWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *box,
-		      struct ColorWheelBase_intern *ColorWheelBase)
+		      struct Library *ColorWheelBase
+)
 {
     struct ColorWheelHSB 	hsb;
     struct ColorWheelRGB 	rgb;
@@ -592,7 +591,8 @@ STATIC VOID ClutWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
 /***************************************************************************************************/
 
 VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *box,
-		 struct ColorWheelBase_intern *ColorWheelBase)
+		 struct Library *ColorWheelBase
+)
 {
     struct IBox 	wbox;
     struct RastPort	temprp;
@@ -792,8 +792,9 @@ VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *
 
 /***************************************************************************************************/
 
-VOID RenderKnob(struct ColorWheelData *data, struct RastPort *rp, struct IBox *gbox, BOOL update,
-		struct ColorWheelBase_intern *ColorWheelBase)
+VOID RenderKnob(struct ColorWheelData *data, struct RastPort *rp,
+		struct IBox *gbox, BOOL update
+)
 {
     WORD x, y;
     
@@ -888,8 +889,9 @@ VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox)
 
 /***************************************************************************************************/
 
-void DrawDisabledPattern(struct ColorWheelData *data, struct RastPort *rport, struct IBox *gadbox,
-			 struct ColorWheelBase_intern *ColorWheelBase)
+void DrawDisabledPattern(struct ColorWheelData *data, struct RastPort *rport,
+			 struct IBox *gadbox
+)
 {
     ULONG pattern = 0x88882222;
 
@@ -959,7 +961,7 @@ void DrawDisabledPattern(struct ColorWheelData *data, struct RastPort *rport, st
 
 /***************************************************************************************************/
 
-BOOL getPens( struct ColorWheelData *data, struct ColorWheelBase_intern *ColorWheelBase )
+BOOL getPens( struct ColorWheelData *data )
 {
     struct ColorMap *cm = data->scr->ViewPort.ColorMap;
     LONG	 	 r,g,b, levels = data->levels, range = data->range, i;
@@ -1035,7 +1037,7 @@ BOOL getPens( struct ColorWheelData *data, struct ColorWheelBase_intern *ColorWh
 
 /***************************************************************************************************/
 
-void allocPens( struct ColorWheelData *data, struct ColorWheelBase_intern *ColorWheelBase )
+void allocPens( struct ColorWheelData *data )
 {
     LONG	depth = GetBitMapAttr( data->scr->RastPort.BitMap, BMA_DEPTH );
 
@@ -1059,7 +1061,7 @@ void allocPens( struct ColorWheelData *data, struct ColorWheelBase_intern *Color
 	    data->range = 255 / (levels-1);
 	    data->levels = levels;
 
-	    if( getPens( data, ColorWheelBase ) ) break;
+	    if( getPens( data ) ) break;
 	}		
     }						
 
@@ -1067,7 +1069,7 @@ void allocPens( struct ColorWheelData *data, struct ColorWheelBase_intern *Color
 
 /****************************************************************************/
 
-void freePens( struct ColorWheelData *data, struct ColorWheelBase_intern *ColorWheelBase )
+void freePens( struct ColorWheelData *data )
 {
     if( data->gotpens )
     {
