@@ -65,7 +65,7 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    NATIVE(BPTR lc_ret;)
+    NATIVE(BPTR seglist;)
 
     D(bug("CloseLibrary $%lx (\"%s\") by \"%s\"\n", library,
 	library ? library->lib_Node.ln_Name : "(null)",
@@ -78,7 +78,7 @@
 	Forbid();
 
 	/* Do the close */
-	NATIVE(lc_ret =) AROS_LVO_CALL0(BPTR,struct Library,library,2,);
+	NATIVE(seglist =) AROS_LVO_CALL0(BPTR,struct Library *,library,2,);
 	/*
 	    Normally you'd expect the library to be expunged if this returns
 	    non-zero, but this is only exec which doesn't know anything about
@@ -92,8 +92,10 @@
 #if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
     else
     {
-	/* local vars not guaranteed to be initialised to 0 */
-	lc_ret = 0;
+	/* Local vars not guaranteed to be initialised to 0. I initialise
+	   it here to save an assignment in case the close went ok (common
+	   path optimization). */
+	seglist = 0;
     }
 
     /*
@@ -104,7 +106,7 @@
     */
     {
 	/* Put the library base in register d0 */
-	register BPTR ret __asm("d0") = lc_ret;
+	register BPTR ret __asm("d0") = seglist;
 
 	/* Make sure the above assignment isn't optimized away */
 	asm volatile("": : "r" (ret));
