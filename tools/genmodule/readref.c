@@ -275,3 +275,53 @@ void readref(void)
 	}
     }
 }
+
+void readrefmcc(void)
+{
+    struct linelist *linelistit = NULL;
+    char structname[512]; char *line = NULL;
+    
+    snprintf(structname, 511, "struct %s_DATA", modulename); 
+    structname[511] = '\0';
+    
+    if (!fileopen(reffile))
+    {
+	fprintf(stderr, "Could not open %s\n", reffile);
+	exit(20);
+    }
+   
+    while ((line=readline())!=NULL)
+    {
+        static char instruct = 0;
+        
+        if (strcmp(line, structname) == 0)
+        {
+            instruct = 1;
+            readline(); /* Skip opening brace */
+            continue;
+        }
+        
+        if (instruct)
+        {
+            char *begin = line;
+            while (isspace(*begin)) begin++;
+            
+            if (strncmp(begin, "}", 1) == 0)
+                instruct = 0;
+            else
+            {
+                struct linelist *text = malloc(sizeof(struct linelist));
+                text->line = strdup(begin);
+                text->next = NULL;
+                
+                if (linelistit != NULL)
+                    linelistit->next = text;
+                
+                linelistit = text;
+                
+                if (datastruct == NULL)
+                    datastruct = linelistit;
+            }
+        }
+    }
+}
