@@ -92,48 +92,49 @@ AROS_LH2(struct LIBBASETYPE *, init,
     LIBBASE->dl_UtilityBase=OpenLibrary("utility.library",39);
     if(LIBBASE->dl_UtilityBase!=NULL)
     {
-	static const struct TagItem tags[]=
-    	{
-    	    { NP_Entry, (IPTR)LDDemon },
-    	    { NP_Input, 0 },
-    	    { NP_Output, 0 },
-    	    { NP_Name, (IPTR)"lib & dev loader demon" },
-    	    { TAG_END, 0 }
+	struct TagItem tags[]=
+	{
+	    { NP_Entry, (IPTR)LDDemon },
+	    { NP_Input, 0 },
+	    { NP_Output, 0 },
+	    { NP_Name, (IPTR)"lib & dev loader demon" },
+	    { NP_UserData, (IPTR)LIBBASE },
+	    { TAG_END, 0 }
 	};
 
-    	LIBBASE->dl_LDDemon=CreateNewProc((struct TagItem *)tags);
+	LIBBASE->dl_LDDemon=CreateNewProc((struct TagItem *)tags);
 
 	if(LIBBASE->dl_LDDemon!=NULL)
 	{
-    	    (void)SetFunction(&SysBase->LibNode,-92*LIB_VECTSIZE,AROS_SLIB_ENTRY(OpenLibrary,Dos));
-    	    (void)SetFunction(&SysBase->LibNode,-74*LIB_VECTSIZE,AROS_SLIB_ENTRY(OpenDevice,Dos));
-    	    (void)SetFunction(&SysBase->LibNode,-69*LIB_VECTSIZE,AROS_SLIB_ENTRY(CloseLibrary,Dos));
-    	    (void)SetFunction(&SysBase->LibNode,-75*LIB_VECTSIZE,AROS_SLIB_ENTRY(CloseDevice,Dos));
-    	    (void)SetFunction(&SysBase->LibNode,-67*LIB_VECTSIZE,AROS_SLIB_ENTRY(RemLibrary,Dos));
-    	    (void)SetFunction(&SysBase->LibNode,-73*LIB_VECTSIZE,AROS_SLIB_ENTRY(RemLibrary,Dos));
-    
-    	    LIBBASE->dl_LDHandler.is_Node.ln_Name="lib & dev loader demon";
-    	    LIBBASE->dl_LDHandler.is_Node.ln_Pri=0;
-    	    LIBBASE->dl_LDHandler.is_Code=LDFlush;
+	    (void)SetFunction(&SysBase->LibNode,-92*LIB_VECTSIZE,AROS_SLIB_ENTRY(OpenLibrary,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-74*LIB_VECTSIZE,AROS_SLIB_ENTRY(OpenDevice,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-69*LIB_VECTSIZE,AROS_SLIB_ENTRY(CloseLibrary,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-75*LIB_VECTSIZE,AROS_SLIB_ENTRY(CloseDevice,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-67*LIB_VECTSIZE,AROS_SLIB_ENTRY(RemLibrary,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-73*LIB_VECTSIZE,AROS_SLIB_ENTRY(RemLibrary,Dos));
+
+	    LIBBASE->dl_LDHandler.is_Node.ln_Name="lib & dev loader demon";
+	    LIBBASE->dl_LDHandler.is_Node.ln_Pri=0;
+	    LIBBASE->dl_LDHandler.is_Code=LDFlush;
 
 	    *dosPtr = LIBBASE;
 
-    	    AddMemHandler(&LIBBASE->dl_LDHandler);
-    	    AddLibrary((struct Library *)LIBBASE);
+	    AddMemHandler(&LIBBASE->dl_LDHandler);
+	    AddLibrary((struct Library *)LIBBASE);
 
-    	    /*
-    		Here we have to get the first node of the mountlist,
-    		and we try and boot from it, (assign it to SYS:).
-    	    */
-    	    DOSBoot(SysBase, DOSBase);
+	    /*
+		Here we have to get the first node of the mountlist,
+		and we try and boot from it, (assign it to SYS:).
+	    */
+	    DOSBoot(SysBase, DOSBase);
 
-    	    /* This is where we start the RTC_AFTERDOS residents */
-    	    InitCode(RTF_AFTERDOS,0);
+	    /* This is where we start the RTC_AFTERDOS residents */
+	    InitCode(RTF_AFTERDOS,0);
 
-    	    /* We now restart the multitasking  - this is done
-    	       automatically by RemTask() when it switches.
-    	    */
-    	    RemTask(NULL);
+	    /* We now restart the multitasking	- this is done
+	       automatically by RemTask() when it switches.
+	    */
+	    RemTask(NULL);
 	}
 	CloseLibrary(LIBBASE->dl_UtilityBase);
     }
