@@ -55,62 +55,25 @@ STRPTR Section2Name(ULONG section)
 {
     switch (section)
     {
-        case SID_COORDINATION:
-            return _(MSG_SECTION_COORDINATION);
-
-        case SID_EVANGELISM:
-            return _(MSG_SECTION_EVANGELISM);
-        
-        case SID_HIDD:
-            return _(MSG_SECTION_HIDD);
-        
-        case SID_INTUITION:
-            return _(MSG_SECTION_INTUITION);
-        
-        case SID_GRAPHICS:
-            return _(MSG_SECTION_GRAPHICS);
-        
-        case SID_SHELL_COMMANDS:
-            return _(MSG_SECTION_SHELL_COMMANDS);
-        
-        case SID_WORKBENCH:
-            return _(MSG_SECTION_WORKBENCH);
-
-        case SID_TOOLS:
-            return _(MSG_SECTION_TOOLS);
-        
-        case SID_PREFERENCES:
-            return _(MSG_SECTION_PREFERENCES);
-
-        case SID_BGUI:
-            return _(MSG_SECTION_BGUI);
-        
-        case SID_ZUNE:
-            return _(MSG_SECTION_ZUNE);
-        
-        case SID_KERNEL:
-            return _(MSG_SECTION_KERNEL);
-        
-        case SID_DOS:
-            return _(MSG_SECTION_DOS);
-        
-        case SID_LIBC_POSIX:
-            return _(MSG_SECTION_LIBC_POSIX);
-
-        case SID_DOCUMENTATION:
-            return _(MSG_SECTION_DOCUMENTATION);
-
-        case SID_TRANSLATION:
-            return _(MSG_SECTION_TRANSLATION);
-
-        case SID_ARTISTRY:
-            return _(MSG_SECTION_ARTISTRY);
-
-        case SID_WEBSITE:
-            return _(MSG_SECTION_WEBSITE);
-
-        default:
-            return NULL;
+        case SID_COORDINATION:   return _(MSG_SECTION_COORDINATION);
+        case SID_EVANGELISM:     return _(MSG_SECTION_EVANGELISM);
+        case SID_HIDD:           return _(MSG_SECTION_HIDD);
+        case SID_INTUITION:      return _(MSG_SECTION_INTUITION);
+        case SID_GRAPHICS:       return _(MSG_SECTION_GRAPHICS);
+        case SID_SHELL_COMMANDS: return _(MSG_SECTION_SHELL_COMMANDS);
+        case SID_WORKBENCH:      return _(MSG_SECTION_WORKBENCH);
+        case SID_TOOLS:          return _(MSG_SECTION_TOOLS);
+        case SID_PREFERENCES:    return _(MSG_SECTION_PREFERENCES);
+        case SID_BGUI:           return _(MSG_SECTION_BGUI);
+        case SID_ZUNE:           return _(MSG_SECTION_ZUNE);
+        case SID_KERNEL:         return _(MSG_SECTION_KERNEL);
+        case SID_DOS:            return _(MSG_SECTION_DOS);
+        case SID_LIBC_POSIX:     return _(MSG_SECTION_LIBC_POSIX);
+        case SID_DOCUMENTATION:  return _(MSG_SECTION_DOCUMENTATION);
+        case SID_TRANSLATION:    return _(MSG_SECTION_TRANSLATION);
+        case SID_ARTISTRY:       return _(MSG_SECTION_ARTISTRY);
+        case SID_WEBSITE:        return _(MSG_SECTION_WEBSITE);
+        default:                 return NULL;
     }
 }
 
