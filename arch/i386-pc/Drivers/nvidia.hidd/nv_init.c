@@ -269,22 +269,44 @@ int findCard(struct nv_staticdata *nsd)
 	{
 		UWORD d = (*ptr)->DeviceID;
 		
-		if (is(d,TNT)			|| 
-			is(d,TNT2)			||
-			is(d,UTNT2)			||
-			is(d,VTNT2)			||
-			is(d,UVTNT2)		||
-			is(d,ITNT2)			||
-			is(d,GEFORCE_SDR)	||
-			is(d,GEFORCE_DDR)	||
-			is(d,QUADRO)		||
-			is(d,GEFORCE2_MX)	||
-			is(d,GEFORCE2_MX2)	||
-			is(d,QUADRO2_MXR)	||
-			is(d,GEFORCE2_GTS)	||
-			is(d,GEFORCE2_GTS2)	||
-			is(d,GEFORCE2_ULTRA)||
-			is(d,QUADRO2_PRO))
+		if (is(d,TNT)				|| 
+			is(d,TNT2)				||
+			is(d,UTNT2)				||
+			is(d,VTNT2)				||
+			is(d,UVTNT2)			||
+			is(d,ITNT2)				||
+			is(d,GEFORCE_SDR)		||
+			is(d,GEFORCE_DDR)		||
+			is(d,QUADRO)			||
+			is(d,GEFORCE2_MX)		||
+			is(d,GEFORCE2_MX2)		||
+			is(d,QUADRO2_MXR)		||
+			is(d,GEFORCE2_GTS)		||
+			is(d,GEFORCE2_GTS2)		||
+			is(d,GEFORCE2_ULTRA)	||
+			is(d,QUADRO2_PRO)		||
+			is(d,GEFORCE4_MX460)	||
+			is(d,GEFORCE4_MX440)	||
+			is(d,GEFORCE4_MX420)	||
+			is(d,GEFORCE4_440GO)	||
+			is(d,GEFORCE4_420GO)	||
+			is(d,GEFORCE4_420GO32)	||
+			is(d,QUADRO2_500)		||
+			is(d,GEFORCE4_440GO64)	||
+			is(d,QUADRO4_200)		||
+			is(d,QUADRO4_550)		||
+			is(d,QUADRO4_500GOGL)	||
+			is(d,GEFORCE2_IGPU)		||
+			is(d,GEFORCE3)			||
+			is(d,GEFORCE3_200)		||
+			is(d,GEFORCE3_500)		||
+			is(d,QUADRO_DCC)		||
+			is(d,GEFORCE4_4600)		||
+			is(d,GEFORCE4_4400)		||
+			is(d,GEFORCE4_4200)		||
+			is(d,QUADRO4_900)		||
+			is(d,QUADRO4_750)		||
+			is(d,QUADRO4_700))
 		{
 			D(bug("found in VENDOR_NVIDIA!\n"));
 			
