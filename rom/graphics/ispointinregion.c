@@ -57,6 +57,9 @@
     if (!_IsPointInRect(Bounds(Reg), x, y))
 	return FALSE;
 
+    x -= MinX(Reg);
+    y -= MinY(Reg);
+
     for
     (
         rr = Reg->RegionRectangle;
