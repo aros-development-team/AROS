@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -60,36 +60,36 @@ IPTR iconConNew(Class *cl, Object *obj, struct opSet *ops)
 {
     IPTR retval=0;
     struct IconContainerClassData *data;
-    struct TagItem *tag;
-    Object *vert=NULL, *horiz=NULL;
-    Object *desktop=NULL;
-    BYTE viewMode=ICAVM_LARGE;
+    struct TagItem *tag, *tstate = ops->ops_AttrList;
+    Object *vert = NULL, *horiz = NULL;
+    Object *desktop = NULL;
+    BYTE viewMode = ICAVM_LARGE;
 
-    tag=FindTagItem(ICA_VertScroller, ops->ops_AttrList);
-    if(tag)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
-        tag->ti_Tag=TAG_IGNORE;
-        vert=(Object*)tag->ti_Data;
-    }
-    tag=FindTagItem(ICA_HorizScroller, ops->ops_AttrList);
-    if(tag)
-    {
-        tag->ti_Tag=TAG_IGNORE;
-        horiz=(Object*)tag->ti_Data;
-    }
-
-    tag=FindTagItem(ICA_Desktop, ops->ops_AttrList);
-    if(tag)
-    {
-        tag->ti_Tag=TAG_IGNORE;
-        desktop=(Object*)tag->ti_Data;
-    }
-
-    tag=FindTagItem(ICA_ViewMode, ops->ops_AttrList);
-    if(tag)
-    {
-        tag->ti_Tag=TAG_IGNORE;
-        viewMode=(Object*)tag->ti_Data;
+        switch (tag->ti_Tag)
+        {
+            case ICA_VertScroller:
+                vert = (Object*) tag->ti_Data;
+                break;
+            
+            case ICA_HorizScroller:
+                horiz = (Object*) tag->ti_Data;
+                break;
+            
+            case ICA_Desktop:
+                desktop = (Object*) tag->ti_Data;
+                break;
+            
+            case ICA_ViewMode:
+                viewMode = (Object*) tag->ti_Data;
+                break;
+            
+            default:
+                continue; /* Don't supress non-processed tags */
+        }
+        
+        tag->ti_Tag = TAG_IGNORE;              
     }
 
     retval=DoSuperMethodA(cl, obj, (Msg)ops);
