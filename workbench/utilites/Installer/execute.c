@@ -2,6 +2,7 @@
 #define SDEBUG 1
 #include "Installer.h"
 #include "execute.h"
+#include "commands.h"
 
 int eval_cmd( char * );
 

@@ -23,3 +23,7 @@
 - added int *intval; to struct ScriptArg
 - support for integers in script (bin,dec,hex)
 
+0007
+- added commands.h which contains the strings of known commands
+- added texts.h which contains the default values of some variables
+

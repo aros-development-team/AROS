@@ -1,0 +1,233 @@
+#ifndef _COMMANDS_H
+#define _COMMANDS_H
+
+/* Command symbols */
+struct CommandList
+{
+  char * cmdsymbol;
+  int  cmbnumber;
+};
+
+#define ABORT		1
+#define ALL		2
+#define APPEND		3
+#define ASKBOOL		4
+#define ASKCHOICE	5
+#define ASKDIR		6
+#define ASKDISK		7
+#define ASKFILE		8
+#define ASKNUMBER	9
+#define ASKOPTIONS	10
+#define ASKSTRING	11
+#define ASSIGNS		12
+#define CAT		13
+#define CHOICES		14
+#define COMMAND		15
+#define COMPLETE	16
+#define CONFIRM		17
+#define COPYFILES	18
+#define COPYLIB		19
+#define DATABASE	20
+#define DEBUG		21
+#define DEFAULT		22
+#define DELETE		23
+#define DELOPTS		24
+#define DEST		25
+#define DISK		26
+#define EARLIER		27
+#define EXECUTE		28
+#define EXISTS		29
+#define EXIT		30
+#define EXPANDPATH	31
+#define FILEONLY	32
+#define FILES		33
+#define FONTS		34
+#define FOREACH		35
+#define GETASSIGN	36
+#define GETDEVICE	37
+#define GETDISKSPACE	38
+#define GETENV		39
+#define GETSIZE		40
+#define GETSUM		41
+#define GETVERSION	42
+#define HELP		43
+#define IF		44
+#define INCLUDE		45
+#define INFOS		46
+#define MAKEASSIGN	47
+#define MAKEDIR		48
+#define MESSAGE		49
+#define NEWNAME		50
+#define NEWPATH		51
+#define NOGAUGE		52
+#define NOPOSITION	53
+#define ONERROR		54
+#define OPTIONAL	55
+#define PATHONLY	56
+#define PATMATCH	57
+#define PATTERN		58
+#define PROCEDURE	59
+#define PROMPT		60
+#define PROTECT		61
+#define RANGE		62
+#define RENAME		63
+#define REXX		64
+#define RUN		65
+#define SAFE		66
+#define SELECT		67
+#define SET		68
+#define SETDEFAULTTOOL	69
+#define SETSTACK	70
+#define SETTOOLTYPE	71
+#define SHIFTLEFT	72
+#define SHIFTRGHT	73
+#define SOURCE		74
+#define STARTUP		75
+#define STRLEN		76
+#define SUBSTR		77
+#define SWAPCOLORS	78
+#define TACKON		79
+#define TEXTFILE	80
+#define TOOLTYPE	81
+#define TRANSCRIPT	82
+#define TRAP		83
+#define UNTIL		84
+#define USER		85
+#define WELCOME		86
+#define WHILE		87
+#define WORKING		88
+#define TIMES		89
+#define PLUS		90
+#define MINUS		91
+#define DIV		92
+#define LESS		93
+#define LESSEQ		94
+#define DIFF		95
+#define EQUAL		96
+#define MORE		97
+#define MOREEQ		98
+#define AND		99
+#define BITAND		100
+#define BITNOT		101
+#define BITOR		102
+#define BITXOR		103
+#define IN		104
+#define NOT		105
+#define OR		106
+#define XOR		107
+
+struct CommandList commands[] =
+{
+  {"abort",		ABORT		},
+  {"all",		ALL		},
+  {"append",		APPEND		},
+  {"askbool",		ASKBOOL		},
+  {"askchoice",		ASKCHOICE	},
+  {"askdir",		ASKDIR		},
+  {"askdisk",		ASKDISK		},
+  {"askfile",		ASKFILE		},
+  {"asknumber",		ASKNUMBER	},
+  {"askoptions",	ASKOPTIONS	},
+  {"askstring",		ASKSTRING	},
+  {"assigns",		ASSIGNS		},
+  {"cat",		CAT		},
+  {"choices",		CHOICES		},
+  {"command",		COMMAND		},
+  {"complete",		COMPLETE	},
+  {"confirm",		CONFIRM		},
+  {"copyfiles",		COPYFILES	},
+  {"copylib",		COPYLIB		},
+  {"database",		DATABASE	},
+  {"debug",		DEBUG		},
+  {"default",		DEFAULT		},
+  {"delete",		DELETE		},
+  {"delopts",		DELOPTS		},
+  {"dest",		DEST		},
+  {"disk",		DISK		},
+  {"earlier",		EARLIER		},
+  {"execute",		EXECUTE		},
+  {"exists",		EXISTS		},
+  {"exit",		EXIT		},
+  {"expandpath",	EXPANDPATH	},
+  {"fileonly",		FILEONLY	},
+  {"files",		FILES		},
+  {"fonts",		FONTS		},
+  {"foreach",		FOREACH		},
+  {"getassign",		GETASSIGN	},
+  {"getdevice",		GETDEVICE	},
+  {"getdiskspace",	GETDISKSPACE	},
+  {"getenv",		GETENV		},
+  {"getsize",		GETSIZE		},
+  {"getsum",		GETSUM		},
+  {"getversion",	GETVERSION	},
+  {"help",		HELP		},
+  {"if",		IF		},
+  {"include",		INCLUDE		},
+  {"infos",		INFOS		},
+  {"makeassign",	MAKEASSIGN	},
+  {"makedir",		MAKEDIR		},
+  {"message",		MESSAGE		},
+  {"newname",		NEWNAME		},
+  {"newpath",		NEWPATH		},
+  {"nogauge",		NOGAUGE		},
+  {"noposition",	NOPOSITION	},
+  {"onerror",		ONERROR		},
+  {"optional",		OPTIONAL	},
+  {"pathonly",		PATHONLY	},
+  {"patmatch",		PATMATCH	},
+  {"pattern",		PATTERN		},
+  {"procedure",		PROCEDURE	},
+  {"prompt",		PROMPT		},
+  {"protect",		PROTECT		},
+  {"range",		RANGE		},
+  {"rename",		RENAME		},
+  {"rexx",		REXX		},
+  {"run",		RUN		},
+  {"safe",		SAFE		},
+  {"select",		SELECT		},
+  {"set",		SET		},
+  {"setdefaulttool",	SETDEFAULTTOOL	},
+  {"setstack",		SETSTACK	},
+  {"settooltype",	SETTOOLTYPE	},
+  {"shiftleft",		SHIFTLEFT	},
+  {"shiftrght",		SHIFTRGHT	},
+  {"source",		SOURCE		},
+  {"startup",		STARTUP		},
+  {"strlen",		STRLEN		},
+  {"substr",		SUBSTR		},
+  {"swapcolors",	SWAPCOLORS	},
+  {"tackon",		TACKON		},
+  {"textfile",		TEXTFILE	},
+  {"tooltype",		TOOLTYPE	},
+  {"transcript",	TRANSCRIPT	},
+  {"trap",		TRAP		},
+  {"until",		UNTIL		},
+  {"user",		USER		},
+  {"welcome",		WELCOME		},
+  {"while",		WHILE		},
+  {"working",		WORKING		},
+
+  {"*",			TIMES		},
+  {"+",			PLUS		},
+  {"-",			MINUS		},
+  {"/",			DIV		},
+  {"<",			LESS		},
+  {"<=",		LESSEQ		},
+  {"<>",		DIFF		},
+  {"=",			EQUAL		},
+  {">",			MORE		},
+  {">=",		MOREEQ		},
+  {"and",		AND		},
+  {"bitand",		BITAND		},
+  {"bitnot",		BITNOT		},
+  {"bitor",		BITOR		},
+  {"bitxor",		BITXOR		},
+  {"in",		IN		},
+  {"not",		NOT		},
+  {"or",		OR		},
+  {"xor",		XOR		},
+
+  {"",			0		}
+};
+
+#endif /* _COMMANDS_H */
