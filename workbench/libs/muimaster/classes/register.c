@@ -369,6 +369,12 @@ static ULONG Register_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     for(data->numitems = 0; data->labels[data->numitems]; data->numitems++)
 	;
+        
+    if (data->numitems <= 0)
+    {
+        CoerceMethod(cl, obj, OM_DISPOSE);
+	return NULL;
+    }
 
     data->columns = (WORD)GetTagData(MUIA_Register_Columns, data->numitems, msg->ops_AttrList);
     if (data->columns <= 0) data->columns = 1;
