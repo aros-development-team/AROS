@@ -1,0 +1,84 @@
+
+This is the beginning of the CygWin port of AROS
+
+
+I have committed my changes for the CygWin Port, I hope that someone
+will pick up my work.  Basically you need some internal information of
+CygWin to make this port work...
+
+
+REQUIREMENTS:
+
+You'll need a recent version of CygWin and XFree86 for CygWin if you
+want to have easy graphics output.  "Easy" means that the X11 part
+should work as is -- if you want DirectX or the like, you have to build
+a graphics.hidd on your own.
+
+I suppose you have installed CygWin and XFree86, just started the
+CygWin Shell (probably BASH.EXE) and have a copy of the current AROS
+sources in /usr/src/AROS.
+
+
+COMPILING:
+
+Change the current directory to /usr/src/AROS and run "autoconf" to
+generate the "configure" script from "configure.in".
+If you do not have autoconf (it wasn't installed on my version of CygWin)
+you'll have to do it on some other machine and copy the "configure" script
+over to /usr/src/AROS.
+
+Then you can run this script with "sh configure".
+
+
+For compiling up to the point where I stopped (now) you still have to
+modify some things:
+
+- AROS/tools/toollib/Makefile:
+    comment out the "makedepend" lines, or fix the "can't rename depend
+    as depend.bak" problem you'll encounter if you did not change anything
+    and just typed "make":
+"makedepend: error:  cannot rename /usr/src/AROS/bin/cygwin-i386/tools/depend to /usr/src/AROS/bin/cygwin-i386/tools/depend.bak"
+
+- AROS/tools/FlexCat/flexcat.c:
+    lines 389/418 -> change to #if 0
+    or find out how to figure out if stricmp/strcasecmp and
+    strnicmp/strncasecmp are implemented on the host system.
+    (iaint@aros.org has applied for this task ;-)
+
+
+Do "make".
+
+Now everything should work until config/unix/exec/kernel.c is to
+be compiled.  Here compilation should stop with lots of errors and
+warnings.
+
+
+WHAT NEEDS TO BE DONE?
+
+CygWin specific stuff is in config/cygwin:
+
+- config/cygwin/exec/init.c (copy from linux) needs to be adjusted
+  for CygWin
+
+- config/cygwin/sigcore.h must be written
+
+- fix config/unix/exec/kernel.c
+[iaint@aros.org:
+  "Is CygWin that closely tied in that it implements the full unix signal
+semantics (struct siginfo would be nice). Now if only all of them would
+agree on common names for such horrible things as the cpu context
+structure :-)"]
+
+
+Basically you can peek at the other ports (linux mostly, as its the
+most mature port) to see what needs to be done and "translate" to how
+CygWin handles it.
+
+
+Have fun...
+
+
+Henning Kiel <hkiel@aros.org>
+
+August 2000
+
