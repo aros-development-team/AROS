@@ -80,6 +80,25 @@ do                                  \
 #define AROS_PALETTE_SIZE 256
 #define AROS_PALETTE_MEMSIZE (sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE)
 
+/* private AROS fields in RastPort struct:
+
+   driverdata:  longreserved[0],longreserved[1]
+   backpointer: wordreserved[0],wordreserved[1],wordreserved[2],wordreserved[3]
+   fgcolor:     wordreserved[4],wordreserved[5]
+   bgcolor: 	wordreserved[6],reserved[0],reserved[1]
+   
+   Pointers above use 8 byte/64 bit, because that's what
+   would be required on AROS 64 bit.
+   
+   Still unused fields:
+   
+   UBYTE reserved[2 .. 7]
+
+*/   
+
+#define RP_FGCOLOR(rp)	    (*(ULONG **)&((rp)->wordreserved[4]))
+#define RP_BGCOLOR(rp)	    (*(ULONG **)&((rp)->wordreserved[6]))
+   
 #define RP_BACKPOINTER(rp)  (*(struct RastPort **)&((rp)->wordreserved[0]))
 #define RP_DRIVERDATA(rp)   (*(struct gfx_driverdata **)&((rp)->longreserved[0]))
 #define GetDriverData(rp)   RP_DRIVERDATA(rp)
