@@ -299,6 +299,44 @@ directories and create new ones when updating. The last line tells
 <shell>cvs diff</shell> to use my favourite format.</p>
 
 </section>
+<section title="Importing sources into CVS">
+
+<p>Sometimes, you want to add an existing software to the
+CVS repository. Use <shell>cvs import</shell> for this.
+Since the CVS import man page is quite poorly written, I'll
+give you an example how it works.</p>
+
+<ol>
+<li>You extract the files whereever you like (it's 
+probably best <strong>not</strong> to use the CVS tree for this)</li>
+
+<li>Enter the new directory and run the import command:
+
+<example>
+<line><shell>&gt; </shell><user>cd name-1.2.3</user></line>
+<line><shell>&gt; </shell><user>cvs -d :pserver:digulla@cvs.aros.org:/home/cvs/aros import -m "Explanation" contrib/name VENDOR NAME_1_2_3</user></line>
+</example>
+
+<p>All files (except some file like <filename>*.bak</filename>
+which <shell>cvs import</shell> will automatically ignore)
+in the current directory and below will be copied into the
+repository <filename>contrib</filename> in the directory
+<filename>name</filename>. The <shell>-m</shell> option should
+give an explanation what this package is about.
+</p>
+
+<p><user>VENDOR</user> is the vendor tag which should give a hint where this
+package comes from (for example, <shell>REDHAT_LINUX</shell>) and
+the last item is a symbolic name for the version which is
+imported. Usually, you will use the name of the package and the
+version to generate this tag (as in the example).</p>
+
+<p>You can use <shell>-I</shell> to ignore more files.</p>
+
+</li>
+</ol>
+
+</section>
 <section title="More infos about CVS">
 
 <p>Well, CVS has man pages and info files and here is a nice
