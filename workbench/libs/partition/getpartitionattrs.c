@@ -64,6 +64,26 @@
 		if (handler->GetPartitionAttrs)
 			return handler->GetPartitionAttrs(PartitionBase, ph, taglist);
 	}
-	return 1;
+	else
+	{
+		/* we are the root partition */
+		while (taglist[0].ti_Tag != TAG_DONE)
+		{
+			switch (taglist[0].ti_Tag)
+			{
+			case PT_GEOMETRY:
+				{
+				struct DriveGeometry *dg = (struct DriveGeometry *)taglist[0].ti_Data;
+					CopyMem(&ph->dg, dg, sizeof(struct DriveGeometry));
+				}
+				break;
+			case PT_DOSENVEC:
+				CopyMem(&ph->de, (struct DosEnvec *)taglist[0].ti_Data, sizeof(struct DosEnvec));
+				break;
+			}
+			taglist++;
+		}
+	}
+	return 0;
 	AROS_LIBFUNC_EXIT
 }
