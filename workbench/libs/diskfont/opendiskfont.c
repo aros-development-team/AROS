@@ -10,7 +10,7 @@
 #ifdef DEBUG
 #undef DEBUG
 #endif
-#define DEBUG 0
+//#define DEBUG 1
 #endif
 #  include <aros/debug.h>
 
@@ -73,8 +73,11 @@
     BOOL bestinmemory = TRUE;
     struct TTextAttr *ttait;
     struct TextFont *tf = NULL;
-    ULONG len = strlen(textAttr->ta_Name)-5;
-    
+    ULONG len = strlen(textAttr->ta_Name);
+
+    if (len>5 && strcasecmp(textAttr->ta_Name+len-5,".font")==0)
+        len -= 5;
+
     D(bug("OpenDiskFont(textAttr=%p)\n", textAttr));
     D(bug("Name %s YSize %ld Style 0x%lx Flags 0x%lx\n",
           textAttr->ta_Name,
@@ -116,8 +119,11 @@
 	    while ((ttait = DF_IteratorGetNext(iterator, DFB(DiskfontBase)))!=NULL)
 	    {
 		D(bug("OpenDiskFont: Checking font: %s\n", ttait->tta_Name));
-		
-		if (strncasecmp(ttait->tta_Name, textAttr->ta_Name, len) == 0)
+	        ULONG len2 = strlen(ttait->tta_Name) - 5;
+
+	        D(bug("len: %d len2: %d\n", len, len2));
+	       
+		if ((len == len2)  && (strncasecmp(ttait->tta_Name, textAttr->ta_Name, len) == 0))
 		{
 		    if (IS_OUTLINE_FONT(ttait))
 		    {
