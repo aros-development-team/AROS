@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -8,8 +8,8 @@
 #include <devices/inputevent.h>
 #include <devices/keymap.h>
 #include "cxintern.h"
-#define __NOLIBBASE__ 1
 #include <proto/keymap.h>
+#define __NOLIBBASE__ 1
 #include <proto/timer.h>
 #undef __NOLIBBASE__
 #include <aros/debug.h>
