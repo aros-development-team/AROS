@@ -27,9 +27,9 @@ char *libnames[] =
 char *copyrights[] =
 {
     "AMIGA Replacement Operating System (AROS)",
-    "Copyright © 1996 ",
-    "AROS - The Amiga Replacement OS ",
-    "© 1985-1993 Commodore-Amiga, Inc.",
+    "Copyright © 1996, 1997 ",
+    "AROS - The Amiga Replacement OS  ",
+    "© 1985-1996 ESCOM AG",
     "ALPHA ROM ",
     "exec.library",
     "exec 40.100 (12.12.96)\013\010"
@@ -74,9 +74,10 @@ char *copyrights[] =
     BUGS
 
     SEE ALSO
-	OpenLibrary()
+	OpenLibrary(), FindResident(), InitResident()
 
     INTERNALS
+	No checks are made on the validity of the tag.
 
     HISTORY
 	12-12-96 ldp created
