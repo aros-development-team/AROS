@@ -41,6 +41,7 @@ FILES := amiga2date \
 	sortlayercr \
 	signaltest \
 	strtodate \
+	systemtags \
 	tasktest \
 	tasktest2 \
 	ExNext \
