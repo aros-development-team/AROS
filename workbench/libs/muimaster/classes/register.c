@@ -24,264 +24,236 @@
 #include "muimaster_intern.h"
 #include "support.h"
 
+# undef DEBUG
+# define DEBUG 0
+# include <aros/debug.h>
+
 extern struct Library *MUIMasterBase;
 
-#define REGISTERTAB_EXTRA_HEIGHT     4
-#define REGISTERTAB_IMEXTRA_HEIGHT   2
-#define REGISTERTABITEM_EXTRA_WIDTH  8
-#define REGISTERTAB_SPACE_LEFT 	     8
-#define REGISTERTAB_SPACE_RIGHT      8
-#define REGISTERTAB_IMAGE_TEXT_SPACE 4
+#define INTERTAB 4
+#define TEXTSPACING 4
+#define REGISTERTAB_EXTRA_HEIGHT 7
 #define REGISTER_FRAMEX 4
 #define REGISTER_FRAMEY 4
-#define SAMEWIDTH 1
-
-#define IMWIDTH(x)  (((struct Image *)(x))->Width)
-#define IMHEIGHT(x) (((struct Image *)(x))->Height)
 
 struct RegisterTabItem
 {
-    STRPTR  text;
-    Object *image;
-    WORD    textlen;
-    WORD    x1, y1, x2, y2, w, h;
-    WORD    tx, ty, ix, iy;
+    STRPTR  text;    /* strlen(text) - valide between new/delete */
+    WORD    textlen; /* strlen(text) - valide between setup/cleanup */
+    WORD    x1, x2;  /* tab x input sensitive interval, relative to object's origin - valid between show/hide */
+    WORD    y1, y2;  /* tab y input sensitive interval - valid between setup/cleanup */
 };
 
 struct MUI_RegisterData
 {
-    struct MUI_EventHandlerNode   ehn;
-    struct RegisterTabItem  	 *items;
-    char    	    	    	**labels;
-    WORD    	    	     	  numitems;
-    WORD    	    	     	  active;
-    WORD    	    	    	  oldactive;
-    WORD    	    	     	  left;
-    WORD    	    	     	  top;
-    WORD    	    	     	  width;
-    WORD    	    	     	  height;
-    WORD    	    	     	  framewidth;
-    WORD    	    	     	  frameheight;
-    WORD    	    	     	  fontw;
-    WORD    	    	     	  fonth;
-    WORD    	    	     	  fontb;
-    WORD    	    	     	  slopew;    
+    struct MUI_EventHandlerNode ehn;
+    struct RegisterTabItem     *items;
+    char    	    	      **labels;
+    WORD    	    	        numitems;
+    WORD    	    	     	active;
+    WORD    	    	    	oldactive;
+    WORD    	    	     	left;
+    WORD    	    	     	top;
+    WORD    	    	     	min_width;
+    WORD    	    	     	tab_height;      /* title height */
+    WORD    	    	     	framewidth;
+    WORD    	    	     	frameheight;
+    WORD    	    	     	fontw;
+    WORD    	    	     	fonth;
+    WORD    	    	     	fontb;
+    WORD                        total_hspacing;
+    WORD                        ty; /* text y origin - valid between setup/cleanup */
 };
 
+/**************************************************************************
+   Render one item
+**************************************************************************/
 static void RenderRegisterTabItem(struct IClass *cl, Object *obj,  WORD item)
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
     struct RegisterTabItem *ri = &data->items[item];
+    struct TextExtent extent;
+    WORD fitlen;  /* text len fitting in alloted space */
+    WORD fitpix;  /* text pixels fitting in alloted space */
     WORD x, y;
-    
+    WORD top_item_bar_y;
+    WORD bottom_item_bar_y;
+    WORD left_item_bar_x;
+    WORD right_item_bar_x;
+    WORD item_bar_width;
+    WORD text_y;
+    WORD item_bg_height;
+    WORD fitwidth;
+
     if ((item < 0) || (item >= data->numitems)) return;
     
-    SetDrMd(_rp(obj), JAM1);
-    SetFont(_rp(obj), _font(obj));
-    
-    x = data->left + ri->x1;
     y = data->top + ri->y1;
- 
-    SetAPen(_rp(obj), _pens(obj)[(data->active == item) ? MPEN_TEXT : MPEN_BACKGROUND]);       
-    Move(_rp(obj), x + ri->tx + 1, y + ri->ty);
-    Text(_rp(obj), ri->text, ri->textlen);
-    SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);       
-    Move(_rp(obj), x + ri->tx, y + ri->ty);
-    Text(_rp(obj), ri->text, ri->textlen);
-    
-    if (ri->image)
-    {
-    	DrawImageState(_rp(obj), (struct Image*)ri->image, x + ri->ix, y + ri->iy, IDS_NORMAL, muiRenderInfo(obj)->mri_DrawInfo);
-    }
-    
-    /* upper / at left side */
-    
-    SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
-    WritePixel(_rp(obj), x + data->slopew, y + 2);
-    Move(_rp(obj), x + data->slopew / 2, y + 3 + data->slopew - 1);
-    Draw(_rp(obj), x + data->slopew - 1, y + 3);
-    
-    /* --- at top side */
-    
-    RectFill(_rp(obj), x + data->slopew + 1, y + 1, x + data->slopew + 2, y + 1);
-    RectFill(_rp(obj), x + data->slopew + 3, y, x + ri->w - 1 - data->slopew - 3, y);
-
-    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-    RectFill(_rp(obj), x + ri->w - 1 - data->slopew - 2, y + 1, x + ri->w - 1 - data->slopew - 1, y + 1);
-    
-    /* upper \ at right side */
-    
-    WritePixel(_rp(obj), x + ri->w - 1 - data->slopew, y + 2);
-    Move(_rp(obj), x + ri->w - 1 - data->slopew + 1, y + 3);
-    Draw(_rp(obj), x + ri->w - 1 - data->slopew / 2, y + 3 + data->slopew - 1);
-    
-    /* lower / at left side. */
-    {
-	int x1 = x, x2 = x + data->slopew / 2 - 1;
-	int y1 = y + ri->h - 2, y2 = y + ri->h - 2 - data->slopew + 1;
-
-	if ((item == 0) || (data->active == item))
-	{
-	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
-	    Move(_rp(obj), x1, y1);
-	    Draw(_rp(obj), x2, y2);
-	} else
-	{
-	    int h;
-	    if (x2 < x1)
-	    {
-		h = x2;
-		x2 = x1;
-		x1 = h;
-	    }
-
-	    if (y2 < y1)
-	    {
-		h = y2;
-		y2 = y1;
-		y1 = h;
-	    }
-
-	    DoMethod(obj, MUIM_DrawBackground, x1, y1, x2 - x1 + 1, y2 - y1 + 1, x1, y1,0);
-	}
-    }
-
-    /* lower \ at the lefst side from the previous item */
-    if (item > 0)
-    {
-    	int x1 = x + data->slopew / 2, x2 = x + data->slopew - 1;
-    	int y1 = y + ri->h - 2 - data->slopew + 1, y2 = y + ri->h - 2;
-    	if (data->active == item)
-	{
-	    int h;
-	    if (x2 < x1)
-	    {
-		h = x2;
-		x2 = x1;
-		x1 = h;
-	    }
-
-	    if (y2 < y1)
-	    {
-		h = y2;
-		y2 = y1;
-		y1 = h;
-	    }
-
-	    DoMethod(obj, MUIM_DrawBackground, x1, y1, x2 - x1 + 1, y2 - y1 + 1, x1, y1,0);
-
-	}
-	else
-	{
-    	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-	    Move(_rp(obj), x1, y1);
-	    Draw(_rp(obj), x2, y2);
-	}
-    }
-    
-    /* lower \ at right side. */
-    {
-    	int x1 = x + ri->w - 1 - data->slopew / 2 + 1, x2 = x + ri->w - 1;
-    	int y1 = y + ri->h - 2 - data->slopew + 1, y2 = y + ri->h - 2;
-	if (data->active == item + 1)
-	{
-	    int h;
-	    if (x2 < x1)
-	    {
-		h = x2;
-		x2 = x1;
-		x1 = h;
-	    }
-
-	    if (y2 < y1)
-	    {
-		h = y2;
-		y2 = y1;
-		y1 = h;
-	    }
-
-	    DoMethod(obj, MUIM_DrawBackground, x1, y1, x2 - x1 + 1, y2 - y1 + 1, x1, y1,0);
-	}
-	else
-	{
-	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-	    Move(_rp(obj), x1, y1);
-	    Draw(_rp(obj), x2, y2);
-	}
-    }
 
     if (data->active == item)
     {
-	DoMethod(obj,MUIM_DrawBackground, x, y + ri->h - 1, ri->w, 1, x, y + ri->h - 1, 0);
+	top_item_bar_y = _top(obj) + ri->y1;
+	bottom_item_bar_y = _top(obj) + ri->y2 - 2;
+	left_item_bar_x = _left(obj) + ri->x1 - 1;
+	right_item_bar_x = _left(obj) + ri->x2 + 1;
+	item_bg_height = data->tab_height;
+	text_y = y + data->ty;
     }
     else
     {
-    	WORD x1, x2;
-	
-	x1 = x;
-	x2 = x + ri->w - 1;
-	
-	if (data->active == item - 1)
-	    x1 += data->slopew;
-	else if (data->active == item + 1)
-	    x2 -= data->slopew;
-	    
-    	SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
-    	RectFill(_rp(obj), x1, y + ri->h - 1, x2, y + ri->h - 1);
+	top_item_bar_y = _top(obj) + ri->y1 + 2;
+	bottom_item_bar_y = _top(obj) + ri->y2 - 1;
+	left_item_bar_x = _left(obj) + ri->x1;
+	right_item_bar_x = _left(obj) + ri->x2;
+	item_bg_height = data->tab_height - 3;
+	text_y = y + data->ty + 1;
     }
+    item_bar_width = right_item_bar_x - left_item_bar_x + 1;
 
+    fitwidth = item_bar_width - TEXTSPACING;
+    fitlen = TextFit(_rp(obj), ri->text, ri->textlen, &extent, NULL, 1, fitwidth, data->tab_height);
+    fitpix = extent.te_Width;
+/*      D(bug("extent for %s (len=%d) in %d pix = %d chars, %d pix [%x,%x,%x]\n", */
+/*  	  ri->text, ri->textlen, fitwidth, fitlen, fitpix, _rp(obj), _rp(obj)->Font, _font(obj))); */
+
+    x = left_item_bar_x + (item_bar_width - fitpix) / 2;
+
+    /* fill tab with register background */
+    DoMethod(obj,MUIM_DrawBackground, left_item_bar_x, top_item_bar_y + 4,
+	     item_bar_width, item_bg_height - 4,
+	     left_item_bar_x, top_item_bar_y + 4, 0);
+    DoMethod(obj,MUIM_DrawBackground, left_item_bar_x + 2, top_item_bar_y + 2,
+	     item_bar_width - (2 * 2), 2,
+	     left_item_bar_x + 2, top_item_bar_y + 2, 0);
+    DoMethod(obj,MUIM_DrawBackground, left_item_bar_x + 4, top_item_bar_y + 1,
+	     item_bar_width - (2 * 4), 1,
+	     left_item_bar_x + 4, top_item_bar_y + 1, 0);
+
+    /* top horiz bar */
+    SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+    RectFill(_rp(obj), left_item_bar_x + 4, top_item_bar_y, right_item_bar_x - 4, top_item_bar_y);
+    /* left vert bar */
+    RectFill(_rp(obj), left_item_bar_x, top_item_bar_y + 4, left_item_bar_x, bottom_item_bar_y);
+    WritePixel(_rp(obj), left_item_bar_x + 1, top_item_bar_y + 3);
+    WritePixel(_rp(obj), left_item_bar_x + 1, top_item_bar_y + 2);
+    WritePixel(_rp(obj), left_item_bar_x + 2, top_item_bar_y + 1);
+    WritePixel(_rp(obj), left_item_bar_x + 3, top_item_bar_y + 1);
+    SetAPen(_rp(obj), _pens(obj)[MPEN_HALFSHINE]);
+    WritePixel(_rp(obj), left_item_bar_x + 3, top_item_bar_y);
+    WritePixel(_rp(obj), left_item_bar_x + 4, top_item_bar_y + 1);
+    WritePixel(_rp(obj), left_item_bar_x + 2, top_item_bar_y + 2);
+    WritePixel(_rp(obj), left_item_bar_x + 3, top_item_bar_y + 2);
+    WritePixel(_rp(obj), left_item_bar_x + 2, top_item_bar_y + 3);
+    WritePixel(_rp(obj), left_item_bar_x, top_item_bar_y + 3);
+    WritePixel(_rp(obj), left_item_bar_x + 1, top_item_bar_y + 4);
+
+    if (data->active == item)
+    {
+	/* bottom horiz bar */
+	SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+	WritePixel(_rp(obj), left_item_bar_x - 1, bottom_item_bar_y + 1);
+	SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
+	WritePixel(_rp(obj), right_item_bar_x + 1, bottom_item_bar_y + 1);
+	DoMethod(obj,MUIM_DrawBackground, left_item_bar_x - 1, bottom_item_bar_y + 2,
+		 item_bar_width + (2 * 1), 1,
+		 left_item_bar_x - 1, top_item_bar_y + 2, 0);
+	
+    }
+    /* right vert bar */
+    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
+    WritePixel(_rp(obj), right_item_bar_x - 1, top_item_bar_y + 2);
+    RectFill(_rp(obj), right_item_bar_x, top_item_bar_y + 4, right_item_bar_x, bottom_item_bar_y);
+    SetAPen(_rp(obj), _pens(obj)[MPEN_FILL]);
+    WritePixel(_rp(obj), right_item_bar_x - 2, top_item_bar_y + 1);
+    WritePixel(_rp(obj), right_item_bar_x - 1, top_item_bar_y + 3);
+    WritePixel(_rp(obj), right_item_bar_x, top_item_bar_y + 3);
+    SetAPen(_rp(obj), _pens(obj)[MPEN_BACKGROUND]);
+    WritePixel(_rp(obj), right_item_bar_x - 3, top_item_bar_y + 1);
+
+    /* text */ 
+    SetDrMd(_rp(obj), JAM1);
+    SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
+    Move(_rp(obj), x, text_y);
+    Text(_rp(obj), ri->text, fitlen);
 }
 
-static void RenderRegisterTab(struct IClass *cl, Object *obj, BOOL alsoframe)
+/**************************************************************************
+   Render tab bar
+**************************************************************************/
+static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
     WORD i;
+    WORD tabx;
+
+/*
+ * Erase / prepare for drawing
+ */
+    if (flags & MADF_DRAWOBJECT)
+    {
+	DoMethod(_parent(obj),MUIM_DrawBackground, data->left, data->top,
+		 data->framewidth, data->tab_height - 1, data->left, data->top, 0);
+    }
+    else
+    {
+	/* draw parent bg over oldactive */
+	WORD old_left, old_top, old_width, old_height;
+	struct RegisterTabItem *ri = &data->items[data->oldactive];
+
+	old_left = _left(obj) + ri->x1 - 2;
+	old_top = _top(obj) + ri->y1;
+	old_width = ri->x2 - ri->x1 + 5;
+	old_height = data->tab_height - 1;
+	DoMethod(_parent(obj),MUIM_DrawBackground, old_left, old_top,
+		 old_width, old_height, old_left, old_top, 0);
+	SetDrMd(_rp(obj), JAM1);
+	SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+	RectFill(_rp(obj), old_left, old_top + old_height, old_left + old_width, old_top + old_height);
+    }
 
     SetDrMd(_rp(obj), JAM1);
-    
     SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);   
-     
-    RectFill(_rp(obj), data->left,
-    	    	 data->top + data->height - 1,
-		 data->left + REGISTERTAB_SPACE_LEFT - 1,
-		 data->top + data->height - 1);
-		 
-    RectFill(_rp(obj), data->left + data->width - REGISTERTAB_SPACE_RIGHT,
-    	    	 data->top + data->height - 1,
-		 data->left + data->width - 1,
-		 data->top + data->height - 1); 
-		 
-    for(i = 0; i < data->numitems; i++)
-    {
-    	RenderRegisterTabItem(cl, obj, i); 
-    }
-    
-    if (alsoframe)
+    SetFont(_rp(obj), _font(obj));
+
+/*
+ * Draw new graphics
+ */
+    /* register frame */
+    if (flags & MADF_DRAWOBJECT)
     {
     	SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
 	
 	RectFill(_rp(obj), data->left,
-	    	     data->top + data->height - 1,
+	    	     data->top + data->tab_height - 1,
 		     data->left,
-		     data->top + data->height + data->frameheight - 1);
+		     data->top + data->tab_height + data->frameheight - 1);
 		     		     
-	RectFill(_rp(obj), data->left + data->width,
-	    	     data->top + data->height - 1,
+	RectFill(_rp(obj), data->left + 1,
+	    	     data->top + data->tab_height - 1,
 		     data->left + data->framewidth - 2,
-		     data->top + data->height - 1);
+		     data->top + data->tab_height - 1);
 		     
 	SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
 	
 	RectFill(_rp(obj), data->left + data->framewidth - 1,
-	    	     data->top + data->height - 1,
+	    	     data->top + data->tab_height - 1,
 		     data->left + data->framewidth - 1,
-		     data->top + data->height + data->frameheight - 1);
+		     data->top + data->tab_height + data->frameheight - 1);
 		     
 	RectFill(_rp(obj), data->left + 1,
-	    	     data->top + data->height + data->frameheight - 1,
+	    	     data->top + data->tab_height + data->frameheight - 1,
 		     data->left + data->framewidth - 2,
-		     data->top + data->height + data->frameheight - 1);
+		     data->top + data->tab_height + data->frameheight - 1);
+	for(i = 0, tabx = 0; i < data->numitems; i++)
+	{
+	    RenderRegisterTabItem(cl, obj, i); 
+	}
     }
+    else
+    {
+	RenderRegisterTabItem(cl, obj, data->active);
+	RenderRegisterTabItem(cl, obj, data->oldactive);
+    }
+
 }
 
 /**************************************************************************
@@ -300,8 +272,7 @@ static ULONG Register_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
     
     data->labels = (char**)GetTagData(MUIA_Register_Titles, NULL, msg->ops_AttrList);
-    data->active = (WORD)GetTagData(MUIA_Group_ActivePage, 0, msg->ops_AttrList);
-    
+
     if (!data->labels)
     {
 	CoerceMethod(cl, obj, OM_DISPOSE);
@@ -309,9 +280,15 @@ static ULONG Register_New(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     for(data->numitems = 0; data->labels[data->numitems]; data->numitems++)
+	;
+
+    data->active = (WORD)GetTagData(MUIA_Group_ActivePage, 0, msg->ops_AttrList);
+    if (data->active < 0 || data->active >= data->numitems)
     {
+	data->active = 0;
     }
-    
+    data->oldactive = data->active;
+
     data->items = (struct RegisterTabItem *)AllocVec(data->numitems * sizeof(struct RegisterTabItem),
     	    	    	    	    	    	     MEMF_PUBLIC | MEMF_CLEAR);
     
@@ -354,9 +331,15 @@ static IPTR Register_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
     IPTR    	    	     retval;
-    
-    data->active = (WORD)GetTagData(MUIA_Group_ActivePage, data->active, msg->ops_AttrList);
-    
+    WORD active;
+
+    active = (WORD)GetTagData(MUIA_Group_ActivePage, data->active, msg->ops_AttrList);
+
+    if (active != data->active)
+    {
+	data->oldactive = data->active;
+	data->active = active;
+    }    
     retval = DoSuperMethodA(cl, obj, (Msg)msg);
     
     return retval;
@@ -368,103 +351,35 @@ static IPTR Register_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 static ULONG Register_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);   
-    struct RastPort temprp;
-    WORD    	    i, x, h, biggest_w = 0;
+    WORD    	    i, h = 0;
     
     if (!DoSuperMethodA(cl, obj, (Msg)msg))
     {
     	return FALSE;
     }
     
-    InitRastPort(&temprp);
-    SetFont(&temprp, _font(obj));
-    
     data->fonth = _font(obj)->tf_YSize;
     data->fontb = _font(obj)->tf_Baseline;
     
     h = 0;
-    for(i = 0; i < data->numitems; i++)
-    {
-    	if (data->items[i].image)
-	{
-	    if (IMHEIGHT(data->items[i].image) > h) h = IMHEIGHT(data->items[i].image);
-	}
-    }
-    
-    if (h) h += REGISTERTAB_IMEXTRA_HEIGHT;
-        
+
     i = data->fonth + REGISTERTAB_EXTRA_HEIGHT;
     h = (i > h) ? i : h;
     
-    data->height = (h + 3) & ~3; /* Multiple of 4 */
-    
-    data->height += 4;
-    
-    data->slopew = (data->height - 4) / 2;
+    data->tab_height = h;
+    data->ty = data->fontb + 1 + (data->tab_height - data->fonth) / 2;
+
+/*      D(bug("Register_Setup : data->height=%d\n", data->tab_height)); */
     
     for(i = 0; i < data->numitems; i++)
     {
     	data->items[i].textlen = strlen(data->items[i].text);
-    	data->items[i].w = TextLength(&temprp, data->items[i].text, data->items[i].textlen);
-	data->items[i].w += REGISTERTABITEM_EXTRA_WIDTH + data->slopew * 2;
-	
-	if (data->items[i].image)
-	{
-	    data->items[i].w += REGISTERTAB_IMAGE_TEXT_SPACE +
-	    	    	       ((struct Image *)data->items[i].image)->Width;
-	}
-	
-	if (data->items[i].w > biggest_w) biggest_w = data->items[i].w;
-    }
-    
-    if (SAMEWIDTH)
-    {
-	for(i = 0; i < data->numitems; i++)
-	{
-    	    data->items[i].w = biggest_w;
-	}
-    }
-
-    x = REGISTERTAB_SPACE_LEFT;
-    for(i = 0; i < data->numitems; i++)
-    {
-	WORD itemwidth;
-    	WORD to = 0;
-	
-	itemwidth = TextLength(&temprp, data->items[i].text, data->items[i].textlen);
-
-	if (data->items[i].image)
-	{
-	    to = IMWIDTH(data->items[i].image) + REGISTERTAB_IMAGE_TEXT_SPACE;
-            itemwidth += to;
-    	}
-	
-	data->items[i].x1 = x;
 	data->items[i].y1 = 0;
-	data->items[i].x2 = x + data->items[i].w - 1;
-	data->items[i].y2 = data->height - 1;
-	data->items[i].h  = data->items[i].y2 - data->items[i].y1 + 1;
-    	data->items[i].ix = (data->items[i].w - itemwidth) / 2;
-	if (data->items[i].image)
-	{
-	    data->items[i].iy = (data->items[i].h - IMHEIGHT(data->items[i].image)) / 2;
-	}
-	
-	data->items[i].tx = data->items[i].ix + to;
-	data->items[i].ty = data->fontb + (data->items[i].h - data->fonth) / 2;
-	
-	
-	x += data->items[i].w - data->slopew;
+	data->items[i].y2 = data->tab_height - 1;
     }
-
-    data->width = x + data->slopew + REGISTERTAB_SPACE_RIGHT;
-
-#ifdef AROS
-    DeinitRastPort(&temprp);
-#endif
 
     muiAreaData(obj)->mad_HardILeft  	= REGISTER_FRAMEX;
-    muiAreaData(obj)->mad_HardITop   	= data->height + REGISTER_FRAMEY;
+    muiAreaData(obj)->mad_HardITop   	= data->tab_height + REGISTER_FRAMEY;
     muiAreaData(obj)->mad_HardIRight  	= REGISTER_FRAMEX;
     muiAreaData(obj)->mad_HardIBottom 	= REGISTER_FRAMEY;
     muiAreaData(obj)->mad_Flags     	|= (MADF_INNERLEFT | MADF_INNERTOP | MADF_INNERRIGHT | MADF_INNERBOTTOM);
@@ -492,21 +407,25 @@ static ULONG Register_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanu
 static ULONG Register_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
-
+    WORD minwidth;
     DoSuperMethodA(cl, obj, (Msg)msg);
     
-    if (data->width > msg->MinMaxInfo->MinWidth)
-    	msg->MinMaxInfo->MinWidth = data->width;
+    data->total_hspacing = (data->numitems + 1) * INTERTAB - 2;
+/*      D(bug("Register_AskMinMax : data->total_hspacing = %d\n", data->total_hspacing)); */
+
+    minwidth = data->total_hspacing;
+    if (minwidth > msg->MinMaxInfo->MinWidth)
+    	msg->MinMaxInfo->MinWidth = minwidth;
 	
-    if (data->width > msg->MinMaxInfo->MaxWidth)
-    	msg->MinMaxInfo->MaxWidth = data->width;
+    if (minwidth > msg->MinMaxInfo->MaxWidth)
+    	msg->MinMaxInfo->MaxWidth = minwidth;
 	
-    if (data->width > msg->MinMaxInfo->DefWidth)
-    	msg->MinMaxInfo->DefWidth = data->width;
+    if (minwidth > msg->MinMaxInfo->DefWidth)
+    	msg->MinMaxInfo->DefWidth = minwidth;
 	
-    msg->MinMaxInfo->MinHeight += data->height;
-    msg->MinMaxInfo->MaxHeight += data->height;
-    msg->MinMaxInfo->DefHeight += data->height;
+    msg->MinMaxInfo->MinHeight += data->tab_height;
+    msg->MinMaxInfo->MaxHeight += data->tab_height;
+    msg->MinMaxInfo->DefHeight += data->tab_height;
 
     return TRUE;
 }
@@ -524,9 +443,50 @@ static ULONG Register_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout 
     data->left        = _left(obj);
     data->top         = _top(obj);
     data->framewidth  = _width(obj);
-    data->frameheight = _height(obj) - data->height;
+    data->frameheight = _height(obj) - data->tab_height;
+/*      D(bug("Register_Layout : left=%d, top=%d / framewidth=%d, frameheight=%d\n", */
+/*  	  data->left, data->top, data->framewidth, data->frameheight)); */
 
     return retval;
+}
+
+/**************************************************************************
+ MUIM_Draw
+**************************************************************************/
+static ULONG Register_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+{
+    struct MUI_RegisterData *data = INST_DATA(cl, obj);
+    WORD i;
+    WORD minwidth;
+    WORD extra_space;
+    WORD fitwidth;
+    WORD x;
+    WORD item_width; /* from vertical line left to v l right */
+
+    DoSuperMethodA(cl,obj,(Msg)msg);
+
+    item_width = (_width(obj) - data->total_hspacing) / data->numitems;
+    extra_space = (_width(obj) - data->total_hspacing) % data->numitems;
+/*      D(bug("Register_Show : width = %d, mwidth = %d, max item width = %d, remainder = %d\n", _width(obj), _mwidth(obj), item_width, extra_space)); */
+
+/*      D(bug("Register_Show : left = %d, _left = %d, mleft = %d, \n", data->left, _left(obj), _mleft(obj))); */
+    x = INTERTAB - 1;
+
+    for(i = 0; i < data->numitems; i++)
+    {
+	struct RegisterTabItem *ri = &data->items[i];
+    	ri->x1 = x;
+    	ri->x2 = ri->x1 + item_width - 1;
+	if (extra_space > 0)
+	{
+	    ri->x2++;
+	    extra_space--;
+	}
+	fitwidth = ri->x2 - ri->x1 + 1 - TEXTSPACING;
+	x += fitwidth + TEXTSPACING + INTERTAB;
+    }
+    
+    return TRUE;
 }
 
 /**************************************************************************
@@ -538,7 +498,10 @@ static ULONG Register_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
     
     DoSuperMethodA(cl,obj,(Msg)msg);
 
-    RenderRegisterTab(cl, obj, TRUE);
+/*      D(bug("Register_Draw : flags = %d\n", msg->flags)); */
+    if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)))
+	return(0);
+    RenderRegisterTab(cl, obj, msg->flags);
     
     return TRUE;
 }
@@ -559,9 +522,11 @@ static ULONG Register_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 	    x = msg->imsg->MouseX - data->left;
 	    y = msg->imsg->MouseY - data->top;
 
-	    if (_between(0, x, data->width) &&
-		_between(0, y, data->height))
+	    D(bug("Register_HandleEvent : %d,%d,%d -- %d,%d,%d\n", 0, x, _width(obj), 0, y, data->tab_height));
+	    if (_between(0, x, _width(obj)) &&
+		_between(0, y, data->tab_height))
 	    {
+		D(bug("Register_HandleEvent : in tab, %d,%d\n", x, y));
 		for(i = 0; i < data->numitems; i++)
 		{
 		    if (_between(data->items[i].x1, x, data->items[i].x2) &&
@@ -601,6 +566,7 @@ AROS_UFH3S(IPTR,Register_Dispatcher,
     	case MUIM_Cleanup: return Register_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
 	case MUIM_AskMinMax: return Register_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
     	case MUIM_Layout: return Register_Layout(cl, obj, (struct MUIP_Layout *)msg);
+    	case MUIM_Show: return Register_Show(cl, obj, (struct MUIP_Show *)msg);
 	case MUIM_Draw: return Register_Draw(cl, obj, (struct MUIP_Draw *)msg);
 	case MUIM_HandleEvent: return Register_HandleEvent(cl, obj, (struct MUIP_HandleEvent *)msg);
     }
