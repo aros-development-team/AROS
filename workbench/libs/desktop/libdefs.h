@@ -11,7 +11,7 @@
 #define REVISION_NUMBER  1
 #define BASENAME         Desktop
 #define BASENAME_STRING  "Desktop"
-#define VERSION_STRING   "$VER: desktop 41.1 (11.09.2002)\r\n"
+#define VERSION_STRING   "$VER: desktop 41.1 (02.11.2002)\r\n"
 #define LIBEND           Desktop_end
 #define LIBFUNCTABLE     Desktop_functable
 #define COPYRIGHT_STRING ""
