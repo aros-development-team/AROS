@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#include <aros/machine.i>
+#include "machine.i"
 
 /* SMult32():
     These are the signed/unsigned 32 bit multiplication routines.

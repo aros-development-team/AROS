@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#include <aros/machine.i>
+#include "machine.i"
 
 /* SMult64()/UMult64():
     These are the signed/unsigned 64 bit multiplication routines.

@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#include <aros/machine.i>
+#include "machine.i"
 
     .globl  AROS_SLIB_ENTRY(UDivMod32,Utility)
     .globl  AROS_SLIB_ENTRY(UDivMod32_020,Utility)
@@ -25,7 +25,7 @@ AROS_SLIB_ENTRY(UDivMod32_020,Utility):
 
 AROS_SLIB_ENTRY(UDivMod32,Utility):
     movem.l d2-d3,-(sp)
-    cmp.l   #$FFFF,d1
+    cmp.l   #0xFFFF,d1
     bhi.s   full_division
     move.l  d1,d3
     swap    d0
@@ -50,7 +50,7 @@ full_division:
     swap    d0
     swap    d1
     clr.w   d0
-    moveq   #$F,d2
+    moveq   #0xF,d2
 .loop:
     add.l   d0,d0
     addx.l  d1,d1
@@ -59,6 +59,6 @@ full_division:
     sub.l   d3,d1
     addq.w  #1,d0
 .loopend:
-    dbra.s  d2,.loop
+    dbra    d2,.loop
     movem.l (sp)+,d2-d3
     rts

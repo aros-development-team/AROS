@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#include <aros/machine.i>
+#include "machine.i"
 
     .globl  AROS_SLIB_ENTRY(SDivMod32,Utility)
     .globl  AROS_SLIB_ENTRY(SDivMod32_020,Utility)
