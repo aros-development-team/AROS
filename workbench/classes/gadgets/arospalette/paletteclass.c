@@ -35,11 +35,11 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
     struct PaletteData *data = INST_DATA(cl, o);
     
     BOOL labelplace_set = FALSE, relayout = FALSE;
-    
-    
+    BOOL colortag_found = FALSE, numcolorstag_found = FALSE;
+        
     EnterFunc(bug("Palette::Set()\n"));
     
-    for (tstate = msg->ops_AttrList; (tag = NextTagItem(&tstate)); )
+    for (tstate = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tstate)); )
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -47,17 +47,22 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
     	switch (tag->ti_Tag)
     	{
     	case AROSA_Palette_Depth:		/* [ISU] */
-    	    data->pd_NumColors = (1 << ((UBYTE)tidata));
+	    /* NumColors tag overrides Depth tag! */
+	    if (!numcolorstag_found)
+	    {	        
+    		data->pd_NumColors = (1 << ((UBYTE)tidata));
 
-    	    D(bug("Depth initialized to %d\n", tidata));
-    	    relayout = TRUE;
-    	    retval = 1UL;
-    	    
+    		D(bug("Depth initialized to %d\n", tidata));
+    		relayout = TRUE;
+    		retval = 1UL;
+	    }
     	    break;
     	    
     	case AROSA_Palette_Color:		/* [IS] */
-    	    data->pd_Color = (UBYTE)tidata;
+	    colortag_found = TRUE;
+	    
     	    data->pd_OldColor = data->pd_Color;
+    	    data->pd_Color = (UBYTE)tidata;
     	    D(bug("Color set to %d\n", tidata));    	    
     	    retval = 1UL;
     	    break;
@@ -102,6 +107,8 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
     	    break;
     	    
     	case AROSA_Palette_NumColors:
+	    numcolorstag_found = TRUE;
+
     	    data->pd_NumColors = (UWORD)tidata;
     	    relayout = TRUE;
     	    break;
@@ -109,7 +116,31 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
     	} /* switch (tag->ti_Tag) */
     	
     } /* for (each attr in attrlist) */
-    
+
+    if (colortag_found)
+    {
+    	/* convert pen number to index */
+	
+    	if (data->pd_ColorTable)
+	{	
+            WORD i;
+
+	    /* convert pen number to index number */
+	    for(i = 0; i < data->pd_NumColors; i++)
+	    {
+		if (data->pd_ColorTable[i] == data->pd_Color)
+		{
+	            data->pd_Color = i;
+		    break;
+		}
+	    }
+	    
+	} else {
+	    data->pd_Color -= data->pd_ColorOffset;
+	}
+	
+    } /* if (colortag_found) */
+        
     if (relayout)
     {
     	/* Check if the old selected fits into the new depth */
@@ -170,6 +201,36 @@ STATIC Object *palette_new(Class *cl, Object *o, struct opSet *msg)
     ReturnPtr ("Palette::New", Object *, o);
 }
 
+/*********************
+**  Palette::Set()  **
+*********************/
+STATIC IPTR palette_get(Class *cl, Object *o, struct opGet *msg)
+{
+    struct PaletteData *data = INST_DATA(cl, o);
+    IPTR retval = 1UL;
+   
+    switch(msg->opg_AttrID)
+    {
+   	case AROSA_Palette_Color:
+	    *msg->opg_Storage = (IPTR)GetPalettePen(data, data->pd_Color);
+	    break;
+	
+	case AROSA_Palette_ColorOffset:
+	    *msg->opg_Storage = (IPTR)data->pd_ColorOffset;
+	    break;
+	
+	case AROSA_Palette_ColorTable:
+	    *msg->opg_Storage = (IPTR)data->pd_ColorTable;
+	    break;
+	    
+	default:
+	    retval = DoSuperMethodA(cl, o, (Msg)msg);
+	    break;
+    }
+   
+    return retval;
+}
+
 /************************
 **  Palette::Render()  **
 ************************/
@@ -197,7 +258,7 @@ STATIC VOID palette_render(Class *cl, Object *o, struct gpRender *msg)
 
 	    RenderFrame(data, rp, gbox, dri, FALSE, AROSPaletteBase);
 
-    	    RenderPalette(data, dri, rp, AROSPaletteBase);
+    	    RenderPalette(data, rp, AROSPaletteBase);
     	    
     	    /* Render frame aroun ibox */
     	    if (data->pd_IndWidth || data->pd_IndHeight)
@@ -213,7 +274,7 @@ STATIC VOID palette_render(Class *cl, Object *o, struct gpRender *msg)
     	    if (data->pd_IndWidth || data->pd_IndHeight)
     	    {
     	    	struct IBox *ibox = &(data->pd_IndicatorBox);
-    	    	SetAPen(rp, GetPalettePen(data, dri, data->pd_Color));
+    	    	SetAPen(rp, GetPalettePen(data, data->pd_Color));
     	    	
     	    	D(bug("Drawing indocator at: (%d, %d, %d, %d)\n",
     	    		ibox->Left, ibox->Top,
@@ -242,7 +303,7 @@ STATIC VOID palette_render(Class *cl, Object *o, struct gpRender *msg)
 /*************************
 **  Palette::Dispose()  **
 *************************/
-STATIC IPTR palette_dispose(Class *cl, Object *o, Msg *msg)
+STATIC VOID palette_dispose(Class *cl, Object *o, Msg msg)
 {
     struct PaletteData *data = INST_DATA(cl, o);
     
@@ -352,10 +413,7 @@ STATIC IPTR palette_handleinput(Class *cl, Object *o, struct gpInput *msg)
     retval = GMR_MEACTIVE;
     
     if (ie->ie_Class == IECLASS_RAWMOUSE)
-    {
-    	/* Georg Steger: did not behave like on real Amiga when
-	   mouse is outside palettebox. */
-	   
+    {	   
     	WORD x = msg->gpi_Mouse.X + data->pd_GadgetBox.Left;
 	WORD y = msg->gpi_Mouse.Y + data->pd_GadgetBox.Top;
 	
@@ -370,7 +428,7 @@ STATIC IPTR palette_handleinput(Class *cl, Object *o, struct gpInput *msg)
     	{
     	    case SELECTUP: {
 		/* If the button was released outside the gadget, then
-		** go back to old state --> no longer: Georg Steger
+		** go back to old state --> no longer: stegerg
 		*/
 
 		D(bug("IECLASS_RAWMOUSE: SELECTUP\n"));
@@ -397,8 +455,8 @@ STATIC IPTR palette_handleinput(Class *cl, Object *o, struct gpInput *msg)
     	    	{
 		#endif
     	    	
-		    D(bug("Left released inside gadget, color=%d\n", data->pd_Color));
-    	    	    *(msg->gpi_Termination) = data->pd_Color;
+		    D(bug("Left released inside gadget, color=%d\n", GetPalettePen(data, data->pd_Color)));
+    	    	    *(msg->gpi_Termination) = GetPalettePen(data, data->pd_Color);
     	    	    retval = GMR_VERIFY;
     	    	
 		#if 0
@@ -635,7 +693,7 @@ AROS_UFH3S(IPTR, dispatch_paletteclass,
 	    break;
 	
 	case OM_DISPOSE:
-	    retval = palette_dispose(cl, o, msg);
+	    palette_dispose(cl, o, msg);
 	    break;
 	    
 	case GM_RENDER:
@@ -667,9 +725,7 @@ AROS_UFH3S(IPTR, dispatch_paletteclass,
 	     * The check of cl == OCLASS(o) should fail if we have been
 	     * subclassed, and we have gotten here via DoSuperMethodA().
 	     */
-	    if (    retval
-	    	 && (msg->MethodID == OM_UPDATE)
-	    	 && (cl == OCLASS(o))	)
+	    if ( retval && ((msg->MethodID != OM_UPDATE) || (cl == OCLASS(o))) )
 	    {
 	    	struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
 	    	if (gi)
@@ -688,6 +744,9 @@ AROS_UFH3S(IPTR, dispatch_paletteclass,
 
 	    break;
 
+	case OM_GET:
+	    retval = palette_get(cl, o, (struct opGet *)msg);
+	    break;
 	    
 	default:
 	    retval = DoSuperMethodA(cl, o, msg);
