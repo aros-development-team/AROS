@@ -70,7 +70,7 @@ ULONG desktopHandler(void)
 	while(running)
 	{
 		WaitPort(DesktopBase->db_HandlerPort);
-		while(msg=((struct Message*)GetMsg(DesktopBase->db_HandlerPort)))
+		while((msg=((struct DesktopInternMsg*)GetMsg(DesktopBase->db_HandlerPort))))
 		{
 			if(msg->di_Message.mn_Node.ln_Type==NT_MESSAGE)
 			{
@@ -168,7 +168,7 @@ ULONG desktopHandler(void)
 							NewList(&tnList);
 
 							dl=LockDosList(htl->htl_Types | LDF_READ);
-							while(dl=NextDosEntry(dl, htl->htl_Types))
+							while((dl=NextDosEntry(dl, htl->htl_Types)))
 							{
 								tn=(struct TempNode*)AllocVec(sizeof(struct TempNode), MEMF_ANY);
 								tn->t_Name=AllocVec(strlen(dl->dol_DevName)+1, MEMF_ANY);
