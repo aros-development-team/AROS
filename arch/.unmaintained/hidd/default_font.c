@@ -185,7 +185,7 @@ const struct TextFont topaz8_tf =
 	},
 	8,	/* YSize */
 	FSF_TAGGED,	/* Style */
-	FPF_DESIGNED,	/* Flags */
+	FPF_DESIGNED|FPF_ROMFONT,	/* Flags */
 	8,	/* XSize */
 	6,	/* Baseline */
 	1,	/* Boldsmear */
