@@ -1,0 +1,153 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+OBJDIR := $(GENDIR)/$(CURDIR)
+
+# BEGIN_DESC{makefile}
+# This is the makefile for layers.library. Use it if you want to compile
+# only this part of AROS.
+# END_DESC{makefile}
+
+# BEGIN_DESC{localmakevar}
+# \item{FILES} This is a list of all files (without the .c) which
+#	contain internal functions of the library (eg. libinit(),
+#	libopen(), libexpunge() and the function table).
+#
+# \item{FUNCTIONS} This is a list of all files (without the .c)
+#	with public functions of the library. The makefile will
+#	strip all files from this list for which a special
+#	version for this CPU does exist.
+#
+# END_DESC{localmakevar}
+
+# Main function for layers.library. Need this apart as an anchor for the link:
+INIT_FILE = layersstrap_init
+# Guarantee that this will go at the end of the library object:
+END_FILE = layers_endtag
+
+FILES = basicfuncs layers_functable
+
+FUNCTIONS = \
+	beginupdate			\
+	createbehindlayer		\
+	createupfronthooklayer		\
+	createupfrontlayer		\
+	disposelayerinfo		\
+	dohookcliprects 		\
+	endupdate			\
+	fattenlayerinfo 		\
+	initlayers			\
+	installclipregion		\
+	installlayerhook		\
+	installlayerinfohook		\
+	locklayer			\
+	locklayerinfo			\
+	movelayer			\
+	newlayerinfo			\
+	sizelayer			\
+	sortlayercr			\
+	swapbitsrastportcliprect	\
+	thinlayerinfo			\
+	unlocklayer			\
+	unlocklayerinfo 		\
+	whichlayer
+
+# Do the magic required for function replacement.
+# Keep this value for later
+ALL_FILES	:= $(FILES)
+ALL_FUNCTIONS	:= $(FUNCTIONS)
+
+%prepare_replace rom/layers
+%filter_replace FUNCTIONS
+%filter_replace FILES
+
+%prepare_shlib layers $(SHARED_LAYERS)
+
+# ***** Native ***************
+ifeq ($(FLAVOUR),native)
+
+# The options for the linker
+LIBS = -L$(LIBDIR) -llayers -larossupport -larosc
+
+# The filename of the linklib
+LIB=$(LIBDIR)/liblayers.a
+
+# The names of the linklibs this depends on
+LIBLIST = layers arosc arossupport
+
+# The filenames of the linklibs this depends on
+LIBDEPS = $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
+
+# The object filenames
+OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+INITFUNC = $(OBJDIR)/$(INIT_FILE).o
+ENDFUNC = $(OBJDIR)/$(END_FILE).o
+
+$(OSMODDIR)/layers.strap : $(INITFUNC) $(ENDFUNC) $(OBJS) $(LIBDEPS)
+	@echo "Building $(notdir $@)..."
+	@$(CC) $(ILDFLAGS) $(GENMAP) layers.map $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee layersstrap.err
+	@$(IF) $(TEST) ! -s layersstrap.err; then rm layersstrap.err ; else true ; fi
+	@$(STRIP) $@
+
+# ***** END ***************
+endif
+
+# Collect all (asm-)functions in a linklib for fast linking:
+$(LIB) : $(OBJS)
+	%mklib_q
+	@$(RM) $(RMLIB)
+
+#MM
+kernel-layers-amiga-m68k : show-flags $(OSMODDIR)/layers.strap
+
+# MetaMake targets
+#MM kernel-layers : setup includes layers-$(ARCH) kernel-layers-$(ARCH)-$(CPU)
+kernel-layers :
+	@$(NOP)
+
+# For development only!
+#MM klq : layers-$(ARCH) kernel-layers-$(ARCH)-$(CPU)
+klq :
+	@$(NOP)
+
+#MM klqa : 
+klqa : asm
+	@$(NOP)
+
+#MM
+setup :
+	%mkdirs_q $(OSGENDIR) $(OBJDIR)
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err $(LIB) *.s
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt="$(SHARED_CFLAGS) $(CFLAGS)"
+
+%asm_rule "$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES)"
+
+%ctoasm_q
+
+%additional_objs_rule
+
+layers_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) $(TOP)/scripts/makefunctable.awk
+	%mkfunctable_q Layers
+
+layers_endtag.c : $(TOP)/scripts/makeendtag.awk
+	%mkendtag_q Layers
+
+$(OBJDIR)/layers_init.o : libdefs.h
+
+%libdefs_rule
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)
+
+%common
+%include_deps
