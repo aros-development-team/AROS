@@ -291,6 +291,8 @@ int td_recalibrate(unsigned char unitn, char type, int sector, struct TrackDiskB
 	    /* if drive doesn't report any error return 0 */
 	    if (((TDBase->td_sr0 & 0xf0) == 0x20) && (TDBase->td_pcn == sector))
 	    {
+		/* Store current track */
+		TDBase->td_Units[unitn]->tdu_pcn = TDBase->td_pcn;
 		return 0;
 	    }
 	    /* SeekError otherwise */
@@ -333,6 +335,14 @@ int td_rseek(UBYTE unitn, UBYTE dir, UBYTE cyls, struct TrackDiskBase *TDBase)
 	    /* if drive doesn't report any error return 0 */
 	    if (((TDBase->td_sr0 & 0xf0) == 0x20))
 	    {
+		if (dir)
+		{
+		    TDBase->td_Units[unitn]->tdu_pcn--;
+		}
+		else
+		{
+		    TDBase->td_Units[unitn]->tdu_pcn++;
+		}
 		return 0;
 	    }
 	    /* SeekError otherwise */
@@ -368,7 +378,10 @@ int td_readwritetrack(UBYTE unitnum, char cyl, char hd, char mode, struct TrackD
     do
     {
 	rwcnt = 3;	// Max 3 retries of read/write
-	err = td_recalibrate(unitnum,0,(cyl*DP_SECTORS)<<1,TDBase);
+	err = 0;
+	/* If we are on the correct track, dont seek */
+	if (TDBase->td_Units[unitnum]->tdu_pcn != ((cyl*DP_SECTORS)<<1))
+		err = td_recalibrate(unitnum,0,(cyl*DP_SECTORS)<<1,TDBase);
 	if (!err)
 	{
 	    do
