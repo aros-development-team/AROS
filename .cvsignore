@@ -14,3 +14,4 @@ c_lib
 thread
 thread.c
 make.opts
+errors
