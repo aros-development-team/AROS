@@ -33,6 +33,8 @@
 	None.
 
     NOTES
+	This call is deferred. Wait() for IDCMP_CHANGEWINDOW if your
+	program depends on the new size.
 
     EXAMPLE
 

@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Change position and size of a window
     Lang: english
 */
 #include "intuition_intern.h"
@@ -35,8 +35,8 @@
     RESULT
 
     NOTES
-	The window will not change its position immediately but only when the
-	next input event is received.
+	This call is deferred. Wait() for IDCMP_CHANGEWINDOW if your
+	program depends on the new size.
 
     EXAMPLE
 
