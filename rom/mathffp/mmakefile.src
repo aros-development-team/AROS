@@ -11,7 +11,7 @@ LIBNAME 	:= mathffp
 OBJDIR		:= $(OSGENDIR)/$(LIBNAME)
 LIB		:= $(LIBDIR)/lib$(LIBNAME).so
 
-%prepare_shlib $(LIBNAME) $(SHARED_GRAPHICS)
+%prepare_shlib $(LIBNAME) $(SHARED_MATHFFP)
 
 INIT_FILE	:= $(LIBNAME)_init
 FILES		:= $(LIBNAME)_functable
