@@ -25,6 +25,7 @@ typedef struct
 }
 HTMLTag;
 
+extern int	 HTML_Get	PARAMS ((MyStream * stream, CBD data));
 extern void	 HTML_InitParse PARAMS ((void));
 extern int	 HTML_ScanText	PARAMS ((String buffer, MyStream * stream, CBD data));
 extern HTMLTag * HTML_ParseTag	PARAMS ((MyStream * stream, CBD data));
