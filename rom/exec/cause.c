@@ -15,7 +15,7 @@
 	__AROS_LH1(void, Cause,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Interrupt *, interrupt, A1),
+	__AROS_LHA(struct Interrupt *, Interrupt, A1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 30, Exec)
