@@ -111,6 +111,11 @@ DEPLIB_AROS=$(LIBDIR)/libaros.so
 else
 DEPLIB_AROS=$(LIBDIR)/libaros.a
 endif
+ifeq ("$(SHARED_OOP)","yes")
+DEPLIB_OOP=$(LIBDIR)/liboop.so
+else
+DEPLIB_OOP=$(LIBDIR)/liboop.a
+endif
 
 DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(GENDIR)/filesys/emul_handler.o \
@@ -123,6 +128,7 @@ DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(DEPLIB_GRAPHICS) \
     $(DEPLIB_MATHFFP) \
     $(DEPLIB_BOOPSI) \
+    $(DEPLIB_OOP) \
     $(DEPLIB_HIDDCLASS) \
     $(DEPLIB_UNIXIOCLASS) \
     $(DEPLIB_EXPANSION) \
@@ -139,7 +145,7 @@ LIBS=-L$(LIBDIR) \
 	-lboot -lintuition -lgraphics -ldos -lconsole \
 	-lhiddcl -lunixiocl -lboopsi -lutility -ltimer \
 	-laros -lmathffp -lmathieeesingbas -lexpansion -lbattclock \
-	-lamiga -larossupport -linput -lkeymap
+	-lamiga -larossupport -linput -lkeymap -loop
 
 # BEGIN_DESC{internaltarget}
 # \item{$(BINDIR)/arosshell} Create the AROS shell for systems which

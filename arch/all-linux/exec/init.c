@@ -30,6 +30,7 @@ extern const struct Resident
     Utility_resident,
     Aros_resident,
     BOOPSI_resident,
+    OOP_resident,
     HIDD_resident,
     UnixIO_resident,
     Graphics_resident,
@@ -57,6 +58,7 @@ static const struct Resident *romtagList[] =
     &Aros_resident,			    /* ColdStart,   102  */
     &Mathieeesingbas_resident,              /* ColdStart,   101  */
     &BOOPSI_resident,			    /* ColdStart,   95	 */
+    &OOP_resident,			    /* ColdStart,   94	 */
     &HIDD_resident,			    /* ColdStart,   92	 */
     &UnixIO_resident,			    /* ColdStart,   91	 */
     &Graphics_resident, 		    /* ColdStart,   65	 */
