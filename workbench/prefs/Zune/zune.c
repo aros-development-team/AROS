@@ -22,11 +22,6 @@
 #include <proto/iffparse.h>
 #include <proto/muimaster.h>
 
-#ifdef __AROS__
-/*  #define DEBUG 1 */
-/* #include <aros/debug.h> */
-#endif
-
 #include "buttonsp.h"
 #include "groupsp.h"
 #include "windowp.h"
@@ -39,66 +34,63 @@
 #include "navigationp.h"
 #include "zunestuff.h"
 
+/************************************************************************/
+
+#ifndef MAXFILENAMELENGTH
+#define MAXFILENAMELENGTH 255
+#endif
+
+/************************************************************************/
+
+#ifdef __AROS__
+#define MCC_Query(x) AROS_LVO_CALL1(struct MUI_CustomClass *,          \
+		                    AROS_LCA(LONG, (x), D0),           \
+				    struct Library *, mcclib, 5, lib)
+#else
+
+#ifdef __amigaos4__
+#else
+struct MUI_CustomClass *MCC_Query(ULONG d0);
+#pragma  libcall mcclib MCC_Query 01e 001
+#endif
+#endif
+
+/************************************************************************/
+
 void load_prefs(CONST_STRPTR name);
 void save_prefs(CONST_STRPTR name, BOOL envarc);
 void test_prefs(void);
 void restore_prefs(CONST_STRPTR name);
 
-#ifndef __AROS__
-struct Library *MUIMasterBase;
+/************************************************************************/
 
-/* On AmigaOS we build a fake library base, because it's not compiled as sharedlibrary yet */
-#include "muimaster_intern.h"
-
-int open_muimaster(void)
-{
-    static struct MUIMasterBase_intern MUIMasterBase_instance;
-    MUIMasterBase = (struct Library*)&MUIMasterBase_instance;
-
-    MUIMasterBase_instance.sysbase = *((struct ExecBase **)4);
-    MUIMasterBase_instance.dosbase = (APTR)OpenLibrary("dos.library",37);
-    MUIMasterBase_instance.utilitybase = (APTR)OpenLibrary("utility.library",37);
-    MUIMasterBase_instance.aslbase = OpenLibrary("asl.library",37);
-    MUIMasterBase_instance.gfxbase = (APTR)OpenLibrary("graphics.library",37);
-    MUIMasterBase_instance.layersbase = OpenLibrary("layers.library",37);
-    MUIMasterBase_instance.intuibase = (APTR)OpenLibrary("intuition.library",37);
-    MUIMasterBase_instance.cxbase = OpenLibrary("commodities.library",37);
-    MUIMasterBase_instance.keymapbase = OpenLibrary("keymap.library",37);
-    MUIMasterBase_instance.gadtoolsbase = OpenLibrary("gadtools.library",37);
-    MUIMasterBase_instance.iffparsebase = OpenLibrary("iffparse.library",37);
-    MUIMasterBase_instance.diskfontbase = OpenLibrary("diskfont.library",37);
-    MUIMasterBase_instance.iconbase = OpenLibrary("icon.library",44);
-    InitSemaphore(&MUIMasterBase_instance.ZuneSemaphore);
-    return 1;
-}
-
-void close_muimaster(void)
-{
-}
-
-#else /* __AROS__ */
-
-int open_muimaster(void)
-{
-    return 1;
-}
-
-void close_muimaster(void)
-{
-}
-
+#ifdef __amigaos4__
+struct Library *ZuneMasterBase;
+struct ZuneMasterIFace *IZuneMaster;
 #endif
 
+/************************************************************************/
 
 /****************************************************************
  Open needed libraries
 *****************************************************************/
 int open_libs(void)
 {
-    if (open_muimaster())
-	return 1;
+#ifdef __amigaos4__
+    if (!(ZuneMasterBase = OpenLibrary("zunemaster.library",0)))
+    {
+    	printf("Unable to open zunemaster.library\n");
+    	return 0;
+    }
 
-    return 0;
+    if (!(IZuneMaster = (struct ZuneMasterIFace*)GetInterface(ZuneMasterBase,"main",1,NULL)))
+    {
+    	printf("Unable to get main interface of zunemaster.library\n");
+    	CloseLibrary(ZuneMasterBase); ZuneMasterBase = NULL;
+    	return 0;
+    }
+#endif
+    return 1;
 }
 
 /****************************************************************
@@ -106,7 +98,10 @@ int open_libs(void)
 *****************************************************************/
 void close_libs(void)
 {
-    close_muimaster();
+#ifdef __amigaos4__
+    DropInterface((struct Interface*)IZuneMaster);
+    CloseLibrary(ZuneMasterBase);
+#endif
 }
 
 struct Hook hook_standard;
@@ -261,22 +256,14 @@ void main_cancel_pressed(void)
     DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 }
 
-#ifdef __AROS__
-#define MCC_Query(x) AROS_LVO_CALL1(struct MUI_CustomClass *,          \
-		                    AROS_LCA(LONG, (x), D0),           \
-				    struct Library *, mcclib, 5, lib)
-#else
-
-struct MUI_CustomClass *MCC_Query(ULONG d0);
-#pragma  libcall mcclib MCC_Query 01e 001
-
-#endif
-
 /****************************************************************
  Look for MCPs
+ 
+ TODO: Write for AmigaOS4
 *****************************************************************/
 void find_mcps(void)
 {
+#ifndef __amigaos4__
     static CONST_STRPTR const searchpaths[] =
     {
         "Zune/#?.(mcp|mcc)",
@@ -368,6 +355,7 @@ void find_mcps(void)
     FreeDeviceProc(dp);
     
     CurrentDir(olddir);
+#endif
 }
 
 /****************************************************************
@@ -431,10 +419,15 @@ int init_gui(void)
 
     static struct Hook page_display_hook;
 
+#ifdef __amigaos4__
+    hook_standard.h_Entry = (HOOKFUNC)hook_func_standard;
+    page_display_hook.h_Entry = (HOOKFUNC)main_page_list_display;
+#else
     hook_standard.h_Entry = HookEntry;
     hook_standard.h_SubEntry = (APTR)hook_func_standard;
     page_display_hook.h_Entry = HookEntry;
     page_display_hook.h_SubEntry = (APTR)main_page_list_display;
+#endif
 
     if (!strcmp(appname, "global"))
 	wintitle = "Zune - Global Prefs";
