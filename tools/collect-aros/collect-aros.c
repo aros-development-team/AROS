@@ -214,12 +214,16 @@ int main(int argc, char *argv[])
      	        output = argv[cnt][2]?&argv[cnt][2]:argv[++cnt];
             else
 	    /* Incremental linking is requested */
-            if (argv[cnt][1]=='r' && argv[cnt][2]=='\0')
+            if ((argv[cnt][1]=='r' || argv[cnt][1]=='i') && argv[cnt][2]=='\0')
 	        incremental = 1;
 	    else
 	    /* Ignoring of missing symbols is requested */
-	    if (argv[cnt][1]=='i')
+	    if (strncmp(&argv[cnt][1], "ius", 4) == 0)
+	    {
 	        ignore_missing_symbols = 1;
+		argv[cnt][1] = 'r';  /* Just some non-harming option... */
+		argv[cnt][2] = '\0'; 
+	    }
 	    else
 	    /* Complete stripping is requested, but we do it our own way */
 	    if (argv[cnt][1]=='s' && argv[cnt][2]=='\0')
