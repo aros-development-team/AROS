@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <ctype.h>
+#include <errno.h>
 #include "memory.h"
 #include "hash.h"
 
@@ -97,6 +99,38 @@ void Purify_Init (void)
 
 	node->data = "code";
     }
+
+    node = Purify_AddMemory (__ctype_b
+	, sizeof(__ctype_b[0])*256
+	, PURIFY_MemFlag_Readable
+	, PURIFY_MemType_Data
+    );
+
+    node->data = "ctype array";
+
+    node = Purify_AddMemory (__ctype_tolower
+	, sizeof(__ctype_tolower[0])*256
+	, PURIFY_MemFlag_Readable
+	, PURIFY_MemType_Data
+    );
+
+    node->data = "tolower array";
+
+    node = Purify_AddMemory (__ctype_toupper
+	, sizeof(__ctype_toupper[0])*256
+	, PURIFY_MemFlag_Readable
+	, PURIFY_MemType_Data
+    );
+
+    node->data = "toupper array";
+
+    node = Purify_AddMemory (&errno
+	, sizeof(errno)
+	, PURIFY_MemFlag_Readable|PURIFY_MemFlag_Writable
+	, PURIFY_MemType_Data
+    );
+
+    node->data = "errno";
 
     Purify_PrintMemory ();
 }
