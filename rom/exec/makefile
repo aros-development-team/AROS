@@ -2,7 +2,9 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-FILES = init execfunctions \
+FILES = init execfunctions
+
+FUNCTIONS = \
 	allocmem freemem addhead \
 	addtask remtask wait \
 	signal allocsignal freesignal \
@@ -40,7 +42,9 @@ FILES = init execfunctions \
 	checkio abortio waitio \
 	initresident cause
 
-all: setup $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
+all: setup \
+	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
+	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
@@ -59,3 +63,5 @@ $(OSGENDIR)/%.d: %.c
 	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
 
 include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+include $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).d)
+
