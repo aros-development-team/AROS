@@ -15,26 +15,27 @@ DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
 	$(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
 
 FILES = \
-	newshell \
-	type \
-	echo \
-	cd \
-	avail \
-	list \
-	run \
-	execute \
-	path \
-	shell \
-	dir \
-	wait \
+	addbuffers \
+	ask \
 	assign \
+	avail \
+	cd \
+	copy \
 	delete \
+	dir \
+	echo \
+	execute \
+	list \
 	makedir \
 	mount \
-	version \
-	copy \
+	newshell \
+	path \
+	run \
+	shell \
 	tasklist \
-        addbuffers
+	type \
+	version \
+	wait
 
 EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
