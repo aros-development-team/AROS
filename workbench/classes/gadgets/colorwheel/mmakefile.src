@@ -8,7 +8,7 @@ ULIBNAME := ColorWheel
 LIBPOST	 := gadget
 DESTDIR  := $(GADGETDIR)
 
-FILES := colorwheelclass
+FILES := colorwheelclass support
 
 FUNCTIONS := \
 	converthsbtorgb \

@@ -31,54 +31,70 @@
 
 #include "libdefs.h"
 
+#include "libdefs.h"
 
-/* Predeclaration */
-LIBBASETYPE;
+/***************************************************************************************************/
 
-
-/**************
-**  Defines  **
-**************/
 #define SysBase (((struct LibHeader *) ColorWheelBase)->lh_SysBase)
 
-#undef EG
+#undef 	EG
 #define EG(o) ((struct ExtGadget *)o)
 
-#define HSPACING	2
-#define VSPACING	3
-
-#define HBORDER	HSPACING
-#define VBORDER (VSPACING - 1)
-
-
-#define HSELBORDER	1
-#define VSELBORDER	1
+/***************************************************************************************************/
 
 struct ColorWheelData
 {
+    WORD 			dummy;
+};
 
+
+struct ColorWheelBase_intern
+{
+    struct Library 		library;
+    struct ExecBase		*sysbase;
+    BPTR			seglist;
+    struct IClass 		*classptr;
+#ifndef GLOBAL_INTUIBASE
+    struct IntuitionBase	*intuibase;
+#endif
+    struct GfxBase		*gfxbase;
+    struct Library		*utilitybase;
     
 };
 
+/***************************************************************************************************/
 
-/*****************
-**  Prototypes  **
-*****************/
+struct IClass * InitColorWheelClass (struct ColorWheelBase_intern *ColorWheelBase);
+VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox);
+void DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen,
+			 struct ColorWheelBase_intern *ColorWheelBase);
 
-struct IClass * InitColorWheelClass (LIBBASETYPEPTR);
+
+/***************************************************************************************************/
+
+/* The following typedefs are necessary, because the names of the global
+   variables storing the library base pointers	and the corresponding
+   structs are equal.
+   This is a hack, of course. */
+typedef struct GfxBase GraphicsBase;
+typedef struct IntuitionBase IntuiBase;
+
+/***************************************************************************************************/
+
+#undef CWB
+#define CWB(b) ((struct ColorWheelBase_intern *)b)
+#undef UtilityBase
+#define UtilityBase 	CWB(ColorWheelBase)->utilitybase
 
 
-/********************
-**  Library stuff  **
-********************/
-/*
-extern struct ExecBase *SysBase;
-*/
+#ifndef GLOBAL_INTUIBASE
+#undef IntuitionBase
+#define IntuitionBase	CWB(ColorWheelBase)->intuibase
+#endif
 
-LIBBASETYPE
-{
-    struct LibHeader lh;
-    struct IClass *classptr;
-};
+#undef GfxBase
+#define GfxBase		CWB(ColorWheelBase)->gfxbase
+#undef SysBase
+#define SysBase		CWB(ColorWheelBase)->sysbase
 
 #endif /* COLORWHEEL_INTERN_H */

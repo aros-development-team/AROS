@@ -14,33 +14,48 @@
 #include <aros/debug.h>
 
 #include <proto/exec.h>
+#include <proto/intuition.h>
 
 #include "colorwheel_intern.h"
 #include "libdefs.h"
 
+/***************************************************************************************************/
+
+/* Global IntuitionBase */
+#ifdef GLOBAL_INTUIBASE
+struct IntuitionBase *IntuitionBase;
+#endif
 
 #undef SysBase
 
 /* Customize libheader.c */
-#define LC_LIBBASESIZE  sizeof(LIBBASETYPE)
+#define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->sysbase)
+#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->seglist)
+#define LC_LIBBASESIZE          sizeof(LIBBASETYPE)
+#define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
+#define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->library)
 
 #define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB
 
 #include <libcore/libheader.c>
 
+#undef  SDEBUG
+#undef  DEBUG
+#define DEBUG 0
+#include <aros/debug.h>
 
-/* Global Data */
-/* struct ExecBase *SysBase; */
+#define SysBase      (LC_SYSBASE_FIELD(lh))
+
 
 #define ColorWheelBase ((LIBBASETYPEPTR) lh)
 
+/***************************************************************************************************/
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
     D(bug("Inside initfunc of colorwheel.gadget\n"));
 
-#if 0
     if (!GfxBase)
     	GfxBase = (GraphicsBase *) OpenLibrary ("graphics.library", 37);
     if (!GfxBase)
@@ -65,24 +80,15 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     	return NULL;
 
     /* ------------------------- */
-#endif
+
     /* You would return NULL if the init failed. */
     return TRUE;
 }
 
-#if 0
-ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
-{
-}
-
-void SAVEDS STDARGS LC_BUILDNAME(L_CloseLib) (LC_LIBHEADERTYPEPTR lh)
-{
-}
-#endif
+/***************************************************************************************************/
 
 void SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
 {
-#if 0
     if (ColorWheelBase->classptr)
     {
 	RemoveClass (ColorWheelBase->classptr);
@@ -90,16 +96,15 @@ void SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
 	ColorWheelBase->classptr = NULL;
     }
 
-
     /* CloseLibrary() checks for NULL-pointers */
     CloseLibrary (UtilityBase);
     UtilityBase = NULL;
     
-
     CloseLibrary ((struct Library *) GfxBase);
     GfxBase = NULL;
     
     CloseLibrary ((struct Library *) IntuitionBase);
     IntuitionBase = NULL;
-#endif
 }
+
+/***************************************************************************************************/
