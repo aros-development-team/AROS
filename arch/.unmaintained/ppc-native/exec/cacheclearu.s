@@ -31,7 +31,7 @@
     SEE ALSO
  
     INTERNALS
- 
+ 	Left out until I decide about PPC memory model
     HISTORY
  
 ******************************************************************************/
@@ -43,9 +43,5 @@
 	.globl	AROS_SLIB_ENTRY(CacheClearU,Exec)
 	.type	AROS_SLIB_ENTRY(CacheClearU,Exec),@function
 AROS_SLIB_ENTRY(CacheClearU,Exec):
-	PROLOG
-	/*
-	DCBF 0,????
-	ICBI 0,????
-	*/
-	EPILOG
+	subr
+	rts

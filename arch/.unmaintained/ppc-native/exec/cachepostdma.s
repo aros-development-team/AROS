@@ -46,18 +46,12 @@
  
     INTERNALS
 	According to Phase 5 technical documentation implementing this is
-	a bit tricky. Until I can fully understand it, we just flush both caches
-	instead
+	a bit tricky.
+ 	Left out until I decide about PPC memory model
  
     HISTORY
  
 ******************************************************************************/
-
-/*
-   XDEF AROS_SLIB_ENTRY(CachePostDMA,Exec)   	; for 68000/10/20
-   XDEF AROS_SLIB_ENTRY(CachePostDMA_30,Exec)	; for 68030+
-   XDEF AROS_SLIB_ENTRY(CachePostDMA_40,Exec)	; for 68040/68060
-*/
 
 	#include "machine.i"
 
@@ -66,7 +60,5 @@
 	.globl	AROS_SLIB_ENTRY(CachePostDMA,Exec)
 	.type	AROS_SLIB_ENTRY(CachePostDMA,Exec),@function
 AROS_SLIB_ENTRY(CachePostDMA,Exec):
-	PROLOG
-	ICBI	0,R13
-	DCBF	0,R13
-	EPILOG
+	subr
+	rts

@@ -1,59 +1,35 @@
-/*
-     (C) 1995-96 AROS - The Amiga Research OS
-     $Id$
- 
-     Desc:
-     Lang:
-*/
+This is Supervisor function. Between lines there is exception handler part.
 
-/*****************************************************************************
- 
-    NAME
- 
- 	AROS_LH1(ULONG, Supervisor,
- 
-    SYNOPSIS
- 	AROS_LHA(ULONG_FUNC, userFunction, A5),
- 
-    LOCATION
- 	struct ExecBase *, SysBase, 5, Exec)
- 
-    FUNCTION
- 	Call a routine in supervisor mode. This routine runs on the
- 	supervisor stack and must end with a "rte". No registers are spilled,
- 	i.e. Supervisor() effectively works like a function call.
- 
-    INPUTS
- 	userFunction - address of the function to be called.
- 
-    RESULT
- 	whatever the function left in the registers
- 
-    NOTES
- 	This function is CPU dependant.
- 
-    EXAMPLE
- 
-    BUGS
- 	Context switches that happen during the duration of this call are lost.
- 
-    SEE ALSO
- 
-    INTERNALS
- 
-    HISTORY
- 
-******************************************************************************/
-
-	#include "machine.i"
-
-	.text
-	.balign 4
-	.globl	AROS_SLIB_ENTRY(Supervisor,Exec)
-	.type	AROS_SLIB_ENTRY(Supervisor,Exec),@function
-AROS_SLIB_ENTRY(Supervisor,Exec):
-
+	push	scr
+	mflr	scr	/* save lr, so we can move it to srr0 later */
+	push	scr
+	/* try to cause a trap */
+_Supervisor_trp:
 	mfmsr	r0
- 	/* No trap? Then this was called from supervisor mode */
+exception caused, so:
+------------------------------------------------------------------------
+exception handler
+	mfsrr0	scr
+	/* was it called from Supervisor function? (pseudocode) */
+	cmp	scr,_Supervisor_trp	/* supervisor */
+	beq	ok
+	/* was it called from Superstate function? (pseudocode) */
+	cmp	scr,_Superstate_trp	/* superstate */
+	beq	ok
+	.
+	.
+	.
+ok:
+	/* fetch the instruction that is after the one causing exception */
+	addi	scr,scr,4
+	mtlr	scr
+	blr
+exception handler
+------------------------------------------------------------------------
+next line of Supervisor  function
+	pop	scr	/* pop lr */
+	mtsrr0	scr
+	pop	scr
+	/* Jump to user procedure. It will return by rfi using value from lr */
  	ljmp	arg0
-
+	/* user procedure returns by the means of rfi, so no rts */

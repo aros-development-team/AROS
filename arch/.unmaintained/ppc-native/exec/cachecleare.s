@@ -42,7 +42,7 @@
     SEE ALSO
  
     INTERNALS
-	Clears the PPC cache block to which address parameter belongs
+	Left out until I decide about PPC memory model
  
     HISTORY
  
@@ -55,14 +55,5 @@
 	.globl	AROS_SLIB_ENTRY(CacheClearE,Exec)
 	.type	AROS_SLIB_ENTRY(CacheClearE,Exec),@function
 AROS_SLIB_ENTRY(CacheClearE,Exec):
-	PROLOG
-	CMPWI	R4,CACRF_ClearI		/* clear IC? */
-	BNE	data			/* no? so maybe data? */
-	ICBI	0,R13			/* yes? flush IC */
-	EPILOG
-data:
-	CMPWI R4,CACRF_ClearD		/* is it DC? */
-	BNE	finish			/* no? so exit! */
-	DCBF	0,R13			/* yes? flush DC */
-finish:
-	EPILOG
+	subr
+	rts
