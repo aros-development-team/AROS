@@ -131,6 +131,37 @@ static UBYTE getByte(OOP_Class *cl, OOP_Object *o, ULONG reg)
     return OOP_DoMethod(driver, (OOP_Msg)&msg);  
 }
 
+static UBYTE pcidevice_RB(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigByte *msg)
+{
+    return getByte(cl, o, msg->reg);
+}
+
+static UWORD pcidevice_RW(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigWord *msg)
+{
+    return getWord(cl, o, msg->reg);
+}
+
+static UBYTE pcidevice_RL(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigLong *msg)
+{
+    return getLong(cl, o, msg->reg);
+}
+
+static VOID pcidevice_WB(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_WriteConfigByte *msg)
+{
+    setByte(cl, o, msg->reg, msg->val);
+}
+
+static VOID pcidevice_WW(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_WriteConfigWord *msg)
+{
+    setWord(cl, o, msg->reg, msg->val);
+}
+
+static VOID pcidevice_WL(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_WriteConfigLong *msg)
+{
+    setLong(cl, o, msg->reg, msg->val);
+}
+
+
 /*
     PCIDevice::New method is invoked by base pci class. It passes to the device
     class information about the driver this class should use and location of 
@@ -775,7 +806,7 @@ void free_pcideviceclass(struct pci_staticdata *psd, OOP_Class *cl)
 }
 	
 #define _NUM_ROOT_METHODS	3
-#define _NUM_PCIDEVICE_METHODS	0   /*NUM_PCIDRIVER_METHODS*/
+#define _NUM_PCIDEVICE_METHODS	6   /*NUM_PCIDRIVER_METHODS*/
 
 OOP_Class *init_pcideviceclass(struct pci_staticdata *psd)
 {
@@ -791,6 +822,12 @@ OOP_Class *init_pcideviceclass(struct pci_staticdata *psd)
 
     struct OOP_MethodDescr pcidevice_descr[_NUM_PCIDEVICE_METHODS + 1] =
     {
+	{ OOP_METHODDEF(pcidevice_RB),  moHidd_PCIDriver_ReadConfigByte },
+	{ OOP_METHODDEF(pcidevice_RW),  moHidd_PCIDriver_ReadConfigWord },
+	{ OOP_METHODDEF(pcidevice_RL),  moHidd_PCIDriver_ReadConfigLong },
+	{ OOP_METHODDEF(pcidevice_WB),  moHidd_PCIDriver_WriteConfigByte },
+	{ OOP_METHODDEF(pcidevice_WW),  moHidd_PCIDriver_WriteConfigWord },
+	{ OOP_METHODDEF(pcidevice_WL),  moHidd_PCIDriver_WriteConfigLong },
 	{ NULL, 0UL }
     };
 
