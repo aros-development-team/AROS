@@ -4,6 +4,9 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/* stegerg: maybe more safe, even if Unix malloc is used and not AROS malloc */
+#define NO_MALLOC 1
+
 #if 0 
 /**************  BitMap::Set()  *********************************/
 static VOID MNAME(set)(Class *cl, Object *o, struct pRoot_Set *msg)
@@ -13,7 +16,7 @@ static VOID MNAME(set)(Class *cl, Object *o, struct pRoot_Set *msg)
     ULONG idx;
     
     tstate = msg->attrList;
-    while((tag = NextTagItem(&tstate)))
+    while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
         if(IS_BM_ATTR(tag->ti_Tag, idx))
         {
@@ -947,8 +950,12 @@ UX11
     	ReturnVoid("X11Gfx.BitMap::PutImage(XCreateImage failed)");
 	    
     bperline	= image->bytes_per_line;
-	
+
+    #if NO_MALLOC
+    image->data = (char *)AllocVec((size_t)height * bperline, MEMF_PUBLIC);
+    #else	
     image->data = (char *)malloc((size_t)height * bperline);
+    #endif
     if (!image->data)
     {
 LX11	
@@ -960,18 +967,22 @@ UX11
     toimage_func(cl, o, pixarray, image, width, height, depth, toimage_data);
 	
 LX11
-   XSetFunction(data->display, data->gc, GC_DRMD(gc));
-   XPutImage(data->display
-    		, DRAWABLE(data)
-		, data->gc
-		, image
-		, 0, 0
-		, x, y
-		, width, height
-   );
+    XSetFunction(data->display, data->gc, GC_DRMD(gc));
+    XPutImage(data->display
+    		 , DRAWABLE(data)
+		 , data->gc
+		 , image
+		 , 0, 0
+		 , x, y
+		 , width, height
+    );
     XFlush(data->display);
-UX11    
+UX11 
+    #if NO_MALLOC
+    FreeVec(image->data);
+    #else   
     free(image->data);
+    #endif
     
 LX11    
     XFree(image);
