@@ -476,24 +476,17 @@ static const ULONG coltab[] = {
 
 #ifdef CreateLayerTagList
 	{
-		struct Region * ls = NewRegion();
-		struct Rectangle r;
 		struct TagItem tags[4] = {{LA_Visible, FALSE},
 		                          {LA_Priority, ROOTPRIORITY},
-		                          {LA_Shape, (ULONG)ls},
 		                          {TAG_DONE, -1}};
-
-		r.MinX = screen->Screen.LeftEdge;
-		r.MinY = screen->Screen.TopEdge;
-		r.MaxX = screen->Screen.LeftEdge + screen->Screen.Width - 1;// - 50;
-		r.MaxY = screen->Screen.TopEdge  + screen->Screen.Height - 1;// - 50;
-
-#warning Should check whether OrRectRegion succeeds and whether layer gets created!
-		OrRectRegion(ls, &r);
 
 		screen->rootLayer = 
 			CreateLayerTagList(&screen->Screen.LayerInfo,
 			                   screen->Screen.RastPort.BitMap,
+					   screen->Screen.LeftEdge,
+					   screen->Screen.TopEdge,
+					   screen->Screen.LeftEdge + screen->Screen.Width - 1,
+					   screen->Screen.TopEdge + screen->Screen.Height - 1,
 			                   0,
 			                   tags);
 	}
