@@ -211,6 +211,16 @@ extern BOOL pattern_pen(struct RastPort *rp
 	, ULONG *pixval_ptr
 	, struct GfxBase *GfxBase);
 
+/* function for area opeartions */
+BOOL areafillpolygon(struct RastPort  * rp,
+                     struct Rectangle * bounds, 
+                     UWORD              first_idx, 
+                     UWORD              last_idx,
+                     UWORD              bytesperrow,
+                     struct GfxBase   * GfxBase);
 
 
 #endif /* GRAPHICS_INTERN_H */
+
+
+
