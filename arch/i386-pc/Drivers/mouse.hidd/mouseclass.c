@@ -84,9 +84,9 @@ static OOP_Object * _mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         struct mouse_data *data = OOP_INST_DATA(cl, o);
         struct TagItem *tag, *tstate;
 
-	tstate = msg->attrList;
+        tstate = msg->attrList;
 
-	/* Search for all mouse attrs */
+        /* Search for all mouse attrs */
 
         while ((tag = NextTagItem((const struct TagItem **)&tstate)))
         {
@@ -95,37 +95,37 @@ static OOP_Object * _mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
             if (IS_HIDDMOUSE_ATTR(tag->ti_Tag, idx))
             {
                 switch (idx)
-		{
+                {
                     case aoHidd_Mouse_IrqHandler:
                         data->mouse_callback = (APTR)tag->ti_Data;
-		        break;
+                        break;
 
                     case aoHidd_Mouse_IrqHandlerData:
                         data->callbackdata = (APTR)tag->ti_Data;
                         break;
-		}
-	    }
-	} /* while (tags to process) */
+                }
+            }
+        } /* while (tags to process) */
 
-	/* Search for mouse installed. As USB is the fastest to test, do it
-	first, if not found search for PS/2 mouse. If failure then check every
-	COM port in the system - the las chance to see... */
+        /* Search for mouse installed. As USB is the fastest to test, do it
+        first, if not found search for PS/2 mouse. If failure then check every
+        COM port in the system - the las chance to see... */
 
-	if (!test_mouse_usb(cl, o))
-	{
-	    if (!test_mouse_ps2(cl, o))
+        if (!test_mouse_usb(cl, o))
+        {
+	    if (!test_mouse_com(cl, o))
 	    {
-	        if (!test_mouse_com(cl, o))
-		{
-		    /* No mouse found. What we can do now is just Dispose() :( */
+        	if (!test_mouse_ps2(cl, o))
+                {
+                    /* No mouse found. What we can do now is just Dispose() :( */
 
-	            OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-		    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
+                    OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+                    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
 
-		    o = NULL;
-		}
-	    }
-	}
+                    o = NULL;
+                }
+            }
+        }
 
         ObtainSemaphore( &MSD(cl)->sema);
         MSD(cl)->mousehidd = o;
@@ -163,7 +163,7 @@ OOP_Class *_init_mouseclass (struct mouse_staticdata *msd)
 
     struct OOP_ABDescr attrbases[] =
     {
-	{ IID_Hidd_Mouse, &msd->hiddMouseAB },
+        { IID_Hidd_Mouse, &msd->hiddMouseAB },
         { NULL, NULL }
     };
 	
@@ -247,3 +247,4 @@ VOID _free_mouseclass(struct mouse_staticdata *msd)
     }
     ReturnVoid("_free_mouseclass");
 }
+

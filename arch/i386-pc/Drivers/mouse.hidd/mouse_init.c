@@ -1,6 +1,6 @@
 /*
     (C) 1999 AROS - The Amiga Research OS
-    $Id: 
+    $Id$ 
 
     Desc: Mouse hidd (COM/PS2/USB) for standalone i386 AROS
     Lang: english
@@ -22,9 +22,9 @@
 /* Customize libheader.c */
 #define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->sysbase)
 #define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->seglist)
-#define LC_RESIDENTNAME		mouseHidd_resident
-#define LC_RESIDENTFLAGS	RTF_AUTOINIT|RTF_COLDSTART
-#define LC_RESIDENTPRI		9
+#define LC_RESIDENTNAME     	mouseHidd_resident
+#define LC_RESIDENTFLAGS        RTF_AUTOINIT|RTF_COLDSTART
+#define LC_RESIDENTPRI          9
 #define LC_LIBBASESIZE          sizeof(LIBBASETYPE)
 #define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
 #define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->library)
@@ -62,19 +62,20 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
     {
         msd->sysbase = SysBase;
         msd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
-	if (msd->oopbase)
-	{
-	    msd->utilitybase = OpenLibrary(UTILITYNAME, 37);
-	    if (msd->utilitybase)
-	    {
-		if (_init_mouseclass(msd))
-		{
-		    return TRUE;
-		}
-	    }
-	    CloseLibrary(msd->oopbase);
-	}
-	FreeMem(msd, sizeof (struct mouse_staticdata));
+        if (msd->oopbase)
+        {
+            msd->utilitybase = OpenLibrary(UTILITYNAME, 37);
+            if (msd->utilitybase)
+            {
+                if (_init_mouseclass(msd))
+                {
+                    return TRUE;
+                }
+            }
+            CloseLibrary(msd->oopbase);
+        }
+        FreeMem(msd, sizeof (struct mouse_staticdata));
     }
     return FALSE;
 }
+

@@ -25,7 +25,7 @@
 
 #include "mouse.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define HiddMouseAB	(MSD(cl)->hiddMouseAB)
@@ -127,9 +127,25 @@ int test_mouse_com(OOP_Class *cl, OOP_Object *o)
                     /* Alloc New unit for us */
                     if ((unit = HIDD_Serial_NewUnit(serial, i)))
                     {
+                        int proto;
+                        
+                        D(bug("Checking for mouse on serial port %d\n", i));
+
                         /* Install RingBuffer interrupt */
                         HIDD_SerialUnit_Init(unit, mouse_RingHandler, data, NULL, NULL);
+                        
+                        /* Try to get mouse protocol in PnP way */
+                        if ((proto = mouse_DetectPNP(data, unit)) >= 0)
+                        {
+                            /* We got protocol */
 
+                            switch (proto)
+                            {
+                                case P_LOGI:
+
+                            }
+                        }
+                        
                         /* No mouse? Dispose useless unit then */
                         HIDD_Serial_DisposeUnit(serial, unit);
                     }
