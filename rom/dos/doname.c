@@ -151,8 +151,15 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
     }
     else
     {
+    #if 0
+    	/* stegerg: ?? */
 	device = DOSBase->dl_NulHandler;
 	unit = DOSBase->dl_NulLock;
+    #else
+    	fh = (struct FileHandle *)BADDR(DOSBase->dl_SYSLock);
+	device = fh->fh_Device;
+	unit = fh->fh_Unit;
+    #endif
     }
     
     iofs->IOFS.io_Device = device;
