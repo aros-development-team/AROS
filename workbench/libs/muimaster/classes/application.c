@@ -24,6 +24,9 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
+#define MYDEBUG 1
+#include "debug.h"
+
 #include "muimaster_intern.h"
 #include "mui.h"
 #include "support.h"
@@ -106,9 +109,6 @@ Notify.mui/MUIM_SetUDataOnce              done
 static const int __version = 1;
 static const int __revision = 1;
 
-struct MUIP_Application_ADDMEMBER { ULONG MethodID; APTR obj; };
-struct MUIP_Application_REMMEMBER { ULONG MethodID; APTR obj; };
-
 
 /*
  * MethodQueueNode
@@ -171,10 +171,9 @@ static void  DeleteRIDNode (struct MUI_ApplicationData *data, struct RIDNode *ri
 }
 
 
-
-/*
- * Process a pushed method.
- */
+/**************************************************************************
+ Process a pushed method.
+**************************************************************************/
 static BOOL application_do_pushed_method (struct MUI_ApplicationData *data)
 {
     struct MQNode  *mq;
@@ -189,10 +188,10 @@ static BOOL application_do_pushed_method (struct MUI_ApplicationData *data)
 }
 
 
-/*
- * OM_NEW
- */
-static ULONG mNew(struct IClass *cl, Object *obj, struct opSet *msg)
+/**************************************************************************
+ OM_NEW
+**************************************************************************/
+static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ApplicationData *data;
     struct TagItem        *tags,*tag;
@@ -217,10 +216,20 @@ static ULONG mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     /* window list */
     data->app_WindowFamily = MUI_NewObjectA(MUIC_Family, NULL);
     if (!data->app_WindowFamily)
+    {
+    	CoerceMethod(cl,obj,OM_DISPOSE);
 	return 0;
+    }
 
     data->app_GlobalInfo.mgi_ApplicationObject = obj;
-    data->app_GlobalInfo.mgi_UserPort = CreateMsgPort();
+    if (!(data->app_GlobalInfo.mgi_UserPort = CreateMsgPort()))
+    {
+    	CoerceMethod(cl,obj,OM_DISPOSE);
+	return 0;
+    }
+
+    D(bug("muimaster.library/application.c: Message Port created at 0x%lx\n",data->app_GlobalInfo.mgi_UserPort));
+
     muiNotifyData(obj)->mnd_GlobalInfo = &data->app_GlobalInfo;
 
     /* parse initial taglist */
@@ -254,17 +263,8 @@ static ULONG mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 	    data->app_Version = (STRPTR)tag->ti_Data;
 	    break;
 	case MUIA_Application_Window:
-	    if (tag->ti_Data)
-	    {
-		DoMethod(data->app_WindowFamily,
-			 MUIM_Family_AddTail, tag->ti_Data);
-		DoMethod((Object *)tag->ti_Data,
-			 MUIM_ConnectParent, obj);
-	    }
-	    else
-	    {
-		bad_childs = TRUE;
-	    }
+	    if (tag->ti_Data) DoMethod(obj,OM_ADDMEMBER,tag->ti_Data);
+	    else bad_childs = TRUE;
 	    break;
 	}
     }
@@ -301,24 +301,19 @@ static ULONG mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
-/*
- * OM_DISPOSE
- */
-static ULONG mDispose(struct IClass *cl, Object *obj, Msg msg)
+
+/**************************************************************************
+ OM_DISPOSE
+**************************************************************************/
+static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
-
-/*      g_print("App : created %d/%d gc\n", get_num_gc(), get_num_gc_req()); */
-/*  g_print("app dispose\n"); */
-
-//    if (data->app_RIDMemChunk)
-//	g_mem_chunk_destroy(data->app_RIDMemChunk);
 
     if (data->app_WindowFamily)
 	MUI_DisposeObject(data->app_WindowFamily);
 
-    DeleteMsgPort(data->app_GlobalInfo.mgi_UserPort);
-    data->app_GlobalInfo.mgi_UserPort = NULL;
+    if (data->app_GlobalInfo.mgi_UserPort)
+    	DeleteMsgPort(data->app_GlobalInfo.mgi_UserPort);
 
 #warning FIXME: prefs
 #if 0
@@ -329,9 +324,9 @@ static ULONG mDispose(struct IClass *cl, Object *obj, Msg msg)
 }
 
 
-/*
- * OM_SET
- */
+/**************************************************************************
+ OM_SET
+**************************************************************************/
 static ULONG mSet(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ApplicationData *data  = INST_DATA(cl, obj);
@@ -438,14 +433,15 @@ static ULONG mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 /*
  * OM_ADDMEMBER
  */
-static ULONG mAddMember(struct IClass *cl, Object *obj,
-	   struct MUIP_Application_ADDMEMBER *msg)
+static ULONG mAddMember(struct IClass *cl, Object *obj, struct opMember *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
+    D(bug("muimaster.library/application.c: Adding 0x%lx to window member list\n",msg->opam_Object));
+
     DoMethodA(data->app_WindowFamily, (Msg)msg);
     /* Application knows its GlobalInfo, so we can inform window */
-    DoMethod(msg->obj, MUIM_ConnectParent, obj);
+    DoMethod(msg->opam_Object, MUIM_ConnectParent, obj);
     return TRUE;
 }
 
@@ -453,13 +449,14 @@ static ULONG mAddMember(struct IClass *cl, Object *obj,
 /*
  * OM_REMMEMBER
  */
-static ULONG mRemMember(struct IClass *cl, Object *obj,
-	   struct MUIP_Application_REMMEMBER *msg)
+static ULONG mRemMember(struct IClass *cl, Object *obj, struct opMember *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     static ULONG disconnect = MUIM_DisconnectParent;
 
-    DoMethodA(msg->obj, (Msg)&disconnect);
+    D(bug("muimaster.library/application.c: Removing 0x%lx to window member list\n",msg->opam_Object));
+
+    DoMethodA(msg->opam_Object, (Msg)&disconnect);
     DoMethodA(data->app_WindowFamily, (APTR)msg);
     return TRUE;
 }
@@ -718,9 +715,9 @@ AROS_UFH3S(IPTR, Application_Dispatcher,
 	** sent a OM_NEW method.
 	*/
     case OM_NEW:
-	return(mNew(cl, obj, (struct opSet *) msg));
+	return(Application_New(cl, obj, (struct opSet *) msg));
     case OM_DISPOSE:
-	return(mDispose(cl, obj, msg));
+	return(Application_Dispose(cl, obj, msg));
     case OM_SET:
 	return(mSet(cl, obj, (struct opSet *)msg));
     case OM_GET:

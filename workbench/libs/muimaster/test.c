@@ -3,13 +3,19 @@
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#include <proto/dos.h>
 
 /* the following should go in a single include file which then only
 ** constits of the public constants and members. Actually this is easiey
 */
 
 #include "mui.h"
-#include "classes/notify.h" 
+
+Object *MUI_NewObject(char *classname, int tag,...)
+{
+    return MUI_NewObjectA(classname, (struct TagItem*)&tag);
+}
+
 
 /* muimaster.library is not yet a library */
 #include "muimaster_intern.h"
@@ -17,6 +23,39 @@
 struct Library *MUIMasterBase;
 struct MUIMasterBase_intern MUIMasterBase_instance;
 
+void main(void)
+{
+    Object *app;
+    Object *wnd;
+
+    MUIMasterBase = (struct Library*)&MUIMasterBase_instance;
+
+    MUIMasterBase_instance.sysbase = *((struct ExecBase **)4);
+    MUIMasterBase_instance.utilitybase = OpenLibrary("utility.library",37);
+
+    app = ApplicationObject,
+    	SubWindow, wnd = WindowObject,
+    	    MUIA_Window_Title, "test",
+    	    WindowContents, VGroup,
+    	    	Child, MUI_NewObject(MUIC_Area, MUIA_FixWidth, 40, MUIA_FixHeight, 30, TAG_DONE),
+    	    	Child, MUI_NewObject(MUIC_Area, MUIA_FixWidth, 40, MUIA_FixHeight, 30, TAG_DONE),
+    	        End,
+    	    End,
+    	End;
+
+    if (app)
+    {
+    	printf("Application Object created at 0x%lx\n",app);
+    	printf("Window Object created at 0x%lx\n",wnd);
+	set(wnd,MUIA_Window_Open,TRUE);
+	Delay(200);
+	MUI_DisposeObject(app);
+    }
+}
+
+// ---- old test -------
+
+#if 0
 __asm __saveds void hook_function(register __a1 int *pval)
 {
     printf("get notification of the userdata: %ld\n",*pval);
@@ -53,3 +92,5 @@ void main(void)
 	MUI_DisposeObject(notify);
     }
 }
+
+#endif

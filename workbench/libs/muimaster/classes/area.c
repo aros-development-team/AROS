@@ -29,8 +29,11 @@
 
 extern struct Library *MUIMasterBase;
 
-#include "debug.h"
+#include "support.h"
 #include "mui.h"
+
+#define MYDEBUG 1
+#include "debug.h"
 
 #define g_strdup(x) strdup(x)
 #define g_free(x) free(x)
@@ -117,18 +120,17 @@ static void setup_cycle_chain (struct MUI_AreaData *data, Object *obj);
 static void cleanup_cycle_chain (struct MUI_AreaData *data, Object *obj);
 
 
-/*
- * OM_NEW
- */
-static ULONG
-mNew(struct IClass *cl, Object *obj, struct opSet *msg)
+
+/**************************************************************************
+ OM_NEW
+**************************************************************************/
+static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_AreaData *data;
     struct TagItem *tags,*tag;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
-    if (!obj)
-	return FALSE;
+    if (!obj) return FALSE;
 
     /* Initial local instance data */
     data = INST_DATA(cl, obj);
@@ -202,9 +204,7 @@ mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->mad_Flags |= MADF_INNERTOP;
 		data->mad_HardITop =  CLAMP((ULONG)tag->ti_Data, 0, 32);
 		break;
-
 	    case MUIA_InputMode:
-/*  		g_print("Input mode for %p set to %d\n", obj, tag->ti_Data); */
 		data->mad_InputMode = tag->ti_Data;
 		break;
 	    case MUIA_MaxHeight:
@@ -260,7 +260,9 @@ mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if ((data->mad_Frame != 0) && (data->mad_FrameTitle))
     {
-	data->mad_FrameTitle = g_strdup(data->mad_FrameTitle);
+    	char *frame_title = mui_alloc(strlen(data->mad_FrameTitle)+1);
+    	if (frame_title) strcpy(frame_title,data->mad_FrameTitle);
+    	data->mad_FrameTitle = NULL;
     }
 
     if (data->mad_InputMode != MUIV_InputMode_None)
@@ -272,21 +274,21 @@ mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 	data->mad_ehn.ehn_Class    = cl;
     }
 
+    D(bug("muimaster.library/area.c: Area Object created at 0x%lx\n",obj));
+
     return (ULONG)obj;
 }
 
-
-/*
- * OM_DISPOSE
- */
-static ULONG
-mDispose(struct IClass *cl, Object *obj, Msg msg)
+/**************************************************************************
+ OM_DISPOSE
+**************************************************************************/
+static ULONG Area_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
     if ((data->mad_Frame > 0) && (data->mad_FrameTitle))
     {
-	g_free(data->mad_FrameTitle);
+	mui_free(data->mad_FrameTitle);
     }
 
 #warning FIXME: mad_Background
@@ -1771,9 +1773,9 @@ AROS_UFH3S(IPTR, Area_Dispatcher,
 	** sent a OM_NEW method.
 	*/
 	case OM_NEW:
-	    return(mNew(cl, obj, (struct opSet *) msg));
+	    return Area_New(cl, obj, (struct opSet *) msg);
 	case OM_DISPOSE:
-	    return(mDispose(cl, obj, msg));
+	    return Area_Dispose(cl, obj, msg);
 	case OM_SET:
 	    return(mSet(cl, obj, (struct opSet *)msg));
 	case OM_GET:

@@ -152,7 +152,7 @@ objs/test.o: test.c
   sc $(CFLAGS) $(CLASSESDIRS) test.c objname=$@
 
 test: objs/test.o objs/support.o $(LIBOBJS) $(CLASSESOBJS)
-  sc link to test with <<
+  sc link lib lib:debug.lib to test with <<
 objs/test.o objs/support.o $(LIBOBJS) $(CLASSESOBJS)
 <
 
