@@ -60,7 +60,7 @@
 
 ******************************************************************************/
 
-#include "include/machine.i"
+#include "machine.i"
 
 	.text
 	_ALIGNMENT
