@@ -550,7 +550,7 @@ AROS_UFH3(LONG, unitentry,
 
     D(bug("fdsk_device/unitentry: Trying to open \"%s\" ...\n", buf));
 
-    unit->file = Open(buf, MODE_READWRITE);
+    unit->file = Open(buf, MODE_OLDFILE);
     if(!unit->file)
     {
 /*
