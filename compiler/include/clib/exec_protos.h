@@ -120,10 +120,10 @@ AROS_LP1(void, Supervisor,
     struct ExecBase *, SysBase, 5, Exec)
 
 AROS_LP0(void, Switch,
-    struct ExecBase *, SysBase, 6, Exec)
+    struct ExecBase *, SysBase, 9, Exec)
 #define Switch() \
     AROS_LC0(void, Switch, \
-    struct ExecBase *, SysBase, 6, Exec)
+    struct ExecBase *, SysBase, 9, Exec)
 
 AROS_LP0(void, UserState,
     struct ExecBase *, SysBase, 26, Exec)
