@@ -16,6 +16,8 @@
 #include <aros/debug.h>
 #undef kprintf
 
+#define INIT AROS_SLIB_ENTRY(init,Aros)
+
 extern const UBYTE name[];
 extern const UBYTE version[];
 extern const APTR inittabl[4];
