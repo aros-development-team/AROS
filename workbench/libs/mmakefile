@@ -31,6 +31,8 @@
 #MM     workbench-libs-nvdisk \
 #MM     workbench-libs-muimaster \
 #MM     workbench-libs-coolimages \
+#MM     workbench-libs-pci \
+#MM	workbench-libs-pcilinux \
 #MM     workbench-libs-freetype-complete
 
 #MM- includes : \
