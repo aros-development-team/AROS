@@ -18,8 +18,8 @@ EXEDIR      := $(AROS_WANDERER)/Tools
 ICONS       := Info
 ICONFILES   := $(foreach f, $(ICONS), $(EXEDIR)/$(f).info)
 
-#MM
-workbench-system-wanderer-tools-info-icons : setup $(EXE) $(ICONFILES)
+#MM workbench-system-wanderer-tools-info-icons : workbench-system-wanderer-tools-info-setup
+workbench-system-wanderer-tools-info-icons : $(ICONFILES)
 
 $(EXEDIR)/%.info : icons/%.info.src icons/%_N.png icons/%_S.png
 	%makeicon2
