@@ -45,6 +45,7 @@ CLASSESOBJS= \
   objs/classes/bitmap.o \
   objs/classes/bodychunk.o \
   objs/classes/boopsi.o \
+  objs/classes/chunkyimage.o \
   objs/classes/configdata.o \
   objs/classes/cycle.o \
   objs/classes/dataspace.o \
@@ -240,6 +241,9 @@ objs/classes/bodychunk.o: classes/bodychunk.c
 
 objs/classes/boopsi.o: classes/boopsi.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/boopsi.c objname=$@
+
+objs/classes/chunkyimage.o: classes/chunkyimage.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/chunkyimage.c objname=$@
 
 objs/classes/configdata.o: classes/configdata.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/configdata.c objname=$@

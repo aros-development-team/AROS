@@ -12,6 +12,7 @@ CLASSES := \
     bitmap \
     bodychunk \
     boopsi \
+    chunkyimage \
     configdata \
     cycle \
     dataspace \
@@ -93,6 +94,7 @@ USE_CLIB_STATIC := yes
 USE_MLIB        := yes
 
 USER_INCLUDES := -I.
+USER_CFLAGS := -DHAVE_COOLIMAGES
 
 #MM- workbench-libs-muimaster : setup includes linklibs \
 #MM	workbench-libs-muimaster-module
