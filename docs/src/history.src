@@ -10,7 +10,11 @@ NOTE: This is beta. If you want this code, then have a look at our
 \item Bugfixes
 \item Worked on docs
 \item Many (50+) new functions in c.lib and amiga.lib
-\item Amiga and Linux/m68k versions
+\item Big endian IO functions in aros.library
+\item Amiga native and Linux/m68k versions. Amiga is still alpha.
+\item A *pre* alpha of VBCC with i386 support. This is only loosely
+	connected to AROS. See the README in the directory
+	\filename{AROS/compiler/vbcc/}.
 \end{itemize}
 
 Things we currently work on:
@@ -20,6 +24,7 @@ Things we currently work on:
 \item A own C compiler for AROS (VBCC)
 \item diskfont.library and icon.library
 \item AROS on Amiga (maybe even bootable)
+\item CLI commands
 \end{itemize}
 
 \section{AROS 1.9}
