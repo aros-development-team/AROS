@@ -18,7 +18,6 @@
 #ifdef __AROS__
 #include <proto/alib.h>
 #include <proto/intuition.h>
-#include <proto/muimaster.h>
 //#define DEBUG 1
 //#include <aros/debug.h>
 #endif

@@ -1,6 +1,5 @@
 #include <proto/intuition.h>
 #include <proto/exec.h>
-#include <proto/muimaster.h>
 
 #include <dos/dos.h>
 #include <libraries/mui.h>

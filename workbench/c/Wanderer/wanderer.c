@@ -27,7 +27,6 @@
 
 #ifdef __AROS__
 #include <libraries/mui.h>
-#include <proto/muimaster.h>
 #include <proto/workbench.h>
 #include <aros/debug.h>
 #else

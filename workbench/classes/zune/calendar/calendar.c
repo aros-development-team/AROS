@@ -12,7 +12,6 @@
 #include <proto/utility.h>
 #include <proto/locale.h>
 #include <proto/timer.h>
-#include <proto/muimaster.h>
 
 #include <aros/debug.h>
 #include <aros/asmcall.h>

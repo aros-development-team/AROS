@@ -14,7 +14,6 @@
 #include <proto/intuition.h>
 #ifdef __AROS__
 #include <libraries/mui.h>
-#include <proto/muimaster.h>
 #endif
 #include <clib/alib_protos.h>
 #include <stdio.h>

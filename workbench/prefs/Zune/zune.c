@@ -24,7 +24,6 @@
 #ifdef __AROS__
 /*  #define DEBUG 1 */
 /*  #include <aros/debug.h> */
-#include <proto/muimaster.h>
 #endif
 
 #include "buttonsp.h"
