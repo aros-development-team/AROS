@@ -226,7 +226,7 @@ AROS_LH1(STRPTR, getlangstring,
 {
     AROS_LIBFUNC_INIT
 
-	kprintf("\nWe have got to getlangstring\n");
+    //kprintf("\nWe have got to getlangstring\n");
 
     if(id < MAXSTRMSG)
 	return __svenska_strings[id];
