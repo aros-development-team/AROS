@@ -31,10 +31,6 @@
 #include <proto/dos.h>
 #include <clib/alib_protos.h>
 
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
-
 /* #define MYDEBUG 1 */
 #include "debug.h"
 

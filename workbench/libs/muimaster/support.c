@@ -15,10 +15,6 @@
 #include <proto/keymap.h>
 #include <proto/utility.h>
 
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
-
 #include "mui.h"
 #include "support.h"
 #include "muimaster_intern.h"

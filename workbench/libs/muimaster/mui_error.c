@@ -1,14 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include "muimaster_intern.h"
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
 
 /*****************************************************************************
 
