@@ -92,7 +92,15 @@ struct IntScreen
     /* Private fields */
     struct DrawInfo DInfo;
     UWORD  Pens[NUMDRIPENS];
+    UWORD  SpecialFlags;
 };
+
+#define GetPrivScreen(s)	((struct IntScreen *)s)
+
+/* SpecialFlags */
+#define SF_IsParent	(0x0001)
+#define SF_IsChild	(0x0002)
+
 
 struct EasyRequestUserData
 {
