@@ -2,7 +2,7 @@
 ; $Id$
 ;
 
-; $VER: AROS Startup-Sequence for native-i386 0.0 (2001-09-02)
+; $VER: AROS Startup-Sequence for native-i386 0.0 (2001-09-06)
 
 ;SetPatch QUIET
 
@@ -11,6 +11,20 @@
 Mount RAM:
 Mount NIL:
 ;Mount PIPEFS:
+
+;-----------------------------------------------
+; Copy System to RAM:
+Copy SYS:AROS.tgz RAM:
+CD RAM:
+;SYS:contrib/aminet/untgz RAM:AROS.tgz 
+SYS:contrib/gnu/gzip -d RAM:AROS.tgz
+SYS:contrib/aminet/untar RAM:AROS.tar 
+Assign SYS: RAM:
+Assign C: SYS:C
+Assign DEVS: SYS:Devs
+Assign LIBS: SYS:LIBS
+Assign S: SYS:S
+;-----------------------------------------------
 
 ;Version >NIL:
 FailAt 21
@@ -23,7 +37,7 @@ Assign CLIPS:   RAM:Clipboards
 Assign KEYMAPS: DEVS:Keymaps
 Assign LOCALE:  SYS:Locale
 Assign LIBS:    SYS:Classes ADD
-;Assign FONTS:   SYS:Fonts
+Assign FONTS:   SYS:Fonts
 ;Assign HELP:    LOCALE:Help DEFER
 ;Assign PRINTERS: DEVS:Printers
 
@@ -37,7 +51,7 @@ Copy >NIL: ENVARC: ENV: ALL CLONE NOREQ
 ;SetEnv Kickstart $Kickstart
 
 AddDatatypes REFRESH QUIET
-;IPrefs
+IPrefs
 ;Run <NIL: >NIL: ConClip
 
 Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
