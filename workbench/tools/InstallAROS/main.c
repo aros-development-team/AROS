@@ -211,7 +211,7 @@ IPTR Install__OM_NEW
 		if((from = Open(data->instc_lic_file, MODE_OLDFILE)))
 		{
 			D(bug("[INSTALLER.i] Allocating buffer [%d] for license file '%s'!", fib->fib_Size, data->instc_lic_file));
-			data->instc_lic_buffer = AllocVec(fib->fib_Size, MEMF_CLEAR | MEMF_PUBLIC );
+			data->instc_lic_buffer = AllocVec(fib->fib_Size+1, MEMF_CLEAR | MEMF_PUBLIC );
 			if ((s = Read(from, data->instc_lic_buffer, fib->fib_Size)) == -1)
 			{
 				D(bug("[INSTALLER.i] Error processing license file!"));
@@ -1065,7 +1065,7 @@ void FixUpPackageFile(char * packagefile, IPTR **fixupdirs, int dircnt)
 	if((from = Open(packagefile, MODE_OLDFILE)))
 	{
 		D(bug("[INSTALLER] FixUpPackageFile() Allocating buffer [%d] for package path '%s'!\n", fib->fib_Size, packagefile));
-		oldpackageline = AllocVec(fib->fib_Size, MEMF_CLEAR | MEMF_PUBLIC );
+		oldpackageline = AllocVec(fib->fib_Size+1, MEMF_CLEAR | MEMF_PUBLIC );
 		if ((s = Read(from, oldpackageline, fib->fib_Size)) == -1)
 		{
 			D(bug("[INSTALLER] FixUpPackageFile() Error processing package file!\n"));
@@ -1948,7 +1948,7 @@ IPTR Install__MUIM_IC_CopyFiles
 					if ((dlock = Lock(message->dstDir, ACCESS_READ))==NULL) break;
 					UnLock(dlock);
 
-					char		*tmppath = AllocVec((strlen(message->dstDir) - strlen(dest_Path))+strlen(instalationtmp_path) + 2, MEMF_CLEAR | MEMF_PUBLIC );
+					char		*tmppath = AllocVec((strlen(message->dstDir) - strlen(dest_Path))+strlen(instalationtmp_path) + 3, MEMF_CLEAR | MEMF_PUBLIC );
 					BPTR	ulock=NULL;
 
 					IPTR		src_point = (((message->dstDir) + strlen(dest_Path))+1),
@@ -2051,10 +2051,10 @@ copy_backup:
 	{
 		if ((undorecord = AllocMem(sizeof(struct InstallC_UndoRecord), MEMF_CLEAR | MEMF_PUBLIC ))==NULL)DoMethod(self, MUIM_IC_QuitInstall);
 
-		char *tmppath=AllocVec((strlen(message->dstFile) - strlen(dest_Path))+1, MEMF_CLEAR | MEMF_PUBLIC );
+		char *tmppath=AllocVec((strlen(message->dstFile) - strlen(dest_Path))+2, MEMF_CLEAR | MEMF_PUBLIC );
 
-		undorecord->undo_src = AllocVec((strlen(message->dstFile) - strlen(dest_Path))+strlen(instalationtmp_path) + 2, MEMF_CLEAR | MEMF_PUBLIC );
-		undorecord->undo_dst = AllocVec(strlen(message->dstFile)+1, MEMF_CLEAR | MEMF_PUBLIC );
+		undorecord->undo_src = AllocVec((strlen(message->dstFile) - strlen(dest_Path))+strlen(instalationtmp_path) + 3, MEMF_CLEAR | MEMF_PUBLIC );
+		undorecord->undo_dst = AllocVec(strlen(message->dstFile)+2, MEMF_CLEAR | MEMF_PUBLIC );
 
 		IPTR		src_point = (((message->dstFile) + strlen(dest_Path))+1),
 				src_len = (strlen(message->dstFile) - strlen(dest_Path));
@@ -2070,7 +2070,7 @@ copy_backup:
 
 		FreeVec(tmppath);
 		IPTR		undosrcpath = (((IPTR)FilePart(undorecord->undo_src) - (IPTR)(undorecord->undo_src)) - 1);
-		tmppath=AllocVec(undosrcpath+1, MEMF_CLEAR | MEMF_PUBLIC );
+		tmppath=AllocVec(undosrcpath+2, MEMF_CLEAR | MEMF_PUBLIC );
 
 		CopyMem(undorecord->undo_src, tmppath, undosrcpath);
 
@@ -2486,7 +2486,7 @@ int main(int argc,char *argv[])
 
 	D(bug("[INST-APP] Path length = %d bytes\n", pathend));
 
-	source_Path = AllocVec( pathend, MEMF_CLEAR | MEMF_PUBLIC );
+	source_Path = AllocVec( pathend + 1 , MEMF_CLEAR | MEMF_PUBLIC );
 	CopyMem(source_path, source_Path, pathend);
 	D(bug("[INST-APP] Launched from '%s'\n", source_Path));
 	FreeVec(source_path);
