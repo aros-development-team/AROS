@@ -4,8 +4,6 @@
 
 #include <stdio.h>
 
-#define DEBUG 1
-
 #include <proto/exec.h>
 
 #include <exec/memory.h>
@@ -21,12 +19,30 @@
 #include "afshandler.h"
 #include "baseredef.h"
 
-struct BlockCache *initCache(struct afsbase *afsbase, struct Volume *volume, ULONG numBuffers) {
+struct BlockCache *initCache
+	(
+		struct afsbase *afsbase,
+		struct Volume *volume,
+		ULONG numBuffers
+	)
+{
 struct BlockCache *head;
 struct BlockCache *cache;
 ULONG i;
 
-	if ((head=AllocVec(numBuffers*(sizeof(struct BlockCache)+BLOCK_SIZE(volume)),MEMF_PUBLIC | MEMF_CLEAR))) {
+	if (
+			(
+				head=AllocVec
+					(
+						numBuffers*
+						(
+							sizeof(struct BlockCache)+BLOCK_SIZE(volume)
+						)
+						,MEMF_PUBLIC | MEMF_CLEAR
+					)
+			)
+		)
+	{
 		cache=head;
 		for (i=0;i<(numBuffers-1);i++) {
 			cache->buffer=(ULONG *)((ULONG)cache+sizeof(struct BlockCache));
@@ -36,7 +52,12 @@ ULONG i;
 		cache->buffer=(ULONG *)((ULONG)cache+sizeof(struct BlockCache));
 		cache->next=0;
 	}
-	D(bug("initCache: my Mem is %lx size %lx\n",head,numBuffers*(sizeof(struct BlockCache)+BLOCK_SIZE(volume))));
+	D(bug
+		(
+			"initCache: my Mem is %lx size %lx\n",
+			head,
+			numBuffers*(sizeof(struct BlockCache)+BLOCK_SIZE(volume))
+		));
 	return head;
 }
 
@@ -65,7 +86,16 @@ void sendDeviceCmd(struct afsbase *afsbase, struct Volume *volume, UWORD command
 }
 /*******************************************************************/
 
-ULONG readDisk(struct afsbase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR mem, ULONG cmd) {
+ULONG readDisk
+	(
+		struct afsbase *afsbase,
+		struct Volume *volume,
+		ULONG start,
+		ULONG count,
+		APTR mem,
+		ULONG cmd
+	)
+{
 ULONG retval;
 QUAD offset;
 
@@ -78,9 +108,9 @@ QUAD offset;
 	volume->iorequest->iotd_Req.io_Actual=offset>>32;
 	retval=DoIO((struct IORequest *)&volume->iorequest->iotd_Req);
 	if (retval)
-		showError(afsbase, ERR_READWRITE);
+		showError(afsbase, ERR_READWRITE, retval);
 	if (volume->istrackdisk)
-		sendDeviceCmd(afsbase, volume,ETD_MOTOR);
+		sendDeviceCmd(afsbase, volume,TD_MOTOR);
 	return retval;
 }
 
