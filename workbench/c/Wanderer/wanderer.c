@@ -368,7 +368,7 @@ STATIC IPTR IconWindow_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    	if (is_open) set(obj, MUIA_Window_Open, TRUE);
 		     }
 		     break;
-		
+
 	}
     }
     return DoSuperMethodA(cl,obj,(Msg)msg);
@@ -380,7 +380,11 @@ STATIC IPTR IconWindow_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     struct IconWindow_Data *data = (struct IconWindow_Data*)INST_DATA(cl,obj);
     switch (msg->opg_AttrID)
     {
-	case	MUIA_IconWindow_Drawer: *msg->opg_Storage = xget(data->iconlist,MUIA_IconDrawerList_Drawer); return 1;
+	case	MUIA_IconWindow_Drawer:
+		if (!data->is_root)
+		    *msg->opg_Storage = xget(data->iconlist,MUIA_IconDrawerList_Drawer);
+		else *msg->opg_Storage = NULL;
+		return 1;
     }
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
