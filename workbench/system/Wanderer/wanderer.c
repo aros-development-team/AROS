@@ -4,7 +4,7 @@
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
-#define DEBUG 1
+#define DEBUG 0
 
 #include <exec/types.h>
 #include <libraries/gadtools.h>
@@ -599,6 +599,13 @@ IPTR Wanderer__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                 data->wd_ActiveWindow = (Object *) tag->ti_Data;
                 bug("*** wanderer active window: %p\n", tag->ti_Data);
                 break;
+		
+	    case MUIA_Application_Iconified:
+	        /* Wanderer itself cannot be iconified, 
+		   just hide, instead.  */
+	        tag->ti_Tag  = MUIA_ShowMe;
+		tag->ti_Data = !tag->ti_Data;
+		break; 
         }
     }
     
@@ -700,15 +707,14 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
         
         switch (wbhm->wbhm_Type)
         {
-	    #warning TODO: remember to override MUIA_Application_Iconified when appicon support is implemented.
             case WBHM_TYPE_SHOW:
                 D(bug("Wanderer: WBHM_TYPE_SHOW\n"));
-                set(self, MUIA_Application_Iconified, FALSE);
+                set(self, MUIA_ShowMe, TRUE);
                 break;
             
             case WBHM_TYPE_HIDE:
                 D(bug("Wanderer: WBHM_TYPE_HIDE\n"));
-                set(self, MUIA_Application_Iconified, TRUE);
+                set(self, MUIA_ShowMe, FALSE);
                 break;
                 
             case WBHM_TYPE_UPDATE:
