@@ -5,6 +5,7 @@
     Desc: startup code for AROS (main())
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE
 #include <aros/system.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -34,11 +35,6 @@
 #include <aros/machine.h>
 #include <aros/asmcall.h>
 #undef kprintf
-
-#define NEWLIST(l)                          \
-((l)->lh_Head=(struct Node *)&(l)->lh_Tail, \
- (l)->lh_Tail=NULL,                         \
- (l)->lh_TailPred=(struct Node *)(l))
 
 extern void *ExecFunctions[];
 extern const struct Resident Utility_resident;
@@ -89,23 +85,26 @@ static void boot(void)
     RemTask(NULL);
 }
 
-AROS_UFH2(void, IntServer,
-    AROS_LHA(struct Interrupt *,first,A1),
-    AROS_LHA(struct ExecBase *,SysBase,A6)
+AROS_UFH2 (void, IntServer,
+    AROS_UFHA (struct List      *,intList,A1),
+    AROS_UFHA (struct ExecBase  *,SysBase,A6)
 )
 {
-    while(first!=NULL)
+    struct Interrupt * irq;
+
+    ForeachNode (intList, irq)
     {
-	if(AROS_UFC2(int,first->is_Code,AROS_UFCA(APTR,first->is_Data,A1),
-					AROS_UFCA(struct ExecBase *,SysBase,A6)))
+	if (AROS_UFC2 (int, irq->is_Code,
+		AROS_UFCA (APTR,              irq->is_Data, A1),
+		AROS_UFCA (struct ExecBase *, SysBase,      A6)
+	))
 	    break;
-	first=(struct Interrupt *)first->is_Node.ln_Succ;
     }
 }
 
 AROS_UFH2(int, Dispatcher,
-    AROS_LHA(APTR,is_Data,A1),
-    AROS_LHA(struct ExecBase *,SysBase,A6)
+    AROS_UFHA (APTR,              is_Data, A1),
+    AROS_UFHA (struct ExecBase *, SysBase, A6)
 )
 {
     Disable();
@@ -305,9 +304,12 @@ int main(int argc,char *argv[])
 	    if((1<<i)&(INTF_PORTS|INTF_COPER|INTF_VERTB|INTF_EXTER|INTF_SETCLR))
 	    {
 		struct Interrupt *is;
-		is=(struct Interrupt *)AllocMem(sizeof(struct Interrupt),MEMF_PUBLIC);
+		struct SoftIntList *sil;
+		is=AllocMem(sizeof(struct Interrupt),MEMF_PUBLIC);
+		sil=AllocMem(sizeof(struct SoftIntList),MEMF_PUBLIC);
 		is->is_Code=&IntServer;
-		is->is_Data=NULL;
+		is->is_Data=sil;
+		NEWLIST((struct List *)sil);
 		SetIntVector(i,is);
 	    }
     }
