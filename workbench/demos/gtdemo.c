@@ -52,6 +52,8 @@ struct Gadget *button;
 #define ID_PALETTE 5
 #define ID_SLIDER 6
 #define ID_SCROLLER 7
+#define ID_STRING 8
+#define ID_INTEGER 9
 
 struct NewGadget buttongad =
 {
@@ -114,6 +116,20 @@ struct NewGadget scrollergad =
     380, 160, 20, 100,
     NULL, NULL,
     ID_SCROLLER, 0, NULL, NULL
+};
+
+struct NewGadget stringgad =
+{
+    420, 180, 100, 20,
+    "String (8)", NULL,
+    ID_STRING, PLACETEXT_ABOVE, NULL, NULL
+};
+
+struct NewGadget integergad =
+{
+    420, 240, 60, 20,
+    "Integer (9)", NULL,
+    ID_INTEGER, PLACETEXT_ABOVE, NULL, NULL
 };
 
 STRPTR mxlabels[] =
@@ -224,6 +240,8 @@ struct Gadget *makegadgets(struct Gadget *gad)
     numbergad.ng_VisualInfo = vi;
     slidergad.ng_VisualInfo = vi;
     scrollergad.ng_VisualInfo = vi;
+    stringgad.ng_VisualInfo = vi;
+    integergad.ng_VisualInfo = vi;
 
     gad = CreateGadget(BUTTON_KIND, gad, &buttongad,
                        GA_Immediate, TRUE,
@@ -291,6 +309,24 @@ D(bug("Created slider gadget: %p\n", gad));
 		       TAG_DONE);
 
 D(bug("Created scroller gadget: %p\n", gad));
+    gad = CreateGadget(STRING_KIND, gad, &stringgad,
+    		       GTST_String,		"Blahblahblah",
+    		       GTST_MaxChars,		80,
+    		       GTSC_Visible,		2,
+    		       GA_Immediate,		TRUE,
+		       TAG_DONE);
+
+D(bug("Created string gadget: %p\n", gad));
+
+    gad = CreateGadget(INTEGER_KIND, gad, &integergad,
+    		       GTIN_Number,		100,
+    		       GTIN_MaxChars,		5,
+    		       STRINGA_Justification,	GACT_STRINGCENTER,
+    		       GA_Immediate,		TRUE,
+		       TAG_DONE);
+
+D(bug("Created integer gadget: %p\n", gad));
+
     if (!gad) {
         FreeGadgets(glist);
         printf("GTDemo: Error creating gadgets\n");
