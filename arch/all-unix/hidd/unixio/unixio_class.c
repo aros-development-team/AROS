@@ -266,7 +266,7 @@ static void WaitForIO (void)
 reply:
 		    D(bug("wfio: Reply: fd=%ld res=%ld replying to task %x on port %x\n", msg->fd, msg->result, ((struct Message *)msg)->mn_ReplyPort->mp_SigTask,((struct Message *)msg)->mn_ReplyPort));
 /*
-kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x\n",((struct Task *)((struct Message *)msg)->mn_ReplyPort->mp_SigTask)->tc_Node.ln_Name,((struct Message *)msg)->mn_ReplyPort->mp_SigTask,((struct Message *)msg)->mn_ReplyPort);
+kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x (flags : 0x%0x)\n",((struct Task *)((struct Message *)msg)->mn_ReplyPort->mp_SigTask)->tc_Node.ln_Name,((struct Message *)msg)->mn_ReplyPort->mp_SigTask,((struct Message *)msg)->mn_ReplyPort,((struct Message *)msg)->mn_ReplyPort->mp_Flags);
 */
 		    Remove ((struct Node *)msg);
 		    flags = fcntl (msg->fd, F_GETFL);
@@ -343,7 +343,7 @@ static IPTR unixio_wait(Class *cl, Object *o, struct uioMsg *msg)
     IPTR retval = 0UL;
     struct UnixIOData *id = INST_DATA(cl, o);
     struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
-    struct MsgPort  * port = CreatePort(NULL, 0);//= id -> uio_ReplyPort;
+    struct MsgPort  * port = CreatePort(NULL, 0);
     struct uio_data *ud = (struct uio_data *)cl->UserData;
 
     if (umsg  && port)
@@ -366,7 +366,7 @@ kprintf("\tUnixIO::Wait() Task %s (%x) waiting on port %x\n",FindTask(NULL)->tc_
 	WaitPort (port);
 	GetMsg (port);
 
-DeletePort(port);
+        DeletePort(port);
 
 	D(bug("Get msg fd=%ld mode=%ld res=%ld\n", umsg->fd, umsg->mode, umsg->result));
 	retval = umsg->result;
@@ -380,6 +380,43 @@ DeletePort(port);
     return retval;
 }
 
+/************************
+**  UnixIO::AsyncIO()  **
+************************/
+static IPTR unixio_asyncio(Class *cl, Object *o, struct uioMsgAsyncIO *msg)
+{
+    IPTR retval = 0UL;
+    struct UnixIOData *id = INST_DATA(cl, o);
+    struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
+    struct MsgPort  * port = msg->um_ReplyPort;
+    struct uio_data *ud = (struct uio_data *)cl->UserData;
+
+    if (umsg)
+    {
+	port->mp_Flags   = PA_SOFTINT;
+
+	umsg->Message.mn_ReplyPort = port;
+	umsg->fd   = ((struct uioMsg *)msg)->um_Filedesc;
+	umsg->mode = ((struct uioMsg *)msg)->um_Mode;
+	umsg->callback = NULL;
+	umsg->callbackdata = NULL;
+
+	D(bug("Sending msg fd=%ld mode=%ld to port %x\n", umsg->fd, umsg->mode, ud->ud_Port));
+
+        /*
+        ** Just send the message and leave
+        ** When the message arrives on the port the user must free 
+        ** the message!
+        */
+	PutMsg (ud->ud_Port, (struct Message *)umsg);
+
+    }
+    else
+	retval = ENOMEM;
+
+    return retval;
+}
+
 
 
 /* This is the initialisation code for the HIDD class itself. */
@@ -388,7 +425,7 @@ DeletePort(port);
 
 
 #define NUM_ROOT_METHODS 2
-#define NUM_UNIXIO_METHODS 1
+#define NUM_UNIXIO_METHODS 2
 
 AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
     AROS_UFHA(ULONG, dummy1, D0),
@@ -415,6 +452,7 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
     struct MethodDescr unixio_mdescr[NUM_UNIXIO_METHODS + 1] =
     {
     	{ (IPTR (*)())unixio_wait,	moHidd_UnixIO_Wait		},
+    	{ (IPTR (*)())unixio_asyncio,	moHidd_UnixIO_AsyncIO		},
     	{ NULL, 0UL }
     };
     
@@ -573,6 +611,24 @@ IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode, APTR callback, APTR callbac
      
      return DoMethod((Object *)o, (Msg)&p);
 }
+
+IPTR Hidd_UnixIO_AsyncIO(HIDD *o, ULONG fd, struct MsgPort * port, ULONG mode)
+{
+     static MethodID mid = 0UL;
+     struct uioMsgAsyncIO p;
+     
+     if (!mid)
+     	mid = GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_AsyncIO);
+     p.um_MethodID = mid;
+     p.um_Filedesc = fd;
+     p.um_ReplyPort= port;
+     p.um_Mode	   = mode;
+     
+     return DoMethod((Object *)o, (Msg)&p);
+}
+
+
+
 
 
 /* The below function is just a hack to avoid
