@@ -1,69 +1,39 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+ * Copyright (c) 1993 Martin Birgmeier
+ * All rights reserved.
+ *
+ * You may redistribute unmodified or modified versions of this source
+ * code provided that the above copyright notice and this and the
+ * following conditions are retained.
+ *
+ * This software is provided ``as is'', and comes with no warranties
+ * of any kind. I shall in no event be liable for anything that happens
+ * to anyone/anything when using this software.
+ */
 
-    Desc: Function seed48()
-    Lang: english
-*/
+#include <sys/cdefs.h>
+__FBSDID("$FreeBSD$");
 
-#include <aros/machine.h>
-extern unsigned char __Xrand[8];
-extern unsigned char __Xrand_buffer[6];
-extern void __set_standardvalues(void);
-extern void __copy_x_to_buffer();
+#include "rand48.h"
 
-/*****************************************************************************
+extern unsigned short _rand48_seed[3];
+extern unsigned short _rand48_mult[3];
+extern unsigned short _rand48_add;
 
-    NAME */
-#include <stdlib.h>
-
-	unsigned short int * seed48 (
-
-/*  SYNOPSIS */
-	unsigned short int seed16v[3])
-
-/*  FUNCTION
-        Initialize the random number generator
-
-    INPUTS
-        seedval
-
-    RESULT
-        None
-
-    NOTES
-        This function must not be used in a shared library or
-        in a threaded application.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	dran48()
-
-    INTERNALS
-
-    HISTORY
-
-******************************************************************************/
+unsigned short *
+seed48(unsigned short xseed[3])
 {
-  __copy_x_to_buffer();
+	static unsigned short sseed[3];
 
-#if (AROS_BIG_ENDIAN == 0)
-  #define HIGH 4
-  #define MIDDLE 2
-  #define LOW 0
-#else
-  #define HIGH 2
-  #define MIDDLE 4
-  #define LOW 6
-#endif
-  *(unsigned short *)&__Xrand[HIGH]   = seed16v[2];
-  *(unsigned short *)&__Xrand[MIDDLE] = seed16v[1];
-  *(unsigned short *)&__Xrand[LOW]    = seed16v[0];
-
-  __set_standardvalues();
-  
-  return (unsigned short int *)__Xrand_buffer;
-} /* srand48 */
+	sseed[0] = _rand48_seed[0];
+	sseed[1] = _rand48_seed[1];
+	sseed[2] = _rand48_seed[2];
+	_rand48_seed[0] = xseed[0];
+	_rand48_seed[1] = xseed[1];
+	_rand48_seed[2] = xseed[2];
+	_rand48_mult[0] = RAND48_MULT_0;
+	_rand48_mult[1] = RAND48_MULT_1;
+	_rand48_mult[2] = RAND48_MULT_2;
+	_rand48_add = RAND48_ADD;
+	return sseed;
+}

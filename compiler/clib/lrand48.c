@@ -1,57 +1,26 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+ * Copyright (c) 1993 Martin Birgmeier
+ * All rights reserved.
+ *
+ * You may redistribute unmodified or modified versions of this source
+ * code provided that the above copyright notice and this and the
+ * following conditions are retained.
+ *
+ * This software is provided ``as is'', and comes with no warranties
+ * of any kind. I shall in no event be liable for anything that happens
+ * to anyone/anything when using this software.
+ */
 
-    Desc: Function lrand48()
-    Lang: english
-*/
+#include <sys/cdefs.h>
+__FBSDID("$FreeBSD$");
 
-#include <aros/machine.h>
-#include <stdio.h>
-extern void __calc_seed(unsigned short int xsubi[3]);
-extern unsigned char __Xrand[8];
+#include "rand48.h"
 
-/*****************************************************************************
+extern unsigned short _rand48_seed[3];
 
-    NAME */
-#include <stdlib.h>
-
-	long int lrand48 (
-
-/*  SYNOPSIS */
-	void)
-
-/*  FUNCTION
-        Compute a random integer between [0, 2^32-1]
-
-    INPUTS
-        None.
-
-    RESULT
-        Random number
-
-    NOTES
-        This function must not be used in a shared library or
-        in a threaded application.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	srand48(), erand48(), drand48()
-
-    INTERNALS
-
-    HISTORY
-
-******************************************************************************/
+long
+lrand48(void)
 {
-  unsigned long int retval;
-  
-  __calc_seed(NULL);
-
-  retval = *(long int *)&__Xrand[2];
-
-  return (retval>>1);
-} /* lrand48 */
+	_dorand48(_rand48_seed);
+	return ((long) _rand48_seed[2] << 15) + ((long) _rand48_seed[1] >> 1);
+}

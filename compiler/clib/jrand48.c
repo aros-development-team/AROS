@@ -1,59 +1,24 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+ * Copyright (c) 1993 Martin Birgmeier
+ * All rights reserved.
+ *
+ * You may redistribute unmodified or modified versions of this source
+ * code provided that the above copyright notice and this and the
+ * following conditions are retained.
+ *
+ * This software is provided ``as is'', and comes with no warranties
+ * of any kind. I shall in no event be liable for anything that happens
+ * to anyone/anything when using this software.
+ */
 
-    Desc: Function jrand48()
-    Lang: english
-*/
+#include <sys/cdefs.h>
+__FBSDID("$FreeBSD$");
 
-#include <aros/machine.h>
-extern void __calc_seed(unsigned short int xsubi[3]);
+#include "rand48.h"
 
-/*****************************************************************************
-
-    NAME */
-#include <stdlib.h>
-
-	long int jrand48 (
-
-/*  SYNOPSIS */
-	unsigned short int xsubi[3])
-
-/*  FUNCTION
-        Compute a random integer between [0, 2^32-1]
-
-    INPUTS
-        None.
-
-    RESULT
-        Random number
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	srand48(), erand48(), drand48()
-
-    INTERNALS
-
-    HISTORY
-
-******************************************************************************/
+long
+jrand48(unsigned short xseed[3])
 {
-	long int retval;
-	
-	__calc_seed(xsubi);
-
-#if (AROS_BIG_ENDIAN == 0)
-	retval = *(long int *)&xsubi[1];
-#else
-	retval = (unsigned long int)xsubi[1] | ((unsigned long int)xsubi[0] << 16);
-#endif	
-	if (retval < 0)
-		return (-retval | 0x80000000);
-
-	return retval;
-} /* jrand48 */
+	_dorand48(xseed);
+	return ((long) xseed[2] << 16) + (long) xseed[1];
+}
