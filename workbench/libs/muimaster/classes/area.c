@@ -661,29 +661,6 @@ static ULONG Area_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
     area_update_innersizes(obj, data, frame, zframe);
     
     msg->MinMaxInfo->MinWidth = _subwidth(obj);
-    if (data->mad_TitleText)
-    {
-	/* Save the orginal font */
-	struct TextFont *obj_font = _font(obj);
-
-	_font(obj) = zune_font_get(obj,MUIV_Font_Title);
-	zune_text_get_bounds(data->mad_TitleText, obj);
-
-        /* restore the font */
-	_font(obj) = obj_font;
-
-	_subheight(obj) = _subheight(obj) - _addtop(obj) + data->mad_TitleText->height + 1;
-	_addtop(obj) = data->mad_TitleText->height + 1;
-
-#if 0
-	if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
-	{
-	    _subheight(obj) += 1;
-	    _addtop(obj) += 1;
-	}
-#endif
-    }
-
     msg->MinMaxInfo->MinHeight = _subheight(obj);
 
     msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth;
@@ -851,6 +828,8 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data)
 
     zframe = zune_zframe_get_with_state(
 	&muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame], state);
+    /* update innersizes as there are frames which have different inner spacings in selected state */
+    area_update_innersizes(obj, data, frame, zframe);
 
     /* no frametitle, just draw frame and return */
     if (!data->mad_TitleText)
@@ -1859,6 +1838,30 @@ static void area_update_innersizes(Object *obj, struct MUI_AreaData *data,
     {
 	data->mad_subheight = CLAMP(data->mad_addtop + frame->innerBottom  + zframe->ibottom, 0, 127);
     }
+
+    if (data->mad_TitleText)
+    {
+	/* Save the orginal font */
+	struct TextFont *obj_font = _font(obj);
+
+	_font(obj) = zune_font_get(obj,MUIV_Font_Title);
+	zune_text_get_bounds(data->mad_TitleText, obj);
+
+        /* restore the font */
+	_font(obj) = obj_font;
+
+	_subheight(obj) = _subheight(obj) - _addtop(obj) + data->mad_TitleText->height + 1;
+	_addtop(obj) = data->mad_TitleText->height + 1;
+
+#if 0
+	if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
+	{
+	    _subheight(obj) += 1;
+	    _addtop(obj) += 1;
+	}
+#endif
+    }
+
 
 /*      D(bug("area_update_innersizes(%x,%d) => addleft/top=%d/%d, subwidth/height=%d/%d\n", */
 /*  	  obj, data->mad_Frame, data->mad_addleft, data->mad_addtop, data->mad_subwidth, data->mad_subheight)); */
