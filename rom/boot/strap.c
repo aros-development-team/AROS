@@ -144,9 +144,19 @@ struct MsgPort *mp=CreateMsgPort();
 
 				if (!DoIO((struct IORequest *)&iotd->iotd_Req))
 				{
-#warning "TODO: check bootblock for bootable code"
 					if ((AROS_BE2LONG(buf[0]) & 0xFFFFFF00)==0x444F5300)
 						retval=1;
+					else
+					{
+						iotd->iotd_Req.io_Offset =
+							((de->de_LowCyl*de->de_Surfaces*
+							de->de_BlocksPerTrack)+1)*(de->de_SizeBlock*4);
+						if (!DoIO((struct IORequest *)&iotd->iotd_Req))
+						{
+							if ((AROS_BE2LONG(buf[0]) & 0xFFFFFF00)==0x444F5300)
+								retval=1;
+						}
+					}
 				}
 				if (strcmp(AROS_BSTR_ADDR(fssm->fssm_Device),"trackdisk.device")==0)
 				{
