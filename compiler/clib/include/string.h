@@ -31,6 +31,10 @@ size_t strspn (const char * s1, const char * s2);
 char * strstr (const char * buf, const char * str);
 char * strtok (char * s1, const char * s2);
 
+char * strrev(char * s); /* SAS C */
+int stch_l(const char * in, long * lvalue); /* SAS C */
+int stcu_d(char * out, unsigned uivalue); /* SAS C */
+
 void * memchr (const void * dest, int c, size_t n);
 int memcmp (const void * s1, const void * s2, size_t n);
 void * memcpy (void * dest, const void * src, size_t n);

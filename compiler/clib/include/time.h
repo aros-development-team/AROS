@@ -35,6 +35,8 @@
 #   endif
 #endif
 
+#define CLOCKS_PER_SEC 50
+
 struct tm
 {
     int tm_sec;

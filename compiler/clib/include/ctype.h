@@ -44,6 +44,8 @@ extern const int *const __ctype_tolower;
 #define iscntrl(c)      _istype(c,_IScntrl)
 #define ispunct(c)      _istype(c,_ISpunct)
 #define isalnum(c)      _istype(c,_ISalnum)
+#define iscsym(c)	(isalnum(c) || (((c) & 127) == 0x5F))	/* SAS C */
+#define iscsymf(c)	(isalpha(c) || (((c) & 127) == 0x5F)) 	/* SAS C */
 
 #define toupper(c)      (__ctype_toupper[(int)(c)])
 #define tolower(c)      (__ctype_tolower[(int)(c)])

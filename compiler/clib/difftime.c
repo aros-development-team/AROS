@@ -1,0 +1,57 @@
+/*
+    (C) 1995-2000 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Return the number of seconds elapsed between time2 and time1.
+    Lang: english
+*/
+
+/*****************************************************************************
+
+    NAME */
+#include <time.h>
+
+	double difftime (
+
+/*  SYNOPSIS */
+	time_t time2,
+	time_t time1)
+
+/*  FUNCTION
+       difftime() returns the number of seconds elapsed between
+       time time2 and time time1. 
+
+    INPUTS
+	time2 - time value from which time1 is subtracted
+	time1 - time value that is subtracted from time2
+
+    RESULT
+	The number of seconds elapsed in double precision.
+
+    NOTES
+
+    EXAMPLE
+	time_t tt1, tt2;
+	double secs;
+	
+	time (&tt1);
+        ...
+	time (&tt2);
+	
+	secs = difftime(tt2, tt1);
+	
+    BUGS
+
+    SEE ALSO
+	time(), ctime(), asctime(), localtime()
+
+    INTERNALS
+
+    HISTORY
+	15.12.2000 stegerg created
+
+******************************************************************************/
+{
+    return (double)(time2 - time1);
+    
+} /* difftime */
