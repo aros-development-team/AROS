@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Assign CLI command
@@ -22,131 +22,109 @@
 #include <stdio.h>
 #include <string.h>
 
+
+/******************************************************************************
+
+
+    NAME
+
+        Assign [(name):] [{(target)}] [LIST] [EXISTS] [DISMOUNT] [DEFER]
+	       [PATH] [ADD] [REMOVE] [VOLS] [DIRS] [DEVICES]
+
+    SYNOPSIS
+
+        NAME, TARGET/M, LIST/S, EXISTS/S, DISMOUNT/S, DEFER/S, PATH/S, ADD/S,
+	REMOVE/S, VOLS/S, DIRS/S, DEVICES/S
+
+    LOCATION
+
+        Workbench:C
+
+    FUNCTION
+
+        ASSIGN creates a reference to a file or directory. The reference 
+	is a logical device name which makes it very convenient to specify
+	assigned objects using the reference instead of their paths.
+
+	If the NAME and TARGET arguments are given, ASSIGN assigns the
+	given logical name to the specified target. If the NAME given is
+	already assigned to a file or directory the new target replaces the 
+	previous target. A colon must be included after the NAME argument.
+
+	If only the NAME argument is given, any assigns to that NAME are
+	removed. If no arguments whatsoever are given, all logical
+	assigns are listed.
+
+    INPUTS
+
+        NAME      --  the name that should be assigned to a file or directory
+	TARGET    --  one or more files or directories to assign the NAME to
+	LIST      --  list all assigns made
+	EXISTS    --  if NAME is already assigned, set the condition flag to
+	              WARN
+	DISMOUNT  --  remove the volume or device NAME from the dos list
+	DEFER     --  make an ASSIGN to a path or directory that not need to
+	              exist at the time of assignment. The first time the
+		      NAME is referenced the NAME is bound to the object
+	PATH      --  path to assign with a non-binding assign. This means
+	              that the assign is re-evaluated each time a reference
+		      to NAME is done. Like for DEFER, the path doesn't have
+		      to exist when the ASSIGN command is executed
+	ADD       --  don't replace an assign but add another object for a
+                      NAME (multi-assigns)
+	REMOVE    --  remove an ASSIGN
+	VOLS      --  show assigned volumes if in LIST mode
+	DIRS      --  show assigned directories if in LIST mode
+	DEVICES   --  show assigned devices if in LIST mode
+        
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+        The assign command has many switches. This together with the somewhat
+	messy handling of DosList:s by dos.library makes the operation rather
+	complicated.
+
+	There are some fundamental building blocks that defines the semantics
+	of the Assign command.
+
+	Only one of the switches ADD, REMOVE, PATH and DEFER may be specified.
+	
+	If EXISTS is specified, only the name parameter is important.
+	
+	The implementation is split up in two fundamental procedures.
+	
+	doAssign()     --  make [a number of] assigns
+	showAssigns()  --  show the available assigns
+	checkAssign()  --  check if a particular assign exists
+	
+    HISTORY
+
+******************************************************************************/
+
 static const char version[] = "$VER: assign 41.5 (12.11.2000)\n";
 
 
 /* Prototypes */
 
 int checkAssign(STRPTR name);
-
 int doAssign(STRPTR name, STRPTR *target, BOOL dismount, BOOL defer, BOOL path,
 	     BOOL add, BOOL remove);
-
 void showAssigns(BOOL vols, BOOL dirs, BOOL devices);
-
 int removeAssign(STRPTR name);
-
 STRPTR GetFullPath(BPTR lock);
 
 
-/*
-Format:    ASSIGN [(name):] [[(target)}] [LIST] [EXISTS] [DISMOUNT] [DEFER] [PA
-TH]          
-[ADD] [REMOVE] [VOLS] [DIRS] [DEVICES]
-
-Template:  NAME,TARGET/M,LIST/S,EXISTS/S,DISMOUNT/S,DEFER/S,PATH/S,ADD/S
-           REMOVE/S,VOLS/S,DIRS/S,DEVICES/S
-
-Location:  C:
-     _________________________________________________________________
-
-   ASSIGN allows the references to files or directories with short,
-   convenient logical device names, rather than their usual names or
-   complete paths. The ASSIGN command can create assignments, remove
-   assignments, or list some or all current assignments
-
-   If the (name) and {(target}) arguments are given, ASSIGN assigns the
-   given logical name to the specified target. Each time the assigned
-   logical device name is referred to, AmigaDOS accesses the specified
-   target. If the (name) given is already assigned to a file or
-   directory, the new target replaces the previous one. A colon must be
-   included after the (name) argument.
-
-   If only the (name) argument is given, any existing ASSIGN of a file or
-   directory to that logical device is cancelled.
-
-   You can assign several logical device names to the same target by
-   using multiple ASSIGN commands.
-
-   You can assign one logical device name to several targets by
-   specifying each file or directory after the (name) argument or by
-   using several ASSIGN commands with teh ADD option. Specifying the ADD
-   option does not replace any existing target assigned to (name). This
-   target is added to the ASSIGN list and the system searches for all the
-   targets when (name) is encountered. If the first target is not
-   available, ASSIGN uses the next target added.
-
-   The REMOVE option deletes a target name from the ASSIGN list.
-
-   If no arguments are given the ASSIGN or if the LIST keyowrd is used, a
-   list of all current assignments is displayed. If the VOLS, DIRS, or
-   DEVICES switch is specified, ASSIGN limits the display to volumes,
-   directories, or devices.
-
-   When the {(target)} argument is given, AmigaDOS immediately looks for
-   that file or directory. If the ASSIGN commands are part of the
-   User-startup, the targets must be present on a mounted disk during the
-   boot procedure. If the an assigned target cannot be found a requester
-   will apear asking for it. However using the DEFER and PATH options
-   make the system wait until the target is needed before searching for
-   it.
-
-   The DEFER option creates a late-binding ASSIGN. This ASSIGN takes
-   effect when the assigned object is first referenced, rather than when
-   the assignment is made. When the DEFER option is used, the disk
-   containing the assigned target is not needed until the object is
-   called. The assignment then remains vaild until explicitly changed.
-
-   The PATH option creates a non-binding ASSIGN. A non-binding ASSIGN
-   acts like a DEFERred assign, except that it is re-evaliated each time
-   the assigned name is referenced. For example, if you assign FONTS: to
-   DF0:Fonts with the path option, any disk in DF0: is searched when
-   FONTS: is referenced. As long as the disk contains a Fonts directory,
-   it satisfies the ASSIGN. You cannot assign multiple assigns with the
-   PATh option.
-
-   The DISMOUNT option disconnects a volume or device from the list of
-   mounted devices. You must provide the device name in the argument.
-   DISMOUNT removes the name from the list, but does not free
-   resouourses. You cannout cancel a DISMOUNT with out rebooting.
-   DISMOUNT is ment for use by software developers only and can cause a
-   software failure if not used carefully.
-
-   If the EXISTS keyword is specified, the NAME parameter represents
-   a name which is checked if it exists as an assing. If not, the
-   return value is set to WARN.
-
-     _________________________________________________________________
-
-   Example:
-     * Assign fonts: myfonts:fontdir
-
-     assigns the FONTS: directory Fontdir on Myfonts
-     _________________________________________________________________
-*/
-
-
-/* INTERNALS:
-
-   The assign command has many switches. This together with the somewhat
-   messy handling of DosList:s by dos.library makes the operation rather
-   complicated.
-
-   There are some fundamental building blocks that defines the semantics
-   of the Assign command.
-
-   Only one of the switches ADD, REMOVE, PATH and DEFER may be specified.
-
-   If no TARGET is given, the NAME is removed as an assign.
-
-   If EXISTS is specified, only the name parameter is important.
-   
-   The implementation is split up in two fundamental procedures.
- 
-   doAssign()     --  make [a number of] assigns
-   showAssigns()  --  show the available assigns
-   checkAssign()  --  check if a particular assign exists
-*/
+#define  ARG_TEMPLATE  "NAME,TARGET/M,LIST/S,EXISTS/S,DISMOUNT/S,DEFER/S,PATH/S,ADD/S,REMOVE/S,VOLS/S,DIRS/S,DEVICES/S"
 
 enum
 {
@@ -175,14 +153,13 @@ int main (int argc, char ** argv)
     struct RDArgs *rda;
     int error = RETURN_OK;
 
-    /* No /M for target for now... */
-    rda = ReadArgs("NAME,TARGET/M,LIST/S,EXISTS/S,DISMOUNT/S,DEFER/S,PATH/S,ADD/S,REMOVE/S,VOLS/S,DIRS/S,DEVICES/S", args, NULL);
+    rda = ReadArgs(ARG_TEMPLATE, args, NULL);
     
     if(rda != NULL)
     {
 	/* Get correct types and reduce complexity for clarity */
 	STRPTR  name     = (STRPTR)args[ARG_NAME];
-	STRPTR *target   = (STRPTR)args[ARG_TARGET];
+	STRPTR *target   = (STRPTR *)args[ARG_TARGET];
 	BOOL    list     = (BOOL)args[ARG_LIST];
 	BOOL    exists   = (BOOL)args[ARG_EXISTS];
 	BOOL    dismount = (BOOL)args[ARG_DISMOUNT];
@@ -227,6 +204,7 @@ int main (int argc, char ** argv)
 	{
 	    printf("Only one of ADD, REMOVE, PATH or DEFER is allowed\n");
 	    FreeArgs(rda);
+
 	    return RETURN_FAIL;
 	}
 	
@@ -265,7 +243,9 @@ int main (int argc, char ** argv)
 	FreeArgs(rda);
     }
     else
+    {
 	error = RETURN_FAIL;
+    }
     
     return error;
 }
@@ -319,7 +299,9 @@ void showAssigns(BOOL vols, BOOL dirs, BOOL devices)
 	    printf(tdl->dol_DevName);
 	    
 	    for(count = 15 - strlen(tdl->dol_DevName); count > 0; count--)
+	    {
 		printf(" ");
+	    }
 	    
 	    switch(tdl->dol_Type)
 	    {
@@ -334,7 +316,7 @@ void showAssigns(BOOL vols, BOOL dirs, BOOL devices)
 	    default:
 		{
 		    STRPTR             dirName;     /* For NameFromLock() */
-		    struct AssignList *nextAssign;  /* For multiassings */
+		    struct AssignList *nextAssign;  /* For multiassigns */
 
 		    dirName = GetFullPath(tdl->dol_Lock);
 		    
@@ -344,7 +326,9 @@ void showAssigns(BOOL vols, BOOL dirs, BOOL devices)
 			FreeVec(dirName);
 		    }
 		    else
+		    {
 			printf("\n");
+		    }
 		    
 		    nextAssign = tdl->dol_misc.dol_assign.dol_List;
 		    
@@ -391,7 +375,9 @@ void showAssigns(BOOL vols, BOOL dirs, BOOL devices)
 	}
 	
 	if(count <  5)
+	{
 	    printf("\n");
+	}
     }
     
     UnLockDosList(lockBits);
@@ -408,7 +394,9 @@ STRPTR GetFullPath(BPTR lock)
 	buf = AllocVec(size, MEMF_ANY);
 
 	if(buf == NULL)
+	{
 	    break;
+	}
 
 	if(NameFromLock(lock, buf, size))
 	{
@@ -439,6 +427,7 @@ int doAssign(STRPTR name, STRPTR *target, BOOL dismount, BOOL defer, BOOL path,
     if(colon == NULL || colon[1] != 0)
     {
 	printf("Invalid device name %s\n", name);
+
 	return RETURN_FAIL;
     }
 
@@ -520,7 +509,9 @@ int doAssign(STRPTR name, STRPTR *target, BOOL dismount, BOOL defer, BOOL path,
 
 	/* We break as soon as we get a serious error */
 	if(error == RETURN_FAIL)
+	{
 	    return error;
+	}
 
     } /* loop through all targets */
 
@@ -542,7 +533,9 @@ int removeAssign(STRPTR name)
     element = FindDosEntry(dl, name, LDF_ASSIGNS);
 
     if(element != NULL)
+    {
 	UnLock(element->dol_Lock);
+    }
 
     /* For now, we don't free any (possible) multiassign locks. Hopefully
        RemAssignList() should be able to do this, but I'm not sure... */
@@ -562,8 +555,10 @@ int checkAssign(STRPTR name)
 
     dl = LockDosList(LDF_DEVICES | LDF_ASSIGNS | LDF_VOLUMES | LDF_READ);
 
-    if(FindDosEntry(dl, name, LDF_DEVICES | LDF_ASSIGNS | LDF_VOLUMES) == NULL)
+    if (FindDosEntry(dl, name, LDF_DEVICES | LDF_ASSIGNS | LDF_VOLUMES) == NULL)
+    {
 	error = RETURN_WARN;
+    }
 
     UnLockDosList(LDF_DEVICES | LDF_ASSIGNS | LDF_VOLUMES | LDF_READ);
 
