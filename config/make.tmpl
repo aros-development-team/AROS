@@ -464,7 +464,9 @@ libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
 	@$(ECHO) "Generating $@..."
 	@$(AWK) -f $(BINDIR)/scripts/genlibdefs.awk $< > $@
 
+ifndef FUNCTABLE_SRCS
 FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
+endif
 
 functable.c : $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfunctable.awk \
 	    libdefs.h
