@@ -308,7 +308,7 @@ IPTR Calendar__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
     data->base_cellwidth = data->cellwidth;
     data->base_cellheight = data->cellheight;
     
-    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
     
     return TRUE;
 }
@@ -318,7 +318,7 @@ IPTR Calendar__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
  
-    DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
     
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
@@ -347,7 +347,7 @@ IPTR Calendar__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     struct Calendar_DATA *data = INST_DATA(cl, obj);
     struct Region   	*region;
     struct Rectangle 	 rect;
-    APTR    	    	 clip;
+    APTR    	    	 clip = NULL;
     WORD    	    	 x, y, offx, offy, day, mdays;
 
     x = (_mwidth(obj) - 2) / 7;

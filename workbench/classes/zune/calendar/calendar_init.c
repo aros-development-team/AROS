@@ -45,7 +45,7 @@ AROS_SET_LIBFUNC( Calendar_Startup, LIBBASETYPE, LIBBASE )
     return TRUE;
 
 error:
-    if( TimerBase != NULL ) CloseDevice( TimerIO );
+    if( TimerBase != NULL ) CloseDevice( (struct IORequest *) TimerIO );
     if( TimerIO != NULL ) FreeMem( TimerIO, sizeof( struct timerequest ) );
     
     return FALSE;
@@ -53,8 +53,10 @@ error:
 
 AROS_SET_LIBFUNC( Calendar_Shutdown, LIBBASETYPE, LIBBASE )
 {
-    if( TimerBase != NULL ) CloseDevice( TimerIO );
+    if( TimerBase != NULL ) CloseDevice( (struct IORequest *) TimerIO );
     if( TimerIO != NULL ) FreeMem( TimerIO, sizeof( struct timerequest ) );
+
+    return TRUE;
 }
 
 ADD2INITLIB( Calendar_Startup, 1 );
