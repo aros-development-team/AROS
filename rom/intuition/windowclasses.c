@@ -248,16 +248,23 @@ static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
 	
 	data->rp = CloneRastPort(&w->WScreen->RastPort);
 	if (data->rp)
-	{
-	
-	
-	    data->isrendered = FALSE;
-	    
+	{	    
 	    /* Lock all layers while the window is dragged */
 D(bug("locking all layers\n"));
 	    LockLayers(&w->WScreen->LayerInfo);
+	    	    
+	    SetDrMd(data->rp, COMPLEMENT);
 	    
-	
+	    drawwindowframe(data->rp
+			    , data->curleft
+			    , data->curtop
+			    , data->curleft + w->Width  - 1
+			    , data->curtop  + w->Height - 1
+			    , IntuitionBase
+	    );
+	    
+	    data->isrendered = TRUE;
+	    
 	    retval = GMR_MEACTIVE;
 	}
     }
@@ -393,27 +400,24 @@ static IPTR dragbar_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
     w = msg->gpgi_GInfo->gi_Window;
     
     /* Allways clear last drawn frame */
-		
-    if (data->curleft != w->LeftEdge || data->curtop != w->TopEdge)
+			    
+    if (data->isrendered)
     {
-		    
-	if (data->isrendered)
-	{
 
-	    SetDrMd(data->rp, COMPLEMENT);
-	    
-	    /* Erase old frame */
-	    drawwindowframe(data->rp
-			   , data->curleft
-			   , data->curtop
-			   , data->curleft + w->Width  - 1
-			   , data->curtop  + w->Height - 1
-			   , IntuitionBase
-	    );
-			
-	}
-	
+	SetDrMd(data->rp, COMPLEMENT);
+
+	/* Erase old frame */
+	drawwindowframe(data->rp
+		       , data->curleft
+		       , data->curtop
+		       , data->curleft + w->Width  - 1
+		       , data->curtop  + w->Height - 1
+		       , IntuitionBase
+	);
+
     }
+	
+
     if (!data->drag_canceled)
     {
 	    
@@ -614,16 +618,23 @@ static IPTR sizebutton_goactive(Class *cl, Object *o, struct gpInput *msg)
 
 	data->rp = CloneRastPort(&w->WScreen->RastPort);
 	if (data->rp)
-	{
-	
-	
-	    data->isrendered = FALSE;
-	    
+	{      
 	    /* Lock all layers while the window is resized */
 D(bug("locking all layers\n"));
 	    LockLayers(&w->WScreen->LayerInfo);
 	    
+	    SetDrMd(data->rp, COMPLEMENT);
+	    
+	    drawwindowframe(data->rp
+			    , w->LeftEdge
+			    , w->TopEdge
+			    , w->LeftEdge + data->width  - 1
+			    , w->TopEdge  + data->height - 1
+			    , IntuitionBase
+	    );
 	
+	    data->isrendered = TRUE;
+	    
 	    retval = GMR_MEACTIVE;
 	}
     }
@@ -756,27 +767,23 @@ static IPTR sizebutton_goinactive(Class *cl, Object *o, struct gpGoInactive *msg
     w = msg->gpgi_GInfo->gi_Window;
     
     /* Allways clear last drawn frame */
-		
-    if (data->width != w->Width || data->height != w->Height)
+			    
+    if (data->isrendered)
     {
-		    
-	if (data->isrendered)
-	{
 
-	    SetDrMd(data->rp, COMPLEMENT);
-	    
-	    /* Erase old frame */
-	    drawwindowframe(data->rp
-			   , w->LeftEdge
-			   , w->TopEdge
-			   , w->LeftEdge + data->width  - 1
-			   , w->TopEdge  + data->height - 1
-			   , IntuitionBase
-	    );
-			
-	}
-	
+	SetDrMd(data->rp, COMPLEMENT);
+
+	/* Erase old frame */
+	drawwindowframe(data->rp
+		       , w->LeftEdge
+		       , w->TopEdge
+		       , w->LeftEdge + data->width  - 1
+		       , w->TopEdge  + data->height - 1
+		       , IntuitionBase
+	);
+
     }
+	
     if (!data->drag_canceled)
     {
 	    
