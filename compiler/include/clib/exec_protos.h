@@ -160,12 +160,12 @@ __AROS_LP1(void, AddDevice,
 __AROS_LP2I(void, AddHead,
     __AROS_LPA(struct List *, list, A0),
     __AROS_LPA(struct Node *, node, A1),
-    struct SysBase *, SysBase, 40, Exec)
+    struct ExecBase *, SysBase, 40, Exec)
 #define AddHead(list, node) \
     __AROS_LC2I(void, AddHead, \
     __AROS_LCA(struct List *, list, A0), \
     __AROS_LCA(struct Node *, node, A1), \
-    struct SysBase *, SysBase, 40, Exec)
+    struct ExecBase *, SysBase, 40, Exec)
 
 __AROS_LP1(void, AddLibrary,
     __AROS_LPA(struct Library *, library,A1),
@@ -226,12 +226,12 @@ __AROS_LP1(void, AddSemaphore,
 __AROS_LP2I(void, AddTail,
     __AROS_LPA(struct List *, list, A0),
     __AROS_LPA(struct Node *, node, A1),
-    struct SysBase *, SysBase, 41, Exec)
+    struct ExecBase *, SysBase, 41, Exec)
 #define AddTail(list, node) \
     __AROS_LC2I(void, AddTail, \
     __AROS_LCA(struct List *, list, A0), \
     __AROS_LCA(struct Node *, node, A1), \
-    struct SysBase *, SysBase, 41, Exec)
+    struct ExecBase *, SysBase, 41, Exec)
 
 __AROS_LP3(APTR, AddTask,
     __AROS_LPA(struct Task *,     task,      A1),
@@ -474,22 +474,22 @@ __AROS_LP1(BYTE, DoIO,
 __AROS_LP2I(void, Enqueue,
     __AROS_LPA(struct List *, list, A0),
     __AROS_LPA(struct Node *, node, A1),
-    struct SysBase *, SysBase, 45, Exec)
+    struct ExecBase *, SysBase, 45, Exec)
 #define Enqueue(list, node) \
     __AROS_LC2I(void, Enqueue, \
     __AROS_LCA(struct List *, list, A0), \
     __AROS_LCA(struct Node *, node, A1), \
-    struct SysBase *, SysBase, 45, Exec)
+    struct ExecBase *, SysBase, 45, Exec)
 
 __AROS_LP2I(struct Node *, FindName,
     __AROS_LPA(struct List *, list, A0),
     __AROS_LPA(UBYTE       *, name, A1),
-    struct SysBase *, SysBase, 46, Exec)
+    struct ExecBase *, SysBase, 46, Exec)
 #define FindName(list, name) \
     __AROS_LC2I(struct Node *, FindName, \
     __AROS_LCA(struct List *, list, A0), \
     __AROS_LCA(UBYTE       *, name, A1), \
-    struct SysBase *, SysBase, 46, Exec)
+    struct ExecBase *, SysBase, 46, Exec)
 
 __AROS_LP1(struct MsgPort *, FindPort,
     __AROS_LPA(STRPTR, name,A1),
@@ -603,13 +603,13 @@ __AROS_LP3I(void, Insert,
     __AROS_LPA(struct List *, list, A0),
     __AROS_LPA(struct Node *, node, A1),
     __AROS_LPA(struct Node *, pred, A2),
-    struct SysBase *, SysBase, 39, Exec)
+    struct ExecBase *, SysBase, 39, Exec)
 #define Insert(list, node, pred) \
     __AROS_LC3I(void, Insert, \
     __AROS_LCA(struct List *, list, A0), \
     __AROS_LCA(struct Node *, node, A1), \
     __AROS_LCA(struct Node *, pred, A2), \
-    struct SysBase *, SysBase, 39, Exec)
+    struct ExecBase *, SysBase, 39, Exec)
 
 __AROS_LP3(ULONG, MakeFunctions,
     __AROS_LPA(APTR, target,        A0),
@@ -779,11 +779,11 @@ __AROS_LP1(void, RemDevice,
 
 __AROS_LP1I(struct Node *, RemHead,
     __AROS_LPA(struct List *, list, A0),
-    struct SysBase *, SysBase, 43, Exec)
+    struct ExecBase *, SysBase, 43, Exec)
 #define RemHead(list) \
     __AROS_LC1I(struct Node *, RemHead, \
     __AROS_LCA(struct List *, list, A0), \
-    struct SysBase *, SysBase, 43, Exec)
+    struct ExecBase *, SysBase, 43, Exec)
 
 __AROS_LP1(void, RemLibrary,
     __AROS_LPA(struct Library *, library,A1),
@@ -803,11 +803,11 @@ __AROS_LP1(void, RemMemHandler,
 
 __AROS_LP1I(void, Remove,
     __AROS_LPA(struct Node *, node, A1),
-    struct SysBase *, SysBase, 42, Exec)
+    struct ExecBase *, SysBase, 42, Exec)
 #define Remove(node) \
     __AROS_LC1I(void, Remove, \
     __AROS_LCA(struct Node *, node, A1), \
-    struct SysBase *, SysBase, 42, Exec)
+    struct ExecBase *, SysBase, 42, Exec)
 
 __AROS_LP1(void, RemPort,
     __AROS_LPA(struct MsgPort *, port, A1),
@@ -835,11 +835,11 @@ __AROS_LP1(void, RemSemaphore,
 
 __AROS_LP1I(struct Node *, RemTail,
     __AROS_LPA(struct List *, list, A0),
-    struct SysBase *, SysBase, 44, Exec)
+    struct ExecBase *, SysBase, 44, Exec)
 #define RemTail(list) \
     __AROS_LC1I(struct Node *, RemTail, \
     __AROS_LCA(struct List *, list, A0), \
-    struct SysBase *, SysBase, 44, Exec)
+    struct ExecBase *, SysBase, 44, Exec)
 
 __AROS_LP1(void, RemTask,
     __AROS_LPA(struct Task *,     task, A1),
