@@ -28,6 +28,7 @@
 #include <proto/arossupport.h>
 /* #include <proto/alib.h> */
 #include "intuition_intern.h"
+#include "gadgets.h"
 
 #undef GfxBase
 #undef LayersBase
@@ -218,19 +219,8 @@ void intui_RefreshWindowFrame(struct Window *w)
     
     SetAPen(rp, 1);
     D(bug("Pen set\n"));
-    Move(rp, 0, 0);
-    D(bug("RP move\n"));
+    drawrect(rp, 0, 0, w->Width - 1, w->Height - 1, IntuitionBase);
 
-    D(bug("Window dims: (%d, %d, %d, %d)\n"
-    	, w->LeftEdge, w->TopEdge, w->Width, w->Height));
-	
-    Draw(rp, w->Width - 1, 0);
-    D(bug("Line drawn\n"));
-    
-    Draw(rp, w->Width - 1, w->Height - 1);
-    Draw(rp, 0,  w->Height - 1);
-    Draw(rp, 0, 0);
-    
     /* Refresh all the sytem gadgets */
     
     for (i = 0; i < NUM_SYSGADS; i ++)
