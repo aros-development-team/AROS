@@ -717,20 +717,16 @@ static void ScrollTo(UWORD dir, UWORD quali)
 	{
 	    g = (struct Gadget *)gad[GAD_VERTSCROLL];
 	}
-#if 0
+
 	SetGadgetAttrs(g, win, NULL, PGA_Top, top,
 				     TAG_DONE);
-#else
-    	{
-    	    struct TagItem tags[] =
-	    {
-		{PGA_Top    , top   },
-		{TAG_DONE	    }
-	    };
 
-	    DoGadgetMethod(g, win, NULL, OM_UPDATE, (IPTR)tags, NULL, 0);
-	}   
-#endif
+#ifdef __MORPHOS__
+    	/* Looks like setting PGA_Top on Amiga does not cause OM_NOTIFIEs
+           to be sent (to dto). Or something like that. */
+
+	SetDTAttrs(dto, win, NULL, (horiz ? DTA_TopHoriz : DTA_TopVert), top, TAG_DONE);
+#endif	   
 
     } /* if (top != oldtop) */
     
@@ -875,6 +871,17 @@ static void HandleAll(void)
 			{
 			    switch((ULONG)GTMENUITEM_USERDATA(item))
 			    {
+				case MSG_MEN_PROJECT_OPEN:
+				    filename = GetFile();
+				    if (filename) OpenDTO();
+				    break;
+				
+				case MSG_MEN_PROJECT_SAVEAS:
+				    break;
+				    
+				case MSG_MEN_PROJECT_PRINT:
+				    break;
+				    
 				case MSG_MEN_PROJECT_ABOUT:
 				    About();
 				    break;
@@ -883,11 +890,28 @@ static void HandleAll(void)
 				    quitme = TRUE;
 				    break;
 				
-				case MSG_MEN_PROJECT_OPEN:
-				    filename = GetFile();
-				    if (filename) OpenDTO();
+				case MSG_MEN_EDIT_MARK:
+				#if defined(_AROS) && !defined(__MORPHOS__)
+				    if (StartDragSelect(dto))
+				#else
+				    {
+				    	struct DTSpecialInfo *si;
+					
+					/*
+					** ClipView example on AmigaDev CD does just the following.
+					** None of the checks AROS datatypes.library/StartDragSelect()
+					** does.
+					*/
+					   
+					si = (struct DTSpecialInfo *)(((struct Gadget *)dto)->SpecialInfo);
+					si->si_Flags |= DTSIF_DRAGSELECT;
+				    }
+				#endif
+				    {
+				    	#warning TODO: change mouse pointer to crosshair
+				    }
 				    break;
-				
+				    
 				case MSG_MEN_EDIT_COPY:
 				    {
 					struct dtGeneral dtg;
@@ -899,6 +923,9 @@ static void HandleAll(void)
 				    }
 				    break;
 				
+				case MSG_MEN_EDIT_SELECTALL:
+				    break;
+				    
 				case MSG_MEN_EDIT_CLEARSELECTED:
 				    {
 					struct dtGeneral dtg;
@@ -910,6 +937,9 @@ static void HandleAll(void)
 				    }
 				    break;
 				
+				case MSG_MEN_SETTINGS_SAVEDEF:
+				    break;
+				    
 			    } /* switch(GTMENUITEM_USERDATA(item)) */
 			    
 			    men = item->NextSelect;
@@ -937,6 +967,10 @@ static void HandleAll(void)
 				    SetWindowPointer (win, WA_Pointer, NULL, TAG_DONE);
 				break;
 
+    	    	    	    case DTA_Title:
+			    	SetWindowTitles(win, (UBYTE *)tidata, (UBYTE *)~0);
+				break;
+				
 			    /* Error message */
 			    case DTA_ErrorLevel:
 /*                              if (tidata)
