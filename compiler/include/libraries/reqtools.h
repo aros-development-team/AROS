@@ -99,7 +99,11 @@ struct ReqToolsPrefs
     struct ReqDefaults 		ReqDefaults[RTPREF_NR_OF_REQ];
 };
 
+#ifdef _AROS
+#define RTPREFS_SIZE		(4 + (RTPREF_NR_OF_REQ * (4 + 4 + 2 + 2 + 2 + 2)))
+#else
 #define RTPREFS_SIZE 		(sizeof (struct ReqToolsPrefs) - sizeof (struct SignalSemaphore) - 4)
+#endif
 
 /* Flags */
 
