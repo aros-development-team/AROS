@@ -8,11 +8,10 @@
 
 /******************************************************************************/
 
-#include <string.h>
-
-#include "intuition_intern.h"
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#include <string.h>
+#include "intuition_intern.h"
 
 /******************************************************************************/
 
@@ -20,7 +19,11 @@ ULONG TellWBTaskToOpenWindows(struct IntuitionBase *IntuitionBase)
 {
     DEBUG_WORKBENCH(dprintf("TellWBTaskToOpenWindows: currenttask <%s>\n",
                             FindTask(NULL)->tc_Node.ln_Name));
-    if( GetPrivIBase(IntuitionBase)->WorkBenchMP != NULL )
+    if
+    (
+           GetPrivIBase(IntuitionBase)->WorkBenchMP != NULL 
+        && GetPrivIBase(IntuitionBase)->WorkBenchMP->mp_SigTask != FindTask(NULL)
+    )
     {
         struct IntuiMessage *imsg;
 
@@ -60,7 +63,11 @@ ULONG TellWBTaskToCloseWindows(struct IntuitionBase *IntuitionBase)
     DEBUG_WORKBENCH(dprintf("TellWBTaskToCloseWindows: currenttask <%s>\n",
                             FindTask(NULL)->tc_Node.ln_Name));
 
-    if( GetPrivIBase(IntuitionBase)->WorkBenchMP != NULL )
+    if
+    (
+           GetPrivIBase(IntuitionBase)->WorkBenchMP != NULL
+        && GetPrivIBase(IntuitionBase)->WorkBenchMP->mp_SigTask != FindTask(NULL)
+    )
     {
         struct MsgPort      replymp;
         struct IntuiMessage imsg;
