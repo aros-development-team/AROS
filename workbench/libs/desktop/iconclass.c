@@ -9,9 +9,11 @@
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <intuition/classes.h>
+#include <intuition/intuition.h>
 #include <intuition/classusr.h>
 #include <intuition/imageclass.h>
 #include <libraries/mui.h>
+#include <workbench/workbench.h>
 
 #include "support.h"
 #include "worker.h"
@@ -194,6 +196,7 @@ IPTR iconNew(Class *cl, Object *obj, struct opSet *msg)
 		data->sizePart=NULL;
 		data->typePart=NULL;
 		data->lastModifiedPart=NULL;
+		data->whyRedraw=0;
 
 		data->desktop=desktop;
 	}
@@ -218,6 +221,7 @@ IPTR iconSet(Class *cl, Object *obj, struct opSet *msg)
 				break;
 			case IA_Selected:
 				data->selected=tag->ti_Data;
+				data->whyRedraw=
 				SetAttrs(data->imagePart, MUIA_Selected, tag->ti_Data, TAG_END);
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
@@ -509,10 +513,22 @@ IPTR iconDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
 	IPTR retval;
 	struct IconClassData *data;
+	ULONG imageDrawState=IDS_NORMAL;
 
 	data=(struct IconClassData*)INST_DATA(cl, obj);
 
 	retval=DoSuperMethodA(cl, obj, (Msg)msg);
+
+	if(data->viewMode==IAVM_LARGEICON)
+	{
+		if(data->whyRedraw==WR_SELECTED)
+		{
+			if(data->selected==TRUE)
+				imageDrawState==IDS_SELECTED;
+		}
+
+		DrawIconStateA(_rp(obj), data->diskObject, NULL, _left(data->imagePart), _top(data->imagePart), imageDrawState, NULL);
+	}
 
 	MUI_Redraw(data->imagePart, MADF_DRAWOBJECT);
 	MUI_Redraw(data->labelPart, MADF_DRAWOBJECT);
@@ -525,7 +541,6 @@ IPTR iconDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 		if(data->lastModifiedPart)
 			MUI_Redraw(data->lastModifiedPart, MADF_DRAWOBJECT);
 	}
-
 
 	return retval;
 }
@@ -547,8 +562,8 @@ IPTR iconAskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 
 	if(data->viewMode==IAVM_LARGEICON)
 	{
-		iconWidth=30;
-		iconHeight=30;
+		iconWidth=data->diskObject->do_Gadget.Width;
+		iconHeight=data->diskObject->do_Gadget.Height;
 	}
 	else
 	{
@@ -665,9 +680,9 @@ IPTR iconAskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 	{
 		case IAVM_LARGEICON:
 			msg->MinMaxInfo->DefWidth+=(MAX(iconWidth, labelWidth));
-			msg->MinMaxInfo->DefHeight+=(iconWidth+labelHeight);
-			msg->MinMaxInfo->MinHeight+=(iconWidth+labelHeight);
-			msg->MinMaxInfo->MaxHeight+=(iconWidth+labelHeight);
+			msg->MinMaxInfo->DefHeight+=(iconHeight+labelHeight);
+			msg->MinMaxInfo->MinHeight+=(iconHeight+labelHeight);
+			msg->MinMaxInfo->MaxHeight+=(iconHeight+labelHeight);
 			msg->MinMaxInfo->MinWidth+=(MAX(iconWidth, labelWidth));
 			msg->MinMaxInfo->MaxWidth+=(MAX(iconWidth, labelWidth));
 			break;
@@ -678,7 +693,6 @@ IPTR iconAskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 			msg->MinMaxInfo->MaxHeight+=(MAX(iconHeight, labelHeight));
 			msg->MinMaxInfo->MinWidth+=(iconWidth+labelWidth);
 			msg->MinMaxInfo->MaxWidth+=(iconWidth+labelWidth);
-
 			break;
 		case IAVM_DETAIL:
 		{
@@ -731,22 +745,26 @@ IPTR iconConnectParent(Class *cl, Object *obj, struct MUIP_ConnectParent *msg)
 	struct IconClassData *data;
 	IPTR retval;
 	ULONG iconSize;
+	ULONG frameType;
 
 	data=(struct IconClassData*)INST_DATA(cl, obj);
 
-	if(data->viewMode==IAVM_LARGEICON)
-		iconSize=30;
-	else
+	if(data->viewMode!=IAVM_LARGEICON)
 		iconSize=15;
 
 	if(!data->imagePart)
 	{
 		data->imagePart=RectangleObject,
 			ButtonFrame,
-			MUIA_FixHeight, iconSize,
-			MUIA_FixWidth, iconSize,
+			MUIA_FixHeight, data->diskObject->do_Gadget.Height,
+			MUIA_FixWidth, data->diskObject->do_Gadget.Width,
 			End;
 	}
+
+	if(data->viewMode==IAVM_LARGEICON)
+		SetAttrs(data->imagePart, MUIA_Frame, MUIV_Frame_None, TAG_END);
+	else
+		SetAttrs(data->imagePart, MUIA_Frame, MUIV_Frame_Button, TAG_END);
 
 	if(!data->labelPart)
 	{

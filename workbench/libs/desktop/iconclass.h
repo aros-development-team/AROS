@@ -31,6 +31,8 @@
 #define IAVM_SMALLICON  2
 #define IAVM_DETAIL     3
 
+#define WR_SELECTED     1
+
 #define _comment(obj)  (iconData(obj)->comment)
 #define _script(obj)  (iconData(obj)->script)
 #define _pure(obj)  (iconData(obj)->pure)
@@ -57,6 +59,7 @@ struct IconClassData
 	struct DateStamp lastChanged;
 	LONG type;
 	Object *desktop;
+	BYTE whyRedraw;
 };
 
 struct __dummyIconData__
