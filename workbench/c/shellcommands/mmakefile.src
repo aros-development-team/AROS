@@ -8,6 +8,7 @@ FILES	:= \
     Else \
     EndIf \
     EndSkip \
+    FailAt \
     If \
     Lab \
     Prompt \
