@@ -1,3 +1,10 @@
+/*
+    (C) 1997 AROS - The Amiga Research OS
+    $Id$
+
+    Desc:
+    Lang: english
+*/
 #include <graphics/layers.h>
 #include <graphics/clip.h>
 #include <graphics/rastport.h>
