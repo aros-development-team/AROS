@@ -2,30 +2,33 @@
 #define ZUNE_CLOCK_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <libraries/mui.h>
 
 /*** Name *******************************************************************/
-#define MUIC_Clock              "Clock.mcc"
+#define MUIC_Clock                      "Clock.mcc"
+
+/*** Identifier base ********************************************************/
+#define MUIB_Clock                      (MUIB_AROS | 0x00000000)
 
 /*** Attributes *************************************************************/
-#define MUIA_Clock_Hour 	(TAG_USER | (0xA303 << 16) | 0x0011)
-#define MUIA_Clock_Min 	    	(TAG_USER | (0xA303 << 16) | 0x0012)
-#define MUIA_Clock_Sec 	    	(TAG_USER | (0xA303 << 16) | 0x0013)
-#define MUIA_Clock_Time	    	(TAG_USER | (0xA303 << 16) | 0x0014)
-#define MUIA_Clock_Ticked   	(TAG_USER | (0xA303 << 16) | 0x0015)
-#define MUIA_Clock_Frozen  	(TAG_USER | (0xA303 << 16) | 0x0016)
-#define MUIA_Clock_EditHand	(TAG_USER | (0xA303 << 16) | 0x0017)
+#define MUIA_Clock_Hour 	        (MUIB_Clock | 0x00000000)
+#define MUIA_Clock_Min 	    	        (MUIB_Clock | 0x00000001)
+#define MUIA_Clock_Sec 	    	        (MUIB_Clock | 0x00000002)
+#define MUIA_Clock_Time	    	        (MUIB_Clock | 0x00000003)
+#define MUIA_Clock_Ticked   	        (MUIB_Clock | 0x00000004)
+#define MUIA_Clock_Frozen  	        (MUIB_Clock | 0x00000005)
+#define MUIA_Clock_EditHand	        (MUIB_Clock | 0x00000006)
 
-#define MUIV_Clock_EditHand_Hour    0
-#define MUIV_Clock_EditHand_Minute  1
-#define MUIV_Clock_EditHand_Second  2
+#define MUIV_Clock_EditHand_Hour        (0)
+#define MUIV_Clock_EditHand_Minute      (1)
+#define MUIV_Clock_EditHand_Second      (2)
 
 /*** Methods ****************************************************************/
-#define MUIM_Clock_Timer    	0x785A09
+#define MUIM_Clock_Timer    	        (MUIB_Clock | 0x00000000)
 
 /*** Macros *****************************************************************/
 #define ClockObject MUIOBJMACRO_START(MUIC_Clock)
