@@ -1,5 +1,5 @@
 /*
-   (C) 2000 AROS - The Amiga Research OS
+   (C) 2000-2001 AROS - The Amiga Research OS
    $Id$
 
    Desc: Exchange -- controls commodities
@@ -95,6 +95,11 @@
 
 #define  P(x)   x
 
+#define BORDERY      4
+#define SPACEY       4
+#define EXTRAHEIGHT  6
+#define LABELSPACEY  4
+
 struct ExchangeState
 {
     CxObj          *ec_broker;
@@ -138,7 +143,7 @@ void    informBroker(LONG command, struct ExchangeState *ec);
 void    switchActive(struct ExchangeState *ec);
 void    realMain(struct ExchangeState *ec);
 void    freeResources(struct ExchangeState *ec);
-BOOL    initGadgets(struct ExchangeState *ec);
+BOOL    initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight);
 BOOL    readShellArgs(struct ExchangeState *ec);
 BOOL    readWBArgs(int argc, char **argv, struct ExchangeState *ec);
 BOOL    getResources(struct ExchangeState *es);
@@ -272,7 +277,9 @@ BOOL getResources(struct ExchangeState *ec)
     struct Screen    *screen;
     struct DrawInfo  *drawInfo;
     LONG              topOffset;
-
+    LONG    	      fontHeight;
+    LONG    	      winHeight;
+    
     memset(ec, 0, sizeof(struct ExchangeState));
 
     /* First, open necessary libraries */
@@ -323,7 +330,7 @@ BOOL getResources(struct ExchangeState *ec)
     /* TODO: BuiltInLanguage should be NULL, but AROS' locale is not
              complete */
     //    ec->ec_catalog = OpenCatalog(NULL, "Sys/commodities.catalog",
-    //			         OC_BuiltInLanguage, "english");
+    //			         OC_BuiltInLanguage, "english", TAG_DONE);
     
     //    if(ec->ec_catalog == NULL)
     //        return FALSE;
@@ -359,10 +366,11 @@ BOOL getResources(struct ExchangeState *ec)
 	return FALSE;
 
     drawInfo = GetScreenDrawInfo(screen);
-    topOffset = drawInfo->dri_Font->tf_YSize + screen->WBorTop;
+    fontHeight = drawInfo->dri_Font->tf_YSize;
+    topOffset = fontHeight + screen->WBorTop;
     FreeScreenDrawInfo(screen, drawInfo);
 
-    if(!initGadgets(ec))
+    if(!initGadgets(ec, screen, fontHeight))
 	return FALSE;
 
     ec->ec_menus = CreateMenusA(nm, NULL);
@@ -373,13 +381,19 @@ BOOL getResources(struct ExchangeState *ec)
     if(!LayoutMenusA(ec->ec_menus, ec->ec_visualInfo, NULL))
 	return FALSE;
 	
+    winHeight = BORDERY * 2 + fontHeight + LABELSPACEY +
+    	    	(fontHeight + EXTRAHEIGHT) * 4 + 
+		SPACEY * 3 +
+		screen->WBorTop + fontHeight + 1 +
+		screen->WBorBottom;
+    
     ec->ec_window = OpenWindowTags(NULL,
 				   WA_PubScreen,    NULL,
 				   WA_Gadgets,      ec->ec_context,
 				   WA_Left,         0,
 				   WA_Top,          0,
 				   WA_Width,        500,
-				   WA_Height,       104 + topOffset,
+				   WA_Height,       winHeight,
 				   WA_Title,        "Exchange:", /* TODO */
 				   WA_IDCMP,        BUTTONIDCMP | CYCLEIDCMP |
 				                    LISTVIEWIDCMP | 
@@ -515,8 +529,10 @@ struct NewGadget textGad2 =
 /* Cycle gadget texts */
 STRPTR  strings[] = { "Active", "Inactive", NULL };
 
-BOOL initGadgets(struct ExchangeState *ec)
+BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
 {
+    LONG y, h;
+    
     listView.ng_VisualInfo = ec->ec_visualInfo;
     cycleBut.ng_VisualInfo = ec->ec_visualInfo;
     textGad.ng_VisualInfo  = ec->ec_visualInfo;
@@ -527,6 +543,30 @@ BOOL initGadgets(struct ExchangeState *ec)
 
     CreateContext(&ec->ec_context);
 
+    y = scr->WBorTop + fontHeight + 1 + BORDERY + fontHeight + LABELSPACEY;
+    h = fontHeight + EXTRAHEIGHT;
+    
+    listView.ng_TopEdge = y;
+    listView.ng_Height  = h * 4 + SPACEY * 3;
+    
+    showBut.ng_TopEdge = y + 2 * (h + SPACEY);
+    showBut.ng_Height  = h;
+    
+    hideBut.ng_TopEdge = y + 2 * (h + SPACEY);
+    hideBut.ng_Height  = h;
+    
+    killBut.ng_TopEdge = y + 3 * (h + SPACEY);
+    killBut.ng_Height  = h;
+    
+    cycleBut.ng_TopEdge = y + 3 * (h + SPACEY);
+    cycleBut.ng_Height  = h;
+    
+    textGad.ng_TopEdge = y;
+    textGad.ng_Height  = h;
+    
+    textGad2.ng_TopEdge = y + 1 * (h + SPACEY);
+    textGad2.ng_Height  = h;
+    
     if(ec->ec_context == NULL)
 	return FALSE;
 
