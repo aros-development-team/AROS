@@ -65,8 +65,6 @@ kernel-expansion-linklib : setup show-flags $(LIB)
 #MM kernel-expansion-module : setup includes
 kernel-expansion-module : setup show-flags $(OSMODDIR)/expansion.library
 
-# The all powerful ROM library generating stuff...
-NO_FUNCTABLE := 1
 %genromlib_f
 
 %asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(END_FILE) $(ALL_FILES)"
