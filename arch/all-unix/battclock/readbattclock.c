@@ -15,12 +15,12 @@ AROS_LH0(ULONG, ReadBattClock, APTR, BattClockBase, 2, Battclock)
     AROS_LIBFUNC_INIT
 
     /*
-        This is mostly an example.
+	This is mostly an example.
 	It is quite possible that this time value is not for the local
 	timezone, so it has to be converted.
     */
     time_t t;
-    struct tm *tm;    
+    struct tm *tm;
 
     time(&t);
     tm = localtime(&t);
@@ -34,7 +34,10 @@ AROS_LH0(ULONG, ReadBattClock, APTR, BattClockBase, 2, Battclock)
 	Still, I'll be dead, and by then they won't be using 32-bit clocks
 	I expect...
     */
+#ifdef __FreeBSD__
     return (t - 252460800 + tm->tm_gmtoff);
-
+#else
+    return (t - 252460800);
+#endif
     AROS_LIBFUNC_EXIT
 } /* ReadBattClock */
