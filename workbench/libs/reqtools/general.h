@@ -18,7 +18,7 @@
 
 /* compiler/AmigaOS/AROS specific defines */
 
-#ifndef _AROS
+#ifndef __AROS__
 
 /* AmigaOS */
 
@@ -93,7 +93,7 @@ extern void REGARGS Reply_GT_Msg (struct IntuiMessage *);
 extern void REGARGS DoCloseWindow (struct Window *, int);
 extern void REGARGS mySetWriteMask (struct RastPort *, ULONG);
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFP3(void, WinBackFill,
     AROS_UFPA(struct Hook *, hook, A0),
     AROS_UFPA(struct RastPort *, the_rp, A2),

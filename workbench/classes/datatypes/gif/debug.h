@@ -8,13 +8,13 @@
 
 /* Debug Macros */
 
-#ifdef _AROS
+#ifdef __AROS__
 
 #undef DEBUG
 #define DEBUG 1
 #include <aros/debug.h>
 
-#else /* _AROS */
+#else /* __AROS__ */
 
 #define bug kprintf
 
@@ -26,6 +26,6 @@ void kprintf(char *string, ...);
 
 #endif /* MYDEBUG */
 
-#endif /*_AROS */
+#endif /*__AROS__ */
 
 #endif /* __DEBUG_H */

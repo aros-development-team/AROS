@@ -29,7 +29,7 @@
 #include <proto/iffparse.h>
 #include <proto/layers.h>
 
-#ifndef _AROS
+#ifndef __AROS__
 #include <libraries/reqtools.h>
 #include <proto/reqtools.h>
 #endif
@@ -48,7 +48,7 @@
 #include "debug.h"
 
 
-#ifdef _AROS
+#ifdef __AROS__
 #define NO_PRINTER 1
 #define NO_GMORE_SCROLLRASTER 1
 #else
@@ -1557,7 +1557,7 @@ static void CopyTextEntry(void)
     struct CopyMsg *msg;
     struct IFFHandle *iff;
 
-#ifndef _AROS
+#ifndef __AROS__
     struct Library *SysBase = *((struct Library **) 4L);
 #endif
 
@@ -1865,7 +1865,7 @@ STATIC ULONG notifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1
     return DoMethod(o, OM_NOTIFY, &tag1, ginfo, flags);
 }
 
-#ifndef _AROS
+#ifndef __AROS__
 
 struct AsyncMethodMsg
 {
@@ -2503,7 +2503,7 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 
  	    if (diff_x)
  	    {
-#ifdef _AROS
+#ifdef __AROS__
 		IPTR val;
 		LONG top, total, visible;
 
@@ -2532,7 +2532,7 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 
 	    if (diff_y)
 	    {
-#ifdef _AROS
+#ifdef __AROS__
 		IPTR val;
 		LONG top, total, visible;
 
@@ -2669,7 +2669,7 @@ STATIC VOID DT_Print(struct IClass *cl, struct Gadget *g, struct dtPrint *msg)
     PrintText(td, msg->dtp_PIO);
 }
 
-#ifndef _AROS
+#ifndef __AROS__
 
 STATIC LONG strseg(struct Line *line, STRPTR str, LONG slen, LONG casesens, LONG offset)
 {
@@ -3026,7 +3026,7 @@ STATIC ULONG DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg
    return DoSuperMethodA(cl, (Object*)g, (Msg) msg);
 }
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH3S(IPTR, DT_Dispatcher,
 	   AROS_UFHA(Class *, cl, A0),
 	   AROS_UFHA(Object *, o, A2),
@@ -3132,7 +3132,7 @@ ASM ULONG DT_Dispatcher2(register __a0 struct IClass *cl, register __a2 Object *
 	}
 	break;
 
-#ifndef _AROS
+#ifndef __AROS__
 
     case DTM_REMOVEDTOBJECT:
     	{
@@ -3167,7 +3167,7 @@ ASM ULONG DT_Dispatcher2(register __a0 struct IClass *cl, register __a2 Object *
     return 0;
 }
 
-#ifndef _AROS
+#ifndef __AROS__
 
 struct DispatchStruct
 {
@@ -3225,7 +3225,7 @@ struct IClass *DT_MakeClass(struct Library *textbase)
 
     if (cl)
     {
-#ifdef _AROS
+#ifdef __AROS__
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(DT_Dispatcher);
 #else
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;

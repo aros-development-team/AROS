@@ -1,7 +1,7 @@
 /*
  */
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/asmcall.h>
 #endif
 
@@ -71,7 +71,7 @@ extern LONG	IntGadValue( struct Gadget * );
 extern BOOL	ProcessGadget( UWORD, UWORD );
 extern BOOL	ProcessMenuItem( UWORD );
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFP3(void, IntuiMsgFunc,
     AROS_UFPA(struct Hook *, hook, A0),
     AROS_UFPA(APTR, req, A2),

@@ -218,7 +218,7 @@ void LoadDriver(char *name,
 	if(mididevicedata==NULL) return;
 
 	if((mididevicedata->Flags&1)==0){
-#ifdef _AROS
+#ifdef __AROS__
 		D(bug("%s: mididevicedata->Flags&1==0 is not not supported for AROS!\n",name));
 		CloseMidiDevice(mididevicedata);
 		return;

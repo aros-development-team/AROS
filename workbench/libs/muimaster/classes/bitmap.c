@@ -14,7 +14,7 @@
 #include <proto/utility.h>
 #include <proto/cybergraphics.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -230,7 +230,7 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
 	
     } /* for(y = 0; y < data->height; y++) */
     
-#ifdef _AROS
+#ifdef __AROS__
     DeinitRastPort(&temprp);
     DeinitRastPort(&bmrp);
 #endif

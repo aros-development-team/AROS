@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #include <proto/graphics.h>
 #else
@@ -64,7 +64,7 @@ typedef struct ZTextLine {
 typedef struct ZTextChunk {
     GString              *str;
 
-#ifndef _AROS
+#ifndef __AROS__
     struct MUI_ImageSpec *image;
 #endif
 
@@ -252,7 +252,7 @@ zune_text_destroy_chunk (gpointer val, gpointer dummy)
     if (chunk->str)
 	g_string_free(chunk->str, TRUE);
 
-#ifndef _AROS
+#ifndef __AROS__
     if (chunk->image)
 	zune_imspec_free(chunk->image);
 #endif
@@ -493,7 +493,7 @@ zune_text_parse_line (STRPTR s, ULONG *current_style, int *argtype, TEXT arg)
 
 /* Oh boy... why does TextExtent() require a RastPort
  * when it only needs the TextFont? */
-#ifdef _AROS
+#ifdef __AROS__
 void myTextExtent(struct TextFont *tf, STRPTR string, ULONG count,
                   struct TextExtent *te)
 {
@@ -534,7 +534,7 @@ void myTextExtent(struct TextFont *tf, STRPTR string, ULONG count,
     te->te_Extent.MaxX = te->te_Width  - 1;
     te->te_Extent.MaxY = te->te_Height - 1 - tf->tf_Baseline;
 }
-#endif /* _AROS */
+#endif /* __AROS__ */
 
 /* trailing spaces are not correctly handled, thus the hack which
  * adds a final dot for the calculation  .
@@ -544,7 +544,7 @@ calculate_chunk_bounds (gpointer ch, gpointer udata)
 {
     struct chunk_bounds_datas *cbd = (struct chunk_bounds_datas *)udata;
     ZTextChunk *chunk = (ZTextChunk *)ch;
-#ifndef _AROS
+#ifndef __AROS__
     GdkFont *font = _font(cbd->lbd->obj);
 #else
     struct TextExtent te;
@@ -567,7 +567,7 @@ calculate_chunk_bounds (gpointer ch, gpointer udata)
 	cbd->lbd->text->style = chunk->style;
 /*  	g_print("chunk <%s>\n", chunk->str->str); */
 
-#ifndef _AROS
+#ifndef __AROS__
 	chunk->cheight += font->ascent + font->descent;
 
 	gdk_text_extents (font,
@@ -620,7 +620,7 @@ kprintf(" >>  obj=%lx font=%lx\n", cbd->lbd->obj, _font(cbd->lbd->obj));
 	    chunk->lbearing = lbearing;
 	}
     }
-#ifndef _AROS
+#ifndef __AROS__
     else if (chunk->image)
     {
     }
@@ -748,7 +748,7 @@ paste_italized (GdkDrawable *src, int src_width, int src_height,
 #endif
 
 
-#ifndef _AROS
+#ifndef __AROS__
 static void
 prepare_italic_pixmap (GdkDrawable **drawable, GdkGC **gc, Object *obj,
 		       ZTextChunk *chunk)
@@ -811,7 +811,7 @@ static void
 draw_text_string (struct chunk_draw_datas *cdd, ZTextChunk *chunk)
 {
     Object *obj = cdd->ldd->obj;
-#ifndef _AROS
+#ifndef __AROS__
     GdkDrawable *drawable = _window(obj);
     GdkGC *gc = _rp(obj);
     int xtext = cdd->ldd->left + cdd->xoffset - chunk->lbearing;
@@ -831,7 +831,7 @@ draw_text_string (struct chunk_draw_datas *cdd, ZTextChunk *chunk)
 	SetAPen(gc, _dri(obj)->dri_Pens[cdd->ldd->text->dripen]);
     }
 
-#ifndef _AROS
+#ifndef __AROS__
     if (cdd->ldd->text->style & ZTC_STYLE_ITALIC)
     {
 	xback = xtext;
@@ -903,7 +903,7 @@ draw_text_chunk (gpointer ch, gpointer d)
     {
 	draw_text_string(cdd, chunk);
     }
-#ifndef _AROS
+#ifndef __AROS__
     else if (chunk->image)
     {
     }

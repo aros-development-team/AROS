@@ -19,7 +19,7 @@ struct MUI_ApplicationData
     struct MinList app_IHList;
     struct MinList app_MethodQueue;
     struct MinList app_ReturnIDQueue;
-#ifndef _AROS
+#ifndef __AROS__
     GMemChunk     *app_RIDMemChunk;
 #else
     APTR           app_RIDMemChunk;
@@ -36,7 +36,7 @@ struct MUI_ApplicationData
     BOOL           app_Iconified;
     BOOL           app_SingleTask;
 
-#ifndef _AROS
+#ifndef __AROS__
     GMainLoop     *app_MainLoop;
     guint          app_CfgSpyTimeout;
 #endif

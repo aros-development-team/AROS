@@ -13,7 +13,7 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -30,7 +30,7 @@ struct MUI_ListviewData
     struct Hook hook;
 };
 
-#ifndef _AROS
+#ifndef __AROS__
 __asm ULONG Listview_Layout_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 struct MUI_LayoutMsg *lm)
 #else
 AROS_UFH3(ULONG,Listview_Layout_Function,
@@ -107,7 +107,7 @@ AROS_UFH3(ULONG,Listview_Layout_Function,
 #define LIST_VERT_VISIBLE 5
 #define LIST_VERT_ENTRIES 6
 
-#ifndef _AROS
+#ifndef __AROS__
 __asm ULONG Listview_Function(register __a0 struct Hook *hook, register __a1 void **msg)
 #else
 AROS_UFH3(ULONG,Listview_Function,

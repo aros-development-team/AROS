@@ -33,7 +33,7 @@ responsibility is assumed.
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <libraries/asl.h>
-#ifndef _AROS
+#ifndef __AROS__
 #include <clib/exec_protos.h>
 #include <clib/asl_protos.h>
 #else

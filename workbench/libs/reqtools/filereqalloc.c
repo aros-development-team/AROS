@@ -9,7 +9,7 @@
 
 /****************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 #define fib_EntryType fib_DirEntryType
 #endif
 

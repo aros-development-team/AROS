@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 //#define USE_BOOPSI_STUBS
 #include <proto/utility.h>
 #include <proto/intuition.h>
@@ -57,7 +57,7 @@
 
 #endif
 
-#ifndef _AROS
+#ifndef __AROS__
 
 #if 1
 #undef SysBase
@@ -758,7 +758,7 @@ STATIC IPTR gradientslider_domain(Class *cl, Object *o, struct gpDomain *msg)
 
 /***************************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH3S(IPTR, dispatch_gradientsliderclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
@@ -833,7 +833,7 @@ struct IClass *InitGradientSliderClass (struct GradientSliderBase_intern * Gradi
 
     if ((cl = MakeClass("gradientslider.gadget", GADGETCLASS, NULL, sizeof(struct GradientSliderData), 0)))
     {
-    #ifdef _AROS
+    #ifdef __AROS__
 	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_gradientsliderclass);
     #else
 	cl->cl_Dispatcher.h_Entry    = (HOOKFUNC)dispatch_gradientsliderclass;

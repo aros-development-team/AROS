@@ -16,7 +16,7 @@ struct IClass           *dt_class;
 struct ExecBase         *SysBase;
 struct IntuitionBase    *IntuitionBase;
 struct GfxBase          *GfxBase;
-#ifdef _AROS
+#ifdef __AROS__
 struct UtilityBase      *UtilityBase;
 #else
 struct Library          *UtilityBase;
@@ -29,7 +29,7 @@ struct Library          *PictureBase;
 /* inside ilbmclass.c */
 struct IClass *DT_MakeClass(struct Library *ilbmbase);
 
-#ifdef _AROS
+#ifdef __AROS__
 #undef  register
 #define register
 
@@ -41,7 +41,7 @@ struct IClass *DT_MakeClass(struct Library *ilbmbase);
 
 ASM SAVEDS int __UserLibInit( register __a6 struct Library *libbase )
 {
-#ifndef _AROS
+#ifndef __AROS__
     SysBase = *(struct ExecBase**)4;
 #endif
 
@@ -55,7 +55,7 @@ ASM SAVEDS int __UserLibInit( register __a6 struct Library *libbase )
 	    {
 		if((DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 39)))
 		{
-#ifdef _AROS
+#ifdef __AROS__
 		    if((UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37)))
 #else
 		    if((UtilityBase = (struct Library *)OpenLibrary("utility.library", 37)))

@@ -448,7 +448,7 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 /**************************************************************************************************/
 /**************************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH3S(IPTR, DT_Dispatcher,
 	   AROS_UFHA(Class *, cl, A0),
 	   AROS_UFHA(Object *, o, A2),
@@ -495,7 +495,7 @@ IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, re
     } /* switch(msg->MethodID) */
     
     return retval;
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_EXIT
 #endif
 }
@@ -508,7 +508,7 @@ struct IClass *DT_MakeClass(struct Library *asciibase)
 
     if (cl)
     {
-#ifdef _AROS
+#ifdef __AROS__
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(DT_Dispatcher);
 #else
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;

@@ -7,7 +7,7 @@
 #include <proto/reqtools.h>
 #include "rtstrings.h"
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <libraries/locale.h>
 extern struct ReqToolsBase 	*ReqToolsBase;
 #endif
@@ -15,7 +15,7 @@ extern struct ReqToolsBase 	*ReqToolsBase;
 extern struct Window		*WindowPtr;
 extern struct Hook		IntuiHook;
 
-#ifdef _AROS
+#ifdef __AROS__
 struct LocaleBase		*LocaleBase;
 #define LOCALECAST (struct LocaleBase *)
 #else

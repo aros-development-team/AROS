@@ -18,7 +18,7 @@
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <libraries/mui.h>
 #include <proto/muimaster.h>
 #endif
@@ -27,7 +27,7 @@
 
 struct Library       *MUIMasterBase;
 
-#ifndef _AROS
+#ifndef __AROS__
 
 #include <mui.h>
 #undef SysBase
@@ -245,7 +245,7 @@ Test_Print(struct IClass *cl, Object *obj, struct MUIP_Test_Print *msg)
 /*
  * Test class method dispatcher.
  */
-#ifndef _AROS
+#ifndef __AROS__
 __asm IPTR Test_Dispatcher(register __a0 Class *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
 AROS_UFH3S(IPTR, Test_Dispatcher,
@@ -388,7 +388,7 @@ ExtendedTest_Print(struct IClass *cl, Object *obj,
 /*
  * ExtendedTest class method dispatcher.
  */
-#ifndef _AROS
+#ifndef __AROS__
 __asm IPTR ExtendedTest_Dispatcher(register __a0 Class *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
 AROS_UFH3S(IPTR, ExtendedTest_Dispatcher,

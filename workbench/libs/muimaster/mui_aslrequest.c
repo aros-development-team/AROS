@@ -6,7 +6,7 @@
 */
 
 #include <proto/asl.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -15,7 +15,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm BOOL MUI_AslRequest(register __a0 APTR requester, register __a1 struct TagItem *tagList)
 #else
 	AROS_LH2(BOOL, MUI_AslRequest,

@@ -13,7 +13,7 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -32,7 +32,7 @@ struct MUI_PopimageData
 };
 
 
-#ifndef _AROS
+#ifndef __AROS__
 static __asm VOID Close_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
 #else
 AROS_UFH3(VOID,Close_Function,
@@ -59,7 +59,7 @@ AROS_UFH3(VOID,Close_Function,
     data->imageadjust = NULL;
 }
 
-#ifndef _AROS
+#ifndef __AROS__
 static __asm VOID Press_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
 #else
 AROS_UFH3(VOID,Press_Function,

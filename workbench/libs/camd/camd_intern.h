@@ -20,7 +20,7 @@
 #  include <libcore/compiler.h>
 #endif
 
-#if defined(_AMIGA) && !defined(_AROS)
+#if defined(_AMIGA) && !defined(__AROS__)
 #  define AROS_LIBFUNC_INIT
 #  define AROS_LIBBASE_EXT_DECL(a,b)
 #  define AROS_LIBFUNC_EXIT
@@ -56,7 +56,7 @@
 #include <dos/dosextens.h>
 #endif
 
-#ifdef _AROS
+#ifdef __AROS__
 #  undef DEBUG
 #  define DEBUG 1
 #  include <aros/debug.h>

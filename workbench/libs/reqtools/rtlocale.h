@@ -6,7 +6,7 @@
 #include "general.h"
 #include "catalog.h"
 
-#ifndef _AROS
+#ifndef __AROS__
 extern struct LocaleBase *LocaleBase;
 #endif
 

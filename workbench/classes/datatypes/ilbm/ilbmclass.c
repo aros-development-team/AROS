@@ -342,7 +342,7 @@ static IPTR ILBM_New(Class *cl, Object *o, struct opSet *msg)
 
 /**************************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH3S(IPTR, DT_Dispatcher,
 	   AROS_UFHA(Class *, cl, A0),
 	   AROS_UFHA(Object *, o, A2),
@@ -351,7 +351,7 @@ AROS_UFH3S(IPTR, DT_Dispatcher,
 ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, register __a1 Msg msg)
 #endif
 {
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_INIT
 #endif
 
@@ -378,7 +378,7 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 
     return retval;
     
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_EXIT
 #endif
 }
@@ -395,7 +395,7 @@ struct IClass *DT_MakeClass(struct Library *ilbmbase)
 
     if (cl)
     {
-#ifdef _AROS
+#ifdef __AROS__
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(DT_Dispatcher);
 #else
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;

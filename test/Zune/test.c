@@ -226,7 +226,7 @@ struct DropText_Data
 struct Library *KeymapBase;
 #endif
 
-#ifndef _AROS
+#ifndef __AROS__
 __saveds __asm IPTR dispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
 AROS_UFH3S(IPTR, dispatcher,

@@ -14,7 +14,7 @@
 #include <proto/graphics.h>
 #include <proto/commodities.h>
 #include <proto/intuition.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -24,7 +24,7 @@ extern struct Library *MUIMasterBase;
 #include "mui.h"
 #include "imspec.h"
 
-#ifdef _AROS
+#ifdef __AROS__
 #define g_strdup(x) 	    	    	    	    \
     ({	    	    	    	    	    	    \
     	UBYTE *dup; 	    	    	    	    \

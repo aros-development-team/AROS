@@ -9,7 +9,7 @@
 #ifndef __Z_STRING_SET_H__
 #define __Z_STRING_SET_H__
 
-//#ifndef _AROS
+//#ifndef __AROS__
 //#include <glib.h>
 //#endif
 

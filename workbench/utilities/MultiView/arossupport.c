@@ -6,7 +6,7 @@
     Lang: English
 */
 
-#ifndef _AROS
+#ifndef __AROS__
 
 #include "arossupport.h"
 #include <dos/dostags.h>
@@ -70,5 +70,5 @@ struct DTMethod *FindTriggerMethod(struct DTMethod *methods, STRPTR command, ULO
     return retval;
 
 } /* FindTriggerMethod */
-#endif /* _AROS */
+#endif /* __AROS__ */
 

@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/exec.h>
 #include <proto/muimaster.h>
 #include <string.h>
@@ -34,7 +34,7 @@
 Class *
 _zune_class_load(CONST_STRPTR className)
 {
-#ifndef _AROS
+#ifndef __AROS__
     GModule *module;
     STRPTR modpath;
     QueryFunc query;
@@ -43,7 +43,7 @@ _zune_class_load(CONST_STRPTR className)
 #endif
     struct MUI_CustomClass *mcc;
 
-#ifndef _AROS
+#ifndef __AROS__
     if (!g_module_supported())
 	return NULL;
 

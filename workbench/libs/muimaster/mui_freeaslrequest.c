@@ -6,7 +6,7 @@
 */
 
 #include <proto/asl.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -15,7 +15,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm VOID MUI_FreeAslRequest(register __a0 APTR requester)
 #else
 	AROS_LH1(VOID, MUI_FreeAslRequest,

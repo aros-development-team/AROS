@@ -16,7 +16,7 @@
 
 #include <string.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -137,7 +137,7 @@ static IPTR Scale_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	data->label_minwidth = TextLength(&rp,minlabel,strlen(minlabel));
 	data->label_height = _font(obj)->tf_YSize;
 
-#ifdef _AROS
+#ifdef __AROS__
 	DeinitRastPort(&rp);
 #endif
     }
@@ -203,7 +203,7 @@ static IPTR Scale_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    {
 		//int pct = j * 100 / i;
 
-#ifdef _AROS
+#ifdef __AROS__
 		snprintf(buf, 255, "%d%%", j);
 #else
 		sprintf(buf, "%d%%", j);
@@ -252,7 +252,7 @@ static IPTR Scale_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    {
 		ZText *ztext;
 		int val = k * 100 / i;
-#ifdef _AROS
+#ifdef __AROS__
 		snprintf(buf, 255, "%d%%", val);
 #else
 		sprintf(buf, "%d%%", val);

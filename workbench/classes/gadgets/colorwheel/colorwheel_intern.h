@@ -15,7 +15,7 @@
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
-#ifdef _AROS
+#ifdef __AROS__
 #ifndef LIBCORE_BASE_H
 #   include <libcore/base.h>
 #endif
@@ -33,7 +33,7 @@
 #	include <dos/dos.h>
 #endif
 
-#ifdef _AROS
+#ifdef __AROS__
 #ifndef AROS_DEBUG_H
 #include <aros/debug.h>
 #endif
@@ -50,7 +50,7 @@
 
 /***************************************************************************************************/
 
-#ifndef _AROS
+#ifndef __AROS__
 #define DeinitRastPort(x)
 #define EnterFunc(x)
 #define bug

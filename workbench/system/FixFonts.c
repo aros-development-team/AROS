@@ -134,7 +134,7 @@ ULONG bufsize=4096L;
                    fhead=NewFontContents(lock,fullname);
                    if (fhead) {
                     if (fhead->fch_NumEntries>0) {
-#ifdef _AROS
+#ifdef __AROS__
 #if !AROS_BIG_ENDIAN
 		     WORD i;
 		     

@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>

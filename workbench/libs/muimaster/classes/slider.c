@@ -16,7 +16,7 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -142,7 +142,7 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
     data->knob_height = _font(obj)->tf_YSize + 2 * data->knob_frame->ythickness;
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-#ifdef _AROS
+#ifdef __AROS__
     DeinitRastPort(&rp);
 #endif
     return TRUE;

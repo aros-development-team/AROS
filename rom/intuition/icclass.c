@@ -30,7 +30,7 @@
 #include "intuition_private.h"
 #include "intuition_pdefs.h"
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/asmcall.h>
 #include <proto/alib.h>
 #endif

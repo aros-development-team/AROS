@@ -8,7 +8,7 @@
 **	(C) Copyright 1997 Andreas R. Kleinert
 **	All Rights Reserved.
 */
-/* This might define _AROS */
+/* This might define __AROS__ */
 #ifndef EXEC_TYPE_H
 #   include <exec/types.h>
 #endif
@@ -98,7 +98,7 @@ Therefore ASM must be used. */
 #   else
 #     ifdef __GNUC__
 
-#	ifndef _AROS /* No AROS ? */
+#	ifndef __AROS__ /* No AROS ? */
 
 #	    define REG(r)
 #	    define GNUCREG(r)   __asm( ## r)
@@ -108,7 +108,7 @@ Therefore ASM must be used. */
 #	    define STDARGS	__stdargs
 #	    define ALIGNED	__aligned
 
-#	else /* _AROS */
+#	else /* __AROS__ */
 
 #	    define REG(r)
 #	    define GNUCREG(r)
@@ -118,7 +118,7 @@ Therefore ASM must be used. */
 #	    define STDARGS
 #	    define ALIGNED
 
-#	endif /* _AROS */
+#	endif /* __AROS__ */
 
 #     else /* any other compiler, to be added here */
 
@@ -135,7 +135,7 @@ Therefore ASM must be used. */
 # endif /* __MAXON__ */
 #endif /* __SASC */
 
-#ifdef _AROS
+#ifdef __AROS__
 #   include <aros/libcall.h>
 #   include <aros/asmcall.h>
 #else

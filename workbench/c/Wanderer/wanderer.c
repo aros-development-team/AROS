@@ -23,7 +23,7 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <libraries/mui.h>
 #include <proto/muimaster.h>
 #include <proto/workbench.h>
@@ -34,7 +34,7 @@
 
 
 
-#ifndef _AROS
+#ifndef __AROS__
 struct Library *MUIMasterBase;
 
 /* On AmigaOS we build a fake library base, because it's not compiled as sharedlibrary yet */
@@ -151,7 +151,7 @@ static struct NewMenu nm[] =
 static struct Hook hook_standard;
 
 
-#ifndef _AROS
+#ifndef __AROS__
 __asm __saveds void hook_func_standard(register __a0 struct Hook *h, register __a2 void *dummy, register __a1 **funcptr)
 #else
 AROS_UFH3(void, hook_func_standard,
@@ -504,7 +504,7 @@ STATIC IPTR Wanderer_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return NULL;
     }
 
-#ifdef _AROS
+#ifdef __AROS__
     RegisterWorkbench(data->notify_port);
 #endif
 
@@ -539,7 +539,7 @@ STATIC IPTR Wanderer_Dispose(struct IClass *cl, Object *obj, Msg msg)
 	 * successful */
 	DoMethod(obj, MUIM_Application_RemInputHandler, &data->timer_ihn);
 	DoMethod(obj, MUIM_Application_RemInputHandler, &data->notify_ihn);
-#ifdef _AROS
+#ifdef __AROS__
 	UnregisterWorkbench(data->notify_port);
 #endif
 	DeleteMsgPort(data->notify_port);
@@ -649,7 +649,7 @@ void execute_ok(void)
 	    	SYS_Asynch,	TRUE,
 	    	SYS_Input,  (IPTR)input,
 	    	SYS_Output, (IPTR)NULL,
-#ifdef _AROS
+#ifdef __AROS__
 	    	SYS_Error,  (IPTR)NULL,
 #endif
 		NP_CurrentDir, lock, /* Will be freed automatical if successful */
@@ -674,13 +674,13 @@ void execute_cancel(void)
 void shell_open(char **cd_ptr)
 {
     BPTR cd = Lock(*cd_ptr,ACCESS_READ);
-#ifdef _AROS
+#ifdef __AROS__
     BPTR win = Open("CON:10/10/640/480/AROS-Shell/CLOSE", MODE_OLDFILE);
 #else
     BPTR win = Open("CON:10/10/640/480/AROS-Shell/AUTO/CLOSE", MODE_OLDFILE);
 #endif
 
-#ifdef _AROS
+#ifdef __AROS__
     if (SystemTags("",
 #else
     if (SystemTags("newshell",
@@ -688,7 +688,7 @@ void shell_open(char **cd_ptr)
 	SYS_Asynch,     TRUE,
 	SYS_Input,	    (IPTR)win,
 	SYS_Output,	    (IPTR)NULL,
-#ifdef _AROS
+#ifdef __AROS__
 	SYS_Background, FALSE,
 	SYS_Error,	    (IPTR)NULL,
 	SYS_UserShell,  TRUE,
@@ -772,7 +772,7 @@ VOID DoAllMenuNotifies(Object *strip, char *path)
 **************************************************************************/
 static struct Hook hook_action;
 
-#ifndef _AROS
+#ifndef __AROS__
 __asm __saveds void hook_func_action(register __a0 struct Hook *h, register __a2 Object *obj, register __a1 struct IconWindow_ActionMsg *msg)
 #else
 AROS_UFH3(void, hook_func_action,
@@ -909,7 +909,7 @@ AROS_UFH3(void, hook_func_action,
     }
 }
 
-#ifdef _AROS
+#ifdef __AROS__
 LONG            __detacher_must_wait_for_signal = SIGBREAKF_CTRL_F;
 struct Process *__detacher_process              = NULL;
 STRPTR          __detached_name                 = "Wanderer";
@@ -1012,7 +1012,7 @@ int main(void)
 	/* And now open it */
 	DoMethod(root_iconwnd, MUIM_IconWindow_Open);
 
-#ifdef _AROS
+#ifdef __AROS__
 	DoDetach();
 #endif
 

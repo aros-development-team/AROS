@@ -13,13 +13,13 @@
 #include <intuition/classes.h>
 #endif
 
-#ifndef _AROS
+#ifndef __AROS__
 #include <gdk/gdktypes.h>
 #endif
 
 #include <muikey.h>
 
-#ifndef _AROS
+#ifndef __AROS__
 BOOL zune_key_translate (Object *win, GdkEventKey *event, ULONG *muikey);
 #endif
 

@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
@@ -194,7 +194,7 @@ mSetup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     if (!DoSuperMethodA(cl,obj,(Msg)msg))
 	return FALSE;
 
-#ifdef _AROS
+#ifdef __AROS__
     data->ehn.ehn_Events = IDCMP_VANILLAKEY;
 #else
     data->ehn.ehn_Events = GDK_KEY_PRESS_MASK;

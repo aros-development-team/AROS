@@ -743,7 +743,7 @@ static void ScrollTo(UWORD dir, UWORD quali)
     BOOL horiz;
     BOOL inc;
 
-#ifdef _AROS    
+#ifdef __AROS__    
     switch(dir)
     {
     	case RAWKEY_NM_WHEEL_UP:
@@ -878,7 +878,7 @@ static void HandleAll(void)
 		case IDCMP_RAWKEY:
 		    switch(msg->Code)
 		    {
-		    #ifdef _AROS
+		    #ifdef __AROS__
 		    	case RAWKEY_NM_WHEEL_UP:
 		    	case RAWKEY_NM_WHEEL_DOWN:
 		    	case RAWKEY_NM_WHEEL_LEFT:
@@ -891,7 +891,7 @@ static void HandleAll(void)
 			    ScrollTo(msg->Code, msg->Qualifier);
 			    break;
 			
-		    #ifdef _AROS
+		    #ifdef __AROS__
 			case RAWKEY_HOME: /* HOME */
 			    ScrollTo(CURSORUP, IEQUALIFIER_LALT);
 			    break;
@@ -1000,7 +1000,7 @@ static void HandleAll(void)
 				    break;
 
 				case MSG_MEN_EDIT_MARK:
-				#if defined(_AROS) && !defined(__MORPHOS__)
+				#if defined(__AROS__) && !defined(__MORPHOS__)
 				    if (StartDragSelect(dto))
 				#else
 				    {

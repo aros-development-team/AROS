@@ -17,7 +17,7 @@ struct MUI_WindowData
 {
     struct MUI_RenderInfo wd_RenderInfo;
     struct MUI_MinMax     wd_MinMax;
-#ifdef _AROS
+#ifdef __AROS__
     struct MsgPort       *wd_UserPort; /* IDCMP port */
 #endif
 

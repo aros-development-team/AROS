@@ -400,7 +400,7 @@ LONG ASM SAVEDS PaletteRequestA (
 	    glob->bluebits = displayinfo.BlueBits;
 #ifdef COLORWHEEL
 
-#ifdef _AROS
+#ifdef __AROS__
 #warning DisplayInfo.Resolution does not seem to have correct/any values yet in AROS
 	    glob->screenres.x = glob->screenres.y = 22;
 #else
@@ -976,7 +976,7 @@ static int REGARGS SetupPalWindow (GlobData *glob, char *title)
     if (winwidth < 256) winwidth = 256;
 
     val = glob->fontheight * 2 + 4;
-#ifdef _AROS
+#ifdef __AROS__
     val += 5;
 #endif
 
@@ -1005,7 +1005,7 @@ static int REGARGS SetupPalWindow (GlobData *glob, char *title)
 	    wheelheight = maxheight;
 	}
 
-    #ifndef _AROS
+    #ifndef __AROS__
     #warning Changed, because gcc produced wrong code! gcc 2.95.1 compiled under UAE JIT for Linux!?
     	wheelwidth = glob->screenres.y;
 	wheelwidth *= wheelheight;
@@ -1229,7 +1229,7 @@ static int REGARGS SetupPalWindow (GlobData *glob, char *title)
 		  TAG_IGNORE :
 		  WHEEL_MaxPens     	, 0 	    	    	    },
 		 {WHEEL_GradientSlider	, (IPTR)glob->wheel_slider  },
-#ifdef _AROS
+#ifdef __AROS__
 /* Need this, because without BevelBox AROS colorwheel gadget renders through mask
 which because of bugs in gfx library functions (!?) does not work yet and instead
 causes mem trashes/crashes/etc (in AmigaOS the AROS colorwheel gadget works fine

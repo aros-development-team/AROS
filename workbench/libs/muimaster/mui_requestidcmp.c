@@ -6,7 +6,7 @@
 */
 
 #include <clib/alib_protos.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -18,7 +18,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm VOID MUI_RequestIDCMP(register __a0 Object *obj, register __d0 ULONG flags)
 #else
 	AROS_LH2(VOID, MUI_RequestIDCMP,

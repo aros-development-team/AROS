@@ -15,7 +15,7 @@
 
 #include <zune/boopsi.h>
 #include <zune/preprotos.h>
-#ifndef _AROS
+#ifndef __AROS__
 #include <gdk/gdktypes.h>
 #endif
 #include <zune/premui.h>

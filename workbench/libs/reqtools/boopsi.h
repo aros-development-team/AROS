@@ -1,4 +1,4 @@
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/asmcall.h>
 
 AROS_UFP3(IPTR, myBoopsiDispatch,

@@ -77,7 +77,7 @@ SAVEDS void CamdTimerProc(void){
 	TimerIO->tr_node.io_Message.mn_Length=sizeof(struct timerequest);
 
 	/* No support for eclock in AROS. */
-#ifndef _AROS
+#ifndef __AROS__
 	if((error=OpenDevice(
 			TIMERNAME,UNIT_ECLOCK,(struct IORequest *)TimerIO,0L
 	))!=0){

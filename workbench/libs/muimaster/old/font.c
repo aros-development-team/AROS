@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/graphics.h>
 #include <proto/diskfont.h>
 #include <stdlib.h>
@@ -19,7 +19,7 @@
 #include <prefs.h>
 #include <font.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 const struct TextAttr defaultFont =
     { "topaz.font", 8, FS_NORMAL, 0 };
 #endif
@@ -42,7 +42,7 @@ zune_font_get (LONG preset)
 void
 zune_font_replace (GdkFont **font, STRPTR fontname)
 {
-#ifdef _AROS
+#ifdef __AROS__
     struct TextAttr ta;
     char name[256], *s;
 #endif
@@ -50,7 +50,7 @@ zune_font_replace (GdkFont **font, STRPTR fontname)
 /*  g_print("replacing preset %ld with font %s\n", preset, fontname); */
 
     if (*font)
-#ifdef _AROS
+#ifdef __AROS__
 	CloseFont(*font);
 #else
 	gdk_font_unref(*font);
@@ -58,7 +58,7 @@ zune_font_replace (GdkFont **font, STRPTR fontname)
 
     if (fontname != NULL && strlen(fontname) > 0)
     {
-#ifdef _AROS
+#ifdef __AROS__
 	strcpy(name, fontname);
 	ta.ta_Name = name;
 
@@ -90,7 +90,7 @@ zune_font_replace (GdkFont **font, STRPTR fontname)
 	if (fontname != NULL && strlen(fontname) > 0)
 	    g_warning("Cannot load font '%s', fallback to window font\n",
 		      fontname);
-#ifdef _AROS
+#ifdef __AROS__
 	*font = __zprefs.fonts[-MUIV_Font_Normal];
 	(*font)->tf_Accessors ++; /* FIXME: HACK */
 #else
@@ -100,7 +100,7 @@ zune_font_replace (GdkFont **font, STRPTR fontname)
     else
     {
 	g_warning("Cannot load font '%s', trying 'fixed'\n", fontname);
-#ifdef _AROS
+#ifdef __AROS__
 	*font = OpenFont(&defaultFont);
 #else
 	*font = gdk_font_load("fixed");

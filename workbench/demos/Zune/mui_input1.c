@@ -12,7 +12,7 @@
 //#include <libraries/mui.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <libraries/mui.h>
 #include <proto/muimaster.h>
 #endif
@@ -25,7 +25,7 @@ struct Library       *MUIMasterBase;
 
 #define _U(s) (s)
 
-#ifndef _AROS
+#ifndef __AROS__
 
 #include <mui.h> /* Should be somewhen libraries/mui.h */
 #undef SysBase

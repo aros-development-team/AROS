@@ -6,7 +6,7 @@
 */
 
 #include <proto/asl.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -15,7 +15,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm APTR MUI_AllocAslRequest(register __d0 unsigned long reqType, register __a0 struct TagItem *tagList)
 #else
 	AROS_LH2(APTR, MUI_AllocAslRequest,

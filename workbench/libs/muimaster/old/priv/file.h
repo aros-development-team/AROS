@@ -50,7 +50,7 @@ __zune_file_get_user_prefs_global_file(void);
 STRPTR
 __zune_file_get_user_prefs_app_file(STRPTR app_title);
 
-#ifdef _AROS
+#ifdef __AROS__
 #define __zune_file_get_data_dir()              "Zune:data/"
 // __zune_file_get_lib_dir()
 #define __zune_file_get_user_dir()              "PROGDIR:"

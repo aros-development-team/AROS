@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #endif
@@ -103,7 +103,7 @@ _zune_builtin_class_create (CONST_STRPTR className)
 	/* found the class to create */
 	if (!strcmp(builtin->name, className))
 	{
-#ifndef _AROS
+#ifndef __AROS__
 	    /* rootclass is our parent */
 	    if (!strcmp(builtin->supername, ROOTCLASS))
 		_zune_add_root_class();

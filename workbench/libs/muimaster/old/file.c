@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <stdio.h> /* snprintf */
@@ -16,7 +16,7 @@
 
 #include <zunepriv.h>
 #include <file.h>
-#ifndef _AROS
+#ifndef __AROS__
 #include <sys/stat.h>
 #endif
 #include <unistd.h>
@@ -65,7 +65,7 @@ __zune_file_find_image(STRPTR relpath)
 BOOL
 __zune_file_exists_regular(STRPTR path)
 {
-#ifndef _AROS
+#ifndef __AROS__
 
     struct stat st;
 
@@ -96,7 +96,7 @@ __zune_file_exists_regular(STRPTR path)
     return FALSE;
 }
 
-#ifndef _AROS
+#ifndef __AROS__
 
 STRPTR
 __zune_file_get_data_dir(void)

@@ -15,7 +15,7 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/alib.h>
 #include <aros/asmcall.h>
 
@@ -66,7 +66,7 @@ struct IntuiText GeneralText, FileReqText, DefSizeText, NrOfEntriesText;
 
 LONG BevelLeft, BevelTop, BevelHeight, BevelWidth;
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH3(void, IntuiMsgFunc,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(APTR, req, A2),
@@ -85,7 +85,7 @@ void __asm __saveds IntuiMsgFunc( register __a0 struct Hook *hook,
 	RenderPrefsWindow();
 	GT_EndRefresh ( WindowPtr, TRUE);
     }
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_EXIT
 #endif    
 }
@@ -466,7 +466,7 @@ retryopenwin:
     IntuiText.IText = str;
     len = IntuiTextLength (&IntuiText);
     InitNewGadget (left + len + 8, top, intgadwidth, fontht + 6, str, MINENTRIES_GADID);
-#ifdef _AROS	
+#ifdef __AROS__	
     NewGadget.ng_Flags = NG_HIGHLABEL | PLACETEXT_LEFT;
 #else
     NewGadget.ng_Flags = NG_HIGHLABEL;

@@ -51,7 +51,7 @@
 #include <proto/dos.h>
 #include <string.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/asmcall.h>
 #endif
 
@@ -71,7 +71,7 @@ extern void ShortDelay (void);
 extern APTR STDARGS DofmtArgs (char *, char *,...);
 
 
-#ifndef _AROS
+#ifndef __AROS__
 extern ULONG ASM myBoopsiDispatch (
     REGPARAM(a0, Class *,),
     REGPARAM(a2, struct Image *,),
@@ -161,7 +161,7 @@ struct CombStringInfo
 
 /****************************************************************************************/
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH3(ULONG, StrEditHookEntry,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(struct SGWork *, sgw, A2),
@@ -241,7 +241,7 @@ StrEditHookEntry (
     } /* if( msg[ 0 ] == SGH_KEY ) */
 
     return( FALSE );
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_EXIT
 #endif
 }

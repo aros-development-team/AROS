@@ -7,7 +7,7 @@
 #include <proto/locale.h>
 #include <string.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/macros.h>
 #endif
 
@@ -18,7 +18,7 @@ char *REGARGS GetStr (struct Catalog *cat, char *idstr)
     char  *local;
     UWORD id = *(UWORD *)idstr;
 
-#ifdef _AROS
+#ifdef __AROS__
 #if !AROS_BIG_ENDIAN
     id = AROS_BE2WORD(id);
 #endif

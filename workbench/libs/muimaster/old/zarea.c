@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
@@ -268,7 +268,7 @@ mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (data->mad_InputMode != MUIV_InputMode_None)
     {
-#ifdef _AROS
+#ifdef __AROS__
 
 	data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
 
@@ -1301,7 +1301,7 @@ handle_popupmenu(struct IClass *cl, Object *obj)
 {
 }
 
-#ifndef _AROS
+#ifndef __AROS__
 
 /* called every 1/10 s */
 static gboolean
@@ -1349,7 +1349,7 @@ handle_press(struct IClass *cl, Object *obj)
     {
 	case MUIV_InputMode_RelVerify:
 	    set(obj, MUIA_Timer, ++muiAreaData(obj)->mad_Timeval);
-#ifdef _AROS
+#ifdef __AROS__
 #warning FIXME: input timeout
 #else
 	    data->mad_PreTimeout_id =
@@ -1384,7 +1384,7 @@ handle_release(struct IClass *cl, Object *obj)
 	    set(obj, MUIA_Pressed, FALSE);
 	    set(obj, MUIA_Selected, FALSE);
 	}
-#ifdef _AROS
+#ifdef __AROS__
 #warning FIXME: input timeout
 #else
 	if (data->mad_Timeout_id)
@@ -1403,7 +1403,7 @@ handle_release(struct IClass *cl, Object *obj)
     }
 }
 
-#ifdef _AROS
+#ifdef __AROS__
 
 static ULONG
 event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
@@ -1665,7 +1665,7 @@ mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 
     if (msg->imsg)
     {
-#ifdef _AROS
+#ifdef __AROS__
 	switch (msg->imsg->Class)
 	{
 	case IDCMP_MOUSEBUTTONS:

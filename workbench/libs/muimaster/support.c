@@ -7,7 +7,7 @@
 
 #include <string.h>
 
-#ifndef _AROS
+#ifndef __AROS__
 #ifndef __MAXON__
 #include <dos.h>
 #endif
@@ -20,7 +20,7 @@
 #include <proto/graphics.h>
 #include <proto/keymap.h>
 #include <proto/utility.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -157,7 +157,7 @@ static const struct __MUIBuiltinClass *builtins[] =
  * metaDispatcher - puts h_Data in A6 and calls real dispatcher
  */
 
-#ifdef _AROS
+#ifdef __AROS__
 AROS_UFH3(IPTR, metaDispatcher,
 	AROS_UFHA(struct IClass  *, cl,  A0),
 	AROS_UFHA(Object *, obj, A2),
@@ -324,7 +324,7 @@ void FreeVecPooled (APTR pool, APTR mem)
     }
 }
 
-#ifndef _AROS
+#ifndef __AROS__
 char *StrDup(char *x)
 {
     char *dup;

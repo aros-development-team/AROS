@@ -6,7 +6,7 @@
 */
 
 #include <proto/intuition.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
@@ -16,7 +16,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef _AROS
+#ifndef __AROS__
 __asm Object *MUI_NewObjectA(register __a0 char *classname,register __a1 struct TagItem *tags)
 #else
 	AROS_LH2(Object *, MUI_NewObjectA,
@@ -64,7 +64,7 @@ __asm Object *MUI_NewObjectA(register __a0 char *classname,register __a1 struct 
 
 	if (!obj)
 	{
-    	#ifndef _AROS
+    	#ifndef __AROS__
 	    printf("Could not create object of %s\n",classname);
 	#else
 	    kprintf("  *** Could not create object of %s\n",classname);
@@ -74,7 +74,7 @@ __asm Object *MUI_NewObjectA(register __a0 char *classname,register __a1 struct 
 	return obj;
     }
 
-#ifndef _AROS
+#ifndef __AROS__
     printf("Couldn't find %s\n",classname);
 #else
     kprintf(" *** Couldn't find %s\n",classname);

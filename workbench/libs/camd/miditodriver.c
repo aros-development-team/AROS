@@ -183,7 +183,7 @@ ULONG Transmit_Status(struct DriverData *driverdata){
 ULONG ASM Transmitter(REG(a2) struct DriverData *driverdata){
 	UBYTE ret;
 
-#ifndef _AROS
+#ifndef __AROS__
 	if((driverdata->mididevicedata->Flags&1)==0){
 		return Transmitter_oldformat(driverdata);
 	}
@@ -261,7 +261,7 @@ BOOL Midi2Driver_internal(
 	ULONG maxbuff
 ){
 
-#ifndef _AROS
+#ifndef __AROS__
 	if((driverdata->mididevicedata->Flags&1)==0){
 		return Midi2Driver_internal_oldformat(driverdata,msg,maxbuff);
 	}
@@ -297,7 +297,7 @@ BOOL Midi2Driver_internal(
 
 BOOL SysEx2Driver(struct DriverData *driverdata,UBYTE *buffer){
 
-#ifndef _AROS
+#ifndef __AROS__
 	if((driverdata->mididevicedata->Flags&1)==0){
 		return SysEx2Driver_oldformat(driverdata,buffer);
 	}

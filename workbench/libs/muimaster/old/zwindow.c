@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
@@ -256,7 +256,7 @@ mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     InitMinList(&(data->wd_EHList));
     InitMinList(&(data->wd_CCList));
 
-#ifdef _AROS
+#ifdef __AROS__
     data->wd_CrtFlags = WFLG_SIZEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_CLOSEGADGET
                       | WFLG_SIMPLE_REFRESH | WFLG_REPORTMOUSE | WFLG_NEWLOOKMENUS;
 #else
@@ -565,7 +565,7 @@ window_minmax (struct MUI_WindowData *data)
 static void
 window_show (struct MUI_WindowData *data)
 {
-#ifdef _AROS
+#ifdef __AROS__
     struct Window *win = data->wd_RenderInfo.mri_Window;
 #endif
 
@@ -616,7 +616,7 @@ window_Open(struct IClass *cl, Object *obj)
     /* inquire about sizes */
     window_minmax(data);
     window_select_dimensions(data);
-#ifdef _AROS
+#ifdef __AROS__
     data->wd_UserPort = muiGlobalInfo(obj)->mgi_UserPort;
 #endif
 
@@ -638,7 +638,7 @@ window_Open(struct IClass *cl, Object *obj)
 
     window_show(data);
 
-#ifdef _AROS
+#ifdef __AROS__
     MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
 #else
     /* expose event will trigger a MUIM_Draw */

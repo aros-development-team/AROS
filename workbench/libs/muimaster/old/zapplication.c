@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
@@ -27,7 +27,7 @@
 #include <Family.h>
 #include <familydata.h>
 
-#ifndef _AROS
+#ifndef __AROS__
 #include <event_impl.h>
 #else
 #include <window_impl.h>
@@ -218,7 +218,7 @@ mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     /* Initial local instance data */
     data = INST_DATA(cl, obj);
 
-#ifndef _AROS
+#ifndef __AROS__
     data->app_MainLoop = g_main_new (TRUE);
 #endif
 
@@ -304,7 +304,7 @@ mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 #endif
 
 #warning FIXME: implement checking for prefs change
-#ifndef _AROS
+#ifndef __AROS__
     /* currently hardcoded range of 1-10 s for prefs files notifications */
     __zprefs.app_cfg_spy_delay = CLAMP(__zprefs.app_cfg_spy_delay, 1000, 10 * 1000);
     data->app_CfgSpyTimeout = g_timeout_add(__zprefs.app_cfg_spy_delay,
@@ -330,7 +330,7 @@ mDispose(struct IClass *cl, Object *obj, Msg msg)
     if (data->app_WindowFamily)
 	MUI_DisposeObject(data->app_WindowFamily);
 
-#ifndef _AROS
+#ifndef __AROS__
     if (data->app_CfgSpyTimeout)
 	g_source_remove(data->app_CfgSpyTimeout);
 #endif
@@ -521,14 +521,14 @@ mInputBuffered(struct IClass *cl, Object *obj,
                struct MUIP_Application_InputBuffered *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
-#ifdef _AROS
+#ifdef __AROS__
     struct IntuiMessage *imsg;
 #endif
 
     /* process all pushed methods */
     application_do_pushed_method(data);
 
-#ifdef _AROS
+#ifdef __AROS__
     imsg = (struct IntuiMessage *)GetMsg(data->app_GlobalInfo.mgi_UserPort);
     if (imsg != NULL)
     {
@@ -577,7 +577,7 @@ mNewInput(struct IClass *cl, Object *obj,
     if (*msg->signal & SIGBREAKF_CTRL_C)
 	return MUIV_Application_ReturnID_Quit;
 
-#ifndef _AROS
+#ifndef __AROS__
 
     __application_wait_event(data, TRUE);
 

@@ -9,7 +9,7 @@
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 

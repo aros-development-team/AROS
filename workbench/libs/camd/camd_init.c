@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 #include <exec/libraries.h>
-#ifdef _AROS
+#ifdef __AROS__
 #  include <aros/libcall.h>
 #  include <aros/asmcall.h>
 #endif
@@ -42,7 +42,7 @@ struct UtilityBase *UtilityBase;
 #define LC_NO_CLOSELIB
 /* #define LC_NO_EXPUNGELIB */
 
-#ifdef _AROS
+#ifdef __AROS__
 #  include <libcore/libheader.c>
 
 #  undef DEBUG

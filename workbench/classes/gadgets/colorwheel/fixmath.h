@@ -44,7 +44,7 @@ Fixed32 FixAtan2( Fixed32, Fixed32 );
 
 __inline static Fixed32 FixMul(Fixed32 eins,Fixed32 zwei)
 {
-#ifdef _AROS
+#ifdef __AROS__
     return (Fixed32) ( (double) eins * (double) zwei * 0.0000152587890625 );
 #else
 
@@ -83,7 +83,7 @@ __inline static Fixed32 FixMul(Fixed32 eins,Fixed32 zwei)
 
 #endif /* version060 */
 
-#endif /* _AROS */
+#endif /* __AROS__ */
 
 }
 
@@ -91,7 +91,7 @@ __inline static Fixed32 FixMul(Fixed32 eins,Fixed32 zwei)
 
 __inline static Fixed32 FixDiv(Fixed32 eins,Fixed32 zwei)
 {
-#ifdef _AROS
+#ifdef __AROS__
     eins = (double) eins / (double) zwei * 65536.0;
 #else
 	
@@ -126,7 +126,7 @@ __inline static Fixed32 FixDiv(Fixed32 eins,Fixed32 zwei)
 #endif
 #endif /* version060 */
 
-#endif /* _AROS */
+#endif /* __AROS__ */
 
     return eins;
 }

@@ -12,7 +12,7 @@
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
-#ifdef _AROS
+#ifdef __AROS__
 #include <libraries/mui.h>
 #include <proto/muimaster.h>
 #endif
@@ -20,7 +20,7 @@
 
 struct Library       *MUIMasterBase;
 
-#ifndef _AROS
+#ifndef __AROS__
 
 #include <mui.h>
 #undef SysBase
