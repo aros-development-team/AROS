@@ -148,7 +148,7 @@ document modlist
 List of all the modules currently loaded in memory
 end
 
-define findhit
+define findaddr
     if debug_seglist
         set $cont = 1
         set $segnode = (struct debug_segnode *)debug_seglist.mlh_Head
@@ -158,7 +158,7 @@ define findhit
 
             while $nextseg && $cont
 	        if $arg0 >= $nextseg && $arg0 <= ($nextseg + *(ULONG *)((UBYTE *)$nextseg - 4) - sizeof(BPTR))
-                    printf "Hit found in %s\n", $segnode->name
+                    printf "Hit found in %s, which is loaded at 0x%08x\n", $segnode->name, $segnode->seglist
 
                     set $cont = 0
                 end
@@ -170,6 +170,6 @@ define findhit
         end
     end
 end
-document findhit
+document findaddr
 Shows the modules that contains the given address
 end
