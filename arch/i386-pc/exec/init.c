@@ -142,7 +142,7 @@ static const struct Resident *romtagList[] =
     /* BOCHS doesn't like something in there: error "unsupported CMOS read, address = 0x701" */
     &TrackDisk_resident,	    /* ColdStart,   4    */	//Trackdisk		
 #endif
-    &ide_resident,                  /* ColdStart,   4    */	//IDE device
+//    &ide_resident,                  /* ColdStart,   4    */	//IDE device
 
 //    &emul_handler_resident,		    /* ColdStart,   0	 */
 //    &Workbench_resident,		    /* ColdStart,  -120  */
@@ -260,7 +260,11 @@ int main()
             MEMF_LOCAL, 10, (APTR)0x01000000, "fast memory");
     }
 
-    if (!(SSP=AllocMem(4096,MEMF_PUBLIC)))      // Alloc 4kb supervisor stack
+#warning There's some strange problem somewhere. I must add some
+#warning bytes to the 4096, otherwise expansion.library gets
+#warning corrupted!?
+       
+    if (!(SSP=AllocMem(4096+16384,MEMF_PUBLIC)))      // Alloc 4kb supervisor stack
     {
         kprintf("Supervisor init failed!!!!\nSystem halted...");
         do {} while(1);
