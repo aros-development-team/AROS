@@ -15,11 +15,13 @@ STARTUP = $(LIBDIR)/startup.o
 %define_libs
 
 FILES = alib_util allocnamedobject callhook coercemethod createextio	    \
-	createport createstdio createtask deleteextio deleteport deletestdio\
-	deletetask dogadgetmethod domethod dosupermethod easyrequest	    \
-	fastrand hookentry liballocpooled libcreatepool libdeletepool	    \
-	libfreepooled newlist newobject openscreentags openwindowtags	    \
-	rangerand setattrs setsuperattrs arosinquire
+	creategadget createmenus createport createstdio createtask	    \
+	deleteextio deleteport deletestdio deletetask dogadgetmethod	    \
+	domethod dosupermethod drawbevelbox easyrequest	fastrand	    \
+	getvisualinfo gt_getgadgetattrs gt_setgadgetattrs hookentry	    \
+	layoutmenuitems layoutmenus liballocpooled libcreatepool	    \
+	libdeletepool libfreepooled newlist newobject openscreentags	    \
+	openwindowtags rangerand setattrs setsuperattrs arosinquire
 
 OBJS = $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)

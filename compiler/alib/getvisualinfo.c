@@ -1,0 +1,54 @@
+/*
+    (C) 1997 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Get a (private) visual info structure
+    Lang: english
+*/
+#include <exec/types.h>
+#define AROS_TAGRETURNTYPE APTR
+
+#include "alib_intern.h"
+
+extern struct GadToolsBase * GadToolsBase;
+
+/*****************************************************************************
+
+    NAME */
+#include <intuition/screens.h>
+#include <utility/tagitem.h>
+#define NO_INLINE_STDARG /* turn off inline def */
+#include <proto/gadtools.h>
+
+	APTR GetVisualInfo (
+
+/*  SYNOPSIS */
+	struct Screen * screen,
+	ULONG		tag1,
+	...		)
+
+/*  FUNCTION
+        Varargs version of gadtools.library/GetVisualInfoA().
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
+{
+    AROS_SLOWSTACKTAGS_PRE(tag1)
+    retval = GetVisualInfoA (screen, AROS_SLOWSTACKTAGS_ARG(tag1));
+    AROS_SLOWSTACKTAGS_POST
+} /* GetVisualInfo */
