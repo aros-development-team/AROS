@@ -72,23 +72,23 @@ struct VSprite
     struct VSprite   *NextVSprite;
     struct VSprite   *PrevVSprite;
 
-    struct VSprite   *DrawPath;    
-    struct VSprite   *ClearPath;   
+    struct IntVSprite *IntVSprite;
+    struct VSprite   *ClearPath;
 
-    WORD OldY, OldX;	     
+    WORD OldY, OldX;
 
 /* COMMON VARIABLES */
-    WORD Flags;	      
+    WORD Flags;
 
 /* USER VARIABLES */
-    WORD Y, X;		      
+    WORD Y, X;
 
     WORD Height;
-    WORD Width;	      
-    WORD Depth;	     
+    WORD Width;
+    WORD Depth;
 
-    WORD MeMask;	     
-    WORD HitMask;	      
+    WORD MeMask;
+    WORD HitMask;
 
     WORD *ImageData;
 
