@@ -1,12 +1,9 @@
-a/*
-   Copyright © 1995-2002, The AROS Development Team. All rights reserved.
-   $Id$ 
- */
+/*
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$ 
+*/
 
 #define MUIMASTER_YES_INLINE_STDARG
-
-#define DEBUG 1
-#include <aros/debug.h>
 
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -35,6 +32,9 @@ a/*
 #include "desktop_intern_protos.h"
 
 #include <string.h>
+
+#define DEBUG 1
+#include <aros/debug.h>
 
 static ULONG DoSetupMethod(Object * obj, struct MUI_RenderInfo *info)
 {
@@ -760,13 +760,10 @@ IPTR iconShow(Class * cl, Object * obj, Msg msg)
 IPTR iconConnectParent(Class * cl, Object * obj,
                        struct MUIP_ConnectParent * msg)
 {
-    struct IconClassData *data;
-    IPTR            retval;
-    ULONG           iconSize;
-    ULONG           frameType;
-
-    data = (struct IconClassData *) INST_DATA(cl, obj);
-
+    struct IconClassData *data = (struct IconClassData *) INST_DATA(cl, obj);
+    IPTR                  retval;
+    ULONG                 iconSize;
+    
     if (data->viewMode != IAVM_LARGEICON)
         iconSize = 15;
 
@@ -838,7 +835,7 @@ IPTR iconConnectParent(Class * cl, Object * obj,
             UBYTE           date[LEN_DATSTRING];
             UBYTE           time[LEN_DATSTRING];
             ULONG           bufferLength = LEN_DATSTRING * 3; /* FIXME: ??? */
-            UBYTE          *buffer = (bufferLength, MEMF_ANY);
+            UBYTE          *buffer = AllocVec(bufferLength, MEMF_ANY);
             /* FIXME: error checking */
             
             dt.dat_Stamp   = data->lastChanged;
