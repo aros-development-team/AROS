@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/12 14:17:34  digulla
+    Added alias UnLock Close
+
     Revision 1.2  1996/08/01 17:40:48  digulla
     Added standard header for all files
 
@@ -92,6 +95,7 @@
 			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
+/*AROS alias UnLock Close */
 {
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
@@ -110,7 +114,7 @@
 
     /* 0 handles are OK */
     if(!file)
-        return ret;
+	return ret;
 
     /* If the filehandle has a pending write on it Flush() the buffer. */
     if(fh->fh_Flags&FHF_WRITE)
@@ -118,10 +122,10 @@
 
     /* Prepare I/O request. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-    iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
+    iofs->IOFS.io_Message.mn_ReplyPort	 =&me->pr_MsgPort;
+    iofs->IOFS.io_Message.mn_Length	 =sizeof(struct IOFileSys);
     iofs->IOFS.io_Device =fh->fh_Device;
-    iofs->IOFS.io_Unit   =fh->fh_Unit;
+    iofs->IOFS.io_Unit	 =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_CLOSE;
     iofs->IOFS.io_Flags  =0;
 
