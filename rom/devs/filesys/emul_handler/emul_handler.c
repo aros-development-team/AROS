@@ -1144,7 +1144,11 @@ AROS_LH1(void, beginio,
 		if (fh->fd==STDOUT_FILENO)
 		    fh->fd=STDIN_FILENO;
 
-		error = Hidd_UnixIO_Wait(emulbase->unixio, fh->fd, vHidd_UnixIO_Read);
+		error = Hidd_UnixIO_Wait(emulbase->unixio
+			, fh->fd
+			, vHidd_UnixIO_Read
+			, NULL
+			, NULL);
 
 		if (error == 0) {
 		    iofs->io_Union.io_READ.io_Length = read (fh->fd,iofs->io_Union.io_READ.io_Buffer,iofs->io_Union.io_READ.io_Length);
