@@ -75,6 +75,7 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 	{ SA_Height,	AROS_DEFAULT_WBHEIGHT	},	
 	{ SA_PubName,   (IPTR)"Workbench"       },
 	{ SA_Pens,      (IPTR) pens             },
+	{ SA_SharePens, TRUE			},
 	{ TAG_END, 0 }
     };
     
