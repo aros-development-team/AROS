@@ -1616,10 +1616,18 @@ fi
 
 if test -z "$aros_gui_basedir" ; then
         aros_gui_libdir="$x_libraries"
-    aros_gui_ldflags="-L $x_libraries"
+    if test -z "$x_libraries" ; then
+	aros_gui_ldflags=""
+    else
+	aros_gui_ldflags="-L $x_libraries"
+    fi
     aros_gui_libflags="-lX11"
     aros_gui_incdir="$x_includes"
-    aros_gui_ccflags="-I $x_includes"
+    if test -z "$x_includes" ; then
+	aros_gui_ccflags=""
+    else
+	aros_gui_ccflags="-I $x_includes"
+    fi
 else
     if test -n "$aros_gui_basedir" ; then
 	aros_gui_libdir="${aros_gui_basedir}/lib"
