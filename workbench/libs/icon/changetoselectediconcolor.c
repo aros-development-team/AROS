@@ -10,7 +10,7 @@
 #define EFFECT_TINT_BLUE (2)
 #define EFFECT_XOR       (3)
 
-#define EFFECT EFFECT_TINT_BLUE
+#define EFFECT EFFECT_LIGHTEN
 
 /*****************************************************************************
 
