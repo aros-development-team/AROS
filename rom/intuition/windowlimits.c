@@ -60,26 +60,38 @@
 
     BOOL retval = TRUE;
 
-    if(window->Width >= MinWidth)
-	window->MinWidth = MinWidth;
-    else
-	retval = FALSE;
-
-    if(window->Height >= MinHeight)
-	window->MinHeight = MinHeight;
-    else
-	retval = FALSE;
-
-    if(window->Width <= MaxWidth)
-	window->MaxWidth = MaxWidth;
-    else
-	retval = FALSE;
-
-    if(window->Height <= MaxHeight)
-	window->MaxHeight = MaxHeight;
-    else
-	retval = FALSE;
-
+    if (MinWidth)
+    {
+	if(window->Width >= MinWidth)
+	    window->MinWidth = MinWidth;
+	else
+	    retval = FALSE;
+    }
+    
+    if (MinHeight)
+    {
+	if(window->Height >= MinHeight)
+	    window->MinHeight = MinHeight;
+	else
+	    retval = FALSE;
+    }
+    
+    if (MaxWidth)
+    {
+	if(window->Width <= MaxWidth)
+	    window->MaxWidth = MaxWidth;
+	else
+	    retval = FALSE;
+    }
+    
+    if (MaxHeight)
+    {
+	if(window->Height <= MaxHeight)
+	    window->MaxHeight = MaxHeight;
+	else
+	    retval = FALSE;
+    }
+    
     return retval;
     AROS_LIBFUNC_EXIT
 } /* WindowLimits */
