@@ -1075,7 +1075,7 @@ typedef unsigned long (*ULONG_FUNC)();
 #ifndef AROS_CALL0
 #define AROS_CALL0(returntype,address,basetype,basename) \
     (((__AROS_LC_PREFIX returntype(*)(__AROS_LP_BASE(basetype,basename)))\
-    address)(basename))
+    (void *)(address))(basename))
 #endif
 
 #ifndef AROS_CALL1
@@ -1083,7 +1083,7 @@ typedef unsigned long (*ULONG_FUNC)();
     (((__AROS_LC_PREFIX t(*)(\
     __AROS_LPA(a1),\
     __AROS_LP_BASE(bt,bn)))\
-    a)(\
+    (void *)(a))(\
     __AROS_LCA(a1),\
     bn))
 #endif
@@ -1094,7 +1094,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LPA(a1),\
     __AROS_LPA(a2),\
     __AROS_LP_BASE(bt,bn)))\
-    a)(\
+    (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
     bn))
@@ -1106,7 +1106,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LPA(a2),\
     __AROS_LPA(a3),\
     __AROS_LP_BASE(bt,bn)))\
-    a)(\
+    (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
     __AROS_LCA(a3),\
@@ -1120,7 +1120,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LPA(a3),\
     __AROS_LPA(a4),\
     __AROS_LP_BASE(bt,bn)))\
-    a)(\
+    (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
     __AROS_LCA(a3),\
@@ -1137,7 +1137,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LPA(a4),\
     __AROS_LPA(a5),\
     __AROS_LP_BASE(bt,bn)))\
-    a)(\
+    (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
     __AROS_LCA(a3),\
@@ -1156,7 +1156,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LPA(a5),\
     __AROS_LPA(a6),\
     __AROS_LP_BASE(bt,bn)))\
-    a)(\
+    (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
     __AROS_LCA(a3),\
@@ -1177,7 +1177,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LPA(a6),\
     __AROS_LPA(a7),\
     __AROS_LP_BASE(bt,bn)))\
-    a)(\
+    (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
     __AROS_LCA(a3),\
@@ -1200,7 +1200,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LPA(a7),\
     __AROS_LPA(a8),\
     __AROS_LP_BASE(bt,bn)))\
-    a)(\
+    (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
     __AROS_LCA(a3),\
