@@ -455,15 +455,19 @@ if test -n "$aros_shared_cflags" ; then
 fi
 
 # We make sure that we don't change config.h unless it has really changed.
-out=bin/$aros_arch-$aros_cpu/AROS/include/aros/config.h
-if cmp -s "$out" "config/config.h"; then
-    echo "config/config.h is unchanged."
-    rm $out
-else
-    echo "Replacing $out by config/config.h"
-    if test -f $out ; then
-	mv $out ${out}.bak
+# Sometimes, configure will not create config/config.h; in that case,
+# assume that it has not changed.
+if test -f config/config.h ; then
+    out=bin/$aros_arch-$aros_cpu/AROS/include/aros/config.h
+    if cmp -s "$out" "config/config.h"; then
+        echo "config/config.h is unchanged."
+        rm $out
+    else
+        echo "Replacing $out by config/config.h"
+        if test -f $out ; then
+	    mv $out ${out}.bak
+        fi
+        mv config/config.h $out
     fi
-    mv config/config.h $out
 fi
 
