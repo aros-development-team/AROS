@@ -1,57 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.15  1999/10/11 20:57:26  stegerg
-    added internal refreshglist func
-
-    Revision 1.14  1998/10/20 16:46:03  hkiel
-    Amiga Research OS
-
-    Revision 1.13  1997/12/25 23:20:03  hkiel
-    Keep compiler happy ;-)
-
-    Revision 1.12  1997/09/25 11:13:36  nlorentz
-    Added refreshing of stringgadgets
-
-    Revision 1.11  1997/01/27 00:36:42  ldp
-    Polish
-
-    Revision 1.10  1996/12/10 14:00:08  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.9  1996/11/08 11:28:04  aros
-    All OS function use now Amiga types
-
-    Moved intuition-driver protos to intuition_intern.h
-
-    Revision 1.8  1996/10/25 14:25:56  aros
-    Handle BOOPSI Gadgets
-
-    Revision 1.7  1996/10/24 15:51:24  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.6  1996/10/10 13:31:07  digulla
-    Move Gadget code in own files
-
-    Revision 1.5  1996/10/04 15:33:57  digulla
-    Added a comment
-
-    Revision 1.4  1996/10/02 18:12:03  digulla
-    Draw text after border for IMAGE and BORDER gadgets and before for HCOMP-type
-	gadgets (The text of IMAGE-Gadgets was not visible)
-
-    Revision 1.3  1996/08/29 13:57:38  digulla
-    Commented
-    Moved common code from driver to Intuition
-
-    Revision 1.2  1996/08/29 07:50:49  digulla
-    Fixed a small bug in PropGadgets. The jumpsize of the knob was too small.
-
-    Revision 1.1  1996/08/28 17:55:36  digulla
-    Proportional gadgets
-    BOOPSI
-
 
     Desc:
     Lang: english

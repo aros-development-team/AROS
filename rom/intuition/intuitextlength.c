@@ -1,28 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.7  1999/02/18 23:18:01  hkiel
-    Added return value
-
-    Revision 1.6  1998/10/20 16:45:58  hkiel
-    Amiga Research OS
-
-    Revision 1.5  1997/01/27 00:36:40  ldp
-    Polish
-
-    Revision 1.4  1996/12/10 14:00:04  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.3  1996/10/31 13:51:18  aros
-    Create and free the RastPort with the new functions
-
-    Revision 1.2  1996/10/24 15:51:20  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/10/21 17:06:48  aros
-    A couple of new functions
-
 
     Desc:
     Lang: english

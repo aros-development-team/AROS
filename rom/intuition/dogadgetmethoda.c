@@ -1,47 +1,6 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.12  2001/01/10 17:57:07  stegerg
-    dont allocate GadgetInfo structure. Instead have it as a normal variable
-    on the stack. Source code cleanup.
-
-    Revision 1.11  2000/01/21 23:06:40  stegerg
-    fixed for screengadgets, for which the window parameter
-    is supposed to point to the screen (hack).
-
-    Revision 1.10  1999/09/29 16:54:38  stegerg
-    ock gadget semaphore to protect against race conditions between app task and input.device task
-
-    Revision 1.9  1999/07/23 21:41:07  stegerg
-    fixes, gzz
-
-    Revision 1.8  1999/07/21 21:38:07  stegerg
-    fixes for gzz gadgets
-
-    Revision 1.7  1999/05/06 17:41:11  nlorentz
-    Use macro to set gadgetinfo rastport correctly (win->RPort/BorderPort)
-
-    Revision 1.6  1999/05/01 05:19:36  bergers
-    All system gadgets are drawn into the BorderRPort of the window.
-
-    Revision 1.5  1998/10/20 16:45:53  hkiel
-    Amiga Research OS
-
-    Revision 1.4  1997/01/27 00:36:37  ldp
-    Polish
-
-    Revision 1.3  1996/12/10 14:00:01  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.2  1996/11/08 11:28:00  aros
-    All OS function use now Amiga types
-
-    Moved intuition-driver protos to intuition_intern.h
-
-    Revision 1.1  1996/10/25 14:17:54  aros
-    New functions
-
 
     Desc: Implementation of DoGadgetMethodA
     Lang: english

@@ -1,27 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.6  1998/10/20 16:46:03  hkiel
-    Amiga Research OS
-
-    Revision 1.5  1997/01/27 00:36:42  ldp
-    Polish
-
-    Revision 1.4  1996/12/10 14:00:07  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.3  1996/10/24 15:51:24  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.2  1996/08/29 13:57:38  digulla
-    Commented
-    Moved common code from driver to Intuition
-
-    Revision 1.1  1996/08/28 17:55:35  digulla
-    Proportional gadgets
-    BOOPSI
-
 
     Desc:
     Lang: english

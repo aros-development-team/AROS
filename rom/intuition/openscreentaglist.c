@@ -1,34 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.9  2000/08/03 20:36:32  stegerg
-    screen depth gadget should be usable now + src cleanup + small fixes
-
-    Revision 1.8  2000/01/21 23:04:52  stegerg
-    SHOWTITLE (SA_ShowTitle) defaults to TRUE:
-
-    Revision 1.7  1999/08/16 21:07:33  stegerg
-    taglist is now handled in openscreen
-
-    Revision 1.6  1998/10/20 16:46:01  hkiel
-    Amiga Research OS
-
-    Revision 1.5  1998/09/12 20:20:08  hkiel
-    converted TODO/FIXME comments to #warnings
-
-    Revision 1.4  1997/01/27 00:36:41  ldp
-    Polish
-
-    Revision 1.3  1996/12/10 14:00:06  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.2  1996/10/24 15:51:23  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/09/21 14:11:39  digulla
-    Open and close screens
-
 
     Desc:
     Lang: english

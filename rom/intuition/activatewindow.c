@@ -1,61 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.16  2000/12/25 13:41:37  hkiel
-    Bugfix: ActivateWindow(activewin); caused the active win to be rendered inactive.
-
-    Revision 1.15  2000/08/03 18:30:49  stegerg
-    renamed DeferedAction??? to IntuiAction???. The IntuiActionMessage
-    structure (formerly called DeferedActionMessage) now contains an
-    union for the variables needed by the different actions.
-
-    Revision 1.14  2000/02/04 21:56:01  stegerg
-    use SendDeferedActionMsg instead of PutMsg
-
-    Revision 1.13  2000/01/19 19:04:28  stegerg
-    don't call intui_activatewindow
-
-    Revision 1.12  1999/10/13 21:08:13  stegerg
-    action message goes to deferedactionport now
-
-    Revision 1.11  1999/10/06 19:55:27  stegerg
-    int_activatewindow may have window = NULL.
-    protect window->Flags modification with Forbid(), Permit()
-
-    Revision 1.10  1999/03/26 10:37:44  nlorentz
-    Set WFLG_WINDOWACTIVE flag
-
-    Revision 1.9  1999/03/25 04:26:23  bergers
-    Update for deffered treatment of windows.
-
-    Revision 1.8  1999/03/24 20:05:26  nlorentz
-    Handle window activation on input.devices context
-
-    Revision 1.7  1998/10/20 16:45:50  hkiel
-    Amiga Research OS
-
-    Revision 1.6  1997/01/27 00:36:35  ldp
-    Polish
-
-    Revision 1.5  1996/12/10 13:59:59  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.4  1996/11/08 11:28:00  aros
-    All OS function use now Amiga types
-
-    Moved intuition-driver protos to intuition_intern.h
-
-    Revision 1.3  1996/10/24 15:51:17  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.2  1996/08/29 13:33:30  digulla
-    Moved common code from driver to Intuition
-    More docs
-
-    Revision 1.1  1996/08/23 17:28:17  digulla
-    Several new functions; some still empty.
-
 
     Desc:
     Lang: english

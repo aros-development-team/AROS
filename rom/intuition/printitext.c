@@ -1,47 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.12  2000/08/12 19:21:28  stegerg
-    if there is a IntuiText->ITextFont must SetSoftStyle(rp,
-    IntuiText->ITextFont->ta_Style)
-
-    Revision 1.11  1998/10/20 16:46:01  hkiel
-    Amiga Research OS
-
-    Revision 1.10  1998/08/16 18:48:34  nlorentz
-    Bugfix: Now renders text so that TopEdge is top of character cell
-
-    Revision 1.9  1998/02/12 16:19:45  turrican
-    Fix uninitialized variable warnings
-
-    Revision 1.8  1997/01/27 00:36:42  ldp
-    Polish
-
-    Revision 1.7  1996/12/10 14:00:07  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.6  1996/11/08 11:28:04  aros
-    All OS function use now Amiga types
-
-    Moved intuition-driver protos to intuition_intern.h
-
-    Revision 1.5  1996/10/24 15:51:23  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.4  1996/10/21 17:07:08  aros
-    Restored wrong font
-
-    Revision 1.3  1996/08/29 15:13:32  digulla
-    Wrote code
-
-    Revision 1.2  1996/08/29 13:57:37  digulla
-    Commented
-    Moved common code from driver to Intuition
-
-    Revision 1.1  1996/08/23 17:28:18  digulla
-    Several new functions; some still empty.
-
 
     Desc:
     Lang: english

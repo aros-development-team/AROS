@@ -1,46 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.13  2000/04/08 16:37:37  stegerg
-    removed ilock variable because it is unused.
-
-    Revision 1.12  2000/03/17 22:13:46  stegerg
-    Don't LockIBase before and after int_refreshglist
-
-    Revision 1.11  2000/03/16 14:57:53  bergers
-    Pass additional parameter to CheckRectFill.
-
-    Revision 1.10  2000/01/19 19:05:01  stegerg
-    renamed debug output (was "intui_RefreshWindowFrame")
-
-    Revision 1.9  2000/01/11 16:05:00  bergers
-    Update. Move some code from intuition_driver to this directoy.
-
-    Revision 1.8  1998/12/31 19:35:39  nlorentz
-    "Implemented" function (Just calls driver)
-
-    Revision 1.7  1998/10/20 20:08:04  nlorentz
-    Fixed lots of errors due to aros_not_implemented()
-
-    Revision 1.6  1998/10/20 16:46:03  hkiel
-    Amiga Research OS
-
-    Revision 1.5  1998/09/12 20:20:09  hkiel
-    converted TODO/FIXME comments to #warnings
-
-    Revision 1.4  1997/01/27 00:36:43  ldp
-    Polish
-
-    Revision 1.3  1996/12/10 14:00:08  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.2  1996/10/24 15:51:24  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/10/21 17:06:49  aros
-    A couple of new functions
-
 
     Desc:
     Lang: english

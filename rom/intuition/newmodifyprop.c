@@ -1,40 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.8  2000/07/09 22:04:44  stegerg
-    (almost) no more flickering prop gadgets.
-    there's still a strange gfx trash with the prop gadgets used by
-    the BGUI demo GroupView (apart from the right/bottom window borders
-    which have wrong color)
-
-    When the prop gadget knob is moved right or down it doesnt clear everything
-    away at the left/top side :-\ Dont know what happens here, other prop gadgets
-    in window borders work fine, for example the ones in "More".
-
-    Revision 1.7  1999/07/19 21:59:36  stegerg
-    prop gadgets now in amiga look
-
-    Revision 1.6  1998/10/20 16:46:00  hkiel
-    Amiga Research OS
-
-    Revision 1.5  1997/01/27 00:36:41  ldp
-    Polish
-
-    Revision 1.4  1996/12/10 14:00:06  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.3  1996/11/08 11:28:04  aros
-    All OS function use now Amiga types
-
-    Moved intuition-driver protos to intuition_intern.h
-
-    Revision 1.2  1996/10/24 15:51:22  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/10/10 13:09:55  digulla
-    New function: NewModifyProp()
-
 
     Desc:
     Lang: english

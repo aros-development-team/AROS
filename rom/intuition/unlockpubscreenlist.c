@@ -1,10 +1,6 @@
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.3  1999/08/20 16:38:58  SDuvan
-    Public screen functions
-
 
     Desc:
     Lang: English
