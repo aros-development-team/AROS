@@ -24,7 +24,6 @@ FILES	:= \
     aslrequesttags \
     beginio \
     bestmodeid \
-    betest \
     buildeasyrequest \
     callhook \
     changeextsprite \
