@@ -120,6 +120,7 @@
       break;
       
       case LA_ChildOf:
+        parent = (struct Layer *)tagList[i].ti_Data;
       break;
       
       case LA_InFrontOf:
