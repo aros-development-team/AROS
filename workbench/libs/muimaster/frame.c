@@ -12,6 +12,7 @@
 
 #include "muimaster_intern.h"
 #include "mui.h"
+#include "frame.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -187,7 +188,52 @@ static void frame_thick_border_down_draw (struct MUI_RenderInfo *mri,
 }
 
 /**************************************************************************
- 5 : FST_WIN_BEVEL
+ 5 : FST_ROUND_BEVEL
+**************************************************************************/
+static void round_bevel_draw (struct MUI_RenderInfo *mri,
+		  int left, int top, int width, int height,
+		  MPen ul, MPen lr)
+{
+    SetAPen(mri->mri_RastPort, mri->mri_Pens[MPEN_BACKGROUND]);
+    RectFill(mri->mri_RastPort,
+             left, top, left + 3, top + height - 1);
+    RectFill(mri->mri_RastPort,
+             left + width - 4, top, left + width - 1, top + height - 1);
+    rect_draw(mri, left, top+2, 2, height-4, ul);
+    rect_draw(mri, left+1, top+1, 2, 1, ul);
+    rect_draw(mri, left+1, top + height - 2, 2, 1, ul);
+    rect_draw(mri, left+2, top + height - 1, 1, 1, ul);
+    rect_draw(mri, left+2, top, width - 5, 1, ul);
+
+    rect_draw(mri, left + width - 2, top+2, 2, height-4, lr);
+    rect_draw(mri, left + width - 3, top+1, 2, 1, lr);
+    rect_draw(mri, left + width - 3, top + height - 2, 2, 1, lr);
+    rect_draw(mri, left+3, top + height - 1, width - 5, 1, lr);
+    rect_draw(mri, left + width - 3, top, 1, 1, lr);
+}
+
+/**************************************************************************
+
+**************************************************************************/
+static void frame_round_bevel_up_draw (struct MUI_RenderInfo *mri,
+			   int left, int top, int width, int height)
+{
+    round_bevel_draw (mri, left, top, width, height,
+		      MPEN_SHINE, MPEN_SHADOW);
+}
+
+/**************************************************************************
+
+**************************************************************************/
+static void frame_round_bevel_down_draw (struct MUI_RenderInfo *mri,
+			     int left, int top, int width, int height)
+{
+    round_bevel_draw (mri, left, top, width, height,
+		      MPEN_SHADOW, MPEN_SHINE);
+}
+
+/**************************************************************************
+ 6 : FST_WIN_BEVEL
 **************************************************************************/
 static void frame_border_button_up_draw (struct MUI_RenderInfo *mri,
 			    int left, int top, int width, int height)
@@ -211,134 +257,7 @@ static void frame_border_button_down_draw (struct MUI_RenderInfo *mri,
 }
 
 /**************************************************************************
- 6 : FST_GRAY_BORDER
-**************************************************************************/
-static void frame_gray_border_up_draw (struct MUI_RenderInfo *mri,
-			   int left, int top, int width, int height)
-{
-    thinborder_draw(mri, left, top, width, height,
-		    MPEN_HALFSHINE, MPEN_HALFSHADOW);
-}
-
-/**************************************************************************
-
-**************************************************************************/
-static void frame_gray_border_down_draw (struct MUI_RenderInfo *mri,
-			     int left, int top, int width, int height)
-{
-    thinborder_draw(mri, left, top, width, height,
-		    MPEN_HALFSHADOW, MPEN_HALFSHINE);
-}
-
-/**************************************************************************
- 7 : FST_SEMIROUND_BEVEL
-**************************************************************************/
-static void semiround_bevel_draw (struct MUI_RenderInfo *mri,
-		      int left, int top, int width, int height,
-		      MPen pen1, MPen pen2, MPen pen3, MPen pen4, MPen pen5)
-{
-    struct RastPort *rp = mri->mri_RastPort;
-
-    button_draw(mri, left, top, width, height, pen1, pen5);
-    button_draw(mri, left+1, top+1, width-2, height-2, pen2, pen4);
-
-    SetAPen(rp, mri->mri_Pens[pen2]);
-    WritePixel(rp, left, top);
-
-    SetAPen(rp, mri->mri_Pens[pen1]);
-    WritePixel(rp, left + 1, top + 1);
-
-    SetAPen(mri->mri_RastPort, mri->mri_Pens[pen5]);
-    WritePixel(rp, left + width - 2, top + height - 2);
-
-    SetAPen(mri->mri_RastPort, mri->mri_Pens[pen4]);
-    WritePixel(rp, left + width - 1, top + height - 1);
-
-    SetAPen(mri->mri_RastPort, mri->mri_Pens[pen3]);
-    WritePixel(rp, left,             top + height - 2);
-    WritePixel(rp, left + 1,         top + height - 1);
-    WritePixel(rp, left + width - 2, top);
-    WritePixel(rp, left + width - 1, top + 1);
-}
-
-/**************************************************************************
-
-**************************************************************************/
-static void frame_semiround_bevel_up_draw (struct MUI_RenderInfo *mri,
-			       int left, int top, int width, int height)
-{
-    semiround_bevel_draw (mri, left, top, width, height,
-			  MPEN_SHINE, MPEN_HALFSHINE, MPEN_BACKGROUND,
-			  MPEN_HALFSHADOW, MPEN_SHADOW);
-}
-
-/**************************************************************************
-
-**************************************************************************/
-static void frame_semiround_bevel_down_draw (struct MUI_RenderInfo *mri,
-				 int left, int top, int width, int height)
-{
-    semiround_bevel_draw (mri, left, top, width, height,
-			  MPEN_SHADOW, MPEN_HALFSHADOW, MPEN_BACKGROUND,
-			  MPEN_HALFSHINE, MPEN_SHINE);
-}
-
-/**************************************************************************
- 8 : FST_SEMIROUND_THIN_BORDER
-**************************************************************************/
-static void round_thin_border_draw (struct MUI_RenderInfo *mri,
-			int left, int top, int width, int height,
-			MPen pen1, MPen pen2, MPen pen3, MPen pen4, MPen pen5)
-{
-    struct RastPort *rp = mri->mri_RastPort;
-
-    rect_draw(mri, left, top, width - 1, height - 1, pen1);
-    rect_draw(mri, left + 1, top + 1, width - 1, height - 1, pen5);
-
-    rect_draw(mri, left, top, 2, 2, pen2);
-    rect_draw(mri, left + width - 4, top + height - 4, 2, 2, pen2);
-    rect_draw(mri, left + 2, top + 2, 2, 2, pen4);
-    rect_draw(mri, left + width - 2, top + height - 2, 2, 2, pen4);
-    rect_draw(mri, left + 1, top + 1, 2, 2, pen3);
-    rect_draw(mri, left + width - 3, top + height - 3, 2, 2, pen3);
-
-    rect_draw(mri, left + 1, top + height - 3, 1, 3, pen4);
-    rect_draw(mri, left + width - 3, top + 1, 3, 1, pen4);
-
-    WritePixel(rp, left + 2,         top + height - 3);
-    WritePixel(rp, left + width - 3, top + 2);
-
-    SetAPen(rp, mri->mri_Pens[pen2]);
-    WritePixel(rp, left,             top + height - 2);
-    WritePixel(rp, left + 2,         top + height - 2);
-    WritePixel(rp, left + width - 2, top);
-    WritePixel(rp, left + width - 2, top + 2);
-}
-
-/**************************************************************************
-
-**************************************************************************/
-static void frame_round_thin_border_up_draw (struct MUI_RenderInfo *mri,
-				 int left, int top, int width, int height)
-{
-    round_thin_border_draw(mri, left, top, width, height,
-			   MPEN_SHINE, MPEN_HALFSHINE, MPEN_BACKGROUND,
-			   MPEN_HALFSHADOW, MPEN_SHADOW);
-}
-
-/**************************************************************************
-
-**************************************************************************/
-static void frame_round_thin_border_down_draw (struct MUI_RenderInfo *mri,
-				   int left, int top, int width, int height)
-{
-    round_thin_border_draw(mri, left, top, width, height,
-			   MPEN_SHADOW, MPEN_HALFSHADOW, MPEN_BACKGROUND,
-			   MPEN_HALFSHINE, MPEN_SHINE);
-}
-
-/**************************************************************************
- 9 : FST_ROUND_THICK_BORDER
+ 7 : FST_ROUND_THICK_BORDER
 **************************************************************************/
 static void round_thick_border_draw (struct MUI_RenderInfo *mri,
 			int left, int top, int width, int height,
@@ -395,50 +314,131 @@ static void frame_round_thick_border_down_draw (struct MUI_RenderInfo *mri,
 }
 
 /**************************************************************************
- 10 : FST_ROUND_BEVEL
+ 8 : FST_ROUND_THIN_BORDER
 **************************************************************************/
-static void round_bevel_draw (struct MUI_RenderInfo *mri,
-		  int left, int top, int width, int height,
-		  MPen ul, MPen lr)
+static void round_thin_border_draw (struct MUI_RenderInfo *mri,
+			int left, int top, int width, int height,
+			MPen pen1, MPen pen2, MPen pen3, MPen pen4, MPen pen5)
 {
-    SetAPen(mri->mri_RastPort, mri->mri_Pens[MPEN_BACKGROUND]);
-    RectFill(mri->mri_RastPort,
-             left, top, left + 3, top + height - 1);
-    RectFill(mri->mri_RastPort,
-             left + width - 4, top, left + width - 1, top + height - 1);
-    rect_draw(mri, left, top+2, 2, height-4, ul);
-    rect_draw(mri, left+1, top+1, 2, 1, ul);
-    rect_draw(mri, left+1, top + height - 2, 2, 1, ul);
-    rect_draw(mri, left+2, top + height - 1, 1, 1, ul);
-    rect_draw(mri, left+2, top, width - 5, 1, ul);
+    struct RastPort *rp = mri->mri_RastPort;
 
-    rect_draw(mri, left + width - 2, top+2, 2, height-4, lr);
-    rect_draw(mri, left + width - 3, top+1, 2, 1, lr);
-    rect_draw(mri, left + width - 3, top + height - 2, 2, 1, lr);
-    rect_draw(mri, left+3, top + height - 1, width - 5, 1, lr);
-    rect_draw(mri, left + width - 3, top, 1, 1, lr);
+    rect_draw(mri, left, top, width - 1, height - 1, pen1);
+    rect_draw(mri, left + 1, top + 1, width - 1, height - 1, pen5);
+
+    rect_draw(mri, left, top, 2, 2, pen2);
+    rect_draw(mri, left + width - 4, top + height - 4, 2, 2, pen2);
+    rect_draw(mri, left + 2, top + 2, 2, 2, pen4);
+    rect_draw(mri, left + width - 2, top + height - 2, 2, 2, pen4);
+    rect_draw(mri, left + 1, top + 1, 2, 2, pen3);
+    rect_draw(mri, left + width - 3, top + height - 3, 2, 2, pen3);
+
+    rect_draw(mri, left + 1, top + height - 3, 1, 3, pen4);
+    rect_draw(mri, left + width - 3, top + 1, 3, 1, pen4);
+
+    WritePixel(rp, left + 2,         top + height - 3);
+    WritePixel(rp, left + width - 3, top + 2);
+
+    SetAPen(rp, mri->mri_Pens[pen2]);
+    WritePixel(rp, left,             top + height - 2);
+    WritePixel(rp, left + 2,         top + height - 2);
+    WritePixel(rp, left + width - 2, top);
+    WritePixel(rp, left + width - 2, top + 2);
 }
 
 /**************************************************************************
 
 **************************************************************************/
-static void frame_round_bevel_up_draw (struct MUI_RenderInfo *mri,
+static void frame_round_thin_border_up_draw (struct MUI_RenderInfo *mri,
+				 int left, int top, int width, int height)
+{
+    round_thin_border_draw(mri, left, top, width, height,
+			   MPEN_SHINE, MPEN_HALFSHINE, MPEN_BACKGROUND,
+			   MPEN_HALFSHADOW, MPEN_SHADOW);
+}
+
+/**************************************************************************
+
+**************************************************************************/
+static void frame_round_thin_border_down_draw (struct MUI_RenderInfo *mri,
+				   int left, int top, int width, int height)
+{
+    round_thin_border_draw(mri, left, top, width, height,
+			   MPEN_SHADOW, MPEN_HALFSHADOW, MPEN_BACKGROUND,
+			   MPEN_HALFSHINE, MPEN_SHINE);
+}
+
+/**************************************************************************
+ 9 : FST_GRAY_BORDER
+**************************************************************************/
+static void frame_gray_border_up_draw (struct MUI_RenderInfo *mri,
 			   int left, int top, int width, int height)
 {
-    round_bevel_draw (mri, left, top, width, height,
-		      MPEN_SHINE, MPEN_SHADOW);
+    thinborder_draw(mri, left, top, width, height,
+		    MPEN_HALFSHINE, MPEN_HALFSHADOW);
 }
 
 /**************************************************************************
 
 **************************************************************************/
-static void frame_round_bevel_down_draw (struct MUI_RenderInfo *mri,
+static void frame_gray_border_down_draw (struct MUI_RenderInfo *mri,
 			     int left, int top, int width, int height)
 {
-    round_bevel_draw (mri, left, top, width, height,
-		      MPEN_SHADOW, MPEN_SHINE);
+    thinborder_draw(mri, left, top, width, height,
+		    MPEN_HALFSHADOW, MPEN_HALFSHINE);
 }
 
+/**************************************************************************
+ A : FST_SEMIROUND_BEVEL
+**************************************************************************/
+static void semiround_bevel_draw (struct MUI_RenderInfo *mri,
+		      int left, int top, int width, int height,
+		      MPen pen1, MPen pen2, MPen pen3, MPen pen4, MPen pen5)
+{
+    struct RastPort *rp = mri->mri_RastPort;
+
+    button_draw(mri, left, top, width, height, pen1, pen5);
+    button_draw(mri, left+1, top+1, width-2, height-2, pen2, pen4);
+
+    SetAPen(rp, mri->mri_Pens[pen2]);
+    WritePixel(rp, left, top);
+
+    SetAPen(rp, mri->mri_Pens[pen1]);
+    WritePixel(rp, left + 1, top + 1);
+
+    SetAPen(mri->mri_RastPort, mri->mri_Pens[pen5]);
+    WritePixel(rp, left + width - 2, top + height - 2);
+
+    SetAPen(mri->mri_RastPort, mri->mri_Pens[pen4]);
+    WritePixel(rp, left + width - 1, top + height - 1);
+
+    SetAPen(mri->mri_RastPort, mri->mri_Pens[pen3]);
+    WritePixel(rp, left,             top + height - 2);
+    WritePixel(rp, left + 1,         top + height - 1);
+    WritePixel(rp, left + width - 2, top);
+    WritePixel(rp, left + width - 1, top + 1);
+}
+
+/**************************************************************************
+
+**************************************************************************/
+static void frame_semiround_bevel_up_draw (struct MUI_RenderInfo *mri,
+			       int left, int top, int width, int height)
+{
+    semiround_bevel_draw (mri, left, top, width, height,
+			  MPEN_SHINE, MPEN_HALFSHINE, MPEN_BACKGROUND,
+			  MPEN_HALFSHADOW, MPEN_SHADOW);
+}
+
+/**************************************************************************
+
+**************************************************************************/
+static void frame_semiround_bevel_down_draw (struct MUI_RenderInfo *mri,
+				 int left, int top, int width, int height)
+{
+    semiround_bevel_draw (mri, left, top, width, height,
+			  MPEN_SHADOW, MPEN_HALFSHADOW, MPEN_BACKGROUND,
+			  MPEN_HALFSHINE, MPEN_SHINE);
+}
 
 /**************************************************************************
  hold builtin frames.
@@ -473,23 +473,23 @@ static struct ZuneFrameGfx __builtinFrameGfx[] = {
 	frame_thick_border_down_draw},
 	3, 3
     },
+    /* rounded bevel */
+    { /* 5 : FST_ROUND_BEVEL */
+	{frame_round_bevel_up_draw,
+	frame_round_bevel_down_draw},
+	4, 1
+    },
     /* zin31 ugly look */
-    { /* 5 : FST_WIN_BEVEL */
+    { /* 6 : FST_WIN_BEVEL */
 	{frame_border_button_up_draw,
 	frame_border_button_down_draw},
 	3, 3
     },
-    /* strange gray border */
-    { /* 6 : FST_GRAY_BORDER */
-	{frame_gray_border_up_draw,
-	frame_gray_border_down_draw},
-	3, 3
-    },
-    /* semi rounded bevel */
-    { /* 7 : FST_SEMIROUND_BEVEL */
-	{frame_semiround_bevel_up_draw,
-	frame_semiround_bevel_down_draw},
-	2, 2
+    /* rounded thick border */
+    { /* 7 : FST_ROUND_THICK_BORDER */
+	{frame_round_thick_border_up_draw,
+	frame_round_thick_border_down_draw},
+	4, 4
     },
     /* rounded thin border */
     { /* 8 : FST_ROUND_THIN_BORDER */
@@ -497,17 +497,17 @@ static struct ZuneFrameGfx __builtinFrameGfx[] = {
 	frame_round_thin_border_down_draw},
 	4, 4
     },
-    /* rounded thick border */
-    { /* 9 : FST_ROUND_THICK_BORDER */
-	{frame_round_thick_border_up_draw,
-	frame_round_thick_border_down_draw},
-	4, 4
+    /* strange gray border */
+    { /* 9 : FST_GRAY_BORDER */
+	{frame_gray_border_up_draw,
+	frame_gray_border_down_draw},
+	3, 3
     },
-    /* rounded bevel */
-    { /* 10 : FST_ROUND_BEVEL */
-	{frame_round_bevel_up_draw,
-	frame_round_bevel_down_draw},
-	4, 1
+    /* semi rounded bevel */
+    { /* A : FST_SEMIROUND_BEVEL */
+	{frame_semiround_bevel_up_draw,
+	frame_semiround_bevel_down_draw},
+	2, 2
     },
 };
 
@@ -524,8 +524,43 @@ struct ZuneFrameGfx *zune_zframe_get_index (int i)
 /**************************************************************************
 
 **************************************************************************/
-struct ZuneFrameGfx *zune_zframe_get (struct MUI_FrameSpec *frameSpec)
+struct ZuneFrameGfx *zune_zframe_get (struct MUI_FrameSpec_intern *frameSpec)
 {
     if (frameSpec->type >= FST_COUNT) return &__builtinFrameGfx[FST_RECT];
     return &__builtinFrameGfx[frameSpec->type];
+}
+
+/*------------------------------------------------------------------------*/
+
+BOOL zune_frame_intern_to_spec (const struct MUI_FrameSpec_intern *intern,
+				STRPTR spec)
+{
+    if (!intern || !spec)
+	return FALSE;
+
+    spec[0] = intern->type + '0';
+    spec[1] = intern->state + '0';
+    spec[2] = intern->innerLeft + '0';
+    spec[3] = intern->innerRight + '0';
+    spec[4] = intern->innerTop + '0';
+    spec[5] = intern->innerBottom + '0';
+    spec[6] = 0;
+    return TRUE;
+}
+
+/*------------------------------------------------------------------------*/
+
+BOOL zune_frame_spec_to_intern(CONST_STRPTR spec,
+			       struct MUI_FrameSpec_intern *intern)
+{    
+    if (!intern || !spec)
+	return FALSE;
+
+    intern->type        = spec[0] - '0';
+    intern->state       = spec[1] - '0';
+    intern->innerLeft   = spec[2] - '0';
+    intern->innerRight  = spec[3] - '0';
+    intern->innerTop    = spec[4] - '0';
+    intern->innerBottom = spec[5] - '0';
+    return TRUE;
 }
