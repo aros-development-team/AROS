@@ -176,10 +176,12 @@ AROS_LH1(struct CommoditiesBase *, open,
     if(CxBase->cx_TimerBase == NULL)
 	return NULL;
 
-    D(bug("commodities_open: Setting up Zero object.\n"));
-    
     if(CxBase->cx_LibNode.lib_OpenCnt == 1)
+    {
+	D(bug("commodities_open: Setting up Zero object.\n"));
+    
 	ok = InitCx((struct CommoditiesBase *)CxBase);
+    }
     
     if(!ok)
     {

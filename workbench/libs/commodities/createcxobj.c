@@ -1,5 +1,5 @@
 /*
-    (C) 1997-98 AROS - The Amiga Replacement OS
+    (C) 1997-2000 AROS - The Amiga Replacement OS
     $Id$
 
     Desc:
@@ -49,7 +49,7 @@ VOID BrokerFunc(CxObj *, struct NewBroker *, struct Library *CxBase);
 
     RESULT
 
-    The commodity object or NULL if it coundn't be created. Not so severe
+    The commodity object or NULL if it couldn't be created. Not so severe
     problems in the creation process are recorded in an internal field
     retrievable with CxObjError(). These errors are defined in <libraries/
     commodities.h>
@@ -80,7 +80,7 @@ VOID BrokerFunc(CxObj *, struct NewBroker *, struct Library *CxBase);
 {
     AROS_LIBFUNC_INIT
 
-CxObj *co;
+    CxObj *co;
 
     D(bug("CreateCxObject: Entering..., trying to create an object "
 	  "of type %d\n", type));
@@ -146,9 +146,8 @@ CxObj *co;
 
 
 VOID BrokerFunc(CxObj *co, struct NewBroker *nbrok, struct Library *CxBase)
-
 {
-    strncpy(co->co_Ext.co_BExt->bext_Name, nbrok->nb_Name, CBD_NAMELEN);
+    strncpy(co->co_Ext.co_BExt->bext_Name,  nbrok->nb_Name,  CBD_NAMELEN);
     strncpy(co->co_Ext.co_BExt->bext_Title, nbrok->nb_Title, CBD_TITLELEN);
     strncpy(co->co_Ext.co_BExt->bext_Descr, nbrok->nb_Descr, CBD_DESCRLEN);
     
@@ -160,7 +159,5 @@ VOID BrokerFunc(CxObj *co, struct NewBroker *nbrok, struct Library *CxBase)
     
     co->co_Ext.co_BExt->bext_MsgPort = nbrok->nb_Port;
 
-    co->co_Flags |= nbrok->nb_Flags;
-
+    co->co_Flags |= (UBYTE)nbrok->nb_Flags;
 }
-

@@ -1,5 +1,5 @@
 /*
-    (C) 1997-99 AROS - The Amiga Research OS
+    (C) 1997-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Commodities input handler
@@ -86,7 +86,6 @@ AROS_UFH2(struct InputEvent *, CxTree,
     while((tempMsg = (CxMsg *)GetMsg(&CxBase->cx_MsgPort)) != NULL)
 	FreeCxStructure(tempMsg, CX_MESSAGE, (struct Library *)CxBase);
 
-
     /* Route all messages to the first broker */
 
     tempMsg = (CxMsg *)CxBase->cx_MessageList.lh_Head;
@@ -121,7 +120,6 @@ AROS_UFH2(struct InputEvent *, CxTree,
 		    co = msg->cxm_retObj[msg->cxm_Level];
 		    co = (CxObj *)co->co_Node.ln_Succ;
 		}		
-
 		/* Neither successor broker nor return object exists => done */
 		else
 		{
@@ -129,10 +127,10 @@ AROS_UFH2(struct InputEvent *, CxTree,
 		}
 	    }
 	    else
-
 	    /* Route the message to the next broker */
 	    {
-		// kprintf("Routing to next broker %p co = %p\n", co->co_Node.ln_Succ, co);
+		// kprintf("Routing to next broker %p co = %p\n",
+		//	co->co_Node.ln_Succ, co);
 		msg->cxm_Routing = (CxObj *)co->co_Node.ln_Succ;
 	    }
 	}
@@ -244,21 +242,21 @@ static void ProduceEvent(CxMsg *msg, struct CommoditiesBase *CxBase)
 
 static void SendFunc(CxMsg *msg, CxObj *co, struct CommoditiesBase *CxBase)
 {
-CxMsg  *tempMsg;
-  
+    CxMsg  *tempMsg;
+    
     if(co->co_Ext.co_SendExt->sext_MsgPort == NULL)
 	return;
-
+    
     tempMsg = (CxMsg *)AllocCxStructure(CX_MESSAGE, CXM_DOUBLE,
 					(struct Library *)CxBase);
-
+    
     if(tempMsg == NULL) 
 	return;
-
+    
     CopyMem(msg, tempMsg, sizeof(CxMsg));
-
+    
     CopyInputEvent(msg->cxm_Data, tempMsg->cxm_Data, CxBase);
-
+    
     tempMsg->cxm_ID = co->co_Ext.co_SendExt->sext_ID;
     
     PutMsg(co->co_Ext.co_SendExt->sext_MsgPort, (struct Message *)tempMsg);
@@ -269,7 +267,7 @@ static void TransFunc(CxMsg *msg, CxObj *co, struct CommoditiesBase *CxBase)
 {
     struct  InputEvent *event;
     CxMsg              *msg2;
-
+    
     if(co->co_Ext.co_IE != NULL)
     {
         event = co->co_Ext.co_IE;
@@ -281,7 +279,7 @@ static void TransFunc(CxMsg *msg, CxObj *co, struct CommoditiesBase *CxBase)
 	    if((msg2 = (CxMsg *)AllocCxStructure(CX_MESSAGE, CXM_DOUBLE,
 			        (struct Library *)CxBase)) == NULL)
 		break;
-
+	    
 	    saveIE = msg2->cxm_Data;
 	    CopyMem(msg, msg2, sizeof(CxMsg));
 	    msg2->cxm_Data = saveIE;

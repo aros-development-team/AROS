@@ -143,7 +143,6 @@ extern struct InputEvent *cxIHandler();
     return co;
     
     AROS_LIBFUNC_EXIT
-
 } /* CxBroker */
 
 
