@@ -75,8 +75,6 @@ Object *LoginWindow__OM_NEW
                             methodtype          = 0;
     APTR                    pool;
     BPTR                    lock;
-    IPTR                    logoFrame           = NULL,
-                            detailsFrame        = NULL;
     BOOL                    localLogins         = TRUE,
                             nametypeset         = FALSE,
                             methodtypeset       = FALSE;
@@ -99,7 +97,9 @@ Object *LoginWindow__OM_NEW
                             *logonMethod        = NULL,
                             *logonmethStr       = NULL,
                             *okButton           = NULL,
-                            *cancelButton       = NULL;
+                            *cancelButton       = NULL,
+                            *logoFrame          = NULL,
+                            *detailsFrame       = NULL;
 
     /* Allocate memory pool ------------------------------------------------*/
     pool = CreatePool(MEMF_ANY, 4096, 4096);
@@ -169,7 +169,7 @@ Object *LoginWindow__OM_NEW
             break;
 
         default:
-            continue; /* Don't supress non-processed tags */
+            continue; // Don't supress non-processed tags 
         }
 
         tag->ti_Tag = TAG_IGNORE;
@@ -209,7 +209,7 @@ Object *LoginWindow__OM_NEW
     case LWA_METH_Disabled:
         logonMethod = PoplistObject,
             MUIA_Disabled, TRUE,
-	    MUIA_Popstring_String, StringObject, StringFrame, End,
+	    MUIA_Popstring_String, logonmethStr = StringObject, StringFrame, End,
 	    MUIA_Popstring_Button,  PopButton(MUII_PopUp),
         End;
         break;
@@ -219,7 +219,7 @@ Object *LoginWindow__OM_NEW
         break;
     default:
         logonMethod = PoplistObject,
-		    MUIA_Popstring_String,  StringObject, StringFrame, End,
+		    MUIA_Popstring_String,  logonmethStr = StringObject, StringFrame, End,
 		    MUIA_Popstring_Button,  PopButton(MUII_PopUp),
                 End;
         break;
@@ -237,12 +237,12 @@ Object *LoginWindow__OM_NEW
         }
     }
     
-    authmethodList[authm_count] = NULL;
+    authmethodList[authm_count] = NULL; /* make sure we end on NULL */
 
     kprintf("LOGINWINDOW checking contents..\n");
 
     if (!contents) contents = HVSpace;
-/*
+
     if (!contents)
     {
         int                     i;
@@ -279,7 +279,7 @@ Object *LoginWindow__OM_NEW
             MUIA_Text_Contents, (IPTR)StrDup(strbuff),
         End;
     }
-*/
+
     kprintf("LOGINWINDOW checking Logo..\n");
 
     /* Setup image ---------------------------------------------------------*/
