@@ -38,7 +38,6 @@ struct CoolImageData
 
 extern struct IntuitionBase *IntuitionBase;
 extern struct GfxBase 	    *GfxBase;
-extern struct ExecBase	    *SysBase;
 extern struct UtilityBase   *UtilityBase;
 
 struct IClass 	    	    *cool_imageclass;
@@ -56,6 +55,7 @@ static struct Library       *cool_cybergfxbase;
 
 static IPTR coolimage_new(Class * cl, Object * o, struct opSet * msg)
 {
+    AROS_GET_SYSBASE
     struct CoolImageData *data;
     
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
@@ -218,6 +218,7 @@ BOOL InitCoolImageClass(struct Library *CyberGfxBase)
 
 void CleanupCoolImageClass(void)
 {
+    AROS_GET_SYSBASE
     if (cool_imageclass)
     {
     	FreeClass(cool_imageclass);
