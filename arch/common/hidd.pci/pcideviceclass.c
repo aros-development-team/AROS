@@ -803,8 +803,6 @@ void free_pcideviceclass(struct pci_staticdata *psd, OOP_Class *cl)
 
 	if (cl)
 	    OOP_DisposeObject((OOP_Object *)cl);
-	
-	OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
     }
 }
 	
@@ -854,17 +852,10 @@ OOP_Class *init_pcideviceclass(struct pci_staticdata *psd)
 	if (cl)
 	{
 	    cl->UserData = (APTR)psd;
-	    psd->hiddPCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-	    if (psd->hiddPCIDeviceAB)
-	    {
-		OOP_AddClass(cl);
-		D(bug("[PCIDevice] Class OK\n"));
-	    }
-	    else
-	    {
-		free_pcideviceclass(psd, cl);
-		cl = NULL;
-	    }
+
+	    OOP_AddClass(cl);
+	    D(bug("[PCIDevice] Class OK\n"));
+	    psd->pciDeviceClass = cl;
 	}
 	OOP_ReleaseAttrBase(IID_Meta);
     }

@@ -72,6 +72,8 @@ void Query()
 	/* Enumerate through devices that met requirements only */
 	HIDD_PCI_EnumDevices(o, &PCIHook, &tags);
 
+	[do whatever you want with PCI devices]
+
 	/* Don't need PCI object anymore */
 	OOP_DisposeObject(o);
     }
@@ -202,6 +204,14 @@ Done. The pci subsystem will then use the passed class pointer (note: thanks
 to passing class pointer directly, driver classes do not have to be public) to
 scan PCI bus handled with this hardware driver. From this point, PCI devices
 handled with newly added driver are available for any use.
+
+Removing driver class from the system
+-------------------------------------
+The driver may ask PCI subsystem to be removed, using the RemHardwareDriver 
+call. It's query may be, but doesn't have to be fulfilled. The driver will
+not be removed if there are any other users of PCI subsystem expect the driver
+wishing to be removed itself. When the RemHardwareDriver call success, the
+driver class may be deleted.
 
 Why do I need this pluggable driver?
 ------------------------------------

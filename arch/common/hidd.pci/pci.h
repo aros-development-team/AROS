@@ -11,6 +11,8 @@
 #include <exec/execbase.h>
 #include <exec/nodes.h>
 #include <exec/lists.h>
+#include <exec/semaphores.h>
+#include <dos/bptr.h>
 
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
@@ -28,7 +30,7 @@ extern UBYTE LIBEND;
 
 AROS_UFP3(struct pcibase *, Pci_init,
     AROS_UFHA(struct pcibase *, pcibase, D0),
-    AROS_UFHA(ULONG, slist, A0),
+    AROS_UFHA(BPTR, slist, A0),
     AROS_UFHA(struct ExecBase *, SysBase, A6));
 
 struct DriverNode {
@@ -61,8 +63,8 @@ typedef struct DeviceData {
     UBYTE		IRQLine;
     UBYTE		HeaderType;
     struct {
-	ULONG		addr;
-	ULONG		size;
+	IPTR		addr;
+	IPTR		size;
     } BaseReg[6];
     ULONG		RomBase;
     ULONG		RomSize;
@@ -77,7 +79,10 @@ struct pci_staticdata {
     struct Library	*oopbase;
     struct Library	*utilitybase;
     
+    struct SignalSemaphore driver_lock;
     struct List		drivers;
+
+    APTR		MemPool;
     
     OOP_AttrBase	hiddAB;
     OOP_AttrBase	hiddPCIAB;
@@ -85,9 +90,11 @@ struct pci_staticdata {
     OOP_AttrBase	hiddPCIBusAB;
     OOP_AttrBase	hiddPCIDeviceAB;
 
-    OOP_Class		*pciClass;    
-    OOP_Object		*pciObject;    
-    OOP_Class		*driverClass;
+    OOP_Class		*pciClass;
+    OOP_Class		*pciDeviceClass;
+    OOP_Class		*pciDriverClass;
+
+    ULONG		users;
 
     /* Most commonly used methods have already the mID's stored here */
     OOP_MethodID	mid_RB;
@@ -101,13 +108,17 @@ struct pci_staticdata {
 struct pcibase {
     struct Library 		LibNode;
     struct ExecBase		*sysBase;
+    BPTR			segList;
+    APTR			MemPool;
     struct pci_staticdata	*psd;
 };
 
 OOP_Class *init_pciclass(struct pci_staticdata *);
 OOP_Class *init_pcidriverclass(struct pci_staticdata *);
-OOP_Class *init_pcibridgeclass(struct pci_staticdata *);
 OOP_Class *init_pcideviceclass(struct pci_staticdata *);
+void free_pciclass(struct pci_staticdata *, OOP_Class *cl);
+void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
+void free_pcidriverclass(struct pci_staticdata *, OOP_Class *cl);
 
 #define BASE(lib) ((struct pcibase*)(lib))
 

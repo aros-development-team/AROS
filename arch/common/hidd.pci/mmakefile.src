@@ -9,8 +9,6 @@ LIBNAME := pci
 
 FILES	:= pcidriverclass pcideviceclass pciclass pciutil
 
-FUNCS := pci_libfunc
-
 #MM
 includes-copy : $(INCDIR)/hidd/pci.h $(GENINCDIR)/hidd/pci.h $(INCDIR)/libraries/pci.h $(GENINCDIR)/libraries/pci.h
 
@@ -36,7 +34,7 @@ $(AROS_DEVS)/pci.ids : pci.ids
 
 %build_module_macro mmake=kernel-pci \
     modname=pci modtype=hidd \
-    files="$(FILES) $(FUNCS)" \
+    files="$(FILES)" \
     conffile=lib.conf genfunctable=yes \
     uselibs="rom amiga"
 

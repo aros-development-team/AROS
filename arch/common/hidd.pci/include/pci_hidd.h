@@ -40,6 +40,7 @@ enum
 {
     moHidd_PCI_AddHardwareDriver = 0,
     moHidd_PCI_EnumDevices,
+    moHidd_PCI_RemHardwareDriver,
 
     NUM_PCI_METHODS
 };
@@ -68,6 +69,12 @@ struct pHidd_PCI_EnumDevices
     OOP_MethodID    mID;
     struct Hook	    *callback;
     struct TagItem  *requirements;
+};
+
+struct pHidd_PCI_RemHardwareDriver
+{
+    OOP_MethodID    mID;
+    OOP_Class	    *driverClass;
 };
 
 /* PCI device class */

@@ -19,6 +19,7 @@
 
 #define DEBUG 1
 #include <aros/debug.h>
+#include <aros/atomic.h>
 
 /*
     There are no static AttrBases in this class. Therefore it might be placed
@@ -103,7 +104,7 @@ static void _PCI_AddHwDrv(OOP_Class *cl, OOP_Object *o,
     if (msg->driverClass != NULL)
     {
         // Get some extra memory for driver node
-        dn = AllocMem(sizeof(struct DriverNode), MEMF_CLEAR);
+        dn = AllocPooled(PSD(cl)->MemPool, sizeof(struct DriverNode));
         if (dn)
         {
 	    int bus;
@@ -133,10 +134,9 @@ static void _PCI_AddHwDrv(OOP_Class *cl, OOP_Object *o,
     
 	    devtags[3].ti_Data = (IPTR)drv;
 	
-	    // Add the driver to the end of drivers list
-	    AddTail(&PSD(cl)->drivers, (struct Node*)dn);
-
-	    // and scan whole PCI bus looking for devices available
+	    // Scan whole PCI bus looking for devices available
+	    // There is no need for semaphore protected list operations at this
+	    // point, because driver is still not public.
 	    bus = 0;
 	    do
 	    {
@@ -155,14 +155,16 @@ static void _PCI_AddHwDrv(OOP_Class *cl, OOP_Object *o,
 		    {
 			/* Regular device */
 			case 1:
-			    pcidev = (struct PciDevice *)AllocMem(sizeof(struct Device), MEMF_CLEAR);
+			    pcidev = (struct PciDevice *)AllocPooled(PSD(cl)->MemPool,
+				sizeof(struct Device));
 			    pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
 						(struct TagItem *)&devtags);
 			    AddTail(&dn->devices, (struct Node *)pcidev);
 			    break;
 			/* Cool! Multifunction device, search subfunctions then */
 			case 2:
-			    pcidev = (struct PciDevice *)AllocMem(sizeof(struct Device), MEMF_CLEAR);
+			    pcidev = (struct PciDevice *)AllocPooled(PSD(cl)->MemPool,
+				sizeof(struct Device));
 			    pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
 						(struct TagItem *)&devtags);
 			    AddTail(&dn->devices, (struct Node *)pcidev);
@@ -171,7 +173,8 @@ static void _PCI_AddHwDrv(OOP_Class *cl, OOP_Object *o,
 				devtags[2].ti_Data = sub;
 				if (isPCIDeviceAvailable(cl, drv, bus, dev, sub))
 				{
-				    pcidev = (struct PciDevice *)AllocMem(sizeof(struct Device), MEMF_CLEAR);
+				    pcidev = (struct PciDevice *)AllocPooled(PSD(cl)->MemPool,
+					sizeof(struct Device));
 				    pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
 							(struct TagItem *)&devtags);
 				    AddTail(&dn->devices, (struct Node *)pcidev);
@@ -184,6 +187,12 @@ static void _PCI_AddHwDrv(OOP_Class *cl, OOP_Object *o,
 		}
 		bus++;
 	    } while (bus <= dn->highBus);
+
+	    // Add the driver to the end of drivers list
+
+	    ObtainSemaphore(&PSD(cl)->driver_lock);
+	    AddTail(&PSD(cl)->drivers, (struct Node*)dn);
+	    ReleaseSemaphore(&PSD(cl)->driver_lock);
 	}
     }
 }
@@ -215,6 +224,9 @@ static void _PCI_EnumDevs(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_EnumDev
     SubClass	= GetTagData(tHidd_PCI_SubClass,    0xffffffff, msg->requirements);
     SubsystemID	= GetTagData(tHidd_PCI_SubsystemID, 0xffffffff, msg->requirements);
     SubsystemVendorID = GetTagData(tHidd_PCI_SubsystemVendorID, 0xffffffff, msg->requirements);
+
+    /* Lock driver list for exclusive use */
+    ObtainSemaphore(&PSD(cl)->driver_lock);
 
     /* For every driver in the system... */
     ForeachNode(&(PSD(cl)->drivers), (struct Node *)dn)
@@ -279,6 +291,80 @@ static void _PCI_EnumDevs(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_EnumDev
 	    }
 	}
     }
+
+    ReleaseSemaphore(&PSD(cl)->driver_lock);
+}
+
+static BOOL _PCI_RemHwDrv(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_RemHardwareDriver *msg)
+{
+    struct DriverNode *dn = NULL, *next = NULL, *rem = NULL;
+    BOOL freed = FALSE;
+
+    D(bug("[PCI] Removing hardware driver %x\n",msg->driverClass));
+    /*
+	Removing HW driver allowed only if classes unused. That means the users
+	count should be == 1 (only driver itself uses pci to remove its class)
+    */
+    Forbid();
+    if (PSD(cl)->users == 1)
+    {
+	/* Get exclusive lock on driver list */
+	ObtainSemaphore(&PSD(cl)->driver_lock);
+	ForeachNodeSafe(&PSD(cl)->drivers, (struct Node *)dn, (struct Node *)next)
+	{
+	    if (dn->driverClass == msg->driverClass)
+	    {
+		Remove((struct Node *)dn);
+		rem = dn;
+	    }
+	}
+        ReleaseSemaphore(&PSD(cl)->driver_lock);
+
+	/* If driver removed, rem contains pointer to removed DriverNode */
+	if (rem)
+	{
+	    struct PciDevice *dev, *next;
+
+	    /* For every device */
+	    ForeachNodeSafe(&rem->devices, (struct Node *)dev, (struct Node *)next)
+	    {
+		/* Dispose PCIDevice object instance */
+		OOP_DisposeObject(dev->device);
+
+		/* Remove device from device list */
+		Remove((struct Node *)dev);
+
+		/* Free memory used for device struct */
+		FreePooled(PSD(cl)->MemPool, dev, sizeof(struct PciDevice));
+	    }
+	    
+	    /* Dispose driver */
+	    OOP_DisposeObject(rem->driverObject);
+
+	    /* And free memory for DriverNode */
+	    FreePooled(PSD(cl)->MemPool, rem, sizeof(struct DriverNode));
+
+	    /* Driver removed and everything freed */
+	    freed = TRUE;
+	}
+    }
+    Permit();
+    
+    D(bug("[PCI] PCI::RemHardwareDriver() %s\n", freed?"succeeded":"failed"));
+ 
+    return freed;
+}
+
+static OOP_Object *_PCI_New(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    AROS_ATOMIC_INC(PSD(cl)->users);
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, msg);
+}
+
+static VOID _PCI_Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    AROS_ATOMIC_DEC(PSD(cl)->users);
+    OOP_DoSuperMethod(cl, o, msg);
 }
 
 /* Class initialization and destruction */
@@ -293,7 +379,7 @@ static void _PCI_EnumDevs(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_EnumDev
 
 void free_pciclass(struct pci_staticdata *psd, OOP_Class *cl)
 {
-    D(bug("[PCI] Subsystem destruction\n"));
+    D(bug("[PCI] Base Class destruction\n"));
     
     if (psd)
     {
@@ -302,25 +388,38 @@ void free_pciclass(struct pci_staticdata *psd, OOP_Class *cl)
 	if (cl)
 	    OOP_DisposeObject((OOP_Object *)cl);
 	
+	OOP_ReleaseAttrBase(IID_Hidd_PCI);
+	OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
 	OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
+	OOP_ReleaseAttrBase(IID_Hidd);
     }
 }
 	
-#define _NUM_PCI_METHODS	2 //NUM_PCIDRIVER_METHODS
+#define _NUM_ROOT_METHODS	2
+#define _NUM_PCI_METHODS	3 //NUM_PCIDRIVER_METHODS
 
 OOP_Class *init_pciclass(struct pci_staticdata *psd)
 {
     OOP_Class *cl = NULL;
 
+    struct OOP_MethodDescr root_descr[_NUM_ROOT_METHODS + 1] =
+    {
+	{ OOP_METHODDEF(_PCI_New),	moRoot_New },
+	{ OOP_METHODDEF(_PCI_Dispose),	moRoot_Dispose },
+	{ NULL, 0UL }
+    };
+    
     struct OOP_MethodDescr pci_descr[_NUM_PCI_METHODS + 1] =
     {
 	{ OOP_METHODDEF(_PCI_AddHwDrv), moHidd_PCI_AddHardwareDriver },
 	{ OOP_METHODDEF(_PCI_EnumDevs), moHidd_PCI_EnumDevices },
+	{ OOP_METHODDEF(_PCI_RemHwDrv), moHidd_PCI_RemHardwareDriver },
 	{ NULL, 0UL }
     };
 
     struct OOP_InterfaceDescr ifdescr[] =
     {
+	{ root_descr,	    IID_Root,		_NUM_ROOT_METHODS },
 	{ pci_descr,  	    IID_Hidd_PCI,	_NUM_PCI_METHODS },
 	{ NULL, NULL, 0UL }
     };
@@ -346,14 +445,14 @@ OOP_Class *init_pciclass(struct pci_staticdata *psd)
 	    cl->UserData = (APTR)psd;
 	    psd->hiddPCIAB = OOP_ObtainAttrBase(IID_Hidd_PCI);
 	    psd->hiddPCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+	    psd->hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
 	    psd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
 
-	    if (psd->hiddPCIAB && psd->hiddPCIDeviceAB)
+	    if (psd->hiddPCIAB && psd->hiddPCIDeviceAB && psd->hiddPCIDriverAB && psd->hiddAB)
 	    {
 		D(bug("[PCI] Everything OK\n"));
 		OOP_AddClass(cl);
 		psd->pciClass = cl;
-		psd->pciObject = OOP_NewObject(cl, NULL, NULL);
 	    }
 	    else
 	    {

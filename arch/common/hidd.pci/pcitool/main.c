@@ -38,6 +38,8 @@ OOP_AttrBase __IHidd_PCIDev;
 OOP_AttrBase __IHidd_PCIDrv;
 OOP_AttrBase HiddAttrBase;
 
+OOP_Object *pci;
+
 int openLibs()
 {
     if ((OOPBase=OpenLibrary("oop.library", 0)) != NULL)
@@ -61,6 +63,9 @@ int openLibs()
 void closeLibs()
 {
     pciids_Close();
+
+    if (pci)
+	OOP_DisposeObject(pci);
 
     OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
     OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
@@ -216,6 +221,14 @@ AROS_UFH3(void, select_function,
 	set(VendorID, MUIA_Text_Contents, buf);
 	set(VendorName, MUIA_Text_Contents, pciids_GetVendorName(val, buf, 79));
 	vendor = val;
+
+	if (vendor == 0x10de)
+	{
+	    HIDD_PCIDriver_UnMapPCI(drv, 
+		HIDD_PCIDriver_MapPCI(drv, 0xd0000000, 1000),
+		1000);
+	    
+	}
 
 	OOP_GetAttr(obj, aHidd_PCIDevice_ProductID, (APTR)&val);
 	snprintf(buf, 79, "0x%04x", val);
@@ -609,8 +622,6 @@ void loop(void)
 
 int main(int argc, char *argv[])
 {
-    OOP_Object *o;
-    
     pci_hook.h_Entry = (APTR)pci_callback;
     display_hook.h_Entry = (APTR)display_function;
     select_hook.h_Entry = (APTR)select_function;
@@ -622,11 +633,10 @@ int main(int argc, char *argv[])
     {
     	if(GUIinit())
     	{
-	    o = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-	    if (o)
+	    pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+	    if (pci)
 	    {	
-		HIDD_PCI_EnumDevices(o, &pci_hook, NULL);
-		OOP_DisposeObject(o);
+		HIDD_PCI_EnumDevices(pci, &pci_hook, NULL);
 	    }
 	    
       	    set(MainWindow, MUIA_Window_Open, TRUE);
