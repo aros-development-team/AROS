@@ -101,9 +101,10 @@
     }
   }
 
+  _l = GetFirstFamilyMember(other_layer);
+  
   if (TRUE == toback)
   {
-    _l = GetFirstFamilyMember(other_layer);
     /*
      * If the topmost child of the other layer is
      * behind my layer I don't have to do anything.
@@ -113,11 +114,11 @@
       UnlockLayers(layer_to_move->LayerInfo);
       return TRUE;
     }
-    ret = _MoveLayerBehind(layer_to_move,first, _l);
+    ret = _MoveLayerBehind(layer_to_move, _l, LayersBase);
   }
   else
   {
-    ret = _MoveLayerToFront(layer_to_move, first, other_layer);
+    ret = _MoveLayerToFront(layer_to_move, _l, LayersBase);
   }
   
   UnlockLayers(layer_to_move->LayerInfo);
