@@ -797,4 +797,120 @@ void UnsplitLayers(struct Layer_Info * LI, struct Rectangle * rect)
   }
 }
 
+
+/* 
+ * A function that may only be called for pure SMART layers!
+ * When a clipregion is installed a secondary list of cliprects
+ * exists that represents those parts where the paint operations may
+ * be performed on.
+ * This function copies all BitMaps of the cliprect list where
+ * the region is into  the usual list of cliprects.
+ * It also frees the bitmaps and cliprects of the region cliprect
+ * list.
+ */
+
+void CopyClipRectsClipRects(struct Layer * L,
+                            struct ClipRect * srcCR,
+                            struct ClipRect * destCR)
+{
+  struct ClipRect * sCR = srcCR;
+  while (TRUE)
+  {
+    /* only copy from ClipRects that are hidden as the visible
+       ones have all info in the screens rastport anyway 
+    */
+    if (NULL != sCR->lobs)
+    {
+      struct ClipRect * dCR = destCR;
+      int area = (sCR->bounds.MaxX - sCR->bounds.MinX + 1) *
+                 (sCR->bounds.MaxY - sCR->bounds.MinY + 1);
+      int areacopied = 0;
+                 
+      while (NULL != dCR && areacopied != area)
+      {   
+        if (! (sCR->bounds.MinX > dCR->bounds.MaxX ||
+               sCR->bounds.MinY > dCR->bounds.MaxY ||
+               sCR->bounds.MaxX < dCR->bounds.MinX ||
+               sCR->bounds.MaxY < dCR->bounds.MinY))
+        { 
+          /* these two overlap */
+          int a;
+          ULONG srcX, srcY;
+          ULONG destX, destY;
+          ULONG width, height;
+          
+          width = sCR->bounds.MaxX - sCR->bounds.MinX + 1;
+          height= sCR->bounds.MaxY - sCR->bounds.MinY + 1;
+          
+          if (sCR->bounds.MinX > dCR->bounds.MinX)
+          {
+            srcX  = sCR->bounds.MinX & 0x0f;
+            destX = sCR->bounds.MinX - dCR->bounds.MinX + (dCR->bounds.MinX & 0x0f);
+          }
+          else
+          {
+            srcX   = dCR->bounds.MinX - sCR->bounds.MinX + (sCR->bounds.MinX & 0x0F);
+            destX  = dCR->bounds.MinX & 0x0f;
+            width -= (dCR->bounds.MinX - sCR->bounds.MinX);
+          }
+          
+          if (sCR->bounds.MinY > dCR->bounds.MinY)
+          {
+            srcY  = 0;
+            destY = sCR->bounds.MinY - dCR->bounds.MinY;
+          }
+          else
+          {
+            srcY    = dCR->bounds.MinY - sCR->bounds.MinY;
+            destY   = 0;
+            height -= srcY;
+          }
+          
+          if (sCR->bounds.MaxX > dCR->bounds.MaxX)
+            width  -= (sCR->bounds.MaxX - dCR->bounds.MaxX);
+            
+          if (sCR->bounds.MaxY > dCR->bounds.MaxY)
+            height -= (sCR->bounds.MaxY - dCR->bounds.MaxY);
+            
+          a = width * height;
+           
+          if (a == area)
+          {
+            FreeBitMap(dCR);
+            dCR -> BitMap = sCR -> BitMap;
+            break;
+          }
+          else
+          {
+            areacopied += a;
+            
+            BltBitMap(sCR->BitMap,
+            	      srcX,
+            	      srcY,
+            	      dCR->BitMap,
+            	      destX,
+            	      destY,
+            	      width,
+            	      height,
+            	      0x0c0,
+            	      0xff,
+            	      NULL);
+            FreeBitMap(sCR->BitMap);
+          }
+        }
+        dCR = dCR -> Next;
+      } /* walk through all destination ClipRects */
+    } /* if (NULL != sCR->lobs) */
+  
+    if (NULL == sCR->Next)
+      break;
+  
+    sCR = sCR -> Next;
+  }
+  
+  sCR->Next = L->SuperSaveClipRects;
+  L->SuperSaveClipRects = srcCR;
+  
+}
+
 /*-----------------------------------END-----------------------------------*/
