@@ -101,10 +101,10 @@ static LONG country_init(void)
 
 /*********************************************************************************************/
 
-AROS_UFH3S(IPTR, LVRenderHook,
-    AROS_UFHA(struct Hook *,            hook,     	A0),
-    AROS_UFHA(struct Node *,    	node,           A2),
-    AROS_UFHA(struct LVDrawMsg *,	msg,	        A1)
+static IPTR LVRenderHook(
+    struct Hook *hook,
+    struct Node *node,
+    struct LVDrawMsg *msg
 )
 {
     AROS_USERFUNC_INIT
@@ -207,7 +207,8 @@ static LONG country_makegadgets(void)
     if (max_flagh > itemheight) itemheight = max_flagh;
     itemheight += 2;
    
-    lvhook.h_Entry = AROS_ASMSYMNAME(LVRenderHook);
+    lvhook.h_Entry = HookEntry;
+    lvhook.h_SubEntry = LVRenderHook;
     
     gad = countrygad = CreateGadget(LISTVIEW_KIND, gad, &ng, GTLV_Labels    	, (IPTR)&country_list,
     	    	    	    	    	    	    	     GTLV_ShowSelected	, NULL	    	     ,
@@ -259,8 +260,12 @@ static LONG country_input(struct IntuiMessage *msg)
 	    case MSG_GAD_TAB_COUNTRY:
 	    	if ((entry = (struct CountryEntry *)FindListNode(&country_list, msg->Code)))
 		{
-		    strcpy(localeprefs.lp_CountryName, entry->lve.realname);
-		    LoadCountry(localeprefs.lp_CountryName, &localeprefs.lp_CountryData);
+		    if (active_country != msg->Code)
+		    {
+			active_country = msg->Code;
+			strcpy(localeprefs.lp_CountryName, entry->lve.realname);
+			LoadCountry(localeprefs.lp_CountryName, &localeprefs.lp_CountryData);
+		    }
 		}
 		retval = TRUE;
 		break;
