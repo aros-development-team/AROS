@@ -109,7 +109,7 @@ crypt : crypt.c
 # \item{DEVARCHIVE} Basename of the source archive
 #
 # END_DESC{localmakevar}
-BINARCHIVE = AROS-$(ARCH)-$(KERNEL)-current
+BINARCHIVE = AROS-$(ARCH)-$(CPU)-current
 DEVARCHIVE = AROSdev-current
 
 # BEGIN_DESC{target}
