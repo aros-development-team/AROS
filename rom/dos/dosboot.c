@@ -108,25 +108,24 @@ AROS_UFH3(void, intBoot,
 					{
 						if (!OpenDevice(fssm->fssm_Device+1,fssm->fssm_Unit, (struct IORequest *)&iotd->iotd_Req,0))
 						{
-							do
+							kprintf("Insert bootable disk\n");
+							for (;;)
 							{
-								kprintf("Insert bootable disk\n");
-								for (;;)
-								{
-									iotd->iotd_Req.io_Command=CMD_READ;
-									iotd->iotd_Req.io_Offset=0;
-									iotd->iotd_Req.io_Data=buf;
-									iotd->iotd_Req.io_Length=512;
-									DoIO((struct IORequest *)&iotd->iotd_Req);
-									if ((iotd->iotd_Req.io_Error) || ((AROS_BE2LONG(buf[0]) & 0xFFFFFF00)!=0x444F5300))
-										Delay(200);
-									else
-										break;
-								}
 								iofs->io_Union.io_OpenDevice.io_DeviceName=fssm->fssm_Device+1;
 								iofs->io_Union.io_OpenDevice.io_Unit = fssm->fssm_Unit;
 								iofs->io_Union.io_OpenDevice.io_Environ = BADDR(fssm->fssm_Environ);
-							} while (OpenDevice((STRPTR)((ULONG)BADDR(dn->dn_Handler)+1),fssm->fssm_Unit,&iofs->IOFS,0));
+								if (OpenDevice((STRPTR)((ULONG)BADDR(dn->dn_Handler)+1),fssm->fssm_Unit,&iofs->IOFS,0))
+								{
+									kprintf("\nFS returned error %ld on this disk!\n"
+												"Try another disk.\n"
+												"AROS will be rebooted in 10 seconds ...\n",iofs->io_DosError);
+									Delay(500);
+									ColdReboot();
+								}
+								else
+									break;
+							}
+
 							dn->dn_Unit = iofs->IOFS.io_Unit;
 							dn->dn_Device = iofs->IOFS.io_Device;
 							CloseDevice((struct IORequest *)&iotd->iotd_Req);
