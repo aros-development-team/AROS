@@ -20,7 +20,7 @@
 #define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->hdg_SysBase)
 #define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->hdg_SegList)
 #define LC_RESIDENTNAME         hiddgraphics_resident
-#define LC_RESIDENTFLAGS        RTF_AUTOINIT|RTF_COLDSTART
+#define LC_RESIDENTFLAGS        RTF_AUTOINIT | RTF_COLDSTART
 #define LC_RESIDENTPRI          9
 #define LC_LIBBASESIZE          sizeof(LIBBASETYPE)
 #define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
@@ -35,7 +35,7 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define sysBase      (LC_SYSBASE_FIELD(lh))
