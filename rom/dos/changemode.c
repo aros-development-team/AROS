@@ -67,7 +67,7 @@
     /* Convert Open() and Lock() constants to filehandler flags. */
     ULONG newflags, mask;
 
-    if(newmode == MODE_OLDFILE || newmode == MODE_READWRITE || 
+    if(newmode == MODE_OLDFILE || newmode == MODE_READWRITE ||
        newmode == ACCESS_READ)
     {
         newflags = 0;
@@ -80,7 +80,14 @@
     }
     else
     {
-        newflags = newmode;
+	if (newmode & FMF_APPEND)
+	    fh->fh_Flags |= FHF_APPEND;
+	else
+	    fh->fh_Flags &= ~FHF_APPEND;
+
+	newmode &= ~FMF_APPEND;
+
+	newflags = newmode;
         mask     = 0xFFFFFFFF;
     }
 
