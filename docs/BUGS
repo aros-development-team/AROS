@@ -208,7 +208,7 @@ Henon started with "henon ?" should be recognized and the help-text
 should appear. -> The "?" as a signle character is not recognized!!
 The problem was probably the buggy code in compiler/alib/startup.c.
 
-BUG000030 work
+BUG000030 fixed
 srittau@aros.org
 "Filenote", "Rename" and "Protect" segfault. The buggy code seems to
 be somewhere in MatchFirst().
@@ -370,7 +370,7 @@ Probably the timer somehow effects unixio HIDD.
 This problem went away when the idle task was changed to not busy wait
 any more (now using sigsuspend()).
 
-BUG000052
+BUG000052 fixed
 nlorentz@online.no
 Buttons in mxgads are no longer highlighted when pressed.
 
@@ -453,7 +453,7 @@ bergers@aros.org
 ExNext() does not work on the ram disk. This is the reason why 'Setenv' 
 crashes.
 
-BUG000065 seems to be fixed
+BUG000065 seem to be fixed
 bernie@aros.org
 AROS dumps core when you attempt to cd into a plain file (try "cd aros" in
 the Workbench: directory).
@@ -506,6 +506,8 @@ hkiel@aros.org
 "List C:" says "Directory is empty" :-(
 "List C" (from Workbench:) and "C:" plus "List" works...
 The problem was caused by badly implemented MatchFirst/MatchNext/MatchEnd.
+
+The problem was buggy dos.library/Match*** functions.
 
 BUG000074
 hkiel@aros.org
