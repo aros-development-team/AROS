@@ -119,4 +119,17 @@
 #define RAWKEY_KP_PLUS	    0x5E
 #define RAWKEY_KP_ENTER     0x43
 
+/*
+   NewMouse standard:
+
+   Copyright (c) 1999 by Alessandro Zummo <azummo@ita.flashnet.it> .
+   All Rights Reserved
+*/
+
+#define RAWKEY_NM_WHEEL_UP      0x7A
+#define RAWKEY_NM_WHEEL_DOWN    0x7B
+#define RAWKEY_NM_WHEEL_LEFT    0x7C
+#define RAWKEY_NM_WHEEL_RIGHT   0x7D
+#define RAWKEY_NM_BUTTON_FOURTH 0x7E
+
 #endif /* DEVICES_RAWKEYCODES_H */
