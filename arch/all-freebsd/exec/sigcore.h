@@ -15,8 +15,8 @@ typedef struct sigcontext sigcontext_t;
 #define SP_TYPE		long
 #define CPU_NUMREGS	0
 
-#define SC_DISABLE(sc)   (sc->sc_mask = ~0L)
-#define SC_ENABLE(sc)    (sc->sc_mask = 0L)
+#define SC_DISABLE(sc)   (sc->sc_mask = sig_int_mask)
+#define SC_ENABLE(sc)    (sigemptyset(&sc->sc_mask))
 
 #define SP(sc)       (sc->sc_esp)
 #define FP(sc)       (sc->sc_ebp)
