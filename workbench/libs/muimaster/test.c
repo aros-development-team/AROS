@@ -139,6 +139,7 @@ void main(void)
     MUIMasterBase_instance.intuibase = (APTR)OpenLibrary("intuition.library",37);
     MUIMasterBase_instance.cxbase = OpenLibrary("commodities.library",37);
     MUIMasterBase_instance.keymapbase = OpenLibrary("keymap.library",37);
+    MUIMasterBase_instance.gadtoolsbase = OpenLibrary("gadtools.library",37);
     __zune_prefs_init(&__zprefs);
 #else
     MUIMasterBase = (struct Library*)OpenLibrary("muimaster.library",0);
