@@ -19,7 +19,8 @@
 #include <proto/dos.h>
 #include <oop/oop.h>
 
-#include "../graphics/graphics_private.h"
+#include "../graphics/graphics_private.h"	/* LateGfxInit proto	*/
+#include "../intuition/intuition_private.h"	/* LateIntuiInit proto	*/
 
 #ifdef _AROS
 #include <aros/asmcall.h>
@@ -191,8 +192,19 @@ static BOOL init_gfx(struct Library *hiddbase, struct initbase *base)
     	D(bug("calling private gfx LateGfxInit()\n"));
 	if (LateGfxInit(hiddbase))
 	{
+	    struct IntuitionBase *IntuitionBase;
 	    D(bug("success\n"));
-	    success = TRUE;
+	    
+	    /* Now that gfx. is guaranteed to be up & kicking, let intuition open WB screen */
+	    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
+	    if (IntuitionBase)
+	    {
+	    	if (LateIntuiInit(NULL))
+	    	{
+	    	    success = TRUE;
+		}
+		CloseLibrary((struct Library *)IntuitionBase);
+	    }
 	}
 	
 	CloseLibrary((struct Library *)GfxBase);
