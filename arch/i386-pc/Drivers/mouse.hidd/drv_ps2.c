@@ -161,7 +161,8 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             UBYTE *mouse_data=data->u.ps2.mouse_data;
             
             UBYTE mousecode = kbd_read_input();
-            if (0xfa == mousecode)
+//            if (0xfa == mousecode)
+	    if ((0xfa == mousecode) && (data->u.ps2.expected_mouse_acks))
             {
                 D(bug("                             Got a mouse ACK!\n"));
                 if (data->u.ps2.expected_mouse_acks) {
@@ -286,7 +287,7 @@ int mouse_ps2reset(struct mouse_data *data)
     aux_write_ack(KBD_OUTCMD_ENABLE);
     kbd_write_cmd(AUX_INTS_ON);
     
-    data->u.ps2.expected_mouse_acks = 1;
+    data->u.ps2.expected_mouse_acks = 6; /* for each aux_write_ack */
 
     D(bug("Initialized PS/2 mouse!\n"));
 
