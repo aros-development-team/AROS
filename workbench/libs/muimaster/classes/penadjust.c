@@ -100,8 +100,7 @@ static void InputFunc(struct Hook *hook, Object *obj, APTR msg)
     
     zune_pen_intern_to_spec(&data->intpenspec, &data->penspec);
 
-kprintf(" ## penspec now %s\n", &data->penspec);
-
+    D(bug(" ## penspec now %s\n", &data->penspec));
 }
 
 static IPTR MuipenDisplayFunc(struct Hook *hook, char **array, char *entry)
@@ -113,6 +112,7 @@ static IPTR MuipenDisplayFunc(struct Hook *hook, char **array, char *entry)
     if (line < 0 || line > 7)
 	line = 0;
     snprintf(buf, sizeof(buf), "\33I[2:m%ld]", line);
+
     *array++ = buf;
     *array++ = "";
     *array = entry;

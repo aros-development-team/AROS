@@ -48,7 +48,6 @@ static IPTR Pendisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!obj) return FALSE;
     
     data = INST_DATA(cl, obj);
-
     snprintf(data->penspec.ps_buf, sizeof(data->penspec.ps_buf), "%c%d", PST_MUI, MPEN_TEXT);
     data->pen = -1;
     
@@ -66,7 +65,6 @@ static IPTR Pendisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Pendisplay_RGBcolor:
 	    	{
 		    struct MUI_RGBcolor *rgb = (struct MUI_RGBcolor *)tag->ti_Data;
-		    
 	    	    snprintf(data->penspec.ps_buf, sizeof(data->penspec.ps_buf), "%c%08x,%08x,%08x", PST_RGB, rgb->red, rgb->green, rgb->blue);
 		}
 		break;
@@ -132,7 +130,7 @@ static IPTR Pendisplay_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Pendisplay_RGBcolor:
 	    	{
 		    struct MUI_RGBcolor *rgb = (struct MUI_RGBcolor *)tag->ti_Data;
-		    
+
 	    	    snprintf(data->penspec.ps_buf, sizeof(data->penspec.ps_buf), "%c%08x,%08x,%08x", PST_RGB, rgb->red, rgb->green, rgb->blue);
 		}
 		newcol = TRUE;

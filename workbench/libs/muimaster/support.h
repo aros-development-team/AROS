@@ -66,6 +66,10 @@ ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...);
 struct MUI_RenderInfo;
 #endif
 
+#ifndef __AROS__
+char *StrDup(char *x);
+#endif
+
 ULONG DoSetupMethod(Object *obj, struct MUI_RenderInfo *info);
 APTR AllocVecPooled (APTR pool, ULONG memsize);
 void FreeVecPooled (APTR pool, APTR mem);

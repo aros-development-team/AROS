@@ -12,6 +12,8 @@
 #include "imspec_intern.h"
 #include "support.h"
 
+extern struct Library *MUIMasterBase;
+
 static void draw_thick_line(struct RastPort *rp,int x1, int y1, int x2, int y2)
 {
     Move(rp,x1,y1);
