@@ -9,11 +9,12 @@
 int main(int argc, char **argv)
 {
     char *s;
+    struct functions *functions = functionsinit();
     struct config *cfg = initconfig(argc, argv, DUMMY);
     
     writeincproto(cfg);
-    writeincclib(cfg);
-    writeincdefines(cfg);
+    writeincclib(cfg, functions);
+    writeincdefines(cfg, functions);
     
     return 0;
 }

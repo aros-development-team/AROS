@@ -2,7 +2,8 @@
     Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
     
-    Code to parse the command line options for the genmodule program
+    Code to parse the command line options and the module config file for
+    the genmodule program
 */
 
 #include <string.h>
@@ -12,6 +13,7 @@
 #include "config.h"
 
 static void readconfig(struct config *);
+static struct conffuncinfo *newconffuncinfo(const char *name, unsigned int lvo);
 
 struct config *initconfig(int argc, char **argv, int command)
 {
@@ -155,49 +157,9 @@ struct config *initconfig(int argc, char **argv, int command)
     return cfg;
 }
 
-/* Help functions to handle the variables and the types */
-struct linelist *addline(struct linelist **linelistptr, const char *line)
-{
-    while(*linelistptr != NULL) linelistptr = &(*linelistptr)->next;
-    
-    *linelistptr = malloc(sizeof(struct linelist));
-    if (*linelistptr != NULL)
-    {
-	(*linelistptr)->next = NULL;
-	(*linelistptr)->line = strdup(line);
-    }
-    else
-    {
-	puts("Out of memory !");
-	exit(20);
-    }
-
-    return *linelistptr;
-}
-
-struct forcelist *addforcebase(struct forcelist **forcelistptr, const char *basename)
-{
-    while(*forcelistptr != NULL) forcelistptr = &(*forcelistptr)->next;
-    
-    *forcelistptr = malloc(sizeof(struct forcelist));
-    if (*forcelistptr != NULL)
-    {
-	(*forcelistptr)->next = NULL;
-	(*forcelistptr)->basename = strdup(basename);
-    }
-    else
-    {
-	puts("Out of memory !");
-	exit(20);
-    }
-
-    return *forcelistptr;
-}
-
 /* Functions to read configuration from the configuration file */
 
 #include "fileread.h"
-#include "functionhead.h"
 
 static void readsectionconfig(struct config *);
 static void readsectioncdef(struct config *);
@@ -269,17 +231,6 @@ static void readconfig(struct config *cfg)
 	    filewarning("warning line outside section ignored\n");
     }
     fileclose();
-    
-    if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
-    {
-        struct functionhead *function;
-        
-        function = newfunctionhead("MCC_Query", NULL, cfg->firstlvo - 1);
-	funcaddarg(function, NULL, NULL, "D0");
-
-        function->next = funclist;
-        funclist = function;
-    }
 }
 
 
@@ -388,7 +339,7 @@ static void readsectionconfig(struct config *cfg)
 		break;
 		
 	    case 8: /* forcebase */
-		addforcebase(&cfg->forcelist, s);
+		slist_append(&cfg->forcelist, s);
 		break;
                 
             case 9: /* superclass */
@@ -549,7 +500,7 @@ static void readsectioncdef(struct config *cfg)
 
 	if (strncmp(line, "##", 2)!=0)
 	{
-	    addline(&cfg->cdeflines, line);
+	    slist_append(&cfg->cdeflines, line);
 	}
 	else
 	{
@@ -586,7 +537,7 @@ static void readsectioncdefprivate(struct config *cfg)
 
 	if (strncmp(line, "##", 2)!=0)
 	{
-	    addline(&cfg->cdefprivatelines, line);
+	    slist_append(&cfg->cdefprivatelines, line);
 	}
 	else
 	{
@@ -615,7 +566,7 @@ static void readsectionfunctionlist(struct config *cfg)
     int atend = 0;
     char *line, *s, *s2;
     unsigned int lvo = cfg->firstlvo;
-    struct functionhead **funclistptr = &funclist;
+    struct conffuncinfo **funclistptr = &cfg->conffunclist;
     
     if (cfg->basename==NULL)
 	exitfileerror(20, "section functionlist has to come after section config\n");
@@ -697,14 +648,16 @@ static void readsectionfunctionlist(struct config *cfg)
 
 	    line[len] = '\0';
 
-	    *funclistptr = newfunctionhead(line, NULL, lvo);
+	    *funclistptr = newconffuncinfo(line, lvo);
 	    lvo++;
 
 	    /* Parse registers specifications if available */
 	    if (sopenbracket != NULL && (scolon == NULL || scolon > sopenbracket))
 	    {
+		int regcount = 0;
+		
 		if (sclosebracket == NULL)
-		    exitfileerror(20, "'(' withouth ')'");
+		    exitfileerror(20, "'(' without ')'");
 		if (cfg->libcall != REGISTER)
 		    exitfileerror(20, "registers may only be specified for REGISTER libcall\n");
 		
@@ -721,11 +674,15 @@ static void readsectionfunctionlist(struct config *cfg)
 			char c = s[2];
 
 			s[2] = '\0';
-			funcaddarg(*funclistptr, NULL, NULL, s);
+			slist_append(&(*funclistptr)->regs, s);
+			regcount++;
 			s[2] = c;
 		    }
 		    else
-			exitfileerror(20, "wrong register \"%s\" for argument %u\n", s, (*funclistptr)->argcount+1);
+			exitfileerror(20,
+				      "wrong register \"%s\" for argument %u\n",
+				      s, regcount+1
+			);
 		    
 		    s += 2;
 		    while (isspace(*s)) s++;
@@ -742,8 +699,6 @@ static void readsectionfunctionlist(struct config *cfg)
 	    /* Parse extra specification, like aliases, vararg, ... */
 	    if (scolon != NULL)
 	    {
-		struct functionalias **aliaslistptr = &(*funclistptr)->aliases;
-		
 		s = scolon+1;
 		while (isspace(*s)) s++;
 		do
@@ -762,7 +717,7 @@ static void readsectionfunctionlist(struct config *cfg)
 			
 			c = *s2;
 			*s2 = '\0';
-			funcaddalias(*funclistptr, s);
+			slist_append(&(*funclistptr)->aliases, s);
 			*s2 = c;
 			
 			s = s2;
@@ -782,4 +737,23 @@ static void readsectionfunctionlist(struct config *cfg)
 	    funclistptr = &((*funclistptr)->next);
 	}
     }
+}
+
+static struct conffuncinfo *newconffuncinfo(const char *name, unsigned int lvo)
+{
+    struct conffuncinfo *conffuncinfo = malloc(sizeof(struct conffuncinfo));
+    
+    if (conffuncinfo == NULL)
+    {
+	fprintf(stderr, "Out of memory !\n");
+	exit (20);
+    }
+    
+    conffuncinfo->next = NULL;
+    conffuncinfo->name = strdup(name);
+    conffuncinfo->lvo = lvo;
+    conffuncinfo->regs = NULL;
+    conffuncinfo->aliases = NULL;
+
+    return conffuncinfo;
 }

@@ -6,27 +6,17 @@
 */
 #include "functionhead.h"
 
-/* In funclist the information of all the functions of the module will be stored.
- * The list has to be sorted on the lvonum field
- */
-struct functionhead *funclist = NULL;
-
-/* In methlist the information of all the methods of the class will be 
- * stored. We (mis)use struct functionhead for this, but don't use certain
- * fields (like lvo and reg (in struct arglist)).
- */
-struct functionhead *methlist;
-
-struct functionhead *newfunctionhead(const char *name, const char *type, unsigned int lvo)
+struct functionhead *newfunctionhead(const char *name, enum libcall libcall)
 {
     struct functionhead *funchead = malloc(sizeof(struct functionhead));
     
     if (funchead != NULL)
     {
 	funchead->next = NULL;
-	funchead->name = (name == NULL) ? NULL : strdup(name);
-	funchead->type = (type == NULL) ? NULL : strdup(type);
-	funchead->lvo = lvo;
+	funchead->name = strdup(name);
+	funchead->type = NULL;
+	funchead->libcall = libcall;
+	funchead->lvo = 0;
 	funchead->argcount = 0;
 	funchead->arguments = NULL;
 	funchead->aliases = NULL;
@@ -40,7 +30,8 @@ struct functionhead *newfunctionhead(const char *name, const char *type, unsigne
     return funchead;
 }
 
-struct functionarg *funcaddarg(
+struct functionarg *funcaddarg
+(
     struct functionhead *funchead,
     const char *name, const char *type, const char *reg
 )
@@ -68,21 +59,22 @@ struct functionarg *funcaddarg(
     return *argptr;
 }
 
-struct functionalias *funcaddalias(struct functionhead *funchead, const char *alias)
+struct stringlist *funcaddalias(struct functionhead *funchead, const char *alias)
 {
-    struct functionalias *funcalias = malloc(sizeof(struct functionalias));
+    return slist_append(&funchead->aliases, alias);
+}
+
+struct functions *functionsinit(void)
+{
+    struct functions *functions = malloc(sizeof(struct functions));
     
-    if (funcalias != NULL)
+    if (functions == NULL)
     {
-	funcalias->next = funchead->aliases;
-	funcalias->alias = strdup(alias);
-	funchead->aliases = funcalias;
+	fprintf(stderr, "Out of memory\n");
+	exit (20);
     }
-    else
-    {
-	puts("Out of memory !");
-	exit(20);
-    }
+    functions->funclist = NULL;
+    functions->methlist = NULL;
     
-    return funcalias;
+    return functions;
 }

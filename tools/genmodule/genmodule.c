@@ -9,26 +9,26 @@
 int main(int argc, char **argv)
 {
     char *s;
-
+    struct functions *functions = functionsinit();
     struct config *cfg = initconfig(argc, argv, NORMAL);
 
-    readref(cfg);
+    readref(cfg, functions);
     if (cfg->modtype == LIBRARY || cfg->modtype == DEVICE || cfg->modtype == RESOURCE)
     {
         writeincproto(cfg);
-        writeincclib(cfg);
-        writeincdefines(cfg);
+        writeincclib(cfg, functions);
+        writeincdefines(cfg, functions);
     }
     if (cfg->modtype == LIBRARY)
         writeautoinit(cfg);
     if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
     {
-        writemccinit(cfg);
+        writemccinit(cfg, functions);
         writemccquery(cfg);
     }
-    writestart(cfg);
+    writestart(cfg, functions);
     writeend(cfg);
-    writestubs(cfg);
+    writestubs(cfg, functions);
     
     return 0;
 }

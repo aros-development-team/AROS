@@ -32,7 +32,7 @@ void writeautoinit(struct config *cfg)
     );
     if (cfg->forcelist!=NULL)
     {
-	struct forcelist * forcelistit;
+	struct stringlist * forcelistit;
 	
 	fprintf(out, "\n");
 	for (forcelistit = cfg->forcelist;
@@ -40,7 +40,7 @@ void writeautoinit(struct config *cfg)
 	     forcelistit = forcelistit->next
 	    )
 	{
-	    fprintf(out, "extern struct Library *%s;\n", forcelistit->basename);
+	    fprintf(out, "extern struct Library *%s;\n", forcelistit->s);
 	}
 	fprintf(out, "\nvoid __%s_forcelibs(void)\n{\n", cfg->modulename);
 	for (forcelistit = cfg->forcelist;
@@ -48,7 +48,7 @@ void writeautoinit(struct config *cfg)
 	     forcelistit = forcelistit->next
 	    )
 	{
-	    fprintf(out, "    %s = NULL;\n", forcelistit->basename);
+	    fprintf(out, "    %s = NULL;\n", forcelistit->s);
 	}
 	fprintf(out, "}\n");
     }

@@ -1,8 +1,14 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
 
-    Desc: Define the C structure for storing the command line options
+    Desc: Define the C structure for storing the command line options and the
+          module config data
 */
+
+#ifndef _CONFIG_H
+#define _CONFIG_H
+
+#include "stringlist.h"
 
 enum command { CMD_UNSPECIFIED, DUMMY, NORMAL, LIBDEFS };
 enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP, DEVICE, RESOURCE };
@@ -18,14 +24,13 @@ enum optionflags
     OPTION_DUPBASE = 1<<BIT_DUPBASE
 };
 
-struct forcelist {
-    struct forcelist *next;
-    char *basename;
-};
-
-struct linelist {
-    struct linelist *next;
-    char *line;
+struct conffuncinfo {
+    struct conffuncinfo *next;
+    char *name;
+    unsigned int lvo;
+    struct stringlist *regs;
+    int regcount;
+    struct stringlist *aliases;
 };
 
 struct config
@@ -66,11 +71,14 @@ struct config
     /* In forcelist a list of basenames is present that need to be present in the
      * static link library so that certain libraries are opened by a program
      */
-    struct forcelist *forcelist;
+    struct stringlist *forcelist;
 
     /* Code to add to the generated files */
-    struct linelist *cdeflines, *cdefprivatelines;
+    struct stringlist *cdeflines, *cdefprivatelines;
 
+    /* The function config data present in the functionlist section */
+    struct conffuncinfo *conffunclist;
+    
     /* MCC specific data */
     char *superclass;
     int customdispatcher; /* does class have custom dispatcher? */
@@ -78,7 +86,6 @@ struct config
 
 /* Function prototypes */
 
-struct linelist *addline(struct linelist **, const char *);
-struct forcelist *addforcebase(struct forcelist **, const char *);
-
 struct config *initconfig(int, char **, int);
+
+#endif //_CONFIG_H

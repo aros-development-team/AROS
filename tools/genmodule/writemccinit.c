@@ -6,13 +6,13 @@
 */
 #include "genmodule.h"
 
-void writemccinit(struct config *cfg)
+void writemccinit(struct config *cfg, struct functions *functions)
 {
     FILE *out;
     char line[256];
     struct functionhead *methlistit;
     struct functionarg *arglistit;
-    struct linelist *linelistit;
+    struct stringlist *linelistit;
     unsigned int lvo;
     int i;
     
@@ -56,7 +56,7 @@ void writemccinit(struct config *cfg)
         
     for(linelistit = cfg->cdeflines; linelistit != NULL; linelistit = linelistit->next)
     {
-        fprintf(out, "%s\n", linelistit->line);
+        fprintf(out, "%s\n", linelistit->s);
     }
 
     fprintf
@@ -86,7 +86,7 @@ void writemccinit(struct config *cfg)
     
     for 
     (
-        methlistit = methlist; 
+        methlistit = functions->methlist; 
         methlistit != NULL; 
         methlistit = methlistit->next)
     {
@@ -98,14 +98,15 @@ void writemccinit(struct config *cfg)
         (
             arglistit = methlistit->arguments; 
             arglistit != NULL; 
-            arglistit = arglistit->next)
+            arglistit = arglistit->next
+	)
         {
             if (!first)
                 fprintf(out, ", ");
             else
                 first = 0;
             
-            fprintf(out, "%s %s", arglistit->type, arglistit->name );
+            fprintf(out, "%s", arglistit->type);
         }
         
         fprintf(out, ");\n");
@@ -128,9 +129,10 @@ void writemccinit(struct config *cfg)
         
         for 
         (
-            methlistit = methlist; 
+            methlistit = functions->methlist; 
             methlistit != NULL; 
-            methlistit = methlistit->next)
+            methlistit = methlistit->next
+	)
         {
             fprintf
             (
@@ -150,7 +152,45 @@ void writemccinit(struct config *cfg)
             arglistit = arglistit->next;
             fprintf(out, "self, ");
             arglistit = arglistit->next;
-            fprintf(out, "(%s) message);\n", arglistit->type);
+
+	    {
+		char *begin = strdup(arglistit->type), *end;
+		unsigned int brackets = 0;
+		
+		/* Count the [] specification at the end of the argument */
+		end = begin+strlen(begin);
+		while (isspace(*(end-1))) end--;
+		while (*(end-1)==']')
+		{
+		    brackets++;
+		    end--;
+		    while (isspace(*(end-1))) end--;
+		    if (*(end-1)!='[')
+		    {
+			fprintf(stderr,
+				"Argument \"%s\" not understood for function %s\n",
+				begin, methlistit->name
+			);
+			exit(20);
+		    }
+		    end--;
+		    while (isspace(*(end-1))) end--;
+		}
+			
+		/* Skip over the argument name and duplicate it */
+		while (!isspace(*(end-1)) && *(end-1)!='*') end--;
+
+		/* Add * for the brackets */
+		while (isspace(*(end-1))) end--;
+		for (i=0; i<brackets; i++)
+		{
+		    *end='*';
+		    end++;
+		}
+		*end='\0';
+		fprintf(out, "(%s) message);\n", begin);
+		free(begin);
+	    }
         }
         
         fprintf

@@ -11,7 +11,7 @@ static void writedefinevararg(FILE *, struct functionhead *, struct config *);
 static void writedefinestack(FILE *, struct functionhead *, struct config *);
 static void writealiases(FILE *, struct functionhead *, struct config *);
 
-void writeincdefines(struct config *cfg)
+void writeincdefines(struct config *cfg, struct functions *functions)
 {
     FILE *out;
     char line[256];
@@ -38,14 +38,15 @@ void writeincdefines(struct config *cfg)
 	    "#include <aros/libcall.h>\n"
 	    "#include <exec/types.h>\n"
 	    "\n",
-	    cfg->modulenameupper, cfg->modulenameupper, cfg->modulename);
+	    cfg->modulenameupper, cfg->modulenameupper, cfg->modulename
+    );
     if (cfg->command!=DUMMY)
     {
-	for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
+	for (funclistit = functions->funclist; funclistit!=NULL; funclistit = funclistit->next)
 	{
 	    if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo))
 	    {
-		if (cfg->libcall != STACK)
+		if (funclistit->libcall != STACK)
 		{
 		    writedefineregister(out, funclistit, cfg);
 		    if (!funclistit->novararg)
@@ -63,7 +64,8 @@ void writeincdefines(struct config *cfg)
     fprintf(out,
 	    "\n"
 	    "#endif /* DEFINES_%s_PROTOS_H*/\n",
-	    cfg->modulenameupper);
+	    cfg->modulenameupper
+    );
     fclose(out);
 }
 
@@ -245,13 +247,13 @@ writedefinestack(FILE *out, struct functionhead *funclistit, struct config *cfg)
 void
 writealiases(FILE *out, struct functionhead *funclistit, struct config *cfg)
 {
-    struct functionalias *aliasesit;
+    struct stringlist *aliasesit;
     
     for (aliasesit = funclistit->aliases;
 	 aliasesit != NULL;
 	 aliasesit = aliasesit->next
     )
     {
-	fprintf(out, "#define %s %s\n", aliasesit->alias, funclistit->name);
+	fprintf(out, "#define %s %s\n", aliasesit->s, funclistit->name);
     }
 }

@@ -4,6 +4,7 @@ GENMODULE_SRCS := \
     fileread.c \
     functionhead.c \
     readref.c \
+    stringlist.c \
     writeincclib.c \
     writeincproto.c \
     writeincdefines.c \
@@ -21,6 +22,7 @@ GENLIBDEFS_SRCS := \
     config.c \
     fileread.c \
     functionhead.c \
+    stringlist.c \
     writeinclibdefs.c
 GENLIBDEFS_DEPS := $(addprefix $(TOP)/tools/genmodule/,$(GENLIBDEFS_SRCS) $(GENMODULE_INCS))
 
@@ -29,6 +31,7 @@ GENMODULEDUMMY_SRCS := \
     config.c \
     fileread.c \
     functionhead.c \
+    stringlist.c \
     writeincproto.c \
     writeincclib.c \
     writeincdefines.c
