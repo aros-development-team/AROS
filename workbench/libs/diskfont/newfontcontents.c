@@ -194,7 +194,7 @@ struct contentsBuffer
 	    strcat(cNode->fc.fc_FileName, "/");
 	    strcat(cNode->fc.fc_FileName, fib->fib_FileName);
 
-#if 1	    /* TODO: Factor out the code in diskfont_io.c that extracts
+	    /* TODO: Factor out the code in diskfont_io.c that extracts
 	             tags and make it a function... */
 
 	    /* Embedded tags? */
@@ -234,11 +234,14 @@ struct contentsBuffer
 
 	    } /* if(this was a tagged font) */
 	    
-#endif
 	    cNode->fc.fc_YSize = GetWord(fileDfh+14+2+2+4+32+20);  /* dfh_TF.tf_YSize */
 	    cNode->fc.fc_Style = GetByte(fileDfh+14+2+2+4+32+20+2); /* dfh_TF.tf_Style */
-	    cNode->fc.fc_Flags = GetByte(fileDfh+14+2+2+4+32+20+2+1) & ~FPF_REMOVED; /* dfh_TF.tf_Flags */
+	    cNode->fc.fc_Flags = GetByte(fileDfh+14+2+2+4+32+20+2+1); /* dfh_TF.tf_Flags */
 
+    	    cNode->fc.fc_Flags &= ~FPF_REMOVED;
+	    cNode->fc.fc_Flags &= ~FPF_ROMFONT;
+	    cNode->fc.fc_Flags |=  FPF_DISKFONT;
+	    
 	    fch.fch_NumEntries++;
 	    
 	    UnLoadSeg(fontSeg);
@@ -258,8 +261,9 @@ struct contentsBuffer
 			     ((UBYTE *)ret + sizeof(struct FontContentsHeader)));
 	    }
 	    
-	    FreeBuffers(&contentsList);
 	}
+	
+	FreeBuffers(&contentsList);
 	
     } /* if(we could examine the font's directory) */
     
