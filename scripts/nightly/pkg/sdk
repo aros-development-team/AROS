@@ -4,6 +4,8 @@
 source $SP/setup
 setl   sdk.log
 
+ARCHIVE_BASE=$ARCHIVE_BASE/Development_Tools
+
 printi "Creating AROS/"$HOST_CPU" SDK package..."
 PACKAGE=$BASENAME-$HOST_CPU-all-sdk
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2

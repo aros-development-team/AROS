@@ -4,6 +4,8 @@
 source $SP/setup
 setl   documentation.log
 
+ARCHIVE_BASE=$ARCHIVE_BASE/Documentation
+
 printi "Creating documentation packages..."
 
 printi "Creating HTML documentation package..."

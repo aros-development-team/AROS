@@ -52,6 +52,10 @@ execute()
 
 archive()
 {
+    archdir=`dirname $1`
+    if [ ! -a $archdir ]; then
+        mkdir -p $archdir
+    fi
     execute tar cjvf $1 $2
     execute md5sum $1 >$1.md5
 }
