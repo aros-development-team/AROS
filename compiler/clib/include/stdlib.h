@@ -18,6 +18,8 @@
 void __attribute__ ((noreturn)) exit (int code);
 void __attribute__ ((noreturn)) abort (void);
 
+int atexit(void (*func)(void));
+
 int abs (int j);
 long labs (long j);
 double atof (const char * str);
