@@ -4305,7 +4305,7 @@ VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
     EnterFunc(bug("driver_BltPattern(%d, %d, %d, %d, %d)\n"
     	, xMin, yMin, xMax, yMax, byteCnt));
 	
-kprintf("Entering %s\n",__FUNCTION__);
+/*kprintf("Entering %s\n",__FUNCTION__);*/
 	
     if (!CorrectDriverData(rp, GfxBase))
     	ReturnVoid("driver_BltPattern");
@@ -4384,12 +4384,12 @@ LOCK_HIDD(bm);
 		{
 		
 
-kprintf("VISIBLE!\n");
+/*kprintf("VISIBLE!\n");
 kprintf("xMin: %d, yMin: %d, xMax: %d, yMax: %d\n",xMin,yMin,xMax,yMax);
 kprintf("intersect: %d/%d - %d/%d\n",intersect.MinX, intersect.MinY,
                                      intersect.MaxX, intersect.MaxY);		
 
-kprintf("source coords: %d/%d\n\n",intersect.MinX-xrel, intersect.MinY-yrel);
+kprintf("source coords: %d/%d\n\n",intersect.MinX-xrel, intersect.MinY-yrel);*/
 
 		    amiga2hidd_fast( (APTR) &pi
 		        , intersect.MinX - xrel
@@ -4415,10 +4415,10 @@ LOCK_HIDD(CR->BitMap);
 
 			SetAttrs( BM_OBJ(CR->BitMap), setgc_tags );
 
-kprintf("INVISIBLE! CR->BitMap = %x\n",CR->BitMap);
+/*kprintf("INVISIBLE! CR->BitMap = %x\n",CR->BitMap);
 kprintf("xMin: %d, yMin: %d, xMax: %d, yMax: %d\n",xMin,yMin,xMax,yMax);
 kprintf("intersect: %d/%d - %d/%d\n",intersect.MinX, intersect.MinY,
-                                     intersect.MaxX, intersect.MaxY);
+                                     intersect.MaxX, intersect.MaxY);*/
 
 		    	amiga2hidd_fast( (APTR) &pi
 				, intersect.MinX - xrel
