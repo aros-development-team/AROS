@@ -19,7 +19,7 @@ make
 PACKAGE=$BASENAME-i386-pc-boot-floppy
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
 
-make    bootdisk-pc-i386
+make    bootdisk
 makedir $BUILD_BASE/$PACKAGE
 copy    $BUILD_BASE/AROS/bin/pc-i386/gen/rom/boot/aros.bin $BUILD_BASE/$PACKAGE
 cd      $BUILD_BASE
@@ -43,7 +43,7 @@ else
 fi
 
 cd      $BUILD_BASE/AROS
-make    bootiso-pc-i386
+make    bootiso
 makedir $BUILD_BASE/$PACKAGE
 copy    $BUILD_BASE/AROS/bin/pc-i386/gen/rom/boot/aros.iso $BUILD_BASE/$PACKAGE
 cd      $BUILD_BASE
