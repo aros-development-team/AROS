@@ -17,6 +17,7 @@ INCSUBDIRS :=	aros \
 		inline \
 		intuition \
 		libraries \
+		oop \
 		pragmas \
 		prefs \
 		proto \
