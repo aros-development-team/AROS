@@ -19,12 +19,14 @@ FILES	:= \
 	dos \
 	expansion \
 	functions \
+	gadtools \
 	graphics \
 	iffparse \
 	intuition \
 	layers \
 	libraries \
 	locale \
+	realtime \
 	utility
 
 
