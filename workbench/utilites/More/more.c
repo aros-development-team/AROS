@@ -152,7 +152,7 @@ static void Cleanup(char *msg)
     if (scr) UnlockPubScreen(0,scr);
 
     if (linearray) FreeVec(linearray);
-/*    if (filebuffer) FreeVec(filebuffer);*/
+    if (filebuffer) FreeVec(filebuffer);
 
     if (fh) Close(fh);
 
@@ -195,11 +195,6 @@ static void OpenLibs(void)
 
 static void OpenFile(void)
 {	
-    static char *text = "Eins\nZwei\nDrei oder vier";
-    
-    filelen = strlen(text);
-    filebuffer = text;
-
     if (!(fh = Open(filename, MODE_OLDFILE)))
     {
 	DosError();
