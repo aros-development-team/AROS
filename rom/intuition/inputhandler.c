@@ -157,21 +157,21 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
 		{
 		    FreeTagItems((struct TagItem *)im->IAddress);
 		}
-		/* fall through */
-		
-	    case IDCMP_VANILLAKEY:
-	    case IDCMP_RAWKEY:
-	    	if (im->Qualifier & IEQUALIFIER_REPEAT)
-		{
-		    /* IDCMP_IDCMPUPDATE messages can also be sent from app task, therefore
-		       it would be better if there was an ATOMIC_DEC macro or something */
-		       
-		    IW(im->IDCMPWindow)->num_repeatevents--;
-		}
-	    	break;
+		break;
 		
 	} /* switch(im->Class) */
-	
+		
+	if (im->Qualifier & IEQUALIFIER_REPEAT)
+	{
+	    /* IDCMP_IDCMPUPDATE messages can also be sent from app task, therefore
+	       it would be better if there was an ATOMIC_DEC macro or something */
+
+	    if (IW(im->IDCMPWindow)->num_repeatevents)
+	    {
+	        IW(im->IDCMPWindow)->num_repeatevents--;
+	    }
+	}
+			
     	FreeIntuiMessage(im);
 	
     } /* while ((im = (struct IntuiMessage *)GetMsg(iihdata->IntuiReplyPort))) */
