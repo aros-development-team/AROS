@@ -1,3 +1,14 @@
+- stefan 18.3.2001
+- Native:
+The serial mouse driver should use the serial device instead of the 
+serial hidd.
+
+- Big Endian:
+The random number generation function srand48(), seed48(), drand48()
+etc. have not been implemented for big endian CPUs.
+
+
+
 - digulla 21.7.1999
 genmf should be able to read several template files. This
 would allow to overide debug rules.
@@ -44,7 +55,3 @@ a certain point is inside an object one must do:
       
 I found several places where this was wrong, and probably
 there are more.
-
-
-The random number generation function srand48(), seed48(), drand48()
-etc. have not been implemented for big endian CPUs.
