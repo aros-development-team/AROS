@@ -17,9 +17,6 @@
 
 /*********************************************************************/
 
-#define FIRST_EXT_VECTOR    0x20    /* This is exactly what Intel says about */
-#define SYSTEM_VECTOR       0x80    /* Vector callable from user mode */
-
 #define NR_IRQS             16      /* Use all XT-PIC interrupts */
 #define NR_SYSCALLS         4
 
@@ -27,13 +24,12 @@
  * Structure used to describe interrupt controler. Sufficient to describe
  * the low-level hardware
  */
-
 struct irqController
 {
     const char  *ic_Name;                       /* Controller name */
     void        (*ic_startup)(unsigned int);    /* All functions here! */
     void        (*ic_shutdown)(unsigned int);
-    void        (*ic_handle)(unsigned int, struct pt_regs *);
+    void        (*ic_handle)(unsigned int, unsigned int, struct pt_regs *);
     void        (*ic_enable)(unsigned int);
     void        (*ic_disable)(unsigned int);
 };
