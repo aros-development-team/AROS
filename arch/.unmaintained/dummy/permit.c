@@ -5,26 +5,20 @@
     Desc:
     Lang:
 */
-#define timeval sys_timeval
-#include <signal.h>
-#undef timeval
 #include <exec/execbase.h>
-
-void en (void);
 
 /******************************************************************************
 
     NAME */
 #include <proto/exec.h>
 
-	AROS_LH0(void, Enable,
+	AROS_LH0(void, Permit,
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 21, Exec)
+	struct ExecBase *, SysBase, 23, Exec)
 
 /*  FUNCTION
-	This function reenables the delivery of interrupts after a call to
-	Disable().
+	This function activates the dispatcher again after a call to Permit().
 
     INPUTS
 	None.
@@ -33,8 +27,6 @@ void en (void);
 	None.
 
     NOTES
-	This function may be used from interrupts.
-
 	This function preserves all registers.
 
     EXAMPLE
@@ -42,7 +34,7 @@ void en (void);
     BUGS
 
     SEE ALSO
-	Forbid(), Permit(), Disable()
+	Forbid(), Disable(), Enable()
 
     INTERNALS
 
@@ -50,22 +42,13 @@ void en (void);
 
 ******************************************************************************/
 {
-    if ((-- SysBase->IDNestCnt) < 0)
-	en ();
-
-    if ((SysBase->AttnResched & 0x80) && SysBase->TDNestCnt<0)
+    if ((--SysBase->TDNestCnt) < 0
+	&& (SysBase->AttnResched & 0x80)
+	&& SysBase->IDNestCnt < 0
+    )
     {
 	SysBase->AttnResched &= ~0x80;
 
 	Switch ();
     }
-} /* Enable */
-
-void en (void)
-{
-    sigset_t set;
-
-    sigfillset (&set);
-
-    sigprocmask (SIG_UNBLOCK, &set, NULL);
-} /* en */
+} /* Permit */
