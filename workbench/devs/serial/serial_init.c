@@ -867,14 +867,15 @@ AROS_LH1(void, beginio,
         struct TagItem tags[] = 
           {{TAG_DATALENGTH, ioreq->io_ReadLen},
            {TAG_STOP_BITS , ioreq->io_StopBits},
+           {TAG_SKIP      , 0},  // !!! PARITY!!!
            {TAG_END       , 0}};
         success = HIDD_SerialUnit_SetParameters(SU->su_Unit,
                                                 tags);
         if (FALSE == success) {
           ioreq->IOSer.io_Error = SerErr_InvParam;
           kprintf("HIDD_SerialUnit_SetParameters() failed.\n");
-          return;   
-	} 
+          return;
+	}
         SU->su_ReadLen  = ioreq->io_ReadLen;
         SU->su_WriteLen = ioreq->io_WriteLen;
         SU->su_StopBits = ioreq->io_StopBits;
