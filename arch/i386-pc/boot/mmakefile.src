@@ -97,7 +97,7 @@ setup-pc-i386 :
 kernel-link-pc-i386 : $(BINDIR)/boot/aros-pc-i386
 
 $(BINDIR)/boot/aros-pc-i386 : $(OBJS) $(DEPLIBS)
-	@ld -N -e kernel_startup -Ttext 0x00100000 -Map $(OSGENDIR)/boot/aros.map \
+	@$(HOST_LD) -N -e kernel_startup -Ttext 0x00100000 -Map $(OSGENDIR)/boot/aros.map \
 	    -o $@ $(KOBJS) -L$(LIBDIR) $(LIBS)
 	@strip --strip-unneeded -R .note -R .comment $@
 
