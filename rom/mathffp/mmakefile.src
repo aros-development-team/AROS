@@ -15,11 +15,10 @@ FUNCS   := \
     spsub \
     sptst
 
-#MM- kernel-mathffp : includes linklibs
+#MM kernel-mathffp-includes : \
+#MM     kernel-exec-includes \
+#MM     includes-copy
 
-%build_module_macro mmake=kernel-mathffp \
+%build_module mmake=kernel-mathffp \
   modname=mathffp modtype=library \
-  funcs=$(FUNCS) \
-  conffile=lib.conf
-
-%common
+  files=$(FUNCS)
