@@ -8,6 +8,9 @@
 #include <proto/exec.h>
 #include "dos_intern.h"
 
+#include <aros/debug.h>
+
+
 /*****************************************************************************
 
     NAME */
@@ -56,9 +59,13 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct Process *me=(struct Process *)FindTask(NULL);
-    BPTR stream=me->pr_CES?me->pr_CES:me->pr_COS;
+    BPTR stream=me->pr_CES ? me->pr_CES : me->pr_COS;
     UBYTE buffer[80];
     BOOL ret;
+
+    ASSERT_VALID_PTR(stream);
+    ASSERT_VALID_PTR_OR_NULL(header);
+
 
     /* Fault() will do all the formatting of the string */
     Fault(code, header, buffer, 80);
