@@ -232,7 +232,6 @@ struct MUI_AreaData
 #define MADF_SELECTED          (1<< 18) /* PRIV - mui verified */
 #define MADF_FIXHEIGHT         (1<< 19) /* PRIV - zune-specific */
 #define MADF_FILLAREA          (1<< 20) /* PRIV - mui verified */
-#define MADF_ACTIVE            (1<< 21) /* PRIV - zune-specific */
 #define MADF_FIXWIDTH          (1<< 22) /* PRIV - zune-specific */
 #define MADF_FIXHEIGHTTXT      (1<< 22) /* PRIV - mui verified (unused in zune) */
 #define MADF_INNERLEFT         (1<< 23) /* PRIV - mui verified */
