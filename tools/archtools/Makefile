@@ -6,7 +6,7 @@
 
 -include $(TOP)/config/make.cfg
 
-USER_CFLAGS := -Wall -Wunused -O2
+USER_CFLAGS := -Wall -Wunused -O0 -g
 
 HOST_CC	    ?= $(CC)
 HOST_STRIP  ?= strip
@@ -17,8 +17,9 @@ all : $(ARCHTOOL)
 
 $(ARCHTOOL) : archtool.c
 	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $< -o $@
-	@$(HOST_STRIP) $@
+	@$(HOST_CC) $(HOST_CFLAGS) $(USER_CFLAGS) $< -o $@
+
+#	@$(HOST_STRIP) $@
 
 clean:
 	@$(RM) -f $(ARCHTOOL)
