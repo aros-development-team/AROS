@@ -50,7 +50,7 @@ AROS_SLIB_ENTRY(Enable,Exec):
 	/* Decrement and test IDNestCnt */
 	subq.b	#1,IDNestCnt(%a6)
 	jpl	.noswch
-	bsr.w	AROS_CDEFNAME(en)
+	bsr.w	AROS_CSYMNAME(en)
 
 	/* return if there are no delayed switches pending. */
 	tst.b	AttnResched+1(%a6)
