@@ -927,9 +927,92 @@ void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WOR
     }
 }
 
+void zune_text_draw_single (ZText *text, Object *obj, WORD left, WORD right, WORD top, LONG xpos, LONG ypos, BOOL cursor)
+{
+    struct RastPort *rp;
+    ULONG style = FS_NORMAL;
+
+    ZTextLine *line_node;
+    ZTextChunk *chunk_node;
+
+    if (!text || !obj) return;
+
+    rp = _rp(obj);
+    SetFont(rp,_font(obj));
+
+    top += _font(obj)->tf_Baseline + text->yscroll;
+
+    for (line_node = (ZTextLine *)text->lines.mlh_Head; line_node->node.mln_Succ ; line_node = (ZTextLine*)line_node->node.mln_Succ)
+    {
+	LONG x;
+
+	if (line_node->align == ZTL_CENTER) x = (left + right - line_node->lwidth) / 2;
+	else if (line_node->align == ZTL_RIGHT) x = right - line_node->lwidth;
+	else x = left;
+
+	x += text->xscroll;
+
+	if (!ypos)
+	for (chunk_node = (ZTextChunk *)line_node->chunklist.mlh_Head; chunk_node->node.mln_Succ ; chunk_node = (ZTextChunk*)chunk_node->node.mln_Succ)
+	{
+	    char *str = chunk_node->str;
+	    ULONG newstyle = FS_NORMAL;
+	    int offx;
+	    int cursor_width;
+
+	    if (!str) str = "";
+
+	    if (xpos >= strlen(str))
+	    {
+		x += chunk_node->cwidth;
+		xpos -= strlen(str);
+		continue;
+	    }
+
+	    offx = TextLength(_rp(obj),str,xpos);
+	    cursor_width = TextLength(rp,&chunk_node->str[xpos],1);
+
+	    if (chunk_node->style & ZTC_STYLE_BOLD) newstyle |= FSF_BOLD;
+	    if (chunk_node->style & ZTC_STYLE_UNDERLINE) newstyle |= FSF_UNDERLINED;
+	    if (newstyle != style)
+	    {
+		SetSoftStyle(rp, newstyle, 0xff);
+		style = newstyle;
+	    }
+
+	    if (cursor)
+	    {
+		SetAPen(_rp(obj), _dri(obj)->dri_Pens[FILLPEN]);
+		RectFill(_rp(obj), x + offx, top - _font(obj)->tf_Baseline, x + offx + cursor_width - 1, top - _font(obj)->tf_Baseline + _font(obj)->tf_YSize-1);
+	    } else
+	    {
+		DoMethod(obj, MUIM_DrawBackground, x + offx, top - _font(obj)->tf_Baseline, cursor_width, _font(obj)->tf_YSize);
+	    }
+	    
+	    Move(rp,x + offx, top);
+	    SetABPenDrMd(rp, _dri(obj)->dri_Pens[chunk_node->dripen],0,JAM1);
+
+	    Text(rp,&chunk_node->str[xpos],1);
+	    return;
+	}
+
+#if 0
+	if (!cursory && cursorx != -1)
+	{
+	    /* Cursor has not been drawn yet */
+	    SetAPen(_rp(obj), _dri(obj)->dri_Pens[FILLPEN]);
+	    RectFill(_rp(obj), x, top - _font(obj)->tf_Baseline, x + _font(obj)->tf_XSize - 1, top - _font(obj)->tf_Baseline + _font(obj)->tf_YSize-1);
+	}
+#endif
+
+	top += line_node->lheight;
+	ypos--;
+    }
+}
+
 int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y, struct ZTextLine **line_ptr, struct ZTextChunk **chunk_ptr, int *offset_ptr, int *len_ptr)
 {
-    int i,j;
+    int i;
     struct ZTextLine *line;
     struct ZTextChunk *chunk;
 
@@ -965,6 +1048,8 @@ int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y, struct ZTex
 	*offset_ptr += TextLength(&rp,chunk->str,x);
     }
 
+    *offset_ptr += text->xscroll;
+
     return 1;
 }
 
@@ -986,14 +1071,18 @@ int zune_text_get_line_len(ZText *text, Object *obj, LONG y)
     return len;
 }
 
-void zune_make_cursor_visible(ZText *text, Object *obj, LONG cursorx, LONG cursory, LONG left, LONG top, LONG right, LONG bottom)
+int zune_make_cursor_visible(ZText *text, Object *obj, LONG cursorx, LONG cursory, LONG left, LONG top, LONG right, LONG bottom)
 {
     struct RastPort rp;
+    LONG oldxscroll,oldyscroll;
 
     ZTextLine *line_node;
     ZTextChunk *chunk_node;
 
-    if (!text || !obj) return;
+    if (!text || !obj) return 0;
+
+    oldxscroll = text->xscroll;
+    oldyscroll = text->yscroll;
 
     InitRastPort(&rp);
     SetFont(&rp,_font(obj));
@@ -1042,5 +1131,7 @@ void zune_make_cursor_visible(ZText *text, Object *obj, LONG cursorx, LONG curso
 	top += line_node->lheight;
 	cursory--;
     }
+
+    return (text->xscroll != oldxscroll || text->yscroll != oldyscroll);
 }
 
