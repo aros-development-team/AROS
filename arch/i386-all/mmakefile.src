@@ -38,7 +38,7 @@ $(GENINCDIR)/%.h : %.h
 geninc$(HOST_EXE_SUFFIX) : geninc.c
 	@echo "CFLAGS=$(CFLAGS)"
 	@echo "Creating geninc..."
-	@$(HOST_CC) $(CFLAGS) -I$(OS_INCLUDES) -o $@ $<
+	@$(HOST_CC) $(CFLAGS) -o $@ $<
 
 machine.i: geninc$(HOST_EXE_SUFFIX) $(MACHINE_H)
 	./geninc$(HOST_EXE_SUFFIX) > machine.i
