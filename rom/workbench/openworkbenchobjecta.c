@@ -19,6 +19,7 @@
 
 #include "workbench_intern.h"
 #include "support.h"
+#include "support_messages.h"
 #include "handler.h"
 #include "handler_support.h"
 
@@ -536,14 +537,13 @@ BOOL __WB_LaunchProgram
     struct WBCommandMessage *message = NULL;
        
     /*-- Allocate memory for messages --------------------------------------*/
-    startup = AllocMem(sizeof(struct WBStartup), MEMF_PUBLIC | MEMF_CLEAR);
+    startup = CreateWBS();
     if (startup == NULL) 
     {
         D(bug("workbench.library: WB_LaunchProgram: Failed to allocate memory for startup message\n"));
         SetIoErr(ERROR_NO_FREE_STORE); 
         goto error;
     }
-    MESSAGE(startup)->mn_Length = sizeof(struct WBStartup);
     
     message = CreateWBCM(WBCM_TYPE_LAUNCH);
     if (message == NULL)
@@ -561,11 +561,9 @@ BOOL __WB_LaunchProgram
     }
 
     /*-- Send message to handler -------------------------------------------*/
-    D(bug("workbench.library: WB_LaunchProgram: Setting up message\n"));
+    /* NOTE: The handler will deallocate all resources of this message! */
     message->wbcm_Data.Launch.Startup = startup; 
     
-    /* The handler will deallocate the memory! */
-    D(bug("workbench.library: WB_LaunchProgram: Sending message\n"));
     PutMsg(&(WorkbenchBase->wb_HandlerPort), (struct Message *) message);
     
     D(bug("workbench.library: WB_LaunchProgram: Success\n"));
@@ -573,7 +571,7 @@ BOOL __WB_LaunchProgram
     return TRUE;
 
 error:
-    if (startup != NULL) FreeMem(startup, sizeof(struct WBStartup));
+    if (startup != NULL) DestroyWBS(startup);
     if (message != NULL) DestroyWBCM(message);
     
     D(bug("workbench.library: WB_LaunchProgram: Failure\n"));
