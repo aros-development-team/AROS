@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.12  1996/10/14 02:38:39  iaint
+    FreeBSD patch no longer needed.
+
     Revision 1.11  1996/10/10 13:23:55  digulla
     Make handler work with timer (Fleischer)
 
@@ -56,15 +59,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
-#if defined(__FreeBSD__)
-#define timeval _timeval
 #include <sys/stat.h>
-#define tv_sec tv_secs
-#define tv_usec tv_micros
-#undef timeval
-#else
-#include <sys/stat.h>
-#endif
 #include <sys/time.h>
 #ifdef __GNUC__
     #include "emul_handler_gcc.h"
