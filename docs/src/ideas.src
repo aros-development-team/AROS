@@ -43,7 +43,7 @@ can easily operate on it. One should be able to stream data in and out
 of the objects. One could have separate "converter objects" that
 can convert from a data format (eg. GIF->internal raw image format
 and back eg. raw->GIF.) So when you want to put a GIF file into
-a image object the system will automatically search for installed
+an image object the system will automatically search for installed
 gif->internal raw converters and convert the GIF into a stream of
 raw image data passed to the image object.
 
@@ -151,9 +151,9 @@ spooled data away).
 \begin{new}{19.1.1998}
 By Paulo F. Zemek:
 The Amiga
-has the Smart refreshed windows that uses an own bitmap an the Simple, that
-need to be refreshed because uses the screen bitmap. I want a Double
-Buffered one. A simple refresh window where you allocates a bitmap and a
+has the Smart refreshed windows that uses an own bitmap and the Simple, that
+need to be refreshed because it uses the screen bitmap. I want a Double
+Buffered one. A simple refresh window where you allocate a bitmap and a
 rastport for it, and this will be send to window on Refresh (or in window's
 BackFill Hook) and when the Draw of All Buttons are finished, so you don't
 get "flickering" (I don't know the correct word) on the graphic, and uses
@@ -163,10 +163,10 @@ almost the same memory of a Smart one.
 \item
 \begin{new}{19.1.1998}
 By Paulo F. Zemek:
-The amiga need a function for opening windows into other windows like on
-windows. The "Requester" do this, but stops the functionality of the
-window, and don't have all Attributes of a real window. This or something
-like this is needed for buttons what are over others, so the graphic of the
+The amiga needs a function for opening windows into other windows like on
+windows. The "Requester" does this, but stops the functionality of the
+window, and doesn't have all Attributes of a real window. This or something
+like this is needed for buttons which are over others, so the graphic of the
 "bottom" one will not pass over the front one. And can be created new
 functions for opening Windows/Screens, so you can convert a window into a
 screen, create Public Windows and open other windows on it...
@@ -188,7 +188,7 @@ is easy to do, so the Enqueue already exists.
 \item
 \begin{new}{19.1.1998}
 By Paulo F. Zemek:
-Intuition should not sent more than one REFRESH message to a window (ie.
+Intuition should not send more than one REFRESH message to a window (ie.
 if there is already one in the queue, then it should be removed first).
 \end{new}
 \end{itemize}
