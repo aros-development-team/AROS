@@ -17,6 +17,10 @@
 #include "mui.h"
 #endif
 
+#ifndef _MUI_FRAME_H
+#include "frame.h"
+#endif
+
 typedef enum CycleMenuPosition {
     CYCLE_MENU_POSITION_CENTERED,
     CYCLE_MENU_POSITION_TOP,
@@ -81,8 +85,8 @@ typedef enum RegisterLook {
 struct ZunePrefsNew
 {
     char *fonts[-MUIV_Font_NegCount];
-    char *imagespecs[MUII_Count];
-    struct MUI_FrameSpec frames[MUIV_Frame_Count];
+    CONST_STRPTR imagespecs[MUII_Count];
+    struct MUI_FrameSpec_intern frames[MUIV_Frame_Count];
 
     /* Groups */
     GroupTitlePosition group_title_position;
@@ -116,12 +120,10 @@ struct ZunePrefsNew
 
     /* Strings */
 /* old zune used struct MUI_PenSpec, new will probably differ -dlc */
-#if FIXME_WHICH_STORAGE
     struct MUI_PenSpec string_bg_active; /* yet unused, remove this comment when handled */
     struct MUI_PenSpec string_text_active; /* yet unused, remove this comment when handled */
     struct MUI_PenSpec string_bg_inactive; /* yet unused, remove this comment when handled */
     struct MUI_PenSpec string_text_inactive; /* yet unused, remove this comment when handled */
-#endif
 
     /* Lists */
     WORD     list_linespacing; /* yet unused, remove this comment when handled */
