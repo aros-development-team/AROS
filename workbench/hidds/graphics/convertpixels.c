@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <hidd/graphics.h>
 #include "graphics_intern.h"
 #include <aros/machine.h>

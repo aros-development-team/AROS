@@ -2,12 +2,13 @@
 #define HIDD_SERIAL_H
 
 /*
-    Copyright (C) 1998 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definitions for the Serial HIDD system.
     Lang: english
 */
+
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif

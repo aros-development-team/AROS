@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #define CATCOMP_ARRAY
 #include "serialprefs_strings.h"
 
