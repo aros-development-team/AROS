@@ -48,25 +48,10 @@ LONG getDiskInfo(struct Volume *volume, struct InfoData *id) {
 	id->id_NumBlocks=volume->rootblock*2-volume->bootblocks;
 	id->id_NumBlocksUsed=volume->usedblockscount;
 	id->id_BytesPerBlock=volume->flags==0 ? BLOCK_SIZE(volume)-24 : BLOCK_SIZE(volume);
-	id->id_DiskType=volume->dostype | volume->flags;
+	id->id_DiskType=volume->dostype | (volume->flags & 0xFF);
 	id->id_VolumeNode=0;		/* I think this is useless in AROS */
 	id->id_InUse=(LONG)TRUE;	/* if we are here the device should be in use! */
 	return 0;
-}
-
-/*******************************************
- Name  : flush
- Descr.: flush buffers and update disk (sync)
- Input : afsbase -
-         volume  - volume to flush
- Output: DOSTRUE
-********************************************/
-ULONG flush(struct afsbase *afsbase, struct Volume *volume) {
-
-	flushCache(volume->blockcache);
-	sendDeviceCmd(afsbase, volume, CMD_UPDATE);
-	//turn off motor
-	return DOSTRUE;
 }
 
 /*******************************************
@@ -511,7 +496,7 @@ LONG retval;
 			iofs->io_DosError=error;
 			ReplyMsg(&iofs->IOFS.io_Message);
 		}
-		WaitPort(&afsbase->port);
+		checkDeviceFlags(afsbase);
+		Wait(1<<afsbase->port.mp_SigBit);
 	}
 }
-

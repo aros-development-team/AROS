@@ -13,7 +13,7 @@
 #include <aros/asmcall.h>
 #include <exec/memory.h>
 #include <exec/io.h>
-#include <devices/trackdisk.h>
+#include <hardware/custom.h>
 #include <hardware/intbits.h>
 
 #include <aros/debug.h>
@@ -93,14 +93,79 @@ void flushCache(struct BlockCache *cache) {
 	}
 }
 
-/********************* for trackdisk reading ***********************/
-void sendDeviceCmd(struct afsbase *afsbase, struct Volume *volume, UWORD command) {
+/*******************************************************************/
 
-	volume->iorequest->iotd_Req.io_Command=command;
+void motorOff(struct afsbase *afsbase, struct Volume *volume) {
+
+	volume->iorequest->iotd_Req.io_Command=TD_MOTOR;
 	volume->iorequest->iotd_Req.io_Length=0;
 	DoIO((struct IORequest *)&volume->iorequest->iotd_Req);
 }
-/*******************************************************************/
+
+UBYTE diskPresent(struct afsbase *afsbase, struct Volume *volume) {
+
+	volume->iorequest->iotd_Req.io_Command=TD_CHANGESTATE;
+	DoIO((struct IORequest *)&volume->iorequest->iotd_Req);
+	return volume->iorequest->iotd_Req.io_Actual==0;
+}
+
+LONG getGeometry
+	(
+		struct afsbase *afsbase,
+		struct Volume *volume,
+		struct DriveGeometry *dg
+	)
+{
+	volume->iorequest->iotd_Req.io_Command = TD_GETGEOMETRY;
+	volume->iorequest->iotd_Req.io_Data = dg;
+	volume->iorequest->iotd_Req.io_Length = sizeof(struct DriveGeometry);
+	return DoIO((struct IORequest *)&volume->iorequest->iotd_Req);
+}
+
+/*******************************************
+ Name  : flush
+ Descr.: flush buffers and update disk (sync)
+ Input : afsbase -
+         volume  - volume to flush
+ Output: DOSTRUE
+********************************************/
+ULONG flush(struct afsbase *afsbase, struct Volume *volume) {
+
+	flushCache(volume->blockcache);
+	volume->iorequest->iotd_Req.io_Command=CMD_UPDATE;
+	DoIO((struct IORequest *)&volume->iorequest->iotd_Req);
+	//turn off motor
+	return DOSTRUE;
+}
+
+#warning "define afsbase volume->afsbase"
+
+extern VOID changeIntCode(struct Volume *, APTR, struct ExecBase *);
+
+LONG addChangeInt(struct afsbase *afsbase, struct Volume *volume) {
+
+	volume->mc_int.is_Code = (void(*)())&changeIntCode;
+	volume->mc_int.is_Data = volume;
+	volume->iochangeint->iotd_Req.io_Command = TD_ADDCHANGEINT;
+	volume->iochangeint->iotd_Req.io_Flags = 0;
+	volume->iochangeint->iotd_Req.io_Length = sizeof(struct Interrupt);
+	volume->iochangeint->iotd_Req.io_Data = &volume->mc_int;
+	volume->iochangeint->iotd_Req.io_Error = 0;
+	SendIO((struct IORequest *)&volume->iochangeint->iotd_Req);
+	return volume->iochangeint->iotd_Req.io_Error;
+}
+
+void remChangeInt(struct afsbase *afsbase, struct Volume *volume) {
+
+	if (
+			(volume->iochangeint != 0) &&
+			(volume->iochangeint->iotd_Req.io_Error == 0)
+		)
+	{
+		volume->iochangeint->iotd_Req.io_Command = TD_ADDCHANGEINT;
+		SendIO((struct IORequest *)&volume->iochangeint->iotd_Req);
+	}
+}
 
 ULONG readDisk
 	(
@@ -128,7 +193,7 @@ UQUAD offset;
 	retval=DoIO((struct IORequest *)&volume->iorequest->iotd_Req);
 	if (retval)
 		showError(afsbase, ERR_READWRITE, retval);
-	if (volume->istrackdisk)
+	if (volume->flags & VOLF_TRACKDISK)
 	{
 		if (volume->moff_time)
 		{
@@ -137,7 +202,7 @@ UQUAD offset;
 		else
 		{
 			volume->moff_time=100;
-			//AddIntServer(INTB_VERTB, &volume->vbl_int);
+			AddIntServer(INTB_VERTB, &volume->vbl_int);
 		}
 	}
 	return retval;
@@ -223,7 +288,13 @@ UWORD i,j;
 }
 #endif
 
-struct BlockCache *getBlock(struct afsbase *afsbase, struct Volume *volume, ULONG blocknum) {
+struct BlockCache *getBlock
+	(
+		struct afsbase *afsbase,
+		struct Volume *volume,
+		ULONG blocknum
+	)
+{
 struct BlockCache *blockbuffer;
 
 	blockbuffer=getFreeCacheBlock(afsbase, volume, blocknum);
@@ -281,12 +352,27 @@ AROS_UFH4(int, timercode,
 	AROS_USERFUNC_INIT
 	if (--volume->moff_time == 0)
 	{
-		volume->iorequest->iotd_Req.io_Command=TD_MOTOR;
-		volume->iorequest->iotd_Req.io_Length=0;
-		DoIO((struct IORequest *)&volume->iorequest->iotd_Req);
+		volume->flags |= VOLF_MOTOR_OFF;
+		Signal
+		(
+			volume->afsbase->port.mp_SigTask,
+			1<<volume->afsbase->port.mp_SigBit
+		);
 		RemIntServer(INTB_VERTB, &volume->vbl_int);
 	}
 	return 0;
 	AROS_USERFUNC_EXIT
 }
 
+AROS_UFH3(VOID, changeIntCode,
+    AROS_UFHA(struct Volume *, volume, A1),
+    AROS_UFHA(APTR, is_Code, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+	AROS_USERFUNC_INIT
+
+	volume->flags |= VOLF_MEDIA_CHANGE;
+	Signal(volume->afsbase->port.mp_SigTask, 1<<volume->afsbase->port.mp_SigBit);
+
+	AROS_USERFUNC_EXIT
+}

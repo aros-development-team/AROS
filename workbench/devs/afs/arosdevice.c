@@ -102,6 +102,7 @@ AROS_LH2(struct afsbase *, init,
 		afsbase->intuitionbase = (struct IntuitionBase *)OpenLibrary("intuition.library",39);
 		if (afsbase->intuitionbase)
 		{
+			NEWLIST(&afsbase->device_list);
 			NEWLIST(&afsbase->port.mp_MsgList);
 			afsbase->port.mp_Node.ln_Type = NT_MSGPORT;
 			afsbase->port.mp_SigBit = SIGBREAKB_CTRL_F;
@@ -168,6 +169,7 @@ AROS_LH3(void, open,
 		);
 	if (volume)
 	{
+		AddTail(&afsbase->device_list, &volume->ln);
 		iofs->IOFS.io_Unit = (struct Unit *)(&volume->ah);
 		iofs->IOFS.io_Device = &afsbase->device;
 		afsbase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
@@ -210,8 +212,12 @@ AROS_LH0(BPTR, expunge, struct afsbase *, afsbase, 3, afsdev)
 	CloseLibrary((struct Library *)DOSBase);
 	Remove(&afsbase->device.dd_Library.lib_Node);
 	retval=afsbase->seglist;
-	FreeMem((char *)afsbase-afsbase->device.dd_Library.lib_NegSize,
-				afsbase->device.dd_Library.lib_NegSize+afsbase->device.dd_Library.lib_PosSize);
+	FreeMem
+	(
+		(char *)afsbase-afsbase->device.dd_Library.lib_NegSize,
+			afsbase->device.dd_Library.lib_NegSize+
+			afsbase->device.dd_Library.lib_PosSize
+	);
 	return retval;
 
 	AROS_LIBFUNC_EXIT
@@ -235,6 +241,7 @@ AROS_LH1(BPTR, close,
 	volume = ((struct AfsHandle *)iofs->IOFS.io_Unit)->volume;
 	if (!volume->locklist)
 	{
+		Remove(&volume->ln);
 		uninitVolume(afsbase, volume);
 		iofs->IOFS.io_Device=(struct Device *)-1;
 		if (!--afsbase->device.dd_Library.lib_OpenCnt)

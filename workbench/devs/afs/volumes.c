@@ -190,8 +190,8 @@ struct BlockCache *blockbuffer;
 UWORD i;
 LONG retval;
 
-#warning TODO disk in drive check
-	if ((blockbuffer=getBlock(afsbase, volume,0)))
+	blockbuffer=getBlock(afsbase, volume,0);
+	if (blockbuffer)
 	{
 		volume->dostype=AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
 		if (volume->dostype!=0x444F5300)
@@ -199,7 +199,7 @@ LONG retval;
 			blockbuffer=getBlock(afsbase, volume, 1);
 			volume->dostype=AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
 		}
-		volume->flags=AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
+		volume->flags |= AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
 		if (volume->dostype==0x444F5300)
 		{
 			if ((blockbuffer=getBlock(afsbase, volume,volume->rootblock)))
@@ -318,6 +318,60 @@ UWORD *cmdcheck;
 	}
 }
 
+struct IOExtTD *openBlockDevice
+	(
+		struct afsbase *afsbase,
+		struct MsgPort *mp,
+		char *blockdevice,
+		ULONG unit,
+		ULONG flags
+	)
+{
+struct IOExtTD *ioreq;
+
+	ioreq=(struct IOExtTD *)CreateIORequest(mp, sizeof(struct IOExtTD));
+	if (ioreq)
+	{
+		if (OpenDevice(blockdevice, unit, (struct IORequest *)ioreq, flags))
+		{
+			showError(afsbase, ERR_DEVICE, blockdevice);
+			DeleteIORequest((struct IORequest *)ioreq);
+			ioreq = 0;
+		}
+	}
+	return ioreq;
+}
+
+void closeBlockDevice(struct afsbase *afsbase, struct IOExtTD *ioreq) {
+
+	if (ioreq->iotd_Req.io_Device)
+		CloseDevice((struct IORequest *)&ioreq->iotd_Req);
+	DeleteIORequest((APTR)ioreq);
+}
+
+void checkAddChangeInt(struct afsbase *afsbase, struct Volume *volume) {
+struct DriveGeometry dg;
+
+	if (!getGeometry(afsbase, volume, &dg))
+	{
+		if (dg.dg_Flags & DGF_REMOVABLE)
+		{
+			volume->iochangeint = openBlockDevice
+				(
+					afsbase,
+					volume->ioport,
+					volume->blockdevice,
+					volume->unit,
+					0
+				);
+			if (volume->iochangeint)
+			{
+				addChangeInt(afsbase, volume);
+			}
+		}
+	}
+}
+
 /*******************************************
  Name  : initVolume
  Descr.: maybe a better name would be mountVolume
@@ -360,59 +414,52 @@ struct Volume *volume;
 			volume->ioport=CreateMsgPort();
 			if (volume->ioport)
 			{
-				volume->iorequest=(struct IOExtTD *)CreateIORequest
+				volume->iorequest = openBlockDevice
 					(
+						afsbase,
 						volume->ioport,
-						sizeof(struct IOExtTD)
+						volume->blockdevice,
+						volume->unit,
+						0
 					);
 				if (volume->iorequest)
 				{
-					volume->istrackdisk=StrCmp(volume->blockdevice,"trackdisk.device");
-					if (!OpenDevice
-							(
-								volume->blockdevice,
-								volume->unit,
-								(struct IORequest *)&volume->iorequest->iotd_Req,
-								0
-							)
-						)
-					{
-						volume->rootblock=
+					checkAddChangeInt(afsbase, volume);
+					if (StrCmp(volume->blockdevice,"trackdisk.device"))
+						volume->flags |= VOLF_TRACKDISK;
+					volume->rootblock=
+						(
 							(
 								(
-									(
-										devicedef->de_HighCyl-devicedef->de_LowCyl+1
-									)*devicedef->de_Surfaces*devicedef->de_BlocksPerTrack
-								)-1+devicedef->de_Reserved
-							)/2;	//root int the middle of a partition
-						volume->startblock=
-								devicedef->de_LowCyl*
-								devicedef->de_Surfaces*
-								devicedef->de_BlocksPerTrack;
-						volume->cmdread=CMD_READ;
-						volume->cmdwrite=CMD_WRITE;
-						volume->cmdseek=TD_SEEK;
-						volume->cmdformat=TD_FORMAT;
-						nsdCheck(afsbase, volume);
-						volume->vbl_int.is_Code = (void(*)())&timercode;
-						volume->vbl_int.is_Data = volume;
-						*error=newMedium(afsbase, volume);
-						if ((!*error) || (*error=ERROR_NOT_A_DOS_DISK))
-						{
-							D(bug("afs.handler: initVolume: BootBlocks=%ld\n",volume->bootblocks));
-							D(bug("afs.handler: initVolume: RootBlock=%ld\n",volume->rootblock));
-							volume->ah.header_block=volume->rootblock;
-							volume->ah.volume=volume;
-							volume->ioport->mp_SigTask=afsbase->port.mp_SigTask;
-							return volume;
-						}
-					}
+									devicedef->de_HighCyl-devicedef->de_LowCyl+1
+								)*devicedef->de_Surfaces*devicedef->de_BlocksPerTrack
+							)-1+devicedef->de_Reserved
+						)/2;	/* root in the middle of a partition */
+					volume->startblock=
+							devicedef->de_LowCyl*
+							devicedef->de_Surfaces*
+							devicedef->de_BlocksPerTrack;
+					volume->cmdread=CMD_READ;
+					volume->cmdwrite=CMD_WRITE;
+					volume->cmdseek=TD_SEEK;
+					volume->cmdformat=TD_FORMAT;
+					nsdCheck(afsbase, volume);
+					volume->vbl_int.is_Code = (void(*)())&timercode;
+					volume->vbl_int.is_Data = volume;
+					volume->ah.volume=volume;
+					if (diskPresent(afsbase, volume))
+						*error = newMedium(afsbase, volume);
 					else
+						*error = 0;
+					volume->ioport->mp_SigTask=afsbase->port.mp_SigTask;
+					if ((!*error) || (*error=ERROR_NOT_A_DOS_DISK))
 					{
-						*error = ERROR_OBJECT_NOT_FOUND;
-						showError(afsbase, ERR_DEVICE, volume->blockdevice);
+						D(bug("afs.handler: initVolume: BootBlocks=%ld\n",volume->bootblocks));
+						D(bug("afs.handler: initVolume: RootBlock=%ld\n",volume->rootblock));
+						volume->afsbase = afsbase;
+						volume->ah.header_block=volume->rootblock;
+						return volume;
 					}
-					DeleteIORequest((struct IORequest *)volume->iorequest);
 				}
 				else
 				{
@@ -448,18 +495,47 @@ struct Volume *volume;
 void uninitVolume(struct afsbase *afsbase, struct Volume *volume) {
 
 	remDosVolume(afsbase, volume);
+	remChangeInt(afsbase, volume);
 	if (volume->blockcache)
 		freeCache(afsbase, volume->blockcache);
 	if (volume->devicelist.dl_OldName)
 		FreeVec(BADDR(volume->devicelist.dl_OldName));
 	if (volume->iorequest)
-	{
-		if (volume->iorequest->iotd_Req.io_Device)
-			CloseDevice((struct IORequest *)&volume->iorequest->iotd_Req);
-		DeleteIORequest((APTR)volume->iorequest);
-	}
+		closeBlockDevice(afsbase, volume->iorequest);
+	if (volume->iochangeint)
+		closeBlockDevice(afsbase, volume->iochangeint);
 	if (volume->ioport)
 		DeleteMsgPort(volume->ioport);
 	FreeMem(volume,sizeof(struct Volume));
+}
+
+void checkDeviceFlags(struct afsbase *afsbase) {
+struct Volume *volume;
+
+	volume = (struct Volume *)afsbase->device_list.lh_Head;
+	while (volume->ln.ln_Succ)
+	{
+		if (volume->flags & VOLF_MOTOR_OFF)
+		{
+			motorOff(afsbase, volume);
+			volume->flags &= ~VOLF_MOTOR_OFF;
+		}
+		else if (volume->flags & VOLF_MEDIA_CHANGE)
+		{
+			if (diskPresent(afsbase, volume))
+			{
+				newMedium(afsbase, volume);
+				volume->flags |= VOLF_DISK_IN;
+			}
+			else
+			{
+				flush(afsbase, volume);
+				remDosVolume(afsbase, volume);
+				volume->flags &= ~VOLF_DISK_IN;
+			}
+			volume->flags &= ~VOLF_MEDIA_CHANGE;
+		}
+		volume = (struct Volume *)volume->ln.ln_Succ;
+	}
 }
 
