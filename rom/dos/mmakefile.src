@@ -46,7 +46,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 	     attemptlockdoslist changemode checksignal cli cliinitnewcli \
 	     cliinitrun close comparedates createdir createnewproc \
 	     createproc currentdir datestamp datetostr delay deletefile \
-	     deletevar deviceproc dopkt dosgetstring duplock endnotify \
+	     deletevar deviceproc displayerror dopkt dosgetstring duplock endnotify \
 	     errorreport exall exallend examine execute exit exnext fault \
 	     fgetc fgets filepart findarg findcliproc finddosentry findsegment \
 	     findvar flush format fputc fputs fread freeargs freedeviceproc \
