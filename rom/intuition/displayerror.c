@@ -77,7 +77,7 @@
 	0,			/* Flags */
 	DosGetString(STRING_REQUESTTITLE), /* "System requester" */
 	formatStr,
-	&gadTexts		/* "Retry|Cancel" */
+	gadTexts		/* "Retry|Cancel" */
     };
 
     window = (struct Window *)((struct Process *)FindTask(NULL))->pr_WindowPtr;
