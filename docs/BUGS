@@ -365,3 +365,7 @@ This is indirectly caused by input.device's timer
 (If the timer disabled, it will work normally).
 Probably the timer somehow effects unixio HIDD.
 
+BUG000052
+nlorentz@online.no
+Buttons in mxgads are no longer highlighted when pressed.
+
