@@ -48,7 +48,7 @@ struct MXData {
     struct DrawInfo *dri;
     struct TextAttr *tattr;
     struct Image *mximage;
-
+    struct Rectangle bbox;
     /* Information about ticks */
     ULONG active, newactive; /* The active tick and the tick to be activated */
 
@@ -58,6 +58,7 @@ struct MXData {
     LONG labelplace, ticklabelplace;
     UWORD fontheight;
     UWORD spacing;
+    UWORD maxtextwidth;
 };
 
 
@@ -65,7 +66,7 @@ struct MXData {
 void drawdisabledpattern(struct MXBase_intern *AROSMutualExcludeBase, struct RastPort *rport, UWORD pen, WORD left, WORD top, UWORD width, UWORD height);
 BOOL renderlabel(struct MXBase_intern *AROSMutualExcludeBase,
 		 struct Gadget *gad, struct RastPort *rport,
-                 LONG labelplace, LONG ticklabelplace);
+                 struct MXData *data);
 
 
 
