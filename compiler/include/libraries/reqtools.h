@@ -64,6 +64,10 @@
 #define	REQTOOLSNAME		 "reqtools.library"
 #define	REQTOOLSVERSION		 38L
 
+#ifndef _AROS
+#define IPTR ULONG
+#endif
+
 /***********************
 *                      *
 *     Preferences      *
