@@ -262,6 +262,9 @@ BOOL layoutsubitems(struct MenuItem * motheritem,
                     struct TagItem * taglist,
                     struct GadToolsBase_intern * GadToolsBase);
 
+BOOL is_menubarlabelclass_image(struct Image *im,
+    	    	    	    	struct GadToolsBase_intern *GadToolsBase);
+
 /****************************************************************************************/
 
 struct GadToolsBase_intern
