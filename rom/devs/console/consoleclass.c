@@ -1,12 +1,12 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Base class for console units
     Lang: english
 */
 
-#include <proto/boopsi.h>
+#include <proto/intuition.h>
 #include <proto/utility.h>
 #include <aros/asmcall.h>
 #include <devices/conunit.h>

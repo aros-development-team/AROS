@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -236,7 +236,6 @@ struct ConsoleBase
     BPTR seglist;
     struct GfxBase *gfxBase;
     struct IntuitionBase *intuitionBase;
-    struct Library *boopsiBase;
     struct Library *utilityBase;
     struct Library *keymapBase;
     
@@ -285,11 +284,6 @@ __AROS_LC0(BPTR, expunge, struct ConsoleBase *, ConsoleDevice, 3, Console)
 #   undef IntuitionBase
 #endif
 #define IntuitionBase CB(ConsoleDevice)->intuitionBase
-
-#ifdef BOOPSIBase
-#   undef BOOPSIBase
-#endif
-#define BOOPSIBase CB(ConsoleDevice)->boopsiBase
 
 #ifdef UtilityBase
 #   undef UtilityBase
