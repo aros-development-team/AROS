@@ -164,8 +164,9 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		        tag->ti_Tag = TAG_IGNORE;
 		    }
 		    break;
+
 	    case    MUIA_Gauge_Divide:
-		    if (data->current != tag->ti_Data)
+		    if (data->divide != tag->ti_Data)
 		    {
 		        data->divide = tag->ti_Data;
 		        info_changed = 1;
@@ -176,6 +177,7 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		        tag->ti_Tag = TAG_IGNORE;
 		    }
 		    break;
+
 		case    MUIA_Gauge_InfoText:
 	    	    if (strcmp(data->info, (STRPTR)tag->ti_Data))
 		    {
@@ -194,6 +196,7 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		        tag->ti_Tag = TAG_IGNORE;
 		    }
 		    break;
+
 	    case    MUIA_Gauge_Max:
 	    	    if (data->max != tag->ti_Data)
 		    {
