@@ -302,7 +302,7 @@ static const ULONG coltab[] = {
 						 NULL);
     D(bug("got bitmap\n"));	    
     
-    /* Init screens viewport (probably not necessary, but I'll do it anyway */
+    /* Init screen's viewport */
     InitVPort(&screen->Screen.ViewPort);
     
     /* Allocate a RasInfo struct in which we have  a pointer
@@ -312,7 +312,9 @@ static const ULONG coltab[] = {
     screen->Screen.ViewPort.RasInfo = AllocMem(sizeof(struct RasInfo), MEMF_ANY | MEMF_CLEAR);
     
     
-    if(!success || (NULL == screen->Screen.RastPort.BitMap) || (NULL == screen->Screen.ViewPort.RasInfo))
+    if(!success || 
+       (NULL == screen->Screen.RastPort.BitMap) || 
+       (NULL == screen->Screen.ViewPort.RasInfo))
     {
         ok = FALSE;
     }
@@ -323,6 +325,21 @@ static const ULONG coltab[] = {
 	*/
         D(bug("got allocated stuff\n"));	    
 	screen->Screen.ViewPort.RasInfo->BitMap = screen->Screen.RastPort.BitMap;
+    }
+
+    if (ok)
+    {
+      /* Get a color map structure. Sufficient colors?? */
+      
+      if (NULL != (screen->Screen.ViewPort.ColorMap = GetColorMap(1 << ns.Depth)))
+      {
+        /* I should probably also call AttachPalExtra */
+        if (0 != AttachPalExtra(screen->Screen.ViewPort.ColorMap,
+                                &screen->Screen.ViewPort))
+          ok = FALSE;
+      }
+      else
+        ok = FALSE;
     }
  
     if (ok)
@@ -502,6 +519,8 @@ static const ULONG coltab[] = {
  	
     if (!ok)
     {
+        if (screen->Screen.ViewPort.ColorMap) FreeColorMap(screen->Screen.ViewPort.ColorMap);
+
         if (screen->Screen.BarLayer) KillScreenBar(&screen->Screen, IntuitionBase);
 	
 	if (screen->DInfo.dri_AmigaKey)  DisposeObject(screen->DInfo.dri_AmigaKey);
