@@ -48,6 +48,7 @@ FUNCTIONS := \
 	animate \
 	areadraw \
 	areaellipse \
+	areaend \
 	areamove \
 	askfont \
 	bitmapscale \
