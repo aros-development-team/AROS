@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    Copyright (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
     Desc: List the contents of a directory
@@ -17,7 +17,7 @@
 		
     TEMPLATE
 
-        DIR/M,P=PAT/K,DATES/S,NODATES/S,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/S
+	DIR/M,P=PAT/K,DATES/S,NODATES/S,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/S
 
     LOCATION
 
@@ -470,7 +470,7 @@ int printfiledata(STRPTR filename,
             VPrintf("%-11.s %s",argv);
           }
 
-          if (!args[ARG_QUICK] && '0' != filenote[0])
+          if (!args[ARG_QUICK] && '\0' != filenote[0])
           {
             argv[0] = (IPTR)filenote;
             VPrintf("\n: %s",argv);
