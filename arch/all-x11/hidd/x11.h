@@ -196,13 +196,26 @@ struct x11_staticdata
     ULONG   	    	     clut_mask;
     
     Atom    	    	     delete_win_atom;
-
+    Atom    	    	     clipboard_atom;
+    Atom    	    	     clipboard_property_atom;
+    Atom    	    	     clipboard_incr_atom;
+    
 #if 0
     VOID	    	     (*activecallback)(APTR, OOP_Object *, BOOL);
     APTR	    	     callbackdata;
 #endif    
+
+    struct MsgPort  	    *hostclipboardmp;
+    struct Message  	    *hostclipboardmsg;
+    ULONG   	    	     hostclipboardstate;
+    unsigned char   	    *hostclipboard_incrbuffer;
+    ULONG   	    	     hostclipboard_incrbuffer_size;
 };
 
+#define HOSTCLIPBOARDSTATE_IDLE     	0
+#define HOSTCLIPBOARDSTATE_READ     	1
+#define HOSTCLIPBOARDSTATE_READ_INCR    2
+#define HOSTCLIPBOARDSTATE_WRITE    	3
 
 VOID get_bitmap_info(struct x11_staticdata *xsd, Drawable d, ULONG *sz, ULONG *bpl);
 
@@ -224,6 +237,10 @@ VOID free_kbdclass	( struct x11_staticdata * );
 VOID free_mouseclass	( struct x11_staticdata * );
 VOID free_x11class	( struct x11_staticdata * );
 
+ULONG x11clipboard_init(struct x11_staticdata *);
+VOID  x11clipboard_handle_commands(struct x11_staticdata *);
+BOOL  x11clipboard_want_event(XEvent *);
+VOID  x11clipboard_handle_event(struct x11_staticdata *, XEvent *);
 
 #define XSD(cl)     	((struct x11_staticdata *)cl->UserData)
 

@@ -152,14 +152,14 @@ static int MyErrorHandler (Display * display, XErrorEvent * errevent)
 
     XGetErrorText (display, errevent->error_code, buffer, sizeof (buffer));
     fprintf (stderr
-	, "XError %d (Major=%d, Minor=%d)\n%s\n"
+	, "XError %d (Major=%d, Minor=%d) task = %s\n%s\n"
 	, errevent->error_code
 	, errevent->request_code
 	, errevent->minor_code
+	, FindTask(0)->tc_Node.ln_Name
 	, buffer
     );
     fflush (stderr);
-//    *((ULONG *)0) = 0;
 
     return 0;
 }
@@ -221,13 +221,16 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 
 			XSetErrorHandler (MyErrorHandler);
 			XSetIOErrorHandler (MySysErrorHandler);
-
+			
 			/* Turn off auto repeat */
     /*		    XAutoRepeatOff(xsd->display);
     */		    
     
 			xsd->delete_win_atom = XInternAtom(xsd->display, "WM_DELETE_WINDOW", FALSE);
-
+			xsd->clipboard_atom  = XInternAtom(xsd->display, "CLIPBOARD", FALSE);
+    	    	    	xsd->clipboard_property_atom = XInternAtom(xsd->display, "AROS_HOSTCLIP", FALSE);
+    	    	    	xsd->clipboard_incr_atom = XInternAtom(xsd->display, "INCR", FALSE);
+			
     			xtp.parent = FindTask(NULL);
     			xtp.ok_signal	= SIGBREAKF_CTRL_E;
     			xtp.fail_signal = SIGBREAKF_CTRL_F;

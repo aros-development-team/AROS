@@ -19,7 +19,7 @@ OS_INCLUDES := -I$(GENINCDIR)
 
 X11KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey.table
 
-FILES	   := x11 support x11gfx onbitmap offbitmap support x11kbd x11mouse xshm
+FILES	   := x11 support x11gfx onbitmap offbitmap support x11kbd x11mouse x11clipboard xshm
 
 %build_module_macro mmake=kernel-x11gfx \
   modname=x11gfx modtype=hidd \
