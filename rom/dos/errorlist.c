@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.5  2000/05/21 08:47:46  SDuvan
+    Added script errors
+
     Revision 1.4  1999/10/25 13:58:19  SDuvan
     Added more strings -- not only errors anymore
 
@@ -79,6 +82,12 @@ struct EString EString[]=
 { STRING_RETRY,                 "Retry" },
 { STRING_CANCEL,                "Cancel" },
 { STRING_REQUESTTITLE,          "System requester" },
+
+
+{ ERROR_NO_MATCHING_ELSEENDIF,  "No matching Else or EndIf"},
+{ ERROR_SCRIPT_ONLY,            "This command is supposed to be used in "
+                                "command files only" },
+{ ERROR_NUMBER_OF_ARGUMENTS,    "Wrong number of arguments" },
 
 { 0,				"Undefined error" }
 };
