@@ -282,7 +282,7 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return 0;
     }
 
-    D(bug("Group_New(0x%lx)\n",obj));
+/*      D(bug("Group_New(0x%lx)\n",obj)); */
 
     if (data->flags & GROUP_VIRTUAL)
     {
@@ -408,14 +408,16 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     		case MUIA_FrameTitle:
     		case MUIA_HorizWeight:
     		case MUIA_Pressed:
-    		case MUIA_Selected:
     		case MUIA_ShortHelp:
     		case MUIA_ShowMe:
     		case MUIA_VertWeight:
     		case MUIA_Weight:
 	    	    tag->ti_Tag = TAG_IGNORE;
 		    break;
-
+    		case MUIA_Selected:
+		    D(bug("Group_Set(%p) MUIA_Selected forwarded\n", obj));
+/*  	    	    tag->ti_Tag = TAG_IGNORE; */
+		    break;
 	    }
 	}
 
@@ -777,8 +779,10 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     APTR clip;
 
 /*      D(bug("Group_Draw(%lx) %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */
-
+    D(bug("Group_Draw(%p) msg=0x%08lx flags=0x%08lx\n", obj, msg->flags, _flags(obj)));
     DoSuperMethodA(cl, obj, (Msg)msg);
+    D(bug("Group_Draw(%p) (after dsma) msg=0x%08lx flags=0x%08lx\n",
+	  obj, msg->flags, _flags(obj)));
 
     if ((msg->flags & MADF_DRAWUPDATE) && data->update == 1)
     {
@@ -919,14 +923,15 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 //	if (gdk_rectangle_intersect(&group_rect, &child_rect,
 //				    &muiRenderInfo(obj)->mri_ClipRect))
 //	    DoMethodA(child, (Msg)msg);
-	if (((msg->flags & MADF_DRAWUPDATE) && data->update) || (data->flags & GROUP_PAGEMODE))
+/*  	if (((msg->flags & MADF_DRAWUPDATE) && data->update) || (data->flags & GROUP_PAGEMODE)) */
 	    MUI_Redraw(child, MADF_DRAWOBJECT);
-	else
-	    MUI_Redraw(child, msg->flags);
+/*  	else */
+/*  	    MUI_Redraw(child, msg->flags); */
 	muiRenderInfo(obj)->mri_ClipRect = group_rect;
 /*  	    g_print("set back clip to (%d, %d, %d, %d)\n", */
 /*  		    group_rect.x, group_rect.y, group_rect.width, group_rect.height); */
     }
+    D(bug("Group_Draw(%p) end\n", obj));
 
     if (data->flags & GROUP_VIRTUAL && region)
     {
@@ -1187,7 +1192,7 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
     struct MUI_MinMax tmp = { 0, 0, MUI_MAXMAX, MUI_MAXMAX, 0, 0 };
     
     cstate = (Object *)children->mlh_Head;
-    D(bug("minmax_pagemode(%lx)\n", obj, tmp.DefWidth));
+/*      D(bug("minmax_pagemode(%lx)\n", obj, tmp.DefWidth)); */
     while ((child = NextObject(&cstate)))
     {
 	if (! (_flags(child) & MADF_SHOWME))
@@ -1201,7 +1206,7 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
 			    ((w0_defheight(child) < MUI_MAXMAX) ? w0_defheight(child) : tmp.DefHeight));
 	tmp.DefWidth = MAX(tmp.DefWidth,
 			   ((w0_defwidth(child) < MUI_MAXMAX) ? w0_defwidth(child) : tmp.DefWidth));
-	D(bug("minmax_pagemode(%lx) defw = %ld\n", obj, tmp.DefWidth));
+/*  	D(bug("minmax_pagemode(%lx) defw = %ld\n", obj, tmp.DefWidth)); */
     }
     END_MINMAX();
 }
@@ -1242,7 +1247,7 @@ static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
 	    continue;
 	/*  Ask child  */
 	DoMethodA(child, (Msg)&childMsg);
-	D(bug("*** group %lx, child %lx min=%ld,%ld\n", obj, child, childMinMax.MinWidth, childMinMax.MinHeight));
+	/*  D(bug("*** group %lx, child %lx min=%ld,%ld\n", obj, child, childMinMax.MinWidth, childMinMax.MinHeight)); */
 	__area_finish_minmax(child, childMsg.MinMaxInfo);
     }
 
