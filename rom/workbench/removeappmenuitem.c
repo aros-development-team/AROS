@@ -7,20 +7,21 @@
 */
 
 #include "workbench_intern.h"
+#include <workbench/workbench.h>
 
 /*****************************************************************************
 
     NAME */
 
-	#include <proto/workbench.h>
-	
-	AROS_LH1(BOOL	, RemoveAppMenuItem,
+        #include <proto/workbench.h>
+
+        AROS_LH1(BOOL	, RemoveAppMenuItem,
 /*  SYNOPSIS */
 
-	AROS_LHA(struct AppMenuItem *, appMenuItem, A0),
+        AROS_LHA(struct AppMenuItem *, appMenuItem, A0),
 
 /*  LOCATION */
-	struct WorkbenchBase *, WorkbenchBase, 13, Workbench)
+        struct WorkbenchBase *, WorkbenchBase, 13, Workbench)
 
 /*  FUNCTION
 
@@ -45,8 +46,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
-    aros_print_not_implemented ("RemoveAppMenuItem");
-#warning TODO: Write Workbench/RemoveAppMenuItem
+    if( appMenuItem ) {
+        Remove( (struct Node *) appMenuItem );
+        FreeVec( appMenuItem );
+
+        /* TODO: Notify Workbench Apps about the change. */
+
+        return TRUE;
+    }
 
     return FALSE;
 

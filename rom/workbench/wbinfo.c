@@ -7,11 +7,12 @@
 */
 
 #include <exec/types.h>
-#include <workbench/workbench.h>
 #include <exec/ports.h>
 #include <utility/tagitem.h>
 #include <dos/dos.h>
+
 #include "workbench_intern.h"
+#include <workbench/workbench.h>
 
 /*****************************************************************************
 

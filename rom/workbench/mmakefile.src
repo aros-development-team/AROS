@@ -35,14 +35,14 @@ LIBNAME  := workbench
 ULIBNAME := Workbench
 
 OSMODULE  := workbench.library
-FILES	  :=
+FILES     := handler
 FUNCTIONS := \
-	addappicona \
-	addappmenuitema \
-	addappwindowa \
-	removeappicon \
-	removeappmenuitem \
-	removeappwindow \
+    addappicona \
+    addappmenuitema \
+    addappwindowa \
+    removeappicon \
+    removeappmenuitem \
+    removeappwindow \
     wbinfo \
     openworkbenchobjecta \
     closeworkbenchobjecta \

@@ -7,27 +7,28 @@
 */
 
 #include <exec/types.h>
-#include <workbench/workbench.h>
 #include <exec/ports.h>
 #include <utility/tagitem.h>
 #include <intuition/intuition.h>
+
 #include "workbench_intern.h"
+#include <workbench/workbench.h>
 
 /*****************************************************************************
 
     NAME */
 
-    #include <proto/workbench.h>
+        #include <proto/workbench.h>
 
-    AROS_LH3(BOOL, ChangeWorkbenchSelectionA,
+        AROS_LH3(BOOL, ChangeWorkbenchSelectionA,
 
 /*  SYNOPSIS */
-    AROS_LHA(STRPTR,              name, A0),
-    AROS_LHA(struct Hook *,     hook, A1),
-    AROS_LHA(struct TagItem *,  tags, A2),
+        AROS_LHA(STRPTR,            name, A0),
+        AROS_LHA(struct Hook *,     hook, A1),
+        AROS_LHA(struct TagItem *,  tags, A2),
 
 /*  LOCATION */
-    struct WorkbenchBase *, WorkbenchBase, 21, Workbench)
+        struct WorkbenchBase *, WorkbenchBase, 21, Workbench)
 
 /*  FUNCTION
 
@@ -52,10 +53,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
-    aros_print_not_implemented ("ChangeWorkbenchSelectionA");
-#warning TODO: Write Workbench/ChangeWorkbenchSelectionA
+    /* No tags defined for this function... */
 
-    return NULL;
+    return FALSE;
 
     AROS_LIBFUNC_EXIT
 } /* ChangeWorkbenchSelectionA */

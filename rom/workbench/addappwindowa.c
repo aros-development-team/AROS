@@ -7,29 +7,30 @@
 */
 
 #include <exec/types.h>
-#include <workbench/workbench.h>
 #include <exec/ports.h>
 #include <utility/tagitem.h>
 #include <intuition/intuition.h>
+
 #include "workbench_intern.h"
+#include <workbench/workbench.h>
 
 /*****************************************************************************
 
     NAME */
 
-	#include <proto/workbench.h>
+        #include <proto/workbench.h>
 
-	AROS_LH5(struct AppWindow *, AddAppWindowA,
+        AROS_LH5(struct AppWindow *, AddAppWindowA,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG			, id		, D0),
-	AROS_LHA(ULONG			, userdata	, D1),
-	AROS_LHA(struct Window *	, window	, A0),
-	AROS_LHA(struct MsgPort *	, msgport	, A1),
-	AROS_LHA(struct TagItem *	, taglist	, A2),
-	
+        AROS_LHA(ULONG           , id       , D0),
+        AROS_LHA(ULONG           , userdata , D1),
+        AROS_LHA(struct Window * , window   , A0),
+        AROS_LHA(struct MsgPort *, msgport  , A1),
+        AROS_LHA(struct TagItem *, taglist  , A2),
+
 /*  LOCATION */
-	struct WorkbenchBase *, WorkbenchBase, 8, Workbench)
+        struct WorkbenchBase *, WorkbenchBase, 8, Workbench)
 
 /*  FUNCTION
 
@@ -54,10 +55,24 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
-    aros_print_not_implemented ("AddAppWindowA");
-#warning TODO: Write Workbench/AddAppWindowA
+    struct AppWindow *appWindow;
 
-    return NULL;
+    if( !(appWindow = AllocVec( sizeof( struct AppWindow ), MEMF_ANY | MEMF_CLEAR )) ) {
+        return NULL;
+    }
+
+    appWindow->aw_ID       = id;
+    appWindow->aw_UserData = userdata;
+    appWindow->aw_Window   = window;
+    appWindow->aw_MsgPort  = msgport;
+
+    NEWLIST( &(appWindow->aw_DropZones) );
+
+    AddTail( &(WorkbenchBase->wb_AppWindows), (struct Node *) appWindow );
+
+    /* TODO: Notify Workbench Apps about this. */
+
+    return appWindow;
 
     AROS_LIBFUNC_EXIT
 } /* AddAppWindowA */

@@ -7,26 +7,27 @@
 */
 
 #include <exec/types.h>
-#include <workbench/workbench.h>
 #include <exec/ports.h>
 #include <utility/tagitem.h>
 #include <intuition/intuition.h>
+
 #include "workbench_intern.h"
+#include <workbench/workbench.h>
 
 /*****************************************************************************
 
     NAME */
 
-    #include <proto/workbench.h>
+        #include <proto/workbench.h>
 
-    AROS_LH2(BOOL, CloseWorkbenchObjectA,
+        AROS_LH2(BOOL, CloseWorkbenchObjectA,
 
 /*  SYNOPSIS */
-    AROS_LHA(STRPTR,           name, A0),
-    AROS_LHA(struct TagItem *, tags, A1),
+        AROS_LHA(STRPTR,           name, A0),
+        AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-    struct WorkbenchBase *, WorkbenchBase, 17, Workbench)
+        struct WorkbenchBase *, WorkbenchBase, 17, Workbench)
 
 /*  FUNCTION
 
@@ -51,8 +52,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
-    aros_print_not_implemented ("CloseWorkbenchObjectA");
-#warning TODO: Write Workbench/CloseWorkbenchObjectA
+    /* No tags defined fot this function... */
 
     return NULL;
 

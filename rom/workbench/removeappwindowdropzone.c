@@ -7,26 +7,27 @@
 */
 
 #include <exec/types.h>
-#include <workbench/workbench.h>
 #include <exec/ports.h>
 #include <utility/tagitem.h>
 #include <intuition/intuition.h>
+
 #include "workbench_intern.h"
+#include <workbench/workbench.h>
 
 /*****************************************************************************
 
     NAME */
 
-    #include <proto/workbench.h>
+        #include <proto/workbench.h>
 
-    AROS_LH2(BOOL, RemoveAppWindowDropZone,
+        AROS_LH2(BOOL, RemoveAppWindowDropZone,
 
 /*  SYNOPSIS */
-    AROS_LHA(struct AppWindow *		, aw      , A0),
-    AROS_LHA(struct AppWindowDropZone *	, dropzone     , A1),
+        AROS_LHA(struct AppWindow *        , aw      , A0),
+        AROS_LHA(struct AppWindowDropZone *, dropZone, A1),
 
 /*  LOCATION */
-    struct WorkbenchBase *, WorkbenchBase, 20, Workbench)
+        struct WorkbenchBase *, WorkbenchBase, 20, Workbench)
 
 /*  FUNCTION
 
@@ -51,10 +52,16 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
-    aros_print_not_implemented ("RemoveAppWindowDropZone");
-#warning TODO: Write Workbench/RemoveAppWindowDropZone
+    if( (aw != NULL) && (dropZone != NULL) ) {
+        Remove( (struct Node *) dropZone );
+        FreeVec( dropZone );
 
-    return NULL;
+        /* TODO: Notify the Workbench Apps about this. */
+
+        return TRUE;
+    }
+
+    return FALSE;
 
     AROS_LIBFUNC_EXIT
 } /* RemoveAppWindowDropZone */

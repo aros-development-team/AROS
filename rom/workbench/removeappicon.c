@@ -7,19 +7,20 @@
 */
 
 #include "workbench_intern.h"
+#include <workbench/workbench.h>
 
 /*****************************************************************************
 
     NAME */
 
-	#include <proto/workbench.h>
-	
-	AROS_LH1(BOOL	, RemoveAppIcon,
+        #include <proto/workbench.h>
+
+        AROS_LH1(BOOL   , RemoveAppIcon,
 /*  SYNOPSIS */
-	AROS_LHA(struct AppIcon *, appIcon, A0),
+        AROS_LHA(struct AppIcon *, appIcon, A0),
 /*  LOCATION */
 
-	struct WorkbenchBase *, WorkbenchBase, 11, Workbench)
+        struct WorkbenchBase *, WorkbenchBase, 11, Workbench)
 /*  FUNCTION
 
     INPUTS
@@ -43,8 +44,13 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
-    aros_print_not_implemented ("RemoveAppIcon");
-#warning TODO: Write Workbench/RemoveAppIcon
+    if( appIcon ) {
+        Remove( (struct Node *) appIcon );
+        FreeVec( appIcon );
+
+        /* TODO: Notify the Workbench Apps about this. */
+        return TRUE;
+    }
 
     return FALSE;
 
