@@ -2,6 +2,9 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1998/02/02 21:08:15  bergers
+    Changed LONGs to floats. The define in mathieeesingtrans_intern.h does the trick.
+
     Revision 1.6  1997/12/05 18:54:26  bergers
     Update for acos, asin.
 
@@ -23,6 +26,11 @@
 */
 #ifndef __MATHIEEESINGTRANS_INTERN_H__
 #define __MATHIEEESINGTRANS_INTERN_H__
+
+/* the following line is necessary so that the function headers are
+   created correctly and the functions can be compiled properly */
+
+#define float LONG
 
 /* This is a short file that contains a few things every mathieeesingtrans 
    function needs */

@@ -19,11 +19,11 @@
 
     NAME */
 
-      AROS_LH1(LONG, IEEESPAcos,
+      AROS_LH1(float, IEEESPAcos,
 
 /*  SYNOPSIS */
 
-      AROS_LHA(LONG, y, D0),
+      AROS_LHA(float, y, D0),
 
 /*  LOCATION */
 

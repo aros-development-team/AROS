@@ -19,12 +19,12 @@
 
     NAME */
 
-      AROS_LH2(LONG, IEEESPPow,
+      AROS_LH2(float, IEEESPPow,
 
 /*  SYNOPSIS */
 
-      AROS_LHA(LONG, x, D1),
-      AROS_LHA(LONG, y, D0),
+      AROS_LHA(float, x, D1),
+      AROS_LHA(float, y, D0),
 
 /*  LOCATION */
 

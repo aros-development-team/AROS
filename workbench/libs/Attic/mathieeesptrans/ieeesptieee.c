@@ -18,10 +18,10 @@
 
     NAME */
 
-      AROS_LH1(LONG, IEEESPTieee,
+      AROS_LH1(float, IEEESPTieee,
 
 /*  SYNOPSIS */
-      AROS_LHA(LONG, y, D0),
+      AROS_LHA(float, y, D0),
 
 /*  LOCATION */
       struct Library *, MathIeeeSingTransBase, 17, Mathieeesingtrans)
