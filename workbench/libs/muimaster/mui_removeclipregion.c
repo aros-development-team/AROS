@@ -39,6 +39,9 @@ __asm VOID MUI_RemoveClipRegion(register __a0 struct MUI_RenderInfo *mri, regist
 
     NOTES
 
+	sba: This function frees the region given in MUI_AddClipRegion, but this seems wrong to me.
+	MUI_AddClipRegion should better duplicate the region.
+
     EXAMPLE
 
     BUGS
