@@ -15,6 +15,10 @@
 #   include <exec/libraries.h>
 #endif
 
+#ifndef EXEC_SEMAPHORES_H
+#   include <exec/semaphores.h>
+#endif
+
 #ifndef EXEC_MEMORY_H
 #   include <exec/memory.h>
 #endif
@@ -63,6 +67,8 @@ struct vMemChunk
 
 struct nv_staticdata
 {
+        struct SignalSemaphore	HW_acc;	/* Exclusive hardware use */
+
 	struct Library		*oopbase;
 	struct Library		*utilitybase;
 	struct ExecBase		*sysbase;

@@ -24,7 +24,9 @@ static VOID MNAME(clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear
 
     if (data == NSD(cl)->visible)
     {
+ObtainSemaphore(&NSD(cl)->HW_acc);
 	new_fillRect(NSD(cl), 0, 0, width-1, height-1, GC_BG(msg->gc), vHidd_GC_DrawMode_Copy);
+ReleaseSemaphore(&NSD(cl)->HW_acc);
     }
     else
     {
@@ -80,7 +82,9 @@ static BOOL MNAME(setcolors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_S
 
 		/* Update DAC registers */
 #ifdef OnBitmap
+ObtainSemaphore(&NSD(cl)->HW_acc);
 		riva_wclut(&NSD(cl)->riva, xc_i, red, green, blue);
+ReleaseSemaphore(&NSD(cl)->HW_acc);
 #endif
 	
 		msg->colors[col_i].pixval = xc_i;
@@ -305,10 +309,12 @@ static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
 
     if (data == NSD(cl)->visible)
     {
+ObtainSemaphore(&NSD(cl)->HW_acc);
 	new_fillRect(NSD(cl),
 	    msg->minX, msg->minY,
 	    msg->maxX, msg->maxY,
 	    fg, mode);
+ReleaseSemaphore(&NSD(cl)->HW_acc);
     }
     else
     {

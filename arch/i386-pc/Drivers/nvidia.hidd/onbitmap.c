@@ -142,10 +142,12 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 				OOP_GetAttr(sync, aHidd_Sync_VTotal,		&vtotal);
 				    
 			    /* Now, when the best display mode is chosen, we can build it */
+ObtainSemaphore(&NSD(cl)->HW_acc);
 				load_mode(NSD(cl), width, height, depth, pixel, base,
 					hdisp, vdisp,
 					hstart, hend, htotal,
 					vstart, vend, vtotal);
+ReleaseSemaphore(&NSD(cl)->HW_acc);
 
 			    NSD(cl)->visible = data;	/* Set created object as visible */
 
