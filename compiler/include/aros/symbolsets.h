@@ -2,7 +2,7 @@
 #define _AROS_SYMBOLSETS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Symbol sets support
@@ -11,6 +11,7 @@
 
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <aros/asmcall.h>
 
 struct libraryset
 {
@@ -24,7 +25,12 @@ struct libraryset
 extern int set_call_funcs(void *set[], int order);
 extern int set_open_libraries(void);
 extern void set_close_libraries(void);
-
+extern
+AROS_UFH3(int, set_call_libfuncs,
+	  AROS_UFHA(void**, set, A0),
+	  AROS_UFHA(int, order, D0),
+	  AROS_UFHA(void*, libbase, A6)
+	 );
 
 #define SETNAME(set) __##set##_LIST__
 
@@ -60,6 +66,35 @@ void * SETNAME(set)[] __attribute__((weak))={0,0};
 
 #define ADD2INIT(symbol, pri) ADD2SET(symbol, init, pri)
 #define ADD2EXIT(symbol, pri) ADD2SET(symbol, exit, pri)
+
+/*
+    initlib, expungelib, openlib, closelib sets are similar to the init and exit
+    sets, only they are specific to the initialisation phase of libraries.
+    initlib/expungelib are only called when a library is loaded/unloaded from
+    memory. openlib/closelib is called every time a library is opened/closed.
+    The library base is passed to each of the functions present in the sets as
+    the first argument in the A6 register. To define a function for one of these
+    sets the AROS_SET_LIBFUNC macro can be used.
+    
+    The return argument is also an int but the opposite to the init and exit sets.
+    A zero value indicates an (de)initialization failure, a one indicates succes.
+    The calling of the functions in the initlib and the openlib sets stops when
+    the first zero value is met. The functions in the expungelib and the
+    closelib are always called.
+    
+    These sets have a lower priority then the INIT and the CTORS sets. So when
+    a library is loaded first the init set is called, then the ctors set and
+    finally the initlib set.
+*/
+
+#define AROS_SET_LIBFUNC(funcname, libbasetype, libbase) \
+    AROS_UFH1(int, funcname, \
+	      AROS_UFHA(libbasetype *, libbase, A6) \
+	     )
+#define ADD2INITLIB(symbol, pri)    ADD2SET(symbol, initlib, pri)
+#define ADD2EXPUNGELIB(symbol, pri) ADD2SET(symbol, expungelib, pri)
+#define ADD2OPENLIB(symbol, pri)    ADD2SET(symbol, openlib, pri)
+#define ADD2CLOSELIB(symbol, pri)   ADD2SET(symbol, closelib, pri)
 
 /*
   this macro generates the necessary symbols to open and close automatically
