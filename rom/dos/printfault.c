@@ -67,7 +67,11 @@
     /* Fault() will do all the formatting of the string */
     Fault(code, NULL, buffer, 80);
 
-    if (header != NULL)
+    if (code == 0)
+    {
+	ret = DOSTRUE;
+    }
+    else if (header != NULL)
     {
 	if(!FPuts(stream, header) && !FPuts(stream, ": ") &&
 	   !FPuts(stream, buffer) && !FPuts(stream, "\n"))
