@@ -51,6 +51,7 @@ FUNCTIONS := 	addclass		\
 		findserver		\
 		getattr			\
 		getattrbase		\
+		getmethod		\
 		getmethodid		\
 		newobject		\
 		obtainattrbase		\
