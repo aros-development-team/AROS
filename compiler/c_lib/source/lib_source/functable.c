@@ -1,39 +1,29 @@
-#include <libcore/compiler.h>
-#include <libcore/base.h>
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    *** Automatic generated file. Do not edit ***
+    Desc: Function table for 
+    Lang: english
+*/
+#ifndef LIBCORE_COMPILER_H
+#   include <libcore/compiler.h>
+#endif
+#ifndef NULL
+#define NULL ((void *)0)
+#endif
 
-#include "intern.h"
-#include "SampleFuncs.h"
+#include "libdefs.h"
+extern void AROS_SLIB_ENTRY(OpenLib,LibHeader) (void);
+extern void AROS_SLIB_ENTRY(CloseLib,LibHeader) (void);
+extern void AROS_SLIB_ENTRY(ExpungeLib,LibHeader) (void);
+extern void AROS_SLIB_ENTRY(ExtFuncLib,LibHeader) (void);
+extern void AROS_SLIB_ENTRY(EXF_TestRequest,BASENAME) (void);
 
-AROS_LH2(struct LibHeader *, InitLib,
-    AROS_LHA(struct LibHeader *, lh, D0),
-    AROS_LHA(BPTR,                 segList, A0),
-    struct ExecBase *, SysBase, 0, LibHeader
-);
-AROS_LH1 (struct LibHeader *, OpenLib,
-    AROS_LHA (ULONG, version, D0),
-    struct LibHeader *, lh, 1, LibHeader
-);
-AROS_LH0 (BPTR, CloseLib,
-    struct LibHeader *, lh, 2, LibHeader
-);
-AROS_LH0 (BPTR, ExpungeLib,
-    struct LibHeader *, lh, 3, LibHeader
-);
-AROS_LH0 (struct LibHeader *, ExtFuncLib,
-    struct LibHeader *, lh, 4, LibHeader
-);
-
-APTR const LIBFUNCTABLE [] =
+void *const LIBFUNCTABLE[]=
 {
-    (APTR) AROS_SLIB_ENTRY(OpenLib, LibHeader),
-    (APTR) AROS_SLIB_ENTRY(CloseLib, LibHeader),
-    (APTR) AROS_SLIB_ENTRY(ExpungeLib, LibHeader),
-    (APTR) AROS_SLIB_ENTRY(ExtFuncLib, LibHeader),
-
-    /* add your own functions here */
-    (APTR) AROS_SLIB_ENTRY(EXF_TestRequest, BASENAME),
-
-    /* This marks the end of the table */
-    (APTR) ((LONG)-1)
+    AROS_SLIB_ENTRY(OpenLib,LibHeader),
+    AROS_SLIB_ENTRY(CloseLib,LibHeader),
+    AROS_SLIB_ENTRY(ExpungeLib,LibHeader),
+    AROS_SLIB_ENTRY(ExtFuncLib,LibHeader),
+    AROS_SLIB_ENTRY(EXF_TestRequest,BASENAME), /* 5 */
+    (void *)-1L
 };
-
