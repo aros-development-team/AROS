@@ -7,13 +7,17 @@
 */
 
 #include <aros/libcall.h>
+#include <exec/devices.h>
+#include <exec/semaphores.h>
+#include <exec/lists.h>
+#include <exec/ports.h>
+#include <dos/dos.h>
 
 struct fdskbase
 {
     struct Device 		device;
     struct ExecBase 		*sysbase;
-    struct DosLibrary 		*dosbase;
-    BPTR 			seglist;
+    APTR 			seglist;
     struct SignalSemaphore 	sigsem;
     struct MsgPort 		port;
     struct MinList 		units;
@@ -28,17 +32,5 @@ struct unit
     struct MsgPort 		port;
     BPTR 			file;
 };
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct fdskbase *, fdskbase, 3, ram)
-
-#ifdef SysBase
-    #undef SysBase
-#endif
-#ifdef DOSBase
-    #undef DOSBase
-#endif
-#define SysBase fdskbase->sysbase
-#define DOSBase fdskbase->dosbase
 
 #endif

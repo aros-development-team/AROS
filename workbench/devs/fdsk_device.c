@@ -14,6 +14,8 @@
 #include <dos/dostags.h>
 #include <proto/dos.h>
 #include <aros/asmcall.h>
+#include <aros/libcall.h>
+#include <aros/symbolsets.h>
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #include "fdsk_device_gcc.h"
 #endif
@@ -21,105 +23,27 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-/****************************************************************************************/
-
-extern const char 	name[];
-extern const char 	version[];
-extern const APTR 	inittabl[4];
-extern void *const 	functable[];
-extern const UBYTE 	datatable;
-extern struct fdskbase *AROS_SLIB_ENTRY(init, fdsk)();
-extern void 		AROS_SLIB_ENTRY(open, fdsk)();
-extern BPTR 		AROS_SLIB_ENTRY(close, fdsk)();
-extern BPTR 		AROS_SLIB_ENTRY(expunge, fdsk)();
-extern int 		AROS_SLIB_ENTRY(null, fdsk)();
-extern void 		AROS_SLIB_ENTRY(beginio, fdsk)();
-extern LONG 		AROS_SLIB_ENTRY(abortio, fdsk)();
-extern const char 	end;
+#include LC_LIBDEFS_FILE
 
 /****************************************************************************************/
 
-int entry(void)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, fdskbase)
 {
-    /* If the device was executed by accident return error code. */
-    return -1;
-}
-
-/****************************************************************************************/
-
-const struct Resident resident = 
-{
-    RTC_MATCHWORD, 
-    (struct Resident *)&resident, 
-    (APTR)&end, 
-    RTF_AUTOINIT, 
-    41, 
-    NT_DEVICE, 
-    0, 
-    (char *)name, 
-    (char *)&version[6], 
-    (ULONG *)inittabl
-};
-
-const char name[] = "fdsk.device";
-
-const char version[] = "$VER: file-disk device 41.1 (10.9.96)\r\n";
-
-const APTR inittabl[4] = 
-{
-    (APTR)sizeof(struct fdskbase), 
-    (APTR)functable, 
-    (APTR)&datatable, 
-    &AROS_SLIB_ENTRY(init, fdsk)
-};
-
-void *const functable[] = 
-{
-    &AROS_SLIB_ENTRY(open, fdsk), 
-    &AROS_SLIB_ENTRY(close, fdsk), 
-    &AROS_SLIB_ENTRY(expunge, fdsk), 
-    &AROS_SLIB_ENTRY(null, fdsk), 
-    &AROS_SLIB_ENTRY(beginio, fdsk), 
-    &AROS_SLIB_ENTRY(abortio, fdsk), 
-    (void *)-1
-};
-
-const UBYTE datatable = 0;
-
-/****************************************************************************************/
-
-AROS_UFH3(struct fdskbase *, AROS_SLIB_ENTRY(init,fdsk),
- AROS_UFHA(struct fdskbase *, fdskbase, D0),
- AROS_UFHA(BPTR,             segList,   A0),
- AROS_UFHA(struct ExecBase *, sysbase,  A6)
-)
-{
-    AROS_USERFUNC_INIT
-
-    /* Store arguments */
-    SysBase = sysbase;
+   AROS_SET_LIBFUNC_INIT
 
     D(bug("fdsk_device: in libinit func\n"));
 
-    fdskbase->seglist = segList;
     InitSemaphore(&fdskbase->sigsem);
     NEWLIST((struct List *)&fdskbase->units);
     fdskbase->port.mp_Node.ln_Type = NT_MSGPORT;
     fdskbase->port.mp_Flags = PA_SIGNAL;
     fdskbase->port.mp_SigBit = SIGB_SINGLE;
     NEWLIST((struct List *)&fdskbase->port.mp_MsgList);
-    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
-    
-    if(DOSBase != NULL)
-    {
-    	D(bug("fdsk_device: in libinit func. Returning %x (success) :-)\n", fdskbase));
-	return fdskbase;
-    }
-    
-    D(bug("fdsk_device: in libinit func. Returning NULL (failure) :-(\n"));
 
-    return NULL;
-    AROS_USERFUNC_EXIT
+   D(bug("fdsk_device: in libinit func. Returning %x (success) :-)\n", fdskbase));
+   return TRUE;
+
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
@@ -131,13 +55,13 @@ AROS_UFP3(LONG, unitentry,
  
 /****************************************************************************************/
 
-AROS_LH3(void, open, 
- AROS_LHA(struct IOExtTD *, iotd, A1), 
- AROS_LHA(ULONG,              unitnum, D0), 
- AROS_LHA(ULONG,              flags, D1), 
-	   struct fdskbase *, fdskbase, 1, fdsk)
+AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
+		     LIBBASETYPE, fdskbase,
+		     struct IOExtTD, iotd,
+		     unitnum, flags
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
 
     static const struct TagItem tags[] = 
     {
@@ -155,13 +79,6 @@ AROS_LH3(void, open,
     struct unit *unit;
 
     D(bug("fdsk_device: in libopen func.\n"));
-
-    /* Keep compiler happy */
-    flags = 0;
-
-    /* I have one more opener. */
-    fdskbase->device.dd_Library.lib_OpenCnt++;
-    fdskbase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
 
     D(bug("fdsk_device: in libopen func. Looking if unit is already open\n"));
 
@@ -181,7 +98,7 @@ AROS_LH3(void, open,
    	   
 	    D(bug("fdsk_device: in libopen func. Yep. Unit is already open\n"));
 	    
-	    return;
+	    return TRUE;
 	}
 
     D(bug("fdsk_device: in libopen func. No, it is not. So creating new unit ...\n"));
@@ -225,8 +142,7 @@ AROS_LH3(void, open,
 		/* Set returncode */
 		iotd->iotd_Req.io_Error = 0;
 		ReleaseSemaphore(&fdskbase->sigsem);
-		fdskbase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
-		return;
+		return TRUE;
 	    }else
 		iotd->iotd_Req.io_Error = TDERR_NotSpecified;
 	}else
@@ -237,21 +153,20 @@ AROS_LH3(void, open,
 
     ReleaseSemaphore(&fdskbase->sigsem);
 
-    fdskbase->device.dd_Library.lib_OpenCnt--;
-    AROS_LIBFUNC_EXIT
+    return FALSE;
+   
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH1(BPTR, close, 
- AROS_LHA(struct IOExtTD *, iotd, A1), 
-	   struct fdskbase *, fdskbase, 2, fdsk)
+AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
+		      LIBBASETYPE, fdskbase,
+		      struct IOExtTD, iotd
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
     struct unit *unit;
-
-    /* Let any following attemps to use the device crash hard. */
-    iotd->iotd_Req.io_Device = (struct Device *)-1;
 
     ObtainSemaphore(&fdskbase->sigsem);
     unit = (struct unit *)iotd->iotd_Req.io_Unit;
@@ -267,69 +182,22 @@ AROS_LH1(BPTR, close,
     }
     ReleaseSemaphore(&fdskbase->sigsem);
 
-    /* I have one fewer opener. */
-    if(!--fdskbase->device.dd_Library.lib_OpenCnt)
-    {
-	/* Delayed expunge pending? */
-	if(fdskbase->device.dd_Library.lib_Flags&LIBF_DELEXP)
-	    /* Then expunge the device */
-	    return expunge();
-    }
-    return 0;
-    AROS_LIBFUNC_EXIT
+    return TRUE;
+
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH0(BPTR, expunge, struct fdskbase *, fdskbase, 3, fdsk)
-{
-    AROS_LIBFUNC_INIT
-
-    BPTR ret;
-    /*
-	This function is single-threaded by exec by calling Forbid.
-	Never break the Forbid() or strange things might happen.
-    */
-
-    /* Test for openers. */
-    if(fdskbase->device.dd_Library.lib_OpenCnt)
-    {
-	/* Set the delayed expunge flag and return. */
-	fdskbase->device.dd_Library.lib_Flags |= LIBF_DELEXP;
-	return 0;
-    }
-
-    /* Free resources */
-    CloseLibrary((struct Library *)DOSBase);
-
-    /* Get rid of the device. Remove it from the list. */
-    Remove(&fdskbase->device.dd_Library.lib_Node);
-
-    /* Get returncode here - FreeMem() will destroy the field. */
-    ret = fdskbase->seglist;
-
-    /* Free the memory. */
-    FreeMem((char *)fdskbase-fdskbase->device.dd_Library.lib_NegSize, 
-	    fdskbase->device.dd_Library.lib_NegSize+fdskbase->device.dd_Library.lib_PosSize);
-
-    return ret;
-    AROS_LIBFUNC_EXIT
-}
-
-/****************************************************************************************/
-
-AROS_LH0I(int, null, struct fdskbase *, fdskbase, 4, fdsk)
-{
-    AROS_LIBFUNC_INIT
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
+ADD2INITLIB(GM_UNIQUENAME(Init), 0)
+ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
+ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 /****************************************************************************************/
 
 AROS_LH1(void, beginio, 
  AROS_LHA(struct IOExtTD *, iotd, A1), 
-	   struct fdskbase *, fdskbase, 5, fdsk)
+	   struct fdskbase *, fdskbase, 5, Fdsk)
 {
     AROS_LIBFUNC_INIT
 
@@ -376,7 +244,7 @@ AROS_LH1(void, beginio,
 
 AROS_LH1(LONG, abortio, 
  AROS_LHA(struct IOExtTD *, iotd, A1), 
-	   struct fdskbase *, fdskbase, 6, fdsk)
+	   struct fdskbase *, fdskbase, 6, Fdsk)
 {
     AROS_LIBFUNC_INIT
     return IOERR_NOCMD;
@@ -627,9 +495,5 @@ AROS_UFH3(LONG, unitentry,
     } /* for(;;) */
     AROS_USERFUNC_EXIT
 }
-
-/****************************************************************************************/
-
-const char end = 0;
 
 /****************************************************************************************/

@@ -7,13 +7,16 @@
 #define RAMDRIVE_DEVICE_GCC_H
 
 #include <aros/libcall.h>
+#include <exec/devices.h>
+#include <exec/semaphores.h>
+#include <exec/ports.h>
+#include <exec/lists.h>
 
 struct ramdrivebase
 {
     struct Device 		device;
     struct ExecBase 		*sysbase;
-    struct DosLibrary 		*dosbase;
-    BPTR 			seglist;
+    APTR 			seglist;
     struct SignalSemaphore 	sigsem;
     struct MsgPort 		port;
     struct MinList 		units;
@@ -29,17 +32,5 @@ struct unit
     struct MsgPort 		port;
     UBYTE 			*mem;
 };
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct ramdrivebase *, ramdrivebase, 3, ramdrive)
-
-#ifdef SysBase
-    #undef SysBase
-#endif
-#ifdef DOSBase
-    #undef DOSBase
-#endif
-#define SysBase ramdrivebase->sysbase
-#define DOSBase ramdrivebase->dosbase
 
 #endif

@@ -25,8 +25,9 @@
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <proto/dos.h>
-#include <aros/asmcall.h>
 #include <aros/macros.h>
+#include <aros/libcall.h>
+#include <aros/symbolsets.h>
 #include <string.h>
 
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
@@ -36,80 +37,11 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include LC_LIBDEFS_FILE
+
 /****************************************************************************************/
 
 #define NEWSTYLE_DEVICE 1
-
-/****************************************************************************************/
-
-extern const char 	name[];
-extern const char 	version[];
-extern const APTR 	inittabl[4];
-extern void *const 	functable[];
-extern const UBYTE 	datatable;
-extern struct ramdrivebase *AROS_SLIB_ENTRY(init, ramdrive)();
-extern void 		AROS_SLIB_ENTRY(open, ramdrive)();
-extern BPTR 		AROS_SLIB_ENTRY(close, ramdrive)();
-extern BPTR 		AROS_SLIB_ENTRY(expunge, ramdrive)();
-extern int 		AROS_SLIB_ENTRY(null, ramdrive)();
-extern void 		AROS_SLIB_ENTRY(beginio, ramdrive)();
-extern LONG 		AROS_SLIB_ENTRY(abortio, ramdrive)();
-extern STRPTR 		AROS_SLIB_ENTRY(killrad0, ramdrive)();
-extern STRPTR 		AROS_SLIB_ENTRY(killrad, ramdrive)();
-extern const char 	end;
-
-/****************************************************************************************/
-
-int entry(void)
-{
-    /* If the device was executed by accident return error code. */
-    return -1;
-}
-
-/****************************************************************************************/
-
-const struct Resident resident = 
-{
-    RTC_MATCHWORD, 
-    (struct Resident *)&resident, 
-    (APTR)&end, 
-    RTF_AUTOINIT, 
-    41, 
-    NT_DEVICE, 
-    0, 
-    (char *)name, 
-    (char *)&version[6], 
-    (ULONG *)inittabl
-};
-
-const char name[] = "ramdrive.device";
-
-const char version[] = "$VER: ramdrive.device 41.1 (19.07.2001)\r\n";
-
-const APTR inittabl[4] = 
-{
-    (APTR)sizeof(struct ramdrivebase), 
-    (APTR)functable, 
-    (APTR)&datatable, 
-    &AROS_SLIB_ENTRY(init, ramdrive)
-};
-
-void *const functable[] = 
-{
-    &AROS_SLIB_ENTRY(open, ramdrive), 
-    &AROS_SLIB_ENTRY(close, ramdrive), 
-    &AROS_SLIB_ENTRY(expunge, ramdrive), 
-    &AROS_SLIB_ENTRY(null, ramdrive), 
-    &AROS_SLIB_ENTRY(beginio, ramdrive), 
-    &AROS_SLIB_ENTRY(abortio, ramdrive), 
-    &AROS_SLIB_ENTRY(killrad0, ramdrive), 
-    &AROS_SLIB_ENTRY(killrad, ramdrive), 
-    (void *)-1
-};
-
-const UBYTE datatable = 0;
-
-/****************************************************************************************/
 
 #if NEWSTYLE_DEVICE
 
@@ -154,20 +86,12 @@ static void FormatOFS(UBYTE *mem, ULONG number, struct unit *unit);
 
 /****************************************************************************************/
 
-AROS_UFH3(struct ramdrivebase *, AROS_SLIB_ENTRY(init,ramdrive),
-    AROS_UFHA(struct ramdrivebase *, ramdrivebase, D0),
-    AROS_UFHA(BPTR, segList, A0),
-    AROS_UFHA(struct ExecBase *, sysbase, A6)
-)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, ramdrivebase)
 {
-    AROS_USERFUNC_INIT
-
-    /* Store arguments */
-    SysBase = sysbase;
+    AROS_SET_LIBFUNC_INIT
 
     D(bug("ramdrive_device: in libinit func\n"));
 
-    ramdrivebase->seglist = segList;
     InitSemaphore(&ramdrivebase->sigsem);
     NEWLIST((struct List *)&ramdrivebase->units);
     ramdrivebase->port.mp_Node.ln_Type = NT_MSGPORT;
@@ -175,19 +99,10 @@ AROS_UFH3(struct ramdrivebase *, AROS_SLIB_ENTRY(init,ramdrive),
     ramdrivebase->port.mp_SigBit = SIGB_SINGLE;
     NEWLIST((struct List *)&ramdrivebase->port.mp_MsgList);
     
-    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
+    D(bug("ramdrive_device: in libinit func. Returning %x (success) :-)\n", ramdrivebase));
+    return TRUE;
     
-    if(DOSBase != NULL)
-    {
-    	D(bug("ramdrive_device: in libinit func. Returning %x (success) :-)\n", ramdrivebase));
-    	return ramdrivebase;
-    }
-    
-    D(bug("ramdrive_device: in libinit func. Returning NULL (failure) :-(\n"));
-    
-    return NULL;
-    
-    AROS_USERFUNC_EXIT
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
@@ -199,13 +114,13 @@ AROS_UFP3(LONG, unitentry,
  
 /****************************************************************************************/
 
-AROS_LH3(void, open, 
-    AROS_LHA(struct IOExtTD *, iotd, A1), 
-    AROS_LHA(ULONG, unitnum, D0), 
-    AROS_LHA(ULONG, flags, D1), 
-    struct ramdrivebase *, ramdrivebase, 1, ramdrive)
+AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
+		     LIBBASETYPE, ramdrivebase,
+		     struct IOExtTD, iotd,
+		     unitnum, flags
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
 
     static const struct TagItem tags[] = 
     {
@@ -228,15 +143,8 @@ AROS_LH3(void, open,
     {
 	D(bug("ramdrive.device/open: IORequest structure passed to OpenDevice is too small!\n"));
 	iotd->iotd_Req.io_Error = IOERR_OPENFAIL;
-	return;
+	return FALSE;
     }
-
-    /* Keep compiler happy */
-    flags = 0;
-
-    /* I have one more opener. */
-    ramdrivebase->device.dd_Library.lib_OpenCnt++;
-    ramdrivebase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
 
     D(bug("ramdrive_device: in libopen func. Looking if unit is already open\n"));
 
@@ -256,7 +164,7 @@ AROS_LH3(void, open,
    	   
 	    D(bug("ramdrive_device: in libopen func. Yep. Unit is already open\n"));
 	    
-	    return;
+	    return TRUE;
 	}
 
     D(bug("ramdrive_device: in libopen func. No, it is not. So creating new unit ...\n"));
@@ -300,8 +208,7 @@ AROS_LH3(void, open,
 		/* Set returncode */
 		iotd->iotd_Req.io_Error = 0;
 		ReleaseSemaphore(&ramdrivebase->sigsem);
-		ramdrivebase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
-		return;
+		return TRUE;
 	    }else
 		iotd->iotd_Req.io_Error = TDERR_NotSpecified;
 	}else
@@ -312,21 +219,20 @@ AROS_LH3(void, open,
 
     ReleaseSemaphore(&ramdrivebase->sigsem);
 
-    ramdrivebase->device.dd_Library.lib_OpenCnt--;
-    AROS_LIBFUNC_EXIT
+    return FALSE;
+    
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH1(BPTR, close, 
-    AROS_LHA(struct IOExtTD *, iotd, A1), 
-    struct ramdrivebase *, ramdrivebase, 2, ramdrive)
+AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
+		      LIBBASETYPE, ramdrivebase,
+		      struct IOExtTD, iotd
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
     struct unit *unit;
-
-    /* Let any following attemps to use the device crash hard. */
-    iotd->iotd_Req.io_Device = (struct Device *)-1;
 
     ObtainSemaphore(&ramdrivebase->sigsem);
     unit = (struct unit *)iotd->iotd_Req.io_Unit;
@@ -342,71 +248,22 @@ AROS_LH1(BPTR, close,
     }
     ReleaseSemaphore(&ramdrivebase->sigsem);
 
-    /* I have one fewer opener. */
-    if(!--ramdrivebase->device.dd_Library.lib_OpenCnt)
-    {
-	/* Delayed expunge pending? */
-	if(ramdrivebase->device.dd_Library.lib_Flags&LIBF_DELEXP)
-	    /* Then expunge the device */
-	    return expunge();
-    }
-    return 0;
-    AROS_LIBFUNC_EXIT
+    return TRUE;
+
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH0(BPTR, expunge, struct ramdrivebase *, ramdrivebase, 3, ramdrive)
-{
-    AROS_LIBFUNC_INIT
-
-    BPTR ret;
-    /*
-	This function is single-threaded by exec by calling Forbid.
-	Never break the Forbid() or strange things might happen.
-    */
-
-    /* Test for openers. */
-    if(ramdrivebase->device.dd_Library.lib_OpenCnt)
-    {
-	/* Set the delayed expunge flag and return. */
-	ramdrivebase->device.dd_Library.lib_Flags |= LIBF_DELEXP;
-	return 0;
-    }
-
-    /* Free resources */
-    CloseLibrary((struct Library *)DOSBase);
-
-    /* Get rid of the device. Remove it from the list. */
-    Remove(&ramdrivebase->device.dd_Library.lib_Node);
-
-    /* Get returncode here - FreeMem() will destroy the field. */
-    ret = ramdrivebase->seglist;
-
-    /* Free the memory. */
-    FreeMem((char *)ramdrivebase-ramdrivebase->device.dd_Library.lib_NegSize, 
-	    ramdrivebase->device.dd_Library.lib_NegSize+ramdrivebase->device.dd_Library.lib_PosSize);
-
-    return ret;
-    AROS_LIBFUNC_EXIT
-}
-
-/****************************************************************************************/
-
-AROS_LH0I(int, null, struct ramdrivebase *, ramdrivebase, 4, ramdrive)
-{
-    AROS_LIBFUNC_INIT
-    
-    return 0;
-    
-    AROS_LIBFUNC_EXIT
-}
+ADD2INITLIB(GM_UNIQUENAME(Init), 0)
+ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
+ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 /****************************************************************************************/
 
 AROS_LH1(void, beginio, 
     AROS_LHA(struct IOExtTD *, iotd, A1), 
-    struct ramdrivebase *, ramdrivebase, 5, ramdrive)
+    struct ramdrivebase *, ramdrivebase, 5, Ramdrive)
 {
     AROS_LIBFUNC_INIT
 
@@ -528,7 +385,7 @@ AROS_LH1(void, beginio,
 
 AROS_LH1(LONG, abortio, 
  AROS_LHA(struct IOExtTD *, iotd, A1), 
-	   struct ramdrivebase *, ramdrivebase, 6, ramdrive)
+	   struct ramdrivebase *, ramdrivebase, 6, Ramdrive)
 {
     AROS_LIBFUNC_INIT
     
@@ -540,7 +397,7 @@ AROS_LH1(LONG, abortio,
 /****************************************************************************************/
 
 AROS_LH0(STRPTR, killrad0, 
-	   struct ramdrivebase *, ramdrivebase, 7, ramdrive)
+	   struct ramdrivebase *, ramdrivebase, 7, Ramdrive)
 {
     AROS_LIBFUNC_INIT
 
@@ -555,7 +412,7 @@ AROS_LH0(STRPTR, killrad0,
 
 AROS_LH1(STRPTR, killrad, 
  AROS_LHA(ULONG, unit, D0), 
-	   struct ramdrivebase *, ramdrivebase, 8, ramdrive)
+	   struct ramdrivebase *, ramdrivebase, 8, Ramdrive)
 {
     AROS_LIBFUNC_INIT
 
