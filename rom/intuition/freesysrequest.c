@@ -55,13 +55,21 @@
     struct Screen *scr;
     struct Gadget *gadgets;
     STRPTR *gadgetlabels;
+    
+    struct EasyRequestUserData *requserdata;
 
     if ((window == NULL) || (window == (void *)1L))
 	return;
 
     scr = window->WScreen;
-    gadgets = window->FirstGadget;
-    gadgetlabels = ((struct EasyRequestUserData *)window->UserData)->GadgetLabels;
+    
+    requserdata = (struct EasyRequestUserData *)window->UserData;
+    gadgets = requserdata->Gadgets;
+    
+    /* Remove gadgets before closing window to avoid conflicts with system gadgets */
+    RemoveGList(window, gadgets, requserdata->NumGadgets);
+    
+    gadgetlabels = requserdata->GadgetLabels;
 
     FreeVec(window->UserData);
     CloseWindow(window);

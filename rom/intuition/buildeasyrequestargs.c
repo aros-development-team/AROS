@@ -177,6 +177,8 @@ int charsinstring(STRPTR string, char c);
 			    req->UserData = (BYTE *)requserdata;
 			    requserdata->IDCMP = IDCMP;
 			    requserdata->GadgetLabels = gadgetlabels;
+			    requserdata->Gadgets = gadgets;
+			    requserdata->NumGadgets = dims.gadgets;
 			    buildeasyreq_draw(&dims, formattedtext,
 					      req, scr, gadgets);
 			    FreeVec(formattedtext);
@@ -468,6 +470,7 @@ struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
 	    easyrequest_freegadgets(gadgetlist);
 	    return NULL;
 	}
+	
 	if ((currentgadget + 1) != dims->gadgets)
 	{
 	    xoffset += dims->gadgetwidth +

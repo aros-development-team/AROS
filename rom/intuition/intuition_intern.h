@@ -115,6 +115,8 @@ struct EasyRequestUserData
 {
     ULONG    IDCMP;
     STRPTR * GadgetLabels;
+    struct Gadget *Gadgets;
+    UWORD NumGadgets;
 };
 
 
