@@ -735,33 +735,35 @@ char *string;
   freelvnodes ( &lv_infolist );
   NewList ( &lv_infolist );
 
-  sprintf ( tmp, "NextWindow   = %p", win->NextWindow );	APPENDLIST();
-  sprintf ( tmp, "LeftEdge     = %d", win->LeftEdge );		APPENDLIST();
-  sprintf ( tmp, "TopEdge      = %d", win->TopEdge );		APPENDLIST();
-  sprintf ( tmp, "Width        = %d", win->Width );		APPENDLIST();
-  sprintf ( tmp, "Height       = %d", win->Height );		APPENDLIST();
-  sprintf ( tmp, "MinWidth     = %d", win->MinWidth );		APPENDLIST();
-  sprintf ( tmp, "MinHeight    = %d", win->MinHeight );		APPENDLIST();
-  sprintf ( tmp, "MaxWidth     = %d", win->MaxWidth );		APPENDLIST();
-  sprintf ( tmp, "MaxHeight    = %d", win->MaxHeight );		APPENDLIST();
-  sprintf ( tmp, "Flags        = 0x%08lx", win->Flags );	APPENDLIST();
-  sprintf ( tmp, "IDCMPFlags   = 0x%08lx", win->IDCMPFlags );	APPENDLIST();
-  sprintf ( tmp, "Title        = \"%s\"", win->Title );		APPENDLIST();
-  sprintf ( tmp, "ReqCount     = %d", win->ReqCount );		APPENDLIST();
-  sprintf ( tmp, "WScreen      = %p \"%s\"", win->WScreen,
+  sprintf ( tmp, "NextWindow    = %p", win->NextWindow );	APPENDLIST();
+  sprintf ( tmp, "LeftEdge      = %d", win->LeftEdge );		APPENDLIST();
+  sprintf ( tmp, "TopEdge       = %d", win->TopEdge );		APPENDLIST();
+  sprintf ( tmp, "Width         = %d", win->Width );		APPENDLIST();
+  sprintf ( tmp, "Height        = %d", win->Height );		APPENDLIST();
+  sprintf ( tmp, "MinWidth      = %d", win->MinWidth );		APPENDLIST();
+  sprintf ( tmp, "MinHeight     = %d", win->MinHeight );	APPENDLIST();
+  sprintf ( tmp, "MaxWidth      = %d", win->MaxWidth );		APPENDLIST();
+  sprintf ( tmp, "MaxHeight     = %d", win->MaxHeight );	APPENDLIST();
+  sprintf ( tmp, "Flags         = 0x%08lx", win->Flags );	APPENDLIST();
+  sprintf ( tmp, "IDCMPFlags    = 0x%08lx", win->IDCMPFlags );	APPENDLIST();
+  sprintf ( tmp, "Title         = \"%s\"", win->Title );	APPENDLIST();
+  sprintf ( tmp, "ReqCount      = %d", win->ReqCount );		APPENDLIST();
+  sprintf ( tmp, "WScreen       = %p \"%s\"", win->WScreen,
 				win->WScreen->Title );		APPENDLIST();
-  sprintf ( tmp, "BorderLeft   = %d", win->BorderLeft );	APPENDLIST();
-  sprintf ( tmp, "BorderTop    = %d", win->BorderTop );		APPENDLIST();
-  sprintf ( tmp, "BorderRight  = %d", win->BorderRight );	APPENDLIST();
-  sprintf ( tmp, "BorderBottom = %d", win->BorderBottom );	APPENDLIST();
+  sprintf ( tmp, "BorderLeft    = %d", win->BorderLeft );	APPENDLIST();
+  sprintf ( tmp, "BorderTop     = %d", win->BorderTop );	APPENDLIST();
+  sprintf ( tmp, "BorderRight   = %d", win->BorderRight );	APPENDLIST();
+  sprintf ( tmp, "BorderBottom  = %d", win->BorderBottom );	APPENDLIST();
   if ( IS_CHILD ( win ) )
   {
-    sprintf ( tmp, "Parent       = %p", win->Parent );		APPENDLIST();
+    sprintf ( tmp, "Parent Win  = %p", win->parent );		APPENDLIST();
   }
   if ( HAS_CHILDREN ( win ) )
   {
-    sprintf ( tmp, "Descendant   = %p", win->Descendant );	APPENDLIST();
+    sprintf ( tmp, "First Child = %p", win->firstchild );	APPENDLIST();
   }
+  sprintf ( tmp, "Parent        = %p", win->Parent );		APPENDLIST();
+  sprintf ( tmp, "Descendant    = %p", win->Descendant );	APPENDLIST();
 
   if ( InfoWindow == NULL )
   {
@@ -830,6 +832,7 @@ VOID rescue_all()
 {
 struct Screen *scr;
 struct Window *win;
+WORD width, height;
 
   /* Get Intuition's first Screen */
   lock = LockIBase ( 0 );
@@ -844,12 +847,22 @@ struct Window *win;
     while ( win )
     {
       /* Move Window onto the Screen if outside */
+      if ( win->parent == NULL )
+      {
+	width = scr->Width;
+	height = scr->Height;
+      }
+      else
+      {
+	width = win->parent->Width;
+	height = win->parent->Height;
+      }
       /* TODO:	calculate reasonable values:
 		eg. this way only the Close Gadget my be visible :-( */
       if ( win->RelLeftEdge < 0
-	|| win->RelTopEdge  < 0
-	|| win->RelLeftEdge > scr->Width
-	|| win->RelTopEdge  > scr->Height )
+	|| win->RelTopEdge  <= -(win->BorderTop)
+	|| win->RelLeftEdge > width
+	|| win->RelTopEdge  >= (height - win->BorderTop) )
       {
 	MoveWindow ( win, - win->RelLeftEdge, - win->RelTopEdge );
       }
