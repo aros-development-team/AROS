@@ -138,6 +138,8 @@ int main(int argc, char* argv[])
     }
     name = strdup ( argv[1] );
 
+    adfEnvInitDefault();
+
     dev = adfCreateDumpDevice ( name, cylinders, heads, sectors );
 
     adfCreateHdFile ( dev, "AROS-Boot", 1 );
