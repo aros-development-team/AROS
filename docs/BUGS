@@ -480,7 +480,7 @@ crash (not immediately but at some later point in execution). Sort works
 on files in ram:, though.
 
 BUG000070
-henning@tilt.prima.de
+hkiel@aros.org
 Running contrib/Demos/Voxel/voxel without ./aros --memsize 16 gives
 "voxel:Object is of wrong type" instead of "voxel:Could not open object: Out of
 memory"
@@ -498,7 +498,14 @@ Using Opaque and moving windows around will sooner or later produce an error
 resulting in a Segmentation fault.
 
 BUG000073
-henning.kiel@gmx.de
+hkiel@aros.org
 "List C:" says "Directory is empty" :-(
 "List C" (from Workbench:) and "C:" plus "List" works...
+
+BUG000074
+hkiel@aros.org
+Internal implementations of stricmp() and strnicmp() in
+tools/FlexCat/flexcat.c cause conflicts with existing functions on certain
+OS's.  These need to be implemented in Linux, but not Amiga/GG and
+Windows/CygWin.
 
