@@ -73,6 +73,13 @@
 
     li->BlankHook = hook;
     
+    if (li->check_lp)
+    {
+    	LockLayer(0, li->check_lp);
+	li->check_lp->BackFill = hook;
+	UnlockLayer(li->check_lp);
+    }
+    
     UnlockLayerInfo(li);
 
     return OldHook;
