@@ -372,9 +372,11 @@ enum
     vHidd_StdPixFmt_ARGB32,
     vHidd_StdPixFmt_BGRA32,
     vHidd_StdPixFmt_RGBA32,
+    vHidd_StdPixFmt_ABGR32,
     vHidd_StdPixFmt_0RGB32,
     vHidd_StdPixFmt_BGR032,
     vHidd_StdPixFmt_RGB032,
+    vHidd_StdPixFmt_0BGR32,
     vHidd_StdPixFmt_LUT8,
     vHidd_StdPixFmt_Plane,
 
