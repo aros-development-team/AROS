@@ -1,0 +1,7 @@
+## version $VER: LoadResource.catalog 1.0 (12.8.2003)
+## language français
+## codeset 0
+;
+MSG_ERROR_OPEN_LIBRARY
+Impossible d'ouvrir la librairie %s.
+;
