@@ -84,7 +84,7 @@ extern void aros_not_implemented ();
     Not so much, I think (schulz) ;-))
 */
 
-#define AROS_STACKSIZE	8000
+#define AROS_STACKSIZE	40960
 
 /* How to map function arguments to CPU registers */
 /*
