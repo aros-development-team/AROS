@@ -19,8 +19,8 @@
 /*
     Prototypes
 */
-AROS_LP1(IPTR, ArosInquire,
-    AROS_LPA(ULONG, query, D0),
+AROS_LP1(ULONG, ArosInquire,
+    AROS_LPA(struct TagItem *, taglist, A0),
     struct ArosBase *, ArosBase, 5, Aros)
 
 

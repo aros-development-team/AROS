@@ -11,9 +11,9 @@
 /*
     Defines
 */
-#define ArosInquire(query) \
-    AROS_LC1(IPTR, ArosInquire, \
-    AROS_LCA(ULONG, query, D0), \
+#define ArosInquire(taglist) \
+    AROS_LC1(ULONG, ArosInquire, \
+    AROS_LCA(struct TagItem *, taglist, A0), \
     struct ArosBase *, ArosBase, 5, Aros)
 
 

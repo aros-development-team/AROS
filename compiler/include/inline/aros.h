@@ -9,8 +9,13 @@
 #define AROS_BASE_NAME ArosBase
 #endif
 
-#define ArosInquire(query) \
-	LP1(0x1e, IPTR, ArosInquire, ULONG, query, d0, \
+#define ArosInquire(taglist) \
+	LP1(0x1e, ULONG, ArosInquire, struct TagItem *, taglist, a0, \
 	, AROS_BASE_NAME)
+
+#ifndef NO_INLINE_STDARG
+#define ArosInquireTags(tags...) \
+	({ULONG _tags[] = { tags }; ArosInquire((struct TagItem *)_tags);})
+#endif /* !NO_INLINE_STDARG */
 
 #endif /* _INLINE_AROS_H */
