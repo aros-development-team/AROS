@@ -57,7 +57,7 @@ struct RxsLib
 	struct List        rl_Unused22; /* rl_TaskList */
 	WORD               rl_Unused23; /* rl_NumTask */
 	struct List        rl_LibList; /* Library list header */
-	WORD               rl_NumList; /* Nodes count in library list */
+	WORD               rl_NumLib; /* Nodes count in library list */
 	struct List        rl_ClipList; /* Clip list header */
 	WORD               rl_NumClip; /* Nodes count in clip list */
 	struct List        rl_Unused24; /* rl_MsgList */
