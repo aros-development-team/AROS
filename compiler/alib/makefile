@@ -27,6 +27,10 @@ FILES = alib_util \
 	dosupermethod \
 	freestruct \
 	hookentry \
+	liballocpooled \
+	libcreatepool \
+	libdeletepool \
+	libfreepooled \
 	newlist \
 	newobject \
 	openscreentags \
