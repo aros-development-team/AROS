@@ -2,7 +2,7 @@
 #define _LOCALE_H
 
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,11 +13,11 @@
 
 /*** Prototypes *************************************************************/
 /* Main *********************************************************************/
-STRPTR  _(ULONG ID);            /* Get a message, as a STRPTR */
+CONST_STRPTR _(ULONG ID);       /* Get a message, as a STRPTR */
 #define __(id) ((IPTR) _(id))   /* Get a message, as an IPTR */
 
 /* Setup ********************************************************************/
-BOOL Locale_Initialize(void);
-void Locale_Deinitialize(void);
+VOID Locale_Initialize(VOID);
+VOID Locale_Deinitialize(VOID);
 
 #endif /* _LOCALE_H */
