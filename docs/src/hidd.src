@@ -7,7 +7,7 @@
 correct. It's purpose is to offer a basis for discussion not to put
 things into concrete}\par
 
-The AmigaOS is built on the Amigas' custom chips. This is a fact which is
+The AmigaOS is built on the Amiga's custom chips. This is a fact which is
 eventually discovered when you hit the rather tight limits they impose
 and try to circumvent them by adding new hardware. For the new hardware,
 you also need a device driver. But sometimes, the applications can't be
@@ -17,8 +17,8 @@ even more worse, the OS doesn't use a driver to access this chip at all.
 
 AROS was designed to be a portable OS and be compatible to the old AmigaOS.
 But we had to design something which lessens these burdens without
-becoming incompatible nor loosing too much speed. So we developed the
-idea of the HIDD - the Hardware Independend Device Driver.
+becoming incompatible or loosing too much speed. So we developed the
+idea of the HIDD - the Hardware Independent Device Driver.
 
 \section{Features}
 
@@ -233,7 +233,7 @@ string must have the same address).
 
 \item{STRPTR HIDDM_GetTagName (Tag tag)} Return a human readble string
 with the name for a tag. For example a serial HIDD with the
-tag |HIDDV_Serial_Baudrate| might return |"Baud rate"|. The
+tag |HIDDV_Serial_BPSRate| might return |"BPS rate"|. The
 application will use this to generate its GUI.
 
 \end{methods}
@@ -302,7 +302,7 @@ CPs will also use this to talk to the application.
 \item{HIDDA_Shared,ULONG,ISG} Allow to share a HIDD with other
 applications or lock it for single use. This might be used in HIDDs like
 sound HIDDs, serial HIDDs, graphics HIDDs, etc. Not all HIDDs need to
-supported shared access (see below).
+support shared access (see below).
 
 Values for |HIDDA_Shared| are:
 
@@ -347,8 +347,8 @@ you to prevent that or clean up.
 The type of a serial HIDD is |HIDDV_Type_Serial| and the names
 for serial specific things is prefixed with |HIDD?_Serial_|.
 
-Subtypes of serial HIDDs are |HIDDV_RS232| and |HIDDV_RS488|, for
-example.
+Subtypes of serial HIDDs are |HIDDV_Type_Serial_RS232| and
+|HIDDV_Type_Serial_RS488|, for example.
 
 \begin{taglist}
 \item{HIDDA_Serial_BPSRate,ULONG,ISG} The bits per second or a logical BPS
@@ -397,7 +397,7 @@ a |HIDDM_QueryKeyStates()|.
 
 \begin{taglist}
 \item{HIDDA_Keyboard_Type,ULONG,ISG} If the Keyboard HIDD can work with more
-then one type of keyboard, you can specify the type here or if the HIDD
+than one type of keyboard, you can specify the type here or if the HIDD
 can figure the type of keyboard itself, it can offer the type here.
 If the HIDD doesn't support this, this value is |0| and can't be changed
 by setting it. The method |HIDDM_QueryModes()| should return a type
@@ -490,7 +490,7 @@ reuse. You can also dispose the GC with |DisposeObject()|.
 srcX, WORD srcY, UWORD width, UWORD height, HIDDT_GC dest, WORD destX,
 WORD destY)} Copy a rectangular area from the drawing area |src| to the
 drawing area stored in |dest| (which may be |src|). The source area is not
-changed (except both rectangles overlap). The mode of the GC |dest|
+changed (except when both rectangles overlap). The mode of the GC |dest|
 determines how the copy takes place.
 
 In quick mode, the following restrictions are not checked: It's not checked
@@ -507,7 +507,7 @@ the pixel could be set, the command will return 1 else 0.
 
 In quick mode, the pixel is always set, even if the coordinates are
 illegal, and it will always return 1 (but might crash the machine if
-the coordiantes are invalid).
+the coordinates are invalid).
 
 \item{ULONG HIDDV_Graphics_Cmd_GetPixel (HIDDT_GC gc, WORD x, WORD y)}
 Queries the color of the pixel at (|x|,|y|). This command is available in
@@ -634,9 +634,9 @@ data in here.
 \item{HIDDA_GC_BitMap,HIDDT_BitMap,G} This is the bitmap which
 is connected to this GC.
 
-\item{HIDDA_GC_Foreground,ULONG,SG} This is the forground color.
+\item{HIDDA_GC_Foreground,ULONG,SG} This is the foreground color.
 
-\item{HIDDA_GC_Background,ULONG,SG} This is the forground color.
+\item{HIDDA_GC_Background,ULONG,SG} This is the foreground color.
 
 \item{HIDDA_GC_DrawMode,ULONG,SG} This is the draw mode. There are
 16 possible modes and they are defined as follows:
@@ -681,8 +681,8 @@ but it's only for illustration issues).
 
 Amiga with internal sound (subclass of hiddclass):
 
-There are two possibilities, how to handle it. The first is, not to handle
-it, so that the method is passes on to the hiddclass (which doesn't know
+There are two possibilities of how to handle it. The first is to not handle
+it, so that the method is passed on to the hiddclass (which doesn't know
 this method either) and then on to the rootclass, which returns 0 (FALSE)
 on unknown methods. The second possibility is to implement it in
 soundhiddclass and return FALSE immediatly (because we know that the
@@ -700,7 +700,7 @@ Amiga with internal sound or soundcard and additional MIDI-card:
 This configuration would have two HIDDs, one for MIDI only and one for
 sound in general. For the implementation of the last one see above (either
 Amiga with internal sound or Amiga with sound-card). The MIDI HIDD-class
-could subclass the general sound class (without knowing, if it is capable
+could subclass the general sound class (without knowing if it is capable
 of playing MIDI) and pass on all methods except MIDI relevant methods. It
 would fully overload these. Another solution would be to subclass hiddclass
 directly and ignore every non-MIDI sound command. While the general class
@@ -708,7 +708,7 @@ would be unit 0, the MIDI class would be unit 1, so that an application can
 choose between the normal sound-system (either the internal Amiga
 soundsystem or a sound-card, which might have MIDI capabilities on its own)
 or the MIDI card. If the MIDI class would subclass the normal soundhidd, it
-would feature non-MIDI sound, too (by passing the methods on). Of course,
+would feature non-MIDI sound too (by passing the methods on). Of course,
 it had to pass a query to a HIDDA_Capabilities attribute on to the
 superclass, so that the capabilities of the superclass can be recognized by
 the application for unit 1, too.
@@ -733,9 +733,9 @@ o Some thoughts about the sound.hidd:
     o HIDDV_Sound_Music
     o HIDDV_Sound_Speech
 
-  o Possibly attributes HIDDA_Sound_ActivateHook, ..._InactivateHook [ISG]
+  o Possible attributes HIDDA_Sound_ActivateHook, ..._InactivateHook [ISG]
     These attributes could be used by an application to provide hooks, which
-    are called, if a not-locked unit is exclusively locked by another
+    are called if a not-locked unit is exclusively locked by another
     application (or this exclusive lock is freed). So these attributes
     makes only sense with HIDDV_Sound_NonExclusiveNotLocked.
 
