@@ -27,12 +27,19 @@ LIBOBJS = \
   objs/mui_requestidcmp.o\
   objs/mui_seterror.o
 
-all: dirs objs/support.o $(LIBOBJS)
+CLASSESOBJS= \
+  objs/classes/notify.o
+
+all: dirs objs/support.o $(LIBOBJS) $(CLASSESOBJS)
 
 dirs:
   execute  <<
     if not exists objs
       makedir objs
+    endif
+
+    if not exists objs/classes
+      makedir objs/classes
     endif
 <
 
@@ -113,6 +120,10 @@ objs/mui_requestidcmp.o: mui_requestidcmp.c
 
 objs/mui_seterror.o: mui_seterror.c
   sc $(CFLAGS) $(LIBSDIRS) libcode mui_seterror.c objname=$@
+
+objs/classes/notify.o: classes/notify.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/notify.c objname=$@
+
 
 clean:
   -delete objs all
