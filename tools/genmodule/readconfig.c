@@ -77,7 +77,7 @@ void readconfig(void)
     }
     fileclose();
     
-    if (modtype == MCC)
+    if (modtype == MCC || modtype == MUI || modtype == MCP)
     {
         struct functionlist *function;
         

@@ -22,20 +22,23 @@ int main(int argc, char **argv)
 	;
     
     if (strcmp(argv[2],"library")==0)
-    {
-	modtype = LIBRARY;
-	firstlvo = 5;
-    }
+    	modtype = LIBRARY;
     else if (strcmp(argv[2],"mcc")==0)
-    {
-	modtype = MCC;
-	firstlvo = 6;
-    }
+    	modtype = MCC;
+    else if (strcmp(argv[2],"mui")==0)
+    	modtype = MUI;
+    else if (strcmp(argv[2],"mcp")==0)
+    	modtype = MCP;
     else
     {
 	fprintf(stderr, "Unknown modtype \"%s\" speficied for second argument\n", argv[2]);
 	exit(20);
     }
+
+    if (modtype == LIBRARY)
+        firstlvo = 5;
+    else if (modtype == MCC || modtype == MUI || modtype == MCP)
+        firstlvo = 6;
     
     conffile = argv[3];
 

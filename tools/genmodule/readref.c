@@ -190,7 +190,11 @@ void readref(void)
     {
 	if (funclistit->type==NULL)
 	{
-	    if (modtype == MCC && strcmp(funclistit->name, "MCC_Query") == 0 )
+	    if 
+            (
+                   (modtype == MCC || modtype == MUI || modtype == MCP) 
+                && strcmp(funclistit->name, "MCC_Query") == 0 
+            )
             {
                 struct arglist *arglistit = funclistit->arguments;
                 
