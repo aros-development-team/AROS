@@ -105,9 +105,9 @@ AROS_LH2(struct GadToolsBase_intern *, init,
     LIBBASE->seglist=segList;
 
     LIBBASE->aroscbbase = NULL;
+    LIBBASE->arosmxbase = NULL;
 
     LIBBASE->buttonclass = NULL;
-    LIBBASE->mxclass = NULL;
 
     /* You would return NULL here if the init failed. */
     return LIBBASE;
@@ -171,12 +171,11 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
     /* I have one fewer opener. */
     if(!--LIBBASE->library.lib_OpenCnt)
       {
-        if (LIBBASE->mxclass)
-            FreeClass(LIBBASE->mxclass);
 	if (LIBBASE->buttonclass)
 	    FreeClass(LIBBASE->buttonclass);
 
-        /*        CloseLibrary(LIBBASE->aroscbbase);*/
+        CloseLibrary(LIBBASE->arosmxbase);
+        CloseLibrary(LIBBASE->aroscbbase);
 
 	CloseLibrary(UtilityBase);
         CloseLibrary((struct Library *)GfxBase);

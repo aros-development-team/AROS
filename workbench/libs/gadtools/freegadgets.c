@@ -56,7 +56,7 @@
     for (;nextgad;glist=nextgad)
     {
 	nextgad = glist->NextGadget;
-	if ((glist->Flags & GTYP_GADTOOLS) == GTYP_GADTOOLS)
+	if ((glist->Flags & GTYP_GADTOOLS))
 	{
 	    FreeVec(glist->GadgetText);
 	    DisposeObject(glist);

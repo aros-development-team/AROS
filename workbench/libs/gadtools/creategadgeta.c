@@ -5,6 +5,7 @@
     Desc: gadtools.library function CreateGadgetA()
     Lang: english
 */
+#include <proto/exec.h>
 #include <exec/memory.h>
 #include <proto/intuition.h>
 #include <intuition/gadgetclass.h>
@@ -40,8 +41,8 @@
                    all possible kinds.
 	previous - Pointer to the previous gadget in gadget-list. Create the
 	           first "gadget" with CreateContext().
-        ng -       pointer to struct NewGadget
-        taglist -  additional tags
+        ng -       Pointer to struct NewGadget. See <libraries/gadtools.h>.
+        taglist -  Additional tags. See <libraries/gadtools.h>.
 
     RESULT
         A pointer to a gadget or NULL to indicate an error.
@@ -53,7 +54,7 @@
     BUGS
 
     SEE ALSO
-        CreateContext(), FreeGadgets()
+        CreateContext(), FreeGadgets(), <libraries/gadtools.h>
 
     INTERNALS
 
@@ -64,13 +65,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-    struct Gadget *gad;
+    struct Gadget *gad = NULL;
     struct TagItem stdgadtags[] = {
         {GA_Left, 0L},
 	{GA_Top, 0L},
 	{GA_Width, 0L},
 	{GA_Height, 0L},
 	{GA_IntuiText, (IPTR)NULL},
+        {GA_LabelPlace, (IPTR)GV_LabelPlace_In},
 	{GA_Previous, (IPTR)previous},
 	{GA_ID, 0L},
 	{GA_DrawInfo, (IPTR)NULL},
@@ -86,31 +88,50 @@
     stdgadtags[TAG_Width].ti_Data = ng->ng_Width;
     stdgadtags[TAG_Height].ti_Data = ng->ng_Height;
     stdgadtags[TAG_IText].ti_Data = (IPTR)makeitext((struct GadToolsBase_intern *)GadToolsBase, ng);
-    stdgadtags[TAG_Previous].ti_Data = (IPTR)previous;
-    stdgadtags[TAG_ID].ti_Data = ng->ng_GadgetID;
-    stdgadtags[TAG_DrawInfo].ti_Data = (IPTR)(((struct VisualInfo *)(ng->ng_VisualInfo))->vi_dri);
-    stdgadtags[TAG_UserData].ti_Data = (IPTR)ng->ng_UserData;
-
-    switch(kind)
+    if (stdgadtags[TAG_IText].ti_Data)
     {
-    case BUTTON_KIND:
-        gad = makebutton((struct GadToolsBase_intern *)GadToolsBase, 
-            stdgadtags, (struct VisualInfo *)ng->ng_VisualInfo, taglist);
-        break;
-    case CHECKBOX_KIND:
-        gad = makecheckbox((struct GadToolsBase_intern *)GadToolsBase,
-            stdgadtags, (struct VisualInfo *)ng->ng_VisualInfo, taglist);
-        break;
-    case MX_KIND:
-        gad = makemx((struct GadToolsBase_intern *)GadToolsBase,
-            stdgadtags, (struct VisualInfo *)ng->ng_VisualInfo, taglist);
-        break;
-    default:
-        return NULL;
+        stdgadtags[TAG_Previous].ti_Data = (IPTR)previous;
+        stdgadtags[TAG_ID].ti_Data = ng->ng_GadgetID;
+        stdgadtags[TAG_DrawInfo].ti_Data = (IPTR)(((struct VisualInfo *)(ng->ng_VisualInfo))->vi_dri);
+        stdgadtags[TAG_UserData].ti_Data = (IPTR)ng->ng_UserData;
+
+        /* Calculate label placement.*/
+        if ((ng->ng_Flags & PLACETEXT_LEFT))
+            stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Left;
+        else if ((ng->ng_Flags & PLACETEXT_RIGHT))
+            stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Right;
+        else if ((ng->ng_Flags & PLACETEXT_ABOVE))
+            stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Above;
+        else if ((ng->ng_Flags & PLACETEXT_BELOW))
+            stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Below;
+
+        switch(kind)
+        {
+        case BUTTON_KIND:
+            gad = makebutton((struct GadToolsBase_intern *)GadToolsBase, 
+                             stdgadtags,
+                             (struct VisualInfo *)ng->ng_VisualInfo,
+                             taglist);
+            break;
+        case CHECKBOX_KIND:
+            gad = makecheckbox((struct GadToolsBase_intern *)GadToolsBase,
+                               stdgadtags,
+                               (struct VisualInfo *)ng->ng_VisualInfo,
+                               taglist);
+            break;
+        case MX_KIND:
+            gad = makemx((struct GadToolsBase_intern *)GadToolsBase,
+                         stdgadtags,
+                         (struct VisualInfo *)ng->ng_VisualInfo,
+                         taglist);
+            break;
+        }
     }
 
     if (gad)
 	gad->GadgetType |= GTYP_GADTOOLS;
+    else
+        FreeVec((APTR)stdgadtags[TAG_IText].ti_Data);
 
     return gad;
     AROS_LIBFUNC_EXIT
