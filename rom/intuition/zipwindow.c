@@ -49,9 +49,21 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    
+    struct shortIntuiMessage *msg;
 
-#warning TODO: Write intuition/ZipWindow()
-    aros_print_not_implemented ("ZipWindow");
+    msg = AllocMem(sizeof(struct shortIntuiMessage), MEMF_CLEAR);
+ 
+    if (NULL != msg)
+    {
+      msg->Class       = IDCMP_WBENCHMESSAGE;
+      msg->Code        = IMCODE_ZIPWINDOW;
+      msg->Window      = window;
+      
+      PutMsg(window->WindowPort, (struct Message *)msg); 
+    }   
+    
+
 
     AROS_LIBFUNC_EXIT
 } /* ZipWindow */
