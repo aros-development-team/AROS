@@ -76,7 +76,6 @@ __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register
     EXAMPLE
 
     BUGS
-	The function itself is a bug ;-) Remove it!
 
     SEE ALSO
 
@@ -173,7 +172,7 @@ __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register
 	    LONG isopen;
 
 //	    set(app, MUIA_Application_Sleep, TRUE);
-	    DoMethod(app, OM_ADDMEMBER, req_wnd);
+	    DoMethod(app, OM_ADDMEMBER, (IPTR)req_wnd);
 
 	    while(current)
 	    {
@@ -198,20 +197,26 @@ __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register
 	    /* if this is only one button lets add it separatly */
 	    if (num_gads == 1)
 	    {
-	        DoMethod(req_group, OM_ADDMEMBER, HSpace(0));
-	        DoMethod(req_group, OM_ADDMEMBER, req_but[0]);
-	        DoMethod(req_group, OM_ADDMEMBER, HSpace(0));
-	        DoMethod(req_but[0], MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, 2);
+	        DoMethod(req_group, OM_ADDMEMBER, (IPTR)HSpace(0));
+	        DoMethod(req_group, OM_ADDMEMBER, (IPTR)req_but[0]);
+	        DoMethod(req_group, OM_ADDMEMBER, (IPTR)HSpace(0));
+	        DoMethod(req_but[0], MUIM_Notify, MUIA_Pressed, FALSE,
+			 (IPTR)app, 2, MUIM_Application_ReturnID, 2);
 	    }
 	    else
 	    {
 	        int j;
 
-	        for(j=0;j < num_gads;j++)
+	        for(j = 0; j < num_gads; j++)
 	        {
-	            if(j > 0) DoMethod(req_group, OM_ADDMEMBER, HSpace(0));
-	            DoMethod(req_group, OM_ADDMEMBER, req_but[j]);
-	            DoMethod(req_but[j], MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, j+2 <= num_gads ? j+2 : 1);
+	            if (j > 0)
+		    {
+			DoMethod(req_group, OM_ADDMEMBER, (IPTR)HSpace(0));
+		    }
+	            DoMethod(req_group, OM_ADDMEMBER, (IPTR)req_but[j]);
+	            DoMethod(req_but[j], MUIM_Notify, MUIA_Pressed, FALSE,
+			     (IPTR)app, 2, MUIM_Application_ReturnID,
+			     (j+2 <= num_gads) ? j+2 : 1);
 	            set(req_but[j], MUIA_CycleChain, 1);
 	        }
 	    }
@@ -223,8 +228,8 @@ __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register
 	    /* lets collect the waiting returnIDs now */
 	    // COLLECT_RETURNIDS;
 
-	    set(req_wnd,MUIA_Window_Open,TRUE);
-	    get(req_wnd,MUIA_Window_Open,&isopen);
+	    set(req_wnd, MUIA_Window_Open, TRUE);
+	    get(req_wnd, MUIA_Window_Open, (IPTR)&isopen);
 
 	    if (isopen)
 	    {
@@ -233,7 +238,7 @@ __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register
 
 	        while (result == -1)
 	        {
-		    ULONG ret = DoMethod(app, MUIM_Application_NewInput, &sigs);
+		    ULONG ret = DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs);
 
 		    /* if a button was hit, lets get outda here. */
 		    if (ret > 0 && ret <= num_gads+1)
@@ -252,7 +257,7 @@ __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register
 //	    set(app, MUIA_Application_Sleep, FALSE);
         }
 
-	DoMethod(app, OM_REMMEMBER, req_wnd);
+	DoMethod(app, OM_REMMEMBER, (IPTR)req_wnd);
 	MUI_DisposeObject(req_wnd);
     }
     return result;
