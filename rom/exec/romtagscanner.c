@@ -13,6 +13,8 @@
 #include <exec/resident.h>
 #include <proto/exec.h>
 
+#define DEBUG 0
+#include <aros/debug.h>
 /*
  * RomTag scanner.
  *
@@ -61,7 +63,7 @@ ULONG **AROS_SLIB_ENTRY(RomTagScanner,Exec)
 	ptr = *ranges++;
 	end = *ranges++;
 
-	kprintf("RomTagScanner: Start = %p, End = %p\n", ptr, end);
+	D(bug("RomTagScanner: Start = %p, End = %p\n", ptr, end));
 	do
 	{
 	    res = (struct Resident *)ptr;
