@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1997/03/17 18:56:25  srittau
+    Fixed some typos in FUNCTION description.
+
     Revision 1.6  1997/01/27 00:36:40  ldp
     Polish
 
@@ -58,12 +61,12 @@
 	should be another BOOPSI class; all BOOPSI classes are subclasses
 	of the ROOTCLASS.
 
-	SuperClasses can by private or publiec. You can specify aname/ID
+	SuperClasses can by private or public. You can specify a name/ID
 	for the class if you want it to become a public class. For public
 	classes, you must call AddClass() afterwards to make it public
 	accessible.
 
-	The returnvalue contains a pointer to the IClass structure of your
+	The return value contains a pointer to the IClass structure of your
 	class. You must specify your dispatcher in cl_Dispatcher. You can
 	also store shared data in cl_UserData.
 
