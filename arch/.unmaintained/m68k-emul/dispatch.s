@@ -12,7 +12,7 @@
         AROS_LH0(void, Dispatch,
 
     LOCATION
-        struct ExecBase *, SysBase, 7, Exec)
+        struct ExecBase *, SysBase, 10, Exec)
 
     FUNCTION
 
