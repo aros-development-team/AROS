@@ -45,4 +45,4 @@ AROS_LP1(BOOL, RequestFile,
     struct Library *, AslBase, 7, Asl)
 
 
-#endif /*  */
+#endif /* CLIB_ASL_PROTOS_H */
