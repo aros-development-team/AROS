@@ -22,6 +22,7 @@
 #include "asl_intern.h"
 #include "filereqhooks.h"
 #include "layout.h"
+#include "dirlist.h"
 
 #undef TURN_OFF_DEBUG
 
@@ -38,9 +39,7 @@ STATIC BOOL FRGadLayout(struct LayoutData *, struct AslBase_intern *);
 STATIC VOID FRGadCleanup(struct LayoutData *, struct AslBase_intern *);
 STATIC ULONG FRHandleEvents(struct LayoutData *, struct AslBase_intern *);
 
-STATIC BOOL AddToPath(STRPTR, STRPTR *, ULONG *, struct AslBase_intern *);
-
-STATIC BOOL UpdateFileList(struct FRUserData *, struct Window *, struct AslBase_intern *);
+STATIC ULONG GetSelectedFiles(struct FRUserData *, struct LayoutData *, struct AslBase_intern *AslBase);
 
 
 
@@ -50,7 +49,7 @@ STATIC BOOL UpdateFileList(struct FRUserData *, struct Window *, struct AslBase_
 #define ID_BUTPARENT	3
 #define ID_BUTCANCEL	4
 
-#define ID_LISTVIEW	5
+#define ID_DIRLIST	5
 
 #undef NUMBUTS
 #define NUMBUTS 4L
@@ -235,7 +234,6 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     struct FRUserData *udata;
     struct IntFileReq *ifreq;
-    BOOL success = FALSE;
     STRPTR butstr[NUMBUTS];
     
     #define EXIT_ID 1
@@ -247,99 +245,47 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     udata = ld->ld_UserData;
     ifreq = (struct IntFileReq *)ld->ld_IntReq;
 
-
-    if (!AddToPath( ifreq->ifr_Drawer,
-    		    &(udata->CurPath),
-    		    &(udata->PathBufSize),
-    		    ASLB(AslBase)))
-    	goto bye;
+    udata->DirListClass = InitDirListClass(AslBase);
+    if (!udata->DirListClass)
+    	goto failure;
     	
-
-/* Create file list */
-    udata->FLConstructHook.h_Entry = (APTR)AROS_ASMSYMNAME(FLConstructHook);
-    udata->FLConstructHook.h_Data  = AslBase;
-    udata->FLDestructHook.h_Entry = (APTR)AROS_ASMSYMNAME(FLDestructHook);
-    udata->FLDestructHook.h_Data  = AslBase;
-
-    
-    udata->FileList = NewObject(NULL, AROSLISTCLASS, 
-    			AROSA_List_ConstructHook, &(udata->FLConstructHook),
-    			AROSA_List_DestructHook, &(udata->FLDestructHook),
-    			TAG_END);
-    if (!udata->FileList)
-    	goto bye;    			
-    	
-    D(bug("\tFilelist created\n"));
-
-/* Create volume list */
-    udata->VLConstructHook.h_Entry = (APTR)AROS_ASMSYMNAME(VLConstructHook);
-    udata->VLConstructHook.h_Data  = AslBase;
-    udata->VLDestructHook.h_Entry = (APTR)AROS_ASMSYMNAME(VLDestructHook);
-    udata->VLDestructHook.h_Data  = AslBase;
-
-    
-    udata->VolumesList = NewObject(NULL, AROSLISTCLASS, 
-    			AROSA_List_ConstructHook, &(udata->VLConstructHook),
-    			AROSA_List_DestructHook, &(udata->VLDestructHook),
-    			TAG_END);
-
-    if (!udata->VolumesList)
-    	goto bye;
-
-    if (!GetDir(udata->CurPath, udata->FileList, ASLB(AslBase)))
-    	goto bye;
-    
-    if (!GetVolumes(udata->VolumesList, ASLB(AslBase)))
-    	goto bye;
-    	
-    udata->Flags |= FRFLG_FILELIST;
-
-    udata->DispHookBuf = AllocMem(DISPHOOKBUFSIZE, MEMF_ANY);
-    if (!udata->DispHookBuf)	
-    	goto bye;
-
-    udata->VLDisplayHook.h_Entry = (APTR)AROS_ASMSYMNAME(VLDisplayHook);
-    udata->VLDisplayHook.h_Data  = udata;
-
-    udata->FLDisplayHook.h_Entry = (APTR)AROS_ASMSYMNAME(FLDisplayHook);
-    udata->FLDisplayHook.h_Data  = udata;
-    
-    udata->Listview = NewObject(NULL, AROSLISTVIEWCLASS, 
-    		GA_ID,				ID_LISTVIEW,
+    udata->DirList = NewObject(udata->DirListClass, NULL, 
+    		GA_ID,				ID_DIRLIST,
    		GA_Immediate,		    	TRUE,
-    		AROSA_Listview_MaxColumns,  	2,
-    		AROSA_Listview_DisplayHook, 	&(udata->FLDisplayHook),
-    		AROSA_Listview_Format,	    	"P=l, P=l",
+    		AROSA_DirList_Path,		ifreq->ifr_Drawer,
+
 //    		AROSA_Listview_MultiSelect, 	TRUE,
     		TAG_END);
     	
-    if (!udata->Listview)
-    	goto bye;
+    if (!udata->DirList)
+    	goto failure;
+
+    /* Needs to return pointer to first gadget so that AslRequest can AddGList() them */
+    ld->ld_GList = (struct Gadget *)udata->DirList;
+
+    D(bug("DirList created: %p\n", udata->DirList));
     	
     udata->Prop = NewObject(NULL, PROPGCLASS, 
-    				GA_Previous,	udata->Listview,
+    				GA_Previous,	udata->DirList,
     				TAG_END);
        				
     if (!udata->Prop)
-    	goto bye;
-    	
-    SetAttrs(udata->Listview, 
+    	goto failure;
+
+D(bug("Prop created\n"));
+    SetAttrs(udata->DirList, 
     			ICA_TARGET,		udata->Prop,
     			ICA_MAP,		lv2prop,
     			TAG_END);
 
-    SetAttrs(udata->Prop,	ICA_TARGET,	udata->Listview,
+    SetAttrs(udata->Prop,	ICA_TARGET,	udata->DirList,
     				ICA_MAP,	prop2lv,
     				TAG_END);    		
    	
-    /* Remember this gadget so we can free it in FreeCommon */
-    ld->ld_GList = (struct Gadget *)udata->Listview;
-
-    D(bug("Listview created: %p\n", udata->Listview));
     
     udata->ButFrame = NewObject(NULL, FRAMEICLASS, TAG_END);
     if (!udata->ButFrame)
-    	goto bye;
+    	goto failure;
     			
     udata->OKBut = NewObject(NULL, FRBUTTONCLASS,
     			GA_Image,	udata->ButFrame,
@@ -349,8 +295,8 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     			GA_Text,	GetIR(ifreq)->ir_PositiveText,
     			TAG_END);
     if (!udata->OKBut)
-    	goto bye;
-    	
+    	goto failure;
+D(bug("OKBut created\n"));
     udata->VolumesBut = NewObject(NULL, FRBUTTONCLASS,
     			GA_Image,	udata->ButFrame,
     			GA_Previous,	udata->OKBut,
@@ -359,8 +305,8 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     			GA_Text,	ifreq->ifr_VolumesText,
     			TAG_END);
     if (!udata->VolumesBut)
-   	goto bye;
-   	
+   	goto failure;
+D(bug("VolumesBut created\n"));   	
     udata->ParentBut = NewObject(NULL, FRBUTTONCLASS,
     			GA_Image,	udata->ButFrame,
     			GA_Previous,	udata->VolumesBut,
@@ -370,11 +316,9 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     			TAG_END);
  
     if (!udata->ParentBut)
-   	goto bye;
-	
-
-    			
-    	
+   	goto failure;
+D(bug("ParentBut created\n"));	
+ 	
     udata->CancelBut = NewObject(NULL, FRBUTTONCLASS,
     			GA_Image,	udata->ButFrame,
     			GA_Previous,	udata->ParentBut,
@@ -383,9 +327,9 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     			GA_Text,	GetIR(ifreq)->ir_NegativeText,
     			TAG_END);
     if (!udata->CancelBut)
-    	goto bye;
+    	goto failure;
     	
-    
+D(bug("CancelBut created\n"));    
 
     butstr[0] = GetIR(ifreq)->ir_PositiveText;
     butstr[1] =	ifreq->ifr_VolumesText;    
@@ -410,18 +354,13 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     ld->ld_MinHeight = ld->ld_Screen->WBorTop + ld->ld_Screen->Font->ta_YSize + 1
     		  + MIN_SPACING * 3
     		  + udata->ButHeight * 3;
-    		   
-		
-    success = TRUE;
 
-bye:
+    ReturnBool ("FRGadInit", TRUE);	
+failure:
 
-    if (!success)
-    {
-    	FRGadCleanup(ld, ASLB(AslBase));
-    }
+    FRGadCleanup(ld, ASLB(AslBase));
     	
-    ReturnBool ("FRGadInit", success);	
+    ReturnBool ("FRGadInit", FALSE);	
 	
 }
 
@@ -458,20 +397,14 @@ STATIC BOOL FRGadLayout(struct LayoutData *ld, struct AslBase_intern *AslBase)
     
     if (!(udata->Flags & FRFLG_LAYOUTED))
     {
-    	SetAttrs(udata->Listview,
+    	Object *list;
+    	
+    	SetAttrs(udata->DirList,
     		GA_Left,	left,
     		GA_Top,		win->BorderTop  + MIN_SPACING,
     		GA_RelWidth,	- (win->BorderRight  + 3 * MIN_SPACING + DEF_PROPWIDTH),
     		GA_RelHeight,	butrelbottom - MIN_SPACING - 2,
     		TAG_END);
-    		    	
-    	/* Need to SetGadgetAttrs this if notification should work
-    	** (needs GadgetInfo)
-    	*/		
-    	SetGadgetAttrs((struct Gadget *)udata->Listview, ld->ld_Window, NULL,
-    				AROSA_Listview_List,	udata->FileList,
-    				TAG_END);
-
 
     	SetAttrs(udata->Prop,
     		GA_RelRight,	- (win->BorderRight  + MIN_SPACING + DEF_PROPWIDTH),
@@ -479,6 +412,15 @@ STATIC BOOL FRGadLayout(struct LayoutData *ld, struct AslBase_intern *AslBase)
     		GA_Width,	DEF_PROPWIDTH,
     		GA_RelHeight,	butrelbottom - MIN_SPACING - 2,
     		TAG_END);
+    		
+    	/* Get & set the list, so that the prop receives OM_UPTAE and resizes
+    	** itself properly.
+    	*/
+    	GetAttr(AROSA_Listview_List, udata->DirList, (IPTR *)&list);
+    	
+    	SetGadgetAttrs((struct Gadget *)udata->DirList, ld->ld_Window, NULL,
+    			AROSA_Listview_List,	list,
+    			TAG_END);
 
     	/* GA_RelBottom */
     	buttags[0].ti_Data = butrelbottom;
@@ -518,8 +460,6 @@ STATIC BOOL FRGadLayout(struct LayoutData *ld, struct AslBase_intern *AslBase)
 **  FRHandleEvents  **
 *********************/
 
-#undef Exit
-#define Exit(ret) {retval = ret; break;}
 STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct IntuiMessage *imsg;
@@ -528,222 +468,45 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 
 
     imsg = ld->ld_Event;
+
 D(bug("FRHandleEvents: Class: %d\n", imsg->Class));        
+
     switch (imsg->Class)
     {
-    	case IDCMP_GADGETUP:
+    case IDCMP_GADGETUP:
 
 D(bug("GADGETUP! gadgetid=%d\n", ((struct Gadget *)imsg->IAddress)->GadgetID));
 
-    	    switch (((struct Gadget *)imsg->IAddress)->GadgetID)
-    	    {
-	    	case ID_BUTCANCEL:
-		    retval = FALSE;
-		    break;
-		    
-		case ID_LISTVIEW:
-		{
-		    ULONG doubleclick;
-		    
-		    BOOL changedir = FALSE;
-
-D(bug("ID_LISTVIEW event\n"));
-		    GetAttr(AROSA_Listview_DoubleClick, udata->Listview, &doubleclick);
-		    
-		    if (doubleclick + 1)
-		    {
-		    	Object *list;
-	    	        LONG active;
-	    	        
-	    	        #define GetEAD(e) ((struct ExAllData  *)e)
-	    	        #define GetVI(e)  ((struct VolumeInfo *)e)
-	    	        APTR entry;
-D(bug("\tDoubleclick "));
-	    	        list = ((udata->Flags & FRFLG_FILELIST)
-	    	        		? udata->FileList : udata->VolumesList);
-
-
-		    	
-		    	/* Get the active entry */
-		    	GetAttr(AROSA_List_Active, list, &active);
-		    	if (active == AROSV_List_Active_None)
-		    	    Exit(GHRET_OK);
-D(bug("on entry %d\n", active));		    	    
-		    	DoMethod(list, AROSM_List_GetEntry, active, &entry);
-		    	
-		    	if (udata->Flags & FRFLG_FILELIST)
-		    	{
-
-		    	    if (GetEAD(entry)->ed_Type > 0)
-		    	    {
-D(bug("Directory names. last: %s clicked: %s\n", udata->CurPath, GetEAD(entry)->ed_Name));
-		    	    	if (!AddToPath(	GetEAD(entry)->ed_Name,
-		    	    			&(udata->CurPath),
-		    	    			&(udata->PathBufSize),
-		    	    			ASLB(AslBase)))
-		    	    	   Exit(FALSE);
-		    	    	   
-D(bug("\tNew curpath: %s\n", udata->CurPath));		    	    			    	    	
-		    	    	changedir = TRUE;
-		    	    } /* Clicked entry is a directory */
-		    	    
-
-		    	}
-		    	else
-		    	{
-		    	    udata->CurPath[0] = 0;
-		    	    
-		    	    if (!AddToPath(	GetVI(entry)->vi_Name, 
-		    	    			&(udata->CurPath),
-		    	    			&(udata->PathBufSize),
-		    	    			ASLB(AslBase)))
-		    	    	Exit(FALSE);
-
-		    	    changedir = TRUE;
-		    	} /* Volme list is shown */
-		    	
-		    	if (changedir)
-		    	{
-		    	    UpdateFileList(udata, ld->ld_Window, ASLB(AslBase));
-		    	}
-		    	    
-		    }
+   	switch (((struct Gadget *)imsg->IAddress)->GadgetID)
+    	{
+	case ID_BUTCANCEL:
+	    retval = FALSE;
+	    break;
 		
-		} break;
+	case ID_BUTVOLUMES:
+	    DoGadgetMethod((struct Gadget *)udata->DirList,
+    	 		ld->ld_Window,
+		    	NULL,
+		    	AROSM_DirList_ShowVolumes, NULL);
+	    break;
 		
-		case ID_BUTVOLUMES:
-		{
-		    RemoveGList(ld->ld_Window, (struct Gadget *)udata->Listview, 1);
+	case ID_BUTPARENT:
+	    DoGadgetMethod((struct Gadget *)udata->DirList,
+		    	ld->ld_Window,
+		    	NULL,
+		    	AROSM_DirList_ShowParent, NULL);
+	    break;
+		
+	case ID_BUTOK:
+	    retval = GetSelectedFiles(udata, ld, ASLB(AslBase));
+	    break;
+	} /* switch (gadget ID) */	
 
-		    SetGadgetAttrs((struct Gadget *)udata->Listview, ld->ld_Window, NULL,
-		    		AROSA_Listview_List, udata->VolumesList,
-		    		AROSA_Listview_DisplayHook, &(udata->VLDisplayHook),
-		    		AROSA_Listview_Format, "P=l",
-		    		TAG_END);
-		   	
-		    udata->Flags &= ~FRFLG_FILELIST;
-		    
-		    AddGList(ld->ld_Window, (struct Gadget *)udata->Listview, -1, 1, NULL);
-
-		    RefreshGList((struct Gadget *)udata->Listview, ld->ld_Window, NULL, 1);		    
-		} break;
-		
-		case ID_BUTPARENT:
-		{
-		    /* Show parent directory */
-		    if ( !AddToPath("/", 
-		    		    &(udata->CurPath),
-		    		    &(udata->PathBufSize),
-		    		    ASLB(AslBase)))
-		    {
-		    	D(bug("Failed path: %s\n",udata->CurPath));		    
-		 	Exit(FALSE);
-		    }	
-		    D(bug("OK path: %s\n", udata->CurPath));
-		    if (!UpdateFileList(udata, ld->ld_Window, ASLB(AslBase)))
-		    	Exit(FALSE);
-		    
-		}
-		
-		case ID_BUTOK:
-		{
-		    if (!(udata->Flags & FRFLG_FILELIST))
-		    {
-			break;
-		    }
-		    else
-		    {
-		    	struct IntFileReq *ifreq;
-		    	struct FileRequester *req;
-		    	
-		    	ifreq = (struct IntFileReq *)ld->ld_IntReq;
-		    	req = (struct FileRequester *)ld->ld_Req;
-		    	
-		    	if (!(ifreq->ifr_Flags1 & FRF_DOMULTISELECT))
-		    	{
-		    	    LONG active;
-		    	    struct ExAllData *ead;
-		    	    /* Only singleselect */
-		    	    
-		    	    GetAttr(AROSA_List_Active, udata->FileList, &active);
-		    	    if (active == AROSV_List_Active_None)
-		    	    	Exit(GHRET_OK);
-		    	    	
-		    	    DoMethod(udata->FileList, AROSM_List_GetEntry, active, &ead);
-		    	    /* File selected ? */
-		    	    if (ead->ed_Type > 0)
-		    	    	Exit(GHRET_OK);
-		    	    	
-		    	    req->fr_Drawer = AllocVec(strlen(udata->CurPath) + 1, MEMF_ANY);
-		    	    if (!req->fr_Drawer)
-		    	    	Exit(FALSE);
-		    	    	
-		    	    req->fr_File = AllocVec(strlen(ead->ed_Name) + 1, MEMF_ANY);
-		    	    if (!req->fr_File)
-		    	    	Exit(FALSE);
-		    	    	
-		    	    strcpy(req->fr_Drawer, udata->CurPath);
-		    	    strcpy(req->fr_File, ead->ed_Name);
-		    	    
-		    	}
-		    	else
-		    	{
-		    	    LONG selcount;
-		    	    struct WBArg *wbarg;
-		    	    LONG id;
-		    	    
-		    	    /* Create a WBArg structure for the selected files */
-		    	    
-		    	    DoMethod(udata->FileList,
-		    	    	AROSM_List_Select,
-		    	    	AROSV_List_Select_All,
-		    	    	AROSV_List_Select_Ask,
-		    	    	&selcount);
-		    	    	
-		    	    #undef UB
-		    	    #define UB(x) ((UBYTE *)x)
-		    	    /* Allocate WBArg structures */
-		    	    req->fr_ArgList = wbarg = AllocVec(
-		    	    			UB(&wbarg[selcount]) - UB(&wbarg[0]),
-		    	    			MEMF_ANY|MEMF_CLEAR);
-			    if (!req->fr_ArgList)
-			    	Exit(FALSE);
-			    	
-	    		    id = AROSV_List_NextSelected_Start;
-	    		    
-	    		    req->fr_NumArgs = selcount;
-	    
-	    		    for (;;)
-	    		    {
-	    		    	struct ExAllData *ead;
-	    		    	
-	    			DoMethod(udata->FileList, AROSM_List_NextSelected, &id);
-	    			if (id == AROSV_List_NextSelected_End)
-	    	    		    break;
-	    	
-	    			DoMethod(udata->FileList, AROSM_List_GetEntry, &ead);
-	    			
-	    			wbarg->wa_Name = AllocVec(strlen(ead->ed_Name) + 1, MEMF_ANY);
-	    			if (!wbarg->wa_Name)
-	    			    Exit(FALSE);
-	    			    
-	    			strcpy(wbarg->wa_Name, ead->ed_Name);
-	    			
-	    		    }
-		    	    
-		    	}
-		    
-		    }
-		
-		} break;
-		
-	} break;
-	    
+	break; /* case IDCMP_GADGETUP: */
 	    
     } /* switch (imsg->Class) */
     
     return (retval);
-
 }
 
 /*******************
@@ -756,12 +519,8 @@ STATIC VOID FRGadCleanup(struct LayoutData *ld, struct AslBase_intern *AslBase)
     D(bug("FRGadCleanup(ld=%p)\n", ld));
     udata = (struct FRUserData *)ld->ld_UserData;
 
-D(bug("Freeing filelist\n"));
-    if (udata->FileList)	
-    	DisposeObject(udata->FileList);
-    	
-    if (udata->Listview)
-    	DisposeObject(udata->Listview);
+    if (udata->DirList)
+    	DisposeObject(udata->DirList);
 
     if (udata->Prop)
     	DisposeObject(udata->Prop);
@@ -781,84 +540,115 @@ D(bug("Freeing filelist\n"));
     if (udata->ButFrame)
     	DisposeObject(udata->ButFrame);
     	
-D(bug("Freeing volumeslist\n"));
-    if (udata->VolumesList)	
-    	DisposeObject(udata->VolumesList);
-D(bug("Freeing disphookbuf\n"));    	
-    if (udata->DispHookBuf)
-    	FreeMem(udata->DispHookBuf, DISPHOOKBUFSIZE);
-D(bug("Freeing curpath\n"));    	
-    if (udata->CurPath)
-    	FreeMem(udata->CurPath, udata->PathBufSize);
+    if (udata->DirListClass)
+    	CleanupDirListClass(udata->DirListClass, AslBase);
 
     ReturnVoid("FRGadCleanup");
 }
 
-
-
-/****************
-**  AddToPath  **
-*****************/
-STATIC BOOL AddToPath(STRPTR			path2add,
-			STRPTR			*bufptr,
-			ULONG			*lptr,
-			struct AslBase_intern	*AslBase)
+STATIC ULONG GetSelectedFiles(	struct FRUserData	*udata,
+				struct LayoutData	*ld,
+				struct AslBase_intern	*AslBase)
 {
-#undef SIZEINCREASE
-#define SIZEINCREASE 100
-
-    if (!*bufptr)
+    ULONG volumes_shown;
+    ULONG retval = GHRET_OK;
+		    
+    GetAttr(AROSA_DirList_VolumesShown, udata->DirList, &volumes_shown);
+		    
+    if (volumes_shown)
+	retval = GHRET_OK;
+    else
     {
-    	*bufptr = AllocMem(SIZEINCREASE, MEMF_ANY);
-    	if (!*bufptr)
-    	    return (FALSE);
-    	    
-    	**bufptr = 0; /* null-terminate */
-    	*lptr = SIZEINCREASE;
-    }
-    
-    while (!AddPart(*bufptr, path2add, *lptr))
-    {
-    	STRPTR newbuf;
-    	
-    	newbuf = AllocMem(*lptr + SIZEINCREASE, MEMF_ANY);
-    	if (!newbuf)
-    	    return (FALSE);
-    	  
-    	strcpy(newbuf, *bufptr);
-    	FreeMem(*bufptr, *lptr);
-    	
-    	*lptr += SIZEINCREASE;
-    }
-    
-    return (TRUE);
-    
-}
-
-/*******************
-**  UpdateFileList  **
-*******************/
-STATIC BOOL UpdateFileList( struct FRUserData		*udata,
-		    	    struct Window 		*w,
-		   	    struct AslBase_intern	*AslBase)
-{
-
-    RemoveGList(w, (struct Gadget *)udata->Listview, 1);
-    DoMethod(udata->FileList, AROSM_List_Clear);
-
-    if (!GetDir(udata->CurPath, udata->FileList, ASLB(AslBase)))
-	return (FALSE);
-
-    SetGadgetAttrs((struct Gadget *)udata->Listview, w, NULL,
-	AROSA_Listview_List, 	 udata->FileList,
-	AROSA_Listview_Format, 	 "P=l, P=l",
-	AROSA_Listview_DisplayHook, &(udata->FLDisplayHook),
-	TAG_END);
+    	struct IntFileReq *ifreq;
+    	struct FileRequester *req;
+    	Object *filelist;
+		    	
+	GetAttr(AROSA_Listview_List, udata->DirList, (IPTR *)&filelist);
+	    	
+	ifreq = (struct IntFileReq *)ld->ld_IntReq;
+	req = (struct FileRequester *)ld->ld_Req;
+		    	
+	if (!(ifreq->ifr_Flags1 & FRF_DOMULTISELECT))
+	{
+	    LONG active;
+	    struct ExAllData *ead;
 		    	    
-    udata->Flags |= FRFLG_FILELIST;
+	    GetAttr(AROSA_List_Active, filelist, &active);
+		    	    
+	    if (active == AROSV_List_Active_None)
+	      	{ retval = GHRET_OK; goto bye; }
+		    	    	
+	    DoMethod(filelist, AROSM_List_GetEntry, active, &ead);
+	    /* File or directory selected ? */
+	    if (ead->ed_Type > 0)
+	    	{ retval = GHRET_OK; goto bye; }
+		    
+	    /* The next allocated stuff is freed by the StripRequester() 
+	    ** function if the allocations fail. 
+	    */	    	
+	    req->fr_Drawer = AllocVec(strlen(udata->CurPath) + 1, MEMF_ANY);
+	    if (!req->fr_Drawer)
+	    	{ retval = FALSE; goto bye; }
+		    	    	
+	    req->fr_File = AllocVec(strlen(ead->ed_Name) + 1, MEMF_ANY);
+	    if (!req->fr_File)
+	    	{ retval = FALSE; goto bye; }
+		    	    	
+	    strcpy(req->fr_Drawer, udata->CurPath);
+	    strcpy(req->fr_File, ead->ed_Name);
+		    	    
+	}
+	else
+	{
+	    LONG selcount;
+	    struct WBArg *wbarg;
+	    LONG id;
+		    	    
+	    /* Create a WBArg structure for the selected files */
+		    	    
+	    DoMethod(filelist,
+	    	AROSM_List_Select,
+	    	AROSV_List_Select_All,
+	    	AROSV_List_Select_Ask,
+	    	&selcount);
+		    	    	
+	    #undef UB
+	    #define UB(x) ((UBYTE *)x)
+		    
+	    /* Allocate WBArg structures */
+	    req->fr_ArgList = wbarg = AllocVec(
+	    	    		UB(&wbarg[selcount]) - UB(&wbarg[0]),
+	    	    		MEMF_ANY|MEMF_CLEAR);
+	    if (!req->fr_ArgList)
+		{ retval = FALSE; goto bye; }
+			    	
+    	    /* Iterate list and put selected files into WBArg structs */
+    	    id = AROSV_List_NextSelected_Start;
+	    		    
+    	    req->fr_NumArgs = selcount;
     
-    AddGList(w, (struct Gadget *)udata->Listview, -1, 1, NULL);
-    RefreshGList((struct Gadget *)udata->Listview, w, NULL, 1);
-				
-    return (TRUE);
-}		    
+    	    for (;;)
+    	    {
+    		struct ExAllData *ead;
+    		    	
+    		DoMethod(filelist, AROSM_List_NextSelected, &id);
+    		if (id == AROSV_List_NextSelected_End)
+    	    	    break;
+	    	
+    		DoMethod(filelist, AROSM_List_GetEntry, &ead);
+    			
+    		wbarg->wa_Name = AllocVec(strlen(ead->ed_Name) + 1, MEMF_ANY);
+    		if (!wbarg->wa_Name)
+    		    { retval = FALSE; goto bye; }
+	    			    
+    		strcpy(wbarg->wa_Name, ead->ed_Name);
+	    			
+    	    } /* for (iterate list for selected files) */
+		    	    
+	} /* if (single- or multiselect ?) */
+	
+    } /* if (volumes currently shown ?) */
+
+bye:
+    return (retval);
+}
