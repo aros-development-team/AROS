@@ -39,9 +39,7 @@ extern int CalcKnobSize (struct Gadget * propGadget, long * knobleft,
 static int MyErrorHandler (Display *, XErrorEvent *);
 static int MySysErrorHandler (Display *);
 
-#define DEBUG			0
-#define DEBUG_OpenWindow	0
-#define DEBUG_CloseWindow	0
+#define DEBUG	0
 #define DEBUG_ProcessXEvents	0
 
 #if DEBUG
@@ -350,7 +348,7 @@ int intui_OpenWindow (struct IntWindow * iw,
     XFlush (sysDisplay);
     /* XSync (sysDisplay, FALSE); */
 
-    Diow(bug("Opening Window %08lx (X=%ld)\n", w, iw->iw_XWindow));
+    Diow(bug("Opening Window %p (X=%ld)\n", iw, iw->iw_XWindow));
 
     return 1;
 }
@@ -358,7 +356,7 @@ int intui_OpenWindow (struct IntWindow * iw,
 void intui_CloseWindow (struct IntWindow * iw,
 	    struct IntuitionBase * IntuitionBase)
 {
-    Dicw(bug("Closing Window %08lx (X=%ld)\n", iw, iw->iw_XWindow));
+    Dicw(bug("Closing Window %p (X=%ld)\n", iw, iw->iw_XWindow));
 
     XDestroyWindow (sysDisplay, iw->iw_XWindow);
 
@@ -691,9 +689,10 @@ void intui_ProcessEvents (void)
 
 	    if (w)
 	    {
-		Dipxe(bug("X=%d is asocciated with Window %08lx\n",
+		Dipxe(bug("X=%d is asocciated with Window %p\n",
 		    event.xany.window,
-		    (ULONG)w));
+		    w
+		));
 	    }
 	    else
 		Dipxe(bug("X=%d is not asocciated with a Window\n",
