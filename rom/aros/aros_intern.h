@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information for aros.library.
@@ -31,10 +31,6 @@ LIBBASETYPE
     BPTR                 aros_segList;
 
 };
-
-/* digulla again... Needed for close() */
-#define expunge() \
- AROS_LC0(BPTR, expunge, struct ArosBase *, ArosBase, 3, Aros)
 
 #define SysBase         LIBBASE->aros_sysBase
 #define UtilityBase	LIBBASE->aros_utilityBase
