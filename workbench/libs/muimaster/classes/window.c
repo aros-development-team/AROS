@@ -1248,6 +1248,9 @@ static ULONG Window_ConnectParent(struct IClass *cl, Object *obj,
     if (data->wd_RootObject)
 	DoMethod(data->wd_RootObject, MUIM_ConnectParent, (IPTR)obj);
 
+    if (data->wd_ChildMenustrip)
+	DoMethod(data->wd_ChildMenustrip, MUIM_ConnectParent, (IPTR)obj);
+
     return TRUE;
 }
 
@@ -1261,6 +1264,9 @@ static ULONG Window_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP
 
     /* Close the window before disconnecting all the childs */
     set(obj,MUIA_Window_Open,FALSE);
+
+    if (data->wd_ChildMenustrip)
+	DoMethod(data->wd_ChildMenustrip, MUIM_DisconnectParent, (IPTR)obj);
 
     if (data->wd_RootObject)
 	DoMethodA(data->wd_RootObject, (Msg)msg);

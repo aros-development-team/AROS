@@ -333,6 +333,8 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 #endif
 #endif
 
+    if (data->app_Menustrip) DoMethod(data->app_Menustrip, MUIM_ConnectParent, (IPTR)obj);
+
     return (ULONG)obj;
 }
 
