@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES	:= -I.
 
 LIBNAME := aroslist
-LIBPOST := gadget
+LIBPOST := class
 
 DESTDIR := $(GADGETDIR)
 
