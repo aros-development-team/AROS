@@ -157,12 +157,15 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 {
     LONG  match;
     int   i;
+    BOOL  matched = FALSE;
 
     for (i = 0; files[i] != NULL; i++)
     {
 	for (match = MatchFirst(files[i], ap); match == 0;
 	     match = MatchNext(ap))
 	{
+	    matched = TRUE;
+
 	    if (CheckSignal(SIGBREAKF_CTRL_C))
 	    {
 		MatchEnd(ap);
@@ -232,7 +235,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 		PrintFault(IoErr(), "");
 		
 		/* If ALL is given as a parameter, we continue */
-		if(!all)
+		if (!all)
 		{
 		    MatchEnd(ap);
 		    
@@ -245,6 +248,11 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 		printf("%s  Deleted\n", ap->ap_Buf);
 	    }
 	}
+    }
+
+    if (!matched)
+    {
+	printf("No file to delete\n");
     }
     
     return RETURN_OK;
