@@ -51,34 +51,28 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-  if (size > 0 && NULL != prefbuffer)
-  {
-    struct DeferedActionMessage * msg;
-
-    memcpy(GetPrivIBase(IntuitionBase)->ActivePreferences,
-           prefbuffer,
-           size <= sizeof(struct Preferences) ? size : sizeof(struct Preferences));
-  
-    /*
-    ** If inform == TRUE then notify all windows that want to know about 
-    ** an update on the preferences.
-    */
-    msg = AllocMem(sizeof(struct DeferedActionMessage), MEMF_CLEAR);
-    
-    if (NULL != msg)
+    if (size > 0 && NULL != prefbuffer)
     {
-      msg->Code = AMCODE_NEWPREFS;
-      
-      SendDeferedActionMsg(msg, IntuitionBase);
+	memcpy(GetPrivIBase(IntuitionBase)->ActivePreferences,
+               prefbuffer,
+               size <= sizeof(struct Preferences) ? size : sizeof(struct Preferences));
+
+	/*
+	** If inform == TRUE then notify all windows that want to know about 
+	** an update on the preferences.
+	*/
+
+	AllocAndSendIntuiActionMsg(AMCODE_NEWPREFS, NULL, IntuitionBase);
+
     }
-  }
 
 #warning Is there any further immediate action to be taken when the prefences are updated?
 
-  return (struct Preferences *) prefbuffer;
+    return (struct Preferences *) prefbuffer;
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
+  
 } /* SetPrefs */

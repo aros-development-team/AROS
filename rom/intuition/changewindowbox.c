@@ -53,20 +53,19 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     
-    struct DeferedActionMessage * msg;
+    struct IntuiActionMessage * msg;
     
-    msg = AllocMem(sizeof (struct DeferedActionMessage), MEMF_CLEAR);
+    msg = AllocIntuiActionMsg(AMCODE_CHANGEWINDOWBOX, window, IntuitionBase);
     if (NULL != msg)
     {
-	msg->Code	= AMCODE_CHANGEWINDOWBOX;
-	msg->Window	= window;
-	msg->left	= left;
-	msg->top	= top;
-	msg->width	= width;
-	msg->height	= height;
+	msg->iam.iam_changewindowbox.Left   = left;
+	msg->iam.iam_changewindowbox.Top    = top;
+	msg->iam.iam_changewindowbox.Width  = width;
+	msg->iam.iam_changewindowbox.Height = height;
 	
-	SendDeferedActionMsg(msg, IntuitionBase);
+	SendIntuiActionMsg(msg, IntuitionBase);
     }
 
     AROS_LIBFUNC_EXIT
+    
 } /* ChangeWindowBox */

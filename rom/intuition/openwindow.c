@@ -374,7 +374,7 @@
     if (!ModifyIDCMP (w, nw.IDCMPFlags))
 	goto failexit;
 	
-    IW(w)->closeMessage = AllocMem(sizeof (struct DeferedActionMessage), MEMF_PUBLIC);
+    IW(w)->closeMessage = AllocIntuiActionMsg(AMCODE_CLOSEWINDOW, w, IntuitionBase);
     if (NULL == IW(w)->closeMessage)
     	goto failexit;
 
@@ -689,7 +689,7 @@ failexit:
 	*/
 	
 	if (IW(w)->closeMessage)
-	    FreeMem(IW(w)->closeMessage, sizeof (struct DeferedActionMessage));
+	    FreeIntuiActionMsg(IW(w)->closeMessage, IntuitionBase);
 	
 	if (driver_init_done)
 	    intui_CloseWindow(w, IntuitionBase);

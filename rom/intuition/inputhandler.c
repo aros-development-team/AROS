@@ -73,7 +73,7 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 	    	    NEWLIST( &(port->mp_MsgList) );
 	    	    iihdata->IntuiReplyPort = port;
 
-		    NEWLIST(&iihdata->IntuiDeferedActionQueue);
+		    NEWLIST(&iihdata->IntuiActionQueue);
     		    NEWLIST(&iihdata->GeneratedInputEventList);
 		    
 		    iihandler->is_Code = (APTR)AROS_ASMSYMNAME(IntuiInputHandler);
@@ -88,7 +88,7 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 		    UnlockIBase(lock);
 
 		    GetPrivIBase(IntuitionBase)->IntuiReplyPort = iihdata->IntuiReplyPort;
-		    GetPrivIBase(IntuitionBase)->IntuiDeferedActionQueue = &iihdata->IntuiDeferedActionQueue;
+		    GetPrivIBase(IntuitionBase)->IntuiActionQueue = &iihdata->IntuiActionQueue;
 
 		    ReturnPtr ("InitIIH", struct Interrupt *, iihandler);
 		    
@@ -1046,7 +1046,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    }
 	}
 
-        HandleDeferedActions(iihdata, IntuitionBase);
+        HandleIntuiActions(iihdata, IntuitionBase);
     
    	/* Add generated InputEvents */
 	

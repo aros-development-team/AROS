@@ -102,7 +102,7 @@ struct IntIntuitionBase
     int rom/inputhandler.c/InitIIH()
     */
     struct MsgPort	   	* IntuiReplyPort;
-    struct MinList	  	* IntuiDeferedActionQueue;
+    struct MinList	  	* IntuiActionQueue;
     struct IOStdReq	  	* InputIO;
     struct MsgPort	  	* InputMP;
     BOOL		     	InputDeviceOpen;
@@ -121,7 +121,7 @@ struct IntIntuitionBase
 
     struct SignalSemaphore   	GadgetLock;
     struct SignalSemaphore   	MenuLock;
-    struct SignalSemaphore   	DeferedActionLock;
+    struct SignalSemaphore   	IntuiActionLock;
     struct LayerContext      	BackupLayerContext;
     
     struct IClass 		* dragbarclass;
@@ -286,7 +286,7 @@ struct IntWindow
        since CloseWindow() may not fail.
     */
        
-    struct DeferedActionMessage * closeMessage;
+    struct IntuiActionMessage  	* closeMessage;
     Object 			* sysgads[NUM_SYSGADS];
     struct Image		* AmigaKey;
     struct Image 		* Checkmark;
@@ -335,21 +335,46 @@ Another note: Maybe use a union here to save space.
 */
 
 
-struct DeferedActionMessage
+struct IntuiActionMessage
 {
     struct Message  		ExecMessage;
-    UWORD           		Code; 
-    struct Window 		* Window;
-    struct Window 		* BehindWindow; /* only used by MoveWindowInFrontOf */
-    struct Gadget 		* Gadget;
-    struct Task   		* Task;
-    WORD            		dx;           /* used by MoveLayer, SizeLayer */
-    WORD           		dy;           /* used by MoveLayer, SizeLayer */
-    LONG	    		left;
-    LONG	    		top;
-    LONG	    		width;
-    LONG 	    		height;
-    
+    struct Window		* Window;
+    struct Task			* Task;
+    UWORD           		Code;
+    union
+    {
+        struct 
+	{
+	    struct Gadget	* Gadget;
+	}			iam_activategadget;
+	struct
+	{
+	    LONG		Left;
+	    LONG		Top;
+	    LONG		Width;
+	    LONG		Height;
+	}			iam_changewindowbox;
+	struct
+	{
+	    WORD		dx;
+	    WORD		dy;
+	}   			iam_movewindow;
+	struct
+	{
+	    struct Window	* BehindWindow;
+	}			iam_movewindowinfrontof;
+	struct
+	{
+	    struct Screen	* Screen;
+	    BOOL		ShowIt;
+	}			iam_showtitle;
+	struct
+	{
+	    WORD		dx;
+	    WORD		dy;
+	}			iam_sizewindow;
+	
+    } 				iam;    
 };
 
 
@@ -381,7 +406,7 @@ enum
 #define WMFLG_TABLETMESSAGES	 (1 << 4)
 					      
 /* Called by intuition to free a window */
-extern VOID int_closewindow(struct DeferedActionMessage *msg, struct IntuitionBase *IntuitionBase);
+extern VOID int_closewindow(struct IntuiActionMessage *msg, struct IntuitionBase *IntuitionBase);
 extern VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBase);
 
 /* Driver prototypes */
@@ -418,7 +443,11 @@ extern VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase
 extern void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase);
 extern void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase);
 extern void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase);
-extern void SendDeferedActionMsg(struct DeferedActionMessage *msg, struct IntuitionBase *IntuitionBase);
+extern struct IntuiActionMessage *AllocIntuiActionMsg(UWORD code, struct Window *win, struct IntuitionBase *IntuitionBase);
+extern void FreeIntuiActionMsg(struct IntuiActionMessage *msg, struct IntuitionBase *IntuitionBase);
+extern void SendIntuiActionMsg(struct IntuiActionMessage *msg, struct IntuitionBase *IntuitionBase);
+extern BOOL AllocAndSendIntuiActionMsg(UWORD code, struct Window *win, struct IntuitionBase *IntuitionBase);
+
 extern void UpdateMouseCoords(struct Window *win);
 extern WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Rectangle *destrectarray);
 

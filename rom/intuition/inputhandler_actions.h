@@ -1,3 +1,2 @@
-void HandleDeferedActions(struct IIHData *iihdata,
-			  struct IntuitionBase *IntuitionBase);
+void HandleIntuiActions(struct IIHData *iihdata, struct IntuitionBase *IntuitionBase);
 			  

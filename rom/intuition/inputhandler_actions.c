@@ -35,8 +35,8 @@
 #define LOCK_REFRESH(x)		ObtainSemaphore(&GetPrivScreen(x)->RefreshLock)
 #define UNLOCK_REFRESH(x)	ReleaseSemaphore(&GetPrivScreen(x)->RefreshLock)
 
-#define LOCK_ACTIONS()      	ObtainSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);	
-#define UNLOCK_ACTIONS()	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+#define LOCK_ACTIONS()      	ObtainSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);	
+#define UNLOCK_ACTIONS()	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
 
 /*******************************************************************************************************/
 
@@ -405,21 +405,21 @@ static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD
 
 /*******************************************************************************************************/
 
-void HandleDeferedActions(struct IIHData *iihdata,
+void HandleIntuiActions(struct IIHData *iihdata,
 			  struct IntuitionBase *IntuitionBase)
 {
-    struct DeferedActionMessage *am, *next_am;
+    struct IntuiActionMessage *am, *next_am;
     
-    D(bug("Handle defered action messages\n"));
+    D(bug("Handle Intuition action messages\n"));
     
     LOCK_ACTIONS();
 
-    am = (struct DeferedActionMessage *)iihdata->IntuiDeferedActionQueue.mlh_Head;
-    next_am = (struct DeferedActionMessage *)am->ExecMessage.mn_Node.ln_Succ;
+    am = (struct IntuiActionMessage *)iihdata->IntuiActionQueue.mlh_Head;
+    next_am = (struct IntuiActionMessage *)am->ExecMessage.mn_Node.ln_Succ;
     
     UNLOCK_ACTIONS();
 
-    /* Handle defered action messages */
+    /* Handle Intuition action messages */
 
     while(next_am)
     {
@@ -606,40 +606,42 @@ void HandleDeferedActions(struct IIHData *iihdata,
 	    break; }
 
 
-            case AMCODE_MOVEWINDOW: 
+            case AMCODE_MOVEWINDOW: {
+	    	WORD dx = am->iam.iam_movewindow.dx;
+		WORD dy = am->iam.iam_movewindow.dy;
 		
 		/* correct dx, dy if necessary */
 		
-		if ((targetwindow->LeftEdge + targetwindow->Width + am->dx) > targetwindow->WScreen->Width)
+		if ((targetwindow->LeftEdge + targetwindow->Width + dx) > targetwindow->WScreen->Width)
 		{
-		    am->dx = targetwindow->WScreen->Width - (targetwindow->LeftEdge + targetwindow->Width);
-		} else if ((targetwindow->LeftEdge + am->dx) < 0)
+		    dx = targetwindow->WScreen->Width - (targetwindow->LeftEdge + targetwindow->Width);
+		} else if ((targetwindow->LeftEdge + dx) < 0)
 		{
-		    am->dx = -targetwindow->LeftEdge;
+		    dx = -targetwindow->LeftEdge;
 		}
 
-		if ((targetwindow->TopEdge + targetwindow->Height + am->dy) > targetwindow->WScreen->Height)
+		if ((targetwindow->TopEdge + targetwindow->Height + dy) > targetwindow->WScreen->Height)
 		{
-		    am->dy = targetwindow->WScreen->Height - (targetwindow->TopEdge + targetwindow->Height);
-		} else if ((targetwindow->TopEdge + am->dy) < 0)
+		    dy = targetwindow->WScreen->Height - (targetwindow->TopEdge + targetwindow->Height);
+		} else if ((targetwindow->TopEdge + dy) < 0)
 		{
-		    am->dy = -targetwindow->TopEdge;
+		    dy = -targetwindow->TopEdge;
 		}
 		
-		if (am->dx || am->dy)
+		if (dx || dy)
 		{   
 		    LOCK_REFRESH(targetscreen);
 		    
-                    MoveLayer(0, targetlayer, am->dx, am->dy);
+                    MoveLayer(0, targetlayer, dx, dy);
 
                     /* in case of GZZ windows also move outer window */
                     if (IS_GZZWINDOW(targetwindow))
                     {
-                	MoveLayer(NULL, targetwindow->BorderRPort->Layer, am->dx, am->dy);
+                	MoveLayer(NULL, targetwindow->BorderRPort->Layer, dx, dy);
                     }
 
-                    targetwindow->LeftEdge += am->dx;
-                    targetwindow->TopEdge  += am->dy;
+                    targetwindow->LeftEdge += dx;
+                    targetwindow->TopEdge  += dy;
 
 		    CheckLayerRefreshBehind(targetlayer, targetscreen, IntuitionBase);
 		    
@@ -657,13 +659,14 @@ void HandleDeferedActions(struct IIHData *iihdata,
 					 
 		} /* if (am->dx || am->dy) */
 		
-            break;
+            break; }
 
             case AMCODE_MOVEWINDOWINFRONTOF: {
-	        struct Layer *lay;
-	        BOOL 	     movetoback = TRUE;
+	        struct Window *BehindWindow = am->iam.iam_movewindowinfrontof.BehindWindow;
+	        struct Layer  *lay;
+	        BOOL 	      movetoback = TRUE;
 		
-		for(lay = am->BehindWindow->WLayer; lay; lay = lay->back)
+		for(lay = BehindWindow->WLayer; lay; lay = lay->back)
 		{
 		    if (lay == targetwindow->WLayer)
 		    {
@@ -680,9 +683,9 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		
                 if (IS_GZZWINDOW(targetwindow))
 		{
-                    MoveLayerInFrontOf(targetwindow->BorderRPort->Layer, am->BehindWindow->WLayer);
+                    MoveLayerInFrontOf(targetwindow->BorderRPort->Layer, BehindWindow->WLayer);
                 }
-                MoveLayerInFrontOf(targetwindow->WLayer, am->BehindWindow->WLayer);
+                MoveLayerInFrontOf(targetwindow->WLayer, BehindWindow->WLayer);
 
                 CheckLayersBehind = TRUE;
                 L = targetlayer;
@@ -699,8 +702,8 @@ void HandleDeferedActions(struct IIHData *iihdata,
                 WORD OldHeight    = targetwindow->Height;
                 WORD NewLeftEdge  = OldLeftEdge;
 		WORD NewTopEdge   = OldTopEdge;
-		WORD NewWidth	  = OldWidth + am->dx;
-		WORD NewHeight	  = OldHeight + am->dy;
+		WORD NewWidth	  = OldWidth  + am->iam.iam_sizewindow.dx;
+		WORD NewHeight	  = OldHeight + am->iam.iam_sizewindow.dy;
 		WORD size_dx, size_dy;
 
                 /* correct new window coords if necessary */
@@ -792,7 +795,12 @@ void HandleDeferedActions(struct IIHData *iihdata,
 
 	    case AMCODE_CHANGEWINDOWBOX: {
 
-		DoMoveSizeWindow(targetwindow, am->left, am->top, am->width, am->height, IntuitionBase);
+		DoMoveSizeWindow(targetwindow,
+				 am->iam.iam_changewindowbox.Left,
+				 am->iam.iam_changewindowbox.Top,
+				 am->iam.iam_changewindowbox.Width,
+				 am->iam.iam_changewindowbox.Height,
+				 IntuitionBase);
 		
 	    break; }
 	
@@ -818,10 +826,10 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		   
 		if ((iihdata->ActiveGadget == NULL) &&
 		    (IntuitionBase->ActiveWindow == targetwindow) &&
-		    ((am->Gadget->Flags & GFLG_DISABLED) == 0))
+		    ((am->iam.iam_activategadget.Gadget->Flags & GFLG_DISABLED) == 0))
 		{
 
-		    if (DoActivateGadget(targetwindow, am->Gadget, IntuitionBase))
+		    if (DoActivateGadget(targetwindow, am->iam.iam_activategadget.Gadget, IntuitionBase))
 		    {
 		    	am->Code = TRUE;
 		    }		
@@ -839,8 +847,8 @@ void HandleDeferedActions(struct IIHData *iihdata,
 	        break;
 	
 	    case AMCODE_SCREENSHOWTITLE:
-	    	targetscreen = (struct Screen *)am->Gadget;
-		if ((targetscreen->Flags & SHOWTITLE) && (am->dx == FALSE))
+	    	targetscreen = am->iam.iam_showtitle.Screen;
+		if ((targetscreen->Flags & SHOWTITLE) && (am->iam.iam_showtitle.ShowIt == FALSE))
 		{
 		    LOCK_REFRESH(targetscreen);
 		    
@@ -856,7 +864,7 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		    
 		    UNLOCK_REFRESH(targetscreen);
 		    
-		} else if (!(targetscreen->Flags & SHOWTITLE) && (am->dx == TRUE))
+		} else if (!(targetscreen->Flags & SHOWTITLE) && (am->iam.iam_showtitle.ShowIt == TRUE))
 		{
 		    UpfrontLayer(0, targetscreen->BarLayer);
 		    
@@ -913,10 +921,10 @@ next_action:
     	LOCK_ACTIONS();	
 
 	if (remove_am) Remove(&am->ExecMessage.mn_Node);
-	if (free_am)   FreeMem(am, sizeof(struct DeferedActionMessage));
+	if (free_am)   FreeIntuiActionMsg(am, IntuitionBase);
 
 	am = next_am;
-	next_am = (struct DeferedActionMessage *)am->ExecMessage.mn_Node.ln_Succ;
+	next_am = (struct IntuiActionMessage *)am->ExecMessage.mn_Node.ln_Succ;
 
     	UNLOCK_ACTIONS();
 	

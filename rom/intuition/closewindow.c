@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.27  2000/08/03 18:30:50  stegerg
+    renamed DeferedAction??? to IntuiAction???. The IntuiActionMessage
+    structure (formerly called DeferedActionMessage) now contains an
+    union for the variables needed by the different actions.
+
     Revision 1.26  2000/07/08 20:16:17  stegerg
     bugfix (could access memory which it just freed a bit before)
 
@@ -171,13 +176,13 @@ void LateCloseWindow(struct MsgPort *userport,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     
-    struct DeferedActionMessage *msg;
+    struct IntuiActionMessage 	*msg;
     
-    struct IIHData *iihd;
+    struct IIHData 		*iihd;
     
-    struct MsgPort *userport;
-    struct Screen *screen;
-    BOOL do_unlockscreen;
+    struct MsgPort 		*userport;
+    struct Screen 		*screen;
+    BOOL 			do_unlockscreen;
 
     D(bug("CloseWindow (%p)\n", window));
 
@@ -192,16 +197,13 @@ void LateCloseWindow(struct MsgPort *userport,
     */
 
     msg = IW(window)->closeMessage;
-    
-    msg->Code   = AMCODE_CLOSEWINDOW;
-    msg->Window	= window;
-    msg->Task	= FindTask(NULL);
+    msg->Task = FindTask(NULL); /* !! */
     
     /* We must save this here, because after we have returned from
        the Wait() the window is gone  */
     userport = window->UserPort;
 
-    SendDeferedActionMsg(msg, IntuitionBase);
+    SendIntuiActionMsg(msg, IntuitionBase);
 
     /* Attention: a window can also be created on the input device task context,
        usually (only?) for things like popup gadgets. */
@@ -252,17 +254,17 @@ void LateCloseWindow(struct MsgPort *userport,
 /******************************************************************************/
 
 /* This is called from the intuition input handler */
-VOID int_closewindow(struct DeferedActionMessage *msg, struct IntuitionBase *IntuitionBase)
+VOID int_closewindow(struct IntuiActionMessage *msg, struct IntuitionBase *IntuitionBase)
 {
     /* Free everything except the applications messageport */
-    ULONG lock;
+    ULONG 		lock;
     
-    struct Window *window, *win2;
-    struct Screen *screen;
-    struct MsgPort *userport;
-    struct IIHData *iihd;
-    struct Task	*msgtask;
-    BOOL do_unlockscreen;
+    struct Window 	*window, *win2;
+    struct Screen 	*screen;
+    struct MsgPort 	*userport;
+    struct IIHData 	*iihd;
+    struct Task		*msgtask;
+    BOOL 		do_unlockscreen;
     
     D(bug("CloseWindow (%p)\n", window));
 
@@ -345,7 +347,7 @@ VOID int_closewindow(struct DeferedActionMessage *msg, struct IntuitionBase *Int
     /* msg param now longer valid ... */
     
     if (IW(window)->closeMessage)
-	FreeMem(IW(window)->closeMessage, sizeof (struct DeferedActionMessage));
+	FreeIntuiActionMsg(IW(window)->closeMessage, IntuitionBase);
 
     /* ... after the FreeMem above!! */
     

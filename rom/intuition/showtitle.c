@@ -53,18 +53,19 @@
 
     if (screen->BarLayer)
     {
-	struct DeferedActionMessage * msg;
+	struct IntuiActionMessage * msg;
 
-	msg = AllocMem(sizeof(struct DeferedActionMessage), MEMF_CLEAR);
+	msg = AllocIntuiActionMsg(AMCODE_SCREENSHOWTITLE, NULL, IntuitionBase);
 
 	if (NULL != msg)
 	{
-	    msg->Code        = AMCODE_SCREENSHOWTITLE;
-	    msg->Gadget      = (struct Gadget *)screen;
-	    msg->dx          = ShowIt ? TRUE : FALSE;
-	    SendDeferedActionMsg(msg, IntuitionBase); 
+	    msg->iam.iam_showtitle.Screen = screen;
+	    msg->iam.iam_showtitle.ShowIt = ShowIt;
+
+	    SendIntuiActionMsg(msg, IntuitionBase); 
 	}   
     }
     
     AROS_LIBFUNC_EXIT
+    
 } /* ShowTitle */

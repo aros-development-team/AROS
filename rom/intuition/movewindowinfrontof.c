@@ -50,18 +50,17 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    struct DeferedActionMessage * msg;
+    struct IntuiActionMessage * msg;
     
-    msg = AllocMem(sizeof(struct DeferedActionMessage), MEMF_CLEAR);
+    msg = AllocIntuiActionMsg(AMCODE_MOVEWINDOWINFRONTOF, window, IntuitionBase);
  
     if (NULL != msg)
     {
-      msg->Code        = AMCODE_MOVEWINDOWINFRONTOF;
-      msg->Window      = window;
-      msg->BehindWindow= behindwindow;
-      
-      SendDeferedActionMsg(msg, IntuitionBase); 
+	msg->iam.iam_movewindowinfrontof.BehindWindow = behindwindow;
+
+	SendIntuiActionMsg(msg, IntuitionBase); 
     }   
 
     AROS_LIBFUNC_EXIT
+    
 } /* MoveWindowInFrontOf */

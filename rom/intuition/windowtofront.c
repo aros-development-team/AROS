@@ -49,17 +49,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    struct DeferedActionMessage * msg;
-    
-    msg = AllocMem(sizeof(struct DeferedActionMessage), MEMF_CLEAR);
- 
-    if (NULL != msg)
-    {
-      msg->Code        = AMCODE_WINDOWTOFRONT;
-      msg->Window      = window;
-      
-      SendDeferedActionMsg(msg, IntuitionBase); 
-    }   
+    AllocAndSendIntuiActionMsg(AMCODE_WINDOWTOFRONT, window, IntuitionBase);
 
     AROS_LIBFUNC_EXIT
+    
 } /* WindowToFront */

@@ -13,7 +13,7 @@ struct IIHData
 {
     struct IntuitionBase	*IntuitionBase;
     struct MsgPort		*IntuiReplyPort;
-    struct MinList		IntuiDeferedActionQueue;
+    struct MinList		IntuiActionQueue;
     struct MinList		GeneratedInputEventList;
     struct Gadget		*ActiveGadget;
     struct GadgetInfo		GadgetInfo;

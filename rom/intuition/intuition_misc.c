@@ -426,12 +426,57 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
 
 /**********************************************************************************/
 
-void SendDeferedActionMsg(struct DeferedActionMessage *msg, struct IntuitionBase *IntuitionBase)
-{    
-    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
-    AddTail((struct List *)GetPrivIBase(IntuitionBase)->IntuiDeferedActionQueue, (struct Node *)msg);
-    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+struct IntuiActionMessage *AllocIntuiActionMsg(UWORD code, struct Window *win,
+					       struct IntuitionBase *IntuitionBase)
+{
+    struct IntuiActionMessage *msg;
+    
+    if ((msg = AllocMem(sizeof(struct IntuiActionMessage), MEMF_PUBLIC | MEMF_CLEAR)))
+    {
+        msg->Code   = code;
+	msg->Window = win;
+	msg->Task   = FindTask(NULL);
+    }
+    
+    return msg;
 }
+
+/**********************************************************************************/
+
+void FreeIntuiActionMsg(struct IntuiActionMessage *msg, struct IntuitionBase *IntuitionBase)
+{
+    if (msg)
+    {
+        FreeMem(msg, sizeof(struct IntuiActionMessage));
+    }
+}
+
+/**********************************************************************************/
+
+void SendIntuiActionMsg(struct IntuiActionMessage *msg, struct IntuitionBase *IntuitionBase)
+{    
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
+    AddTail((struct List *)GetPrivIBase(IntuitionBase)->IntuiActionQueue, (struct Node *)msg);
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
+}
+
+/**********************************************************************************/
+
+BOOL AllocAndSendIntuiActionMsg(UWORD code, struct Window *win, struct IntuitionBase *IntuitionBase)
+{
+    struct IntuiActionMessage *msg;
+    BOOL		      retval = FALSE;
+    
+    if ((msg = AllocIntuiActionMsg(code, win, IntuitionBase)))
+    {
+        SendIntuiActionMsg(msg, IntuitionBase);
+	
+	retval = TRUE;
+    }
+    
+    return retval;
+}
+
 
 /**********************************************************************************/
 

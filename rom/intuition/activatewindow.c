@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.15  2000/08/03 18:30:49  stegerg
+    renamed DeferedAction??? to IntuiAction???. The IntuiActionMessage
+    structure (formerly called DeferedActionMessage) now contains an
+    union for the variables needed by the different actions.
+
     Revision 1.14  2000/02/04 21:56:01  stegerg
     use SendDeferedActionMsg instead of PutMsg
 
@@ -104,20 +109,10 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     
-    struct DeferedActionMessage *msg;
-    
-    msg = AllocMem( sizeof (struct DeferedActionMessage), MEMF_PUBLIC);
-    if (msg)
-    {
-	msg->Code  	= AMCODE_ACTIVATEWINDOW;
-	msg->Window	= window;
-
-	SendDeferedActionMsg(msg, IntuitionBase);
-	
-    }
-    
+    AllocAndSendIntuiActionMsg(AMCODE_ACTIVATEWINDOW, window, IntuitionBase);
 
     AROS_LIBFUNC_EXIT
+    
 } /* ActivateWindow */
 
 /* This is calles on the input.device's context */
