@@ -139,7 +139,7 @@ setup :
 	@echo "CFLAGS=$(CFLAGS)"
 
 clean:
-	$(RM) $(OBJDIR) *.err $(LIBDIR)/libexec.a
+	$(RM) $(OBJDIR) *.err $(LIB)
 
 $(OBJDIR)/%.o: %.c
 	@$(ECHO) "Compiling $(CURDIR)/$<..."
