@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Init of workbench.library
-    Lang: english
+    Initialization of workbench.library.
 */
 
 #include "workbench_intern.h"
@@ -34,36 +33,42 @@
 
 #define SysBase     (WorkbenchBase->wb_SysBase)
 
-ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR WorkbenchBase) {
+ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
+{
     /* Make sure that the libraries are opened in L_OpenLib() */
     WorkbenchBase->wb_LibsOpened = FALSE;
 
     /* Initialize our private lists. */
-    NEWLIST( &(WorkbenchBase->wb_AppWindows) );
-    NEWLIST( &(WorkbenchBase->wb_AppIcons) );
-    NEWLIST( &(WorkbenchBase->wb_AppMenuItems) );
-    NEWLIST( &(WorkbenchBase->wb_HiddenDevices) );
+    NEWLIST(&(WorkbenchBase->wb_AppWindows));
+    NEWLIST(&(WorkbenchBase->wb_AppIcons));
+    NEWLIST(&(WorkbenchBase->wb_AppMenuItems));
+    NEWLIST(&(WorkbenchBase->wb_HiddenDevices));
 
     /* Initialize our semaphore. */
-    InitSemaphore( &(WorkbenchBase->wb_Semaphore) );
+    InitSemaphore(&(WorkbenchBase->wb_Semaphore));
 
     return TRUE;
 } /* L_InitLib */
 
-ULONG SAVEDS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR WorkbenchBase) {
-    if( !(WorkbenchBase->wb_LibsOpened) ) {
-        if( !(WorkbenchBase->wb_UtilityBase = OpenLibrary( UTILITYNAME, 37L )) ) {
-            D(bug( "Workbench: Failed to open utility.library!\n" ));
+ULONG SAVEDS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
+{
+    if (!(WorkbenchBase->wb_LibsOpened))
+    {
+        if (!(WorkbenchBase->wb_UtilityBase = OpenLibrary(UTILITYNAME, 37L)))
+        {
+            D(bug("Workbench: Failed to open utility.library!\n"));
             return FALSE;
         }
 
-        if( !(WorkbenchBase->wb_IntuitionBase = OpenLibrary( INTUITIONNAME, 37L )) ) {
-            D(bug( "Workbench: Failed to open intuition.library!\n" ));
+        if (!(WorkbenchBase->wb_IntuitionBase = OpenLibrary(INTUITIONNAME, 37L)))
+        {
+            D(bug("Workbench: Failed to open intuition.library!\n"));
             return FALSE;
         }
 
-        if( !(WorkbenchBase->wb_DOSBase = OpenLibrary( DOSNAME, 37L )) ) {
-            D(bug( "Workbench: Failed to open dos.library!\n" ));
+        if (!(WorkbenchBase->wb_DOSBase = OpenLibrary(DOSNAME, 37L)))
+        {
+            D(bug("Workbench: Failed to open dos.library!\n"));
             return FALSE;
         }
 
@@ -73,16 +78,20 @@ ULONG SAVEDS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR WorkbenchBase) {
     return TRUE;
 } /* L_OpenLib */
 
-void SAVEDS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR WorkbenchBase) {
-    if( (WorkbenchBase->wb_UtilityBase) ) {
-        CloseLibrary( WorkbenchBase->wb_UtilityBase );
+void SAVEDS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
+{
+    if ((WorkbenchBase->wb_UtilityBase))
+    {
+        CloseLibrary(WorkbenchBase->wb_UtilityBase);
     }
 
-    if( (WorkbenchBase->wb_IntuitionBase) ) {
-        CloseLibrary( WorkbenchBase->wb_IntuitionBase );
+    if ((WorkbenchBase->wb_IntuitionBase))
+    {
+        CloseLibrary(WorkbenchBase->wb_IntuitionBase);
     }
 
-    if( (WorkbenchBase->wb_DOSBase) ) {
-        CloseLibrary( WorkbenchBase->wb_DOSBase );
+    if ((WorkbenchBase->wb_DOSBase))
+    {
+        CloseLibrary(WorkbenchBase->wb_DOSBase);
     }
 } /* L_ExpungeLib */
