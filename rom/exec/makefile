@@ -33,7 +33,14 @@ ASMFUNCTIONS = forbid disable getcc cacheclearu cachepredma cachepostdma
 
 else
 OBJDIR=$(OSGENDIR)/exec
+ifeq ("$(SHARED_EXEC)","yes")
 LIB=$(LIBDIR)/libexec.so
+RMLIB=$(LIBDIR)/libexec.a
+else
+LIB=$(LIBDIR)/libexec.a
+RMLIB=$(LIBDIR)/libexec.so
+endif
+SHARED_AR=$(AR)
 
 FILES = init execfunctions
 
@@ -113,6 +120,7 @@ endif
 setup :
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@if [ ! -d $(OSMODDIR) ]; then $(MKDIR) $(OSMODDIR) ; else true ; fi
+	@echo "CFLAGS=$(CFLAGS)"
 
 clean:
 	$(RM) $(OBJDIR) *.err $(LIBDIR)/libexec.a
@@ -120,14 +128,17 @@ clean:
 $(LIB): $(OBJS)
 	@echo "Recreating $@..."
 	@$(SHARED_AR) $@ $(OBJS)
+	@$(RM) $(RMLIB)
 
 $(OBJDIR)/%.o: %.c
-	$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	@echo "Compiling $(CURDIR)/$<"
+	@$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
+	@echo "Makedepend $(CURDIR)/$<"
+	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 ifneq ($(TARGET),clean)
 include $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)

@@ -219,7 +219,15 @@ AmigaOS :
 # END_DESC{internaltarget}
 LIBOBJS=$(wildcard $(OSGENDIR)/*.o)
 ifneq ("$(SHARED_AR)","")
-LIBLIBS=$(LIBDIR)/libexec.so $(LIBDIR)/libdos.so $(LIBDIR)/libutility.so \
+ifeq ("$(SHARED_EXEC)","yes")
+DEPLIBEXEC=$(LIBDIR)/libexec.so
+LIBEXEC=-lexec
+else
+DEPLIBEXEC= #$(LIBDIR)/libexec.a
+LIBEXEC=
+endif
+
+LIBLIBS=$(DEPLIBEXEC) $(LIBDIR)/libdos.so $(LIBDIR)/libutility.so \
 	$(LIBDIR)/libgraphics.so \
 	$(LIBDIR)/libintuition.so
 LIBPATH=$(shell cd $(LIBDIR) ; pwd)
@@ -231,7 +239,7 @@ ifeq ("$(SHARED_AR)","")
 	@$(RANLIB) $@
 else
 	@$(SHARED_AR) $@ $(LIBOBJS) -L$(LIBDIR) \
-		-lintuition -lgraphics -ldos -lutility -lexec -lamiga
+		-lintuition -lgraphics -ldos -lutility $(LIBEXEC) -lamiga
 endif
 
 GENPROTOS=$(TOP)/scripts/genprotos
