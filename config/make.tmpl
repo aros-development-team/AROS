@@ -1189,7 +1189,7 @@ BD_DIRS$(BDID) := $(foreach name, %(catalogs), %(dir)/$(name)/%(subdir))
 
 #MM %(mmake) : %(mmake)-setup
 
-%(mmake) : $(BD_OBJS$(BDID)) %(include)
+%(mmake) : $(BD_OBJS$(BDID)) %(source)
 
 #MM %(mmake)-setup
 %rule_makedirs dirs=$(BD_DIRS$(BDID)) setuptarget=%(mmake)-setup
