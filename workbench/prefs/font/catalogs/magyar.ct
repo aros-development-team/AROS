@@ -1,0 +1,77 @@
+## version $VER: fontprefs.catalog 1.0 (03.02.2005)
+## language magyar
+## codeset 0
+;
+;
+MSG_ERROR_CANT_CREATE_APPLICATION
+Nem tudtam létrehozni az alkalmazást!
+; Can't create application object.
+;
+MSG_CANT_CREATE_REQ
+Nem tudtam létrehozni a kérdezõt!
+; Can't open create filerequester!
+;
+MSG_CANT_CREATE_CONTEXT
+Nem tudtam létrehozni összefüggést a Gadtools-szal!
+; Can't create context for Gadtools!
+;
+MSG_CANT_OPEN_STREAM
+Nem tudtam megnyitni az IFF áramot!
+; Can't open IFF stream!
+;
+MSG_CANT_WRITE_PREFFILE
+Nem tudtam menteni a beállításokat!
+; Can't write preferences!
+;
+MSG_CANT_READ_PREFFILE
+Nem tudtam beolvasni a beállításokat!
+; Can't read preferences!
+;
+MSG_CANT_ALLOCATE_IFFPTR
+Nem tudtam lefoglalni az IFF kezelõt!
+; Can't allocate IFF handle!
+;
+MSG_CANT_ALLOCATE_MEM
+Nincs elegendõ memória az alkalmazáshoz (%s)!
+; Can't allocate application memory (%s)!
+;
+MSG_NAME
+Betûtípus beállítások
+; Font Preferences
+;
+MSG_MENU_PREFERENCES
+Beállítások
+; Preferences
+;
+MSG_MENU_PREFERENCES_IMPORT
+I\0Importál...
+; I\0Import...
+;
+MSG_MENU_PREFERENCES_EXPORT
+E\0Exportál...
+; E\0Export...
+;
+MSG_ASL_OPEN_TITLE
+Betûtípus beállítás betöltése
+; Load Font Preferences
+;
+MSG_ASL_SAVE_TITLE
+Betûtípus beállítás mentése
+; Save Font Preferences
+;
+MSG_OK
+Rendben
+; Ok
+;
+MSG_ICONS
+Ikonok:
+;Icons:
+;
+MSG_SYSTEM
+Rendszer:
+;System:
+;
+MSG_SCREEN
+Képernyõ:
+; Screen:
+;
