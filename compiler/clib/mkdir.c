@@ -8,6 +8,7 @@
 #include <proto/dos.h>
 #include <errno.h>
 #include "__errno.h"
+#include "__upath.h"
 
 /*****************************************************************************
 
@@ -53,6 +54,10 @@
 	return -1;
     }
 
+    path = __path_u2a(path);
+    if (!path)
+        return -1;
+	    
     lock = CreateDir(path);
 
     if (!lock)
