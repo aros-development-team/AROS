@@ -300,7 +300,7 @@ c00022;2;SDuvan;Write C:If
 c00023;2;Stephan Rupprecht,SDuvan;Write C:Info
 c00024;2;chodorowski,SDuvan;Write C:Join
 c00025;2;SDuvan;Write C:Lab
-c00027;1;matthias,bergers,SDuvan;Write C:List
+c00027;2;matthias,bergers,SDuvan,stegerg;Write C:List
 c00028;2;SDuvan;Write C:MakeLink
 c00029;2;matthias,SDuvan;Write C:MakeDir
 c00030;2;matthias;Write C:Mount
