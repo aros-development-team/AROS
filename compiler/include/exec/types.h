@@ -208,6 +208,20 @@
     typedef double  DOUBLE;	/* 64bit IEEE floating point value */
 #endif
 
+#ifndef __typedef_LONGBITS
+#   define __typedef_LONGBITS
+    typedef ULONG LONGBITS;
+#endif
+
+#ifndef __typedef_WORDBITS
+#   define __typedef_WORDBITS
+    typedef UWORD WORDBITS;
+#endif
+
+#ifndef __typedef_BYTEBITS
+#   define __typedef_BYTEBITS
+    typedef UBYTE BYTEBITS;
+#endif
 
 /*************************************
  ***** Some useful definitions	 *****
