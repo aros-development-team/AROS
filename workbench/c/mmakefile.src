@@ -35,6 +35,7 @@ FILES	:= \
 	Rename \
 	RequestChoice \
 	RequestFile \
+	Reset \
 	ResList \
 	ScreenPattern \
 	Search \
