@@ -1,10 +1,10 @@
 /* gui.c -- here are all functions for the gui */
 
 /*
-  Uncomment the next line if you want to use the
+  Comment the next line if do not you want to use the
   experimental Intuition based GUI
-#define INTUIGUI 1
 */
+#define INTUIGUI 1
 
 #include "Installer.h"
 #include "execute.h"
@@ -83,11 +83,21 @@ APTR vi;
 struct Screen *scr;
 struct Gadget *glist = NULL, *first = NULL, *gad = NULL;
 
-#define INTUIGUI 0
 
 #define ID_BOOLGAD 1
-struct NewGadget gt_boolgad = {
+struct NewGadget gt_boolgadfalse = {
   10,10, 30,30, /* ng_LeftEdge ng_TopEdge ng_Width ng_Height */
+  NULL, /* ng_GadgetText */
+  NULL, /* ng_TextAttr */
+  ID_BOOLGAD, /* ng_GadgetID */
+  PLACETEXT_IN, /* ng_Flags */
+  NULL, /* ng_VisualInfo */
+  NULL  /* ng_UserData */
+};
+
+#define ID_BOOLGAD 2
+struct NewGadget gt_boolgadtrue = {
+  50,10, 30,30, /* ng_LeftEdge ng_TopEdge ng_Width ng_Height */
   NULL, /* ng_GadgetText */
   NULL, /* ng_TextAttr */
   ID_BOOLGAD, /* ng_GadgetID */
@@ -171,7 +181,8 @@ struct TagItem tags[] =
   gad = CreateContext( &glist );
   if(gad==NULL)
     printf("CreateContext() failed\n");
-  gt_boolgad.ng_VisualInfo = vi;
+  gt_boolgadtrue.ng_VisualInfo = vi;
+  gt_boolgadfalse.ng_VisualInfo = vi;
   gt_textgad.ng_VisualInfo = vi;
 }
 
@@ -644,27 +655,16 @@ char c;
 	{ TAG_DONE } };
 
     clear_gui();
-    gad = CreateGadgetA( BUTTON_KIND, gad, &gt_boolgad, ti1 );
+    gad = CreateGadgetA( BUTTON_KIND, gad, &gt_boolgadtrue, ti1 );
     first = gad;
+    gad = CreateGadgetA( BUTTON_KIND, gad, &gt_boolgadfalse, ti1 );
 
     gad = CreateGadgetA( TEXT_KIND, gad, &gt_textgad, ti2 );
 
-    if(glist==NULL)
-        printf("glist==NULL\n");
-    else
-    {
-printf("glist=%p\n",glist);
-printf("glist->NextGadget=%p\n",glist->NextGadget);
-printf("GuiWin=%p\n",GuiWin);
-printf("Adding gads...\n");
-        AddGList(GuiWin,glist,-1,-1,NULL);
-printf("Refreshing glist...\n");
-        RefreshGList(glist,GuiWin,NULL,-1);
-printf("Refreshing win...\n");
-        GT_RefreshWindow(GuiWin,NULL);
-        //DrawBevelBoxA(rp, 8,8,160,75,bevel_tag);
-printf("Finished...\n");
-    }
+    AddGList(GuiWin,glist,-1,-1,NULL);
+    RefreshGList(glist,GuiWin,NULL,-1);
+    GT_RefreshWindow(GuiWin,NULL);
+    //DrawBevelBoxA(rp, 8,8,160,75,bevel_tag);
         
 #if 1
     itext.NextText = NULL;
@@ -712,14 +712,14 @@ printf("Finished...\n");
                     retval = 0;
                     finish = TRUE;
                     break;
-                  case 4:
+                  case 2:
                     retval = 1;
                     finish = TRUE;
                     break;
                   case 0:
                     abort_install();
                     break;
-                  case 2:
+                  case 3:
                     for( i = 0 ; i < GetPL( pl, _HELP ).intval ; i ++ )
                     {
                       printf( "%s\n", GetPL( pl, _HELP ).arg[i] );
@@ -742,6 +742,8 @@ printf("Finished...\n");
       } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
       
     } while( !finish );
+    RemoveGList(GuiWin,glist,-1);
+    GT_RefreshWindow(GuiWin,NULL);
 #else
     Delay( 100 );
 #endif
