@@ -368,6 +368,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		snprintf(spec, sizeof(spec), "1:%ld", i);
 		data->vector_image[i] = ImageObject,
 		    ButtonFrame,
+		    InnerSpacing(4,4),
 		    MUIA_CycleChain, 1,
 		    MUIA_Image_Spec, spec,
 		    MUIA_InputMode, MUIV_InputMode_Immediate,
