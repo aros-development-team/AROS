@@ -11,6 +11,10 @@ MSG_CANT_CREATE_REQ
 Kann Datei Requester nicht erzeugen!
 ; Can't open create filerequester!
 ;
+MSG_CANT_CREATE_CONTEXT
+Kann Kontext für Gadtools nicht erzeugen!
+;Can't create context for Gadtools!
+;
 MSG_CANT_OPEN_STREAM
 Kann IFF Stream nicht öffnen!
 ; Can't open IFF stream!
