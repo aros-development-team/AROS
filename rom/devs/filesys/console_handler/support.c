@@ -138,24 +138,6 @@ static struct csimatch
 
 /******************************************************************************************/
 
-static LONG strnicmp(STRPTR string1, STRPTR string2, LONG length) /* taken from utility/strnicmp */
-{
-    UBYTE c1, c2;
-
-    /* Loop as long as the strings are identical and valid. */
-    do
-    {
-	/* Get characters, convert them to lower case. */
-	c1 = tolower(*string1++);
-	c2 = tolower(*string2++);
-    }while(c1 == c2 && c1 && --length);
-
-    /* Get result. */
-    return (LONG)c1 - (LONG)c2;
-}
-
-/******************************************************************************************/
-
 struct Task *createConTask(APTR taskparams, struct conbase *conbase)
 {
     struct Task *task;
