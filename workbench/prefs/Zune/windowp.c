@@ -22,6 +22,7 @@
 #endif
 
 #include "zunestuff.h"
+#include <string.h>
 
 extern struct Library *MUIMasterBase;
 
