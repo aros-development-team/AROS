@@ -47,12 +47,18 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
         
         Child, (IPTR) HGroup,
             Child, (IPTR) VGroup, /* Text Buttons */
+	        MUIA_Weight, 130,
                 Child, (IPTR) ColGroup(2),
                     GroupFrameT("General"),                    
 	            MUIA_Group_SameHeight, TRUE,
-	            MUIA_Group_VertSpacing, 2,
+	            MUIA_Group_VertSpacing, 1,
                     Child, (IPTR) FreeLabel("Background:"),
                     Child, (IPTR) d.text_background_popimage = MakeBackgroundPopimage(),
+	Child, RectangleObject, MUIA_MaxHeight, 0, End,
+	Child, HGroup,
+	Child, RectangleObject, MUIA_MaxHeight, 0, MUIA_FixWidth, 28, End,
+	Child, RectangleObject, MUIA_MaxHeight, 0, End,
+	End,
                     Child, (IPTR) FreeLabel("Background in\npressed state:"),
                     Child, (IPTR) d.text_selbackground_popimage = MakeBackgroundPopimage(),
                     End,
@@ -60,7 +66,7 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                     GroupFrameT("Text Buttons"),
 	            MUIA_Group_VertSpacing, 2,
                     Child, (IPTR) FreeLabel("Frame:"),
-                    Child, (IPTR) d.button_popframe = MakePopframe(),                  
+                    Child, (IPTR) d.button_popframe = MakePopframe(),
                     Child, (IPTR) Label("Font:"),
                     Child, (IPTR) PopaslObject,
                         MUIA_Popasl_Type, ASL_FontRequest,
@@ -78,12 +84,11 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                     
                     Child, (IPTR) HSpace(0),
                     Child, (IPTR) FreeLabel("Frame:"),
-                    Child, (IPTR) d.imagebutton_popframe = NewObject
+                    Child, (IPTR) d.imagebutton_popframe = MUI_NewObject
                     (
-                        CL_FrameClipboard->mcc_Class, NULL,
-                        MUIA_Draggable,           TRUE, 
+                        MUIC_Popframe,
                         MUIA_CycleChain,          1,
-                        MUIA_MaxWidth,            28,
+                        MUIA_FixWidth,            28,
                         MUIA_Window_Title, (IPTR) "Adjust Frame",
                         TAG_DONE
                     ),
@@ -93,11 +98,10 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                     GroupFrameT("Checkmarks"),
                     Child, (IPTR) HSpace(0),
                     Child, (IPTR) FreeLabel("Look:"),
-                    Child, (IPTR) d.checkmark_look_popimage = NewObject
+                    Child, (IPTR) d.checkmark_look_popimage = MUI_NewObject
                     (
-                        CL_ImageClipboard->mcc_Class, NULL,
+                        MUIC_Popimage,
                         MUIA_Imageadjust_Type,       MUIV_Imageadjust_Type_Image,
-                        MUIA_Draggable,              TRUE,
                         MUIA_CycleChain,             1,
                         MUIA_FixWidth,               28,
                         MUIA_MaxHeight,              28,
@@ -115,11 +119,10 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	            Child, (IPTR) HSpace(0),
                     Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
-                        Child, (IPTR) d.radio_look_popimage = NewObject
+                        Child, (IPTR) d.radio_look_popimage = MUI_NewObject
                         (
-                            CL_ImageClipboard->mcc_Class, NULL,
+                            MUIC_Popimage,
                             MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
-                            MUIA_Draggable, TRUE, 
                             MUIA_CycleChain, 1,
                             MUIA_MaxWidth, 28,
                             MUIA_FixHeight, 28,

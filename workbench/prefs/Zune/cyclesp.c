@@ -75,11 +75,10 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
             GroupFrameT("Cycle Gadget Design"),
             Child, (IPTR) HVSpace,
             Child, (IPTR) d.cycle_popimage =
-            NewObject
+            MUI_NewObject
             (
-                CL_ImageClipboard->mcc_Class, NULL,
+                MUIC_Popimage,
                 MUIA_Imageadjust_Type,       MUIV_Imageadjust_Type_Image,
-                MUIA_Draggable,              TRUE, 
                 MUIA_CycleChain,             1,
                 MUIA_MaxWidth,               28,
                 MUIA_MaxHeight,              28,
@@ -117,10 +116,9 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                     End, /* VGroup */
                     Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
-                        Child, (IPTR) d.background_menu_popimage = NewObject
+                        Child, (IPTR) d.background_menu_popimage = MUI_NewObject
                         (
-                            CL_ImageClipboard->mcc_Class, NULL,
-                            MUIA_Draggable,           TRUE,
+                            MUIC_Popimage,
                             MUIA_CycleChain,          1,
                             MUIA_Window_Title, (IPTR) "Adjust Background",
                             TAG_DONE

@@ -59,11 +59,10 @@ ULONG Imagecfg[NBIMAGES] =
 
 static Object *MakeSpecialPopimage(CONST_STRPTR title)
 {
-    return NewObject
+    return MUI_NewObject
 	(
-	    CL_ImageClipboard->mcc_Class, NULL,
+	    MUIC_Popimage,
 	    MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
-	    MUIA_Draggable, TRUE, 
 	    MUIA_CycleChain, 1,
 	    MUIA_MaxWidth, 28,
 	    MUIA_MaxHeight, 28,
@@ -118,7 +117,7 @@ static IPTR SpecialP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	Child, (IPTR) ScaleObject, End,
 	End, // Progress Indicator
 	End, // HGroup
-	Child, HGroup,
+	Child, (IPTR) HGroup,
 	GroupFrameT("Device Images"),
 	Child, (IPTR) HSpace(0),
 	Child, d.popimage[0] = MakeSpecialPopimage("Drawer"),
@@ -130,7 +129,7 @@ static IPTR SpecialP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	Child, d.popimage[6] = MakeSpecialPopimage("Assign"),
 	Child, (IPTR) HSpace(0),
 	End, // Device Images
-	Child, HGroup,
+	Child, (IPTR) HGroup,
 	GroupFrameT("Tape Images"),
 	Child, (IPTR) HSpace(0),
 	Child, d.popimage[7] = MakeSpecialPopimage("Tape play"),

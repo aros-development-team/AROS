@@ -51,9 +51,8 @@ static CONST_STRPTR gadget_type_labels[] =
 
 Object *MakeArrowPopimage (CONST_STRPTR wintitle)
 {
-    return NewObject(CL_ImageClipboard->mcc_Class, NULL,
+    return MUI_NewObject(MUIC_Popimage,
 		     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
-		     MUIA_Draggable, TRUE, 
 		     MUIA_CycleChain, 1,
 		     MUIA_MaxWidth, 30,
 		     MUIA_MaxHeight, 30,
@@ -135,11 +134,10 @@ static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	            MUIA_Group_SameWidth, TRUE,
 	            Child, (IPTR) VGroup,
 	                MUIA_Group_VertSpacing, 1,
-	                Child, (IPTR) d.knob_popimage = NewObject
+	                Child, (IPTR) d.knob_popimage = MUI_NewObject
                         (
-                            CL_ImageClipboard->mcc_Class, NULL,
+                            MUIC_Popimage,
                             MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
-                            MUIA_Draggable, TRUE, 
                             MUIA_CycleChain, 1,
                             MUIA_Imagedisplay_FreeHoriz, FALSE,
                             MUIA_Imagedisplay_FreeVert, FALSE,
