@@ -3,8 +3,6 @@
 
 #include <exec/types.h>
 
-#include "volumes.h"
-
-ULONG calcChkSum(struct Volume *, ULONG *);
+ULONG calcChkSum(ULONG, ULONG *);
 
 #endif
