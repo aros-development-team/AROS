@@ -218,6 +218,6 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o):
 	$(foreach f,%(files),$(shell echo >> $(GENDIR)/config.files add $(f)))
 %end
 
-%define supp_files files=/M
+%define exclude_files files=/M
 	$(foreach f,%(files),$(shell echo >> $(GENDIR)/config.files not $(f)))
 %end
