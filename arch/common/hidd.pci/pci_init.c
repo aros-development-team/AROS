@@ -15,7 +15,7 @@
 
 #include <utility/utility.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <proto/exec.h>
 #include <aros/debug.h>
@@ -68,6 +68,7 @@ static const APTR inittabl[4] =
     &Pci_init
 };
 
+static
 AROS_UFH3(LIBBASETYPEPTR, Pci_init,
     AROS_UFHA(LIBBASETYPEPTR, LIBBASE, D0),
     AROS_UFHA(ULONG, slist, A0),
@@ -76,7 +77,8 @@ AROS_UFH3(LIBBASETYPEPTR, Pci_init,
     AROS_USERFUNC_INIT
 
     struct pci_staticdata *psd;
-        
+
+    /* Initialize the library-related things */
     LIBBASE->sysBase = SysBase;
     LIBBASE->LibNode.lib_Node.ln_Pri = Pci_Resident.rt_Pri;
     LIBBASE->LibNode.lib_Node.ln_Name = Pci_Resident.rt_Name;
@@ -88,6 +90,7 @@ AROS_UFH3(LIBBASETYPEPTR, Pci_init,
 
     D(bug("[PCI] Initializing PCI system\n"));
 
+    /* Get some space for static data of the classes */
     psd = AllocMem(sizeof(struct pci_staticdata), MEMF_CLEAR | MEMF_PUBLIC);
     
     if (psd)

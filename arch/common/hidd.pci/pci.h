@@ -1,23 +1,28 @@
 #ifndef _PCI_H
 #define _PCI_H
 
+/*
+    Copyright © 2004, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <exec/execbase.h>
 #include <exec/nodes.h>
 #include <exec/lists.h>
 
-//#include <aros/abi.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 
 #include <oop/oop.h>
 
-//#include <asm/macros.h>
 #include <aros/arossupportbase.h>
 #include <exec/execbase.h>
 
 #include LC_LIBDEFS_FILE
+
+/* Private data and structures unavailable outside the pci base classes */
 
 extern UBYTE LIBEND;
 
@@ -30,7 +35,6 @@ struct DriverNode {
     struct Node		node;
     OOP_Class		*driverClass;	/* Driver class */
     OOP_Object		*driverObject;	/* Driver object */
-    UBYTE		managed;	/* Delete class after pci destruction? */
     ULONG		highBus;
     struct List		devices;	/* List of defices behind this node */
 };
@@ -60,6 +64,12 @@ typedef struct DeviceData {
 	ULONG		addr;
 	ULONG		size;
     } BaseReg[6];
+    ULONG		RomBase;
+    ULONG		RomSize;
+
+    STRPTR		strClass;
+    STRPTR		strSubClass;
+    STRPTR		strInterface;
 } tDeviceData;
 
 struct pci_staticdata {
@@ -69,6 +79,7 @@ struct pci_staticdata {
     
     struct List		drivers;
     
+    OOP_AttrBase	hiddAB;
     OOP_AttrBase	hiddPCIAB;
     OOP_AttrBase	hiddPCIDriverAB;
     OOP_AttrBase	hiddPCIBusAB;
@@ -78,6 +89,7 @@ struct pci_staticdata {
     OOP_Object		*pciObject;    
     OOP_Class		*driverClass;
 
+    /* Most commonly used methods have already the mID's stored here */
     OOP_MethodID	mid_RB;
     OOP_MethodID	mid_RW;
     OOP_MethodID	mid_RL;
@@ -100,6 +112,7 @@ OOP_Class *init_pcideviceclass(struct pci_staticdata *);
 #define BASE(lib) ((struct pcibase*)(lib))
 
 #define PSD(cl) ((struct pci_staticdata*)cl->UserData)
+
 /* PCI Configspace offsets */
 #define PCICS_VENDOR		0x00
 #define PCICS_PRODUCT		0x02
@@ -200,7 +213,7 @@ OOP_Class *init_pcideviceclass(struct pci_staticdata *);
 #define PCIBAR_TYPE_MMAP	0x00
 #define PCIBAR_TYPE_IO		0x01
 #define PCIBAR_MASK_MEM		0xfffffff0
-#define PCIBAR_MASK_IO		0xfffffffb
+#define PCIBAR_MASK_IO		0xfffffffc
 
 #define PCIBAR_MEMTYPE_MASK	0x06
 #define PCIBAR_MEMTYPE_32BIT	0x00
@@ -235,6 +248,12 @@ OOP_Class *init_pcideviceclass(struct pci_staticdata *);
 #define PCIBR_INT_LINE		0x3c
 #define PCIBR_INT_PIN		0x3d
 #define PCIBR_CONTROL		0x3e
+
+#define PCICTRLB_ISAENABLE	2
+#define PCICTRLB_VGAENABLE	3
+
+#define PCICTRLF_ISAENABLE	(1 << PCICTRLB_ISAENABLE)
+#define PCICTRLF_VGAENABLE	(1 << PCICTRLF_ISAENABLE)
 
 #endif /* _PCI_H */
 

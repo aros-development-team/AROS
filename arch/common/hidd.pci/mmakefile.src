@@ -26,8 +26,10 @@ $(INCDIR)/libraries/pci.h: include/pci_lib.h
 $(GENINCDIR)/libraries/pci.h: include/pci_lib.h
 	$(CP) include/pci_lib.h  $(GENINCDIR)/libraries/pci.h
 
-%build_module_macro mmake=workbench-libs-pci \
-    modname=pci modtype=library \
+#MM- kernel-objs: kernel-pci-kobj
+
+%build_module_macro mmake=kernel-pci \
+    modname=pci modtype=hidd \
     files="$(FILES) $(FUNCS)" \
     conffile=lib.conf genfunctable=yes \
     uselibs="rom amiga"
