@@ -716,7 +716,8 @@ void fbRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2)
     {
     	for(x = 0; x < w / 4; x++)
 	{
-	    *((ULONG *)dst)++ = *((ULONG *)src)++;
+	    *(ULONG *)dst = *(ULONG *)src;
+	    dst += 4; src += 4;
 	}
 	src += srcmod;
 	dst += dstmod;

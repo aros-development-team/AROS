@@ -746,23 +746,25 @@ static VOID bitmap_blitcolorexpansion(OOP_Class *cl, OOP_Object *o, struct pHidd
 		    break;
 
 		case 2:
-		    *((UWORD *)mem)++ = pix;
+		    *(UWORD *)mem = pix;
+		    mem += 2;
     	    	    break;
 
 		case 3:
 		#if AROS_BIG_ENDIAN
-		    *((UBYTE *)mem)++ = pix >> 16;
-		    *((UBYTE *)mem)++ = pix >> 8;
-		    *((UBYTE *)mem)++ = pix;
+		    *mem++ = pix >> 16;
+		    *mem++ = pix >> 8;
+		    *mem++ = pix;
 		#else
-		    *((UBYTE *)mem)++ = pix;
-		    *((UBYTE *)mem)++ = pix >> 8;
-		    *((UBYTE *)mem)++ = pix >> 16;
+		    *mem++ = pix;
+		    *mem++ = pix >> 8;
+		    *mem++ = pix >> 16;
 		#endif
 		    break;
 
 		case 4:
-		    *((ULONG *)mem)++ = pix;
+		    *(ULONG *)mem++ = pix;
+		    mem += 4;
 		    break;
 
 	    }
