@@ -42,7 +42,7 @@
 
 #undef DEBUG
 #define DEBUG 0
-#include <aros/debug.h>
+#   include <aros/debug.h>
 
 ULONG addextragadget(struct Window *w,BOOL is_gzz,struct DrawInfo *dri,LONG relright,ULONG imagetype,ULONG gadgetid,ULONG gadgettype,struct IntuitionBase *IntuitionBase);
 extern ULONG HookEntry();
@@ -916,4 +916,102 @@ ULONG addextragadget(struct Window *w,BOOL is_gzz,struct DrawInfo *dri,LONG relr
 
 }
 
+/**********************************************************************************/
+
+LONG CalcResourceHash(APTR resource)
+{
+    LONG l1, l2, l3, l4, hash;
+    
+    /* FIXME: Probably sucks. I have no clue about this hash stuff */
+    
+    l1 = ((LONG)resource) & 0xFF;
+    l2 = (((LONG)resource) >> 8) & 0xFF;
+    l3 = (((LONG)resource) >> 16) & 0xFF;
+    l4 = (((LONG)resource) >> 24) & 0xFF;
+   
+    hash = (l1 + l2 + l3 + l4) % RESOURCELIST_HASHSIZE;
+
+    return hash;
+}
+/**********************************************************************************/
+
+void AddResourceToList(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase)
+{
+    struct HashNode *hn = NULL;
+    LONG    	     hash;
+    ULONG   	     ilock;
+        
+    switch(resourcetype)
+    {
+    	case RESOURCE_WINDOW:
+	    hn = &((struct IntWindow *)resource)->hashnode;
+	    hn->type = RESOURCE_WINDOW;
+	    break;
+	    
+	default:
+	    D(bug("AddResourceToList: Unknown resource type!!!\n"));
+	    return;
+    }  
+
+    hash = CalcResourceHash(resource);
+
+    hn->resource = resource;
+	    
+    ilock = LockIBase(0);
+    AddTail((struct List *)&GetPrivIBase(IntuitionBase)->ResourceList[hash], (struct Node *)hn);
+    UnlockIBase(ilock);
+}
+
+/**********************************************************************************/
+
+void RemoveResourceFromList(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase)
+{
+    struct HashNode *hn = NULL;
+    ULONG   	     ilock;
+    
+    switch(resourcetype)
+    {	
+    	case RESOURCE_WINDOW:
+	    hn = &((struct IntWindow *)resource)->hashnode;
+	    break;
+	    
+	default:
+	    D(bug("RemoveResourceFromList: Unknown resource type!!!\n"));
+	    return;
+    }
+    
+    if (hn->type != resourcetype)
+    {
+    	D(bug("RemoveResourceFromList: Panic. Resource Type mismatch!!!\n"));
+    }
+    
+    ilock = LockIBase(0);
+    Remove((struct Node *)hn);
+    UnlockIBase(ilock);
+}
+
+/**********************************************************************************/
+
+BOOL ResourceExisting(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase)
+{
+    struct HashNode *hn = NULL;
+    LONG    	     hash;
+    ULONG   	     ilock;
+    BOOL    	     exists = FALSE;
+    
+    hash = CalcResourceHash(resource);
+    
+    ilock = LockIBase(0);
+    ForeachNode((struct List *)&GetPrivIBase(IntuitionBase)->ResourceList[hash], hn)
+    {
+    	if ((hn->resource == resource) && (hn->type == resourcetype))
+	{
+	    exists = TRUE;
+	    break;
+	}
+    }
+    UnlockIBase(ilock);
+    
+    return exists;
+}
 /**********************************************************************************/
