@@ -8,8 +8,6 @@
     Desc: ANSI-C header file stddef.h
     Lang: english
 */
-#define __AROS_CLIB_TYPES_ONLY
-
 #include <aros/systypes.h>
 
 /* This construction prevents these types from being multiply defined. */

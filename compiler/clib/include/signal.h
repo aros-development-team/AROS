@@ -8,8 +8,6 @@
     Based on SUSv2 with help from C99.
 */
 
-#define __AROS_CLIB_TYPES_ONLY
-
 #include <aros/system.h>	    /* for restrict */
 #include <aros/systypes.h>	    /* includes <exec/types.h> */
 #include <sys/_posix.h>

@@ -8,8 +8,6 @@
     Standard fixed sized integral types.
 */
 
-#define __AROS_CLIB_TYPES_ONLY
-
 #include <exec/types.h>			/* includes <aros/system.h> */
 
 typedef QUAD		int64_t;        /* 64-bit signed integer   */
