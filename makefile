@@ -46,7 +46,7 @@ LIBS=-L$(LIBDIR) \
 #	for the main targets (eg. all, clean).
 #
 # END_DESC{localmakevar}
-SUBDIRS = config rom compiler workbench apps
+SUBDIRS = config compiler rom workbench apps
 
 # BEGIN_DESC{localmakevar}
 # \item{TESTDIR} The director in which the test cases will be put in
