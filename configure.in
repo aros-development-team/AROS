@@ -412,7 +412,7 @@ case "$target_os" in
 
     pc)
 	aros_target_arch="pc"
-	aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -funroll-loops -DADEBUG=1 -DMDEBUG=1"
+	aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -DADEBUG=1 -DMDEBUG=1"
 	aros_shared_default="no"
 	case "$target_cpu" in
 	    *i?86*)
@@ -433,7 +433,7 @@ case "$target_os" in
 
     prep)
 	aros_target_arch="prep"
-	aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -funroll-loops -mregnames -mcpu=604e -mno-toc -mprototype -mno-sdata -DADEBUG=0 -DMDEBUG=0"
+	aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -mregnames -mcpu=604e -mno-toc -mprototype -mno-sdata -DADEBUG=0 -DMDEBUG=0"
 	aros_shared_default="no"
 	aros_target_cpu="ppc"
 	aros_object_format="elf32ppc"
