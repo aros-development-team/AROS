@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: OOP HIDD metaclass
@@ -69,7 +69,7 @@ struct hiddmeta_inst
     } data;
 };
 
-#define OOPBase	(GetOBase(((OOP_Class *)cl)->UserData))
+#define OOPBase	(cl->OOPBasePtr)
    
 /**********************
 **  HIDDMeta::New()  **
@@ -571,7 +571,7 @@ static VOID get_info_on_ifs(OOP_Class *super
     ReturnVoid("get_info_on_ifs");
 }
 
-#define OOPBase ((struct IntOOPBase *)OOP_OCLASS(OOP_OCLASS(cl))->UserData)
+#define OOPBase (cl->OOPBasePtr)
 
 /**********************
 **  HIDD_DoMethod()  **
