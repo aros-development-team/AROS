@@ -74,8 +74,8 @@ Area.mui/MUIA_Background            done
 Area.mui/MUIA_BottomEdge            done
 Area.mui/MUIA_ContextMenu
 Area.mui/MUIA_ContextMenuTrigger
-Area.mui/MUIA_ControlChar
-Area.mui/MUIA_CycleChain
+Area.mui/MUIA_ControlChar           done
+Area.mui/MUIA_CycleChain            done
 Area.mui/MUIA_Disabled
 Area.mui/MUIA_Draggable
 Area.mui/MUIA_Dropable
@@ -85,10 +85,10 @@ Area.mui/MUIA_FixHeight             done
 Area.mui/MUIA_FixHeightTxt          need text/font
 Area.mui/MUIA_FixWidth              done
 Area.mui/MUIA_FixWidthTxt           need text/font
-Area.mui/MUIA_Font
+Area.mui/MUIA_Font                  done
 Area.mui/MUIA_Frame                 done
 Area.mui/MUIA_FramePhantomHoriz     done
-Area.mui/MUIA_FrameTitle            need text/font
+Area.mui/MUIA_FrameTitle            done
 Area.mui/MUIA_Height                done
 Area.mui/MUIA_HorizDisappear
 Area.mui/MUIA_HorizWeight           done
@@ -105,7 +105,7 @@ Area.mui/MUIA_RightEdge             done
 Area.mui/MUIA_Selected              done
 Area.mui/MUIA_ShortHelp             done
 Area.mui/MUIA_ShowMe                done
-Area.mui/MUIA_ShowSelState
+Area.mui/MUIA_ShowSelState          done (I only)
 Area.mui/MUIA_Timer                 done
 Area.mui/MUIA_TopEdge               done
 Area.mui/MUIA_VertDisappear
