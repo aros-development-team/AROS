@@ -76,9 +76,9 @@ void _Exec_Disable(struct ExecBase * SysBase)
 	AROS_LIBFUNC_INIT
 
 	/*
-	 * Disable interrupts by setting masking all interrupt sources.
+	 * Disable interrupts by masking all interrupts.
 	 */
-	WREG_L(IMR) = ~0;
+	SetSR(0x0700,0x0700);
 	
 	SysBase->IDNestCnt++;
 
