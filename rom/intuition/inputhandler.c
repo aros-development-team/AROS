@@ -292,8 +292,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			   if user used LMB to activate gadget and LAMIGA + LALT
 			   to activate other window, or viceversa */
 
-			gadget->Flags &= ~GFLG_SELECTED;
-			RefreshGList(gadget, gi->gi_Window, NULL, 1);
+    	    	    	if (!(gadget->Activation & GACT_TOGGLESELECT))
+			{
+			    if (gadget->Flags & GFLG_SELECTED)
+			    {
+			    	gadget->Flags &= ~GFLG_SELECTED;
+			    	RefreshBoolGadgetState(gadget, gi->gi_Window, IntuitionBase);
+			    }
+			}
 			break;
 
 	            case GTYP_PROPGADGET:
@@ -399,13 +405,15 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    {
 		    case GTYP_BOOLGADGET:
 			if (gadget->Activation & GACT_TOGGLESELECT)
+			{
 			    gadget->Flags ^= GFLG_SELECTED;
-			else
+			    RefreshBoolGadgetState(gadget, w, IntuitionBase);
+			}
+			else if (!(gadget->Flags & GFLG_SELECTED))
+			{
 			    gadget->Flags |= GFLG_SELECTED;
-			    
-
-			RefreshGList (gadget, w, NULL, 1);
-
+			    RefreshBoolGadgetState(gadget, w, IntuitionBase);			    
+			}
 			break;
 
 		    case GTYP_PROPGADGET:
@@ -482,18 +490,25 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		{
 		    int inside = InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
 		    
-		    int selected = (gadget->Flags & GFLG_SELECTED) != 0;
+		    /*int selected = (gadget->Flags & GFLG_SELECTED) != 0;*/
 
 
 		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
 		    {
 		    case GTYP_BOOLGADGET:
 			if (!(gadget->Activation & GACT_TOGGLESELECT) )
-			    gadget->Flags &= ~GFLG_SELECTED;
-
-			if (selected)
-			    RefreshGList (gadget, w, NULL, 1);
-
+			{
+			    if (gadget->Flags & GFLG_SELECTED)
+			    {
+			    	gadget->Flags &= ~GFLG_SELECTED;
+				RefreshBoolGadgetState(gadget, w, IntuitionBase);
+			    }
+    	    	    	}
+			else
+			{
+			    inside = TRUE;
+			}
+			
 			if (inside && (gadget->Activation & GACT_RELVERIFY))
 			{
 			    ih_fire_intuimessage(w,
@@ -660,10 +675,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
 		    {
 		    case GTYP_BOOLGADGET:
-			if  (inside != selected)
+		    	if (!(gadget->Activation & GACT_TOGGLESELECT))
 			{
-			    gadget->Flags ^= GFLG_SELECTED;
-			    RefreshGList (gadget, w, NULL, 1);
+			    if  (inside != selected)
+			    {
+				gadget->Flags ^= GFLG_SELECTED;
+				RefreshBoolGadgetState(gadget, w, IntuitionBase);
+			    }
 			}
 			break;
 
