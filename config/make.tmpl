@@ -255,10 +255,10 @@ $(OBJDIR)/functable.c : mmakefile.src $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfun
 
 #------------------------------------------------------------------------------
 # Generate endskip variable
-%define mkendtag_q lib=dummy to=$@
+%define mkendtag_q lib=dummy base=dummy to=$@
 	@$(ECHO) "Regenerating %(to)..."
 	@$(AWK) -f $(TOP)/scripts/makeendtag.awk \
-	    -v lib="%(lib)"
+	    -v lib="%(lib)" -v base="%(base)"
 %end
 
 #------------------------------------------------------------------------------
@@ -855,6 +855,10 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 
 #------------------------------------------------------------------------------
 %define genlib_arch
+ifndef BASENAME
+  BASENAME := $(ULIBNAME)
+endif
+
 SLIB	      := $(SLIBDIR)/$(LIBNAME).library
 LIB	      := $(LIBDIR)/lib$(LIBNAME).a
 INIT_FILE     := $(LIBNAME)_init
@@ -912,7 +916,8 @@ $(ENDFUNC) : $(END_FILE).c
 $(OBJDIR)/$(END_FILE).c : $(TOP)/scripts/makeendtag.awk
 	@$(ECHO) "Regenerating $@..."
 	@$(AWK) -f $(TOP)/scripts/makeendtag.awk \
-		-v lib=$(ULIBNAME)
+		-v lib=$(ULIBNAME) \
+		-v base=$(BASENAME)
 
 $(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
 
@@ -930,6 +935,10 @@ endif
 ifndef DESTDIR
   DESTDIR := $(SLIBDIR)
 endif
+ifndef BASENAME
+  BASENAME := $(ULIBNAME)
+endif
+
 SLIB	      := $(DESTDIR)/$(LIBNAME).$(LIBPOST)
 LIB	      := $(LIBDIR)/lib$(LIBNAME).a
 INIT_FILE     := $(LIBNAME)_init
@@ -985,7 +994,8 @@ FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 $(END_FILE).c : $(TOP)/scripts/makeendtag.awk
 	@$(ECHO) "Regenerating $@..."
 	@$(AWK) -f $(TOP)/scripts/makeendtag.awk \
-		-v lib=$(ULIBNAME)
+		-v lib=$(ULIBNAME) \
+		-v base=$(BASENAME)
 
 $(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
 
