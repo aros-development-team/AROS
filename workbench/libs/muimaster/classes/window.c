@@ -241,7 +241,8 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
 	mri->mri_BorderRight = 0;
 	mri->mri_BorderTop = 0;
 	mri->mri_BorderBottom = 0;
-    }   else
+    }
+    else
     {
 	mri->mri_BorderLeft = mri->mri_Screen->WBorLeft;
 	mri->mri_BorderTop = mri->mri_Screen->WBorTop + mri->mri_Screen->Font->ta_YSize+ 1;
@@ -254,7 +255,9 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
 	    GetAttr(IA_Height,temp_obj,&val);
     	    DisposeObject(temp_obj);
     	    mri->mri_BorderBottom = val;
-        } else mri->mri_BorderBottom = mri->mri_Screen->WBorBottom;
+        }
+	else
+	    mri->mri_BorderBottom = mri->mri_Screen->WBorBottom;
     }
 
     return TRUE;
@@ -815,16 +818,16 @@ void _zune_window_message(struct IntuiMessage *imsg)
 					imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge,update);
 		    switch (res)
 		    {
-			case    MUIV_DragReport_Abort:
+			case MUIV_DragReport_Abort:
 			    UndrawDragNDrop(data->wd_dnd);
 			    DoMethod(data->wd_DropObject, MUIM_DragFinish,(IPTR)data->wd_DragObject);
 			    data->wd_DropObject = NULL;
 			    i = 1;
 			    break;
 
-			case    MUIV_DragReport_Continue: break;
-			case    MUIV_DragReport_Lock: break; /* NYI */
-			case    MUIV_DragReport_Refresh:
+			case MUIV_DragReport_Continue: break;
+			case MUIV_DragReport_Lock: break; /* NYI */
+			case MUIV_DragReport_Refresh:
 			    UndrawDragNDrop(data->wd_dnd);
 			    update = 1;
 			    break;
@@ -877,7 +880,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
     switch (imsg->Class)
     {
-    	case    IDCMP_MOUSEMOVE:
+    	case IDCMP_MOUSEMOVE:
 	    if (ContextMenuUnderPointer(data,data->wd_RootObject,imsg->MouseX,imsg->MouseY)) iWin->Flags |= WFLG_RMBTRAP;
 	    else iWin->Flags &= ~WFLG_RMBTRAP;
 	    break;
@@ -890,7 +893,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    set(oWin, MUIA_Window_Activate, FALSE);
 	    break;
 
-	case	IDCMP_NEWSIZE:
+	case IDCMP_NEWSIZE:
 	{
 	    int hborders = iWin->BorderLeft + iWin->BorderRight;
 	    int vborders = iWin->BorderTop  + iWin->BorderBottom;
@@ -912,7 +915,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    if (data->wd_RenderInfo.mri_Window->Flags & WFLG_SIMPLE_REFRESH)
 	    {
 		data->wd_Flags |= MUIWF_RESIZING;
-	    } else
+	    }
+	    else
 	    {
 		_width(data->wd_RootObject) = data->wd_Width;
 		_height(data->wd_RootObject) = data->wd_Height;
@@ -936,7 +940,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	}
 	break;
 
-	case	IDCMP_REFRESHWINDOW:
+	case IDCMP_REFRESHWINDOW:
 	    if (data->wd_Flags & MUIWF_RESIZING)
 	    {
 		//LONG left,top,right,bottom;
@@ -970,7 +974,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		}
 #endif
 		MUI_Redraw(data->wd_RootObject, REDUCE_FLICKER_TEST?MADF_DRAWOBJECT:MADF_DRAWALL);
-	    } else
+	    }
+	    else
 	    {
 		if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
 		{
@@ -980,12 +985,12 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    }
 	    break;
 
-	case	IDCMP_CLOSEWINDOW:
+	case IDCMP_CLOSEWINDOW:
 	    set(oWin, MUIA_Window_CloseRequest, TRUE);
 	    nnset(oWin, MUIA_Window_CloseRequest, FALSE); /* I'm not sure here but zune keeps track of old values inside notifyclass */
 	    break;
 
-	case    IDCMP_MENUPICK:
+	case IDCMP_MENUPICK:
 	    if (data->wd_Menu)
 	    {
 		if (MENUNUM(imsg->Code != NOMENU) && ITEMNUM(imsg->Code) != NOITEM)
@@ -1016,7 +1021,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    }
 	    break;
 
-	case    IDCMP_IDCMPUPDATE:
+	case IDCMP_IDCMPUPDATE:
 	    if (data->wd_VertProp || data->wd_HorizProp)
 	    {
 		struct TagItem *tag;
@@ -1121,7 +1126,8 @@ static ULONG invoke_event_handler (struct MUI_EventHandlerNode *ehn,
     {
     	DoMethod(ehn->ehn_Object, MUIM_HandleInput, (IPTR)event, muikey);
     	res = 0;
-    } else
+    }
+    else
     {
 	if (ehn->ehn_Class)
 	    res = CoerceMethod(ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
@@ -1362,70 +1368,74 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
 
     switch (newval)
     {
-	case	MUIV_Window_ActiveObject_None:
-		data->wd_ActiveObject = NULL;
-		if (old_active)
-		{
-		    if (_flags(old_active) & MADF_CANDRAW)
-			DoMethod(old_active, MUIM_GoInactive);
-		}
-		break;
+	case MUIV_Window_ActiveObject_None:
+	    data->wd_ActiveObject = NULL;
+	    if (old_active)
+	    {
+		if (_flags(old_active) & MADF_CANDRAW)
+		    DoMethod(old_active, MUIM_GoInactive);
+	    }
+	    break;
 
-	case	MUIV_Window_ActiveObject_Next:
-		if (data->wd_ActiveObject)
+	case MUIV_Window_ActiveObject_Next:
+	    if (data->wd_ActiveObject)
+	    {
+		data->wd_ActiveObject = NULL;
+		if (_flags(old_active) & MADF_CANDRAW)
+		    DoMethod(old_active, MUIM_GoInactive);
+		if (old_activenode)
 		{
-		    data->wd_ActiveObject = NULL;
-		    if (_flags(old_active) & MADF_CANDRAW)
-			DoMethod(old_active, MUIM_GoInactive);
-		    if (old_activenode)
-		    {
-			data->wd_ActiveObject = (old_activenode->node.mln_Succ->mln_Succ) ?
-			    ((struct ObjNode*)old_activenode->node.mln_Succ)->obj : NULL;
-		    }   else
-		    {
-			if (!IsListEmpty((struct List*)&data->wd_CycleChain))
-			    data->wd_ActiveObject =
-				((struct ObjNode*)data->wd_CycleChain.mlh_Head)->obj;
-		    }
-		}   else
+		    data->wd_ActiveObject = (old_activenode->node.mln_Succ->mln_Succ) ?
+			((struct ObjNode*)old_activenode->node.mln_Succ)->obj : NULL;
+		}
+		else
 		{
 		    if (!IsListEmpty((struct List*)&data->wd_CycleChain))
-			data->wd_ActiveObject = ((struct ObjNode*)data->wd_CycleChain.mlh_Head)->obj;
+			data->wd_ActiveObject =
+			    ((struct ObjNode*)data->wd_CycleChain.mlh_Head)->obj;
 		}
-		break;
+	    }
+	    else
+	    {
+		if (!IsListEmpty((struct List*)&data->wd_CycleChain))
+		    data->wd_ActiveObject = ((struct ObjNode*)data->wd_CycleChain.mlh_Head)->obj;
+	    }
+	    break;
 
-	case    MUIV_Window_ActiveObject_Prev:
-		if (data->wd_ActiveObject)
+	case MUIV_Window_ActiveObject_Prev:
+	    if (data->wd_ActiveObject)
+	    {
+		data->wd_ActiveObject = NULL;
+		if (_flags(old_active) & MADF_CANDRAW)
+		    DoMethod(old_active, MUIM_GoInactive);
+		if (old_activenode)
 		{
-		    data->wd_ActiveObject = NULL;
-		    if (_flags(old_active) & MADF_CANDRAW)
-			DoMethod(old_active, MUIM_GoInactive);
-		    if (old_activenode)
-		    {
-			 data->wd_ActiveObject = (old_activenode->node.mln_Pred->mln_Pred) ?
-			     ((struct ObjNode*)old_activenode->node.mln_Pred)->obj : NULL;
-		    } else
-		    {
-			if (!IsListEmpty((struct List*)&data->wd_CycleChain))
-			    data->wd_ActiveObject =
-				((struct ObjNode*)data->wd_CycleChain.mlh_TailPred)->obj;
-		    }
-		}   else
-		{
-		   if (!IsListEmpty((struct List*)&data->wd_CycleChain))
-		       data->wd_ActiveObject =
-			   ((struct ObjNode*)data->wd_CycleChain.mlh_TailPred)->obj;
+		    data->wd_ActiveObject = (old_activenode->node.mln_Pred->mln_Pred) ?
+			((struct ObjNode*)old_activenode->node.mln_Pred)->obj : NULL;
 		}
-		break;
+		else
+		{
+		    if (!IsListEmpty((struct List*)&data->wd_CycleChain))
+			data->wd_ActiveObject =
+			    ((struct ObjNode*)data->wd_CycleChain.mlh_TailPred)->obj;
+		}
+	    }
+	    else
+	    {
+		if (!IsListEmpty((struct List*)&data->wd_CycleChain))
+		    data->wd_ActiveObject =
+			((struct ObjNode*)data->wd_CycleChain.mlh_TailPred)->obj;
+	    }
+	    break;
 
 	default:
-		if (old_active)
-		{
-		    data->wd_ActiveObject = NULL;
-		    DoMethod(old_active, MUIM_GoInactive);
-		}
-		data->wd_ActiveObject = (Object*)newval;
-		break;
+	    if (old_active)
+	    {
+		data->wd_ActiveObject = NULL;
+		DoMethod(old_active, MUIM_GoInactive);
+	    }
+	    data->wd_ActiveObject = (Object*)newval;
+	    break;
     }
 
     if (data->wd_ActiveObject)
@@ -1577,122 +1587,122 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-	    case    MUIA_Window_EraseArea:
-		    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ERASEAREA);
-		    break;
+	    case MUIA_Window_EraseArea:
+		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ERASEAREA);
+		break;
 
-	    case    MUIA_Window_CloseGadget:
-		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_CLOSEGADGET);
-		    break;
+	    case MUIA_Window_CloseGadget:
+		_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_CLOSEGADGET);
+		break;
 
-	    case    MUIA_Window_SizeGadget:
-		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_SIZEGADGET);
-		    break;
+	    case MUIA_Window_SizeGadget:
+		_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_SIZEGADGET);
+		break;
 
-	    case    MUIA_Window_Backdrop:
-		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BACKDROP);
-		    break;
+	    case MUIA_Window_Backdrop:
+		_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BACKDROP);
+		break;
 
-	    case     MUIA_Window_Borderless:
-		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BORDERLESS);
-		    break;
+	    case MUIA_Window_Borderless:
+		_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BORDERLESS);
+		break;
 
-	    case    MUIA_Window_DepthGadget:
-		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_DEPTHGADGET);
-		    break;
+	    case MUIA_Window_DepthGadget:
+		_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_DEPTHGADGET);
+		break;
 
-	    case    MUIA_Window_DragBar:
-		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_DRAGBAR);
-		    break;
+	    case MUIA_Window_DragBar:
+		_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_DRAGBAR);
+		break;
 
-	    case    MUIA_Window_SizeRight:
-		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_SIZEBRIGHT);
-		    break;
+	    case MUIA_Window_SizeRight:
+		_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_SIZEBRIGHT);
+		break;
 
-	    case    MUIA_Window_Height:
-		    data->wd_ReqHeight = (LONG)tag->ti_Data;
-		    break;
+	    case  MUIA_Window_Height:
+		data->wd_ReqHeight = (LONG)tag->ti_Data;
+		break;
 
-	    case    MUIA_Window_Width:
-		    data->wd_ReqWidth = (LONG)tag->ti_Data;
-		    break;
+	    case MUIA_Window_Width:
+		data->wd_ReqWidth = (LONG)tag->ti_Data;
+		break;
 
-	    case    MUIA_Window_ID:
-		    set(obj, MUIA_Window_ID, tag->ti_Data);
-		    break;
+	    case MUIA_Window_ID:
+		set(obj, MUIA_Window_ID, tag->ti_Data);
+		break;
 
-	    case    MUIA_Window_IsSubWindow:
-		    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ISSUBWINDOW);
-		    break;
+	    case MUIA_Window_IsSubWindow:
+		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ISSUBWINDOW);
+		break;
 
-	    case    MUIA_Window_Title:
-		    set(obj, MUIA_Window_Title, tag->ti_Data);
-		    break;
+	    case MUIA_Window_Title:
+		set(obj, MUIA_Window_Title, tag->ti_Data);
+		break;
 
-	    case    MUIA_Window_ScreenTitle:
-		    set(obj, MUIA_Window_ScreenTitle, tag->ti_Data);
-		    break;
+	    case MUIA_Window_ScreenTitle:
+		set(obj, MUIA_Window_ScreenTitle, tag->ti_Data);
+		break;
 
-	    case    MUIA_Window_Activate:
-		    _handle_bool_tag(data->wd_Flags, !tag->ti_Data, MUIWF_DONTACTIVATE);
-		    break;
+	    case MUIA_Window_Activate:
+		_handle_bool_tag(data->wd_Flags, !tag->ti_Data, MUIWF_DONTACTIVATE);
+		break;
 
-	    case    MUIA_Window_DefaultObject:
-		    set(obj, MUIA_Window_DefaultObject, tag->ti_Data);
-		    break;
+	    case MUIA_Window_DefaultObject:
+		set(obj, MUIA_Window_DefaultObject, tag->ti_Data);
+		break;
 
-	    case    MUIA_Window_Menustrip:
-		    data->wd_ChildMenustrip = (Object*)tag->ti_Data;
-		    break;
+	    case MUIA_Window_Menustrip:
+		data->wd_ChildMenustrip = (Object*)tag->ti_Data;
+		break;
 
-   	    case    MUIA_Window_RootObject:
-		    if (!tag->ti_Data)
-		    {
-			CoerceMethod(cl, obj, OM_DISPOSE);
-			return 0;
-		    }
-		    set(obj, MUIA_Window_RootObject, tag->ti_Data);
-		    break;
+   	    case MUIA_Window_RootObject:
+		if (!tag->ti_Data)
+		{
+		    CoerceMethod(cl, obj, OM_DISPOSE);
+		    return 0;
+		}
+		set(obj, MUIA_Window_RootObject, tag->ti_Data);
+		break;
 
-	    case    MUIA_Window_AltHeight:
-		    data->wd_AltDim.Height = (WORD)tag->ti_Data;
-		    break;
+	    case MUIA_Window_AltHeight:
+		data->wd_AltDim.Height = (WORD)tag->ti_Data;
+		break;
 
-	    case    MUIA_Window_AltWidth:
-		    data->wd_AltDim.Width = (WORD)tag->ti_Data;
-		    break;
+	    case MUIA_Window_AltWidth:
+		data->wd_AltDim.Width = (WORD)tag->ti_Data;
+		break;
 
-	    case    MUIA_Window_AltLeftEdge:
-		    data->wd_AltDim.Left = (WORD)tag->ti_Data;
-		    break;
+	    case MUIA_Window_AltLeftEdge:
+		data->wd_AltDim.Left = (WORD)tag->ti_Data;
+		break;
 
-	    case    MUIA_Window_AltTopEdge:
-		    data->wd_AltDim.Top = (WORD)tag->ti_Data;
-		    break;
+	    case MUIA_Window_AltTopEdge:
+		data->wd_AltDim.Top = (WORD)tag->ti_Data;
+		break;
 
-	    case    MUIA_Window_AppWindow:
-		    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ISAPPWINDOW);
-		    break;
+	    case MUIA_Window_AppWindow:
+		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ISAPPWINDOW);
+		break;
 
-	    case    MUIA_Window_LeftEdge:
-		    data->wd_X = tag->ti_Data;
-		    break;
+	    case MUIA_Window_LeftEdge:
+		data->wd_X = tag->ti_Data;
+		break;
 
-	    case    MUIA_Window_TopEdge:
-		    data->wd_Y = tag->ti_Data;
-		    break;
+	    case MUIA_Window_TopEdge:
+		data->wd_Y = tag->ti_Data;
+		break;
 
-	    case    MUIA_Window_UseBottomBorderScroller:
-		    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USEBOTTOMSCROLLER);
-		    break;
+	    case MUIA_Window_UseBottomBorderScroller:
+		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USEBOTTOMSCROLLER);
+		break;
 
-	    case    MUIA_Window_UseRightBorderScroller:
-		    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USERIGHTSCROLLER);
-		    break;
+	    case MUIA_Window_UseRightBorderScroller:
+		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USERIGHTSCROLLER);
+		break;
 
-	    case    MUIA_Window_DisableKeys:
-		    data->wd_DisabledKeys = tag->ti_Data;
-		    break;
+	    case MUIA_Window_DisableKeys:
+		data->wd_DisabledKeys = tag->ti_Data;
+		break;
 
 	    case MUIA_Window_RefWindow:
 		data->wd_RefWindow = (Object *)tag->ti_Data;
@@ -1745,36 +1755,38 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-	    case    MUIA_Window_Width:
-		    data->wd_ReqWidth = (LONG)tag->ti_Data;
-		    /* Note: Not clean */
-		    data->wd_Width = 0;
-		    break;
+	    case MUIA_Window_Width:
+		data->wd_ReqWidth = (LONG)tag->ti_Data;
+		/* Note: Not clean */
+		data->wd_Width = 0;
+		break;
 
-	    case    MUIA_Window_Height:
-		    data->wd_ReqHeight = (LONG)tag->ti_Data;
-		    /* Note: Not clean */
-		    data->wd_Width = 0;
-		    break;
+	    case MUIA_Window_Height:
+		data->wd_ReqHeight = (LONG)tag->ti_Data;
+		/* Note: Not clean */
+		data->wd_Width = 0;
+		break;
 
-	    case    MUIA_Window_LeftEdge:
-		    data->wd_X = (LONG)tag->ti_Data;
-		    break;
+	    case MUIA_Window_LeftEdge:
+		data->wd_X = (LONG)tag->ti_Data;
+		break;
 
-	    case    MUIA_Window_TopEdge:
-		    data->wd_Y = (LONG)tag->ti_Data;
-		    break;
+	    case MUIA_Window_TopEdge:
+		data->wd_Y = (LONG)tag->ti_Data;
+		break;
 
-	    case    MUIA_Window_Activate:
-		    if (data->wd_RenderInfo.mri_Window)
+	    case MUIA_Window_Activate:
+		if (data->wd_RenderInfo.mri_Window)
+		{
+		    if (tag->ti_Data)
 		    {
-			if (tag->ti_Data)
-			{
-			    ActivateWindow(data->wd_RenderInfo.mri_Window);
-			    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ACTIVE);
-			}
-		    } else _handle_bool_tag(data->wd_Flags, !tag->ti_Data, MUIWF_DONTACTIVATE);
-		    break;
+			ActivateWindow(data->wd_RenderInfo.mri_Window);
+			_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ACTIVE);
+		    }
+		}
+		else
+		    _handle_bool_tag(data->wd_Flags, !tag->ti_Data, MUIWF_DONTACTIVATE);
+		break;
 
 	    case MUIA_Window_ActiveObject:
 		window_set_active_object(data, obj, tag->ti_Data);
@@ -1806,67 +1818,68 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		window_change_root_object(data, obj, (Object *)tag->ti_Data);
 		break;
 
-	    case    MUIA_Window_Title:
-		    if (data->wd_Title) FreeVec(data->wd_Title);
-		    data->wd_Title = StrDup((STRPTR)tag->ti_Data);
-		    if (data->wd_RenderInfo.mri_Window)
-			SetWindowTitles(data->wd_RenderInfo.mri_Window,data->wd_Title, (CONST_STRPTR)~0);
-		    break;
+	    case MUIA_Window_Title:
+		if (data->wd_Title) FreeVec(data->wd_Title);
+		data->wd_Title = StrDup((STRPTR)tag->ti_Data);
+		if (data->wd_RenderInfo.mri_Window)
+		    SetWindowTitles(data->wd_RenderInfo.mri_Window,data->wd_Title, (CONST_STRPTR)~0);
+		break;
 
-	    case    MUIA_Window_ScreenTitle:
-		    if (data->wd_ScreenTitle) FreeVec(data->wd_ScreenTitle);
-		    data->wd_ScreenTitle = StrDup((STRPTR)tag->ti_Data);
-		    if (data->wd_RenderInfo.mri_Window)
-			SetWindowTitles(data->wd_RenderInfo.mri_Window,
-					(CONST_STRPTR)~0, data->wd_ScreenTitle);
-		    break;
+	    case MUIA_Window_ScreenTitle:
+		if (data->wd_ScreenTitle) FreeVec(data->wd_ScreenTitle);
+		data->wd_ScreenTitle = StrDup((STRPTR)tag->ti_Data);
+		if (data->wd_RenderInfo.mri_Window)
+		    SetWindowTitles(data->wd_RenderInfo.mri_Window,
+				    (CONST_STRPTR)~0, data->wd_ScreenTitle);
+		break;
 
-	    case    MUIA_Window_CloseGadget:
-		    if (!(data->wd_Flags & MUIWF_OPENED))
-			_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_CLOSEGADGET);
-		    break;
+	    case MUIA_Window_CloseGadget:
+		if (!(data->wd_Flags & MUIWF_OPENED))
+		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_CLOSEGADGET);
+		break;
 
-	    case    MUIA_Window_SizeGadget:
-		    if (!(data->wd_Flags & MUIWF_OPENED))
-			_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_SIZEGADGET);
-		    break;
+	    case MUIA_Window_SizeGadget:
+		if (!(data->wd_Flags & MUIWF_OPENED))
+		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_SIZEGADGET);
+		break;
 
-	    case    MUIA_Window_Backdrop:
-		    if (!(data->wd_Flags & MUIWF_OPENED))
-			_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BACKDROP);
-		    break;
+	    case MUIA_Window_Backdrop:
+		if (!(data->wd_Flags & MUIWF_OPENED))
+		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BACKDROP);
+		break;
 
-	    case     MUIA_Window_Borderless:
-		    if (!(data->wd_Flags & MUIWF_OPENED))
-			_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BORDERLESS);
-		    break;
+	    case MUIA_Window_Borderless:
+		if (!(data->wd_Flags & MUIWF_OPENED))
+		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BORDERLESS);
+		break;
 
-	    case    MUIA_Window_DepthGadget:
-		    if (!(data->wd_Flags & MUIWF_OPENED))
-			_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_DEPTHGADGET);
-		    break;
+	    case MUIA_Window_DepthGadget:
+		if (!(data->wd_Flags & MUIWF_OPENED))
+		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_DEPTHGADGET);
+		break;
 
-	    case    MUIA_Window_DragBar:
-		    if (!(data->wd_Flags & MUIWF_OPENED))
-			_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_DRAGBAR);
-		    break;
+	    case MUIA_Window_DragBar:
+		if (!(data->wd_Flags & MUIWF_OPENED))
+		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_DRAGBAR);
+		break;
 
-	    case    MUIA_Window_SizeRight:
-		    if (!(data->wd_Flags & MUIWF_OPENED))
-			_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_SIZEBRIGHT);
-		    break;
+	    case MUIA_Window_SizeRight:
+		if (!(data->wd_Flags & MUIWF_OPENED))
+		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_SIZEBRIGHT);
+		break;
 
-	    case    MUIA_Window_UseBottomBorderScroller:
-		    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USEBOTTOMSCROLLER);
-		    break;
+	    case MUIA_Window_UseBottomBorderScroller:
+		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USEBOTTOMSCROLLER);
+		break;
 
-	    case    MUIA_Window_UseRightBorderScroller:
-		    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USERIGHTSCROLLER);
-		    break;
+	    case MUIA_Window_UseRightBorderScroller:
+		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USERIGHTSCROLLER);
+		break;
 
-	    case    MUIA_Window_DisableKeys:
-		    data->wd_DisabledKeys = tag->ti_Data;
-		    break;
+	    case MUIA_Window_DisableKeys:
+		data->wd_DisabledKeys = tag->ti_Data;
+		break;
+
 	    case MUIA_Window_RefWindow:
 		data->wd_RefWindow = (Object *)tag->ti_Data;
 		break;
