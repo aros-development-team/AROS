@@ -221,7 +221,7 @@ extern const struct __MUIBuiltinClass _MUI_List_desc; /* PRIV */
 #define MUIC_Floattext "Floattext.mui"
 
 /* Floattext attributes */
-#define MUIA_Floattext_Justify   (TAG_USER|0x0042dc03= /* MUI: V4  isg BOOL   */
+#define MUIA_Floattext_Justify   (TAG_USER|0x0042dc03) /* MUI: V4  isg BOOL   */
 #define MUIA_Floattext_SkipChars (TAG_USER|0x00425c7d) /* MUI: V4  is. STRPTR */
 #define MUIA_Floattext_TabSize   (TAG_USER|0x00427d17) /* MUI: V4  is. LONG   */
 #define MUIA_Floattext_Text      (TAG_USER|0x0042d16a) /* MUI: V4  isg STRPTR */
