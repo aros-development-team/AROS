@@ -42,7 +42,7 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define SysBase      (LC_SYSBASE_FIELD(lh))
@@ -100,7 +100,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 						irq->h_Node.ln_Pri=127;		/* Set the highest pri */
 						irq->h_Code = serial_int_uart1;
 						irq->h_Data = (APTR)csd;
-//						HIDD_IRQ_AddHandler(csd->irqhidd, irq, vHidd_IRQ_Serial1);
+						HIDD_IRQ_AddHandler(csd->irqhidd, irq, vHidd_IRQ_Serial1);
 
 						/* Install UART1 and UART2 interrupt */
 						irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
@@ -111,7 +111,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 						irq->h_Node.ln_Pri=127;		/* Set the highest pri */
 						irq->h_Code = serial_int_uart2;
 						irq->h_Data = (APTR)csd;
-//						HIDD_IRQ_AddHandler(csd->irqhidd, irq, vHidd_IRQ_Serial2);
+						HIDD_IRQ_AddHandler(csd->irqhidd, irq, vHidd_IRQ_Serial2);
 
 						D(bug("  Got Interrupts\n"));
 						ReturnInt("SerialHIDD_Init", ULONG, TRUE);

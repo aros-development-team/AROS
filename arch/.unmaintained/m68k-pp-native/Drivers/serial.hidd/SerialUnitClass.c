@@ -30,8 +30,8 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define SDEBUG 0
-#define DEBUG 0
+#define SDEBUG 1
+#define DEBUG 1
 #include <aros/debug.h>
 
 void serialunit_receive_data();
@@ -46,24 +46,47 @@ BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed);
 #define MINSPEED 300
 #define MAXSPEED 230400
 
+#undef SysBase
+
 static inline void serial_out_w(struct HIDDSerialUnitData * data, 
                                 ULONG offset, 
                                 UWORD value)
 {
+	AROS_GET_SYSBASE
+	D(bug("poke.w 0x%x,0x%x\n",data->baseaddr+offset,value));
 	WREG_W((data->baseaddr+offset)) = value;
 }
 
 static inline UWORD serial_in_w(struct HIDDSerialUnitData * data,
                                 ULONG offset)
 {
-	return RREG_W(data->baseaddr+offset);
+	AROS_GET_SYSBASE
+	UWORD value = RREG_W(data->baseaddr+offset);
+	D(bug("peek.w 0x%x = 0x%x\n",data->baseaddr+offset,value));
+	return value;
+}
+
+#if 0
+static inline void serial_out_b(struct HIDDSerialUnitData * data, 
+                                ULONG offset, 
+                                UBYTE value)
+{
+	AROS_GET_SYSBASE
+	D(bug("poke.b 0x%x,0x%x\n",data->baseaddr+offset,value));
+	WREG_B((data->baseaddr+offset)) = value;
 }
 
 static inline UBYTE serial_in_b(struct HIDDSerialUnitData * data,
                                 ULONG offset)
 {
-	return RREG_B(data->baseaddr+offset);
+	AROS_GET_SYSBASE
+	UBYTE value = RREG_B(data->baseaddr+offset);
+	D(bug("peek.b 0x%x = 0x%x\n",data->baseaddr+offset,value));
+	return value;
 }
+#endif
+
+#define SysBase (CSD(cl->UserData)->sysbase)
 
 /*************************** Classes *****************************/
 
@@ -112,12 +135,12 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
 
 		CSD(cl->UserData)->units[data->unitnum] = data;
 
-		D(bug("Unit %d at 0x0%x\n", data->unitnum, data->baseaddr));
+		//D(bug("Unit %d at 0x0%x\n", data->unitnum, data->baseaddr));
 
 		/* Init UART - See 14-10 of dragonball documentation */
-		serial_out_w(data,USTCNT, UEN | RXEN);
+		serial_out_w(data, USTCNT, UEN | RXEN | TXEN);
 		dummy = RREG_W(URX1);
-
+		//D(bug("Setting baudrate now!"));
 		/* Now set the baudrate */
 		set_baudrate(data, data->baudrate);
 
@@ -179,7 +202,7 @@ ULONG serialunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Wri
 		return 0;
 
 	utx = serial_in_w(data, UTX);
-  
+
 	/*
 	 * I may only write something here if nothing is in the fifo right
 	 * now because otherwise this might be handled through an interrupt.
@@ -187,6 +210,7 @@ ULONG serialunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Wri
 	if (utx & FIFO_EMPTY) {
 		/* write data into FIFO */
 		do {
+			//D(bug("%c",msg->Outbuffer[count]));
 			serial_out_w(data, UTX, msg->Outbuffer[count++]);
 			len--;
 			utx = serial_in_w(data, UTX);
@@ -387,13 +411,18 @@ AROS_UFH3(void, serialunit_receive_data,
 
 	/*
 	** Read the data from the port ...
+	** !!! The xcopilot implementation seem rather stupid. I can only get one
+	** byte per interrupt. I hope the real thing is a bit better... !!!
 	*/
-	while (1) {
+	while (len < sizeof(buffer)) {
 		UWORD urx = serial_in_w(data, URX);
-		if (urx & DATA_READY)
+		if (urx & DATA_READY) {
 			buffer[len++] = (UBYTE)urx;
-		else
+			/* for xcopilot need to get out of here. */
 			break;
+		} else {
+			break;
+		}
 	}
   
 	/*
@@ -607,6 +636,7 @@ BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed)
 			found = TRUE;
 			break;
 		}
+		i++;
 	}
 	
 	if (FALSE == found) {
@@ -662,9 +692,10 @@ static void common_serial_int_handler(HIDDT_IRQ_Handler * irq,
 {
 	UWORD code = 0;
 	if (csd->units[unitnum])
-		code = serial_in_b(csd->units[unitnum], UBAUD) << 8;
+		code = serial_in_w(csd->units[unitnum], URX);
 	
 	if (code & (FIFO_EMPTY|FIFO_HALF|DATA_READY)) {
+		D(bug("In %s 1\n",__FUNCTION__));
 		if (csd->units[unitnum]) {
 			serialunit_receive_data(csd->units[unitnum],
 			                        NULL,
@@ -677,6 +708,7 @@ static void common_serial_int_handler(HIDDT_IRQ_Handler * irq,
 		code = serial_in_w(csd->units[unitnum], UTX);
 
 	if (code & (FIFO_EMPTY|FIFO_HALF|TX_AVAIL)) {
+		D(bug("In %s 2\n",__FUNCTION__));
 		if (csd->units[unitnum]) {
 			if (0 == serialunit_write_more_data(csd->units[unitnum], NULL, SysBase)) {
 				
