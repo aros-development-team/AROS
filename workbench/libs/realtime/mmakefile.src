@@ -23,7 +23,7 @@ ULIBNAME	:= RealTime
 #
 # END_DESC{localmakevar}
 
-FILES := functable
+FILES := functable pulse
 
 FUNCTIONS := createplayera \
 	     deleteplayer \
@@ -42,6 +42,11 @@ FUNCTIONS := createplayera \
 
 #MM workbench-libs-realtime : setup includes linklibs
 workbench-libs-realtime : $(SLIB)
+	@$(NOP)
+
+
+#MM workbench-libs-realtime-quick :
+workbench-libs-realtime-quick : $(SLIB)
 	@$(NOP)
 
 #MM
