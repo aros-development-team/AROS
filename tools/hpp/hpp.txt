@@ -186,9 +186,11 @@ gives
 
 <TT>&lt;TT&gt;</TT>
 ------------------------------------------------------------------------------
-<WRITE FILE=name TEXT=text>
+<WRITE FILE=name TEXT=text PROCESSOUTPUT>
 
-Write something into the file.
+Write something into the file. If you specify PROCESSOUTPUT then HPP
+will parse text before it writes it to the file. In any case, variables
+will be expanded.
 
 <WRITE FILE="$filename.toc" TEXT="chapter $ChapterCount. $title>
 ------------------------------------------------------------------------------
