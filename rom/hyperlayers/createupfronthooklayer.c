@@ -89,7 +89,6 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-  struct Region * lr = NewRegion();
   struct Rectangle r;
   struct TagItem tagList[5] = {{LA_Priority    , 0},
                                {LA_Hook        , NULL},
@@ -100,17 +99,11 @@
   tagList[0].ti_Data = (LAYERBACKDROP == (flags & LAYERBACKDROP)) ?
                        BACKDROPPRIORITY:
                        UPFRONTPRIORITY;
-  tagList[1].ti_Data = (ULONG)hook;
-  tagList[2].ti_Data = (ULONG)bm2; 
-  tagList[3].ti_Data = (ULONG)lr;
+  tagList[1].ti_Data = (IPTR)hook;
+  tagList[2].ti_Data = (IPTR)bm2; 
+  tagList[3].ti_Data = (IPTR)NewRectRegion(x0, y0, x1, y1);
 
-  r.MinX = x0;
-  r.MaxX = x1;
-  r.MinY = y0;
-  r.MaxY = y1;
-
-  if (FALSE == OrRectRegion(lr, &r))
-    return FALSE;
+  if (!tagList[3].ti_Data) return NULL;
 
   return CreateLayerTagList(li,
                             bm,
@@ -119,4 +112,5 @@
 
 
   AROS_LIBFUNC_EXIT
+  
 } /* CreateUpfrontHookLayer */
