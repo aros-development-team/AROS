@@ -47,6 +47,7 @@ APTR	RemoveSList  (APTR * list, APTR node);
 void	hexdump      (const void * data, IPTR offset, ULONG count);
 int	strrncasecmp (const char *, const char *, int);
 void	RawPutChars  (const UBYTE * string, int len);
+BOOL    IsDosEntryA  (char *Name, ULONG Flags);
 
 /* AROS enhancements */
 BOOL ReadByte	 (struct Hook *, UBYTE  * dataptr, void * stream);
