@@ -50,7 +50,6 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,LocaleBase)
-    extern void aros_print_not_implemented (char *);
 
     aros_print_not_implemented ("FormatString");
     return FALSE;

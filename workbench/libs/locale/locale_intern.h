@@ -20,6 +20,9 @@
 #include <libraries/locale.h>
 #endif
 
+/* aros_print_not_implemented() macro: */
+#include <aros/debug.h>
+
 struct IntLocaleBase
 {
     struct LocaleBase        lb_LocaleBase;
