@@ -3,13 +3,8 @@
 
 #include <stddef.h>
 
-/************ In libiberty.a ************/
 extern void *xmalloc(size_t size);
-
-extern char *make_temp_file(const char *suffix);
-
-/****************************************/
-
+extern char *make_temp_file(char *suffix);
 extern char *program_name;
 extern void nonfatal(const char *msg, const char *errorstr);
 extern void fatal(const char *msg, const char *errorstr);
