@@ -115,4 +115,13 @@ void SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
     CyberGfxBase = NULL;
 }
 
-/***************************************************************************************************/
+/*****************************************************************************/
+
+void *const LIBFUNCTABLE[]=
+{
+    AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader),
+    AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader),
+    AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader),
+    AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader),
+    (void *)-1L
+};

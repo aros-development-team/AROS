@@ -1,29 +1,22 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
+MODNAME := arospalette
+MODTYPE := gadget
+
 USER_INCLUDES := -I.
 
-LIBNAME		:= arospalette
-LIBPOST		:= gadget
-
-DESTDIR		:= $(GADGETDIR)
-
 FILES := paletteclass support
+FUNCS := 
 
-# Make shared object
-%genwblib
+USE_ROMLIB := yes
+#USE_AMIGALIB := yes
 
-#MM workbench-classes-arospalette : workbench-classes-setup includes
-workbench-classes-arospalette : $(SLIB)
-	@$(NOP)
+#MM workbench-gadgets-arospalette : includes linklibs
+workbench-gadgets-arospalette : workbench-gadgets-arospalette-module
 
-#MM workbench-classes-arospalette-quick :
-workbench-classes-arospalette-quick : $(SLIB)
-	@$(NOP)
-
-#MM workbench-classes-setup
-workbench-classes-setup : setup
-#MM clean
+%make_module_setup mmake=workbench-gadgets-arospalette
+%make_module mmake=workbench-gadgets-arospalette
 
 %common
+%include_deps

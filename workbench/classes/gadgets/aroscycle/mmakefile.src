@@ -1,28 +1,21 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+MODNAME := aroscycle
+MODTYPE := gadget
+
 USER_INCLUDES := -I.
 
-LIBNAME := aroscycle
-LIBPOST := gadget
-
-DESTDIR := $(GADGETDIR)
-
 FILES := cycleclass support
+FUNCS := 
 
-%genwblib
+USE_ROMLIB := yes
 
-#MM workbench-classes-aroscycle : workbench-classes-setup includes
-workbench-classes-aroscycle : $(SLIB)
-	@$(NOP)
+#MM workbench-gadgets-aroscycle : includes linklibs
+workbench-gadgets-aroscycle : workbench-gadgets-aroscycle-module
 
-#MM workbench-classes-aroscycle-quick : 
-workbench-classes-aroscycle-quick : $(SLIB)
-	@$(NOP)
-
-
-#MM workbench-classes-setup
-workbench-classes-setup : setup
-#MM clean
+%make_module_setup mmake=workbench-gadgets-aroscycle
+%make_module mmake=workbench-gadgets-aroscycle
 
 %common
+%include_deps

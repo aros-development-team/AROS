@@ -1,37 +1,27 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
+MODNAME := colorwheel
+MODTYPE := gadget
 
-LIBNAME  := colorwheel
-ULIBNAME := ColorWheel
-LIBPOST	 := gadget
-DESTDIR  := $(GADGETDIR)
+USER_INCLUDES := -I.
 
 FILES := colorwheelclass support fixmathtrans
 
-FUNCTIONS := \
+FUNCS := \
 	converthsbtorgb \
 	convertrgbtohsb
 
-%define_libs prelibs=-l$(LIBNAME)
+USE_AMIGALIB := yes
+USE_MLIB := yes
 
-%genlib_cpak
+#MM workbench-gadgets-colorwheel : includes linklibs
+workbench-gadgets-colorwheel : workbench-gadgets-colorwheel-module
 
-#MM workbench-classes-gadgets-colorwheel : setup includes
-workbench-classes-gadgets-colorwheel : $(SLIB)
-	@$(NOP)
+%make_module_setup mmake=workbench-gadgets-colorwheel
+%make_module mmake=workbench-gadgets-colorwheel
 
-#MM workbench-classes-gadgets-colorwheel-quick :
-workbench-classes-gadgets-colorwheel-quick : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(GADGETDIR) $(DESTDIRS)
-
-#MM 
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
+%make_lib_includes
 
 %common
+%include_deps
