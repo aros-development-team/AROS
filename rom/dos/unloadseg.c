@@ -2,6 +2,13 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1997/12/11 14:32:09  bergers
+    UnLoadSeg() built on top of InternalUnLoadSeg().
+
+
+    Revision 1.7  1997/12/09 00:17:00  bergers
+    Calls InternalUnLoadSeg() now.
+
     Revision 1.6  1997/01/27 00:36:33  ldp
     Polish
 
@@ -27,27 +34,30 @@
 #include <dos/dos.h>
 #include "dos_intern.h"
 
+extern Exec_FreeMem();
+
 /*****************************************************************************
 
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(void, UnLoadSeg,
+        AROS_LH1(BOOL, UnLoadSeg,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, seglist, D1),
+        AROS_LHA(BPTR, seglist, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 26, Dos)
+        struct DosLibrary *, DOSBase, 26, Dos)
 
 /*  FUNCTION
-	Free a segment list allocated with LoadSeg().
+        Free a segment list allocated with LoadSeg().
 
     INPUTS
-	seglist - The segment list.
+        seglist - The segment list.
 
     RESULT
-
+        success = returns whether everything went ok. Returns FALSE if
+                  seglist was NULL.
     NOTES
 
     EXAMPLE
@@ -55,27 +65,24 @@
     BUGS
 
     SEE ALSO
-	LoadSeg()
+        LoadSeg()
 
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
+        29-10-95    digulla automatically created from
+                            dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    BPTR next;
 
-    while(seglist)
-    {
-	next=*(BPTR *)BADDR(seglist);
-	FreeVec(BADDR(seglist));
-	seglist=next;
-    }
+  if (seglist)
+    return InternalUnLoadSeg(seglist, (void *)&Exec_FreeMem);
 
-    AROS_LIBFUNC_EXIT
+  return FALSE;
+
+  AROS_LIBFUNC_EXIT
 } /* UnLoadSeg */
