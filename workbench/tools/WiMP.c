@@ -16,7 +16,9 @@
 
     LOCATION
 
-        Workbench:Tools
+	Workbench:Tools
+
+    FUNCTION
 
     BUGS
 
@@ -30,7 +32,7 @@
 
 ******************************************************************************/
 
-static const char version[] = "$VER: WiMP 0.6 (07.01.2001)\n";
+static const char version[] = "$VER: WiMP 0.7 (10.02.2001)\n";
 
 #define AROS_ALMOST_COMPATIBLE
 
@@ -81,11 +83,24 @@ struct Menu *menus;
 ULONG IDCMP;
 ULONG lock;
 ULONG w_sigbit, iw_sigbit;
+APTR vi;
 
-enum {None_type,Window_type,Screen_type,Max_type};
+enum {
+  None_type,
+  Window_type,
+  Screen_type,
+  Max_type
+};
 
-#define ClearIDCMP() {IDCMP = Window->IDCMPFlags; Window->IDCMPFlags = NULL;}
-#define ResetIDCMP() {Window->IDCMPFlags = IDCMP;}
+#define ClearIDCMP()		\
+{				\
+  IDCMP = Window->IDCMPFlags;	\
+  Window->IDCMPFlags = 0UL;	\
+}
+#define ResetIDCMP()		\
+{				\
+  Window->IDCMPFlags = IDCMP;	\
+}
 
 #define ID_SHOW 10
 struct NewGadget showgad =
@@ -194,15 +209,16 @@ struct NewGadget updategad =
 #define ID_LISTVIEW 23
 struct NewGadget listviewgad =
 {
-    10, 30, 561, 100,
+    10, 5, 561, 125,
     "Screen/Window List", NULL,
     ID_LISTVIEW, PLACETEXT_ABOVE, NULL, NULL
 };
 
-#define NUMLVNODES  3
-struct List lv_list;
-APTR vi;
+
+struct List lv_list, lv_infolist;
+
 struct Gadget *glist = NULL;
+struct Gadget *igads = NULL;
 struct Gadget *screenlistg = NULL;
 struct Gadget *actiong = NULL;
 #define ACTIONGLENW 8
@@ -283,12 +299,12 @@ struct Node *node;
 char tmp[1024];
 char *string;
 
-  NewList(list);
+  NewList ( list );
 
   /* Get Intuition's first Screen */
-  lock = LockIBase(0);
+  lock = LockIBase ( 0 );
   scr = IntuitionBase->FirstScreen;
-  UnlockIBase(lock);
+  UnlockIBase ( lock );
 
   /* Traverse through all Screens */
   while ( scr )
@@ -303,10 +319,10 @@ char *string;
 		scr->Title,
 		scr->DefaultTitle
 	    );
-    string = strdup(tmp);
+    string = strdup ( tmp );
     node = (struct Node *) AllocMem ( sizeof(struct Node), MEMF_CLEAR );
-    AddTail(list, node);
-    SetNodeName(node, string);
+    AddTail ( list, node );
+    SetNodeName ( node, string );
 
     /* Traverse through all Windows of current Screen */
     win = scr->FirstWindow;
@@ -326,10 +342,10 @@ char *string;
 		(IS_CHILD(win)?' ':0),
 		win->parent
 	      );
-      string = strdup(tmp);
+      string = strdup ( tmp );
       node = (struct Node *) AllocMem ( sizeof(struct Node), MEMF_CLEAR );
-      AddTail(list, node);
-      SetNodeName(node, string);
+      AddTail ( list, node );
+      SetNodeName ( node, string );
       win = win->NextWindow;
     }
     scr = scr->NextScreen;
@@ -342,12 +358,12 @@ VOID freelvnodes(struct List *list)
 {
 struct Node *popnode;
 
-  while ( IsListEmpty(list) != TRUE )
+  while ( IsListEmpty ( list ) != TRUE )
   {
-    popnode = RemTail(list);
+    popnode = RemTail ( list );
 
-    free (popnode->ln_Name);
-    FreeMem ( popnode, sizeof(struct Node) );
+    free ( popnode->ln_Name );
+    FreeMem ( popnode, sizeof ( struct Node ) );
   }
 
 return;
@@ -356,21 +372,21 @@ return;
 VOID update_list()
 {
   /* Detach List from Gadget */
-  GT_SetGadgetAttrs(screenlistg,Window,NULL,
+  GT_SetGadgetAttrs ( screenlistg, Window, NULL,
       GTLV_Labels, (IPTR)~0,
-      TAG_DONE);
+      TAG_DONE );
 
   /* Recalculate List */
-  freelvnodes(&lv_list);
-  initlvnodes(&lv_list);
+  freelvnodes( &lv_list );
+  initlvnodes( &lv_list );
 
   /* Attach List to Gadget */
-  GT_SetGadgetAttrs(screenlistg,Window,NULL,
-      GTLV_Labels, (IPTR)&lv_list,
-      GTLV_Selected, (IPTR)~0,
-      TAG_DONE);
+  GT_SetGadgetAttrs ( screenlistg, Window, NULL,
+      GTLV_Labels,	(IPTR)&lv_list,
+      GTLV_Selected,	(IPTR)~0,
+      TAG_DONE );
   update_actionglist();
-  GT_RefreshWindow(Window,NULL);
+  GT_RefreshWindow ( Window, NULL );
 
 return;
 }
@@ -379,10 +395,10 @@ struct Gadget *gt_init()
 {
     struct Gadget *gad = NULL;
     
-    Screen = LockPubScreen(NULL);
-    vi = GetVisualInfoA(Screen, NULL);
+    Screen = LockPubScreen ( NULL );
+    vi = GetVisualInfoA ( Screen, NULL );
     if ( vi != NULL )
-	gad = CreateContext(&glist);
+	gad = CreateContext ( &glist );
 	
     return gad;
 }
@@ -394,36 +410,36 @@ IPTR xptr = 0;
 struct Screen *scr;
 struct Window *win;
 
-  GT_GetGadgetAttrs(screenlistg,Window,NULL,
+  GT_GetGadgetAttrs ( screenlistg, Window, NULL,
       GTLV_Selected, (IPTR)&gadget,
-      TAG_DONE);
+      TAG_DONE );
   if ( gadget != -1 )
   {
   struct Node *xnode;
   char *xnodename;
 
-    xnode = (struct Node *)GetHead(&lv_list);
+    xnode = (struct Node *) GetHead ( &lv_list );
     for ( ; gadget > 0 ; gadget-- )
     {
-      xnode = GetSucc(xnode);
+      xnode = GetSucc ( xnode );
     }
-    xnodename = GetNodeName(xnode);
+    xnodename = GetNodeName ( xnode );
     switch ( xnodename[2] )
     {
       case 'r' : /* "Screen:" */
 	  *type = Screen_type;
-	  xptr = (IPTR)strtol(&(xnodename[12]),NULL,16);
+	  xptr = (IPTR) strtol ( &(xnodename[12]), NULL, 16 );
 	  break;
       case 'W' : /* "  Window:" */
 	  *type = Window_type;
-	  xptr = (IPTR)strtol(&(xnodename[12]),NULL,16);
+	  xptr = (IPTR) strtol ( &(xnodename[12]), NULL, 16 );
 	  break;
       default:
 	  break;
     }
-    lock = LockIBase(0);
+    lock = LockIBase ( 0 );
     scr = IntuitionBase->FirstScreen;
-    UnlockIBase(lock);
+    UnlockIBase ( lock );
     /* Traverse through all Screens */
     while ( scr && scr != (struct Screen *)xptr )
     {
@@ -459,7 +475,7 @@ VOID update_actionglist()
 struct Gadget *gad;
 int i, type, max;
 
-  getsw(&type);
+  getsw ( &type );
   gad = actiong;
 
   if ( type == Screen_type )
@@ -478,23 +494,23 @@ int i, type, max;
   {
     if ( i > max )
     {
-      OnGadget(gad,Window,NULL);
-      OnMenu(Window,actionmenu[i-1]);
+      OnGadget ( gad, Window, NULL );
+      OnMenu ( Window, actionmenu[i-1] );
     }
     else
     {
-      OffGadget(gad,Window,NULL);
-      OffMenu(Window,actionmenu[i-1]);
+      OffGadget ( gad, Window, NULL );
+      OffMenu ( Window, actionmenu[i-1] );
     }
     gad = gad->NextGadget;
   }
   if ( type == None_type )
   {
-    OffMenu(Window,FULLMENUNUM(1,11,NOSUB));
+    OffMenu ( Window, FULLMENUNUM ( 1, 11, NOSUB ) );
   }
   else
   {
-    OnMenu(Window,FULLMENUNUM(1,11,NOSUB));
+    OnMenu ( Window, FULLMENUNUM ( 1, 11, NOSUB ) );
   }
 
 return;
@@ -502,9 +518,9 @@ return;
 
 VOID makemenus()
 {
-    menus = CreateMenusA(nm,NULL);
-    LayoutMenusA(menus, vi, NULL);
-    SetMenuStrip(Window, menus);
+    menus = CreateMenusA ( nm, NULL );
+    LayoutMenusA ( menus, vi, NULL );
+    SetMenuStrip ( Window, menus );
 
 return;
 }
@@ -512,6 +528,8 @@ return;
 struct Gadget *makegadgets(struct Gadget *gad)
 {
 int i;
+int topborder, leftborder;
+struct TextAttr fixedfontattr;
 struct NewGadget *buttons[] =
 {
   &updategad,
@@ -530,39 +548,48 @@ struct NewGadget *buttons[] =
 };
 #define BUTTONALEN	6
 #define BUTTONBLEN	7
-#define BUTTONLEN	(BUTTONALEN+BUTTONBLEN)
+#define BUTTONLEN	( BUTTONALEN + BUTTONBLEN )
 
+  topborder = Window->WScreen->WBorTop + Window->WScreen->Font->ta_YSize + 1;
+  leftborder = Window->WScreen->WBorLeft;
+  AskFont ( Window->RPort, &fixedfontattr );
+  listviewgad.ng_TextAttr = &fixedfontattr;
   listviewgad.ng_VisualInfo = vi;
+  listviewgad.ng_LeftEdge += leftborder;
+  listviewgad.ng_TopEdge += topborder + Window->WScreen->Font->ta_YSize + 1;
+  listviewgad.ng_Height -= Window->WScreen->Font->ta_YSize + 1;
   for ( i = 0 ; i < BUTTONLEN ; i++ )
   {
     buttons[i]->ng_VisualInfo = vi;
+    buttons[i]->ng_LeftEdge += leftborder;
+    buttons[i]->ng_TopEdge += topborder;
   }
     
-  initlvnodes(&lv_list);
-  gad = CreateGadget(LISTVIEW_KIND, gad, &listviewgad,
+  initlvnodes ( &lv_list );
+  gad = CreateGadget ( LISTVIEW_KIND, gad, &listviewgad,
 		GTLV_Labels,		(IPTR)&lv_list,
 		GTLV_ShowSelected,	NULL,
 		GTLV_ReadOnly,		FALSE,
-		TAG_DONE);
+		TAG_DONE );
   screenlistg = gad;
 
   for ( i = 0 ; i < BUTTONALEN ; i++ )
   {
-    gad = CreateGadget(BUTTON_KIND, gad, buttons[i],
-		TAG_DONE);
+    gad = CreateGadget ( BUTTON_KIND, gad, buttons[i],
+		TAG_DONE );
   }
   actiong = gad;
 
   for ( ; i < BUTTONLEN ; i++ )
   {
-    gad = CreateGadget(BUTTON_KIND, gad, buttons[i],
-		TAG_DONE);
+    gad = CreateGadget ( BUTTON_KIND, gad, buttons[i],
+		TAG_DONE );
   }
 
   if ( gad == NULL )
   {
-    FreeGadgets(glist);
-    printf("GTDemo: Error creating gadgets\n");
+    FreeGadgets ( glist );
+    printf ( "GTDemo: Error creating gadgets\n" );
   }
 
 return gad;
@@ -570,9 +597,9 @@ return gad;
 
 VOID open_lib()
 {
-  IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library",0L);
-  GfxBase = (struct GfxBase *) OpenLibrary("graphics.library",0L);
-  GadToolsBase = OpenLibrary("gadtools.library",0L);
+  IntuitionBase = (struct IntuitionBase *) OpenLibrary ( "intuition.library", 0L );
+  GfxBase = (struct GfxBase *) OpenLibrary ( "graphics.library", 0L );
+  GadToolsBase = OpenLibrary ( "gadtools.library", 0L );
 
 return;
 }
@@ -583,8 +610,8 @@ VOID open_window()
 	, WA_Title,	    TITLE_TXT
 	, WA_Left,	    0
 	, WA_Top,	    0
-	, WA_Width,	    580
-	, WA_Height,	    180
+	, WA_InnerWidth,    580
+	, WA_InnerHeight,   180
 	, WA_IDCMP,	    IDCMP_REFRESHWINDOW
 			    | IDCMP_MOUSEBUTTONS
 			    | IDCMP_GADGETUP
@@ -606,42 +633,71 @@ return;
 
 VOID close_window()
 {
-  CloseWindow(InfoWindow);
-  CloseWindow(Window);
-  FreeGadgets(glist);
-  FreeVisualInfo(vi);
-  UnlockPubScreen(NULL, Screen);
+  CloseWindow ( InfoWindow );
+  CloseWindow ( Window );
+  FreeGadgets ( glist );
+  FreeVisualInfo ( vi );
+  UnlockPubScreen ( NULL, Screen );
 
 return;
 }
 
 VOID close_lib()
 {
-  CloseLibrary((struct Library *)IntuitionBase);
-  CloseLibrary((struct Library *)GfxBase);
-  CloseLibrary(GadToolsBase);
+  CloseLibrary ( (struct Library *)IntuitionBase );
+  CloseLibrary ( (struct Library *)GfxBase );
+  CloseLibrary ( GadToolsBase );
 
 return;
 }
 
 VOID open_infowindow()
 {
+struct TextAttr fixedfontattr;
+struct Gadget *gad = NULL;
+int topborder, leftborder;
+#define ID_SWINFO 30
+struct NewGadget swinfogad =
+{
+    10, 5, 561, 220,
+    "Info", NULL,
+    ID_SWINFO, PLACETEXT_ABOVE, NULL, NULL
+};
+
   InfoWindow = OpenWindowTags ( NULL
-	, WA_Title,	INFOTITLE_TXT
-	, WA_Left,	0
-	, WA_Top,	0
-	, WA_Width,	580
-	, WA_Height,	250
-	, WA_IDCMP,	IDCMP_CLOSEWINDOW
-	, WA_Flags,	WFLG_DRAGBAR
-			| WFLG_DEPTHGADGET
-			| WFLG_CLOSEGADGET
-			| WFLG_ACTIVATE
-			| WFLG_GIMMEZEROZERO
+	, WA_Title,		INFOTITLE_TXT
+	, WA_Left,		0
+	, WA_Top,		0
+	, WA_InnerWidth,	580
+	, WA_InnerHeight,	250
+	, WA_IDCMP,		IDCMP_CLOSEWINDOW
+	, WA_Flags,		WFLG_DRAGBAR
+				| WFLG_DEPTHGADGET
+				| WFLG_CLOSEGADGET
+				| WFLG_ACTIVATE
 	, TAG_END
-    );
-    iw_sigbit = 1 << InfoWindow->UserPort->mp_SigBit;
-    iw_rp = InfoWindow->RPort;
+  );
+  iw_sigbit = 1 << InfoWindow->UserPort->mp_SigBit;
+  iw_rp = InfoWindow->RPort;
+
+  topborder = InfoWindow->WScreen->WBorTop + InfoWindow->WScreen->Font->ta_YSize + 1;
+  leftborder = InfoWindow->WScreen->WBorLeft;
+  AskFont ( InfoWindow->RPort, &fixedfontattr );
+  swinfogad.ng_TextAttr = &fixedfontattr;
+  swinfogad.ng_VisualInfo = vi;
+  swinfogad.ng_LeftEdge += leftborder;
+  swinfogad.ng_TopEdge += topborder + InfoWindow->WScreen->Font->ta_YSize + 1;
+  swinfogad.ng_Height -= InfoWindow->WScreen->Font->ta_YSize + 1;
+  
+  gad = CreateContext ( &igads );
+  igads = CreateGadget ( LISTVIEW_KIND, igads, &swinfogad,
+		GTLV_Labels,		(IPTR)&lv_infolist,
+		GTLV_ShowSelected,	NULL,
+		GTLV_ReadOnly,		FALSE,
+		TAG_DONE );
+
+  AddGList ( InfoWindow, igads, 0, -1, NULL );
+  RefreshGList ( igads, InfoWindow, NULL, -1 );
 
 return;
 }
@@ -655,13 +711,56 @@ VOID close_infowindow()
 return;
 }
 
-#define WPRINT(line)			\
-	Move(iw_rp, 10, line*9+2);	\
-	Text(iw_rp, tmp, strlen(tmp) );
+#define APPENDLIST()							\
+    string = strdup ( tmp );						\
+    node = (struct Node *) AllocMem ( sizeof(struct Node), MEMF_CLEAR );\
+    AddTail ( &lv_infolist, node );					\
+    SetNodeName ( node, string );
 
 VOID WindowInfo( struct Window *win )
 {
 char tmp[1024];
+struct Node *node;
+char *string;
+
+  if ( InfoWindow != NULL )
+  {
+    /* Detach List from Gadget */
+    GT_SetGadgetAttrs ( igads, InfoWindow, NULL,
+	GTLV_Labels, (IPTR)~0,
+	TAG_DONE);
+  }
+
+  freelvnodes ( &lv_infolist );
+  NewList ( &lv_infolist );
+
+  sprintf ( tmp, "NextWindow   = %p", win->NextWindow );	APPENDLIST();
+  sprintf ( tmp, "LeftEdge     = %d", win->LeftEdge );		APPENDLIST();
+  sprintf ( tmp, "TopEdge      = %d", win->TopEdge );		APPENDLIST();
+  sprintf ( tmp, "Width        = %d", win->Width );		APPENDLIST();
+  sprintf ( tmp, "Height       = %d", win->Height );		APPENDLIST();
+  sprintf ( tmp, "MinWidth     = %d", win->MinWidth );		APPENDLIST();
+  sprintf ( tmp, "MinHeight    = %d", win->MinHeight );		APPENDLIST();
+  sprintf ( tmp, "MaxWidth     = %d", win->MaxWidth );		APPENDLIST();
+  sprintf ( tmp, "MaxHeight    = %d", win->MaxHeight );		APPENDLIST();
+  sprintf ( tmp, "Flags        = 0x%08lx", win->Flags );	APPENDLIST();
+  sprintf ( tmp, "IDCMPFlags   = 0x%08lx", win->IDCMPFlags );	APPENDLIST();
+  sprintf ( tmp, "Title        = \"%s\"", win->Title );		APPENDLIST();
+  sprintf ( tmp, "ReqCount     = %d", win->ReqCount );		APPENDLIST();
+  sprintf ( tmp, "WScreen      = %p \"%s\"", win->WScreen,
+				win->WScreen->Title );		APPENDLIST();
+  sprintf ( tmp, "BorderLeft   = %d", win->BorderLeft );	APPENDLIST();
+  sprintf ( tmp, "BorderTop    = %d", win->BorderTop );		APPENDLIST();
+  sprintf ( tmp, "BorderRight  = %d", win->BorderRight );	APPENDLIST();
+  sprintf ( tmp, "BorderBottom = %d", win->BorderBottom );	APPENDLIST();
+  if ( IS_CHILD ( win ) )
+  {
+    sprintf ( tmp, "Parent       = %p", win->Parent );		APPENDLIST();
+  }
+  if ( HAS_CHILDREN ( win ) )
+  {
+    sprintf ( tmp, "Descendant   = %p", win->Descendant );	APPENDLIST();
+  }
 
   if ( InfoWindow == NULL )
   {
@@ -669,43 +768,13 @@ char tmp[1024];
   }
   else
   {
-    EraseRect ( iw_rp, 0, 0, InfoWindow->Width, InfoWindow->Height );
-  }
-  DrawBevelBox ( iw_rp, 4, 16, 560, 200,
-		 GTBB_Recessed, TRUE,
-		 GTBB_FrameType, BBFT_RIDGE,
-		 GT_VisualInfo, (IPTR) vi,
-		 TAG_DONE );
+    /* Attach List to Gadget */
+    GT_SetGadgetAttrs ( igads, InfoWindow, NULL,
+	GTLV_Labels,	(IPTR)&lv_infolist,
+	GTLV_Selected,	(IPTR)~0,
+	TAG_DONE );
 
-  SetAPen(iw_rp,1);
-  sprintf(tmp,"Window: %p \"%s\"",win,win->Title);	WPRINT(  1 );
-
-  sprintf(tmp,"NextWindow   = %p", win->NextWindow);	WPRINT(  3 );
-  sprintf(tmp,"LeftEdge     = %d", win->LeftEdge);	WPRINT(  4 );
-  sprintf(tmp,"TopEdge      = %d", win->TopEdge);	WPRINT(  5 );
-  sprintf(tmp,"Width        = %d", win->Width);		WPRINT(  6 );
-  sprintf(tmp,"Height       = %d", win->Height);	WPRINT(  7 );
-  sprintf(tmp,"MinWidth     = %d", win->MinWidth);	WPRINT(  8 );
-  sprintf(tmp,"MinHeight    = %d", win->MinHeight);	WPRINT(  9 );
-  sprintf(tmp,"MaxWidth     = %d", win->MaxWidth);	WPRINT( 10 );
-  sprintf(tmp,"MaxHeight    = %d", win->MaxHeight);	WPRINT( 11 );
-  sprintf(tmp,"Flags        = 0x%08lx", win->Flags);	WPRINT( 12 );
-  sprintf(tmp,"IDCMPFlags   = 0x%08lx", win->IDCMPFlags); WPRINT( 13 );
-  sprintf(tmp,"Title        = \"%s\"", win->Title);	WPRINT( 14 );
-  sprintf(tmp,"ReqCount     = %d", win->ReqCount);	WPRINT( 15 );
-  sprintf(tmp,"WScreen      = %p \"%s\"", win->WScreen,
-				win->WScreen->Title);	WPRINT( 16 );
-  sprintf(tmp,"BorderLeft   = %d", win->BorderLeft);	WPRINT( 17 );
-  sprintf(tmp,"BorderTop    = %d", win->BorderTop);	WPRINT( 18 );
-  sprintf(tmp,"BorderRight  = %d", win->BorderRight);	WPRINT( 19 );
-  sprintf(tmp,"BorderBottom = %d", win->BorderBottom);	WPRINT( 20 );
-  if(IS_CHILD(win))
-  {
-    sprintf(tmp,"Parent       = %p", win->Parent);	WPRINT( 21 );
-  }
-  if(HAS_CHILDREN(win))
-  {
-    sprintf(tmp,"Descendant   = %p", win->Descendant);	WPRINT( 22 );
+    GT_RefreshWindow ( InfoWindow, NULL );
   }
 
 return;
@@ -714,6 +783,29 @@ return;
 VOID ScreenInfo( struct Screen *scr )
 {
 char tmp[1024];
+struct Node *node;
+char *string;
+
+  if ( InfoWindow != NULL )
+  {
+    /* Detach List from Gadget */
+    GT_SetGadgetAttrs ( igads, InfoWindow, NULL,
+	GTLV_Labels, (IPTR)~0,
+	TAG_DONE );
+  }
+
+  freelvnodes ( &lv_infolist );
+  NewList ( &lv_infolist );
+
+  sprintf ( tmp, "Screen: %p \"%s\"", scr,scr->Title );		APPENDLIST();
+  sprintf ( tmp, "LeftEdge     = %d", scr->LeftEdge );		APPENDLIST();
+  sprintf ( tmp, "TopEdge      = %d", scr->TopEdge );		APPENDLIST();
+  sprintf ( tmp, "Width        = %d", scr->Width );		APPENDLIST();
+  sprintf ( tmp, "Height       = %d", scr->Height );		APPENDLIST();
+  sprintf ( tmp, "Flags        = 0x%08x", scr->Flags );		APPENDLIST();
+  sprintf ( tmp, "Title        = \"%s\"", scr->Title );		APPENDLIST();
+  sprintf ( tmp, "DefaultTitle = \"%s\"", scr->DefaultTitle );	APPENDLIST();
+  sprintf ( tmp, "FirstWindow  = %p", scr->FirstWindow );	APPENDLIST();
 
   if ( InfoWindow == NULL )
   {
@@ -721,24 +813,14 @@ char tmp[1024];
   }
   else
   {
-    EraseRect ( iw_rp, 0, 0, InfoWindow->Width, InfoWindow->Height );
-  }
-  DrawBevelBox ( iw_rp, 4, 16, 560, 200,
-		 GTBB_Recessed, TRUE,
-		 GTBB_FrameType, BBFT_RIDGE,
-		 GT_VisualInfo, (IPTR) vi,
-		 TAG_DONE );
+    /* Attach List to Gadget */
+    GT_SetGadgetAttrs ( igads, InfoWindow, NULL,
+	GTLV_Labels,	(IPTR)&lv_infolist,
+	GTLV_Selected,	(IPTR)~0,
+	TAG_DONE );
 
-  SetAPen(iw_rp,1);
-  sprintf(tmp,"Screen: %p \"%s\"",scr,scr->Title);		WPRINT(  1 );
-  sprintf(tmp,"LeftEdge     = %d", scr->LeftEdge);		WPRINT(  3 );
-  sprintf(tmp,"TopEdge      = %d", scr->TopEdge);		WPRINT(  4 );
-  sprintf(tmp,"Width        = %d", scr->Width);			WPRINT(  5 );
-  sprintf(tmp,"Height       = %d", scr->Height);		WPRINT(  6 );
-  sprintf(tmp,"Flags        = 0x%08x", scr->Flags);		WPRINT(  7 );
-  sprintf(tmp,"Title        = \"%s\"", scr->Title);		WPRINT(  8 );
-  sprintf(tmp,"DefaultTitle = \"%s\"", scr->DefaultTitle);	WPRINT(  9 );
-  sprintf(tmp,"FirstWindow  = %p", scr->FirstWindow);		WPRINT( 10 );
+    GT_RefreshWindow ( InfoWindow, NULL );
+  }
 
 return;
 }
@@ -749,9 +831,9 @@ struct Screen *scr;
 struct Window *win;
 
   /* Get Intuition's first Screen */
-  lock = LockIBase(0);
+  lock = LockIBase ( 0 );
   scr = IntuitionBase->FirstScreen;
-  UnlockIBase(lock);
+  UnlockIBase ( lock );
 
   /* Traverse through all Screens */
   while ( scr )
@@ -784,9 +866,9 @@ struct Screen *scr;
 struct Window *win;
 
   /* Get Intuition's first Screen */
-  lock = LockIBase(0);
+  lock = LockIBase ( 0 );
   scr = IntuitionBase->FirstScreen;
-  UnlockIBase(lock);
+  UnlockIBase ( lock );
 
   /* Traverse through all Screens */
   while ( scr )
@@ -796,7 +878,7 @@ struct Window *win;
     while ( win )
     {
       /* Show Window if hidden */
-      if ( IsWindowVisible(win) != TRUE )
+      if ( IsWindowVisible ( win ) != TRUE )
       {
 	ShowWindow ( win );
       }
@@ -825,19 +907,21 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
   open_lib();
   open_window();
 
-  CurrentTime( &sec1, &msec1 );
+  NewList (&lv_infolist);
+
+  CurrentTime ( &sec1, &msec1 );
   sel1 = -1;
 
   gad = gt_init();
-  gad = makegadgets(gad);
-  AddGList(Window,glist,0,-1,NULL);
-  RefreshGList(glist,Window,NULL,-1);
+  gad = makegadgets ( gad );
+  AddGList ( Window, glist, 0, -1, NULL );
+  RefreshGList ( glist, Window, NULL, -1 );
 
   makemenus();
   
   update_actionglist();
 
-  es.es_StructSize = sizeof(es);
+  es.es_StructSize = sizeof ( es );
   es.es_Flags	= 0;
   es.es_Title	= TITLE_TXT;
 
@@ -846,18 +930,18 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
     port = Wait ( w_sigbit | iw_sigbit );
     if ( ( port & iw_sigbit ) != 0L )
     {
-      msg = (struct IntuiMessage *)GetMsg(InfoWindow->UserPort);
+      msg = (struct IntuiMessage *) GetMsg ( InfoWindow->UserPort );
       class = msg->Class;
       code = msg->Code;
       if ( class == IDCMP_CLOSEWINDOW )
       {
 	close_infowindow();
       }
-      ReplyMsg((struct Message *)msg);
+      ReplyMsg ( (struct Message *) msg );
     }
     else if ( ( port & w_sigbit ) != 0L )
     {
-      msg = (struct IntuiMessage *)GetMsg(Window->UserPort);
+      msg = (struct IntuiMessage *) GetMsg ( Window->UserPort );
       class = msg->Class;
       code = msg->Code;
       switch ( class )
@@ -869,17 +953,17 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 	case IDCMP_MENUPICK :
 		while ( code != MENUNULL )
 		{
-//		  printf("Menu: %d %d %d\n",MENUNUM(code),ITEMNUM(code),SUBNUM(code));
-		  switch ( MENUNUM(code) )
+//		  printf ( "Menu: %d %d %d\n", MENUNUM(code), ITEMNUM(code), SUBNUM(code) );
+		  switch ( MENUNUM ( code ) )
 		  {
 		    case 0: /* Project */
-			switch ( ITEMNUM(code) )
+			switch ( ITEMNUM ( code ) )
 			{
 			  case 0: /* About */
 				es.es_TextFormat = ABOUT_TXT;
 				es.es_GadgetFormat = CONTINUE_TXT;
 				ClearIDCMP();
-				EasyRequest(Window,&es,NULL,NULL,NULL);
+				EasyRequest ( Window, &es, NULL, NULL, NULL );
 				ResetIDCMP();
 				break;
 			  case 2: /* Quit */
@@ -888,13 +972,13 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 			}
 			break;
 		    case 1: /* Window List */
-			switch ( ITEMNUM(code) )
+			object = getsw ( &type );
+			switch ( ITEMNUM ( code ) )
 			{
 			  case 0: /* Update List */
 				/* Update will be done after this switch() */
 				break;
 			  case 2: /* Kill */
-				object = getsw(&type);
 				if ( type == Screen_type || type == Window_type )
 				{
 				int killit;
@@ -904,22 +988,22 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 					es.es_TextFormat = CLOSESCREEN_TXT;
 					es.es_GadgetFormat = YESNO_TXT;
 					ClearIDCMP();
-					killit = EasyRequest(Window,&es,NULL,NULL,NULL);
+					killit = EasyRequest ( Window, &es, NULL, NULL, NULL );
 					ResetIDCMP();
 					if ( killit == EASYTRUE )
 					{
-					  CloseScreen((struct Screen *)object);
+					  CloseScreen ( (struct Screen *)object );
 					}
 					break;
 				    case Window_type :
 					es.es_TextFormat = CLOSEWINDOW_TXT;
 					es.es_GadgetFormat = YESNO_TXT;
 					ClearIDCMP();
-					killit = EasyRequest(Window,&es,NULL,NULL,NULL);
+					killit = EasyRequest ( Window, &es, NULL, NULL, NULL );
 					ResetIDCMP();
 					if ( killit == EASYTRUE )
 					{
-					  CloseWindow((struct Window *)object);
+					  CloseWindow ( (struct Window *)object );
 					}
 					break;
 				    default:
@@ -928,16 +1012,15 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 				}
 				break;
 			  case 3: /* To Front */
-				object = getsw(&type);
 				if ( type == Screen_type || type == Window_type )
 				{
 				  switch ( type )
 				  {
 				    case Screen_type :
-					ScreenToFront((struct Screen *)object);
+					ScreenToFront ( (struct Screen *)object );
 					break;
 				    case Window_type :
-					WindowToFront((struct Window *)object);
+					WindowToFront ( (struct Window *) object );
 					break;
 				    default:
 					break;
@@ -945,16 +1028,15 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 				}
 				break;
 			  case 4: /* To Back */
-				object = getsw(&type);
 				if ( type == Screen_type || type == Window_type )
 				{
 				  switch ( type )
 				  {
 				    case Screen_type :
-					ScreenToBack((struct Screen *)object);
+					ScreenToBack ( (struct Screen *)object );
 					break;
 				    case Window_type :
-					WindowToBack((struct Window *)object);
+					WindowToBack ( (struct Window *) object );
 					break;
 				    default:
 					break;
@@ -962,86 +1044,84 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 				}
 				break;
 			  case 5: /* To Origin */
-				object = getsw(&type);
 				if ( type == Screen_type || type == Window_type )
 				{
 				  switch ( type )
 				  {
 				    case Screen_type :
-					MoveScreen((struct Screen *)object,-((struct Screen *)object)->LeftEdge,-((struct Screen *)object)->TopEdge);
+					MoveScreen ( (struct Screen *)object,
+						-((struct Screen *)object)->LeftEdge,
+						-((struct Screen *)object)->TopEdge );
 					break;
 				    case Window_type :
-					MoveWindow((struct Window *)object,-((struct Window *)object)->RelLeftEdge,-((struct Window *)object)->RelTopEdge);
+					MoveWindow ( (struct Window *)object,
+						-((struct Window *)object)->RelLeftEdge,
+						-((struct Window *)object)->RelTopEdge );
 					break;
 				    default:
 					break;
 				  }
-				  Delay(5);
+				  Delay ( 5 );
 				}
 				break;
 			  case 6: /* Activate */
-				object = getsw(&type);
 				if ( type == Window_type )
 				{
-				  ActivateWindow((struct Window *)object);
+				  ActivateWindow ( (struct Window *)object );
 				}
 				break;
 			  case 7: /* Zip */
-				object = getsw(&type);
 				if ( type == Window_type )
 				{
-				  ZipWindow((struct Window *)object);
+				  ZipWindow ( (struct Window *)object );
 				}
 				break;
 			  case 8: /* Hide */
-				object = getsw(&type);
 				if ( type == Window_type )
 				{
 				  if ( (struct Window *)object == Window )
 				  {
-				    /* TODO: Iconify */
+				    /* TODO: Iconify WiMP */
 				  }
 				  else
 				  {
-				    HideWindow((struct Window *)object);
+				    HideWindow ( (struct Window *)object );
 				  }
 				}
-				Delay(5);
+				Delay ( 5 );
 				break;
 			  case 9: /* Show */
-				object = getsw(&type);
 				if ( type == Window_type )
 				{
-				  ShowWindow((struct Window *)object);
+				  ShowWindow ( (struct Window *)object );
 				}
-				Delay(5);
+				Delay ( 5 );
 				break;
 			  case 11: /* Info */
-				object = getsw(&type);
 				if ( type == Window_type )
 				{
-				  WindowInfo((struct Window *)object);
+				  WindowInfo ( (struct Window *)object );
 				}
 				else if ( type == Screen_type )
 				{
-				  ScreenInfo((struct Screen *)object);
+				  ScreenInfo ( (struct Screen *)object );
 				}
 				break;
 			}
 			update_list();
 			break;
 		    case 2: /* Generic */
-			switch ( ITEMNUM(code) )
+			switch ( ITEMNUM ( code ) )
 			{
 			  case 0: /* Rescue All */
 				rescue_all();
-				Delay(5);
+				Delay ( 5 );
 				update_list();
 				break;
 
 			  case 1: /* Show All */
 				show_all();
-				Delay(5);
+				Delay ( 5 );
 				update_list();
 				break;
 
@@ -1057,7 +1137,7 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 		    default:
 			break;
 		  }
-		  if ( (item = ItemAddress(menus,code)) != NULL )
+		  if ( (item = ItemAddress ( menus, code ) ) != NULL )
 		  {
 		    code = item->NextSelect;
 		  }
@@ -1080,7 +1160,7 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 			es.es_TextFormat = ABOUT_TXT;
 			es.es_GadgetFormat = CONTINUE_TXT;
 			ClearIDCMP();
-			EasyRequest(Window,&es,NULL,NULL,NULL);
+			EasyRequest ( Window, &es, NULL, NULL, NULL );
 			ResetIDCMP();
 			break;
 
@@ -1090,61 +1170,61 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 			break;
 
 		  case ID_SHOW:
-			object = getsw(&type);
+			object = getsw ( &type );
 			if ( type == Window_type )
 			{
-			  ShowWindow((struct Window *)object);
+			  ShowWindow ( (struct Window *)object );
 			}
-			Delay(5);
+			Delay ( 5 );
 			update_list();
 			break;
 
 		  case ID_HIDE:
-			object = getsw(&type);
+			object = getsw ( &type );
 			if ( type == Window_type )
 			{
 			  if ( (struct Window *)object == Window )
 			  {
-			    /* TODO: Iconify */
+			    /* TODO: Iconify WiMP */
 			  }
 			  else
 			  {
-			    HideWindow((struct Window *)object);
+			    HideWindow ( (struct Window *)object );
 			  }
 			}
-			Delay(5);
+			Delay ( 5 );
 			update_list();
 			break;
 
 		  case ID_ZIP:
-			object = getsw(&type);
+			object = getsw ( &type );
 			if ( type == Window_type )
 			{
-			  ZipWindow((struct Window *)object);
+			  ZipWindow ( (struct Window *)object );
 			}
 			update_list();
 			break;
 
 		  case ID_ACTIVATE:
-			object = getsw(&type);
+			object = getsw ( &type );
 			if ( type == Window_type )
 			{
-			  ActivateWindow((struct Window *)object);
+			  ActivateWindow ( (struct Window *)object );
 			}
 			update_list();
 			break;
 
 		  case ID_FRONT:
-			object = getsw(&type);
+			object = getsw ( &type );
 			if ( type == Screen_type || type == Window_type )
 			{
 			  switch ( type )
 			  {
 			    case Screen_type :
-				ScreenToFront((struct Screen *)object);
+				ScreenToFront ( (struct Screen *)object );
 				break;
 			    case Window_type :
-				WindowToFront((struct Window *)object);
+				WindowToFront ( (struct Window *)object );
 				break;
 			    default:
 				break;
@@ -1154,16 +1234,16 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 			break;
 
 		  case ID_BACK:
-			object = getsw(&type);
+			object = getsw ( &type );
 			if ( type == Screen_type || type == Window_type )
 			{
 			  switch ( type )
 			  {
 			    case Screen_type :
-				ScreenToBack((struct Screen *)object);
+				ScreenToBack ( (struct Screen *)object );
 				break;
 			    case Window_type :
-				WindowToBack((struct Window *)object);
+				WindowToBack ( (struct Window *)object );
 				break;
 			    default:
 				break;
@@ -1173,27 +1253,31 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 			break;
 
 		  case ID_ORIGIN:
-			object = getsw(&type);
+			object = getsw ( &type );
 			if ( type == Screen_type || type == Window_type )
 			{
 			  switch ( type )
 			  {
 			    case Screen_type :
-				MoveScreen((struct Screen *)object,-((struct Screen *)object)->LeftEdge,-((struct Screen *)object)->TopEdge);
+				MoveScreen ( (struct Screen *)object,
+					-((struct Screen *)object)->LeftEdge,
+					-((struct Screen *)object)->TopEdge );
 				break;
 			    case Window_type :
-				MoveWindow((struct Window *)object,-((struct Window *)object)->RelLeftEdge,-((struct Window *)object)->RelTopEdge);
+				MoveWindow ( (struct Window *)object,
+					-((struct Window *)object)->RelLeftEdge,
+					-((struct Window *)object)->RelTopEdge );
 				break;
 			    default:
 				break;
 			  }
-			  Delay(5);
+			  Delay ( 5 );
 			}
 			update_list();
 			break;
 
 		  case ID_KILL:
-			object = getsw(&type);
+			object = getsw ( &type );
 			if ( type == Screen_type || type == Window_type )
 			{
 			int killit;
@@ -1203,22 +1287,22 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 				es.es_TextFormat = CLOSESCREEN_TXT;
 				es.es_GadgetFormat = YESNO_TXT;
 				ClearIDCMP();
-				killit = EasyRequest(Window,&es,NULL,NULL,NULL);
+				killit = EasyRequest ( Window, &es, NULL, NULL, NULL );
 				ResetIDCMP();
 				if ( killit == EASYTRUE )
 				{
-				  CloseScreen((struct Screen *)object);
+				  CloseScreen ( (struct Screen *)object );
 				}
 				break;
 			    case Window_type :
 				es.es_TextFormat = CLOSEWINDOW_TXT;
 				es.es_GadgetFormat = YESNO_TXT;
 				ClearIDCMP();
-				killit = EasyRequest(Window,&es,NULL,NULL,NULL);
+				killit = EasyRequest ( Window, &es, NULL, NULL, NULL );
 				ResetIDCMP();
 				if ( killit == EASYTRUE )
 				{
-				  CloseWindow((struct Window *)object);
+				  CloseWindow ( (struct Window *)object );
 				}
 				break;
 			    default:
@@ -1244,19 +1328,19 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 			CurrentTime( &sec2, &msec2 );
 			GT_GetGadgetAttrs ( screenlistg,Window,NULL,
       					GTLV_Selected, (IPTR)&sel2,
-      					TAG_DONE);
+      					TAG_DONE );
 			if ( sel1 == sel2
 			     && DoubleClick ( sec1, msec1, sec2, msec2 )
       			   )
       			{
-			  object = getsw(&type);
+			  object = getsw ( &type );
 			  if ( type == Window_type )
 			  {
-			    WindowInfo((struct Window *)object);
+			    WindowInfo ( (struct Window *)object );
 			  }
 			  else if ( type == Screen_type )
 			  {
-			    ScreenInfo((struct Screen *)object);
+			    ScreenInfo ( (struct Screen *)object );
 			  }
       			}
       			sec1 = sec2;
@@ -1273,12 +1357,12 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 	default :
 		break;
       }
-      ReplyMsg((struct Message *)msg);
+      ReplyMsg ( (struct Message *)msg );
     }
   }
 
   close_window();
   close_lib();
-  return(0);
+  return ( 0 );
 }
 
