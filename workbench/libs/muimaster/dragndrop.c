@@ -27,6 +27,9 @@
 #include "muimaster_intern.h"
 #include "support.h"
 
+/* #define MYDEBUG 1 */
+#include "debug.h"
+
 extern struct Library *MUIMasterBase;
 
 #ifdef __MAXON__
@@ -1079,13 +1082,28 @@ VOID FinishDragNDrop(struct DragNDrop *dnd)
 }
 //-------------------------------------
 
-//-------------------------------------
-struct BitMapNode *CreateBitMapNode( ULONG tags,... )
+/**********************************************************************
+ Varargs function of CreateBitMapNode(). Note that we need a dummy
+ because we need at least one parameter
+**********************************************************************/
+struct BitMapNode *VARARGS68K CreateBitMapNode(void *dummy, ...)
 {
-	return CreateBitMapNodeA( (struct TagItem*)&tags );
-}
-//-------------------------------------
+#ifndef __amigaos4__
+    return CreateBitMapNodeA( (struct TagItem*)(((ULONG*)&dummy)+1));
+#else
+    va_list argptr;
+    struct TagItem *tagList;
+    struct BitMapNode *res;
 
+    va_startlinear(argptr, dummy);
+    tagList = va_getlinearva(argptr,struct TagItem *);
+    res = CreateBitMapNodeA(tagList);
+    va_end(argptr);
+    return res;
+#endif
+}
+
+/******************************************************************************/
 
 
 

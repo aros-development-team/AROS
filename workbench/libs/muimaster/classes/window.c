@@ -3347,7 +3347,7 @@ static IPTR Window_DragObject(struct IClass *cl, Object *obj, struct MUIP_Window
 	    return 0;
 	}
 
-	if (!(bmn = CreateBitMapNode(
+	if (!(bmn = CreateBitMapNode(NULL, /* dummy */
 		GUI_BitMap, di->bm,
 		GUI_LeftOffset, di->touchx,
 		GUI_TopOffset, di->touchy,
