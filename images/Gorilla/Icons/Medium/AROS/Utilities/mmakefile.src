@@ -3,17 +3,8 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Clock Installer More MultiView
-ICONDIR   := $(AROSDIR)/Utilities
-ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
+ICONS := Clock Installer More MultiView
 
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-utilities
-#MM
-themes-gorilla-icons-aros-utilities : setup $(ICONFILES)
-	@$(NOP)
-
-$(ICONDIR)/%.info : %.info.src %.png
-	@$(ILBMTOICON) $+ $@
-
-setup :
-	%mkdirs_q $(ICONDIR)
+%build_icons mmake=themes-gorilla-icons-aros-utilities icons=$(ICONS) \
+             dir=$(AROS_UTILITIES)

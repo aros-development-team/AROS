@@ -3,17 +3,8 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Patterns
-ICONDIR   := $(AROSDIR)/Prefs/Presets
-ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
+ICONS := Patterns
 
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-prefs-presets
-#MM
-themes-gorilla-icons-aros-prefs-presets : setup $(ICONFILES)
-	@$(NOP)
-
-$(ICONDIR)/%.info : %.info.src %.png
-	@$(ILBMTOICON) $+ $@
-
-setup :
-	%mkdirs_q $(ICONDIR)
+%build_icons mmake=themes-gorilla-icons-aros-prefs-presets icons=$(ICONS) \
+             dir=$(AROS_PREFS)/Presets/Patterns
