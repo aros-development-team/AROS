@@ -3,11 +3,7 @@ TOP=..
 
 include $(TOP)/config/make.cfg
 
-ifeq ($(FLAVOUR),native)
-SUBDIRS=c demos      libs
-else
 SUBDIRS=c demos devs libs locale
-endif
 
 all: $(SDIR)/Startup-Sequence
 	@for dir in $(SUBDIRS) ; do \
