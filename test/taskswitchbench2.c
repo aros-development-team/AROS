@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #include <stdio.h>
 #include <sys/time.h>
 
@@ -76,8 +78,13 @@ int main(void)
 {
     double elapsed = 0;
 
-    /* Since I'm SO lazy, I'm using processes here, even if tasks would work too, 'cause */
-    /* it's easier to create processes than tasks, without using any linklib             */
+    /* 
+       Since I'm SO lazy, I'm using processes here, even if tasks would work too, 'cause 
+       it's easier to create processes than tasks...
+
+       Ok ok... that's a lie, I could use CreateTask() from libamiga, but it seems to be 
+       buggy under AROS?
+    */   
     task1 = (struct Task *)CreateNewProcTags(NP_Entry, (STACKIPTR)Task1Entry, TAG_DONE);
     task2 = (struct Task *)CreateNewProcTags(NP_Entry, (STACKIPTR)Task2Entry, TAG_DONE);
 
