@@ -43,85 +43,85 @@ int strlcat(char *buf, char *src, int len);
 #endif /* __AROS_TYPES_DEFINED__ */
 
 /*** AROS register definitions **********************************************/
-#define D0 __d0
-#define D1 __d1
-#define D2 __d2
-#define D3 __d3
-#define D4 __d4
-#define D5 __d5
-#define D6 __d6
-#define D7 __d7
-#define A0 __a0
-#define A1 __a1
-#define A2 __a2
-#define A3 __a3
-#define A4 __a4
-#define A5 __a5
-#define A6 __a6
-#define A7 __a7
+#define __REG_D0 __d0
+#define __REG_D1 __d1
+#define __REG_D2 __d2
+#define __REG_D3 __d3
+#define __REG_D4 __d4
+#define __REG_D5 __d5
+#define __REG_D6 __d6
+#define __REG_D7 __d7
+#define __REG_A0 __a0
+#define __REG_A1 __a1
+#define __REG_A2 __a2
+#define __REG_A3 __a3
+#define __REG_A4 __a4
+#define __REG_A5 __a5
+#define __REG_A6 __a6
+#define __REG_A7 __a7
 
 /*** AROS library function macros *******************************************/
 #define AROS_LH0(rt, fn, bt, bn, lvo, p) \
-    __asm rt fn()
+    __asm rt fn (void)
 #define AROS_LH1(rt, fn, a1, bt, bn, lvo, p) \
-    __asm rt fn(a1)
+    __asm rt fn (a1)
 #define AROS_LH2(rt, fn, a1, a2, bt, bn, lvo, p) \
-    __asm rt fn(a1, a2)
+    __asm rt fn (a1, a2)
 #define AROS_LH3(rt, fn, a1, a2, a3, bt, bn, lvo, p) \
-    __asm rt fn(a1, a2, a3)
+    __asm rt fn (a1, a2, a3)
 #define AROS_LH4(rt, fn, a1, a2, a3, a4, bt, bn, lvo, p) \
-    __asm rt fn(a1, a2, a3, a4)
+    __asm rt fn (a1, a2, a3, a4)
 #define AROS_LH5(rt, fn, a1, a2, a3, a4, a5, bt, bn, lvo, p) \
-    __asm rt fn(a1, a2, a3, a4, a5)
+    __asm rt fn (a1, a2, a3, a4, a5)
 #define AROS_LH6(rt, fn, a1, a2, a3, a4, a5, a6, bt, bn, lvo, p) \
-    __asm rt fn(a1, a2, a3, a4, a5, a6)
+    __asm rt fn (a1, a2, a3, a4, a5, a6)
 #define AROS_LH7(rt, fn, a1, a2, a3, a4, a5, a6, a7, bt, bn, lvo, p) \
-    __asm rt fn(a1, a2, a3, a4, a5, a6, a7)
+    __asm rt fn (a1, a2, a3, a4, a5, a6, a7)
 #define AROS_LH8(rt, fn, a1, a2, a3, a4, a5, a6, a7, a8, bt, bn, lvo, p) \
-    __asm rt fn(a1, a2, a3, a4, a5, a6, a7, a8)
+    __asm rt fn (a1, a2, a3, a4, a5, a6, a7, a8)
 
-#define AROS_LHA(type, name, reg) register reg type name
+#define AROS_LHA(type, name, reg) register __REG_##reg type name
 
 /*** AROS user function macros **********************************************/
-#define AROS_UFH0(rt, fn, bt, bn, lvo, p) \
-    __asm rt fn()
-#define AROS_UFH1(rt, fn, a1, bt, bn, lvo, p) \
-    __asm rt fn(a1)
-#define AROS_UFH2(rt, fn, a1, a2, bt, bn, lvo, p) \
-    __asm rt fn(a1, a2)
-#define AROS_UFH3(rt, fn, a1, a2, a3, bt, bn, lvo, p) \
-    __asm rt fn(a1, a2, a3)
-#define AROS_UFH4(rt, fn, a1, a2, a3, a4, bt, bn, lvo, p) \
-    __asm rt fn(a1, a2, a3, a4)
-#define AROS_UFH5(rt, fn, a1, a2, a3, a4, a5, bt, bn, lvo, p) \
-    __asm rt fn(a1, a2, a3, a4, a5)
-#define AROS_UFH6(rt, fn, a1, a2, a3, a4, a5, a6, bt, bn, lvo, p) \
-    __asm rt fn(a1, a2, a3, a4, a5, a6)
-#define AROS_UFH7(rt, fn, a1, a2, a3, a4, a5, a6, a7, bt, bn, lvo, p) \
-    __asm rt fn(a1, a2, a3, a4, a5, a6, a7)
-#define AROS_UFH8(rt, fn, a1, a2, a3, a4, a5, a6, a7, a8, bt, bn, lvo, p) \
-    __asm rt fn(a1, a2, a3, a4, a5, a6, a7, a8)
+#define AROS_UFH0(rt, fn) \
+    __asm rt fn (void)
+#define AROS_UFH1(rt, fn, a1) \
+    __asm rt fn (a1)
+#define AROS_UFH2(rt, fn, a1, a2) \
+    __asm rt fn (a1, a2)
+#define AROS_UFH3(rt, fn, a1, a2, a3) \
+    __asm rt fn (a1, a2, a3)
+#define AROS_UFH4(rt, fn, a1, a2, a3, a4) \
+    __asm rt fn (a1, a2, a3, a4)
+#define AROS_UFH5(rt, fn, a1, a2, a3, a4, a5) \
+    __asm rt fn (a1, a2, a3, a4, a5)
+#define AROS_UFH6(rt, fn, a1, a2, a3, a4, a5, a6) \
+    __asm rt fn (a1, a2, a3, a4, a5, a6)
+#define AROS_UFH7(rt, fn, a1, a2, a3, a4, a5, a6, a7) \
+    __asm rt fn (a1, a2, a3, a4, a5, a6, a7)
+#define AROS_UFH8(rt, fn, a1, a2, a3, a4, a5, a6, a7, a8) \
+    __asm rt fn (a1, a2, a3, a4, a5, a6, a7, a8)
 
-#define AROS_UFH0S(rt, fn, bt, bn, lvo, p) \
-    __asm static rt fn()
-#define AROS_UFH1S(rt, fn, a1, bt, bn, lvo, p) \
-    __asm static rt fn(a1)
-#define AROS_UFH2S(rt, fn, a1, a2, bt, bn, lvo, p) \
-    __asm static rt fn(a1, a2)
-#define AROS_UFH3S(rt, fn, a1, a2, a3, bt, bn, lvo, p) \
-    __asm static rt fn(a1, a2, a3)
-#define AROS_UFH4S(rt, fn, a1, a2, a3, a4, bt, bn, lvo, p) \
-    __asm static rt fn(a1, a2, a3, a4)
-#define AROS_UFH5S(rt, fn, a1, a2, a3, a4, a5, bt, bn, lvo, p) \
-    __asm static rt fn(a1, a2, a3, a4, a5)
-#define AROS_UFH6S(rt, fn, a1, a2, a3, a4, a5, a6, bt, bn, lvo, p) \
-    __asm static rt fn(a1, a2, a3, a4, a5, a6)
-#define AROS_UFH7S(rt, fn, a1, a2, a3, a4, a5, a6, a7, bt, bn, lvo, p) \
-    __asm static rt fn(a1, a2, a3, a4, a5, a6, a7)
-#define AROS_UFH8S(rt, fn, a1, a2, a3, a4, a5, a6, a7, a8, bt, bn, lvo, p) \
-    __asm static rt fn(a1, a2, a3, a4, a5, a6, a7, a8)
+#define AROS_UFH0S(rt, fn) \
+    __asm static rt fn (void)
+#define AROS_UFH1S(rt, fn, a1) \
+    __asm static rt fn (a1)
+#define AROS_UFH2S(rt, fn, a1, a2) \
+    __asm static rt fn (a1, a2)
+#define AROS_UFH3S(rt, fn, a1, a2, a3) \
+    __asm static rt fn (a1, a2, a3)
+#define AROS_UFH4S(rt, fn, a1, a2, a3, a4) \
+    __asm static rt fn (a1, a2, a3, a4)
+#define AROS_UFH5S(rt, fn, a1, a2, a3, a4, a5) \
+    __asm static rt fn (a1, a2, a3, a4, a5)
+#define AROS_UFH6S(rt, fn, a1, a2, a3, a4, a5, a6) \
+    __asm static rt fn (a1, a2, a3, a4, a5, a6)
+#define AROS_UFH7S(rt, fn, a1, a2, a3, a4, a5, a6, a7) \
+    __asm static rt fn (a1, a2, a3, a4, a5, a6, a7)
+#define AROS_UFH8S(rt, fn, a1, a2, a3, a4, a5, a6, a7, a8) \
+    __asm static rt fn (a1, a2, a3, a4, a5, a6, a7, a8)
 
-#define AROS_UFHA(type, name, reg) register reg type name
+#define AROS_UFHA(type, name, reg) register __REG_##reg type name
 
 #define AROS_UFP0 AROS_UFH0
 #define AROS_UFP1 AROS_UFH1
