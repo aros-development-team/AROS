@@ -54,7 +54,6 @@
     EXAMPLE
 
     BUGS
-      No support for superbitmap / simple layers.
 
     SEE ALSO
 
