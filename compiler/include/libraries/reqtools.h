@@ -151,6 +151,7 @@ struct ReqToolsBase
              confused by the library bases below.  Add the rt_ prefix to the
              library names to fix the problem (e.g. rt_IntuitionBase). */
 
+
     /* The following library bases may be read and used by your program */
     struct IntuitionBase 	*IntuitionBase;
     struct GfxBase 		*GfxBase;
@@ -161,6 +162,9 @@ struct ReqToolsBase
     struct UtilityBase 		*UtilityBase;
 
     /* PRIVATE FIELDS, THESE WILL CHANGE FROM RELEASE TO RELEASE! */
+
+    /* Obsolete, at least for AROS. Dont know about AmigaOS. -ksvalast. */
+    UWORD  RealOpenCnt;
 
     UWORD 			AvailFontsLock;
     struct AvailFontsHeader 	*AvailFontsHeader;
