@@ -10,6 +10,8 @@
 
 #include "smeditor.h"
 
+int __nocommandline = 1;
+
 int main()
 {
     Object *app, *win;
