@@ -71,6 +71,16 @@ typedef enum {
     vHidd_IRQ_Ether,        /* Ethernet card IRQ */
     vHidd_IRQ_Mouse,        /* PS/2 mouse IRQ */
     vHidd_IRQ_Touchscreen,  /* Touchscreen IRQ */
+    vHidd_IRQ_Timer2,       /* Timer 2 */
+    vHidd_IRQ_CustomA,      /* Custom A IRQ */
+    vHidd_IRQ_CustomB,      /* Custom B IRQ */
+    vHidd_IRQ_CustomC,      /* Custom C IRQ */
+    vHidd_IRQ_CustomD,      /* Custom D IRQ */
+    vHidd_IRQ_CustomE,      /* Custom E IRQ */
+    vHidd_IRQ_CustomF,      /* Custom F IRQ */
+    vHidd_IRQ_CustomG,      /* Custom G IRQ */
+    vHidd_IRQ_CustomH,      /* Custom H IRQ */
+    vHidd_IRQ_CustomI,      /* Custom I IRQ */
 
     vHidd_IRQ_NumIRQ        /* Number of IRQ's defined */
     
