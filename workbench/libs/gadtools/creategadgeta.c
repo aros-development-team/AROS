@@ -40,7 +40,8 @@
         kind -     Kind of gadget. See <libraries/gadtools.h> for a list of
                    all possible kinds.
 	previous - Pointer to the previous gadget in gadget-list. Create the
-	           first "gadget" with CreateContext().
+	           first "gadget" with CreateContext(). This may be NULL, in
+		   which case CreateGadgetA() fails.
         ng -       Pointer to struct NewGadget. See <libraries/gadtools.h>.
         taglist -  Additional tags. See <libraries/gadtools.h>.
 

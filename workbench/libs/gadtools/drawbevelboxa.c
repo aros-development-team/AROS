@@ -48,8 +48,7 @@
     NOTES
 	Boxes drawn with DrawBevelBox() aren't refreshed automatically.
 	You have to refresh them yourself.
-	The rastport will be modified for DrawBevelBoxA() to guarantee
-	fast drawing.
+	DrawBevelBoxA() might modify the rastport to guarantee fast drawing.
 
     EXAMPLE
 
