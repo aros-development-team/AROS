@@ -146,7 +146,7 @@
     /*
      * Make the layer invisible
      */
-    _BackupPartsOfLayer(l, l->shape, 0, FALSE, LayersBase);
+    _BackupPartsOfLayer(l, &clearr, 0, FALSE, LayersBase);
     
     /*
      * Walk through all the layers behind this layer and
