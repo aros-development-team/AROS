@@ -2,28 +2,29 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-ODIR=$(OBJDIR)/i386-emul
-
 all: setup $(LIBDIR)/libkernel.a
 
 setup :
-	@echo "Setting up"
-	@if [ ! -d $(ODIR) ]; then $(MKDIR) $(ODIR) ; fi
-	@$(TOUCH) setup
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
 
 clean:
-	$(RM) $(ODIR) $(LIBDIR)/libkernel.a setup
+	$(RM) $(OSGENDIR) $(LIBDIR)/libkernel.a
 
-$(ODIR)/%.o: %.s
+$(OSGENDIR)/%.o: %.s
 	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
-$(ODIR)/%.o: %.c
+$(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
-$(LIBDIR)/libkernel.a: $(ODIR)/init.o $(ODIR)/supervisor.o $(ODIR)/switch.o \
-	    $(ODIR)/dispatch.o $(ODIR)/disable.o $(ODIR)/enable.o \
-	    $(ODIR)/forbid.o $(ODIR)/permit.o $(ODIR)/preparecontext.o \
-	    $(ODIR)/special.o
+$(LIBDIR)/libkernel.a: $(OSGENDIR)/init.o $(OSGENDIR)/supervisor.o $(OSGENDIR)/switch.o \
+	    $(OSGENDIR)/dispatch.o $(OSGENDIR)/disable.o $(OSGENDIR)/enable.o \
+	    $(OSGENDIR)/forbid.o $(OSGENDIR)/permit.o $(OSGENDIR)/preparecontext.o \
+	    $(OSGENDIR)/special.o $(OSGENDIR)/semaphoreglue.o $(OSGENDIR)/exception.o \
+	    $(OSGENDIR)/cachecleare.o $(OSGENDIR)/cacheclearu.o \
+	    $(OSGENDIR)/cachecontrol.o $(OSGENDIR)/cachepostdma.o \
+	    $(OSGENDIR)/cachepredma.o $(OSGENDIR)/setsr.o $(OSGENDIR)/getcc.o \
+	    $(OSGENDIR)/superstate.o $(OSGENDIR)/userstate.o $(OSGENDIR)/stackswap.o \
+	    $(OSGENDIR)/runprocess.o
 	$(AR) $@ $^
