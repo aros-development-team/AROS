@@ -118,30 +118,9 @@ void readref(void)
 	    {
 		if (strncmp(line, "Arguments", 9)==0)
 		{
-		    switch (libcall)
-		    {
-		    case STACK:
-			assert(*arglistptr==NULL);
-			*arglistptr = malloc(sizeof(struct arglist));
-			(*arglistptr)->next = NULL;
-			(*arglistptr)->reg = "";
-			funclistit->argcount++;
-			break;
-			
-		    case REGISTER:
-			if (*arglistptr==NULL)
-			{
-			    fprintf(stderr, "Error: not enough register specified for function \"%s\"\n",
-				    funclistit->name);
-			    exit(20);
-			}
-			break;
-			
-		    default:
-			fprintf(stderr, "Internal error: unhandled libcall type in readref\n");
-			exit(20);
-			break;
-		    }
+		    int i, brackets=0;
+		    char *name;
+		    
 		    begin = strchr(line, ':');
 		    if (begin==NULL)
 		    {
@@ -150,14 +129,65 @@ void readref(void)
 		    }
 		    begin++;
 		    while (isspace(*begin)) begin++;
+			
 		    end = begin+strlen(begin);
 		    while (isspace(*(end-1))) end--;
-		    while (!isspace(*(end-1)) && *(end-1)!='*') end--;
-		    (*arglistptr)->name = strdup(end);
-		    while (isspace(*(end-1))) end--;
+		    while (*(end-1)==']')
+		    {
+			brackets++;
+			end--;
+			while (isspace(*(end-1))) end--;
+			if (*(end-1)!='[')
+			{
+			    fprintf(stderr, "Argument \"%s\" not understood for function %s\n",
+				    begin, funclistit->name);
+			    exit(20);
+			}
+			end--;
+			while (isspace(*(end-1))) end--;
+		    }
 		    *end='\0';
-		    (*arglistptr)->type = strdup(begin);
-		    arglistptr = &((*arglistptr)->next);
+		    while (!isspace(*(end-1)) && *(end-1)!='*') end--;
+		    name = strdup(end);
+		    while (isspace(*(end-1))) end--;
+		    for (i=0; i<brackets; i++)
+		    {
+			*end='*';
+			end++;
+		    }
+		    *end='\0';
+		    if (strcasecmp(begin, "void")==0)
+			free(name);
+		    else
+		    {
+			switch (libcall)
+			{
+			case STACK:
+			    assert(*arglistptr==NULL);
+			    *arglistptr = malloc(sizeof(struct arglist));
+			    (*arglistptr)->next = NULL;
+			    (*arglistptr)->reg = "";
+			    funclistit->argcount++;
+			    break;
+			    
+			case REGISTER:
+			    if (*arglistptr==NULL)
+			    {
+				fprintf(stderr, "Error: not enough register specified for function \"%s\"\n",
+					funclistit->name);
+				exit(20);
+			    }
+			    break;
+			    
+			default:
+			    fprintf(stderr, "Internal error: unhandled libcall type in readref\n");
+			    exit(20);
+			    break;
+			}
+			(*arglistptr)->name = name;
+			(*arglistptr)->type = strdup(begin);
+			arglistptr = &((*arglistptr)->next);
+		    }
 		}
 		else if (strncmp(line, "Type", 4)==0)
 		{
