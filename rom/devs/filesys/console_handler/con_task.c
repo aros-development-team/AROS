@@ -123,11 +123,11 @@ static void con_read(struct conbase *conbase, struct IOFileSys *iofs)
 	/* we must correct io_READ.io_Length, because answer_read_request
 	   would read until fh->inputsize if possible, but here it is allowed only
 	   to read max. fh->canreadsize chars */
-	   
-	iofs->io_Union.io_READ.io_Length = readlen;	
+
+	iofs->io_Union.io_READ.io_Length = readlen;
 	answer_read_request(conbase, fh, iofs);
-	
-	fh->canreadsize -= readlen;	
+
+	fh->canreadsize -= readlen;
 	if (fh->canreadsize == 0) fh->flags &= ~FHFLG_CANREAD;
 	
     }
@@ -162,10 +162,10 @@ static void con_write(struct conbase *conbase, struct IOFileSys *iofs)
 #if 0
 
     /* stegerg: this seems to be wrong */
-    
+
     /* Change the task to which CTRL/C/D/E/F signals are sent to
        the task which sent this write request */
-    
+
     /* PARANOIA ^ 3 */
        
     if (iofs->IOFS.io_Message.mn_ReplyPort)
@@ -220,12 +220,12 @@ LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
 	    D(bug("contask: device opened\n"));
 
     	    fh->flags |= FHFLG_CONSOLEDEVICEOPEN;
-	    
+
 	    fh->conwriteio = *fh->conreadio;
 	    fh->conwriteio.io_Message.mn_ReplyPort = fh->conwritemp;
 
 	    /* Turn the console into LF+CR mode so that both
-	       linefeed and carriage return is done on 
+	       linefeed and carriage return is done on
 	    */
 	    fh->conwriteio.io_Command	= CMD_WRITE;
 	    fh->conwriteio.io_Data	= (APTR)lf_on;
@@ -396,7 +396,7 @@ AROS_UFH3(VOID, conTaskEntry,
     	    	D(bug("contask: conreadio created\n"));
 		
 		fh->nw = default_nw;
-		
+
 		parse_filename(conbase, fh, iofs, &fh->nw);
 		
     	    	if (!(fh->flags & FHFLG_AUTO))
@@ -417,7 +417,7 @@ AROS_UFH3(VOID, conTaskEntry,
 		{
 		    DeleteIORequest( ioReq(fh->conreadio) );
 		}
-	    
+
 	    } /* if (fh->conreadio) */
 	    else
 	    {
@@ -476,7 +476,7 @@ AROS_UFH3(VOID, conTaskEntry,
 	    D(bug("contask: waiting for sigs %x\n",conreadmask | contaskmask));
 	    sigs = Wait(conreadmask | contaskmask);
 	}
-	
+
 	if (sigs & contaskmask)
 	{
 	    /* FSA mesages */
@@ -501,40 +501,40 @@ AROS_UFH3(VOID, conTaskEntry,
 
     	    	    case FSA_CHANGE_SIGNAL:
 		    	fh->breaktask = iofs->io_Union.io_CHANGE_SIGNAL.io_Task;
-    	    	    	ReplyMsg(&iofs->IOFS.io_Message);			
+    	    	    	ReplyMsg(&iofs->IOFS.io_Message);
 			break;
-			
+
     	    	    case FSA_CONSOLE_MODE:
 			{
 			    UWORD newmode = iofs->io_Union.io_CONSOLE_MODE.io_ConsoleMode ? 1 : 0;
 			    UWORD oldmode = (fh->flags & FHFLG_RAW) ? 1 : 0;
-			    
+
 			    if (newmode != oldmode)
 			    {
 			    	if (newmode)
 				{
 				    /* Switching from CON: mode to RAW: mode */
-				    
+
 				    fh->flags |= FHFLG_RAW;
-				    
+
 				    fh->inputstart = fh->inputsize;
 				    fh->inputpos   = fh->inputsize;
-				    
+
 				    HandlePendingReads(conbase, fh);
 				}
 				else
 				{
 				    /* Switching from RAW: mode to CON: mode */
-				    
+
 				    fh->flags &= ~FHFLG_RAW;
- 				}				
-				
+ 				}
+
 			    } /*  if (newmode != oldmode) */
-			    
-			} 
-    	    	    	ReplyMsg(&iofs->IOFS.io_Message);			
+
+			}
+    	    	    	ReplyMsg(&iofs->IOFS.io_Message);
 		    	break;
-			
+
 		} /* switch(iofs->IOFS.io_Command) */
 
 	    } /* while((iofs = (struct IOFileSys *)GetMsg(fh->contaskmp))) */
@@ -560,7 +560,7 @@ AROS_UFH3(VOID, conTaskEntry,
     	    if (fh->flags & FHFLG_RAW)
 	    {
 	    	/* raw mode */
-		
+
 		for(inp = 0; (inp < fh->conbuffersize) && (fh->inputpos <  INPUTBUFFER_SIZE); )
 		{
 		    fh->inputbuffer[fh->inputpos++] = fh->consolebuffer[inp++];
@@ -645,7 +645,7 @@ AROS_UFH3(VOID, conTaskEntry,
 				    do_movecursor(conbase, fh, CUR_LEFT, chars_right);
 				    do_cursorvisible(conbase, fh, TRUE);
 
-				    memmove(&fh->inputbuffer[fh->inputpos], &fh->inputbuffer[fh->inputpos + 1], chars_right); 
+				    memmove(&fh->inputbuffer[fh->inputpos], &fh->inputbuffer[fh->inputpos + 1], chars_right);
 
 				}
 			    }
@@ -672,7 +672,7 @@ AROS_UFH3(VOID, conTaskEntry,
 				    memmove(&fh->inputbuffer[fh->inputstart], &fh->inputbuffer[fh->inputpos], chars_right);
 
 				    fh->inputsize -= (fh->inputpos - fh->inputstart);
-				    fh->inputpos = fh->inputstart;	
+				    fh->inputpos = fh->inputstart;
 				}
 			    }
 		    	    break;
@@ -723,7 +723,7 @@ AROS_UFH3(VOID, conTaskEntry,
     	    	    	case INP_ECHO_STRING:
 			    do_write(conbase, fh, &c, 1);
 			    break;
-			    
+
 			case INP_STRING:
 			    if (fh->inputsize < INPUTBUFFER_SIZE)
 			    {
@@ -741,7 +741,7 @@ AROS_UFH3(VOID, conTaskEntry,
 				    do_movecursor(conbase, fh, CUR_LEFT, chars_right);
 				    do_cursorvisible(conbase, fh, TRUE);
 
-				    memmove(&fh->inputbuffer[fh->inputpos + 1], &fh->inputbuffer[fh->inputpos], chars_right);		    
+				    memmove(&fh->inputbuffer[fh->inputpos + 1], &fh->inputbuffer[fh->inputpos], chars_right);
 				    fh->inputbuffer[fh->inputpos++] = c;
 				    fh->inputsize++;
 				}
@@ -750,13 +750,19 @@ AROS_UFH3(VOID, conTaskEntry,
 
     	    		case INP_EOF:
 		    	    fh->flags |= FHFLG_EOF;
+                            if (fh->flags & FHFLG_AUTO && fh->window)
+                            {
+                                CloseWindow(fh->window);
+                                fh->window = NULL;
+                            }
+
     	    	    	    /* fall through */
 
 			case INP_RETURN:
 		            if (fh->inputsize < INPUTBUFFER_SIZE)
 			    {
 				if (inp != INP_EOF)
-				{			    
+				{
 		        	    c = '\n';
 				    do_write(conbase, fh, &c, 1);
 
@@ -820,11 +826,11 @@ AROS_UFH3(VOID, conTaskEntry,
 		} /* while((inp = scan_input(conbase, fh, &c)) != INP_DONE) */
 
     	    } /* if (fh->flags & FHFLG_RAW) else ... */
-	    
+
 	    /* wait for next input from console.device */
 
-	    StartAsyncConsoleRead(fh, conbase);		
-	    
+	    StartAsyncConsoleRead(fh, conbase);
+
 	} /* if (sigs & conmask) */
 
 	/* pending writes ? */
@@ -852,14 +858,14 @@ AROS_UFH3(VOID, conTaskEntry,
 #else
 	    ForeachNodeSafe(&fh->pendingWrites, iofs, iofs_next)
 	    {
-		Remove((struct Node *)iofs);		    
+		Remove((struct Node *)iofs);
 		answer_write_request(conbase, fh, iofs);
 	    }
 
 	    fh->flags &= ~FHFLG_WRITEPENDING;
 #endif
 	} /* if ((fh->flags & FHFLG_WRITEPENDING) && (fh->inputpos == fh->inputstart) && (fh->inputsize == 0)) */
-	    
+
     } /* while(! ((fh->usecount == 0) && ((fh->flags & FHFLG_EOF) || !(fh->flags & FHFLG_WAIT))) ) */
 
     if (fh->flags & FHFLG_ASYNCCONSOLEREAD)
@@ -871,12 +877,12 @@ AROS_UFH3(VOID, conTaskEntry,
 	/* Wait for abort */
 	WaitIO( ioReq(fh->conreadio) );
     }
-    
+
     /* Clean up */
-    
+
     if (fh->flags & FHFLG_CONSOLEDEVICEOPEN)
     	CloseDevice((struct IORequest *)fh->conreadio);
-	
+
     if (fh->window)
     	CloseWindow(fh->window);
 	
