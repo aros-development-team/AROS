@@ -390,10 +390,19 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
    if (LBACapacity > MAXCapacity) MAXCapacity = LBACapacity;
 
    /* If cylcount is larger than 1024, attempt to adjust */
-   while ((unit->au_Cylinders > 1024)&(unit->au_Heads<255))
+   if (unit->au_Cylinders > 1023)
    {
-       unit->au_Cylinders = (unit->au_Cylinders) >> 1;
-       unit->au_Heads = (unit->au_Heads) << 1;
+       while ((unit->au_Cylinders > 1024)&(unit->au_Heads<=128))
+       {
+	   unit->au_Cylinders = (unit->au_Cylinders) >> 1;
+	   unit->au_Heads = (unit->au_Heads) << 1;
+       }
+       if (unit->au_Heads > 255)
+       {
+	   /* This needs some more massage */
+	   unit->au_Heads = 255;
+	   unit->au_Cylinders = ( (MAXCapacity)/(unit->au_Heads*unit->au_SectorsT))-1;
+       }
    }
 
    /* Whew, finally done here */
