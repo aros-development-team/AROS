@@ -4905,8 +4905,8 @@ static ULONG rpa_render(APTR rpar_data
     
     array = rpard->array + rpard->modulo * srcy + rpard->bppix * srcx;
     
-    HIDD_BM_PutImage(dstbm_obj
-    	, dst_gc, rpard->array
+    HIDD_BM_GetImage(dstbm_obj
+    	, rpard->array
 	, rpard->modulo
 	, x1, y1
 	, width, height
@@ -5218,7 +5218,6 @@ LONG driver_FillPixelArray(struct RastPort *rp
     HIDDT_Pixel pix;
     
     /* HIDDT_ColComp are 16 Bit */
-    
     col.alpha	= (HIDDT_ColComp)((pixel >> 16) & 0x0000FF00);
     col.red	= (HIDDT_ColComp)((pixel >> 8) & 0x0000FF00);
     col.green	= (HIDDT_ColComp)(pixel & 0x0000FF00);
