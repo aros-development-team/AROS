@@ -117,6 +117,7 @@ case "$type" in
 # instructions.
 	COMMON_AFLAGS="-m68060 -x assembler-with-cpp"
 	FLAVOUR="native"
+	STRIP=strip
 # Prevent the Amiga c:sort from being found when we really want the GNU sort
 	SORT=/gg/bin/sort
 # And another problem with old pdksh shells not knowing `test -e' and newer
