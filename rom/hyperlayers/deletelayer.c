@@ -75,15 +75,12 @@
             __FUNCTION__,
             l);
     UnlockLayers(l->LayerInfo);
-kprintf("%s %d\n",__FUNCTION__,__LINE__);  
     return FALSE;
   }
-kprintf("%s %d\n",__FUNCTION__,__LINE__);  
     
   if (IS_VISIBLE(l))
   { 
     struct Region * r = NewRegion();
-kprintf("%s %d\n",__FUNCTION__,__LINE__);  
 
     OrRegionRegion(l->VisibleRegion, r);
     _l = l->back;
