@@ -14,16 +14,36 @@
 
 #include <workbench/startup.h>
 
-extern struct WBStartup *WBenchMsg;
+#include <string.h>
+
+/* Make the programs which don't link against the startup code happy */
+struct WBStartup *WBenchMsg __attribute__((weak)) = NULL;
+
+static char *StrDup(char *str)
+{
+    STRPTR dup;
+    ULONG  len;
+
+    if (str == NULL) return NULL;
+
+    len = strlen(str);
+    dup = AllocVec(len + 1, MEMF_PUBLIC);
+    if (dup != NULL) CopyMem(str, dup, len + 1);
+
+    return dup;
+
+}
 
 char *__getprogramname(void)
 {
-    char *name = NULL;
+    char *name   = NULL;
 
-    if (WBenchMsg)
+    if (WBenchMsg && WBenchMsg->sm_NumArgs)
     {
-        if (WBenchMsg->sm_NumArgs)
-            name = WBenchMsg->sm_ArgList[0].wa_Name;
+        name = StrDup(WBenchMsg->sm_ArgList[0].wa_Name);
+
+        if (!name)
+	    SetIoErr(ERROR_NO_FREE_STORE);
     }
     else
     {
