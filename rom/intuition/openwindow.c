@@ -414,7 +414,8 @@
 	    w->BorderTop += GfxBase->DefaultFont->tf_YSize + 1;
     }
 
-    if (w->Flags & (WFLG_SIZEBRIGHT | WFLG_SIZEBBOTTOM))
+    if ((w->Flags & WFLG_SIZEGADGET) && 
+        (w->Flags & (WFLG_SIZEBRIGHT | WFLG_SIZEBBOTTOM)))
     {
         IPTR sizewidth = 16, sizeheight = 16;
 	struct Image *im;
