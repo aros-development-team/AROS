@@ -30,9 +30,11 @@ FUNCTIONS = \
 
 # Functions that are written in asm and need to be linked into exec.strap.
 # These are in config/$(KERNEL).
-ASMFUNCTIONS = 
+ASMFUNCTIONS = forbid permit disable getcc cacheclearu
 
 else
+LIBS = 
+
 FILES = init execfunctions
 
 FUNCTIONS = \
