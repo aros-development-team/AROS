@@ -31,6 +31,9 @@
 #include "support.h"
 #include "textengine.h"
 
+#define MYDEBUG 1
+#include "debug.h"
+
 extern struct Library *MUIMasterBase;
 
 static const int __version = 1;
@@ -286,6 +289,8 @@ static ULONG  Rectangle_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *m
 	int x1;
 	int x2;
 	int yt;
+
+        D(bug("muimaster.library/area.c: Draw Rectangle Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
 
 	SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
 	if (__zprefs.group_title_color == GROUP_TITLE_COLOR_3D)

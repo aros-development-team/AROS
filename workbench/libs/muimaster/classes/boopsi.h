@@ -26,6 +26,8 @@ extern char MUIC_Boopsi[];
 #define MUIA_Boopsi_TagScreen               0x8042bc71 /* V4  isg ULONG             */
 #define MUIA_Boopsi_TagWindow               0x8042e11d /* V4  isg ULONG             */
 
+#define MUIA_Boopsi_OnlyTrigger             0x8042e11e /* ZV1 PRIV (for notification) */
+
 extern const struct __MUIBuiltinClass _MUI_Boopsi_desc;
 
 #endif

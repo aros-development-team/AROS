@@ -35,9 +35,42 @@ struct Library *MUIMasterBase;
 struct Library *ColorWheelBase;
 
 
+Object *wheel;
+Object *r_slider;
+Object *g_slider;
+Object *b_slider;
+
+ULONG xget(Object *obj, Tag attr)
+{
+  ULONG storage;
+  GetAttr(attr, obj, &storage);
+  return storage;
+}
+
 __saveds void repeat_function(void)
 {
     printf("MUI_Timer\n");
+}
+
+__saveds void wheel_function(void)
+{
+    nnset(r_slider,MUIA_Numeric_Value, (xget(wheel,WHEEL_Red) >> 24) & 0xff);
+    nnset(g_slider,MUIA_Numeric_Value, (xget(wheel,WHEEL_Green) >> 24) & 0xff);
+    nnset(b_slider,MUIA_Numeric_Value, (xget(wheel,WHEEL_Blue) >> 24) & 0xff);
+}
+
+__saveds void slider_function(void)
+{
+    struct ColorWheelRGB cw;
+    ULONG red = xget(r_slider,MUIA_Numeric_Value);
+    ULONG green = xget(g_slider,MUIA_Numeric_Value);
+    ULONG blue = xget(b_slider,MUIA_Numeric_Value);
+
+    cw.cw_Red = (red<<24)|(red<<16)|(red<<8)|red;
+    cw.cw_Green = (green<<24)|(green<<16)|(green<<8)|green;
+    cw.cw_Blue = (blue<<24)|(blue<<16)|(blue<<8)|blue;
+
+    nnset(wheel, WHEEL_RGB, &cw);
 }
 
 /* The custom class */
@@ -85,9 +118,10 @@ void main(void)
     Object *open_button;
     Object *quit_button;
     Object *repeat_button;
-    Object *wheel;
 
     struct Hook hook;
+    struct Hook hook_wheel;
+    struct Hook hook_slider;
 
 #ifndef COMPILE_WITH_MUI
     MUIMasterBase = (struct Library*)&MUIMasterBase_instance;
@@ -107,6 +141,8 @@ void main(void)
 #endif
 
     hook.h_Entry = (HOOKFUNC)repeat_function;
+    hook_wheel.h_Entry = (HOOKFUNC)wheel_function;
+    hook_slider.h_Entry = (HOOKFUNC)slider_function;
 
     /* should check the result in a real program! */
     CL_DropText = MUI_CreateCustomClass(NULL,MUIC_Text,NULL,sizeof(struct DropText_Data), dispatcher);
@@ -137,26 +173,7 @@ void main(void)
 			End,
 		    End,
 
-		Child, HGroup,
-		    Child, VGroup,
-			Child, RectangleObject,
-			    MUIA_VertWeight,0, /* Seems to be not supported properly as orginal MUI doesn't allow to alter the height of the window */
-			    MUIA_Rectangle_HBar, TRUE,
-			    MUIA_Rectangle_BarTitle,"Enter a string",
-			    End,
-
-			Child, StringObject,
-			    StringFrame,
-			    MUIA_CycleChain,1,
-			    MUIA_String_AdvanceOnCR, TRUE,
-			    End,
-
-	    	    	Child, SliderObject,
-    		    	    MUIA_Group_Horiz, TRUE,
-    	    		    MUIA_CycleChain,1,
-			    End,
-			End,
-
+		Child, VGroup,
 		    Child, wheel = BoopsiObject,  /* MUI and Boopsi tags mixed */
 		        GroupFrame,
 		        MUIA_Boopsi_ClassID  , "colorwheel.gadget",
@@ -173,9 +190,25 @@ void main(void)
 		        ICA_TARGET  , ICTARGET_IDCMP, /* needed for notification */
 		        WHEEL_Saturation, 0, /* start in the center */
 		        MUIA_FillArea, TRUE, /* use this because it defaults to FALSE 
-					     for boopsi gadgets but the colorwheel
-					     doesnt bother about redrawing its backgorund */
+					        for boopsi gadgets but the colorwheel
+					        doesnt bother about redrawing its backgorund */
 		        End,
+
+		    Child, r_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
+		    Child, g_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
+		    Child, b_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
+		    End,
+
+		Child, RectangleObject,
+		    MUIA_VertWeight,0, /* Seems to be not supported properly as orginal MUI doesn't allow to alter the height of the window */
+		    MUIA_Rectangle_HBar, TRUE,
+		    MUIA_Rectangle_BarTitle,"Enter a string",
+		    End,
+
+		Child, StringObject,
+		    StringFrame,
+		    MUIA_CycleChain,1,
+		    MUIA_String_AdvanceOnCR, TRUE,
 		    End,
 
     	    	Child, HGroup,
@@ -210,6 +243,12 @@ void main(void)
     	DoMethod(open_button, MUIM_Notify, MUIA_Pressed, FALSE, second_wnd, 3,  MUIM_Set, MUIA_Window_Open, TRUE);
     	DoMethod(quit_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     	DoMethod(repeat_button, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook);
+
+	DoMethod(wheel, MUIM_Notify,WHEEL_Hue       , MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_wheel);
+	DoMethod(wheel, MUIM_Notify,WHEEL_Saturation, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_wheel);
+	DoMethod(r_slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_slider);
+	DoMethod(g_slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_slider);
+	DoMethod(b_slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_slider);
 
 	set(wnd,MUIA_Window_Open,TRUE);
 
