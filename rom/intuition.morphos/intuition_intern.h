@@ -87,6 +87,11 @@
 
 #include <aros/asmcall.h>
 
+// FIXME: needs better solution...
+#ifndef SKINS
+#   define IntDrawInfo DrawInfo
+#endif
+
 #ifdef __MORPHOS__
 void    dprintf(char *, ...) __attribute__ ((format (printf, 1, 2)));
 void * memclr(APTR, ULONG);
@@ -183,7 +188,11 @@ void * memclr(APTR, ULONG);
 #define PROP_RENDER_OPTIMIZATION 0
 
 #define INTERNAL_BOOPSI  1
-#define LIFLG_SUPPORTS_OFFSCREEN_LAYERS 2
+
+#ifndef LIFLG_SUPPORTS_OFFSCREEN_LAYERS
+   /* Defined in <graphics/layers.h>, but apparently not on MorphOS. */
+#  define LIFLG_SUPPORTS_OFFSCREEN_LAYERS 2
+#endif
 
 #define INTUITIONNAME    "intuition.library"
 #define MENUBARLABELCLASS "menubarlabelclass"
