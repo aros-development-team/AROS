@@ -1,11 +1,12 @@
 # $Id$
 TOP=../..
+CURDIR=compiler/include
 
 include $(TOP)/config/make.cfg
 
-AMIGADIR=$(TOP)/amiga
+AMIGADIR := $(TOP)/amiga
 
-INCLUDES := $(wildcard *.h */*.h)
+INCLUDES      := $(wildcard *.h */*.h)
 DEST_INCLUDES := $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
 INCSUBDIRS :=	aros \
 		clib \
@@ -28,19 +29,23 @@ INCSUBDIRS :=	aros \
 
 all: setup
 
-os-include: $(DEST_INCLUDES)
+#MM
+includes : make-dirs copy-includes
 
-$(INCDIR)/%.h: %.h
+copy-includes : $(DEST_INCLUDES)
+
+$(INCDIR)/%.h : %.h
 	$(CP) $< $@
 
-setup: make-dirs os-include
+setup: make-dirs copy-includes
 
-make-dirs:
+make-dirs :
 	@for dir in $(INCDIR)         \
 		$(foreach f,$(INCSUBDIRS),$(INCDIR)/$(f)) \
 	; do \
 	   if [ ! -d "$$dir" ]; then $(MKDIR) "$$dir" ; else true ; fi ;\
 	done
 
-clean:
+#MM
+clean :
 	-$(RM) $(INCDIR)
