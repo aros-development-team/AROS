@@ -1,18 +1,8 @@
-#ifndef SERIAL_INTERN_H
-#define SERIAL_INTERN_H
+#ifndef PARALLEL_INTERN_H
+#define PARALLEL_INTERN_H
 /*
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
-    $Log$
-    Revision 1.3  2000/11/03 23:37:44  stegerg
-    oop renaming stuff
-
-    Revision 1.2  2000/09/21 16:44:56  stegerg
-    same fixes as in serial routines.
-
-    Revision 1.1  2000/01/12 18:15:36  bergers
-    Pretty much a cut & paste job from serial device. Untested.
-
 
     Desc: Private definitions for Parallel device.
     Lang:
@@ -144,5 +134,4 @@ struct ParallelUnit
 
 #define OOPBase		(((struct parallelbase *)ParallelDevice)->oopBase)
 
-#endif /* SERIAL_INTERN_H */
-
+#endif /* PARALLEL_INTERN_H */
