@@ -256,7 +256,7 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 		, &te
 		, NULL
 		, 1
-		, container.Width
+		, container.Width - 6
 		, container.Height);
 
 	    SetAPen(rp, pens[(win->Flags & WFLG_WINDOWACTIVE) ? FILLTEXTPEN : TEXTPEN]);
