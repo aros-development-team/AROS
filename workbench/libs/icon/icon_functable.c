@@ -11,6 +11,8 @@
 #define NULL ((void *)0)
 #endif
 
+#include "libdefs.h"
+
 void AROS_SLIB_ENTRY(open,Icon) (void);
 void AROS_SLIB_ENTRY(close,Icon) (void);
 void AROS_SLIB_ENTRY(expunge,Icon) (void);
@@ -28,7 +30,7 @@ void AROS_SLIB_ENTRY(PutDefDiskObject,Icon) (void);
 void AROS_SLIB_ENTRY(GetDiskObjectNew,Icon) (void);
 void AROS_SLIB_ENTRY(DeleteDiskObject,Icon) (void);
 
-void *const Icon_functable[]=
+void *const FUNCTABLE[]=
 {
     AROS_SLIB_ENTRY(open,Icon), /* 1 */
     AROS_SLIB_ENTRY(close,Icon), /* 2 */
