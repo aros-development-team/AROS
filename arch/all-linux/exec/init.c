@@ -112,7 +112,7 @@ static const struct Resident *romtagList[] =
 /* So we can examine the memory */
 struct MemHeader *mh;
 UBYTE *memory, *space;
-int memSize = 2;
+int memSize = 8;
 
 extern void InitCore(void);
 extern struct ExecBase *PrepareExecBase(struct MemHeader *mh);
