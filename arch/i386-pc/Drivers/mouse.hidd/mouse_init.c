@@ -60,6 +60,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
     msd = AllocMem( sizeof (struct mouse_staticdata), MEMF_CLEAR|MEMF_PUBLIC );
     if (msd)
     {
+        InitSemaphore(&msd->sema);
         msd->sysbase = SysBase;
         msd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
         if (msd->oopbase)
