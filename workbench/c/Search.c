@@ -393,7 +393,7 @@ int main()
     
     /* Exit */
     
-    if(error = IoErr())
+    if((error = IoErr()) != 0)
     {
 	PrintFault(error, NULL);
 	return RETURN_FAIL;
@@ -443,7 +443,7 @@ BOOL FindString(struct AnchorPath *anchor, ULONG *args, TEXT *pattern,
     
     /* Open the file for reading */
     
-    if(file = Open((TEXT *)&(anchor->ap_Info.fib_FileName), MODE_OLDFILE))
+    if((file = Open((TEXT *)&(anchor->ap_Info.fib_FileName), MODE_OLDFILE)) != NULL)
     {
 	/* Get a buffer for the file */
 	
