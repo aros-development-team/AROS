@@ -1869,7 +1869,7 @@ AROS_LH1(void, beginio,
 	
     case FSA_DISK_INFO:
 	{
-	    struct InfoData *id = (struct InfoData *)iofs->IOFS.io_Unit;
+	    struct InfoData *id = iofs->io_Union.io_INFO.io_Info;
 	    struct statfs    buf;
 	    
 	    statfs(".", &buf);
