@@ -72,62 +72,107 @@ IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
 #endif /* !USE_BOOPSI_STUBS */
 #endif
 
-IPTR DoSuperNewA(Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, struct TagItem *tags);
-IPTR DoSuperNewTags(Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, ULONG methodID, ...);
+IPTR DoSuperNewTagList(Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, struct TagItem *tags);
+IPTR DoSuperNewTags(Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, ULONG tag1, ...);
 
 #if !defined(INTUITION_NO_INLINE_STDARG) && !defined(NO_INLINE_STDARG)
-//IPTR DoSuperNewA(Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, struct TagItem *tags);
-//IPTR DoSuperNewTags(Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, ULONG methodID, ...);
-
 #   ifndef CLIB_BOOPSI_PROTOS_H /* prevent name clashes */
-    //ULONG SetAttrs (APTR obj, Tag tag1, ...);
-    //ULONG SetSuperAttrs (Class * cl, Object * obj, Tag tag1, ...);
-    //APTR NewObject (Class * classPtr, UBYTE * classID, Tag tag1, ...);
-
-#       ifndef USE_BOOPSI_STUBS
-#       define DoMethodA(object, message)                                 \
+#       define SetSuperAttrsA(class, object, attrs)          \
+        ({                                                   \
+            struct opSet __ops;                              \
+                                                             \
+            __ops.MethodID     = OM_SET;                     \
+            __ops.ops_AttrList = (attrs);                    \
+            __ops.ops_GInfo    = NULL;                       \
+                                                             \
+            DoSuperMethodA((class), (object), (Msg) &__ops); \
+        })
+#       define SetSuperAttrs(class, object, args...)                      \
         ({                                                                \
-            ASSERT_VALID_PTR((object));                                   \
-            object != NULL ?                                              \
-            ({                                                            \
-                ASSERT_VALID_PTR(OCLASS((object)));                       \
-                ASSERT_VALID_PTR((message));                              \
-                CALLHOOKPKT                                               \
-                (                                                         \
-                    (struct Hook *) OCLASS((object)), (object), (message) \
-                );                                                        \
-            })                                                            \
-            :                                                             \
-                NULL                                                      \
-            ;                                                             \
+            IPTR __args[] = {args};                                       \
+            SetSuperAttrsA((class), (object), (struct TagItem *) __args); \
         })
-        
-        #define DoMethod(object, methodid, tags...) \
-        ({                                          \
-            IPTR __tags[] = {methodid, tags};       \
-            DoMethodA((object), (__tags));          \
-        })
-        /*
-        #define DoSuperMethodA(class, object, message)                     \
-        ({                                                                 \
-            class != NULL && object != NULL ?                              \
-                CALLHOOKPKT                                                \
-                (                                                          \
-                    (struct Hook *) (class)->cl_Super, (object), (message) \
-                )                                                          \
-            :                                                              \
-                NULL                                                       \
-            ;                                                              \
-        })
-        */
-        //IPTR DoSuperMethodA (Class * cl, Object * obj, Msg message);
-        //IPTR DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...);
-        //IPTR CoerceMethodA (Class * cl, Object * obj, Msg message);
-        //IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
-#       endif /* !USE_BOOPSI_STUBS */
-#   endif /* CLIB_BOOPSI_PROTOS_H */
     
-#endif /* !INTUITION_NO_INLINE_STDARG */
+#       ifndef USE_BOOPSI_STUBS /* prevent name clashes */
+#           define DoMethodA(object, message)                                 \
+            ({                                                                \
+                ASSERT_VALID_PTR((object));                                   \
+                (object) != NULL ?                                            \
+                ({                                                            \
+                    ASSERT_VALID_PTR(OCLASS((object)));                       \
+                    ASSERT_VALID_PTR((message));                              \
+                    CALLHOOKPKT                                               \
+                    (                                                         \
+                        (struct Hook *) OCLASS((object)), (object), (message) \
+                    );                                                        \
+                })                                                            \
+                :                                                             \
+                    NULL                                                      \
+                ;                                                             \
+            })
+#           define DoMethod(object, methodid, args...)                        \
+            ({                                                                \
+                IPTR __args[] = {methodid, args};                             \
+                DoMethodA((object), __args);                                  \
+            })
+            
+#           define DoSuperMethodA(class, object, message)                     \
+            ({                                                                \
+                ((class) != NULL && (object) != NULL) ?                       \
+                    CALLHOOKPKT                                               \
+                    (                                                         \
+                        (struct Hook *) ((Class *) (class))->cl_Super,        \
+                        (object), (message)                                   \
+                    )                                                         \
+                :                                                             \
+                    NULL                                                      \
+                ;                                                             \
+            })
+#           define DoSuperMethod(class, object, methodid, args...)            \
+            ({                                                                \
+                IPTR __args[] = {methodid, args};                             \
+                DoSuperMethodA((class), (object), __args);                    \
+            })
+            
+#           define CoerceMethodA(class, object, message)                      \
+            ({                                                                \
+                ((class) != NULL && (object) != NULL) ?                       \
+                    CALLHOOKPKT((struct Hook *) (class), (object), (message)) \
+                :                                                             \
+                    NULL                                                      \
+                ;                                                             \
+            })
+#           define CoerceMethod(class, object, methodid, args...)             \
+            ({                                                                \
+                IPTR __args[] = {methodid, args};                             \
+                CoerceMethodA((class), (object), __args);                     \
+            })
+#       endif /* !USE_BOOPSI_STUBS */
+#   endif /* CLIB_BOOPSI_PROTOS_H */   
+
+#   define DoSuperNewTagList(class, object, gadgetinfo, tags)              \
+    ({                                                                     \
+        struct opSet __ops;                                                \
+                                                                           \
+        __ops.MethodID     = OM_NEW;                                       \
+        __ops.ops_AttrList = (tags);                                       \
+        __ops.ops_GInfo    = (gadgetinfo);                                 \
+                                                                           \
+        (class) != NULL && (object) != NULL ?                              \
+            DoSuperMethodA((class), (object), &__ops)                      \
+        :                                                                  \
+            NULL                                                           \
+        ;                                                                  \
+    })
+#   define DoSuperNewTags(class, object, gadgetinfo, args...)              \
+    ({                                                                     \
+        IPTR __args[] = {args};                                            \
+        DoSuperNewTagList                                                  \
+        (                                                                  \
+            (class), (object), (gadgetinfo), (struct TagItem *) __args     \
+        );                                                                 \
+    })
+#endif /* !INTUITION_NO_INLINE_STDARG && !NO_INLINE_STDARG */
 
 #ifndef CLIB_BOOPSI_PROTOS_H /* Prevent name clashes */
 IPTR CallHookA (struct Hook * hook, APTR obj, APTR param);

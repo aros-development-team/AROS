@@ -3,6 +3,8 @@
     $Id$
 */
 
+#define INTUITION_NO_INLINE_STDARG
+
 #include <intuition/classes.h>
 #include <stdarg.h>
 #include <proto/alib.h>
@@ -67,4 +69,4 @@ ULONG DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...)
             (struct Hook *)cl->cl_Super, obj, AROS_SLOWSTACKMETHODS_ARG(MethodID)
         );
     AROS_SLOWSTACKMETHODS_POST
-} /* DoSuperMethod ()*/
+} /* DoSuperMethod()*/
