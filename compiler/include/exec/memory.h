@@ -2,7 +2,7 @@
 #define EXEC_MEMORY_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Memory handling
@@ -64,6 +64,10 @@ struct MemList
 #define MEMF_REVERSE    (1L<<18)
 #define MEMF_TOTAL      (1L<<19)
 #define MEMF_NO_EXPUNGE (1L<<31)
+
+/* New in AROS/MorphOS. Flag for CreatePool to get automatic
+   semaphore protection */
+#define MEMF_SEM_PROTECTED (1L << 20)
 
 struct MemHandlerData
 {
