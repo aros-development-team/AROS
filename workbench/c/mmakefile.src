@@ -30,6 +30,7 @@ FILES	    := \
 	setclock \
 	setlocale \
 	tasklist \
+	crlist \
 	type \
 	wait \
 	why \
