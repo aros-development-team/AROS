@@ -23,10 +23,10 @@ int main(void)
     Locale_Initialize();
     
     application = ApplicationObject,
-        SubWindow, (IPTR) window = SystemPrefsWindowObject,
+        SubWindow, (IPTR) (window = SystemPrefsWindowObject,
             WindowContents, (IPTR) WPEditorObject,
             End,
-        End,
+        End),
     End;
 
     if (application)
