@@ -320,7 +320,7 @@ static BOOL SaveJPEG(struct IClass *cl, Object *o, struct dtWrite *dtw )
 {
     JpegHandleType          *jpeghandle;
     BPTR		    filehandle;
-    unsigned int            width, height, numplanes, y;
+    unsigned int            width, height, numplanes;
     UBYTE		    *linebuf;
     struct BitMapHeader     *bmhd;
     long                    *colorregs;
@@ -422,7 +422,7 @@ static BOOL SaveJPEG(struct IClass *cl, Object *o, struct dtWrite *dtw )
 			width,			// Width
 			1))			// Height
 	{
-	    D(bug("jpeg.datatype/SaveJPEG(): READPIXELARRAY line %d failed !\n", y));
+	    D(bug("jpeg.datatype/SaveJPEG(): READPIXELARRAY failed!\n"));
 	    JPEG_Exit(jpeghandle, ERROR_OBJECT_WRONG_TYPE);
 	    return FALSE;
 	}
