@@ -89,6 +89,8 @@ extern void rewind (FILE * stream);
 extern int fgetpos (FILE * stream, fpos_t * pos);
 extern int fsetpos (FILE * stream, fpos_t * pos);
 
+extern int remove(const char * pathname);
+
 #ifdef AROS_ALMOST_COMPATIBLE
 extern int __vcformat (void * data, int (*outc)(int, void *),
 			const char * format, va_list args);
