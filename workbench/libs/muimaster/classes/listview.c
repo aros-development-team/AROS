@@ -204,6 +204,26 @@ BOOPSI_DISPATCHER(IPTR, Listview_Dispatcher, cl, obj, msg)
     {
 	case OM_NEW: return Listview_New(cl, obj, (struct opSet *)msg);
 	case OM_DISPOSE: return Listview_Dispose(cl,obj,msg);
+	case MUIM_List_Clear:
+	case MUIM_List_CreateImage:
+	case MUIM_List_DeleteImage:
+	case MUIM_List_Exchange:
+	case MUIM_List_GetEntry:
+	case MUIM_List_Insert:
+	case MUIM_List_InsertSingle:
+	case MUIM_List_Jump:
+	case MUIM_List_NextSelected:
+	case MUIM_List_Redraw:
+	case MUIM_List_Remove:
+	case MUIM_List_Select:
+	case MUIM_List_Sort:
+	case MUIM_List_TestPos:
+	{
+	    struct MUI_ListviewData *data = INST_DATA(cl, obj);
+	    
+	    return DoMethodA(data->list, msg);
+	}
+	
     }
     
     return DoSuperMethodA(cl, obj, msg);
