@@ -1,4 +1,8 @@
 #!/bin/sh
+#
+# Print the size of a file in a "nice" way. Just call it with the name of
+# the file as parameter
+#
 
 /bin/ls -l $1 | \
 gawk ' \

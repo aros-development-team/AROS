@@ -1,4 +1,8 @@
 #!/bin/sh
+#
+# This script print a "nice" date for a file. Just call it with the name
+# if the file as parameter.
+#
 
 ( /bin/ls -l $1 ; date ) | \
 gawk ' \
