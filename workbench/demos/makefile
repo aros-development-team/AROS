@@ -9,7 +9,7 @@ include $(TOP)/config/make.cfg
 EXEDIR=$(BINDIR)/Demos
 
 OBJDIR = $(GENDIR)/demos
-LIBS = -L$(LIBDIR) -lamiga -laros
+LIBS = -L$(LIBDIR) -lamiga -laros -larosc
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a $(LIBDIR)/startup.o
 
 FILES = helloworld \
@@ -54,17 +54,17 @@ $(EXEDIR)/%: $(OBJDIR)/%.o $(DEPLIBS)
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)/%.d: %.c $(IMAGEFILES)
+$(OBJDIR)/%.d: %.c
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -p$(OBJDIR)/
+	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
 
 $(OBJDIR)/librarytest.d: librarytest.c
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -p$(OBJDIR)/ -I$(TOP)/libs
+	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -I$(TOP)/libs -- $(CFLAGS) -- $^
 
 include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 

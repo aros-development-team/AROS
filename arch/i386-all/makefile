@@ -61,7 +61,7 @@ $(OSGENDIR)/%.d: %.c $(TOP)/include/aros/machine.h
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -p$(OSGENDIR)/
+	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
 
 include $(OSGENDIR)/geninc.d
 include $(OSGENDIR)/preparecontext.d

@@ -124,7 +124,7 @@ clean:
 	done
 
 $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
-	$(CC) $(CFLAGS) $< $(LIBS) $(X11LDFLAGS) -lX11 -o $@
+	$(CC) $(CFLAGS) $< $(LIBS) $(X11LDFLAGS) -o $@
 
 subdirs:
 	@for dir in $(SUBDIRS) ; do \
@@ -193,3 +193,4 @@ $(GENDIR)/%.o: %.c
 
 cleandep:
 	$(RM) $(GENDIR)/*.d $(GENDIR)/*/*.d
+# DO NOT DELETE THIS LINE -- make depend depends on it.

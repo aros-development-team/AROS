@@ -26,7 +26,7 @@ $(OSGENDIR)/%.d: %.c
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -p$(OSGENDIR)/
+	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
 
 include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
 

@@ -27,7 +27,8 @@ FILES = \
 	superstate \
 	userstate \
 	stackswap \
-	runprocess
+	runprocess \
+	initcore
 
 all: setup $(TOP)/include/aros/machine.h machine.i \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
@@ -60,6 +61,7 @@ $(OSGENDIR)/%.d: %.c
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -p$(OSGENDIR)/
+	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
 
 include $(OSGENDIR)/geninc.d
+include $(OSGENDIR)/preparecontext.d

@@ -16,7 +16,7 @@ COMMON_CFLAGS="-g"
 RANLIB="ranlib"
 X11LIBDIR=""
 X11INCDIR=""
-MKDEPEND="makedepend -f\$@ -- \$(CFLAGS) -- \$^"
+MKDEPEND="makedepend"
 
 # Flags to link AROS binaries (ie. binaries which are to be started
 # inside AROS). What we need is something like a shared lib: All
@@ -41,7 +41,7 @@ case "$type" in
 	ARCH="linux"
 	KERNEL="i386-emul"
 	X11LIBDIR="/usr/X11R6/lib"
-	MKDEPEND="makedepend -D__GNUC__ -Di386 -f\$@ -- \$(CFLAGS) -- \$^"
+	MKDEPEND="makedepend -D__GNUC__ -Di386"
 	COMMON_AFLAGS="-x assembler-with-cpp"
 	;;
 "HP-UX" )
@@ -69,7 +69,8 @@ case "$type" in
 	ILDFLAGS="-nostartfiles -nostdlib"
 	ARCH="amiga"
 	KERNEL="m68k-native"
-	MKDEPEND="gcc -M -o \$@ \$(CFLAGS) \$^"
+	MKDEPEND="makedepend -D__GNUC__ -D_AMIGA -DAMIGA"
+	COMMON_AFLAGS="-m68020 -x assembler-with-cpp"
 	;;
 esac
 
