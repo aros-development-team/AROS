@@ -281,9 +281,8 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 	/* if (ICU(o)->conFlags & CF_LF_MODE_ON) */
 	if (CHECK_MODE(o, M_LNM))
 	{
-	    IPTR dummy;
-	    /* Do carriage return */
-	    Console_DoCommand(o, C_CARRIAGE_RETURN, 0, &dummy);
+	    CU(o)->cu_XCP = CHAR_XMIN(o);
+	    CU(o)->cu_XCCP = CHAR_XMIN(o);
 	}
 	Console_RenderCursor(o);
     	break;
