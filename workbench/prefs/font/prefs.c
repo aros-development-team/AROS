@@ -220,7 +220,7 @@ BOOL FP_Cancel(void)
 BOOL FP_Write(CONST_STRPTR filename, struct FontPrefs *fp[FP_COUNT])
 {
     BOOL              rc = TRUE;
-    UBYTE             a = 0, b = 0;
+    UBYTE             a = 0, error = 0;
     struct PrefHeader header; 
     
     memset(&header, 0, sizeof(struct PrefHeader));
@@ -231,7 +231,7 @@ BOOL FP_Write(CONST_STRPTR filename, struct FontPrefs *fp[FP_COUNT])
         {
             InitIFFasDOS(iffHandle);
     
-            if (!(b = OpenIFF(iffHandle, IFFF_WRITE))) /* NULL = successful! */
+            if (!(error = OpenIFF(iffHandle, IFFF_WRITE))) /* NULL = successful! */
             {
                 PushChunk(iffHandle, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN);
     
@@ -246,23 +246,23 @@ BOOL FP_Write(CONST_STRPTR filename, struct FontPrefs *fp[FP_COUNT])
     
                 for (a = 0; a < FP_COUNT; a++)
                 {
-                    b = PushChunk(iffHandle, ID_PREF, ID_FONT, sizeof(struct FontPrefs));
+                    error = PushChunk(iffHandle, ID_PREF, ID_FONT, sizeof(struct FontPrefs));
     
-                    if (b) // TODO: We need some error checking here!
+                    if (error != 0) // TODO: We need some error checking here!
                     {
-                        printf("error: PushChunk() = %d ", b);
+                        printf("error: PushChunk() = %d ", error);
                     }
                     
                     convertEndian(fp[a]); // Convert to m68k endian
                     
-                    b = WriteChunkBytes(iffHandle, fp[a], sizeof(struct FontPrefs));
-                    b = PopChunk(iffHandle);
+                    error = WriteChunkBytes(iffHandle, fp[a], sizeof(struct FontPrefs));
+                    error = PopChunk(iffHandle);
     
                     convertEndian(fp[a]); // Revert to initial endian
     
-                    if (b) // TODO: We need some error checking here!
+                    if (error != 0) // TODO: We need some error checking here!
                     {
-                        printf("error: PopChunk() = %d ", b);
+                        printf("error: PopChunk() = %d ", error);
                     }
                 }
     
