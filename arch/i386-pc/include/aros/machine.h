@@ -28,6 +28,7 @@
 
 #define AROS_GET_SYSBASE	struct ExecBase * SysBase = *(struct ExecBase **)0x4;
 #define AROS_GET_DOSBASE        extern struct DosLibrary * DOSBase;
+#define AROS_GET_SYSBASE_OK     extern struct ExecBase * SysBase;
 
 /* ??? */
 #define SP_OFFSET 0
