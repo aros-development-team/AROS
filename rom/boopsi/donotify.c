@@ -14,7 +14,7 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/boopsi.h>
-#include <clib/intuition_protos.h> /* for DoMethod() */
+#include <proto/intuition.h>
 
 #include "intern.h"
 
@@ -30,8 +30,6 @@
     This will hopefully allow us to send an IDCMP message from a boopsi
     gadget method. 
 
-    We may not be able to get this to work though, as AROS doesn't yet
-    have a compatible intuition.
 */
 static struct IntuiMessage *SendIDCMPUpdate(
     Class 		*cl,
@@ -45,24 +43,7 @@ static struct IntuiMessage *SendIDCMPUpdate(
 {
     struct IntuiMessage	*imsg;
 
-    imsg = msg->opu_GInfo->gi_Window->MessageKey;
-    while( imsg && !(imsg->Class & IDCMP_LONELYMESSAGE) )
-    {
-	imsg = imsg->SpecialLink;
-    }
-
-    if( !imsg )
-    {
-	imsg = AllocMem(sizeof(struct ExtIntuiMessage), MEMF_CLEAR);
-	if( imsg != NULL )
-	{
-	    /* Add the newly created message to start of list of messages */
-	    imsg->SpecialLink = msg->opu_GInfo->gi_Window->MessageKey;
-	    msg->opu_GInfo->gi_Window->MessageKey = imsg;
-	    imsg->ExecMessage.mn_ReplyPort = msg->opu_GInfo->gi_Window->WindowPort;
-	    
-	}
-    }
+    imsg = AllocIntuiMessage(msg->opu_GInfo->gi_Window);
 
     if( imsg )
     {
@@ -74,9 +55,13 @@ static struct IntuiMessage *SendIDCMPUpdate(
 	imsg->MouseY	= 0;
 	imsg->Seconds	= 0;
 	imsg->Micros	= 0;
+
+	/* done by AllocIntuiMessage
 	imsg->IDCMPWindow = msg->opu_GInfo->gi_Window;
+	*/
 	
-	PutMsg( msg->opu_GInfo->gi_Window->UserPort, (struct Message *)msg);
+	SendIntuiMessage(msg->opu_GInfo->gi_Window , imsg);
+	
     }
     return imsg;
 }
@@ -163,6 +148,9 @@ static struct IntuiMessage *SendIDCMPUpdate(
     		    {
 			SendIDCMPUpdate( cl, o, msg, IDCMP_IDCMPUPDATE,
 					0, ic->ic_CloneTags, BOOPSIBase );
+					
+			/* in this case the cloned tagitems will be freed in the Intuition
+			   InputHandler when the app has replied the IntuiMessage */
 		    }
 		} /* CloneTagItems() */
 
