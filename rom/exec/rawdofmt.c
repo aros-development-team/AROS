@@ -13,19 +13,36 @@
 
 #include <stdarg.h>
 
-#define align_arg(ptr, type) \
+/* Align pointer 'ptr' to a boundary optimal for the type 'type'.  */
+#define align_ptr(ptr, type) \
     ((APTR)(((IPTR)ptr + __alignof__(type) - 1) & ~(__alignof__(type) - 1)))
 
-#define stack_arg(DataStream, type)           \
-({                                            \
-    DataStream = align_arg(DataStream, type); \
-                                              \
-    *(((type *)DataStream)++);                \
+/* Fetch an argument from the a stack-type data stream.
+
+   'type' is guaranteed to be one of the fundamental types which
+   other types are cast to on the basis of the default argument
+   promotion rule,
+
+   The minimum guaranteed alignment for the arguments is the one
+   of the type 'int', thus avoid aligning the stream if sizeof(type)
+   is less than or equal to sizeof(int).
+
+   (Perhaps using __alignof__ rather than sizeof woulc be more correct
+    here?!).  */
+
+#define stack_arg(DataStream, type)               \
+({                                                \
+    if (sizeof(type) > sizeof(int))               \
+        DataStream = align_ptr(DataStream, type); \
+	                                          \
+    *((type *)DataStream)++;                      \
 })
 
-/* Macro to fetch the data from the stream. The stream can either be a
-   va_list or stack memory. Variables are put on the stack following
-   the default argument promotion rule of the C standard, which states that:
+/* Macro to fetch the data from the stream.
+
+   The stream can either be a va_list or stack memory. Variables are
+   put on the stack following the default argument promotion rule of
+   the C standard, which states that:
 
        "types char and short int are promoted to int, and float is promoted
         to double" (http://www.eskimo.com/~scs/C-faq/q15.2.html)
@@ -46,42 +63,63 @@
    whether this is a safe assumption, I really don't know, I just know
    that for now it works :-).  */
 
-#define fetch_arg(DataStream, type)                                     \
-({                                                                      \
-    type res;                                                           \
-                                                                        \
-    if (sizeof(type) <= sizeof(int))                                    \
-    {                                                                   \
-        if (in_va_list)                                                 \
-	    res = (type)va_arg((*(va_list *)DataStream), int);          \
-	else                                                            \
-	    res = (type)stack_arg((DataStream), int);                   \
-    }                                                                   \
-    else                                                                \
-    if (sizeof(type) == sizeof(long))                                   \
-    {                                                                   \
-        if (in_va_list)                                                 \
-	    res = (type)va_arg((*(va_list *)DataStream), long);         \
-	else                                                            \
-	    res = (type)stack_arg((DataStream), long);                  \
-    }                                                                   \
-    else                                                                \
-    {                                                                   \
-        if (in_va_list)                                                 \
-	    res = (type)(IPTR)va_arg((*(va_list *)DataStream), void *); \
-	else                                                            \
-	    res = (type)(IPTR)stack_arg((DataStream), void *);          \
-    }                                                                   \
-                                                                        \
-    res;                                                                \
+#define fetch_arg(type)                                      \
+({                                                           \
+    type res;                                                \
+                                                             \
+    if (sizeof(type) <= sizeof(int))                         \
+    {                                                        \
+        if (in_va_list)                                      \
+	    res = (type)va_arg(VaListStream, int);           \
+	else                                                 \
+	    res = (type)stack_arg(DataStream, int);          \
+    }                                                        \
+    else                                                     \
+    if (sizeof(type) == sizeof(long))                        \
+    {                                                        \
+        if (in_va_list)                                      \
+	    res = (type)va_arg(VaListStream, long);          \
+	else                                                 \
+	    res = (type)stack_arg(DataStream, long);         \
+    }                                                        \
+    else                                                     \
+    {                                                        \
+        if (in_va_list)                                      \
+	    res = (type)(IPTR)va_arg(VaListStream, void *);  \
+	else                                                 \
+	    res = (type)(IPTR)stack_arg(DataStream, void *); \
+    }                                                        \
+                                                             \
+    res;                                                     \
 })
 
-#define PutCh(ch, data)           \
-    AROS_UFC2(void, PutChProc,    \
-    AROS_UFCA(UBYTE, (ch),   D0), \
-    AROS_UFCA(APTR , (data), A3)) \
+#define PutCh(ch, data)                \
+do                                     \
+{                                      \
+    if (PutChProc != NULL)             \
+    {                                  \
+        AROS_UFC2(void, PutChProc,     \
+        AROS_UFCA(UBYTE, (ch),   D0),  \
+        AROS_UFCA(APTR , (data), A3)); \
+    }                                  \
+    else                               \
+    {                                  \
+        *((UBYTE *)data)++ = ch;       \
+    }                                  \
+} while (0);
 
 #define FIX_EXEC_BUGS 0
+
+/* On certain architectures va_list args are all passed on the stack, thus we can
+   merge the implementations.  */
+#if defined __i386__ || defined __mc68000__
+#    define FAKE_VA_LIST
+#    define in_va_list 0
+#    undef va_arg
+#    define va_arg(x, y) (0)
+#    define VaListStream DataStream
+#endif
+
 /*****************************************************************************
 
     NAME */
@@ -203,12 +241,15 @@
 {
     AROS_LIBFUNC_INIT
 
-#ifdef __mc68000___
+#ifdef __mc68000
     register APTR __PutChData asm("a3") = PutChData;
 #   define PutChData __PutChData
 #endif
 
+#ifndef FAKE_VA_LIST
     int in_va_list = 0;
+    volatile va_list VaListStream;
+#endif
 
     /* As long as there is something to format left */
     while(*FormatString)
@@ -256,11 +297,13 @@
 	    /* Possibly switch to a va_list type stream.  */
 	    if (*FormatString == 'v')
 	    {
-	        va_list *list_ptr = fetch_arg(DataStream, va_list *);
+	        va_list *list_ptr = fetch_arg(va_list *);
 		if (list_ptr != NULL)
 		{
+                    #ifndef FAKE_VA_LIST
 	            in_va_list = 1;
-		    DataStream = (APTR)list_ptr;
+		    #endif
+		    VaListStream = *list_ptr;
 		}
 
 		FormatString++;
@@ -271,15 +314,17 @@
 	       format string.  */
 	    if (*FormatString == 'V')
 	    {
-	        va_list *list_ptr   = fetch_arg(DataStream, va_list *);
-	        char    *new_format = fetch_arg(DataStream, char *);
+	        va_list *list_ptr   = fetch_arg(va_list *);
+	        char    *new_format = fetch_arg(char *);
 
                 FormatString++;
 
 		if (list_ptr != NULL)
 		{
+                    #ifndef FAKE_VA_LIST
 	            in_va_list = 1;
-		    DataStream = (APTR)list_ptr;
+		    #endif
+		    VaListStream = *list_ptr;
 		}
 
 		if (new_format != NULL)
@@ -328,7 +373,7 @@
 	    {
 		/* BCPL string */
 		case 'b':
-		    buf = BADDR(fetch_arg(DataStream, BPTR));
+		    buf = BADDR(fetch_arg(BPTR));
 
 		    /* Set width */
 		    width = *buf++;
@@ -352,7 +397,7 @@
 				For longs reading signed and unsigned
 				doesn't make a difference.
 			    */
-			    n = fetch_arg(DataStream, ULONG);
+			    n = fetch_arg(ULONG);
 
 			    /* But for words it may do. */
 			}else
@@ -361,12 +406,12 @@
 				UWORD as WORD even when 'u' is used.
 			    */
 			    if((FIX_EXEC_BUGS && *FormatString=='d') || !FIX_EXEC_BUGS)
-			        n = fetch_arg(DataStream, WORD);
+			        n = fetch_arg(WORD);
 			    else
-			        n = fetch_arg(DataStream, WORD);
+			        n = fetch_arg(WORD);
 
 			/* Negative number? */
-			if(*FormatString=='d'&&(LONG)n<0)
+			if(*FormatString=='d' && (LONG)n < 0)
 			{
 			    minus=1;
 			    n=-n;
@@ -406,9 +451,9 @@
 
 			/* Get value */
 			if(larg)
-			    n = fetch_arg(DataStream, ULONG);
+			    n = fetch_arg(ULONG);
 			else
-			    n = fetch_arg(DataStream, UWORD);
+			    n = fetch_arg(UWORD);
 
 			/* Convert to ASCII */
 			{
@@ -438,7 +483,7 @@
 		    {
 			UBYTE *buffer;
 
-			buf = fetch_arg(DataStream, UBYTE *);
+			buf = fetch_arg(UBYTE *);
 
                         if (!buf)
                         {
@@ -469,10 +514,10 @@
 		    /* Get value */
 		    if(larg)
 		    {
-			*buf = fetch_arg(DataStream, ULONG);
+			*buf = fetch_arg(ULONG);
 		    }else
 		    {
-			*buf = fetch_arg(DataStream, UWORD);
+			*buf = fetch_arg(UWORD);
 		    }
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 		    if (maxwidth != ~0)
@@ -557,4 +602,3 @@
 
     AROS_LIBFUNC_EXIT
 } /* RawDoFmt */
-
