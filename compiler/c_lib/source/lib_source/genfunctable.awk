@@ -34,7 +34,7 @@ BEGIN {
 
     verbose_pattern = libbase"[ \\t]*,[ \\t]*[0-9]+[ \\t]*,[ \\t]*"basename;
 
-#print verbose_pattern;
+#print verbose_pattern > "/dev/stderr";
 
     if (maxlvo < 4)
 	maxlvo = 4;
@@ -92,6 +92,12 @@ END {
     print "    AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader),";
     print "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader),";
     print "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader),";
+
+    if (maxlvo <= 4)
+    {
+	print "Error: No matching functions found" > "/dev/stderr";
+	exit (10);
+    }
 
     for (t=5; t<=maxlvo; t++)
     {
