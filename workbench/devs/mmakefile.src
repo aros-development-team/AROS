@@ -5,6 +5,7 @@ OBJDIR := $(GENDIR)/$(CURDIR)
 USER_CFLAGS := -O2 -fomit-frame-pointer
 
 %define_libs
+%make_common_setup
 
 DEVS := $(DEVSDIR)/ram.handler    \
 	$(DEVSDIR)/nil.handler    \

@@ -4,6 +4,7 @@ include $(TOP)/config/make.cfg
 OBJDIR := $(GENDIR)/workbench/devs
 
 %define_libs
+%make_common_setup
 
 FILES	:= clipboard
 OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)

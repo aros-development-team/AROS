@@ -10,6 +10,8 @@ LIB	:= $(LIBDIR)/libkeyboard.a
 
 %define_libs
 
+%make_common_setup
+
 #MM
 kernel-devs-$(ARCH)-$(CPU) : $(LIB)
 	@$(NOP)

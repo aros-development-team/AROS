@@ -21,6 +21,8 @@ FILES :=	arosdevice \
 OBJS := $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 LIB := $(LIBDIR)/libafs.a
 
+%make_common_setup
+
 #MM workbench-devs: workbench-devs-afshandler
 workbench-devs: workbench-devs-afshandler
 
