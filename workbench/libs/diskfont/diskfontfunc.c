@@ -239,8 +239,8 @@ STATIC BOOL GetFileList(struct DirEntry *direntry, struct DiskfontBase_intern *D
 		}
 		else
 		{
-		    REMOVE(fe);
 		    struct DateStamp ds;
+		    REMOVE(fe);
 		    
 		    ds.ds_Days = eadit->ed_Days;
 		    ds.ds_Minute = eadit->ed_Mins;
