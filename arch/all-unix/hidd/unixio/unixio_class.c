@@ -313,8 +313,8 @@ kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x (flags :
 			Remove ((struct Node *)msg);
 			flags = fcntl (msg->fd, F_GETFL);
 			fcntl (msg->fd, F_SETFL, flags & ~FASYNC);
-			ReplyMsg ((struct Message *)msg);
 		    }
+		    ReplyMsg ((struct Message *)msg);
 		}
 	    }
 	}
