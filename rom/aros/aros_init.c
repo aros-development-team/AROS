@@ -88,15 +88,15 @@ AROS_LH1(struct LIBBASETYPE *, open,
 {
     AROS_LIBFUNC_INIT
 
-    /* I have one more opener. */
-    LIBBASE->aros_LibNode.lib_OpenCnt++;
-    LIBBASE->aros_LibNode.lib_Flags&=~LIBF_DELEXP;
-
     if(!(LIBBASE->aros_utilityBase))
     {
 	if(!(LIBBASE->aros_utilityBase = OpenLibrary("utility.library", 37)))
 	    return NULL;
     }
+
+    /* I have one more opener. */
+    LIBBASE->aros_LibNode.lib_OpenCnt++;
+    LIBBASE->aros_LibNode.lib_Flags&=~LIBF_DELEXP;
 
     /* You would return NULL if the open failed. */
     return LIBBASE;
