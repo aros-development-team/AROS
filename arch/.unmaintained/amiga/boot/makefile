@@ -35,9 +35,7 @@ $(BINDIR)/boot: $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).o)
 	strip $@
 
 $(BOOTGENDIR)/%.d: %.c
-	@if [ ! -d $(BOOTGENDIR) ] ; then $(MKDIR) $(BOOTGENDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(BOOTGENDIR) -- $(CFLAGS) -- $^
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 include $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).d)

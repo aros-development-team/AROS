@@ -5,6 +5,8 @@ include $(TOP)/config/make.cfg
 
 SPECIAL_CFLAGS = -I $(TOP)/exec
 
+MACHINE_H = $(TOP)/compiler/include/aros/machine.h
+
 FILES = \
 	supervisor \
 	switch \
@@ -30,17 +32,17 @@ FILES = \
 	runprocess \
 	initcore
 
-all: setup $(TOP)/include/aros/machine.h machine.i \
+all: setup $(MACHINE_H) machine.i \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
-$(TOP)/include/aros/machine.h:
-	$(TOP)/scripts/makelinks . $(TOP)/include/aros machine.h
+$(MACHINE_H): machine.h
+	$(CP) $< $@
 
 clean:
-	$(RM) $(TOP)/include/aros/machine.h
+	$(RM) $(MACHINE_H)
 
 config:
 	@echo "Configuring for an m68k CPU..."
@@ -57,11 +59,9 @@ $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
-$(OSGENDIR)/%.d: %.c $(TOP)/include/aros/machine.h
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
+$(OSGENDIR)/%.d: %.c $(MACHINE_H)
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 include $(OSGENDIR)/geninc.d
 include $(OSGENDIR)/preparecontext.d

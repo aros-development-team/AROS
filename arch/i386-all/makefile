@@ -1,5 +1,6 @@
 # $Id$
 TOP=../..
+COMPILE_KERNEL = yes # Must have a value, no matter which one
 
 include $(TOP)/config/make.cfg
 
@@ -33,7 +34,7 @@ FILES = \
 
 CFILES = setjmp longjmp
 
-all: setup $(TOP)/apps/compiler/include/aros/machine.h machine.i \
+all: setup $(TOP)/compiler/include/aros/machine.h machine.i \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(CFILES),$(CLIBDIR)/$(f).o)
 
@@ -41,11 +42,11 @@ setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	@if [ ! -d $(CLIBDIR) ]; then $(MKDIR) $(CLIBDIR) ; else true ; fi
 
-$(TOP)/apps/compiler/include/aros/machine.h: machine.h
-	cp machine.h $(TOP)/apps/compiler/include/aros
+$(TOP)/compiler/include/aros/machine.h: machine.h
+	cp machine.h $(TOP)/compiler/include/aros
 
 clean:
-	$(RM) $(TOP)/apps/compiler/include/aros/machine.h
+	$(RM) $(TOP)/compiler/include/aros/machine.h
 
 config:
 	@echo "Configuring for a x86 CPU..."
@@ -66,11 +67,10 @@ $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
-$(OSGENDIR)/%.d: %.c $(TOP)/apps/compiler/include/aros/machine.h
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
+$(OSGENDIR)/%.d: %.c $(TOP)/compiler/include/aros/machine.h
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
-include $(OSGENDIR)/geninc.d
-include $(OSGENDIR)/preparecontext.d
+ifneq ("$(TARGET)","clean")
+-include $(OSGENDIR)/geninc.d $(OSGENDIR)/preparecontext.d
+endif

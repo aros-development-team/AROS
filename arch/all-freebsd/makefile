@@ -29,10 +29,8 @@ $(OSGENDIR)/%.o: %.c
 	if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OSGENDIR)/%.d: %.c
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -p$(OSGENDIR)/
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
 

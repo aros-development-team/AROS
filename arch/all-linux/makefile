@@ -1,4 +1,7 @@
+# $Id$
+
 TOP=../..
+COMPILE_KERNEL = yes # Must have a value, no matter which one
 
 USER_INCLUDES=-I$(TOP)/rom/graphics -I$(TOP)/rom/intuition
 
@@ -13,7 +16,7 @@ setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
 clean:
-	$(RM) $(OSGENDIR) *.err
+	-$(RM) $(OSGENDIR) *.err
 
 config:
 	@echo "Configuring for Linux..."
@@ -23,10 +26,9 @@ $(OSGENDIR)/%.o: %.c
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OSGENDIR)/%.d: %.c
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
-include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
-
+ifneq ($(TARGET),clean)
+-include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+endif
