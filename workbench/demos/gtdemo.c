@@ -43,7 +43,7 @@ struct Screen *scr;
 struct Window *win;
 struct Gadget *glist = NULL;
 
-struct Gadget *button;
+struct Gadget *button, *strgad, *integergadget;
 WORD topoffset;
 
 #define ID_BUTTON 1
@@ -74,8 +74,8 @@ struct NewGadget checkbox =
 struct NewGadget cyclegad =
 {
     210, 140, 100, 20,
-    NULL, NULL,
-    ID_CYCLE, 0, NULL, NULL
+    "cyclegad (4)", NULL,
+    ID_CYCLE, PLACETEXT_ABOVE, NULL, NULL
 };
 
 struct NewGadget mxgad =
@@ -141,11 +141,12 @@ struct NewGadget listviewgad =
     ID_LISTVIEW, PLACETEXT_ABOVE, NULL, NULL
 };
 
-#define NUMLVNODES  13
+#define NUMLVNODES  20
 struct Node lv_nodes[NUMLVNODES];
 struct List lv_list;
 STRPTR lv_texts[] = {"This", "is", "a", "demo", "of", "the", "GadTools", "listview.",
-	"Try", "scrolling", "and", "selecting", "entries"};
+	"Try", "scrolling", "and", "selecting", "entries",
+	"One", "Two", "Three", "Four", "Five", "Six", "Seven"};
 
 
 STRPTR mxlabels[] =
@@ -269,7 +270,7 @@ BOOL openwin()
 			     IDCMP_VANILLAKEY |
 			     IDCMP_CLOSEWINDOW |
 			     IDCMP_REFRESHWINDOW,
-			 WA_SimpleRefresh, TRUE,
+//			 WA_SimpleRefresh, TRUE,
 			 WA_Gadgets, glist,
 			 WA_DragBar, TRUE,
 			 WA_CloseGadget, TRUE,
@@ -364,7 +365,7 @@ D(bug("Created slider gadget: %p\n", gad));
 		       TAG_DONE);
 
 D(bug("Created scroller gadget: %p\n", gad));
-    gad = CreateGadget(STRING_KIND, gad, &stringgad,
+    gad = strgad = CreateGadget(STRING_KIND, gad, &stringgad,
     		       GTST_String,		"Blahblahblah",
     		       GTST_MaxChars,		80,
     		       GTSC_Visible,		2,
@@ -373,7 +374,7 @@ D(bug("Created scroller gadget: %p\n", gad));
 
 D(bug("Created string gadget: %p\n", gad));
 
-    gad = CreateGadget(INTEGER_KIND, gad, &integergad,
+    gad = integergadget = CreateGadget(INTEGER_KIND, gad, &integergad,
     		       GTIN_Number,		100,
     		       GTIN_MaxChars,		5,
     		       STRINGA_Justification,	GACT_STRINGCENTER,
@@ -384,6 +385,7 @@ D(bug("Created integer gadget: %p\n", gad));
 
     
     initlvnodes(&lv_list, lv_nodes, lv_texts, NUMLVNODES);
+D(bug("Inited lv nodes\n"));
     gad = CreateGadget(LISTVIEW_KIND, gad, &listviewgad,
     		GTLV_Labels,	(IPTR)&lv_list,
     		GTLV_ReadOnly,	FALSE,
@@ -424,6 +426,11 @@ void handlewin()
     BOOL ready = FALSE;
     struct IntuiMessage *msg;
 
+    GT_SetGadgetAttrs(strgad,win,NULL,GTST_String, "Hello",
+    				      TAG_DONE);
+	
+    GT_SetGadgetAttrs(integergadget,win,NULL,GTIN_Number,1000,TAG_DONE);
+    			      
     while (ready == FALSE) {
 	WaitPort(win->UserPort);
 	msg = GT_GetIMsg(win->UserPort);
@@ -479,7 +486,15 @@ void handlewin()
 		case ID_PALETTE:
 		    printf(" (color: %d)", msg->Code);
 		    break;
-		    
+		
+		case ID_LISTVIEW:
+		    printf(" (lv item: %d)", msg->Code);
+		    break;
+		
+		case ID_CYCLE:
+		    printf(" (cycle item: %d)", msg->Code);
+		    break;
+		           
 		case ID_CHECKBOX:{
                     BOOL checked;
 
