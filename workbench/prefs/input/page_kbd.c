@@ -324,9 +324,9 @@ static LONG kbd_layout(void)
     testheight = dri->dri_Font->tf_YSize + STRING_EXTRAHEIGHT;
     testgroupheight = testheight + FRAME_FRAMEHEIGHT;
     
-    minwidth = lvgroupwidth + SPACE_X + delaygroupwidth;
+    minwidth = lvgroupwidth + GROUPSPACE_X + delaygroupwidth;
    
-    h = delaygroupheight + SPACE_Y + rategroupheight + SPACE_Y + testgroupheight;
+    h = delaygroupheight + GROUPSPACE_Y + rategroupheight + GROUPSPACE_Y + testgroupheight;
     
     minheight = (lvgroupheight > h) ? lvgroupheight : h;
 
@@ -740,14 +740,14 @@ LONG page_kbd_handler(LONG cmd, IPTR param)
 	case PAGECMD_SETDOMLEFT:
 	    domleft = param;
 	    lvgroupx1 = domleft;
-	    delaygroupx1 = rategroupx1 = testgroupx1 = domleft + lvgroupwidth + SPACE_X;
+	    delaygroupx1 = rategroupx1 = testgroupx1 = domleft + lvgroupwidth + GROUPSPACE_X;
 	    break;
 	    
 	case PAGECMD_SETDOMTOP:
 	    domtop = param;
 	    lvgroupy1 = rategroupy1 = param;
-	    delaygroupy1 = rategroupy1 + rategroupheight + SPACE_Y;
-	    testgroupy1 = delaygroupy1 + delaygroupheight + SPACE_Y;
+	    delaygroupy1 = rategroupy1 + rategroupheight + GROUPSPACE_Y;
+	    testgroupy1 = delaygroupy1 + delaygroupheight + GROUPSPACE_Y;
 	    break;
 	    
 	case PAGECMD_SETDOMWIDTH:

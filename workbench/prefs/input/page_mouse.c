@@ -321,7 +321,7 @@ static LONG mouse_layout(void)
     doublegroupheight = dri->dri_Font->tf_YSize + BUTTON_EXTRAHEIGHT + FRAME_FRAMEHEIGHT;
     
     minwidth  = mapgroupwidth;
-    minheight = mapgroupheight + SPACE_Y + doublegroupheight;
+    minheight = mapgroupheight + GROUPSPACE_Y + doublegroupheight;
 
     DeinitRastPort(&temprp);
     
@@ -483,7 +483,7 @@ static LONG mouse_makegadgets(void)
     	    	    	    	    	    	    	 TAG_DONE);
     
     doublegroupx1 = domleft;
-    doublegroupy1 = mapgroupy1 + mapgroupheight + SPACE_Y;
+    doublegroupy1 = mapgroupy1 + mapgroupheight + GROUPSPACE_Y;
     
     ng.ng_LeftEdge = doublegroupx1 + FRAME_OFFX;
     ng.ng_TopEdge  = doublegroupy1 + FRAME_OFFY;

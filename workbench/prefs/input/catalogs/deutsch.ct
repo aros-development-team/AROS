@@ -90,10 +90,10 @@ MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY
 Pause Doppelklick
 ;
 MSG_GAD_KEY_REPEAT_DELAY
-Verzögerung
+Wiederhol-Verzögerung
 ;
 MSG_GAD_KEY_REPEAT_RATE
-Geschwindigkeit
+Wiederhol-Geschwindigkeit
 ;
 MSG_GAD_KEY_TEST
 Test
