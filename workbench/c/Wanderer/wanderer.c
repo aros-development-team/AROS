@@ -677,6 +677,7 @@ void shell_open(char **cd_ptr)
     BPTR cd = Lock(*cd_ptr,ACCESS_READ);
 #ifdef __AROS__
     BPTR win = Open("CON:10/10/640/480/AROS-Shell/CLOSE", MODE_OLDFILE);
+    BPTR from = Open("S:Shell-Startup", MODE_OLDFILE);
 #else
     BPTR win = Open("CON:10/10/640/480/AROS-Shell/AUTO/CLOSE", MODE_OLDFILE);
 #endif
@@ -688,6 +689,7 @@ void shell_open(char **cd_ptr)
 	SYS_Output,	    (IPTR)NULL,
 	SYS_Background, FALSE,
 	SYS_Error,	    (IPTR)NULL,
+	SYS_ScriptInput, (IPTR)from,
 	SYS_UserShell,  TRUE,
 	NP_CurrentDir, cd,
 	TAG_DONE) == -1)
@@ -701,6 +703,9 @@ void shell_open(char **cd_ptr)
 #endif
     {
     	Close(win);
+    #ifdef __AROS__
+    	Close(from);
+    #endif
     	UnLock(cd);
     }
 }
