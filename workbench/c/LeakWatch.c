@@ -2,7 +2,7 @@
     Copyright © 2002, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: 
+    Desc: show deltas of resources usage
     Lang: english
 */
 
@@ -42,6 +42,7 @@ static const char version[] = "$VER: LeakWatch 0.1 (25.12.2002)\n";
 #define MAX_MR 1000
 #define MAX_NR 1000
 
+/* All resources that have an opencount, eg. libs, devs, fonts */
 struct OpenedResourceNode {
     struct Node  node;
     CONST_STRPTR name;
@@ -49,47 +50,40 @@ struct OpenedResourceNode {
     ULONG        count;
 };
 
+/* All resources that LeakWatch handles. */
 struct TrackedResources {
-    struct List opened;
-    ULONG       freeMem;
+    struct List opened;   /* List of OpenedResourceNode */
+    ULONG       freeMem;  /* total free memory */
 };
-
 
 struct ModifiedResource {
-    struct Node node;
-    struct OpenedResourceNode *before;
-    struct OpenedResourceNode *after;
+    struct Node  node;
+    CONST_STRPTR name;
+    APTR         addr;
+    ULONG        before_count;
+    ULONG        after_count;
 };
-
-struct NewResource {
-    struct Node node;
-    struct OpenedResourceNode *orn;
-};
-
-
 
 /* store eg. new libraries, or libraries with modified opencount
  *
  */
 struct ResourceDiff {
     LONG memLost;
-    struct List newOpened;       /* contains NewResource */
     struct List modifiedOpened;  /* contains ModifiedResource */
 };
 
+/* static storage to avoid interfering with memleaks debugging */
 static struct OpenedResourceNode _ornbuf[MAX_ORN];
 static struct TrackedResources _trbuf[MAX_TR];
 static struct ResourceDiff _rdbuf[MAX_RD];
 static UBYTE _strbuf[MAX_STR];
 static struct ModifiedResource _mrbuf[MAX_MR];
-static struct NewResource _nrbuf[MAX_NR];
 
 static int next_orn = 0;
 static int next_tr = 0; 
 static int next_rd = 0; 
 static int next_str = 0; 
 static int next_mr = 0; 
-static int next_nr = 0; 
 
 static struct OpenedResourceNode *get_orn()
 {
@@ -135,18 +129,6 @@ static void release_mr (struct ModifiedResource *mr)
 {
 }
 
-static struct NewResource *get_nr()
-{
-    if (next_nr == MAX_NR)
-	return NULL;
-    return &_nrbuf[next_nr++];
-}
-
-static void release_nr (struct NewResource *nr)
-{
-}
-
-
 CONST_STRPTR StaticStrDup (CONST_STRPTR str)
 {   
     UBYTE *start = &_strbuf[next_str];
@@ -176,7 +158,6 @@ static struct ResourceDiff *NewStateDiff(const struct TrackedResources *old,
 static void DisplayStateDiff(const struct ResourceDiff *rd);
 static void DeleteStateDiff(struct ResourceDiff *rd);
 static struct TrackedResources * CopyResourcesState(const struct TrackedResources *src);
-
 
 static BOOL AddLibs(struct List *opened)
 {
@@ -250,7 +231,7 @@ static BOOL AddFonts(struct List *opened)
     return TRUE;
 }
 
-
+/* Add opencount-based resources to the tracking list. */
 static BOOL AddOpenedResources(struct List *opened)
 {
     if (!AddLibs(opened))
@@ -262,7 +243,7 @@ static BOOL AddOpenedResources(struct List *opened)
     return TRUE;
 }
 
-
+/* Get a snapshot of current resources */
 static struct TrackedResources *NewResourcesState(void)
 {
     struct TrackedResources *tr;
@@ -293,6 +274,7 @@ static void DeleteResourceNode(struct OpenedResourceNode *orn)
     release_orn(orn);
 }
 
+/* Free snapshot of current resources */
 static void DeleteResourcesState(struct TrackedResources *rs)
 {
     struct OpenedResourceNode *orn;
@@ -316,23 +298,32 @@ void DisplayResourcesState(const struct TrackedResources *rs)
 {
     /* FIXME */
     struct OpenedResourceNode *orn;
+    IPTR tmp[3];
+    IPTR mem[1];
 
     if (!rs)
 	return;
 
+    FPuts(Output(), "LeakWatch snapshot:\n");
+
+    mem[0] = rs->freeMem;
+    VFPrintf(Output(), " Free memory : %ld bytes\n", mem);
+
+    FPuts(Output(), " Opened resources:\n");
     for(orn=(struct OpenedResourceNode *)rs->opened.lh_Head;
         orn->node.ln_Succ!=NULL;
         orn=(struct OpenedResourceNode *)orn->node.ln_Succ)
     {
-	FPuts(Output(), (STRPTR)orn->name);
-	FPuts(Output(), "\n");
+	tmp[0] = (IPTR)orn->name;
+	tmp[1] = (IPTR)orn->addr;
+	tmp[2] = (IPTR)orn->count;
+	VFPrintf(Output(), "  %s (0x%lx) : %ld\n", tmp);
     }
-
-    
+    FPuts(Output(), "--\n");
 }
 
-
-/* the ResourceDiff can have dangling pointers in old and nu, so dont clear
+/* Compute the delta between 2 resources snapshots.
+ * the ResourceDiff can have dangling pointers in old and nu, so dont clear
  * them before being done with rd in the processing loop
  */
 static struct ResourceDiff *NewStateDiff(const struct TrackedResources *old,
@@ -346,7 +337,6 @@ static struct ResourceDiff *NewStateDiff(const struct TrackedResources *old,
     if (!rd)
 	return NULL;
 
-    NEWLIST(&rd->newOpened);
     NEWLIST(&rd->modifiedOpened);
 
     for(orn=(struct OpenedResourceNode *)nu->opened.lh_Head;
@@ -370,8 +360,10 @@ static struct ResourceDiff *NewStateDiff(const struct TrackedResources *old,
 			struct ModifiedResource *mr = get_mr();
 			if (!mr)
 			    return NULL;
-			mr->before = other;
-			mr->after = orn;
+			mr->name = other->name;
+			mr->addr = other->addr;
+			mr->before_count = other->count;
+			mr->after_count = orn->count;
 			Enqueue(&rd->modifiedOpened, (struct Node *)mr);
 		    }
 		}
@@ -379,11 +371,16 @@ static struct ResourceDiff *NewStateDiff(const struct TrackedResources *old,
 	}
 	if (!seen)
 	{
-	    struct NewResource *nr = get_nr();
-	    if (!nr)
+	    struct ModifiedResource *mr = get_mr();
+	    if (!mr)
 		return NULL;
-	    nr->orn = orn;
-	    Enqueue(&rd->newOpened, (struct Node *)nr);
+	    
+	    mr->name = orn->name;
+	    mr->addr = orn->addr;
+	    mr->before_count = 0;
+	    mr->after_count = orn->count;
+
+	    Enqueue(&rd->modifiedOpened, (struct Node *)mr);
 	}
     }
 
@@ -400,7 +397,6 @@ static void DisplayStateDiff(const struct ResourceDiff *rd)
     IPTR modified[4];
     IPTR newv[3];
     struct ModifiedResource *mr;
-    struct NewResource *nr;
 
     FPuts(Output(), "LeakWatch report:\n");
     mem[0] = rd->memLost;
@@ -412,23 +408,12 @@ static void DisplayStateDiff(const struct ResourceDiff *rd)
 	mr->node.ln_Succ!=NULL;
 	mr=(struct ModifiedResource *)mr->node.ln_Succ)
     {
-	modified[0] = (IPTR)mr->before->name;
-	modified[1] = (IPTR)mr->before->addr;
-	modified[2] = mr->before->count;
-	modified[3] = mr->after->count;
+	modified[0] = (IPTR)mr->name;
+	modified[1] = (IPTR)mr->addr;
+	modified[2] = mr->before_count;
+	modified[3] = mr->after_count;
 	
 	VFPrintf(Output(), "  %s (0x%lx) : %ld -> %d\n", modified);
-    }
-
-    FPuts(Output(), " Newly opened:\n");
-    for(nr=(struct NewResource *)rd->newOpened.lh_Head;
-	nr->node.ln_Succ!=NULL;
-	nr=(struct NewResource *)nr->node.ln_Succ)
-    {
-	newv[0] = (IPTR)nr->orn->name;
-	newv[1] = (IPTR)nr->orn->addr;
-	newv[2] = nr->orn->count;
-	VFPrintf(Output(), "  %s (0x%lx) : %ld\n", newv);
     }
 
     FPuts(Output(), "--\n");
@@ -440,7 +425,6 @@ static void DeleteStateDiff(struct ResourceDiff *rd)
     /* FIXME */
     struct ModifiedResource *mr;
     struct ModifiedResource *tmpmr;
-    struct NewResource *nr;
     struct NewResource *tmpnr;
 
     if (!rd)
@@ -454,16 +438,6 @@ static void DeleteStateDiff(struct ResourceDiff *rd)
 	Remove((struct Node *)mr);
 	
 	release_mr(mr);
-    }
-    
-    for(nr=(struct NewResource *)rd->newOpened.lh_Head;
-        nr->node.ln_Succ!=NULL;
-        nr=tmpnr)
-    {
-	tmpnr = (struct NewResource *)nr->node.ln_Succ;
-	Remove((struct Node *)nr);
-	
-	release_nr(nr);
     }
 
     release_rd(rd);
@@ -516,7 +490,7 @@ int main(void)
     struct TrackedResources *start_rs = NULL;
     BOOL quitme = FALSE;
 
-    FPuts(Output(), "LeakWatch running, CTRL-C to exit, CTRL-E to watch for leaks since beginning, CTRL-F to watch for leaks since last CTRL-F\n");
+    FPuts(Output(), "LeakWatch running, CTRL-C to exit, CTRL-E to watch for leaks since beginning, CTRL-F to watch for leaks since last CTRL-F, CTRL-D for an usage snapshot\n");
     crs = NewResourcesState();
     start_rs = CopyResourcesState(crs);
 
@@ -524,7 +498,16 @@ int main(void)
     {
 	ULONG signals;
 
-	signals = Wait(SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_C);
+	signals = Wait(SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_C);
+
+	if (signals & SIGBREAKF_CTRL_D)
+	{
+	    struct TrackedResources *tr;
+
+	    tr = NewResourcesState();
+	    DisplayResourcesState(tr);
+	    DeleteResourcesState(tr);
+	}
 	if (signals & SIGBREAKF_CTRL_E)
 	{
 	    struct ResourceDiff *rd = NULL;
