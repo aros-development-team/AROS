@@ -520,9 +520,12 @@ endif
 
 #MM- %(mmake) : setup includes linklibs %(mmake)-quick
 
+%(mmake)-PATH := PATH=$(TOOLDIR):$$PATH
+
 #MM
 %(mmake)-quick : $(GENDIR)/$(CURDIR)/.configured
-	@if ! $(MAKE) PROGDIR="PROGDIR:" -q -C $(GENDIR)/$(CURDIR); then \
+        @$(%(mmake)-PATH); \
+	 if ! $(MAKE) PROGDIR="PROGDIR:" -q -C $(GENDIR)/$(CURDIR); then \
 	    $(MAKE) PROGDIR="PROGDIR:" -C $(GENDIR)/$(CURDIR); \
 	    ret=$$?; \
 	    if [ $$ret -ne 0 ] ; then \
@@ -574,7 +577,7 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	%mkdirs_q $(GENDIR)/$(CURDIR)
 	cd $(GENDIR)/$(CURDIR); \
 	    $(RM) config.cache; \
-	    PATH=$(TOOLDIR):$$PATH \
+	    $(%(mmake)-PATH); \
 	    AR=$(AR2) RANLIB=$(RANLIB2) OBJCOPY="$(OBJCOPY)" \
 	    CC="$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-gcc $(%(mmake)-nix)" \
 	    CC_FOR_BUILD="$(HOST_CC)" \
