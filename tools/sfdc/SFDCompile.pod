@@ -321,3 +321,52 @@ Initial release.
 Added workaround for workbench.library (base name is "wb").
 Added AmigaOS 4 support.
 Added the --addvectors switch.
+
+
+=item B<1.2 (2004-06-16)>
+
+Generates files for mathieeedoub*, though probably broken. Well they
+are the same as fd2inline generates at least.
+
+
+=item B<1.2a (2004-06-20)>
+
+Replace AROS_LP with AROS_LD. Because it is guaranteed to define the
+function prototype. [verhaegs]
+
+=item B<1.3 (2004-11-12)>
+
+Correctly handle the argument C<type **arg>, where there is no
+whitespace between the argument type and the argument name.
+
+=item
+
+Correctly handle the prototype C<void function (void)>, were there is
+a whitespace between the function name and the parenthesis and "void"
+is used to indicate no arguments.
+
+=item
+
+Replace C<-> with C<_> in base/library name.
+
+=item
+
+New special keyword for register specification (in addition to B<sysv>
+and B<base>): B<autoreg>, which automatically allocates m68k registers
+for the arguments.
+
+=item
+
+B<sysv> now works correctly with varargs functions. B<sysv> combined
+with B<gatestubs> work for m68k and i386 only for now. For AROS
+targets in B<macros>, the correct AROS macro is used to fetch the
+function to be called.
+
+=item
+
+New B<--mode>: B<functable>. For proper code generation in AROS, make
+sure gateprotos are included before you include the functable.
+
+=item
+
+B<proto> files now include F<Include/defines/> files when used in AROS.

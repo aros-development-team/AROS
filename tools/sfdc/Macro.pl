@@ -133,13 +133,24 @@ BEGIN {
 		    $argtypes = "$sfd->{basetype}, $argtypes";
 		}
 	    }
-
-	    # Skip jmp instruction (is m68k ILLEGAL in MOS)
-	    my $o = $$prototype{'bias'} - 2;
 	    
 	    print "	({$$prototype{'return'} (*_func) ($argtypes) = \\\n";
 	    print "	    ($$prototype{'return'} (*) ($argtypes))\\\n";
-	    print "	    *((ULONG*) (((char*) $self->{BASE}) - $o));\\\n";
+
+	    if ($$classes{'target'} eq 'morphos') {
+		# Skip jmp instruction (is m68k ILLEGAL in MorphOS)
+		my $o = $$prototype{'bias'} - 2;
+		print "	    *((ULONG*) (((char*) $self->{BASE}) - $o));\\\n";
+	    }
+	    elsif ($classes->{target} eq 'aros') {
+		my $o = $$prototype{'bias'} / 6;
+		print "	    __AROS_GETVECADDR($self->{BASE}, $o);\\\n";
+	    }
+	    else {
+		my $o = $$prototype{'bias'};
+		print "	    (((char*) $self->{BASE}) - $o);\\\n";
+	    }
+
 	    print "	  (*_func)(";
 
 	    if (!$prototype->{nb}) {

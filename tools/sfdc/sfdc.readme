@@ -1,4 +1,4 @@
-Short:    Compile SFD files into someting useful
+Short:    Compile SFD files into someting useful (v1.3)
 Author:   Martin Blom <martin@blom.org>
 Type:     dev/gcc
 Requires: perl
