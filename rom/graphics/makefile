@@ -5,7 +5,7 @@ SPECIAL_CFLAGS=-I/usr/include
 
 include $(TOP)/config/make.cfg
 
-FILES = graphics_init graphics_functable graphics_driver
+FILES = graphics_init graphics_functable
 FUNCTIONS = \
 	closefont \
 	draw \
@@ -42,10 +42,6 @@ setup :
 
 clean:
 	$(RM) $(OSGENDIR) *.err
-
-$(OSGENDIR)/driver_x11.o: driver_x11.c
-	$(CC) $(CFLAGS) $(X11CCFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err

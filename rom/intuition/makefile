@@ -5,7 +5,7 @@ SPECIAL_CFLAGS = -I/usr/include
 
 include $(TOP)/config/make.cfg
 
-FILES = intuition_init intuition_functable intuition_driver gadgets \
+FILES = intuition_init intuition_functable gadgets \
 	boolgadgets propgadgets boopsigadgets \
 	imageclass frameiclass icclass buttongclass gadgetclass
 FUNCTIONS = \
@@ -66,10 +66,6 @@ setup :
 
 clean:
 	$(RM) $(OSGENDIR) *.err
-
-$(OSGENDIR)/intui_x11.o: intui_x11.c
-	$(CC) $(CFLAGS) $(X11CCFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
