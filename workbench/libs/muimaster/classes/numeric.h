@@ -13,7 +13,7 @@ struct MUI_NumericData
     char buf[50];
 };
 
-enum flags {
+enum numeric_flags {
     NUMERIC_REVERSE = (1<<0),
     NUMERIC_REVLEFTRIGHT = (1<<1),
     NUMERIC_REVUPDOWN = (1<<2),
