@@ -50,33 +50,42 @@ static const char THIS_FILE[] = __FILE__;
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    
     ASSERT_VALID_PTR(vp);
-    ASSERT_VALID_PTR(table);
+    ASSERT_VALID_PTR_OR_NULL(table);
 
-    driver_LoadRGB32 (vp, table, GfxBase);
-
-    while (*table)
+    /* it is legal to pass a NULL table */
+    
+    if (table)
     {
-        ULONG count, first, t;
+        ULONG count;
 	
-	count = (*table) >> 16;
-	first = (*table) & 0xFFFF;
+	driver_LoadRGB32 (vp, table, GfxBase);
 
-	table ++;
-
-	for (t = 0; t < count; t++)
+        /* table is terminated by a count value of 0 */
+	
+	while ((count = (*table) >> 16))
 	{
-	    SetRGB32CM (vp->ColorMap,
-	    		t + first,
-			table[0],
-			table[1],
-			table[2]);
+            ULONG first, t;
 
-	    table += 3;
-	}
+	    first = (*table) & 0xFFFF;
 
-    } /* while (*table) */
+	    table ++;
 
+	    for (t = 0; t < count; t++)
+	    {
+		SetRGB32CM (vp->ColorMap,
+	    		    t + first,
+			    table[0],
+			    table[1],
+			    table[2]);
+
+		table += 3;
+	    }
+
+	} /* while (*table) */
+    }
+    
     AROS_LIBFUNC_EXIT
     
 } /* LoadRGB32 */
