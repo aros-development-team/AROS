@@ -56,50 +56,6 @@ extern struct Library *MUIMasterBase;
 #define ZTL_CENTER  2
 #define ZTL_RIGHT   3
 
-#define DEFAULT_TEXT_ALIGN ZTL_LEFT
-
-/*-------------*/
-
-struct line_bounds_datas {
-    ZText *text;
-    Object *obj;
-};
-
-struct chunk_bounds_datas {
-    ZTextLine *line;
-    struct line_bounds_datas *lbd;
-};
-
-/*-------------*/
-
-struct line_draw_datas {
-    ZText *text;
-    Object *obj;
-    WORD left;
-    WORD right;
-    WORD top;
-    WORD yoffset; /* incremented by each line draw */
-};
-
-struct chunk_draw_datas {
-    ZTextLine *line;
-    struct line_draw_datas *ldd;
-    WORD xoffset; /* incremented by each chunk draw */
-};
-
-/*-------------*/
-
-struct line_pos_datas {
-    ZText *text;
-    Object *obj;
-    WORD left;
-    WORD right;
-    WORD *realleft;
-    WORD *realright;
-};
-
-/************************/
-
 struct zune_context
 {
     LONG pen;
@@ -107,14 +63,35 @@ struct zune_context
     UBYTE align;
 
     ZTextLine *line;
-    char *text_start;
-    char *text;
+    const char *text_start;
+    const char *text;
     CONST_STRPTR imspec;
-    Object               *obj; /* Area subclass, see List_CreateImage */
+    Object       *obj; /* Area subclass, see List_CreateImage */
 };
 
-static ZTextLine *zune_text_parse_line (STRPTR *s, struct zune_context *zc,
+ZText *zune_text_new (CONST_STRPTR preparse, CONST_STRPTR content, int argtype, TEXT argbyte);
+char *zune_text_iso_string(ZText *text);
+void zune_text_destroy (ZText *text);
+void zune_text_chunk_new(struct zune_context *zc);
+static int strlenlf(const char *str);
+static CONST_STRPTR parse_escape_code (ZTextLine *ztl, struct zune_context *zc, CONST_STRPTR s);
+static ZTextLine *zune_text_parse_line (CONST_STRPTR *s, struct zune_context *zc,
 					int *argtype, int arg);
+void zune_text_get_bounds (ZText *text, Object *obj);
+void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top);
+void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WORD top,
+			    LONG cursorx, LONG cursory);
+void zune_text_draw_single (ZText *text, Object *obj, WORD left, WORD right, WORD top,
+			    LONG xpos, LONG ypos, BOOL cursor);
+int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y,
+			   struct ZTextLine **line_ptr, struct ZTextChunk **chunk_ptr,
+			   int *offset_ptr, int *len_ptr);
+int zune_text_get_line_len(ZText *text, Object *obj, LONG y);
+int zune_get_xpos_of_line(ZText *text, Object *obj, LONG y, LONG xpixel);
+int zune_text_get_lines(ZText *text);
+int zune_make_cursor_visible(ZText *text, Object *obj, LONG cursorx, LONG cursory,
+			     LONG left, LONG top, LONG right, LONG bottom);
+int zune_text_merge(ZText *text, Object *obj, int x, int y, ZText *tomerge);
 
 
 /**************************************************************************
@@ -125,7 +102,8 @@ ZText *zune_text_new (CONST_STRPTR preparse, CONST_STRPTR content, int argtype, 
     ZText *text;
     /* STRPTR *lines; */
     /* int i; */
-    char *dup_content, *buf;
+    STRPTR dup_content;
+    CONST_STRPTR buf;
     int preparse_len;
     struct zune_context zc;
     int arg;
@@ -162,7 +140,7 @@ ZText *zune_text_new (CONST_STRPTR preparse, CONST_STRPTR content, int argtype, 
 
     while (1)
     {
-	struct ZTextLine *ztl = zune_text_parse_line((STRPTR *)&buf, &zc, &argtype, arg);
+	struct ZTextLine *ztl = zune_text_parse_line(&buf, &zc, &argtype, arg);
 	if (ztl) AddTail((struct List*)&text->lines,(struct Node*)ztl);
 	else break;
 	if (*buf == '\n')
@@ -328,7 +306,7 @@ static int strlenlf(const char *str)
  Note: Only aligments at the beginning of a line should affect this line
  (tested in MUI)
 **************************************************************************/
-static STRPTR parse_escape_code (ZTextLine *ztl, struct zune_context *zc, STRPTR s)
+static CONST_STRPTR parse_escape_code (ZTextLine *ztl, struct zune_context *zc, CONST_STRPTR s)
 {
     unsigned char c;
     c = *s;
@@ -421,9 +399,9 @@ static STRPTR parse_escape_code (ZTextLine *ztl, struct zune_context *zc, STRPTR
 
  Note that the contents in s_ptr is overwritten.
 **************************************************************************/
-static ZTextLine *zune_text_parse_line (STRPTR *s_ptr, struct zune_context *zc, int *argtype, int arg)
+static ZTextLine *zune_text_parse_line (CONST_STRPTR *s_ptr, struct zune_context *zc, int *argtype, int arg)
 {
-    STRPTR s;
+    CONST_STRPTR s;
     UBYTE c;
 
     ZTextLine *ztl;
