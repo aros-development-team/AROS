@@ -41,3 +41,7 @@ struct IntBOOPSIBase
 #define GetBBase(lib)           ((struct IntBOOPSIBase *)(lib))
 #define SysBase 		(GetBBase(BOOPSIBase)->bb_SysBase)
 #define UtilityBase		(GetBBase(BOOPSIBase)->bb_UtilityBase)
+
+extern Class rootclass;
+extern struct IClass *InitICClass(struct Library *base);
+extern struct IClass *InitModelClass(struct Library *base);
