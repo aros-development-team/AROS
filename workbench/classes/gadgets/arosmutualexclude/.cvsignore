@@ -3,3 +3,4 @@ arosmutualexclude_endtag.c
 libdefs.h
 mmakefile
 *.err
+*.map

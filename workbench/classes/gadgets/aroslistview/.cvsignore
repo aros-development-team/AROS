@@ -4,3 +4,4 @@ aroslistview_functable.c
 libdefs.h
 mmakefile
 *.err
+*.map
