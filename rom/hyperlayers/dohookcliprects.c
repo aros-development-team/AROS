@@ -101,9 +101,10 @@
 	{
 	    /* yes, that's a layer to be considered */
 	    /* I want nobody else to interrupt me while I call the hook for this layer */
-	    struct ClipRect * CR = L->ClipRect;
+	    struct ClipRect * CR;
 	    LockLayer(0, L);
 
+    	    CR = L->ClipRect; /* must not read this before LockLayer!! */
 	    /*
 	    ** Set rport->Layer to NULL, so that the hook function does not
 	    ** need to clone the rport and set clonerp->Layer to NULL in
