@@ -10,6 +10,7 @@
 
 #include <proto/alib.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <libraries/mui.h>
@@ -118,7 +119,7 @@ long int min, max;
     char *out;
     BOOL running = TRUE;
     Object *st, *wc;
-    ULONG val, sigs;
+    ULONG val, sigs = 0;
 
 	out = StrDup("TEST");
 
@@ -145,12 +146,11 @@ long int min, max;
 
 	    while (running)
 	    {
-		switch (val = DoMethod(app,MUIM_Application_Input,(IPTR)&sigs))
+		switch (val = DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
 		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
-			DelContents(wc);
-			quit = TRUE;
+			quit = TRUE; running = FALSE;
 			break;
 		    case Push_Proceed:
 			GetAttr(MUIA_String_Integer, st, &retval);
@@ -162,6 +162,9 @@ long int min, max;
 		    default:
 			break;
 		}
+		
+		sigs = CheckSignal(SIGBREAKF_CTRL_C | sigs);
+
 	    }
 	    GetAttr(MUIA_String_Integer, st, &retval);
 
@@ -184,7 +187,7 @@ char *retval, *string;
     char *out;
     BOOL running = TRUE;
     Object *st, *wc;
-    ULONG val, sigs;
+    ULONG val, sigs = 0;
 
 	out = StrDup("test");
 
@@ -211,12 +214,11 @@ char *retval, *string;
 
 	    while (running)
 	    {
-		switch (val = DoMethod(app,MUIM_Application_Input,(IPTR)&sigs))
+		switch (val = DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
 		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
-			DelContents(wc);
-			quit = TRUE;
+			quit = TRUE; running = FALSE;
 			break;
 		    case Push_Proceed:
 			running = FALSE;
@@ -224,6 +226,8 @@ char *retval, *string;
 		    default:
 			break;
 		}
+		sigs = CheckSignal(SIGBREAKF_CTRL_C | sigs);
+
 	    }
 	    get(st, MUIA_String_Contents, (IPTR *)&string);
 
@@ -231,6 +235,7 @@ char *retval, *string;
 	}
 	FreeVec(out);
     }
+    retval = string;
 
 return retval;
 }
@@ -238,14 +243,18 @@ return retval;
 
 int main()
 {
+char *string;
+long int *intval;
 
     init_gui();
 
     for(;;)
     {
-	request_string("blah");
+	string = request_string("blah");
+	printf("you entered string <%s>\n",string);
 	if(quit) break;
-	request_number(99);
+	intval = request_number(99);
+	printf("you entered number <%ld>\n",intval);
 	if(quit) break;
     }
     deinit_gui();
