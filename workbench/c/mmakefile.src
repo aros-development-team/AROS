@@ -60,6 +60,7 @@ FILES	:= \
     devlist \
     dir \
     echo \
+    execute \
     liblist \
     makedir \
     mount \
@@ -70,17 +71,17 @@ FILES	:= \
     screenpattern \
     setclock \
     setlocale \
+    shell \
     sort \
     stacksnoop \
     tasklist \
     type \
     wait \
     rename \
-    why 
-
+    why
 
 # I'd like to move this into a rule, but it would be far too hard.
-EXES := $(foreach f,$(FILES),$(AROS_C)/$(f))
+EXES := $(foreach f,$(FILES), $(AROS_C)/$(f))
 USER_CFLAGS := -I$(TOP)/rom/dos
 
 USE_CLIB_SHARED := yes
