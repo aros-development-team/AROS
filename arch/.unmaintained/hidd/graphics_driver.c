@@ -974,8 +974,8 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy
     
     brd = (struct bitmap_render_data *)bitmap_rd;
     
-kprintf("bitmap_render(%p, %d, %d, %p, %p, %d, %d, %d, %d, %p)\n"
-	, bitmap_rd, srcx, srcy, dstbm_obj, dst_gc, x1, y1, x2, y2, GfxBase);
+//kprintf("bitmap_render(%p, %d, %d, %p, %p, %d, %d, %d, %d, %p)\n"
+//	, bitmap_rd, srcx, srcy, dstbm_obj, dst_gc, x1, y1, x2, y2, GfxBase);
 	
 	
     /* Get some info on the colormaps. We have to make sure
