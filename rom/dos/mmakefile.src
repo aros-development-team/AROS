@@ -59,7 +59,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 	     matchpatternnocase maxcli namefromlock newloadseg nextdosentry \
 	     open openfromlock output parentdir parentoffh parsepattern \
 	     parsepatternnocase pathpart printfault putstr read readargs \
-	     readitem relabel remassignlist remdosentry remsegment rename \
+	     readitem relabel readlink remassignlist remdosentry remsegment rename \
 	     replypkt runcommand samedevice samelock seek selectinput \
 	     selectoutput sendpkt setargstr setcomment setconsoletask \
 	     setcurrentdirname setfiledate setfilesize setfilesystask \
