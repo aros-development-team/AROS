@@ -157,7 +157,7 @@ struct TextFont *ConvDiskFont(
     COPYPTR(ptr, charloc_ptr); /* tf_CharLoc		*/
     COPYPTR(ptr, charspace_ptr); /* tf_CharSpace	*/
     COPYPTR(ptr, charkern_ptr); /* tf_CharKern		*/
-
+ 
 D(bug("Textfont struct converted\n"));
     D(bug("YSize:     %d\n",	tmp_tf.tf_YSize));
     D(bug("Style:     %d\n",	tmp_tf.tf_Style));
@@ -174,7 +174,7 @@ D(bug("Textfont struct converted\n"));
     D(bug("charkern:  %p\n", 	charkern_ptr));
 
     /* Allocate memory for font */
-    tf = AllocVec( tmp_tf.tf_Style & FSF_COLORFONT ? 
+    tf = AllocVec( (tmp_tf.tf_Style & FSF_COLORFONT) ? 
 			    sizeof (struct ColorTextFont) : sizeof (struct TextFont)
 		  ,  MEMF_ANY|MEMF_CLEAR);
     if (!tf)
@@ -210,6 +210,7 @@ D(bug("Textfont struct converted\n"));
 	CONVBYTE(ptr, CTF(tf)->ctf_PlanePick);
 	CONVBYTE(ptr, CTF(tf)->ctf_PlaneOnOff);
 	COPYPTR(ptr,  cfc_ptr);
+
 	for (i = 0; i < 8; i ++ )
 	{
 	    COPYPTR(ptr,  ctf_chardata_ptrs[i]);
@@ -253,7 +254,9 @@ D(bug("Textfont struct converted\n"));
 		goto failure;
 
 	    CopyMem(ctf_chardata_ptrs[i], CTF(tf)->ctf_CharData[i], chardatasize); 
+
 	}
+
     }
     else
     {
@@ -268,9 +271,9 @@ D(bug("Textfont struct converted\n"));
 
     /* ----------------------- */
     /* Add fontname */
-    if (!(tf->tf_Message.mn_Node.ln_Name = AllocVec( strlen(fontname) + 1, MEMF_ANY)))
+    if (!(tf->tf_Message.mn_Node.ln_Name = AllocVec( strlen(FilePart(fontname)) + 1, MEMF_ANY)))
 	goto failure;
-    strcpy(tf->tf_Message.mn_Node.ln_Name, fontname);
+    strcpy(tf->tf_Message.mn_Node.ln_Name, FilePart(fontname));
 
     D(bug("Fontname copied, %s\n", fontname));
 
@@ -495,19 +498,27 @@ struct TextFont *ReadDiskFont(
 			
     /* Allocate mem for constructed filename */
     filename = AllocVec(   sizeof (FONTSDIR) + len  + sizeof("/") 
-    				+ strlen(ysizebuf) + 1
+    				+ strlen(ysizebuf) + 1 + 1
 			 , MEMF_ANY);
 		
     if (filename)
     { 
 	BPTR fh, seglist;
 	
-	strcpy (filename, FONTSDIR);
+	if (!(strchr(reqattr->tta_Name, ':')))
+	{
+	    strcpy (filename, FONTSDIR);
+	}
+	else
+	{
+	    filename[0] = 0;
+	}
+	
 	strncat(filename, reqattr->tta_Name, len);
 	strcat (filename, "/");
 	strcat (filename, ysizebuf);
-		
-	
+	if (reqattr->tta_Style & FSF_COLORFONT) strcat(filename, "c");
+
 	if ((fh = Open(filename, MODE_OLDFILE)) != 0)
 	{
 	    if ((seglist = LoadSeg(filename)) != 0)
