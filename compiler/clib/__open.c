@@ -197,6 +197,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 	    goto success;
 	}
         FreeDosObject(DOS_FIB, fib);
+	fib = NULL;
     }
 
     /* the file exists and it's not a directory or the file doesn't exist */
