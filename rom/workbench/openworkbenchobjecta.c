@@ -193,40 +193,29 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
             struct CommandLineInterface *cli = Cli();
             if (cli != NULL)
             {
-                BPTR  lock = NULL, /* Lock on the executable file */
-                      cd   = NULL, /* Saved current directory */
-                     *paths;       /* Path list */
+                BPTR *paths;          /* Path list */
+                BOOL  running = TRUE;
                 
-                /* Save current directory */
-                cd = CurrentDir(NULL);
-                CurrentDir(cd);
-               
                 /* Iterate over all paths in the path list */
                 for
                 (
                     paths = (BPTR *) BADDR(cli->cli_CommandDir);
-                    lock == NULL && paths != NULL;
+                    running == TRUE && paths != NULL;
                     paths = (BPTR *) BADDR(paths[0]) /* next path */
                 )
                 {
-                    CurrentDir(paths[1]);
-                    lock = Lock(name, SHARED_LOCK);
-                }
-                
-                /* Restore current directory */
-                CurrentDir(cd); 
-                
-                /* Launch the program */
-                if (lock != NULL)
-                {
-                    STRPTR path = AllocateNameFromLock(lock);
-                    if (path != NULL)
+                    BPTR cd   = CurrentDir(paths[1]);
+                    BPTR lock = Lock(name, SHARED_LOCK);
+                    
+                    if (lock != NULL)
                     {
-                        success = OpenWorkbenchObjectA(path, tags);
-                        FreeVec(path);
+                        success = OpenWorkbenchObjectA(name, tags);
+                        running = FALSE;
+                        
+                        UnLock(lock);
                     }
                     
-                    UnLock(lock);
+                    CurrentDir(cd);
                 }
             }
         }
@@ -247,7 +236,7 @@ STRPTR __CLI_BuildCommandLine
     struct TagItem *tag      = NULL;
     BPTR            lastLock = NULL;
     STRPTR          buffer   = NULL;
-    ULONG           length   = strlen(command) + 1 /* NULL */;
+    ULONG           length   = strlen(command) + 3 /* NULL + 2 '"' */;
     
     /*-- Calculate length of resulting string ------------------------------*/
     while ((tag = NextTagItem(&tstate)) != NULL)
@@ -289,7 +278,9 @@ STRPTR __CLI_BuildCommandLine
         buffer[0] = '\0';
         
         /*-- Build command line --------------------------------------------*/
+        strcat(buffer, "\"");
         strcat(buffer, command);
+        strcat(buffer, "\"");
         
         tstate = tags; lastLock = NULL;
         while ((tag = NextTagItem(&tstate)) != NULL )
