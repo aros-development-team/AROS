@@ -17,5 +17,8 @@
 void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 	    struct IntuitionBase * IntuitionBase);
 
+void RefreshBoolGadgetState(struct Gadget * gadget, struct Window * window,
+    	    	    	    struct IntuitionBase *IntuitionBase);
+
 #endif /* _BOOLGADGETS_H_ */
 
