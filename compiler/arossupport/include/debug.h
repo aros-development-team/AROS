@@ -182,7 +182,20 @@
 
 /* Memory munging macros
  */
-#define MUNGWALL_SIZE	16
+ 
+/* MUNGWALL_SIZE must be a multiple of MEMCHUNK_TOTAL, otherwise for example
+   rom/exec/allocate complains, because the return value (memory pointer) of
+   AllocMem would not be a multiple of MEMCHUNK_TOTAL anymore.
+   
+   See rom/exec/allocmem and rom/exec/freemem for more info. 
+   
+   The "32 *" probably makes sure that you get a multiple of MEMCHUNK_TOTAL on
+   every machine, because on 32 bit machines MEMCHUNK_TOTAL will be 8 and
+   on 64 bit machines it will be 16, and it would even work on 128 bit machines
+   because I guess there MEMCHUNK_TOTAL will be 32 */
+   
+#define MUNGWALL_SIZE (32 * 3)
+
 #if AROS_SIZEOFULONG == 4
 #    define MEMFILL_FREE	0xDEADBEEFL
 #    define MEMFILL_ALLOC	0xC0DEDBADL
