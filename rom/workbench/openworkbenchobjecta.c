@@ -464,11 +464,10 @@ BOOL __WB_BuildArguments
         LONG i      = 0;
         BOOL error  = FALSE;
         
-	#warning "CHECKME: if the check fails (goto error), lock gets UnLock()ed, but may it?"
         if
         (
-               (args[i].wa_Lock = lock)         == NULL
-            || (args[i].wa_Name = StrDup(name)) == NULL
+               (args[i].wa_Lock = DupLock(lock)) == NULL
+            || (args[i].wa_Name = StrDup(name))  == NULL
         )
         {
             goto error;
