@@ -96,7 +96,7 @@ c00007;1;hkiel;Write C:Copy
 c00008;1;laguest;Write C:CPU
 c00009;2;srittau;Write C:Date
 c00010;2;SDuvan;Write C:Delete
-c00011;1;digulla;Write C:Dir
+c00011;1;digulla,SDuvan;Write C:Dir
 c00012;2;matthias;Write C:Echo
 c00013;2;SDuvan;Write C:Else
 c00014;2;SDuvan;Write C:Endif
@@ -111,15 +111,14 @@ c00022;2;SDuvan;Write C:If
 c00023;1;Stephan Rupprecht,SDuvan;Write C:Info
 c00024;2;chodorowski,SDuvan;Write C:Join
 c00025;2;SDuvan;Write C:Lab
-c00026;1;matthias;librarytest
-c00027;1;matthias,bergers;Write C:List
+c00027;1;matthias,bergers,SDuvan;Write C:List
 c00028;2;SDuvan;Write C:MakeLink
 c00029;2;matthias,SDuvan;Write C:MakeDir
 c00030;2;matthias;Write C:Mount
 c00031;1;matthias;Write C:NewShell
 c00032;2;matthias;Write C:Path
 c00033;2;SDuvan;Write C:Prompt
-c00034;1;laguest;Write C:Protect
+c00034;2;laguest,SDuvan;Write C:Protect
 c00035;2;SDuvan;Write C:Quit
 c00036;2;SDuvan;Write C:Relabel
 c00037;2;laguest,SDuvan;Write C:Rename
