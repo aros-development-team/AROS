@@ -63,7 +63,6 @@ Boston, MA 02111-1307, USA.  */
 #include "mem.h"
 #include "var.h"
 #include "dep.h"
-#include "dirnode.h"
 #include "project.h"
 
 /* globals */
