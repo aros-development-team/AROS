@@ -9,6 +9,8 @@
 #include <proto/intuition.h>
 #include <graphics/gfxmacros.h>
 #include <intuition/cghooks.h>
+#include <intuition/intuition.h>
+#include <intuition/imageclass.h>
 #include "intuition_intern.h"
 #include "propgadgets.h"
 #include "gadgets.h"
@@ -693,6 +695,15 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 		} /* not PROPNEWLOOK */
 
 	    } /* if (flags & AUTOKNOB) */
+	    else
+	    {
+	        DrawImageState(rp,
+			       (struct Image *)gadget->GadgetRender,
+			       knob->Left,
+			       knob->Top,
+			       IDS_NORMAL,
+			       dri);
+	    }
 	    ReleaseGIRPort(rp);
 	    
 	} /* if ((rp = ObtainGIRPort(&gi))) */
