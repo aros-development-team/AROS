@@ -14,46 +14,19 @@ USER_INCLUDES := -I.
 XSHM_INCLUDES := -I$(SYS_INCLUDES)
 endif
 
-USER_INCLUDES := $(USER_INCLUDES) -I$(SYS_INCLUDES)
-
+USER_INCLUDES += -I$(SYS_INCLUDES)
 OS_INCLUDES := -I$(GENINCDIR)
-
-CFLAGS2 = $(HOST_CFLAGS) $(USER_INCLUDES) $(OS_INCLUDES) -D__AROS__
 
 X11KEYMAPTABLE_FILE := $(DEVSDIR)/Keymaps/X11/keycode2rawkey.table
 
-FILES	   := x11 support x11gfx onbitmap offbitmap x11_init support x11kbd x11mouse
+FILES	   := x11 support x11gfx onbitmap offbitmap support x11kbd x11mouse xshm
 
-OBJDIR := $(GENDIR)/$(CURDIR)
-END_FILE := $(OBJDIR)/endtag
-ENDFUNC := $(END_FILE).o
-OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) $(OBJDIR)/functable.o $(OBJDIR)/xshm.o
-LIB	:= $(LIBDIR)/libx11cl.a
-KOBJ    := $(KOBJSDIR)/x11gfx_hidd.o
-
-#MM hidd-graphics-linklib-quick
-hidd-graphics-linklib-quick : $(LIB)
-
-#MM
-hidd-graphics-x11 : $(LIB) setup
-
-#MM
-kernel-x11gfx-kobj : $(KOBJ)
-
-$(LIB) : $(OBJS)
-	%mklib_q
-
-$(KOBJ) : $(OBJS)
-	echo Linking $@
-	@$(LD) -r -o $@ $^
-
-#MM
-clean ::
-	$(RM) $(OBJS) $(LIB) $(OBJDIR) libdefs.h *.err
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR)
+%build_module_macro mmake=kernel-x11gfx \
+  modname=x11gfx modtype=hidd \
+  initfile=x11_init files=$(FILES) \
+  conffile=lib.conf \
+  compiler=host \
+  genfunctable=yes
 
 #MM x11keymaptable
 x11keymaptable : setup-x11keymaptable $(TOOLDIR)/makexkeytable $(X11KEYMAPTABLE_FILE)
@@ -98,23 +71,8 @@ setup-x11keymaptable :
 $(TOOLDIR)/makexkeytable: makexkeytable.c
 	$(HOST_CC) $(GUI_CCFLAGS) -I$(GUI_INCDIR) $(GUI_LDFLAGS) -lX11 $< -o $@ 
 
-$(OBJDIR)/%.o : %.c
-	%compile_q cmd=$(HOST_CC) opt="$(SHARED_CFLAGS) $(CFLAGS2)"
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-	
+OBJDIR := $(GENDIR)/$(CURDIR)
 $(OBJDIR)/xshm.o	: xshm.c
-	%compile_q cmd=$(HOST_CC) opt="$(SHARED_CFLAGS) $(XSHM_INCLUDES) $(CFLAGS2)"
+	%compile_q cmd=$(HOST_CC) opt="$(SHARED_CFLAGS) $(XSHM_INCLUDES) $(CFLAGS)"
 	
-%libdefs_rule
-	
-%mkfunctable_arch
-
-%mkendtag_q
-	
-x11gfx_init.o : libdefs.h
-
-
 %common
-%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d) $(END_FILE).d
