@@ -11,7 +11,7 @@ includes-copy : $(DEST_INCLUDES)
 #MM
 setup-includes :
 	@$(FOR) dir in $(INCDIR) $(INCDIR)/sys ; do \
-	    $(IF) $(TEST) ! -d "$$dir" ; then $(MKDIR) "$$dir" ; else $(NOP) ; fi \
+	    $(IF) $(TEST) ! -d "$$dir" ; then $(MKDIR) "$$dir" ; else $(NOP) ; fi ; \
 	done
 
 $(INCDIR)/%.h : %.h
