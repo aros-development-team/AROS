@@ -145,6 +145,8 @@ int main(int argc, char *argv[])
     char **ldargs;
     FILE *pipe;
     FILE *setsfile = NULL;
+    char buf[200];
+    int thereare = 0;
 
     atexit(exitfunc);
 
@@ -188,16 +190,39 @@ int main(int argc, char *argv[])
 
     ret = gensets(pipe, setsfile);
     fclose(setsfile);
+    pclose(pipe);
 
     if (ret)
     {
 	free(command);
 	command = joinstrings(GCCPATH " -nostartfiles -nostdlib -Wl,-r -o ", tempoutname, " ", output, " ", setsfilename, NULL);
 	xsystem(command);
-	xsystem(joinstrings(MVPATH " -f ", tempoutname, " ", output, NULL));
+	free(command);
+	command = joinstrings(MVPATH " -f ", tempoutname, " ", output, NULL);
+	xsystem(command);
     }
 
-    return 0;
+    free(command);
+    command = joinstrings(NMPATH " -ul ", output, NULL);
+
+    pipe = xpopen(command);
+
+    while ((cnt = fread(buf, 1, sizeof(buf), pipe))!=0)
+    {
+	if (!thereare)
+	{
+	    thereare = 1;
+	    fprintf(stderr, "There are undefined symbols in %s:\n", output);
+        }
+
+	fwrite(buf, cnt, 1, stderr);
+    }
+    fatalerror(ferror(pipe));
+
+    if (thereare)
+    	remove(output);
+
+    return thereare;
 }
 
 
