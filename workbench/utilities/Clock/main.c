@@ -38,7 +38,7 @@ char *versionString = VERSIONSTR;
 /*** Variables **************************************************************/
 /* Options ******************************************************************/
 
-static WORD optionLeft   = MUIV_Window_LeftEdge_Centered,
+static IPTR optionLeft   = MUIV_Window_LeftEdge_Centered,
             optionTop    = MUIV_Window_TopEdge_Centered,
             optionWidth  = 150,
             optionHeight = 150;
@@ -110,16 +110,16 @@ int main(void)
     GetArguments();
     
     application = ApplicationObject,
-        SubWindow, window = WindowObject,
-            MUIA_Window_Title,       MSG( MSG_WINDOW_TITLE ),
-            MUIA_Window_Activate,    TRUE,
-            MUIA_Window_NoMenus,     TRUE,
-            MUIA_Window_LeftEdge,    optionLeft,
-            MUIA_Window_TopEdge,     optionTop,
-            MUIA_Window_Width,       optionWidth,
-            MUIA_Window_Height,      optionHeight,
+        SubWindow, (IPTR) window = WindowObject,
+            MUIA_Window_Title,    (IPTR) MSG(MSG_WINDOW_TITLE),
+            MUIA_Window_Activate,        TRUE,
+            MUIA_Window_NoMenus,         TRUE,
+            MUIA_Window_LeftEdge,        optionLeft,
+            MUIA_Window_TopEdge,         optionTop,
+            MUIA_Window_Width,           optionWidth,
+            MUIA_Window_Height,          optionHeight,
             
-            WindowContents, ClockObject,
+            WindowContents, (IPTR) ClockObject,
             End,
         End,
     End;
@@ -131,7 +131,7 @@ int main(void)
         DoMethod
         ( 
             window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-            application, 2, 
+            (IPTR) application, 2, 
             MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
         );
         
@@ -139,7 +139,7 @@ int main(void)
         
         while
         ( 
-               DoMethod(application, MUIM_Application_NewInput, &signals) 
+               DoMethod(application, MUIM_Application_NewInput, (IPTR) &signals) 
             != MUIV_Application_ReturnID_Quit
         )
         {
