@@ -6,6 +6,9 @@
 #
 
 if cmp -s "$1" "$2"; then
+    true
+else
+    echo "Replacing $2 by $1"
     mv "$2" "$2.bak"
     mv "$1" "$2"
 fi
