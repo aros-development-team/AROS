@@ -69,5 +69,7 @@ int main(void)
 	
     } else printf("AllocIFF failed!\n");
     
+    CloseLibrary(IFFParseBase);
+
     return 0;
 }
