@@ -1,12 +1,14 @@
+#include <sys/types.h>
+#include <stdio.h>
+#include <stddef.h>
 #include <exec/alerts.h>
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <dos/dosextens.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <signal.h>
+#include <asm/sigcontext.h>
 #include "machine.h"
+#include "etask.h"
 
 #define FuncOffset(x)       (int)__AROS_GETJUMPVEC(0,x)
 
@@ -18,16 +20,13 @@ int main (void)
 	"#define AROS_SLIB_ENTRY(n,s)   s ## _ ## n\n"
 	    "\n");
 
-    printf ("# For sigprocmask\n");
-    printf ("#define SIG_BLOCK     %d\n", SIG_BLOCK);
-    printf ("#define SIG_UNBLOCK   %d\n\n", SIG_UNBLOCK);
-
     printf ("# ExecBase\n");
     printf ("#define AttnResched   %d\n", offsetof (struct ExecBase, AttnResched));
     printf ("#define IDNestCnt     %d\n", offsetof (struct ExecBase, IDNestCnt));
     printf ("#define TDNestCnt     %d\n", offsetof (struct ExecBase, TDNestCnt));
     printf ("#define TaskReady     %d\n", offsetof (struct ExecBase, TaskReady));
     printf ("#define ThisTask      %d\n", offsetof (struct ExecBase, ThisTask));
+    printf ("#define SysFlags      %d\n", offsetof (struct ExecBase, SysFlags));
 
     printf ("\n# struct Task\n");
     printf ("#define tc_State      %d\n", offsetof (struct Task, tc_State));
@@ -42,6 +41,7 @@ int main (void)
     printf ("#define tc_SPLower    %d\n", offsetof (struct Task, tc_SPLower));
     printf ("#define tc_SPUpper    %d\n", offsetof (struct Task, tc_SPUpper));
     printf ("#define tc_IDNestCnt  %d\n", offsetof (struct Task, tc_IDNestCnt));
+    printf ("#define tc_UnionETask %d\n", offsetof (struct Task, tc_UnionETask));
 
     printf ("\n# struct DosBase\n");
     printf ("#define dl_SysBase    %d\n", offsetof (struct DosLibrary, dl_SysBase));
@@ -50,6 +50,20 @@ int main (void)
     printf ("#define stk_Lower     %d\n", offsetof (struct StackSwapStruct, stk_Lower));
     printf ("#define stk_Upper     %d\n", offsetof (struct StackSwapStruct, stk_Upper));
     printf ("#define stk_Pointer   %d\n", offsetof (struct StackSwapStruct, stk_Pointer));
+
+    printf ("\n# struct sigcontext_struct\n");
+    printf ("#define sc_mask       %d\n", offsetof (struct sigcontext_struct, sc_mask));
+    printf ("#define sc_usp        %d\n", offsetof (struct sigcontext_struct, sc_usp));
+    printf ("#define sc_d0         %d\n", offsetof (struct sigcontext_struct, sc_d0));
+    printf ("#define sc_d1         %d\n", offsetof (struct sigcontext_struct, sc_d1));
+    printf ("#define sc_a0         %d\n", offsetof (struct sigcontext_struct, sc_a0));
+    printf ("#define sc_a1         %d\n", offsetof (struct sigcontext_struct, sc_a1));
+    printf ("#define sc_sr         %d\n", offsetof (struct sigcontext_struct, sc_sr));
+    printf ("#define sc_pc         %d\n", offsetof (struct sigcontext_struct, sc_pc));
+    printf ("#define sc_formatvec  %d\n", offsetof (struct sigcontext_struct, sc_formatvec));
+
+    printf ("\n# struct IntETask\n");
+    printf ("#define iet_Context   %d\n", offsetof (struct IntETask, iet_Context));
 
     printf ("\n# Task Flags\n");
     printf ("#define TS_RUN        %d\n", TS_RUN);
