@@ -1,5 +1,5 @@
 /*
-    (C) 1999-2001 AROS - The Amiga Research OS
+    Copyright (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -7,15 +7,16 @@
 */
 
 #define USE_BOOPSI_STUBS
-#include "datatypes_intern.h"
 #include <utility/tagitem.h>
 #include <dos/dostags.h>
 #include <dos/dosextens.h>
+#include <proto/dos.h>
 #include <proto/intuition.h>
 #include <intuition/intuition.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/cghooks.h>
 #include <clib/boopsistubs.h>
+#include "datatypes_intern.h"
 
 struct LayoutMessage
 {

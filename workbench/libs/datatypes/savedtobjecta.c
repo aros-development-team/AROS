@@ -1,18 +1,20 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    Copyright (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
     Lang: English
 */
-#include "datatypes_intern.h"
 #include <proto/utility.h>
 #include <proto/icon.h>
+#include <proto/dos.h>
+#include <proto/datatypes.h>
 #include <exec/memory.h>
 #include <datatypes/datatypesclass.h>
 #include <workbench/icon.h>
 #include <workbench/workbench.h>
 #include <utility/tagitem.h>
+#include "datatypes_intern.h"
 
 STRPTR CreateIconName(STRPTR name, struct Library *DataTypesBase);
 

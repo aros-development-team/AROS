@@ -1,15 +1,15 @@
 /*
-    (C) 1997-99 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
     Lang: english
 */
 #define USE_BOOPSI_STUBS
-#include "datatypes_intern.h"
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <clib/boopsistubs.h>
+#include "datatypes_intern.h"
 
 /*****************************************************************************
 
