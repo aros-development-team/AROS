@@ -7,13 +7,11 @@ FUNCS	:=  cdinputhandler rawkeyconvert
 
 #MM- kernel-console : includes linklibs
 
-%build_module_macro mmake=kernel-console \
+%build_module mmake=kernel-console \
   modname=console modtype=device \
-  initfile=console funcs=$(FUNCS) files=$(FILES) \
-  conffile=lib.conf \
+  files="console $(FUNCS) $(FILES)" \
   uselibs="amiga rom" \
-  objdir=$(GENDIR)/rom/console \
-  genfunctable=no genincludes=no
+  objdir=$(GENDIR)/rom/console
 
 #MM includes-copy
 
