@@ -214,16 +214,17 @@ void mount(struct DeviceNode *dn)
     struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
     struct IOFileSys *iofs;
     struct MsgPort *mp = CreateMsgPort();
-    
+
     if (mp != NULL)
     {
-	iofs = (struct IOFileSys *)CreateIORequest(mp, 
+	iofs = (struct IOFileSys *)CreateIORequest(mp,
 						   sizeof(struct IOFileSys));
 	if (iofs != NULL)
 	{
 	    iofs->io_Union.io_OpenDevice.io_DeviceName = AROS_BSTR_ADDR(fssm->fssm_Device);
-	    iofs->io_Union.io_OpenDevice.io_Unit = fssm->fssm_Unit;
-	    iofs->io_Union.io_OpenDevice.io_Environ = BADDR(fssm->fssm_Environ);
+	    iofs->io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
+	    iofs->io_Union.io_OpenDevice.io_Environ    = BADDR(fssm->fssm_Environ);
+	    iofs->io_Union.io_OpenDevice.io_DosName    = dn->dn_NewName;
 	    if (!OpenDevice(AROS_BSTR_ADDR(dn->dn_Handler), 0, &iofs->IOFS, 0))
 	    {
 		if (AddDosEntry(dn))
