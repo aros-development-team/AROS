@@ -814,7 +814,7 @@ endif
 endif
 
 # Some include files need to be generated before the .c can be parsed.
-ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes),) # Only for this target these deps are wanted
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick),) # Only for this target these deps are wanted
 $(BD_REFFILES$(BDID)) : $(BD_REFFILE_DEPS$(BDID))
 $(BD_DEPS$(BDID)) : $(BD_DFILE_DEPS$(BDID))
 endif
