@@ -78,7 +78,7 @@ int main (int argc, char ** arvg)
 				argv[1]=(IPTR)flags;
 				argv[2]=(IPTR)date;
 				argv[3]=(IPTR)time;
-				if(VPrintf("%-25.s   <Dir> %7.s %-11s %s\n",argv)<0)
+				if(VPrintf("%-25.s   <Dir> %7.s %-11.s %s\n",argv)<0)
 				{
 				    error=RETURN_ERROR;
 				    loop=0;
@@ -91,7 +91,7 @@ int main (int argc, char ** arvg)
 				argv[2]=(IPTR)flags;
 				argv[3]=(IPTR)date;
 				argv[4]=(IPTR)time;
-				if(VPrintf("%-25.s %7.ld %7.s %s %s\n",argv)<0)
+				if(VPrintf("%-25.s %7.ld %7.s %-11.s %s\n",argv)<0)
 				{
 				    error=RETURN_ERROR;
 				    loop=0;
