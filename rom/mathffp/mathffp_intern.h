@@ -2,8 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.3  1997/07/04 05:59:52  bergers
+    Revision 1.4  1997/07/21 20:56:40  bergers
     *** empty log message ***
+
+    Revision 1.3  1997/07/04 05:59:52  bergers
+    Added some more constants
 
     Revision 1.2  1997/06/25 21:36:43  bergers
     *** empty log message ***
@@ -66,6 +69,16 @@ struct MathBase
 #define Zero_Bit     0x00000004  /* Flags of the 680xx CPU */
 #define Negative_Bit 0x00000008  
 #define Overflow_Bit 0x00000002  
+
+/* some Motorla fast floting point format constants  */
+#define SP_zero   0x00000000
+#define SP_pinfty 0xffffff7f
+
+/* basic constants */
+#define one      0x80000041 /*  1.00000000000000000000e+00 */
+#define minusone 0x800000c1 /* -1.00000000000000000000e+00 */
+#define two      0x80000042 /*  2.0                        */
+#define onehalf  0x80000040 /*  0.5                        */
 
 #define expunge() \
  AROS_LC0(BPTR, expunge, struct MathBase *, MathBase, 3, Mathffp)

@@ -2,8 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.2  1997/06/25 21:36:44  bergers
+    Revision 1.3  1997/07/21 20:56:40  bergers
     *** empty log message ***
+
+    Revision 1.2  1997/06/25 21:36:44  bergers
+    Improved overflow handling
 
     Revision 1.1  1997/05/30 20:50:57  aros
     *** empty log message ***
@@ -125,18 +128,17 @@
   if ((char) Res < 0)
     Res += 0x00000100;
 
-
-
   Res &= FFPMantisse_Mask;
-  Res |= Exponent;
+  Res |= (Exponent & 0x7f);
   Res |= (fnum1 & FFPSign_Mask) ^ (fnum2 & FFPSign_Mask);
 
   if ((char) Res < 0)
     SetSR(Negative_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
 
-  if ((char) Exponent < 0)
-    SetSR(Overflow_Bit, Negative_Bit | Overflow_Bit);
-
+  if ((char) Exponent < 0) 
+  {
+    SetSR(Overflow_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+    return(Res | (FFPMantisse_Mask | FFPExponent_Mask));
+  }
   return Res;
 } /* SPDiv */
-

@@ -2,11 +2,12 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.4  1997/07/04 05:59:52  bergers
+    Revision 1.5  1997/07/21 20:56:40  bergers
     *** empty log message ***
 
     Revision 1.3  1997/07/03 18:35:06  bergers
     Replaced multiple addition by multiplication -> faster now
+		Improved overflow handling
 
     Revision 1.2  1997/06/25 21:36:44  bergers
     *** empty log message ***
@@ -61,10 +62,7 @@
 
     SEE ALSO
 
-
     INTERNALS
-      ALGORITHM:
-        Pen and paper algorithm.
 
     HISTORY
 
@@ -99,7 +97,8 @@
 
   Res |= ((fnum1 & FFPSign_Mask) ^ (fnum2 & FFPSign_Mask) );
 
-  if ((char) Exponent < 0)
+  /* overflow? */
+  if ((char) Exponent < 0 || (char) Exponent == 0x7f)
   {
     SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     return (Res | (FFPMantisse_Mask + FFPExponent_Mask));
@@ -107,11 +106,8 @@
 
   Res |= Exponent;
 
-
   if ((char) Res < 0)
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;
-
 } /* SPMul */
-

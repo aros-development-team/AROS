@@ -71,7 +71,7 @@
 #define IEEESPSincos(z, y) \
     AROS_LC2(FLOAT, IEEESPSincos, \
     AROS_LPA(FLOAT, z, a0), \
-    AROS_LPA(FLOAT, y, d0)
+    AROS_LPA(FLOAT, y, d0), \
     struct MathIeeeSingTransBase *, MathIeeeSingTransBase, 9, Mathieeesptrans)
 
 #define IEEESPSinh(y) \

@@ -2,8 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.2  1997/06/25 21:36:44  bergers
+    Revision 1.3  1997/07/21 20:56:40  bergers
     *** empty log message ***
+
+    Revision 1.2  1997/06/25 21:36:44  bergers
+    Corrections
 
     Revision 1.1  1997/05/30 20:50:57  aros
     *** empty log message ***
@@ -103,13 +106,19 @@
 
   if (Shift > 0)
   {
-    Mant2 >>= Shift + 1;
+    if (Shift >= 31)
+      Mant2 = 0;
+    else
+      Mant2 >>= (Shift + 1);
     Mant1 >>= 1;
     Exponent = (fnum1 & FFPExponent_Mask) + 1;
   }
   else
   {
-    Mant1 >>= -Shift + 1;
+    if (Shift <= -31)
+      Mant1 = 0;
+    else
+      Mant1 >>= (-Shift + 1);
     Mant2 >>= 1;
     Exponent = (fnum2 & FFPExponent_Mask) + 1;
   }
@@ -133,7 +142,6 @@
       SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
       return 0;
     }
-
   }
     /* second case: sign(fnum1) != sign(fnum2)
     ** -1 <= res < 1
@@ -178,7 +186,7 @@
     return (Res | (FFPMantisse_Mask | FFPExponent_Mask));
   }
 
-  Res |= Mant1 | Exponent;
+  Res |= (Mant1 & FFPMantisse_Mask) | Exponent;
   return Res;
 } /* SPAdd */
 
