@@ -1,0 +1,19 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES         := loginwindow
+INCLUDE_FILES := loginwindow.h
+
+#MM workbench-classes-zune-loginwindow : workbench-classes-zune-loginwindow-catalogs includes
+%build_module \
+    mmake=workbench-classes-zune-loginwindow \
+    modname=LoginWindow modtype=mcc \
+    conffile=loginwindow.conf \
+    uselibs="amiga rom"
+    
+%copy_includes path=zune dir=
+    
+%common
+%include_deps
