@@ -254,6 +254,9 @@ extern int ilogbf (float);
 extern float rintf (float);
 extern float scalbnf (float, int);
 
+extern long int lrintf (float);
+
+
 /*
  * float versions of BSD math library entry points
  */
