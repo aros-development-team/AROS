@@ -169,10 +169,6 @@ static void GetVisual(void)
 static void MakePattern(void)
 {
     struct RastPort *temprp;
-    WORD y;
-    ULONG plane1dat = 0xFFFF0000;
-    ULONG plane2dat = 0x0000FFFF;
-    ULONG bpr;
 
     if (!(patternbm = AllocBitMap(PATTERNWIDTH * 2,
 				  PATTERNHEIGHT * 2,
@@ -190,25 +186,6 @@ static void MakePattern(void)
 
     temprp->BitMap = patternbm;
 
-
-    /* AROS gfx functions don't like non visible
-       offscreenbitmaps yet, so for now let's do it
-       this way */
-
-    bpr = GetBitMapAttr(patternbm,BMA_WIDTH) / 8;
-
-    for(y = 0;y < PATTERNHEIGHT;y++)
-    {
-	if (y == PATTERNHEIGHT / 2)
-	{
-	    plane1dat = (plane1dat << 16) + (plane1dat >> 16);
-	    plane2dat = (plane2dat << 16) + (plane2dat >> 16);
-	}
-	*(ULONG *)(((UBYTE *)patternbm->Planes[0]) + y * bpr) = plane1dat;
-	*(ULONG *)(((UBYTE *)patternbm->Planes[1]) + y * bpr) = plane2dat;
-    }
-    
-#if 0
     SetAPen(temprp,dri->dri_Pens[PATTERNCOL1]);
 
     RectFill(temprp,0,0,10,10);
@@ -224,11 +201,9 @@ static void MakePattern(void)
     RectFill(temprp,PATTERNWIDTH / 2,
 		    PATTERNHEIGHT / 2,
 		    PATTERNWIDTH - 1,
-		    PATTERNHEIGHT - 1);*/
-#endif
+		    PATTERNHEIGHT - 1);
 
     FreeRastPort(temprp);
-	
 }
 
 static void MakeWin(void)
