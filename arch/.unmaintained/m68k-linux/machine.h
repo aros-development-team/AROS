@@ -229,7 +229,7 @@ extern void _aros_not_implemented (char *X);
     __ASM_PREFIX(n,s)\
     __ASM_ARGQUAD1(a1)\
     __ASM_ARGQUAD2(a1)\
-    __ASM_POSTFIX(t,n,s,1)\
+    __ASM_POSTFIX(t,n,s,2)\
     __AROS_LHAQUAD(a1),\
     __AROS_LH_BASE(bt,bn))
 
@@ -239,7 +239,7 @@ extern void _aros_not_implemented (char *X);
     __ASM_ARGQUAD2(a2)\
     __ASM_ARGQUAD1(a1)\
     __ASM_ARGQUAD2(a1)\
-    __ASM_POSTFIX(t,n,s,2)\
+    __ASM_POSTFIX(t,n,s,4)\
     __AROS_LHAQUAD(a1),\
     __AROS_LHAQUAD(a2),\
     __AROS_LH_BASE(bt,bn))
