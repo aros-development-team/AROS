@@ -859,7 +859,7 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	int top,bottom;
 	if (abs(diffy) < data->entries_visible)
 	{
-	    ScrollRaster(_rp(obj),0,diffy * data->entry_maxheight,_mleft(obj),y,_mright(obj),_mbottom(obj));
+	    ScrollRaster(_rp(obj),0,diffy * data->entry_maxheight,_mleft(obj),y,_mright(obj),y + data->entry_maxheight * data->entries_visible);
 	    if (diffy > 0)
 	    {
 	    	start = end - diffy;
@@ -1323,9 +1323,10 @@ STATIC ULONG List_InsertSingleAsTree(struct IClass *cl, Object *obj, struct MUIP
     struct MUI_ListData *data = INST_DATA(cl, obj);
     struct ListEntry *lentry;
     int pos;
+    int into_root;
 
-    if (msg->parent == MUIV_List_Active_Off)
-	return ~0; /* We return -1 for now, later we could insert this node at top level */
+    /* Do we insert the element into the root? */
+    into_root = msg->parent == MUIV_List_InsertSingleAsTree_Root;
 
     switch (msg->rel_entry_pos)
     {
@@ -1373,20 +1374,18 @@ STATIC ULONG List_InsertSingleAsTree(struct IClass *cl, Object *obj, struct MUIP
     }
 
     /* Set the correct number of parants */
-    if (msg->parent == MUIV_List_InsertSingleAsTree_Root)
-	lentry->parents = 0;
-    else
- 	lentry->parents = data->entries[msg->parent]->parents + 1;
+    if (into_root) lentry->parents = 0;
+    else lentry->parents = data->entries[msg->parent]->parents + 1;
 
     /* The parent is gets really a parent */
-    data->entries[msg->parent]->flags |= LE_FLAG_PARENT | LE_FLAG_HASCHILDREN;
+    if (!into_root) data->entries[msg->parent]->flags |= LE_FLAG_PARENT | LE_FLAG_HASCHILDREN;
 
     data->entries[pos] = lentry;
     data->confirm_entries_num++;
 
     if (_flags(obj) & MADF_SETUP)
     {
-    	/* We have to calulate the with and height of the newly inserted entry, this
+    	/* We have to calulate the width and height of the newly inserted entry, this
     	** has to be done after inserting the element into the list */
     	CalcDimsOfEntry(cl,obj,pos);
 
