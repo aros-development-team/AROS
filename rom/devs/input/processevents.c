@@ -8,6 +8,8 @@
 
 #include <proto/exec.h>
 #include <proto/timer.h>
+#include <proto/graphics.h>
+
 #include <exec/lists.h>
 #include <exec/interrupts.h>
 #include <exec/alerts.h>
@@ -51,6 +53,17 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+AROS_UFH3S(void, ResetHandler,
+    AROS_UFHA(struct inputbase *, InputDevice, A1),
+    AROS_UFHA(APTR, code, A5),
+    AROS_UFHA(struct ExecBase *, sysBase, A6))
+{
+    if (InputDevice->ResetSig)
+    {
+    	Signal(InputDevice->InputTask, InputDevice->ResetSig);
+    }
+}
+ 
 /**********************
 **  ForwardEvents()  **
 **********************/
@@ -65,14 +78,15 @@ VOID ForwardQueuedEvents(struct inputbase *InputDevice)
    {
    	ForeachNode(&(InputDevice->HandlerList), ihiterator)
     	{
-/*	    D(bug("ipe: calling inputhandler %s at %p\n",
+	    D(bug("ipe: calling inputhandler %s at %p\n",
 	    		ihiterator->is_Node.ln_Name, ihiterator->is_Code));
-*/		
+		
             ie_chain = AROS_UFC2(struct InputEvent *, ihiterator->is_Code,
 		    AROS_UFCA(struct InputEvent *,  ie_chain,          	    A0),
 		    AROS_UFCA(APTR,                 ihiterator->is_Data,    A1));
 
-//	    D(bug("ipe: returned from inputhandler\n"));
+	    D(bug("ipe: returned from inputhandler\n"));
+
 	} /* for each input handler */
 	
     } 
@@ -86,18 +100,18 @@ VOID ForwardQueuedEvents(struct inputbase *InputDevice)
 ***********************************/
 void ProcessEvents (struct inputbase *InputDevice)
 {
-    ULONG commandsig, kbdsig, wakeupsigs, gpdsig, timersig, keytimersig;
-    struct MsgPort *timermp, *keytimermp;
-    struct timerequest *timerio, *keytimerio;
+    ULONG   	    	     commandsig, kbdsig, wakeupsigs;
+    ULONG   	    	     gpdsig, timersig, keytimersig;
+    struct MsgPort  	    *timermp, *keytimermp;
+    struct timerequest      *timerio, *keytimerio;
 
-
-    struct MsgPort *kbdmp, *gpdmp;
-    struct IOStdReq *kbdio, *gpdio;
-    struct InputEvent *kbdie, *gpdie, keyrepeatie;
+    struct MsgPort  	    *kbdmp, *gpdmp;
+    struct IOStdReq 	    *kbdio, *gpdio;
+    struct InputEvent 	    *kbdie, *gpdie, keyrepeatie;
+    struct Interrupt	    resethandler;
+    struct Library  	    *TimerBase;
     
-    struct Library *TimerBase;
-    
-    struct GamePortTrigger mouseTrigger =
+    struct GamePortTrigger  mouseTrigger =
     {
 	GPTF_DOWNKEYS | GPTF_UPKEYS,
 	9999,			/* We dont really care about time triggers */
@@ -105,8 +119,8 @@ void ProcessEvents (struct inputbase *InputDevice)
 	0
     };
 
-    BYTE controllerType = GPCT_MOUSE;
-    BYTE keyrepeat_state = 0;
+    BYTE    	    	    controllerType = GPCT_MOUSE;
+    BYTE    	    	    keyrepeat_state = 0;
     
     /************** Open timer.device *******************/
     
@@ -141,6 +155,20 @@ void ProcessEvents (struct inputbase *InputDevice)
     if ( 0 != OpenDevice("keyboard.device", 0, (struct IORequest *)kbdio, 0))
     	Alert(AT_DeadEnd | AG_OpenDev | AN_Unknown);
     
+    /* Install RESET Handler */
+    
+    InputDevice->ResetSig = 1L << AllocSignal(-1);
+    
+    resethandler.is_Node.ln_Name = "input.device reset handler";
+    resethandler.is_Node.ln_Type = NT_INTERRUPT;
+    resethandler.is_Node.ln_Pri = -128;
+    
+    resethandler.is_Code = (VOID (*)())ResetHandler;
+    resethandler.is_Data = InputDevice;
+    
+    kbdio->io_Command = KBD_ADDRESETHANDLER;
+    kbdio->io_Data = &resethandler;
+    DoIO((struct IORequest *)kbdio);
     
     kbdie = AllocMem(sizeof (struct InputEvent), MEMF_PUBLIC | MEMF_CLEAR);
     if (!kbdie)
@@ -192,18 +220,12 @@ void ProcessEvents (struct inputbase *InputDevice)
     timersig    = 1 << timermp->mp_SigBit;
     keytimersig = 1 << keytimermp->mp_SigBit;
     
-#if 0
-    /* Tell the task that created us, that we are finished initializing */
-    Signal(taskparams->Caller, taskparams->Signal);
-#endif
     for (;;)
     {
+	wakeupsigs = Wait (commandsig | kbdsig | gpdsig | timersig | keytimersig | InputDevice->ResetSig);
 
-	wakeupsigs = Wait (commandsig | kbdsig | gpdsig | timersig | keytimersig);
 	D(bug("Wakeup sig: %x, cmdsig: %x, kbdsig: %x\n, timersig: %x"
 		, wakeupsigs, commandsig, kbdsig, timersig));
-	
-
 	
 	if (wakeupsigs & timersig)
 	{
@@ -399,7 +421,26 @@ void ProcessEvents (struct inputbase *InputDevice)
 	    
 	    /* Wit for some more events */
 	    SEND_GPD_REQUEST(gpdio, gpdie);
+	    
+	} /* if (wakeupsigs & gpdsig) */
+	
+	if (wakeupsigs & InputDevice->ResetSig)
+	{
+	    struct IOStdReq resetio = *kbdio;
+	    
+	    InputDevice->ResetSig = 0;
+	    
+    	    ShowImminentReset();
+	    
+	    resetio.io_Command = KBD_RESETHANDLERDONE;
+	    resetio.io_Data = &resethandler;
+	    
+	    /* Relying on this cmd being done quick, here */
+	    
+	    DoIO((struct IORequest *)&resetio);
+	    
 	}
+	
     } /* Forever */
    
 } /* ProcessEvents */

@@ -120,8 +120,7 @@ static const UWORD SupportedCommands[] =
 AROS_UFH3(struct inputbase *, AROS_SLIB_ENTRY(init,Input),
  AROS_UFHA(struct inputbase *,	InputDevice,	D0),
  AROS_UFHA(BPTR,		segList,	A0),
- AROS_UFHA(struct ExecBase *,	sysBase,	A6)
-)
+ AROS_UFHA(struct ExecBase *,	sysBase,	A6))
 {
     AROS_USERFUNC_INIT
 
@@ -143,9 +142,11 @@ AROS_UFH3(struct inputbase *, AROS_SLIB_ENTRY(init,Input),
     InputDevice->KeyRepeatInterval.tv_micro
 	= (DEFAULT_KEY_REPEAT_INTERVAL % 50) * 1000000 / 50;
 
+    (struct Library *)GfxBase = OpenLibrary("graphics.library", 0);
+    
     /* Initialise the input.device task. */
-    InputDevice->InputTask = AllocMem(sizeof(struct Task), MEMF_PUBLIC|MEMF_CLEAR);
-    if(InputDevice->InputTask != NULL)
+    InputDevice->InputTask = AllocMem(sizeof(struct Task), MEMF_PUBLIC | MEMF_CLEAR);
+    if(InputDevice->InputTask && GfxBase)
     {
 	struct Task *task = InputDevice->InputTask;
 	APTR stack;
@@ -190,7 +191,9 @@ AROS_UFH3(struct inputbase *, AROS_SLIB_ENTRY(init,Input),
     }
 
     Alert(AT_DeadEnd | AG_NoMemory | AO_Unknown | AN_Unknown);
+    
     return NULL;
+    
     AROS_USERFUNC_EXIT
 }
 
@@ -256,8 +259,9 @@ AROS_LH0(BPTR, expunge, struct inputbase *, InputDevice, 3, Input)
     AROS_LIBFUNC_INIT
 
     /* Do not expunge the device. Set the delayed expunge flag and return. */
-    InputDevice->device.dd_Library.lib_Flags|=LIBF_DELEXP;
+    InputDevice->device.dd_Library.lib_Flags |= LIBF_DELEXP;
     return 0;
+    
     AROS_LIBFUNC_EXIT
 }
 
@@ -266,7 +270,9 @@ AROS_LH0(BPTR, expunge, struct inputbase *, InputDevice, 3, Input)
 AROS_LH0I(int, null, struct inputbase *, InputDevice, 4, Input)
 {
     AROS_LIBFUNC_INIT
+    
     return 0;
+    
     AROS_LIBFUNC_EXIT
 }
 
@@ -278,8 +284,8 @@ AROS_LH1(void, beginio,
 	   struct inputbase *, InputDevice, 5, Input)
 {
     AROS_LIBFUNC_INIT
-    LONG error=0;
     
+    LONG error=0;    
     BOOL done_quick = TRUE;
     
     D(bug("id: beginio(ioreq=%p)\n", ioreq));
@@ -289,7 +295,7 @@ AROS_LH1(void, beginio,
 
     switch (ioreq->io_Command)
     {
-#if NEWSTYLE_DEVICE
+    #if NEWSTYLE_DEVICE
         case NSCMD_DEVICEQUERY:
 	    if(ioStd(ioreq)->io_Length < ((LONG)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
 	    {
@@ -310,7 +316,7 @@ AROS_LH1(void, beginio,
 		ioStd(ioreq)->io_Actual   = sizeof(struct NSDeviceQueryResult);
 	    }
 	    break;
-#endif
+    #endif
 
 	case IND_ADDHANDLER:
 	case IND_REMHANDLER:
@@ -355,8 +361,10 @@ AROS_LH1(LONG, abortio,
 	   struct inputbase *, InputDevice, 6, Input)
 {
     AROS_LIBFUNC_INIT
+    
     /* Everything already done. */
     return 0;
+    
     AROS_LIBFUNC_EXIT
 }
 

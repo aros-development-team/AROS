@@ -32,41 +32,23 @@
 #endif
 
 /* Size of the input device's stack */
-#define IDTASK_STACKSIZE (AROS_STACKSIZE + 10240)
+#define IDTASK_STACKSIZE    	    (AROS_STACKSIZE + 10240)
+
 /* Priority of the input.device task */
-#define IDTASK_PRIORITY 20
+#define IDTASK_PRIORITY     	    20
 
 /* Default key repeat threshold/interval in 1/50 secs */
 
 #define DEFAULT_KEY_REPEAT_THRESHOLD 25
 #define DEFAULT_KEY_REPEAT_INTERVAL  2
 
-/* Predeclaration */
-struct inputbase;
-#if 0
-/* Structure passed to the input.device task when it's initialized */
-struct IDTaskParams
-{
-    struct inputbase 	*InputDevice;
-    struct Task		*Caller; /* Signal this task.. */
-    ULONG		Signal; /* Using this sigs, that the ID task */
-    				/* has been initialized and is ready to handle IO requests */
-};
-#endif
-
-/* Prototypes */
-VOID ProcessEvents(struct inputbase *InputDevice);
-struct Task *CreateInputTask(APTR taskparams, struct inputbase *InputDevice);
-VOID AddEQTail(struct InputEvent *ie, struct inputbase *InputDevice);
-struct InputEvent *GetEventsFromQueue(struct inputbase *InputDevice);
-BOOL IsQualifierKey(UWORD key);
-BOOL IsRepeatableKey(UWORD key);
-
 struct inputbase
 {
-    struct Device device;
-    struct ExecBase * sysBase;
-    BPTR seglist;
+    struct Device   	device;
+    struct ExecBase 	*sysBase;
+    struct GfxBase  	*gfxBase;
+    
+    BPTR    	    	seglist;
     
     /* The stuff below will never get deallocated, since
     ** input device is never removed, once it's initialized.
@@ -78,9 +60,17 @@ struct inputbase
     struct InputEvent 	*EventQueueTail;
     struct timeval	KeyRepeatThreshold;
     struct timeval	KeyRepeatInterval;
-    
-    UWORD ActQualifier;
+    ULONG   	    	ResetSig;
+    UWORD   	    	ActQualifier;
 };
+
+/* Prototypes */
+VOID ProcessEvents(struct inputbase *InputDevice);
+struct Task *CreateInputTask(APTR taskparams, struct inputbase *InputDevice);
+VOID AddEQTail(struct InputEvent *ie, struct inputbase *InputDevice);
+struct InputEvent *GetEventsFromQueue(struct inputbase *InputDevice);
+BOOL IsQualifierKey(UWORD key);
+BOOL IsRepeatableKey(UWORD key);
 
 #define expunge() \
 __AROS_LC0(BPTR, expunge, struct inputbase *, InputDevice, 3, Input)
@@ -88,7 +78,9 @@ __AROS_LC0(BPTR, expunge, struct inputbase *, InputDevice, 3, Input)
 #ifdef SysBase
     #undef SysBase
 #endif
-#define SysBase InputDevice->sysBase
+
+#define SysBase     	InputDevice->sysBase
+#define GfxBase     	InputDevice->gfxBase
 
 #endif /* INPUT_INTERN_H */
 
