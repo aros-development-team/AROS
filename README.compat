@@ -1,0 +1,42 @@
+WHAT IS THIS
+------------
+
+This file is a collection of things which are different between AROS and the
+original AmigaOS and how they are handled in order to be compatible.
+
+DIFFERENCES BETWEEN AROS AND THE AMIGA OS
+-----------------------------------------
+
+* Pointer/Integer conversions
+
+If you need a variable which can store a pointers as an integer, don't use
+ULONG but IPTR. AROS gurantees that LONG is 32bit on all systems, while
+IPTR is always large enough to contain a pointer. Most notable things
+which are affected by this: TagItems (the ti_Data field is now an IPTR
+instead of ULONG), BOOPSI classes (eg. the return value of DoMethod()),
+ReadArgs(), VPrintf(), VFPrintf() and more.
+
+* 64bit variables
+
+The type of 64bit variables is QUAD (unsigned: UQUAD). This is for example
+returned by the function SMult64() of Utility.library. To access the
+high- and loworder 32bit values of the 64bit variable, use LOW32OF64()
+and HIGH32OF64() which are defined in <aros/64bit.h>.
+
+* Cloning RastPorts
+
+AROS uses an external driver to access the graphics hardware. Since the
+nature of this driver is unknown to AROS, it is no more valid to clone
+a RastPort by simply copying it. To be compatible, there are two new
+functions (in AROS) or macros (on Amiga): CloneRastPort() and FreeRastPort().
+You must call CloneRastPort() to create a copy and FreeRastPort() after
+you´ve done your work with it.
+
+This approach produces equivalent code on the Amiga but on AROS it can slow
+things down a bit. If you must preserve the original state of the RastPort,
+it's more save to create a clone, work on it and then dispose it again. It
+can also be faster if you would have to make a lot of changes to the RastPort
+to create two clones and set them to the two states you need. But your code
+should not depend on certain gains or losses of speed due to cloned RastPorts
+since the behaviour of the underlying graphics system is undefined.
+
