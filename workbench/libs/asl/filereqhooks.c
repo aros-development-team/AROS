@@ -258,7 +258,6 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		GA_ID,				ID_DIRLIST,
 		GA_Immediate,			TRUE,
 		AROSA_DirList_Path,		ifreq->ifr_Drawer,
-
 /*		AROSA_Listview_MultiSelect,	TRUE, */
 		TAG_DONE);
 
@@ -342,10 +341,10 @@ D(bug("CancelBut created\n"));
     butstr[2] = ifreq->ifr_ParentText;
     butstr[3] = GetIR(ifreq)->ir_NegativeText;
 
-    udata->ButWidth = BiggestTextLength(butstr,
-					NUMBUTS,
-					&(ld->ld_DummyRP),
-					ASLB(AslBase));
+    udata->ButWidth = 8 + BiggestTextLength(butstr,
+					    NUMBUTS,
+					    &(ld->ld_DummyRP),
+					    ASLB(AslBase));
 D(bug("Got biggest textlength\n"));					
     D(bug("screen=%p\nscreen font=%p\n, ld font=%p\n"
     	, ld->ld_Screen, ld->ld_Screen->Font, ld->ld_Font));
@@ -358,7 +357,7 @@ D(bug("Got biggest textlength\n"));
     
 
     ld->ld_MinWidth =  ld->ld_Screen->WBorLeft + ld->ld_Screen->WBorRight
-		     + MIN_SPACING * (NUMBUTS + 1)
+		     + MIN_SPACING * (NUMBUTS + 5)
 		     + udata->ButWidth * NUMBUTS;
 
     ld->ld_MinHeight = ld->ld_Screen->WBorTop + ld->ld_Font->tf_YSize + 1
@@ -492,7 +491,7 @@ EnterFunc(bug("FRHandleEvents: Class: %d\n", imsg->Class));
     {
     case IDCMP_GADGETUP:
 
-D(bug("GADGETUP! gadgetid=%d\n", ((struct Gadget *)imsg->IAddress)->GadgetID));
+	D(bug("GADGETUP! gadgetid=%d\n", ((struct Gadget *)imsg->IAddress)->GadgetID));
 
 	switch (((struct Gadget *)imsg->IAddress)->GadgetID)
 	{
@@ -517,6 +516,20 @@ D(bug("GADGETUP! gadgetid=%d\n", ((struct Gadget *)imsg->IAddress)->GadgetID));
 	case ID_BUTOK:
 	    retval = GetSelectedFiles(udata, ld, ASLB(AslBase));
 	    break;
+	
+	case ID_DIRLIST:
+	    {
+		IPTR doubleclicked = FALSE;
+	    
+		GetAttr(AROSA_Listview_DoubleClick, udata->DirList, (IPTR *)&doubleclicked);
+		
+	   	if (doubleclicked)
+		{
+		    retval = GetSelectedFiles(udata, ld, ASLB(AslBase));
+		}
+	    }
+	    break;
+	    
 	} /* switch (gadget ID) */
 
 	break; /* case IDCMP_GADGETUP: */
@@ -567,6 +580,8 @@ STATIC ULONG GetSelectedFiles(  struct FRUserData       *udata,
 				struct LayoutData	*ld,
 				struct AslBase_intern	*AslBase)
 {
+    struct path *cur_path;
+    
     ULONG volumes_shown;
     ULONG retval = GHRET_OK;
 
@@ -579,6 +594,7 @@ STATIC ULONG GetSelectedFiles(  struct FRUserData       *udata,
 	struct IntFileReq *ifreq;
 	struct FileRequester *req;
 	Object *filelist;
+
 
 	GetAttr(AROSA_Listview_List, udata->DirList, (IPTR *)&filelist);
 
@@ -597,13 +613,27 @@ STATIC ULONG GetSelectedFiles(  struct FRUserData       *udata,
 
 	    DoMethod(filelist, AROSM_List_GetEntry, active, &ead);
 	    /* File or directory selected ? */
+
 	    if (ead->ed_Type > 0)
 		{ retval = GHRET_OK; goto bye; }
 
 	    /* The next allocated stuff is freed by the StripRequester()
 	    ** function if the allocations fail.
 	    */
-	    req->fr_Drawer = AllocVec(strlen(udata->CurPath) + 1, MEMF_ANY);
+	    
+	    #if 0
+	    	/* Georg Steger: udata->CurPath 0 ??? never used ???? */
+		
+	    	req->fr_Drawer = AllocVec(strlen(udata->CurPath) + 1, MEMF_ANY);
+	    
+	    #else
+
+	    	GetAttr(AROSA_DirList_Path, udata->DirList, (IPTR *)&cur_path);
+
+	    	req->fr_Drawer = AllocVec(strlen(path_string(cur_path)) + 1, MEMF_ANY);
+
+	    #endif
+	    
 	    if (!req->fr_Drawer)
 		{ retval = FALSE; goto bye; }
 
@@ -611,8 +641,20 @@ STATIC ULONG GetSelectedFiles(  struct FRUserData       *udata,
 	    if (!req->fr_File)
 		{ retval = FALSE; goto bye; }
 
-	    strcpy(req->fr_Drawer, udata->CurPath);
+	    #if 0
+	    	/* Georg Steger: udata->CurPath unused?? */
+		
+	    	strcpy(req->fr_Drawer, udata->CurPath);
+	    
+	    #else
+	    
+	    	strcpy(req->fr_Drawer, path_string(cur_path));
+	    
+	    #endif
+	    
 	    strcpy(req->fr_File, ead->ed_Name);
+	    
+	    retval = GHRET_FINISHED_OK;
 	}
 	else
 	{

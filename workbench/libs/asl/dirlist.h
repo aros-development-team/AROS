@@ -129,7 +129,7 @@ STRPTR path_string(struct path *path);
 #define DIRLIST_TAGBASE 30000
 
 
-#define AROSA_DirList_Path		DIRLIST_TAGBASE + 1	/* [IS] */
+#define AROSA_DirList_Path		DIRLIST_TAGBASE + 1	/* [ISG] */
 #define AROSA_DirList_VolumesShown	DIRLIST_TAGBASE + 2	/* [G] */
 
 

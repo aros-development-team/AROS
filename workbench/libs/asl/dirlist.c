@@ -83,6 +83,10 @@ STATIC IPTR dirlist_get(struct IClass *cl, Object *o, struct opGet *msg)
     	*(msg->opg_Storage) = ((data->dld_Flags & DLFLG_FILELIST) == 0);
     	break;
     
+    case AROSA_DirList_Path:
+    	*(msg->opg_Storage) = (IPTR)data->dld_CurPath;
+	break;
+	
     default:
     	retval = DoSuperMethodA(cl, o, (Msg)msg);
     	break;
@@ -102,7 +106,7 @@ STATIC Object *dirlist_new(struct IClass *cl, Object *o, struct opSet *msg)
     {
     	{AROSA_Listview_MaxColumns,	(IPTR)2},
     	{AROSA_Listview_DisplayHook,	(IPTR)&(GetSDLD(cl)->sd_FileDisplayHook)},
-    	{AROSA_Listview_Format,		(IPTR)"P=l,P=l"},
+    	{AROSA_Listview_Format,		(IPTR)"P=l,P=1"},
     	{TAG_MORE, 			(IPTR)msg->ops_AttrList}
     };
     
@@ -210,12 +214,12 @@ STATIC VOID dirlist_singleclick(Class *cl, Object *o, struct AROSP_Listview_Sing
     {
     	struct VolumeInfo *vi;
 
-    	DoMethod(data->dld_VolumesList, AROSM_List_GetEntry, msg->Position, &vi);
-		
+    	DoMethod(data->dld_VolumesList, AROSM_List_GetEntry, msg->Position, &vi);	
 	
 	if (path_set(data->dld_CurPath, vi->vi_Name, ASLB(AslBase)))
+	{
 	    UpdateFileList(cl, o, msg->GInfo, ASLB(AslBase));
-
+	}
 
     } /* if (volume list is shown) */
 	

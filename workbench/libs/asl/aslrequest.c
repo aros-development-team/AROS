@@ -133,8 +133,8 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 			
 	    nw.LeftEdge	= intreq->ir_LeftEdge;
 	    nw.TopEdge	= intreq->ir_TopEdge;
-	    nw.Width	= intreq->ir_Width;
-	    nw.Height	= intreq->ir_Height;
+	    nw.Width	= (intreq->ir_Width > ld->ld_MinWidth) ? intreq->ir_Width : ld->ld_MinWidth;
+	    nw.Height	= (intreq->ir_Height > ld->ld_MinHeight) ? intreq->ir_Height : ld->ld_MinHeight;
 
 /*	    nw.MinWidth	= ld->ld_MinWidth;
 	    nw.MinHeight= ld->ld_MinHeight;
@@ -210,7 +210,7 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 		    
 		    /* Wait for the user to do something */	
 		    success = HandleEvents(ld, reqinfo, ASLB(AslBase));
-					
+		
 		    /* Finished with event handling, clean up requester 
 		    specific stuff */
 		
