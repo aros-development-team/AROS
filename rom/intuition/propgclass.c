@@ -382,11 +382,11 @@ STATIC IPTR goactive_propgclass(Class *cl, Object *o, struct gpInput *msg)
     	    /* If the knob was not hit, swallow hit-event.
     	    (Gadget has allready been updated) */
 
-    	    *(msg->gpi_Termination) = IDCMP_GADGETUP;	    
-    	    retval = GMR_NOREUSE|GMR_VERIFY;
-    	    
     	    /* Update PGA_Top. Final update. */
     	    UpdateTop(cl, o, msg->gpi_GInfo, TRUE);
+
+    	    *(msg->gpi_Termination) = data->top;
+    	    retval = GMR_NOREUSE|GMR_VERIFY;
     	}
     	else
     	{
@@ -408,6 +408,7 @@ STATIC IPTR handleinput_propgclass(Class *cl, Object *o, struct gpInput *msg)
 	    
     /* Default: stay active */
     IPTR retval = GMR_MEACTIVE;
+    struct PropGData *data = INST_DATA(cl, o);
 	    
     ie = msg->gpi_IEvent;
     if (ie->ie_Class == IECLASS_RAWMOUSE)
@@ -460,7 +461,7 @@ STATIC IPTR handleinput_propgclass(Class *cl, Object *o, struct gpInput *msg)
     	    	/* Update PGA_Top. Final update. */
     	    	UpdateTop(cl, o, msg->gpi_GInfo, TRUE);
     	    
-    	    	*(msg->gpi_Termination) = IDCMP_GADGETUP;
+    	    	*(msg->gpi_Termination) = data->top;
     	    	retval = GMR_NOREUSE|GMR_VERIFY;
     	    	break;
 	    	
