@@ -1,2 +1,2 @@
-CFG_PACKAGES=(hosted)
+CFG_PACKAGES=(hosted contrib development i386-pc)
 CFG_MAIL_ENABLE=yes
