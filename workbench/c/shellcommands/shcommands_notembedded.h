@@ -77,49 +77,11 @@ static ULONG name##_main(IPTR *__shargs, struct ExecBase *SysBase,   \
     }                       \
 }
 
-
-#define AROS_SH0(name, version)                             \
-static ULONG name##_main(struct ExecBase *SysBase,          \
-                         struct DosLibrary *);              \
-AROS_UFH3(LONG, entry,                                      \
-    AROS_UFHA(char *,argstr,A0),                            \
-    AROS_UFHA(ULONG,argsize,D0),                            \
-    AROS_UFHA(struct ExecBase *,SysBase,A6)                 \
-)                                                           \
-{                                                           \
-    AROS_USERFUNC_INIT                                      \
-							    \
-    LONG __retcode = RETURN_FAIL;                           \
-    struct DosLibrary *DOSBase =                            \
-        (struct DosLibrary *) OpenLibrary(DOSNAME, 0);      \
-                                                            \
-    if (!DOSBase)                                           \
-    {                                                       \
-        SetIoErr(ERROR_INVALID_RESIDENT_LIBRARY);           \
-	goto __exit;                                        \
-    }                                                       \
-                                                            \
-    __retcode = name##_main(SysBase, DOSBase);              \
-    							    \
-__exit:                                                     \
-    if (DOSBase) CloseLibrary((struct Library *)DOSBase);   \
-                                                            \
-    return __retcode;                                       \
-							    \
-    AROS_USERFUNC_EXIT                                      \
-}                                                           \
-                                                            \
-static const char name##_version[] = "$VER: "               \
-                                     stringify(name) " "    \
-				     stringify(version) " " \
-				     "(" __DATE__ ")\n";    \
-						 	    \
-static ULONG name##_main(struct ExecBase *SysBase,          \
-                         struct DosLibrary *DOSBase)        \
-{                                                           \
-    {
-
 #define __DEF(x...) {x}
+
+#define AROS_SH0(name, version)                   \
+    __AROS_SH_ARGS(name, version, 1, {0}, "")     \
+    {                                             \
 
 #define AROS_SH1(name, version, a1)               \
     __AROS_SH_ARGS(name, version, 1,              \
