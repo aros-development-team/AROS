@@ -101,6 +101,7 @@ bootdisk-native-i386: \
 	$(BOOT_DEST_grub) $(BINDIR)/boot/aros-native-i386 install
 	@$(CP) $(BINDIR)/boot/aros-native-i386 $(BOOT_DEST_DIR)/Devs
 	@gzip -f $(BOOT_DEST_DIR)/Devs/aros-native-i386
+	@strip --strip-unneeded $(BOOT_DEST_C) $(BOOT_DEST_Tools) $(BOOT_DEST_Demos) $(BOOT_DEST_Aminet)
 	@$(TOOLDIR)/createhdfile $(OSGENDIR)/boot/aros.bin floppy1440 $(BOOT_DEST_DIR)
 	@./install $(OSGENDIR)/boot/aros.bin
 
