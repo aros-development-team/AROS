@@ -5,6 +5,7 @@
     Lang: english
 */
 #include "exec_intern.h"
+#include <exec/resident.h>
 #include <proto/exec.h>
 
 /*****************************************************************************
@@ -14,15 +15,20 @@
 	AROS_LH2(void, InitCode,
 
 /*  SYNOPSIS */
-	AROS_LHA(unsigned long, startClass, D0),
-	AROS_LHA(unsigned long, version, D1),
+	AROS_LHA(ULONG, startClass, D0),
+	AROS_LHA(ULONG, version, D1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 12, Exec)
 
 /*  FUNCTION
+	Traverse the ResModules array and InitResident() all modules with
+	versions greater than or equal to version, and of a class equal to
+	startClass.
 
     INPUTS
+	startClass - which type of module to start
+	version - a version number
 
     RESULT
 
@@ -45,7 +51,27 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
-    aros_print_not_implemented ("InitCode");
+    ULONG *list = SysBase->ResModules;
+
+    if(list)
+    {
+	while(*list)
+	{
+	    /*
+		If bit 31 is set, this doesn't point to a Resident module, but
+		to another list of modules.
+	    */
+	    if(*list & 0x80000000) list = (ULONG *)(*list & 0x7fffffff);
+
+	    if( (((struct Resident *)*list)->rt_Version >= (UBYTE)version)
+	     && (((struct Resident *)*list)->rt_Flags & (UBYTE)startClass) )
+	    {
+		InitResident((struct Resident *)*list, NULL);
+	    }
+
+	    list++;
+	}
+    }
 
     AROS_LIBFUNC_EXIT
 } /* InitCode */
