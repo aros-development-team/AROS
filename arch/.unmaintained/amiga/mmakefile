@@ -9,7 +9,6 @@
 #MM	kernel-hidd \
 #MM	kernel-aros \
 #MM	kernel-alerthook-module \
-#MM	kernel-boopsi-module \
 #MM	kernel-oop-module \
 #MM	kernel-utility-module \
 #MM	kernel-devs \
