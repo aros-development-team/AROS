@@ -15,49 +15,9 @@
 #   include <aros/libcall.h>
 #endif
 
-AROS_LP3(BOOL, AddFreeList,
-    AROS_LPA(struct FreeList *, freelist, A0),
-    AROS_LPA(APTR             , mem, A1),
-    AROS_LPA(unsigned long    , size, A2),
-    struct Library *, IconBase, 12, Icon)
-
-AROS_LP2(UBYTE *, BumpRevision,
-    AROS_LPA(UBYTE *, newname, A0),
-    AROS_LPA(UBYTE *, oldname, A1),
-    struct Library *, IconBase, 18, Icon)
-
-AROS_LP1(BOOL, DeleteDiskObject,
-    AROS_LPA(UBYTE *, name, A0),
-    struct Library *, IconBase, 23, Icon)
-
-AROS_LP2(UBYTE *, FindToolType,
-    AROS_LPA(UBYTE **, toolTypeArray, A0),
-    AROS_LPA(UBYTE  *, typeName, A1),
-    struct Library *, IconBase, 16, Icon)
-
-AROS_LP1(void, FreeFreeList,
-    AROS_LPA(struct FreeList *, freelist, A0),
-    struct Library *, IconBase, 9, Icon)
-
-AROS_LP1(struct DiskObject *, GetDefDiskObject,
-    AROS_LPA(long, type, D0),
-    struct Library *, IconBase, 20, Icon)
-
-AROS_LP1(struct DiskObject *, GetDiskObjectNew,
-    AROS_LPA(UBYTE *, name, A0),
-    struct Library *, IconBase, 22, Icon)
-
-AROS_LP2(BOOL, MatchToolValue,
-    AROS_LPA(UBYTE *, typeString, A0),
-    AROS_LPA(UBYTE *, value, A1),
-    struct Library *, IconBase, 17, Icon)
-
-AROS_LP1(BOOL, PutDefDiskObject,
-    AROS_LPA(struct DiskObject *, diskObject, A0),
-    struct Library *, IconBase, 21, Icon)
-
-
-#endif /* CLIB_IFFPARSE_PROTOS_H */
+/*
+    Prototypes
+*/
 AROS_LP0(struct IFFHandle *, AllocIFF,
     struct Library *, IFFParseBase, 5, Iffparse)
 
