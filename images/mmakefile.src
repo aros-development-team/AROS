@@ -1,0 +1,10 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-complete : workbench-images
+#MM workbench-images : setup
+
+workbench-images : files-copy
+%copy_files_q files="$(wildcard *.png)" dst=$(AROS_IMAGES)
