@@ -19,7 +19,6 @@
 #    define DECLARE_SysBase_global extern struct ExecBase *SysBase;
 #    define DEFINE_SysBase_global struct ExecBase *SysBase;
 #    define DEFINE_SysBase_local
-#    define main_SysBase_arg
 #else
 #    define DECLARE_SysBase_global
 #    define DEFINE_SysBase_local struct ExecBase *SysBase;
@@ -31,12 +30,10 @@
 #    define DECLARE_DOSBase_global extern struct DosLibrary *DOSBase;
 #    define DEFINE_DOSBase_global struct DosLibrary *DOSBase;
 #    define DEFINE_DOSBase_local
-#    define main_DOSBase_arg
 #else
 #    define DECLARE_DOSBase_global
 #    define DEFINE_DOSBase_local struct DosLibrary *DOSBase;
 #    define DEFINE_DOSBase_global
-#    define main_DOSBase_arg ,DOSBase
 #endif
 
 #define CALL_main(name) name##_main(__shargs, argstr, SysBase, DOSBase)
