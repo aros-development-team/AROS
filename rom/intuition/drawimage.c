@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/04 15:33:43  digulla
+    Optimized: Draws now as many consecutive pixels as possible
+
     Revision 1.3  1996/09/18 14:43:42  digulla
     Made DrawImage work
     After OpenWindow() one *must* call Wait() to allow X11 to draw for now.
@@ -73,12 +76,14 @@
     __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     ULONG   apen;
     ULONG   drmd;
-    int     x, y, d, plane;
+    WORD    x, y, d, plane;
+    WORD    xoff, yoff;
     UWORD * bits[24];
     UWORD   bitmask;
     UWORD   shift;
     UWORD   offset;
     ULONG   pen;
+    ULONG   lastPen;
 #define START_BITMASK	0x8000L
 
     /* Store important variables of the RastPort */
@@ -110,11 +115,15 @@
 
 	offset	= 0;
 
-	for (y=0; y < image->Height; y++)
+	yoff = image->TopEdge + topOffset;
+
+	for (y=0; y < image->Height; y++, yoff++)
 	{
 	    bitmask = START_BITMASK;
 
-	    for (x=0; x < image->Width; x++)
+	    xoff = image->LeftEdge + leftOffset;
+
+	    for (x=0; x < image->Width; x++, xoff++)
 	    {
 		pen = image->PlaneOnOff;
 		shift = 1;
@@ -143,11 +152,18 @@
     , pen
 ); */
 
-		SetAPen (rp, pen);
-		WritePixel (rp
-		    , x + image->LeftEdge + leftOffset
-		    , y + image->TopEdge + topOffset
-		);
+		if (!x)
+		{
+		    lastPen = pen;
+		    Move (rp, xoff, yoff);
+		}
+
+		if (pen != lastPen)
+		{
+		    SetAPen (rp, lastPen);
+		    Draw (rp, xoff, yoff);
+		    lastPen = pen;
+		}
 
 		bitmask >>= 1;
 
@@ -157,6 +173,9 @@
 		    offset ++;
 		}
 	    }
+
+	    SetAPen (rp, pen);
+	    Draw (rp, xoff-1, yoff);
 
 	    if (bitmask != START_BITMASK)
 		offset ++;
