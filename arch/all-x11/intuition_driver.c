@@ -1028,8 +1028,6 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
     ULONG  lock;
     UWORD wait = 0;
     
-    UWORD count = 0;
-    
     char *ptr = NULL;
     
     WORD mpos_x = iihdata->LastMouseX, mpos_y = iihdata->LastMouseY;
@@ -1047,11 +1045,10 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 	reuse_event = FALSE;
 	ptr = NULL;
 	
-	count ++;
 	
-	D(bug("iih: reuse_event = %d, coun = %d\n", reuse_event, count));
+	D(bug("iih: reuse_event = %d\n", reuse_event));
 
-	/* If the last InputEvent was swallowed, we can reuse the IntuiMessage */
+	/* If the last InnputEvent was swallowed, we can reuse the IntuiMessage */
 	if (!im)
 	{
 	    im = AllocMem (sizeof (struct IntuiMessage), MEMF_CLEAR);
@@ -1175,8 +1172,8 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X	= im->MouseX;
-			gpi.gpi_Mouse.Y	= im->MouseY;
+			gpi.gpi_Mouse.X	= ie->ie_X;
+			gpi.gpi_Mouse.Y	= ie->ie_Y;
 			gpi.gpi_TabletData	= NULL;
 
 			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
@@ -1185,6 +1182,8 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 
 			if (retval != GMR_MEACTIVE)
 			{
+			    struct gpGoInactive gpgi;
+			    
 			    if (retval & GMR_REUSE)
 			    	reuse_event = TRUE;
 
@@ -1200,6 +1199,13 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 			    {
 			    	im->Class = 0; /* Swallow event */
 			    }
+			    
+			    gpgi.MethodID = GM_GOINACTIVE;
+			    gpgi.gpgi_GInfo = gi;
+			    gpgi.gpgi_Abort = 0;
+			    
+			    DoMethodA((Object *)gadget, (Msg)&gpgi);
+			    
 			    gadget = NULL;
 			}
 
@@ -1224,12 +1230,6 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 		    int inside = InsideGadget(w,gadget, ie->ie_X, ie->ie_Y);
 		    int selected = (gadget->Flags & GFLG_SELECTED) != 0;
     
-		    if (inside && (gadget->Activation & GACT_RELVERIFY))
-		    {
-			im->Class    = IDCMP_GADGETUP;
-			im->IAddress = gadget;
-			ptr	     = "GADGETUP";
-		    }
 
 		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
 		    {
@@ -1239,15 +1239,30 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 
 			if (selected)
 			    RefreshGList (gadget, w, NULL, 1);
+		    
+		    	if (inside && (gadget->Activation & GACT_RELVERIFY))
+		    	{
+			    im->Class    = IDCMP_GADGETUP;
+			    im->IAddress = gadget;
+			    ptr = "GADGETUP";
+		   	}
+			    
 			gadget = NULL;
 			break;
 
 		    case GTYP_PROPGADGET:
 			HandlePropSelectUp(gadget, w, NULL, IntuitionBase);
+		    	if (inside && (gadget->Activation & GACT_RELVERIFY))
+		    	{
+			    im->Class    = IDCMP_GADGETUP;
+			    im->IAddress = gadget;
+			    ptr = "GADGETUP";
+		   	}
+
 			gadget = NULL;
 			break;
 			
-		    /* String gadgets don't care about SELECTUP */
+		    /* Intuition string gadgets don't care about SELECTUP */
 
 		    case GTYP_CUSTOMGADGET: {
 			struct gpInput gpi;
@@ -1258,8 +1273,8 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X	= im->MouseX;
-			gpi.gpi_Mouse.Y	= im->MouseY;
+			gpi.gpi_Mouse.X	= ie->ie_X;
+			gpi.gpi_Mouse.Y	= ie->ie_Y;
 			gpi.gpi_TabletData	= NULL;
 
 			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
@@ -1268,6 +1283,8 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 
 			if (retval != GMR_MEACTIVE)
 			{
+			    struct gpGoInactive gpgi;
+			    
 			    if (retval & GMR_REUSE)
 			    	reuse_event = TRUE;
 
@@ -1283,6 +1300,13 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 			    {
 			    	im->Class = 0; /* Swallow event */
 			    }
+   
+			    gpgi.MethodID = GM_GOINACTIVE;
+			    gpgi.gpgi_GInfo = gi;
+			    gpgi.gpgi_Abort = 0;
+			    
+			    DoMethodA((Object *)gadget, (Msg)&gpgi);
+
 			    gadget = NULL;
 			}
 
@@ -1373,6 +1397,8 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 
 			if (retval != GMR_MEACTIVE)
 			{
+			    struct gpGoInactive gpgi;
+			    
 			    if (retval & GMR_REUSE)
 			    	reuse_event = TRUE;
 
@@ -1388,6 +1414,13 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 			    {
 			    	im->Class = 0; /* Swallow event */
 			    }
+   
+			    gpgi.MethodID = GM_GOINACTIVE;
+			    gpgi.gpgi_GInfo = gi;
+			    gpgi.gpgi_Abort = 0;
+			    
+			    DoMethodA((Object *)gadget, (Msg)&gpgi);
+
 			    gadget = NULL;
 			}
 
@@ -1455,6 +1488,8 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 
 			if (retval != GMR_MEACTIVE)
 			{
+			    struct gpGoInactive gpgi;
+			    
 			    if (retval & GMR_REUSE)
 			    	reuse_event = TRUE;
 
@@ -1470,7 +1505,15 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 			    {
 			    	im->Class = 0; /* Swallow event */
 			    }
+
+			    gpgi.MethodID = GM_GOINACTIVE;
+			    gpgi.gpgi_GInfo = gi;
+			    gpgi.gpgi_Abort = 0;
+			    
+			    DoMethodA((Object *)gadget, (Msg)&gpgi);
+			    
 			    gadget = NULL;
+			    
 			}
 
 		    
@@ -1536,8 +1579,8 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 
     iihdata->ActiveGadget = gadget;
 
-    /* If InputEvents have been swallowed, there is a free IntuiMessage
-    ** struct (eg. not sent to the apps messageport,
+    /* If IntuiMessages has been swallowed (im->Class = 0), there is a free IntuiMessage
+    ** struct (eg. not sent to the apps messageport),
     ** and we must free it here
     */
     
@@ -1547,10 +1590,11 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 	im = NULL;
     }
 
-    /* Wait for the app to reply. We will only receive on event at a time,
-    ** since input.device has high pri, and will allways be woke up before
-    ** any other app, so we will recieve one event at a time, and have to wait
-    ** for each one.
+    /* Wait for the apps to reply to the sent IntuiMessage.
+    ** Each time we wake up we will probably only have receive
+    ** one message. This is because input.device run on higher pri than apps,
+    ** and will therefore be woke up immediately when an app
+    ** calls ReplyMsg().
     */
      
     while (wait)
