@@ -5,7 +5,6 @@
     Open a drawer or launch a program.
 */
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include <exec/types.h>

@@ -5,7 +5,6 @@
     The Workbench Handler process and associated functions.
 */
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include <exec/ports.h>
