@@ -1,0 +1,40 @@
+
+/* native endian 2 big endian */
+
+template<class C>
+inline C ne2be (C value) // native endian to big endian (htonl ())
+{
+  return static_cast<C> (htonl (static_cast<long> (value)));
+}
+
+template<>
+inline short ne2be (short value) // specialization for short (htons ())
+{
+  return static_cast<short> (htons (static_cast<short> (value)));
+}
+
+template<>
+inline unsigned short ne2be (unsigned short value) // specialization for unsigned short (htons ())
+{
+  return static_cast<unsigned short> (htons (static_cast<unsigned short> (value)));
+}
+
+/* big endian 2 native endian */
+
+template<class C>
+inline C be2ne (C value) // big endian to native endian (ntohl ())
+{
+  return static_cast<C> (ntohl (static_cast<long> (value)));
+}
+
+template<>
+inline short be2ne (short value) // specialization for short (ntohs ())
+{
+  return static_cast<short> (ntohs (static_cast<short> (value)));
+}
+
+template<>
+inline unsigned short be2ne (unsigned short value) // specialization for unsigned short (ntohs ())
+{
+  return static_cast<unsigned short> (ntohs (static_cast<unsigned short> (value)));
+}
