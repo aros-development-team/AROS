@@ -153,6 +153,19 @@ void Refresh (struct RastPort * rp)
 
 	tend += 10;
     }
+
+    SetAPen (rp, 0);
+    RectFill (rp, 450, 140, 549, 239);
+
+    for (y=0; y<20; y++)
+    {
+	for (x=0; x<100; x++)
+	{
+	    pen = (LONG)ReadPixel (rp, x+100,y+100);
+	    SetAPen (rp, pen);
+	    WritePixel (rp, x+450, y+140);
+	}
+    }
 }
 
 #define GAD_WID     100
@@ -715,7 +728,10 @@ int main (int argc, char ** argv)
 		break;
 
 	    case IDCMP_REFRESHWINDOW:
+		bug ("REFRESHWINDOW\n");
+		BeginRefresh (win);
 		Refresh (rp);
+		EndRefresh (win, TRUE);
 		break;
 
 	    case IDCMP_GADGETDOWN: {
