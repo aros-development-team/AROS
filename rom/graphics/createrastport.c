@@ -59,7 +59,7 @@
 
     if (newRP)
     {
-	if (!driver_CreateRastPort (newRP, GfxBase))
+	if (!InitRastPort (newRP))
 	{
 	    FreeMem (newRP, sizeof (struct RastPort));
 	    newRP = NULL;
