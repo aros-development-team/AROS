@@ -57,7 +57,7 @@ AROS_UFH3(void, boot,
 
     struct DosLibrary *DOSBase;
 //    struct emulbase *emulbase;
-    struct TagItem fhtags[]= { { TAG_END, 0 } };
+//    struct TagItem fhtags[]= { { TAG_END, 0 } };
 //    struct FileHandle *fh_stdin, *fh_stdout;
 
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);

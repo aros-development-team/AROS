@@ -49,10 +49,12 @@ AROS_UFH3(void, intBoot,
     struct ExpansionBase *ExpansionBase = NULL;
     struct Library       *DOSBase       = NULL;
     struct BootNode      *bootNode      = NULL;
+#if 0
     STRPTR                bootName;
     LONG                  bootNameLength;        
     BPTR                  lock;
     LONG                  second;
+#endif
 
 #   define deviceName (((struct DosList *) bootNode->bn_DeviceNode)->dol_DevName)
     
@@ -91,7 +93,7 @@ AROS_UFH3(void, intBoot,
 	    from the list so DOS doesn't try to boot from it later. 
         */ 
 
-	if( !mount( (struct DeviceNode *) bootNode->bn_DeviceNode, DOSBase ) )
+	if( !mount( (struct DeviceNode *) bootNode->bn_DeviceNode, (struct DosLibrary *)DOSBase ) )
 	{
 	    REMOVE( bootNode );
 	}
@@ -259,7 +261,7 @@ BOOL mount( struct DeviceNode *dn, struct DosLibrary * DOSBase )
 	    iofs->io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
 	    iofs->io_Union.io_OpenDevice.io_Environ    = BADDR(fssm->fssm_Environ);
 	    iofs->io_Union.io_OpenDevice.io_DosName    = dn->dn_NewName;
-	    if (!OpenDevice(AROS_BSTR_ADDR(dn->dn_Handler), 0, &iofs->IOFS, 0))
+	    if (!OpenDevice((STRPTR)AROS_BSTR_ADDR(dn->dn_Handler), 0, &iofs->IOFS, 0))
 	    {
 		if (AddDosEntry(dn))
 		{
