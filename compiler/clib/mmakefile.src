@@ -103,8 +103,10 @@ FILES := \
 	remove \
 	rename \
 	rewind \
+	rewinddir \
 	scanf \
 	seed48 \
+	seekdir \
 	setbuf \
 	setenv \
 	setlinebuf \
@@ -140,6 +142,7 @@ FILES := \
 	strtol \
 	strtoul \
 	system \
+	telldir \
 	time \
 	truncate \
 	ungetc \
