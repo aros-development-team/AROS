@@ -39,9 +39,9 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
     __doupath = 1;
 
     /* argv[0] usually contains the name of the program, possibly with the full
-       path to it. Here we translate that path, which is an AmigaDOS-style path, into
-       an unix-style one.  */
-    if (argv && argv[0])
+       path to it. Here we translate that path, which is an AmigaDOS-style path,
+       into an unix-style one.  */
+    if (argv && argv[0] && !__get_arosc_privdata()->acpd_do_not_substitute_argv0)
     {
         char *new_argv0;
 
@@ -59,7 +59,7 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
        with the caller, but we do not want that. It's kind of wasteful to do
        it even if we've been started as a fresh process, though, so if we can
        we avoid it. */
-    if (!__get_arosc_privdata()->acpd_do_not_clone_vars)
+    if (!__get_arosc_privdata()->acpd_spawned)
     {
         if (!clone_vars(&old_vars))
 	{
@@ -82,7 +82,7 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
     }
 
 
-    if (!__get_arosc_privdata()->acpd_do_not_clone_vars)
+    if (!__get_arosc_privdata()->acpd_spawned)
         restore_vars(&old_vars);
 
 err_vars:
@@ -195,7 +195,7 @@ static void update_PATH(void)
     #define PE(x) ((PathEntry *)(BADDR(x)))
 
     UBYTE aname[PATH_MAX]; /* PATH_MAX Ought to enough, it would be too complicated
-                              handling aname dynamically (thanks to our suxxy dos.library).  */
+                              handling aname dynamically (thanks to our sucky dos.library).  */
     char *PATH = NULL;
     size_t oldlen = 0;
     PathEntry *cur;

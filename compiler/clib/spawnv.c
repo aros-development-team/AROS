@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/syscall.h>
 
 #include "__errno.h"
 #include "__upath.h"
@@ -24,6 +25,7 @@ typedef struct
 {
     BPTR command;
     LONG returncode;
+    int  parent_does_upath;
 } childdata_t;
 
 AROS_UFP3(static LONG, wait_entry,
@@ -169,6 +171,8 @@ static char *join_args(char * const *argv);
 	    else     tags[3].ti_Tag  = TAG_IGNORE;
 
 
+	    childdata.parent_does_upath = __doupath;
+
 	    if (CreateNewProc(tags) != NULL)
 	        ret = childdata.returncode;
 	    else
@@ -203,22 +207,33 @@ AROS_UFHA(ULONG, argsize,D0),
 AROS_UFHA(struct ExecBase *,SysBase,A6))
 {
     struct DosLibrary *DOSBase;
+    struct Library *aroscbase;
     LONG rc = -1;
     childdata_t *childdata = (childdata_t *)FindTask(NULL)->tc_UserData;
 
     DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
+    if (DOSBase == NULL)
+        goto err1;
 
-    if (DOSBase)
-    {
-        rc = RunCommand
-	(
-	    childdata->command, Cli()->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT, argstr, argsize
-	);
+    aroscbase = OpenLibrary("arosc.library", 0);
+    if (aroscbase == NULL)
+        goto err2;
 
-	CloseLibrary((struct Library *)DOSBase);
+    __get_arosc_privdata()->acpd_do_not_substitute_argv0 = !childdata->parent_does_upath;
+    __get_arosc_privdata()->acpd_spawned = 1;
 
-    }
+    rc = RunCommand
+    (
+        childdata->command, Cli()->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
+	argstr, argsize
+    );
 
+    CloseLibrary(aroscbase);
+
+err2:
+    CloseLibrary((struct Library *)DOSBase);
+
+err1:
     childdata->returncode = rc;
     return rc;
 }
