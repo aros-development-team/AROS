@@ -29,19 +29,27 @@
 #ifndef  DOS_DATETIME_H
 #   include <dos/datetime.h>
 #endif
+#ifndef  DOS_DOSTAGS_H
+#   include <dos/dostags.h>
+#endif
 
 #ifndef DOSBase
     extern struct DosLibrary *DOSBase;
 #endif
 
-LONG FWritef (BPTR fh, CONST_STRPTR format, ...);
-/*
-LONG FPrintf (BPTR fh, CONST_STRPTR format, ...);
-LONG Printf (CONST_STRPTR format, ...);
-*/
-APTR AllocDosObjectTags (ULONG type, ULONG tag1, ...);
-struct Process * CreateNewProcTags (ULONG tag1, ...);
-LONG SystemTags (STRPTR command, ULONG tag1, ...);
-BPTR NewLoadSegTags (STRPTR file, ULONG tag1, ...);
+#define AllocDosObjectTagList AllocDosObject
+#define CreateNewProcTagList CreateNewProc
+#define NewLoadSegTagList NewLoadSeg
+#define System SystemTagList
+
+/* Prototypes for stubs in amiga.lib */
+APTR AllocDosObjectTags (ULONG type, Tag tag1, ...);
+struct Process * CreateNewProcTags (Tag tag1, ...);
+BPTR NewLoadSegTags (STRPTR file, Tag tag1, ...);
+LONG SystemTags (STRPTR command, Tag tag1, ...);
+
+LONG FWritef (BPTR fh, STRPTR format, ...);
+LONG FPrintf (BPTR fh, STRPTR format, ...);
+LONG Printf (STRPTR format, ...);
 
 ##end clib
