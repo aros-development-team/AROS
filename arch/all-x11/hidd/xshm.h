@@ -2,8 +2,9 @@
 #define X11HIDD_XSHM_H
 
 
-#define USE_XSHM 0
+#include <aros/config.h>
 
+#if USE_XSHM
 
 #define XSHM_MEMSIZE 500000	/* We allocate 500K for dumping images to X */
 
@@ -33,5 +34,6 @@ void get_xshm_ximage(Display *display
 	
 void destroy_xshm_ximage(XImage *image);
 
+#endif /* USE_XSHM */
 
 #endif /* X11HIDD_XSHM_H */

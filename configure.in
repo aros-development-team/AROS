@@ -61,6 +61,9 @@ AC_PROG_CC
 AC_PROG_AWK
 AROS_PROG(MMAKE,mmake)
 
+# Check for some includes
+AC_CHECK_HEADERS(sys/ipc.h sys/shm.h)
+
 # Perform some default variable assignments. Note all of these will be
 # Regenerated from the script, so there is no need to cache them.
 aros_host_cc="$CC"
@@ -125,6 +128,32 @@ case "$host_os" in
 	AC_MSG_ERROR([Unsupported host architecture $host])
 	;;
 esac
+
+# See if we can compile SHM support
+HAVE_SHM_SUPPORT=0
+if [[ "x$no_x" != "xyes" -a "x$ac_cv_header_sys_ipc_h" = "xyes" -a "x$ac_cv_header_sys_shm_h" = "xyes" ]]; then
+  AC_MSG_CHECKING(whether the X11 MIT-SHM extension can be compiled in)
+  LIBS="-L/usr/X11/lib -lX11 -lXext"
+  AC_TRY_LINK([
+#include <sys/types.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/keysym.h>
+#include <X11/cursorfont.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <X11/extensions/XShm.h>],[
+static XShmSegmentInfo shminfo;
+static Display *display;
+XShmAttach(display, &shminfo);
+XSync(display,0);
+shmctl(shminfo.shmid, IPC_RMID, 0);
+],
+HAVE_SHM_SUPPORT=1
+AC_MSG_RESULT(yes),
+HAVE_SHM_SUPPORT=0
+AC_MSG_RESULT(no))
+fi
 
 AROS_PROG(HOST_AR,[ar],[cru])
 AROS_PROG(HOST_RANLIB,ranlib)
@@ -332,6 +361,7 @@ AC_SUBST(aros_arch)
 AC_SUBST(aros_cpu)
 AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
+AC_SUBST(HAVE_SHM_SUPPORT)
 
 # Host related
 AC_SUBST(aros_host_arch)
@@ -391,7 +421,11 @@ if test -z "$aros_gui_basedir" ; then
     else
 	aros_gui_ldflags="-L $x_libraries"
     fi
-    aros_gui_libflags="-lX11 -lXext"
+    if test "$HAVE_SHM_SUPPORT" = "1" ; then
+      aros_gui_libflags="-lX11 -lXext"
+    else
+      aros_gui_libflags="-lX11"
+    fi
     aros_gui_incdir="$x_includes"
     if test -z "$x_includes" ; then
 	aros_gui_ccflags=""
@@ -449,3 +483,6 @@ if test -f config/config.h ; then
         mv config/config.h $out
     fi
 fi
+
+
+

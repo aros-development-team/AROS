@@ -15,4 +15,6 @@
 
 #define AROS_FLAVOUR	@aros_flavour_uc@
 
+#define USE_XSHM	@HAVE_SHM_SUPPORT@
+
 #endif /* AROS_CONFIG_H */
