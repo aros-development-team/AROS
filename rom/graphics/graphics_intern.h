@@ -218,6 +218,10 @@ extern ULONG driver_GetVPModeID(struct ViewPort *vp, struct GfxBase *GfxBase);
 extern ULONG driver_BestModeIDA(struct TagItem *tags, struct GfxBase *GfxBase);
 extern struct BitMap *driver_AllocScreenBitMap(ULONG modeid, struct GfxBase *GfxBase);
 extern BOOL driver_MouseCoordsRelative(struct GfxBase *GfxBase);
+VOID driver_SetPointerPos(UWORD x, UWORD y, struct GfxBase *GfxBase);
+VOID driver_SetPointerShape(UWORD *shape, UWORD width, UWORD height
+		, UWORD xoffset, UWORD yoffset, struct GfxBase *GfxBase);
+
 extern BOOL driver_SetFrontBitMap(struct BitMap *bm, BOOL copyback, struct GfxBase *GfxBase);
 
 /* functions in support.c */

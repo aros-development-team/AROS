@@ -36,5 +36,20 @@
 	BOOL, copyback, d0, \
 	GFX_BASE_NAME )
 
+#define SetPointerPos(x, y) \
+    LP2( , VOID, SetPointerPos, \
+	UWORD, x, d0, \
+	UWORD, y, d1, \
+	GFX_BASE_NAME )
+
+
+#define SetPointerShape(shape, width, height, xoffset, yoffset) \
+    LP5( , VOID, SetPointerShape, \
+	UWORD *, shape, a0, \
+	UWORD, width, d0, \
+	UWORD, height, d1, \
+	UWORD, xoffset, d2, \
+	UWORD, yoffset, d3, \
+	GFX_BASE_NAME )
 	
 #endif _GFX_PINLINES_H

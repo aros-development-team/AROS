@@ -45,4 +45,17 @@ AROS_LP2(BOOL, SetFrontBitMap,
     AROS_LPA(BOOL, copyback, D0),
     struct GfxBase *, GfxBase, 184, Graphics)
 
+AROS_LP2(VOID, SetPointerPos,
+    AROS_LPA(UWORD, x, D0),
+    AROS_LPA(UWORD, y, D1),
+    struct GfxBase *, GfxBase, 185, Graphics)
+
+AROS_LP5(VOID, SetPointerShape,
+    AROS_LPA(UWORD *, shape, A0),
+    AROS_LPA(UWORD, width, D0),
+    AROS_LPA(UWORD, height, D1),
+    AROS_LPA(UWORD, xoffset, D2),
+    AROS_LPA(UWORD, yoffset, D3),
+    struct GfxBase *, GfxBase, 186, Graphics)
+
 #endif /* _GRAPHICS_PRIVATE_H */
