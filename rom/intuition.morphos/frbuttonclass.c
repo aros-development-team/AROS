@@ -125,7 +125,7 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
             {
                 // ONLY DO THIS FOR REAL IMAGE OBJECTS (cyfm 31/12/02)
                 /* center image position, we assume image top and left is 0 */
-                SetAttrsA(EG(o)->SelectRender, &image_tags);
+                SetAttrsA(EG(o)->SelectRender, image_tags);
             }
 
             x = container.Left + (container.Width / 2) -
