@@ -9,7 +9,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef AROS_NO_SIGNAL_H
+
 #include <signal.h>
 
 	int sigsuspend (
@@ -42,5 +42,3 @@
     return -1; /* return failure */
 
 } /* sigsuspend */
-
-#endif

@@ -9,7 +9,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef AROS_NO_SIGNAL_H
+
 #include <signal.h>
 
 	int sigaddset (
@@ -46,5 +46,3 @@
 	
 	return -1;
 } /* sigaddset */
-
-#endif
