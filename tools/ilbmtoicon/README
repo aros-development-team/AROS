@@ -80,3 +80,8 @@ icondescription file
      Optional. Default = DEFAULT = inherit from parent view
      mode.
      
+   TRANSPARENT = <integer>
+   
+     Transparent (mask) color in ILBM image(s). Use -1 for no transparency.
+     Default = 0.
+

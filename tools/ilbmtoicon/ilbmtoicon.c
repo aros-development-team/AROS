@@ -129,6 +129,7 @@ static LONG 	    	    drawervleftoption = 0;
 static LONG 	    	    drawervtopoption = 0;
 static LONG 	    	    drawershowoption = 0;
 static LONG 	    	    drawershowasoption = 0;
+static LONG 	    	    transparentoption = 0;
 
 /****************************************************************************************/
 
@@ -331,6 +332,7 @@ keywordtable[] =
     {KEYWORD_INTEGER	, "DRAWERVIEWTOP"   , &drawervtopoption     , NULL  	    	},
     {KEYWORD_CYCLE	, "DRAWERSHOW"      , &drawershowoption     , showcycles   	},
     {KEYWORD_CYCLE	, "DRAWERSHOWAS"    , &drawershowoption     , showascycles   	},
+    {KEYWORD_INTEGER	, "TRANSPARENT"     , &transparentoption    , NULL  	    	},
     {0	    	    	, NULL	    	    , NULL  	    	    	    	    	}
 };
 
@@ -1537,18 +1539,18 @@ static LONG writeimagchunk(struct ILBMImage *img)
 #undef ACT_STRUCT
 #define ACT_STRUCT ic
 
-    SET_BYTE(ic_transparentcolour, 0);
+    SET_BYTE(ic_transparentcolour, transparentoption);
     if (skippalette)
     {
     	SET_BYTE(ic_numcolours, 0);
-	SET_BYTE(ic_flags, 1); /* HasTransparentColour */
+	SET_BYTE(ic_flags, (transparentoption != -1) ? 1 : 0); /* 1 = HasTransparentColour */
 	SET_BYTE(ic_paletteformat, 0);
 	SET_WORD(ic_numpalettebytes, 0);
     }
     else
     {
     	SET_BYTE(ic_numcolours, img->cmapentries - 1);
-	SET_BYTE(ic_flags, 3); /* HasTransparentColour + HasPalette */
+	SET_BYTE(ic_flags, (transparentoption != -1) ? 3 : 2); /* 2 = HasPalette */
 	SET_BYTE(ic_paletteformat, palpacked);
     	SET_WORD(ic_numpalettebytes, palsize - 1);
     }
