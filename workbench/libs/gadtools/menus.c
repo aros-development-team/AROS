@@ -51,7 +51,7 @@
 
 /**************************************************************************************************/
 
-static BOOL is_menubarlabelclass_image(struct Image *im, struct GadToolsBase_intern *GadToolsBase)
+BOOL is_menubarlabelclass_image(struct Image *im, struct GadToolsBase_intern *GadToolsBase)
 {
     BOOL is_barlabel = FALSE;
 
@@ -563,8 +563,9 @@ static ULONG EqualizeItems(struct MenuItem *firstitem, struct MenuItem *lastitem
     	    	    	   struct Image *amikeyimage, struct VisualInfo *vi,
 			   struct GadToolsBase_intern * GadToolsBase)
 {
-    struct MenuItem *item;
-    WORD    	    minx = 0, maxwidth = 0, maxrightstuffwidth = 0;
+    struct MenuItem 	*item;
+    struct TextExtent    te;
+    WORD    	    	 minx = 0, maxwidth = 0, maxrightstuffwidth = 0;
 
     if (!firstitem) return 0;
 
@@ -579,13 +580,15 @@ static ULONG EqualizeItems(struct MenuItem *firstitem, struct MenuItem *lastitem
 
     /* Calc. the max. width of AmigaKey/CommandString/">>" */
 
+    FontExtent(vi->vi_dri->dri_Font, &te);
+
     for(item = firstitem; item && (item != lastitem); item = item->NextItem)
     {
         WORD width = 0;
 
 	if (item->Flags & COMMSEQ)
 	{
-	    width =  vi->vi_dri->dri_Font->tf_XSize;
+	    width = te.te_Width;
 
 	    if (item->Flags & ITEMTEXT)
 	    {
@@ -594,17 +597,20 @@ static ULONG EqualizeItems(struct MenuItem *firstitem, struct MenuItem *lastitem
 
 		if (it->ITextFont)
 		{
-        	    if (NULL != (font = OpenFont(it->ITextFont)))
+        	    if ((font = OpenFont(it->ITextFont)))
         	    {
-        	        width = font->tf_XSize;
+		    	struct TextExtent e;
+			
+			FontExtent(font, &e);
+			
+        	        width = e.te_Width;
         	        CloseFont(font);
         	    }
 		}
 	    }
 
             width += amikeyimage->Width +
-		     AMIGAKEY_KEY_SPACING +
-		     TEXT_AMIGAKEY_SPACING;
+		     AMIGAKEY_KEY_SPACING;
 
         }
 	else if (item->Flags & ITEMTEXT)
@@ -699,7 +705,8 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
     struct MenuItem 	* menuitem = firstitem;
     struct MenuItem 	* equalizeitem = firstitem;
     struct Image 	* amikeyimage, * chkimage;
-
+    struct TextExtent	te;
+    
     ULONG 		curX = 0;
     ULONG 		curY = 0;
 
@@ -709,6 +716,8 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
     chkimage = (struct Image *)GetTagData(GTMN_Checkmark, 0, taglist);
     if (!chkimage) chkimage = vi->vi_dri->dri_CheckMark;
 
+    FontExtent(vi->vi_dri->dri_Font, &te);
+    
     while (NULL != menuitem)
     {
 	ULONG addwidth = 0;
@@ -717,6 +726,9 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
 	menuitem->LeftEdge = curX;
 	menuitem->TopEdge  = curY;
 
+    #if 0 /* stegerg: disabled, because menuitem->Width right here, is supposed to
+             only contain the width of the leftside stuff, ie. excluding possible
+	     commseq or commtext! */
 	/*
 	** Check the flags whether there exists a shortcut or a checkmark is
 	** necessary..
@@ -730,7 +742,7 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
 
 	    if (!amikeyimage) amikeyimage = vi->vi_dri->dri_AmigaKey;
 
-	    addwidth = vi->vi_dri->dri_Font->tf_XSize;
+	    addwidth = te.te_Width;
 	    if (menuitem->Flags & ITEMTEXT)
 	    {
         	struct TextFont  *font;
@@ -738,10 +750,15 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
 
 		if (it->ITextFont)
 		{
-        	    if (NULL != (font = OpenFont(it->ITextFont)))
+        	    if ((font = OpenFont(it->ITextFont)))
         	    {
-        	      addwidth = font->tf_XSize;
-        	      CloseFont(font);
+		    	struct TextExtent e;
+			
+			FontExtent(font, &e);
+			
+        	      	addwidth = e.te_Width;
+			
+        	      	CloseFont(font);
         	    }
 		}
 	    }
@@ -751,6 +768,7 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
 			TEXT_AMIGAKEY_SPACING;
 
 	} /* if (0 != (menuitem->Flags & COMMSEQ)) */
+    #endif
 
 	if (0 != (menuitem->Flags & CHECKIT))
 	{
@@ -776,7 +794,9 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
 	    if (NULL != (ti = FindTagItem(GTMN_FrontPen, taglist)))
 	    {
         	it->FrontPen = ti->ti_Data;
-	    } else {
+	    }
+	    else
+	    {
         	it->FrontPen = vi->vi_dri->dri_Pens[BARDETAILPEN];
 	    }
 

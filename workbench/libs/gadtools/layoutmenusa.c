@@ -133,23 +133,68 @@
                                     strlen(menu->MenuName)) +
 			 vinfo->vi_screen->MenuHBorder * 2;
 
-#if 0     
+    #if 0     
 	/* stegerg: the Amiga just clips them away, and BTW:
             dri->dri_Resolution.X is not screen width!! It's
 	    aspect information */                           
 	if (menu->Width + curX > vinfo->vi_dri->dri_Resolution.X)
 	{
-//#warning Proper layout of menu titles???
+    	    //#warning Proper layout of menu titles???
 	    curX  = 0;
 	    curY += ((textfont->tf_YSize * 5) / 4);
 
 	    menu->LeftEdge = curX;
 	    menu->TopEdge  = curY;
 	}
-#endif
+    #endif
 
 	menu->Height = textfont->tf_YSize;
 
+    	/* Make sure the menu box is at least as large as the menu title,
+	   otherwise it looks ugly */
+	   
+    	if (menu->FirstItem && menu->FirstItem->Width < menu->Width)
+	{
+	    struct MenuItem *item = menu->FirstItem, *subitem;
+	    LONG    	     diff = menu->Width - item->Width;
+	    
+	    while(item)
+	    {
+	    	item->Width += diff;
+		
+		if (item->Flags & ITEMTEXT)
+		{
+		    struct IntuiText *it = (struct IntuiText *)item->ItemFill;
+		    
+		    if ((it = it->NextText))
+		    {
+		    	it->LeftEdge += diff;
+		    } 
+		}
+		else
+		{
+	    	    struct Image *im = (struct Image *)item->ItemFill;
+		    
+		    if (is_menubarlabelclass_image(im, GadToolsBase))
+		    {
+		    	im->Width += diff;
+		    }
+		}
+		
+		if ((subitem = item->SubItem))
+		{
+		    while(subitem)
+		    {
+		    	subitem->LeftEdge += diff;
+			subitem = subitem->NextItem;
+		    }
+		}
+		
+		item = item->NextItem;
+	    }
+	    
+	}
+	
 	/* Proper layout??? */
 	curX += menu->Width + vinfo->vi_screen->BarHBorder * 2;
 
