@@ -465,6 +465,11 @@ Execute an AmigaDOS script.
   Returns TRUE if file1 is older (earlier) than file2.
 
 
+( getdiskspace <pathname> )
+  Returns the number free bytes on the device.  If the pathname is bad or
+  no info could not be obtained, -1 is returned.
+
+
 
 /* Unimplemented commands */
 ( copyfiles )
@@ -473,7 +478,6 @@ Execute an AmigaDOS script.
 ( foreach )
 ( getassign )
 ( getdevice )
-( getdiskspace )
 ( getenv )
 ( getsize )
 ( getsum )
