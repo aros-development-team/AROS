@@ -454,6 +454,52 @@
 	IW(w)->sizeimage_height = sizeheight;
     }
 
+    /* look for GACT_???BORDER gadgets which increase the BorderSizes */
+    
+    if (nw.FirstGadget)
+    {
+        struct Gadget *gad;
+	
+	for(gad = nw.FirstGadget; gad; gad = gad->NextGadget)
+	{
+	    WORD gadx1, gady1, gadx2, gady2;
+	    
+	    if (gad->Activation & GACT_LEFTBORDER)
+	    {
+	        /* may never be GFLG_RELRIGHT / GFLG_RELWIDTH */
+		
+		gadx2 = gad->LeftEdge + gad->Width - 1;
+		if (gadx2 >= w->BorderLeft) w->BorderLeft = gadx2 + 1;
+	    }
+	    
+	    if (gad->Activation & GACT_TOPBORDER)
+	    {
+	        /* may never be GFLG_RELBOTTOM / GFLG_RELHEIGHT */
+		
+	        gady2 = gad->TopEdge + gad->Height - 1;
+		if (gady2 >= w->BorderTop) w->BorderTop = gady2 + 1;
+	    }
+	    
+	    if (gad->Activation & GACT_RIGHTBORDER)
+	    {
+	        /* must be GFLG_RELRIGHT but never GFLG_RELWIDTH */
+		
+		gadx1 = -gad->LeftEdge;
+		if (gadx1 >= w->BorderRight) w->BorderRight = gadx1 + 1;
+	    }
+	    
+	    if (gad->Activation & GACT_BOTTOMBORDER)
+	    {
+	        /* must be GFLG_RELBOTTOM but never GFLG_RELHEIGHT */
+		
+		gady1 = -gad->TopEdge;
+		if (gady1 >= w->BorderBottom) w->BorderBottom = gady1 + 1;
+	    }
+	    	    
+	} /* for(gad = nw.FirstGadget; gad; gad = gad->NextGadget) */
+	
+    } /* if (nw.FirstGadget) */
+    
     if (innerWidth != ~0L) nw.Width = innerWidth + w->BorderLeft + w->BorderRight;
     if (innerHeight != ~0L) nw.Height = innerHeight + w->BorderTop + w->BorderBottom;
     
