@@ -8,6 +8,9 @@
 #ifndef CLIB_ALIB_PROTOS_H
 #   include <clib/alib_protos.h>
 #endif
+#ifndef DOS_DOS_H
+#   include <dos/dos.h>
+#endif
 #ifndef PROTO_ICON_H
 #   include <proto/icon.h>
 #endif
