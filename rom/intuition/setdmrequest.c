@@ -19,7 +19,7 @@
 	AROS_LHA(struct Requester *, dmrequest, A0),
 
 /*  LOCATION */
-	struct IntuitionBase *, IntuitionBase, 53, Intuition)
+	struct IntuitionBase *, IntuitionBase, 43, Intuition)
 
 /*  FUNCTION
 	Try to set the DMRequest of a window.
