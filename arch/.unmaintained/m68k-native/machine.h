@@ -80,17 +80,34 @@ extern void _aros_not_implemented (void);
     ignored by the function.
 */
 
+/* The registers */
+#define D0 "d0"
+#define D1 "d1"
+#define D2 "d2"
+#define D3 "d3"
+#define D4 "d4"
+#define D5 "d5"
+#define D6 "d6"
+#define D7 "d7"
+#define A0 "a0"
+#define A1 "a1"
+#define A2 "a2"
+#define A3 "a3"
+#define A4 "a4"
+#define A5 "a5"
+#define A6 "a6"
+
 /* What to do with the library base in header, prototype and call */
-#define __AROS_LH_BASE(basetype,basename)   basetype basename
-#define __AROS_LP_BASE(basetype,basename)   void *
+#define __AROS_LH_BASE(basetype,basename)   basetype basename __asm("a6")
+#define __AROS_LP_BASE(basetype,basename)   void *  __asm("a6")
 #define __AROS_LC_BASE(basetype,basename)   basename
 
 /* How to transform an argument in header, prototype and call */
-#define __AROS_LHA(type,name,reg)     type name
-#define __AROS_LPA(type,name,reg)     type
+#define __AROS_LHA(type,name,reg)     type name __asm(reg)
+#define __AROS_LPA(type,name,reg)     type __asm(reg)
 #define __AROS_LCA(type,name,reg)     name
-#define __AROS_UFHA(type,name,reg)    type name
-#define __AROS_UFPA(type,name,reg)    type
+#define __AROS_UFHA(type,name,reg)    type name __asm(reg)
+#define __AROS_UFPA(type,name,reg)    type __asm(reg)
 #define __AROS_UFCA(type,name,reg)    name
 
 /* Prefix for library function in header, prototype and call */
@@ -100,6 +117,14 @@ extern void _aros_not_implemented (void);
 #define __AROS_UFH_PREFIX   /* eps */
 #define __AROS_UFP_PREFIX   /* eps */
 #define __AROS_UFC_PREFIX   /* eps */
+
+/* Postfix for library function in header, prototype and call */
+#define __AROS_LH_POSTFIX    /* eps */
+#define __AROS_LP_POSTFIX    /* eps */
+#define __AROS_LC_POSTFIX    /* eps */
+#define __AROS_UFH_POSTFIX   /* eps */
+#define __AROS_UFP_POSTFIX   /* eps */
+#define __AROS_UFC_POSTFIX   /* eps */
 
 /* if this is defined, all AROS_LP*-macros will expand to nothing. */
 #define __AROS_USE_MACROS_FOR_LIBCALL
