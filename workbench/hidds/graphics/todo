@@ -1,0 +1,23 @@
+TODO LIST GFX HIDD:
+
+- pass GC to all bitmap rendering calls.
+DONE
+
+- Correct handling in AllocBitMap() (BMF_MINPLANES etc)
+DONE, but do not check for BMF_MINPLANES; maybe not necessary.
+
+- Implement a temp BM object for planar Amiga bitmaps, to
+  avoid cluttering up the graphics_driver.
+  
+
+- Implement rendering in bm baseclass only with the help of
+pixel format and baseadress.
+
+- Use the above to handle PIXFMT_XXX CGFX bitmaps
+
+- Callback funcs for refresh info and for active window info
+
+- ClipRectangle in the bitmap class. Try to implement
+some general HIDD_BM_ApplyClipping() method in
+the BM baseclass for ease of use by the subclasses.
+The clipping should be used for lines, ellipses etc.
