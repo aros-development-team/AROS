@@ -33,7 +33,7 @@
 
 /* Structures */
 struct MemMapNode {
-    struct MinNode *node;
+    struct MinNode node;
     ULONG Base;
     ULONG Length;
     ULONG Type;
@@ -47,12 +47,12 @@ struct MemMapNode {
 #define MMAP_Type_ACPINVS	4
 
 struct DriveInfoNode {
-    struct MinNode *node;
+    struct Node node;
     UBYTE	Number;
     UBYTE	Mode;
     UWORD	Cylinders;
-    UWORD	Heads;
-    UWORD	Sectors;
+    UBYTE	Heads;
+    UBYTE	Sectors;
 };
 
 #define DriveMode_CHS		0
