@@ -51,7 +51,7 @@
     
     if (imsg)
     {
-        FreeMem(imsg, sizeof(struct ExtIntuiMessage));
+        FreeMem(imsg, sizeof(struct IntIntuiMessage));
     }
 
     AROS_LIBFUNC_EXIT

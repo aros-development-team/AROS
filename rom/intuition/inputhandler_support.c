@@ -184,8 +184,22 @@ BOOL fire_intuimessage(struct Window *w,
     	    imsg->Class = Class;
 	    imsg->Code = Code;
 	    imsg->Qualifier = iihd->ActQualifier;
-	    imsg->IAddress = IAddress;
-
+	    
+	    if (Class == IDCMP_RAWKEY)
+	    {
+		/*
+		** In case of IDCMP_RAWKEY IntuiMessage->IAddress is a pointer to the
+		** prev Code/Qual data, not the data itself (which is the case for
+		** IDCMP_VANILLAKEY)
+		*/
+		
+	    	INT_INTUIMESSAGE(imsg)->prevCodeQuals = IAddress;
+		imsg->IAddress = &(INT_INTUIMESSAGE(imsg)->prevCodeQuals);
+	    }
+	    else
+	    {
+	    	imsg->IAddress = IAddress;
+    	    }
 	    send_intuimessage(imsg, w, IntuitionBase);
 
 	    result = TRUE;

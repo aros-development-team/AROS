@@ -51,7 +51,7 @@
     
     ASSERT_VALID_PTR(window);
     
-    if ((msg = AllocMem(sizeof(struct ExtIntuiMessage), MEMF_PUBLIC | MEMF_CLEAR)))
+    if ((msg = AllocMem(sizeof(struct IntIntuiMessage), MEMF_PUBLIC | MEMF_CLEAR)))
     {
         msg->ExecMessage.mn_Node.ln_Type = NT_MESSAGE;
 	msg->ExecMessage.mn_Length       = sizeof(struct ExtIntuiMessage);
