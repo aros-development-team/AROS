@@ -49,10 +49,10 @@ AROS_LH1(struct Screen *, GetDefaultPubScreen,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    STRPTR name;
     struct Screen *defscreen;
+    STRPTR  	   name;
 
-   DEBUG_GETDEFAULTPUBSCREEN(dprintf("GetDefaultPubScreen(%s)\n",nameBuffer));
+    DEBUG_GETDEFAULTPUBSCREEN(dprintf("GetDefaultPubScreen(%s)\n",nameBuffer));
 
     LockPubScreenList();
 

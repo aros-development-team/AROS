@@ -59,6 +59,7 @@ AROS_LH0(struct List *, LockPubScreenList,
                                     FindTask(NULL)->tc_Node.ln_Name));
     ObtainSemaphore(&GPB(IntuitionBase)->PubScrListLock);
     DEBUG_LOCKPUBSCREENLIST(dprintf("LockPubScreenList: done\n"));
+    
     return (struct List *)&(GPB(IntuitionBase)->PubScreenList);
 
     AROS_LIBFUNC_EXIT

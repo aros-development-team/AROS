@@ -143,6 +143,7 @@ AROS_LH0(LONG, CloseWorkBench,
     {
         retval = FALSE;
     }
+    
     DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: UnLockPubScreenList\n"));
     UnlockPubScreenList();
     DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: UnLockPubScreenList done\n"));

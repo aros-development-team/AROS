@@ -85,11 +85,12 @@ AROS_LH4(void, DrawBorder,
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
     ULONG  apen;
     ULONG  bpen;
     ULONG  drmd;
     ULONG  penmode;
-    WORD * ptr;
+    WORD  *ptr;
     WORD   x, y;
     WORD   xoff, yoff;
     int    t;

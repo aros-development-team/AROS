@@ -66,9 +66,10 @@ AROS_LH5(UWORD, AddGList,
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    struct Gadget * pred;
-    struct Gadget * last;
-    UWORD count, count2;
+
+    struct Gadget *pred;
+    struct Gadget *last;
+    UWORD   	   count, count2;
 
     EXTENDUWORD(position);
     EXTENDWORD(numGad);
@@ -103,6 +104,7 @@ AROS_LH5(UWORD, AddGList,
                                    last->GadgetID));
             last->GadgetType &= ~GTYP_REQGADGET;
         }
+	
         pred = (struct Gadget *)&window->FirstGadget;
         requester = NULL;
     }
@@ -143,13 +145,13 @@ AROS_LH5(UWORD, AddGList,
 
     if (!requester || requester->ReqLayer)
     {
-#if 1
+    #if 1
         /* Refresh REL gadgets first. Wizard.library (die, die, die!) seems to rely on that. */
         int_refreshglist(gadget, window, requester, numGad, REFRESHGAD_REL, 0, IntuitionBase);
         int_refreshglist(gadget, window, requester, numGad, 0, REFRESHGAD_REL, IntuitionBase);
-#else
+    #else
         RefreshGList(gadget, window, requester, numGad);
-#endif
+    #endif
     }
 
 #ifdef USEGADGETLOCK

@@ -11,12 +11,12 @@
 
 struct ChangeWindowBoxActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
-    LONG left;
-    LONG top;
-    LONG width;
-    LONG height;
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
+    LONG    	    	     left;
+    LONG    	    	     top;
+    LONG    	    	     width;
+    LONG    	    	     height;
 };
 
 static VOID int_changewindowbox(struct ChangeWindowBoxActionMsg *msg,
@@ -84,7 +84,6 @@ AROS_LH5(void, ChangeWindowBox,
     msg.window = window;
     msg.left   = left;
     msg.top    = top;
-
     msg.width  = width;
     msg.height = height;
 

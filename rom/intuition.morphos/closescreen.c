@@ -29,7 +29,7 @@
 struct CloseScreenActionMsg
 {
     struct IntuiActionMsg msg;
-    struct Screen *Screen;
+    struct Screen   	 *Screen;
 };
 
 static VOID int_closescreen(struct CloseScreenActionMsg *msg,
@@ -76,8 +76,8 @@ AROS_LH1(BOOL, CloseScreen,
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
     struct CloseScreenActionMsg msg;
-//    ULONG lock;
 
     DEBUG_CLOSESCREEN(dprintf("CloseScreen: Screen 0x%lx\n", screen));
 
@@ -179,14 +179,6 @@ AROS_LH1(BOOL, CloseScreen,
     /* Free the RasInfo of the viewport */
     FreeMem(screen->ViewPort.RasInfo, sizeof (struct RasInfo));
 
-#if 0
-    /* Root layer now automatically freed in ThinLayerInfo() */
-
-#ifdef CreateLayerTagList
-    /* Free the root layer */
-    DeleteLayer(0UL, ((struct IntScreen *)screen)->rootLayer);
-#endif
-#endif
     /* Uninit the layerinfo */
 
     ThinLayerInfo(&screen->LayerInfo);
@@ -239,7 +231,7 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
 {
     struct Screen *parent,*screen = msg->Screen;
     struct Window *win = 0;
-    ULONG lock;
+    ULONG   	   lock;
 
     /* If this is a public screen, free related information if there are
        no windows left on the screen */

@@ -63,7 +63,7 @@ AROS_LH3(ULONG, GetAttr,
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct opGet get;
-    ULONG result = 0;
+    ULONG        result = 0;
 
     DEBUG_GETATTR(dprintf("GetAttr[%x]: AttrID 0x%lx Object 0x%lx Storage 0x%lx\n",
                           &get, attrID, object, storagePtr));

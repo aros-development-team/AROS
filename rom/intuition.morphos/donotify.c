@@ -33,14 +33,9 @@
     gadget method.
  
 */
-static struct IntuiMessage *SendIDCMPUpdate(
-                Class       *cl,
-                Object      *o,
-                struct opUpdate *msg,
-                ULONG       class,
-                UWORD       code,
-                APTR        IAddress,
-                struct IntuitionBase *IntuitionBase)
+static struct IntuiMessage *SendIDCMPUpdate(Class *cl, Object *o, struct opUpdate *msg,
+                    	    	    	    ULONG class, UWORD code, APTR IAddress,
+                    	    	    	    struct IntuitionBase *IntuitionBase)
 {
     struct IntuiMessage *imsg;
 
@@ -50,8 +45,8 @@ static struct IntuiMessage *SendIDCMPUpdate(
 
     if( imsg )
     {
-        imsg->Class = class;
-        imsg->Code  = code;
+        imsg->Class 	= class;
+        imsg->Code  	= code;
         imsg->Qualifier = (msg->opu_Flags == OPUF_INTERIM) ? ICMAGIC : 0; //tells SendIntuiMessage if the message is OK to be dropped
         imsg->IAddress  = IAddress;
         imsg->MouseX    = msg->opu_GInfo->gi_Window->MouseX;
@@ -158,12 +153,15 @@ AROS_LH4(IPTR, DoNotify,
                     else
                     {
                         if (msg->opu_GInfo)
+			{
                             if (msg->opu_GInfo->gi_Window)
+			    {
                                 if (msg->opu_GInfo->gi_Window->UserPort)
+				{
                                     if (msg->opu_GInfo->gi_Window->IDCMPFlags & IDCMP_IDCMPUPDATE)
                                     {
                                         struct TagItem  *ti;
-                                        UWORD       code = 0;
+                                        UWORD       	 code = 0;
 
                                         if ((ti = FindTagItem(ICSPECIAL_CODE, ic->ic_CloneTags)))
                                         {
@@ -177,6 +175,9 @@ AROS_LH4(IPTR, DoNotify,
 
                                         ic->ic_CloneTags = NULL;
                                     }
+				}
+			    }
+			}
                     }
 
                     FreeTagItems(ic->ic_CloneTags);

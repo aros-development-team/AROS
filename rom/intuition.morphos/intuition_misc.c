@@ -69,13 +69,13 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
         AllocMem(sizeof(struct Preferences),
                  MEMF_CLEAR);
 
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID = -1UL;
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width = AROS_DEFAULT_WBWIDTH;
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height = AROS_DEFAULT_WBHEIGHT;
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth = AROS_DEFAULT_WBDEPTH;
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Control = 0;
+    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID  = -1UL;
+    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width  	= AROS_DEFAULT_WBWIDTH;
+    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height 	= AROS_DEFAULT_WBHEIGHT;
+    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth  	= AROS_DEFAULT_WBDEPTH;
+    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Control 	= 0;
 
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_TimeOut = 50;
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_TimeOut  = 50;
     GetPrivIBase(IntuitionBase)->IControlPrefs.ic_MetaDrag = IEQUALIFIER_LCOMMAND;    
     GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags = ICF_3DMENUS |
     	    	    	    	    	    	    	  ICF_OFFSCREENLAYERS |
@@ -83,10 +83,10 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
     	    	    					  ICF_MENUSNAP |
 							  ICF_STRGAD_FILTER |
 							  ICF_COERCE_LACE;
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_WBtoFront = 'N';
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_FrontToBack = 'M';
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqTrue = 'V';
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqFalse = 'B';  
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_WBtoFront 	= 'N';
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_FrontToBack 	= 'M';
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqTrue   	= 'V';
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqFalse  	= 'B';  
 
 
     /*
@@ -173,7 +173,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 {
 
     struct DrawInfo *dri;
-    BOOL is_gzz;
+    BOOL    	     is_gzz;
 
     EnterFunc(bug("CreateWinSysGadgets(w=%p)\n", w));
 
@@ -189,27 +189,6 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
         db_left = 0;
         db_width = 0; /* Georg Steger: was w->Width; */
 
-        /* Now find out what gadgets the window wants */
-#if 0
-        if (    w->Flags & WFLG_CLOSEGADGET
-                || w->Flags & WFLG_DEPTHGADGET
-                || w->Flags & WFLG_HASZOOM
-                || w->Flags & WFLG_DRAGBAR /* To assure w->BorderTop being set correctly */
-                || w->Flags & WFLG_SIZEGADGET
-           )
-        {
-            /* If any of titlebar gadgets are present, me might just as well
-            insert a dragbar too */
-
-            w->Flags |= WFLG_DRAGBAR;
-
-            /* Georg Steger: bordertop is set by rom/intuition/openwindow.c
-            to scr->WBorTop + FontHeight + 1 */
-
-            /* w->BorderTop = TITLEBAR_HEIGHT; */
-        }
-#endif
-
         /* Relright of rightmost button */
         //relright = - (TITLEBAR_HEIGHT - 1);
 
@@ -224,29 +203,29 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
             WORD height = ((struct IntWindow *)w)->sizeimage_height;
 
             struct TagItem size_tags[] =
-                {
-                    {GA_Image   , 0             },
-                    {GA_RelRight    , -width  + 1   },
-                    {GA_RelBottom   , -height + 1   },
-                    {GA_Width   , width     },
-                    {GA_Height  , height    },
-                    {GA_SysGadget   , TRUE      },
-                    {GA_SysGType    , GTYP_SIZING   },
-                    {GA_BottomBorder, TRUE      },
-                    {GA_RightBorder , TRUE      },
-                    {GA_GZZGadget   , is_gzz    },
-                    {TAG_DONE           }
-                };
+            {
+                {GA_Image   	, 0             },
+                {GA_RelRight    , -width  + 1   },
+                {GA_RelBottom   , -height + 1   },
+                {GA_Width   	, width     	},
+                {GA_Height  	, height    	},
+                {GA_SysGadget   , TRUE      	},
+                {GA_SysGType    , GTYP_SIZING   },
+                {GA_BottomBorder, TRUE      	},
+                {GA_RightBorder , TRUE      	},
+                {GA_GZZGadget   , is_gzz    	},
+                {TAG_DONE           	    	}
+            };
 
             struct TagItem image_tags[] =
-                {
-                    {IA_Width   , width },
-                    {IA_Height  , height    },
-                    {SYSIA_Which    , SIZEIMAGE },
-                    {SYSIA_DrawInfo , (IPTR)dri },
-                    {SYSIA_Size, w->WScreen->Flags & SCREENHIRES ? SYSISIZE_MEDRES : SYSISIZE_LOWRES},
-                    {TAG_DONE           }
-                };
+            {
+                {IA_Width   	, width     	    	    	    	    	    	    	     },
+                {IA_Height  	, height    	    	    	    	    	    	    	     },
+                {SYSIA_Which    , SIZEIMAGE 	    	    	    	    	    	    	     },
+                {SYSIA_DrawInfo , (IPTR)dri 	    	    	    	    	    	    	     },
+                {SYSIA_Size 	, w->WScreen->Flags & SCREENHIRES ? SYSISIZE_MEDRES : SYSISIZE_LOWRES},
+                {TAG_DONE           	    	    	    	    	    	    	    	     }
+            };
             Object *im;
 
             im = NewObjectA(NULL, SYSICLASS, image_tags);
@@ -271,39 +250,39 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
         if (w->Flags & WFLG_DEPTHGADGET)
         {
             struct TagItem depth_tags[] =
-                {
-                    {GA_Image   , 0                 },
-                    //{GA_RelRight  , relright      },
-                    {GA_Top     , 0                 },
-		#if SQUARE_WIN_GADGETS
-                    {GA_Width , TITLEBAR_HEIGHT     },
-		#endif
-                    {GA_Height  , TITLEBAR_HEIGHT   },
-                    {GA_SysGadget   , TRUE          },
-                    {GA_SysGType    , GTYP_WDEPTH       },
-                    {GA_TopBorder   , TRUE          },
-                    {GA_GZZGadget   , is_gzz        },
-                    {GA_RelVerify   , TRUE          },
-                    {TAG_DONE               }
-                };
+            {
+                {GA_Image   	, 0                 },
+              //{GA_RelRight  	, relright          },
+                {GA_Top     	, 0                 },
+	    #if SQUARE_WIN_GADGETS
+                {GA_Width   	, TITLEBAR_HEIGHT   },
+	    #endif
+                {GA_Height  	, TITLEBAR_HEIGHT   },
+                {GA_SysGadget   , TRUE              },
+                {GA_SysGType    , GTYP_WDEPTH       },
+                {GA_TopBorder   , TRUE              },
+                {GA_GZZGadget   , is_gzz            },
+                {GA_RelVerify   , TRUE              },
+                {TAG_DONE                   	    }
+            };
 
             struct TagItem image_tags[] =
-                {
-#ifdef SKINS
-                {TAG_IGNORE , 0         },
-#else
-                {IA_Left    , -1            },
-#endif
-    	    	#if SQUARE_WIN_GADGETS
-                    {IA_Width , TITLEBAR_HEIGHT + 1   },
-		#endif
-                    {IA_Height  , TITLEBAR_HEIGHT   },
-                    {SYSIA_Which    , DEPTHIMAGE        },
-                    {SYSIA_DrawInfo , (IPTR)dri     },
-                    {SYSIA_Size , w->WScreen->Flags & SCREENHIRES ?
-                     SYSISIZE_MEDRES : SYSISIZE_LOWRES},
-                    {TAG_DONE               }
-                };
+            {
+    	#ifdef SKINS
+            	{TAG_IGNORE 	, 0         	    	    	    },
+    	#else
+            	{IA_Left    	, -1                	    	    },
+    	#endif
+    	    #if SQUARE_WIN_GADGETS
+                {IA_Width   	, TITLEBAR_HEIGHT + 1       	    },
+	    #endif
+                {IA_Height  	, TITLEBAR_HEIGHT   	    	    },
+                {SYSIA_Which    , DEPTHIMAGE        	    	    },
+                {SYSIA_DrawInfo , (IPTR)dri         	    	    },
+                {SYSIA_Size 	, w->WScreen->Flags & SCREENHIRES ?
+                    	    	  SYSISIZE_MEDRES : SYSISIZE_LOWRES },
+                {TAG_DONE                   	    	    	    }
+            };
             Object *im;
 
             im = NewObjectA(NULL, SYSICLASS, image_tags);
@@ -324,8 +303,8 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                 }
                 else
                 {
-                    int width;
-                    GetAttr(GA_Width, SYSGAD(w, DEPTHGAD), (ULONG*)&width);
+                    IPTR width;
+                    GetAttr(GA_Width, SYSGAD(w, DEPTHGAD), &width);
 
                     /*****/
 #ifndef SKINS
@@ -337,11 +316,11 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 
                     {
                         struct TagItem gadtags[] =
-                            {
-                                {GA_RelRight, relright  },
-                                /* {GA_Width    , width     }, */
-                                {TAG_DONE           }
-                            };
+                        {
+                            {GA_RelRight, relright  },
+                         /* {GA_Width   , width     }, */
+                            {TAG_DONE               }
+                        };
 
                         SetAttrsA(SYSGAD(w, DEPTHGAD), gadtags);
                     }
@@ -357,39 +336,39 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 	    ((w->Flags & WFLG_SIZEGADGET) && (w->Flags & WFLG_DEPTHGADGET)))
         {
             struct TagItem zoom_tags[] =
-                {
-                    {GA_Image   , 0             },
-                    //{GA_RelRight  , relright      },
-                    {GA_Top     , 0                 },
-		#if SQUARE_WIN_GADGETS
-                    {GA_Width , TITLEBAR_HEIGHT     },
-		#endif
-                    {GA_Height  , TITLEBAR_HEIGHT   },
-                    {GA_SysGadget   , TRUE          },
-                    {GA_SysGType    , GTYP_WZOOM        },
-                    {GA_TopBorder   , TRUE          },
-                    {GA_GZZGadget   , is_gzz        },
-                    {GA_RelVerify   , TRUE          },
-                    {TAG_DONE               }
-                };
+            {
+                {GA_Image   	, 0                 },
+                //{GA_RelRight  , relright          },
+                {GA_Top     	, 0                 },
+	    #if SQUARE_WIN_GADGETS
+                {GA_Width   	, TITLEBAR_HEIGHT   },
+	    #endif
+                {GA_Height  	, TITLEBAR_HEIGHT   },
+                {GA_SysGadget   , TRUE              },
+                {GA_SysGType    , GTYP_WZOOM        },
+                {GA_TopBorder   , TRUE              },
+                {GA_GZZGadget   , is_gzz            },
+                {GA_RelVerify   , TRUE              },
+                {TAG_DONE                   	    }
+            };
 
             struct TagItem image_tags[] =
-                {
-#ifdef SKINS
-                    {TAG_IGNORE , 0         },
-#else
-                    {IA_Left    , -1            },
-#endif
-    	    	#if SQUARE_WIN_GADGETS
-                    {IA_Width , TITLEBAR_HEIGHT + 1   },
-		#endif
-                    {IA_Height  , TITLEBAR_HEIGHT   },
-                    {SYSIA_Which    , ZOOMIMAGE     },
-                    {SYSIA_DrawInfo , (IPTR)dri     },
-                    {SYSIA_Size , w->WScreen->Flags & SCREENHIRES ?
-                     SYSISIZE_MEDRES : SYSISIZE_LOWRES},
-                    {TAG_DONE               }
-                };
+            {
+    	    #ifdef SKINS
+                {TAG_IGNORE 	, 0         	    	    	    },
+    	    #else
+                {IA_Left    	, -1                	    	    },
+    	    #endif
+    	    #if SQUARE_WIN_GADGETS
+                {IA_Width   	, TITLEBAR_HEIGHT + 1       	    },
+	    #endif
+                {IA_Height  	, TITLEBAR_HEIGHT   	    	    },
+                {SYSIA_Which    , ZOOMIMAGE         	    	    },
+                {SYSIA_DrawInfo , (IPTR)dri         	    	    },
+                {SYSIA_Size 	, w->WScreen->Flags & SCREENHIRES ?
+                    	    	  SYSISIZE_MEDRES : SYSISIZE_LOWRES },
+                {TAG_DONE                   	    	    	    }
+            };
             Object *im;
 
             im = NewObjectA(NULL, SYSICLASS, image_tags);
@@ -410,8 +389,8 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                 }
                 else
                 {
-                    int width;
-                    GetAttr(GA_Width, SYSGAD(w, ZOOMGAD), (ULONG*)&width);
+                    IPTR width;
+                    GetAttr(GA_Width, SYSGAD(w, ZOOMGAD), &width);
 
                     --width;
 
@@ -422,7 +401,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                         struct TagItem gadtags[] =
                             {
                                 {GA_RelRight, relright},
-                                {TAG_DONE           }
+                                {TAG_DONE             }
                             };
 
 
@@ -477,33 +456,33 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
         if (w->Flags & WFLG_CLOSEGADGET)
         {
             struct TagItem close_tags[] =
-                {
-                    {GA_Image   , 0     },
-                    {GA_Left    , 0         },
-                    {GA_Top     , 0         },
-		#if SQUARE_WIN_GADGETS
-                    {GA_Width , TITLEBAR_HEIGHT   },
-		#endif
-                    {GA_Height  , TITLEBAR_HEIGHT   },
-                    {GA_SysGadget   , TRUE          },
-                    {GA_SysGType    , GTYP_CLOSE        },
-                    {GA_TopBorder   , TRUE          },
-                    {GA_GZZGadget   , is_gzz        },
-                    {GA_RelVerify   , TRUE          },
-                    {TAG_DONE               }
-                };
+            {
+                {GA_Image   	, 0         	    },
+                {GA_Left    	, 0         	    },
+                {GA_Top     	, 0         	    },
+	    #if SQUARE_WIN_GADGETS
+                {GA_Width   	, TITLEBAR_HEIGHT   },
+	    #endif
+                {GA_Height  	, TITLEBAR_HEIGHT   },
+                {GA_SysGadget   , TRUE              },
+                {GA_SysGType    , GTYP_CLOSE        },
+                {GA_TopBorder   , TRUE              },
+                {GA_GZZGadget   , is_gzz            },
+                {GA_RelVerify   , TRUE              },
+                {TAG_DONE                   	    }
+            };
             struct TagItem image_tags[] =
-                {
-		#if SQUARE_WIN_GADGETS
-                    {IA_Width , TITLEBAR_HEIGHT + 1   },
-		#endif
-                    {IA_Height  , TITLEBAR_HEIGHT},
-                    {SYSIA_Which    , CLOSEIMAGE        },
-                    {SYSIA_DrawInfo , (IPTR)dri     },
-                    {SYSIA_Size , w->WScreen->Flags & SCREENHIRES ?
-                     SYSISIZE_MEDRES : SYSISIZE_LOWRES},
-                    {TAG_DONE               }
-                };
+            {
+	    #if SQUARE_WIN_GADGETS
+                {IA_Width 	, TITLEBAR_HEIGHT + 1 	    	    },
+	    #endif
+                {IA_Height      , TITLEBAR_HEIGHT	    	    },
+                {SYSIA_Which    , CLOSEIMAGE            	    },
+                {SYSIA_DrawInfo , (IPTR)dri     	    	    },
+                {SYSIA_Size     , w->WScreen->Flags & SCREENHIRES ?
+                     	    	  SYSISIZE_MEDRES : SYSISIZE_LOWRES },
+                {TAG_DONE               	    	    	    }
+            };
             Object *im;
 
             im = NewObjectA(NULL, SYSICLASS, image_tags);
@@ -524,8 +503,8 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                 }
                 else
                 {
-                    int width;
-                    GetAttr(GA_Width, SYSGAD(w, CLOSEGAD), (ULONG*)&width);
+                    IPTR width;
+                    GetAttr(GA_Width, SYSGAD(w, CLOSEGAD), &width);
 
                     db_left  += width;
                     db_width -= width;
@@ -537,17 +516,17 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
         {
 
             struct TagItem dragbar_tags[] =
-                {
-                    {GA_Left    , 0/*db_left*/},
-                    {GA_Top     , 0         },
-                    {GA_RelWidth    , 0/*db_width*/     },
-                    {GA_Height  , TITLEBAR_HEIGHT   },
-                    {GA_SysGadget   , TRUE          },
-                    {GA_SysGType    , GTYP_WDRAGGING    },
-                    {GA_TopBorder   , TRUE          },
-                    {GA_GZZGadget   , is_gzz        },
-                    {TAG_DONE               }
-                };
+            {
+        	{GA_Left    	, 0/*db_left*/	    },
+        	{GA_Top     	, 0         	    },
+        	{GA_RelWidth    , 0/*db_width*/     },
+        	{GA_Height  	, TITLEBAR_HEIGHT   },
+        	{GA_SysGadget   , TRUE              },
+        	{GA_SysGType    , GTYP_WDRAGGING    },
+        	{GA_TopBorder   , TRUE              },
+        	{GA_GZZGadget   , is_gzz            },
+        	{TAG_DONE                   	     }
+            };
             SYSGAD(w, DRAGBAR) = NewObjectA(NULL, BUTTONGCLASS, dragbar_tags);
 
             if (!SYSGAD(w, DRAGBAR))
@@ -610,9 +589,9 @@ VOID KillWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 
 void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 {
-    BOOL front = TRUE;
+    BOOL  front = TRUE;
     ULONG backdrop = LAYERBACKDROP;
-    WORD ypos = 0;
+    WORD  ypos = 0;
 
 #ifdef SKINS
     if (scr->Flags & SCREENQUIET || (GetPrivScreen(scr)->SpecialFlags & SF_InvisibleBar)) front = FALSE;
@@ -638,7 +617,9 @@ void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
                                                    LAYERSIMPLE | backdrop,
                                                    LAYERS_NOBACKFILL,
                                                    NULL);
-        } else {
+        }
+	else
+	{
             scr->BarLayer = CreateBehindHookLayer(&scr->LayerInfo,
                                                    scr->RastPort.BitMap,
                                                    0,
@@ -793,8 +774,8 @@ void UpdateMouseCoords(struct Window *win)
 WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Rectangle *destrectarray)
 {
     struct Rectangle    intersect;
-    BOOL        intersecting = FALSE;
-    WORD        numrects = 0;
+    BOOL            	intersecting = FALSE;
+    WORD            	numrects = 0;
 
     /* calc. intersection between a and b */
 
@@ -877,31 +858,31 @@ WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Recta
 ULONG addextragadget(struct Window *w,BOOL is_gzz,struct DrawInfo *dri,LONG relright,ULONG imagetype,ULONG gadgetid,ULONG gadgettype,struct IntuitionBase *IntuitionBase)
 {
     struct TagItem gadget_tags[] =
-        {
-            {GA_Image   , 0                 },
-            {GA_ToggleSelect, FALSE         },
-            {GA_Top     , 0                 },
-            {GA_Height  , TITLEBAR_HEIGHT   },
-            {GA_TopBorder   , TRUE          },
-            {GA_GZZGadget   , is_gzz        },
-            {GA_ID      , gadgetid          },
-            {GA_RelVerify, TRUE             },
-            {TAG_DONE                       }
-        };
+    {
+        {GA_Image   	, 0                 },
+        {GA_ToggleSelect, FALSE             },
+        {GA_Top     	, 0                 },
+        {GA_Height  	, TITLEBAR_HEIGHT   },
+        {GA_TopBorder   , TRUE              },
+        {GA_GZZGadget   , is_gzz            },
+        {GA_ID      	, gadgetid          },
+        {GA_RelVerify	, TRUE              },
+        {TAG_DONE                           }
+    };
     struct TagItem image_tags[] =
-        {
-#ifdef SKINS
-            {TAG_IGNORE , 0         },
-#else
-            {IA_Left    , -1            },
-#endif
-            {IA_Height  , TITLEBAR_HEIGHT   },
-            {SYSIA_Which    , imagetype     },
-            {SYSIA_DrawInfo , (IPTR)dri     },
-            {SYSIA_Size , w->WScreen->Flags & SCREENHIRES ?
-             SYSISIZE_MEDRES : SYSISIZE_LOWRES},
-            {TAG_DONE               }
-        };
+    {
+    #ifdef SKINS
+        {TAG_IGNORE 	, 0             	    	    },
+    #else
+        {IA_Left    	, -1            	    	    },
+    #endif
+        {IA_Height  	, TITLEBAR_HEIGHT       	    },
+        {SYSIA_Which    , imagetype         	    	    },
+        {SYSIA_DrawInfo , (IPTR)dri         	    	    },
+        {SYSIA_Size 	, w->WScreen->Flags & SCREENHIRES ?
+            	      SYSISIZE_MEDRES : SYSISIZE_LOWRES     },
+        {TAG_DONE                   	    	    	    }
+    };
     Object *im;
 
     if (gadgettype == LOCKGAD)
@@ -920,20 +901,17 @@ ULONG addextragadget(struct Window *w,BOOL is_gzz,struct DrawInfo *dri,LONG relr
         }
         else
         {
-            int width;
-            GetAttr(GA_Width, SYSGAD(w, gadgettype), (ULONG*)&width);
+            IPTR width;
+            GetAttr(GA_Width, SYSGAD(w, gadgettype), &width);
 
             --width;
 
             {
                 struct TagItem gadtags[] =
-                    {
-                        {
-                            GA_RelRight, relright - width
-                        },
-                        {TAG_DONE               }
-                    };
-
+                {
+                    {GA_RelRight, relright - width  },
+                    {TAG_DONE               	    }
+                };
 
                 SetAttrsA(SYSGAD(w, gadgettype), gadtags);
             }

@@ -12,10 +12,10 @@
 
 struct ChangeWindowShapeActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
-    struct Region *shape;
-    struct Hook *callback;
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
+    struct Region   	    *shape;
+    struct Hook     	    *callback;
 };
 
 static VOID int_changewindowshape(struct ChangeWindowShapeActionMsg *msg,
@@ -70,8 +70,8 @@ AROS_LH3(struct Region *, ChangeWindowShape,
 
     if (IS_GZZWINDOW(window)) return NULL;
 
-    msg.window = window;
-    msg.shape = newshape;
+    msg.window   = window;
+    msg.shape    = newshape;
     msg.callback = callback;
     DoSyncAction((APTR)int_changewindowshape, &msg.msg, IntuitionBase);
 
@@ -96,10 +96,10 @@ AROS_LH3(struct Region *, ChangeWindowShape,
 static VOID int_changewindowshape(struct ChangeWindowShapeActionMsg *msg,
                                   struct IntuitionBase *IntuitionBase)
 {
-    struct Window *window = msg->window;
-    struct Region *shape = msg->shape;
-    struct Hook *callback = msg->callback;
-    struct Screen *screen = window->WScreen;
+    struct Window   *window = msg->window;
+    struct Region   *shape = msg->shape;
+    struct Hook     *callback = msg->callback;
+    struct Screen   *screen = window->WScreen;
 
     if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
     

@@ -68,6 +68,7 @@ AROS_LH2(void, FreeScreenBuffer,
     if (screenbuffer)
     {
         FreeDBufInfo(screenbuffer->sb_DBufInfo);
+	
         if (((struct IntScreenBuffer *)screenbuffer)->free_bitmap)
             FreeBitMap(screenbuffer->sb_BitMap);
 

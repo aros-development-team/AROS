@@ -117,6 +117,7 @@ AROS_LH3(struct ScreenBuffer *, AllocScreenBuffer,
                             FreeDBufInfo(ScreenBuffer->sb.sb_DBufInfo);
                             FreeMem(ScreenBuffer, sizeof(struct IntScreenBuffer));
                             DEBUG_ALLOCSCREENBUFFER(dprintf("AllocScreenBuffer: failed\n"));
+			    
                             return NULL;
                         }
                     }

@@ -48,7 +48,6 @@ AROS_LH1(void, BeginRefresh,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    //ULONG oldclip;
     ULONG mode = NO_DOUBLEBUFFER;
 
 #ifdef BEGINUPDATEGADGETREFRESH
@@ -64,14 +63,14 @@ AROS_LH1(void, BeginRefresh,
 
     /* Find out whether it's a GimmeZeroZero window with an extra layer to lock */
     if (BLAYER(window))
-        LockLayer(0,BLAYER(window));
+        LockLayer(0, BLAYER(window));
 
     /* jDc: in actual implementation border layer is created as the 1st one. this means it's added to
     ** screens layer semaphore list at the end (layers use AddTail), so here we also need to lock it
     ** as 1st one, otherwise we run into a deadlock with LockLayers() !!!
     */
 
-    LockLayer(0,WLAYER(window));
+    LockLayer(0, WLAYER(window));
 
     /* jDc: in current opaque implementation the damaged regions are added to
     ** window's internal damage list and matched against actual damage here

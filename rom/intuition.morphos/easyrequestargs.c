@@ -66,19 +66,21 @@ AROS_LH4(LONG, EasyRequestArgs,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    LONG result;
     struct Window *req;
+    LONG    	   result;
 
     req = BuildEasyRequestArgs(window, easyStruct,
                                IDCMP_ptr != NULL ? *IDCMP_ptr : NULL, argList);
 
     /* req = 0/1 is handled by SysReqHandler */
     while ((result = SysReqHandler(req, IDCMP_ptr, TRUE)) == -2)
-    {}
+    {
+    }
 
 
     FreeSysRequest(req);
 
     return result;
+    
     AROS_LIBFUNC_EXIT
 } /* EasyRequestArgs */

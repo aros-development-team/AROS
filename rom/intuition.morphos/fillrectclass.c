@@ -53,7 +53,7 @@ struct FillRectData
 
 IPTR fillrect_set(Class *cl, Object *obj, struct opSet *msg)
 {
-    struct TagItem *tag, *tstate = msg->ops_AttrList;
+    struct TagItem  	*tag, *tstate = msg->ops_AttrList;
     struct FillRectData *data = INST_DATA(cl, obj);
 
     IPTR retval = 0;
@@ -62,20 +62,20 @@ IPTR fillrect_set(Class *cl, Object *obj, struct opSet *msg)
     {
         switch(tag->ti_Tag)
         {
-        case IA_APattern:
-            ((struct Image *)obj)->ImageData = (APTR)tag->ti_Data;
-            retval = 1;
-            break;
+            case IA_APattern:
+        	((struct Image *)obj)->ImageData = (APTR)tag->ti_Data;
+        	retval = 1;
+        	break;
 
-        case IA_APatSize:
-            data->apatsize = (WORD)tag->ti_Data;
-            retval = 1;
-            break;
+            case IA_APatSize:
+        	data->apatsize = (WORD)tag->ti_Data;
+        	retval = 1;
+        	break;
 
-        case IA_Mode:
-            data->mode = (WORD)tag->ti_Data;
-            retval = 1;
-            break;
+            case IA_Mode:
+        	data->mode = (WORD)tag->ti_Data;
+        	retval = 1;
+        	break;
         }
     }
 
@@ -87,8 +87,8 @@ IPTR fillrect_set(Class *cl, Object *obj, struct opSet *msg)
 IPTR fillrect_draw(Class *cl, Object *obj, struct impDraw *msg)
 {
     struct FillRectData *data = INST_DATA(cl, obj);
-    struct RastPort     rp;
-    WORD        x1, y1, x2, y2;
+    struct RastPort      rp;
+    WORD            	 x1, y1, x2, y2;
 
     if (!((struct impDraw *)msg)->imp_RPort) return 0;
 
@@ -133,29 +133,29 @@ AROS_UFH3S(IPTR, dispatch_fillrectclass,
 
     switch (msg->MethodID)
     {
-    case OM_NEW:
-        obj = (Object *)DoSuperMethodA(cl, obj, msg);
-        if (obj)
-        {
-            fillrect_set(cl, obj, (struct opSet *)msg);
-            retval = (IPTR)obj;
-        }
-        break;
+	case OM_NEW:
+            obj = (Object *)DoSuperMethodA(cl, obj, msg);
+            if (obj)
+            {
+        	fillrect_set(cl, obj, (struct opSet *)msg);
+        	retval = (IPTR)obj;
+            }
+            break;
 
-    case OM_SET:
-        retval = fillrect_set(cl, obj, (struct opSet *)msg);
-        retval += DoSuperMethodA(cl, obj, msg);
-        break;
+	case OM_SET:
+            retval = fillrect_set(cl, obj, (struct opSet *)msg);
+            retval += DoSuperMethodA(cl, obj, msg);
+            break;
 
 
-    case IM_DRAW:
-    case IM_DRAWFRAME:
-        retval = fillrect_draw(cl, obj, (struct impDraw *)msg);
-        break;
+	case IM_DRAW:
+	case IM_DRAWFRAME:
+            retval = fillrect_draw(cl, obj, (struct impDraw *)msg);
+            break;
 
-    default:
-        retval = DoSuperMethodA(cl, obj, msg);
-        break;
+	default:
+            retval = DoSuperMethodA(cl, obj, msg);
+            break;
 
     } /* switch (msg->MethodID) */
 
@@ -178,7 +178,7 @@ struct IClass *InitFillRectClass (struct IntuitionBase * IntuitionBase)
     {
         cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_fillrectclass);
         cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData          = (IPTR)IntuitionBase;
+        cl->cl_UserData              = (IPTR)IntuitionBase;
 
         AddClass (cl);
     }

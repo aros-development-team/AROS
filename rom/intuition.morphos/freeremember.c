@@ -47,12 +47,13 @@ AROS_LH2(void, FreeRemember,
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    struct Remember * next, * key;
+
+    struct Remember *next, *key;
 
     DEBUG_REMEMBER(dprintf("FreeRemember: Key 0x%lx ReallyForget %d\n",
                            rememberKey, reallyForget));
 
-    for (next=*rememberKey; (key=next); )
+    for (next = *rememberKey; (key = next); )
     {
         next = key->NextRemember;
 

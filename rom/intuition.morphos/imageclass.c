@@ -85,41 +85,41 @@ AROS_UFH3S(IPTR, dispatch_imageclass,
 
     switch (msg->MethodID)
     {
-    case OM_NEW:
-        D(kprintf("ImageClass OM_NEW\n"));
+	case OM_NEW:
+            D(kprintf("ImageClass OM_NEW\n"));
 
-        if (cl)
-        {
-            retval = (IPTR)DoSuperMethodA(cl, o, msg);
-
-            if(retval)
+            if (cl)
             {
-                /*
-                This is how Intuition knows an image is a boopsi
-                object!
-                */
-                /*
-                  The instance object is contains cleared memory!
-                  memset ((void *)retval, 0, (cl->cl_InstOffset + cl->cl_InstSize));
-                */
-                IM(retval)->Width = 80;
-                IM(retval)->Height = 40;
-                IM(retval)->Depth = CUSTOMIMAGEDEPTH;
+        	retval = (IPTR)DoSuperMethodA(cl, o, msg);
+
+        	if(retval)
+        	{
+                    /*
+                    This is how Intuition knows an image is a boopsi
+                    object!
+                    */
+                    /*
+                      The instance object is contains cleared memory!
+                      memset ((void *)retval, 0, (cl->cl_InstOffset + cl->cl_InstSize));
+                    */
+                    IM(retval)->Width = 80;
+                    IM(retval)->Height = 40;
+                    IM(retval)->Depth = CUSTOMIMAGEDEPTH;
+        	}
             }
-        }
 
-        o = (Object *)retval;
-        /*
-        Fall through -> allow the class the set all the initial
-        attributes
-        */
+            o = (Object *)retval;
+            /*
+            Fall through -> allow the class the set all the initial
+            attributes
+            */
 
-    case OM_SET:
+	case OM_SET:
         {
             struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
             struct TagItem *tag;
-            IPTR tidata;
-            BOOL unsupported = FALSE;
+            IPTR 	    	tidata;
+            BOOL 	    	unsupported = FALSE;
 
             D( kprintf("ImageClass OM_SET\n") );
 
@@ -129,37 +129,37 @@ AROS_UFH3S(IPTR, dispatch_imageclass,
 
                 switch (tag->ti_Tag)
                 {
-                case IA_Left:
-                    IM(o)->LeftEdge = (WORD) tidata;
-                    break;
+                    case IA_Left:
+                	IM(o)->LeftEdge = (WORD) tidata;
+                	break;
 
-                case IA_Top:
-                    IM(o)->TopEdge = (WORD) tidata;
-                    break;
+                    case IA_Top:
+                	IM(o)->TopEdge = (WORD) tidata;
+                	break;
 
-                case IA_Width:
-                    IM(o)->Width = (WORD) tidata;
-                    break;
+                    case IA_Width:
+                	IM(o)->Width = (WORD) tidata;
+                	break;
 
-                case IA_Height:
-                    IM(o)->Height = (WORD) tidata;
-                    break;
+                    case IA_Height:
+                	IM(o)->Height = (WORD) tidata;
+                	break;
 
-                case IA_FGPen:
-                    IM(o)->PlanePick = (WORD) tidata;
-                    break;
+                    case IA_FGPen:
+                	IM(o)->PlanePick = (WORD) tidata;
+                	break;
 
-                case IA_BGPen:
-                    IM(o)->PlaneOnOff = (WORD) tidata;
-                    break;
+                    case IA_BGPen:
+                	IM(o)->PlaneOnOff = (WORD) tidata;
+                	break;
 
-                case IA_Data:
-                    IM(o)->ImageData = (UWORD *) tidata;
-                    break;
+                    case IA_Data:
+                	IM(o)->ImageData = (UWORD *) tidata;
+                	break;
 
-                default:
-                    unsupported = TRUE;
-                    break;
+                    default:
+                	unsupported = TRUE;
+                	break;
 
                 } /* switch (Tag) */
 
@@ -179,60 +179,60 @@ AROS_UFH3S(IPTR, dispatch_imageclass,
             break;
         }
 
-    case OM_GET:
-        D( kprintf("ImageClass OM_GET\n") );
+	case OM_GET:
+            D( kprintf("ImageClass OM_GET\n") );
 
-        retval = 1UL;
+            retval = 1UL;
 
-        switch (((struct opGet *)msg)->opg_AttrID)
-        {
-        case IA_Left:
-            *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->LeftEdge;
+            switch (((struct opGet *)msg)->opg_AttrID)
+            {
+        	case IA_Left:
+        	    *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->LeftEdge;
+        	    break;
+
+        	case IA_Top:
+        	    *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->TopEdge;
+        	    break;
+
+        	case IA_Width:
+        	    *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->Width;
+        	    break;
+
+        	case IA_Height:
+        	    *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->Height;
+        	    break;
+
+        	case IA_FGPen:
+        	    *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->PlanePick;
+        	    break;
+
+        	case IA_BGPen:
+        	    *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->PlaneOnOff;
+        	    break;
+
+        	case IA_Data:
+        	    *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->ImageData;
+        	    break;
+
+        	default:
+        	    retval = 0UL;
+        	    break;
+
+            } /* switch */
+
+            /*
+            Because we are a direct subclass of rootclass
+            which has no settable/gettable attributes we
+            we will NOT pass this method to our superclass!
+            */
             break;
 
-        case IA_Top:
-            *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->TopEdge;
-            break;
-
-        case IA_Width:
-            *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->Width;
-            break;
-
-        case IA_Height:
-            *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->Height;
-            break;
-
-        case IA_FGPen:
-            *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->PlanePick;
-            break;
-
-        case IA_BGPen:
-            *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->PlaneOnOff;
-            break;
-
-        case IA_Data:
-            *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->ImageData;
-            break;
-
-        default:
-            retval = 0UL;
-            break;
-
-        } /* switch */
-
-        /*
-        Because we are a direct subclass of rootclass
-        which has no settable/gettable attributes we
-        we will NOT pass this method to our superclass!
-        */
-        break;
-
-    case IM_ERASE:
-        /*
-        Both erase methods are documented as handled the same
-        at this level, so we will fall thru...
-        */
-    case IM_ERASEFRAME:
+	case IM_ERASE:
+            /*
+            Both erase methods are documented as handled the same
+            at this level, so we will fall thru...
+            */
+	case IM_ERASEFRAME:
         {
             WORD left, top, width, height;
 
@@ -244,16 +244,17 @@ AROS_UFH3S(IPTR, dispatch_imageclass,
             height = IM(o)->Height - 1;
 
             if (((struct impErase *)msg)->imp_RPort)
-            EraseRect(((struct impErase *)msg)->imp_RPort,
-                      left, top,
-                      left + width, top + height);
-
+	    {
+        	EraseRect(((struct impErase *)msg)->imp_RPort,
+                	  left, top,
+                	  left + width, top + height);
+    	    }
             /* Leave retval=0: No further rendering necessary */
             break;
         }
 
-    case IM_HITFRAME:
-    case IM_HITTEST:
+	case IM_HITFRAME:
+	case IM_HITTEST:
         {
             struct impHitTest *imp = (struct impHitTest *)msg;
 
@@ -263,15 +264,18 @@ AROS_UFH3S(IPTR, dispatch_imageclass,
             */
             if ((imp->imp_Point.X >= IM(o)->LeftEdge && imp->imp_Point.X < IM(o)->LeftEdge + IM(o)->Width) &&
                     (imp->imp_Point.Y >= IM(o)->TopEdge  && imp->imp_Point.Y < IM(o)->TopEdge + IM(o)->Height))
+	    {
                 retval = 1UL;
+	    }
+	    
             DEBUG_HIT(dprintf("image: HITTEST %d %d (%d,%d) %d×%d = %d\n", imp->imp_Point.X, imp->imp_Point.Y,
                               IM(o)->LeftEdge, IM(o)->TopEdge, IM(o)->Width, IM(o)->Height, retval));
             break;
         }
 
-#if 0 /* for imageclass, IM_HITFRAME==IM_HITTEST */
-    case IM_HITFRAME:
-        {
+    #if 0 /* for imageclass, IM_HITFRAME==IM_HITTEST */
+	case IM_HITFRAME:
+	{
             struct impHitTest *imp = (struct impHitTest *)msg;
 
             /*
@@ -280,15 +284,15 @@ AROS_UFH3S(IPTR, dispatch_imageclass,
             */
             if ((imp->imp_Point.X >= IM(o)->LeftEdge && imp->imp_Point.X < IM(o)->LeftEdge + imp->imp_Dimensions.Width) &&
                     (imp->imp_Point.Y >= IM(o)->TopEdge  && imp->imp_Point.Y < IM(o)->TopEdge + imp->imp_Dimensions.Height))
-                retval = 1UL;
+        	retval = 1UL;
             break;
-        }
-#endif
+	}
+    #endif
 
-        /* case OM_DISPOSE */
-    default:
-        retval = DoSuperMethodA(cl, o, msg);
-        break;
+            /* case OM_DISPOSE */
+	default:
+            retval = DoSuperMethodA(cl, o, msg);
+            break;
 
     } /* switch */
 
@@ -313,7 +317,7 @@ struct IClass *InitImageClass (struct IntuitionBase * IntuitionBase)
     {
         cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_imageclass);
         cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData          = (IPTR)IntuitionBase;
+        cl->cl_UserData              = (IPTR)IntuitionBase;
 
         AddClass (cl);
     }

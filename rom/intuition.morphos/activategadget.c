@@ -13,11 +13,11 @@
 
 struct ActivateGadgetActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
-    struct Requester *requester;
-    struct Gadget *gadget;
-    BOOL success;
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
+    struct Requester	    *requester;
+    struct Gadget   	    *gadget;
+    BOOL    	    	     success;
 };
 
 #define DEBUG_ACTIVATEGADGET(x) ;
@@ -68,9 +68,7 @@ AROS_LH3(BOOL, ActivateGadget,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    //struct IntuiActionMessage *msg;
-    //struct MsgPort              replyport;
-    BOOL            success = FALSE;
+    BOOL success = FALSE;
 
     DEBUG_ACTIVATEGADGET(dprintf("ActivateGadget: Gadget 0x%lx Window 0x%lx Req 0x%lx\n",
                                  gadget, window, requester));
@@ -80,12 +78,13 @@ AROS_LH3(BOOL, ActivateGadget,
         if (1)
         {
             if ((((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET) && (!(gadget->Activation & GACT_ACTIVEGADGET))) ||
-                    ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_STRGADGET))
+                ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_STRGADGET))
             {
                 struct ActivateGadgetActionMsg msg;
-                msg.window = window;
+		
+                msg.window    = window;
                 msg.requester = requester;
-                msg.gadget = gadget;
+                msg.gadget    = gadget;
 
                 DEBUG_ACTIVATEGADGET(dprintf("ActivateGadget: send gadget activation msg\n"));
 
@@ -123,15 +122,15 @@ AROS_LH3(BOOL, ActivateGadget,
 static VOID int_activategadget(struct ActivateGadgetActionMsg *msg,
                                struct IntuitionBase *IntuitionBase)
 {
-    struct IIHData  *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-    struct Window *window = msg->window;
+    struct IIHData   *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+    struct Window    *window = msg->window;
     struct Requester *req = msg->requester;
-    struct Gadget *gadget = msg->gadget;
+    struct Gadget    *gadget = msg->gadget;
 
     DEBUG_ACTIVATEGADGET(dprintf("int_ActivateGadget: Gadget 0x%lx Window 0x%lx Req 0x%lx\n",
-                    gadget,
-                    window,
-                    req));
+                	 gadget,
+                	 window,
+                	 req));
 
     msg->success = FALSE;
 
@@ -144,8 +143,8 @@ static VOID int_activategadget(struct ActivateGadgetActionMsg *msg,
                     iihdata->ActiveGadget));
 
     if ((iihdata->ActiveGadget == NULL) &&
-            (IntuitionBase->ActiveWindow == window) &&
-            ((gadget->Flags & GFLG_DISABLED) == 0))
+        (IntuitionBase->ActiveWindow == window) &&
+        ((gadget->Flags & GFLG_DISABLED) == 0))
     {
         msg->success = (DoActivateGadget(window, req, gadget, IntuitionBase) != NULL);
     }

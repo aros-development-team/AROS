@@ -81,7 +81,7 @@ AROS_LH1(struct Screen *, LockPubScreen,
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct Screen *screen = NULL;
-    struct List *list;
+    struct List   *list;
 
     DEBUG_LOCKPUBSCREEN(dprintf("LockPubScreen: name <%s>\n",
                                 name ? name : (CONST_STRPTR)"NULL"));
@@ -117,6 +117,7 @@ AROS_LH1(struct Screen *, LockPubScreen,
     else
     {
         struct PubScreenNode *psn;
+	
         ASSERT_VALID_PTR_ROMOK(name);
 
         /* Browse the public screen list */

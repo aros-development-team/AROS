@@ -76,8 +76,8 @@ void ReplyMenuMessage(struct MenuMessage *msg, struct IntuitionBase *IntuitionBa
 void MH2Int_MakeMenusInactive(struct Window *win, UWORD menupick, struct IntuitionBase *IntuitionBase)
 {
     struct InputEvent ie;
-    struct IOStdReq ior;
-    struct MsgPort replyport;
+    struct IOStdReq   ior;
+    struct MsgPort    replyport;
 
     ie.ie_NextEvent     = 0;
     ie.ie_Class         = IECLASS_MENU;
@@ -137,9 +137,8 @@ UWORD FindMenuShortCut(struct Menu *menu, UBYTE key, BOOL do_click_op,
                        struct IntuitionBase *IntuitionBase)
 {
     struct MenuItem *item, *sub;
-    UWORD menunum, itemnum = 0, subnum = 0;
-#   warning FIXME: are the defaults above ok? they used to be random
-    BOOL found = FALSE;
+    UWORD   	     menunum, itemnum = 0, subnum = 0;
+    BOOL    	     found = FALSE;
 
     DEBUG_FINDMENUSHORTCUT(dprintf("FindMenuShortCut: Menu 0x%lx key 0x%lx <%c> do_click_op 0x%lx\n",menu,key,key,do_click_op));
 
@@ -238,7 +237,7 @@ void CheckMenuItemWasClicked(struct MenuItem *item, UWORD itemnum, struct MenuIt
         for(i = 0; (i < 32) && parentitem; i++, parentitem = parentitem->NextItem)
         {
             if ((i != itemnum) && (item->MutualExclude & (1L << i)) &&
-                    ((parentitem->Flags & (CHECKED | CHECKIT)) == (CHECKIT | CHECKED)))
+                ((parentitem->Flags & (CHECKED | CHECKIT)) == (CHECKIT | CHECKED)))
             {
                 parentitem->Flags &= ~CHECKED;
             }
@@ -248,12 +247,4 @@ void CheckMenuItemWasClicked(struct MenuItem *item, UWORD itemnum, struct MenuIt
 }
 
 
-/**************************************************************************************************/
-/**************************************************************************************************/
-/**************************************************************************************************/
-/**************************************************************************************************/
-/**************************************************************************************************/
-/**************************************************************************************************/
-/**************************************************************************************************/
-/**************************************************************************************************/
 /**************************************************************************************************/

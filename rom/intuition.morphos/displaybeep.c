@@ -9,10 +9,9 @@
 
 #define BEEPTICKS       3   /* in 1/10th sec units */
 
-static inline
-ULONG beepcolor(ULONG x)
+static inline ULONG beepcolor(ULONG x)
 {
-  return x < 0x88888888 ? 0xCCCCCCCC : 0x55555555;
+    return x < 0x88888888 ? 0xCCCCCCCC : 0x55555555;
 }
 
 
@@ -112,23 +111,25 @@ AROS_LH1(void, DisplayBeep,
 
 #else /* USE_NEWDISPLAYBEEP */
 
-    struct MsgPort *TimerMsgPort;
-    struct timerequest *BeepTimerIO;
-    BOOL VisualBeep = TRUE;
-    BOOL AllScreens = FALSE;
-    LONG NumBeeped = 0;
+    struct MsgPort  	*TimerMsgPort;
+    struct timerequest  *BeepTimerIO;
+    BOOL    	    	 VisualBeep = TRUE;
+    BOOL    	    	 AllScreens = FALSE;
+    LONG    	    	 NumBeeped = 0;
 
     TimerMsgPort = CreateMsgPort();
     if (!TimerMsgPort)
     {
         return;
     }
+    
     BeepTimerIO = (struct timerequest *) CreateIORequest (TimerMsgPort, sizeof (struct timerequest));
     if (!BeepTimerIO)
     {
         DeleteMsgPort(TimerMsgPort);
         return;
     }
+    
     if (OpenDevice ("timer.device", UNIT_VBLANK, (struct IORequest *) BeepTimerIO, 0) != 0)
     {
         DeleteIORequest((struct IORequest *) BeepTimerIO);
@@ -190,14 +191,14 @@ AROS_LH1(void, DisplayBeep,
                     // struct Window *BeepWindow;
                     struct TagItem window_tags[] =
                     {
-                        {WA_Left, 0},
-                        {WA_Top, 0},
-                        {WA_Width, -1},
-                        {WA_Height, -1},
-                        {WA_Flags, WFLG_SIMPLE_REFRESH | WFLG_BORDERLESS},
-                        {WA_CustomScreen, (IPTR) screen},
-                        //          {WA_Priority, 50},  // Place in front of all other windows!
-                        {TAG_DONE, 0}
+                        {WA_Left    	, 0 	    	    	    	    	},
+                        {WA_Top     	, 0 	    	    	    	    	},
+                        {WA_Width   	, -1	    	    	    	    	},
+                        {WA_Height  	, -1	    	    	    	    	},
+                        {WA_Flags   	, WFLG_SIMPLE_REFRESH | WFLG_BORDERLESS },
+                        {WA_CustomScreen, (IPTR) screen     	    	    	},
+                      //{WA_Priority	, 50	    	    	    	    	},  // Place in front of all other windows!
+                        {TAG_DONE   	    	    	    	    	    	}
                     };
 
                     GetPrivScreen(screen)->DisplayBeepWindow = (struct Window *) OpenWindowTagList (NULL, window_tags);
@@ -277,11 +278,11 @@ AROS_LH1(void, DisplayBeep,
     DeleteIORequest((struct IORequest *) BeepTimerIO);
     DeleteMsgPort(TimerMsgPort);
 
-#warning TODO: Make this "multitasking proof"!
-#warning TODO: Produce beep according to prefs
-#warning TODO: Check if BEEPING flag is handled correctly
-#warning TODO: Make BeepWindow 50% transparent! :-)
-#warning TODO: Use TimerIO (IntuitionBase->TimerIO) instead of self-made BeepTimerIO?
+    #warning TODO: Make this "multitasking proof"!
+    #warning TODO: Produce beep according to prefs
+    #warning TODO: Check if BEEPING flag is handled correctly
+    #warning TODO: Make BeepWindow 50% transparent! :-)
+    #warning TODO: Use TimerIO (IntuitionBase->TimerIO) instead of self-made BeepTimerIO?
 
 #endif /* USE_NEWDISPLAYBEEP */
 

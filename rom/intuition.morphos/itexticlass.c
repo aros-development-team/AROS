@@ -58,16 +58,16 @@
 LONG itext_draw(Class *cl, Object *o, struct impDraw *msg)
 {
     struct RastPort *rp = msg->imp_RPort;
-    LONG retval = 0;
+    LONG    	     retval = 0;
 
     if (rp)
     {
-        struct IntuiText *iText = (struct IntuiText *)IM(o)->ImageData;
-        int leftOffset = msg->imp_Offset.X + IM(o)->LeftEdge;
-        int topOffset = msg->imp_Offset.Y + IM(o)->TopEdge;
-        struct TextFont *newfont = NULL;
-        struct TextFont *font;
-        UBYTE style;
+        struct IntuiText    *iText = (struct IntuiText *)IM(o)->ImageData;
+        int 	    	     leftOffset = msg->imp_Offset.X + IM(o)->LeftEdge;
+        int 	    	     topOffset = msg->imp_Offset.Y + IM(o)->TopEdge;
+        struct TextFont     *newfont = NULL;
+        struct TextFont     *font;
+        UBYTE 	    	     style;
 
         font = rp->Font;
         style = rp->AlgoStyle;
@@ -126,20 +126,20 @@ AROS_UFH3S(IPTR, dispatch_itexticlass,
 
     switch(msg->MethodID)
     {
-    case IM_DRAW:
-        retval = itext_draw(cl, o, (struct impDraw *)msg);
-        break;
+	case IM_DRAW:
+            retval = itext_draw(cl, o, (struct impDraw *)msg);
+            break;
 
-#warning itexticlass/IM_DRAWFRAME not implemented
-#if 0
-    case IM_DRAWFRAME:
-        itext_drawframe(cl, o, (struct impDraw *)msg);
-        break;
-#endif
+    #warning itexticlass/IM_DRAWFRAME not implemented
+    #if 0
+	case IM_DRAWFRAME:
+            itext_drawframe(cl, o, (struct impDraw *)msg);
+            break;
+    #endif
 
-    default:
-        retval = DoSuperMethodA(cl, o, msg);
-        break;
+	default:
+            retval = DoSuperMethodA(cl, o, msg);
+            break;
 
     } /* switch */
 
@@ -163,7 +163,7 @@ struct IClass *InitITextIClass (struct IntuitionBase * IntuitionBase)
     {
         cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_itexticlass);
         cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData          = (IPTR)IntuitionBase;
+        cl->cl_UserData              = (IPTR)IntuitionBase;
 
         AddClass (cl);
     }

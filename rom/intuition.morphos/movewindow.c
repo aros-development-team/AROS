@@ -11,10 +11,10 @@
 
 struct MoveWindowActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
-    LONG dx;
-    LONG dy;
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
+    LONG    	    	     dx;
+    LONG    	    	     dy;
 };
 
 static VOID int_movewindow(struct MoveWindowActionMsg *msg,
@@ -72,8 +72,8 @@ AROS_LH3(void, MoveWindow,
         struct MoveWindowActionMsg msg;
 
         msg.window = window;
-        msg.dx = dx;
-        msg.dy = dy;
+        msg.dx     = dx;
+        msg.dy     = dy;
 
         DoASyncAction((APTR)int_movewindow, &msg.msg, sizeof(msg), IntuitionBase);
         //DoSyncAction((APTR)int_movewindow, &msg.msg, IntuitionBase);

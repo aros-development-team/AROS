@@ -46,7 +46,7 @@ AROS_LH1(LONG, MakeScreen,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    LONG failure = TRUE;
+    LONG  failure = TRUE;
     ULONG ilock = LockIBase(0);
 
     if (screen)

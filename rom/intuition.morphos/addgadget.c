@@ -58,8 +58,8 @@ AROS_LH3(UWORD, AddGadget,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    struct Gadget * pred;
-    UWORD count;
+    struct Gadget *pred;
+    UWORD   	   count;
 
     EXTENDUWORD(position);
 
