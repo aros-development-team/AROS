@@ -15,6 +15,7 @@
 #include <intuition/classusr.h>
 #include <intuition/imageclass.h>
 #include <proto/graphics.h>
+#include <proto/layers.h>
 #include <graphics/rastport.h>
 #include <graphics/text.h>
 
@@ -368,5 +369,51 @@ void GetDomGadgetIBox(struct Gadget *gad, struct Window *win,
     
     box->Left -= domain.Left;
     box->Top  -= domain.Top;
+}
+
+void EraseRelGadgetArea(struct Window *win, struct IntuitionBase *IntuitionBase)
+{
+    struct Gadget *gad;
+    struct Region *old_clipregion;
+    WORD old_scroll_x, old_scroll_y;
+    struct IBox box;
+    
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+
+    LockLayerRom(win->WLayer);
+
+    old_scroll_x = win->WLayer->Scroll_X;
+    old_scroll_y = win->WLayer->Scroll_Y;
+    old_clipregion = InstallClipRegion(win->WLayer, NULL);
+
+    gad = win->FirstGadget;
+    while(gad)
+    {
+	/* no eraserect for gadgets in the border area since
+	   refreshwindowframe already "erases" the whole border
+	   area */
+
+	if (!IS_BORDER_GADGET(gad))
+	{
+	    if (gad->Flags & (GFLG_RELRIGHT | GFLG_RELBOTTOM |
+			      GFLG_RELWIDTH | GFLG_RELHEIGHT | GFLG_RELSPECIAL))
+	    {
+		GetDomGadgetIBox(gad, win, NULL, &box);
+		EraseRect(win->RPort, box.Left,
+		    		      box.Top,
+				      box.Left + box.Width - 1,
+				      box.Top + box.Height -1);
+	    }
+	} 
+	gad = gad->NextGadget;
+    }
+
+    InstallClipRegion(win->WLayer, old_clipregion);
+    win->WLayer->Scroll_X = old_scroll_x;
+    win->WLayer->Scroll_Y = old_scroll_y;
+
+    UnlockLayerRom(win->WLayer);
+
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);    
 }
 
