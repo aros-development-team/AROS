@@ -7,7 +7,7 @@
 
 static void readsectionconfig(FILE *);
 static void readsectionproto(FILE *);
-static void readsectionclib(FILE *);
+static void readsectioncdef(FILE *);
 static void readsectionfunctionlist(FILE *);
 
 void readconfig(void)
@@ -28,7 +28,7 @@ void readconfig(void)
 	readline(in);
 	if (strncmp(line, "##", 2)==0)
 	{
-	    static char *parts[] = {"config", "proto", "clib", "functionlist"};
+	    static char *parts[] = {"config", "proto", "cdef", "functionlist"};
 	    const unsigned int nums = sizeof(parts)/sizeof(char *);
 	    unsigned int partnum;
 	    int i, atend = 0;
@@ -78,8 +78,8 @@ void readconfig(void)
 		readsectionproto(in);
 		break;
 		
-	    case 3: /* clib */
-		readsectionclib(in);
+	    case 3: /* cdef */
+		readsectioncdef(in);
 		break;
 		
 	    case 4: /* functionlist */
@@ -331,18 +331,18 @@ static void readsectionproto(FILE *in)
     }
 }
 
-static void readsectionclib(FILE *in)
+static void readsectioncdef(FILE *in)
 {
     int atend = 0;
     char *s;
-    struct linelist **linelistptr = &cliblines;
+    struct linelist **linelistptr = &cdeflines;
     
     while (!atend)
     {
 	readline(in);
 	if (feof(in))
 	{
-	    fprintf(stderr, "%s:%d:error unexptected end of file in section clib\n", conffile, lineno);
+	    fprintf(stderr, "%s:%d:error unexptected end of file in section cdef\n", conffile, lineno);
 	    exit(20);
 	}
 	if (strncmp(line, "##", 2)!=0)
@@ -358,14 +358,14 @@ static void readsectionclib(FILE *in)
 	    while (isspace(*s)) s++;
 	    if (strncmp(s, "end", 3)!=0)
 	    {
-		fprintf(stderr, "%s:%d:error \"##end clib\" expected\n", conffile, lineno);
+		fprintf(stderr, "%s:%d:error \"##end cdef\" expected\n", conffile, lineno);
 		exit(20);
 	    }
 	    s += 3;
 	    while (isspace(*s)) s++;
-	    if (strncmp(s, "clib", 4)!=0)
+	    if (strncmp(s, "cdef", 4)!=0)
 	    {
-		fprintf(stderr, "%s:%d:error \"##end clib\" expected\n", conffile, lineno);
+		fprintf(stderr, "%s:%d:error \"##end cdef\" expected\n", conffile, lineno);
 		exit(20);
 	    }
 	    s += 5;

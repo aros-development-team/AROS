@@ -55,7 +55,7 @@ extern enum libcall libcall;
 
 extern char *modulename, *basename, *modulenameupper, *libbase, *libbasetype, *libbasetypeextern, *datestring;
 extern unsigned int majorversion, minorversion, firstlvo;
-extern struct linelist *cliblines, *protolines;
+extern struct linelist *cdeflines, *protolines;
 
 /* global variables for reading lines from files */
 extern char *line; /* The current read file */

@@ -25,7 +25,7 @@ enum libcall libcall = STACK;
 char *modulename = NULL, *basename = NULL, *modulenameupper = NULL, *libbase = NULL,
      *libbasetype = NULL, *libbasetypeextern = NULL, *datestring = "00.00.0000";
 unsigned int majorversion = 0, minorversion = 0, firstlvo = 0;
-struct linelist *cliblines = NULL, *protolines = NULL;
+struct linelist *cdeflines = NULL, *protolines = NULL;
 
 /* global variables for reading lines from files */
 char *line; /* The current read file */
