@@ -56,6 +56,7 @@ all: setup $(LIB)
 setup :
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@if [ ! -d $(LIBDIR) ]; then $(MKDIR) $(LIBDIR) ; else true ; fi
+	@echo "CFLAGS=$(CFLAGS)"
 
 clean:
 	$(RM) $(OBJDIR) *.err $(LIB)
@@ -77,7 +78,8 @@ setup-test :
 	@if [ ! -d $(EXEDIR) ]; then $(MKDIR) $(EXEDIR) ; else true ; fi
 
 $(OBJDIR)/%.o: %.c
-	$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	@echo "Compiling $(CURDIR)/$<..."
+	@$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 dos_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
@@ -88,7 +90,8 @@ dos_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
+	@echo "Makedepend $CURDIR/$<..."
+	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 ifneq ($(TARGET),clean)
 include $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)

@@ -73,12 +73,14 @@ $(LIB) : $(OBJS)
 
 setup :
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
+	@echo "CFLAGS=$(CFLAGS)"
 
 clean:
 	$(RM) $(OBJDIR) *.err
 
 $(OBJDIR)/%.o: %.c
-	$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	@echo "Compiling $(CURDIR)/$<"
+	@$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 graphics_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
@@ -89,7 +91,8 @@ graphics_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
+	@echo "Makedepend $(CURDIR)/$<"
+	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 ifneq ($(TARGET),clean)
 include $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
