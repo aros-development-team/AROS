@@ -4,10 +4,10 @@ alib/ - The source for the amiga.lib. This link library
 
 aros/ -The source for aros.lib. This link library
 	contains special functions which allow to write
-	protable code.
+	portable code.
 
 clib/ - The source for AROS' c.lib. This link library
-	contaisn the standard ANSI C (and some more)
+	contains the standard ANSI C (and some more)
 	library functions like |printf()|, |strcpy()|, etc.
 
 	The directory also contains the includes for ANSI C.
