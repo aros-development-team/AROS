@@ -23,7 +23,7 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/aros.h>
+	#include <proto/aros.h>
 
 	int kprintf (
 
