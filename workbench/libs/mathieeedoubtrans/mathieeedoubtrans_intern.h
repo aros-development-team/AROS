@@ -5,17 +5,17 @@
     Desc:
     Lang: english
 */
-#ifndef __MATHIEEEDOUBBAS_INTERN_H__
-#define __MATHIEEEDOUBBAS_INTERN_H__
+#ifndef __MATHIEEEDOUBTRANS_INTERN_H__
+#define __MATHIEEEDOUBTRANS_INTERN_H__
 
-/* This is a short file that contains a few things every mathieeedoubbas
+/* This is a short file that contains a few things every mathieeedoubtrans
    function needs */
 
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
 #endif
 #ifndef PROTO_MATHIEEEDPTRANS_H
-#   include <proto/mathieeedoubbas.h>
+#   include <proto/mathieeedoubtrans.h>
 #endif
 
 #ifndef EXEC_TYPES_H
@@ -73,6 +73,10 @@ struct MathIeeeDoubTransBase
 #define IEEEDPNAN_Lo           0xFFFFFFFF
 #define IEEEDPNAN_64           0x7FFFFFFFFFFFFFFFUUL
 
+#define IEEEDPPInfty_Hi        0x7FEFFFFF
+#define IEEEDPPInfty_Lo        0xFFFFFFFF
+#define IEEEDPPInfty_64        0x7FEFFFFFFFFFFFFFUUL
+
 #define IEEEDPMantisse_Mask_64 0x0007FFFFFFFFFFFFULL /* 63 bit for the mantisse */
 #define IEEEDPExponent_Mask_64 0x7FF8000000000000ULL /* 10 bit for the exponent */
 #define IEEEDPSign_Mask_64     0x8000000000000000ULL /*  1 bit for the sign     */
@@ -82,5 +86,5 @@ struct MathIeeeDoubTransBase
 #define IEEESPSign_Mask        0x80000000 /*  1 bit for the sign     */
 
 
-#endif /* __MATHIEEEDOUBBAS_INTERN_H__  */
+#endif /* __MATHIEEEDOUBTRANS_INTERN_H__  */
 
