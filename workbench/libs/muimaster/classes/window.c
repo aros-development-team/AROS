@@ -928,6 +928,9 @@ static ULONG window_Close(struct IClass *cl, Object *obj);
 static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 			     struct IntuiMessage *event);
 
+/* handle intuimessage while an object is being dragged
+ * (reply imsg before returning)
+ */
 void HandleDragging (Object *oWin, struct MUI_WindowData *data,
 		     struct IntuiMessage *imsg)
 {
@@ -1094,6 +1097,7 @@ void HandleDragging (Object *oWin, struct MUI_WindowData *data,
 	/* stop listening to IDCMP_MOUSEMOVE */
 	_zune_window_change_events(data, _zune_window_get_default_events());
     }
+    ReplyMsg((struct Message*)imsg);
 }
 
 /* Reply to imsg if handled */
@@ -1102,96 +1106,86 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 {
     struct Window *iWin;
     BOOL is_handled = TRUE;
+    BOOL replied = FALSE;
 
     iWin = imsg->IDCMPWindow;
     switch (imsg->Class)
     {
-    	case IDCMP_MOUSEMOVE:
-	    if 
-            (
-                ContextMenuUnderPointer
-                (
-                    data, data->wd_RootObject, imsg->MouseX, imsg->MouseY
-                )
-            )
-            {
-                iWin->Flags |= WFLG_RMBTRAP;
-	    }
-            else if (!data->wd_NoMenus)
-            {
-                iWin->Flags &= ~WFLG_RMBTRAP;
-            }
-	    is_handled = FALSE; /* fowardable to area event handlers */
-	    break;
-
 	case IDCMP_ACTIVEWINDOW:
 	    data->wd_Flags |= MUIWF_ACTIVE;
 	    set(oWin, MUIA_Window_Activate, TRUE);
+	    is_handled = FALSE; /* forwardable to area event handlers */
 	    break;
 
 	case IDCMP_INACTIVEWINDOW:
 	    data->wd_Flags &= ~MUIWF_ACTIVE;
 	    set(oWin, MUIA_Window_Activate, FALSE);
 	    set(oWin, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
+	    is_handled = FALSE; /* forwardable to area event handlers */
 	    break;
 
 	case IDCMP_NEWSIZE:
-	{
-	    int hborders = iWin->BorderLeft + iWin->BorderRight;
-	    int vborders = iWin->BorderTop  + iWin->BorderBottom;
+	    ReplyMsg((struct Message*)imsg);
+	    replied = TRUE;
 
-	    /* set window limits according to window contents */
-	    WindowLimits
-            (
-                iWin,
-                data->wd_MinMax.MinWidth  + hborders,
-                data->wd_MinMax.MinHeight + vborders,
-                data->wd_MinMax.MaxWidth  + hborders,
-                data->wd_MinMax.MaxHeight + vborders
-            );
-	}
-
-	if ((iWin->GZZWidth  != data->wd_Width) || (iWin->GZZHeight != data->wd_Height))
-	{
-	    data->wd_Width  = iWin->GZZWidth;
-	    data->wd_Height = iWin->GZZHeight;
-	    DoMethod(data->wd_RootObject, MUIM_Hide);
-
-	    if (data->wd_RenderInfo.mri_Window->Flags & WFLG_SIMPLE_REFRESH)
 	    {
-		data->wd_Flags |= MUIWF_RESIZING;
+		int hborders = iWin->BorderLeft + iWin->BorderRight;
+		int vborders = iWin->BorderTop  + iWin->BorderBottom;
+		
+		/* set window limits according to window contents */
+		WindowLimits (
+		    iWin,
+		    data->wd_MinMax.MinWidth  + hborders,
+		    data->wd_MinMax.MinHeight + vborders,
+		    data->wd_MinMax.MaxWidth  + hborders,
+		    data->wd_MinMax.MaxHeight + vborders
+		    );
 	    }
-	    else
-	    {
-		_width(data->wd_RootObject) = data->wd_Width;
-		_height(data->wd_RootObject) = data->wd_Height;
-		DoMethod(data->wd_RootObject, MUIM_Layout);
-		DoMethod(data->wd_RootObject, MUIM_Show);
-		{
-		    LONG left,top,width,height;
 
-		    left = data->wd_RenderInfo.mri_Window->BorderLeft;
-		    top = data->wd_RenderInfo.mri_Window->BorderTop,
-			width = data->wd_RenderInfo.mri_Window->Width
-			- data->wd_RenderInfo.mri_Window->BorderRight - left;
-		    height = data->wd_RenderInfo.mri_Window->Height
-			- data->wd_RenderInfo.mri_Window->BorderBottom - top;
+	    if ((iWin->GZZWidth  != data->wd_Width) || (iWin->GZZHeight != data->wd_Height))
+	    {
+		data->wd_Width  = iWin->GZZWidth;
+		data->wd_Height = iWin->GZZHeight;
+		DoMethod(data->wd_RootObject, MUIM_Hide);
+
+		if (data->wd_RenderInfo.mri_Window->Flags & WFLG_SIMPLE_REFRESH)
+		{
+		    data->wd_Flags |= MUIWF_RESIZING;
+		}
+		else
+		{
+		    _width(data->wd_RootObject) = data->wd_Width;
+		    _height(data->wd_RootObject) = data->wd_Height;
+		    DoMethod(data->wd_RootObject, MUIM_Layout);
+		    DoMethod(data->wd_RootObject, MUIM_Show);
+		    {
+			LONG left,top,width,height;
+
+			left = data->wd_RenderInfo.mri_Window->BorderLeft;
+			top = data->wd_RenderInfo.mri_Window->BorderTop,
+			    width = data->wd_RenderInfo.mri_Window->Width
+			    - data->wd_RenderInfo.mri_Window->BorderRight - left;
+			height = data->wd_RenderInfo.mri_Window->Height
+			    - data->wd_RenderInfo.mri_Window->BorderBottom - top;
 
 //		    D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
 //			  __LINE__, data->wd_Background, left, top, width,
 //			  height, left, top));
-		    zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
-				     left, top, width, height, left, top, 0);
+			zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
+					 left, top, width, height, left, top, 0);
+		    }
+		    if (muiGlobalInfo(oWin)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
+			MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
+		    else
+			MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
 		}
-		if (muiGlobalInfo(oWin)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
-		    MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
-		else
-		    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
 	    }
-	}
-	break;
+	    break;
 
 	case IDCMP_REFRESHWINDOW:
+	    ReplyMsg((struct Message*)imsg);
+	    replied = TRUE;
+
 	    if (data->wd_Flags & MUIWF_RESIZING)
 	    {
 		//LONG left,top,right,bottom;
@@ -1240,10 +1234,15 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 	    break;
 
 	case IDCMP_CLOSEWINDOW:
+	    ReplyMsg((struct Message*)imsg);
+	    replied = TRUE;
 	    set(oWin, MUIA_Window_CloseRequest, TRUE);
 	    break;
 
 	case IDCMP_MENUPICK:
+	    ReplyMsg((struct Message*)imsg);
+	    replied = TRUE;
+
 	    if (data->wd_Menu)
 	    {
 		if (MENUNUM(imsg->Code != NOMENU) && ITEMNUM(imsg->Code) != NOITEM)
@@ -1275,6 +1274,7 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 	    break;
 
 	case IDCMP_IDCMPUPDATE:
+	    is_handled = FALSE; /* forwardable to area event handlers */
 	    if (data->wd_VertProp || data->wd_HorizProp)
 	    {
 		struct TagItem *tag;
@@ -1287,19 +1287,20 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 		       
 		    if (data->wd_VertProp)
 		    {
-			if (tag->ti_Data == GADGETID(data->wd_VertProp));
+			if (tag->ti_Data == GADGETID(data->wd_VertProp))
+			    ;
 			
 			if (tag->ti_Data == GADGETID(data->wd_UpButton))
 			{
 			    Object *prop = (Object *)((struct Gadget *)data->wd_VertProp)->UserData;
-			    
+			    is_handled = TRUE;
 			    if (prop) DoMethod(prop, MUIM_Prop_Decrease, 1);
 			}			
 			
 			if (tag->ti_Data == GADGETID(data->wd_DownButton))
 			{
 			    Object *prop = (Object *)((struct Gadget *)data->wd_VertProp)->UserData;
-			    
+			    is_handled = TRUE;
 			    if (prop) DoMethod(prop, MUIM_Prop_Increase, 1);
 			}
 			
@@ -1307,19 +1308,20 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 
 		    if (data->wd_HorizProp)
 		    {
-			if (tag->ti_Data == GADGETID(data->wd_HorizProp));
+			if (tag->ti_Data == GADGETID(data->wd_HorizProp))
+			    ;
 			
 			if (tag->ti_Data == GADGETID(data->wd_LeftButton))
 			{
 			    Object *prop = (Object *)((struct Gadget *)data->wd_HorizProp)->UserData;
-			    
+			    is_handled = TRUE;
 			    if (prop) DoMethod(prop, MUIM_Prop_Decrease, 1);
 			}
 			
 			if (tag->ti_Data == GADGETID(data->wd_RightButton))
 			{
 			    Object *prop = (Object *)((struct Gadget *)data->wd_HorizProp)->UserData;
-			    
+			    is_handled = TRUE;
 			    if (prop) DoMethod(prop, MUIM_Prop_Increase, 1);
 			}
 			
@@ -1331,6 +1333,9 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 	    is_handled = FALSE;
 	    break;
     } /* switch (imsg->Class) */
+
+    if (is_handled && !replied)
+	ReplyMsg((struct Message*)imsg);
 
     return is_handled;
 }
@@ -1400,14 +1405,31 @@ static ULONG InvokeEventHandler (struct MUI_EventHandlerNode *ehn,
 }
 
 static void HandleRawkey(Object *win, struct MUI_WindowData *data, 
-			     struct IntuiMessage *event)
+			 struct IntuiMessage *event)
 {
     struct MinNode              *mn;
     struct MUI_EventHandlerNode *ehn;
+    struct IntuiMessage          imsg_copy;
     ULONG                        res;
     LONG                         muikey = MUIKEY_NONE;
     Object                      *active_object = NULL;
     IPTR                         disabled;
+    ULONG                        key;
+
+    /* get the vanilla key for control char */
+    {
+	UWORD msg_code;
+	/* Remove the up prefix as convert key does not convert a upkey event */
+	msg_code = event->Code;
+	event->Code &= ~IECODE_UP_PREFIX;
+    	key = ConvertKey(event);
+	event->Code = msg_code;
+    }
+
+    imsg_copy = *event;
+    imsg_copy.IAddress = NULL; /* be sure to trap access to that */
+    ReplyMsg((struct Message*)event);
+    event = &imsg_copy;
 
     /* check if imsg translate to predefined keystroke */
     {
@@ -1419,7 +1441,13 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 	ievent.ie_SubClass     = 0;
 	ievent.ie_Code         = event->Code;
 	ievent.ie_Qualifier    = event->Qualifier;
-	ievent.ie_EventAddress = (APTR *) *((ULONG *)(event->IAddress));
+	/* ie_EventAddress is not used by MatchIX. If needed, it should be 
+	 * ensured that it is still a valid adress because of the shallow
+	 * IntuiMessage copy currently done in _zune_window_message before
+	 * message is replied.
+	 */
+	ievent.ie_EventAddress = NULL;
+	//ievent.ie_EventAddress = (APTR *) *((ULONG *)(event->IAddress));
 
 	for (muikey = MUIKEY_COUNT - 1; muikey >= MUIKEY_PRESS; muikey--)
 	{
@@ -1516,51 +1544,41 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
     } /* if ... default object */
 
     /* try Control Chars */
+    if (key)
     {
-    	struct IntuiMessage imsg;
-    	ULONG key;
+	for (mn = data->wd_CCList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+	{
+	    ehn = (struct MUI_EventHandlerNode *)mn;
 
-	/* Remove the up prefix as convert key does not convert a upkey event */
-    	imsg = *event;
-    	imsg.Code &= ~IECODE_UP_PREFIX;
-    	key = ConvertKey(&imsg);
+	    if (ehn->ehn_Events == key)
+	    {
+		IPTR disabled;
+		LONG muikey2 = ehn->ehn_Flags;
 
-    	if (key)
-    	{
-            for (mn = data->wd_CCList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
-            {
-		ehn = (struct MUI_EventHandlerNode *)mn;
+		get(ehn->ehn_Object, MUIA_Disabled, &disabled);
+		if (disabled)
+		    continue;
 
-		if (ehn->ehn_Events == key)
+		if (event->Code & IECODE_UP_PREFIX)
 		{
-		    IPTR disabled;
-		    LONG muikey2 = ehn->ehn_Flags;
+		    /* simulate a release */
+		    if (muikey2 == MUIKEY_PRESS)
+			muikey2 = MUIKEY_RELEASE;
+		    else
+			return;
+		}
 
-		    get(ehn->ehn_Object, MUIA_Disabled, &disabled);
-		    if (disabled)
-			continue;
-
-		    if (event->Code & IECODE_UP_PREFIX)
-		    {
-			/* simulate a release */
-			if (muikey2 == MUIKEY_PRESS)
-			    muikey2 = MUIKEY_RELEASE;
-			else
-			    return;
-		    }
-
-		    if ((muikey2 != MUIKEY_NONE)
-			&& (_flags(ehn->ehn_Object) & MADF_CANDRAW)
-			&& (_flags(ehn->ehn_Object) & MADF_SHOWME))
-		    {
-			res = CoerceMethod
-			    (
-				ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, 
-				NULL, muikey2
-				);
-			if (res & MUI_EventHandlerRC_Eat)
-			    return;
-		    }
+		if ((muikey2 != MUIKEY_NONE)
+		    && (_flags(ehn->ehn_Object) & MADF_CANDRAW)
+		    && (_flags(ehn->ehn_Object) & MADF_SHOWME))
+		{
+		    res = CoerceMethod
+			(
+			    ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, 
+			    NULL, muikey2
+			    );
+		    if (res & MUI_EventHandlerRC_Eat)
+			return;
 		}
 	    }
 	}
@@ -1613,8 +1631,33 @@ static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 {
     struct MinNode              *mn;
     struct MUI_EventHandlerNode *ehn;
+    struct IntuiMessage          imsg_copy;
     ULONG                        res;
     ULONG                        mask = event->Class;
+
+    if (mask != IDCMP_IDCMPUPDATE)
+    {
+	imsg_copy = *event;
+	imsg_copy.IAddress = NULL; /* be sure to trap access to that */
+	ReplyMsg((struct Message*)event);
+	event = &imsg_copy;
+    }
+
+    if (mask == IDCMP_MOUSEMOVE)
+    {
+	struct Window *iWin;
+	iWin = event->IDCMPWindow;
+
+	if (ContextMenuUnderPointer (data, data->wd_RootObject,
+				     event->MouseX, event->MouseY))
+	{
+	    iWin->Flags |= WFLG_RMBTRAP;
+	}
+	else if (!data->wd_NoMenus)
+	{
+	    iWin->Flags &= ~WFLG_RMBTRAP;
+	}
+    }
 
     for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
     {
@@ -1633,6 +1676,9 @@ static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 		return;
 	}
     }
+
+    if (mask == IDCMP_IDCMPUPDATE)
+	ReplyMsg((struct Message*)event);
 }
 
 
@@ -1643,29 +1689,25 @@ void _zune_window_message(struct IntuiMessage *imsg)
     struct Window *iWin;
     Object        *oWin;
     struct MUI_WindowData *data;
-    struct IntuiMessage imsg_copy;
     BOOL handled;
 
     iWin = imsg->IDCMPWindow;
     oWin = (Object *)iWin->UserData;
     data = muiWindowData(oWin);
 
-    imsg_copy = *imsg;
-    ReplyMsg((struct Message*)imsg);
-
     if (data->wd_DragObject)
     {
-	HandleDragging(oWin, data, &imsg_copy);
+	HandleDragging(oWin, data, imsg);
 	return;
     }
 
-    handled = HandleWindowEvent(oWin, data, &imsg_copy);
+    handled = HandleWindowEvent(oWin, data, imsg);
     if (!handled)
     {
 	if (IDCMP_RAWKEY == imsg->Class)
-	    HandleRawkey(oWin, data, &imsg_copy);
+	    HandleRawkey(oWin, data, imsg);
 	else
-	    HandleInputEvent(oWin, data, &imsg_copy);
+	    HandleInputEvent(oWin, data, imsg);
     }
 }
 
