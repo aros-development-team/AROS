@@ -1161,10 +1161,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
       oldcr = oldcr->Next;
   } /* for all old cliprects */
 
-  if (IS_EMPTYREGION(l->DamageList))
-    l->Flags &= ~LAYERREFRESH;
-  else
-    l->Flags |= LAYERREFRESH;
+  CHECKDAMAGELIST(l);
 
   return TRUE;
 }
