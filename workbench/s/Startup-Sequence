@@ -55,7 +55,7 @@ Run <NIL: >NIL: ConClip
 
 If EXISTS C:RexxMast
     Assign REXX: S:
-    ;Run <NIL: >NIL: C:RexxMast
+    Run <NIL: >NIL: C:RexxMast
 EndIf
 
 If EXISTS S:User-Startup
@@ -64,4 +64,4 @@ EndIf
 
 LoadWB
 
-;EndCLI
+EndCLI
