@@ -21,7 +21,7 @@
 
 #include <string.h>
 
-#define MYDEBUG 1
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 #include "imspec_intern.h"
 #include "mui.h"
@@ -54,8 +54,6 @@ static void Gradient_Function(struct Hook *hook, Object *obj, APTR msg)
     struct MUI_RGBcolor *end_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_end_poppen, MUIA_Pendisplay_RGBcolor);
     int angle = XGET(data->gradient_angle_slider, MUIA_Numeric_Value);
     int is_tiled = XGET(data->gradient_type_cycle, MUIA_Cycle_Active);
-
-    D(bug("Gradient_Function: cycle=%d\n", is_tiled));
 
     snprintf(data->gradient_imagespec,sizeof(data->gradient_imagespec),
 	     "%s:%d,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
@@ -269,10 +267,8 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct Imageadjust_DATA *data,
 			nnset(data->gradient_angle_slider, MUIA_Numeric_Value, spec.u.gradient.angle);
 		       
 			set(data->gradient_type_cycle, MUIA_Cycle_Active, *s == '7' ? 0 : 1);
-			D(bug("set cycle, val=%ld\n", XGET(data->gradient_type_cycle, MUIA_Cycle_Active)));
 		    }
 
-		    D(bug("a\n"));
 		    Gradient_Function(NULL,obj,&data);
 		    if (data->adjust_type == MUIV_Imageadjust_Type_All)
 		        set(obj,MUIA_Group_ActivePage,5);
@@ -503,7 +499,6 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		     (IPTR)obj, 3, MUIM_CallHook, (IPTR)&data->gradient_hook, (IPTR)data);
 
 	/* Set the gradient image to correct values */
-	D(bug("b\n"));
 	Gradient_Function(NULL,obj,&data);
 
     } /* if (gradient_imagedisplay) */
