@@ -16,6 +16,11 @@
 #include <intuition/intuitionbase.h>
 #include <exec/execbase.h>
 
+LONG ReturnError2(void)
+{
+  return -1;
+}
+
 #include "muimaster_intern.h"
 
 #define VERSION   1
@@ -138,6 +143,9 @@ ASM SEGLISTPTR LibClose(REG(a6, struct MUIMasterBase_intern *mb))
   return 0;
 }
 
+#undef SysBase
+extern struct ExecBase *SysBase;
+
 /* Initialize library */
 ASM struct Library *LibInit(REG(a0, SEGLISTPTR seglist), REG(d0, struct MUIMasterBase_intern *mb), REG(a6, struct ExecBase *sysbase))
 {
@@ -161,6 +169,9 @@ ASM struct Library *LibInit(REG(a0, SEGLISTPTR seglist), REG(d0, struct MUIMaste
   /* Fill some globals */
 //  MUIMasterBase = (struct Library *)mb;
   mb->sysbase = sysbase;
+	SysBase = sysbase;
+
+  D(bug("Librarybase at 0x%lx\n",mb));
 
   if (L_InitLib(&mb->library))
     return &mb->library;
@@ -173,7 +184,6 @@ ASM struct Library *LibInit(REG(a0, SEGLISTPTR seglist), REG(d0, struct MUIMaste
 }
 
 /************************************************************************/
-
 /* This is the table of functions that make up the library. The first
    four are mandatory, everything following it are user callable
    routines. The table is terminated by the value -1. */
@@ -183,6 +193,31 @@ static const APTR LibVectors[] = {
   (APTR) LibClose,
   (APTR) LibExpunge,
   (APTR) LibReserved,
+  (APTR) MUI_NewObjectA,
+  (APTR) MUI_DisposeObject,
+  (APTR) MUI_RequestA,
+  (APTR) MUI_AllocAslRequest,
+  (APTR) MUI_AslRequest,
+  (APTR) MUI_FreeAslRequest,
+  (APTR) MUI_Error,
+  (APTR) MUI_SetError,
+  (APTR) MUI_GetClass,
+  (APTR) MUI_FreeClass,
+  (APTR) MUI_RequestIDCMP,
+  (APTR) MUI_RejectIDCMP,
+  (APTR) MUI_Redraw,
+  (APTR) MUI_CreateCustomClass,
+  (APTR) MUI_DeleteCustomClass,
+  (APTR) MUI_MakeObjectA,
+  (APTR) MUI_Layout,
+  (APTR) MUI_ObtainPen,
+  (APTR) MUI_ReleasePen,
+  (APTR) MUI_AddClipping,
+  (APTR) MUI_RemoveClipping,
+  (APTR) MUI_AddClipRegion,
+  (APTR) MUI_RemoveClipRegion,
+  (APTR) MUI_BeginRefresh,
+  (APTR) MUI_EndRefresh,
   (APTR) -1
 };
 
@@ -216,3 +251,7 @@ const ULONG LibInitTable[4] = {
   (ULONG)LibInit                 /* The address of the routine to do the setup */
 };
 
+void _CXFERR(void)
+{
+    D(bug("CFXERR\n"));
+}
