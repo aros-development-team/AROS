@@ -2,7 +2,7 @@
 # Start tclsh with options \
 exec tclsh8.0 "$0" "$@"
 
-set optionfile "$env(HOME)/.mmake.opts"
+set optionfile "$env(HOME)/.mmake.config"
 
 set project "default"
 set defaultproject "default"
@@ -132,15 +132,18 @@ proc buildmflist project {
     set top $opts($project,top)
     set len [expr [string length $top] + 1]
 
-    set fh [open "|find \"$top\" -name \"$mfn\" -print" r]
+    cd $top
 
-    while {[gets $fh line] >= 0} {
-	set mfn [string range $line $len end]
+    set fh [open "|find . -type d -print" r]
 
-	if {[file exists $line.src]} {
-	    lappend opts($project,makefiles) $mfn.src
-	} else {
-	    lappend opts($project,makefiles) $mfn
+    while {[gets $fh dir] >= 0} {
+	set dir [string range $dir 2 end]
+	set lmfn [file join $dir $mfn]
+
+	if {[file exists $lmfn.src]} {
+	    lappend opts($project,makefiles) $lmfn.src
+	} elseif {[file exists $lmfn]} {
+	    lappend opts($project,makefiles) $lmfn
 	}
     }
 
@@ -160,6 +163,30 @@ proc progress {max curr datavar} {
 	set data $x
 	puts -nonewline "."
 	flush stdout
+    }
+}
+
+proc appendtarget {project target mf deps} {
+    global opts tmf td tutd
+
+puts "appendtarget prj=$project t=$target mf=$mf deps=$deps"
+
+    # Is this target unknown yet ?
+    if {[array names td "$project,$target"] == ""} {
+	lappend opts($project,targets) $target
+	set tmf($project,$target) $mf
+	set td($project,$target) $deps
+	set tutd($project,$target) 0
+    } else {
+	if {[lsearch $tmf($project,$target) $mf] == -1} {
+	    lappend tmf($project,$target) $mf
+	}
+
+	foreach dep $deps {
+	    if {[lsearch $td($project,$target) $dep] == -1} {
+		lappend td($project,$target) $dep
+	    }
+	}
     }
 }
 
@@ -193,39 +220,18 @@ proc buildtargetlist project {
 		    regsub ":" $line " " line
 		    set args [getargs $project $line]
 		    set target [lindex $args 0]
-		    lappend opts($project,targets) $target
-		    set tmf($project,$target) $mf
-		    set td($project,$target) {}
+
+		    appendtarget $project $target $mf {}
 		} else {
 		    set tmp [split $line ":"]
 		    set targets [getargs $project [lindex $tmp 0]]
 		    set deps [getargs $project [lindex $tmp 1]]
-#puts "target deps=$deps ([lindex $tmp 1])"
 
 		    foreach target $targets {
-			# Is this targets unknown yet ?
-			if {[lsearch -exact $opts($project,targets) $target] == -1} {
-			    lappend opts($project,targets) $target
-			    set tmf($project,$target) $mf
-			    set td($project,$target) $deps
-			} else {
-			    if {[lsearch $tmf($project,$target) $mf] == -1} {
-				lappend tmf($project,$target) $mf
-			    }
-
-			    foreach dep $deps {
-				if {[lsearch $td($project,$target) $dep] == -1} {
-				    lappend td($project,$target) $dep
-				}
-			    }
-			}
+			appendtarget $project $target $mf $deps
 		    }
 		}
 	    }
-	}
-
-	foreach t $opts($project,targets) {
-	    set tutd($project,$t) 0
 	}
 
 	close $fh
@@ -310,7 +316,7 @@ proc execute {prj cmd in out args} {
     }
 
     #puts --nonewline "$in $out "
-    puts "$cmd $argstr"
+    #puts "$cmd $argstr"
 
     if {1} {
 	set error [catch "exec $in $out 2>@stderr $cmd $argstr" msg]
@@ -333,6 +339,9 @@ proc callmake {prj targ mf} {
     set ext [file extension $mf]
 #puts "dir=$dir file=$file ext=$ext"
 
+    cd [file join $opts($prj,top) $dir]
+    puts "    Making $targ in $dir..."
+
     if {$ext == ".src"} {
 	regsub "\.\[^.\]*$" $file "" file
 #puts "dir=$dir file=$file ext=$ext"
@@ -342,17 +351,15 @@ proc callmake {prj targ mf} {
 	if {![file exists $dest]
 	    || [file mtime $src] > [file mtime $dest]
 	    || ($opts($prj,genmakefiledeps) != ""
-		&& [file mtime [substvars $prj $opts($prj,genmakefiledeps)]]
+		&& [file mtime [substvars $prj $opts($prj,genmakefiledeps)]] > [file mtime $dest]
 	    )
 	} {
-	    if {![execute $prj $opts($prj,genmakefilescript) - $dest $src]} {
+	    if {![execute $prj $opts($prj,genmakefilescript) - $file $file.src]} {
 		puts stderr "Error while regenerating makefile $dest"
 		exit 10
 	    }
 	}
     }
-
-    cd [file join $opts($prj,top) $dir]
 
     set vars($prj,CURDIR) $dir
 
