@@ -45,6 +45,7 @@ USER_INCLUDES := -I. -I../include $(addprefix -I,$(DIRS))
 #MM workbench-libs-freetype-linklib : workbench-libs-freetype-includes
 #MM workbench-libs-freetype-module : workbench-libs-freetype-includes
 
+# for ftsystem use the source code available in ../config/aros
 %rule_compile basename=../config/aros/ftsystem targetdir=$(GENDIR)/$(CURDIR)
 
 %build_linklib mmake=workbench-libs-freetype-linklib libname=freetype2 \
