@@ -147,6 +147,15 @@
 #   define AROS_SLOWSTACKMETHODS
 #endif /* !AROS_STACK_GROWS_DOWNWARDS */
 
+#if !defined(__CONCAT)
+#   if defined(__STDC__) || defined(__cplusplus)
+#       define      __CONCAT1(a,b)  a ## b
+#       define      __CONCAT(a,b)   __CONCAT1(a,b)
+#   else
+#       define      __CONCAT(a,b)       a/**/b
+#   endif
+#endif
+
 #ifndef AROS_ASMSYMNAME
 #   define AROS_ASMSYMNAME(n) n
 #endif
@@ -162,25 +171,43 @@
 #define ___AROS_STR(x) #x
 #define __AROS_STR(x) ___AROS_STR(x)
 
+
 /* Makes a 'new' symbol which occupies the same memory location as the 'old' symbol */
 #if !defined AROS_MAKE_ALIAS
-#   define AROS_MAKE_ALIAS(old, new)                                                  \
-        extern typeof(old) new;                                                       \
-        AROS_MAKE_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(new), AROS_CSYM_FROM_ASM_NAME(old))
+#   define AROS_MAKE_ALIAS(old, new) \
+        AROS_MAKE_ASM_SYM(typeof(old), new, AROS_CSYM_FROM_ASM_NAME(new), AROS_CSYM_FROM_ASM_NAME(old)); \
+	AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(new))
 #endif
 
-/* define an asm symbol 'sym' with value 'value'
-   'value' has to be an asm constant, thus either an
-   address number or an asm symbol name, */
+/* define an asm symbol 'asym' with a C name 'csym', type 'type' and with value 'value'.
+   'value' has to be an asm constant, thus either an address number or an asm symbol name, */
 #if !defined AROS_MAKE_ASM_SYM 
-#    define AROS_MAKE_ASM_SYM(sym, value)                         \
-         asm("\n.globl " __AROS_STR(sym) "\n\t"                   \
-             ".set " __AROS_STR(sym) ", " __AROS_STR(value) "\n")
+#    define AROS_MAKE_ASM_SYM(type, csym, asym, value)             \
+         extern type csym asm(__AROS_STR(asym));                   \
+	 typedef int __CONCAT(__you_must_first_make_asym_, asym);  \
+         asm(".set " __AROS_STR(asym) ", " __AROS_STR(value) "\n")
 #endif
 
+/* Makes an ASM symbol 'asym' available for use in the compilation unit this
+   macro is used, with a C name 'csym'. This has also the side effect of
+   triggering the inclusion, by the linker, of all code and data present in the
+   module where the ASM symbol is actually defined.  */
 #if !defined AROS_IMPORT_ASM_SYM 
-#    define AROS_IMPORT_ASM_SYM(sym)          \
-         asm("\n.globl " __AROS_STR(sym) "\n")
+#    define AROS_IMPORT_ASM_SYM(type, csym, asym)     \
+         extern type csym asm(__AROS_STR(asym));      \
+         asm("\n.globl " __AROS_STR(asym) "\n") 
+#endif
+
+/* Make sure other compilation units can see the symbol 'asym' created with AROS_MAKE_ASM_SYM.
+   This macro results in a compile-time error in case it's used BEFORE the symbol has been
+   made with AROS_MAKE_ASM_SYM.  */
+#if !defined AROS_EXPORT_ASM_SYM 
+#    define AROS_EXPORT_ASM_SYM(asym)                                    \
+         struct __CONCAT(___you_must_first_make_asym_, asym)             \
+	 {                                                               \
+	     int a[sizeof(__CONCAT(__you_must_first_make_asym_, asym))]; \
+	 };                                                              \
+         asm("\n.globl " __AROS_STR(asym) "\n")
 #endif
 
 #endif /* AROS_SYSTEM_H */
