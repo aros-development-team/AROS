@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/11 12:58:46  digulla
+    Determine the size of the name (M. Fleischer)
+
     Revision 1.3  1996/08/13 13:52:46  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
     Replaced __AROS_LA by __AROS_LHA
@@ -69,14 +72,27 @@
     static const ULONG flagarray[]=
     { LDF_DEVICES, LDF_ASSIGNS, LDF_VOLUMES, LDF_ASSIGNS, LDF_ASSIGNS };
     
+    /* Determine the size of the name (-1 if the last character is a ':') */
+    STRPTR end=name;
+    ULONG size;
+    while(*end++)
+        ;
+    size=~(name-end);
+    if(size&&*--end==':')
+        size--;
+
+    /* Follow the list */   
     for(;;)
     {
+        /* Get next entry. Return NULL if there is none. */
 	dlist=dlist->dol_Next;
 	if(dlist==NULL)
 	    return NULL;
-	if(flags&flagarray[dlist->dol_Type])
-	    if(!Stricmp(name,dlist->dol_Name))
-		return dlist;
+
+	/* Check type and name */
+	if(flags&flagarray[dlist->dol_Type]&&
+	   !Strnicmp(name,dlist->dol_Name,size)&&!dlist->dol_Name[size])
+	    return dlist;
     }
     __AROS_FUNC_EXIT
 } /* FindDosEntry */
