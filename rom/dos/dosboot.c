@@ -8,6 +8,9 @@
 
 #define AROS_ALMOST_COMPATIBLE
 
+# define  DEBUG  1
+# include <aros/debug.h>
+
 #include <exec/types.h>
 #include <exec/nodes.h>
 #include <exec/lists.h>
@@ -18,7 +21,6 @@
 #include <dos/dostags.h>
 #include <libraries/expansionbase.h>
 #include <aros/asmcall.h>
-#include <aros/debug.h>
 #include <string.h>
 
 #include <proto/exec.h>
@@ -73,11 +75,19 @@ AROS_UFH3(void, intBoot,
 	bootname[len-1] = ':';
 	bootname[len] = '\0';
 	CloseLibrary((struct Library *)ExpansionBase);
+
+	D(bug("Locking primary boot device %s\n", bootname));
+
 	lock = Lock(bootname, SHARED_LOCK);
-	if( lock )
-		AssignLock("SYS", lock);
+
+	if(lock != NULL)
+	{
+	    AssignLock("SYS", lock);
+	}
 	else
-		Alert( AT_DeadEnd | AG_BadParm | AN_DOSLib );
+	{
+	    Alert(AT_DeadEnd | AG_BadParm | AN_DOSLib);
+	}
 
 	FreeMem(bootname, len + 2);
 	lock = Lock("SYS:", SHARED_LOCK);
