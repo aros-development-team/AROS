@@ -1,3 +1,4 @@
+
 #include <dos/dos.h>
 #include <intuition/intuition.h>
 #include <graphics/gfx.h>
@@ -11,6 +12,8 @@
 #include <clib/alib_protos.h>
 
 #include <stdio.h>
+#include <stdlib.h>
+
 
 #define PATTERNWIDTH  32
 #define PATTERNHEIGHT 32
@@ -38,6 +41,7 @@ static struct BitMap *patternbm;
 
 static struct Hook backfillhook, *old_layerinfohook;
 static BOOL hook_installed;
+
 
 static void Cleanup(char *msg)
 {
@@ -88,6 +92,7 @@ static void Cleanup(char *msg)
     exit(rc);
 }
 
+
 static void OpenLibs(void)
 {
     if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",39)))
@@ -106,7 +111,9 @@ static void OpenLibs(void)
     }
 }
 
-static void MyBackfillFunc(struct Hook *hook,struct RastPort *rp, struct LayerHookMsg *msg)
+
+static void MyBackfillFunc(struct Hook *hook,struct RastPort *rp,
+			   struct LayerHookMsg *msg)
 {
     struct RastPort myrp;
     WORD x1,y1,x2,y2,px,py,pw,ph;
@@ -165,11 +172,13 @@ static void MyBackfillFunc(struct Hook *hook,struct RastPort *rp, struct LayerHo
 
 }
 
+
 static void InitBackfillHook(void)
 {
     backfillhook.h_Entry = HookEntry;
     backfillhook.h_SubEntry = (HOOKFUNC)MyBackfillFunc;
 }
+
 
 static void GetVisual(void)
 {
@@ -183,6 +192,7 @@ static void GetVisual(void)
 	Cleanup("Can't get drawinfo!");
     }
 }
+
 
 static void MakePattern(void)
 {
@@ -225,6 +235,7 @@ static void MakePattern(void)
 	
 }
 
+
 static void StartBackfillHook(void)
 {
     struct Window *tempwin;
@@ -254,6 +265,7 @@ static void StartBackfillHook(void)
     if (tempwin) CloseWindow(tempwin);
 }
 
+
 static void MakeWin(void)
 {	
     if (!(win = OpenWindowTags(0,WA_PubScreen,(IPTR)scr,
@@ -274,8 +286,8 @@ static void MakeWin(void)
     }
 
     ScreenToFront(win->WScreen);
-
 }
+
 
 static void HandleAll(void)
 {
@@ -283,12 +295,13 @@ static void HandleAll(void)
 
     BOOL quitme = FALSE;
 
-    while(!quitme)
+    while (!quitme)
     {
 	WaitPort(win->UserPort);
+
 	while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
 	{
-	    switch(msg->Class)
+	    switch (msg->Class)
 	    {
 		case IDCMP_CLOSEWINDOW:
 			quitme = TRUE;
@@ -299,10 +312,12 @@ static void HandleAll(void)
 			EndRefresh(win,TRUE);
 			break;
 	    }
+
 	    ReplyMsg((struct Message *)msg);
 	}
     }
 }
+
 
 int main(void)
 {
@@ -314,5 +329,6 @@ int main(void)
     MakeWin();
     HandleAll();
     Cleanup(0);
+
     return 0;
 }

@@ -1,9 +1,11 @@
+
 #include <libraries/reqtools.h>
 #include <proto/exec.h>
 #include <proto/reqtools.h>
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define PROGNAME "rtezrequest"
 
@@ -28,10 +30,11 @@ static void action(void)
 {
     struct TagItem tags[] =
     {
-        {RT_Underscore		, (IPTR)'_'					},
-	{RTEZ_ReqTitle		, (IPTR)"I'm a ReqTools Requester"		},
-    	{TAG_DONE								}
+        { RT_Underscore	, (IPTR)'_' },
+	{ RTEZ_ReqTitle	, (IPTR)"I'm a ReqTools Requester" },
+    	{ TAG_DONE }
     };
+
     IPTR args[] = {(IPTR)"ABCDEF12345678", 12345678};
        
     rtEZRequestA("This is a requester\n"
@@ -45,10 +48,12 @@ static void action(void)
 		 tags);
 }
 
+
 int main(void)
 {
     openlibs();
     action();
     cleanup(0);
+
     return 0;
 }

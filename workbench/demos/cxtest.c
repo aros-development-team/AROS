@@ -1,5 +1,5 @@
 /*
-    (C) 1998-2000 AROS - The Amiga Research OS
+    (C) 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Test program for Commodities
@@ -13,10 +13,11 @@
 #include <intuition/intuition.h>
 #include <exec/memory.h>
 #include <aros/machine.h>
-#include <stdio.h>
 #include <libraries/commodities.h>
 #include <dos/dos.h>
 
+#include <stdio.h>
+#include <stdlib.h>
 
 struct IntuitionBase *IntuitionBase;
 
@@ -134,13 +135,13 @@ int main(int argc, char* argv[])
     fprintf(stderr, "Deleting all objects.\n");
     DeleteCxObjAll(myBroker);
 
-
     CloseWindow(window);
 
     fprintf(stderr, "Closing commodities.library...\n");
     CloseLibrary(CxBase);
     CloseLibrary((struct Library *)IntuitionBase);
     fprintf(stderr, "All done.\n");
+
     return 0;
 }
 

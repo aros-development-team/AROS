@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define PROGNAME "rtscreen"
 
@@ -46,5 +47,6 @@ int main(void)
     openlibs();
     action();
     cleanup(0);
+
     return 0;
 }
