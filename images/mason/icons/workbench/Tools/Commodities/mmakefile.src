@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := AutoPoint Blanker ClickToFront Exchange
+ICONS     := AutoPoint Blanker ClickToFront Exchange Opaque
 ICONDIR   := $(AROSDIR)/Tools/Commodities
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
