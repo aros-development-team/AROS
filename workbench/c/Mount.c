@@ -365,7 +365,7 @@ int main(void)
 	    STRPTR *dev = (STRPTR *)args[0];
 	    preparefile(mem, size);
 
-	    while (*dev)
+	    if (dev) while (*dev)
 	    {
 		error = mount(*dev++, mem, size);
 

@@ -51,7 +51,7 @@ AROS_SHA(STRPTR,   , TO,     /K,   NULL))
 
     a = SHArg( );
 
-    while (*a != NULL)
+    if (a) while (*a != NULL)
     {
 	b = *a;
 

@@ -303,7 +303,7 @@ STRPTR fixExpression(STRPTR val1, STRPTR op, STRPTR *vals)
 	len += strlen(op) + 1;
     }
 
-    for (i = 0; vals[i] != NULL; i++)
+    if (vals) for (i = 0; vals[i] != NULL; i++)
     {
 	len += strlen(vals[i]) + 1;
     }
@@ -324,7 +324,7 @@ STRPTR fixExpression(STRPTR val1, STRPTR op, STRPTR *vals)
 	strcat(arg, " ");
     }
 
-    for (i = 0; vals[i] != NULL; i++)
+    if (vals) for (i = 0; vals[i] != NULL; i++)
     {
 	strcat(arg, vals[i]);
 	strcat(arg, " ");

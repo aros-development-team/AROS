@@ -282,10 +282,12 @@ BOOL ScanDosList(STRPTR *filter)
 {
     struct InfoDosNode *idn = 0L;
     struct DosList     *ndl, *dl;
-    STRPTR             *strray = NULL;
+    STRPTR             *strray = NULL, dummy = NULL;
     BOOL                err = FALSE;
 
     D(bug("Entered ScanDosList()\n"));
+    
+    if (filter == NULL) filter = &dummy;
     
     if(*filter != NULL)
     {
@@ -584,8 +586,10 @@ void doInfo()
 	BOOL     blocks   = (BOOL)args[ARG_BLOCKS];
 	STRPTR  *devs     = (STRPTR *)args[ARG_DEVS];
 
+    	if (devs && (*devs == NULL)) devs = NULL;
+	
 	/* If nothing is specified, show everything we got */
-	if(*devs == NULL && !disks && !vols)
+	if(devs == NULL && !disks && !vols)
 	{
 	    vols = TRUE;
 	    disks = TRUE;
@@ -593,7 +597,7 @@ void doInfo()
 
 	/* check pattern strings */
 	
-	if(*devs != NULL)
+	if(devs != NULL)
 	{
 	    STRPTR  *p = devs;
 	    
@@ -643,7 +647,7 @@ void doInfo()
 	    __sprintf(nfmtstr, "%%-%lds", MaxLen);
 	    
 	    /* show device infomation */
-	    if(*devs != NULL || disks || !vols)
+	    if(devs != NULL || disks || !vols)
 	    {
 		for(idn = head; idn; idn = idn->Next)
 		{

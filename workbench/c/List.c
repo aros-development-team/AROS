@@ -944,7 +944,7 @@ int main(void)
 	    dates = TRUE;
 	}
 
-	if (*directories == NULL)
+	if ((directories == NULL) || (*directories == NULL))
 	{
 	    /* No file to list given. Just list the current directory */
 	    error = listFile("#?", files, dirs, parsedPattern, noHead,
