@@ -2,6 +2,9 @@
     (C) 1995-99 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  2000/04/07 19:43:21  stegerg
+    if there is no default public screen return "Workbench".
+
     Revision 1.7  1999/09/12 01:48:58  bernie
     more public screens support
 
@@ -75,9 +78,20 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+    STRPTR name;
+    
     LockPubScreenList();
-    strcpy(nameBuffer, GetPrivScreen(GetPrivIBase(IntuitionBase)->DefaultPubScreen)
-	->pubScrNode->psn_Node.ln_Name);
+
+    if (GetPrivIBase(IntuitionBase)->DefaultPubScreen)
+    {
+        name = GetPrivScreen(GetPrivIBase(IntuitionBase)->DefaultPubScreen)
+	       ->pubScrNode->psn_Node.ln_Name;
+    } else {
+        name = "Workbench";
+    }	       
+
+    strcpy(nameBuffer, name);
+	
     UnlockPubScreenList();
 
     AROS_LIBFUNC_EXIT
