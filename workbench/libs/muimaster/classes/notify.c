@@ -544,6 +544,9 @@ static ULONG Notify_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *m
     }
 
     nnode = CreateNNode(data, msg);
+    if (NULL == nnode)
+	return FALSE;
+
     AddTail((struct List *)data->mnd_NotifyList, (struct Node *)nnode);
     return TRUE;
 }
