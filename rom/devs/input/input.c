@@ -138,8 +138,8 @@ AROS_LH3(void, open,
     	    idtask_params.InputDevice = InputDevice;
     	    idtask_params.Caller = FindTask(NULL);
     	    
-    	    /* We don't use a OS signel (like SIGBREAKF_CTRL_D), because
-    	    ** we might get it from elsewere.
+    	    /* We don't use a OS signal (like SIGBREAKF_CTRL_D), because
+    	    ** we might receive it from elsewere.
     	    */
     	    idtask_params.Signal = 1 << ioreq->io_Message.mn_ReplyPort->mp_SigBit;
     	

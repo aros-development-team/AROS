@@ -64,6 +64,9 @@ static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initba
 #define isspace(c) \
 	(c == '\t' || c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\v')
 
+
+#include <proto/graphics.h>
+
 BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 {
 /* This is the initialisation code for InitHIDDs module */
@@ -217,7 +220,7 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 		success = FALSE;
 		goto end;
 	    }
-	    
+
 	    if (!init_device(kbdname, "keyboard.device", base))
 	    {
 	        kprintf("Could not init keyboard hidd %s\n", kbdname);
@@ -225,13 +228,13 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 		goto end;
 	    }
 	    
+
 	    if (!init_device(mousename, "gameport.device", base))
 	    {
 	        kprintf("Could not init mouse hidd %s\n", mousename);
 		success = FALSE;
 		goto end;
 	    }
-
 end:
 	}
     
@@ -316,7 +319,7 @@ static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initba
 		    ioStd(io)->io_Data = data;
 		    ioStd(io)->io_Length = strlen(data);
 		    
-		    /* Le the device init the HIDD */
+		    /* Let the device init the HIDD */
 		    DoIO(io);
 		    if (0 == io->io_Error)
 		    {
@@ -339,19 +342,3 @@ static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initba
     ReturnBool("init_device", success);
 }
 
-/*
-#include <dos/dosextens.h>
-static VOID printdoslist(struct initbase *base)
-{
-    struct DosList *dl;
-    dl = LockDosList(LDF_READ|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS);
-    
-    while ((dl = NextDosEntry(dl, LDF_READ|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS)))
-    {
-    	D(bug("device: %s\n", dl->dol_DevName));    
-    }
-    UnLockDosList(LDF_READ|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS);
-    return;
-}
-
-*/
