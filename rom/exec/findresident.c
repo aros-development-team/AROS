@@ -1,10 +1,12 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$    $Log
+
     Desc:
     Lang: english
 */
 #include "exec_intern.h"
+#include <exec/resident.h>
 #include <proto/exec.h>
 
 /*****************************************************************************
@@ -20,10 +22,14 @@
 	struct ExecBase *, SysBase, 16, Exec)
 
 /*  FUNCTION
+	Search for a Resident module in the system resident list.
 
     INPUTS
+	name - pointer to the name of a Resident module to find
 
     RESULT
+	pointer to the Resident module (struct Resident *), or null if
+	not found.
 
     NOTES
 
@@ -44,7 +50,28 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
-    aros_print_not_implemented ("FindResident");
+    ULONG *list;
+
+    list = SysBase->ResModules;
+
+    if(list)
+    {
+	while(*list)
+	{
+	    /*
+		If bit 31 is set, this doesn't point to a Resident module, but
+		to another list of modules.
+	    */
+	    if(*list & 0x80000000) list = (ULONG *)(*list & 0x7fffffff);
+
+	    if(!(strcmp( ((struct Resident *)*list)->rt_Name, name)) )
+	    {
+		return (struct Resident *)*list;
+	    }
+
+	    list++;
+	}
+    }
 
     return NULL;
     AROS_LIBFUNC_EXIT
