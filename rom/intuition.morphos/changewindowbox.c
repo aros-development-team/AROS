@@ -76,8 +76,6 @@ AROS_LH5(void, ChangeWindowBox,
     if (!window)
         return;
     
-    if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
-    
     EXTENDWORD(left);
     EXTENDWORD(top);
     EXTENDWORD(width);
@@ -115,6 +113,9 @@ static VOID int_changewindowbox(struct ChangeWindowBoxActionMsg *msg,
                                 struct IntuitionBase *IntuitionBase)
 {
     struct Window *window = msg->window;
+
+    if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
+    
 
     DoMoveSizeWindow(window, msg->left, msg->top, msg->width, msg->height, TRUE, IntuitionBase);
 }
