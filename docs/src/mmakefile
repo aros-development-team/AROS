@@ -24,19 +24,18 @@ RUN_SRC2HTML := $(SRC2HTML) --html --output=index.html \
 
 #MM- all-docs : setup-docs doc-includes docs
 #MM docs : setup-docs copy-pics
-docs : $(SRC2HTML) autodocs $(HTMLDIR)/srcs $(HTMLDIR)/index.html \
+docs : autodocs $(HTMLDIR)/srcs $(HTMLDIR)/index.html \
 	copy-files \
 	access-rights
 
 #MM
-setup-docs :
+setup-docs : $(SRC2HTML)
 	@for dir in $(HTMLDIR) $(HTMLDIR)/autodocs $(HTMLDIR)/pics \
 		$(DOCGENDIR) ; do \
 	    if [ ! -d $$dir ]; then \
 		mkdir $$dir ; \
 	    else true ; fi ; \
 	done
-	cd src2html ; make
 
 copy-files : $(HTMLDIR)/rtdemo.log $(HTMLDIR)/pubkey.asc $(HTMLDIR)/license.html \
 	$(HTMLDIR)/oldnews.html
@@ -73,6 +72,9 @@ clean ::
 $(SRC2HTML) : src2html/src2html
 	cp $< $@
 
+src2html/src2html :
+	cd ./src2html ; make
+
 $(HTMLDIR)/index.html : $(FILES) doc_header.html doc_footer.html \
 	    	$(SRC2HTML) keywords.db files.db \
 		page_header.html $(DOCGENDIR)/run-src2html
@@ -88,15 +90,15 @@ $(HTMLDIR)/index.html : $(FILES) doc_header.html doc_footer.html \
 $(DOCGENDIR)/run-src2html :
 	@touch $@
 
-autodocs : $(DOCGENDIR)/htmlpages
+autodocs : $(HTMLDIR)/autodocs/index.html
 
-$(DOCGENDIR)/htmlpages : $(AUTODOC_SRCS) genadocs.py \
+$(HTMLDIR)/autodocs/index.html : $(AUTODOC_SRCS) genadocs.py \
 		adoc_header.html adoc_footer.html page_header.html
 	@echo "Regenerating the HTML AutoDocs"
 	@$(PYTHON) genadocs.py DESTDIR="$(HTMLDIR)/autodocs" \
 		DOCGENDIR="$(DOCGENDIR)" \
 		$(AUTODOC_SRCS)
-	@touch $(DOCGENDIR)/htmlpages $(DOCGENDIR)/run-src2html
+	@touch $(DOCGENDIR)/run-src2html
 
 #MM
 doc-includes : $(DOCGENDIR)/devlist.inc \
