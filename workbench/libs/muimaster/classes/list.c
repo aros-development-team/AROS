@@ -1541,6 +1541,27 @@ STATIC ULONG List_SelectChange(struct IClass *cl, Object *obj, struct MUIP_List_
     return 1;
 }
 
+/**************************************************************************
+ MUIM_List_CreateImage
+**************************************************************************/
+STATIC IPTR List_CreateImage(struct IClass *cl, Object *obj, struct MUIP_List_CreateImage *msg)
+{
+    APTR image = NULL;
+
+    return image;
+}
+
+/**************************************************************************
+ MUIM_List_DeleteImage
+**************************************************************************/
+STATIC ULONG List_DeleteImage(struct IClass *cl, Object *obj, struct MUIP_List_DeleteImage *msg)
+{
+
+    return 0;
+}
+
+
+
 
 BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
 {
@@ -1569,6 +1590,8 @@ BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
 	case MUIM_List_Display: return List_Display(cl,obj,(APTR)msg);
 	case MUIM_List_SelectChange: return List_SelectChange(cl,obj,(APTR)msg);
 	case MUIM_List_InsertSingleAsTree: return List_InsertSingleAsTree(cl,obj,(APTR)msg);
+	case MUIM_List_CreateImage: return List_CreateImage(cl,obj,(APTR)msg);
+	case MUIM_List_DeleteImage: return List_DeleteImage(cl,obj,(APTR)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
