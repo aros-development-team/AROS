@@ -19,6 +19,7 @@
 
 #include <asm/ptrace.h>
 #include <asm/irq.h>
+#include <asm/io.h>
 
 #include <proto/exec.h>
 #include <proto/oop.h>
@@ -29,17 +30,17 @@
 #undef SysBase
 #endif /* SysBase */
 
-void global_server(int cpl, struct irq_staticdata *isd, struct pt_regs *regs);
+void global_server(int cpl, struct irq_staticdata *isd, struct pt_regs *);
 
-struct irqServer timer_int = { global_server, "timer", NULL};
-struct irqServer kbd_int = { global_server, "keyboard", NULL};
-struct irqServer com1_int = { global_server, "serial 1", NULL};
-struct irqServer com2_int = { global_server, "serial 2", NULL};
-struct irqServer floppy_int = { global_server, "floppy", NULL};
-struct irqServer rtc_int = { global_server, "rtc", NULL};
-struct irqServer mouse_int = { global_server, "ps/2 mouse", NULL};
-struct irqServer ide0_int = { global_server, "ide0", NULL};
-struct irqServer ide1_int = { global_server, "ide1", NULL};
+struct irqServer timer_int  = { global_server, "timer"	    , NULL};
+struct irqServer kbd_int    = { global_server, "keyboard"   , NULL};
+struct irqServer com1_int   = { global_server, "serial 1"   , NULL};
+struct irqServer com2_int   = { global_server, "serial 2"   , NULL};
+struct irqServer floppy_int = { global_server, "floppy"     , NULL};
+struct irqServer rtc_int    = { global_server, "rtc"	    , NULL};
+struct irqServer mouse_int  = { global_server, "ps/2 mouse" , NULL};
+struct irqServer ide0_int   = { global_server, "ide0"	    , NULL};
+struct irqServer ide1_int   = { global_server, "ide1"	    , NULL};
 
 void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 
@@ -48,9 +49,11 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
     here dummy handlers.
 *******************************************************************************/
 
-void no_action(int cpl, void *dev_id, struct pt_regs *regs, struct irq_staticdata *isd) { }
+void no_action(int cpl, struct irq_staticdata *isd, struct pt_regs *regs)
+{
+}
 
-static void math_error_irq(int cpl, void *dev_id, struct pt_regs *regs, struct irq_staticdata *isd)
+static void math_error_irq(int cpl, struct irq_staticdata *isd, struct pt_regs *regs)
 {
 	outb(0,0xF0);
 }
