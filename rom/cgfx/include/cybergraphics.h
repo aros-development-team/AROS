@@ -87,6 +87,7 @@ struct CyberModeNode
 #define RECTFMT_RAW 	5UL
 
 /* AROS extensions */
+
 #define PIXFMT_ABGR32	100UL
 
 #define RECTFMT_RGB15	100UL
@@ -103,6 +104,8 @@ struct CyberModeNode
 #define RECTFMT_BGRA32	111UL
 #define RECTFMT_RGBA32	RECTFMT_RGBA
 #define RECTFMT_ABGR32	113UL
+
+/* End AROS extensions */
 
 #define SETVC_DPMSLevel		0x88002001
 
