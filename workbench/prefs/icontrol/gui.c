@@ -63,6 +63,11 @@ struct IPWindow_DATA
 {
     Object  *menutypeobj;
     Object  *menulookobj;
+    Object  *opaqueobj;
+    Object  *offscreenobj;
+    Object  *avoideraseobj;
+    Object  *defpubscrobj;
+    Object  *scractivobj;
     BOOL    tested;
 };
 
@@ -138,7 +143,57 @@ BOOL Gadgets2Prefs
     {
     	prefs->ic_Flags |= ICF_3DMENUS;
     }
-    
+
+    get(data->offscreenobj, MUIA_Selected, &active);
+    if (active == 0)
+    {
+    	prefs->ic_Flags &= ~ICF_OFFSCREENLAYERS;
+    }
+    else
+    {
+    	prefs->ic_Flags |= ICF_OFFSCREENLAYERS;
+    }
+
+    get(data->opaqueobj, MUIA_Selected, &active);
+    if (active == 0)
+    {
+    	prefs->ic_Flags &= ~ICF_OPAQUEMOVE;
+    }
+    else
+    {
+    	prefs->ic_Flags |= ICF_OPAQUEMOVE;
+    }
+
+    get(data->avoideraseobj, MUIA_Selected, &active);
+    if (active == 0)
+    {
+    	prefs->ic_Flags &= ~ICF_AVOIDWINBORDERERASE;
+    }
+    else
+    {
+    	prefs->ic_Flags |= ICF_AVOIDWINBORDERERASE;
+    }
+
+    get(data->defpubscrobj, MUIA_Selected, &active);
+    if (active == 0)
+    {
+    	prefs->ic_Flags &= ~ICF_DEFPUBSCREEN;
+    }
+    else
+    {
+    	prefs->ic_Flags |= ICF_DEFPUBSCREEN;
+    }
+
+    get(data->scractivobj, MUIA_Selected, &active);
+    if (active == 0)
+    {
+    	prefs->ic_Flags &= ~ICF_SCREENACTIVATION;
+    }
+    else
+    {
+    	prefs->ic_Flags |= ICF_SCREENACTIVATION;
+    }
+
     return TRUE;
 }
 
@@ -151,7 +206,11 @@ BOOL Prefs2Gadgets
 {
     set(data->menutypeobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_POPUPMENUS) ? 1 : 0);
     set(data->menulookobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_3DMENUS) ? 1 : 0);
-    
+    set(data->offscreenobj, MUIA_Selected, (prefs->ic_Flags & ICF_OFFSCREENLAYERS) ? 1 : 0);
+    set(data->opaqueobj, MUIA_Selected, (prefs->ic_Flags & ICF_OPAQUEMOVE) ? 1 : 0);
+    set(data->avoideraseobj, MUIA_Selected, (prefs->ic_Flags & ICF_AVOIDWINBORDERERASE) ? 1 : 0);
+    set(data->defpubscrobj, MUIA_Selected, (prefs->ic_Flags & ICF_DEFPUBSCREEN) ? 1 : 0);
+    set(data->scractivobj, MUIA_Selected, (prefs->ic_Flags & ICF_SCREENACTIVATION) ? 1 : 0);
     return TRUE;
 }
 
@@ -164,7 +223,9 @@ IPTR IPWindow__OM_NEW
 {
     struct IPWindow_DATA *data = NULL;
     Object *menu, *previewpage, *menutypeobj, *menulookobj;
-    
+    Object *opaqueobj, *offscreenobj, *avoideraseobj;
+    Object *defpubscrobj, *scractivobj;
+
     extern struct NewMenu nm[];
     
     menu = MUI_MakeObject(MUIO_MenustripNM, nm, 0);
@@ -249,8 +310,29 @@ IPTR IPWindow__OM_NEW
     	    	    End,
 		End,
 	    Child, VGroup,
-	    	GroupFrameT("..."),
-		Child, HVSpace,
+	    	GroupFrameT("Windows"),
+    		Child, ColGroup(2),
+		    Child, Label1("Opaque move:"),
+		    Child, opaqueobj = MUI_MakeObject(MUIO_Checkmark,
+						      "Opaque move:"),
+		    Child, Label1("Offscreen move:"),
+		    Child, offscreenobj = MUI_MakeObject(MUIO_Checkmark,
+							 "Offscreen move:"),
+		    Child, Label1("Avoid erasing borders:"),
+		    Child, avoideraseobj = MUI_MakeObject(MUIO_Checkmark,
+							   "Avoid erasing borders:"),
+		    End,
+		End,
+	    Child, VGroup,
+	    	GroupFrameT("Screens"),
+    		Child, ColGroup(2),
+		    Child, Label1("Default PubScreen:"),
+		    Child, defpubscrobj = MUI_MakeObject(MUIO_Checkmark,
+						"Default PubScreen:"),
+		    Child, Label1("Screen activation:"),
+		    Child, scractivobj = MUI_MakeObject(MUIO_Checkmark,
+						"Screen activation:"),
+		    End,
 		End,
 	    End,
        TAG_DONE
@@ -261,6 +343,11 @@ IPTR IPWindow__OM_NEW
     data = INST_DATA(CLASS, self);
     data->menutypeobj = menutypeobj;
     data->menulookobj = menulookobj;
+    data->opaqueobj = opaqueobj;
+    data->offscreenobj = offscreenobj;
+    data->avoideraseobj = avoideraseobj;
+    data->defpubscrobj = defpubscrobj;
+    data->scractivobj = scractivobj;
 
     DoMethod(menutypeobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
     	     (IPTR)previewpage, 3, MUIM_CallHook, (IPTR)&previewhook, (IPTR)data);
