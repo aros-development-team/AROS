@@ -193,7 +193,7 @@
 
     /* since this is an emulation, we just show the bug in the console */
     fprintf (stderr
-	, "GURU Meditation %04lx %04lx\n"
+	, "\x07" "GURU Meditation %04lx %04lx\n"
 	, alertNum >> 16
 	, alertNum & 0xFFFF
     );
