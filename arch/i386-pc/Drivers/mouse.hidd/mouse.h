@@ -59,9 +59,9 @@ struct mouse_staticdata
     OOP_Object		*mousehidd;
 };
 
-/* 256 byte long ring buffer used to read data with timeout defined */
+/* 488 byte long ring buffer used to read data with timeout defined */
 
-#define RingSize 256
+#define RingSize 488
 
 struct Ring
 {
@@ -101,6 +101,28 @@ struct mouse_data
         } com;
     } u;
 };
+
+/* Mouse types */
+#define P_MS            0               /* Microsoft */
+#define P_MSC           1               /* Mouse Systems Corp */
+#define P_MM            2               /* MMseries */
+#define P_LOGI          3               /* Logitech */
+#define P_BM            4               /* BusMouse ??? */
+#define P_LOGIMAN       5               /* MouseMan / TrackMan */
+#define P_PS2           6               /* PS/2 mouse */
+#define P_MMHIT         7               /* MM_HitTab */
+#define P_GLIDEPOINT    8               /* ALPS serial GlidePoint */
+#define P_IMSERIAL      9               /* Microsoft serial IntelliMouse */
+#define P_THINKING      10              /* Kensington serial ThinkingMouse */
+#define P_IMPS2         11              /* Microsoft PS/2 IntelliMouse */
+#define P_THINKINGPS2   12              /* Kensington PS/2 ThinkingMouse */
+#define P_MMANPLUSPS2   13              /* Logitech PS/2 MouseMan+ */
+#define P_GLIDEPOINTPS2 14              /* ALPS PS/2 GlidePoint */
+#define P_NETPS2        15              /* Genius PS/2 NetMouse */
+#define P_NETSCROLLPS2  16              /* Genius PS/2 NetScroll */
+#define P_SYSMOUSE      17              /* SysMouse */
+#define P_AUTO          18              /* automatic */
+#define P_ACECAD        19              /* ACECAD protocol */
 
 OOP_Class *_init_mouseclass  ( struct mouse_staticdata * );
 VOID _free_mouseclass  ( struct mouse_staticdata * );

@@ -20,6 +20,9 @@
 
 #include <devices/inputevent.h>
 
+#include <stdio.h>
+#include <strings.h>
+
 #include "mouse.h"
 
 #define DEBUG 0
@@ -35,10 +38,12 @@
 
 /* Prototypes */
 
-ULONG mouse_RingHandler(UBYTE *, ULONG, ULONG, struct mouse_data *);
-int mouse_CheckRing(struct mouse_data *);
-UBYTE mouse_GetFromRing(struct mouse_data *);
-
+ULONG   mouse_RingHandler(UBYTE *, ULONG, ULONG, struct mouse_data *);
+int     mouse_CheckRing(struct mouse_data *);
+int     mouse_GetFromRing(struct mouse_data *, char *);
+int     mouse_Select(struct mouse_data *, ULONG);
+void    mouse_FlushInput(struct mouse_data *);
+int     mouse_DetectPNP(struct mouse_data *, OOP_Object *);
 /* Misc functions */
 
 #define inb(port) \
@@ -50,9 +55,9 @@ UBYTE mouse_GetFromRing(struct mouse_data *);
     ({  char __value=(val); \
     __asm__ __volatile__ ("outb %%al,$" #port::"a"(__value)); })
 
-/* aros_usleep - sleep for usec microseconds */
+/* mouse_usleep - sleep for usec microseconds */
 #warning: Incompatible with BOCHS busy loop! Change to precise timer.device!
-void aros_usleep(ULONG usec)
+void mouse_usleep(ULONG usec)
 {
     ULONG hz;
     int step;
@@ -120,15 +125,11 @@ int test_mouse_com(OOP_Class *cl, OOP_Object *o)
                 for (i=0; i<4; i++)
                 {
                     /* Alloc New unit for us */
-                    if ((unit = HIDD_Serial_NewUnit(serial, i++)))
+                    if ((unit = HIDD_Serial_NewUnit(serial, i)))
                     {
                         /* Install RingBuffer interrupt */
                         HIDD_SerialUnit_Init(unit, mouse_RingHandler, data, NULL, NULL);
 
-                    
-                        /* Try to detect mouse type. Use PNP first. */
-
-                    
                         /* No mouse? Dispose useless unit then */
                         HIDD_Serial_DisposeUnit(serial, unit);
                     }
@@ -146,6 +147,340 @@ int test_mouse_com(OOP_Class *cl, OOP_Object *o)
 }
 
 /*****  *************************************************************/
+
+#undef SysBase
+#define SysBase (*(struct ExecBase **)4L)
+
+/* serial PnP ID string */
+typedef struct {
+    int revision;       /* PnP revision, 100 for 1.00 */
+    char *eisaid;       /* EISA ID including mfr ID and product ID */
+    char *serial;       /* serial No, optional */
+    char *class;        /* device class, optional */
+    char *compat;       /* list of compatible drivers, optional */
+    char *description;  /* product description, optional */
+    int neisaid;        /* length of the above fields... */
+    int nserial;
+    int nclass;
+    int ncompat;
+    int ndescription;
+} pnpid_t;
+
+/* symbol table entry */
+typedef struct {
+    char *name;
+    int val;
+} symtab_t;
+
+static const __attribute__((section(".text"))) symtab_t pnpprod[] = {
+    { "KML0001",        P_THINKING },   /* Kensignton ThinkingMouse */
+    { "MSH0001",        P_IMSERIAL },   /* MS IntelliMouse */
+    { "MSH0004",        P_IMSERIAL },   /* MS IntelliMouse TrackBall */
+    { "KYEEZ00",        P_MS },         /* Genius EZScroll */
+    { "KYE0001",        P_MS },         /* Genius PnP Mouse */
+    { "KYE0003",        P_IMSERIAL },   /* Genius NetMouse */
+    { "LGI800C",        P_IMSERIAL },   /* Logitech MouseMan (4 button model) */
+    { "LGI8050",        P_IMSERIAL },   /* Logitech MouseMan+ */
+    { "LGI8051",        P_IMSERIAL },   /* Logitech FirstMouse+ */
+    { "LGI8001",        P_LOGIMAN },    /* Logitech serial */
+
+    { "PNP0F00",        P_BM },         /* MS bus */
+    { "PNP0F01",        P_MS },         /* MS serial */
+    { "PNP0F02",        P_BM },         /* MS InPort */
+    { "PNP0F03",        P_PS2 },        /* MS PS/2 */
+    /*
+     * EzScroll returns PNP0F04 in the compatible device field; but it
+     * doesn't look compatible... XXX
+     */
+    { "PNP0F04",        P_MSC },        /* MouseSystems */
+    { "PNP0F05",        P_MSC },        /* MouseSystems */
+    { "PNP0F08",        P_LOGIMAN },    /* Logitech serial */
+    { "PNP0F09",        P_MS },         /* MS BallPoint serial */
+    { "PNP0F0A",        P_MS },         /* MS PnP serial */
+    { "PNP0F0B",        P_MS },         /* MS PnP BallPoint serial */
+    { "PNP0F0C",        P_MS },         /* MS serial comatible */
+    { "PNP0F0D",        P_BM },         /* MS InPort comatible */
+    { "PNP0F0E",        P_PS2 },        /* MS PS/2 comatible */
+    { "PNP0F0F",        P_MS },         /* MS BallPoint comatible */
+    { "PNP0F11",        P_BM },         /* MS bus comatible */
+    { "PNP0F12",        P_PS2 },        /* Logitech PS/2 */
+    { "PNP0F13",        P_PS2 },        /* PS/2 */
+    { "PNP0F15",        P_BM },         /* Logitech bus */
+    { "PNP0F17",        P_LOGIMAN },    /* Logitech serial compat */
+    { "PNP0F18",        P_BM },         /* Logitech bus compatible */
+    { "PNP0F19",        P_PS2 },        /* Logitech PS/2 compatible */
+    { NULL,             -1 },
+};
+
+int mouse_pnpgets(struct mouse_data *data, OOP_Object *unit, char *buf)
+{
+    int     i;
+    char    c;
+
+    struct TagItem stags[] = {
+        { TAG_DATALENGTH,   7 },
+        { TAG_STOP_BITS,    1 },
+        { TAG_PARITY_OFF,   1 },
+        { TAG_DONE,         0 }};
+
+    struct TagItem mcr[] = {
+        { TAG_SET_MCR,      0 },
+        { TAG_DONE,         0 }};
+
+    /* Try to detect mouse ton according to XF86 sources). */
+    HIDD_SerialUnit_SetBaudrate(unit, 1200);
+    HIDD_SerialUnit_SetParameters(unit, stags);
+    
+    /* Set DRT=1, RTS=0 */
+    mcr[0].ti_Data = 1;
+    HIDD_SerialUnit_SetParameters(unit, mcr);
+    mouse_usleep(200000);
+
+    /* wait for response */
+    mouse_FlushInput(data);
+    mcr[0].ti_Data = 3;     /* DTR=1, RTS=1 */
+    HIDD_SerialUnit_SetParameters(unit, mcr);
+    /* Try to read data. Mouse has to respond if PNP */
+    if (!mouse_Select(data, 200000))
+        goto connect_idle;
+
+    /* Collect PnP COM device ID */
+    i = 0;
+    mouse_usleep(200000);   /* the mouse must send `Begin ID' within 200msec */
+    while (mouse_GetFromRing(data, &c))
+    {
+        /* we may see "M", or "M3..." before `Begin ID' */
+        if ((c == 0x08) || (c == 0x28))     /* Begin ID */
+        {
+            buf[i++] = c;
+            break;
+        }
+    }
+    if (i <= 0)
+    {
+        /* we haven't seen `Begin ID' in time... */
+        goto connect_idle;
+    }
+
+    ++c;    /* make it `End ID' */
+    for (;;)
+    {
+        if (!mouse_Select(data, 200000))
+            break;
+
+        mouse_GetFromRing(data, &buf[i]);
+        if (buf[i++] == c)      /* End ID */
+            break;
+        if (i >= 256)
+            break;
+    }
+
+    if (buf[i - 1] != c)
+        goto connect_idle;
+
+    return i;
+    
+connect_idle:
+    return 0;
+}
+
+static int mouse_pnpparse(pnpid_t *id, char *buf, int len)
+{
+    char s[3];
+    int offset;
+    int sum = 0;
+    int i, j;
+
+    id->revision = 0;
+    id->eisaid = NULL;
+    id->serial = NULL;
+    id->class = NULL;
+    id->compat = NULL;
+    id->description = NULL;
+    id->neisaid = 0;
+    id->nserial = 0;
+    id->nclass = 0;
+    id->ncompat = 0;
+    id->ndescription = 0;
+
+    offset = 0x28 - buf[0];
+
+    /* calculate checksum */
+    for (i = 0; i < len - 3; ++i)
+    {
+        sum += buf[i];
+        buf[i] += offset;
+    }
+    sum += buf[len - 1];
+    for (; i < len; ++i)
+        buf[i] += offset;
+    D(bug("Mouse: PnP ID string: '%*.*s'\n", len, len, buf));
+
+    /* revision */
+    buf[1] -= offset;
+    buf[2] -= offset;
+    id->revision = ((buf[1] & 0x3f) << 6) | (buf[2] & 0x3f);
+    D(bug("Mouse: PnP rev %d.%02d\n", id->revision / 100, id->revision % 100));
+
+    /* EISA vender and product ID */
+    id->eisaid = &buf[3];
+    id->neisaid = 7;
+
+    /* option strings */
+    i = 10;
+    if (buf[i] == '\\')
+    {
+        /* device serial # */
+        for (j = ++i; i < len; ++i)
+        {
+            if (buf[i] == '\\')
+                break;
+        }
+        if (i >= len)
+            i -= 3;
+        if (i - j == 8)
+        {
+            id->serial = &buf[j];
+            id->nserial = 8;
+        }
+    }
+    if (buf[i] == '\\')
+    {
+        /* PnP class */
+        for (j = ++i; i < len; ++i)
+        {
+            if (buf[i] == '\\')
+            break;
+        }
+        if (i >= len)
+            i -= 3;
+        if (i > j + 1)
+        {
+            id->class = &buf[j];
+            id->nclass = i - j;
+        }
+    }
+
+    if (buf[i] == '\\')
+    {
+        /* compatible driver */
+        for (j = ++i; i < len; ++i)
+        {
+            if (buf[i] == '\\')
+                break;
+        }
+        /*
+         * PnP COM spec prior to v0.96 allowed '*' in this field,
+         * it's not allowed now; just igore it.
+         */
+        if (buf[j] == '*')
+            ++j;
+        if (i >= len)
+            i -= 3;
+        if (i > j + 1)
+        {
+            id->compat = &buf[j];
+            id->ncompat = i - j;
+        }
+    }
+
+    if (buf[i] == '\\')
+    {
+        /* product description */
+        for (j = ++i; i < len; ++i)
+        {
+            if (buf[i] == ';')
+                break;
+        }
+        if (i >= len)
+            i -= 3;
+        if (i > j + 1)
+        {
+            id->description = &buf[j];
+            id->ndescription = i - j;
+        }
+    }
+
+    /* checksum exists if there are any optional fields */
+    if ((id->nserial > 0) || (id->nclass > 0)
+        || (id->ncompat > 0) || (id->ndescription > 0))
+    {
+        sprintf(s, "%02X", sum & 0x0ff);
+        if (strncmp(s, &buf[len - 3], 2) != 0)
+        {
+        }
+    }            
+    return TRUE;
+}
+
+/* name/val mapping */
+
+static symtab_t *gettoken(symtab_t *tab, char *s, int len)
+{
+    int i;
+    
+    for (i = 0; tab[i].name != NULL; ++i)
+    {
+	    if (strncmp(tab[i].name, s, len) == 0)
+		    break;
+    }
+    return &tab[i];
+}
+
+static symtab_t *mouse_pnpproto(pnpid_t *id)
+{
+    symtab_t *t;
+    int i, j;
+	
+    if (id->nclass > 0)
+    if (strncmp(id->class, "MOUSE", id->nclass) != 0)
+        /* this is not a mouse! */
+        return NULL;
+
+    if (id->neisaid > 0)
+    {
+        t = gettoken(pnpprod, id->eisaid, id->neisaid);
+        if (t->val != -1)
+            return t;
+    }
+    
+    /*
+     * The 'Compatible drivers' field may contain more than one
+     * ID separated by ','.
+     */
+    if (id->ncompat <= 0)
+        return NULL;
+    for (i = 0; i < id->ncompat; ++i)
+    {
+        for (j = i; id->compat[i] != ','; ++i)
+            if (i >= id->ncompat)
+                break;
+        if (i > j)
+        {
+            t = gettoken(pnpprod, id->compat + j, i - j);
+            if (t->val != -1)
+                return t;
+        }
+    }
+    
+    return NULL;
+}	
+	
+int mouse_DetectPNP(struct mouse_data *data, OOP_Object *unit)
+{
+    char buf[256];
+    int len;
+    pnpid_t pnpid;
+    symtab_t *t;
+
+    if (((len = mouse_pnpgets(data, unit, buf)) <= 0) || !mouse_pnpparse(&pnpid, buf, len))
+        return -1;
+    if ((t = mouse_pnpproto(&pnpid)) == NULL)
+        return -1;
+    D(bug("Mouse: protocol: %d\n", t->val));
+
+    return (t->val);
+}
 
 ULONG mouse_RingHandler(UBYTE *buf, ULONG len, ULONG unit, struct mouse_data *data)
 {
@@ -170,20 +505,75 @@ int mouse_CheckRing(struct mouse_data *data)
 }
 
 /*
+ * Clears ring buffer so it can get new data
+ */
+void mouse_FlushInput(struct mouse_data *data)
+{
+        data->u.com.rx->ptr = data->u.com.rx->top;
+}
+
+/*
  * Get one byte from ring buffer. Returns 0 if there is nothing to get
  */
-UBYTE mouse_GetFromRing(struct mouse_data *data)
+int mouse_GetFromRing(struct mouse_data *data, char *c)
 {
     struct Ring *r = data->u.com.rx;
-    UBYTE result = 0;
     
     if (r->top != r->ptr)
     {
-        result = r->ring[r->ptr++];
+        *c = r->ring[r->ptr++];
 
         if (r->ptr >= RingSize) r->ptr = 0;
+
+        return 1;
     }
 
-    return result;
+    return 0;
+}
+
+/*
+ * Select version for Ring handling.
+ *
+ * This functions waits for data present in Ring buffer for usec. Returns
+ * non-zero if there is something in buffer, 0 otherwise.
+ */
+#warning: Incompatible with BOCHS busy loop! Change to precise timer.device!
+int mouse_Select(struct mouse_data *data, ULONG usec)
+{
+    ULONG hz;
+    int step;
+    int latch;
+    int avail = 0;
+    struct Ring *r = data->u.com.rx;
+    
+    while (usec && !avail)
+    {
+        /*
+         * If we want to wait longer than 50000 usec, then we have to do it
+         * in several steps
+         */
+	
+        step = (usec > 50000) ? 50000 : usec;
+        hz = 1000000 / step;
+        
+        latch = (1193180 + (hz >> 1)) / hz;
+
+        /* Do the timer like cpu.c file */
+
+        outb((inb(0x61) & ~0x02) | 0x01, 0x61);
+        outb(0xb0, 0x43);           /* binary, mode 0, LSB/MSB, Ch 2 */
+        outb(latch & 0xff, 0x42); /* LSB of count */
+        outb(latch >> 8, 0x42);   /* MSB of count */
+        
+        /* Speaker counter will start now. Just wait till it finishes */
+        do {
+            avail = r->top - r->ptr;
+        } while (((inb(0x61) & 0x20) == 0) && !avail);
+        
+        /* Decrease wait counter */
+	    usec -= step;
+    }
+
+    return avail;
 }
 
