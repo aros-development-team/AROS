@@ -14,6 +14,7 @@
 #endif
 #  include <aros/debug.h>
 
+#include <string.h>
 #include <graphics/text.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
