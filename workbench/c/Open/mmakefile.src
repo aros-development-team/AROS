@@ -6,19 +6,14 @@ include $(TOP)/config/make.cfg
 FILES	:= main
 
 EXEDIR  := $(AROS_C)
-EXE     := $(EXEDIR)/Open
-
-USE_CLIB_STATIC := yes
-USE_AMIGALIB    := yes
-NO_AUTOINIT     := yes
 
 #MM- workbench-c : workbench-c-open
 #MM workbench-c-open : includes linklibs
 
-%make_prog_setup mmake=workbench-c-open startup=
+%build_prog mmake=workbench-c-open \
+    progname=Open targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="amiga arosc" \
+    usestartup=no
 
-workbench-c-open : setup $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
 %common
-%include_deps
+
