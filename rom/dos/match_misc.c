@@ -16,6 +16,7 @@
 #include <proto/exec.h>
 
 #include "dos_intern.h"
+#include <aros/debug.h>
 
 #include <string.h>
 
@@ -214,12 +215,26 @@ LONG Match_BuildAChainList(STRPTR pattern, struct AnchorPath *ap,
 	    if (*patternend == '\0')
 	    {
 		i = ParsePatternNoCase(patternstart, ac->an_String, len);
+		if (i == 0) 
+		{
+		    /* It is not a pattern, although we guessed it was one.
+		       Do the strcpy, otherwise we have uppercase stuff in
+		       ac->an_String because of ParsePatternNOCASE() */
+		    strcpy(ac->an_String, patternstart);
+		}
 	    }
 	    else
 	    {
 		c = patternend[1];
 		patternend[1] = '\0';
 		i = ParsePatternNoCase(patternstart, ac->an_String, len);
+		if (i == 0) 
+		{
+		    /* It is not a pattern, although we guessed it was one.
+		       Do the strcpy, otherwise we have uppercase stuff in
+		       ac->an_String because of ParsePatternNOCASE() */
+		    strcpy(ac->an_String, patternstart);
+		}
 		patternend[1] = c;
 	    }
 	    
