@@ -65,6 +65,7 @@ EXTRA_DEPLIBS := $(LIBDIR)/libarosc.a
 
 #MM
 kernel-utility-$(ARCH)-$(CPU) : show-flags $(LIB)
+	@$(NOP)
 
 # MetaMake targets
 #MM kernel-utility : setup includes utility-$(ARCH) linklibs kernel-utility-$(ARCH)-$(CPU)

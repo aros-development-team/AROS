@@ -104,6 +104,7 @@ OBJS := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 #MM
 kernel-intuition-linux-$(CPU) : show-flags $(LIB)
+	@$(NOP)
 
 $(LIB) : $(OBJS)
 	%mklib_q
