@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry excluding="org/openlaszlo/iv/flash/xml/caucho/|org/openlaszlo/iv/flash/xml/jaxen/" kind="src" path="jgenerator-2.2/src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/lps-3.0b2/3rd-party/jars/dev/servlet-2.3.jar"/>
+	<classpathentry kind="lib" path="/BRANCH_2_1_X/lib/optional/jdom-1.0.jar"/>
+	<classpathentry kind="lib" path="/BRANCH_2_1_X/lib/core/commons-logging-1.0.4.jar"/>
+	<classpathentry kind="lib" path="/BRANCH_2_1_X/lib/core/log4j-1.2.9.jar"/>
+	<classpathentry kind="lib" path="/BRANCH_2_1_X/lib/core/commons-httpclient-2.0.2.jar"/>
+	<classpathentry kind="lib" path="/BRANCH_2_1_X/lib/optional/jakarta-oro-2.0.8.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/lps-3.0b2/WEB-INF/lib/xmlrpc-1.2-b1.jar"/>
+	<classpathentry kind="lib" path="/BRANCH_2_1_X/lib/core/commons-collections-3.1.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/lps-3.0b2/WEB-INF/lib/axis.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/lps-3.0b2/WEB-INF/lib/jaxrpc.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/lps-3.0b2/WEB-INF/lib/saaj.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/lps-3.0b2/WEB-INF/lib/batik-svggen.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/lps-3.0b2/WEB-INF/lib/commons-beanutils.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/lps-3.0b2/WEB-INF/lib/jakarta-regexp-1.2.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/tools/jakarta-ant-1.5.1/lib/junit.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/3rdparty/saxon6_5_3/saxon.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/lps-3.0b2/WEB-INF/lib/xpp3-1.1.3.4d_b4.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/lps-3.0b2/WEB-INF/lib/iso-relax.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/lps-3.0b2/WEB-INF/lib/commons-jexl-1.0-dev.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/lps-3.0b2/3rd-party/jars/dev/fop.jar"/>
+	<classpathentry sourcepath="/rhino1_5R4pre/src" kind="lib" path="/BRANCH_2_1_X/lib/core/rhino1.5r4-continuations-20040629T1232.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/lps-3.0b2/3rd-party/jars/dev/xercesImpl.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/tools/jakarta-ant-1.5.1/lib/xml-apis.jar"/>
+	<classpathentry kind="lib" path="L:/dl/dev/lps-3.0b2-src/lps-3.0b2/WEB-INF/lib/ftp.jar"/>
+	<classpathentry kind="output" path="eclipse-build"/>
+</classpath>

@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+
+Name: org/openlaszlo/server/
+Specification-Title: LPS Server Package
+Specification-Version: 3.0b2
+Specification-Vendor: laszlosystems.com
+Implementation-Title: org.openlaszlo.server
+Implementation-Version: b2 INTERNAL
+Implementation-Vendor: org.openlaszlo
