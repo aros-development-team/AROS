@@ -453,11 +453,23 @@ AROS_UFH3(IPTR, DiskFontFunc,
 	    fhc->fhc_TextFont = ReadDiskFont(fhc->fhc_ReqAttr, DFB(DiskfontBase));
 	    if (fhc->fhc_TextFont)
 	    {
-	    /*	D(bug("Adding font: %p\n", fhc->fhc_TextFont));
-		    AddFont(fhc->fhc_TextFont);
-		    D(bug("Font added\n"));
-	    */
-		    retval = FH_SUCCESS;
+	    	D(bug("Adding font: %p\n", fhc->fhc_TextFont));
+		
+		/* Forbid() must be called before AddFont, because AddFont clears
+		   tf_Accessors and in the worst case it could happen to us that
+		   after the AddFont() another task opens and closes/frees the
+		   diskfont, before we manage to increase tf_Accessors. */
+		   
+		Forbid();
+
+		AddFont(fhc->fhc_TextFont);				
+		fhc->fhc_TextFont->tf_Accessors++;
+		
+		Permit();
+				
+		D(bug("Font added\n"));
+
+		retval = FH_SUCCESS;
 	    }	
 	    break;
             
