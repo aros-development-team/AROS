@@ -625,8 +625,12 @@ static ULONG *buf_to_ximage(Class *cl, Object *bm
 	
 	    for (y = 0; y < msg->height; y ++) {
 		memcpy(imdata, buf, msg->modulo);
-			
+
+#if 0			
 		((UBYTE *)imdata) += msg->modulo;
+#else
+		((UBYTE *)imdata) += image->bytes_per_line; /*sg*/
+#endif
 		((UBYTE *)buf) += msg->modulo;
 	    }
 	}
@@ -649,7 +653,7 @@ kprintf("Native32 format, bits_per_pixel=%d\n", image->bits_per_pixel);
 		for (x = 0; x < width; x ++) {
 		    *imdata ++ = (UWORD)*p ++;
 		}
-		((UBYTE *)imdata) += ((image->bytes_per_line / 2) - width); /*sg*/
+		((UBYTE *)imdata) += (image->bytes_per_line - width * 2); /*sg*/
 		((UBYTE *)buf) += msg->modulo;
 	    }
 	    break; }
@@ -681,7 +685,7 @@ kprintf("Native32 format, bits_per_pixel=%d\n", image->bits_per_pixel);
 		    *imdata ++ = pix >> 16;
 #endif
 		}
-		
+		((UBYTE *)imdata) += (image->bytes_per_line - width * 3); /*sg*/		
 		((UBYTE *)buf) += msg->modulo;
 	    }
 	    break; }
