@@ -32,7 +32,7 @@
 #include "kbd.h"
 #include "keys.h"
 
-#define DEBUG 0 
+#define DEBUG 0
 #include <aros/debug.h>
 
 /****************************************************************************************/
@@ -151,7 +151,7 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
             HIDDT_IRQ_Handler   *irq;
 
-            irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
+            XSD(cl)->irq = irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
 
             if (!irq)
             {
@@ -182,6 +182,17 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     ReturnPtr("Kbd::New", OOP_Object *, o);
 }
 
+STATIC VOID kbd_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    ObtainSemaphore(&XSD(cl)->sema);
+    XSD(cl)->kbdhidd = NULL;
+    ReleaseSemaphore(&XSD(cl)->sema);
+    HIDD_IRQ_RemHandler(XSD(cl)->irqhidd, XSD(cl)->irq);
+    FreeMem(XSD(cl)->irq, sizeof(HIDDT_IRQ_Handler));
+    OOP_DisposeObject(XSD(cl)->irqhidd);
+    OOP_DoSuperMethod(cl, o, msg);
+}
+
 /****************************************************************************************/
 
 static VOID kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_HandleEvent *msg)
@@ -201,7 +212,7 @@ static VOID kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_Handl
 #undef XSD
 #define XSD(cl) xsd
 
-#define NUM_ROOT_METHODS 1
+#define NUM_ROOT_METHODS 2
 #define NUM_KBD_METHODS 1
 
 /****************************************************************************************/
@@ -219,6 +230,7 @@ OOP_Class *init_kbdclass (struct kbd_staticdata *xsd)
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
         {OOP_METHODDEF(kbd_new) , moRoot_New},
+	{OOP_METHODDEF(kbd_dispose), moRoot_Dispose},
         {NULL	    	    	, 0UL	    }
     };
     
@@ -361,25 +373,20 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     WORD    	    work = 10000;
 
     D(bug("ki: {\n")); 
-   
     for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--)
     {
     	/* data from information port */
-	
     	if (info & KBD_STATUS_MOUSE_OBF)
 	{
 	    /*
 	    ** Data from PS/2 mouse. Hopefully this gets through to mouse interrupt
 	    ** if we break out of while loop here :-\
-	    */	    
-	    
+	    */
 	    break;
 	}
-	
         keycode = kbd_read_input();
 
     	D(bug("ki: keycode %d (%x)\n", keycode, keycode));
-	
 	if (info & (KBD_STATUS_GTO | KBD_STATUS_PERR))
 	{
             /* Ignore errors and messages for mouse -> eat status/error byte */
@@ -391,27 +398,22 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	    /* Ignore these */
 	    continue;
 	}
-		
 	if ((keycode == 0xE0) || (keycode == 0xE1))
 	{
 	    /* Extended keycodes: E0 gets followed by one code, E1 by two */
 	    data->prev_keycode = keycode;
 	    continue;
 	}
-	
 	if ((keycode == 0x00) || (keycode == 0xFF))
 	{
 	    /* 00 is error. FF is sent by some keyboards -> ignore it. */
 	    data->prev_keycode = 0;
 	    continue;
 	}
-		
 	amigacode = NOKEY;
     	event = 0;
-	
     	downkeycode = keycode & 0x7F;
 	releaseflag = keycode & 0x80;
-	
 	if (data->prev_keycode)
 	{
 	    if (data->prev_keycode == 0xE0)
@@ -424,12 +426,10 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 		    amigacode = e0_keytable[downkeycode];
 		    if (amigacode != NOKEY) amigacode |= releaseflag;
 		}
-				
 	    } /* if (data->prev_keycode == 0xE0) */
 	    else
 	    {
 	    	/* Check Pause key: 0xE1 0x1D 0x45   0xE1 0x9D 0xC5 */
-		
 	    	if ((data->prev_keycode == 0xE1) && (downkeycode == 0x1D))
 		{
 		    /* lets remember, that we still need third key */
@@ -439,7 +439,6 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 		else if ((data->prev_keycode == 0x1234) && (downkeycode == 0x45))
 		{
 		    /* Got third key and yes, it is Pause */
-		    
 		    amigacode = 0x6E | releaseflag;
 		    data->prev_keycode = 0;
 		}
@@ -456,89 +455,69 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	else
 	{
 	    /* Normal single byte keycode */
-	    
 	    event = keycode;
-	    
 	    if (downkeycode < NUM_STDKEYS)
 	    {
 		amigacode = std_keytable[downkeycode];
 		if (amigacode != NOKEY) amigacode |= releaseflag;
 	    }	    
 	}
-	
         switch(event)
         {
             case K_KP_Numl:
                 kbd_keystate^=0x02;	/* Turn Numlock bit on */
                 kbd_updateleds(kbd_keystate);
                 break;
-		
             case K_Scroll_Lock:
                 kbd_keystate^=0x01;	/* Turn Scrolllock bit on */
                 kbd_updateleds(kbd_keystate);
                 break;
-		
             case K_CapsLock:
                 kbd_keystate^=0x04;	/* Turn Capslock bit on */
                 kbd_updateleds(kbd_keystate);
                 break;
-		
             case K_LShift:
                 kbd_keystate|=LSHIFT;
                 break;
-		
             case (K_LShift|0x80):
                 kbd_keystate&=~LSHIFT;
                 break;
-		
             case K_RShift:
                 kbd_keystate|=RSHIFT;
                 break;
-		
             case (K_RShift|0x80):
                 kbd_keystate&=~RSHIFT;
                 break;
-		
             case K_LCtrl:
                 kbd_keystate|=LCTRL;
                 break;
-		
             case (K_LCtrl|0x80):
                 kbd_keystate&=~LCTRL;
                 break;
-		
             case K_RCtrl:
                 kbd_keystate|=RCTRL;
                 break;
-		
             case (K_RCtrl|0x80):
                 kbd_keystate&=~RCTRL;
                 break;
-		
             case K_LMeta:
                 kbd_keystate|=LMETA;
                 break;
-		
             case (K_LMeta|0x80):
                 kbd_keystate&=~LMETA;
                 break;
-		
             case K_RMeta:
                 kbd_keystate|=RMETA;
                 break;
-		
             case (K_RMeta|0x80):
                 kbd_keystate&=~RMETA;
                 break;
-		
             case K_LAlt:
                 kbd_keystate|=LALT;
                 break;
-		
             case (K_LAlt|0x80):
                 kbd_keystate&=~LALT;
                 break;
-		
             case K_RAlt:
                 kbd_keystate|=RALT;
                 break;
@@ -563,7 +542,7 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             ColdReboot();
 
     	if (amigacode == NOKEY) continue;
-	
+
     	if (amigacode == data->prev_amigacode)
 	{
 	    /*
@@ -572,14 +551,14 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	    */	    
 	    continue;
 	}
-	
+
 	data->prev_amigacode = amigacode;
-	
+
 	D(bug("ki: ********************* c %d (%x)\n", amigacode, amigacode));
 
         /* Pass the code to handler */
         data->kbd_callback(data->callbackdata, amigacode);
-			  	
+
 	/* Protect as from forever loop */
 	if (!--work)
 	{
@@ -600,7 +579,6 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 
     return;
 }
-
 
 /****************************************************************************************/
 

@@ -39,4 +39,9 @@ int test_mouse_usb(OOP_Class *cl, OOP_Object *o)
     return 0; /* Report no USB mouse */
 }
 
+void dispose_mouse_usb(OOP_Class *cl, OOP_Object *o)
+{
+    return;
+}
+
 /*****  *************************************************************/

@@ -96,19 +96,15 @@ void mouse_usleep(ULONG usec)
 
 int test_mouse_com(OOP_Class *cl, OOP_Object *o)
 {
-    OOP_Object      *serial;
-    OOP_Object      *unit;
-
-    struct Library  *shidd;
-
+    struct mouse_data *data = OOP_INST_DATA(cl, o);
     int i=0;
 
-    if ((shidd = OpenLibrary("serial.hidd",0)))
+    data->u.com.shidd = OpenLibrary("serial.hidd",0);
+    if (data->u.com.shidd != NULL)
     {
-        if ((serial = OOP_NewObject(NULL, CLID_Hidd_Serial, NULL)))
+        data->u.com.serial = OOP_NewObject(NULL, CLID_Hidd_Serial, NULL);
+        if (data->u.com.serial != NULL)
         {
-            struct mouse_data *data = OOP_INST_DATA(cl, o);
-
             /*
                 As we got serial object, we go now through all units searching
                 for mouse.
@@ -128,17 +124,18 @@ int test_mouse_com(OOP_Class *cl, OOP_Object *o)
                 for (i=0; i<4; i++)
                 {
                     /* Alloc New unit for us */
-                    if ((unit = HIDD_Serial_NewUnit(serial, i)))
+                    data->u.com.unit = HIDD_Serial_NewUnit(data->u.com.serial, i);
+                    if (data->u.com.unit != NULL)
                     {
                         int proto;
 
                         D(bug("Checking for mouse on serial port %d\n", i));
 
                         /* Install RingBuffer interrupt */
-                        HIDD_SerialUnit_Init(unit, mouse_RingHandler, data, NULL, NULL);
+                        HIDD_SerialUnit_Init(data->u.com.unit, mouse_RingHandler, data, NULL, NULL);
 
                         /* Try to get mouse protocol in PnP way */
-                        if ((proto = mouse_DetectPNP(data, unit)) >= 0)
+                        if ((proto = mouse_DetectPNP(data, data->u.com.unit)) >= 0)
                         {
                             /* We got protocol */
                             data->u.com.mouse_protocol = proto;
@@ -163,7 +160,7 @@ int test_mouse_com(OOP_Class *cl, OOP_Object *o)
                         {
                             D(bug("Mouse: no serial mouse detected!\n"));
                             /* No mouse? Dispose useless unit then */
-                            HIDD_Serial_DisposeUnit(serial, unit);
+                            HIDD_Serial_DisposeUnit(data->u.com.serial, data->u.com.unit);
                         }
                     }
                 }
@@ -171,11 +168,20 @@ int test_mouse_com(OOP_Class *cl, OOP_Object *o)
             }
 
             /* Found no serial mouse... Dispose serial object */
-            OOP_DisposeObject(serial);
+            OOP_DisposeObject(data->u.com.serial);
         }
-        CloseLibrary(shidd);
+        CloseLibrary(data->u.com.shidd);
     }
     return 0; /* Report no COM mouse */
+}
+
+void dispose_mouse_seriell(OOP_Class *cl, OOP_Object *o) {
+struct mouse_data *data = OOP_INST_DATA(cl, o);
+
+	HIDD_Serial_DisposeUnit(data->u.com.serial, data->u.com.unit);
+	FreeMem(data->u.com.rx, sizeof(struct Ring));
+	OOP_DisposeObject(data->u.com.serial);
+	CloseLibrary(data->u.com.shidd);
 }
 
 /******************************************************************/
@@ -247,7 +253,7 @@ static const __attribute__((section(".text"))) symtab_t pnpprod[] = {
 int mouse_pnpgets(struct mouse_data *data, OOP_Object *unit, char *buf)
 {
     int     i,tmpavail;
-    char    c,tmp;
+    char    c;
 
     struct TagItem stags[] = {
         { TAG_DATALENGTH,   7 },

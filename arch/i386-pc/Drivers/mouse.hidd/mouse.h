@@ -21,6 +21,7 @@
 #   include <exec/semaphores.h>
 #endif
 
+#include <hidd/irq.h>
 #include <hidd/mouse.h>
 
 /* defines for buttonstate */
@@ -86,7 +87,7 @@ struct mouse_data
     UWORD buttonstate;
 
     char *mouse_name;
-
+    char type; /* type of mouse (usb, ps2, seriell) */
 /* Driver specific data */
 
     union
@@ -98,7 +99,7 @@ struct mouse_data
         struct
         {
             OOP_Object  *irqhidd;
-            
+            HIDDT_IRQ_Handler *irq;
             UBYTE       mouse_data[4];
             UBYTE       mouse_collected_bytes;
             UBYTE       expected_mouse_acks;
@@ -109,7 +110,7 @@ struct mouse_data
         {
             OOP_Object  *serial;
             OOP_Object  *unit;
-
+            struct Library *shidd;
             UBYTE       mouse_data[4];
             UBYTE       mouse_collected_bytes;
             UBYTE       mouse_protocol;
@@ -120,6 +121,11 @@ struct mouse_data
         } com;
     } u;
 };
+
+#define MDT_UNKNOWN 0
+#define MDT_USB     1
+#define MDT_SERIELL 2
+#define MDT_PS2     3
 
 /* Mouse types */
 #define P_MS            0               /* Microsoft */
@@ -167,7 +173,10 @@ struct mouse_data
 #define KBD_OUTCMD_SET_RES		0xE8
 #define KBD_OUTCMD_SET_SCALE11		0xE6
 #define KBD_OUTCMD_SET_SCALE21		0xE7
-#define KBD_OUTCMD_SET_SCALE		0xE9
+#define KBD_OUTCMD_STATUS_REQUEST	0xE9
+#define KBD_OUTCMD_SET_STREAM_MODE	0xEA
+#define KBD_OUTCMD_READ_DATA		0xEB
+#define KBD_OUTCMD_SET_REMOTE_MODE	0xF0
 #define KBD_OUTCMD_SET_RATE		0xF3
 #define KBD_OUTCMD_SET_STREAM          	0xEA
 #define KBD_OUTCMD_ENABLE		0xF4
