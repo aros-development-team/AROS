@@ -13,6 +13,7 @@ USE_AROSLIB     := yes
 USE_CLIB_SHARED := yes
 USE_AMIGALIB    := yes
 
+#MM- workbench-system-wanderer : workbench-system-wanderer-tools-delete
 #MM workbench-system-wanderer-tools-delete : includes linklibs 
 
 %make_prog_setup mmake=workbench-system-wanderer-tools-delete
