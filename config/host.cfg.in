@@ -88,4 +88,4 @@ CHECKUDS	:= $(NM)
 ARCHDIR		:= $(TOP)/bin/$(ARCH)-$(CPU)
 MKDEPEND	:= $(TOP)/scripts/mkdep
 TOOLDIR		:= $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)/tools
-GENMF		:= $(TOOLDIR)/genmf
+GENMF		:= $(TOOLDIR)/genmf.py

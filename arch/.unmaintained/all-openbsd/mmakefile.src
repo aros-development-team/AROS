@@ -101,7 +101,7 @@ $(OSGENDIR)/%.o : %.c
 	%compile_q opt=$(CFLAGS2)
 
 $(OSGENDIR)/%.d : %.c
-	%mkdepend_q $(CFLAGS2)
+	%mkdepend_q flags=$(CFLAGS2)
 
 %include_deps
 %common

@@ -35,9 +35,9 @@ endif
 # support it nonetheless.
 ALL_FILES := $(FILES)
 %prepare_replace rom/hidd
-%filter_replace FILES
+%filter_replace var=FILES
 
-%prepare_shlib hiddgfxaicl $(SHARED_HIDDCLASS)
+%prepare_shlib lib=hiddgfxaicl shflag=$(SHARED_HIDDCLASS)
 
 ifndef INITFUNC
 INITFUNC := $(OBJDIR)/$(INIT_FILE).o
@@ -129,7 +129,7 @@ clean ::
 $(OBJDIR)/%.o : %.c
 	%compile_q 
 
-%asm_rule "$(FILES) $(INIT_FILE) $(END_FILE)"
+%asm_rule opt="$(FILES) $(INIT_FILE) $(END_FILE)"
 
 %ctoasm_q
 
