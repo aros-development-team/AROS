@@ -350,8 +350,8 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
 
 #define IW(x) ((struct IntWindow *)(x))
 
-#if 0 /* FIXME: backport, disabled */
     win = NULL;
+#if 0 /* FIXME: backport, disabled */
     if (IntuitionBase->FirstScreen && GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_SCREENACTIVATION)
     {
         struct Window *scanw = 0;
