@@ -10,6 +10,7 @@
 #include <string.h>
 #include <exec/types.h>
 #include <graphics/gfxmacros.h>
+#include <intuition/imageclass.h>
 
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
@@ -562,12 +563,13 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case    MUIA_Selected:
+		D(bug(" Area_Set(%p) : MUIA_Selected val=%ld sss=%d\n", obj, tag->ti_Data, !!(data->mad_Flags & MADF_SHOWSELSTATE)));
 		if (tag->ti_Data) data->mad_Flags |= MADF_SELECTED;
 		else data->mad_Flags &= ~MADF_SELECTED;
-		if (data->mad_Flags & MADF_SHOWSELSTATE)
+/*  		if (data->mad_Flags & MADF_SHOWSELSTATE) */
 		    MUI_Redraw(obj, MADF_DRAWOBJECT);
-		else
-		    MUI_Redraw(obj, MADF_DRAWUPDATE);
+/*  		else */
+/*  		    MUI_Redraw(obj, MADF_DRAWUPDATE); */
 		break;
 
 	    case MUIA_Timer:
@@ -848,6 +850,8 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 /*      D(bug("Area_Draw(0x%lx) %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */
 
+     D(bug(" Area_Draw(%p) msg=0x%08lx flags=0x%08lx\n",obj, msg->flags,_flags(obj)));
+
     if (msg->flags & MADF_DRAWALL)
 	msg->flags |= MADF_DRAWOBJECT;
 
@@ -903,10 +907,12 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	if (!background)
 	{
 	    /* This will do the rest, TODO: on MADF_DRAWALL we not really need to draw this */
-	    DoMethod(obj, MUIM_DrawBackground, left, top, width, height, left, top, 0);
+	    D(bug(" Area_Draw(%p) MUIM_DrawBackground\n", obj));
+	    DoMethod(obj, MUIM_DrawBackground, left, top, width, height, left, top, data->mad_Flags);
 	}
 	else
 	{
+	    D(bug(" Area_Draw(%p) zune_imspec_draw\n", obj));
 	    zune_imspec_draw(background, data->mad_RenderInfo,
 			    left, top, width, height, left, top, 0);
 	}
@@ -1048,13 +1054,22 @@ static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Dra
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     struct MUI_ImageSpec_intern *bg;
-    
+    LONG state;
+
     if (!(data->mad_Flags & MADF_CANDRAW)) /* not between show/hide */
 	return FALSE;
 
-    bg = (!(data->mad_Flags & MADF_SELECTED) || !(data->mad_Flags & MADF_SHOWSELSTATE)) ? 
-    	 data->mad_Background : data->mad_SelBack;
-          
+    if ((msg->flags & MADF_SELECTED) && (msg->flags & MADF_SHOWSELSTATE))
+    { 
+    	bg = data->mad_SelBack;
+	state = IDS_SELECTED;
+    }
+    else
+    {
+	bg = data->mad_Background;
+	state = IDS_NORMAL;
+    }
+
     if (!bg)
     {
     	Object *parent;
@@ -1069,7 +1084,7 @@ static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Dra
 
     zune_imspec_draw(bg, data->mad_RenderInfo,
 		     msg->left, msg->top, msg->width, msg->height,
-		     msg->xoffset, msg->yoffset, 0);
+		     msg->xoffset, msg->yoffset, state);
 
     return TRUE;
 }
@@ -1384,10 +1399,20 @@ static void handle_press(struct IClass *cl, Object *obj)
 	    break;
 
 	case MUIV_InputMode_Immediate:
-	    nnset(obj, MUIA_Selected, FALSE);
-	    set(obj, MUIA_Selected, TRUE);
-	    break;
+	{
+	    ULONG selected;
 
+	    get(obj, MUIA_Selected, &selected);
+	    if (selected)
+	    {
+		D(bug("handle_press(%p) : nnset MUIA_Selected FALSE\n", obj));
+		nnset(obj, MUIA_Selected, FALSE);
+	    }
+	    D(bug("handle_press(%p) : set MUIA_Selected TRUE\n", obj));
+	    set(obj, MUIA_Selected, TRUE);
+	    D(bug("handle_press(%p) : done\n", obj));
+	    break;
+	}
 	case MUIV_InputMode_Toggle:
 	    set(obj, MUIA_Selected, !(data->mad_Flags & MADF_SELECTED));
 	    break;
