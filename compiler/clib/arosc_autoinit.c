@@ -11,14 +11,22 @@
 
 static AROS_SET_LIBFUNC(__arosc_libopen, struct Library *, aroscbase)
 {
+    AROS_USERFUNC_INIT
+    
     return arosc_internalinit();
+
+    AROS_USERFUNC_EXIT
 }
 
 static AROS_SET_LIBFUNC(__arosc_libclose, struct Library *, aroscbase)
 {
+    AROS_USERFUNC_INIT
+    
     arosc_internalexit();
 
     return 1;
+
+    AROS_USERFUNC_EXIT
 }
 
 ADD2OPENLIB(__arosc_libopen, 0);

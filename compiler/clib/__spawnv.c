@@ -197,6 +197,8 @@ AROS_UFHA(char *, argstr,A0),
 AROS_UFHA(ULONG, argsize,D0),
 AROS_UFHA(struct ExecBase *,SysBase,A6))
 {
+    AROS_USERFUNC_INIT
+
     struct DosLibrary *DOSBase;
     struct Library *aroscbase;
     LONG rc = -1;
@@ -228,6 +230,8 @@ err1:
     childdata->returncode = rc;
 
     return rc;
+    
+    AROS_USERFUNC_EXIT
 }
 
 #include "__open.h"
