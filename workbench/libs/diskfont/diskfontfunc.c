@@ -141,7 +141,6 @@ STATIC struct FileEntry *GetFileList(BPTR fontslock, struct DiskfontBase_intern 
 		    }
 
 		    strcpy(feptr->FileName, ead->ed_Name);
-		    kprintf("getfilelist: Found name: %s\n",feptr->FileName);
 		}
 		ead = ead->ed_Next;
 
