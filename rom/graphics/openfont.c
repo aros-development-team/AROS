@@ -48,7 +48,7 @@ extern struct TextFont * driver_OpenFont (struct TextAttr *,
 {
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
-    struct Font * font;
+    struct TextFont * font;
 
     font = driver_OpenFont (textAttr, GfxBase);
 

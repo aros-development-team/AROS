@@ -48,7 +48,7 @@ void driver_CloseFont (struct TextFont *, struct GfxBase *);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    tf->etf_Font.tf_Accessors --;
+    textFont->tf_Accessors --;
 
     driver_CloseFont (textFont, GfxBase);
 
