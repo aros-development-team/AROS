@@ -7,12 +7,6 @@
 
 #include <string.h>
 
-#ifndef __AROS__
-#ifndef __MAXON__
-#include <dos.h>
-#endif
-#endif
-
 #include <intuition/classes.h>
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
@@ -20,6 +14,7 @@
 #include <proto/graphics.h>
 #include <proto/keymap.h>
 #include <proto/utility.h>
+
 #ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
@@ -121,17 +116,6 @@ void FreeVecPooled (APTR pool, APTR mem)
     }
 }
 
-#ifndef __AROS__
-char *StrDup(char *x)
-{
-    char *dup;
-    if (!x) return NULL;
-    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
-    if (dup) CopyMem((x), dup, strlen(x) + 1);
-    return dup;
-}
-#endif
-
 void *Node_Next(APTR node)
 {
     if(node == NULL) return NULL;
@@ -147,38 +131,3 @@ void *List_First(APTR list)
     if(((struct MinList*)list)->mlh_Head->mln_Succ == NULL) return NULL;
     return ((struct MinList*)list)->mlh_Head;
 }
-
-/**************************************************************************
- A temporary snprintf wrapper for SAS.
-**************************************************************************/
-#ifndef __AROS__
-
-#include <stdarg.h>
-#include <stdio.h>
-
-int snprintf(char *buf, int size, const char *fmt, ...)
-{
-    int ret;
-    va_list argptr;
-    va_start(argptr,fmt);
-    ret = vsprintf(buf,fmt,argptr);
-    va_end(argptr);
-    return ret;
-}
-
-int strlcat(char *buf, char *src, int len)
-{
-    int l = strlen(buf);
-    buf += l;
-    len -= l;
-
-    if (len>0)
-    {
-	int i;
-	for (i=0; i < len - 1 && *src; i++)
-	    *buf++ = *src++;
-	*buf = 0;
-    }
-}
-
-#endif

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
+    Copyright © 2002-2003, The AROS Development Team. 
     All rights reserved.
     
     $Id$
@@ -9,30 +9,28 @@
 #define _MUIMASTER_SUPPORT_H
 
 #ifndef EXEC_TYPES_H
-#include <exec/types.h>
+#   include <exec/types.h>
 #endif
-
 #ifndef INTUITION_CLASSUSR_H
-#include <intuition/classusr.h>
+#   include <intuition/classusr.h>
 #endif
-
 #ifndef INTUITION_CLASSES_H
-#include <intuition/classes.h>
+#   include <intuition/classes.h>
 #endif
-
 #ifndef CLIB_MACROS_H
-#include <clib/macros.h>
+#   include <clib/macros.h>
 #endif
 
 #ifdef __AROS__
-#ifndef AROS_ASMCALL_H
-#include <aros/asmcall.h>
+#   ifndef AROS_ASMCALL_H
+#       include <aros/asmcall.h>
+#   endif
+#endif /* __AROS__ */
+
+#ifndef __AROS__
+#   include "support_amigaos.h"
 #endif
-#else
-#ifndef _COMPILER_H
-#include "compiler.h"
-#endif
-#endif
+
 
 #define mui_alloc(x) AllocVec(x,MEMF_CLEAR)
 #define mui_alloc_struct(x) ((x *)AllocVec(sizeof(x),MEMF_CLEAR))
@@ -55,14 +53,6 @@ ULONG ConvertKey(struct IntuiMessage *imsg);
 struct MUI_RenderInfo;
 #endif
 
-#ifndef __AROS__
-char *StrDup(char *x);
-#define AROS_LONG2BE(x) (x)
-int snprintf(char *buf, int size, const char *fmt, ...);
-int strlcat(char *buf, char *src, int len);
-
-#endif
-
 ULONG DoSetupMethod(Object *obj, struct MUI_RenderInfo *info);
 IPTR xget(Object *obj, Tag attr);
 APTR AllocVecPooled (APTR pool, ULONG memsize);
@@ -73,5 +63,4 @@ void *Node_Next(APTR node);
 /* returns first node of this list */
 void *List_First(APTR list);
 
-
-#endif
+#endif /* _MUIMASTER_SUPPORT_H */
