@@ -757,86 +757,76 @@ void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo)
     _defheight(obj) = MinMaxInfo->DefHeight;
 }
 
+/*                      <-- _top(obj) (frame title position depends of _top(obj))
+ *  ====== Title =====  <-- frame_top (depends of title, if centered/above)
+ * |                  | <-- bgtop (depends of frame, bg always begins under frame)
+ * |                  |
+ * |                  |
+ *  ==================  <-- "bgbottom" and "frame_bottom" (frame overwrites bg (1))
+ *
+ * (1) : needed for phantom frame objects, where no frame overwrites bg, thus bg
+ * must go as far as theorical bottom frame border.
+ */
+
 /*
  * draw object background if MADF_FILLAREA.
  */
-static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data, ULONG flags)
+static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data, ULONG flags,
+					 struct ZuneFrameGfx *zframe, WORD frame_top)
 {
     struct MUI_ImageSpec_intern *background;
-    int left,top,width,height;
+    int bgtop, bgleft, bgw, bgh;
 
     if (!(data->mad_Flags & MADF_SELECTED) || !(data->mad_Flags & MADF_SHOWSELSTATE))
 	background = data->mad_Background;
     else
 	background = data->mad_SelBack;
 
-    left = _left(obj);
-    top = _top(obj);
-    width = _width(obj);
-    height = _height(obj);
-
-    if (data->mad_TitleText)
-    {
-	switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_position)
-	{
-	    case GROUP_TITLE_POSITION_ABOVE:
-		top += _font(obj)->tf_Baseline;
-		height -= _font(obj)->tf_Baseline;
-		break;
-	    case GROUP_TITLE_POSITION_CENTERED:
-		top += data->mad_TitleText->height / 2 + 2;
-		height -= data->mad_TitleText->height / 2 + 2;
-		break;
-	}
-	/* TODO: Fill the Area not covered here */
-    }
+    bgleft = _left(obj);
+    bgtop = frame_top + zframe->itop;
+    bgw = _width(obj);
+#if REDUCE_FLICKER_TEST
+    bgh = _height(obj) - frame_top + _top(obj);
+#else
+    bgh = _height(obj) - bgtop + _top(obj);
+#endif
 
     if (!background)
     {
 	/* This will do the rest, TODO: on MADF_DRAWALL we not really need to draw this */
 /*  	D(bug(" Area_Draw(%p):%ld: MUIM_DrawBackground\n", obj, __LINE__)); */
-	DoMethod(obj, MUIM_DrawBackground, left, top, width, height, left, top, data->mad_Flags);
+	DoMethod(obj, MUIM_DrawBackground, bgleft, frame_top, bgw, bgh, bgleft, frame_top,
+		 data->mad_Flags);
     }
     else
     {
 /*  	D(bug(" Area_Draw(%p):%ld: zune_imspec_draw\n", obj, __LINE__)); */
 	zune_imspec_draw(background, data->mad_RenderInfo,
-			 left, top, width, height, left, top, 0);
+			 bgleft, bgtop, bgw, bgh, bgleft, bgtop, 0);
     }
 
-    if (top > _top(obj) && !(flags & MADF_DRAWALL))
+#if REDUCE_FLICKER_TEST
+    if (bgtop > _top(obj) && !(flags & MADF_DRAWALL))
     {
 	/* Fill in the gap produced by the title with the background of the parent object but only if
 	 * the upper object hasn't drawn it already (which is the case if MADF_DRAWALL is setted) */
-	DoMethod(obj, MUIM_DrawParentBackground, left, _top(obj), width, top - _top(obj) + 1, left, top, data->mad_Flags);
+	DoMethod(obj, MUIM_DrawParentBackground, bgleft, _top(obj), bgw, bgtop - _top(obj),
+		 bgleft, _top(obj), data->mad_Flags);
     }
+#endif
 }
 
 
 /*
  * draw object frame + title if ! MADF_FRAMEPHANTOM.
  */
-static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data)
+static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data,
+				    struct ZuneFrameGfx *zframe, WORD frame_top)
 {
-    struct ZuneFrameGfx *zframe;
-    struct MUI_FrameSpec_intern *frame;
-    int state;
     APTR textdrawclip;
-    struct TextFont *obj_font;
     struct Region *region;
-    int x, top;
-    int width, height;
-
-    /* on selected state, will get the opposite frame */
-    frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
-    state = frame->state;
-    if ((data->mad_Flags & MADF_SELECTED) && (data->mad_Flags & MADF_SHOWSELSTATE))
-	state ^= 1;
-
-    zframe = zune_zframe_get_with_state(
-	&muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame], state);
-    /* update innersizes as there are frames which have different inner spacings in selected state */
-    area_update_innersizes(obj, data, frame, zframe);
+    int tx;
+    int tw, frame_height;
 
     /* no frametitle, just draw frame and return */
     if (!data->mad_TitleText)
@@ -846,40 +836,23 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data)
     }
 
     /* set clipping so that frame is not drawn behind title */
+    tw = data->mad_TitleText->width;
+    tx = _mleft(obj) + (_mwidth(obj) - tw) / 2;
+    if (tx < _mleft(obj) + 2)
+	tx = _mleft(obj) + 2;
 
-    width = data->mad_TitleText->width;
-/*  	    if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D) */
-/*  		width += 1; */
-
-    x = _mleft(obj) + (_mwidth(obj) - width) / 2;
-
-    switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_position)
-    {
-	case GROUP_TITLE_POSITION_ABOVE:
-	    top = _top(obj) + _font(obj)->tf_Baseline - 2;
-	    height = _height(obj) - (_font(obj)->tf_Baseline - 2);
-	    break;
-	case GROUP_TITLE_POSITION_CENTERED:
-	    top = _top(obj) + data->mad_TitleText->height / 2;
-	    height = _height(obj) - data->mad_TitleText->height / 2;
-	    break;
-	default:
-	    break;
-    }
-
-    if (x < _mleft(obj) + 2)
-	x = _mleft(obj) + 2;
+    frame_height = _height(obj) - frame_top + _top(obj);
 
     if ((region = NewRegion()))
     {
 	struct Rectangle rect;
 	int maxx;
 
-	maxx = x + width + 1;
+	maxx = tx + tw + 1;
 	if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color
 	    != GROUP_TITLE_COLOR_3D)
 	    maxx--;
-	rect.MinX = x - 2;
+	rect.MinX = tx - 2;
 	rect.MinY = _top(obj);
 	rect.MaxX = MIN(_mright(obj), maxx);
 	rect.MaxY = rect.MinY + data->mad_TitleText->height - 1; // frame is not thick enough anywhy
@@ -894,7 +867,7 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data)
 	textdrawclip = MUI_AddClipRegion(muiRenderInfo(obj),region);
     }
 	    
-    zframe->draw(muiRenderInfo(obj), _left(obj), top, _width(obj), height);
+    zframe->draw(muiRenderInfo(obj), _left(obj), frame_top, _width(obj), frame_height);
 
     if (region)
     {
@@ -903,8 +876,6 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data)
     }
 
     /* Title text drawing */
-    obj_font = _font(obj);
-    _font(obj) = zune_font_get(obj,MUIV_Font_Title);
 
     /* TODO: sba if a TextFit() for zune text is available one could disable the clipping */
     textdrawclip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj) + 2, _top(obj),
@@ -913,23 +884,20 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data)
     SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
     if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
     {
-	zune_text_draw(data->mad_TitleText, obj, x + 1, x + width, _top(obj) + 1);
+	zune_text_draw(data->mad_TitleText, obj, tx + 1, tx + tw, _top(obj) + 1);
 	SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
-	zune_text_draw(data->mad_TitleText, obj, x, x + width - 1, _top(obj));
+	zune_text_draw(data->mad_TitleText, obj, tx, tx + tw - 1, _top(obj));
     }
     else
     {
-		
 	if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_HILITE)
 	{
 	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
 	}
-	zune_text_draw(data->mad_TitleText, obj, x, x + width - 1, _top(obj));
+	zune_text_draw(data->mad_TitleText, obj, tx, tx + tw - 1, _top(obj));
     }
 
     MUI_RemoveClipping(muiRenderInfo(obj), textdrawclip);
-
-    _font(obj) = obj_font;
 }
 
 /**************************************************************************
@@ -938,10 +906,12 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data)
 static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
+    struct ZuneFrameGfx *zframe;
+    struct TextFont *obj_font;
+    WORD frame_top;
     //APTR areaclip;
 
 /*      D(bug("Area_Draw(0x%lx) %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */
-
 /*      D(bug(" Area_Draw(%p) msg=0x%08lx flags=0x%08lx\n",obj, msg->flags,_flags(obj))); */
 
     if (msg->flags & MADF_DRAWALL)
@@ -954,50 +924,60 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	return 0;
     }
 
-//    if ((data->mad_Flags & MADF_SELECTED) &&
-//	!(data->mad_Flags & MADF_SHOWSELSTATE))
-//    {
-//	if (!(msg->flags & MADF_DRAWALL))
-//	    msg->flags &= ~MADF_DRAWOBJECT;
-//	return 0;
-//    }
+/* Background cant be drawn without knowing anything about frame, thus some
+ * calculations are made before background and frame drawing.
+ */
+    {
+	/* on selected state, will get the opposite frame */
+	struct MUI_FrameSpec_intern *frame;
+	int state;
+
+	frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
+	state = frame->state;
+	if ((data->mad_Flags & MADF_SELECTED) && (data->mad_Flags & MADF_SHOWSELSTATE))
+	    state ^= 1;
+
+	zframe = zune_zframe_get_with_state(
+	    &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame], state);
+	/* update innersizes as there are frames which have different inner spacings in selected state */
+	area_update_innersizes(obj, data, frame, zframe);
+    }
+
+    obj_font = _font(obj);
+    _font(obj) = zune_font_get(obj,MUIV_Font_Title);
+
+    if (data->mad_TitleText && !(data->mad_Flags & MADF_FRAMEPHANTOM))
+    {
+	switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_position)
+	{
+	    case GROUP_TITLE_POSITION_ABOVE:
+		frame_top = _top(obj) + _font(obj)->tf_Baseline - zframe->itop + 1;
+		break;
+	    case GROUP_TITLE_POSITION_CENTERED:
+		frame_top = _top(obj) + (data->mad_TitleText->height - zframe->itop) / 2;
+		break;
+	    default:
+		break;
+	}
+    }
+    else
+    {
+	frame_top = _top(obj);
+    }
 
     /* Background drawing */
     if (data->mad_Flags & MADF_FILLAREA)
     {
-	Area_Draw__handle_background(obj, data, msg->flags);
+	Area_Draw__handle_background(obj, data, msg->flags, zframe, frame_top);
     }
 
     /* Frame and frametitle drawing */
     if (!(data->mad_Flags & MADF_FRAMEPHANTOM))
     {
-	Area_Draw__handle_frame(obj, data);
+	Area_Draw__handle_frame(obj, data, zframe, frame_top);
     }
 
-#if 0
-    {
-	struct Rectangle mrect, current;
-
-	mrect.MinX = _mleft(obj);
-	mrect.MinY = _mtop(obj);
-	mrect.MaxX = _mright(obj);
-	mrect.MaxY = _mbottom(obj);
-
-	current = muiRenderInfo(obj)->mri_ClipRect;
-/*  	    g_print("intersect area: mrect=(%d, %d, %d, %d) current=(%d, %d, %d, %d)\n", */
-/*  		    mrect.x, mrect.y, */
-/*  		    mrect.width, mrect.height, */
-/*  		    current.x, current.y, */
-/*  		    current.width, current.height); */
-
-	if (!gdk_rectangle_intersect(&mrect, &current,
-				     &muiRenderInfo(obj)->mri_ClipRect))
-	{
-/*  	g_print("failed\n"); */
-	    msg->flags &= ~MADF_DRAWOBJECT;
-	}
-    }
-#endif
+    _font(obj) = obj_font;
 
 /*    MUI_RemoveClipping(muiRenderInfo(obj), areaclip);*/
 
@@ -1862,7 +1842,7 @@ static void area_update_innersizes(Object *obj, struct MUI_AreaData *data,
 	data->mad_subheight = CLAMP(data->mad_addtop + frame->innerBottom  + zframe->ibottom, 0, 127);
     }
 
-    if (data->mad_TitleText)
+    if (data->mad_TitleText && !(data->mad_Flags & MADF_FRAMEPHANTOM))
     {
 	/* Save the orginal font */
 	struct TextFont *obj_font = _font(obj);
