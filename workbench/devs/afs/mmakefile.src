@@ -20,6 +20,7 @@ FILES := main \
 FUNCS :=
 
 USE_LIBDEFS := no
+USER_CFLAGS := -DDEBUG=0
 
 #MM- workbench-fs-complete : workbench-fs-afs
 #MM- workbench-fs-afs : setup includes linklibs workbench-fs-afs-module

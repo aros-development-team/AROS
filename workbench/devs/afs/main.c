@@ -2,7 +2,9 @@
    $Id$
 */
 
+#ifndef DEBUG
 #define DEBUG 1
+#endif
 
 #include <proto/dos.h>
 
