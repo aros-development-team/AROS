@@ -1,0 +1,40 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+_INCLUDES := $(foreach f,$(shell ls *.[hi]), $(f))      \
+            $(foreach f,$(shell ls aros/*.[hi]), $(f))  \
+            $(foreach f,$(shell ls asm/*.[hi]), $(f))   \
+            $(foreach f,$(shell ls exec/*.[hi]), $(f))
+
+INCFILES := $(foreach f,$(_INCLUDES), $(INCDIR)/$(f) $(GENINCDIR)/$(f))
+
+DIRS :=	$(INCDIR) $(GENINCDIR) \
+	$(foreach d, aros asm exec libcore, $(INCDIR)/$(d) $(GENINCDIR)/$(d))
+
+MACHINE_H := $(GENINCDIR)/aros/machine.h
+
+#MM
+includes-pp-native-m68000 : $(INCFILES)
+	@$(NOP)
+
+#MM
+includes-pp-native-m68000 : $(INCFILES) $(GENINCDIR)/sigcore.h
+	@$(NOP)
+
+#MM
+setup-includes :
+	@$(FOR) dir in $(DIRS) ; do \
+	    $(IF) $(TEST) ! -d "$$dir" ; then $(MKDIR) "$$dir" ; else true ; fi ; \
+	done
+
+#MM
+clean ::
+	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS)
+
+$(INCDIR)/% : %
+	$(CP) $< $@
+
+$(GENINCDIR)/% : %
+	$(CP) $< $@
+
+%common
