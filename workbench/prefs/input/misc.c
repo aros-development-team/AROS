@@ -169,3 +169,41 @@ void SortInNode(struct List *list, struct Node *node)
 
 /*********************************************************************************************/
 
+void DrawFrameWithTitle(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, STRPTR title)
+{
+    UWORD pen1, pen2, slen, tlen, i;
+   
+    pen1 = dri->dri_Pens[SHADOWPEN];
+    pen2 = dri->dri_Pens[SHINEPEN];
+    slen = strlen(title);
+    tlen = TextLength(rp, title, slen);
+    
+    SetDrMd(rp, JAM1);
+    
+    SetAPen(rp, dri->dri_Pens[TEXTPEN]);
+    Move(rp, x1 + FRAMETITLE_OFFX + FRAMETITLE_TITLESPACE, y1 + rp->TxBaseline);
+    Text(rp, title, slen);
+    
+    y1 += rp->TxBaseline / 2;
+    
+    for(i = 0; i < 2; i++)
+    {
+    	SetAPen(rp, pen1);
+    	Move(rp, x1, y2);
+	Draw(rp, x1, y1);
+	Draw(rp, x1 + FRAMETITLE_OFFX - 1 - i, y1);
+	Move(rp, x1 + FRAMETITLE_OFFX - 1 + FRAMETITLE_TITLESPACE + tlen + FRAMETITLE_TITLESPACE - i, y1);
+	Draw(rp, x2, y1);
+	
+	SetAPen(rp, pen2);
+	Draw(rp, x2, y2);
+	Draw(rp, x1 + 1, y2);
+	
+	x1++; y1++; x2--; y2--;
+	pen1 ^= pen2; pen2 ^= pen1; pen1 ^= pen2; /* swap pen1 and pen2 */
+    }
+    
+}
+
+/*********************************************************************************************/
+

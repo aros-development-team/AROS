@@ -86,7 +86,7 @@ Accelerated
 MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY (//)
 Double-Click Delay
 ;
-MSG_GAD_KBD_REPEAT_DELAY (//)
+MSG_GAD_KEY_REPEAT_DELAY (//)
 Key Repeat Delay
 ;
 MSG_GAD_KEY_REPEAT_RATE (//)

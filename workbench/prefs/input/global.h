@@ -198,6 +198,11 @@
 #define TABBORDER_Y 	    	8
 #define SPACE_X     	    	4
 #define SPACE_Y     	    	4
+#define FRAMETITLE_OFFX     	8
+#define FRAMETITLE_TITLESPACE	2
+#define FRAMETITLE_EXTRAWIDTH	16
+#define FRAMESPACEX 	    	8
+#define FRAMESPACEY 	    	8
 
 #define BUTTON_EXTRAWIDTH   	16
 #define BUTTON_EXTRAHEIGHT  	6
@@ -233,11 +238,10 @@ void InitMenus(void);
 void MakeMenus(void);
 void KillMenus(void);
 void SetMenuFlags(void);
-
 struct Node *FindListNode(struct List *list, WORD which);
 void SortInNode(struct List *list, struct Node *node);
-
 STRPTR GetFile(STRPTR title, STRPTR dir, BOOL savemode);
+void DrawFrameWithTitle(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, STRPTR title);
 
 /* page_mouse.c */
 

@@ -119,7 +119,7 @@ MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY
 Fördröjning för dubbelklick
 ; Double-Click Delay
 ;
-MSG_GAD_KBD_REPEAT_DELAY
+MSG_GAD_KEY_REPEAT_DELAY
 Fördröjning för tangentrepetition
 ; Key Repeat Delay
 ;
