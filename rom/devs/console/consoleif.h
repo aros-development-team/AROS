@@ -29,7 +29,8 @@ enum
     M_Console_Down,
     M_Console_GetDefaultParams,
     M_Console_RenderCursor,
-    M_Console_ClearCell
+    M_Console_ClearCell,
+    M_Console_NewWindowSize
     
 };
 
@@ -95,6 +96,10 @@ struct P_Console_ClearCell
     WORD  Y;
 };
 
+struct P_Console_NewWindowSize
+{
+    ULONG MethodID;
+};
 
 struct P_Console_GetDefaultParams
 {
@@ -172,6 +177,12 @@ struct P_Console_GetDefaultParams
     DoMethodA((o), (Msg)&p);			\
 })
 
+#define Console_NewWindowSize(o)		\
+({						\
+    struct P_Console_NewWindowSize p;		\
+    p.MethodID	= M_Console_NewWindowSize;	\
+    DoMethodA((o), (Msg)&p);			\
+})
 
 
 #endif /* CONSOLEIF_H */

@@ -321,6 +321,9 @@ static VOID stdcon_rendercursor(Class *cl, Object *o, struct P_Console_RenderCur
      SetDrMd(rp, JAM2);
 }
 
+/**************************
+**  StdCon::ClearCell()  **
+**************************/
 static VOID stdcon_clearcell(Class *cl, Object *o, struct P_Console_ClearCell *msg)
 {
      struct RastPort *rp = RASTPORT(o);
@@ -335,6 +338,65 @@ static VOID stdcon_clearcell(Class *cl, Object *o, struct P_Console_ClearCell *m
 	, GFX_Y(o, msg->Y) + rp->Font->tf_YSize - 1
      );
 }
+
+/*******************************
+**  StdCon::NewWindowSize()  **
+*******************************/
+static VOID stdcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewWindowSize *msg)
+{
+    struct RastPort *rp = RASTPORT(o);
+    struct stdcondata *data = INST_DATA(cl, o);
+    WORD old_xmax = CHAR_XMAX(o);
+    WORD old_ymax = CHAR_YMAX(o);
+    WORD old_xcp = XCP;
+    WORD old_ycp = YCP;
+    
+    WORD x1, y1, x2, y2;
+    
+    DoSuperMethodA(cl, o, (Msg)msg);
+    
+    if (CHAR_XMAX(o) < old_xmax)
+    {
+        x1 = GFX_XMAX(o) + 1;
+	y1 = GFX_YMIN(o);
+	x2 = WINDOW(o)->Width - WINDOW(o)->BorderRight - 1;
+	y2 = WINDOW(o)->Height - WINDOW(o)->BorderBottom - 1;
+	
+	if ((x2 >= x1) && (y2 >= y1))
+	{
+	    SetAPen(rp, 0);
+	    SetDrMd(rp, JAM2),
+	    RectFill(rp, x1, y1, x2, y2);
+	}
+    }
+
+    if (CHAR_YMAX(o) < old_ymax)
+    {
+        x1 = GFX_XMIN(o);
+	y1 = GFX_YMAX(o) + 1;
+	x2 = WINDOW(o)->Width - WINDOW(o)->BorderRight - 1;
+	y2 = WINDOW(o)->Height - WINDOW(o)->BorderBottom - 1;
+	
+	if ((x2 >= x1) && (y2 >= y1))
+	{
+	    SetAPen(rp, 0);
+	    SetDrMd(rp, JAM2),
+	    RectFill(rp, x1, y1, x2, y2);
+	}
+    }
+
+    if ((old_xcp != XCP) || (old_ycp != YCP)) 
+    {
+        SetAPen(rp, 0);
+	SetDrMd(rp, JAM2);
+	RectFill(rp, GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o));
+	
+    	Console_RenderCursor(o);
+    }
+    return;
+}
+
+
 
 AROS_UFH3S(IPTR, dispatch_stdconclass,
     AROS_UFHA(Class *,  cl,  A0),
@@ -364,6 +426,10 @@ AROS_UFH3S(IPTR, dispatch_stdconclass,
 	
     case M_Console_ClearCell:
     	stdcon_clearcell(cl, o, (struct P_Console_ClearCell *)msg);
+	break;
+	
+    case M_Console_NewWindowSize:
+        stdcon_newwindowsize(cl, o, (struct P_Console_NewWindowSize *)msg);
 	break;
 	
     default:

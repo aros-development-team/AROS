@@ -215,6 +215,9 @@ static VOID console_docommand(Class *cl, Object *o, struct P_Console_DoCommand *
     ReturnVoid("Console::DoCommand");
 }
 
+/**********************************
+**  Console::GetDefaultParams()  **
+**********************************/
 static VOID console_getdefaultparams(Class *cl, Object *o, struct P_Console_GetDefaultParams *msg)
 {
     switch (msg->Command)
@@ -250,6 +253,35 @@ static VOID console_getdefaultparams(Class *cl, Object *o, struct P_Console_GetD
 	    msg->Params[0] = 1;
 	    break;
     }
+    
+    return;
+}
+
+/*******************************
+**  Console::NewWindowSize()  **
+*******************************/
+static VOID console_newwindowsize(Class *cl, Object *o, struct P_Console_NewWindowSize *msg)
+{
+    struct ConUnit *unit;
+    struct consoledata *data;
+    struct Window *win;
+    
+    data = INST_DATA(cl, o);
+    unit = (struct ConUnit *)data;
+
+    win = unit->cu_Window;
+    
+    unit->cu_XMax     = (win->Width  - (win->BorderLeft + win->BorderRight )) / unit->cu_XRSize - 1;
+    unit->cu_YMax     = (win->Height - (win->BorderTop  + win->BorderBottom)) / unit->cu_YRSize - 1;
+
+    unit->cu_XRExtant = win->BorderLeft + (unit->cu_XRSize * unit->cu_XMax);
+    unit->cu_YRExtant = win->BorderTop  + (unit->cu_YRSize * unit->cu_YMax);
+
+    if (unit->cu_XCCP > unit->cu_XMax) unit->cu_XCCP = unit->cu_XMax;
+    if (unit->cu_YCCP > unit->cu_YMax) unit->cu_YCCP = unit->cu_YMax;
+    
+    unit->cu_XCP = unit->cu_XCCP;
+    unit->cu_YCP = unit->cu_YCCP;
     
     return;
 }
@@ -291,6 +323,10 @@ AROS_UFH3S(IPTR, dispatch_consoleclass,
 
     case M_Console_GetDefaultParams:
     	console_getdefaultparams(cl, o, (struct P_Console_GetDefaultParams *)msg);
+	break;
+
+    case M_Console_NewWindowSize:
+    	console_newwindowsize(cl, o, (struct P_Console_NewWindowSize *)msg);
 	break;
 	
     default:
