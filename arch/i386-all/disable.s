@@ -42,28 +42,32 @@
 	.balign 16
 	.globl	_Exec_Disable
 	.type	_Exec_Disable,@function
+
 _Exec_Disable:
-	call dis
+	call  disable
 	pushl %eax
-	movl 8(%esp),%eax
-	incb IDNestCnt(%eax)
-	popl %eax
+	movl  8(%esp),%eax
+	incb  IDNestCnt(%eax)
+	popl  %eax
 	ret
 
-.globl dis
-	.type	dis,@function
-dis:
+	.globl	disable
+	.type	disable,@function
+disable:
 	pushl %eax
 	pushl %ecx
 	pushl %edx
+
 	pushl $-1
 	pushl $0
-	leal 4(%esp),%eax
+	leal  4(%esp),%eax
 	pushl %eax
 	pushl $0
-	call sigprocmask
-	addl $16,%esp
-	popl %edx
-	popl %ecx
-	popl %eax
+	call  sigprocmask
+	addl  $16,%esp
+
+	popl  %edx
+	popl  %ecx
+	popl  %eax
+
 	ret
