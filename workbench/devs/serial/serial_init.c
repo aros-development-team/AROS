@@ -153,7 +153,7 @@ AROS_UFH3(struct serialbase *, AROS_SLIB_ENTRY(init,Serial),
   /* open the serial hidd */
   if (NULL == SerialDevice->SerialHidd)
   {
-    SerialDevice->SerialHidd = OpenLibrary("sys:Hidds/serial.hidd",0);
+    SerialDevice->SerialHidd = OpenLibrary("DRIVERS:serial.hidd",0);
     D(bug("serial.hidd base: 0x%x\n",SerialDevice->SerialHidd));
     if (NULL == SerialDevice->SerialHidd)
 	return NULL;

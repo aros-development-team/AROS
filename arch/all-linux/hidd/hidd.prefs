@@ -2,7 +2,7 @@
 # Linux Hidd.Prefs #
 ####################
 
-library SYS:Hidds/graphics.hidd
+library DRIVERS:graphics.hidd
 
 # Uncomment following lines to activate X11 driver
 

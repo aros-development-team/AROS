@@ -10,10 +10,11 @@
 int main(void)
 {
     /* Initialize PCI classes */
-    CloseLibrary(OpenLibrary("SYS:Hidds/pci.hidd",0));
+    CloseLibrary(OpenLibrary("DRIVERS:pci.hidd",0));
     
     /* Initialize PCI linux driver. Requires uid=0 to operate */
-    CloseLibrary(OpenLibrary("SYS:Hidds/pcilinux.hidd",0));
-    CloseLibrary(OpenLibrary("SYS:Hidds/pcipc.hidd",0));
-   return 0;
+    CloseLibrary(OpenLibrary("DRIVERS:pcilinux.hidd",0));
+    CloseLibrary(OpenLibrary("DRIVERS:pcipc.hidd",0));
+    
+    return 0;
 }
