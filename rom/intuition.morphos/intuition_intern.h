@@ -1,4 +1,4 @@
-#ifndef INTUITION_INTERN_H
+#ifndef INTUITION_INTERNH_H
 #define INTUITION_INTERN_H
 
 /*
@@ -160,7 +160,22 @@ void * memclr(APTR, ULONG);
 /* Options */
 
 #define MENUS_BACKFILL  TRUE
-#define FRAME_SIZE       0 /* 0 = 1:1 thin,  1 = 2:1 medres like AmigaOS,  2 = 1:1 thick */
+
+#define MENUS_AMIGALOOK                (GetPrivIBase(IntuitionBase)->MenuLook)
+/* --- Values --- */
+#define MENULOOK_3D            0
+#define MENULOOK_CLASSIC       1
+
+#define MENUS_UNDERMOUSE       (GetPrivIBase(IntuitionBase)->MenusUnderMouse)
+/* --- Values --- */
+/* TRUE, FALSE */
+
+#define FRAME_SIZE             (GetPrivIBase(IntuitionBase)->FrameSize)
+/* --- Values --- */
+#define FRAMESIZE_THIN         0 /* 1:1 thin */
+#define FRAMESIZE_MEDRES       1 /* 2:1 medres like AmigaOS */
+#define FRAMESIZE_THICK        2 /* 1:1 thick */
+
 
 #define GADTOOLSCOMPATIBLE
 //enables some gadtools-weirdo-code, MUST be set in both gadtools & intui to work!!!
@@ -214,6 +229,7 @@ void * memclr(APTR, ULONG);
 #define PROP_RENDER_OPTIMIZATION 0
 
 #define INTERNAL_BOOPSI  1
+#define SINGLE_SETPOINTERPOS_PER_EVENTLOOP 1
 
 #ifndef LIFLG_SUPPORTS_OFFSCREEN_LAYERS
    /* Defined in <graphics/layers.h>, but apparently not on MorphOS. */
@@ -339,6 +355,17 @@ struct Color32
 #define COLORTABLEENTRIES   32  //8
 
 struct IntScreen;
+
+#define RESOURCELIST_HASHSIZE 256
+
+#define RESOURCE_WINDOW 1
+
+struct HashNode
+{
+    struct MinNode node;
+    UWORD         type;
+    APTR          resource;
+};
 
 /* IntuitionBase */
 struct IntIntuitionBase
@@ -499,6 +526,13 @@ struct IntIntuitionBase
 #endif
 
     WORD            prop_clickoffset_x, prop_clickoffset_y;
+
+    struct MinList             ResourceList[RESOURCELIST_HASHSIZE];
+
+    /* Menu Look Settings */
+    int                                MenusUnderMouse;
+    int                                MenuLook;
+    int                                FrameSize;
 };
 
 struct SharedPointer
@@ -763,6 +797,8 @@ struct IntWindow
     struct Image           *AmigaKey;
     struct Image           *Checkmark;
     struct Window          *menulendwindow;
+    
+    struct HashNode         hashnode;
 
     /* When the Zoom gadget is pressed the window will have the
        dimensions stored here. The old dimensions are backed up here
@@ -895,9 +931,10 @@ extern void intui_MoveWindow (struct Window * window, WORD dx, WORD dy);
 extern int  intui_OpenWindow (struct Window *, struct IntuitionBase *,
 struct BitMap * SuperBitMap, struct Hook *backfillhook,
 struct Region * shape,
+struct Hook * shapehook,
 struct Layer * parent,
 ULONG  visible);
-extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
+extern void intui_SetWindowTitles (struct Window *, CONST_STRPTR, CONST_STRPTR);
 extern void intui_RefreshWindowFrame(struct Window *win);
 extern struct Window *intui_FindActiveWindow(struct InputEvent *ie, struct IntuitionBase *IntuitionBase);
 extern void intui_ScrollWindowRaster(struct Window * win, WORD dx, WORD dy, WORD xmin,
@@ -918,6 +955,11 @@ extern void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBas
 extern void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase);
 extern void UpdateMouseCoords(struct Window *win);
 extern WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Rectangle *destrectarray);
+
+extern LONG CalcResourceHash(APTR resource);
+extern void AddResourceToList(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase);
+extern void RemoveResourceFromList(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase);
+extern BOOL ResourceExisting(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase);
 
 /* misc.c */
 extern struct RastPort *MyCreateRastPort(struct IntuitionBase *);
