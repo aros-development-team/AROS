@@ -23,7 +23,7 @@
 #include <proto/muimaster.h>
 #endif
 
-//#define MYDEBUG 1
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 
 #include "mui.h"
@@ -57,9 +57,12 @@ typedef enum {
 
 #define CHECKBOX_IMAGE 4
 
+/* should really contain an union */
 struct MUI_ImageSpec
 {
     ImageSpecType type;
+    UWORD flags;                  /* see MUI_ImageSpec_Flags */
+    struct MUI_RenderInfo *mri;
     UBYTE muicolor;
     UBYTE pattern;
 
@@ -72,6 +75,8 @@ struct MUI_ImageSpec
     LONG vectortype;
     void (*vector_draw)(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state);
 };
+
+enum MUI_ImageSpec_Flags { IMSPEC_REALIZED = (1<<0) /* struct is between _setup and _cleanup */ };
 
 static void draw_thick_line(struct RastPort *rp,int x1, int y1, int x2, int y2)
 {
@@ -441,7 +446,7 @@ static struct MUI_ImageSpec *get_config_imspec(LONG in, Object *obj)
 
 static struct MUI_ImageSpec *get_pattern_imspec(LONG in)
 {
-    struct MUI_ImageSpec *spec;
+    struct MUI_ImageSpec *spec = NULL;
 
     if (in >= MUII_BACKGROUND && in <= MUII_FILL)
     {
@@ -458,8 +463,7 @@ static struct MUI_ImageSpec *get_pattern_imspec(LONG in)
 	}
     	return spec;
     }
-
-    if (in >= MUII_SHADOWBACK && in <= MUII_MARKBACKGROUND)
+    else if (in >= MUII_SHADOWBACK && in <= MUII_MARKBACKGROUND)
     {
 	if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
 	{
@@ -520,6 +524,7 @@ static struct MUI_ImageSpec *get_bitmap_imspec(char *filename)
     {
 	spec->type = IST_BITMAP;
 	spec->filename = StrDup(filename);
+	D(bug("get_bitmap_imspec(%s): spec=%lx, fname=%lx\n", spec, spec->filename));
 	return spec;
     }
     return NULL;
@@ -650,12 +655,28 @@ static struct MUI_ImageSpec *zune_imspec_copy(struct MUI_ImageSpec *spec)
 
 void zune_imspec_free(struct MUI_ImageSpec *spec)
 {
-    
+    D(bug("zune_imspec_free(0x%lx)\n", spec));
+    if (!spec) return;
+    if (spec->flags & IMSPEC_REALIZED)
+    {
+	D(bug("zune_imspec_free(0x%lx) : cleanup, with 0x%lx\n", spec, spec->mri));
+	zune_imspec_cleanup(&spec, spec->mri);
+    }
+    if (spec->type == IST_BITMAP)
+    {
+/*  	  D(bug("zune_imspec_free(0x%lx): filename FreeVec(0x%lx)\n", spec, spec->filename)); */
+	FreeVec(spec->filename);
+    }
+/*      D(bug("zune_imspec_free(0x%lx): FreeVec()\n", spec)); */
+    mui_free(spec);
 }
 
 void zune_imspec_setup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri)
 {
     if (!spec || !(*spec)) return;
+    if ((*spec)->flags & IMSPEC_REALIZED)
+	zune_imspec_cleanup(spec, mri);
+    (*spec)->mri = mri;
     switch ((*spec)->type)
     {
 	case	IST_COLOR:
@@ -672,11 +693,15 @@ void zune_imspec_setup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri)
 	        break;
 		/* IST_EXTERNAL is to be implemented */
     }
+    (*spec)->flags |= IMSPEC_REALIZED;
 }
 
 void zune_imspec_cleanup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri)
 {
     if (!spec || !(*spec)) return;
+    D(bug("zune_imspec_cleanup(0x%lx)\n", *spec));
+    if (!((*spec)->flags & IMSPEC_REALIZED))
+	return;
     switch ((*spec)->type)
     {
 	case	IST_COLOR:
@@ -699,6 +724,7 @@ void zune_imspec_cleanup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri
 	case	IST_VECTOR:
 	        break;
     }
+    (*spec)->flags &= ~IMSPEC_REALIZED;
 }
 
 /* This is very very uneligant but only a test */
