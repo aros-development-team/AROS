@@ -17,17 +17,20 @@ LINKLIBS	:= \
 	$(LIBDIR)/libarosm.a $(LIBDIR)/libarossupport.a
 
 #MM
-boot-native-i386 : $(OSGENDIR)/boot/bootsect $(OSGENDIR)/boot/setup \
+boot-native-i386 : setup $(OSGENDIR)/boot/bootsect $(OSGENDIR)/boot/setup \
 		    header-native-i386 $(LIB)
 	@$(NOP)
 
 #MM
-header-native-i386: $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-	%mkdirs_q $(LIBDIR)/boot
+header-native-i386: setup $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	%add_objects $(foreach f,$(FILES),rom/boot/$(f))
 #MM
 clean ::
 	-$(RM) $(TESTS)
+
+#MM
+setup ::
+	%mkdirs_q $(OBJDIR) $(LIBDIR)/boot
 
 $(LIB) : $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	%mklib_q
