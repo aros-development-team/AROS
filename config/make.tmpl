@@ -181,10 +181,10 @@ endif
 #
 %define rule_genfunctable name=functable files=/A dir=. libdefs=libdefs.h
 
-%(dir)/%(name).c : $(addsuffix .c,%(files)) $(BINDIR)/scripts/genfunctable.awk %(libdefs)
+%(dir)/%(name).c : $(addsuffix .c,%(files)) $(SCRIPTDIR)/genfunctable.awk %(libdefs)
 	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
 ifneq (%(files),)
-	$(AWK) -v file=%(libdefs) -f $(BINDIR)/scripts/genfunctable.awk $(addsuffix .c,%(files)) > $@
+	$(AWK) -v file=%(libdefs) -f $(SCRIPTDIR)/genfunctable.awk $(addsuffix .c,%(files)) > $@
 else
 	$(ARCHTOOL) -t
 	$(MV) functable.c $@
