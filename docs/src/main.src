@@ -1,10 +1,10 @@
 \include{background.src}
 \include{faq.src}
-\include{devinfo-1.src}
-\include{devinfo-2.src}
-\include{devinfo-3.src}
-\include{devinfo-4.src}
-\include{devinfo-5.src}
+\include{differences.src}
+\include{cvs.src}
+\include{missing.src}
+\include{included.src}
+\include{style.src}
 \include{devinfo_inside.src}
 \include{devinfo_outside.src}
 \appendix

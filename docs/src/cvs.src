@@ -47,6 +47,10 @@ you must do this in the same directory where crypt is).
 \bold{CVS doesn't work with Miami.} Miami uses a different routine for
 encrypting data than Un*x and therefore passwords generated with Miami
 won't work. Sorry.
+\begin{new}{18.8.1997}
+But you can use Miami with CVS to work on AROS after you have created
+a password with AmiTCP.
+\end{new}
 
 \subsection{How to get access to the AROS CVS server}
 
@@ -228,11 +232,11 @@ be credited for your work.
 There is now a preliminary jobserver WWW interface:
 
 \begin{itemize}
-\item \link{Show free jobs}{jobserv-showfree.html}
+\item \lref{Show free jobs}{jobs-free}
 
-\item \link{Show jobs which are in work}{jobserv-showwork.html}
+\item \lref{Show jobs which are in work}{jobs-work}
 
-\item \link{Show completed jobs}{jobserv-showdone.html}
+\item \lref{Show completed jobs}{jobs-done}
 
 \end{itemize}
 

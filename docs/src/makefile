@@ -254,8 +254,8 @@ jobserv-done.inc :
 contents.inc : collectcontents.sh contents2html.gawk makefile2html.gawk
 	collectcontents.sh $(TOP) > $@
 
-main.src : background.src faq.src devinfo-1.src devinfo-2.src devinfo-3.src \
-    devinfo-4.src devinfo-5.src devinfo_inside.src devinfo_outside.src \
+main.src : background.src faq.src differences.src cvs.src missing.src \
+    included.src style.src devinfo_inside.src devinfo_outside.src \
     autodoc.src history.src links.src jobserv.src
 
 autodoc.src : autodoc.inc
