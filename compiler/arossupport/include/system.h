@@ -53,53 +53,47 @@
 #endif
 
 #if defined(__STDC__) || defined(__cplusplus)
-#define	    __const__	    const
-#define	    __inline__	    inline
-#define	    __volatile__    volatile
-#ifndef __CONCAT
-#   define	    __CONCAT1(a,b)  a ## b
-#   define	    __CONCAT(a,b)   __CONCAT1(a,b)
-#endif
+#   define	    __const__	    const
+#   define	    __inline__	    inline
+#   define	    __volatile__    volatile
 
 /*
  * C99 defines a new keyword restrict that can help do optimisation where
  * pointers are used in programs. We'd like to support optimisation :-)
  */
-#if defined(__STDC__VERSION__) &&  __STDC__VERSION__ >= 199901L
-#define	    __restrict__    restrict
-#else
-#define	    __restrict__
-#define	    restrict
-#endif
+#   if defined(__STDC__VERSION__) &&  __STDC__VERSION__ >= 199901L
+#	define	    __restrict__    restrict
+#   else
+#	define	    __restrict__
+#	define	    restrict
+#   endif
 
 #else
-#define	    __const__
-#define	    const
-#define	    __inline__
-#define	    inline
-#define	    __volatile__
-#define	    volatile
-#define	    __restrict__
-#define	    restrict
-
-#define	    __CONCAT(a,b)	a/**/b
+#   define	    __const__
+#   define	    const
+#   define	    __inline__
+#   define	    inline
+#   define	    __volatile__
+#   define	    volatile
+#   define	    __restrict__
+#   define	    restrict
 #endif
 
 /* 3. Macros for making things more efficient */
 #if __GNUC__ < 2 || __GNUC__ == 2 && __GNUC_MINOR__ < 5
-#define __unused
-#define __noreturn
-#define __noeffect
+#   define __unused
+#   define __noreturn
+#   define __noeffect
 #endif
 #if __GNUC__ == 2 && __GNUC_MINOR__ >= 5 && __GNUC_MINOR__ < 7
-#define __unused
-#define __noreturn  __attribute__((__noreturn__))
-#define __noeffect  __attribute__((__const__))
+#   define __unused
+#   define __noreturn  __attribute__((__noreturn__))
+#   define __noeffect  __attribute__((__const__))
 #endif
 #if __GNUC__ == 2 && __GNUC_MINOR__ >= 7 || __GNUC__ > 2
-#define __unused    __attribute__((__unused__))
-#define __noreturn  __attribute__((__noreturn__))
-#define __noeffect  __attribute__((__const__))
+#   define __unused    __attribute__((__unused__))
+#   define __noreturn  __attribute__((__noreturn__))
+#   define __noeffect  __attribute__((__const__))
 #endif
 
 /* 4. Makros for debugging and development */
@@ -107,6 +101,16 @@
 #   define NDEBUG
 #endif
 #include <assert.h>
+/* __CONCAT is defined on Linux in cdefs.h */
+#if !defined(__CONCAT)
+#   if defined(__STDC__) || defined(__cplusplus)
+#	define	    __CONCAT1(a,b)  a ## b
+#	define	    __CONCAT(a,b)   __CONCAT1(a,b)
+#   else
+#	define	    __CONCAT(a,b)	a/**/b
+#   endif
+#endif
+
 
 /* 5. Sytem-specific files */
 #ifdef _AMIGA
