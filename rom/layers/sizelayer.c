@@ -61,10 +61,6 @@
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   /* 
-     I could use MoveSizeLayer() instead but I think there's a less
-     heavy way of doing this. 
-   */
-  /* 
     In this case I will create a layer behind the current layer and
     I will try to clear as little of the layer that was above it as
     possible.
@@ -224,6 +220,7 @@
       CR = l_tmp->ClipRect;
       while (NULL != CR)
       {
+        /* only need to back up if CR is visible */
         if (NULL == CR->lobs)
 	{
           LONG SrcX, SrcY;
@@ -233,6 +230,7 @@
               SrcX = CR->bounds.MinX;
             else
               SrcX = l_tmp->bounds.MinX + width;
+
             BltBitMap(
               bm,             /* Source Bitmap = rastport's bitmap */
               SrcX,
@@ -254,6 +252,7 @@
               SrcY = CR->bounds.MinY;
             else
               SrcY = l_tmp->bounds.MinY + height;
+
             BltBitMap(
               bm,             /* Source Bitmap = rastport's bitmap */
               CR->bounds.MinX,
@@ -297,6 +296,7 @@
       CR = l->ClipRect;
       while (NULL != CR)
       {
+        /* only show those CR that are not hidden, of course. */
         if (NULL == CR->lobs)
         {
           LONG DestX, DestY;

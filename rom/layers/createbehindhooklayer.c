@@ -192,6 +192,7 @@
     CR = L->ClipRect;
     while (CR != NULL)
     {
+      /* only show thos cliprects that are visible, of course. */
       if (NULL == CR->lobs)
       {
         if (0 == (L->Flags & LAYERSUPER))

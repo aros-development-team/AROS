@@ -143,11 +143,12 @@ struct ClipRect * Case_0(struct Rectangle * R,
         struct BitMap * DestBM;
         LONG DestX, DestY;
 
+        if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+          AllocBitMapFlag = BMF_CLEAR;
+
         /* if it doesn't have a superbitmap I allocate memory */ 
         if (0 == (passivelayer->Flags & LAYERSUPER) )
         {
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-            AllocBitMapFlag = BMF_CLEAR;
 
           CR -> BitMap = AllocBitMap(
              DEF_MAXX - DEF_MINX + 1 + 16,
@@ -304,14 +305,14 @@ struct ClipRect * Case_1(struct Rectangle * R,
           struct BitMap * DestBM;       
           LONG DestX, DestY;
 
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+            AllocBitMapFlag = BMF_CLEAR;
           /* 
              Are we supposed to get a blank bitmap, which is the case
              for cliprects that are not shown yet = layers that are added  
            */ 
           if (0 == (passivelayer->Flags & LAYERSUPER))
           {
-            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-              AllocBitMapFlag = BMF_CLEAR;
 
             CR -> BitMap = AllocBitMap(
                DEF_MAXX - DEF_MINX + 1 + 16,
@@ -483,10 +484,11 @@ struct ClipRect * Case_2(struct Rectangle * R,
           struct BitMap * DestBM;
           LONG DestX, DestY;
 
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0 )
+            AllocBitMapFlag = BMF_CLEAR;
+
           if (0 == (passivelayer->Flags & LAYERSUPER))
           {
-            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0 )
-              AllocBitMapFlag = BMF_CLEAR;
 
             CR ->BitMap = AllocBitMap(
                DEF_X1 - DEF_MINX + 1 + 16,
@@ -662,10 +664,11 @@ struct ClipRect * Case_3(struct Rectangle * R,
           struct BitMap * DestBM;
           LONG DestX, DestY;
 
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+            AllocBitMapFlag = BMF_CLEAR;
+
           if (0 == (passivelayer->Flags & LAYERSUPER)) 
 	  {
-            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-              AllocBitMapFlag = BMF_CLEAR;
 
             CR->BitMap = AllocBitMap(
                DEF_X1 - DEF_MINX + 1 + 16,
@@ -835,10 +838,11 @@ struct ClipRect * Case_4(struct Rectangle * R,
           struct BitMap * DestBM;
           LONG DestX, DestY;
 
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0 )
+            AllocBitMapFlag = BMF_CLEAR;
+
           if (0 == (passivelayer->Flags & LAYERSUPER))
 	  {
-            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0 )
-              AllocBitMapFlag = BMF_CLEAR;
 
             CR->BitMap = AllocBitMap(
               DEF_MAXX - DEF_MINX + 1 + 16,
@@ -1015,11 +1019,11 @@ struct ClipRect * Case_5(struct Rectangle * R,
           struct BitMap * DestBM;
           LONG DestX, DestY;
 
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+            AllocBitMapFlag = BMF_CLEAR;
+
           if (0 == (passivelayer->Flags & LAYERSUPER ))
           {
-            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-              AllocBitMapFlag = BMF_CLEAR;
-
             CR ->BitMap = AllocBitMap(
                DEF_MAXX - DEF_MINX + 1 + 16,
                DEF_Y1 - DEF_Y0 + 1,
@@ -1193,10 +1197,11 @@ struct ClipRect * Case_6(struct Rectangle * R,
           struct BitMap * DestBM;
           LONG DestX, DestY;
         
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+            AllocBitMapFlag = BMF_CLEAR;
+
           if (0 == (passivelayer->Flags & LAYERSUPER))
 	  {
-            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-              AllocBitMapFlag = BMF_CLEAR;
 
             CR ->BitMap = AllocBitMap(
                DEF_X1 - DEF_MINX + 1 + 16,
@@ -1381,10 +1386,11 @@ struct ClipRect * Case_7(struct Rectangle * R,
           struct BitMap * DestBM;
           LONG DestX, DestY;
 
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+            AllocBitMapFlag = BMF_CLEAR;
+
           if (0 == (passivelayer->Flags & LAYERSUPER))
 	  { 
-            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-              AllocBitMapFlag = BMF_CLEAR;
 
             CR ->BitMap = AllocBitMap(
                DEF_X1 - DEF_MINX + 1 + 16,
@@ -1549,10 +1555,11 @@ struct ClipRect * Case_8(struct Rectangle * R,
           struct BitMap * DestBM;
           LONG DestX, DestY;
 
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+            AllocBitMapFlag = BMF_CLEAR;
+
           if (0 == (passivelayer->Flags & LAYERSUPER ))
 	  {
-            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-              AllocBitMapFlag = BMF_CLEAR;
 
             CR ->BitMap = AllocBitMap(
                DEF_MAXX - DEF_X0 + 1 + 16,
@@ -1725,10 +1732,11 @@ struct ClipRect * Case_9(struct Rectangle * R,
           struct BitMap * DestBM;
           LONG DestX, DestY;
 
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+            AllocBitMapFlag = BMF_CLEAR;
+
           if (0 == (passivelayer->Flags & LAYERSUPER))
  	  {
-            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-              AllocBitMapFlag = BMF_CLEAR;
 
             CR ->BitMap = AllocBitMap(
                DEF_MAXX - DEF_X0 + 1 + 16,
@@ -1905,11 +1913,11 @@ struct ClipRect * Case_10(struct Rectangle * R,
           struct BitMap * DestBM;
           LONG DestX, DestY;
 
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+             AllocBitMapFlag = BMF_CLEAR;
+
           if (0 == (passivelayer->Flags & LAYERSUPER))
           {
-            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-               AllocBitMapFlag = BMF_CLEAR;
-
             CR ->BitMap = AllocBitMap(
                DEF_X1 - DEF_X0 + 1 + 16,
                DEF_MAXY - DEF_MINY + 1,
@@ -2094,10 +2102,11 @@ struct ClipRect * Case_11(struct Rectangle * R,
           struct BitMap * DestBM;
           LONG DestX, DestY;
 
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+            AllocBitMapFlag = BMF_CLEAR;
+
           if (0 == (passivelayer->Flags & LAYERSUPER))
           {
-            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-              AllocBitMapFlag = BMF_CLEAR;
 
             CR ->BitMap = AllocBitMap(
                DEF_X1 - DEF_X0 + 1 + 16,
@@ -2273,10 +2282,11 @@ struct ClipRect * Case_12(struct Rectangle * R,
           struct BitMap * DestBM;
           LONG DestX, DestY;
 
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+            AllocBitMapFlag = BMF_CLEAR;
+
           if (0 == (passivelayer->Flags & LAYERSUPER))
 	  {
-            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-              AllocBitMapFlag = BMF_CLEAR;
 
             CR ->BitMap = AllocBitMap(
                DEF_MAXX - DEF_X0 + 1 + 16,
@@ -2464,10 +2474,11 @@ struct ClipRect * Case_13(struct Rectangle * R,
           struct BitMap * DestBM;
           LONG DestX, DestY;
 
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+            AllocBitMapFlag = BMF_CLEAR;
+
           if (0 == (passivelayer->Flags & LAYERSUPER))
 	  { 
-            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-              AllocBitMapFlag = BMF_CLEAR;
 
             CR ->BitMap = AllocBitMap(
                DEF_MAXX - DEF_X0 + 1 + 16,
@@ -2655,10 +2666,11 @@ struct ClipRect * Case_14(struct Rectangle * R,
           struct BitMap * DestBM;
           LONG DestX, DestY;
 
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+            AllocBitMapFlag = BMF_CLEAR;
+
           if (0 == (passivelayer->Flags & LAYERSUPER))
           {
-            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-              AllocBitMapFlag = BMF_CLEAR;
 
             CR ->BitMap = AllocBitMap(
                DEF_X1 - DEF_X0 + 1 + 16,
@@ -2865,10 +2877,11 @@ struct ClipRect * Case_15(struct Rectangle * R,
           struct BitMap * DestBM;
           LONG DestX, DestY;
 
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+            AllocBitMapFlag = BMF_CLEAR;
+
           if (0 == (passivelayer->Flags & LAYERSUPER))
 	  {
-            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-              AllocBitMapFlag = BMF_CLEAR;
 
             CR ->BitMap = AllocBitMap(
                DEF_X1 - DEF_X0 + 1 + 16,
