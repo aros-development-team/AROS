@@ -229,7 +229,9 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
     mri->mri_Pens = mri->mri_PensStorage;
 
     for (i = 0; i < -MUIV_Font_NegCount; i++)
+    {
 	mri->mri_Fonts[i] = NULL;
+    }
 
     mri->mri_LeftImage  = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,LEFTIMAGE,TAG_DONE);
     mri->mri_RightImage  = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,RIGHTIMAGE,TAG_DONE);
@@ -275,9 +277,13 @@ void CleanupRenderInfo(struct MUI_RenderInfo *mri)
     if (mri->mri_SizeImage) {DisposeObject(mri->mri_SizeImage);mri->mri_SizeImage=NULL;};
 
     for (i = 0; i < -MUIV_Font_NegCount; i++)
+    {
 	if (mri->mri_Fonts[i])
+	{
 	    CloseFont(mri->mri_Fonts[i]);
-
+	    mri->mri_Fonts[i] = NULL;
+	}
+    }
     ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_MARK]);
     ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_HALFSHADOW]);
     ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_HALFSHINE]);
