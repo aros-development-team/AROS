@@ -46,7 +46,7 @@
     struct Library *, UtilityBase, 39, Utility)
 
 #define CallHookPkt(hook, object, paramPacket) \
-    AROS_LC3(ULONG, CallHookPkt, \
+    AROS_LC3(IPTR, CallHookPkt, \
     AROS_LCA(struct Hook *, hook, A0), \
     AROS_LCA(APTR         , object, A2), \
     AROS_LCA(APTR         , paramPacket, A1), \

@@ -44,7 +44,7 @@ AROS_LP1(LONG, AttemptRemNamedObject,
     AROS_LPA(struct NamedObject *, object, A0),
     struct Library *, UtilityBase, 39, Utility)
 
-AROS_LP3(ULONG, CallHookPkt,
+AROS_LP3(IPTR, CallHookPkt,
     AROS_LPA(struct Hook *, hook, A0),
     AROS_LPA(APTR         , object, A2),
     AROS_LPA(APTR         , paramPacket, A1),
