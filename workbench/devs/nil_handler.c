@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/10 13:14:54  digulla
+    ? (Fleischer)
+
     Revision 1.2  1996/09/12 14:52:00  digulla
     Use correct way to access external names (was missing)
 
@@ -11,6 +14,7 @@
     Desc:
     Lang:
 */
+#include <exec/errors.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <clib/exec_protos.h>
@@ -35,12 +39,6 @@ int __AROS_SLIB_ENTRY(null,nil_handler)();
 void __AROS_SLIB_ENTRY(beginio,nil_handler)();
 LONG __AROS_SLIB_ENTRY(abortio,nil_handler)();
 static const char end;
-
-struct device
-{
-    struct DosList *doslist;
-    ULONG usecount;
-};
 
 int nil_handler_entry(void)
 {
@@ -110,20 +108,31 @@ __AROS_LH3(void, open,
 	   struct nilbase *, nilbase, 1, nil_handler)
 {
     __AROS_FUNC_INIT
+    ULONG *dev;
 
-    /* Keep compiler happy */
-    unitnum=0;
-    flags=0;
+    /* Get compiler happy */
+    unitnum=flags=0;
 
     /* I have one more opener. */
     nilbase->device.dd_Library.lib_OpenCnt++;
-    nilbase->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
-
-    /* Set returncode */
-    iofs->IOFS.io_Error=0;
 
     /* Mark Message as recently used. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
+
+    dev=AllocMem(sizeof(ULONG),MEMF_PUBLIC|MEMF_CLEAR);
+    if(dev!=NULL)
+    {
+        iofs->IOFS.io_Unit=(struct Unit *)dev;
+        iofs->IOFS.io_Device=&nilbase->device;
+    	nilbase->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
+    	iofs->IOFS.io_Error=0;
+    	return;
+    }else
+	iofs->io_DosError=ERROR_NO_FREE_STORE;
+	
+    iofs->IOFS.io_Error=IOERR_OPENFAIL;
+    nilbase->device.dd_Library.lib_OpenCnt--;
+
     __AROS_FUNC_EXIT
 }
 
@@ -132,9 +141,19 @@ __AROS_LH1(BPTR, close,
 	   struct nilbase *, nilbase, 2, nil_handler)
 {
     __AROS_FUNC_INIT
+    ULONG *dev;
+   
+    dev=(ULONG *)iofs->IOFS.io_Unit;
+    if(*dev)
+    {
+	iofs->io_DosError=ERROR_OBJECT_IN_USE;
+	return 0;
+    }
 
     /* Let any following attemps to use the device crash hard. */
     iofs->IOFS.io_Device=(struct Device *)-1;
+    FreeMem(dev,sizeof(ULONG));
+    iofs->io_DosError=0;
 
     /* I have one fewer opener. */
     if(!--nilbase->device.dd_Library.lib_OpenCnt)
@@ -196,8 +215,6 @@ __AROS_LH1(void, beginio,
 {
     __AROS_FUNC_INIT
     LONG error=0;
-    struct device *dev;
-    struct DosList *dl;
 
     /*
 	Do everything quick no matter what. This is possible
@@ -205,59 +222,6 @@ __AROS_LH1(void, beginio,
     */
     switch(iofs->IOFS.io_Command)
     {
-	case FSA_MOUNT:
-	    /* AddDosEntry() may Wait(), so return error code if necessary */
-	    if(!(iofs->IOFS.io_Flags&IOF_QUICK))
-	    {
-		error=ERROR_NOT_IMPLEMENTED;
-		break;
-	    }
-	    dev=AllocMem(sizeof(struct device),MEMF_PUBLIC|MEMF_CLEAR);
-	    if(dev!=NULL)
-	    {
-		dl=MakeDosEntry((STRPTR)iofs->io_Args[0],DLT_DEVICE);
-		if(dl!=NULL)
-		{
-		    dl->dol_Unit=(struct Unit *)dev;
-		    dl->dol_Device=&nilbase->device;
-		    dev->doslist=dl;
-		    if(AddDosEntry(dl))
-			break;
-		    else
-			error=ERROR_OBJECT_EXISTS;
-		    FreeDosEntry(dl);
-		}else
-		    error=ERROR_NO_FREE_STORE;
-		FreeMem(dev,sizeof(struct device));
-	    }
-	    else
-		error=ERROR_NO_FREE_STORE;
-	    break;
-
-	case FSA_DISMOUNT:
-	    /* RemDosEntry() may wait, so return error code if necessary */
-	    if(!(iofs->IOFS.io_Flags&IOF_QUICK))
-	    {
-		error=ERROR_NOT_IMPLEMENTED;
-		break;
-	    }
-	    LockDosList(LDF_DEVICES|LDF_WRITE);
-	    dev=(struct device *)iofs->IOFS.io_Unit;
-	    if(dev->usecount==1)
-	    {
-		RemDosEntry(dev->doslist);
-		FreeDosEntry(dev->doslist);
-		FreeMem(dev,sizeof(struct device));
-	    }else
-	    {
-		Forbid();
-		dev->usecount--;
-		Permit();
-		error=ERROR_OBJECT_IN_USE;
-	    }
-	    UnLockDosList(LDF_DEVICES|LDF_WRITE);
-	    break;
-
 	case FSA_OPEN:
 	case FSA_OPEN_FILE:
 	    /* No names allowed on NIL: */
@@ -267,7 +231,7 @@ __AROS_LH1(void, beginio,
 		break;
 	    }
 	    Forbid();
-	    ((struct device *)iofs->IOFS.io_Unit)->usecount++;
+	    ++*(ULONG *)iofs->IOFS.io_Unit;
 	    Permit();
 	    break;
 
@@ -285,7 +249,7 @@ __AROS_LH1(void, beginio,
 
 	case FSA_CLOSE:
 	    Forbid();
-	    ((struct device *)iofs->IOFS.io_Unit)->usecount--;
+	    --*(ULONG *)iofs->IOFS.io_Unit;
 	    Permit();
 	    break;
 

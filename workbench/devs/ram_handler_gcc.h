@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/10 13:16:45  digulla
+    ? (Fleischer)
+
     Revision 1.1  1996/09/11 12:52:54  digulla
     Two new devices by M. Fleischer: RAM: and NIL:
 
@@ -25,11 +28,9 @@ struct rambase
     struct DosLibrary *dosbase;
     struct UtilityBase *utilitybase;
     BPTR seglist;
-    ULONG unitcount;
     struct MsgPort *port;		/* Port to put IORequests to */
     struct SignalSemaphore *sigsem;	/* Semaphore for iofs */
     struct IOFileSys *iofs;		/* IORequest to be aborted or NULL */
-    struct MinList waitdoslist;
 };
 
 #define init(rambase, segList) \

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/10 13:16:27  digulla
+    ? (Fleischer)
+
     Revision 1.3  1996/09/13 17:57:05  digulla
     Use IPTR
 
@@ -215,7 +218,6 @@ __AROS_LH2(struct rambase *, init,
     /* Store arguments */
     rambase->sysbase=SysBase;
     rambase->seglist=segList;
-    NEWLIST((struct List *)&rambase->waitdoslist);
     rambase->dosbase=(struct DosLibrary *)OpenLibrary("dos.library",39);
     if(rambase->dosbase!=NULL)
     {
@@ -292,6 +294,27 @@ __AROS_LH2(struct rambase *, init,
 #define DOSBase rambase->dosbase
 #define UtilityBase rambase->utilitybase
 
+static STRPTR Strdup(struct rambase *rambase, STRPTR string)
+{
+    STRPTR s2=string,s3;
+    while(*s2++)
+	;
+    s3=(STRPTR)AllocMem(s2-string,MEMF_ANY);
+    if(s3!=NULL)
+	CopyMem(string,s3,s2-string);
+    return s3;
+}
+
+static void Strfree(struct rambase *rambase, STRPTR string)
+{
+    STRPTR s2=string;
+    if(string==NULL)
+	return;
+    while(*s2++)
+	;
+    FreeMem(string,s2-string);
+}
+
 __AROS_LH3(void, open,
  __AROS_LHA(struct IOFileSys *, iofs, A1),
  __AROS_LHA(ULONG,              unitnum, D0),
@@ -299,51 +322,73 @@ __AROS_LH3(void, open,
 	   struct rambase *, rambase, 1, ramdev)
 {
     __AROS_FUNC_INIT
-    /*
-	This function is single-threaded by exec by calling Forbid.
-	If you break the Forbid() another task may enter this function
-	at the same time. Take care.
-    */
+    struct filehandle *fhv, *fhc;
+    struct vnode *vol;
+    struct cnode *dev;
+    struct DosList *dlv;
 
     /* Keep compiler happy */
-    unitnum=0;
-    flags=0;
+    unitnum=flags=0;
 
     /* I have one more opener. */
     rambase->device.dd_Library.lib_OpenCnt++;
-    rambase->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
-
-    /* Set returncode */
-    iofs->IOFS.io_Error=0;
 
     /* Mark Message as recently used. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    __AROS_FUNC_EXIT
-}
 
-__AROS_LH1(BPTR, close,
- __AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct rambase *, rambase, 2, ramdev)
+    iofs->IOFS.io_Error=ERROR_NO_FREE_STORE;
+    fhv=(struct filehandle*)AllocMem(sizeof(struct filehandle),MEMF_CLEAR);
+    if(fhv!=NULL)
 {
-    __AROS_FUNC_INIT
-    /*
-	This function is single-threaded by exec by calling Forbid.
-	If you break the Forbid() another task may enter this function
-	at the same time. Take care.
-    */
-
-    /* Let any following attemps to use the device crash hard. */
-    iofs->IOFS.io_Device=(struct Device *)-1;
-
-    /* I have one fewer opener. */
-    if(!--rambase->device.dd_Library.lib_OpenCnt)
+	fhc=(struct filehandle*)AllocMem(sizeof(struct filehandle),MEMF_CLEAR);
+	if(fhc!=NULL)
     {
-	/* Delayed expunge pending? */
-	if(rambase->device.dd_Library.lib_Flags&LIBF_DELEXP)
-	    /* Then expunge the device */
-	    return expunge();
+	    vol=(struct vnode *)AllocMem(sizeof(struct vnode),MEMF_CLEAR);
+	    if(vol!=NULL)
+	    {
+		dev=(struct cnode *)AllocMem(sizeof(struct cnode),MEMF_CLEAR);
+		if(dev!=NULL)
+		{
+		    vol->name=Strdup(rambase,"Ram Disk");
+		    if(vol->name!=NULL)
+		    {
+			dlv=MakeDosEntry("Ram Disk",DLT_VOLUME);
+			if(dlv!=NULL)
+			{
+			    vol->type=ST_USERDIR;
+			    vol->self=vol;
+			    vol->doslist=dlv;
+			    vol->protect=FIBF_READ|FIBF_WRITE|FIBF_EXECUTE|FIBF_DELETE;
+			    NEWLIST((struct List *)&vol->list);
+			    fhv->node=(struct dnode *)vol;
+			    dlv->dol_Unit  =(struct Unit *)fhv;
+			    dlv->dol_Device=&rambase->device;
+			    dev->type=ST_LINKDIR;
+			    dev->self=dev;
+			    dev->volume=vol;
+			    fhc->node=(struct dnode *)dev;
+			    iofs->IOFS.io_Unit=(struct Unit *)fhc;
+			    iofs->IOFS.io_Device=&rambase->device;
+			    AddDosEntry(dlv);
+			    rambase->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
+			    iofs->IOFS.io_Error=0;
+			    return;
     }
-    return 0;
+			Strfree(rambase,vol->name);
+		    }
+		    FreeMem(dev,sizeof(struct cnode));
+		}
+		FreeMem(vol,sizeof(struct vnode));
+	    }
+	    FreeMem(fhc,sizeof(struct filehandle));
+	}
+	FreeMem(fhv,sizeof(struct filehandle));
+    }
+
+    /* Set returncode */
+    iofs->IOFS.io_Error=IOERR_OPENFAIL;
+
+    rambase->device.dd_Library.lib_OpenCnt--;
     __AROS_FUNC_EXIT
 }
 
@@ -420,104 +465,6 @@ __AROS_LH1(LONG, abortio,
     __AROS_FUNC_INIT
     return 0;
     __AROS_FUNC_EXIT
-}
-
-static STRPTR Strdup(struct rambase *rambase, STRPTR string)
-{
-    STRPTR s2=string,s3;
-    while(*s2++)
-	;
-    s3=(STRPTR)AllocMem(s2-string,MEMF_ANY);
-    if(s3!=NULL)
-	CopyMem(string,s3,s2-string);
-    return s3;
-}
-
-static void Strfree(struct rambase *rambase, STRPTR string)
-{
-    STRPTR s2=string;
-    if(string==NULL)
-	return;
-    while(*s2++)
-	;
-    FreeMem(string,s2-string);
-}
-
-static LONG startup(struct rambase *rambase, STRPTR name, struct TagItem *args)
-{
-    struct filehandle *fhv, *fhc;
-    struct DosList *dlv, *dlc;
-    struct cnode *dev;
-    struct vnode *vol;
-
-    /* Get compiler happy */
-    args=NULL;
-
-    fhv=(struct filehandle*)AllocMem(sizeof(struct filehandle),MEMF_CLEAR);
-    if(fhv!=NULL)
-    {
-	vol=(struct vnode *)AllocMem(sizeof(struct vnode),MEMF_CLEAR);
-	if(vol!=NULL)
-	{
-	    vol->name=Strdup(rambase,"Ram Disk");
-	    if(vol->name!=NULL)
-	    {
-		dlv=MakeDosEntry("Ram Disk",DLT_VOLUME);
-		if(dlv!=NULL)
-		{
-		    fhc=(struct filehandle *)AllocMem(sizeof(struct filehandle),MEMF_CLEAR);
-		    if(fhc!=NULL)
-		    {
-			dev=(struct cnode *)AllocMem(sizeof(struct cnode),MEMF_CLEAR);
-			if(dev!=NULL)
-			{
-			    dev->name=Strdup(rambase,name);
-			    if(dev->name!=NULL)
-			    {
-				dlc=MakeDosEntry(name,DLT_DEVICE);
-				if(dlc!=NULL)
-				{
-				    vol->type=ST_USERDIR;
-				    vol->protect=FMF_READ|FMF_WRITE;
-				    vol->self=vol;
-				    vol->doslist=dlv;
-				    NEWLIST((struct List *)&vol->list);
-				    fhv->node=(struct dnode *)vol;
-				    dlv->dol_Unit  =(struct Unit *)fhv;
-				    dlv->dol_Device=&rambase->device;
-				    dev->type=ST_LINKDIR;
-				    dev->self=dev;
-				    dev->volume=vol;
-				    dev->doslist=dlc;
-				    fhc->node=(struct dnode *)dev;
-				    dlc->dol_Unit  =(struct Unit *)fhc;
-				    dlc->dol_Device=&rambase->device;
-				    if(AddDosEntry(dlv))
-				    {
-					if(AddDosEntry(dlc))
-					{
-					    rambase->unitcount++;
-					    return 0;
-					}
-					RemDosEntry(dlv);
-				    }
-				    FreeDosEntry(dlc);
-				}
-				Strfree(rambase,dev->name);
-			    }
-			    FreeMem(dev,sizeof(struct cnode));
-			}
-			FreeMem(fhc,sizeof(struct filehandle));
-		    }
-		    FreeDosEntry(dlv);
-		}
-		Strfree(rambase,vol->name);
-	    }
-	    FreeMem(vol,sizeof(struct vnode));
-	}
-	FreeMem(fhv,sizeof(struct filehandle));
-    }
-    return ERROR_NO_FREE_STORE;
 }
 
 static LONG getblock(struct rambase *rambase, struct fnode *file, LONG block, int mode, UBYTE **result)
@@ -921,7 +868,7 @@ static LONG open_file(struct rambase *rambase, struct filehandle **handle, STRPT
 		    error=lock((struct dnode *)file,mode);
 		    if(!error)
 		    {
-			fh->node=dir;
+			fh->node=(struct dnode *)file;
 			*handle=fh;
 			return 0;
 		    }
@@ -1145,25 +1092,37 @@ static LONG delete_object(struct rambase *rambase, struct filehandle *filehandle
     return 0;
 }
 
-LONG die(struct rambase *rambase, struct filehandle *handle)
+__AROS_LH1(BPTR, close,
+ __AROS_LHA(struct IOFileSys *, iofs, A1),
+	   struct rambase *, rambase, 2, ramdev)
 {
+    __AROS_FUNC_INIT
     struct cnode *dev;
     struct vnode *vol;
     struct dnode *dir;
     struct fnode *file;
+    struct filehandle *handle;
 
+    handle=(struct filehandle *)iofs->IOFS.io_Unit;
     dev=(struct cnode *)handle->node;
-    free_lock(rambase,handle);
-    if(dev->type!=ST_LINKDIR||dev->self!=dev)
-	return ERROR_OBJECT_WRONG_TYPE;
     vol=dev->volume;
+    if(dev->type!=ST_LINKDIR||dev->self!=dev)
+    {
+	iofs->io_DosError=ERROR_OBJECT_WRONG_TYPE;
+	return 0;
+    }
     if(vol->volcount)
-	return ERROR_OBJECT_IN_USE;
+    {
+	iofs->io_DosError=ERROR_OBJECT_IN_USE;
+	return 0;
+    }
 
+    /* Let any following attemps to use the device crash hard. */
+    iofs->IOFS.io_Device=(struct Device *)-1;
+
+    free_lock(rambase,handle);
     RemDosEntry(vol->doslist);
     FreeDosEntry(vol->doslist);
-    RemDosEntry(dev->doslist);
-    FreeDosEntry(dev->doslist);
 
     while(vol->list.mlh_Head->mln_Succ!=NULL)
     {
@@ -1178,8 +1137,19 @@ LONG die(struct rambase *rambase, struct filehandle *handle)
 
     Strfree(rambase,dev->name);
     FreeMem(dev,sizeof(struct cnode));
-    rambase->unitcount--;
+    
+    iofs->io_DosError=0;
+
+    /* I have one fewer opener. */
+    if(!--rambase->device.dd_Library.lib_OpenCnt)
+    {
+	/* Delayed expunge pending? */
+	if(rambase->device.dd_Library.lib_Flags&LIBF_DELEXP)
+	    /* Then expunge the device */
+	    return expunge();
+    }
     return 0;
+    __AROS_FUNC_EXIT
 }
 
 void deventry(struct rambase *rambase)
@@ -1201,24 +1171,6 @@ void deventry(struct rambase *rambase)
 	{
 	    switch(iofs->IOFS.io_Command)
 	    {
-		case FSA_MOUNT:
-		    /*
-			mount a new dos device (a new filesystem)
-			Unit *root;    root handle on return
-			STRPTR name;   device name without colon
-			ULONG *args;   further arguments
-		    */
-		    AddTail((struct List *)&rambase->waitdoslist,&iofs->IOFS.io_Message.mn_Node);
-		    continue;
-
-		case FSA_DISMOUNT:
-		    /*
-			Free the lock then try to dismount dos device
-			Unit *root;    handle to device's root directory
-		    */
-		    AddTail((struct List *)&rambase->waitdoslist,&iofs->IOFS.io_Message.mn_Node);
-		    continue;
-
 		case FSA_OPEN:
 		    /*
 			get handle on a file or directory
@@ -1474,25 +1426,6 @@ void deventry(struct rambase *rambase)
 	    }
 	    iofs->io_DosError=error;
 	    ReplyMsg(&iofs->IOFS.io_Message);
-	}
-	if(rambase->waitdoslist.mlh_Head->mln_Succ!=NULL)
-	{
-	    if(!AttemptLockDosList(LDF_DEVICES|LDF_VOLUMES|LDF_WRITE))
-		Delay(TICKS_PER_SECOND/2);
-	    else
-	    {
-		while((iofs=(struct IOFileSys *)RemHead((struct List *)&rambase->waitdoslist))!=NULL)
-		{
-		    if(iofs->IOFS.io_Command==FSA_MOUNT)
-			error=startup(rambase,(STRPTR)iofs->io_Args[0],
-				      (struct TagItem *)iofs->io_Args[1]);
-		    else
-			error=die(rambase,(struct filehandle *)iofs->IOFS.io_Unit);
-		    iofs->io_DosError=error;
-		    ReplyMsg(&iofs->IOFS.io_Message);
-		}
-		UnLockDosList(LDF_DEVICES|LDF_VOLUMES|LDF_WRITE);
-	    }
 	}
 #if 0
 	if(rambase->iofs!=NULL)
