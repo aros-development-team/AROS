@@ -20,16 +20,16 @@
 
 /*********************************************************************************************/
 
-#define ARRAY_TO_LONG(x) ( ((x)[3] << 24UL) + ((x)[2] << 16UL) + ((x)[1] << 8UL) + ((x)[0]) )
-#define ARRAY_TO_WORD(x) ( ((x)[1] << 8UL) + ((x)[0]) )
+#define ARRAY_TO_LONG(x) ( ((x)[0] << 24UL) + ((x)[1] << 16UL) + ((x)[2] << 8UL) + ((x)[3]) )
+#define ARRAY_TO_WORD(x) ( ((x)[0] << 8UL) + ((x)[1]) )
 
-#define LONG_TO_ARRAY(x,y) (y)[3] = (UBYTE)(ULONG)((x) >> 24UL); \
-    	    	    	   (y)[2] = (UBYTE)(ULONG)((x) >> 16UL); \
-			   (y)[1] = (UBYTE)(ULONG)((x) >>  8UL); \
-			   (y)[0] = (UBYTE)(ULONG)((x));
+#define LONG_TO_ARRAY(x,y) (y)[0] = (UBYTE)(ULONG)((x) >> 24UL); \
+    	    	    	   (y)[1] = (UBYTE)(ULONG)((x) >> 16UL); \
+			   (y)[2] = (UBYTE)(ULONG)((x) >>  8UL); \
+			   (y)[3] = (UBYTE)(ULONG)((x));
 
-#define WORD_TO_ARRAY(x,y) (y)[1] = (UBYTE)(ULONG)((x) >>  8UL); \
-			   (y)[0] = (UBYTE)(ULONG)((x));
+#define WORD_TO_ARRAY(x,y) (y)[0] = (UBYTE)(ULONG)((x) >>  8UL); \
+			   (y)[1] = (UBYTE)(ULONG)((x));
 			   
 /*********************************************************************************************/
 
