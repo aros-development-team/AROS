@@ -181,14 +181,39 @@ void readref(void)
     fileclose();
 
     /* Checking to see if every function has a prototype */
-    for (funclistit = funclist;
-	 funclistit!=NULL;
-	 funclistit = funclistit->next)
+    for 
+    (
+        funclistit =  funclist; 
+        funclistit != NULL; 
+        funclistit =  funclistit->next
+    )
     {
 	if (funclistit->type==NULL)
 	{
-	    fprintf(stderr, "Did not find function %s in reffile %s\n", funclistit->name, reffile);
-	    exit(20);
+	    if (modtype == MCC && strcmp(funclistit->name, "MCC_Query") == 0 )
+            {
+                struct arglist *arglistit = funclistit->arguments;
+                
+                if (arglistit == NULL)
+                {
+                    fprintf(stderr, "Wrong number of arguments for MCC_Query");
+                    exit(20);
+                }
+                
+                funclistit->type = "IPTR";
+                
+                arglistit->type = "LONG";
+                arglistit->name = "what";
+            }
+            else
+            {
+                fprintf
+                (
+                    stderr, "Did not find function %s in reffile %s\n", 
+                    funclistit->name, reffile
+                );
+                exit(20);
+            }
 	}
     }
 }

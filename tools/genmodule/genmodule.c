@@ -24,7 +24,7 @@ enum libcall libcall = STACK;
 
 char *modulename = NULL, *basename = NULL, *modulenameupper = NULL, 
      *libbase = NULL, *libbasetype = NULL, *libbasetypeextern = NULL, 
-     *datestring = "00.00.0000", superclass = NULL;
+     *datestring = "00.00.0000", *superclass = NULL;
 unsigned int majorversion = 0, minorversion = 0, firstlvo = 0;
 struct linelist *cdeflines = NULL, *protolines = NULL;
 
@@ -87,6 +87,11 @@ int main(int argc, char **argv)
         writeincclib(0);
         writeincdefines(0);
         writeautoinit();
+    }
+    if( modtype == MCC )
+    {
+        writemccinit();
+        writemccquery();
     }
     writestart();
     writeend();

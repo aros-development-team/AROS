@@ -70,3 +70,5 @@ void writestart(void);
 void writeend(void);
 void writeautoinit(void);
 void writestubs(void);
+void writemccinit(void);
+void writemccquery(void);
