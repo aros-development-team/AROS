@@ -1,6 +1,7 @@
 BOOPSI/;BOOPSI
 alib_commodities;Amiga.lib - Commodities
 alib_stdio;Amiga.lib - Standard I/O
+alib;Amiga.lib
 amigaguide;AmigaGuide
 arp;ARP
 asl;Asl
@@ -10,6 +11,7 @@ bullet;Bullet.library (Fonts)
 c/;CLI Tools
 cardres;Card.resource
 cia;Cia.resource
+clib;ANSI C link library
 colorwheel;Colorwheel Gadget
 commodities;Commodities.library
 console;Console.device
