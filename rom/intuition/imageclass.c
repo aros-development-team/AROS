@@ -1,9 +1,10 @@
-/* This is an native Amiga SAS/C implementation of the Amiga Rom
- * 'imageclass' for AROS.  I do not yet have GCC set up, nor access
- * to Linux for testing. Hopefully someone will adapt it to the AROS
- * coding style.
- */
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
 
+    Desc: Implementation of IMAGECLASS
+    Lang: english
+*/
 #ifdef _SASC
 
 #define USE_SYSBASE
@@ -41,6 +42,101 @@
 
 #include "intuition_intern.h"
 
+/* Image data */
+#define ARROWDOWN_WIDTH    18
+#define ARROWDOWN_HEIGHT   11
+
+UWORD ArrowDown0Data[] =
+{
+    0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x0C0C, 0x4000,
+    0x0738, 0x4000, 0x03F0, 0x4000, 0x01E0, 0x4000, 0x00C0, 0x4000,
+    0x0000, 0x4000, 0x0000, 0x4000, 0x7FFF, 0xC000,
+
+    0xFFFF, 0x8000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+    0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+    0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+};
+
+UWORD ArrowDown1Data[] =
+{
+    0xFFFF, 0x8000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8C0C, 0x0000,
+    0x8738, 0x0000, 0x83F0, 0x0000, 0x81E0, 0x0000, 0x80C0, 0x0000,
+    0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+
+    0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000,
+    0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000,
+    0x0000, 0x4000, 0x0000, 0x4000, 0x7FFF, 0xC000,
+};
+
+#define ARROWUP_WIDTH	 18
+#define ARROWUP_HEIGHT	 11
+
+UWORD ArrowUp0Data[] =
+{
+    0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x00C0, 0x4000,
+    0x01E0, 0x4000, 0x03F0, 0x4000, 0x0738, 0x4000, 0x0C0C, 0x4000,
+    0x0000, 0x4000, 0x0000, 0x4000, 0x7FFF, 0xC000,
+
+    0xFFFF, 0x8000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+    0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+    0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+};
+
+UWORD ArrowUp1Data[] =
+{
+    0xFFFF, 0x8000, 0x8000, 0x0000, 0x8000, 0x0000, 0x80C0, 0x0000,
+    0x81E0, 0x0000, 0x83F0, 0x0000, 0x8738, 0x0000, 0x8C0C, 0x0000,
+    0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+
+    0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000,
+    0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000,
+    0x0000, 0x4000, 0x0000, 0x4000, 0x7FFF, 0xC000,
+};
+
+#define ARROWLEFT_WIDTH    11
+#define ARROWLEFT_HEIGHT   16
+
+UWORD ArrowLeft0Data[] =
+{
+    0x0000, 0x0020, 0x0020, 0x0120, 0x0320, 0x0620, 0x0E20, 0x1C20,
+    0x1C20, 0x0E20, 0x0620, 0x0320, 0x0120, 0x0020, 0x0020, 0xFFE0,
+
+    0xFFE0, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000,
+    0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000,
+};
+
+UWORD ArrowLeft1Data[] =
+{
+    0xFFE0, 0x8000, 0x8000, 0x8100, 0x8300, 0x8600, 0x8E00, 0x9C00,
+    0x9C00, 0x8E00, 0x8600, 0x8300, 0x8100, 0x8000, 0x8000, 0x0000,
+
+    0x0000, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020,
+    0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0xFFE0,
+};
+
+#define ARROWRIGHT_WIDTH    11
+#define ARROWRIGHT_HEIGHT   16
+
+UWORD ArrowRight0Data[] =
+{
+    0x0000, 0x0020, 0x0020, 0x1020, 0x1820, 0x0C20, 0x0E20, 0x0720,
+    0x0720, 0x0E20, 0x0C20, 0x1820, 0x1020, 0x0020, 0x0020, 0xFFE0,
+
+    0xFFE0, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000,
+    0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000,
+};
+
+UWORD ArrowRight1Data[] =
+{
+    0xFFE0, 0x8000, 0x8000, 0x9000, 0x9800, 0x8C00, 0x8E00, 0x8700,
+    0x8700, 0x8E00, 0x8C00, 0x9800, 0x9000, 0x8000, 0x8000, 0x0000,
+
+    0x0000, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020,
+    0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0xFFE0,
+};
+
+
+
 /****************************************************************************/
 
 /* Set if to 1 to enable kprintf debugging
@@ -61,6 +157,8 @@
 
 /****************************************************************************/
 
+#undef IntuitionBase
+#define IntuitionBase	((struct IntuitionBase *)(cl->cl_UserData))
 
 /* Our imageclass dispatcher.
  */
@@ -69,7 +167,7 @@ __RA3(static IPTR, dispatch_imageclass,
     Object *, o,   A2,
     Msg,      msg, A1)
 {
-    ULONG retval = 0UL;
+    IPTR retval = 0UL;
 
     switch (msg->MethodID)
     {
@@ -91,7 +189,7 @@ __RA3(static IPTR, dispatch_imageclass,
 	    {
 		D( kprintf("ImageClass Instance Size; %ld bytes\n", SIZEOF_INSTANCE(cl)) );
 
-		retval = (ULONG)DoSuperMethodA(cl, o, msg);
+		retval = (IPTR)DoSuperMethodA(cl, o, msg);
 
 		if(retval)
 		{
@@ -105,42 +203,167 @@ __RA3(static IPTR, dispatch_imageclass,
 	    D( else { kprintf("Class pointer is NULL\n") } );
 	}
 	D( else { kprintf("Carrier Object pointer is NULL\n") } );
-	break;
+
+	o = (Object *)retval;
+	/*
+	    Fall through -> allow the class the set all the initial
+	    attributes
+	*/
     }
+
+    case OM_SET:
+	D( kprintf("ImageClass OM_SET\n") );
+
+	if (o)
+	{
+	    struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
+	    struct TagItem *tag;
+	    IPTR tidata;
+	    BOOL unsupported;
+
+	    unsupported = FALSE;
+
+	    while ((tag = NextTagItem(&tstate)))
+	    {
+		tidata = tag->ti_Data;
+
+		switch (tag->ti_Tag)
+		{
+		case IA_Left:
+		    IM(o)->LeftEdge = (WORD) tidata;
+		    break;
+
+		case IA_Top:
+		    IM(o)->TopEdge = (WORD) tidata;
+		    break;
+
+		case IA_Width:
+		    IM(o)->Width = (WORD) tidata;
+		    break;
+
+		case IA_Height:
+		    IM(o)->Height = (WORD) tidata;
+		    break;
+
+		case IA_FGPen:
+		    IM(o)->PlanePick = (WORD) tidata;
+		    break;
+
+		case IA_BGPen:
+		    IM(o)->PlaneOnOff = (WORD) tidata;
+		    break;
+
+		case IA_Data:
+		    IM(o)->ImageData = (UWORD *) tidata;
+		    break;
+
+		case SYSIA_Which:
+		    switch (tidata)
+		    {
+		    case DEPTHIMAGE:
+		    case ZOOMIMAGE:
+		    case SIZEIMAGE:
+		    case CLOSEIMAGE:
+		    case SDEPTHIMAGE:
+			IM(o)->ImageData = NULL;
+			unsupported = TRUE;
+			break;
+
+		    case LEFTIMAGE:
+			IM(o)->ImageData = ArrowLeft0Data;
+			IM(o)->Width     = ARROWLEFT_WIDTH;
+			IM(o)->Height    = ARROWLEFT_HEIGHT;
+			break;
+
+		    case UPIMAGE:
+			IM(o)->ImageData = ArrowUp0Data;
+			IM(o)->Width     = ARROWUP_WIDTH;
+			IM(o)->Height    = ARROWUP_HEIGHT;
+			break;
+
+		    case RIGHTIMAGE:
+			IM(o)->ImageData = ArrowRight0Data;
+			IM(o)->Width     = ARROWRIGHT_WIDTH;
+			IM(o)->Height    = ARROWRIGHT_HEIGHT;
+			break;
+
+		    case DOWNIMAGE:
+			IM(o)->ImageData = ArrowDown0Data;
+			IM(o)->Width     = ARROWDOWN_WIDTH;
+			IM(o)->Height    = ARROWDOWN_HEIGHT;
+			break;
+
+		    case CHECKIMAGE:
+		    case MXIMAGE:
+		    case MENUCHECK:
+		    case AMIGAKEY:
+			IM(o)->ImageData = NULL;
+			unsupported = TRUE;
+			break;
+
+		    } /* Which image ? */
+
+		default:
+		    unsupported = TRUE;
+		    break;
+
+		} /* switch (Tag) */
+	    } /* while (Tag) */
+
+	    /*
+		If all attributes were supported and there is no retval yet,
+		set retval to 1.
+	    */
+	    if (!unsupported && !retval)
+		retval = 1UL;
+	    /*
+		Because we are a direct subclass of rootclass
+		which has no settable/gettable attributes we
+		we will NOT pass this method to our superclass!
+	    */
+	}
+	D( else { kprintf("Object pointer is NULL\n") } );
+	break;
 
     case OM_GET:
 	D( kprintf("ImageClass OM_GET\n") );
 
 	if (o)
 	{
+	    retval = 1UL;
+
 	    switch (((struct opGet *)msg)->opg_AttrID)
 	    {
 	    case IA_Left:
-		*((struct opGet *)msg)->opg_Storage = (ULONG) IM(o)->LeftEdge;
+		*((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->LeftEdge;
 		break;
 
 	    case IA_Top:
-		*((struct opGet *)msg)->opg_Storage = (ULONG) IM(o)->TopEdge;
+		*((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->TopEdge;
 		break;
 
 	    case IA_Width:
-		*((struct opGet *)msg)->opg_Storage = (ULONG) IM(o)->Width;
+		*((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->Width;
 		break;
 
 	    case IA_Height:
-		*((struct opGet *)msg)->opg_Storage = (ULONG) IM(o)->Height;
+		*((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->Height;
 		break;
 
 	    case IA_FGPen:
-		*((struct opGet *)msg)->opg_Storage = (ULONG) IM(o)->PlanePick;
+		*((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->PlanePick;
 		break;
 
 	    case IA_BGPen:
-		*((struct opGet *)msg)->opg_Storage = (ULONG) IM(o)->PlaneOnOff;
+		*((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->PlaneOnOff;
 		break;
 
 	    case IA_Data:
-		*((struct opGet *)msg)->opg_Storage = (ULONG) IM(o)->ImageData;
+		*((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->ImageData;
+		break;
+
+	    default:
+		retval = 0UL;
 		break;
 
 	    } /* switch */
@@ -153,65 +376,18 @@ __RA3(static IPTR, dispatch_imageclass,
 	}
 	break;
 
-    case OM_SET:
-	D( kprintf("ImageClass OM_SET\n") );
-
-	if (o)
+    case IM_DRAW:
 	{
-	    struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
-	    struct TagItem *tag;
-	    ULONG tidata;
+	    struct impDraw * imsg = (struct impDraw *)msg;
 
-	    while ((tag = NextTagItem(&tstate)))
-	    {
-		tidata = tag->ti_Data;
+	    DrawImage (imsg->imp_RPort
+		, (struct Image *)o
+		, imsg->imp_Offset.X
+		, imsg->imp_Offset.Y
+	    );
 
-		switch (tag->ti_Tag)
-		{
-		case IA_Left:
-			IM(o)->LeftEdge = (WORD) tidata;
-			retval = 1UL;
-			break;
-
-		case IA_Top:
-			IM(o)->TopEdge = (WORD) tidata;
-			retval = 1UL;
-			break;
-
-		case IA_Width:
-			IM(o)->Width = (WORD) tidata;
-			retval = 1UL;
-			break;
-
-		case IA_Height:
-			IM(o)->Height = (WORD) tidata;
-			retval = 1UL;
-			break;
-
-		case IA_FGPen:
-			IM(o)->PlanePick = (WORD) tidata;
-			retval = 1UL;
-			break;
-
-		case IA_BGPen:
-			IM(o)->PlaneOnOff = (WORD) tidata;
-			retval = 1UL;
-			break;
-
-		case IA_Data:
-			IM(o)->ImageData = (UWORD *) tidata;
-			retval = 1UL;
-			break;
-		} /* switch */
-	    } /* while */
-
-	    /*
-		Because we are a direct subclass of rootclass
-		which has no settable/gettable attributes we
-		we will NOT pass this method to our superclass!
-	    */
+	    /* Leave retval=0: No further rendering necessary */
 	}
-	D( else { kprintf("Object pointer is NULL\n") } );
 	break;
 
     case IM_ERASE:
@@ -235,8 +411,9 @@ __RA3(static IPTR, dispatch_imageclass,
 		left, top,
 		left + width, top + height
 	    );
+
+	    /* Leave retval=0: No further rendering necessary */
 	} /* if */
-	retval = 1UL;
 	break;
 
     case IM_HITTEST:
@@ -257,7 +434,7 @@ __RA3(static IPTR, dispatch_imageclass,
 		(imp->imp_Point.Y >= IM(o)->TopEdge  && imp->imp_Point.Y <= IM(o)->TopEdge + IM(o)->Height)
 		)
 	    {
-		return(1UL);
+		retval = 1UL;
 	    } /* if */
 	}
 	break;
@@ -272,11 +449,12 @@ __RA3(static IPTR, dispatch_imageclass,
     return (retval);
 } /* dispatch_imageclass */
 
+#undef IntuitionBase
+
 /****************************************************************************/
 
-/* Initialize our image class.
- */
-struct IClass *InitImageClass(void)
+/* Initialize our image class. */
+struct IClass *InitImageClass (struct IntuitionBase * IntuitionBase)
 {
     struct IClass *cl = NULL;
 
@@ -284,20 +462,13 @@ struct IClass *InitImageClass(void)
 	*/
     if ((cl = MakeClass(IMAGECLASS, ROOTCLASS, NULL, sizeof(struct Image), 0)))
     {
-	cl->cl_Dispatcher.h_Entry = (APTR)dispatch_imageclass;
+	cl->cl_Dispatcher.h_Entry    = (APTR)dispatch_imageclass;
 	cl->cl_Dispatcher.h_SubEntry = NULL;
+	cl->cl_UserData 	     = (IPTR)IntuitionBase;
 
 	AddClass (cl);
     }
 
     return (cl);
-}
-
-/* Remove the image class. Normally, you have no reason for this
- * for rom baseclass such as imageclass.
- */
-BOOL FreeImageClass( struct IClass *cl)
-{
-    return ((BOOL)FreeClass(cl));
 }
 
