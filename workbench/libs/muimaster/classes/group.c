@@ -189,6 +189,7 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_GroupData *data;
     struct TagItem *tags,*tag;
     BOOL   bad_childs = FALSE;
+    ULONG  disabled;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return 0;
@@ -291,6 +292,13 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	_flags(obj) |= MADF_ISVIRTUALGROUP;
     }
 
+    /* will forward MUIA_Disabled to childs */
+    get(obj, MUIA_Disabled, &disabled);
+    if (disabled)
+    {
+	set(obj, MUIA_Disabled, TRUE);
+    }
+    
     /* This is only used for virtual groups */
     data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS; /* Will be filled on demand */
     data->ehn.ehn_Priority = 10; /* Will hear the click before all other normal objects */
