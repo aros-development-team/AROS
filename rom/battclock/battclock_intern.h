@@ -6,6 +6,9 @@
     Lang: english
 */
 
+#ifndef BATTCLOCK_INTERN_H
+#define BATTCLOCK_INTERN_H
+
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
 #endif
@@ -31,3 +34,5 @@ struct BattClockBase
 #   undef UtilityBase
 #endif
 #define UtilityBase     (BattClockBase->bb_UtilBase)
+
+#endif //BATTCLOCK_INTERN_H
