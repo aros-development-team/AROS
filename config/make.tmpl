@@ -238,7 +238,7 @@ $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(cflags)
 else
 $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(dflags)
 endif
-%(basename).d : %(basename).c
+$(TMP_TARGETBASE).d : %(basename).c
 	%mkdepend_q flags=$(TMP_DFLAGS)
 %end
 #------------------------------------------------------------------------------
