@@ -147,8 +147,13 @@
 
 #ifndef __typedef_STACKBYTE
 #   define __typedef_STACKBYTE
+#   ifdef AROS_8BIT_STACKTYPE
+    typedef   signed AROS_8BIT_STACKTYPE	STACKBYTE;   /* signed 8-bit value */
+    typedef unsigned AROS_8BIT_STACKTYPE	STACKUBYTE;  /* unsigned 8-bit value */
+#   else
     typedef signed int				STACKBYTE;   /* signed 8-bit value */
     typedef unsigned int			STACKUBYTE;  /* unsigned 8-bit value */
+#   endif
 #endif
 
 #ifndef __typedef_STACKFLOAT
@@ -160,6 +165,14 @@
 #   endif
 #endif
 
+#ifndef __typedef_STACKDOUBLE
+#   define __typedef_STACKDOUBLE
+#   ifdef AROS_DOUBLE_STACKTYPE
+	typedef AROS_DOUBLE_STACKTYPE		STACKDOUBLE;  /* signed 64-bit floating point value */
+#   else
+	typedef double				STACKDOUBLE;  /* signed 64-bit floating point value */
+#   endif
+#endif
 
 /*************************************
  ***** Other interesting types	 *****
