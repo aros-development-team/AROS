@@ -172,55 +172,59 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	    xsd->utilitybase = OpenLibrary(UTILITYNAME, 37);
 	    if (xsd->utilitybase)
 	    {
-	        STRPTR displayname;
-	    
-		/* Try to get the display */
-		if (!(displayname = getenv("DISPLAY")))
-		    displayname =":0.0";
-		    
-		/* Do not need to singlethead this
-		   since no other tasks are using X currently
-		*/
-		   		    
-    		xsd->display = XOpenDisplay(displayname);
-		if (xsd->display)
+	        xsd->dosbase = OpenLibrary(DOSNAME, 37);
+		if (xsd->dosbase)
 		{
-		   D(bug("x11_init: got display\n"));
+	            STRPTR displayname;
 
-		    XSetErrorHandler (MyErrorHandler);
-		    XSetIOErrorHandler (MySysErrorHandler);
-		    
-		    /* Turn off auto repeat */
-/*		    XAutoRepeatOff(xsd->display);
-*/		    
-		    if (initclasses(xsd))
+		    /* Try to get the display */
+		    if (!(displayname = getenv("DISPLAY")))
+			displayname =":0.0";
+
+		    /* Do not need to singlethead this
+		       since no other tasks are using X currently
+		    */
+
+    		    xsd->display = XOpenDisplay(displayname);
+		    if (xsd->display)
 		    {
-			/* The X11 task should be the last one up.
-			   (It is difficult to clean up after it
-			   otherwise, if something should fail) */
-			       
-			struct x11task_params xtp;
-			    
-		   	D(bug("x11_init: got classes\n"));
-			
-			xtp.parent = FindTask(NULL);
-			xtp.ok_signal   = SIGBREAKF_CTRL_E;
-			xtp.fail_signal = SIGBREAKF_CTRL_F;
-			xtp.xsd	    = xsd;
-			    
-			if (create_x11task(&xtp, SysBase))
+		       D(bug("x11_init: got display\n"));
+
+			XSetErrorHandler (MyErrorHandler);
+			XSetIOErrorHandler (MySysErrorHandler);
+
+			/* Turn off auto repeat */
+    /*		    XAutoRepeatOff(xsd->display);
+    */		    
+			if (initclasses(xsd))
 			{
-			    D(bug("x11_init: Task up& running\n"));
-			    return TRUE;
+			    /* The X11 task should be the last one up.
+			       (It is difficult to clean up after it
+			       otherwise, if something should fail) */
+
+			    struct x11task_params xtp;
+
+		   	    D(bug("x11_init: got classes\n"));
+
+			    xtp.parent = FindTask(NULL);
+			    xtp.ok_signal   = SIGBREAKF_CTRL_E;
+			    xtp.fail_signal = SIGBREAKF_CTRL_F;
+			    xtp.xsd	    = xsd;
+
+			    if (create_x11task(&xtp, SysBase))
+			    {
+				D(bug("x11_init: Task up& running\n"));
+				return TRUE;
+			    }
+			    freeclasses(xsd);
+
 			}
-			freeclasses(xsd);
-			
+
+			XCloseDisplay(xsd->display);
+
 		    }
-		    
-		    XCloseDisplay(xsd->display);
-		
+		    CloseLibrary(xsd->dosbase);
 		}
-		
 		CloseLibrary(xsd->utilitybase);
 	    }
 	    CloseLibrary(xsd->oopbase);
