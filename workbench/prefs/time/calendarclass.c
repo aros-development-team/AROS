@@ -283,6 +283,8 @@ static IPTR Calendar_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 	if (w > data->cellwidth) data->cellwidth = w;
     }
     
+    DeinitRastPort(&rp);
+
     data->cellwidth += CELL_EXTRAWIDTH;
     
     data->base_cellwidth = data->cellwidth;
