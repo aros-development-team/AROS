@@ -5,7 +5,7 @@
 include $(TOP)/config/make.cfg
 include ../make.cfg
 
-FILES	:= test
+FILES	:= test wb
 
 EXEDIR := $(ZUNEDIR)/Tests
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))

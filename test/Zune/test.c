@@ -289,7 +289,7 @@ int main(void)
     struct Hook hook_display2;
 
     hook_standard.h_Entry = (HOOKFUNC)hook_func_standard;
-    
+
     MUIMasterBase = (struct Library*)OpenLibrary("muimaster.library",0);
 
     hook.h_Entry = (HOOKFUNC)repeat_function;
@@ -1016,7 +1016,7 @@ Child, ScrollgroupObject, MUIA_Scrollgroup_Contents, VGroupV,
     GroupFrameT("virtvir"),   
     Child, SimpleButton("eins"),   
     Child, SimpleButton("zwei"),   
-    Child, SimpleButton("drei"),   
+    Child, SimpleButton("drei"),
     Child, SimpleButton("vier"),
     Child, SimpleButton("eins"),   
     Child, SimpleButton("zwei"),   
@@ -1032,7 +1032,7 @@ Child, ScrollgroupObject, MUIA_Scrollgroup_Contents, VGroupV,
     Child, SimpleButton("vier"),
     End,
     End,
-End,   
+End,
     End,   
 #else
 
