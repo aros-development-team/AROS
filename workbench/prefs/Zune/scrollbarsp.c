@@ -39,6 +39,7 @@ struct MUI_ScrollbarsPData
     Object *gadget_type_cycle;
     Object *background_popimage;
     Object *knob_popimage;
+    Object *arrangement_radio;
 };
 
 static CONST_STRPTR gadget_type_labels[] =
@@ -46,6 +47,14 @@ static CONST_STRPTR gadget_type_labels[] =
     "standard",
     "newlook",
     "custom",
+    NULL,
+};
+
+static char *arrangement_labels[] =
+{
+    "Top",
+    "Middle",
+    "Bottom",
     NULL,
 };
 
@@ -133,14 +142,10 @@ static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       GroupFrameT("Frame"),
 			       Child, d.popframe = MakePopframe(),
 			       End, /* Frame VGroup*/
-			       Child, ColGroup(3),
+			       Child, VGroup,
 			       GroupFrameT("Arrangement"),
-			       ScrollbarObject, End,
-			       ScrollbarObject, End,
-			       ScrollbarObject, End,
-			       ScrollbarObject, End,
-			       ScrollbarObject, End,
-			       ScrollbarObject, End,
+			       Child, d.arrangement_radio = RadioObject,
+			       MUIA_Radio_Entries, arrangement_labels, End,
 			       End, /* Arrangement VGroup*/
 			       End, /* VGroup right */
     	TAG_MORE, msg->ops_AttrList);
@@ -205,6 +210,11 @@ static IPTR ScrollbarsP_ConfigToGadgets(struct IClass *cl, Object *obj,
 			    MUICFG_Frame_Prop);
     set(data->popframe, MUIA_Framedisplay_Spec, (IPTR)spec);
 
+/* Radio (Arrangement) */
+    setmutex(data->arrangement_radio,
+	     DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+		      MUICFG_Scrollbar_Arrangement));
+
     return 1;    
 }
 
@@ -226,6 +236,10 @@ static IPTR ScrollbarsP_GadgetsToConfig(struct IClass *cl, Object *obj,
 /* Cycles */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Scrollbar_Type,
 	     xget(data->gadget_type_cycle, MUIA_Cycle_Active));
+
+/* Radio */
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Scrollbar_Arrangement,
+	     xget(data->arrangement_radio, MUIA_Radio_Active));
 
 /* Images */
     str = (STRPTR)xget(data->background_popimage, MUIA_Imagedisplay_Spec);
