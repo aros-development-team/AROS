@@ -34,8 +34,9 @@
 
 ******************************************************************************/
 {
-#   warning TODO: Implement setlocale()
-    
+#   warning Implement setlocale()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+
     return "C";
 } /* setlocale() */
 

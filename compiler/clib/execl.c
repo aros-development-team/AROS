@@ -5,6 +5,8 @@
     POSIX function execl().
 */
 
+#include <aros/debug.h>
+
 #include <unistd.h>
 
 /*****************************************************************************
@@ -35,8 +37,9 @@
 
 ******************************************************************************/
 {
-#   warning TODO: implement execl()
-    
+#   warning Implement execl()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+
     return -1;
 } /* execl() */
 
