@@ -78,13 +78,12 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 	{ SA_SharePens, TRUE			},
 	{ TAG_END, 0 }
     };
-    
     if (!GetPrivIBase(IntuitionBase)->WorkBench)
     {
 	struct Screen *screen;
 
 	screen = OpenScreenTagList (NULL, screenTags);
-	kprintf("WB SCREEN: %p\n");
+	kprintf("WB SCREEN: %p\n", screen);
 
 	if(screen)
 	{
@@ -97,7 +96,6 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 
 	    /* ...and make it the default */
 	    SetDefaultPubScreen(NULL);
-	
 	    MakeWBPattern(screen, IntuitionBase);
 	    return TRUE;
 	}
@@ -624,14 +622,13 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
     
     	InitBackfillHook(IntuitionBase);  
     	InstallLayerInfoHook(&scr->LayerInfo, &backfillhook);
-
     	tempwin = OpenWindowTagList(0,wintags);
     	if (tempwin) CloseWindow(tempwin);
 
     }
     else
     {
-	/* If this doesn't succeed, then ther is someting seriously wrong */
+	/* If this doesn't succeed, then there is someting seriously wrong */
     	kprintf("COULD NOT CREATE PATTERN BITMAP in rom/intuition/lateintuiinit.c\n");
 	Alert(AT_DeadEnd);
     }
