@@ -132,6 +132,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
     register enum
     {
         S_START0,
+	S_START1,
         S_START,
         S_VOLUME,
         S_PARENT,
@@ -179,16 +180,17 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
 	        if (ch == '/')
 		    state = S_PARENT;
 		else
-		if (ch == ':')
-		    state = S_VOLUME;
-		else
-		if (ch == '\0')
-		    run = 0;
-		else
- 		    upath++[0] = ch;
+		{
+		    state = S_START1;
+		    continue;
+		}
 
 		break;
 
+	    case S_START1:
+		if (ch == ':')
+		    state = S_VOLUME;
+		else
 	    case S_START:
 	        if (ch == '/')
 		    state = S_SLASH;
