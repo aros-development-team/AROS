@@ -602,14 +602,15 @@ len2 = 0;
     }
 
     if (!( WindowPtr = OpenWindowTags (NULL,
-		    WA_Left, 0,
+		    WA_Left, 1,
 		    WA_Top, Screen->BarHeight + 1,
 		    WA_Width, winwidth,
 		    WA_Height, top + Screen->WBorBottom,
+		    WA_DepthGadget, FALSE,
 		    WA_Zoom, Zoom,
-		    WA_IDCMP, CHECKBOXIDCMP|BUTTONIDCMP|SLIDERIDCMP|INTEGERIDCMP
-					    |CYCLEIDCMP|IDCMP_MOUSEMOVE|IDCMP_REFRESHWINDOW|IDCMP_MENUPICK,
-		    WA_Flags, WFLG_DRAGBAR|WFLG_DEPTHGADGET|WFLG_ACTIVATE|WFLG_SIMPLE_REFRESH,
+		    WA_IDCMP, CHECKBOXIDCMP|BUTTONIDCMP|SLIDERIDCMP|INTEGERIDCMP|CYCLEIDCMP|IDCMP_CLOSEWINDOW
+					    |IDCMP_VANILLAKEY|IDCMP_MOUSEMOVE|IDCMP_REFRESHWINDOW|IDCMP_MENUPICK,
+		    WA_Flags, WFLG_DRAGBAR|WFLG_DEPTHGADGET|WFLG_ACTIVATE|WFLG_SIMPLE_REFRESH|WFLG_CLOSEGADGET,
 		    WA_Gadgets, glist,
 		    WA_Title, GetString (MSG_WINDOW_TITLE),
 		    WA_PubScreen, Screen,
@@ -744,45 +745,65 @@ VOID
 LoopGUI( VOID )
 {
     BOOL	run = TRUE;
+    ULONG	signals;
 
     while( run )
     {
 	struct IntuiMessage im, *imsg;
 
-	WaitPort( WindowPtr->UserPort );
+	signals = Wait(1L << WindowPtr->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
 
-	while( ( imsg = ( struct IntuiMessage * ) GT_GetIMsg( WindowPtr->UserPort ) ) )
+	if( signals & (1L << WindowPtr->UserPort->mp_SigBit ) )
 	{
-	    struct Gadget	*gad;
-	    UWORD		code;
 
-	    im = *imsg;
-	    GT_ReplyIMsg( imsg );
-	    gad = ( struct Gadget * ) im.IAddress;
-
-	    switch( im.Class )
+	    while( ( imsg = ( struct IntuiMessage * ) GT_GetIMsg( WindowPtr->UserPort ) ) )
 	    {
-		case IDCMP_REFRESHWINDOW:
-		    GT_BeginRefresh( WindowPtr );
-		    RenderPrefsWindow();
-		    GT_EndRefresh( WindowPtr, TRUE );
-		    break;
+	    	struct Gadget	*gad;
+	    	UWORD		code;
 
-		case IDCMP_GADGETUP:
-		    run = ProcessGadget( gad->GadgetID, im.Code );
-		    break;
+	    	im = *imsg;
+	    	GT_ReplyIMsg( imsg );
+	    	gad = ( struct Gadget * ) im.IAddress;
 
-		case IDCMP_MENUPICK:
-		    code = im.Code;
+	    	switch( im.Class )
+	    	{
+			case IDCMP_REFRESHWINDOW:
+		    	GT_BeginRefresh( WindowPtr );
+		    	RenderPrefsWindow();
+		    	GT_EndRefresh( WindowPtr, TRUE );
+		    	break;
 
-		    while( run && ( code != MENUNULL ) )
-		    {
-			run = ProcessMenuItem( code );
-			code = ItemAddress( Menus, code )->NextSelect;
-		    }
+			case IDCMP_GADGETUP:
+		        run = ProcessGadget( gad->GadgetID, im.Code );
+		        break;
 
-		    break;
+			case IDCMP_MENUPICK:
+		        code = im.Code;
+
+		        while( run && ( code != MENUNULL ) )
+		        {
+				run = ProcessMenuItem( code );
+				code = ItemAddress( Menus, code )->NextSelect;
+		        }
+
+		        break;
+
+			case IDCMP_VANILLAKEY:
+			switch( imsg->Code )
+			{
+				case 27: /* User has pressed the escape key */
+				run = FALSE;
+				break;
+			}
+			break;
+
+			case IDCMP_CLOSEWINDOW:
+			run = FALSE;
+			break;
+	    	}
 	    }
-	}
+    	}
+	if( signals & SIGBREAKF_CTRL_C )
+	    run = FALSE;
     }
 }

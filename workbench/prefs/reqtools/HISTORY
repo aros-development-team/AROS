@@ -1,0 +1,6 @@
+38.283 (01.10.2001)     ReqTools Preferences now uses WaitPort() instead of Wait(), tapping
+                        several signalports at once, now including CTRL-C signals. Support
+                        for IDCMP_VANILLAKEY has also been added. Currently, ReqTools only
+                        responds to "escape" key presses. Finally, ReqTools now sports a
+                        standard window closegadget and the corresponding IDCMP_CLOSEWINDOW
+                        event notification to go with it.
