@@ -62,7 +62,8 @@
     case BMA_HEIGHT:
         return (IPTR)bitmap->Rows;
     case BMA_WIDTH:
-        return (IPTR)bitmap->BytesPerRow;
+      /* must return width in pixel! */
+        return ((IPTR)bitmap->BytesPerRow * 8);
     case BMA_DEPTH:
         return (IPTR)bitmap->Depth;
     case BMA_FLAGS:
