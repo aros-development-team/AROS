@@ -32,6 +32,7 @@
 
 /* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
 
+#if 0
 static OOP_AttrBase HiddBitMapAttrBase;
 static OOP_AttrBase HiddPixFmtAttrBase;
 static OOP_AttrBase HiddGfxAttrBase;
@@ -48,6 +49,7 @@ static struct OOP_ABDescr attrbases[] =
     { IID_Hidd_DisplayBitMap,	&HiddDisplayBitMapAB },
     { NULL, NULL }
 };
+#endif
 
 void free_offbmclass(struct display_staticdata *);
 void DisplayRefreshArea(struct bitmap_data *, int , struct Box *);
@@ -76,6 +78,7 @@ static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         memset(data, 0, sizeof(struct bitmap_data));
 	
 	/* Get attr values */
+#define xsd XSD(cl)
 	OOP_GetAttr(o, aHidd_BitMap_Width,		&width);
 	OOP_GetAttr(o, aHidd_BitMap_Height, 	&height);
 #if 0
@@ -89,7 +92,7 @@ static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	
 	/* Get the friend bitmap. This should be a displayable bitmap */
 	OOP_GetAttr(o, aHidd_BitMap_Friend,	(IPTR *)&friend);
-
+#undef xsd
 	/* If you got a friend bitmap, copy its colormap */
 	if (friend)
 	{
@@ -256,9 +259,19 @@ OOP_Class *init_offbmclass(struct display_staticdata *xsd)
             D(bug("BitMap class ok\n"));
             xsd->offbmclass = cl;
             cl->UserData     = (APTR) xsd;
+
+            __IHidd_BitMap = OOP_ObtainAttrBase(IID_Hidd_BitMap);
+            __IHidd_PixFmt = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
+            __IHidd_Gfx    = OOP_ObtainAttrBase(IID_Hidd_Gfx);
+            __IHidd_DisplayGfx    = OOP_ObtainAttrBase(IID_Hidd_Displaygfx);
+            __IHidd_DisplayBitMap = OOP_ObtainAttrBase(IID_Hidd_DisplayBitMap);
            
             /* Get attrbase for the BitMap interface */
-	    if (OOP_ObtainAttrBases(attrbases))
+	    if (NULL != __IHidd_BitMap &&
+	        NULL != __IHidd_PixFmt &&
+	        NULL != __IHidd_Gfx    &&
+	        NULL != __IHidd_DisplayGfx &&
+	        NULL != __IHidd_DisplayBitMap)
             {
                 OOP_AddClass(cl);
             }
@@ -270,7 +283,8 @@ OOP_Class *init_offbmclass(struct display_staticdata *xsd)
         }
 	
 	/* We don't need this anymore */
-	OOP_ReleaseAttrBase(IID_Meta);
+#warning Change this!!!
+//	OOP_ReleaseAttrBase(IID_Meta);
     } /* if(MetaAttrBase) */
 
     ReturnPtr("init_bmclass", Class *,  cl);
@@ -288,8 +302,9 @@ void free_offbmclass(struct display_staticdata *xsd)
         OOP_RemoveClass(xsd->offbmclass);
         if(xsd->offbmclass) OOP_DisposeObject((OOP_Object *) xsd->offbmclass);
         xsd->offbmclass = NULL;
-	
-	OOP_ReleaseAttrBases(attrbases);
+
+#warning Change this!
+//	OOP_ReleaseAttrBases(attrbases);
     }
     ReturnVoid("free_bmclass");
 }

@@ -16,8 +16,8 @@
 
 #define IID_Hidd_DisplayBitMap "hidd.bitmap.displaybitmap"
 
-#define HiddDisplayBitMapAB __abHidd_DisplayBitMap
-extern OOP_AttrBase HiddDisplayBitMapAB;
+//#define HiddDisplayBitMapAB __abHidd_DisplayBitMap
+//extern OOP_AttrBase HiddDisplayBitMapAB;
 
 enum {
     aoHidd_DisplayBitMap_Drawable,

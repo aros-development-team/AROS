@@ -39,6 +39,7 @@
 
 /* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
 
+#if 0
 static OOP_AttrBase HiddBitMapAttrBase;  
 static OOP_AttrBase HiddPixFmtAttrBase;
 static OOP_AttrBase HiddGfxAttrBase;
@@ -46,16 +47,19 @@ static OOP_AttrBase HiddSyncAttrBase;
 static OOP_AttrBase HiddDisplayAB;
 static OOP_AttrBase HiddDisplayBitMapAB;
 
+
 static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
     { IID_Hidd_DisplayBitMap,	&HiddDisplayBitMapAB	},
     { IID_Hidd_Displaygfx,	&HiddDisplayAB		},
-    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
+//    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
     { IID_Hidd_Sync,		&HiddSyncAttrBase	},
     { IID_Hidd_Gfx, 	    	&HiddGfxAttrBase    	},
     { NULL, NULL }
 };
+#endif
+
 
 struct display_data
 {
@@ -121,10 +125,11 @@ UBYTE shape[] =
     taglist[idx].ti_Tag  = aHidd_Sync_ ## tag;	\
     taglist[idx].ti_Data = val
 
-VOID init_sync_tags(struct TagItem *tags, struct DisplayModeDesc *md)
+VOID init_sync_tags(struct TagItem *tags, struct DisplayModeDesc *md, OOP_Class * cl)
 {
+#define xsd XSD(cl)
     ULONG clock = (md->clock == 1) ? 28322000 : 25175000;
-	SET_SYNC_TAG(tags, 0, PixelClock, 	clock	);
+    SET_SYNC_TAG(tags, 0, PixelClock, 	clock	);
     SET_SYNC_TAG(tags, 1, HDisp, 	md->HDisplay	);
     SET_SYNC_TAG(tags, 2, VDisp, 	md->VDisplay	);
     SET_SYNC_TAG(tags, 3, HSyncStart, 	md->HSyncStart	);
@@ -134,10 +139,12 @@ VOID init_sync_tags(struct TagItem *tags, struct DisplayModeDesc *md)
     SET_SYNC_TAG(tags, 7, VSyncEnd, 	md->VSyncEnd	);
     SET_SYNC_TAG(tags, 8, VTotal, 	md->VTotal	);
     tags[9].ti_Tag = TAG_DONE;
+#undef xsd
 }
 
 static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+#define xsd XSD(cl)
     struct TagItem pftags[] = {
     	{ aHidd_PixFmt_RedShift,	0	}, /* 0 */
 	{ aHidd_PixFmt_GreenShift,	0	}, /* 1 */
@@ -157,13 +164,12 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ aHidd_PixFmt_BitMapType,	0	}, /* 15 */
 	{ TAG_DONE, 0UL }
     };
-
     struct TagItem sync_640_480[NUM_SYNC_TAGS];
 #ifndef ONLY640 
     struct TagItem sync_758_576[NUM_SYNC_TAGS];
     struct TagItem sync_800_600[NUM_SYNC_TAGS];
 #endif
-    
+
     struct TagItem modetags[] = {
 	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags		},
 	{ aHidd_Gfx_SyncTags,	(IPTR)sync_640_480	},
@@ -179,6 +185,8 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ TAG_MORE, 0UL }
     };
     struct pRoot_New mymsg;
+#undef xsd
+
 *(ULONG *)0xc0de2122=0;
 
     /* Init the pixel format */
@@ -203,10 +211,10 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     
     /* First init the sync tags */
-    init_sync_tags(sync_640_480, &DisplayDefMode[0]);
+    init_sync_tags(sync_640_480, &DisplayDefMode[0], cl);
 #ifndef ONLY640
-    init_sync_tags(sync_758_576, &DisplayDefMode[1]);
-    init_sync_tags(sync_800_600, &DisplayDefMode[2]);
+    init_sync_tags(sync_758_576, &DisplayDefMode[1], cl);
+    init_sync_tags(sync_800_600, &DisplayDefMode[2], cl);
 #endif
     
     /* init mytags. We use TAG_MORE to attach our own tags before we send them
@@ -230,8 +238,6 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     EnterFunc(bug("DisplayGfx::New()\n"));
     
-
-
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
@@ -256,7 +262,9 @@ static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
     BOOL found = FALSE;
+#define xsd XSD(cl)
     if (IS_GFX_ATTR(msg->attrID, idx)) {
+#undef xsd
     	switch (idx) {
 	     case aoHidd_Gfx_SupportsHWCursor:
 	     	*msg->storage = (IPTR)TRUE;
@@ -287,8 +295,10 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
     data = OOP_INST_DATA(cl, o);
     
     /* Displayable bitmap ? */
+#define xsd XSD(cl)
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
     framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
+#undef xsd
     
     if (framebuffer) {
 	/* If the user asks for a framebuffer map we must ALLWAYS supply a class */ 
@@ -321,8 +331,9 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	    is supplied, you can create a bitmap with same pixelformat as Frien
 	*/
 	
-	
+#define xsd XSD(cl)
 	modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+
 	if (vHidd_ModeID_Invalid != modeid) {
 	    /* User supplied a valid modeid. We can use our offscreen class */
 	    classptr = XSD(cl)->offbmclass;
@@ -357,6 +368,7 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	/* Yes. We must let the superclass not that we do this. This is
 	   done through adding a tag in the frot of the taglist */
 	mytags[0].ti_Tag	= aHidd_BitMap_ClassPtr;
+#undef xsd
 	mytags[0].ti_Data	= (IPTR)classptr;
 	mytags[1].ti_Tag	= TAG_MORE;
 	mytags[1].ti_Data	= (IPTR)msg->attrList;
@@ -384,10 +396,12 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 
     EnterFunc(bug("DisplayGfx.BitMap::CopyBox( %d,%d to %d,%d of dim %d,%d\n",
     	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
-	
+
+#define xsd XSD(cl)
+#warning Potential source for error: HiddDisplayBitMapAB define.	
     OOP_GetAttr(msg->src,  aHidd_DisplayBitMap_Drawable, (IPTR *)&src);
     OOP_GetAttr(msg->dest, aHidd_DisplayBitMap_Drawable, (IPTR *)&dest);
-
+#undef xsd
     if (!dest || !src ||
     	((mode != vHidd_GC_DrawMode_Copy) &&
 	 (mode != vHidd_GC_DrawMode_And) &&
@@ -833,8 +847,22 @@ OOP_Class *init_displayclass (struct display_staticdata *xsd)
     	{
 	    cl->UserData = (APTR)xsd;
 	    xsd->displayclass = cl;
+
+            __IHidd_BitMap        = OOP_ObtainAttrBase(IID_Hidd_BitMap);
+            __IHidd_DisplayBitMap = OOP_ObtainAttrBase(IID_Hidd_DisplayBitMap);
+            __IHidd_DisplayGfx    = OOP_ObtainAttrBase(IID_Hidd_Displaygfx);
+            __IHidd_Sync          = OOP_ObtainAttrBase(IID_Hidd_Sync);
+            __IHidd_Gfx           = OOP_ObtainAttrBase(IID_Hidd_Gfx);
 	    
+#if 0
 	    if (OOP_ObtainAttrBases(attrbases))
+#else
+	    if (!__IHidd_BitMap         || 
+	        !__IHidd_DisplayBitMap  ||
+	        !__IHidd_DisplayGfx     ||
+	        !__IHidd_Sync           ||
+	        !__IHidd_Gfx)
+#endif
 	    {
 		D(bug("VgaHiddClass ok\n"));
 		
@@ -863,9 +891,11 @@ VOID free_displayclass(struct display_staticdata *xsd)
 	
         if(xsd->displayclass) OOP_DisposeObject((OOP_Object *) xsd->displayclass);
         xsd->displayclass = NULL;
-	
+
+#warning Change!
+#if 0
 	OOP_ReleaseAttrBases(attrbases);
+#endif
     }
     ReturnVoid("free_displayclass");
 }
-
