@@ -79,7 +79,7 @@ static IPTR aslfontstyle_new(Class * cl, Object * o, struct opSet * msg)
     	
 	data->style = GetTagData(ASLFS_Style, FS_NORMAL, msg->ops_AttrList);
 	
-	if ((labelarray = (STRPTR *)GetTagData(ASLFS_LabelArray, NULL, msg->ops_AttrList)))
+	if ((labelarray = (STRPTR *)GetTagData(ASLFS_LabelArray, 0, msg->ops_AttrList)))
 	{
 	    data->text[0] = labelarray[0];
 	    data->text[1] = labelarray[1];

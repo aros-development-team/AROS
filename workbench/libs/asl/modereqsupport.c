@@ -30,7 +30,7 @@
 
 #define SDEBUG 0
 #define DEBUG 0
-#define ADEBUG 0
+//#define ADEBUG 0
 
 #include <aros/debug.h>
 

@@ -24,7 +24,7 @@ STRPTR GetString(LONG id, struct Catalog *catalog, struct AslBase_intern *AslBas
  
     if (catalog && LocaleBase)
     {
-    	retval = GetCatalogStr(catalog, id, retval);
+    	retval = (STRPTR)GetCatalogStr(catalog, id, retval);
     }
     
     return retval;
