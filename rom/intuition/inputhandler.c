@@ -1055,10 +1055,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			      	     w,
 			      	     IntuitionBase);
 
-		Forbid();
-		w->Flags |= WFLG_WINDOWTICKED;
-		Permit();
-
 		break; /* case IECLASS_TIMER */
 
 	    case IECLASS_MENU:

@@ -82,6 +82,10 @@
     
     if (window->UserPort)
     {
+    	if (imsg->Class == IDCMP_INTUITICKS)
+	{
+	    window->Flags |= WFLG_WINDOWTICKED;
+	}
     	PutMsg(window->UserPort, &imsg->ExecMessage);
     }
     else
