@@ -42,6 +42,9 @@ else
 fi
 AC_MSG_RESULT($target)
 
+#don't know where else to put this...
+TOPDIR=$PWD
+
 # Parse the target field into something useful.
 changequote(<<,>>)
 target_os=`echo $target | sed 's/^\([^-]*\)-\(.*\)$/\1/'`
@@ -141,7 +144,7 @@ case "$host_os" in
         	;;
 	esac 	
 	aros_host_lib_suffix=".0.0"
-        ;; 
+        ;;
 
     openbsd*)
         aros_host_cc="$aros_host_cc -pipe"
@@ -260,7 +263,7 @@ dnl particular target.
 # host and target CPU are the same. With GCC this is normally enough.
 #
 
-#if test "$cross_compile" = "no" ; then 
+#if test "$cross_compile" = "no" ; then
     aros_target_cc="$aros_host_cc"
     aros_target_as="$aros_host_cc"
     aros_shared_ld="$aros_host_ld"
@@ -531,7 +534,7 @@ case "$target_os" in
 		;;
 	esac
 	;;
- 
+
     *)
 	AC_MSG_ERROR([Unsupported target architecture $target])
 	;;
@@ -708,6 +711,7 @@ AC_SUBST(aros_arch)
 AC_SUBST(aros_cpu)
 AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
+AC_SUBST(TOPDIR)
 
 # Host related
 AC_SUBST(aros_host_arch)
@@ -727,6 +731,7 @@ AC_SUBST(aros_host_lib_suffix)
 AC_SUBST(aros_target_arch)
 AC_SUBST(aros_target_cpu)
 AC_SUBST(aros_target_incl)
+AC_SUBST(aros_target_cc)
 AC_SUBST(aros_shared_default)
 
 AC_SUBST(aros_target_cflags)
@@ -849,10 +854,15 @@ cp config/config.h.in ${aros_geninc_dir}
 cp config/host.cfg.in ${aros_hostcfg_dir}
 cp config/target.cfg.in ${aros_targetcfg_dir}
 cp config/make.defaults.in ${aros_targetcfg_dir}
+cp config/specs.in ${aros_targetcfg_dir}
+cp scripts/aros-gcc.in bin/${aros_host_arch}-${aros_host_cpu}/tools/${aros_target_cpu}-${aros_target_arch}-aros-gcc.in
 
 AC_OUTPUT(Makefile ${aros_inc_dir}/config.h ${aros_geninc_dir}/config.h
 	${aros_hostcfg_dir}/host.cfg ${aros_targetcfg_dir}/target.cfg
-	mmake.config ${aros_targetcfg_dir}/make.defaults)
+	mmake.config ${aros_targetcfg_dir}/make.defaults ${aros_targetcfg_dir}/specs
+        bin/${aros_host_arch}-${aros_host_cpu}/tools/${aros_target_cpu}-${aros_target_arch}-aros-gcc)
+
+chmod a+x bin/${aros_host_arch}-${aros_host_cpu}/tools/${aros_target_cpu}-${aros_target_arch}-aros-gcc
 
 
 dnl This is in order to not defined SHARED_CFLAGS sometimes
