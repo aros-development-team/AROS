@@ -35,12 +35,12 @@ COREFILES	:= init \
 
 
 #MM
-exec-palm-m68k : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \
+exec-palm-m68000 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \
 	$(foreach f,$(COREFILES), $(OBJDIR)/$(f).o)
 	@$(NOP)
 
 #MM
-setup-exec-palm-m68k : $(GENINCDIR)/sigcore.h
+setup-exec-palm-m68000 : $(GENINCDIR)/sigcore.h
 	%mkdirs_q $(OBJDIR)
 	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
 	%add_objects $(foreach f,$(COREFILES), rom/exec/$(f))
@@ -48,7 +48,7 @@ setup-exec-palm-m68k : $(GENINCDIR)/sigcore.h
 
 
 #MM
-includes-palm-m68k : $(INCFILES)
+includes-palm-m68000 : $(INCFILES)
 	@$(NOP)
 
 #MM
