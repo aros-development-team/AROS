@@ -137,12 +137,12 @@ main (int argc, char ** argv)
 	    if (mode != m_prespace)
 	    {
 		NEWMODE(m_space);
+		putchar (c);
 	    }
 	    else
 	    {
 		fputs ("&nbsp", stdout);
 	    }
-	    putchar (c);
 	    break;
 
 	case '/': /* Comment or / */
