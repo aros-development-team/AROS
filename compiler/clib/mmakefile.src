@@ -23,6 +23,7 @@ FILES := \
 	abort \
 	abs \
 	asctime \
+	atof \
 	atoi \
 	atol \
 	bcopy \
@@ -101,6 +102,7 @@ FILES := \
 	strrchr \
 	strspn \
 	strstr \
+	strtod \
 	strtok \
 	strtol \
 	strtoul \
