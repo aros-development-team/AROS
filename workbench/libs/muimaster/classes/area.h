@@ -188,7 +188,7 @@ struct MUI_AreaData
 
     char *mad_BackgroundSpec;
     LONG               mad_DisableCount; /* counts number of disables */
-    /* EBD PRIV */
+    /* END PRIV */
 };
 
 
