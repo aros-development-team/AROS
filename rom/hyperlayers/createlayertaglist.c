@@ -102,39 +102,39 @@
   {
     switch (tagList[i].ti_Tag)
     {
-      case LA_PRIORITY:
+      case LA_Priority:
         priority = tagList[i].ti_Data;
       break;
       
-      case LA_HOOK:
+      case LA_Hook:
         hook = (struct Hook *)tagList[i].ti_Data;
       break;
       
-      case LA_SUPERBITMAP:
+      case LA_SuperBitMap:
         superbitmap = (struct BitMap *)tagList[i].ti_Data;
       break;
       
-      case LA_CHILDOF:
+      case LA_ChildOf:
         parent = (struct Layer *)tagList[i].ti_Data;
       break;
       
-      case LA_INFRONTOF:
+      case LA_InFrontOf:
         if (infrontof)
           return NULL;
         infrontof = (struct Layer *)tagList[i].ti_Data;
       break;
       
-      case LA_BEHIND:
+      case LA_Behind:
         if (behind)
           return NULL;
         behind = (struct Layer *)tagList[i].ti_Data;
       break;
       
-      case LA_VISIBLE:
+      case LA_Visible:
         visible = tagList[i].ti_Data;
       break;
       
-      case LA_SHAPE:
+      case LA_Shape:
         layershape = (struct Region *)tagList[i].ti_Data;
       break;
 
