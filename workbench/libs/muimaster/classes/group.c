@@ -387,6 +387,15 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Virtgroup_Left:
 		virt_offx = tag->ti_Data;
 		break;
+	    
+            case MUIA_Group_LayoutHook:
+                /* 
+                    [ach] Seems like MUI supports setting this attribute after 
+                    initialization, even though the documentation states 
+                    otherwise. Atleast some programs use it... 
+                */
+                data->layout_hook = (struct Hook *)tag->ti_Data;
+		break;
 
 	    case MUIA_Virtgroup_Top:
 		virt_offy = tag->ti_Data;
