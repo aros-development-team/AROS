@@ -28,6 +28,11 @@ extern char MUIC_List[];
 #define MUIM_List_Select                    0x804252d8 /* V4  */
 #define MUIM_List_Sort                      0x80422275 /* V4  */
 #define MUIM_List_TestPos                   0x80425f48 /* V11 */
+#define MUIM_List_Construct                 0x9d5100A1 /* ZV1 GM same like NList */
+#define MUIM_List_Destruct                  0x9d5100A2 /* ZV1 GM same like NList */
+#define MUIM_List_Compare                   0x9d5100A3 /* Zv1 GM same like NList */
+#define MUIM_List_Display                   0x9d5100A4 /* Zv1 GM same like NList */
+
 struct  MUIP_List_Clear                     { ULONG MethodID; };
 struct  MUIP_List_CreateImage               { ULONG MethodID; Object *obj; ULONG flags; };
 struct  MUIP_List_DeleteImage               { ULONG MethodID; APTR listimg; };
@@ -43,6 +48,10 @@ struct  MUIP_List_Remove                    { ULONG MethodID; LONG pos; };
 struct  MUIP_List_Select                    { ULONG MethodID; LONG pos; LONG seltype; LONG *state; };
 struct  MUIP_List_Sort                      { ULONG MethodID; };
 struct  MUIP_List_TestPos                   { ULONG MethodID; LONG x; LONG y; struct MUI_List_TestPos_Result *res; };
+struct  MUIP_List_Construct                 { ULONG MethodID; APTR entry; APTR pool; };
+struct  MUIP_List_Destruct                  { ULONG MethodID; APTR entry; APTR pool; };
+struct  MUIP_List_Compare                   { ULONG MethodID; APTR entry1; APTR entry2; LONG sort_type1; LONG sort_type2; };
+struct  MUIP_List_Display                   { ULONG MethodID; APTR entry; LONG entry_pos; STRPTR *strings; STRPTR *preparses; };
 
 /* Attributes */
 
