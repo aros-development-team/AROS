@@ -7,7 +7,7 @@ assign LOCALE: sys:Locale
 
 makedir ram:env
 assign ENV: ram:env
-assign Libs: Sys:Classes/Gadgets ADD
+assign Libs: Sys:Classes ADD
 
 
 ;
