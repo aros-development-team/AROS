@@ -25,6 +25,9 @@ clean:
 $(BINDIR)/dir: dir.c strlen.c qsort.c strcpy.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(BINDIR)/librarytest: librarytest.c $(TOP)/libs/dummylib_gcc.h
+	$(CC) $(CFLAGS) -I $(TOP)/libs -c $< -o $@
+
 $(BINDIR)/%: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
