@@ -485,7 +485,7 @@ ULONG navclass_dispatcher(Class *cl, Object *obj, Msg msg)
    switch(msg->MethodID)
    {
    case OM_NEW:
-      if((rv = DoSuperMethodA(cl,obj,msg)) != NULL)
+      if((rv = DoSuperMethodA(cl,obj,msg)) != 0)
       {
 	 Object *newobj = (Object *) rv;
 

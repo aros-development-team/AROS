@@ -1245,7 +1245,7 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
    data->n_Pool = CreatePool(MEMF_CLEAR | MEMF_ANY, AG_PUDDLE_SIZE, AG_PUDDLE_SIZE);
 
    /* process attributes that only belongs to this class */
-   while((tag = NextTagItem(&tstate)) != NULL)
+   while((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
    {
       switch(tag->ti_Tag)
       {
@@ -1391,7 +1391,7 @@ ULONG om_set(Class *cl,Object *obj,struct opSet *msg)
    struct TagItem *tag;
 
    /* process attributes that only belongs to this class */
-   while((tag = NextTagItem(&tstate)) != NULL)
+   while((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
    {
       switch(tag->ti_Tag)
       {

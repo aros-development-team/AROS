@@ -123,7 +123,7 @@ ULONG agdtm_rexxcmd(Class *cl, Object *obj, struct RexxMsg *msg)
 
    DB(("command received : %s\n",msg->rm_Args[0]));
 
-   cmd = CopyString(cl, obj, msg->rm_Args[0]);
+   cmd = CopyString(cl, obj, (STRPTR)msg->rm_Args[0]);
    if(cmd != NULL)
    {
       STRPTR ptr = cmd;
@@ -317,7 +317,7 @@ RegCall GetA4 void asyncmethodfunc(void)
 	             Close(rxmsg->rm_Stdout);
 
 	          /* delete commandstring */
-		  DeleteArgstring(rxmsg->rm_Args[0]);
+		  DeleteArgstring((STRPTR)rxmsg->rm_Args[0]);
 
 		  DeleteRexxMsg(rxmsg);
 
@@ -356,7 +356,7 @@ RegCall GetA4 void asyncmethodfunc(void)
 	          Close(rxmsg->rm_Stdout);
 
 	       /* delete commandstring */
-	       DeleteArgstring(rxmsg->rm_Args[0]);
+	       DeleteArgstring((STRPTR)rxmsg->rm_Args[0]);
 
 	       DeleteRexxMsg(rxmsg);
 
