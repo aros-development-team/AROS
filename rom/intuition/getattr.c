@@ -15,7 +15,7 @@
 #include <proto/intuition.h>
 #include <proto/boopsi.h>
 
-	AROS_LH3(ULONG, oldGetAttr,
+	AROS_LH3(ULONG, GetAttr,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG   , attrID, D0),

@@ -205,7 +205,7 @@ AROS_LP1(void, FreeSysRequest,
     AROS_LPA(struct Window *, Window, A0),
     struct IntuitionBase *, IntuitionBase, 62, Intuition)
 
-AROS_LP3(ULONG, oldGetAttr,
+AROS_LP3(ULONG, GetAttr,
     AROS_LPA(ULONG   , attrID, D0),
     AROS_LPA(Object *, object, A0),
     AROS_LPA(IPTR *  , storagePtr, A1),
@@ -391,7 +391,7 @@ AROS_LP1(void, ScreenToFront,
     AROS_LPA(struct Screen *, screen, A0),
     struct IntuitionBase *, IntuitionBase, 42, Intuition)
 
-AROS_LP2(ULONG, oldSetAttrsA,
+AdROS_LP2(ULONG, SetAttrsA,
     AROS_LPA(APTR            , object, A0),
     AROS_LPA(struct TagItem *, tagList, A1),
     struct IntuitionBase *, IntuitionBase, 108, Intuition)

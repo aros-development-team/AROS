@@ -212,8 +212,8 @@
     AROS_LCA(struct Window *, window, A0), \
     struct IntuitionBase *, IntuitionBase, 62, Intuition)
 
-#define oldGetAttr(attrID, object, storagePtr) \
-    AROS_LC3(ULONG, oldGetAttr, \
+#define GetAttr(attrID, object, storagePtr) \
+    AROS_LC3(ULONG, GetAttr, \
     AROS_LCA(ULONG   , attrID, D0), \
     AROS_LCA(Object *, object, A0), \
     AROS_LCA(IPTR *  , storagePtr, A1), \
@@ -432,8 +432,8 @@
     AROS_LCA(struct Screen *, screen, A0), \
     struct IntuitionBase *, IntuitionBase, 42, Intuition)
 
-#define oldSetAttrsA(object, tagList) \
-    AROS_LC2(ULONG, oldSetAttrsA, \
+#define SetAttrsA(object, tagList) \
+    AROS_LC2(ULONG, SetAttrsA, \
     AROS_LCA(APTR            , object, A0), \
     AROS_LCA(struct TagItem *, tagList, A1), \
     struct IntuitionBase *, IntuitionBase, 108, Intuition)
