@@ -2,7 +2,8 @@ path SYS:Demos ADD QUIET
 assign DEVS: devs
 assign LIBS: libs
 assign S: s
-mount RAM: NIL:
+mount RAM:
+;mount NIL:
 makedir ram:T
 assign T: ram:t
 ;
