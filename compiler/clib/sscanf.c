@@ -20,8 +20,8 @@
 	int sscanf (
 
 /*  SYNOPSIS */
-	char        * str,
-	const char  * format,
+	const char  *str,
+	const char  *format,
 	...)
 
 /*  FUNCTION
@@ -61,9 +61,7 @@
     va_list args;
 
     va_start(args, format);
-
     retval = vsscanf(str, format, args);
-
     va_end(args);
     
     return retval;
