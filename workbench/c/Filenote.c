@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Filenote CLI command
@@ -92,6 +92,10 @@
 
 #include <ctype.h>
 
+#include <aros/rt.h>
+
+#define ERROR_HEADER "Filenote"
+
 #define ARG_TEMPLATE    "FILE/A,COMMENT,ALL/S,QUIET/S"
 #define ARG_FILE        0
 #define ARG_COMMENT     1
@@ -105,7 +109,7 @@
 
 #define MAX_PATH_LEN    512
 
-static const char version[] = "$VER: Filenote 41.0 (20.04.1997)\n";
+static const char version[] = "$VER: Filenote 41.1 (29.08.1998)\n";
 
 struct UtilityBase *UtilityBase;
 
@@ -115,8 +119,10 @@ int main(int argc, char *argv[])
 {
     struct RDArgs     * rda;
     struct AnchorPath * apath;
-    IPTR              * args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL};
+    IPTR                args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL};
     int                 Return_Value;
+
+    RT_Init();
 
     Return_Value = RETURN_OK;
 
@@ -129,9 +135,12 @@ int main(int argc, char *argv[])
         {
             /* Make sure DOS knows the buffer size.
              */
+            apath->ap_Flags = APF_DOWILD | APF_FollowHLinks;
             apath->ap_Strlen = MAX_PATH_LEN;
+            apath->ap_BreakBits = 0;
+            apath->ap_FoundBreak = 0;
 
-            rda = ReadArgs(ARG_TEMPLATE, (LONG *)args, NULL);
+            rda = ReadArgs(ARG_TEMPLATE, args, NULL);
             if (rda)
             {
                 Return_Value = Do_Filenote(apath,
@@ -144,7 +153,7 @@ int main(int argc, char *argv[])
             }
             else
             {
-                PrintFault(IoErr(), "Filenote");
+                PrintFault(IoErr(), ERROR_HEADER);
 
                 Return_Value = RETURN_FAIL;
             }
@@ -163,6 +172,8 @@ int main(int argc, char *argv[])
         VPrintf("Need \'utility.library\' version 39 or above\n", NULL);
         Return_Value = RETURN_FAIL;
     }
+
+    RT_Exit();
 
     return (Return_Value);
 
@@ -200,16 +211,14 @@ int Do_Filenote(struct AnchorPath *a,
         All == NOT_SET
     )
     {
-        VPrintf("Note failed\n", NULL);
-        SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-
+        PrintFault(ERROR_OBJECT_WRONG_TYPE, ERROR_HEADER);
         Return_Value = RETURN_FAIL;
     }
     else
     {
         if (Return_Value != RETURN_FAIL)
         {
-            Result = MatchFirst((STRPTR)File, a);
+            Result = MatchFirst(File, a);
 
             if (Result == MATCHED_FILE)
             {
@@ -273,7 +282,7 @@ int Do_Filenote(struct AnchorPath *a,
             }
             else
             {
-                PrintFault(IoErr(), "Filenote");
+                PrintFault(IoErr(), ERROR_HEADER);
                 Return_Value = RETURN_FAIL;
             }
 
