@@ -70,4 +70,10 @@ ULONG DoSetupMethod(Object *obj, struct MUI_RenderInfo *info);
 APTR AllocVecPooled (APTR pool, ULONG memsize);
 void FreeVecPooled (APTR pool, APTR mem);
 
+/* returns next node of this node */
+void *Node_Next(APTR node);
+/* returns first node of this list */
+void *List_First(APTR list);
+
+
 #endif
