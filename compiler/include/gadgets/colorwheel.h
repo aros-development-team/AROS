@@ -36,21 +36,21 @@ struct ColorWheelRGB
 };
 
 
-#define WHEEL_Dummy          (TAG_USER+0x04000000)
-#define WHEEL_Hue            (WHEEL_DUMMY+1)
-#define WHEEL_Saturation     (WHEEL_DUMMY+2)
-#define WHEEL_Brightness     (WHEEL_DUMMY+3)
-#define WHEEL_HSB            (WHEEL_DUMMY+4)
-#define WHEEL_Red            (WHEEL_DUMMY+5)
-#define WHEEL_GREen          (WHEEL_DUMMY+6)
-#define WHEEL_Blue           (WHEEL_DUMMY+7)
-#define WHEEL_RGB            (WHEEL_DUMMY+8)
-#define WHEEL_Screen         (WHEEL_DUMMY+9)
-#define WHEEL_Abbrv          (WHEEL_DUMMY+10)
-#define WHEEL_Donation       (WHEEL_DUMMY+11)
-#define WHEEL_BevelBox       (WHEEL_DUMMY+12)
-#define WHEEL_GradientSlider (WHEEL_DUMMY+13)
-#define WHEEL_MaxPens        (WHEEL_DUMMY+14)
+#define WHEEL_Dummy          (TAG_USER + 0x04000000)
+#define WHEEL_Hue            (WHEEL_Dummy + 1)
+#define WHEEL_Saturation     (WHEEL_Dummy + 2)
+#define WHEEL_Brightness     (WHEEL_Dummy + 3)
+#define WHEEL_HSB            (WHEEL_Dummy + 4)
+#define WHEEL_Red            (WHEEL_Dummy + 5)
+#define WHEEL_GREen          (WHEEL_Dummy + 6)
+#define WHEEL_Blue           (WHEEL_Dummy + 7)
+#define WHEEL_RGB            (WHEEL_Dummy + 8)
+#define WHEEL_Screen         (WHEEL_Dummy + 9)
+#define WHEEL_Abbrv          (WHEEL_Dummy + 10)
+#define WHEEL_Donation       (WHEEL_Dummy + 11)
+#define WHEEL_BevelBox       (WHEEL_Dummy + 12)
+#define WHEEL_GradientSlider (WHEEL_Dummy + 13)
+#define WHEEL_MaxPens        (WHEEL_Dummy + 14)
 
 
 #endif /* GADGETS_COLORWHEEL_H */
