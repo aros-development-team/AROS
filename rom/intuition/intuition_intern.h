@@ -360,10 +360,11 @@ enum
 
 /* Flag definitions for MoreFlags */
 
-#define  WMFLG_NOTIFYDEPTH  (1 << 0)     /* Window wants notification when
-					    it's depth arranged */
+#define WMFLG_NOTIFYDEPTH        (1 << 0)   /* Window wants notification when
+					       it's depth arranged */
 
-
+#define WMFLG_DO_UNLOCKPUBSCREEN (1 << 1)
+					      
 /* Called by intuition to free a window */
 VOID int_closewindow(struct DeferedActionMessage *msg, struct IntuitionBase *IntuitionBase);
 VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBase);
