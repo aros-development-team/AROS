@@ -11,7 +11,7 @@ FILES	:=	kbd_init functable kbdclass kbd_common
 #MM Drivers-pc-i386-kbd :
 Drivers-pc-i386-kbd : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) kbdclass.s kbd_common.s $(ENDFUNC)
 	%add_objects rom/boot/kbd_driver
-	@ld -rd $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
+	@ld -r -d $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
 	    -o $(OSGENDIR)/boot/kbd_driver.o
 	@objcopy -R .note -R .comment $(OSGENDIR)/boot/kbd_driver.o
 

@@ -14,7 +14,7 @@ ENDFUNC     := $(END_FILE).o
 #MM Drivers-pc-i386-irq : hidd-irq-stubs
 Drivers-pc-i386-irq : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
 	%add_objects rom/boot/hidd.kernel.irq
-	@ld -rd $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
+	@ld -r -d $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
 	    -o $(OSGENDIR)/boot/hidd.kernel.irq.o
 	@objcopy -R .note -R .comment $(OSGENDIR)/boot/hidd.kernel.irq.o
 
