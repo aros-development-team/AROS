@@ -122,6 +122,7 @@ FUNCTIONS := \
 	locklayerrom \
 	move \
 	newregion \
+	obtainbestpena \
 	openfont \
 	orrectregion \
 	orregionregion \
@@ -133,6 +134,7 @@ FUNCTIONS := \
 	readpixelarray8 \
 	readpixelline8 \
 	rectfill \
+	releasepen \
 	remfont \
 	remvsprite \
 	scalerdiv \
