@@ -75,7 +75,7 @@ const struct Resident resident=
     (ULONG *)inittabl
 };
 
-const char name[]=NAME_STRING
+const char name[]=NAME_STRING;
 
 const char version[]=VERSION_STRING;
 
