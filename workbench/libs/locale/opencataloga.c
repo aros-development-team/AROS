@@ -33,7 +33,7 @@ struct header
 	AROS_LHA(struct TagItem *, tags, A2),
 
 /*  LOCATION */
-	struct Library *, LocaleBase, 25, Locale)
+	struct LocaleBase *, LocaleBase, 25, Locale)
 
 /*  FUNCTION
 

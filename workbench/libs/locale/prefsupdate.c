@@ -20,7 +20,7 @@
 	AROS_LHA(struct Locale  *, locale, A0),
 
 /*  LOCATION */
-	struct Library *, LocaleBase, 28, Locale)
+	struct LocaleBase *, LocaleBase, 28, Locale)
 
 /*  FUNCTION
 	This internal function is called by the IPrefs program to

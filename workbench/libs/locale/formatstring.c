@@ -31,7 +31,7 @@ char HEXarray [] = "0123456789ABCDEF";
 	AROS_LHA(struct Hook   *, putCharFunc, A3),
 
 /*  LOCATION */
-	struct Library *, LocaleBase, 11, Locale)
+	struct LocaleBase *, LocaleBase, 11, Locale)
 
 /*  FUNCTION
 

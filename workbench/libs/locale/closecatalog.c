@@ -20,7 +20,7 @@
 	AROS_LHA(struct Catalog *, catalog, A0),
 
 /*  LOCATION */
-	struct Locale *, LocaleBase, 6, Locale)
+	struct LocaleBase *, LocaleBase, 6, Locale)
 
 /*  FUNCTION
 	Conclude access to a message catalog, and decrement the use count.

@@ -22,7 +22,7 @@
 	AROS_LHA(STRPTR          , defaultString, A1),
 
 /*  LOCATION */
-	struct Library *, LocaleBase, 12, Locale)
+	struct LocaleBase *, LocaleBase, 12, Locale)
 
 /*  FUNCTION
 	This function will return the string specified by the 

@@ -25,7 +25,7 @@
 	AROS_LHA(ULONG          , type, D1),
 
 /*  LOCATION */
-	struct Locale *, LocaleBase, 30, Locale)
+	struct LocaleBase *, LocaleBase, 30, Locale)
 
 /*  FUNCTION
 	StrnCmp() will compare two strings, up to a maximum length
