@@ -44,6 +44,9 @@ char * strtok (char * str, const char * sep);
 char * strtok_r (char * str, const char * sep, char ** last);
 char * stpcpy (char * dest, const char * src);
 
+size_t strlcpy(char *dst, const char *src, size_t size);
+size_t strlcat(char *dst, const char *src, size_t size);
+
 int    strcoll (const char *s1, const char *s2);
 
 size_t strxfrm (char * restrict s1, const char * restrict s2, size_t n);

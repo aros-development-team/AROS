@@ -67,6 +67,8 @@ COMMON	:= \
 	strcpy \
 	strcspn \
 	strdup \
+	strlcat \
+	strlcpy \
 	strlen \
 	strncasecmp \
 	strncat \
@@ -78,7 +80,7 @@ COMMON	:= \
 	strspn \
 	strstr \
 	strtod \
-	strtok
+	strtok 
 
 
 #   - Shared are in either the shared linklib, or the arosc.library module
