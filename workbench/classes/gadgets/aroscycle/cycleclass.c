@@ -193,7 +193,7 @@ IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
         rport = ObtainGIRPort(msg->ops_GInfo);
         if(rport)
         {
-            DoMethod(o, GM_RENDER, msg->ops_GInfo, rport, GREDRAW_UPDATE);
+            DoMethod(o, GM_RENDER, (IPTR)msg->ops_GInfo, (IPTR)rport, GREDRAW_UPDATE);
             ReleaseGIRPort(rport);
             result = FALSE;
         }
