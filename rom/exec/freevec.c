@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Free memory allocated by AllocVec().
@@ -24,10 +24,11 @@
 	struct ExecBase *, SysBase, 115, Exec)
 
 /*  FUNCTION
-	Free some memory allocated with allocvec.
+	Free some memory previously allocated with AllocVec().
 
     INPUTS
-	memoryBlock - The memory to be freed. It is safe to free a NULL pointer.
+	memoryBlock - The memory to be freed. It is safe to try to free a NULL
+                      pointer.
 
     RESULT
 
