@@ -15,8 +15,6 @@
 #include <string.h>
 #include "dos_intern.h"
 
-#include <linux/signal.h>
-
 LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name, struct DosLibrary *DOSBase)
 {
     STRPTR volname;
