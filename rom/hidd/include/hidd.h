@@ -40,11 +40,11 @@
  */
 enum {
     HIDDA_Base = (TAG_USER + 0x800000),
-    HIDDA_Type,			/* [..G] (UWORD) Major type of HIDD */
+    HIDDA_Type, 		/* [..G] (UWORD) Major type of HIDD */
     HIDDA_SubType,		/* [..G] (UWORD) Sub-type of HIDD */
     HIDDA_Producer,		/* [..G] (ULONG) Product Developer */
-    HIDDA_Name,			/* [..G] (STRPTR) Name of HIDD */
-    HIDDA_HardwareName,		/* [..G] (STRPTR) Hardware description */
+    HIDDA_Name, 		/* [..G] (STRPTR) Name of HIDD */
+    HIDDA_HardwareName, 	/* [..G] (STRPTR) Hardware description */
     HIDDA_Active,		/* [ISG] (BOOL) Current active status */
     HIDDA_Status,		/* [..G] (ULONG) Status change */
     HIDDA_ErrorCode,		/* [..G] (ULONG) Error code */
@@ -63,7 +63,7 @@ enum {
 /* Values for the HIDD_Type Tag */
 #define HIDDV_Type_Any		-1	/* match any type */
 
-#define HIDDV_Type_Root		0	/* hiddclass */
+#define HIDDV_Type_Root 	0	/* hiddclass */
 #define HIDDV_Type_Config	1	/* configuration plugins */
 #define HIDDV_Type_Timer	2	/* clocks and alarms */
 
@@ -91,16 +91,13 @@ enum {
     HIDDM_BeginIO,		/* Send a device like command */
     HIDDM_AbortIO,		/* Abort a device like command */
 
-    HIDDM_Lock,			/* Lock a HIDD */
-    HIDDM_UnLock,		/* UnLock a HIDD */
-    HIDDM_AddHidd,		/* Add a subclass HIDD */
-    HIDDM_RemoveHidd,		/* Remove a subclass HIDD */
-    HIDDM_FindHidd		/* Find a suitable HIDD */
+    HIDDM_LoadConfigPlugin,	/* HIDDT_Config M ( hmPlugin *) */
+    HIDDM_Lock, 		/* Lock a HIDD */
+    HIDDM_Unlock,		/* UnLock a HIDD */
+    HIDDM_AddHIDD,		/* Add a subclass HIDD */
+    HIDDM_RemoveHIDD,		/* Remove a subclass HIDD */
+    HIDDM_FindHIDD		/* Find a suitable HIDD */
 };
-
-#if 0
-#define HIDDM_LoadConfigPlugin	(HIDDM_Base + 5) /* HIDDT_Config M ( hmPlugin *) */
-#endif
 
 /*
     This flag is set on uncommon methods. Uncommon methods are methods
@@ -145,7 +142,7 @@ typedef struct hmLock
 typedef struct hmAdd
 {
     STACKULONG		MethodID;
-    struct MinList	*hma_List;	/* Private to classes */
+    Class		*hma_Class;
 } hmAdd;
 
 /* Used for HIDDM_FindHIDD */

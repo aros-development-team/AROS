@@ -46,7 +46,7 @@ const struct Resident HIDD_resident =
     RTF_COLDSTART,
     41,
     NT_UNKNOWN,
-    90,	/* Has to be after BOOPSI */
+    90, /* Has to be after BOOPSI */
     (UBYTE *)name,
     (UBYTE *)version,
     (APTR)&AROS_SLIB_ENTRY(init,HIDD)
@@ -75,9 +75,9 @@ struct HIDDData
 /* Static Data for the hiddclass. */
 struct HCD
 {
-    struct Library 		*UtilityBase;
-    struct Library 		*BOOPSIBase;
-    struct MinList 		 hiddList;
+    struct Library		*UtilityBase;
+    struct Library		*BOOPSIBase;
+    struct MinList		 hiddList;
     struct SignalSemaphore	 listLock;
 };
 
@@ -87,17 +87,17 @@ struct HCD
 /* This is the dispatcher for the root HIDD class. */
 
 AROS_UFH3(static IPTR, dispatch_hiddclass,
-    AROS_UFHA(Class *, 	cl, 	A0),
-    AROS_UFHA(Object *, o,  	A2),
-    AROS_UFHA(Msg,	msg,	A1)
+    AROS_UFHA(Class *,  cl,     A0),
+    AROS_UFHA(Object *, o,      A2),
+    AROS_UFHA(Msg,      msg,    A1)
 )
 {
     IPTR retval = 0UL;
     struct HIDDData *hd = NULL;
 
     /* Don't try and get instance data if we don't have an object. */
-    if(	   msg->MethodID != OM_NEW
-	&& msg->MethodID != HIDDM_Class_Get 
+    if(    msg->MethodID != OM_NEW
+	&& msg->MethodID != HIDDM_Class_Get
 	&& msg->MethodID != HIDDM_Class_MGet
       )
 	hd = INST_DATA(cl, o);
@@ -111,12 +111,12 @@ AROS_UFH3(static IPTR, dispatch_hiddclass,
 	    break;
 
 	hd = INST_DATA(cl, retval);
-	
+
 	/*  Initialise the HIDD class. These fields are publicly described
 	    as not being settable at Init time, however it is the only way to
 	    get proper abstraction if you ask me. Plus it does reuse code
 	    in a nice way.
-	
+
 	    To pass these into the init code I would recommend that your
 	    pass in a TagList of your tags, which is linked to the user's
 	    tags by a TAG_MORE. This way you will prevent them from setting
@@ -135,7 +135,7 @@ AROS_UFH3(static IPTR, dispatch_hiddclass,
 	    hd->hd_ErrorCode = GetTagData(HIDDA_ErrorCode, 0, list);
 	    hd->hd_Locking = GetTagData(HIDDA_Locking, HIDDV_LockShared, list);
 	}
-	
+
 	/* Fall through */
     case OM_SET:
     {
@@ -192,7 +192,7 @@ AROS_UFH3(static IPTR, dispatch_hiddclass,
 	case HIDDA_ErrorCode:
 	    *((struct opGet *)msg)->opg_Storage = hd->hd_ErrorCode;
 	    break;
-    
+
 	case HIDDA_Locking:
 	    *((struct opGet *)msg)->opg_Storage = hd->hd_Locking;
 	    break;
@@ -201,7 +201,7 @@ AROS_UFH3(static IPTR, dispatch_hiddclass,
 
     /* These are the "hiddclass" methods. */
 
-    /*  These two are invalid, since we don't have anything to get 
+    /*	These two are invalid, since we don't have anything to get
 	from a class, so the superclass should handle these.
 
 	This is especially the case since the only place that we can
@@ -213,7 +213,7 @@ AROS_UFH3(static IPTR, dispatch_hiddclass,
 	retval = 0;
 	break;
 
-    /* 	Yet to determine the semantics of these so we just let
+    /*	Yet to determine the semantics of these so we just let
 	them return 0 for now.
     */
     case HIDDM_BeginIO:
@@ -224,21 +224,21 @@ AROS_UFH3(static IPTR, dispatch_hiddclass,
     /* Return NULL for failure. */
     case HIDDM_LoadConfigPlugin:
     case HIDDM_Lock:
-    case HIDDM_Unlock:			    
+    case HIDDM_Unlock:
 	retval = NULL;
 	break;
 
     case HIDDM_AddHIDD:
     {
 	/* We add a class to the list of HIDD's */
-	struct IClass *hc = ((hmAdd *)msg)->hma_Class;
+	Class *hc = ((hmAdd *)msg)->hma_Class;
 
 	if( (hc->cl_Flags & CLF_INLIST) == 0 )
 	{
 	    /* A class structure is really a MinNode */
 	    ObtainSemaphore(&((struct HCD *)cl->cl_UserData)->listLock);
 	    AddTail(
-		(struct List *)&((struct HCD *)cl->cl_UserData)->hiddList, 
+		(struct List *)&((struct HCD *)cl->cl_UserData)->hiddList,
 		(struct Node *)hc
 	    );
 	    ReleaseSemaphore(&((struct HCD *)cl->cl_UserData)->listLock);
@@ -264,7 +264,7 @@ AROS_UFH3(static IPTR, dispatch_hiddclass,
 
     case OM_DISPOSE:
 	/* We don't actually have anything to free - fall through. */
-    
+
     default:
 	/* No idea, send it to the superclass */
 	retval = DoSuperMethodA(cl, o, msg);
@@ -316,7 +316,7 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, HIDD),
     if(hcd->UtilityBase == NULL)
     {
 	CloseLibrary(hcd->UtilityBase);
-    	FreeMem(hcd, sizeof(struct HCD));
+	FreeMem(hcd, sizeof(struct HCD));
 	Alert(AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_UtilityLib);
 	return NULL;
     }
@@ -332,4 +332,4 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, HIDD),
 	AddClass(cl);
     }
     return NULL;
-}	
+}
