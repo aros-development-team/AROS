@@ -93,6 +93,10 @@ BOOL FireMenuMessage(WORD code, struct Window *win,
 		     struct InputEvent *ie, struct IntuitionBase *IntuitionBase);
 		     
 /*********************************************************************/
+
+LONG Gad_BeginUpdate(struct Layer *layer, struct IntuitionBase *IntuitionBase);
+void Gad_EndUpdate(struct Layer *layer, UWORD flag, struct IntuitionBase *IntuitionBase);
+
 /*********************************************************************/
 /*********************************************************************/
 /*********************************************************************/
