@@ -415,7 +415,7 @@ nothing can be done with other windows. (Locking error?)
 The lock happens when another window is dragged and the eyes of watchman
 need an update.
 
-BUG000060
+BUG000060 fixed
 bergers@aros.org
 Newshell creates two (?) simple refresh windows. When moving these windows
 the result is garbage on the screen.
@@ -439,4 +439,9 @@ Contrib/DDemo7 does not work with current mathlib (produces trashy gfx, and
 segfaults after some time). Must be a bug in mlib, because it used to work
 with my own sin/cos routines (taylor series with arg folded to [0,Pi/2]),
 before the Sun routines have been added.
+
+BUG000064
+bergers@aros.org
+ExNext() does not work on the ram disk. This is the reason why 'Setenv' 
+crashes.
 
