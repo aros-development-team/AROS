@@ -16,6 +16,7 @@
 #include "locale_intern.h"
 
 extern void InitLocale(
+    STRPTR filename,
     struct IntLocale *,
     struct LocalePrefs *,
     struct LocaleBase *);
@@ -133,7 +134,7 @@ extern void InitLocale(
 				locale = AllocMem(sizeof(struct IntLocale), MEMF_CLEAR|MEMF_PUBLIC);
 				if(locale)
 				{
-				    InitLocale(locale, lp, LocaleBase);
+				    InitLocale(name, locale, lp, LocaleBase);
 				    break;
 				}
 				else
