@@ -111,6 +111,7 @@ void InitPrefs(STRPTR filename, BOOL use, BOOL save)
     if ((entry = AllocPooled(mempool, sizeof(struct LanguageEntry))))
     {
     	strcpy(entry->lve.name, "English");
+    	strcpy(entry->lve.realname, "English");
 	entry->lve.node.ln_Name = entry->lve.name;
 	
 	SortInNode(&language_list, &entry->lve.node);
