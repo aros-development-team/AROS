@@ -126,7 +126,16 @@
     }
 #else
     if(et != NULL)
-	FreeVec(et);
+    {
+    	/* Orphan all our remaining children. */
+	struct ETask *child;
+
+        /* Do an effective ChildOrphan(0) */
+        ForeachNode(&et->et_Children, child)
+   	    child->et_Parent = NULL;
+    
+    	FreeVec(et);
+    }
 #endif
 
     /* Changing the task lists always needs a Disable(). */
