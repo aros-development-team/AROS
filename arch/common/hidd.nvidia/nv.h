@@ -58,7 +58,7 @@ typedef enum {
     NV04 = 0,	NV05,	NV05M64,    NV06,   NV10,
     NV11,       NV11M,  NV15,	    NV17,   NV17M,
     NV18,       NV18M,  NV20,	    NV25,   NV28,
-    NV30,       NV31,   NV34,	    NV35,
+    NV30,       NV31,   NV34,	    NV35,   NV36,
 
     CardType_Sizeof
 } CardType;
@@ -106,7 +106,7 @@ typedef struct CardState {
     ULONG   pllB;
     ULONG   timingH;
     ULONG   timingV;
-
+    ULONG   displayV;
     struct {
 	UBYTE	attr[0x15];
 	UBYTE	crtc[0x41];
