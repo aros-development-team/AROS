@@ -94,8 +94,12 @@ __asm struct MUI_CustomClass *MUI_CreateCustomClass(register __a0 struct Library
     mcc->mcc_Super  = super;
     mcc->mcc_Module = NULL; /* _zune_class_load() will set this */
 
+#ifdef __MAXON__
+    cl->cl_Dispatcher.h_Entry = (HOOKFUNC)dispatcher;
+#else
     cl->cl_Dispatcher.h_Entry    = (HOOKFUNC)metaDispatcher;
     cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC)dispatcher;
+#endif
     cl->cl_Dispatcher.h_Data     = base;
 
     return mcc;

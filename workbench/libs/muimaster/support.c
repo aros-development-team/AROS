@@ -147,7 +147,8 @@ AROS_UFH3(IPTR, metaDispatcher,
 #ifdef __MAXON__
 __asm ULONG metaDispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
 {
-    return CallHookPkt(&cl->cl_Dispatcher,obj, msg);
+	  /* We don't use a metaDispatcher */
+    return 0;
 }
 #else
 __asm ULONG metaDispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
@@ -188,8 +189,12 @@ static struct IClass *builtin_to_public_class(const struct __MUIBuiltinClass *de
     if (!(cl = MakeClass((STRPTR)desc->name, (STRPTR)superClassID, superClassPtr, desc->datasize, 0)))
 	return NULL;
 
+#ifdef __MAXON__
+    cl->cl_Dispatcher.h_Entry = desc->dispatcher;
+#else
     cl->cl_Dispatcher.h_Entry = (HOOKFUNC)metaDispatcher;
     cl->cl_Dispatcher.h_SubEntry = desc->dispatcher;
+#endif
     cl->cl_Dispatcher.h_Data = MUIMasterBase;
     return cl;
 }
