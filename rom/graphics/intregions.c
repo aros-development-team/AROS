@@ -88,10 +88,9 @@
      }
 
      static struct GfxBase *GfxBase;
+#    undef  kprintf
+#    define kprintf(format, x...) printf(format, ##x)
 
-#    ifndef __AROS__
-#        undef  kprintf
-#        define kprintf(format, x...) printf(format, ##x)
 #    endif
 #endif
 
