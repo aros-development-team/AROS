@@ -41,8 +41,6 @@
 int isRegionWithinBounds(struct Region *r, int left, int top, int width, int height);
 ULONG ConvertKey(struct IntuiMessage *imsg);
 
-ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...);
-
 #define _between(a,x,b) ((x)>=(a) && (x)<=(b))
 #define _isinobject(x,y) (_between(_mleft(obj),(x),_mright (obj)) \
                           && _between(_mtop(obj) ,(y),_mbottom(obj)))

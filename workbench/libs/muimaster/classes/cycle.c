@@ -66,7 +66,7 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
     Object  	    	    *pageobj, *imgobj;
     int i;
 
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 		MUIA_Background, MUII_ButtonBack,
 		ButtonFrame,
 		MUIA_InputMode, MUIV_InputMode_RelVerify,

@@ -35,7 +35,7 @@ static IPTR Poppen_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem  	    *tag, *tags;
     //Object *image;
 
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 			       ButtonFrame,
 			       InnerSpacing(4,4),
 			       MUIA_Background, MUII_ButtonBack,

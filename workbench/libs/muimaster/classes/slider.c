@@ -80,7 +80,7 @@ static ULONG Slider_New(struct IClass *cl, Object * obj, struct opSet *msg)
 	}
     }
 
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 	MUIA_Background, MUII_SliderBack,
 	MUIA_Font, MUIV_Font_Knob,
 	MUIA_Frame, MUIV_Frame_Slider,

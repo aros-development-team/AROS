@@ -196,7 +196,7 @@ static ULONG Scrollgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     layout_hook->h_Entry = (HOOKFUNC)Scrollgroup_Layout_Function;
 
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
     	MUIA_Group_Horiz, FALSE,
     	Child, group = GroupObject,
 	    MUIA_Group_LayoutHook, layout_hook,

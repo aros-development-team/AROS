@@ -41,7 +41,7 @@ static IPTR Popstring_New(struct IClass *cl, Object *obj, struct opSet *msg)
     button = (Object*)GetTagData(MUIA_Popstring_Button,NULL,msg->ops_AttrList);
     string = (Object*)GetTagData(MUIA_Popstring_String,NULL,msg->ops_AttrList);
     
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
     			MUIA_Group_Horiz, TRUE,
     			MUIA_Group_Spacing, 0,
     			Child, string,

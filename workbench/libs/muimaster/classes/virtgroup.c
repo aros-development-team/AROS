@@ -34,7 +34,7 @@ static ULONG Virtgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
     //struct MUI_VirtgroupData *data;
     //int i;
 
-    return DoSuperNew(cl, obj, MUIA_Group_Virtual, TRUE, TAG_MORE, msg->ops_AttrList);
+    return DoSuperNewTags(cl, obj, NULL, MUIA_Group_Virtual, TRUE, TAG_MORE, msg->ops_AttrList);
 }
 
 

@@ -32,7 +32,7 @@ static IPTR Settingsgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_Settingsgroup *data;
     struct TagItem  	    *tag, *tags;
 
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 			TAG_MORE, msg->ops_AttrList);
     if (!obj) return FALSE;
     

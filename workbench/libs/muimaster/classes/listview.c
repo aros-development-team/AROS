@@ -144,7 +144,7 @@ static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     layout_hook->h_Entry = HookEntry;
     layout_hook->h_SubEntry = (HOOKFUNC)Listview_Layout_Function;
 
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 	MUIA_Group_Horiz, FALSE,
 	MUIA_InnerLeft,0,
 	MUIA_InnerRight,0,

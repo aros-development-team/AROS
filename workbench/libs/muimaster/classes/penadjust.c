@@ -129,7 +129,7 @@ static IPTR Penadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem  	       *tag, *tags;
     Object  	    	       *listobj, *sliderobj, *coloradjobj;
 
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
     	MUIA_Register_Titles, register_labels,
 	Child, ListviewObject,
 	   MUIA_Listview_List, listobj = ListObject,

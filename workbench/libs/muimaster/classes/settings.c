@@ -43,7 +43,7 @@ static IPTR Settings_New(struct IClass *cl, Object *obj, struct opSet *msg)
     Object *listobj;
     static const struct Hook list_display_hook = { {NULL, NULL}, HookEntry,
 						   ListDisplayFunc, NULL };
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 			         Child, HGroup,
 			           Child, VGroup,
 			             Child, ListviewObject,

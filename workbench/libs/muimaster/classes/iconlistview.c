@@ -187,7 +187,7 @@ static ULONG IconListview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     layout_hook->h_Entry = HookEntry;
     layout_hook->h_SubEntry = (HOOKFUNC)IconListview_Layout_Function;
 
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
     	MUIA_Group_Horiz, FALSE,
     	Child, group = GroupObject,
 	    usewinborder?TAG_IGNORE:MUIA_Group_LayoutHook, layout_hook,

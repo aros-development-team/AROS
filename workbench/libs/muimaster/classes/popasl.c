@@ -282,7 +282,7 @@ static IPTR Popasl_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (!(asl_req = AllocAslRequest(asl_type,msg->ops_AttrList))) return 0;
  
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 		MUIA_Popstring_Toggle, FALSE,
 		TAG_MORE, msg->ops_AttrList);
     if (!obj) return FALSE;

@@ -410,7 +410,7 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
     APTR *array = NULL;
     char *format = NULL;
     
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 /*  	MUIA_InnerLeft,0, */
 /*  	MUIA_InnerRight,0, */
 /*  	MUIA_InnerTop,0, */

@@ -55,7 +55,7 @@ static ULONG Rectangle_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_RectangleData *data;
     struct TagItem *tags,*tag;
 
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 	MUIA_Font, MUIV_Font_Title,
 	TAG_MORE, msg->ops_AttrList);
 

@@ -375,7 +375,7 @@ static IPTR IconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_IconData   *data;
     struct TagItem  	    *tag, *tags;
 
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 	MUIA_Dropable, TRUE,
 	MUIA_Font, MUIV_Font_Tiny,
     	TAG_MORE, msg->ops_AttrList);
@@ -1501,7 +1501,7 @@ static IPTR IconDrawerList_New(struct IClass *cl, Object *obj, struct opSet *msg
     struct MUI_IconDrawerData   *data;
     struct TagItem  	    *tag, *tags;
 
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
     	TAG_MORE, msg->ops_AttrList);
     if (!obj) return FALSE;
 
@@ -1731,7 +1731,7 @@ static IPTR IconVolumeList_New(struct IClass *cl, Object *obj, struct opSet *msg
     struct MUI_IconDrawerData   *data;
     struct TagItem  	    *tag, *tags;
     
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
     	TAG_MORE, msg->ops_AttrList);
     if (!obj) return FALSE;
 

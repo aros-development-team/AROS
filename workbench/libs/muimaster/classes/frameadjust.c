@@ -148,7 +148,7 @@ static IPTR Frameadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     int lut[] = { 0, 1, 2, 3, 4, 6, 9, 10, 8, 7, 5 };
     int i;
 
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 			       MUIA_Group_Horiz, TRUE,
 			       MUIA_Group_HorizSpacing, 20,
 			       Child, FD_display = MUI_NewObject(MUIC_Framedisplay,
