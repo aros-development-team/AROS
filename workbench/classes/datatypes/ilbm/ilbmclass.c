@@ -97,7 +97,7 @@ static UBYTE *UnpackByteRun1(UBYTE *source, UBYTE *dest, LONG unpackedsize)
 
 /**************************************************************************************************/
 
-static BOOL MakeBitMap(Object *o, struct IFFHandle *handle, struct BitMapHeader *bmhd,
+static BOOL MakeBitMap(Class *cl, Object *o, struct IFFHandle *handle, struct BitMapHeader *bmhd,
     	    	       struct FileBitMapHeader *file_bmhd, struct ContextNode *body_cn)
 {
     struct BitMap *bm;
@@ -186,11 +186,8 @@ static BOOL MakeBitMap(Object *o, struct IFFHandle *handle, struct BitMapHeader 
 	    
     } /* switch(file_bmhd->bmh_Compression) */
     
-    SetDTAttrs(o, NULL, NULL, DTA_NominalHoriz, bmhd->bmh_Width ,
-    	    	    	      DTA_NominalVert , bmhd->bmh_Height,
-			      PDTA_BitMap     , (IPTR)bm    	,
-			      TAG_DONE);
-			      
+    SetDTAttrs(o, NULL, NULL, PDTA_BitMap, bm, TAG_DONE);
+
     FreeVec(body);
     SetIoErr(0);
     
@@ -199,7 +196,116 @@ static BOOL MakeBitMap(Object *o, struct IFFHandle *handle, struct BitMapHeader 
 
 /**************************************************************************************************/
 
-static BOOL ReadILBM(Object *o)
+const UBYTE bitmask[] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01, 0 };
+
+static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct BitMapHeader *bmhd,
+    	    	       struct FileBitMapHeader *file_bmhd, struct ContextNode *body_cn)
+{
+    UBYTE   	*src, *srcline, *srclinestart, *chunkystart, *chunky, *body, *compressed, *uncompressed, *maskptr;
+    int		width, height, numplanes, mask;
+    LONG    	x, y, p, w16, body_bpr, bodysize;
+    ULONG	rgb;
+    BOOL	compress;
+    
+    width  = bmhd->bmh_Width;
+    height = bmhd->bmh_Height;
+    numplanes = bmhd->bmh_Depth;
+    w16      = (width + 15) & ~15;
+    body_bpr = w16 / 8;
+    bodysize = body_cn->cn_Size;
+
+    p = bodysize + width * 3;
+    if ((file_bmhd->bmh_Compression == cmpByteRun1))
+    {
+    	p += body_bpr * numplanes;
+    }
+    
+    body = AllocVec(p, MEMF_ANY);
+    if (!body)
+    {
+    	SetIoErr(ERROR_NO_FREE_STORE);
+    	return FALSE;
+    }
+    
+    D(bug("ilbm.datatype/ReadRGB: Width %d Height %d Depth %d body_bpr %ld bodysize %ld p %ld body %lx\n", width, height, numplanes, body_bpr, bodysize, p, body));
+
+    if (ReadChunkBytes(handle, body, bodysize) != bodysize)
+    {
+    	FreeVec(body);
+	SetIoErr(ERROR_UNKNOWN);
+	return FALSE;
+    }
+    
+    compress = FALSE;
+    switch(file_bmhd->bmh_Compression)
+    {
+	case cmpByteRun1:
+	    compressed = body;
+	    uncompressed = body + bodysize + width * 3;
+	    compress = TRUE;
+    	case cmpNone:
+	    src = body;
+	    chunkystart = body + bodysize;
+	    for(y = 0; y < height; y++)
+	    {
+		chunky = chunkystart;
+		srclinestart = src;
+		maskptr = (UBYTE *) bitmask;
+		if( compress )
+		{
+		    compressed = UnpackByteRun1(compressed, uncompressed, body_bpr * numplanes);
+		    srclinestart = uncompressed;
+		}
+	    	for(x = 0; x < width; x++)
+		{
+		    mask = *maskptr++;
+		    if( !mask )
+		    {
+			maskptr = (UBYTE *) bitmask;
+			mask = *maskptr++;
+			srclinestart++;
+		    }
+		    srcline = srclinestart;
+		    rgb = 0;
+		    for(p = 0; p < numplanes; p++)
+		    {
+			rgb = (rgb >> 1) | (*srcline & mask ? 0x800000 : 0);
+			srcline += body_bpr;
+		    }
+		    // D(bug("ilbm.datatype/ReadRGB: RGB %06lx mask %02x srcline %lx chunky %lx\n", rgb, mask, srcline, chunky));
+		    *chunky++ = rgb & 0xff;
+		    *chunky++ = (rgb >> 8) & 0xff;
+		    *chunky++ = (rgb >> 16) & 0xff;
+		    if( !DoSuperMethod(cl, o,
+				PDTM_WRITEPIXELARRAY,	// Method_ID
+				(IPTR) chunkystart,	// PixelData
+				PBPAFMT_RGB,		// PixelFormat
+				width*3,		// PixelArrayMod (number of bytes per row)
+				0,			// Left edge
+				y,			// Top edge
+				width,			// Width
+				1))			// Height (here: one line)
+		    {
+			D(bug("ilbm.datatype/ReadRGB: WRITEPIXELARRAY failed\n"));
+			FreeVec(body);
+			SetIoErr(ERROR_UNKNOWN);
+			return FALSE;
+		    }
+		}
+		src += body_bpr * numplanes;
+	    }
+	    break;
+    } /* switch(file_bmhd->bmh_Compression) */
+    
+    FreeVec(body);
+    SetIoErr(0);
+    
+    return TRUE;
+}
+
+/**************************************************************************************************/
+
+static BOOL ReadILBM(Class *cl, Object *o)
 {
     struct FileBitMapHeader *file_bmhd;
     struct BitMapHeader     *bmhd;
@@ -238,12 +344,14 @@ static BOOL ReadILBM(Object *o)
     if (PropChunks(handle, propchunks, 3) != 0)
     {
     	SetIoErr(ERROR_NO_FREE_STORE);
+	D(bug("ilbm.datatype propchunks\n"));
 	return FALSE;
     }
    
     if (StopChunk(handle, ID_ILBM, ID_BODY) != 0)
     {
     	SetIoErr(ERROR_NO_FREE_STORE);
+	D(bug("ilbm.datatype stopchunks\n"));
 	return FALSE;
     }
     
@@ -251,6 +359,7 @@ static BOOL ReadILBM(Object *o)
     if (error)
     {
     	SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+	D(bug("ilbm.datatype parseiff\n"));
 	return FALSE;
     }
     
@@ -261,66 +370,85 @@ static BOOL ReadILBM(Object *o)
     cn = CurrentChunk(handle);
     if ((cn->cn_Type != ID_ILBM) ||
     	(cn->cn_ID != ID_BODY) ||
-	(bmhd_prop == NULL) ||
-	(cmap_prop == NULL))
+	(bmhd_prop == NULL))
     {
     	SetIoErr(ERROR_REQUIRED_ARG_MISSING);
+	D(bug("ilbm.datatype currentchunk\n"));
 	return FALSE;
     }
 
     file_bmhd = (struct FileBitMapHeader *)bmhd_prop->sp_Data;
-    
-    if ((file_bmhd->bmh_Depth > 8) ||
-    	(file_bmhd->bmh_Compression > 1))
-    {
-    	SetIoErr(ERROR_NOT_IMPLEMENTED);
-	return FALSE;
-    }
-    
     bmhd->bmh_Width  	  = bmhd->bmh_PageWidth  = file_bmhd->bmh_Width [0] * 256 + file_bmhd->bmh_Width [1];
     bmhd->bmh_Height 	  = bmhd->bmh_PageHeight = file_bmhd->bmh_Height[0] * 256 + file_bmhd->bmh_Height[1];
     bmhd->bmh_Depth  	  = file_bmhd->bmh_Depth;
     bmhd->bmh_Masking 	  = file_bmhd->bmh_Masking;
     bmhd->bmh_Transparent = file_bmhd->bmh_Transparent[0] * 256 + file_bmhd->bmh_Transparent[1];
     
-    numcolors = cmap_prop->sp_Size / 3;
-
-    SetDTAttrs(o, NULL, NULL, PDTA_NumColors, numcolors, TAG_DONE);
-    
-    if (GetDTAttrs(o, PDTA_ColorRegisters   , (IPTR *)&colorregs,
-    	    	      PDTA_CRegs    	    , (IPTR *)&cregs	,
-		      TAG_DONE	    	    	    	    	 ) == 2)
-    {
-    	if (colorregs && cregs)
-	{
-	    UBYTE *src = (UBYTE *)cmap_prop->sp_Data;
-	    LONG   i;
-	    
-	    for(i = 0; i < numcolors; i++)
-	    {
-	    	colorregs->red   = *src++;
-		colorregs->green = *src++;
-		colorregs->blue  = *src++;
-		
-		*cregs++ = ((ULONG)colorregs->red)   * 0x01010101;
-		*cregs++ = ((ULONG)colorregs->green) * 0x01010101;
-		*cregs++ = ((ULONG)colorregs->blue)  * 0x01010101;
-		
-		colorregs++;
-	    }
-	    
-	}
-    }
-
     {
     	IPTR name = NULL;
 	
 	GetDTAttrs(o, DTA_Name, (IPTR)&name, TAG_DONE);
 	
-    	SetDTAttrs(o, NULL, NULL, DTA_ObjName, name, TAG_DONE);
+    	SetDTAttrs(o, NULL, NULL, DTA_ObjName, name,
+				  DTA_NominalHoriz, bmhd->bmh_Width ,
+				  DTA_NominalVert , bmhd->bmh_Height,
+				  TAG_DONE);
     }
     
-    return MakeBitMap(o, handle, bmhd, file_bmhd, cn);
+    if ((file_bmhd->bmh_Depth == 24) && (file_bmhd->bmh_Compression <= 1))
+    {
+	D(bug("ilbm.datatype/ReadILBM: 24 bit\n"));
+	if( !ReadRGBPic(cl, o, handle, bmhd, file_bmhd, cn) )
+	{
+	    D(bug("ilbm.datatype readrgbpic\n"));
+	    return FALSE;
+	}
+    }
+    else if ((file_bmhd->bmh_Depth <= 8) && (file_bmhd->bmh_Compression <= 1) && (cmap_prop != NULL))
+    {
+	D(bug("ilbm.datatype/ReadILBM: %d bit\n", (int)file_bmhd->bmh_Depth));
+	numcolors = cmap_prop->sp_Size / 3;
+    
+	SetDTAttrs(o, NULL, NULL, PDTA_NumColors, numcolors, TAG_DONE);
+	
+	if (GetDTAttrs(o, PDTA_ColorRegisters   , (IPTR *)&colorregs,
+			  PDTA_CRegs    	    , (IPTR *)&cregs	,
+			  TAG_DONE	    	    	    	    	 ) == 2)
+	{
+	    if (colorregs && cregs)
+	    {
+		UBYTE *src = (UBYTE *)cmap_prop->sp_Data;
+		LONG   i;
+		
+		for(i = 0; i < numcolors; i++)
+		{
+		    colorregs->red   = *src++;
+		    colorregs->green = *src++;
+		    colorregs->blue  = *src++;
+		    
+		    *cregs++ = ((ULONG)colorregs->red)   * 0x01010101;
+		    *cregs++ = ((ULONG)colorregs->green) * 0x01010101;
+		    *cregs++ = ((ULONG)colorregs->blue)  * 0x01010101;
+		    
+		    colorregs++;
+		}
+		
+	    }
+	}
+	if( !MakeBitMap(cl, o, handle, bmhd, file_bmhd, cn) )
+	{
+	    D(bug("ilbm.datatype makebitmap\n"));
+	    return FALSE;
+	}
+    }
+    else
+    {
+	D(bug("ilbm.datatype unknown\n"));
+    	SetIoErr(ERROR_NOT_IMPLEMENTED);
+	return FALSE;
+    }
+
+    return TRUE;
 }
 
 /**************************************************************************************************/
@@ -332,7 +460,7 @@ static IPTR ILBM_New(Class *cl, Object *o, struct opSet *msg)
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
-    	if (!ReadILBM((Object *)retval))
+    	if (!ReadILBM(cl, (Object *)retval))
 	{
 	    CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
 	    retval = 0;
@@ -361,7 +489,7 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 
     putreg(REG_A4, (long) cl->cl_Dispatcher.h_SubEntry);        /* Small Data */
 
-    D(bug("ilbm.datatype/DT_Dispatcher: Entering\n"));
+    // D(bug("ilbm.datatype/DT_Dispatcher: Entering\n"));
 
     switch(msg->MethodID)
     {
@@ -376,7 +504,7 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 
     } /* switch(msg->MethodID) */
 
-    D(bug("ilbm.datatype/DT_Dispatcher: Leaving\n"));
+    // D(bug("ilbm.datatype/DT_Dispatcher: Leaving\n"));
 
     return retval;
     
