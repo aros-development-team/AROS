@@ -429,9 +429,15 @@ static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
     struct gfx_data *data;
 	
     data = OOP_INST_DATA(cl, o);
-	
+
+    if (!msg->bitMap)
+    {
+    	return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    }
+    
     OOP_GetAttr(msg->bitMap, aHidd_BitMap_ModeID, &modeid);
-    if ( HIDD_Gfx_GetMode(o, (HIDDT_ModeID)modeid, &sync, &pf)) {
+    if ( HIDD_Gfx_GetMode(o, (HIDDT_ModeID)modeid, &sync, &pf))
+    {
     	struct MsgPort *port;
 	
 #if 1
@@ -445,11 +451,13 @@ static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 #if ADJUST_XWIN_SIZE		
 	/* Send resize message to the x11 task */
 	port = CreateMsgPort();
-	if (NULL != port) {
+	if (NULL != port)
+	{
 	    struct notify_msg *nmsg;
 	    
 	    nmsg = AllocMem(sizeof (*nmsg), MEMF_PUBLIC);
-	    if (NULL != nmsg) {
+	    if (NULL != nmsg)
+	    {
 	    	nmsg->notify_type 	= NOTY_RESIZEWINDOW;
 		nmsg->xdisplay	  	= data->display;
 		nmsg->xwindow	 	= data->fbwin;
