@@ -41,6 +41,7 @@
 	.globl	AROS_SLIB_ENTRY(GetCC,Exec)
 	.type	AROS_SLIB_ENTRY(GetCC,Exec),@function
 AROS_SLIB_ENTRY(GetCC,Exec):
-	/* Dummy */
+	/* This should be implemented in the jump table for speed. */
+	move	%ccr,%d0
 	rts
 
