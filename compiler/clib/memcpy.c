@@ -48,6 +48,7 @@
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     CopyMem ((UBYTE *)src, dest, count);
 
     return dest;
