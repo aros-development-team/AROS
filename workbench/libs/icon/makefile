@@ -15,12 +15,14 @@ FUNCTIONS = \
 	bumprevision \
 	deletediskobject \
 	findtooltype \
+	freediskobject \
 	freefreelist \
 	getdefdiskobject \
 	getdiskobject \
 	getdiskobjectnew \
 	matchtoolvalue \
-	putdefdiskobject
+	putdefdiskobject \
+	putdiskobject
 
 all: setup $(SLIBDIR)/icon.library
 
