@@ -5,6 +5,11 @@
 
 /**********************************************************************/
 
+#define PICDTV43_SUPPORT 1
+#define DEBUGMETHODS 0
+
+/**********************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,25 +45,31 @@
 static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
 {
  IPTR RetVal;
- struct TagItem *Attrs;
  char *Title;
+ IPTR sourcetype;
  BPTR FileHandle;
  struct BitMapHeader *bmhd;
  char LineBuffer[128];
  long Width, Height, NumChars;
+ unsigned int i;
  unsigned char *RGBBuffer;
+#if PICDTV43_SUPPORT
+#else /* PICDTV43_SUPPORT */
  unsigned char *ChunkyBuffer;
  unsigned long ModeID;
- short nColors;
+ long nColors;
  struct ColorRegister *ColMap;
  long *ColRegs;
- unsigned int i, j, k, Counter;
+ unsigned int j, k, Counter;
  unsigned int Col7, Col3;
  struct Screen *scr;
  struct BitMap *bm;
  struct RastPort rp;
+#endif /* else PICDTV43_SUPPORT */
 
+ 
 #ifdef MYDEBUG
+ struct TagItem *Attrs;
  struct TagItem *ti;
  int Known;
 
@@ -78,11 +89,12 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
 
  D(bug("ppm.datatype/OM_NEW: DoSuperMethod: 0x%lx\n", (unsigned long) RetVal));
 
+#ifdef MYDEBUG
  Attrs=((struct opSet *) msg)->ops_AttrList;
 
  D(bug("ppm.datatype/OM_NEW: Attrs: 0x%lx\n", (unsigned long) Attrs));
+ D(bug("ppm.datatype/OM_NEW: Tag list:\n"));
 
-#ifdef MYDEBUG
  while((ti=NextTagItem(&Attrs)))
  {
   for(i=0; i<NumAttribs; i++)
@@ -102,38 +114,46 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
  }
 
  Attrs=((struct opSet *) msg)->ops_AttrList;
+ Title=(char *) GetTagData(DTA_Name, NULL, Attrs);
+ D(bug("ppm.datatype/OM_NEW: Title: %s\n", Title?Title:"[none]"));
 #endif /* MYDEBUG */
 
- Title=(char *) GetTagData(DTA_Name, NULL, Attrs);
+    if( GetDTAttrs((Object *) RetVal,
+			DTA_SourceType    , (IPTR)&sourcetype ,
+			DTA_Handle        , (IPTR)&FileHandle,
+			DTA_Name          , (IPTR)&Title,
+			PDTA_BitMapHeader , (IPTR)&bmhd,
+			TAG_DONE) != 4 )
+    {
+        D(bug("ppm.datatype/OM_NEW: GetDTAttrs(DTA_Handle, DTA_BitMapHeader) error !\n"));
+	CoerceMethod(cl, (Object *) RetVal, OM_DISPOSE);
+	SetIoErr(ERROR_OBJECT_NOT_FOUND);
+	return FALSE;
+    }
+    D(bug("ppm.datatype/OM_NEW: GetDTAttrs(DTA_Handle, DTA_BitMapHeader) successful\n"));
+    
+    if ( sourcetype == DTST_RAM && FileHandle == NULL )
+    {
+	D(bug("ppm.datatype/OM_NEW: Creating an empty object\n"));
+	return TRUE;
+    }
+    if ( sourcetype != DTST_FILE || !FileHandle || !bmhd )
+    {
+	D(bug("ppm.datatype/OM_NEW: Unsupported sourcetype mode\n"));
+	SetIoErr(ERROR_NOT_IMPLEMENTED);
+	return FALSE;
+    }
 
- D(bug("ppm.datatype/OM_NEW: Title: %s\n", Title?Title:"none"));
-
- if(!(GetDTAttrs((Object *) RetVal, DTA_Handle, &FileHandle, PDTA_BitMapHeader, &bmhd, TAG_DONE)==2))
- {
-  D(bug("ppm.datatype/OM_NEW: GetDTAttrs(DTA_Handle, PDTA_BitMapHeader) failed\n"));
-
-  CoerceMethod(cl, (Object *) RetVal, OM_DISPOSE);
-  return(0);
- }
-
- if(!(FileHandle && bmhd))
- {
-  D(bug("ppm.datatype/OM_NEW: FileHandle and bmhd failed\n"));
-
-  CoerceMethod(cl, (Object *) RetVal, OM_DISPOSE);
-  return(0);
- }
-
- D(bug("ppm.datatype/OM_NEW: Now Seek'ing\n"));
+ D(bug("ppm.datatype/OM_NEW: Title: %s\n", Title?Title:"[none]"));
 
  Seek(FileHandle, 0, OFFSET_BEGINNING);
-
  D(bug("ppm.datatype/OM_NEW: Seek successfull\n"));
 
  if(!FGets(FileHandle, LineBuffer, 128))
  {
   D(bug("ppm.datatype/OM_NEW: FGets line 1 failed\n"));
 
+  SetIoErr(ERROR_OBJECT_WRONG_TYPE);
   CoerceMethod(cl, (Object *) RetVal, OM_DISPOSE);
   return(0);
  }
@@ -153,6 +173,7 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
  {
   D(bug("ppm.datatype/OM_NEW: FGets line 2 failed\n"));
 
+  SetIoErr(ERROR_OBJECT_WRONG_TYPE);
   CoerceMethod(cl, (Object *) RetVal, OM_DISPOSE);
   return(0);
  }
@@ -165,6 +186,7 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
   {
    D(bug("ppm.datatype/OM_NEW: FGets line 3 after comment failed\n"));
 
+   SetIoErr(ERROR_OBJECT_WRONG_TYPE);
    CoerceMethod(cl, (Object *) RetVal, OM_DISPOSE);
    return(0);
   }
@@ -176,6 +198,7 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
  {
   D(bug("ppm.datatype/OM_NEW: StrToLong(Width) failed\n"));
 
+  SetIoErr(ERROR_OBJECT_WRONG_TYPE);
   CoerceMethod(cl, (Object *) RetVal, OM_DISPOSE);
   return(0);
  }
@@ -189,6 +212,7 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
  {
   D(bug("ppm.datatype/OM_NEW: StrToLong(Height) failed\n"));
 
+  SetIoErr(ERROR_OBJECT_WRONG_TYPE);
   CoerceMethod(cl, (Object *) RetVal, OM_DISPOSE);
   return(0);
  }
@@ -200,6 +224,7 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
  {
   D(bug("ppm.datatype/OM_NEW: FGets line 3 (4) failed\n"));
 
+  SetIoErr(ERROR_OBJECT_WRONG_TYPE);
   CoerceMethod(cl, (Object *) RetVal, OM_DISPOSE);
   return(0);
  }
@@ -217,16 +242,79 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
 
  bmhd->bmh_Width  = Width;
  bmhd->bmh_Height = Height;
-
  bmhd->bmh_PageWidth = bmhd->bmh_Width;
  bmhd->bmh_PageHeight = bmhd->bmh_Height;
 
- bmhd->bmh_Depth  = 8;
+/************************************************************
+** the rest of the PPM_New function depends on whether we use
+** PDTM_WRITEPIXELARRAY method for true color picture.datatype. */
+#if PICDTV43_SUPPORT
 
+ D(bug("ppm.datatype/OM_NEW: Using 24 bit colors\n"));
+ bmhd->bmh_Depth = 24;
+
+ /* Get a buffer for one line of RGB triples */
+ RGBBuffer=AllocVec(Width*3, MEMF_ANY | MEMF_CLEAR);
+ if(!RGBBuffer)
+ {
+  D(bug("ppm.datatype/OM_NEW: AllocVec(RGBBuffer) failed\n"));
+  CoerceMethod(cl, (Object *) RetVal, OM_DISPOSE);
+  SetIoErr(ERROR_NO_FREE_STORE);
+  return(0);
+ }
+ D(bug("ppm.datatype/OM_NEW: RGBBuffer successfully allocated\n"));
+
+ /* Flush filehandle, so that unbuffered Read() can be used after buffered FGets() */
+ Flush(FileHandle);
+
+ /* Copy picture line by line to picture.datatype using WRITEPIXELARRAY method */
+ for(i=0; i<Height; i++)
+ {
+  if(!(Read(FileHandle, RGBBuffer, (Width*3))==(Width*3)))
+  {
+   D(bug("ppm.datatype/OM_NEW: Read(RGBBuffer) failed, maybe file too short\n"));
+   FreeVec(RGBBuffer);
+   CoerceMethod(cl, (Object *) RetVal, OM_DISPOSE);
+   SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+   return(0);
+  }
+  if(!DoSuperMethod(cl, (Object *) RetVal,
+		PDTM_WRITEPIXELARRAY,	// Method_ID
+		(IPTR) RGBBuffer,	// PixelData
+		PBPAFMT_RGB,		// PixelFormat
+		Width*3,		// PixelArrayMod (number of bytes per row)
+		0,			// Left edge
+		i,			// Top edge
+		Width,			// Width
+		1))			// Height (here: one line)
+   {
+	D(bug("ppm.datatype/OM_NEW: WRITEPIXELARRAY failed\n"));
+	FreeVec(RGBBuffer);
+	CoerceMethod(cl, (Object *) RetVal, OM_DISPOSE);
+	return(0);
+   }
+ }
+ D(bug("ppm.datatype/OM_NEW: WRITEPIXELARRAY of whole picture done\n"));
+
+ FreeVec(RGBBuffer);
+
+ SetDTAttrs((Object *) RetVal, NULL, NULL, DTA_ObjName,      Title,
+					   DTA_NominalHoriz, Width,
+					   DTA_NominalVert,  Height,
+					   TAG_DONE);
+
+ D(bug("ppm.datatype/OM_NEW: Leaving. (24 bit mode)\n"));
+ return(RetVal);
+
+/***********************************************************/
+#else /* PICDTV43_SUPPORT */
+
+ D(bug("ppm.datatype/OM_NEW: Using 8 bit colors\n"));
+ bmhd->bmh_Depth = 8;
  nColors=1<<8;
- SetDTAttrs((Object *) RetVal, NULL, NULL, PDTA_NumColors, nColors, TAG_DONE);
 
- D(bug("ppm.datatype/OM_NEW: nColors set\n"));
+ SetDTAttrs((Object *) RetVal, NULL, NULL, PDTA_NumColors, nColors, TAG_DONE);
+ D(bug("ppm.datatype/OM_NEW: nColors set: %ld\n", nColors));
 
  ColMap=NULL;
  ColRegs=NULL;
@@ -287,11 +375,8 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
 
  D(bug("ppm.datatype/OM_NEW: Screen 0x%lx\n", (unsigned long) scr));
 
-#if 0
- bm=AllocBitMap(bmhd->bmh_Width, bmhd->bmh_Height, bmhd->bmh_Depth, BMF_CLEAR, scr->RastPort.BitMap);
-#else
+// bm=AllocBitMap(bmhd->bmh_Width, bmhd->bmh_Height, bmhd->bmh_Depth, BMF_CLEAR, scr->RastPort.BitMap);
  bm=AllocBitMap(bmhd->bmh_Width, bmhd->bmh_Height, bmhd->bmh_Depth, BMF_CLEAR, NULL);
-#endif /* 0 */
  if(!bm)
  {
   D(bug("ppm.datatype/OM_NEW: AllocBitMap failed\n"));
@@ -349,6 +434,7 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
 
  D(bug("ppm.datatype/OM_NEW: ChunkyBuffer successfully allocated\n"));
 
+
  Flush(FileHandle);
 
  for(i=0; i<Height; i++)
@@ -393,10 +479,16 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
  FreeVec(ChunkyBuffer);
  FreeVec(RGBBuffer);
 
-  D(bug("ppm.datatype/OM_NEW: Leaving\n"));
-
+ D(bug("ppm.datatype/OM_NEW: Leaving. (8 bit mode)\n"));
  return(RetVal);
-}
+
+/***********************************************************/
+#endif /* else PICDTV43_SUPPORT */
+} /* PPM_New() */
+
+/**************************************************************************************************/
+
+#if DEBUGMETHODS
 
 STATIC IPTR DT_NotifyMethod(struct IClass *cl, struct Gadget *g, struct opUpdate *msg)
 {
@@ -438,6 +530,7 @@ STATIC IPTR DT_NotifyMethod(struct IClass *cl, struct Gadget *g, struct opUpdate
  return(DoSuperMethodA(cl, (Object *) g, (Msg) msg));
 }
 
+/**************************************************************************************************/
 STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
  IPTR RetVal;
@@ -548,6 +641,7 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
  return(RetVal);
 }
 
+/**************************************************************************************************/
 STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 {
  IPTR RetVal;
@@ -738,6 +832,8 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
  return(RetVal);
 }
 
+/**************************************************************************************************/
+
 STATIC IPTR DT_LayoutMethod(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 {
  IPTR RetVal;
@@ -807,6 +903,8 @@ else
  return(RetVal);
 }
 
+#endif /* DEBUGMETHODS */
+
 /**************************************************************************************************/
 /**************************************************************************************************/
 /**************************************************************************************************/
@@ -835,83 +933,74 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 
     putreg(REG_A4, (long) cl->cl_Dispatcher.h_SubEntry);        /* Small Data */
 
-    D(bug("ppm.datatype/DT_Dispatcher: Entering\n"));
+//    D(bug("ppm.datatype/DT_Dispatcher: Entering\n"));
 
     switch(msg->MethodID)
     {
 	case OM_NEW:
-
+	{
 	    D(bug("ppm.datatype/DT_Dispatcher: Method OM_NEW\n"));
-
 	    retval = PPM_New(cl, o, (struct opSet *)msg);
 	    break;
+	}
 
+#if DEBUGMETHODS
 	case OM_UPDATE:
 	case OM_SET:
-
+	{
 	    D(bug("ppm.datatype/DT_Dispatcher: Method %s\n", (msg->MethodID==OM_UPDATE) ? "OM_UPDATE" : "OM_SET"));
-
 	    retval = DT_SetMethod(cl, (struct Gadget *) o, (struct opSet *) msg);
-
 	    break;
+	}
 
 	case OM_GET:
-
+	{
 	    D(bug("ppm.datatype/DT_Dispatcher: Method OM_GET\n"));
-
 	    retval = DT_GetMethod(cl, (struct Gadget *) o, (struct opGet *) msg);
-
 	    break;
+	}
 
 	case OM_NOTIFY:
-
+	{
 	    D(bug("ppm.datatype/DT_Dispatcher: Method OM_NOTIFY\n"));
-
 	    retval = DT_NotifyMethod(cl, (struct Gadget *) o, (struct opUpdate *) msg);
-
 	    break;
+	}
 
 	case GM_LAYOUT: 
-
+	{
 	    D(bug("ppm.datatype/DT_Dispatcher: Method GM_LAYOUT\n"));
-
 	    retval = DT_LayoutMethod(cl, (struct Gadget *) o, (struct gpLayout *) msg);
-
 	    break;
-
+	}
 
 	case DTM_PROCLAYOUT:
-
+	{
 	    D(bug("ppm.datatype/DT_Dispatcher: Method DTM_PROCLAYOUT\n"));
-
 	    retval = DT_LayoutMethod(cl, (struct Gadget *) o, (struct gpLayout *) msg);
-
 	    break;
-
+	}
 
 	case DTM_ASYNCLAYOUT:
-
+	{
 	    D(bug("ppm.datatype/DT_Dispatcher: Method DTM_ASYNCLAYOUT\n"));
-
 	    retval = DT_LayoutMethod(cl, (struct Gadget *) o, (struct gpLayout *) msg);
-
 	    break;
+	}
 
 	case GM_RENDER:
-
+	{
 	    D(bug("ppm.datatype/DT_Dispatcher: Method GM_RENDER\n"));
-
 	    D(bug("ppm.datatype/GM_RENDER: Entering\n"));
-
 	    retval = DoSuperMethodA(cl, o, msg);
-
 	    D(bug("ppm.datatype/GM_RENDER: Leaving\n"));
-
 	    break;
+	}
+#endif /* DEBUGMETHODS */
 
 	default:
-
-#ifdef MYDEBUG
+	{
+#if 0
 	    for(i=0; i<NumMethods; i++)
 	    {
 	     if(msg->MethodID==KnownMethods[i])
@@ -926,18 +1015,15 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 	    {
 	     D(bug("ppm.datatype/DT_Dispatcher: Method 0x%lx\n", (unsigned long) msg->MethodID));
 	    }
-#endif /* MYDEBUG */
-
-#if 0
 	    D(bug("ppm.datatype/DT_Dispatcher: Method 0x%lx %lu\n", (unsigned long) msg->MethodID, (unsigned long) msg->MethodID));
 #endif /* 0 */
-
 	    retval = DoSuperMethodA(cl, o, msg);
 	    break;
+	}
 
     } /* switch(msg->MethodID) */
 
-    D(bug("ppm.datatype/DT_Dispatcher: Leaving\n"));
+//    D(bug("ppm.datatype/DT_Dispatcher: Leaving\n"));
 
     return retval;
 #ifdef _AROS
