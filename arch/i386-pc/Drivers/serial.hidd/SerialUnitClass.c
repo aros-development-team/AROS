@@ -18,6 +18,7 @@
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <proto/alib.h>
+#include <proto/intuition.h>
 #include <exec/libraries.h>
 #include <exec/ports.h>
 #include <exec/memory.h>
@@ -28,8 +29,11 @@
 #include <hidd/serial.h>
 #include <hidd/unixio.h>
 #include <hidd/irq.h>
+#include <intuition/preferences.h>
 
 #include <devices/serial.h>
+
+
 
 #include "serial_intern.h"
 
@@ -40,15 +44,17 @@
 #include <aros/debug.h>
 
 /* The speed of the crystal */
-#define CRYSTAL_SPEED 	1842000 
+#define CRYSTAL_SPEED 	1843200 
 
 
 void serialunit_receive_data();
-void serialunit_write_more_data();
+ULONG serialunit_write_more_data();
 
 unsigned char get_lcr(struct HIDDSerialUnitData * data);
 unsigned char get_fcr(ULONG baudrate);
 BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed);
+static void adapt_data(struct HIDDSerialUnitData * data,
+                       struct Preferences * prefs);
 
 
 inline void outb(unsigned char value, unsigned short port)
@@ -146,13 +152,22 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
 
   if (obj)
   {
+    struct IntuitionBase * IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",0);
     data = OOP_INST_DATA(cl, obj);
     
     data->baseaddr = bases[unitnum];
-    
-    data->datalength = 8;
-    data->parity     = FALSE;
-    data->baudrate   = 0; /* will be initialize in set_baudrate() */
+
+    if (NULL != IntuitionBase) {
+      struct Preferences prefs;
+      GetPrefs(&prefs,sizeof(prefs));
+      data->baudrate      = prefs.BaudRate;
+      adapt_data(data, &prefs);
+      CloseLibrary((struct Library *)IntuitionBase);
+    } else {
+      data->datalength = 8;
+      data->parity     = FALSE;
+      data->baudrate   = 9600; /* will be initialize in set_baudrate() */
+    }
     data->unitnum    = unitnum;
 
     CSD(cl->UserData)->units[data->unitnum] = data;
@@ -178,7 +193,7 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
     serial_outp(data, UART_LCR, get_lcr(data));
      
     serial_outp(data, UART_MCR, 8);
-    serial_outp(data, UART_IER, UART_IER_RDI);
+    serial_outp(data, UART_IER, UART_IER_RDI | UART_IER_THRI | UART_IER_RLSI | UART_IER_MSI);
      
     /* clear the interrupt registers again ... */
     (void)serial_inp(data, UART_LSR);
@@ -186,7 +201,7 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
     (void)serial_inp(data, UART_IIR);
     (void)serial_inp(data, UART_MSR);
      
-     set_baudrate(data, SER_DEFAULT_BAUDRATE);
+    set_baudrate(data, data->baudrate);
   } /* if (obj) */
 
   ReturnPtr("SerialUnit::New()", OOP_Object *, obj);
@@ -448,11 +463,12 @@ AROS_UFH3(void, serialunit_receive_data,
     data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
 }
 
-AROS_UFH3(void, serialunit_write_more_data,
+AROS_UFH3(ULONG, serialunit_write_more_data,
    AROS_UFHA(APTR, iD, A1),
    AROS_UFHA(APTR, iC, A5),
    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+  ULONG bytes = 0;
   struct HIDDSerialUnitData * data = iD;
 
   /*
@@ -460,7 +476,7 @@ AROS_UFH3(void, serialunit_write_more_data,
    * anything here.
    */
   if (TRUE == data->stopped)
-    return;
+    return 0;
     
   /*
   ** Ask for more data be written to the unit
@@ -468,7 +484,8 @@ AROS_UFH3(void, serialunit_write_more_data,
   D(bug("Asking for more data to be written to unit %d\n",data->unitnum));
 
   if (NULL != data->DataWriteCallBack)
-    data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
+    bytes = data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
+  return bytes;
 }
 
 
@@ -586,7 +603,7 @@ unsigned char get_lcr(struct HIDDSerialUnitData * data)
     case 8: lcr = 3;
     break;
   
-    default: lcr = 0;
+    default: lcr = 3;
   }
   
   switch (data->stopbits)
@@ -670,7 +687,7 @@ BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed)
     serial_outp(data, UART_DLL, quot & 0xff);
     serial_outp(data, UART_DLM, quot >> 8);
     serial_outp(data, UART_LCR, get_lcr(data));
-    serial_outp(data, UART_FCR, get_fcr(speed));
+    serial_outp(data, UART_FCR, get_fcr(speed) | UART_FCR_ENABLE_FIFO);
     
     return TRUE;
 }
@@ -685,7 +702,7 @@ void serial_int_13(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
     UBYTE code;
 
-    code = 1;
+    code = UART_IIR_NO_INT;
 
     if (csd->units[0])
 	code = serial_inp(csd->units[0], UART_IIR) & 0x07;
@@ -701,9 +718,14 @@ void serial_int_13(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	case UART_IIR_MSI:
 	    (void)serial_inp(csd->units[0], UART_MSR);
 	    break;
+	case UART_IIR_THRI:
+	    if (csd->units[0]) 
+	      if (0 == serialunit_write_more_data(csd->units[0], NULL, SysBase))
+	        (void)serial_inp(csd->units[0], UART_IIR);
+	    break;
     }	
 
-    code = 1;
+    code = UART_IIR_NO_INT;
     if (csd->units[2])
 	code = serial_inp(csd->units[2], UART_IIR) & 0x07;
     switch (code)
@@ -717,6 +739,11 @@ void serial_int_13(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	case UART_IIR_MSI:
 	    (void)serial_inp(csd->units[2], UART_MSR);
 	    break;
+	case UART_IIR_THRI:
+	    if (csd->units[2]) 
+	      if (0 == serialunit_write_more_data(csd->units[0], NULL, SysBase))
+	        (void)serial_inp(csd->units[2], UART_IIR);
+	    break;
     }	
 
     return;
@@ -726,7 +753,7 @@ void serial_int_24(HIDDT_IRQ_Handler * irq, HIDDT_IRQ_HwInfo *hw)
 {
     UBYTE code;
 
-    code = 1;
+    code = UART_IIR_NO_INT;
     if (csd->units[1])
 	code = serial_inp(csd->units[1], UART_IIR) & 0x07;
     switch (code)
@@ -739,6 +766,11 @@ void serial_int_24(HIDDT_IRQ_Handler * irq, HIDDT_IRQ_HwInfo *hw)
 	    break;
 	case UART_IIR_MSI:
 	    (void)serial_inp(csd->units[1], UART_MSR);
+	    break;
+	case UART_IIR_THRI:
+	    if (csd->units[1]) 
+	      if (0 == serialunit_write_more_data(csd->units[0], NULL, SysBase))
+	        (void)serial_inp(csd->units[1], UART_IIR);
 	    break;
     }
 
@@ -756,7 +788,80 @@ void serial_int_24(HIDDT_IRQ_Handler * irq, HIDDT_IRQ_HwInfo *hw)
 	case UART_IIR_MSI:
 	    (void)serial_inp(csd->units[3], UART_MSR);
 	    break;
+	case UART_IIR_THRI:
+	    if (csd->units[3]) 
+	      if (0 == serialunit_write_more_data(csd->units[3], NULL, SysBase))
+	        (void)serial_inp(csd->units[3], UART_IIR);
+	    break;
     }	
 
     return;
+}
+
+static void adapt_data(struct HIDDSerialUnitData * data,
+                       struct Preferences * prefs)
+{
+	/*
+	 * Parity.
+	 */
+	data->parity = TRUE;
+
+	switch ((prefs->SerParShk >> 4) & 0x0f) {
+
+		case SPARITY_NONE:
+		default:             /* DEFAULT !! */
+			data->parity = FALSE;
+		break;
+		
+		case SPARITY_EVEN:
+			data->paritytype = PARITY_EVEN;
+		break;
+		
+		case SPARITY_ODD:
+			data->paritytype = PARITY_ODD;
+		break;
+
+		case SPARITY_MARK:
+			data->paritytype = PARITY_1;
+		break;
+		case SPARITY_SPACE:
+			data->paritytype = PARITY_0;
+		break;
+
+	}
+	
+	/*
+	 * Bit per character 
+	 */
+	switch ((prefs->SerRWBits & 0x0f)) {
+		default: /* 8 bit */
+		case 0:
+			data->datalength = 8;
+		break;
+		
+		case 1: /* 7 bit */
+			data->datalength = 7;
+		break;
+		
+		case 2: /* 6 bit */
+			data->datalength = 6;
+		break;
+		
+		case 3: /* 5 bit */
+			data->datalength = 5;
+		break;
+	}
+
+	/*
+	 * 2 stop bits ? default is '1'.
+	 */
+	if (1 == (prefs->SerStopBuf >> 4))
+		data->stopbits = 2;
+	else
+		data->stopbits = 1;
+	
+	/*
+	 * Handshake to be used.
+	 */
+	// MISSING!
 }
