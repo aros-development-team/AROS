@@ -6,6 +6,8 @@ BUGS - Known bugs of AROS
 
 INSTALL - A short description on how to compile AROS the first time
 
+INSTALL.amiga - A short description on how to compile AROS on Amiga
+
 README - A readme with a short introduction about AROS
 
 apps/ - This directory contains the source for applications for AROS.
@@ -70,10 +72,12 @@ rom/ - Things which are internal parts of the OS.
 
 scripts/ - Scripts which are used to generate code.
 
-setup - Execute this shell-script to prepare for compilation of AROS.
+autogen.sh - Execute this shell-script to prepare for compilation of AROS.
 	It checks for needed tools and tries to build them.
 	Run it when you have installed a completely new tree or sources
-	in the tools/ directory have changed.
+	in the \filename{tools/} directory have changed.
+	This script also generates and runs \filename{configure} from
+	\filename{configure.in}.
 
 tools/ - This contains build tools.
 

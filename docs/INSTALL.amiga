@@ -230,6 +230,8 @@ on the Amiga. Please address any comments and questions to
 6. Running configure
    -----------------
 
+	Run 'autoconf' at the top dir to create configure from configure.in
+
 	Use "sh ./configure --help" for all possible options, then
 	type:
 

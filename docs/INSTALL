@@ -22,7 +22,9 @@ Basic Installation of AROS-SOURCES
 3. Build all the necessary tools for compilation.
 	Get all non-AROS tools,
 	i.e. get a c-compiler (gcc recommended), binutils, gawk, etc.
-	Now compile AROS' tools. Either run "setup" or:
+	Now compile AROS' tools.
+	Either run "autogen.sh" with possible options as mentioned in e)
+	or (the same, but do everything on your own):
 
 	a) MetaMake, short mmake.
 		cd AROS/tools/MetaMake
@@ -70,15 +72,29 @@ Basic Installation of AROS-SOURCES
 		make
 
 
-4. Run ./configure in the source root.
-	Use "./configure --help" for all possible options.
-	This will examine your system and create the necessary
-	files for the build.
+	e) The configure script.
+		Goto the top dir of AROS and call `autoconfig` which
+		will generate "configure" from "configure.in".
+		Then you must run configure.
+		This will examine your system and create the necessary
+		files for the build.
+
+		It has one option:
+		'--enable-gfxhidd' / '--disable-gfxhidd'
+		  This determines whether you want to enable gfx via the
+		  graphics.hidd or old direct X11 calls.
+		  '--disable-gfxhidd' is the default. This value will be
+		  cached and can be overridden at any time running
+		  configure again with the new option (this will require
+		  to recompile major parts of AROS, though).
+
+		Use "./configure --help" for all possible options.
 
 	That's it. And now for the most important step:
 
 5. Compile your sources.
-	If you have the .mmake.config in your $HOME dir, and adjusted
+	Call the wrapper Makefile with 'make' or
+	if you have the .mmake.config in your $HOME dir, and adjusted
 	the "top" variable in it, just call mmake, or if you haven't,
 	call mmake in the topdir of AROS (e.g: /usr/src/AROS)
 
