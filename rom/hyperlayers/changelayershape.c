@@ -74,7 +74,7 @@
 
   {
     struct Region r, cutoldshape, rtmp, cutnewshape;
-    struct Layer * lparent, * _l, * lfirst;
+    struct Layer * lparent, * _l, * lfirst = NULL;
     int behind_l = FALSE;
     InitRegion(&r);
     InitRegion(&rtmp);

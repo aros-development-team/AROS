@@ -26,8 +26,6 @@ AROS_UFP3(struct Region *, ScaleLayerCallback,
    AROS_UFPA(struct Layer               *, l        , A2),
    AROS_UFPA(struct ChangeLayerShapeMsg *, clsm     , A1));
 
-//struct Region * ScaleLayerCallback();
-
 /*****************************************************************************
 
     NAME */
@@ -77,7 +75,6 @@ AROS_UFP3(struct Region *, ScaleLayerCallback,
   
   hook.h_Entry = (IPTR)ScaleLayerCallback;
   hook.h_Data  = (APTR)&parm;
-
 
   oldshape = ChangeLayerShape(l, 0, &hook);
 
