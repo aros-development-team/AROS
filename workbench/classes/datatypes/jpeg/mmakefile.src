@@ -9,6 +9,8 @@ FUNCS := obtainengine
 #MM- workbench-datatypes-complete: workbench-datatypes-jpeg
 #MM workbench-datatypes-jpg : includes linklibs linklibs-jpg
 
+USER_CFLAGS := -DAROS_LC_SETFUNCS
+
 %build_module_macro mmake=workbench-datatypes-jpeg modname=jpeg \
   modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
   uselibs="jpeg amiga arosc m"
