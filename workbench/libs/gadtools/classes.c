@@ -1679,7 +1679,7 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     	    	struct TagItem sftags[] = {{STRINGA_Font, (IPTR)NULL}, {TAG_DONE, }};
     	    	
     	    	sftags[0].ti_Data = (IPTR)data->font;
-    	    	DoSuperMethod(cl, o, OM_SET, sftags, NULL);
+    	    	DoSuperMethod(cl, (Object *)retval, OM_SET, sftags, NULL);
     	    }
     	}
 
