@@ -1,22 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.4  1997/01/27 00:36:14  ldp
-    Polish
 
-    Revision 1.3  1996/12/09 13:53:21  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.2  1996/10/24 15:50:24  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/09/11 12:54:45  digulla
-    A couple of new DOS functions from M. Fleischer
-
-    Desc:
+    Desc: Change the mode of a filehandle or -lock.
     Lang: english
 */
 #include <proto/exec.h>
@@ -45,7 +31,7 @@
     INPUTS
 	type    - CHANGE_FH or CHANGE_LOCK.
 	object  - Filehandle or lock.
-	newmode - New mode.
+	newmode - New mode (see <dos/dos.h>).
 
     RESULT
 	!=0 if all went well, 0 else. IoErr() gives additional information
@@ -81,6 +67,22 @@
     /* Get pointer to I/O request. Use stackspace for now. */
     struct IOFileSys io,*iofs=&io;
 
+    /* Convert Open() and Lock() constants to filehandler flags. */
+    ULONG newflags, mask;
+    if (newmode==MODE_OLDFILE || newmode==MODE_READWRITE || newmode==ACCESS_READ)
+    {
+        newflags=0UL;
+        mask    =FMF_LOCK;
+    } else if (newmode==MODE_NEWFILE || newmode==ACCESS_WRITE)
+    {
+        newflags=FMF_LOCK;
+        mask    =FMF_LOCK;
+    } else
+    {
+        newflags=newmode;
+        mask    =0xFFFFFFFF;
+    }
+
     /* Prepare I/O request. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
     iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
@@ -89,12 +91,14 @@
     iofs->IOFS.io_Unit   =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_FILE_MODE;
     iofs->IOFS.io_Flags  =0;
-    iofs->io_Args[0]=newmode;
+    iofs->io_Union.io_FILE_MODE.io_FileMode=newflags;
+    iofs->io_Union.io_FILE_MODE.io_Mask    =mask;
 
     /* Send the request. */
     DoIO(&iofs->IOFS);
-    
+
     /* Set error code and return */
-    return (me->pr_Result2=iofs->io_DosError)==0;
+    SetIoErr(iofs->io_DosError);
+    return iofs->io_DosError==0;
     AROS_LIBFUNC_EXIT
 } /* ChangeMode */
