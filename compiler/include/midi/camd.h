@@ -2,7 +2,7 @@
 #define MIDI_CAMD_H
 
 /*
-    (C) 2001 AROS - The Amiga Research OS
+    Copyright (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -32,7 +32,7 @@ typedef union{
 
 #define mm_Msg l[0]
 #define mm_Time l[1]
-#ifdef AROS_BIG_ENDIAN
+#if !AROS_BIG_ENDIAN
 #  define mm_Status b[3]
 #  define mm_Data1 b[2]
 #  define mm_Data2 b[1]
@@ -82,7 +82,7 @@ struct MidiLink{
 
 	/* Private data may follow. (currently not, but..) */
 };
-#ifdef AROS_BIG_ENDIAN
+#if !AROS_BIG_ENDIAN
 #  define sxf_Mode b[3]
 #  define sxf_ID1 b[2]
 #  define sxf_ID2 b[1]
