@@ -15,7 +15,10 @@
  * the public imspec API in imspec.h
  */
 
+#ifndef LIBRARIES_MUI_H
 #include "mui.h"
+#endif
+
 #include "muimaster_intern.h"
 #include "penspec.h"
 
