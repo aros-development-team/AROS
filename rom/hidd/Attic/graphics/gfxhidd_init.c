@@ -18,6 +18,7 @@
 #include "initstruct.h"
 #include "gfxhidd_intern.h"
 
+#define SDEBUG 1
 #define DEBUG 1
 #include <aros/debug.h>
 

@@ -11,7 +11,7 @@ GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
 
 
 #All modules must be in single files.
-MODULES	:= hiddclass inithidds
+MODULES	:= hiddclass
 
 #One lib pr. module. Lib follows naming of modules.
 LIBS := $(foreach f, $(MODULES), $(LIBDIR)/lib$(f).a)

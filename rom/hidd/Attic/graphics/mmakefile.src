@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 OBJDIR		:= $(GENDIR)/$(CURDIR)
-LIB		:= $(LIBDIR)/libhiddgraphicscl.a
+LIB		:= $(LIBDIR)/libhiddgfx.a
 OS_INCLUDES	:= -I$(GENINCDIR)
 
 MY_INCLS := $(wildcard include/*.h)
@@ -10,7 +10,7 @@ DEST_INC := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
 GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
 
 INIT_FILE := gfxhidd_init
-END_FILE  := hiddgraphics_end
+END_FILE  := hiddgfx_end
 
 FILES	  := GfxHiddClass GC_GCClass
 
@@ -20,15 +20,15 @@ ALL_FILES := $(FILES)
 %prepare_replace rom/hidd
 %filter_replace FILES
 
-%prepare_shlib hiddgraphicscl $(SHARED_HIDDCLASS)
+%prepare_shlib hiddgfx $(SHARED_HIDDCLASS)
 
 # ***** NATIVE SECTION *****
 ifeq ($(FLAVOUR),native)
 
 # Note this bit hasn't been written yet...
 
-LIBS := -L$(LIBDIR) -lhiddgraphicscl
-LIBLIST := hiddgraphicscl hiddcl amiga
+LIBS := -L$(LIBDIR) -lhiddgfx
+LIBLIST := hiddgfx hiddcl amiga
 LIBDEPS := $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
 
 OBJS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
@@ -36,8 +36,8 @@ OBJS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 $(OSMODDIR)/hiddgraphics.class: $(OBJS)
 	@$(ECHO) "Building $(notdir $@)..."
 	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(ENDFUNC) $(LIBS) \
-	    -o $@ 2>&1 |tee hiddgraphicscl.map
-	@$(IF) $(TEST) ! -s hiddgraphicscl.map; then $(RM) hiddgraphicscl.map; else true; fi
+	    -o $@ 2>&1 |tee hiddgfx.map
+	@$(IF) $(TEST) ! -s hiddgfx.map; then $(RM) hiddgfx.map; else true; fi
 	@$(STRIP) $@
 
 else
@@ -60,6 +60,10 @@ DEPS := $(foreach f, $(INIT_FILE) $(FILES) $(END_FILE), $(OBJDIR)/$(f).d)
 $(LIB): $(OBJS)
 	%mklib_q
 	@$(RM) $(RMLIB)
+	
+$(END_FILE) :
+	$(ECHO)	"Generating $@"
+	$(ECHO)	"const char Generating $@"
 
 #MM
 includes-copy : $(DEST_INC) $(GEN_INC)

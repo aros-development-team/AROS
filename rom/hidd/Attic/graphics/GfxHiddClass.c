@@ -114,8 +114,6 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
     {
 	D(bug("GfxHiddClass ok\n"));
 	cl->UserData = (APTR)csd;
-	
-	HiddGCAttrBase = GetAttrBase(IID_Hidd_GC);
 
 	AddClass(cl);
     }
