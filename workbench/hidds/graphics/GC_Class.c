@@ -140,6 +140,31 @@ static VOID gc_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 
 }
 
+/*** GC::SetClipRect() ****************************************************/
+VOID gc_setcliprect(Class *cl, Object *o, struct pHidd_GC_SetClipRect *msg)
+{
+     HIDDT_GC_Intern *data;
+     
+     data = INST_DATA(cl, o);
+     
+     data->clipX1 = msg->x1;
+     data->clipY1 = msg->y1;
+     data->clipX2 = msg->x2;
+     data->clipY2 = msg->y2;
+     
+     data->doClip = TRUE;
+}
+
+VOID gc_unsetcliprect(Class *cl, Object *o, struct pHidd_GC_UnsetClipRect *msg)
+{
+     HIDDT_GC_Intern *data;
+     
+     data = INST_DATA(cl, o);
+     
+     data->doClip = FALSE;
+    
+}
+
 
 /*** init_gcclass *************************************************************/
 
@@ -152,7 +177,7 @@ static VOID gc_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 #define UtilityBase (csd->utilitybase)
 
 #define NUM_ROOT_METHODS   3
-#define NUM_GC_METHODS    0
+#define NUM_GC_METHODS    2
 
 Class *init_gcclass(struct class_static_data *csd)
 {
@@ -166,6 +191,8 @@ Class *init_gcclass(struct class_static_data *csd)
 
     struct MethodDescr gc_descr[NUM_GC_METHODS + 1] =
     {
+    	{(IPTR (*)())gc_setcliprect	, moHidd_GC_SetClipRect		},
+    	{(IPTR (*)())gc_unsetcliprect	, moHidd_GC_UnsetClipRect	},
         {NULL, 0UL}
     };
     

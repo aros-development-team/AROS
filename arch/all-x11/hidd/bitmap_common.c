@@ -1295,3 +1295,42 @@ static VOID MNAME(get)(Class *cl, Object *o, struct pRoot_Get *msg)
 
 
 
+/*** BitMap:: DrawLine() ***************************/
+VOID MNAME(drawline)(Class *cl, Object *o, struct pHidd_BitMap_DrawLine *msg)
+{
+    Object *gc = msg->gc;
+    struct bitmap_data *data = INST_DATA(cl, o);
+    
+LX11
+    if (GC_DOCLIP(gc)) {
+    	XRectangle cr;
+	
+	cr.x = GC_CLIPX1(gc);
+	cr.y = GC_CLIPY1(gc);
+	cr.width  = GC_CLIPX2(gc) - cr.x + 1;
+	cr.height = GC_CLIPY2(gc) - cr.y + 1;
+    
+    	XSetClipRectangles(data->display
+		, data->gc
+		, 0, 0
+		, &cr
+		, 1
+		, Unsorted
+	);
+    }
+    
+    XSetForeground(data->display, data->gc, GC_FG(gc));
+	
+    XDrawLine(data->display, DRAWABLE(data), data->gc
+	, msg->x1, msg->y1
+	, msg->x2, msg->y2 
+    );
+	
+    if (GC_DOCLIP(gc)) {
+    	XSetClipMask(data->display, data->gc, None);
+    }	
+    
+    
+UX11
+}
+

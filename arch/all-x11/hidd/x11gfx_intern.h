@@ -30,6 +30,7 @@ XImage *alloc_ximage(Display *display, int screen, ULONG width, UBYTE depth, UBY
 VOID free_ximage(XImage *image);
 
 
+#define USE_X11_DRAWLINE 1
 
 /* Private Attrs and methods for the X11Gfx Hidd */
 

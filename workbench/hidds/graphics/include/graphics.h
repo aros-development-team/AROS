@@ -600,13 +600,26 @@ struct pHidd_BitMap_SetPixelFormat {
 
 /**** Graphics context definitions ********************************************/
     /* Methods for a graphics context */
-/*    
-enum
-{
-
+    
+enum {
+    moHidd_GC_SetClipRect,
+    moHidd_GC_UnsetClipRect
 
 };
-*/
+
+struct pHidd_GC_SetClipRect {
+    MethodID mID;
+    LONG x1;
+    LONG y1;
+    LONG x2;
+    LONG y2;
+};
+
+
+struct pHidd_GC_UnsetClipRect {
+    MethodID mID;
+};
+
 enum
 {
     /* Attributes for a graphics context */
@@ -663,6 +676,10 @@ BOOL	 HIDD_Gfx_RegisterGfxModes(Object *hiddGfx, struct TagItem **modeTags);
 
 struct List *HIDD_Gfx_QueryGfxModes(Object *hiddGfx, struct TagItem *queryTags);
 VOID HIDD_Gfx_ReleaseGfxModes(Object *hiddGfx, struct List *modeList);
+
+
+VOID HIDD_GC_SetClipRect(Object *gc, LONG x1, LONG y1, LONG x2, LONG y2);
+VOID HIDD_GC_UnsetClipRect(Object *gc);
 
 VOID     HIDD_BM_BltBitMap   (Object obj, Object dest, WORD srcX, WORD srcY, WORD destX, WORD destY, WORD width, WORD height);
 BOOL     HIDD_BM_Show        (Object obj);
@@ -751,6 +768,14 @@ typedef struct {
     APTR  planeMask; /* Pointer to a shape bitMap                        */
     ULONG colExp;
     
+    BOOL  doClip;
+
+    LONG  clipX1;
+    LONG  clipY1;
+    LONG  clipX2;
+    LONG  clipY2;
+
+    
 } HIDDT_GC_Intern;
 
 #define GCINT(gc)	((HIDDT_GC_Intern *)gc)
@@ -762,6 +787,14 @@ typedef struct {
 #define GC_LINEPAT(gc)	(GCINT(gc)->linePat)
 #define GC_PLANEMASK(gc) (GCINT(gc)->planeMask)
 #define GC_COLEXP(gc)	(GCINT(gc)->colExp)
+
+#define GC_DOCLIP(gc)	(GCINT(gc)->doClip)
+#define GC_CLIPX1(gc)	(GCINT(gc)->clipX1)
+#define GC_CLIPY1(gc)	(GCINT(gc)->clipY1)
+#define GC_CLIPX2(gc)	(GCINT(gc)->clipX2)
+#define GC_CLIPY2(gc)	(GCINT(gc)->clipY2)
+
+#define GC_(gc)	(GCINT(gc)->)
 
 /******************** Gfx Mode definitions ********************/
 

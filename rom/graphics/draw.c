@@ -48,6 +48,9 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
+#if 1
+  driver_Draw(rp, x, y, GfxBase);
+#else
   LONG x_end = x;
   LONG y_end = y;
   LONG x_step = 0, y_step = 0;
@@ -131,6 +134,8 @@
       }
     }
   }
+
+#endif
 
   AROS_LIBFUNC_EXIT
 } /* Draw */

@@ -144,6 +144,7 @@ extern void driver_CloseFont (struct TextFont *, struct GfxBase *);
 extern void driver_DeinitRastPort (struct RastPort *, struct GfxBase *);
 extern void driver_DrawEllipse (struct RastPort *, LONG x, LONG y,
 			LONG rx, LONG ry, struct GfxBase *);
+extern void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase);
 extern void driver_EraseRect (struct RastPort *, LONG, LONG, LONG, LONG,
 			    struct GfxBase *);
 extern void driver_FreeBitMap (struct BitMap *, struct GfxBase *);

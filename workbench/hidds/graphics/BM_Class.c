@@ -33,6 +33,12 @@ static AttrBase HiddBitMapAttrBase = 0;
 static AttrBase HiddGCAttrBase = 0;
 static AttrBase HiddPixFmtAttrBase = 0;
 
+#define POINT_OUTSIDE_CLIP(gc, x, y)	\
+	(  (x) < GC_CLIPX1(gc)		\
+	|| (x) > GC_CLIPX2(gc)		\
+	|| (y) < GC_CLIPY1(gc)		\
+	|| (y) > GC_CLIPY2(gc) )
+
 /*** BitMap::New() ************************************************************/
 
 
@@ -391,6 +397,8 @@ static ULONG bitmap_drawpixel(Class *cl, Object *obj, struct pHidd_BitMap_DrawPi
 
     TODO Support for line pattern
          Optimize remove if t == 1 ...
+	 Implement better clipping: Should be no reason to calculate
+	 more than the part of the line that is inside the cliprect
 
     HISTORY
 ***************************************************************************/
@@ -401,13 +409,44 @@ static VOID bitmap_drawline(Class *cl, Object *obj, struct pHidd_BitMap_DrawLine
     UWORD maskLine = 1 << 15;  /* for line pattern */
     BYTE  maskCnt  = 16;
     ULONG fg;   /* foreground pen   */
+    BOOL doclip, renderpix;
     
     Object *gc;
 
-    EnterFunc(bug("BitMap::DrawLinel() x1: %i, y1: %i x2: %i, y2: %i\n", msg->x1, msg->y1, msg->x2, msg->y2));
+    EnterFunc(bug("BitMap::DrawLine() x1: %i, y1: %i x2: %i, y2: %i\n", msg->x1, msg->y1, msg->x2, msg->y2));
     
     gc = msg->gc;
+    doclip = GC_DOCLIP(gc);
+    renderpix = TRUE;
     fg = GC_FG(gc);
+    
+    if (doclip) {
+    	/* If line is not inside cliprect, then just return */
+	LONG x1, y1, x2, y2;
+	
+	/* Normalize coords */
+	if (msg->x1 > msg->x2) {
+	    x1 = msg->x2; x2 = msg->x1;
+	} else {
+	    x1 = msg->x1; x2 = msg->x2;
+	}
+	
+	if (msg->y1 > msg->y2) {
+	    y1 = msg->y2; y2 = msg->y1;
+	} else {
+	    y1 = msg->y1; y2 = msg->y2;
+	}
+	
+	if (    x1 > GC_CLIPX2(gc)
+	     || x2 < GC_CLIPX1(gc)
+	     || y1 > GC_CLIPY2(gc)
+	     || y2 < GC_CLIPY1(gc) ) {
+	     
+	     /* Line is not inside cliprect, so just return */
+	     return;
+	     
+	}
+    }
 
     /* Calculate slope */
     dx = abs(msg->x2 - msg->x1);
@@ -433,16 +472,24 @@ static VOID bitmap_drawline(Class *cl, Object *obj, struct pHidd_BitMap_DrawLine
     incrNE = 2 * (dy - dx);  /* Increment use for move to NE */
 
     x = msg->x1; y = msg->y1;
-
-    if(GC_LINEPAT(gc) & maskLine)
-    {
-        HIDD_BM_DrawPixel(obj, gc, x, y); /* The start pixel */
+    
+    if (doclip) {
+	/* Pixel inside ? */
+	if ( POINT_OUTSIDE_CLIP(gc, x, y ))
+	    renderpix = FALSE;
+	else
+	    renderpix = TRUE;
+	     
     }
-    else
-    {
-        GC_FG(gc) = GC_BG(gc);
-        HIDD_BM_DrawPixel(obj, gc, x, y); /* The start pixel */
-        GC_FG(gc) = fg;
+    
+    if (renderpix) {
+	if(GC_LINEPAT(gc) & maskLine) {
+	     HIDD_BM_DrawPixel(obj, gc, x, y); /* The start pixel */
+	} else {
+	    GC_FG(gc) = GC_BG(gc);
+	    HIDD_BM_DrawPixel(obj, gc, x, y); /* The start pixel */
+            GC_FG(gc) = fg;
+	}
     }
 
 
@@ -484,16 +531,25 @@ static VOID bitmap_drawline(Class *cl, Object *obj, struct pHidd_BitMap_DrawLine
             d = d + incrNE;
         }
 
-        if(GC_LINEPAT(gc) & maskLine)
-        {
-            HIDD_BM_DrawPixel(obj, gc, x, y);
-        }
-        else
-        {
-            GC_FG(gc) = GC_BG(gc);
-            HIDD_BM_DrawPixel(obj, gc, x, y);
-            GC_FG(gc) = fg;
-        }
+
+	if (doclip) {
+	    /* Pixel inside ? */
+	    if ( POINT_OUTSIDE_CLIP(gc, x, y ))
+		renderpix = FALSE;
+	    else
+		renderpix = TRUE;
+	     
+	}
+	
+	if (renderpix) {
+            if(GC_LINEPAT(gc) & maskLine) {
+		HIDD_BM_DrawPixel(obj, gc, x, y);
+            } else {
+		GC_FG(gc) = GC_BG(gc);
+		HIDD_BM_DrawPixel(obj, gc, x, y);
+		GC_FG(gc) = fg;
+	    }
+	}
     }
 
 
@@ -576,7 +632,7 @@ static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *
     
     /* Get the source pixel format */
     data = INST_DATA(cl, obj);
-    srcpf = &data->prot.pixfmt;
+    srcpf = (HIDDT_PixelFormat *)&data->prot.pixfmt;
     
     dstpf = (HIDDT_PixelFormat *)HIDD_BM_GetPixelFormat(msg->dest, vHidd_PixFmt_Native);
     

@@ -649,6 +649,36 @@ Object * HIDD_BM_SetPixelFormat(Object *obj, struct TagItem *pixFmtTags)
 }
 
 
+/********* GC *****************************************/
+VOID HIDD_GC_SetClipRect(Object *obj, LONG x1, LONG y1, LONG x2, LONG y2)
+{
+    static MethodID mid = 0;
+    struct pHidd_GC_SetClipRect p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_GC, moHidd_GC_SetClipRect);
+        
+    p.mID	= mid;
+    p.x1	= x1;
+    p.y1	= y1;
+    p.x2	= x2;
+    p.y2	= y2;
+    
+    DoMethod(obj, (Msg)&p);
+    
+}
+
+VOID HIDD_GC_UnsetClipRect(Object *obj)
+{
+    static MethodID mid = 0;
+    struct pHidd_GC_UnsetClipRect p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_GC, moHidd_GC_UnsetClipRect);
+        
+    p.mID	= mid;
+    
+    DoMethod(obj, (Msg)&p);
+}
+
 /********* PlanarBM **********************************/
 VOID HIDD_PlanarBM_SetBitMap(Object *obj, struct BitMap *bitMap)
 {

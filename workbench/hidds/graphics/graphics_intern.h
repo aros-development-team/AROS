@@ -150,7 +150,9 @@ enum {
 #if 0
 struct HIDDGCData
 {
+#if 0
     APTR bitMap;     /* bitmap to which this gc is connected             */
+#endif
     APTR  userData;  /* pointer to own data                              */
     ULONG fg;        /* foreground color                                 */
     ULONG bg;        /* background color                                 */
@@ -161,6 +163,7 @@ struct HIDDGCData
     UWORD linePat;   /* LinePattern                                      */
     APTR  planeMask; /* Pointer to a shape bitMap                        */
     ULONG colExp;
+    
     /* WARNING: structure could be extented in the future                */
 };
 #endif    

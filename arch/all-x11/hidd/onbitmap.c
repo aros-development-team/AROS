@@ -368,7 +368,12 @@ UX11
 #define XSD(cl) xsd
 
 #define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 14
+
+#if USE_X11_DRAWLINE
+#   define NUM_BITMAP_METHODS 15
+#else
+#   define NUM_BITMAP_METHODS 14
+#endif
 
 
 Class *init_onbmclass(struct x11_staticdata *xsd)
@@ -401,6 +406,9 @@ Class *init_onbmclass(struct x11_staticdata *xsd)
     	{(IPTR (*)())MNAME(unmappixel),		moHidd_BitMap_UnmapPixel},
     	{(IPTR (*)())MNAME(putimagelut),	moHidd_BitMap_PutImageLUT},
     	{(IPTR (*)())MNAME(getimagelut),	moHidd_BitMap_GetImageLUT},
+#if USE_X11_DRAWLINE
+    	{(IPTR (*)())MNAME(drawline),		moHidd_BitMap_DrawLine},
+#endif
         {NULL, 0UL}
     };
     
