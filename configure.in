@@ -863,7 +863,6 @@ AC_OUTPUT(Makefile ${aros_inc_dir}/config.h ${aros_geninc_dir}/config.h
         bin/${aros_host_arch}-${aros_host_cpu}/tools/${aros_target_cpu}-${aros_target_arch}-aros-gcc)
 
 chmod a+x bin/${aros_host_arch}-${aros_host_cpu}/tools/${aros_target_cpu}-${aros_target_arch}-aros-gcc
-ln -sf ${TOPDIR}/bin/${aros_host_arch}-${aros_host_cpu}/tools/${aros_target_cpu}-${aros_target_arch}-aros-gcc ${prefix}/bin
 
 dnl This is in order to not defined SHARED_CFLAGS sometimes
 dnl We don't always do aros_shared_ar, aros_shared_cflags
