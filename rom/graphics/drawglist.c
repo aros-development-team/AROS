@@ -8,8 +8,6 @@
 #include "graphics_intern.h"
 #include "gels_internal.h"
 
-void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *, struct GfxBase *);
-
 /*****************************************************************************
 
     NAME */
@@ -105,11 +103,6 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *, struct Gfx
 			if (0 != (CurVSprite->Flags & SAVEBACK) &&
 			    NULL != CurVSprite->VSBob) {
 
-
-				_ValidateIntVSprite(CurVSprite->IntVSprite,
-				                    rp,
-				                    FALSE,
-				                    GfxBase);
 				BltRastPortBitMap(rp,
 		                        	  CurVSprite->X,
 		                        	  CurVSprite->Y,
@@ -167,6 +160,7 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *, struct Gfx
 					 * it's a bob! mark it as drawn.
 					 */
 					CurVSprite->VSBob->Flags |= BDRAWN;
+					CurVSprite->VSBob->Flags &= ~BOBNIX;
 				}
 			}
 		}
