@@ -146,8 +146,17 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
             if(csd->gcclass)
             {
                 D(bug("GCClass ok\n"));
+		
+	    	csd->planarbmclass = init_planarbmclass(csd);
+	    	if (csd->planarbmclass)
+		{
+		    csd->chunkybmclass = init_chunkybmclass(csd);
+		    if (csd->chunkybmclass)
+		    {
 
-                ok = TRUE;
+                	ok = TRUE;
+		    }
+		}
             }
         }
     }
@@ -174,6 +183,8 @@ void free_gfxhiddclass(struct class_static_data *csd)
     {
         RemoveClass(csd->gfxhiddclass);
 	
+	free_chunkybmclass(csd);
+	free_planarbmclass(csd);
         free_gcclass(csd);
         free_bitmapclass(csd);
         if(csd->gfxhiddclass) DisposeObject((Object *) csd->gfxhiddclass);
