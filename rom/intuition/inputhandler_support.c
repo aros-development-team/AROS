@@ -487,6 +487,8 @@ struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, stru
 					ULONG termination, BOOL *reuse_event,
 					struct IntuitionBase *IntuitionBase)
 {					       
+    struct IIHData  *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+
     if (retval != GMR_MEACTIVE)
     {
 	struct gpGoInactive gpgi;
@@ -525,7 +527,23 @@ struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, stru
 	gpgi.gpgi_Abort = 0;
 
 	Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
-
+    	
+	if (SYSGADGET_ACTIVE)
+	{
+	    /* Switch back from Master Drag or Size Gadget to
+	       real/original/app Size or Drag Gadget */
+	       
+	    gadget = iihdata->ActiveSysGadget;
+	    iihdata->ActiveSysGadget = NULL;
+	    
+	    if (IS_BOOPSI_GADGET(gadget))
+	    {
+	    	Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
+	    }
+	    
+	    retval = 0;
+	}
+	
 	gadget->Activation &= ~GACT_ACTIVEGADGET;
 	
 	if ((gadget->Flags & GFLG_TABCYCLE) && (retval & GMR_NEXTACTIVE))

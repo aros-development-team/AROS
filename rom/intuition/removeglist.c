@@ -52,6 +52,8 @@
     LONG    	    numGad2;
     UWORD   	    count;
 
+    if (!numGad) return ~0;
+    
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
     
     iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
@@ -70,23 +72,33 @@
 	/* Check if one of the gadgets to be removed is the active gadget.
 	   If it is, then make it inactive! */
 
-	for (last = gadget; last->NextGadget && numGad2--; last = last->NextGadget)
+	for (last = gadget; last && numGad2--; last = last->NextGadget)
 	{
-    	    if (iihdata->ActiveGadget == last)
+    	    if ((iihdata->ActiveGadget == last) || (iihdata->ActiveSysGadget == last))
 	    {
 		#warning: According to autodocs should also wait for the (left?) mouse button to be released
 		switch(last->GadgetType & GTYP_GTYPEMASK)
 		{
 	    	    case GTYP_CUSTOMGADGET:
 		    {		    
-			 struct gpGoInactive gpgi;
+			struct gpGoInactive gpgi;
 
-			 gpgi.MethodID = GM_GOINACTIVE;
-			 gpgi.gpgi_GInfo = NULL;
-			 gpgi.gpgi_Abort = 1; 
+			gpgi.MethodID = GM_GOINACTIVE;
+			gpgi.gpgi_GInfo = NULL;
+			gpgi.gpgi_Abort = 1; 
 
-			 DoGadgetMethodA(last, remPtr, NULL, (Msg)&gpgi);
-			 break;
+			DoGadgetMethodA(last, remPtr, NULL, (Msg)&gpgi);
+
+			if (SYSGADGET_ACTIVE)
+			{
+			    if (IS_BOOPSI_GADGET(iihdata->ActiveSysGadget))
+			    {
+			    	DoGadgetMethodA(iihdata->ActiveSysGadget, remPtr, NULL, (Msg)&gpgi);
+			    }
+			    iihdata->ActiveSysGadget = NULL;
+			}
+
+			break;
 		    }
 		}
 
@@ -94,7 +106,7 @@
 		iihdata->ActiveGadget = NULL;
 	    }
 
-	} /* for (last = gadget; last->NextGadget && numGad2--; last = last->NextGadget) */
+	} /* for (last = gadget; last && numGad2--; last = last->NextGadget) */
 
 	for (last = gadget; last->NextGadget && --numGad; last = last->NextGadget) ; 
 

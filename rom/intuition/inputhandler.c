@@ -72,39 +72,67 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 							     sizeof(struct GeneratedInputEvent) * 10,
 							     sizeof(struct GeneratedInputEvent) * 10)))
 		{
-	            ULONG lock;
-
-		    /* We do not want to be woken up by message replies.
-		       We are anyway woken up about 10 times a second by
-		       timer events
-		    */
-	    	    port->mp_Flags   = PA_IGNORE;
-
-	    	    NEWLIST( &(port->mp_MsgList) );
-	    	    iihdata->IntuiReplyPort = port;
-
-		    NEWLIST(&iihdata->IntuiActionQueue);
-    		    NEWLIST(&iihdata->GeneratedInputEventList);
+		    struct TagItem dragtags[] =
+		    {
+		    	{GA_SysGadget	, TRUE	    	},
+			{GA_SysGType	, GTYP_WDRAGGING},
+			{TAG_DONE   	    	    	}
+		    };
+		    struct TagItem sizetags[] =
+		    {
+		    	{GA_SysGadget	, TRUE	    	},
+			{GA_SysGType	, GTYP_SIZING	},
+			{TAG_DONE   	    	    	}
+		    };
 		    
-		    /* Note: there are several routines like CloseWindow, which
-		       expect is_Data to point to the IIHData structure, so don't
-		       change this! */
-		       
-		    iihandler->is_Code = (APTR)AROS_ASMSYMNAME(IntuiInputHandler);
-		    iihandler->is_Data = iihdata;
-		    iihandler->is_Node.ln_Pri	= 50;
-		    iihandler->is_Node.ln_Name	= "Intuition InputHandler";
+		    iihdata->MasterDragGadget = (struct Gadget *)NewObjectA(GetPrivIBase(IntuitionBase)->dragbarclass,
+		    	    	    	    	    			    NULL,
+									    dragtags);
 
-		    lock = LockIBase(0UL);
+		    iihdata->MasterSizeGadget = (struct Gadget *)NewObjectA(GetPrivIBase(IntuitionBase)->sizebuttonclass,
+		    	    	    	    	    			    NULL,
+									    sizetags);
+		    			    			   
+		    if (iihdata->MasterDragGadget && iihdata->MasterSizeGadget)
+		    {
+	        	ULONG lock;
 
-		    iihdata->IntuitionBase = IntuitionBase;
+			/* We do not want to be woken up by message replies.
+			   We are anyway woken up about 10 times a second by
+			   timer events
+			*/
+	    		port->mp_Flags   = PA_IGNORE;
 
-		    UnlockIBase(lock);
+	    		NEWLIST( &(port->mp_MsgList) );
+	    		iihdata->IntuiReplyPort = port;
 
-		    GetPrivIBase(IntuitionBase)->IntuiReplyPort = iihdata->IntuiReplyPort;
-		    GetPrivIBase(IntuitionBase)->IntuiActionQueue = &iihdata->IntuiActionQueue;
+			NEWLIST(&iihdata->IntuiActionQueue);
+    			NEWLIST(&iihdata->GeneratedInputEventList);
 
-		    ReturnPtr ("InitIIH", struct Interrupt *, iihandler);
+			/* Note: there are several routines like CloseWindow, which
+			   expect is_Data to point to the IIHData structure, so don't
+			   change this! */
+
+			iihandler->is_Code = (APTR)AROS_ASMSYMNAME(IntuiInputHandler);
+			iihandler->is_Data = iihdata;
+			iihandler->is_Node.ln_Pri	= 50;
+			iihandler->is_Node.ln_Name	= "Intuition InputHandler";
+
+			lock = LockIBase(0UL);
+
+			iihdata->IntuitionBase = IntuitionBase;
+
+			UnlockIBase(lock);
+
+			GetPrivIBase(IntuitionBase)->IntuiReplyPort = iihdata->IntuiReplyPort;
+			GetPrivIBase(IntuitionBase)->IntuiActionQueue = &iihdata->IntuiActionQueue;
+
+			ReturnPtr ("InitIIH", struct Interrupt *, iihandler);
+			
+		    } /* f (iihdata->MasterDragGadget && iihdata->MasterSizeGadget) */
+		    
+		    if (iihdata->MasterDragGadget) DisposeObject((Object *)iihdata->MasterDragGadget);
+		    if (iihdata->MasterSizeGadget) DisposeObject((Object *)iihdata->MasterSizeGadget);
 		    
 		} /* if (iihdata->InputEventMemPool = ... */
 		FreeMem(port, sizeof(struct MsgPort));
@@ -125,6 +153,9 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 VOID CleanupIIH(struct Interrupt *iihandler, struct IntuitionBase *IntuitionBase)
 {
     struct IIHData *iihdata = (struct IIHData *)iihandler->is_Data;
+    
+    DisposeObject((Object *)iihdata->MasterDragGadget);
+    DisposeObject((Object *)iihdata->MasterSizeGadget);
     
     FreeGeneratedInputEvents(iihdata);
     DeletePool(iihdata->InputEventMemPool);
@@ -239,7 +270,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
         
 	w = IntuitionBase->ActiveWindow;
 	
-	if (!MENUS_ACTIVE)
+	if (!MENUS_ACTIVE && !SYSGADGET_ACTIVE)
 	{
             /* lock = LockIBase(0UL); */
 
@@ -288,6 +319,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 				gpgi.gpgi_Abort = 1; 
 
 				Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
+				
+				/* No need to handle iihdata->ActiveSysGadget here, as if
+				   there's an active sys gadget we cannot get here, because
+				   of the "if (!MENUS_ACTIVE && !SYSGADGET_ACTIVE)" check
+				   above */
 			    }
 			    break;
 
@@ -391,6 +427,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 						 IntuitionBase->ActiveScreen->MouseY, gi, IntuitionBase);
 			    if (gadget)
 			    {
+			    	BOOL is_draggad, is_sizegad;
+				
 		        	/* Whenever the active gadget changes the gi must be updated
 				   because it is cached in iidata->GadgetInfo!!!! Don't
 				   forget to do this if somewhere else the active
@@ -399,7 +437,31 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		        	PrepareGadgetInfo(gi, IntuitionBase->ActiveScreen, w);
 		    		SetGadgetInfoGadget(gi, gadget);
 
-				if (gadget->Activation & GACT_IMMEDIATE)
+   	    	    	    	is_draggad = ((gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDRAGGING);
+				is_sizegad = ((gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SIZING);
+
+    	    	    	    	if (is_draggad || is_sizegad)
+				{
+				    if (IS_BOOPSI_GADGET(gadget))
+				    {
+					DoGPInput(gi,
+						  gadget,
+						  ie,
+						  GM_GOACTIVE,
+						  &reuse_event,
+						  IntuitionBase);
+						  
+					/* Ignoring retval of dispatcher above is what AmigaOS does too for
+					   boopsi drag/resize gadgets */
+					   
+				    }
+				    
+				    /* From now on the master drag/size gadget takes over */
+				    
+				    iihdata->ActiveSysGadget = gadget;
+				    gadget = is_draggad ? iihdata->MasterDragGadget : iihdata->MasterSizeGadget;
+				}
+				else if (gadget->Activation & GACT_IMMEDIATE)
 				{
 				    ih_fire_intuimessage(w,
 					      		 IDCMP_GADGETDOWN,
@@ -407,14 +469,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 					      		 gadget,
 					      		 IntuitionBase);
 				}
-
+ 
 				new_gadget = TRUE;
 			    }
 
 			} /* if (!gadget) */
 
 			if (gadget)
-			{
+			{			    
 			    switch (gadget->GadgetType & GTYP_GTYPEMASK)
 			    {
 				case GTYP_BOOLGADGET:

@@ -605,25 +605,39 @@ static const ULONG coltab[] = {
 
 	    struct TagItem sdepth_tags[] =
 	    {
-	        {GA_RelRight,	-SDEPTH_WIDTH + 1	},
-		{GA_Top,		0  			},
-		{GA_Width,		SDEPTH_WIDTH		},
-		{GA_Height,		SDEPTH_HEIGHT		},
-		{GA_DrawInfo,	(IPTR)&screen->DInfo 	}, /* required */
-		{GA_SysGadget,	TRUE			},
-		{GA_SysGType,	GTYP_SDEPTH	 	},
-		{GA_RelVerify,	TRUE			},
-		{TAG_DONE,		0UL			}
+	    	{GA_Image   	, 0 	    	    	},
+	        {GA_RelRight	, -SDEPTH_WIDTH + 1	},
+		{GA_Top     	, 0  			},
+		{GA_Width   	, SDEPTH_WIDTH		},
+		{GA_Height  	, SDEPTH_HEIGHT		},
+		{GA_SysGadget	, TRUE			},
+		{GA_SysGType	, GTYP_SDEPTH	 	},
+		{TAG_DONE		    	    	}
 	    };
-
-	    screen->depthgadget = NewObjectA(GetPrivIBase(IntuitionBase)->tbbclass,
-					     NULL,
-					     sdepth_tags );
-
-	    screen->Screen.FirstGadget = (struct Gadget *)screen->depthgadget;
-	    if (screen->Screen.FirstGadget)
+	    struct TagItem image_tags[] =
 	    {
-		screen->Screen.FirstGadget->GadgetType |= GTYP_SCRGADGET;
+	    	{IA_Left    	, -1    	    	},
+		{IA_Width   	, SDEPTH_WIDTH + 1	},
+		{IA_Height  	, SDEPTH_HEIGHT   	},
+		{SYSIA_Which	, SDEPTHIMAGE   	},
+		{SYSIA_DrawInfo , (IPTR)&screen->DInfo	},
+		{TAG_DONE   	    	    	    	}
+	    };	    
+    	    struct Object *im;
+	    
+	    im = NewObjectA(NULL, SYSICLASS, image_tags);
+	    
+	    if (im)
+	    {
+	    	sdepth_tags[0].ti_Data = (IPTR)im;
+		
+		screen->depthgadget = NewObjectA(NULL, BUTTONGCLASS, sdepth_tags );
+
+		screen->Screen.FirstGadget = (struct Gadget *)screen->depthgadget;
+		if (screen->Screen.FirstGadget)
+		{
+		    screen->Screen.FirstGadget->GadgetType |= GTYP_SCRGADGET;
+		}
 	    }
 	}
 

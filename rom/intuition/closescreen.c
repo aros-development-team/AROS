@@ -126,8 +126,13 @@
 	    
 	    /* kill depth gadget */
 	    if (((struct IntScreen *)screen)->depthgadget)
-	    	DisposeObject(((struct IntScreen *)screen)->depthgadget);
+	    {
+	    	Object *im = (Object*)((struct Gadget *)(((struct IntScreen *)screen)->depthgadget))->GadgetRender;
 		
+	    	DisposeObject(im);
+	    	DisposeObject(((struct IntScreen *)screen)->depthgadget);
+	    }
+	    
 	    /* Free the RasInfo of the viewport */
 	    FreeMem(screen->ViewPort.RasInfo, sizeof (struct RasInfo));
 	    

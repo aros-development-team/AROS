@@ -132,7 +132,6 @@ struct IntIntuitionBase
     struct LayerContext      	BackupLayerContext;
     
     struct IClass 		* dragbarclass;
-    struct IClass 		* tbbclass; /* Titlebar button class. (close, zoom, depth) */
     struct IClass 		* sizebuttonclass;
     
     struct Preferences	   	* DefaultPreferences;
@@ -296,9 +295,14 @@ struct IntRequestUserData
 #define REFRESHGAD_REL    4		/* gadgets with GFLG_RELRIGHT, GFLG_RELBOTTOM, GFLG_RELWIDTH, GFLG_RELHEIGHT */
 #define REFRESHGAD_RELS   8		/* GFLG_RELSPECIAL gadgets */
 
+#define SYSGADGET_ACTIVE (iihdata->ActiveSysGadget != NULL)
+
 VOID int_refreshglist(struct Gadget *gadgets, struct Window *window,
 		      struct Requester *requester, LONG numGad, LONG mustbe, LONG mustnotbe,
 		      struct IntuitionBase *IntuitionBase);
+
+VOID int_refreshwindowframe(struct Window *window, BOOL onlytitle,
+    	    	    	    struct IntuitionBase *IntuitionBase);
 
 enum {
     DRAGBAR = 0,

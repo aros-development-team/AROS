@@ -16,6 +16,7 @@
 #include <dos/dos.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/gadgetclass.h>
+#include <intuition/imageclass.h>
 #include <intuition/preferences.h>
 #include <graphics/layers.h>
 
@@ -159,11 +160,11 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 	    
 	    struct TagItem size_tags[] =
 	    {
+	    	{GA_Image   	, 0 	    	},
 	        {GA_RelRight	, -width + 1	},
 		{GA_RelBottom	, -height + 1 	},
 		{GA_Width	, width		},
 		{GA_Height	, height	},
-		{GA_DrawInfo	, (IPTR)dri 	},	/* required	*/
 		{GA_SysGadget	, TRUE		},
 		{GA_SysGType	, GTYP_SIZING 	},
 		{GA_BottomBorder, TRUE		},
@@ -171,14 +172,33 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 		{GA_GZZGadget	, is_gzz	},
 		{TAG_DONE			}
 	    };
-	    SYSGAD(w, SIZEGAD) = NewObjectA(
-			GetPrivIBase(IntuitionBase)->sizebuttonclass
-			, NULL
-			, size_tags );
-
-	    if (!SYSGAD(w, SIZEGAD))
-		sysgads_ok = FALSE;
+	    struct TagItem image_tags[] =
+	    {
+	    	{IA_Width   	, width     },
+		{IA_Height  	, height    },
+		{SYSIA_Which	, SIZEIMAGE },
+		{SYSIA_DrawInfo , (IPTR)dri },
+		{TAG_DONE   	    	    }		
+	    };
+	    Object *im;
 	    
+	    im = NewObjectA(NULL, SYSICLASS, image_tags);
+	    if (!im)
+	    {
+	    	sysgads_ok = FALSE;
+	    }
+	    else
+	    {
+	    	size_tags[0].ti_Data = (IPTR)im;
+		
+		SYSGAD(w, SIZEGAD) = NewObjectA(NULL, BUTTONGCLASS, size_tags);
+
+		if (!SYSGAD(w, SIZEGAD))
+		{
+		    DisposeObject(im);
+		    sysgads_ok = FALSE;
+		}
+	    }
 	    
 	}  
 	
@@ -186,87 +206,143 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 	{
 	    struct TagItem depth_tags[] =
 	    {
+	    	{GA_Image   	, 0 	    	    	},
 	        {GA_RelRight	, relright		},
 		{GA_Top		, 0  			},
 		{GA_Width	, TITLEBAR_HEIGHT	},
 		{GA_Height	, TITLEBAR_HEIGHT	},
-		{GA_DrawInfo	, (IPTR)dri 		},	/* required	*/
 		{GA_SysGadget	, TRUE			},
 		{GA_SysGType	, GTYP_WDEPTH 		},
 		{GA_TopBorder	, TRUE			},
 		{GA_GZZGadget	, is_gzz		},
 		{TAG_DONE	 			}
 	    };
+	    struct TagItem image_tags[] =
+	    {
+	    	{IA_Left    	, -1	    	    	},
+	    	{IA_Width   	, TITLEBAR_HEIGHT + 1 	},
+		{IA_Height  	, TITLEBAR_HEIGHT   	},
+		{SYSIA_Which	, DEPTHIMAGE 	    	},
+		{SYSIA_DrawInfo , (IPTR)dri 	    	},
+		{TAG_DONE   	    	    	    	}		
+	    };
+	    Object *im;
 		
 	    relright -= TITLEBAR_HEIGHT;
-		
 	    db_width -= TITLEBAR_HEIGHT;
+		
+	    im = NewObjectA(NULL, SYSICLASS, image_tags);
+	    if (!im)
+	    {
+	    	sysgads_ok = FALSE;
+	    }
+	    else
+	    {
+    	    	depth_tags[0].ti_Data = (IPTR)im;
 	    
-	    SYSGAD(w, DEPTHGAD) = NewObjectA(
-			GetPrivIBase(IntuitionBase)->tbbclass
-			, NULL
-			, depth_tags );
+		SYSGAD(w, DEPTHGAD) = NewObjectA(NULL, BUTTONGCLASS, depth_tags);
 
-	    if (!SYSGAD(w, DEPTHGAD))
-		sysgads_ok = FALSE;
-	    
-	    
+		if (!SYSGAD(w, DEPTHGAD))
+		{
+		    DisposeObject(im);
+		    sysgads_ok = FALSE;
+		}
+	    }
 	}  
 
 	if (w->Flags & WFLG_HASZOOM)
 	{
 	    struct TagItem zoom_tags[] = 
 	    {
+	    	{GA_Image   	, 0 	    	    	},
 	        {GA_RelRight	, relright		},
 		{GA_Top		, 0  			},
 		{GA_Width	, TITLEBAR_HEIGHT	},
 		{GA_Height	, TITLEBAR_HEIGHT	},
-		{GA_DrawInfo	, (IPTR)dri 		},	/* required	*/
 		{GA_SysGadget	, TRUE			},
 		{GA_SysGType	, GTYP_WZOOM 		},
 		{GA_TopBorder	, TRUE			},
 		{GA_GZZGadget	, is_gzz		},
 		{TAG_DONE	 			}
 	    };
+	    struct TagItem image_tags[] =
+	    {
+	    	{IA_Left    	, -1	    	    	},
+	    	{IA_Width   	, TITLEBAR_HEIGHT + 1   },
+		{IA_Height  	, TITLEBAR_HEIGHT   	},
+		{SYSIA_Which	, ZOOMIMAGE 	    	},
+		{SYSIA_DrawInfo , (IPTR)dri 	    	},
+		{TAG_DONE   	    	    	    	}		
+	    };
+	    Object *im;
 		
 	    relright -= TITLEBAR_HEIGHT;
 	    db_width -= TITLEBAR_HEIGHT;
 	    
-	    SYSGAD(w, ZOOMGAD) = NewObjectA(
-			GetPrivIBase(IntuitionBase)->tbbclass
-			, NULL
-			, zoom_tags );
+	    im = NewObjectA(NULL, SYSICLASS, image_tags);
+	    if (!im)
+	    {
+	    	sysgads_ok = FALSE;
+	    }
+	    else
+	    {
+    	    	zoom_tags[0].ti_Data = (IPTR)im;
 
-	    if (!SYSGAD(w, ZOOMGAD))
-		sysgads_ok = FALSE;
+		SYSGAD(w, ZOOMGAD) = NewObjectA(NULL, BUTTONGCLASS, zoom_tags);
+
+		if (!SYSGAD(w, ZOOMGAD))
+		{
+		    DisposeObject(im);
+		    sysgads_ok = FALSE;
+		}
+	    }
 	}  
 
 	if (w->Flags & WFLG_CLOSEGADGET)
 	{
 	    struct TagItem close_tags[] =
 	    {
+	    	{GA_Image   	, 0 	    	    	},
 	        {GA_Left	, 0			},
 		{GA_Top		, 0  			},
 		{GA_Width	, TITLEBAR_HEIGHT	},
 		{GA_Height	, TITLEBAR_HEIGHT	},
-		{GA_DrawInfo	, (IPTR)dri 		},	/* required	*/
 		{GA_SysGadget	, TRUE			},
 		{GA_SysGType	, GTYP_CLOSE 		},
 		{GA_TopBorder	, TRUE			},
 		{GA_GZZGadget	, is_gzz		},
 		{TAG_DONE				}
 	    };
+	    struct TagItem image_tags[] =
+	    {
+	    	{IA_Width   	, TITLEBAR_HEIGHT + 1	},
+		{IA_Height  	, TITLEBAR_HEIGHT   	},
+		{SYSIA_Which	, CLOSEIMAGE 	    	},
+		{SYSIA_DrawInfo , (IPTR)dri 	    	},
+		{TAG_DONE   	    	    	    	}		
+	    };
+	    Object *im;
 		
 	    db_left  += TITLEBAR_HEIGHT;
 	    db_width -= TITLEBAR_HEIGHT;
-	    
-	    SYSGAD(w, CLOSEGAD) = NewObjectA(
-			GetPrivIBase(IntuitionBase)->tbbclass
-			, NULL
-			, close_tags );
 
-	    if (!SYSGAD(w, CLOSEGAD))
-		sysgads_ok = FALSE;
+	    im = NewObjectA(NULL, SYSICLASS, image_tags);
+	    if (!im)
+	    {
+	    	sysgads_ok = FALSE;
+	    }
+	    else
+	    {
+ 	    	close_tags[0].ti_Data = (IPTR)im;
+		
+	    	SYSGAD(w, CLOSEGAD) = NewObjectA(NULL, BUTTONGCLASS, close_tags);
+
+		if (!SYSGAD(w, CLOSEGAD))
+		{
+		    DisposeObject(im);
+		    sysgads_ok = FALSE;
+		}
+	    }
 	}  
 
 	/* Now try to create the various gadgets */
@@ -284,10 +360,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 		{GA_GZZGadget	, is_gzz		},
 		{TAG_DONE				}
 	    };
-	    SYSGAD(w, DRAGBAR) = NewObjectA(
-			GetPrivIBase(IntuitionBase)->dragbarclass
-			, NULL
-			, dragbar_tags );
+	    SYSGAD(w, DRAGBAR) = NewObjectA(NULL, BUTTONGCLASS, dragbar_tags);
 				
 	    if (!SYSGAD(w, DRAGBAR))
 		sysgads_ok = FALSE;
@@ -339,6 +412,10 @@ VOID KillWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
         if (SYSGAD(w, i))
 	{
 	    RemoveGadget( w, (struct Gadget *)SYSGAD(w, i));
+	    if (((struct Gadget *)SYSGAD(w, i))->GadgetRender)
+	    {
+	    	DisposeObject((Object *)((struct Gadget *)SYSGAD(w, i))->GadgetRender);
+	    }
 	    DisposeObject( SYSGAD(w, i) );
 	}
     }
