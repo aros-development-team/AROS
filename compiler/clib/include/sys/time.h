@@ -9,13 +9,14 @@
     Lang: english
 */
 
-/* This structure describes a specific time. See also <dos/time.h>. */
+/* This structure describes a specific time. See also <devices/timer.h>. */
+#ifndef DEVICES_TIMER_H
 struct timeval
 {
     long tv_sec;  /* Seconds passed. */
     long tv_usec; /* Microseconds passed in the current second. */
 };
-
+#endif /* DEVICES_TIMER_H */
 
 /* This structure describes a timezone. */
 struct timezone

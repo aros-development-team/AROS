@@ -31,11 +31,14 @@
 #define TR_GETSYSTIME (CMD_NONSTD+1)
 #define TR_SETSYSTIME (CMD_NONSTD+2)
 
+/* Avoid name conflict with <sys/time.h> */
+#ifndef _SYS_TIME_H
 struct timeval
 {
     ULONG tv_secs;
     ULONG tv_micro;
 };
+#endif /* _SYS_TIME_H */
 
 struct EClockVal
 {
