@@ -22,8 +22,9 @@ char *conffile, *gendir, *genincdir, *reffile;
 enum modtype modtype = UNSPECIFIED;
 enum libcall libcall = STACK;
 
-char *modulename = NULL, *basename = NULL, *modulenameupper = NULL, *libbase = NULL,
-     *libbasetype = NULL, *libbasetypeextern = NULL, *datestring = "00.00.0000";
+char *modulename = NULL, *basename = NULL, *modulenameupper = NULL, 
+     *libbase = NULL, *libbasetype = NULL, *libbasetypeextern = NULL, 
+     *datestring = "00.00.0000", *superclass = NULL;
 unsigned int majorversion = 0, minorversion = 0, firstlvo = 0;
 struct linelist *cdeflines = NULL, *protolines = NULL;
 

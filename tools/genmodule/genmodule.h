@@ -54,7 +54,8 @@ extern enum modtype modtype;
 enum libcall { STACK, REGISTER, MIXED, REGISTERMACRO, AUTOREGISTER };
 extern enum libcall libcall;
 
-extern char *modulename, *basename, *modulenameupper, *libbase, *libbasetype, *libbasetypeextern, *datestring;
+extern char *modulename, *basename, *modulenameupper, *libbase, *libbasetype, 
+            *libbasetypeextern, *datestring, *superclass;
 extern unsigned int majorversion, minorversion, firstlvo;
 extern struct linelist *cdeflines, *protolines;
 
