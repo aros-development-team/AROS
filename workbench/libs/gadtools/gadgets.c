@@ -120,7 +120,7 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
     tag = FindTagItem(GTMX_TitlePlace, taglist);
     if (tag)
     {
-        switch (tag.ti_Data)
+        switch (tag->ti_Data)
         {
         case PLACETEXT_LEFT:
             tags[4].ti_Data = GV_LabelPlace_Left;
