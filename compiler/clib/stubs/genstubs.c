@@ -16,7 +16,7 @@
 
 static char *names[]=
 {
-#include <sys/syscall.def>
+#include "../include/sys/syscall.def"
 NULL
 };
 
