@@ -1,11 +1,11 @@
 #ifndef _DOS_PRIVATE_H
 #define _DOS_PRIVATE_H
+
 /* 
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Private function definitions for DOS
-    Lang: english
+    Private function definitions for DOS.
 */
 
 #ifndef EXEC_TYPES_H
@@ -13,15 +13,6 @@
 #endif
 #ifndef AROS_LIBCALL_H
 #include <aros/libcall.h>
-#endif
-
-#if defined(_AMIGA) && defined(__GNUC__)
-#   ifndef NO_INLINE_STDARG
-#	define NO_INLINE_STDARG
-#   endif
-#   include "dos_pinlines.h"
-#else
-#   include "dos_pdefs.h"
 #endif
 
 /*
