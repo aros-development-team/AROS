@@ -193,7 +193,7 @@ aros_target_strip="true"
 # It is necessary to clear the include and link paths for target
 # commands. This should help clear up problems when cross compiling.
 # XXX We don't do this yet.
-aros_target_cflags="-Wall -O0"
+aros_target_cflags="-Wall -O0 -DADEBUG=1 -DMDEBUG=1"
 aros_target_aflags="-Wall -x assembler-with-cpp"
 aros_target_ldflags="-nostartfiles -nostdlib -Wl,-i"
 
@@ -208,7 +208,7 @@ aros_static_ldflags=""
 aros_kernel_ldflags="-Wl,-rpath,./lib"
 
 # These are the flags to pass when compiling debugged programs
-aros_debug_cflags="-g -O0 -DADEBUG=1"
+aros_debug_cflags="-g -O0 -DADEBUG=1 -DMDEBUG=1"
 aros_debug_aflags=""
 aros_debug_ldflags="-g"
 aros_target_genmap="-Wl,-Map -Xlinker"
