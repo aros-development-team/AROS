@@ -1,7 +1,7 @@
 <contents>
 <item>
     <dir>battclock</dir>
-    Directory containing a Unix |ReadBattClock()|
+    Directory containing a Unix <code>ReadBattClock()</code>
 		  function.
 
 </item>

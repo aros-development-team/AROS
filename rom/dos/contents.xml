@@ -9,8 +9,8 @@
 
 <item>
     <file>dos_init.c</file>
-    The init-code (|lib_init()|, |lib_open()|,
-	|lib_close()|, |lib_expunge()|).
+    The init-code (<code>lib_init()</code>, <code>lib_open()</code>,
+	<code>lib_close()</code>, <code>lib_expunge()</code>).
 
 </item>
 

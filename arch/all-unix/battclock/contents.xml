@@ -9,6 +9,6 @@
 
 <item>
     <file>readbattclock.c</file>
-    The Unix version of the |ReadBattClock()| function.
+    The Unix version of the <code>ReadBattClock()</code> function.
 </item>
 </contents>
