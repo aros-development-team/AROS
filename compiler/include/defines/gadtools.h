@@ -11,10 +11,15 @@
 /*
     Defines
 */
-#define CreateGadgetA(kind, gad, ng, taglist) \
+#define CreateContext(glistptr) \
+    AROS_LC1(struct Gadget *, CreateContext, \
+    AROS_LPA(struct Gadget **, glistptr, A0), \
+    struct Library *, GadtoolsBase, 19, Gadtools)
+
+#define CreateGadgetA(kind, previous, ng, taglist) \
     AROS_LC4(struct Gadget *, CreateGadgetA, \
     AROS_LPA(ULONG, kind, D0), \
-    AROS_LPA(struct Gadget *, gad, A0), \
+    AROS_LPA(struct Gadget *, previous, A0), \
     AROS_LPA(struct NewGadget *, ng, A1), \
     AROS_LPA(struct TagItem *, taglist, A2), \
     struct Library *, GadtoolsBase, 5, Gadtools)
@@ -34,11 +39,6 @@
     AROS_LC1(void, FreeMenus, \
     AROS_LPA(struct Menu *, menu, A0), \
     struct Library *, GadtoolsBase, 9, Gadtools)
-
-#define CreateContext(glistptr) \
-    AROS_LC1(struct Gadget *, CreateContext, \
-    AROS_LPA(struct Gadget **, glistptr, A0), \
-    struct Library *, GadtoolsBase, 19, Gadtools)
 
 #define DrawBevelBoxA(rport, left, top, width, height, taglist) \
     AROS_LC6(void, DrawBevelBoxA, \
