@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
 
 #include <proto/exec.h>
@@ -122,7 +119,8 @@ static IPTR aslfontpreview_dispose(Class * cl, Object * o, Msg msg)
 static IPTR aslfontpreview_set(Class * cl, Object * o, struct opSet * msg)
 {
     struct AslFontPreviewData 	*data;
-    struct TagItem  	    	*tag, *tstate = msg->ops_AttrList;
+    struct TagItem  	    	*tag;
+    const struct TagItem        *tstate = msg->ops_AttrList;
     struct RastPort 	    	*rp;
     BOOL    	    	    	 redraw = FALSE;
     IPTR    	    	    	 retval;

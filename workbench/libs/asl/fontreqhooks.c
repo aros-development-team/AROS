@@ -173,8 +173,9 @@ AROS_UFH3(VOID, FOTagHook,
 {
     AROS_USERFUNC_INIT
 
-    struct TagItem 	*tag, *tstate;
-    struct IntFontReq 	*iforeq;
+    struct TagItem 	     *tag;
+    const struct TagItem *tstate;
+    struct IntFontReq 	 *iforeq;
 
     EnterFunc(bug("FOTagHook(hook=%p, pta=%p)\n", hook, pta));
 

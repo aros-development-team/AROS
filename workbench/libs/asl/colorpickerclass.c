@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
 
 
@@ -234,7 +231,8 @@ static IPTR aslcolorpicker_dispose(Class * cl, Object * o, Msg msg)
 static IPTR aslcolorpicker_set(Class * cl, Object * o, struct opSet *msg)
 {
     struct AslColorPickerData 	*data = INST_DATA(cl, o);
-    struct TagItem 	    	*tag, *tstate = msg->ops_AttrList;
+    struct TagItem 	    	*tag;
+    const struct TagItem *tstate = msg->ops_AttrList;
     IPTR		    	 retval, tidata;
     
     retval = DoSuperMethod(cl, o, OM_SET, (IPTR) msg->ops_AttrList, (IPTR) msg->ops_GInfo);
