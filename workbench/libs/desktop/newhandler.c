@@ -5,6 +5,7 @@
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <intuition/classes.h>
+#include <libraries/mui.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -16,6 +17,7 @@
 
 #include "desktop_intern_protos.h"
 #include "worker_protos.h"
+#include "iconcontainerobserver.h"
 
 #define HS_STARTING 1
 #define HS_RUNNING  2
@@ -160,11 +162,10 @@ ULONG desktopHandler(void)
 						struct WorkerMessage *newMsg;
 						struct WorkingMessageNode *wmn;
 						struct WorkerScanRequest *wsr=(struct WorkerScanRequest*)wm;
-						UWORD i;
 
 						wmn=findWorkedMessage(&workingMessages, wsr->wsr_WMessage.w_ID);
 
-						//DoMethod(wmsg->wm_Working->hsr_CallBack, ICM_AddIcon, msg->wsr_Results, msg->wsr_ResultsArray);
+						DoMethod(((struct HandlerScanRequest*)wmn->wm_Working)->hsr_Application, MUIM_Application_PushMethod, ((struct HandlerScanRequest*)wmn->wm_Working)->hsr_CallBack, 3, ICOM_AddIcons, wsr->wsr_Results, wsr->wsr_ResultsArray);
 
 						if(wsr->wsr_More)
 						{

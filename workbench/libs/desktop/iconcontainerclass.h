@@ -1,7 +1,6 @@
 #ifndef ICONCONTAINERCLASS_H
 #define ICONCONTAINERCLASS_H
 
-
 #define ICA_BASE TAG_USER+1000
 
 #define ICA_VertScroller  ICA_BASE+1

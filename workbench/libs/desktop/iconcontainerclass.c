@@ -15,6 +15,7 @@
 #include <proto/utility.h>
 
 #include "desktop_intern.h"
+#include "presentation.h"
 #include "iconcontainerclass.h"
 
 #include "desktop_intern_protos.h"
@@ -70,6 +71,7 @@ IPTR iconConNew(Class *cl, Object *obj, struct opSet *ops)
 	}
 
 	retval=DoSuperMethodA(cl, obj, (Msg)ops);
+
 	if(retval)
 	{
 		obj=(Object*)retval;
@@ -88,21 +90,8 @@ IPTR iconConNew(Class *cl, Object *obj, struct opSet *ops)
 		data->widthAdjusted=0;
 		data->horizScroll=FALSE;
 		data->vertScroll=FALSE;
-
 		data->horizProp=horiz;
-		if(data->horizProp)
-		{
-			muiNotifyData(data->horizProp)->mnd_ParentObject=obj;
-			DoMethod(data->horizProp, MUIM_ConnectParent, obj);
-		}
-
 		data->vertProp=vert;
-		if(data->vertProp)
-		{
-			muiNotifyData(data->vertProp)->mnd_ParentObject=obj;
-			DoMethod(data->vertProp, MUIM_ConnectParent, obj);
-		}
-
 	}
 
 	return retval;
@@ -132,6 +121,7 @@ IPTR iconConSetup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 		DoSetupMethod(data->vertProp, msg->RenderInfo);
 
 	MUI_RequestIDCMP(obj, IDCMP_MOUSEBUTTONS);
+
 
 	return retval;
 }
@@ -217,6 +207,7 @@ ULONG layoutObject(struct IconContainerClassData *data, Object *obj, Object *new
 			newY=ICONSPACINGY;
 
 			data->virtualWidth=_defwidth(newObject)+ICONSPACINGX;
+			data->thisColumnWidth=_defwidth(newObject);
 		}
 		else
 		{
@@ -230,6 +221,7 @@ ULONG layoutObject(struct IconContainerClassData *data, Object *obj, Object *new
 				newY=ICONSPACINGY;
 				data->virtualWidth+=_defwidth(newObject)+ICONSPACINGX;
 				data->thisColumnHeight=0;
+				data->thisColumnWidth=0;
 			}
 
 			if(_defwidth(newObject) > data->thisColumnWidth)
@@ -244,7 +236,6 @@ ULONG layoutObject(struct IconContainerClassData *data, Object *obj, Object *new
 	if(data->thisColumnHeight+_defheight(newObject)+ICONSPACINGY > data->virtualHeight)
 		data->virtualHeight+=data->thisColumnHeight;
 
-//printf("laying out at: %d, %d\n", newX, newY);
 	MUI_Layout(newObject, newX, newY, _defwidth(newObject), _defheight(newObject), 0);
 
 	return retval;
@@ -454,8 +445,12 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 			mn=(struct MemberNode*)data->memberList.mlh_Head;
 			while(mn->m_Node.mln_Succ)
 			{
-				_left(mn->m_Object)=_left(mn->m_Object)-scrollAmountX;
-				_top(mn->m_Object)=_top(mn->m_Object)-scrollAmountY;
+				//_left(mn->m_Object)=_left(mn->m_Object)-scrollAmountX;
+				//_top(mn->m_Object)=_top(mn->m_Object)-scrollAmountY;
+
+				// this is slow... but necessary. If members are groups, then
+				// we can't resort to the above
+				MUI_Layout(mn->m_Object, _left(mn->m_Object)-scrollAmountX-_mleft(obj), _top(mn->m_Object)-scrollAmountY-_mtop(obj), _width(mn->m_Object), _height(mn->m_Object), 0);
 
 				mn=(struct MemberNode*)mn->m_Node.mln_Succ;
 			}
@@ -494,8 +489,11 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 			mn=(struct MemberNode*)data->memberList.mlh_Head;
 			while(mn->m_Node.mln_Succ)
 			{
-				_left(mn->m_Object)=_left(mn->m_Object)-scrollAmountX;
-				_top(mn->m_Object)=_top(mn->m_Object)-scrollAmountY;
+//				_left(mn->m_Object)=_left(mn->m_Object)-scrollAmountX;
+//				_top(mn->m_Object)=_top(mn->m_Object)-scrollAmountY;
+
+				MUI_Layout(mn->m_Object, _left(mn->m_Object)-scrollAmountX-_mleft(obj), _top(mn->m_Object)-scrollAmountY-_mtop(obj), _width(mn->m_Object), _height(mn->m_Object), 0);
+
 
 				mn=(struct MemberNode*)mn->m_Node.mln_Succ;
 			}
@@ -548,7 +546,31 @@ IPTR iconConSet(Class *cl, Object *obj, struct opSet *msg)
 	}
 
 	return 0;
+}
 
+IPTR iconConConnectParent(Class *cl, Object *obj, struct MUIP_ConnectParent *msg)
+{
+	struct IconContainerClassData *data;
+	IPTR retval;
+
+	retval=DoSuperMethodA(cl, obj, msg);
+
+	data=(struct IconContainerClassData*)INST_DATA(cl, obj);
+
+	if(data->horizProp)
+	{
+		muiNotifyData(data->horizProp)->mnd_ParentObject=obj;
+		DoMethod(data->horizProp, MUIM_ConnectParent, obj);
+	}
+	if(data->vertProp)
+	{
+		muiNotifyData(data->vertProp)->mnd_ParentObject=obj;
+		DoMethod(data->vertProp, MUIM_ConnectParent, obj);
+	}
+
+	SetAttrs(obj, PA_InTree, TRUE, TAG_END);
+
+	return retval;
 }
 
 AROS_UFH3(IPTR, iconContainerDispatcher,
@@ -557,8 +579,6 @@ AROS_UFH3(IPTR, iconContainerDispatcher,
 	AROS_UFHA(Msg     , msg, A1))
 {
 	ULONG retval=0;
-
-	kprintf("iconContainerDispatcher\n");
 
 	switch(msg->MethodID)
 	{
@@ -591,6 +611,9 @@ AROS_UFH3(IPTR, iconContainerDispatcher,
 		case OM_GET:
 			retval=DoSuperMethodA(cl, obj, msg);
 			break;
+		case MUIM_ConnectParent:
+			retval=iconConConnectParent(cl, obj, (struct MUIP_ConnectParent*)msg);
+			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, msg);
 			broadcastMessage(cl, obj, msg);
@@ -599,4 +622,5 @@ AROS_UFH3(IPTR, iconContainerDispatcher,
 
 	return retval;
 }
+
 

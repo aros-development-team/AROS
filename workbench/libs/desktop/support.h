@@ -14,6 +14,7 @@ struct HandlerScanRequest
 	struct DesktopInternMsg hsr_Message;
 	BPTR hsr_DirLock;
 	Object *hsr_CallBack;
+	Object *hsr_Application;
 };
 
 #define DIMC_ADDUSER        10

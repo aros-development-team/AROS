@@ -13,8 +13,23 @@
 #include "initstruct.h"
 #include "support.h"
 
+#include "observer.h"
+#include "presentation.h"
 #include "iconcontainerclass.h"
+#include "iconclass.h"
+#include "diskiconclass.h"
+#include "drawericonclass.h"
+#include "tooliconclass.h"
+#include "projecticonclass.h"
+#include "trashcaniconclass.h"
 #include "iconcontainerobserver.h"
+#include "iconobserver.h"
+#include "diskiconobserver.h"
+#include "drawericonobserver.h"
+#include "tooliconobserver.h"
+#include "projecticonobserver.h"
+#include "trashcaniconobserver.h"
+
 
 #include "desktop_intern_protos.h"
 
@@ -183,16 +198,76 @@ AROS_LH1(struct DesktopBase *, open,
 		if(!DesktopBase->db_UtilityBase)
 			return NULL;
 
+		DesktopBase->db_IconBase=OpenLibrary("icon.library", 0);
+		if(!DesktopBase->db_IconBase)
+			return NULL;
+
 		DesktopBase->db_MUIMasterBase=OpenLibrary("muimaster.library", 0);
 		if(!DesktopBase->db_MUIMasterBase)
 			return NULL;
 
-		DesktopBase->db_IconContainer=MUI_CreateCustomClass(NULL, MUIC_Area, NULL, sizeof(struct IconContainerClassData), iconContainerDispatcher);
+		DesktopBase->db_Presentation=MUI_CreateCustomClass(NULL, MUIC_Area, NULL, sizeof(struct PresentationClassData), presentationDispatcher);
+		if(!DesktopBase->db_Presentation)
+			return NULL;
+
+		DesktopBase->db_IconContainer=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Presentation, sizeof(struct IconContainerClassData), iconContainerDispatcher);
 		if(!DesktopBase->db_IconContainer)
 			return NULL;
 
-		DesktopBase->db_IconContainerObserver=MUI_CreateCustomClass(NULL, MUIC_Notify, NULL, sizeof(struct IconContainerObserverClassData), iconContainerObserverDispatcher);
+		DesktopBase->db_Observer=MUI_CreateCustomClass(NULL, MUIC_Notify, NULL, sizeof(struct ObserverClassData), observerDispatcher);
+		if(!DesktopBase->db_Observer)
+			return NULL;
+
+		DesktopBase->db_IconObserver=MUI_CreateCustomClass(NULL, MUIC_Notify, NULL, sizeof(struct IconObserverClassData), iconObserverDispatcher);
+		if(!DesktopBase->db_IconObserver)
+			return NULL;
+
+		DesktopBase->db_DiskIconObserver=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_IconObserver, sizeof(struct DiskIconObserverClassData), diskIconObserverDispatcher);
+		if(!DesktopBase->db_DiskIconObserver)
+			return NULL;
+
+		DesktopBase->db_DrawerIconObserver=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_IconObserver, sizeof(struct DrawerIconObserverClassData), drawerIconObserverDispatcher);
+		if(!DesktopBase->db_DrawerIconObserver)
+			return NULL;
+
+		DesktopBase->db_ToolIconObserver=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_IconObserver, sizeof(struct ToolIconObserverClassData), toolIconObserverDispatcher);
+		if(!DesktopBase->db_ToolIconObserver)
+			return NULL;
+
+		DesktopBase->db_ProjectIconObserver=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_IconObserver, sizeof(struct ProjectIconObserverClassData), projectIconObserverDispatcher);
+		if(!DesktopBase->db_ProjectIconObserver)
+			return NULL;
+
+		DesktopBase->db_TrashcanIconObserver=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_IconObserver, sizeof(struct TrashcanIconObserverClassData), trashcanIconObserverDispatcher);
+		if(!DesktopBase->db_TrashcanIconObserver)
+			return NULL;
+
+		DesktopBase->db_IconContainerObserver=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Observer, sizeof(struct IconContainerObserverClassData), iconContainerObserverDispatcher);
 		if(!DesktopBase->db_IconContainerObserver)
+			return NULL;
+
+		DesktopBase->db_Icon=MUI_CreateCustomClass(NULL, MUIC_Group, NULL, sizeof(struct IconClassData), iconDispatcher);
+		if(!DesktopBase->db_Icon)
+			return NULL;
+
+		DesktopBase->db_DiskIcon=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Icon, sizeof(struct DiskIconClassData), diskIconDispatcher);
+		if(!DesktopBase->db_DiskIcon)
+			return NULL;
+
+		DesktopBase->db_DrawerIcon=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Icon, sizeof(struct DrawerIconClassData), drawerIconDispatcher);
+		if(!DesktopBase->db_DrawerIcon)
+			return NULL;
+
+		DesktopBase->db_TrashcanIcon=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Icon, sizeof(struct TrashcanIconClassData), trashcanIconDispatcher);
+		if(!DesktopBase->db_TrashcanIcon)
+			return NULL;
+
+		DesktopBase->db_ToolIcon=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Icon, sizeof(struct ToolIconClassData), toolIconDispatcher);
+		if(!DesktopBase->db_ToolIcon)
+			return NULL;
+
+		DesktopBase->db_ProjectIcon=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Icon, sizeof(struct ProjectIconClassData), projectIconDispatcher);
+		if(!DesktopBase->db_ProjectIcon)
 			return NULL;
 
 		DesktopBase->db_libsOpen=TRUE;
@@ -261,12 +336,43 @@ AROS_LH0(BPTR, expunge, struct DesktopBase *, DesktopBase, 3, BASENAME)
 		return 0;
     }
 
+	if(DesktopBase->db_DiskIconObserver)
+		MUI_DeleteCustomClass(DesktopBase->db_DiskIconObserver);
+	if(DesktopBase->db_DrawerIconObserver)
+		MUI_DeleteCustomClass(DesktopBase->db_DrawerIconObserver);
+	if(DesktopBase->db_ToolIconObserver)
+		MUI_DeleteCustomClass(DesktopBase->db_ToolIconObserver);
+	if(DesktopBase->db_ProjectIconObserver)
+		MUI_DeleteCustomClass(DesktopBase->db_ProjectIconObserver);
+	if(DesktopBase->db_TrashcanIconObserver)
+		MUI_DeleteCustomClass(DesktopBase->db_TrashcanIconObserver);
+	if(DesktopBase->db_IconObserver)
+		MUI_DeleteCustomClass(DesktopBase->db_IconObserver);
 	if(DesktopBase->db_IconContainerObserver)
 		MUI_DeleteCustomClass(DesktopBase->db_IconContainerObserver);
+	if(DesktopBase->db_Observer)
+		MUI_DeleteCustomClass(DesktopBase->db_Observer);
+	if(DesktopBase->db_ToolIcon)
+		MUI_DeleteCustomClass(DesktopBase->db_ToolIcon);
+	if(DesktopBase->db_DiskIcon)
+		MUI_DeleteCustomClass(DesktopBase->db_DiskIcon);
+	if(DesktopBase->db_DrawerIcon)
+		MUI_DeleteCustomClass(DesktopBase->db_DrawerIcon);
+	if(DesktopBase->db_TrashcanIcon)
+		MUI_DeleteCustomClass(DesktopBase->db_TrashcanIcon);
+	if(DesktopBase->db_ProjectIcon)
+		MUI_DeleteCustomClass(DesktopBase->db_ProjectIcon);
+	if(DesktopBase->db_Icon)
+		MUI_DeleteCustomClass(DesktopBase->db_Icon);
 	if(DesktopBase->db_IconContainer)
 		MUI_DeleteCustomClass(DesktopBase->db_IconContainer);
+	if(DesktopBase->db_Presentation)
+		MUI_DeleteCustomClass(DesktopBase->db_Presentation);
+
 	if(DesktopBase->db_MUIMasterBase)
 		CloseLibrary(DesktopBase->db_MUIMasterBase);
+	if(DesktopBase->db_IconBase)
+		CloseLibrary(DesktopBase->db_IconBase);
 	if(DesktopBase->db_UtilityBase)
 		CloseLibrary(DesktopBase->db_UtilityBase);
 	if(DesktopBase->db_LayersBase)

@@ -7,12 +7,14 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+#include <proto/utility.h>
 
 #include "desktop_intern.h"
 #include "support.h"
 
 #include "iconcontainerclass.h"
 #include "iconcontainerobserver.h"
+#include "observer.h"
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -60,13 +62,64 @@
 	switch(kind)
 	{
 		case CDO_IconContainer:
-			newObject=NewObject(IconContainer->mcc_Class, NULL, TAG_END);
+		{
+			UBYTE *dir;
+			struct TagItem *tag;
+
+			tag=FindTagItem(ICOA_Directory, tags);
+			if(tag)
+			{
+				dir=tag->ti_Data;
+				tag->ti_Tag=TAG_IGNORE;
+			}
+
+			newObject=NewObjectA(IconContainer->mcc_Class, NULL, tags);
 
 			semanticObject=NewObject(IconContainerObserver->mcc_Class, NULL,
-						ICOA_Presentation, newObject,
-						TAG_MORE, tags);
+						OA_Presentation, newObject,
+						ICOA_Directory, dir, TAG_END);
 
+			break;
+		}
 
+		case CDO_DiskIcon:
+			newObject=NewObjectA(DiskIcon->mcc_Class, NULL, tags);
+
+			semanticObject=NewObject(DiskIconObserver->mcc_Class, NULL,
+						OA_Presentation, newObject,
+						TAG_END);
+			break;
+
+		case CDO_DrawerIcon:
+			newObject=NewObjectA(DrawerIcon->mcc_Class, NULL, tags);
+
+			semanticObject=NewObject(DiskIconObserver->mcc_Class, NULL,
+						OA_Presentation, newObject,
+						TAG_END);
+			break;
+
+		case CDO_ToolIcon:
+			newObject=NewObjectA(ToolIcon->mcc_Class, NULL, tags);
+
+			semanticObject=NewObject(ToolIconObserver->mcc_Class, NULL,
+						OA_Presentation, newObject,
+						TAG_END);
+			break;
+
+		case CDO_ProjectIcon:
+			newObject=NewObjectA(ProjectIcon->mcc_Class, NULL, tags);
+
+			semanticObject=NewObject(ProjectIconObserver->mcc_Class, NULL,
+						OA_Presentation, newObject,
+						TAG_END);
+			break;
+
+		case CDO_TrashcanIcon:
+			newObject=NewObjectA(TrashcanIcon->mcc_Class, NULL, tags);
+
+			semanticObject=NewObject(TrashcanIconObserver->mcc_Class, NULL,
+						OA_Presentation, newObject,
+						TAG_END);
 			break;
 	}
 

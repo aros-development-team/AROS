@@ -3,17 +3,25 @@
 #include <aros/debug.h>
 
 #include <exec/types.h>
+#include <exec/memory.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
+#include <libraries/mui.h>
+#include <workbench/workbench.h>
+
+#include <proto/dos.h>
+#include <proto/desktop.h>
+#include <proto/intuition.h>
+#include <proto/utility.h>
 
 #include "support.h"
 #include "worker.h"
 #include "desktop_intern.h"
 #include "iconcontainerobserver.h"
-
-#include <proto/dos.h>
-#include <proto/intuition.h>
-#include <proto/utility.h>
+#include "presentation.h"
+#include "iconcontainerclass.h"
+#include "observer.h"
+#include "iconclass.h"
 
 #include "desktop_intern_protos.h"
 
@@ -22,15 +30,7 @@ IPTR iconConObsNew(Class *cl, Object *obj, struct opSet *msg)
 	IPTR retval=0;
 	struct IconContainerObserverClassData *data;
 	struct TagItem *tag;
-	Object *presentation;
 	UBYTE *directory;
-
-	tag=FindTagItem(ICOA_Presentation, msg->ops_AttrList);
-	if(tag)
-	{
-		tag->ti_Tag=TAG_IGNORE;
-		presentation=(Object*)tag->ti_Data;
-	}
 
 	tag=FindTagItem(ICOA_Directory, msg->ops_AttrList);
 	if(tag)
@@ -42,16 +42,12 @@ IPTR iconConObsNew(Class *cl, Object *obj, struct opSet *msg)
 	retval=DoSuperMethodA(cl, obj, (Msg)msg);
 	if(retval)
 	{
-		struct HandlerScanRequest *hsr;
-
 		obj=(Object*)retval;
 		data=INST_DATA(cl, obj);
-		data->presentation=presentation;
 		data->directory=directory;
 		data->dirLock=Lock(directory, ACCESS_READ);
 
-		hsr=createScanMessage(DIMC_SCANDIRECTORY, NULL, data->dirLock, obj);
-		PutMsg(DesktopBase->db_HandlerPort, (struct Message*)hsr);
+		DoMethod(_presentation(obj), MUIM_Notify, PA_InTree, MUIV_EveryTime, obj, 3, MUIM_Set, OA_InTree, TRUE);
 	}
 
 	return retval;
@@ -74,7 +70,16 @@ IPTR iconConObsSet(Class *cl, Object *obj, struct opSet *msg)
 				data->directory=(UBYTE*)tag->ti_Data;
 				data->dirLock=Lock(data->directory, ACCESS_READ);
 				break;
+			case OA_InTree:
+			{
+				struct HandlerScanRequest *hsr;
+				hsr=createScanMessage(DIMC_SCANDIRECTORY, NULL, data->dirLock, obj, _app(_presentation(obj)));
+				PutMsg(DesktopBase->db_HandlerPort, (struct Message*)hsr);
 
+				retval=DoSuperMethodA(cl, obj, (Msg)msg);
+
+				break;
+			}
 			default:
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
@@ -116,6 +121,60 @@ IPTR iconConObsDispose(Class *cl, Object *obj, Msg msg)
 	return retval;
 }
 
+IPTR iconConObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
+{
+	IPTR retval=0;
+	ULONG i;
+	Object *newIcon;
+	struct TagItem *iconTags;
+	ULONG kind;
+
+	for(i=0; i<msg->wsr_Results; i++)
+	{
+		iconTags=AllocVec(3*sizeof(struct TagItem), MEMF_ANY);
+		iconTags[0].ti_Tag=IA_DiskObject;
+		iconTags[0].ti_Data=msg->wsr_ResultsArray[i].sr_DiskObject;
+		iconTags[1].ti_Tag=IA_Label;
+		iconTags[1].ti_Data=msg->wsr_ResultsArray[i].sr_Name;
+		iconTags[2].ti_Tag=TAG_END;
+		iconTags[2].ti_Data=0;
+
+		switch(msg->wsr_ResultsArray[i].sr_DiskObject->do_Type)
+		{
+			case WBDISK:
+				kind=CDO_DiskIcon;
+				break;
+			case WBDRAWER:
+				kind=CDO_DrawerIcon;
+				break;
+			case WBTOOL:
+				kind=CDO_ToolIcon;
+				break;
+			case WBPROJECT:
+				kind=CDO_ProjectIcon;
+				break;
+			case WBGARBAGE:
+				kind=CDO_TrashcanIcon;
+				break;
+			case WBDEVICE:
+				break;
+			case WBKICK:
+				break;
+			case WBAPPICON:
+				break;
+			default:
+				// something serious has gone wrong here
+				break;
+		}
+
+		newIcon=CreateDesktopObjectA(kind, iconTags);
+
+		DoMethod(_presentation(obj), OM_ADDMEMBER, newIcon);
+	}
+
+	return retval;
+}
+
 AROS_UFH3(IPTR, iconContainerObserverDispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
 	AROS_UFHA(Object *, obj, A2),
@@ -136,6 +195,9 @@ AROS_UFH3(IPTR, iconContainerObserverDispatcher,
 			break;
 		case OM_DISPOSE:
 			retval=iconConObsDispose(cl, obj, msg);
+			break;
+		case ICOM_AddIcons:
+			retval=iconConObsAddIcons(cl, obj, (struct icoAddIcon*)msg);
 			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, msg);
