@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -162,7 +162,7 @@ char HEXarray [] = "0123456789ABCDEF";
         */
         template_pos++;
 
-        kprintf("FOUND_FORMAT: template_pos: %d\n",template_pos);
+        //kprintf("FOUND_FORMAT: template_pos: %d\n",template_pos);
         /*
         ** Does the user want the '%' to be printed?
         */
@@ -176,6 +176,7 @@ char HEXarray [] = "0123456789ABCDEF";
               AROS_UFCA(char,            fmtTemplate[template_pos],  A1));
           }
           template_pos++;
+	  arg_counter--; //stegerg
         }
         else
         {
@@ -207,7 +208,7 @@ char HEXarray [] = "0123456789ABCDEF";
           ** arg_pos 
           */
           
-          kprintf("next char: %c\n",fmtTemplate[template_pos]);
+          //kprintf("next char: %c\n",fmtTemplate[template_pos]);
           
           if ('0' <= fmtTemplate[template_pos] &&
               '9' >= fmtTemplate[template_pos])
@@ -266,10 +267,15 @@ char HEXarray [] = "0123456789ABCDEF";
           if ('.' == fmtTemplate[template_pos])
           {
             template_pos++;
-            maxwidth = 0;
-            while ('0' <= fmtTemplate[template_pos] &&
-                   '9' >= fmtTemplate[template_pos])
-              maxwidth = maxwidth * 10 + fmtTemplate[template_pos++] - '0';
+	    if ('0' <= fmtTemplate[template_pos] &&
+	        '9' >= fmtTemplate[template_pos])
+	    {
+              maxwidth = 0;
+
+              while ('0' <= fmtTemplate[template_pos] &&
+                     '9' >= fmtTemplate[template_pos])
+        	maxwidth = maxwidth * 10 + fmtTemplate[template_pos++] - '0';
+    	    }
           }
           
           /*
@@ -280,7 +286,7 @@ char HEXarray [] = "0123456789ABCDEF";
             length_found = TRUE;
             template_pos ++;
           }
-         
+        
           /*
           ** Print it according to the given type info.
           */
@@ -293,7 +299,7 @@ char HEXarray [] = "0123456789ABCDEF";
               */
               if (FALSE == scanning)
               {
-                buffer = (char *)BADDR(*(char **)((ULONG)stream+indices[arg_pos-1]));
+                buffer = (char *)BADDR(*(char **)(((IPTR)stream)+indices[arg_pos-1]));
                 
                 width = *buffer++;
                 
@@ -312,12 +318,12 @@ char HEXarray [] = "0123456789ABCDEF";
               {
                 if (FALSE == length_found)
                 {
-                  tmp = *(UWORD *)(((ULONG)stream)+indices[arg_pos-1]);
+                  tmp = *(UWORD *)(((IPTR)stream)+indices[arg_pos-1]);
                   buffer = &buf[4+1];
                 }
                 else
                 {  
-                  tmp = *(ULONG *)(((ULONG)stream)+indices[arg_pos-1]);
+                  tmp = *(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
                   buffer = &buf[8+1];
                 }
                 
@@ -354,11 +360,11 @@ char HEXarray [] = "0123456789ABCDEF";
                 ULONG group_index = 0;
                 if (FALSE == length_found)
                 {
-                  tmp = *(UWORD *)(((ULONG)stream)+indices[arg_pos-1]);
+                  tmp = *(UWORD *)(((IPTR)stream)+indices[arg_pos-1]);
                 }
                 else
                 {  
-                  tmp = *(ULONG *)(((ULONG)stream)+indices[arg_pos-1]);
+                  tmp = *(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
                 }
                 if ((LONG) tmp < 0 && 'D' == fmtTemplate[template_pos])
                 {
@@ -432,12 +438,12 @@ char HEXarray [] = "0123456789ABCDEF";
 
                 if (FALSE == length_found)
                 {
-                  tmp = *(UWORD *)(((ULONG)stream)+indices[arg_pos-1]);
+                  tmp = *(UWORD *)(((IPTR)stream)+indices[arg_pos-1]);
                   buffer = &buf[4+1];
                 }
                 else
                 {  
-                  tmp = *(ULONG *)(((ULONG)stream)+indices[arg_pos-1]);
+                  tmp = *(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
                   buffer = &buf[8+1];
                 }
                 
@@ -475,7 +481,7 @@ char HEXarray [] = "0123456789ABCDEF";
             {
               if (FALSE == scanning)
               {
-                buffer = *(char **)(((ULONG)stream)+indices[arg_pos-1]);
+                buffer = *(char **)(((IPTR)stream)+indices[arg_pos-1]);
                 width = strlen(buffer);
                 
                 if (width > maxwidth)
@@ -492,9 +498,9 @@ char HEXarray [] = "0123456789ABCDEF";
               if (FALSE == scanning)
               {
                 if (TRUE == length_found)
-                  buf[0] = (char)*(ULONG *)(stream+indices[arg_pos-1]);
+                  buf[0] = (char)*(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
                 else
-                  buf[0] = (char)*(WORD  *)(stream+indices[arg_pos-1]);
+                  buf[0] = (char)*(WORD  *)(((IPTR)stream)+indices[arg_pos-1]);
 
                 width = 1;
               }
@@ -515,6 +521,7 @@ char HEXarray [] = "0123456789ABCDEF";
           if (FALSE == scanning)
           { 
             int i;
+
             /*
                Now everything I need is known:
                buffer  - contains the string to be printed
