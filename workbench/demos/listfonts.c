@@ -58,7 +58,7 @@ int main(int argc, char ** argv)
 	UWORD count;
 
 	pargs[0] = afh->afh_NumEntries;
-	VPrintf("Number of fonts found: %d\n", pargs);
+	VPrintf("Number of fonts found: %ld\n", pargs);
 
 	/* Get pointer to the first AvailFonts item */
 	afptr = (struct AvailFonts*)&afh[1];
