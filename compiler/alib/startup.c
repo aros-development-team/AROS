@@ -30,6 +30,7 @@ extern struct ExecBase * SysBase;
 extern struct WBStartup *WBenchMsg;
 extern int main (int argc, char ** argv);
 
+extern struct DateStamp __startup_datestamp;
 extern struct SignalSemaphore __startup_memsem;
 extern APTR __startup_mempool; /* malloc() and free() */
 extern jmp_buf __startup_jmp_buf;
@@ -72,6 +73,8 @@ AROS_UFH3(LONG, entry,
     if (!(DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39)))
 	return -1;
 
+    DateStamp(&__startup_datestamp);
+    
     myproc = (struct Process *)FindTask(NULL);
 
     /* Do we have a CLI structure? */
@@ -253,6 +256,7 @@ struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 struct WBStartup *WBenchMsg;
 
+struct DateStamp __startup_datestamp;
 struct SignalSemaphore __startup_memsem;
 APTR __startup_mempool = NULL;
 jmp_buf __startup_jmp_buf;
