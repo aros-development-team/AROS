@@ -26,7 +26,6 @@
 #include <aros/debug.h>
 
 ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userdata);
-VOID free_mouseclass(struct vga_staticdata *xsd);
 
 static AttrBase HiddMouseAB;
 
@@ -43,7 +42,15 @@ struct mouse_data
     
     Object * Ser;
     Object * Unit;
+    
+    UWORD buttonstate;
 };
+
+/* defines for buttonstate */
+
+#define LEFT_BUTTON 	1
+#define RIGHT_BUTTON 	2
+#define MIDDLE_BUTTON	4
 
 /***** Mouse::New()  ***************************************/
 static Object * mouse_new(Class *cl, Object *o, struct pRoot_New *msg)
@@ -253,6 +260,7 @@ ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR use
 #else
     static struct mouse_data *mousedata;
     static struct pHidd_Mouse_Event e;
+    UWORD buttonstate;
 #endif
 
 #if OLD_GFXMOUSE_HACK 
@@ -292,30 +300,49 @@ ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR use
             DoMethod(vsd->vgahidd, (Msg) &p);
 
 #else
-     	    mousedata = (struct mouse_data *)userdata;
+
+/* microsoft serial mouse protocol:
+
+        D7      D6      D5      D4      D3      D2      D1      D0
+
+1.      X       1       LB      RB      Y7      Y6      X7      X6
+2.      X       0       X5      X4      X3      X2      X1      X0      
+3.      X       0       Y5      Y4      Y3      Y2      Y1      Y0
+
+*/
+   	   
+	    mousedata = (struct mouse_data *)userdata;
 
             e.x = (char)(((inbuf[0] & 0x03) << 6) | (inbuf[1] & 0x3f));
 	    e.y = (char)(((inbuf[0] & 0x0c) << 4) | (inbuf[2] & 0x3f));
-	    e.button = vHidd_Mouse_NoButton;
-	    e.type = vHidd_Mouse_Motion;
+	    if (e.x || e.y)
+	    {
+		e.button = vHidd_Mouse_NoButton;
+		e.type = vHidd_Mouse_Motion;
 	    
-	    mousedata->mouse_callback(mousedata->callbackdata, &e);
-
-	    if((inbuf[0] & 0x20)>>5)
+	    	mousedata->mouse_callback(mousedata->callbackdata, &e);
+	    }
+	    
+	    buttonstate  = ((inbuf[0] & 0x20) >> 5); /*  left button bit goes to bit 0 in button state */
+	    buttonstate |= ((inbuf[0] & 0x10) >> 3); /* right button bit goes to bit 1 in button state */
+	    
+	    if((buttonstate & LEFT_BUTTON) != (mousedata->buttonstate & LEFT_BUTTON))
 	    {
 		e.button = vHidd_Mouse_Button1;
-		e.type = vHidd_Mouse_Press;
+		e.type = (buttonstate & LEFT_BUTTON) ? vHidd_Mouse_Press : vHidd_Mouse_Release;
 
 		mousedata->mouse_callback(mousedata->callbackdata, &e);
 	    }
 
-            if((inbuf[0] & 0x10)>>4)
+            if((buttonstate & RIGHT_BUTTON) != (mousedata->buttonstate & RIGHT_BUTTON))
             {
                 e.button = vHidd_Mouse_Button2;
-                e.type = vHidd_Mouse_Press;
+                e.type = (buttonstate & RIGHT_BUTTON) ? vHidd_Mouse_Press : vHidd_Mouse_Release;
 
                 mousedata->mouse_callback(mousedata->callbackdata, &e);
             }
+	    
+	    mousedata->buttonstate = buttonstate;
 #endif
 	}
     }
