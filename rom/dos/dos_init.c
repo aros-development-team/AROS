@@ -110,6 +110,14 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Dos),
 
     LIBBASE->dl_IntuitionBase = NULL;
 
+#ifdef AROS_MODULES_DEBUG
+{
+    extern struct MinList debug_seglist;
+    
+    NEWLIST((struct List *)&debug_seglist);
+}
+#endif
+
     {
 	/*  iaint:
 	    I know this is bad, but I also know that the timer.device
