@@ -52,7 +52,7 @@ AROS_SLIB_ENTRY(ColdReboot,Exec):
 
 	.balign 4
 resetus:
-#warning FIXME! This code won't work!
+//warning FIXME! This code won't work!
 	lea.l	0x1000000,%a0		/* end of rom */
 	sub.l	-0x14(%a0),%a0		/* subtract size of rom */
 	move.l	4(%a0),%a0		/* get vector from rom+4 */
