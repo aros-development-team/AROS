@@ -9,19 +9,13 @@
 #include <aros/debug.h>
 #include <libcore/base.h>
 
-#include <intuition/classes.h>
-#include <intuition/classusr.h>
-
 #include <proto/exec.h>
-#include <proto/intuition.h>
-#include <proto/muimaster.h>
+#include <proto/timer.h>
 
 #include <aros/symbolsets.h>
 #include LC_LIBDEFS_FILE
 
 #include <utility/date.h>
-#include <libraries/mui.h>
-#include <zune/clock.h>
 
 
 /*** Variables **************************************************************/
