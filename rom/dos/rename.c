@@ -17,8 +17,8 @@
 	AROS_LH2(LONG, Rename,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, oldName, D1),
-	AROS_LHA(STRPTR, newName, D2),
+	AROS_LHA(CONST_STRPTR, oldName, D1),
+	AROS_LHA(CONST_STRPTR, newName, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 13, Dos)

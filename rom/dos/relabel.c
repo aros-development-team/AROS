@@ -15,8 +15,8 @@
 	AROS_LH2(LONG, Relabel,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, drive, D1),
-	AROS_LHA(STRPTR, newname, D2),
+	AROS_LHA(CONST_STRPTR, drive, D1),
+	AROS_LHA(CONST_STRPTR, newname, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 120, Dos)
