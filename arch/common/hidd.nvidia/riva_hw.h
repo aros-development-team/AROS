@@ -53,6 +53,8 @@
 #define NV_ARCH_10  0x10
 #define NV_ARCH_20  0x20
 #define NV_ARCH_30  0x30
+#define NV_ARCH_40  0x40
+
 /***************************************************************************\
 *                                                                           *
 *                             FIFO registers.                               *
