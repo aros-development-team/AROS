@@ -52,7 +52,7 @@ static OOP_Object *pcidriver_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     struct DrvInstData *instance = (struct DrvInstData *)OOP_INST_DATA(cl, o);
 
     instance->DirectBus = GetTagData(aHidd_PCIDriver_DirectBus, TRUE, msg->attrList);
-    
+
     return o;
 }
 
@@ -262,13 +262,12 @@ static APTR pcidriver_alloc(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_AllocPCIMem *msg)
 {
     APTR memory = AllocVec(msg->Size + 4096 + AROS_ALIGN(sizeof(APTR)), MEMF_CLEAR);
-    ULONG diff;
+    IPTR diff;
     
-    diff = (ULONG)memory - (AROS_ROUNDUP2((ULONG)memory + 4, 4096));
-    *((APTR*)((ULONG)memory - diff - 4)) = memory;
+    diff = (IPTR)memory - (AROS_ROUNDUP2((IPTR)memory + 4, 4096));
+    *((APTR*)((IPTR)memory - diff - 4)) = memory;
 
-    return (APTR)((ULONG)memory - diff);
-    
+    return (APTR)((IPTR)memory - diff);
 }
 
 /*
@@ -278,7 +277,7 @@ static APTR pcidriver_alloc(OOP_Class *cl, OOP_Object *o,
 static VOID pcidriver_free(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_FreePCIMem *msg)
 {
-    APTR memory = *(APTR*)((ULONG)msg->Address - 4);
+    APTR memory = *(APTR*)((IPTR)msg->Address - 4);
     FreeVec(memory);
 }
 
@@ -327,9 +326,6 @@ void free_pcidriverclass(struct pci_staticdata *psd, OOP_Class *cl)
 
 	if (cl)
 	    OOP_DisposeObject((OOP_Object *)cl);
-	
-	OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
-	OOP_ReleaseAttrBase(IID_Hidd);
     }
 }
 	
@@ -343,8 +339,8 @@ OOP_Class *init_pcidriverclass(struct pci_staticdata *psd)
     /* In case of regular driver, the New method should be written. Here not ;) */
     struct OOP_MethodDescr root_descr[_NUM_ROOT_METHODS + 1] = 
     {
-	{ OOP_METHODDEF(pcidriver_new), moRoot_New },
-	{ OOP_METHODDEF(pcidriver_get), moRoot_Get },
+	{ OOP_METHODDEF(pcidriver_new),	    moRoot_New },
+	{ OOP_METHODDEF(pcidriver_get),	    moRoot_Get },
 	{ NULL, 0UL }
     };
 
@@ -391,32 +387,23 @@ OOP_Class *init_pcidriverclass(struct pci_staticdata *psd)
 	if (cl)
 	{
 	    cl->UserData = (APTR)psd;
-	    psd->hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
-	    psd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
 
-	    if (psd->hiddPCIDriverAB)
-	    {
-		OOP_AddClass(cl);
-		D(bug("[PCIDriver] Dummy Driver Class OK\n"));
+	    OOP_AddClass(cl);
+	    D(bug("[PCIDriver] Dummy Driver Class OK\n"));
+	    psd->pciDriverClass = cl;
 
-		/*
-		    We do have driver class. Now we can get some MethodID's,
-		    so that whole PCI subsystem works slightly faster ;)
-		*/
+	    /*
+		We do have driver class. Now we can get some MethodID's,
+		so that whole PCI subsystem works slightly faster ;)
+	    */
 		
-		psd->mid_RB = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigByte);
-		psd->mid_RW = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigWord);
-		psd->mid_RL = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigLong);
+	    psd->mid_RB = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigByte);
+	    psd->mid_RW = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigWord);
+	    psd->mid_RL = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigLong);
 	
-		psd->mid_WB = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_WriteConfigByte);
-		psd->mid_WW = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_WriteConfigWord);
-		psd->mid_WL = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_WriteConfigLong);
-	    }
-	    else
-	    {
-		free_pcidriverclass(psd, cl);
-		cl = NULL;
-	    }
+	    psd->mid_WB = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_WriteConfigByte);
+	    psd->mid_WW = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_WriteConfigWord);
+	    psd->mid_WL = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_WriteConfigLong);
 	}
 	OOP_ReleaseAttrBase(IID_Meta);
     }

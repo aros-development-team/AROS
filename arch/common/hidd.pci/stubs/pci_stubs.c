@@ -47,6 +47,19 @@ VOID HIDD_PCI_AddHardwareDriver(OOP_Object *obj, OOP_Class *driver)
     OOP_DoMethod(obj, (OOP_Msg) &p);
 }
 
+BOOL HIDD_PCI_RemHardwareDriver(OOP_Object *obj, OOP_Class *driver)
+{
+    STATIC_MID;
+    struct pHidd_PCI_RemHardwareDriver p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_RemHardwareDriver);
+
+    p.mID = mid;
+    p.driverClass = driver;
+
+    return OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
 VOID HIDD_PCI_EnumDevices(OOP_Object *obj, struct Hook *callback, struct TagItem *requirements)
 {
     STATIC_MID;
