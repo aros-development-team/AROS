@@ -3,9 +3,10 @@
     $Id$
 */
 
-#include <aros/debug.h>
 #include <proto/dos.h>
 #include "icon_intern.h"
+
+#   include <aros/debug.h>
 
 /*****************************************************************************
 

@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: 
-    Lang: English
 */
 
 /****************************************************************************************/
@@ -18,8 +15,8 @@
 
 #include "icon_intern.h"
 
-#define DEBUG 0
-#include <aros/debug.h>
+#   define DEBUG 0
+#   include <aros/debug.h>
 
 /****************************************************************************************/
 
