@@ -377,8 +377,38 @@ void intui_RefreshWindowFrame(struct Window *w)
 	    if (w->BorderBottom > 2) RectFill(rp, 1, w->Height - w->BorderBottom + 1,
 	    					  w->Width - 2, w->Height - 2);
 						  
-	    /* Refresh all the gadgets with GACT_???BORDER activation set */
+	    InstallClipRegion(rp->Layer,old_clipregion);
+	    
+	    rp->Layer->Scroll_X = old_scroll_x;
+	    rp->Layer->Scroll_Y = old_scroll_y;
+	    
+	    UnlockLayerRom(rp->Layer);
+	    
+    	    /* Refresh all the gadgets with GACT_???BORDER activation set */
 
+            /* The layer must not be locked when calling RefreshGList,
+	       otherwise a deadlock can happen:
+	       
+	       task a: ObtainGirPort: ObtainSem(GadgetLock)
+	       
+	       ** task switch **
+	       
+	       task b: LockLayer
+	               refreshglist -> ObtainGIRPort : ObtainSem(GadgetLock)
+		                                       must wait because locked by task a
+						       
+	       ** task switch **
+	       
+	       task a: ObtainGirPort: LockLayer
+	                              must wait because layer locked by task b
+				      
+	       --------------------------------------------------------------------
+	       = Deadlock: task a tries to lock layer which is locked by task b
+	                   task b will never unlock the layer because it tries to
+			   ObtainSem GadgetLock which is locked by task a.
+	    
+	    */
+	    
 	    ilock = LockIBase(0);
 	    
 	    gad = w->FirstGadget;
@@ -403,13 +433,6 @@ void intui_RefreshWindowFrame(struct Window *w)
 		    RefreshGList((struct Gadget *)SYSGAD(w, i), w, NULL, 1 );
 	    }
 #endif
-
-	    InstallClipRegion(rp->Layer,old_clipregion);
-	    
-	    rp->Layer->Scroll_X = old_scroll_x;
-	    rp->Layer->Scroll_Y = old_scroll_y;
-	    
-	    UnlockLayerRom(rp->Layer);
 
 	    FreeScreenDrawInfo(w->WScreen, dri);
 	    
