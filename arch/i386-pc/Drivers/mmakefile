@@ -1,9 +1,0 @@
-# $Id$
-include $(TOP)/config/make.cfg
-
-#Install i386-native specific S:hidd.prefs file
-
-##MM
-#workbench-s-hiddprefs-pc-i386 :
-#	@$(CP) hidd.prefs $(SDIR)
-
