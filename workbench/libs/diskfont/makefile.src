@@ -62,7 +62,7 @@ $(SLIBDIR)/diskfont.library: $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
 	@if test -s undefdsyms.list; then \
 	    echo "Error: Found undefined symbols" ; \
 	    cat undefdsyms.list ; \
-	else true ; fi
+	else rm undefdsyms.list ; fi
 	@if test ! -s diskfontlib.map; then rm diskfontlib.map ; else true ; fi
 	@$(STRIP) $@
 
