@@ -3,185 +3,50 @@ include $(TOP)/config/make.cfg
 
 LIB := freetype2
 
-FILES := \
-      ftbase \
-      ftinit \
-      ftsystem \
-      ftdebug \
-      ftglyph \
-      ftbbox \
-      ftmm \
-      ftsynth \
-      autohint \
-      ahoptim \
-      ftcache \
-      cff \
-      pshinter \
-      psaux \
-      psnames \
-      raster \
-      sfnt \
-      smooth \
-      truetype \
-      type1 \
-      type1cid \
-      type42 \
-      bdf \
-      pcf \
-      pfr \
-      winfnt \
-      ftgzip
+FILESDIR := \
+      base/ftbase \
+      base/ftinit \
+      base/ftsystem \
+      base/ftdebug \
+      base/ftglyph \
+      base/ftbbox \
+      base/ftmm \
+      base/ftsynth \
+      autohint/autohint \
+      autohint/ahoptim \
+      cache/ftcache \
+      cff/cff \
+      pshinter/pshinter \
+      psaux/psaux \
+      psnames/psnames \
+      raster/raster \
+      sfnt/sfnt \
+      smooth/smooth \
+      truetype/truetype \
+      type1/type1 \
+      cid/type1cid \
+      type42/type42 \
+      bdf/bdf \
+      pcf/pcf \
+      pfr/pfr \
+      winfonts/winfnt \
+      gzip/ftgzip
 
-USER_INCLUDES := -I../include
+DIRS := $(sort $(dir $(FILESDIR)))
+vpath %.c $(DIRS)
+
+FILES := $(notdir $(FILESDIR))
+
+USER_INCLUDES := -I. -I../include $(foreach f,$(SUBDIRS),-I$(f))
 
 #MM contrib-freetype-linklib : contrib-freetype-includes
 
 %make_linklib_setup mmake=contrib-freetype-linklib
-
-# Override the standard compilation because the files are
-# located in subdirectories and an extra include flags
-# needs to be set.
-
-$(OBJDIR)/%.o : base/%.c
-	%compile_q opt="$(CFLAGS) -Ibase"
-
-$(OBJDIR)/%.d : base/%.c
-	%mkdepend_q flags="$(CFLAGS) -Ibase"
-
-$(OBJDIR)/%.o : autohint/%.c
-	%compile_q opt="$(CFLAGS) -Iautohint"
-
-$(OBJDIR)/%.d : autohint/%.c
-	%mkdepend_q flags="$(CFLAGS) -Iautohint"
-
-$(OBJDIR)/%.o : pshinter/%.c
-	%compile_q opt="$(CFLAGS) -Ipshinter"
-
-$(OBJDIR)/%.d : pshinter/%.c
-	%mkdepend_q flags="$(CFLAGS) -Ipshinter"
-
-$(OBJDIR)/%.o : psaux/%.c
-	%compile_q opt="$(CFLAGS) -Ipsaux"
-
-$(OBJDIR)/%.d : psaux/%.c
-	%mkdepend_q flags="$(CFLAGS) -Ipsaux"
-
-$(OBJDIR)/%.o : psnames/%.c
-	%compile_q opt="$(CFLAGS) -Ipsnames"
-
-$(OBJDIR)/%.d : psnames/%.c
-	%mkdepend_q flags="$(CFLAGS) -Ipsnames"
-
-$(OBJDIR)/%.o : raster/%.c
-	%compile_q opt="$(CFLAGS) -Iraster"
-
-$(OBJDIR)/%.d : raster/%.c
-	%mkdepend_q flags="$(CFLAGS) -Iraster"
-
-$(OBJDIR)/%.o : smooth/%.c
-	%compile_q opt="$(CFLAGS) -Ismooth"
-
-$(OBJDIR)/%.d : smooth/%.c
-	%mkdepend_q flags="$(CFLAGS) -Ismooth"
-
-$(OBJDIR)/%.o : sfnt/%.c
-	%compile_q opt="$(CFLAGS) -Isfnt"
-
-$(OBJDIR)/%.d : sfnt/%.c
-	%mkdepend_q flags="$(CFLAGS) -Isfnt"
-
-$(OBJDIR)/%.o : cache/%.c
-	%compile_q opt="$(CFLAGS) -Icache"
-
-$(OBJDIR)/%.d : cache/%.c
-	%mkdepend_q flags="$(CFLAGS) -Icache"
-
-$(OBJDIR)/%.o : cff/%.c
-	%compile_q opt="$(CFLAGS) -Icff"
-
-$(OBJDIR)/%.d : cff/%.c
-	%mkdepend_q flags="$(CFLAGS) -Icff"
-
-$(OBJDIR)/%.o : truetype/%.c
-	%compile_q opt="$(CFLAGS) -Itruetype"
-
-$(OBJDIR)/%.d : truetype/%.c
-	%mkdepend_q flags="$(CFLAGS) -Itruetype"
-
-$(OBJDIR)/%.o : type1/%.c
-	%compile_q opt="$(CFLAGS) -Itype1"
-
-$(OBJDIR)/%.d : type1/%.c
-	%mkdepend_q flags="$(CFLAGS) -Itype1"
-
-$(OBJDIR)/%.o : type42/%.c
-	%compile_q opt="$(CFLAGS) -Itype42"
-
-$(OBJDIR)/%.d : type42/%.c
-	%mkdepend_q flags="$(CFLAGS) -Itype42"
-
-$(OBJDIR)/%.o : cid/%.c
-	%compile_q opt="$(CFLAGS) -Icid"
-
-$(OBJDIR)/%.d : cid/%.c
-	%mkdepend_q flags="$(CFLAGS) -Icid"
-
-$(OBJDIR)/%.o : bdf/%.c
-	%compile_q opt="$(CFLAGS) -Ibdf"
-
-$(OBJDIR)/%.d : bdf/%.c
-	%mkdepend_q flags="$(CFLAGS) -Ibdf"
-
-$(OBJDIR)/%.o : pcf/%.c
-	%compile_q opt="$(CFLAGS) -Ipcf"
-
-$(OBJDIR)/%.d : pcf/%.c
-	%mkdepend_q flags="$(CFLAGS) -Ipcf"
-
-$(OBJDIR)/%.o : pfr/%.c
-	%compile_q opt="$(CFLAGS) -Ipfr"
-
-$(OBJDIR)/%.d : pfr/%.c
-	%mkdepend_q flags="$(CFLAGS) -Ipfr"
-
-$(OBJDIR)/%.o : winfonts/%.c
-	%compile_q opt="$(CFLAGS) -Iwinfonts"
-
-$(OBJDIR)/%.d : winfonts/%.c
-	%mkdepend_q flags="$(CFLAGS) -Iwinfonts"
-
-$(OBJDIR)/%.o : gzip/%.c
-	%compile_q opt="$(CFLAGS) -Iwinfonts"
-
-$(OBJDIR)/%.d : gzip/%.c
-	%mkdepend_q flags="$(CFLAGS) -Iwinfonts"
-
 %make_linklib mmake=contrib-freetype-linklib
-
-$(OBJDIR)/freetype2_functable.o: $(OBJDIR)/freetype2_functable.c
-	%compile_q opt="$(CFLAGS) -I."
-
-$(OBJDIR)/convlist : convlist/convlist.c
-	gcc -o $@ $<
-
-$(OBJDIR)/freetype2_functable.c : freetype2_funclist $(OBJDIR)/convlist
-	$(OBJDIR)/convlist freetype2 $(OBJDIR)
-
-$(OBJDIR)/freetype2_init.o : freetype2_init.c
-	%compile_q opt="$(CFLAGS) -I."
-
-$(OBJDIR)/freetype2_endtag.o : freetype2_endtag.c
-	%compile_q opt="$(CFLAGS) -I."
-
-#MM
-contrib-freetype-module : $(AROS_LIBS)/freetype2.library
 
 LIBS = -larosc_shared
 
-$(AROS_LIBS)/freetype2.library : $(LIBDIR)/libarosc_shared.a
-
-$(AROS_LIBS)/freetype2.library : $(OBJDIR)/freetype2_init.o $(OBJDIR)/freetype2_functable.o $(OBJS) $(OBJDIR)/freetype2_endtag.o
-	%link_module_q err="freetype.err" objs=$^
+%build_module mmake=contrib-freetype-module modname=freetype2 modtype=library files="$(FILES) freetype2_init"
 
 %common
 %include_deps

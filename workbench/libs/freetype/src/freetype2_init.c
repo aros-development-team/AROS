@@ -12,32 +12,20 @@
 #include <dos/dosextens.h>
 #include <aros/libcall.h>
 #include <aros/debug.h>
+#include <libcore/base.h>
+#include <libcore/compiler.h>
 
 #include <proto/exec.h>
 #include <proto/alib.h>
 
-#include "libdefs.h"
-
-/* #define LC_NO_INITLIB */
-/* #define LC_NO_EXPUNGELIB */
-#define LC_NO_OPENLIB
-#define LC_NO_CLOSELIB
-
-#undef SysBase
-
-#include <libcore/libheader.c>
-
 struct Library *aroscbase;
-
-#undef SysBase
-
 struct ExecBase *SysBase;
 
-ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR Freetype2Base)
+ULONG SAVEDS STDARGS FreeType2_L_InitLib (struct LibHeader *Freetype2Base)
 {
     D(bug("Inside Init func of regina.library\n"));
 
-    SysBase = LC_SYSBASE_FIELD(Freetype2Base);
+    SysBase = Freetype2Base->lh_SysBase;
     
     if (!(aroscbase = OpenLibrary("arosc.library",41)))
         return FALSE;
@@ -45,7 +33,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR Freetype2Base)
     return TRUE;
 }
 
-void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR Freetype2Base)
+void  SAVEDS STDARGS FreeType2_L_ExpungeLib(struct LibHeader *Freetype2Base)
 {
     D(bug("Inside Expunge func of regina.library\n"));
 
