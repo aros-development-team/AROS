@@ -2,7 +2,8 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-FILES = stricmp strnicmp applytagchanges findtagitem tolower
+FILES = applytagchanges callhookpkt findtagitem nexttagitem \
+	stricmp strnicmp tolower
 
 all: setup $(OSGENDIR)/utility_init.o $(OSGENDIR)/utility_functable.o \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
