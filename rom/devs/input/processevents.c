@@ -315,10 +315,15 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	    } /* switch( ((struct InputEvent *)gpdio->io_Data)->ie_Code) */
 	    
 	#endif
+
+	    /* Gameport just returns the frame count since the last
+	       report in ie_TimeStamp.tv_secs; we therefore must add
+	       a real timestamp ourselves */
+	    GetSysTime(&gpdie->ie_TimeStamp);	    
 	    
 	    /* Add event to queue */
 	    AddEQTail((struct InputEvent *)gpdio->io_Data, InputDevice);
-	    /* New event from keyboard device */
+	    /* New event from gameport device */
     	    D(bug("id: Gameport event\n"));
 
     	    	
