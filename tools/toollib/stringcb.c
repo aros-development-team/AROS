@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <errno.h>
 #include <toollib/error.h>
 #include <toollib/stringcb.h>

@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright (C) 1997 AROS - The Amiga Research OS
+   Copyright © 1995-2001, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
