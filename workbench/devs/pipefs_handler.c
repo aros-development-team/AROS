@@ -2,8 +2,8 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
-    Revision 1.9  2001/07/16 15:00:39  falemagn
-    some more adjustments. Directory listing is implemented, also thanks to the dos.library/ExAll() emulation
+    Revision 1.10  2001/07/16 15:21:32  falemagn
+    File types weren't reported correctly
 
     Revision 1.4  2001/07/15 21:12:24  falemagn
     Ooops... forgot to do merge with Stefan changes...
@@ -77,8 +77,10 @@ struct pipefsmessage
 
 struct dirnode
 {
-    struct Node node;
+    struct MinNode          node;
     struct dirnode         *parent;     /* Parent directory */
+    STRPTR                  name;
+    LONG                    type;
     ULONG                   numusers;
     struct SignalSemaphore  filesSem;
     struct List files;
@@ -86,8 +88,10 @@ struct dirnode
 
 struct filenode
 {
-    struct Node     node;
+    struct MinNode  node;
     struct dirnode *parent;
+    STRPTR          name;
+    LONG            type;
     ULONG           numusers;           /* Number of actual users of this pipe */
     ULONG           numwriters;         /* Num of actual writers */
     ULONG           numreaders;         /* Num of actual readers */
@@ -209,8 +213,8 @@ AROS_LH3(void, open,
 	dn = AllocVec(sizeof(*dn),MEMF_PUBLIC|MEMF_CLEAR);
 	if (dn)
 	{
-	    dn->node.ln_Type = (UBYTE)ST_ROOT;
-	    dn->node.ln_Name = iofs->io_Union.io_OpenDevice.io_DosName;
+	    dn->type   = ST_ROOT;
+	    dn->name   = iofs->io_Union.io_OpenDevice.io_DosName;
 	    dn->parent = NULL;
 
 	    NEWLIST(&dn->files);
@@ -476,9 +480,9 @@ static struct filenode *FindFile(struct dirnode **dn_ptr, STRPTR path)
 
     if (!path[0]) return (struct filenode *)dn;
 
-    if ((BYTE)dn->node.ln_Type <= 0)
+    if (dn->type <= 0)
     {
-        kprintf("User wants %S to be a directory, but it's a file.\n", dn->node.ln_Name);
+        kprintf("User wants %S to be a directory, but it's a file.\n", dn->name);
 	dn = NULL;
 	return NULL;
     }
@@ -491,11 +495,11 @@ static struct filenode *FindFile(struct dirnode **dn_ptr, STRPTR path)
 
     while (fn)
     {
-	kprintf("Comparing %S with %.*S.\n", fn->node.ln_Name, len, path);
+	kprintf("Comparing %S with %.*S.\n", fn->name, len, path);
 	if
 	(
-	    strlen(fn->node.ln_Name) == len               &&
-	    strncasecmp(fn->node.ln_Name, path, len) == 0
+	    strlen(fn->name) == len                    &&
+	    strncasecmp(fn->name, path, len) == 0
 	)
 	{
 	    break;
@@ -523,7 +527,7 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, 
     filename = SkipColon(filename);
 
     kprintf("User wants to open file %S.\n", filename);
-    kprintf("Current directory is %S\n", dn->node.ln_Name);
+    kprintf("Current directory is %S\n", dn->name);
 
     fn = FindFile(&dn, filename);
     if (!fn)
@@ -537,11 +541,11 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, 
 	    fn = AllocVec(sizeof(*fn), MEMF_PUBLIC|MEMF_CLEAR);
 	    if (fn)
 	    {
-		fn->node.ln_Name = StrDup(pipefsbase, FilePart(filename));
+		fn->name = StrDup(pipefsbase, FilePart(filename));
 
-		if (fn->node.ln_Name)
+		if (fn->name)
 		{
-		    fn->node.ln_Type = (UBYTE)ST_PIPEFILE;
+		    fn->type = ST_PIPEFILE;
 
 		    NEWLIST(&fn->pendingwrites);
 		    NEWLIST(&fn->pendingreads);
@@ -568,7 +572,7 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, 
 	}
     }
 
-    if ((BYTE)fn->node.ln_Type > 0 && mode&(FMF_WRITE|FMF_READ))
+    if ((BYTE)fn->type > 0 && mode&(FMF_WRITE|FMF_READ))
     {
 	kprintf("The file is a directory, cannot be open for reading/writing\n");
 	*err = ERROR_OBJECT_WRONG_TYPE;
@@ -659,7 +663,7 @@ AROS_UFH3(LONG, pipefsproc,
 
 		    kprintf("File requested found.\n");
 		    kprintf("The requested file is %s.\n",
-		            (BYTE)fn->node.ln_Type <= 0  ?
+		            fn->type <= 0  ?
 			    "a pipe":
 			    "a directory");
 
@@ -791,7 +795,7 @@ AROS_UFH3(LONG, pipefsproc,
     		    };
 
 		    kprintf("Command is EXAMINE\n");
-		    kprintf("Examining file %S\n", fn->node.ln_Name);
+		    kprintf("Examining file %S\n", fn->name);
 
 		    if (type > ED_OWNER)
     		    {
@@ -809,7 +813,7 @@ AROS_UFH3(LONG, pipefsproc,
 			continue;
 		    }
 
-		    if ((BYTE)fn->node.ln_Type > 0)
+		    if (fn->type > 0)
 		    {
 			msg->iofs->io_DirPos = (LONG)GetHead(&((struct dirnode *)fn)->files);
                     }
@@ -844,12 +848,12 @@ AROS_UFH3(LONG, pipefsproc,
 
 			/* Fall through */
         		case ED_TYPE:
-	    		    ead->ed_Type = (UBYTE)fn->node.ln_Type;
+	    		    ead->ed_Type = fn->type;
 
 			/* Fall through */
 			case ED_NAME:
 	  		{
-			    STRPTR name = fn->node.ln_Name;
+			    STRPTR name = fn->name;
 			    ead->ed_Name = next;
 
 			    for (;;)
@@ -887,7 +891,7 @@ AROS_UFH3(LONG, pipefsproc,
 			continue;
 		    }
 
-    		    kprintf("Current directory is %S. Current file is %S\n", fn->parent->node.ln_Name, fn->node.ln_Name);
+    		    kprintf("Current directory is %S. Current file is %S\n", fn->parent->name, fn->name);
 
 		    fib->fib_OwnerUID       = 0;
 		    fib->fib_OwnerGID       = 0;
@@ -896,9 +900,9 @@ AROS_UFH3(LONG, pipefsproc,
 		    fib->fib_Date.ds_Tick   = 0;
 		    fib->fib_Protection	    = 0;
 		    fib->fib_Size	    = 0;
-		    fib->fib_DirEntryType   = (BYTE)fn->node.ln_Type;
+		    fib->fib_DirEntryType   = fn->type;
 
-		    strncpy(fib->fib_FileName, fn->node.ln_Name, MAXFILENAMELENGTH - 1);
+		    strncpy(fib->fib_FileName, fn->name, MAXFILENAMELENGTH - 1);
 		    fib->fib_Comment[0] = '\0';
 
 		    fib->fib_DiskKey = (LONG)GetSucc(fn);
