@@ -1,116 +1,28 @@
+# Copyright © 1995-2003, The AROS Development Team. All rights reserved.
 # $Id$
-
-# BEGIN_DESC{makefile}
-# This is the toplevel makefile. Use it if you want to compile the whole
-# distribution.
-# END_DESC{makefile}
 
 include $(TOP)/config/make.cfg
 
-# MetaMake rules
 #MM AROS : clean-errors AROS-$(ARCH)-$(CPU) test
 AROS : checkerr
 	@$(NOP)
 
-#MM- install : install-$(ARCH)-$(CPU)
-
-
-# BEGIN_DESC{internaltarget}
-# \item{clean-errors} Delete the global error file
-#
-# END_DESC{internaltarget}
+# Delete the global error file
 #MM
 clean-errors :
 	@$(RM) -f $(GENDIR)/errors
 	
-# BEGIN_DESC{internaltarget}
-# \item{checkerr} Checks if any error has been occurred during compile
-#
-# END_DESC{internaltarget}
+# Checks if any error has been occurred during compile
 checkerr :
 	@if [ -f $(GENDIR)/errors ]; then wc -l $(GENDIR)/errors ; else $(NOP) ; fi
 
-# BEGIN_DESC{target}
-# \item{crypt} Create the file crypt to create a password for CVS access
-#
-# END_DESC{target}
+# Create the file crypt to create a password for CVS access
 crypt : tools/crypt.c
 	$(CC) -o crypt tools/crypt.c
 
-# BEGIN_DESC{localmakevar}
-# \item{BINARCHIVE} Basename of the binary archive
-#
-# \item{DEVARCHIVE} Basename of the source archive
-#
-# END_DESC{localmakevar}
-BINARCHIVE = AROS-$(ARCH)-$(CPU)-current
-DEVARCHIVE = AROSdev-current
+#MM- install : install-$(ARCH)-$(CPU)
 
-# BEGIN_DESC{target}
-# \item{dist} Create the distribution archives
-#
-# END_DESC{target}
-# BEGIN_DESC{internaltarget}
-# \item{dir-dir} Creates the directory for the distribution archives
-#
-# \item{dist-tar} Create .tar.gz archive of the binary for the local
-#	architecture.
-#
-# \item{dist-lha} Create LhA archive of the binary for the local
-#	architecture.
-#
-# \item{dist-src} Create the source archive as .tar.gz and LhA files.
-#
-# END_DESC{internaltarget}
-#MM
-dist : dist-dir dist-tar dist-lha dist-src
-	cp README dist/$(BINARCHIVE).readme
-	cp README dist/$(DEVARCHIVE).readme
-
-dist-dir :
-	@if [ ! -d dist ]; then $(MKDIR) dist ; else $(NOP) ; fi
-	@echo "Correcting access flags"
-	@chmod -R ug=rwX,o=rX .
-
-dist-tar :
-	cd $(ARCHDIR) ; \
-	    $(RM) ../../dist/$(BINARCHIVE).tgz ; \
-	    tar chvvzf ../../dist/$(BINARCHIVE).tgz AROS
-
-dist-lha :
-	cd $(ARCHDIR) ; \
-	    $(RM) ../../dist/$(BINARCHIVE).lha ; \
-	    lha a ../../dist/$(BINARCHIVE).lha AROS
-
-dist-src :
-	$(TOP)/scripts/makedist src $(DEVARCHIVE)
-
-# BEGIN_DESC{target}
-# \item{clean} Remove all generated files
-#
-# END_DESC{target}
-# M M
-#clean :
-#	-$(RM) $(ARCHDIR) Makefile mmake.cache config.cache config.status \
-#		config.log
-
-
-$(GENDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $< -c -o $@
-
-# BEGIN_DESC{target}
-# \item{cleandep} Remove all generated dependency files.
-#
-# END_DESC{target}
+# Remove all generated dependency files.
 #MM
 cleandep :
 	find $(GENDIR) -name "*.d" -exec $(RM) "{}" \;
-
-# BEGIN_DESC{target}
-# \item{docs} Compile the documentation for AROS.
-#
-# END_DESC{target}
-docs:
-	cd $(TOP)/docs/src ; make
-
-.PHONY: docs dist setup
