@@ -8,7 +8,7 @@
 #include "memory.h"
 
 #define MEM_START 0x400
-#define MEM_SIZE  0x90000-0x400
+#define MEM_SIZE  0x100000-0x400
 
 struct MemHeader * detect_memory(void)
 {
