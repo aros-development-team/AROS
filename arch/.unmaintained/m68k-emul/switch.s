@@ -13,7 +13,7 @@
         AROS_LH0(void, Switch,
 
     LOCATION
-        struct ExecBase *, SysBase, 6, Exec)
+        struct ExecBase *, SysBase, 9, Exec)
 
     FUNCTION
         Tries to switch to the first task in the ready list. This
