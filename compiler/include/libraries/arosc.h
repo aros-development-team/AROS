@@ -97,7 +97,6 @@ extern struct Library *aroscbase;
 #endif
 
 #if defined(_CLIB_KERNEL_) || defined(_CLIB_LIBRARY_)
-#define errno               (*(int *)         (clib_userdata->errnoptr))
 #define stdin               (*(FILE **)       (clib_userdata->stdinptr))
 #define stdout              (*(FILE **)       (clib_userdata->stdoutptr))
 #define stderr              (*(FILE **)       (clib_userdata->stderrptr))
