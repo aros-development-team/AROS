@@ -1,3 +1,11 @@
+/*
+    (C) 1997-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Font requester specific code.
+    Lang: english
+*/
+
 #define AROS_ALMOST_COMPATIBLE 1
 
 #include <proto/exec.h>
@@ -21,8 +29,12 @@
 
 #include <aros/debug.h>
 
+/*******************************************************************************************/
+
 #define G(x) ((struct Gadget *)(x))
 #define EG(x) ((struct ExtGadget *)(x))
+
+/*******************************************************************************************/
 
 static const struct TagItem arrowinc_to_prop [] =
 {
@@ -268,6 +280,4 @@ void FreeObjects(Object **first, Object **last, struct AslBase_intern *AslBase)
     }
 }
 
-/*******************************************************************************************/
-/*******************************************************************************************/
 /*******************************************************************************************/

@@ -21,6 +21,7 @@
 /* Options */
 
 #define FOREQ_MIN_VISIBLELINES 	 	3
+#define FOREQ_VISIBILE_SIZE_CHARS   	4
 #define FOREQ_COOL_BUTTONS 		1
 
 #define FOREQ_FIRST_OBJECT(x) 	    	((x)->NameListview)
@@ -41,7 +42,8 @@ struct FOUserData
     struct List			NameListviewList;
     struct List     	    	SizeListviewList;
     struct Hook     	    	SizeListviewRenderHook;
-    
+    struct Hook     	    	StringEditHook;
+    struct ASLLVFontReqNode 	*ActiveFont;
     struct AvailFontsHeader 	*AFH;
 
     UWORD 			ButWidth;

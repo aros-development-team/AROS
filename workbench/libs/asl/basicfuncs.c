@@ -714,6 +714,13 @@ VOID StripRequester(APTR req, UWORD reqtype, struct AslBase_intern *AslBase)
 	    break;
 
 	case ASL_FontRequest:
+
+	    #undef GetFO
+	    #define GetFO(r) ((struct FontRequester *)r)
+
+	    FreeVecPooled(GetFO(req)->fo_TAttr.tta_Name, AslBase);
+	    GetFO(req)->fo_TAttr.tta_Name = NULL;
+	    
 	    break;
 
 	case ASL_ScreenModeRequest:
