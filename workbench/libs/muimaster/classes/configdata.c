@@ -34,15 +34,6 @@ struct MUI_ConfigdataData
     int test;
 };
 
-static char *StrDup(char *x)
-{
-    char *dup;
-    if (!x) return NULL;
-    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC | MEMF_CLEAR);
-    if (dup) CopyMem((x), dup, strlen(x) + 1);
-    return dup;
-}
-
 static void *GetConfigData(Object *obj, ULONG id, void *def)
 {
     void *f = (void*)DoMethod(obj,MUIM_Dataspace_Find,id);

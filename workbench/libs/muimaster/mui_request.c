@@ -19,15 +19,6 @@
 
 extern struct Library *MUIMasterBase;
 
-static char *StrDup(char *x)
-{
-    char *dup;
-    if (!x) return NULL;
-    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
-    if (dup) CopyMem((x), dup, strlen(x) + 1);
-    return dup;
-}
-
 #ifdef _AROS
 AROS_UFH2S(void, cpy_func,
     AROS_UFHA(UBYTE, chr, D0),

@@ -34,15 +34,6 @@ struct Library *MUIMasterBase;
 void load_prefs(char *filename);
 void save_prefs(char *filename);
 
-static char *StrDup(char *x)
-{
-    char *dup;
-    if (!x) return NULL;
-    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
-    if (dup) CopyMem((x), dup, strlen(x) + 1);
-    return dup;
-}
-
 #ifndef _AROS
 
 /* On AmigaOS we build a fake library base, because it's not compiled as sharedlibrary yet */

@@ -38,15 +38,6 @@ struct MUI_ImageData
     struct MUI_ImageSpec *img;
 };
 
-static char *StrDup(char *x)
-{
-    char *dup;
-    if (!x) return NULL;
-    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
-    if (dup) CopyMem((x), dup, strlen(x) + 1);
-    return dup;
-}
-
 
 /**************************************************************************
  OM_NEW
