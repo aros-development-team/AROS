@@ -100,7 +100,7 @@ static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	}
 	
 
-	assert (width != 0 && height != 0 && depth != 0);
+	ASSERT (width != 0 && height != 0 && depth != 0);
 	
 	/* 
 	   We must only create depths that are supported by the friend drawable
