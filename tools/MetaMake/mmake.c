@@ -24,9 +24,9 @@ Boston, MA 02111-1307, USA.  */
 #   define PARAMS(x) x
 #else
 #   define PARAMS(x) ()
-#endif /* __STDC__ */
+#endif /* PROTOTYPES */
 
-#if defined(HAVE_STDARG_H) && defined(__STDC__)
+#if defined(HAVE_STDARG_H) && defined(__STDC__) && __STDC__
 #   include <stdarg.h>
 #   define VA_START(args, lastarg) va_start(args, lastarg)
 #else
@@ -44,15 +44,17 @@ Boston, MA 02111-1307, USA.  */
 #else
 #   include <strings.h>
 #endif
-#include <sys/stat.h>
 #ifdef HAVE_SYS_STAT_H
+#   include <sys/stat.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
 #   include <sys/types.h>
 #endif
 #ifdef HAVE_NETINET_IN_H
 #   include <netinet/in.h> /* for htonl/ntohl() */
 #endif
 
-#define ID	((0L << 24) | (5L << 16) | 1)
+#define ID	((0L << 24) | (5L << 16) | 2)
 
 /* Types */
 typedef struct _Node Node;
@@ -179,10 +181,10 @@ int verbose = 0;
 	for (n=(void *)(((List *)(l))->first); \
 	    ((Node *)(n))->next; \
 	    n=(void *)(((Node *)(n))->next))
-#   define ForeachNodeSafe(l,node,next) \
+#   define ForeachNodeSafe(l,node,nextnode) \
 	for (node=(void *)(((List *)(l))->first); \
-	    ((next)=(void*)((Node *)(node))->next); \
-	    (node)=(void *)(next))
+	    ((nextnode)=(void*)((Node *)(node))->next); \
+	    (node)=(void *)(nextnode))
 
 #define cfree(x)        if (x) free (x)
 #define SETSTR(str,val) \
@@ -818,8 +820,8 @@ readcachedir (FILE * fh)
     ret = fread (&len, sizeof(len), 1, fh);
     if (ferror (fh))
     {
-	error ("readcachedir:fread():%d: %s",
-	    __LINE__, strerror (errno)
+	error ("readcachedir:fread():%d",
+	    __LINE__
 	);
 	return NULL;
     }
@@ -838,8 +840,8 @@ readcachedir (FILE * fh)
 	ret = fread (node->node.name, len, 1, fh);
 	if (ferror (fh))
 	{
-	    error ("readcachedir:fread():%d: %s",
-		__LINE__, strerror (errno)
+	    error ("readcachedir:fread():%d",
+		__LINE__
 	    );
 	    free (node);
 	    return NULL;
@@ -849,8 +851,8 @@ readcachedir (FILE * fh)
     ret = fread (&tt, sizeof (tt), 1, fh);
     if (ferror (fh))
     {
-	error ("readcachedir:fread():%d: %s",
-	    __LINE__, strerror (errno)
+	error ("readcachedir:fread():%d",
+	    __LINE__
 	);
 	free (node);
 	return NULL;
@@ -1033,8 +1035,8 @@ writecachedir (FILE * fh, DirNode * node)
     ret = fwrite (&out, sizeof(out), 1, fh);
     if (ret <= 0)
     {
-	error ("writecachedir/fwrite():%d: %s",
-	    __LINE__, strerror(errno)
+	error ("writecachedir/fwrite():%d",
+	    __LINE__
 	);
 	return ret;
     }
@@ -1044,8 +1046,8 @@ writecachedir (FILE * fh, DirNode * node)
 	ret = fwrite (node->node.name, len, 1, fh);
 	if (ret <= 0)
 	{
-	    error ("writecachedir/fwrite():%d: %s",
-		__LINE__, strerror(errno)
+	    error ("writecachedir/fwrite():%d",
+		__LINE__
 	    );
 	    return ret;
 	}
@@ -1054,8 +1056,8 @@ writecachedir (FILE * fh, DirNode * node)
     ret = fwrite (&out, sizeof (out), 1, fh);
     if (ret <= 0)
     {
-	error ("writecachedir/fwrite():%d: %s",
-	    __LINE__, strerror(errno)
+	error ("writecachedir/fwrite():%d",
+	    __LINE__
 	);
 	return ret;
     }
@@ -1071,8 +1073,8 @@ writecachedir (FILE * fh, DirNode * node)
     ret = fwrite (&out, sizeof (out), 1, fh);
     if (ret <= 0)
     {
-	error ("writecachedir/fwrite():%d: %s",
-	    __LINE__, strerror(errno)
+	error ("writecachedir/fwrite():%d",
+	    __LINE__
 	);
 	return ret;
     }
@@ -1169,7 +1171,9 @@ buildmflist (Project * prj)
 	path[offset ++] = '/';
 	path[offset] = 0;
 
-/* printf ("Entering \"%s\"\n", path); */
+#if 0
+    printf ("Entering \"%s\"\n", path);
+#endif
 
 	dnode = finddirnode (prj, path);
 
@@ -1182,7 +1186,9 @@ buildmflist (Project * prj)
 
 	if (!dnode || st.st_mtime > dnode->time)
 	{
-/* printf ("Updating cache in %s\n", path); */
+#if 0
+    printf ("Updating cache in %s\n", path);
+#endif
 	    if (!dnode)
 		dnode = adddirnode (prj, path);
 
@@ -1235,7 +1241,9 @@ buildmflist (Project * prj)
 		)
 		{
 		    addnodeonce (&dirs, path, NULL);
-    /* printf ("Adding %s for later\n", path); */
+#if 0
+    printf ("Adding %s for later\n", path);
+#endif
 		}
 
 		path[offset] = 0;
@@ -1245,7 +1253,7 @@ buildmflist (Project * prj)
 	}
 	else
 	{
-	    DirNode * subdir;
+	    DirNode * subdir, * nextsubdir;
 
 	    chdir (path);
 
@@ -1263,10 +1271,28 @@ buildmflist (Project * prj)
 		mfnsrc[len] = '.';
 	    }
 
-	    ForeachNode (&dnode->subdirs, subdir)
+	    chdir (prj->top);
+
+	    ForeachNodeSafe (&dnode->subdirs, subdir, nextsubdir)
 	    {
 		strcpy (path+offset, subdir->node.name);
-		addnodeonce (&dirs, path, NULL);
+
+		if (stat (path, &st) == -1 && errno == ENOENT)
+		{
+#if 1
+    printf ("Removing %s from cache (%s)\n", path, subdir->node.name);
+    printdirtree (prj);
+#endif
+		    Remove (subdir);
+		    freecachenodes (subdir);
+		}
+		else
+		{
+#if 0
+    printf ("Adding %s for later\n", path);
+#endif
+		    addnodeonce (&dirs, path, NULL);
+		}
 	    }
 
 	    path[offset] = 0;
@@ -1423,8 +1449,8 @@ printf ("Opening %s\n", mfnode->name);
 
 	if (!fh)
 	{
-	    error ("buildtargetlist:fopen():%d: %s",
-		__LINE__, strerror (errno)
+	    error ("buildtargetlist:fopen():%d: Opening %s for reading",
+		__LINE__, mfnode->name
 	    );
 	}
 
