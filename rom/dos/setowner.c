@@ -1,17 +1,17 @@
 /*
-    (C) 1995 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.2  1996/08/13 13:52:52  digulla
-    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced __AROS_LA by __AROS_LHA
-
-    Revision 1.1  1996/08/12 14:29:29  digulla
-    Change owner of a file
+    Revision 1.3  1996/09/11 13:03:08  digulla
+    Wrote functions (M. Fleischer)
 
     Desc:
     Lang: english
 */
+#include <clib/exec_protos.h>
+#include <dos/dosextens.h>
+#include <dos/filesystem.h>
+#include <clib/dos_protos.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -22,8 +22,8 @@
 	__AROS_LH2(BOOL, SetOwner,
 
 /*  SYNOPSIS */
-	__AROS_LHA(STRPTR, name, D1),
-	__AROS_LHA(long  , owner_info, D2),
+	__AROS_LHA(STRPTR, name,       D1),
+	__AROS_LHA(ULONG,  owner_info, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 166, Dos)
@@ -31,8 +31,12 @@
 /*  FUNCTION
 
     INPUTS
+	name       - name of the file
+	owner_info - (UID<<16)+GID
 
     RESULT
+	!=0 if all went well, 0 else. IoErr() gives additional
+	information in that case.
 
     NOTES
 
@@ -53,6 +57,21 @@
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    return FALSE;
+    /* Get pointer to process structure */
+    struct Process *me=(struct Process *)FindTask(NULL);
+
+    /* Get pointer to I/O request. Use stackspace for now. */
+    struct IOFileSys io,*iofs=&io;
+
+    /* Prepare I/O request. */
+    iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
+    iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
+    iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
+    iofs->IOFS.io_Flags=0;
+    iofs->IOFS.io_Command=FSA_SET_OWNER;
+    /* io_Args[0] is the name which is set by DoName(). */
+    iofs->io_Args[1]=owner_info>>16;
+    iofs->io_Args[2]=owner_info&0xffff;
+    return !DoName(iofs,name);
     __AROS_FUNC_EXIT
 } /* SetOwner */
