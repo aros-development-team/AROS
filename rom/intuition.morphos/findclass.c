@@ -6,6 +6,7 @@
     Find a BOOPSI Class in the class list.
 */
 
+#include <string.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
 
