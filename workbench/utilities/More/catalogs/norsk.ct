@@ -1,77 +1,77 @@
-## version $VER: more.catalog 1.0 (18.10.2000)
+## version $VER: more.catalog 1.0 (12.12.2001)
 ## codeset 0
 ## language norsk
 ;
-MSG_CANT_OPEN_LIB 
+MSG_CANT_OPEN_LIB
 Kan ikke åpne %s V%1d!
 ;
-MSG_NO_MEM 
+MSG_NO_MEM
 Ikke nok minne!
 ;
-MSG_CANT_LOCK_SCR 
+MSG_CANT_LOCK_SCR
 Kan ikke låse offentlig skjerm!
 ;
-MSG_CANT_GET_DRI 
-Kan ikke hente DrawInfo! 
+MSG_CANT_GET_DRI
+Kan ikke hente DrawInfo!
 ;
-MSG_CANT_GET_VI 
+MSG_CANT_GET_VI
 Kan ikke hente VisualInfo!
 ;
-MSG_CANT_CREATE_SYSIMAGE 
+MSG_CANT_CREATE_SYSIMAGE
 Kan ikke lage SYSICLASS-bilder!
 ;
 MSG_CANT_CREATE_GADGET
 Kan ikke lage knapper!
 ;
-MSG_CANT_CREATE_MENUS 
+MSG_CANT_CREATE_MENUS
 Kan ikke lage menyer!
 ;
-MSG_CANT_CREATE_WIN 
+MSG_CANT_CREATE_WIN
 Kan ikke åpne vindu!
 ;
-MSG_MEN_PROJECT 
+MSG_MEN_PROJECT
 Fil
 ;
-MSG_MEN_PROJECT_OPEN 
+MSG_MEN_PROJECT_OPEN
 O\0Åpne...
 ;
-MSG_MEN_PROJECT_SAVEAS 
+MSG_MEN_PROJECT_SAVEAS
 A\0Lagre som...
 ;
-MSG_MEN_PROJECT_PRINT 
+MSG_MEN_PROJECT_PRINT
 P\0Skriv ut
 ;
-MSG_MEN_PROJECT_ABOUT 
+MSG_MEN_PROJECT_ABOUT
 ?\0Om...
 ;
-MSG_MEN_PROJECT_QUIT 
+MSG_MEN_PROJECT_QUIT
 Q\0Avslutt
 ;
-MSG_MEN_NAVIGATION 
+MSG_MEN_NAVIGATION
 Navigering
 ;
-MSG_MEN_NAVIGATION_FIND 
+MSG_MEN_NAVIGATION_FIND
 F\0Finn...
 ;
 MSG_MEN_NAVIGATION_FIND_NEXT
 .\0Finn neste
 ;
-MSG_MEN_NAVIGATION_FIND_PREV 
+MSG_MEN_NAVIGATION_FIND_PREV
 ,\0Finn forrige
 ;
-MSG_MEN_NAVIGATION_JUMP 
+MSG_MEN_NAVIGATION_JUMP
 J\0Hopp...
 ;
-MSG_ASL_OPEN_TITLE 
+MSG_ASL_OPEN_TITLE
 Velg fil å åpne
 ;
-MSG_ASL_SAVE_TITLE 
-Velg fil å lage til
+MSG_ASL_SAVE_TITLE
+Velg fil å lagre til
 ;
-MSG_ABOUT 
+MSG_ABOUT
 More V%ld.%ld\n (%s)\nCopyright © %s av %s
 ;
-MSG_ABOUT_TITLE 
+MSG_ABOUT_TITLE
 More
 ;
 MSG_CONTINUE
@@ -80,19 +80,19 @@ Fortsett
 MSG_JUMP_TITLE
 Gå til linje...
 ;
-MSG_FIND_TITLE 
+MSG_FIND_TITLE
 Søk
 ;
-MSG_OK 
+MSG_OK
 OK
 ;
-MSG_CANCEL 
+MSG_CANCEL
 Avbryt
 ;
-MSG_WIN_TITLE 
+MSG_WIN_TITLE
 More: %s (%ld Linjer - %ld Bytes)
 ;
-MSG_SHORTCUT_TOP 
+MSG_SHORTCUT_TOP
 T
 ;
 MSG_SHORTCUT_BOTTOM
