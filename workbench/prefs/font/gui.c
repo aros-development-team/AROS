@@ -317,7 +317,7 @@ struct AppGUIData * openAppWindow(struct Screen *publicScreen, struct AppGUIData
 						WA_Gadgets,	appGUIData->agd_GadgetList,
 						WA_Title,	getCatalog(catalogPtr, MSG_WINTITLE),
 						WA_PubScreen,	publicScreen,
-						WA_IDCMP,	IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW |
+						WA_IDCMP,	IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW | IDCMP_VANILLAKEY |
 								IDCMP_MENUPICK | BUTTONIDCMP | MXIDCMP,
 						TAG_END);
 
@@ -377,6 +377,15 @@ void inputLoop(struct AppGUIData *appGUIData)
     {
      case IDCMP_CLOSEWINDOW :
       running = FALSE;
+     break;
+
+     case IDCMP_VANILLAKEY :
+      switch(intuiMessage->Code)
+      {
+       case 27 : // User has pressed the escape key
+        running = FALSE;
+       break;
+      }
      break;
 
      case IDCMP_MENUPICK :

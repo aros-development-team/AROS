@@ -31,7 +31,7 @@
 #define CATCOMP_ARRAY
 #include "fontprefs_strings.h"
 
-UBYTE version[] = "$VER: Font 0.10 (27.09.2001)";
+UBYTE version[] = "$VER: Font 0.11 (30.09.2001)";
 
 /* Our local library bases. They don't need to be set to NULL. David Gerber has pointed out that
    ANSI-C requires automated NULL initialization when nothing else is specified. However, if the
