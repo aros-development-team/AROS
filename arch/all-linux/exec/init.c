@@ -14,7 +14,8 @@
 #include <proto/exec.h>
 
 #if defined(__linux__) && defined(__mc68000__)
-#include <sys/mmap.h>
+#include <sys/mman.h>
+#include <unistd.h>
 #endif
 
 #include <memory.h>	/* From $(TOP)/rom/exec */
@@ -58,9 +59,9 @@ static const struct Resident *romtagList[] =
 };
 
 /* So we can examine the memory */
-struct MemHeader mh;
+struct MemHeader *mh;
 UBYTE *memory, *space;
-int memSize = 1;
+int memSize = 2;
 
 extern void InitCore(void);
 extern struct ExecBase *PrepareExecBase(struct MemHeader *mh);
@@ -87,6 +88,7 @@ int main(int argc, char **argv)
 
     struct ExecBase *SysBase;
     struct termios t;
+    int psize = 0;
 
     /*
     First up, set up the memory.
@@ -96,41 +98,51 @@ int main(int argc, char **argv)
     to make that invalid to trap NULL dereference errors.
 
     */
-#ifdef __linux__
-    space = malloc(4096);
-    if(space)
+#if defined(__linux__) && defined(__mc68000__)
+    psize = getpagesize();
+    space = mmap((APTR)0, (memSize << 20), PROT_READ|PROT_WRITE,
+		 MAP_ANON|MAP_PRIVATE|MAP_FIXED, -1, 0);
+    if (space != (UBYTE *)-1)
     {
-	int size = 4096/sizeof(ULONG);
+	int size = psize/sizeof(ULONG);
+	memory = (UBYTE *)((ULONG)space + psize);
 	while(--size)
-	    *space++ = 0xDEADBEEF;
+	    *((ULONG *)space)++ = 0xDEADBEEF;
     }
-#endif
-
-    /* We allocate memSize megabytes, plus a little extra */
-    memory = malloc((memSize << 20) + MEMCHUNK_TOTAL);
+    else
+    {
+	perror("mmap");
+	exit(20);
+    }
+#else
+    /* We allocate memSize megabytes */
+    memory = malloc((memSize << 20));
     if( !memory )
     {
 	 /*fprintf(stderr, "Cannot allocate any memory!\n");*/
 	 exit(20);
     }
+#endif
 
     /* Prepare the first mem header */
-    mh.mh_Node.ln_Name = "chip memory";
-    mh.mh_Node.ln_Pri = -5;
-    mh.mh_Attributes = MEMF_CHIP | MEMF_PUBLIC;
-    mh.mh_First = (struct MemChunk *)
-	    (((IPTR)memory + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1));
-    mh.mh_First->mc_Next = NULL;
-    mh.mh_First->mc_Bytes = memSize << 20;
-    mh.mh_Lower = memory;
-    mh.mh_Upper = memory + MEMCHUNK_TOTAL + mh.mh_First->mc_Bytes;
-    mh.mh_Free = mh.mh_First->mc_Bytes;
+    mh = (struct MemHeader *)memory;
+    mh->mh_Node.ln_Type = NT_MEMORY;
+    mh->mh_Node.ln_Name = "chip memory";
+    mh->mh_Node.ln_Pri = -5;
+    mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL |
+	                MEMF_24BITDMA | MEMF_KICK;
+    mh->mh_First = (struct MemChunk *)((UBYTE *)mh+MEMHEADER_TOTAL);
+    mh->mh_First->mc_Next = NULL;
+    mh->mh_First->mc_Bytes = (memSize << 20) - MEMHEADER_TOTAL - psize;
+    mh->mh_Lower = mh->mh_First;
+    mh->mh_Upper = (APTR)(memory + (memSize << 20) - psize);
+    mh->mh_Free = mh->mh_First->mc_Bytes;
 
     /*
 	This will prepare enough of ExecBase to allow us to
 	call functions, it will also set up the memory list.
     */
-    SysBase = PrepareExecBase(&mh);
+    SysBase = PrepareExecBase(mh);
 
     /* Ok, lets start up the kernel, we are probably using the UNIX
        kernel, or a variant of that (see config/unix).
@@ -141,15 +153,8 @@ int main(int argc, char **argv)
        put SysBase at location 4. On other systems, DON'T DO THIS.
     */
 #if defined(__linux__) && defined(__mc68000__)
-    if( mmap((APTR)0, getpagesize(), PROT_READ|PROT_WRITE,
-	MAP_ANON|MAP_PRIVATE|MAP_FIXED, -1, 0) != (APTR)0 )
-    {
-	perror("mmap: Can't map page 0\n");
-	exit(10);
-    }
-
     *(APTR *)4 = SysBase;
-    if(mprotect((APTR)0,getpagesize(), PROT_READ))
+    if (mprotect((APTR)0, psize, PROT_READ))
     {
 	perror("mprotect");
 	exit(10);
