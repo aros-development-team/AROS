@@ -51,6 +51,10 @@
 #undef Indent
 #undef ExitFunc
 
+/* StegerG */
+#undef SDEBUG
+#define SDEBUG 0
+
 #if SDEBUG
 
 #   ifndef SDEBUG_INDENT
