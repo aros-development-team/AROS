@@ -137,7 +137,6 @@ MUIM_Application_AddInputHandler          done ?
 MUIM_Application_CheckRefresh             todo (implementable ?)
 MUIM_Application_GetMenuCheck             OBSOLETE
 MUIM_Application_GetMenuState             OBSOLETE
-MUIM_Application_Iconify                  dummy (private)
 MUIM_Application_Input                    OBSOLETE
 MUIM_Application_InputBuffered            todo
 MUIM_Application_Load
@@ -289,7 +288,7 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
     /* Parse prefs */
     data->app_SingleTask = (BOOL)GetTagData(MUIA_Application_SingleTask, FALSE, 
 					    msg->ops_AttrList);
-    data->app_Base = (STRPTR)GetTagData(MUIA_Application_Base, NULL, msg->ops_AttrList);
+    data->app_Base = (STRPTR)GetTagData(MUIA_Application_Base, 0, msg->ops_AttrList);
     if (data->app_Base && strpbrk(data->app_Base, " :/()#?*.,"))
 	data->app_Base = NULL;
     if (data->app_Base && !data->app_SingleTask)
@@ -517,9 +516,6 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	}
     }
 
-    DoMethod(obj, MUIM_Notify, MUIA_Application_Iconified, TRUE,
-	     MUIV_Notify_Self, 1, MUIM_Application_Iconify);
-
     if (data->app_Menustrip) DoMethod(data->app_Menustrip, MUIM_ConnectParent, (IPTR)obj);
 
     ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
@@ -670,7 +666,26 @@ static ULONG Application_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 
 	    case    MUIA_Application_Iconified:
-		    data->app_Iconified = (ULONG)tag->ti_Data;
+	            if (data->app_Iconified != tag->ti_Data)
+		    {
+                        struct List *wlist;
+                        APTR         wstate;
+                        Object      *curwin;
+    
+			data->app_Iconified = tag->ti_Data;
+			
+                        get(obj, MUIA_Application_WindowList, &wlist);
+                     
+			if (wlist)
+			{
+                            wstate = wlist->lh_Head;
+                            while ((curwin = NextObject(&wstate)))
+                            {
+                                set(curwin, MUIA_ShowMe, !data->app_Iconified);
+                            }
+			}
+		    }
+		    #warning In case the WB is up, an appicon needs to be placed on the desktop
 		    break;
 
 	    case    MUIA_Application_Sleep:
@@ -875,16 +890,6 @@ static ULONG Application_RemInputHandler(struct IClass *cl, Object *obj, struct 
     return TRUE;
 }
 
-
-/*
- *
- */
-static ULONG Application_Iconify(struct IClass *cl, Object *obj, Msg *msg)
-{
-    /*struct MUI_ApplicationData *data = INST_DATA(cl, obj);*/
-
-    return TRUE;
-}
 
 void _zune_window_message(struct IntuiMessage *imsg); /* from window.c */
 
@@ -1268,14 +1273,10 @@ static ULONG Application_OpenConfigWindow(struct IClass *cl, Object *obj,
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct TagItem tags[] =
     {
-#ifdef __AROS__
-	{ SYS_Background, TRUE },
-	{ SYS_Error,      NULL },
-#endif
-	{ SYS_Asynch,     TRUE },
-	{ SYS_Input,      NULL },
-	{ SYS_Output,     NULL },
-	{ TAG_DONE,       0    }
+	{ SYS_Asynch, TRUE },
+	{ SYS_Input,  0    },
+	{ SYS_Output, 0    },
+	{ TAG_DONE,   0    }
     };
     char cmd[255];
 
@@ -1306,7 +1307,7 @@ IPTR Application_Execute(Class *CLASS, Object *self, Msg message)
         }
     }
     
-    return NULL;
+    return 0;
 }
 
 
@@ -1333,8 +1334,6 @@ BOOPSI_DISPATCHER(IPTR, Application_Dispatcher, cl, obj, msg)
 	    return Application_AddInputHandler(cl, obj, (APTR)msg);
 	case MUIM_Application_RemInputHandler:
 	    return Application_RemInputHandler(cl, obj, (APTR)msg);
-	case MUIM_Application_Iconify :
-	    return Application_Iconify(cl, obj, (APTR)msg);
 	case MUIM_Application_Input:
 	    return Application_Input(cl, obj, (APTR)msg);
 	case MUIM_Application_InputBuffered :
