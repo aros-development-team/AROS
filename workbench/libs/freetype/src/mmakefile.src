@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-LIB := freetype
+LIB := freetype2
 
 FILES := \
       ftbase \
@@ -150,6 +150,31 @@ $(OBJDIR)/%.d : winfonts/%.c
 	%mkdepend_q flags="$(CFLAGS) -Iwinfonts"
 
 %make_linklib mmake=contrib-freetype-linklib
+
+$(OBJDIR)/freetype2_functable.o: $(OBJDIR)/freetype2_functable.c
+	%compile_q opt="$(CFLAGS) -I."
+
+$(OBJDIR)/convlist : convlist/convlist.c
+	gcc -o $@ $<
+
+$(OBJDIR)/freetype2_functable.c : freetype2_funclist $(OBJDIR)/convlist
+	$(OBJDIR)/convlist freetype2 $(OBJDIR)
+
+$(OBJDIR)/freetype2_init.o : freetype2_init.c
+	%compile_q opt="$(CFLAGS) -I."
+
+$(OBJDIR)/freetype2_endtag.o : freetype2_endtag.c
+	%compile_q opt="$(CFLAGS) -I."
+
+#MM
+contrib-freetype-module : $(AROS_LIBS)/freetype2.library
+
+LIBS = -larosc_shared
+
+$(AROS_LIBS)/freetype2.library : $(LIBDIR)/libarosc_shared.a
+
+$(AROS_LIBS)/freetype2.library : $(OBJDIR)/freetype2_init.o $(OBJDIR)/freetype2_functable.o $(OBJS) $(OBJDIR)/freetype2_endtag.o
+	%link_module_q err="freetype.err" objs=$^
 
 %common
 %include_deps
