@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Program that makes country files
@@ -48,37 +48,40 @@ extern struct CountryPrefs
     portugalPrefs,
     schweizPrefs,
     suissePrefs,
+    suomiPrefs,
     sverigePrefs,
     svizzeraPrefs,
     united_kingdomPrefs,
     united_statesPrefs;
 
 /* Please keep this in alphabetical order, ie the order of Latin 1 */
+
 struct CountryEntry CountryArray[] =
 {
-    { "australia",          &australiaPrefs },
-    { "belgie",     	    &belgiePrefs },
-    { "belgique",   	    &belgiquePrefs },
-    { "canada",     	    &canadaPrefs },
-    { "canada_français",    &canada_francaisPrefs },
-    { "danmark",    	    &danmarkPrefs },
-    { "deutschland",        &deutschPrefs },
-    { "españa",     	    &espanaPrefs },
-    { "france",     	    &francePrefs },
-    { "great_britain",      &greatBritainPrefs },
-    { "italia",     	    &italiaPrefs },
-    { "nederland",  	    &nederlandPrefs },
-    { "norge",	    	    &norgePrefs },
-    { "österreich", 	    &osterreichPrefs },
-    { "polska",             &polskaPrefs },
-    { "portugal",   	    &portugalPrefs },
-    { "schweiz",    	    &schweizPrefs },
-    { "suisse",     	    &suissePrefs },
-    { "sverige",    	    &sverigePrefs },
-    { "svizzera",   	    &svizzeraPrefs },
-    { "united_kingdom",     &united_kingdomPrefs },
-    { "united_states",	    &united_statesPrefs },
-    { NULL, NULL }
+    { "australia"   	, &australiaPrefs 	},
+    { "belgie"	    	, &belgiePrefs    	},
+    { "belgique"    	, &belgiquePrefs  	},
+    { "canada"	    	, &canadaPrefs    	},
+    { "canada_français" , &canada_francaisPrefs },
+    { "danmark"     	, &danmarkPrefs   	},
+    { "deutschland" 	, &deutschPrefs   	},
+    { "españa"	    	, &espanaPrefs    	},
+    { "france"	    	, &francePrefs    	},
+    { "great_britain"	, &greatBritainPrefs    },
+    { "italia"	    	, &italiaPrefs    	},
+    { "nederland"   	, &nederlandPrefs 	},
+    { "norge"	    	, &norgePrefs     	},
+    { "österreich"    	, &osterreichPrefs 	},
+    { "polska"	    	, &polskaPrefs    	},
+    { "portugal"    	, &portugalPrefs  	},
+    { "schweiz"     	, &schweizPrefs   	},
+    { "suisse"	    	, &suissePrefs    	},
+    { "suomi"	    	, &suomiPrefs     	},
+    { "sverige"     	, &sverigePrefs   	},
+    { "svizzera"    	, &svizzeraPrefs    	},
+    { "united_kingdom"	, &united_kingdomPrefs	},
+    { "united_states"	, &united_statesPrefs	},
+    { NULL  	    	, NULL    	    	}
 };
 
 /* This is equivalent to the start of the catalog file.
@@ -159,15 +162,20 @@ int main(int argc, char **argv)
 	    if(res == 0)
 	    {
 		UBYTE buffer[1024];
+
 		strcpy(buffer, argv[1]);
 		strcat(buffer, argv[i]);
 		strcat(buffer, ".country");
 		doCountry(CountryArray[j].ca_Data, argv[0], buffer);
 		break;
 	    }
+#if 0
+/* stegerg: does not work because of 'ö' in österreich */
 	    /* If countryArray < argv[] don't bother searching */
 	    else if(res > 0)
 		break;
+#endif
+
 	}
     }
     return 0;
