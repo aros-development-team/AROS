@@ -27,5 +27,5 @@ _sys_dispatch:
 	   clear the LO IRQ status register!! POSE has a bug here for
 	   clearing all of it at once (HI+LO)
 	*/
-	clr.w  0xfffff30e     // clear the IRQ status register LO
+//	clr.w  0xfffff30e     // clear the IRQ status register LO
 	rte
