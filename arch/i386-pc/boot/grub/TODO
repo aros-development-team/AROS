@@ -13,7 +13,7 @@ Priorities:
   higher priority.
 
 
-Things that must or should be done before 1.0:
+Things that should be done before 1.0:
 
 * Finish the Multiboot Speicification 0.7. !!!
 
@@ -25,10 +25,7 @@ Things that must or should be done before 1.0:
 
 * Add missing features of graphics support. !!
 
-* Fix a bug about drive completion. It happens only if a network drive
-  is available. !!
-
-Things that must _not_ be done before 1.0:
+Things that should _not_ be done before 1.0:
 
 * Add configuration inclusion support by adding a command "include". !
 

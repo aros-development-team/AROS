@@ -792,6 +792,7 @@ load_initrd (char *initrd)
 {
   int len;
   unsigned long moveto;
+  unsigned long max_addr;
   struct linux_kernel_header *lh
     = (struct linux_kernel_header *) (cur_addr - LINUX_SETUP_MOVE_SIZE);
   
@@ -815,8 +816,10 @@ load_initrd (char *initrd)
     moveto = (mbi.mem_upper + 0x400) << 10;
   
   moveto = (moveto - len) & 0xfffff000;
-  if (moveto + len >= LINUX_INITRD_MAX_ADDRESS)
-    moveto = (LINUX_INITRD_MAX_ADDRESS - len) & 0xfffff000;
+  max_addr = (lh->header == LINUX_MAGIC_SIGNATURE && lh->version >= 0x0203
+	      ? lh->initrd_addr_max : LINUX_INITRD_MAX_ADDRESS);
+  if (moveto + len >= max_addr)
+    moveto = (max_addr - len) & 0xfffff000;
   
   /* XXX: Linux 2.3.xx has a bug in the memory range check, so avoid
      the last page.

@@ -33,7 +33,7 @@
 @setchapternewpage off
 
 @ifinfo
-Copyright @copyright{} 1999,2000,2001,2002 Free Software Foundation, Inc.
+Copyright @copyright{} 1999,2000,2001,2002,2004 Free Software Foundation, Inc.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -65,7 +65,7 @@ into another language, under the above conditions for modified versions.
 @c The following two commands start the copyright page.
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 1999,2000,2001,2002 Free Software Foundation, Inc.
+Copyright @copyright{} 1999,2000,2001,2002,2004 Free Software Foundation, Inc.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -154,22 +154,29 @@ although porting to other platforms may be addressed in the future.
 One of the important features in GRUB is flexibility; GRUB understands
 filesystems and kernel executable formats, so you can load an arbitrary
 operating system the way you like, without recording the physical
-position of your kernel on the disk.
+position of your kernel on the disk. Thus you can load the kernel
+just by specifying its file name and the drive and partition where the
+kernel resides.
 
-Thus you can load the kernel just by specifying its file name and the
-drive (and the partition) where the kernel resides. To let GRUB know the
-drive and the file name, you can either type in them manually via the
-command-line interface (@pxref{Command-line interface}), or use the nice
-menu interface (@pxref{Menu interface}) through which you can easily
-select which OS it boots. To allow you to customize the menu, GRUB will
-load a preexisting configuration file (@pxref{Configuration}). Note that
-you can not only enter the command-line interface whenever you like, but
-also you can edit specific menu entries prior to using them.
+When booting with GRUB, you can use either a command-line interface
+(@pxref{Command-line interface}), or a menu interface (@pxref{Menu
+interface}). Using the command-line interface, you type the drive
+specification and file name of the kernel manually. In the menu
+interface, you just select an OS using the arrow keys. The menu is
+based on a configuration file which you prepare beforehand
+(@pxref{Configuration}). While in the menu, you can switch to the
+command-line mode, and vice-versa. You can even edit menu entries
+before using them.
 
-In the following chapters, you will learn how to specify a drive or a
+In the following chapters, you will learn how to specify a drive, a
 partition, and a file name (@pxref{Naming convention}) to GRUB, how to
 install GRUB on your drive (@pxref{Installation}), and how to boot your
 OSes (@pxref{Booting}), step by step.
+
+Besides the GRUB boot loader itself, there is a @dfn{grub shell}
+@command{grub} (@pxref{Invoking the grub shell}) which can be run when
+you are in your operating system. It emulates the boot loader and can
+be used for installing the boot loader.
 
 
 @node History
@@ -250,7 +257,7 @@ command-line. An example configuration file is provided in
 @ref{Configuration}.
 
 @item Provide a menu interface
-A menu interface listing the preset boot commands, with a programmable
+A menu interface listing preset boot commands, with a programmable
 timeout, is available. There is no fixed limit on the number of boot
 entries, and the current implementation has space for several hundred.
 
@@ -277,8 +284,8 @@ fs}. @xref{Filesystem}, for more information.
 Can decompress files which were compressed by @command{gzip}. This
 function is both automatic and transparent to the user (i.e. all
 functions operate upon the uncompressed contents of the specified
-files). This greatly reduces a file size and the loading time, a
-particularly major benefit for floppies.@footnote{There are a few
+files). This greatly reduces a file size and loading time, a
+particularly great benefit for floppies.@footnote{There are a few
 pathological cases where loading a very badly organized ELF kernel might
 take longer, but in practice this never happen.}
 
@@ -287,7 +294,7 @@ compressed state, so a different module-loading command can be specified
 to avoid uncompressing the modules.
 
 @item Access data on any installed device
-Support reading data from any or all floppy or hard disk(s) recognized
+Support reading data from any or all floppies or hard disk(s) recognized
 by the BIOS, independent of the setting of the root device.
 
 @item Be independent of drive geometry translations
@@ -371,7 +378,7 @@ Look at the following examples and explanations:
 (fd0)
 @end example
 
-First of all, GRUB requires that the device name is enclosed with
+First of all, GRUB requires that the device name be enclosed with
 @samp{(} and @samp{)}. The @samp{fd} part means that it is a floppy
 disk. The number @samp{0} is the drive number, which is counted from
 @emph{zero}. This expression means that GRUB will use the whole floppy
@@ -411,13 +418,19 @@ partition.
 
 Of course, to actually access the disks or partitions with GRUB, you
 need to use the device specification in a command, like @samp{root
-(fd0)} or @samp{unhide (hd0,2)}. To help you find out which number is a
-partition you want, the GRUB command-line (@pxref{Command-line
-interface}) options have argument completion. That means that, for
-example, you only need to type @samp{root (}, followed by a @key{TAB},
-and GRUB will display the list of drives, partitions, or file names, so
-it should be quite easy to determine the name of your target partition,
-even with minimal knowledge of the syntax.
+(fd0)} or @samp{unhide (hd0,2)}. To help you find out which number
+specifies a partition you want, the GRUB command-line
+(@pxref{Command-line interface}) options have argument
+completion. This means that, for example, you only need to type
+
+@example
+root (
+@end example
+
+followed by a @key{TAB}, and GRUB will display the list of drives,
+partitions, or file names. So it should be quite easy to determine the
+name of your target partition, even with minimal knowledge of the
+syntax.
 
 Note that GRUB does @emph{not} distinguish IDE from SCSI - it simply
 counts the drive numbers from zero, regardless of their type. Normally,
@@ -425,7 +438,8 @@ any IDE drive number is less than any SCSI drive number, although that
 is not true if you change the boot sequence by swapping IDE and SCSI
 drives in your BIOS.
 
-Now the question is, how to specify a file? Again, see this example:
+Now the question is, how to specify a file? Again, consider an
+example:
 
 @example
 (hd0,0)/vmlinuz
@@ -435,33 +449,37 @@ This specifies the file named @samp{vmlinuz}, found on the first
 partition of the first hard disk drive. Note that the argument
 completion works with file names, too.
 
-That was easy, admit it. Do read the next chapter, to find out how to
+That was easy, admit it. Now read the next chapter, to find out how to
 actually install GRUB on your drive.
 
 
 @node Installation
 @chapter Installation
 
-First, you need to have GRUB itself properly installed on your system,
-(@pxref{Obtaining and Building GRUB}) either from the source tarball, or
-as a package for your OS.
+In order to install GRUB as your boot loader, you need to first
+install the GRUB system and utilities under your UNIX-like operating
+system (@pxref{Obtaining and Building GRUB}). You can do this either
+from the source tarball, or as a package for your OS.
 
-To use GRUB, you need to install it on your drive. There are two ways of
-doing that - either using the utility @command{grub-install}
-(@pxref{Invoking grub-install}) on a UNIX-like OS, or by using the
-native Stage 2. These are quite similar, however, the utility might
-probe a wrong BIOS drive, so better be careful.
+After you have done that, you need to install the boot loader on a
+drive (floppy or hard disk). There are two ways of doing that - either
+using the utility @command{grub-install} (@pxref{Invoking
+grub-install}) on a UNIX-like OS, or by running GRUB itself from a
+floppy. These are quite similar, however the utility might probe a
+wrong BIOS drive, so you should be careful.
 
 Also, if you install GRUB on a UNIX-like OS, please make sure that you
 have an emergency boot disk ready, so that you can rescue your computer
 if, by any chance, your hard drive becomes unusable (unbootable).
 
-GRUB comes with boot images, which are normally installed in the
-directory @file{/usr/share/grub/i386-pc}. You need to copy the files
-@file{stage1}, @file{stage2}, and @file{*stage1_5} to the directory
-@file{/boot/grub}. Here the directory where GRUB images are installed
-and the directory where GRUB will use to find them are called @dfn{image
-directory} and @dfn{boot directory}, respectively.
+GRUB comes with boot images, which are normally put in the directory
+@file{/usr/share/grub/i386-pc}. If you do not use grub-install, then
+you need to copy the files @file{stage1}, @file{stage2}, and
+@file{*stage1_5} to the directory @file{/boot/grub}. Hereafter, the
+directory where GRUB images are initially placed (normally
+@file{/usr/share/grub/i386-pc}) will be called the @dfn{image
+directory}, and the directory where the boot loader needs to find them
+(usually @file{/boot/grub}) will be called the @dfn{boot directory}.
 
 @menu
 * Creating a GRUB boot floppy::
@@ -506,29 +524,30 @@ The device file name may be different. Consult the manual for your OS.
 normal boot-sector used by an OS.
 
 GRUB can currently boot GNU Mach, Linux, FreeBSD, NetBSD, and OpenBSD
-directly, so using it on a boot sector should be okay. But generally, it
-would be a good idea to back up the first sector of the partition on
-which you are installing GRUB's stage1. This isn't as important if you
-are installing GRUB on the first sector of a hard disk, since it's easy
-to reinitialize it (e.g. by running @samp{FDISK /MBR} from DOS).
+directly, so using it on a boot sector (the first sector of a
+partition) should be okay. But generally, it would be a good idea to
+back up the first sector of the partition on which you are installing
+GRUB's stage1. This isn't as important if you are installing GRUB on
+the first sector of a hard disk, since it's easy to reinitialize it
+(e.g. by running @samp{FDISK /MBR} from DOS).
 
 If you decide to install GRUB in the native environment, which is
-definitely desirable, you'll need to create the GRUB boot disk, and
+definitely desirable, you'll need to create a GRUB boot disk, and
 reboot your computer with it. Otherwise, see @ref{Installing GRUB using
-grub-install}, for more details.
+grub-install}.
 
 Once started, GRUB will show the command-line interface
 (@pxref{Command-line interface}). First, set the GRUB's @dfn{root
 device}@footnote{Note that GRUB's root device doesn't necessarily mean
 your OS's root partition; if you need to specify a root partition for
 your OS, add the argument into the command @command{kernel}.} to the
-boot directory, like this:
+partition containing the boot directory, like this:
 
 @example
 grub> @kbd{root (hd0,0)}
 @end example
 
-If you are not sure which partition actually holds these files, use the
+If you are not sure which partition actually holds this directory, use the
 command @command{find} (@pxref{find}), like this:
 
 @example
@@ -545,9 +564,10 @@ Once you've set the root device correctly, run the command
 grub> @kbd{setup (hd0)}
 @end example
 
-This command will install GRUB on the MBR in the first drive. If you
-want to install GRUB into the @dfn{boot sector} of a partition instead
-of the MBR, specify a partition into which you want to install GRUB:
+This command will install the GRUB boot loader on the Master Boot
+Record (MBR) of the first drive. If you want to put GRUB into the boot
+sector of a partition instead of putting it in the MBR, specify the
+partition into which you want to install GRUB:
 
 @example
 grub> @kbd{setup (hd0,0)}
@@ -557,29 +577,32 @@ If you install GRUB into a partition or a drive other than the first
 one, you must chain-load GRUB from another boot loader. Refer to the
 manual for the boot loader to know how to chain-load GRUB.
 
-Now you can boot GRUB without a GRUB floppy. See the chapter
-@ref{Booting} to find out how to boot your operating systems from GRUB.
+After using the setup command, you will boot into GRUB without the
+GRUB floppy. See the chapter @ref{Booting} to find out how to boot
+your operating systems from GRUB.
 
 
 @node Installing GRUB using grub-install
 @section Installing GRUB using grub-install
 
-@strong{Caution:} This procedure is definitely deprecated, because there
-are several posibilities that your computer can be unbootable. For
-example, most operating systems don't tell GRUB how to map BIOS drives
-to OS devices correctly, GRUB merely @dfn{guesses} the mapping. This
-will succeed in most cases, but not always. So GRUB provides you with a
-user-defined map file called @dfn{device map}, which you must fix, if it
-is wrong. @xref{Device map}, for more details.
+@strong{Caution:} This procedure is definitely less safe, because
+there are several ways in which your computer can become
+unbootable. For example, most operating systems don't tell GRUB how to
+map BIOS drives to OS devices correctly---GRUB merely @dfn{guesses}
+the mapping. This will succeed in most cases, but not
+always. Therefore, GRUB provides you with a map file called the
+@dfn{device map}, which you must fix if it is wrong. @xref{Device
+map}, for more details.
 
-Unfortunately, if you do want to install GRUB under a UNIX-like OS (such
+If you still do want to install GRUB under a UNIX-like OS (such
 as @sc{gnu}), invoke the program @command{grub-install} (@pxref{Invoking
 grub-install}) as the superuser (@dfn{root}).
 
-The usage is basically very easy. You only need to specify one argument
-to the program, namely, where to install GRUB. The argument can be
-either of a device file or a GRUB's drive/partition. So, this will
-install GRUB into the MBR of the first IDE disk under Linux:
+The usage is basically very simple. You only need to specify one
+argument to the program, namely, where to install the boot loader. The
+argument can be either a device file (like @samp{/dev/hda}) or a
+partition specified in GRUB's notation. For example, under Linux the
+following will install GRUB into the MBR of the first IDE disk:
 
 @example
 # @kbd{grub-install /dev/hda}
@@ -597,7 +620,13 @@ If it is the first BIOS drive, this is the same as well:
 # @kbd{grub-install '(hd0)'}
 @end example
 
-But all the above examples assume that you use GRUB images under
+Or you can omit the parentheses:
+
+@example
+# @kbd{grub-install hd0}
+@end example
+
+But all the above examples assume that GRUB should use images under
 the root directory. If you want GRUB to use images under a directory
 other than the root directory, you need to specify the option
 @option{--root-directory}. The typical usage is that you create a GRUB
@@ -607,12 +636,12 @@ boot floppy with a filesystem. Here is an example:
 @group
 # @kbd{mke2fs /dev/fd0}
 # @kbd{mount -t ext2 /dev/fd0 /mnt}
-# @kbd{grub-install --root-directory=/mnt '(fd0)'}
+# @kbd{grub-install --root-directory=/mnt fd0}
 # @kbd{umount /mnt}
 @end group
 @end example
 
-Another example is in case that you have a separate boot partition
+Another example is when you have a separate boot partition
 which is mounted at @file{/boot}. Since GRUB is a boot loader, it
 doesn't know anything about mountpoints at all. Thus, you need to run
 @command{grub-install} like this:
@@ -625,8 +654,8 @@ By the way, as noted above, it is quite difficult to guess BIOS drives
 correctly under a UNIX-like OS. Thus, @command{grub-install} will prompt
 you to check if it could really guess the correct mappings, after the
 installation. The format is defined in @ref{Device map}. Please be
-careful enough. If the output is wrong, it is unlikely that your
-computer can boot with no problem.
+quite careful. If the output is wrong, it is unlikely that your
+computer will be able to boot with no problem.
 
 Note that @command{grub-install} is actually just a shell script and the
 real task is done by the grub shell @command{grub} (@pxref{Invoking the
@@ -639,12 +668,12 @@ boot loader on a running OS may be extremely dangerous.
 @node Booting
 @chapter Booting
 
-For Multiboot-compliant kernels, GRUB can load them in a consistent way,
-but, for some free operating systems, you need to use some OS-specific
+GRUB can load Multiboot-compliant kernels in a consistent way,
+but for some free operating systems you need to use some OS-specific
 magic.
 
 @menu
-* General boot methods::        How to boot OSes with GRUB genenerally
+* General boot methods::        How to boot OSes with GRUB generally
 * OS-specific notes::           Notes on some operating systems
 @end menu
 
@@ -655,11 +684,11 @@ magic.
 GRUB has two distinct boot methods. One of the two is to load an
 operating system directly, and the other is to chain-load another boot
 loader which then will load an operating system actually. Generally
-speaking, the former is desirable, because you don't need to install or
-maintain other boot loaders and GRUB is flexible enough to load an
-operating system from an arbitrary disk/partition. However, the latter
-is sometimes required, since GRUB doesn't support all the existing
-operating systems natively.
+speaking, the former is more desirable, because you don't need to
+install or maintain other boot loaders and GRUB is flexible enough to
+load an operating system from an arbitrary disk/partition. However,
+the latter is sometimes required, since GRUB doesn't support all the
+existing operating systems natively.
 
 @menu
 * Loading an operating system directly::
@@ -672,7 +701,7 @@ operating systems natively.
 
 Multiboot (@pxref{Top, Multiboot Specification, Motivation, multiboot,
 The Multiboot Specification}) is the native format supported by GRUB.
-For the sake of convenience, there are also support for Linux, FreeBSD,
+For the sake of convenience, there is also support for Linux, FreeBSD,
 NetBSD and OpenBSD. If you want to boot other operating systems, you
 will have to chain-load them (@pxref{Chain-loading}).
 
@@ -681,11 +710,11 @@ steps:
 
 @enumerate
 @item
-Set GRUB's root device to the drive where the OS images are stored by
+Set GRUB's root device to the drive where the OS images are stored with
 the command @command{root} (@pxref{root}).
 
 @item
-Load the kernel image by the command @command{kernel} (@pxref{kernel}).
+Load the kernel image with the command @command{kernel} (@pxref{kernel}).
 
 @item
 If you need modules, load them with the command @command{module}
@@ -696,11 +725,11 @@ Run the command @command{boot} (@pxref{boot}).
 @end enumerate
 
 Linux, FreeBSD, NetBSD and OpenBSD can be booted in a similar
-manner. You can load a kernel image by the command @command{kernel} and
+manner. You load a kernel image with the command @command{kernel} and
 then run the command @command{boot}. If the kernel requires some
 parameters, just append the parameters to @command{kernel}, after the
 file name of the kernel. Also, please refer to @ref{OS-specific notes},
-for the information on your OS-specific issues.
+for information on your OS-specific issues.
 
 
 @node Chain-loading
@@ -721,7 +750,7 @@ grub> @kbd{rootnoverify (hd0,0)}
 @end example
 
 @item
-Set the @dfn{active} flag in the partition by the command
+Set the @dfn{active} flag in the partition using the command
 @command{makeactive}@footnote{This is not necessary for most of the
 modern operating systems.} (@pxref{makeactive}):
 
@@ -730,7 +759,7 @@ grub> @kbd{makeactive}
 @end example
 
 @item
-Load the boot loader by the command @command{chainloader}
+Load the boot loader with the command @command{chainloader}
 (@pxref{chainloader}):
 
 @example
@@ -820,7 +849,7 @@ command. For example, to set @option{vga} to @samp{ext}, do this:
 grub> @kbd{kernel /vmlinuz root=/dev/hda1 vga=ext}
 @end example
 
-See the documentation in the Linux source tree for the complete
+See the documentation in the Linux source tree for complete
 information on the available options.
 
 @item
@@ -836,7 +865,7 @@ Finally, run the command @command{boot} (@pxref{boot}).
 @end enumerate
 
 @strong{Caution:} If you use an initrd and specify the @samp{mem=}
-option to the kernel, to let it use less than actual memory size, you
+option to the kernel to let it use less than actual memory size, you
 will also have to specify the same memory size to GRUB. To let GRUB know
 the size, run the command @command{uppermem} @emph{before} loading the
 kernel. @xref{uppermem}, for more information.
@@ -885,7 +914,7 @@ Run @command{boot} (@pxref{boot}).
 @end enumerate
 
 For now, however, GRUB doesn't allow you to pass kernel parameters, so
-it may be better to chain-load it instead, for more information please
+it may be better to chain-load it instead. For more information, please
 see @ref{Chain-loading}.
 
 
@@ -983,7 +1012,7 @@ grub> @kbd{boot}
 @node Configuration
 @chapter Configuration
 
-You probably noticed that you need to type several commands to boot your
+You've probably noticed that you need to type several commands to boot your
 OS. There's a solution to that - GRUB provides a menu interface
 (@pxref{Menu interface}) from which you can select an item (using arrow
 keys) that will do everything to boot an OS.
@@ -1051,7 +1080,7 @@ successfully.
 
 The argument for the command @command{title} is used to display a short
 title/description of the entry in the menu. Since @command{title}
-displays the argument as is, you can write basically anything in there.
+displays the argument as is, you can write basically anything there.
 
 @example
 @group
@@ -1178,7 +1207,7 @@ see @file{netboot/README.netboot} in the source distribution.
 GRUB requires a file server and optionally a server that will assign an
 IP address to the machine on which GRUB is running. For the former, only
 TFTP is supported at the moment. The latter is either BOOTP, DHCP or a
-RARP server@footnote{RARP is deprecated, since it cannot serve much
+RARP server@footnote{RARP is not advised, since it cannot serve much
 information}. It is not necessary to run both the servers on one
 computer. How to configure these servers is beyond the scope of this
 document, so please refer to the manuals specific to those
@@ -1198,7 +1227,7 @@ Otherwise, run @command{ifconfig}, like this:
 grub> @kbd{ifconfig --address=192.168.110.23 --server=192.168.110.14}
 @end example
 
-You can also use @command{ifconfig} in conjugation with @command{bootp},
+You can also use @command{ifconfig} in conjuction with @command{bootp},
 @command{dhcp} or @command{rarp} (e.g. to reassign the server address
 manually). @xref{ifconfig}, for more details.
 
@@ -1227,29 +1256,29 @@ grub> @kbd{boot}
 @node Diskless
 @section Booting from a network
 
-It is sometimes very useful to boot from a network, especially, when you
+It is sometimes very useful to boot from a network, especially when you
 use a machine which has no local disk. In this case, you need to obtain
 a kind of Net Boot @sc{rom}, such as a PXE @sc{rom} or a free software
 package like Etherboot. Such a Boot @sc{rom} first boots the machine,
 sets up the network card installed into the machine, and downloads a
 second stage boot image from the network. Then, the second image will
-try to boot an operating system from the network actually.
+try to boot an operating system actually from the network.
 
 GRUB provides two second stage images, @file{nbgrub} and
-@file{pxegrub} (@pxref{Images}). Those images are the same as the
+@file{pxegrub} (@pxref{Images}). These images are the same as the
 normal Stage 2, except that they set up a network automatically, and try
 to load a configuration file from the network, if specified. The usage
 is very simple: If the machine has a PXE @sc{rom}, use
-@file{pxegrub}. If the machine has a NBI loader such as Etherboot, use
-@file{nbgrub}. There is no difference between them but their formats. As
-how to load a second stage image you want to use should be described in
-the manual on your Net Boot @sc{rom}, please refer to the manual, for
-more information.
+@file{pxegrub}. If the machine has an NBI loader such as Etherboot, use
+@file{nbgrub}. There is no difference between them except their
+formats. Since the way to load a second stage image you want to use
+should be described in the manual on your Net Boot @sc{rom}, please
+refer to the manual, for more information.
 
 However, there is one thing specific to GRUB. Namely, how to specify a
 configuration file in a BOOTP/DHCP server. For now, GRUB uses the tag
-@samp{150}, to get the name of a configuration file. This below is an
-example about a BOOTP configuration:
+@samp{150}, to get the name of a configuration file. The following is an
+example with a BOOTP configuration:
 
 @example
 @group
@@ -1267,12 +1296,12 @@ foo:ht=1:ha=63655d0334a7:ip=145.71.35.127:\
 @end example
 
 Note that you should specify the drive name @code{(nd)} in the name of
-the configuration file. That is because you can change the root drive
-before downloading the configuration from the TFTP server, when the
+the configuration file. This is because you might change the root drive
+before downloading the configuration from the TFTP server when the
 preset menu feature is used (@pxref{Preset Menu}).
 
-See the manual about your BOOTP/DHCP server, for more information. The
-exact syntax should differ from the example, more or less.
+See the manual of your BOOTP/DHCP server for more information. The
+exact syntax should differ a little from the example.
 
 
 @node Serial terminal
@@ -1281,8 +1310,8 @@ exact syntax should differ from the example, more or less.
 This chapter describes how to use the serial terminal support in GRUB.
 
 If you have many computers or computers with no display/keyboard, it
-would be very useful to control the computers with serial
-communications. To connect a computer with another via a serial line,
+could be very useful to control the computers through serial
+communications. To connect one computer with another via a serial line,
 you need to prepare a null-modem (cross) serial cable, and you may need
 to have multiport serial boards, if your computer doesn't have extra
 serial ports. In addition, a terminal emulator is also required, such as
@@ -1312,32 +1341,33 @@ command accepts many other options, so please refer to @ref{serial},
 for more details.
 
 The command @command{terminal} (@pxref{terminal}) chooses which type of
-terminal you want to use. In that case above, the terminal will be a
+terminal you want to use. In the case above, the terminal will be a
 serial terminal, but you can also pass @code{console} to the command,
-like @samp{terminal serial console}. In this case, a terminal in which
+as @samp{terminal serial console}. In this case, a terminal in which
 you press any key will be selected as a GRUB terminal.
 
 However, note that GRUB assumes that your terminal emulator is
 compatible with VT100 by default. This is true for most terminal
 emulators nowadays, but you should pass the option @option{--dumb} to
-the command, if your terminal emulator is not VT100-compatible or
-implements few VT100 escape sequences. If you specify the option, then
+the command if your terminal emulator is not VT100-compatible or
+implements few VT100 escape sequences. If you specify this option then
 GRUB provides you with an alternative menu interface, because the normal
-menu requires several fancy features for your terminal.
+menu requires several fancy features of your terminal.
 
 
 @node Preset Menu
 @chapter Embedding a configuration file into GRUB
 
-GRUB supports @dfn{preset menu} which is always loaded before starting.
-The preset menu feature is useful, for example, when your computer has
-no console but a serial cable. In this case, it is critical to set up
-the serial terminal as soon as possible, since you cannot see any
-message until the serial terminal begins to work. So it is nice to run
-the commands @command{serial} (@pxref{serial}) and @command{terminal}
-(@pxref{terminal}) sooner than anything else at the start-up time.
+GRUB supports a @dfn{preset menu} which is to be always loaded before
+starting. The preset menu feature is useful, for example, when your
+computer has no console but a serial cable. In this case, it is
+critical to set up the serial terminal as soon as possible, since you
+cannot see any message until the serial terminal begins to work. So it
+is good to run the commands @command{serial} (@pxref{serial}) and
+@command{terminal} (@pxref{terminal}) before anything else at the
+start-up time.
 
-It is slightly complicated how the preset menu works:
+How the preset menu works is slightly complicated:
 
 @enumerate
 @item
@@ -1348,21 +1378,21 @@ entries, like an ordinary configuration file.
 @item
 GRUB checks if the configuration file is available. Note that this check
 is performed @strong{regardless of the existence of the preset
-menu}. The configuration file is loaded, even after the preset menu was
+menu}. The configuration file is loaded even if the preset menu was
 loaded.
 
 @item
-When the preset menu includes any boot entries, they are cleared when
+If the preset menu includes any boot entries, they are cleared when
 the configuration file is loaded. It doesn't matter whether the
 configuration file has any entries or no entry. The boot entries in the
 preset menu are used only when GRUB fails in loading the configuration
 file.
 @end enumerate
 
-To enable the preset menu feature, you must specify a file to the
-configure script with the option @option{--enable-preset-menu}. The file
-has the same semantics as normal configuration files
-(@pxref{Configuration}).
+To enable the preset menu feature, you must rebuild GRUB specifying a
+file to the configure script with the option
+@option{--enable-preset-menu}. The file has the same semantics as
+normal configuration files (@pxref{Configuration}).
 
 Another point you should take care is that the diskless support
 (@pxref{Diskless}) diverts the preset menu. Diskless images embed a
@@ -1395,13 +1425,13 @@ whatever they like, if you share your computer with other people. So
 this chapter describes how to improve the security of GRUB.
 
 One thing which could be a security hole is that the user can do too
-many things with GRUB, because GRUB allows to modify its configuration
-and run arbitrary commands at run-time. For example, the user can read
-even @file{/etc/passwd} in the command-line interface by the command
+many things with GRUB, because GRUB allows one to modify its configuration
+and run arbitrary commands at run-time. For example, the user can even
+read @file{/etc/passwd} in the command-line interface by the command
 @command{cat} (@pxref{cat}). So it is necessary to disable all the
 interactive operations.
 
-Thus, GRUB provides @dfn{password} feature, so that only administrators
+Thus, GRUB provides a @dfn{password} feature, so that only administrators
 can start the interactive operations (i.e. editing menu entries and
 entering the command-line interface). To use this feature, you need to
 run the command @command{password} in your configuration file
@@ -1446,7 +1476,7 @@ permit only administrators to run some of your menu entries, such as an
 entry for booting an insecure OS like DOS.
 
 GRUB provides the command @command{lock} (@pxref{lock}). This command
-always fails until you enter a valid password, so you can use it, like
+always fails until you enter the valid password, so you can use it, like
 this:
 
 @example
@@ -1460,7 +1490,7 @@ chainload +1
 @end example
 
 You should insert @command{lock} right after @command{title}, because
-any user can execute commands in an entry, until GRUB encounters
+any user can execute commands in an entry until GRUB encounters
 @command{lock}.
 
 You can also use the command @command{password} instead of
@@ -1480,7 +1510,7 @@ overview of them. @xref{Internals}, for more details.
 @table @file
 @item stage1
 This is an essential image used for booting up GRUB. Usually, this is
-embedded in a MBR or the boot sector of a partition. Because a PC boot
+embedded in an MBR or the boot sector of a partition. Because a PC boot
 sector is 512 bytes, the size of this image is exactly 512 bytes.
 
 All @file{stage1} must do is to load Stage 2 or Stage 1.5 from a local
@@ -1489,7 +1519,7 @@ location of Stage 2 (or Stage 1.5) in a block list format, so it never
 understand any filesystem structure.
 
 @item stage2
-This is the core image of GRUB. This does all things but booting up
+This is the core image of GRUB. It does everything but booting up
 itself. Usually, this is put in a filesystem, but that is not required.
 
 @item e2fs_stage1_5
@@ -1501,23 +1531,23 @@ itself. Usually, this is put in a filesystem, but that is not required.
 @itemx vstafs_stage1_5
 @itemx xfs_stage1_5
 
-These are called @dfn{Stage 1.5}, because the purpose is a bridge
+These are called @dfn{Stage 1.5}, because they serve as a bridge
 between @file{stage1} and @file{stage2}, that is to say, Stage 1.5 is
 loaded by Stage 1 and Stage 1.5 loads Stage 2. The difference between
 @file{stage1} and @file{*_stage1_5} is that the former doesn't
-understand any filesystem but the latter does an filesystem
+understand any filesystem while the latter understands one filesystem
 (e.g. @file{e2fs_stage1_5} understands ext2fs). So you can move the
-location of Stage 2 to another safely, even after GRUB has been
+Stage 2 image to another location safely, even after GRUB has been
 installed.
 
 While Stage 2 cannot generally be embedded in a fixed area as the size
-is so large, Stage 1.5 can be installed into the area right after a MBR,
+is so large, Stage 1.5 can be installed into the area right after an MBR,
 or the boot loader area of a ReiserFS or a FFS.
 
 @item nbgrub
 This is a network boot image for the Network Image Proposal used by some
 network boot loaders, such as Etherboot. This is mostly the same as
-Stage 2, but this also sets up a network and loads a configuration file
+Stage 2, but it also sets up a network and loads a configuration file
 from the network.
 
 @item pxegrub
@@ -1555,8 +1585,8 @@ The device syntax is like this:
 
 @samp{[]} means the parameter is optional. @var{device} should be
 either @samp{fd} or @samp{hd} followed by a digit, like @samp{fd0}.
-But you can also set @var{device} to a hexadecimal or a decimal, which
-is a BIOS drive number, so the following are equivalent:
+But you can also set @var{device} to a hexadecimal or a decimal number
+which is a BIOS drive number, so the following are equivalent:
 
 @example
 (hd0)
@@ -1578,10 +1608,10 @@ finds the subpartition @var{bsd-subpart-letter}. Here is an example:
 (hd0,a)
 @end example
 
-The syntax like @samp{(hd0)} represents using the entire disk (or the
-MBR when installing GRUB), while the syntax like @samp{(hd0,0)}
-represents using the partition of the disk (or the boot sector of the
-partition when installing GRUB).
+The syntax @samp{(hd0)} represents using the entire disk (or the
+MBR when installing GRUB), while the syntax @samp{(hd0,0)}
+represents using the first partition of the disk (or the boot sector
+of the partition when installing GRUB).
 
 If you enabled the network support, the special drive, @samp{(nd)}, is
 also available. Before using the network drive, you must initialize the
@@ -1709,7 +1739,8 @@ the first word in the command-line, pressing the @key{TAB} key (or
 @key{C-i}) will display a listing of the available commands, and if the
 cursor is after the first word, the @kbd{@key{TAB}} will provide a
 completion listing of disks, partitions, and file names depending on the
-context.
+context. Note that to obtain a list of drives, one must open a
+parenthesis, as @command{root (}.
 
 Note that you cannot use the completion functionality in the TFTP
 filesystem. This is because TFTP doesn't support file name listing for
@@ -1748,7 +1779,7 @@ of entry names.
 If an @key{ESC} is pressed in the editor, it aborts all the changes made
 to the configuration entry and returns to the main menu interface.
 
-When a particular line is selected, the editor places the user at a
+When a particular line is selected, the editor places the user in a
 special version of the GRUB command-line to edit that line.  When the
 user hits @key{RET}, GRUB replaces the line in question in the boot
 entry with the changes (unless it was aborted via @key{ESC},
@@ -1758,15 +1789,15 @@ If you want to add a new line to the menu entry, press @key{o} if adding
 a line after the current line or press @key{O} if before the current
 line.
 
-To delete a line, hit the key @key{d}. Although GRUB does not support
-@dfn{undo} unfortunately, you can do almost the same thing by just
+To delete a line, hit the key @key{d}. Although GRUB unfortunately
+does not support @dfn{undo}, you can do almost the same thing by just
 returning to the main menu.
 
 
 @node Hidden menu interface
 @section The hidden menu interface
 
-When your terminal is dumb or you request GRUB of hiding the menu
+When your terminal is dumb or you request GRUB to hide the menu
 interface explicitly with the command @command{hiddenmenu}
 (@pxref{hiddenmenu}), GRUB doesn't show the menu interface (@pxref{Menu
 interface}) and automatically boots the default entry, unless
@@ -1783,8 +1814,8 @@ In this chapter, we list all commands that are available in GRUB.
 
 Commands belong to different groups. A few can only be used in
 the global section of the configuration file (or ``menu''); most
-of them can be entered on the command-line and can be either used
-in the menu or in the menu entries.
+of them can be entered on the command-line and can be used either
+anywhere in the menu or specifically in the menu entries.
 
 @menu
 * Menu-specific commands::
@@ -1817,7 +1848,7 @@ All numbers can be either decimal or hexadecimal. A hexadecimal number
 must be preceded by @samp{0x}, and is case-insensitive.
 
 @item
-Extra options or text at the end of the line is ignored unless otherwise
+Extra options or text at the end of the line are ignored unless otherwise
 specified.
 
 @item
@@ -1855,7 +1886,7 @@ default entry is the entry saved with the command
 
 @deffn Command fallback num
 Go into unattended boot mode: if the default boot entry has any errors,
-instead of waiting for the user to do anything, immediately start
+instead of waiting for the user to do something, immediately start
 over using the @var{num} entry (same numbering as the @code{default}
 command (@pxref{default})). This obviously won't help if the machine was
 rebooted by a kernel that GRUB loaded.
@@ -1895,7 +1926,7 @@ the line, starting with the first non-space character.
 @node General commands
 @section The list of general commands
 
-Commands usable both in the menu and in the command-line.
+Commands usable anywhere in the menu and in the command-line.
 
 @menu
 * bootp::                       Initialize a network device via BOOTP
@@ -2093,7 +2124,7 @@ it is disabled. If no argument is given, the state is toggled.
 Create a new primary partition. @var{part} is a partition specification
 in GRUB syntax (@pxref{Naming convention}); @var{type} is the partition
 type and must be a number in the range @code{0-0xff}; @var{from} is
-the starting address and @var{to} is the length, both in sector units.
+the starting address and @var{len} is the length, both in sector units.
 @end deffn
 
 
@@ -2118,7 +2149,7 @@ entered, it loads the @var{new-config-file} as a new config file and
 restarts the GRUB Stage 2, if @var{new-config-file} is
 specified. Otherwise, GRUB will just unlock the privileged instructions.
 You can also use this command in the script section, in which case it
-will ask for the password, before continueing.  The option
+will ask for the password, before continuing.  The option
 @option{--md5} tells GRUB that @var{passwd} is encrypted with
 @command{md5crypt} (@pxref{md5crypt}).
 @end deffn
@@ -2139,13 +2170,13 @@ is only available if GRUB is compiled with netboot support. See also
 
 @deffn Command serial [@option{--unit=unit}] [@option{--port=port}] [@option{--speed=speed}] [@option{--word=word}] [@option{--parity=parity}] [@option{--stop=stop}] [@option{--device=dev}]
 Initialize a serial device. @var{unit} is a number in the range 0-3
-specifying which serial port to use; default is 0, that corresponds
+specifying which serial port to use; default is 0, which corresponds to
 the port often called COM1. @var{port} is the I/O port where the UART
 is to be found; if specified it takes precedence over @var{unit}.
 @var{speed} is the transmission speed; default is 9600. @var{word} and
 @var{stop} are the number of data bits and stop bits. Data bits must
-be in the range 5-8 and stop bits are 1 or 2. Default is 8 data bits
-and one stop bit. @var{parity} is one of @samp{no}, @samp{odd},
+be in the range 5-8 and stop bits must be 1 or 2. Default is 8 data
+bits and one stop bit. @var{parity} is one of @samp{no}, @samp{odd},
 @samp{even} and defaults to @samp{no}. The option @option{--device}
 can only be used in the grub shell and is used to specify the 
 tty device to be used in the host operating system (@pxref{Invoking the
@@ -2173,7 +2204,7 @@ grub> @kbd{setkey capslock control}
 grub> @kbd{setkey control capslock}
 @end example
 
-A key must be an alphabet, a digit, or one of these symbols:
+A key must be an alphabet letter, a digit, or one of these symbols:
 @samp{escape}, @samp{exclam}, @samp{at}, @samp{numbersign},
 @samp{dollar}, @samp{percent}, @samp{caret}, @samp{ampersand},
 @samp{asterisk}, @samp{parenleft}, @samp{parenright}, @samp{minus},
@@ -2357,7 +2388,7 @@ with netboot support. See also @ref{Network}.
 @deffn Command unhide partition
 Unhide the partition @var{partition} by clearing the @dfn{hidden} bit in
 its partition type code. This is useful only when booting DOS or Windows
-and multiple primary partitions exist in one disk. See also
+and multiple primary partitions exist on one disk. See also
 @ref{DOS/Windows}.
 @end deffn
 
@@ -2424,7 +2455,7 @@ syntax}.
 @subsection boot
 
 @deffn Command boot
-Boot the OS/chain-loader which has been loaded. Only necessary if
+Boot the OS or chain-loader which has been loaded. Only necessary if
 running the fully interactive command-line (it is implicit at the end of
 a menu entry).
 @end deffn
@@ -2537,9 +2568,9 @@ Usually, you don't need to run this command directly. @xref{setup}.
 @subsection find
 
 @deffn Command find filename
-Search for the file name @var{filename} in all of partitions and print
-the list of the devices which contain the file. The file name
-@var{filename} should be an absolute file name like
+Search for the file name @var{filename} in all mountable partitions
+and print the list of the devices which contain the file. The file
+name @var{filename} should be an absolute file name like
 @code{/boot/grub/stage1}.
 @end deffn
 
@@ -2565,9 +2596,9 @@ Filesystem test mode is turned off by any use of the @command{install}
 
 @deffn Command geometry drive [cylinder head sector [total_sector]]
 Print the information for the drive @var{drive}. In the grub shell, you
-can set the geometry of the drive arbitrarily. The number of the
-cylinders, the one of the heads, the one of the sectors and the one of
-the total sectors are set to CYLINDER, HEAD, SECTOR and TOTAL_SECTOR,
+can set the geometry of the drive arbitrarily. The number of
+cylinders, the number of heads, the number of sectors and the number of
+total sectors are set to CYLINDER, HEAD, SECTOR and TOTAL_SECTOR,
 respectively. If you omit TOTAL_SECTOR, then it will be calculated
 based on the C/H/S values automatically.
 @end deffn
@@ -2604,7 +2635,7 @@ about each of the commands which match those @var{patterns}.
 @deffn Command impsprobe
 Probe the Intel Multiprocessor Specification 1.1 or 1.4 configuration
 table and boot the various CPUs which are found into a tight loop. This
-command can be used only in the Stage 2.
+command can be used only in the Stage 2, but not in the grub shell.
 @end deffn
 
 
@@ -2631,10 +2662,10 @@ In short, it will perform a full install presuming the Stage 2 or Stage
 1.5 as a Stage 2 from now on.} is in its final install location.
 
 In slightly more detail, it will load @var{stage1_file}, validate that
-it is a GRUB Stage 1 of the right version number, install a blocklist for
-loading @var{stage2_file} as a Stage 2. If the option @option{d} is
-present, the Stage 1 will always look for the actual disk
-@var{stage2_file} was installed on, rather than using the booting
+it is a GRUB Stage 1 of the right version number, install in it a
+blocklist for loading @var{stage2_file} as a Stage 2. If the option
+@option{d} is present, the Stage 1 will always look for the actual
+disk @var{stage2_file} was installed on, rather than using the booting
 drive. The Stage 2 will be loaded at address @var{addr}, which must be
 @samp{0x8000} for a true Stage 2, and @samp{0x2000} for a Stage 1.5. If
 @var{addr} is not present, GRUB will determine the address
@@ -2651,10 +2682,10 @@ command preserves the DOS BPB (and for hard disks, the partition table)
 of the sector the Stage 1 is to be installed into.
 
 @strong{Caution:} Several buggy BIOSes don't pass a booting drive
-properly when booting from a hard disk drive. Therefore, you will have
-to specify the option @option{d}, whether your Stage2 resides at the
-booting drive or not, if you have such a BIOS unfortunately. We know
-these are defective in that:
+properly when booting from a hard disk drive. Therefore, you will
+unfortunately have to specify the option @option{d}, whether your
+Stage2 resides at the booting drive or not, if you have such a
+BIOS. We know these are defective in this way:
 
 @table @asis
 @item
@@ -2775,7 +2806,7 @@ password can be used with the command @command{password}
 
 @deffn Command module file @dots{}
 Load a boot module @var{file} for a Multiboot format boot image (no
-interpretation of the file contents are made, so that user of this
+interpretation of the file contents are made, so the user of this
 command must know what the kernel in question expects). The rest of the
 line is passed as the @dfn{module command-line}, like the
 @command{kernel} command. You must load a Multiboot kernel image before
@@ -2917,7 +2948,7 @@ information.
 
 @deffn Command testload file
 Read the entire contents of @var{file} in several different ways and
-compares them, to test the filesystem code. The output is somewhat
+compare them, to test the filesystem code. The output is somewhat
 cryptic, but if no errors are reported and the final @samp{i=@var{X},
 filepos=@var{Y}} reading has @var{X} and @var{Y} equal, then it is
 definitely consistent, and very likely works correctly subject to a
@@ -3054,7 +3085,7 @@ This error is returned if the sanity checks on the integrity of the
 partition table fail. This is a bad sign.
 
 @item 6 : Mismatched or corrupt version of stage1/stage2
-This error is returned if the install command is pointed to incompatible
+This error is returned if the install command points to incompatible
 or corrupt versions of the stage1 or stage2. It can't detect corruption
 in general, but this is a sanity check on the version numbers, which
 should be correct.
@@ -3075,8 +3106,8 @@ which are unknown.
 @item 10 : Unsupported Multiboot features requested
 This error is returned when the Multiboot features word in the Multiboot
 header requires a feature that is not recognized. The point of this is
-that the kernel requires special handling which GRUB is likely unable to
-provide.
+that the kernel requires special handling which GRUB is probably
+unable to provide.
 
 @item 11 : Unrecognized device string
 This error is returned if a device string was expected, and the string
@@ -3118,13 +3149,12 @@ happens if your disk is larger than the BIOS can handle (512MB for
 
 @item 19 : Linux kernel must be loaded before initrd
 This error is returned if the initrd command is used before loading a
-Linux kernel. Similar to the above error, it only makes sense in that
-case anyway.
+Linux kernel.
 
 @item 20 : Multiboot kernel must be loaded before modules
 This error is returned if the module load command is used before loading
 a Multiboot kernel. It only makes sense in this case anyway, as GRUB has
-no idea how to communicate the presence of location of such modules to a
+no idea how to communicate the presence of such modules to a
 non-Multiboot-aware kernel.
 
 @item 21 : Selected disk does not exist
@@ -3155,7 +3185,7 @@ This error is returned if the link count is beyond the maximum
 (currently 5), possibly the symbolic links are looped.
 
 @item 27 : Unrecognized command
-This error is returned if an unrecognized command is entered into the
+This error is returned if an unrecognized command is entered on the
 command-line or in a boot sequence section of a configuration file and
 that entry is selected.
 
@@ -3215,7 +3245,7 @@ BIOS drives and OS devices.
 
 You can use the command @command{grub} for installing GRUB under your
 operating systems and for a testbed when you add a new feature into GRUB
-or when fix a bug. @command{grub} is almost the same as the Stage 2,
+or when fixing a bug. @command{grub} is almost the same as the Stage 2,
 and, in fact, it shares the source code with the Stage 2 and you can use
 the same commands (@pxref{Commands}) in @command{grub}. It is emulated by
 replacing BIOS calls with UNIX system calls and libc functions.
@@ -3263,7 +3293,8 @@ should be an integer (decimal, octal or hexadecimal).
 Do not use the configuration file even if it can be read.
 
 @item --no-curses
-Do not use the curses interface even if it is available.
+Do not use the screen handling interface by the curses even if it is
+available.
 
 @item --batch
 This option has the same meaning as @samp{--no-config-file --no-curses}.
@@ -3299,13 +3330,13 @@ If a drive cannot be unmounted but can be mounted with the read-only
 flag, mount it in read-only mode. That should be secure.
 
 @item
-If a drive must be mounted with the read-write flag, make sure that any
-activity is not being done on it during running the command
-@command{grub}.
+If a drive must be mounted with the read-write flag, make sure that no
+activity is being done on it while the command @command{grub} is
+running.
 
 @item
-Reboot your operating system as soon as possible. Probably that is not
-required if you follow these rules above, but reboot is the most secure
+Reboot your operating system as soon as possible. This is probably not
+required if you follow the rules above, but reboot is the most secure
 way.
 @end itemize
 
@@ -3344,14 +3375,14 @@ drives to OS devices. This file consists of lines like this:
 @var{device} @var{file}
 @end example
 
-@var{device} is a drive, which syntax is the same as the one in GRUB
-(@pxref{Device syntax}), and @var{file} is an OS's file, which is
-normally a device file.
+@var{device} is a drive specified in the GRUB syntax (@pxref{Device
+syntax}), and @var{file} is an OS file, which is normally a device
+file.
 
 The reason why the grub shell gives you the device map file is that it
 cannot guess the map between BIOS drives and OS devices correctly in
 some environments. For example, if you exchange the boot sequence
-between IDE and SCSI in your BIOS, it mistakes the order.
+between IDE and SCSI in your BIOS, it gets the order wrong.
 
 Thus, edit the file if the grub shell makes a mistake. You can put any
 comments in the file if needed, as the grub shell assumes that a line is
@@ -3361,7 +3392,7 @@ just a comment if the first character is @samp{#}.
 @node Invoking grub-install
 @chapter Invoking grub-install
 
-The program @command{grub-install} installs GRUB on your drive by the
+The program @command{grub-install} installs GRUB on your drive using the
 grub shell (@pxref{Invoking the grub shell}). You must specify the
 device name on which you want to install GRUB, like this:
 
@@ -3383,16 +3414,18 @@ Print the version number of GRUB and exit.
 
 @item --force-lba
 Force GRUB to use LBA mode even for a buggy BIOS. Use this option only
-if your BIOS doesn't work in LBA mode even though it supports LBA mode.
+if your BIOS doesn't work properly in LBA mode even though it supports
+LBA mode.
 
 @item --root-directory=@var{dir}
 Install GRUB images under the directory @var{dir} instead of the root
 directory. This option is useful when you want to install GRUB into a
-separate partition or a removable disk. Here is an example when you have
-a separate @dfn{boot} partition which is mounted on @file{/boot}:
+separate partition or a removable disk. Here is an example in which
+you have a separate @dfn{boot} partition which is mounted on
+@file{/boot}:
 
 @example
-@kbd{grub-install --root-directory=/boot '(hd0)'}
+@kbd{grub-install --root-directory=/boot hd0}
 @end example
 
 @item --grub-shell=@var{file}
@@ -3520,35 +3553,20 @@ This will install the grub shell @file{grub} (@pxref{Invoking the grub
 shell}), the Multiboot checker @file{mbchk} (@pxref{Invoking mbchk}),
 and the GRUB images. This will also install the GRUB manual.
 
-Also, the latest version is available from the CVS. The repository is:
-
-@code{:pserver:anoncvs@@subversions.gnu.org:/cvsroot/grub}
-
-and the module is:
-
-@code{grub}
-
-The password for anoncvs is empty. So the instruction is:
-
-@example
-@group
-@kbd{cvs -d :pserver:anoncvs@@subversions.gnu.org:/cvsroot/grub login}
-@kbd{Password: @key{ENTER}}
-@kbd{cvs -d :pserver:anoncvs@@subversions.gnu.org:/cvsroot/grub co grub}
-@end group
-@end example
+Also, the latest version is available from the CVS. See
+@uref{http://savannah.gnu.org/cvs/?group=grub} for more information.
 
 
 @node Reporting bugs
 @appendix Reporting bugs
 
-This is the guideline of how to report bugs. Take a look at this list
-below before you submit bugs:
+These are the guideline for how to report bugs. Take a look at this
+list below before you submit bugs:
 
 @enumerate
 @item
-Before unsettled, read this manual through and through. Also, see the
-@uref{http://www.gnu.org/software/grub/grub-faq.html, GNU GRUB FAQ}.
+Before getting unsettled, read this manual through and through. Also,
+see the @uref{http://www.gnu.org/software/grub/grub-faq.html, GNU GRUB FAQ}.
 
 @item
 Always mention the information on your GRUB. The version number and the
@@ -3557,7 +3575,7 @@ options specified to the configure script and your operating system,
 including the versions of gcc and binutils.
 
 @item
-If you get troubled with the installation, inform us of how you
+If you have trouble with the installation, inform us of how you
 installed GRUB. Don't omit error messages, if any. Just @samp{GRUB hangs
 up when it boots} is not enough.
 
@@ -3566,11 +3584,12 @@ important: the geometries and the partition tables of your hard disk
 drives and your BIOS.
 
 @item
-If GRUB cannot boot your operating system, write down @emph{all} on the
-screen. Don't paraphrase them, like @samp{The foo OS crashes with GRUB,
-even though it can boot with the bar boot loader fine}. Mention the
-commands you executed, the messages printed by them, and information on
-your operating system including the version number.
+If GRUB cannot boot your operating system, write down
+@emph{everything} you see on the screen. Don't paraphrase them, like
+@samp{The foo OS crashes with GRUB, even though it can boot with the
+bar boot loader just fine}. Mention the commands you executed, the
+messages printed by them, and information on your operating system
+including the version number.
 
 @item
 Explain what you wanted to do. It is very useful to know your purpose
@@ -3592,12 +3611,12 @@ that we often need to reproduce the same problem you encounterred in our
 environment. So your information should be sufficient for us to do the
 same thing---Don't forget that we cannot see your computer directly. If
 you are not sure whether to state a fact or leave it out, state it!
-Reporting too many things is quite better than omitting an important
-thing.
+Reporting too many things is much better than omitting something
+important.
 @end enumerate
 
-If you realize the guideline above, submit a report to the
-@uref{http://bugcomm.enbug.org/?project=grub&mode=project, Bug Tracking System}.
+If you follow the guideline above, submit a report to the
+@uref{http://savannah.gnu.org/bugs/?group=grub, Bug Tracking System}.
 Alternatively, you can submit a report via electronic mail to
 @email{bug-grub@@gnu.org}, but we strongly recommend that you use the
 Bug Tracking System, because e-mail can be passed over easily.
@@ -3608,7 +3627,7 @@ Once we get your report, we will try to fix the bugs.
 @node Future
 @chapter Where GRUB will go
 
-Here are some ideas that might happen in the future:
+Here are some ideas of what might happen in the future:
 
 @itemize @bullet
 @item
@@ -3631,7 +3650,7 @@ See the file @file{TODO} in the source distribution, for more
 information.
 
 
-@c Seperate the programming guide.
+@c Separate the programming guide.
 @include internals.texi
 
 
@@ -3649,7 +3668,7 @@ Some notes:
 
   This is the second attempt to rewrite the manual. The status is
 mostly complete, but I need to check the spelling by ispell, and add
-more indices. Perhaps I also have to let some English native speakers to
+more indices. Perhaps I also have to let some English native speakers
 proofread this manual through. My English is syntactically almost
 perfect, but sometimes (often?) awful in the nuance. Hehe, I can't be an
 English poet for now.

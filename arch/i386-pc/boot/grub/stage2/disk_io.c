@@ -72,6 +72,9 @@ struct fsys_entry fsys_table[NUM_FSYS + 1] =
 # ifdef FSYS_XFS
   {"xfs", xfs_mount, xfs_read, xfs_dir, 0, 0},
 # endif
+#ifdef FSYS_ISO9660
+  { "iso9660", iso9660_mount, iso9660_read, iso9660_dir, 0, 0},
+#endif
 # ifdef FSYS_AFFS
   {"aFFS", affs_mount, affs_read, affs_dir, 0, 0},
 # endif
@@ -87,7 +90,7 @@ struct fsys_entry fsys_table[NUM_FSYS + 1] =
 
 /* These have the same format as "boot_drive" and "install_partition", but
    are meant to be working values. */
-unsigned long current_drive = 0xFF;
+unsigned long current_drive = GRUB_NO_DRIVE;
 unsigned long current_partition;
 
 #ifndef STAGE1_5
@@ -125,17 +128,28 @@ struct geometry buf_geom;
 int filepos;
 int filemax;
 
+static inline unsigned long
+log2 (unsigned long word)
+{
+  asm volatile ("bsfl %1,%0"
+:          "=r" (word)
+:          "r" (word));
+  return word;
+}
+
 int
 rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 {
-  int slen = (byte_offset + byte_len + SECTOR_SIZE - 1) >> SECTOR_BITS;
+  int slen, sectors_per_vtrack;
+  int sect_size_lg2 = log2(buf_geom.sector_size);
 
   if (byte_len <= 0)
     return 1;
 
   while (byte_len > 0 && !errnum)
     {
-      int soff, num_sect, bufaddr, track, size = byte_len;
+      int soff, num_sect, track, size = byte_len;
+      char *bufaddr;
 
       /*
        *  Check track buffer.  If it isn't valid or it is from the
@@ -150,6 +164,7 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 	    }
 	  buf_drive = drive;
 	  buf_track = -1;
+	  sect_size_lg2 = log2(buf_geom.sector_size);
 	}
 
       /* Make sure that SECTOR is valid.  */
@@ -158,16 +173,23 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 	  errnum = ERR_GEOM;
 	  return 0;
 	}
-      
+
+      slen = (byte_offset + byte_len + buf_geom.sector_size - 1) >> sect_size_lg2;
+      /* Eliminate buffer overflow */
+      if ((buf_geom.sectors << sect_size_lg2) > BUFFERLEN)
+          sectors_per_vtrack = (BUFFERLEN >> sect_size_lg2);
+      else
+          sectors_per_vtrack = buf_geom.sectors;
+
       /*  Get first sector of track  */
-      soff = sector % buf_geom.sectors;
+      soff = sector % sectors_per_vtrack;
       track = sector - soff;
-      num_sect = buf_geom.sectors - soff;
-      bufaddr = BUFFERADDR + (soff * SECTOR_SIZE) + byte_offset;
+      num_sect = sectors_per_vtrack - soff;
+      bufaddr = (char *)BUFFERADDR + (soff * buf_geom.sector_size) + byte_offset;
 
       if (track != buf_track)
 	{
-	  int bios_err, read_start = track, read_len = buf_geom.sectors;
+	  int bios_err, read_start = track, read_len = sectors_per_vtrack;
 
 	  /*
 	   *  If there's more than one read in this entire loop, then
@@ -178,7 +200,7 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 	    {
 	      read_start = sector;
 	      read_len = num_sect;
-	      bufaddr = BUFFERADDR + byte_offset;
+	      bufaddr = (char *)BUFFERADDR + byte_offset;
 	    }
 
 	  bios_err = biosdisk (BIOSDISK_READ, drive, &buf_geom,
@@ -200,7 +222,7 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 				   sector, slen, BUFFERSEG))
 		    errnum = ERR_READ;
 
-		  bufaddr = BUFFERADDR + byte_offset;
+		  bufaddr = (char *)BUFFERADDR + byte_offset;
 		}
 	    }
 	  else
@@ -217,7 +239,8 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 		{
 		  /* We already read the sector 1, copy it to sector 0 */
 		  memmove ((char *) BUFFERADDR, 
-			   (char *) BUFFERADDR + SECTOR_SIZE, SECTOR_SIZE);
+			   (char *) BUFFERADDR + buf_geom.sector_size,
+			   buf_geom.sector_size);
 		}
 	      else
 		{
@@ -228,8 +251,8 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 	    }
 	}
 	  
-      if (size > ((num_sect * SECTOR_SIZE) - byte_offset))
-	size = (num_sect * SECTOR_SIZE) - byte_offset;
+      if (size > ((num_sect * buf_geom.sector_size) - byte_offset))
+	size = (num_sect * buf_geom.sector_size) - byte_offset;
 
       /*
        *  Instrumentation to tell which sectors were read and used.
@@ -237,28 +260,27 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
       if (disk_read_func)
 	{
 	  int sector_num = sector;
-	  int length = SECTOR_SIZE - byte_offset;
+	  int length = buf_geom.sector_size - byte_offset;
 	  if (length > size)
 	    length = size;
 	  (*disk_read_func) (sector_num++, byte_offset, length);
 	  length = size - length;
 	  if (length > 0)
 	    {
-	      while (length > SECTOR_SIZE)
+	      while (length > buf_geom.sector_size)
 		{
-		  (*disk_read_func) (sector_num++, 0, SECTOR_SIZE);
-		  length -= SECTOR_SIZE;
+		  (*disk_read_func) (sector_num++, 0, buf_geom.sector_size);
+		  length -= buf_geom.sector_size;
 		}
 	      (*disk_read_func) (sector_num, 0, length);
 	    }
 	}
 
-      memmove (buf, (char *) bufaddr, size);
+      memmove (buf, bufaddr, size);
 
       buf += size;
       byte_len -= size;
       sector += num_sect;
-      slen -= num_sect;
       byte_offset = 0;
     }
 
@@ -375,7 +397,7 @@ sane_partition (void)
     return 1;
   
   if (!(current_partition & 0xFF000000uL)
-      && (current_drive & 0xFFFFFF7F) < 8
+/*      && (current_drive & 0xFFFFFF7F) < 8	FIXME: El-Torito > 8 */
       && (current_partition & 0xFF) == 0xFF
       && ((current_partition & 0xFF00) == 0xFF00
 	  || (current_partition & 0xFF00) < 0x800)
@@ -523,13 +545,14 @@ set_partition_hidden_flag (int hidden)
 
 
 static void
-check_and_print_mount (void)
+check_and_print_mount (int flags)
 {
   attempt_mount ();
   if (errnum == ERR_FSYS_MOUNT)
     errnum = ERR_NONE;
   if (!errnum)
     print_fsys_type ();
+  if (!flags)
   print_error ();
 }
 #endif /* STAGE1_5 */
@@ -805,7 +828,7 @@ real_open_partition (int flags)
 				 current_partition >> 16);
 
 		  if (! IS_PC_SLICE_TYPE_BSD (current_slice))
-		    check_and_print_mount ();
+		    check_and_print_mount (flags);
 		  else
 		    {
 		      int got_part = 0;
@@ -824,7 +847,7 @@ real_open_partition (int flags)
 			  
 			  grub_printf ("     BSD Partition num: \'%c\', ",
 				       bsd_part + 'a');
-			  check_and_print_mount ();
+			  check_and_print_mount (flags);
 			}
 
 		      if (! got_part)
@@ -879,10 +902,19 @@ real_open_partition (int flags)
 #ifndef STAGE1_5
   if (flags)
     {
+      errnum = ERR_NONE;
       if (! (current_drive & 0x80))
 	{
 	  current_partition = 0xFFFFFF;
-	  check_and_print_mount ();
+	  current_slice = 0;
+	  part_start = 0;
+	  part_length = buf_geom.total_sectors;
+	  check_and_print_mount (flags);
+	}
+      else
+	{
+          cur_part_addr = 0;
+          cur_part_offset = 0;
 	}
       
       errnum = ERR_NONE;
@@ -922,8 +954,8 @@ set_device (char *device)
   int drive = (dev >> 24) & 0xFF;
   int partition = dev & 0xFFFFFF;
 
-  /* If DRIVE is disabled (0xFF), use SAVED_DRIVE instead.  */
-  if (drive == 0xFF)
+  /* If DRIVE is disabled, use SAVED_DRIVE instead.  */
+  if (drive == GRUB_NO_DRIVE)
     current_drive = saved_drive;
   else
     current_drive = drive;
@@ -1149,7 +1181,7 @@ setup_part (char *filename)
 
   if (! (filename = set_device (filename)))
     {
-      current_drive = 0xFF;
+      current_drive = GRUB_NO_DRIVE;
       return 0;
     }
   
@@ -1166,7 +1198,7 @@ setup_part (char *filename)
     {
       if ((filename = set_device (filename)) == 0)
 	{
-	  current_drive = 0xFF;
+          current_drive = GRUB_NO_DRIVE;
 	  return 0;
 	}
 # ifndef NO_BLOCK_FILES
@@ -1527,7 +1559,9 @@ grub_open (char *filename)
 	    {
 	      if ((*ptr && *ptr != '/' && !isspace (*ptr))
 		  || tmp == 0 || tmp > filemax)
-		errnum = ERR_BAD_FILENAME;
+              {
+                  errnum = ERR_BAD_FILENAME;
+              }
 	      else
 		filemax = tmp;
 

@@ -661,7 +661,7 @@ restart:
 
 		      saved_drive = boot_drive;
 		      saved_partition = install_partition;
-		      current_drive = 0xFF;
+		      current_drive = GRUB_NO_DRIVE;
 
 		      if (! get_cmdline (PACKAGE " edit> ", new_heap,
 					 NEW_HEAPSIZE + 1, 0, 1))

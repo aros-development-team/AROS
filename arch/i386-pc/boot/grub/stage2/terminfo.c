@@ -1,7 +1,7 @@
 /* terminfo.c - read a terminfo entry from the command line */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2004  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -245,15 +245,14 @@ ti_exit_standout_mode (void)
 
 /* set the current terminal emulation to use */
 void 
-ti_set_term (struct terminfo new)
+ti_set_term (const struct terminfo *new)
 {
-  term = new;
+  grub_memmove (&term, new, sizeof (struct terminfo));
 }
 
-/* return the current terminal emulation */
-struct terminfo
-ti_get_term(void)
+/* get the current terminal emulation */
+void
+ti_get_term(struct terminfo *copy)
 {
-  return term;
+  grub_memmove (copy, &term, sizeof (struct terminfo));
 }
-

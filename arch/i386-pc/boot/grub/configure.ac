@@ -262,6 +262,13 @@ if test x"$enable_xfs" != xno; then
   FSYS_CFLAGS="$FSYS_CFLAGS -DFSYS_XFS=1"
 fi
 
+AC_ARG_ENABLE(iso9660,
+  [  --disable-iso9660       disable ISO9660 support in Stage 2])
+
+if test x"$enable_iso9660" != xno; then
+  FSYS_CFLAGS="$FSYS_CFLAGS -DFSYS_ISO9660=1"
+fi
+
 AC_ARG_ENABLE(affs,
   [  --disable-affs          disable AFFS support in Stage 2])
 

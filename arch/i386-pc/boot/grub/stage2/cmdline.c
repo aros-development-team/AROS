@@ -101,7 +101,7 @@ init_cmdline (void)
   /* Initialization.  */
   saved_drive = boot_drive;
   saved_partition = install_partition;
-  current_drive = 0xFF;
+  current_drive = GRUB_NO_DRIVE;
   errnum = 0;
   count_lines = -1;
   

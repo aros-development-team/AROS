@@ -77,6 +77,7 @@ struct reiserfs_super_block
 #define REISERFS_MAX_SUPPORTED_VERSION 2
 #define REISERFS_SUPER_MAGIC_STRING "ReIsErFs"
 #define REISER2FS_SUPER_MAGIC_STRING "ReIsEr2Fs"
+#define REISER3FS_SUPER_MAGIC_STRING "ReIsEr3Fs"
 
 #define MAX_HEIGHT 7
 
@@ -573,7 +574,8 @@ reiserfs_mount (void)
   if (part_length < superblock + (sizeof (super) >> SECTOR_BITS)
       || ! devread (superblock, 0, sizeof (struct reiserfs_super_block), 
 		(char *) &super)
-      || (substring (REISER2FS_SUPER_MAGIC_STRING, super.s_magic) > 0
+      || (substring (REISER3FS_SUPER_MAGIC_STRING, super.s_magic) > 0
+	  && substring (REISER2FS_SUPER_MAGIC_STRING, super.s_magic) > 0
 	  && substring (REISERFS_SUPER_MAGIC_STRING, super.s_magic) > 0)
       || (/* check that this is not a copy inside the journal log */
 	  super.s_journal_block * super.s_blocksize
@@ -586,7 +588,8 @@ reiserfs_mount (void)
 			(char *) &super))
 	return 0;
 
-      if (substring (REISER2FS_SUPER_MAGIC_STRING, super.s_magic) > 0
+      if (substring (REISER3FS_SUPER_MAGIC_STRING, super.s_magic) > 0
+	  && substring (REISER2FS_SUPER_MAGIC_STRING, super.s_magic) > 0
 	  && substring (REISERFS_SUPER_MAGIC_STRING, super.s_magic) > 0)
 	{
 	  /* pre journaling super block ? */
@@ -1220,7 +1223,8 @@ reiserfs_embed (int *start_sector, int needed_sectors)
   
   *start_sector = 1; /* reserve first sector for stage1 */
   if ((substring (REISERFS_SUPER_MAGIC_STRING, super.s_magic) <= 0
-       || substring (REISER2FS_SUPER_MAGIC_STRING, super.s_magic) <= 0)
+       || substring (REISER2FS_SUPER_MAGIC_STRING, super.s_magic) <= 0
+       || substring (REISER3FS_SUPER_MAGIC_STRING, super.s_magic) <= 0)
       && (/* check that this is not a super block copy inside
 	   * the journal log */
 	  super.s_journal_block * super.s_blocksize 

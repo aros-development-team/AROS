@@ -933,9 +933,9 @@ realcseg:
 
 
 /*
- *   int biosdisk_int13_extensions (int ah, int drive, void *dap)
+ *   int biosdisk_int13_extensions (int ax, int drive, void *dap)
  *
- *   Call IBM/MS INT13 Extensions (int 13 %ah=AH) for DRIVE. DAP
+ *   Call IBM/MS INT13 Extensions (int 13 %ax=AX) for DRIVE. DAP
  *   is passed for disk address packet. If an error occurs, return
  *   non-zero, otherwise zero.
  */
@@ -945,6 +945,9 @@ ENTRY(biosdisk_int13_extensions)
 	movl	%esp, %ebp
 
 	pushl	%esi
+	pushl	%ebx
+	pushl	%ecx
+	pushl	%edx	
 
 	/* compute the address of disk_address_packet */
 	movl	0x10(%ebp), %eax
@@ -955,13 +958,13 @@ ENTRY(biosdisk_int13_extensions)
 
 	/* drive */
 	movb	0xc(%ebp), %dl
-	/* ah */
-	movb	0x8(%ebp), %dh
+	/* ax */
+	movw	0x8(%ebp), %bx
 	/* enter real mode */
 	call	EXT_C(prot_to_real)
 	
 	.code16
-	movb	%dh, %ah
+	movw	%bx, %ax
 	movw	%cx, %ds
 	int	$0x13		/* do the operation */
 	movb	%ah, %dl	/* save return value */
@@ -974,6 +977,9 @@ ENTRY(biosdisk_int13_extensions)
 
 	movb	%dl, %al	/* return value in %eax */
 
+	popl	%edx
+	popl	%ecx
+	popl	%ebx
 	popl	%esi
 	popl	%ebp
 
@@ -1100,7 +1106,6 @@ ENTRY(check_int13_extensions)
 	popl	%ebp
 
 	ret
-
 
 /*
  *   int get_diskinfo_int13_extensions (int drive, void *drp)

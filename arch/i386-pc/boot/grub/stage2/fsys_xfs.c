@@ -1,7 +1,7 @@
 /* fsys_xfs.c - an implementation for the SGI XFS file system */
 /*  
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2001,2002  Free Software Foundation, Inc.
+ *  Copyright (C) 2001,2002,2004  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -65,9 +65,9 @@ static struct xfs_info xfs;
 #define inode		((xfs_dinode_t *)((char *)FSYS_BUF + 8192))
 #define icore		(inode->di_core)
 
-#define	mask32lo(n)	(((__uint32_t)1 << (n)) - 1)
+#define	mask32lo(n)	(((xfs_uint32_t)1 << (n)) - 1)
 
-#define	XFS_INO_MASK(k)		((__uint32_t)((1ULL << (k)) - 1))
+#define	XFS_INO_MASK(k)		((xfs_uint32_t)((1ULL << (k)) - 1))
 #define	XFS_INO_OFFSET_BITS	xfs.inopblog
 #define	XFS_INO_AGBNO_BITS	xfs.agblklog
 #define	XFS_INO_AGINO_BITS	(xfs.agblklog + xfs.inopblog)
@@ -97,8 +97,8 @@ ino2offset (xfs_ino_t ino)
 	return ino & XFS_INO_MASK(XFS_INO_OFFSET_BITS);
 }
 
-static inline __const__ __uint16_t
-le16 (__uint16_t x)
+static inline __const__ xfs_uint16_t
+le16 (xfs_uint16_t x)
 {
 	__asm__("xchgb %b0,%h0"	\
 		: "=q" (x) \
@@ -106,8 +106,8 @@ le16 (__uint16_t x)
 		return x;
 }
 
-static inline __const__ __uint32_t
-le32 (__uint32_t x)
+static inline __const__ xfs_uint32_t
+le32 (xfs_uint32_t x)
 {
 #if 0
         /* 386 doesn't have bswap.  */
@@ -122,12 +122,12 @@ le32 (__uint32_t x)
 	return x;
 }
 
-static inline __const__ __uint64_t
-le64 (__uint64_t x)
+static inline __const__ xfs_uint64_t
+le64 (xfs_uint64_t x)
 {
-	__uint32_t h = x >> 32;
-        __uint32_t l = x & ((1ULL<<32)-1);
-        return (((__uint64_t)le32(l)) << 32) | ((__uint64_t)(le32(h)));
+	xfs_uint32_t h = x >> 32;
+        xfs_uint32_t l = x & ((1ULL<<32)-1);
+        return (((xfs_uint64_t)le32(l)) << 32) | ((xfs_uint64_t)(le32(h)));
 }
 
 
@@ -154,7 +154,7 @@ xt_len (xfs_bmbt_rec_32_t *r)
 }
 
 static inline int
-xfs_highbit32(__uint32_t v)
+xfs_highbit32(xfs_uint32_t v)
 {
 	int i;
 
@@ -312,7 +312,7 @@ sf_ino (char *sfe, int namelen)
 	void *p = sfe + namelen + 3;
 
 	return (xfs.i8param == 0)
-		? le64(*(xfs_ino_t *)p) : le32(*(__uint32_t *)p);
+		? le64(*(xfs_ino_t *)p) : le32(*(xfs_uint32_t *)p);
 }
 
 static inline xfs_ino_t
@@ -320,7 +320,7 @@ sf_parent_ino (void)
 {
 	return (xfs.i8param == 0)
 		? le64(*(xfs_ino_t *)(&inode->di_u.di_dir2sf.hdr.parent))
-		: le32(*(__uint32_t *)(&inode->di_u.di_dir2sf.hdr.parent));
+		: le32(*(xfs_uint32_t *)(&inode->di_u.di_dir2sf.hdr.parent));
 }
 
 static inline int
