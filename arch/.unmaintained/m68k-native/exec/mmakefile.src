@@ -15,7 +15,7 @@ TESTS =
 all: setup $(foreach f,$(FILES),$(OBJDIR)/$(f).o) 
 
 #MM
-setup-exec-m68k :
+setup-exec-amiga-m68k :
 	%mkdirs_q $(OBJDIR) $(OSGENDIR)
 	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
 	%exclude_files $(foreach f,$(FILES), rom/exec/$(f))
