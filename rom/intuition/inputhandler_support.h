@@ -22,6 +22,17 @@ BOOL fire_intuimessage(struct Window *w,
 		       APTR IAddress,
 		       struct IntuitionBase *IntuitionBase);
 
+/* use ih_fire_intuimessage if A) the inputevent because of which
+   you call this function might have to be eaten or modified
+   by Intuition or B) an inputevent might have to be created
+   by Intuition because of a deferred action */
+   
+BOOL ih_fire_intuimessage(struct Window *w,
+                       	  ULONG Class,
+		       	  UWORD Code,
+		       	  APTR IAddress,
+		       	  struct IntuitionBase *IntuitionBase);
+
 /*********************************************************************/
 
 IPTR Locked_DoMethodA (Object * obj,
@@ -44,8 +55,12 @@ void SetGPIMouseCoords(struct gpInput *gpi, struct Gadget *gad);
 
 struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, struct Gadget *gadget,
 					ULONG termination,
-					BOOL *reuse_event,struct IntuitionBase *IntuitionBase);
+					BOOL *reuse_event, struct IntuitionBase *IntuitionBase);
 
+struct Gadget *DoGPInput(struct GadgetInfo *gi, struct Gadget *gadget,
+			 struct InputEvent *ie, STACKULONG methodid,
+			 BOOL *reuse_event, struct IntuitionBase *IntuitionBase);
+			 
 struct Gadget * FindGadget (struct Screen *scr, struct Window * window, int x, int y,
 			    struct GadgetInfo * gi, struct IntuitionBase *IntuitionBase);
 
@@ -68,6 +83,10 @@ struct Window *FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event,
 				struct IntuitionBase *IntuitionBase);
 
 /*********************************************************************/
+
+struct InputEvent *AllocInputEvent(struct IIHData *iihdata);
+void FreeGeneratedInputEvents(struct IIHData *iihdata);
+
 /*********************************************************************/
 /*********************************************************************/
 /*********************************************************************/
