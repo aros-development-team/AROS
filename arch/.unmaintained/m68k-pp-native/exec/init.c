@@ -128,8 +128,7 @@ void main_init(void * memory, ULONG memSize)
 
 
 	/*
-	   Prepare first memory list. Our memory will statr at 0x00100000. First
-	   1MB is reserved for kernel use only. DO NOT use it please.
+	   Prepare first memory list. Our memory will start at 'memory'.
 	 */
 
 	mh=(struct MemHeader*)memory;
