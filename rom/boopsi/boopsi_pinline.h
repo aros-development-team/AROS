@@ -1,0 +1,33 @@
+#ifndef _BOOPSI_PINLINE_H
+#define _BOOPSI_PINLINE_H
+
+/*
+    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Private m68k inlines for boopsi.library
+    Lang: english
+*/
+
+#ifndef __INLINE_MACROS_H
+#include <inline/macros.h>
+#endif
+
+#ifndef BOOPSI_BASE_NAME
+#define BOOPSI_BASE_NAME BOOPSIBase
+#endif
+
+#define DoNotify(cl, o, ic, msg) \
+	LP4( , IPTR, DoNotify, \
+	    Class *, (cl), a0, \
+	    Object *, (o), a1, \
+	    struct ICData *, (ic), a2, \
+	    struct opUpdate *, (msg), a3, \
+	    , BOOPSI_BASE_NAME )
+
+#define FreeICData(ic) \
+	LP1NR(, void, FreeICData, \
+	    struct ICData *, (ic), a0, \
+	    , BOOPSI_BASE_NAME )
+
+#endif /* _BOOPSI_PINLINE_H */

@@ -1,0 +1,3 @@
+*.[ch]
+.cvsignore
+mmakefile.src
