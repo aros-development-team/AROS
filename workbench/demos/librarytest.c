@@ -7,7 +7,7 @@
 */
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 #include "dummylib_gcc.h"
 
 static const char version[] = "$VER: librarytest 41.1 (14.3.1997)\n";

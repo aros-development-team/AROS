@@ -14,7 +14,7 @@
 #include <dos/datetime.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 #include <proto/alib.h>
 #include <proto/utility.h>
 #include <proto/graphics.h>

@@ -14,7 +14,7 @@
 #include <graphics/gfxbase.h>
 #include <graphics/text.h>
 #include <proto/graphics.h>
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 #include "graphics_intern.h"
 
 #define static	/* nothing */

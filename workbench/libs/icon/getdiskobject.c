@@ -5,7 +5,7 @@
     Desc:
     Lang: english
 */
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 #include <proto/dos.h>
 #include "icon_intern.h"
 

@@ -5,7 +5,7 @@
     Desc:
     Lang: english
 */
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 #include "icon_intern.h"
 
 extern const IPTR IconDesc[];

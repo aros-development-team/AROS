@@ -18,7 +18,7 @@
 #include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 #include <proto/intuition.h>
 
 static AROS_UFH3(ULONG, ProcessDrawerData,

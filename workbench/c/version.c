@@ -14,7 +14,7 @@
 #include <proto/utility.h>
 #include <utility/tagitem.h>
 #include <utility/utility.h>
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 #include <stdio.h>
 
 static const char version[] = "$VER: version 41.2 (4.10.96)\n";

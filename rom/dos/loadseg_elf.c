@@ -9,7 +9,7 @@
 #include <proto/exec.h>
 #include <dos/dosasl.h>
 #include <proto/dos.h>
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 #include "dos_intern.h"
 #include <aros/debug.h>
 
@@ -145,6 +145,8 @@ BPTR LoadSeg_ELF (BPTR file)
     LONG  * error  = &((struct Process *)FindTask (NULL))->pr_Result2;
 
 #define ERROR(a)    { *error = a; goto end; }
+
+    *error = 0;
 
     /* Load the header */
     if (read_block (file, 0, &eh, sizeof (eh)))

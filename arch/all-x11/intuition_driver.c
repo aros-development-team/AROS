@@ -22,7 +22,7 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 #include <proto/alib.h>
 #include "intuition_intern.h"
 #include "gadgets.h"

@@ -14,7 +14,7 @@
 #include <exec/execbase.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 
 #include "aros_intern.h"
 #include "libdefs.h"
@@ -85,7 +85,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
 AROS_LH1(struct LIBBASETYPE *, open,
  AROS_LHA(ULONG, version, D0),
-           struct LIBBASETYPE *, LIBBASE, 1, BASENAME)
+	   struct LIBBASETYPE *, LIBBASE, 1, BASENAME)
 {
     AROS_LIBFUNC_INIT
 
@@ -99,29 +99,29 @@ AROS_LH1(struct LIBBASETYPE *, open,
 }
 
 AROS_LH0(BPTR, close,
-           struct LIBBASETYPE *, LIBBASE, 2, BASENAME)
+	   struct LIBBASETYPE *, LIBBASE, 2, BASENAME)
 {
     AROS_LIBFUNC_INIT
 
     /* I have one fewer opener. */
     if(!--LIBBASE->aros_LibNode.lib_OpenCnt)
     {
-            return expunge();
+	    return expunge();
     }
     return 0;
     AROS_LIBFUNC_EXIT
 }
 
 AROS_LH0(BPTR, expunge,
-           struct LIBBASETYPE *, LIBBASE, 3, BASENAME)
+	   struct LIBBASETYPE *, LIBBASE, 3, BASENAME)
 {
     AROS_LIBFUNC_INIT
 
     /* Test for openers. */
     if(LIBBASE->aros_LibNode.lib_OpenCnt)
     {
-        /* Set the delayed expunge flag and return. */
-        LIBBASE->aros_LibNode.lib_Flags|=LIBF_DELEXP;
+	/* Set the delayed expunge flag and return. */
+	LIBBASE->aros_LibNode.lib_Flags|=LIBF_DELEXP;
     }
 
     return 0;
@@ -129,7 +129,7 @@ AROS_LH0(BPTR, expunge,
 }
 
 AROS_LH0I(int, null,
-            struct LIBBASETYPE *, LIBBASE, 4, BASENAME)
+	    struct LIBBASETYPE *, LIBBASE, 4, BASENAME)
 {
     AROS_LIBFUNC_INIT
     return 0;
