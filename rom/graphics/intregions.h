@@ -69,7 +69,20 @@ if (dx || dy)                                  \
         _TranslateRect(&_rr->bounds, dx, dy);  \
 }
 
-#define USE_BANDED_FUNCTIONS 1
+/*
+ ** Important: ClearRegion calls InitRegion(). If you change something here
+ ** which should not be done in case of ClearRegion() then don't forget to
+ ** fix ClearRegion!
+ */
+
+#define InitRegion(region)            \
+{                                     \
+    (region)->bounds.MinX = 0;        \
+    (region)->bounds.MinY = 0;        \
+    (region)->bounds.MaxX = 0;        \
+    (region)->bounds.MaxY = 0;        \
+    (region)->RegionRectangle = NULL; \
+}
 
 /* ugly hack, I know... */
 #ifndef GfxBase

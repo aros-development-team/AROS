@@ -34,7 +34,7 @@
 */
 
 
-#    define SIZECHUNKBUF 10
+#    define SIZECHUNKBUF 20
 
 struct ChunkExt
 {
@@ -1363,7 +1363,7 @@ int main(void)
         int l = i*20;
 
 	struct Rectangle r = {l, 0, l+11, 201};
-        _OrRectRegion(R1, &r, GfxBase);
+        OrRectRegion(R1, &r);
     }
 
     for (i = 0; i < 10; i++)
@@ -1371,12 +1371,12 @@ int main(void)
         int u = i*20;
 
 	struct Rectangle r = {0, u, 201, u+11};
-        _OrRectRegion(R2, &r, GfxBase);
+        OrRectRegion(R2, &r);
     }
 
     for (i = 0; i<100000; i++)
     {
-        _XorRegionRegion(R2, R1, GfxBase);
+        XorRegionRegion(R2, R1);
     }
 
     DisposeRegion(R2);
