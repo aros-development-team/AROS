@@ -78,16 +78,13 @@ void td_select(UBYTE unitnum, struct TrackDiskBase *tdb)
 /* Wait for interrupt */
 int td_waitint(struct TrackDiskBase *TDBase)
 {
-    D(bug("$"));
     TDBase->td_iotime = 150;	// Each IO command has 3s to complete before error occurs
     Wait((1L << TDBase->td_IntBit));
     if (TDBase->td_iotime)
     {
-	D(bug("+"));
 	TDBase->td_iotime = 0;
 	return 0;
     }
-    D(bug("-"));
     return TDERR_NotSpecified;
 }
 
@@ -222,7 +219,7 @@ int td_dinit(struct TrackDiskBase *TDBase)
     td_configure(TDBase);
     // programm data rate
     fd_outb(0,FD_DCR);
-    //td_waitint(TDBase);
+    td_waitint(TDBase);
     // issue Sense Interrupt Status (loop 4 times)
     for (i=0; i<4; i++)
     {
@@ -301,8 +298,8 @@ int td_rseek(UBYTE unitn, UBYTE dir, UBYTE cyls, struct TrackDiskBase *TDBase)
 {
     int err;
 
-    /* Select the unit, do not start motor */
-    td_select(unitn,TDBase);
+    /* Select the unit, start motor */
+    td_motoron(unitn,TDBase);
 
     if (dir)
     {
@@ -373,68 +370,62 @@ int td_readwritetrack(UBYTE unitnum, char cyl, char hd, char mode, struct TrackD
     fd_outb(0, FD_DCR);	// 500kbit/s only!
     do
     {
-	/* Seek drive */
-	//err = td_recalibrate(unitnum, 0, (cyl*DP_SECTORS) << 1, TDBase);
-	//if (!err)
-	{
-	    rwcnt = 3;	// Max 3 retries of read/write
+	rwcnt = 3;	// Max 3 retries of read/write
 
-	    do
+	do
+	{
+	    /* Clear err flag */
+	    err = 0;
+	    /* Set DMA up */
+	    clear_dma_ff(TD_DMA);
+	    // Should place some cache flush in future (when cache implemented)
+	    set_dma_addr(TD_DMA, (ULONG)(TDBase->td_Units[unitnum]->td_DMABuffer));
+	    set_dma_count(TD_DMA, DP_SECTORS*512);
+	    set_dma_mode(TD_DMA, (mode == FD_READ) ? DMA_MODE_READ : DMA_MODE_WRITE);
+	    enable_dma(TD_DMA);
+	    /* Issue read/write command */
+	    TDBase->td_comsize = 9;
+	    buf = TDBase->td_rawcom;
+	    *buf++ = mode;							// Command
+	    *buf++ = unitnum | (hd << 2);	// Drive Select
+	    *buf++ = cyl;					// Cylinder
+	    *buf++ = hd;					// Head
+	    *buf++ = 1;						// Sector
+	    *buf++ = DP_SSIZE;			// Sector size
+	    *buf++ = DP_SECTORS;			// End sector - the same as sec field for a while
+	    *buf++ = DP_GAP1;				// Gap length
+	    *buf++ = -1;					// DTL
+	    /* Command prepared, now send it */
+	    td_sendcommand(TDBase);
+	    /* Wait for end phase */
+	    err = td_waitint(TDBase);
+	    if (!err)
 	    {
-		/* Clear err flag */
-		err = 0;
-		/* Set DMA up */
-		clear_dma_ff(TD_DMA);
-		// Should place some cache flush in future (when cache implemented)
-		set_dma_addr(TD_DMA, (ULONG)(TDBase->td_Units[unitnum]->td_DMABuffer));
-		set_dma_count(TD_DMA, DP_SECTORS*512);
-		set_dma_mode(TD_DMA, (mode == FD_READ) ? DMA_MODE_READ : DMA_MODE_WRITE);
-		enable_dma(TD_DMA);
-		/* Issue read/write command */
-		TDBase->td_comsize = 9;
-		buf = TDBase->td_rawcom;
-		*buf++ = mode;							// Command
-		*buf++ = unitnum | (hd << 2);	// Drive Select
-		*buf++ = cyl;					// Cylinder
-		*buf++ = hd;					// Head
-		*buf++ = 1;						// Sector
-		*buf++ = DP_SSIZE;			// Sector size
-		*buf++ = DP_SECTORS;			// End sector - the same as sec field for a while
-		*buf++ = DP_GAP1;				// Gap length
-		*buf++ = -1;					// DTL
-		/* Command prepared, now send it */
-		td_sendcommand(TDBase);
-		/* Wait for end phase */
-		err = td_waitint(TDBase);
-		if (!err)
+		/* Read result bytes */
+		td_readstatus(TDBase, 7);
+		/* Check if everything went OK */
+		if (!(TDBase->td_result[0] & 0xc0))
 		{
-		    /* Read result bytes */
-		    td_readstatus(TDBase, 7);
-		    /* Check if everything went OK */
-		    if (!(TDBase->td_result[0] & 0xc0))
-		    {
-			return 0;
-		    }
+		    return 0;
 		}
-		/* Something went wrong. Let's see what. */
-		/* if err != then timeout err. */
-		if (!err)
-		{	
-		    err = TDERR_NotSpecified;
-		    if (TDBase->td_result[1] & 0x80)
-			err = TDERR_TooFewSecs;
-		    else if (TDBase->td_result[1] & 0x20)
-		    {
-			err = TDERR_BadHdrSum;
-			if (TDBase->td_result[2] & 0x20)
-			    err = TDERR_BadSecSum;
-		    }
-		    else if (TDBase->td_result[1] & 0x04)
-			err = TDERR_TooFewSecs;
+	    }
+	    /* Something went wrong. Let's see what. */
+	    /* if err != then timeout err. */
+	    if (!err)
+	    {	
+		err = TDERR_NotSpecified;
+		if (TDBase->td_result[1] & 0x80)
+		    err = TDERR_TooFewSecs;
+		else if (TDBase->td_result[1] & 0x20)
+		{
+		    err = TDERR_BadHdrSum;
+		    if (TDBase->td_result[2] & 0x20)
+			err = TDERR_BadSecSum;
 		}
-	    } while (--rwcnt);
-	}
-	//td_recalibrate(unitnum, 1, 0, TDBase);
+		else if (TDBase->td_result[1] & 0x04)
+		    err = TDERR_TooFewSecs;
+	    }
+	} while (--rwcnt);
     } while(--skcnt);	
 
     return err;

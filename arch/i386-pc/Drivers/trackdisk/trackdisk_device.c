@@ -686,8 +686,9 @@ void TD_DevTask(struct TrackDiskBase *tdb)
 			    break;
 			case TDU_DISK:
 			    /* We really should not do this here. */
-			    td_select(tdu->tdu_UnitNum,tdb);
+			    td_motoron(tdu->tdu_UnitNum,tdb);
 			    dir = (inb(FD_DIR)>>7);
+			    td_motoroff(tdu->tdu_UnitNum,tdb);
 			    if (dir == 1)
 			    {
 				D(bug("Floppy removal detected\n"));
@@ -750,7 +751,6 @@ void td_floppytimer(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 
 void td_floppyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
-    D(bug("*"));
     Signal(&TDBase->td_TaskData->td_Task,(1L << TDBase->td_IntBit));
 }
 
