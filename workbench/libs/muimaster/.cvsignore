@@ -12,3 +12,5 @@ test
 *.mdbi
 buildincludes
 muimaster.lib
+test2
+include
