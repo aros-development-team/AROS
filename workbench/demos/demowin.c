@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/08/30 17:03:11  digulla
+    Uses kprintf() now. Makes life a lot easier.
+
     Revision 1.7  1996/08/29 15:14:36  digulla
     Changed name
     Tests PrintIText(), too
@@ -61,7 +64,7 @@
 #include <ctype.h>
 #include <aros/rt.h>
 
-#if 0
+#if 1
 #   define D(x)    x
 #else
 #   define D(x)     /* eps */
@@ -433,17 +436,11 @@ static LONG tinymain(void)
 	/* ... */
     };
     int cont, draw;
-    ULONG args[4];
     int prop;
 
-    VPrintf ("Welcome to the window demo of AROS\n", NULL);
-    Flush (Output ());
+    bug("Welcome to the window demo of AROS\n");
 
-    args[0] = (ULONG) tinymain;
-    args[1] = (ULONG) Refresh;
-    args[2] = (ULONG) _entry;
-    VPrintf ("main=%08lx\nRefresh=%08lx\nentry=%08lx\n", args);
-    Flush (Output ());
+    D(bug("main=%p Refresh=%p entry=%p\n", tinymain, Refresh, _entry));
 
     nw.LeftEdge = 100;
     nw.TopEdge = 100;
@@ -465,9 +462,7 @@ static LONG tinymain(void)
 
     OpenDevice ("console.device", -1, (struct IORequest *)&cioreq, 0);
     ConsoleDevice = (struct Library *)cioreq.io_Device;
-    args[0] = (ULONG) ConsoleDevice;
-    VPrintf ("Opening console.device=%08lx\n", args);
-    Flush (Output ());
+    bug ("Opening console.device=%p\n", ConsoleDevice);
 
     if (!ConsoleDevice)
     {
@@ -510,13 +505,11 @@ static LONG tinymain(void)
 
 		len = RawKeyConvert (&ievent, buf, sizeof (buf), NULL);
 
-		args[0] = im->Code;
-		args[1] = im->Qualifier;
-		VPrintf ("Key %ld + Qual %lx=\"", args);
+		bug ("Key %ld + Qual %lx=\"", im->Code, im->Qualifier);
 
 		if (len < 0)
 		{
-		    VPrintf ("\" (buffer too short)", NULL);
+		    bug ("\" (buffer too short)");
 		    break;
 		}
 
@@ -527,35 +520,34 @@ static LONG tinymain(void)
 			switch (buf[t])
 			{
 			case '\n':
-			    VPrintf ("\\n", NULL);
+			    bug ("\\n");
 			    break;
 
 			case '\t':
-			    VPrintf ("\\t", NULL);
+			    bug ("\\t");
 			    break;
 
 			case '\b':
-			    VPrintf ("\\b", NULL);
+			    bug ("\\b");
 			    break;
 
 			case '\r':
-			    VPrintf ("\\r", NULL);
+			    bug ("\\r");
 			    break;
 
 			case 0x1B:
-			    VPrintf ("^[", NULL);
+			    bug ("^[");
 			    break;
 
 			default:
-			    args[0] = buf[t];
-			    VPrintf ("\\x%02x", args);
+			    bug ("\\x%02x", buf[t]);
 			    break;
 			} /* switch */
 		    }
 		    else
-			FPutC (Output(), buf[t]);
+			bug ("%c", buf[t]);
 		}
-		VPrintf ("\"\n", NULL);
+		bug ("\"\n");
 
 		if (*buf == '\x1b' && len == 1)
 		{
@@ -617,8 +609,7 @@ static LONG tinymain(void)
 
 		gadget = (struct Gadget *)im->IAddress;
 
-		args[0] = gadget->GadgetID;
-		VPrintf ("User pressed gadget %ld\n", args);
+		bug ("User pressed gadget %ld\n", gadget->GadgetID);
 
 		break; }
 
@@ -627,8 +618,7 @@ static LONG tinymain(void)
 
 		gadget = (struct Gadget *)im->IAddress;
 
-		args[0] = gadget->GadgetID;
-		VPrintf ("User released gadget %ld\n", args);
+		bug ("User released gadget %ld\n", gadget->GadgetID);
 
 		if (gadget->GadgetID == 1)
 		    cont = 0;
