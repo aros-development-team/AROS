@@ -82,7 +82,7 @@ exec-linux : $(OSGENDIR)/exec/init.o
 
 #MM- kernel-intuition-linux : intuition-$(GFXSYSTEM) kernel-intuition-linklib
 
-#MM- kernel-hidd-linux : kernel-hidd-linklib
+#MM- kernel-hidd-linux : kernel-hidd-linklib kernel-hidd-unix
 
 #MM- kernel-utility-linux : kernel-utility-linklib
 
@@ -96,7 +96,7 @@ exec-linux : $(OSGENDIR)/exec/init.o
 
 #MM- includes-linux : includes-copy includes-linux-$(CPU)
 
-#MM- workbench-linux : workbench-complete workbench-hidds-unix
+#MM- workbench-linux : workbench-complete workbench-hidd-unix
 
 #MM- contrib-linux : contrib-complete
 
