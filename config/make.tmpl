@@ -642,7 +642,7 @@ endif
   objdir=$(OBJDIR) linklibname=$(BD_MODNAME$(BDID)) uselibs= usecpak=$(USE_CPAK) \
   genshlinklib=no genfunctable= genincludes= compiler=target
 
-%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-includes %(mmake)-linklib %(mmake)-quick"
+%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-includes %(mmake)-linklib %(mmake)-quick %(mmake)-kobj"
 
 .PHONY : setup-module$(BDID)
 
@@ -819,7 +819,7 @@ endif
 #MM
 %(mmake)-includes-libdefs : $(BD_LIBDEFSINC$(BDID))
 
-ifneq ($(filter $(TARGET),%(mmake) %(mmake)-linklib %(mmake)-quick),) # Avoid conflicts
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-linklib %(mmake)-quick %(mmake)-kobj),) # Avoid conflicts
 ifneq ($(dir $(BD_FILES$(BDID))),./)
 vpath %.c $(filter-out ./,$(dir $(BD_FUNCS$(BDID)) $(BD_FILES$(BDID))))
 endif
@@ -841,7 +841,7 @@ endif
 BD_DFILE_DEPS$(BDID) := $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
 
 # Some include files need to be generated before the .c can be parsed.
-ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-linklib),) # Only for this target these deps are wanted
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-linklib) %(mmake)-kobj,) # Only for this target these deps are wanted
 $(BD_DEPS$(BDID)) : $(BD_DFILE_DEPS$(BDID))
 endif
 
@@ -908,13 +908,14 @@ MYDIRS$(BDID) := $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(GENINCDIR)/clib \
   $(GENINCDIR)/proto $(GENINCDIR)/defines $(GENINCDIR)/inline \
   $(GENINCDIR)/pragmas $(INCDIR) $(INCDIR)/clib $(INCDIR)/proto \
   $(INCDIR)/defines $(INCDIR)/inline $(INCDIR)/pragmas \
-  $(BD_MODDIR$(BDID))
+  $(BD_MODDIR$(BDID)) $(KOBJSDIR)
 
 %rule_makedirs dirs=$(MYDIRS$(BDID)) setuptarget=setup-module$(BDID)
 
 # %(mmake)-linklib is a real big mess (bigger then the rest) but it has
 # to disappear in the so don't try to hard
 #MM %(mmake)-linklib : %(mmake)-setup setup-clib
+#MM %(mmake)-kobj : %(mmake)-setup setup-clib
 
 TMP_DEPS := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h \
   $(BD_LIBDEFSINC$(BDID))
@@ -924,15 +925,18 @@ TMP_DEPS += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_includes.stamp \
 endif
 
 %(mmake)-linklib : $(TMP_DEPS)
+%(mmake)-kobj : $(TMP_DEPS)
 
 # Link only when target %(mmake)-linklib otherwise for example jpeg.datatype
 # that depend on the jpeg library can cause to get this rule executed unwanted
-ifeq ($(TARGET),%(mmake)-linklib)
+ifneq ($(filter $(TARGET),%(mmake)-linklib %(mmake)-kobj),)
 ifneq (%(genshlinklib),yes)
 %(mmake)-linklib : $(LIBDIR)/lib$(BD_MODNAME$(BDID)).a
 else
 %(mmake)-linklib : $(LIBDIR)/lib$(BD_MODNAME$(BDID)).so
 endif
+
+%(mmake)-kobj : $(KOBJSDIR)/$(BD_MODNAME$(BDID))_$(BD_MODTYPE$(BDID)).o
 
 %rule_link_linklib libname=$(BD_MODNAME$(BDID)) libdir=$(LIBDIR) \
   objs="$(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))"
@@ -951,9 +955,12 @@ BD_SHOBJS$(BDID) := $(patsubst %.o,%.so,$(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $
 %rule_link_shlib libname=$(BD_MODNAME$(BDID)) libdir=$(LIBDIR) \
   objs=$(BD_SHOBJS$(BDID))
 
+$(KOBJSDIR)/$(BD_MODNAME$(BDID))_$(BD_MODTYPE$(BDID)).o : $(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))
+	@$(LD) -r -o $@ $^
+
 endif
 
-%include_deps depstargets="%(mmake) %(mmake)-linklib" deps=$(BD_DEPS$(BDID))
+%include_deps depstargets="%(mmake) %(mmake)-linklib %(mmake)-kobj" deps=$(BD_DEPS$(BDID))
 %end
 #------------------------------------------------------------------------------
 
