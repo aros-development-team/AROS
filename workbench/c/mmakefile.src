@@ -46,6 +46,7 @@ FILES	    := \
 	Copy \
 	Else \
 	EndIf \
+	EndSkip \
 	FailAt \
 	Fault \
 	Filenote \
@@ -53,16 +54,19 @@ FILES	    := \
 	Getenv \
 	If \
 	Join \
+	Lab \
 	List \
 	Lock \
 	Prompt \
 	Protect \
+	Quit \
 	RequestChoice \
 	RequestFile \
 	Set \
 	SetDate \
 	Setenv \
 	Setmap \
+	Skip \
 	Stack \
 	Status \
 	Unalias \
