@@ -2,7 +2,7 @@ include $(TOP)/config/make.cfg
 
 DESTDIR := $(BINDIR)/Locale/Catalogs
 
-CATALOGS 	:= svenska
+CATALOGS 	:= svenska deutsch
 CATDESC 	:= fontprefs
 CATSUBDIR	:= Sys/
 CATNAME 	:= FontPrefs
@@ -14,8 +14,8 @@ CATDIRS := $(foreach f, $(CATALOGS), $(DESTDIR)/$(f)/$(CATSUBDIR))
 
 .PHONY : all clean create_catalogs create_include create_dirs
 
-#MM setup-localeprefs-catalogs :
-setup-localeprefs-catalogs : create_dirs create_catalogs create_include
+#MM setup-fontprefs-catalogs :
+setup-fontprefs-catalogs : create_dirs create_catalogs create_include
 
 create_catalogs: $(OBJS)
 	@$(NOP)
