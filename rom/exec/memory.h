@@ -1,26 +1,6 @@
 /*
-    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.6  2001/10/18 12:11:05  stegerg
-    support for automatic semaphore protection in pools
-    (use MEMF_SEM_PROTECTED in CreatePool).
-
-    Revision 1.5  1998/10/20 16:45:13  hkiel
-    Amiga Research OS
-
-    Revision 1.4  1996/10/23 14:26:58  aros
-    Renamed AROS macros from XYZ to AROS_XYZ, so we know what they are
-
-    Use only roundup macro for 256 bytes (not for 2^32)
-
-    Use AROS_WORSTALIGN instead of DOUBLEALIGN
-
-    Revision 1.3  1996/10/19 17:11:07  aros
-    Moved ALLOCVEC_TOTAL to machine.h because it's used many times.
-
-    Revision 1.2  1996/08/01 17:41:27  digulla
-    Added standard header for all files
 
     Desc:
     Lang:

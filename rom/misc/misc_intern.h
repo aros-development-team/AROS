@@ -1,6 +1,6 @@
 /*
-    Copyright (C) 1998 AROS  --  The Amiga Research OS
-    $id:$
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: Internal data structures for misc.resource
     Lang: English

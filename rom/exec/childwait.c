@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     ChildWait() - Wait for a task to finish it processing.

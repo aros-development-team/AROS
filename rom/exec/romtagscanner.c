@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2000-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     ROMTag scanner. Adapted from the original i386-native to become
