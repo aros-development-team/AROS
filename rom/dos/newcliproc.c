@@ -83,7 +83,7 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 
     if (!Asynch)
     {
-        csm->csm_ReturnCode = rc;
+        csm->csm_ReturnCode = me->cli_ReturnCode;
 	ReplyMsg((struct Message *)csm);
     }
 
