@@ -89,8 +89,7 @@ const struct inittable datatable=
   I_END ()
 };
 
-#undef O
-#undef SysBase
+struct ExecBase * SysBase;
 
 AROS_LH2(struct GadToolsBase_intern *, init,
  AROS_LHA(struct GadToolsBase_intern *, LIBBASE, D0),
@@ -101,6 +100,7 @@ AROS_LH2(struct GadToolsBase_intern *, init,
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
+    SysBase = sysBase;
     LIBBASE->sysbase=sysBase;
     LIBBASE->seglist=segList;
 
@@ -110,7 +110,6 @@ AROS_LH2(struct GadToolsBase_intern *, init,
 }
 
 /* Use This from now on */
-#define SysBase LIBBASE->sysbase
 
 AROS_LH1(struct GadToolsBase_intern *, open,
  AROS_LHA(ULONG, version, D0),

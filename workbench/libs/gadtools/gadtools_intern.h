@@ -86,8 +86,11 @@ typedef struct IntuitionBase IntuiBase;
 typedef struct GfxBase GraphicsBase;
 
 #define GTB(gtb)        ((struct GadToolsBase_intern *)gtb)
+/*
 #undef SysBase
 #define SysBase (GTB(GadToolsBase)->sysbase)
+*/
+extern struct ExecBase * SysBase;
 #undef IntuitionBase
 #define IntuitionBase (GTB(GadToolsBase)->intuibase)
 #undef DOSBase
