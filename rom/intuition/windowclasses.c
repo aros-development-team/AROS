@@ -234,18 +234,11 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		    }
 	    
 		
-		    /* OK, user released mouse. Put window into new position */
-		    MoveLayer(0L, w->WLayer
+		    MoveWindow(w
 			, data->curleft - w->LeftEdge	/* dx */
 			, data->curtop  - w->TopEdge	/* dy */
 		    );
-		    
 		
-		
-		    /* Update window coordinates */
-		    w->LeftEdge = data->curleft;
-		    w->TopEdge  = data->curtop;
-			
 		}
 		    
 		
@@ -565,17 +558,20 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		    if (NULL == w->WLayer->front)
 		    {
 		    	/* Send window to back */
-			BehindLayer(0L, w->WLayer);
+			WindowToBack(w);
 		    }
 		    else
 		    {
 		    	/* Send window to front */
-			UpfrontLayer(0L, w->WLayer);
+			WindowToFront(w);
 		    }
 		    UnlockLayerInfo(&w->WScreen->LayerInfo);
 		    
 		    break; }
 		
+		case GTYP_WZOOM:
+		    ZipWindow(msg->gpi_GInfo->gi_Window);
+		    break;
 	    }
 	    
 	    
