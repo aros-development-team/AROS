@@ -278,11 +278,21 @@ int mouse_ps2reset(struct mouse_data *data)
 	return 0;
 
     kbd_write_command_w(KBD_CTRLCMD_MOUSE_ENABLE);
+    /*
+     * Unfortunatley on my computer these commands cause
+     * the mouse not to work at all. I hope that these
+     * lines can be left out and it still works on all other
+     * computers. Maybe we can emulate the same effect
+     * of these commands here with a preferences program
+     * and configuring the mouse driver. - Stefan
+     */
+/*****************************************************
     aux_write(KBD_OUTCMD_SET_RATE);
     aux_write(200);
     aux_write(KBD_OUTCMD_SET_RES);
     aux_write(3);
     aux_write(KBD_OUTCMD_SET_SCALE21);
+*****************************************************/
     kbd_write_command(KBD_CTRLCMD_MOUSE_DISABLE);
     kbd_write_cmd(AUX_INTS_OFF);
     
@@ -291,7 +301,16 @@ int mouse_ps2reset(struct mouse_data *data)
     kbd_write_command_w(KBD_CTRLCMD_MOUSE_ENABLE);
     aux_write(KBD_OUTCMD_ENABLE);
     kbd_write_cmd(AUX_INTS_ON);
-    
+
+    /*
+     * According to the specs there is an external
+     * latch that holds the level-sensitive interrupt
+     * request until the CPU readsport 0x60.
+     * If this is not read then the mouse does not
+     * work on my computer.- Stefan
+     */
+    kbd_read_data();
+
     D(bug("Initialized PS/2 mouse!\n"));
 
     return 1;
