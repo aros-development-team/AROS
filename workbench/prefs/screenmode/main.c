@@ -15,7 +15,7 @@ int main()
     Object *app, *win;
     
     app = ApplicationObject,
-        MUIA_Application_Title, (IPTR)"Test List Class",
+        MUIA_Application_Title, (IPTR)"Screen Mode Preferences",
 
         SubWindow, (IPTR)(win = SystemPrefsWindowObject,
             WindowContents, (IPTR) SMEditorObject,

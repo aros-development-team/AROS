@@ -64,7 +64,7 @@ Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 	    (IPTR)properties, 3,
 	    MUIM_Set, MUIA_ScreenModeProperties_DisplayID, MUIV_TriggerValue
 	);
-	
+		
         DoMethod
 	(
 	    properties, MUIM_Notify, MUIA_ScreenModeProperties_DisplayID, MUIV_EveryTime,
@@ -185,6 +185,8 @@ IPTR SMEditor__MUIM_PrefsEditor_ImportFH
     if (success)
     {
         SMPByteSwap(&smp);
+	
+	nnset(data->selector, MUIA_ScreenModeSelector_Active, smp.smp_DisplayID);
 	SetAttrs
 	(
 	    data->properties,
