@@ -402,12 +402,18 @@ struct StringInfo
     struct KeyMap	* AltKeyMap;
 };
 
-			 /***** Requester *****/
+/**********************************************************************
+ **                            Requesters                            **
+ **********************************************************************/
 
+/* The following struct is used for standard intuition requesters
+   (not to be mixed up with asl or easy requesters).
+   See intuition.library/Request() for more information. */
 struct Requester
 {
     struct Requester * OlderRequest;
 
+    /* The dimensions of the requester */
     WORD LeftEdge;
     WORD TopEdge;
     WORD Width;
@@ -415,44 +421,56 @@ struct Requester
     WORD RelLeft;
     WORD RelTop;
 
-    struct Gadget    * ReqGadget;
-    struct Border    * ReqBorder;
-    struct IntuiText * ReqText;
+    struct Gadget    * ReqGadget; /* First gadget of the requester */
+    struct Border    * ReqBorder; /* First border of the requester */
+    struct IntuiText * ReqText;   /* First intuitext of the requester */
 
     UWORD Flags;    /* see below */
-    UBYTE BackFill;
+    UBYTE BackFill; /* a pen to fill the background of the requester */
 
-    struct Layer * ReqLayer;
+    struct Layer * ReqLayer; /* The layer on which the requester is based */
 
-    UBYTE ReqPad1[32];
+    UBYTE ReqPad1[32]; /* PRIVATE */
 
-    struct BitMap * ImageBMap;
-    struct Window * RWindow;
-    struct Image  * ReqImage;
+    struct BitMap * ImageBMap; /* you may use this to fill the requester
+                                  with your own image */
+    struct Window * RWindow;   /* window, which the requester belongs to */
+    struct Image  * ReqImage;  /* corresponds to USEREQIMAGE (see below) */
 
-    UBYTE ReqPad2[32];
+    UBYTE ReqPad2[32]; /* PRIVATE */
 };
 
 /* Flags */
-#define POINTREL      (1<<0)
-#define PREDRAWN      (1<<1)
-#define NOISYREQ      (1<<2)
-#define SIMPLEREQ     (1<<4)
-#define USEREQIMAGE   (1<<5)
-#define NOREQBACKFILL (1<<6)
+#define POINTREL      (1<<0) /* If set, LeftEdge and TopEdge are relative
+                                to the coordinates of either the pointer
+                                or the window */
+#define PREDRAWN      (1<<1) /* If set, ImageBMap points to a custom bitmap */
+#define NOISYREQ      (1<<2) /* Requester doesn't filter input */
+#define SIMPLEREQ     (1<<4) /* If set, a SIMPLEREFRESH layer is used */
+#define USEREQIMAGE   (1<<5) /* ReqImage points to an image, which is used
+                                as background */
+#define NOREQBACKFILL (1<<6) /* Ignore BackFill pen */
 /* The following flags are READ-ONLY */
 #define REQOFFWINDOW  (1<<12)
-#define REQACTIVE     (1<<13)
-#define SYSREQUEST    (1<<14)
+#define REQACTIVE     (1<<13) /* Requester is active */
+#define SYSREQUEST    (1<<14) /* unused */
 #define DEFERREFRESH  (1<<15)
 
+/* This struct is passes as second parameter to EasyRequestArgs() and
+   BuildEasyRequest(). It describes the general look of the requester. */
 struct EasyStruct
 {
-    ULONG   es_StructSize; /* should be 20 at the moment */
-    ULONG   es_Flags;
-    UBYTE * es_Title;
-    UBYTE * es_TextFormat;
-    UBYTE * es_GadgetFormat;
+    ULONG   es_StructSize;   /* Should be sizeof(struct EasyStruct). Note
+                                that this size may change, if you update the
+                                includes! Do not use absolute values as
+                                the size of pointers may vary on different
+                                platforms! */
+    ULONG   es_Flags;        /* None defined, yet */
+    UBYTE * es_Title;        /* Text in the titlebar of the requester */
+    UBYTE * es_TextFormat;   /* Text in requester (printf-style). The
+                                arguments needed for that string are the
+                                fourth paramter to EasyRequestArgs() */
+    UBYTE * es_GadgetFormat; /* Text of the gadgets, separated by |'s */
 };
 
 			    /***** Window *****/

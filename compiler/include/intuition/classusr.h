@@ -72,7 +72,7 @@ struct opGet
 {
     STACKULONG	MethodID;
     Tag 	opg_AttrID;
-    STACKIPTR * opg_Storage;
+    IPTR      * opg_Storage;
 };
 
 struct opAddTail
