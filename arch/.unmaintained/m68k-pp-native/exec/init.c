@@ -6,7 +6,7 @@
 #ifdef __palmos__
 #include <Pilot.h>
 #endif
-#include <registers.h>
+#include <asm/registers.h>
 #include <gfx.h>
 
 #define AROS_USE_OOP

@@ -8,7 +8,7 @@
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <exec/memory.h>
-#include <asm/ptrace.h>
+#include <exec/ptrace.h>
 #include "etask.h"
 #include "exec_util.h"
 

@@ -39,7 +39,7 @@
  
 ******************************************************************************/
 
-	#include "../machine.i"
+	#include "../include/aros/machine.i"
 
 	.text
 	.balign 4
