@@ -177,7 +177,7 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 		    unit->au_Base = LIBBASE;
 		    unit->au_Bus  = bus;
 		    unit->au_Drive = AllocPooled(LIBBASE->ata_MemPool, sizeof(struct DriveIdent));
-		    unit->au_UnitNum = b << 8 | u;
+		    unit->au_UnitNum = b << 1 | u;	// b << 8 | u
 		    unit->au_DevMask = 0xa0 | (u << 4);
 
 		    if (LIBBASE->ata_32bit)
@@ -285,7 +285,7 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 		    unit->au_NumLoop = unit->au_Flags & AF_ATAPI ?
 			10000000 : 4000000;
 
-		    D(bug("[ATA] Unit %02x%02x %s '%s'", b, u, 
+		    D(bug("[ATA] Unit %03x %s '%s'", unit->au_UnitNum, 
 			unit->au_Flags & AF_ATAPI ? "ATAPI":"ATA",unit->au_Model));
 
 		    if (!(unit->au_Flags & AF_ATAPI))

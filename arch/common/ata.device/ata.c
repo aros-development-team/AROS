@@ -752,7 +752,7 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
 		    */
 		    AROS_LVO_CALL3(void, 
 			AROS_LCA(struct IORequest *, (struct IORequest *)(ios[count]), A1),
-			AROS_LCA(ULONG, (b << 8) | d, D0),
+			AROS_LCA(ULONG, (b << 1) | d, D0),	// (b << 8) | d
 			AROS_LCA(ULONG, 0, D1),
 			LIBBASETYPEPTR, LIBBASE, 1, ata);
 			

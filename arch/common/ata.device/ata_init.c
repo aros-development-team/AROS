@@ -524,8 +524,8 @@ AROS_LH3(void, open,
     iorq->io_Error = IOERR_OPENFAIL;
 
     /* Extract bus and device numbers */
-    bus = (unitnum & 0xff00) >> 8;
-    dev = (unitnum & 0x00ff);
+    bus = unitnum >> 1;			// 0xff00 >> 8
+    dev = (unitnum & 0x1);		// 0x00ff
 
     /* Is the bus number within allowed range and is it allocated at all? */
     if ((bus < MAX_BUS) && (LIBBASE->ata_Buses[bus] != NULL))
