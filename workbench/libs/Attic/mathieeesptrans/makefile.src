@@ -34,7 +34,9 @@ FUNCTIONS = \
 	ieeesplog \
 	ieeesplog10 \
 	ieeesppow \
-	ieeespsin
+	ieeespsin \
+	ieeespcos \
+	ieeesptan
 
 
 

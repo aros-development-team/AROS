@@ -2,6 +2,9 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1997/07/28 20:43:04  bergers
+    Some bug-fixes and changes
+
     Revision 1.2  1997/07/27 21:47:24  bergers
     Initial revision - yet more math stuff!
 
@@ -104,6 +107,14 @@ struct MathIeeeSingTransBase_intern
 #define sinf4    0xb9500d01 /* -1/7!   */
 #define sinf5    0x3638ef1d /*  1/9!   */
 #define sinf6    0xb2d7322b /* -1/11!  */
+
+// for calculation of the cosine
+#define cosf1    one        /*  1/1!   */
+#define cosf2    0xbf000000 /* -1/2!   */
+#define cosf3    0x3d2aaaab /*  1/4!   */
+#define cosf4    0xbab60b61 /* -1/6!   */
+#define cosf5    0x37d00d01 /*  1/8!   */
+#define cosf6    0xb493f27e /* -1/10!  */
 
 
 #define expunge() \

@@ -14,7 +14,7 @@ LIB=$(LIBDIR)/lib$(LIBNAME).a
 
 INIT_FILE = $(LIBNAME)_init
 
-FILES = $(LIBNAME)_functable intern_spld
+FILES = $(LIBNAME)_functable intern_spld intern_spisodd
 
 END_FILE = $(LIBNAME)_endtag
 

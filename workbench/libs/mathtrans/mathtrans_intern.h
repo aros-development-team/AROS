@@ -32,7 +32,7 @@ struct MathTransBase_intern; /* prereference */
 /* Internal prototypes */
 
 LONG intern_SPLd(struct MathTransBase_intern * MathTransBase, ULONG fnum);
-
+LONG intern_SPisodd(ULONG fnum);
 
 #define MATHFFPNAME     "mathtrans.library"
 
@@ -73,6 +73,7 @@ struct MathTransBase_intern
 #define FFP_zero   0x00000000
 #define FFP_Pinfty 0xffffff7f
 #define FFP_Ninfty 0xffffffff
+#define FFP_NAN    0xffffffff
 
 /* constants neccessary for log and log10 */
 #define InvLde   0xb1721840    /*  1 / (log e / log 2)  = log 2 / log e  */
@@ -96,8 +97,23 @@ struct MathTransBase_intern
 #define pio2     0xc90fdb41 /*  1.57079632679489655800e+00 */
 #define pio4     0xc90fdb40 /*  0.7853981634e+00           */
 
-/* constants neccessary for acos and asin */
+/*  for calculation of the sine */
+#define sinf1    one        /*  1/1!   */
+#define sinf2    0xaaaaabbe /* -1/3!   */
+#define sinf3    0x8888893a /*  1/5!   */
+#define sinf4    0xd00d01b4 /* -1/7!   */
+#define sinf5    0xb8ef1d2e /*  1/9!   */
+#define sinf6    0xd7322ba7 /* -1/11!  */
 
+/*  for calculation of the cosine */
+#define cosf1    one        /*  1/1!   */
+#define cosf2    0x800000c0 /* -1/2!   */
+#define cosf3    0xaaaaab3c /*  1/4!   */
+#define cosf4    0xb60b61b7 /* -1/6!   */
+#define cosf5    0xd00d0131 /*  1/8!   */
+#define cosf6    0x93f27eab /* -1/10!  */
+
+/* constants neccessary for acos and asin */
 #define pS0      0xaaaaaa3e /*a  1.66666666666666657415e-01 */
 #define pS1      0xa6b090bf /*0 -3.25565818622400915405e-01 */
 #define pS2      0xce0aa83e /*8  2.01212532134862925881e-01 */

@@ -23,7 +23,7 @@
 
 /*  SYNOPSIS */
 
-      AROS_LHA(LONG*, pfnum2, D1),
+      AROS_LHA(IPTR*, pfnum2, D1),
       AROS_LHA(LONG , fnum1 , D0),
 
 /*  LOCATION */

@@ -138,4 +138,4 @@
 
   return IEEESPMul( IEEESPAdd(ld_M, Exponent), InvLd10);
 
-} /* SPLog */
+} /* IEEESPLog */
