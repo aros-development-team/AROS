@@ -22,8 +22,8 @@ struct libraryset
 };
 
 extern int set_call_funcs(void *set[], int order);
-extern int set_open_libraries(struct libraryset *set[]);
-extern void set_close_libraries(struct libraryset *set[]);
+extern int set_open_libraries(void);
+extern void set_close_libraries(void);
 
 
 #define SETNAME(set) __##set##_SET__
@@ -43,13 +43,21 @@ void * SETNAME(set)[] __attribute__((weak))={0,0}
 #define ADD2EXIT(symbol, pri)\
 	ADD2SET(symbol, __EXIT_SET__, pri)
 
-#define ADD2LIBS(name, ver, pri, btype, bname, postopenfunc, preclosefunc) \
-btype bname;                                                               \
-const ULONG bname##_version __attribute__((weak)) = ver;                   \
-struct libraryset libraryset_##bname =                                     \
-{                                                                          \
-     name, &bname##_version, &bname, postopenfunc, preclosefunc            \
-};                                                                         \
+
+/*
+  this macro generates the necessary symbols to open and close automatically
+  a library. It will make an error message be showed if the library cannot
+  be open
+*/
+#define ADD2LIBS(name, ver, pri, btype, bname, postopenfunc, preclosefunc)   \
+btype bname;                                                                 \
+extern int __includeshowerror;                                               \
+const int __libincludeshowerror __attribute__((weak)) = &__includeshowerror; \
+const ULONG bname##_version __attribute__((weak)) = ver;                     \
+struct libraryset libraryset_##bname =                                       \
+{                                                                            \
+     name, &bname##_version, &bname, postopenfunc, preclosefunc              \
+};                                                                           \
 ADD2SET(libraryset_##bname, __LIBS_SET__, pri)
 
 #define ASKFORLIBVERSION(bname, ver) \
