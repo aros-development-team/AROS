@@ -6,11 +6,13 @@
 # $* The stem (ie. target is dir/a.foo.b and the pattern is
 #    a.%.b, then the stem is dir/foo)
 
+#------------------------------------------------------------------------------
 # Create one directory without any output
 %define mkdir_q dir=.
 	@$(IF) $(TEST) ! -d %(dir) ; then $(MKDIR) %(dir) ; else $(NOP) ; fi
 %end
 
+#------------------------------------------------------------------------------
 # Create several directories without any output
 %define mkdirs_q dirs=/M
 	@$(FOR) dir in %(dirs) ; do \
@@ -18,6 +20,7 @@
 	done
 %end
 
+#------------------------------------------------------------------------------
 # Same, more noisy
 %define mkdirs dirs=/M
 	@$(FOR) dir in %(dirs) ; do \
@@ -25,6 +28,7 @@
 	done
 %end
 
+#------------------------------------------------------------------------------
 # Assemble the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt).
 %define assemble_q cmd=$(AS) opt=$(AFLAGS) from=$< to=$@ err=$*.err
@@ -33,39 +37,55 @@
 	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 %end
 
+#------------------------------------------------------------------------------
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt).
-%define compile_q cmd=$(CC) opt=$(CFLAGS) from=$< to=$@ err=$*.err
-	@$(ECHO) "Compiling $(CURDIR)/%(from)..."
-	@%(cmd) %(opt) -c %(from) -o %(to) 2>&1|tee %(err)
-	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
+%define compile_q cmd=$(CC) opt=$(CFLAGS) from=$< to=$@ path=$(CURDIR)/
+	@$(ECHO) "Compiling %(path)%(from)..."
+	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		echo "%(path)%(from): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
+		cat $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		true ; \
+	    fi ; \
+	else \
+	    echo "Compile failed: %(cmd) %(opt) -c %(from) -o %(to)" ; \
+	    exit 1 ; \
+	fi
 %end
 
-%define link_q cmd=$(CC) opt=$(ILDFLAGS) startup=$(STARTUP) from=$< to=$@ err=$(@F)-x.err libs=$(LIBS)
+#------------------------------------------------------------------------------
+%define link_q cmd=$(CC) opt=$(ILDFLAGS) startup=$(STARTUP) from=$< to=$@ libs=$(LIBS)
 	@$(ECHO) "Linking %(to)..."
-	@%(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) 2>&1|tee %(err)
-%checkuds err=%(err) to=%(to)
-	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
+	@$(IF) %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		echo "%(path)%(from): %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs)" >> $(GENDIR)/errors ; \
+		cat $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		true ; \
+	    fi ; \
+	else \
+	    echo "Link failed: %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs)" ; \
+	    exit 1 ; \
+	fi
+%checkuds to=%(to) linkcmd="%(cmd) %(opt) %(startup) %(from) -o %(to) %(libs)"
 %end
 
-%define link cmd=$(CC) opt=$(ILDFLAGS) startup=$(STARTUP) from=$< to=$@ err=$(@F)-x.err libs=$(LIBS) us=undefdsyms.list
-	@$(ECHO) "Linking %(to)..."
-	%(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) 2>&1|tee %(err)
-%checkuds err=%(err) to=%(to)
-	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
-%end
-
-%define checkuds us=undefdsyms.list err=$(@F)-x.err to=$@
+#------------------------------------------------------------------------------
+%define checkuds us=$(GENDIR)/undefdsyms.list err=$(GENDIR)/errors to=$@ linkcmd=""
 	@$(ECHO) "Checking %(to)..."
 	@$(CHECKUDS) %(to) > %(us)
 	@$(IF) $(TEST) -s %(us); then \
+	    $(ECHO) "%(linkcmd)" >> %(err) ; \
 	    $(CAT) %(us) >> %(err); \
 	    $(ECHO) "There are undefined symbols in %(to):"; \
 	    $(CAT) %(us); \
+	    exit 1 ; \
 	else $(NOP) ; fi
-	@$(RM) %(us)
 %end
 
+#------------------------------------------------------------------------------
 # Create the library
 %define mklib_q ar=$(AR) ranlib=$(RANLIB) to=$@ from=$(OBJS)
 	@$(ECHO) "Creating library %(to)..."
@@ -73,6 +93,7 @@
 	@%(ranlib) %(to)
 %end
 
+#------------------------------------------------------------------------------
 %define mklib_arch ar=$(AR) ranlib=$(RANLIB) to=$@ from="$(OBJS)" cmd=$(CC) opt=$(CFLAGS) err=functions.err archive=$(ARCHIVE)
 	@$(ECHO) "Creating library %(to)..."
 	@%(ar) %(to) %(from)
@@ -80,9 +101,7 @@
 	@$(RM) $(RMLIB)
 
 $(OBJDIR)/functions.o : $(OBJDIR)/functions.c
-	@$(ECHO) "Compiling $<..."
-	@%(cmd) %(opt) -I$(OBJDIR) -c $< -o $@ 2>&1|tee %(err)
-	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
+%compile_q opt="$(CFLAGS) -I$(OBJDIR)"
 
 $(OBJDIR)/functions.c : %(archive)
 %mkdir_q $(OBJDIR)
@@ -92,6 +111,7 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 %mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
 %end
 
+#------------------------------------------------------------------------------
 %define mklib_f ar=$(AR) ranlib=$(RANLIB) to=$@ from="$(OBJS)" cmd=$(CC) opt=$(CFLAGS) err=functions.err functions=$(FUNCTIONS) deplibs="$(DEPLIBS)"
 	@$(ECHO) "Creating library %(to)..."
 	@%(ar) %(to) %(from)
@@ -99,9 +119,7 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 	@$(RM) $(RMLIB)
 
 $(OBJDIR)/functions.o : $(OBJDIR)/functions.c
-	@$(ECHO) "Compiling $<..."
-	@%(cmd) %(opt) -I$(OBJDIR) -c $< -o $@ 2>&1|tee %(err)
-	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
+%compile_q opt="$(CFLAGS) -I$(OBJDIR)" path=""
 
 $(OBJDIR)/functions.c : $(foreach f,%(functions),$(f).c)
 	@$(CPAK) %(functions)
@@ -112,6 +130,7 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 %mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
 %end
 
+#------------------------------------------------------------------------------
 # Same but more noisy
 %define mklib ar=$(AR) ranlib=$(RANLIB) to=$@ from=$(OBJS)
 	@$(ECHO) "Creating library %(to)..."
@@ -119,6 +138,7 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 	%(ranlib) %(to)
 %end
 
+#------------------------------------------------------------------------------
 # Create the dependency file %(to) for %(from) in the directory %(dir)
 %define mkdepend_q flags=$(CFLAGS) from=$< to=$@ dir=$(@D) opt=
 	@$(IF) [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else $(NOP) ; fi
@@ -126,6 +146,7 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 	@$(MKDEPEND) %(flags) %(from) -o %(to)
 %end
 
+#------------------------------------------------------------------------------
 # Same but more noisy
 %define mkdepend flags=$(CFLAGS) from=$< to=$@ dir=$(@D) opt=
 	@$(IF) [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else $(NOP) ; fi
@@ -133,6 +154,7 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 	$(MKDEPEND) %(flags) %(from) -o %(to)
 %end
 
+#------------------------------------------------------------------------------
 # Add section with all necessary libs and dependencies for linking
 %define define_libs prelibs= postlibs= deplibs=
 STARTUP = $(LIBDIR)/startup.o
@@ -141,6 +163,7 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 	$(LIBDIR)/libarosc.a $(LIBDIR)/libarosm.a %(deplibs)
 %end
 
+#------------------------------------------------------------------------------
 # Do something in all subdirs
 # This macro uses a trick: %(target) is evaluated *after* %(text), so one
 # can use %(target) in %(text).
@@ -164,6 +187,7 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 	done
 %end
 
+#------------------------------------------------------------------------------
 # Prepare creation of a shared lib
 %define prepare_shlib lib=dummy shflag=$(SHARED_DUMMY)
 ifeq ("%(shflag)","yes")
@@ -177,6 +201,7 @@ RMLIB  := $(LIBDIR)/lib%(lib).so
 endif
 %end
 
+#------------------------------------------------------------------------------
 # Generate function table
 %define mkfunctable_q lib=dummy from=$^ to=$@
 	@$(ECHO) "Regenerating %(to)..."
@@ -184,6 +209,7 @@ endif
 	    -v lib="%(lib)" %(from)
 %end
 
+#------------------------------------------------------------------------------
 # Generate endskip variable
 %define mkendtag_q lib=dummy to=$@
 	@$(ECHO) "Regenerating %(to)..."
@@ -191,6 +217,7 @@ endif
 	    -v lib="%(lib)"
 %end
 
+#------------------------------------------------------------------------------
 # Common rules for all makefiles
 %define common
 # Delete generated makefiles
@@ -199,6 +226,7 @@ clean ::
 
 %end
 
+#------------------------------------------------------------------------------
 # Include the dependency files and add some internal rules
 %define include_deps deps=$(DEPS)/M nodepstargets=
 # Include these files but only if the current target is neither
@@ -208,6 +236,7 @@ ifeq (,$(filter clean% setup% includes% %(nodepstargets),$(TARGET)))
 endif
 %end
 
+#------------------------------------------------------------------------------
 # rule to generate libdefs.h with archtool (options may go away!)
 %define libdefs_rule conffile=lib.conf genlibdefstool=$(ARCHTOOL) dest=libdefs.h
 %(dest) : %(conffile) %(genlibdefstool)
@@ -216,12 +245,14 @@ endif
 %end
 
 
+#------------------------------------------------------------------------------
 # rule to generate asm files from c files (for debugging purposes)
 %define asm_rule opt=$(GENASM)
 .PHONY : asm
 asm : $(foreach f,%(opt),$(f).s) all
 %end
 
+#------------------------------------------------------------------------------
 # generate asm files from c files (for debugging purposes)
 %define ctoasm_q
 %.s : %.c
@@ -229,9 +260,11 @@ asm : $(foreach f,%(opt),$(f).s) all
 	@$(CC) -S $(CFLAGS) $< -c -o $@
 %end
 
+#------------------------------------------------------------------------------
 %define gennames name=$(LIBNAME)
 %end
 
+#------------------------------------------------------------------------------
 %define genlib flags=$(CFLAGS) cc=$(CC)
 ifndef SLIB
 SLIB := $(SLIBDIR)/$(LIBNAME).library
@@ -293,9 +326,7 @@ clean ::
 	    $(LIB) $(SLIB)
 
 $(OBJDIR)/%.o : %.c
-	@$(ECHO) "Compiling $(CURDIR)/$<..."
-	@%(cc) %(flags) -c $< -o $@ 2>&1|tee $*.err
-	@$(IF) $(TEST) -s $*.err ; then $(TOUCH) $(TOP)/errors ; else $(RM) $*.err ; fi
+%compile_q cmd=%(cc) opt=%(flags)
 
 # Rule to create a .library in the local dir
 libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
@@ -325,6 +356,7 @@ $(OBJDIR)/%.d : %.c
 %mkdepend opt=$(MKDEPEND_FLAGS)
 %end
 
+#------------------------------------------------------------------------------
 %define genromlib flags=$(CFLAGS) cc=$(CC)
 ifndef INCLUDE_PREFIX
 INCLUDE_PREFIX := $(LIBNAME)
@@ -392,9 +424,7 @@ clean ::
 	    $(LIB) $(SLIB)
 
 $(OBJDIR)/%.o : %.c
-	@$(ECHO) "Compiling $(CURDIR)/$<..."
-	@%(cc) %(flags) -c $< -o $@ 2>&1|tee $*.err
-	@$(IF) $(TEST) -s $*.err ; then $(TOUCH) $(TOP)/errors ; else $(RM) $*.err ; fi
+%compile_q cmd=%(cc) opt=%(flags)
 
 # Rule to create a .library in the local dir
 libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
@@ -426,6 +456,7 @@ $(OBJDIR)/%.d : %.c
 %mkdepend opt=$(MKDEPEND_FLAGS)
 %end
 
+#------------------------------------------------------------------------------
 # version of genromlib that allows you to use archtools
 %define genromlib_arch flags=$(CFLAGS) cc=$(CC) files=$(FILES) archive=$(ARCHIVE)
 ifndef INCLUDE_PREFIX
@@ -528,6 +559,7 @@ $(OBJDIR)/%.d : %.c
 
 %end
 
+#------------------------------------------------------------------------------
 # version of genromlib that allows you to use cpak
 %define genromlib_f flags=$(CFLAGS) cc=$(CC) files=$(FILES) functions=$(FUNCTIONS)
 ifndef INCLUDE_PREFIX
@@ -634,6 +666,7 @@ $(OBJDIR)/%.d : %.c
 
 %end
 
+#------------------------------------------------------------------------------
 # version of genromlib that allows you to use cpak and generates inline
 %define genromlib_finline flags=$(CFLAGS) cc=$(CC) files=$(FILES) functions=$(FUNCTIONS)
 ifndef INCLUDE_PREFIX
@@ -740,6 +773,7 @@ $(OBJDIR)/%.d : %.c
 
 %end
 
+#------------------------------------------------------------------------------
 %define genlibincludes name=$(INCLUDE_PREFIX) functions=$(ALL_FUNCTIONS)
 #MM includes-generate : setup-clib
 includes-generate : setup libdefs.h $(OBJDIR)/headers.stamp \
@@ -762,6 +796,7 @@ $(INCDIR)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
 	$(CP) $< $@
 %end
 
+#------------------------------------------------------------------------------
 %define genlibincludes_arch name=$(INCLUDE_PREFIX) archive=$(ARCHIVE)
 #MM includes-generate : setup-clib
 includes-generate : setup libdefs.h $(OBJDIR)/headers.stamp \
@@ -794,6 +829,7 @@ $(INCDIR)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
 
 
 
+#------------------------------------------------------------------------------
 %define genlibincludesinline name=$(INCLUDE_PREFIX) functions=$(ALL_FUNCTIONS)
 #MM includes-generate : setup-clib
 includes-generate : setup libdefs.h $(OBJDIR)/headers.stamp \
@@ -827,6 +863,7 @@ $(INCDIR)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
 	$(CP) $< $@
 %end
 
+#------------------------------------------------------------------------------
 # Used to help with the function replacement mechanism. Use like
 #
 #	%prepare_replace module=os/exec
@@ -853,10 +890,12 @@ $(INCDIR)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
 -include $(GENDIR)/%(module)/mf.inc
 %end
 
+#------------------------------------------------------------------------------
 %define filter_replace var=FILES filter=$(SUPPRESS_FILES)
 %(var) := $(filter-out %(filter),$(%(var)))
 %end
 
+#------------------------------------------------------------------------------
 # You can use this to prevent objects which weren't compiled correctly by
 # config/$(...) directories to not be compiled by the local makefile.
 %define additional_objs_rule
@@ -865,18 +904,21 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 	@exit 1
 %end
 
+#------------------------------------------------------------------------------
 %define add_objects files=/M
 	@$(FOR) file in %(files) ; do \
 	    $(ECHO) >> $(GENDIR)/config.files "add $$file" ; \
 	done
 %end
 
+#------------------------------------------------------------------------------
 %define exclude_files files=/M
 	@$(FOR) file in %(files) ; do \
 	    $(ECHO) >> $(GENDIR)/config.files "not $$file" ; \
 	done
 %end
 
+#------------------------------------------------------------------------------
 %define genlib_arch
 SLIB	      := $(SLIBDIR)/$(LIBNAME).library
 LIB	      := $(LIBDIR)/lib$(LIBNAME).a
@@ -913,9 +955,7 @@ $(LIB) : $(OBJS)
 	@$(RANLIB) $@
 
 $(OBJDIR)/functions.o : functions.c
-	@$(ECHO) "Compiling $<..."
-	@$(CC) $(CFLAGS) -c functions.c -o $(OBJDIR)/functions.o 2>&1|tee functions.err
-	@$(IF) $(TEST) -s functions.err; then $(TOUCH) $(TOP)/errors ; else $(RM) functions.err ; fi
+%compile_q
 
 functions.c : $(ARCHIVE)
 	@$(ARCHTOOL) -s $(ARCHIVE) $@
@@ -927,9 +967,7 @@ ALL_FUNCTIONS := $(FUNCTIONS)
 %genlibincludes_arch
 
 $(OBJDIR)/%.o : %.c
-	@$(ECHO) "Compiling $(CURDIR)/$<..."
-	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
-	@$(IF) $(TEST) -s $*.err; then $(TOUCH) $(TOP)/errors;else $(RM) $*.err; fi
+%compile_q
 
 functable.c : $(ARCHIVE) libdefs.h
 	@$(ECHO) "Generating $@..."
@@ -948,6 +986,7 @@ libdefs.h : lib.conf
 
 %end
 
+#------------------------------------------------------------------------------
 %define genlib_cpak
 SLIB	      := $(SLIBDIR)/$(LIBNAME).library
 LIB	      := $(LIBDIR)/lib$(LIBNAME).a
@@ -984,9 +1023,7 @@ $(LIB) : $(OBJS)
 	@$(RANLIB) $@
 
 $(OBJDIR)/functions.o : functions.c
-	@$(ECHO) "Compiling $<..."
-	@$(CC) $(CFLAGS) -c functions.c -o $(OBJDIR)/functions.o 2>&1|tee functions.err
-	@$(IF) $(TEST) -s functions.err; then $(TOUCH) $(TOP)/errors ; else $(RM) functions.err ; fi
+%compile_q
 
 functions.c : $(foreach f,$(FUNCTIONS),$(f).c)
 	@$(CPAK) $(FUNCTIONS)
@@ -998,9 +1035,7 @@ ALL_FUNCTIONS := $(FUNCTIONS)
 %genlibincludes
 
 $(OBJDIR)/%.o : %.c
-	@$(ECHO) "Compiling $(CURDIR)/$<..."
-	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
-	@$(IF) $(TEST) -s $*.err; then $(TOUCH) $(TOP)/errors;else $(RM) $*.err; fi
+%compile_q
 
 FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 
@@ -1022,12 +1057,8 @@ libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
 
 %end
 
-
-
-
-
+#------------------------------------------------------------------------------
 #Common template for generating non-rom shared objects
-
 %define genwblib flags=$(CFLAGS) cc=$(CC)
 ifndef LIBPOST
 LIBPOST := library
@@ -1103,9 +1134,7 @@ clean ::
 	    $(LIB) $(SLIB)
 
 $(OBJDIR)/%.o : %.c
-	@$(ECHO) "Compiling $(CURDIR)/$<..."
-	@%(cc) %(flags) -c $< -o $@ 2>&1|tee $*.err
-	@$(IF) $(TEST) -s $*.err ; then $(TOUCH) $(TOP)/errors ; else $(RM) $*.err ; fi
+%compile_q cmd=%(cc) opt=%(flags)
 
 # Rule to create a .library in the local dir
 libdefs.h : lib.conf $(ARCHTOOL)
