@@ -27,18 +27,19 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define IS_BM_ATTR(attr, idx) ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Total_BitMap_Attrs)
 
-static AttrBase HiddBitMapAttrBase = 0;
-static AttrBase HiddGCAttrBase = 0;
-static AttrBase HiddPixFmtAttrBase = 0;
-static AttrBase HiddColorMapAttrBase = 0;
+static AttrBase HiddBitMapAttrBase	= 0;
+static AttrBase HiddGCAttrBase		= 0;
+static AttrBase HiddPixFmtAttrBase	= 0;
+static AttrBase HiddSyncAttrBase	= 0;
+static AttrBase HiddColorMapAttrBase	= 0;
 
 static struct ABDescr attrbases[] = {
-    { IID_Hidd_BitMap,	&HiddBitMapAttrBase	},
-    { IID_Hidd_GC,	&HiddGCAttrBase		},
-    { IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
-    { IID_Hidd_PixFmt,	&HiddColorMapAttrBase	},
+    { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
+    { IID_Hidd_GC,		&HiddGCAttrBase		},
+    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
+    { IID_Hidd_Sync,		&HiddSyncAttrBase	},
+    { IID_Hidd_ColorMap,	&HiddColorMapAttrBase	},
     { NULL, 0UL }
 };
 
@@ -54,27 +55,46 @@ static struct ABDescr attrbases[] = {
 /* BitMap baseclass is a in C++ terminology a pure virtual
    baseclass. It will not allocate any bitmap data at all,
    that is up to the subclass to do.
+
+   The main task of the BitMap baseclass is to store
+   
+   There are two ways the we can find out the pixfmt:
+   
+   Displayable bitmap - 
+   	The tags will contrain a modeid.
+   	One can use this modeid to get a pointer to an
+	allready registered pixfmt.
+	
+    Non-displayable bitmap -
+    	The aHidd_BitMap_StdPixFmt attribute will allways be passed
+	  
 */    
 
-	 
+
+#define GOT_BM_ATTR(code) GOT_ATTR(code, aoHidd_BitMap, bitmap)
+#define AO(x) aoHidd_BitMap_ ## x
+
+#define BMAF(x) (1L << aoHidd_BitMap_ ## x)
+
+#define BM_NONDISP_AF ( BMAF(Width) | BMAF(Height) | BMAF(PixFmt) )
 
 static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
 {
-    struct HIDDBitMapData *data;
-    struct TagItem *tag, *tstate;
 
     EnterFunc(bug("BitMap::New()\n"));
 
     obj  = (Object *) DoSuperMethod(cl, obj, (Msg) msg);
 
-    if(obj)
-    {
-    	BOOL got_gfxhidd = FALSE;
+    if(NULL != obj) {
+    	struct HIDDBitMapData *data;
 	BOOL ok = TRUE;
 	struct TagItem colmap_tags[] = {
 	    { aHidd_ColorMap_NumEntries,	16 },
 	    { TAG_DONE, 0UL }
 	};
+
+    	DECLARE_ATTRCHECK(bitmap);
+    	IPTR attrs[num_Total_BitMap_Attrs];
 	
         data = INST_DATA(cl, obj);
     
@@ -84,43 +104,83 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
         data->height      = 200;
         data->reqdepth	  = 8;
         data->displayable = FALSE;
+	data->pf_registered = FALSE;
 
-        tstate = msg->attrList;
-        while((tag = NextTagItem((const struct TagItem **)&tstate)))
-        {
-            ULONG idx;
-
-            if(IS_BM_ATTR(tag->ti_Tag, idx))
-            {
-                switch(idx)
-                {
-                    case aoHidd_BitMap_Width       : data->width       = tag->ti_Data; break;
-                    case aoHidd_BitMap_Height      : data->height      = tag->ti_Data; break;
-                    case aoHidd_BitMap_Depth       : data->reqdepth    = tag->ti_Data; break;
-                    case aoHidd_BitMap_Displayable : data->displayable = (BOOL) tag->ti_Data; break;
-		    case aoHidd_BitMap_Friend	   : data->friend	= (Object *)tag->ti_Data; break;
-		    case aoHidd_BitMap_GfxHidd	   : 
-		    	data->gfxhidd	= (Object *)tag->ti_Data;
-			got_gfxhidd = TRUE;
-			break;
-	    
-
-                    default: D(bug("  unknown attribute %li\n", tag->ti_Data)); break;
-                } /* switch tag */
-            } /* if (is BM attr) */
-        }
-
-
-	if (!got_gfxhidd) {
-	
-    	    kprintf("!!!! BM CLASS DID NOT GET GFX HIDD !!!\n");
-	    kprintf("!!!! The reason for this is that the gfxhidd subclass NewBitmap() method\n");
-	    kprintf("!!!! has not left it to the baseclass to avtually create the object,\n");
-	    kprintf("!!!! but rather done it itself. This MUST be corrected in the gfxhidd subclass\n");
-	    
+	if (0 != ParseAttrs(msg->attrList, attrs, num_Total_BitMap_Attrs
+			, &ATTRCHECK(bitmap), HiddBitMapAttrBase)) {
+	    kprintf("!!! ERROR PARSING ATTRS IN BitMap::New() !!!\n");
+	    kprintf("!!! NUMBER OF ATTRS IN IF: %d !!!\n", num_Total_BitMap_Attrs);
 	    ok = FALSE;
-	    
 	}
+
+	if (ok) {
+	    if (!GOT_BM_ATTR(GfxHidd) || !GOT_BM_ATTR(Displayable)) {
+    	    	kprintf("!!!! BM CLASS DID NOT GET GFX HIDD !!!\n");
+	    	kprintf("!!!! The reason for this is that the gfxhidd subclass NewBitmap() method\n");
+	    	kprintf("!!!! has not left it to the baseclass to avtually create the object,\n");
+	    	kprintf("!!!! but rather done it itself. This MUST be corrected in the gfxhidd subclass\n");
+		kprintf("!!!! ATTRCHECK: %p !!!!\n", ATTRCHECK(bitmap));
+	    
+	    	ok = FALSE;
+	    } else {
+	    	data->gfxhidd = (Object *)attrs[AO(GfxHidd)];
+	    }
+	}
+	
+	/* Save pointer to friend bitmap */
+	if (GOT_BM_ATTR(Friend))
+	    data->friend = (Object *)attrs[AO(Friend)];
+	
+	if (ok) {
+	    if ( attrs[AO(Displayable)] ) {
+		/* We should allways get modeid, but we check anyway */
+		if (!GOT_BM_ATTR(ModeID)) {
+		    kprintf("!!! BitMap:New() DID NOT GET MODEID FOR DISPLAYABLE BITMAP !!!\n");
+		    ok = FALSE;
+		} else {
+	    	    HIDDT_ModeID modeid;
+	    	    Object *sync, *pf;
+		
+		    modeid = (HIDDT_ModeID)attrs[AO(ModeID)];
+	    
+	    	    if (!HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pf)) {
+	    		kprintf("!!! BitMap::New() RECEIVED INVALID MODEID %p\n", modeid);
+	    		ok = FALSE;
+	    	    } else {
+	    		ULONG width, height;
+	    		/* Update the bitmap with data from the modeid */
+			GetAttr(sync, aHidd_Sync_HDisp, &width);
+			GetAttr(sync, aHidd_Sync_VDisp, &height);
+			data->width = width;
+			data->height = height;
+
+		        /* The PixFmt is allready registered and locked in the PixFmt database */
+			data->prot.pixfmt = pf;
+		    }
+	    	}
+	    } else {  /* displayable */
+		if (BM_NONDISP_AF != (BM_NONDISP_AF & ATTRCHECK(bitmap))) {
+		    if (OCLASS(obj) != CSD(cl)->planarbmclass) {
+	    		/* HACK. This is an ugly hack to allow the
+		           late initialization of BitMap objects in AROS.
+		   
+		           The PixelFormat will be set later.
+			*/
+#warning Find a better way to do this.
+	/* One could maybe fix this by implementing a separate AmigaPitMap class
+	*/
+			kprintf("!!! BitMap:New(): NO PIXFMT FOR NONDISPLAYABLE BITMAP !!!\n");
+			ok = FALSE;
+		    }
+		} else {
+		    data->width	 = attrs[AO(Width)];
+		    data->height = attrs[AO(Height)];
+		    data->prot.pixfmt = attrs[AO(PixFmt)]; 
+		}
+	    } /* displayable */
+	} /* if (ok) */
+	
+	
 	
 	/* Try to create the colormap */
 	if (ok) {
@@ -159,7 +219,8 @@ static void bitmap_dispose(Class *cl, Object *obj, Msg *msg)
     
     
     /* Release the previously registered pixel format */
-    HIDD_Gfx_ReleasePixFmt(data->gfxhidd, data->prot.pixfmt);
+    if (data->pf_registered)
+    	HIDD_Gfx_ReleasePixFmt(data->gfxhidd, data->prot.pixfmt);
 
     DoSuperMethod(cl, obj, (Msg) msg);
 
@@ -176,21 +237,21 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 
     EnterFunc(bug("BitMap::Get() attrID: %i  storage: %p\n", msg->attrID, msg->storage));
 
-    if(IS_BM_ATTR(msg->attrID, idx))
+    if(IS_BITMAP_ATTR(msg->attrID, idx))
     {
         switch(idx)
         {
             case aoHidd_BitMap_Width       : *msg->storage = data->width; D(bug("  width: %i\n", data->width)); break;
             case aoHidd_BitMap_Height      : *msg->storage = data->height; break;
             case aoHidd_BitMap_Displayable : *msg->storage = (IPTR) data->displayable; break;
-#if 0
-            case aoHidd_BitMap_Format      : *msg->storage = data->format; break;
-#endif
+	    
+	    case aoHidd_BitMap_PixFmt	: *msg->storage = (IPTR)data->prot.pixfmt; break;
 
 
 	    case aoHidd_BitMap_Friend	   : *msg->storage = (IPTR)data->friend; break;
 	    case aoHidd_BitMap_ColorMap : *msg->storage = (IPTR)data->colmap; break;
 	    
+#if 0
             case aoHidd_BitMap_Depth:
 	    	if (NULL != data->prot.pixfmt) {
 	    	    *msg->storage = ((HIDDT_PixelFormat *)data->prot.pixfmt)->depth;
@@ -198,6 +259,10 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 		    *msg->storage = data->reqdepth;
 		}
 		break;
+		
+#endif
+		
+	    case aoHidd_BitMap_GfxHidd	: *msg->storage = (IPTR)data->gfxhidd; break;
 
 	    case aoHidd_BitMap_BytesPerRow: {
 	    	HIDDT_PixelFormat *pf;
@@ -223,7 +288,8 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
 {
     /* Copy the colors into the internal buffer */
-    struct HIDDBitMapData *data = INST_DATA(cl, o);
+    struct HIDDBitMapData *data;
+    data = INST_DATA(cl, o);
     /* Subclass has initialized HIDDT_Color->pixelVal field and such.
        Just copy it into the colortab.
     */
@@ -239,7 +305,7 @@ static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors
     if (NULL == data->colmap) {
     	return FALSE;
     }
-    
+
     /* Use the colormap class to set the colors */
     return HIDD_CM_SetColors(data->colmap, msg->colors
     	, msg->firstColor, msg->numColors
@@ -613,11 +679,11 @@ static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *
     
 kprintf("COPYBOX: SRC PF: %p, obj=%p, cl=%s, OCLASS: %s\n", srcpf, obj
 	, cl->ClassNode.ln_Name, OCLASS(obj)->ClassNode.ln_Name);
-
-    dstpf = (HIDDT_PixelFormat *)HIDD_BM_GetPixelFormat(msg->dest, vHidd_PixFmt_Native);
+	
+    GetAttr(msg->dest, aHidd_BitMap_PixFmt, (IPTR *)&dstpf);
     
     /* Compare graphtypes */
-    if (HIDD_PF_GRAPHTYPE(srcpf) == HIDD_PF_GRAPHTYPE(dstpf)) {
+    if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf)) {
     	/* It is ok to do a direct copy */
     } else {
     	/* Find out the gfx formats */
@@ -638,7 +704,7 @@ kprintf("COPYBOX: SRC PF: %p, obj=%p, cl=%s, OCLASS: %s\n", srcpf, obj
     
     /* All else have failed, copy pixel by pixel */
 
-    if (HIDD_PF_GRAPHTYPE(srcpf) == HIDD_PF_GRAPHTYPE(dstpf)) {
+    if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf)) {
     	if (IS_TRUECOLOR(srcpf)) {
 kprintf("COPY FROM TRUECOLOR TO TRUECOLOR\n");
 	    for(y = 0; y < msg->height; y++) {
@@ -706,8 +772,6 @@ kprintf("COPY FROM PALETTE TO TRUECOLOR, DRAWMODE %d, CTAB %p\n", GC_DRMD(gc), c
 		    col = &ctab[pix];
 	
 		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, col);
-/*		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, &ctab[HIDD_BM_GetPixel(obj, srcX++, srcY)]);
-*/		    
 		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
 		    
 		}
@@ -1517,11 +1581,14 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColo
     EnterFunc(bug("BitMap::BlitColorExpansion(srcBM=%p, srcX=%d, srcY=%d, destX=%d, destY=%d, width=%d, height=%d)\n",
     		msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
 		
-    
     cemd = GC_COLEXP(gc);
     fg	 = GC_FG(gc);
     bg	 = GC_BG(gc);
-    
+
+/* kprintf("------------- Blit_ColExp: (%d, %d, %d, %d, %d, %d) cemd=%d, fg=%p, bg=%p -------------\n"
+    , msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height
+    , cemd, fg, bg);
+*/    
     for (y = 0; y < msg->height; y ++)
     {
     	for (x = 0; x < msg->width; x ++)
@@ -1530,88 +1597,73 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColo
 	    
 	    /* Pixel value is either 0 or 1 for BM of depth 1 */
 	    is_set = HIDD_BM_GetPixel(msg->srcBitMap, x + msg->srcX, y + msg->srcY);
-	    
-	    if (cemd & vHidd_GC_ColExp_Transparent)
-	    {
-	    	/* Only use apen if pixel is set */
-		if (is_set)
-		{
-		    HIDD_BM_DrawPixel(o, gc, x + msg->destX, y + msg->destY);
-		}
-		    
-	    }
-	    else if (cemd & vHidd_GC_ColExp_Opaque)
-	    {
-	    	/* Use apen if pixel is et, bpen otherwise */
-		if (is_set)
-		    HIDD_BM_DrawPixel(o, gc, x + msg->destX, y + msg->destY);
-		else
-		{
+
+/*	    
+if (is_set)	
+    kprintf("#");
+else
+    kprintf(" "); 
+*/	    
+	    if (is_set) {
+		HIDD_BM_DrawPixel(o, gc, x + msg->destX, y + msg->destY);
+	    } else {
+		if (cemd & vHidd_GC_ColExp_Opaque) {
 		    /* Write bixel with BG pen */
 		    GC_FG(gc) = bg;
 		    HIDD_BM_DrawPixel(o, gc, x + msg->destX, y + msg->destY);
 		    /* Reset to FG pen */
-		    GC_FG(gc) = bg;
-		    
-		}   
-		
+		    GC_FG(gc) = fg;
+		}
 	    } /* if () */
 	    
 	} /* for (each x) */
-	
+/*
+    kprintf("\n");
+*/
     } /* for ( each y ) */
     
     ReturnVoid("BitMap::BlitColorExpansion");
     
 }
 
-/*** BitMap::GetPixelFormat() **********************************************/
-
-
-static Object *bitmap_getpixfmt(Class *cl, Object *o, struct pHidd_BitMap_GetPixelFormat *msg) 
-{
-    Object *fmt;
-    
-    
-    if (msg->stdPixFmt >= num_Hidd_PixFmt)
-    {
-    	kprintf("!!! Illegal pixel format passed to BitMap::GetPixelFormat()\n");
-	return NULL;
-    }
-    
-    if (msg->stdPixFmt == vHidd_PixFmt_Native || msg->stdPixFmt == vHidd_PixFmt_Native32)
-    {
-	struct HIDDBitMapData *data;
-	data = INST_DATA(cl, o);
-	fmt  = data->prot.pixfmt;
-    }
-    else
-    {
-    	fmt = CSD(cl)->std_pixfmts[msg->stdPixFmt - num_Hidd_PseudoPixFmt];
-    }
-
-#if 0    
-    if (msg->stdPixFmt == vHidd_PixFmt_Native32)
-    {
-	msg->pixFmtReturn->bytes_per_pixel = 4;
-	msg->pixFmtReturn->stdpixfmt = vHidd_PixFmt_Native32;
-    }
-#endif
-
-    return fmt;
-}
 
 
 /*** BitMap::BytesPerLine() **********************************************/
 static ULONG bitmap_bytesperline(Class *cl, Object *o, struct pHidd_BitMap_BytesPerLine *msg)
 {
-     Object *pf;
+     ULONG bpl;
      
+     switch (msg->pixFmt) {
+         case vHidd_StdPixFmt_Native32:
+	     bpl = sizeof (HIDDT_Pixel) * msg->width;
+	     break;
+	     
+	 case vHidd_StdPixFmt_Native: {
+	     struct HIDDBitMapData *data;
+	     
+	     data = INST_DATA(cl, o);
+	     
+	     bpl = ((HIDDT_PixelFormat *)data->prot.pixfmt)->size * msg->width;
+	     break;
+	}
+	     
+	default: {
+	    Object *pf;
+	    struct HIDDBitMapData *data;
+	    
+	    data = INST_DATA(cl, o);
+	    
+	    pf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+	    if (NULL == pf) {
+		kprintf("!!! COULD NOT GET STD PIXFMT IN BitMap::BytesPerLine() !!!\n");
+		return 0;
+	    }
+	    bpl = ((HIDDT_PixelFormat *)pf)->size * msg->width;
+	    break;
+	}
+     }
      
-#warning Optimize this. We can just halfway reimplement bitmap_getpixelformat above
-     pf = HIDD_BM_GetPixelFormat(o, msg->pixFmt);
-     
-     return ((HIDDT_PixelFormat *)pf)->size * msg->width;
+     return bpl;
      
 }
 /*** BitMap::Set() *****************************************************/
@@ -1635,43 +1687,19 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
     tstate = msg->attrList;
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
-        if(IS_BM_ATTR(tag->ti_Tag, idx))
+        if(IS_BITMAP_ATTR(tag->ti_Tag, idx))
         {
             switch(idx)
             {
                 case aoHidd_BitMap_Width         : data->width         = tag->ti_Data; break;
                 case aoHidd_BitMap_Height        : data->height        = tag->ti_Data; break;
-                case aoHidd_BitMap_Displayable   : data->displayable   = (BOOL) tag->ti_Data; break;
-#if 0		
-                case aoHidd_BitMap_Format        : data->format        = tag->ti_Data; break;
-                case aoHidd_BitMap_BytesPerPixel : data->bytesPerPixel = tag->ti_Data; break;
-
-                case aoHidd_BitMap_BytesPerRow   : data->bytesPerRow   = tag->ti_Data; break;
-#endif
-
 
 #if 0
                 case aoHidd_BitMap_ColorTab      : data->colorTab      = (APTR) tag->ti_Data; break;
 #endif
-		case aoHidd_BitMap_BitMap	 : data->bitMap	       = (Object *)tag->ti_Data;
 
-#if 0
-		case aoHidd_BitMap_GC  		: update_from_gc(cl, obj, (Object *)tag->ti_Data); break;
-		case aoHidd_BitMap_Foreground  	: data->fg		= tag->ti_Data; break;
-		case aoHidd_BitMap_Background  	: data->bg		= tag->ti_Data; break;
-		case aoHidd_BitMap_DrawMode	: data->drMode		= tag->ti_Data; break;
-		case aoHidd_BitMap_LinePattern 	: data->linePat		= tag->ti_Data; break;
-		case aoHidd_BitMap_ColorMask   	: data->colMask		= tag->ti_Data; break;
-		case aoHidd_BitMap_PlaneMask	: (APTR)data->planeMask	= tag->ti_Data; break;
-		case aoHidd_BitMap_Font	   	: (APTR)data->font	= tag->ti_Data; break;
-		case aoHidd_BitMap_ColorExpansionMode	: data->colExp		= tag->ti_Data; break;
-#endif
-                case aoHidd_BitMap_Depth:
-		    if (NULL != data->prot.pixfmt) {
-			((HIDDT_PixelFormat *)data->prot.pixfmt)->depth  = tag->ti_Data;
-		    } else {
-		    	data->reqdepth = tag->ti_Data;
-		    }
+		default:
+		    kprintf("!!! TRYING TO SET NONSETTABLE BITMAP ATTR %d !!!\n", idx);
 		    break;
 
             }
@@ -1681,25 +1709,6 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
     return;
 }
 
-
-static Object * bitmap_setpixelformat(Class *cl, Object *o, struct pHidd_BitMap_SetPixelFormat *msg)
-{
-    /* Register it with the gfxhidd */
-    Object *pixfmt;
-    struct HIDDBitMapData *data;
-    data = INST_DATA(cl, o);
-     
-    /* This is a private method */
-    pixfmt = HIDD_Gfx_RegisterPixFmt(data->gfxhidd, msg->pixFmtTags);
-     
-    if (NULL == pixfmt)
-     	return NULL;
-    
-    data->prot.pixfmt = pixfmt;
-    
-    return pixfmt;
-     
-}
 
 static Object *bitmap_setcolormap(Class *cl, Object *o, struct pHidd_BitMap_SetColorMap *msg)
 {
@@ -1775,6 +1784,59 @@ static VOID bitmap_unmappixel(Class *cl, Object *o, struct pHidd_BitMap_UnmapPix
     msg->color->pixval	= msg->pixel;
 }
 
+/* Default implementation of direct access funcs. Just return FALSE */
+static BOOL bitmap_obtaindirectaccess(Class *cl, Object *o, struct pHidd_BitMap_ObtainDirectAccess *msg)
+{
+    return FALSE;
+}
+static VOID bitmap_releasedirectaccess(Class *cl, Object *o, struct pHidd_BitMap_ReleaseDirectAccess *msg)
+{
+     kprintf("!!! BitMap BaseClasse ReleaseDirectAccess() called !!!\n");
+     kprintf("!!! This should never happen and is probably due to a buggy implementation in the subclass !!!\n");
+     
+     return;
+}
+
+/******* PRIVATE ***************************/
+static BOOL bitmap_setbitmaptags(Class *cl, Object *o, struct pHidd_BitMap_SetBitMapTags *msg)
+{
+    struct HIDDBitMapData *data;
+    Object *pf;
+    IPTR attrs[num_Hidd_BitMap_Attrs];
+    DECLARE_ATTRCHECK(bitmap);
+    
+    data = INST_DATA(cl, o);
+    
+    if (0 != ParseAttrs(msg->bitMapTags
+    		, attrs, num_Hidd_BitMap_Attrs
+		, &ATTRCHECK(bitmap), HiddBitMapAttrBase)) {
+	kprintf("!!! FAILED PARSING IN BitMap::SetBitMapTags !!!\n");
+	return FALSE;
+    }
+
+    if (GOT_BM_ATTR(PixFmtTags)) {
+    	/* Allready a pixfmt registered ? */
+
+	pf = HIDD_Gfx_RegisterPixFmt(data->gfxhidd, (struct TagItem *)attrs[AO(PixFmtTags)]);
+	if (NULL == pf)
+	    return FALSE;
+	    
+    	if (data->pf_registered)
+	     HIDD_Gfx_ReleasePixFmt(data->gfxhidd, data->prot.pixfmt);
+
+	data->prot.pixfmt = pf;
+    }
+
+
+    if (GOT_BM_ATTR(Width))
+    	data->width = attrs[AO(Width)];
+
+    if (GOT_BM_ATTR(Height))	
+    	data->height = attrs[AO(Height)];
+    
+    return TRUE;
+}
+
 /*** init_bitmapclass *********************************************************/
 
 #undef OOPBase
@@ -1784,7 +1846,7 @@ static VOID bitmap_unmappixel(Class *cl, Object *o, struct pHidd_BitMap_UnmapPix
 #define SysBase (csd->sysbase)
 
 #define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 24
+#define NUM_BITMAP_METHODS 25
 
 Class *init_bitmapclass(struct class_static_data *csd)
 {
@@ -1816,13 +1878,17 @@ Class *init_bitmapclass(struct class_static_data *csd)
         {(IPTR (*)())bitmap_putimage		, moHidd_BitMap_PutImage		},
         {(IPTR (*)())bitmap_getimage		, moHidd_BitMap_GetImage		},
         {(IPTR (*)())bitmap_blitcolexp		, moHidd_BitMap_BlitColorExpansion	},
-        {(IPTR (*)())bitmap_getpixfmt		, moHidd_BitMap_GetPixelFormat	},
         {(IPTR (*)())bitmap_bytesperline	, moHidd_BitMap_BytesPerLine	},
 	{(IPTR (*)())bitmap_convertpixels	, moHidd_BitMap_ConvertPixels	},
-	{(IPTR (*)())bitmap_setpixelformat	, moHidd_BitMap_SetPixelFormat	},
 	{(IPTR (*)())bitmap_setcolormap		, moHidd_BitMap_SetColorMap	},
 	{(IPTR (*)())bitmap_mapcolor		, moHidd_BitMap_MapColor	},
 	{(IPTR (*)())bitmap_unmappixel		, moHidd_BitMap_UnmapPixel	},
+	{(IPTR (*)())bitmap_obtaindirectaccess	, moHidd_BitMap_ObtainDirectAccess	},
+	{(IPTR (*)())bitmap_releasedirectaccess	, moHidd_BitMap_ReleaseDirectAccess	},
+
+	/* PRIVATE METHODS */	
+#warning This is a hack to make the late initialization of planar bitmaps work
+	{(IPTR (*)())bitmap_setbitmaptags	, moHidd_BitMap_SetBitMapTags	},
 	
         {NULL, 0UL}
     };
@@ -1849,28 +1915,20 @@ Class *init_bitmapclass(struct class_static_data *csd)
 
     EnterFunc(bug("init_bitmapclass(csd=%p)\n", csd));
 
-    if(MetaAttrBase)
-    {
-        cl = NewObject(NULL, CLID_HiddMeta, tags);
-        if(cl)
-        {
-            D(bug("BitMap class ok\n"));
-            csd->bitmapclass = cl;
-            cl->UserData     = (APTR) csd;
-            
-	    
-            if(ObtainAttrBases(attrbases))
-            {
-                AddClass(cl);
-            }
-            else
-            {
-			
-                free_bitmapclass(csd);
-                cl = NULL;
+    if(MetaAttrBase)   {
+	if (ObtainAttrBases(attrbases)) {
+    	    cl = NewObject(NULL, CLID_HiddMeta, tags);
+    	    if(NULL != cl) {
+        	D(bug("BitMap class ok\n"));
+        	csd->bitmapclass = cl;
+        	cl->UserData     = (APTR) csd;
+		AddClass(cl);
             }
         }
     } /* if(MetaAttrBase) */
+    
+    if (NULL == cl)
+	free_bitmapclass(csd);
 
     ReturnPtr("init_bitmapclass", Class *,  cl);
 }
@@ -1882,14 +1940,37 @@ void free_bitmapclass(struct class_static_data *csd)
 {
     EnterFunc(bug("free_bitmapclass(csd=%p)\n", csd));
 
-    if(csd)
-    {
-        RemoveClass(csd->bitmapclass);
-        if(csd->bitmapclass) DisposeObject((Object *) csd->bitmapclass);
-        csd->bitmapclass = NULL;
+    if(NULL != csd) {
+	if (NULL != csd->bitmapclass) {
+	
+	    RemoveClass(csd->bitmapclass);
+    	    DisposeObject((Object *) csd->bitmapclass);
+    	    csd->bitmapclass = NULL;
+	}
 	
 	ReleaseAttrBases(attrbases);
     }
 
     ReturnVoid("free_bitmapclass");
+}
+
+
+#undef OOPBase
+#define OOPBase (OCLASS(OCLASS(OCLASS(o)))->UserData)
+
+/*********** Stubs for private methods **********************/
+BOOL HIDD_BitMap_SetBitMapTags(Object *o, struct TagItem *bitMapTags)
+{
+   static MethodID mid = 0;
+   
+   struct pHidd_BitMap_SetBitMapTags p;
+   
+   if (!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetBitMapTags);
+   
+   p.mID = mid;
+   
+   p.bitMapTags = bitMapTags;
+   
+   return (BOOL)DoMethod(o, (Msg)&p);
+   
 }

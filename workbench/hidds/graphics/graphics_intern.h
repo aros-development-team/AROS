@@ -18,27 +18,38 @@
 #include <dos/dos.h>
 
 
-/* Instance data of GfxMode objects. We have it defined here so we can
-   access GfxMode objects' instance data directly (like BOOPSI gadgets)
-   in GraphicsClass
-*/
-struct gfxmode_data {
-    ULONG width;
-    ULONG height;
     
-    Object **pfarray;
-    ULONG numpfs;
+#define GOT_PF_ATTR(code)	GOT_ATTR(code, aoHidd_PixFmt, pixfmt)
+#define FOUND_PF_ATTR(code)	FOUND_ATTR(code, aoHidd_PixFmt, pixfmt);
+
+#define GOT_SYNC_ATTR(code)	GOT_ATTR(code, aoHidd_Sync, sync)
+#define FOUND_SYNC_ATTR(code)	FOUND_ATTR(code, aoHidd_Sync, sync);
+
+#define GOT_BM_ATTR(code)	GOT_ATTR(code, aoHidd_BitMap, bitmap)
+#define FOUND_BM_ATTR(code)	FOUND_ATTR(code, aoHidd_BitMap, bitmap);
+
+
+struct sync_data {
+    ULONG pixtime; /* pixel time in pico seconds */
     
-    Object *gfxhidd;
+    ULONG hdisp;
+    ULONG left_margin;
+    ULONG right_margin;
+    ULONG hsync_length;
     
+    ULONG vdisp;
+    ULONG upper_margin;
+    ULONG lower_margin;
+    ULONG vsync_length;
     
 };
 
 
 /* This is the pixfmts DB. */
+
 #warning Find a way to optimize searching in the pixfmt database
 
-/* Organize the pf db in some other way that makes it quixker to find a certain PF */
+/* Organize the pf db in some other way that makes it quicker to find a certain PF */
 
 struct pfnode {
     struct MinNode node;
@@ -53,22 +64,51 @@ struct objectnode {
    ULONG refcount;
 };
 
-/* Private GfxMode attrs */
-enum {
-	aoHidd_GfxMode_GfxHidd = num_Hidd_GfxMode_Attrs,
-	
-	num_Total_GfxMode_Attrs
-};
 
-#define aHidd_GfxMode_GfxHidd	(HiddGfxModeAttrBase + aoHidd_GfxMode_GfxHidd)
+struct mode_bm {
+    UBYTE *bm;
+    UWORD bpr;
+};
+struct mode_db {
+    /* Array of all available gfxmode PixFmts that are part of 
+       gfxmodes
+     */
+    struct SignalSemaphore sema;
+    Object **pixfmts;
+    /* Number of pixfmts in the above array */
+    ULONG num_pixfmts;
+    
+    /* All the sync times that are part of any gfxmode */
+    Object **syncs;
+    /* Number of syncs in the above array */
+    ULONG num_syncs;
+    
+    /* A bitmap of size (num_pixfmts * num_syncs), that tells if the
+       mode is displayable or not. If a particular (x, y) coordinate
+       of the bitmap is 1, it means that the pixfmt and sync objects
+       you get by indexing pixfmts[x] and syncs[y] are a valid mode.
+       If not, the mode is considered invalid
+    */
+    
+    struct mode_bm orig_mode_bm;	/* Original as supplied by subclass */
+    struct mode_bm checked_mode_bm;	/* After applying monitor refresh rate checks etc. */
+    
+};
 
 struct HIDDGraphicsData
 {
-	struct SignalSemaphore modesema;
-	struct MinList modelist;
+	/* Gfx mode "database" */
+	struct mode_db mdb;
 
 	
-	/* Pixel format "database" */
+	/*
+	   Pixel format "database". This is a list
+	   of all pixelformats currently used bu some bitmap.
+	   The point of having this as a central db in the gfx hidd is
+	   that if several bitmaps are of the same pixel format
+	   they may point to the same PixFmt object instead
+	   of allocating their own instance. Thus we are saving mem
+	*/
 	struct SignalSemaphore pfsema;
 	struct MinList pflist;
 };
@@ -94,6 +134,19 @@ struct pHidd_Gfx_ReleasePixFmt {
 Object *HIDD_Gfx_RegisterPixFmt(Object *o, struct TagItem *pixFmtTags);
 VOID HIDD_Gfx_ReleasePixFmt(Object *o, Object *pixFmt);
 
+/* Private bitmap methods */
+enum {
+    moHidd_BitMap_SetBitMapTags = num_Hidd_BitMap_Methods
+};
+
+struct pHidd_BitMap_SetBitMapTags {
+    MethodID mID;
+    struct TagItem *bitMapTags;
+};
+
+BOOL HIDD_BitMap_SetBitMapTags(Object *o, struct TagItem *bitMapTags);
+
+
 struct HIDDBitMapData
 {
     struct _hidd_bitmap_protected prot;
@@ -102,26 +155,13 @@ struct HIDDBitMapData
     ULONG height;        /* height of the bitmap in pixel */
     ULONG reqdepth;	 /* Depth as requested by user */
     BOOL  displayable;   /* bitmap displayable?           */
+    BOOL  pf_registered;
     ULONG flags;         /* see hidd/graphic.h 'flags for */
                          /* HIDD_Graphics_CreateBitMap'   */
 #if 0
     ULONG format;        /* planar or chunky              */
     ULONG bytesPerRow;   /* bytes per row                 */
     ULONG bytesPerPixel; /* bytes per pixel               */
-#endif
-#if 0
-    HIDDT_Pixel fg;        /* foreground color                                 */
-    HIDDT_Pixel bg;        /* background color                                 */
-    ULONG drMode;    /* drawmode                                         */
-    /* WARNING: type of font could be change */
-    APTR  font;      /* current fonts                                    */
-    ULONG colMask;   /* ColorMask prevents some color bits from changing */
-    UWORD linePat;   /* LinePattern                                      */
-    APTR  planeMask; /* Pointer to a shape bitMap                        */
-    
-    Object *gc;
-
-    ULONG colExp;	/* Color expansion mode	*/
 #endif
     Object *bitMap;
     /* WARNING: structure could be extented in the future                */
@@ -179,8 +219,8 @@ struct class_static_data
     Class                *gcclass;      /* graphics context class */
     Class		 *colormapclass; /* colormap class	  */
     
-    Class		 *gfxmodeclass;
-    Class		 *pixfmtclass;
+    Class		 *pixfmtclass;	/* descring bitmap pixel formats */
+    Class		 *syncclass;	/* describing gfxmode sync times */
     
     
     Class		 *planarbmclass;
@@ -232,6 +272,9 @@ void   free_gfxmodeclass(struct class_static_data *csd);
 Class *init_pixfmtclass(struct class_static_data *csd);
 void   free_pixfmtclass(struct class_static_data *csd);
 
+Class *init_syncclass(struct class_static_data *csd);
+void   free_syncclass(struct class_static_data *csd);
+
 Class *init_colormapclass(struct class_static_data *csd);
 void free_colormapclass(struct class_static_data *csd);
 
@@ -248,6 +291,8 @@ Class *init_chunkybmclass(struct class_static_data *csd);
 void   free_chunkybmclass(struct class_static_data *csd);
 
 inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelFormat *pf);
+BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG attrcheck, struct class_static_data *csd);
+BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG attrcheck, struct class_static_data *csd);
 
 
 

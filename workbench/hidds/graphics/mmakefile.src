@@ -17,7 +17,7 @@ OBJDIR	    := $(GENDIR)/$(CURDIR)
 
 FILES       := GraphicsClass BM_Class CM_Class GC_Class  \
                planarbm chunkybm convertpixels	\
-	       gfxmode pixfmt
+	       pixfmt sync
 	       
 	       
 EXTRA_LIBS  := -L$(LIBDIR) -lhidd$(LIBNAME)stubs
@@ -82,7 +82,7 @@ hidd-graphics-includes-quick : setup-includes includes-copy
 
 # create stubs-file
 
-$(STUB_FILE) : $(STUB_OBJS)
+$(STUB_FILE) : $(STUB_OBJS) $(MY_INCLS)
 	%mklib_q from=$(STUB_OBJS)
 
 $(OBJDIR)/%.o : %.c	

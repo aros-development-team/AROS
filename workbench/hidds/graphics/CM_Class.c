@@ -22,6 +22,9 @@
 
 #include "graphics_intern.h"
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 struct colormap_data {
     HIDDT_ColorLUT clut;
 };
@@ -132,7 +135,7 @@ static BOOL colormap_setcolors(Class *cl, Object *o, struct pHidd_ColorMap_SetCo
     HIDDT_PixelFormat *pf;
      
     data = INST_DATA(cl, o);
-     
+
      numnew = msg->firstColor + msg->numColors;
     /* See if there is enpugh space in the array  */
     if (numnew > data->clut.entries) {
@@ -262,29 +265,23 @@ Class *init_colormapclass(struct class_static_data *csd)
     };
     
     Class *cl = NULL;
+    
+    EnterFunc(bug("init_colormapclass()\n"));
 
-    if(MetaAttrBase)
-    {
-        cl = NewObject(NULL, CLID_HiddMeta, tags);
-        if(cl)
-        {
-            csd->colormapclass = cl;
-            cl->UserData     = (APTR) csd;
-            
-	    
-            if(ObtainAttrBases(attrbases))
-            {
-                AddClass(cl);
-            }
-            else
-            {
-			
-                free_colormapclass(csd);
-                cl = NULL;
+    if(MetaAttrBase) {
+        if(ObtainAttrBases(attrbases)) {
+    	    cl = NewObject(NULL, CLID_HiddMeta, tags);
+    	    if(NULL != cl) {
+        	csd->colormapclass = cl;
+        	cl->UserData     = (APTR) csd;
+		AddClass(cl);
             }
         }
     } /* if(MetaAttrBase) */
-    return cl;
+    
+    if (NULL == cl)
+	free_colormapclass(cl);
+    ReturnPtr("init_colormapclass", Class *, cl);
 }
 
 
@@ -292,16 +289,18 @@ Class *init_colormapclass(struct class_static_data *csd)
 
 void free_colormapclass(struct class_static_data *csd)
 {
+    EnterFunc(bug("free_colormapclass()\n"));
 
-    if(csd)
-    {
-        RemoveClass(csd->colormapclass);
-        if(csd->colormapclass) DisposeObject((Object *) csd->colormapclass);
-        csd->colormapclass = NULL;
+    if(NULL != csd) {
+	if (NULL != csd->colormapclass) {
+    	    RemoveClass(csd->colormapclass);
+    	    DisposeObject((Object *) csd->colormapclass);
+    	    csd->colormapclass = NULL;
+	}
 	
 	ReleaseAttrBases(attrbases);
     }
     
-    return;
+    ReturnVoid("free_colormapclass");
 
 }

@@ -26,3 +26,36 @@ DONE. (No HIDD_BM_ApplyClipping though - not usefull)
 
 
 - Test fast rendering of lines to offscreen HIDD BMs
+DONE. Fixed a bug in the X11 BM class. Now works fine.
+
+- Implement rastport WriteMask ie. planemask in the HIDD
+
+- Implement a videoram manager. This includes
+cahcing of often-used bitmaps in videoram.
+The user should have the ability to decide the
+policies for what bitmaps get to be in vram, and
+which doesn't, maybe through some callback function.
+
+- Implement the pre_graphics_func()/do_graphics_func()
+scheme in XAA. There may not be enough gained by this
+for making it worth implement. Also this will
+increase the number of methods in the API.
+
+
+
+- Not to do with gfx directly, but: Implement general
+unix signal handler servers in the UnixIO hidd.
+This way several "modules" can use the same
+unix signal, and get some code executed when the signal arrives.
+
+- review the ModeID API for future-proofness. There may be more
+than sync and pixfmt to return for a modeid in the future.
+
+- Not directly connected to gfx, but implement tag functions that
+can parse tas and check against attrchecks, ie. an array of attrcheck
+combinations that are legal. The result could
+be passed in a IPTR array that would be possible
+to index with ao#?.
+- Make the above possible for taglists that has multiple attrbases,
+and also with the use of default tags, like in GraphicsClass.c/register_modes()
+with hirearchial tag "trees".

@@ -31,6 +31,11 @@
 static BOOL create_std_pixfmts(struct class_static_data *csd);
 static VOID delete_std_pixfmts(struct class_static_data *csd);
 static VOID free_objectlist(struct List *list, BOOL disposeobjects, struct class_static_data *csd);
+static BOOL register_modes(Class *cl, Object *o, struct TagItem *modetags);
+
+static BOOL alloc_mode_db(struct mode_db *mdb, ULONG numsyncs, ULONG numpfs, Class *cl);
+static VOID free_mode_db(struct mode_db *mdb, Class *cl);
+static Object *create_and_init_object(Class *cl, UBYTE *data, ULONG datasize, struct class_static_data *csd);
 
 
 static struct pfnode *find_pixfmt(struct MinList *pflist
@@ -42,26 +47,65 @@ static Object *find_stdpixfmt(HIDDT_PixelFormat *tofind
 
 /*static AttrBase HiddGCAttrBase;*/
 
-static AttrBase HiddPixFmtAttrBase  = 0;
-static AttrBase HiddGfxModeAttrBase = 0;
-static AttrBase HiddBitMapAttrBase  = 0;
+static AttrBase HiddPixFmtAttrBase	= 0;
+static AttrBase HiddBitMapAttrBase	= 0;
+static AttrBase HiddGfxAttrBase		= 0;
+static AttrBase HiddSyncAttrBase	= 0;
+
+static struct ABDescr attrbases[] = {
+    { IID_Hidd_PixFmt, 	&HiddPixFmtAttrBase	},
+    { IID_Hidd_BitMap,	&HiddBitMapAttrBase	},
+    { IID_Hidd_Gfx,	&HiddGfxAttrBase	},
+    { IID_Hidd_Sync,	&HiddSyncAttrBase	},
+    { NULL, NULL }
+};
+    
+
+BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG attrcheck, struct class_static_data *csd);
+BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG attrcheck, struct class_static_data *csd);
+
+
+
+#define COMPUTE_HIDD_MODEID(sync, pf)	\
+    ( ((sync) << 16) | (pf) )
+    
+#define MODEID_TO_SYNCIDX(id) ( (id) >> 16 )
+#define MODEID_TO_PFIDX(id) ( (id) & 0x0000FFFF )
+
 
 /*** HIDDGfx::New() *********************************************************/
 
 static Object *root_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
     struct HIDDGraphicsData *data;
+    BOOL ok = FALSE;
+    struct TagItem *modetags;
     o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
     if (NULL == o)
     	return NULL;
-	
+    
     data = INST_DATA(cl, o);
     
-    NEWLIST(&data->modelist);
     NEWLIST(&data->pflist);
     
-    InitSemaphore(&data->modesema);
+    InitSemaphore(&data->mdb.sema);
     InitSemaphore(&data->pfsema);
+    
+    /* Get the mode tags */
+    modetags = (struct TagItem *)GetTagData(aHidd_Gfx_ModeTags, NULL, msg->attrList);
+    if (NULL != modetags) {
+	/* Parse it and register the gfxmodes */
+	if (register_modes(cl, o, modetags)) {
+	    ok = TRUE;
+	}
+    }
+    
+    if (!ok) {
+	MethodID dispose_mid;
+	dispose_mid = GetMethodID(IID_Root, moRoot_Dispose);
+	CoerceMethod(cl, o, (Msg)&dispose_mid);
+	o = NULL;
+    }
     
     return o;
 }
@@ -74,9 +118,9 @@ static VOID root_dispose(Class *cl, Object *o, Msg msg)
     struct HIDDGraphicsData *data;
     data = INST_DATA(cl, o);
     
-    ObtainSemaphore(&data->modesema);
-    free_objectlist((struct List *)&data->modelist, TRUE, CSD(cl));
-    ReleaseSemaphore(&data->modesema);
+    /* free the mode db stuff */
+    free_mode_db(&data->mdb, cl);
+    
     
     ObtainSemaphore(&data->pfsema);
     free_objectlist((struct List *)&data->pflist, TRUE, CSD(cl));
@@ -84,6 +128,36 @@ static VOID root_dispose(Class *cl, Object *o, Msg msg)
 
     DoSuperMethod(cl, o, msg);
 }
+
+/*** HIDDGfx::Get() *********************************************************/
+
+static VOID root_get(Class *cl, Object *o, struct pRoot_Get *msg)
+{
+    struct HIDDGraphicsData *data;
+    BOOL found = FALSE;
+    ULONG idx;
+    
+    data = INST_DATA(cl, o);
+    
+    if (IS_GFX_ATTR(msg->attrID, idx)) {
+	switch (idx) {
+	    case aoHidd_Gfx_NumSyncs: {
+		found = TRUE;
+		*msg->storage = data->mdb.num_syncs;
+		break;
+	    }
+	    
+	    default:	/* Keep compiler happy */
+		break;
+	}
+    }
+    
+    if (!found)
+        DoSuperMethod(cl, o, (Msg)msg);
+	
+    return;    
+}
+
 
 
 /*** HIDDGfx::NewGC() *********************************************************/
@@ -107,7 +181,7 @@ static VOID hiddgfx_disposegc(Class *cl, Object *o, struct pHidd_Gfx_DisposeGC *
 {
     EnterFunc(bug("HIDDGfx::DisposeGC()\n"));
 
-    if(msg->gc) DisposeObject(msg->gc);
+    if (NULL != msg->gc) DisposeObject(msg->gc);
 
     ReturnVoid("HIDDGfx::DisposeGC");
 }
@@ -115,53 +189,156 @@ static VOID hiddgfx_disposegc(Class *cl, Object *o, struct pHidd_Gfx_DisposeGC *
 
 /*** HIDDGfx::NewBitMap() ****************************************************/
 
+#define BMAO(x) aoHidd_BitMap_ ## x
+#define BMAF(x) (1L << aoHidd_BitMap_ ## x)
+
+#define BM_DIMS_AF  (BMAF(Width) | BMAF(Height))
+
+#define SET_TAG(tags, idx, tag, val)	\
+    tags[idx].ti_Tag = tag ; tags[idx].ti_Data = (IPTR)val;
+
+#define SET_BM_TAG(tags, idx, tag, val)	\
+    SET_TAG(tags, idx, aHidd_BitMap_ ## tag, val)
+
+	
 static Object * hiddgfx_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
-    struct TagItem tags[] = {
-    	{ aHidd_BitMap_GfxHidd,	(IPTR)NULL },
-	{ TAG_MORE, 0UL }
-    };
+    struct TagItem bmtags[7];
     
-    STRPTR classid;
-    Class *classptr;
+    IPTR attrs[num_Total_BitMap_Attrs];
+    STRPTR classid = NULL;
+    Class *classptr = NULL;
+    BOOL displayable = FALSE; /* Default attr value */
+    Object *pf = NULL, *sync;
+    HIDDT_ModeID modeid;
     
-    tags[0].ti_Data = (IPTR)o;
-    tags[1].ti_Data = (IPTR)msg->attrList;
+    DECLARE_ATTRCHECK(bitmap);
     
-    if (    NULL == msg->classPtr
-         && NULL == msg->classID  ) {
-    	
-	HIDDT_StdPixFmt stdpf;
+    BOOL gotclass = FALSE;
     
-  	/* The superclass has not supplied a bitmap
-	   Find out the pixelformat.
-	*/
-	
-	stdpf = GetTagData(aHidd_BitMap_StdPixFmt, vHidd_PixFmt_Unknown, msg->attrList);
-	
-	switch (stdpf) {
-#warning Remember to update this if more std pixfmts are added
-	    case vHidd_PixFmt_RGB24:
-	    case vHidd_PixFmt_RGB16:
-	    case vHidd_PixFmt_ARGB32:
-	    case vHidd_PixFmt_RGBA32:
-	    case vHidd_PixFmt_LUT8:
-	        classid = CLID_Hidd_ChunkyBM;
-		classptr = NULL;
-	        break;
-		
-	    default:
-kprintf("!!!No std pixfmt supplied to hiddgfx_newbitmap\n");
-	    	return NULL;
-	    	break;
-	}
-	
-    } else {
-    	classptr = msg->classPtr;
-	classid  = msg->classID;
+    
+    if (0 != ParseAttrs(msg->attrList, attrs, num_Total_BitMap_Attrs
+    	, &ATTRCHECK(bitmap), HiddBitMapAttrBase)) {
+	kprintf("!!! FAILED TO PARSE ATTRS IN Gfx::NewBitMap !!!\n");
+	return NULL;
     }
     
-    return NewObject(classptr, classid, tags);
+    if (GOT_BM_ATTR(PixFmt)) {
+	kprintf("!!! Gfx::NewBitMap: USER IS NOT ALLOWED TO PASS aHidd_BitMap_PixFmt !!!\n");
+	return NULL;
+    }
+    
+    /* Get class supplied by superclass */
+    if (GOT_BM_ATTR(ClassPtr)) {
+    	classptr	= (Class *)attrs[BMAO(ClassPtr)];
+	gotclass = TRUE;
+    } else {
+	if (GOT_BM_ATTR(ClassID)) {
+    	    classid	= (STRPTR)attrs[BMAO(ClassID)];
+	    gotclass = TRUE;
+	}
+    }
+		
+    if (GOT_BM_ATTR(Displayable))
+	displayable = (BOOL)attrs[BMAO(Displayable)];
+
+    if (GOT_BM_ATTR(ModeID)) {
+	modeid = attrs[BMAO(ModeID)];
+	/* Check that it is a valid mode */
+	if (!HIDD_Gfx_GetMode(o, modeid, &sync, &pf)) {
+	    kprintf("!!! Gfx::NewBitMap: USER PASSED INVALID MODEID !!!\n");
+	}
+    }
+
+    /* First argument is gfxhidd */    
+    SET_BM_TAG(bmtags, 0, GfxHidd, o);
+    SET_BM_TAG(bmtags, 1, Displayable, displayable);
+	
+    if (displayable) {
+	/* The user has to supply a modeid */
+	if (!GOT_BM_ATTR(ModeID)) {
+	    kprintf("!!! Gfx::NewBitMap: USER HAS NOT PASSED MODEID FOR DISPLAYABLE BITMAP !!!\n");
+	    return NULL;
+	}
+	
+	if (!gotclass) {
+	    kprintf("!!! Gfx::NewBitMap: SUBCLASS DID NOT PASS CLASS FOR DISPLAYABLE BITMAP !!!\n");
+	    return NULL;
+	}
+	
+	SET_BM_TAG(bmtags, 2, ModeID, modeid);
+	SET_TAG(bmtags, 3, TAG_MORE, msg->attrList);
+	
+    } else { /* if (displayable) */
+	ULONG width, height;
+    
+	/* To get a pixfmt for an offscreen bitmap we either need 
+	    (ModeID || ( (Width && Height) && StdPixFmt) || ( (Width && Height) && Friend))
+	*/
+	    
+	if (GOT_BM_ATTR(ModeID)) {   
+	    /* We have allredy gotten pixelformat and sync for the modeid case */
+	    GetAttr(sync, aHidd_Sync_HDisp, &width);
+	    GetAttr(sync, aHidd_Sync_VDisp, &height);
+	} else {
+	    /* Next to look for is StdPixFmt */
+	    
+	    /* Check that we have width && height */
+	    if (BM_DIMS_AF != (BM_DIMS_AF & ATTRCHECK(bitmap))) {
+		kprintf("!!! Gfx::NewBitMap() MISSING WIDTH/HEIGHT TAGS !!!\n");
+		return NULL;
+	    }
+	    width  = attrs[BMAO(Width)];
+	    height = attrs[BMAO(Height)];
+	    
+	    
+	    if (GOT_BM_ATTR(StdPixFmt)) {
+
+		pf = HIDD_Gfx_GetPixFmt(o, (HIDDT_StdPixFmt)attrs[BMAO(StdPixFmt)]);
+		if (NULL == pf) {
+		    kprintf("!!! Gfx::NewBitMap(): USER PASSED BOGUS StdPixFmt !!!\n");
+		    return NULL;
+		}
+	    } else {
+		/* Last alternative is that the user passed a friend bitmap */
+		if (GOT_BM_ATTR(Friend)) {
+		    GetAttr((Object *)attrs[BMAO(Friend)], aHidd_BitMap_PixFmt, (IPTR *)&pf);
+		} else {
+		    kprintf("!!! Gfx::NewBitMap: UNSIFFICIENT ATTRS TO CREATE OFFSCREEN BITMAP !!!\n");
+		    return NULL;
+		}
+	    }
+	}
+	
+	/* Did the subclass provide an offbitmap class for us ? */
+	if (!gotclass) {
+	    /* Have to find a suitable class ourselves */
+	    HIDDT_BitMapType bmtype;
+		
+	    GetAttr(pf, aHidd_PixFmt_BitMapType, &bmtype);
+	    switch (bmtype) {
+	        case vHidd_BitMapType_Chunky: classptr = CSD(cl)->chunkybmclass; break;
+	        case vHidd_BitMapType_Planar: classptr = CSD(cl)->planarbmclass; break;
+	        default:
+	    	    kprintf("!!! Gfx::NewBitMap: UNKNOWN BITMAPTYPE %d !!!\n", bmtype);
+		    return NULL;
+	    }
+	} /* if (!gotclass) */
+	
+	/* Set the tags we want to pass to the selected bitmap class */
+	SET_BM_TAG(bmtags, 2, Width,  width);
+	SET_BM_TAG(bmtags, 3, Height, height);
+	SET_BM_TAG(bmtags, 4, PixFmt, pf);
+	if (GOT_BM_ATTR(Friend)) {
+	    SET_BM_TAG(bmtags, 5, Friend, attrs[BMAO(Friend)]);
+	} else {
+	    SET_TAG(bmtags, 5, TAG_IGNORE, 0UL);
+	}
+	SET_TAG(bmtags, 6, TAG_MORE, msg->attrList);
+    } /* if (!displayable) */
+    
+
+    return NewObject(classptr, classid, bmtags);
 }
 
 
@@ -171,212 +348,532 @@ static VOID hiddgfx_disposebitmap(Class *cl, Object *o, struct pHidd_Gfx_Dispose
 {
     if (NULL != msg->bitMap)
 	DisposeObject(msg->bitMap);
+	
+
 }
 
 
-/*** HIDDGfx::RegisterGfxModes() ********************************************/
-static BOOL hiddgfx_registergfxmodes(Class *cl, Object *o, struct pHidd_Gfx_RegisterGfxModes *msg)
+
+
+/*** register_modes() ********************************************/
+#define SD(x) ((struct sync_data *)x)
+#define PF(x) ((HIDDT_PixelFormat *)x)
+
+#define XCOORD_TO_BYTEIDX(x) ( (x) >> 3)
+#define COORD_TO_BYTEIDX(x, y, bpr) ( ( (y) * bpr ) + XCOORD_TO_BYTEIDX(x) )
+#define XCOORD_TO_MASK(x) (1L << (7 - ((x) & 0x07) ))
+#define WIDTH_TO_BYTES(width) ( (( (width) - 1) >> 3) + 1)
+
+/* modebm functions pfidx is x and syncidx is y coord in the bitmap */
+static inline BOOL alloc_mode_bm(struct mode_bm *bm, ULONG numsyncs, ULONG numpfs, Class *cl)
 {
-    struct TagItem **taglists;
-    struct HIDDGraphicsData *data;
-    
-    struct MinList tmplist;
-    struct Node *n, *safe;
-    
-    struct TagItem gfxhidd_tags[] = {
-	{ aHidd_GfxMode_GfxHidd,	(IPTR)NULL },
-	{ TAG_MORE, 0UL }
-    };
-    
-    
-    data = INST_DATA(cl, o);
-    NEWLIST(&tmplist);
-    
-    gfxhidd_tags[0].ti_Data = (IPTR)o;
-    
-    /* Create a bunch of gfxmode objects */
-    for (taglists = msg->modeTags; *taglists; taglists ++) {
-    	/* Create a node */
-	struct ModeNode *node;
-	node = AllocMem(sizeof (struct ModeNode), MEMF_CLEAR);
-	if (NULL == node)
-	    goto failure;
-	    
-	/* Add the node to the temprorary list so we can keep track of it */
-	AddTail((struct List *)&tmplist, (struct Node *)node);
-
-	/* Try to create the object */
+    bm->bpr = WIDTH_TO_BYTES(numpfs);
+    bm->bm = AllocVec(bm->bpr * numsyncs, MEMF_CLEAR);
+    if (NULL == bm->bm)
+	return FALSE;
 	
-	gfxhidd_tags[1].ti_Data = (IPTR)*taglists;
-
-	node->gfxMode = NewObject(CSD(cl)->gfxmodeclass, NULL, gfxhidd_tags);
-	if (NULL == node->gfxMode)
-	    goto failure;
-	
-    }
-    
-    /* Add all nodes in tmplist to the real list */
-    ObtainSemaphore(&data->modesema);
-    
-    ForeachNodeSafe(&tmplist, n, safe) {
-    	Remove(n);
-	AddTail((struct List *)&data->modelist, n);
-    }
-    ReleaseSemaphore(&data->modesema);
-    
-    
+    /* We initialize the mode bitmap to all modes valid */
+    memset(bm->bm, 0xFF, bm->bpr * numsyncs);
     
     return TRUE;
-    
-failure:
-    /* This is a temporary non-public list so it does not need protection */
-    free_objectlist((struct List *)&tmplist, TRUE, CSD(cl));
+}
+
+static inline VOID free_mode_bm(struct mode_bm *bm, Class *cl)
+{
+    FreeVec(bm->bm);
+    bm->bm  = NULL;
+    bm->bpr = 0;
+}
+
+static inline BOOL is_valid_mode(struct mode_bm *bm, ULONG syncidx, ULONG pfidx)
+{
+    if (0 != (XCOORD_TO_MASK(pfidx) & bm->bm[COORD_TO_BYTEIDX(pfidx, syncidx, bm->bpr)]))
+	return TRUE;
     return FALSE;
 }
 
 
-/*** HIDDGfx::QueryGfxModes() ********************************************/
-static struct List * hiddgfx_querygfxmodes(Class *cl, Object *o, struct pHidd_Gfx_QueryGfxModes *msg)
+static inline VOID set_valid_mode(struct mode_bm *bm, ULONG syncidx, ULONG pfidx, BOOL valid)
+{
+    if (valid)
+	bm->bm[COORD_TO_BYTEIDX(pfidx, syncidx, bm->bpr)] |= XCOORD_TO_MASK(pfidx);
+    else
+	bm->bm[COORD_TO_BYTEIDX(pfidx, syncidx, bm->bpr)] &= ~XCOORD_TO_MASK(pfidx);
+
+    return;
+}
+
+static BOOL alloc_mode_db(struct mode_db *mdb, ULONG numsyncs, ULONG numpfs, Class *cl)
+{
+    BOOL ok = FALSE;
+    
+    if (0 == numsyncs || 0 == numpfs)
+	return FALSE;
+	
+    ObtainSemaphore(&mdb->sema);
+    /* free_mode_bm() needs this */
+    mdb->num_pixfmts	= numpfs;
+    mdb->num_syncs	= numsyncs;
+
+    mdb->syncs	 = AllocMem(sizeof (Object *) * numsyncs, MEMF_CLEAR);
+    if (NULL != mdb->syncs) {
+	mdb->pixfmts = AllocMem(sizeof (Object *) * numpfs,   MEMF_CLEAR);
+	if (NULL != mdb->pixfmts) {
+	    if (alloc_mode_bm(&mdb->orig_mode_bm, numsyncs, numpfs, cl)) {
+		if (alloc_mode_bm(&mdb->checked_mode_bm, numsyncs, numpfs, cl)) {
+		    ok = TRUE;
+		}
+	    }
+	}
+    }
+    if (!ok)
+	free_mode_db(mdb, cl);
+    ReleaseSemaphore(&mdb->sema);
+    
+    return ok;
+}
+
+static VOID free_mode_db(struct mode_db *mdb, Class *cl)
+{
+    ULONG i;
+    ObtainSemaphore(&mdb->sema);
+    if (NULL != mdb->pixfmts) {
+    
+/****** !!! NB !!! The Pixel formats are registerd in the
+  GfxMode Database and is freed in the
+  free_object_list functions
+
+    	for (i = 0; i < mdb->num_pixfmts; i ++) {
+	    if (NULL != mdb->pixfmts[i]) {
+	    	DisposeObject(mdb->pixfmts[i]);
+		mdb->pixfmts[i] = NULL;
+	    }
+	}
+*/
+
+	FreeMem(mdb->pixfmts, sizeof (Object *) * mdb->num_pixfmts);
+	mdb->pixfmts = NULL; mdb->num_pixfmts = 0;
+    }
+
+    if (NULL != mdb->syncs) {
+    	for (i = 0; i < mdb->num_syncs; i ++) {
+	    if (NULL != mdb->syncs[i]) {
+	    
+	    	DisposeObject(mdb->syncs[i]);
+		mdb->syncs[i] = NULL;
+	    }
+	}
+	FreeMem(mdb->syncs,   sizeof (Object *) * mdb->num_syncs);
+	mdb->syncs = NULL; mdb->num_syncs = 0;
+    }
+    
+    if (NULL != mdb->orig_mode_bm.bm) {
+	free_mode_bm(&mdb->orig_mode_bm, cl);
+    }
+    
+    if (NULL != mdb->checked_mode_bm.bm) {
+	free_mode_bm(&mdb->checked_mode_bm, cl);
+    }
+    ReleaseSemaphore(&mdb->sema);
+    return;
+}
+
+/* Initializes default tagarray. in numtags the TAG_MORE is not accounted for,
+   so the array must be of size NUM_TAGS + 1
+*/
+static VOID init_def_tags(struct TagItem *tags, ULONG numtags)
+{
+    ULONG i;
+    for (i = 0; i < numtags; i ++) {
+	tags[i].ti_Tag = TAG_IGNORE;
+	tags[i].ti_Data = 0UL;
+    }
+    tags[i].ti_Tag  = TAG_MORE;
+    tags[i].ti_Data = 0UL;
+    
+    return;
+}
+static BOOL register_modes(Class *cl, Object *o, struct TagItem *modetags)
+{
+    struct TagItem *tag, *tstate;
+    struct HIDDGraphicsData *data;
+    
+    DECLARE_ATTRCHECK(sync);
+//    DECLARE_ATTRCHECK(pixfmt);
+    
+    struct mode_db *mdb;
+    
+    HIDDT_PixelFormat pixfmt_data;
+    struct sync_data sync_data;
+    
+    struct TagItem def_sync_tags[num_Hidd_Sync_Attrs     + 1];
+    struct TagItem def_pixfmt_tags[num_Hidd_PixFmt_Attrs + 1];
+    
+    ULONG numpfs = 0,numsyncs	= 0;
+    ULONG pfidx = 0, syncidx = 0;
+    
+    data = INST_DATA(cl, o);
+    mdb = &data->mdb;
+    InitSemaphore(&mdb->sema);
+    
+    memset(&pixfmt_data, 0, sizeof (pixfmt_data));
+    memset(&sync_data,   0, sizeof (sync_data));
+    
+    init_def_tags(def_sync_tags,	num_Hidd_Sync_Attrs);
+    init_def_tags(def_pixfmt_tags,	num_Hidd_PixFmt_Attrs);
+    
+    /* First we need to calculate how much memory we are to allocate by counting supplied
+       pixel formats and syncs */
+    
+    for (tstate = modetags; (tag = NextTagItem((const struct TagItem **)&tstate));) {
+	ULONG idx;
+	if (IS_GFX_ATTR(tag->ti_Tag, idx)) {
+	    switch (idx) {
+		case aoHidd_Gfx_PixFmtTags:	numpfs	 ++;    break;
+		case aoHidd_Gfx_SyncTags:	numsyncs ++;	break;
+		default: break;
+	    }
+	}
+    }
+    
+    if (0 == numpfs || 0 == numsyncs) {
+	kprintf("!!! WE MUST AT LEAST HAVE ONE PIXFMT AND ONE SYNC IN Gfx::RegisterModes() !!!\n");
+    }
+
+    ObtainSemaphore(&mdb->sema);
+    
+    /* Allocate memory for mode db */
+    if (!alloc_mode_db(&data->mdb, numsyncs, numpfs, cl))
+	goto failure;
+    
+    
+    for (tstate = modetags; (tag = NextTagItem((const struct TagItem **)&tstate));) {
+	/* Look for Gfx, PixFmt and Sync tags */
+	ULONG idx;
+	
+	if (IS_GFX_ATTR(tag->ti_Tag, idx)) {
+	    switch (idx) {
+		case aoHidd_Gfx_PixFmtTags:
+		    def_pixfmt_tags[num_Hidd_PixFmt_Attrs].ti_Data = tag->ti_Data;
+		    mdb->pixfmts[pfidx] = HIDD_Gfx_RegisterPixFmt(o, def_pixfmt_tags);
+		    if (NULL == mdb->pixfmts[pfidx]) {
+			kprintf("!!! UNABLE TO CREATE PIXFMT OBJECT IN Gfx::RegisterModes() !!!\n");
+			goto failure;
+		    }
+		    pfidx ++;
+		    break;
+		    
+		case aoHidd_Gfx_SyncTags:
+		    def_sync_tags[num_Hidd_Sync_Attrs].ti_Data = tag->ti_Data;
+		    if (!parse_sync_tags(def_sync_tags
+			    , &sync_data
+			    , ATTRCHECK(sync)
+			    , CSD(cl) )) {
+			kprintf("!!! ERROR PARSING SYNC TAGS IN Gfx::RegisterModes() !!!\n");
+			goto failure;
+		    } else {
+			mdb->syncs[syncidx] = create_and_init_object(CSD(cl)->syncclass
+			    , (UBYTE *)&sync_data
+			    , sizeof (sync_data)
+			    , CSD(cl) );
+			if (NULL == mdb->syncs[syncidx]) {
+			    kprintf("!!! UNABLE TO CREATE PIXFMT OBJECT IN Gfx::RegisterModes() !!!\n");
+			    goto failure;
+			}
+			syncidx ++;
+		    }
+		    break;
+	    }
+	} else if (IS_SYNC_ATTR(tag->ti_Tag, idx)) {
+	    if (idx >= num_Hidd_Sync_Attrs) {
+		kprintf("!!! UNKNOWN SYNC ATTR IN Gfx::New(): %d !!!\n", idx);
+	    } else {
+		def_sync_tags[idx].ti_Tag  = tag->ti_Tag;
+		def_sync_tags[idx].ti_Data = tag->ti_Data;
+	    }
+	} else if (IS_PIXFMT_ATTR(tag->ti_Tag, idx)) {
+	    if (idx >= num_Hidd_PixFmt_Attrs) {
+		kprintf("!!! UNKNOWN PIXFMT ATTR IN Gfx::New(): %d !!!\n", idx);
+	    } else {
+		def_pixfmt_tags[idx].ti_Tag  = tag->ti_Tag;
+		def_pixfmt_tags[idx].ti_Data = tag->ti_Data;
+	    }
+	}
+    }
+    
+    ReleaseSemaphore(&mdb->sema);
+    return TRUE;
+    
+failure:
+
+    /*	mode db is freed in dispose */
+    ReleaseSemaphore(&mdb->sema);
+    
+    return FALSE;
+}
+
+
+struct modequery {
+    struct mode_db *mdb;
+    ULONG minwidth;
+    ULONG maxwidth;
+    ULONG minheight;
+    ULONG maxheight;
+    HIDDT_StdPixFmt *stdpfs;
+    ULONG numfound;
+    ULONG pfidx;
+    ULONG syncidx;
+    BOOL dims_ok;
+    BOOL stdpfs_ok;
+    BOOL check_ok;
+    Class *cl;
+};
+
+
+
+/* This is a recursive function that looks for valid modes */
+static HIDDT_ModeID *querymode(struct modequery *mq) {
+    HIDDT_ModeID *modeids;
+    register Object *pf;
+    register Object *sync;
+    BOOL mode_ok = FALSE;
+    Class *cl = mq->cl;
+    
+    mq->dims_ok	  = FALSE;
+    mq->stdpfs_ok = FALSE;
+    mq->check_ok  = FALSE;
+    
+    /* Look at the supplied idx */
+    if (mq->pfidx >= mq->mdb->num_pixfmts) {
+	mq->pfidx = 0;
+	mq->syncidx ++;
+    }
+	
+    if (mq->syncidx >= mq->mdb->num_syncs) {
+	/* We have reached the end of the recursion. Allocate memory and go back */
+	modeids = AllocVec(sizeof (HIDDT_ModeID) * (mq->numfound + 1), MEMF_ANY);
+	/* Get the end of the array */
+	modeids += mq->numfound;
+	*modeids -- = vHidd_ModeID_Invalid;
+	
+	return modeids;
+    }
+	
+    /* Get the pf and sync objects */
+    pf   = mq->mdb->pixfmts[mq->pfidx];
+    sync = mq->mdb->syncs[mq->syncidx];
+    
+
+    /* Check that the mode is really usable */
+    if (is_valid_mode(&mq->mdb->checked_mode_bm, mq->syncidx, mq->pfidx)) {
+	mq->check_ok = TRUE;
+    
+    
+	/* See if this mode matches the criterias set */
+	
+	if (	SD(sync)->hdisp  >= mq->minwidth
+	     && SD(sync)->hdisp  <= mq->maxwidth
+	     && SD(sync)->vdisp >= mq->minheight
+	     && SD(sync)->vdisp <= mq->maxheight	) {
+	     
+	     
+	    mq->dims_ok = TRUE;
+
+	    if (NULL != mq->stdpfs) {
+		register HIDDT_StdPixFmt *stdpf = mq->stdpfs;
+		while (*stdpf) {
+		    if (*stdpf == PF(pf)->stdpixfmt) {
+		       	mq->stdpfs_ok  = TRUE;
+		    }
+		    stdpf ++;
+		}
+	    } else {
+	    	mq->stdpfs_ok = TRUE;
+	    }
+	}
+    }
+    
+    
+    if (mq->dims_ok && mq->stdpfs_ok && mq->check_ok) {
+	mode_ok = TRUE;
+	mq->numfound ++;
+    }
+    
+    modeids = querymode(mq);
+
+    if (NULL == modeids)
+	return NULL;
+	
+    if (mode_ok) {
+	/* The mode is OK. Add it to the list */
+	*modeids -- = COMPUTE_HIDD_MODEID(mq->syncidx, mq->pfidx);
+    }
+    
+    return modeids;
+	
+}
+
+/*** HIDDGfx::QueryModeIDs() ********************************************/
+static HIDDT_ModeID *hiddgfx_querymodeids(Class *cl, Object *o, struct pHidd_Gfx_QueryModeIDs *msg)
 {
     struct TagItem *tag, *tstate;
     
-    struct List *modelist;
+    HIDDT_ModeID *modeids;
     struct HIDDGraphicsData *data;
-    struct ModeNode *node;
+    struct mode_db *mdb;
     
-    ULONG minwidth	= 0x0
-    	, maxwidth	= 0xFFFFFFFF
-	, minheight	= 0x0
-	, maxheight	= 0xFFFFFFFF;
-
-    HIDDT_StdPixFmt *pixfmts;
-    
-    /* Allocate a list to return modes in */
-    
-    modelist =  AllocMem(sizeof (struct List), MEMF_ANY);
-    if (NULL == modelist)
-    	return NULL;
+    struct modequery mq = {
+	NULL,		/* mode db (set later)	*/
+	0, 0xFFFFFFFF, 	/* minwidth, maxwidth	*/
+	0, 0xFFFFFFFF,	/* minheight, maxheight	*/
+	NULL,		/* stdpfs		*/
+	0,		/* numfound		*/
+	0, 0,		/* pfidx, syncidx	*/
+	FALSE, FALSE,	/* dims_ok, stdpfs_ok	*/
+	FALSE,		/* check_ok		*/
+	NULL		/* class (set later)	*/
 	
-    NEWLIST(modelist);
+    };
+    
 
     data = INST_DATA(cl, o);
+    mdb = &data->mdb;
+    mq.mdb = mdb;
+    mq.cl  = cl;
     
     for (tstate = msg->queryTags; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
 	switch (tag->ti_Tag) {
 	    case tHidd_GfxMode_MinWidth:
-	    	minwidth = (ULONG)tag->ti_Tag;
+	    	mq.minwidth = (ULONG)tag->ti_Tag;
 		break;
 
 	    case tHidd_GfxMode_MaxWidth:
-	    	maxwidth = (ULONG)tag->ti_Tag;
+	    	mq.maxwidth = (ULONG)tag->ti_Tag;
 		break;
 
 	    case tHidd_GfxMode_MinHeight:
-	    	minheight = (ULONG)tag->ti_Tag;
+	    	mq.minheight = (ULONG)tag->ti_Tag;
 		break;
 
 	    case tHidd_GfxMode_MaxHeight:
-	    	maxheight = (ULONG)tag->ti_Tag;
+	    	mq.maxheight = (ULONG)tag->ti_Tag;
 		break;
 		
 	    case tHidd_GfxMode_PixFmts:
-	    	pixfmts = (HIDDT_StdPixFmt *)tag->ti_Data;
+	    	mq.stdpfs = (HIDDT_StdPixFmt *)tag->ti_Data;
 		break;
 
 	}
     }
+
+    ObtainSemaphoreShared(&mdb->sema);
+
+    /* Recursively check all modes */    
+    modeids = querymode(&mq);
     
-    /* Look through all the gfxnodes and see if we can find something suitable */
-#define GMD(x) ((struct gfxmode_data *)x)
-
-    ObtainSemaphoreShared(&data->modesema);
-
-    ForeachNode(&data->modelist, node) {
-    	Object *mode = node->gfxMode;
-	BOOL usemode = FALSE;
-    	
-    	if (	GMD(mode)->width  >= minwidth
-	     && GMD(mode)->width  <= maxwidth
-	     && GMD(mode)->height >= minheight
-	     && GMD(mode)->height <= maxheight	) {
-	     
-	     
-	     usemode = TRUE;
-
-#if 0	     
-/* Don't care about pixel formats yet */
-	    if (NULL != pixfmts) {
-		HIDDT_StdPixFmt *pf = pixfmts;
-		while (*pf) {
-		    if (*pf = modes[i].pixfmt) {
-		       	usemode  = TRUE;
-		    }
-		    
-		}
-	    } else {
-	    	usemode = TRUE;
-	    }
-	    
-	    
-#endif
-	    if (usemode) {
-	    	struct ModeNode *newnode;
-	    
-	    	/* Allocate a node for the list */
-	        newnode = AllocMem(sizeof (struct ModeNode), MEMF_CLEAR);
-		if (NULL == newnode) {
-		
-    		    ReleaseSemaphore(&data->modesema);
-		    goto failure;
-		    
-		}
-		    
-		AddTail(modelist, (struct Node *)newnode);
-		
-		/* We do not copy the object, we just make a link */
-		newnode->gfxMode = node->gfxMode;
-		
-	    }
-	    
-	
-	} /* check dimensions */
-	
-    } /* ForeachNode() */
-
-    ReleaseSemaphore(&data->modesema);
+    ReleaseSemaphore(&mdb->sema);
     
-    return modelist;
-
-failure:
-     free_objectlist(modelist, FALSE, CSD(cl));
-     
-     return NULL;
+    return modeids;
      
 }
 
-/*** HIDDGfx::ReleaseGfxModes() ********************************************/
-static VOID hiddgfx_releasegfxmodes(Class *cl, Object *o, struct pHidd_Gfx_ReleaseGfxModes *msg)
+/*** HIDDGfx::ReleaseModes() ********************************************/
+static VOID hiddgfx_releasemodeids(Class *cl, Object *o, struct pHidd_Gfx_ReleaseModeIDs *msg)
 {
+    FreeVec(msg->modeIDs);
+}
 
-    /* Private modelist so it does not need protection */
-    free_objectlist(msg->modeList, FALSE, CSD(cl));
+/*** HIDDGfx::NextMode *************************************************/
+static HIDDT_ModeID hiddgfx_nextmodeid(Class *cl, Object *o, struct pHidd_Gfx_NextModeID *msg)
+{
+    struct HIDDGraphicsData *data;
+    struct mode_db *mdb;
+    ULONG syncidx, pfidx;
+    HIDDT_ModeID return_id = vHidd_ModeID_Invalid;
+    BOOL found = FALSE;
     
-    FreeMem(msg->modeList, sizeof (struct List));
+    data = INST_DATA(cl, o);
+    mdb = &data->mdb;
+
+    ObtainSemaphoreShared(&mdb->sema);    
+    if (vHidd_ModeID_Invalid == msg->modeID) {
+	pfidx	= 0;
+	syncidx = 0;	
+    } else {
+	pfidx 	= MODEID_TO_PFIDX( msg->modeID );
+	syncidx	= MODEID_TO_SYNCIDX( msg->modeID );
+
+	/* Increament one from the last call */
+	pfidx ++;
+	if (pfidx >= mdb->num_pixfmts) {
+	    pfidx = 0;
+	    syncidx ++;
+	}
+    }
+    
+    /* Search for a new mode. We only accept valid modes */
+    for (; syncidx < mdb->num_syncs; syncidx ++) {
+	/* We only return valid modes */
+	for (; pfidx < mdb->num_pixfmts; pfidx ++) {
+	    if (is_valid_mode(&mdb->checked_mode_bm, syncidx, pfidx)) {
+		found = TRUE;
+		break;
+	    }
+	}
+	if (found)
+	    break;
+    }
+    if (found) {
+	return_id = COMPUTE_HIDD_MODEID(syncidx, pfidx);
+	*msg->syncPtr	= mdb->syncs[syncidx];
+	*msg->pixFmtPtr	= mdb->pixfmts[pfidx];
+    } else {
+	*msg->syncPtr = *msg->pixFmtPtr = NULL;
+    }
+	
+    ReleaseSemaphore(&mdb->sema);
+    
+    return return_id;
+}
+
+/*** HiddGfx::GetMode() **************************************************/
+
+static BOOL hiddgfx_getmode(Class *cl, Object *o, struct pHidd_Gfx_GetMode *msg)
+{
+    ULONG pfidx, syncidx;
+    struct HIDDGraphicsData *data;
+    struct mode_db *mdb;
+    BOOL ok = FALSE;
+    
+    data = INST_DATA(cl, o);
+    mdb = &data->mdb;
+    
+    pfidx	= MODEID_TO_PFIDX(msg->modeID);
+    syncidx	= MODEID_TO_SYNCIDX(msg->modeID);
+    
+    ObtainSemaphoreShared(&mdb->sema);
+    
+    if (! (pfidx >= mdb->num_pixfmts || syncidx >= mdb->num_syncs) ) {
+	if (is_valid_mode(&mdb->checked_mode_bm, syncidx, pfidx)) {
+	    ok = TRUE;
+	    *msg->syncPtr	= mdb->syncs[syncidx];
+	    *msg->pixFmtPtr	= mdb->pixfmts[pfidx];
+	}
+    }
+    ReleaseSemaphore(&mdb->sema);
+    
+    if (!ok) {
+	*msg->syncPtr = *msg->pixFmtPtr = NULL;
+    }
+    return ok;
 }
 
 /*** HIDDGfx::RegisterPixFmt() ********************************************/
 
 static Object *hiddgfx_registerpixfmt(Class *cl, Object *o, struct pHidd_Gfx_RegisterPixFmt *msg)
 {
-
-#define GOT_ATTR(code) ((attrcheck & (1L << aoHidd_PixFmt_ ## code)) == (1L << aoHidd_PixFmt_ ## code))
-#define FOUND_ATTR(code)  attrcheck |= (1L << aoHidd_PixFmt_ ## code);
-
-   
-    struct TagItem *tag, *tstate;
     HIDDT_PixelFormat cmp_pf;
     struct HIDDGraphicsData *data;
-    ULONG attrcheck = 0;
     
     struct pfnode *pfnode;
     
@@ -384,113 +881,9 @@ static Object *hiddgfx_registerpixfmt(Class *cl, Object *o, struct pHidd_Gfx_Reg
     
     data = INST_DATA(cl, o);
     
-    for (tstate = msg->pixFmtTags; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
-    	ULONG idx;
-	if (IS_PIXFMT_ATTR(tag->ti_Tag, idx)) {
-	    switch (idx) {
-	    	case aoHidd_PixFmt_GraphType:
-		    cmp_pf.flags = (ULONG)tag->ti_Data;
-		    FOUND_ATTR(GraphType);
-		    break;
-		    
-		case aoHidd_PixFmt_Depth:
-		    cmp_pf.depth = (ULONG)tag->ti_Data;
-		    FOUND_ATTR(Depth);
-		    break;
-		    
-		case aoHidd_PixFmt_RedShift:
-		    cmp_pf.red_shift = tag->ti_Data;
-		    FOUND_ATTR(RedShift);
-		    break;
-
-		case aoHidd_PixFmt_GreenShift:
-		    cmp_pf.green_shift = tag->ti_Data;
-		    FOUND_ATTR(GreenShift);
-		    break;
-		    
-		case aoHidd_PixFmt_BlueShift:
-		    cmp_pf.blue_shift = tag->ti_Data;
-		    FOUND_ATTR(BlueShift);
-		    break;
-		    
-		case aoHidd_PixFmt_AlphaShift:
-		    cmp_pf.alpha_shift = tag->ti_Data;
-		    FOUND_ATTR(AlphaShift);
-		    break;
-		
-		case aoHidd_PixFmt_RedMask:
-		    cmp_pf.red_mask = tag->ti_Data;
-		    FOUND_ATTR(RedMask);
-		    break;
-		    
-		case aoHidd_PixFmt_GreenMask:
-		    cmp_pf.green_mask = tag->ti_Data;
-		    FOUND_ATTR(GreenMask);
-		    break;
-
-		case aoHidd_PixFmt_BlueMask:
-		    cmp_pf.blue_mask = tag->ti_Data;
-		    FOUND_ATTR(BlueMask);
-		    break;
-
-		case aoHidd_PixFmt_AlphaMask:
-		    cmp_pf.alpha_mask = tag->ti_Data;
-		    FOUND_ATTR(AlphaMask);
-		    break;
-		    
-		case aoHidd_PixFmt_BitsPerPixel:
-		    cmp_pf.size = tag->ti_Data;
-		    FOUND_ATTR(BitsPerPixel);
-		    break;
-		    
-		case aoHidd_PixFmt_BytesPerPixel:
-		    cmp_pf.bytes_per_pixel = tag->ti_Data;
-		    FOUND_ATTR(BytesPerPixel);
-		    break;
-		    
-		case aoHidd_PixFmt_CLUTShift:
-		    cmp_pf.clut_shift = (ULONG)tag->ti_Data;
-		    FOUND_ATTR(CLUTShift);
-		    break;
-		    
-		case aoHidd_PixFmt_CLUTMask:
-		    cmp_pf.clut_mask = (ULONG)tag->ti_Data;
-		    FOUND_ATTR(CLUTMask);
-		    break;
-
-		    
-		default:
-		    break;
-	    
-	    }
-	
-	}
-    }
-    
-    switch (HIDD_PF_GRAPHTYPE(&cmp_pf)) {
-    	case vHidd_GT_TrueColor:
-	    /* Check that we got all the truecolor describing stuff */
-	    if ( ! (GOT_ATTR(RedMask)   && GOT_ATTR(GreenMask)
-	    	 && GOT_ATTR(BlueMask)  && GOT_ATTR(AlphaMask)
-		 && GOT_ATTR(RedShift)  && GOT_ATTR(GreenShift)
-		 && GOT_ATTR(BlueShift) && GOT_ATTR(AlphaShift) ) ) {
-		 
-		 kprintf("!!! Unsufficient true color format describing attrs to pixfmt\n");
-		 return NULL;
-	    }
-	    break;
-	
-	case vHidd_GT_Palette:
-	    if ( ! (GOT_ATTR(CLUTShift) && GOT_ATTR(CLUTMask)) ) {
-		 kprintf("!!! Unsufficient palette format describing attrs to pixfmt\n");
-		 return NULL;
-	    }
-	    break;
-	
-	case vHidd_GT_StaticPalette:
-	
-	    break;
-	
+    if (!parse_pixfmt_tags(msg->pixFmtTags, &cmp_pf, 0, CSD(cl))) {
+    	kprintf("!!! FAILED PARSING TAGS IN Gfx::RegisterPixFmt() !!!\n");
+	return FALSE;
     }
     
     ObtainSemaphoreShared(&data->pfsema);
@@ -538,7 +931,8 @@ kprintf("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n"
 	, PF(&cmp_pf)->bytes_per_pixel
 	, PF(&cmp_pf)->size
 	, PF(&cmp_pf)->depth
-	, PF(&cmp_pf)->stdpixfmt);
+	, PF(&cmp_pf)->stdpixfmt
+	, HIDD_BP_BITMAPTYPE(&cmp_pf));
 
 */
 ObtainSemaphore(&data->pfsema);
@@ -570,9 +964,6 @@ static VOID hiddgfx_releasepixfmt(Class *cl, Object *o, struct pHidd_Gfx_Release
     
     /* Go through the pixfmt list trying to find the object */
     ObtainSemaphore(&data->pfsema);
-    
-    /* We can use ForeachNode and not ForeachNodeSafe because
-      we remove only one node and do not traverse the list any further after that */
       
     ForeachNodeSafe(&data->pflist, n, safe) {
     	if (msg->pixFmt == n->object) {
@@ -595,6 +986,40 @@ static VOID hiddgfx_releasepixfmt(Class *cl, Object *o, struct pHidd_Gfx_Release
     
     ReleaseSemaphore(&data->pfsema);
 }
+
+/** Gfx::CheckMode() *******************************************/
+
+/*
+    This is a method which should be implemented by the subclasses.
+    It should look at the supplied pixfmt and sync and see if it is valid.
+    This will handle any special cases that are not covered by the 
+    pixfmts/syncs supplied in HIDD_Gfx_RegisterModes().
+    For example some advanced modes, like 1024x768x24 @ 90 might not be available
+    because of lack of bandwidth in the gfx hw.
+*/
+static BOOL hiddgfx_checkmode(Class *cl, Object *o, struct pHidd_Gfx_CheckMode *msg)
+{
+    /* As a default we allways return TRUE, ie. the mode is OK */
+    return TRUE;
+}
+
+/*** Gfx::GetPixFmt() **********************************************/
+
+
+static Object *hiddgfx_getpixfmt(Class *cl, Object *o, struct pHidd_Gfx_GetPixFmt *msg) 
+{
+    Object *fmt;
+    
+    if (!IS_REAL_STDPIXFMT(msg->stdPixFmt)) {
+    	kprintf("!!! Illegal pixel format passed to Gfx::GetPixFmt(): %d\n", msg->stdPixFmt);
+	return NULL;
+    }  else  {
+    	fmt = CSD(cl)->std_pixfmts[REAL_STDPIXFMT_IDX(msg->stdPixFmt)];
+    }
+
+    return fmt;
+}
+
 /*************************** Classes *****************************/
 
 #undef OOPBase
@@ -605,8 +1030,8 @@ static VOID hiddgfx_releasepixfmt(Class *cl, Object *o, struct pHidd_Gfx_Release
 #define OOPBase     (csd->oopbase)
 #define UtilityBase (csd->utilitybase)
 
-#define NUM_ROOT_METHODS	2
-#define NUM_GFXHIDD_METHODS	9
+#define NUM_ROOT_METHODS	3
+#define NUM_GFXHIDD_METHODS	12
 
 Class *init_gfxhiddclass (struct class_static_data *csd)
 {
@@ -615,6 +1040,7 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
     struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] = {
         {(IPTR (*)())root_new,    	     	moRoot_New	},
         {(IPTR (*)())root_dispose,         	moRoot_Dispose	},
+        {(IPTR (*)())root_get,         		moRoot_Get	},
 	{ NULL, 0UL }
     };
     
@@ -624,11 +1050,14 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
         {(IPTR (*)())hiddgfx_disposegc,     	moHidd_Gfx_DisposeGC		},
         {(IPTR (*)())hiddgfx_newbitmap,     	moHidd_Gfx_NewBitMap		},
         {(IPTR (*)())hiddgfx_disposebitmap, 	moHidd_Gfx_DisposeBitMap	},
-        {(IPTR (*)())hiddgfx_registergfxmodes, 	moHidd_Gfx_RegisterGfxModes	},
-        {(IPTR (*)())hiddgfx_querygfxmodes, 	moHidd_Gfx_QueryGfxModes	},
-        {(IPTR (*)())hiddgfx_releasegfxmodes, 	moHidd_Gfx_ReleaseGfxModes	},
+        {(IPTR (*)())hiddgfx_querymodeids, 	moHidd_Gfx_QueryModeIDs		},
+        {(IPTR (*)())hiddgfx_releasemodeids, 	moHidd_Gfx_ReleaseModeIDs	},
+	{(IPTR (*)())hiddgfx_checkmode, 	moHidd_Gfx_CheckMode		},
+	{(IPTR (*)())hiddgfx_nextmodeid,	moHidd_Gfx_NextModeID		},
+	{(IPTR (*)())hiddgfx_getmode, 		moHidd_Gfx_GetMode		},
         {(IPTR (*)())hiddgfx_registerpixfmt, 	moHidd_Gfx_RegisterPixFmt	},
         {(IPTR (*)())hiddgfx_releasepixfmt, 	moHidd_Gfx_ReleasePixFmt	},
+	{(IPTR (*)())hiddgfx_getpixfmt, 	moHidd_Gfx_GetPixFmt		},
         {NULL, 0UL}
     };
     
@@ -654,7 +1083,7 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
     };
     
 
-    EnterFunc(bug("    init_gfxhiddclass(csd=%p)\n", csd));
+    EnterFunc(bug("init_gfxhiddclass(csd=%p)\n", csd));
 
     cl = NewObject(NULL, CLID_HiddMeta, tags);
     D(bug("Class=%p\n", cl));
@@ -662,18 +1091,10 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
     	goto failexit;
         
     cl->UserData = (APTR)csd;
+    AddClass(cl);
     
-    HiddBitMapAttrBase = ObtainAttrBase(IID_Hidd_BitMap);
-    if (!HiddBitMapAttrBase)
-    	goto failexit;
-	
-    HiddGfxModeAttrBase = ObtainAttrBase(IID_Hidd_GfxMode);
-    if (!HiddGfxModeAttrBase)
-    	goto failexit;
-    
-    HiddPixFmtAttrBase = ObtainAttrBase(IID_Hidd_PixFmt);
-    if (!HiddPixFmtAttrBase)
-    	goto failexit;
+    if (!ObtainAttrBases(attrbases))
+	goto failexit;
 
     csd->bitmapclass = init_bitmapclass(csd);
     if (NULL == csd->bitmapclass)
@@ -692,23 +1113,23 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
     if (NULL == csd->chunkybmclass)
     	goto failexit;
 	
-    csd->gfxmodeclass = init_gfxmodeclass(csd);
-    if (NULL == csd->gfxmodeclass)
-    	goto failexit;
-
-	
     csd->pixfmtclass = init_pixfmtclass(csd);
     if (NULL == csd->pixfmtclass)
+    	goto failexit;
+	
+    csd->syncclass = init_syncclass(csd);
+    if (NULL == csd->syncclass)
     	goto failexit;
 	
     csd->colormapclass = init_colormapclass(csd);
     if (NULL == csd->colormapclass)
     	goto failexit;
-	
+
+D(bug("Creating std pixelfmts\n"));
     if (!create_std_pixfmts(csd))
     	goto failexit;
+D(bug("Pixfmts created\n"));
 
-    AddClass(cl);
 
     ReturnPtr("init_gfxhiddclass", Class *, cl);
     
@@ -719,156 +1140,97 @@ failexit:
 }
 
 
-void free_gfxhiddclass(struct class_static_data *csd)
+VOID free_gfxhiddclass(struct class_static_data *csd)
 {
     EnterFunc(bug("free_gfxhiddclass(csd=%p)\n", csd));
-    
-    	
-
-    if(csd)
-    {
-        RemoveClass(csd->gfxhiddclass);
-	
-	
-	delete_std_pixfmts(csd);
+    if(NULL != csd) {
 	
 	free_colormapclass(csd);
+	free_syncclass(csd);
 	free_pixfmtclass(csd);
-	free_gfxmodeclass(csd);
 	free_chunkybmclass(csd);
 	free_planarbmclass(csd);
         free_gcclass(csd);
         free_bitmapclass(csd);
-        if(csd->gfxhiddclass) DisposeObject((Object *) csd->gfxhiddclass);
-        csd->gfxhiddclass = NULL;
-    }
 
-    if (HiddPixFmtAttrBase) {
-    	ReleaseAttrBase(IID_Hidd_PixFmt);
-	HiddPixFmtAttrBase = NULL;
-    }
-    
-    if (HiddGfxModeAttrBase) {
-    	ReleaseAttrBase(IID_Hidd_GfxMode);
-	HiddGfxModeAttrBase = NULL;
-    }
-
-    if (HiddBitMapAttrBase) {
-    	ReleaseAttrBase(IID_Hidd_BitMap);
-	HiddBitMapAttrBase = NULL;
+	delete_std_pixfmts(csd);
+        
+	if (NULL != csd->gfxhiddclass) {
+    	    RemoveClass(csd->gfxhiddclass);
+	    DisposeObject((Object *) csd->gfxhiddclass);
+    	    csd->gfxhiddclass = NULL;
+	}
+	
+	ReleaseAttrBases(attrbases);
     }
     
     ReturnVoid("free_gfxhiddclass");
 }
 
+const HIDDT_PixelFormat stdpfs[] = 
+{
+    {   
+	  24, 24, 3
+	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000
+	, 8, 16, 24, 0
+	, 0, 0
+	, vHidd_StdPixFmt_RGB24
+	, PF_GRAPHTYPE(TrueColor, Chunky)
+    }, {
+	  16, 16, 2
+	, 0x0000F800, 0x000007E0, 0x0000001E, 0x00000000
+	, 16, 21, 27, 0
+	, 0, 0
+	, vHidd_StdPixFmt_RGB16
+	, PF_GRAPHTYPE(TrueColor, Chunky)
+    }, {
+	  32, 32, 4
+	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000
+	, 8, 16, 24, 0
+	, vHidd_StdPixFmt_ARGB32
+	, PF_GRAPHTYPE(TrueColor, Chunky)
+    }, {
+	  32, 32, 4
+	, 0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF
+	, 0, 8, 16, 24
+	, 0, 0
+	, vHidd_StdPixFmt_RGBA32
+	, PF_GRAPHTYPE(TrueColor, Chunky)
+    }, {
+	  8, 8, 1
+	, 0UL, 0UL, 0UL, 0UL
+	, 0, 0, 0, 0
+	, 0x000000FF, 0
+	, vHidd_StdPixFmt_LUT8
+	, PF_GRAPHTYPE(Palette, Chunky)
+    }, {
+    	  1, 1, 1
+	, 0UL, 0UL, 0UL, 0UL
+	, 0, 0, 0, 0
+	, 0x0000000F, 0
+	, vHidd_StdPixFmt_Plane
+	, PF_GRAPHTYPE(Palette, Planar)
+    }
+    
+};
 
 static BOOL create_std_pixfmts(struct class_static_data *csd)
 {
-    struct TagItem rgb24[] = {
-    	{ aHidd_PixFmt_RedShift,	8		},
-    	{ aHidd_PixFmt_GreenShift,	16		},
-    	{ aHidd_PixFmt_BlueShift,	24		},
-    	{ aHidd_PixFmt_AlphaShift,	0		},
-    	{ aHidd_PixFmt_RedMask,		0x00FF0000	},
-    	{ aHidd_PixFmt_GreenMask,	0x0000FF00	},
-    	{ aHidd_PixFmt_BlueMask,	0x000000FF	},
-    	{ aHidd_PixFmt_AlphaMask,	0x00000000	},
-    	{ aHidd_PixFmt_Depth,		24		},
-    	{ aHidd_PixFmt_BitsPerPixel,	24		},
-    	{ aHidd_PixFmt_BytesPerPixel,	3		},
-	{ aHidd_PixFmt_GraphType,	vHidd_GT_TrueColor },
-	{ aHidd_PixFmt_StdPixFmt,	vHidd_PixFmt_RGB24 },
-	{ TAG_DONE, 0UL }
-    };
-	
-
-    struct TagItem rgb16[] = {
-
-    	{ aHidd_PixFmt_RedShift,	16		},
-    	{ aHidd_PixFmt_GreenShift,	21		},
-    	{ aHidd_PixFmt_BlueShift,	27		},
-    	{ aHidd_PixFmt_AlphaShift,	0		},
-    	{ aHidd_PixFmt_RedMask,		0x0000F800	},
-    	{ aHidd_PixFmt_GreenMask,	0x000007E0	},
-    	{ aHidd_PixFmt_BlueMask,	0x0000001E	},
-    	{ aHidd_PixFmt_AlphaMask,	0x00000000	},
-    	{ aHidd_PixFmt_Depth,		16		},
-    	{ aHidd_PixFmt_BitsPerPixel,	16		},
-    	{ aHidd_PixFmt_BytesPerPixel,	2		},
-	{ aHidd_PixFmt_GraphType,	vHidd_GT_TrueColor },
-	{ aHidd_PixFmt_StdPixFmt,	vHidd_PixFmt_RGB16 },
-	{ TAG_DONE, 0UL }
-    };
-    
-    
-
-
-    struct TagItem argb32[] = {
-    	{ aHidd_PixFmt_RedShift,	8		},
-    	{ aHidd_PixFmt_GreenShift,	16		},
-    	{ aHidd_PixFmt_BlueShift,	24		},
-    	{ aHidd_PixFmt_AlphaShift,	0		},
-    	{ aHidd_PixFmt_RedMask,		0x00FF0000	},
-    	{ aHidd_PixFmt_GreenMask,	0x0000FF00	},
-    	{ aHidd_PixFmt_BlueMask,	0x000000FF	},
-    	{ aHidd_PixFmt_AlphaMask,	0xFF000000	},
-    	{ aHidd_PixFmt_Depth,		32		},
-    	{ aHidd_PixFmt_BitsPerPixel,	32		},
-    	{ aHidd_PixFmt_BytesPerPixel,	4		},
-	{ aHidd_PixFmt_GraphType,	vHidd_GT_TrueColor },
-	{ aHidd_PixFmt_StdPixFmt,	vHidd_PixFmt_ARGB32 },
-	{ TAG_DONE, 0UL }
-    };
-
-
-    struct TagItem rgba32[] = {
-    	{ aHidd_PixFmt_RedShift,	0		},
-    	{ aHidd_PixFmt_GreenShift,	8		},
-    	{ aHidd_PixFmt_BlueShift,	16		},
-    	{ aHidd_PixFmt_AlphaShift,	24		},
-    	{ aHidd_PixFmt_RedMask,		0xFF000000	},
-    	{ aHidd_PixFmt_GreenMask,	0x00FF0000	},
-    	{ aHidd_PixFmt_BlueMask,	0x0000FF00	},
-    	{ aHidd_PixFmt_AlphaMask,	0x000000FF	},
-    	{ aHidd_PixFmt_Depth,		32		},
-    	{ aHidd_PixFmt_BitsPerPixel,	32		},
-    	{ aHidd_PixFmt_BytesPerPixel,	4		},
-	{ aHidd_PixFmt_GraphType,	vHidd_GT_TrueColor },
-	{ aHidd_PixFmt_StdPixFmt,	vHidd_PixFmt_RGBA32 },
-	{ TAG_DONE, 0UL }
-    };
-
-
-    struct TagItem lut8[] = {
-    	{ aHidd_PixFmt_CLUTShift,	0		},
-    	{ aHidd_PixFmt_CLUTMask,	0x000000FF	},
-    	{ aHidd_PixFmt_Depth,		8		},
-    	{ aHidd_PixFmt_BitsPerPixel,	8		},
-    	{ aHidd_PixFmt_BytesPerPixel,	1		},
-	{ aHidd_PixFmt_GraphType,	vHidd_GT_Palette },
-	{ aHidd_PixFmt_StdPixFmt,	vHidd_PixFmt_LUT8 },
-	{ TAG_DONE, 0UL }
-    };
-
-    struct TagItem *pf_tags[num_Hidd_StdPixFmt] = {
-    	rgb24, rgb16, argb32, rgba32, lut8
-    };
-    
     ULONG i;
     
     memset(csd->std_pixfmts, 0, sizeof (Object *) * num_Hidd_StdPixFmt);
     
     for (i = 0; i < num_Hidd_StdPixFmt; i ++) {
-    	csd->std_pixfmts[i] = NewObject(csd->pixfmtclass, NULL, pf_tags[i]);
+    	csd->std_pixfmts[i] = create_and_init_object(csd->pixfmtclass
+		    , (UBYTE *)&stdpfs[i],  sizeof (stdpfs[i]), csd);
 	if (NULL == csd->std_pixfmts[i]) {
 	    kprintf("FAILED TO CREATE PIXEL FORMAT %d\n", i);
 	    delete_std_pixfmts(csd);
-	    return FALSE;  
+	    ReturnBool("create_stdpixfmts", FALSE);
 	}
     }
-    
-    return TRUE;
-    
+    ReturnBool("create_stdpixfmts", TRUE);
+
 }
 
 
@@ -893,8 +1255,6 @@ static VOID free_objectlist(struct List *list, BOOL disposeobjects, struct class
     	Remove(( struct Node *)n);
 	
 	if (NULL != n->object && disposeobjects) {
-kprintf("free_objectlist: FREEING OBJECT %p, class=%p\n"
-	, n->object, OCLASS(n->object) );
 	    DisposeObject(n->object);
 	}
 	
@@ -907,7 +1267,7 @@ kprintf("free_objectlist: FREEING OBJECT %p, class=%p\n"
 static inline BOOL cmp_pfs(HIDDT_PixelFormat *tmppf, HIDDT_PixelFormat *dbpf)
 {
     if (    dbpf->depth == tmppf->depth 
-	 && HIDD_PF_GRAPHTYPE(dbpf) == HIDD_PF_GRAPHTYPE(tmppf)) {
+	 && HIDD_PF_COLMODEL(dbpf) == HIDD_PF_COLMODEL(tmppf)) {
     /* The pixfmts are very alike, check all attrs */
 	     
 	tmppf->stdpixfmt = ((HIDDT_PixelFormat *)dbpf)->stdpixfmt;
@@ -918,6 +1278,11 @@ static inline BOOL cmp_pfs(HIDDT_PixelFormat *tmppf, HIDDT_PixelFormat *dbpf)
     }
     return FALSE;
 }
+
+/*
+     Matches the supplied pixelformat against all standard pixelformats
+     to see if there allready exsts a pixelformat object for this pixelformat
+*/
 
 static Object *find_stdpixfmt(HIDDT_PixelFormat *tofind
 	, struct class_static_data *csd)
@@ -935,6 +1300,205 @@ static Object *find_stdpixfmt(HIDDT_PixelFormat *tofind
 	
     }
     return retpf;
+}
+
+
+/*
+    Parses the tags supplied in 'tags' and puts the result into 'sync'.
+    It also checks to see if all needed attrs are supplied.
+    It uses 'attrcheck' for this, so you may find attrs outside
+    of this function, and mark them as found before calling this function
+*/
+
+#define SYNC_AF(code) (1L << aoHidd_Sync_ ## code)
+#define SYAO(x) (aoHidd_Sync_ ## x)
+
+#define X11_SYNC_AF	( \
+	  SYNC_AF(HSyncStart) | SYNC_AF(HSyncEnd) | SYNC_AF(HTotal) \
+	| SYNC_AF(VSyncStart) | SYNC_AF(VSyncEnd) | SYNC_AF(VTotal) ) 
+
+#define LINUXFB_SYNC_AF ( \
+	  SYNC_AF(LeftMargin)  | SYNC_AF(RightMargin) | SYNC_AF(HSyncLength) \
+	| SYNC_AF(UpperMargin) | SYNC_AF(LowerMargin) | SYNC_AF(VSyncLength) )
+
+#define SYNC_DISP_AF ( \
+	SYNC_AF(HDisp) | SYNC_AF(VDisp) )
+BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHECK(sync), struct class_static_data *csd)
+{
+    BOOL ok = FALSE;
+    IPTR attrs[num_Hidd_Sync_Attrs];
+    
+    if (0 != ParseAttrs(tags, attrs, num_Hidd_Sync_Attrs, &ATTRCHECK(sync), HiddSyncAttrBase)) {
+	kprintf("!!! parse_sync_tags: ERROR PARSING ATTRS !!!\n");
+	return FALSE;
+    }
+
+    /* Check that we have all attrs */
+    if (GOT_SYNC_ATTR(PixelTime)) {
+	data->pixtime = attrs[SYAO(PixelTime)];
+    } else if (GOT_SYNC_ATTR(PixelClock)) {
+	DOUBLE pixclock, pixtime;
+		    
+	/* Compute the pixtime */
+	pixclock =(DOUBLE)attrs[SYAO(PixelClock)];
+	pixtime = 1 / pixclock;
+	pixtime *= 1000000000000;
+	data->pixtime = (ULONG)pixtime;
+	
+    } else {
+	kprintf("!!! MISSING PIXELTIME/CLOCK ATTR !!!\n");
+	return FALSE;
+    }
+    
+    /* Check that we have HDisp and VDisp */
+    if (SYNC_DISP_AF != (SYNC_DISP_AF & ATTRCHECK(sync))) {
+	    kprintf("!!! MISSING HDISP OR VDISP ATTR !!!\n");
+    } else {
+	data->hdisp = attrs[SYAO(HDisp)];
+	data->vdisp = attrs[SYAO(VDisp)];
+
+	/* Test that the user has not supplied both X11 style and fbdev style attrs */
+	if ( (LINUXFB_SYNC_AF & ATTRCHECK(sync)) != 0 && (X11_SYNC_AF & ATTRCHECK(sync)) != 0 ) {
+	    kprintf("!!! BOTH LINUXFB-STYLE AND X11-STYLE ATTRS WERE SUPPLIED !!!\n");
+	    kprintf("!!! YOU MAY ONLY SUPPLY ONE OF THEM !!!\n");
+	} else {
+	    
+	    /* Test that we have all attrs of either the X11 style or the Linux FB style */
+	    if ((LINUXFB_SYNC_AF & ATTRCHECK(sync)) == LINUXFB_SYNC_AF) {
+		/* Set the data struct */
+		data->left_margin	= attrs[SYAO(LeftMargin)];
+		data->right_margin	= attrs[SYAO(RightMargin)];
+		data->hsync_length	= attrs[SYAO(HSyncLength)];
+		
+		data->upper_margin	= attrs[SYAO(UpperMargin)];
+		data->lower_margin	= attrs[SYAO(LowerMargin)];
+		data->vsync_length	= attrs[SYAO(VSyncLength)];
+		ok = TRUE;
+		
+	    } else if ((X11_SYNC_AF & ATTRCHECK(sync)) == X11_SYNC_AF) {
+		ULONG hsync_start, hsync_end, htotal;
+		ULONG vsync_start, vsync_end, vtotal;
+		
+		hsync_start	= attrs[SYAO(HSyncStart)];
+		hsync_end	= attrs[SYAO(HSyncEnd)];
+		htotal		= attrs[SYAO(HTotal)];
+		
+		vsync_start	= attrs[SYAO(VSyncStart)];
+		vsync_end	= attrs[SYAO(VSyncEnd)];
+		vtotal		= attrs[SYAO(VTotal)];
+
+		data->left_margin  = htotal      - hsync_end;
+		data->right_margin = hsync_start - data->hdisp;
+		data->hsync_length = hsync_end   - hsync_start;
+
+		data->upper_margin = vtotal      - vsync_end;
+		data->lower_margin = vsync_start - data->vdisp;
+		data->vsync_length = vsync_end   - vsync_start;
+		ok = TRUE;
+	    } else {
+		kprintf("!!! UNSUFFICIENT ATTRS PASSED TO parse_sync_tags: %x !!!\n", ATTRCHECK(sync));
+	    }
+	}
+    }
+    
+    return ok;
+}
+
+/*
+    Parses the tags supplied in 'tags' and puts the result into 'pf'.
+    It also checks to see if all needed attrs are supplied.
+    It uses 'attrcheck' for this, so you may find attrs outside
+    of this function, and mark them as found before calling this function
+*/
+
+#define PFAF(x) (1L << aoHidd_PixFmt_ ## x)
+#define PF_COMMON_AF (   PFAF(Depth) | PFAF(BitsPerPixel) | PFAF(BytesPerPixel)	\
+		       | PFAF(ColorModel) | PFAF(BitMapType) )
+		       
+#define PF_TRUECOLOR_AF ( PFAF(RedMask)  | PFAF(GreenMask)  | PFAF(BlueMask)  | PFAF(AlphaMask) | \
+			  PFAF(RedShift) | PFAF(GreenShift) | PFAF(BlueShift) | PFAF(AlphaShift))
+			  
+#define PF_PALETTE_AF ( PFAF(CLUTMask) | PFAF(CLUTShift) )
+		       
+#define PFAO(x) (aoHidd_PixFmt_ ## x)
+  
+BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG ATTRCHECK(pixfmt), struct class_static_data *csd)
+{
+    IPTR attrs[num_Hidd_PixFmt_Attrs];
+    
+    
+    if (0 != ParseAttrs(tags, attrs, num_Hidd_PixFmt_Attrs, &ATTRCHECK(pixfmt), HiddPixFmtAttrBase)) {
+	kprintf("!!! parse_pixfmt_tags: ERROR PARSING TAGS THROUGH ParseAttrs !!!\n");
+	return FALSE;
+    }
+
+    if (PF_COMMON_AF != (PF_COMMON_AF & ATTRCHECK(pixfmt))) {
+	kprintf("!!! parse_pixfmt_tags: Missing PixFmt attributes passed to parse_pixfmt_tags(): %x !!!\n", ATTRCHECK(pixfmt));
+	return FALSE;
+    }
+    
+    /* Set the common attributes */
+    pf->depth		= attrs[PFAO(Depth)];
+    pf->size		= attrs[PFAO(BitsPerPixel)];
+    pf->bytes_per_pixel	= attrs[PFAO(BytesPerPixel)];
+    
+    SET_PF_COLMODEL(  pf, attrs[PFAO(ColorModel)]);
+    SET_PF_BITMAPTYPE(pf, attrs[PFAO(BitMapType)]);
+    
+    /* Set the colormodel specific stuff */
+    switch (HIDD_PF_COLMODEL(pf)) {
+    	case vHidd_ColorModel_TrueColor:
+	    /* Check that we got all the truecolor describing stuff */
+	    if (PF_TRUECOLOR_AF != (PF_TRUECOLOR_AF & ATTRCHECK(pixfmt))) {
+		 kprintf("!!! Unsufficient true color format describing attrs to pixfmt in parse_pixfmt_tags() !!!\n");
+		 return FALSE;
+	    }
+	    
+	    /* Set the truecolor stuff */
+	    pf->red_mask	= attrs[PFAO(RedMask)];
+	    pf->green_mask	= attrs[PFAO(GreenMask)];
+	    pf->blue_mask	= attrs[PFAO(BlueMask)];
+	    pf->alpha_mask	= attrs[PFAO(AlphaMask)];
+	    
+	    pf->red_shift	= attrs[PFAO(RedShift)];
+	    pf->green_shift	= attrs[PFAO(GreenShift)];
+	    pf->blue_shift	= attrs[PFAO(BlueShift)];
+	    pf->alpha_shift	= attrs[PFAO(AlphaShift)];
+	    break;
+	
+	case vHidd_ColorModel_Palette:
+	case vHidd_ColorModel_StaticPalette:
+	    if ( PF_PALETTE_AF != (PF_PALETTE_AF & ATTRCHECK(pixfmt))) {
+		 kprintf("!!! Unsufficient palette format describing attrs to pixfmt in parse_pixfmt_tags() !!!\n");
+		 return FALSE;
+	    }
+	    
+	    /* set palette stuff */
+	    pf->clut_mask	= attrs[PFAO(CLUTMask)];
+	    pf->clut_shift	= attrs[PFAO(CLUTShift)];
+	    break;
+    } /* shift (colormodel) */
+    
+    return TRUE;
+}
+
+/* 
+    Create an empty object and initialize it the "ugly" way. This only works with
+    CLID_Hidd_PixFmt and CLID_Hidd_Sync classes
+*/
+static Object *create_and_init_object(Class *cl, UBYTE *data, ULONG datasize, struct class_static_data *csd)
+{
+    Object *o;
+			
+    o = NewObject(cl, NULL, NULL);
+    if (NULL == o) {
+	kprintf("!!! UNABLE TO CREATE OBJECT IN create_and_init_object() !!!\n");
+	return NULL;
+    }
+	    
+    memcpy(o, data, datasize);
+    
+    return o;
 }
 	
 
@@ -1001,3 +1565,7 @@ VOID HIDD_Gfx_ReleasePixFmt(Object *o, Object *pixFmt)
 
 
 }
+
+
+
+

@@ -15,7 +15,7 @@
 
 #include <string.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 
@@ -53,17 +53,19 @@ static Object *planarbm_new(Class *cl, Object *o, struct pRoot_New *msg)
     BOOL ok = TRUE;    
     	/* Set the bitmaps' pixelformat */
     struct TagItem pf_tags[] = {
-      	    { aHidd_PixFmt_GraphType,	   vHidd_GT_Palette	}, /* 0 */
-      	    { aHidd_PixFmt_Depth,	   0			}, /* 1 */
-      	    { aHidd_PixFmt_BytesPerPixel,  0			}, /* 2 */
-      	    { aHidd_PixFmt_BitsPerPixel,   0			}, /* 3 */
-      	    { aHidd_PixFmt_StdPixFmt,	   0			}, /* 4 */
-      	    { aHidd_PixFmt_CLUTShift,	   0			}, /* 5 */
-	    { aHidd_PixFmt_CLUTMask,	   0x000000FF		}, /* 6 */
+      	    { aHidd_PixFmt_ColorModel,	   vHidd_ColorModel_Palette	}, /* 0 */
+      	    { aHidd_PixFmt_Depth,	   0				}, /* 1 */
+      	    { aHidd_PixFmt_BytesPerPixel,  0				}, /* 2 */
+      	    { aHidd_PixFmt_BitsPerPixel,   0				}, /* 3 */
+      	    { aHidd_PixFmt_StdPixFmt,	   0				}, /* 4 */
+      	    { aHidd_PixFmt_CLUTShift,	   0				}, /* 5 */
+	    { aHidd_PixFmt_CLUTMask,	   0x000000FF			}, /* 6 */
+	    { aHidd_PixFmt_BitMapType,	   vHidd_BitMapType_Planar	},
 	    { TAG_DONE, 0UL }
     };
     
     struct planarbm_data *data;
+    Object *pf;
 
     o =(Object *)DoSuperMethod(cl, o, (Msg)msg);
     if (NULL == o)
@@ -74,36 +76,27 @@ static Object *planarbm_new(Class *cl, Object *o, struct pRoot_New *msg)
     
     
     /* Get some data about the dimensions of the bitmap */
+
+    data->planes_alloced = (BOOL)GetTagData(aHidd_PlanarBM_AllocPlanes, TRUE, msg->attrList);
     
-    GetAttr(o, aHidd_BitMap_Depth,	&depth);
+#warning Fix this hack
+    /* Because this class is used to emulate Amiga bitmaps, we
+       have to see if it should have late initalisation
+    */
+    if (!data->planes_alloced)
+	return o; /* Late initialization */
+	
+
+    /* Not late initalization. Get some info on the bitmap */	
     GetAttr(o, aHidd_BitMap_Width,	&width);
     GetAttr(o, aHidd_BitMap_Height,	&height);
+    GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    GetAttr(pf, aHidd_PixFmt_Depth, (IPTR *)&depth);
     
     /* We cache some info */
     data->bytesperrow	  = (width + alignoffset) / aligndiv;
     data->rows 		  = height;
     data->depth		  = depth;
-    
-    data->planes_alloced = (BOOL)GetTagData(aHidd_PlanarBM_AllocPlanes, TRUE, msg->attrList);
-
-    pf_tags[1].ti_Data = depth;
-    pf_tags[2].ti_Data = 1;
-    pf_tags[3].ti_Data = depth;
-    pf_tags[4].ti_Data = vHidd_PixFmt_Unknown;
-	
-	
-    if (NULL == HIDD_BM_SetPixelFormat(o, pf_tags)) {
-kprintf("!!! PlanarBM::New(): Could not allocate pixel format\n");
-	ok = FALSE;
-    }
-    
-    if (ok) {
-    
-	if (!data->planes_alloced) {
-    	    /* Nothing more to do */
-	    return o;
-	}
-    }
     
     
     if (ok) {
@@ -191,16 +184,13 @@ static VOID planarbm_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel
     notpixel  = ~pixel;
     mask      = 1;
 
-    for(i = 0; i < data->depth; i++, mask <<=1, plane ++)
-    {
-    	if ((*plane != NULL) && (*plane != (UBYTE *)-1))
-	{
-	    if(msg->pixel & mask)
-	    {
+    for(i = 0; i < data->depth; i++, mask <<=1, plane ++) {
+    
+    	if ((*plane != NULL) && (*plane != (UBYTE *)-1)) {
+	
+	    if(msg->pixel & mask){
 		*(*plane + offset) = *(*plane + offset) | pixel;
-	    }
-	    else
-	    {
+	    } else {
 		*(*plane + offset) = *(*plane + offset) & notpixel;
 	    }
         }
@@ -230,13 +220,12 @@ static ULONG planarbm_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixe
     pixel     = 128 >> (msg->x % 8);
     retval    = 0;
 
-    for(i = 0; i < data->depth; i++, plane ++)
-    {
-        if (*plane == (UBYTE *)-1)
-	{
+    for(i = 0; i < data->depth; i++, plane ++) {
+    
+        if (*plane == (UBYTE *)-1) {
 	    retval = retval | (1 << i);
-	} else if (*plane != NULL)
-	{
+	} else if (*plane != NULL) {
+	
 	    if(*(*plane + offset) & pixel)
 	    {
 		retval = retval | (1 << i);
@@ -252,10 +241,21 @@ BOOL planarbm_setbitmap(Class *cl, Object *o, struct pHidd_PlanarBM_SetBitMap *m
 {
     struct planarbm_data *data;
     struct BitMap *bm;
-    struct TagItem tags[] = {
-    	{ aHidd_BitMap_Depth,	0UL },
-	{ aHidd_BitMap_Width,	0UL },
-	{ aHidd_BitMap_Height,	0UL },
+    
+    struct TagItem pftags[] = {
+    	{ aHidd_PixFmt_Depth,		0UL				},	/* 0 */
+    	{ aHidd_PixFmt_BitsPerPixel,	0UL				},	/* 1 */
+    	{ aHidd_PixFmt_BytesPerPixel,	1UL				},	/* 2 */
+    	{ aHidd_PixFmt_ColorModel,	vHidd_ColorModel_Palette	},	/* 3 */
+    	{ aHidd_PixFmt_BitMapType,	vHidd_BitMapType_Planar		},	/* 4 */
+    	{ aHidd_PixFmt_CLUTShift,	0UL				},	/* 5 */
+    	{ aHidd_PixFmt_CLUTMask,	0x000000FF			},	/* 6 */
+    	{ TAG_DONE, 0UL }	/* 7 */
+    };
+    struct TagItem bmtags[] = {
+	{ aHidd_BitMap_Width,		0UL },
+	{ aHidd_BitMap_Height,		0UL },
+    	{ aHidd_BitMap_PixFmtTags,	0UL },
 	{ TAG_DONE, 0UL }
     };
 	
@@ -301,12 +301,23 @@ BOOL planarbm_setbitmap(Class *cl, Object *o, struct pHidd_PlanarBM_SetBitMap *m
     data->bytesperrow	= bm->BytesPerRow;
     data->rows		= bm->Rows;
     
-    tags[0].ti_Data = bm->Depth;
-    tags[1].ti_Data = bm->BytesPerRow * 8;
-    tags[2].ti_Data = bm->Rows;
-    SetAttrs(o, tags);
+    pftags[0].ti_Data = bm->Depth;	/* PixFmt_Depth */
+    pftags[1].ti_Data = bm->Depth;	/* PixFmt_BitsPerPixel */
+    
+    bmtags[0].ti_Data = bm->Depth;
+    bmtags[1].ti_Data = bm->BytesPerRow * 8;
+    bmtags[2].ti_Data = (IPTR)pftags;
+    
+    /* Call private bitmap method to update superclass */
+    if (!HIDD_BitMap_SetBitMapTags(o, bmtags)) {
+    	ULONG i;
 	
-    return TRUE;    
+	for (i = 0; i < data->planebuf_size; i ++) {
+	    data->planes[i] = NULL;
+	}
+    }
+
+    return TRUE;
 }
 
 
@@ -368,26 +379,22 @@ Class *init_planarbmclass(struct class_static_data *csd)
 
     EnterFunc(bug("init_planarbmclass(csd=%p)\n", csd));
 
-    if(MetaAttrBase)
-    {
-        cl = NewObject(NULL, CLID_HiddMeta, tags);
-        if(cl)
-        {
-            D(bug("BitMap class ok\n"));
+    if(MetaAttrBase)  {
+	if (ObtainAttrBases(attrbases)) {
+    	    cl = NewObject(NULL, CLID_HiddMeta, tags);
+    	    if(NULL != cl) {
+        	D(bug("BitMap class ok\n"));
+        	csd->planarbmclass = cl;
+        	cl->UserData     = (APTR) csd;
+		
+    		AddClass(cl);
             
-            /* Get attrbase for the BitMap interface */
-	    if (ObtainAttrBases(attrbases))
-            {
-            	csd->planarbmclass = cl;
-            	cl->UserData     = (APTR) csd;
-		
-                AddClass(cl);
-		
-		return cl;
             }
-	    DisposeObject((Object *)cl);
         }
     } /* if(MetaAttrBase) */
+    
+    if (NULL == cl)
+	free_planarbmclass(csd);
 
     ReturnPtr("init_planarbmclass", Class *,  cl);
 }
@@ -399,13 +406,13 @@ void free_planarbmclass(struct class_static_data *csd)
 {
     EnterFunc(bug("free_planarbmclass(csd=%p)\n", csd));
 
-    if(csd)
-    {
-        RemoveClass(csd->planarbmclass);
-	
-	DisposeObject((Object *) csd->planarbmclass);
-	
-        csd->planarbmclass = NULL;
+    if(NULL != csd) {
+    
+	if (NULL != csd->planarbmclass) {
+    	    RemoveClass(csd->planarbmclass);
+	    DisposeObject((Object *) csd->planarbmclass);
+    	    csd->planarbmclass = NULL;
+	}
     }
     ReleaseAttrBases(attrbases);
 

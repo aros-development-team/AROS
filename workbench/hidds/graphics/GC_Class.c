@@ -218,28 +218,24 @@ Class *init_gcclass(struct class_static_data *csd)
 
     EnterFunc(bug("init_gcclass(csd=%p)\n", csd));
 
-    if(MetaAttrBase)
-    {
-        if(ObtainAttrBases(attrbases))
-        {
+    if(MetaAttrBase) {
+        if(ObtainAttrBases(attrbases))  {
             cl = NewObject(NULL, CLID_HiddMeta, tags);
-            if(cl)
-            {
+            if(NULL != cl) {
                 D(bug("GC class ok\n"));
                 csd->gcclass = cl;
                 cl->UserData = (APTR) csd;
                 
                 AddClass(cl);
 		
-		return cl;
             }
-	    
-	    ReleaseAttrBases(attrbases);
         }
-	
     } /* if(MetaAttrBase) */
     
-    return NULL;
+    if (NULL == cl)
+	free_gcclass(csd);
+    
+    ReturnPtr("init_gcclass", Class *, cl);
 
 }
 
@@ -249,14 +245,13 @@ void free_gcclass(struct class_static_data *csd)
 {
     EnterFunc(bug("free_gcclass(csd=%p)\n", csd));
 
-    if(csd)
-    {
-        RemoveClass(csd->gcclass);
+    if(NULL != csd) {
+	if (NULL != csd->gcclass) {
+    	    RemoveClass(csd->gcclass);
+    	    DisposeObject((Object *) csd->gcclass);
 
-        if(csd->gcclass) DisposeObject((Object *) csd->gcclass);
-
-        csd->gcclass = NULL;
-
+    	    csd->gcclass = NULL;
+	}
     }
     
     ReleaseAttrBases(attrbases);

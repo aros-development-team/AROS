@@ -42,17 +42,19 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
     
     BOOL gotwidth = FALSE, gotheight = FALSE;
     BOOL ok = TRUE;
+    
+    EnterFunc(bug("GfxMode::New()\n"));
 
     gfxhidd = (Object *)GetTagData(aHidd_GfxMode_GfxHidd, NULL, msg->attrList);    
     if (NULL == gfxhidd) {
 	kprintf("!!! NO GFXHIDD SUPPLPIED TO GfxMode::New() !!\n");
-	return NULL;
+	ReturnPtr("GfxMode::New(No gfxhidd supplied)", Object*,  NULL);
     }
     
     /* Get Object from superclass */
     o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
     if (NULL == o)
-    	return NULL;
+    	ReturnPtr("GfxMode::New(Failed from superclass)", Object *, NULL);
     
     data = INST_DATA(cl, o);
 
@@ -87,6 +89,8 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
 	
 	    if (IS_GFXMODE_ATTR(tag->ti_Tag, idx)) {
 		switch (idx) {
+		    case aoHidd_GfxMode_Number:	/* PRIVATE */
+			data->gmno = (ULONG)tag->ti_Data;
 		    case aoHidd_GfxMode_Width:
 			width = (ULONG)tag->ti_Data;
 			gotwidth = TRUE;
@@ -99,8 +103,8 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
 		    
 		    case aoHidd_GfxMode_StdPixFmt:
 		    
-			stdpf = (HIDDT_StdPixFmt)tag->ti_Data;
-			data->pfarray[pfidx ++] = CSD(cl)->std_pixfmts[tag->ti_Data - num_Hidd_PseudoPixFmt];
+			stdpf = (HIDDT_StdPixFmt)tag->ti_Data;			
+			data->pfarray[pfidx ++] = CSD(cl)->std_pixfmts[REAL_STDPIXFMT_IDX(tag->ti_Data)];
 			break;
 		 
 		    case aoHidd_GfxMode_PixFmtTags:
@@ -140,7 +144,7 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
     }
     
     
-    return o;
+    ReturnPtr("GfxMode::New(End)", Object *,  o);
      
 }     
 
@@ -219,6 +223,27 @@ Object *gfxmode_lookuppixfmt(Class *cl, Object *o, struct pHidd_GfxMode_LookupPi
     return data->pfarray[msg->pixFmtNo];
 }
 
+#define COMPUTE_MODEID(idx1, idx2) \
+    ( ((idx1) << 16) | (idx2) )
+    
+/* The modeid returned by this call may be used for the aHidd_BitMap_ModeID attr
+   in calls to HIDD_Gfx_NewBitMap
+*/
+HIDDT_ModeID gfxmode_getmodeid(Class *cl, Object *o, struct pHidd_GfxMode_GetModeID *msg)
+{
+    HIDDT_ModeID hiddmode = vHidd_ModeID_Invalid;
+    struct gfxmode_data *data;
+    
+    data = INST_DATA(cl, o);
+    
+    if (msg->pixFmtNo >= data->numpfs) {
+	kprintf("!!! TO LARGE IDX IN CALL TO GfxMode::GetModeID() !!!\n");
+    } else {
+	hiddmode = COMPUTE_MODEID(data->gmno, msg->pixFmtNo);
+    }
+    return hiddmode;
+}
+
 /*** init_gfxmodeclass *********************************************************/
 
 #undef OOPBase
@@ -228,7 +253,7 @@ Object *gfxmode_lookuppixfmt(Class *cl, Object *o, struct pHidd_GfxMode_LookupPi
 #define SysBase (csd->sysbase)
 
 #define NUM_ROOT_METHODS 3
-#define NUM_GFXMODE_METHODS 1
+#define NUM_GFXMODE_METHODS 2
 
 Class *init_gfxmodeclass(struct class_static_data *csd)
 {
@@ -242,6 +267,7 @@ Class *init_gfxmodeclass(struct class_static_data *csd)
     
     struct MethodDescr gfxmode_descr[NUM_GFXMODE_METHODS + 1] = {
         {(IPTR (*)())gfxmode_lookuppixfmt, 	moHidd_GfxMode_LookupPixFmt	},
+        {(IPTR (*)())gfxmode_getmodeid, 	moHidd_GfxMode_GetModeID	},
 	{ NULL, 0UL }
     };
         
@@ -266,25 +292,22 @@ Class *init_gfxmodeclass(struct class_static_data *csd)
 
     EnterFunc(bug("init_gfxmodeclass(csd=%p)\n", csd));
 
-    if(MetaAttrBase)
-    {
-    
+    if(MetaAttrBase) {
+	if (ObtainAttrBases(attrbases)) {
 
-        cl = NewObject(NULL, CLID_HiddMeta, tags);
-        if(cl)
-        {
-            D(bug("GfxMode class ok\n"));
-            csd->gfxmodeclass = cl;
-            cl->UserData     = (APTR) csd;
+    	    cl = NewObject(NULL, CLID_HiddMeta, tags);
+    	    if(NULL != cl) {
+        	D(bug("GfxMode class ok\n"));
+        	csd->gfxmodeclass = cl;
+        	cl->UserData     = (APTR) csd;
+		AddClass(cl);
             
-            /* Get attrbase for the GfxMode interface */
-	    if (!ObtainAttrBases(attrbases)) {
-			
-                free_gfxmodeclass(csd);
-                cl = NULL;
             }
         }
     } /* if(MetaAttrBase) */
+    
+    if (NULL == cl)
+	free_gfxmodeclass(csd);
 
     ReturnPtr("init_gfxmodeclass", Class *,  cl);
 }
@@ -295,17 +318,15 @@ Class *init_gfxmodeclass(struct class_static_data *csd)
 void free_gfxmodeclass(struct class_static_data *csd)
 {
     EnterFunc(bug("free_gfxmodeclass(csd=%p)\n", csd));
-    
-    ReleaseAttrBases(attrbases);
 
-    if(csd)
-    {
-        RemoveClass(csd->gfxmodeclass);
-        if (csd->gfxmodeclass) {
+    if(NULL != csd) {
+	if (NULL != csd->gfxmodeclass) {
+    	    RemoveClass(csd->gfxmodeclass);
 	    DisposeObject((Object *) csd->gfxmodeclass);
             csd->gfxmodeclass = NULL;
 	}
     }
+    ReleaseAttrBases(attrbases);
 
     ReturnVoid("free_gfxmodeclass");
 }

@@ -314,38 +314,38 @@ VOID bitmap_convertpixels(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixel
     }
     
     
-    if (    srcfmt->stdpixfmt == vHidd_PixFmt_Native32
-    	 && dstfmt->stdpixfmt == vHidd_PixFmt_Native    ) {
+    if (    srcfmt->stdpixfmt == vHidd_StdPixFmt_Native32
+    	 && dstfmt->stdpixfmt == vHidd_StdPixFmt_Native    ) {
 	 
 	 native32_to_native(cl, o, msg);
 	 return;
     }
     
-    switch (HIDD_PF_GRAPHTYPE(srcfmt)) {
-	case vHidd_GT_TrueColor:
-	    switch (HIDD_PF_GRAPHTYPE(dstfmt)) {
-	    	case vHidd_GT_TrueColor:
+    switch (HIDD_PF_COLMODEL(srcfmt)) {
+	case vHidd_ColorModel_TrueColor:
+	    switch (HIDD_PF_COLMODEL(dstfmt)) {
+	    	case vHidd_ColorModel_TrueColor:
 		     true_to_true(cl, o, msg);
 		     break;
 		     
 		
-		case vHidd_GT_Palette:
-		case vHidd_GT_StaticPalette:
+		case vHidd_ColorModel_Palette:
+		case vHidd_ColorModel_StaticPalette:
 		     true_to_pal(cl, o, msg);
 		     break;
 		
 	    }
 	    break;
 	
-	case vHidd_GT_Palette:
-	case vHidd_GT_StaticPalette:
-	    switch (HIDD_PF_GRAPHTYPE(dstfmt)) {
-	    	case vHidd_GT_TrueColor:
+	case vHidd_ColorModel_Palette:
+	case vHidd_ColorModel_StaticPalette:
+	    switch (HIDD_PF_COLMODEL(dstfmt)) {
+	    	case vHidd_ColorModel_TrueColor:
 		     pal_to_true(cl, o, msg);
 		     break;
 		
-		case vHidd_GT_Palette:
-		case vHidd_GT_StaticPalette:
+		case vHidd_ColorModel_Palette:
+		case vHidd_ColorModel_StaticPalette:
 		     pal_to_pal(cl,o, msg);
 		     break;
 		

@@ -84,8 +84,6 @@ Object * HIDD_Gfx_NewBitMap(Object *obj, struct TagItem *tagList)
     if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewBitMap);
         
     p.mID      = mid;
-    p.classPtr = NULL;
-    p.classID  = NULL;
     p.attrList = tagList;
 
     return((Object *) DoMethod(obj, (Msg) &p));
@@ -107,46 +105,107 @@ void HIDD_Gfx_DisposeBitMap(Object *obj, Object *bitMap)
 
 /***************************************************************/
 
-BOOL HIDD_Gfx_RegisterGfxModes(Object *obj, struct TagItem **modeTags)
+HIDDT_ModeID * HIDD_Gfx_QueryModeIDs(Object *obj, struct TagItem *queryTags)
 {
     static MethodID mid = 0;
-    struct pHidd_Gfx_RegisterGfxModes p;
+    struct pHidd_Gfx_QueryModeIDs p;
     
-    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_RegisterGfxModes);
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_QueryModeIDs);
         
-    p.mID    = mid;
-    p.modeTags = modeTags;
+    p.mID	= mid;
+    p.queryTags	= queryTags;
 
-    return DoMethod(obj, (Msg) &p);
+    return (HIDDT_ModeID *)DoMethod(obj, (Msg) &p);
 }
 /***************************************************************/
 
-struct List * HIDD_Gfx_QueryGfxModes(Object *obj, struct TagItem *queryTags)
+VOID HIDD_Gfx_ReleaseModeIDs(Object *obj, HIDDT_ModeID *modeIDs)
 {
     static MethodID mid = 0;
-    struct pHidd_Gfx_QueryGfxModes p;
+    struct pHidd_Gfx_ReleaseModeIDs p;
     
-    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_QueryGfxModes);
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ReleaseModeIDs);
         
-    p.mID    = mid;
-    p.queryTags = queryTags;
-
-    return (struct List *)DoMethod(obj, (Msg) &p);
-}
-/***************************************************************/
-
-void HIDD_Gfx_ReleaseGfxModes(Object *obj, struct List *modeList)
-{
-    static MethodID mid = 0;
-    struct pHidd_Gfx_ReleaseGfxModes p;
-    
-    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ReleaseGfxModes);
-        
-    p.mID    = mid;
-    p.modeList = modeList;
+    p.mID	= mid;
+    p.modeIDs	= modeIDs;
 
     DoMethod(obj, (Msg) &p);
 }
+
+
+/***************************************************************/
+Object *    HIDD_Gfx_GetPixFmt  (Object *obj, HIDDT_StdPixFmt stdPixFmt)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_GetPixFmt p;
+
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetPixFmt);
+        
+    p.mID = mid;
+    
+    p.stdPixFmt		= stdPixFmt;
+    
+    return (Object *)DoMethod(obj, (Msg) &p);
+}
+
+/***************************************************************/
+
+BOOL HIDD_Gfx_CheckMode(Object *obj, HIDDT_ModeID modeID, Object *sync, Object *pixFmt)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_CheckMode p;
+
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_CheckMode);
+        
+    p.mID = mid;
+    
+    p.modeID	= modeID;
+    p.sync	= sync;
+    p.pixFmt	= pixFmt;
+    
+    return (BOOL)DoMethod(obj, (Msg) &p);
+}
+
+
+/***************************************************************/
+BOOL HIDD_Gfx_GetMode(Object *obj, HIDDT_ModeID modeID, Object **syncPtr, Object **pixFmtPtr)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_GetMode p;
+
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
+        
+    p.mID = mid;
+    
+    p.modeID	= modeID;
+    p.syncPtr	= syncPtr;
+    p.pixFmtPtr	= pixFmtPtr;
+
+    return (BOOL)DoMethod(obj, (Msg) &p);
+    
+}
+
+/***************************************************************/
+HIDDT_ModeID HIDD_Gfx_NextModeID(Object *obj, HIDDT_ModeID modeID, Object **syncPtr, Object **pixFmtPtr)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_NextModeID p;
+
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NextModeID);
+        
+    p.mID = mid;
+    
+    p.modeID	= modeID;
+    p.syncPtr	= syncPtr;
+    p.pixFmtPtr	= pixFmtPtr;
+
+    return (HIDDT_ModeID)DoMethod(obj, (Msg) &p);
+    
+}
+
 
 
 /***************************************************************/
@@ -582,23 +641,6 @@ ULONG HIDD_BM_BytesPerLine(Object *obj, HIDDT_StdPixFmt pixFmt, ULONG width)
 
 /***************************************************************/
 
-Object *    HIDD_BM_GetPixelFormat  (Object *obj, HIDDT_StdPixFmt stdPixFmt)
-{
-    static MethodID mid = 0;
-    struct pHidd_BitMap_GetPixelFormat p;
-
-    
-    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetPixelFormat);
-        
-    p.mID = mid;
-    
-    p.stdPixFmt		= stdPixFmt;
-    
-    return (Object *)DoMethod(obj, (Msg) &p);
-}
-
-
-/***************************************************************/
 
 VOID     HIDD_BM_ConvertPixels  (Object *obj
 	, APTR *srcPixels
@@ -635,18 +677,6 @@ VOID     HIDD_BM_ConvertPixels  (Object *obj
     DoMethod(obj, (Msg) &p);
 }
 
-Object * HIDD_BM_SetPixelFormat(Object *obj, struct TagItem *pixFmtTags)
-{
-    static MethodID mid = 0;
-    struct pHidd_BitMap_SetPixelFormat p;
-    
-    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetPixelFormat);
-        
-    p.mID = mid;
-    p.pixFmtTags = pixFmtTags;
-    
-    return (Object *)DoMethod(obj, (Msg)&p);
-}
 
 Object * HIDD_BM_SetColorMap(Object *obj, Object *colorMap)
 {
@@ -732,7 +762,7 @@ VOID HIDD_GC_UnsetClipRect(Object *obj)
 }
 
 /********* PlanarBM **********************************/
-VOID HIDD_PlanarBM_SetBitMap(Object *obj, struct BitMap *bitMap)
+BOOL HIDD_PlanarBM_SetBitMap(Object *obj, struct BitMap *bitMap)
 {
     static MethodID mid = 0;
     struct pHidd_PlanarBM_SetBitMap p;
@@ -742,8 +772,7 @@ VOID HIDD_PlanarBM_SetBitMap(Object *obj, struct BitMap *bitMap)
     p.mID = mid;
     p.bitMap = bitMap;
     
-    DoMethod(obj, (Msg)&p);
-    return;
+    return (BOOL)DoMethod(obj, (Msg)&p);
 }
 
 
@@ -778,16 +807,3 @@ HIDDT_Pixel HIDD_CM_GetPixel(Object *obj, ULONG pixelNo) /* Starts at 0 */
     return (HIDDT_Pixel)DoMethod(obj, (Msg)&p);
 }
 
-/************ GfxMode *****************************************/
-Object *HIDD_GM_LookupPixFmt(Object *obj, ULONG pixFmtNo) /* Starts at 0 */
-{
-    static MethodID mid = 0;
-    struct pHidd_GfxMode_LookupPixFmt p;
-    
-    if(!mid) mid = GetMethodID(IID_Hidd_GfxMode, moHidd_GfxMode_LookupPixFmt);
-        
-    p.mID = mid;
-    p.pixFmtNo = pixFmtNo;
-    
-    return (Object *)DoMethod(obj, (Msg)&p);
-}
