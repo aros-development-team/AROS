@@ -586,7 +586,7 @@ void ASM SAVEDS IntuiMsgFunc (
     {
 	if (imsg->Class == IDCMP_REFRESHWINDOW) RenderReqWindow (glob, TRUE, FALSE);
     }
-    else if (glob->imsghook)
+    else if ((glob->imsghook) && (glob->imsghook != hook))
     {
 	SetDrawerAndFileFields (glob);
 	CallHookPkt (glob->imsghook, glob->req, imsg);
