@@ -104,8 +104,8 @@ List;
 #define hexval(c)           (((c) > '9') ? (c) - 'a' + 10 : (c) - '0')
 
 /* Prototypes */
-extern int execute PARAMS ((const char * cmd, const char * in,
-			    const char * out, const char * args));
+extern int execute PARAMS ((const char * cmd, const char * args,
+			    const char * in, const char * out));
 extern char * _xstrdup PARAMS ((const char * str, const char * file, int line));
 extern void * _xmalloc PARAMS ((size_t size, const char * file, int line));
 extern void * _xrealloc PARAMS ((void * ptr, size_t size, const char * file, int line));

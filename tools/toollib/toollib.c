@@ -106,8 +106,8 @@ printlist (const List * l)
 }
 
 int
-execute (const char * cmd, const char * in,
-	 const char * out, const char * args)
+execute (const char * cmd, const char * args,
+	 const char * in, const char * out)
 {
     char buffer[4096];
     int rc;
