@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI C function fgets()
-    Lang: english
+    Lang: English
 */
 
 #include <errno.h>
@@ -12,6 +12,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include "__open.h"
+#include "__errno.h"
 
 /*****************************************************************************
 
@@ -72,6 +73,7 @@
     {
     	errno = EBADF;
 	stream->flags |= _STDIO_ERROR;
+
 	return NULL;
     }
 
@@ -85,7 +87,9 @@
 	    stream->flags |= _STDIO_ERROR;
         }
 	else
+	{
 	    stream->flags |= _STDIO_EOF;
+	}
     }
 
     return buffer;

@@ -11,6 +11,7 @@
 #include <proto/dos.h>
 #include <errno.h>
 #include "__open.h"
+#include "__errno.h"
 
 /*****************************************************************************
 
@@ -58,6 +59,7 @@
     if (!(fdesc = __getfdesc(fd)))
     {
         errno = EBADF;
+
 	return -1;
     }
 
@@ -72,6 +74,7 @@
 	{
 	    fdesc->opencount++;
 	    errno = IoErr2errno(IoErr());
+
 	    return -1;
         }
 
