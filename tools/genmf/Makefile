@@ -7,3 +7,6 @@ clean :
 
 check :
 	genmf tmpl.test < in.test
+	genmf --curdir=`pwd` tmpl.test < in.test
+
+test : check

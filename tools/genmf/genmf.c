@@ -69,6 +69,7 @@ Arg;
 
 /* Globals */
 List templates;
+char * curdir = NULL;
 
 /* Macros */
 #   define NewList(l)       (((List *)l)->prelast = (Node *)(l), \
@@ -305,6 +306,27 @@ String * getline (FILE * fh)
     }
 
     return s;
+}
+
+void output (const char * line)
+{
+    const char * ptr = line;
+
+    while (*ptr)
+    {
+	if (*ptr == '$' && ptr[1] == '(' && curdir &&
+	    !strncmp ("CURDIR)", ptr+2, 7)
+	)
+	{
+	    ptr += 9;
+	    fputs (curdir, stdout);
+	}
+	else
+	{
+	    putchar (*ptr);
+	    ptr ++;
+	}
+    }
 }
 
 char ** getargs (const char * line, int * argc)
@@ -610,7 +632,7 @@ void replace_template (const char * string)
 	    {
 		arg = findArg (tmpl, &ptr);
 		if (arg)
-		    fputs (arg->value, stdout);
+		    output (arg->value);
 	    }
 	    else if (*ptr == '%')
 	    {
@@ -641,6 +663,13 @@ void replace_template (const char * string)
 		replace_template (str->value);
 		free_string (str);
 	    }
+	    else if (*ptr == '$' && ptr[1] == '(' && curdir &&
+		    !strncmp ("CURDIR)", ptr+2, 7)
+		)
+	    {
+		ptr += 9;
+		fputs (curdir, stdout);
+	    }
 	    else
 	    {
 		putchar (*ptr);
@@ -660,7 +689,12 @@ int main (int argc, char ** argv)
     NewList (&templates);
 
     for (t=1; t<argc; t++)
-	read_templates (argv[t]);
+    {
+	if (!strncmp ("--curdir=", argv[t], 9))
+	    curdir = argv[t] + 9;
+	else
+	    read_templates (argv[t]);
+    }
 
     fputs (
 	"####################################################################\n"
@@ -684,7 +718,10 @@ int main (int argc, char ** argv)
 	    replace_template (ptr);
 	}
 	else
-	    puts (line->value);
+	{
+	    output (line->value);
+	    putchar ('\n');
+	}
 
 	free_string (line);
     }

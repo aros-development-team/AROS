@@ -10,6 +10,12 @@
 	# End template2
 %end
 
+%define template3 arg1=x arg2=$(CURDIR)
+	# Begin template1
+	echo "%(arg1) %(arg2) $(CURDIR)"
+	# End template1
+%end
+
 %define common
 # This is the common part of all makefiles
 %end

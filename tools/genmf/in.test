@@ -1,4 +1,6 @@
 
+VAR = x y $(CURDIR) $(XXX) $(CURDI) x$(CURDIR)y
+
 all:
 %template1
 %template1 1
@@ -6,4 +8,8 @@ all:
 %template2
 %template2 A
 %template2 A B
-
+%template3
+%template3 X
+%template3 X Y
+%template3 arg1="x$(CURDIR)y" $(CURDIR)
+	cd $(CURDIR)
