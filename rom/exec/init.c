@@ -469,6 +469,7 @@ printf ("SysBase = %p\n", SysBase);
 	AssignLock ("S",    Lock ("SYS:s",      SHARED_LOCK));
 	AssignLock ("LIBS", Lock ("SYS:libs",   SHARED_LOCK));
 	AssignLock ("DEVS", Lock ("SYS:devs",   SHARED_LOCK));
+	AssignLate ("ENVARC", "sys:prefs/env-archive");
 
 	fh_stdin->fh_Device  =&emulbase->eb_device;
 	fh_stdin->fh_Unit    =emulbase->eb_stdin;
