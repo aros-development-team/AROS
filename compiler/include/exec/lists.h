@@ -95,7 +95,7 @@ struct MinList
 
 #   define ForeachNodeSafe(l,n,n2) \
 	for (n=(void *)(((struct List *)(l))->lh_Head); \
-	    n2=(void *)((struct Node *)(n))->ln_Succ; \
+	    (n2=(void *)((struct Node *)(n))->ln_Succ); \
 	    n=(void *)n2)
 
 #   define SetNodeName(node,name)   \
