@@ -656,3 +656,77 @@ static VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase
     }
 
 }
+
+void intui_ScrollWindowRaster(struct Window * win,
+                              WORD dx,
+                              WORD dy,
+                              WORD xmin,
+                              WORD ymin,
+                              WORD xmax,
+                              WORD ymax,
+                              struct IntuitionBase * IntuitionBase)
+{
+  ScrollRasterBF(win->RPort,
+                 dx,
+                 dy,
+                 xmin,
+                 ymin,
+                 xmax,
+                 ymax);
+  /* Has there been damage to the layer? */
+  if (0 != (win->RPort->Layer->Flags & LAYERREFRESH))
+  {
+    /* 
+       Send a refresh message to the window if it doesn't already
+       have one.
+    */
+    windowneedsrefresh(win, IntuitionBase);
+  } 
+}
+
+void windowneedsrefresh(struct Window * w, 
+                        struct IntuitionBase * IntuitionBase )
+{
+  /* Supposed to send a message to this window, saying that it needs a
+     refresh. I will check whether there is no such a message queued in
+     its messageport, though. It only needs one such message! 
+  */
+  struct IntuiMessage * IM;
+  BOOL found = FALSE;
+
+  if (NULL == w->UserPort)
+    return;
+  
+  /* Can use Forbid() for this */
+  
+  Forbid();
+  
+  IM = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
+
+  /* reset the flag in the layer */
+  w->WLayer->Flags &= ~LAYERREFRESH;
+
+  while ((NULL != IM) && !found)
+  {
+    /* Does the window already have such a message? */
+    if (IDCMP_REFRESHWINDOW == IM->Class)
+    {
+kprintf("Window %s already has a refresh message pending!!\n",w->Title);
+      found = TRUE;
+    }
+    IM = (struct IntuiMessage *)IM->ExecMessage.mn_Node.ln_Succ;
+  }
+  
+  Permit();
+
+kprintf("Sending a refresh message to window %s!!\n",w->Title);
+  if (!found)
+  {
+    IM = alloc_intuimessage(IntuitionBase);
+    if (NULL != IM)
+    {
+      IM->Class = IDCMP_REFRESHWINDOW;
+      send_intuimessage(IM, w, IntuitionBase);
+    }
+  }
+}
