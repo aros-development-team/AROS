@@ -12,8 +12,14 @@
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
 #endif
+#ifndef INTUITION_INTUITION_H
+#   include <intuition/intuition.h>
+#endif
 #ifndef INTUITION_INTUITIONBASE_H
 #   include <intuition/intuitionbase.h>
+#endif
+#ifndef INTUITION_SCREENS_H
+#   include <intuition/screens.h>
 #endif
 #ifndef INTUITION_CLASSES_H
 #   include <intuition/classes.h>
