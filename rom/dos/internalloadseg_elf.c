@@ -427,11 +427,7 @@ BPTR InternalLoadSeg_ELF
     (
         !read_block(file, 0, &eh, sizeof(eh), funcarray, DOSBase) ||
         !check_header(&eh, DOSBase) ||
-        /*
-            Use eh.shnum+1 instead of eh.shnum so that we allocate space also for the common section
-            header, which will come in hand in case there are common symbols.
-        */
-        !(sh = load_block(file, eh.shoff, (eh.shnum+1) * eh.shentsize, funcarray, DOSBase))
+        !(sh = load_block(file, eh.shoff, eh.shnum * eh.shentsize, funcarray, DOSBase))
     )
     {
         return 0;
@@ -441,7 +437,7 @@ BPTR InternalLoadSeg_ELF
     for (i = 0; i < eh.shnum; i++)
     {
         /*
-           Load the symbol table(s) and fix common symbols
+           Load the symbol table(s).
 
            NOTICE: the ELF standard, at the moment (Nov 2002) explicitely states
                    that only one symbol table per file is allowed. However, it
@@ -449,28 +445,9 @@ BPTR InternalLoadSeg_ELF
         */
         if (sh[i].type == SHT_SYMTAB)
         {
-            struct symbol *sym ;
-            ULONG numsyms;
-            ULONG j;
-
             sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
             if (!sh[i].addr)
                 goto error;
-
-            sym     = (struct symbol *)sh[i].addr;
-            numsyms = sh[i].size / sh[i].entsize;
-
-            for (j = 0; j < numsyms; j++, sym++)
-            {
-                if (sym->shindex == SHN_COMMON)
-                {
-                    offset       = (offset + sym->value-1) & ~(sym->value-1);
-                    sym->value   = offset;
-                    sym->shindex = eh.shnum; /* The common section's index */
-
-                    offset += sym->size;
-                }
-            }
         }
         else
         /* Load the section in memory if needed, and make an hunk out of it */
@@ -481,15 +458,6 @@ BPTR InternalLoadSeg_ELF
         }
 
     }
-
-    /* Create a hunk for the COMMON symbols, if necessary */
-    sh[eh.shnum].size  = offset;
-    sh[eh.shnum].type  = SHT_NOBITS;
-    sh[eh.shnum].addr  = NULL;
-    sh[eh.shnum].flags = SHF_ALLOC;
-
-    if (!load_hunk(0, &next_hunk_ptr, &sh[eh.shnum], funcarray, DOSBase))
-        goto error;
 
     /* Relocate the sections */
     for (i = 0; i < eh.shnum; i++)
@@ -533,7 +501,7 @@ BPTR InternalLoadSeg_ELF
 error:
 
     /* There were some errors, deallocate all the allocated sections */
-    for (i = 0; i < eh.shnum + 1; i++)
+    for (i = 0; i < eh.shnum; i++)
     {
         if (sh[i].addr)
         {
@@ -549,7 +517,7 @@ error:
 end:
 
     /* Free the section headers */
-    MyFree(sh, (eh.shnum+1) * eh.shentsize);
+    MyFree(sh, eh.shnum * eh.shentsize);
 
     return hunks;
 }
