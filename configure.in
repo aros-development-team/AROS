@@ -4,7 +4,7 @@ dnl
 dnl Desc: Autoconf source for configuration file
 dnl Lang: english
 
-AC_INIT(workbench/aros.c)
+AC_INIT(mmakefile)
 AC_CONFIG_AUX_DIR(scripts/autoconf)
 
 dnl Check what host we are running on.
