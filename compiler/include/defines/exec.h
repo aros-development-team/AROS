@@ -104,7 +104,7 @@
 
 #define RawMayGetChar() \
     AROS_LC0(LONG, RawMayGetChar, \
-    struct ExecBase *, SysBase, 84, Exec)
+    struct ExecBase *, SysBase, 85, Exec)
 
 #define RawPutChar(chr) \
     AROS_LC1(void, RawPutChar, \
