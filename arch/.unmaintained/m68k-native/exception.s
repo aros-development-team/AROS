@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.4  1996/10/24 01:38:31  aros
+#    Include machine.i
+#
 #    Revision 1.3  1996/10/21 21:08:57  aros
 #    Changed __AROS_LA to __AROS_LHA
 #
@@ -46,18 +49,13 @@
 #
 #******************************************************************************
 
-	Disable     =	-0x78
-	Enable	    =	-0x7e
-	ThisTask    =	0x114
-	IDNestCnt   =	0x126
-	tc_Flags    =	0xe
-	tc_SigRecvd =	0x1a
-	tc_SigExcept=	0x1e
-	tc_ExceptData=	0x26
-	tc_ExceptCode=	0x2a
-	TB_EXCEPT   =	5
+	.include "machine.i"
 
+	.text
+	.balign 16
 	.globl	_Exec_Exception
+	.type	_Exec_Exception,@function
+
 _Exec_Exception:
 	# First clear task exception bit.
 	movel	a6@(ThisTask),a2

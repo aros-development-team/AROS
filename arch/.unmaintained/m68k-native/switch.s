@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.3  1996/10/24 01:38:31  aros
+#    Include machine.i
+#
 #    Revision 1.2  1996/08/01 17:41:37  digulla
 #    Added standard header for all files
 #
@@ -46,19 +49,13 @@
 #
 #******************************************************************************
 
-	Supervisor  =	-0x1e
-	Dispatch    =	-0x2a
-	Enqueue     =	-0x10e
-	ThisTask    =	0x114
-	AttnResched =	0x12a
-	TaskReady   =	0x196
-	tc_Flags    =	0xe
-	tc_State    =	0xf
-	TS_RUN	    =	2
-	TS_READY    =	3
-	TB_EXCEPT   =	5
+	.include "machine.i"
 
+	.text
+	.balign 16
 	.globl	_Exec_Switch
+	.type	_Exec_Switch,@function
+
 _Exec_Switch:
 	| call switch in supervisor mode
 	| this is necessary to determine if the current context is user or

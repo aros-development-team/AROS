@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.3  1996/10/24 01:38:31  aros
+#    Include machine.i
+#
 #    Revision 1.2  1996/08/01 17:41:35  digulla
 #    Added standard header for all files
 #
@@ -52,9 +55,13 @@
 #
 #******************************************************************************
 
-	TDNestCnt   =	0x127
+	.include "machine.i"
 
+	.text
+	.balign 16
 	.globl	_Exec_Forbid
+	.type	_Exec_Forbid,@function
+
 _Exec_Forbid:
 	# increment nesting count and return
 	# this seems to be a very unspectacular call and a good job for a C

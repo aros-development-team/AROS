@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.3  1996/10/24 01:38:31  aros
+#    Include machine.i
+#
 #    Revision 1.2  1996/08/01 17:41:36  digulla
 #    Added standard header for all files
 #
@@ -39,12 +42,13 @@
 #
 #******************************************************************************
 
-	Switch	    =	-0x24
-	IDNestCnt   =	0x126
-	TDNestCnt   =	0x127
-	AttnResched =	0x12a
+	.include "machine.i"
 
+	.text
+	.balign 16
 	.globl	_Exec_Permit
+	.type	_Exec_Permit,@function
+
 _Exec_Permit:
 	# decrement nesting count and return if there are Forbid()s left
 	subqb	#1,a6@(TDNestCnt)

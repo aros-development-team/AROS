@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.3  1996/10/24 01:38:31  aros
+#    Include machine.i
+#
 #    Revision 1.2  1996/08/01 17:41:34  digulla
 #    Added standard header for all files
 #
@@ -81,35 +84,21 @@
 #
 #******************************************************************************
 
-	Exception   =	-0x30
-	Disable     =	-0x78
-	Enable	    =	-0x7e
-	ThisTask    =	0x114
-	IDNestCnt   =	0x126
-	TaskReady   =	0x196
-	tc_Flags    =	0xe
-	tc_State    =	0xf
-	tc_IDNestCnt=	0x10
-	tc_SigRecvd =	0x1a
-	tc_SigExcept=	0x1e
-	tc_ExceptData=	0x26
-	tc_ExceptCode=	0x2a
-	tc_SPReg    =	0x36
-	tc_Switch   =	0x42
-	tc_Launch   =	0x46
 	INTENA	    =	0xdff09a
 	INTEN	    =	0x4000
 	SET	    =	0x8000
-	TS_RUN	    =	2
-	TB_EXCEPT   =	5
-	TB_SWITCH   =	6
-	TB_LAUNCH   =	7
 
 	# Dispatching routine for the 68000.
 	# Higher models (with FPU) need a slightly different
 	# routine or the additional registers cannot be used!
 
+	.include "machine.i"
+
+	.text
+	.balign 16
 	.globl	_Exec_Dispatch
+	.type	_Exec_Dispatch,@function
+
 _Exec_Dispatch:
 
 	# preserve a5 then move user stack pointer into it
@@ -124,7 +113,6 @@ _Exec_Dispatch:
 
 	# get SysBase
 	movel	_sysbase,a6
-
 
 	# disable interrupts the simple way
 	movew	#0x2700,sr

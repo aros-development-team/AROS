@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.4  1996/10/24 01:38:31  aros
+#    Include machine.i
+#
 #    Revision 1.3  1996/10/21 21:08:59  aros
 #    Changed __AROS_LA to __AROS_LHA
 #
@@ -46,12 +49,13 @@
 #
 #******************************************************************************
 
-	Disable     =	-0x78
-	Enable	    =	-0x7e
-	ThisTask    =	0x114
-	tc_SPLower  =	0x3a
+	.include "machine.i"
 
+	.text
+	.balign 16
 	.globl	_Exec_StackSwap
+	.type	_Exec_StackSwap,@function
+
 _Exec_StackSwap:
 	| Preserve returnaddress and fix sp
 	movel	sp@+,d0

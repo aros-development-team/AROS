@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.3  1996/10/24 01:38:31  aros
+#    Include machine.i
+#
 #    Revision 1.2  1996/08/01 17:41:34  digulla
 #    Added standard header for all files
 #
@@ -67,12 +70,17 @@
 #
 #******************************************************************************
 
-	IDNestCnt   =	0x126
 	INTENA	    =	0xdff09a
 	INTEN	    =	0x4000
 	SET	    =	0x8000
 
+	.include "machine.i"
+
+	.text
+	.balign 16
 	.globl	_Exec_Disable
+	.type	_Exec_Disable,@function
+
 _Exec_Disable:
 	# disable interrupts
 	movew	#INTEN,INTENA
