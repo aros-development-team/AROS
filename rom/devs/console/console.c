@@ -110,7 +110,6 @@ AROS_LH2(struct ConsoleBase *, init,
     ConsoleDevice->sysBase = sysBase;
     ConsoleDevice->seglist = segList;
     
-    kprintf("zsjdfh\n");    
     ConsoleDevice->device.dd_Library.lib_OpenCnt=1;
 
     return ConsoleDevice;
@@ -130,7 +129,6 @@ AROS_LH3(void, open,
     BOOL success = FALSE;
     
     /* Keep compiler happy */
-    unitnum=0;
     flags=0;
     
     EnterFunc(bug("OpenConsole()\n"));
@@ -178,9 +176,11 @@ AROS_LH3(void, open,
 	    goto open_fail;
     }	    
     
-    if (unitnum == CONU_LIBRARY)
+    if (((LONG)unitnum) == CONU_LIBRARY) /* unitnum is ULONG while CONU_LIBRARY is -1 :-(   */
     {
+    	D(bug("Opening CONU_LIBRARY unit\n"));
     	ioreq->io_Device = (struct Device *)ConsoleDevice;
+	success = TRUE;
     }
     else
     {
