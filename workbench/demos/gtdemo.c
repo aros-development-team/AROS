@@ -274,7 +274,6 @@ BOOL openwin()
 			 WA_DragBar, TRUE,
 			 WA_CloseGadget, TRUE,
 			 WA_DepthGadget, TRUE,
-			 WA_Zoom, TRUE,
 			 TAG_DONE);
     if (!win) {
 	printf("GTDemo: Error opening window\n");
