@@ -85,6 +85,7 @@ void writestart(struct config *cfg, struct functions *functions)
 		"    UWORD negsize, possize;\\\n"
 		"    UBYTE *negptr = (UBYTE *)lh;\\\n"
 		"    negsize = ((struct Library *)lh)->lib_NegSize;\\\n"
+		"    negptr -= negsize;\\\n"
 		"    possize = ((struct Library *)lh)->lib_PosSize;\\\n"
 		"    FreeMem (negptr, negsize+possize);\\\n"
 		"} while(0)\n"
