@@ -186,7 +186,7 @@ objs/classes/application.o: classes/application.c
 objs/classes/area.o: classes/area.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/area.c objname=$@
 
-objs/classes/area.o: classes/bitmap.c
+objs/classes/bitmap.o: classes/bitmap.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/bitmap.c objname=$@
 
 objs/classes/bodychunk.o: classes/bodychunk.c
