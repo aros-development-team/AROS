@@ -21,8 +21,10 @@ TOOLGENDIR = $(GENDIR)/tools
 LDFLAGS = -noixemul
 
 FILES = main ils config
+TOOLZ = printresmodules showvecs
+TOOLS = $(foreach f,$(TOOLZ),$(TOOLDIR)/$(f))
 
-all:	setup $(BINDIR)/boot $(BINDIR)/boot.config $(TOOLDIR)/printresmodules
+all:	setup $(BINDIR)/boot $(BINDIR)/boot.config $(TOOLS)
 
 clean:
 	-rm -f $(BINDIR)/boot
@@ -48,7 +50,7 @@ $(BINDIR)/boot: $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).o)
 $(BINDIR)/boot.config: boot.config
 	$(CP) $< $@
 
-$(TOOLDIR)/printresmodules: $(TOOLGENDIR)/printresmodules.o
+$(TOOLDIR)/%: $(TOOLGENDIR)/%.o
 	$(CC) $(LDFLAGS) $< -o $@
 	strip $@
 
