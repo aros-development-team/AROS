@@ -13,8 +13,6 @@ USE_CLIB_SHARED := yes
 USE_AMIGALIB := yes
 USE_MLIB := yes
 
-USER_CFLAGS := -O2 -Wunused -Wall
-
 #MM- workbench : workbench-tools
 #MM workbench-tools : setup-cx includes linklibs
 
