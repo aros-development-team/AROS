@@ -19,6 +19,10 @@
 #include <aros/asmcall.h>
 #include "trackdisk_intern.h"
 
+#include <oop/oop.h>
+#include <proto/oop.h>
+#include <hidd/irq.h>
+
 #define DEBUG 0 
 #include <aros/debug.h>
 
@@ -26,17 +30,8 @@
 
 #define ioStd(x)  ((struct IOStdReq *)x)
 
-AROS_UFP4(int, td_floppyint,
-	AROS_UFHA(ULONG, dummy1, A0),
-    AROS_UFHA(struct TrackDiskBase *, TDBase, A1),
-	AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6));
-
-AROS_UFP4(int, td_floppytimer,
-	AROS_UFHA(ULONG, dummy1, A0),
-	AROS_UFHA(struct TrackDiskBase *, TDBase, A1),
-	AROS_UFHA(ULONG, dummy2, A5),
-	AROS_UFHA(struct ExecBase *, SysBase, A6));
+void td_floppyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
+void td_floppytimer(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
 int td_readwrite(char mode, struct TDU *unit, struct IOExtTD *iotd,
 				struct TrackDiskBase *TDBase);
@@ -121,31 +116,54 @@ AROS_LH2(struct TrackDiskBase *,  init,
     /* Build list of all available units */
     NEWLIST((struct List*)&TDBase->units);
     {
-		/* Install floppy controller interrupt */
-		struct Interrupt *is;
-		is = (struct Interrupt *)AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
-		if(!is)
-		{
-	    	/* PANIC! No memory for trackdisk IntServer ! */
-			Alert(AT_DeadEnd|AO_TrackDiskDev|AN_IntrMem);
-		}
-		is->is_Node.ln_Pri=127;		/* Set the highest pri */
-		is->is_Code = (void (*)())&td_floppyint;
-		is->is_Data = (APTR)TDBase;
-//		AddIntServer(0x80000006,is);	//<-- int_floppy
+	/* Install floppy interrupts */
+	struct Library	*OOPBase;
+	
+	OOPBase = OpenLibrary(AROSOOP_NAME, 0);
+	
+	if (OOPBase)
+	{
+	    Object *o;
+	    
+	    o = NewObject(NULL, CLID_Hidd_IRQ, NULL);
+	    
+	    if (o)
+	    {
+		HIDDT_IRQ_Handler *irq;
+		
+		irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
 
-		/* Install timer interrupt */
-		is = (struct Interrupt *)AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
-		if (!is)
+		if(!irq)
 		{
+			/* PANIC! No memory for trackdisk IntServer ! */
 			Alert(AT_DeadEnd|AO_TrackDiskDev|AN_IntrMem);
 		}
-		is->is_Node.ln_Pri=126;		/* Lower than timer.device */
-		is->is_Code = (void (*)())&td_floppytimer;
-		is->is_Data = (APTR)TDBase;
-//		AddIntServer(0x80000000,is);	//<-- int_timer
+		irq->h_Node.ln_Pri=127;		/* Set the highest pri */
+		irq->h_Node.ln_Name = name;
+		irq->h_Code = td_floppyint;
+		irq->h_Data = (APTR)TDBase;
+		
+		HIDD_IRQ_AddHandler(o, irq, vHidd_IRQ_Floppy);
+		
+		irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
+
+		if(!irq)
+		{
+			/* PANIC! No memory for trackdisk IntServer ! */
+			Alert(AT_DeadEnd|AO_TrackDiskDev|AN_IntrMem);
+		}
+		irq->h_Node.ln_Pri=10;		/* Set the highest pri */
+		irq->h_Node.ln_Name = name;
+		irq->h_Code = td_floppytimer;
+		irq->h_Data = (APTR)TDBase;
+		
+		HIDD_IRQ_AddHandler(o, irq, vHidd_IRQ_Timer);
+		
+		DisposeObject(o);
+	    }
+	    CloseLibrary(OOPBase);
 	}
-
+    }	
     /* Get installed drives info */
 
     asm volatile (
@@ -707,15 +725,13 @@ int td_readwrite(char mode, struct TDU *unit, struct IOExtTD *iotd,
 #ifdef SysBase
 #undef SysBase
 #endif
+#define SysBase (hw->sysBase)
+#define TDBase ((struct TrackDiskBase *)irq->h_Data)
 
 // Timer interrupt (IRQ0). This pice of code decreases timeout register for
 // every drive. It it gets 0 it turns floppy motor off. If timeout is set to 0
 // (inactive) or 255 (currently used drive) it does nothing.
-AROS_UFH4(int, td_floppytimer,
-	AROS_UFHA(ULONG, dummy1, A0),
-	AROS_UFHA(struct TrackDiskBase *, TDBase, A1),
-	AROS_UFHA(ULONG, dummy2, A5),
-	AROS_UFHA(struct ExecBase *, SysBase, A6))
+void td_floppytimer(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
 	int i;
 	unsigned char DOR;
@@ -756,15 +772,13 @@ AROS_UFH4(int, td_floppytimer,
 	}
 	
 	/* Allow other servers to process this int */
-	return 0;
+	return;
 }
 
+
 // Interrupt for IRQ6 (floppy int).
-AROS_UFH4(int, td_floppyint,
-	AROS_UFHA(ULONG, dummy1, A0),
-    AROS_UFHA(struct TrackDiskBase *, TDBase, A1),
-	AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+
+void td_floppyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
 	struct MsgPort *port;
 
@@ -779,4 +793,3 @@ AROS_UFH4(int, td_floppyint,
 }
 
 static const char end = 0;
-

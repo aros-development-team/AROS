@@ -6,6 +6,7 @@
 #include <exec/semaphores.h>
 #include <exec/interrupts.h>
 #include <exec/devices.h>
+#include <oop/oop.h>
 
 struct TrackDiskBase
 {
