@@ -28,7 +28,7 @@
 #define SEND_TIMER_REQUEST(timerio)			\
 	timerio->tr_node.io_Command = TR_ADDREQUEST;	\
 	timerio->tr_time.tv_secs = 0;			\
-	timerio->tr_time.tv_micro = 10000;		\
+	timerio->tr_time.tv_micro = 100000;		\
 	SendIO((struct IORequest *)timerio)
 
 #define DEBUG 0
