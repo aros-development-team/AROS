@@ -179,17 +179,24 @@
      dependent on the size of the window. */
 #define GA_RelSpecial	 (GA_Dummy + 39)
 
+#define GA_TextAttr	 (GA_Dummy + 40)
+  /* [] (BOOL) */
+#define GA_ReadOnly	 (GA_Dummy + 41)
+#define GA_Underscore	 (GA_Dummy + 42)
+#define GA_ActivateKey   (GA_Dummy + 43)
+#define GA_BackFill	 (GA_Dummy + 44)
+#define GA_GadgetHelpText (GA_Dummy + 45)
+#define GA_UserInput	 (GA_Dummy + 46)
+
 /* The following attributes are AROS specific. */
   /* [IS.] (struct TextAttr *) TextAttr structure (see <graphics/text.h>) to
      use for gadget rendering. This attribute is not directly supported by
      GadgetClass. */
-#define GA_TextAttr	 (GA_Dummy + 40)
-  /* [] (BOOL) */
-#define GA_ReadOnly	 (GA_Dummy + 41)
+
   /* [I..] (LONG) Choose the placing of the label. GadgetClass does not support
      this directly. Its subclasses have to take care of that. For possible
      values see below. */
-#define GA_LabelPlace    (GA_Dummy + 42)
+#define GA_LabelPlace    (GA_Dummy + 100)
 
 
 /* Placetext values for GA_LabelPlace. */
