@@ -9,6 +9,7 @@
 #include <exec/types.h>
 
 #include <proto/graphics.h>
+#include <stdio.h>
 
 #include "muimaster_intern.h"
 #include "mui.h"
@@ -538,12 +539,12 @@ BOOL zune_frame_intern_to_spec (const struct MUI_FrameSpec_intern *intern,
     if (!intern || !spec)
 	return FALSE;
 
-    spec[0] = intern->type + '0';
-    spec[1] = intern->state + '0';
-    spec[2] = intern->innerLeft + '0';
-    spec[3] = intern->innerRight + '0';
-    spec[4] = intern->innerTop + '0';
-    spec[5] = intern->innerBottom + '0';
+    snprintf(&spec[0], 1, "%x", intern->type);
+    snprintf(&spec[1], 1, "%x", intern->state);
+    snprintf(&spec[2], 1, "%x", intern->innerLeft);
+    snprintf(&spec[3], 1, "%x", intern->innerRight);
+    snprintf(&spec[4], 1, "%x", intern->innerTop);
+    snprintf(&spec[5], 1, "%x", intern->innerBottom);
     spec[6] = 0;
     return TRUE;
 }
@@ -553,14 +554,32 @@ BOOL zune_frame_intern_to_spec (const struct MUI_FrameSpec_intern *intern,
 BOOL zune_frame_spec_to_intern(CONST_STRPTR spec,
 			       struct MUI_FrameSpec_intern *intern)
 {    
+    int i;
+    char buf[2];
+    
     if (!intern || !spec)
 	return FALSE;
 
-    intern->type        = spec[0] - '0';
-    intern->state       = spec[1] - '0';
-    intern->innerLeft   = spec[2] - '0';
-    intern->innerRight  = spec[3] - '0';
-    intern->innerTop    = spec[4] - '0';
-    intern->innerBottom = spec[5] - '0';
+    buf[1] = 0;
+
+    buf[0] = spec[0];
+    if (sscanf(buf, "%x", &intern->type) < 1)
+	return FALSE;
+    buf[0] = spec[1];
+    if (sscanf(buf, "%x", &intern->state) < 1)
+	return FALSE;
+    buf[0] = spec[2];
+    if (sscanf(buf, "%x", &intern->innerLeft) < 1)
+	return FALSE;
+    buf[0] = spec[3];
+    if (sscanf(buf, "%x", &intern->innerRight) < 1)
+	return FALSE;
+    buf[0] = spec[4];
+    if (sscanf(buf, "%x", &intern->innerTop) < 1)
+	return FALSE;
+    buf[0] = spec[5];
+    if (sscanf(buf, "%x", &intern->innerBottom) < 1)
+	return FALSE;
+
     return TRUE;
 }
