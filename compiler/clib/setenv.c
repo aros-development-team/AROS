@@ -15,7 +15,7 @@
     NAME */
 #include <stdlib.h>
 
-	char *setenv (
+	int setenv (
 
 /*  SYNOPSIS */
 	const char *name,
@@ -50,7 +50,7 @@
 
 ******************************************************************************/
 {
-	if (!overwrite && FindVar(name, LV_VAR))
+    if (!overwrite && FindVar(name, LV_VAR))
     	return 0;
 
     return -!SetVar(name, value, -1, LV_VAR | GVF_LOCAL_ONLY);

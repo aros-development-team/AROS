@@ -6,7 +6,7 @@
     $Id$
 
     Desc: ANSI-C header file stdlib.h
-    Lang: english
+    Lang: English
 */
 #ifndef _SYS_TYPES_H
 #   include <sys/types.h>
@@ -22,12 +22,12 @@ int atexit(void (*func)(void));
 
 int abs (int j);
 long labs (long j);
-double atof (const char * str);
-int atoi (const char * str);
-long atol (const char * str);
-long strtol (const char * str, char ** endptr, int base);
-unsigned long strtoul (const char * str, char ** endptr, int base);
-double strtod(const char * str, char ** endptr);
+double atof (const char *str);
+int atoi (const char *str);
+long atol (const char *str);
+long strtol (const char *str, char **endptr, int base);
+unsigned long strtoul (const char *str, char **endptr, int base);
+double strtod(const char *str, char **endptr);
 
 int rand (void);
 void srand (unsigned int seed);
@@ -54,7 +54,7 @@ char *setstate(char *state);
 
 void qsort(void * array, size_t count, size_t elementsize,
 	int (*comparefunction)(const void * element1, const void * element2));
-void * bsearch(const void * key, const void * base, size_t count,
+void *bsearch(const void * key, const void * base, size_t count,
 	size_t size, int (*comparefunction)(const void *, const void *));
 
 void *malloc(size_t size);
@@ -63,11 +63,11 @@ void *realloc(void *oldmem, size_t newsize);
 void  free(void *memory);
 
 char *getenv(const char *name);
-char *setenv(const char *name, const char *value, int overwrite);
+int   setenv(const char *name, const char *value, int overwrite);
 int   putenv(const char *string);
 
 char *mktemp(char *buf);
-int system(const char *string);
+int   system(const char *string);
 
 char *gcvt(double number, size_t ndigit, char *buf);
 
