@@ -537,35 +537,44 @@ BOOL zune_frame_intern_to_spec (const struct MUI_FrameSpec_intern *intern,
 
 /*------------------------------------------------------------------------*/
 
+static int hexasciichar_to_int(char x)
+{
+    if (x >= '0' && x <= '9') return x - '0';
+    if (x >= 'a' && x <= 'f') return x - 'a';
+    if (x >= 'A' && x <= 'F') return x - 'A';
+    return -1;
+}
+
 BOOL zune_frame_spec_to_intern(CONST_STRPTR spec,
 			       struct MUI_FrameSpec_intern *intern)
 {    
-    int i;
-    char buf[2];
+    int val;
     
     if (!intern || !spec)
 	return FALSE;
 
-    buf[1] = 0;
+    val = hexasciichar_to_int(spec[0]);
+    if (val == -1) return FALSE;
+    intern->type = val;
 
-    buf[0] = spec[0];
-    if (sscanf(buf, "%x", &intern->type) < 1)
-	return FALSE;
-    buf[0] = spec[1];
-    if (sscanf(buf, "%x", &intern->state) < 1)
-	return FALSE;
-    buf[0] = spec[2];
-    if (sscanf(buf, "%x", &intern->innerLeft) < 1)
-	return FALSE;
-    buf[0] = spec[3];
-    if (sscanf(buf, "%x", &intern->innerRight) < 1)
-	return FALSE;
-    buf[0] = spec[4];
-    if (sscanf(buf, "%x", &intern->innerTop) < 1)
-	return FALSE;
-    buf[0] = spec[5];
-    if (sscanf(buf, "%x", &intern->innerBottom) < 1)
-	return FALSE;
+    val = hexasciichar_to_int(spec[1]);
+    if (val == -1) return FALSE;
+    intern->state = val;
 
+    val = hexasciichar_to_int(spec[2]);
+    if (val == -1) return FALSE;
+    intern->innerLeft = val;
+
+    val = hexasciichar_to_int(spec[3]);
+    if (val == -1) return FALSE;
+    intern->innerRight = val;
+
+    val = hexasciichar_to_int(spec[4]);
+    if (val == -1) return FALSE;
+    intern->innerTop = val;
+
+    val = hexasciichar_to_int(spec[5]);
+    if (val == -1) return FALSE;
+    intern->innerBottom = val;
     return TRUE;
 }
