@@ -26,7 +26,7 @@ BEGIN {
 	if ($prototype->{type} eq 'function'  ||
 	    $prototype->{type} eq 'cfunction' ||
 	    $prototype->{type} eq 'varargs') {
-	    printf "	(((struct $sfd->{BaseName}IFace *)___base)->$prototype->{funcname})(";
+	    printf "	(((struct $sfd->{BaseName}IFace *)(___base))->$prototype->{funcname})(";
 	}
 	else {
 	    $self->SUPER::function_start (@_);
