@@ -89,7 +89,7 @@ static void Cleanup(char *msg, WORD rc)
 {
     if (msg)
     {
-    	printf("Setmap: %s\n",msg);
+    	printf("SetKeyboard: %s\n",msg);
     }
     
     if (seg)
