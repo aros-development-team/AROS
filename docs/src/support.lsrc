@@ -53,7 +53,7 @@ funct OpenDB (char $server, char $db)
 
     if ($sock < 0)
     {
-	printf ("Can't connect to server \"%s\": %s (%d)!\n", $server, $ERRMSG, $res);
+	printf ("Can't connect to server \"%s\": %s !\n", $server, $ERRMSG);
 	return (-1);
     }
 
