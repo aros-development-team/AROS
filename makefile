@@ -12,9 +12,9 @@ DEP_LIBS= $(LIBDIR)/libAmigaOS.a \
 LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS -laros
 
-SUBDIRS = $(KERNEL) aros exec dos utility graphics \
+SUBDIRS = $(KERNEL) aros exec dos utility graphics intuition \
 	filesys libs c
-DIST_FILES = makefile arosshell.c README.CVS gendef.awk make.cfg \
+DIST_FILES = makefile arosshell.c README.CVS scripts/gendef.awk make.cfg \
 	configure
 
 TESTDIR = $(BINDIR)/test
@@ -82,7 +82,7 @@ clean:
 	done
 
 $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
-	$(CC) $(CFLAGS) $< $(LIBS) -o $@
+	$(CC) $(CFLAGS) $< $(LIBS) -L/usr/lib/X11 -lX11 -o $@
 
 subdirs:
 	@for dir in $(SUBDIRS) ; do \
@@ -108,40 +108,33 @@ $(LIBDIR)/libAmigaOS.a : $(wildcard $(OSGENDIR)/*.o)
 $(SDIR)/Startup-Sequence : s/Startup-Sequence
 	$(CP) $^ $@
 
-includes: include/aros/config/gnuc/exec_defines.h \
-	include/aros/config/gnuc/dos_defines.h \
-	include/aros/config/gnuc/utility_defines.h
+includes: include/clib/exec_protos.h \
+	    include/clib/dos_protos.h \
+	    include/clib/utility_protos.h \
+	    include/clib/graphics_protos.h \
+	    include/clib/intuition_protos.h
 
-include/aros/config/gnuc/exec_defines.h: m68k-native/*.c m68k-native/*.s exec/*.c dummy/*
-	echo "#ifndef GCC_EXEC_DEFINES_H" >$@
-	echo "#define GCC_EXEC_DEFINES_H" >>$@
-	echo "#include <aros/config/gnuc/libcall_m68k.h>" >>$@
-	echo "struct ExecBase;" >>$@
-	echo "extern struct ExecBase *SysBase;" >>$@
-	echo "#define Cause(a)" >>$@
-	echo "" >>$@
-	gawk -f gendef.awk $^ >>$@
-	echo "#endif" >>$@
+include/clib/exec_protos.h: .FORCE
+	gawk -f scripts/genprotos.h --assign lib=Exec \
+	$(KERNEL)/*.s $(KERNEL)/*.c exec/*.c
 
-include/aros/config/gnuc/dos_defines.h: dos/*.c
-	echo "#ifndef GCC_DOS_DEFINES_H" >$@
-	echo "#define GCC_DOS_DEFINES_H" >>$@
-	echo "#include <aros/config/gnuc/libcall_m68k.h>" >>$@
-	echo "struct DosLibrary;" >>$@
-	echo "extern struct DosLibrary *DOSBase;" >>$@
-	echo "" >>$@
-	gawk -f gendef.awk $^ >>$@
-	echo "#endif" >>$@
+include/clib/dos_protos.h: .FORCE
+	gawk -f scripts/genprotos.h --assign lib=Dos \
+	dos/*.c
 
-include/aros/config/gnuc/utility_defines.h: utility/*.c
-	echo "#ifndef GCC_UTILITY_DEFINES_H" >$@
-	echo "#define GCC_UTILITY_DEFINES_H" >>$@
-	echo "#include <aros/config/gnuc/libcall_m68k.h>" >>$@
-	echo "struct UtilityBase;" >>$@
-	echo "extern struct UtilityBase *UtilityBase;" >>$@
-	echo "" >>$@
-	gawk -f gendef.awk $^ >>$@
-	echo "#endif" >>$@
+include/clib/utility_protos.h: .FORCE
+	gawk -f scripts/genprotos.h --assign lib=Utility \
+	utility/*.c
+
+include/clib/graphics_protos.h: .FORCE
+	gawk -f scripts/genprotos.h --assign lib=Graphics \
+	graphics/*.c
+
+include/clib/intuition_protos.h: .FORCE
+	gawk -f scripts/genprotos.h --assign lib=Intuition \
+	intuition/*.c
+
+.FORCE:
 
 $(GENDIR)/test/%.o: test/%.c
 	$(CC) $(CFLAGS) -I ./libs $^ -c -o $@
