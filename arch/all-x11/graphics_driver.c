@@ -408,6 +408,9 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
     XFontStruct      * xfs;
     int t;
 
+    if (!ta->ta_Name)
+	return NULL;
+
     if (!(tf = AllocMem (sizeof (struct ETextFont), MEMF_ANY)) )
 	return (NULL);
 
@@ -432,6 +435,7 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
 
     tf->etf_XFS = *xfs;
 
+    tf->etf_Font.tf_Message.mn_Node.ln_Name = StrDup (ta->ta_Name);
     tf->etf_Font.tf_YSize = tf->etf_XFS.max_bounds.ascent +
 		    tf->etf_XFS.max_bounds.descent;
     tf->etf_Font.tf_XSize = tf->etf_XFS.max_bounds.rbearing -
@@ -457,6 +461,7 @@ void driver_CloseFont (struct ETextFont * tf, struct GfxBase * GfxBase)
     if (!tf->etf_Font.tf_Accessors)
     {
 	XUnloadFont (sysDisplay, tf->etf_XFS.fid);
+	FreeVec (tf->etf_Font.tf_Message.mn_Node.ln_Name);
 	FreeMem (tf, sizeof (struct ETextFont));
     }
     else
