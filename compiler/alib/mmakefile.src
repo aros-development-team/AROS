@@ -52,6 +52,7 @@ FILES		:= \
 	libfreepooled \
 	newlist \
 	newobject \
+	obtainbestpen \
 	opencatalog \
 	openscreentags \
 	openwindowtags \
@@ -59,6 +60,7 @@ FILES		:= \
 	setattrs \
 	setgadgetattrs \
 	setsuperattrs \
+	setwindowpointer \
 	timedelay
 
 %prepare_replace compiler/alib
