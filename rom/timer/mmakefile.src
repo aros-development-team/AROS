@@ -36,7 +36,7 @@ ULIBNAME := Timer
 
 OSMODULE  := timer.device
 FILES	  := timervblank
-FUNCTIONS := addtime beginio cmptime getsystime subtime
+FUNCTIONS := addtime beginio abortio cmptime getsystime subtime
 
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of extra libraries that you want included during
