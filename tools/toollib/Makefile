@@ -49,12 +49,10 @@ clean :
 	@mv -f Makefile.tmp Makefile
 	-@$(RM) Makefile.bak
 
-depend :
-	@touch $(DEPFILE)
-	@makedepend -f$(DEPFILE) -- $(HOST_CFLAGS) -- *.c
+depend : $(DEPFILE)
+	@$(NOP)
 
 $(DEPFILE) : 
-	@touch $(DEPFILE)
-	@makedepend -f$(DEPFILE) -- $(HOST_CFLAGS) -- *.c
+	@makedepend -f- -- $(HOST_CFLAGS) -- *.c > $(DEPFILE)
 
 -include $(DEPFILE)
