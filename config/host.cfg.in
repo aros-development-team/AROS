@@ -57,5 +57,4 @@ MKDEPEND := $(TOP)/scripts/mkdep
 MMAKE    := $(TOOLDIR)/mmake
 ARCHTOOL := $(TOOLDIR)/archtool
 CPAK     := $(TOOLDIR)/cpak
-CPAK2    := $(TOOLDIR)/cpak2
 GENMF    := $(TOOLDIR)/genmf
