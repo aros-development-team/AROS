@@ -92,20 +92,28 @@
 #endif
 
 /* 3. Macros for making things more efficient */
-#if __GNUC__ < 2 || __GNUC__ == 2 && __GNUC_MINOR__ < 5
-#   define __unused
+#if __GNUC_PREREQ(2,5)
+#   define __noreturn  __attribute__((__noreturn__))
+#else
 #   define __noreturn
+#endif
+
+#if __GNUC_PREREQ(2,5) && !(__GNU_PREREQ(2,6) && defined __cplusplus)
+#   define __noeffect  __attribute__((__const__))
+#else
 #   define __noeffect
 #endif
-#if __GNUC__ == 2 && __GNUC_MINOR__ >= 5 && __GNUC_MINOR__ < 7
-#   define __unused
-#   define __noreturn  __attribute__((__noreturn__))
-#   define __noeffect  __attribute__((__const__))
+
+#if __GNUC_PREREQ(2.7)
+#    define __unused   __attribute__((__unused__))
+#else
+#    define __unused
 #endif
-#if __GNUC__ == 2 && __GNUC_MINOR__ >= 7 || __GNUC__ > 2
-#   define __unused    __attribute__((__unused__))
-#   define __noreturn  __attribute__((__noreturn__))
-#   define __noeffect  __attribute__((__const__))
+
+#if __GNUC_PREREQ(2,96)
+#    define __pure     __attribute__((__pure__))
+#else
+#    define __pure
 #endif
 
 /* 4. Makros for debugging and development */
