@@ -31,6 +31,9 @@ typedef struct ZTextLine {
 } ZTextLine;
 
 struct ZText {
+	  LONG xscroll; /* number of pixel which are not visible */
+    LONG yscroll;
+
     WORD width; /* store calculated bounds - read only ! */
     WORD height;
 
@@ -59,5 +62,6 @@ void zune_text_get_real_pos (ZText *text, Object *obj, WORD *left, WORD *right);
 
 int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y, struct ZTextLine **line_ptr, struct ZTextChunk **chunk_ptr, int *offset_ptr, int *len_ptr);
 int zune_text_get_line_len(ZText *text, Object *obj, LONG y);
+void zune_make_cursor_visible(ZText *text, Object *obj, LONG cursorx, LONG cursory, LONG left, LONG top, LONG right, LONG bottom);
 
 #endif
