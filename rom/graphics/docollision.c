@@ -93,8 +93,6 @@
             int offset    , _offset = 0;
             int _scroll = 0;
             int line = 0;
-#warning Not comparing collision masks!!!!!!!!!
-            // put collision mask comparison here!
             /*
              * I will hold the CurVSprite's collision mask still
              * and adjust/shift the collision mask of _CurVSprite.
@@ -138,10 +136,13 @@
                * _CurVSprite is further to the right than 
                * CurVSprite.
                */
-              _scroll = offset & 0xf;
+              _scroll = -(offset & 0xf);
               offset >>= 4;
             }
             
+            /*
+             * _scroll > 0 means shift the bits to the RIGHT!
+             */
             while ((line < ( CurVSprite->Height+ CurVSprite->Y)) &&
                    (line < (_CurVSprite->Height+_CurVSprite->Y))   )
             {
@@ -203,9 +204,6 @@
               line++;
             }
 
-
-            collision = TRUE;
-            
             if (TRUE == collision)
             {
               UWORD mask = CurVSprite->MeMask & _CurVSprite->HitMask;
@@ -225,7 +223,6 @@
               }
             }
           }
-          
           _CurVSprite = _CurVSprite->NextVSprite;
         }
         CurVSprite = CurVSprite->NextVSprite;
