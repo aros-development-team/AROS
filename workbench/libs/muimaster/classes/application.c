@@ -570,6 +570,7 @@ static ULONG Application_RemInputHandler(struct IClass *cl, Object *obj, struct 
 	struct timerequest_ext *time_ext = (struct timerequest_ext*)msg->ihnode->ihn_Node.mln_Pred;
 	if (!CheckIO((struct IORequest*)time_ext)) AbortIO((struct IORequest*)time_ext);
 	WaitIO((struct IORequest*)time_ext);
+	FreeVec(time_ext);
     }	else Remove((struct Node *)msg->ihnode);
 
     return TRUE;
@@ -686,8 +687,11 @@ static ULONG mNewInput(struct IClass *cl, Object *obj,
 	    while ((time_ext = (struct timerequest_ext *)GetMsg(data->app_TimerPort)))
 	    	AddTail(&list,(struct Node*)time_ext);
 
-	    /* Now we proccess the list and resend the timer io, no loop can happen */
-	    for (n = list.lh_Head; n->ln_Succ; n = n->ln_Succ)
+	    /* Now we proccess the list and resend the timer io, no loop can happen
+	    ** we use RemHead() because the handler can remove it itself and so
+	    ** a FreeVec() could happen in MUIM_Application_RemInputHandler which would
+	    ** destroy the the ln->Succ of course */
+	    while (n = RemHead(&list))
 	    {
 		struct timerequest_ext *time_ext = (struct timerequest_ext *)n;
 		struct MUI_InputHandlerNode *ihn = time_ext->ihn;

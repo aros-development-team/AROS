@@ -441,6 +441,10 @@ static ULONG Group_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Con
 	{
 	    _flags(child) |= MADF_INVIRTUALGROUP;
 	}
+
+        /* Only childs of groups can have parents */
+        muiNotifyData(child)->mnd_ParentObject = obj;
+
 	DoMethod(child, MUIM_ConnectParent, obj);
     }
     return TRUE;
@@ -461,6 +465,7 @@ static ULONG Group_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_
     while ((child = NextObject(&cstate)))
     {
 	DoMethodA(child, (Msg)msg);
+        muiNotifyData(child)->mnd_ParentObject = NULL;
 	_flags(child) &= ~MADF_INVIRTUALGROUP;
     }
     DoSuperMethodA(cl,obj,(Msg)msg);

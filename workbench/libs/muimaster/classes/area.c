@@ -442,16 +442,42 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	    case MUIA_ShowMe:
 		{
-		    Object *parent;
-		    Object *win;
-		    get(obj, MUIA_Parent, &parent);
-		    win = _win(obj);
+		    ULONG oldflags = data->mad_Flags;
+		    int recalc = 0;
 
 		    if (tag->ti_Data) data->mad_Flags |= MADF_SHOWME;
 		    else data->mad_Flags &= ~MADF_SHOWME;
 
-		    if (parent == win || (parent && (_flags(parent)&MADF_CANDRAW)))
-			DoMethod(_win(obj), MUIM_Window_RecalcDisplay);
+		    if (oldflags != data->mad_Flags)
+		    {
+			if (!tag->ti_Data)
+			{
+			    /* Should be made invisible, so send a MUIM_Hide and then a MUIM_Cleanup to the object if needed,
+			    ** as objects with MUIA_ShowMe to false neighter get MUIM_Setup nor MUIM_Show */
+			    if (_flags(obj)&MADF_CANDRAW)
+			    {
+			    	DoMethod(obj,MUIM_Hide);
+			    	recalc = 1;
+			    }
+			    if (_flags(obj)&MADF_SETUP) DoMethod(obj,MUIM_Cleanup);
+			} else
+			{
+			    Object *parent = _parent(obj); /* Will be NULL if direct child of a window! */
+			    if (parent)
+			    {
+				if (_flags(parent) & MADF_SETUP) DoMethod(obj,MUIM_Setup,muiRenderInfo(parent));
+				if (_flags(parent) & MADF_CANDRAW) DoMethod(obj,MUIM_Show);
+			    } else
+			    {
+				/* Check if window is open... */
+			    }
+			}
+
+		    	if (recalc)
+		    	{
+			    DoMethod(_win(obj), MUIM_Window_RecalcDisplay);
+			}
+		    }
 		}
 		break;
 
