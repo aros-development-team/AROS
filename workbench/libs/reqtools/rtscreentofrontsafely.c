@@ -31,32 +31,31 @@
 	struct ReqToolsBase *, ReqToolsBase, 23, ReqTools)
 
 /*  FUNCTION
+	Brings the specified screen to the front of the display, but only after
+	checking it is still in the list of currently open screens.
 
-    Brings the specified screen to the front of the display, but only after
-    checking it is still in the list of currently open screens.
-
-    This function can be used to bring a screen back to the front of the
-    display after bringing another screen to the front.  If the first screen
-    closed while you where busy it is harmless to call this function, unlike
-    calling the normal ScreenToFront().
+	This function can be used to bring a screen back to the front of the
+	display after bringing another screen to the front.  If the first screen
+	closed while you where busy it is harmless to call this function, unlike
+	calling the normal ScreenToFront().
 
     INPUTS
-
-    screen  --  pointer to the screen
+	screen  --  pointer to the screen
 
     RESULT
+	none
 
     NOTES
-
-    This function is for the advanced ReqTools user.
+	This function is for the advanced ReqTools user.
 
     EXAMPLE
 
     BUGS
+	none known
 
     SEE ALSO
 
-    intuition.library/ScreenToFront()
+	intuition.library/ScreenToFront()
 
     INTERNALS
 

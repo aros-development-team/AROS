@@ -33,18 +33,34 @@
 	struct ReqToolsBase *, ReqToolsBase, 5, ReqTools)
 
 /*  FUNCTION
+	Allocates a requester structure for you in a future compatible
+	manner. This is the only way to properly allocate a rtFileRequester,
+	rtFontRequester, rtReqInfo or rtScreenModeRequester structure. The
+	structure will be initialized for you.
+
+	Use rtFreeRequest() to free the requester structure when you no
+	longer need it.
    
     INPUTS
+	type    - type of structure to allocate, currently RT_REQINFO,
+	    RT_FILEREQ, RT_FONTREQ or RT_SCREENMODEREQ.
+	taglist - pointer to array of tags (currently always NULL).
 
+    TAGS
+	no tags defined yet
+	
     RESULT
+	req - pointer to the requester allocated or NULL if no memory.
 
     NOTES
 
     EXAMPLE
 
     BUGS
+	none known
 
     SEE ALSO
+	rtFreeRequest()
 
     INTERNALS
 

@@ -1,6 +1,28 @@
 ##begin proto
-#ifndef RTBase
-extern struct Library * RTBase;
+#ifndef ReqToolsBase
+extern struct ReqToolsBase * ReqToolsBase;
 #endif
 
 ##end proto
+
+##begin clib
+
+#ifndef LIBRARIES_REQTOOLS_H
+#   include <libraries/reqtools.h>
+#endif
+
+/* Prototypes for stubs in reqtoolsstubs.lib */
+
+APTR rtAllocRequest (ULONG type, Tag tag1, ...);
+LONG rtChangeReqAttr (APTR req, Tag tag1, ...);
+APTR rtFileRequest (struct rtFileRequester * filereq, char *file, char *title, Tag tag1, ...);
+ULONG rtEZRequest (char *bodyfmt, char *gadfmt, struct rtReqInfo *reqinfo, struct TagItem *taglist, ...);
+ULONG rtEZRequestTags (char *bodyfmt, char *gadfmt, struct rtReqInfo *reqinfo, APTR argarray, Tag tag1, ...);
+ULONG rtGetString (UBYTE *buffer, ULONG maxchars, char *title, struct rtReqInfo *reqinfo, Tag tag1, ...);
+ULONG rtGetLong (ULONG *longptr, char *title, struct rtReqInfo *reqinfo, Tag tag1, ...);
+ULONG rtFontRequest (struct rtFontRequester *fontreq, char *title, Tag tag1, ...);
+LONG rtPaletteRequest (char *title, struct rtReqInfo *reqinfo, Tag tag1, ...);
+ULONG rtReqHandler (struct rtHandlerInfo *handlerinfo, ULONG sigs, Tag tag1, ...);
+ULONG rtScreenModeRequest (struct rtScreenModeRequester *screenmodereq, char *title, Tag tag1, ...);
+
+##end clib

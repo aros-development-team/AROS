@@ -32,26 +32,28 @@
 
 /*  FUNCTION
 
-    Frees a filelist returned by rtFileRequest() when the FREQF_MULTISELECT
-    flag was set.  Call this after you have scanned the filelist and you no
-    longer need it.
+	Frees a filelist returned by rtFileRequest() when the FREQF_MULTISELECT
+	flag was set.  Call this after you have scanned the filelist and you no
+	longer need it.
 
     INPUTS
 
-    filelist  --  pointer to rtFileList structure, returned by rtFileRequest();
-                  may be NULL.
+	filelist  --  pointer to rtFileList structure, returned by rtFileRequest();
+                      may be NULL.
 
     RESULT
+	none
 
     NOTES
 
     EXAMPLE
 
     BUGS
+	none known
 
     SEE ALSO
 
-    rtFileRequest()
+        rtFileRequest()
 
     INTERNALS
 

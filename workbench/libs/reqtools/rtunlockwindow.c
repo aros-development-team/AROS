@@ -31,32 +31,36 @@
 	struct ReqToolsBase *, ReqToolsBase, 27, ReqTools)
 
 /*  FUNCTION
+	Unlock a window previously locked with rtLockWindow(). The window
+	will once again accept user input and will get its original mouse
+	pointer back (default or custom).
 
-    Unlock a window previously locked with rtLockWindow(). The window will
-    once again accept user input.
+	Under Kickstart V39 or higher the original window pointer will not
+	be restored if it was set using SetWindowPointer(). You will have to
+	restore the pointer yourself in this case.
 
     INPUTS
-
-    window  --  pointer to the window to be unlocked
-
+	window - pointer to the window to be unlocked.
+	windowlock - the windowlock pointer returned by rtLockWindow(), may
+	    be NULL.
 
     RESULT
-
+	none
 
     NOTES
-
-    The mouse pointer has to be set back manually for now.
+	The mouse pointer has to be set back manually for now.
 
     EXAMPLE
 
     BUGS
+	none known
 
     SEE ALSO
+	rtLockWindow()
 
     INTERNALS
-
-    Needs semaphores to avoid race condition problems for multithreaded
-    applications.
+	Needs semaphores to avoid race condition problems for multithreaded
+	applications.
 
     HISTORY
 

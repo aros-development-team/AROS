@@ -32,18 +32,25 @@
 	struct ReqToolsBase *, ReqToolsBase, 6, ReqTools)
 
 /*  FUNCTION
+	Free requester structure previously allocated by rtAllocRequestA().
+	This will also free all buffers associated with the requester, so
+	there is no need to call rtFreeReqBuffer() first.
    
     INPUTS
+	req - pointer to requester (may be NULL).
 
     RESULT
+	none
 
     NOTES
 
     EXAMPLE
 
     BUGS
+	none known
 
     SEE ALSO
+	rtAllocRequestA()
 
     INTERNALS
 

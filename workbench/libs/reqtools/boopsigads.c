@@ -163,9 +163,9 @@ struct CombStringInfo
 
 #ifdef _AROS
 AROS_UFH3(ULONG, StrEditHookEntry,
-    AROS_LHA(struct Hook *, hook, A0),
-    AROS_LHA(struct SGWork *, sgw, A2),
-    AROS_LHA(ULONG *, msg, A1))
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct SGWork *, sgw, A2),
+    AROS_UFHA(ULONG *, msg, A1))
 #else
 ULONG ASM SAVEDS
 StrEditHookEntry (
