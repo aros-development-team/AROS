@@ -189,7 +189,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     struct Gadget *gadget = iihdata->ActiveGadget;
     struct IntuitionBase *IntuitionBase = iihdata->IntuitionBase;
     ULONG  lock;
-    char *ptr = NULL;
     struct GadgetInfo *gi = &iihdata->GadgetInfo;
     BOOL reuse_event = FALSE;
     struct Window *w;
@@ -223,7 +222,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     
     	D(bug("iih: Handling event of class %d, code %d\n", ie->ie_Class, ie->ie_Code));
 	reuse_event = FALSE;
-	ptr = NULL;
 	
 	/* Use event to find the active window */
         
@@ -771,9 +769,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
 			
 	case IECLASS_RAWKEY:
-	    /* send release events only to windows who
-	       have not set IDCMP_VANILLAKEY and no
-	       active gadget */
+	    /* release events go only to gadgets and windows who
+	       have not set IDCMP_VANILLAKEY */
 	    
 	    iihdata->ActQualifier &= ~KEY_QUALIFIERS;
 	    iihdata->ActQualifier |= (ie->ie_Qualifier & KEY_QUALIFIERS);
@@ -786,9 +783,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    }
 				      
 	    if ( (!(ie->ie_Code & IECODE_UP_PREFIX)) ||
-	         (!gadget && w && ((w->IDCMPFlags & IDCMP_VANILLAKEY) == 0)) )
+	         gadget ||
+	         ((w->IDCMPFlags & IDCMP_VANILLAKEY) == 0) )
 	    {
-		ptr = "RAWKEY PRESSED";
 
 		if (gadget)
 		{
@@ -843,7 +840,44 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 		} /* if (a gadget is currently active) */
 		else if (w)
-		{		    		  
+		{
+		    BOOL menushortcut = FALSE;
+		    
+		    if ((ie->ie_Qualifier & IEQUALIFIER_RCOMMAND) &&
+		        (!(w->Flags & WFLG_RMBTRAP)) &&
+			(w->IDCMPFlags & IDCMP_MENUPICK))
+		    {
+			ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
+
+			if (w->MenuStrip)
+			{
+			    UBYTE key;
+			    
+		            if (MapRawKey(ie, &key, 1, NULL) == 1)
+			    {
+				UWORD menucode;
+
+				menucode = FindMenuShortCut(w->MenuStrip, key, TRUE, IntuitionBase);
+				if (menucode != MENUNULL)
+				{
+				    ie->ie_Class        = IECLASS_MENU;
+				    ie->ie_SubClass     = IESUBCLASS_MENUSTOP;
+				    ie->ie_EventAddress = w;
+				    ie->ie_Code         = menucode;
+				    
+				    reuse_event = TRUE;
+				    MENUS_ACTIVE = TRUE;
+				    menushortcut = TRUE;
+				}
+			    }
+			}
+			if (!menushortcut) /* !! */
+			    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
+
+		    } /* if could be a menu short cut */
+		    
+		    if (menushortcut) break;
+		    
 		    /* This is a regular RAWKEY event (no gadget taking care
 		       of it...). */
 
@@ -931,16 +965,21 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    {
 	        MENUS_ACTIVE = FALSE;
 		/* semaphore was locked when menu action started, see
-		   above where MMCODE_START MenuMessage is sent */	
+		   above where MMCODE_START MenuMessage is sent.
+		   
+		   It could have also have been looked if the user
+		   activated one of the menu key shortcuts, see
+		   "case IECLASS_RAWKEY" */
+		   	
     		ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
 
 	        orig_ie->ie_Class = IECLASS_NULL;
 
-		    ih_fire_intuimessage((struct Window *)ie->ie_EventAddress,
-		    			 IDCMP_MENUPICK,
-					 ie->ie_Code,
-					 (struct Window *)ie->ie_EventAddress,
-					 IntuitionBase);
+		ih_fire_intuimessage((struct Window *)ie->ie_EventAddress,
+		    		     IDCMP_MENUPICK,
+				     ie->ie_Code,
+				     (struct Window *)ie->ie_EventAddress,
+				     IntuitionBase);
 
 	    }
 	    break;
@@ -952,8 +991,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		orig_ie->ie_Class = IECLASS_NULL;
 		break;
 	    }
-
-	    ptr = NULL;
 
             kprintf("\x07" "\n\n======== Unknown IEClass: addr = %x  class = %d (origclass = %d)! =============\n\n",orig_ie, ie->ie_Class,orig_ie->ie_Class);
 	    break;

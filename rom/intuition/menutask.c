@@ -470,6 +470,10 @@ static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
 static void HandleCheckItem(struct Window *win, struct MenuItem *item, WORD itemnum,
 			    struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
+    /* Note: If you change something here, you probably must also change
+             menus.c/CheckMenuItemWasClicked() which is used when the
+	     user uses the menu key shortcuts! */
+	     
     WORD itemtype = ((win == mhd->menuwin) ? ITEM_ITEM : ITEM_SUBITEM);
     		    
     BOOL re_render = FALSE;

@@ -27,4 +27,7 @@ void MH2Int_MakeMenusInactive(struct Window *win, UWORD menupick, struct Intuiti
 void GetMenuBox(struct Window *win, struct MenuItem *item,
 	        WORD *xmin, WORD *ymin, WORD *xmax, WORD *ymax);
 
+UWORD FindMenuShortCut(struct Menu *menu, UBYTE key, BOOL do_click_op,
+		       struct IntuitionBase *IntuitionBase);
+void CheckMenuItemWasClicked(struct MenuItem *item, UWORD itemnum, struct MenuItem *parentitem);
 

@@ -723,6 +723,15 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 	{	
 	}
     }
+    else if (qual & IEQUALIFIER_RCOMMAND)
+    {
+        /* ANSI key but pressed together with right Amiga key */
+	
+	sgw->EditOp  = EO_SPECIAL; /* FIXME: ??? is this correct ??? */
+	sgw->Code    = keybuf[0]; /* looks this is really correct (tested on Amiga) */
+	sgw->Actions = (SGA_USE|SGA_REUSE|SGA_END);
+	
+    }
     else
     {
         /* ANSI key */
