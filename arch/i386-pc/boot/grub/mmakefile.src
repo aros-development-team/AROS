@@ -29,7 +29,7 @@ configure: config.h.in configure.in
 
 Makefile: configure $(TOP)/arch/i386-native/boot/menu.lst
 	CFLAGS="-minline-all-stringops" CC="$(HOST_CC)" ./configure \
-	--enable-preset-menu=$(TOP)/config/i386-native/boot/menu.lst \
+	--enable-preset-menu=$(TOP)/arch/i386-native/boot/menu.lst \
 	--disable-fat --disable-ffs --disable-minix --disable-reiserfs \
 	--disable-vstafs --disable-jfs --disable-xfs --disable-md5-password \
 	--disable-packet-retransmission --disable-ext2fs -disable-serial \
