@@ -51,11 +51,11 @@ extern void Exec_FreeMem();
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-
     if (seglist)
     {
-#ifdef AROS_MODULES_DEBUG
+#if AROS_MODULES_DEBUG
         extern struct MinList debug_seglist;
+        extern struct MinList free_debug_segnodes;
         struct debug_segnode *segnode;
 
     	Forbid();
@@ -64,8 +64,7 @@ extern void Exec_FreeMem();
             if (segnode->seglist == seglist)
             {
                 REMOVE(segnode);
-                FreeMem(segnode, sizeof(struct debug_segnode));
-
+		ADDHEAD(&free_debug_segnodes, segnode);
                 break;
             }
         }

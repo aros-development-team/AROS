@@ -110,12 +110,21 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Dos),
 
     LIBBASE->dl_IntuitionBase = NULL;
 
-#ifdef AROS_MODULES_DEBUG
-{
-    extern struct MinList debug_seglist;
-    
-    NEWLIST((struct List *)&debug_seglist);
-}
+#if AROS_MODULES_DEBUG
+    {
+        extern struct MinList debug_seglist, free_debug_segnodes;
+
+        static struct debug_segnode debug_segnode_array[4096];
+        int i;
+
+        NEWLIST(&free_debug_segnodes);
+        NEWLIST(&debug_seglist);
+
+        for (i = 0; i < sizeof(debug_segnode_array)/sizeof(debug_segnode_array[0]); i++)
+        {
+	    ADDTAIL(&free_debug_segnodes, &debug_segnode_array[i]);
+        }
+    }
 #endif
 
     {

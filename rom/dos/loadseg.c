@@ -12,17 +12,15 @@
 #include <aros/debug.h>
 #include "dos_intern.h"
 
-#ifdef AROS_MODULES_DEBUG
+#define AROS_MODULES_DEBUG 1
+
+#if AROS_MODULES_DEBUG
 #include <exec/nodes.h>
 #include <exec/lists.h>
-#include <exec/memory.h>
 #include <string.h>
-struct MinList debug_seglist =
-{
-    (struct MinNode *)&debug_seglist.mlh_Tail,
-    NULL,
-    (struct MinNode *)&debug_seglist
-};
+
+struct MinList debug_seglist, free_debug_segnodes;
+
 #endif
 
 /*****************************************************************************
@@ -87,15 +85,18 @@ q        IoErr() gives additional information in that case.
         {
 #if AROS_MODULES_DEBUG
             struct debug_segnode *segnode;
-            segnode = AllocMem(sizeof(struct debug_segnode), MEMF_ANY);
 
-            if (segnode)
+	    Forbid();
+            segnode = (struct debug_segnode *)REMHEAD(&free_debug_segnodes);
+            Permit();
+
+	    if (segnode)
             {
                 NameFromFH(file, segnode->name, sizeof(segnode->name));
 
                 segnode->seglist = segs;
 
-    	    	Forbid();
+		Forbid();
                 ADDTAIL(&debug_seglist, segnode);
 		Permit();
             }
