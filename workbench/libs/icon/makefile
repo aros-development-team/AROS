@@ -6,10 +6,10 @@ USER_INCLUDES = -I..
 include $(TOP)/config/make.cfg
 
 OBJDIR=$(GENDIR)/workbench/libs/icon
-DEPLIBS=$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a
-LIBS=-L$(LIBDIR) -lamiga -larosc
+DEPLIBS=$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a $(LIBDIR)/libaros.a
+LIBS=-L$(LIBDIR) -laros -lamiga -larosc
 
-FILES = icon_init icon_functable basicfuncs
+FILES = icon_init icon_functable basicfuncs diskobjio
 FUNCTIONS = \
 	addfreelist \
 	bumprevision \
@@ -17,6 +17,7 @@ FUNCTIONS = \
 	findtooltype \
 	freefreelist \
 	getdefdiskobject \
+	getdiskobject \
 	getdiskobjectnew \
 	matchtoolvalue \
 	putdefdiskobject
