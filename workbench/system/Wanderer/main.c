@@ -8,6 +8,7 @@
 #include <libraries/mui.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+#include <dos/dos.h>
 
 #include "locale.h"
 #include "wanderer.h"
@@ -22,13 +23,15 @@ int main(void)
 {
     Locale_Initialize();
     
+    LONG retval = RETURN_ERROR;
+    
     if ((app = WandererObject, End) != NULL)
     {
-	DoMethod(app, MUIM_Application_Execute);        
+	retval = DoMethod(app, MUIM_Application_Execute);        
 	MUI_DisposeObject(app);
     }
     
     Locale_Deinitialize();
     
-    return 0;
+    return retval;
 }
