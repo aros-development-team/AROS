@@ -2,7 +2,7 @@
 #define COLORWHEEL_INTERN_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for colorwheel.gadget.
@@ -60,8 +60,6 @@
 #define ReturnVoid(a) return
 #endif
 
-#define SysBase 		(((struct LibHeader *) ColorWheelBase)->lh_SysBase)
-
 #undef 	EG
 #define EG(o) 			((struct ExtGadget *)o)
 
@@ -109,24 +107,7 @@ struct ColorWheelData
     BOOL    	    	    	gotpens;
 };
 
-struct ColorWheelBase_intern
-{
-    struct Library 		library;
-    struct ExecBase		*sysbase;
-    BPTR			seglist;
-    struct IClass 		*classptr;
-#ifndef GLOBAL_INTUIBASE
-    struct IntuitionBase	*intuibase;
-#endif
-    struct GfxBase		*gfxbase;
-    struct Library		*cybergfxbase;
-    struct Library		*utilitybase;
-    struct Library		*layersbase;    
-};
-
 /***************************************************************************************************/
-
-struct IClass *InitColorWheelClass (struct ColorWheelBase_intern *ColorWheelBase);
 
 #if FIXED_MATH
 BOOL CalcWheelColor(LONG x, LONG y, LONG cx, LONG cy, ULONG *hue, ULONG *sat);
@@ -134,47 +115,18 @@ BOOL CalcWheelColor(LONG x, LONG y, LONG cx, LONG cy, ULONG *hue, ULONG *sat);
 BOOL CalcWheelColor(LONG x, LONG y, double cx, double cy, ULONG *hue, ULONG *sat);
 #endif
 VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *box,
-		 struct ColorWheelBase_intern *ColorWheelBase);
-VOID RenderKnob(struct ColorWheelData *data, struct RastPort *rp, struct IBox *gbox, BOOL update,
-		struct ColorWheelBase_intern *ColorWheelBase);
+		 struct Library *ColorWheelBase
+);
+VOID RenderKnob(struct ColorWheelData *data, struct RastPort *rp,
+		struct IBox *gbox, BOOL update
+);
 VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox);
-void DrawDisabledPattern(struct ColorWheelData *data, struct RastPort *rport, struct IBox *gadbox,
-			 struct ColorWheelBase_intern *ColorWheelBase);
-void allocPens( struct ColorWheelData *data, struct ColorWheelBase_intern *ColorWheelBase );
-void freePens( struct ColorWheelData *data, struct ColorWheelBase_intern *ColorWheelBase );
+void DrawDisabledPattern(struct ColorWheelData *data, struct RastPort *rport,
+			 struct IBox *gadbox
+);
+void allocPens( struct ColorWheelData *data );
+void freePens( struct ColorWheelData *data );
 
 /***************************************************************************************************/
-
-/* The following typedefs are necessary, because the names of the global
-   variables storing the library base pointers	and the corresponding
-   structs are equal.
-   This is a hack, of course. */
-   
-typedef struct GfxBase GraphicsBase;
-typedef struct IntuitionBase IntuiBase;
-
-/***************************************************************************************************/
-
-#undef CWB
-#define CWB(b) 			((struct ColorWheelBase_intern *)b)
-#undef UtilityBase
-#define UtilityBase 		CWB(ColorWheelBase)->utilitybase
-
-
-#ifndef GLOBAL_INTUIBASE
-#undef IntuitionBase
-#define IntuitionBase		CWB(ColorWheelBase)->intuibase
-#endif
-
-#undef GfxBase
-#define GfxBase			CWB(ColorWheelBase)->gfxbase
-
-#define CyberGfxBase    	CWB(ColorWheelBase)->cybergfxbase
-
-#undef SysBase
-#define SysBase			CWB(ColorWheelBase)->sysbase
-
-#undef LayersBase
-#define LayersBase		CWB(ColorWheelBase)->layersbase
 
 #endif /* COLORWHEEL_INTERN_H */

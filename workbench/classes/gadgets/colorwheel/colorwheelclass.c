@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     AROS colorwheel gadget.
@@ -36,8 +36,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define ColorWheelBase ((struct ColorWheelBase_intern *)(cl->cl_UserData))
-
 #include <clib/boopsistubs.h>
 
 #else
@@ -61,9 +59,9 @@
 #include "BoopsiStubs.h"
 #include "colorwheel_intern.h"
 
-#define ColorWheelBase ((struct ColorWheelBase_intern *)(cl->cl_UserData))
-
 #endif
+
+#define ColorWheelBase ((struct Library *)(cl->cl_UserData))
 
 #if FIXED_MATH
 #include "fixmath.h"
@@ -121,7 +119,7 @@ STATIC VOID notify_all(Class *cl, Object *o, struct GadgetInfo *gi, BOOL interim
 
 /***************************************************************************************************/
 
-STATIC IPTR colorwheel_set(Class *cl, Object *o, struct opSet *msg)
+IPTR ColorWheel__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     const struct TagItem 	*tag, *tstate;
     struct ColorWheelData 	*data 	       = INST_DATA(cl, o);
@@ -265,10 +263,14 @@ STATIC IPTR colorwheel_set(Class *cl, Object *o, struct opSet *msg)
     }    
     ReturnPtr ("ColorWheel::Set", IPTR, retval);
 }
+IPTR ColorWheel__OM_UPDATE(Class *cl, Object *o, struct opSet *msg)
+{
+    return ColorWheel__OM_SET(cl, o, msg);
+}
 
 /***************************************************************************************************/
 
-STATIC Object *colorwheel_new(Class *cl, Object *o, struct opSet *msg)
+Object *ColorWheel__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     EnterFunc(bug("ColorWheel::New()\n"));
     
@@ -305,7 +307,7 @@ STATIC Object *colorwheel_new(Class *cl, Object *o, struct opSet *msg)
 	    data->donation = (UWORD *) GetTagData(WHEEL_Donation      , (IPTR) NULL   , msg->ops_AttrList);
 	    data->maxpens  =           GetTagData(WHEEL_MaxPens       , 256	      , msg->ops_AttrList);
 	    
-    	    colorwheel_set(cl, o, msg);
+    	    ColorWheel__OM_SET(cl, o, msg);
 #if 1
 	    {
 		struct Library *DOSBase;
@@ -329,7 +331,7 @@ STATIC Object *colorwheel_new(Class *cl, Object *o, struct opSet *msg)
     	    }	
 #endif    	    
     	    
-    	    allocPens(data,ColorWheelBase);
+    	    allocPens(data);
     	    
     	    InitRastPort( &data->trp );    
 	} else {
@@ -343,7 +345,7 @@ STATIC Object *colorwheel_new(Class *cl, Object *o, struct opSet *msg)
 
 /***************************************************************************************************/
 
-STATIC IPTR colorwheel_get(Class *cl, Object *o, struct opGet *msg)
+IPTR ColorWheel__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct ColorWheelData 	*data = INST_DATA(cl, o);
     IPTR 			retval = 1UL;
@@ -403,7 +405,7 @@ STATIC IPTR colorwheel_get(Class *cl, Object *o, struct opGet *msg)
 
 /***************************************************************************************************/
 
-STATIC VOID colorwheel_render(Class *cl, Object *o, struct gpRender *msg)
+VOID ColorWheel__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     struct ColorWheelData 	*data = INST_DATA(cl, o);    
     struct DrawInfo 		*dri = msg->gpr_GInfo->gi_DrInfo;
@@ -427,12 +429,12 @@ STATIC VOID colorwheel_render(Class *cl, Object *o, struct gpRender *msg)
     switch (redraw)
     {
     	case GREDRAW_REDRAW:
-    	    RenderWheel(data, rp, &gbox,ColorWheelBase);
-	    RenderKnob(data, rp, &gbox, FALSE, ColorWheelBase);
+    	    RenderWheel(data, rp, &gbox, ColorWheelBase);
+	    RenderKnob(data, rp, &gbox, FALSE);
 	    break;
 	    
     	case GREDRAW_UPDATE:    	 
-	    RenderKnob(data, rp, &gbox, TRUE, ColorWheelBase);
+	    RenderKnob(data, rp, &gbox, TRUE);
     	    break;
     	    
     	    
@@ -440,7 +442,7 @@ STATIC VOID colorwheel_render(Class *cl, Object *o, struct gpRender *msg)
     
     if (EG(o)->Flags & GFLG_DISABLED)
     {
-    	DrawDisabledPattern(data, rp, &gbox, ColorWheelBase);
+    	DrawDisabledPattern(data, rp, &gbox);
     }
 
     if( data->backfill ) InstallLayerHook( rp->Layer, hook );
@@ -450,7 +452,7 @@ STATIC VOID colorwheel_render(Class *cl, Object *o, struct gpRender *msg)
 
 /***************************************************************************************************/
 
-STATIC VOID colorwheel_dispose(Class *cl, Object *o, Msg msg)
+VOID ColorWheel__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct ColorWheelData 	*data = INST_DATA(cl, o);
     
@@ -478,7 +480,7 @@ STATIC VOID colorwheel_dispose(Class *cl, Object *o, Msg msg)
     if (data->savebm)
     	FreeBitMap(data->savebm );
 
-    freePens(data,ColorWheelBase);
+    freePens(data);
     
     DeinitRastPort( &data->trp );
     
@@ -487,7 +489,7 @@ STATIC VOID colorwheel_dispose(Class *cl, Object *o, Msg msg)
 
 /***************************************************************************************************/
 
-STATIC IPTR colorwheel_hittest(Class *cl, Object *o, struct gpHitTest *msg)
+IPTR ColorWheel__GM_HITTEST(Class *cl, Object *o, struct gpHitTest *msg)
 {
     struct ColorWheelData 	*data = INST_DATA(cl, o);
     ULONG			hue, sat;
@@ -526,7 +528,7 @@ STATIC IPTR colorwheel_hittest(Class *cl, Object *o, struct gpHitTest *msg)
 
 /***************************************************************************************************/
 
-STATIC IPTR colorwheel_goactive(Class *cl, Object *o, struct gpInput *msg)
+IPTR ColorWheel__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {
     struct ColorWheelData 	*data = INST_DATA(cl, o);
     IPTR 			retval = GMR_NOREUSE;
@@ -570,7 +572,7 @@ STATIC IPTR colorwheel_goactive(Class *cl, Object *o, struct gpInput *msg)
 
 /***************************************************************************************************/
 
-STATIC IPTR colorwheel_handleinput(Class *cl, Object *o, struct gpInput *msg)
+IPTR ColorWheel__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 {
     struct ColorWheelData	*data = INST_DATA(cl, o);
     struct InputEvent 		*ie = msg->gpi_IEvent;
@@ -635,7 +637,7 @@ STATIC IPTR colorwheel_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 /***************************************************************************************************/
 
-STATIC IPTR colorwheel_domain(Class *cl, Object *o, struct gpDomain *msg)
+IPTR ColorWheel__GM_DOMAIN(Class *cl, Object *o, struct gpDomain *msg)
 {
     struct ColorWheelData *data = INST_DATA(cl, o);
     UWORD		   width = 0x7fff, height = 0x7fff;
@@ -664,99 +666,6 @@ STATIC IPTR colorwheel_domain(Class *cl, Object *o, struct gpDomain *msg)
     msg->gpd_Domain.Height 	= height;
     
     return 1L;
-}
-
-/***************************************************************************************************/
-
-#ifdef __AROS__
-AROS_UFH3S(IPTR, dispatch_colorwheelclass,
-    AROS_UFHA(Class *,  cl,  A0),
-    AROS_UFHA(Object *, o,   A2),
-    AROS_UFHA(Msg,      msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-#else
-IPTR dispatch_colorwheelclass( REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg ) )
-{
-#endif
-    IPTR retval = 0UL;
-    
-    switch(msg->MethodID)
-    {
-	case GM_HANDLEINPUT:
-	    retval = colorwheel_handleinput(cl, o, (struct gpInput *)msg);
-	    break;
-	
-	case GM_RENDER:
-	    colorwheel_render(cl, o, (struct gpRender *)msg);
-	    break;
-	
-	case OM_SET:
-	case OM_UPDATE:
-	    retval = colorwheel_set(cl, o, (struct opSet *)msg);
-	    break;
-
-	case GM_HITTEST:
-	    retval = colorwheel_hittest(cl, o, (struct gpHitTest *)msg);
-	    break;
-	    
-	case GM_GOACTIVE:
-	    retval = colorwheel_goactive(cl, o, (struct gpInput *)msg);
-	    break;
-
-	case OM_GET:
-	    retval = colorwheel_get(cl, o, (struct opGet *)msg);
-	    break;
-
-	case GM_DOMAIN:
-	    retval = colorwheel_domain(cl, o, (struct gpDomain *)msg);
-	    break;
-		    
-	case OM_NEW:
-	    retval = (IPTR)colorwheel_new(cl, o, (struct opSet *)msg);
-	    break;
-	
-	case OM_DISPOSE:
-	    colorwheel_dispose(cl, o, msg);
-	    break;
-		    
-	default:
-	    retval = DoSuperMethodA(cl, o, (Msg)msg);
-	    break;
-	    
-    } /* switch */
-
-    return (retval);
-
-#ifdef __AROS__
-    AROS_USERFUNC_EXIT
-#endif        
-}  /* dispatch_colorwheelclass */
-
-
-#undef ColorWheelBase
-
-/***************************************************************************************************/
-
-struct IClass *InitColorWheelClass (struct ColorWheelBase_intern * ColorWheelBase)
-{
-    struct IClass *cl = NULL;
-
-    if ((cl = MakeClass("colorwheel.gadget", GADGETCLASS, NULL, sizeof(struct ColorWheelData), 0)))
-    {
-#ifdef __AROS__
-	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_colorwheelclass);
-#else
-	cl->cl_Dispatcher.h_Entry    = (HOOKFUNC) dispatch_colorwheelclass;
-#endif
-	cl->cl_Dispatcher.h_SubEntry = NULL;
-	cl->cl_UserData 	     = (IPTR)ColorWheelBase;
-
-	AddClass (cl);
-    }
-
-    return (cl);
 }
 
 /***************************************************************************************************/
