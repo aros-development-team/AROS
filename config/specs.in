@@ -17,7 +17,7 @@
 %{detach:@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/Lib/detach.o}  @TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/Lib/startup.o %{nix:@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/Lib/nixmain.o}
 
 *predefines:
--D__ELF__ -D__@gcc_target_cpu@__ -A-system -Asystem(posix) -D__AROS__ -DAMIGA
+-D__ELF__ -D__@gcc_target_cpu@__ -A-system -Asystem(posix) -D__AROS__ -DAMIGA -D_AMIGA
 
 *cross_compile:
 1
