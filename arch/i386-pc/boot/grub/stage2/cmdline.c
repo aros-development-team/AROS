@@ -1,8 +1,7 @@
 /* cmdline.c - the device-independent GRUB text command line */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1996  Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 1999, 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,6 +21,7 @@
 #include <shared.h>
 
 #ifdef SUPPORT_DISKLESS
+# define GRUB	1
 # include <etherboot.h>
 #endif
 
@@ -50,10 +50,9 @@ skip_to (int after_equal, char *cmdline)
 void
 print_cmdline_message (int forever)
 {
-  printf ("\
- [ Minimal BASH-like line editing is supported.  For the first word, TAB
-   lists possible command completions.  Anywhere else TAB lists the possible
-   completions of a device/filename.%s ]\n",
+  printf (" [ Minimal BASH-like line editing is supported.  For the first word, TAB\n"
+	  "   lists possible command completions.  Anywhere else TAB lists the possible\n"
+	  "   completions of a device/filename.%s ]\n",
 	  (forever ? "" : "  ESC at any time exits."));
 }
 
@@ -104,7 +103,8 @@ init_cmdline (void)
   saved_partition = install_partition;
   current_drive = 0xFF;
   errnum = 0;
-
+  count_lines = -1;
+  
   /* Restore memory probe state.  */
   mbi.mem_upper = saved_mem_upper;
   if (mbi.mmap_length)
@@ -129,7 +129,7 @@ enter_cmdline (char *heap, int forever)
   grub_putchar ('\n');
 #endif
   print_cmdline_message (forever);
-
+  
   while (1)
     {
       struct builtin *builtin;
@@ -163,9 +163,16 @@ enter_cmdline (char *heap, int forever)
 	 disks.  */
       buf_drive = -1;
 
+      /* Start to count lines, only if the internal pager is in use.  */
+      if (use_pager)
+	count_lines = 0;
+      
       /* Run BUILTIN->FUNC.  */
       arg = skip_to (1, heap);
       (builtin->func) (arg, BUILTIN_CMDLINE);
+
+      /* Finish the line count.  */
+      count_lines = -1;
     }
 }
 
@@ -191,8 +198,15 @@ run_script (char *script, char *heap)
       if (errnum)
 	{
 	  errnum = ERR_NONE;
-	  grub_printf ("\nPress any key to continue...");
-	  (void) getkey ();
+
+	  /* If a fallback entry is defined, don't prompt a user's
+	     intervention.  */
+	  if (fallback_entry < 0)
+	    {
+	      grub_printf ("\nPress any key to continue...");
+	      (void) getkey ();
+	    }
+	  
 	  return 1;
 	}
 
@@ -222,7 +236,7 @@ run_script (char *script, char *heap)
 	  continue;
 	}
 
-      if (! (builtin->flags & BUILTIN_HIDDEN))
+      if (! (builtin->flags & BUILTIN_NO_ECHO))
 	grub_printf ("%s\n", old_entry);
 
       /* If BUILTIN cannot be run in the command-line, skip it.  */

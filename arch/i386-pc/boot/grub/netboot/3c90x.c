@@ -38,8 +38,8 @@
 #include "nic.h"
 #include "pci.h"
 #include "cards.h"
+#include "timer.h"
 
-#define	TIME_OUT	60000
 #define	XCVR_MAGIC	(0x5A00)
 /** any single transmission fails after 16 collisions or other errors
  ** this is the number of times to retry the transmission -- this should
@@ -243,7 +243,7 @@ static struct
     unsigned char	isBrev;
     unsigned char	CurrentWindow;
     unsigned int	IOAddr;
-    unsigned char	HWAddr[6];
+    unsigned char	HWAddr[ETH_ALEN];
     TXD			TransmitDPD;
     RXD			ReceiveUPD;
     }
@@ -479,13 +479,13 @@ a3c90x_transmit(struct nic *nic, const char *d, unsigned int t,
 
     struct eth_hdr
 	{
-	unsigned char dst_addr[6];
-	unsigned char src_addr[6];
+	unsigned char dst_addr[ETH_ALEN];
+	unsigned char src_addr[ETH_ALEN];
 	unsigned short type;
 	} hdr;
 
     unsigned char status;
-    unsigned timeout, i, retries;
+    unsigned i, retries;
 
     for (retries=0; retries < XMIT_RETRIES ; retries++)
 	{
@@ -504,10 +504,10 @@ a3c90x_transmit(struct nic *nic, const char *d, unsigned int t,
 	hdr.type = htons(t);
 
 	/** Copy the destination address **/
-	memcpy(hdr.dst_addr, d, 6);
+	memcpy(hdr.dst_addr, d, ETH_ALEN);
 
 	/** Copy our MAC address **/
-	memcpy(hdr.src_addr, INF_3C90X.HWAddr, 6);
+	memcpy(hdr.src_addr, INF_3C90X.HWAddr, ETH_ALEN);
 
 	/** Setup the DPD (download descriptor) **/
 	INF_3C90X.TransmitDPD.DnNextPtr = 0;
@@ -528,12 +528,12 @@ a3c90x_transmit(struct nic *nic, const char *d, unsigned int t,
 	    ;
 
 	/** Wait for NIC Transmit to Complete **/
-	timeout=TIME_OUT;
+	load_timer2(10*TICKS_PER_MS);	/* Give it 10 ms */
 	while (!(inw(INF_3C90X.IOAddr + regCommandIntStatus_w)&0x0004) &&
-	       --timeout)
-	    for(i=0;i<TIME_OUT;i++);
+		timer2_running())
+		;
 
-	if (timeout==0)
+	if (!(inw(INF_3C90X.IOAddr + regCommandIntStatus_w)&0x0004))
 	    {
 	    printf("3C90X: Tx Timeout\n");
 	    continue;
@@ -548,16 +548,16 @@ a3c90x_transmit(struct nic *nic, const char *d, unsigned int t,
 	if ((status & 0xbf) == 0x80)
 	    return;
 
-	   printf("3C90X: Status (%x)\n", status);
+	   printf("3C90X: Status (%hhX)\n", status);
 	/** check error codes **/
 	if (status & 0x02)
 	    {
-	    printf("3C90X: Tx Reclaim Error (%x)\n", status);
+	    printf("3C90X: Tx Reclaim Error (%hhX)\n", status);
 	    a3c90x_reset(NULL);
 	    }
 	else if (status & 0x04)
 	    {
-	    printf("3C90X: Tx Status Overflow (%x)\n", status);
+	    printf("3C90X: Tx Status Overflow (%hhX)\n", status);
 	    for (i=0; i<32; i++)
 		outb(0x00, INF_3C90X.IOAddr + regTxStatus_b);
 	    /** must re-enable after max collisions before re-issuing tx **/
@@ -565,23 +565,23 @@ a3c90x_transmit(struct nic *nic, const char *d, unsigned int t,
 	    }
 	else if (status & 0x08)
 	    {
-	    printf("3C90X: Tx Max Collisions (%x)\n", status);
+	    printf("3C90X: Tx Max Collisions (%hhX)\n", status);
 	    /** must re-enable after max collisions before re-issuing tx **/
 	    a3c90x_internal_IssueCommand(INF_3C90X.IOAddr, cmdTxEnable, 0);
 	    }
 	else if (status & 0x10)
 	    {
-	    printf("3C90X: Tx Underrun (%x)\n", status);
+	    printf("3C90X: Tx Underrun (%hhX)\n", status);
 	    a3c90x_reset(NULL);
 	    }
 	else if (status & 0x20)
 	    {
-	    printf("3C90X: Tx Jabber (%x)\n", status);
+	    printf("3C90X: Tx Jabber (%hhX)\n", status);
 	    a3c90x_reset(NULL);
 	    }
 	else if ((status & 0x80) != 0x80)
 	    {
-	    printf("3C90X: Internal Error - Incomplete Transmission (%x)\n",
+	    printf("3C90X: Internal Error - Incomplete Transmission (%hhX)\n",
 	           status);
 	    a3c90x_reset(NULL);
 	    }
@@ -634,17 +634,17 @@ a3c90x_poll(struct nic *nic)
 	{
 	errcode = INF_3C90X.ReceiveUPD.UpPktStatus;
 	if (errcode & (1<<16))
-	    printf("3C90X: Rx Overrun (%x)\n",errcode>>16);
+	    printf("3C90X: Rx Overrun (%hX)\n",errcode>>16);
 	else if (errcode & (1<<17))
-	    printf("3C90X: Runt Frame (%x)\n",errcode>>16);
+	    printf("3C90X: Runt Frame (%hX)\n",errcode>>16);
 	else if (errcode & (1<<18))
-	    printf("3C90X: Alignment Error (%x)\n",errcode>>16);
+	    printf("3C90X: Alignment Error (%hX)\n",errcode>>16);
 	else if (errcode & (1<<19))
-	    printf("3C90X: CRC Error (%x)\n",errcode>>16);
+	    printf("3C90X: CRC Error (%hX)\n",errcode>>16);
 	else if (errcode & (1<<20))
-	    printf("3C90X: Oversized Frame (%x)\n",errcode>>16);
+	    printf("3C90X: Oversized Frame (%hX)\n",errcode>>16);
 	else
-	    printf("3C90X: Packet error (%x)\n",errcode>>16);
+	    printf("3C90X: Packet error (%hX)\n",errcode>>16);
 	return 0;
 	}
 
@@ -659,10 +659,15 @@ a3c90x_poll(struct nic *nic)
 /*** a3c90x_disable: exported routine to disable the card.  What's this for?
  *** the eepro100.c driver didn't have one, so I just left this one empty too.
  *** Ideas anyone?
+ *** Must turn off receiver at least so stray packets will not corrupt memory
+ *** [Ken]
  ***/
 static void
 a3c90x_disable(struct nic *nic)
     {
+	/* Disable the receiver and transmitter. */
+	outw(cmdRxDisable, INF_3C90X.IOAddr + regCommandIntStatus_w);
+	outw(cmdTxDisable, INF_3C90X.IOAddr + regCommandIntStatus_w);
     }
 
 
@@ -682,6 +687,8 @@ a3c90x_probe(struct nic *nic, unsigned short *probeaddrs, struct pci_device *pci
 
     if (probeaddrs == 0 || probeaddrs[0] == 0)
           return 0;
+
+    adjust_pci_device(pci);
 
     INF_3C90X.IOAddr = probeaddrs[0] & ~3;
     INF_3C90X.CurrentWindow = 255;
@@ -759,9 +766,7 @@ a3c90x_probe(struct nic *nic, unsigned short *probeaddrs, struct pci_device *pci
     INF_3C90X.HWAddr[3] = eeprom[1]&0xFF;
     INF_3C90X.HWAddr[4] = eeprom[2]>>8;
     INF_3C90X.HWAddr[5] = eeprom[2]&0xFF;
-    printf("MAC Address = %b:%b:%b:%b:%b:%b\n",
-        INF_3C90X.HWAddr[0],INF_3C90X.HWAddr[1],INF_3C90X.HWAddr[2],
-	INF_3C90X.HWAddr[3],INF_3C90X.HWAddr[4],INF_3C90X.HWAddr[5]);
+    printf("MAC Address = %!\n", INF_3C90X.HWAddr);
 
     /** Program the MAC address into the station address registers **/
     a3c90x_internal_SetWindow(INF_3C90X.IOAddr, winAddressing2);
@@ -773,7 +778,8 @@ a3c90x_probe(struct nic *nic, unsigned short *probeaddrs, struct pci_device *pci
     outw(0, INF_3C90X.IOAddr + regStationMask_2_3w+4);
 
     /** Fill in our entry in the etherboot arp table **/
-    for(i=0;i<6;i++) nic->node_addr[i] = (eeprom[i/2] >> (8*((i&1)^1))) & 0xff;
+    for(i=0;i<ETH_ALEN;i++)
+	nic->node_addr[i] = (eeprom[i/2] >> (8*((i&1)^1))) & 0xff;
 
     /** Read the media options register, print a message and set default
      ** xcvr.

@@ -1,7 +1,7 @@
 /* hercules.c - hercules console interface */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2001  Free Software Foundation, Inc.
+ *  Copyright (C) 2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,9 +22,18 @@
 
 #include <shared.h>
 #include <hercules.h>
+#include <term.h>
 
 /* The position of the cursor.  */
-static unsigned hercx, hercy;
+static int herc_x;
+static int herc_y;
+
+static int herc_standard_color = A_NORMAL;
+static int herc_normal_color = A_NORMAL;
+static int herc_highlight_color = A_REVERSE;
+static int herc_current_color = A_NORMAL;
+static color_state herc_color_state = COLOR_STATE_STANDARD;
+static int herc_cursor_state = 1;
 
 /* Write a byte to a port.  */
 static inline void
@@ -36,36 +45,38 @@ outb (unsigned short port, unsigned char value)
 static void
 herc_set_cursor (void)
 {
-  unsigned offset = hercy * HERCULES_WIDTH + hercx;
+  unsigned offset = herc_y * HERCULES_WIDTH + herc_x;
   
   outb (HERCULES_INDEX_REG, 0x0f);
-  outb (0x80, 0x0f);
+  outb (0x80, 0);
   outb (HERCULES_DATA_REG, offset & 0xFF);
-  outb (0x80, offset & 0xFF);
+  outb (0x80, 0);
   
   outb (HERCULES_INDEX_REG, 0x0e);
-  outb (0x80, 0x0e);
+  outb (0x80, 0);
   outb (HERCULES_DATA_REG, offset >> 8);
-  outb (0x80, offset >> 8);
+  outb (0x80, 0);
 }
 
 void
-herc_putchar (int c)
+hercules_putchar (int c)
 {
-  
   switch (c)
     {
     case '\b':
-      if (hercx)
-	hercx--;
+      if (herc_x > 0)
+	herc_x--;
       break;
       
     case '\n':
-      hercy++;
+      herc_y++;
       break;
       
     case '\r':
-      hercx = 0;
+      herc_x = 0;
+      break;
+
+    case '\a':
       break;
 
     default:
@@ -73,23 +84,24 @@ herc_putchar (int c)
 	volatile unsigned short *video
 	  = (unsigned short *) HERCULES_VIDEO_ADDR;
 	
-	video[hercy * HERCULES_WIDTH + hercx] = 0x0700 | c;
-	hercx++;
-	if (hercx >= HERCULES_WIDTH)
+	video[herc_y * HERCULES_WIDTH + herc_x]
+	  = (herc_current_color << 8) | c;
+	herc_x++;
+	if (herc_x >= HERCULES_WIDTH)
 	  {
-	    hercx = 0;
-	    hercy++;
+	    herc_x = 0;
+	    herc_y++;
 	  }
       }
       break;
     }
 
-  if (hercy >= HERCULES_HEIGHT)
+  if (herc_y >= HERCULES_HEIGHT)
     {
-      int i;
       volatile unsigned long *video = (unsigned long *) HERCULES_VIDEO_ADDR;
+      int i;
       
-      hercy = HERCULES_HEIGHT - 1;
+      herc_y = HERCULES_HEIGHT - 1;
       grub_memmove ((char *) HERCULES_VIDEO_ADDR,
 		    (char *) HERCULES_VIDEO_ADDR + HERCULES_WIDTH * 2,
 		    HERCULES_WIDTH * (HERCULES_HEIGHT - 1) * 2);
@@ -101,7 +113,7 @@ herc_putchar (int c)
 }
 
 void
-herc_cls (void)
+hercules_cls (void)
 {
   int i;
   volatile unsigned long *video = (unsigned long *) HERCULES_VIDEO_ADDR;
@@ -109,35 +121,66 @@ herc_cls (void)
   for (i = 0; i < HERCULES_WIDTH * HERCULES_HEIGHT / 2; i++)
     video[i] = 0x07200720;
 
-  hercx = hercy = 0;
+  herc_x = herc_y = 0;
   herc_set_cursor ();
 }
 
 int
-herc_getxy (void)
+hercules_getxy (void)
 {
-  return (hercx << 8) | hercy;
+  return (herc_x << 8) | herc_y;
 }
 
 void
-herc_gotoxy (int x, int y)
+hercules_gotoxy (int x, int y)
 {
-  hercx = x;
-  hercy = y;
+  herc_x = x;
+  herc_y = y;
   herc_set_cursor ();
 }
 
 void
-herc_set_attrib (int attr)
+hercules_setcolorstate (color_state state)
 {
-  volatile unsigned char *video = (unsigned char *) HERCULES_VIDEO_ADDR;
-  
-  if (attr & 0xF0)
-    attr = 0x70;
-  else
-    attr = 0x07;
+  switch (state) {
+    case COLOR_STATE_STANDARD:
+      herc_current_color = herc_standard_color;
+      break;
+    case COLOR_STATE_NORMAL:
+      herc_current_color = herc_normal_color;
+      break;
+    case COLOR_STATE_HIGHLIGHT:
+      herc_current_color = herc_highlight_color;
+      break;
+    default:
+      herc_current_color = herc_standard_color;
+      break;
+  }
 
-  video[((hercy * HERCULES_WIDTH + hercx) << 1) + 1] = attr;
+  herc_color_state = state;
+}
+
+void
+hercules_setcolor (int normal_color, int highlight_color)
+{
+  herc_normal_color = normal_color;
+  herc_highlight_color = highlight_color;
+  
+  hercules_setcolorstate (herc_color_state);
+}
+
+int
+hercules_setcursor (int on)
+{
+  int old_state = herc_cursor_state;
+  
+  outb (HERCULES_INDEX_REG, 0x0a);
+  outb (0x80, 0);
+  outb (HERCULES_DATA_REG, on ? 0 : (1 << 5));
+  outb (0x80, 0);
+  herc_cursor_state = on;
+
+  return old_state;
 }
 
 #endif /* SUPPORT_HERCULES */

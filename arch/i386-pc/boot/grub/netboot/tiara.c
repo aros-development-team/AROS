@@ -125,7 +125,7 @@ static void tiara_reset(struct nic *nic)
 	while ((inb(ioaddr + DLCR_RECV_MODE) & BUF_EMPTY) == 0)
 		inb(ioaddr + BMPR_MEM_PORT);
 	/* Set node address */
-	for (i = 0; i < ETHER_ADDR_SIZE; ++i)
+	for (i = 0; i < ETH_ALEN; ++i)
 		outb(nic->node_addr[i], ioaddr + DLCR_NODE_ID + i);
 	outb(CLR_RCV_STATUS, ioaddr + DLCR_RECV_STAT);
 	outb(CARD_ENABLE, ioaddr + DLCR_ENABLE);
@@ -145,11 +145,11 @@ static int tiara_poll(struct nic *nic)
 	len = inw(ioaddr + BMPR_MEM_PORT);		/* throw away status */
 	len = inw(ioaddr + BMPR_MEM_PORT);
 	/* Drop overlength packets */
-	if (len > ETH_MAX_PACKET)
+	if (len > ETH_FRAME_LEN)
 		return (0);		/* should we drain the buffer? */
 	insw(ioaddr + BMPR_MEM_PORT, nic->packet, len / 2);
 	/* If it's our own, drop it */
-	if (memcmp(nic->packet + ETHER_ADDR_SIZE, nic->node_addr, ETHER_ADDR_SIZE) == 0)
+	if (memcmp(nic->packet + ETH_ALEN, nic->node_addr, ETH_ALEN) == 0)
 		return (0);
 	nic->packetlen = len;
 	return (1);
@@ -168,17 +168,17 @@ const char *p)			/* Packet */
 	unsigned int	len;
 	unsigned long	time;
 
-	len = s + ETHER_HDR_SIZE;
-	if (len < ETH_MIN_PACKET)
-		len = ETH_MIN_PACKET;
+	len = s + ETH_HLEN;
+	if (len < ETH_ZLEN)
+		len = ETH_ZLEN;
 	t = htons(t);
-	outsw(ioaddr + BMPR_MEM_PORT, d, ETHER_ADDR_SIZE / 2);
-	outsw(ioaddr + BMPR_MEM_PORT, nic->node_addr, ETHER_ADDR_SIZE / 2);
+	outsw(ioaddr + BMPR_MEM_PORT, d, ETH_ALEN / 2);
+	outsw(ioaddr + BMPR_MEM_PORT, nic->node_addr, ETH_ALEN / 2);
 	outw(t, ioaddr + BMPR_MEM_PORT);
 	outsw(ioaddr + BMPR_MEM_PORT, p, s / 2);
 	if (s & 1)					/* last byte */
 		outb(p[s-1], ioaddr + BMPR_MEM_PORT);
-	while (s++ < ETH_MIN_PACKET - ETHER_HDR_SIZE)	/* pad */
+	while (s++ < ETH_ZLEN - ETH_HLEN)	/* pad */
 		outb(0, ioaddr + BMPR_MEM_PORT);
 	outw(len | (TMST << 8), ioaddr + BMPR_PKT_LEN);
 	/* wait for transmit complete */
@@ -206,20 +206,13 @@ static int tiara_probe1(struct nic *nic)
 	static char	all_ones[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 	int		i;
 
-	for (i = 0; i < ETHER_ADDR_SIZE; ++i)
+	for (i = 0; i < ETH_ALEN; ++i)
 		nic->node_addr[i] = inb(ioaddr + PROM_ID + i);
 	if (memcmp(nic->node_addr, vendor_prefix, sizeof(vendor_prefix)) != 0)
 		return (0);
 	if (memcmp(nic->node_addr, all_ones, sizeof(all_ones)) == 0)
 		return (0);
-	printf("\nTiara ioaddr 0x%x, addr ", ioaddr);
-	for (i = 0; i < ETHER_ADDR_SIZE; ++i)
-	{
-		printf("%b", nic->node_addr[i]);
-		if (i < ETHER_ADDR_SIZE - 1)
-			printf(":");
-	}
-	putchar('\n');
+	printf("\nTiara ioaddr %#hX, addr %!\n", ioaddr, nic->node_addr);
 	return (1);
 }
 

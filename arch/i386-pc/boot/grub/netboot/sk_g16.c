@@ -514,7 +514,7 @@ static int SK_poll(struct nic *nic)
 	struct priv *p;         /* SK_G16 private structure */
 	struct rmd *rmdp;
 	int csr0, rmdstat, packet_there;
-    PRINTF2(("## %s: At beginning of SK_poll(). CSR0: 0x%X\n",
+    PRINTF2(("## %s: At beginning of SK_poll(). CSR0: %#hX\n",
            SK_NAME, SK_read_reg(CSR0)));
 
 	p = nic->priv_data;
@@ -529,7 +529,7 @@ static int SK_poll(struct nic *nic)
 
     if (csr0 & CSR0_ERR) /* LANCE Error */
     {
-	printf("%s: error: 0x%x", SK_NAME, csr0);
+	printf("%s: error: %#hX", SK_NAME, csr0);
 
         if (csr0 & CSR0_MISS)      /* No place to store packet ? */
         {
@@ -576,7 +576,7 @@ static int SK_poll(struct nic *nic)
 	}
 	else if (rmdstat & RX_ERR)          /* Receive Error ? */
 	{
-	    printf("%s: RX error: 0x%x\n", SK_NAME, (int) rmdstat);
+	    printf("%s: RX error: %#hX\n", SK_NAME, (int) rmdstat);
 	    rmdp->u.s.status = RX_OWN;      /* Relinquish ownership to LANCE */
 	}
 	else /* We have a packet which can be queued for the upper layers */
@@ -628,20 +628,20 @@ const char *pack)		/* Packet */
     short len;
     int csr0, i, tmdstat;
 
-    PRINTF2(("## %s: At beginning of SK_transmit(). CSR0: 0x%X\n",
+    PRINTF2(("## %s: At beginning of SK_transmit(). CSR0: %#hX\n",
            SK_NAME, SK_read_reg(CSR0)));
 	p = nic->priv_data;
 	tmdp = p->tmdhead + p->tmdnum; /* Which descriptor for transmitting */
 
 	/* Copy data into dual ported ram */
 
-	memcpy(&p->ram->tmdbuf[p->tmdnum][0], d, ETHER_ADDR_SIZE);	/* dst */
-	memcpy(&p->ram->tmdbuf[p->tmdnum][ETHER_ADDR_SIZE], nic->node_addr, ETHER_ADDR_SIZE); /* src */
-	p->ram->tmdbuf[p->tmdnum][ETHER_ADDR_SIZE + ETHER_ADDR_SIZE] = t >> 8;	/* type */
-	p->ram->tmdbuf[p->tmdnum][ETHER_ADDR_SIZE + ETHER_ADDR_SIZE + 1] = t;	/* type */
-	memcpy(&p->ram->tmdbuf[p->tmdnum][ETHER_HDR_SIZE], pack, s);
-	s += ETHER_HDR_SIZE;
-	while (s < ETH_MIN_PACKET)	/* pad to min length */
+	memcpy(&p->ram->tmdbuf[p->tmdnum][0], d, ETH_ALEN);	/* dst */
+	memcpy(&p->ram->tmdbuf[p->tmdnum][ETH_ALEN], nic->node_addr, ETH_ALEN); /* src */
+	p->ram->tmdbuf[p->tmdnum][ETH_ALEN + ETH_ALEN] = t >> 8;	/* type */
+	p->ram->tmdbuf[p->tmdnum][ETH_ALEN + ETH_ALEN + 1] = t;	/* type */
+	memcpy(&p->ram->tmdbuf[p->tmdnum][ETH_HLEN], pack, s);
+	s += ETH_HLEN;
+	while (s < ETH_ZLEN)	/* pad to min length */
 		p->ram->tmdbuf[p->tmdnum][s++] = 0;
 	p->ram->tmde[p->tmdnum].status2 = 0x0;
 
@@ -674,7 +674,7 @@ const char *pack)		/* Packet */
 
     if (csr0 & CSR0_ERR) /* LANCE Error */
     {
-	printf("%s: error: 0x%x", SK_NAME, csr0);
+	printf("%s: error: %#hX", SK_NAME, csr0);
 
         if (csr0 & CSR0_MISS)      /* No place to store packet ? */
         {
@@ -696,7 +696,7 @@ const char *pack)		/* Packet */
      */
     if (tmdstat & TX_ERR) /* Error occurred */
     {
-	printf("%s: TX error: 0x%x 0x%x\n", SK_NAME, (int) tmdstat,
+	printf("%s: TX error: %#hX %#hX\n", SK_NAME, (int) tmdstat,
 		(int) tmdp->status2);
 
 	if (tmdp->status2 & TX_TDR)    /* TDR problems? */
@@ -730,9 +730,9 @@ DISABLE - Turn off ethernet interface
 ***************************************************************************/
 static void SK_disable(struct nic *nic)
 {
-    PRINTF(("## %s: At beginning of SK_disable(). CSR0: 0x%X\n",
+    PRINTF(("## %s: At beginning of SK_disable(). CSR0: %#hX\n",
            SK_NAME, SK_read_reg(CSR0)));
-    PRINTF(("%s: Shutting %s down CSR0 0x%X\n", SK_NAME, SK_NAME,
+    PRINTF(("%s: Shutting %s down CSR0 %#hX\n", SK_NAME, SK_NAME,
            (int) SK_read_reg(CSR0)));
 
     SK_write_reg(CSR0, CSR0_STOP); /* STOP the LANCE */
@@ -788,7 +788,7 @@ int SK_probe1(struct nic *nic, short ioaddr1)
         * Now here we could use a routine which searches for a free
         * place in the ram and set SK_ADDR if found. TODO.
         */
-            printf("%s: SK_ADDR 0x%X is not valid. Check configuration.\n",
+            printf("%s: SK_ADDR %#hX is not valid. Check configuration.\n",
                     SK_NAME, SK_ADDR);
             return -1;
     }
@@ -803,11 +803,11 @@ int SK_probe1(struct nic *nic, short ioaddr1)
 #endif
 
     board = (SK_RAM *) rom_addr;
-	PRINTF(("adr[0]: %x, adr[1]: %x, adr[2]: %x\n",
+	PRINTF(("adr[0]: %hX, adr[1]: %hX, adr[2]: %hX\n",
 	board->rom[0], board->rom[2], board->rom[4]));
 
     /* Read in station address */
-    for (i = 0, j = 0; i < ETHER_ADDR_SIZE; i++, j+=2)
+    for (i = 0, j = 0; i < ETH_ALEN; i++, j+=2)
     {
 	*(nic->node_addr+i) = board->rom[j];
     }
@@ -832,15 +832,8 @@ int SK_probe1(struct nic *nic, short ioaddr1)
     p->tmdhead = &(p->ram)->tmde[0];     /* Set TMD head */
     p->rmdhead = &(p->ram)->rmde[0];     /* Set RMD head */
 
-    printf("Schneider & Koch G16 at 0x%x, mem at 0x%X, HW addr: %b:%b:%b:%b:%b:%b\n",
-	    (unsigned int) ioaddr,
-	    (unsigned int) p->ram,
-	    *(nic->node_addr+0),
-	    *(nic->node_addr+1),
-	    *(nic->node_addr+2),
-	    *(nic->node_addr+3),
-	    *(nic->node_addr+4),
-	    *(nic->node_addr+5));
+    printf("Schneider & Koch G16 at %#hX, mem at %#hX, HW addr: %!\n",
+	    (unsigned int) ioaddr, (unsigned int) p->ram, nic->node_addr);
 
     /* Initialize buffer pointers */
 
@@ -865,19 +858,19 @@ int SK_probe1(struct nic *nic, short ioaddr1)
          * then stop again and reinit with NORMAL_MODE
          */
 
-        printf("## %s: After lance init. CSR0: 0x%X\n",
+        printf("## %s: After lance init. CSR0: %#hX\n",
                SK_NAME, SK_read_reg(CSR0));
         SK_write_reg(CSR0, CSR0_STOP);
-        printf("## %s: LANCE stopped. CSR0: 0x%X\n",
+        printf("## %s: LANCE stopped. CSR0: %#hX\n",
                SK_NAME, SK_read_reg(CSR0));
         SK_lance_init(nic, MODE_DTX | MODE_DRX);
-        printf("## %s: Reinit with DTX + DRX off. CSR0: 0x%X\n",
+        printf("## %s: Reinit with DTX + DRX off. CSR0: %#hX\n",
                SK_NAME, SK_read_reg(CSR0));
         SK_write_reg(CSR0, CSR0_STOP);
-        printf("## %s: LANCE stopped. CSR0: 0x%X\n",
+        printf("## %s: LANCE stopped. CSR0: %#hX\n",
                SK_NAME, SK_read_reg(CSR0));
         SK_lance_init(nic, MODE_NORMAL);
-        printf("## %s: LANCE back to normal mode. CSR0: 0x%X\n",
+        printf("## %s: LANCE back to normal mode. CSR0: %#hX\n",
                SK_NAME, SK_read_reg(CSR0));
         SK_print_pos(nic, "POS regs before returning OK");
 
@@ -887,7 +880,7 @@ int SK_probe1(struct nic *nic, short ioaddr1)
     else /* LANCE init failed */
     {
 
-	PRINTF(("## %s: LANCE init failed: CSR0: 0x%X\n",
+	PRINTF(("## %s: LANCE init failed: CSR0: %#hX\n",
                SK_NAME, SK_read_reg(CSR0)));
 	return -1;
     }
@@ -908,7 +901,7 @@ static int SK_lance_init(struct nic *nic, unsigned short mode)
     struct tmd  *tmdp;
     struct rmd  *rmdp;
 
-    PRINTF(("## %s: At beginning of LANCE init. CSR0: 0x%X\n",
+    PRINTF(("## %s: At beginning of LANCE init. CSR0: %#hX\n",
            SK_NAME, SK_read_reg(CSR0)));
 
     /* Reset LANCE */
@@ -957,7 +950,7 @@ static int SK_lance_init(struct nic *nic, unsigned short mode)
 
     (p->ram)->ib.mode = mode;        /* Set operation mode */
 
-    for (i = 0; i < ETHER_ADDR_SIZE; i++)   /* Set physical address */
+    for (i = 0; i < ETH_ALEN; i++)   /* Set physical address */
     {
 	(p->ram)->ib.paddr[i] = *(nic->node_addr+i);
     }
@@ -995,7 +988,7 @@ static int SK_lance_init(struct nic *nic, unsigned short mode)
     SK_write_reg(CSR2, 0);          /* Set high order bits 23:16 */
 
 
-    PRINTF(("## %s: After setting CSR1-3. CSR0: 0x%X\n",
+    PRINTF(("## %s: After setting CSR1-3. CSR0: %#hX\n",
            SK_NAME, SK_read_reg(CSR0)));
 
     /* Initialize LANCE */
@@ -1016,8 +1009,8 @@ static int SK_lance_init(struct nic *nic, unsigned short mode)
 
     if (i >= 100) /* Something is wrong ! */
     {
-	printf("%s: can't init am7990, status: 0x%x "
-	       "init_block: 0x%X\n",
+	printf("%s: can't init am7990, status: %#hX "
+	       "init_block: %#hX\n",
 		SK_NAME, (int) SK_read_reg(CSR0),
 		(unsigned int) &(p->ram)->ib);
 
@@ -1034,7 +1027,7 @@ static int SK_lance_init(struct nic *nic, unsigned short mode)
 
     SK_write_reg(CSR0, CSR0_IDON | CSR0_INEA | CSR0_STRT);
 
-    PRINTF(("## %s: LANCE started. CSR0: 0x%X\n", SK_NAME,
+    PRINTF(("## %s: LANCE started. CSR0: %#hX\n", SK_NAME,
             SK_read_reg(CSR0)));
 
     return 0;                      /* LANCE is up and running */
@@ -1122,7 +1115,7 @@ static void SK_print_pos(struct nic *nic, char *text)
 
 
     printf("## %s: %s.\n"
-           "##   pos0=0x%x pos1=0x%x pos2=0x%x pos3=0x%X pos4=0x%x\n",
+           "##   pos0=%#hX pos1=%#hX pos2=%#hX pos3=%#hX pos4=%#hX\n",
            SK_NAME, text, pos0, pos1, pos2, (pos3<<14), pos4);
 
 } /* End of SK_print_pos() */
@@ -1134,7 +1127,7 @@ static void SK_print_ram(struct nic *nic)
     struct priv *p = (struct priv *) nic->priv_data;
 
     printf("## %s: RAM Details.\n"
-           "##   RAM at 0x%X tmdhead: 0x%X rmdhead: 0x%X initblock: 0x%X\n",
+           "##   RAM at %#hX tmdhead: %#hX rmdhead: %#hX initblock: %#hX\n",
            SK_NAME,
            (unsigned int) p->ram,
            (unsigned int) p->tmdhead,
@@ -1149,7 +1142,7 @@ static void SK_print_ram(struct nic *nic)
            {
                printf("\n##   ");
            }
-        printf("tmdbufs%d: 0x%X ", (i+1), (int) p->tmdbufs[i]);
+        printf("tmdbufs%d: %#hX ", (i+1), (int) p->tmdbufs[i]);
     }
     printf("##   ");
 
@@ -1159,7 +1152,7 @@ static void SK_print_ram(struct nic *nic)
            {
                printf("\n##   ");
            }
-        printf("rmdbufs%d: 0x%X ", (i+1), (int) p->rmdbufs[i]);
+        printf("rmdbufs%d: %#hX ", (i+1), (int) p->rmdbufs[i]);
     }
     putchar('\n');
 

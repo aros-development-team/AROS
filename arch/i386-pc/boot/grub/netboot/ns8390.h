@@ -6,6 +6,15 @@ Author: Martin Renters
 
 **************************************************************************/
 
+#define VENDOR_NONE	0
+#define VENDOR_WD	1
+#define VENDOR_NOVELL	2
+#define VENDOR_3COM	3
+
+#define FLAG_PIO	0x01
+#define FLAG_16BIT	0x02
+#define FLAG_790	0x04
+
 #define MEM_8192	32
 #define MEM_16384	64
 #define MEM_32768	128

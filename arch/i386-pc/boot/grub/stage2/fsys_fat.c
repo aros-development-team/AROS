@@ -1,6 +1,5 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1996   Erich Boleyn  <erich@uruk.org>
  *  Copyright (C) 2000, 2001   Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -176,7 +175,7 @@ fat_read (char *buf, int len)
   
   if (FAT_SUPER->file_cluster < 0)
     {
-      /* root directory for non-fat16 */
+      /* root directory for fat16 */
       size = FAT_SUPER->root_max - filepos;
       if (size > len)
  	size = len;

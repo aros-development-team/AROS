@@ -1,7 +1,7 @@
 /* fsys_jfs.c - an implementation for the IBM JFS file system */
 /*  
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2001  Free Software Foundation, Inc.
+ *  Copyright (C) 2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -243,14 +243,12 @@ jfs_read (char *buf, int len)
 			endofcur = (offset + xadlen) << jfs.l2bsize; 
 			toread = (endofcur >= endpos)
 				  ? len : (endofcur - filepos);
-#ifndef STAGE1_5
+
 			disk_read_func = disk_read_hook;
-#endif /* STAGE1_5 */
 			devread (addressXAD (xad) << jfs.bdlog,
 				 filepos - (offset << jfs.l2bsize), toread, buf);
-#ifndef STAGE1_5
 			disk_read_func = NULL;
-#endif /* STAGE1_5 */
+
 			buf += toread;
 			len -= toread;
 			filepos += toread;

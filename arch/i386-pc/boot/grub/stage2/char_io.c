@@ -1,8 +1,7 @@
 /* char_io.c - basic console input and output */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1996  Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,6 +19,7 @@
  */
 
 #include <shared.h>
+#include <term.h>
 
 #ifdef SUPPORT_HERCULES
 # include <hercules.h>
@@ -30,7 +30,62 @@
 #endif
 
 #ifndef STAGE1_5
-int auto_fill = 1;
+struct term_entry term_table[] =
+  {
+    {
+      "console",
+      0,
+      console_putchar,
+      console_checkkey,
+      console_getkey,
+      console_getxy,
+      console_gotoxy,
+      console_cls,
+      console_setcolorstate,
+      console_setcolor,
+      console_setcursor
+    },
+#ifdef SUPPORT_SERIAL
+    {
+      "serial",
+      /* A serial device must be initialized.  */
+      TERM_NEED_INIT,
+      serial_putchar,
+      serial_checkkey,
+      serial_getkey,
+      serial_getxy,
+      serial_gotoxy,
+      serial_cls,
+      serial_setcolorstate,
+      0,
+      0
+    },
+#endif /* SUPPORT_SERIAL */
+#ifdef SUPPORT_HERCULES
+    {
+      "hercules",
+      0,
+      hercules_putchar,
+      console_checkkey,
+      console_getkey,
+      hercules_getxy,
+      hercules_gotoxy,
+      hercules_cls,
+      hercules_setcolorstate,
+      hercules_setcolor,
+      hercules_setcursor
+    },      
+#endif /* SUPPORT_HERCULES */
+    /* This must be the last entry.  */
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+  };
+
+/* This must be console.  */
+struct term_entry *current_term = term_table;
+
+int max_lines = 24;
+int count_lines = -1;
+int use_pager = 1;
 #endif
 
 void
@@ -88,10 +143,17 @@ convert_to_ascii (char *buf, int c,...)
 }
 
 void
+grub_putstr (const char *str)
+{
+  while (*str)
+    grub_putchar (*str++);
+}
+
+void
 grub_printf (const char *format,...)
 {
   int *dataptr = (int *) &format;
-  char c, *ptr, str[16];
+  char c, str[16];
   unsigned long mask = 0xFFFFFFFF;
   
   dataptr++;
@@ -99,7 +161,7 @@ grub_printf (const char *format,...)
   while ((c = *(format++)) != 0)
     {
       if (c != '%')
-	putchar (c);
+	grub_putchar (c);
       else
 	switch (c = *(format++))
 	  {
@@ -114,23 +176,16 @@ grub_printf (const char *format,...)
 	  case 'u':
 	    *convert_to_ascii (str, c, *((unsigned long *) dataptr++) & mask)
 	      = 0;
-
-	    ptr = str;
-
-	    while (*ptr)
-	      putchar (*(ptr++));
+	    grub_putstr (str);
 	    break;
 
 #ifndef STAGE1_5
 	  case 'c':
-	    putchar ((*(dataptr++)) & 0xff);
+	    grub_putchar ((*(dataptr++)) & 0xff);
 	    break;
 
 	  case 's':
-	    ptr = (char *) (*(dataptr++));
-
-	    while ((c = *(ptr++)) != 0)
-	      putchar (c);
+	    grub_putstr ((char *) *(dataptr++));
 	    break;
 #endif
 	  }
@@ -218,17 +273,9 @@ add_history (const char *cmdline, int no)
     num_history++;
 }
 
-/* Don't use this with a MAXLEN greater than 1600 or so!  The problem
-   is that GET_CMDLINE depends on the everything fitting on the screen
-   at once.  So, the whole screen is about 2000 characters, minus the
-   PROMPT, and space for error and status lines, etc.  MAXLEN must be
-   at least 1, and PROMPT and CMDLINE must be valid strings (not NULL
-   or zero-length).
-
-   If ECHO_CHAR is nonzero, echo it instead of the typed character. */
-int
-get_cmdline (char *prompt, char *cmdline, int maxlen,
-	     int echo_char, int readline)
+static int
+real_get_cmdline (char *prompt, char *cmdline, int maxlen,
+		  int echo_char, int readline)
 {
   /* This is a rather complicated function. So explain the concept.
      
@@ -277,8 +324,6 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
   char *buf = (char *) CMDLINE_BUF;
   /* The kill buffer.  */
   char *kill_buf = (char *) KILL_BUF;
-  /* The original state of AUTO_FILL.  */
-  int saved_auto_fill = auto_fill;
   
   /* Nested function definitions for code simplicity.  */
 
@@ -306,29 +351,15 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
 	{
 	  xpos -= count;
 
-	  if ((terminal & TERMINAL_CONSOLE)
-# ifdef SUPPORT_HERCULES
-	      || (terminal & TERMINAL_HERCULES)
-# endif /* SUPPORT_HERCULES */
-	      )
-	    {
-	      int y = getxy () & 0xFF;
-	      
-	      gotoxy (xpos, y);
-	    }
-# ifdef SUPPORT_SERIAL
-	  else if (! (terminal & TERMINAL_DUMB) && (count > 4))
-	    {
-	      grub_printf ("\e[%dD", count);
-	    }
-	  else
+	  if (current_term->flags & TERM_DUMB)
 	    {
 	      int i;
 	      
 	      for (i = 0; i < count; i++)
 		grub_putchar ('\b');
 	    }
-# endif /* SUPPORT_SERIAL */
+	  else
+	    gotoxy (xpos, getxy () & 0xFF);
 	}
     }
 
@@ -344,22 +375,7 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
 	{
 	  xpos += count;
 
-	  if ((terminal & TERMINAL_CONSOLE)
-# ifdef SUPPORT_HERCULES
-	      || (terminal & TERMINAL_HERCULES)
-# endif /* SUPPORT_HERCULES */
-	      )
-	    {
-	      int y = getxy () & 0xFF;
-	      
-	      gotoxy (xpos, y);
-	    }
-# ifdef SUPPORT_SERIAL
-	  else if (! (terminal & TERMINAL_DUMB) && (count > 4))
-	    {
-	      grub_printf ("\e[%dC", count);
-	    }
-	  else
+	  if (current_term->flags & TERM_DUMB)
 	    {
 	      int i;
 	      
@@ -371,7 +387,8 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
 		    grub_putchar (echo_char);
 		}
 	    }
-# endif /* SUPPORT_SERIAL */
+	  else
+	    gotoxy (xpos, getxy () & 0xFF);
 	}
     }
 
@@ -449,14 +466,14 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
 
 	  pos++;
 	}
-
+      
       /* Fill up the rest of the line with spaces.  */
       for (; i < start + len; i++)
 	{
 	  grub_putchar (' ');
 	  pos++;
 	}
-
+      
       /* If the cursor is at the last position, put `>' or a space,
 	 depending on if there are more characters in BUF.  */
       if (pos == CMDLINE_WIDTH)
@@ -468,29 +485,15 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
 	  
 	  pos++;
 	}
-
+      
       /* Back to XPOS.  */
-      if ((terminal & TERMINAL_CONSOLE)
-# ifdef SUPPORT_HERCULES
-	  || (terminal & TERMINAL_HERCULES)
-# endif /* SUPPORT_HERCULES */
-	  )
-	{
-	  int y = getxy () & 0xFF;
-	  
-	  gotoxy (xpos, y);
-	}
-# ifdef SUPPORT_SERIAL      
-      else if (! (terminal & TERMINAL_SERIAL) && (pos - xpos > 4))
-	{
-	  grub_printf ("\e[%dD", pos - xpos);
-	}
-      else
+      if (current_term->flags & TERM_DUMB)
 	{
 	  for (i = 0; i < pos - xpos; i++)
 	    grub_putchar ('\b');
 	}
-# endif /* SUPPORT_SERIAL */
+      else
+	gotoxy (xpos, getxy () & 0xFF);
     }
 
   /* Initialize the command-line.  */
@@ -556,15 +559,10 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
   lpos = llen;
   grub_strcpy (buf, cmdline);
 
-  /* Disable the auto fill mode.  */
-  auto_fill = 0;
-  
   cl_init ();
 
-  while (ASCII_CHAR (c = getkey ()) != '\n' && ASCII_CHAR (c) != '\r')
+  while ((c = ASCII_CHAR (getkey ())) != '\n' && c != '\r')
     {
-      c = translate_keycode (c);
-      
       /* If READLINE is non-zero, handle readline-like key bindings.  */
       if (readline)
 	{
@@ -611,11 +609,7 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
 		   completion.  */
 		grub_memmove (completion_buffer, buf + i, lpos - i);
 		completion_buffer[lpos - i] = 0;
-		/* Enable the auto fill mode temporarily.  */
-		auto_fill = 1;
 		ret = print_completions (is_filename, 1);
-		/* Disable the auto fill mode again.  */
-		auto_fill = 0;
 		errnum = ERR_NONE;
 
 		if (ret >= 0)
@@ -627,13 +621,8 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
 		      {
 			/* There are more than one candidates, so print
 			   the list.  */
-
 			grub_putchar ('\n');
-			/* Enable the auto fill mode temporarily.  */
-			auto_fill = 1;
 			print_completions (is_filename, 0);
-			/* Disable the auto fill mode again.  */
-			auto_fill = 0;
 			errnum = ERR_NONE;
 		      }
 		  }
@@ -786,124 +775,77 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
   if (readline && lpos < llen)
     add_history (cmdline, 0);
 
-  /* Restore the auto fill mode.  */
-  auto_fill = saved_auto_fill;
-  
   return 0;
 }
 
-/* Translate a special key to a common ascii code.  */
+/* Don't use this with a MAXLEN greater than 1600 or so!  The problem
+   is that GET_CMDLINE depends on the everything fitting on the screen
+   at once.  So, the whole screen is about 2000 characters, minus the
+   PROMPT, and space for error and status lines, etc.  MAXLEN must be
+   at least 1, and PROMPT and CMDLINE must be valid strings (not NULL
+   or zero-length).
+
+   If ECHO_CHAR is nonzero, echo it instead of the typed character. */
 int
-translate_keycode (int c)
+get_cmdline (char *prompt, char *cmdline, int maxlen,
+	     int echo_char, int readline)
 {
-# ifdef SUPPORT_SERIAL
-  if (terminal & TERMINAL_SERIAL)
-    {
-      /* In a serial terminal, things are complicated, because several
-	 key codes start from the character ESC, while we want to accept
-	 ESC itself.  */
-      if (c == '\e')
-	{
-	  int start;
+  int old_cursor;
+  int ret;
 
-	  /* Get current time.  */
-	  start = currticks ();
-
-	  while (checkkey () == -1)
-	    {
-	      /* Wait for a next character, at least for 0.1 sec
-		 (18.2 ticks/sec).  */
-	      int now;
-	      
-	      now = currticks ();
-	      if (now - start >= 2)
-		return c;
-	    }
-
-	  c = getkey ();
-	  if (c == '[')
-	    {
-	      int c1, c2;
-
-	      /* To filter illegal states.  */
-	      c = 0;
-	      c1 = getkey ();
-	      switch (c1)
-		{
-		case 'A':	/* KEY_UP */
-		  c = 16;
-		  break;
-		case 'B':	/* KEY_DOWN */
-		  c = 14;
-		  break;
-		case 'C':	/* KEY_RIGHT */
-		  c = 6;
-		  break;
-		case 'D':	/* KEY_LEFT */
-		  c = 2;
-		  break;
-		case 'F':	/* End */
-		  c = 5;
-		  break;
-		case 'H':	/* Home */
-		  c = 1;
-		  break;
-		case '1':
-		  c2 = getkey ();
-		  if (c2 == '~')
-		    {
-		      /* One of control keys (pos1,....).  */
-		      c = 1;
-		    }
-		  break;
-		case '3':
-		  c2 = getkey ();
-		  if (c2 == '~')
-		    {
-		      /* One of control keys (del,....).  */
-		      c = 4;
-		    }
-		  break;
-		case '4':	/* Del */
-		  c = 4;
-		  break;
-		}
-	    }
-	}
-    }
-  else
-# endif /* SUPPORT_SERIAL */
-    {
-      switch (c)
-	{
-	case KEY_LEFT:
-	  c = 2;
-	  break;
-	case KEY_RIGHT:
-	  c = 6;
-	  break;
-	case KEY_UP:
-	  c = 16;
-	  break;
-	case KEY_DOWN:
-	  c = 14;
-	  break;
-	case KEY_HOME:
-	  c = 1;
-	  break;
-	case KEY_END:
-	  c = 5;
-	  break;
-	case KEY_DC:
-	  c = 4;
-	  break;
-	case KEY_BACKSPACE:
-	  c = 8;
-	  break;
-	}
-    }
+  old_cursor = setcursor (1);
   
-  return ASCII_CHAR (c);
+  /* Because it is hard to deal with different conditions simultaneously,
+     less functional cases are handled here. Assume that TERM_NO_ECHO
+     implies TERM_NO_EDIT.  */
+  if (current_term->flags & (TERM_NO_ECHO | TERM_NO_EDIT))
+    {
+      char *p = cmdline;
+      int c;
+      
+      /* Make sure that MAXLEN is not too large.  */
+      if (maxlen > MAX_CMDLINE)
+	maxlen = MAX_CMDLINE;
+
+      /* Print only the prompt. The contents of CMDLINE is simply discarded,
+	 even if it is not empty.  */
+      grub_printf ("%s", prompt);
+
+      /* Gather characters until a newline is gotten.  */
+      while ((c = ASCII_CHAR (getkey ())) != '\n' && c != '\r')
+	{
+	  /* Return immediately if ESC is pressed.  */
+	  if (c == 27)
+	    {
+	      setcursor (old_cursor);
+	      return 1;
+	    }
+
+	  /* Printable characters are added into CMDLINE.  */
+	  if (c >= ' ' && c <= '~')
+	    {
+	      if (! (current_term->flags & TERM_NO_ECHO))
+		grub_putchar (c);
+
+	      /* Preceding space characters must be ignored.  */
+	      if (c != ' ' || p != cmdline)
+		*p++ = c;
+	    }
+	}
+
+      *p = 0;
+
+      if (! (current_term->flags & TERM_NO_ECHO))
+	grub_putchar ('\n');
+
+      setcursor (old_cursor);
+      return 0;
+    }
+
+  /* Complicated features are left to real_get_cmdline.  */
+  ret = real_get_cmdline (prompt, cmdline, maxlen, echo_char, readline);
+  setcursor (old_cursor);
+  return ret;
 }
 #endif /* STAGE1_5 */
 
@@ -942,7 +884,7 @@ safe_parse_maxint (char **str_ptr, int *myint_ptr)
       found = 1;
       if (myint > ((MAXINT - digit) / mult))
 	{
-	  errnum = ERR_NUMBER_PARSING;
+	  errnum = ERR_NUMBER_OVERFLOW;
 	  return 0;
 	}
       myint = (myint * mult) + digit;
@@ -1023,7 +965,7 @@ grub_strncat (char *s1, const char *s2, int n)
    a static library supporting minimal standard C functions and link
    each image with the library. Complicated things should be left to
    computer, definitely. -okuji  */
-#if ! defined(STAGE1_5) || defined(FSYS_VSTAFS)
+#if !defined(STAGE1_5) || defined(FSYS_VSTAFS)
 int
 grub_strcmp (const char *s1, const char *s2)
 {
@@ -1046,55 +988,35 @@ grub_strcmp (const char *s1, const char *s2)
 int
 getkey (void)
 {
-  int c = -1;
-  
-  if ((terminal & TERMINAL_CONSOLE)
-#ifdef SUPPORT_HERCULES
-      || (terminal & TERMINAL_HERCULES)
-#endif /* SUPPORT_HERCULES */
-      )
-    c = console_getkey ();
-#ifdef SUPPORT_SERIAL
-  else if (terminal & TERMINAL_SERIAL)
-    c = serial_getkey ();
-#endif /* SUPPORT_SERIAL */
-
-  return c;
+  return current_term->getkey ();
 }
 
 /* Check if a key code is available.  */
 int
 checkkey (void)
 {
-  int c = -1;
-
-  if ((terminal & TERMINAL_CONSOLE)
-#ifdef SUPPORT_HERCULES
-      || (terminal & TERMINAL_HERCULES)
-#endif /* SUPPORT_HERCULES */
-      )
-    c = console_checkkey ();
-  
-#ifdef SUPPORT_SERIAL
-  if (terminal & TERMINAL_SERIAL)
-    c = serial_checkkey ();
-#endif /* SUPPORT_SERIAL */
-
-  return c;
+  return current_term->checkkey ();
 }
-
 #endif /* ! STAGE1_5 */
 
 /* Display an ASCII character.  */
 void
 grub_putchar (int c)
 {
-#ifndef STAGE1_5
-  static int col = 0;
-#endif
-  
   if (c == '\n')
     grub_putchar ('\r');
+#ifndef STAGE1_5
+  else if (c == '\t' && current_term->getxy)
+    {
+      int n;
+      
+      n = 8 - ((current_term->getxy () >> 8) & 3);
+      while (n--)
+	grub_putchar (' ');
+      
+      return;
+    }
+#endif /* ! STAGE1_5 */
   
 #ifdef STAGE1_5
   
@@ -1103,36 +1025,43 @@ grub_putchar (int c)
   
 #else /* ! STAGE1_5 */
 
-  /* Track the cursor by software here.  */
-  /* XXX: This doesn't handle horizontal or vertical tabs.  */
-  if (c == '\r')
-    col = 0;
-  else if (c == '\b')
+  if (c == '\n')
     {
-      if (col > 0)
-	col--;
+      /* Internal `more'-like feature.  */
+      if (count_lines >= 0)
+	{
+	  count_lines++;
+	  if (count_lines >= max_lines - 2)
+	    {
+	      int tmp;
+	      
+	      /* It's important to disable the feature temporarily, because
+		 the following grub_printf call will print newlines.  */
+	      count_lines = -1;
+
+	      if (current_term->setcolorstate)
+		current_term->setcolorstate (COLOR_STATE_HIGHLIGHT);
+	      
+	      grub_printf ("\n[Hit return to continue]");
+
+	      if (current_term->setcolorstate)
+		current_term->setcolorstate (COLOR_STATE_NORMAL);
+	      
+	      do
+		{
+		  tmp = ASCII_CHAR (getkey ());
+		}
+	      while (tmp != '\n' && tmp != '\r');
+	      grub_printf ("\r                        \r");
+	      
+	      /* Restart to count lines.  */
+	      count_lines = 0;
+	      return;
+	    }
+	}
     }
-  else if (c >= ' ' && c <= '~')
-    {
-      /* Fold a line only if AUTO_FILL is true.  */
-      if (auto_fill && col >= 79)
-	grub_putchar ('\n');
 
-      col++;
-    }
-
-  if (terminal & TERMINAL_CONSOLE)
-    console_putchar (c);
-
-# ifdef SUPPORT_HERCULES
-  if (terminal & TERMINAL_HERCULES)
-    herc_putchar (c);
-# endif /* SUPPORT_HERCULES */
-
-# ifdef SUPPORT_SERIAL
-  if (terminal & TERMINAL_SERIAL)
-    serial_putchar (c);
-# endif /* SUPPORT_SERIAL */
+  current_term->putchar (c);
   
 #endif /* ! STAGE1_5 */
 }
@@ -1141,174 +1070,37 @@ grub_putchar (int c)
 void
 gotoxy (int x, int y)
 {
-  if (terminal & TERMINAL_CONSOLE)
-    console_gotoxy (x, y);
-#ifdef SUPPORT_HERCULES
-  else if (terminal & TERMINAL_HERCULES)
-    herc_gotoxy (x, y);
-#endif /* SUPPORT_HERCULES */
-#ifdef SUPPORT_SERIAL
-  else if (terminal & TERMINAL_SERIAL)
-    serial_gotoxy (x, y);
-#endif /* SUPPORT_SERIAL */
+  current_term->gotoxy (x, y);
 }
-
-#ifdef SUPPORT_SERIAL
-/* The serial part of gotoxy.  */
-void
-serial_gotoxy (int x, int y)
-{
-  grub_printf ("\e[%d;%dH", y + 1, x + 1);
-}
-#endif /* SUPPORT_SERIAL */
 
 int
 getxy (void)
 {
-  int ret = 0;
-  
-  if (terminal & TERMINAL_CONSOLE)
-    ret = console_getxy ();
-#ifdef SUPPORT_HERCULES
-  else if (terminal & TERMINAL_HERCULES)
-    ret = herc_getxy ();
-#endif /* SUPPORT_HERCULES */
-#ifdef SUPPORT_SERIAL
-  else if (terminal & TERMINAL_SERIAL)
-    ret = serial_getxy ();
-#endif /* SUPPORT_SERIAL */
-  
-  return ret;
+  return current_term->getxy ();
 }
-
-#ifdef SUPPORT_SERIAL
-/* The serial part of getxy.  */
-int
-serial_getxy (void)
-{
-  int x, y;
-  int start, now;
-  char buf[32];	/* XXX */
-  int i;
-  int c;
-  char *p;
-  
-  /* Drain the input buffer.  */
-  while (serial_checkkey () != -1)
-    serial_getkey ();
-
-  /* CPR.  */
-  grub_printf ("\e[6n");
-
-  /* Get current time.  */
-  while ((start = getrtsecs ()) == 0xFF)
-    ;
-
- again:
-  i = 0;
-  c = 0;
-  do
-    {
-      if (serial_checkkey () != -1)
-	{
-	  c = serial_getkey ();
-	  if (i == 1 && c != '[')
-	    i = 0;
-	  
-	  if (i == 0 && c != '\e')
-	    continue;
-
-	  if (i != 0 && c == '\e')
-	    i = 0;
-
-	  buf[i] = c;
-	  i++;
-	}
-      else
-	{
-	  /* Get current time.  */
-	  while ((now = getrtsecs ()) == 0xFF)
-	    ;
-
-	  /* FIXME: Remove this magic number.  */
-	  if (now - start > 10)
-	    {
-	      /* Something is quite wrong.  */
-	      return 0;
-	    }
-	}
-    }
-  while (c != 'R' && i < sizeof (buf));
-  
-  if (c != 'R')
-    goto again;
-
-  p = buf + 2;
-  if (! safe_parse_maxint (&p, &y))
-    {
-      errnum = 0;
-      goto again;
-    }
-  
-  if (*p != ';')
-    goto again;
-
-  p++;
-  if (! safe_parse_maxint (&p, &x))
-    {
-      errnum = 0;
-      goto again;
-    }
-
-  if (*p != 'R')
-    goto again;
-
-  return ((x - 1) << 8) | (y - 1);
-}
-#endif /* SUPPORT_SERIAL */
 
 void
 cls (void)
 {
-  if (terminal & TERMINAL_CONSOLE)
-    console_cls ();
-#ifdef SUPPORT_HERCULES
-  else if (terminal & TERMINAL_HERCULES)
-    herc_cls ();
-#endif /* SUPPORT_HERCULES */
-#ifdef SUPPORT_SERIAL
-  else if (terminal & TERMINAL_SERIAL)
-    serial_cls ();
-#endif /* SUPPORT_SERIAL */
-}
-
-#ifdef SUPPORT_SERIAL
-/* The serial part of cls.  */
-void
-serial_cls (void)
-{
   /* If the terminal is dumb, there is no way to clean the terminal.  */
-  if (terminal & TERMINAL_DUMB)
+  if (current_term->flags & TERM_DUMB)
     grub_putchar ('\n');
   else
-    grub_printf ("\e[H\e[J");
+    current_term->cls ();
 }
-#endif /* SUPPORT_SERIAL */
 
-void
-set_attrib (int attr)
+int
+setcursor (int on)
 {
-#ifdef SUPPORT_HERCULES
-  if (terminal & TERMINAL_HERCULES)
-    herc_set_attrib (attr);
-  else
-#endif /* SUPPORT_HERCULES */
-    console_set_attrib (attr);
+  if (current_term->setcursor)
+    return current_term->setcursor (on);
+
+  return 1;
 }
 #endif /* ! STAGE1_5 */
 
 int
-substring (char *s1, char *s2)
+substring (const char *s1, const char *s2)
 {
   while (*s1 == *s2)
     {
@@ -1451,7 +1243,6 @@ grub_memmove (void *to, const void *from, int len)
    return errnum ? NULL : to;
 }
 
-#ifndef STAGE1_5
 void *
 grub_memset (void *start, int c, int len)
 {
@@ -1466,6 +1257,7 @@ grub_memset (void *start, int c, int len)
   return errnum ? NULL : start;
 }
 
+#ifndef STAGE1_5
 char *
 grub_strcpy (char *dest, const char *src)
 {

@@ -14,21 +14,21 @@ configuring the GRUB.
 * GCC
 
   Probably every recent GCC should work, but we recommend GCC 2.95 and
-  later, since you can create smaller binary images. See the webpage
+  later, since you can create smaller binary images. See the web page
   <http://gcc.gnu.org/>.
 
 * GNU Make
 
   For now, the Makefiles produced by Automake depends on GNU Make. See
-  the webpage <http://www.gnu.org/software/make/make.html>.
+  the web page <http://www.gnu.org/software/make/make.html>.
 
 * GNU binutils 2.9.1.0.23 or later
 
   Binutils has changed the behavior of 16bit assembler between 2.9.1
   and 2.9.1.0.x, and we support only 2.9.1.0.x and higher. In
   particular, we recommend using binutils 2.10, since it is the only
-  public release that supports real 16bit mode. Please taka a look at
-  the webpage <http://sourceware.cygnus.com/binutils/>, for more
+  public release that supports real 16bit mode. Please take a look at
+  the web page <http://sourceware.cygnus.com/binutils/>, for more
   information. Note that you don't have to install it into any system
   directory. See the section "Operation Controls", if you want to
   install binutils into your own directory.
@@ -40,16 +40,20 @@ configure script.
 * Texinfo 4.0 or later
 
   We use some new macros in the documents, so you need a recent
-  Texinfo release. See the webpage
+  Texinfo release. See the web page
   <http://www.gnu.org/software/texinfo/texinfo.html>.
 
-* Developers: GNU Automake 1.4h or later
+* Developers: GNU Automake 1.5
 
   You should not need Automake just to compile GRUB, but you will need
   it if you edit any of the build files (Makefile.am, configure.in,
   etc).  We use the new "per-executable flags" feature found in the
-  latest release of automake.  See the webpage
+  latest release of automake.  See the web page
   <http://www.gnu.org/software/automake/automake.html>.
+
+  Note that you shouldn't use 1.6 because of the incompatibility on
+  assembler support. We will shift to 1.6, once 1.6 becomes more popular
+  than 1.5.
 
 
 Configuring the GRUB
@@ -207,6 +211,15 @@ operates.
 `--disable-reiserfs'
      Omit the ReiserFS support in Stage 2.
 
+`--disable-vstafs'
+     Omit the VSTa filesystem support in Stage 2.
+
+`--disable-jfs'
+     Omit the JFS support in Stage 2.
+
+`--disable-xfs'
+     Omit the XFS support in Stage 2.
+
 `--disable-gunzip'
      Omit the decompression support in Stage 2.
 
@@ -220,6 +233,9 @@ operates.
 
 `--without-curses'
      Don't use the curses library.
+
+`--disable-hercules'
+     Omit the hercules console support in Stage 2.
 
 `--disable-serial'
      Omit the serial terminal support in Stage 2.
@@ -238,6 +254,10 @@ operates.
 `--enable-example-kernel'
      Build the example Multiboot kernel in the directory "docs". You
      will be able to boot the image "kernel" with GRUB.
+
+`--disable-auto-linux-mem-opt'
+     Don't pass the "mem=" option automatically, when booting Linux.
+     You can also disable the feature at run time.
 
 
 `configure' also accepts several options for the network support. See

@@ -1,7 +1,7 @@
 /* device.c - Some helper functions for OS devices and BIOS drives */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,9 +42,27 @@
 #  include <linux/unistd.h>     /* _llseek */
 # endif /* (GLIBC < 2) || ((__GLIBC__ == 2) && (__GLIBC_MINOR < 1)) */
 # include <sys/ioctl.h>		/* ioctl */
-# include <linux/hdreg.h>	/* HDIO_GETGEO */
-# include <linux/major.h>	/* FLOPPY_MAJOR */
-# include <linux/kdev_t.h>	/* MAJOR */
+# ifndef HDIO_GETGEO
+#  define HDIO_GETGEO	0x0301	/* get device geometry */
+/* If HDIO_GETGEO is not defined, it is unlikely that hd_geometry is
+   defined.  */
+struct hd_geometry
+{
+  unsigned char heads;
+  unsigned char sectors;
+  unsigned short cylinders;
+  unsigned long start;
+};
+# endif /* ! HDIO_GETGEO */
+# ifndef FLOPPY_MAJOR
+#  define FLOPPY_MAJOR	2	/* the major number for floppy */
+# endif /* ! FLOPPY_MAJOR */
+# ifndef MAJOR
+#  ifndef MINORBITS
+#   define MINORBITS	8
+#  endif /* ! MINORBITS */
+#  define MAJOR(dev)	((unsigned int) ((dev) >> MINORBITS))
+# endif /* ! MAJOR */
 # ifndef CDROM_GET_CAPABILITY
 #  define CDROM_GET_CAPABILITY	0x5331	/* get capabilities */
 # endif /* ! CDROM_GET_CAPABILITY */
@@ -436,6 +454,13 @@ read_device_map (FILE *fp, char **map, const char *map_file)
       while (*eptr && ! isspace (*eptr))
 	eptr++;
       *eptr = 0;
+
+      /* Multiple entries for a given drive is not allowed.  */
+      if (map[drive])
+	{
+	  show_error (line_number, "Duplicated entry found");
+	  return 0;
+	}
       
       map[drive] = strdup (ptr);
       assert (map[drive]);

@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1996   Erich Boleyn  <erich@uruk.org>
+ *  Copyright (C) 2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 #include "shared.h"
 
-static int saved_sector;
+static int saved_sector = -1;
 
 static void
 disk_read_savesect_func (int sector, int offset, int length)
@@ -30,7 +30,7 @@ disk_read_savesect_func (int sector, int offset, int length)
 void
 cmain (void)
 {
-  printf ("\n\nGRUB loading, please wait...\n");
+  grub_printf ("\n\nGRUB loading, please wait...\n");
 
   /*
    *  Here load the true second-stage boot-loader.
@@ -43,6 +43,13 @@ cmain (void)
       disk_read_hook = disk_read_savesect_func;
       grub_read ((char *) 0x8000, SECTOR_SIZE * 2);
       disk_read_hook = NULL;
+
+      /* Sanity check: catch an internal error.  */
+      if (saved_sector == -1)
+	{
+	  grub_printf ("internal error: the second sector of Stage 2 is unknown.");
+	  stop ();
+	}
       
       ret = grub_read ((char *) 0x8000 + SECTOR_SIZE * 2, -1);
       

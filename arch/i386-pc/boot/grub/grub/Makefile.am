@@ -7,7 +7,8 @@ SERIAL_FLAGS = -DSUPPORT_SERIAL=1
 endif
 
 AM_CFLAGS = $(GRUB_CFLAGS) -DGRUB_UTIL=1 -DFSYS_EXT2FS=1 -DFSYS_FAT=1 \
-	-DFSYS_FFS=1 -DFSYS_MINIX=1 $(SERIAL_FLAGS) \
+	-DFSYS_FFS=1 -DFSYS_MINIX=1 -DSUPPORT_HERCULES=1 \
+	$(SERIAL_FLAGS) \
 	-fwritable-strings -I$(top_srcdir)/stage2 \
 	-I$(top_srcdir)/stage1 -I$(top_srcdir)/lib
 

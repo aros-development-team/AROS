@@ -25,6 +25,8 @@ Things that must or should be done before 1.0:
 
 * Add missing features of graphics support. !!
 
+* Fix a bug about drive completion. It happens only if a network drive
+  is available. !!
 
 Things that must _not_ be done before 1.0:
 
@@ -53,10 +55,9 @@ Things that must _not_ be done before 1.0:
 
 Things that may be done anytime:
 
-* Port the script ``grub-install'' to FreeBSD, NetBSD and OpenBSD. At
-  least you will have to modify the function `convert' so that it can
-  translate a native device name into the corresponding GRUB drive
-  representation. !
+* Port the script ``grub-install'' to OpenBSD. At least you will have to
+  modify the function `convert' so that it can translate a native device
+  name into the corresponding GRUB drive representation. !
 
 * Add a command to run a GRUB script file. !!
 
@@ -84,7 +85,7 @@ Things that may be done anytime:
 
 * Add more remote console support (parallel and net).
 
-* Add RAID support.
+* Add (real) RAID support.
 
 ? Add a partition naming syntax that means ``the first partition of
   this type''.  We need this for clean Hurd install floppies.

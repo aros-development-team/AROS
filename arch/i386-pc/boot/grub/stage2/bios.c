@@ -165,6 +165,9 @@ get_diskinfo (int drive, struct geometry *geometry)
 	       regardless of a size specified in a caller.  */
 	    unsigned char dummy[16];
 	  } __attribute__ ((packed)) drp;
+
+	  /* It is safe to clear out DRP.  */
+	  grub_memset (&drp, 0, sizeof (drp));
 	  
 	  drp.size = sizeof (drp);
 	  err = get_diskinfo_int13_extensions (drive, &drp);

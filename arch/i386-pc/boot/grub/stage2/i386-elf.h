@@ -1,7 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1996  Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 2001  Free Software Foundation, Inc.
+ *  Copyright (C) 2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -51,8 +50,13 @@ typedef struct
   
 #define EI_VERSION	6	/* version number.  "e_version" must be the same */
 #define EV_CURRENT      1	/* current version number */
+
+#define EI_OSABI	7	/* operating system/ABI indication */
+#define ELFOSABI_FREEBSD	9
   
-#define EI_PAD		7	/* from here in is just padding */
+#define EI_ABIVERSION	8	/* ABI version */
+  
+#define EI_PAD		9	/* from here in is just padding */
   
 #define EI_BRAND	8	/* start of OS branding (This is
 				   obviously illegal against the ELF

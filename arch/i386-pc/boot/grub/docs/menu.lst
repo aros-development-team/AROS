@@ -11,13 +11,13 @@ default 0
 # Fallback to the second entry.
 fallback 1
 
-# For booting the GNU Hurd
+# For booting GNU/Hurd
 title  GNU/Hurd
 root   (hd0,0)
 kernel /boot/gnumach.gz root=hd0s1
 module /boot/serverboot.gz
 
-# For booting Linux
+# For booting GNU/Linux
 title  GNU/Linux
 root (hd1,0)
 kernel /vmlinuz root=/dev/hdb1

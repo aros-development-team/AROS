@@ -65,6 +65,11 @@ extern struct nic	*a3c90x_probe(struct nic *, unsigned short *
 	PCI_ARG(struct pci_device *));
 #endif
 
+#ifdef	INCLUDE_EEPRO
+extern struct nic	*eepro_probe(struct nic *, unsigned short *
+	PCI_ARG(struct pci_device *));
+#endif
+
 #ifdef	INCLUDE_EEPRO100
 extern struct nic	*eepro100_probe(struct nic *, unsigned short *
 	PCI_ARG(struct pci_device *));
@@ -82,6 +87,11 @@ extern struct nic	*otulip_probe(struct nic *, unsigned short *
 
 #ifdef	INCLUDE_TULIP
 extern struct nic	*tulip_probe(struct nic *, unsigned short *
+	PCI_ARG(struct pci_device *));
+#endif
+
+#ifdef	INCLUDE_DAVICOM
+extern struct nic	*davicom_probe(struct nic *, unsigned short *
 	PCI_ARG(struct pci_device *));
 #endif
 
@@ -115,6 +125,11 @@ extern struct nic	*t507_probe(struct nic *, unsigned short *
 	PCI_ARG(struct pci_device *));
 #endif
 
+#ifdef	INCLUDE_NI5010
+extern struct nic	*ni5010_probe(struct nic *, unsigned short *
+	PCI_ARG(struct pci_device *));
+#endif
+
 #ifdef	INCLUDE_NI5210
 extern struct nic	*ni5210_probe(struct nic *, unsigned short *
 	PCI_ARG(struct pci_device *));
@@ -143,6 +158,26 @@ extern struct nic	*depca_probe(struct nic *, unsigned short *
 #ifdef	INCLUDE_RTL8139
 extern struct nic	*rtl8139_probe(struct nic *, unsigned short *
 	PCI_ARG(struct pci_device *));
+#endif
+
+#ifdef	INCLUDE_W89C840
+extern struct nic	*w89c840_probe(struct nic *, unsigned short *
+	PCI_ARG(struct pci_device *));
+#endif
+
+#ifdef	INCLUDE_SIS900
+extern struct nic	*sis900_probe(struct nic *, unsigned short *
+        PCI_ARG(struct pci_device *));
+#endif
+
+#ifdef	INCLUDE_NATSEMI
+extern struct nic	*natsemi_probe(struct nic *, unsigned short *
+        PCI_ARG(struct pci_device *));
+#endif
+
+#ifdef	INCLUDE_TLAN
+extern struct nic	*tlan_probe(struct nic *, unsigned short *
+        PCI_ARG(struct pci_device *));
 #endif
 
 #endif	/* CARDS_H */

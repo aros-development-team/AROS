@@ -77,6 +77,10 @@ II  FLASH PROMS
     have heard problem reports of its use under FreeBSD.  Anyone willing to
     make it work under FreeBSD is more than welcome to do so!
 
+    You also have the option of using EPROM chips - the 3C905B-TX-NM has been
+    successfully tested with 27C256 (32kB) and 27C512 (64kB) chips with a
+    specified access time of 100ns and faster.
+
 
 III GENERAL USE
 
@@ -87,10 +91,10 @@ III GENERAL USE
 	2.  Build the appropriate 3c90x.fd0 or 3c90x.fd0 floppy image with
 	possibly the value CFG_3C90X_XCVR defined to the transceiver type that
 	you want to use (i.e., 10/100 rj45, AUI, coax, MII).
-	3.  Run the floppy image on the PC to be network booted, to verify that
-	it will boot properly.
+	3.  Run the floppy image on the PC to be network booted, to get
+	it configured, and to verify that it will boot properly.
 	4.  Build the 3c90x.rom or 3c90x.lzrom PROM image and program
-	it into the flash memory chip.
+	it into the flash or EPROM memory chip.
 	5.  Put the PROM in the ethernet card, boot and enable 'boot from
 	network first' in the system BIOS, save and reboot.
 
@@ -100,6 +104,8 @@ III GENERAL USE
 	boot PROM, add the setting CFG_3C90X_BOOTROM_FIX and go through the
 	steps 2-5 above.  This works around a bug in some 3c905B cards (see
 	below), but has some side-effects which may not be desirable.
+        Please note that you have to boot off a floppy (not PROM!) once for
+        this fix to take effect.
 	2.  The possible need to manually set the CFG_3C90X_XCVR value to
 	configure the transceiver type.  Values are listed below.
 	3.  The possible need to define CFG_3C90X_PRESERVE_XCVR for use in
@@ -160,7 +166,9 @@ III GENERAL USE
     by the driver.
 
     To enable the 3c905B bugfix, which is necessary for these cards when 
-    booting from the Flash ROM, define -DCFG_3C90X_BOOTROM_FIX when building.
+    booting from the Flash ROM, define -DCFG_3C90X_BOOTROM_FIX when building,
+    create a floppy image and boot it once.
+    Thereafter, the card should accept the larger prom image.
 
     The driver should choose an appropriate transceiver on the card.  However,
     if it doesn't on your card or if you need to, for instance, set your
@@ -276,3 +284,24 @@ IV  FOR DEVELOPERS....
 	number.  Another driver used 't' (for 'three'?); I chose 'a' for
 	no reason at all.
 
+Addendum by Jorge L. deLyra <delyra@latt.if.usp.br>, 22Nov2000 re
+working around the 3C905 hardware bug mentioned above:
+
+Use this floppy to fix any 3COM model 3C905B PCI 10/100 Ethernet cards
+that fail to load and run the boot program the first time around. If
+they have a "Lucent" rather than a "Broadcom" chipset these cards have
+a configuration bug that causes a hang when trying to load the boot
+program from the PROM, if you try to use them right out of the box.
+
+The boot program in this floppy is the file named 3c905b-tpo100.rom
+from Etherboot version 4.6.10, compiled with the bugfix parameter
+
+			CFG_3C90X_BOOTROM_FIX
+
+You have to take the chip off the card and boot the system once using
+this floppy. Once loaded from the floppy, the boot program will access
+the card and change some setting in it, correcting the problem. After
+that you may use either this boot program or the normal one, compiled
+without this bugfix parameter, to boot the machine from the PROM chip.
+
+[Any recent Etherboot version should do, not just 4.6.10 - Ed.]

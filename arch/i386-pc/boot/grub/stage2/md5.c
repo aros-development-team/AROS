@@ -1,7 +1,7 @@
 /* md5.c - an implementation of the MD5 algorithm and MD5 crypt */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 2000, 2001  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -215,7 +215,14 @@ md5_password (const char *key, char *crypted, int check)
   unsigned char *digest;
 
   if (check)
-    saltlen = strstr (salt, "$") - salt;
+    {
+      /* If our crypted password isn't 3 chars, then it can't be md5
+	 crypted. So, they don't match.  */
+      if (strlen(crypted) <= 3)
+	return 1;
+      
+      saltlen = strstr (salt, "$") - salt;
+    }
   else
     {
       char *end = strstr (salt, "$");

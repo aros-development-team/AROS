@@ -90,7 +90,7 @@ info_TEXINFOS = grub.texi multiboot.texi
 grub_TEXINFOS = internals.texi
 EXAMPLES = boot.S kernel.c multiboot.h
 multiboot_TEXINFOS = boot.S.texi kernel.c.texi multiboot.h.texi
-man_MANS = grub.8 mbchk.1 grub-install.8 grub-md5-crypt.8
+man_MANS = grub.8 mbchk.1 grub-install.8 grub-md5-crypt.8 grub-terminfo.8
 HELP2MAN = help2man
 SRC2TEXI = src2texi
 noinst_SCRIPTS = $(HELP2MAN) $(SRC2TEXI)
@@ -574,6 +574,12 @@ uninstall-man: uninstall-man1 uninstall-man8
 @MAINTAINER_MODE_TRUE@	chmod 755 $<
 @MAINTAINER_MODE_TRUE@	$(PERL) $(srcdir)/$(HELP2MAN) \
 @MAINTAINER_MODE_TRUE@		--name="Encrypt a password in MD5 format" \
+@MAINTAINER_MODE_TRUE@		--section=8 --output=$@ $<
+
+@MAINTAINER_MODE_TRUE@$(srcdir)/grub-terminfo.8: ../util/grub-terminfo $(srcdir)/$(HELP2MAN)
+@MAINTAINER_MODE_TRUE@	chmod 755 $<
+@MAINTAINER_MODE_TRUE@	$(PERL) $(srcdir)/$(HELP2MAN) \
+@MAINTAINER_MODE_TRUE@		--name="Generate a terminfo command from a terminfo name" \
 @MAINTAINER_MODE_TRUE@		--section=8 --output=$@ $<
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

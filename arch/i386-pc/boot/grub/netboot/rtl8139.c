@@ -18,6 +18,10 @@
 
 /*
 
+  06 Apr 2001	ken_yap@users.sourceforge.net (Ken Yap)
+     Following email from Hyun-Joon Cha, added a disable routine, otherwise
+     NIC remains live and can crash the kernel later.
+
   4 Feb 2000	espenlaub@informatik.uni-ulm.de (Klaus Espenlaub)
      Shuffled things around, removed the leftovers from the 8129 support
      that was in the Linux driver and added a bit more 8139 definitions.
@@ -60,6 +64,7 @@
 #include "nic.h"
 #include "pci.h"
 #include "cards.h"
+#include "timer.h"
 
 #define RTL_TIMEOUT (1*TICKS_PER_SEC)
 
@@ -70,7 +75,7 @@
 #define RX_DMA_BURST    4       /* Maximum PCI burst, '4' is 256 bytes */
 #define TX_DMA_BURST    4       /* Calculate as 16<<val. */
 #define NUM_TX_DESC     4       /* Number of Tx descriptor registers. */
-#define TX_BUF_SIZE (ETH_MAX_PACKET-4)	/* FCS is added by the chip */
+#define TX_BUF_SIZE	ETH_FRAME_LEN	/* FCS is added by the chip */
 #define RX_BUF_LEN_IDX 0	/* 0, 1, 2 is allowed - 8,16,32K rx buffer */
 #define RX_BUF_LEN (8192 << RX_BUF_LEN_IDX)
 
@@ -160,12 +165,11 @@ static unsigned char tx_buffer[TX_BUF_SIZE] __attribute__((aligned(4)));
  * states that we can do whatever we want below 0x10000 - so we do!  */
 /* But we still give the user the choice of using an internal buffer
    just in case - Ken */
-#ifdef	USE_INTERNAL_BUFFER
-static unsigned char rx_ring[RX_BUF_LEN+16] __attribute__((aligned(4)));
-#else
+#ifdef	USE_LOWMEM_BUFFER
 #define rx_ring ((unsigned char *)(0x10000 - (RX_BUF_LEN + 16)))
+#else
+static unsigned char rx_ring[RX_BUF_LEN+16] __attribute__((aligned(4)));
 #endif
-
 
 struct nic *rtl8139_probe(struct nic *nic, unsigned short *probeaddrs,
 	struct pci_device *pci);
@@ -181,29 +185,16 @@ struct nic *rtl8139_probe(struct nic *nic, unsigned short *probeaddrs,
 	struct pci_device *pci)
 {
 	int i;
-	struct pci_device *p;
 	int speed10, fullduplex;
 
 	/* There are enough "RTL8139" strings on the console already, so
 	 * be brief and concentrate on the interesting pieces of info... */
 	printf(" - ");
-	if (probeaddrs == 0 || probeaddrs[0] == 0) {
-		printf("\nERROR: no probeaddrs given, using pci_device\n");
-		for (p = pci; p->vendor; p++) {
-			if ( ( (p->vendor == PCI_VENDOR_ID_REALTEK)
-			    && (p->dev_id == PCI_DEVICE_ID_REALTEK_8139) )
-			  || ( (p->vendor == PCI_VENDOR_ID_SMC_1211)
-			    && (p->dev_id == PCI_DEVICE_ID_SMC_1211) ) ) {
-				probeaddrs[0] = p->ioaddr;
-				printf("rtl8139: probing %x (membase %x)\n",
-					p->ioaddr, p->membase);
-			}
-		}
-		return 0;
-	}
 
 	/* Mask the bit that says "this is an io addr" */
 	ioaddr = probeaddrs[0] & ~3;
+
+	adjust_pci_device(pci);
 
 	/* Bring the chip out of low-power mode. */
 	outb(0x00, ioaddr + Config1);
@@ -214,19 +205,14 @@ struct nic *rtl8139_probe(struct nic *nic, unsigned short *probeaddrs,
 			*ap++ = read_eeprom(i + 7);
 	} else {
 		unsigned char *ap = (unsigned char*)nic->node_addr;
-		for (i = 0; i < ETHER_ADDR_SIZE; i++)
+		for (i = 0; i < ETH_ALEN; i++)
 			*ap++ = inb(ioaddr + MAC0 + i);
 	}
 
-	printf("ioaddr 0x%x, addr ", ioaddr);
-
-	for (i = 0; i < ETHER_ADDR_SIZE; i++) {
-		printf("%b", nic->node_addr[i]);
-		if (i < ETHER_ADDR_SIZE-1) putchar(':');
-	}
 	speed10 = inb(ioaddr + MediaStatus) & MSRSpeed10;
 	fullduplex = inw(ioaddr + MII_BMCR) & BMCRDuplex;
-	printf(" %sMbps %s-duplex\n", speed10 ? "10" : "100",
+	printf("ioaddr %#hX, addr %! %sMbps %s-duplex\n", ioaddr,
+		nic->node_addr,  speed10 ? "10" : "100",
 		fullduplex ? "full" : "half");
 
 	rtl_reset(nic);
@@ -305,12 +291,12 @@ static void rtl_reset(struct nic* nic)
 	cur_rx = 0;
 	cur_tx = 0;
 
-	/* Check that the chip has finished the reset. */
-	for (i = 1000; i > 0; i--)
-		if ((inb(ioaddr + ChipCmd) & CmdReset) == 0)
-			break;
+	/* Give the chip 10ms to finish the reset. */
+	load_timer2(10*TICKS_PER_MS);
+	while ((inb(ioaddr + ChipCmd) & CmdReset) != 0 && timer2_running())
+		/* wait */;
 
-	for (i = 0; i < 6; i++)
+	for (i = 0; i < ETH_ALEN; i++)
 		outb(nic->node_addr[i], ioaddr + MAC0 + i);
 
 	/* Must enable Tx/Rx before setting transfer thresholds! */
@@ -351,20 +337,20 @@ static void rtl_transmit(struct nic *nic, const char *destaddr,
 	unsigned int status, to, nstype;
 	unsigned long txstatus;
 
-	memcpy(tx_buffer, destaddr, ETHER_ADDR_SIZE);
-	memcpy(tx_buffer + ETHER_ADDR_SIZE, nic->node_addr, ETHER_ADDR_SIZE);
+	memcpy(tx_buffer, destaddr, ETH_ALEN);
+	memcpy(tx_buffer + ETH_ALEN, nic->node_addr, ETH_ALEN);
 	nstype = htons(type);
-	memcpy(tx_buffer + 2 * ETHER_ADDR_SIZE, (char*)&nstype, 2);
-	memcpy(tx_buffer + ETHER_HDR_SIZE, data, len);
+	memcpy(tx_buffer + 2 * ETH_ALEN, (char*)&nstype, 2);
+	memcpy(tx_buffer + ETH_HLEN, data, len);
 
-	len += ETHER_HDR_SIZE;
+	len += ETH_HLEN;
 #ifdef	DEBUG_TX
-	printf("sending %d bytes ethtype %x\n", len, type);
+	printf("sending %d bytes ethtype %hX\n", len, type);
 #endif
 
 	/* Note: RTL8139 doesn't auto-pad, send minimum payload (another 4
 	 * bytes are sent automatically for the FCS, totalling to 64 bytes). */
-	while (len < ETH_MIN_PACKET - 4) {
+	while (len < ETH_ZLEN) {
 		tx_buffer[len++] = '\0';
 	}
 
@@ -386,14 +372,14 @@ static void rtl_transmit(struct nic *nic, const char *destaddr,
 	txstatus = inl(ioaddr+ TxStatus0 + cur_tx*4);
 
 	if (status & TxOK) {
-		cur_tx = ++cur_tx % NUM_TX_DESC;
+		cur_tx = (cur_tx + 1) % NUM_TX_DESC;
 #ifdef	DEBUG_TX
-		printf("tx done (%d ticks), status %x txstatus %X\n",
+		printf("tx done (%d ticks), status %hX txstatus %X\n",
 			to-currticks(), status, txstatus);
 #endif
 	} else {
 #ifdef	DEBUG_TX
-		printf("tx timeout/error (%d ticks), status %x txstatus %X\n",
+		printf("tx timeout/error (%d ticks), status %hX txstatus %X\n",
 			currticks()-to, status, txstatus);
 #endif
 		rtl_reset(nic);
@@ -415,7 +401,7 @@ static int rtl_poll(struct nic *nic)
 	outw(status & ~(RxFIFOOver | RxOverflow | RxOK), ioaddr + IntrStatus);
 
 #ifdef	DEBUG_RX
-	printf("rtl_poll: int %x ", status);
+	printf("rtl_poll: int %hX ", status);
 #endif
 
 	ring_offs = cur_rx % RX_BUF_LEN;
@@ -424,8 +410,8 @@ static int rtl_poll(struct nic *nic)
 	rx_status &= 0xffff;
 
 	if ((rx_status & (RxBadSymbol|RxRunt|RxTooLong|RxCRCErr|RxBadAlign)) ||
-	    (rx_size < ETH_MIN_PACKET) || (rx_size > ETH_MAX_PACKET)) {
-		printf("rx error %x\n", rx_status);
+	    (rx_size < ETH_ZLEN) || (rx_size > ETH_FRAME_LEN + 4)) {
+		printf("rx error %hX\n", rx_status);
 		rtl_reset(nic);	/* this clears all interrupts still pending */
 		return 0;
 	}
@@ -447,7 +433,7 @@ static int rtl_poll(struct nic *nic)
 #endif
 	}
 #ifdef	DEBUG_RX
-	printf(" at %X type %b%b rxstatus %x\n",
+	printf(" at %X type %hhX%hhX rxstatus %hX\n",
 		(unsigned long)(rx_ring+ring_offs+4),
 		nic->packet[12], nic->packet[13], rx_status);
 #endif
@@ -462,4 +448,11 @@ static int rtl_poll(struct nic *nic)
 
 static void rtl_disable(struct nic *nic)
 {
+	/* reset the chip */
+	outb(CmdReset, ioaddr + ChipCmd);
+
+	/* 10 ms timeout */
+	load_timer2(10*TICKS_PER_MS);
+	while ((inb(ioaddr + ChipCmd) & CmdReset) != 0 && timer2_running())
+		/* wait */;
 }

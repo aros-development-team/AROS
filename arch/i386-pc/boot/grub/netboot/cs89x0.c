@@ -75,7 +75,6 @@ static unsigned short   eth_cs_type;	/* one of: CS8900, CS8920, CS8920M  */
 static unsigned short   eth_auto_neg_cnf;
 static unsigned short   eth_adapter_cnf;
 static unsigned short	eth_linectl;
-static unsigned char	eth_vendor;
 
 /*************************************************************************
 	CS89x0 - specific routines
@@ -116,7 +115,7 @@ static int get_eeprom_data(int off, int len, unsigned short *buffer)
 	int i;
 
 #ifdef	EDEBUG
-	printf("\ncs: EEPROM data from %x for %x:",off,len);
+	printf("\ncs: EEPROM data from %hX for %hX:",off,len);
 #endif
 	for (i = 0; i < len; i++) {
 		if (wait_eeprom_ready() < 0)
@@ -130,7 +129,7 @@ static int get_eeprom_data(int off, int len, unsigned short *buffer)
 #ifdef	EDEBUG
 		if (!(i%10))
 			printf("\ncs: ");
-		printf("%x ", buffer[i]);
+		printf("%hX ", buffer[i]);
 #endif
 	}
 #ifdef	EDEBUG
@@ -235,7 +234,7 @@ static int detect_tp(void)
 /* send a test packet - return true if carrier bits are ok */
 static int send_test_pkt(struct nic *nic)
 {
-	static char testpacket[] = { 0,0,0,0,0,0, 0,0,0,0,0,0,
+	static unsigned char testpacket[] = { 0,0,0,0,0,0, 0,0,0,0,0,0,
 				     0, 46, /*A 46 in network order       */
 				     0, 0,  /*DSAP=0 & SSAP=0 fields      */
 				     0xf3,0 /*Control (Test Req+P bit set)*/ };
@@ -243,11 +242,11 @@ static int send_test_pkt(struct nic *nic)
 
 	writereg(PP_LineCTL, readreg(PP_LineCTL) | SERIAL_TX_ON);
 
-	memcpy(testpacket, nic->node_addr, ETHER_ADDR_SIZE);
-	memcpy(testpacket+ETHER_ADDR_SIZE, nic->node_addr, ETHER_ADDR_SIZE);
+	memcpy(testpacket, nic->node_addr, ETH_ALEN);
+	memcpy(testpacket+ETH_ALEN, nic->node_addr, ETH_ALEN);
 
 	outw(TX_AFTER_ALL, eth_nic_base + TX_CMD_PORT);
-	outw(ETH_MIN_PACKET, eth_nic_base + TX_LEN_PORT);
+	outw(ETH_ZLEN, eth_nic_base + TX_LEN_PORT);
 
 	/* Test to see if the chip has allocated memory for the packet */
 	for (tmo = currticks() + 2;
@@ -257,7 +256,7 @@ static int send_test_pkt(struct nic *nic)
 
 	/* Write the contents of the packet */
 	outsw(eth_nic_base + TX_FRAME_PORT, testpacket,
-	      (ETH_MIN_PACKET+1)>>1);
+	      (ETH_ZLEN+1)>>1);
 
 	printf(" sending test packet ");
 	/* wait a couple of timer ticks for packet to be received */
@@ -307,9 +306,6 @@ static void cs89x0_reset(struct nic *nic)
 	int  i;
 	unsigned long reset_tmo;
 
-	if(eth_vendor!=VENDOR_CS89x0)
-		return;
-
 	writereg(PP_SelfCTL, readreg(PP_SelfCTL) | POWER_ON_RESET);
 
 	/* wait for two ticks; that is 2*55ms */
@@ -337,7 +333,7 @@ static void cs89x0_reset(struct nic *nic)
 	writereg(PP_BusCTL, 0);
 
 	/* set the ethernet address */
-	for (i=0; i < ETHER_ADDR_SIZE/2; i++)
+	for (i=0; i < ETH_ALEN/2; i++)
 		writereg(PP_IA+i*2,
 			 nic->node_addr[i*2] |
 			 (nic->node_addr[i*2+1] << 8));
@@ -374,13 +370,10 @@ static void cs89x0_transmit(
 	unsigned long tmo;
 	int           sr;
 
-	if(eth_vendor!=VENDOR_CS89x0)
-		return;
-
 	/* does this size have to be rounded??? please,
 	   somebody have a look in the specs */
-	if ((sr = ((s + ETHER_HDR_SIZE + 1)&~1)) < ETH_MIN_PACKET)
-		sr = ETH_MIN_PACKET;
+	if ((sr = ((s + ETH_HLEN + 1)&~1)) < ETH_ZLEN)
+		sr = ETH_ZLEN;
 
 retry:
 	/* initiate a transmit sequence */
@@ -396,12 +389,12 @@ retry:
 		goto retry; }
 
 	/* Write the contents of the packet */
-	outsw(eth_nic_base + TX_FRAME_PORT, d, ETHER_ADDR_SIZE/2);
+	outsw(eth_nic_base + TX_FRAME_PORT, d, ETH_ALEN/2);
 	outsw(eth_nic_base + TX_FRAME_PORT, nic->node_addr,
-	      ETHER_ADDR_SIZE/2);
+	      ETH_ALEN/2);
 	outw(((t >> 8)&0xFF)|(t << 8), eth_nic_base + TX_FRAME_PORT);
 	outsw(eth_nic_base + TX_FRAME_PORT, p, (s+1)/2);
-	for (sr = sr/2 - (s+1)/2 - ETHER_ADDR_SIZE - 1; sr-- > 0;
+	for (sr = sr/2 - (s+1)/2 - ETH_ALEN - 1; sr-- > 0;
 	     outw(0, eth_nic_base + TX_FRAME_PORT));
 
 	/* wait for transfer to succeed */
@@ -409,7 +402,7 @@ retry:
 	     (s = readreg(PP_TxEvent)&~0x1F) == 0 && currticks() < tmo;)
 		/* nothing */ ;
 	if ((s & TX_SEND_OK_BITS) != TX_OK) {
-		printf("\ntransmission error 0x%x\n", s);
+		printf("\ntransmission error %#hX\n", s);
 	}
 
 	return;
@@ -422,9 +415,6 @@ ETH_POLL - Wait for a frame
 static int cs89x0_poll(struct nic *nic)
 {
 	int status;
-
-	if(eth_vendor!=VENDOR_CS89x0)
-		return 0;
 
 	status = readreg(PP_RxEvent);
 
@@ -441,6 +431,7 @@ static int cs89x0_poll(struct nic *nic)
 
 static void cs89x0_disable(struct nic *nic)
 {
+	cs89x0_reset(nic);
 }
 
 /**************************************************************************
@@ -466,9 +457,7 @@ struct nic *cs89x0_probe(struct nic *nic, unsigned short *probe_addrs)
 	unsigned short eeprom_buff[CHKSUM_LEN];
 
 
-	for (eth_vendor = VENDOR_NONE, ioidx = 0;
-	     eth_vendor == VENDOR_NONE &&
-		     (ioaddr=netcard_portlist[ioidx++]) != 0;) {
+	for (ioidx = 0; (ioaddr=netcard_portlist[ioidx++]) != 0; ) {
 		/* if they give us an odd I/O address, then do ONE write to
 		   the address port, to get it back to address zero, where we
 		   expect to find the EISA signature word. */
@@ -488,7 +477,7 @@ struct nic *cs89x0_probe(struct nic *nic, unsigned short *probe_addrs)
 		eth_cs_type = rev_type &~ REVISON_BITS;
 		cs_revision = ((rev_type & REVISON_BITS) >> 8) + 'A';
 
-		printf("\ncs: cs89%c0%s rev %c, base 0x%x",
+		printf("\ncs: cs89%c0%s rev %c, base %#hX",
 		       eth_cs_type==CS8900?'0':'2',
 		       eth_cs_type==CS8920M?"M":"",
 		       cs_revision,
@@ -548,10 +537,10 @@ struct nic *cs89x0_probe(struct nic *nic, unsigned short *probe_addrs)
 			eth_irq = i; }
 
 		/* Retrieve and print the ethernet address. */
-		for (i=0; i<ETHER_ADDR_SIZE; i++) {
-			printf("%b%s",(int)(nic->node_addr[i] =
-					  ((unsigned char *)eeprom_buff)[i]),
-			       i < ETHER_ADDR_SIZE-1 ? ":" : "\n"); }
+		for (i=0; i<ETH_ALEN; i++) {
+			nic->node_addr[i] = ((unsigned char *)eeprom_buff)[i];
+		}
+		printf("%!\n", nic->node_addr);
 
 		/* Set the LineCTL quintuplet based on adapter
 		   configuration read from EEPROM */
@@ -583,9 +572,7 @@ struct nic *cs89x0_probe(struct nic *nic, unsigned short *probe_addrs)
 		}
 
 		/* Initialize the card for probing of the attached media */
-		eth_vendor = VENDOR_CS89x0;
 		cs89x0_reset(nic);
-		eth_vendor = VENDOR_NONE;
 
 		/* set the hardware to the configured choice */
 		switch(eth_adapter_cnf & A_CNF_MEDIA_TYPE) {
@@ -652,14 +639,16 @@ struct nic *cs89x0_probe(struct nic *nic, unsigned short *probe_addrs)
 		writereg(PP_LineCTL, readreg(PP_LineCTL) | SERIAL_RX_ON |
 			 SERIAL_TX_ON);
 
-		eth_vendor = VENDOR_CS89x0;
+		break;
 	}
 
+	if (ioaddr == 0)
+		return (0);
 	nic->reset = cs89x0_reset;
 	nic->poll = cs89x0_poll;
 	nic->transmit = cs89x0_transmit;
 	nic->disable = cs89x0_disable;
-	return nic;
+	return (nic);
 }
 
 /*

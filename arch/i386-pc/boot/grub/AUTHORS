@@ -1,5 +1,3 @@
-Erich Boleyn originally designed and implemented GRUB.
-
 VaX#n8 (real name unknown) wrote shared_src/fsys_ext2fs.c.
 
 Heiko Schroeder rewrote shared_src/stage1.S to be more readable.
@@ -7,18 +5,21 @@ Heiko Schroeder rewrote shared_src/stage1.S to be more readable.
 The following authors assigned copyright on their work to the Free
 Software Foundation:
 
+Erich Stefan Boleyn originally designed and implemented GRUB.
+
 Gordon Matzigkeit adopted GRUB into the GNU Project.  He fixed several
 bugs, added symbolic link support to shared_src/fsys_ext2fs.c, and
-began the implementation of /sbin/grub.
+began the implementation of /sbin/grub. He was an official maintainer.
 
-OKUJI Yoshinori contributed many bugfixes and new features, such as
+Yoshinori K. Okuji contributed many bugfixes and new features, such as
 working LBA support, /sbin/grub support for configuration files, the
 script /sbin/grub-install, the utility /bin/mbchk, the new engine for
 builtin commands, disk swapping support, keyboard configuration support,
 network support, online help support, command-line history support,
 hidden menu support, the new Linux loader, serial terminal support,
 single-line editing support, the utility /sbin/grub-md5-crypt, the new
-GRUB manual, and several new commands.
+GRUB manual, and several new commands. He is the current official
+maintainer.
 
 Peter Astrand added support for a color menu.
 
@@ -39,3 +40,8 @@ Frank Mehnert added support for hercules console.
 Kristoffer Branemyr added VSTa filesystem support.
 
 Serguei Tzukanov added JFS and XFS support.
+
+Jason Thomas added Linux DAC960 support and support for hiding/unhiding
+logical partitions, and did a significant bugfix for the terminal stuff.
+
+Tilmann Bubeck added support for vt100-incompatible terminals.

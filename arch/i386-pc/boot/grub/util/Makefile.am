@@ -1,5 +1,5 @@
 bin_PROGRAMS = mbchk
-sbin_SCRIPTS = grub-install grub-md5-crypt
+sbin_SCRIPTS = grub-install grub-md5-crypt grub-terminfo
 noinst_SCRIPTS = grub-image
 #noinst_DATA = menu.lst
 

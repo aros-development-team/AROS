@@ -504,9 +504,9 @@ minix_dir (char *dirname)
 
 	  if (dp->inode)
 	    {
-	      int saved_c = dp->name[namelen + 1];
+	      int saved_c = dp->name[namelen];
 
-	      dp->name[namelen+1] = 0;
+	      dp->name[namelen] = 0;
 	      str_chk = substring (dirname, dp->name);
 
 # ifndef STAGE1_5
@@ -519,7 +519,7 @@ minix_dir (char *dirname)
 		}
 # endif
 
-	      dp->name[namelen + 1] = saved_c;
+	      dp->name[namelen] = saved_c;
 	    }
 
 	}

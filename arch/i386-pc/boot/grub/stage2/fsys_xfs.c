@@ -1,7 +1,7 @@
 /* fsys_xfs.c - an implementation for the SGI XFS file system */
 /*  
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2001  Free Software Foundation, Inc.
+ *  Copyright (C) 2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -109,7 +109,16 @@ le16 (__uint16_t x)
 static inline __const__ __uint32_t
 le32 (__uint32_t x)
 {
+#if 0
+        /* 386 doesn't have bswap.  */
 	__asm__("bswap %0" : "=r" (x) : "0" (x));
+#else
+	/* This is slower but this works on all x86 architectures.  */
+	__asm__("xchgb %b0, %h0" \
+		"\n\troll $16, %0" \
+		"\n\txchgb %b0, %h0" \
+		: "=q" (x) : "0" (x));
+#endif
 	return x;
 }
 
@@ -499,14 +508,12 @@ xfs_read (char *buf, int len)
 			endofcur = (offset + xadlen) << xfs.blklog; 
 			toread = (endofcur >= endpos)
 				  ? len : (endofcur - filepos);
-#ifndef STAGE1_5
+
 			disk_read_func = disk_read_hook;
-#endif /* STAGE1_5 */
 			devread (fsb2daddr (xad->start),
 				 filepos - (offset << xfs.blklog), toread, buf);
-#ifndef STAGE1_5
 			disk_read_func = NULL;
-#endif /* STAGE1_5 */
+
 			buf += toread;
 			len -= toread;
 			filepos += toread;

@@ -1,8 +1,7 @@
 /* shared.h - definitions used in all GRUB-specific code */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1996  Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 1999, 2000, 2001 Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -139,29 +138,26 @@ extern char *grub_scratch_mem;
 #define LINUX_DEFAULT_SETUP_SECTS	4
 #define LINUX_FLAG_CAN_USE_HEAP		0x80
 #define LINUX_INITRD_MAX_ADDRESS	0x38000000
-#define LINUX_MAX_SETUP_SECTS		63
+#define LINUX_MAX_SETUP_SECTS		64
 #define LINUX_BOOT_LOADER_TYPE		0x71
-#define LINUX_HEAP_END_OFFSET		(0x7F00 - 0x200)
+#define LINUX_HEAP_END_OFFSET		(0x9000 - 0x200)
 
-#define LINUX_STAGING_AREA        RAW_ADDR (0x100000)
-#define LINUX_SETUP               RAW_ADDR (0x90000)
-#define LINUX_KERNEL              RAW_ADDR (0x10000)
-#define LINUX_KERNEL_MAXLEN       0x7F000
-#define LINUX_SETUP_SEG           0x9020
-#define LINUX_INIT_SEG            0x9000
-#define LINUX_SETUP_STACK         0x7F00
+#define LINUX_BZIMAGE_ADDR		RAW_ADDR (0x100000)
+#define LINUX_ZIMAGE_ADDR		RAW_ADDR (0x10000)
+#define LINUX_OLD_REAL_MODE_ADDR	RAW_ADDR (0x90000)
+#define LINUX_SETUP_STACK		0x9000
 
-#define LINUX_FLAG_BIG_KERNEL     0x1
+#define LINUX_FLAG_BIG_KERNEL		0x1
 
 /* Linux's video mode selection support. Actually I hate it!  */
-#define LINUX_VID_MODE_NORMAL	0xFFFF
-#define LINUX_VID_MODE_EXTENDED	0xFFFE
-#define LINUX_VID_MODE_ASK	0xFFFD
+#define LINUX_VID_MODE_NORMAL		0xFFFF
+#define LINUX_VID_MODE_EXTENDED		0xFFFE
+#define LINUX_VID_MODE_ASK		0xFFFD
 
-#define CL_MY_LOCATION  RAW_ADDR (0x97F00)
-#define CL_MY_END_ADDR  RAW_ADDR (0x97FFF)
-#define CL_MAGIC        0xA33F
-#define CL_BASE_ADDR    RAW_ADDR (0x90000)
+#define LINUX_CL_OFFSET			0x9000
+#define LINUX_CL_END_OFFSET		0x90FF
+#define LINUX_SETUP_MOVE_SIZE		0x9100
+#define LINUX_CL_MAGIC			0xA33F
 
 /*
  *  General disk stuff
@@ -335,29 +331,16 @@ extern char *grub_scratch_mem;
 #define ACS_DARROW	'v'
 
 /* Special graphics characters for IBM displays. */
-#ifdef GRUB_UTIL
-# define DISP_UL	ACS_ULCORNER
-# define DISP_UR	ACS_URCORNER
-# define DISP_LL	ACS_LLCORNER
-# define DISP_LR	ACS_LRCORNER
-# define DISP_HORIZ	ACS_HLINE
-# define DISP_VERT	ACS_VLINE
-# define DISP_LEFT	ACS_LARROW
-# define DISP_RIGHT	ACS_RARROW
-# define DISP_UP	ACS_UARROW
-# define DISP_DOWN	ACS_DARROW
-#else /* ! GRUB_UTIL */
-# define DISP_UL	218
-# define DISP_UR	191
-# define DISP_LL	192
-# define DISP_LR	217
-# define DISP_HORIZ	196
-# define DISP_VERT	179
-# define DISP_LEFT	0x1b
-# define DISP_RIGHT	0x1a
-# define DISP_UP	0x18
-# define DISP_DOWN	0x19
-#endif /* ! GRUB_UTIL */
+#define DISP_UL		218
+#define DISP_UR		191
+#define DISP_LL		192
+#define DISP_LR		217
+#define DISP_HORIZ	196
+#define DISP_VERT	179
+#define DISP_LEFT	0x1b
+#define DISP_RIGHT	0x1a
+#define DISP_UP		0x18
+#define DISP_DOWN	0x19
 
 /* Remap some libc-API-compatible function names so that we prevent
    circularararity. */
@@ -391,7 +374,7 @@ extern char *grub_scratch_mem;
 #include "mb_info.h"
 extern unsigned long mb_header_flags;
 
-/* For the Linux/i386 boot protocol version 2.02.  */
+/* For the Linux/i386 boot protocol version 2.03.  */
 struct linux_kernel_header
 {
   char code1[0x0020];
@@ -420,7 +403,7 @@ struct linux_kernel_header
   unsigned long bootsect_kludge;	/* obsolete */
   unsigned short heap_end_ptr;		/* Free memory after setup end */
   unsigned short pad1;			/* Unused */
-  unsigned long cmd_line_ptr;		/* Points to the kernel command line */
+  char *cmd_line_ptr;			/* Points to the kernel command line */
 } __attribute__ ((packed));
 
 /* Memory map address range descriptor used by GET_MMAP_ENTRY. */
@@ -548,7 +531,9 @@ typedef enum
   ERR_BAD_ARGUMENT,
   ERR_UNALIGNED,
   ERR_PRIVILEGED,
-  ERR_NEED_SERIAL,
+  ERR_DEV_NEED_INIT,
+  ERR_NO_DISK_SPACE,
+  ERR_NUMBER_OVERFLOW,
 
   MAX_ERR_NUM
 } grub_error_t;
@@ -558,17 +543,21 @@ extern unsigned long boot_drive;
 extern unsigned long install_second_sector;
 extern struct apm_info apm_bios_info;
 extern unsigned long boot_part_addr;
-extern unsigned long boot_part_offset;
 extern int saved_entryno;
 extern unsigned char force_lba;
 extern char version_string[];
 extern char config_file[];
 extern unsigned long linux_text_len;
+extern char *linux_data_tmp_addr;
+extern char *linux_data_real_addr;
 
 #ifdef GRUB_UTIL
 /* If not using config file, this variable is set to zero,
    otherwise non-zero.  */
 extern int use_config_file;
+/* If using the preset menu, this variable is set to non-zero,
+   otherwise zero.  */
+extern int use_preset_menu;
 /* If not using curses, this variable is set to zero, otherwise non-zero.  */
 extern int use_curses;
 /* The flag for verbose messages.  */
@@ -606,6 +595,11 @@ extern char *password;
 extern password_t password_type;
 extern int auth;
 extern char commands[];
+
+/* For `more'-like feature.  */
+extern int max_lines;
+extern int count_lines;
+extern int use_pager;
 #endif
 
 #ifndef NO_DECOMPRESSION
@@ -620,8 +614,6 @@ extern void (*disk_read_func) (int, int, int);
 #ifndef STAGE1_5
 /* The flag for debug mode.  */
 extern int debug;
-/* Color settings */
-extern int normal_color, highlight_color;
 #endif /* STAGE1_5 */
 
 extern unsigned long current_drive;
@@ -779,55 +771,28 @@ int currticks (void);
 /* Clear the screen. */
 void cls (void);
 
-/* The console part of cls.  */
-void console_cls (void);
-
-#ifndef GRUB_UTIL
-/* Turn off cursor. */
-void nocursor (void);
-#endif
+/* Turn on/off cursor. */
+int setcursor (int on);
 
 /* Get the current cursor position (where 0,0 is the top left hand
    corner of the screen).  Returns packed values, (RET >> 8) is x,
    (RET & 0xff) is y. */
 int getxy (void);
 
-/* The console part of getxy.  */
-int console_getxy (void);
-
 /* Set the cursor position. */
 void gotoxy (int x, int y);
-
-/* The console part of gotoxy.  */
-void console_gotoxy (int x, int y);
 
 /* Displays an ASCII character.  IBM displays will translate some
    characters to special graphical ones (see the DISP_* constants). */
 void grub_putchar (int c);
 
-/* The console part of grub_putchar.  */
-void console_putchar (int c);
-
 /* Wait for a keypress, and return its packed BIOS/ASCII key code.
    Use ASCII_CHAR(ret) to extract the ASCII code. */
 int getkey (void);
 
-/* The console part of getkey.  */
-int console_getkey (void);
-
 /* Like GETKEY, but doesn't block, and returns -1 if no keystroke is
    available. */
 int checkkey (void);
-
-/* The console part of checkkey.  */
-int console_checkkey (void);
-
-/* Sets text mode character attribute at the cursor position.  See A_*
-   constants defined above. */
-void set_attrib (int attr);
-
-/* The console part of set_attrib.  */
-void console_set_attrib (int attr);
 
 /* Low-level disk I/O */
 int get_diskinfo (int drive, struct geometry *geometry);
@@ -843,7 +808,8 @@ void stop_floppy (void);
 #define BUILTIN_MENU		0x2	/* Run in the menu.  */
 #define BUILTIN_TITLE		0x4	/* Only for the command title.  */
 #define BUILTIN_SCRIPT		0x8	/* Run in the script.  */
-#define BUILTIN_HIDDEN		0x10	/* Don't print command on booting. */
+#define BUILTIN_NO_ECHO		0x10	/* Don't print command on booting. */
+#define BUILTIN_HELP_LIST	0x20	/* Show help in listing.  */
 
 /* The table for a builtin.  */
 struct builtin
@@ -879,18 +845,6 @@ kernel_t;
 extern kernel_t kernel_type;
 extern int show_menu;
 extern int grub_timeout;
-
-/* Control the auto fill mode.  */
-extern int auto_fill;
-
-/* This variable specifies which console should be used.  */
-extern int terminal;
-
-#define TERMINAL_CONSOLE	(1 << 0)	/* keyboard and screen */
-#define TERMINAL_SERIAL		(1 << 1)	/* serial console */
-#define TERMINAL_HERCULES	(1 << 2)	/* hercules */
-
-#define TERMINAL_DUMB		(1 << 16)	/* dumb terminal */
 
 void init_builtins (void);
 void init_config (void);
@@ -943,12 +897,12 @@ void print_error (void);
 char *convert_to_ascii (char *buf, int c, ...);
 int get_cmdline (char *prompt, char *cmdline, int maxlen,
 		 int echo_char, int history);
-int substring (char *s1, char *s2);
+int substring (const char *s1, const char *s2);
 int nul_terminate (char *str);
 int get_based_digit (int c, int base);
 int safe_parse_maxint (char **str_ptr, int *myint_ptr);
 int memcheck (int start, int len);
-int translate_keycode (int c);
+void grub_putstr (const char *str);
 
 #ifndef NO_DECOMPRESSION
 /* Compression support. */

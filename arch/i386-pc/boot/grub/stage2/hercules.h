@@ -28,11 +28,4 @@
 #define HERCULES_INDEX_REG	0x3b4
 #define HERCULES_DATA_REG	0x3b5
 
-/* Functions.  */
-void herc_putchar (int c);
-void herc_cls (void);
-int herc_getxy (void);
-void herc_gotoxy (int x, int y);
-void herc_set_attrib (int attr);
-
 #endif /* ! GRUB_HERCULES_HEADER */

@@ -1,5 +1,5 @@
 dnl Configure script for GRUB.
-dnl Copyright 1999,2000,2001 Free Software Foundation, Inc.
+dnl Copyright 1999,2000,2001,2002 Free Software Foundation, Inc.
 
 dnl Permission to use, copy, modify and distribute this software and its
 dnl documentation is hereby granted, provided that both the copyright
@@ -13,7 +13,7 @@ dnl LIABILITY OF ANY KIND FOR ANY DAMAGES WHATSOEVER RESULTING FROM THE
 dnl USE OF THIS SOFTWARE.
 
 AC_INIT(stage2/stage2.c)
-AM_INIT_AUTOMAKE(grub, 0.90)
+AM_INIT_AUTOMAKE(grub, 0.93)
 AM_CONFIG_HEADER(config.h)
 AC_PREREQ(2.13)
 
@@ -102,14 +102,27 @@ CPPFLAGS="$CPPFLAGS -Wall -Wmissing-prototypes -Wunused -Wshadow"
 CPPFLAGS="$CPPFLAGS -Wpointer-arith"
 
 AC_CACHE_CHECK([whether -Wundef works], undef_flag, [
-  saved_CPPFLAGS=$CPPFLAGS
+  saved_CPPFLAGS="$CPPFLAGS"
   CPPFLAGS="-Wundef"
   AC_TRY_COMPILE(, , undef_flag=yes, undef_flag=no)
-  CPPFLAGS=$saved_CPPFLAGS
+  CPPFLAGS="$saved_CPPFLAGS"
+])
+
+# The options `-falign-*' are supported by gcc 3.0 or later.
+# Probably it is sufficient to only check for -falign-loops.
+AC_CACHE_CHECK([whether -falign-loops works], [falign_loop_flag], [
+  saved_CPPFLAGS="$CPPFLAGS"
+  CPPFLAGS="-falign-loops=1"
+  AC_TRY_COMPILE(, , [falign_loop_flag=yes], [falign_loop_flag=no])
+  CPPFLAGS="$saved_CPPFLAGS"
 ])
 
 # Force no alignment to save space.
-CPPFLAGS="$CPPFLAGS -malign-jumps=1 -malign-loops=1 -malign-functions=1"
+if test "x$falign_loop_flag" = xyes; then
+  CPPFLAGS="$CPPFLAGS -falign-jumps=1 -falign-loops=1 -falign-functions=1"
+else
+  CPPFLAGS="$CPPFLAGS -malign-jumps=1 -malign-loops=1 -malign-functions=1"
+fi
 
 if test "x$undef_flag" = xyes; then
   CPPFLAGS="$CPPFLAGS -Wundef"
@@ -299,13 +312,6 @@ if test "x$enable_3c529" = xyes; then
   NETBOOT_DRIVERS="$NETBOOT_DRIVERS 3c529.o"
 fi
 
-AC_ARG_ENABLE(3c590,
-  [  --enable-3c590          enable 3Com590 driver])
-if test "x$enable_3c590" = xyes; then
-  NET_CFLAGS="$NET_CFLAGS -DINCLUDE_3C590=1"
-  NETBOOT_DRIVERS="$NETBOOT_DRIVERS 3c590.o"
-fi
-
 AC_ARG_ENABLE(3c595,
   [  --enable-3c595          enable 3Com595 driver])
 if test "x$enable_3c595" = xyes; then
@@ -327,11 +333,25 @@ if test "x$enable_cs89x0" = xyes; then
   NETBOOT_DRIVERS="$NETBOOT_DRIVERS cs89x0.o"
 fi
 
+AC_ARG_ENABLE(davicom,
+  [  --enable-davicom        enable Davicom driver])
+if test "x$enable_davicom" = xyes; then
+  NET_CFLAGS="$NET_CFLAGS -DINCLUDE_DAVICOM=1"
+  NETBOOT_DRIVERS="$NETBOOT_DRIVERS davicom.o"
+fi
+
 AC_ARG_ENABLE(depca,
   [  --enable-depca          enable DEPCA and EtherWORKS driver])
 if test "x$enable_depca" = xyes; then
   NET_CFLAGS="$NET_CFLAGS -DINCLUDE_DEPCA=1"
   NETBOOT_DRIVERS="$NETBOOT_DRIVERS depca.o"
+fi
+
+AC_ARG_ENABLE(eepro,
+  [  --enable-eepro          enable Etherexpress Pro/10 driver])
+if test "x$enable_eepro" = xyes; then
+  NET_CFLAGS="$NET_CFLAGS -DINCLUDE_EEPRO=1"
+  NETBOOT_DRIVERS="$NETBOOT_DRIVERS eepro.o"
 fi
 
 AC_ARG_ENABLE(eepro100,
@@ -390,6 +410,20 @@ if test "x$enable_ni6510" = xyes; then
   NETBOOT_DRIVERS="$NETBOOT_DRIVERS ni6510.o"
 fi
 
+AC_ARG_ENABLE(natsemi,
+  [  --enable-natsemi        enable NatSemi DP8381x driver])
+if test "x$enable_natsemi" = xyes; then
+  NET_CFLAGS="$NET_CFLAGS -DINCLUDE_NATSEMI=1"
+  NETBOOT_DRIVERS="$NETBOOT_DRIVERS natsemi.o"
+fi
+
+AC_ARG_ENABLE(ni5010,
+  [  --enable-ni5010         enable Racal-Interlan NI5010 driver])
+if test "x$enable_ni5010" = xyes; then
+  NET_CFLAGS="$NET_CFLAGS -DINCLUDE_NI5010=1"
+  NETBOOT_DRIVERS="$NETBOOT_DRIVERS ni5010.o"
+fi
+
 AC_ARG_ENABLE(3c503,
   [  --enable-3c503          enable 3Com503 driver])
 if test "x$enable_3c503" = xyes; then
@@ -432,6 +466,13 @@ if test "x$enable_rtl8139" = xyes; then
   NETBOOT_DRIVERS="$NETBOOT_DRIVERS rtl8139.o"
 fi
 
+AC_ARG_ENABLE(sis900,
+  [  --enable-sis900         enable SIS 900 and SIS 7016 driver])
+if test "x$enable_sis900" = xyes; then
+  NET_CFLAGS="$NET_CFLAGS -DINCLUDE_SIS900=1"
+  NETBOOT_DRIVERS="$NETBOOT_DRIVERS sis900.o"
+fi
+
 AC_ARG_ENABLE(sk-g16,
   [  --enable-sk-g16         enable Schneider and Koch G16 driver])
 if test "x$enable_sk_g16" = xyes; then
@@ -467,6 +508,13 @@ if test "x$enable_via_rhine" = xyes; then
   NETBOOT_DRIVERS="$NETBOOT_DRIVERS via_rhine.o"
 fi
 
+AC_ARG_ENABLE(w89c840,
+  [  --enable-w89c840        enable Winbond W89c840, Compex RL100-ATX driver])
+if test "x$enable_w89c840" = xyes; then
+  NET_CFLAGS="$NET_CFLAGS -DINCLUDE_W89C840=1"
+  NETBOOT_DRIVERS="$NETBOOT_DRIVERS w89c840.o"
+fi
+
 dnl Check if the netboot support is turned on.
 AM_CONDITIONAL(NETBOOT_SUPPORT, test "x$NET_CFLAGS" != x)
 if test "x$NET_CFLAGS" != x; then
@@ -486,24 +534,11 @@ if test "x$enable_3c503_aui" = xyes; then
   NET_EXTRAFLAGS="$NET_EXTRAFLAGS -DT503_AUI=1"
 fi
 
-AC_ARG_ENABLE(3c509-hack,
-  [  --enable-3c509-hack     make a 3c509 do bootp quicker])
-if test "x$enable_3c509_hack" = xyes; then
-  NET_EXTRAFLAGS="$NET_EXTRAFLAGS -DT509HACK=1"
-fi
-
 AC_ARG_ENABLE(compex-rl2000-fix,
   [  --enable-compex-rl2000-fix
                           specify this if you have a Compex RL2000 PCI])
 if test "x$enable_compex_rl2000_fix" = xyes; then
   NET_EXTRAFLAGS="$NET_EXTRAFLAGS -DCOMPEX_RL2000_FIX=1"
-fi
-
-AC_ARG_ENABLE(ns8390-force-16bit,
-  [  --enable-ns8390-force-16bit
-                          specify this if falsely 8 bit is detected])
-if test "x$enable_ns8390_force_16bit" = xyes; then
-  NET_EXTRAFLAGS="$NET_EXTRAFLAGS -DNS8390_FORCE_16BIT=1"
 fi
 
 AC_ARG_ENABLE(smc9000-scan,
@@ -538,7 +573,7 @@ AM_CONDITIONAL(HERCULES_SUPPORT, test "x$enable_hercules" != xno)
 
 dnl Serial terminal
 AC_ARG_ENABLE(serial,
-  [  --disable-serial        diable serial terminal support])
+  [  --disable-serial        disable serial terminal support])
 AM_CONDITIONAL(SERIAL_SUPPORT, test "x$enable_serial" != xno)
 
 dnl Simulation of the slowness of a serial device.
@@ -600,4 +635,4 @@ dnl Output.
 AC_OUTPUT([Makefile stage1/Makefile stage2/Makefile docs/Makefile \
 	lib/Makefile util/Makefile grub/Makefile \
 	netboot/Makefile util/grub-image util/grub-install \
-	util/grub-md5-crypt])
+	util/grub-md5-crypt util/grub-terminfo])

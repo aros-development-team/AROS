@@ -39,10 +39,21 @@ Ken Yap, July 1997
 #define	LANCE_TOTAL_SIZE	0x10
 #endif
 
+/* lance_poll() now can use multiple Rx buffers to prevent packet loss. Set
+ * Set LANCE_LOG_RX_BUFFERS to 0..7 for 1, 2, 4, 8, 16, 32, 64 or 128 Rx
+ * buffers. Usually 4 (=16 Rx buffers) is a good value. (Andreas Neuhaus)
+ * Decreased to 2 (=4 Rx buffers) (Ken Yap, 20010305) */
+
+#define LANCE_LOG_RX_BUFFERS	2		/* Use 2^2=4 Rx buffers */
+
+#define RX_RING_SIZE		(1 << (LANCE_LOG_RX_BUFFERS))
+#define RX_RING_MOD_MASK	(RX_RING_SIZE - 1)
+#define RX_RING_LEN_BITS	((LANCE_LOG_RX_BUFFERS) << 29)
+
 struct lance_init_block
 {
 	unsigned short	mode;
-	unsigned char	phys_addr[6];
+	unsigned char	phys_addr[ETH_ALEN];
 	unsigned long	filter[2];
 	Address		rx_ring;
 	Address		tx_ring;
@@ -52,7 +63,7 @@ struct lance_rx_head
 {
 	union {
 		Address		base;
-		char		addr[4];
+		unsigned char	addr[4];
 	} u;
 	short		buf_length;	/* 2s complement */
 	short		msg_length;
@@ -62,7 +73,7 @@ struct lance_tx_head
 {
 	union {
 		Address		base;
-		char		addr[4];
+		unsigned char	addr[4];
 	} u;
 	short		buf_length;	/* 2s complement */
 	short		misc;
@@ -71,20 +82,26 @@ struct lance_tx_head
 struct lance_interface
 {
 	struct lance_init_block	init_block;
-	struct lance_rx_head	rx_ring;
+	struct lance_rx_head	rx_ring[RX_RING_SIZE];
 	struct lance_tx_head	tx_ring;
-	unsigned char		rbuf[ETH_MAX_PACKET];
-	unsigned char		tbuf[ETH_MAX_PACKET];
+	unsigned char		rbuf[RX_RING_SIZE][ETH_FRAME_LEN+4];
+	unsigned char		tbuf[ETH_FRAME_LEN];
+	/*
+	 * Do not alter the order of the struct members above;
+	 * the hardware depends on the correct alignment.
+	 */
+	int			rx_idx;
 };
 
 #define	LANCE_MUST_PAD		0x00000001
 #define	LANCE_ENABLE_AUTOSELECT	0x00000002
+#define	LANCE_SELECT_PHONELINE	0x00000004
 #define	LANCE_MUST_UNRESET	0x00000008
 
 /* A mapping from the chip ID number to the part number and features.
    These are from the datasheets -- in real life the '970 version
    reportedly has the same ID as the '965. */
-static struct lance_chip_type
+static const struct lance_chip_type
 {
 	int	id_number;
 	const char	*name;
@@ -104,31 +121,32 @@ static struct lance_chip_type
 		LANCE_ENABLE_AUTOSELECT},
         {0x2621, "PCnet/PCI-II 79C970A",        /* 79C970A PCInetPCI II. */
                 LANCE_ENABLE_AUTOSELECT},
+	{0x2625, "PCnet-FAST III 79C973",	/* 79C973 PCInet-FAST III. */
+		LANCE_ENABLE_AUTOSELECT},
+        {0x2626, "PCnet/HomePNA 79C978",        
+                LANCE_ENABLE_AUTOSELECT|LANCE_SELECT_PHONELINE},
 	{0x0, "PCnet (unknown)",
 		LANCE_ENABLE_AUTOSELECT},
 };
 
 /* Define a macro for converting program addresses to real addresses */
-#ifdef	ETHERBOOT32
 #undef	virt_to_bus
 #define	virt_to_bus(x)		((unsigned long)x)
-#endif
-#ifdef	ETHERBOOT16
-#define	virt_to_bus(x)		(((Address)x)+RELOC)
-#endif	/* ETHERBOOT16 */
 
 static int			chip_version;
+static int			lance_version;
 static unsigned short		ioaddr;
+#ifndef	INCLUDE_LANCE
 static int			dma;
+#endif
 static struct lance_interface	*lp;
 
 /* additional 8 bytes for 8-byte alignment space */
-#ifndef	USE_INTERNAL_BUFFER
+#ifdef	USE_LOWMEM_BUFFER
 #define lance ((char *)0x10000 - (sizeof(struct lance_interface)+8))
 #else
 static char			lance[sizeof(struct lance_interface)+8];
 #endif
-
 
 #ifndef	INCLUDE_LANCE
 /* DMA defines and helper routines */
@@ -199,9 +217,9 @@ static void lance_reset(struct nic *nic)
 	/* Reset the LANCE */
 	(void)inw(ioaddr+LANCE_RESET);
 	/* Un-Reset the LANCE, needed only for the NE2100 */
-	if (chip_table[chip_version].flags & LANCE_MUST_UNRESET)
+	if (chip_table[lance_version].flags & LANCE_MUST_UNRESET)
 		outw(0, ioaddr+LANCE_RESET);
-	if (chip_table[chip_version].flags & LANCE_ENABLE_AUTOSELECT)
+	if (chip_table[lance_version].flags & LANCE_ENABLE_AUTOSELECT)
 	{
 		/* This is 79C960 specific; Turn on auto-select of media
 		   (AUI, BNC). */
@@ -209,16 +227,48 @@ static void lance_reset(struct nic *nic)
 		/* Don't touch 10base2 power bit. */
 		outw(inw(ioaddr+LANCE_BUS_IF) | 0x2, ioaddr+LANCE_BUS_IF);
 	}
+	/* HomePNA cards need to explicitly pick the phoneline interface.
+	 * Some of these cards have ethernet interfaces as well, this
+	 * code might require some modification for those.
+  	 */
+        if (chip_table[lance_version].flags & LANCE_SELECT_PHONELINE) {
+                short media, check ;
+                /* this is specific to HomePNA cards... */
+                outw(49, ioaddr+0x12) ;
+                media = inw(ioaddr+0x16) ;
+#ifdef DEBUG
+                printf("media was %d\n", media) ;
+#endif
+                media &= ~3 ;
+                media |= 1 ;
+#ifdef DEBUG
+                printf("media changed to %d\n", media) ;
+#endif
+                media &= ~3 ;
+                media |= 1 ;
+                outw(49, ioaddr+0x12) ;
+                outw(media, ioaddr+0x16) ;
+                outw(49, ioaddr+0x12) ;
+                check = inw(ioaddr+0x16) ;
+#ifdef DEBUG
+                printf("check %s, media was set properly\n", 
+			check ==  media ? "passed" : "FAILED" ) ; 
+#endif
+	}
+ 
 	/* Re-initialise the LANCE, and start it when done. */
 	/* Set station address */
-	for (i = 0; i < ETHER_ADDR_SIZE; ++i)
+	for (i = 0; i < ETH_ALEN; ++i)
 		lp->init_block.phys_addr[i] = nic->node_addr[i];
-	/* Preset the receive ring header */
-	lp->rx_ring.buf_length = -ETH_MAX_PACKET;
-	/* OWN */
-	lp->rx_ring.u.base = virt_to_bus(lp->rbuf) & 0xffffff;
-	/* we set the top byte as the very last thing */
-	lp->rx_ring.u.addr[3] = 0x80;
+	/* Preset the receive ring headers */
+	for (i=0; i<RX_RING_SIZE; i++) {
+		lp->rx_ring[i].buf_length = -ETH_FRAME_LEN-4;
+		/* OWN */
+		lp->rx_ring[i].u.base = virt_to_bus(lp->rbuf[i]) & 0xffffff;
+		/* we set the top byte as the very last thing */
+		lp->rx_ring[i].u.addr[3] = 0x80;
+	}
+	lp->rx_idx = 0;
 	lp->init_block.mode = 0x0;	/* enable Rx and Tx */
 	l = (Address)virt_to_bus(&lp->init_block);
 	outw(0x1, ioaddr+LANCE_ADDR);
@@ -234,9 +284,13 @@ static void lance_reset(struct nic *nic)
 	(void)inw(ioaddr+LANCE_ADDR);
 	outw(0x4, ioaddr+LANCE_DATA);		/* stop */
 	outw(0x1, ioaddr+LANCE_DATA);		/* init */
-	for (i = 100; i > 0; --i)
+	for (i = 10000; i > 0; --i)
 		if (inw(ioaddr+LANCE_DATA) & 0x100)
 			break;
+#ifdef	DEBUG
+	if (i <= 0)
+		printf("Init timed out\n");
+#endif
 	/* Apparently clearing the InitDone bit here triggers a bug
 	   in the '974. (Mark Stockton) */
 	outw(0x2, ioaddr+LANCE_DATA);		/* start */
@@ -249,23 +303,29 @@ static int lance_poll(struct nic *nic)
 {
 	int		status;
 
-	status = lp->rx_ring.u.base >> 24;
+	status = lp->rx_ring[lp->rx_idx].u.base >> 24;
 	if (status & 0x80)
 		return (0);
 #ifdef	DEBUG
-	printf("LANCE packet received rx_ring.u.base %X mcnt %x csr0 %x\n",
-		lp->rx_ring.u.base, lp->rx_ring.msg_length,
+	printf("LANCE packet received rx_ring.u.base %X mcnt %hX csr0 %hX\n",
+		lp->rx_ring[lp->rx_idx].u.base, lp->rx_ring[lp->rx_idx].msg_length,
 		inw(ioaddr+LANCE_DATA));
 #endif
 	if (status == 0x3)
-		memcpy(nic->packet, lp->rbuf, nic->packetlen = lp->rx_ring.msg_length);
+		memcpy(nic->packet, lp->rbuf[lp->rx_idx], nic->packetlen = lp->rx_ring[lp->rx_idx].msg_length);
 	/* Andrew Boyd of QNX reports that some revs of the 79C765
 	   clear the buffer length */
-	lp->rx_ring.buf_length = -ETH_MAX_PACKET;
-	lp->rx_ring.u.addr[3] |= 0x80;	/* prime for next receive */
+	lp->rx_ring[lp->rx_idx].buf_length = -ETH_FRAME_LEN-4;
+	lp->rx_ring[lp->rx_idx].u.addr[3] |= 0x80;	/* prime for next receive */
+
+	/* I'm not sure if the following is still ok with multiple Rx buffers, but it works */
 	outw(0x0, ioaddr+LANCE_ADDR);
 	(void)inw(ioaddr+LANCE_ADDR);
 	outw(0x500, ioaddr+LANCE_DATA);		/* clear receive + InitDone */
+
+	/* Switch to the next Rx ring buffer */
+	lp->rx_idx = (lp->rx_idx + 1) & RX_RING_MOD_MASK;
+
 	return (status == 0x3);
 }
 
@@ -282,14 +342,14 @@ static void lance_transmit(
 	unsigned long		time;
 
 	/* copy the packet to ring buffer */
-	memcpy(lp->tbuf, d, ETHER_ADDR_SIZE);	/* dst */
-	memcpy(&lp->tbuf[ETHER_ADDR_SIZE], nic->node_addr, ETHER_ADDR_SIZE); /* src */
-	lp->tbuf[ETHER_ADDR_SIZE+ETHER_ADDR_SIZE] = t >> 8;	/* type */
-	lp->tbuf[ETHER_ADDR_SIZE+ETHER_ADDR_SIZE+1] = t;	/* type */
-	memcpy(&lp->tbuf[ETHER_HDR_SIZE], p, s);
-	s += ETHER_HDR_SIZE;
+	memcpy(lp->tbuf, d, ETH_ALEN);	/* dst */
+	memcpy(&lp->tbuf[ETH_ALEN], nic->node_addr, ETH_ALEN); /* src */
+	lp->tbuf[ETH_ALEN+ETH_ALEN] = t >> 8;	/* type */
+	lp->tbuf[ETH_ALEN+ETH_ALEN+1] = t;	/* type */
+	memcpy(&lp->tbuf[ETH_HLEN], p, s);
+	s += ETH_HLEN;
 	if (chip_table[chip_version].flags & LANCE_MUST_PAD)
-		while (s < ETH_MIN_PACKET)	/* pad to min length */
+		while (s < ETH_ZLEN)	/* pad to min length */
 			lp->tbuf[s++] = 0;
 	lp->tx_ring.buf_length = -s;
 	lp->tx_ring.misc = 0x0;
@@ -299,7 +359,12 @@ static void lance_transmit(
 	lp->tx_ring.u.addr[3] = 0x83;
 	/* Trigger an immediate send poll */
 	outw(0x0, ioaddr+LANCE_ADDR);
-	outw(0x48, ioaddr+LANCE_DATA);
+	(void)inw(ioaddr+LANCE_ADDR);	/* as in the datasheets... */
+	/* Klaus Espenlaub: the value below was 0x48, but that enabled the
+	 * interrupt line, causing a hang if for some reasone the interrupt
+	 * controller had the LANCE interrupt enabled.  I have no idea why
+	 * nobody ran into this before...  */
+	outw(0x08, ioaddr+LANCE_DATA);
 	/* wait for transmit complete */
 	time = currticks() + TICKS_PER_SEC;		/* wait one second */
 	while (currticks() < time && (lp->tx_ring.u.base & 0x80000000) != 0)
@@ -309,7 +374,7 @@ static void lance_transmit(
 	(void)inw(ioaddr+LANCE_ADDR);
 	outw(0x200, ioaddr+LANCE_DATA);		/* clear transmit + InitDone */
 #ifdef	DEBUG
-	printf("tx_ring.u.base %X tx_ring.buf_length %x tx_ring.misc %x csr0 %x\n",
+	printf("tx_ring.u.base %X tx_ring.buf_length %hX tx_ring.misc %hX csr0 %hX\n",
 		lp->tx_ring.u.base, lp->tx_ring.buf_length, lp->tx_ring.misc,
 		inw(ioaddr+LANCE_DATA));
 #endif
@@ -317,6 +382,13 @@ static void lance_transmit(
 
 static void lance_disable(struct nic *nic)
 {
+	(void)inw(ioaddr+LANCE_RESET);
+	if (chip_table[lance_version].flags & LANCE_MUST_UNRESET)
+		outw(0, ioaddr+LANCE_RESET);
+
+	outw(0, ioaddr+LANCE_ADDR);
+	outw(0x0004, ioaddr+LANCE_DATA);	/* stop the LANCE */
+
 #ifndef	INCLUDE_LANCE
 	disable_dma(dma);
 #endif
@@ -328,11 +400,13 @@ static int lance_probe1(struct nic *nic, struct pci_device *pci)
 static int lance_probe1(struct nic *nic)
 #endif
 {
-	int			reset_val, lance_version;
+	int			reset_val ;
 	unsigned int		i;
 	Address			l;
 	short			dma_channels;
+#ifndef	INCLUDE_LANCE
 	static const char	dmas[] = { 5, 6, 7, 3 };
+#endif
 
 	reset_val = inw(ioaddr+LANCE_RESET);
 	outw(reset_val, ioaddr+LANCE_RESET);
@@ -361,8 +435,8 @@ static int lance_probe1(struct nic *nic)
 	lp = (struct lance_interface *)l;
 	lp->init_block.mode = 0x3;	/* disable Rx and Tx */
 	lp->init_block.filter[0] = lp->init_block.filter[1] = 0x0;
-	/* top bits are zero, we have only one buffer each for Rx and Tx */
-	lp->init_block.rx_ring = virt_to_bus(&lp->rx_ring) & 0xffffff;
+	/* using multiple Rx buffer and a single Tx buffer */
+	lp->init_block.rx_ring = (virt_to_bus(&lp->rx_ring) & 0xffffff) | RX_RING_LEN_BITS;
 	lp->init_block.tx_ring = virt_to_bus(&lp->tx_ring) & 0xffffff;
 	l = virt_to_bus(&lp->init_block);
 	outw(0x1, ioaddr+LANCE_ADDR);
@@ -376,6 +450,10 @@ static int lance_probe1(struct nic *nic)
 	outw(0x915, ioaddr+LANCE_DATA);
 	outw(0x0, ioaddr+LANCE_ADDR);
 	(void)inw(ioaddr+LANCE_ADDR);
+	/* Get station address */
+	for (i = 0; i < ETH_ALEN; ++i) {
+		nic->node_addr[i] = inb(ioaddr+LANCE_ETH_ADDR+i);
+	}
 #ifndef	INCLUDE_LANCE
 	/* now probe for DMA channel */
 	dma_channels = ((inb(DMA1_STAT_REG) >> 4) & 0xf) |
@@ -404,19 +482,11 @@ static int lance_probe1(struct nic *nic)
 	}
 	if (i >= (sizeof(dmas)/sizeof(dmas[0])))
 		dma = 0;
-	printf("\n%s base 0x%x, DMA %d, addr ",
-		chip_table[lance_version].name, ioaddr, dma);
+	printf("\n%s base %#X, DMA %d, addr %!\n",
+		chip_table[lance_version].name, ioaddr, dma, nic->node_addr);
 #else
-	printf(" %s base 0x%x, addr ", chip_table[lance_version].name, ioaddr);
+	printf(" %s base %#hX, addr %!\n", chip_table[lance_version].name, ioaddr, nic->node_addr);
 #endif
-	/* Get station address */
-	for (i = 0; i < ETHER_ADDR_SIZE; ++i)
-	{
-		printf("%b", nic->node_addr[i] = inb(ioaddr+LANCE_ETH_ADDR+i));
-		if (i < ETHER_ADDR_SIZE -1)
-			printf(":");
-	}
-	putchar('\n');
 	if (chip_table[chip_version].flags & LANCE_ENABLE_AUTOSELECT) {
 		/* Turn on auto-select of media (10baseT or BNC) so that the
 		 * user watch the LEDs. */
@@ -442,15 +512,22 @@ struct nic *ni6510_probe(struct nic *nic, unsigned short *probe_addrs)
 #endif
 {
 	unsigned short		*p;
+#ifndef	INCLUDE_LANCE
 	static unsigned short	io_addrs[] = { 0x300, 0x320, 0x340, 0x360, 0 };
+#endif
 
 	/* if probe_addrs is 0, then routine can use a hardwired default */
-	if (probe_addrs == 0)
+	if (probe_addrs == 0) {
+#ifdef	INCLUDE_LANCE
+		return 0;
+#else
 		probe_addrs = io_addrs;
+#endif
+	}
 	for (p = probe_addrs; (ioaddr = *p) != 0; ++p)
 	{
 		char	offset15, offset14 = inb(ioaddr + 14);
-		short	pci_cmd;
+		unsigned short	pci_cmd;
 
 #ifdef	INCLUDE_NE2100
 		if ((offset14 == 0x52 || offset14 == 0x57) &&
@@ -465,11 +542,7 @@ struct nic *ni6510_probe(struct nic *nic, unsigned short *probe_addrs)
 				break;
 #endif
 #ifdef	INCLUDE_LANCE
-		pcibios_read_config_word(0, pci->devfn, PCI_COMMAND, &pci_cmd);
-		if (!(pci_cmd & PCI_COMMAND_MASTER)) {
-			pci_cmd |= PCI_COMMAND_MASTER;
-			pcibios_write_config_word(0, pci->devfn, PCI_COMMAND, pci_cmd);
-		}
+		adjust_pci_device(pci);
 		if (lance_probe1(nic, pci) >= 0)
 			break;
 #endif
@@ -485,8 +558,7 @@ struct nic *ni6510_probe(struct nic *nic, unsigned short *probe_addrs)
 		nic->disable = lance_disable;
 		return nic;
 	}
-	/* else */
-	{
-		return 0;
-	}
+
+	/* no board found */
+	return 0;
 }
