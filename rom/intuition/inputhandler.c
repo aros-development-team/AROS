@@ -1348,12 +1348,26 @@ D(bug("Window: %p\n", w));
 		
                      /* First erase the old frame on the right side and 
                         on the lower side if necessary, but only do this
-                        for not GZZ windows 
+                        for non-GZZ windows 
                      */
                      
                      if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
                      {
                        struct RastPort * rp = targetwindow->BorderRPort;
+                       struct Layer * L = rp->Layer;
+                       struct ClipRect * cr = NULL;
+                       /* 
+                       ** In case a clip region is installed then I have to 
+                       ** install the regular cliprects of the layer
+                       ** first. Otherwise the frame might not get cleared correctly.
+                       */
+                       if (NULL != L->ClipRegion && NULL != L->_cliprects)
+                       {
+                         /* remember those cliprects */
+                         cr = L->ClipRect;
+                         L->ClipRect = L->_cliprects;
+                       }
+                       
                        SetAPen(rp, 0);
                        if (msg->dy > 0)
                        {
@@ -1370,6 +1384,15 @@ D(bug("Window: %p\n", w));
                                   targetwindow->BorderTop,
                                   targetwindow->Width,
                                   targetwindow->Height - targetwindow->BorderBottom);
+                       }
+                       
+                       /*
+                       ** Reinstall the clipregions rectangles if there are any.
+                       */
+                       if (NULL != cr)
+                       {
+                         /* reinstall the cliprects */
+                         L->ClipRect = cr;
                        }
                      }
                      
