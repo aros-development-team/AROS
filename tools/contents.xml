@@ -77,6 +77,11 @@
 
 <item>
     <dir>gensets</dir>
-    Tool to handle symbol sets 
+    Tool to handle symbol sets
+</item>
+
+<item>
+    <dir>collect-aros</dir>
+    A wrapper to the linker that encapsulates the gensets' functionalities.
 </item>
 </contents>
