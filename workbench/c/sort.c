@@ -76,7 +76,7 @@ struct sorted_data
   ULONG                len; // length of line including '\n'.
 };
 
-struct Library * LocaleBase;
+struct LocaleBase * LocaleBase;
 struct Locale * locale;
 
 int compare(struct sorted_data * sd1, 

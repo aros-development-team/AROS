@@ -109,7 +109,7 @@ static struct ButtonInfo bi[NUM_BUTTONS] =
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
 struct Library *GadToolsBase;
-struct Library *LocaleBase;
+struct LocaleBase *LocaleBase;
 
 static struct Screen *scr;
 static struct DrawInfo *dri;

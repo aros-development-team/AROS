@@ -5,7 +5,7 @@
 #include <proto/dos.h>
 #include <proto/locale.h>
 
-struct Library *LocaleBase = NULL;
+struct LocaleBase *LocaleBase = NULL;
 
 int main(int argc, char **av)
 {

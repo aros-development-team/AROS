@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 }
 
 
-struct Library *LocaleBase          = NULL;
+struct LocaleBase *LocaleBase       = NULL;
 struct Library *GadToolsBase        = NULL;
 struct Library *CxBase              = NULL;
 struct Library *IconBase            = NULL;
