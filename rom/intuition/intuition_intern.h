@@ -83,11 +83,11 @@ struct IntIntuitionBase
     
     APTR		     DriverData; /* Pointer which the driver may use */
 
-/*
-    struct MinList	     PublicScreenList;
-    struct Screen	   * DefaultPublicScreen;
-    struct SignalSemaphore * PubScreenListLock;
-*/
+    struct Screen	    *DefaultPubScreen;
+    struct SignalSemaphore   PubScrListLock;
+    struct MinList	     PubScreenList;
+    UWORD                    pubScrGlobalMode;
+
     struct Library         * LayersBase;
     
     struct IClass *dragbarclass;
@@ -101,6 +101,7 @@ struct IntScreen
     /* Private fields */
     struct DrawInfo DInfo;
     UWORD  Pens[NUMDRIPENS];
+    struct PubScreenNode *pubScrNode;
     UWORD  SpecialFlags;
 };
 
