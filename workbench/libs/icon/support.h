@@ -26,11 +26,11 @@ VOID RemoveIconFromList(struct NativeIcon *icon, struct IconBase *IconBase);
 struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconBase);
 
 /*** Macros *****************************************************************/
-#define OpenIcon(name, mode) (__OpenIcon_WB((name), (mode), IconBase))
-#define CloseIcon(file) (__CloseIcon_WB((file), IconBase))
-#define OpenDefaultIcon(name, mode) (__OpenDefaultIcon_WB((name), (mode), IconBase))
-#define CloseDefaultIcon(file) (__CloseDefaultIcon_WB((file), IconBase))
+#define OpenIcon(name, mode) (__OpenIcon_WB((name), (mode), LB(IconBase)))
+#define CloseIcon(file) (__CloseIcon_WB((file), LB(IconBase)))
+#define OpenDefaultIcon(name, mode) (__OpenDefaultIcon_WB((name), (mode), LB(IconBase)))
+#define CloseDefaultIcon(file) (__CloseDefaultIcon_WB((file), LB(IconBase)))
 
-#define ReadIcon(file) (__ReadIcon_WB((file), IconBase))
+#define ReadIcon(file) (__ReadIcon_WB((file), LB(IconBase)))
 
 #endif /* _SUPPORT_H_ */
