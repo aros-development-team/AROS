@@ -5,8 +5,6 @@
 __sighandler_t *signal(int sig, __sighandler_t *handler)
 {
 #warning implement signal
-
-    fprintf(stderr, "**clib warning**: signal() not implemented\n");
     errno = ENOSYS;
     return (__sighandler_t *)-1;
 }
