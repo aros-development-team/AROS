@@ -48,6 +48,7 @@ extern const struct Resident Intuition_resident;
 extern const struct Resident emul_handler_resident;
 extern const struct Resident Console_resident;
 extern const struct Resident Mathffp_resident;
+extern const struct Resident Aros_resident;
 
 extern void InitCore(void);
 
@@ -361,6 +362,7 @@ printf ("SysBase = %p\n", SysBase);
 
     debugmem ();
 
+    (void) InitResident((struct Resident *)&Aros_resident,0);
     (void) InitResident((struct Resident *)&Utility_resident,0);
     DOSBase = (struct DosLibrary *)InitResident((struct Resident *)&Dos_resident,0);
 
