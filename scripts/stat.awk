@@ -43,12 +43,15 @@ BEGIN {
     print ""
     for (name in job)
     {
-	printf ("%4d jobs in %s (%.2f%% todo, %.2f%% in work, %.2f%% completed\n",
-	    job[name],
-	    name,
-	    jobf[name]*100.0/job[name],
-	    jobw[name]*100.0/job[name],
-	    jobd[name]*100.0/job[name]);
+	if (jobf[name]!=job[name])
+	{
+	    printf ("%4d jobs in %s (%.2f%% todo, %.2f%% in work, %.2f%% completed\n",
+		job[name],
+		name,
+		jobf[name]*100.0/job[name],
+		jobw[name]*100.0/job[name],
+		jobd[name]*100.0/job[name]);
+	}
     }
     print ""
     print "There is a total of " ojobs " other things."
