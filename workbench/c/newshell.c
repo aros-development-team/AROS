@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    (C) Copyright 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -91,10 +91,19 @@
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
+#include <dos/filesystem.h>
+
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
-static const char version[] = "$VER: newshell 41.1 (14.3.1997)\n";
+/* This is 0, because it is at the moment handled in the Shell itself
+   (workbench/c/shell.c). Should it turn out that the correct place
+   to do the CHANGE_SIGNAL is newshell.c instead, change this define
+   to 1 and in shell.c set the same define to 0. */
+   
+#define DO_CHANGE_SIGNAL 0
+
+static const char version[] = "$VER: newshell 41.1 (21.04.2001)\n";
 
 int main (int argc, char ** argv)
 {
@@ -105,6 +114,9 @@ int main (int argc, char ** argv)
     struct Process *process;
     
     BPTR    in, out, shell, lock;
+#if DO_CHANGE_SIGNAL
+    BPTR    duplock;
+#endif
     STRPTR  s1, s3, buf;
     LONG    error = RETURN_ERROR;
     
@@ -161,60 +173,110 @@ int main (int argc, char ** argv)
 
 		if(out != NULL)
 		{
-		    /* Clone output filehandle */
+ 
+    	    	#if DO_CHANGE_SIGNAL
+		
+		    /* Duplicate the lock, to make sure that the
+		       file does not go away before we have sent
+		       FSA_CHANGE_SIGNAL to it (without duplicating
+		       the lock this could happen if the new created
+		       shell process exits almost immediately */
+		       		    
+		    duplock = DupLockFromFH(out);
 		    
-		    lock = DupLockFromFH(out);
-
-		    if(lock != NULL)
+		    if(duplock != NULL)
+		    
 		    {
-			in = OpenFromLock(lock);
+		    
+    	    	#endif
+		    	/* Clone output filehandle */
 
-			if(in != NULL)
+		    	lock = DupLockFromFH(out);
+			
+			if (lock != NULL)
 			{
-			    struct TagItem tags[]=
+			    in = OpenFromLock(lock);
+
+			    if(in != NULL)
 			    {
-				{ NP_Arguments  , 0           },
-				{ NP_Input      , 0           },
-				{ NP_Output     , 0           },
-				{ NP_Error      , 0           },
-				{ NP_Seglist    , 0           },
-				{ NP_Cli        , 1           },
-				{ NP_CopyVars   , (IPTR)TRUE  },
-				{ TAG_END       , 0           }
-			    };
+				struct TagItem tags[]=
+				{
+				    { NP_Arguments  , 0           },
+				    { NP_Input      , 0           },
+				    { NP_Output     , 0           },
+				    { NP_Error      , 0           },
+				    { NP_Seglist    , 0           },
+				    { NP_Cli        , 1           },
+				    { NP_CopyVars   , (IPTR)TRUE  },
+				    { TAG_END       , 0           }
+				};
 
-			    tags[0].ti_Data = (IPTR)buf;
-			    tags[1].ti_Data = (IPTR)in;
-			    tags[2].ti_Data = (IPTR)out;
-			    tags[4].ti_Data = (IPTR)shell;
+				tags[0].ti_Data = (IPTR)buf;
+				tags[1].ti_Data = (IPTR)in;
+				tags[2].ti_Data = (IPTR)out;
+				tags[4].ti_Data = (IPTR)shell;
 
-			    process = CreateNewProc(tags);
+				process = CreateNewProc(tags);
 
-			    if (process != NULL)
+				if (process != NULL)
+				{
+				
+				#if DO_CHANGE_SIGNAL
+				
+    	    	    	    	    struct FileHandle *fh = (struct FileHandle *)BADDR(out);
+				    struct IOFileSys  iofs;
+				    
+				    iofs.IOFS.io_Message.mn_Node.ln_Type   = NT_REPLYMSG;
+				    iofs.IOFS.io_Message.mn_ReplyPort      = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+				    iofs.IOFS.io_Message.mn_Length         = sizeof(struct IOFileSys);
+				    iofs.IOFS.io_Command                   = FSA_CHANGE_SIGNAL;
+				    iofs.IOFS.io_Flags                     = 0;
+    	    	    	    	    
+				    iofs.IOFS.io_Device    	    	   = fh->fh_Device;
+				    iofs.IOFS.io_Unit      	    	   = fh->fh_Unit;
+				    iofs.io_Union.io_CHANGE_SIGNAL.io_Task = (struct Task *)process;
+				    
+				    DoIO(&iofs.IOFS);
+				    
+				#endif  
+				  
+				    out = in = shell = NULL;
+				    error = 0;
+				}
+
+				Close(in);
+				
+			    } /* if (lock != NULL) */
+			    else
 			    {
-				out = in = shell = NULL;
-				error = 0;
+				UnLock(lock);
 			    }
-
-			    Close(in);
-			}
-			else
-			{
-			    UnLock(lock);
-			}
-		    }
-
+			    
+			} /* if (lock != NULL) */
+			
+    	    	#if DO_CHANGE_SIGNAL
+		
+			UnLock(duplock);
+			
+		    } /* if(duplock != NULL) */
+		    
+    	    	#endif
+		
 		    Close(out);
-		}
+		    
+		} /* if(out != NULL) */
 
 		UnLoadSeg(shell);
-	    }
+		
+	    } /* if(shell != NULL) */
 
 	    FreeVec(buf);
-	}
+	    
+	} /* if (buf != NULL) */
 
 	FreeArgs(rda);
-    }
+	
+    } /* if (rda != NULL) */ 
     else
     {
 	error = RETURN_FAIL;
