@@ -935,7 +935,7 @@ static ULONG ASM SAVEDS myReqHandler (
 		    
 	    if (glob->arg.buffer[0])
 	    {
-		if ((str = ((STDARGS char * (*)(long, long, struct PWCallBackArgs *))
+		if ((str = ((PWCALLBACKFUNPTR)
 			   glob->value)(glob->mode, glob->checksum, &glob->arg)))
 		{
 		    /* Check if return was 'Please verify', MAJOR HACK !! */

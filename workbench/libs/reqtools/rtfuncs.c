@@ -468,22 +468,57 @@ SAVEDS ASM void RTFuncs_rtSpread(REGPARAM(a0, ULONG *, posarray),
 
 SAVEDS ASM void RTFuncs_ScreenToFrontSafely(REGPARAM(a0, struct Screen *, screen))
 {
-    struct Screen *scr = IntuitionBase->FirstScreen;
+#ifndef USE_FORBID
+    ULONG ilock;
+#endif
+    struct Screen *scr;
 
+    /* Bugfixes: 1. Lock *before* peeking IntuitionBase->FirstScreen
+                 2. Favor LockIBase() over Forbid() */
+
+#ifdef USE_FORBID
     Forbid();
+#else
+    ilock = LockIBase(0);
+#endif
+
+    scr = IntuitionBase->FirstScreen;
 
     while(scr != NULL)
     {
 	if(scr == screen)
 	{
+#ifdef USE_FORBID
 	    ScreenToFront(screen);
 	    break;
+#else
+	    /* Forbid before UnlockIBase() to avoid screen from disappearing */
+	    Forbid();
+
+	    /* UnlockIBase() basically does ReleaseSemaphore() and that never
+	       Wait(), and thus cannot break Forbid(). */
+	    UnlockIBase(ilock);
+
+	    /* Actually this will break the Forbid() if it need to Wait() for
+	       semaphore, so this function isn't 100% bulletproof anyway... */
+	    ScreenToFront(screen);
+
+	    Permit();
+
+	    /* Note: return not break!
+	    */
+	    return;
+#endif
 	}
 	
 	scr = scr->NextScreen;
     }
 
+#ifdef USE_FORBID
     Permit();
+#else
+    UnlockIBase(ilock);
+#endif
 }
 
 /****************************************************************************************/
