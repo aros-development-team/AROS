@@ -125,7 +125,7 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prefs.imagespecs[MUII_Disk] = "0:128";
     data->prefs.imagespecs[MUII_Chip] = "0:128";
     data->prefs.imagespecs[MUII_Volume] = "0:128";
-    data->prefs.imagespecs[MUII_RegisterBack] = "0:128";
+    data->prefs.imagespecs[MUII_RegisterBack] = (char*)GetConfigData(obj,MUICFG_Background_Register,"0:128");
     data->prefs.imagespecs[MUII_Network] = "0:128";
     data->prefs.imagespecs[MUII_Assign] = "0:128";
     data->prefs.imagespecs[MUII_TapePlay] = "0:128";
@@ -133,12 +133,12 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prefs.imagespecs[MUII_TapePause] = "0:128";
     data->prefs.imagespecs[MUII_TapeStop] = "0:128";
     data->prefs.imagespecs[MUII_TapeRecord] = "0:128";
-    data->prefs.imagespecs[MUII_GroupBack] = "0:128";
+    data->prefs.imagespecs[MUII_GroupBack] = (char*)GetConfigData(obj,MUICFG_Background_Framed,"0:128");
     data->prefs.imagespecs[MUII_SliderBack] = "0:128";
     data->prefs.imagespecs[MUII_SliderKnob] = "0:128";
     data->prefs.imagespecs[MUII_TapeUp] = "0:128";
     data->prefs.imagespecs[MUII_TapeDown] = "0:128";
-    data->prefs.imagespecs[MUII_PageBack] = "0:128";
+    data->prefs.imagespecs[MUII_PageBack] = (char*)GetConfigData(obj,MUICFG_Background_Page,"0:128");
     data->prefs.imagespecs[MUII_ReadListBack] = "0:128";
 
 
