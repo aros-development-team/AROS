@@ -65,7 +65,7 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
  Known=FALSE;
 #endif /* MYDEBUG */
 
- D(bug("ppm.datatype/OM_NEW: Reached\n"));
+ D(bug("ppm.datatype/OM_NEW: Entering\n"));
 
  D(bug("ppm.datatype/OM_NEW: cl: 0x%lx o: 0x%lx msg: 0x%lx\n", (unsigned long) cl, (unsigned long) o, (unsigned long) msg));
 
@@ -100,6 +100,8 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
    D(bug("ppm.datatype/OM_NEW: Tag ID 0x%lx\n", ti->ti_Tag));
   }
  }
+
+ Attrs=((struct opSet *) msg)->ops_AttrList;
 #endif /* MYDEBUG */
 
  Title=(char *) GetTagData(DTA_Name, NULL, Attrs);
@@ -388,6 +390,9 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
 #endif /* _AROS */
  FreeVec(ChunkyBuffer);
  FreeVec(RGBBuffer);
+
+  D(bug("ppm.datatype/OM_NEW: Leaving\n"));
+
  return(RetVal);
 }
 
@@ -399,6 +404,8 @@ STATIC IPTR DT_NotifyMethod(struct IClass *cl, struct Gadget *g, struct opUpdate
 
  register int i;
  int Known;
+
+ D(bug("ppm.datatype/OM_NOTIFY: Entering\n"));
 
  Known=FALSE;
 
@@ -422,6 +429,8 @@ STATIC IPTR DT_NotifyMethod(struct IClass *cl, struct Gadget *g, struct opUpdate
   }
  }
 
+ D(bug("ppm.datatype/OM_NOTIFY: Leaving\n"));
+
 #endif /* MYDEBUG */
 
  return(DoSuperMethodA(cl, (Object *) g, (Msg) msg));
@@ -438,6 +447,8 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
  register int i;
  int Known;
 #endif /* MYDEBUG */
+
+ D(bug("ppm.datatype/OM_SET: Entering\n"));
 
  RetVal=DoSuperMethodA(cl, (Object *) g, (Msg) msg);
 
@@ -527,6 +538,9 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
    }
   }
  }
+
+ D(bug("ppm.datatype/OM_SET: Leaving\n"));
+
 #endif /* MYDEBUG */
 
  return(RetVal);
@@ -540,6 +554,7 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
  int Known;
 #endif /* MYDEBUG */
 
+ D(bug("ppm.datatype/OM_GET: Entering\n"));
 
  RetVal=DoSuperMethodA(cl, (Object *) g, (Msg) msg);
 
@@ -714,6 +729,8 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   }
  }
 
+ D(bug("ppm.datatype/OM_GET: Leaving\n"));
+
 #endif /* MYDEBUG */
 
  return(RetVal);
@@ -722,24 +739,61 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 STATIC IPTR DT_LayoutMethod(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 {
  IPTR RetVal;
+ const char L[]="GM_LAYOUT";
+ const char P[]="DTM_PROCLAYOUT";
+ const char A[]="DTM_ASYNCLAYOUT";
+ const char U[]="Unknown Method";
+ char *MethodName;
 
 #ifdef MYDEBUG
- D(bug("ppm.datatype/GM_LAYOUT: MethodID 0x%lx\n", msg->MethodID));
+ switch(msg->MethodID)
+ {
+  case GM_LAYOUT:
+  {
+   MethodName=L;
 
- D(bug("ppm.datatype/GM_LAYOUT: GagdetInfo->Screen 0x%lx\n", (unsigned int) msg->gpl_GInfo->gi_Screen));
- D(bug("ppm.datatype/GM_LAYOUT: GagdetInfo->Window 0x%lx\n", (unsigned int) msg->gpl_GInfo->gi_Window));
- D(bug("ppm.datatype/GM_LAYOUT: GagdetInfo->Requester 0x%lx\n", (unsigned int) msg->gpl_GInfo->gi_Requester));
- D(bug("ppm.datatype/GM_LAYOUT: GagdetInfo->RastPort 0x%lx\n", (unsigned int) msg->gpl_GInfo->gi_RastPort));
- D(bug("ppm.datatype/GM_LAYOUT: GagdetInfo->Layer 0x%lx\n", (unsigned int) msg->gpl_GInfo->gi_Layer));
- D(bug("ppm.datatype/GM_LAYOUT: GagdetInfo->Domain %ld %ld %ld %ld\n", (int) msg->gpl_GInfo->gi_Domain.Left, (int) msg->gpl_GInfo->gi_Domain.Top, (int) msg->gpl_GInfo->gi_Domain.Width, (int) msg->gpl_GInfo->gi_Domain.Height));
+   break;
+  }
 
+  case DTM_PROCLAYOUT:
+  {
+   MethodName=P;
 
- D(bug("ppm.datatype/GM_LAYOUT: gpl_Initial 0x%lx\n", msg->gpl_Initial));
+   break;
+  }
+
+  case DTM_ASYNCLAYOUT:
+  {
+   MethodName=A;
+
+   break;
+  }
+
+  default:
+  {
+   MethodName=U;
+  }
+ }
+
+ D(bug("ppm.datatype/%s: Entering\n", MethodName));
+
+ D(bug("ppm.datatype/%s: MethodID 0x%lx\n", MethodName, msg->MethodID));
+
+ D(bug("ppm.datatype/%s: GagdetInfo->Screen 0x%lx\n", MethodName, (unsigned int) msg->gpl_GInfo->gi_Screen));
+ D(bug("ppm.datatype/%s: GagdetInfo->Window 0x%lx\n", MethodName, (unsigned int) msg->gpl_GInfo->gi_Window));
+ D(bug("ppm.datatype/%s: GagdetInfo->Requester 0x%lx\n", MethodName, (unsigned int) msg->gpl_GInfo->gi_Requester));
+ D(bug("ppm.datatype/%s: GagdetInfo->RastPort 0x%lx\n", MethodName, (unsigned int) msg->gpl_GInfo->gi_RastPort));
+ D(bug("ppm.datatype/%s: GagdetInfo->Layer 0x%lx\n", MethodName, (unsigned int) msg->gpl_GInfo->gi_Layer));
+ D(bug("ppm.datatype/%s: GagdetInfo->Domain %ld %ld %ld %ld\n", MethodName, (int) msg->gpl_GInfo->gi_Domain.Left, (int) msg->gpl_GInfo->gi_Domain.Top, (int) msg->gpl_GInfo->gi_Domain.Width, (int) msg->gpl_GInfo->gi_Domain.Height));
+
+ D(bug("ppm.datatype/%s: gpl_Initial 0x%lx\n", MethodName, msg->gpl_Initial));
 #endif /* MYDEBUG */
 
  RetVal=DoSuperMethodA(cl, (Object *) g, (Msg) msg);
 
- D(bug("ppm.datatype/GM_LAYOUT: RetVal 0x%lx\n", (unsigned int) RetVal));
+ D(bug("ppm.datatype/%s: RetVal 0x%lx\n", MethodName, (unsigned int) RetVal));
+
+ D(bug("ppm.datatype/%s: Leaving\n", MethodName));
 
  return(RetVal);
 }
@@ -772,9 +826,7 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 
     putreg(REG_A4, (long) cl->cl_Dispatcher.h_SubEntry);        /* Small Data */
 
-#if 0
-    D(bug("ppm.datatype/DT_Dispatcher: Reached\n"));
-#endif /* 0 */
+    D(bug("ppm.datatype/DT_Dispatcher: Entering\n"));
 
     switch(msg->MethodID)
     {
@@ -811,12 +863,40 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 	    break;
 
 	case GM_LAYOUT: 
-	case DTM_PROCLAYOUT:
-	case DTM_ASYNCLAYOUT:
 
 	    D(bug("ppm.datatype/DT_Dispatcher: Method GM_LAYOUT\n"));
 
 	    retval = DT_LayoutMethod(cl, (struct Gadget *) o, (struct gpLayout *) msg);
+
+	    break;
+
+
+	case DTM_PROCLAYOUT:
+
+	    D(bug("ppm.datatype/DT_Dispatcher: Method DTM_PROCLAYOUT\n"));
+
+	    retval = DT_LayoutMethod(cl, (struct Gadget *) o, (struct gpLayout *) msg);
+
+	    break;
+
+
+	case DTM_ASYNCLAYOUT:
+
+	    D(bug("ppm.datatype/DT_Dispatcher: Method DTM_ASYNCLAYOUT\n"));
+
+	    retval = DT_LayoutMethod(cl, (struct Gadget *) o, (struct gpLayout *) msg);
+
+	    break;
+
+	case GM_RENDER:
+
+	    D(bug("ppm.datatype/DT_Dispatcher: Method GM_RENDER\n"));
+
+	    D(bug("ppm.datatype/GM_RENDER: Entering\n"));
+
+	    retval = DoSuperMethodA(cl, o, msg);
+
+	    D(bug("ppm.datatype/GM_RENDER: Leaving\n"));
 
 	    break;
 
@@ -848,9 +928,7 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 
     } /* switch(msg->MethodID) */
 
-#if 0
     D(bug("ppm.datatype/DT_Dispatcher: Leaving\n"));
-#endif /* 0 */
 
     return retval;
 #ifdef _AROS
