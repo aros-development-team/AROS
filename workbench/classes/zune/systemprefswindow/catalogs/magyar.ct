@@ -1,0 +1,38 @@
+## version $VER: systemprefswindow.catalog 1.0 (25.01.2005)
+## language magyar
+## codeset 0
+;
+; Translated by Miklós Németh
+;
+MSG_MENU_PREFS
+Beállítások
+; Preferences
+;
+MSG_MENU_PREFS_IMPORT
+I\0Importál...
+; I\0Import...
+;
+MSG_MENU_PREFS_EXPORT
+E\0Exportál...
+; E\0Export...
+;
+MSG_MENU_PREFS_TEST
+T\0Teszt...
+; T\0Test
+;
+MSG_MENU_PREFS_REVERT
+V\Visszaállít
+; R\0Revert
+;
+MSG_MENU_PREFS_SAVE
+M\0Ment
+; S\0Save
+;
+MSG_MENU_PREFS_USE
+H\0Használ
+; U\0Use
+;
+MSG_MENU_PREFS_CANCEL
+Mégsem
+; C\0Cancel
+;
