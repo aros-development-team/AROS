@@ -171,6 +171,8 @@ int main(int argc, char **argv)
 	showrequester(NULL, frtags_);
 
 	CloseLibrary(AslBase);
+    } else {
+        puts("Could not open asl.library!\n");
     }
     return 0;
 }
