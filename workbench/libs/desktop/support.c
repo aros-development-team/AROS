@@ -44,8 +44,6 @@ BOOL startDesktopHandler(void)
         return FALSE;
     }
     
-    DesktopBase->db_Library.lib_OpenCnt++;
-
     D(bug("*** Starting desktop handler\n"));
     process = CreateNewProcTags
     (
@@ -174,13 +172,13 @@ struct WorkingMessageNode *findWorkedMessage(struct MinList *list, ULONG id)
     struct WorkingMessageNode *wmn;
     BOOL            found = FALSE;
 
-    wmn = list->mlh_Head;
+    wmn = (struct WorkingMessageNode *)list->mlh_Head;
     while (!found && wmn->wm_Node.mln_Succ)
     {
         if (wmn->wm_ID == id)
             found = TRUE;
         else
-            wmn = wmn->wm_Node.mln_Succ;
+            wmn = (struct WorkingMessageNode *)wmn->wm_Node.mln_Succ;
     }
 
     return wmn;
