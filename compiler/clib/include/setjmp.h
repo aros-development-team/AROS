@@ -1,5 +1,5 @@
-#ifndef _SETJMP_H
-#define _SETJMP_H
+#ifndef _SETJMP_H_
+#define _SETJMP_H_
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
@@ -8,6 +8,9 @@
     Desc: ANSI-C header file setjmp.h
     Lang: english
 */
+
+#include <aros/system.h>
+#include <sys/_posix.h>
 
 #ifdef __mc68000__
 #define _JMPLEN 12
@@ -26,8 +29,31 @@ typedef struct jmp_buf
     unsigned long regs[_JMPLEN];
 } jmp_buf[1];
 
-/* Prototypes */
-extern int setjmp (jmp_buf env);
-extern void longjmp (jmp_buf env, int val);
+#if !defined(_ANSI_SOURCE)
+typedef struct sigjmp_buf
+{
+    unsigned long   retaddr;
+    unsigned long   regs[_JMPLEN];
+} sigjmp_buf[1];
+#endif /* !_ANSI_SOURCE */
 
-#endif /* _SETJMP_H */
+/* Prototypes */
+__BEGIN_DECLS
+int	setjmp (jmp_buf env);
+void	longjmp (jmp_buf env, int val) __noreturn ;
+
+#if !defined(_ANSI_SOURCE)
+/* Unix functions */
+void   siglongjmp(sigjmp_buf, int) __noreturn ;
+int    sigsetjmp(sigjmp_buf, int);
+
+#if !defined(_POSIX_SOURCE)
+void	_longjmp(jmp_buf, int) __noreturn ;
+int	_setjmp(jmp_buf);
+#endif
+
+#endif /* !_ANSI_SOURCE */
+
+__END_DECLS
+
+#endif /* _SETJMP_H_ */
