@@ -7,7 +7,9 @@
 */
 #ifndef _INITSTRUCT_H_
 #define _INITSTRUCT_H_
-#include <aros/machine.h>
+#ifndef EXEC_TYPES_H
+#   include <exec/types.h>
+#endif
 
 typedef BYTE type_B;
 typedef WORD type_W;
