@@ -120,28 +120,6 @@ Object *SystemPrefsWindow__OM_NEW
         data = INST_DATA(CLASS, self);
         data->spwd_Catalog = catalog;
         data->spwd_Editor  = editor;
-        data->spwd_CanSave = TRUE;
-               
-        /*-- Completely disable save button if ENVARC: is write-protected --*/
-        lock = Lock("ENVARC:", SHARED_LOCK);
-        if (lock != NULL)
-        {
-            struct InfoData id;
-            
-            if (Info(lock, &id))
-            {
-                if (id.id_DiskState == ID_WRITE_PROTECTED)
-                {
-                    data->spwd_CanSave = FALSE;
-                }
-            }
-            
-            UnLock(lock);
-        }
-        else
-        {
-            data->spwd_CanSave = FALSE;
-        }
         
         /*-- Handle initial attribute values -------------------------------*/
         SetAttrsA(self, message->ops_AttrList);
@@ -216,7 +194,18 @@ IPTR SystemPrefsWindow__OM_SET
         switch (tag->ti_Tag)
         {
             case MUIA_PrefsWindow_Save_Disabled:
-                if (!data->spwd_CanSave) tag->ti_Tag = TAG_IGNORE;
+                if (!XGET(data->spwd_Editor, MUIA_PrefsEditor_CanSave))
+                {
+                    tag->ti_Tag = TAG_IGNORE;
+                }
+                break;
+                
+            case MUIA_PrefsWindow_Test_Disabled:
+            case MUIA_PrefsWindow_Revert_Disabled:
+                if (!XGET(data->spwd_Editor, MUIA_PrefsEditor_CanTest))
+                {
+                    tag->ti_Tag = TAG_IGNORE;
+                }
                 break;
         }
     }

@@ -16,7 +16,9 @@
 struct PrefsEditor_DATA
 {
     BOOL   ped_Changed,
-           ped_Testing;
+           ped_Testing,
+           ped_CanSave,
+           ped_CanTest;
     STRPTR ped_Name,
            ped_Path;
     BPTR   ped_BackupFH;

@@ -16,7 +16,6 @@ struct SystemPrefsWindow_DATA
 {
     struct Catalog *spwd_Catalog;
     Object         *spwd_Editor;
-    BOOL            spwd_CanSave;
 };
 
 /*** Private methods ********************************************************/
