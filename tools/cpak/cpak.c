@@ -110,6 +110,8 @@ char filename[50];
 			_read ( fd, incname, 1 );
 		        if ( incname[0] == '<' || incname[0] == 0x22 )
 			{
+                            int found;
+
 			    if ( incname[0] == '<' )
 			    {
 				bracket = '>';
@@ -118,21 +120,35 @@ char filename[50];
 			    {
 				bracket = 0x22;
 			    }
-			    i = 0;
+
+                            i = 0;
 			    do {
 				i++;
 				_read ( fd, &incname[i], 1 );
 			    } while ( incname[i] != bracket );
 			    incname[i+1] = 0;
-			    search = &first;
-			    while ( search->next != NULL && strcmp ( search->text, incname) !=0  )
+
+			    for
+                            (
+                                found         = 0, search = &first;
+                                search->next != NULL;
+                                search        = search->next
+                            )
 			    {
-				search = search->next;
+                                /* don't put <> includes after "" ones */
+                                if ( bracket == '>' && search->text[0] != '<')
+                                    break;
+
+                                if ( strcmp ( search->text, incname) == 0 )
+                                {
+                                    found = 1;
+                                    break;
+                                }
 			    }
-			    if ( search->next == NULL && strcmp ( search->text, incname ) != 0 )
+			    if ( !found )
 			    {
 				current = malloc ( sizeof ( struct inclist ) );
-				current->next = NULL;
+				current->next = search->next;
 				current->text = strdup ( incname );
 				search->next = current;
 			    }
