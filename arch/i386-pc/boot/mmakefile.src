@@ -72,7 +72,8 @@ BOOT_TAR_FILES := \
     Prefs/Zune Prefs/Zune.info Prefs.info \
     Prefs/Env-Archive Prefs/Presets \
     S/Shell-Startup S/Startup-Sequence \
-    System System.info \
+    System/About System/FixFonts System/FixFonts.info System/Themes \
+    System/Wanderer System.info \
     Tools/calculator Tools/Editor Tools/HDToolBox Tools/HDToolBox.info \
     Tools/Commodities Tools/Commodities.info Tools.info \
     Utilities/MultiView Utilities/Multiview.info Utilities.info 
