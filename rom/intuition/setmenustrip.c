@@ -6,10 +6,9 @@
     Lang: English
 */
 #include "intuition_intern.h"
+#include "menus.h"
 
-void CalculateDims(struct Menu *menu);
-void GetBox(struct MenuItem *item, struct Menu *menu,
-	    WORD *xmax, WORD *ymax);
+void CalculateDims(struct Window *win, struct Menu *menu);
 void Characterize(struct Menu *menu);
 
 /*****************************************************************************
@@ -65,6 +64,8 @@ void Characterize(struct Menu *menu);
 
 #define HASSUBITEM 0x8000
 
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
+
     /* If a menu is active for this task, we must wait until the
        user is done. We check the task rather than the window as
        semaphores is owned by tasks... */
@@ -76,7 +77,9 @@ void Characterize(struct Menu *menu);
     /* When entering here, this menustrip is NOT displayed as the user has
        removed it from the window using ClearMenuStrip() if it was ever
        attached to a window. */
-    CalculateDims(menu);
+    CalculateDims(window, menu);
+
+#if 0 /* stegerg: ??? */
 
     /*
     if(me == GPB(IntuiBase)->ib_ActiveMenuTask)
@@ -90,10 +93,11 @@ void Characterize(struct Menu *menu);
 	Wait(SIGF_INTUITION);
     }
     */
-    
+#endif
+   
     window->MenuStrip = menu;
     
-    
+#if 0 /* stegerg: ??? */    
     /* Note that we have to do a similar test in the input handler
        as well. */
     
@@ -111,23 +115,38 @@ void Characterize(struct Menu *menu);
 	    Signal(sleeper, SIGF_INTUITION);
     }
     */
+#endif
+
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
     
     return TRUE;
     
     /* TODO:
        The following things should be done in SetMenuStrip:
        
-       * Calculate the layer size for each menu (that is the layer that
+       * Calculate the menu box coords for each menu (that is the box that
          is shown when this menu is active. Save the values in JazzX,JazzY,
-         BeatX and BeatY. The same goes for submenus but there we use some
-         hackish trickery as there are no Musical variables.
+         BeatX and BeatY. This cannot be done for sub-menus as there are
+	 no Musical variables and subitem->SubItem cannot be used either
+	 as it could hold just two WORDs but we need 4 WORDs. JazzX = box_x1
+	 , JazzY = box_y1, BeatX = box_x2, BeatY = box_y2, everything relative
+	 to the menu coords (or menuitem coords, in case of a subitem box).
 
+         stegerg: DONE
+	 
+	 
        * Construct the Amiga-key symbol in a size appropriate for the
          font that is in use (or is this up to the application program?).
 	 !!! Should be done in OpenWindow() !!!
 
+         stegerg: DONE 
+	 
+	 
        * The equivalent of the above for the checkmark.
 
+         stegerg: DONE
+	 
+	 
        * Consistency checks(?). If ItemFill is NULL something must be wrong
          for example if this is a selectable menu item.
 
@@ -136,10 +155,7 @@ void Characterize(struct Menu *menu);
     AROS_LIBFUNC_EXIT
 } /* SetMenuStrip */
 
-#define min(a,b) (((a) < (b)) ? (a) : (b))
-#define max(a,b) (((a) > (b)) ? (a) : (b))
-
-void CalculateDims(struct Menu *menu)
+void CalculateDims(struct Window *win, struct Menu *menu)
 {
     struct MenuItem *item;
 
@@ -147,37 +163,11 @@ void CalculateDims(struct Menu *menu)
     {
 	item = menu->FirstItem;
 
-	GetBox(item, menu, &menu->BeatX, &menu->BeatY);
+	GetMenuBox(win, item, &menu->JazzX, &menu->JazzY, &menu->BeatX, &menu->BeatY);
 
 	menu = menu->NextMenu;
     }
 }
-
-
-void GetBox(struct MenuItem *item, struct Menu *menu,
-	    WORD *xmax, WORD *ymax)
-{
-    WORD right, bottom;
-
-    right = bottom = -0x7fff;
-
-    while(item != NULL)
-    {
-	right  = max(right,  item->LeftEdge + item->Width);
-	bottom = max(bottom, item->TopEdge + item->Height);
-	
-	if(item->SubItem != NULL)
-	    /* We can do this as subitems cannot have subitems. */
-	    GetBox(item->SubItem, menu, (WORD *)&item->SubItem->SubItem, 
-		   ((WORD *)&item->SubItem->SubItem)+1);
-
-	item = item->NextItem;
-    }
-
-    *xmax = right + menu->LeftEdge;
-    *ymax = bottom + menu->TopEdge + menu->Height;
-}
-
 
 /* Mark items that has subitems. This is necessary for the input handler
    code. It's not possible to check item->SubItem within it as we save
