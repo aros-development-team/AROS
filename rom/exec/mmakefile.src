@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 # Use OS's own includes over the ones from AROS
-OS_INCLUDES := -I$(INCDIR) -I. -I$(GENINCDIR)
+OS_INCLUDES := -I. -I$(GENINCDIR)
 
 # ***** Native ***************
 ifeq ($(FLAVOUR),native)
@@ -16,8 +16,8 @@ LIB	    := $(LIBDIR)/libexec.a
 FILES	    :=
 FUNCTIONS   := \
 	initcode initstruct makelibrary makefunctions findresident	    \
-	initresident setintvector addintserver remintserver                 \
-	availmem allocentry freeentry typeofmem addmemlist                  \
+	initresident setintvector addintserver remintserver		    \
+	availmem allocentry freeentry typeofmem addmemlist		    \
 	addmemhandler remmemhandler insert addhead addtail remove remhead   \
 	remtail enqueue findname setsignal allocsignal freesignal addport   \
 	remport waitport findport createmsgport deletemsgport putmsg getmsg \
@@ -38,9 +38,9 @@ else
 OSMODULE    := exec.library
 INIT_FILE   := exec_init
 SYS_FILES   := execfunctions prepareexecbase
-FILES	    := traphandler exec_util 
+FILES	    := traphandler exec_util
 END_FILE    := exec_endtag
-LIBNAME	    := exec
+LIBNAME     := exec
 
 FUNCTIONS   := \
 	abortio adddevice addhead addintserver addlibrary addmemhandler \
@@ -86,7 +86,7 @@ FUNCTABLE_SRCS	:= $(foreach f,$(FUNCTIONS),$(f).c)
 .PHONY : all clean setup
 
 ifeq ($(FLAVOUR),native)
-DEPLIBS := arossupport arosc 
+DEPLIBS := arossupport arosc
 else
 DEPLIBS :=
 endif
@@ -102,9 +102,6 @@ kernel-exec-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
 # The all powerful ROM library generating stuff...
 NO_FUNCTABLE := 1
 %genromlib_f
-
-#MM includes-generate : setup-clib
-%genlibincludes
 
 %asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(END_FILE) $(ALL_FILES)"
 %ctoasm_q
