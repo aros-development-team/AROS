@@ -85,6 +85,10 @@ struct Screen * openscreen(void)
                           WA_Height, 200,
                           WA_Width, 200,
 			  WA_CustomScreen, screen,
+			  WA_Activate,		TRUE,
+			  WA_DepthGadget, 	TRUE,
+			  WA_Zoom,		TRUE,
+			  WA_CloseGadget,	TRUE,
                           TAG_END);
 
   printf("Window opened\n");
