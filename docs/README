@@ -10,7 +10,7 @@ New this time:
 - Bugfixes (as usual)
 - Some new functions
 - We have the first game for AROS: Moria3D runs after minor changes
-- All neccessary includes to compile AROS
+- All necessary includes to compile AROS
 - Added conditional muild (see make.defaults)
 - Much faster linking on Unix
 
@@ -72,7 +72,7 @@ MISC
 ----
 
 This software is subject to the "Standard Amiga FD-Software Copyright Note".
-It is MAILWARE as defined in paragraph 4s.
+It is MAILWARE as defined in paragraph 4b.
 If you like it and use it regularly please send a message to the
 following address:
 
