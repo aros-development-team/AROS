@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/08/23 17:25:30  digulla
+    Added include intuition/intuition.h to user-docs
+
     Revision 1.1  1996/08/13 15:37:27  digulla
     First function for intuition.library
 
@@ -15,6 +18,7 @@
 /*****************************************************************************
 
     NAME */
+	#include <intuition/intuition.h>
 	#include <clib/intuition_protos.h>
 
 	__AROS_LH2(BOOL, ModifyIDCMP,
