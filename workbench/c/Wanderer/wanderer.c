@@ -220,19 +220,6 @@ Object *execute_wnd;
 Object *execute_command_string;
 
 /**************************************************************************
- Easily get attributes. (disabled for AmigaOS version because library is
- a linking library for debugging reasons and contains already xget)
-**************************************************************************/
-#ifdef __AROS__
-ULONG xget(Object *obj, Tag attr)
-{
-  ULONG storage;
-  GetAttr(attr, obj, &storage);
-  return storage;
-}
-#endif
-
-/**************************************************************************
  This is a custom class inheriting from the WindowClass.
 **************************************************************************/
 
@@ -652,14 +639,14 @@ void execute_ok(void)
 	    	SYS_Input,  (IPTR)input,
 	    	SYS_Output, (IPTR)NULL,
 	    	SYS_Error,  (IPTR)NULL,
-		NP_CurrentDir, lock, /* Will be freed automatical if successful */
+		NP_CurrentDir, (IPTR)lock, /* Will be freed automatical if successful */
 	    	TAG_DONE) == -1)
 #else
 	if (SystemTags(execute_command,
 	    	SYS_Asynch,	TRUE,
 	    	SYS_Input,  (IPTR)input,
 	    	SYS_Output, (IPTR)NULL,
-		NP_CurrentDir, lock, /* Will be freed automatical if successful */
+		NP_CurrentDir, (IPTR)lock, /* Will be freed automatical if successful */
 	    	TAG_DONE) == -1)
 #endif
         {
@@ -683,7 +670,7 @@ void shell_open(char **cd_ptr)
 {
     BPTR cd = Lock(*cd_ptr,ACCESS_READ);
 
-    if (SystemTags("NewShell", NP_CurrentDir, cd, TAG_DONE) == -1)
+    if (SystemTags("NewShell", NP_CurrentDir, (IPTR)cd, TAG_DONE) == -1)
     {
     	UnLock(cd);
     }
