@@ -309,6 +309,8 @@ struct InfoData
   /* An error occured, while unlocking a record. */
 #define ERROR_UNLOCK_ERROR		243
 
+/* Further errors are defined in dosasl.h amd filesystem.h as well */
+
 /* Maximum length of strings got from Fault(). Note that they should be
    shorter than 60 characters. */
 #define FAULT_MAX		82
