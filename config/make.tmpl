@@ -501,16 +501,22 @@ endif
 
 #MM
 %(mmake)-quick : $(GENDIR)/$(CURDIR)/.configured
-	@$(MAKE) -C $(GENDIR)/$(CURDIR)
-	@$(MAKE) -C $(GENDIR)/$(CURDIR) install
+	@if ! $(MAKE) -q -C $(GENDIR)/$(CURDIR); then \
+	    $(MAKE) -C $(GENDIR)/$(CURDIR); \
+	    ret=$$?; \
+	    if [ $$ret -ne 0 ] ; then \
+	        exit $$ret; \
+	    fi; \
+	    $(MAKE) -C $(GENDIR)/$(CURDIR) install; \
+	fi
 
 $(TOP)/$(CURDIR)/.files-touched:
-	@find . | xargs $(TOUCH) -r configure 
-	@$(ECHO) YES > $@
+	@find . | xargs $(TOUCH) -r configure; \
+	$(ECHO) YES > $@
 
 $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	%mkdirs_q $(GENDIR)/$(CURDIR)
-	cd $(GENDIR)/$(CURDIR); \
+	@cd $(GENDIR)/$(CURDIR); \
 	    $(RM) config.cache; \
 	    for AR2 in $(AR); do break; done; \
 	    for RANLIB2 in $(RANLIB); do break; done; \
@@ -520,7 +526,7 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	    CC_FOR_BUILD="$(HOST_CC)" \
 	    %(configure) --prefix=%(prefix) --bindir=%(bindir) --libdir=%(libdir) \
 	    --includedir=%(includedir)  %(extraoptions) \
-	    --host=$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros
+	    --host=$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros; \
 	$(ECHO) YES > $@
 
 #MM
