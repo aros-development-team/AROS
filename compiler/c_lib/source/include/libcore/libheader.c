@@ -246,7 +246,6 @@ DECLARESET(INITLIB)
 DECLARESET(EXPUNGELIB)
 DECLARESET(OPENLIB)
 DECLARESET(CLOSELIB)
-DECLARESET(SYSINIT)
 
 #endif
 
@@ -284,9 +283,8 @@ AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
 #endif
 
 #ifdef AROS_LC_SETFUNCS
-    ok = set_call_libfuncs(SETNAME(SYSINIT), 1, sysBase);
 # ifndef AROS_LC_SET_NOLIBS
-    ok = ok && set_open_libraries();
+    ok = set_open_libraries();
 # endif
     ok = ok && set_call_funcs(SETNAME(INIT), 1, 1);
     if ( ok )
@@ -559,5 +557,4 @@ DEFINESET(INITLIB)
 DEFINESET(EXPUNGELIB)
 DEFINESET(OPENLIB)
 DEFINESET(CLOSELIB)
-DEFINESET(SYSINIT)
 #endif
