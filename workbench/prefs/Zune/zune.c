@@ -21,6 +21,7 @@
 #endif
 
 #include "buttonsp.h"
+#include "groupsp.h"
 #include "windowp.h"
 #include "zunestuff.h"
 
@@ -202,6 +203,7 @@ struct page_entry main_page_entries[] =
     {"System",NULL,NULL,NULL},
     {"Windows",NULL,NULL,&_MUIP_Windows_desc},
     {"Buttons",NULL,NULL,&_MUIP_Buttons_desc},
+    {"Groups",NULL,NULL,&_MUIP_Groups_desc},
 };
 
 #define MAIN_PAGE_ENTRIES_LEN sizeof(main_page_entries)/sizeof(main_page_entries[0])
