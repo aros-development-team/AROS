@@ -509,6 +509,93 @@ void GenerateLayers2(void)
   i = unusedlayer();
   layers[i] = CreateBehindLayer(&screen->LayerInfo, 
                                  screen->RastPort.BitMap,
+                                 10,
+                                 10,
+                                 100,
+                                 95,
+                                 LAYERSMART,
+                                 NULL);
+  
+  /* 
+    CHEAT!!!
+    Still have to copy the X-Window info manually. It is found
+    in longreserved[0] of the RastPort of a window (should be found
+    in a screen anyway)
+  */
+#if 0
+  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
+#endif
+  frame(layers[i]);
+
+  i = unusedlayer();
+  layers[i] = CreateBehindLayer(&screen->LayerInfo, 
+                                 screen->RastPort.BitMap,
+                                 50,
+                                 50,
+                                 150,
+                                 150,
+                                 LAYERSMART,
+                                 NULL);
+
+  /* 
+    CHEAT!!!
+    Still have to copy the X-Window info manually. It is found
+    in longreserved[0] of the RastPort of a window (should be found
+    in a screen anyway)
+  */
+#if 0
+  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
+#endif
+  frame(layers[i]);
+
+  i = unusedlayer();
+  layers[i] = CreateBehindLayer(&screen->LayerInfo, 
+                                 screen->RastPort.BitMap,
+                                 70,
+                                 130,
+                                 140,
+                                 190,
+                                 LAYERSMART,
+                                 NULL);
+  /* 
+    CHEAT!!!
+    Still have to copy the X-Window info manually. It is found
+    in longreserved[0] of the RastPort of a window (should be found
+    in a screen anyway)
+  */
+#if 0
+  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
+#endif
+  frame(layers[i]);
+
+  i = unusedlayer();
+  layers[i] = CreateBehindLayer(&screen->LayerInfo,
+                                 screen->RastPort.BitMap,
+                                 120,
+                                 120,
+                                 150,
+                                 160,
+                                 LAYERSMART,
+                                 NULL);
+
+  /*
+    CHEAT!!!
+    Still have to copy the X-Window info manually. It is found
+    in longreserved[0] of the RastPort of a window (should be found
+    in a screen anyway)
+  */
+#if 0
+  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
+#endif
+  frame(layers[i]);
+}
+
+void GenerateLayers3(void)
+{
+  int i;
+  i = unusedlayer();
+  layers[i] = CreateBehindLayer(&screen->LayerInfo, 
+                                 screen->RastPort.BitMap,
                                  110,
                                  110,
                                  200,
@@ -1095,7 +1182,7 @@ void DemoD()
   Delay(20);
   BehindLayer(0,layers[0]);
   printf("Inviting a few smart friends...\n");
-  GenerateLayers2();
+  GenerateLayers3();
   printf("Moving the layers...\n");
   c = 0;
   while (c < 40)
