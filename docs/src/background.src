@@ -73,9 +73,11 @@ something to ask or say, contact the coordinator
 \if{html}{
 \section{The current status}
 
-This status was generated \today.
+This status was generated\ \today.
 
 \incverb{status.inc}
+
+\link{Graphical progress}{progress.gif}
 }
 
 \begin{new}{9.10.1997}
