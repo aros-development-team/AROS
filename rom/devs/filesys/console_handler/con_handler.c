@@ -316,7 +316,7 @@ static LONG open_con(struct conbase *conbase, struct IOFileSys *iofs)
     {
     	UBYTE sig = AllocSignal(-1);
 	
-	if (sig == -1)
+	if (sig == (UBYTE)-1)
 	{
 	    iofs->io_DosError = ERROR_NO_FREE_STORE; /* Any other error code better suited here? */
 	}
