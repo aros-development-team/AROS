@@ -10,20 +10,11 @@
 #define IPTR int
 #endif /* ADE */
 
-#ifdef LINUX
-#define FALSE	0
-#define TRUE	1
-#define IPTR	int
-#define PrintFault(x,y)	perror(y)
-#define IoErr()		/* */
-#endif /* LINUX */
-
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef LINUX
 #include <dos/dos.h>
 #include <exec/exec.h>
 #include <exec/execbase.h>
@@ -31,7 +22,6 @@
 #include <proto/exec.h>
 
 extern struct ExecBase *SysBase;
-#endif /* !LINUX */
 
 
 typedef struct ScriptArg
@@ -59,8 +49,8 @@ typedef struct ScriptArg
 typedef struct InstallerPrefs
 {
   char * transcriptfile;
-  FILE * transcriptstream;
-  int debug;
+  BPTR transcriptstream;
+  int debug, pretend, nopretend, novicelog;
   int welcome;
   int copyfail, copyflags;
   ScriptArg onerror, *onerrorparent;
@@ -96,6 +86,8 @@ struct ParameterList
   int used;
 };
 
+
+/* Special characters */
 #define SEMICOLON	0x3B
 #define LINEFEED	0x0A
 #define BACKSLASH	0x5C

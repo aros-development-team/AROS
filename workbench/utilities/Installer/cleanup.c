@@ -10,9 +10,7 @@ extern int error;
 /* External function prototypes */
 extern void free_varlist();
 extern void execute_script( ScriptArg *, int );
-#ifndef LINUX
 extern void deinit_gui();
-#endif /* !LINUX */
 extern void traperr( char *, char * );
 
 /* Internal function prototypes */
@@ -36,14 +34,12 @@ void cleanup( )
 {
   if( preferences.transcriptstream != NULL )
   {
-    fclose( preferences.transcriptstream );
+    Close( preferences.transcriptstream );
   }
 
   free_script( script.cmd );
   free_varlist();
-#ifndef LINUX
   deinit_gui();
-#endif /* !LINUX */
 }
 
 void end_malloc( )

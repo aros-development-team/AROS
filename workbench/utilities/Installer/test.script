@@ -32,7 +32,7 @@
 	 ( prompt
 		"Some instructions need to be added to the \"S:user-startup\" so that your system will be properly configured to use FredApp." ) 
 	 ( help "No help for this function" ) 
-	 ( command "assign Fred: T:\n" ) 
+	 ( command "List DEVS:\n" "assign Fred: T:\n" ) 
  ) 
 
  ( tooltype 
@@ -50,11 +50,11 @@
 	 ( append "In the begining there was the Amiga 1000, and this was good...\n" ) 
 	 ( include "DEVS:Mountlist" ) 
 	 ( confirm ) 
- ) 
+ )
 
 ;( run "info >t:fred/result"
-( run "C:List \"\" SYS:"
 ;	 ( prompt "Running 'info'" ) 
+( run "C:List \"\" SYS:"
 	 ( prompt "Running 'C:List'" )
 	 ( help "This will only work from the CLI!" ) 
 	 ( confirm ) 

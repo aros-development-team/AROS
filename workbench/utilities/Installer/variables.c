@@ -2,9 +2,11 @@
 
 #include "Installer.h"
 #include "texts.h"
+#include "main.h"
 
 /* External variables */
 extern InstallerPrefs preferences;
+extern IPTR args[TOTAL_ARGS];
 
 /* External function prototypes */
 extern void request_userlevel( char * );
@@ -26,6 +28,10 @@ struct VariableList *find_var( char * );
 int numvariables = 0;
 struct VariableList *variables = NULL;
 
+
+/*
+ * Get entry of variable in global list
+ */
 struct VariableList *find_var( char *name )
 {
 int i;
@@ -37,6 +43,11 @@ int i;
          &(variables[i]);
 }
 
+
+/*
+ * Return the value of a variable
+ * string if non-NULL else integer
+ */
 void *get_variable( char *name )
 {
 struct VariableList *entry;
@@ -57,6 +68,10 @@ struct VariableList *entry;
   }
 }
 
+
+/*
+ * Get the string value of a variable
+ */
 char *get_var_arg( char *name )
 {
 struct VariableList *entry;
@@ -69,6 +84,10 @@ return ( entry != NULL ) ?
        NULL;
 }
 
+
+/*
+ * Get the integer value of a variable
+ */
 long int get_var_int( char *name )
 {
 struct VariableList *entry;
@@ -81,6 +100,11 @@ return ( entry != NULL ) ?
        0;
 }
 
+
+/*
+ * Set the value of a variable
+ * Add variable to global list if not existent
+ */
 void set_variable( char *name, char *text, long int intval )
 {
 int i;
@@ -125,11 +149,35 @@ int i;
 
 }
 
+
+/*
+ * Set initial variables at INIT stage
+ */
 void set_preset_variables( )
 {
 #warning FIXME: Use real APPNAME, LANGUAGE from RDArgs()
-  set_variable( "@app-name", "DemoApp", 0 );
-  set_variable( "@language", "english", 0 );
+
+#ifdef DEBUG
+  if( args[ARG_APPNAME] )
+  {
+    set_variable( "@app-name", (char *)args[ARG_APPNAME], 0 );
+  }
+  else
+  {
+    set_variable( "@app-name", "DemoApp", 0 );
+  }
+#else /* DEBUG */
+  set_variable( "@app-name", (char *)args[ARG_APPNAME], 0 );
+#endif /* DEBUG */
+
+  if( args[ARG_LANGUAGE] )
+  {
+    set_variable( "@language", (char *)args[ARG_LANGUAGE], 0 );
+  }
+  else
+  {
+    set_variable( "@language", "english", 0 );
+  }
 
   set_variable( "@abort-button", ABORT_BUTTON, 0 );
   set_variable( "@default-dest", DEFAULT_DEST, 0 );
@@ -162,18 +210,26 @@ void set_preset_variables( )
   set_variable( "@startup-help",	NULL,	0 );
 }
 
+
 #ifdef DEBUG
+/*
+ * Dump values of all variables
+ */
 void dump_varlist( )
 {
 int i;
 
-  printf( "DUMP of all variables:\n" );
+  printf( "DUMP of all %d variables:\n", numvariables );
   for( i = 0 ; i < numvariables ; i++ )
     printf( "%s = %s | %ld\n", variables[i].varsymbol, variables[i].vartext, variables[i].varinteger );
 
 }
 #endif /* DEBUG */
 
+
+/*
+ * Free the memory allocated by global varlist
+ */
 void free_varlist( )
 {
 int i; 

@@ -1,4 +1,4 @@
-BUG00001
+BUG00001 fixed
 fseek() has a bug -- check in future
 As long as this isn't fixed everything has to be separated by whitespaces!
 

@@ -96,6 +96,8 @@ struct CommandList
 #define _ICONINFO	82
 
 #define NUMCMDS		82
+
+
 /* Parameters */
 #define _PARAMETER	128 /* Base number for parameters */
 
@@ -140,7 +142,9 @@ struct CommandList
 
 #define _MAXCOMMAND	(NUMPARAMS+NUMCMDS)	/* Total number of keywords */
 
+
 #define GetPL( x, y )	x[ y - _PARAMETER -1 ]
+
 
 /* _DATABASE keywords */
 

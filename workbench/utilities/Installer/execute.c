@@ -33,32 +33,33 @@ extern char *request_disk( struct ParameterList * );
 extern char *request_file( struct ParameterList * );
 extern long int request_options( struct ParameterList * );
 extern void request_userlevel( char * );
+extern int request_confirm( struct ParameterList *, long int );
 extern void traperr( char *, char * );
 extern void outofmem( void * );
+extern void link_function( char *, long int );
 
 /* Internal function prototypes */
 int eval_cmd( char * );
 void execute_script( ScriptArg *, int );
 char *strip_quotes( char * );
-#ifndef LINUX
 static void callback( char, char ** );
-#endif /* !LINUX */
 long int getint( ScriptArg * );
 int database_keyword( char * );
 char *collect_strings( ScriptArg *, char, int );
 struct ParameterList *get_parameters( ScriptArg *, int );
 void collect_stringargs( ScriptArg *, int, struct ParameterList * );
+void modify_userstartup( char *, struct ParameterList * );
+void free_parameterlist( struct ParameterList * );
+void free_parameter( struct ParameterList );
 
-#ifndef LINUX
 char * callbackstring = NULL, * globalstring = NULL;
-#endif /* !LINUX */
 
 
 /*
-  identify first arg with command and next ones as parameters to it
-  command has to be keyword or quoted string
-  parameters are converted as needed, <cmd> executed
-*/
+ * identify first arg with command and next ones as parameters to it
+ * command has to be keyword or quoted string
+ * parameters are converted as needed, <cmd> executed
+ */
 void execute_script( ScriptArg *commands, int level )
 {
 ScriptArg *current, *dummy = NULL;
@@ -118,7 +119,7 @@ void *params;
                           free( string );
                           if( preferences.transcriptstream != NULL )
                           {
-                            fprintf( preferences.transcriptstream, "Aborting script.\n" );
+                            Write( preferences.transcriptstream, "Aborting script.\n", 17 );
                           }
                           error = USERABORT;
                           traperr( "Aborting!", NULL );
@@ -284,7 +285,7 @@ void *params;
                             final_report();
                           }
                           free( string );
-                          free( parameter );
+                          free_parameterlist( parameter );
 #ifdef DEBUG
                           dump_varlist();
 #endif /* DEBUG */
@@ -295,6 +296,7 @@ void *params;
       case _IF		: /* if 1st arg != 0 execute 2nd cmd else execute optional 3rd cmd */
                           if( current->next != NULL && current->next->next != NULL )
                           {
+                            char *stringarg = NULL;
                             current = current->next;
                             if( current->cmd != NULL )
                             {
@@ -304,6 +306,7 @@ void *params;
                             if( i == 0 )
                             {
                               current = current->next;
+                              stringarg = current->arg;
                             }
                             if( current->next != NULL )
                             {
@@ -318,6 +321,11 @@ void *params;
                                 current->parent->arg = strdup( current->arg );
                                 outofmem( current->parent->arg );
                               }
+                            }
+                            else if ( stringarg )
+                            {
+                              current->parent->arg = strdup( "\"\"" );
+                              outofmem( current->parent->arg );
                             }
                           }
                           else
@@ -383,7 +391,8 @@ void *params;
                           }
                           break;
 
-      case _PROCEDURE	: /* Ignore this keyword, it was parsed in parse.c */
+      case _PROCEDURE	: /* Link user function to global function name-space */
+                          link_function( current->next->arg, current->next->intval );
                           break;
 
       case _SELECT	: /* Return the nth item of arguments, NULL|0 if 0 */
@@ -722,7 +731,6 @@ void *params;
                           }
                           /* Call RawDoFmt() with parameter list */
                           /* Store that produced string as return value */
-#ifndef LINUX
                           string = malloc( MAXARGSIZE );
                           outofmem( string );
                           callbackstring = string;
@@ -733,10 +741,6 @@ void *params;
                           RawDoFmt( clip, params, &callback, &globalstring );
 #endif /* !ADE */
                           string = callbackstring;
-#else /* !LINUX */
-                          string = strdup( clip );
-                          outofmem( string );
-#endif /* !LINUX */
                           /* Free temporary space */
                           free( clip );
                           if( mclip )
@@ -863,7 +867,8 @@ void *params;
                           string = collect_strings( current->next, 0, level );
                           if( preferences.transcriptfile != NULL )
                           {
-                            fprintf( preferences.transcriptstream, "%s\n", string );
+                            Write( preferences.transcriptstream, string, strlen( string ) );
+                            Write( preferences.transcriptstream, "\n", 1 );
                           }
                           /* Add surrounding quotes to string */
                           slen = ( string == NULL ) ? 0 : strlen( string );
@@ -1068,7 +1073,7 @@ void *params;
                           clip[slen+2] = 0;
                           current->parent->arg = clip;
                           free( string );
-                          free( parameter );
+                          free_parameterlist( parameter );
                           break;
 
       case _WORKING	: /* Display strings below "Working on Installation" */
@@ -1098,17 +1103,13 @@ void *params;
                             clip = strip_quotes( current->arg );
                             i = database_keyword( clip );
                             free( clip );
-#warning FIXME: compute return values for "database"
+#warning TODO: compute return values for "database"
                             switch( i )
                             {
                               case _VBLANK :
                                 clip = malloc( MAXARGSIZE );
                                 outofmem( clip );
-#ifndef LINUX
                                 sprintf( clip, "%c%d%c", DQUOTE, SysBase->VBlankFrequency, DQUOTE );
-#else /* !LINUX */
-                                sprintf( clip, "%c%d%c", DQUOTE, 50, DQUOTE );
-#endif /* !LINUX */
                                 current->parent->arg = strdup( clip );
                                 outofmem( current->parent->arg );
                                 free( clip );
@@ -1143,49 +1144,49 @@ void *params;
       case _ASKBOOL	: /* Ask user for a boolean */
                           parameter = get_parameters( current->next, level );
                           current->parent->intval = request_bool( parameter );
-                          free( parameter );
+                          free_parameterlist( parameter );
                           break;
 
       case _ASKNUMBER	: /* Ask user for a number */
                           parameter = get_parameters( current->next, level );
                           current->parent->intval = request_number( parameter );
-                          free( parameter );
+                          free_parameterlist( parameter );
                           break;
 
       case _ASKSTRING	: /* Ask user for a string */
                           parameter = get_parameters( current->next, level );
                           current->parent->arg = request_string( parameter );
-                          free( parameter );
+                          free_parameterlist( parameter );
                           break;
 
       case _ASKCHOICE	: /* Ask user to choose one item */
                           parameter = get_parameters( current->next, level );
                           current->parent->intval = request_choice( parameter );
-                          free( parameter );
+                          free_parameterlist( parameter );
                           break;
 
       case _ASKDIR	: /* Ask user for a directory */
                           parameter = get_parameters( current->next, level );
                           current->parent->arg = request_dir( parameter );
-                          free( parameter );
+                          free_parameterlist( parameter );
                           break;
 
       case _ASKDISK	: /* Ask user to insert a disk */
                           parameter = get_parameters( current->next, level );
                           current->parent->arg = request_disk( parameter );
-                          free( parameter );
+                          free_parameterlist( parameter );
                           break;
 
       case _ASKFILE	: /* Ask user for a filename */
                           parameter = get_parameters( current->next, level );
                           current->parent->arg = request_file( parameter );
-                          free( parameter );
+                          free_parameterlist( parameter );
                           break;
 
       case _ASKOPTIONS	: /* Ask user to choose multiple items */
                           parameter = get_parameters( current->next, level );
                           current->parent->intval = request_options( parameter );
-                          free( parameter );
+                          free_parameterlist( parameter );
                           break;
 
       case _ONERROR	: /* link onerror to preferences */
@@ -1245,70 +1246,88 @@ void *params;
                           break;
 
       case _RUN		: /* Execute a command line */
-#ifndef LINUX
 #warning TODO: Check me for correctness
                           if( current->next != NULL )
                           {
                           BPTR seg;
-                            current = current->next;
-                            if( current->cmd != NULL )
+                            parameter = get_parameters( current->next, level );
+                            if( preferences.pretend == 0 || GetPL( parameter, _SAFE).used == 1 )
                             {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            if( current->arg == NULL )
-                            {
-                              error = BADPARAMETER;
-                              traperr( "<%s> requires a string parameter!\n", current->parent->cmd->arg );
-                            }
-                            if( ( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE ) )
-                            {
-                              /* Strip off quotes */
-                              string = strip_quotes( current->arg );
-                            }
-                            else
-                            {
-                              clip = get_var_arg( current->arg );
-                              if( clip == NULL )
+                              string = collect_strings( current->next, SPACE, level );
+                              if( string == NULL )
                               {
                                 error = BADPARAMETER;
                                 traperr( "<%s> requires a string parameter!\n", current->parent->cmd->arg );
                               }
-                              string = strdup( clip );
-                              outofmem( string );
-                            }
-                            for( i = 0 ; string[i] != 0 && string[i] != SPACE ; i++ );
-                            if( string[i] == SPACE )
-                            {
-                              string[i] = 0;
-                              clip = &(string[i+1]);
-                              j = strlen( clip );
-                            }
-                            else
-                            {
-                              clip = NULL;
-                              j = 0;
-                            }
-                            if( ( seg = LoadSeg( string ) ) == NULL )
-                            {
-                              /* Couldn't load file -- set @ioerr and handle trap/onerror */
-                              i = IoErr();
+                              for( i = 0 ; string[i] != 0 && string[i] != SPACE ; i++ );
+                              if( string[i] == SPACE )
+                              {
+                                string[i] = 0;
+                                clip = &(string[i+1]);
+                                j = strlen( clip );
+                              }
+                              else
+                              {
+                                clip = NULL;
+                                j = 0;
+                              }
+                              if( request_confirm( parameter, _EXPERT ) )
+                              {
+                                if( ( seg = LoadSeg( string ) ) == NULL )
+                                {
+                                  /* Couldn't load file -- set @ioerr and handle trap/onerror */
+                                  i = IoErr();
 #ifdef DEBUG
-                              PrintFault( i, "Installer" );
+                                  PrintFault( i, "Installer" );
 #endif /* DEBUG */
-                              set_variable( "@ioerr", NULL, i );
-                              error = DOSERROR;
-                              traperr( "Couldn't load binary %s\n", string );
-                            }
-                            if( preferences.transcriptstream != NULL )
-                            {
-                              fprintf( preferences.transcriptstream, "Started program: \"%s\"\n", string );
-                            }
+                                  set_variable( "@ioerr", NULL, i );
+                                  error = DOSERROR;
+                                  traperr( "Couldn't load binary %s\n", string );
+                                }
+                                if( preferences.transcriptstream != NULL )
+                                {
+                                  Write( preferences.transcriptstream, "Started program: \"", 18 );
+                                  Write( preferences.transcriptstream, string, strlen( string ) );
+                                  Write( preferences.transcriptstream, "\"\n", 2 );
+                                }
 #define STACKSIZE 10000
-                            current->parent->intval = RunCommand( seg, STACKSIZE, clip, j );
-                            UnLoadSeg( seg );
+                                current->parent->intval = RunCommand( seg, STACKSIZE, clip, j );
+#warning FIXME: is @ioerr set if command not run?
+                                set_variable( "@ioerr", NULL, IoErr() );
+                                UnLoadSeg( seg );
+                              }
+                              free( string );
+                            }
+                          }
+                          else
+                          {
+                            error = SCRIPTERROR;
+                            traperr( "<%s> requires arguments!\n", current->arg );
+                          }
+                          break;
+
+      case _STARTUP	:
+                          if( current->next->cmd != NULL )
+                          {
+                            /* There is a command instead of a value -- execute command */
+                            execute_script( current->next->cmd, level + 1 );
+                          }
+                          if( current->next->arg != NULL )
+                          {
+                            string = strip_quotes( current->next->arg );
+                            parameter = get_parameters( current->next, level );
+                            if( request_confirm( parameter, _EXPERT ) )
+                            {
+                              modify_userstartup( string, parameter );
+                            }
+                            free_parameterlist( parameter );
                             free( string );
                           }
-#endif /* !LINUX */
+                          else
+                          {
+                            error = SCRIPTERROR;
+                            traperr( "<%s> requires a name-string as argument!\n", current->arg );
+                          }
                           break;
 
       /* Here are all unimplemented commands */
@@ -1336,7 +1355,6 @@ void *params;
       case _PROTECT	:
       case _RENAME	:
       case _REXX	:
-      case _STARTUP	:
       case _TACKON	:
       case _TEXTFILE	:
       case _TOOLTYPE	:
@@ -1422,7 +1440,7 @@ void *params;
                               }
                             }
 
-                            free( parameter );
+                            free_parameterlist( parameter );
                           }
                           break;
 
@@ -1465,7 +1483,7 @@ void *params;
                               }
                             }
 
-                            free( parameter );
+                            free_parameterlist( parameter );
                           }
                           break;
 
@@ -1521,6 +1539,9 @@ void *params;
 }
 
 
+/*
+ * Get an ID for the command string
+ */
 int eval_cmd( char * argument )
 {
 int i;
@@ -1532,7 +1553,11 @@ int i;
   else
   {
     for( i = 0 ; i < _MAXCOMMAND && strcasecmp(internal_commands[i].cmdsymbol, argument ) != 0 ; i++ );
-    if( i == _MAXCOMMAND )
+    if( i != _MAXCOMMAND )
+    {
+      return internal_commands[i].cmdnumber;
+    }
+    else
     {
       if( find_proc( argument ) != NULL )
       {
@@ -1543,15 +1568,13 @@ int i;
         return _UNKNOWN;
       }
     }
-    else
-    {
-      return internal_commands[i].cmdnumber;
-    }
   }
 }
 
 
-#ifndef LINUX
+/*
+ * Callback function for RawDoFmt()
+ */
 static void callback( char chr, char ** data )
 {
 static int i = 0, j = 1;
@@ -1575,9 +1598,12 @@ static char * string = NULL;
   }
   *(*data)++ = chr;
 }
-#endif /* !LINUX */
 
 
+/*
+ * Strip off quotes from a string
+ * Does not check for quotes!
+ */
 char *strip_quotes( char *string )
 {
 int slen;
@@ -1592,10 +1618,11 @@ char *clip;
 return clip;
 }
 
+
 /*
-  Convert data entry to <int>
-  <string>s are atol()'d, <cmd>s are *not* executed
-*/
+ * Convert data entry to <int>
+ * <string>s are atol()'d, <cmd>s are *not* executed
+ */
 long int getint( ScriptArg *argument )
 {
 long int i;
@@ -1631,9 +1658,10 @@ char * clip;
 return i;
 }
 
+
 /*
-  Find out information on hardware
-*/
+ * Get an ID for hardware descriptor
+ */
 int database_keyword( char *name )
 {
   if( strcasecmp( name, "vblank" ) == 0 )
@@ -1652,12 +1680,13 @@ int database_keyword( char *name )
 return _UNKNOWN;
 }
 
+
 /*
-  Concatenate all arguments as a string with separating character
-  if character is 0 strings are concatenated without separator
-  <int>s are converted to strings, <cmd>s are executed,
-  <parameter>s are not considered
-*/
+ * Concatenate all arguments as a string with separating character
+ * if character is 0 strings are concatenated without separator
+ * <int>s are converted to strings, <cmd>s are executed,
+ * <parameter>s are not considered
+ */
 char *collect_strings( ScriptArg *current, char separator, int level )
 {
 char *string = NULL, *clip, *dummy;
@@ -1723,11 +1752,46 @@ int i;
 return string;
 }
 
+
 /*
-  args are scanned for known parameters
-  the used entry will be set and <int>s and <string>s read in ParameterList
-  intval contains number of <string>s
-*/
+ * Free the allocated space for string list
+ */
+void free_parameter(struct ParameterList pl)
+{
+int j;
+
+  if( pl.arg )
+  {
+    for( j = 0 ; j < pl.intval ; j++ )
+    {
+      free(pl.arg[j]);
+    }
+    free(pl.arg);
+    pl.arg = NULL;
+  }
+}
+
+
+/*
+ * Free a complete (struct ParameterList *)
+ */
+void free_parameterlist(struct ParameterList *pl)
+{
+int i;
+
+  for( i = 0 ; i < NUMPARAMS ; i++ )
+  {
+    free_parameter( pl[i] );
+  }
+  free(pl);
+}
+
+
+/*
+ * args are scanned for known parameters
+ * the used entry will be set and <int>s and <string>s read in ParameterList
+ * intval contains number of <string>s
+ */
 struct ParameterList *get_parameters( ScriptArg *script, int level )
 {
 struct ParameterList *pl;
@@ -1967,6 +2031,61 @@ char *string, *clip;
             }
           }
         }
+        else if ( cmd == _IF )
+        {
+          /* This parameter is masqueraded */
+          switch( cmd )
+          {
+            /* "Allowed" Commands (for compatibility) */
+
+            /* ( if ( = 1 1 ) ( command "blah" ) ) is allowed, but should be
+             * ( command ( if ( = 1 1 ) "blah" ) )
+             */
+            case _IF	: /* if 1st arg != 0 get parameter from 2nd cmd else get optional 3rd cmd parameter */
+                        if( current != NULL && current->next != NULL )
+                        {
+                          if( current->cmd != NULL )
+                          {
+                            execute_script( current->cmd, level + 1 );
+                          }
+                          i = getint( current );
+                          if( i == 0 )
+                          {
+                            current = current->next;
+                          }
+                          if( current->next != NULL )
+                          {
+                            current = current->next;
+                            if( current->cmd != NULL )
+                            {
+                            struct ParameterList *subpl;
+                              subpl = get_parameters( current, level + 1 );
+                              for( i = 0 ; i < NUMPARAMS ; i++ )
+                              {
+                                if( subpl[i].used == 1 )
+                                {
+                                  free_parameter( pl[i] );
+                                  pl[i].arg = subpl[i].arg;
+                                  pl[i].intval = subpl[i].intval;
+                                  pl[i].intval2 = subpl[i].intval2;
+                                  subpl[i].arg = NULL;
+                                }
+                              }
+                              free_parameterlist( subpl );
+                            }
+                          }
+                        }
+                        else
+                        {
+                          error = SCRIPTERROR;
+                          traperr( "<%s> requires two arguments!\n", script->arg );
+                        }
+                        break;
+
+            default	: /* We do only collect tags -- this is a command */
+                        break;
+          }
+        }
       }
     }
     script = script->next;
@@ -1975,10 +2094,11 @@ char *string, *clip;
 return pl;
 }
 
+
 /*
-  read <string>s in ParameterList
-  <int>s are converted, <cmd>s executed
-*/
+ * read <string>s in ParameterList
+ * <int>s are converted, <cmd>s executed
+ */
 void collect_stringargs( ScriptArg *current, int level, struct ParameterList *pl )
 {
 char *string, *clip, **mclip = NULL;
@@ -2035,4 +2155,115 @@ int j = 0;
   pl->arg = mclip;
   pl->intval = j;
 }
+
+
+/*
+ * Read in one line of a file
+ */
+char * get_file_line( BPTR file )
+{
+char *out;
+char buf[1];
+int i=0, cnt;
+
+  do
+  {
+    cnt = Read( file, buf, 1 );
+    i += cnt;
+  } while ( cnt && buf[0] != LINEFEED );
+  if( i == 0 )
+  {
+    return NULL;
+  }
+  Seek( file, -i, OFFSET_CURRENT );
+  out = malloc( i * sizeof( char ) );
+  outofmem( out );
+  Read( file, out, i );
+  out[i-1] = 0;
+
+return out;
+}
+
+
+/*
+ * Routine for modifying S:User-Startup
+ */
+void modify_userstartup( char *string, struct ParameterList *parameter )
+{
+BPTR userstartup;
+BPTR tmpuserstartup;
+char *line;
+int i, changed = 0, cont = 0;
+
+  userstartup = Open( "S:User-Startup", MODE_OLDFILE );
+  tmpuserstartup = Open( "S:User-Startup.tmp", MODE_NEWFILE );
+  if( !tmpuserstartup )
+  {
+#warning TODO: Complain more smoothly...
+    fprintf( stderr, "Could not open S:User-Startup for writing!" );
+    exit(-1);
+  }
+  if( userstartup )
+  {
+    while ( ( line = get_file_line( userstartup ) ) && !changed )
+    {
+      if( strncasecmp( line, ";BEGIN ", 7) == 0 )
+      {
+        if( strcmp( &(line[7]), string ) == 0 )
+        {
+          changed = 1;
+        }
+      }
+      if( !changed )
+      {
+        Write( tmpuserstartup, line, strlen( line ) );
+       Write( tmpuserstartup, "\n", 1 );
+      }
+     free( line );
+    }
+  }
+
+  Write( tmpuserstartup, ";BEGIN ", 7 );
+  Write( tmpuserstartup, string, strlen( string ) );
+  Write( tmpuserstartup, "\n", 1 );
+  for( i = 0 ; i < GetPL( parameter, _COMMAND ).intval ; i++ )
+  {
+    Write( tmpuserstartup, GetPL( parameter, _COMMAND).arg[i], strlen( GetPL( parameter, _COMMAND).arg[i] ) );
+  }
+  Write( tmpuserstartup, ";END ", 5 );
+  Write( tmpuserstartup, string, strlen( string ) );
+  Write( tmpuserstartup, "\n", 1 );
+
+  if( userstartup )
+  {
+    while ( ( line = get_file_line( userstartup ) ) )
+    {
+      if( !cont )
+      {
+        if( strncasecmp( line, ";END ", 5) == 0 )
+        {
+          if( strcmp( &(line[5]), string ) == 0 )
+          {
+            cont = 1;
+          }
+        }
+      }
+      else
+      {
+        Write( tmpuserstartup, line, strlen( line ) );
+        Write( tmpuserstartup, "\n", 1 );
+      }
+      free( line );
+    }
+  }
+
+  Close( tmpuserstartup );
+  Close( userstartup );
+
+  DeleteFile( "S:User-Startup" );
+#warning FIXME: Rename( "old", "new" ) does not work here
+  Rename( "S:User-Startup.tmp", "S:User-Startup" );
+
+}
+
 

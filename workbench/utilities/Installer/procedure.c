@@ -12,33 +12,75 @@ extern void cleanup();
 
 /* Internal function prototypes */
 struct ProcedureList *find_proc( char * );
-void set_procedure( char **, int, ScriptArg * );
+long int set_procedure( char **, int, ScriptArg * );
 void free_proclist();
+void link_function( char *, long int );
 
 
-int numusrprocs = 0;
-struct ProcedureList *usrprocs = NULL;
+int numusrprocs = 0, numactiveusrprocs = 0;
+struct ProcedureList *usrprocs = NULL, **activeusrprocs = NULL;
 
+
+/*
+ * Activate previously parsed user function
+ */
+void link_function( char *name, long int incarnation )
+{
+int i = 0, j = 0, inc = -1;
+
+  for( ; i < numactiveusrprocs && strcmp( name, activeusrprocs[i]->procname ) != 0 ; i++ );
+
+  while( j < numusrprocs && inc != incarnation )
+  {
+    if( strcmp( name, usrprocs[j].procname ) == 0 )
+    {
+      inc++;
+    }
+    j++;
+  }
+  j--;
+
+  if( i == numactiveusrprocs )
+  {
+    numactiveusrprocs++;
+    activeusrprocs = realloc( activeusrprocs, sizeof(struct ProcedureList *) * numactiveusrprocs );
+    if( activeusrprocs == NULL )
+    {
+      end_malloc();
+    }
+  }
+  activeusrprocs[i] = &((usrprocs[j]));
+}
+
+
+/*
+ * Return user's function
+ */
 struct ProcedureList *find_proc( char *name )
 {
 int i;
 
   /* Check if procedure is in list */
-  for( i = 0 ; i < numusrprocs && strcmp( name, usrprocs[i].procname ) != 0 ; i++ );
-  if( i == numusrprocs )
+  for( i = 0 ; i < numactiveusrprocs && strcmp( name, activeusrprocs[i]->procname ) != 0 ; i++ );
+  if( i == numactiveusrprocs )
   {
     /* Not in list */
     printf( "<%s> - Procedure not found!\n", name );
     return NULL;
   }
 
-return &(usrprocs[i]);
+return activeusrprocs[i];
 }
 
-void set_procedure( char **args, int num, ScriptArg *cmd )
+
+/*
+ * Remember user functions at parse time
+ */
+long int set_procedure( char **args, int num, ScriptArg *cmd )
 {
 int i;
 char *name;
+long int incarnation = 0;
 
   name = args[0];
   /* Check if name is in preset list */
@@ -51,29 +93,33 @@ char *name;
   }
 
   /* Check if name is in list */
-  for( i = 0 ; i < numusrprocs && strcmp( name, usrprocs[i].procname ) != 0 ; i++ );
-  if( i != numusrprocs )
+  for( i = 0 ; i < numusrprocs ; i++ )
   {
-    printf( "Procedure <%s> already defined!\n", name );
-    cleanup();
-    exit(-1);
-  }
-  else
-  {
-    /* Enlarge list for one additional element */
-    numusrprocs++;
-    usrprocs = realloc( usrprocs, sizeof(struct ProcedureList) * numusrprocs );
-    if( usrprocs == NULL )
+    if( strcmp( name, usrprocs[i].procname ) == 0 )
     {
-      end_malloc();
+      incarnation++;
     }
-    usrprocs[i].procbody = cmd;
-    usrprocs[i].procname = name;
-    usrprocs[i].arglist = &(args[1]);
-    usrprocs[i].argnum = num-1;
   }
+
+  /* Enlarge list for one additional element */
+  numusrprocs++;
+  usrprocs = realloc( usrprocs, sizeof(struct ProcedureList) * numusrprocs );
+  if( usrprocs == NULL )
+  {
+    end_malloc();
+  }
+  usrprocs[i].procbody = cmd;
+  usrprocs[i].procname = name;
+  usrprocs[i].arglist = &(args[1]);
+  usrprocs[i].argnum = num-1;
+
+return incarnation;
 }
 
+
+/*
+ * Free the memory of the user function list
+ */
 void free_proclist( )
 {
 int i; 

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
     Desc: Installer V43.3
@@ -9,7 +9,7 @@
 #include "Installer.h"
 #include "main.h"
 
-static const char version[] = "$VER: Installer 43.3 (18.07.1998)\n";
+static const char version[] = "$VER: Installer 43.3 (21.02.1999)\n";
 
 
 /* External variables */
@@ -29,33 +29,31 @@ extern void dump_varlist();
 #endif /* DEBUG */
 extern void show_parseerror( char *, int );
 extern void final_report();
-#ifndef LINUX
 extern void init_gui();
-#endif /* !LINUX */
 
 /* Internal function prototypes */
 int main( int, char ** );
 
 
 char *filename = NULL;
-FILE *inputfile;
+BPTR inputfile;
 char buffer[MAXARGSIZE];
 int error = 0, grace_exit = 0;
 
 InstallerPrefs preferences;
 ScriptArg script;
 
+IPTR args[TOTAL_ARGS] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+/*
+ * MAIN
+ */
 int main( int argc, char *argv[] )
 {
-#ifndef LINUX
-IPTR args[TOTAL_ARGS] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 struct RDArgs *rda;
-#endif /* !LINUX */
 
 ScriptArg *currentarg, *dummy;
 int nextarg, endoffile, count;
-
-#ifndef LINUX
 
   /* evaluate args with RDArgs(); */
   rda = ReadArgs( ARG_TEMPLATE, args, NULL );
@@ -64,17 +62,22 @@ int nextarg, endoffile, count;
     PrintFault( IoErr(), "Installer" );
     exit(-1);
   }
-#warning FIXME: evaluate args with RDArgs()
-#endif /* !LINUX */
 
   /* open script file */
-#warning FIXME: get real script name instead of static "test.script"
 #ifdef DEBUG
-  free( filename );
-  filename = strdup( "test.script" );
+  if( args[ARG_SCRIPT] )
+  {
+    filename = strdup( (char *)args[ARG_SCRIPT] );
+  }
+  else
+  {
+    filename = strdup( "test.script" );
+  }
+#else /* DEBUG */
+  filename = strdup( args[ARG_SCRIPT] );
 #endif /* DEBUG */
 
-  inputfile = fopen( filename, "r" );
+  inputfile = Open( filename, MODE_OLDFILE );
   if( inputfile == NULL )
   {
     PrintFault( IoErr(), "Installer" );
@@ -82,22 +85,45 @@ int nextarg, endoffile, count;
   }
 
   preferences.welcome = FALSE;
+  if( args[ARG_NOLOG] )
+  {
+    preferences.novicelog = FALSE;
+  }
+  else
+  {
+    preferences.novicelog = TRUE;
+  }
+  preferences.transcriptfile = strdup( ( args[ARG_LOGFILE] ) ? (char *)args[ARG_LOGFILE] : "install_log_file" );
   preferences.transcriptstream = NULL;
+  preferences.nopretend = args[ARG_NOPRETEND];
+  preferences.pretend = 0;
+
 #ifdef DEBUG
-  preferences.transcriptfile = "install_log_file";
   preferences.debug = TRUE;
-  preferences.defusrlevel = 0;
 #else /* DEBUG */
-  preferences.transcriptfile = ( (char *)args[ARG_LOGFILE] != NULL ) ? (char *)args[ARG_LOGFILE] : "install_log_file";
-  preferences.defusrlevel = _NOVICE;
-  if( strcasecmp( "novice", (char *)args[ARG_DEFUSER] ) == 0 )
-    preferences.defusrlevel = _NOVICE;
-  if( strcasecmp( "average", (char *)args[ARG_DEFUSER] ) == 0 )
-    preferences.defusrlevel = _AVERAGE;
-  if( strcasecmp( "expert", (char *)args[ARG_DEFUSER] ) == 0 )
-    preferences.defusrlevel = _EXPERT;
   preferences.debug = FALSE;
 #endif /* DEBUG */
+
+  if( args[ARG_DEFUSER] )
+  {
+    preferences.defusrlevel = _NOVICE;
+    if( strcasecmp( "average", (char *)args[ARG_DEFUSER] ) == 0 )
+    {
+      preferences.defusrlevel = _AVERAGE;
+    }
+    else if( strcasecmp( "expert", (char *)args[ARG_DEFUSER] ) == 0 )
+    {
+      preferences.defusrlevel = _EXPERT;
+    }
+    else
+    {
+      preferences.defusrlevel = _NOVICE;
+    }
+  }
+  else
+  {
+    preferences.defusrlevel = _NOVICE;
+  }
   preferences.copyfail = COPY_FAIL;
   preferences.copyflags = 0;
 
@@ -114,12 +140,11 @@ int nextarg, endoffile, count;
     preferences.trapparent[count] = NULL;
   }
 
+  FreeArgs(rda);
 #warning FIXME: distinguish between cli/workbench invocation
 
   /* Init GUI -- i.e open empty window */
-#ifndef LINUX
   init_gui();
-#endif /* !LINUX */
 
   line = 1;
 
@@ -165,7 +190,7 @@ int nextarg, endoffile, count;
     nextarg = FALSE;
     do
     {
-      count = fread( &buffer[0], 1, 1, inputfile );
+      count = Read( inputfile, &buffer[0], 1 );
       if( count == 0 )
         endoffile = TRUE;
 
@@ -177,7 +202,7 @@ int nextarg, endoffile, count;
           case SEMICOLON  : /* A comment, ok - Go on with next line */
                             do
                             {
-                              count = fread( &buffer[0], 1, 1, inputfile );
+                              count = Read( inputfile, &buffer[0], 1 );
                             } while( buffer[0] != LINEFEED && count != 0 );
                             line++;
                             if( count == 0 )
@@ -202,7 +227,7 @@ int nextarg, endoffile, count;
                             break;
 
           default	  : /* Plain text or closing bracket is not allowed */
-                            fclose( inputfile );
+                            Close( inputfile );
                             show_parseerror( "Too many closing brackets!", line );
                             cleanup();
                             exit(-1);
@@ -232,12 +257,12 @@ int nextarg, endoffile, count;
   }
 
   free( filename );
-  fclose( inputfile );
+  Close( inputfile );
 
   if( preferences.transcriptfile != NULL )
   {
     /* open transcript file */
-    preferences.transcriptstream = fopen( preferences.transcriptfile, "w" );
+    preferences.transcriptstream = Open( preferences.transcriptfile, MODE_NEWFILE );
     if( preferences.transcriptstream == NULL )
     {
       PrintFault( IoErr(), "Installer" );

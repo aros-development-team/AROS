@@ -4,13 +4,13 @@
 
 /* External variables */
 extern char buffer[MAXARGSIZE];
-extern FILE *inputfile;
+extern BPTR inputfile;
 extern int line;
 extern InstallerPrefs preferences;
 
 /* External function prototypes */
 extern void end_malloc();
-extern void set_procedure( char **, int, ScriptArg * );
+extern long int set_procedure( char **, int, ScriptArg * );
 extern void show_parseerror( char *, int );
 extern void cleanup();
 
@@ -20,6 +20,29 @@ void parse_file( ScriptArg * );
 
 int line;
 
+#ifdef DEBUG
+/*
+ * Print the sub-tree of ScriptArg *a
+ */
+void printcode( ScriptArg *a, int x )
+{
+int i;
+  /* Don't produce a SegFault if pointer is non-NULL */
+  if((long int)a > 1000)
+  {
+    for(i=0;i<x;i++)
+      printf(" ");
+    printf("%ld: %s , cmd=%ld, next=%ld, parent=%ld\n",(long int)a,a->arg,(long int)a->cmd,(long int)a->next,(long int)a->parent);
+    printcode( a->cmd, x+1 );
+    printcode( a->next, x );
+  }
+}
+#endif /* DEBUG */
+
+
+/*
+ * Read in file and generate executable tree
+ */
 void parse_file( ScriptArg *first )
 {
 ScriptArg *current;
@@ -30,7 +53,7 @@ char **mclip;
   current = first;
   do
   {
-    count = fread( &buffer[0], 1, 1, inputfile );
+    count = Read( inputfile, &buffer[0], 1 );
     if( count == 0 )
     {
       PrintFault( IoErr(), "Installer" );
@@ -45,7 +68,7 @@ char **mclip;
         case SEMICOLON : /* A comment, ok - Go on with next line */
                          do
                          {
-                           count = fread( &buffer[0], 1, 1, inputfile );
+                           count = Read( inputfile, &buffer[0], 1 );
                          } while( buffer[0] != LINEFEED && count != 0 );
                          line++;
                          break;
@@ -155,7 +178,7 @@ char **mclip;
                                cleanup();
                                exit(-1);
                              }
-                             count = fread( &buffer[i], 1, 1, inputfile );
+                             count = Read( inputfile, &buffer[i], 1 );
                            } while( masquerade || ( buffer[i] != buffer[0] && count != 0 ) );
                            current->arg = (char *)malloc( sizeof(char)*(i+2) );
                            if( current->arg == NULL )
@@ -170,7 +193,7 @@ char **mclip;
                            do
                            {
                              i++;
-                             count = fread( &buffer[i], 1, 1, inputfile );
+                             count = Read( inputfile, &buffer[i], 1 );
                            } while( !isspace( buffer[i] ) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON && count != 0 && i < MAXARGSIZE );
                            if( buffer[i] == LINEFEED )
                            {
@@ -186,14 +209,13 @@ char **mclip;
                            {
                              do
                              {
-                               count = fread( &buffer[i], 1, 1, inputfile );
+                               count = Read( inputfile, &buffer[i], 1 );
                              } while( buffer[i] != LINEFEED && count != 0 );
                              line++;
                            }
                            if( buffer[i] == LBRACK || buffer[i] == RBRACK )
                            {
-#warning FIXME: fseek() does not work!
-                             fseek(inputfile, -1 , SEEK_CUR );
+                             Seek( inputfile, -1 , OFFSET_CURRENT );
                            }
                            buffer[i] = 0;
                            switch( buffer[0] )
@@ -220,7 +242,7 @@ char **mclip;
                                             }
                                             if( current == current->parent->cmd && strcasecmp( buffer, "procedure" ) == 0 )
                                             {
-                                            ScriptArg *proc;
+                                            ScriptArg *proc, *uproc;
                                             int finish;
                                               /* Save procedure in ProcedureList */
                                               proc = malloc( sizeof( ScriptArg ) );
@@ -228,6 +250,7 @@ char **mclip;
                                               {
                                                 end_malloc();
                                               }
+                                              uproc = proc;
                                               proc->parent = NULL;
                                               proc->next = NULL;
                                               proc->arg = NULL;
@@ -243,6 +266,18 @@ char **mclip;
                                               proc->cmd->arg = NULL;
                                               proc->cmd->intval = 0;
                                               proc->cmd->ignore = 0;
+                                              proc = proc->cmd;
+                                              proc->cmd = malloc( sizeof( ScriptArg ) );
+                                              if( proc->cmd == NULL )
+                                              {
+                                                end_malloc();
+                                              }
+                                              proc->cmd->parent = proc;
+                                              proc->cmd->next = NULL;
+                                              proc->cmd->arg = NULL;
+                                              proc->cmd->intval = 0;
+                                              proc->cmd->ignore = 0;
+                                              proc->cmd->cmd = NULL;
                                               /* parse procedure name and args */
                                               mclip = NULL;
                                               j = 0;
@@ -252,7 +287,7 @@ char **mclip;
                                                 /* goto next argument */
                                                 do
                                                 {
-                                                  count = fread( &buffer[0], 1, 1, inputfile );
+                                                  count = Read( inputfile, &buffer[0], 1 );
                                                   if( buffer[0] == LINEFEED )
                                                   {
                                                     line++;
@@ -280,7 +315,7 @@ char **mclip;
                                                   {
                                                     do
                                                     {
-                                                      count = fread( &buffer[0], 1, 1, inputfile );
+                                                      count = Read( inputfile, &buffer[0], 1 );
                                                     } while( buffer[0] != LINEFEED && count != 0 );
                                                     line++;
                                                   }
@@ -293,7 +328,7 @@ char **mclip;
                                                   do
                                                   {
                                                     i++;
-                                                    count = fread( &buffer[i], 1, 1, inputfile );
+                                                    count = Read( inputfile, &buffer[i], 1 );
                                                   } while( !isspace( buffer[i] ) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON && count != 0 && i < MAXARGSIZE );
                                                   if( i == MAXARGSIZE )
                                                   {
@@ -307,8 +342,7 @@ char **mclip;
                                                   }
                                                   if( buffer[i] == LBRACK || buffer[i] == RBRACK || buffer[i] == SEMICOLON )
                                                   {
-#warning FIXME: fseek() does not work!
-                                                    fseek(inputfile, -1 , SEEK_CUR );
+                                                    Seek( inputfile, -1 , OFFSET_CURRENT );
                                                   }
                                                   buffer[i] = 0;
                                                   j++;
@@ -334,20 +368,82 @@ char **mclip;
                                                   }
                                                   /* Next string is body-command */
                                                   finish = TRUE;
-                                              /*    fseek(inputfile, -1 , SEEK_CUR );*/
                                                 }
                                               } while( !finish );
                                               /* Procedure body */
                                               parse_file( proc->cmd );
-                                              set_procedure( mclip, j, proc );
+                                              finish = FALSE;
                                               do
                                               {
-                                                count = fread( &buffer[0], 1, 1, inputfile );
-                                                if( buffer[0] == LINEFEED )
+                                                do
                                                 {
+                                                  count = Read( inputfile, &buffer[0], 1 );
+                                                  if( buffer[0] == LINEFEED )
+                                                  {
+                                                    line++;
+                                                  }
+                                                } while( isspace(buffer[0]) && count != 0 );
+                                                if( buffer[0] == SEMICOLON )
+                                                {
+                                                  do
+                                                  {
+                                                    count = Read( inputfile, &buffer[0], 1 );
+                                                  } while( buffer[0] != LINEFEED && count != 0 );
                                                   line++;
                                                 }
-                                              } while( buffer[0] != RBRACK && count != 0 );
+                                                else if( buffer[0] == LBRACK )
+                                                {
+                                                  proc->next = malloc( sizeof( ScriptArg ) );
+                                                  if( proc->next == NULL )
+                                                  {
+                                                    end_malloc();
+                                                  }
+                                                  proc->next->parent = proc->parent;
+                                                  proc->next->next = NULL;
+                                                  proc->next->arg = NULL;
+                                                  proc->next->intval = 0;
+                                                  proc->next->ignore = 0;
+                                                  proc = proc->next;
+                                                  proc->cmd = malloc( sizeof( ScriptArg ) );
+                                                  if( proc->cmd == NULL )
+                                                  {
+                                                    end_malloc();
+                                                  }
+                                                  proc->cmd->parent = proc;
+                                                  proc->cmd->next = NULL;
+                                                  proc->cmd->arg = NULL;
+                                                  proc->cmd->intval = 0;
+                                                  proc->cmd->ignore = 0;
+                                                  proc->cmd->cmd = NULL;
+                                                  parse_file( proc->cmd );
+                                                }
+                                                else if( buffer[0] == RBRACK )
+                                                {
+                                                  finish = TRUE;
+                                                }
+                                                else
+                                                {
+                                                  show_parseerror( "Procedure has rubbish in its body!", line );
+                                                  cleanup();
+                                                  exit(-1);
+                                                }
+                                              } while (!finish);
+                                              current->next = (ScriptArg *)malloc( sizeof(ScriptArg) );
+                                              if( current->next == NULL )
+                                              {
+                                                end_malloc();
+                                              }
+                                              current->next->parent = current->parent;
+                                              current = current->next;
+                                              current->arg = mclip[0];
+                                              current->cmd = NULL;
+                                              current->next = NULL;
+                                              current->intval = set_procedure( mclip, j, uproc );
+                                              current->ignore = 0;
+                                    #ifdef DEBUG
+                                      printf("\n\n");
+                                      printcode( uproc, 0 );
+                                    #endif /* DEBUG */
                                               buffer[0] = 0;
                                               ready = TRUE;
                                             }

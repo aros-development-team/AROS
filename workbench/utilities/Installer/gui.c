@@ -4,7 +4,7 @@
 #include "execute.h"
 
 /* External variables */
-extern FILE *inputfile;
+extern BPTR inputfile;
 extern char buffer[MAXARGSIZE];
 extern char *filename;
 extern InstallerPrefs preferences;
@@ -13,9 +13,9 @@ extern int error, grace_exit;
 /* External function prototypes */
 extern void cleanup();
 extern char *get_var_arg( char * );
-extern char *get_var_int( char * );
+extern long int get_var_int( char * );
 extern void execute_script( ScriptArg *, int );
-extern void set_variable( char *, char *, int );
+extern void set_variable( char *, char *, long int );
 #ifdef DEBUG
 extern void dump_varlist();
 #endif /* DEBUG */
@@ -23,11 +23,11 @@ extern void end_malloc();
 extern void outofmem( void * );
 
 /* Internal function prototypes */
-#ifndef LINUX
+struct Border * genborder( int, int );
+void remborder( struct Border * );
 void init_gui();
 void deinit_gui();
 void clear_gui();
-#endif /* !LINUX */
 void show_abort( char * );
 void show_complete( long int );
 void show_exit( char * );
@@ -46,36 +46,83 @@ char *request_dir( struct ParameterList * );
 char *request_disk( struct ParameterList * );
 char *request_file( struct ParameterList * );
 long int request_options( struct ParameterList * );
+int request_confirm( struct ParameterList *, long int );
 void abort_install();
 void final_report();
 void traperr( char *, char * );
 int strtostrs ( char *, char *** );
 
-#ifndef LINUX
 
 #include <proto/intuition.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <proto/graphics.h>
 #include <graphics/gfxbase.h>
+#include <proto/gadtools.h>
+#include <libraries/gadtools.h>
 
 struct IntuitionBase *IntuitionBase = NULL;
+struct Library *GadToolsBase = NULL;
 struct GfxBase * GfxBase = NULL;
 struct Window *GuiWin;
 struct RastPort *rp;
+struct IntuiMessage *msg;
+ULONG class;
+UWORD code;
+
 const char GuiWinTitle[] ="AROS - Installer V43.3";
 
+APTR vi;
+struct Screen *scr;
+struct Gadget *glist = NULL, *first = NULL, *gad = NULL;
+
+
+#define INTUIGUI 1
+
+#define ID_BOOLGAD 1
+struct NewGadget gt_boolgad = {
+  10,10, 30,30, /* ng_LeftEdge ng_TopEdge ng_Width ng_Height */
+  NULL, /* ng_GadgetText */
+  NULL, /* ng_TextAttr */
+  ID_BOOLGAD, /* ng_GadgetID */
+  PLACETEXT_IN, /* ng_Flags */
+  NULL, /* ng_VisualInfo */
+  NULL  /* ng_UserData */
+};
+
+#define ID_TEXTGAD 4
+struct NewGadget gt_textgad = {
+  10,50, 100,70, /* ng_LeftEdge ng_TopEdge ng_Width ng_Height */
+  NULL, /* ng_GadgetText */
+  NULL, /* ng_TextAttr */
+  0, /* ng_GadgetID */
+  0, /* ng_Flags */
+  NULL, /* ng_VisualInfo */
+  NULL  /* ng_UserData */
+};
+
+
+/*
+ * Initialize the GUI
+ */
 void init_gui( )
 {
 struct TagItem tags[] =
 {
-  { WA_Width	, 300 },
-  { WA_Height	, 150 },
+  { WA_Width	, 400 },
+  { WA_Height	, 200 },
   { WA_Title	, (ULONG)GuiWinTitle },
-  { WA_IDCMP	, IDCMP_MOUSEMOVE },
+  { WA_IDCMP	, IDCMP_MOUSEMOVE
+		  | IDCMP_GADGETUP
+		  | IDCMP_GADGETDOWN },
+  { WA_Flags	,   WFLG_ACTIVATE
+		  | WFLG_DEPTHGADGET
+		  | WFLG_DRAGBAR
+		  | WFLG_GIMMEZEROZERO },
 
-  { 0,0}
+  { 0,0 }
 };
+struct Gadget *gad = NULL;
 
   IntuitionBase = (struct IntuitionBase *)OpenLibrary( "intuition.library", 37 );
   if (IntuitionBase == NULL)
@@ -84,12 +131,19 @@ struct TagItem tags[] =
     exit(-1);
   }
 
- GfxBase = (struct GfxBase *)OpenLibrary( "graphics.library", 37 );
- if (GfxBase == NULL)
- {
-   cleanup();
-   exit(-1);
- }
+  GfxBase = (struct GfxBase *)OpenLibrary( "graphics.library", 37 );
+  if (GfxBase == NULL)
+  {
+    cleanup();
+    exit(-1);
+  }
+
+  GadToolsBase = OpenLibrary( "gadtools.library", 0 );
+  if (GadToolsBase == NULL)
+  {
+    cleanup();
+    exit(-1);
+  }
 
   if( NULL == ( GuiWin = OpenWindowTagList( NULL, tags ) ) )
   {
@@ -98,34 +152,53 @@ struct TagItem tags[] =
     exit(-1);
   }
   rp = GuiWin->RPort;
+
+  scr = LockPubScreen( NULL );
+  vi = GetVisualInfoA( scr, NULL );
+  gad = CreateContext( &glist );
+  if(gad==NULL)
+    printf("CreateContext() failed\n");
+  gt_boolgad.ng_VisualInfo = vi;
+  gt_textgad.ng_VisualInfo = vi;
 }
 
+
+/*
+ * Close GUI
+ */
 void deinit_gui( )
 {
+  FreeGadgets( glist );
+  FreeVisualInfo( vi );
+  UnlockPubScreen( NULL, scr );
   CloseWindow( GuiWin );
   CloseLibrary( (struct Library *)IntuitionBase );
+  CloseLibrary( (struct Library *)GadToolsBase );
   CloseLibrary( (struct Library *)GfxBase );
 }
 
+
+/*
+ * Clean the GUI display
+ */
 void clear_gui()
 {
-  EraseRect( rp, 0, 0, GuiWin->Width - 5, GuiWin->Height - 11 );
+  EraseRect( rp, 0, 0, GuiWin->Width, GuiWin->Height );
 }
 
-#endif /* !LINUX */
 
+/*
+ * Show user that we are going to "(abort)" install
+ * Don't confuse NOVICE...
+ */
 void show_abort( char *msg )
 {
-#ifndef LINUX
 struct IntuiText itext;
 char **out, *text;
 int n, m;
-#endif /* !LINUX */
-char c;
 
   if( get_var_int( "@user-level" ) > _NOVICE )
   {
-#ifndef LINUX
     clear_gui();
     itext.NextText = NULL;
     itext.FrontPen = 1;
@@ -152,20 +225,17 @@ char c;
       itext.IText = out[n];
       PrintIText( rp, &itext, 10, 15*(n+2) );
     }
-#else /* !LINUX */
-  printf( "Aborting Installation:\n%s\n", msg );
-#endif /* !LINUX */
     printf( " Press Return to Proceed\n" );
-    c = getchar();
-    while( getchar() != LINEFEED );
+    scanf("x");
   }
 }
 
+
+/*
+ * Show user how much we have completed yet
+ */
 void show_complete( long int percent )
 {
-#ifdef LINUX
-  printf( "(Done %ld%c)\n", percent, PERCENT );
-#else /* LINUX */
 char *text;
 
   text = malloc( strlen( GuiWinTitle ) + 13);
@@ -175,19 +245,18 @@ char *text;
   }
   sprintf( text, "%s (Done %3ld%c)", GuiWinTitle, percent, PERCENT );
   SetWindowTitles( GuiWin, text, NULL);
-#endif /* LINUX */
 }
 
+
+/*
+ * Show user that we "(exit)" the installation
+ */
 void show_exit( char *msg )
 {
-#ifndef LINUX
 struct IntuiText itext;
 char **out, *text;
 int n, m;
-#endif /* !LINUX */
-char c;
 
-#ifndef LINUX
   clear_gui();
   itext.NextText = NULL;
   itext.FrontPen = 1;
@@ -219,17 +288,17 @@ char c;
   itext.IText = text;
   PrintIText( rp, &itext, 10, 15*(n+2) );
   free( text );
-#else /* !LINUX */
-  printf( "%s\n", msg );
-#endif /* !LINUX */
 #ifdef DEBUG
   printf( "\nDone with installation.\n\n" );
 #endif /* DEBUG */
   printf( " Press Return to Proceed\n" );
-  c = getchar();
-  while( getchar() != LINEFEED );
+  scanf("x");
 }
 
+
+/*
+ * Show the line which caused the parse-error
+ */
 void show_parseerror( char * msg, int errline )
 {
 int count = 1, i = -1;
@@ -241,7 +310,7 @@ int count = 1, i = -1;
     printf( "%s\n",msg );
   }
 #endif /* DEBUG */
-  inputfile = fopen( filename, "r" );
+  inputfile = Open( filename, MODE_OLDFILE );
   if( inputfile == NULL )
   {
     PrintFault( IoErr(), "Installer" );
@@ -251,7 +320,7 @@ int count = 1, i = -1;
   errline--;
   while( count != 0 && errline > 0 )
   {
-    count = fread( buffer, 1, 1, inputfile );
+    count = Read( inputfile, buffer, 1 );
     if( buffer[0] == LINEFEED )
     {
       errline--;
@@ -260,7 +329,7 @@ int count = 1, i = -1;
   do
   {
     i++;
-    count = fread( &buffer[i], 1, 1, inputfile );
+    count = Read( inputfile, &buffer[i], 1 );
   } while( buffer[i] != LINEFEED && count != 0 && i < MAXARGSIZE );
   buffer[i] = 0;
 #ifdef DEBUG
@@ -269,9 +338,13 @@ int count = 1, i = -1;
 
 }
 
+
+/*
+ * Tell user that some big task is to be done
+ * "Be patient..."
+ */
 void show_working( char *msg )
 {
-#ifndef LINUX
 struct IntuiText itext;
 char *text, **out;
 int n, m;
@@ -305,24 +378,23 @@ int n, m;
     itext.IText = out[n];
     PrintIText( rp, &itext, 10, 15*(n+2) );
   }
-#else /* !LINUX */
-  printf( "Working on Installation:\n%s\n", msg );
-#endif /* !LINUX */
 }
 
+
+/*
+ * Display a "(message)" to the user
+ * Don't confuse NOVICE unless "(all)" users want to get this info
+ */
 void show_message( char * msg ,struct ParameterList * pl )
 {
-#ifndef LINUX
 struct IntuiText itext;
 char **out;
-#endif /* !LINUX */
 int n, m;
 char c;
 int finish = FALSE;
 
   if( GetPL( pl, _ALL ).used == 1 || get_var_int( "@user-level" ) > _NOVICE )
   {
-#ifndef LINUX
     clear_gui();
     itext.NextText = NULL;
     itext.FrontPen = 1;
@@ -344,14 +416,10 @@ int finish = FALSE;
       itext.IText = out[n];
       PrintIText( rp, &itext, 10, 15*(n+1) );
     }
-#else /* !LINUX */
-    printf( "Message:\n%s\n", msg );
-#endif /* !LINUX */
     do
     {
       printf( " P - Proceed\n A - Abort\n H - Help\n" );
-      c = getchar();
-      while( getchar() != LINEFEED );
+      scanf( "%c", &c );
       switch( tolower( c ) )
       {
         case 'p': /* Proceed */
@@ -378,6 +446,10 @@ int finish = FALSE;
   }
 }
 
+
+/*
+ * Show the help-window for topic: User-Level
+ */
 void show_help_userlevel( )
 {
 #warning TODO: help for userlevel-requester
@@ -386,6 +458,10 @@ void show_help_userlevel( )
 #endif /* DEBUG */
 }
 
+
+/*
+ * Show the help-window for topic: Log-File
+ */
 void show_help_logfile()
 {
 #warning TODO: help for logfile-requester
@@ -394,6 +470,10 @@ void show_help_logfile()
 #endif /* DEBUG */
 }
 
+
+/*
+ * Show the help-window for topic: Installer
+ */
 void show_help_installer( )
 {
 #warning TODO: help/about for Installer
@@ -402,12 +482,16 @@ void show_help_installer( )
 #endif /* DEBUG */
 }
 
+
+/*
+ * Ask user for his user-level
+ */
 void request_userlevel( char *msg )
 {
 int usrlevel, finish = FALSE;
 
 #ifdef DEBUG
-int c;
+char c;
 
   usrlevel = preferences.defusrlevel;
   if( msg != NULL )
@@ -422,8 +506,7 @@ int c;
   do
   {
     printf( "Which user-level do you want?\n 0 - Novice\n 1 - Average\n 2 - Expert\n P - Proceed\n A - Abort\n H - Help\n O - About Installer\n\nDefault is %d\n", usrlevel );
-    c = getchar();
-    while( getchar() != LINEFEED );
+    scanf( "%c", &c );
     switch( tolower( c ) )
     {
       case 'a'	: /* abort */
@@ -461,8 +544,7 @@ int c;
     do
     {
       printf( "Installer can log all actions.\nDo you want to\n F - write a log File\n P - log to Printer\n N - disable logging\n H - Help\n A - Abort installation ?\n" );
-      c = getchar();
-      while( getchar() != LINEFEED );
+      scanf( "%c", &c );
       switch( tolower( c ) )
       {
         case 'a': /* abort */
@@ -497,12 +579,17 @@ int c;
 #endif /* DEBUG */
 }
 
+
+/*
+ * Ask user for a boolean
+ */
 long int request_bool( struct ParameterList *pl)
 {
 int i;
 long int retval;
 char yes[] = "Yes", no[] = "No", *yesstring, *nostring;
-int c, finish = FALSE;
+int finish = FALSE;
+char c;
 
   retval = ( GetPL( pl, _DEFAULT ).intval != 0 );
   yesstring = yes;
@@ -519,35 +606,97 @@ int c, finish = FALSE;
   {
     if( preferences.transcriptstream != NULL )
     {
-      fprintf( preferences.transcriptstream, ">%s\n", GetPL( pl, _PROMPT ).arg[i] );
+    char tmpbuffer[MAXARGSIZE];
+      sprintf( tmpbuffer, ">%s\n", GetPL( pl, _PROMPT ).arg[i] );
+      Write( preferences.transcriptstream, tmpbuffer, strlen( tmpbuffer ) );
     }
   }
-#ifdef DEBUG
   if( get_var_int( "@user-level" ) > _NOVICE )
-  do
+#ifdef INTUIGUI
   {
+    struct IntuiText itext;
+    char **out;
+    int j, n, m;
+
+    clear_gui();
+    gad = CreateGadget( BUTTON_KIND, gad, &gt_boolgad,
+		    	GA_Immediate, TRUE,
+		    	TAG_DONE );
+    first = gad;
+
+    gad = CreateGadget( TEXT_KIND, gad, &gt_textgad,
+		    	GTTX_Text, yesstring,
+		    	GTTX_CopyText, TRUE,
+		    	GTTX_Border, TRUE,
+		    	GTTX_Justification, GTJ_CENTER,
+		    	TAG_DONE );
+
+    if(glist==NULL)
+        printf("glist==NULL\n");
+    else
+    {
+printf("Adding gads...\n");
+        AddGList(GuiWin,glist,-1,-1,NULL);
+printf("Refreshing glist...\n");
+        RefreshGList(glist,GuiWin,NULL,-1);
+printf("Refreshing win...\n");
+        GT_RefreshWindow(GuiWin,NULL);
+printf("Drawing Bevel...\n");
+        DrawBevelBox(rp, 8,8,160,75,NULL);
+printf("Finished...\n");
+    }
+        
+#if 1
+    itext.NextText = NULL;
+    itext.FrontPen = 1;
+    itext.BackPen = 0;
+    itext.DrawMode = JAM1;
+    itext.LeftEdge = 10;
+    itext.TopEdge = 10;
+    itext.ITextFont = NULL;
+
+    j = 0;
     for( i = 0 ; i < GetPL( pl, _PROMPT ).intval ; i ++ )
     {
+#ifdef DEBUG
       printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
+#endif /* DEBUG */
+      out = malloc( sizeof( char * ) );
+      outofmem( out );
+      out[0] = NULL;
+      m = strtostrs( GetPL( pl, _PROMPT ).arg[i], &out );
+      for( n = 0 ; n < m ; n++ )
+      {
+        itext.IText = out[n];
+        PrintIText( rp, &itext, 10, 15*(j+5) );
+        free( out[n] );
+        j++;
+      }
+      free( out );
     }
-    printf( "Default is %ld.\n", retval );
-    printf( " 1 - %s\n 0 - %s\n A - Abort\n H - Help\n", yesstring, nostring );
-    c = getchar();
-    while( getchar() != LINEFEED );
-    switch( tolower( c ) )
+    do
     {
-      case '1'	: /* return TRUE */
-                  retval = 1;
-                  finish = TRUE;
-                  break;
-      case '0'	: /* return FALSE */
+      Wait( 1L<<GuiWin->UserPort->mp_SigBit );
+      msg = (struct IntuiMessage *)GetMsg( GuiWin->UserPort );
+      class = msg->Class;
+      code = msg->Code;
+      switch( class )
+      {
+        case IDCMP_GADGETUP:
+              switch( ( (struct Gadget *)(msg->IAddress) )->GadgetID )
+              {
+                case 1:
                   retval = 0;
                   finish = TRUE;
                   break;
-      case 'a'	: /* abort */
+                case 4:
+                  retval = 1;
+                  finish = TRUE;
+                  break;
+                case 0:
                   abort_install();
                   break;
-      case 'h'	: /* help */
+                case 2:
                   for( i = 0 ; i < GetPL( pl, _HELP ).intval ; i ++ )
                   {
                     printf( "%s\n", GetPL( pl, _HELP ).arg[i] );
@@ -558,26 +707,82 @@ int c, finish = FALSE;
                     printf( "%s\n", get_var_arg( "@asknumber-help" ) );
                   }
                   break;
-      default	: break;
-    }
-  } while( !finish );
+                default:
+                  break;
+              }
+              break;
+        default:
+              break;
+      }
+      ReplyMsg((struct Message *)msg);
+    } while( !finish );
+#else
+    Delay( 100 );
+#endif
+  }
+#else /* INTUIGUI */
+  {
+    do
+    {
+      for( i = 0 ; i < GetPL( pl, _PROMPT ).intval ; i ++ )
+      {
+        printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
+      }
+      printf( "Default is %ld.\n", retval );
+      printf( " 1 - %s\n 0 - %s\n A - Abort\n H - Help\n", yesstring, nostring );
+      scanf( "%c", &c );
+      switch( tolower( c ) )
+      {
+        case '1' : /* return TRUE */
+                   retval = 1;
+                   finish = TRUE;
+                   break;
+        case '0' : /* return FALSE */
+                   retval = 0;
+                   finish = TRUE;
+                   break;
+        case 'a' : /* abort */
+                   abort_install();
+                   break;
+        case 'h' : /* help */
+                   for( i = 0 ; i < GetPL( pl, _HELP ).intval ; i ++ )
+                   {
+                     printf( "%s\n", GetPL( pl, _HELP ).arg[i] );
+                   }
+                   if( i == 0 )
+                   {
+#warning FIXME: What default help text is used?
+                     printf( "%s\n", get_var_arg( "@asknumber-help" ) );
+                   }
+                   break;
+        default  : break;
+      }
+    } while( !finish );
+  }
+#endif /* INTUIGUI */
 
-#endif /* DEBUG */
   if( preferences.transcriptstream != NULL )
   {
-    fprintf( preferences.transcriptstream, "Ask Question: Result was \"%s\".\n\n", ( retval ? yesstring : nostring ) );
+  char tmpbuffer[MAXARGSIZE];
+    sprintf( tmpbuffer, "Ask Question: Result was \"%s\".\n\n", ( retval ? yesstring : nostring ) );
+    Write( preferences.transcriptstream, tmpbuffer, strlen( tmpbuffer ) );
   }
 
 return retval;
 }
 
+
+/*
+ * Ask user for a number
+ */
 long int request_number( struct ParameterList *pl)
 {
 int i;
 long int retval, min, max;
 #ifdef DEBUG
 char buffer[MAXARGSIZE];
-int c, finish = FALSE;
+int finish = FALSE;
+char c;
 
   retval = GetPL( pl, _DEFAULT ).intval;
   if( GetPL( pl, _RANGE ).used == 1 )
@@ -604,7 +809,9 @@ int c, finish = FALSE;
   {
     if( preferences.transcriptstream != NULL )
     {
-      fprintf( preferences.transcriptstream, ">%s\n", GetPL( pl, _PROMPT ).arg[i] );
+    char tmpbuffer[MAXARGSIZE];
+      sprintf( tmpbuffer, ">%s\n", GetPL( pl, _PROMPT ).arg[i] );
+      Write( preferences.transcriptstream, tmpbuffer, strlen( tmpbuffer ) );
     }
   }
   retval = GetPL( pl, _DEFAULT ).intval;
@@ -617,12 +824,11 @@ int c, finish = FALSE;
     }
     printf( "Number [%ld,%ld] is %ld.\n", min, max, retval );
     printf( " V - Change value\n P - Proceed\n A - Abort\n H - Help\n" );
-    c = getchar();
-    while( getchar() != LINEFEED );
+    scanf( "%c", &c );
     switch( tolower( c ) )
     {
       case 'v'	: /* change value */
-                  gets( buffer );
+                  scanf( "%s", buffer );
                   i = atol( buffer );
                   if( i < min || i > max )
                   {
@@ -659,19 +865,26 @@ int c, finish = FALSE;
 #endif /* DEBUG */
   if( preferences.transcriptstream != NULL )
   {
-    fprintf( preferences.transcriptstream, "Ask Number: Result was \"%ld\".\n\n", retval );
+  char tmpbuffer[MAXARGSIZE];
+    sprintf( tmpbuffer, "Ask Number: Result was \"%ld\".\n\n", retval );
+    Write( preferences.transcriptstream, tmpbuffer, strlen( tmpbuffer ) );
   }
 
 return retval;
 }
 
+
+/*
+ * Ask user for a string
+ */
 char *request_string( struct ParameterList *pl)
 {
 int i;
 char *retval,*string;
 #ifdef DEBUG
 char buffer[MAXARGSIZE];
-int c, finish = FALSE;
+int finish = FALSE;
+char c;
 
   if( GetPL( pl, _DEFAULT ).used == 1 )
   {
@@ -685,7 +898,9 @@ int c, finish = FALSE;
   {
     if( preferences.transcriptstream != NULL )
     {
-      fprintf( preferences.transcriptstream, ">%s\n", GetPL( pl, _PROMPT ).arg[i] );
+    char tmpbuffer[MAXARGSIZE];
+      sprintf( tmpbuffer, ">%s\n", GetPL( pl, _PROMPT ).arg[i] );
+      Write( preferences.transcriptstream, tmpbuffer, strlen( tmpbuffer ) );
     }
   }
   if( get_var_int( "@user-level" ) > _NOVICE )
@@ -697,12 +912,11 @@ int c, finish = FALSE;
     }
     printf( "String is %s.\n", string );
     printf( " V - Enter new string\n P - Proceed\n A - Abort\n H - Help\n" );
-    c = getchar();
-    while( getchar() != LINEFEED );
+    scanf( "%c", &c );
     switch( tolower( c ) )
     {
       case 'v'	: /* enter new string */
-                  gets( buffer );
+                  scanf( "%s", buffer );
                   free( string );
                   string = strdup( buffer );
                   break;
@@ -728,49 +942,50 @@ int c, finish = FALSE;
 #endif /* DEBUG */
 
   /* Add surrounding quotes */
-  c = strlen( string );
-  retval = malloc( c + 3 );
+  i = strlen( string );
+  retval = malloc( i + 3 );
   outofmem( retval );
   retval[0] = DQUOTE;
   strcpy( retval + 1, string );
-  retval[c+1] = DQUOTE;
-  retval[c+2] = 0;
+  retval[i+1] = DQUOTE;
+  retval[i+2] = 0;
   free( string );
   if( preferences.transcriptstream != NULL )
   {
-    fprintf( preferences.transcriptstream, "Ask String: Result was %s.\n\n", retval );
+  char tmpbuffer[MAXARGSIZE];
+    sprintf( tmpbuffer, "Ask String: Result was %s.\n\n", retval );
+    Write( preferences.transcriptstream, tmpbuffer, strlen( tmpbuffer ) );
   }
 
 return retval;
 }
 
-#warning TODO: check whole function (supports only 1-9 in text-gui)
-/* Ask user to choose one of N items */
+/*
+ * Ask user to choose one of N items
+ */
 long int request_choice( struct ParameterList *pl )
 {
 int i;
 long int retval;
 #ifdef DEBUG
-int c, n = -1, finish = FALSE;
+int max, finish = FALSE;
+char c;
 
   retval = GetPL( pl, _DEFAULT ).intval;
-  if( retval == 0 )
+  if( preferences.transcriptstream != NULL )
   {
-    retval = 1;
-  }
-  for( i = 0 ; i < GetPL( pl, _PROMPT ).intval ; i ++ )
-  {
-    if( preferences.transcriptstream != NULL )
+    for( i = 0 ; i < GetPL( pl, _PROMPT ).intval ; i ++ )
     {
-      fprintf( preferences.transcriptstream, ">%s\n", GetPL( pl, _PROMPT ).arg[i] );
+    char tmpbuffer[MAXARGSIZE];
+      sprintf( tmpbuffer, ">%s\n", GetPL( pl, _PROMPT ).arg[i] );
+      Write( preferences.transcriptstream, tmpbuffer, strlen( tmpbuffer ) );
     }
   }
-  for( i = 0; i < 32 ; i ++ )
+  max = GetPL( pl, _CHOICES ).intval;
+  if( max > 32 )
   {
-    if( retval & ( 1 << i ) )
-    {
-      n = i + 1;
-    }
+    error = SCRIPTERROR;
+    traperr( "More than 32 choices given!\n", NULL );
   }
   if( get_var_int( "@user-level" ) > _NOVICE )
   do
@@ -779,14 +994,9 @@ int c, n = -1, finish = FALSE;
     {
       printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
     }
-    if( GetPL( pl, _CHOICES ).intval > 32 )
-    {
-      error = SCRIPTERROR;
-      traperr( "More than 32 choices given!\n", NULL );
-    }
     if( GetPL( pl, _CHOICES ).intval > 1 )
     {
-      for( i = 0 ; i < GetPL( pl, _CHOICES ).intval ; i ++)
+      for( i = 0 ; i < max ; i ++)
       {
         printf( "%2d: (%c) %s\n", ( i + 1 ), ( retval&(1<<i) ? '*' : ' ' ), GetPL( pl, _CHOICES ).arg[i]);
       }
@@ -796,25 +1006,20 @@ int c, n = -1, finish = FALSE;
       error = SCRIPTERROR;
       traperr( "No choices given!\n", NULL );
     }
-    printf( " P - Proceed\n A - Abort\n H - Help\n" );
-    c = getchar();
-    while( getchar() != LINEFEED );
-    if( isdigit(c) && c != '0' )
+    printf( " V - Change Value\n P - Proceed\n A - Abort\n H - Help\n" );
+    scanf( "%c", &c );
+    switch( tolower( c ) )
     {
-      retval = 1 << ( c - '1' );
-      n = ( c - '0' );
-    }
-    else
-    {
-      switch( tolower( c ) )
-      {
-        case 'a': /* abort */
+      case 'a'	: /* abort */
                   abort_install();
                   break;
-        case 'p': /* proceed */
-                  finish = TRUE;
+      case 'p'	: /* proceed */
+                  if( retval < max )
+                  {
+                    finish = TRUE;
+                  }
                   break;
-        case 'h': /* help */
+      case 'h'	: /* help */
                   for( i = 0 ; i < GetPL( pl, _HELP ).intval ; i ++ )
                   {
                     printf( "%s\n", GetPL( pl, _HELP ).arg[i] );
@@ -824,20 +1029,29 @@ int c, n = -1, finish = FALSE;
                     printf( "%s\n", get_var_arg( "@asknumber-help" ) );
                   }
                   break;
-        default	: break;
-      }
+      case 'v'	: /* change value */
+                  scanf( "%s", buffer );
+                  retval = ( atol( buffer ) < max ) ? atol( buffer ) : retval ;
+                  break;
+      default	: break;
     }
   } while( !finish );
 
 #endif /* DEBUG */
   if( preferences.transcriptstream != NULL )
   {
-    fprintf( preferences.transcriptstream, "Ask Choice: User selected \"%s\".\n\n", GetPL( pl, _CHOICES ).arg[n] );
+  char tmpbuffer[MAXARGSIZE];
+    sprintf( tmpbuffer, "Ask Choice: Result was \"%s\".\n\n", GetPL( pl, _CHOICES ).arg[retval] );
+    Write( preferences.transcriptstream, tmpbuffer, strlen( tmpbuffer ) );
   }
 
 return retval;
 }
 
+
+/*
+ * Ask user for a directory
+ */
 #warning TODO: write whole function
 char *request_dir( struct ParameterList *pl )
 {
@@ -863,6 +1077,10 @@ int c;
 return retval;
 }
 
+
+/*
+ * Ask user for a specific disk
+ */
 #warning TODO: write whole function
 /* Ask user to insert a specific disk */
 char *request_disk( struct ParameterList *pl )
@@ -889,6 +1107,10 @@ int c;
 return retval;
 }
 
+
+/*
+ * Ask user for a file
+ */
 #warning TODO: write whole function
 char *request_file( struct ParameterList *pl )
 {
@@ -914,6 +1136,10 @@ int c;
 return retval;
 }
 
+
+/*
+ * Ask user for a selection of multiple items (choose m of n items)
+ */
 #warning TODO: write whole function
 long int request_options( struct ParameterList *pl )
 {
@@ -924,16 +1150,99 @@ long int retval;
 return retval;
 }
 
+
+/*
+ * Ask user to confirm
+ */
+int request_confirm( struct ParameterList * pl, long int minuser )
+{
+struct IntuiText itext;
+int n, m, finish = FALSE;
+int retval = 1;
+char c;
+
+  if( get_var_int( "@user-level" ) >= minuser )
+  {
+    clear_gui();
+    itext.NextText = NULL;
+    itext.FrontPen = 1;
+    itext.BackPen = 0;
+    itext.DrawMode = JAM1;
+    itext.LeftEdge = 10;
+    itext.TopEdge = 10;
+    itext.ITextFont = NULL;
+
+    m = GetPL( pl, _PROMPT ).intval;
+    if( m == 0 )
+    {
+      error = SCRIPTERROR;
+      traperr( "Missing prompt!\n", NULL );
+    }
+    if( GetPL( pl, _HELP ).intval == 0 )
+    {
+      error = SCRIPTERROR;
+      traperr( "Missing help!\n", NULL );
+    }
+
+    do
+    {
+      for( n = 0 ; n < m ; n++ )
+      {
+#ifdef DEBUG
+        printf( "%s\n", GetPL( pl, _PROMPT ).arg[n] );
+#endif /* DEBUG */
+        itext.IText = GetPL( pl, _PROMPT ).arg[n];
+        PrintIText( rp, &itext, 10, 15*(n+2) );
+      }
+#ifdef DEBUG 
+      printf( " P - Proceed\n S - Skip this\n A - Abort Installation\n H - Help\n" );
+#endif /* DEBUG */
+      scanf( "%c", &c );
+      switch( tolower( c ) )
+      {
+        case 'p': /* proceed */
+                  finish = TRUE;
+                  break;
+        case 's': /* skip this */
+                  finish = TRUE;
+                  retval = 0;
+                  break;
+        case 'h': /* help */
+                  m = GetPL( pl, _HELP ).intval;
+                  for( n = 0 ; n < m ; n++ )
+                  {
+                    printf( "%s\n", GetPL( pl, _HELP ).arg[n] );
+                  }
+                  break;
+        case 'a': /* abort */
+                  abort_install();
+                  break;
+        default	: break;
+      }
+    } while( finish == FALSE );
+  }
+  else
+  {
+    return 1;
+  }
+
+return retval;
+}
+
+
+/*
+ * Ask user if he really wants to abort
+ */
 void abort_install( )
 {
 #ifdef DEBUG
-int c, abort = -1;
+int abort = -1;
+char c;
 
   do
   {
     printf( "Do you really want to abort Installer? [y/n]" );
-    c = getchar();
-    while( getchar() != LINEFEED );
+    scanf( "%c", &c );
     switch( tolower( c ) )
     {
       case 'y'	: error = USERABORT;
@@ -949,13 +1258,21 @@ int c, abort = -1;
 #endif /* DEBUG */
 }
 
+
+/*
+ * Give a short summary on what was done
+ */
 void final_report( )
 {
 #ifdef DEBUG
-  printf( "Application has bee installed in %s\n", get_var_arg( "@default-dest" ) );
+  printf( "Application has been installed in %s.\n", get_var_arg( "@default-dest" ) );
 #endif /* DEBUG */
 }
 
+
+/*
+ * Execute "(traperr)" from preferences
+ */
 void traperr( char * msg, char * name )
 {
 char *outmsg;
@@ -998,6 +1315,10 @@ int i, j;
   }
 }
 
+
+/*
+ * Break string into array of strings at LINEFEEDs
+ */
 int strtostrs ( char * in, char ***outarr )
 {
 int i = 0, j = 0;

@@ -210,4 +210,44 @@
   ( pipes: '>' etc. don't work and AROS has no 'info' )
 - "ask[bool|number|string|choice]" now print infos to log file
 
+0033
+- added parameter support to "run"
+- added gui-function request_confirm():
+  shows(==needs!) (prompt...) and (help...) and is only executed if
+  @user-level >= minuser
+- changed behaviour of "askchoice"
+  ( tests with Installer 43.3 showed that no bitmask is used )
+
+0034
+- added function "startup"
+- "if" returns empty string for empty FALSE case, if TRUE case is a string
+
+0035
+- stripped LINUX stuff
+
+0036
+- working out IntuitionGUI: function for generating gadget borders
+- first test in askbool
+- code for cleaning up ParameterLists
+- it is now legal to mask option-parameters with "if"
+  (e.g. help) with (if ... (help ...))
+
+0037
+- procedures are now linked in at run-time, parsing is done before executing,
+  "(procedure ...)" key puts the function into the active list
+  replaces existing function
+
+0038
+- converted libc filehandling to AmigaDOS filehandling
+  ( ie. fread() -> Read() )
+- commented all functions
+
+0039
+- procedures now can have multiple commands as body
+  (ie. not necessarily a block)
+- support more ReadArgs() parameters
+
+0040 INTERMEDIATE VERSION ONLY
+- more intuition gui tries
+
 
