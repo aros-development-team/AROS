@@ -134,8 +134,7 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 					 MUIA_CycleChain, 1,
 					 MUIA_Window_Title, (IPTR)"Adjust Background",
 					 TAG_DONE),
-			       Child, MUI_MakeObject(MUIO_Label, (IPTR)"Background",
-						     MUIO_Label_Centered),
+			       Child, CLabel((IPTR)"Background"),
 			       End, /* VGroup BG */
 			       End, /* HGroup Frame/BG */
 			       Child, HGroup,
@@ -231,7 +230,7 @@ static IPTR CyclesP_GadgetsToConfig(struct IClass *cl, Object *obj,
 	     xget(data->recessed_entries_checkmark, MUIA_Selected));
 /* Cycles */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Cycle_MenuCtrl_Position,
-	     xget(data->menu_position_cycle, MUIA_Radio_Active));
+	     xget(data->menu_position_cycle, MUIA_Cycle_Active));
 
     return TRUE;
 }

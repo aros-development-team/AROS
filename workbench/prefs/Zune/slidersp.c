@@ -85,6 +85,7 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperNew(cl, obj,
 			       MUIA_Group_Horiz, FALSE,
 			       Child, HGroup,
+			       MUIA_VertWeight, 400,
 			       Child, HGroup,
 			       GroupFrameT("Container Design"),
 			       Child, HGroup,
@@ -134,15 +135,19 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
 			       End, /* VGroup Knob Design */
 			       End, /* HGroup Container/Knob design */
-			       Child, HGroup,
+			       Child, VGroup,
 			       GroupFrameT("Example Sliders"),
+			       Child, VSpace(0),
+			       Child, HGroup,
 			       Child, VGroup,
 			       Child, MakeSmallHorizSlider(),
 			       Child, MakeBigHorizSlider(),
 			       End, /* VGroup horiz sliders */
 			       Child, MakeSmallVertSlider(),
 			       Child, MakeBigVertSlider(),
-			       End, /* HGroup Slider examples */
+			       End, /* HGroup */
+			       Child, HVSpace,
+			       End, /* VGroup Slider examples */
     	TAG_MORE, msg->ops_AttrList);
 
     if (!obj) return FALSE;
