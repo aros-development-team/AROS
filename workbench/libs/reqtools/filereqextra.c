@@ -1200,7 +1200,7 @@ void REGARGS ShowFontSample (GlobData *glob, int refresh, int dowait)
     char 		*message = "0123 aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ";
     UWORD 		*cmap = NULL;
     ULONG 		style = glob->fontstyle, count = glob->colcount;
-    APTR 		winlock;
+    APTR 		winlock = NULL;
 
     if (dowait) winlock = rtLockWindow (glob->reqwin);
     
