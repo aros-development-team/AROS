@@ -28,24 +28,7 @@ void _Exec_Enable(struct ExecBase * SysBase)
 
     if(--SysBase->IDNestCnt < 0)
     {
-	/* Block all signals. We should really only block those that
-	   map to interrupts.
-	*/
-
-#if 0
-
-	if( (SysBase->AttnResched & 0x80)
-	 && (SysBase->TDNestCnt < 1)
-	)
-	{
-		SysBase->AttnResched &= ~0x80;
-		Switch();
-	}
-
-#endif
-
 	sigprocmask(SIG_UNBLOCK, &sig_int_mask, NULL);
-
     }
 
 #ifndef UseExecstubs
