@@ -19,7 +19,7 @@
 BOOL pattern_pen(struct RastPort *rp, LONG x, LONG y, ULONG apen, ULONG bpen, ULONG *pixval_ptr, struct GfxBase *GfxBase)
 {
     ULONG idx, mask;
-    ULONG set_pixel, pixval;
+    ULONG set_pixel, pixval = 0;
     
     ULONG drmd = GetDrMd(rp);
     ULONG pattern_height = 1L << ABS(rp->AreaPtSz);
@@ -67,7 +67,7 @@ BOOL pattern_pen(struct RastPort *rp, LONG x, LONG y, ULONG apen, ULONG bpen, UL
     else
     {
 	UBYTE i, depth;
-	ULONG plane_size, pen_mask;
+	ULONG plane_size, pen_mask = 0;
 	UBYTE *plane;
 			
 	plane_size = (/* bytesperrow = */ 2 ) * pattern_height;

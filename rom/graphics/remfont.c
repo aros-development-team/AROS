@@ -56,7 +56,7 @@
     ASSERT_VALID_PTR(textFont);
     
     Forbid();
-    tfe = textFont->tf_Extension;
+    tfe = (struct TextFontExtension *)textFont->tf_Extension;
     if (tfe)
     {
     	if ((tfe->tfe_MatchWord == TFE_MATCHWORD) && (tfe->tfe_BackPtr == textFont))

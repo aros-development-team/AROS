@@ -169,7 +169,7 @@ static VOID pattern_to_buf(struct pattern_info *pi, LONG x_src, LONG y_src,
     ULONG   	    bpen;
     ULONG   	    drmd;
     UBYTE   	    *apt;
-    LONG    	    mask_x, mask_y;
+    LONG    	    mask_x = 0, mask_y = 0;
     
     rp   = pi->rp;
     apen = GetAPen(rp);

@@ -399,7 +399,7 @@ ULONG driver_GetCyberIDAttr(ULONG attribute, ULONG id, struct GfxBase *GfxBase)
 BOOL driver_IsCyberModeID(ULONG modeid, struct GfxBase *GfxBase)
 {
     BOOL iscyber = FALSE;
-    HIDDT_ModeID hiddmode;
+    HIDDT_ModeID hiddmode = 0;
     OOP_Object *sync, *pf;
     
     hiddmode = AMIGA_TO_HIDD_MODEID(hiddmode);

@@ -724,7 +724,6 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     while ( len -- )
     {
 	ULONG charloc;
-	WORD render_x;
 	ULONG idx;
 	
 	if (*string < tf->tf_LoChar || *string > tf->tf_HiChar )
@@ -1284,7 +1283,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 {
      
     OOP_Object *pf;
-    HIDDT_StdPixFmt srcfmt_hidd;
+    HIDDT_StdPixFmt srcfmt_hidd = 0;
     ULONG start_offset, bppix;
     
     LONG pixwritten = 0;
@@ -1371,7 +1370,7 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
 {
      
     OOP_Object *pf;    
-    HIDDT_StdPixFmt dstfmt_hidd;
+    HIDDT_StdPixFmt dstfmt_hidd = 0;
     
     ULONG start_offset, bppix;
     
@@ -1656,7 +1655,7 @@ ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Libr
 VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct Library *CyberGfxBase)
 {
     struct TagItem *tag, *tstate;
-    ULONG dpmslevel;
+    ULONG dpmslevel = 0;
     
     struct TagItem htags[] = {
 	{ aHidd_Gfx_DPMSLevel,	0UL	},
@@ -1665,7 +1664,7 @@ VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct 
     
     BOOL dpms_found = FALSE;
     
-    HIDDT_DPMSLevel hdpms;
+    HIDDT_DPMSLevel hdpms = 0;
     
     for (tstate = tags; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
     	switch (tag->ti_Tag) {

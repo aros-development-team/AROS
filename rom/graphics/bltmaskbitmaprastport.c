@@ -148,7 +148,7 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     struct bltmask_render_data 	*brd;
     OOP_Object	    	    	*dest_pf;
     HIDDT_ColorModel	    	dest_colmod;
-    HIDDT_Pixel     	    	*pixtab;
+    HIDDT_Pixel     	    	*pixtab = NULL;
     ULONG   	    	    	x, y, width, height;
     LONG    	    	    	lines_done, lines_per_step, doing_lines;
     BOOL    	    	    	pal_to_true = FALSE;
