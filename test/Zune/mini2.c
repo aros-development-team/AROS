@@ -29,12 +29,6 @@
 
 Object *app;
 
-ULONG xget(Object *obj, Tag attr)
-{
-  ULONG storage;
-  GetAttr(attr, obj, &storage);
-  return storage;
-}
 int main(void)
 {
     Object *wnd;

@@ -29,13 +29,6 @@
 
 Object *app;
 
-ULONG xget(Object *obj, Tag attr)
-{
-  ULONG storage;
-  GetAttr(attr, obj, &storage);
-  return storage;
-}
-
 Object *MakeLabel(STRPTR str)
 {
   return (MUI_MakeObject(MUIO_Label, str, 0));

@@ -55,13 +55,6 @@ Object *list2;
 Object *drawer_iconlist;
 Object *volume_iconlist;
 
-ULONG xget(Object *obj, Tag attr)
-{
-  ULONG storage;
-  GetAttr(attr, obj, &storage);
-  return storage;
-}
-
 AROS_UFH0(void, repeat_function)
 {
     printf("MUI_Timer\n");
