@@ -509,6 +509,9 @@ endif
 # building it, but when running it from inside AROS it can also find that stuff by simply opening
 # PROGDIR:, which it will do automatically if it uses the configuration parameters set when running
 # ./configure
+#
+# *NOTICE*: DO NOT put a trailing '/' (slash) after $PROGDIR, as the variable already contains
+# either a '/' (slash) or a ':' (colon), thus simply attach it to the name which as to follow it.
 
 %define build_with_configure mmake=/A configure=$(TOP)/$(CURDIR)/configure prefix= \
     bindir= libdir= includedir= extraoptions= nix=no
