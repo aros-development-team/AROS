@@ -237,9 +237,7 @@ IPTR iconConObsAddIcons(Class * cl, Object * obj, struct icoAddIcon * msg)
     return retval;
 }
 
-AROS_UFH3(IPTR, iconContainerObserverDispatcher,
-          AROS_UFHA(Class *, cl, A0),
-          AROS_UFHA(Object *, obj, A2), AROS_UFHA(Msg, msg, A1))
+BOOPSI_DISPATCHER(IPTR, iconContainerObserverDispatcher, cl, obj, msg)
 {
     ULONG           retval = 0;
 
