@@ -17,10 +17,7 @@ or better.
 If it's not already on your system (type \shell{cvs} to find out), fetch
 if from one of the many GNU mirrors and install it in your \filename{$HOME}.
 
-\begin{new}{7.10.1997}
-If you want to get the sources only, you can use the anonymous access (see
-below). If you want to have read-write access to the database,
-\end{new}
+If you want to have access to the database,
 then get the
 AROS developer archive from the AmiNET and compile \filename{crypt.c} (just
 say \shell{make crypt}. Think of a good password and use \filename{crypt}
@@ -38,13 +35,10 @@ server".
 \begin{new}{7.10.1997}
 \subsection{CVS on Amiga}
 
-If you have an Amiga, you can participate, too. If you just want to
-download the newest source, you can use the anonymous user (see below).
-If you want to modify the sources, then you have to create a password.
-In any case, you have to get the CVS from
-ADE, install it.
+First, you have to get the CVS from ADE, install it. Then create a password
+as follows:
 
-If you want full access, and get the demo for AmiTCP 4.0 (\filename{AmiTCP-demo-40.lha}
+Get the demo for AmiTCP 4.0 (\filename{AmiTCP-demo-40.lha}
 in \filename{comm/tcp}) from AmiNET
 (no need to install AmiTCP; just get the archive and extract the file
 \filename{AmiTCP} from it).
@@ -71,6 +65,11 @@ won't work. Sorry.
 \begin{new}{18.8.1997}
 But you can use Miami with CVS to work on AROS after you have created
 a password with AmiTCP.
+\end{new}
+
+\begin{new}{7.1.1997}
+Versions of AmiTCP greater than 4.3 don't work either; they have changed
+the algorithm for encoding the password.
 \end{new}
 
 \begin{new}{7.10.1997}
@@ -101,11 +100,6 @@ encoded mail with your password and I'll encrypt and add it.
 Wait until I confirm this. While you wait, look for CVS 1.8 or better if
 you haven't already done so.
 
-\begin{new}{18.8.1997}
-If you want read-only access, then your username is \shell{anon} and
-your password is \shell{anon}, too.
-\end{new}
-
 \begin{new}{7.10.1997}
 \subsection{Logging into the server}
 \end{new}
@@ -123,12 +117,12 @@ where \shell{user} is your login, eg. digulla:
 > cvs -d :pserver:digulla@aros.fh-konstanz.de:/home/AROS/CVS login
 \end{example}
 
-\begin{new}{18.8.1997}
-For anonymous readonly access, it would look like this:
-
-\begin{example}
-> cvs -d :pserver:anon@aros.fh-konstanz.de:/home/AROS/CVS login
-\end{example}
+\begin{new}{7.1.1997}
+On the Amiga, you must \shell{setenv HOME} to a directory (eg.
+\shell{setenv HOME SYS:Home}). Setting it to a device or assign
+doesn't work because CVS always adds a / after \shell{$HOME} when
+it looks for it's files. And don't forget to copy it to \filename{ENVARC:}
+(\shell{copy ENV:HOME ENVARC:}) to make it permanent.
 \end{new}
 
 This should ask you for your password. Type it in and if there is no error
