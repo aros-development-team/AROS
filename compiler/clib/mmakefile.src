@@ -29,7 +29,6 @@ COMMON	:= \
 	bcmp \
 	bcopy \
 	bzero \
-	index \
 	longjmp \
 	memchr \
 	memcmp \
