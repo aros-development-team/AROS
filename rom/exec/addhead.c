@@ -55,6 +55,7 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    AROS_GET_SYSBASE
     ASSERT_VALID_PTR(node);
     ASSERT_VALID_PTR(list);
 

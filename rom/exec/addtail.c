@@ -52,6 +52,7 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    AROS_GET_SYSBASE
 //  ASSERT_VALID_PTR(node); argh! TypeOfMem() doesn't know about the data segment!
     ASSERT_VALID_PTR(list);
 
