@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Converts a string into a date
@@ -147,7 +147,7 @@ const char *const Dos_SubstDateTable[]=
 	}
 
 	if (t != 3)
-	    days = curr.ds_Days + t - 1;
+	    days = curr.ds_Days + 1 - t;
 	else
 	{
 	    for (t=0; t<7; t++)
