@@ -107,8 +107,9 @@ def filterSrc (src):
 		out.write ("""<HTML><HEAD>
     <TITLE>AROS - The Amiga Research OS - AutoDocs</TITLE>
 </HEAD>
-<BODY>
-<CENTER><P>(C) 1998 AROS - The Amiga Research OS</P></CENTER>
+<BODY BACKGROUND="/pics/background.gif" BGCOLOR="#C0C0C0"
+   TEXT="#000011" LINK="#3300DD" ALINK="#FF5566" VLINK="#550055">
+<CENTER><P>(C) 1998-2000 AROS - The Amiga Research OS</P></CENTER>
 <P><HR></P>
 """)
 		# Now read the data in the header
