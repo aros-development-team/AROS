@@ -5,6 +5,7 @@ DEST	:= ../html/
 #DEST	 := ../html.test/
 JOBDEST := $(DEST)jobserver/
 MIC	:= $(TOP)/scripts/moveifchanged
+LITE	:= /usr/local/Hughes/bin/lite
 
 FILES := main.src
 
@@ -110,8 +111,8 @@ jobserver : jobserver-setup \
 	    $(JOBDEST).htaccess \
 	    $(JOBDEST)jobserv-add.html \
 	    $(JOBDEST)jobserv-free.html \
-	    $(JOBDEST)jobserv-work.html \
-	    $(JOBDEST)jobserv-done.html \
+	    $(JOBDEST)jobserv-work.shtml \
+	    $(JOBDEST)jobserv-done.shtml \
 	    $(JOBDEST)jobserv-msql.html \
 	    $(JOBDEST)cgi-bin/jobserv-add.cgi \
 	    $(JOBDEST)cgi-bin/jobserv-free.cgi \
@@ -168,14 +169,14 @@ $(JOBDEST)jobserv-free.html : page_header.html jobserv-free.body \
 	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
 	    > $@
 
-$(JOBDEST)jobserv-work.html : page_header.html jobserv-work.body \
+$(JOBDEST)jobserv-work.shtml : page_header.html jobserv-work.body \
 	    page_footer_nolinks.html
 	cat $^ | \
 	    sed "s/\\\\thischapter/Jobs which are in work/" | \
 	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
 	    > $@
 
-$(JOBDEST)jobserv-done.html : page_header.html jobserv-done.body \
+$(JOBDEST)jobserv-done.shtml : page_header.html jobserv-done.body \
 	    page_footer_nolinks.html
 	cat $^ | \
 	    sed "s/\\\\thischapter/Finished jobs/" | \
@@ -227,7 +228,11 @@ $(DEST)inc_index.html : $(INCLUDE_SRCS)
 all-docs : includes docs 
 
 includes : devlist.inc contents.inc status.inc \
+	support.lib \
 	jobserv-free.inc jobserv-work.inc jobserv-done.inc
+
+support.lib : support.lsrc
+	$(LITE) -l$@ $<
 
 devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt 
 	gawk -f $< --assign TOP="$(TOP)" > $@
