@@ -111,7 +111,6 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
     if ( srcBitMap->Pad != 0 || destBitMap->Pad != 0 
       || srcBitMap->Flags & BMF_AROS_DISPLAYED || destBitMap->Flags & BMF_AROS_DISPLAYED)
     {
-kprintf("Calling driver_BltBitMap %d,%d!!!\n",xSize,ySize);
 	planecnt = driver_BltBitMap (srcBitMap, xSrc, ySrc
 	    , destBitMap, xDest, yDest
 	    , xSize, ySize
@@ -125,9 +124,9 @@ kprintf("Calling driver_BltBitMap %d,%d!!!\n",xSize,ySize);
 	ULONG x, y, plane;
 	ULONG depth;
 	PLANEPTR src, dest, temp;
-kprintf("Doing nonvisible blit %d,%d!",xSize,ySize);
-	wSrc  =  srcBitMap->BytesPerRow * 8;
-	wDest = destBitMap->BytesPerRow * 8;
+
+	wSrc  = GetBitMapAttr( srcBitMap, BMA_WIDTH);
+	wDest = GetBitMapAttr(destBitMap, BMA_WIDTH);
 	temp = NULL;
 
 	depth = GetBitMapAttr ( srcBitMap, BMA_DEPTH);
@@ -153,25 +152,21 @@ kprintf("Doing nonvisible blit %d,%d!",xSize,ySize);
 	/* Clip width and height for source and dest */
 	if (ySrc + ySize > srcBitMap->Rows)
 	{
-kprintf("bltbitmap: clipping 1\n");
 	    ySize = srcBitMap->Rows - ySrc;
 	}
 
 	if (yDest + ySize > destBitMap->Rows)
 	{
-kprintf("bltbitmap: clipping 2: %d>=%d\n",yDest+ySize,destBitMap->Rows);
 	    ySize = destBitMap->Rows - yDest;
         }
 
 	if (xSrc + xSize >= wSrc)
 	{
-kprintf("bltbitmap: clipping 3\n");
 	    xSize = wSrc - xSrc;
         }
         
 	if (xDest + xSize >= wDest)
 	{
-kprintf("bltbitmap: clipping 4\n");
 	    xSize = wDest - xDest;
         }
 
@@ -191,9 +186,13 @@ kprintf("bltbitmap: clipping 4\n");
 
 		for (y=0; y<ySize; y++)
 		{
-		    src  =  srcBitMap->Planes[plane] + y* srcBitMap->BytesPerRow;
-		    dest = destBitMap->Planes[plane] + y*destBitMap->BytesPerRow;
+		    src  =  srcBitMap->Planes[plane] + (y+ySrc) * srcBitMap->BytesPerRow;
+		    dest = destBitMap->Planes[plane] + (y+yDest)*destBitMap->BytesPerRow;
 
+                    /*
+                       If the source address is less or equal to
+                       the destination address 
+                     */
 		    if ((src <= dest && src+srcBitMap->BytesPerRow > dest)
 			|| (dest <= src && dest+destBitMap->BytesPerRow > src)
 		    )
@@ -234,16 +233,18 @@ kprintf("bltbitmap: clipping 4\n");
 static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest, ULONG xdest,
 	ULONG minterm)
 {
-    ULONG sByte, sBit, sSet;
-    ULONG dByte, dBit, dSet;
+    ULONG sByte, sSet;
+    ULONG dByte, dSet;
+    UBYTE sBit;
+    UBYTE dBit;
     BOOL set;
 
-    sByte = xsrc / 8;
-    sBit = 1L << (7-(xsrc & 7L));
+    sByte = xsrc >> 3;
+    sBit = 1L << (7 - (xsrc & 0x07));
     sSet = (src[sByte] & sBit) != 0;
 
-    dByte = xdest / 8;
-    dBit = 1L << (7-(xdest & 7L));
+    dByte = xdest >> 3;
+    dBit = 1L << (7 - (xdest & 0x07));
     dSet = (dest[dByte] & dBit) != 0;
 
     set = 0;
@@ -251,22 +252,22 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest, ULONG xdest,
     if (minterm & 0x0010)
     {
 	if (!sSet && !dSet)
-	    set |= 1;
+	    set = 1;
     }
     if (minterm & 0x0020)
     {
 	if (!sSet && dSet)
-	    set |= 1;
+	    set = 1;
     }
     if (minterm & 0x0040)
     {
 	if (sSet && !dSet)
-	    set |= 1;
+	    set = 1;
     }
     if (minterm & 0x0080)
     {
 	if (sSet && dSet)
-	    set |= 1;
+	    set = 1;
     }
 
     if (set)
