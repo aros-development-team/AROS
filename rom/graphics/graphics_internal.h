@@ -19,8 +19,6 @@
 #include "fakegfxhidd.h"
 #include "objcache.h"
 
-HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase);
-UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase);
 
 #if 0
 VOID activatebm_callback(APTR data, OOP_Object *bmobj, BOOL activated);

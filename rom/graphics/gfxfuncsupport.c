@@ -11,6 +11,7 @@
 
 /****************************************************************************************/
 
+#include <cybergraphx/cybergraphics.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/layers.h>
@@ -591,10 +592,422 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, LONG xSrc, L
 }
 
 /****************************************************************************************/
+
+struct wp8_render_data
+{
+    UBYTE   	   *array;
+    ULONG   	    modulo;
+    HIDDT_PixelLUT *pixlut;
+};
+
+static ULONG wp8_render(APTR wp8r_data, LONG srcx, LONG srcy, OOP_Object *dstbm_obj,
+    	    	    	OOP_Object *dst_gc, LONG x1, LONG y1, LONG x2, LONG y2,
+			struct GfxBase *GfxBase)
+{
+    struct wp8_render_data *wp8rd;
+    ULONG   	    	    width, height;
+    
+    wp8rd = (struct wp8_render_data *)wp8r_data;
+    
+    width  = x2 - x1 + 1;
+    height = y2 - y1 + 1;
+    
+    HIDD_BM_PutImageLUT(dstbm_obj
+    	, dst_gc
+	, wp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, wp8rd->modulo)
+	, wp8rd->modulo
+	, x1, y1
+	, width, height
+	, wp8rd->pixlut
+    );
+    
+    return width * height;
+}
 /****************************************************************************************/
+
+LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
+    	    	    LONG xstart, LONG ystart, LONG xstop, LONG ystop,
+		    HIDDT_PixelLUT *pixlut, struct GfxBase *GfxBase)
+{
+	
+    LONG pixwritten = 0;
+    
+    struct wp8_render_data wp8rd;
+    struct Rectangle rr;
+    
+    OOP_Object *gc;
+    HIDDT_DrawMode old_drmd;
+
+    struct TagItem gc_tags[] =
+    {
+	{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy},
+	{ TAG_DONE, 0}
+    };
+    
+    
+    if (!CorrectDriverData (rp, GfxBase))
+	return 0;
+	
+    gc = GetDriverData(rp)->dd_GC;
+    
+    OOP_GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
+    OOP_SetAttrs(gc, gc_tags);
+    
+    wp8rd.modulo	= modulo;
+    wp8rd.array		= array;
+    wp8rd.pixlut	= pixlut;
+    
+    rr.MinX = xstart;
+    rr.MinY = ystart;
+    rr.MaxX = xstop;
+    rr.MaxY = ystop;
+    
+    pixwritten = do_render_func(rp, NULL, &rr, wp8_render, &wp8rd, FALSE, GfxBase);
+    
+    /* Reset to preserved drawmode */
+    gc_tags[0].ti_Data = old_drmd;
+    OOP_SetAttrs(gc, gc_tags);
+    
+    return pixwritten;
+
+}
+
 /****************************************************************************************/
+
+/*
+** General functions for moving blocks of data to or from HIDDs, be it pixelarrays
+** or bitmaps. They use a callback-function to get data from amiga/put data to amiga
+** bitmaps/pixelarrays
+*/
+
 /****************************************************************************************/
+
+void amiga2hidd_fast(APTR src_info, OOP_Object *hidd_gc, LONG x_src , LONG y_src,
+    	    	     struct BitMap *hidd_bm, LONG x_dest, LONG y_dest,
+		     ULONG xsize, ULONG ysize, VOID (*fillbuf_hook)(),
+		     struct GfxBase * GfxBase)
+{
+    
+    
+    ULONG tocopy_w,
+    	  tocopy_h;
+	  
+    LONG pixels_left_to_process = xsize * ysize;
+	  
+    LONG current_x, current_y, next_x, next_y;
+    OOP_Object *bm_obj;
+
+    next_x = 0;
+    next_y = 0;
+    
+    bm_obj = OBTAIN_HIDD_BM(hidd_bm);
+    if (NULL == bm_obj)
+    	return;
+    
+    LOCK_PIXBUF 
+      
+    while (pixels_left_to_process)
+    {
+
+	/* Get some more pixels from the HIDD */
+
+	current_x = next_x;
+	current_y = next_y;
+	
+	if (NUMPIX < xsize)
+	{
+	   /* buffer can't hold a single horizontal line, and must 
+	      divide each line into several copy-operations */
+	    tocopy_w = xsize - current_x;
+	    if (tocopy_w > NUMPIX)
+	    {
+	        /* Not quite finished with current horizontal pixel line */
+	    	tocopy_w = NUMPIX;
+		next_x += NUMPIX;
+	    }
+	    else
+	    {	/* Start at a new line */
+	    	next_x = 0;
+		next_y ++;
+	    }
+	    tocopy_h = 1;
+	    
+    	}
+	else /* We can copy one or several whole horizontal lines at a time */
+	{
+	    tocopy_h = MIN(NUMPIX / xsize, ysize - current_y);
+
+	    tocopy_w = xsize;
+
+	    next_x = 0;
+	    next_y += tocopy_h;
+	    
+	
+	}
+
+
+	/* Get data */
+	fillbuf_hook(src_info
+		, current_x + x_src
+		, current_y + y_src
+		, current_x + x_dest
+		, current_y + y_dest
+		, tocopy_w, tocopy_h
+		, PrivGBase(GfxBase)->pixel_buf
+		, bm_obj
+		, IS_HIDD_BM(hidd_bm) ? HIDD_BM_PIXTAB(hidd_bm) : NULL
+		, GfxBase
+	);
+	
+	/* Put it to the HIDD */
+	D(bug("Putting box\n"));
+
+	HIDD_BM_PutImage(bm_obj
+		, hidd_gc
+		, (UBYTE*)PrivGBase(GfxBase)->pixel_buf
+		, tocopy_w * sizeof (HIDDT_Pixel)
+		, x_dest + current_x
+		, y_dest + current_y
+		, tocopy_w, tocopy_h
+		, vHidd_StdPixFmt_Native32
+	);
+
+	D(bug("Box put\n"));
+
+	pixels_left_to_process -= (tocopy_w * tocopy_h);
+	
+	
+    } /* while (pixels left to copy) */
+    
+    ULOCK_PIXBUF    
+
+    RELEASE_HIDD_BM(bm_obj, hidd_bm);
+    
+    return;
+    
+}
+
 /****************************************************************************************/
+
+void hidd2buf_fast(struct BitMap *hidd_bm, LONG x_src , LONG y_src, APTR dest_info,
+    	    	   LONG x_dest, LONG y_dest, ULONG xsize, ULONG ysize, VOID (*putbuf_hook)(),
+		   struct GfxBase * GfxBase)
+{
+
+    ULONG tocopy_w, tocopy_h;
+    
+    LONG pixels_left_to_process = xsize * ysize;
+    ULONG current_x, current_y, next_x, next_y;
+    
+    #warning Src bitmap migh be user initialized so we should not use HIDD_BM_PIXTAB() below
+    
+    OOP_Object *bm_obj;
+    
+    next_x = 0;
+    next_y = 0;
+    
+    bm_obj = OBTAIN_HIDD_BM(hidd_bm);
+    if (NULL == bm_obj)
+    	return;
+	
+    LOCK_PIXBUF    
+
+    while (pixels_left_to_process)
+    {
+	
+	current_x = next_x;
+	current_y = next_y;
+	
+	if (NUMPIX < xsize)
+	{
+	   /* buffer cant hold a single horizontal line, and must 
+	      divide each line into copies */
+	    tocopy_w = xsize - current_x;
+	    if (tocopy_w > NUMPIX)
+	    {
+	        /* Not quite finished with current horizontal pixel line */
+	    	tocopy_w = NUMPIX;
+		next_x += NUMPIX;
+	    }
+	    else
+	    {	/* Start at a new line */
+	    
+	    	next_x = 0;
+		next_y ++;
+	    }
+	    tocopy_h = 1;
+	    
+    	}
+    	else
+    	{
+	    tocopy_h = MIN(NUMPIX / xsize, ysize - current_y);
+	    tocopy_w = xsize;
+
+	    next_x = 0;
+	    next_y += tocopy_h;
+	    
+    	}
+	
+	
+	/* Get some more pixels from the HIDD */
+	HIDD_BM_GetImage(bm_obj
+		, (UBYTE *)PrivGBase(GfxBase)->pixel_buf
+		, tocopy_w
+		, x_src + current_x
+		, y_src + current_y
+		, tocopy_w, tocopy_h
+		, vHidd_StdPixFmt_Native32);
+
+
+	/*  Write pixels to the destination */
+	putbuf_hook(dest_info
+		, current_x + x_src
+		, current_y + y_src
+		, current_x + x_dest
+		, current_y + y_dest
+		, tocopy_w, tocopy_h
+		, (HIDDT_Pixel *)PrivGBase(GfxBase)->pixel_buf
+		, bm_obj
+		, IS_HIDD_BM(hidd_bm) ? HIDD_BM_PIXTAB(hidd_bm) : NULL
+	);
+	
+	pixels_left_to_process -= (tocopy_w * tocopy_h);
+
+    }
+    
+    ULOCK_PIXBUF
+
+    RELEASE_HIDD_BM(bm_obj, hidd_bm);
+    
+    return;
+    
+}
+
+/****************************************************************************************/
+
+UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase)
+{
+     UWORD cpf = (UWORD)-1;
+     
+     switch (stdpf)
+     {
+	case vHidd_StdPixFmt_RGB16:
+	    cpf = PIXFMT_RGB16;
+	    break;
+	
+	case vHidd_StdPixFmt_RGB24:
+	    cpf = PIXFMT_RGB24;
+	    break;
+	
+	case vHidd_StdPixFmt_ARGB32:
+	    cpf = PIXFMT_ARGB32;
+	    break;
+	
+	case vHidd_StdPixFmt_RGBA32:
+	    cpf = PIXFMT_RGBA32;
+	    break;
+	
+	case vHidd_StdPixFmt_LUT8:
+	    cpf = PIXFMT_LUT8;
+	    break;
+	    
+	default:
+	    D(bug("UNKNOWN CYBERGRAPHICS PIXFMT IN cyber2hidd_pixfmt\n"));
+	    break;
+     
+    }
+
+    return cpf;     
+     
+}
+
+/****************************************************************************************/
+
+HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase)
+{
+    HIDDT_StdPixFmt stdpf = vHidd_StdPixFmt_Unknown;
+
+    switch (cpf)
+    {
+	case PIXFMT_RGB16:
+	    stdpf = vHidd_StdPixFmt_RGB16;
+	    break;
+	
+	case PIXFMT_RGB24:
+	    stdpf = vHidd_StdPixFmt_RGB24;
+	    break;
+	
+	case PIXFMT_ARGB32:
+	    stdpf = vHidd_StdPixFmt_ARGB32;
+	    break;
+	
+	case PIXFMT_RGBA32:
+	    stdpf = vHidd_StdPixFmt_RGBA32;
+	    break;
+	
+	case PIXFMT_LUT8:
+	    stdpf = vHidd_StdPixFmt_LUT8;
+	    break;
+	    
+	default:
+	    D(bug("UNKNOWN CYBERGRAPHICS PIXFMT IN cyber2hidd_pixfmt\n"));
+	    break;
+    }
+    
+    return stdpf;
+}
+
+/****************************************************************************************/
+
+void template_to_buf(struct template_info *ti, LONG x_src, LONG y_src,
+    	    	     LONG x_dest, LONG y_dest, ULONG xsize, ULONG ysize,
+		     ULONG *buf, struct BitMap *dest_bm)
+{
+    UBYTE   *srcptr;
+    LONG    x, y;
+    
+    EnterFunc(bug("template_to_buf(%p, %d, %d, %d, %d, %p)\n"
+    			, ti, x_src, y_src, xsize, ysize, buf));
+			
+    /* Find the exact startbyte */
+    srcptr = ti->source + XCOORD_TO_BYTEIDX(x_src) + (ti->modulo * y_src);
+    
+    /* Find the exact startbit */
+    x_src &= 0x07;
+
+    for (y = 0; y < ysize; y ++)
+    {
+	UBYTE *byteptr = srcptr;
+	
+    	for (x = 0; x < xsize; x ++)
+	{
+	    UBYTE mask = XCOORD_TO_MASK(x + x_src);
+	    BOOL is_set = ((*byteptr & mask) ? TRUE : FALSE);
+	    
+	    if (ti->invertsrc)
+	    {
+	    	is_set = ((is_set == TRUE) ? FALSE : TRUE);
+	    }
+	    
+	    if (is_set)
+		*buf = 1UL;
+	    else
+		*buf = 0UL;
+	    buf ++;
+
+	    /* Last pixel in this byte ? */
+	    if (((x + x_src) & 0x07) == 0x07)
+	    {
+	    	byteptr ++;
+	    }
+		
+	}
+	srcptr += ti->modulo;
+    }
+    
+    ReturnVoid("template_to_buf");
+}
+
 /****************************************************************************************/
 /****************************************************************************************/
 /****************************************************************************************/

@@ -10,6 +10,13 @@
 #include <proto/exec.h>
 #include <cybergraphx/cybergraphics.h>
 #include "graphics_intern.h"
+#include "gfxfuncsupport.h"
+
+#define SET_TAG(tags, idx, tag, val)	\
+    tags[idx].ti_Tag = tag ; tags[idx].ti_Data = (IPTR)val;
+
+#define SET_BM_TAG(tags, idx, tag, val)	\
+    SET_TAG(tags, idx, aHidd_BitMap_ ## tag, val)
 
 /*****************************************************************************
 
@@ -77,8 +84,8 @@
 	A pointer to the new bitmap.
 
     NOTES
-	When allocating using a friend bitmap, it is not safe to assume
-	anything about the structure of the bitmap data if that friend
+	When allocating using a friend_bitmap bitmap, it is not safe to assume
+	anything about the structure of the bitmap data if that friend_bitmap
 	BitMap might not be a standard amiga bitmap (for instance, if the
 	workbench is running on a non-amiga display device, its
 	Screen->RastPort->BitMap won't be in standard amiga format. The
@@ -86,9 +93,9 @@
 
 	    \begin{itemize}
 	    \item blitting it to another bitmap, which must be either a
-		standard Amiga bitmap, or a friend of this bitmap.
+		standard Amiga bitmap, or a friend_bitmap of this bitmap.
 
-	    \item blitting from this bitmap to a friend bitmap or to a
+	    \item blitting from this bitmap to a friend_bitmap bitmap or to a
 		standard Amiga bitmap.
 
 	    \item attaching it to a rastport and making rendering calls.
@@ -126,7 +133,7 @@
 
     /*
 	If the depth is too large or the bitmap should be displayable or
-	there is a friend bitmap and that's not a normal bitmap, then
+	there is a friend_bitmap bitmap and that's not a normal bitmap, then
 	call the RTG driver.
     */
     
@@ -135,18 +142,220 @@
 	|| (flags & BMF_DISPLAYABLE)
 /*	|| (friend_bitmap && friend_bitmap->Pad != 0) */
 	|| (friend_bitmap && friend_bitmap->Flags & BMF_AROS_HIDD)
-#warning Should	we also check for BMF_MINPLANES ?
+    	#warning Should	we also check for BMF_MINPLANES ?
 	|| (flags & BMF_SPECIALFMT) /* Cybergfx bitmap */
     )
     {
-	nbm = driver_AllocBitMap (sizex
-	    , sizey
-	    , depth
-	    , flags
-	    , friend_bitmap
-	    , 0
-	    , GfxBase
-	);
+
+	struct TagItem bm_tags[8];	/* Tags for offscreen bitmaps */
+    	HIDDT_ModeID hiddmode = 0;
+	
+	/* Hack: see AllocScreenBitMap */
+	
+	if ((LONG)depth < 0)
+	{
+	    depth = (ULONG)(-((LONG)depth));
+	    hiddmode = (HIDDT_ModeID)friend_bitmap;
+	    friend_bitmap = NULL;
+	}
+	
+	/*
+	    bug("driver_AllocBitMap(sizex=%d, sizey=%d, depth=%d, flags=%d, friend_bitmap=%p)\n",
+    		sizex, sizey, depth, flags, friend_bitmap);
+	*/
+
+
+	SET_BM_TAG( bm_tags, 0, Width,  sizex	);
+	SET_BM_TAG( bm_tags, 1, Height, sizey	);
+
+	if (flags & BMF_DISPLAYABLE)
+	{
+	    /* Use the hiddmode instead of depth/friend_bitmap */
+	    if  (vHidd_ModeID_Invalid == hiddmode)
+    		ReturnPtr("driver_AllocBitMap(Invalid modeID)", struct BitMap *, NULL);
+
+	    SET_BM_TAG(bm_tags, 2, ModeID, hiddmode);
+	    SET_BM_TAG(bm_tags, 3, Displayable, TRUE);
+	    SET_TAG(bm_tags, 4, TAG_DONE, 0);
+	}
+	else
+	{
+
+	    if (NULL != friend_bitmap)
+	    {
+		if (IS_HIDD_BM(friend_bitmap))
+		SET_BM_TAG(bm_tags, 2, Friend, HIDD_BM_OBJ(friend_bitmap));
+	    }
+	    else
+	    {
+		SET_TAG(bm_tags, 2, TAG_IGNORE, 0);
+	    }
+
+	    if (flags & BMF_SPECIALFMT)
+	    {
+		HIDDT_StdPixFmt stdpf;
+
+		stdpf = cyber2hidd_pixfmt(DOWNSHIFT_PIXFMT(flags), GfxBase);
+		SET_BM_TAG(bm_tags, 3, StdPixFmt, stdpf);
+	    }
+	    else
+	    {
+		SET_TAG(bm_tags, 3, TAG_IGNORE, 0);
+	    }
+
+	    SET_TAG(bm_tags, 4, TAG_DONE, 0);
+	}
+
+	nbm = AllocMem (sizeof (struct BitMap), MEMF_ANY|MEMF_CLEAR);
+	if (NULL != nbm)
+	{
+
+    	    OOP_Object *bm_obj;
+    	    OOP_Object *gfxhidd;
+
+    	    gfxhidd  = SDD(GfxBase)->gfxhidd;
+
+    	    /* Create HIDD bitmap object */
+    	    if (NULL != gfxhidd)
+	    {
+    		bm_obj = HIDD_Gfx_NewBitMap(gfxhidd, bm_tags);
+    		if (NULL != bm_obj)
+    		{
+
+    		    OOP_Object *pf;
+    		    OOP_Object *colmap = 0;
+    		    HIDDT_ColorModel colmod;
+    		    BOOL ok = FALSE;
+		    IPTR width, height;
+
+
+    		    /*  It is possible that the HIDD had to allocate
+    			a larger depth than that supplied, so
+    			we should get back the correct depth.
+    			This is because layers.library might
+    			want to allocate offscreen bimaps to
+    			store obscured areas, and then those
+    			offscreen bitmaps should be of the same depth as
+    			the onscreen ones.
+    		    */
+
+		    OOP_GetAttr(bm_obj, aHidd_BitMap_Width, &width);
+		    OOP_GetAttr(bm_obj, aHidd_BitMap_Height, &height);
+    		    OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+
+
+    		    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+    		    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, (IPTR *)&colmod);
+
+    		    OOP_GetAttr(bm_obj, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
+
+    			/* Store it in plane array */
+    		    HIDD_BM_OBJ(nbm) = bm_obj;
+    		    HIDD_BM_COLMOD(nbm) = colmod;
+    		    HIDD_BM_COLMAP(nbm) = colmap;
+    		    nbm->Rows   = height;
+    		    nbm->BytesPerRow = WIDTH_TO_BYTES(width);
+    		    nbm->Depth  = depth;
+    		    nbm->Flags  = flags | BMF_AROS_HIDD;
+
+    		    /* If this is a displayable bitmap, create a color table for it */
+
+    		    if (flags & BMF_DISPLAYABLE)
+		    {
+    			/* Allcoate a pixtab */
+    			HIDD_BM_PIXTAB(nbm) = AllocVec(sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE, MEMF_ANY);
+    			if (NULL != HIDD_BM_PIXTAB(nbm))
+			{
+    			    /* Set this palette to all black by default */
+
+    			    HIDDT_Color col;
+    			    ULONG i;
+
+    			    col.red     = 0;
+    			    col.green   = 0;
+    			    col.blue    = 0;
+    			    col.alpha   = 0;
+
+    			    if (vHidd_ColorModel_Palette == colmod ||
+			        vHidd_ColorModel_TrueColor == colmod)
+			    {
+
+    				ULONG numcolors;
+
+				#if 1
+				numcolors = 1L << ((depth <= 8) ? depth : 8);
+				#else		
+
+				/* this fails when depth == 32, because numcolors
+				   would then need to have at least 33 bits */
+
+    				numcolors = 1L << depth;
+    				if (numcolors > AROS_PALETTE_SIZE)
+    				    numcolors = AROS_PALETTE_SIZE;
+    				#endif
+
+    				/* Set palette to all black */
+    				for (i = 0; i < numcolors; i ++)
+				{
+    				    HIDD_BM_SetColors(HIDD_BM_OBJ(nbm), &col, i, 1);
+    				    HIDD_BM_PIXTAB(nbm)[i] = col.pixval;
+    				}
+				
+    			    }
+    			    ok = TRUE;
+
+    			} /* if (pixtab successfully allocated) */
+			
+    		    } /* if (flags & BMF_DISPLAYABLE) */
+    		    else
+    		    {
+    			if (friend_bitmap)
+    			{
+    			    /* We got a friend_bitmap bitmap. We inherit its colormap
+    			       !!! NOTE !!! If this is used after the friend_bitmap bitmap is freed
+    			       it means trouble, as the colortab mem
+    			       will no longer be valid
+    			    */
+    			    if (IS_HIDD_BM(nbm))
+			    {
+
+    				HIDD_BM_COLMAP(nbm) = HIDD_BM_COLMAP(friend_bitmap);
+    				HIDD_BM_COLMOD(nbm) = HIDD_BM_COLMOD(friend_bitmap);
+    				HIDD_BM_PIXTAB(nbm) = HIDD_BM_PIXTAB(friend_bitmap);
+
+    				ok = TRUE;
+    			    }
+
+
+    			} else ok = TRUE;
+    		    }
+
+    		    if (ok)
+		    {
+			if (flags & BMF_CLEAR)
+			{
+		    	    BltBitMap(nbm
+				    , 0, 0
+				    , nbm
+				    , 0, 0
+				    , width, height
+				    , 0x00
+				    , 0xFF
+				    , NULL
+			    );
+			}
+    			ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
+    		    }
+
+    		    OOP_DisposeObject(bm_obj);
+		    
+    		} /* if (bitmap object allocated) */
+
+    	    } /* if (gfxhidd) */
+    	    FreeMem(nbm, sizeof (struct BitMap));
+	    
+	} /* if (nbm) */
+
 	ASSERT_VALID_PTR(nbm);
     }
     else /* Otherwise init a plain Amiga bitmap */
@@ -192,5 +401,7 @@
     }
 
     return nbm;
+    
     AROS_LIBFUNC_EXIT
+    
 } /* AllocBitMap */

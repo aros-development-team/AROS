@@ -48,9 +48,26 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+   
+    LONG pixwritten;
 
-    return driver_WritePixelArray8 (rp, xstart, ystart, xstop, ystop,
-				    array, temprp, GfxBase);
+    #warning Do not use HIDD_BM_PIXTAB, because object might have no pixtab
+    
+    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, HIDD_BM_PIXTAB(rp->BitMap) };
+    
+    EnterFunc(bug("driver_WritePixelArray8(%p, %d, %d, %d, %d)\n",
+    	rp, xstart, ystart, xstop, ystop));
+	
+  
+    pixwritten = write_pixels_8(rp, array
+    	, xstop - xstart + 1 /* modulo */
+	, xstart, ystart
+	, xstop, ystop
+	, &pixlut
+	, GfxBase);
+
+    ReturnInt("driver_WritePixelArray8", LONG, pixwritten);
 
     AROS_LIBFUNC_EXIT
+    
 } /* WritePixelArray8 */

@@ -115,6 +115,16 @@ struct gfx_driverdata
     
 };
 
+/* for template_to_buf */
+
+struct template_info
+{
+    PLANEPTR source;
+    LONG x_src;
+    LONG modulo;
+    BOOL invertsrc;
+};
+
 /****************************************************************************************/
 
 OOP_Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase *GfxBase);
@@ -133,6 +143,29 @@ LONG fillrect_pendrmd(struct RastPort *tp, LONG x1, LONG y1, LONG x2, LONG y2,
 BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, LONG xSrc, LONG ySrc,
 	    	   struct BitMap *dstBitMap, OOP_Object *dstbm_obj, LONG xDest, LONG yDest,
 		   LONG xSize, LONG ySize, ULONG minterm, OOP_Object *gc, struct GfxBase *GfxBase);
+
+
+LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
+    	    	    LONG xstart, LONG ystart, LONG xstop, LONG ystop,
+		    HIDDT_PixelLUT *pixlut, struct GfxBase *GfxBase);
+
+
+void amiga2hidd_fast(APTR src_info, OOP_Object *hidd_gc, LONG x_src , LONG y_src,
+    	    	     struct BitMap *hidd_bm, LONG x_dest, LONG y_dest,
+		     ULONG xsize, ULONG ysize, VOID (*fillbuf_hook)(),
+		     struct GfxBase * GfxBase);
+
+void hidd2buf_fast(struct BitMap *hidd_bm, LONG x_src , LONG y_src, APTR dest_info,
+    	    	   LONG x_dest, LONG y_dest, ULONG xsize, ULONG ysize, VOID (*putbuf_hook)(),
+		   struct GfxBase * GfxBase);
+
+HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase);
+
+UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase);
+
+void template_to_buf(struct template_info *ti, LONG x_src, LONG y_src,
+    	    	     LONG x_dest, LONG y_dest, ULONG xsize, ULONG ysize,
+		     ULONG *buf, struct BitMap *dest_bm);
 
 /****************************************************************************************/
 
