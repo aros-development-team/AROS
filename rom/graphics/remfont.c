@@ -50,20 +50,43 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
+    struct TextFontExtension *tfe;
+    BOOL    	    	      can_remove = TRUE;
+    
     ASSERT_VALID_PTR(textFont);
     
     Forbid();
-    if (!(textFont->tf_Flags & FPF_REMOVED))
+    tfe = textFont->tf_Extension;
+    if (tfe)
     {
-	textFont->tf_Flags |= FPF_REMOVED;
-	Remove (&textFont->tf_Message.mn_Node);
+    	if ((tfe->tfe_MatchWord == TFE_MATCHWORD) && (tfe->tfe_BackPtr == textFont))
+	{
+	    if (tfe->tfe_Flags0 & TE0F_NOREMFONT)
+	    {
+	    	can_remove = FALSE;
+	    }
+	}
+	
     }
-#if DEBUG
-    else
+    
+    if (can_remove)
     {
-    	D(bug("Someone tried to remove font which is already removed!"));
+	if (!(textFont->tf_Flags & FPF_REMOVED))
+	{
+	    textFont->tf_Flags |= FPF_REMOVED;
+	    Remove (&textFont->tf_Message.mn_Node);	    
+	}
+    #if DEBUG
+	else
+	{
+    	    D(bug("Someone tried to remove font which is already removed!"));
+	}
+    #endif
+
+    	StripFont(textFont);
+
     }
-#endif
+        
     Permit();
     
     AROS_LIBFUNC_EXIT
