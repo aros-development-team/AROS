@@ -1962,7 +1962,7 @@ if cmp -s "$out" "config/config.h"; then
     rm $out
 else
     echo "Replacing $out by config/config.h"
-    if test -e $out ; then
+    if test -f $out ; then
 	mv $out ${out}.bak
     fi
     mv config/config.h $out
