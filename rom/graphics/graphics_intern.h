@@ -25,7 +25,9 @@
 #ifndef OOP_OOP_H
 #   include <oop/oop.h>
 #endif
-
+#ifndef GRAPHICS_VIEW_H
+#   include <graphics/view.h>
+#endif
 
 #include "fontsupport.h"
 
@@ -227,6 +229,26 @@ void areafillellipse(struct RastPort   * rp,
                      UWORD              * CurVctr,
                      UWORD               BytesPerRow,
                      struct GfxBase    * GfxBase);
+
+
+/* functions in color_support */
+ULONG color_distance(struct ColorMap * cm,
+                     ULONG r,
+                     ULONG g,
+                     ULONG b,
+                     ULONG index);
+
+BOOL color_equal(struct ColorMap * cm,
+                 ULONG r,
+                 ULONG g,
+                 ULONG b,
+                 ULONG index);
+
+VOID color_set(struct ColorMap * cm,
+               ULONG r,
+               ULONG g,
+               ULONG b,
+               ULONG index);
                      
 
 #endif /* GRAPHICS_INTERN_H */
