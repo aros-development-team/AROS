@@ -1,5 +1,5 @@
 /*
-    (C) 1997-2000 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -51,17 +51,20 @@ static struct libinfo
 {
     {&IntuitionBase	, "intuition.library"		, 39	},
     {&GfxBase		, "graphics.library"		, 39	},
-    {&CyberGfxBase	, "cybergraphics.library"	, 39	},
     {&GadToolsBase	, "gadtools.library"		, 39	},
     {&LayersBase	, "layers.library"		, 39	},
     {&UtilityBase	, "utility.library"		, 39	},
     {&KeymapBase	, "keymap.library"		, 39	},
     {&DataTypesBase	, "datatypes.library"		, 39	},
+    {&DiskfontBase  	, "diskfont.library"	    	, 39	},
     {NULL							}
 };
 
+static struct TextAttr	textattr;
+static struct TextFont	*font;
 static struct RDArgs 	*myargs;
 static IPTR 		args[NUM_ARGS];
+static UBYTE	    	fontname[256];
 static WORD		winwidth, winheight;
 static WORD		sizeimagewidth, sizeimageheight;
 static BOOL		model_has_members;
@@ -69,6 +72,7 @@ static BOOL		model_has_members;
 /*********************************************************************************************/
 
 static void CloseLibs(void);
+static void KillFont(void);
 static void FreeArguments(void);
 static void KillICObjects(void);
 static void FreeVisual(void);
@@ -111,8 +115,9 @@ void Cleanup(STRPTR msg)
     FreeVisual();
     CloseDTO();
     KillICObjects();
-    CloseLibs();
+    KillFont();
     FreeArguments();
+    CloseLibs();
     CleanupLocale();
     
     exit(prog_exitcode);
@@ -150,8 +155,46 @@ static void CloseLibs(void)
 
 /*********************************************************************************************/
 
+static void LoadFont(void)
+{
+    font = OpenDiskFont(&textattr);
+    if (!font)
+    {
+    	textattr.ta_Name  = "topaz.font";
+	textattr.ta_YSize = 8;
+	textattr.ta_Style = 0;
+	textattr.ta_Flags = 0;
+	
+	font = OpenFont(&textattr);
+    }
+}
+
+/*********************************************************************************************/
+
+static void KillFont(void)
+{
+    if (font) CloseFont(font);
+}
+
+/*********************************************************************************************/
+
 static void GetArguments(void)
 {
+    struct TextFont *defaultfont = GfxBase->DefaultFont;
+    
+    /* This might be a bit problematic depending on how default system font
+       switching through Font prefs program works and if then the previous
+       default system font is closed or not. So this is very likely only safe
+       when in such a case the previous font is not closed (means -> the font
+       will remain in memory in any case)
+       
+       ClipView example program on Amiga Dev CD also does it like this. So ... */
+       
+    textattr.ta_Name  = defaultfont->tf_Message.mn_Node.ln_Name;
+    textattr.ta_YSize = defaultfont->tf_YSize;
+    textattr.ta_Style = defaultfont->tf_Style;
+    textattr.ta_Flags = defaultfont->tf_Flags;
+    
     if (!(myargs = ReadArgs(ARG_TEMPLATE, args, NULL)))
     {
         Fault(IoErr(), 0, s, 256);
@@ -164,6 +207,20 @@ static void GetArguments(void)
         filename = GetFile();
         if (!filename) Cleanup(NULL);
     }
+    
+    if (args[ARG_FONTNAME])
+    {
+    	strncpy(fontname, (char *)args[ARG_FONTNAME], 255 - 5);
+	if (!strstr(fontname, ".font")) strcat(fontname, ".font");
+	
+	textattr.ta_Name = fontname;
+    }
+    
+    if (args[ARG_FONTSIZE])
+    {
+    	textattr.ta_YSize = *(LONG *)args[ARG_FONTSIZE];
+    }
+    
 }
 
 /*********************************************************************************************/
@@ -431,9 +488,10 @@ static void AddDTOToWin(void)
 
 static void OpenDTO(void)
 {
-    IPTR   val;
-    ULONG  *methods;
-    STRPTR objname = NULL;
+    struct DTMethod *triggermethods;
+    ULONG   	    *methods;
+    STRPTR  	    objname = NULL;
+    IPTR    	    val;
     
     old_dto = dto;
 
@@ -448,12 +506,14 @@ static void OpenDTO(void)
         dto = NewDTObject(clipunit, ICA_TARGET    , (IPTR)model_obj,
 				    GA_ID         , 1000	   ,
 				    DTA_SourceType, DTST_CLIPBOARD ,
+				    DTA_TextAttr  , (IPTR)&textattr,
 				    TAG_DONE);
 	
 	D(bug("MultiView: NewDTObject returned %x\n", dto));			    
     } else {
-	dto = NewDTObject(filename, ICA_TARGET, (IPTR)model_obj,
-    				    GA_ID     , 1000	       ,
+	dto = NewDTObject(filename, ICA_TARGET	    , (IPTR)model_obj,
+    				    GA_ID     	    , 1000	     ,
+				    DTA_TextAttr    , (IPTR)&textattr,
     				    TAG_DONE);
     }
 
@@ -492,11 +552,11 @@ static void OpenDTO(void)
 	if (FindMethod(methods, DTM_CLEARSELECTED)) dto_supports_clearselected = TRUE;
     }
 
-    if ((methods = GetDTTriggerMethods(dto)))
+    if ((triggermethods = GetDTTriggerMethods(dto)))
     {
-        if (FindMethod(methods, STM_ACTIVATE_FIELD)) dto_supports_activate_field = TRUE;
-        if (FindMethod(methods, STM_NEXT_FIELD)) dto_supports_next_field = TRUE;
-        if (FindMethod(methods, STM_PREV_FIELD)) dto_supports_prev_field = TRUE;
+        if (FindTriggerMethod(triggermethods, NULL, STM_ACTIVATE_FIELD)) dto_supports_activate_field = TRUE;
+        if (FindTriggerMethod(triggermethods, NULL, STM_NEXT_FIELD))     dto_supports_next_field     = TRUE;
+        if (FindTriggerMethod(triggermethods, NULL, STM_PREV_FIELD))     dto_supports_prev_field     = TRUE;
    }
         
     if (old_dto)
@@ -654,7 +714,7 @@ static void HandleAll(void)
     struct TagItem	*tstate, *tags, *tag;
     struct MenuItem	*item;
     struct Gadget	*activearrowgad = NULL;
-    WORD		arrowticker, activearrowkind = 0;
+    WORD		arrowticker = 0, activearrowkind = 0;
     IPTR		tidata;
     UWORD		men;
     BOOL 		quitme = FALSE;
@@ -878,8 +938,9 @@ int main(void)
 {
     InitLocale("Sys/multiview.catalog", 1);
     InitMenus();
-    GetArguments();
     OpenLibs();
+    GetArguments();
+    LoadFont();
     MakeICObjects();
     OpenDTO();
     GetVisual();

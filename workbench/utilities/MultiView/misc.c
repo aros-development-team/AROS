@@ -78,10 +78,16 @@ void InitMenus(void)
 
 void MakeMenus(void)
 {
+    struct TagItem menu_tags[] =
+    {
+    	{GTMN_NewLookMenus, TRUE},
+	{TAG_DONE   	    	}
+    };
+    
     menus = CreateMenusA(nm, NULL);
     if (!menus) Cleanup(MSG(MSG_CANT_CREATE_MENUS));
     
-    if (!LayoutMenusA(menus, vi, NULL)) Cleanup(MSG(MSG_CANT_CREATE_MENUS));
+    if (!LayoutMenusA(menus, vi, menu_tags)) Cleanup(MSG(MSG_CANT_CREATE_MENUS));
     
 }
 
