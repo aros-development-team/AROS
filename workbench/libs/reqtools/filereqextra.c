@@ -1200,10 +1200,14 @@ static struct Region *MyInstallRegion (struct Window *win, struct Region *reg, i
 {
     struct Region *oldregion;
 
+    LockLayerInfo(&win->WScreen->LayerInfo);
+    
     if (refresh) GT_EndRefresh (win, FALSE);
     
     oldregion = InstallClipRegion (win->WLayer, reg);
     if (refresh) GT_BeginRefresh (win);
+
+    UnlockLayerInfo(&win->WScreen->LayerInfo);
     
     return (oldregion);
 }
