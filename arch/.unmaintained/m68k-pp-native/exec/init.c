@@ -123,7 +123,7 @@ static const struct Resident *romtagList[] =
 void main_init(void * memory, ULONG memSize)
 {
 	struct ExecBase *SysBase = NULL;
-	ULONG * m68k_USP;
+	ULONG * m68k_USP, * m68k_SSP;
 	struct MemHeader *mh = NULL;
 
 
@@ -173,14 +173,22 @@ void main_init(void * memory, ULONG memSize)
 	}
 	m68k_USP += AROS_STACKSIZE;
 
+
 	SysBase->ResModules=romtagList;
 	
+	/*
+	 * Get some memory for the SSP. 
+	 */
+	if (NULL == (m68k_SSP =(ULONG)AllocMem(AROS_STACKSIZE,MEMF_PUBLIC)))  {
+		do {} while(1);
+	}
+	m68k_SSP += AROS_STACKSIZE;
 	/*
 	 * This is the last place where I am in supervisor mode.
 	 * so let me switch into user mode and continue there.
 	 * The user mode function will then call main_init_cont.
 	 */
-	switch_to_user_mode(main_init_cont, m68k_USP);
+	switch_to_user_mode(main_init_cont, m68k_SSP, m68k_USP);
 }
 
 /*
