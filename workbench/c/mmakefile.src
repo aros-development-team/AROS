@@ -36,8 +36,6 @@ FILES	:= \
     SetDate \
     SetKeyboard \
     SetDefaultFont \
-    Stack \
-    Status \
     Unalias \
     Version \
     Which \
