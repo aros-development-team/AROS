@@ -45,29 +45,119 @@
 	XorRegionRegion(), OrRegionRegion()
 
     INTERNALS
+        Two regions A and B consist of rectangles a1,...,a3 and b1,...,b3.
+        A = a1 + a2 + a3;
+        B = b1 + b2 + b3;
+        A * B = (a1 + a2 + a3) * (b1 + b2 + b3) =
+                 a1            * (b1 + b2 + b3)   +
+                      a2       * (b1 + b2 + b3)   +
+                           a3  * (b1 + b2 + b3);  
 
     HISTORY
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
+  AROS_LIBFUNC_INIT
     
-    struct Rectangle CurRectangle;
-    struct RegionRectangle * CurRR = region1 -> RegionRectangle;
+  struct Region Backup;
+  struct Region Work;
+  struct Rectangle R;
+  struct RegionRectangle * RR = region1->RegionRectangle;
+  struct RegionRectangle * _RR;
+  struct RegionRectangle * __RR;
+  
+  /* Region2 will hold the result */
+  Backup.bounds          = region2->bounds;
+  Backup.RegionRectangle = region2->RegionRectangle;
+  
+  region1->bounds.MinX = 0;
+  region1->bounds.MinY = 0;
+  region1->bounds.MaxX = 0;
+  region1->bounds.MaxY = 0;
+  
+  while (NULL != RR)
+  {
+    /* 
+       Backup holds the inital Region 2.
+       I have to make another backup of the whole Region first
+     */
+    Work.bounds = Backup.bounds;
+    _RR = Backup.RegionRectangle;
     
-    while (NULL != CurRR)
+    if (NULL != _RR)
     {
-      CurRectangle.MinX = region1->bounds.MinX + CurRR->bounds.MinX;
-      CurRectangle.MaxX = region1->bounds.MinX + CurRR->bounds.MaxX;
-      CurRectangle.MinY = region1->bounds.MinY + CurRR->bounds.MinY;
-      CurRectangle.MaxY = region1->bounds.MinY + CurRR->bounds.MaxY;
+      __RR = (struct RegionRectangle *)
+                   AllocMem(sizeof(struct RegionRectangle), 0);
+      if (NULL == __RR)
+      {
+        /* no more memory. I have to restore the inital state */
+        ClearRegion(&Work);
+        ClearRegion(region2);
+        region2->bounds          = Backup.bounds;
+        region2->RegionRectangle = Backup.RegionRectangle;
+        
+        return FALSE;
+      }
       
-      AndRectRegion(region2, &CurRectangle);
+      Work.RegionRectangle = __RR;
+      __RR->bounds = _RR->bounds;
+      __RR->Prev   = NULL;
       
-      CurRR = CurRR -> Next;
-    }
- 
-    return TRUE;
+      _RR          = _RR->Next;
+                                  
+      while (NULL != _RR)
+      {
+        __RR -> Next = (struct RegionRectangle *)
+                         AllocMem(sizeof(struct RegionRectangle), 0);
 
-    AROS_LIBFUNC_EXIT
+        if (NULL == __RR->Next)
+        {
+          /* no more memory. I have to restore the inital state */
+          ClearRegion(&Work);
+          ClearRegion(region2);
+          region2->bounds          = Backup.bounds;
+          region2->RegionRectangle = Backup.RegionRectangle;
+        
+          return FALSE;
+        }
+
+        __RR -> Next -> Prev = __RR;
+        __RR                 = __RR ->Next;
+
+        __RR->bounds         = _RR->bounds;        
+       
+        _RR                  = _RR->Next;
+      }
+      __RR->Next = NULL;  
+    }
+    else
+      Work.RegionRectangle = NULL;
+    
+    R.MinX = region1->bounds.MinX + RR->bounds.MinX;
+    R.MinY = region1->bounds.MinY + RR->bounds.MinY;
+    R.MaxX = region1->bounds.MinX + RR->bounds.MaxX;
+    R.MaxY = region1->bounds.MinY + RR->bounds.MaxY;
+    
+    AndRectRegion(&Work, &R);/* can't fail */
+    
+    /* the result is in Work. I add this temporary result to the
+       final result  */
+       
+    if (FALSE == OrRegionRegion(&Work, region2))
+    {
+      /* ran out of memory */
+      ClearRegion(&Work);
+      ClearRegion(region2);
+      region2->bounds          = Backup.bounds;
+      region2->RegionRectangle = Backup.RegionRectangle;
+        
+      return FALSE;
+    }
+       
+    RR = RR->Next;
+  } /* while (NULL != RR) */   
+
+  return TRUE;
+  
+  AROS_LIBFUNC_EXIT
 }
