@@ -95,6 +95,7 @@ case "$type" in
 	COMMON_AFLAGS="-x assembler-with-cpp"
 	SHARED_CFLAGS="-fpic"
 	SHARED_AR="ld -shared -o"
+	MKDEPEND="makedepend -D__GNUC__ -Di386"
 	;;
 "AmigaOS" )
 	CC="gcc"
