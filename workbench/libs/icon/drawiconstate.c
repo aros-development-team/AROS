@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
+
 #include <workbench/icon.h>
 #include <intuition/imageclass.h>
 #include "icon_intern.h"
@@ -17,13 +15,13 @@
 	AROS_LH7(void, DrawIconStateA,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A0),
-	AROS_LHA(struct DiskObject *, icon, A1),
-	AROS_LHA(STRPTR, label, A2),
-	AROS_LHA(LONG, leftEdge, D0),
-	AROS_LHA(LONG, topEdge, D1),
-	AROS_LHA(ULONG, state, D2),
-	AROS_LHA(struct TagItem *, tags, A3),
+	AROS_LHA(struct RastPort *,   rp,       A0),
+	AROS_LHA(struct DiskObject *, icon,     A1),
+	AROS_LHA(STRPTR,              label,    A2),
+	AROS_LHA(LONG,                leftEdge, D0),
+	AROS_LHA(LONG,                topEdge,  D1),
+	AROS_LHA(ULONG,               state,    D2),
+	AROS_LHA(struct TagItem *,    tags,     A3),
 
 /*  LOCATION */
 	struct Library *, IconBase, 27, Icon)
@@ -99,70 +97,62 @@
 		    {
 			struct BitMap *bm;
 
-			bm = AllocBitMap(nativeicon->icon35.width,
-		    	    		 nativeicon->icon35.height,
-					 0,
-					 0,
-					 rp->BitMap);
+			bm = AllocBitMap
+                        (
+                            nativeicon->icon35.width,
+                            nativeicon->icon35.height,
+                            0, 0, rp->BitMap
+                        );
 
 			if (bm)
 			{
 		    	    struct RastPort bmrp;
-
+                            
 			    InitRastPort(&bmrp);
 			    bmrp.BitMap = bm;
+                            
+			    WriteLUTPixelArray
+                            (
+                                img->imagedata,
+                                0, 0,
+                                nativeicon->icon35.width,
+                                &bmrp, cgfxcoltab,
+                                0, 0,
+                                nativeicon->icon35.width,
+                                nativeicon->icon35.height,
+                                CTABFMT_XRGB8
+                            );
 
-			    WriteLUTPixelArray(img->imagedata,
-		    	    		       0,
-					       0,
-					       nativeicon->icon35.width,
-					       &bmrp,
-					       cgfxcoltab,
-					       0,
-					       0,
-					       nativeicon->icon35.width,
-					       nativeicon->icon35.height,
-					       CTABFMT_XRGB8);
-
-			    #if 1
-			    BltMaskBitMapRastPort(bm,
-			    	    		  0,
-						  0,
-						  rp,
-						  leftEdge,
-						  topEdge,
-						  nativeicon->icon35.width,
-						  nativeicon->icon35.height,
-						  0xE0,
-						  img->mask);
-			    #endif		      
-			    DeinitRastPort(&bmrp);
+			    BltMaskBitMapRastPort
+                            (
+                                bm, 0, 0, rp, leftEdge, topEdge,
+                                nativeicon->icon35.width,
+                                nativeicon->icon35.height,
+                                0xE0, img->mask
+                            );
+			    
+                            DeinitRastPort(&bmrp);
 
 			    FreeBitMap(bm);
     	    	    	    FreeVecPooled(POOL, cgfxcoltab);
 			    
 			    return;
-
 			} /* if (bm) */ 
-
 		    } /* if (img->mask) */
-
-		    WriteLUTPixelArray(img->imagedata,
-		    	    	       0,
-				       0,
-				       nativeicon->icon35.width,
-				       rp,
-				       cgfxcoltab,
-				       leftEdge,
-				       topEdge,
-				       nativeicon->icon35.width,
-				       nativeicon->icon35.height,
-				       CTABFMT_XRGB8);
+                    
+		    WriteLUTPixelArray
+                    (
+                        img->imagedata, 0, 0, nativeicon->icon35.width,
+                        rp, cgfxcoltab, leftEdge, topEdge,
+                        nativeicon->icon35.width,
+                        nativeicon->icon35.height,
+                        CTABFMT_XRGB8
+                    );
 				       
 		    FreeVecPooled(POOL, cgfxcoltab);
-		    return;
 		    
-		} /* if ((cgfxcoltab = AllocVec(img->numcolors * sizeof(ULONG), MEMF_ANY))) */
+                    return;
+		} /* if (cgfxcoltab != NULL) */
 		
 	    } /* if (bmdepth >= 15) */
 	    
@@ -172,16 +162,25 @@
     
     if (state == IDS_SELECTED && icon->do_Gadget.SelectRender)
     {
-	DrawImage(rp,(struct Image*)icon->do_Gadget.SelectRender,leftEdge,topEdge);
-    } else
+	DrawImage
+        (
+            rp, (struct Image *) icon->do_Gadget.SelectRender, 
+            leftEdge, topEdge
+        );
+    }
+    else
     {
 	if (icon->do_Gadget.Flags & GFLG_GADGIMAGE)
 	{
-	    DrawImage(rp,(struct Image*)icon->do_Gadget.GadgetRender,leftEdge,topEdge);
+	    DrawImage
+            (
+                rp, (struct Image *) icon->do_Gadget.GadgetRender,
+                leftEdge, topEdge
+            );
 	}
     }
 
 #warning DrawIconStateA() is only very limited implemented
 
     AROS_LIBFUNC_EXIT
-} /* FreeFreeList */
+} /* DrawIconStateA() */
