@@ -39,6 +39,7 @@
  
 ******************************************************************************/
 #include "include/machine.i"
+#include <aros/config.h>
 
 	.text
 	.globl	AROS_SLIB_ENTRY(StackSwap,Exec)
@@ -69,6 +70,36 @@ AROS_SLIB_ENTRY(StackSwap,Exec):
 	xchgl	%ecx,             stk_Upper(%ebx)
 	movl    %ecx,             tc_SPUpper(%edx)
 	
+#if AROS_STACK_DEBUG
+	/* Fill [stk_Lower .. stk_Pointer - 16] with 0xE1 */
+	
+	pushl	%edi
+	pushl	%eax
+	
+	/* Destination register = %edi = NEW SPLower.
+	   Which was already swapped above, so to be found
+	   in task->tc_SPLower */
+	movl	tc_SPLower(%edx), %edi
+
+	/* %ecx = count register = NEW SP register - NEW SP_Lower - 16 */
+	movl	stk_Pointer(%ebx), %ecx
+	subl	$16, %ecx
+	subl	%edi, %ecx
+	
+	/* byte value to store */
+	movb	$0xE1, %al
+	
+	/* direction to store: forward */
+	cld
+	
+	/* do the store operation: put %ecx times %al into memory starting at %edi. */
+	rep
+	stosb
+	
+	popl	%eax
+	popl	%edi
+#endif	
+
 	/* We need to restore %ebx before swapping stack pointers, so
 	   put its content in a register whose content doesn't matter
 	   anymore to us, like %edx.  */
