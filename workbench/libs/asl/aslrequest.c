@@ -176,7 +176,12 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 */
 	    nw.Flags	=  WFLG_DRAGBAR    | WFLG_DEPTHGADGET   | WFLG_CLOSEGADGET    |
 			   WFLG_SIZEGADGET | WFLG_SIZEBBOTTOM   | WFLG_SIMPLE_REFRESH |
-			   WFLG_ACTIVATE   | WFLG_NOCAREREFRESH;
+			   WFLG_NOCAREREFRESH;
+	    
+	    if (!(intreq->ir_Flags & IF_OPENINACTIVE))
+	    {
+	    	nw.Flags |= WFLG_ACTIVATE;
+	    }
 	    
 	    idcmp = IDCMP_CLOSEWINDOW | IDCMP_GADGETUP      | IDCMP_MOUSEMOVE  |
 		    IDCMP_NEWSIZE     | IDCMP_REFRESHWINDOW | IDCMP_GADGETDOWN |
@@ -255,6 +260,22 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 		    ld->ld_Command = LDCMD_WINDOWOPENED;
 		    CallHookPkt(&(reqinfo->GadgetryHook), ld, ASLB(AslBase));
 		    		
+		    if (intreq->ir_Flags & IF_POPTOFRONT)
+		    {
+		    	struct Screen 	*frontscr;
+		    	ULONG 	    	 ilock;
+			
+			ilock = LockIBase(0);
+			frontscr = IntuitionBase->FirstScreen;
+			UnlockIBase(ilock);
+			
+			if (frontscr != win->WScreen)
+			{
+		    	    ScreenToFront(win->WScreen);
+			    intreq->ir_Flags |= IF_POPPEDTOFRONT;
+			}
+		    }
+		    
 		    /* Wait for the user to do something */	
 		    success = HandleEvents(ld, reqinfo, ASLB(AslBase));
 		
