@@ -1,5 +1,6 @@
-#!/bin/sh
+#! /bin/sh
 
+echo "cat..."
 cat >myctest.c <<END
 
 #include<stdio.h>
@@ -28,9 +29,12 @@ int main(int argc, char *argv[])
 
 END
 
+echo "gcc..."
 gcc myctest.c -o myctest
+echo "rm..."
 rm myctest.c
 
+echo "if [ myctest | cut..."
 if [ `myctest |cut -d' ' -f 1` != 4 ]
     then echo "Error : sizeof(long)!=4"
 fi
@@ -41,6 +45,7 @@ if [ `myctest |cut -d' ' -f 3` != 4 ]
     then echo "Error  :sizeof(int)!=4"
 fi
 
+echo "final if then..."
 if [ `myctest |cut -d' ' -f 4` = LITTLE ]
     then 
     echo "#ifndef LITT_ENDIAN"
@@ -51,4 +56,5 @@ else
     echo "#endif /* LITT_ENDIAN */"
 fi
 
+echo "rm..."
 rm myctest
