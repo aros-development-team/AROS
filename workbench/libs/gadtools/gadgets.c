@@ -1,5 +1,5 @@
 /*
-   (C) 1997 AROS - The Amiga Replacement OS
+   (C) 1997-98 AROS - The Amiga Replacement OS
    $Id$
 
    Desc: GadTools gadget creation functions
@@ -24,8 +24,12 @@
 #include <gadgets/aroscycle.h>
 #include <gadgets/arosmx.h>
 #include <gadgets/arospalette.h>
-#include "gadtools_intern.h"
 
+#define SDEBUG 1
+#define DEBUG 1
+#include <aros/debug.h>
+
+#include "gadtools_intern.h"
 
 /*******************
 **  makebutton()  **
@@ -74,22 +78,26 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
 	{TAG_MORE, (IPTR) NULL}
     };
 
+    EnterFunc(bug("makecheckbox()\n"));
+
     if (!GadToolsBase->aroscbbase)
         GadToolsBase->aroscbbase = OpenLibrary("SYS:Classes/Gadgets/aroscheckbox.gadget", 0);
     if (!GadToolsBase->aroscbbase)
         return NULL;
+
+    D(bug("GadToolsBase->aroscbbase: %p\n", GadToolsBase->aroscbbase));
 
     tags[0].ti_Data = GetTagData(GA_Disabled, FALSE, taglist);
     tags[1].ti_Data = GetTagData(GTCB_Checked, FALSE, taglist);
     tags[2].ti_Data = (IPTR) stdgadtags;
 
     if (!GetTagData(GTCB_Scaled, FALSE, taglist)) {
-	stdgadtags[TAG_Width].ti_Data = CHECKBOX_WIDTH;
-	stdgadtags[TAG_Height].ti_Data = CHECKBOX_HEIGHT;
+        stdgadtags[TAG_Width].ti_Data = CHECKBOX_WIDTH;
+        stdgadtags[TAG_Height].ti_Data = CHECKBOX_HEIGHT;
     }
     obj = (struct Gadget *) NewObjectA(NULL, AROSCHECKBOXCLASS, tags);
 
-    return obj;
+    ReturnPtr("makecheckbox()", struct Gadget *, obj);
 }
 
 /******************
