@@ -2,7 +2,7 @@
 #
 include $(TOP)/config/make.cfg
 
-LIB :=	coolimages
+LIB :=	coolimagesstatic
 
 INCLUDE_FILES	:= include/coolimages.h
 
@@ -29,13 +29,13 @@ FILES := saveimage  	\
 
 USER_CFLAGS := -Iinclude
 
-#MM- linklibs : linklibs-coolimages
-#MM linklibs-coolimages : includes
+#MM- linklibs : linklibs-coolimagesstatic
+#MM linklibs-coolimagesstatic : includes
 #MM includes-copy
 
 %copy_includes path=linklibs
 
-%make_linklib_setup mmake=linklibs-coolimages
+%make_linklib_setup mmake=linklibs-coolimagesstatic
 %make_linklib
 
 %common
