@@ -268,6 +268,14 @@ struct class_static_data
     struct Library       * utilitybase;
     struct Library       * oopbase;
  
+    OOP_AttrBase    	 hiddPixFmtAttrBase;
+    OOP_AttrBase    	 hiddBitMapAttrBase;
+    OOP_AttrBase    	 hiddGfxAttrBase;
+    OOP_AttrBase    	 hiddSyncAttrBase;
+    OOP_AttrBase    	 hiddGCAttrBase;
+    OOP_AttrBase    	 hiddColorMapAttrBase;
+    OOP_AttrBase    	 hiddPlanarBMAttrBase;
+    
     OOP_Class            *gfxhiddclass; /* graphics hidd class    */
     OOP_Class            *bitmapclass;  /* bitmap class           */
     OOP_Class            *gcclass;      /* graphics context class */
@@ -295,6 +303,13 @@ struct class_static_data
     
 };
 
+#define __IHidd_PixFmt      (csd->hiddPixFmtAttrBase)
+#define __IHidd_BitMap	    (csd->hiddBitMapAttrBase)
+#define __IHidd_Gfx 	    (csd->hiddGfxAttrBase)
+#define __IHidd_Sync	    (csd->hiddSyncAttrBase)
+#define __IHidd_GC  	    (csd->hiddGCAttrBase)
+#define __IHidd_ColorMap    (csd->hiddColorMapAttrBase)
+#define __IHidd_PlanarBM    (csd->hiddPlanarBMAttrBase)
 
 /* Library base */
 

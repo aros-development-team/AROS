@@ -6,6 +6,8 @@
     Lang: english
 */
 
+/****************************************************************************************/
+
 #include <string.h>
 
 #include <proto/exec.h>
@@ -25,37 +27,40 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-struct colormap_data {
+/****************************************************************************************/
+
+struct colormap_data
+{
     HIDDT_ColorLUT clut;
 };
 
-/* Don't initialize with "= 0", otherwise they end up in the DATA segment! */
+/****************************************************************************************/
 
-static OOP_AttrBase HiddColorMapAttrBase;
+#define csd ((struct class_static_data *)cl->UserData)
 
-static struct OOP_ABDescr attrbases[] = {
-    { IID_Hidd_ColorMap,	&HiddColorMapAttrBase	},
-    { NULL, 0UL }
-};
-
+/****************************************************************************************/
 
 static OOP_Object *colormap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    struct colormap_data *data;
-    ULONG numentries;
-    struct TagItem *tag, *tstate;
-    BOOL ok = FALSE;
+    struct colormap_data    *data;
+    ULONG   	    	    numentries;
+    struct TagItem  	    *tag, *tstate;
+    BOOL    	    	    ok = FALSE;
     
     numentries = 256;
     
-    for (tstate = msg->attrList; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
+    for (tstate = msg->attrList; (tag = NextTagItem((const struct TagItem **)&tstate)); )
+    {
     	ULONG idx;
 	
-    	if (IS_COLORMAP_ATTR(tag->ti_Tag, idx)) {
-	    switch (idx) {
+    	if (IS_COLORMAP_ATTR(tag->ti_Tag, idx))
+	{
+	    switch (idx)
+	    {
 	    	case aoHidd_ColorMap_NumEntries:
 		    numentries = tag->ti_Data;
-		    if (numentries > 256 || numentries < 0) {
+		    if (numentries > 256 || numentries < 0)
+		    {
 		     	D(bug("!!! ILLEGAL value for NumEntries in ColorMap::New()\n"));
 		    }
 		    break;
@@ -76,19 +81,24 @@ static OOP_Object *colormap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     data->clut.entries = numentries;
     
     data->clut.colors = AllocMem(sizeof (HIDDT_Color) * data->clut.entries, MEMF_CLEAR);
-    if (NULL != data->clut.colors) {
+    if (NULL != data->clut.colors)
+    {
 	ok = TRUE;
     }
     
-    if (!ok) {
+    if (!ok)
+    {
     	ULONG dispose_mid;
 	
 	dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 	OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
 	o = NULL;
     }
+    
     return o;
 }
+
+/****************************************************************************************/
 
 static VOID colormap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
@@ -96,7 +106,8 @@ static VOID colormap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     
     data = OOP_INST_DATA(cl, o);
    
-    if (NULL != data->clut.colors) {
+    if (NULL != data->clut.colors)
+    {
 	FreeMem(data->clut.colors, data->clut.entries * sizeof (HIDDT_Color));
 
 	/* To detect use of allready freed mem */
@@ -104,18 +115,23 @@ static VOID colormap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     }
 	     
     OOP_DoSuperMethod(cl, o, msg);
+    
     return;
 }
+
+/****************************************************************************************/
 
 static VOID colormap_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct colormap_data *data;
-    ULONG idx;
+    ULONG   	    	idx;
     
     data = OOP_INST_DATA(cl, o);
     
-    if (IS_COLORMAP_ATTR(msg->attrID, idx)) {
-    	switch (idx) {
+    if (IS_COLORMAP_ATTR(msg->attrID, idx))
+    {
+    	switch (idx)
+	{
 	    case aoHidd_ColorMap_NumEntries:
 	    	*msg->storage = data->clut.entries;
 		break;
@@ -125,25 +141,34 @@ static VOID colormap_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
 	}
-    } else {
+    }
+    else
+    {
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
+    
     return;
 }
 
-static BOOL colormap_setcolors(OOP_Class *cl, OOP_Object *o, struct pHidd_ColorMap_SetColors *msg)
+/****************************************************************************************/
+
+static BOOL colormap_setcolors(OOP_Class *cl, OOP_Object *o,
+    	    	    	       struct pHidd_ColorMap_SetColors *msg)
 {
-    struct colormap_data *data;
-    ULONG numnew;
-    ULONG i, col_idx;
-    HIDDT_Color *col;
-    HIDDT_PixelFormat *pf;
+    struct colormap_data    *data;
+    ULONG   	    	    numnew;
+    ULONG   	    	    i, col_idx;
+    HIDDT_Color     	    *col;
+    HIDDT_PixelFormat 	    *pf;
 
     data = OOP_INST_DATA(cl, o);
 
-     numnew = msg->firstColor + msg->numColors;
+    numnew = msg->firstColor + msg->numColors;
+    
     /* See if there is enpugh space in the array  */
-    if (numnew > data->clut.entries) {
+    
+    if (numnew > data->clut.entries)
+    {
      	/* Reallocate and copy */
 	HIDDT_Color *newmap;
 	
@@ -163,30 +188,39 @@ static BOOL colormap_setcolors(OOP_Class *cl, OOP_Object *o, struct pHidd_ColorM
     col_idx = msg->firstColor;
     col = &data->clut.colors[msg->firstColor];
     pf = (HIDDT_PixelFormat *)msg->pixFmt;
-    for (i = 0; i < msg->numColors; i ++) {
     
+    for (i = 0; i < msg->numColors; i ++)
+    {    
     	/* Set the color */
 	*col = msg->colors[i];
 	
 	/* Set the pixval using the supplied pixel format */
-	if (IS_TRUECOLOR(pf)) {
+	if (IS_TRUECOLOR(pf))
+	{
 	    /* Map the color to a HIDDT_Pixel */
 	    msg->colors[i].pixval = col->pixval = int_map_truecolor(col, pf);
 	
-	} else {
+	}
+	else
+	{
 	    msg->colors[i].pixval = col->pixval = (HIDDT_Pixel)col_idx;
 	}
+	
 /*	bug("ColMap::SetColors: col %d (%x %x %x %x) mapped to %x\n"
 		, col_idx
 		, col->red, col->green, col->blue, col->alpha
 		, msg->colors[i].pixval);
 	
 */
+
 	col ++;
 	col_idx ++;
     }
+    
     return TRUE;
 }
+
+/****************************************************************************************/
 
 inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelFormat *pf)
 {
@@ -204,18 +238,22 @@ inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelFormat *pf)
     return color->pixval;
 }
 
-static HIDDT_Pixel colormap_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_ColorMap_GetPixel *msg)
+/****************************************************************************************/
+
+static HIDDT_Pixel colormap_getpixel(OOP_Class *cl, OOP_Object *o,
+    	    	    	    	     struct pHidd_ColorMap_GetPixel *msg)
 {
     struct colormap_data *data;
      
     data = OOP_INST_DATA(cl, o);
      
-    if (msg->pixelNo < 0 || msg->pixelNo >= data->clut.entries) {
+    if (msg->pixelNo < 0 || msg->pixelNo >= data->clut.entries)
+    {
 	D(bug("!!! Unvalid msg->pixelNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
 		msg->pixelNo,
 		data->clut.entries));
 	
-//	*((ULONG *)0) = 0;
+    	// *((ULONG *)0) = 0;
 	return (HIDDT_Pixel)-1L;
 	
     }
@@ -223,26 +261,35 @@ static HIDDT_Pixel colormap_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_
     return data->clut.colors[msg->pixelNo].pixval;
 }
 
-static BOOL colormap_getcolor(OOP_Class *cl, OOP_Object *o, struct pHidd_ColorMap_GetColor *msg)
+/****************************************************************************************/
+
+static BOOL colormap_getcolor(OOP_Class *cl, OOP_Object *o,
+    	    	     	      struct pHidd_ColorMap_GetColor *msg)
 {
     struct colormap_data *data;
     
     data = OOP_INST_DATA(cl, o);
-    if (msg->colorNo < 0 || msg->colorNo >= data->clut.entries) {
+    
+    if (msg->colorNo < 0 || msg->colorNo >= data->clut.entries)
+    {
 	D(bug("!!! Unvalid msg->colorNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
 		msg->colorNo,
 		data->clut.entries));
+		
 	return FALSE;
     }
+    
     *msg->colorReturn = data->clut.colors[msg->colorNo];
     
     return TRUE;
 }
 
-/*** init_colormapclass *********************************************************/
+/****************************************************************************************/
 
 #undef OOPBase
 #undef SysBase
+
+#undef csd
 
 #define OOPBase (csd->oopbase)
 #define SysBase (csd->sysbase)
@@ -250,84 +297,84 @@ static BOOL colormap_getcolor(OOP_Class *cl, OOP_Object *o, struct pHidd_ColorMa
 #define NUM_ROOT_METHODS   3
 #define NUM_COLORMAP_METHODS 3
 
+/****************************************************************************************/
+
 OOP_Class *init_colormapclass(struct class_static_data *csd)
 {
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
-        {(IPTR (*)())colormap_new    , moRoot_New    },
-        {(IPTR (*)())colormap_dispose, moRoot_Dispose},
-        {(IPTR (*)())colormap_get    , moRoot_Get    },
-        {NULL, 0UL}
+        {(IPTR (*)())colormap_new    , moRoot_New    	},
+        {(IPTR (*)())colormap_dispose, moRoot_Dispose	},
+        {(IPTR (*)())colormap_get    , moRoot_Get    	},
+        {NULL	    	    	     , 0UL  	    	}
     };
 
     struct OOP_MethodDescr colormap_descr[NUM_COLORMAP_METHODS + 1] =
     {
-        {(IPTR (*)())colormap_setcolors, 	moHidd_ColorMap_SetColors	},
-        {(IPTR (*)())colormap_getpixel, 	moHidd_ColorMap_GetPixel	},
-        {(IPTR (*)())colormap_getcolor, 	moHidd_ColorMap_GetColor	},
-        {NULL, 0UL}
+        {(IPTR (*)())colormap_setcolors , moHidd_ColorMap_SetColors	},
+        {(IPTR (*)())colormap_getpixel	, moHidd_ColorMap_GetPixel	},
+        {(IPTR (*)())colormap_getcolor	, moHidd_ColorMap_GetColor	},
+        {NULL	    	    	    	, 0UL	    	    	    	}
     };
     
     struct OOP_InterfaceDescr ifdescr[] =
     {
-        {root_descr,	  IID_Root	   , NUM_ROOT_METHODS},
-        {colormap_descr,  IID_Hidd_ColorMap, NUM_COLORMAP_METHODS},
-        {NULL, NULL, 0}
+        {root_descr 	, IID_Root	    , NUM_ROOT_METHODS	    },
+        {colormap_descr , IID_Hidd_ColorMap , NUM_COLORMAP_METHODS  },
+        {NULL	    	, NULL	    	    , 0     	    	    }
     };
 
     OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
 
     struct TagItem tags[] =
     {
-        {aMeta_SuperID,        (IPTR) CLID_Root},
-        {aMeta_InterfaceDescr, (IPTR) ifdescr},
-        {aMeta_ID,             (IPTR) CLID_Hidd_ColorMap},
-        {aMeta_InstSize,       (IPTR) sizeof(struct colormap_data)},
-        {TAG_DONE, 0UL}
+        {aMeta_SuperID	    	, (IPTR) CLID_Root  	    	    	},
+        {aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	    	},
+        {aMeta_ID   	    	, (IPTR) CLID_Hidd_ColorMap 	    	},
+        {aMeta_InstSize     	, (IPTR) sizeof(struct colormap_data)	},
+        {TAG_DONE   	    	, 0UL	    	    	    	    	}
     };
     
     OOP_Class *cl = NULL;
     
     EnterFunc(bug("init_colormapclass()\n"));
 
-    if(MetaAttrBase) {
-#ifndef AROS_CREATE_ROM_BUG
-        if(OOP_ObtainAttrBases(attrbases)) 
-#endif
-        {
-    	    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	    if(NULL != cl) {
-        	csd->colormapclass = cl;
-        	cl->UserData     = (APTR) csd;
-		OOP_AddClass(cl);
-            }
+    if(MetaAttrBase)
+    {
+    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
+	
+    	if(NULL != cl)
+	{
+            csd->colormapclass = cl;
+            cl->UserData     = (APTR) csd;
+	    OOP_AddClass(cl);
         }
+
     } /* if(MetaAttrBase) */
     
     if (NULL == cl)
 	free_colormapclass(csd);
+	
     ReturnPtr("init_colormapclass", OOP_Class *, cl);
 }
 
-
-/*** free_colormapclass *********************************************************/
+/****************************************************************************************/
 
 void free_colormapclass(struct class_static_data *csd)
 {
     EnterFunc(bug("free_colormapclass()\n"));
 
-    if(NULL != csd) {
-	if (NULL != csd->colormapclass) {
+    if(NULL != csd)
+    {
+	if (NULL != csd->colormapclass)
+	{
     	    OOP_RemoveClass(csd->colormapclass);
     	    OOP_DisposeObject((OOP_Object *) csd->colormapclass);
     	    csd->colormapclass = NULL;
 	}
-
-#ifndef AROS_CREATE_ROM_BUG	
-	OOP_ReleaseAttrBases(attrbases);
-#endif
     }
     
     ReturnVoid("free_colormapclass");
-
 }
+
+/****************************************************************************************/

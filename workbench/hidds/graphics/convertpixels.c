@@ -10,7 +10,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-/*** BitMap::ConvertPixels() **********************************************/
+/****************************************************************************************/
+
 #define SHIFT_PIX(pix, shift)	\
 	(( (shift) < 0) ? (pix) >> (-shift) : (pix) << (shift) )
 
@@ -102,8 +103,10 @@
 	HIDDT_PixelFormat *srcfmt = msg->srcPixFmt;	\
 	HIDDT_PixelFormat *dstfmt = msg->dstPixFmt;
 
+/****************************************************************************************/
 
-static VOID true_to_true(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
+static VOID true_to_true(OOP_Class *cl, OOP_Object *o,
+    	    	    	 struct pHidd_BitMap_ConvertPixels *msg)
 {
     LONG alpha_diff, red_diff, green_diff, blue_diff;
 
@@ -170,21 +173,26 @@ bug("destmasks = %p %p %p %p  diffs = %d %d %d %d\n",
 	    PUT_TRUE_PIX(d, dstpix, dstfmt);
 	    
 	} /* for (x) */
+	
 	((UBYTE *)src) += msg->srcMod;
 	((UBYTE *)dst) += msg->dstMod;
+	
     } /* for (y) */
     
     *msg->srcPixels = src;
     *msg->dstBuf    = dst;
     
 }
+/****************************************************************************************/
 
-static VOID true_to_pal(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
+static VOID true_to_pal(OOP_Class *cl, OOP_Object *o,
+    	    	    	struct pHidd_BitMap_ConvertPixels *msg)
 {
-D(bug("BitMap::ConvertPixels() : Truecolor to palette conversion not implemented yet\n"));
+    D(bug("BitMap::ConvertPixels() : Truecolor to palette conversion not implemented yet\n"));
 }
 
-static VOID pal_to_true(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
+static VOID pal_to_true(OOP_Class *cl, OOP_Object *o,
+    	    	    	struct pHidd_BitMap_ConvertPixels *msg)
 {
     HIDDT_Pixel *lut;
 
@@ -195,10 +203,13 @@ static VOID pal_to_true(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Conver
     
     lut = msg->pixlut->pixels;
 	
-    for (y = 0; y < msg->height; y ++) {
+    for (y = 0; y < msg->height; y ++)
+    {
     	APTR s = src;
 	APTR d = dst;
-	for (x = 0; x < msg->width; x ++) {
+	
+	for (x = 0; x < msg->width; x ++)
+	{
 	    ULONG srcpix;
 	    
 	    GET_PAL_PIX(s, srcpix, srcfmt, lut);
@@ -212,11 +223,15 @@ static VOID pal_to_true(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Conver
 	((UBYTE *)dst) += msg->dstMod;
 	
     } 
+    
     *msg->srcPixels = src;
     *msg->dstBuf    = dst;
 }
 
-static VOID pal_to_pal(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
+/****************************************************************************************/
+
+static VOID pal_to_pal(OOP_Class *cl, OOP_Object *o,
+    	    	       struct pHidd_BitMap_ConvertPixels *msg)
 {
     HIDDT_PixelFormat *spf, *dpf;
      
@@ -225,13 +240,13 @@ static VOID pal_to_pal(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Convert
      
      
     if (    spf->clut_shift == dpf->clut_shift
-         && spf->clut_mask  == dpf->clut_mask ) {
+         && spf->clut_mask  == dpf->clut_mask )
+    {
 	/* This one is rather easy, just copy the data */
 	
-	
-	  
-	  
-    } else {
+    }
+    else
+    {
      	/* Convert pixel-by pixel */
      
     }
@@ -239,27 +254,34 @@ static VOID pal_to_pal(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Convert
     return;
 }
 
-static void native32_to_native(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
+/****************************************************************************************/
+
+static void native32_to_native(OOP_Class *cl, OOP_Object *o,
+    	    	    	       struct pHidd_BitMap_ConvertPixels *msg)
 {
     INIT_VARS()
-    HIDDT_PixelFormat *dstfmt = msg->dstPixFmt;
+    HIDDT_PixelFormat 	*dstfmt = msg->dstPixFmt;    
+    LONG    	    	x, y;
     
-    LONG x, y;
-    
-D(bug("SRC: Native32, DST: Native, height=%d, width=%d, bytes per pixel: %d, srcmod: %d, dstmod: %d, depth: %d\n"
+    D(bug("SRC: Native32, DST: Native, height=%d, width=%d, bytes per pixel: %d, srcmod: %d, dstmod: %d, depth: %d\n"
 	, msg->height, msg->width, dstfmt->bytes_per_pixel, msg->srcMod, msg->dstMod, dstfmt->depth));
 
-    for ( y = 0; y < msg->height; y ++) {
+    for ( y = 0; y < msg->height; y ++)
+    {
 	APTR d = dst;
 	APTR s = src;
-	for (x = 0; x < msg->width; x ++) {
+	
+	for (x = 0; x < msg->width; x ++)
+	{
 	    
-	    switch (dstfmt->bytes_per_pixel) {
+	    switch (dstfmt->bytes_per_pixel)
+	    {
 		case 4:
 		    *((ULONG *)d) ++ = (ULONG)*((HIDDT_Pixel *)s) ++;
 		    break;
 	    
-		case 3: {
+		case 3:
+		{
 		    HIDDT_Pixel dstpix;
 		
 		    dstpix = *((HIDDT_Pixel *)s) ++;
@@ -268,7 +290,8 @@ D(bug("SRC: Native32, DST: Native, height=%d, width=%d, bytes per pixel: %d, src
 		    ((UBYTE *)d)[1] = (UBYTE)((dstpix >> 8)  & 0x000000FF);
 		    ((UBYTE *)d)[2] = (UBYTE)(dstpix  & 0x000000FF);
 	    
-		    break; }
+		    break;
+		}
 	    
 		case 2:
 		    *((UWORD *)d) ++ = (UWORD)(*((HIDDT_Pixel *)s) ++);
@@ -278,9 +301,10 @@ D(bug("SRC: Native32, DST: Native, height=%d, width=%d, bytes per pixel: %d, src
 		    *((UBYTE *)d) ++ = (UBYTE)*((HIDDT_Pixel *)s) ++;
 		    break;
 			
-#if 0
+    	    #if 0
 		case 0:
-		    if (dstfmt->depth == 1) {
+		    if (dstfmt->depth == 1)
+		    {
 			UBYTE mask;
 
 			mask = XCOORD_TO_MASK(x);
@@ -292,10 +316,10 @@ D(bug("SRC: Native32, DST: Native, height=%d, width=%d, bytes per pixel: %d, src
 			}
 		    }
 		    break;
-#endif
+    	    #endif
+	    
 	    } /* switch() */
-		
-		
+				
 	} /* for (x) */
 	    
 	((UBYTE *)src) += msg->srcMod;
@@ -307,27 +331,34 @@ D(bug("SRC: Native32, DST: Native, height=%d, width=%d, bytes per pixel: %d, src
     *msg->dstBuf    = dst;
 }
 
-static VOID quick_copy(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
+/****************************************************************************************/
+
+static VOID quick_copy(OOP_Class *cl, OOP_Object *o,
+    	    	       struct pHidd_BitMap_ConvertPixels *msg)
 {
     	/* Just do a simple memcpy() of the pixels */
     INIT_VARS()
-    HIDDT_PixelFormat *srcfmt = msg->srcPixFmt;
+    HIDDT_PixelFormat 	*srcfmt = msg->srcPixFmt;    
+    ULONG   	    	bpl = msg->width * srcfmt->bytes_per_pixel;
     
-    ULONG bpl = msg->width * srcfmt->bytes_per_pixel;
-#warning This does not work well for formats with bytes_per_pixel < 1
+    #warning This does not work well for formats with bytes_per_pixel < 1
     
-    if (msg->srcMod == bpl && msg->dstMod == bpl) {
+    if (msg->srcMod == bpl && msg->dstMod == bpl)
+    {
 	memcpy(dst, src, bpl * msg->height);
     }
-    else {
-	    ULONG i;
-	    ULONG copy_width;
-	    
-	    copy_width = msg->width * srcfmt->bytes_per_pixel;
-	for (i = 0; i < msg->height; i ++) {
-		memcpy(dst, src, copy_width);
-		((UBYTE *)src) += msg->srcMod;
-		((UBYTE *)dst) += msg->dstMod;
+    else
+    {
+	ULONG i;
+	ULONG copy_width;
+
+	copy_width = msg->width * srcfmt->bytes_per_pixel;
+	
+	for (i = 0; i < msg->height; i ++)
+	{
+	    memcpy(dst, src, copy_width);
+	    ((UBYTE *)src) += msg->srcMod;
+	    ((UBYTE *)dst) += msg->dstMod;
 	}
     }
 	
@@ -336,6 +367,7 @@ static VOID quick_copy(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Convert
 	
 }
 
+/****************************************************************************************/
 
 #warning Discuss this design decision:
 
@@ -349,12 +381,15 @@ static VOID quick_copy(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Convert
   to do the conversion and save two method calls.
 */  
 
-VOID bitmap_convertpixels(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
+/****************************************************************************************/
+
+VOID bitmap_convertpixels(OOP_Class *cl, OOP_Object *o,
+    	    	    	  struct pHidd_BitMap_ConvertPixels *msg)
 {
     /* For now we assume truecolor */
     HIDDT_PixelFormat *srcfmt, *dstfmt;
     
-//    bug("bitmap_convertpixels()\n");
+    //bug("bitmap_convertpixels()\n");
 
     srcfmt = msg->srcPixFmt;
     dstfmt = msg->dstPixFmt;
@@ -363,23 +398,28 @@ VOID bitmap_convertpixels(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Conv
 /* bug("ConvertPixels: src=%d, dst=%d\n"
 	, srcfmt->stdpixfmt, dstfmt->stdpixfmt);
 */    
+
     /* Check if source and dest are the same format */
-    if (srcfmt->stdpixfmt == dstfmt->stdpixfmt) {
+    if (srcfmt->stdpixfmt == dstfmt->stdpixfmt)
+    {
 	quick_copy(cl, o, msg);
 	return;
     }
     
     
     if (    srcfmt->stdpixfmt == vHidd_StdPixFmt_Native32
-    	 && dstfmt->stdpixfmt == vHidd_StdPixFmt_Native    ) {
+    	 && dstfmt->stdpixfmt == vHidd_StdPixFmt_Native    )
+    {
 	 
 	 native32_to_native(cl, o, msg);
 	 return;
     }
     
-    switch (HIDD_PF_COLMODEL(srcfmt)) {
+    switch (HIDD_PF_COLMODEL(srcfmt))
+    {
 	case vHidd_ColorModel_TrueColor:
-	    switch (HIDD_PF_COLMODEL(dstfmt)) {
+	    switch (HIDD_PF_COLMODEL(dstfmt))
+	    {
 	    	case vHidd_ColorModel_TrueColor:
 		     true_to_true(cl, o, msg);
 		     break;
@@ -395,7 +435,8 @@ VOID bitmap_convertpixels(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Conv
 	
 	case vHidd_ColorModel_Palette:
 	case vHidd_ColorModel_StaticPalette:
-	    switch (HIDD_PF_COLMODEL(dstfmt)) {
+	    switch (HIDD_PF_COLMODEL(dstfmt))
+	    {
 	    	case vHidd_ColorModel_TrueColor:
 		     pal_to_true(cl, o, msg);
 		     break;
@@ -407,6 +448,9 @@ VOID bitmap_convertpixels(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Conv
 		
 	    }
 	    break;
-     }
+    }
+    
     return;
 }
+
+/****************************************************************************************/

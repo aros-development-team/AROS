@@ -6,6 +6,8 @@
     Lang: english
 */
 
+/****************************************************************************************/
+
 #include <string.h>
 
 #include <proto/exec.h>
@@ -28,22 +30,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-/* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
-
-static OOP_AttrBase HiddBitMapAttrBase;
-static OOP_AttrBase HiddGCAttrBase;
-static OOP_AttrBase HiddPixFmtAttrBase;
-static OOP_AttrBase HiddSyncAttrBase;
-static OOP_AttrBase HiddColorMapAttrBase;
-
-static struct OOP_ABDescr attrbases[] = {
-    { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
-    { IID_Hidd_GC,		&HiddGCAttrBase		},
-    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
-    { IID_Hidd_Sync,		&HiddSyncAttrBase	},
-    { IID_Hidd_ColorMap,	&HiddColorMapAttrBase	},
-    { NULL, 0UL }
-};
+/****************************************************************************************/
 
 #define POINT_OUTSIDE_CLIP(gc, x, y)	\
 	(  (x) < GC_CLIPX1(gc)		\
@@ -53,9 +40,6 @@ static struct OOP_ABDescr attrbases[] = {
 
 
     
-/*** BitMap::New() ************************************************************/
-
-
 /* BitMap baseclass is a in C++ terminology a pure virtual
    baseclass. It will not allocate any bitmap data at all,
    that is up to the subclass to do.
@@ -75,51 +59,62 @@ static struct OOP_ABDescr attrbases[] = {
 */    
 
 
-#define GOT_BM_ATTR(code) GOT_ATTR(code, aoHidd_BitMap, bitmap)
-#define AO(x) aoHidd_BitMap_ ## x
+/****************************************************************************************/
 
-#define BMAF(x) (1L << aoHidd_BitMap_ ## x)
+#define GOT_BM_ATTR(code)   GOT_ATTR(code, aoHidd_BitMap, bitmap)
+#define AO(x) 	    	    aoHidd_BitMap_ ## x
 
-#define BM_NONDISP_AF ( BMAF(Width) | BMAF(Height) | BMAF(PixFmt) )
+#define BMAF(x)     	    (1L << aoHidd_BitMap_ ## x)
+
+#define BM_NONDISP_AF 	    ( BMAF(Width) | BMAF(Height) | BMAF(PixFmt) )
+
+#define csd 	    	    ((struct class_static_data *)cl->UserData)
+
+/****************************************************************************************/
 
 static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
-
     EnterFunc(bug("BitMap::New()\n"));
 
     obj  = (OOP_Object *) OOP_DoSuperMethod(cl, obj, (OOP_Msg) msg);
 
-    if(NULL != obj) {
-    	struct HIDDBitMapData *data;
-	BOOL ok = TRUE;
-	struct TagItem colmap_tags[] = {
-	    { aHidd_ColorMap_NumEntries,	16 },
-	    { TAG_DONE, 0UL }
+    if (NULL != obj)
+    {
+	struct TagItem      	colmap_tags[] =
+	{
+	    { aHidd_ColorMap_NumEntries , 16	},
+	    { TAG_DONE	    	    	     	}
 	};
+    	struct HIDDBitMapData 	*data;
+	BOOL 	    	    	ok = TRUE;
 
     	DECLARE_ATTRCHECK(bitmap);
-    	IPTR attrs[num_Total_BitMap_Attrs];
+    	IPTR 	    	    	attrs[num_Total_BitMap_Attrs];
 	
         data = OOP_INST_DATA(cl, obj);
     
         /* clear all data and set some default values */
         memset(data, 0, sizeof(struct HIDDBitMapData));
-        data->width       = 320;
-        data->height      = 200;
-        data->reqdepth	  = 8;
-        data->displayable = FALSE;
+	
+        data->width         = 320;
+        data->height        = 200;
+        data->reqdepth	    = 8;
+        data->displayable   = FALSE;
 	data->pf_registered = FALSE;
-	data->modeid = vHidd_ModeID_Invalid;
+	data->modeid 	    = vHidd_ModeID_Invalid;
 
-	if (0 != OOP_ParseAttrs(msg->attrList, attrs, num_Total_BitMap_Attrs
-			, &ATTRCHECK(bitmap), HiddBitMapAttrBase)) {
+	if (0 != OOP_ParseAttrs(msg->attrList, attrs, num_Total_BitMap_Attrs,
+	    	    	    	&ATTRCHECK(bitmap), HiddBitMapAttrBase))
+	{
 	    D(bug("!!! ERROR PARSING ATTRS IN BitMap::New() !!!\n"));
 	    D(bug("!!! NUMBER OF ATTRS IN IF: %d !!!\n", num_Total_BitMap_Attrs));
 	    ok = FALSE;
 	}
 
-	if (ok) {
-	    if (   !GOT_BM_ATTR(GfxHidd) || !GOT_BM_ATTR(Displayable)) {
+	if (ok)
+	{
+	    if (!GOT_BM_ATTR(GfxHidd) || !GOT_BM_ATTR(Displayable))
+	    {
     	    	D(bug("!!!! BM CLASS DID NOT GET GFX HIDD !!!\n"));
 	    	D(bug("!!!! The reason for this is that the gfxhidd subclass NewBitmap() method\n"));
 	    	D(bug("!!!! has not left it to the baseclass to avtually create the object,\n"));
@@ -127,7 +122,9 @@ static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *
 		D(bug("!!!! ATTRCHECK: %p !!!!\n", ATTRCHECK(bitmap)));
 	    
 	    	ok = FALSE;
-	    } else {
+	    }
+	    else
+	    {
 	    	data->gfxhidd = (OOP_Object *)attrs[AO(GfxHidd)];
 	    }
 	}
@@ -136,26 +133,36 @@ static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *
 	if (GOT_BM_ATTR(Friend))
 	    data->friend = (OOP_Object *)attrs[AO(Friend)];
 	
-	if (ok) {
-	    if ( attrs[AO(Displayable)] ) {
+	if (ok)
+	{
+	    if ( attrs[AO(Displayable)] )
+	    {
 		/* We should allways get modeid, but we check anyway */
-		if (!GOT_BM_ATTR(ModeID)) {
+		if (!GOT_BM_ATTR(ModeID))
+		{
 		    D(bug("!!! BitMap:New() DID NOT GET MODEID FOR DISPLAYABLE BITMAP !!!\n"));
 		    ok = FALSE;
-		} else {
-	    	    HIDDT_ModeID modeid;
-	    	    OOP_Object *sync, *pf;
+		}
+		else
+		{
+	    	    HIDDT_ModeID    modeid;
+	    	    OOP_Object      *sync, *pf;
 		
 		    modeid = (HIDDT_ModeID)attrs[AO(ModeID)];
 	    
-	    	    if (!HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pf)) {
+	    	    if (!HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pf))
+		    {
 	    		D(bug("!!! BitMap::New() RECEIVED INVALID MODEID %p\n", modeid));
 	    		ok = FALSE;
-	    	    } else {
+	    	    }
+		    else
+		    {
 	    		ULONG width, height;
+			
 	    		/* Update the bitmap with data from the modeid */
 			OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
 			OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
+			
 			data->width = width;
 			data->height = height;
 			data->displayable = TRUE;
@@ -164,53 +171,67 @@ static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *
 			data->prot.pixfmt = pf;
 		    }
 	    	}
-	    } else {  /* displayable */
-		if (BM_NONDISP_AF != (BM_NONDISP_AF & ATTRCHECK(bitmap))) {
-		    if (OOP_OCLASS(obj) != CSD(cl)->planarbmclass) {
+	    }
+	    else
+	    {  /* displayable */
+		if (BM_NONDISP_AF != (BM_NONDISP_AF & ATTRCHECK(bitmap)))
+		{
+		    if (OOP_OCLASS(obj) != CSD(cl)->planarbmclass)
+		    {
 	    		/* HACK. This is an ugly hack to allow the
 		           late initialization of BitMap objects in AROS.
 		   
 		           The PixelFormat will be set later.
 			*/
-#warning Find a better way to do this.
-	/* One could maybe fix this by implementing a separate AmigaPitMap class
-	*/
+			
+    	    	    	#warning Find a better way to do this.
+			
+	    	    	/* One could maybe fix this by implementing a separate AmigaPitMap class
+	    	    	*/
+			
 			D(bug("!!! BitMap:New(): NO PIXFMT FOR NONDISPLAYABLE BITMAP !!!\n"));
 			ok = FALSE;
 		    }
-		} else {
+		}
+		else
+		{
 		    data->width	 = attrs[AO(Width)];
 		    data->height = attrs[AO(Height)];
 		    data->prot.pixfmt = (OOP_Object *)attrs[AO(PixFmt)]; 
 		}
+		
 	    } /* displayable */
+	    
 	} /* if (ok) */
 	
-	if (ok) {
+	if (ok)
+	{
 	    /* initialize the direct method calling */
 	    
 	    if (GOT_BM_ATTR(ModeID))
 	    	data->modeid = attrs[AO(ModeID)];
 		
-#if USE_FAST_PUTPIXEL
+    	#if USE_FAST_PUTPIXEL
 	    data->putpixel = (IPTR (*)(OOP_Class *, OOP_Object *, struct pHidd_BitMap_PutPixel *))
-				    OOP_GetMethod(obj, CSD(cl)->putpixel_mid);
+			     OOP_GetMethod(obj, CSD(cl)->putpixel_mid);
 	    if (NULL == data->putpixel)
 		ok = FALSE;
-#endif
-#if USE_FAST_GETPIXEL
+    	#endif
+	
+    	#if USE_FAST_GETPIXEL
 	    data->getpixel = (IPTR (*)(OOP_Class *, OOP_Object *, struct pHidd_BitMap_GetPixel *))
-				    OOP_GetMethod(obj, CSD(cl)->getpixel_mid);
+			     OOP_GetMethod(obj, CSD(cl)->getpixel_mid);
 	    if (NULL == data->getpixel)
 		ok = FALSE;
-#endif
+    	#endif
 
-#if USE_FAST_DRAWPIXEL
+    	#if USE_FAST_DRAWPIXEL
 	    data->drawpixel = (IPTR (*)(OOP_Class *, OOP_Object *, struct pHidd_BitMap_DrawPixel *))
-				    OOP_GetMethod(obj, CSD(cl)->drawpixel_mid);
+			      OOP_GetMethod(obj, CSD(cl)->drawpixel_mid);
 	    if (NULL == data->drawpixel)
 		ok = FALSE;
-#endif
+    	#endif
+	
 	    /* Try to create the colormap */
 
     	    /* stegerg: Only add a ColorMap for a visible bitmap (screen). This
@@ -233,21 +254,24 @@ static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *
 	}
 	
 	
-	if (!ok) {
-	    ULONG dispose_mid;	
+	if (!ok)
+	{
+	    ULONG dispose_mid;
+	    	
 	    dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 	
 	    OOP_CoerceMethod(cl, obj, (OOP_Msg)&dispose_mid);
 	
 	    obj = NULL;
+	    
     	} /* if(obj) */
-    }
+	
+    } /* if (NULL != obj) */
 
     ReturnPtr("BitMap::New", OOP_Object *, obj);
 }
 
-
-/*** BitMap::Dispose() ********************************************************/
+/****************************************************************************************/
 
 static void bitmap_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg *msg)
 {
@@ -259,8 +283,7 @@ static void bitmap_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg *msg)
     	OOP_DisposeObject(data->colmap);
     
     D(bug("Calling super\n"));
-    
-    
+        
     /* Release the previously registered pixel format */
     if (data->pf_registered)
     	HIDD_Gfx_ReleasePixFmt(data->gfxhidd, data->prot.pixfmt);
@@ -270,13 +293,12 @@ static void bitmap_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg *msg)
     ReturnVoid("BitMap::Dispose");
 }
 
-
-/*** BitMap::Get() ************************************************************/
+/****************************************************************************************/
 
 static VOID bitmap_get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 {
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, obj);
-    ULONG  idx;
+    ULONG   	    	   idx;
 
     EnterFunc(bug("BitMap::Get() attrID: %i  storage: %p\n", msg->attrID, msg->storage));
 
@@ -284,31 +306,55 @@ static VOID bitmap_get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
     {
         switch(idx)
         {
-            case aoHidd_BitMap_Width       : *msg->storage = data->width; D(bug("  width: %i\n", data->width)); break;
-            case aoHidd_BitMap_Height      : *msg->storage = data->height; break;
-            case aoHidd_BitMap_Displayable : *msg->storage = (IPTR) data->displayable; break;
+            case aoHidd_BitMap_Width:
+	    	 *msg->storage = data->width;
+		 D(bug("  width: %i\n", data->width));
+		 break;
+		 
+            case aoHidd_BitMap_Height:
+	    	*msg->storage = data->height;
+		break;
+		
+            case aoHidd_BitMap_Displayable:
+	    	*msg->storage = (IPTR) data->displayable;
+		break;
 	    
-	    case aoHidd_BitMap_PixFmt	: *msg->storage = (IPTR)data->prot.pixfmt; break;
+	    case aoHidd_BitMap_PixFmt:
+	    	*msg->storage = (IPTR)data->prot.pixfmt;
+		break;
 
-
-	    case aoHidd_BitMap_Friend	   : *msg->storage = (IPTR)data->friend; break;
-	    case aoHidd_BitMap_ColorMap : *msg->storage = (IPTR)data->colmap; break;
+	    case aoHidd_BitMap_Friend:
+	    	*msg->storage = (IPTR)data->friend;
+		break;
+		
+	    case aoHidd_BitMap_ColorMap:
+	    	*msg->storage = (IPTR)data->colmap;
+		break;
 	    
-#if 0
+    	#if 0
             case aoHidd_BitMap_Depth:
-	    	if (NULL != data->prot.pixfmt) {
+	    	if (NULL != data->prot.pixfmt)
+		{
 	    	    *msg->storage = ((HIDDT_PixelFormat *)data->prot.pixfmt)->depth;
-		} else {
+		}
+		else
+		{
 		    *msg->storage = data->reqdepth;
 		}
 		break;
 		
-#endif
+    	#endif
 		
-	    case aoHidd_BitMap_GfxHidd	: *msg->storage = (IPTR)data->gfxhidd; break;
-	    case aoHidd_BitMap_ModeID   : *msg->storage = data->modeid; break;
+	    case aoHidd_BitMap_GfxHidd:
+	    	*msg->storage = (IPTR)data->gfxhidd;
+		break;
+		
+	    case aoHidd_BitMap_ModeID:
+	    	*msg->storage = data->modeid;
+		break;
 
-	    case aoHidd_BitMap_BytesPerRow: {
+	    case aoHidd_BitMap_BytesPerRow:
+	    {
 	    	HIDDT_PixelFormat *pf;
 		
 		pf = (HIDDT_PixelFormat *)data->prot.pixfmt;
@@ -320,50 +366,61 @@ static VOID bitmap_get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
             default:
 	    	D(bug("UNKNOWN ATTR IN BITMAP BASECLASS: %d\n", idx));
 	    	OOP_DoSuperMethod(cl, obj, (OOP_Msg) msg);
+		break;
         }
-    } else {
+    }
+    else
+    {
 	OOP_DoSuperMethod(cl, obj, (OOP_Msg) msg);
     }
     
-
     ReturnVoid("BitMap::Get");
 }
 
+/****************************************************************************************/
 
-/************* BitMap::SetColors() ******************************/
 #define UB(x) ((UBYTE *)x)
+
+/****************************************************************************************/
+
 static BOOL bitmap_setcolors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
     /* Copy the colors into the internal buffer */
     struct HIDDBitMapData *data;
+    
     data = OOP_INST_DATA(cl, o);
+
     /* Subclass has initialized HIDDT_Color->pixelVal field and such.
        Just copy it into the colortab.
     */
 
-    if (NULL == data->colmap) {
-	struct TagItem colmap_tags[] = {
-    	    { aHidd_ColorMap_NumEntries,	0 },
-	    { TAG_DONE, 0UL }
+    if (NULL == data->colmap)
+    {
+	struct TagItem colmap_tags[] =
+	{
+    	    { aHidd_ColorMap_NumEntries, 0  },
+	    { TAG_DONE	    	    	    }
    	};
+	
 	colmap_tags[0].ti_Data = msg->firstColor + msg->numColors;
     	data->colmap = OOP_NewObject(NULL, CLID_Hidd_ColorMap, colmap_tags);
     }
     
-    if (NULL == data->colmap) {
+    if (NULL == data->colmap)
+    {
     	return FALSE;
     }
 
     /* Use the colormap class to set the colors */
-    return HIDD_CM_SetColors(data->colmap, msg->colors
-    	, msg->firstColor, msg->numColors
-	, data->prot.pixfmt
-    );
+    return HIDD_CM_SetColors(data->colmap, msg->colors,
+    	    	    	     msg->firstColor, msg->numColors,
+			     data->prot.pixfmt);
     
 }
 
+/*****************************************************************************************
 
-/*** BitMap::DrawPixel() ***************************************************
+    BitMap::DrawPixel()
 
     NAME
         moHidd_BitMap_DrawPixel
@@ -396,16 +453,18 @@ static BOOL bitmap_setcolors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_S
     TODO
         - Support for shapeplane.
         - Optimize
-***************************************************************************/
 
-static ULONG bitmap_drawpixel(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawPixel *msg)
+*****************************************************************************************/
+
+static ULONG bitmap_drawpixel(OOP_Class *cl, OOP_Object *obj,
+    	    	    	      struct pHidd_BitMap_DrawPixel *msg)
 {
-    HIDDT_Pixel src, dest, val;
-    HIDDT_DrawMode mode;
-    HIDDT_Pixel writeMask;
-    OOP_Object *gc;
+    HIDDT_Pixel     	    	    src, dest, val;
+    HIDDT_DrawMode  	    	    mode;
+    HIDDT_Pixel     	    	    writeMask;
+    OOP_Object      	    	    *gc;
 #if USE_FAST_PUTPIXEL
-    struct pHidd_BitMap_PutPixel p;
+    struct pHidd_BitMap_PutPixel    p;
 #endif
 
 /*    EnterFunc(bug("BitMap::DrawPixel() x: %i, y: %i\n", msg->x, msg->y));
@@ -443,13 +502,18 @@ static ULONG bitmap_drawpixel(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMa
     mode      = GC_DRMD(gc);
     
 #if OPTIMIZE_DRAWPIXEL_FOR_COPY
-    if (vHidd_GC_DrawMode_Copy == mode && GC_COLMASK(gc) == ~0UL) {
+    if (vHidd_GC_DrawMode_Copy == mode && GC_COLMASK(gc) == ~0UL)
+    {
 	val = src;
-    } else {
+    }
+    else
+    {
 #endif
-
+        
     dest      = HIDD_BM_GetPixel(obj, msg->x, msg->y);
     writeMask = ~GC_COLMASK(gc) & dest;
+
+    val = 0;
 
     if(mode & 1) val = ( src &  dest);
     if(mode & 2) val = ( src & ~dest) | val;
@@ -474,11 +538,13 @@ static ULONG bitmap_drawpixel(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMa
 #endif
 
 /*    ReturnInt("BitMap::DrawPixel ", ULONG, 1); */ /* in quickmode return always 1 */
+
     return 1;
 }
 
+/*****************************************************************************************
 
-/*** BitMap::DrawLine() *****************************************************
+    BitMap::DrawLine()
 
     NAME
         DrawLine
@@ -513,15 +579,17 @@ static ULONG bitmap_drawpixel(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMa
 	 more than the part of the line that is inside the cliprect
 
     HISTORY
-***************************************************************************/
 
-static VOID bitmap_drawline(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawLine *msg)
+*****************************************************************************************/
+
+static VOID bitmap_drawline(OOP_Class *cl, OOP_Object *obj,
+    	    	    	    struct pHidd_BitMap_DrawLine *msg)
 {
-    WORD  dx, dy, incrE, incrNE, d, x, y, s1, s2, t, i;
-    UWORD maskLine = 1 << 15;  /* for line pattern */
-    BYTE  maskCnt  = 16;
-    ULONG fg;   /* foreground pen   */
-    BOOL doclip, renderpix;
+    WORD    	dx, dy, incrE, incrNE, d, x, y, s1, s2, t, i;
+    UWORD   	maskLine = 1 << 15;  /* for line pattern */
+    BYTE    	maskCnt  = 16;
+    ULONG   	fg;   /* foreground pen   */
+    BOOL    	doclip, renderpix;
     
     OOP_Object *gc;
 
@@ -534,27 +602,35 @@ static VOID bitmap_drawline(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
     renderpix = TRUE;
     fg = GC_FG(gc);
     
-    if (doclip) {
+    if (doclip)
+    {
     	/* If line is not inside cliprect, then just return */
 	LONG x1, y1, x2, y2;
 	
 	/* Normalize coords */
-	if (msg->x1 > msg->x2) {
+	if (msg->x1 > msg->x2)
+	{
 	    x1 = msg->x2; x2 = msg->x1;
-	} else {
+	}
+	else
+	{
 	    x1 = msg->x1; x2 = msg->x2;
 	}
 	
-	if (msg->y1 > msg->y2) {
+	if (msg->y1 > msg->y2)
+	{
 	    y1 = msg->y2; y2 = msg->y1;
-	} else {
+	}
+	else
+	{
 	    y1 = msg->y1; y2 = msg->y2;
 	}
 	
 	if (    x1 > GC_CLIPX2(gc)
 	     || x2 < GC_CLIPX1(gc)
 	     || y1 > GC_CLIPY2(gc)
-	     || y2 < GC_CLIPY1(gc) ) {
+	     || y2 < GC_CLIPY1(gc) )
+	{
 	     
 	     /* Line is not inside cliprect, so just return */
 	     return;
@@ -587,7 +663,8 @@ static VOID bitmap_drawline(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
 
     x = msg->x1; y = msg->y1;
     
-    if (doclip) {
+    if (doclip)
+    {
 	/* Pixel inside ? */
 	if ( POINT_OUTSIDE_CLIP(gc, x, y ))
 	    renderpix = FALSE;
@@ -596,10 +673,14 @@ static VOID bitmap_drawline(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
 	     
     }
     
-    if (renderpix) {
-	if(GC_LINEPAT(gc) & maskLine) {
+    if (renderpix)
+    {
+	if(GC_LINEPAT(gc) & maskLine)
+	{
 	     HIDD_BM_DrawPixel(obj, gc, x, y); /* The start pixel */
-	} else {
+	}
+	else
+	{
 	    GC_FG(gc) = GC_BG(gc);
 	    HIDD_BM_DrawPixel(obj, gc, x, y); /* The start pixel */
             GC_FG(gc) = fg;
@@ -646,7 +727,8 @@ static VOID bitmap_drawline(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
         }
 
 
-	if (doclip) {
+	if (doclip)
+	{
 	    /* Pixel inside ? */
 	    if ( POINT_OUTSIDE_CLIP(gc, x, y ))
 		renderpix = FALSE;
@@ -655,10 +737,14 @@ static VOID bitmap_drawline(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
 	     
 	}
 	
-	if (renderpix) {
-            if(GC_LINEPAT(gc) & maskLine) {
+	if (renderpix)
+	{
+            if(GC_LINEPAT(gc) & maskLine)
+	    {
 		HIDD_BM_DrawPixel(obj, gc, x, y);
-            } else {
+            }
+	    else
+	    {
 		GC_FG(gc) = GC_BG(gc);
 		HIDD_BM_DrawPixel(obj, gc, x, y);
 		GC_FG(gc) = fg;
@@ -666,14 +752,12 @@ static VOID bitmap_drawline(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
 	}
     }
 
-
     ReturnVoid("BitMap::DrawLine ");
 }
 
+/*****************************************************************************************
 
-
-
-/*** BitMap::DrawRect() *****************************************************
+    BitMap::DrawRect()
 
     NAME
         DrawRect
@@ -708,12 +792,14 @@ static VOID bitmap_drawline(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
     TODO
 
     HISTORY
-***************************************************************************/
 
-static VOID bitmap_drawrect(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawRect *msg)
+*****************************************************************************************/
+
+static VOID bitmap_drawrect(OOP_Class *cl, OOP_Object *obj,
+    	    	    	    struct pHidd_BitMap_DrawRect *msg)
 {
-    WORD addX, addY;
     OOP_Object *gc = msg->gc;
+    WORD    	addX, addY;
 
     EnterFunc(bug("BitMap::DrawRect()"));
 
@@ -728,8 +814,9 @@ static VOID bitmap_drawrect(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
     ReturnVoid("BitMap::DrawRect");
 }
 
+/*****************************************************************************************
 
-/*** BitMap::FillRect() *****************************************************
+    BitMap::FillRect()
 
     NAME
         FillRect
@@ -765,14 +852,15 @@ static VOID bitmap_drawrect(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
         Fill with pattern
 
     HISTORY
-***************************************************************************/
 
-static VOID bitmap_fillrect(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawRect *msg)
+*****************************************************************************************/
+
+static VOID bitmap_fillrect(OOP_Class *cl, OOP_Object *obj,
+    	    	    	    struct pHidd_BitMap_DrawRect *msg)
 {
-    WORD y = msg->minY;
-    
     OOP_Object *gc = msg->gc;
-
+    WORD    	y = msg->minY;
+    
     EnterFunc(bug("BitMap::FillRect()"));
 
     for(; y <= msg->maxY; y++)
@@ -783,9 +871,10 @@ static VOID bitmap_fillrect(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
     ReturnVoid("BitMap::FillRect");
 }
 
+/*****************************************************************************************
 
-/*** BitMap::DrawEllipse() **************************************************
-
+    BitMap::DrawEllipse()
+    
     NAME
         DrawEllipse
 
@@ -820,22 +909,25 @@ static VOID bitmap_fillrect(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
         Bugfix
 
     HISTORY
-***************************************************************************/
+
+*****************************************************************************************/
 
 #warning Try to opimize clipping here
-static VOID bitmap_drawellipse(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawEllipse *msg)
+
+static VOID bitmap_drawellipse(OOP_Class *cl, OOP_Object *obj,
+    	    	    	       struct pHidd_BitMap_DrawEllipse *msg)
 {
-    WORD   x = msg->rx, y = 0;     /* ellipse points */
     OOP_Object *gc = msg->gc;
+    WORD    	x = msg->rx, y = 0;     /* ellipse points */
 
     /* intermediate terms to speed up loop */
-    LONG t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
-    LONG t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
-    LONG t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
-    LONG d1 = t2 - t7 + (t4 >> 1);    /* error terms */
-    LONG d2 = (t1 >> 1) - t8 + t5;
+    LONG    	t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
+    LONG    	t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
+    LONG    	t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
+    LONG    	d1 = t2 - t7 + (t4 >> 1);    /* error terms */
+    LONG    	d2 = (t1 >> 1) - t8 + t5;
     
-    BOOL doclip = GC_DOCLIP(gc);
+    BOOL    	doclip = GC_DOCLIP(gc);
     
 
     EnterFunc(bug("BitMap::DrawEllipse()"));
@@ -844,7 +936,8 @@ static VOID bitmap_drawellipse(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
     {
         /* draw 4 points using symmetry */
 	
-	if  (doclip) {
+	if  (doclip)
+	{
 	
 	    if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y + y))
 		HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
@@ -858,7 +951,9 @@ static VOID bitmap_drawellipse(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
 	    if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y - y))
 		HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
 	     
-	} else {
+	}
+	else
+	{
 	    HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
             HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
             HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
@@ -884,8 +979,9 @@ static VOID bitmap_drawellipse(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
     do                              /* rest of top right quadrant */
     {
         /* draw 4 points using symmetry */
-#if 1
-	if  (doclip) {
+    #if 1
+	if  (doclip)
+	{
 	
 	    if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y + y))
 		HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
@@ -899,20 +995,22 @@ static VOID bitmap_drawellipse(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
 	    if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y - y))
 		HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
 	     
-	} else {
+	}
+	else
+	{
 	
 	    HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
             HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
             HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
             HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
         }
-#else
+    #else
 	
         HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
         HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
         HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
         HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
-#endif
+    #endif
         x--;            /* always move left here */
         t8 = t8 - t6;
         if (d2 < 0)     /* move up and left */
@@ -925,14 +1023,16 @@ static VOID bitmap_drawellipse(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
         {
             d2 = d2 + t5 - t8;
         }
+
     } while (x >= 0);
 
 
     ReturnVoid("BitMap::DrawEllipse");
 }
 
+/*****************************************************************************************
 
-/*** BitMap::FillEllipse() **************************************************
+    BitMap::FillEllipse()
 
     NAME
         FillEllipse
@@ -967,19 +1067,21 @@ static VOID bitmap_drawellipse(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
         Bugfix
 
     HISTORY
-***************************************************************************/
 
-static VOID bitmap_fillellipse(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawEllipse *msg)
+*****************************************************************************************/
+
+static VOID bitmap_fillellipse(OOP_Class *cl, OOP_Object *obj,
+    	    	    	       struct pHidd_BitMap_DrawEllipse *msg)
 {
-    WORD x = msg->rx, y = 0;     /* ellipse points */
     OOP_Object *gc = msg->gc;
+    WORD    	x = msg->rx, y = 0;     /* ellipse points */
 
     /* intermediate terms to speed up loop */
-    LONG t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
-    LONG t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
-    LONG t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
-    LONG d1 = t2 - t7 + (t4 >> 1);    /* error terms */
-    LONG d2 = (t1 >> 1) - t8 + t5;
+    LONG    	t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
+    LONG    	t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
+    LONG    	t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
+    LONG    	d1 = t2 - t7 + (t4 >> 1);    /* error terms */
+    LONG    	d2 = (t1 >> 1) - t8 + t5;
 
     EnterFunc(bug("BitMap::FillEllipse()"));
 
@@ -1023,15 +1125,16 @@ static VOID bitmap_fillellipse(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
         {
             d2 = d2 + t5 - t8;
         }
+	
     } while (x >= 0);
-
 
     ReturnVoid("BitMap::FillEllipse");
 }
 
+/*****************************************************************************************
 
 
-/*** BitMap::DrawPolygon() **************************************************
+    BitMap::DrawPolygon()
 
     NAME
         DrawPolygon
@@ -1063,29 +1166,29 @@ static VOID bitmap_fillellipse(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
     TODO
 
     HISTORY
-***************************************************************************/
 
-static VOID bitmap_drawpolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawPolygon *msg)
+*****************************************************************************************/
+
+static VOID bitmap_drawpolygon(OOP_Class *cl, OOP_Object *obj,
+    	    	    	       struct pHidd_BitMap_DrawPolygon *msg)
 {
-    WORD i;
-    
     OOP_Object *gc = msg->gc;
-
+    WORD    	i;
+    
     EnterFunc(bug("BitMap::DrawPolygon()"));
 
     for(i = 2; i < (2 * msg->n); i = i + 2)
     {
         HIDD_BM_DrawLine(obj, gc, msg->coords[i - 2], msg->coords[i - 1],
-                              msg->coords[i    ], msg->coords[i + 1]
-                        );
+                              msg->coords[i], msg->coords[i + 1]);
     }
 
     ReturnVoid("BitMap::DrawPolygon");
 }
 
+/*****************************************************************************************
 
-
-/*** BitMap::FillPolygon() **************************************************
+    BitMap::FillPolygon()
 
     NAME
         FillPolygon()
@@ -1120,7 +1223,8 @@ static VOID bitmap_drawpolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
     TODO
 
     HISTORY
-***************************************************************************/
+
+*****************************************************************************************/
 
 static VOID bitmap_fillpolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawPolygon *msg)
 {
@@ -1132,9 +1236,9 @@ static VOID bitmap_fillpolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
     ReturnVoid("BitMap::FillPolygon");
 }
 
+/*****************************************************************************************
 
-
-/*** BitMap::DrawText() *****************************************************
+    BitMap::DrawText()
 
     NAME
         DrawText()
@@ -1172,22 +1276,23 @@ static VOID bitmap_fillpolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
         - Fontstyle
 
     HISTORY
-***************************************************************************/
 
-static VOID bitmap_drawtext(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawText *msg)
+*****************************************************************************************/
+
+static VOID bitmap_drawtext(OOP_Class *cl, OOP_Object *obj,
+    	    	    	    struct pHidd_BitMap_DrawText *msg)
 {
-    OOP_Object *gc = msg->gc;
+    OOP_Object      *gc = msg->gc;
     struct TextFont *font  = GC_FONT(gc);
-    UBYTE  *charPatternPtr = font->tf_CharData;
-    UWORD  modulo          = font->tf_Modulo;
-    ULONG  charLog;
-    UBYTE  ch;              /* current character to print               */
-    WORD   fx, fx2, fy, fw; /* position and length of character in the  */
+    UBYTE   	    *charPatternPtr = font->tf_CharData;
+    UWORD   	    modulo          = font->tf_Modulo;
+    ULONG   	    charLog;
+    UBYTE   	    ch;              /* current character to print               */
+    WORD    	    fx, fx2, fy, fw; /* position and length of character in the  */
                             /* character bitmap                         */
-    WORD   xMem = msg->x;   /* position in bitmap                       */
-    WORD   yMem = msg->y - font->tf_Baseline;
-    WORD   x, y, i;
-
+    WORD    	    xMem = msg->x;   /* position in bitmap                       */
+    WORD    	    yMem = msg->y - font->tf_Baseline;
+    WORD    	    x, y, i;
 
     ULONG GetPixel(WORD x, WORD y)
     {
@@ -1256,8 +1361,9 @@ static VOID bitmap_drawtext(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
     ReturnVoid("BitMap::DrawText");
 }
 
+/*****************************************************************************************
 
-/*** BitMap::DrawFillText () ************************************************
+    BitMap::DrawFillText ()
 
     NAME
         DrawFillText()
@@ -1294,7 +1400,8 @@ static VOID bitmap_drawtext(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
     TODO
 
     HISTORY
-***************************************************************************/
+
+*****************************************************************************************/
 
 static VOID bitmap_drawfilltext(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawText *msg)
 {
@@ -1306,9 +1413,9 @@ static VOID bitmap_drawfilltext(OOP_Class *cl, OOP_Object *obj, struct pHidd_Bit
     ReturnVoid("BitMap::DrawFillText");
 }
 
+/*****************************************************************************************
 
-
-/*** BitMap::FillSpan() *****************************************************
+    BitMap::FillSpan()
 
     NAME
         FillSpan()
@@ -1338,7 +1445,8 @@ static VOID bitmap_drawfilltext(OOP_Class *cl, OOP_Object *obj, struct pHidd_Bit
     TODO
 
     HISTORY
-***************************************************************************/
+
+*****************************************************************************************/
 
 static VOID bitmap_fillspan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawText *msg)
 {
@@ -1350,8 +1458,9 @@ static VOID bitmap_fillspan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
     ReturnVoid("BitMap::FillSpan");
 }
 
+/*****************************************************************************************
 
-/*** BitMap::Clear() ********************************************************
+    BitMap::Clear()
 
     NAME
         Clear()
@@ -1381,11 +1490,11 @@ static VOID bitmap_fillspan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
     TODO
 
     HISTORY
-***************************************************************************/
+
+*****************************************************************************************/
 
 static VOID bitmap_clear(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_Clear *msg)
 {
-
     WORD  x, y;
     ULONG width, height;
 
@@ -1405,6 +1514,8 @@ static VOID bitmap_clear(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_Cle
     ReturnVoid("BitMap::Clear");
 }
 
+/****************************************************************************************/
+
 static LONG inline getpixfmtbpp(OOP_Class *cl, OOP_Object *o, HIDDT_StdPixFmt stdpf)
 {
     OOP_Object *pf;
@@ -1413,7 +1524,8 @@ static LONG inline getpixfmtbpp(OOP_Class *cl, OOP_Object *o, HIDDT_StdPixFmt st
     
     data = OOP_INST_DATA(cl, o);
     
-    switch (stdpf) {
+    switch (stdpf)
+    {
     	case vHidd_StdPixFmt_Native:
 	    OOP_GetAttr(data->prot.pixfmt, aHidd_PixFmt_BytesPerPixel, &bpp);
 	    break;
@@ -1424,39 +1536,30 @@ static LONG inline getpixfmtbpp(OOP_Class *cl, OOP_Object *o, HIDDT_StdPixFmt st
 	    
 	default:
 	    pf = HIDD_Gfx_GetPixFmt(data->gfxhidd, stdpf);
-	    if (NULL == pf) {
+	    
+	    if (NULL == pf)
+	    {
 		D(bug("!!! INVALID PIXFMT IN BitMap::PutImage(): %d !!!\n", stdpf));
-	    } else {
+	    }
+	    else
+	    {
 		OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bpp);
 	    }
 	    break;
     }
+    
     return bpp;
 }
 
-#if 0
-static VOID bitmap_getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
-{
-    WORD x, y;
-    ULONG *pixarray = (ULONG *)msg->pixels;
-    
-    for (y = 0; y < msg->height; y ++)
-    {
-    	for (x = 0; x < msg->width; x ++)
-    	{
-	    *pixarray ++ = HIDD_BM_GetPixel(o, x + msg->x , y + msg->y);
-	}
-    }
-    return;
-}
-#endif
+/****************************************************************************************/
 
-static VOID bitmap_getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
+static VOID bitmap_getimage(OOP_Class *cl, OOP_Object *o,
+    	    	    	    struct pHidd_BitMap_GetImage *msg)
 {
-    WORD x, y;
-    UBYTE *pixarray = (UBYTE *)msg->pixels;
-    LONG bpp;
-    struct HIDDBitMapData *data;
+    WORD    	    	    x, y;
+    UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
+    LONG    	    	    bpp;
+    struct HIDDBitMapData   *data;
     
     data = OOP_INST_DATA(cl, o);
     
@@ -1465,7 +1568,8 @@ static VOID bitmap_getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
     
     
     bpp = getpixfmtbpp(cl, o, msg->pixFmt);
-    if (-1 == bpp) {
+    if (-1 == bpp)
+    {
 	D(bug("!!! INVALID PIXFMT IN BitMap::PutImage(): %d !!!\n", msg->pixFmt));
 	return;
     }
@@ -1541,13 +1645,16 @@ static VOID bitmap_getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
     ReturnVoid("BitMap::GetImage");
 }
 
-static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
+/****************************************************************************************/
+
+static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o,
+    	    	    	    struct pHidd_BitMap_PutImage *msg)
 {
-    WORD x, y;
-    UBYTE *pixarray = (UBYTE *)msg->pixels;
-    ULONG old_fg;
-    LONG bpp;
-    struct HIDDBitMapData *data;
+    WORD    	    	    x, y;
+    UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
+    ULONG   	    	    old_fg;
+    LONG    	    	    bpp;
+    struct HIDDBitMapData   *data;
     
     OOP_Object *gc = msg->gc;
     
@@ -1558,12 +1665,12 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
     
     
     bpp = getpixfmtbpp(cl, o, msg->pixFmt);
-    if (-1 == bpp) {
+    if (-1 == bpp)
+    {
 	D(bug("!!! INVALID PIXFMT IN BitMap::PutImage(): %d !!!\n", msg->pixFmt));
 	return;
     }
-    
-        
+           
     switch(msg->pixFmt)
     {
     	case vHidd_StdPixFmt_Native:
@@ -1577,11 +1684,26 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
     		for (x = 0; x < msg->width; x ++)
     		{
 		    register HIDDT_Pixel pix;
-		    switch (bpp) {
-	    		case 1: pix = *((UBYTE *)pixarray) & 0x000000FF; pixarray ++; break;
-			case 2: pix = *((UWORD *)pixarray) & 0x0000FFFF; pixarray += 2; break;
-			case 3: D(bug("PUTIMAGE: 3  BYTESPERPIX NOT HANDLED YET\n")); break;
-			case 4: pix = *((ULONG *)pixarray); pixarray += 4; break;
+
+		    switch (bpp)
+		    {
+	    		case 1:
+			    pix = *((UBYTE *)pixarray) & 0x000000FF;
+			    pixarray ++;
+			    break;
+			    
+			case 2:
+			    pix = *((UWORD *)pixarray) & 0x0000FFFF;
+			    pixarray += 2;
+			    break;
+			    
+			case 3:
+			    D(bug("PUTIMAGE: 3  BYTESPERPIX NOT HANDLED YET\n"));
+			    break;
+			    
+			case 4:
+			    pix = *((ULONG *)pixarray); pixarray += 4;
+			    break;
 
 		    }
 
@@ -1638,17 +1760,17 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
     ReturnVoid("BitMap::PutImage");
 }
 
-/*** BitMap::BlitColorExpansion() **********************************************/
-static VOID bitmap_blitcolexp(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
-{
+/****************************************************************************************/
 
-    ULONG cemd;
-    ULONG fg, bg;
-    LONG x, y;
+static VOID bitmap_blitcolexp(OOP_Class *cl, OOP_Object *o,
+    	    	    	      struct pHidd_BitMap_BlitColorExpansion *msg)
+{
+    ULONG   cemd;
+    ULONG   fg, bg;
+    LONG    x, y;
     
     OOP_Object *gc = msg->gc;
-    
-    
+       
     EnterFunc(bug("BitMap::BlitColorExpansion(srcBM=%p, srcX=%d, srcY=%d, destX=%d, destY=%d, width=%d, height=%d)\n",
     		msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
 		
@@ -1675,16 +1797,21 @@ if (is_set)
 else
     bug(" "); 
 */	    
-	    if (is_set) {
+	    if (is_set)
+	    {
 		HIDD_BM_DrawPixel(o, gc, x + msg->destX, y + msg->destY);
-	    } else {
-		if (cemd & vHidd_GC_ColExp_Opaque) {
+	    }
+	    else
+	    {
+		if (cemd & vHidd_GC_ColExp_Opaque)
+		{
 		    /* Write bixel with BG pen */
 		    GC_FG(gc) = bg;
 		    HIDD_BM_DrawPixel(o, gc, x + msg->destX, y + msg->destY);
 		    /* Reset to FG pen */
 		    GC_FG(gc) = fg;
 		}
+		
 	    } /* if () */
 	    
 	} /* for (each x) */
@@ -1697,19 +1824,20 @@ else
     
 }
 
+/****************************************************************************************/
 
-
-/*** BitMap::BytesPerLine() **********************************************/
 static ULONG bitmap_bytesperline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BytesPerLine *msg)
 {
      ULONG bpl;
      
-     switch (msg->pixFmt) {
+     switch (msg->pixFmt)
+     {
          case vHidd_StdPixFmt_Native32:
 	     bpl = sizeof (HIDDT_Pixel) * msg->width;
 	     break;
 	     
-	 case vHidd_StdPixFmt_Native: {
+	 case vHidd_StdPixFmt_Native:
+	 {
 	     struct HIDDBitMapData *data;
 	     
 	     data = OOP_INST_DATA(cl, o);
@@ -1718,17 +1846,21 @@ static ULONG bitmap_bytesperline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 	     break;
 	}
 	     
-	default: {
-	    OOP_Object *pf;
-	    struct HIDDBitMapData *data;
+	default:
+	{
+	    OOP_Object      	    *pf;
+	    struct HIDDBitMapData   *data;
 	    
 	    data = OOP_INST_DATA(cl, o);
 	    
 	    pf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
-	    if (NULL == pf) {
+	    
+	    if (NULL == pf)
+	    {
 		D(bug("!!! COULD NOT GET STD PIXFMT IN BitMap::BytesPerLine() !!!\n"));
 		return 0;
 	    }
+	    
 	    bpl = ((HIDDT_PixelFormat *)pf)->size * msg->width;
 	    break;
 	}
@@ -1737,21 +1869,22 @@ static ULONG bitmap_bytesperline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
      return bpl;
      
 }
-/*** BitMap::Set() *****************************************************/
+
+/****************************************************************************************/
 
 /*
-
    This makes it easier to create a subclass of the graphics hidd.
    It only allowd to use this method in the p_RootNew method of a
    bitmap subclass.
-
 */
+
+/****************************************************************************************/
 
 static VOID bitmap_set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
-    struct HIDDBitMapData *data = OOP_INST_DATA(cl, obj);
-    struct TagItem *tag, *tstate;
-    ULONG  idx;
+    struct HIDDBitMapData   *data = OOP_INST_DATA(cl, obj);
+    struct TagItem  	    *tag, *tstate;
+    ULONG   	    	    idx;
 
 /*    EnterFunc(bug("BitMap::Set()\n"));
 */
@@ -1762,12 +1895,19 @@ static VOID bitmap_set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
         {
             switch(idx)
             {
-                case aoHidd_BitMap_Width         : data->width         = tag->ti_Data; break;
-                case aoHidd_BitMap_Height        : data->height        = tag->ti_Data; break;
+                case aoHidd_BitMap_Width:
+		    data->width = tag->ti_Data;
+		    break;
+		    
+                case aoHidd_BitMap_Height:
+		    data->height = tag->ti_Data;
+		    break;
 
-#if 0
-                case aoHidd_BitMap_ColorTab      : data->colorTab      = (APTR) tag->ti_Data; break;
-#endif
+    	    #if 0
+                case aoHidd_BitMap_ColorTab:
+		    data->colorTab = (APTR)tag->ti_Data;
+		    break;
+    	    #endif
 
 		default:
 		    D(bug("!!! TRYING TO SET NONSETTABLE BITMAP ATTR %d !!!\n", idx));
@@ -1780,11 +1920,13 @@ static VOID bitmap_set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     return;
 }
 
+/****************************************************************************************/
 
-static OOP_Object *bitmap_setcolormap(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColorMap *msg)
+static OOP_Object *bitmap_setcolormap(OOP_Class *cl, OOP_Object *o,
+    	    	    	    	      struct pHidd_BitMap_SetColorMap *msg)
 {
-    struct HIDDBitMapData *data;
-    OOP_Object *old;
+    struct HIDDBitMapData   *data;
+    OOP_Object	    	    *old;
     
     data = OOP_INST_DATA(cl, o);
     
@@ -1794,27 +1936,30 @@ static OOP_Object *bitmap_setcolormap(OOP_Class *cl, OOP_Object *o, struct pHidd
     return old;
 }
 
-static HIDDT_Pixel bitmap_mapcolor(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_MapColor *msg)
-{
+/****************************************************************************************/
 
+static HIDDT_Pixel bitmap_mapcolor(OOP_Class *cl, OOP_Object *o,
+    	    	    	    	   struct pHidd_BitMap_MapColor *msg)
+{
     HIDDT_PixelFormat *pf = BM_PIXFMT(o);
     
     HIDDT_Pixel red	= msg->color->red;
     HIDDT_Pixel green	= msg->color->green;
     HIDDT_Pixel blue	= msg->color->blue;
-    
-    
-    
+        
     /* This code assumes that sizeof (HIDDT_Pixel is a multimple of sizeof(col->#?)
        which should be true for most (all ?) systems. (I have never heard
        of any system with for example 3 byte types.
     */
 
-    if (IS_TRUECOLOR(pf)) {
+    if (IS_TRUECOLOR(pf))
+    {
     	msg->color->pixval = MAP_RGB(red, green, blue, pf);
-    } else {
-    	struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
-	HIDDT_Color *ctab;
+    }
+    else
+    {
+    	struct HIDDBitMapData 	*data = OOP_INST_DATA(cl, o);
+	HIDDT_Color 	    	*ctab;
 	
 	ctab = ((HIDDT_ColorLUT *)data->colmap)->colors;
 	/* Search for the best match in the color table */
@@ -1825,20 +1970,23 @@ static HIDDT_Pixel bitmap_mapcolor(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
     return msg->color->pixval;
 }
 
+/****************************************************************************************/
+
 static VOID bitmap_unmappixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UnmapPixel *msg)
 {
 
     HIDDT_PixelFormat *pf = BM_PIXFMT(o);
     
-    if (IS_TRUECOLOR(pf)) {
-
+    if (IS_TRUECOLOR(pf))
+    {
     	msg->color->red		= RED_COMP	(msg->pixel, pf);
     	msg->color->green	= GREEN_COMP	(msg->pixel, pf);
     	msg->color->blue	= BLUE_COMP	(msg->pixel, pf);
-    } else {
-    	struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
-	
-	HIDDT_ColorLUT *clut;
+    }
+    else
+    {
+    	struct HIDDBitMapData 	*data = OOP_INST_DATA(cl, o);	
+	HIDDT_ColorLUT      	*clut;
 	
 	clut = (HIDDT_ColorLUT *)data->colmap;
 	
@@ -1851,16 +1999,24 @@ static VOID bitmap_unmappixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
 	*msg->color = clut->colors[msg->pixel];
     	
     }
+    
     /* Unnecesart, but ... */
     msg->color->pixval	= msg->pixel;
 }
 
-/* Default implementation of direct access funcs. Just return FALSE */
-static BOOL bitmap_obtaindirectaccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ObtainDirectAccess *msg)
+/****************************************************************************************/
+
+static BOOL bitmap_obtaindirectaccess(OOP_Class *cl, OOP_Object *o,
+    	    	    	    	      struct pHidd_BitMap_ObtainDirectAccess *msg)
 {
+    /* Default implementation of direct access funcs. Just return FALSE */
     return FALSE;
 }
-static VOID bitmap_releasedirectaccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ReleaseDirectAccess *msg)
+
+/****************************************************************************************/
+
+static VOID bitmap_releasedirectaccess(OOP_Class *cl, OOP_Object *o,
+    	    	    	    	       struct pHidd_BitMap_ReleaseDirectAccess *msg)
 {
      D(bug("!!! BitMap BaseClasse ReleaseDirectAccess() called !!!\n"));
      D(bug("!!! This should never happen and is probably due to a buggy implementation in the subclass !!!\n"));
@@ -1868,33 +2024,36 @@ static VOID bitmap_releasedirectaccess(OOP_Class *cl, OOP_Object *o, struct pHid
      return;
 }
 
-static VOID bitmap_scalebitmap(OOP_Class * cl, OOP_Object *o, struct pHidd_BitMap_BitMapScale * msg)
+/****************************************************************************************/
+
+static VOID bitmap_scalebitmap(OOP_Class * cl, OOP_Object *o,
+    	    	    	       struct pHidd_BitMap_BitMapScale * msg)
 {
-    struct BitScaleArgs * bsa = msg->bsa;
-    UWORD ys = bsa-> bsa_SrcY;
-    ULONG xs = bsa-> bsa_SrcX;
-    ULONG count = 0;
-    ULONG dxs = bsa->bsa_SrcWidth;
-    ULONG dys = bsa->bsa_SrcHeight;
-    LONG accuyd = - (dys >> 1);
-    LONG accuxd = - (dxs >> 1);
-    ULONG this_x;
-    ULONG y;
-    HIDDT_Color col;
-    HIDDT_PixelFormat * srcpf, * dstpf;
-    OOP_Object * gc = msg->gc;
-    OOP_Object * dst, * src;
-    HIDDT_Pixel pix;
-    UWORD * linepattern;
+    struct BitScaleArgs     *bsa = msg->bsa;
+    UWORD   	    	    ys = bsa-> bsa_SrcY;
+    ULONG   	    	    xs = bsa-> bsa_SrcX;
+    ULONG   	    	    count = 0;
+    ULONG   	    	    dxs = bsa->bsa_SrcWidth;
+    ULONG   	    	    dys = bsa->bsa_SrcHeight;
+    LONG    	    	    accuyd = - (dys >> 1);
+    LONG    	    	    accuxd = - (dxs >> 1);
+    ULONG   	    	    this_x;
+    ULONG   	    	    y;
+    HIDDT_Color     	    col;
+    HIDDT_PixelFormat 	    *srcpf, *dstpf;
+    OOP_Object      	    *gc = msg->gc;
+    OOP_Object      	    *dst, *src;
+    HIDDT_Pixel     	    pix;
+    UWORD   	    	    *linepattern;
 
     if (NULL != (linepattern = (UWORD *) AllocMem(2*bsa->bsa_DestHeight, 0)))
     {
-        ULONG dyd = bsa->bsa_DestHeight;
-        ULONG dxd = bsa->bsa_DestWidth;
-        LONG accuys = dyd;
-        LONG accuxs = dxd;
-        UWORD DestHeight = bsa->bsa_DestHeight;
-        UWORD DestWidth  = bsa->bsa_DestWidth + bsa->bsa_DestX;
+        ULONG 	dyd = bsa->bsa_DestHeight;
+        ULONG 	dxd = bsa->bsa_DestWidth;
+        LONG 	accuys = dyd;
+        LONG 	accuxs = dxd;
+        UWORD 	DestHeight = bsa->bsa_DestHeight;
+        UWORD 	DestWidth  = bsa->bsa_DestWidth + bsa->bsa_DestX;
         /*
          * Fill in the LinePattern array that tells me which original
          * line goes to which destination line.
@@ -1908,11 +2067,10 @@ static VOID bitmap_scalebitmap(OOP_Class * cl, OOP_Object *o, struct pHidd_BitMa
                 accuys += dyd;
             }
             linepattern[count] = ys;
-//bug("[%d]=%d\n",count, ys);
+    	    //bug("[%d]=%d\n",count, ys);
             count++;
         }
-
-    
+ 
         src = msg->src;
         dst = msg->dst;
     
@@ -1935,7 +2093,7 @@ static VOID bitmap_scalebitmap(OOP_Class * cl, OOP_Object *o, struct pHidd_BitMa
              */
             for (y = 0; y < bsa->bsa_DestHeight; y++)
             {
-//bug("Reading from source at %d/%d\t",xs,linepattern[y]);
+    	    	//bug("Reading from source at %d/%d\t",xs,linepattern[y]);
                 pix = HIDD_BM_GetPixel(src, xs, linepattern[y]);
                      
                 if (srcpf == dstpf)
@@ -1945,7 +2103,7 @@ static VOID bitmap_scalebitmap(OOP_Class * cl, OOP_Object *o, struct pHidd_BitMa
                      HIDD_BM_UnmapPixel(src,pix,&col);
                      GC_FG(gc) = HIDD_BM_MapColor(src, &col);
                 }
-//bug("Writing to destination at %d/%d\n",count,y);
+    	    	//bug("Writing to destination at %d/%d\n",count,y);
 
                 HIDD_BM_DrawPixel(dst, gc, count, y);
             } /* for (y =...) */
@@ -1955,24 +2113,32 @@ static VOID bitmap_scalebitmap(OOP_Class * cl, OOP_Object *o, struct pHidd_BitMa
     }
 }
 
-/******* PRIVATE ***************************/
-static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetBitMapTags *msg)
+/****************************************************************************************/
+
+/* private ! */
+
+/****************************************************************************************/
+
+static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o,
+    	    	    	    	 struct pHidd_BitMap_SetBitMapTags *msg)
 {
-    struct HIDDBitMapData *data;
-    OOP_Object *pf;
-    IPTR attrs[num_Hidd_BitMap_Attrs];
+    struct HIDDBitMapData   *data;
+    OOP_Object      	    *pf;
+    IPTR    	    	    attrs[num_Hidd_BitMap_Attrs];
     DECLARE_ATTRCHECK(bitmap);
     
     data = OOP_INST_DATA(cl, o);
     
     if (0 != OOP_ParseAttrs(msg->bitMapTags
     		, attrs, num_Hidd_BitMap_Attrs
-		, &ATTRCHECK(bitmap), HiddBitMapAttrBase)) {
+		, &ATTRCHECK(bitmap), HiddBitMapAttrBase))
+    {
 	D(bug("!!! FAILED PARSING IN BitMap::SetBitMapTags !!!\n"));
 	return FALSE;
     }
 
-    if (GOT_BM_ATTR(PixFmtTags)) {
+    if (GOT_BM_ATTR(PixFmtTags))
+    {
     	/* Allready a pixfmt registered ? */
 
 	pf = HIDD_Gfx_RegisterPixFmt(data->gfxhidd, (struct TagItem *)attrs[AO(PixFmtTags)]);
@@ -1995,97 +2161,99 @@ static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
     return TRUE;
 }
 
-/*** init_bitmapclass *********************************************************/
+/****************************************************************************************/
 
 #undef OOPBase
 #undef SysBase
 
-#define OOPBase (csd->oopbase)
-#define SysBase (csd->sysbase)
+#undef csd
 
-#define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 25
+#define OOPBase     	    (csd->oopbase)
+#define SysBase     	    (csd->sysbase)
+
+#define NUM_ROOT_METHODS    4
+#define NUM_BITMAP_METHODS  25
+
+/****************************************************************************************/
 
 OOP_Class *init_bitmapclass(struct class_static_data *csd)
 {
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
-        {(IPTR (*)())bitmap_new    , moRoot_New    },
-        {(IPTR (*)())bitmap_dispose, moRoot_Dispose},
-        {(IPTR (*)())bitmap_get    , moRoot_Get    },
-        {(IPTR (*)())bitmap_set	   , moRoot_Set	},
-        {NULL, 0UL}
+        {(IPTR (*)())bitmap_new     , moRoot_New    },
+        {(IPTR (*)())bitmap_dispose , moRoot_Dispose},
+        {(IPTR (*)())bitmap_get     , moRoot_Get    },
+        {(IPTR (*)())bitmap_set	    , moRoot_Set    },
+        {NULL	    	    	    , 0UL   	    }
     };
 
     struct OOP_MethodDescr bitmap_descr[NUM_BITMAP_METHODS + 1] =
     {
-        {(IPTR (*)())bitmap_setcolors	  	, moHidd_BitMap_SetColors	},
-        {(IPTR (*)())bitmap_drawpixel		, moHidd_BitMap_DrawPixel	},
-        {(IPTR (*)())bitmap_drawline		, moHidd_BitMap_DrawLine	},
-        {(IPTR (*)())bitmap_drawrect		, moHidd_BitMap_DrawRect	},
-        {(IPTR (*)())bitmap_fillrect 		, moHidd_BitMap_FillRect	},
-        {(IPTR (*)())bitmap_drawellipse		, moHidd_BitMap_DrawEllipse	},
-        {(IPTR (*)())bitmap_fillellipse		, moHidd_BitMap_FillEllipse	},
-        {(IPTR (*)())bitmap_drawpolygon		, moHidd_BitMap_DrawPolygon	},
-        {(IPTR (*)())bitmap_fillpolygon		, moHidd_BitMap_FillPolygon	},
-        {(IPTR (*)())bitmap_drawtext		, moHidd_BitMap_DrawText	},
-        {(IPTR (*)())bitmap_drawfilltext	, moHidd_BitMap_FillText	},
-        {(IPTR (*)())bitmap_fillspan		, moHidd_BitMap_FillSpan	},
-        {(IPTR (*)())bitmap_clear		, moHidd_BitMap_Clear		},
-        {(IPTR (*)())bitmap_putimage		, moHidd_BitMap_PutImage		},
-        {(IPTR (*)())bitmap_getimage		, moHidd_BitMap_GetImage		},
-        {(IPTR (*)())bitmap_blitcolexp		, moHidd_BitMap_BlitColorExpansion	},
-        {(IPTR (*)())bitmap_bytesperline	, moHidd_BitMap_BytesPerLine	},
-	{(IPTR (*)())bitmap_convertpixels	, moHidd_BitMap_ConvertPixels	},
-	{(IPTR (*)())bitmap_setcolormap		, moHidd_BitMap_SetColorMap	},
-	{(IPTR (*)())bitmap_mapcolor		, moHidd_BitMap_MapColor	},
-	{(IPTR (*)())bitmap_unmappixel		, moHidd_BitMap_UnmapPixel	},
-	{(IPTR (*)())bitmap_obtaindirectaccess	, moHidd_BitMap_ObtainDirectAccess	},
-	{(IPTR (*)())bitmap_releasedirectaccess	, moHidd_BitMap_ReleaseDirectAccess	},
-	{(IPTR (*)())bitmap_scalebitmap         , moHidd_BitMap_BitMapScale     },
+        {(IPTR (*)())bitmap_setcolors	  	, moHidd_BitMap_SetColors	    },
+        {(IPTR (*)())bitmap_drawpixel		, moHidd_BitMap_DrawPixel	    },
+        {(IPTR (*)())bitmap_drawline		, moHidd_BitMap_DrawLine	    },
+        {(IPTR (*)())bitmap_drawrect		, moHidd_BitMap_DrawRect	    },
+        {(IPTR (*)())bitmap_fillrect 		, moHidd_BitMap_FillRect	    },
+        {(IPTR (*)())bitmap_drawellipse		, moHidd_BitMap_DrawEllipse	    },
+        {(IPTR (*)())bitmap_fillellipse		, moHidd_BitMap_FillEllipse	    },
+        {(IPTR (*)())bitmap_drawpolygon		, moHidd_BitMap_DrawPolygon	    },
+        {(IPTR (*)())bitmap_fillpolygon		, moHidd_BitMap_FillPolygon	    },
+        {(IPTR (*)())bitmap_drawtext		, moHidd_BitMap_DrawText	    },
+        {(IPTR (*)())bitmap_drawfilltext	, moHidd_BitMap_FillText	    },
+        {(IPTR (*)())bitmap_fillspan		, moHidd_BitMap_FillSpan	    },
+        {(IPTR (*)())bitmap_clear		, moHidd_BitMap_Clear		    },
+        {(IPTR (*)())bitmap_putimage		, moHidd_BitMap_PutImage	    },
+        {(IPTR (*)())bitmap_getimage		, moHidd_BitMap_GetImage	    },
+        {(IPTR (*)())bitmap_blitcolexp		, moHidd_BitMap_BlitColorExpansion  },
+        {(IPTR (*)())bitmap_bytesperline	, moHidd_BitMap_BytesPerLine	    },
+	{(IPTR (*)())bitmap_convertpixels	, moHidd_BitMap_ConvertPixels	    },
+	{(IPTR (*)())bitmap_setcolormap		, moHidd_BitMap_SetColorMap	    },
+	{(IPTR (*)())bitmap_mapcolor		, moHidd_BitMap_MapColor	    },
+	{(IPTR (*)())bitmap_unmappixel		, moHidd_BitMap_UnmapPixel	    },
+	{(IPTR (*)())bitmap_obtaindirectaccess	, moHidd_BitMap_ObtainDirectAccess  },
+	{(IPTR (*)())bitmap_releasedirectaccess	, moHidd_BitMap_ReleaseDirectAccess },
+	{(IPTR (*)())bitmap_scalebitmap         , moHidd_BitMap_BitMapScale         },
 
 	/* PRIVATE METHODS */	
 #warning This is a hack to make the late initialization of planar bitmaps work
-	{(IPTR (*)())bitmap_setbitmaptags	, moHidd_BitMap_SetBitMapTags	},
+	{(IPTR (*)())bitmap_setbitmaptags	, moHidd_BitMap_SetBitMapTags	    },
 	
-        {NULL, 0UL}
+        {NULL	    	    	    	    	, 0UL	    	    	    	    }
     };
     
     struct OOP_InterfaceDescr ifdescr[] =
     {
-        {root_descr,    IID_Root       , NUM_ROOT_METHODS},
-        {bitmap_descr,  IID_Hidd_BitMap, NUM_BITMAP_METHODS},
-        {NULL, NULL, 0}
+        {root_descr 	, IID_Root          , NUM_ROOT_METHODS 	    },
+        {bitmap_descr	, IID_Hidd_BitMap   , NUM_BITMAP_METHODS    },
+        {NULL	    	, NULL	    	    , 0     	    	    }
     };
 
     OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
 
     struct TagItem tags[] =
     {
-        {aMeta_SuperID,        (IPTR) CLID_Root},
-        {aMeta_InterfaceDescr, (IPTR) ifdescr},
-        {aMeta_ID,             (IPTR) CLID_Hidd_BitMap},
-        {aMeta_InstSize,       (IPTR) sizeof(struct HIDDBitMapData)},
-        {TAG_DONE, 0UL}
+        {aMeta_SuperID	    	, (IPTR) CLID_Root  	    	    	},
+        {aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	    	},
+        {aMeta_ID   	    	, (IPTR) CLID_Hidd_BitMap   	    	},
+        {aMeta_InstSize     	, (IPTR) sizeof(struct HIDDBitMapData)	},
+        {TAG_DONE   	    	, 0UL	    	    	    	    	}
     };
     
     OOP_Class *cl = NULL;
 
     EnterFunc(bug("init_bitmapclass(csd=%p)\n", csd));
 
-    if(MetaAttrBase)   {
-#ifndef AROS_CREATE_ROM_BUG
-	if (OOP_ObtainAttrBases(attrbases)) 
-#endif
+    if(MetaAttrBase)
+    {
+    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
+    	if(NULL != cl)
 	{
-    	    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	    if(NULL != cl) {
-        	D(bug("BitMap class ok\n"));
-        	csd->bitmapclass = cl;
-        	cl->UserData     = (APTR) csd;
-		OOP_AddClass(cl);
-            }
+            D(bug("BitMap class ok\n"));
+            csd->bitmapclass = cl;
+            cl->UserData     = (APTR) csd;
+	    OOP_AddClass(cl);
         }
+	
     } /* if(MetaAttrBase) */
     
     if (NULL == cl)
@@ -2094,45 +2262,52 @@ OOP_Class *init_bitmapclass(struct class_static_data *csd)
     ReturnPtr("init_bitmapclass", OOP_Class *,  cl);
 }
 
-
-/*** free_bitmapclass *********************************************************/
+/****************************************************************************************/
 
 void free_bitmapclass(struct class_static_data *csd)
 {
     EnterFunc(bug("free_bitmapclass(csd=%p)\n", csd));
 
-    if(NULL != csd) {
-	if (NULL != csd->bitmapclass) {
-	
+    if(NULL != csd)
+    {
+	if (NULL != csd->bitmapclass)
+	{	
 	    OOP_RemoveClass(csd->bitmapclass);
     	    OOP_DisposeObject((OOP_Object *) csd->bitmapclass);
     	    csd->bitmapclass = NULL;
 	}
-#ifndef AROS_CREATE_ROM_BUG	
-	OOP_ReleaseAttrBases(attrbases);
-#endif
     }
 
     ReturnVoid("free_bitmapclass");
 }
 
+/****************************************************************************************/
 
 #undef OOPBase
 #define OOPBase (OOP_OOPBASE(o))
 
-/*********** Stubs for private methods **********************/
+/****************************************************************************************/
+
+#ifndef AROS_CREATE_ROM
+#  define STATIC_MID static OOP_MethodID mid
+#else
+#  define STATIC_MID OOP_MethodID mid = 0
+#endif
+
+/****************************************************************************************/
+
 BOOL HIDD_BitMap_SetBitMapTags(OOP_Object *o, struct TagItem *bitMapTags)
 {
-   static OOP_MethodID mid; /* Dont initialize with "=0" otherwise it goes into DATA segment */
+    STATIC_MID;   
+    struct pHidd_BitMap_SetBitMapTags 	p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetBitMapTags);
+
+    p.mID = mid;
+
+    p.bitMapTags = bitMapTags;
    
-   struct pHidd_BitMap_SetBitMapTags p;
-   
-   if (!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetBitMapTags);
-   
-   p.mID = mid;
-   
-   p.bitMapTags = bitMapTags;
-   
-   return (BOOL)OOP_DoMethod(o, (OOP_Msg)&p);
-   
+    return (BOOL)OOP_DoMethod(o, (OOP_Msg)&p); 
 }
+
+/****************************************************************************************/

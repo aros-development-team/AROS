@@ -6,6 +6,8 @@
     Lang: english
 */
 
+/****************************************************************************************/
+
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -23,38 +25,31 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-struct chunkybm_data {
+/****************************************************************************************/
+
+struct chunkybm_data
+{
     UBYTE *buffer;
     ULONG bytesperrow;
     ULONG bytesperpixel;
 };
 
-/* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
+#define csd ((struct class_static_data *)cl->UserData)
 
-static OOP_AttrBase HiddBitMapAttrBase;
-static OOP_AttrBase HiddGCAttrBase;
-static OOP_AttrBase HiddPixFmtAttrBase;
-
-static struct OOP_ABDescr attrbases[] = {
-    { IID_Hidd_BitMap,	&HiddBitMapAttrBase	},
-    { IID_Hidd_GC,	&HiddGCAttrBase		},
-    { IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
-    { NULL, NULL }
-};
-
+/****************************************************************************************/
 
 static OOP_Object *chunkybm_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    struct chunkybm_data *data;
+    struct chunkybm_data    *data;
     
-    ULONG width, height;
+    ULONG   	    	    width, height;
     
-    UBYTE alignoffset	= 15;
-    UBYTE aligndiv	= 2;
+    UBYTE   	    	    alignoffset	= 15;
+    UBYTE   	    	    aligndiv	= 2;
     
-    BOOL ok = TRUE;
-    OOP_Object *pf;
-    ULONG bytesperpixel;
+    BOOL    	    	    ok = TRUE;
+    OOP_Object      	    *pf;
+    ULONG   	    	    bytesperpixel;
     
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
@@ -85,12 +80,12 @@ static OOP_Object *chunkybm_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         if(o) OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
         o = NULL;
     }
-
-    
+   
     return o;
     
 }
 
+/****************************************************************************************/
 
 static void chunkybm_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
@@ -106,8 +101,10 @@ static void chunkybm_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     return;
 }
 
+/****************************************************************************************/
 
-static VOID chunkybm_putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
+static VOID chunkybm_putpixel(OOP_Class *cl, OOP_Object *o,
+    	    	    	      struct pHidd_BitMap_PutPixel *msg)
 {
     UBYTE *dest;
     
@@ -117,17 +114,22 @@ static VOID chunkybm_putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
 
     /* bitmap in chunky-mode */
     dest = data->buffer + msg->x * data->bytesperpixel + msg->y * data->bytesperrow;
+    
     switch(data->bytesperpixel)
     {
 	case 1:
-		*((UBYTE *) dest)   = (UBYTE) msg->pixel;
-		break;
+	    *((UBYTE *) dest) = (UBYTE) msg->pixel;
+	    break;
 		
-	case 2: *((UWORD *) dest)   = (UWORD) msg->pixel; break;
-	case 3:	dest[0] = (UBYTE)(msg->pixel >> 16) & 0x000000FF;
-		dest[1] = (UBYTE)(msg->pixel >> 8) & 0x000000FF;
-		dest[2] = (UBYTE)msg->pixel & 0x000000FF;
-		break;
+	case 2:
+	    *((UWORD *) dest) = (UWORD) msg->pixel;
+	    break;
+	    
+	case 3:
+	    dest[0] = (UBYTE)(msg->pixel >> 16) & 0x000000FF;
+	    dest[1] = (UBYTE)(msg->pixel >> 8) & 0x000000FF;
+	    dest[2] = (UBYTE)msg->pixel & 0x000000FF;
+	    break;
 		
 /*	 if (1 == ( ((IPTR)dest) & 1) )
                 {
@@ -141,41 +143,57 @@ static VOID chunkybm_putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
                 }
 		break;
 */
-	case 4: *((ULONG *) dest)   = (ULONG) msg->pixel; break;
+	case 4:
+	    *((ULONG *) dest) = (ULONG) msg->pixel;
+	    break;
     }
 	
 }
 
+/****************************************************************************************/
 
-static ULONG chunkybm_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
+static ULONG chunkybm_getpixel(OOP_Class *cl, OOP_Object *o,
+    	    	    	       struct pHidd_BitMap_GetPixel *msg)
 {
-    HIDDT_Pixel retval;
-    UBYTE *src;
-    struct chunkybm_data *data;
+    HIDDT_Pixel     	    retval;
+    UBYTE   	    	    *src;
+    struct chunkybm_data    *data;
     
     data = OOP_INST_DATA(cl, o);
-    
-        
+          
     src = data->buffer + msg->x * data->bytesperpixel + msg->y * data->bytesperrow;
 
     switch(data->bytesperpixel)
     {
-	case 1: retval = (HIDDT_Pixel) *((UBYTE *) src);
-	break;
-	case 2: retval = (HIDDT_Pixel) *((UWORD *) src); break;
-	case 3: retval = (HIDDT_Pixel) (src[0] << 16) + (src[1] << 8) + src[2]; break;
-	//(*((UBYTE *) src++) << 16) | *((UWORD *) src)); break;
-	case 4: retval = ((ULONG) *((ULONG *) src)); break;
+	case 1:
+	    retval = (HIDDT_Pixel) *((UBYTE *) src);
+	    break;
+	    
+	case 2:
+	    retval = (HIDDT_Pixel) *((UWORD *) src);
+	    break;
+	    
+	case 3:
+	    retval = (HIDDT_Pixel) (src[0] << 16) + (src[1] << 8) + src[2];
+	    break;
+	    
+	    //(*((UBYTE *) src++) << 16) | *((UWORD *) src));
+	    //break;
+	
+	case 4:
+	    retval = ((ULONG) *((ULONG *) src));
+	    break;
     }
 
     return retval;
 }
 
-
-/*** init_chunkybmclass *********************************************************/
+/****************************************************************************************/
 
 #undef OOPBase
 #undef SysBase
+
+#undef csd
 
 #define OOPBase (csd->oopbase)
 #define SysBase (csd->sysbase)
@@ -183,85 +201,85 @@ static ULONG chunkybm_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 #define NUM_ROOT_METHODS   2
 #define NUM_BITMAP_METHODS 2
 
+/****************************************************************************************/
+
 OOP_Class *init_chunkybmclass(struct class_static_data *csd)
 {
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
-        {(IPTR (*)())chunkybm_new    , moRoot_New    },
-        {(IPTR (*)())chunkybm_dispose, moRoot_Dispose},
-        {NULL, 0UL}
+        {(IPTR (*)())chunkybm_new    	, moRoot_New    },
+        {(IPTR (*)())chunkybm_dispose	, moRoot_Dispose},
+        {NULL	    	    	    	, 0UL	    	}
     };
 
     struct OOP_MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
     {
-        {(IPTR (*)())chunkybm_putpixel		, moHidd_BitMap_PutPixel	},
-        {(IPTR (*)())chunkybm_getpixel		, moHidd_BitMap_GetPixel	},
-        {NULL, 0UL}
+        {(IPTR (*)())chunkybm_putpixel	, moHidd_BitMap_PutPixel},
+        {(IPTR (*)())chunkybm_getpixel	, moHidd_BitMap_GetPixel},
+        {NULL	    	    	    	, 0UL	    	    	}
     };
     
     struct OOP_InterfaceDescr ifdescr[] =
     {
-        {root_descr,    IID_Root       , NUM_ROOT_METHODS},
-        {bitMap_descr,  IID_Hidd_BitMap, NUM_BITMAP_METHODS},
-        {NULL, NULL, 0}
+        {root_descr 	, IID_Root          , NUM_ROOT_METHODS	},
+        {bitMap_descr	, IID_Hidd_BitMap   , NUM_BITMAP_METHODS},
+        {NULL	    	, NULL	    	    , 0     	    	}
     };
 
     OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
 
     struct TagItem tags[] =
     {
-        {aMeta_SuperID,        (IPTR) CLID_Hidd_BitMap},
-        {aMeta_InterfaceDescr, (IPTR) ifdescr},
-        {aMeta_ID,             (IPTR) CLID_Hidd_ChunkyBM},
-        {aMeta_InstSize,       (IPTR) sizeof(struct chunkybm_data)},
-        {TAG_DONE, 0UL}
+        {aMeta_SuperID	    	, (IPTR) CLID_Hidd_BitMap   	    	},
+        {aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	    	},
+        {aMeta_ID   	    	, (IPTR) CLID_Hidd_ChunkyBM 	    	},
+        {aMeta_InstSize     	, (IPTR) sizeof(struct chunkybm_data)	},
+        {TAG_DONE   	    	, 0UL	    	    	    	    	}
     };
     
     OOP_Class *cl = NULL;
 
     EnterFunc(bug("init_chunkybmclass(csd=%p)\n", csd));
 
-    if(MetaAttrBase) {
-#ifndef AROS_CREATE_ROM_BUG
-	if (OOP_ObtainAttrBases(attrbases)) 
-#endif
+    if(MetaAttrBase)
+    {
+    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
+	
+    	if(NULL != cl)
 	{
-    	    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	    if(NULL != cl) {
-        	D(bug("Chunky BitMap class ok\n"));
-		
-        	csd->chunkybmclass = cl;
-        	cl->UserData     = (APTR) csd;
-		OOP_AddClass(cl);
-		
-            }
+            D(bug("Chunky BitMap class ok\n"));
+
+            csd->chunkybmclass = cl;
+            cl->UserData     = (APTR) csd;
+	    OOP_AddClass(cl);
+
         }
 	
     } /* if(MetaAttrBase) */
+    
     if (NULL == cl)
 	free_chunkybmclass(csd);
 
     ReturnPtr("init_chunkybmclass", OOP_Class *, cl);
 }
 
-
-/*** free_chunkybmclass *********************************************************/
+/****************************************************************************************/
 
 void free_chunkybmclass(struct class_static_data *csd)
 {
     EnterFunc(bug("free_chunkybmclass(csd=%p)\n", csd));
 
-    if(NULL != csd) {
-    
-	if (NULL != csd->chunkybmclass) {
+    if(NULL != csd)
+    {   
+	if (NULL != csd->chunkybmclass)
+	{
     	    OOP_RemoveClass(csd->chunkybmclass);
 	    OOP_DisposeObject((OOP_Object *)csd->chunkybmclass);
     	    csd->chunkybmclass = NULL;
 	}
-#ifndef AROS_CREATE_ROM_BUG	
-	OOP_ReleaseAttrBases(attrbases);
-#endif
     }
 
     ReturnVoid("free_chunkybmclass");
 }
+
+/****************************************************************************************/
