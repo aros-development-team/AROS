@@ -25,6 +25,13 @@ FILES := amiga2date \
         inquire \
         mathtest \
         cctest \
+        clippingtest \
+        helloworld \
+        oopdemo \
+        scrollerwin \
+        serialmousetest \
+        serialtest \
+        unixio \
         librarytest \
 	scantest \
 	semaphoretest \
