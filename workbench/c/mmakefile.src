@@ -47,7 +47,6 @@ FILES	:= \
     assign \
     avail \
     cd \
-    copy \
     crlist \
     damagelist \
     date \
