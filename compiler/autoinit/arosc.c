@@ -38,9 +38,9 @@ static int postopen(void)
 
     /* passess these values to the library */
     userdata->errnoptr           = &errno;
-    userdata->stdinptr           = &stdin;
-    userdata->stdoutptr          = &stdout;
-    userdata->stderrptr          = &stderr;
+    userdata->stdinptr           = (void **)&stdin;
+    userdata->stdoutptr          = (void **)&stdout;
+    userdata->stderrptr          = (void **)&stderr;
     userdata->startup_jmp_bufptr = &__startup_jmp_buf;
     userdata->startup_errorptr   = &__startup_error;
 
