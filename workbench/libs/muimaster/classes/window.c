@@ -292,15 +292,19 @@ void
 _zune_window_resize (struct MUI_WindowData *data)
 {
     struct Window *win = data->wd_RenderInfo.mri_Window;
-    WORD dx = data->wd_Width  - win->Width;
-    WORD dy = data->wd_Height - win->Height;
-
-    WindowLimits(win, data->wd_MinMax.MinWidth,
-                      data->wd_MinMax.MinHeight,
-                      data->wd_MinMax.MaxWidth,
-                      data->wd_MinMax.MaxHeight);
+    int hborders = win->BorderLeft + win->BorderRight;
+    int vborders = win->BorderTop  + win->BorderBottom;
+    WORD dx = data->wd_Width  - win->Width + hborders;
+    WORD dy = data->wd_Height - win->Height + vborders;
 
     SizeWindow(win, dx, dy);
+
+    /* The following WindowLimits() call doesn't really work because SizeWindow() is async */
+    WindowLimits(win, data->wd_MinMax.MinWidth + hborders,
+                      data->wd_MinMax.MinHeight + vborders,
+                      data->wd_MinMax.MaxWidth + hborders,
+                      data->wd_MinMax.MaxHeight + vborders);
+
 }
 
 /**************/
@@ -1358,15 +1362,11 @@ static ULONG window_Close(struct IClass *cl, Object *obj)
     return TRUE;
 }
 
-static ULONG
-mRecalcDisplay(struct IClass *cl, Object *obj,
-	             struct MUIP_Window_RecalcDisplay *msg)
+static ULONG Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Window_RecalcDisplay *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
-/*      int i; */
+    if (!(data->wd_Flags & MUIWF_OPENED)) return 0;
 
-/*  g_print("recalc\n"); */
-/*  g_print("HIDE\n"); */
     DoMethod(data->wd_RootObject, MUIM_Hide);
 /*      for (i = 0; i < MUII_Count; i++) */
 /*  	zune_imspec_hide(__zprefs.images[i]); */
@@ -1378,8 +1378,8 @@ mRecalcDisplay(struct IClass *cl, Object *obj,
     window_select_dimensions(data);
     _zune_window_resize(data);
     window_show(data);
-//kprintf("Window->RecalcDisplay calling MUI_Redraw()...\n");
-    MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
+
+    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
     return TRUE;
 }
 
@@ -1624,8 +1624,7 @@ AROS_UFH3S(IPTR, Window_Dispatcher,
 	case MUIM_Window_RemEventHandler: return Window_RemEventHandler(cl, obj, (APTR)msg);
 	case MUIM_ConnectParent: return Window_ConnectParent(cl, obj, (APTR)msg);
 	case MUIM_DisconnectParent: return Window_DisconnectParent(cl, obj, (APTR)msg);
-	case MUIM_Window_RecalcDisplay :
-	    return(mRecalcDisplay(cl, obj, (APTR)msg));
+	case MUIM_Window_RecalcDisplay: return Window_RecalcDisplay(cl, obj, (APTR)msg);
 	case MUIM_Window_Setup: return Window_Setup(cl, obj, (APTR)msg);
 	case MUIM_Window_Cleanup: return Window_Cleanup(cl, obj, (APTR)msg);
 	case MUIM_Window_AddControlCharHandler: return Window_AddControlCharHandler(cl, obj, (APTR)msg);
