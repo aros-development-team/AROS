@@ -13,6 +13,9 @@
 #include <oop/oop.h>
 #include <hidd/pci.h>
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include "pci.h"
 #include "pci_hw.h"
 
@@ -20,13 +23,7 @@
 #	undef SysBase
 #endif /* SysBase */
 
-#ifdef rkprintf
-#	undef rkprintf
-#endif
-
 char stab[400];
-
-#define rkprintf(x...)	scr_RawPutChars(stab, sprintf(stab, x))
 
 ULONG readPCIConfigLong(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE word)
 {
@@ -108,12 +105,12 @@ void scanPCIBuses(struct pci_staticdata *psd, struct ExecBase *SysBase)
 						d->BaseAddress[4] = (APTR)readPCIConfigLong(bus, dev, sub, 8);
 						d->BaseAddress[5] = (APTR)readPCIConfigLong(bus, dev, sub, 9);
 
-						rkprintf("PCI: %d:%d:%d = %04.4lx:%04.4lx (%d/%d/%d), 0x%08.8lx 0x%08.8lx 0x%08.8lx\n",
+						D(bug("PCI: %d:%d:%d = %04.4lx:%04.4lx (%d/%d/%d), 0x%08.8lx 0x%08.8lx 0x%08.8lx\n",
 							bus,dev,sub,
 							d->VendorID,d->DeviceID,
 							d->Class,d->SubClass,d->Interface,
 							d->BaseAddress[0],d->BaseAddress[1],d->BaseAddress[2]
-							);
+							));
 
 						Enqueue(&psd->devices, (struct Node*)ndev);
 					}
