@@ -176,8 +176,10 @@ size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n);
 /* The following are POSIX/SUS additions */
 #if !defined(_ANSI_SOURCE)
 long  a64l(const char *);
-char *ecvt(double, int, int *, int *);
+#if 0 /* FIXME: not implemented */
+char *ecvt(double, int, int *, int *); 
 char *fcvt (double, int, int *, int *);
+#endif
 char *gcvt(double, int, char *);
 int   getsubopt(char **, char *const *, char **);
 int   grantpt(int);
