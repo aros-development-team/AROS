@@ -1,5 +1,5 @@
 /*
-    (C) 1997-99 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -13,6 +13,7 @@
 #define AROS_ALMOST_COMPATIBLE
 
 #include "cxintern.h"
+#include <exec/memory.h>
 #include <libraries/commodities.h>
 #include <proto/exec.h>
 #include <proto/commodities.h>
@@ -59,34 +60,36 @@
 {
     AROS_LIBFUNC_INIT
 
-    LONG         count = 0;
-    CxObj       *te2;
-    CxObj       *tempObj;
+    LONG               count = 0;
+    struct BrokerCopy *brokerCopy;
+    CxObj             *broker;
 
     FreeBrokerList(CopyofList);
 
     ObtainSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
 
-    ForeachNode(&GPB(CxBase)->cx_BrokerList, (struct Node *)tempObj)
+    ForeachNode(&GPB(CxBase)->cx_BrokerList, broker)
     {
-	APTR  ptrSave;
-
-	if (CxObjType(tempObj) == CX_ZERO)
+	if (CxObjType(broker) == CX_ZERO)
 	{
 	    break;
 	}
 
-	if (!(te2 = (CxObj *)AllocCxStructure(CX_OBJECT, CX_BROKER, CxBase)))
+	brokerCopy = AllocVec(sizeof(struct BrokerCopy), MEMF_PUBLIC | MEMF_CLEAR);
+
+	if (brokerCopy == NULL)
 	{
 	    break;
 	}
 
-	ptrSave = te2->co_Ext.co_BExt;
-	CopyMem(tempObj, te2, sizeof(CxObj));
-	te2->co_Ext.co_BExt = ptrSave;
-        *te2->co_Ext.co_BExt = *tempObj->co_Ext.co_BExt;
+	/* Copy the broker name */
+	CopyMem(broker->co_Ext.co_BExt, brokerCopy->bc_Name, sizeof(*broker->co_Ext.co_BExt));
+	brokerCopy->bc_Flags = broker->co_Flags;
+	/* Point the node name to the broker name */
+	brokerCopy->bc_Node.ln_Name = brokerCopy->bc_Name;
+	
 
-        AddTail(CopyofList, (struct Node *)te2);
+        AddTail(CopyofList, &brokerCopy->bc_Node);
         count++;
     }
 
