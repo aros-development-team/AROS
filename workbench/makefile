@@ -4,7 +4,7 @@ TOP=..
 include $(TOP)/config/make.cfg
 
 ifeq ($(FLAVOUR),native)
-SUBDIRS=             libs
+SUBDIRS=c demos      libs
 else
 SUBDIRS=c demos devs libs locale
 endif
