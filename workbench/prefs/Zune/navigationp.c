@@ -179,20 +179,29 @@ static IPTR NavigationP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
     *data = d;
 
-    DoMethod(data->drag_leftbutton_checkmark, MUIM_Notify,
-	     MUIA_Selected, MUIV_EveryTime,
-	     data->drag_leftbutton_string, 3, MUIM_Set,
-	     MUIA_Disabled, MUIV_NotTriggerValue);
+    DoMethod
+    (
+        data->drag_leftbutton_checkmark, MUIM_Notify,
+        MUIA_Selected, MUIV_EveryTime,
+        (IPTR) data->drag_leftbutton_string, 3, MUIM_Set,
+        MUIA_Disabled, MUIV_NotTriggerValue
+    );
 
-    DoMethod(data->drag_middlebutton_checkmark, MUIM_Notify,
-	     MUIA_Selected, MUIV_EveryTime,
-	     data->drag_middlebutton_string, 3, MUIM_Set,
-	     MUIA_Disabled, MUIV_NotTriggerValue);
+    DoMethod
+    (
+        data->drag_middlebutton_checkmark, MUIM_Notify,
+        MUIA_Selected, MUIV_EveryTime,
+        (IPTR) data->drag_middlebutton_string, 3, MUIM_Set,
+        MUIA_Disabled, MUIV_NotTriggerValue
+    );
 
-    DoMethod(data->drag_autostart_checkmark, MUIM_Notify,
-	     MUIA_Selected, MUIV_EveryTime,
-	     data->drag_autostart_slider, 3, MUIM_Set,
-	     MUIA_Disabled, MUIV_NotTriggerValue);
+    DoMethod
+    (
+        data->drag_autostart_checkmark, MUIM_Notify,
+        MUIA_Selected, MUIV_EveryTime,
+        (IPTR) data->drag_autostart_slider, 3, MUIM_Set,
+        MUIA_Disabled, MUIV_NotTriggerValue
+    );
 
     return (IPTR)obj;
 }
