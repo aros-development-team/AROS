@@ -68,6 +68,8 @@ struct Screen  * wbscreen;
 struct Window  * wbwindow;
 struct Menu *    menus;
 APTR vi;
+static ULONG     check;
+
 
 static struct NewMenu nm[] =
 {
@@ -92,13 +94,13 @@ static struct NewMenu nm[] =
       {NM_SUB, "Window"},
       {NM_SUB, "All"},
     {NM_ITEM,  "Show" },
-      {NM_SUB, "Only Icons", CHECKIT | CHECKED},
-      {NM_SUB, "All Files", CHECKIT },
+      {NM_SUB, "Only Icons", CHECKIT | CHECKED, 32},
+      {NM_SUB, "All Files", CHECKIT, 16 },
     {NM_ITEM,  "View By" },
-      {NM_SUB, "Icon", CHECKIT | CHECKED},
-      {NM_SUB, "Name",CHECKIT},
-      {NM_SUB, "Size",CHECKIT},
-      {NM_SUB, "Date", CHECKIT},
+      {NM_SUB, "Icon", CHECKIT | CHECKED, 32 + 64 + 128},
+      {NM_SUB, "Name",CHECKIT, 16 + 64 + 128},
+      {NM_SUB, "Size",CHECKIT, 16 + 32 + 128},
+      {NM_SUB, "Date", CHECKIT, 16 + 32 + 64},
 
   {NM_TITLE, "Icon",          NULL, NM_MENUDISABLED},
     {NM_ITEM,  "Open", "O"},
@@ -117,8 +119,8 @@ static struct NewMenu nm[] =
   {NM_TITLE, "Tools",          NULL, NM_MENUDISABLED},
     {NM_ITEM,  "ResetWB" },
     {NM_ITEM,  "Matt Parsons did a good job?" },
-      {NM_SUB, "Yeah, Kinda...", CHECKIT | CHECKED},
-      {NM_SUB, "Nope, this sucks!", CHECKIT },
+      {NM_SUB, "Yeah, Kinda...", CHECKIT | CHECKED, 32},
+      {NM_SUB, "Nope, this sucks!", CHECKIT, 16 },
   {NM_END}
 
 };
@@ -127,6 +129,7 @@ static struct NewMenu nm[] =
 /*********************************************************************************************/
 void Cleanup(STRPTR msg);
 void ExecuteCommand();
+void backdrop(ULONG);
 /*********************************************************************************************/
 
 LONG            __detacher_must_wait_for_signal = SIGBREAKF_CTRL_F;
