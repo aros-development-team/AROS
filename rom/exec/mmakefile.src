@@ -2,20 +2,15 @@
 include $(TOP)/config/make.cfg
 
 # Use OS's own includes over the ones from AROS
-OS_INCLUDES := -I$(GENINCDIR) -I.
-ifeq ("$(SHARED_EXEC)","yes")
-SPECIAL_CFLAGS := $(SHARED_CFLAGS)
-endif
-
-OBJDIR:=$(OSGENDIR)/exec
+OS_INCLUDES := -I$(INCDIR) -I. -I$(GENINCDIR)
 
 # ***** Native ***************
 ifeq ($(FLAVOUR),native)
 
-LIB	    := $(LIBDIR)/libexec.a
-
 # Main function for exec.strap. Need this apart as an anchor for the link:
 INIT_FILE   := execstrap_init
+OSMODULE    := exec.strap
+LIB	    := $(LIBDIR)/libexec.a
 
 # Other support files:
 FILES	    :=
@@ -40,123 +35,78 @@ FUNCTIONS   := \
 # ***** Not Native ***************
 else
 
-%prepare_shlib exec $(SHARED_EXEC)
-
-FILES	    := exec_init execfunctions traphandler exec_util \
-	       prepareexecbase
+OSMODULE    := exec.library
+INIT_FILE   := exec_init
+SYS_FILES   := execfunctions prepareexecbase
+FILES	    := traphandler exec_util 
+END_FILE    := exec_endtag
 
 FUNCTIONS   := \
-	allocmem freemem addhead addtask remtask wait signal allocsignal    \
-	freesignal alert freeentry remove remhead enqueue addmemhandler     \
-	setexcept setsignal settaskpri findtask findname getmsg putmsg	    \
-	replymsg addtail waitport allocate addport remport findport	    \
-	addmemlist createmsgport deletemsgport createiorequest deallocate   \
-	availmem deleteiorequest allocvec freevec allocabs allocentry	    \
-	createpool deletepool allocpooled remmemhandler initstruct	    \
-	initsemaphore attemptsemaphore obtainsemaphore			    \
-	obtainsemaphoreshared attemptsemaphoreshared releasesemaphore	    \
-	procure vacate addlibrary remlibrary makefunctions makelibrary	    \
-	sumlibrary openlibrary closelibrary setfunction oldopenlibrary	    \
-	copymemquick copymem freepooled remsemaphore addsemaphore	    \
-	releasesemaphorelist obtainsemaphorelist typeofmem rawdofmt insert  \
-	remtail findsemaphore addresource remresource openresource adddevice\
-	remdevice opendevice closedevice doio sendio checkio abortio waitio \
-	initresident addintserver remintserver setintvector alloctrap \
-	childfree childorphan childstatus childwait coldreboot debug	    \
-	findresident freetrap initcode sumkickdata obtainquickvector \
-	supervisor superstate userstate stackswap \
-	cachecleare cacheclearu cachecontrol cachepredma cachepostdma \
-	cause disable dispatch enable forbid preparecontext permit switch \
-	setsr getcc reschedule exception
-
+	abortio adddevice addhead addintserver addlibrary addmemhandler \
+	addmemlist addport addresource addsemaphore addtail addtask alert \
+	allocabs allocate allocentry allocmem allocpooled allocsignal \
+	alloctrap allocvec attemptsemaphore attemptsemaphoreshared availmem \
+	cachecleare cacheclearu cachecontrol cachepostdma cachepredma cause \
+	checkio childfree childorphan childstatus childwait closedevice \
+	closelibrary coldreboot copymem copymemquick createiorequest \
+	createmsgport createpool deallocate debug deleteiorequest \
+	deletemsgport deletepool disable dispatch doio enable enqueue \
+	exception findname findport findresident findsemaphore findtask \
+	forbid freeentry freemem freepooled freesignal freetrap freevec getcc \
+	getmsg initcode initresident initsemaphore initstruct insert \
+	makefunctions makelibrary obtainquickvector obtainsemaphore \
+	obtainsemaphorelist obtainsemaphoreshared oldopenlibrary opendevice \
+	openlibrary openresource permit preparecontext procure putmsg rawdofmt \
+	rawioinit rawmaygetchar rawputchar releasesemaphore \
+	releasesemaphorelist remdevice remhead remintserver remlibrary \
+	remmemhandler remove remport remresource remsemaphore remtail remtask \
+	replymsg reschedule sendio setexcept setfunction setintvector \
+	setsignal setsr settaskpri signal stackswap sumkickdata sumlibrary \
+	superstate supervisor switch taggedopenlibrary typeofmem userstate \
+	vacate wait waitio waitport
 # ***** END ***************
+endif
+
+%prepare_shlib exec $(SHARED_EXEC)
+ifeq ("$(SHARED_EXEC)","yes")
+SPECIAL_CFLAGS := $(SHARED_CFLAGS)
 endif
 
 # Do the magic required for function replacement.
 # Keep this value for later
 ALL_FILES	:= $(FILES)
 ALL_FUNCTIONS	:= $(FUNCTIONS)
+FUNCTABLE_SRCS	:= $(foreach f,$(FUNCTIONS),$(f).c)
 
 %prepare_replace rom/exec
 %filter_replace FUNCTIONS
 %filter_replace FILES
 
-DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
-OBJS := $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
-
 .PHONY : all clean setup
 
-# ***** Native ***************
 ifeq ($(FLAVOUR),native)
-
-LIBS	    := -L$(LIBDIR) -lexec -larossupport -larosc
-INITFUNC    := $(OBJDIR)/$(INIT_FILE).o
-
-#MM kernel-exec-amiga-m68k : linklibs
-kernel-exec-amiga-m68k : show-flags $(LIB) $(OSMODDIR)/exec.strap
-	@$(NOP)
-
-$(OSMODDIR)/exec.strap : $(LIB) $(INITFUNC) $(LIBDIR)/libarossupport.a $(LIBDIR)/libarosc.a
-	@echo "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) execstrap.map $(INITFUNC) $(LIBS) -o $@ 2>&1|tee execstrap.err
-	@if $(TEST) ! -s execstrap.err; then rm execstrap.err ; else true ; fi
-	@strip $@
-
-# To study the assembler output for evaluation (can be helpful in tracking
-# down bugs):
-.PHONY : asm
-asm : $(foreach f,$(ALL_FUNCTIONS) $(INIT_FILE) $(ALL_FILES),$(f).s) all
-
-%.s : %.c
-	@echo "Generating $@ ..."
-	@$(CC) -S $(CFLAGS) $< -c -o $@
-
-# Collect all (asm-)functions in a linklib for fast linking:
-$(LIB) : $(OBJS)
-	@echo "Adding functions to $(notdir $@) ..."
-	@$(AR) $@ $?
-	@$(RANLIB) $@
-
-# ***** Not Native ***************
+DEPLIBS := arossupport arosc 
 else
-
-#MM
-kernel-exec-linux-$(CPU) : show-flags $(LIB)
-
-$(LIB) : $(OBJS)
-	%mklib_q
-	@$(RM) $(RMLIB)
-
-
-# ***** END ***************
+DEPLIBS :=
 endif
 
-show-flags :
-	@echo "CFLAGS=$(CFLAGS)"
-#	 @echo "ADDITIONAL_OBJS=$(ADDITIONAL_OBJS)"
-#	 @echo "OBJS=$(OBJS)"
-
-# MetaMake targets
-#MM kernel-exec : setup includes exec-$(ARCH) kernel-exec-$(ARCH)-$(CPU)
-kernel-exec :
+#MM kernel-exec-linklib : setup includes kernel-exec-$(ARCH)-$(CPU)
+kernel-exec-linklib : show-flags $(LIB)
 	@$(NOP)
 
-#MM
-setup : libdefs.h
-	%mkdirs_q $(OBJDIR) $(OSMODDIR)
+#MM kernel-exec-module : setup includes kernel-exec-$(ARCH)-$(CPU)
+kernel-exec-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+	@$(NOP)
 
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err $(LIB)
+# The all powerful ROM library generating stuff...
+NO_FUNCTABLE := 1
+%genromlib_f
 
-%additional_objs_rule
-%libdefs_rule
+#MM includes-generate : setup-clib
+%genlibincludes
 
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+%asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(END_FILE) $(ALL_FILES)"
+%ctoasm_q
 
 %common
 %include_deps

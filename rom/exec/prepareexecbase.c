@@ -78,8 +78,8 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     SysBase->LibNode.lib_Node.ln_Pri  = -100;
     SysBase->LibNode.lib_Node.ln_Name = "exec.library";
     SysBase->LibNode.lib_IdString = Exec_resident.rt_IdString;
-    SysBase->LibNode.lib_Version = LIBVERSION;
-    SysBase->LibNode.lib_Revision = LIBREVISION;
+    SysBase->LibNode.lib_Version = VERSION_NUMBER;
+    SysBase->LibNode.lib_Revision = REVISION_NUMBER;
     SysBase->LibNode.lib_OpenCnt = 1;
     SysBase->LibNode.lib_NegSize = neg;
     SysBase->LibNode.lib_PosSize = sizeof(struct ExecBase);
@@ -111,7 +111,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 	SysBase->SoftInts[i].sh_List.lh_Type = NT_INTERRUPT;
     }
 
-    SysBase->SoftVer = LIBVERSION;
+    SysBase->SoftVer = VERSION_NUMBER;
     SysBase->ColdCapture = SysBase->CoolCapture
 	= SysBase->WarmCapture = NULL;
 

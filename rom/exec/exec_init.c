@@ -13,6 +13,7 @@
 #include <exec/interrupts.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
+#include <exec/alerts.h>
 #include <exec/tasks.h>
 #include <hardware/intbits.h>
 #include <hardware/custom.h>
@@ -38,16 +39,16 @@
 
 static const UBYTE name[];
 static const UBYTE version[];
-extern const char END;
+extern const char LIBEND;
 static struct ExecBase *AROS_SLIB_ENTRY(init,BASENAME)();
 
 const struct Resident Exec_resident =
 {
     RTC_MATCHWORD,
     (struct Resident *)&Exec_resident,
-    (APTR)&END,
+    (APTR)&LIBEND,
     RTF_SINGLETASK,
-    LIBVERSION,
+    VERSION_NUMBER,
     NT_LIBRARY,
     105,
     (STRPTR)name,
@@ -55,8 +56,8 @@ const struct Resident Exec_resident =
     &AROS_SLIB_ENTRY(init,BASENAME)
 };
 
-static const UBYTE name[] = LIBNAME;
-static const UBYTE version[] = VERSION;
+static const UBYTE name[] = NAME_STRING;
+static const UBYTE version[] = VERSION_STRING;
 
 extern void debugmem(void);
 
@@ -64,6 +65,12 @@ extern void debugmem(void);
 struct AROSSupportBase AROSSupportBase;
 struct ExecBase *SysBase;
 
+/*
+    We temporarily redefine kprintf() so we use the real version in case
+    we have one of these two fn's called before AROSSupportBase is ready.
+*/
+
+#undef kprintf
 void _aros_not_implemented(char *X)
 {
     kprintf("Unsupported function at offset -0x%h in %s\n",
@@ -75,6 +82,8 @@ void aros_print_not_implemented(char *name)
 {
     kprintf("The function %s is not implemented.\n", name);
 }
+
+#define kprintf	(((struct AROSSupportBase *)(SysBase->DebugData))->kprintf)
 
 /* IntServer:
     This interrupt handler will send an interrupt to a series of queued
@@ -206,7 +215,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	if( !ml || !t )
 	{
 	    kprintf("ERROR: Cannot create Boot Task!\n");
-	    exit(20);
+	    Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
 	}
 	ml->ml_NumEntries = 1;
 	ml->ml_ME[0].me_Addr = t;
@@ -233,7 +242,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	    if (!t->tc_UnionETask.tc_ETask)
 	    {
 		kprintf("Not enough memory for first task\n");
-		exit(20);
+		Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
 	    }
 
 	    GetIntETask(t)->iet_Context = AllocTaskMem(t
@@ -244,7 +253,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	    if (!GetIntETask(t)->iet_Context)
 	    {
 		kprintf("Not enough memory for first task\n");
-		exit(20);
+		Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
 	    }
 	}
 
@@ -266,7 +275,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	if( !ml || !t || !s )
 	{
 	    kprintf("ERROR: Cannot create Idle Task!\n");
-	    exit(20);
+    	    Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
 	}
 
 	ml->ml_NumEntries = 2;
@@ -304,7 +313,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 		if( is == NULL )
 		{
 		    kprintf("ERROR: Cannot install Interrupt Servers!\n");
-		    exit(20);
+		    Alert( AT_DeadEnd | AN_IntrMem );
 		}
 		sil = (struct SoftIntList *)((struct Interrupt *)is + 1);
 
@@ -322,7 +331,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	if(!is)
 	{
 	    kprintf("ERROR: Cannot install Task Dispatcher!\n");
-	    exit(20);
+    	    Alert( AT_DeadEnd | AN_IntrMem );
 	}
 	is->is_Code = (void (*)())&Dispatcher;
 	AddIntServer(INTB_VERTB,is);
@@ -377,5 +386,3 @@ AROS_LH0I(int, null,
     return 0;
     AROS_LIBFUNC_EXIT
 }
-
-const char END = 1;
