@@ -23,7 +23,11 @@
 	struct DosLibrary *, DOSBase, 143, Dos)
 
 /*  FUNCTION
-	FreeArgs() will clean up after a call to ReadArgs().
+	FreeArgs() will clean up after a call to ReadArgs(). If the
+	RDArgs structure was allocated by the system in a call to 
+	ReadArgs(), then it will be freed. If however, you allocated
+	the RDArgs structure with AllocDosObject(), then you will
+	have to free it yourself with FreeDosObject().
 
     INPUTS
 	args		- The data used by ReadArgs().
@@ -58,9 +62,18 @@
 	FreeVec(((struct DAList *)args->RDA_DAList)->StrBuf);
 	FreeVec(((struct DAList *)args->RDA_DAList)->MultVec);
 	FreeVec((struct DAList *)args->RDA_DAList);
-    }
 
-    FreeVec(args);
+	/*
+	    Why do I put this here. Unless the user has been bad and
+	    set RDA_DAList to something other than NULL, then this
+	    RDArgs structure was allocated by ReadArgs(), so we can
+	    free it. Otherwise the RDArgs was allocated by
+	    AllocDosObject(), so we are not allowed to free it.
+
+	    See the original AmigaOS autodoc if you don't believe me
+	*/
+	FreeVec(args);
+    }
 
     AROS_LIBFUNC_EXIT
 } /* FreeArgs */
