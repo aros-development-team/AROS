@@ -48,6 +48,7 @@ FILES	:= \
     regiontest \
     rtdemo \
     scrbackfill \
+    screenmodereq \
     scrollerwin \
     serialtest \
     shadowborder \
