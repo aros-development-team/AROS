@@ -18,6 +18,10 @@
 #include <amiga_compiler.h>
 #endif
 
+#ifndef PROTO_UTILITY_H
+#include <proto/utility.h>
+#endif
+
 /* These are the identity function under AmigaOS */
 #define AROS_LONG2BE(x) (x)
 #define AROS_BE2LONG(x) (x)
@@ -58,10 +62,13 @@
 #endif
 
 char *StrDup(const char *x);
-int snprintf(char *buf, size_t size, const char *fmt, ...);
 size_t strlcat(char *buf, const char *src, size_t len);
 Object *DoSuperNewTagList(struct IClass *cl, Object *obj,void *dummy, struct TagItem *tags);
 Object *VARARGS68K DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy, ...);
+int VARARGS68K SPrintf(char *buf, const char *fmt, ...);
+
+#define snprintf SNPrintf
+#define sprintf SPrintf
 
 /*** HookEntry for OS4 (is only a dummy) ************************************/
 #ifdef __amigaos4__
