@@ -48,6 +48,9 @@ extern struct Library *MUIMasterBase;
 static const int __version = 1;
 static const int __revision = 1;
 
+static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg, LONG dosuper);
+static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg, LONG dosuper);
+
 /******************************************************************************/
 /******************************************************************************/
 
@@ -64,6 +67,8 @@ static void change_active_page (struct IClass *cl, Object *obj, LONG page)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     LONG newpage;
+
+    if (!(data->flags & GROUP_PAGEMODE)) return;
 
     switch (page)
     {
@@ -89,8 +94,13 @@ static void change_active_page (struct IClass *cl, Object *obj, LONG page)
 
     if (newpage != data->active_page)
     {
+	if (_flags(obj) & MADF_CANDRAW) Group_Hide(cl,obj,NULL,0);
 	data->active_page = newpage;
-	MUI_Redraw(obj, MADF_DRAWOBJECT);
+    	if (_flags(obj) & MADF_CANDRAW)
+    	{
+	    Group_Show(cl,obj,NULL,0);
+	    MUI_Redraw(obj, MADF_DRAWOBJECT);
+	}
     }
 }
 
@@ -1466,6 +1476,67 @@ mLayout(struct IClass *cl, Object *obj, struct MUIP_Layout *msg)
     return 0;
 }
 
+static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg, LONG dosuper)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    Object               *cstate;
+    Object               *child;
+    struct MinList       *ChildList;
+
+    DoSuperMethodA(cl,obj,(Msg)msg);
+
+    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    cstate = (Object *)ChildList->mlh_Head;
+
+    if (data->flags & GROUP_PAGEMODE)
+    {
+	int page = 0;
+	while ((child = NextObject(&cstate)))
+	{
+	    if (page == data->active_page)
+	    {
+		DoMethod(child, MUIM_Show);
+		break;
+	    }
+	    page++;
+	}
+    } else
+    {
+	while ((child = NextObject(&cstate)))
+	    DoMethodA(child, (Msg)msg);
+    }
+    return TRUE;
+}
+
+static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg, LONG dosuper)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    Object               *cstate;
+    Object               *child;
+    struct MinList       *ChildList;
+
+    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    cstate = (Object *)ChildList->mlh_Head;
+
+    if (data->flags & GROUP_PAGEMODE)
+    {
+	int page = 0;
+	while ((child = NextObject(&cstate)))
+	{
+	    if (page == data->active_page)
+	    {
+		DoMethod(child, MUIM_Hide);
+		break;
+	    }
+	    page++;
+	}
+    } else
+    {
+	while ((child = NextObject(&cstate)))
+	    DoMethod(child, MUIM_Hide);
+    }
+    return DoSuperMethodA(cl,obj,(Msg)msg);
+}
 
 /*
  * MUIM_Export : to export an objects "contents" to a dataspace object.
@@ -1646,6 +1717,8 @@ AROS_UFH3S(IPTR, Group_Dispatcher,
 	return mSetUData(cl, obj, (APTR)msg);
     case MUIM_SetUDataOnce :
 	return mSetUDataOnce(cl, obj, (APTR)msg);
+    case MUIM_Show: return Group_Show(cl, obj, (APTR)msg, 1);
+    case MUIM_Hide: return Group_Hide(cl, obj, (APTR)msg, 1);
 
     case MUIM_DragQueryExtended: return Group_DragQueryExtended(cl, obj, (APTR)msg);
     }
