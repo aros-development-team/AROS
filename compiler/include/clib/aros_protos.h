@@ -16,9 +16,6 @@
 #   include <aros/libcall.h>
 #endif
 
-/* Utility prototypes */
-ULONG ArosInquire (ULONG tag, ...);
-
 /*
     Prototypes
 */
