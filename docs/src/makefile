@@ -35,9 +35,9 @@ setup :
 	done
 	cd conv ; make
 
-copy_files: $(DEST)rtdemo.log
+copy_files: $(DEST)rtdemo.log $(DEST)pubkey.asc
 
-$(DEST)rtdemo.log: rtdemo.log
+$(DEST)% : %
 	cp $< $@
 
 link-pics :
