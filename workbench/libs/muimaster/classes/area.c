@@ -1592,7 +1592,8 @@ static void handle_press(struct IClass *cl, Object *obj)
 	case MUIV_InputMode_Toggle:
 	    // although undocumented, MUI sets MUIA_Pressed too
 	    SetAttrs(obj, MUIA_Selected, !(data->mad_Flags & MADF_SELECTED),
-		     MUIA_Pressed, !(data->mad_Flags & MADF_PRESSED));
+		     MUIA_Pressed, !(data->mad_Flags & MADF_PRESSED),
+		     TAG_DONE);
 	    break;
     }
 }
