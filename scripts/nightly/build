@@ -28,30 +28,6 @@ if [ $? != 0 ]; then
     exit 5
 fi
 
-#-- Generate ChangeLogs -----------------------------------------------------------
-alias cvs2cl='$ROOT/Scripts/cvs2cl.pl --xml --xml-encoding iso-8859-15 --noxmlns'
-ChangeLog()
-{
-    module=$1
-    dir=$2
-    
-    oldpwd=$PWD
-    printi "Generating ChangeLog for the" $module "module"
-    cd $dir
-    cvs2cl -l "-d'>1 day ago'" -f $ARCHIVE_BASE/$BASENAME-ChangeLog-$module.xml
-    
-    if [ -e $ARCHIVE_BASE/$BASENAME-ChangeLog-$module.xml ]; then
-        cd $ARCHIVE_BASE
-        md5sum $BASENAME-ChangeLog-$module.xml > $BASENAME-ChangeLog-$module.xml.md5
-    fi
-    
-    cd $oldpwd
-}
-
-ChangeLog AROS    $SOURCE_AROS
-ChangeLog contrib $SOURCE_CONTRIB
-ChangeLog docs    $SOURCE_DOCS
-
 #-- Build packages -----------------------------------------------------------
 failed=()
 succeeded=()
