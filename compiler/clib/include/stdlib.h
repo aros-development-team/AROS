@@ -12,6 +12,8 @@
 #   include <sys/types.h>
 #endif
 
+#define offsetof(s,f)       ((size_t)(&(((s *)0)->f)))
+
 void __attribute__ ((noreturn)) exit (int code);
 void __attribute__ ((noreturn)) abort (void);
 
