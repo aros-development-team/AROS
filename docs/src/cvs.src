@@ -27,12 +27,10 @@ If it's not already on your system (type \shell{cvs} to find out), fetch
 CVS from one of the many GNU mirrors and install it in your
 \filename{$HOME}.
 
-If you want to get the sources only, you can use the anonymous access (see
-below).
-If you want to have full access to the database, then get the
-AROS developer archive from the AmiNET and compile \filename{crypt.c} (just
-say \shell{make crypt}
-or download \link{crypt.c}{ftp://ftp.aros.org/pub/aros/crypt.c}
+At the request of Amiga Inc, anonymous access has been disabled. You
+must register to get a copy of the sources.
+To do that,
+download \link{crypt.c}{ftp://ftp.aros.org/pub/aros/crypt.c}
 and follow the instructions in the file.
 Think of a good password and use \filename{crypt}
 to encode it, like this:
@@ -103,9 +101,6 @@ encoded mail with your password and I'll encrypt and add it.
 
 Wait until I confirm this. While you wait, look for CVS 1.10 or better if
 you haven't already done so.
-
-If you want read-only access, then your username is \shell{anon} and
-your password is \shell{anon}, too.
 
 \subsection{Logging into the server}
 
