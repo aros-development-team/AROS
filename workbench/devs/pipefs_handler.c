@@ -1094,7 +1094,7 @@ AROS_UFH3(LONG, pipefsproc,
       		}
 		case FSA_WRITE:
 		    kprintf("Command is FSA_WRITE. ");
-		    if (!un->mode & FMF_WRITE)
+		    if (!(un->mode & FMF_WRITE))
 		    {
 		        kprintf("User doesn't have permission to write.\n");
 			SendBack(msg, ERROR_BAD_STREAM_NAME);
@@ -1119,7 +1119,7 @@ AROS_UFH3(LONG, pipefsproc,
 		    break;
 		case FSA_READ:
 		    kprintf("Command is FSA_READ. ");
-		    if (!un->mode & FMF_READ)
+		    if (!(un->mode & FMF_READ))
 		    {
 		        kprintf("User doesn't have permission to read.\n");
 			SendBack(msg, ERROR_BAD_STREAM_NAME);
