@@ -2,11 +2,24 @@
 
 \section{AROS 1.10 (current)}
 
+NOTE: This is beta. If you want this code, then you must contact
+\link{me}{mailto:digulla@aros.fh-konstanz.de}. See also the
+\lref{Section about CVS}{CVS}.
+
 \begin{itemize}
 \item Bugfixes
 \item Worked on docs
 \item Many (50+) new functions in c.lib and amiga.lib
 \item Amiga and Linux/m68k versions
+\end{itemize}
+
+Things we currently work on:
+
+\begin{itemize}
+\item ANSI C library for AROS
+\item A own C compiler for AROS (VBCC)
+\item diskfont.library and icon.library
+\item AROS on Amiga (maybe even bootable)
 \end{itemize}
 
 \section{AROS 1.9}
