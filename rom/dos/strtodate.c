@@ -158,6 +158,36 @@ const char *const Dos_SubstDateTable[]=
 
 	    if (t != 7)
 	    {
+	    #if 1
+	    	LONG diffdays;
+		
+		days = curr.ds_Days;
+		
+		diffdays = t - (days % 7);
+		
+		if (datetime->dat_Flags & DTF_FUTURE)
+		{
+		    if (diffdays > 0)
+		    {
+		    	days += diffdays;
+		    }
+		    else
+		    {
+		    	days += 7 + diffdays;
+		    }
+		}
+		else
+		{
+		    if (diffdays < 0)
+		    {
+		    	days += diffdays;
+		    }
+		    else
+		    {
+		    	days += diffdays - 7;
+		    }
+		}		
+	    #else
 		days = curr.ds_Days;
 
 		if ((days % 7) == 0)
@@ -169,6 +199,7 @@ const char *const Dos_SubstDateTable[]=
 
 		if (datetime->dat_Flags & DTF_FUTURE)
 		    days += 7;
+	    #endif
 	    }
 	    else
 	    {
