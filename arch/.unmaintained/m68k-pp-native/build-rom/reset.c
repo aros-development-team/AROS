@@ -1,4 +1,5 @@
-#include <registers.h>
+#include <asm/registers.h>
+#include <gfx.h>
 
 extern void main_init(void * memory, ULONG memSize);
 extern void forever(void);
@@ -9,7 +10,6 @@ extern void _sys_trap1_handler(void);
 void _Init_IRQVectors(void);
 
 
-#include "../gfx.h"
 
 void aros_reset(void)
 {

@@ -3,8 +3,8 @@
     $Id$
 */
 
-#include <registers.h>
-#include "../gfx.h"
+#include <asm/registers.h>
+#include <gfx.h>
 
 void pause(LONG x)
 {
