@@ -476,7 +476,21 @@ static ZTextLine *zune_text_parse_line (STRPTR *s_ptr, struct zune_context *zc, 
 	    *argtype = ZTEXT_ARG_NONE;
 	    continue;
 	}
-	/* ZTEXT_ARG_HICHARIDX is missing now as the abvove implementation seems wrong to me */
+
+	if (*argtype == ZTEXT_ARG_HICHARIDX && arg == c)
+	{
+	    ULONG styleback = zc->style;
+	    /* underline next char */
+	    zune_text_chunk_new(zc);
+	    zc->style |= ZTC_STYLE_UNDERLINE;
+	    zc->text_start = ++s;
+	    zc->text = ++s;
+	    zune_text_chunk_new(zc);
+	    zc->text_start = s;
+	    zc->style = styleback;
+	    *argtype = ZTEXT_ARG_NONE;
+	}
+
 	zc->text = ++s;
     } /* while */
     zune_text_chunk_new(zc);
