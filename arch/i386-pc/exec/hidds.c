@@ -22,6 +22,8 @@
 #include <hidd/hidd.h>
 #include <hidd/serial.h>
 
+#include "../speaker.h"
+
 #define ioStd(x) ((struct IOStdReq *)x)
 
 void hidd_demo()
@@ -152,6 +154,33 @@ void hidd_demo()
 	    MoveWindow(win,0,-1);
 	    y--;
 	  }
+	}
+
+	{
+	    ULONG i, dummy;
+
+	    SetSpkFreq (400);
+	    SpkOn();
+	    for (i=0; i<100000000; dummy = i*i, i++);  
+	    SpkOff();
+	    for (i=0; i< 50000000; dummy = i*i, i++); 
+	    
+	    SetSpkFreq (500);
+	    SpkOn();
+	    for (i=0; i<100000000; dummy = i*i, i++);
+	    SpkOff();
+	    for (i=0; i< 50000000; dummy = i*i, i++);
+	    
+	    SetSpkFreq (592);
+	    SpkOn();
+	    for (i=0; i<100000000; dummy = i*i, i++); 
+	    SpkOff();
+	    for (i=0; i< 50000000; dummy = i*i, i++); 
+	    
+	    SetSpkFreq (788);
+	    SpkOn();
+	    for (i=0; i<300000000; dummy = i*i, i++);  
+	    SpkOff();
 	}
 
 	if (IntuitionBase)
