@@ -19,6 +19,7 @@
 
 #include <clib/alib_protos.h>
 #include <stdio.h>
+#include <aros/debug.h>
 
 struct Library       *MUIMasterBase;
 

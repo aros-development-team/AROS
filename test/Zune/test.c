@@ -6,6 +6,7 @@
 */
 
 #include <exec/types.h>
+#include <stdlib.h>
 
 #define USE_TEST_BODY
 #define USE_TEST_COLORS
