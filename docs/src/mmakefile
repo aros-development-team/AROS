@@ -32,13 +32,19 @@ setup-docs : make-dirs
 
 make-dirs :
 	@mkdir -p $(HTMLDIR) $(HTMLDIR)/autodocs $(HTMLDIR)/pics \
-		$(DOCGENDIR)
+		$(DOCGENDIR) $(AROSDIR)/Help
 
 copy-files : $(HTMLDIR)/rtdemo.log $(HTMLDIR)/pubkey.asc $(HTMLDIR)/license.html \
-	$(HTMLDIR)/oldnews.html
+	$(HTMLDIR)/oldnews.html $(AROSDIR)/Help/Credits $(AROSDIR)/Help/License
 
 $(HTMLDIR)/% : %
 	cp $< $@
+
+$(AROSDIR)/Help/Credits : credits ;\
+    cp $< $@
+
+$(AROSDIR)/Help/License : $(TOP)/LICENSE ;\
+    cp $< $@
 
 # convert pics/% to HTMLDIR/pics/% without CVS dir.
 PICS := $(addprefix $(HTMLDIR)/pics/, \
@@ -113,7 +119,7 @@ $(HTMLDIR)/contrib.png : size2plot.in $(SIZEDIR)/contrib.size
 	$(CONVERT) $(DOCGENDIR)/plot.pbm $@
 	$(CONVERT) $(DOCGENDIR)/plot.pbm $(basename $@).jpg
 
-$(DOCGENDIR)/devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt
+$(DOCGENDIR)/devlist.inc : devitemfilt.gawk $(TOP)/CVSROOT/passwd.txt
 	gawk -f $< --assign TOP="$(TOP)" > $@
 	@touch $(DOCGENDIR)/run-src2html
 
