@@ -8,6 +8,7 @@
 #include <proto/mathffp.h>
 #include <proto/mathtrans.h>
 #include <proto/layers.h>
+#include <proto/icon.h>
 #include <proto/mathffp.h>
 #include <proto/mathtrans.h>
 #include <proto/mathieeesingbas.h>
