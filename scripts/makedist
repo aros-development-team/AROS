@@ -69,7 +69,7 @@ if [ ! -f "$dstdir/AROS-ibmpc-bin-$rel.tgz" ]; then
 	cd AROS && \
 	autoconf && \
 	./configure --enable-gfxhidd --target=native-i386 && \
-	make || make
+	make
     ) > "$dstdir/AROS-ibmpc-bin-$rel.log" 2>&1
     if [ $? -ne 0 ]; then
 	( 
