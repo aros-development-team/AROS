@@ -20,8 +20,6 @@
 #	define NO_INLINE_STDARG
 #   endif
 #   include "intuition_pinlines.h"
-#else
-#   include "intuition_pdefs.h"
 #endif
 
 /*

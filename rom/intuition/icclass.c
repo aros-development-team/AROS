@@ -28,7 +28,6 @@
 #include <proto/intuition.h>
 
 #include "intuition_private.h"
-#include "intuition_pdefs.h"
 
 #ifdef __AROS__
 #include <aros/asmcall.h>
