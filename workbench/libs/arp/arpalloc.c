@@ -6,8 +6,7 @@
     Lang: english
 */
 
-#include <proto/arp.h>
-#include <exec/memory.h>
+#include "arp_intern.h"
 
 /*****************************************************************************
 

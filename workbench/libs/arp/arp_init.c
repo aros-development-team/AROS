@@ -6,6 +6,7 @@
     Lang: english
 */
 #include <utility/utility.h> /* this must be before mathtrans_intern.h */
+#include <proto/dos.h>
 #include <proto/arp.h>
 
 #define NO_LIB_DEFINES 1

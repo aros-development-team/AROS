@@ -10,10 +10,16 @@
 #define ARP_INTERN_H
 
 #include <exec/types.h>
+#include <exec/memory.h>
 #include <libraries/arp.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <exec/ports.h>
+#include <proto/dos.h>
+#include <proto/arp.h>
+#include <proto/exec.h>
+#include <proto/utility.h>
+#include <proto/intuition.h>
 
 extern struct ArpBase ArpBase;
 
