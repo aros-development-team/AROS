@@ -3,16 +3,6 @@
     $Id$
 */
 
-#define DEBUG 1
-#include <aros/debug.h>
-
-#include <proto/arossupport.h>
-#include <proto/dos.h>
-#include <workbench/icon.h>
-#include <dos/dos.h>
-
-#include <string.h>
-
 #include "icon_intern.h"
 
 /*****************************************************************************
