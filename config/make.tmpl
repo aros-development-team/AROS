@@ -109,7 +109,7 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 		$$dir/%(submf).src > $$dir/%(submf) || exit 1 ; \
 	    fi ; \
 	    if ( cd $$dir ; \
-		$(MAKE) %(mflags) -f %(submf) \
+		$(MAKE) %(mflags) --file=%(submf) \
 		    TOP="%(top)/.." CURDIR="%(curdir)/$$dir" \
 		    TARGET=%(target) %(target) ) ; \
 	    then true ; else exit 1 ; fi ; \
