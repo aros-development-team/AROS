@@ -151,6 +151,14 @@ AROS_UFH3
                 if (message->wbhm_Message.mn_Node.ln_Type == NT_REPLYMSG)
                 {
                     D(bug("Workbench Handler: Deallocating WBHandlerMessage\n"));
+		    if (message->wbhm_Type == WBHM_TYPE_HIDE)
+		    {
+		        struct IntWBHandlerMessage *iwbhm = (struct IntWBHandlerMessage *)message;
+                    
+		        D(bug("Workbench Handler: Replying IntuiMessage because Type = "
+			      "WBHM_TYPE_HIDE"));
+		        ReplyMsg((struct Message *)iwbhm->iwbhm_Data.Hide.imsg);
+		    }
                     DestroyWBHM(message);
                 }
                 else
@@ -343,10 +351,11 @@ static void __HandleIntuition_WB
         switch (message->Code)
 	{
 	    case WBENCHOPEN:
-	        iwbhm = CreateIWBHM(WBHM_TYPE_SHOW, NULL);
+	        iwbhm = CreateIWBHM(WBHM_TYPE_SHOW, hc->hc_RelayReplyPort);
 		break;
 	    case WBENCHCLOSE:
 	        iwbhm = CreateIWBHM(WBHM_TYPE_HIDE, hc->hc_RelayReplyPort);
+		iwbhm->iwbhm_Data.Hide.imsg = message;
 		break;
             default:
 	        iwbhm = NULL;
@@ -355,6 +364,12 @@ static void __HandleIntuition_WB
         if (iwbhm != NULL)
         {
             PutMsg(WorkbenchBase->wb_WorkbenchPort, (struct Message *)iwbhm);
+	
+	    /* Don't reply immediately if we're asked to close the WB,
+	       we'll do it when handling replied message, so that the WB
+	       will have a chance to close its windows.  */ 
+	    if (message->Code == WBENCHCLOSE)
+                return;
         }
     }
     
