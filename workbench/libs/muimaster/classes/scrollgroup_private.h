@@ -8,6 +8,7 @@ struct Scrollgroup_DATA
     Object *vert, *horiz, *button;
     struct Hook hook;
     struct Hook *layout_hook;
+    BOOL usewinborder;
 };
 
 #endif /* _SCROLLGROUP_PRIVATE_H_ */
