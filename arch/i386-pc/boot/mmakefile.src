@@ -108,10 +108,10 @@ $(BINDIR)/boot/aros-pc-i386 : $(OBJS) $(DEPLIBS)
 $(BINDIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386
 	@gzip -9 -f $^
 
-$(BINDIR)/boot/grub/menu.lst : $(TOP)/config/i386-native/boot/menu.lst
+$(BINDIR)/boot/grub/menu.lst : menu.lst
 	@$(CP) $^ $@
 
-$(BINDIR)/boot/grub/menu.lst.DH0 : $(TOP)/config/i386-native/boot/menu.lst.DH0
+$(BINDIR)/boot/grub/menu.lst.DH0 : menu.lst.DH0
 	@$(CP) $^ $@
 
 $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386.gz
@@ -140,9 +140,10 @@ $(BOOT_DEST_DIR)/AROS.pkg :
 	@$(RM) -rf $(GENDIR)/gen/rom/bootdisk.compressed
 	@$(MKDIR) -p $(GENDIR)/gen/rom/bootdisk.compressed
 	@( \
+            oldpwd=$$PWD; \
             cd $(BOOT_SRC_DIR) && \
             for path in $(BOOT_TAR_FILES); do \
-                $(SH) $(TOP)/config/i386-native/boot/copypath $$path $(GENDIR)/gen/rom/bootdisk.compressed ; \
+                $(SH) $$oldpwd/copypath $$path $(GENDIR)/gen/rom/bootdisk.compressed ; \
             done && \
             cd $(GENDIR)/gen/rom && \
             $(RM) AROS.pkg && \
