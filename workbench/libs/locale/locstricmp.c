@@ -63,9 +63,9 @@ extern struct LocaleBase *globallocalebase;
 
 #define LocaleBase globallocalebase
 
-    return StrnCmp(IntLB(LocaleBase)->lb_CurrentLocale,
-    	    	   string1,
-		   string2,
+    return StrnCmp((struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale,
+    	    	   (STRPTR)string1,
+		   (STRPTR)string2,
 		   0x7FFFFFFF,
 		   SC_ASCII);
     
