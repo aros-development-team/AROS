@@ -1869,7 +1869,15 @@ fail_exit:
 void driver_PolyDraw (struct RastPort * rp, LONG count, WORD * coords,
 		    struct GfxBase * GfxBase)
 {
+    int i;                              /* Loop variable */
+
     CorrectDriverData (rp, GfxBase);
+
+    for(i = 0; i < count-1; i++)
+    {
+	Move(rp, coords[2*i], coords[2*i+1]);
+	Draw(rp, coords[2*i+2], coords[2*i+3]);
+    }
 }
 
 void driver_SetRast (struct RastPort * rp, ULONG color,
@@ -1892,7 +1900,7 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
     if (NULL != L)
     {
         /* Layered rastport, we have to clip this operation. */
-    	/* Window rastport, we need to clip th operation */
+    	/* Window rastport, we need to clip this operation */
 	
         struct ClipRect *CR;
 	struct Rectangle intersect;
