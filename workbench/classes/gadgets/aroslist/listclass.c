@@ -19,11 +19,7 @@
 #include "aroslist_intern.h"
 #include <gadgets/aroslist.h>
 
-#define TURN_OFF_DEBUG
-
-#ifndef TURN_OFF_DEBUG
-#define DEBUG 1
-#endif
+#define DEBUG 0
 
 #include <aros/debug.h>
 

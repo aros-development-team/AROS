@@ -29,11 +29,9 @@
 #include "aroslistview_intern.h"
 
 
-#undef TURN_OFF_DEBUG
-#ifndef TURN_OFF_DEBUG
-#define SDEBUG 1
-#define DEBUG 1
-#endif
+#define SDEBUG 0
+#define DEBUG 0
+
 
 #include <aros/debug.h>
 
