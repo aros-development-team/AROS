@@ -138,7 +138,10 @@ void hidd_demo()
         Draw(win->RPort,140,150);
         Draw(win->RPort,180,150);
         Draw(win->RPort,195,140);
-        	
+
+#if !AROS_BOCHS_HACK
+	/* This is slow like hell under Bochs */
+	        	
 	if (win)
 	{
 	  while (x < 200)
@@ -165,6 +168,7 @@ void hidd_demo()
 	    y--;
 	  }
 	}
+#endif
 
 #if !AROS_BOCHS_HACK
 
@@ -305,7 +309,7 @@ void hidd_demo()
 		      case IDCMP_RAWKEY:
 		        {
 			  static char hex[] = "0123456789ABCDEF";
-			  char s[8];
+			  char s[9];
 			  
 			  s[0] = 'K';
 			  s[1] = 'e';
@@ -315,6 +319,7 @@ void hidd_demo()
 			  s[5] = hex[(msg->Code >> 8) & 0xF];
 			  s[6] = hex[(msg->Code >> 4) & 0xF];
 			  s[7] = hex[(msg->Code >> 0) & 0xF];
+			  s[8] = '\0';
 			  
 			  BlackPrint(win2->RPort, s, 60);
 			  
@@ -327,27 +332,10 @@ void hidd_demo()
 			  WORD mx = win2->WScreen->MouseX;
 			  WORD my = win2->WScreen->MouseY;
 
-//			  static char hex[] = "0123456789ABCDEF";
-			  char s[15];
+			  char s[20];
 
 			  sprintf(s, "Mouse: %ld, %ld", mx, my);
-#if 0			  
-			  s[0] = 'M';
-			  s[1] = 'o';
-			  s[2] = 'u';
-			  s[3] = 's';
-			  s[4] = 'e';
-			  s[5] = ' ';
-			  s[6] = hex[(mx >> 12) & 0xF];
-			  s[7] = hex[(mx >> 8) & 0xF];
-			  s[8] = hex[(mx >> 4) & 0xF];
-			  s[9] = hex[(mx >> 0) & 0xF];
-			  s[10] = ',';
-			  s[11] = hex[(my >> 12) & 0xF];
-			  s[12] = hex[(my >> 8) & 0xF];
-			  s[13] = hex[(my >> 4) & 0xF];
-			  s[14] = hex[(my >> 0) & 0xF];
-#endif			  
+
 			  WhitePrint(win2->RPort, s, 80);
 			  
 			  mx &= 511;
