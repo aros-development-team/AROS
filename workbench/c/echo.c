@@ -13,7 +13,9 @@
 
 static const char version[] = "$VER: echo 41.1 (14.3.1997)\n";
 
-int main (int argc, char ** argv)
+int __nocommandline = 1;
+
+int main (void)
 {
     IPTR args[5]={ 0, 0, 0, 0, 0 };
     struct RDArgs *rda;

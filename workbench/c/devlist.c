@@ -73,7 +73,9 @@ static int fillbuffer(struct dev **buffer, IPTR size)
     return 1;
 }
 
-int main(int argc, char *argv[])
+int __nocommandline = 1;
+
+int main(void)
 {
     IPTR size;
     struct dev *buffer,*devs,*devs2;

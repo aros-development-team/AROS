@@ -86,7 +86,9 @@ static const char exthelp[] =
     "\tE/S          Set the CTRL-E flag\n"
     "\tF/S          Set the CTRL-F flag\n";
 
-int main(int argc, char **argv)
+int __nocommandline = 1;
+
+int main(void)
 {
     struct Process *pr = NULL;
     struct RDArgs *rd, *rda = NULL;

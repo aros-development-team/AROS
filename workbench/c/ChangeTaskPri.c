@@ -68,7 +68,9 @@ static const char exthelp[] =
     "\tPRI=PRIORITY/A/N	     New priority of task\n"
     "\tPROCESS/K             Optional process number of change\n";
 
-int main(int argc, char **argv)
+int __nocommandline = 1;
+
+int main(void)
 {
     struct Process *pr = NULL;
     struct RDArgs *rda = NULL, *rdargs;

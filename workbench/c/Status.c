@@ -113,7 +113,9 @@ void printProcess(BOOL full, BOOL tcb, struct Process *process);
 
 static const char version[] = "$VER: Status 41.1 (17.11.2000)\n";
 
-int main(int argc, char *argv[])
+int __nocommandline = 1;
+
+int main(void)
 {
     struct RootNode *root = ((struct DosLibrary *)DOSBase)->dl_Root;
 

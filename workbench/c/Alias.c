@@ -91,8 +91,9 @@ static const char version[] = "$VER: Alias 41.0 (27.07.1997)\n";
 
 void GetNewString(STRPTR, STRPTR, LONG);
 
+int __nocommandline = 1;
 
-int main(int argc, char *argv[])
+int main(void)
 {
     struct RDArgs   *rda;
     struct Process  *AliasProc;
@@ -198,7 +199,7 @@ void GetNewString(STRPTR s, STRPTR d, LONG l)
 
     while (i < l)
     {
-        if (s[i] == '*' || s[i] == '')
+        if (s[i] == '*' || s[i] == '\e')
         {
             d[j] = '*';
 
