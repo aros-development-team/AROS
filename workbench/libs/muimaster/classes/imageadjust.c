@@ -23,6 +23,7 @@
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
+#include "imspec_intern.h"
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
@@ -40,6 +41,7 @@ struct Imageadjust_DATA
     Object *gradient_imagedisplay;
     Object *gradient_start_poppen;
     Object *gradient_end_poppen;
+    char gradient_imagespec[128];
 
     Object *pattern_image[18];
     ULONG last_pattern_selected;
@@ -79,14 +81,13 @@ static void Gradient_Function(struct Hook *hook, Object *obj, APTR msg)
     struct Imageadjust_DATA *data = *(struct Imageadjust_DATA **)msg;
     struct MUI_RGBcolor *start_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_start_poppen, MUIA_Pendisplay_RGBcolor);
     struct MUI_RGBcolor *end_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_end_poppen, MUIA_Pendisplay_RGBcolor);
-    char buf[200];
 
-    snprintf(buf, sizeof(buf), "7:%c,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+    snprintf(data->gradient_imagespec,sizeof(data->gradient_imagespec), "7:%c,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
                  'v',
                  start_rgb->red,start_rgb->green,start_rgb->blue,
                  end_rgb->red,end_rgb->green,end_rgb->blue);
 
-    set(data->gradient_imagedisplay, MUIA_Imagedisplay_Spec, buf);
+    set(data->gradient_imagedisplay, MUIA_Imagedisplay_Spec, data->gradient_imagespec);
 }
 
 
@@ -266,18 +267,34 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct Imageadjust_DATA *data,
 		{
 		    LONG img;
              	    StrToLong(s+2,&img);
-
-//		    if (img >= MUII_WindowBack && img <= MUII_ReadListBack)
-//			return zune_imspec_copy(__zprefs.images[img]);
 	        }
 	        break;
 
 	case	'7':
-		Gradient_Function(NULL,obj,&data);
-		if (data->adjust_type == MUIV_Imageadjust_Type_All)
-		    set(obj,MUIA_Group_ActivePage,5);
-		else
-		    set(obj,MUIA_Group_ActivePage,3);
+		{
+		    struct MUI_ImageSpec_intern spec;
+		    if (zune_gradient_string_to_intern(s+2,&spec))
+		    {
+			struct MUI_RGBcolor col;
+			col.red = spec.u.gradient.start_rgb[0]*0x01010101;
+			col.green = spec.u.gradient.start_rgb[1]*0x01010101;
+			col.blue = spec.u.gradient.start_rgb[2]*0x01010101;
+
+			set(data->gradient_start_poppen, MUIA_Pendisplay_RGBcolor, &col);
+
+			col.red = spec.u.gradient.end_rgb[0]*0x01010101;
+			col.green = spec.u.gradient.end_rgb[1]*0x01010101;
+			col.blue = spec.u.gradient.end_rgb[2]*0x01010101;
+
+			set(data->gradient_end_poppen, MUIA_Pendisplay_RGBcolor, &col);
+		    }
+
+		    Gradient_Function(NULL,obj,&data);
+		    if (data->adjust_type == MUIV_Imageadjust_Type_All)
+		        set(obj,MUIA_Group_ActivePage,5);
+		    else
+		        set(obj,MUIA_Group_ActivePage,3);
+		}
 		break;
     }
 }
@@ -351,8 +368,8 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	        MUIA_Imagedisplay_FreeVert, TRUE,
 	        End),
 	    Child, HGroup,
-		Child, (IPTR)(gradient_start_poppen = PoppenObject, End),
-		Child, (IPTR)(gradient_end_poppen = PoppenObject, End),
+		Child, (IPTR)(gradient_start_poppen = PoppenObject, MUIA_Pendisplay_Spec, (IPTR)"r00000000,00000000,00000000", End),
+		Child, (IPTR)(gradient_end_poppen = PoppenObject, MUIA_Pendisplay_Spec, (IPTR)"rffffffff,ffffffff,ffffffff", End),
 		End,
 	    End;
     }
@@ -485,7 +502,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	DoMethod(gradient_end_poppen, MUIM_Notify, MUIA_Pendisplay_Spec, MUIV_EveryTime,
 		     (IPTR)obj, 3, MUIM_CallHook, (IPTR)&data->gradient_hook, (IPTR)data);
 
-	/* Set the gradient image to correct values (i.e. black) */
+	/* Set the gradient image to correct values */
 	Gradient_Function(NULL,obj,&data);
 
     } /* if (gradient_imagedisplay) */
@@ -549,15 +566,15 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     struct Imageadjust_DATA *data = INST_DATA(cl, obj);
     struct pages {
 	LONG type;
-	LONG pos[5];
+	LONG pos[6];
     };
 
     static struct pages pages_per_type[] = 
     {
-	{ MUIV_Imageadjust_Type_Pen, { 2, -1, -1, -1, -1} },
-	{ MUIV_Imageadjust_Type_Background, { 0, 2, 4, -1, -1} },
-	{ MUIV_Imageadjust_Type_Image, { 0, 1, 2, 3, -1} },
-	{ MUIV_Imageadjust_Type_All, { 0, 1, 2, 3, 4} },
+	{ MUIV_Imageadjust_Type_Pen, { 2, -1, -1, -1, -1, -1} },
+	{ MUIV_Imageadjust_Type_Background, { 0, 2, 4, 5, -1, -1} },
+	{ MUIV_Imageadjust_Type_Image, { 0, 1, 2, 3, -1, -1} },
+	{ MUIV_Imageadjust_Type_All, { 0, 1, 2, 3, 4, 5} },
     };
 
     switch (msg->opg_AttrID)
@@ -635,6 +652,10 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 					    snprintf(data->imagespec, len, "5:%s", str);
 				    }
 				}
+				break;
+
+			case	5: /* Gradient */
+				data->imagespec = StrDup(data->gradient_imagespec);
 				break;
 		    }
 		    if (data->imagespec) *msg->opg_Storage = (ULONG)data->imagespec;
