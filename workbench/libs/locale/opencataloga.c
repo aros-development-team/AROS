@@ -71,6 +71,7 @@ struct header
     char    	    	* language;
     char    	    	* app_language;
     char    	    	* specific_language;
+    char                def_language[] = "english";
 
 #define FILENAMESIZE 256
 
@@ -114,7 +115,7 @@ struct header
     ** don't need to load anything.
     */
     app_language = (char *)GetTagData(OC_BuiltInLanguage,
-                                      (IPTR)0UL,
+                                      def_language,
                                       tags);
 
     if (NULL != app_language && 0 == strcmp(app_language, language))
@@ -139,7 +140,7 @@ struct header
 
 	ForeachNode(&IntLB(LocaleBase)->lb_CatalogList, (struct Node *)catalog)
 	{
-	    if (catalog->ic_Name &&
+        if (catalog->ic_Name &&
         	0 == strcmp(catalog->ic_Name, name) &&
         	catalog->ic_Catalog.cat_Language &&
         	0 == strcmp(catalog->ic_Catalog.cat_Language, language))
@@ -173,7 +174,14 @@ struct header
 
 	while((pref_language < 10) && language)
 	{
-    	if ((((struct Process *)FindTask(NULL))->pr_HomeDir) != NULL)
+    	
+        if (NULL != app_language && 0 == strcmp(app_language, language))
+        {
+    		if (def_locale) CloseLocale(def_locale);
+	    	return NULL;
+        }
+
+        if ((((struct Process *)FindTask(NULL))->pr_HomeDir) != NULL)
 		{
     		strcpy(filename, "PROGDIR:Catalogs");
             AddPart(filename, language, FILENAMESIZE);
