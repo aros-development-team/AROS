@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
  
     Desc:
@@ -33,7 +33,28 @@
         none
 	
     NOTES
-
+        The caller of this function should first check himself
+	whether window->UserPort is NULL. And in this case do not
+	call this function at all.
+	
+	If inside this function the window->UserPort turns out to
+	be NULL, then what happens is, that the IntuiMessage is
+	immediately ReplyMessage()ed in here, just like if this was
+	done by the app whose window was supposed to get the
+	IntuiMessage.
+	
+	The protection with Forbid() is necessary, because of the
+	way shared window userports are handled, when one of this
+	windows is closed, where there is also just a protection with
+	Forbid() when stripping those IntuiMessages from the port
+	which belong to the window which is going to be closed.
+	
+	This function does not check whether the window to which
+	the IntuiMessage is supposed to be sent, really wants to
+	get the IDCMP in question, that is, whether the corresponding
+	flag in window->IDCMPFLags is set.
+	
+	
     EXAMPLE
 
     BUGS
@@ -56,9 +77,20 @@
     {
         IW(window)->num_repeatevents++;
     }
-    PutMsg(window->UserPort, &imsg->ExecMessage);
+
+    Forbid();
+    
+    if (window->UserPort)
+    {
+    	PutMsg(window->UserPort, &imsg->ExecMessage);
+    }
+    else
+    {
+    	ReplyMsg(&imsg->ExecMessage);
+    }
+    
+    Permit();
     
     AROS_LIBFUNC_EXIT
 }
-
 
