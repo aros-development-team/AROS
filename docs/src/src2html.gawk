@@ -50,8 +50,13 @@ BEGIN {
     cmd | getline today;
     close (cmd);
 
-    fninfo="gen/"ARGV[1];
-    gsub(/.src$/,".info",fninfo);
+    if (ARGC==2)
+    {
+	fninfo="gen/"ARGV[1];
+	gsub(/.src$/,".info",fninfo);
+    }
+    else
+	fninfo="";
 
     toc=0;
     thischapter="";

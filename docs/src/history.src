@@ -11,7 +11,7 @@ Things we currently work on:
 \begin{itemize}
 \item ANSI C library for AROS
 \item A own C compiler for AROS (VBCC)
-\item diskfont.library and icon.library
+\item diskfont.library, datatypes and gadtools
 \item AROS on Amiga (maybe even bootable)
 \item CLI commands
 \item Splitting AROS into small packages
