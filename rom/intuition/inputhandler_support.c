@@ -917,7 +917,7 @@ void WindowNeedsRefresh(struct Window * w,
 	    ForeachNode(&w->UserPort->mp_MsgList, IM)
 	    {
 		/* Does the window already have such a message? */
-		if (IDCMP_REFRESHWINDOW == IM->Class)
+		if (IDCMP_REFRESHWINDOW == IM->Class && IM->IAddress == w)
 		{
         	    D(bug("Window %s already has a refresh message pending!!\n",
 		    	   w->Title ? w->Title : (STRPTR)"<NONAME>"));
