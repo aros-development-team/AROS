@@ -106,10 +106,10 @@ int InitWB()
 
     notifysig = 1L << notifyport->mp_SigBit;
 
-    RegisterWorkbench(notifyport);
-
     wbscreen = LockPubScreen(NULL);
     vi = GetVisualInfoA(wbscreen, NULL);
+
+    RegisterWorkbench(notifyport);
 
     OpenDesktop(DESKTOP_All);
 
