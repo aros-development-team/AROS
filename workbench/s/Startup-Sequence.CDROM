@@ -26,6 +26,8 @@ Assign HELP:    LOCALE:Help DEFER
 Touch PIPEFS:systempipe
 Assign PIPE:    PIPEFS:systempipe
 
+C:Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
+
 Copy >NIL: ENVARC:   ENV:   ALL CLONE NOREQ
 Copy >NIL: SYS:Fonts FONTS: ALL CLONE NOREQ
 
@@ -34,18 +36,18 @@ Copy >NIL: SYS:Fonts FONTS: ALL CLONE NOREQ
 SetEnv Workbench $Workbench
 SetEnv Kickstart $Kickstart
 
+FixFonts
+
 AddDatatypes REFRESH QUIET
 IPrefs
 Run <NIL: >NIL: ConClip
 
-Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
 
 
 ; -- BEGIN "AROS under construction" section -------------------------
 
 SetClock LOAD
 
-FixFonts
 
 ; To mount unit /dev/fd0 as drive FDSK: make a link from fdsk/Unit0
 ; to /dev/fd0 (you'll need access rights on the device later -
