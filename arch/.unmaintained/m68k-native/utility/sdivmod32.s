@@ -17,6 +17,7 @@
     .type   AROS_SLIB_ENTRY(SDivMod32,Utility),@function
     .type   AROS_SLIB_ENTRY(SDivMod32_020,Utility),@function
 
+    .balign 4
 AROS_SLIB_ENTRY(SDivMod32_020,Utility):
     divsl.l d1,d1:d0
     rts
@@ -29,6 +30,8 @@ AROS_SLIB_ENTRY(SDivMod32_020,Utility):
     if one is negative, change both,
     if both are negative, change remainder
 */
+
+    .balign 4
 AROS_SLIB_ENTRY(SDivMod32,Utility):
     tst.l   d0
     bpl.s   nispos

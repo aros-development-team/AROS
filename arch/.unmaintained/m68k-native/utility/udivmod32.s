@@ -8,6 +8,8 @@
 
 #include "machine.i"
 
+    .balign 4
+
     .globl  AROS_SLIB_ENTRY(UDivMod32,Utility)
     .globl  AROS_SLIB_ENTRY(UDivMod32_020,Utility)
 
@@ -23,6 +25,7 @@ AROS_SLIB_ENTRY(UDivMod32_020,Utility):
     ./ixemul-41.0/gnulib/common.h
 */
 
+    .balign 4
 AROS_SLIB_ENTRY(UDivMod32,Utility):
     movem.l d2-d3,-(sp)
     cmp.l   #0xFFFF,d1

@@ -10,7 +10,7 @@
 
 	/* Never Called */
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(TrapHandler,Exec)
 	.type	AROS_SLIB_ENTRY(TrapHandler,Exec),@function
 AROS_SLIB_ENTRY(TrapHandler,Exec):

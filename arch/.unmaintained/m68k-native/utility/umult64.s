@@ -19,7 +19,7 @@
 
 */
 
-    .balign 16
+    .balign 4
 
     .globl  AROS_SLIB_ENTRY(UMult64,Utility)
     .globl  AROS_SLIB_ENTRY(UMult64_020,Utility)
@@ -41,6 +41,7 @@ AROS_SLIB_ENTRY(UMult64_020,Utility):
     an unsupp integer instruction anyway :)
 */
 
+    .balign 4
 AROS_SLIB_ENTRY(UMult64,Utility):
     movem.l d2-d5,-(sp)
     /* Set up some registers */

@@ -45,7 +45,7 @@
 	#include "machine.i"
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(StackSwap,Exec)
 	.type	AROS_SLIB_ENTRY(StackSwap,Exec),@function
 AROS_SLIB_ENTRY(StackSwap,Exec):

@@ -19,7 +19,7 @@
 
 */
 
-    .balign 16
+    .balign 4
 
     .globl  AROS_SLIB_ENTRY(SMult64,Utility)
     .globl  AROS_SLIB_ENTRY(SMult64_020,Utility)
@@ -45,6 +45,7 @@ AROS_SLIB_ENTRY(SMult64_020,Utility):
 */
 
 /* Have to change the sign... */
+    .balign 4
 AROS_SLIB_ENTRY(SMult64,Utility):
     move.l  d2,-(a7)
     moveq   #0,d2

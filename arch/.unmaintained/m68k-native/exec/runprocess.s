@@ -25,7 +25,7 @@
 	DOSBase		= entry+4
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(RunProcess,Dos)
 	.type	AROS_SLIB_ENTRY(RunProcess,Dos),@function
 AROS_SLIB_ENTRY(RunProcess,Dos):

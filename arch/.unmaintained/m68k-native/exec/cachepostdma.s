@@ -59,14 +59,14 @@
 	#include "machine.i"
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(CachePostDMA,Exec)
 	.type	AROS_SLIB_ENTRY(CachePostDMA,Exec),@function
 AROS_SLIB_ENTRY(CachePostDMA,Exec):
 	rts
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(CachePostDMA_30,Exec)
 	.type	AROS_SLIB_ENTRY(CachePostDMA_30,Exec),@function
 AROS_SLIB_ENTRY(CachePostDMA_30,Exec):
@@ -89,7 +89,7 @@ cachepostdmasup_30:
 	rte
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(CachePostDMA_40,Exec)
 	.type	AROS_SLIB_ENTRY(CachePostDMA_40,Exec),@function
 AROS_SLIB_ENTRY(CachePostDMA_40,Exec):

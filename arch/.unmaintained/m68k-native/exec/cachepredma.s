@@ -64,7 +64,7 @@
 	#include "machine.i"
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(CachePreDMA,Exec)
 	.type	AROS_SLIB_ENTRY(CachePreDMA,Exec),@function
 AROS_SLIB_ENTRY(CachePreDMA,Exec):
@@ -72,7 +72,7 @@ AROS_SLIB_ENTRY(CachePreDMA,Exec):
 	rts
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(CachePreDMA_40,Exec)
 	.type	AROS_SLIB_ENTRY(CachePreDMA_40,Exec),@function
 AROS_SLIB_ENTRY(CachePreDMA_40,Exec):

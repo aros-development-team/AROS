@@ -22,7 +22,7 @@
     What I do is SetFunction() the correct function in later.
 */
 
-    .balign 16
+    .balign 4
 
     .globl  AROS_SLIB_ENTRY(SMult32,Utility)
     .globl  AROS_SLIB_ENTRY(UMult32,Utility)
@@ -36,6 +36,7 @@ AROS_SLIB_ENTRY(UMult32_020,Utility):
     mulu.l  d1,d0
     rts
 
+    .balign 4
 AROS_SLIB_ENTRY(SMult32,Utility):
 AROS_SLIB_ENTRY(UMult32,Utility):
 /*

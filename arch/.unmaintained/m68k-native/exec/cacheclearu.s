@@ -52,7 +52,7 @@
 	#include "machine.i"
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(CacheClearU,Exec)
 	.type	AROS_SLIB_ENTRY(CacheClearU,Exec),@function
 AROS_SLIB_ENTRY(CacheClearU,Exec):
@@ -60,7 +60,7 @@ AROS_SLIB_ENTRY(CacheClearU,Exec):
 	rts
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(CacheClearU_20,Exec)
 	.type	AROS_SLIB_ENTRY(CacheClearU_20,Exec),@function
 AROS_SLIB_ENTRY(CacheClearU_20,Exec):
@@ -78,7 +78,7 @@ cacheclearusup_20:
 	rte			/* This rte will restore the SR from the stack */
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(CacheClearU_40,Exec)
 	.type	AROS_SLIB_ENTRY(CacheClearU_40,Exec),@function
 AROS_SLIB_ENTRY(CacheClearU_40,Exec):
@@ -94,7 +94,7 @@ cacheclearusup_40:
 	rte
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(CacheClearU_60,Exec)
 	.type	AROS_SLIB_ENTRY(CacheClearU_60,Exec),@function
 AROS_SLIB_ENTRY(CacheClearU_60,Exec):

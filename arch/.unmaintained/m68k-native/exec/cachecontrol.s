@@ -47,7 +47,7 @@
 	#include "machine.i"
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(CacheControl,Exec)
 	.type	AROS_SLIB_ENTRY(CacheControl,Exec),@function
 AROS_SLIB_ENTRY(CacheControl,Exec):

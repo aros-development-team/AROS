@@ -41,7 +41,7 @@
 	#include "machine.i"
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(Permit,Exec)
 	.type	AROS_SLIB_ENTRY(Permit,Exec),@function
 AROS_SLIB_ENTRY(Permit,Exec):

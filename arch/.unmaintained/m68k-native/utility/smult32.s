@@ -22,12 +22,9 @@
     What I do is SetFunction() the correct function in later.
 */
 
-    .balign 16
-
+    .balign 4
     .globl  AROS_SLIB_ENTRY(SMult32_020,Utility)
-
     .type   AROS_SLIB_ENTRY(SMult32_020,Utility),@function
-
 AROS_SLIB_ENTRY(SMult32_020,Utility):
     muls.l  d1,d0
     rts

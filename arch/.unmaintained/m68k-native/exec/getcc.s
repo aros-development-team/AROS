@@ -48,7 +48,7 @@
 	#include "machine.i"
 
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(GetCC,Exec)
 	.type	AROS_SLIB_ENTRY(GetCC,Exec),@function
 
@@ -61,7 +61,7 @@ AROS_SLIB_ENTRY(GetCC,Exec):
 
 	/* 68010 and up */
 	.text
-	.balign 16
+	.balign 4
 	.globl	AROS_SLIB_ENTRY(GetCC_10,Exec)
 	.type   AROS_SLIB_ENTRY(GetCC_10,Exec),@function
 AROS_SLIB_ENTRY(GetCC_10,Exec):
