@@ -38,9 +38,6 @@
 /* #define MYDEBUG 1 */
 #include "debug.h"
 
-#define D(x) x
-#define bug(x...) kprintf(x)
-
 #include "mui.h"
 
 #include "datatypescache.h"
