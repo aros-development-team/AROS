@@ -125,7 +125,7 @@ static void OpenLibs(void)
     	Cleanup("Can't open graphics.library!", RETURN_FAIL);
     }
 
-    if (!(IntuitionBase = (struct GfxBase *)OpenLibrary("intuition.library", 0)))
+    if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 0)))
     {
     	Cleanup("Can't open intuition.library!", RETURN_FAIL);
     }
