@@ -8,9 +8,11 @@
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <clib/alib_protos.h>
+#include <cybergraphx/cybergraphics.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/cybergraphics.h>
 
 #ifdef _AROS
 #include <proto/muimaster.h>
@@ -39,8 +41,9 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
     struct BitMap   	  *friendbm = NULL;
     struct RastPort 	  temprp, bmrp, *scrrp;
     UBYTE   	    	  *linebuffer;
+    ULONG   	    	  *cgfxcoltab = NULL;
     LONG    	    	  bmflags = 0;
-    WORD    	    	  bmdepth, bmwidth, bmheight, x, y;
+    WORD    	    	  bmdepth, bmwidth, bmheight, bmcols, x, y;
 
     if (!data->mappingtable && !data->sourcecolors) return;
     if (!data->bm || (data->width < 1) || (data->height < 1)) return;
@@ -68,6 +71,8 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
     bmdepth = GetBitMapAttr(scrrp->BitMap, BMA_DEPTH);
     if (bmdepth > 8) bmdepth = 8;
     
+    bmcols = 1L << bmdepth;
+    
     data->remapped_bm = AllocBitMap(data->width, data->height, bmdepth, bmflags, friendbm);
 
     if (!data->remapped_bm)
@@ -82,8 +87,28 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
     if (data->transparent != -1)
     {
 	data->mask = AllocRaster(bmwidth,bmheight);
+	memset(data->mask, 0xff, RASSIZE(bmwidth, bmheight));
     }
 
+    if (CyberGfxBase &&
+    	!data->mappingtable &&
+	(GetBitMapAttr(data->remapped_bm, BMA_DEPTH) >= 15))
+    {
+    	cgfxcoltab = AllocVec(bmcols * sizeof(ULONG), MEMF_ANY);
+	
+	if (cgfxcoltab)
+	{
+	    for(y = 0; y < bmcols; y++)
+	    {
+	    	ULONG red = data->sourcecolors[y * 3] & 0xFF000000;
+		ULONG green = data->sourcecolors[y * 3 + 1] & 0xFF000000;
+		ULONG blue = data->sourcecolors[y * 3 + 2] & 0xFF000000;
+		
+	    	cgfxcoltab[y] = (red >> 8) | (green >> 16) | (blue >> 24);
+	    }
+	}
+	
+    }
     
     InitRastPort(&temprp);
     temprp.BitMap = AllocBitMap(data->width, 1, 1, 0, NULL);
@@ -110,16 +135,22 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
 	/* Build the mask, totaly slow but works */
 	if (data->mask)
 	{
-	    UBYTE *mask = data->mask;
+	    UBYTE *mask = data->mask + y * bmwidth / 8;
+	    UBYTE xmask = 0x80;
+	    
 	    for(x = 0; x < data->width; x++)
 	    {
-	    	if (linebuffer[x] != data->transparent)
+	    	if (linebuffer[x] == data->transparent)
 	    	{
-		    mask[y*bmwidth/8+x/8] |= (1L << (7-x%8));
-	    	} else
-	    	{
-		    mask[y*bmwidth/8+x/8] &= ~(1L << (7-x%8));
+		    *mask &= ~xmask;
 	    	}
+		
+		xmask >>= 1;
+		if (!xmask)
+		{
+		    xmask = 0x80;
+		    mask++;
+		}
 	    }
 	}
 	
@@ -131,7 +162,7 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
 	    	linebuffer[x] = data->mappingtable[linebuffer[x]];
 	    }
 	}
-	else 
+	else if (!cgfxcoltab)
 	{
 	    for(x = 0; x < data->width; x++)
 	    {
@@ -157,22 +188,42 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
 		linebuffer[x] = (remappixel & 0xFF);
 	    }
 
-	}
+	} /* else if (!cgfxcoltab) */
 	
 	/* Write line into destination bitmap */
 	
         bmrp.BitMap = data->remapped_bm;
-    	if (temprp.BitMap)
+
+	if (cgfxcoltab)
 	{
-	    WritePixelLine8(&bmrp, 0, y, data->width, linebuffer, &temprp);
+	    WriteLUTPixelArray(linebuffer,
+	    	    	       0,
+			       0,
+			       data->width,
+			       &bmrp,
+			       cgfxcoltab,
+			       0,
+			       y,
+			       data->width,
+			       1,
+			       CTABFMT_XRGB8);
 	}
 	else
 	{
-	    for(x = 0; x < data->width; x++)
+            bmrp.BitMap = data->remapped_bm;
+    	    if (temprp.BitMap)
 	    {
-	    	SetAPen(&bmrp, linebuffer[x]);
-	    	WritePixel(&bmrp, x, y);
+		WritePixelLine8(&bmrp, 0, y, data->width, linebuffer, &temprp);
 	    }
+	    else
+	    {
+		for(x = 0; x < data->width; x++)
+		{
+	    	    SetAPen(&bmrp, linebuffer[x]);
+	    	    WritePixel(&bmrp, x, y);
+		}
+	    }
+	    
 	}
 	
     } /* for(y = 0; y < data->height; y++) */
@@ -188,6 +239,7 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
 	FreeBitMap(temprp.BitMap);
     }
     
+    FreeVec(cgfxcoltab);
     FreeVec(linebuffer);
 }
 
