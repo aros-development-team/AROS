@@ -85,7 +85,13 @@
 
 	    if (o)
 	    {
-		((struct _Object *)o)->o_Class = objcl;
+		_OBJ(o)->o_Class = objcl;
+		
+		#warning "Use atomic macro for this once we have some"
+		Forbid();
+    		objcl->cl_ObjectCount++;
+		Permit();
+		
 		retval = (IPTR) BASEOBJECT(o);
 	    }
 	    break;
@@ -93,6 +99,12 @@
 	case OM_DISPOSE:
 	    /* Free memory. Caller is responsible that everything else
 	       is already cleared! */
+	       
+	    #warning "Use atomic macro for this once we have some"
+	    Forbid();
+    	    OCLASS(o)->cl_ObjectCount--;
+	    Permit();
+	    
 	    FreeVec (_OBJECT(o));
 	    break;
 
