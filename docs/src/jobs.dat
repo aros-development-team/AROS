@@ -93,8 +93,8 @@ camd00025;2;ksvalast;Write GetMidiErr
 camd00026;2;ksvalast;Write MidiMsgType
 camd00027;2;ksvalast;Write MidiMsgLen
 camd00028;2;ksvalast;Write ParseMidi
-camd00029;1;ksvalast;Write OpenMidiDevice
-camd00030;1;ksvalast;Write CloseMidiDevice
+camd00029;2;ksvalast;Write OpenMidiDevice
+camd00030;2;ksvalast;Write CloseMidiDevice
 camd00031;0;ksvalast;Write RethinkCAMD
 camd00032;0;ksvalast;Write StartClusterNotify
 camd00033;0;ksvalast;Write EndClusterNotify
