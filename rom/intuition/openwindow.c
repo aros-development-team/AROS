@@ -27,6 +27,9 @@
 #endif
 #	include <aros/debug.h>
 
+#undef IW
+#define IW(x) ((struct IntWindow *)x)
+
 /*****************************************************************************
 
     NAME */
@@ -72,7 +75,7 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct NewWindow nw;
-    struct Window * w = NULL;
+    struct Window * w = NULL, *helpgroupwindow = NULL;
     struct TagItem *tag, *tagList;
     struct RastPort *rp;
     struct Hook *backfillhook = LAYERS_BACKFILL;
@@ -88,9 +91,10 @@
     WORD    mousequeue = DEFAULTMOUSEQUEUE;
     WORD    repeatqueue = 3; /* stegerg: test on my Amiga suggests this */
     ULONG   moreFlags = 0;
+    ULONG   helpgroup;
     
     ULONG lock;
-    BOOL driver_init_done = FALSE;
+    BOOL driver_init_done = FALSE, have_helpgroup = FALSE;
 
 
     ASSERT_VALID_PTR(newWindow)
@@ -245,14 +249,30 @@
 	    case WA_AmigaKey:
 		AmigaKey = (struct Image *)tag->ti_Data;
 		break;
+
+	    case WA_HelpGroup:
+	        helpgroup = (ULONG)tag->ti_Data;
+		have_helpgroup = TRUE;
+		break;
+		
+	    case WA_HelpGroupWindow:
+		helpgroupwindow = (struct Window *)tag->ti_Data;
+		break;
 		
 	    case WA_MenuHelp:
+	        MODIFY_MFLAG(WMFLG_MENUHELP);
+		break;
+		
+	    case WA_PointerDelay:
+	        MODIFY_MFLAG(WMFLG_POINTERDELAY);
+		break;
+
+	    case WA_TabletMessages:
+		MODIFY_MFLAG(WMFLG_TABLETMESSAGES);
+		break;
+		
 	    case WA_Pointer:
 	    case WA_BusyPointer:
-	    case WA_PointerDelay:
-	    case WA_HelpGroup:
-	    case WA_HelpGroupWindow:
-	    case WA_TabletMessages:
     #warning TODO: Missing WA_ Tags
 		break;
 	    } /* switch Tag */
@@ -324,8 +344,6 @@
     if (nw.Screen == NULL)
         goto failexit;
     
-#define IW(x) ((struct IntWindow *)x)
-
     w  = AllocMem (sizeof(struct IntWindow), MEMF_CLEAR);
     
 /* nlorentz: For now, creating a rastport becomes the responsibility of
@@ -487,6 +505,23 @@
     IW(w)->AmigaKey  = AmigaKey  ? AmigaKey  :
 				   ((struct IntScreen *)(w->WScreen))->DInfo.dri_AmigaKey;
     
+    /* Help stuff */
+    
+    if (!have_helpgroup && helpgroupwindow)
+    {
+        if (IW(helpgroupwindow)->helpflags & HELPF_ISHELPGROUP)
+	{
+	    helpgroup = IW(helpgroupwindow)->helpgroup;
+	    have_helpgroup = TRUE;
+	}
+    }
+    
+    if (have_helpgroup)
+    {
+        IW(w)->helpflags |= HELPF_ISHELPGROUP;
+	IW(w)->helpgroup = helpgroup;
+    }	
+	
     if (!intui_OpenWindow (w, IntuitionBase, nw.BitMap, backfillhook))
 	goto failexit;
 
