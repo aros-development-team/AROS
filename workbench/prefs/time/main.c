@@ -53,6 +53,7 @@ libtable[] =
 
 /*********************************************************************************************/
 
+static struct Hook  	    	yearhook;	    	
 static struct RDArgs        	*myargs;
 static IPTR                 	args[NUM_ARGS];
 
@@ -227,14 +228,48 @@ static void FreeVisual(void)
 
 /*********************************************************************************************/
 
+static void YearFunc(struct Hook *hook, Object *obj, IPTR *param)
+{
+    IPTR year;
+    
+    get(obj, MUIA_String_Integer, &year);
+    
+    if ((LONG)*param == -1)
+    	year--;
+    else if ((LONG)*param == 1)
+    	year++;
+    
+    if (year < 1978)
+    {
+    	year = 1978;
+	nnset(obj, MUIA_String_Integer, year);
+    }
+    else if (year > 2099)
+    {
+    	year = 2099;
+	nnset(obj, MUIA_String_Integer, year);
+    }
+    else if (*param)
+    {
+    	nnset(obj, MUIA_String_Integer, year);
+    }
+    
+    set(cal, MUIA_Calendar_Year, year);
+
+}
+
+/*********************************************************************************************/
+
 static void MakeGUI(void)
 {
     extern struct NewMenu nm;
     
-    Object *menu;
+    Object *menu, *yearaddobj, *yearsubobj;
     
     if (!MakeCalendarClass()) Cleanup(MSG(MSG_CANT_CREATE_APP));
     
+    yearhook.h_Entry = HookEntry;
+    yearhook.h_SubEntry = (HOOKFUNC)YearFunc;
     
     if (LocaleBase)
     {
@@ -272,29 +307,47 @@ static void MakeGUI(void)
 	    MUIA_Window_Title, (IPTR)MSG(MSG_WINTITLE),
 	    MUIA_Window_ID, MAKE_ID('T','W','I','N'),
 	    WindowContents, VGroup,
-	    	Child, HGroup,
+	    	Child, HGroup, /* Group containing calendar box and clock box */
 		    MUIA_Group_SameWidth, TRUE,
-		    Child, VGroup,
+		    Child, VGroup, /* Calendar box */
 		    	GroupFrame,
-			Child, HGroup,
+			Child, HGroup, /* Month/year row */
 		    	    Child, monthobj = MUI_MakeObject(MUIO_Cycle, NULL, monthlabels),
 			    Child, HVSpace,
-			    Child, StringObject,
+			    Child, yearsubobj = TextObject, /* year [-] gadget */
+			    	ButtonFrame,
+				MUIA_Background, MUII_ButtonBack,
+				MUIA_Font, MUIV_Font_Button,
+				MUIA_InputMode, MUIV_InputMode_RelVerify,
+				MUIA_Text_Contents, "\033c-",
+				MUIA_FixWidthTxt, (IPTR)"+",
+				End,
+			    Child, yearobj = StringObject, /* year gadget */
 				StringFrame,
+				MUIA_String_Accept, (IPTR)"0123456789",
+				MUIA_FixWidthTxt, (IPTR)"55555",
+				End,
+			    Child, yearaddobj = TextObject, /* year [-] gadget */
+			    	ButtonFrame,
+				MUIA_Background, MUII_ButtonBack,
+				MUIA_Font, MUIV_Font_Button,
+				MUIA_InputMode, MUIV_InputMode_RelVerify,
+				MUIA_Text_Contents, "\033c+",
+				MUIA_FixWidthTxt, (IPTR)"-",
 				End,
 			    End,
 			Child, (IPTR)cal,
 			End,
-		    Child, VGroup,
+		    Child, VGroup, /* Clock box */
 		    	GroupFrame,
 			Child, HVSpace,
 		    	End,
 		    End,
-		Child, HGroup,
+		Child, HGroup, /* save/use/cancel button row */
 		    MUIA_FixHeight, 1,
 		    MUIA_Group_SameWidth, TRUE,
 		    Child, CoolImageIDButton(MSG(MSG_GAD_SAVE), COOL_SAVEIMAGE_ID),
-		    Child, CoolImageIDButton(MSG(MSG_GAD_USE), COOL_USEIMAGE_ID),
+		    Child, CoolImageIDButton(MSG(MSG_GAD_USE), COOL_DOTIMAGE_ID),
 		    Child, CoolImageIDButton(MSG(MSG_GAD_CANCEL), COOL_CANCELIMAGE_ID),
 		    End,
 		End,
@@ -307,9 +360,13 @@ static void MakeGUI(void)
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
     DoMethod(monthobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, cal, 3, MUIM_NoNotifySet, MUIA_Calendar_Month0, MUIV_TriggerValue);
-
+    DoMethod(yearobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, 0);
+    DoMethod(yearaddobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, 1);
+    DoMethod(yearsubobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, -1);
+    
     set(cal, MUIA_Calendar_Date, &clockdata);
     set(monthobj, MUIA_Cycle_Active, clockdata.month - 1);
+    set(yearobj, MUIA_String_Integer, clockdata.year);
     
 }
 
