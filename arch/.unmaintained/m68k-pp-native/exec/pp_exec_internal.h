@@ -8,6 +8,7 @@
  */
 
 void _sys_trap1_handler(void);
+void sys_Dispatch(struct pt_regs * regs);
 
 
 void switch_to_user_mode(void *, ULONG *);
