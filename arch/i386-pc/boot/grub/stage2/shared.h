@@ -375,6 +375,7 @@ extern char *grub_scratch_mem;
 
 #include "mb_header.h"
 #include "mb_info.h"
+extern unsigned long mb_header_flags;
 
 /* For the Linux/i386 boot protocol version 2.03.  */
 struct linux_kernel_header
@@ -658,6 +659,8 @@ extern int filemax;
  */
 
 extern struct multiboot_info mbi;
+extern struct vbe_controller vbe_info_block;
+extern struct vbe_mode mode_info_block;
 extern unsigned long saved_drive;
 extern unsigned long saved_partition;
 #ifndef STAGE1_5
@@ -756,6 +759,9 @@ int get_vbe_mode_info (int mode_number, struct vbe_mode *mode);
 
 /* Set VBE mode.  */
 int set_vbe_mode (int mode_number);
+
+/* Convert 32-bit pointer to 16-bit segment:offset style pointer */
+#define VBE_FAR_PTR(p) (((p >> 16) << 4) + (p & 0xFFFF))
 
 /* Return the data area immediately following our code. */
 int get_code_end (void);
