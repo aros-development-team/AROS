@@ -434,5 +434,21 @@ void SendDeferedActionMsg(struct DeferedActionMessage *msg, struct IntuitionBase
 }
 
 /**********************************************************************************/
-/**********************************************************************************/
+
+void UpdateMouseCoords(struct Window *win)
+{
+    WORD scrmousex = win->WScreen->MouseX;
+    WORD scrmousey = win->WScreen->MouseY;
+    
+    win->MouseX    = scrmousex - win->LeftEdge;
+    win->MouseY    = scrmousey - win->TopEdge;
+
+    /* stegerg: AmigaOS sets this even if window is not GZZ
+       so we do the same as they are handy also for non-GZZ
+       windows */
+
+    win->GZZMouseX = scrmousex - (win->LeftEdge + win->BorderLeft);
+    win->GZZMouseY = scrmousey - (win->TopEdge + win->BorderTop);
+}
+
 /**********************************************************************************/
