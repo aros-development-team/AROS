@@ -32,7 +32,7 @@ int main(void)
     
     ForeachNode(&list, n)
     {
-        printf("%s %ld\n", n->ln_Name, n->ln_Pri);
+        printf("%s %d\n", n->ln_Name, n->ln_Pri);
     }
     
     return 0;

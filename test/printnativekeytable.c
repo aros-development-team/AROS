@@ -159,7 +159,7 @@ static void dotest(void)
 			ie.ie_Class         = IECLASS_RAWKEY;
     	    	    	ie.ie_Code          = msg->Code;
 			ie.ie_Qualifier     = msg->Qualifier;
-			ie.ie_EventAddress  = *(ULONG *)msg->IAddress;
+			ie.ie_EventAddress  = *((ULONG **) msg->IAddress);
 			
 			ret = MapRawKey(&ie, buf, sizeof(buf), NULL);
 			if (ret >= 0) buf[ret] = 0;

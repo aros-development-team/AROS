@@ -43,13 +43,13 @@ int main(int argc, char **argv)
     }
 
     ArosInquire (
-	AI_ArosVersion, 	&vers,
-	AI_ArosReleaseMajor,	&relMajor,
-	AI_ArosReleaseMinor,	&relMinor,
-	AI_KickstartBase,	&kickbase,
-	AI_KickstartSize,	&kicksize,
-	AI_KickstartVersion,	&kickver,
-	AI_KickstartRevision,	&kickrev,
+	AI_ArosVersion, 	(IPTR) &vers,
+	AI_ArosReleaseMajor,	(IPTR) &relMajor,
+	AI_ArosReleaseMinor,	(IPTR) &relMinor,
+	AI_KickstartBase,	(IPTR) &kickbase,
+	AI_KickstartSize,	(IPTR) &kicksize,
+	AI_KickstartVersion,	(IPTR) &kickver,
+	AI_KickstartRevision,	(IPTR) &kickrev,
 	TAG_DONE);
 
     printf ("AROS release = %ld.%ld\n", relMajor, relMinor);

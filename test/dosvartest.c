@@ -24,7 +24,7 @@
   DeleteVar(VarName, Flags); \
   printf("---\n");
 
-void main(void)
+int main(void)
 {
   int Bytes;
   char * Buffer = AllocMem(0x1000,0x0);
@@ -86,4 +86,6 @@ void main(void)
 
 
   FreeMem(Buffer,0x1000);
+
+    return 0;
 }

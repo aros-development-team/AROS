@@ -51,7 +51,7 @@ int main(void)
 		{
 		    printf("Date2Amiga gave wrong values for date \"%s\" (day #%ld)"
 		           " (secs %ld) -> wrong secs is %ld"
-			   " --> clockdate: year = %ld month = %ld day = %ld\n"
+			   " --> clockdate: year = %d month = %d day = %d\n"
 			   , s, days, seconds, secresult, cd.year, cd.month, cd.mday);
 		}
 		
@@ -64,4 +64,6 @@ int main(void)
 	
 	CloseLibrary((struct Library *)UtilityBase);
     }
+
+    return 0;
 }

@@ -19,7 +19,7 @@ void cleanup(char *msg)
     
     if (buf) FreeVec(buf);
     
-    if (UtilityBase) CloseLibrary(UtilityBase);
+    if (UtilityBase) CloseLibrary((struct Library *)UtilityBase);
     if (DiskfontBase) CloseLibrary(DiskfontBase);
     
     exit(0);
@@ -29,7 +29,7 @@ void openlibs(void)
 {
     DiskfontBase = OpenLibrary("diskfont.library", 0);
     if (!DiskfontBase) cleanup("Cant open diskfont.library!");
-    UtilityBase = OpenLibrary("utility.library", 0);
+    UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library", 0);
     if (!UtilityBase) cleanup("Cant open utility.library!");
 }
 
@@ -73,22 +73,21 @@ void action(void)
 		af->taf_Attr.tta_YSize,
 		af->taf_Type,
 		af->taf_Attr.tta_Flags,
-		af->taf_Attr.tta_Style,
-		i);
+		af->taf_Attr.tta_Style);
 	
-	printf("  tags = %lx  istagged = %d\n", af->taf_Attr.tta_Tags, (af->taf_Attr.tta_Style & FSF_TAGGED));
+	printf("  tags = %p  istagged = %d\n", af->taf_Attr.tta_Tags, (af->taf_Attr.tta_Style & FSF_TAGGED));
 		
 {
 	if ((af->taf_Attr.tta_Style & FSF_TAGGED) && (af->taf_Attr.tta_Tags))
 	{
 	    struct TagItem *tag, *tstate = af->taf_Attr.tta_Tags;
 	   
-	    printf("tags = %lx\n",  af->taf_Attr.tta_Tags);
+	    printf("tags = %p\n",  af->taf_Attr.tta_Tags);
 	    //Delay(1*50);
 	    
 	    while((tag = NextTagItem(&tstate)))
 	    {
-	    	printf(" {0x%08x,0x%08x}\n", tag->ti_Tag, tag->ti_Data);
+	    	printf(" {%lx,%lx}\n", tag->ti_Tag, tag->ti_Data);
 	    }
 	}
 }
@@ -112,4 +111,6 @@ int main(void)
     openlibs();
     action();
     cleanup(0);
+
+    return 0; /* keep compiler happy */
 }

@@ -32,11 +32,9 @@
 
   BOOL writeFullPath(struct AnchorPath *AP);
 
-void main (void)
+int main (void)
 {
-  BPTR dirlock,oldlock;
   BOOL error;
-  BOOL success;
   int strlength=160;
   struct AnchorPath * AP = AllocVec(sizeof(struct AnchorPath) + strlength,MEMF_CLEAR);
   char * Pattern = AllocVec(80,MEMF_ANY);
@@ -85,6 +83,8 @@ void main (void)
   //CurrentDir(oldlock);
 
   //UnLock(dirlock);
+
+    return 0;
 }
 
 #undef MatchFirst

@@ -84,7 +84,7 @@ static void MakeWin(void)
 			   WA_Top,20,
 			   WA_Width,200,
 			   WA_Height,200,
-			   WA_Title,"Press key to flip color!",
+			   WA_Title,(IPTR)"Press key to flip color!",
 			   WA_CloseGadget,TRUE,
 			   WA_DepthGadget,TRUE,
 			   WA_DragBar,TRUE,

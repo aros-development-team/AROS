@@ -8,6 +8,7 @@
 #include <graphics/text.h>
 
 #include <stdio.h>
+#define TA(ta) ((struct TextAttr *) (ta))
 
 int main(void)
 {
@@ -30,8 +31,8 @@ int main(void)
 	tta2.tta_YSize = sizes[i];
 	printf("Size: %d, Weight1: %d, Weight2: %d\n",
 	       (int)sizes[i],
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta1, &tta2, NULL),
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta2, &tta1, NULL));
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta1), TA(&tta2), NULL),
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta2), TA(&tta1), NULL));
     }
     tta2.tta_YSize = 16;
 
@@ -42,8 +43,8 @@ int main(void)
 	tta2.tta_Style = styles[i];
 	printf("Style: %d, Weight1: %d, Weight2: %d\n",
 	       (int)styles[i],
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta1, &tta2, NULL),
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta2, &tta1, NULL));
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta1), TA(&tta2), NULL),
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta2), TA(&tta1), NULL));
     }
     tta2.tta_Style = 0;
 
@@ -53,11 +54,11 @@ int main(void)
 	tta2.tta_Flags = flags[i];
 	printf("Flags: %d, Weight1: %d, Weight2: %d\n",
 	       (int)flags[i],
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta1, &tta2, NULL),
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta2, &tta1, NULL));
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta1), TA(&tta2), NULL),
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta2), TA(&tta1), NULL));
     }
     
-    tta1.tta_Style = tta2.tta_Style = ~(UBYTE)FSF_TAGGED;
+    tta1.tta_Style = tta2.tta_Style = (UBYTE) ~FSF_TAGGED;
     tta1.tta_Flags = tta2.tta_Flags = ~0;
 
     printf("\nNegative flags\n");
@@ -67,10 +68,10 @@ int main(void)
 	tta2.tta_Style = ~styles[i];
 	printf("Style: %d, Weight1: %d, Weight2: %d\n",
 	       (int)styles[i],
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta1, &tta2, NULL),
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta2, &tta1, NULL));
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta1), TA(&tta2), NULL),
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta2), TA(&tta1), NULL));
     }
-    tta2.tta_Style = ~(UBYTE)FSF_TAGGED;
+    tta2.tta_Style = (UBYTE) ~FSF_TAGGED;
 
     /* What is the weight for different flags ? */
     for (i = 0; i < 8; i++)
@@ -78,8 +79,8 @@ int main(void)
 	tta2.tta_Flags = ~flags[i];
 	printf("Flags: %d, Weight1: %d, Weight2: %d\n",
 	       (int)flags[i],
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta1, &tta2, NULL),
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta2, &tta1, NULL));
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta1), TA(&tta2), NULL),
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta2), TA(&tta1), NULL));
     }
     
     /* The weight for some random combinations */
@@ -90,8 +91,8 @@ int main(void)
     tta2.tta_Style = FSF_BOLD;
     tta2.tta_Flags = FPF_DESIGNED;
     printf("\nRandom: 1, Weight1: %d, Weight2: %d\n",
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta1, &tta2, NULL),
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta2, &tta1, NULL));
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta1), TA(&tta2), NULL),
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta2), TA(&tta1), NULL));
 
     tta1.tta_YSize = 12;
     tta1.tta_Style = 0;
@@ -100,8 +101,8 @@ int main(void)
     tta2.tta_Style = 0;
     tta2.tta_Flags = FPF_DISKFONT;
     printf("Random: 2, Weight1: %d, Weight2: %d\n",
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta1, &tta2, NULL),
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta2, &tta1, NULL));
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta1), TA(&tta2), NULL),
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta2), TA(&tta1), NULL));
 
     tta1.tta_YSize = 15;
     tta1.tta_Style = FSF_BOLD;
@@ -110,8 +111,8 @@ int main(void)
     tta2.tta_Style = FSF_ITALIC;
     tta2.tta_Flags = FPF_ROMFONT | FPF_REMOVED;
     printf("Random: 3, Weight1: %d, Weight2: %d\n",
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta1, &tta2, NULL),
-	       MAXFONTMATCHWEIGHT - WeighTAMatch(&tta2, &tta1, NULL));
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta1), TA(&tta2), NULL),
+	       MAXFONTMATCHWEIGHT - WeighTAMatch(TA(&tta2), TA(&tta1), NULL));
 
     return 0;
 }

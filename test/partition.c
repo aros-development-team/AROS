@@ -66,8 +66,8 @@ struct PartitionHandle *ph;
 }
 
 LONG GetPartitionTableAttrsA(struct PartitionHandle *ph, LONG tag, ...) {
-
-	return GetPartitionTableAttrs(ph, &tag);
+    //FIXME: buggy
+	return GetPartitionTableAttrs(ph, (struct TagItem *) &tag);
 }
 
 void PrintPartitionTable(struct PartitionHandle *root, ULONG i) {
@@ -115,7 +115,7 @@ ULONG a;
 		printf("Couldn't read partition table\n");
 }
 
-void main(void) {
+int main(void) {
 struct PartitionHandle *root;
 char *device = "fdsk.device";
 ULONG unit = 1;
@@ -136,5 +136,7 @@ ULONG unit = 1;
 	}
 	else
 		printf("No partition.library\n");
+
+    return 0;
 }
 

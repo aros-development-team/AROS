@@ -119,4 +119,5 @@ int main(void)
 	CloseWindow(win);
     }
     
+    return 0;
 }

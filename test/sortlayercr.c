@@ -63,7 +63,7 @@ void doit(char *msg, WORD dx, WORD dy)
     cr = dummy_lay.ClipRect;
     while(cr)
     {
-        printf("%d ", cr->Flags);
+        printf("%ld ", cr->Flags);
         cr = cr->Next;
     }
     printf("\n");
@@ -83,7 +83,7 @@ void action(void)
     
 }
 
-void main(void)
+int main(void)
 {
     LayersBase = OpenLibrary("layers.library", 0);
     if (LayersBase)
@@ -93,5 +93,6 @@ void main(void)
 	
         CloseLibrary(LayersBase);
     }
-    	    	        
+    
+    return 0;
 }

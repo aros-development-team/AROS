@@ -25,7 +25,6 @@ static struct Window *win;
 static struct Task   *task1, *task2, *maintask;
 
 static struct SignalSemaphore sem;
-static char s[255];
 
 /****************************************************************************************/
 
