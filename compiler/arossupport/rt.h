@@ -148,7 +148,6 @@ extern RTDesc const * RT_Resources[RTT_MAX];
 #define GetRTCheckFunc(no)  (GetRTField(no,CheckFunc))
 
 extern void RT_FreeResource (RTData * rtd, int rtt, RTNode * rtnode);
-extern char * StrDup (const char * str);
 
 #define ALIGNED_PTR	0x00000001	/* Must be aligned */
 #define NULL_PTR	0x00000002	/* May be NULL */
