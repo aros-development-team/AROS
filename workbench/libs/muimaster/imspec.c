@@ -6,6 +6,16 @@
     $Id$
 */
 
+/* This is the implementation of a MUI-like image engine
+ * (see MUIA_Image_Spec for more information about MUI image specs)
+ * Their external form is a string "<type>:<parameters>"
+ * with type being a single char. See zune_image_spec_to_structure().
+ *
+ * Basically an ImageSpec can be anything which can be displayed:
+ * gfx datas, drawing code, ...
+ * See ImageSpecType for the known types.
+ */
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +27,9 @@
 
 #include <proto/exec.h>
 #include <proto/graphics.h>
+#include <proto/intuition.h>
 #include <proto/dos.h>
+#include <clib/alib_protos.h>
 
 #ifdef __AROS__
 #include <proto/muimaster.h>
@@ -34,382 +46,12 @@
 
 #include "muimaster_intern.h"
 #include "prefs.h"
+#include "penspec.h"
+#include "imspec_intern.h"
 
 extern struct Library *MUIMasterBase;
 
-#ifdef __AROS__
-static char *StrDup(char *x)
-{
-    char *dup;
-    if (!x) return NULL;
-    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
-    if (dup) CopyMem((x), dup, strlen(x) + 1);
-    return dup;
-}
-#endif
-
-typedef enum {
-    IST_MUICOLOR, /* one the MUI preset colors, mimic WB colors */
-    IST_PATTERN,  /* a mix of the MUI preset colors, to get even more colors */
-    IST_COLOR,    /* an arbitrary RGB color */
-    IST_BITMAP,   /* a picture to tile in ackground */
-    IST_VECTOR,   /* has code to draw */
-    IST_EXTERNAL, /* small images for gadgets */
-} ImageSpecType;
-
-#define CHECKBOX_IMAGE 4
-
-/* should really contain an union */
-struct MUI_ImageSpec
-{
-    ImageSpecType type;
-    UWORD flags;                  /* see MUI_ImageSpec_Flags */
-    struct MUI_RenderInfo *mri;
-    UBYTE muicolor;
-    UBYTE pattern;
-
-    ULONG r,g,b;
-    LONG color;
-
-    char *filename;
-    struct dt_node *dt;
-
-    LONG vectortype;
-    void (*vector_draw)(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state);
-};
-
-enum MUI_ImageSpec_Flags { IMSPEC_REALIZED = (1<<0) /* struct is between _setup and _cleanup */ };
-
-static void draw_thick_line(struct RastPort *rp,int x1, int y1, int x2, int y2)
-{
-    Move(rp,x1,y1);
-    Draw(rp,x2,y2);
-    Move(rp,x1+1,y1);
-    Draw(rp,x2+1,y2);
-}
-
-#define VECTOR_DRAW_FUNC(x) (((void (*)(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)(x))))
-
-
-#define SPACING 1
-#define HSPACING 1
-#define VSPACING 1
-
-void arrowup_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
-{
-    int cx;
-    struct RastPort *rport = mri->mri_RastPort;
-
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
-
-    cx = width / 2;
-
-    Move(rport, left + HSPACING + 1, top + height - 1 - VSPACING);
-    Draw(rport, left + width - cx, top + VSPACING);
-    Move(rport, left + HSPACING, top + height - 1 - VSPACING);
-    Draw(rport, left + width - cx - 1, top + VSPACING);
-
-    Move(rport, left + width - 1 - HSPACING - 1, top + height - 1 - VSPACING);
-    Draw(rport, left + cx - 1, top + VSPACING);
-    Move(rport, left + width - 1 - HSPACING, top + height - 1 - VSPACING);
-    Draw(rport, left + cx, top + VSPACING);
-}
-
-void arrowdown_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
-{
-    int cx;
-    struct RastPort *rport = mri->mri_RastPort;
-
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
-
-    cx = width / 2;
-
-    Move(rport, left + HSPACING + 1, top + VSPACING);
-    Draw(rport, left + width - cx, top + height - 1 - VSPACING);
-    Move(rport, left + HSPACING, top + VSPACING);
-    Draw(rport, left + width - cx - 1, top + height - 1 - VSPACING);
-
-    Move(rport, left + width - 1 - HSPACING - 1, top + VSPACING);
-    Draw(rport, left + cx - 1, top + height - 1 - VSPACING);
-    Move(rport, left + width - 1 - HSPACING, top + VSPACING);
-    Draw(rport, left + cx, top + height - 1 - VSPACING);
-}
-
-void arrowleft_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
-{
-    int cy;
-    struct RastPort *rport = mri->mri_RastPort;
-
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
-
-    cy = height / 2;
-
-    Move(rport, left + width - 1 - HSPACING, top + VSPACING + 1);
-    Draw(rport, left + HSPACING, top + height - cy);
-    Move(rport, left + width - 1 - HSPACING, top + VSPACING);
-    Draw(rport, left + HSPACING, top + height - cy - 1);
-
-    Move(rport, left + width - 1 - HSPACING, top + height - 1- VSPACING - 1);
-    Draw(rport, left + HSPACING, top + cy - 1);
-    Move(rport, left + width - 1 - HSPACING, top + height - 1 - VSPACING);
-    Draw(rport, left + HSPACING, top + cy);
-}
-
-void arrowright_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
-{
-    int cy;
-    struct RastPort *rport = mri->mri_RastPort;
-
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
-
-    cy = height / 2;
-
-    Move(rport, left + HSPACING, top + VSPACING + 1);
-    Draw(rport, left + width - 1 - HSPACING, top + height - cy);
-    Move(rport, left + HSPACING, top + VSPACING);
-    Draw(rport, left + width - 1 - HSPACING, top + height - cy - 1);
-
-    Move(rport, left + HSPACING, top + height - 1- VSPACING - 1);
-    Draw(rport, left + width - 1 - HSPACING, top + cy - 1);
-    Move(rport, left + HSPACING, top + height - 1 - VSPACING);
-    Draw(rport, left + width - 1 - HSPACING, top + cy);
-}
-
-void checkbox_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
-{
-    int h_spacing = width / 4;
-    int v_spacing = height / 4;
-    int bottom = top + height - 1;
-    int right = left + width - 1;
-
-    /* Draw checkmark (only if image is in selected state) */
-
-    if (state)
-    {
-	left += h_spacing;right -= h_spacing;width -= h_spacing * 2;
-	top += v_spacing;bottom -= v_spacing;height -= v_spacing * 2;
-
-        SetAPen(mri->mri_RastPort, mri->mri_Pens[MPEN_TEXT]);
-
-	draw_thick_line(mri->mri_RastPort, left, top + height / 3 , left, bottom);
-	draw_thick_line(mri->mri_RastPort, left + 1, bottom, right - 1, top);
-    }
-}
-
-void mx_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
-{
-    struct RastPort *rport = mri->mri_RastPort;
-    int bottom = top + height - 1;
-    int right = left + width - 1;
-    int col1;
-    int col2;
-
-    if (state)
-    {
-	col1 = MPEN_SHADOW;
-	col2 = MPEN_SHINE;
-    } else
-    {
-	col1 = MPEN_SHINE;
-	col2 = MPEN_SHADOW;
-    }
-
-    /* Draw checkmark (only if image is in selected state) */
-
-    SetAPen(rport, mri->mri_Pens[col1]);
-    RectFill(rport, left + 3, top, right - 3, top);
-    WritePixel(rport, left + 2, top + 1);
-    RectFill(rport, left + 1, top + 2, left + 1, top + 3);
-    RectFill(rport, left, top + 4, left, bottom - 4);
-    RectFill(rport, left + 1, bottom - 3, left + 1, bottom - 2);
-    WritePixel(rport, left + 2, bottom - 1);
-	
-    SetAPen(rport, mri->mri_Pens[col2]);
-    WritePixel(rport, right - 2, top + 1);
-    RectFill(rport, right - 1, top + 2, right - 1, top + 3);
-    RectFill(rport, right, top + 4, right, bottom - 4);
-    RectFill(rport, right - 1, bottom - 3, right - 1, bottom - 2);
-    WritePixel(rport, right - 2, bottom - 1);
-    RectFill(rport, left + 3, bottom, right - 3, bottom);
-	
-    if (state)
-    {
-	left += 3;right -= 3;width -= 6;
-	top += 3;bottom -= 3;height -= 6;
-	    
-        SetAPen(rport, mri->mri_Pens[MPEN_FILL]);
-	if ((width >= 5) && (height >= 5))
-	{
-	    RectFill(rport, left, top + 2, left, bottom - 2);
-	    RectFill(rport, left + 1, top + 1, left + 1, bottom - 1);
-	    RectFill(rport, left + 2, top, right - 2, bottom);
-	    RectFill(rport, right - 1, top + 1, right - 1, bottom - 1);
-	    RectFill(rport, right, top + 2, right, bottom - 2);
-	} else {
-	    RectFill(rport, left, top, right, bottom);
-	}
-    }
-}
-
-void cycle_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
-{
-    struct RastPort *rport = mri->mri_RastPort;
-    int bottom = top + height - 1;
-    int right = left + width - 1;
-
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
-
-    Move(rport,left,top+1);
-    Draw(rport,left,bottom-1);
-    Move(rport,left+1,top);
-    Draw(rport,left+1,bottom);
-    Draw(rport,right-7,bottom);
-    Move(rport,right-7,bottom-1);
-    Draw(rport,right-6,bottom-1);
-    Move(rport,left+2,top);
-    Draw(rport,right-7,top);
-    Move(rport,right-7,top+1);
-    Draw(rport,right-6,top+1);
-
-    /* The small arrow */
-    Move(rport,right - 6 - 3, top+2);
-    Draw(rport,right - 7 + 3, top+2);
-    Move(rport,right - 6 - 2, top+3);
-    Draw(rport,right - 7 + 2, top+3);
-    Move(rport,right - 6 - 1, top+4);
-    Draw(rport,right - 7 + 1, top+4);
-
-    /* The right bar */
-    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
-    Move(rport,right - 1, top);
-    Draw(rport,right - 1, bottom);
-    SetAPen(rport, mri->mri_Pens[MPEN_SHINE]);
-    Move(rport,right, top);
-    Draw(rport,right, bottom);
-}
-
-void popup_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
-{
-    int right,bottom,cx;
-    struct RastPort *rport = mri->mri_RastPort;
-
-    height -= 3;
-
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
-
-    cx = width / 2;
-
-    Move(rport, left + HSPACING + 1, top + VSPACING);
-    Draw(rport, left + width - cx, top + height - 1 - VSPACING);
-    Move(rport, left + HSPACING, top + VSPACING);
-    Draw(rport, left + width - cx - 1, top + height - 1 - VSPACING);
-
-    Move(rport, left + width - 1 - HSPACING - 1, top + VSPACING);
-    Draw(rport, left + cx - 1, top + height - 1 - VSPACING);
-    Move(rport, left + width - 1 - HSPACING, top + VSPACING);
-    Draw(rport, left + cx, top + height - 1 - VSPACING);
-
-    bottom = top + height - 1 + 3;
-    right = left + width - 1;
-    Move(rport, left, bottom-2);
-    Draw(rport, right, bottom-2);
-    Move(rport, left, bottom-1);
-    Draw(rport, right, bottom-1);
-}
-
-void popfile_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
-{
-    int right,bottom;
-    int edgex,edgey;
-    struct RastPort *rport = mri->mri_RastPort;
-
-    right = left + width - 1;
-    bottom = top + height - 1;
-
-    edgex = left + width * 5 / 8;
-    edgey = top + height * 5 / 8;
-
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
-    Move(rport, left, top);
-    Draw(rport, left, bottom);
-    Move(rport, left+1, top);
-    Draw(rport, left+1, bottom);
-
-    Move(rport, left, bottom);
-    Draw(rport, right, bottom);
-    Move(rport, left, bottom-1);
-    Draw(rport, right, bottom-1);
-
-    Move(rport, right, bottom-1);
-    Draw(rport, right, edgey);
-    Move(rport, right-1, bottom-1);
-    Draw(rport, right-1, edgey);
-
-    Move(rport, right, edgey-1);
-    Draw(rport, edgex, edgey-1);
-    Draw(rport, edgex, top);
-    Draw(rport, left+2,top);
-    Move(rport, left+2,top+1);
-    Draw(rport, edgex-1,top+1);
-
-    Move(rport, edgex+1, top);
-    Draw(rport, right, edgey-1);
-
-}
-
-void popdrawer_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
-{
-    int right,bottom;
-    int halfx,halfy,quartery;
-    struct RastPort *rport = mri->mri_RastPort;
-
-    right = left + width - 1;
-    bottom = top + height - 1;
-
-    halfx = (left + right) / 2;
-    halfy = (top + bottom) / 2;
-    quartery = top + height / 4;
-
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
-    Move(rport, left, quartery);
-    Draw(rport, left, bottom);
-    Move(rport, left+1, quartery);
-    Draw(rport, left+1, bottom);
-    Draw(rport, right, bottom);
-    Draw(rport, right, halfy);
-    Draw(rport, halfx, halfy);
-    Draw(rport, halfx, quartery);
-    Draw(rport, left+1,quartery);
-
-    Move(rport, halfx, quartery-1);
-    Draw(rport, halfx + 2, top);
-    Draw(rport, right - 2, top);
-    Draw(rport, right, quartery-1);
-    Draw(rport, right, halfy);
-}
-
-struct vector_image
-{
-    int minwidth;
-    int minheight;
-    void *draw_func;
-};
-
-static struct vector_image vector_table[] =
-{
-    {10,8,arrowup_draw},
-    {10,8,arrowdown_draw},
-    {8,10,arrowleft_draw},
-    {8,10,arrowright_draw},
-    {16,10,checkbox_draw},
-    {16,10,mx_draw},
-    {15,8,cycle_draw},
-    {10,11,popup_draw},
-    {10,11,popfile_draw},
-    {10,11,popdrawer_draw},
-};
-
-#define VECTOR_TABLE_ENTRIES (sizeof(vector_table)/sizeof(vector_table[0]))
+static struct MUI_ImageSpec_intern *get_brush_imspec(CONST_STRPTR filename);
 
 const static UWORD pattern[] = {
     0x5555,
@@ -417,119 +59,650 @@ const static UWORD pattern[] = {
 };
 
 const static MPenCouple patternPens[] = {
-    {MPEN_SHADOW, MPEN_BACKGROUND},     /* MUII_SHADOWBACK */
-    {MPEN_SHADOW, MPEN_FILL},           /* MUII_SHADOWFILL */
-    {MPEN_SHADOW, MPEN_SHINE},          /* MUII_SHADOWSHINE */
-    {MPEN_FILL, MPEN_BACKGROUND},       /* MUII_FILLBACK */
-    {MPEN_FILL, MPEN_SHINE},            /* MUII_FILLSHINE */
-    {MPEN_SHINE, MPEN_BACKGROUND},      /* MUII_SHINEBACK */
-    {MPEN_FILL, MPEN_BACKGROUND},       /* MUII_FILLBACK2 */
-    {MPEN_HALFSHINE, MPEN_BACKGROUND},  /* MUII_HSHINEBACK */
-    {MPEN_HALFSHADOW, MPEN_BACKGROUND}, /* MUII_HSHADOWBACK */
-    {MPEN_HALFSHINE, MPEN_SHINE},       /* MUII_HSHINESHINE */
-    {MPEN_HALFSHADOW, MPEN_SHADOW},     /* MUII_HSHADOWSHADOW */
-    {MPEN_MARK, MPEN_SHINE},            /* MUII_MARKSHINE */
-    {MPEN_MARK, MPEN_HALFSHINE},        /* MUII_MARKHALFSHINE */
-    {MPEN_MARK, MPEN_BACKGROUND},       /* MUII_MARKBACKGROUND */
+    { MPEN_SHADOW,     MPEN_BACKGROUND }, /* MUII_SHADOWBACK     */
+    { MPEN_SHADOW,     MPEN_FILL       }, /* MUII_SHADOWFILL     */
+    { MPEN_SHADOW,     MPEN_SHINE      }, /* MUII_SHADOWSHINE    */
+    { MPEN_FILL,       MPEN_BACKGROUND }, /* MUII_FILLBACK       */
+    { MPEN_FILL,       MPEN_SHINE      }, /* MUII_FILLSHINE      */
+    { MPEN_SHINE,      MPEN_BACKGROUND }, /* MUII_SHINEBACK      */
+    { MPEN_FILL,       MPEN_BACKGROUND }, /* MUII_FILLBACK2      */
+    { MPEN_HALFSHINE,  MPEN_BACKGROUND }, /* MUII_HSHINEBACK     */
+    { MPEN_HALFSHADOW, MPEN_BACKGROUND }, /* MUII_HSHADOWBACK    */
+    { MPEN_HALFSHINE,  MPEN_SHINE      }, /* MUII_HSHINESHINE    */
+    { MPEN_HALFSHADOW, MPEN_SHADOW     }, /* MUII_HSHADOWSHADOW  */
+    { MPEN_MARK,       MPEN_SHINE      }, /* MUII_MARKSHINE      */
+    { MPEN_MARK,       MPEN_HALFSHINE  }, /* MUII_MARKHALFSHINE  */
+    { MPEN_MARK,       MPEN_BACKGROUND }, /* MUII_MARKBACKGROUND */
 };
 
 #define PATTERN_COUNT (MUII_LASTPAT - MUII_BACKGROUND + 1)
 
-static struct MUI_ImageSpec *get_config_imspec(LONG in, Object *obj)
+static struct MUI_ImageSpec_intern *get_pattern_imspec(LONG in)
 {
-    if (!obj) return NULL;
-
-    if (in >= MUII_WindowBack && in <= MUII_ReadListBack)
-    {
-	return zune_image_spec_to_structure((IPTR)muiGlobalInfo(obj)->mgi_Prefs->imagespecs[in],NULL);
-    }
-    return NULL;
-}
-
-static struct MUI_ImageSpec *get_pattern_imspec(LONG in)
-{
-    struct MUI_ImageSpec *spec = NULL;
+    struct MUI_ImageSpec_intern *spec = NULL;
 
     if (in >= MUII_BACKGROUND && in <= MUII_FILL)
     {
-	if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
+	if ((spec = mui_alloc_struct(struct MUI_ImageSpec_intern)))
 	{
 	    UWORD color;
-	    spec->type = IST_MUICOLOR;
 	    if (in == MUII_BACKGROUND) color = MPEN_BACKGROUND;
 	    else if (in == MUII_SHADOW) color = MPEN_SHADOW;
 	    else if (in == MUII_SHINE) color = MPEN_SHINE;
 	    else color = MPEN_FILL;
 
-	    spec->muicolor = color;
+	    spec->type = IST_COLOR;
+	    zune_penspec_fill_muipen(&spec->u.penspec, color);
 	}
     	return spec;
     }
     else if (in >= MUII_SHADOWBACK && in <= MUII_MARKBACKGROUND)
     {
-	if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
+	if ((spec = mui_alloc_struct(struct MUI_ImageSpec_intern)))
 	{
 	    spec->type = IST_PATTERN;
-	    spec->pattern = in - MUII_SHADOWBACK;
+	    spec->u.pattern = in - MUII_SHADOWBACK;
 	}
     	return spec;
     }
     return NULL;
 }
 
-static struct MUI_ImageSpec *get_vector_imspec(LONG vect)
+
+static struct MUI_ImageSpec_intern *get_pen_imspec(CONST_STRPTR str)
 {
-    struct MUI_ImageSpec *spec;
+    struct MUI_ImageSpec_intern *spec;
 
-    if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
+    if ((spec = mui_alloc_struct(struct MUI_ImageSpec_intern)))
     {
-	spec->type = IST_VECTOR;
-	spec->vectortype = vect;
+	if (!zune_pen_string_to_intern(str, &spec->u.penspec))
+	{
+	    D(bug("*** zune_pen_string_to_intern failed\n"));
+	    mui_free(spec);
+	    return NULL;
+	}
+	spec->type = IST_COLOR;
+    	return spec;
+    }
+    return NULL;   
+}
 
-	if (vect >= 0 && vect < VECTOR_TABLE_ENTRIES)
-	    spec->vector_draw = vector_table[vect].draw_func;
+
+static struct MUI_ImageSpec_intern *get_boopsi_imspec(CONST_STRPTR filename)
+{
+    struct MUI_ImageSpec_intern *spec;
+ 
+    if (!filename)
+	return NULL;
+    if (!strstr(filename, ".image"))
+	return get_brush_imspec(filename);
+
+    if ((spec = mui_alloc_struct(struct MUI_ImageSpec_intern)))
+    {
+	spec->u.boopsi.filename = StrDup(filename);
+	if (!spec->u.boopsi.filename)
+	    return NULL;
+	spec->u.boopsi.obj = NULL;
+	spec->type = IST_BOOPSI;
+	return spec;
+    }
+    return NULL;
+}
+
+
+static struct MUI_ImageSpec_intern *get_brush_imspec(CONST_STRPTR filename)
+{
+    struct MUI_ImageSpec_intern *spec;
+    if ((spec = mui_alloc_struct(struct MUI_ImageSpec_intern)))
+    {
+	size_t last_idx;
+	spec->u.brush.filename[0] = StrDup(filename);
+	if (!spec->u.brush.filename[0])
+	    return NULL;
+	last_idx = strlen(spec->u.brush.filename[0]) - 1;
+	if (spec->u.brush.filename[0][last_idx] == '0')
+	{
+	    char *tmpstr;
+	    tmpstr = StrDup(filename);
+	    if (!tmpstr)
+	    {
+		FreeVec((APTR)spec->u.brush.filename[0]);
+		return NULL;
+	    }
+	    tmpstr[last_idx] = '1';
+	    spec->u.brush.filename[1] = tmpstr;
+	}
+	spec->u.brush.dt[0] = NULL;
+	spec->u.brush.dt[1] = NULL;
+	spec->type = IST_BRUSH;
+	return spec;
+    }
+    return NULL;
+}
+
+
+static struct MUI_ImageSpec_intern *get_bitmap_imspec(CONST_STRPTR filename)
+{
+    struct MUI_ImageSpec_intern *spec;
+    if ((spec = mui_alloc_struct(struct MUI_ImageSpec_intern)))
+    {
+	spec->u.bitmap.filename = StrDup(filename);
+	if (!spec->u.bitmap.filename)
+	    return NULL;
+	spec->u.bitmap.dt = NULL;
+	spec->type = IST_BITMAP;
+	return spec;
+    }
+    return NULL;
+}
+
+
+static struct MUI_ImageSpec_intern *get_config_imspec(LONG img)
+{
+    if ((img >= MUII_WindowBack) && (img <= MUII_ReadListBack))
+    {
+	struct MUI_ImageSpec_intern *spec;
+	if ((spec = mui_alloc_struct(struct MUI_ImageSpec_intern)))
+	{
+	    spec->u.cfg.muiimg = img;
+	    spec->type = IST_CONFIG;
+	    return spec;
+	}
+    }
+    return NULL;
+}
+
+
+static const char *zune_imspec_to_string(struct MUI_ImageSpec_intern *spec)
+{
+    static char buf[64];
+
+    if (!spec)
+    {
+	buf[0] = 0;
+	return buf;
+    }
+    switch (spec->type)
+    {
+	case IST_PATTERN:
+	    sprintf(buf, "0:%ld", spec->u.pattern);
+	    break;
+
+	case IST_VECTOR:
+	    sprintf(buf, "1:%ld", spec->u.vect.type);
+	    break;
+
+	case IST_COLOR:
+	    zune_pen_intern_to_spec(&spec->u.penspec, (struct MUI_PenSpec *)buf);
+	    break;
+
+	case IST_BOOPSI:
+	    sprintf(buf, "3:%s", spec->u.boopsi.filename);
+	    break;
+
+	case IST_BRUSH: /* this is really 3: too */
+	    sprintf(buf, "3:%s", spec->u.brush.filename[0]);
+	    break;
+       
+	case IST_BITMAP:
+	    sprintf(buf, "5:%s", spec->u.bitmap.filename);
+	    break;
+
+	case IST_CONFIG:
+	    sprintf(buf, "6:%ld", spec->u.cfg.muiimg);
+	    break;
+    }
+    return buf;
+}
+
+/**************************************************************************
+ Create a image spec from a string or a magic value.
+ in : contains magic or string
+ obj: is a AreaObject. It is used to access the config data.
+
+ TODO: merge this with zune_imspec_setup() because this function should
+ be called in MUIM_Setup (configdata)
+**************************************************************************/
+static struct MUI_ImageSpec_intern *zune_image_spec_to_structure(IPTR in)
+{
+    struct MUI_ImageSpec_intern *spec = NULL;
+    CONST_STRPTR s;
+
+    if (in >= MUII_WindowBack && in <= MUII_ReadListBack)
+    {
+	D(bug("zune_image_spec_to_structure [config] : in=%ld\n", in));
+	spec = get_config_imspec(in);
+    }
+    else if (in >= MUII_BACKGROUND && in <= MUII_MARKBACKGROUND)
+    {
+	D(bug("zune_image_spec_to_structure [pattern] : in=%ld\n", in));
+	spec = get_pattern_imspec(in);
+    }
+    else
+    {
+	s = (CONST_STRPTR)in;
+	D(bug("zune_image_spec_to_structure [string] : in=%s\n", s));
+
+	switch (*s)
+	{
+	    case '0': /* builtin pattern */
+	    {
+		LONG pat;
+		StrToLong(s+2, &pat);
+		spec = get_pattern_imspec(pat);
+		break;
+	    }
+
+	    case '1': /* builtin standard image, obsoleted by 6: */
+	    {
+		LONG vect;
+		StrToLong(s+2, &vect);
+		spec = zune_imspec_create_vector(vect);
+		break;
+	    }
+
+	    case '2': /* a penspec */
+		spec = get_pen_imspec(s+2);
+		D(bug("zune_image_spec_to_structure : penspec %lx\n", &spec->u.penspec));
+		break;
+
+	    case '3': /* BOOPSI image class name */
+		spec = get_boopsi_imspec(s+2);
+		break;
+
+	    case '4': /* external MUI brush name */
+		spec = get_brush_imspec(s+2);
+		break;
+
+	    case '5': /* external bitmap loaded with datatypes */
+		spec = get_bitmap_imspec(s+2);
+		break;
+
+	    case '6': /* preconfigured image or background */
+	    {
+		LONG img;
+		StrToLong(s+2, &img);
+
+		if (img >= MUII_WindowBack && img <= MUII_ReadListBack)
+		    spec = get_config_imspec(img);
+		break;
+	    }
+	} /* switch(*s) */
+    }
+    D(bug("zune_image_spec_to_structure : out=0x%lx [%s]\n",
+	  spec, zune_imspec_to_string(spec)));
+    return spec;
+}
+
+#if 0
+static struct MUI_ImageSpec_intern *zune_imspec_copy(struct MUI_ImageSpec_intern *spec)
+{
+    struct MUI_ImageSpec_intern *nspec;
+    
+    if (!spec) return NULL;
+    
+    nspec = mui_alloc_struct(struct MUI_ImageSpec_intern);
+    if (nspec) memcpy(nspec,spec,sizeof(struct MUI_ImageSpec_intern));
+    return nspec;
+}
+#endif
+
+
+
+static void zune_imspec_free(struct MUI_ImageSpec_intern *spec)
+{
+    if (!spec)
+	return;
+    D(bug("zune_imspec_free(0x%lx) [%s]\n",
+	   spec, zune_imspec_to_string(spec)));
+
+    switch (spec->type)
+    {
+	case IST_BOOPSI:
+	    if (spec->u.boopsi.filename)
+		FreeVec((APTR)spec->u.boopsi.filename);
+	    break;
+
+	case IST_BRUSH:
+	    if (spec->u.brush.filename[0])
+		FreeVec((APTR)spec->u.brush.filename[0]);
+	    if (spec->u.brush.filename[1])
+		FreeVec((APTR)spec->u.brush.filename[1]);
+	    break;
+
+	case IST_BITMAP:
+	    if (spec->u.bitmap.filename)
+		FreeVec((APTR)spec->u.bitmap.filename);
+	    break;
+
+	default:
+	    break;
+    }
+
+    mui_free(spec);
+}
+
+
+struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s, struct MUI_RenderInfo *mri)
+{
+    struct MUI_ImageSpec_intern *spec;
+
+    if (!mri)
+	return NULL;
+
+    spec = zune_image_spec_to_structure(s);
+
+    D(bug("zune_imspec_setup(%lx) [%s]\n",
+	  spec, zune_imspec_to_string(spec)));
+    if (!spec)
+	return NULL;
+
+    switch (spec->type)
+    {
+	case IST_PATTERN:
+	    break;
+
+	case IST_VECTOR:
+	    break;
+
+	case IST_COLOR:
+	    zune_penspec_setup(&spec->u.penspec, mri);
+	    break;
+
+	case IST_BOOPSI:
+	    break;
+
+	case IST_BRUSH:
+	{
+	    int i;
+
+	    for (i = 0; i < 2; i++)
+	    {
+		if (spec->u.brush.filename[i])
+		{
+		    spec->u.brush.dt[i] = dt_load_picture(spec->u.brush.filename[i],
+							  mri->mri_Screen);
+		}
+	    }
+	    break;
+	}
+	case IST_BITMAP:
+	    if (spec->u.bitmap.filename)
+	    {
+		spec->u.bitmap.dt = dt_load_picture(spec->u.bitmap.filename,
+						    mri->mri_Screen);
+	    }
+	    break;
+
+	case IST_CONFIG:
+	{
+	    Object *win = mri->mri_WindowObject;
+	    struct ZunePrefsNew *prefs =  muiGlobalInfo(win)->mgi_Prefs;
+	    /* potential for deadloop if Zune prefs images contain a 6: */
+	    CONST_STRPTR spec_desc = prefs->imagespecs[spec->u.cfg.muiimg];
+	    zune_imspec_free(spec);
+	    spec = NULL;
+
+	    if (spec_desc[0] == '6')
+	    {
+		D(bug("*** zune_imspec_setup (%s recursive config)\n",
+		      zune_imspec_to_string(spec)));
+	    }
+	    else
+	    {
+		spec = zune_imspec_setup((IPTR)spec_desc, mri);
+	    }
+	    break;
+	}
     }
     return spec;
 }
 
-static struct MUI_ImageSpec *get_color_imspec(ULONG r, ULONG g, ULONG b)
+/* bug : never called in textengine, fix this */
+void zune_imspec_cleanup(struct MUI_ImageSpec_intern *spec)
 {
-    struct MUI_ImageSpec *spec;
-    if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
+    if (!spec)
+	return;
+
+    D(bug("zune_imspec_cleanup(0x%lx) [%s]\n",
+	  spec, zune_imspec_to_string(spec)));
+
+    switch (spec->type)
     {
-	spec->type = IST_COLOR;
-	spec->r = r;
-	spec->g = g;
-	spec->b = b;
-	spec->color = -1;
-    	return spec;
+	case IST_PATTERN:
+	    break;
+
+	case IST_VECTOR:
+	    break;
+
+	case IST_COLOR:
+	    zune_penspec_cleanup(&spec->u.penspec);
+	    break;
+
+	case IST_BOOPSI:
+	    break;
+
+	case IST_BRUSH:
+	{
+	    int i;
+
+	    for (i = 0; i < 2; i++)
+	    {
+		if (spec->u.brush.filename[i])
+		{
+		    dt_dispose_picture(spec->u.brush.dt[i]);
+		    spec->u.brush.dt[i] = NULL;
+		}
+	    }
+	    break;
+	}
+	case IST_BITMAP:
+	    if (spec->u.bitmap.dt)
+	    {
+		dt_dispose_picture(spec->u.bitmap.dt);
+		spec->u.bitmap.dt = NULL;
+	    }
+	    break;
+
+	case IST_CONFIG:
+	    D(bug("*** zune_imspec_cleanup : IST_CONFIG\n"));
+	    break;
     }
-    return NULL;
+
+    zune_imspec_free(spec);
 }
 
-static struct MUI_ImageSpec *get_muicolor_imspec(ULONG muicolor)
+
+BOOL zune_imspec_askminmax(struct MUI_ImageSpec_intern *spec, struct MUI_MinMax *minmax)
 {
-    struct MUI_ImageSpec *spec;
-    if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
+    if ((!spec) || (!minmax))
+	return FALSE;
+
+    switch (spec->type)
     {
-	spec->type = IST_MUICOLOR;
-	spec->muicolor = muicolor;
-    	return spec;
+	case IST_PATTERN:
+	    minmax->MinWidth = 3;
+	    minmax->MinHeight = 3;
+	    minmax->DefWidth = 8;
+	    minmax->DefHeight = 8;
+	    minmax->MaxWidth = MUI_MAXMAX;
+	    minmax->MaxHeight = MUI_MAXMAX;
+	    break;
+
+	case IST_VECTOR:
+	    return zune_imspec_vector_get_minmax(spec, minmax);
+	    break;
+	    
+	case IST_COLOR:
+	    minmax->MinWidth = 3;
+	    minmax->MinHeight = 3;
+	    minmax->DefWidth = 8;
+	    minmax->DefHeight = 8;
+	    minmax->MaxWidth = MUI_MAXMAX;
+	    minmax->MaxHeight = MUI_MAXMAX;
+	    break;
+
+	case IST_BOOPSI:
+	    /* ??? */
+	    break;
+
+	case IST_BRUSH:
+	    if (spec->u.brush.dt[0])
+	    {
+		minmax->MinWidth = dt_width(spec->u.brush.dt[0]);
+		minmax->MinHeight = dt_height(spec->u.brush.dt[0]);
+		minmax->DefWidth = minmax->MinWidth;
+		minmax->DefHeight = minmax->MinHeight;
+		minmax->MaxWidth = minmax->MinWidth;
+		minmax->MaxHeight = minmax->MinHeight;
+	    }
+	    else
+	    {
+		return FALSE;
+	    }
+	    break;
+
+	case IST_BITMAP:
+	    if (spec->u.bitmap.dt)
+	    {
+		minmax->MinWidth = 3;
+		minmax->MinHeight = 3;
+		minmax->DefWidth = 8;
+		minmax->DefHeight = 8;
+		minmax->MaxWidth = MUI_MAXMAX;
+		minmax->MaxHeight = MUI_MAXMAX;
+	    }
+	    else
+	    {
+		return FALSE;
+	    }
+	    break;
+
+	case IST_CONFIG:
+	    D(bug("*** zune_imspec_askminmax : IST_CONFIG\n"));
+	    break;
     }
-    return NULL;
+    return TRUE;
 }
 
-static struct MUI_ImageSpec *get_bitmap_imspec(char *filename)
+
+void zune_imspec_show(struct MUI_ImageSpec_intern *spec, Object *obj)
 {
-    struct MUI_ImageSpec *spec;
-    if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
+    if ((!spec) || (!obj))
+	return;
+
+    D(bug("zune_imspec_show(0x%lx) [%s]\n", spec,
+	  zune_imspec_to_string(spec)));
+
+    /* scaled gradient generation made here */
+    switch (spec->type)
     {
-	spec->type = IST_BITMAP;
-	spec->filename = StrDup(filename);
-	D(bug("get_bitmap_imspec(%s): spec=%lx, fname=%lx\n", spec, spec->filename));
-	return spec;
+	case IST_CONFIG:
+	    D(bug("*** zune_imspec_show : IST_CONFIG\n"));
+	    break;
+	default:
+	    break;
     }
-    return NULL;
+}
+
+
+void zune_imspec_hide(struct MUI_ImageSpec_intern *spec)
+{
+    if (!spec)
+	return;
+
+    D(bug("zune_imspec_hide(0x%lx) [%s]\n", spec,
+	  zune_imspec_to_string(spec)));
+
+    switch (spec->type)
+    {
+	case IST_CONFIG:
+	    D(bug("*** zune_imspec_hide : IST_CONFIG\n"));
+	    break;
+	default:
+	    break;
+    }
+}
+
+
+void zune_imspec_draw (struct MUI_ImageSpec_intern *spec, struct MUI_RenderInfo *mri,
+		 LONG left, LONG top, LONG width, LONG height,
+		 LONG xoffset, LONG yoffset, LONG state)
+{
+    LONG right = left + width - 1;
+    LONG bottom = top + height - 1;
+    struct RastPort *rp = mri->mri_RastPort;
+    struct MUI_ImageSpec_intern def;
+
+    if (!spec)
+    {
+	D(bug("*** zune_imspec_draw called on null imspec\n"));
+	return;
+    }
+
+    if ((spec->type == IST_BITMAP && !spec->u.bitmap.dt)
+	|| (spec->type == IST_BRUSH && !spec->u.brush.dt[0]))
+    {
+    	def.type = IST_COLOR;
+	zune_penspec_fill_muipen(&def.u.penspec, MPEN_BACKGROUND);
+    	spec = &def;
+    }
+
+    switch (spec->type)
+    {
+	case IST_PATTERN:
+	{
+	    LONG fg = mri->mri_Pens[patternPens[spec->u.pattern].fg];
+	    LONG bg = mri->mri_Pens[patternPens[spec->u.pattern].bg];
+	    SetDrMd(rp, JAM2);
+	    SetAPen(rp, fg);
+	    SetBPen(rp, bg);
+	    SetAfPt(rp, pattern, 1);
+	    RectFill(rp, left, top, right, bottom);
+	    SetAfPt(rp, NULL, 0);
+	}
+	break;
+
+	case IST_VECTOR:
+	    if (spec->u.vect.draw)
+	    {
+		spec->u.vect.draw(mri, left, top, width, height, state);
+	    }
+	    break;
+
+	case IST_COLOR:
+	    zune_penspec_draw(&spec->u.penspec, mri, left, top, right, bottom);
+	    break;
+
+	case IST_BOOPSI:
+	    break;
+
+	case IST_BRUSH:
+	    if (state < 0 || state > 1)
+		state = 0;
+	    if (spec->u.brush.dt[state])
+	    {
+		dt_put_on_rastport(spec->u.brush.dt[state], mri->mri_RastPort,
+					 left, top);
+/*  		dt_put_on_rastport_tiled(spec->u.brush.dt[state], mri->mri_RastPort, */
+/*  					 left, top, right, bottom, */
+/*  					 xoffset - left, yoffset - top); */
+	    }
+	    break;
+
+	case IST_BITMAP:
+	    if (spec->u.bitmap.dt)
+	    {
+		dt_put_on_rastport_tiled(spec->u.bitmap.dt, mri->mri_RastPort,
+					 left, top, right, bottom,
+					 xoffset - left, yoffset - top);
+	    }
+	    break;
+
+	case IST_CONFIG:
+	    D(bug("*** zune_imspec_draw : IST_CONFIG\n"));
+	    break;
+    }
 }
 
 /**************************************************************************
@@ -539,22 +712,22 @@ static struct MUI_ImageSpec *get_bitmap_imspec(char *filename)
  in the future it might be that the MUII_#? stuff is not converted to
  a string
 **************************************************************************/
-char *zune_image_spec_duplicate(IPTR in)
+STRPTR zune_image_spec_duplicate(IPTR in)
 {
     char *spec;
     char spec_buf[20];
 
     if (in >= MUII_WindowBack && in < MUII_BACKGROUND)
     {
-	sprintf(spec_buf,"6:%ld",in);
-	spec = spec_buf;
+        sprintf(spec_buf,"6:%ld",in);
+        spec = spec_buf;
     } else
     {
-	if (in >= MUII_BACKGROUND && in < MUII_LASTPAT)
-	{
-	    sprintf(spec_buf,"0:%ld",in);
-	    spec = spec_buf;
-	} else spec = (char*)in;
+        if (in >= MUII_BACKGROUND && in < MUII_LASTPAT)
+        {
+            sprintf(spec_buf,"0:%ld",in);
+            spec = spec_buf;
+        } else spec = (char*)in;
     }
 
     return StrDup(spec);
@@ -563,286 +736,8 @@ char *zune_image_spec_duplicate(IPTR in)
 /**************************************************************************
  Use this function to free the zune_image_spec_duplicate() result
 **************************************************************************/
-void zune_image_spec_free(char *spec)
+void zune_image_spec_free(CONST_STRPTR spec)
 {
-    if (spec) FreeVec(spec);
-}
-
-/**************************************************************************
- Create a image spec. obj is a AreaObject. It is used to access the config
- data.
-
- TODO: merge this with zune_imspec_setup() because this function should
- be called in MUIM_Setup (configdata)
-**************************************************************************/
-struct MUI_ImageSpec *zune_image_spec_to_structure(IPTR in, Object *obj)
-{
-    char *s;
-
-    if (in >= MUII_WindowBack && in <= MUII_ReadListBack)
-	return get_config_imspec(in,obj);
-
-    if (in >= MUII_BACKGROUND && in <= MUII_MARKBACKGROUND)
-	return get_pattern_imspec(in);
-
-    s = (char*)in;
-
-    switch (*s)
-    {
-	case	'0':
-		{
-		    LONG pat;
-             	    StrToLong(s+2,&pat);
-             	    return get_pattern_imspec(pat);
-		}
-
-	case	'1':
-		{
-		    LONG vect;
-		    StrToLong(s+2,&vect);
-		    return get_vector_imspec(vect);
-		}
-		break;
-
-	case	'2':
-	    	s += 2;	
-		if (s[0] == 'm')
-		{
-		    LONG muicolor;
-		    
-		    s++;
-		    
-		    StrToLong(s, &muicolor);
-		    return get_muicolor_imspec(muicolor);
-		}
-		else
-		{
-		    ULONG r,g,b;
-		    r = strtoul(s,&s, 16);
-		    s++;
-		    g = strtoul(s,&s, 16);
-		    s++;
-		    b = strtoul(s,&s, 16);
-		    return get_color_imspec(r,g,b);
-		}
-
-	case	'5':
-		return get_bitmap_imspec(s+2);
-
-	case    '6':
-		{
-		    LONG img;
-             	    StrToLong(s+2,&img);
-
-		    if (img >= MUII_WindowBack && img <= MUII_ReadListBack)
-			return get_config_imspec(img,obj);
-	        }
-	        break;
-    }
-    return NULL;
-}
-
-#if 0
-static struct MUI_ImageSpec *zune_imspec_copy(struct MUI_ImageSpec *spec)
-{
-    struct MUI_ImageSpec *nspec;
-    
-    if (!spec) return NULL;
-    
-    nspec = mui_alloc_struct(struct MUI_ImageSpec);
-    if (nspec) memcpy(nspec,spec,sizeof(struct MUI_ImageSpec));
-    return nspec;
-}
-#endif
-
-void zune_imspec_free(struct MUI_ImageSpec *spec)
-{
-    D(bug("zune_imspec_free(0x%lx)\n", spec));
-    if (!spec) return;
-    if (spec->flags & IMSPEC_REALIZED)
-    {
-	D(bug("zune_imspec_free(0x%lx) : cleanup, with 0x%lx\n", spec, spec->mri));
-	zune_imspec_cleanup(&spec, spec->mri);
-    }
-    if (spec->type == IST_BITMAP)
-    {
-/*  	  D(bug("zune_imspec_free(0x%lx): filename FreeVec(0x%lx)\n", spec, spec->filename)); */
-	FreeVec(spec->filename);
-    }
-/*      D(bug("zune_imspec_free(0x%lx): FreeVec()\n", spec)); */
-    mui_free(spec);
-}
-
-void zune_imspec_setup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri)
-{
-    if (!spec || !(*spec)) return;
-    if ((*spec)->flags & IMSPEC_REALIZED)
-	zune_imspec_cleanup(spec, mri);
-    (*spec)->mri = mri;
-    switch ((*spec)->type)
-    {
-	case	IST_COLOR:
-		(*spec)->color = ObtainBestPenA(mri->mri_Screen->ViewPort.ColorMap, (*spec)->r, (*spec)->g, (*spec)->b, NULL);
-		break;
-
-	case	IST_BITMAP:
-		if ((*spec)->filename)
-		    (*spec)->dt = dt_load_picture((*spec)->filename,mri->mri_Screen);
-		break;
-	case    IST_MUICOLOR:
-	case	IST_PATTERN:
-	case	IST_VECTOR:
-	        break;
-		/* IST_EXTERNAL is to be implemented */
-    }
-    (*spec)->flags |= IMSPEC_REALIZED;
-}
-
-void zune_imspec_cleanup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri)
-{
-    if (!spec || !(*spec)) return;
-    D(bug("zune_imspec_cleanup(0x%lx)\n", *spec));
-    if (!((*spec)->flags & IMSPEC_REALIZED))
-	return;
-    switch ((*spec)->type)
-    {
-	case	IST_COLOR:
-		if ((*spec)->color != -1)
-		{
-		    ReleasePen(mri->mri_Screen->ViewPort.ColorMap, (*spec)->color);
-		    (*spec)->color = -1;
-		}
-		break;
-
-	case	IST_BITMAP:
-		if ((*spec)->dt)
-		{
-		    dt_dispose_picture((*spec)->dt);
-		    (*spec)->dt = NULL;
-		}
-		break;
-	case    IST_MUICOLOR:
-	case	IST_PATTERN:
-	case	IST_VECTOR:
-	        break;
-    }
-    (*spec)->flags &= ~IMSPEC_REALIZED;
-}
-
-/* This is very very uneligant but only a test */
-int zune_imspec_get_minwidth(struct MUI_ImageSpec *spec)
-{
-    if (!spec)
-    {
-    	return 0;
-    }
-    
-    if (spec->type == IST_VECTOR)// && spec->vectortype == 4)
-    {
-	if (spec->vectortype >= 0 && spec->vectortype < VECTOR_TABLE_ENTRIES)
-	{
-	    return vector_table[spec->vectortype].minwidth;
-	}
-    }
-    return 0;
-}
-
-int zune_imspec_get_minheight(struct MUI_ImageSpec *spec)
-{
-    if (!spec)
-    {
-    	return 0;
-    }
-    
-    if (spec->type == IST_VECTOR)// && spec->vectortype == 4)
-    {
-	if (spec->vectortype >= 0 && spec->vectortype < VECTOR_TABLE_ENTRIES)
-	{
-	    return vector_table[spec->vectortype].minheight;
-	}
-    }
-    return 0;
-}
-
-void zune_imspec_show(struct MUI_ImageSpec *spec, Object *obj)
-{
-}
-
-void zune_imspec_hide(struct MUI_ImageSpec *spec)
-{
-}
-
-void zune_draw_image (struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img,
-		 LONG left, LONG top, LONG width, LONG height,
-		 LONG xoffset, LONG yoffset, LONG flags)
-{
-    LONG right = left + width - 1;
-    LONG bottom = top + height - 1;
-    struct RastPort *rp = mri->mri_RastPort;
-    struct MUI_ImageSpec def;
-
-    if (!img)
-    {
-    	def.type = IST_MUICOLOR;
-    	def.muicolor = MPEN_BACKGROUND;
-    	img = &def;
-    }
-
-    if (img->type == IST_BITMAP && !img->dt)
-    {
-    	def.type = IST_MUICOLOR;
-    	def.muicolor = MPEN_BACKGROUND;
-    	img = &def;
-    }
-
-    switch (img->type)
-    {
-	case	IST_MUICOLOR:
-		{
-		    LONG pen = mri->mri_Pens[img->muicolor];
-		    SetAPen(mri->mri_RastPort, pen);
-		    RectFill(mri->mri_RastPort, left, top, right, bottom);
-		}
-		break;
-
-	case	IST_PATTERN:
-		{
-		    LONG fg = mri->mri_Pens[patternPens[img->pattern].fg];
-		    LONG bg = mri->mri_Pens[patternPens[img->pattern].bg];
-		    SetDrMd(rp,JAM2);
-		    SetAPen(rp,fg);
-		    SetBPen(rp,bg);
-		    SetAfPt(rp,pattern,1);
-		    RectFill(rp, left, top, right, bottom);
-		    SetAfPt(rp,NULL,0);
-		}
-		break;
-
-	case	IST_COLOR:
-		{
-		    LONG pen = img->color;
-		    SetAPen(mri->mri_RastPort, pen);
-		    RectFill(mri->mri_RastPort, left, top, right, bottom);
-		}
-		break;
-
-	case	IST_BITMAP:
-		if (img->dt)
-		{
-		    dt_put_on_rastport_tiled(img->dt, mri->mri_RastPort, left, top, right, bottom, xoffset - left, yoffset - top);
-		}
-		break;
-
-	case	IST_VECTOR:
-		if (img->vector_draw)
-		{
-		    img->vector_draw(mri, img, left, top, width, height,!!(flags & IMSPECF_SELECTED));
-		}
-		break;
-    }
-}
-
-void zune_imspec_set_scaled_size (struct MUI_ImageSpec *img, LONG w, LONG h)
-{
+    if (spec) FreeVec((APTR)spec);
 }
 
