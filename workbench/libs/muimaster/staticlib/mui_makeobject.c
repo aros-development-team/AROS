@@ -66,6 +66,7 @@ extern struct Library * MUIMasterBase;
 	    break;
 	    
 	case 6: /* MUIO_Slider */
+	case 111: /* MUIO_CoolButton */
 	    numparams = 3;
 	    break;
 
