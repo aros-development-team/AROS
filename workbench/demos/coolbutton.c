@@ -11,6 +11,8 @@
 #include <linklibs/coolimages.h>
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 struct IntuitionBase 	*IntuitionBase;
 struct GfxBase	     	*GfxBase;
@@ -174,12 +176,13 @@ static void makewin(void)
     if (!win) cleanup("Error creating window!");    
 }
 
+
 static void handleall(void)
 {
     struct IntuiMessage *msg;
     BOOL    	    	quitme = FALSE;
     
-    while(!quitme)
+    while (!quitme)
     {
     	WaitPort(win->UserPort);
 	
@@ -188,7 +191,7 @@ static void handleall(void)
 	   
 	while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
 	{
-	    switch(msg->Class)
+	    switch (msg->Class)
 	    {
 	    	case IDCMP_CLOSEWINDOW:
 		    quitme = TRUE;
@@ -201,9 +204,9 @@ static void handleall(void)
 		case IDCMP_GADGETUP:
 		    printf("Button released\n");
 		    break;
-		    
 	    }
-	    ReplyMsg((struct IntuiMessage *)msg);
+
+	    ReplyMsg((struct Message *)msg);
 	}
     }
 }
@@ -212,9 +215,17 @@ int main(void)
 {
     openlibs();
     getvisual();
-    if (!InitCoolButtonClass(CyberGfxBase)) cleanup("Can't init cool button class!");
+
+    if (!InitCoolButtonClass(CyberGfxBase))
+    {
+	cleanup("Can't init cool button class!");
+    }
+
     makegadget();
     makewin();
     handleall();
     cleanup(NULL);
+
+    return 0;
 }
+
