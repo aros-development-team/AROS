@@ -88,6 +88,10 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
     NOTES
 	If a special hardware is available, this function will use it.
 
+	As a special case, plane pointers of destBitMap can contain NULL
+	or -1, which will act as if the plane was filled with 0's or 1's,
+	respectively.
+
     EXAMPLE
 
     BUGS
@@ -182,6 +186,8 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	    /* Copy this plane ? */
 	    if ((1L << plane) & mask)
 	    {
+#warning FIXME: add support for NULL and -1 plane pointers
+
 		planecnt ++; /* count it */
 
 		for (y=0; y<ySize; y++)
