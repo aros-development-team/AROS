@@ -1,0 +1,16 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES 	    := main smeditor smproperties smselector
+EXEDIR      := $(AROS_PREFS)
+
+#MM- workbench-prefs : workbench-prefs-screenmode
+#MM workbench-prefs-screenmode : includes linklibs 
+
+%build_prog mmake=workbench-prefs-screenmode \
+    progname=ScreenMode targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc"
+
+%common
