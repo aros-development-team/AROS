@@ -1,13 +1,15 @@
 #pragma pack(2)
 #ifndef AROS_SYSTEM_H
 #define AROS_SYSTEM_H
+
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Analyse the current kind of system and compiler.
     Lang: english
 */
+
 #ifndef _AROS
 #   define _AROS
 #endif

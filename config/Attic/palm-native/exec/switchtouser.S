@@ -1,4 +1,8 @@
-	
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 	/*
 	 * Switch the processor into user mode.
 	 */

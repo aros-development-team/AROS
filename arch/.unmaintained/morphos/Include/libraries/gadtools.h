@@ -2,7 +2,7 @@
 #define LIBRARIES_GADTOOLS_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definitions and structures for gadtools.library.

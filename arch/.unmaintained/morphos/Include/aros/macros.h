@@ -2,12 +2,13 @@
 #define AROS_MACROS_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Work on 64bit data types
     Lang: english
 */
+
 #ifndef AROS_MACHINE_H
 #   include <aros/machine.h>
 #endif

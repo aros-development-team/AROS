@@ -1,10 +1,11 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Function to format a string like printf().
     Lang: english
 */
+
 /* Original source from libnix */
 #include <stdio.h>
 #include <stdlib.h>

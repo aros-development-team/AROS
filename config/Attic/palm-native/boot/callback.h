@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef __CALLBACK_H__
 #define __CALLBACK_H__
 

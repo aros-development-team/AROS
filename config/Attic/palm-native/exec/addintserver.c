@@ -1,10 +1,11 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add interrupt client to chain of interrupt server
     Lang: english
 */
+
 #include <aros/config.h>
 #include <exec/execbase.h>
 #include <exec/interrupts.h>
