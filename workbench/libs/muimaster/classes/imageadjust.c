@@ -283,11 +283,11 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	adjust_type == MUIV_Imageadjust_Type_Image)
     {
 	external_group = ListviewObject,
-	    MUIA_Listview_List, (IPTR)external_list = ListObject,
+	    MUIA_Listview_List, (IPTR)(external_list = ListObject,
 	        InputListFrame,
 	        MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
 	        MUIA_List_DestructHook, MUIV_List_DestructHook_String,
-	        End,
+	        End),
 	    End;
     }
     
@@ -295,19 +295,19 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	adjust_type == MUIV_Imageadjust_Type_Background)
     {
 	bitmap_group = VGroup,
-	    Child, (IPTR)bitmap_image = ImagedisplayObject,
+	    Child, (IPTR)(bitmap_image = ImagedisplayObject,
 	        TextFrame,
 	        InnerSpacing(0,0),
 	        MUIA_Imagedisplay_FreeHoriz, TRUE,
 	        MUIA_Imagedisplay_FreeVert, TRUE,
-	        End,
-	    Child, (IPTR)bitmap_popasl = PopaslObject,
-	        MUIA_Popstring_String, (IPTR)bitmap_string = StringObject,
+	        End),
+	    Child, (IPTR)(bitmap_popasl = PopaslObject,
+	        MUIA_Popstring_String, (IPTR)(bitmap_string = StringObject,
                     StringFrame,
                     MUIA_CycleChain, 1,
-                    End,
+                    End),
 	        MUIA_Popstring_Button, (IPTR)PopButton(MUII_PopFile),
-	        End,
+	        End),
 	    End;
     }
 

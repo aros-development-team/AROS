@@ -154,29 +154,28 @@ IPTR Frameadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         MUIA_Group_Horiz,        TRUE,
         MUIA_Group_HorizSpacing, 20,
         
-        Child, (IPTR) FD_display = MUI_NewObject
+        Child, (IPTR) (FD_display = MUI_NewObject
         (
             MUIC_Framedisplay,
             MUIA_FixWidth, 32,
             TAG_DONE
-        ),
+        )),
         Child, (IPTR) VGroup,
             MUIA_Group_VertSpacing, 10,
-            Child, (IPTR) GR_fd = RowGroup(2),
-            End, /* RowGroup */
+            Child, (IPTR) (GR_fd = RowGroup(2), End), /* RowGroup */
             Child, (IPTR) HGroup,
                 Child, (IPTR) Label("Inner Spacing:"),
                 Child, (IPTR) RowGroup(2),
                     Child, (IPTR) Label2("Left"),
-                    Child, (IPTR) SL_left = MakeSpacingSlider(),
+                    Child, (IPTR) (SL_left = MakeSpacingSlider()),
                     Child, (IPTR) HSpace(8),
                     Child, (IPTR) Label2("Top"),
-                    Child, (IPTR) SL_top = MakeSpacingSlider(),
+                    Child, (IPTR) (SL_top = MakeSpacingSlider()),
                     Child, (IPTR) Label2("Right"),
-                    Child, (IPTR) SL_right = MakeSpacingSlider(),
+                    Child, (IPTR) (SL_right = MakeSpacingSlider()),
                     Child, (IPTR) HSpace(8),
                     Child, (IPTR) Label2("Bottom"),
-                    Child, (IPTR) SL_bottom = MakeSpacingSlider(),
+                    Child, (IPTR) (SL_bottom = MakeSpacingSlider()),
                 End, /* RowGroup */
             End, /* HGroup */
         End, /* VGroup */
@@ -193,9 +192,9 @@ IPTR Frameadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->SL_bottom = SL_bottom;
     data->SL_right = SL_right;
     data->slider_hook.h_Entry = HookEntry;
-    data->slider_hook.h_SubEntry = (APTR)SliderFunc;
+    data->slider_hook.h_SubEntry = (HOOKFUNC)SliderFunc;
     data->frames_hook.h_Entry = HookEntry;
-    data->frames_hook.h_SubEntry = (APTR)FramesFunc;
+    data->frames_hook.h_SubEntry = (HOOKFUNC)FramesFunc;
 
     for (i = 0; i < 11; i++)
     {

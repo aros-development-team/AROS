@@ -134,20 +134,19 @@ IPTR Penadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     	
         MUIA_Register_Titles, (IPTR) register_labels,
 	Child, (IPTR) ListviewObject,
-            MUIA_Listview_List, (IPTR) listobj = ListObject,
+            MUIA_Listview_List, (IPTR) (listobj = ListObject,
                 InputListFrame,
 	        MUIA_List_SourceArray, (IPTR) lv_labels,
 	        MUIA_List_Format,      (IPTR) ",,",
 	        MUIA_List_DisplayHook, (IPTR) &muipen_display_hook,
-            End,
+            End),
         End,
-	Child, (IPTR) sliderobj = SliderObject,
+	Child, (IPTR) (sliderobj = SliderObject,
 	    MUIA_Slider_Horiz, TRUE,
 	    MUIA_Numeric_Min,  -128,
 	    MUIA_Numeric_Max,  127,
-        End,  
-	Child, (IPTR) coloradjobj = ColoradjustObject,
-        End,
+        End),  
+	Child, (IPTR) (coloradjobj = ColoradjustObject, End),
 	
         TAG_MORE, (IPTR) msg->ops_AttrList
     );

@@ -120,17 +120,17 @@ IPTR Popframe__MUIM_Popframe_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 	    MUIA_Window_LeftEdge, _left(obj) + x,
 	    MUIA_Window_TopEdge, _bottom(obj) + y + 1,
     	    WindowContents, (IPTR)VGroup,
-		Child, (IPTR)data->frameadjust = MUI_NewObject(
+		Child, (IPTR)(data->frameadjust = MUI_NewObject(
 		    MUIC_Frameadjust,
 		    MUIA_CycleChain, 1,
 		    MUIA_Frameadjust_Spec, (IPTR)frame_spec,
-		    TAG_DONE),
+		    TAG_DONE)),
 		Child, (IPTR)HGroup,
 	            MUIA_Group_SameWidth, TRUE,
-		    Child, (IPTR)ok_button = MUI_MakeObject(MUIO_Button, (IPTR)"_Ok"),
+		    Child, (IPTR)(ok_button = MUI_MakeObject(MUIO_Button, (IPTR)"_Ok")),
 		    Child, (IPTR)HVSpace,
 		    Child, (IPTR)HVSpace,
-		    Child, (IPTR)cancel_button = MUI_MakeObject(MUIO_Button, (IPTR)"_Cancel"),
+		    Child, (IPTR)(cancel_button = MUI_MakeObject(MUIO_Button, (IPTR)"_Cancel")),
 		    End,
 		End,
 	    End;
