@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 PREFSDIR = $(BINDIR)/Prefs
 
 SETTINGS_SYS  = nv_location font.prefs
-SETTINGS_ZUNE = global.prefs
+SETTINGS_ZUNE = global.prefs WANDERER.prefs
 SETTINGFILES  = $(foreach f, $(SETTINGS_SYS), $(PREFSDIR)/Env-Archive/SYS/$(f)) \
                 $(foreach f, $(SETTINGS_ZUNE), $(PREFSDIR)/Env-Archive/Zune/$(f))
 
