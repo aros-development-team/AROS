@@ -329,12 +329,11 @@ static IPTR Calendar_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *ms
 static IPTR Calendar_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct CalendarData *data = INST_DATA(cl, obj);
+    struct Region   	*region;
+    struct Rectangle 	 rect;
+    APTR    	    	 clip;
     WORD    	    	 x, y, offx, offy, day, mdays;
-    
-    DoSuperMethodA(cl, obj, (Msg)msg);
-    
-    if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) return 0;
-    
+
     x = (_mwidth(obj) - 2) / 7;
     y = x * data->base_cellheight / data->base_cellwidth;
     
@@ -346,11 +345,39 @@ static IPTR Calendar_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     	data->cellwidth = x;
 	data->cellheight = y;
     }
-    
-    
+        
     offx = _mleft(obj) + (_mwidth(obj) - data->cellwidth * 7 - 2) / 2 + 1;
     offy = _mtop(obj) + (_mheight(obj) - data->cellheight * 7 - 1) / 2;
     
+    region = NewRegion();
+    if (region)
+    {
+    	rect.MinX = _left(obj);
+	rect.MinY = _top(obj);
+	rect.MaxX = _right(obj);
+	rect.MaxY = _bottom(obj);
+	
+	OrRectRegion(region, &rect);
+	
+	rect.MinX = offx - 1;
+	rect.MinY = offy;
+	rect.MaxX = offx + data->cellwidth * 7;
+	rect.MaxY = offy + data->cellheight * 7;
+	
+	ClearRectRegion(region, &rect);
+	
+	clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
+    }
+    
+    DoSuperMethodA(cl, obj, (Msg)msg);
+
+    if (region)
+    {
+    	MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+    }
+   
+    if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) return 0;
+        
     /* ~random 8 * 7 to make sure expression inside brackets is positive */
     data->mwday = (8 * 7 + data->clockdata.wday - data->clockdata.mday + 1) % 7;
     
