@@ -46,7 +46,7 @@ extern struct Library *MUIMasterBase;
 #define LEVEL_LABEL_SPACING 2
 
 #define LEVEL_WIDTH 	    39
-#define LEVEL_HEIGHT 	    18
+#define LEVEL_HEIGHT 	    20
 
 #define LABEL_HEIGHT	    8
 
@@ -130,12 +130,49 @@ IPTR Levelmeter__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskM
     return TRUE;
 }
 
-static void DrawNeedle(struct RastPort *rp, LONG x1, LONG y1, LONG x2, LONG y2, double angle, LONG pen)
+static void DrawScale(struct RastPort *rp, LONG x1, LONG y1, LONG x2, LONG y2, LONG pen)
 {
     LONG cx = (x1 + x2 + 1) / 2;
     LONG cy = y2 - 1;
     LONG rx = cx - x1 - 1;
     LONG ry = cy - y1 - 1;
+    LONG a, b, g;
+    
+    SetABPenDrMd(rp, pen, 0, JAM1);
+    
+    for(g = 0; g <= 180; g += 15)
+    {
+    	double angle = ((double)g) * 3.14159265358979323846 / 180.0;
+    	
+    	a = cx + (LONG)(cos(angle) * rx);
+    	b = cy - (LONG)(sin(angle) * ry);
+
+    	WritePixel(rp, a, b);
+	
+	if ((g % 45) == 0)
+	{
+	    static WORD offtable[][2] =
+	    {
+	    	{-1,0 },
+		{-1,1 },
+		{0 ,1 },
+		{ 1,1 },
+		{ 1,0 }
+	    };
+	    
+	    WritePixel(rp, a + offtable[g / 45][0], b + offtable[g / 45][1]);
+	}
+	
+    }
+    
+}
+
+static void DrawNeedle(struct RastPort *rp, LONG x1, LONG y1, LONG x2, LONG y2, double angle, LONG pen)
+{
+    LONG cx = (x1 + x2 + 1) / 2;
+    LONG cy = y2 - 1;
+    LONG rx = cx - x1 - 4;
+    LONG ry = cy - y1 - 4;
     LONG a, b;
     
     SetABPenDrMd(rp, pen, 0, JAM1);
@@ -277,6 +314,10 @@ IPTR Levelmeter__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	WritePixel(rp, x2, y1);
 	WritePixel(rp, x1, y2);
 	WritePixel(rp, x2, y2);
+
+	/* Levelmeter scale */
+	
+	DrawScale(rp, x1, y1, x2, y2, _pens(obj)[MPEN_SHINE]);
 	
 	/* Level-Label spacing */
 	
@@ -320,7 +361,7 @@ IPTR Levelmeter__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	/* Label Bg */
 	
 	RectFill(rp, x1 + 2, y1 +2, x2 - 2, y2 - 2);
-	
+		
     }
     
     x1 = _mleft(obj) + OUTERFRAME_X + BORDERSIZE_X + INNERFRAME_X;
