@@ -1380,6 +1380,17 @@ static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 }
 
 /**************************************************************************
+ ...
+**************************************************************************/
+static ULONG Area_HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleInput *msg)
+{
+    /* Actually a dummy, but real MUI does handle here the input stuff which Zune
+    ** has in Area_HandleEvent. For compatibility we should do this too
+    **/
+    return 0;
+}
+
+/**************************************************************************
  Trivial; custom classes may override this to get dynamic menus.
 **************************************************************************/
 static ULONG Area_ContextMenuBuild(struct IClass *cl, Object *obj, struct MUIP_ContextMenuBuild *msg)
@@ -1646,6 +1657,7 @@ AROS_UFH3S(IPTR, Area_Dispatcher,
 	case MUIM_CreateDragImage: return Area_CreateDragImage(cl, obj, (APTR)msg);
 	case MUIM_DeleteDragImage: return Area_DeleteDragImage(cl, obj, (APTR)msg);
 	case MUIM_DragQueryExtended: return Area_DragQueryExtended(cl, obj, (APTR)msg);
+	case MUIM_HandleInput: return Area_HandleInput(cl, obj, (APTR)msg);
 
 	case MUIM_Export: return Area_Export(cl, obj, (APTR)msg);
 	case MUIM_Import: return Area_Import(cl, obj, (APTR)msg);
