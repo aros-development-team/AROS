@@ -17,6 +17,7 @@
 #endif
 #include <dos/dos.h>
 
+#if 0
 
 /* Instance data of GfxMode objects. We have it defined here so we can
    access GfxMode objects' instance data directly (like BOOPSI gadgets)
@@ -104,25 +105,6 @@ struct HIDDBitMapData
     BOOL  displayable;   /* bitmap displayable?           */
     ULONG flags;         /* see hidd/graphic.h 'flags for */
                          /* HIDD_Graphics_CreateBitMap'   */
-#if 0
-    ULONG format;        /* planar or chunky              */
-    ULONG bytesPerRow;   /* bytes per row                 */
-    ULONG bytesPerPixel; /* bytes per pixel               */
-#endif
-#if 0
-    HIDDT_Pixel fg;        /* foreground color                                 */
-    HIDDT_Pixel bg;        /* background color                                 */
-    ULONG drMode;    /* drawmode                                         */
-    /* WARNING: type of font could be change */
-    APTR  font;      /* current fonts                                    */
-    ULONG colMask;   /* ColorMask prevents some color bits from changing */
-    UWORD linePat;   /* LinePattern                                      */
-    APTR  planeMask; /* Pointer to a shape bitMap                        */
-    
-    Object *gc;
-
-    ULONG colExp;	/* Color expansion mode	*/
-#endif
     Object *bitMap;
     /* WARNING: structure could be extented in the future                */
     
@@ -144,28 +126,8 @@ enum {
     
 };
 
-
-
-#if 0
-struct HIDDGCData
-{
-#if 0
-    APTR bitMap;     /* bitmap to which this gc is connected             */
 #endif
-    APTR  userData;  /* pointer to own data                              */
-    ULONG fg;        /* foreground color                                 */
-    ULONG bg;        /* background color                                 */
-    ULONG drMode;    /* drawmode                                         */
-    /* WARNING: type of font could be change */
-    APTR  font;      /* current fonts                                    */
-    ULONG colMask;   /* ColorMask prevents some color bits from changing */
-    UWORD linePat;   /* LinePattern                                      */
-    APTR  planeMask; /* Pointer to a shape bitMap                        */
-    ULONG colExp;
-    
-    /* WARNING: structure could be extented in the future                */
-};
-#endif    
+
 
 
 struct class_static_data
@@ -176,6 +138,8 @@ struct class_static_data
 
     Class                *gfxhiddclass; /* graphics hidd class    */
     Class                *bitmapclass;  /* bitmap class           */
+
+#if 0
     Class                *gcclass;      /* graphics context class */
     Class		 *colormapclass; /* colormap class	  */
     
@@ -187,6 +151,8 @@ struct class_static_data
     Class		 *chunkybmclass;
     
     Object		*std_pixfmts[num_Hidd_StdPixFmt];
+#endif
+
 };
 
 
@@ -202,7 +168,6 @@ struct IntHIDDGraphicsBase
     struct class_static_data *hdg_csd;
 };
 
-
 #define CSD(x) ((struct class_static_data *)x->UserData)
 
 #undef SysBase
@@ -213,6 +178,8 @@ struct IntHIDDGraphicsBase
 
 #undef OOPBase
 #define OOPBase (CSD(cl)->oopbase)
+
+#if 0
 
 
 /* pre declarations */
@@ -250,5 +217,5 @@ void   free_chunkybmclass(struct class_static_data *csd);
 inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelFormat *pf);
 
 
-
+#endif
 #endif /* GRAPHICS_HIDD_INTERN_H */
