@@ -14,7 +14,7 @@
 
 static const char version[] = "$VER: execute 41.1 (14.3.1997)\n";
 
-int main (int argc, char ** argv)
+int main(int argc, char **argv)
 {
     STRPTR args[1]={ 0 };
     struct RDArgs *rda;
@@ -22,8 +22,9 @@ int main (int argc, char ** argv)
     STRPTR s1, s2, s3, buf;
     LONG error=0;
 
-    rda=ReadArgs("FILE/A",(IPTR *)args,NULL);
-    if(rda!=NULL)
+    rda = ReadArgs("FILE/A",(IPTR *)args,NULL);
+
+    if(rda != NULL)
     {
 	s1=s2=(STRPTR)args[0];
 	while(*s2++)
@@ -52,17 +53,22 @@ int main (int argc, char ** argv)
 	    {
 		RunCommand(shell,4096,buf,s3-buf);
 		UnLoadSeg(shell);
-	    } else
-                error=RETURN_FAIL;
+	    } 
+	    else
+                error = RETURN_FAIL;
+
 	    FreeVec(buf);
-	} else
+	}
+	else
         {
             SetIoErr(ERROR_NO_FREE_STORE);
-            error=RETURN_FAIL;
+            error = RETURN_FAIL;
         }
+
 	FreeArgs(rda);
-    }else
-	error=RETURN_FAIL;
+    }
+    else
+	error = RETURN_FAIL;
 
     if(error)
 	PrintFault(IoErr(), NULL);
