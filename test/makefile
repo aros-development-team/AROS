@@ -19,7 +19,8 @@ DEPLIBS = $(LIBDIR)/libarosc.a \
 	$(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
 
 FILES = tasktest signaltest exceptiontest tasktest2 messagetest \
-	semaphoretest initstructtest devicetest filetest
+	semaphoretest initstructtest devicetest filetest \
+	dosvartest
 
 EXES = $(foreach f,$(FILES),$(TESTDIR)/$(f))
 
