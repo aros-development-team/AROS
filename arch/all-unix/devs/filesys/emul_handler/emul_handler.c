@@ -1630,6 +1630,17 @@ AROS_LH1(void, beginio,
 		      (struct filehandle **)&iofs->IOFS.io_Unit,
 		      fixName(iofs->io_Union.io_OPEN.io_Filename),
 		      iofs->io_Union.io_OPEN.io_FileMode);
+	if (
+			(error == ERROR_WRITE_PROTECTED) &&
+			(iofs->io_Union.io_OPEN.io_FileMode & FMF_AMIGADOS)
+		)
+	{
+		error = open_(emulbase,
+                      (struct filehandle **)&iofs->IOFS.io_Unit,
+                      fixName(iofs->io_Union.io_OPEN.io_Filename),
+                      iofs->io_Union.io_OPEN.io_FileMode & (~FMF_WRITE));
+	}
+		
 	break;
 	
     case FSA_CLOSE:
@@ -1817,6 +1828,17 @@ AROS_LH1(void, beginio,
 			  fixName(iofs->io_Union.io_OPEN_FILE.io_Filename),
 			  iofs->io_Union.io_OPEN_FILE.io_FileMode,
 			  iofs->io_Union.io_OPEN_FILE.io_Protection);
+	if (
+			(error == ERROR_WRITE_PROTECTED) &&
+			(iofs->io_Union.io_OPEN_FILE.io_FileMode & FMF_AMIGADOS)
+		)
+	{
+		error = open_file(emulbase,
+			 (struct filehandle **)&iofs->IOFS.io_Unit,
+			 fixName(iofs->io_Union.io_OPEN_FILE.io_Filename),
+			 iofs->io_Union.io_OPEN_FILE.io_FileMode & (~FMF_WRITE),
+			 iofs->io_Union.io_OPEN_FILE.io_Protection);
+	}
 	break;
 	
     case FSA_CREATE_DIR:
