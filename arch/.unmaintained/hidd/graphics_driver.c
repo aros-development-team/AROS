@@ -693,15 +693,76 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 }
 
 
-void driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
+BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
 	LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase * GfxBase)
 {
+  BOOL allocatedTmpRas = FALSE;
+  BYTE * RasPtr;
+  
+  if (!CorrectDriverData (rp, GfxBase))
+    return FALSE;
+  /* 
+    It is assumed that (x1,y1)-(x2,y2) describe a valid rectangle
+    within the rastport. So any corrections have to be done by
+    ScrollRaster() and ScrollRasterBF() 
+  */
+  /*
+    There a four different cases to consider:
+    1) rastport without layer (a screen's rastport)
+    2) rastport with simple-refresh layer 
+    3) rastport with smart -refresh layer
+    4) rastport with superbitmap layer
+    
+    All cases need a TmpRas. If it's not there it will be allocated by
+    this function.
+  */
 
-    if (!CorrectDriverData (rp, GfxBase))
-    	return;
-	
+  if (NULL == rp->TmpRas)
+  {
+    RasPtr = AllocRaster(x2-x1+1,y2-y1+1);
     
+    /* I won't do anything here if I couldn't get the Raster */
+    if (NULL == RasPtr)
+      return FALSE;
     
+    allocatedTmpRas = TRUE;
+  }
+  else
+  {
+    RasPtr = rp->TmpRas->RasPtr;
+  }
+  
+  /* must not change x2,x1,y2,y1 here!!! */
+  /* scroll the stuff */
+
+  if (NULL == rp->Layer)
+  {
+    /* rastport w/o layer. */
+    struct BitMap * bm = rp->BitMap;
+    BYTE plane = 0;
+    BYTE total_planes = GetBitMapAttr(bm, BMA_DEPTH);
+    LONG Mask = 0x01;
+    while (plane < total_planes)
+    {
+      
+
+      /* Next Bitplane */
+      Mask <<=1; 
+      plane++;
+    }     
+  }
+  else
+  {
+    /* rastport with layer */
+    
+  }  
+  
+  /* did I allocate the TmpRas? */
+  if (TRUE == allocatedTmpRas)
+    FreeRaster(RasPtr, x2-x1+1, y2-y1+1);
+  
+  return TRUE;
+  
 }
 
 void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LONG rx, LONG ry,
@@ -2603,7 +2664,7 @@ kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
 		    { aHidd_BitMap_DrawMode,	0UL},
 		    { TAG_DONE, 0UL}
 		};
-		
+
 		struct blit_info bi;
 		drmd_tags[0].ti_Data = MINTERM_TO_GCDRMD(minterm);
 		SetAttrs(dst_bm, drmd_tags);
@@ -2613,7 +2674,7 @@ kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
 		bi.bitmap	= srcBitMap;
 		bi.minterm	= minterm;
 		bi.planemask	= mask;
-		
+
 		bi.bmdepth	= GetBitMapAttr(srcBitMap, BMA_DEPTH);
 		bi.bmwidth	= GetBitMapAttr(srcBitMap, BMA_WIDTH);
 
@@ -2624,9 +2685,9 @@ kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
 			, xSize, ySize
 			, bitmap_to_buf
 		);
+
 			
-			
-		break; }
+	    break; }
 	}
     
     }
