@@ -6,6 +6,7 @@
 /****************************************************************************************/
 
 #include <datatypes/datatypes.h>
+#include <intuition/intuition.h>
 
 #include <proto/dos.h>
 #include <proto/alib.h>
@@ -189,6 +190,125 @@ STATIC VOID DetectIconType(BPTR file, struct DiskObject *dobj, struct IconBase *
     } /* if ((lock = DupLockFromFH(file))) */
     
     D(bug("Detect PNG Icon Type: %d\n", dobj->do_Type));
+}
+
+/****************************************************************************************/
+
+STATIC BOOL MakePlanarImage(struct NativeIcon *icon, struct Image **img,
+    	    	    	    UBYTE *src, struct IconBase *IconBase)
+{
+    LONG width16 = (icon->iconPNG.width + 15) & ~15;
+    LONG bpr = width16 / 8;
+    LONG planesize = bpr * icon->iconPNG.height;
+    LONG x, y;
+    UWORD *p1, *p2;
+    ULONG *s = (ULONG *)src;
+    
+    *img = (struct Image *)AllocPooled(icon->pool, sizeof(struct Image) + planesize * 2);
+    if (*img == NULL) return FALSE;
+    
+    (*img)->Width     = icon->iconPNG.width;
+    (*img)->Height    = icon->iconPNG.height;
+    (*img)->Depth     = 2;
+    (*img)->ImageData = (UWORD *)(*img + 1);
+    (*img)->PlanePick = 3; 
+    
+    p1 = (UWORD *)(*img)->ImageData;
+    p2 = p1 + planesize / 2;
+
+    for(y = 0; y < icon->iconPNG.height; y++)
+    {
+    	ULONG pixelmask = 0x8000;
+	UWORD plane1dat = 0;
+	UWORD plane2dat = 0;
+	
+    	for(x = 0; x < icon->iconPNG.width; x++)
+	{
+	    ULONG pixel = *s++;
+	    
+	#if AROS_BIG_ENDIAN
+	    if ((pixel & 0xFF000000) > 0x80000000)
+	    {
+	    	pixel = (((pixel & 0x00FF0000) >> 16) +
+		    	 ((pixel & 0x0000FF00) >> 8)  +
+			 ((pixel & 0x000000FF)) +
+			 127) / 256;
+	#else
+	    if ((pixel & 0x000000FF) > 0x80)
+    	    {
+	    	pixel = (((pixel & 0x0000FF00) >> 8) +
+		    	 ((pixel & 0x00FF0000) >> 16)  +
+			 ((pixel & 0xFF000000) >> 24) +
+			 127) / 256;
+	#endif
+	    		    
+		if (pixel == 3)
+		{
+	    	    /* Col 2: White */
+	    	    plane2dat |= pixelmask;
+		}
+		else if ((pixel == 2) || (pixel == 1))
+		{
+	    	    /* Col 3: Amiga Blue */
+	    	    plane1dat |= pixelmask;
+		    plane2dat |= pixelmask;
+		}
+		else
+		{
+	    	    /* Col 1: Black */
+		    plane1dat |= pixelmask;
+		}
+	    }
+	    
+    	    pixelmask >>= 1;
+	    if (!pixelmask)
+	    {
+	    	pixelmask = 0x8000;
+		*p1++ = AROS_WORD2BE(plane1dat);
+		*p2++ = AROS_WORD2BE(plane2dat);
+		
+		plane1dat = plane2dat = 0;
+		
+	    }
+	    
+	}
+	
+	if (pixelmask != 0x8000)
+	{
+	    *p1++ = AROS_WORD2BE(plane1dat);
+    	    *p2++ = AROS_WORD2BE(plane2dat);	    
+
+	}
+		
+    } /* for(y = 0; y < icon->iconPNG.height; y++) */
+    
+}
+
+/****************************************************************************************/
+
+STATIC BOOL MakePlanarImages(struct NativeIcon *icon, struct IconBase *IconBase)
+{
+    if (!MakePlanarImage(icon,
+    	    	    	 (struct Image **)&icon->dobj.do_Gadget.GadgetRender,
+			 icon->iconPNG.img1,
+			 IconBase))
+    {
+    	return FALSE;
+    }
+    
+    icon->dobj.do_Gadget.Flags |= GFLG_GADGIMAGE;
+    
+    if (!icon->iconPNG.img2) return TRUE;
+    
+    if (MakePlanarImage(icon,
+    	    	    	 (struct Image **)&icon->dobj.do_Gadget.SelectRender,
+			 icon->iconPNG.img1,
+			 IconBase))
+    {
+    	icon->dobj.do_Gadget.Flags |= GFLG_GADGHIMAGE;
+    }
+        
+    return TRUE;
 }
 
 /****************************************************************************************/
@@ -571,6 +691,15 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 	}
     }
     
+    /* Make fallback planar images */
+    
+    if (!MakePlanarImages(icon, IconBase))
+    {
+    	D(bug("Planar image creation failed\n"));
+    	FreeIconPNG(&icon->dobj, IconBase);
+	return FALSE;
+    }
+        
     *ret = &icon->dobj;
     
     return TRUE;
