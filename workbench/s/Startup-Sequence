@@ -8,8 +8,6 @@
 
 ;SetClock LOAD
 
-Mount RAM:
-Mount NIL:
 Mount PIPEFS:
 
 Version >NIL:
