@@ -23,17 +23,40 @@
 #   include <graphics/rastport.h>
 #endif
 
+/* This structure is used for hash lookup of textfontextensions.
+    Works somewhat like GfxNew(), GfxAssociate(), GfxLookup() etc */
+
+struct tfe_hashnode
+{
+    struct tfe_hashnode 	*next;
+    struct TextFont		*back;
+    struct TextFontExtension	*ext;
+};
+
 extern struct GfxBase * GfxBase;
 
 /* Internal GFXBase struct */
+
 struct GfxBase_intern
 {
     struct GfxBase 	 gfxbase;
     
     /* Driver data shared between all rastports (allocated once) */
     APTR		*shared_driverdata;
+
+
+#define TFE_HASHTABSIZE   16 /* This MUST be a power of two */
+
+    struct tfe_hashnode   * tfe_hashtab[TFE_HASHTABSIZE];
+    struct SignalSemaphore  tfe_hashtab_sema;
 };
 
+extern struct TextFontExtension *tfe_hashlookup(struct TextFont *tf, struct GfxBase *GfxBase);
+
+extern BOOL tfe_hashadd(struct TextFontExtension * etf
+		, struct TextFont *tf
+		, struct GfxBase *GfxBase);
+extern VOID tfe_hashdelete(struct TextFont *tf, struct GfxBase *GfxBase);
 /* Macros */
 #define RASSIZE(w,h)    ((ULONG)(h)*( ((ULONG)(w)+15)>>3&0xFFFE))
 

@@ -50,37 +50,32 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-	struct TextFontExtension *tfe;
+    struct TextFontExtension *tfe;
 	
-	/* Valid parameter ? */
-	if (font == NULL)
-		return;
+    /* Valid parameter ? */
+    if (font == NULL)
+	return;
 		
-	/* Forbid() this early in case someon else calls StripFont()
-	   on the font. (We might risk to find an extension, but when
-	   we are to free it, it's no longer there.
-	*/
-	  
-	Forbid();
+    /* Does the font have an extension ? */
+    tfe = tfe_hashlookup(font, GfxBase);
+    if (tfe)
+    {
+    	/* Remove the hashitem (tfe_hashdeledet has semaphore protection) */
+	tfe_hashdelete(font, GfxBase);
+    
+	font->tf_Extension = tfe->tfe_OrigReplyPort;
 
-	/* Does the font have an extension ? */
-	if (ExtendFont(font, NULL))
-	{
-		tfe = (struct TextFontExtension *)font->tf_Extension;
-		font->tf_Extension = NULL;
-		/* Font is not tagged anymore */
-		font->tf_Style ^= FSF_TAGGED;
+        /* Font is not tagged anymore */
+        font->tf_Style ^= FSF_TAGGED;
 		
 	
 		
-		FreeTagItems(tfe->tfe_Tags);
-		FreeMem(tfe, sizeof (struct TextFontExtension));
+	FreeTagItems(tfe->tfe_Tags);
+	FreeMem(tfe, sizeof (struct TextFontExtension));
 		
-	}
+    }
 
-	Permit();
-
-	return;	
+    return;	
 
     AROS_LIBFUNC_EXIT
 } /* StripFont */

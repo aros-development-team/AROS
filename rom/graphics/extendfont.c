@@ -10,6 +10,12 @@
 #include <exec/memory.h>
 #include "graphics_intern.h"
 
+#undef DEBUG
+#define DEBUG 1
+#include <aros/debug.h>
+
+
+
 /*****************************************************************************
 
     NAME */
@@ -25,17 +31,17 @@
 	struct GfxBase *, GfxBase, 136, Graphics)
 
 /*  FUNCTION
-		Checks whether or not a TextFont has a TextFontExtension.
-		If no extension exists, and tags are fontTags are supplied,
-		then it will try to build one.
+	Checks whether or not a TextFont has a TextFontExtension.
+	If no extension exists, and tags are fontTags are supplied,
+	then it will try to build one.
 
     INPUTS
     	font		- font to check for an extension.
-		fontTags	- tags to buil the TextFontExtesion from if it doesn't exist.
-					   May be 0.
+	fontTags	- tags to buil the TextFontExtesion from if it doesn't exist.
+			  If a NULL pointer is given, ExtendFont will alocate default tags.
     RESULT
     	success		- FALSE if the font has no TextFontExtension and an extension
-    				  can't be built. TRUE otherwise.
+    			  can't be built. TRUE otherwise.
 
     NOTES
 
@@ -57,53 +63,63 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-        #define TFE_COOKIE 0xffff
+    struct TextFontExtension *tfe;
+    struct TagItem def_tags = { TAG_DONE, 0};
+    
+    kprintf("ExtendFont(font=%p, tags=%p)\n", font, fontTags);
+	
+    if (font == NULL)
+	return FALSE;
 
-	/* !!! defaults to FALSE !!! */
-	ULONG retval = FALSE; 
+kprintf("Looking for extension\n");
 	
-	struct TextFontExtension *tfe;
-	
-	if (font == NULL)
-		return(FALSE);
-	
-	/* Does the font allready have an extension ? */
-	if (TFE(font->tf_Extension)->tfe_MatchWord == TFE_COOKIE)
-		retval = TRUE;
-	else
+    /* Does the font allready have an extension ? */
+    
+    tfe = tfe_hashlookup(font, GfxBase);
+    if (tfe)
+    {    
+	kprintf("Extension found\n");
+	return TRUE;
+    }
+
+    /* Allocing these on the stack is no problem,
+    cause we shall clone them, anyway */
+
+    kprintf("Building extension\n");
+
+    /* Try to build an extension */
+    if (!fontTags)
+	fontTags = &def_tags;
+	    
+    if ((tfe = AllocMem(sizeof (struct TextFontExtension), MEMF_ANY|MEMF_CLEAR)) != NULL)
+    {
+	/* We take a copy of the tagitems */
+	if ((tfe->tfe_Tags = CloneTagItems(fontTags)) != NULL)
 	{
-		/* Try to build an extension */
-		if (fontTags)
-		{
-			if ((tfe = AllocMem(sizeof (struct TextFontExtension), MEMF_ANY|MEMF_CLEAR)) != NULL)
-			{
-				/* We take a copy of the tagitems */
-				if ((tfe->tfe_Tags = CloneTagItems(fontTags)) != NULL)
-				{
+	    /* Fill in the textfontextension *before* we make it public */
 				
-					/* Fill in the textfontextension */
-				
-					tfe->tfe_MatchWord		= TFE_COOKIE;
-					tfe->tfe_BackPtr		= font;
-					tfe->tfe_OrigReplyPort	= font->tf_Message.mn_ReplyPort;
+	    tfe->tfe_MatchWord	= 0; /* unused */
+	    tfe->tfe_BackPtr	= font;
+	    tfe->tfe_OrigReplyPort	= font->tf_Message.mn_ReplyPort;
 					
-					/* Singlethread to prevent race conditions */
-					Forbid();
-					
-					font->tf_Style |= FSF_TAGGED;
-					TFE(font->tf_Extension) = tfe;
-					
-					Permit();
-					
-					/* Everything went just fine */
-					retval = TRUE;
-				}
-			}
-			else
-				FreeMem(tfe, sizeof (struct TextFontExtension));
-		}
-	}
-	return (retval);
+	    TFE(font->tf_Extension) = tfe;
+	    font->tf_Style |= FSF_TAGGED;
+		
+	    if (tfe_hashadd(tfe, font, GfxBase))
+	    {
+		return TRUE;
+	    }
+	    FreeTagItems(fontTags);
+
+	} 
+	FreeMem(tfe, sizeof (struct TextFontExtension));
+	
+    } /* if (memory for extension allocated) */
+    
+    return FALSE;
 
     AROS_LIBFUNC_EXIT
 } /* ExtendFont */
+
+
+
