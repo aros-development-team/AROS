@@ -10,7 +10,7 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
-#   define DEBUG 1
+#   define DEBUG 0
 #include <aros/debug.h>
 
 /*****************************************************************************
@@ -71,12 +71,10 @@
     */
     Forbid();
 
-D(bug("%s %d\n",__FUNCTION__,__LINE__));
     /* Free all memory in the tc_MemEntry list. */
     while((mb=(struct MemList *)RemHead(&task->tc_MemEntry))!=NULL)
 	/* Free one MemList node */
 	FreeEntry(mb);
-D(bug("%s %d\n",__FUNCTION__,__LINE__));
 
 #if 0
     if(et != NULL)
@@ -114,12 +112,10 @@ D(bug("%s %d\n",__FUNCTION__,__LINE__));
 	    FreeVec(et);
     }
 #else
-D(bug("%s %d\n",__FUNCTION__,__LINE__));
 #if 0
     if(et != NULL)
 	FreeVec(et);
 #endif
-D(bug("%s %d\n",__FUNCTION__,__LINE__));
 #endif
 
     /* Changing the task lists always needs a Disable(). */
@@ -138,23 +134,17 @@ D(bug("%s %d\n",__FUNCTION__,__LINE__));
 	SysBase->TDNestCnt=-1;
 
 	/* And force a task switch */
-D(bug("%s %d\n",__FUNCTION__,__LINE__));
 	Switch();
-D(bug("%s %d\n",__FUNCTION__,__LINE__));
 	/* Does not return. */
     }
     else
 	/* Good luck. Freeing other tasks is simple. */
 	Remove(&task->tc_Node);
-D(bug("%s %d\n",__FUNCTION__,__LINE__));
 
     /* All done. */
     Enable();
     Permit();
-D(bug("%s %d\n",__FUNCTION__,__LINE__));
 
     ReturnVoid ("RemTask");
     AROS_LIBFUNC_EXIT
 }
-
-
