@@ -298,7 +298,10 @@ AROS_LH0 (BPTR, LC_BUILDNAME(CloseLib),
     {
 	if(LC_LIB_FIELD(lh).lib_Flags & LIBF_DELEXP)
 	{
-	    return (AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader)(lh));
+	    return AROS_LC1(BPTR, LC_BUILDNAME(ExpungeLib),
+		    AROS_LCA(LC_LIBHEADERTYPEPTR, lh, D0),
+		    struct ExecBase *, SysBase, 3, LibHeader
+	    );
 	}
     }
 #endif /* NOEXPUNGE */
