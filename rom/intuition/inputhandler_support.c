@@ -1,3 +1,12 @@
+/*
+    (C) 1995-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Support functions for Intuition's InputHandler
+    Lang: english
+*/
+
+
 #define AROS_ALMOST_COMPATIBLE 1 /* NEWLIST macro */
 #include <proto/exec.h>
 #include <proto/boopsi.h>
@@ -393,13 +402,15 @@ void SetGPIMouseCoords(struct gpInput *gpi, struct Gadget *gad)
     
     WORD mousex, mousey;
     
-    if (gi->gi_Window)
+    if (IS_SCREEN_GADGET(gad) || !gi->gi_Window)
+    {
+        mousex = gi->gi_Screen->MouseX;
+	mousey = gi->gi_Screen->MouseY;    
+    }
+    else
     {
         mousex = gi->gi_Window->MouseX;
 	mousey = gi->gi_Window->MouseY;
-    } else {
-        mousex = gi->gi_Screen->MouseX;
-	mousey = gi->gi_Screen->MouseY;
     }
     
     gpi->gpi_Mouse.X = mousex - gi->gi_Domain.Left - GetGadgetLeft(gad, gi->gi_Screen, gi->gi_Window, NULL);
@@ -501,10 +512,10 @@ struct Gadget *DoGPInput(struct GadgetInfo *gi, struct Gadget *gadget,
 struct Gadget * FindGadget (struct Screen *scr, struct Window * window, int x, int y,
 			    struct GadgetInfo * gi, struct IntuitionBase *IntuitionBase)
 {
-    struct Gadget * gadget, * firstgadget;
-    struct gpHitTest gpht;
-    struct IBox ibox;
-    WORD xrel, yrel;
+    struct Gadget   	*gadget, *firstgadget;
+    struct gpHitTest 	gpht;
+    struct IBox     	ibox;
+    WORD    	    	i, xrel, yrel;
 
     gpht.MethodID     = GM_HITTEST;
     gpht.gpht_GInfo   = gi;
@@ -516,38 +527,51 @@ struct Gadget * FindGadget (struct Screen *scr, struct Window * window, int x, i
         firstgadget = scr->FirstGadget;
     }
     
-    for (gadget = firstgadget; gadget; gadget = gadget->NextGadget)
-    {
-    	if (!(gadget->Flags & GFLG_DISABLED))
+    for(i = 0; i < 2; i++)
+    {    
+	for (gadget = firstgadget; gadget; gadget = gadget->NextGadget)
 	{
-    	    /* stegerg: domain depends on gadgettype and windowflags! */
-            GetGadgetDomain(gadget, scr, window, NULL, &gi->gi_Domain);
-
-	    /* Get coords relative to window */
-
-    	    GetGadgetIBox((Object *)gadget, gi, &ibox);
-
-	    xrel = x - gi->gi_Domain.Left - (window ? window->LeftEdge : 0);
-	    yrel = y - gi->gi_Domain.Top  - (window ? window->TopEdge : 0);
-
-	    if (   xrel >= ibox.Left
-		&& yrel >= ibox.Top
-		&& xrel < ibox.Left + ibox.Width 
-		&& yrel < ibox.Top  + ibox.Height )
+    	    if (!(gadget->Flags & GFLG_DISABLED))
 	    {
-	    	if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_CUSTOMGADGET) break;
-	  
-		gpht.gpht_Mouse.X = xrel - ibox.Left;
-		gpht.gpht_Mouse.Y = yrel - ibox.Top;
+    		/* stegerg: domain depends on gadgettype and windowflags! */
+        	GetGadgetDomain(gadget, scr, window, NULL, &gi->gi_Domain);
 
-		if (Locked_DoMethodA ((Object *)gadget, (Msg)&gpht, IntuitionBase) == GMR_GADGETHIT) break;
+		/* Get coords relative to window */
 
-	    }
+    		GetGadgetIBox((Object *)gadget, gi, &ibox);
 
-	} /* if (!(gadget->Flags & GFLG_DISABLED)) */
+		xrel = x - gi->gi_Domain.Left;
+		yrel = y - gi->gi_Domain.Top;
+		
+    	    	if ((i == 0) && window)
+		{
+		    xrel -= window->LeftEdge;
+		    yrel -= window->TopEdge;
+		}
+		
+		if ((xrel >= ibox.Left) &&
+		    (yrel >= ibox.Top) &&
+		    (xrel < ibox.Left + ibox.Width) &&  
+		    (yrel < ibox.Top  + ibox.Height))
+		{
+	    	    if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_CUSTOMGADGET) break;
 
-    } /* for (gadget = window->FirstGadget; gadget; gadget = gadget->NextGadget) */
+		    gpht.gpht_Mouse.X = xrel - ibox.Left;
+		    gpht.gpht_Mouse.Y = yrel - ibox.Top;
 
+		    if (Locked_DoMethodA ((Object *)gadget, (Msg)&gpht, IntuitionBase) == GMR_GADGETHIT) break;
+
+		}
+
+	    } /* if (!(gadget->Flags & GFLG_DISABLED)) */
+
+	} /* for (gadget = window->FirstGadget; gadget; gadget = gadget->NextGadget) */
+
+    	if (gadget || !window) break;
+	
+	firstgadget = scr->FirstGadget;
+    }
+    
     return (gadget);
 
 } /* FindGadget */
@@ -850,41 +874,52 @@ struct Window *FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event,
 				struct IntuitionBase *IntuitionBase)
 {
     /* The caller has checked that the input event is a IECLASS_RAWMOUSE, SELECTDOWN event */
-    struct Screen *scr;
-    struct Layer *l;
-    struct Window *new_w = NULL;
-    ULONG lock;
+    struct Screen   *scr;
+    struct Layer    *l;
+    struct Window   *new_w;
+    ULONG   	    lock;
     
     *swallow_event = FALSE;
 
     lock = LockIBase(0UL);
-    scr = IntuitionBase->ActiveScreen;
+    
+    new_w = IntuitionBase->ActiveWindow;
+    scr   = IntuitionBase->ActiveScreen;
+    
     UnlockIBase(lock);
     
-    /* What layer ? */
-    D(bug("Click at (%d,%d)\n",scr->MouseX,scr->MouseY));
-    LockLayerInfo(&scr->LayerInfo);
-
-    l = WhichLayer(&scr->LayerInfo, scr->MouseX, scr->MouseY);
-
-    UnlockLayerInfo(&scr->LayerInfo);
-
-    if (NULL == l)
+    if (scr)
     {
-	D(bug("iih: Click not inside layer\n"));
-    }
-    else
-    {
-	new_w = (struct Window *)l->Window;
-	if (!new_w)
+	/* What layer ? */
+	D(bug("FindActiveWindow: Click at (%d,%d)\n",scr->MouseX,scr->MouseY));
+	LockLayerInfo(&scr->LayerInfo);
+
+	l = WhichLayer(&scr->LayerInfo, scr->MouseX, scr->MouseY);
+
+	UnlockLayerInfo(&scr->LayerInfo);
+
+	if (NULL == l)
 	{
-	    D(bug("iih: Selected layer is not a window\n"));
+    	    new_w = NULL;
+	    D(bug("FindActiveWindow: Click not inside layer\n"));
 	}
+	else if (l == scr->BarLayer)
+	{
+    	    D(bug("FindActiveWindow: Click on screen bar layer -> active window stays the same\n"));
+	}
+	else
+	{
+	    new_w = (struct Window *)l->Window;
+	    if (!new_w)
+	    {
+		D(bug("FindActiveWindow: Selected layer is not a window\n"));
+	    }
 
-    	D(bug("Found layer %p\n", l));
+    	    D(bug("FindActiveWindow: Found layer %p\n", l));
 
+	}
     }
-
+    
     return new_w;
 }
 
