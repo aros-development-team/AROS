@@ -781,7 +781,7 @@ GetFilename( STRPTR file, STRPTR hail, ULONG flags )
 VOID
 OpenFile( VOID )
 {
-    if( GetFilename( File, GetString( MSG_PROJECT_OPEN ) + 2, NULL ) )
+    if( GetFilename( File, GetString( MSG_PROJECT_OPEN ) + 2, 0 ) )
     {
         if( !LoadConfig( File ) )
         {
