@@ -27,6 +27,42 @@ extern struct LocaleBase *globallocalebase;
 
 /*********************************************************************************************/
 
+#ifdef __MORPHOS__
+
+extern void LIB_LocRawDoFmt(void);
+extern void LIB_LocStrnicmp(void);
+extern void LIB_LocStricmp(void);
+extern void LIB_LocToLower(void);
+extern void LIB_LocToUpper(void);
+extern void LIB_LocDateToStr(void);
+extern void LIB_LocStrToDate(void);
+extern void LIB_LocDosGetLocalizedString(void);
+
+#endif
+
+/*********************************************************************************************/
+
+#ifdef __MORPHOS__
+static struct patchinfo
+{
+    WORD    library;
+    WORD    whichfunc;
+    APTR    whichpatchfunc;
+}
+pi [] =
+{
+    {LIB_EXEC   , 87 , LIB_LocRawDoFmt},
+    {LIB_UTILITY, 28 , LIB_LocStrnicmp},
+    {LIB_UTILITY, 27 , LIB_LocStricmp},
+    {LIB_UTILITY, 30 , LIB_LocToLower},
+    {LIB_UTILITY, 29 , LIB_LocToUpper},
+    {LIB_DOS    , 124, LIB_LocDateToStr},
+    {LIB_DOS    , 125, LIB_LocStrToDate},
+    {LIB_DOS    , 163, LIB_LocDosGetLocalizedString},
+    {NULL}
+};
+
+#else
 static struct patchinfo
 {
     WORD    library;
@@ -46,6 +82,7 @@ pi [] =
     {LIB_DOS    , 154, LIB_LOCALE, 38}, /* DosGetLocalizedString */
     {NULL   	    	    	     }
 };
+#endif
 
 /*********************************************************************************************/
 
@@ -82,9 +119,12 @@ void InstallPatches(void)
     WORD i;
 
 #ifdef __MORPHOS__
-    static const struct TagItem PPCTag[] =
+    static const struct TagItem PatchTags[] =
     {
-	{TASKTAG_CODETYPE, CODETYPE_PPC},
+	{SETFUNCTAG_MACHINE, MACHINE_PPC},
+	{SETFUNCTAG_TYPE, SETFUNCTYPE_NORMAL},
+	{SETFUNCTAG_IDNAME, (ULONG) "locale.library Language Patch"},
+	{SETFUNCTAG_DELETE, TRUE},
 	{TAG_DONE}
     };
 #endif
@@ -92,10 +132,13 @@ void InstallPatches(void)
     Forbid();
     for(i = 0; pi[i].library; i++)
     {
+#ifdef __MORPHOS__
+        NewSetFunction(GetLib(pi[i].library), pi[i].whichpatchfunc, -pi[i].whichfunc * LIB_VECTSIZE, PatchTags);
+#else
         SetFunction(GetLib(pi[i].library),
 	    	    -pi[i].whichfunc * LIB_VECTSIZE,
 		    __AROS_GETVECADDR(GetLib(pi[i].patchlibrary), pi[i].whichpatchfunc));
-
+#endif
     }
     Permit();
     LocaleBase->lb_SysPatches = TRUE;

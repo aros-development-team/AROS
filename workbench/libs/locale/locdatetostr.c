@@ -23,6 +23,10 @@
  #define YEAR_FORMAT "%Y"
 #endif
 
+#ifndef FORMAT_DEF
+#define FORMAT_DEF 4
+#endif
+
 extern struct LocaleBase *globallocalebase;
 
 AROS_UFH3(void, LocDateToStrPutCharFunc,
@@ -44,7 +48,7 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH1(BOOL, LocDateToStr,
+	AROS_LH1(LONG, LocDateToStr,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct DateTime *, datetime, D1),
@@ -221,7 +225,7 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
     
     REPLACEMENT_UNLOCK;
    
-    return DOSTRUE;
+    return TRUE;
     
     AROS_LIBFUNC_EXIT
     

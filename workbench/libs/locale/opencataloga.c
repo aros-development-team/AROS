@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE
 
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -15,9 +16,11 @@
 #include <proto/iffparse.h>
 #include <proto/utility.h>
 #include <string.h>
-//#include <aros/macros.h>
-#include <aros/debug.h>
 #include "locale_intern.h"
+
+#include <aros/debug.h>
+
+#define	DEBUG_OPENCATALOG(x)	;
 
 struct header
 {
@@ -70,8 +73,7 @@ struct header
     char    	    	* language;
     char    	    	* app_language;
     char    	    	* specific_language;
-    char                def_language[] = "english";
-
+    struct Process	* MyProcess;	
 #define FILENAMESIZE 256
 
     char    	    	  filename[FILENAMESIZE];
@@ -82,29 +84,48 @@ struct header
     WORD    	    	  pref_language;
     UWORD                 i;
 
+    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: locale 0x%lx name <%s> Tags 0x%lx localebase 0x%lx\n",
+				locale,
+				name,
+				tags,
+				LocaleBase));
+
     if (!locale)
     {
+	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: no locale\n"));
 	locale = def_locale = OpenLocale(NULL);
+	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: def_locale 0x%lx\n",
+				def_locale));
     }
 
-    if (!locale) return NULL;
+    if (!locale)
+    {
+	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: nolocale..done\n"));
+	return NULL;
+    }
+
+    MyProcess=(struct Process *)FindTask(NULL);
 
     specific_language = (char *)GetTagData(OC_Language, (IPTR)0, tags);
 
+    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: specific lang 0x%lx\n",specific_language));
     if (specific_language)
     {
 	language = specific_language;
 	pref_language = -1;
+	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: language 0x%lx\n",language));
     }
     else
     {
 	language = locale->loc_PrefLanguages[0];
 	pref_language = 0;
+	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: language 0x%lx\n",language));
     }
 
     if (language == NULL)
     {
     	if (def_locale) CloseLocale(def_locale);
+	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: nolanguage..done\n"));
     	return NULL;
     }
 
@@ -114,18 +135,24 @@ struct header
     ** don't need to load anything.
     */
     app_language = (char *)GetTagData(OC_BuiltInLanguage,
-                                      (IPTR)def_language,
+                                      (IPTR)defLocale.loc_PrefLanguages[0],
                                       tags);
+
+    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: app_language 0x%lx\n",
+				app_language));
 
     if (NULL != app_language && 0 == strcmp(app_language, language))
     {
     	if (def_locale) CloseLocale(def_locale);
+	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: failure..done\n"));
 	return NULL;
     }
 
     version = GetTagData(OC_Version,
                 	 0,
                 	 tags);
+
+    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: version %ld\n",version));
 
     if (NULL != name)
     {
@@ -135,26 +162,37 @@ struct header
 	** The wanted catalog might be in the list of catalogs that are
 	** already loaded. So check that list first.
 	*/
+
+	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: CatalogLock 0x%lx\n",
+					&IntLB(LocaleBase)->lb_CatalogLock));
+
 	ObtainSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
+
+	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: search cached Catalog\n"));
 
 	ForeachNode(&IntLB(LocaleBase)->lb_CatalogList, (struct Node *)catalog)
 	{
-        if (catalog->ic_Name &&
+	    if (catalog->ic_Name &&
         	0 == strcmp(catalog->ic_Name, name) &&
         	catalog->ic_Catalog.cat_Language &&
         	0 == strcmp(catalog->ic_Catalog.cat_Language, language))
 	    {
+		DEBUG_OPENCATALOG(dprintf("OpenCatalogA: found Catalog 0x%lx\n",catalog));
         	catalog->ic_UseCount++;
         	ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
 
-		if (def_locale) CloseLocale(def_locale);
+		if (def_locale)
+		{
+		    CloseLocale(def_locale);
+		}
 
-        	{
-                SetIoErr(ERROR_ACTION_NOT_KNOWN);
-                return (struct Catalog *)catalog;
-            }
+		SetIoErr(ERROR_ACTION_NOT_KNOWN);
+
+		DEBUG_OPENCATALOG(dprintf("OpenCatalogA: return Catalog 0x%lx\n",catalog));
+		return (struct Catalog *)catalog;
 	    }
 	}
+	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: found none\n"));
 
 	ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
 
@@ -163,6 +201,8 @@ struct header
 	SetIoErr(0);
 
 	iff = AllocIFF();
+
+	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: iff 0x%lx\n",iff));
 	if (NULL == iff)
 	{
 	    if (def_locale) CloseLocale(def_locale);
@@ -171,28 +211,53 @@ struct header
 	    return NULL;
 	}
 
-	while((pref_language < 10) && language)
-	{
-    	
-        if (NULL != app_language && 0 == strcmp(app_language, language))
-        {
-    		if (def_locale) CloseLocale(def_locale);
-	    	return NULL;
-        }
+	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: pref_language %ld language 0x%lx\n",
+				pref_language,
+				language));
 
-        if ((((struct Process *)FindTask(NULL))->pr_HomeDir) != NULL)
-		{
-    		strcpy(filename, "PROGDIR:Catalogs");
+	while ((pref_language < 10) && language)
+	{
+	    if ((MyProcess->pr_HomeDir) != NULL)
+	    {
+		DEBUG_OPENCATALOG(dprintf("OpenCatalogA: HomeDir !=NULL..try progdir\n"));
+		strcpy(filename, "PROGDIR:Catalogs");
+		DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",filename));
+		AddPart(filename, language, FILENAMESIZE);
+		DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",filename));
+		AddPart(filename, name    , FILENAMESIZE);
+
+		DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",filename));
+		iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE);
+		DEBUG_OPENCATALOG(dprintf("OpenCatalogA: iffstream 0x%lx\n",
+					iff->iff_Stream));
+	    }
+	    if (iff->iff_Stream) break;
+
+    	    strcpy(filename, "MOSSYS:LOCALE/Catalogs");
+
+	    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",filename));
             AddPart(filename, language, FILENAMESIZE);
+	    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",filename));
             AddPart(filename, name    , FILENAMESIZE);
 
-            iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE);
-	    }
-        	if (iff->iff_Stream) break;
+	    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: try filename <%s>\n",filename));
+
+	    { 	APTR oldwinptr=MyProcess->pr_WindowPtr;
+		MyProcess->pr_WindowPtr=(APTR)-1;
+		iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE);
+		MyProcess->pr_WindowPtr=oldwinptr;
+ 	    }
+
+	    if (iff->iff_Stream) break;
 
     	    strcpy(filename, "LOCALE:Catalogs");
+
+	    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",filename));
             AddPart(filename, language, FILENAMESIZE);
+	    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",filename));
             AddPart(filename, name    , FILENAMESIZE);
+
+	    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: try filename <%s>\n",filename));
 
             iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE);
 	    if (iff->iff_Stream) break;
@@ -200,6 +265,8 @@ struct header
 	    pref_language++;
 	    language = locale->loc_PrefLanguages[pref_language];
 	}
+
+	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: language 0x%lx\n",language));
 
     	/* I no longer need the locale. So close it if we opened it */
 
@@ -213,19 +280,21 @@ struct header
 
 	if (NULL == iff->iff_Stream)
 	{
+	    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: end..nostream\n"));
 	    FreeIFF(iff);
 	    SetIoErr(ERROR_OBJECT_NOT_FOUND);
-
 	    return NULL;
 	}
 
+	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: catalog name <%s>\n",name));
 	catalog = AllocVec(sizeof(struct IntCatalog) + strlen(name) + 1, MEMF_CLEAR | MEMF_PUBLIC);
+	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: catalog 0x%lx\n",catalog));
 	if (NULL == catalog)
 	{
+	    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: end..no catalog\n"));
 	    Close((BPTR)iff->iff_Stream);
 	    FreeIFF(iff);
 	    SetIoErr(ERROR_NO_FREE_STORE);
-
 	    return NULL;
 	}
 
@@ -243,6 +312,7 @@ struct header
 
         	if (IFFERR_EOF == error)
         	{
+		    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: parsed catalog\n"));
         	    /* Did everything go fine? */
 
     	    	    if (!(catalog->ic_LanguageName[0]))
@@ -265,6 +335,8 @@ struct header
     	    	    CloseIFF(iff);
 	    	    Close((BPTR)iff->iff_Stream);
 		    FreeIFF(iff);
+
+		    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: return catalog 0x%lx\n",catalog));
 		    
         	    return &catalog->ic_Catalog;
         	}
@@ -285,16 +357,15 @@ struct header
                 
         		    if (top->cn_Size > 100) break; /*max 100 bytes*/
 
-                error = ReadChunkBytes(iff, buf, top->cn_Size);
-                if (error == top->cn_Size)
+			    error = ReadChunkBytes(iff, buf, top->cn_Size);
+			    if (error == top->cn_Size)
 			    {
 			    	error = 0;
 			    }
-
-            	else
-                {
-        		    break;
-                }
+			    else
+			    {
+				break;
+			    }
 
                 buf[99] = 0;
 
@@ -473,8 +544,10 @@ struct header
 
     if (def_locale) CloseLocale(def_locale);
 
+    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: catalog not loaded\n"));
     return NULL;
 
     AROS_LIBFUNC_EXIT
 
 } /* OpenCatalogA */
+

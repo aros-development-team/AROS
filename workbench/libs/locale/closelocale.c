@@ -9,8 +9,6 @@
 #include <proto/exec.h>
 #include "locale_intern.h"
 
-extern struct Locale defLocale;
-
 /*****************************************************************************
 
     NAME */
@@ -55,16 +53,24 @@ extern struct Locale defLocale;
     AROS_LIBBASE_EXT_DECL(struct Library *,LocaleBase)
 
     /* Best make sure we actually have something freeable. */
-    if(locale && (locale != &defLocale))
+    if(locale && (locale != (struct Locale *)IntLB(LocaleBase)->lb_DefaultLocale))
     {
 	/* Make sure we don't have any race conditions */
 	ObtainSemaphore(&IntLB(LocaleBase)->lb_LocaleLock);
 	if(--IntL(locale)->il_Count == 0)
 	{
-	    /* Free the locale structure if it's not the current
-	       locale */
+	    /* Free the locale structure if it's not the current locale */
 	    if (locale != (struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale)
-  	      FreeMem(locale, sizeof(struct IntLocale));
+	    {
+	      /* Close old .language, if any */
+	      if (IntLB(locale)->lb_CurrentLocale->il_CurrentLanguage)
+	        CloseLibrary(IntLB(locale)->lb_CurrentLocale->il_CurrentLanguage);
+
+	      /* Close old dos.catalog */
+	      CloseCatalog(IntLB(locale)->lb_CurrentLocale->il_DosCatalog);
+
+	      FreeMem(locale, sizeof(struct IntLocale));
+	    }
 	}
 	ReleaseSemaphore(&IntLB(LocaleBase)->lb_LocaleLock);
     }

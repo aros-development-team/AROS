@@ -14,11 +14,14 @@
 #include <prefs/prefhdr.h>
 #include <prefs/locale.h>
 #include <proto/exec.h>
+#include <proto/locale.h>
 #include <aros/asmcall.h>
 
 #include <aros/debug.h>
 
 #include <string.h>
+
+#define	DEBUG_INITLOCALE(x)	;
 
 extern AROS_UFP4(ULONG, AROS_SLIB_ENTRY(strcompare, english),
     AROS_UFPA(STRPTR, string1, A1),
@@ -50,6 +53,8 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     UBYTE fileBuf[512];
     int i = 0;
 
+    DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: Locale 0x%lx\n",il));
+
     while(lang == NULL && i < 10)
     {
 	STRPTR lName = il->il_Locale.loc_PrefLanguages[i];
@@ -58,16 +63,15 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 	
     #ifdef __MORPHOS__  /*I had some ugly problems with the macros adding a space before _Gate so I had to do it this way*/
     if( NULL != lName &&
-    	    AROS_CALL4(ULONG, &LIB_strcompare_Gate,
-		AROS_LCA(STRPTR, "english", A1),
-		AROS_LCA(STRPTR, lName, A2),
-		AROS_LCA(ULONG, 7, D0),
-		AROS_LCA(ULONG, SC_ASCII, D1),
-                struct LocaleBase *, LocaleBase) != 0)
+    	    AROS_UFC4(ULONG, &LIB_strcompare_Gate,
+		AROS_UFCA(STRPTR, defLocale.loc_PrefLanguages[0], A1),
+		AROS_UFCA(STRPTR, lName, A2),
+		AROS_UFCA(ULONG, 7, D0),
+		AROS_UFCA(ULONG, SC_ASCII, D1)) != 0)
     #else
     if( NULL != lName &&
     	    AROS_CALL4(ULONG, AROS_SLIB_ENTRY(strcompare, english),
-		AROS_LCA(STRPTR, "english", A1),
+		AROS_LCA(STRPTR, defLocale.loc_PrefLanguages[0], A1),
 		AROS_LCA(STRPTR, lName, A2),
 		AROS_LCA(ULONG, 7, D0),
 		AROS_LCA(ULONG, SC_ASCII, D1),
@@ -80,6 +84,28 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     	    /* Try and open the specified language */
     	    lang = OpenLibrary(fileBuf, 0);
 
+    	#ifdef __MORPHOS
+    	    if(lang == NULL)
+    	    {
+		/*
+    		    Ok, so the language didn't open, lets try for
+    		    MOSSYS:LOCALE/Languages/xxx.language
+		*/
+		
+		strcpy(fileBuf, "MOSSYS:LOCALE/Languages/");
+		AddPart(fileBuf, lName, 512);
+		strcat(fileBuf, ".language");
+		
+		{ APTR oldwinptr;
+		  struct Process *me=(struct Process *)FindTask(NULL);
+		  oldwinptr = me->pr_WindowPtr;
+		  me->pr_WindowPtr = (APTR) -1;
+		  lang = OpenLibrary(fileBuf, 0);
+		  me->pr_WindowPtr = oldwinptr;
+		}
+	    }
+    	#endif
+	
     	    if(lang == NULL)
     	    {
 		/*
@@ -119,7 +145,7 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 
     if (lang == NULL)
     {
-    	strcpy(il->LanguageName, "english.language");
+    	strcpy(il->LanguageName, defLocale.loc_LanguageName);
     }
 
     il->il_Locale.loc_LanguageName = &il->LanguageName[0];
@@ -145,18 +171,30 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     else
 	mask = 0;
 
+    DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: Language Mask 0x%lx\n",mask));
     /* CONST: If we add any more functions we need to increase this number */   
     for(i = 0; i < 17; i++)
     {
 	if(mask & (1<<i))
 	{
-        il->il_LanguageFunctions[i] = __AROS_GETVECADDR(lang, (i+6));
+    	#ifdef __MORPHOS__
+            il->il_LanguageFunctions[i] = (APTR)(((ULONG)lang) - ((i+6)*6));
+    	#else
+            il->il_LanguageFunctions[i] = __AROS_GETVECADDR(lang, (i+6));
+    	#endif
+	    DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: use Lanugage Entry %ld Func 0x%lx\n",i,il->il_LanguageFunctions[i]));
 	}
 	else
 	{
-        il->il_LanguageFunctions[i] = __eng_functable[i];
+            il->il_LanguageFunctions[i] = __eng_functable[i];
+	    DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: use Default Entry %ld Func 0x%lx\n",i,il->il_LanguageFunctions[i]));
 	}
     }
+
+    /* Open dos.catalog (needed for DosGetLocalizedString patch) */
+    il->il_DosCatalog = OpenCatalogA((struct Locale *)il, "Sys/dos.catalog", NULL);
+
+    DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: DosCatalog 0x%lx\n",il->il_DosCatalog));
 }
 
 /* InitLocale(IntLocale *, LocalePrefs *)
@@ -177,6 +215,8 @@ void InitLocale(STRPTR filename, struct IntLocale *locale,
 {
     struct CountryPrefs *cp;
     int i, i2;
+
+    DEBUG_INITLOCALE(dprintf("InitLocale: filename <%s> Locale 0x%lx LocalePrefs 0x%lx\n",filename,locale,lp));
 
     cp = &lp->lp_CountryData;
 
@@ -204,7 +244,8 @@ void InitLocale(STRPTR filename, struct IntLocale *locale,
 	   poke "english" into the array (Tested on the Amiga where this
 	   does seem to happen, too!) */
 	
-	strcpy(locale->PreferredLanguages[0], "english");
+	DEBUG_INITLOCALE(dprintf("InitLocale: user set no preferred lang\n"));
+	strcpy(locale->PreferredLanguages[0], defLocale.loc_PrefLanguages[0]);
 	locale->il_Locale.loc_PrefLanguages[0] = locale->PreferredLanguages[0];
     }
     
@@ -274,5 +315,7 @@ void InitLocale(STRPTR filename, struct IntLocale *locale,
     locale->il_Locale.loc_MonNegativeSignPos = cp->cp_MonNegativeSignPos;
     locale->il_Locale.loc_MonNegativeCSPos = cp->cp_MonNegativeCSPos;
     locale->il_Locale.loc_CalendarType = cp->cp_CalendarType;
+
+    DEBUG_INITLOCALE(dprintf("InitLocale: done\n"));
 }
 

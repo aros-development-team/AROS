@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#define AROS_ALMOST_COMPATIBLE
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/memory.h>
@@ -25,7 +26,7 @@
 */
 
 #ifdef __MORPHOS__
-    unsigned long __amigappc__ = 1;
+    unsigned long __abox__ = 1;
 #endif
 
 #define INIT    AROS_SLIB_ENTRY(init, Locale)
@@ -37,7 +38,6 @@ LIBBASETYPE * INIT();
 extern const char LIBEND;
 
 extern void SetLocaleLanguage(struct IntLocale *, struct LocaleBase *);
-extern struct Locale defLocale;
 
 int entry(void)
 {
@@ -50,7 +50,7 @@ const struct Resident Locale_resident =
     (struct Resident *)&Locale_resident,
     (APTR)&LIBEND,
 #ifdef __MORPHOS__
-    RTF_PPC |RTF_AUTOINIT,
+    RTF_PPC | RTF_EXTENDED | RTF_AUTOINIT,
 #else
     RTF_AUTOINIT,
 #endif
@@ -60,6 +60,11 @@ const struct Resident Locale_resident =
     (char *)name,
     (char *)&version[6],
     (ULONG *)inittabl
+#ifdef __MORPHOS__
+    ,
+    REVISION_NUMBER,	/* Revision */
+    NULL /* Tags */
+#endif
 };
 
 static const char name[]=NAME_STRING;
@@ -129,20 +134,24 @@ AROS_UFH3(LIBBASETYPE *, AROS_SLIB_ENTRY(init,Locale),
 	    IntLB(LIBBASE)->lb_DosBase = NULL;
 	    return NULL;
 	}
+	
+	IntLB(LIBBASE)->lb_RexxSysBase = OpenLibrary("rexxsyslib.library", 36L);
     }
 
-    def = AllocMem(sizeof(struct IntLocale), MEMF_CLEAR|MEMF_ANY);
+     IntLB(LIBBASE)->lb_DefaultLocale = def = AllocMem(sizeof(struct IntLocale), MEMF_CLEAR|MEMF_ANY);
     if(def != NULL)
     {
 	/* Copy the defaults to our new structure */
 	CopyMem(&defLocale, def, sizeof(struct Locale));
 
+	/* Set lb_CurrentLocale *BEFORE* SetLocaleLanguage */
+	IntLB(LIBBASE)->lb_CurrentLocale = def;
+
 	/* Setup the languages - will not fail here. */
-	SetLocaleLanguage(def, LocaleBase);
+	SetLocaleLanguage(def, LIBBASE);
 
 	def->il_Count = 0;
-	IntLB(LIBBASE)->lb_CurrentLocale = def;
-    	InstallPatches();
+   	InstallPatches();
 	return LIBBASE;
     }
     return NULL;

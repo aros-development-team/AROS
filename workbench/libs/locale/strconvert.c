@@ -10,6 +10,8 @@
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 
+#define	DEBUG_STRCONVERT(x)	;
+
 /*****************************************************************************
 
     NAME */
@@ -72,12 +74,36 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Locale *,LocaleBase)
 
-    return AROS_CALL4(ULONG, IntL(locale)->il_LanguageFunctions[15],
-	AROS_LCA(STRPTR,    string, A0),
-	AROS_LCA(APTR,      buffer, A1),
+    LONG Result;
+
+    DEBUG_STRCONVERT(dprintf("StrConvert: locale 0x%lx <%s> buffer 0x%lx size %ld type 0x%lx\n",
+			locale,
+			string,
+			buffer,
+			bufferSize,
+			type));
+
+    DEBUG_STRCONVERT(dprintf("StrConvert: Function 0x%lx\n",
+			IntL(locale)->il_LanguageFunctions[15]));
+
+#ifdef AROS_CALL4
+    Result = AROS_CALL4(ULONG, IntL(locale)->il_LanguageFunctions[15],
+	AROS_LCA(STRPTR,    string, A1),
+	AROS_LCA(APTR,      buffer, A2),
 	AROS_LCA(ULONG,     bufferSize, D0),
 	AROS_LCA(ULONG,     type, D1),
         struct LocaleBase *, LocaleBase);
+#else
+    Result = AROS_UFC4(ULONG, IntL(locale)->il_LanguageFunctions[15],
+	AROS_UFCA(STRPTR,    string, A1),
+	AROS_UFCA(APTR,      buffer, A2),
+	AROS_UFCA(ULONG,     bufferSize, D0),
+	AROS_UFCA(ULONG,     type, D1));
+#endif
 
+    DEBUG_STRCONVERT(dprintf("StrConvert: retval %lu\n",
+			Result));
+
+    return(Result);
     AROS_LIBFUNC_EXIT
 } /* StrConvert */

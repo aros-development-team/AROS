@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <dos/stdio.h>
@@ -12,7 +13,23 @@
 #include <aros/asmcall.h>
 #include "locale_intern.h"
 
-UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
+#define STOP_BRAIN_DAMAGE	1	/* Oh please, do single char numbers! - Piru */
+
+static const UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
+static const UBYTE monthday[12] =  { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+
+#if STOP_BRAIN_DAMAGE
+BOOL _getnum(LONG numchars,
+             LONG *valPtr,
+             ULONG *cPtr,
+             STRPTR *fmtTemplatePtr,
+             BOOL *checkEOFPtr,
+             struct Locale *locale,
+             struct Hook *getCharFunc,
+             struct LocaleBase *LocaleBase);
+#define get2num(x) _getnum(2, (x), &c, &fmtTemplate, &checkEOF, locale, getCharFunc, LocaleBase)
+#define get4num(x) _getnum(4, (x), &c, &fmtTemplate, &checkEOF, locale, getCharFunc, LocaleBase)
+#endif
 
 /*****************************************************************************
 
@@ -56,7 +73,7 @@ UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 
     	    	    	BTW: The AmigaOS autodocs which state that A1
 			gets locale pointer and A2 NULL are wrong!!
-			
+
 			The read character should be returned in D0. Note
 			that this is a 32 bit character not an 8 bit
 			character. Return a NULL character if you reach the
@@ -98,236 +115,292 @@ UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
     LONG year = 1978;
     BOOL ampm = FALSE, checkEOF = TRUE;
 
-    if(    (fmtTemplate == NULL)
+    if (   (fmtTemplate == NULL)
 	|| (getCharFunc == NULL)
 	|| (locale == NULL)
 	|| (*fmtTemplate == NULL)
-      )
+       )
 	return FALSE;
 
 #define GetChar()\
-	c = AROS_UFC3(ULONG, getCharFunc->h_Entry, \
+	AROS_UFC3(ULONG, getCharFunc->h_Entry, \
 		AROS_UFCA(struct Hook *, getCharFunc, A0), \
 		AROS_UFCA(struct Locale *, locale, A2), \
-		AROS_UFCA(ULONG, NULL, A1)) 
+		AROS_UFCA(ULONG, NULL, A1))
 
-    while(*fmtTemplate)
+    while (*fmtTemplate)
     {
 	/* Check for EOF if we leave the loop */
 	checkEOF = TRUE;
 
-	if(*fmtTemplate == '%')
+	if (*fmtTemplate == '%')
 	{
 	    UBYTE strOffs = 0;
 	    fmtTemplate++;
 
 	    switch(*fmtTemplate++)
 	    {
-		/* Days of the week. */
+		/* abbreviated weekday name */
 		case 'a':
 		    strOffs = 7;
+		/* weekday name */
 		case 'A':
 		{
 		    STRPTR dayStr[7];
 		    BOOL dayOk[7];
 		    ULONG i, a;
 
-		    for(i= 0; i < 7; i++)
+		    for (i= 0; i < 7; i++)
 		    {
 			dayOk[i] = TRUE;
 			dayStr[i] = GetLocaleStr(locale, i + strOffs + 1);
 		    }
 
 		    c = GetChar();
-		    while((c != NULL) && (c != *fmtTemplate))
+		    while ((c != '\0') && (c != *fmtTemplate))
 		    {
-			for(i=0; i < 7; i++)
+			for (i=0; i < 7; i++)
 			{
 			    a = ConvToUpper(locale, *(dayStr[i])++);
 			    c = ConvToUpper(locale, c);
 
-			    if(dayOk[i] && a)
-				if(a != c)  dayOk[i] = FALSE;
+			    if (dayOk[i] && a)
+				if (a != c)  dayOk[i] = FALSE;
 			}
 			c = GetChar();
 		    }
 
 		    /* End of stream in wrong place, or invalid */
-		    if(((c == NULL) && *fmtTemplate) || (c != *fmtTemplate))
+		    if (((c == '\0') && *fmtTemplate) || (c != *fmtTemplate))
 			return FALSE;
 
 		    /* If we didn't get a valid day, fail */
 		    i = 0;
-		    while((i < 7) && (dayOk[i++] == FALSE))
+		    while ((i < 7) && (dayOk[i++] == FALSE))
 			;
-		    if((i == 7) && (dayOk[6] == FALSE))
+		    if ((i == 7) && (dayOk[6] == FALSE))
 			return FALSE;
 
-		    if(*fmtTemplate)    fmtTemplate++;
+		    if (*fmtTemplate)    fmtTemplate++;
 		    checkEOF = FALSE;
 		} break;  /* case 'A': */
 
+		/* abbreviated month name */
 		case 'b':
+		/* abbreviated month name */
 		case 'h':
 		    strOffs = 12;
+		/* month name */
 		case 'B':
 		{
 		    STRPTR monthStr[12];
 		    BOOL monthOk[12];
 		    ULONG i, a;
 
-		    for(i= 0; i < 12; i++)
+		    for (i = 0; i < 12; i++)
 		    {
 			monthOk[i] = TRUE;
 			monthStr[i] = GetLocaleStr(locale, i + strOffs + MON_1);
 		    }
 
 		    c = GetChar();
-		    while((c != NULL) && (c != *fmtTemplate))
+		    while ((c != '\0') && (c != *fmtTemplate))
 		    {
-			for(i=0; i < 12; i++)
+			for (i=0; i < 12; i++)
 			{
 			    a = ConvToUpper(locale, *(monthStr[i])++);
 			    c = ConvToUpper(locale, c);
 
-			    if(monthOk[i] && a)
-				if(a != c)  monthOk[i] = FALSE;
+			    if (monthOk[i] && a)
+				if (a != c)  monthOk[i] = FALSE;
 			}
 			c = GetChar();
 		    }
 
 		    /* End of stream in wrong place, or invalid */
-		    if(((c == NULL) && *fmtTemplate) || (c != *fmtTemplate))
+		    if (((c == '\0') && *fmtTemplate) || (c != *fmtTemplate))
 			return FALSE;
 
 		    /* If we didn't get a valid month, fail */
 		    i = 0;
-		    while((i < 12) && (monthOk[i++] == FALSE))
+		    while ((i < 12) && (monthOk[i++] == FALSE))
 			;
-		    if((i == 12) && (monthOk[11] == FALSE))
+		    if ((i == 12) && (monthOk[11] == FALSE))
 			return FALSE;
 		    month = i;
 
-		    if(*fmtTemplate)    fmtTemplate++;
+		    if (*fmtTemplate)    fmtTemplate++;
 		    checkEOF = FALSE;
 
 		    break;
 		} /* case 'B': */
 
-		/* Day no, leading 0's */
+#if 0
+		/* Day no */
 		case 'd':
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 
 		    day = (c - '0') * 10;
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 		    day += (c - '0');
 
 		    /* Day 0 is undefined. */
-		    if(day == 0)    return FALSE;
+		    if (day == 0)    return FALSE;
 		    day--;
 
 		    /* day is unsigned, so day < 0 is not possible */
-		    if(day > 31)
+		    if (day > 31)
 			return FALSE;
 
 		    break;
+#endif
+#if 1
+		/* These are really the same - Piru. */
 
+		/* Day no */
+		case 'd':
 		/* Day no., leading spaces. */
 		case 'e':
 		    day = 0;
+
 		    c = GetChar();
-		    while(IsSpace(locale, c) == TRUE)
+		    while (IsSpace(locale, c) == TRUE)
 			c = GetChar();
 
-		    if(IsDigit(locale, c) == FALSE)
+		    if (!get2num(&day))
+			return FALSE;
+
+		    /* Day 0 is undefined. */
+		    if (day == 0)
+			return FALSE;
+		    day--;
+
+		    /* day is unsigned, so day < 0 is not possible */
+		    if (day > 31)
+			return FALSE;
+
+		    break;
+#else
+		/* Day no., leading spaces. */
+		case 'e':
+		    day = 0;
+
+		    c = GetChar();
+		    while (IsSpace(locale, c) == TRUE)
+			c = GetChar();
+
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 		    day = (c - '0');
 
 		    c = GetChar();
-		    if(IsDigit(locale, c) == TRUE)
+		    if (IsDigit(locale, c) == TRUE)
 		    {
 			day *= 10;
 			day += (c - '0');
 		    }
 		    else
 		    {
-			if(c != *fmtTemplate++)
+			if (c != *fmtTemplate++)
 			    return FALSE;
-			if(c == NULL)
+			if (c == '\0')
 			    checkEOF = FALSE;
 		    }
-		    if(day == 0)    return FALSE;
+		    if (day == 0)    return FALSE;
 		    day--;
 		    break;
 
-		/* hour 24-hr style with 0's */
+#endif
+
+		/* hour 24-hr style */
 		case 'H':
 		    ampm = FALSE;
+#if STOP_BRAIN_DAMAGE
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (!get2num(&hour))
+			return FALSE;
+#else
+		    c = GetChar();
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 
 		    c = c - '0';
 		    hour = c * 10;
 
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 		    hour += (c - '0');
-
-		    if(hour > 23)    return FALSE;
+#endif
+		    if (hour > 23)    return FALSE;
 		    break;
 
-		/* hour 12-hr style with 0's */
+		/* hour 12-hr style */
 		case 'I':
+#if STOP_BRAIN_DAMAGE
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (!get2num(&hour))
+			return FALSE;
+#else
+		    c = GetChar();
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 
 		    c = c - '0';
 		    hour = c * 10;
 
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 		    hour += (c - '0');
-
-		    if(hour > 11)    return FALSE;
+#endif
+		    if (hour > 11)    return FALSE;
 		    break;
 
-		/* month num, with 0's */
+		/* month num */
 		case 'm':
+#if STOP_BRAIN_DAMAGE
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (!get2num(&month))
+			return FALSE;
+#else
+		    c = GetChar();
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 
 		    month = (c - '0') * 10;
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 		    month += (c - '0');
-
-		    if((month > 12) || (month == 0))
+#endif
+		    if ((month > 12) || (month == 0))
 			return FALSE;
 		    break;
 
-		/* minutes with 0's */
+		/* minutes */
 		case 'M':
+#if STOP_BRAIN_DAMAGE
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (!get2num(&min))
+			return FALSE;
+#else
+		    c = GetChar();
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 
 		    min = (c - '0') * 10;
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 		    min += (c - '0');
+#endif
 
-		    if(min > 59)  return FALSE;
+		    if (min > 59)  return FALSE;
 		    break;
 
 		/* AM or PM string */
@@ -340,83 +413,106 @@ UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 		    pmStr = GetLocaleStr(locale, PM_STR);
 
 		    c = GetChar();
-		    while((c != NULL) && (c != *fmtTemplate))
+		    while ((c != '\0') && (c != *fmtTemplate))
 		    {
 			a = ConvToUpper(locale, *amStr++);
 			b = ConvToUpper(locale, *pmStr++);
 			c = ConvToUpper(locale, c);
 
-			if(amOk && a)
-			    if(a != c)   amOk = FALSE;
+			if (amOk && a)
+			    if (a != c)   amOk = FALSE;
 
-			if(pmOk && b)
-			    if(b != c)   pmOk = FALSE;
+			if (pmOk && b)
+			    if (b != c)   pmOk = FALSE;
 
 			c = GetChar();
 		    }
 
 		    /* End of stream in wrong place, or invalid */
-		    if(((c == NULL) && *fmtTemplate) || (c != *fmtTemplate))
+		    if (((c == '\0') && *fmtTemplate) || (c != *fmtTemplate))
 			return FALSE;
 
 		    /* Check whether we got AM or PM */
-		    if(pmOk == TRUE)        ampm = TRUE;
-		    else if(amOk == TRUE)   ampm = FALSE;
+		    if (pmOk == TRUE)        ampm = TRUE;
+		    else if (amOk == TRUE)   ampm = FALSE;
 
-		    if(*fmtTemplate)    fmtTemplate++;
+		    if (*fmtTemplate)    fmtTemplate++;
 		    checkEOF = FALSE;
 		    break;
 		}
 
+		/* the number of seconds */
 		case 'S':
+#if STOP_BRAIN_DAMAGE
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (!get2num(&sec))
+			return FALSE;
+#else
+		    c = GetChar();
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 
 		    sec = (c - '0') * 10;
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 		    sec += (c - '0');
-
-		    if(sec > 59)  return FALSE;
+#endif
+		    if (sec > 59)  return FALSE;
 		    break;
 
+		/* the year using two or four digits */
 		case 'y':
+#if STOP_BRAIN_DAMAGE
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (!get4num(&year))
+			return FALSE;
+
+		    if (year < 78)
+		    {
+			year += 100;
+		    }
+		    if (year < 1900)
+		    {
+			year += 1900;
+		    }
+#else
+		    c = GetChar();
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 
 		    year = (c - '0') * 10;
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 		    year += (c - '0');
 		    year += (year < 78) ? 2000 : 1900;
+#endif
 		    break;
 
+		/* the year using four digits */
 		case 'Y':
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 		    year = (c - '0') * 1000;
 
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 		    year += (c - '0') * 100;
 
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 		    year += (c - '0') * 10;
 
 		    c = GetChar();
-		    if(IsDigit(locale, c) == FALSE)
+		    if (IsDigit(locale, c) == FALSE)
 			return FALSE;
 		    year += (c - '0');
 
-		    if(year < 1978)
+		    if (year < 1978)
 			return FALSE;
 		    break;
 
@@ -424,23 +520,27 @@ UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 		    return FALSE;
 		    break;
 	    } /* switch() */
-	} /* if(char == '%') */
+	} /* if (char == '%') */
 	else
 	{
 	    c = GetChar();
-	    if(c != *fmtTemplate++)
+	    if (c != *fmtTemplate++)
 		return FALSE;
 	}
-    } /* while(*fmtTemplate) */
+    } /* while (*fmtTemplate) */
 
     /* Reached end of fmtTemplate, end of input stream? */
-    if(checkEOF)
-	if((GetChar() != 0)) return FALSE;
+    if (checkEOF)
+	if ((GetChar() != 0)) return FALSE;
 
-    if(date)
+    /* Sanity check - Piru */
+    if (month && day >= monthday[month - 1])
+	return FALSE;
+
+    if (date)
     {
     	BOOL leap;
-	
+
 #if 1
     	/* stegerg: based on dos.library/strtodate */
 
@@ -470,22 +570,22 @@ UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 	*/
 
     	if (leap && (month >= 3)) day++;
-	
+
 	date->ds_Days = day;
 
 #else
 	year -= 1978;
 
-	if(year > 2)
+	if (year > 2)
 	    day += (year-3) / 4 + 1;
-	else if((year == 2) && (month > 2))
+	else if ((year == 2) && (month > 2))
 	    day += 1;
 
 	date->ds_Days = year * 365 + day + monthdays[month - 1];
 #endif
 
 	date->ds_Minute = hour * 60 + min;
-	if((hour < 12) && ampm)
+	if ((hour < 12) && ampm)
 	    date->ds_Minute += 720;
 	date->ds_Tick = sec * TICKS_PER_SECOND;
     }
@@ -493,3 +593,49 @@ UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 
     AROS_LIBFUNC_EXIT
 } /* ParseDate */
+
+
+#if STOP_BRAIN_DAMAGE
+
+BOOL _getnum(LONG numchars,
+             LONG *valPtr,
+             ULONG *cPtr,
+             STRPTR *fmtTemplatePtr,
+             BOOL *checkEOFPtr,
+             struct Locale *locale,
+             struct Hook *getCharFunc,
+             struct LocaleBase *LocaleBase)
+{
+    LONG val;
+    ULONG c;
+
+    c = *cPtr;
+    //*c = GetChar();
+    if (IsDigit(locale, c) == FALSE)
+	return FALSE;
+
+    val = c - '0';
+
+    while (--numchars >= 1)
+    {
+	c = GetChar();
+	if (IsDigit(locale, c))
+	    val = val * 10 + c - '0';
+	else
+	{
+	    *cPtr = c;
+	    if (c != *(*fmtTemplatePtr)++)
+		return FALSE;
+	    if (c == '\0')
+		*checkEOFPtr = FALSE;
+
+	    break;
+	}
+    }
+
+    *valPtr = val;
+
+    return TRUE;
+}
+
+#endif
