@@ -13,10 +13,6 @@ AROS : checkerr
 	@$(NOP)
 
 #MM
-shell : $(BINDIR)/arosshell
-	@$(NOP)
-
-#MM
 setup : $(CPAK) $(ARCHTOOL) $(FLEXCAT)
 
 
@@ -31,163 +27,6 @@ $(FLEXCAT):
 
 #MM- install : install-$(ARCH)-$(CPU)
 
-
-
-# BEGIN_DESC{localmakevar}
-# \item{LIBS} Flags which are passed to the linker for executables.
-#
-# \item{DEP_LIBS} Files on which executables depend (ie. if these files are
-#	newer than the executable, then the executable is linked anew).
-#
-# END_DESC{localmakevar}
-ifeq ("$(SHARED_AR)","")
-DEPLIB_AMIGAOS = $(LIBDIR)/libAmigaOS.a
-else
-DEPLIB_AMIGAOS = $(LIBDIR)/libAmigaOS.so
-endif
-ifeq ("$(SHARED_EXEC)","yes")
-DEPLIB_EXEC=$(LIBDIR)/libexec.so
-else
-DEPLIB_EXEC=$(LIBDIR)/libexec.a
-endif
-ifeq ("$(SHARED_DOS)","yes")
-DEPLIB_DOS=$(LIBDIR)/libdos.so
-else
-DEPLIB_DOS=$(LIBDIR)/libdos.a
-endif
-ifeq ("$(SHARED_INTUITION)","yes")
-DEPLIB_INTUITION=$(LIBDIR)/libintuition.so
-else
-DEPLIB_INTUITION=$(LIBDIR)/libintuition.a
-endif
-ifeq ("$(SHARED_GRAPHICS)","yes")
-DEPLIB_GRAPHICS=$(LIBDIR)/libgraphics.so
-else
-DEPLIB_GRAPHICS=$(LIBDIR)/libgraphics.a
-endif
-ifeq ("$(SHARED_UTILITY)","yes")
-DEPLIB_UTILITY=$(LIBDIR)/libutility.so
-else
-DEPLIB_UTILITY=$(LIBDIR)/libutility.a
-endif
-ifeq ("$(SHARED_LAYERS)","yes")
-DEPLIB_LAYERS=$(LIBDIR)/liblayers.so
-else
-DEPLIB_LAYERS=$(LIBDIR)/liblayers.a
-endif
-ifeq ("$(SHARED_MATHFFP)","yes")
-DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.so
-else
-DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.a
-endif
-ifeq ("$(SHARED_MATHIEEESINGBAS)","yes")
-DEPLIB_MATHIEEESINGBAS=$(LIBDIR)/libmathieeesingbas.so
-else
-DEPLIB_MATHIEEESINGBAS=$(LIBDIR)/libmathieeesingbas.a
-endif
-ifeq ("$(SHARED_BOOPSI)","yes")
-DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.so
-else
-DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.a
-endif
-ifeq ("$(SHARED_WORKBENCH)","yes")
-DEPLIB_BOOPSI=$(LIBDIR)/libworkbench.so
-else
-DEPLIB_BOOPSI=$(LIBDIR)/libworkbench.a
-endif
-ifeq ("$(SHARED_HIDDCLASS)","yes")
-DEPLIB_HIDDCLASS=$(LIBDIR)/libhiddclass.so
-else
-DEPLIB_HIDDCLASS=$(LIBDIR)/libhiddclass.a
-endif
-ifeq ("$(SHARED_UNIXIOCLASS)","yes")
-DEPLIB_UNIXIOCLASS=$(LIBDIR)/libunixiocl.so
-else
-DEPLIB_UNIXIOCLASS=$(LIBDIR)/libunixiocl.a
-endif
-ifeq ("$(SHARED_EXPANSION)","yes")
-DEPLIB_EXPANSION=$(LIBDIR)/libexpansion.so
-else
-DEPLIB_EXPANSION=$(LIBDIR)/libexpansion.a
-endif
-ifeq ("$(SHARED_TIMER)","yes")
-DEPLIB_TIMER=$(LIBDIR)/libtimer.so
-else
-DEPLIB_TIMER=$(LIBDIR)/libtimer.a
-endif
-ifeq ("$(SHARED_BATTCLOCK)","yes")
-DEPLIB_BATTCLOCK=$(LIBDIR)/libbattclock.so
-else
-DEPLIB_BATTCLOCK=$(LIBDIR)/libbattclock.a
-endif
-ifeq ("$(SHARED_BOOT)","yes")
-DEPLIB_BOOT=$(LIBDIR)/libboot.so
-else
-DEPLIB_BOOT=$(LIBDIR)/libboot.a
-endif
-ifeq ("$(SHARED_AROS)","yes")
-DEPLIB_AROS=$(LIBDIR)/libaros.so
-else
-DEPLIB_AROS=$(LIBDIR)/libaros.a
-endif
-ifeq ("$(SHARED_OOP)","yes")
-DEPLIB_OOP=$(LIBDIR)/liboop.so
-else
-DEPLIB_OOP=$(LIBDIR)/liboop.a
-endif
-ifeq ("$(SHARED_CGFX)","yes")
-DEPLIB_CGFX=$(LIBDIR)/libcybergraphics.so
-else
-DEPLIB_CGFX=$(LIBDIR)/libcybergraphics.a
-endif
-
-DEP_LIBS= $(DEPLIB_AMIGAOS) \
-    $(GENDIR)/filesys/emul_handler.o \
-    $(LIBDIR)/libcon_handler.a \
-    $(LIBDIR)/libamiga.a \
-    $(LIBDIR)/libarossupport.a \
-    $(DEPLIB_DOS) \
-    $(DEPLIB_EXEC) \
-    $(DEPLIB_UTILITY) \
-    $(DEPLIB_INTUITION) \
-    $(DEPLIB_LAYERS) \
-    $(DEPLIB_GRAPHICS) \
-    $(DEPLIB_MATHFFP) \
-    $(DEPLIB_BOOPSI) \
-    $(DEPLIB_OOP) \
-    $(DEPLIB_HIDDCLASS) \
-    $(DEPLIB_UNIXIOCLASS) \
-    $(DEPLIB_EXPANSION) \
-    $(DEPLIB_BOOT) \
-    $(DEPLIB_TIMER) \
-    $(DEPLIB_BATTCLOCK) \
-    $(DEPLIB_CGFX)	\
-    $(LIBDIR)/libconsole.a \
-    $(LIBDIR)/libinput.a \
-    $(LIBDIR)/libkeymap.a \
-    $(LIBDIR)/libx11cl.a \
-    $(LIBDIR)/libkeyboard.a \
-    $(LIBDIR)/libgameport.a \
-    $(DEPLIB_AROS)
-
-LIBS=-L$(LIBDIR) \
-	 $(GENDIR)/filesys/emul_handler.o \
-	-lexec -lAmigaOS \
-	-lboot -lintuition -lgraphics -llayers -ldos -lconsole \
-	-lhiddclass -lunixiocl -lboopsi -lutility -ltimer \
-	-laros -lmathffp -lmathieeesingbas -lexpansion -lbattclock \
-	-lamiga -larossupport -linput -lkeymap -loop -lx11cl \
-	-lhiddgraphicsstubs -lkeyboard -lgameport -lworkbench -lcon_handler \
-	-lcybergraphics
-
-# BEGIN_DESC{internaltarget}
-# \item{$(BINDIR)/arosshell} Create the AROS shell for systems which
-#	support emulation.
-#
-# END_DESC{internaltarget}
-$(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
-	$(CC) $(CFLAGS) -Dmain=submain $< \
-	    $(LIBS) $(GUI_LDFLAGS) $(GUI_LIBFLAGS) -o $@ $(SHELL_LDFLAGS)
 
 # BEGIN_DESC{internaltarget}
 # \item{checkerr} Checks if any error has been occurred during compile
@@ -309,7 +148,7 @@ else
 		$(LIBAROS) $(LIBUTILITY) $(LIBEXEC) -lamiga
 endif
 
-$(GENDIR)/arosshell.o : arosshell.c
+$(GENDIR)/aros.o : aros.c
 	$(CC) $(CFLAGS) -Dmain=submain $< -c -o $@
 
 $(GENDIR)/%.o: %.c
@@ -328,12 +167,5 @@ cleandep:
 # END_DESC{target}
 docs:
 	cd $(TOP)/docs/src ; make
-
-# BEGIN_DESC{target}
-# \item{mmake} Build MetaMake tool
-#
-# END_DESC{target}
-mmake : mmake.c
-	$(CC) -Wall -g -O0 $< -o $@
 
 .PHONY: docs dist setup
