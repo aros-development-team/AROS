@@ -6,6 +6,9 @@
     Lang: english
 */
 
+#include <exec/types.h>
+
+#ifdef _AROS
 //#define USE_BOOPSI_STUBS
 #include <proto/utility.h>
 #include <proto/intuition.h>
@@ -17,13 +20,13 @@
 #include <intuition/imageclass.h>
 #include <utility/tagitem.h>
 #include <gadgets/gradientslider.h>
+
 #include <aros/asmcall.h>
+
 #include <stdlib.h> /* abs() */
 #include "gradientslider_intern.h"
 
-#undef SDEBUG
 #define SDEBUG 0
-#undef DEBUG
 #define DEBUG 0
 
 #include <aros/debug.h>
@@ -32,6 +35,53 @@
 
 #include <clib/boopsistubs.h>
 
+#else /* AMIGA */
+
+#include <intuition/icclass.h>
+#include <intuition/classes.h>
+#include <intuition/classusr.h>
+#include <intuition/cghooks.h>
+#include <intuition/gadgetclass.h>
+#include <intuition/imageclass.h>
+#include <utility/tagitem.h>
+#include <gadgets/gradientslider.h>
+
+#include <inline/graphics.h>
+#include <inline/intuition.h>
+#include <inline/exec.h>
+#include <inline/utility.h>
+#include <inline/cybergraphics.h>
+
+#include "gradientslider_intern.h"
+#include "BoopsiStubs.h"
+
+#endif
+
+#ifndef _AROS
+
+#if 1
+#undef SysBase
+void kprintf( STRPTR FormatStr, ... )
+{
+	TEXT	PutChData[64];
+	STRPTR	p = PutChData;
+	struct Library *SysBase = (*(struct Library **)4L);
+	RawDoFmt(FormatStr, ((STRPTR)(&FormatStr))+4, (void (*)())"\x16\xc0\x4e\x75", PutChData);
+
+	do RawPutChar( *p );
+	while( *p++ );
+}
+#define SysBase		GSB(GradientSliderBase)->sysbase
+#endif
+
+#ifdef __STORMGCC__
+LONG myBltBitMap( struct BitMap *srcBitMap, long xSrc, long ySrc,
+	struct BitMap *destBitMap, long xDest, long yDest, long xSize,
+	long ySize, unsigned long minterm, unsigned long mask,
+	PLANEPTR tempA, struct Library *Graphics );
+#endif
+
+#endif
 
 /***************************************************************************************************/
 
@@ -60,14 +110,15 @@ STATIC VOID notify_curval(Class *cl, Object *o, struct GadgetInfo *gi, BOOL inte
 STATIC IPTR gradientslider_set(Class *cl, Object *o, struct opSet *msg)
 {
     struct TagItem 		*tag, *tstate;
-    IPTR 			retval = 0UL;
+    IPTR 			retval;
     struct GradientSliderData 	*data = INST_DATA(cl, o);
-    BOOL			disabled, redraw_all = FALSE;
+    BOOL    	    	    	redraw_all = data->savebm == NULL;
+    LONG    	    	    	flags = EG(o)->Flags;
     
     EnterFunc(bug("GradientSlider::Set()\n"));
 
-    disabled = (EG(o)->Flags & GFLG_DISABLED) != 0L;
-    
+    retval = 0;
+
     if (msg->MethodID != OM_NEW) retval = DoSuperMethodA(cl, o, (Msg)msg);
     
     tstate = msg->ops_AttrList;
@@ -77,22 +128,26 @@ STATIC IPTR gradientslider_set(Class *cl, Object *o, struct opSet *msg)
     	   	
     	switch (tag->ti_Tag)
     	{
+	    case GRAD_CurVal:
+	        data->curval = (ULONG)tidata;
+		notify_curval(cl, o, msg->ops_GInfo, FALSE, FALSE);
+		retval += 1UL;
+		break;
+		
 	    case GA_Disabled:
-	        if (disabled != tidata)
+	        if ((EG(o)->Flags&GFLG_DISABLED) != (flags&GFLG_DISABLED))
 		{
 		    retval += 1UL;
 		    redraw_all = TRUE;
-		    data->edgesOnly = FALSE;
 		}
 		break;
 		
 	    case GRAD_MaxVal:
-	        if (tidata != 0)
+	        if (tidata > 0 && tidata < 65536) // ReAction fix.
 		{
-		    ULONG new_curval = (((ULONG)tidata) * data->curval) / data->maxval;
+		    ULONG new_curval;
 		    
-		    if (tidata > 0xFFFF) tidata = 0xFFFF;
-		    
+		    new_curval = ( tidata > 0L ) ? (((ULONG)tidata) * data->curval) / data->maxval : 0L;
 	            data->maxval = (ULONG)tidata;
 
 		    if (new_curval != data->curval)
@@ -104,28 +159,37 @@ STATIC IPTR gradientslider_set(Class *cl, Object *o, struct opSet *msg)
 		}
 		break;
 		
-	    case GRAD_CurVal:
-	        data->curval = (ULONG)tidata;
-		notify_curval(cl, o, msg->ops_GInfo, FALSE, FALSE);
-		retval += 1UL;
-		break;
-		
 	    case GRAD_SkipVal:
 	        data->skipval = (ULONG)tidata;
 		break;
 	
 	    case GRAD_PenArray:
+	    {
+	    	if( tidata ) // REACTION_TextAttr collides with this one
+	    	{
+	    	    UWORD *pen = (UWORD *) tidata;
+
+	    	    if( ( pen[0] & 0xff00 ) && ( pen[0] != 0xffff ) )
+	    	    	break;
+
+	    	    if( ( pen[1] & 0xff00 ) && ( pen[1] != 0xffff ) )
+	    	    	break;
+	    	}
+
 	        data->penarray = (UWORD *)tidata;
 		data->numpens = 0;
+
 		if (data->penarray)
 		{
 		    UWORD *pen = data->penarray;
-		    
+
 		    while(*pen++ != (UWORD)~0) data->numpens++;
-		}		
+		}
+
 		retval += 1UL;
 		redraw_all = TRUE;
-		break;
+	    }
+	    break;
 		
 	    default:
 	        break;
@@ -133,9 +197,7 @@ STATIC IPTR gradientslider_set(Class *cl, Object *o, struct opSet *msg)
     	} /* switch (tag->ti_Tag) */
     	
     } /* for (each attr in attrlist) */
-    
-    data->edgesOnly = (EG(o)->Flags & GFLG_DISABLED) ? FALSE : TRUE;
-    
+        
     if (retval)
     {
         struct RastPort *rp;
@@ -161,7 +223,7 @@ STATIC Object *gradientslider_new(Class *cl, Object *o, struct opSet *msg)
     if (o)
     {
     	struct GradientSliderData	*data = INST_DATA(cl, o);
-	struct TagItem 			fitags[]=
+	static struct TagItem 		fitags[]=
 	{
 	   {IA_FrameType	, FRAME_BUTTON	},
            {TAG_DONE				}
@@ -174,7 +236,8 @@ STATIC Object *gradientslider_new(Class *cl, Object *o, struct opSet *msg)
 	    data->skipval    = 0x1111;
 	    data->knobpixels = GetTagData(GRAD_KnobPixels, 5, msg->ops_AttrList);
 	    data->freedom    = GetTagData(PGA_Freedom, LORIENT_HORIZ, msg->ops_AttrList);
-	    data->edgesOnly  = TRUE;
+
+	    InitRastPort( &data->trp );
 	    
     	    gradientslider_set(cl, o, msg);
 	    
@@ -194,11 +257,26 @@ STATIC VOID gradientslider_dispose(Class *cl, Object *o, Msg msg)
     struct GradientSliderData 	*data = INST_DATA(cl, o);
     
     if (data->frame) DisposeObject(data->frame);
+
     if (data->savebm)
     {
         WaitBlit();
 	FreeBitMap(data->savebm);
     }
+
+    if (data->knobbm)
+    {
+    	WaitBlit();
+    	FreeBitMap(data->knobbm);
+    }
+
+    if (data->buffer)
+    {
+    	FreeVec(data->buffer);
+    }
+
+    DeinitRastPort( &data->trp );
+     
     DoSuperMethodA(cl, o, msg);
 }
 
@@ -246,30 +324,112 @@ STATIC VOID gradientslider_render(Class *cl, Object *o, struct gpRender *msg)
 
     GetGadgetIBox(o, msg->gpr_GInfo, &gbox);
     GetSliderBox(&gbox, &sbox);
+    sbox.Left -= gbox.Left;
+    sbox.Top -= gbox.Top;
     GetKnobBox(data, &sbox, &kbox);
-    
-    if (data->savebm && ((sbox.Width != data->savebmwidth) || (sbox.Height != data->savebmheight)))
-    {
-        redraw = GREDRAW_REDRAW;
-    }
     
     switch (redraw)
     {
+    	case GREDRAW_UPDATE:
+	    if ((kbox.Width <= sbox.Width) && (kbox.Height <= sbox.Height) && (data->savebm))
+	    {
+	    	if( gbox.Width == data->savebmwidth && gbox.Height == data->savebmheight )
+	    	{
+		    if ((kbox.Left != data->savefromx) || (kbox.Top != data->savefromy))
+		    {
+			 /* Restore old area behind knob */
+    	    	    #ifdef __STORMGCC__
+			 myBltBitMap( data->knobbm, 0,0, data->savebm, data->savefromx,data->savefromy, kbox.Width,kbox.Height, 0xc0, 0xff, NULL, GfxBase);
+    	    	    #else
+			 BltBitMap( data->knobbm, 0,0, data->savebm, data->savefromx,data->savefromy, kbox.Width,kbox.Height, 0xc0, 0xff, NULL);
+    	    	    #endif
+			 //BltBitMapRastPort( data->savebm, data->savefromx,data->savefromy, rp, gbox.Left+data->savefromx,gbox.Top+data->savefromy, kbox.Width,kbox.Height, 0xc0 );
+
+			 data->savefromx = kbox.Left;
+			 data->savefromy = kbox.Top;
+    	    	    #ifdef __STORMGCC__
+			 myBltBitMap( data->savebm, kbox.Left,kbox.Top, data->knobbm, 0,0, kbox.Width,kbox.Height, 0xc0, 0xff, NULL, GfxBase );
+    	    	    #else
+			 BltBitMap( data->savebm, kbox.Left,kbox.Top, data->knobbm, 0,0, kbox.Width,kbox.Height, 0xc0, 0xff, NULL );
+    	    	    #endif
+			 data->trp.BitMap = data->savebm;
+
+			 DrawKnob(data, &data->trp, dri, &kbox, 0, GradientSliderBase);
+			 //BltBitMapRastPort( data->savebm, kbox.Left,kbox.Top, rp, gbox.Left+kbox.Left,gbox.Top+kbox.Top, kbox.Width,kbox.Height, 0xc0 );
+			 BltBitMapRastPort( data->savebm, sbox.Left,sbox.Top, rp, gbox.Left+sbox.Left,gbox.Top+sbox.Top, sbox.Width,sbox.Height, 0xc0 );
+		    } /* if (!data->savebm || (kbox.Left != data->savefromx) || (kbox.Top != data->savefromy)) */
+
+		    break;
+		}
+		
+	    } /* if ((kbox.Width <= sbox.Width) && (kbox.Height <= sbox.Height)) */
+
     	case GREDRAW_REDRAW:
     	    {
-	        struct TagItem fitags[] =
+		struct RastPort	*trp = &data->trp;
+
+		if( gbox.Width != data->savebmwidth || gbox.Height != data->savebmheight )
 		{
-		    {IA_Width		, gbox.Width		},
-		    {IA_Height		, gbox.Height		},
-		    {IA_EdgesOnly	, data->edgesOnly	},
-		    {TAG_DONE					}
-		};
-		
-		SetAttrsA(data->frame, fitags);
-		
+		    if( data->savebm )
+		    {
+			WaitBlit();
+			FreeBitMap( data->savebm );
+			data->savebm = NULL;
+		    }
+
+		    if( data->knobbm )
+		    {
+			WaitBlit();
+			FreeBitMap( data->knobbm );
+			data->knobbm = NULL;
+		    }
+
+		    if( data->buffer )
+		    {
+			FreeVec( data->buffer );
+			data->buffer = NULL;
+		    }
+		}
+
+		if( data->savebm == NULL )
+		{
+		    struct TagItem fitags[] =
+		    {
+			{IA_Width	, gbox.Width	},
+			{IA_Height	, gbox.Height	},
+			{TAG_DONE			}
+		    };
+
+		    SetAttrsA(data->frame, fitags);
+
+		    if( ! ( data->savebm = AllocBitMap(
+			    gbox.Width, gbox.Height,
+			    GetBitMapAttr(rp->BitMap, BMA_DEPTH),
+			    BMF_MINPLANES, rp->BitMap ) ) )
+		    {
+			break;
+		    }
+
+		    data->savebmwidth = gbox.Width;
+		    data->savebmheight = gbox.Height;
+
+		    if( ! ( data->knobbm = AllocBitMap(
+			    kbox.Width, kbox.Height,
+			    GetBitMapAttr(data->savebm, BMA_DEPTH),
+			    BMF_MINPLANES, data->savebm ) ) )
+		    {
+			FreeBitMap( data->savebm );
+			data->savebm = NULL;
+			break;
+		    }
+
+		    /* Draw frame */
+		    trp->BitMap = data->savebm;
+		    DrawImageState( trp, (struct Image *) data->frame, 0,0, IDS_NORMAL, dri );
+		}
+
 		/* Draw slider background */
-		
-		if ((sbox.Width >= 2) && (sbox.Height >= 2))
+		if( (sbox.Width >= 2) && (sbox.Height >= 2) )
 		{
 	            if (data->numpens < 2)
 		    {
@@ -280,135 +440,47 @@ STATIC VOID gradientslider_render(Class *cl, Object *o, struct gpRender *msg)
 		            pen = data->penarray[0];
 			}
 
-			SetDrMd(rp, JAM1);
-			SetAPen(rp, pen);
-			RectFill(rp, sbox.Left, sbox.Top, sbox.Left + sbox.Width - 1, sbox.Top + sbox.Height - 1);
-
+			SetDrMd(trp, JAM1);
+			SetAPen(trp, pen);
+			RectFill(trp, sbox.Left, sbox.Top, sbox.Left + sbox.Width - 1, sbox.Top + sbox.Height - 1);
 		    } /* ff (data->numpens < 2) */
 		    else
 		    {
-		        struct RastPort trp;
-			
-			if (data->savebm)
-			{
-			    if ((sbox.Width  != data->savebmwidth) ||
-			        (sbox.Height != data->savebmheight))
-			    {
-			        WaitBlit();
-				FreeBitMap(data->savebm);
-				data->savebm = NULL;
-			    }
-			}
-
-		    	if ( (data->savebm != NULL) ||
-			     ((data->savebm = AllocBitMap(sbox.Width,
-	    			   			  sbox.Height,
-				       			  GetBitMapAttr(rp->BitMap, BMA_DEPTH),
-				       			  BMF_MINPLANES,
-				       			  rp->BitMap))) )
-			{						
-			    InitRastPort(&trp);
-		    	
-			    trp.BitMap = data->savebm;
-		    		
-			    DrawGradient(&trp,
-		    		     	 0,
-					 0,
-					 sbox.Width - 1,
-					 sbox.Height - 1,
-					 data->penarray,
-					 data->numpens,
-					 data->freedom,
-					 msg->gpr_GInfo->gi_Screen->ViewPort.ColorMap,
-					 GradientSliderBase);
-		
-			    DeinitRastPort( &trp );
-		
-			    BltBitMapRastPort( data->savebm, 0,0, rp, sbox.Left, sbox.Top, sbox.Width, sbox.Height, 0xc0 );
-			
-			}
-
+		    	DrawGradient(trp,
+    		     		     sbox.Left,
+				     sbox.Top,
+				     sbox.Left + sbox.Width - 1,
+				     sbox.Top + sbox.Height - 1,
+				     data->penarray, data->numpens, data->freedom,
+				     msg->gpr_GInfo->gi_Screen->ViewPort.ColorMap,
+				     GradientSliderBase);
 		    } /* data->numpens >= 2 */
-
 		} /* if ((sbox.Width >= 2) && (sbox.Height >= 2)) */
-	    				
+
 		/* Backup area over which knob will be drawn */
-		
 		if ((kbox.Width > 0) && (kbox.Height > 0) &&
 		    (kbox.Width <= sbox.Width) && (kbox.Height <= sbox.Height))
 		{
-		    data->savefromx	= kbox.Left;
-		    data->savefromy	= kbox.Top;
-		    data->savebmwidth	= sbox.Width;
-		    data->savebmheight	= sbox.Height;
-		    		    
-		} /* if ((kbox.Width > 0) && (kbox.Height > 0) && (kbox.Width <= sbox.Width) && (kbox.Height <= sbox.Height)) */
-		
-		/* Render knob */
-                
-		if ((kbox.Width <= sbox.Width) && (kbox.Height <= sbox.Height))
-		{
-		    DrawKnob(data, rp, dri, &kbox, 0, GradientSliderBase);
-		}
+    	    	#ifdef __STORMGCC__
+		    myBltBitMap( data->savebm, kbox.Left,kbox.Top, data->knobbm, 0,0, kbox.Width,kbox.Height, 0xc0, 0xff, NULL, GfxBase );
+    	    	#else
+		    BltBitMap( data->savebm, kbox.Left,kbox.Top, data->knobbm, 0,0, kbox.Width,kbox.Height, 0xc0, 0xff, NULL );
+    	    	#endif
 
-		/* Draw frame */
-		
-		DrawImageState(rp, (struct Image *)data->frame, gbox.Left, gbox.Top,
-				   (EG(o)->Flags & GFLG_DISABLED) ? IDS_DISABLED : IDS_NORMAL, dri);
-			
-		if (data->edgesOnly == FALSE) data->edgesOnly = TRUE;    		
-				
+		    data->savefromx    = kbox.Left;
+		    data->savefromy    = kbox.Top;
+
+	    	    /* Render knob */
+		    DrawKnob(data, trp, dri, &kbox, 0, GradientSliderBase);
+		} /* if ((kbox.Width > 0) && (kbox.Height > 0) && (kbox.Width <= sbox.Width) && (kbox.Height <= sbox.Height)) */
+
+		BltBitMapRastPort( data->savebm, 0,0, rp, gbox.Left,gbox.Top,gbox.Width,gbox.Height, 0xc0 );
 	    }
 	    break;
-	    		
-    	case GREDRAW_UPDATE:
-	    if ((kbox.Width <= sbox.Width) && (kbox.Height <= sbox.Height))
-	    {
-		if ((kbox.Left != data->savefromx) || (kbox.Top != data->savefromy))
-		{
-	            if (data->savebm)
-		    {
-			/* Restore old area behind knob */
-
-			BltBitMapRastPort(data->savebm,
-					  data->savefromx - sbox.Left,
-					  data->savefromy - sbox.Top,
-					  rp,
-					  data->savefromx,
-					  data->savefromy,
-					  kbox.Width,
-					  kbox.Height,
-					  192);		
-					  				
-		    } /* if (data->savebm) */
-		    else
-		    {
-		    	WORD pen = dri->dri_Pens[BACKGROUNDPEN];
-
-			if (data->penarray && (data->numpens == 1))
-			{
-			    pen = data->penarray[0];
-			}
-
-			SetDrMd(rp, JAM1);
-			SetAPen(rp, pen);
-			RectFill(rp, data->savefromx, data->savefromy,
-				     (data->savefromx + kbox.Width) - 1, (data->savefromy + kbox.Height) - 1);
-		    }	
-
-		    data->savefromx = kbox.Left;
-		    data->savefromy = kbox.Top;
-
-                    DrawKnob(data, rp, dri, &kbox, 0, GradientSliderBase);
-
-		} /* if (!data->savebm || (kbox.Left != data->savefromx) || (kbox.Top != data->savefromy)) */
-
-	    } /* if ((kbox.Width <= sbox.Width) && (kbox.Height <= sbox.Height)) */
- 	    
-    	    break;
-    	    
-    	    
     } /* switch (redraw) */
+
+    if( EG(o)->Flags & GFLG_DISABLED )
+	    DrawDisabledPattern( rp, &gbox, dri->dri_Pens[SHADOWPEN], GradientSliderBase );
             	
     ReturnVoid("GradientSlider::Render");
 }
@@ -417,11 +489,15 @@ STATIC VOID gradientslider_render(Class *cl, Object *o, struct gpRender *msg)
 
 STATIC IPTR gradientslider_hittest(Class *cl, Object *o, struct gpHitTest *msg)
 {
+//  struct GradientSliderData 	*data = INST_DATA(cl, o);
     struct IBox			gbox, sbox;
     WORD			mousex, mousey;
     IPTR 			retval = 0UL;
 
     EnterFunc(bug("GradientSlider::HitTest()\n"));
+
+    if( EG(o)->Flags & GFLG_DISABLED )
+    	return 0UL;
 
     GetGadgetIBox(o, msg->gpht_GInfo, &gbox);
     GetSliderBox(&gbox, &sbox);
@@ -462,6 +538,9 @@ STATIC IPTR gradientslider_goactive(Class *cl, Object *o, struct gpInput *msg)
 
     mousex = msg->gpi_Mouse.X + gbox.Left;
     mousey = msg->gpi_Mouse.Y + gbox.Top;
+
+    data->x = msg->gpi_Mouse.X;
+    data->y = msg->gpi_Mouse.Y;
     
     data->clickoffsetx = mousex - kbox.Left + (sbox.Left - gbox.Left);
     data->clickoffsety = mousey - kbox.Top  + (sbox.Top - gbox.Top);
@@ -481,12 +560,17 @@ STATIC IPTR gradientslider_goactive(Class *cl, Object *o, struct gpInput *msg)
 	if (new_curval > data->maxval) new_curval = (LONG)data->maxval;
 	knobhit = FALSE;
     }    
+
+    data->saveval = data->curval;
     
     if (!knobhit)
     {
    	struct RastPort	*rp;
    		
    	data->curval = new_curval;   		
+
+   	GetKnobBox(data, &sbox, &kbox);
+
    	notify_curval(cl, o, msg->gpi_GInfo, FALSE, TRUE);
    		
    	if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
@@ -494,6 +578,17 @@ STATIC IPTR gradientslider_goactive(Class *cl, Object *o, struct gpInput *msg)
    	    DoMethod(o, GM_RENDER, (IPTR)msg->gpi_GInfo, (IPTR)rp, GREDRAW_UPDATE );
    	    ReleaseGIRPort( rp );
    	}
+   /*
+   	if( mousex >= kbox.Left &&
+   	    mousey >= kbox.Top &&
+   	    mousex < (kbox.Left+kbox.Width) &&
+   	    mousey < (kbox.Top+kbox.Height) )
+   	{
+   	    data->clickoffsetx = mousex - kbox.Left + (sbox.Left - gbox.Left);
+   	    data->clickoffsety = mousey - kbox.Top  + (sbox.Top - gbox.Top);
+   	    return GMR_MEACTIVE;
+   	}
+   */
    
 	retval = GMR_VERIFY | GMR_NOREUSE;
 	/* original AmigaOS gradientslider.gadget does not seem to place any meaningful
@@ -540,6 +635,12 @@ STATIC IPTR gradientslider_handleinput(Class *cl, Object *o, struct gpInput *msg
 		    break; /* SELECTUP */
 		    
 		case IECODE_NOBUTTON:
+		    if( data->x == msg->gpi_Mouse.X && data->y == msg->gpi_Mouse.Y )
+		    	break;
+
+		    data->x = msg->gpi_Mouse.X;
+		    data->y = msg->gpi_Mouse.Y;
+		    
 		    mousex = msg->gpi_Mouse.X - data->clickoffsetx;
 		    mousey = msg->gpi_Mouse.Y - data->clickoffsety;
 		    
@@ -590,14 +691,82 @@ STATIC IPTR gradientslider_handleinput(Class *cl, Object *o, struct gpInput *msg
     ReturnInt("GradientSlider::HandleInput", IPTR, retval);
 }
 
+/***************************************************************************************************/
+
+STATIC IPTR gradientslider_domain(Class *cl, Object *o, struct gpDomain *msg)
+{
+    struct GradientSliderData *data = INST_DATA(cl, o);
+    struct DrawInfo	      *dri = (struct DrawInfo *) GetTagData( GA_DrawInfo, NULL, msg->gpd_Attrs );
+    struct RastPort	      *rp = msg->gpd_RPort;
+    UWORD		       width, height, x=1,y=1;
+
+    if( dri )
+    {
+    	y = dri->dri_Resolution.X;
+    	x = dri->dri_Resolution.Y;
+    }
+
+    switch( msg->gpd_Which )
+    {
+    	case GDOMAIN_MINIMUM:
+    	   if( data->freedom == LORIENT_VERT )
+    	   {
+    	    	width  = 3 + ( ( rp->TxHeight * x ) / y ) + 3;
+		height = 2 + (data->knobpixels*5) + 2;
+	   }
+	   else
+	   {
+		width = 3 + (data->knobpixels*5) + 3;
+		height = 2 + rp->TxHeight + 2;
+	   }
+	break;
+
+	case GDOMAIN_NOMINAL:
+	   if( data->freedom == LORIENT_VERT )
+    	   {
+    	    	width = 3 + ( ( rp->TxHeight * x ) / y ) + 3;
+		height = 2 + (10*data->knobpixels) + 2;
+	   }
+	   else
+	   {
+		width = 3 + (10*data->knobpixels) + 3;
+		height = 2 + rp->TxHeight + 2;
+	   }
+	break;
+
+	case GDOMAIN_MAXIMUM:
+	   if( data->freedom == LORIENT_VERT )
+    	   {
+    	    	width = 3 + ( ( rp->TxHeight * x ) / y ) + 3;
+		height = 0x7fff;
+	   }
+	   else
+	   {
+		width = 0x7fff;
+		height = 2 + rp->TxHeight + 2;
+	   }
+	break;
+    }
+
+    msg->gpd_Domain.Left 	=
+    msg->gpd_Domain.Top  	= 0;
+    msg->gpd_Domain.Width	= width;
+    msg->gpd_Domain.Height 	= height;
+
+    return 1L;
+}
 
 /***************************************************************************************************/
 
+#ifdef _AROS
 AROS_UFH3S(IPTR, dispatch_gradientsliderclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
     AROS_UFHA(Msg,      msg, A1)
 )
+#else
+ULONG __saveds dispatch_gradientsliderclass( REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg ) )
+#endif
 {
     AROS_USERFUNC_INIT
 
@@ -605,14 +774,15 @@ AROS_UFH3S(IPTR, dispatch_gradientsliderclass,
     
     switch(msg->MethodID)
     {
-	case OM_NEW:
-	    retval = (IPTR)gradientslider_new(cl, o, (struct opSet *)msg);
+	case GM_HANDLEINPUT:
+	    retval = gradientslider_handleinput(cl, o, (struct gpInput *)msg);
 	    break;
-	
-	case OM_DISPOSE:
-	    gradientslider_dispose(cl, o, msg);
+
+	case OM_SET:
+	case OM_UPDATE:
+	    retval = (IPTR)gradientslider_set(cl, o, (struct opSet *)msg);
 	    break;
-	    
+
 	case GM_RENDER:
 	    gradientslider_render(cl, o, (struct gpRender *)msg);
 	    break;
@@ -625,17 +795,20 @@ AROS_UFH3S(IPTR, dispatch_gradientsliderclass,
 	    retval = gradientslider_goactive(cl, o, (struct gpInput *)msg);
 	    break;
 
-	case GM_HANDLEINPUT:
-	    retval = gradientslider_handleinput(cl, o, (struct gpInput *)msg);
-	    break;
-
-	case OM_SET:
-	case OM_UPDATE:
-	    retval = (IPTR)gradientslider_set(cl, o, (struct opSet *)msg);
-	    break;
-
 	case OM_GET:
 	    retval = gradientslider_get(cl, o, (struct opGet *)msg);
+	    break;
+	    
+	case OM_NEW:
+	    retval = (IPTR)gradientslider_new(cl, o, (struct opSet *)msg);
+	    break;
+	
+	case OM_DISPOSE:
+	    gradientslider_dispose(cl, o, msg);
+	    break;
+
+	case GM_DOMAIN:
+	    retval = gradientslider_domain(cl, o, (struct gpDomain *)msg);
 	    break;
 	    
 	default:
@@ -660,7 +833,11 @@ struct IClass *InitGradientSliderClass (struct GradientSliderBase_intern * Gradi
 
     if ((cl = MakeClass("gradientslider.gadget", GADGETCLASS, NULL, sizeof(struct GradientSliderData), 0)))
     {
+    #ifdef _AROS
 	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_gradientsliderclass);
+    #else
+	cl->cl_Dispatcher.h_Entry    = (HOOKFUNC)dispatch_gradientsliderclass;
+    #endif
 	cl->cl_Dispatcher.h_SubEntry = NULL;
 	cl->cl_UserData 	     = (IPTR)GradientSliderBase;
 
