@@ -6,8 +6,10 @@ include $(TOP)/config/make.cfg
 
 PREFSDIR = $(BINDIR)/Prefs
 
-SETTINGS = nv_location font.prefs
-SETTINGFILES = $(foreach f, $(SETTINGS), $(PREFSDIR)/Env-Archive/Sys/$(f))
+SETTINGS_SYS  = nv_location font.prefs
+SETTINGS_ZUNE = global.prefs
+SETTINGFILES  = $(foreach f, $(SETTINGS_SYS), $(PREFSDIR)/Env-Archive/SYS/$(f)) \
+                $(foreach f, $(SETTINGS_ZUNE), $(PREFSDIR)/Env-Archive/Zune/$(f))
 
 #MM workbench-prefs : setup copyfiles workbench-prefs-zune
 workbench-prefs:
@@ -15,13 +17,17 @@ workbench-prefs:
 
 #MM
 setup :
-	%mkdirs_q $(PREFSDIR) $(PREFSDIR)/Presets $(PREFSDIR)/Env-Archive $(PREFSDIR)/Env-Archive/Sys
+	%mkdirs_q $(PREFSDIR) $(PREFSDIR)/Presets $(PREFSDIR)/Env-Archive \
+                  $(PREFSDIR)/Env-Archive/SYS $(PREFSDIR)/Env-Archive/Zune
 
 #MM
 copyfiles : setup $(SETTINGFILES)
 	@$(NOP)
 
-$(PREFSDIR)/Env-Archive/Sys/% : env-archive/sys/%
+$(PREFSDIR)/Env-Archive/SYS/% : env-archive/sys/%
+	@$(CP) $< $@
+
+$(PREFSDIR)/Env-Archive/Zune/% : env-archive/zune/%
 	@$(CP) $< $@
 
 #MM
