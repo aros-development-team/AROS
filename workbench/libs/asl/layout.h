@@ -133,6 +133,7 @@ struct AslBase_intern;
 #define ASLFP_BPen  	    	IA_BGPen
 #define ASLFP_Style 	    	IA_Mode
 #define ASLFP_Font  	    	IA_Font
+#define ASLFP_SampleText    	GA_Text
 
 #define ASLFS_Style 	    	SYSIA_Style
 #define ASLFS_LabelArray    	GA_Text

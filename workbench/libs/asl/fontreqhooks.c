@@ -284,6 +284,9 @@ AROS_UFH3(VOID, FOTagHook,
 	    	iforeq->ifo_BackPens = (UBYTE *)tidata;
 		break;
 		
+	    case ASLFO_SampleText:
+	    	iforeq->ifo_SampleText = (STRPTR)tidata;
+		break;
 		
 	    default:
 		break;
@@ -548,6 +551,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {GA_Height	    	, FONTPREVIEWHEIGHT  	    	    },
 	    {GA_Previous    	, (IPTR)gad 	    	    	    },
 	    {GA_ID  	    	, ID_PREVIEW     	    	    },
+	    {ASLFP_SampleText	, (IPTR)iforeq->ifo_SampleText	    },
 	    {TAG_DONE	    	    	    	    	    	    }
 	};
 

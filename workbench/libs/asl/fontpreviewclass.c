@@ -71,7 +71,9 @@ static IPTR aslfontpreview_new(Class * cl, Object * o, struct opSet * msg)
     	data = INST_DATA(cl, o);
 	
 	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
-    	data->previewtext = PREVIEW_TEXT;
+    	data->previewtext = (STRPTR)GetTagData(ASLFP_SampleText, 0, msg->ops_AttrList);
+	if (!data->previewtext) data->previewtext = PREVIEW_TEXT;
+	
 	data->apen = 1;
 	data->bpen = 0;
 	data->drawstyle = FS_NORMAL;
