@@ -204,7 +204,7 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   if(texthunk == NULL)
     ERROR(ERROR_NO_FREE_STORE);
 
-  *texthunk = header.a_text + sizeof(ULONG) + sizeof(BPTR);
+  *((ULONG *)texthunk) = header.a_text + sizeof(ULONG) + sizeof(BPTR);
   /* Link and Bump the text hunk past the next hunk pointer. */
   jumphunk->size = sizeof(struct JumpHunk);
   jumphunk->next = MKBADDR(texthunk + sizeof(ULONG));
@@ -231,7 +231,7 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
     if(datahunk == NULL)
       ERROR(ERROR_NO_FREE_STORE);
     /* write the size of allocated memory */
-    *datahunk = header.a_data + header.a_bss + sizeof(ULONG) + sizeof(BPTR);
+    *((ULONG *)datahunk) = header.a_data + header.a_bss + sizeof(ULONG) + sizeof(BPTR);
 
     datahunk += sizeof(ULONG) + sizeof(BPTR);
 
@@ -339,9 +339,14 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   }
 
   /* Flush the caches */
-  CacheClearE(texthunk, header.a_text, CACRF_ClearI|CACRF_ClearD);
+  CacheClearE(texthunk - sizeof(ULONG) - sizeof(BPTR), 
+		header.a_text + sizeof(ULONG) + sizeof(BPTR),
+		CACRF_ClearI|CACRF_ClearD);
+
   if(datahunk)
-    CacheClearE(datahunk, header.a_data + header.a_bss, CACRF_ClearI|CACRF_ClearD);
+    CacheClearE(datahunk - sizeof(ULONG) - sizeof(BPTR),
+		header.a_data + header.a_bss + sizeof(ULONG) + sizeof(BPTR),
+		CACRF_ClearI|CACRF_ClearD);
 
   /* Ok, it is relocated, and ready to run. Remember to subtract
      next hunk pointer from the text hunk.
