@@ -17,6 +17,10 @@
 
 /* AROS includes */
 
+# define  DEBUG  1
+# include <aros/debug.h>
+
+
 #include <aros/system.h>
 #include <aros/options.h>
 #include <aros/libcall.h>
@@ -35,7 +39,6 @@
 #include <libraries/expansion.h>
 #include <libraries/configvars.h>
 #include <libraries/expansionbase.h>
-#include <aros/debug.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
 
@@ -1176,85 +1179,101 @@ static LONG examine_next(struct emulbase *emulbase,
 			 struct filehandle *fh,
                          struct FileInfoBlock *FIB)
 {
-  int		i;
-  struct stat 	st;
-  struct dirent *dir;
-  char 		*name, *src, *dest, *pathname;
-  DIR		*ReadDIR;
-  /* first of all we have to go to the position where Examine() or
-     ExNext() stopped the previous time so we can read the next entry! */
-  switch(fh->type)
-  {
+    int		i;
+    struct stat    st;
+    struct dirent *dir;
+    char 	  *name, *src, *dest, *pathname;
+    DIR		  *ReadDIR;
+    /* first of all we have to go to the position where Examine() or
+       ExNext() stopped the previous time so we can read the next entry! */
+    switch(fh->type)
+    {
     case FHD_DIRECTORY:
         seekdir((DIR *)fh->fd, FIB->fib_DiskKey);
         pathname = fh->name; /* it's just a directory! */
         ReadDIR  = (DIR *)fh->fd;
-    break;
-     
+	break;
+	
     case FHD_FILE:
         seekdir(fh->DIR, FIB->fib_DiskKey);
         pathname = fh->pathname;
         ReadDIR  = fh->DIR;
-    break; 
-  }
-  /* hm, let's read the data now! 
-     but skip '.' and '..' (they're not available on Amigas and
-     Amiga progs wouldn't know how to treat '.' and '..', i.e. they
-     might want to scan recursively the directory and end up scanning
-     ./././ etc. */
-/*#undef kprintf*/
-  do
-  {
-    dir = readdir(ReadDIR);
-    if (NULL == dir)
-      return ERROR_NO_MORE_ENTRIES;  
+	break; 
+    }
+    /* hm, let's read the data now! 
+       but skip '.' and '..' (they're not available on Amigas and
+       Amiga progs wouldn't know how to treat '.' and '..', i.e. they
+       might want to scan recursively the directory and end up scanning
+       ./././ etc. */
+    /*#undef kprintf*/
+    do
+    {
+	dir = readdir(ReadDIR);
 
-  }  
-  while ( 0 == strcmp(dir->d_name,"." ) || 
-          0 == strcmp(dir->d_name,"..")     ); 
+	if (NULL == dir)
+	    return ERROR_NO_MORE_ENTRIES;  
+	
+    } while ( 0 == strcmp(dir->d_name,"." ) || 
+	      0 == strcmp(dir->d_name,"..") ); 
+    
+    
+    name = (STRPTR)emul_malloc(emulbase,
+			       strlen(pathname) + strlen(dir->d_name) + 2);
+    
+    if (NULL == name)
+	return ERROR_NO_FREE_STORE;
+  
+    strcpy(name, pathname);
+    
+    if (*name)
+	strcat(name, "/");
+    
+    strcat(name, dir->d_name);
+    
+    if (stat(name, &st))
+    {
+	D(bug("stat() failed for %s\n", name));
+	      
+	emul_free(emulbase, name);
 
-  
-  name = (STRPTR)emul_malloc(emulbase, strlen(pathname)+strlen(dir->d_name)+2);
-  
-  if (NULL == name)
-    return ERROR_NO_FREE_STORE;
-  
-  strcpy(name,pathname);
-  if (*name)
-    strcat(name,"/");
-  strcat(name,dir->d_name);
-
-  if (stat(name,&st))
-  {
+	return err_u2a();
+    }
+    
     emul_free(emulbase, name);
-    return err_u2a();
-  }
-    emul_free(emulbase, name);
+    
+    FIB->fib_OwnerUID	    = st.st_uid;
+    FIB->fib_OwnerGID	    = st.st_gid;
+    FIB->fib_Comment[0]	    = '\0'; /* no comments available yet! */
+    FIB->fib_Date.ds_Days   = st.st_ctime/(60*60*24) - (6*365 + 2*366);
+    FIB->fib_Date.ds_Minute = (st.st_ctime/60)%(60*24);
+    FIB->fib_Date.ds_Tick   = (st.st_ctime%60)*TICKS_PER_SECOND;
+    FIB->fib_Protection	    = prot_u2a(st.st_mode);
+    FIB->fib_Size           = st.st_size;
 
-  
-  FIB->fib_OwnerUID		= st.st_uid;
-  FIB->fib_OwnerGID		= st.st_gid;
-  FIB->fib_Comment[0]		= '\0'; /* no comments available yet! */
-  FIB->fib_Date.ds_Days		= st.st_ctime/(60*60*24)-(6*365+2*366);
-  FIB->fib_Date.ds_Minute	= (st.st_ctime/60)%(60*24);
-  FIB->fib_Date.ds_Tick		= (st.st_ctime%60)*TICKS_PER_SECOND;
-  FIB->fib_Protection		= prot_u2a(st.st_mode);
-  FIB->fib_Size			= st.st_size;
+    if (S_ISDIR(st.st_mode))
+    {
+	FIB->fib_DirEntryType = ST_USERDIR; /* S_ISDIR(st.st_mode)?(*fh->name?ST_USERDIR:ST_ROOT):0*/
+    }
+    else
+    {
+	FIB->fib_DirEntryType = ST_FILE;
+    }
+    
+    /* fast copying of the filename */
+    src  = dir->d_name;
+    dest = FIB->fib_FileName;
 
-  if (S_ISDIR(st.st_mode))
-    FIB->fib_DirEntryType 	= ST_USERDIR; /* S_ISDIR(st.st_mode)?(*fh->name?ST_USERDIR:ST_ROOT):0*/
-  else
-    FIB->fib_DirEntryType 	= ST_FILE;
+    for (i =0; i<MAXFILENAMELENGTH-1;i++)
+    {
+	if(! (*dest++=*src++) )
+	{
+	    break;
+	}
+    }
+    
+    FIB->fib_DiskKey = (LONG)telldir(ReadDIR);
 
-  /* fast copying of the filename */
-  src  = dir->d_name;
-  dest = FIB->fib_FileName;
-  for (i =0; i<MAXFILENAMELENGTH-1;i++)
-    if(! (*dest++=*src++) )
-        break;
-
-  FIB->fib_DiskKey		= (LONG)telldir(ReadDIR);
-  return 0;				    
+    return 0;
 }
 
 /*********************************************************************************************/
@@ -1560,6 +1579,20 @@ AROS_LH0I(int, null, struct emulbase *, emulbase, 4, emul_handler)
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************/
+
+STRPTR fixName(STRPTR name)
+{
+    STRPTR colon = strchr(name, ':');
+
+    if (colon != NULL)
+    {
+	return colon + 1;
+    }
+
+    return name;
+}
+
 /*********************************************************************************************/
 
 AROS_LH1(void, beginio,
@@ -1567,8 +1600,9 @@ AROS_LH1(void, beginio,
 	   struct emulbase *, emulbase, 5, emul_handler)
 {
     AROS_LIBFUNC_INIT
-    LONG error=0;
 
+    LONG error = 0;
+    
     /* WaitIO will look into this */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_MESSAGE;
     
@@ -1576,283 +1610,328 @@ AROS_LH1(void, beginio,
     ObtainSemaphore(&emulbase->sem);
     
     /*
-	Do everything quick no matter what. This is possible
-	because I never need to Wait().
+      Do everything quick no matter what. This is possible
+      because I never need to Wait().
     */
     switch(iofs->IOFS.io_Command)
     {
-	case FSA_OPEN:
-	    error=open_(emulbase,
-			(struct filehandle **)&iofs->IOFS.io_Unit,
-			iofs->io_Union.io_OPEN.io_Filename,
-			iofs->io_Union.io_OPEN.io_FileMode);
-	    break;
-
-	case FSA_CLOSE:
-	    error=free_lock(emulbase, (struct filehandle *)iofs->IOFS.io_Unit);
-	    break;
-
-	case FSA_READ:
+    case FSA_OPEN:
+	error = open_(emulbase,
+		      (struct filehandle **)&iofs->IOFS.io_Unit,
+		      fixName(iofs->io_Union.io_OPEN.io_Filename),
+		      iofs->io_Union.io_OPEN.io_FileMode);
+	break;
+	
+    case FSA_CLOSE:
+	error = free_lock(emulbase, (struct filehandle *)iofs->IOFS.io_Unit);
+	break;
+	
+    case FSA_READ:
 	{
-	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
-
-	    if(fh->type==FHD_FILE)
+	    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
+	    
+	    if (fh->type == FHD_FILE)
 	    {
-		if (fh->fd==STDOUT_FILENO)
-		    fh->fd=STDIN_FILENO;
+		if (fh->fd == STDOUT_FILENO)
+		{
+		    fh->fd = STDIN_FILENO;
+		}
 
-		error = Hidd_UnixIO_Wait(emulbase->unixio
-			, fh->fd
-			, vHidd_UnixIO_Read
-			, NULL
-			, NULL);
-
-		if (error == 0) {
-		    iofs->io_Union.io_READ.io_Length = read (fh->fd,iofs->io_Union.io_READ.io_Buffer,iofs->io_Union.io_READ.io_Length);
-
-		    if (iofs->io_Union.io_READ.io_Length<0)
-			error=err_u2a();
+		error = Hidd_UnixIO_Wait(emulbase->unixio, fh->fd,
+					 vHidd_UnixIO_Read, NULL, NULL);
+		
+		if (error == 0)
+		{
+		    iofs->io_Union.io_READ.io_Length = read(fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length);
+		    
+		    if (iofs->io_Union.io_READ.io_Length < 0)
+		    {
+			error = err_u2a();
+		    }
 		}
 		else
 		{
 		    errno = error;
 		    error = err_u2a();
 		}
-	    }else
-		error=ERROR_OBJECT_WRONG_TYPE;
-
+	    }
+	    else
+	    {
+		error = ERROR_OBJECT_WRONG_TYPE;
+	    }
+	    
 	    break;
 	}
-
-	case FSA_WRITE:
+	
+    case FSA_WRITE:
 	{
-	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
-	    if(fh->type==FHD_FILE)
+	    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
+
+	    if (fh->type == FHD_FILE)
 	    {
-		if(fh->fd==STDIN_FILENO)
+		if (fh->fd == STDIN_FILENO)
+		{
 		    fh->fd=STDOUT_FILENO;
-		iofs->io_Union.io_WRITE.io_Length=write(fh->fd,iofs->io_Union.io_WRITE.io_Buffer,iofs->io_Union.io_WRITE.io_Length);
-		if(iofs->io_Union.io_WRITE.io_Length<0)
-		    error=err_u2a();
-	    }else
-		error=ERROR_OBJECT_WRONG_TYPE;
+		}
+
+		iofs->io_Union.io_WRITE.io_Length = write(fh->fd, iofs->io_Union.io_WRITE.io_Buffer, iofs->io_Union.io_WRITE.io_Length);
+
+		if (iofs->io_Union.io_WRITE.io_Length < 0)
+		{
+		    error = err_u2a();
+		}
+	    }
+	    else
+	    {
+		error = ERROR_OBJECT_WRONG_TYPE;
+	    }
+	    
 	    break;
 	}
-
-	case FSA_SEEK:
+	
+    case FSA_SEEK:
 	{
-	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
-	    LONG mode=iofs->io_Union.io_SEEK.io_SeekMode;
+	    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
+	    LONG mode = iofs->io_Union.io_SEEK.io_SeekMode;
 	    LONG oldpos;
-	    if(fh->type==FHD_FILE)
+
+	    if (fh->type == FHD_FILE)
 	    {
-		oldpos=lseek(fh->fd,0,SEEK_CUR);
+		oldpos = lseek(fh->fd, 0, SEEK_CUR);
 
 		if (mode == OFFSET_BEGINNING)
+		{
 		    mode = SEEK_SET;
+		}
 		else if (mode == OFFSET_CURRENT)
+		{
 		    mode = SEEK_CUR;
+		}
 		else
+		{
 		    mode = SEEK_END;
+		}
+		
+		if (lseek(fh->fd, iofs->io_Union.io_SEEK.io_Offset, mode) < 0)
+		{
+		    error = err_u2a();
+		}
 
-		if(lseek(fh->fd,iofs->io_Union.io_SEEK.io_Offset,mode)<0)
-		    error=err_u2a();
-		iofs->io_Union.io_SEEK.io_Offset  =oldpos;
-	    }else
-		error=ERROR_OBJECT_WRONG_TYPE;
-	    break;
-	}
-
-	case FSA_SET_FILE_SIZE:
-#warning FIXME:
-	    /* We could manually change the size, but this is currently not
-	       implemented. FIXME */
-	case FSA_WAIT_CHAR:
-#warning FIXME:
-	    /* We could manually wait for a character to arrive, but this is
-	       currently not implemented. FIXME */
-	case FSA_FILE_MODE:
-#warning FIXME: not supported yet
-	    error=ERROR_ACTION_NOT_KNOWN;
-	    break;
-
-	case FSA_IS_INTERACTIVE:
-	{
-	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
-	    if(fh->type==FHD_FILE)
-		iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive=isatty(fh->fd);
+		iofs->io_Union.io_SEEK.io_Offset = oldpos;
+	    }
 	    else
-		iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive=0;
+	    {
+		error = ERROR_OBJECT_WRONG_TYPE;
+	    }
+
 	    break;
 	}
+	
+    case FSA_SET_FILE_SIZE:
+#warning FIXME:
+	/* We could manually change the size, but this is currently not
+	   implemented. FIXME */
+    case FSA_WAIT_CHAR:
+#warning FIXME:
+	/* We could manually wait for a character to arrive, but this is
+	   currently not implemented. FIXME */
+    case FSA_FILE_MODE:
+#warning FIXME: not supported yet
+	error=ERROR_ACTION_NOT_KNOWN;
+	break;
 
-	case FSA_SAME_LOCK: {
+    case FSA_IS_INTERACTIVE:
+	{
+	    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
+
+	    if (fh->type == FHD_FILE)
+	    {
+		iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = isatty(fh->fd);
+	    }
+	    else
+	    {
+		iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = 0;
+	    }
+	    
+	    break;
+	}
+	
+    case FSA_SAME_LOCK:
+	{
 	    struct filehandle *lock1 = iofs->io_Union.io_SAME_LOCK.io_Lock[0],
 			      *lock2 = iofs->io_Union.io_SAME_LOCK.io_Lock[1];
 
 	    if (strcmp(lock1->name, lock2->name))
+	    {
 		iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_DIFFERENT;
+	    }
 	    else
+	    {
 		iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_SAME;
+	    }
+
 	    break;
 	}
 
-	case FSA_EXAMINE:
-	    error=examine(emulbase,
-	    		  (struct filehandle *)iofs->IOFS.io_Unit,
-			  iofs->io_Union.io_EXAMINE.io_ead,
-			  iofs->io_Union.io_EXAMINE.io_Size,
-			  iofs->io_Union.io_EXAMINE.io_Mode,
-			  &(iofs->io_DirPos));
+    case FSA_EXAMINE:
+	error = examine(emulbase,
+			(struct filehandle *)iofs->IOFS.io_Unit,
+			iofs->io_Union.io_EXAMINE.io_ead,
+			iofs->io_Union.io_EXAMINE.io_Size,
+			iofs->io_Union.io_EXAMINE.io_Mode,
+			&(iofs->io_DirPos));
+	break;
+	
+    case FSA_EXAMINE_NEXT:
+	error = examine_next(emulbase,
+			     (struct filehandle *)iofs->IOFS.io_Unit,
+			     iofs->io_Union.io_EXAMINE_NEXT.io_fib);
+	break;
+	
+    case FSA_EXAMINE_ALL:
+	error = examine_all(emulbase,
+			    (struct filehandle *)iofs->IOFS.io_Unit,
+			    iofs->io_Union.io_EXAMINE_ALL.io_ead,
+			    iofs->io_Union.io_EXAMINE_ALL.io_Size,
+			    iofs->io_Union.io_EXAMINE_ALL.io_Mode);
+	break;
+	
+    case FSA_EXAMINE_ALL_END:
+	error = 0;
+	break;
+	
+    case FSA_OPEN_FILE:
+	error = open_file(emulbase,
+			  (struct filehandle **)&iofs->IOFS.io_Unit,
+			  fixName(iofs->io_Union.io_OPEN_FILE.io_Filename),
+			  iofs->io_Union.io_OPEN_FILE.io_FileMode,
+			  iofs->io_Union.io_OPEN_FILE.io_Protection);
+	break;
+	
+    case FSA_CREATE_DIR:
+	error = create_dir(emulbase,
+			   (struct filehandle **)&iofs->IOFS.io_Unit,
+			   fixName(iofs->io_Union.io_CREATE_DIR.io_Filename),
+			   iofs->io_Union.io_CREATE_DIR.io_Protection);
+	break;
+	
+    case FSA_CREATE_HARDLINK:
+	error = create_hardlink(emulbase,
+				(struct filehandle **)&iofs->IOFS.io_Unit,
+				fixName(iofs->io_Union.io_CREATE_HARDLINK.io_Filename),
+				(struct filehandle *)iofs->io_Union.io_CREATE_HARDLINK.io_OldFile);
 	    break;
-
-	case FSA_EXAMINE_NEXT:
-	    error=examine_next(emulbase,
-	    		       (struct filehandle *)iofs->IOFS.io_Unit,
-	    		       iofs->io_Union.io_EXAMINE_NEXT.io_fib);
-	    break;
-
-	case FSA_EXAMINE_ALL:
-	    error=examine_all(emulbase,
-	    		      (struct filehandle *)iofs->IOFS.io_Unit,
-			      iofs->io_Union.io_EXAMINE_ALL.io_ead,
-			      iofs->io_Union.io_EXAMINE_ALL.io_Size,
-			      iofs->io_Union.io_EXAMINE_ALL.io_Mode);
-	    break;
-
-	case FSA_EXAMINE_ALL_END:
-	    error=0;
-	    break;
-
-	case FSA_OPEN_FILE:
-	    error=open_file(emulbase,
-			    (struct filehandle **)&iofs->IOFS.io_Unit,
-			    iofs->io_Union.io_OPEN_FILE.io_Filename,
-			    iofs->io_Union.io_OPEN_FILE.io_FileMode,
-			    iofs->io_Union.io_OPEN_FILE.io_Protection);
-	    break;
-
-	case FSA_CREATE_DIR:
-	    error = create_dir(emulbase,
-			       (struct filehandle **)&iofs->IOFS.io_Unit,
-			       iofs->io_Union.io_CREATE_DIR.io_Filename,
-			       iofs->io_Union.io_CREATE_DIR.io_Protection);
-	    break;
-
-	case FSA_CREATE_HARDLINK:
-	    error = create_hardlink(emulbase,
-				    (struct filehandle **)&iofs->IOFS.io_Unit,
-				    iofs->io_Union.io_CREATE_HARDLINK.io_Filename,
-				    (struct filehandle *)iofs->io_Union.io_CREATE_HARDLINK.io_OldFile);
-	    break;
-
-	case FSA_CREATE_SOFTLINK:
-            error = create_softlink(emulbase,
-                                    (struct filehandle **)&iofs->IOFS.io_Unit,
-                                    iofs->io_Union.io_CREATE_SOFTLINK.io_Filename,
-                                    iofs->io_Union.io_CREATE_SOFTLINK.io_Reference);
-            break;
-
-	case FSA_RENAME:
-	    error = rename_object(emulbase,
-                                    (struct filehandle *)iofs->IOFS.io_Unit,
-                                    iofs->io_Union.io_RENAME.io_Filename,
-                                    iofs->io_Union.io_RENAME.io_NewName);
-	    break;
-
-        case FSA_READ_SOFTLINK:
-            error = read_softlink(emulbase,
-                                  (struct filehandle *)iofs->IOFS.io_Unit,
-                                  iofs->io_Union.io_READ_SOFTLINK.io_Buffer,
-                                  iofs->io_Union.io_READ_SOFTLINK.io_Size);
-            break;
-
-	case FSA_DELETE_OBJECT:
-	    error = delete_object(emulbase,
-				  (struct filehandle *)iofs->IOFS.io_Unit,
-				  iofs->io_Union.io_DELETE_OBJECT.io_Filename);
-	    break;
-
-	case FSA_PARENT_DIR:
-	    /* error will always be 0 */
-	    error = parent_dir(emulbase,
-	    		       (struct filehandle *)iofs->IOFS.io_Unit,
-	                       &(iofs->io_Union.io_PARENT_DIR.io_DirName)
-	                       );
-            break;
+	    
+    case FSA_CREATE_SOFTLINK:
+	error = create_softlink(emulbase,
+				(struct filehandle **)&iofs->IOFS.io_Unit,
+				fixName(iofs->io_Union.io_CREATE_SOFTLINK.io_Filename),
+				iofs->io_Union.io_CREATE_SOFTLINK.io_Reference);
+	break;
+	    
+    case FSA_RENAME:
+	error = rename_object(emulbase,
+			      (struct filehandle *)iofs->IOFS.io_Unit,
+			      fixName(iofs->io_Union.io_RENAME.io_Filename),
+			      iofs->io_Union.io_RENAME.io_NewName);
+	break;
+	
+    case FSA_READ_SOFTLINK:
+	error = read_softlink(emulbase,
+			      (struct filehandle *)iofs->IOFS.io_Unit,
+			      iofs->io_Union.io_READ_SOFTLINK.io_Buffer,
+			      iofs->io_Union.io_READ_SOFTLINK.io_Size);
+	break;
+	
+    case FSA_DELETE_OBJECT:
+	error = delete_object(emulbase,
+			      (struct filehandle *)iofs->IOFS.io_Unit,
+			      fixName(iofs->io_Union.io_DELETE_OBJECT.io_Filename));
+	break;
+	
+    case FSA_PARENT_DIR:
+	/* error will always be 0 */
+	error = parent_dir(emulbase,
+			   (struct filehandle *)iofs->IOFS.io_Unit,
+			   &(iofs->io_Union.io_PARENT_DIR.io_DirName));
+	break;
         
-        case FSA_PARENT_DIR_POST:
-            /* error will always be 0 */
-            error = 0;
-            parent_dir_post(emulbase, &(iofs->io_Union.io_PARENT_DIR.io_DirName));
-            break;    
-            
-        case FSA_IS_FILESYSTEM:
-	    iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem = TRUE;
-	    error = 0;
+    case FSA_PARENT_DIR_POST:
+	/* error will always be 0 */
+	error = 0;
+	parent_dir_post(emulbase, &(iofs->io_Union.io_PARENT_DIR.io_DirName));
+	break;    
+	
+    case FSA_IS_FILESYSTEM:
+	iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem = TRUE;
+	error = 0;
+	break;
+	
+    case FSA_DISK_INFO:
+	{
+	    struct InfoData *id = (struct InfoData *)iofs->IOFS.io_Unit;
+	    struct statfs    buf;
+	    
+	    statfs(".", &buf);
+	    
+	    id->id_NumSoftErrors = 0;
+	    id->id_UnitNumber = 0;
+	    id->id_DiskState = ID_VALIDATED;
+	    id->id_NumBlocks = buf.f_blocks;
+	    id->id_NumBlocksUsed = buf.f_blocks - buf.f_bavail;
+	    id->id_BytesPerBlock = buf.f_bsize;
+	    id->id_DiskType = ID_DOS_DISK; /* Well, not really true... */
+	    id->id_VolumeNode = NULL;
+	    id->id_InUse = TRUE;
+	    
 	    break;
-	    
-        case FSA_DISK_INFO:
-	    {
-		struct InfoData *id = (struct InfoData *)iofs->IOFS.io_Unit;
-		struct statfs    buf;
-
-		statfs(".", &buf);
-
-		id->id_NumSoftErrors = 0;
-		id->id_UnitNumber = 0;
-		id->id_DiskState = ID_VALIDATED;
-		id->id_NumBlocks = buf.f_blocks;
-		id->id_NumBlocksUsed = buf.f_blocks - buf.f_bavail;
-		id->id_BytesPerBlock = buf.f_bsize;
-		id->id_DiskType = ID_DOS_DISK; /* Well, not really true... */
-		id->id_VolumeNode = NULL;
-		id->id_InUse = TRUE;
-
-		break;
-	    }
-	    
-	case FSA_SET_COMMENT:
-	case FSA_SET_PROTECT:
-	case FSA_SET_OWNER:
-	case FSA_SET_DATE:
-	case FSA_MORE_CACHE:
-	case FSA_FORMAT:
-	case FSA_MOUNT_MODE:
+	}
+	
+    case FSA_SET_COMMENT:
+    case FSA_SET_PROTECT:
+    case FSA_SET_OWNER:
+    case FSA_SET_DATE:
+    case FSA_MORE_CACHE:
+    case FSA_FORMAT:
+    case FSA_MOUNT_MODE:
 #warning FIXME: not supported yet
-
-	default:
-	    error=ERROR_ACTION_NOT_KNOWN;
-	    break;
+	
+    default:
+	error = ERROR_ACTION_NOT_KNOWN;
+	break;
     }
-
+    
     /*Enable();*/
     ReleaseSemaphore(&emulbase->sem);
-
+    
     /* Set error code */
-    iofs->io_DosError=error;
-
+    iofs->io_DosError = error;
+    
     /* If the quick bit is not set send the message to the port */
-    if(!(iofs->IOFS.io_Flags&IOF_QUICK))
+    if(!(iofs->IOFS.io_Flags & IOF_QUICK))
+    {
 	ReplyMsg(&iofs->IOFS.io_Message);
+    }
 
     AROS_LIBFUNC_EXIT
-}
+	}
 
 /*********************************************************************************************/
 
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct emulbase *, emulbase, 6, emul_handler)
+	  struct emulbase *, emulbase, 6, emul_handler)
 {
     AROS_LIBFUNC_INIT
+
     /* Everything already done. */
     return 0;
+
     AROS_LIBFUNC_EXIT
 }
 
 /*********************************************************************************************/
 
-static const char end=0;
+static const char end = 0;
 
 /*********************************************************************************************/
