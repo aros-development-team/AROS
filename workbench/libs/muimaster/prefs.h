@@ -137,7 +137,7 @@ struct ZunePrefsNew
     CycleMenuPosition cycle_menu_position;
     WORD     cycle_menu_min_entries;
     WORD     cycle_menu_speed; /* yet unused, remove this comment when handled */
-    BOOL     cycle_menu_recessed_entries; /* yet unused, remove this comment when handled */
+    BOOL     cycle_menu_recessed_entries;
 
     /* Strings */
     CONST_STRPTR string_bg_active;
