@@ -1387,4 +1387,4 @@ wb00003;0;digulla;Write RemoveAppIcon
 wb00004;0;digulla;Write AddAppMenuItemA
 wb00005;0;digulla;Write RemoveAppMenuItem
 wb00006;0;digulla;Write WBInfo
-WB/MultiView;0;srittau;Write MultiView
+WB/MultiView;1;stegerg;Write MultiView
