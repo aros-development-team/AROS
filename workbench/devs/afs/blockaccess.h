@@ -25,5 +25,6 @@ struct BlockCache *getBlock(struct afsbase *, struct Volume *, ULONG);
 LONG writeBlock(struct afsbase *, struct Volume *, struct BlockCache *);
 void flushCache(struct BlockCache *);
 void sendDeviceCmd(struct afsbase *, struct Volume *volume, UWORD command);
+void checkCache(struct afsbase *, struct BlockCache *);
 
 #endif

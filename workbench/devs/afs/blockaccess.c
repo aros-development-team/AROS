@@ -19,6 +19,14 @@
 #include "afshandler.h"
 #include "baseredef.h"
 
+/********************************************************
+ Name  : initCache
+ Descr.: initialzes block cache for a volume
+ Input : afsbase -
+         volume  - the volume to initialzes cache for
+         numBuffers - number of buffers for cache
+ Output: first buffer (main cache pointer)
+*********************************************************/
 struct BlockCache *initCache
 	(
 		struct afsbase *afsbase,
@@ -46,7 +54,8 @@ ULONG i;
 		cache=head;
 		for (i=0;i<(numBuffers-1);i++) {
 			cache->buffer=(ULONG *)((ULONG)cache+sizeof(struct BlockCache));
-			cache->next=(struct BlockCache *)((ULONG)cache->buffer+BLOCK_SIZE(volume));
+			cache->next=
+				(struct BlockCache *)((ULONG)cache->buffer+BLOCK_SIZE(volume));
 			cache=cache->next;
 		}
 		cache->buffer=(ULONG *)((ULONG)cache+sizeof(struct BlockCache));
@@ -62,7 +71,8 @@ ULONG i;
 }
 
 void freeCache(struct afsbase *afsbase, struct BlockCache *cache) {
-	if (cache) FreeVec(cache);
+	if (cache)
+		FreeVec(cache);
 }
 
 void flushCache(struct BlockCache *cache) {
@@ -117,7 +127,13 @@ UQUAD offset;
 	return retval;
 }
 
-struct BlockCache *getFreeCacheBlock(struct afsbase *afsbase, struct Volume *volume, ULONG blocknum) {
+struct BlockCache *getFreeCacheBlock
+	(
+		struct afsbase *afsbase,
+		struct Volume *volume,
+		ULONG blocknum
+	)
+{
 struct BlockCache *cache;
 struct BlockCache *smallest=0;
 
@@ -140,7 +156,7 @@ struct BlockCache *smallest=0;
 				}
 			}
 		}
-		if (!(cache->flags & BCF_USED))	// its not ok - I know, but for test purposes I want to know if there may be more concurrent blockaccesses
+		if (!(cache->flags & BCF_USED))
 		{
 			if (smallest)
 			{
@@ -161,8 +177,21 @@ struct BlockCache *smallest=0;
 		smallest->volume=volume;
 	}
 	else
-		showText(afsbase, "No free cache available!?\nAdd more cache!!!");
+		showText(afsbase, "Oh, ohhhhh, where is all the cache gone? BUG!!!");
 	return smallest;
+}
+
+void checkCache(struct afsbase *afsbase, struct BlockCache *bc) {
+
+	while (bc)
+	{
+		if (bc->flags & BCF_USED)
+		{
+			kprintf("not released block: %ld!\n", bc->blocknum);
+			showText(afsbase, "not released block: %ld!", bc->blocknum);
+		}
+		bc = bc->next;
+	}
 }
 
 #ifdef DEBUG
@@ -181,16 +210,46 @@ UWORD i,j;
 struct BlockCache *getBlock(struct afsbase *afsbase, struct Volume *volume, ULONG blocknum) {
 struct BlockCache *blockbuffer;
 
-	if ((blockbuffer=getFreeCacheBlock(afsbase, volume, blocknum))) {
-		if (blockbuffer->acc_count==1)		//do we have to read that block ?
-			if (readDisk(afsbase, volume,blocknum,1,blockbuffer->buffer, volume->cmdread))
+	blockbuffer=getFreeCacheBlock(afsbase, volume, blocknum);
+	if (blockbuffer)
+	{
+		if (blockbuffer->acc_count==1)
+		{
+			if (
+					readDisk
+						(
+							afsbase,
+							volume,
+							blocknum,
+							1,
+							blockbuffer->buffer,
+							volume->cmdread
+						)
+				)
+			{
 				blockbuffer=0;
+			}
+		}
 	}
 	return blockbuffer;
 }
 
-LONG writeBlock(struct afsbase *afsbase, struct Volume *volume, struct BlockCache *blockbuffer) {
+LONG writeBlock
+	(
+		struct afsbase *afsbase,
+		struct Volume *volume,
+		struct BlockCache *blockbuffer
+	)
+{
 
-	readDisk(afsbase, volume, blockbuffer->blocknum,1,blockbuffer->buffer,volume->cmdwrite);
+	readDisk
+		(
+			afsbase,
+			volume,
+			blockbuffer->blocknum,
+			1,
+			blockbuffer->buffer,
+			volume->cmdwrite
+		);
 	return DOSTRUE;
 }
