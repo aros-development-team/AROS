@@ -22,7 +22,7 @@
 #define STDC_HEADERS 1
 
 /* Define VERSION as the version of the package.  */
-#define VERSION "0.5"
+#define VERSION "0.6"
 
 /* Define to the name of the distribution.  */
 #define PACKAGE "MetaMake"
@@ -31,7 +31,7 @@
 #define PROTOTYPES 1
 
 /* Define to the version of the distribution.  */
-#define VERSION "0.5"
+#define VERSION "0.6"
 
 /* Define if you have the getcwd function.  */
 #define HAVE_GETCWD 1
