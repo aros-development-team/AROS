@@ -20,7 +20,7 @@
 	AROS_LHA(APTR, requester, A0),
 
 /*  LOCATION */
-	struct Library *, AslBase, 12, Asl)
+	struct Library *, AslBase, 13, Asl)
 
 /*  FUNCTION
 
