@@ -227,7 +227,7 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
     if (framebuffer)
     {
 	/* If the user asks for a framebuffer map we must ALLWAYS supply a class */ 
-	classptr = sd->offbmclass;
+	classptr = sd->onbmclass;
     }
     else if (displayable)
     {
@@ -609,7 +609,7 @@ static BOOL nv__setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 			    ((color.blue >> 8) & 0x0000ff);
 		    
 		    curimg[maxw*2+4] = pixel ? 0x50000000 : 0x00000000;
-		    if (*curimg != 0x50000000)
+		    if (pixel)
 			*curimg++ = pixel;
 		    else curimg++;
 		}

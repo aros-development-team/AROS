@@ -54,6 +54,7 @@ static OOP_Object *onbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
 	ULONG width, height, depth;
 	UBYTE bytesPerPixel;
+	ULONG fb;
 
 	OOP_Object *pf;
 
@@ -65,6 +66,8 @@ static OOP_Object *onbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	OOP_GetAttr(o, aHidd_BitMap_Height, &height);
 	OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&pf);
 	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+
+	fb = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
 
 	D(bug("[NVBitmap] width=%d height=%d depth=%d\n", width, height, depth));
 
@@ -79,6 +82,14 @@ static OOP_Object *onbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	    bytesPerPixel = 2;
         else
 	    bytesPerPixel = 4;
+
+	if (fb)
+	{
+	    width = 640;
+	    height = 480;
+	    bytesPerPixel = 2;
+	    depth = 16;
+	}
 
 	bm->width = width;
 	bm->height = height;
@@ -117,7 +128,31 @@ static OOP_Object *onbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 		break;
 	}
 
-	if (bm->framebuffer != 0xffffffff)
+	if (fb && bm->framebuffer != 0xffffffff)
+	{
+	    bm->state = (struct CardState *)AllocPooled(sd->memPool, 
+					sizeof(struct CardState));
+	    
+	    if (bm->state)
+	    {
+		LOCK_ALL
+		LOCK_HW
+
+		InitMode(sd, bm->state, 640, 480, 16, 25200, bm->framebuffer, 
+		    640, 480,
+		    656, 752, 800,
+		    490, 492, 525);
+
+		LoadState(sd, bm->state);
+		DPMS(sd, sd->dpms);
+
+		UNLOCK_HW
+	        UNLOCK_ALL
+
+		return o;
+	    }
+	}
+	else if (bm->framebuffer != 0xffffffff)
 	{
 	    HIDDT_ModeID modeid;
 	    OOP_Object *sync;
@@ -196,13 +231,10 @@ static OOP_Object *offbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
 	ULONG width, height, depth;
 	UBYTE bytesPerPixel;
-	ULONG fb;
 
 	OOP_Object *pf;
 
 	bm->onbm = FALSE;
-
-	fb = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
 
 	OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
 	OOP_GetAttr(o, aHidd_BitMap_Height, &height);
@@ -229,26 +261,17 @@ static OOP_Object *offbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	bm->state = NULL;
 	bm->bpp = bytesPerPixel;
 
-	if (!fb)
-	{
-	    bm->framebuffer = AllocBitmapArea(sd, bm->width, bm->height,
-				    bm->bpp, TRUE);
+        bm->framebuffer = AllocBitmapArea(sd, bm->width, bm->height,
+			    bm->bpp, TRUE);
 
-	    if (bm->framebuffer == -1)
-	    {
-		bm->framebuffer = (IPTR)AllocMem(bm->pitch * bm->height,
+        if (bm->framebuffer == -1)
+        {
+	    bm->framebuffer = (IPTR)AllocMem(bm->pitch * bm->height,
 					MEMF_PUBLIC | MEMF_CLEAR);
-		bm->fbgfx = FALSE;
-	    }
-	    else
-		bm->fbgfx = TRUE;
+	    bm->fbgfx = FALSE;
 	}
 	else
-	{
-	    D(bug("[NVBitmap] Dummy framebuffer object without bitmap memory\n"));
-	    bm->fbgfx = FALSE;
-	    bm->framebuffer = 0;
-	}
+	    bm->fbgfx = TRUE;
 	
 	bm->BitMap = o;
 	bm->usecount = 0;
@@ -277,7 +300,7 @@ static OOP_Object *offbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 		break;
 	}
 
-	if ((bm->framebuffer != 0xffffffff && bm->framebuffer != 0) || fb)
+	if ((bm->framebuffer != 0xffffffff) && (bm->framebuffer != 0))
 	{
 	    return o;
 	}
@@ -297,6 +320,7 @@ static VOID bm__del(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     LOCK_ALL
 
     LOCK_HW
+    NVDmaKickoff(&sd->Card);
     NVSync(sd);
     UNLOCK_HW
     
@@ -444,6 +468,7 @@ D(bug("[NVBitMap] PutPixel %d:%d-%x (pitch %d, bpp %d) @ %p\n", msg->x, msg->y, 
 
     LOCK_HW
     
+    NVDmaKickoff(&sd->Card);
     NVSync(sd);
 
     switch (bm->bpp)
@@ -474,6 +499,7 @@ static HIDDT_Pixel bm__getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
  
     LOCK_HW
     
+    NVDmaKickoff(&sd->Card);
     NVSync(sd);
 
     switch (bm->bpp)
@@ -1023,6 +1049,8 @@ static VOID bm__drawpoly(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawP
     OOP_Object *gc = msg->gc;
     nvBitMap *bm = OOP_INST_DATA(cl, o);
     ULONG i;
+
+    bm->usecount++;
 
     if ((GC_LINEPAT(gc) != (UWORD)~0) || !bm->fbgfx)
     {
