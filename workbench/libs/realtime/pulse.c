@@ -64,7 +64,7 @@ AROS_UFH3(void, Pulse,
 	/* NOTE! 12 should be 1, but as the timing source is the VBlank
 	         running at 50Hz instead of the real heartbeat running at
 		 600 Hz, we scale things up */
-	GPB(RealTimeBase)->rtb_Time += 12;  /* Not sure about that frac time... maybe
+	GPB(RealTimeBase)->rtb_Time += 24;  /* Not sure about that frac time... maybe
 					 to take care of other sync sources
 					 (not external) whose heartbeats
 					 aliases against 600Hz? */
@@ -112,7 +112,7 @@ AROS_UFH3(void, Pulse,
 		{
 		    /* This conductor doesn't have an external sync source.
 		       Increment conductor time */
-		    conductor->cdt_ClockTime++;
+		    conductor->cdt_ClockTime+=24;
 		}
 		
 		conductor->cdt_Flags &= ~CONDUCTF_METROSET;
