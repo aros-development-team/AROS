@@ -1,7 +1,7 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
+    Copyright © 2002, The AROS Development Team.
     All rights reserved.
-    
+
     $Id$
 */
 
@@ -12,69 +12,70 @@
 #define _MUI_MACROS_H
 
 /* Some nice macrodefinitions for creating your object tree */
-#define MenustripObject     MUI_NewObject(MUIC_Menustrip
-#define MenuObject          MUI_NewObject(MUIC_Menu
-#define MenuObjectT(name)   MUI_NewObject(MUIC_Menu, MUIA_Menu_Title, name
-#define MenuitemObject      MUI_NewObject(MUIC_Menuitem
-#define WindowObject        MUI_NewObject(MUIC_Window
-#define ImageObject         MUI_NewObject(MUIC_Image
-#define BitmapObject        MUI_NewObject(MUIC_Bitmap
-#define BodychunkObject     MUI_NewObject(MUIC_Bodychunk
-#define ChunkyImageObject   MUI_NewObject(MUIC_ChunkyImage
-#define NotifyObject        MUI_NewObject(MUIC_Notify
-#define ApplicationObject   MUI_NewObject(MUIC_Application
-#define TextObject          MUI_NewObject(MUIC_Text
-#define RectangleObject     MUI_NewObject(MUIC_Rectangle
-#define BalanceObject       MUI_NewObject(MUIC_Balance
-#define ListObject          MUI_NewObject(MUIC_List
-#define PropObject          MUI_NewObject(MUIC_Prop
-#define StringObject        MUI_NewObject(MUIC_String
-#define ScrollbarObject     MUI_NewObject(MUIC_Scrollbar
-#define ListviewObject      MUI_NewObject(MUIC_Listview
-#define RadioObject         MUI_NewObject(MUIC_Radio
-#define VolumelistObject    MUI_NewObject(MUIC_Volumelist
-#define FloattextObject     MUI_NewObject(MUIC_Floattext
-#define DirlistObject       MUI_NewObject(MUIC_Dirlist
-#define CycleObject         MUI_NewObject(MUIC_Cycle
-#define GaugeObject         MUI_NewObject(MUIC_Gauge
-#define ScaleObject         MUI_NewObject(MUIC_Scale
-#define NumericObject       MUI_NewObject(MUIC_Numeric
-#define SliderObject        MUI_NewObject(MUIC_Slider
-#define NumericbuttonObject MUI_NewObject(MUIC_Numericbutton
-#define KnobObject          MUI_NewObject(MUIC_Knob
-#define LevelmeterObject    MUI_NewObject(MUIC_Levelmeter
-#define BoopsiObject        MUI_NewObject(MUIC_Boopsi
-#define ColorfieldObject    MUI_NewObject(MUIC_Colorfield
-#define PenadjustObject     MUI_NewObject(MUIC_Penadjust
-#define ColoradjustObject   MUI_NewObject(MUIC_Coloradjust
-#define PaletteObject       MUI_NewObject(MUIC_Palette
-#define GroupObject         MUI_NewObject(MUIC_Group
-#define RegisterObject      MUI_NewObject(MUIC_Register
-#define VirtgroupObject     MUI_NewObject(MUIC_Virtgroup
-#define ScrollgroupObject   MUI_NewObject(MUIC_Scrollgroup
-#define PopstringObject     MUI_NewObject(MUIC_Popstring
-#define PopobjectObject     MUI_NewObject(MUIC_Popobject
-#define PoplistObject       MUI_NewObject(MUIC_Poplist
-#define PopaslObject        MUI_NewObject(MUIC_Popasl
-#define PendisplayObject    MUI_NewObject(MUIC_Pendisplay
-#define PoppenObject        MUI_NewObject(MUIC_Poppen
+#define MenustripObject     MUIOBJMACRO_START(MUIC_Menustrip)
+#define MenuObject          MUIOBJMACRO_START(MUIC_Menu)
+#define MenuObjectT(name)   MUIOBJMACRO_START(MUIC_Menu), MUIA_Menu_Title, name
+#define MenuitemObject      MUIOBJMACRO_START(MUIC_Menuitem)
+#define WindowObject        MUIOBJMACRO_START(MUIC_Window)
+#define ImageObject         MUIOBJMACRO_START(MUIC_Image)
+#define BitmapObject        MUIOBJMACRO_START(MUIC_Bitmap)
+#define BodychunkObject     MUIOBJMACRO_START(MUIC_Bodychunk)
+#define ChunkyImageObject   MUIOBJMACRO_START(MUIC_ChunkyImage)
+#define NotifyObject        MUIOBJMACRO_START(MUIC_Notify)
+#define ApplicationObject   MUIOBJMACRO_START(MUIC_Application)
+#define TextObject          MUIOBJMACRO_START(MUIC_Text)
+#define RectangleObject     MUIOBJMACRO_START(MUIC_Rectangle)
+#define BalanceObject       MUIOBJMACRO_START(MUIC_Balance)
+#define ListObject          MUIOBJMACRO_START(MUIC_List)
+#define PropObject          MUIOBJMACRO_START(MUIC_Prop)
+#define StringObject        MUIOBJMACRO_START(MUIC_String)
+#define ScrollbarObject     MUIOBJMACRO_START(MUIC_Scrollbar)
+#define ListviewObject      MUIOBJMACRO_START(MUIC_Listview)
+#define RadioObject         MUIOBJMACRO_START(MUIC_Radio)
+#define VolumelistObject    MUIOBJMACRO_START(MUIC_Volumelist)
+#define FloattextObject     MUIOBJMACRO_START(MUIC_Floattext)
+#define DirlistObject       MUIOBJMACRO_START(MUIC_Dirlist)
+#define CycleObject         MUIOBJMACRO_START(MUIC_Cycle)
+#define GaugeObject         MUIOBJMACRO_START(MUIC_Gauge)
+#define ScaleObject         MUIOBJMACRO_START(MUIC_Scale)
+#define NumericObject       MUIOBJMACRO_START(MUIC_Numeric)
+#define SliderObject        MUIOBJMACRO_START(MUIC_Slider)
+#define NumericbuttonObject MUIOBJMACRO_START(MUIC_Numericbutton)
+#define KnobObject          MUIOBJMACRO_START(MUIC_Knob)
+#define LevelmeterObject    MUIOBJMACRO_START(MUIC_Levelmeter)
+#define BoopsiObject        MUIOBJMACRO_START(MUIC_Boopsi)
+#define ColorfieldObject    MUIOBJMACRO_START(MUIC_Colorfield)
+#define PenadjustObject     MUIOBJMACRO_START(MUIC_Penadjust)
+#define ColoradjustObject   MUIOBJMACRO_START(MUIC_Coloradjust)
+#define PaletteObject       MUIOBJMACRO_START(MUIC_Palette)
+#define GroupObject         MUIOBJMACRO_START(MUIC_Group)
+#define RegisterObject      MUIOBJMACRO_START(MUIC_Register)
+#define VirtgroupObject     MUIOBJMACRO_START(MUIC_Virtgroup)
+#define ScrollgroupObject   MUIOBJMACRO_START(MUIC_Scrollgroup)
+#define PopstringObject     MUIOBJMACRO_START(MUIC_Popstring)
+#define PopobjectObject     MUIOBJMACRO_START(MUIC_Popobject)
+#define PoplistObject       MUIOBJMACRO_START(MUIC_Poplist)
+#define PopaslObject        MUIOBJMACRO_START(MUIC_Popasl)
+#define PendisplayObject    MUIOBJMACRO_START(MUIC_Pendisplay)
+#define PoppenObject        MUIOBJMACRO_START(MUIC_Poppen)
 /* The following in zune only */
-#define PopimageObject      MUI_NewObject(MUIC_Popimage
-#define AboutmuiObject      MUI_NewObject(MUIC_Aboutmui
-#define ScrmodelistObject   MUI_NewObject(MUIC_Scrmodelist
-#define KeyentryObject      MUI_NewObject(MUIC_Keyentry
-#define VGroup              MUI_NewObject(MUIC_Group
-#define HGroup              MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE
-#define ColGroup(columns)   MUI_NewObject(MUIC_Group, MUIA_Group_Columns, (columns)
-#define RowGroup(rows)      MUI_NewObject(MUIC_Group, MUIA_Group_Rows   , (rows)
-#define PageGroup           MUI_NewObject(MUIC_Group, MUIA_Group_PageMode, TRUE
-#define VGroupV             MUI_NewObject(MUIC_Virtgroup
-#define HGroupV             MUI_NewObject(MUIC_Virtgroup, MUIA_Group_Horiz, TRUE
-#define ColGroupV(columns)  MUI_NewObject(MUIC_Virtgroup, MUIA_Group_Columns, (columns)
-#define RowGroupV(rows)     MUI_NewObject(MUIC_Virtgroup, MUIA_Group_Rows   , (rows)
-#define PageGroupV          MUI_NewObject(MUIC_Virtgroup, MUIA_Group_PageMode, TRUE
-#define RegisterGroup(ts)   MUI_NewObject(MUIC_Register, MUIA_Register_Titles, (ts)
-#define End                 TAG_DONE)
+#define PopimageObject      MUIOBJMACRO_START(MUIC_Popimage)
+#define AboutmuiObject      MUIOBJMACRO_START(MUIC_Aboutmui)
+#define ScrmodelistObject   MUIOBJMACRO_START(MUIC_Scrmodelist)
+#define KeyentryObject      MUIOBJMACRO_START(MUIC_Keyentry)
+#define VGroup              MUIOBJMACRO_START(MUIC_Group)
+#define HGroup              MUIOBJMACRO_START(MUIC_Group), MUIA_Group_Horiz, TRUE
+#define ColGroup(columns)   MUIOBJMACRO_START(MUIC_Group), MUIA_Group_Columns, (columns)
+#define RowGroup(rows)      MUIOBJMACRO_START(MUIC_Group), MUIA_Group_Rows   , (rows)
+#define PageGroup           MUIOBJMACRO_START(MUIC_Group), MUIA_Group_PageMode, TRUE
+#define VGroupV             MUIOBJMACRO_START(MUIC_Virtgroup)
+#define HGroupV             MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_Horiz, TRUE
+#define ColGroupV(columns)  MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_Columns, (columns)
+#define RowGroupV(rows)     MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_Rows   , (rows)
+#define PageGroupV          MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_PageMode, TRUE
+#define RegisterGroup(ts)   MUIOBJMACRO_START(MUIC_Register), MUIA_Register_Titles, (ts)
+
+#define End                 MUIOBJMACRO_END
 
 #define Child               MUIA_Group_Child
 #define SubWindow           MUIA_Application_Window
@@ -148,15 +149,15 @@
 **************************************************************************/
 #define SimpleButton(label) MUI_MakeObject(MUIO_Button,label)
 
-#define CoolImageButton(label,image) MUI_MakeObject(MUIO_CoolButton, label, image, 0)
-#define CoolImageIDButton(label,imageid) MUI_MakeObject(MUIO_CoolButton, label, imageid, MUIO_CoolButton_CoolImageID)
+#define CoolImageButton(label,image) MUI_MakeObject(MUIO_CoolButton, (IPTR)(label), (IPTR)(image), 0)
+#define CoolImageIDButton(label,imageid) MUI_MakeObject(MUIO_CoolButton, (IPTR)(label), imageid, MUIO_CoolButton_CoolImageID)
 
 #ifdef MUI_OBSOLETE
 /**************************************************************************
  A Keybutton macro. The key should be in lower case.
  Don't use this in new code. Use MUI_MakeObject() instead.
 **************************************************************************/
-#define KeyButton(name,key) TextObject, ButtonFrame, MUIA_Font, MUIV_Font_Button, MUIA_Text_Contents, name, MUIA_Text_PreParse, "\33c", MUIA_Text_HiChar, key, MUIA_ControlChar, key, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Background, MUII_ButtonBack, End
+#define KeyButton(name,key) TextObject, ButtonFrame, MUIA_Font, MUIV_Font_Button, MUIA_Text_Contents, (IPTR)(name), MUIA_Text_PreParse, "\33c", MUIA_Text_HiChar, (IPTR)(key), MUIA_ControlChar, key, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Background, MUII_ButtonBack, End
 #endif
 
 
@@ -170,8 +171,8 @@
 /**************************************************************************
  Obsolette Radios macros
 **************************************************************************/
-#define Radio(name,array) RadioObject, GroupFrameT(name), MUIA_Radio_Entries,array, End
-#define KeyRadio(name,array,key) RadioObject, GroupFrameT(name), MUIA_Radio_Entries,array, MUIA_ControlChar, key, End
+#define Radio(name,array) RadioObject, GroupFrameT(name), MUIA_Radio_Entries, (IPTR)(array), End
+#define KeyRadio(name,array,key) RadioObject, GroupFrameT(name), MUIA_Radio_Entries, (IPTR)(array), MUIA_ControlChar, (IPTR)(key), End
 
 /**************************************************************************
  Obsolette Slider macros
@@ -185,7 +186,7 @@
 /**************************************************************************
  Use this for getting a pop button
 **************************************************************************/
-#define PopButton(img) MUI_MakeObject(MUIO_PopButton,img)
+#define PopButton(img) MUI_MakeObject(MUIO_PopButton, (IPTR)(img))
 
 
 /**************************************************************************
@@ -202,55 +203,55 @@
 **************************************************************************/
 
 /* Right aligned */
-#define Label(label)   MUI_MakeObject(MUIO_Label,label,0)
-#define Label1(label)  MUI_MakeObject(MUIO_Label,label, MUIO_Label_SingleFrame)
-#define Label2(label)  MUI_MakeObject(MUIO_Label,label, MUIO_Label_DoubleFrame)
+#define Label(label)   MUI_MakeObject(MUIO_Label, (IPTR)(label), 0)
+#define Label1(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_SingleFrame)
+#define Label2(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_DoubleFrame)
 
 /* Left aligned */
-#define LLabel(label)  MUI_MakeObject(MUIO_Label, label, MUIO_Label_LeftAligned)
-#define LLabel1(label) MUI_MakeObject(MUIO_Label, label, MUIO_Label_LeftAligned | MUIO_Label_SingleFrame)
-#define LLabel2(label) MUI_MakeObject(MUIO_Label, label, MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame)
+#define LLabel(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_LeftAligned)
+#define LLabel1(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_LeftAligned | MUIO_Label_SingleFrame)
+#define LLabel2(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame)
 
 /* Centered */
-#define CLabel(label)  MUI_MakeObject(MUIO_Label, label, MUIO_Label_Centered)
-#define CLabel1(label) MUI_MakeObject(MUIO_Label, label, MUIO_Label_Centered | MUIO_Label_SingleFrame)
-#define CLabel2(label) MUI_MakeObject(MUIO_Label, label, MUIO_Label_Centered | MUIO_Label_DoubleFrame)
+#define CLabel(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_Centered)
+#define CLabel1(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_Centered | MUIO_Label_SingleFrame)
+#define CLabel2(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_Centered | MUIO_Label_DoubleFrame)
 
 /* Freevert - Right aligned */
-#define FreeLabel(label)   MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert)
-#define FreeLabel1(label)  MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_SingleFrame)
-#define FreeLabel2(label)  MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_DoubleFrame)
+#define FreeLabel(label)   MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert)
+#define FreeLabel1(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_SingleFrame)
+#define FreeLabel2(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_DoubleFrame)
 
 /* Freevert - Left aligned */
-#define FreeLLabel(label)  MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_LeftAligned)
-#define FreeLLabel1(label) MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_SingleFrame)
-#define FreeLLabel2(label) MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame)
+#define FreeLLabel(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_LeftAligned)
+#define FreeLLabel1(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_SingleFrame)
+#define FreeLLabel2(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame)
 
 /* Freevert - Centered */
-#define FreeCLabel(label)  MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_Centered)
-#define FreeCLabel1(label) MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_SingleFrame)
-#define FreeCLabel2(label) MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_DoubleFrame)
+#define FreeCLabel(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_Centered)
+#define FreeCLabel1(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_SingleFrame)
+#define FreeCLabel2(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_DoubleFrame)
 
 /* The same as above + keys */
-#define KeyLabel(label,key)   MUI_MakeObject(MUIO_Label, label, key)
-#define KeyLabel1(label,key)  MUI_MakeObject(MUIO_Label, label, MUIO_Label_SingleFrame | (key))
-#define KeyLabel2(label,key)  MUI_MakeObject(MUIO_Label, label, MUIO_Label_DoubleFrame | (key))
-#define KeyLLabel(label,key)  MUI_MakeObject(MUIO_Label, label, MUIO_Label_LeftAligned | (key))
-#define KeyLLabel1(label,key) MUI_MakeObject(MUIO_Label, label, MUIO_Label_LeftAligned | MUIO_Label_SingleFrame|(key))
-#define KeyLLabel2(label,key) MUI_MakeObject(MUIO_Label, label, MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame|(key))
-#define KeyCLabel(label,key)  MUI_MakeObject(MUIO_Label, label, MUIO_Label_Centered | (key))
-#define KeyCLabel1(label,key) MUI_MakeObject(MUIO_Label, label, MUIO_Label_Centered | MUIO_Label_SingleFrame|(key))
-#define KeyCLabel2(label,key) MUI_MakeObject(MUIO_Label, label, MUIO_Label_Centered | MUIO_Label_DoubleFrame|(key))
+#define KeyLabel(label,key)   MUI_MakeObject(MUIO_Label, (IPTR)(label), key)
+#define KeyLabel1(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_SingleFrame | (key))
+#define KeyLabel2(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_DoubleFrame | (key))
+#define KeyLLabel(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_LeftAligned | (key))
+#define KeyLLabel1(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_LeftAligned | MUIO_Label_SingleFrame|(key))
+#define KeyLLabel2(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame|(key))
+#define KeyCLabel(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_Centered | (key))
+#define KeyCLabel1(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_Centered | MUIO_Label_SingleFrame|(key))
+#define KeyCLabel2(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_Centered | MUIO_Label_DoubleFrame|(key))
 
-#define FreeKeyLabel(label,key)   MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | (key))
-#define FreeKeyLabel1(label,key)  MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_SingleFrame | (key))
-#define FreeKeyLabel2(label,key)  MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_DoubleFrame | (key))
-#define FreeKeyLLabel(label,key)  MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_LeftAligned | (key))
-#define FreeKeyLLabel1(label,key) MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_SingleFrame | (key))
-#define FreeKeyLLabel2(label,key) MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame | (key))
-#define FreeKeyCLabel(label,key)  MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_Centered | (key))
-#define FreeKeyCLabel1(label,key) MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_SingleFrame | (key))
-#define FreeKeyCLabel2(label,key) MUI_MakeObject(MUIO_Label, label, MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_DoubleFrame | (key))
+#define FreeKeyLabel(label,key)   MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | (key))
+#define FreeKeyLabel1(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_SingleFrame | (key))
+#define FreeKeyLabel2(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_DoubleFrame | (key))
+#define FreeKeyLLabel(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_LeftAligned | (key))
+#define FreeKeyLLabel1(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_SingleFrame | (key))
+#define FreeKeyLLabel2(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame | (key))
+#define FreeKeyCLabel(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_Centered | (key))
+#define FreeKeyCLabel1(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_SingleFrame | (key))
+#define FreeKeyCLabel2(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_DoubleFrame | (key))
 
 
 /* Some macros */
