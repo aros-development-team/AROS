@@ -257,9 +257,36 @@ static void HandleAll(void)
 
 static void InstallPatches(void)
 {
-    Install_RawDoFmtPatch();
+    struct IPrefsSem 	   *sem;
+    BOOL    	    	   created_sem = FALSE;
     
-    patches_installed = TRUE;
+    sem = AllocVec(sizeof(struct IPrefsSem), MEMF_PUBLIC | MEMF_CLEAR);
+    if (!sem) Cleanup("Out of memory!");
+    
+    InitSemaphore(&sem->sem);
+    sem->sem.ss_Link.ln_Name = sem->semname;
+    strcpy(sem->semname, IPREFS_SEM_NAME);
+    
+    Forbid();
+    if(!(iprefssem = (struct IPrefsSem *)FindSemaphore(IPREFS_SEM_NAME)))
+    {
+    	iprefssem = sem;
+	AddSemaphore(&iprefssem->sem);
+	
+	created_sem = TRUE;
+    }
+    Permit();
+    
+    if (created_sem)
+    {
+    	Install_RawDoFmtPatch();
+    	patches_installed = TRUE;
+    }
+    else
+    {
+     	FreeVec(sem);
+    }
+        
 }
 
 /*********************************************************************************************/
