@@ -30,6 +30,9 @@
 #include <dos/dos.h>
 #endif
 
+/*  #define MYDEBUG 1 */
+#include "debug.h"
+#include "support.h"
 #include "muimaster_intern.h"
 
 extern struct Library *MUIMasterBase;
@@ -47,22 +50,6 @@ struct dt_node
     int count;
     struct BackFillInfo *bfi;
 };
-
-static struct MinNode *Node_Next(APTR node)
-{
-    if(node == NULL) return NULL;
-    if(((struct MinNode*)node)->mln_Succ == NULL) return NULL;
-    if(((struct MinNode*)node)->mln_Succ->mln_Succ == NULL)
-		return NULL;
-    return ((struct MinNode*)node)->mln_Succ;
-}
-
-static struct MinNode *List_First(APTR list)
-{
-    if( !((struct MinList*)list)->mlh_Head) return NULL;
-    if(((struct MinList*)list)->mlh_Head->mln_Succ == NULL) return NULL;
-    return ((struct MinList*)list)->mlh_Head;
-}
 
 /* A BltBitMaskPort() replacement which blits masks for interleaved bitmaps correctly */
 struct LayerHookMsg
@@ -146,7 +133,7 @@ VOID MyBltMaskBitMapRastPort( struct BitMap *srcBitMap, LONG xSrc, LONG ySrc, st
 #endif
 
 
-static Object *LoadPicture(char *filename, struct Screen *scr)
+static Object *LoadPicture(CONST_STRPTR filename, struct Screen *scr)
 {
     Object *o;
 
@@ -154,7 +141,7 @@ static Object *LoadPicture(char *filename, struct Screen *scr)
     APTR oldwindowptr = myproc->pr_WindowPtr;
     myproc->pr_WindowPtr = (APTR)-1;
 
-    o = NewDTObject(filename,
+    o = NewDTObject((APTR)filename,
 	DTA_GroupID          , GID_PICTURE,
 	OBP_Precision        , PRECISION_EXACT,
 	PDTA_Screen          , scr,
@@ -164,14 +151,17 @@ static Object *LoadPicture(char *filename, struct Screen *scr)
 	TAG_DONE);
 	
     myproc->pr_WindowPtr = oldwindowptr;
-	
+    D(bug("... picture=%lx\n", o));
+
     if (o)
     {
 	struct FrameInfo fri = {0};
-	DoMethod(o,DTM_FRAMEBOX,NULL,&fri,&fri,sizeof(struct FrameInfo),0);
+	D(bug("DTM_FRAMEBOX\n", o));
+	DoMethod(o,DTM_FRAMEBOX,NULL,(IPTR)&fri,(IPTR)&fri,sizeof(struct FrameInfo),0);
 	
 	if (fri.fri_Dimensions.Depth>0)
 	{
+	    D(bug("DTM_PROCLAYOUT\n", o));
 	    if (DoMethod(o,DTM_PROCLAYOUT,NULL,1))
 	    {
 		return o;
@@ -192,7 +182,7 @@ void dt_cleanup(void)
 }
 */
 
-struct dt_node *dt_load_picture(char *filename, struct Screen *scr)
+struct dt_node *dt_load_picture(CONST_STRPTR filename, struct Screen *scr)
 {
     struct dt_node *node;
     ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
@@ -203,7 +193,7 @@ struct dt_node *dt_load_picture(char *filename, struct Screen *scr)
 	dt_initialized = 1;
     }
 
-    node = (struct dt_node*)List_First(&dt_list);
+    node = List_First(&dt_list);
     while (node)
     {
 	if (!Stricmp(filename,node->filename) && scr == node->scr)
@@ -212,7 +202,7 @@ struct dt_node *dt_load_picture(char *filename, struct Screen *scr)
 	    ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
 	    return node;
 	}
-	node = (struct dt_node*)Node_Next(node);
+	node = Node_Next(node);
     }
 
     if ((node = (struct dt_node*)AllocVec(sizeof(struct dt_node),MEMF_CLEAR)))
@@ -220,15 +210,18 @@ struct dt_node *dt_load_picture(char *filename, struct Screen *scr)
 	if ((node->filename = StrDup(filename)))
 	{
 	    /* create the datatypes object */
+	    D(bug("loading %s\n", filename));
 	    if ((node->o = LoadPicture(filename,scr)))
 	    {
 		struct BitMapHeader *bmhd;
-		GetDTAttrs(node->o,PDTA_BitMapHeader,&bmhd,TAG_DONE);
+		GetDTAttrs(node->o,PDTA_BitMapHeader, &bmhd, TAG_DONE);
+		D(bug("picture %lx\n", node->o));
 
 		if (bmhd)
 		{
 		    node->width = bmhd->bmh_Width;
 		    node->height = bmhd->bmh_Height;
+		    D(bug("picture %lx = %ldx%ld\n", node->o, node->width, node->height));
 		}
 		node->scr = scr;
 		node->count = 1;
@@ -289,9 +282,9 @@ void dt_put_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y)
 	if (mask)
 	{
 	#ifndef __AROS__
-	    MyBltMaskBitMapRastPort(bitmap,0,0,rp,x,y,dt_width(node),dt_height(node),0xe2,(PLANEPTR)mask);
+	    MyBltMaskBitMapRastPort(bitmap,0,0,rp,x,y,dt_width(node),dt_height(node),0xe0,(PLANEPTR)mask);
 	#else
-	    BltMaskBitMapRastPort(bitmap,0,0,rp,x,y,dt_width(node),dt_height(node),0xe2,(PLANEPTR)mask);	
+	    BltMaskBitMapRastPort(bitmap,0,0,rp,x,y,dt_width(node),dt_height(node),0xe0,(PLANEPTR)mask);	
 	#endif
 	} else BltBitMapRastPort(bitmap,0,0,rp,x,y,dt_width(node),dt_height(node),0xc0);
     }
@@ -300,7 +293,6 @@ void dt_put_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y)
 #define RECTSIZEX(r) ((r)->MaxX-(r)->MinX+1)
 #define RECTSIZEY(r) ((r)->MaxY-(r)->MinY+1)
 
-#define MIN(a,b) ((a)<(b)?(a):(b))
 #define MOD(x,y) ((x)<0 ? (y)-((-(x))%(y)) : (x)%(y))
 
 struct BackFillMsg
