@@ -26,9 +26,9 @@ void writeautoinit(struct config *cfg)
 	    "#include <proto/%s.h>\n"
 	    "#include <aros/symbolsets.h>\n"
 	    "\n"
-	    "ADD2LIBS(\"%s.library\",%u, %s*, %s);\n",
+	    "ADD2LIBS(\"%s.library\",%u, %s, %s);\n",
 	    cfg->modulename,
-	    cfg->modulename, cfg->majorversion, cfg->libbasetypeextern, cfg->libbase
+	    cfg->modulename, cfg->majorversion, cfg->libbasetypeptrextern, cfg->libbase
     );
     if (cfg->forcelist!=NULL)
     {

@@ -63,41 +63,56 @@ struct config *initconfig(int argc, char **argv, int command)
     if (strcmp(*argvit,"library")==0)
     {
     	cfg->modtype = LIBRARY;
-	cfg->suffix = "library";
     }
     else if (strcmp(*argvit,"mcc")==0)
     {
     	cfg->modtype = MCC;
-	cfg->suffix = "mcc";
     }
     else if (strcmp(*argvit,"mui")==0)
     {
     	cfg->modtype = MUI;
-	cfg->suffix = ".mui";
     }
     else if (strcmp(*argvit,"mcp")==0)
     {
     	cfg->modtype = MCP;
-	cfg->suffix = "mcp";
     }
     else if (strcmp(*argvit, "device")==0)
     {
 	cfg->modtype = DEVICE;
-	cfg->suffix = "device";
+    }
+    else if (strcmp(*argvit, "resource")==0)
+    {
+	cfg->modtype = RESOURCE;
     }
     else
     {
 	fprintf(stderr, "Unknown modtype \"%s\" speficied for second argument\n", argv[2]);
 	exit(20);
     }
+    if (!hassuffix)
+	cfg->suffix = *argvit;
     argvit++;
-    
-    if (cfg->modtype == LIBRARY)
+
+    switch (cfg->modtype)
+    {
+    case LIBRARY:
         cfg->firstlvo = 5;
-    else if (cfg->modtype == DEVICE)
+	break;
+    case DEVICE:
 	cfg->firstlvo = 7;
-    else if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
+	break;
+    case MCC:
+    case MUI:
+    case MCP:
         cfg->firstlvo = 6;
+	break;
+    case RESOURCE:
+	cfg->firstlvo = 1;
+	break;
+    default:
+	fprintf(stderr, "Internal error: unsupported modtype for firstlvo\n");
+	exit(20);
+    }
 
     if (hassuffix)
     {
@@ -271,7 +286,7 @@ static void readconfig(struct config *cfg)
 static void readsectionconfig(struct config *cfg)
 {
     int atend = 0, i;
-    char *line, *s, *s2;
+    char *line, *s, *s2, *libbasetypeextern = NULL;
     
     while (!atend)
     {
@@ -329,7 +344,7 @@ static void readsectionconfig(struct config *cfg)
 		break;
 		
 	    case 4: /* libbasetypeextern */
-		cfg->libbasetypeextern = strdup(s);
+		libbasetypeextern = strdup(s);
 		break;
 		
 	    case 5: /* version */
@@ -483,12 +498,33 @@ static void readsectionconfig(struct config *cfg)
     if (cfg->seglist_field != NULL && cfg->libbasetype == NULL)
 	exitfileerror(20, "seglist_field specified when no libbasetype is given\n");
 
-    if (cfg->libbasetypeextern==NULL)
+    if (libbasetypeextern==NULL)
     {
-	if (cfg->modtype == DEVICE)
-	    cfg->libbasetypeextern = "struct Device";
-	else
-	    cfg->libbasetypeextern = "struct Library";
+	switch (cfg->modtype)
+	{
+	case DEVICE:
+	    cfg->libbasetypeptrextern = "struct Device *";
+	    break;
+	case RESOURCE:
+	    cfg->libbasetypeptrextern = "APTR ";
+	    break;
+	case LIBRARY:
+	case MUI:
+	case MCP:
+	case MCC:
+	    cfg->libbasetypeptrextern = "struct Library *";
+	    break;
+	default:
+	    fprintf(stderr, "Internal error: Unsupport modtype for libbasetypeptrextern\n");
+	    exit(20);
+	}
+    }
+    else
+    {
+	cfg->libbasetypeptrextern = malloc(strlen(libbasetypeextern)+3);
+	strcpy(cfg->libbasetypeptrextern, libbasetypeextern);
+	strcat(cfg->libbasetypeptrextern, " *");
+	free(libbasetypeextern);
     }
 }
 

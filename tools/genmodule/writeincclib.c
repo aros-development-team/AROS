@@ -46,8 +46,8 @@ void writeincclib(struct config *cfg)
 		    fprintf(out, "        AROS_LPA(%s, %s, %s),\n",
 			    arglistit->type, arglistit->name, arglistit->reg);
 
-		fprintf(out, "        struct Library *, %sBase, %u, %s)\n",
-			cfg->basename, funclistit->lvo, cfg->basename);
+		fprintf(out, "        %s, %s, %u, %s)\n",
+			cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename);
 	    }
 	}
     }

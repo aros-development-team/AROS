@@ -32,13 +32,13 @@ void writeincproto(struct config *cfg)
 	    "#include <clib/%s_protos.h>\n"
 	    "\n"
 	    "#if !defined(%s) && !defined(__NOLIBBASE__) && !defined(__%s_NOLIBBASE__)\n"
-	    "extern %s *%s;\n"
+	    "extern %s%s;\n"
 	    "#endif\n"
 	    "\n",
 	    cfg->modulenameupper, cfg->modulenameupper,
 	    cfg->modulename,
 	    cfg->libbase, cfg->modulenameupper,
-	    cfg->libbasetypeextern, cfg->libbase
+	    cfg->libbasetypeptrextern, cfg->libbase
     );
     
     fprintf(out,

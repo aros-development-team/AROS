@@ -80,8 +80,8 @@ void writestubs(struct config *cfg)
 			arglistit->type, arglistit->name, arglistit->reg
 		);
 	    
-	    fprintf(out, "                    %s *, %s, %u, %s);\n}\n",
-		    cfg->libbasetypeextern, cfg->libbase, funclistit->lvo, cfg->basename
+	    fprintf(out, "                    %s, %s, %u, %s);\n}\n",
+		    cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename
 	    );
 	}
     }
