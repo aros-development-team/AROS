@@ -98,7 +98,7 @@ workbench-c : setup $(EXES)
 %make_prog_single dir=$(AROS_C)
 
 $(OBJDIR)/evalParser.tab.c : evalParser.y
-	$(BISON) $<
+	$(BISON) $< -o $@
 
 $(OBJDIR)/Eval.o : $(OBJDIR)/evalParser.tab.c Eval.c
 	%compile_q from=Eval.c opt="$(CFLAGS) -I$(OBJDIR)"
