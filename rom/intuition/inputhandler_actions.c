@@ -101,17 +101,14 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		    RefreshGadgets(targetwindow->FirstGadget, targetwindow, NULL);
 		    EndUpdate(targetlayer, FALSE);
 
-		    if (targetwindow->IDCMPFlags & IDCMP_REFRESHWINDOW)
-		    {
-			targetlayer->Flags &= ~LAYERREFRESH;
+		    targetlayer->Flags &= ~LAYERREFRESH;
 
-			fire_intuimessage(targetwindow,
-			                  IDCMP_REFRESHWINDOW,
-					  0,
-					  targetwindow,
-					  IntuitionBase);
+		    ih_fire_intuimessage(targetwindow,
+			                 IDCMP_REFRESHWINDOW,
+					 0,
+					 targetwindow,
+					 IntuitionBase);
 
-		    }
 		  }
 		} 
 		
@@ -177,26 +174,20 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		    
 	    	    if(w)
 		    {
-			if (w->IDCMPFlags & IDCMP_INACTIVEWINDOW)
-			{
-		    	    fire_intuimessage(w,
-					      IDCMP_INACTIVEWINDOW,
-					      0,
-					      w,
-					      IntuitionBase);
-			}
+		    	ih_fire_intuimessage(w,
+					     IDCMP_INACTIVEWINDOW,
+					     0,
+					     w,
+					     IntuitionBase);
 		    }
 
 		    int_activatewindow(targetwindow, IntuitionBase);
 		    
-		    if (targetwindow->IDCMPFlags & IDCMP_ACTIVEWINDOW)
-		    {
-		    	fire_intuimessage(targetwindow,
-					  IDCMP_ACTIVEWINDOW,
-					  0,
-					  targetwindow,
-					  IntuitionBase);
-		    }
+		    ih_fire_intuimessage(targetwindow,
+					 IDCMP_ACTIVEWINDOW,
+					 0,
+					 targetwindow,
+					 IntuitionBase);
 		    
 		} /* if (!iihdata->ActiveGadget) */
 		
@@ -251,6 +242,14 @@ void HandleDeferedActions(struct IIHData *iihdata,
 
                     CheckLayersBehind = TRUE;
                     L = targetlayer;
+
+		    /* Send IDCMP_CHANGEWINDOW to moved window */
+
+		    ih_fire_intuimessage(targetwindow,
+		    			 IDCMP_CHANGEWINDOW,
+					 CWCODE_MOVESIZE,
+					 targetwindow,
+					 IntuitionBase);
 
 		} /* if (am->dx || am->dy) */
 		
@@ -415,28 +414,21 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		/* and refresh all gadgets except border gadgets */
 		int_refreshglist(targetwindow->FirstGadget, targetwindow, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
 		
-		if (targetwindow->IDCMPFlags & IDCMP_NEWSIZE)
-                {
-		   /* Send IDCMP_NEWSIZE to resized window */
+		/* Send IDCMP_NEWSIZE to resized window */
 
-		   fire_intuimessage(targetwindow,
+		ih_fire_intuimessage(targetwindow,
 			             IDCMP_NEWSIZE,
 				     0,
 				     targetwindow,
 				     IntuitionBase);
 
-                }
-
-		if (targetwindow->IDCMPFlags & IDCMP_CHANGEWINDOW)
-		{
-		    /* Send IDCMP_CHANGEWINDOW to resized window */
+		/* Send IDCMP_CHANGEWINDOW to resized window */
 		    
-		    fire_intuimessage(targetwindow,
-		    		      IDCMP_CHANGEWINDOW,
-				      CWCODE_MOVESIZE,
-				      targetwindow,
-				      IntuitionBase);
-		}
+		ih_fire_intuimessage(targetwindow,
+		    		     IDCMP_CHANGEWINDOW,
+				     CWCODE_MOVESIZE,
+				     targetwindow,
+				     IntuitionBase);
 
                 FreeMem(am, sizeof(struct DeferedActionMessage));
             break; }
@@ -592,17 +584,13 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		    int_refreshglist(targetwindow->FirstGadget, targetwindow, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
 		}
 		
-		if (targetwindow->IDCMPFlags & IDCMP_CHANGEWINDOW)
-                {
-		   /* Send IDCMP_CHANGEWINDOW to resized window */
+		/* Send IDCMP_CHANGEWINDOW to resized window */
 
-		   fire_intuimessage(targetwindow,
+		ih_fire_intuimessage(targetwindow,
 			             IDCMP_CHANGEWINDOW,
 				     CWCODE_MOVESIZE,
 				     targetwindow,
 				     IntuitionBase);
-
-                }
 
                 FreeMem(am, sizeof(struct DeferedActionMessage));
             break; }
@@ -749,17 +737,13 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		    int_refreshglist(targetwindow->FirstGadget, targetwindow, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
 		}
 		
-		if (targetwindow->IDCMPFlags & IDCMP_CHANGEWINDOW)
-                {
-		   /* Send IDCMP_CHANGEWINDOW to resized window */
+		/* Send IDCMP_CHANGEWINDOW to resized window */
 
-		   fire_intuimessage(targetwindow,
+		ih_fire_intuimessage(targetwindow,
 			             IDCMP_CHANGEWINDOW,
 				     CWCODE_MOVESIZE,
 				     targetwindow,
 				     IntuitionBase);
-
-                }
 
                 FreeMem(am, sizeof(struct DeferedActionMessage));
 
