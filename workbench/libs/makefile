@@ -2,7 +2,10 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-all: $(SLIBDIR)/dummy.library
+all: setup $(SLIBDIR)/dummy.library
+
+setup :
+	@if [ ! -d $(SLIBDIR) ]; then $(MKDIR) $(SLIBDIR) ; fi
 
 clean:
 	$(RM) $(SLIBDIR)/dummy.library

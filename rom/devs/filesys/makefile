@@ -2,23 +2,17 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-ODIR=$(OBJDIR)/filesys
+OBJDIR=$(GENDIR)/filesys
 
-all: setup $(ODIR)/emul_handler.o $(ODIR)/nil_handler.o
+all: setup $(OBJDIR)/emul_handler.o $(OBJDIR)/nil_handler.o
 
 setup:
-	@echo "Setting up"
-	@if [ ! -d $(ODIR) ]; then $(MKDIR) $(ODIR) ; fi
-	@$(TOUCH) setup
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
 
 clean:
-	$(RM) $(ODIR) setup
+	$(RM) $(OBJDIR)
 
-$(ODIR)/%.o: %.s
-	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
-	if test ! -s $*.err; then rm $*.err; fi
-
-$(ODIR)/%.o: %.c
+$(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
