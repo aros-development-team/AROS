@@ -28,7 +28,6 @@
 #define ICA_HorizScroller ICA_BASE+2
 #define ICA_ScrollToHoriz ICA_BASE+3
 #define ICA_ScrollToVert  ICA_BASE+4
-#define ICA_SelectedIcons ICA_BASE+6
 
 #define AICA_BASE TAG_USER+1800
 #define AICA_SelectedIcons     AICA_BASE+1
