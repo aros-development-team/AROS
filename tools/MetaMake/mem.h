@@ -33,11 +33,13 @@ Boston, MA 02111-1307, USA.  */
     str = val ? xstrdup (val) : NULL
 
 #define xstrdup(str)        _xstrdup(str,__FILE__,__LINE__)
+#define xstrndup(str,len)   _xstrndup(str,len,__FILE__,__LINE__)
 #define xmalloc(size)       _xmalloc(size,__FILE__,__LINE__)
 #define xfree(ptr)          _xfree(ptr,__FILE__,__LINE__)
 #define new(x)              ((x *) xmalloc (sizeof (x)))
 
 extern char * _xstrdup (const char * str, const char * file, int line);
+extern char * _xstrndup (const char * str, size_t len, const char * file, int line);
 extern void * _xmalloc (size_t size, const char * file, int line);
 extern void _xfree (void * ptr, const char * file, int line);
 

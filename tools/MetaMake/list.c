@@ -20,11 +20,34 @@ Boston, MA 02111-1307, USA.  */
 
 /* This file contains the code for the list functions */
 
+#include "config.h"
+
 #include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
+#ifdef HAVE_STRING_H
+#   include <string.h>
+#else
+#   include <strings.h>
+#endif
 
 #include "mem.h"
 #include "list.h"
+
+void
+AssignList (List * dest, List * src)
+{
+    NewList (dest);
+    
+    if (src->first->next != NULL)
+    {
+	src->first->prev = (Node *)&dest->first;
+	dest->first = src->first;
+	src->prelast->next = (Node *)&dest->last;
+	dest->prelast = src->prelast;
+    }
+}
 
 void *
 FindNode (const List * l, const char * name)

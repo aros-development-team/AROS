@@ -27,6 +27,7 @@ Boston, MA 02111-1307, USA.  */
 #else
 #   include <strings.h>
 #endif
+#include <stdlib.h>
 
 #include "mem.h"
 
@@ -39,6 +40,24 @@ _xstrdup (const char * str, const char * file, int line)
     assert (str);
 
     nstr = strdup (str);
+
+    if (!nstr)
+    {
+	fprintf (stderr, "Out of memory in %s:%d", file, line);
+	exit (20);
+    }
+
+    return nstr;
+}
+
+char *
+_xstrndup (const char * str, size_t len, const char * file, int line)
+{
+    char * nstr;
+
+    assert (str);
+
+    nstr = strndup (str);
 
     if (!nstr)
     {

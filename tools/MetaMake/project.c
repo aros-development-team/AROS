@@ -18,19 +18,22 @@ along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
+#include "config.h"
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <assert.h>
+#ifdef HAVE_STRING_H
+#   include <string.h>
+#else
+#   include <strings.h>
+#endif
 
 #include "project.h"
 #include "var.h"
 #include "mem.h"
 #include "dep.h"
-
-extern int verbose;
-extern int debug;
-extern char ** mflags;
-extern int mflagc;
+#include "mmake.h"
 
 List projects;
 static Project * defaultprj = NULL;
@@ -216,48 +219,19 @@ freeproject (Project * prj)
 }
 
 static void
-callmake (Project * prj, const char * tname, const char * mforig)
+callmake (Project * prj, const char * tname, Makefile * makefile)
 {
-    char * mf = xstrdup (substvars (&prj->vars, mforig));
-    char * dir, * file, * ext, * ptr;
+    static char buffer[4096];
+    const char * path = buildpath (makefile->dir);
     int t;
-    char buffer[4096];
-
-    ptr = dir = mf;
-    file = NULL;
-    while (*ptr)
-    {
-	if (*ptr == '/')
-	    file = ptr+1;
-
-	ptr ++;
-    }
-    if (!file)
-    {
-	dir = ".";
-	file = mf;
-    }
-    ptr = file;
-    ext = NULL;
-    while (*ptr)
-    {
-	if (*ptr == '.')
-	    ext = ptr+1;
-
-	ptr ++;
-    }
-
+    
     chdir (prj->top);
-    if (file != mf)
-    {
-	file[-1] = 0;
-	chdir (dir);
-    }
+    chdir (path);
 
-    setvar (&prj->vars, "CURDIR", dir);
+    setvar (&prj->vars, "CURDIR", path);
     setvar (&prj->vars, "TARGET", tname);
 
-    *buffer = 0;
+    strcpy (buffer, "");
 
     for (t=0; t<mflagc; t++)
     {
@@ -265,24 +239,22 @@ callmake (Project * prj, const char * tname, const char * mforig)
 	strcat (buffer, " ");
     }
 
-    if (strcmp (file, "Makefile") && strcmp (file, "makefile"));
+    if (strcmp (makefile->node.name, "Makefile")!=0 && strcmp (makefile->node.name, "makefile")!=0);
     {
 	strcat (buffer, "--file=");
-	strcat (buffer, file);
+	strcat (buffer, makefile->node.name);
 	strcat (buffer, " ");
     }
 
     strcat (buffer, tname);
 
-    printf ("Making %s in %s\n", tname, dir);
+    printf ("Making %s in %s\n", tname, path);
 
     if (!execute (prj, prj->maketool, "-", "-", buffer))
     {
-	error ("Error while running make in %s", dir);
+	error ("Error while running make in %s", path);
 	exit (10);
     }
-
-    free (mf);
 }
 
 
@@ -529,11 +501,14 @@ maketarget (Project * prj, char * tname)
 {
     Target * target, * subtarget;
     Node * node;
-    Makefile * makefile;
-    List regeneratefiles;
-
+    MakefileRef * mfref;
+    MakefileTarget * mftarget;
+    List deps;
+    
     printf ("Building %s.%s\n", prj->node.name, tname);
 
+    NewList (&deps);
+    
     chdir (prj->top);
 
     readvars (prj);
@@ -554,7 +529,15 @@ maketarget (Project * prj, char * tname)
 
     target->updated = 1;
 
-    ForeachNode (&target->deps, node)
+    ForeachNode (&target->makefiles, mfref)
+    {
+	mftarget = FindNode (&mfref->makefile->targets, tname);
+	
+	ForeachNode (&mftarget->deps, node)
+	    addnodeonce (&deps, node->name);
+    }
+    
+    ForeachNode (&deps, node)
     {
 	subtarget = FindNode (&prj->cache->targets, node->name);
 
@@ -568,11 +551,15 @@ maketarget (Project * prj, char * tname)
 	}
     }
 
-    ForeachNode (&target->makefiles, makefile)
+    freelist (&deps);
+    
+    ForeachNode (&target->makefiles, mfref)
     {
-	if (!makefile->virtualtarget)
+	if (!mfref->virtualtarget)
 	{
-	    callmake (prj, tname, makefile->node.name);
+	    callmake (prj, tname, mfref->makefile);
 	}
     }
+    
+    freelist (&deps);
 }
