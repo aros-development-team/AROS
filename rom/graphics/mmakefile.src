@@ -85,8 +85,8 @@ ALL_FILES := $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
 DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(PRE_FUNCS) $(END_FILE),$(OBJDIR)/$(f).d)
 OBJS := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
-#MM kernel : setup includes graphics-$(ARCH)
-kernel : show-flags $(LIB)
+#MM
+kernel-graphics-linux-$(CPU) : show-flags $(LIB)
 
 $(LIB) : $(OBJS)
 	%mklib_q
@@ -94,6 +94,11 @@ $(LIB) : $(OBJS)
 
 show-flags :
 	@echo "CFLAGS=$(CFLAGS)"
+
+# MetaMake targets
+#MM kernel-graphics : setup includes graphics-$(ARCH) kernel-graphics-$(ARCH)-$(CPU)
+kernel-graphics :
+	@$(NOP)
 
 #MM
 setup :

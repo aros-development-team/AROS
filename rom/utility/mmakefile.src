@@ -63,8 +63,13 @@ EXTRA_DEPLIBS := $(LIBDIR)/libarosc.a
 
 %genromlib
 
-#MM kernel : setup includes utility-$(ARCH) linklibs
-kernel : show-flags $(LIB)
+#MM
+kernel-utility-$(ARCH)-$(CPU) : show-flags $(LIB)
+
+# MetaMake targets
+#MM kernel-utility : setup includes utility-$(ARCH) linklibs kernel-utility-$(ARCH)-$(CPU)
+kernel-utility :
+	@$(NOP)
 
 #MM setup
 #MM clean

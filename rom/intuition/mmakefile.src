@@ -102,14 +102,19 @@ ALL_FILES := $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
 DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(PRE_FUNCS) $(END_FILE),$(OBJDIR)/$(f).d)
 OBJS := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
-#MM kernel : setup includes intuition-$(ARCH)
-kernel : show-flags $(LIB)
+#MM
+kernel-intuition-linux-$(CPU) : show-flags $(LIB)
 
 $(LIB) : $(OBJS)
 	%mklib_q
 
 show-flags :
 	@echo "CFLAGS=$(CFLAGS)"
+
+# MetaMake targets
+#MM kernel-intuition : setup includes intuition-$(ARCH) kernel-intuition-$(ARCH)-$(CPU)
+kernel-intuition :
+	@$(NOP)
 
 #MM
 setup :

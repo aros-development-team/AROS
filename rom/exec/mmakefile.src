@@ -91,7 +91,8 @@ ifeq ($(FLAVOUR),native)
 LIBS	    := -L$(LIBDIR) -lexec -larossupport -larosc
 INITFUNC    := $(OBJDIR)/$(INIT_FILE).o
 
-kernel : $(LIB) $(OSMODDIR)/exec.strap
+#MM
+kernel-exec-amiga-m68k : show-flags $(LIB) $(OSMODDIR)/exec.strap
 
 $(OSMODDIR)/exec.strap : $(LIB) $(INITFUNC) $(LIBDIR)/libarossupport.a $(LIBDIR)/libarosc.a
 	@echo "Building $(notdir $@) ..."
@@ -117,12 +118,8 @@ $(LIB) : $(OBJS)
 # ***** Not Native ***************
 else
 
-kernel : show-flags $(LIB)
-
-show-flags :
-	@echo "CFLAGS=$(CFLAGS)"
-#	 @echo "ADDITIONAL_OBJS=$(ADDITIONAL_OBJS)"
-#	 @echo "OBJS=$(OBJS)"
+#MM
+kernel-exec-linux-$(CPU) : show-flags $(LIB)
 
 $(LIB) : $(OBJS)
 	%mklib_q
@@ -139,8 +136,15 @@ $(OBJDIR)/init.d : init.c
 # ***** END ***************
 endif
 
+show-flags :
+	@echo "CFLAGS=$(CFLAGS)"
+#	 @echo "ADDITIONAL_OBJS=$(ADDITIONAL_OBJS)"
+#	 @echo "OBJS=$(OBJS)"
+
 # MetaMake targets
-#MM kernel : setup includes exec-$(ARCH)
+#MM kernel-exec : setup includes exec-$(ARCH) kernel-exec-$(ARCH)-$(CPU)
+kernel-exec :
+	@$(NOP)
 
 #MM
 setup :

@@ -65,11 +65,16 @@ DEPS	    := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)
 ALL_FILES   := $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
 OBJS	    := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
-#MM kernel : setup includes kernel-setup dos-$(ARCH)
-kernel : show-flags $(LIB)
+#MM
+kernel-dos-linux-$(CPU) : show-flags $(LIB)
 
 show-flags :
 	@echo "CFLAGS=$(CFLAGS)"
+
+# MetaMake targets
+#MM kernel-dos : setup includes kernel-setup dos-$(ARCH) kernel-dos-$(ARCH)-$(CPU)
+kernel-dos :
+	@$(NOP)
 
 #MM
 setup :

@@ -1,7 +1,13 @@
 # $Id$
 
-#MM AROS-amiga : setup includes compiler arosboot kernel workbench demos apps
+#Not working yet: kernel workbench demos apps
+
+#MM AROS-amiga : setup includes compiler arosboot kernel
 AROS-amiga :
+	@$(NOP)
+
+#MM kernel : kernel-exec kernel-aros
+kernel :
 	@$(NOP)
 
 #MM apps : Moria3D
@@ -16,7 +22,7 @@ setup-amiga :
 setup-exec-amiga :
 	@$(NOP)
 
-#MM exec-amiga : exec-unix
+#MM exec-amiga : exec-amiga-$(CPU)
 exec-amiga :
 	@$(NOP)
 
@@ -28,7 +34,7 @@ setup-utility-amiga :
 setup-layers-amiga :
 	@$(NOP)
 
-#MM check : check-exec-unix
+#MM check :
 check :
 	@$(NOP)
 
