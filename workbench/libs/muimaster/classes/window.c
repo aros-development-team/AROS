@@ -2494,9 +2494,8 @@ static void deinstall_backbuffer (struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-#ifdef __AROS__
     DeinitRastPort(&data->wd_RenderInfo.mri_BufferRP);
-#endif
+    
     if (data->wd_RenderInfo.mri_BufferBM)
     {
 	FreeBitMap(data->wd_RenderInfo.mri_BufferBM);

@@ -227,10 +227,8 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
 	
     } /* for(y = 0; y < data->height; y++) */
     
-#ifdef __AROS__
     DeinitRastPort(&temprp);
     DeinitRastPort(&bmrp);
-#endif
 
     if (temprp.BitMap)
     {

@@ -1823,9 +1823,8 @@ static ULONG Area_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_Cr
 	    muiRenderInfo(obj)->mri_RastPort = &temprp;
 	    zframe->draw(muiRenderInfo(obj), 0, 0, img->width, img->height);
 	    muiRenderInfo(obj)->mri_RastPort = rp_save;
-#ifdef __AROS__
-	    DeinitRastPort(&temprp);
-#endif
+	    
+            DeinitRastPort(&temprp);
     	}
 
     	img->touchx = msg->touchx;

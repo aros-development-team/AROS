@@ -646,9 +646,9 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 	    }
 	    zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
     	}
-#ifdef __AROS__
-	DeinitRastPort(&rp);
-#endif
+	
+        DeinitRastPort(&rp);
+
 	return 1;
     }
 
@@ -663,10 +663,10 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 		strcpy(&chunk->str[len],&chunk->str[len+1]);
 	    }
     	}
-#ifdef __AROS__
-	DeinitRastPort(&rp);
-#endif
-	return 1;
+	
+        DeinitRastPort(&rp);
+	
+        return 1;
     }
 
     if (code == '\t')
@@ -677,10 +677,10 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 	    get(obj,MUIA_String_Contents, &buf);
 	    set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_Next);
 	    set(obj,MUIA_String_Acknowledge,buf);
-#ifdef __AROS__
-	    DeinitRastPort(&rp);
-#endif
-	    return 0;
+	    
+            DeinitRastPort(&rp);
+	    
+            return 0;
 	}
     }
 
@@ -691,10 +691,10 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 
 	if (act == obj)
 	    set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
-#ifdef __AROS__
-	    DeinitRastPort(&rp);
-#endif
-	    return 0;
+	    
+            DeinitRastPort(&rp);
+	    
+            return 0;
     }
 
     if (data->accept)
@@ -702,9 +702,7 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
     	/* Check if character is accepted */
 	if (!strchr(data->accept,code))
 	{
-#ifdef __AROS__
 	    DeinitRastPort(&rp);
-#endif
 	    return 0;
 	}
     }
@@ -753,18 +751,16 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 		{
 		    data->update_arg1 = offx;
 		    data->update_arg2 = char_width;
-#ifdef __AROS__
-		    DeinitRastPort(&rp);
-#endif
-		    return 2;
+		    
+                    DeinitRastPort(&rp);
+		    
+                    return 2;
 		}
 	    }
         }
     }
 
-#ifdef __AROS__
     DeinitRastPort(&rp);
-#endif
 
     return 1;
 }

@@ -387,9 +387,8 @@ static ULONG Register_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
 	}
 	data->def_width += (textpixmax + TEXTSPACING + 1) * data->numitems;
 	data->def_width = MAX(data->min_width, data->def_width);
-#ifdef __AROS__
-	DeinitRastPort(&temprp);
-#endif
+	
+        DeinitRastPort(&temprp);
     }
 
     muiAreaData(obj)->mad_HardILeft  	= REGISTER_FRAMEX;
