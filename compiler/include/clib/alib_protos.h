@@ -24,25 +24,6 @@
 #ifndef AROS_ASMCALL_H
 #   include <aros/asmcall.h>
 #endif
-/*
-#ifndef INTUITION_INTUITION_H
-#   include <intuition/intuition.h>
-#endif
-#ifndef DEVICES_INPUTEVENT_H
-#   include <devices/inputevemt.h>
-#endif
-#ifdef AROS_SLOWSTACKTAGS
-#   include <stdarg.h>
-#   ifndef UTILITY_TAGITEM_H
-#	include <utility/tagitem.h>
-#   endif
-#endif
-#ifdef AROS_SLOWSTACKMETHODS
-#   ifndef AROS_SLOWSTACKTAGS
-#	include <stdarg.h>
-#   endif
-#endif
-*/
 
 struct MsgPort;
 struct IORequest;
