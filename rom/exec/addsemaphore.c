@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1997/02/26 01:32:51  ldp
+    Removed NT_SIGNALSEM assignment, as this is also done in the
+    InitSemaphore() that is called right after.
+
     Revision 1.7  1997/01/01 03:46:04  ldp
     Committed Amiga native (support) code
 
@@ -69,7 +73,9 @@
     AROS_LIBFUNC_INIT
 
     /* Intialize semaphore */
+#if 0 /* already done in InitSemaphore() */
     sigSem->ss_Link.ln_Type=NT_SIGNALSEM;
+#endif
     InitSemaphore(sigSem);
 
     /* Arbitrate for the semaphore list */
