@@ -94,7 +94,7 @@ struct MUIP_Application_ShowHelp		{ ULONG MethodID; Object *window; char *name; 
 
 /* MUI Obsolette tags */
 #ifdef MUI_OBSOLETE
-#define MUIA_Application_Menu               0x80420e1f /* V4  i.g struct NewMenu *  */
+#define MUIA_Application_Menu							  (TAG_USER|0x00420e1f) /* MUI: V4  i.g struct NewMenu *  */
 #endif /* MUI_OBSOLETE */
 
 
@@ -149,8 +149,16 @@ struct MUI_InputHandlerNode
 **************************************************************************/
 #define MUIM_Application_Iconify       0x80429ab8 /* Zune: V1  */
 
-
-
 extern const struct __MUIBuiltinClass _MUI_Application_desc; /* PRIV */
+
+struct MUI_GlobalInfo
+{
+    ULONG priv0;
+    Object *mgi_ApplicationObject;
+
+    /* The following data is private only, might be extented! */
+    struct MsgPort *mgi_UserPort; /* application-wide IDCMP port */ /* PRIV */
+};
+
 
 #endif
