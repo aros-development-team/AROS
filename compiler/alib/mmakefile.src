@@ -18,6 +18,7 @@ FILES		:= \
 	argint \
 	argstring \
 	arosinquire \
+	beginio \
 	buildeasyrequest \
 	callhook \
 	coercemethod \
