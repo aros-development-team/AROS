@@ -222,10 +222,33 @@ void ProcessEvents (struct inputbase *InputDevice)
     
     for (;;)
     {
-	wakeupsigs = Wait (commandsig | kbdsig | gpdsig | timersig | keytimersig | InputDevice->ResetSig);
+	wakeupsigs = Wait (commandsig 	    	 |
+	    	    	   kbdsig     	    	 |
+			   gpdsig   	    	 |
+			   timersig 	    	 |
+			   keytimersig      	 |
+			   InputDevice->ResetSig |
+			   SIGBREAKF_CTRL_F);
 
 	D(bug("Wakeup sig: %x, cmdsig: %x, kbdsig: %x\n, timersig: %x"
 		, wakeupsigs, commandsig, kbdsig, timersig));
+	
+	if (wakeupsigs & SIGBREAKF_CTRL_F)
+	{
+	    struct InputEvent null_ie;
+	    
+	    null_ie.ie_NextEvent 	 = NULL;
+	    null_ie.ie_Class 		 = IECLASS_NULL;
+	    null_ie.ie_SubClass 	 = 0;
+	    null_ie.ie_Code 		 = 0;
+	    null_ie.ie_Qualifier 	 = 0;
+	    null_ie.ie_position.ie_addr  = 0;
+
+	    /* Add a timestamp to the event */
+	    GetSysTime( &(null_ie.ie_TimeStamp ));
+	    AddEQTail(&null_ie, InputDevice);
+	    ForwardQueuedEvents(InputDevice);	    
+	}
 	
 	if (wakeupsigs & timersig)
 	{
