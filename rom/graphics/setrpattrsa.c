@@ -49,41 +49,42 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
-    struct TagItem * tag;
 
-    while ((tag = NextTagItem ((const struct TagItem **)&tags)))
+    struct TagItem * tag, *tstate = tags;
+
+    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
     {
 	switch (tag->ti_Tag)
 	{
-	case RPTAG_Font:
-	    SetFont (rp, (struct TextFont *)(tag->ti_Data));
-	    break;
+	    case RPTAG_Font:
+		SetFont (rp, (struct TextFont *)(tag->ti_Data));
+		break;
 
-	case RPTAG_APen:
-	    SetAPen (rp, tag->ti_Data);
-	    break;
+	    case RPTAG_APen:
+		SetAPen (rp, tag->ti_Data);
+		break;
 
-	case RPTAG_BPen:
-	    SetBPen (rp, tag->ti_Data);
-	    break;
+	    case RPTAG_BPen:
+		SetBPen (rp, tag->ti_Data);
+		break;
 
-	case RPTAG_DrMd:
-	    SetDrMd (rp, tag->ti_Data);
-	    break;
+	    case RPTAG_DrMd:
+		SetDrMd (rp, tag->ti_Data);
+		break;
 
-	case RPTAG_OutlinePen:
-	    SetOutlinePen (rp, tag->ti_Data);
-	    break;
+	    case RPTAG_OutlinePen:
+		SetOutlinePen (rp, tag->ti_Data);
+		break;
 
-	case RPTAG_WriteMask:
-	    SetWriteMask (rp, tag->ti_Data);
-	    break;
+	    case RPTAG_WriteMask:
+		SetWriteMask (rp, tag->ti_Data);
+		break;
 
-	case RPTAG_MaxPen:
-	    break;
+	    case RPTAG_MaxPen:
+		break;
 
-	case RPTAG_DrawBounds:
-	    break;
+	    case RPTAG_DrawBounds:
+		break;
 	    
 	} /* switch (tag) */
 	
