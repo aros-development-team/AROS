@@ -35,17 +35,31 @@ extern void * SETNAME(set)[] __attribute__((weak));
 void * SETNAME(set)[] __attribute__((weak))={0,0};
 
 #define ADD2SET(symbol, _set, pri)\
-	static const typeof(symbol) * symbol##_ptr __attribute__((section(".aros.set." #_set "." #pri))) = &symbol;
+	static typeof(symbol) * __aros_set_##_set##_##pri##_##symbol __attribute__((section(".aros.set." #_set "." #pri))) = &symbol;
 
-#define ADD2CTORS(symbol, pri)                                              \
-	static const typeof(symbol) * symbol##_ptr __attribute__((section(".ctors." #pri))) = &symbol;
+/*
+    ctors and dtors sets are used by c++ to store static constructors/destructors
+    pointers in them.
 
-#define ADD2DTORS(symbol, pri)                                              \
-	static const typeof(symbol) * symbol##_ptr __attribute__((section(".dtors." #pri))) = &symbol;
+    The functions have to be invoked respectively right before the program enters
+    the main() function and right after the program exits the main() function.
+*/
+#define ADD2CTORS(symbol, pri) ADD2SET(symbol, ctors, pri)
+#define ADD2DTORS(symbol, pri) ADD2SET(symbol, dtors, pri)
 
-/* Backward compatibility */
-#define ADD2INIT(symbol, pri) ADD2CTORS(symbol, pri)
-#define ADD2EXIT(symbol, pri) ADD2DTORS(symbol, pri)
+/*
+    init and exit sets are like the ctors and dtors sets, except that they take
+    precedence on them, that is functions stored in the init set are called
+    before the ones stored in the ctors set, and functions stored in the 
+    exit set are called after the ones stored in the dtors set.
+    
+    Moreover, init functions return an int, instead of void like the ctor functions.
+    This return value is equal to 0 if the function returned with success, otherwise
+    it holds an error code.
+*/
+
+#define ADD2INIT(symbol, pri) ADD2SET(symbol, init, pri)
+#define ADD2EXIT(symbol, pri) ADD2SET(symbol, exit, pri)
 
 /*
   this macro generates the necessary symbols to open and close automatically
@@ -53,9 +67,9 @@ void * SETNAME(set)[] __attribute__((weak))={0,0};
   be open
 */
 #define ADD2LIBS(name, ver, pri, btype, bname, postopenfunc, preclosefunc)   \
-btype bname = NULL;                                                                  \
+btype bname;                                                                         \
 extern int __includelibrarieshandling;                                               \
-const int *__setincludelibrarieshandling __attribute__((weak)) = &__includelibrarieshandling; \
+static const int *__setincludelibrarieshandling __unused = &__includelibrarieshandling; \
 const ULONG bname##_version __attribute__((weak)) = ver;                     \
 struct libraryset libraryset_##bname =                                       \
 {                                                                            \
