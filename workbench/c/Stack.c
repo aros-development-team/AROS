@@ -1,6 +1,6 @@
 
 /*
-    Copyright (C) 2000 AROS - The Amiga Research OS
+    Copyright (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Stack CLI command
@@ -65,8 +65,10 @@ int main(int argc, char **argv)
 	/* Write out current stack size */
 	if(args[0] == NULL)
 	{
+	    LONG currentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
+	    
 	    VPrintf("Current stack size is %ld bytes\n",
-		    (IPTR *)&cli->cli_DefaultStack);
+		    (IPTR *)&currentstack);
 	}
         /* Set new stack size */
 	else
@@ -74,7 +76,7 @@ int main(int argc, char **argv)
 	    LONG  newSize = *(LONG *)args[0];
 
 	    if(newSize > MINIMUM_STACK_SIZE)
-		cli->cli_DefaultStack = newSize;
+		cli->cli_DefaultStack = (newSize + CLI_DEFAULTSTACK_UNIT - 1) / CLI_DEFAULTSTACK_UNIT;
 	    else
 	    {
 	        PutStr("Requested size is too small.\n");

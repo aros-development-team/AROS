@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: The shell program.
@@ -1450,7 +1450,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 
 	SetIoErr(0);     /* Clear error before we execute this command */
 	cli->cli_Module = seglist;
-	cli->cli_ReturnCode = RunCommand(seglist, cli->cli_DefaultStack,
+	cli->cli_ReturnCode = RunCommand(seglist, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
 					 commandArgs, strlen(commandArgs));
 	
 	kprintf("Returned from command %s\n", command);

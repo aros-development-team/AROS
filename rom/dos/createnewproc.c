@@ -122,9 +122,10 @@ void internal_ChildFree(APTR tid);
     if (me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
     {
 	struct CommandLineInterface *cli = Cli();
-
-	if(cli != NULL && cli->cli_DefaultStack > AROS_STACKSIZE)
-	    defaults[9].ti_Data = cli->cli_DefaultStack;
+    	LONG 	    	    	    parentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
+	
+	if(cli != NULL && parentstack > AROS_STACKSIZE)
+	    defaults[9].ti_Data = parentstack;
     }
     
     ApplyTagChanges(defaults, tags);
@@ -172,7 +173,7 @@ void internal_ChildFree(APTR tid);
 	ENOMEM_IF(cli == NULL);
 
 	oldpath = NULL;
-	cli->cli_DefaultStack = defaults[9].ti_Data / 2;
+	cli->cli_DefaultStack = (defaults[9].ti_Data + CLI_DEFAULTSTACK_UNIT - 1) / CLI_DEFAULTSTACK_UNIT;
 
 	if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
 	{
