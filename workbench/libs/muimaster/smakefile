@@ -5,6 +5,7 @@ SUPPORTOBJS = \
   objs/dragndrop.o \
   objs/frame.o \
   objs/imspec.o \
+  objs/menu.o \
   objs/support.o \
   objs/prefs.o \
   objs/textengine.o
@@ -83,6 +84,9 @@ objs/frame.o: frame.c
 
 objs/imspec.o: imspec.c
   sc $(CFLAGS) imspec.c objname=$@
+
+objs/menu.o: menu.c
+  sc $(CFLAGS) menu.c objname=$@
 
 objs/support.o: support.c
   sc $(CFLAGS) support.c objname=$@
