@@ -53,6 +53,7 @@
     struct MsgPort *TimerMsgPort = NULL;
     struct timerequest *MyTimerIO = NULL;
     BOOL VisualBeep = TRUE;
+    BOOL AllScreens = FALSE;
     
     TimerMsgPort = CreateMsgPort();
     MyTimerIO = (struct timerequest *) CreateIORequest (TimerMsgPort, sizeof (struct timerequest));
@@ -65,51 +66,62 @@
     if (VisualBeep)
     {
 	if (! screen)
+	{
             screen = IntuitionBase->FirstScreen;
-
-	if (screen->RastPort.BitMap->Depth <= 8)
-	// visual beep on CLUT-screen
-	{
-            struct DrawInfo *DInfo = NULL;
-            UWORD BGPen;
-            ULONG color[3];
-
-	    DInfo = GetScreenDrawInfo (screen);
-	    BGPen = DInfo->dri_Pens[BACKGROUNDPEN];
-
-	    GetRGB32 (screen->ViewPort.ColorMap, BGPen, 1, color);
-
-            screen->Flags |= BEEPING;
-	    SetRGB32 (&screen->ViewPort, BGPen, color[0] - 0x7FFFFFFF, color[1] - 0x7FFFFFFF, color[2] - 0x7FFFFFFF);
-	    DoIO ((struct IORequest *) MyTimerIO);
-	    SetRGB32 (&screen->ViewPort, BGPen, color[0], color[1], color[2]);
-	    screen->Flags &= !BEEPING;
-
-	    FreeScreenDrawInfo (screen, DInfo);
+            AllScreens = TRUE;
 	}
-	else
-	// visual beep on hi- and truecolor screens
+
+	do
 	{
-            struct Window *BeepWindow;
-            struct TagItem window_tags[] = {
-                {WA_Left, 0},
-                {WA_Top, 0},
-                {WA_Width, -1},
-                {WA_Height, -1},
-                {WA_Flags, WFLG_SIMPLE_REFRESH | WFLG_BORDERLESS},
-                {WA_CustomScreen, (IPTR) screen},
-	        {WA_Priority, 50},  // Place in front of all other windows! 
-                {TAG_DONE, 0}
-            };
-            BeepWindow = (struct Window *) OpenWindowTagList (NULL, window_tags);
-            if (BeepWindow)
+	    if (screen->RastPort.BitMap->Depth <= 8)
+	    // visual beep on CLUT-screen
 	    {
-                DoIO ((struct IORequest *) MyTimerIO);
-                CloseWindow (BeepWindow);
+        	struct DrawInfo *DInfo = NULL;
+        	UWORD BGPen;
+        	ULONG color[3];
+
+		DInfo = GetScreenDrawInfo (screen);
+		BGPen = DInfo->dri_Pens[BACKGROUNDPEN];
+
+		GetRGB32 (screen->ViewPort.ColorMap, BGPen, 1, color);
+
+		screen->Flags |= BEEPING;
+		SetRGB32 (&screen->ViewPort, BGPen, color[0] - 0x7FFFFFFF, color[1] - 0x7FFFFFFF, color[2] - 0x7FFFFFFF);
+		DoIO ((struct IORequest *) MyTimerIO);
+		SetRGB32 (&screen->ViewPort, BGPen, color[0], color[1], color[2]);
+		screen->Flags &= !BEEPING;
+
+		FreeScreenDrawInfo (screen, DInfo);
 	    }
-	}   
+	    else
+	    // visual beep on hi- and truecolor screens
+	    {
+		struct Window *BeepWindow;
+		struct TagItem window_tags[] = {
+			{WA_Left, 0},
+			{WA_Top, 0},
+			{WA_Width, -1},
+			{WA_Height, -1},
+			{WA_Flags, WFLG_SIMPLE_REFRESH | WFLG_BORDERLESS},
+			{WA_CustomScreen, (IPTR) screen},
+			{WA_Priority, 50},  // Place in front of all other windows! 
+			{TAG_DONE, 0}
+		};
+		BeepWindow = (struct Window *) OpenWindowTagList (NULL, window_tags);
+		if (BeepWindow)
+		{
+		    DoIO ((struct IORequest *) MyTimerIO);
+		    CloseWindow (BeepWindow);
+		}
+	    }
+	    screen = screen->NextScreen;
+	    if ( screen == NULL )
+	    {
+		AllScreens = FALSE;
+	    }
+	} while ( AllScreens == TRUE );
     }
-    
+
     CloseDevice ((struct IORequest *) MyTimerIO);
     DeleteIORequest ((struct IORequest *) MyTimerIO);
     DeleteMsgPort (TimerMsgPort);
