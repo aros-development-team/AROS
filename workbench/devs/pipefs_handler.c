@@ -2,8 +2,8 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
-    Revision 1.8  2001/07/16 08:41:15  falemagn
-    Implemented FSA_EXAMINE_NEXT.
+    Revision 1.9  2001/07/16 15:00:39  falemagn
+    some more adjustments. Directory listing is implemented, also thanks to the dos.library/ExAll() emulation
 
     Revision 1.4  2001/07/15 21:12:24  falemagn
     Ooops... forgot to do merge with Stefan changes...
@@ -848,7 +848,24 @@ AROS_UFH3(LONG, pipefsproc,
 
 			/* Fall through */
 			case ED_NAME:
-	    		    ead->ed_Name = fn->node.ln_Name;
+	  		{
+			    STRPTR name = fn->node.ln_Name;
+			    ead->ed_Name = next;
+
+			    for (;;)
+			    {
+	    			if (next >= end)
+	    			{
+				    SendBack(msg, ERROR_BUFFER_OVERFLOW);
+				    continue;
+	    			}
+
+	    			if (!(*next++ = *name++))
+	    			{
+				    break;
+	    			}
+			    }
+			}
     		    }
 
 		    ead->ed_Next = (struct ExAllData *)(((IPTR)next + AROS_PTRALIGN - 1) & ~(AROS_PTRALIGN - 1));
@@ -861,11 +878,16 @@ AROS_UFH3(LONG, pipefsproc,
 		    struct FileInfoBlock *fib = msg->iofs->io_Union.io_EXAMINE_NEXT.io_fib;
                     struct filenode      *fn  = (struct filenode *)fib->fib_DiskKey;
 
+		    kprintf("Command is EXAMINE_NEXT\n");
+
 		    if (!fn)
     		    {
-		        SendBack(msg, ERROR_NO_MORE_ENTRIES);
+			kprintf("There are no more entries in this directory\n");
+			SendBack(msg, ERROR_NO_MORE_ENTRIES);
 			continue;
 		    }
+
+    		    kprintf("Current directory is %S. Current file is %S\n", fn->parent->node.ln_Name, fn->node.ln_Name);
 
 		    fib->fib_OwnerUID       = 0;
 		    fib->fib_OwnerGID       = 0;
