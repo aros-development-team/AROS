@@ -23,7 +23,8 @@ makedirs:
 	else true ; fi
 
 # Create the tools that are used to build AROS.
-tools : makedirs $(TOOLLIB) $(GENMF) $(MODTOOL) $(CPAK) $(ARCHTOOL) $(FLEXCAT) $(GENSKELETON) $(CREATEDTDESC)
+tools : makedirs $(TOOLLIB) $(GENMF) $(MODTOOL) $(CPAK) $(ARCHTOOL) \
+	$(FLEXCAT) $(GENSKELETON) $(CREATEDTDESC) $(ILBMTOC)
 
 $(TOOLLIB) : $(wildcard $(TOP)/tools/toollib/*.[ch])
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/toollib TOP=$(TOP)
@@ -48,6 +49,9 @@ $(GENSKELETON) : $(TOP)/tools/genskeleton/genskeleton.c
 
 $(CREATEDTDESC) : $(wildcard $(TOP)/tools/dtdesc/*.[ch]) $(wildcard $(TOP)/tools/dtdesc/c_iff/*.[ch])
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc -f Makefile.aros TOP=$(TOP)
+
+$(ILBMTOC) : $(TOP)/tools/ilbmtoc/ilbmtoc.c
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/ilbmtoc TOP=$(TOP)
 
 # MetaMake apparently requires a slighty different compilation. Probably
 # because it is sort-of an external package as well.
