@@ -176,6 +176,28 @@ static Object *CreateSysimage(struct DrawInfo *dri, ULONG which)
 		     TAG_DONE);
 }
 
+static void EnqueueByPriAndAddress(struct List *list, struct Node *node)
+{
+    struct Node *scannode;
+    
+    /* Sort by priority and by node address, so that a
+       "remove - modify - enqueue" sequence will re-add
+       the node at the same place in the list it was
+       initially */
+       
+    ForeachNode(list, scannode)
+    {
+    	if (((struct Node *)node)->ln_Pri > scannode->ln_Pri) break;
+	if (((struct Node *)node)->ln_Pri == scannode->ln_Pri)
+	{
+	    if ((IPTR)node > (IPTR)scannode) break;
+	}
+    }
+    
+    Insert(list, (struct Node *)node, scannode->ln_Pred);
+}
+
+
 static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI_RenderInfo *mri)
 {
     ULONG rgbtable[3 * 3];
@@ -1856,6 +1878,7 @@ static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 	    res = InvokeEventHandler(ehn, event, MUIKEY_NONE);
 	    if (res & MUI_EventHandlerRC_Eat)
 		return;
+
 	}
     }
 
@@ -2987,7 +3010,7 @@ static IPTR Window_AddEventHandler(struct IClass *cl, Object *obj,
 #ifdef __AROS__
     msg->ehnode->ehn_Node.ln_Pri = msg->ehnode->ehn_Priority;
 #endif
-    Enqueue((struct List *)&data->wd_EHList, (struct Node *)msg->ehnode);
+    EnqueueByPriAndAddress((struct List *)&data->wd_EHList, (struct Node *)msg->ehnode);
     ChangeEvents(data, GetDefaultEvents());
     return TRUE;
 }
