@@ -1020,19 +1020,19 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
 
     struct TagItem *tag, tags[] =
     {
-    	{GA_Disabled,		FALSE},
-    	{GA_Immediate,		FALSE},
-    	{GA_TabCycle,		TRUE},
-    	{GTIN_Number,		0L},
-    	{GTIN_MaxChars,		10L},
-    	{GTIN_EditHook,		(IPTR)NULL},
-    	{STRINGA_ExitHelp,	FALSE},
-    	{STRINGA_Justification,	GACT_STRINGLEFT},
-    	{STRINGA_ReplaceMode,	FALSE},
-    	{GA_TextAttr,		(IPTR)NULL},
-	{GTA_GadgetKind,	INTEGER_KIND},
-	{GA_Bounds,		(IPTR)&bbox},
-	{TAG_MORE, 	(IPTR)NULL}
+    	{GA_Disabled,		FALSE		}, /* 0 */
+    	{GA_Immediate,		FALSE		}, /* 1 */
+    	{GA_TabCycle,		TRUE		}, /* 2 */
+    	{GTIN_Number,		0L		}, /* 3 */
+    	{GTIN_MaxChars,		10L		}, /* 4 */
+    	{GTIN_EditHook,		(IPTR)NULL	}, /* 5 */
+    	{STRINGA_ExitHelp,	FALSE		}, /* 6 */
+    	{STRINGA_Justification,	GACT_STRINGLEFT	}, /* 7 */
+    	{STRINGA_ReplaceMode,	FALSE		}, /* 8 */
+    	{GA_TextAttr,		(IPTR)NULL	}, /* 9 */
+	{GTA_GadgetKind,	INTEGER_KIND	}, /* 10 */
+	{GA_Bounds,		(IPTR)&bbox	}, /* 11 */
+	{TAG_MORE, 		(IPTR)NULL	}
     };
     
    
