@@ -291,7 +291,13 @@
     if (-1 != retval && 0 == (flags & PENF_NO_SETCOLOR))
     {
         /* Change the rgb values for the selected pen */
-        SetRGB32CM(cm, retval, r, g, b);
+	
+	if (pe->pe_ViewPort)
+	{
+	    SetRGB32(pe->pe_ViewPort, retval, r, g, b);
+	} else {
+            SetRGB32CM(cm, retval, r, g, b);
+	}
     }
 
     ReleaseSemaphore(&pe->pe_Semaphore);
