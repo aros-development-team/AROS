@@ -37,6 +37,9 @@ struct InputEvent * Console_CDInputHandler(struct InputEvent * events,
                                            struct cdihData * cdihData);
 #endif
 
+/*************************************************************************
+
+    NAME */
 	AROS_LH2(struct InputEvent *, CDInputHandler,
 
 /*  SYNOPSIS */
