@@ -204,7 +204,7 @@ int intui_OpenWindow (struct Window * w,
 				      
       /* install it as the BorderRPort */
       w->BorderRPort = L->rp;
-     
+
       /* This layer belongs to a window */
       L->Window = (APTR)w;
      
@@ -336,6 +336,7 @@ void intui_RefreshWindowFrame(struct Window *w)
 #warning this code should be moved inside intuition (it does not contain any hardware specific code)
     if (!(w->Flags & WFLG_BORDERLESS))
     {
+    	
 	dri = GetScreenDrawInfo(w->WScreen);
 	if (dri)
 	{
@@ -346,7 +347,7 @@ void intui_RefreshWindowFrame(struct Window *w)
 	    D(bug("Pen set\n"));
 	    drawrect(rp, 0, 0, w->Width - 1, w->Height - 1, IntuitionBase);
 #endif
-
+	    
 	    SetAPen(rp, dri->dri_Pens[SHINEPEN]);
 	    if (w->BorderLeft > 0) RectFill(rp, 0, 0, 0, w->Height - 1);
 	    if (w->BorderTop > 0)  RectFill(rp, 0, 0, w->Width - 1, 0);
@@ -564,9 +565,14 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 {
 
     struct DrawInfo *dri;
+    BOOL is_gzz;
+    
     EnterFunc(bug("createsysgads(w=%p)\n", w));
-	
+
 #warning this code should be moved inside intuition (it does not contain any hardware specific code)
+
+    is_gzz = (w->Flags & WFLG_GIMMEZEROZERO) ? TRUE : FALSE;
+
     dri = GetScreenDrawInfo(w->WScreen);
     if (dri)
     {
@@ -612,6 +618,7 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 		    {GA_SysGadget,	TRUE		},
 		    {GA_SysGType,	GTYP_WDEPTH 	},
 		    {GA_TopBorder,	TRUE		},
+		    {GA_GZZGadget,	is_gzz		},
 		    {TAG_DONE,		0UL }
 	    };
 		
@@ -641,6 +648,7 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 		    {GA_SysGadget,	TRUE		},
 		    {GA_SysGType,	GTYP_WZOOM 	},
 		    {GA_TopBorder,	TRUE		},
+		    {GA_GZZGadget,	is_gzz		},
 		    {TAG_DONE,		0UL }
 	    };
 		
@@ -667,6 +675,7 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 		    {GA_SysGadget,	TRUE		},
 		    {GA_SysGType,	GTYP_CLOSE 	},
 		    {GA_TopBorder,	TRUE		},
+		    {GA_GZZGadget,	is_gzz		},
 		    {TAG_DONE,		0UL }
 	    };
 		
@@ -693,7 +702,8 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 			{GA_Height,	TITLEBAR_HEIGHT },
 			{GA_SysGType,	GTYP_WDRAGGING	},
 			{GA_TopBorder,	TRUE		},
-			{TAG_DONE,	0UL}
+		    	{GA_GZZGadget, 	is_gzz		},
+			{TAG_DONE,	0UL		}
 	    };
 	    SYSGAD(w, DRAGBAR) = NewObjectA(
 			GetPrivIBase(IntuitionBase)->dragbarclass
@@ -800,9 +810,27 @@ void windowneedsrefresh(struct Window * w,
   if (NULL == w->UserPort)
     return;
   
-  /* Refresh the window's gadgetry */
-kprintf("REFRESHING WINDOW GADGETS\n");
+  
+  /* Refresh the window's gadgetry ... 
+     ... stegerg: and in the actual implementation
+     call RefershWindowFrame first, as the border gadgets don´t
+     cover the whole border area. bug: the border gadgets will
+     be refreshed twice :( */
+
+  
+  BeginUpdate(w->WLayer);
+  
+  if (!(w->Flags & WFLG_GIMMEZEROZERO))
+  {
+      kprintf("REFRESHING NON GZZ WINDOW FRAME\n");
+      RefreshWindowFrame(w);
+  }
+  
+  kprintf("REFRESHING WINDOW GADGETS\n");
+
   RefreshGadgets(w->FirstGadget, w, NULL);
+
+  EndUpdate(w->WLayer, FALSE);
   
   /* Can use Forbid() for this */
   
