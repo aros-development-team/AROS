@@ -41,9 +41,9 @@ struct PointerData
 /***********************************************************************************/
 
 UWORD posctldata[] =
-        {
-                0x0000,0x0000
-        };
+{
+    0x0000,0x0000
+};
 
 AROS_UFH3S(IPTR, dispatch_pointerclass,
            AROS_UFHA(Class *,  cl,  A0),
@@ -66,58 +66,53 @@ AROS_UFH3S(IPTR, dispatch_pointerclass,
         {
             struct TagItem *tags = ((struct opSet *)msg)->ops_AttrList;
             struct BitMap *bitmap = (struct BitMap *)GetTagData(POINTERA_BitMap, NULL, tags);
+
             //ULONG xResolution = GetTagData(POINTERA_XResolution, POINTERXRESN_DEFAULT, tags);
             //ULONG yResolution = GetTagData(POINTERA_YResolution, POINTERYRESN_DEFAULT, tags);
 
-                        D(
-                        {
-                                struct TagItem *tagscan=tags;
+            D(
+            {
+                struct TagItem *tagscan=tags;
 
-                                while(tagscan->ti_Tag != 0)
-                                {
-                                        kprintf("  0x%08lx, %08lx\n",tagscan->ti_Tag,tagscan->ti_Data);
-                                        tagscan++;
-                                }
-                        }
-                        )
+                while(tagscan->ti_Tag != 0)
+                {
+                    kprintf("  0x%08lx, %08lx\n",tagscan->ti_Tag,tagscan->ti_Data);
+                    tagscan++;
+                }
+            }
+            )
 
             if (1)  // bitmap
             {
                 struct TagItem spritetags[] =
-                    {
-                        {
-                            SPRITEA_Width, 0
-                        },
-                        {
-                                                    TAG_SKIP, 0,
-                        },
-                        {
-                                                    TAG_SKIP, 0,
-                        },
-                        {TAG_DONE        }
-                    };
+                {
+                    {SPRITEA_Width  , 0 },
+                    {TAG_SKIP	    , 0 },
+                    {TAG_SKIP	    , 0 },
+                    {TAG_DONE        	}
+                };
                 struct ExtSprite *sprite;
-                                struct BitMap *spritedata=(struct BitMap *)bitmap;
+                struct BitMap *spritedata=(struct BitMap *)bitmap;
 
-                                if(spritedata != NULL)
-                                {
-                        spritetags[0].ti_Data = GetTagData(POINTERA_WordWidth,
-                                                           ((GetBitMapAttr(bitmap, BMA_WIDTH) + 15) & ~15)>>4, tags) * 16;
-                                        spritetags[1].ti_Tag = TAG_SKIP;
-                                        spritetags[2].ti_Tag = TAG_SKIP;
-                                }
-                                else
-                                {
+                if(spritedata != NULL)
+                {
+            	    spritetags[0].ti_Data = GetTagData(POINTERA_WordWidth,
+                                            	       ((GetBitMapAttr(bitmap, BMA_WIDTH) + 15) & ~15)>>4, tags) * 16;
+                    spritetags[1].ti_Tag = TAG_SKIP;
+                    spritetags[2].ti_Tag = TAG_SKIP;
+                }
+                else
+                {
                     D(kprintf("PointerClass: OM_NEW called without bitmap, using dummy sprite !\n"));
 
-                                        spritetags[0].ti_Data = 16;
-                                        spritetags[1].ti_Tag = SPRITEA_OutputHeight;
-                                        spritetags[1].ti_Data = 1; 
-                                        spritetags[2].ti_Tag = SPRITEA_OldDataFormat;
-                                        spritetags[2].ti_Data = TRUE;
-                                        bitmap = (struct BitMap *)posctldata;
+                    spritetags[0].ti_Data = 16;
+                    spritetags[1].ti_Tag = SPRITEA_OutputHeight;
+                    spritetags[1].ti_Data = 1; 
+                    spritetags[2].ti_Tag = SPRITEA_OldDataFormat;
+                    spritetags[2].ti_Data = TRUE;
+                    bitmap = (struct BitMap *)posctldata;
 
-                                }
+                }
 
                 sprite = AllocSpriteDataA(bitmap, spritetags);
 
@@ -134,12 +129,12 @@ AROS_UFH3S(IPTR, dispatch_pointerclass,
                 if (sprite)
                 {
                     struct SharedPointer *shared = CreateSharedPointer(sprite,
-                                                               GetTagData(POINTERA_XOffset, 0, tags),
-                                                               GetTagData(POINTERA_YOffset, 0, tags),
-                                                               IntuitionBase);
+                                                        	       GetTagData(POINTERA_XOffset, 0, tags),
+                                                        	       GetTagData(POINTERA_YOffset, 0, tags),
+                                                        	       IntuitionBase);
 
                     if (shared)
-                            {
+                    {
                         retval = (IPTR)DoSuperMethodA(cl, o, msg);
 
                         if (retval)
@@ -163,35 +158,36 @@ AROS_UFH3S(IPTR, dispatch_pointerclass,
                     }
                 }
             }
-                        else
-                        {
-                        D(kprintf("PointerClass: OM_NEW called without bitmap !\n"));
-                        }
+            else
+            {
+            D(kprintf("PointerClass: OM_NEW called without bitmap !\n"));
+            }
         }
         break;
 
     case OM_GET:
         {
             struct opGet *gmsg = (struct opGet *)msg;
+	    
             D(kprintf("PointerClass: OM_GET\n"));
             retval = 1;
             switch (gmsg->opg_AttrID)
             {
-            case POINTERA_SharedPointer:
-                *gmsg->opg_Storage = (ULONG)P(o)->shared_pointer;
-                break;
+        	case POINTERA_SharedPointer:
+                    *gmsg->opg_Storage = (IPTR)P(o)->shared_pointer;
+                    break;
 
-            case POINTERA_XOffset:
-                *gmsg->opg_Storage = P(o)->shared_pointer->xoffset;
-                break;
+        	case POINTERA_XOffset:
+                    *gmsg->opg_Storage = P(o)->shared_pointer->xoffset;
+                    break;
 
-            case POINTERA_YOffset:
-                *gmsg->opg_Storage = P(o)->shared_pointer->yoffset;
-                break;
+        	case POINTERA_YOffset:
+                    *gmsg->opg_Storage = P(o)->shared_pointer->yoffset;
+                    break;
 
-            default:
-                retval = DoSuperMethodA(cl, o, msg);
-                break;
+        	default:
+                    retval = DoSuperMethodA(cl, o, msg);
+                    break;
             }
             D(kprintf("PointerClass: current extSprite 0x%lx and XOffset %ld YOffset %ld\n",P(o)->shared_pointer->sprite,P(o)->shared_pointer->xoffset,P(o)->shared_pointer->yoffset));
         }
@@ -232,7 +228,7 @@ struct IClass *InitPointerClass (struct IntuitionBase * IntuitionBase)
     {
         cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_pointerclass);
         cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData          = (IPTR)IntuitionBase;
+        cl->cl_UserData              = (IPTR)IntuitionBase;
 
         AddClass (cl);
     }

@@ -81,14 +81,14 @@ AROS_LH0(IPTR, OpenWorkBench,
     {
         /* Open the Workbench screen if we don't have one. */
         struct TagItem screenTags[] =
-            {
-                { SA_LikeWorkbench, TRUE                },
-                { SA_Type         , WBENCHSCREEN        },
-                { SA_Title        , (IPTR)"Workbench Screen"},
-                { SA_PubName      , (IPTR)"Workbench"   },
-                { SA_SharePens    , TRUE            },
-                { TAG_END         , 0           }
-            };
+        {
+            { SA_LikeWorkbench, TRUE                	},
+            { SA_Type         , WBENCHSCREEN        	},
+            { SA_Title        , (IPTR)"Workbench Screen"},
+            { SA_PubName      , (IPTR)"Workbench"   	},
+            { SA_SharePens    , TRUE                	},
+            { TAG_END         , 0           	    	}
+        };
 
         DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: Trying to open Workbench screen\n"));
 

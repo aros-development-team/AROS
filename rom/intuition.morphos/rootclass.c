@@ -60,68 +60,68 @@ AROS_UFH3(IPTR, rootDispatcher,
 {
     AROS_USERFUNC_INIT
 
-    IPTR  retval = 0;
+    IPTR   retval = 0;
     Class *objcl;
 
     switch (msg->MethodID)
     {
-    case OM_NEW:
-        objcl = (Class *)o;
+	case OM_NEW:
+            objcl = (Class *)o;
 
-        /* Get memory. The objects shows how much is needed.
-           (The object is not an object, it is a class pointer!) */
-        o = (Object *) AllocMem
-        (
-            objcl->cl_InstOffset + objcl->cl_InstSize + sizeof (struct _Object),
-            MEMF_ANY | MEMF_CLEAR
-        );
+            /* Get memory. The objects shows how much is needed.
+               (The object is not an object, it is a class pointer!) */
+            o = (Object *) AllocMem
+            (
+        	objcl->cl_InstOffset + objcl->cl_InstSize + sizeof (struct _Object),
+        	MEMF_ANY | MEMF_CLEAR
+            );
 
-        if (o)
-        {
-            _OBJ(o)->o_Class = objcl;
-            
-            AROS_ATOMIC_INC(objcl->cl_ObjectCount);
-            
-            retval = (IPTR) BASEOBJECT(o);
-        }
-        break;
+            if (o)
+            {
+        	_OBJ(o)->o_Class = objcl;
 
-    case OM_DISPOSE:
-        /* Free memory. Caller is responsible that everything else
-           is already cleared! */
-        objcl = OCLASS(o);
-        
-        AROS_ATOMIC_DEC(OCLASS(o)->cl_ObjectCount);
-        
-        FreeMem
-        (
-            _OBJECT(o), 
-            objcl->cl_InstOffset + objcl->cl_InstSize + sizeof (struct _Object)
-        );
-        break;
+        	AROS_ATOMIC_INC(objcl->cl_ObjectCount);
 
-    case OM_ADDTAIL:
-        /* Add <o> to list. */
-        AddTail (((struct opAddTail *)msg)->opat_List, (struct Node *) _OBJECT(o));
-        retval = TRUE;
-        break;
+        	retval = (IPTR) BASEOBJECT(o);
+            }
+            break;
 
-    case OM_REMOVE:
-        /* Remove object from list. */
-        Remove ((struct Node *) _OBJECT(o));
-        retval = TRUE;
-        break;
+	case OM_DISPOSE:
+            /* Free memory. Caller is responsible that everything else
+               is already cleared! */
+            objcl = OCLASS(o);
 
-    case OM_SET:
-    case OM_GET:
-    case OM_UPDATE:
-    case OM_NOTIFY:
-    case OM_ADDMEMBER:
-    case OM_REMMEMBER:
+            AROS_ATOMIC_DEC(OCLASS(o)->cl_ObjectCount);
 
-    default:
-        /* Ignore */
-        break;
+            FreeMem
+            (
+        	_OBJECT(o), 
+        	objcl->cl_InstOffset + objcl->cl_InstSize + sizeof (struct _Object)
+            );
+            break;
+
+	case OM_ADDTAIL:
+            /* Add <o> to list. */
+            AddTail (((struct opAddTail *)msg)->opat_List, (struct Node *) _OBJECT(o));
+            retval = TRUE;
+            break;
+
+	case OM_REMOVE:
+            /* Remove object from list. */
+            Remove ((struct Node *) _OBJECT(o));
+            retval = TRUE;
+            break;
+
+	case OM_SET:
+	case OM_GET:
+	case OM_UPDATE:
+	case OM_NOTIFY:
+	case OM_ADDMEMBER:
+	case OM_REMMEMBER:
+
+	default:
+            /* Ignore */
+            break;
 
     } /* switch */
 

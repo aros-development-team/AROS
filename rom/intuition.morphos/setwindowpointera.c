@@ -48,9 +48,9 @@ AROS_LH2(void, SetWindowPointerA,
 
     if (window)
     {
-        ULONG lock;
+        ULONG 	lock;
         Object *pointer = (Object *)GetTagData(WA_Pointer, NULL, taglist);
-        BOOL busy = (GetTagData(WA_BusyPointer, FALSE, taglist) != 0) ? TRUE : FALSE;
+        BOOL	busy = (GetTagData(WA_BusyPointer, FALSE, taglist) != 0) ? TRUE : FALSE;
 
         DEBUG_SETPOINTER(dprintf("SetWindowPointer: pointer 0x%lx busy %d\n",
                                  pointer, busy));

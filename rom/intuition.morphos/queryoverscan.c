@@ -47,7 +47,7 @@ AROS_LH3(LONG, QueryOverscan,
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct DimensionInfo diminfo;
-    LONG         retval = FALSE;
+    LONG              	 retval = FALSE;
 
     DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: displayid 0x%lx rect 0x%lx oscantype 0x%lx\n",
                                 displayid,
@@ -67,31 +67,31 @@ AROS_LH3(LONG, QueryOverscan,
 
         switch(oscantype)
         {
-        case OSCAN_TEXT:
-            DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_TEXT\n"));
-            memcpy(rect,&diminfo.TxtOScan,sizeof(struct Rectangle));
-            break;
+            case OSCAN_TEXT:
+        	DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_TEXT\n"));
+        	memcpy(rect,&diminfo.TxtOScan,sizeof(struct Rectangle));
+        	break;
 
-        case OSCAN_STANDARD:
-            DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_STANDARD\n"));
-            memcpy(rect,&diminfo.StdOScan,sizeof(struct Rectangle));
-            break;
+            case OSCAN_STANDARD:
+        	DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_STANDARD\n"));
+        	memcpy(rect,&diminfo.StdOScan,sizeof(struct Rectangle));
+        	break;
 
-        case OSCAN_MAX:
-            DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_MAX\n"));
-            memcpy(rect,&diminfo.MaxOScan,sizeof(struct Rectangle));
-            break;
+            case OSCAN_MAX:
+        	DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_MAX\n"));
+        	memcpy(rect,&diminfo.MaxOScan,sizeof(struct Rectangle));
+        	break;
 
-        case OSCAN_VIDEO:
-            DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_VIDEO\n"));
-            memcpy(rect,&diminfo.VideoOScan,sizeof(struct Rectangle));
-            break;
+            case OSCAN_VIDEO:
+        	DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_VIDEO\n"));
+        	memcpy(rect,&diminfo.VideoOScan,sizeof(struct Rectangle));
+        	break;
 
-        default:
-            DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_????\n"));
-            /* or should we assume OSCAN_TEXT? */
-            retval = FALSE;
-            break;
+            default:
+        	DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_????\n"));
+        	/* or should we assume OSCAN_TEXT? */
+        	retval = FALSE;
+        	break;
 
         } /* switch(oscantype) */
 

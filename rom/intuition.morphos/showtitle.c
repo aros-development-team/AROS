@@ -10,9 +10,9 @@
 
 struct ShowTitleActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Screen *screen;
-    BOOL showit;
+    struct IntuiActionMsg    msg;
+    struct Screen   	    *screen;
+    BOOL    	    	     showit;
 };
 
 static VOID int_showtitle(struct ShowTitleActionMsg *msg,
@@ -66,9 +66,9 @@ AROS_LH2(void, ShowTitle,
     {
         struct ShowTitleActionMsg msg;
 
-#ifdef SKINS
+    #ifdef SKINS
         if (GetPrivScreen(screen)->SpecialFlags & (SF_InvisibleBar|SF_AppearingBar)) return;
-#endif
+    #endif
 
         msg.screen = screen;
         msg.showit = ShowIt;

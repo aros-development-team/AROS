@@ -9,10 +9,10 @@
 
 struct SetDMRequestActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
-    struct Requester *dmrequest;
-    BOOL success;
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
+    struct Requester 	    *dmrequest;
+    BOOL    	    	     success;
 };
 
 static VOID int_setdmrequest(struct SetDMRequestActionMsg *msg,
@@ -76,7 +76,7 @@ AROS_LH2(BOOL, SetDMRequest,
     SANITY_CHECKR(window,FALSE)
     SANITY_CHECKR(dmrequest,FALSE)
 
-    msg.window = window;
+    msg.window    = window;
     msg.dmrequest = dmrequest;
 
     DoSyncAction((APTR)int_setdmrequest, &msg.msg, IntuitionBase);
@@ -90,7 +90,7 @@ AROS_LH2(BOOL, SetDMRequest,
 static VOID int_setdmrequest(struct SetDMRequestActionMsg *msg,
                              struct IntuitionBase *IntuitionBase)
 {
-    struct Window *window = msg->window;
+    struct Window    *window = msg->window;
     struct Requester *dmrequest = msg->dmrequest;
     LONG result;
 

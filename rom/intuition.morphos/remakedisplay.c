@@ -46,13 +46,14 @@ AROS_LH0(LONG, RemakeDisplay,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    struct Screen *screen;
-    ULONG ilock = LockIBase(0);
-    LONG failure = 0;
+    struct Screen   *screen;
+    ULONG   	     ilock = LockIBase(0);
+    LONG    	     failure = 0;
 
     for (screen = IntuitionBase->FirstScreen; screen; screen = screen->NextScreen)
     {
         LONG error = MakeVPort(&IntuitionBase->ViewLord, &screen->ViewPort);
+
         if (error)
             failure = error;
     }

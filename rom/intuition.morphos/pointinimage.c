@@ -54,26 +54,26 @@ AROS_LH2(BOOL, PointInImage,
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    BOOL result = FALSE;
-    WORD X = (point >> 16L);
-    WORD Y =  point & 0x0000FFFFL;
-    struct impHitTest method;
+    BOOL    	    	result = FALSE;
+    WORD    	    	X = (point >> 16L);
+    WORD    	    	Y =  point & 0x0000FFFFL;
+    struct impHitTest 	method;
 
     if (image != NULL)
     {
         if (image->Depth == CUSTOMIMAGEDEPTH)
         {
-            method.MethodID = IM_HITTEST;
+            method.MethodID    = IM_HITTEST;
             method.imp_Point.X = X;
             method.imp_Point.Y = Y;
+	    
             result = DoMethodA((Object *)image, (Msg)&method) != 0;
         }
         else
         {
 
             if ((X >= image->LeftEdge && X <= image->LeftEdge + image->Width) &&
-                    (Y >= image->TopEdge  && Y <= image->TopEdge  + image->Height)
-               )
+                (Y >= image->TopEdge  && Y <= image->TopEdge  + image->Height))
             {
                 result = TRUE;
             }
@@ -86,5 +86,6 @@ AROS_LH2(BOOL, PointInImage,
     }
 
     return (result);
+    
     AROS_LIBFUNC_EXIT
 } /* PointInImage */

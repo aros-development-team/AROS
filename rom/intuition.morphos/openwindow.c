@@ -40,15 +40,15 @@
 
 struct OpenWindowActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
-    struct BitMap *bitmap;
-    struct Hook *backfillhook;
-    struct Region *shape;
-    struct Hook *shapehook;
-    struct Layer *parentlayer;
-    BOOL visible;
-    BOOL success;
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
+    struct BitMap   	    *bitmap;
+    struct Hook     	    *backfillhook;
+    struct Region   	    *shape;
+    struct Hook     	    *shapehook;
+    struct Layer    	    *parentlayer;
+    BOOL    	    	     visible;
+    BOOL    	    	     success;
 };
 
 static VOID int_openwindow(struct OpenWindowActionMsg *msg,
@@ -94,40 +94,38 @@ AROS_LH1(struct Window *, OpenWindow,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    struct OpenWindowActionMsg msg;
-    struct NewWindow    nw;
-    struct Window   *w = NULL, *helpgroupwindow = NULL, *parentwin = NULL;
-    struct TagItem  *tag, *tagList;
-    struct RastPort *rp;
-    struct Hook     *backfillhook = LAYERS_BACKFILL, *shapehook = NULL;;
-    struct Region   *shape = NULL;
-    struct IBox     *zoombox = NULL;
-    struct Image    *AmigaKey = NULL;
-    struct Image    *Checkmark = NULL;
-    struct Layer    *parentl = NULL;
+    struct OpenWindowActionMsg   msg;
+    struct NewWindow        	 nw;
+    struct Window   	    	*w = NULL, *helpgroupwindow = NULL, *parentwin = NULL;
+    struct TagItem  	    	*tag, *tagList;
+    struct RastPort 	    	*rp;
+    struct Hook     	    	*backfillhook = LAYERS_BACKFILL, *shapehook = NULL;;
+    struct Region   	    	*shape = NULL;
+    struct IBox     	    	*zoombox = NULL;
+    struct Image    	    	*AmigaKey = NULL;
+    struct Image    	    	*Checkmark = NULL;
+    struct Layer    	    	*parentl = NULL;
 #ifdef SKINS
-    struct SkinInfo *skininfo = NULL;
-    BOOL hasskininfo = FALSE;
-    struct Region   *usertranspregion = NULL;
-    struct Hook     *usertransphook = NULL;
-    struct MsgPort  *userport = NULL;
+    struct SkinInfo 	    	*skininfo = NULL;
+    BOOL    	    	    	 hasskininfo = FALSE;
+    struct Region   	    	*usertranspregion = NULL;
+    struct Hook     	    	*usertransphook = NULL;
+    struct MsgPort  	    	*userport = NULL;
 #endif
-
-    STRPTR      pubScreenName = NULL;
-    UBYTE       *screenTitle = NULL;
-    BOOL        autoAdjust = FALSE, pubScreenFallBack = FALSE;
-    ULONG       innerWidth = ~0L;
-    ULONG       innerHeight = ~0L;
-    WORD        mousequeue = DEFAULTMOUSEQUEUE;
-    WORD        repeatqueue = 3; /* stegerg: test on my Amiga suggests this */
-    ULONG       moreFlags = 0;
-    ULONG       helpgroup = 0;
-    ULONG       extrabuttons = 0, extrabuttonsid = ETI_Dummy;
-
-    //    ULONG     lock;
-    ULONG               windowvisible = TRUE;
-    BOOL        driver_init_done = FALSE, have_helpgroup = FALSE;
-    BOOL                do_setwindowpointer = FALSE;
+    STRPTR          	    	 pubScreenName = NULL;
+    UBYTE           	    	*screenTitle = NULL;
+    BOOL            	    	 autoAdjust = FALSE, pubScreenFallBack = FALSE;
+    ULONG           	    	 innerWidth = ~0L;
+    ULONG           	    	 innerHeight = ~0L;
+    WORD            	    	 mousequeue = DEFAULTMOUSEQUEUE;
+    WORD            	    	 repeatqueue = 3; /* stegerg: test on my Amiga suggests this */
+    ULONG           	    	 moreFlags = 0;
+    ULONG           	    	 helpgroup = 0;
+    ULONG           	    	 extrabuttons = 0, extrabuttonsid = ETI_Dummy;
+  //ULONG     	    	    	 lock;
+    ULONG                   	 windowvisible = TRUE;
+    BOOL            	    	 driver_init_done = FALSE, have_helpgroup = FALSE;
+    BOOL                    	 do_setwindowpointer = FALSE;
 
     ASSERT_VALID_PTR_ROMOK(newWindow);
 
@@ -156,7 +154,7 @@ WFLG_WINDOWACTIVE )
     if (newWindow->Flags & WFLG_NW_EXTENDED)
     {
         tagList = ((struct ExtNewWindow *)newWindow)->Extension;
-#if 1
+    #if 1
         /* Sanitycheck the taglist pointer. Some Am*gaOS 1.3/2.x era
          * apps have WFLG_NW_EXTENDED set with bogus Extension taglist
          * pointer... (older CygnusED for example) - Piru
@@ -165,7 +163,7 @@ WFLG_WINDOWACTIVE )
         {
             tagList = NULL;
         }
-#endif
+    #endif
     }
     else
     {
@@ -196,27 +194,35 @@ WFLG_WINDOWACTIVE )
             case WA_Left:
                 nw.LeftEdge     = tag->ti_Data;
                 break;
+
             case WA_Top:
-                nw.TopEdge  = tag->ti_Data;
+                nw.TopEdge  	= tag->ti_Data;
                 break;
+
             case WA_Width:
-                nw.Width    = tag->ti_Data;
+                nw.Width    	= tag->ti_Data;
                 break;
+
             case WA_Height:
-                nw.Height   = tag->ti_Data;
+                nw.Height   	= tag->ti_Data;
                 break;
+
             case WA_IDCMP:
                 nw.IDCMPFlags   = tag->ti_Data;
                 break;
+
             case WA_MinWidth:
                 nw.MinWidth     = tag->ti_Data;
                 break;
+
             case WA_MinHeight:
                 nw.MinHeight    = tag->ti_Data;
                 break;
+
             case WA_MaxWidth:
                 nw.MaxWidth     = tag->ti_Data;
                 break;
+
             case WA_MaxHeight:
                 nw.MaxHeight    = tag->ti_Data;
                 break;
@@ -224,6 +230,7 @@ WFLG_WINDOWACTIVE )
             case WA_Gadgets:
                 nw.FirstGadget  = (struct Gadget *)(tag->ti_Data);
                 break;
+
             case WA_Title:
                 nw.Title    = (UBYTE *)(tag->ti_Data);
                 break;
@@ -231,12 +238,15 @@ WFLG_WINDOWACTIVE )
             case WA_ScreenTitle:
                 screenTitle = (UBYTE *)tag->ti_Data;
                 break;
+
             case WA_AutoAdjust:
                 autoAdjust  = (tag->ti_Data != 0);
                 break;
+
             case WA_InnerWidth:
                 innerWidth  = tag->ti_Data;
                 break;
+
             case WA_InnerHeight:
                 innerHeight = tag->ti_Data;
                 break;
@@ -249,48 +259,63 @@ moreFlags |= (name); else moreFlags &= ~(name)
             case WA_SizeGadget:
                 MODIFY_FLAG(WFLG_SIZEGADGET);
                 break;
+
             case WA_DragBar:
                 MODIFY_FLAG(WFLG_DRAGBAR);
                 break;
+
             case WA_DepthGadget:
                 MODIFY_FLAG(WFLG_DEPTHGADGET);
                 break;
+
             case WA_CloseGadget:
                 MODIFY_FLAG(WFLG_CLOSEGADGET);
                 break;
+
             case WA_Backdrop:
                 MODIFY_FLAG(WFLG_BACKDROP);
                 break;
+
             case WA_ReportMouse:
                 MODIFY_FLAG(WFLG_REPORTMOUSE);
                 break;
+
             case WA_NoCareRefresh:
                 MODIFY_FLAG(WFLG_NOCAREREFRESH);
                 break;
+
             case WA_Borderless:
                 MODIFY_FLAG(WFLG_BORDERLESS);
                 break;
+
             case WA_Activate:
                 MODIFY_FLAG(WFLG_ACTIVATE);
                 break;
+
             case WA_RMBTrap:
                 MODIFY_FLAG(WFLG_RMBTRAP);
                 break;
+
             case WA_WBenchWindow:
                 MODIFY_FLAG(WFLG_WBENCHWINDOW);
                 break;
+
             case WA_SizeBRight:
                 MODIFY_FLAG(WFLG_SIZEBRIGHT);
                 break;
+
             case WA_SizeBBottom:
                 MODIFY_FLAG(WFLG_SIZEBBOTTOM);
                 break;
+
             case WA_GimmeZeroZero:
                 MODIFY_FLAG(WFLG_GIMMEZEROZERO);
                 break;
+
             case WA_NewLookMenus:
                 MODIFY_FLAG(WFLG_NEWLOOKMENUS);
                 break;
+
             case WA_Zoom:
                 zoombox = (struct IBox *)tag->ti_Data;
                 DEBUG_OPENWINDOW(dprintf("OpenWindow: zoom %d %d %d %d\n",
@@ -466,7 +491,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
                 };
                 break;
 
-#ifdef SKINS
+    	#ifdef SKINS
             case WA_SkinInfo:
                 skininfo = (struct SkinInfo *)tag->ti_Data;
                 hasskininfo = TRUE;
@@ -489,9 +514,9 @@ moreFlags |= (name); else moreFlags &= ~(name)
             case WA_IAmMUI:
                 MODIFY_MFLAG(WMFLG_IAMMUI);
                 break;
-#endif
+    	#endif
 
-#ifndef __MORPHOS__
+    	#ifndef __MORPHOS__
             case WA_Shape:
                 shape = (struct Region *)tag->ti_Data;
                 break;
@@ -509,7 +534,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
             case WA_Visible:
                 windowvisible = (ULONG)tag->ti_Data;
                 break;
-#endif
+    	#endif
 
             case WA_Pointer:
             case WA_BusyPointer:
@@ -552,6 +577,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
     if (!nw.Screen && (pubScreenName || (nw.Type == PUBLICSCREEN)))
     {
         struct Screen *pubs = 0;
+
         moreFlags |= WMFLG_DO_UNLOCKPUBSCREEN;
         pubs = LockPubScreen(pubScreenName);
         if (!pubs && pubScreenFallBack)
@@ -635,11 +661,11 @@ moreFlags |= (name); else moreFlags &= ~(name)
     {
         w->BorderLeft   = w->WScreen->WBorLeft;
         w->BorderRight  = w->WScreen->WBorRight;
-#ifdef TITLEHACK
+    #ifdef TITLEHACK
         w->BorderTop    = w->WScreen->WBorBottom;
-#else
+    #else
         w->BorderTop    = w->WScreen->WBorTop;
-#endif
+    #endif
         w->BorderBottom = w->WScreen->WBorBottom;
     }
 
@@ -652,15 +678,15 @@ moreFlags |= (name); else moreFlags &= ~(name)
            make sure that each window border is big enough so that none of these
            gadgets extends outside the window border area */
 
-#ifdef TITLEHACK
+    #ifdef TITLEHACK
         w->BorderTop    = w->WScreen->WBorTop;
-#endif
+    #endif
         /* Georg Steger: ??? font ??? */
         if (w->WScreen->Font)
             w->BorderTop += ((struct IntScreen *)(w->WScreen))->DInfo.dri_Font->tf_YSize + 1;
         else
             w->BorderTop += GfxBase->DefaultFont->tf_YSize + 1;
-#ifndef TITLEHACK
+    #ifndef TITLEHACK
         #ifdef SKINS
         if (hasskininfo)
         {
@@ -674,7 +700,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
             }
         }
         #endif
-#endif
+    #endif
     }
 
     /* look for GACT_???BORDER gadgets which increase the BorderSizes */
@@ -737,19 +763,19 @@ moreFlags |= (name); else moreFlags &= ~(name)
     //    if ((w->Flags & WFLG_SIZEGADGET) &&
     //       (w->Flags & (WFLG_SIZEBRIGHT | WFLG_SIZEBBOTTOM)))
     {
-        IPTR sizewidth = 16, sizeheight = 16;
-        struct Image *im;
+        IPTR 	    	 sizewidth = 16, sizeheight = 16;
+        struct Image 	*im;
         struct DrawInfo *dri;
 
         if ((dri = GetScreenDrawInfo(w->WScreen)))
         {
             struct TagItem imtags[] =
-                {
-                    {SYSIA_DrawInfo, (STACKIPTR)dri},
-                    {SYSIA_Which, SIZEIMAGE},
-                    {SYSIA_Size, w->WScreen->Flags & SCREENHIRES ? SYSISIZE_MEDRES : SYSISIZE_LOWRES},
-                    {TAG_DONE,}
-                };
+            {
+                {SYSIA_DrawInfo , (STACKIPTR)dri    	    	    	    	    	    	    	},
+                {SYSIA_Which	, SIZEIMAGE 	    	    	    	    	    	    	    	},
+                {SYSIA_Size 	, w->WScreen->Flags & SCREENHIRES ? SYSISIZE_MEDRES : SYSISIZE_LOWRES	},
+                {TAG_DONE   	    	    	    	    	    	    	    	    	    	}
+            };
 
             if ((im = NewObjectA(NULL, SYSICLASS, imtags)))
             {
@@ -813,6 +839,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
             if ((nw.LeftEdge + w->Width) > parentwidth)
                 nw.LeftEdge = parentwidth - w->Width;
+
             if ((nw.TopEdge + w->Height) > parentheight)
                 nw.TopEdge = parentheight - w->Height;
         }
@@ -868,15 +895,13 @@ moreFlags |= (name); else moreFlags &= ~(name)
         ((struct IntWindow *)w)->ZipTopEdge  = nw.TopEdge;	
         ((struct IntWindow *)w)->ZipWidth    = (w->Width == w->MinWidth) ? w->MaxWidth : w->MinWidth;
         ((struct IntWindow *)w)->ZipHeight   = (w->Height == w->MinHeight) ? w->MaxHeight : w->MinHeight;
-        //  ((struct IntWindow *)w)->ZipWidth    = w->Width;
-        //  ((struct IntWindow *)w)->ZipHeight   = w->Height;
     }
 
     DEBUG_OPENWINDOW(dprintf("OpenWindow: zip %d %d %d %d\n",
-                 ((struct IntWindow *)w)->ZipLeftEdge,
-                 ((struct IntWindow *)w)->ZipTopEdge,
-                 ((struct IntWindow *)w)->ZipWidth,
-                 ((struct IntWindow *)w)->ZipHeight));
+                	     ((struct IntWindow *)w)->ZipLeftEdge,
+                	     ((struct IntWindow *)w)->ZipTopEdge,
+                	     ((struct IntWindow *)w)->ZipWidth,
+                	     ((struct IntWindow *)w)->ZipHeight));
 
 
     IW(w)->mousequeue = mousequeue;
@@ -885,10 +910,10 @@ moreFlags |= (name); else moreFlags &= ~(name)
     /* Amiga and checkmark images for menus */
 
     IW(w)->Checkmark = Checkmark ? Checkmark :
-               ((struct IntScreen *)(w->WScreen))->DInfo.dri_CheckMark;
+                    	    	   ((struct IntScreen *)(w->WScreen))->DInfo.dri_CheckMark;
 
     IW(w)->AmigaKey  = AmigaKey  ? AmigaKey  :
-               ((struct IntScreen *)(w->WScreen))->DInfo.dri_AmigaKey;
+                    	    	   ((struct IntScreen *)(w->WScreen))->DInfo.dri_AmigaKey;
 
 #ifndef __MORPHOS__
     /* child support */
@@ -1129,15 +1154,25 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 
     /* refresh type */
     if (w->Flags & WFLG_SIMPLE_REFRESH)
+    {
         layerflags |= LAYERSIMPLE;
+    }
     else
+    {
         if (w->Flags & WFLG_SUPER_BITMAP && SuperBitMap)
+	{
             layerflags |= LAYERSUPER;
+	}
         else
+	{
             layerflags |= LAYERSMART;
-
+	}
+    }
+    
     if (w->Flags & WFLG_BACKDROP)
+    {
         layerflags |= LAYERBACKDROP;
+    }
 
     D(bug("Window dims: (%d, %d, %d, %d)\n",
           w->LeftEdge, w->TopEdge, w->Width, w->Height));
@@ -1146,6 +1181,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     //install transp layer hook!
     {
         struct windowclassprefs *wcprefs = NULL;
+	
         wcprefs = (struct windowclassprefs*)int_GetCustomPrefs(TYPE_WINDOWCLASS,&((struct IntScreen*)(w->WScreen))->DInfo,IntuitionBase);
         if (wcprefs->flags & WINDOWCLASS_PREFS_ROUNDEDEDGES && (w->Title || (w->Flags & (WFLG_DRAGBAR | WFLG_CLOSEGADGET | WFLG_DEPTHGADGET))))
         {
@@ -1155,7 +1191,9 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                 installtransphook = TRUE; notransphook = FALSE;
                 IW(w)->specialflags |= SPFLAG_TRANSPHOOK;
             }
-        } else {
+        }
+	else
+	{
             if (IW(w)->usertransphook)
             {
                 IW(w)->transpregion = NewRegion();
@@ -1164,7 +1202,8 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                     installtransphook = TRUE;
                     IW(w)->specialflags |= SPFLAG_TRANSPHOOK;
                 }
-            } else if (IW(w)->usertranspregion)
+            }
+	    else if (IW(w)->usertranspregion)
             {
                 IW(w)->transpregion = NewRegion();
                 if (IW(w)->transpregion)
@@ -1178,7 +1217,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     }
 #endif
 
-//    LockLayers(&w->WScreen->LayerInfo);
+//  LockLayers(&w->WScreen->LayerInfo);
 
     /* A GimmeZeroZero window??? */
     if (w->Flags & WFLG_GIMMEZEROZERO)
@@ -1191,7 +1230,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
           I just make it that the outer window has the size of what is requested
         */
 
-#ifdef __MORPHOS__
+    #ifdef __MORPHOS__
 
         struct TagItem layertags[] =
         {
@@ -1216,7 +1255,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                                    , LAYERSIMPLE | (layerflags & LAYERBACKDROP)
                                    , (struct TagItem *)&layertags);
 
-#else
+    #else
         /* First create outer window */
 
         struct TagItem lay_tags[] =
@@ -1238,7 +1277,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                         		       LAYERSIMPLE | (layerflags & LAYERBACKDROP),
                         		       lay_tags);
 
-#endif
+    #endif
         /* Could the layer be created. Nothing bad happened so far, so simply leave */
         if (NULL == L)
         {
@@ -1254,11 +1293,11 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
         BLAYER(w) = L;
 
         /* This layer belongs to a window */
-#ifndef __MORPHOS__
+    #ifndef __MORPHOS__
         L->Window = (APTR)w;
-#endif
+    #endif
 
-#ifdef __MORPHOS__
+    #ifdef __MORPHOS__
         /* Now comes the inner window */
         layertags[0].ti_Data = (IPTR)backfillhook;
         w->WLayer = CreateUpfrontLayerTagList(
@@ -1271,7 +1310,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                 , layerflags
                 , (struct TagItem *)&layertags);
 
-#else
+    #else
         /* Now comes the inner window */
 
     	{
@@ -1298,7 +1337,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 					    
 	}
 
-#endif
+    #endif
 
         /* could this layer be created? If not then delete the outer window and exit */
         if (NULL == w->WLayer)
@@ -1313,7 +1352,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     }
     else
     {
-#ifdef __MORPHOS__
+    #ifdef __MORPHOS__
 
         struct TagItem layertags[] =
         {
@@ -1335,43 +1374,30 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                                 w->TopEdge  + w->Height - 1,
                                 layerflags,
                                 (struct TagItem *)&layertags);
-#else
+    #else
 
-#ifdef CreateLayerTagList
         struct TagItem lay_tags[] =
-            {
-                {LA_Hook     	, (IPTR)backfillhook	    	    	    	    	    	    },
-                {LA_Priority    , (layerflags & LAYERBACKDROP) ? BACKDROPPRIORITY : UPFRONTPRIORITY },
-                {LA_Shape       , (IPTR)shape                               	    	    	    },
-		{LA_ShapeHook	, (IPTR)shapehook   	    	    	    	    	    	    },
-                {LA_SuperBitMap , (IPTR)SuperBitMap                           	    	    	    },
-                {LA_ChildOf     , (IPTR)parent                              	    	    	    },
-                {LA_Visible     , (ULONG)visible                                                    },
-                {TAG_DONE                                           	    	    	    	    }
-            };
+        {
+            {LA_Hook        , (IPTR)backfillhook	    	    	    	    	    	},
+            {LA_Priority    , (layerflags & LAYERBACKDROP) ? BACKDROPPRIORITY : UPFRONTPRIORITY },
+            {LA_Shape       , (IPTR)shape                               	    	    	},
+	    {LA_ShapeHook   , (IPTR)shapehook   	    	    	    	    	    	},
+            {LA_SuperBitMap , (IPTR)SuperBitMap                           	    	    	},
+            {LA_ChildOf     , (IPTR)parent                              	    	    	},
+            {LA_Visible     , (ULONG)visible                                                    },
+            {TAG_DONE                                           	    	    	    	}
+        };
 
         w->WLayer = CreateLayerTagList(&w->WScreen->LayerInfo,
-                           w->WScreen->RastPort.BitMap,
-                           w->RelLeftEdge,
-                           w->RelTopEdge,
-                           w->RelLeftEdge + w->Width - 1,
-                           w->RelTopEdge + w->Height - 1,
-                           layerflags,
-                           lay_tags);
+                        	       w->WScreen->RastPort.BitMap,
+                        	       w->RelLeftEdge,
+                        	       w->RelTopEdge,
+                        	       w->RelLeftEdge + w->Width - 1,
+                        	       w->RelTopEdge + w->Height - 1,
+                        	       layerflags,
+                        	       lay_tags);
 
-#else
-        w->WLayer = CreateUpfrontHookLayer(
-                &w->WScreen->LayerInfo
-                , w->WScreen->RastPort.BitMap
-                , w->RelLeftEdge
-                , w->RelTopEdge
-                , w->LeftEdge + w->Width - 1
-                , w->TopEdge  + w->Height - 1
-                , layerflags
-                , backfillhook
-                , SuperBitMap);
-#endif
-#endif
+    #endif
 
         /* Install the BorderRPort here! see GZZ window above  */
         if (NULL != w->WLayer)

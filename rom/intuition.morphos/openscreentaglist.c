@@ -48,17 +48,17 @@ AROS_LH2(struct Screen *, OpenScreenTagList,
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct ExtNewScreen ns =
-        {
-            0, 0, -1, -1, 1,        /* left, top, width, height, depth */
-            0, 1,               /* DetailPen, BlockPen */
-            HIRES | LACE,           /* ViewModes */
-            CUSTOMSCREEN | SHOWTITLE,   /* Type */
-            NULL,               /* Font */
-            NULL,               /* DefaultTitle */
-            NULL,               /* Gadgets */
-            NULL,               /* CustomBitMap */
-            NULL                /* Extension (taglist) */
-        };
+    {
+        0, 0, -1, -1, 1,            /* left, top, width, height, depth */
+        0, 1,               	    /* DetailPen, BlockPen */
+        HIRES | LACE,               /* ViewModes */
+        CUSTOMSCREEN | SHOWTITLE,   /* Type */
+        NULL,               	    /* Font */
+        NULL,               	    /* DefaultTitle */
+        NULL,               	    /* Gadgets */
+        NULL,               	    /* CustomBitMap */
+        NULL                	    /* Extension (taglist) */
+    };
 
     DEBUG_OPENSCREENTAGLIST(dprintf("OpenScreenTagList: NewScreen 0x%lx Tags 0x%lx\n",
                                     newScreen, tagList));
@@ -79,8 +79,10 @@ AROS_LH2(struct Screen *, OpenScreenTagList,
     /* calling OpenScreen through the library vector causes a loop with cgx's patch. */
     {
         extern ULONG LIB_OpenScreen(void);
+	
         REG_A0 = (LONG)&ns;
         REG_A6 = (LONG)IntuitionBase;
+	
         return (struct Screen *) LIB_OpenScreen();
     }
 #else

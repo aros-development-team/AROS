@@ -66,14 +66,14 @@ AROS_LH3(APTR, NewObjectA,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    Object * object;
-    struct opSet method;
+    Object *object;
+    struct  opSet method;
 
     DEBUG_NEWOBJECT(dprintf("NewObject[%x]: Class 0x%lx <%s> TagList 0x%lx\n",
-                &method, /* some unique id to see matching debug info */
-                classPtr,
-                classID ? classID : (classPtr->cl_ID ? classPtr->cl_ID : "NULL"),
-                tagList));
+                	    &method, /* some unique id to see matching debug info */
+                	    classPtr,
+                	    classID ? classID : (classPtr->cl_ID ? classPtr->cl_ID : "NULL"),
+                	    tagList));
 
     EnterFunc(bug("intuition::NewObjectA()\n"));
 
@@ -81,12 +81,12 @@ AROS_LH3(APTR, NewObjectA,
     if (tagList)
     {
         DEBUG_NEWOBJECT(
-        APTR state = tagList;
-        struct TagItem *tag;
+            APTR    	    state = tagList;
+            struct TagItem *tag;
 
             while (tag = NextTagItem(&state))
             {
-            dprintf("\t%08lx %08lx\n", tag->ti_Tag, tag->ti_Data);
+            	dprintf("\t%08lx %08lx\n", tag->ti_Tag, tag->ti_Data);
             }
         )
     }
@@ -112,9 +112,9 @@ AROS_LH3(APTR, NewObjectA,
     D(bug("classPtr: %p\n", classPtr));
 
     /* Try to create a new object */
-    method.MethodID = OM_NEW;
+    method.MethodID 	= OM_NEW;
     method.ops_AttrList = tagList;
-    method.ops_GInfo = NULL;
+    method.ops_GInfo 	= NULL;
     object = (Object *) CoerceMethodA (classPtr, (Object *)classPtr, (Msg)&method);
 
     /* Release the lock on the class. Rootclass also has increased this count. */

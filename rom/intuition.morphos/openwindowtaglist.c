@@ -48,23 +48,23 @@ AROS_LH2(struct Window *, OpenWindowTagList,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    struct ExtNewWindow nw =
-        {
-            0, 0,       /* Left, Top */
-            ~0, ~0,     /* Width, Height */
-            0xFF, 0xFF, /* DetailPen, BlockPen */
-            0L,     /* IDCMPFlags */
-            0L,     /* Flags */
-            NULL,       /* FirstGadget */
-            NULL,       /* CheckMark */
-            NULL,       /* Title */
-            NULL,       /* Screen */
-            NULL,       /* BitMap */
-            0, 0,       /* MinWidth, MinHeight */
-            0, 0,       /* MaxWidth, MaxHeight */
-            WBENCHSCREEN,   /* Type */
-            NULL        /* Extension (taglist) */
-        };
+    struct ExtNewWindow  nw =
+    {
+        0, 0,       	/* Left, Top */
+        ~0, ~0,     	/* Width, Height */
+        0xFF, 0xFF, 	/* DetailPen, BlockPen */
+        0L,         	/* IDCMPFlags */
+        0L,         	/* Flags */
+        NULL,       	/* FirstGadget */
+        NULL,       	/* CheckMark */
+        NULL,       	/* Title */
+        NULL,       	/* Screen */
+        NULL,       	/* BitMap */
+        0, 0,       	/* MinWidth, MinHeight */
+        0, 0,       	/* MaxWidth, MaxHeight */
+        WBENCHSCREEN,   /* Type */
+        NULL        	/* Extension (taglist) */
+    };
     struct Window       *window;
 
     DEBUG_OPENWINDOWTAGLIST(dprintf("OpenWindowTagList: NewWindow 0x%lx TagList 0x%lx\n",
@@ -76,6 +76,7 @@ AROS_LH2(struct Window *, OpenWindowTagList,
 
         CopyMem (newWindow, &nw, (newWindow->Flags & WFLG_NW_EXTENDED) ? sizeof (struct ExtNewWindow) :
                  sizeof (struct NewWindow));
+
         if (tagList)
         {
             ASSERT_VALID_PTR_ROMOK(tagList);
@@ -87,15 +88,14 @@ AROS_LH2(struct Window *, OpenWindowTagList,
     else
     {
         struct TagItem tags[2] =
-            {
-                {
-                    WA_AutoAdjust,  TRUE
-                },
-                {TAG_END,       NULL}
-            };
+        {
+            {WA_AutoAdjust  ,  TRUE 	},
+            {TAG_END	    ,       NULL}
+        };
 
         nw.Extension = tags;
         nw.Flags |= WFLG_NW_EXTENDED;
+
         if (tagList)
         {
             ASSERT_VALID_PTR_ROMOK(tagList);

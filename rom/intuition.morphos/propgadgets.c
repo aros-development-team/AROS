@@ -40,8 +40,8 @@ static void RenderPropBackground(struct Window *win, struct DrawInfo *dri,
     	    	    	    	 struct Rectangle *rect, struct PropInfo *pi,
 				 struct RastPort *rp, BOOL onborder, struct IntuitionBase *IntuitionBase)
 {
-    static UWORD pattern[] = {0x5555,0xAAAA};
-    struct Rectangle r = *rect;
+    static UWORD    	pattern[] = {0x5555,0xAAAA};
+    struct Rectangle 	r = *rect;
        
 #if 0
     if (!(pi->Flags & PROPBORDERLESS))
@@ -73,21 +73,12 @@ static void RenderPropBackground(struct Window *win, struct DrawInfo *dri,
 }
 
 
-VOID HandlePropSelectDown
-(
-    struct Gadget   *gadget,
-    struct Window   *w,
-    struct Requester    *req,
-    UWORD       mouse_x,
-    UWORD       mouse_y,
-    struct IntuitionBase *IntuitionBase
-)
+VOID HandlePropSelectDown(struct Gadget *gadget, struct Window *w, struct Requester *req,
+    	    	    	  UWORD mouse_x, UWORD mouse_y, struct IntuitionBase *IntuitionBase)
 {
-
-
-    struct BBox knob;
-    struct PropInfo * pi;
-    UWORD dx, dy, flags;
+    struct BBox     	 knob;
+    struct PropInfo 	*pi;
+    UWORD   	    	 dx, dy, flags;
 
     pi = (struct PropInfo *)gadget->SpecialInfo;
 
@@ -161,40 +152,29 @@ VOID HandlePropSelectDown
         }
     }
 
-    if (mouse_x >= knob.Left
-            && mouse_y >= knob.Top
-            && mouse_x < knob.Left + knob.Width
-            && mouse_y < knob.Top + knob.Height
-       )
+    if (mouse_x >= knob.Left &&
+    	mouse_y >= knob.Top &&
+	mouse_x < knob.Left + knob.Width &&
+	mouse_y < knob.Top + knob.Height)
+    {
         flags |= KNOBHIT;
+    }
     else
+    {
         flags &= ~KNOBHIT;
+    }
 
     gadget->Flags |= GFLG_SELECTED;
 
     D(bug("New HPot: %d, new VPot: %d\n", dx, dy));
 
-    NewModifyProp (gadget
-                   , w
-                   , req
-                   , flags
-                   , dx
-                   , dy
-                   , pi->HorizBody
-                   , pi->VertBody
-                   , 1
-                  );
+    NewModifyProp(gadget, w, req, flags, dx, dy, pi->HorizBody, pi->VertBody, 1);
 
     return;
 }
 
-VOID HandlePropSelectUp
-(
-    struct Gadget   *gadget,
-    struct Window   *w,
-    struct Requester    *req,
-    struct IntuitionBase *IntuitionBase
-)
+VOID HandlePropSelectUp(struct Gadget *gadget, struct Window *w,
+    	    	    	struct Requester *req, struct IntuitionBase *IntuitionBase)
 {
     struct PropInfo * pi;
 
@@ -220,18 +200,11 @@ VOID HandlePropSelectUp
     return;
 }
 
-VOID HandlePropMouseMove
-(
-    struct Gadget   *gadget,
-    struct Window   *w,
-    struct Requester    *req,
-    LONG        dx,
-    LONG        dy,
-    struct IntuitionBase *IntuitionBase
-)
+VOID HandlePropMouseMove(struct Gadget *gadget, struct Window *w,struct Requester *req,
+    	    	    	 LONG dx, LONG dy, struct IntuitionBase *IntuitionBase)
 {
-    struct BBox knob;
-    struct PropInfo * pi;
+    struct BBox      knob;
+    struct PropInfo *pi;
 
     pi = (struct PropInfo *)gadget->SpecialInfo;
 
@@ -242,7 +215,6 @@ VOID HandlePropMouseMove
 
         if (!CalcKnobSize (gadget, &knob))
             return;
-
 
         /* Move the knob the same amount, ie.
         knob.Left += dx; knob.Top += dy;
@@ -303,16 +275,7 @@ VOID HandlePropMouseMove
                 ((pi->Flags & FREEVERT)  && (dy != pi->VertPot)) )
 
         {
-            NewModifyProp (gadget
-                           , w
-                           , req
-                           , pi->Flags
-                           , dx
-                           , dy
-                           , pi->HorizBody
-                           , pi->VertBody
-                           , 1
-                          );
+            NewModifyProp (gadget, w, req, pi->Flags, dx, dy, pi->HorizBody, pi->VertBody, 1);
         }
 
     } /* Has PropInfo and Mouse is over knob */
@@ -322,8 +285,9 @@ VOID HandlePropMouseMove
 
 int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox)
 {
-    struct PropInfo * pi;
-    WORD x, y;
+    struct PropInfo *pi;
+    WORD    	     x, y;
+    
     pi = (struct PropInfo *)propGadget->SpecialInfo;
 
     //dprintf("CalcKnobSize(%lx,%d,%d,%d,%d)\n", propGadget,
@@ -411,12 +375,12 @@ int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox)
 void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
                         struct Requester * req, struct IntuitionBase * IntuitionBase)
 {
-    struct PropInfo * pi;
-    struct IntDrawInfo * dri;
-    struct GadgetInfo gi;
-    struct RastPort * rp = 0;
-    struct BBox bbox, kbox;
-    BOOL onborder;
+    struct PropInfo 	*pi;
+    struct IntDrawInfo  *dri;
+    struct GadgetInfo 	 gi;
+    struct RastPort 	*rp = 0;
+    struct BBox     	 bbox, kbox;
+    BOOL    	    	 onborder;
 
     D(bug("RefreshPropGadget(gad=%p, win=%s, req=%p)\n", gadget, window->Title, req));
 
@@ -484,6 +448,7 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
 
                     {
                         struct Rectangle tmprect;
+			
                         tmprect.MinX = bbox.Left;
                         tmprect.MaxX = bbox.Left + bbox.Width - 1;
                         tmprect.MinY = bbox.Top;
@@ -522,14 +487,12 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                             struct BBox * knob, struct Window * window, struct Requester * req,
                             struct IntuitionBase * IntuitionBase)
 {
-    struct IntDrawInfo * dri;
-    struct RastPort * rp;
-    struct PropInfo * pi;
-    struct GadgetInfo gi;
-
-    UWORD flags;
-
-    BOOL onborder;
+    struct IntDrawInfo  *dri;
+    struct RastPort 	*rp;
+    struct PropInfo 	*pi;
+    struct GadgetInfo    gi;
+    UWORD   	    	 flags;
+    BOOL    	    	 onborder;
 
     D(bug("RefresPropGadgetKnob(flags=%d, clear=%p, knob = %p, win=%s)\n",
           flags, clear, knob, window->Title));
@@ -550,17 +513,17 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
             if (clear)
             {
                 struct Rectangle a, b, clearrects[4];
-                WORD         i, nrects;
+                WORD         	 i, nrects;
 
-#if (!(PROP_RENDER_OPTIMIZATION))
+    	    #if (!(PROP_RENDER_OPTIMIZATION))
                 if (!(flags & PROPBORDERLESS))
                 {
                     clear->Left ++; clear->Top ++;
                     clear->Width -= 2; clear->Height -= 2;
                 }
-#endif
+    	    #endif
 
-#if 0
+    	    #if 0
                 D(bug("RefresPropGadgetKnob: clear Left %d Top %d Width %d Height %d\n",
                       clear->Left,
                       clear->Top,
@@ -572,7 +535,8 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                       knob->Top,
                       knob->Width,
                       knob->Height));
-#endif
+    	    #endif
+	    
                 a.MinX = clear->Left;
                 a.MinY = clear->Top;
                 a.MaxX = clear->Left + clear->Width - 1;
@@ -582,7 +546,8 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                 b.MinY = knob->Top;
                 b.MaxX = knob->Left + knob->Width - 1;
                 b.MaxY = knob->Top + knob->Height - 1;
-#if 0
+		
+    	    #if 0
                 D(bug("RefresPropGadgetKnob: a MinX %d MinY %d MaxX %d MaxY %d\n",
                       a.MinX,
                       a.MinY,
@@ -594,12 +559,13 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                       b.MinY,
                       b.MaxX,
                       b.MaxY));
-#endif
+    	    #endif
+	    
                 nrects = SubtractRectFromRect(&a, &b, clearrects);
 
                 D(bug("RefresPropGadgetKnob: nrects %d\n",
                       nrects));
-#if 0
+    	    #if 0
                 D(bug("RefresPropGadgetKnob: clearrects[0] MinX %d MinY %d MaxX %d MaxY %d\n",
                       clearrects[0].MinX,
                       clearrects[0].MinY,
@@ -623,7 +589,7 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                       clearrects[3].MinY,
                       clearrects[3].MaxX,
                       clearrects[3].MaxY));
-#endif
+    	    #endif
 
                 /*kprintf("\n=== oldknob = %d,%d-%d,%d   newknob = %d,%d-%d,%d\n",
                     a.MinX,
@@ -838,8 +804,8 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
             } /* if (flags & AUTOKNOB) */
             else
             {
-                struct Image * image = (struct Image *)gadget->GadgetRender;
-                struct BBox bbox;
+                struct Image *image = (struct Image *)gadget->GadgetRender;
+                struct BBox   bbox;
 
                 CalcBBox (window, req, gadget, &bbox);
 
@@ -883,7 +849,7 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 
 } /* RefreshPropGadgetKnob */
 
-BOOL isonborder(struct Gadget *gadget,struct Window *window)
+BOOL isonborder(struct Gadget *gadget, struct Window *window)
 {
     if ((window->BorderBottom > 2) && (gadget->Flags & GFLG_RELBOTTOM))
     if (window->Height + gadget->TopEdge >= window->Height - window->BorderBottom) return TRUE;

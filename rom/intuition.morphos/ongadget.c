@@ -63,12 +63,10 @@ AROS_LH3(void, OnGadget,
     if ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET)
     {
         struct TagItem set_tags[] =
-            {
-                {
-                    GA_Disabled, FALSE
-                },
-                {TAG_END            }
-            };
+        {
+            {GA_Disabled, FALSE },
+            {TAG_END            }
+        };
 
         SetGadgetAttrsA(gadget, window, requester, set_tags);
     }

@@ -13,8 +13,8 @@
 #undef ChangeLayerVisibility
 struct ShowWindowActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
 };
 
 static VOID int_showwindow(struct ShowWindowActionMsg *msg,
@@ -24,8 +24,8 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
 #ifdef ChangeLayerVisibility
 struct ShowWindowActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
 };
 
 static VOID int_showwindow(struct ShowWindowActionMsg *msg,
@@ -100,7 +100,7 @@ AROS_LH1(VOID, ShowWindow,
 static VOID int_showwindow(struct ShowWindowActionMsg *msg,
                            struct IntuitionBase *IntuitionBase)
 {
-    struct Window *window = msg->window;
+    struct Window  *window = msg->window;
     struct Library *CGXSystemBase;
     
     if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
@@ -121,9 +121,10 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
                            struct IntuitionBase *IntuitionBase)
 {
     struct Window *window = msg->window;
-    struct Screen *screen = window->WScreen;
-
+    struct Screen *screen;
+    
     if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
+    screen = window->WScreen;
 
     if (!IsWindowVisible(window))
     {

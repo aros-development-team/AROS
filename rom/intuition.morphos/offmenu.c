@@ -49,15 +49,16 @@ AROS_LH2(void, OffMenu,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    int i;
-    struct Menu * thismenu;
-    struct MenuItem * thisitem;
+    int     	     i;
+    struct Menu     *thismenu;
+    struct MenuItem *thisitem;
 
     DEBUG_OFFMENU(dprintf("OffMenu: Window 0x%lx MenuNumber 0x%lx\n", window, menunumber));
 
     IntuitionBase = IntuitionBase;  /* shut up the compiler */
 
     thismenu = window->MenuStrip;
+    
     if (MENUNUM(menunumber) != NOMENU)
     {
         for (i = 0; i < MENUNUM(menunumber) && thismenu; i++)
@@ -74,10 +75,12 @@ AROS_LH2(void, OffMenu,
             else
             {
                 thisitem = thismenu->FirstItem;
+		
                 for (i = 0; i < ITEMNUM(menunumber) && thisitem; i++)
                 {
                     thisitem = thisitem->NextItem;
                 }
+		
                 if (thisitem)
                 {
                     if (SUBNUM(menunumber) != NOSUB)
@@ -89,13 +92,16 @@ AROS_LH2(void, OffMenu,
                         }
                     }
                 }
+		
                 if (thisitem)
                 {
                     thisitem->Flags &= ~ITEMENABLED;
                 }
             }
-        }
-    }
+	    
+        } /* if (thismenu) */
+	
+    } /* if (MENUNUM(menunumber) != NOMENU) */
 
     AROS_LIBFUNC_EXIT
 } /* OffMenu */
