@@ -102,6 +102,7 @@ extern const struct Resident
     hiddgraphics_resident,
     hiddserial_resident,
     vgaHidd_resident,
+    pciHidd_resident,
     Workbench_resident;
 //    Dos_resident,
 //    LDDemon_resident,
@@ -133,6 +134,7 @@ static const struct Resident *romtagList[] =
     &kbdHidd_resident,			    /* ColdStart,   9    */
     &vgaHidd_resident,			    /* ColdStart,   9    */
     &hiddserial_resident,		    /* ColdStart,   9    */
+    &pciHidd_resident,                      /* ColdStart,   9    */
     &Cybergraphics_resident,		    /* ColdStart,   8    */
     &Console_resident,			    /* ColdStart,   5	 */
     &TrackDisk_resident,		    /* Coldsatrt,   4    */	//Trackdisk		
@@ -261,6 +263,10 @@ int main()
     InitCode(RTF_SINGLETASK, 0);
 
 /* Here goes test area... */
+
+    kprintf("pci.hidd = %08.8lx\n",OpenLibrary("pci.hidd",0));
+
+    kprintf("Starting SAD\n");
 
     /* Enter SAD */
     Debug(0);
