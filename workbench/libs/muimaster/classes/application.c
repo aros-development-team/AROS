@@ -983,7 +983,7 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
 	    }
 	}
 
-    	if (signal & (1L << data->app_BrokerPort->mp_SigBit))
+    	if (data->app_BrokerPort && (signal & (1L << data->app_BrokerPort->mp_SigBit)))
 	{
 	    CxMsg *msg;
 	    
