@@ -1124,7 +1124,7 @@ static LONG pix_read(APTR pr_data
 {
     struct rgbpix_render_data *prd;
     
-    prd = (struct pix_render_data *)pr_data;
+    prd = (struct rgbpix_render_data *)pr_data;
     
     prd->pixel = HIDD_BM_GetPixel(bm, x, y);
 
