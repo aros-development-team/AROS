@@ -691,8 +691,10 @@ void wanderer_about(void)
 	"Henning Kiel, Staf Verhaegen, Henrik Berglund,\n"
 	"Michal Schulz, Iain Templeton, Fabio Alemagna,\n"
 	"Sebastian Heutling, Johan Grip, Tobias Seiler,\n"
-	"Johan Alfredsson, Adam Chodorowski, Sebastian Bauer\n"
-      "Matt Parsons...\n"
+	"Johan Alfredsson, Adam Chodorowski, Sebastian Bauer,\n"
+        "Matt Parsons, Stefan Berger, Bernardo Innocenti,\n"
+	"Joerg Dietrich, Kjetil Svalastog Matheussen, Peter Eriksson,\n"
+	"David Le Corfec, Paul Smith, ...\n"
 	"\nTo be continued...",NULL);
 }
 
