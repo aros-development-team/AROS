@@ -35,14 +35,19 @@
 #include  "clipboard_gcc.h"
 #endif
 
+/*****************************************************************************************/
 
 #define ioClip(x)  ((struct IOClipReq *)x)
 #define min(x,y)   (((x) < (y)) ? (x) : (y))
 
 #define CBUn    (((struct ClipboardUnit *)ioreq->io_Unit))
 
-void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase);
-void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase);
+/*****************************************************************************************/
+
+static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase);
+static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase);
+static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase);
+static void updateCb(struct IORequest *ioreq, struct ClipboardBase *CBBase);
 
 static const char name[];
 static const char version[];
@@ -59,6 +64,8 @@ void  AROS_SLIB_ENTRY(beginio, Clipboard)();
 LONG  AROS_SLIB_ENTRY(abortio, Clipboard)();
 
 static const char end;
+
+/*****************************************************************************************/
 
 int AROS_SLIB_ENTRY(entry, Clipboard)(void)
 {
@@ -103,6 +110,7 @@ static void *const functable[] =
     (void *)-1
 };
 
+/*****************************************************************************************/
 
 AROS_LH2(struct ClipboardBase *,  init,
  AROS_LHA(struct ClipboardBase *, CBBase, D0),
@@ -123,6 +131,7 @@ AROS_LH2(struct ClipboardBase *,  init,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************************/
 
 /* Putchar procedure needed by RawDoFmt() */
 
@@ -135,12 +144,15 @@ AROS_UFH2(void, putchr,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************************/
+
 void cb_sprintf(struct ClipboardBase *CBBase, UBYTE *buffer,
 		UBYTE *format, ...)
 {
     RawDoFmt(format, &format+1, (VOID_FUNC)putchr, &buffer);
 }
 
+/*****************************************************************************************/
 
 AROS_LH3(void, open,
  AROS_LHA(struct IORequest *, ioreq, A1),
@@ -318,6 +330,26 @@ AROS_LH3(void, open,
 	/* Initialization is done, and everything went OK. Add unit to the
 	   list of clipboard units. */
 	Insert((struct List *)&CBBase->cb_UnitList, (struct Node *)CBUn, NULL);
+	
+	/* Check if there is already a clipboard file for this unit existing.
+	   If yes, then set WriteID to 1 so that CMD_READing works, and
+	   also setup clipSize */
+	   
+	if ((CBUn->cu_clipFile = Open(CBUn->cu_clipFilename, MODE_OLDFILE)))
+	{
+	    if (Seek(CBUn->cu_clipFile, 0, OFFSET_END) != -1)
+	    {
+	        CBUn->cu_clipSize = Seek(CBUn->cu_clipFile, 0, OFFSET_BEGINNING);
+		if (CBUn->cu_clipSize != (ULONG)-1)
+		{
+		    CBUn->cu_WriteID = 1;
+		}
+	    }
+	    
+	    Close(CBUn->cu_clipFile);
+	    CBUn->cu_clipFile = 0;
+	}
+
     }
     else
     {
@@ -334,6 +366,7 @@ AROS_LH3(void, open,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************************/
 
 AROS_LH1(BPTR, close,
  AROS_LHA(struct IORequest *,     ioreq,  A1),
@@ -362,6 +395,7 @@ AROS_LH1(BPTR, close,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************************/
 
 AROS_LH0(BPTR, expunge, struct ClipboardBase *, CBBase, 3, Clipboard)
 {
@@ -396,6 +430,7 @@ AROS_LH0(BPTR, expunge, struct ClipboardBase *, CBBase, 3, Clipboard)
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************************/
 
 AROS_LH0I(int, null, struct ClipboardBase *, KBBase, 4, Clipboard)
 {
@@ -404,6 +439,7 @@ AROS_LH0I(int, null, struct ClipboardBase *, KBBase, 4, Clipboard)
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************************/
 
 AROS_LH1(void, beginio,
 	 AROS_LHA(struct IORequest *, ioreq, A1),
@@ -498,39 +534,7 @@ AROS_LH1(void, beginio,
 
 
     case CMD_UPDATE:
-	Close(CBUn->cu_clipFile);
-
-	CBUn->cu_clipSize = ioClip(ioreq)->io_Offset;
-
-	/* Call monitoring hooks. */
-	ObtainSemaphore(&CBBase->cb_SignalSemaphore);
-	{
-	    struct Node        *tnode;
-	    struct ClipHookMsg  chmsg;
-
-	    chmsg.chm_Type = 0;
-	    chmsg.chm_ClipID = ioClip(ioreq)->io_ClipID;
-
-	    ForeachNode(&CBBase->cb_HookList, tnode)
-	    {
-	        CallHookA((struct Hook *)tnode, CBUn, &chmsg);
-	    }
-	    
-	}
-	ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
-
-
-	/* If it is the POSTer that indicates he is done, we don't
-	   release the semaphore as, in case, the semaphore was
-	   never locked because it was originally locked by the
-	   reader wanting the (to be) posted clip. As we couldn't
-	   release the semaphore then as another task then could have
-	   started to write something to the clipboard, we just do
-	   nothing. */
-
-	if(CBUn->cu_PostID != ioClip(ioreq)->io_ClipID)
-	    ReleaseSemaphore(&CBUn->cu_UnitLock);
-	
+        updateCb(ioreq, CBBase);
 	break;
 
 
@@ -568,6 +572,7 @@ AROS_LH1(void, beginio,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************************/
 
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IORequest *,      ioreq, A1),
@@ -581,11 +586,14 @@ AROS_LH1(LONG, abortio,
     AROS_LIBFUNC_EXIT
 }
 
-void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
+/*****************************************************************************************/
+
+static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 {
     /* Is there anything to be read? */
     if(CBUn->cu_WriteID == 0)
     {
+kprintf("\nreadcb: nothing to read. setting IOERR_ABORTED as error\n");
 	ioClip(ioreq)->io_Error = IOERR_ABORTED;
 	return;
     }
@@ -608,8 +616,9 @@ void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
     ioClip(ioreq)->io_Offset += ioClip(ioreq)->io_Actual;
 }
 
+/*****************************************************************************************/
 
-void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
+static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 {
     if(ioClip(ioreq)->io_Offset == 0)
     {
@@ -661,5 +670,44 @@ void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
     ioClip(ioreq)->io_Actual = ioClip(ioreq)->io_Length;
 }
 
+/*****************************************************************************************/
+
+static void updateCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
+{	
+    Close(CBUn->cu_clipFile);
+
+    CBUn->cu_clipSize = ioClip(ioreq)->io_Offset;
+
+    /* Call monitoring hooks. */
+    ObtainSemaphore(&CBBase->cb_SignalSemaphore);
+    {
+	struct Node        *tnode;
+	struct ClipHookMsg  chmsg;
+
+	chmsg.chm_Type = 0;
+	chmsg.chm_ClipID = ioClip(ioreq)->io_ClipID;
+
+	ForeachNode(&CBBase->cb_HookList, tnode)
+	{
+	    CallHookA((struct Hook *)tnode, CBUn, &chmsg);
+	}
+
+    }
+    ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
+
+
+    /* If it is the POSTer that indicates he is done, we don't
+       release the semaphore as, in case, the semaphore was
+       never locked because it was originally locked by the
+       reader wanting the (to be) posted clip. As we couldn't
+       release the semaphore then as another task then could have
+       started to write something to the clipboard, we just do
+       nothing. */
+
+    if(CBUn->cu_PostID != ioClip(ioreq)->io_ClipID)
+	ReleaseSemaphore(&CBUn->cu_UnitLock);	
+}
+
+/*****************************************************************************************/
 
 static const char end = 0;
