@@ -429,13 +429,19 @@ STATIC IPTR DT_NotifyMethod(struct IClass *cl, struct Gadget *g, struct opUpdate
 
 STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
+ IPTR RetVal;
+
 #ifdef MYDEBUG
  struct TagItem *tl;
  struct TagItem *ti;
 
  register int i;
  int Known;
+#endif /* MYDEBUG */
 
+ RetVal=DoSuperMethodA(cl, (Object *) g, (Msg) msg);
+
+#ifdef MYDEBUG
  Known=FALSE;
 
  tl=msg->ops_AttrList;
@@ -493,6 +499,15 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
     break;
    }
 
+   case DTA_TopHoriz:
+   {
+    D(bug("ppm.datatype/OM_SET: Tag ID: DTA_TopHoriz\n"));
+
+    D(bug("ppm.datatype/OM_SET: DTA_TopHoriz %lx\n", (int) ti->ti_Data));
+
+    break;
+   }
+
    default:
    {
     for(i=0; i<NumAttribs; i++)
@@ -514,15 +529,21 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
  }
 #endif /* MYDEBUG */
 
- return(DoSuperMethodA(cl, (Object *) g, (Msg) msg));
+ return(RetVal);
 }
 
 STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 {
+ IPTR RetVal;
 #ifdef MYDEBUG
  register int i;
  int Known;
+#endif /* MYDEBUG */
 
+
+ RetVal=DoSuperMethodA(cl, (Object *) g, (Msg) msg);
+
+#ifdef MYDEBUG
  Known=FALSE;
 
  switch(msg->opg_AttrID)
@@ -632,6 +653,48 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
    break;
   }
 
+  case DTA_FrameInfo:
+  {
+   struct FrameInfo *FI;
+
+   D(bug("ppm.datatype/OM_GET: Tag ID: DTA_FrameInfo\n"));
+
+   FI=(struct FrameInfo *) *(msg->opg_Storage);
+
+   D(bug("ppm.datatype/OM_GET: FrameInfo->fri_PropertyFlags     : 0x%lx\n", (unsigned int) FI->fri_PropertyFlags));
+
+   D(bug("ppm.datatype/OM_GET: FrameInfo->fri_Resolution.x      : %ld\n", (int) FI->fri_Resolution.x));
+   D(bug("ppm.datatype/OM_GET: FrameInfo->fri_Resolution.y      : %ld\n", (int) FI->fri_Resolution.y));
+
+   D(bug("ppm.datatype/OM_GET: FrameInfo->fri_RedBits           : 0x%lx\n", (unsigned int) FI->fri_RedBits));
+   D(bug("ppm.datatype/OM_GET: FrameInfo->fri_GreenBits         : 0x%lx\n", (unsigned int) FI->fri_GreenBits));
+   D(bug("ppm.datatype/OM_GET: FrameInfo->fri_BlueBits          : 0x%lx\n", (unsigned int) FI->fri_BlueBits));
+
+   D(bug("ppm.datatype/OM_GET: FrameInfo->fri_Dimensions.Width  : %lu\n", (unsigned int) FI->fri_Dimensions.Width));
+   D(bug("ppm.datatype/OM_GET: FrameInfo->fri_Dimensions.Height : %lu\n", (unsigned int) FI->fri_Dimensions.Height));
+   D(bug("ppm.datatype/OM_GET: FrameInfo->fri_Dimensions.Depth  : %lu\n", (unsigned int) FI->fri_Dimensions.Depth));
+
+   D(bug("ppm.datatype/OM_GET: FrameInfo->fri_Screen            : 0x%lx\n", (unsigned int) FI->fri_Screen));
+   D(bug("ppm.datatype/OM_GET: FrameInfo->fri_ColorMap          : 0x%lx\n", (unsigned int) FI->fri_ColorMap));
+
+   D(bug("ppm.datatype/OM_GET: FrameInfo->fri_Flags             : 0x%lx\n", (unsigned int) FI->fri_Flags));
+
+   break;
+  }
+
+  case DTA_Domain:
+  {
+   struct IBox *IB;
+
+   D(bug("ppm.datatype/OM_GET: Tag ID: DTA_Domain\n"));
+
+   IB=(struct IBox *) *(msg->opg_Storage);
+
+   D(bug("ppm.datatype/OM_GET: Domain %ld %ld %ld %ld\n", (int) IB->Left, (int) IB->Top, (int) IB->Width, (int) IB->Height));
+
+   break;
+  }
+
   default:
   {
    for(i=0; i<NumAttribs; i++)
@@ -653,7 +716,32 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 
 #endif /* MYDEBUG */
 
- return(DoSuperMethodA(cl, (Object *) g, (Msg) msg));
+ return(RetVal);
+}
+
+STATIC IPTR DT_LayoutMethod(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
+{
+ IPTR RetVal;
+
+#ifdef MYDEBUG
+ D(bug("ppm.datatype/GM_LAYOUT: MethodID 0x%lx\n", msg->MethodID));
+
+ D(bug("ppm.datatype/GM_LAYOUT: GagdetInfo->Screen 0x%lx\n", (unsigned int) msg->gpl_GInfo->gi_Screen));
+ D(bug("ppm.datatype/GM_LAYOUT: GagdetInfo->Window 0x%lx\n", (unsigned int) msg->gpl_GInfo->gi_Window));
+ D(bug("ppm.datatype/GM_LAYOUT: GagdetInfo->Requester 0x%lx\n", (unsigned int) msg->gpl_GInfo->gi_Requester));
+ D(bug("ppm.datatype/GM_LAYOUT: GagdetInfo->RastPort 0x%lx\n", (unsigned int) msg->gpl_GInfo->gi_RastPort));
+ D(bug("ppm.datatype/GM_LAYOUT: GagdetInfo->Layer 0x%lx\n", (unsigned int) msg->gpl_GInfo->gi_Layer));
+ D(bug("ppm.datatype/GM_LAYOUT: GagdetInfo->Domain %ld %ld %ld %ld\n", (int) msg->gpl_GInfo->gi_Domain.Left, (int) msg->gpl_GInfo->gi_Domain.Top, (int) msg->gpl_GInfo->gi_Domain.Width, (int) msg->gpl_GInfo->gi_Domain.Height));
+
+
+ D(bug("ppm.datatype/GM_LAYOUT: gpl_Initial 0x%lx\n", msg->gpl_Initial));
+#endif /* MYDEBUG */
+
+ RetVal=DoSuperMethodA(cl, (Object *) g, (Msg) msg);
+
+ D(bug("ppm.datatype/GM_LAYOUT: RetVal 0x%lx\n", (unsigned int) RetVal));
+
+ return(RetVal);
 }
 
 /**************************************************************************************************/
@@ -719,6 +807,16 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 	    D(bug("ppm.datatype/DT_Dispatcher: Method OM_NOTIFY\n"));
 
 	    retval = DT_NotifyMethod(cl, (struct Gadget *) o, (struct opUpdate *) msg);
+
+	    break;
+
+	case GM_LAYOUT: 
+	case DTM_PROCLAYOUT:
+	case DTM_ASYNCLAYOUT:
+
+	    D(bug("ppm.datatype/DT_Dispatcher: Method GM_LAYOUT\n"));
+
+	    retval = DT_LayoutMethod(cl, (struct Gadget *) o, (struct gpLayout *) msg);
 
 	    break;
 
