@@ -967,10 +967,11 @@ if test "$aros_target_cc_includes" = "" ; then
 	    
             #copy all the needed headers to a directory beneath gendir
 	    for d in $deps; do
+	        h=$(basename $d)
 	        dir=${aros_target_cc_includes}$(echo $(dirname $d) | \
 		                                sed -n "s,^.*/include\(/.\+\)\+,\1,p")
-		mkdir -p $dir
-		cp $d $dir
+		! test -d $dir && mkdir -p $dir
+		! test -f $dir/$h && { cp $d $dir; chmod o+w $dir/$h; }
 	    done
 	done	    
     fi
