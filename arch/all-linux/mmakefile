@@ -21,7 +21,7 @@ setup-linux :
 setup-exec-linux :
 	@$(NOP)
 
-#MM exec-linux : exec-unix
+#MM exec-linux : exec-unix exec-linux-$(CPU)
 exec-linux :
 	@$(NOP)
 
