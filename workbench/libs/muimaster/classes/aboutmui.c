@@ -960,7 +960,7 @@ BOOPSI_DISPATCHER(IPTR, Aboutmui_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-        case OM_NEW: return Aboutmui$OM_NEW(cl, obj, (struct opSet *)msg);
+        case OM_NEW: return Aboutmui__OM_NEW(cl, obj, (struct opSet *)msg);
         default:     return DoSuperMethodA(cl, obj, msg);
     }
 }
