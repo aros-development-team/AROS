@@ -1694,7 +1694,7 @@ else
 
     %(mmake)-PROGDIR := $(%(mmake)-aros_prefix)
     
-    %(mmake)-install_opts := bindir=$(%(mmake)-PROGDIR) sbindir=$(%(mmake)-PROGDIR) \
+    %(mmake)-install_opts := bindir=$(%(mmake)-prefix) sbindir=$(%(mmake)-prefix) \
     libdir=$(AROS_LIB) includedir=$(AROS_INCLUDES) oldincludedir=$(AROS_INCLUDES)
 endif
 
