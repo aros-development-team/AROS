@@ -170,6 +170,7 @@ static struct ListEntry *AllocListEntry(struct MUI_ListData *data)
 
     mem = (ULONG*)AllocPooled(data->pool, size);
     if (!mem) return NULL;
+    D(bug("List AllocListEntry %p, %ld bytes\n", mem, size));
 
     mem[0] = size; /* Save the size */
     le = (struct ListEntry*)(mem+1);
@@ -183,7 +184,8 @@ static struct ListEntry *AllocListEntry(struct MUI_ListData *data)
 static void FreeListEntry(struct MUI_ListData *data, struct ListEntry *entry)
 {
     ULONG *mem = ((ULONG*)entry)-1;
-    FreePooled(data->pool,mem,mem[0]);
+    D(bug("FreeListEntry %p size=%ld\n", mem, mem[0]));
+    FreePooled(data->pool, mem, mem[0]);
 }
 
 /**************************************************************************
@@ -196,16 +198,22 @@ static int SetListSize(struct MUI_ListData *data, LONG size)
     struct ListEntry **new_entries;
     int new_entries_allocated;
 
-    if (size + 1 <= data->entries_allocated) return 1;
+    if (size + 1 <= data->entries_allocated)
+	return 1;
 
-    new_entries_allocated = data->entries_allocated*2+4;
-    if (new_entries_allocated < size + 1) new_entries_allocated = size + 1 + 10; /* 10 is just random */
+    new_entries_allocated = data->entries_allocated * 2 + 4;
+    if (new_entries_allocated < size + 1)
+	new_entries_allocated = size + 1 + 10; /* 10 is just random */
 
-    new_entries = (struct ListEntry**)AllocVec(new_entries_allocated * sizeof(struct ListEntry*),0);
-    if (!new_entries) return 0;
+    D(bug("List %p : SetListSize allocating %ld bytes\n", data,
+	  new_entries_allocated * sizeof(struct ListEntry *)));
+    new_entries = (struct ListEntry**)AllocVec(new_entries_allocated * sizeof(struct ListEntry *),0);
+    if (NULL == new_entries)
+	return 0;
     if (data->entries)
     {
-	CopyMem(data->entries - 1, new_entries, (data->entries_num+1)*sizeof(struct ListEntry*));
+	CopyMem(data->entries - 1, new_entries,
+		(data->entries_num + 1) * sizeof(struct ListEntry*));
 	FreeVec(data->entries - 1);
     }
     data->entries = new_entries + 1;
@@ -245,7 +253,9 @@ static int InsertListEntries(struct MUI_ListData *data, int pos, struct ListEntr
 **************************************************************************/
 static void RemoveListEntries(struct MUI_ListData *data, int pos, int count)
 {
-    memmove(&data->entries[pos],&data->entries[pos+count],(data->entries_num - (pos + count))*sizeof(struct ListEntry *));
+#warning segfault if entries_num = pos = count = 1
+    memmove(&data->entries[pos], &data->entries[pos+count],
+	    (data->entries_num - (pos + count)) * sizeof(struct ListEntry *));
 }
 
 /**************************************************************************
@@ -568,7 +578,9 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
     if (array)
     {
     	int i;
-    	for (i=0;array[i];i++); /* Count the number of elements */
+	/* Count the number of elements */
+    	for (i = 0; array[i] != NULL; i++)
+	    ;
     	/* Insert them */
     	DoMethod(obj, MUIM_List_Insert, (IPTR)array, i, MUIV_List_Insert_Top);
     }
@@ -594,9 +606,15 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static IPTR List_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    if (!data->intern_pool && data->pool)
+
+    D(bug("List Dispose\n"));
+
+    /* Call destruct method for every entry and free the entries manual to avoid notification */
+    while (data->confirm_entries_num)
     {
-	/* Call destruct method for every entry and free the entries manual to avoid notification */
+	struct ListEntry *lentry = data->entries[--data->confirm_entries_num];
+	DoMethod(obj, MUIM_List_Destruct, (IPTR)lentry->data, (IPTR)data->pool);
+	FreeListEntry(data, lentry);
     }
 
     if (data->intern_pool)
@@ -749,10 +767,6 @@ static IPTR List_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    	D(bug("Bug: confirm_entries != MUIA_List_Entries!\n"));
 		    }
 		    break;
-
-	    case    MUIA_Listview_DoubleClick:
-		    data->doubleclick = tag->ti_Data;
-		    break;
     	}
     }
 
@@ -779,7 +793,7 @@ static IPTR List_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_List_VertProp_Visible: STORE = data->vertprop_visible; return 1;
 	case MUIA_List_VertProp_First: STORE = data->vertprop_first; return 1;
 
-	case MUIA_Listview_DoubleClick: STORE = data->doubleclick; return 1;
+	case MUIA_Listview_DoubleClick: STORE = 0; return 1;
     }
 
     if (DoSuperMethodA(cl, obj, (Msg) msg)) return 1;
@@ -829,8 +843,8 @@ static IPTR List_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 static IPTR List_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-
     struct ListImage *li = List_First(&data->images);
+
     while (li)
     {
 	struct ListImage *next = Node_Next(li);
@@ -881,7 +895,7 @@ static IPTR List_AskMinMax(struct IClass *cl, Object *obj,struct MUIP_AskMinMax 
 	else
 	{
 	    ULONG h = data->entry_maxheight + data->prefs_linespacing;
-	    msg->MinMaxInfo->MinHeight += 3 * h + data->prefs_linespacing;
+	    msg->MinMaxInfo->MinHeight += 2 * h + data->prefs_linespacing;
 	    msg->MinMaxInfo->DefHeight += 8 * h + data->prefs_linespacing;
 	    msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
 	}
@@ -892,7 +906,8 @@ static IPTR List_AskMinMax(struct IClass *cl, Object *obj,struct MUIP_AskMinMax 
 	msg->MinMaxInfo->DefHeight += 96;
 	msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;	
     }
-    D(bug("List minheigh=%d, line maxh=%d\n", msg->MinMaxInfo->MinHeight, data->entry_maxheight));
+    D(bug("List %p minheigh=%d, line maxh=%d\n",
+	  obj, msg->MinMaxInfo->MinHeight, data->entry_maxheight));
     return TRUE;
 }
 
@@ -903,9 +918,32 @@ static IPTR List_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     ULONG rc = DoSuperMethodA(cl,obj,(Msg)msg);
+    LONG new_entries_first = data->entries_first;
 
     /* Calc the numbers of entries visible */
     CalcVertVisible(cl,obj);
+
+    if (data->entries_active < new_entries_first)
+	new_entries_first = data->entries_active;
+
+    if (data->entries_active + 1 >= 
+	(data->entries_first + data->entries_visible))
+	new_entries_first =
+	    data->entries_active - data->entries_visible + 1;
+
+    if ((new_entries_first + data->entries_visible >=
+	 data->entries_num)
+	&&
+	(data->entries_visible <= data->entries_num))
+	new_entries_first =
+	    data->entries_num - data->entries_visible;
+
+    if (data->entries_num <= data->entries_visible)
+	new_entries_first = 0;
+
+    set(obj, new_entries_first != data->entries_first ?
+	MUIA_List_First : TAG_IGNORE,
+	new_entries_first);
 
     /* So the notify takes happens */
     set(obj, MUIA_List_VertProp_Visible, data->entries_visible);
@@ -919,7 +957,6 @@ static IPTR List_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     struct MUI_ListData *data = INST_DATA(cl, obj);
     ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
 
-    D(bug("\nList_Show\n"));
     zune_imspec_show(data->list_cursor, obj);
     zune_imspec_show(data->list_select, obj);
     zune_imspec_show(data->list_selcur, obj);
@@ -1125,20 +1162,7 @@ static VOID List_MakeActive(struct IClass *cl, Object *obj, LONG relx, LONG rely
     if (new_act >= data->entries_num) new_act = data->entries_num - 1;
     else if (new_act < 0) new_act = 0;
 
-    /* Only if changed and if there are really entries within the list */
-    if (new_act != data->entries_active && data->entries_num)
-    {
-    	LONG new_entries_first = data->entries_first;
-    	//LONG old_act = data->entries_active;
-    	if (new_act < new_entries_first)
-	    new_entries_first = new_act;
-	if (new_act >= data->entries_first + data->entries_visible - 1)
-	    new_entries_first = new_act - data->entries_visible + 1;
-
-	SetAttrs(obj,MUIA_List_Active,new_act,
-		     new_entries_first!=data->entries_first?MUIA_List_First:TAG_IGNORE,new_entries_first,
-		     TAG_DONE);
-    }
+    set(obj, MUIA_List_Active, new_act);
 }
 
 /**************************************************************************
@@ -1168,8 +1192,7 @@ static IPTR List_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleE
 
 				if (data->last_active == data->entries_active && DoubleClick(data->last_secs, data->last_mics, msg->imsg->Seconds, msg->imsg->Micros))
 				{
-				    set(obj,MUIA_Listview_DoubleClick, TRUE);
-				    nnset(obj,MUIA_Listview_DoubleClick, FALSE);
+				    set(obj, MUIA_Listview_DoubleClick, TRUE);
 				    data->last_active = -1;
 				    data->last_secs = data->last_mics = 0;
 				} else
@@ -1409,10 +1432,12 @@ static IPTR List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert 
     if (count == -1)
     {
     	/* Count the number of entries */
-    	for(count=0;msg->entries[count];count++);
+    	for(count = 0; msg->entries[count] != NULL; count++)
+	    ;
     }
 
-    if (count <= 0) return ~0;
+    if (count <= 0)
+	return ~0;
 
     switch (msg->pos)
     {
@@ -1442,7 +1467,6 @@ static IPTR List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert 
 
     if (!(SetListSize(data,data->entries_num + count)))
 	return ~0;
-
     if (pos != -1)
     {
     	LONG until = pos + count;
@@ -1464,8 +1488,10 @@ static IPTR List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert 
 		return ~0;
 	    }
 
-	    /* now call the construct method which returns us a pointer which we need to store */
-	    lentry->data = (APTR)DoMethod(obj, MUIM_List_Construct, (IPTR)*toinsert, (IPTR)data->pool);
+	    /* now call the construct method which returns us a pointer which
+	       we need to store */
+	    lentry->data = (APTR)DoMethod(obj, MUIM_List_Construct,
+					  (IPTR)*toinsert, (IPTR)data->pool);
 	    if (!lentry->data)
 	    {
 	    	FreeListEntry(data,lentry);
@@ -1483,14 +1509,14 @@ static IPTR List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert 
 
 	    if (_flags(obj) & MADF_SETUP)
 	    {
-	    	/* We have to calulate the with and height of the newly inserted entry, this
-	    	** has to be done after inserting the element into the list */
-	    	CalcDimsOfEntry(cl,obj,pos);
+	    	/* We have to calculate the width and height of the newly inserted entry,
+		   this has to be done after inserting the element into the list */
+	    	CalcDimsOfEntry(cl, obj, pos);
 	    }
 
 	    toinsert++;
 	    pos++;
-	}
+	} // while (pos < until)
 
 	
 	if (_flags(obj) & MADF_SETUP)
@@ -1511,7 +1537,7 @@ static IPTR List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert 
     	return (ULONG)pos;
     } else
     {
-	/* Sort insertion must works differnt */
+	/* Sort insertion must work differently */
     }
     return ~0;
 }
@@ -1581,7 +1607,7 @@ STATIC IPTR List_InsertSingleAsTree(struct IClass *cl, Object *obj, struct MUIP_
     if (!lentry->data)
     {
 	RemoveListEntries(data, pos, 1);
-    	FreeListEntry(data,lentry);
+    	FreeListEntry(data, lentry);
 	return ~0;
     }
 
@@ -1744,7 +1770,7 @@ STATIC IPTR List_CreateImage(struct IClass *cl, Object *obj, struct MUIP_List_Cr
     if (!li)
 	return NULL;
     li->obj = msg->obj;
-    Enqueue((struct List *)&data->images, (struct Node *)li);
+    AddTail((struct List *)&data->images, (struct Node *)li);
     DoSetupMethod(li->obj, muiRenderInfo(obj));
 
     return (IPTR)li;
