@@ -38,6 +38,7 @@ FUNCTIONS = \
 	setrpattrsa \
 	setwritemask \
 	text \
+	textfit \
 	textlength \
 	waittof \
 	writepixel
