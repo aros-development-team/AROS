@@ -1352,6 +1352,14 @@ static IPTR Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *ms
     if (data->mad_ehn.ehn_Events)
 	DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
 
+    D(bug("Area cleanup %p active=%p\n", obj,
+	  (Object *)XGET(_win(obj), MUIA_Window_ActiveObject)));
+    if (obj == (Object *)XGET(_win(obj), MUIA_Window_ActiveObject))
+    {
+	D(bug("we are active, unset us\n"));
+	set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
+    }
+
     /* It's save to call the following function with NULL */
     if ((data->mad_Flags & MADF_SHOWSELSTATE) &&
 	(data->mad_InputMode != MUIV_InputMode_None))
@@ -1765,7 +1773,7 @@ static IPTR Area_ContextMenuBuild(struct IClass *cl, Object *obj, struct MUIP_Co
 static IPTR Area_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
-    STRPTR id;
+    ULONG id;
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
@@ -1782,7 +1790,7 @@ static IPTR Area_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 static IPTR Area_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
-    STRPTR id;
+    ULONG id;
     //BOOL val = FALSE;
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
