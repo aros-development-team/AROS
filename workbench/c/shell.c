@@ -415,13 +415,18 @@ int main (int argc, char ** argv)
             if(rda!=NULL)
             {
                 if(args[1])
+		{
+		    cli->cli_Interactive=DOSFALSE;
+		    cli->cli_Background=DOSTRUE;
                     execute((STRPTR)args[1]);
+		}
                 else
                 {
                     ULONG num=((struct Process *)FindTask(NULL))->pr_TaskNum;
                     VPrintf("New Shell process %ld\n",&num);
                     Flush(Output());
                     cli->cli_Interactive=DOSTRUE;
+		    cli->cli_Background=DOSFALSE;
                     executefile((STRPTR)args[0]);
                     while (error==0)
                     {
