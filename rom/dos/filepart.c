@@ -2,6 +2,9 @@
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/21 17:43:31  aros
+    Better way to create a TEST
+
     Revision 1.2  1996/08/23 17:06:17  digulla
     Added #include "dos_intern.h"
 
@@ -20,11 +23,7 @@
 	  file part.
     Lang: english
 */
-/* #define NO_AROS 1 */
-#include <dos/dos.h>
-#ifndef NO_AROS
-#include <aros/libcall.h>
-#include <clib/aros_protos.h>
+#ifndef TEST
 #include "dos_intern.h"
 #else
 #define __AROS_LH1(t,fn,a1,bt,bn,o,lib)     t fn (a1)
@@ -32,6 +31,8 @@
 #define __AROS_FUNC_INIT
 #define __AROS_BASE_EXT_DECL(bt,bn)
 #define __AROS_FUNC_EXIT
+#include <exec/types.h>
+#define CLIB_DOS_PROTOS_H
 #endif
 
 
@@ -144,8 +145,6 @@
 
 int main (int argc, char ** argv)
 {
-    // kommt noch ;-)
-
     UWORD i;
     STRPTR s,fileptr;
 
