@@ -20,7 +20,7 @@
 	.type	AROS_SLIB_ENTRY(_ObtainSemaphore,Exec),@function
 AROS_SLIB_ENTRY(_ObtainSemaphore,Exec):
 	movem.l	d0-d1/a0-a1,-(sp)
-	bsr	_Exec_ObtainSemaphore
+	bsr	AROS_SLIB_ENTRY(ObtainSemaphore,Exec)
 	movem.l	(sp)+,d0-d1/a0-a1
 	rts
 
@@ -28,7 +28,7 @@ AROS_SLIB_ENTRY(_ObtainSemaphore,Exec):
 	.type	AROS_SLIB_ENTRY(_ReleaseSemaphore,Exec),@function
 AROS_SLIB_ENTRY(_ReleaseSemaphore,Exec):
 	movem.l	d0-d1/a0-a1,-(sp)
-	bsr	_Exec_ReleaseSemaphore
+	bsr	AROS_SLIB_ENTRY(ReleaseSemaphore,Exec)
 	movem.l	(sp)+,d0-d1/a0-a1
 	rts
 
@@ -36,7 +36,7 @@ AROS_SLIB_ENTRY(_ReleaseSemaphore,Exec):
 	.type	AROS_SLIB_ENTRY(_ObtainSemaphoreShared,Exec),@function
 AROS_SLIB_ENTRY(_ObtainSemaphoreShared,Exec):
 	movem.l	d0-d1/a0-a1,-(sp)
-	bsr	_Exec_ObtainSemaphoreShared
+	bsr	AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec)
 	movem.l	(sp)+,d0-d1/a0-a1
 	rts
 
