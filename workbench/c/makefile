@@ -22,7 +22,7 @@ EXES = $(EXEDIR)/helloworld \
 	$(EXEDIR)/dir \
 	$(EXEDIR)/wait \
 	$(EXEDIR)/forkbomb \
-	$(EXEDIR)/openwin
+	$(EXEDIR)/demowin
 
 all: setup $(EXES)
 

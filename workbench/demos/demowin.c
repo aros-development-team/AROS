@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/08/29 15:14:36  digulla
+    Changed name
+    Tests PrintIText(), too
+
     Revision 1.6  1996/08/28 17:58:05  digulla
     Show off all types of BOOLGADGETs and PROPGADGETs
 
@@ -160,6 +164,9 @@ void Refresh (struct RastPort * rp)
     SetAPen (rp, 2);
     Move (rp, 300, 100);
     Text (rp, "Hello World.", 12);
+
+    Move (rp, 20, 350);
+    Text (rp, "Press \"Complement\" to flip PropGadgets", 39);
 }
 
 #define GAD_WID     100
@@ -241,6 +248,17 @@ DemoPropInfo3 =
     0, 0,
     MAXBODY, MAXBODY,
     0,0,0,0,0,0
+};
+
+struct IntuiText
+DemoIText =
+{
+    1, 2, /* Pens */
+    JAM1, /* Drawmode */
+    10, 10, /* Left, Top */
+    NULL, /* TextAttr */
+    "None", /* Text */
+    NULL /* Next */
 };
 
 struct Gadget
@@ -325,13 +343,13 @@ DemoGadget4 =
     &DemoGadget5, /* NextGadget */
     BORDER+(GAD_WID+BORDER)*3, -((GAD_HEI+BORDER)*2), GAD_WID, GAD_HEI, /* hit box */
     GFLG_GADGHNONE
-	| GFLG_LABELSTRING
+	| GFLG_LABELITEXT
 	| GFLG_RELBOTTOM
 	, /* Flags */
     GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &DemoTopBorder, NULL, /* Render */
-    (struct IntuiText *)"None", /* Text */
+    &DemoIText, /* Text */
     0L, NULL, /* MutualExcl, SpecialInfo */
     5, /* GadgetID */
     NULL /* UserData */
@@ -467,6 +485,9 @@ static LONG tinymain(void)
     }
 
     rp = win->RPort;
+
+    DemoIText.LeftEdge = GAD_WID/2 - rp->Font->tf_XSize*2;
+    DemoIText.TopEdge = GAD_HEI/2 - rp->Font->tf_YSize/2 + rp->Font->tf_Baseline;
 
     cont = 1;
     draw = 0;
