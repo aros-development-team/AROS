@@ -89,7 +89,7 @@ setup-x11keymaptable :
 	%mkdirs_q $(DEVSDIR)/Keymaps $(DEVSDIR)/Keymaps/X11
 		
 $(TOOLDIR)/makexkeytable: makexkeytable.c
-	$(CC) $(GUI_CCFLAGS) $(GUI_LDFLAGS) -lX11 $< -o $@ 
+	$(CC) $(GUI_CCFLAGS) -I$(GUI_INCDIR) $(GUI_LDFLAGS) -lX11 $< -o $@ 
 
 $(OBJDIR)/%.o : %.c
 	%compile_q opt="$(SHARED_CFLAGS) $(CFLAGS)"
