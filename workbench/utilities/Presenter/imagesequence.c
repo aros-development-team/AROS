@@ -106,7 +106,8 @@ static IPTR ImageSequence$MUIM_Setup
 
 static IPTR ImageSequence$MUIM_Cleanup
 (
-    struct IClass *CLASS, Object *self, struct MUIP_Cleanup *message)
+    struct IClass *CLASS, Object *self, struct MUIP_Cleanup *message
+)
 {
     struct ImageSequence_DATA *data = INST_DATA( CLASS, self );
 
