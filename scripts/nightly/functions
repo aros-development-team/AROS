@@ -54,13 +54,13 @@ archive()
 {
     archdir=$(dirname $1)
     archname=$(basename $1)
+    oldpwd=$(pwd)
     
     execute mkdir -p $archdir
     execute tar cjvf $1 $2
-    execute pushd
     cd      $archdir
     execute md5sum $archname >$archname.md5
-    execute popd
+    cd      $oldpwd
 }
 
 resetl()
