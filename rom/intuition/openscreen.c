@@ -9,6 +9,7 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
+#include <proto/layers.h>
 
 #ifndef DEBUG_OpenScreen
 #   define DEBUG_OpenScreen 0
@@ -73,10 +74,21 @@
 
     if (screen)
     {
-	if (!InitRastPort (&screen->Screen.RastPort))
+      /* First Init the RastPort then get the BitPlanes!! */
+        int success = InitRastPort (&screen->Screen.RastPort);      
+        screen->Screen.RastPort.BitMap = AllocBitMap(newScreen->Width, 
+                                                     newScreen->Height, 
+                                                     newScreen->Depth, 
+                                                     BMF_CLEAR /* |BMF_DISPLAYABLE */, 
+                                                     NULL);
+	if (!success  || (NULL == screen->Screen.RastPort.BitMap) )
 	{
-	    FreeMem (screen, sizeof (struct IntScreen));
-	    screen = NULL;
+          if (screen->Screen.RastPort.BitMap)
+            FreeBitMap(screen->Screen.RastPort.BitMap);
+
+	  FreeMem (screen, sizeof (struct IntScreen));
+	  screen = NULL;
+          return NULL;
 	}
     }
 
@@ -93,7 +105,13 @@
 
 	screen->Screen.Flags = newScreen->Type;
 
-	screen->Screen.BitMap.Depth = newScreen->Depth;
+        /* Mark the bitmap of the screen as an AROS-displayed BitMap */
+	screen->Screen.RastPort.BitMap->Flags |= BMF_AROS_DISPLAYED;
+        /* 
+           Copy the data from the rastport's bitmap 
+           to the screen's bitmap structure 
+        */
+	screen->Screen.BitMap = *screen->Screen.RastPort.BitMap;
 
 	screen->Screen.BarHeight = 0;
 	screen->Screen.BarVBorder = 0;
@@ -106,15 +124,14 @@
 	screen->Screen.WBorRight = 0;
 	screen->Screen.WBorBottom = 0;
 
-	InitRastPort (&screen->Screen.RastPort);
-
-	screen->Screen.BitMap = *screen->Screen.RastPort.BitMap;
 
 	screen->Screen.Title = newScreen->DefaultTitle;
 
 	screen->Screen.NextScreen = IntuitionBase->FirstScreen;
 	IntuitionBase->FirstScreen =
 	    IntuitionBase->ActiveScreen = &screen->Screen;
+
+	InitLayers(&screen->Screen.LayerInfo);
 
 	screen->DInfo.dri_Version = DRI_VERSION;
 	screen->DInfo.dri_NumPens = NUMDRIPENS;
