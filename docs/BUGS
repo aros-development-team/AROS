@@ -347,7 +347,7 @@ bergers@aros.org
 Running multiple "window"s at the same time leads to flickering on the
 whole screen.
 
-BUG000050
+BUG000050 fixed
 nlorentz@online.no
 Running "window" several times after each other causes a severe
 memory leak, not inside AROS itself, but in Linux
@@ -369,7 +369,7 @@ BUG000052
 nlorentz@online.no
 Buttons in mxgads are no longer highlighted when pressed.
 
-BUG000053
+BUG000053 fixed
 bergers@aros.org
 Games/Mine doesn't run any more. Crashes immediately.
 
@@ -379,10 +379,10 @@ There seems to be a problem when colors are changed with the background when
 a window is moved. Probably also the same problem that causes the lines to
 be drawn into the window in fish/304_clines.
 
-BUG000055
+BUG000055 fixed
 newshell draws the window but then segfaults
 
-BUG000056
+BUG000056 fixed
 hkiel@aros.org
 'Run' fish/worldtime twice. When the two programs update their display,
 the strings are only partially displayed in their correct colors (for
