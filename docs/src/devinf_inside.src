@@ -41,7 +41,7 @@ After some time, make will finish and you will have a directory
 linux.
 
 \item CD into \filename{AROS/bin/linux-i386/AROS/} and call
-\shell{arosshell}. This will produce lots of debug output and a
+\shell{arosshell}. This will produce some debug output and a
 prompt \shell{Workbench:> }. Now type \shell{dir all}. If you
 get a list of all generated files, congratiulations, your copy
 is working.
