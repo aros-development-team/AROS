@@ -106,6 +106,7 @@ typedef struct _APState
 typedef struct AP
 {
     struct Window *ai_thisWindow;
+    struct Window *ai_lastActivatedWindow;
     BOOL           ai_mouseHasMoved;
 } AP;
 
@@ -334,7 +335,7 @@ static void autoActivate(CxMsg *msg, CxObj *co)
     {
 	struct Screen *screen;
 	struct Layer  *layer;
-
+	
 	if (IntuitionBase->ActiveWindow != NULL)
 	{
 	    screen = IntuitionBase->ActiveWindow->WScreen;
@@ -344,19 +345,19 @@ static void autoActivate(CxMsg *msg, CxObj *co)
 	    screen = IntuitionBase->ActiveScreen;
 	}
 	
-	layer = WhichLayer(&screen->LayerInfo, screen->MouseX, screen->MouseY);
-	
+	layer = screen ? WhichLayer(&screen->LayerInfo, screen->MouseX, screen->MouseY) : NULL;
+		
 	apInfo.ai_thisWindow = (layer != NULL) ?
 	    (struct Window *)layer->Window : NULL;
 
 	if (apInfo.ai_mouseHasMoved ||
-	    IntuitionBase->ActiveWindow == apInfo.ai_thisWindow)
+	    (IntuitionBase->ActiveWindow == apInfo.ai_thisWindow) ||
+	    (apInfo.ai_lastActivatedWindow == apInfo.ai_thisWindow))
 	{
 	    apInfo.ai_mouseHasMoved = FALSE;
-
 	    return;
 	}
-	
+
 	/* Two timer events and mouse hasn't moved in between. */
 	
 	apInfo.ai_mouseHasMoved = FALSE;
@@ -365,6 +366,7 @@ static void autoActivate(CxMsg *msg, CxObj *co)
 	   hack... */
 	if (apInfo.ai_thisWindow != NULL)
 	{
+	    apInfo.ai_lastActivatedWindow = apInfo.ai_thisWindow;
 	    ActivateWindow(apInfo.ai_thisWindow);
 	}
 
