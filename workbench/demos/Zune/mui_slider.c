@@ -95,7 +95,7 @@ int main (int argc, char **argv)
 	     (IPTR)app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
     set(mainWin, MUIA_Window_Open, TRUE);
-    if (!xget(mainWin, MUIA_Window_Open))
+    if (!XGET(mainWin, MUIA_Window_Open))
     {
 	MUI_DisposeObject(app);
 	fprintf(stderr, "%s : can't open main window.\n", argv[0]);

@@ -167,7 +167,7 @@ kprintf("*** set up radio1...\n");
      */
 kprintf("*** open window...\n");
     set(mainWin, MUIA_Window_Open, TRUE);
-    if (!xget(mainWin, MUIA_Window_Open))
+    if (!XGET(mainWin, MUIA_Window_Open))
     {
 	MUI_DisposeObject(app);
 	kprintf("%s : can't open main window.\n", argv[0]);
