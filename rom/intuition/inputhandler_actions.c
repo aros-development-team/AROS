@@ -652,6 +652,12 @@ void HandleIntuiActions(struct IIHData *iihdata,
 
     D(bug("Handle Intuition action messages\n"));
 
+    if (iihdata->ActiveSysGadget)
+    {
+     	D(bug("Handle Intuition action messages. Doing nothing because of active drag or resize gadget!\n"));   	
+	return;
+    }
+    
     for (;;)
     {
         LOCK_ACTIONS();
