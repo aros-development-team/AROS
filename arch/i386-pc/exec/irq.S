@@ -47,10 +47,20 @@
 tions to hardware - EOI signals. Both call then IntServer routine with proper
 parameter. After all this things they restore CPU state in user mode */
 
-slave_irq:		outb	%al,$0xa0
+slave_irq:		inb	$0xa1,%al
+			outb	%al,$0xa1
 			movb	$0x62,%al
-main_irq:		outb	%al,$0x20
-			movl	(4),%ebx
+			outb	%al,$0x20
+			movb	$0x20,%al
+			outb	%al,$0xa0
+			jmp	main_airq
+			
+main_irq:		inb	$0x21,%al
+			outb	%al,$0x21
+			movb	$0x20,%al
+			outb	%al,$0x20
+
+main_airq:		movl	(4),%ebx
 			movl	iv_Data(%edx,%ebx),%eax
 			pushl	%eax
 			movl	iv_Code(%edx,%ebx),%eax
@@ -66,104 +76,109 @@ modifications. */
 
 Irq_0:			SUPER
 			REG_STORE
-			movb	$0x60,%al
 			movl	$IVIRQ0,%edx
 			jmp	main_irq
 
 Irq_1:			SUPER
 			REG_STORE
-			movb	$0x61,%al
 			movl	$IVIRQ1,%edx
 			jmp	main_irq
 
 Irq_2:			SUPER
 			REG_STORE
-			movb	$0x62,%al
 			movl	$IVIRQ2,%edx
 			jmp	main_irq
 
 Irq_3:			SUPER
 			REG_STORE
-			movb	$0x63,%al
 			movl	$IVIRQ3,%edx
 			jmp	main_irq
 
 Irq_4:			SUPER
 			REG_STORE
-			movb	$0x64,%al
 			movl	$IVIRQ4,%edx
 			jmp	main_irq
 
 Irq_5:			SUPER
 			REG_STORE
-			movb	$0x65,%al
 			movl	$IVIRQ5,%edx
 			jmp	main_irq
 
 Irq_6:			SUPER
 			REG_STORE
-			movb	$0x66,%al
 			movl	$IVIRQ6,%edx
 			jmp	main_irq
 
 Irq_7:			SUPER
 			REG_STORE
-			movb	$0x67,%al
 			movl	$IVIRQ7,%edx
 			jmp	main_irq
 
 Irq_8:			SUPER
 			REG_STORE
-			movb	$0x60,%al
 			movl	$IVIRQ8,%edx
 			jmp	slave_irq
 
 Irq_9:			SUPER
 			REG_STORE
-			movb	$0x61,%al
 			movl	$IVIRQ9,%edx
 			jmp	slave_irq
 
 Irq_a:			SUPER
 			REG_STORE
-			movb	$0x62,%al
 			movl	$IVIRQA,%edx
 			jmp	slave_irq
 
 Irq_b:			SUPER
 			REG_STORE
-			movb	$0x63,%al
 			movl	$IVIRQB,%edx
 			jmp	slave_irq
 
 Irq_c:			SUPER
 			REG_STORE
-			movb	$0x64,%al
 			movl	$IVIRQC,%edx
 			jmp	slave_irq
 
 Irq_d:			SUPER
 			REG_STORE
-			movb	$0x65,%al
 			movl	$IVIRQD,%edx
 			jmp	slave_irq
 
 Irq_e:			SUPER
 			REG_STORE
-			movb	$0x66,%al
 			movl	$IVIRQE,%edx
 			jmp	slave_irq
 
 Irq_f:			SUPER
 			REG_STORE
-			movb	$0x67,%al
 			movl	$IVIRQF,%edx
 			jmp	slave_irq
 
 
 /* Soft int */
 
-Irq_soft:		SUPER
+Irq_soft:		cmpb	$0,supervisor
+			je	non_super
+
+			pushal
+			
+/*			sti */		/* Enable hardware interrupts */
+			cmpb	$0,softdisable
+			jne	2f	/* Softints disabled */
+
+			movl	(4),%eax
+			pushl	%eax			/* SysBase */
+			pushl	$SoftIntDispatch	/* intCode */
+			pushl	$0			/* intData */
+			pushl	$0			/* custom */
+			pushl	$0			/* intReady */
+			call	SoftIntDispatch
+			addl	$20,%esp
+
+2:			popal
+			iret
+			
+non_super:		SUPER
 			REG_STORE
 			sti		/* Enable hardware interrupts */
 			cmpb	$0,softdisable
@@ -234,3 +249,4 @@ inttab:	.long	Irq_0
 	.long	Irq_e
 	.long	Irq_f
 	.long	Irq_soft	/* Software interrupt */
+	
