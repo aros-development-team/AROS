@@ -8,9 +8,6 @@
     Desc: Basic DOS structures and constants
     Lang: english
 */
-#ifndef _VALUES_H
-#   include <values.h>
-#endif
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
