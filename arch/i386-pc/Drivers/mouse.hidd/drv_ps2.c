@@ -66,7 +66,8 @@ int test_mouse_ps2(OOP_Class *cl, OOP_Object *o)
     {
         HIDDT_IRQ_Handler   *irq;
 
-        if ((irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR | MEMF_PUBLIC)))        
+        data->u.ps2.irq = irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR | MEMF_PUBLIC);
+        if (irq != NULL)
         {
             int result;
             
@@ -105,10 +106,15 @@ int test_mouse_ps2(OOP_Class *cl, OOP_Object *o)
     return 0; 
 }
 
-/****************************************************************************************/
+void dispose_mouse_ps2(OOP_Class *cl, OOP_Object *o) {
+struct mouse_data *data = OOP_INST_DATA(cl, o);
 
-#undef SysBase
-#define SysBase (hw->sysBase)
+   HIDD_IRQ_RemHandler(data->u.ps2.irqhidd, data->u.ps2.irq);
+   FreeMem(data->u.ps2.irq, sizeof(HIDDT_IRQ_Handler));
+   OOP_DisposeObject(data->u.ps2.irqhidd);
+}
+
+/****************************************************************************************/
 
 #define AUX_RECONNECT           170
 #define AUX_ACK                 0xFA 
@@ -126,6 +132,27 @@ void kbd_write_cmd(int cmd);
 void aux_write_ack(int val);
 void kbd_write_output_w(int data);
 void kbd_write_command_w(int data);
+
+/****************************************************************************************/
+
+void getps2Event(struct getps2data *, struct pHidd_Mouse_Event *);
+
+void getps2State(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_Event *event) {
+struct mouse_data *data = OOP_INST_DATA(cl, o);
+UBYTE ack;
+
+	aux_write(KBD_OUTCMD_DISABLE);
+	/* switch to remote mode */
+	aux_write(KBD_OUTCMD_SET_REMOTE_MODE);
+	/* we want data */
+	ack = data->u.ps2.expected_mouse_acks+1;
+	aux_write(KBD_OUTCMD_READ_DATA);
+	while (data->u.ps2.expected_mouse_acks>=ack)
+		mouse_usleep(1000);
+	/* switch back to sream mode */
+	aux_write(KBD_OUTCMD_SET_STREAM_MODE);
+	aux_write(KBD_OUTCMD_ENABLE);
+}
 
 /****************************************************************************************/
 
@@ -163,6 +190,10 @@ int kbd_detect_aux()
 }
 
 /****************************************************************************************/
+
+#undef SysBase
+#define SysBase (hw->sysBase)
+
 
 void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
