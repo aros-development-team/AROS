@@ -80,10 +80,13 @@ FUNCTIONS := \
 	gadgetmouse \
 	getattr \
 	getdefaultpubscreen \
+	getdefprefs \
+	getprefs \
 	getscreendata \
 	getscreendrawinfo \
 	helpcontrol \
 	initrequester \
+	intuitextlength \
 	itemaddress \
 	lateintuiinit \
 	lendmenus \
@@ -136,6 +139,7 @@ FUNCTIONS := \
 	setmenustrip \
 	setmousequeue \
 	setpointer \
+	setprefs \
 	setwindowtitles \
 	showtitle \
 	sizewindow \
