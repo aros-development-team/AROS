@@ -257,6 +257,7 @@ struct DateStamp ds;
 ********************************************/
 void work(struct afsbase *afsbase) {
 struct IOFileSys *iofs;
+struct AfsHandle *afshandle;
 LONG retval;
 
 	afsbase->port.mp_SigBit = SIGBREAKB_CTRL_F;
@@ -266,6 +267,7 @@ LONG retval;
 		{
 			D(bug("afs.handler: got command %ld\n",iofs->IOFS.io_Command));
 			error=0;
+			afshandle = (struct AfsHandle *)iofs->IOFS.io_Unit;
 			switch (iofs->IOFS.io_Command)
 			{
 /*			case (UWORD)-1 :
@@ -281,7 +283,7 @@ LONG retval;
 				PutMsg(&afsbase->rport, &iofs->IOFS.io_Message);
 				continue;
 			case (UWORD)-2 :
-				volume=(struct Volume *)iofs->IOFS.io_Unit;
+				volume=((struct AfsHandle *)iofs->IOFS.io_Unit)->volume;
 				if (volume->locklist)
 				{
 					error = ERROR_OBJECT_IN_USE;
@@ -298,7 +300,7 @@ LONG retval;
 				iofs->IOFS.io_Unit=(struct Unit *)openf
 					(
 						afsbase,
-						(struct AfsHandle *)iofs->IOFS.io_Unit,
+						afshandle,
 						iofs->io_Union.io_OPEN.io_Filename,
 						iofs->io_Union.io_OPEN.io_FileMode
 					);
@@ -307,14 +309,14 @@ LONG retval;
 				closef
 					(
 						afsbase,
-						(struct AfsHandle *)iofs->IOFS.io_Unit
+						afshandle
 					);
 				break;
 			case FSA_READ :
 				iofs->io_Union.io_READ.io_Length=read
 					(
 						afsbase,
-						(struct AfsHandle *)iofs->IOFS.io_Unit,
+						afshandle,
 						iofs->io_Union.io_READ.io_Buffer,
 						iofs->io_Union.io_READ.io_Length
 					);
@@ -323,7 +325,7 @@ LONG retval;
 				iofs->io_Union.io_WRITE.io_Length=write
 					(
 						afsbase,
-						(struct AfsHandle *)iofs->IOFS.io_Unit,
+						afshandle,
 						iofs->io_Union.io_WRITE.io_Buffer,
 						iofs->io_Union.io_WRITE.io_Length
 					);
@@ -332,7 +334,7 @@ LONG retval;
 				iofs->io_Union.io_SEEK.io_Offset=seek
 					(
 						afsbase,
-						(struct AfsHandle *)iofs->IOFS.io_Unit,
+						afshandle,
 						iofs->io_Union.io_SEEK.io_Offset,
 						iofs->io_Union.io_SEEK.io_SeekMode
 					);
@@ -356,7 +358,7 @@ LONG retval;
 				error=examine
 					(
 						afsbase,
-						(struct AfsHandle *)iofs->IOFS.io_Unit,
+						afshandle,
 						iofs->io_Union.io_EXAMINE.io_ead,
 						iofs->io_Union.io_EXAMINE.io_Size,
 						iofs->io_Union.io_EXAMINE.io_Mode,
@@ -367,7 +369,7 @@ LONG retval;
 				error=examineAll
 					(
 						afsbase,
-						(struct AfsHandle *)iofs->IOFS.io_Unit,
+						afshandle,
 						iofs->io_Union.io_EXAMINE_ALL.io_ead,
 						iofs->io_Union.io_EXAMINE_ALL.io_Size,
 						iofs->io_Union.io_EXAMINE_ALL.io_Mode
@@ -377,7 +379,7 @@ LONG retval;
 				error=examineNext
 					(
 						afsbase,
-						(struct AfsHandle *)iofs->IOFS.io_Unit,
+						afshandle,
 						iofs->io_Union.io_EXAMINE_NEXT.io_fib
 					);
 				break;
@@ -385,7 +387,7 @@ LONG retval;
 				iofs->IOFS.io_Unit=(struct Unit *)openfile
 					(
 						afsbase,
-						(struct AfsHandle *)iofs->IOFS.io_Unit,
+						afshandle,
 						iofs->io_Union.io_OPEN_FILE.io_Filename,
 						iofs->io_Union.io_OPEN_FILE.io_FileMode,
 						iofs->io_Union.io_OPEN_FILE.io_Protection
@@ -395,7 +397,7 @@ LONG retval;
 				iofs->IOFS.io_Unit=(struct Unit *)createDir
 					(
 						afsbase,
-						(struct AfsHandle *)iofs->IOFS.io_Unit,
+						afshandle,
 						iofs->io_Union.io_CREATE_DIR.io_Filename,
 						iofs->io_Union.io_CREATE_DIR.io_Protection
 					);
@@ -418,7 +420,7 @@ LONG retval;
 				error=rename
 					(
 						afsbase,
-						(struct AfsHandle *)iofs->IOFS.io_Unit,
+						afshandle,
 						iofs->io_Union.io_RENAME.io_Filename,
 						iofs->io_Union.io_RENAME.io_NewName
 					);
@@ -427,7 +429,7 @@ LONG retval;
 				error=deleteObject
 					(
 						afsbase,
-						(struct AfsHandle *)iofs->IOFS.io_Unit,
+						afshandle,
 						iofs->io_Union.io_DELETE_OBJECT.io_Filename
 					);
 				break;
@@ -435,7 +437,7 @@ LONG retval;
 				error=setComment
 					(
 						afsbase,
-						(struct AfsHandle *)iofs->IOFS.io_Unit,
+						afshandle,
 						iofs->io_Union.io_SET_COMMENT.io_Filename,
 						iofs->io_Union.io_SET_COMMENT.io_Comment
 					);
@@ -444,7 +446,7 @@ LONG retval;
 				error=setProtect
 					(
 						afsbase,
-						(struct AfsHandle *)iofs->IOFS.io_Unit,
+						afshandle,
 						iofs->io_Union.io_SET_PROTECT.io_Filename,
 						iofs->io_Union.io_SET_PROTECT.io_Protection
 					);
@@ -457,7 +459,7 @@ LONG retval;
 				error=setDate
 					(
 						afsbase,
-						(struct AfsHandle *)iofs->IOFS.io_Unit,
+						afshandle,
 						iofs->io_Union.io_SET_DATE.io_Filename,
 						&iofs->io_Union.io_SET_DATE.io_Date
 					);
@@ -470,7 +472,7 @@ LONG retval;
 				error=inhibit
 					(
 						afsbase,
-						((struct AfsHandle *)iofs->IOFS.io_Unit)->volume,
+						afshandle->volume,
 						iofs->io_Union.io_INHIBIT.io_Inhibit
 					);
 				break;
@@ -478,7 +480,7 @@ LONG retval;
 				error=format
 					(
 						afsbase,
-						((struct AfsHandle *)iofs->IOFS.io_Unit)->volume,
+						afshandle->volume,
 						iofs->io_Union.io_FORMAT.io_VolumeName,
 						iofs->io_Union.io_FORMAT.io_DosType
 					);
@@ -487,14 +489,14 @@ LONG retval;
 				iofs->io_Union.io_RELABEL.io_Result=relabel
 					(
 						afsbase,
-						((struct AfsHandle *)iofs->IOFS.io_Unit)->volume,
+						afshandle->volume,
 						iofs->io_Union.io_RELABEL.io_NewName
 					);
 					break;
 			case FSA_DISK_INFO :
 				error=getDiskInfo
 					(
-						((struct AfsHandle *)iofs->IOFS.io_Unit)->volume,
+						afshandle->volume,
 						iofs->io_Union.io_INFO.io_Info
 					);
 				break;
@@ -503,6 +505,7 @@ LONG retval;
 				retval=DOSFALSE;
 				error=ERROR_ACTION_NOT_KNOWN;
 			}
+			checkCache(afsbase, afshandle->volume->blockcache);
 			iofs->io_DosError=error;
 			ReplyMsg(&iofs->IOFS.io_Message);
 		}
