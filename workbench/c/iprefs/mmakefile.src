@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := main vars patches misc localeprefs fontprefs
+FILES := main vars patches misc localeprefs fontprefs serialprefs
 
 EXEDIR := $(AROS_C)
 EXE := $(EXEDIR)/IPrefs

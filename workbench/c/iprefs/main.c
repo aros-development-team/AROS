@@ -61,7 +61,7 @@ preftable[] =
     {"palette"	    , paletteprefsname  , NULL	    	    	},
     {"wbpattern"    , patternprefsname  , NULL	    	    	},
     {"icontrol"     , icontrolprefsname , NULL	    	    	},
-    {"serial"	    , serialprefsname	, NULL	    	    	},
+    {"serial"	    , serialprefsname	, SerialPrefs_Handler 	},
     {"printer"	    , printerprefsname	, NULL	    	    	},
     {"pointer"	    , pointerprefsname  , NULL	    	    	},
     {"overscan"     , overscanprefsname , NULL	    	    	},
