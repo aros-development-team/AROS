@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.4  1999/10/25 13:58:19  SDuvan
+    Added more strings -- not only errors anymore
+
     Revision 1.3  1998/10/20 16:44:34  hkiel
     Amiga Research OS
 
@@ -13,6 +16,7 @@
 */
 #include <dos/dos.h>
 #include <dos/dosasl.h>
+#include <dos/dosextens.h>
 #include "dos_intern.h"
 
 struct EString EString[]=
@@ -65,5 +69,16 @@ struct EString EString[]=
 { ERROR_BUFFER_OVERFLOW,	"Buffer overflow" },
 { ERROR_BREAK,			"Break" },
 { ERROR_NOT_EXECUTABLE, 	"File is not executable" },
+
+{ STRING_INSERT_VOLUME,         "Please insert volume\n%s\nin any drive" },
+{ STRING_VOLUME_FULL,           "The volume %s is full" },
+{ STRING_NO_DISK,               "No disk in drive %s" },
+{ STRING_NO_DOS_DISK,           "Not a DOS disk in drive %s" },
+{ STRING_MUST_REPLACE,          "You MUST replace volume\n%s\nin drive %s" },
+
+{ STRING_RETRY,                 "Retry" },
+{ STRING_CANCEL,                "Cancel" },
+{ STRING_REQUESTTITLE,          "System requester" },
+
 { 0,				"Undefined error" }
 };
