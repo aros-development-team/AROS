@@ -1235,7 +1235,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    break;
 		}
 
-        	bug("\x07" "\n\n======== Unknown IEClass: addr = %x  class = %d (origclass = %d)! =============\n\n",orig_ie, ie->ie_Class,orig_ie->ie_Class);
+        	bug("[Intui] InputHandler: Unknown IEClass: addr = %x  class = %d (origclass = %d)\n",orig_ie, ie->ie_Class,orig_ie->ie_Class);
 		break;
 	    
 	} /* switch (ie->ie_Class) */
