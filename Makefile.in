@@ -23,7 +23,7 @@ makedirs:
 	else true ; fi
 
 # Create the tools that are used to build AROS.
-tools : makedirs $(TOOLLIB) $(GENMF) $(MODTOOL) $(CPAK) $(ARCHTOOL) $(FLEXCAT) $(GENSKELETON)
+tools : makedirs $(TOOLLIB) $(GENMF) $(MODTOOL) $(CPAK) $(ARCHTOOL) $(FLEXCAT) $(GENSKELETON) $(CREATEDTDESC)
 
 $(TOOLLIB) : $(wildcard $(TOP)/tools/toollib/*.[ch])
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/toollib TOP=$(TOP)
@@ -45,6 +45,9 @@ $(FLEXCAT) : $(TOP)/tools/FlexCat/flexcat.c
 
 $(GENSKELETON) : $(TOP)/tools/genskeleton/genskeleton.c
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/genskeleton TOP=$(TOP)
+
+$(CREATEDTDESC) : $(wildcard $(TOP)/tools/dtdesc/*.[ch]) $(wildcard $(TOP)/tools/dtdesc/c_iff/*.[ch])
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc -f Makefile.aros TOP=$(TOP)
 
 # MetaMake apparently requires a slighty different compilation. Probably
 # because it is sort-of an external package as well.
@@ -77,6 +80,8 @@ arch-clean: clean
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/cpak clean
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/genmf clean
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/toollib clean
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/genskeleton clean
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc -f Makefile.aros clean
 
 # Really clean all - like a clean checkout
 dist-clean: arch-clean
