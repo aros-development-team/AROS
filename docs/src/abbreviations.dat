@@ -1,0 +1,49 @@
+BOOPSI/;BOOPSI
+alib_commodities;Amiga.lib - Commodities
+alib_stdio;Amiga.lib - Standard I/O
+amigaguide;AmigaGuide
+arp;ARP
+asl;Asl
+battclock;Battery backedup clock
+battmem;Battery backedup memory
+bullet;Bullet.library (Fonts)
+c/;CLI Tools
+cardres;Card.resource
+cia;Cia.resource
+commodities;Commodities.library
+console;Console.device
+datatypes;Datatypes.library
+disk;Disk.resource
+diskfont;Diskfont.library
+dos;Dos.library
+dtclass;DTClass
+exec;Exec.library
+expansion;Expansion.library
+gadtools;GadTools.library
+graphics;Graphics.library
+icon;Icon.library
+iffparse;IFFParse.library
+input;Input.device
+intuition;Intuition.library
+keymap;Keymap.library
+layers;Layers.library
+locale;Locale.library
+lowlevel;LowLevel.library
+mathffp;MathFFP.library
+mathieeedoubbas;MathIEEEDoubleBase
+mathieeedoubtrans;MathIEEEDoubleTrans
+mathieeesingbas;MathIEEESingleBase
+mathieeesingtrans;MathIEEESingleTrans
+mathtrans;MathTrans
+misc;Misc.resource
+nonvolatile;NonVolatile.library
+potgo;Potgo.resource
+ramdrive;Ramdrive.device
+realtime;RealTime.library
+reqtools;ReqTools.library
+rexxsyslib;RexxSys.library
+timer;Timer.device
+translator;Translater.library
+utility;Utility.library
+wb;Workbench.library
+DevCMD;Device commands
