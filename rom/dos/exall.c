@@ -251,7 +251,13 @@
 	    iofs.io_DosError = ERROR_BAD_NUMBER;
 	else
 	{
-	    while (ExNext(lock, icontrol->fib))
+	    for
+	    (   ;
+	        ExNext(lock, icontrol->fib); 
+		/* Record the latest DiskKey into LastKey so that we can roll back to it
+		   in case of a buffer overflow and when getting called again.  */	   
+		control->eac_LastKey = icontrol->fib->fib_DiskKey
+	    )
 	    {    
 	        /* Try to match the filename, if required.  */
 		if (control->eac_MatchString &&
@@ -304,10 +310,6 @@
 		    case 0:
 			curr->ed_Next = (struct ExAllData *)(((IPTR)next + AROS_PTRALIGN - 1) & ~(AROS_PTRALIGN - 1));
 		}
-
-		/* Record the latest DiskKey into LastKey so that we can roll back to it
-		   in case of a buffer overflow and when getting called again.  */	   
-                control->eac_LastKey = icontrol->fib->fib_DiskKey;
 		    
 		/* Do some more matching... */
 		if (control->eac_MatchFunc &&
