@@ -10,7 +10,7 @@
 #define MUIC_IconListview               "IconListview.mui"
 
 /*** Identifier base ********************************************************/
-#define MUIB_IconListview               (MUIB_ZUNE | 0x00003500)
+#define MUIB_IconListview               (MUIB_ZUNE | 0x00004500)
 
 /*** Attributes *************************************************************/
 #define MUIA_IconListview_IconList      (MUIB_IconListview | 0x00000000) /* Zune: V1  i.g Object * */
