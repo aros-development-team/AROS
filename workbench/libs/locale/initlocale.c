@@ -55,7 +55,7 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 		AROS_UFCA(STRPTR, "english.", A0),
 		AROS_UFCA(STRPTR, lName, A1),
 		AROS_UFCA(ULONG, 10, D0),
-		AROS_UFCA(ULONG, SC_ASCII, D1) != 0))
+		AROS_UFCA(ULONG, SC_ASCII, D1)) != 0)
 	{
     	    /* Try and open the specified language */
     	    lang = OpenLibrary(lName, 0);
