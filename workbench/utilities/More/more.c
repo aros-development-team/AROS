@@ -438,8 +438,8 @@ static void MakeGadgets(void)
 
     for(i = 0;i < NUM_IMAGES;i++)
     {
-	img[i] = NewObject(0, SYSICLASS, SYSIA_DrawInfo	, dri		, 
-				         SYSIA_Which	, img2which[i]	, 
+	img[i] = NewObject(0, SYSICLASS, SYSIA_DrawInfo	, dri, 
+				         SYSIA_Which	, (Tag)img2which[i], 
 				         TAG_DONE);
 
 	if (!img[i]) Cleanup(MSG(MSG_CANT_CREATE_SYSIMAGE));
@@ -454,7 +454,7 @@ static void MakeGadgets(void)
     h_offset = imageh[IMG_LEFTARROW] / 4;
 
     firstgadget = 
-    gad[GAD_UPARROW] = NewObject(0, BUTTONGCLASS, GA_Image	, img[IMG_UPARROW]							, 
+    gad[GAD_UPARROW] = NewObject(0, BUTTONGCLASS, GA_Image	, (Tag)img[IMG_UPARROW]							, 
 						  GA_RelRight	, -imagew[IMG_UPARROW] + 1						, 
 						  GA_RelBottom	, -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1	, 
 						  GA_ID		, GAD_UPARROW								, 
@@ -463,12 +463,12 @@ static void MakeGadgets(void)
 						  GA_RelVerify	, TRUE	    	    	    	    	    	    	    	    	, 
 						  TAG_DONE);
 
-    gad[GAD_DOWNARROW] = NewObject(0, BUTTONGCLASS, GA_Image		, img[IMG_DOWNARROW]				, 
+    gad[GAD_DOWNARROW] = NewObject(0, BUTTONGCLASS, GA_Image		, (Tag)img[IMG_DOWNARROW]				, 
 						    GA_RelRight		, -imagew[IMG_UPARROW] + 1			, 
 						    GA_RelBottom	, -imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1	, 
 						    GA_ID		, GAD_DOWNARROW					, 
 						    GA_RightBorder	, TRUE						, 
-						    GA_Previous		, gad[GAD_UPARROW]				, 
+						    GA_Previous		, (Tag)gad[GAD_UPARROW]				, 
 						    GA_Immediate	, TRUE						,
 						    GA_RelVerify    	, TRUE	    	    	    	    	    	, 
 						    TAG_DONE);
@@ -478,7 +478,7 @@ static void MakeGadgets(void)
 						   GA_Width		, imagew[IMG_DOWNARROW] - v_offset * 2						, 
 						   GA_RelHeight		, -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] - btop -2	, 
 						   GA_ID		, GAD_VERTSCROLL								, 
-						   GA_Previous		, gad[GAD_DOWNARROW]								, 
+						   GA_Previous		, (Tag)gad[GAD_DOWNARROW]								, 
 						   GA_RightBorder	, TRUE										, 
 						   GA_RelVerify		, TRUE										, 
 						   GA_Immediate		, TRUE										, 
@@ -489,22 +489,22 @@ static void MakeGadgets(void)
 						   PGA_Freedom		, FREEVERT									, 
 						   TAG_DONE);
 
-    gad[GAD_RIGHTARROW] = NewObject(0, BUTTONGCLASS, GA_Image		, img[IMG_RIGHTARROW]				, 
+    gad[GAD_RIGHTARROW] = NewObject(0, BUTTONGCLASS, GA_Image		, (Tag)img[IMG_RIGHTARROW]				, 
 						     GA_RelRight	, -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] + 1, 
 						     GA_RelBottom	, -imageh[IMG_RIGHTARROW] + 1			, 
 						     GA_ID		, GAD_RIGHTARROW				, 
 						     GA_BottomBorder	, TRUE						, 
-						     GA_Previous	, gad[GAD_VERTSCROLL]				, 
+						     GA_Previous	, (Tag)gad[GAD_VERTSCROLL]				, 
 						     GA_Immediate	, TRUE						, 
 						     GA_RelVerify   	, TRUE	    	    	    	    	    	,
 						     TAG_DONE);
 
-    gad[GAD_LEFTARROW] = NewObject(0, BUTTONGCLASS, GA_Image		, img[IMG_LEFTARROW]							, 
+    gad[GAD_LEFTARROW] = NewObject(0, BUTTONGCLASS, GA_Image		, (Tag)img[IMG_LEFTARROW]							, 
 						    GA_RelRight		, -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] - imagew[IMG_LEFTARROW] + 1, 
 						    GA_RelBottom	, -imageh[IMG_RIGHTARROW] + 1						, 
 						    GA_ID		, GAD_LEFTARROW								, 
 						    GA_BottomBorder	, TRUE									, 
-						    GA_Previous		, gad[GAD_RIGHTARROW]							, 
+						    GA_Previous		, (Tag)gad[GAD_RIGHTARROW]							, 
 						    GA_Immediate	, TRUE									, 
 						    GA_RelVerify    	, TRUE	    	    	    	    	    	    	    	    	,
 						    TAG_DONE);
@@ -514,7 +514,7 @@ static void MakeGadgets(void)
 						    GA_RelWidth		, -imagew[IMG_LEFTARROW] - imagew[IMG_RIGHTARROW] - imagew[IMG_SIZE] - scr->WBorRight - 2, 
 						    GA_Height		, imageh[IMG_LEFTARROW] - (h_offset * 2)						 , 
 						    GA_ID		, GAD_HORIZSCROLL									 , 
-						    GA_Previous		, gad[GAD_LEFTARROW]									 , 
+						    GA_Previous		, (Tag)gad[GAD_LEFTARROW]									 , 
 						    GA_BottomBorder	, TRUE											 , 
 						    GA_RelVerify	, TRUE											 , 
 						    GA_Immediate	, TRUE											 , 
