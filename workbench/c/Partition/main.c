@@ -11,7 +11,6 @@
 #include <proto/partition.h>
 
 #include <string.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 #define DEBUG 0
@@ -86,7 +85,7 @@ AROS_SH2
     rc = CreatePartitionTable(root, PHPTT_RDB);
     if (rc != 0)
     {
-        printf("*** ERROR: Creating partition table failed. Aborting.\n");
+        PutStr("*** ERROR: Creating partition table failed. Aborting.\n");
         return RETURN_FAIL; /* FIXME: take care of allocated resources... */
     }
     
