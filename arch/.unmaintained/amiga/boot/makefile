@@ -30,6 +30,11 @@ TOOLZ = printresmodules showvecs
 TOOLS = $(foreach f,$(TOOLZ),$(TOOLDIR)/$(f))
 LIBS = -L$(LIBDIR) -larosc
 
+.SUFFIXES:              # Delete the default suffixes
+.SUFFIXES: .c .o .h .d  # Define our suffix list
+
+.PHONY: all clean setup
+
 all:	setup \
 	$(BINDIR)/arosboot $(BINDIR)/arosboot.config $(BINDIR)/arosboot.doc \
 	$(TOOLS)
@@ -70,7 +75,12 @@ $(BOOTGENDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
+$(TOOLGENDIR)/%.d: %.c
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
+
 # Don't try to include dependency files if we're cleaning up.
 ifneq ("$(TARGET)","clean")
 include $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).d)
+include $(foreach f,$(TOOLZ),$(TOOLGENDIR)/$(f).d)
 endif
