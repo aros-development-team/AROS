@@ -32,11 +32,14 @@
 #include <aros/asmcall.h>
 #undef size_t
 
+#define timeval sys_timeval
 #include <sys/types.h>
 #include <signal.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#undef timeval
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

@@ -18,6 +18,7 @@
 #define AROS_ALMOST_COMPATIBLE 1
 
 /* the rest are Amiga includes */
+#define timeval aros_timeval
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -35,6 +36,7 @@
 #include <devices/serial.h>
 
 #include "serial_intern.h"
+#undef timeval
 
 #undef  SDEBUG
 #undef  DEBUG
