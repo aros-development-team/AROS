@@ -33,12 +33,9 @@
 #include "support.h"
 
 #include "muimaster_intern.h"
+#include "prefs.h"
 
 extern struct Library *MUIMasterBase;
-
-#if 0
-static struct MUI_ImageSpec *zune_imspec_copy(struct MUI_ImageSpec *spec);
-#endif
 
 static char *StrDup(char *x)
 {
