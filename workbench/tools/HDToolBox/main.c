@@ -101,6 +101,7 @@ ULONG initEnv(char *device) {
 		);
 	if (!mainwin)
 		return ERR_WINDOW;
+	GT_RefreshWindow(mainwin, NULL);
 	SetWindowPointer(mainwin, WA_BusyPointer, TRUE, TAG_DONE);
 	if (device)
 		findHDs(device, 2);
@@ -177,6 +178,7 @@ BOOL running=TRUE;
 					clearGadgets((struct ExtGadget *)mainglist, win, -1);
 					AddGList(win, pcpglist, ~0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
+					GT_RefreshWindow(mainwin, NULL);
 					break;
 				case ID_PCP_PARTITION :
 					current_partition =(struct PartitionNode *)getNumNode(&current_pt->pl, msg->Code);
@@ -200,6 +202,7 @@ BOOL running=TRUE;
 					clearGadgets((struct ExtGadget *)pcpglist, win, -1);
 					AddGList(win, dglist, ~0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
+					GT_RefreshWindow(mainwin, NULL);
 					break;
 				case ID_PCP_STARTCYL :
 						changeStartCyl
@@ -292,6 +295,7 @@ BOOL running=TRUE;
 					clearGadgets((struct ExtGadget *)pcpglist, win, -1);
 					AddGList(win, mainglist, ~0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
+					GT_RefreshWindow(mainwin, NULL);
 					break;
 				case ID_PCP_CANCEL :
 					pcp_Cancel(current_pt);
@@ -299,6 +303,7 @@ BOOL running=TRUE;
 					clearGadgets((struct ExtGadget *)pcpglist, win, -1);
 					AddGList(win, mainglist, ~0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
+					GT_RefreshWindow(mainwin, NULL);
 					break;
 				case ID_DET_TYPELV :
 					{
@@ -419,6 +424,7 @@ BOOL running=TRUE;
 					clearGadgets((struct ExtGadget *)dglist, win, -1);
 					AddGList(win, pcpglist, ~0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
+					GT_RefreshWindow(mainwin, NULL);
 					viewPartitionData(mainwin, current_pt, current_partition);
 					break;
 				case ID_DET_CANCEL:
@@ -427,6 +433,7 @@ BOOL running=TRUE;
 					clearGadgets((struct ExtGadget *)dglist, win, -1);
 					AddGList(win, pcpglist, ~0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
+					GT_RefreshWindow(mainwin, NULL);
 					viewPartitionData(mainwin, current_pt, current_partition);
 					break;
 				case ID_PCP_PARTITION_GUI:
