@@ -202,6 +202,19 @@
 #   define AROS_SWAP_BYTES_LONG(l) AROS_SWAP_BYTES_LONG_CPU(l)
 #endif
 
+#if !defined(AROS_SWAP_BYTES_QUAD_CPU)
+#   define AROS_SWAP_BYTES_QUAD(l) AROS_SWAP_BYTES_QUAD_GENERIC(l)
+#elif defined(__GNUC__)
+#   define AROS_SWAP_BYTES_QUAD(l)            \
+    (                                         \
+	__builtin_constant_p(l)               \
+	    ? AROS_SWAP_BYTES_QUAD_GENERIC(l) \
+	    : AROS_SWAP_BYTES_QUAD_CPU(l)     \
+    )
+#else
+#   define AROS_SWAP_BYTES_QUAD(l) AROS_SWAP_BYTES_QUAD_CPU(l)
+#endif
+
 #if !defined(AROS_SWAP_WORDS_LONG_CPU)
 #   define AROS_SWAP_WORDS_LONG(l) AROS_SWAP_WORDS_LONG_GENERIC(l)
 #elif defined(__GNUC__)
