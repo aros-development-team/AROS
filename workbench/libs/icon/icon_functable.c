@@ -18,6 +18,8 @@ void AROS_SLIB_ENTRY(null,Icon) (void);
 void AROS_SLIB_ENTRY(FreeFreeList,Icon) (void);
 void AROS_SLIB_ENTRY(AddFreeList,Icon) (void);
 void AROS_SLIB_ENTRY(GetDiskObject,Icon) (void);
+void AROS_SLIB_ENTRY(PutDiskObject,Icon) (void);
+void AROS_SLIB_ENTRY(FreeDiskObject,Icon) (void);
 void AROS_SLIB_ENTRY(FindToolType,Icon) (void);
 void AROS_SLIB_ENTRY(MatchToolValue,Icon) (void);
 void AROS_SLIB_ENTRY(BumpRevision,Icon) (void);
@@ -41,8 +43,8 @@ void *const Icon_functable[]=
     NULL, /* 11 */
     AROS_SLIB_ENTRY(AddFreeList,Icon), /* 12 */
     AROS_SLIB_ENTRY(GetDiskObject,Icon), /* 13 */
-    NULL, /* 14 */
-    NULL, /* 15 */
+    AROS_SLIB_ENTRY(PutDiskObject,Icon), /* 14 */
+    AROS_SLIB_ENTRY(FreeDiskObject,Icon), /* 15 */
     AROS_SLIB_ENTRY(FindToolType,Icon), /* 16 */
     AROS_SLIB_ENTRY(MatchToolValue,Icon), /* 17 */
     AROS_SLIB_ENTRY(BumpRevision,Icon), /* 18 */
