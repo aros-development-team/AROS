@@ -36,6 +36,7 @@
 
 /* Use that #define instead of a string. */
 #define AROSCHECKBOXCLASS "checkbox.aros"
+#define AROSCHECKBOXNAME  "Gadgets/aroscheckbox.gadget"
 
 
 /* Tags to be passed to AROSCHECKBOXCLASS. */

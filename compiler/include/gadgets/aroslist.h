@@ -17,7 +17,7 @@
 #endif
 
 #define AROSLISTCLASS	"list.aros"
-#define AROSLISTNAME	"aroslist.class"
+#define AROSLISTNAME	"Gadgets/aroslist.class"
 
 #define AROSLIST_TAGBASE 10000L
 

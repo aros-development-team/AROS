@@ -17,7 +17,7 @@
 #endif
 
 #define AROSLISTVIEWCLASS "listview.aros"
-#define AROSLISTVIEWNAME  "aroslistview.gadget"
+#define AROSLISTVIEWNAME  "Gadgets/aroslistview.gadget"
 
 #define AROSLV_TAGBASE 20000L
 

@@ -25,8 +25,8 @@
    used to calculate this size. Otherwise GA_Height is ignored. */
 
 /* Use that #define instead of a string. */
-#define AROSMXCLASS "mutualexclude.aros"
-
+#define AROSMXCLASS	"mutualexclude.aros"
+#define AROSMXNAME	"Gadgets/arosmutualexclude.gadget"
 
 /* Tags to be passed to AROSMXCLASS. */
 #define AROSMX_Dummy 30000L

@@ -21,8 +21,8 @@
 /* The AROSCycleClass ist a subclass of GadgetClass. */
 
 /* Use that #define instead of a string. */
-#define AROSCYCLECLASS "cycle.aros"
-
+#define AROSCYCLECLASS	"cycle.aros"
+#define AROSCYCLENAME	"Gadgets/aroscycle.gadget"
 
 /* Tags to be passed to AROSCYCLECLASS. */
 #define AROSCYCLE_Dummy 40000L
