@@ -25,7 +25,7 @@
 #include <stdio.h>
 
 extern void AROSSupportBase_SetStdOut (void *);
-extern int submain(struct DosLibrary *);
+extern int submain(struct ExecBase *, struct DosLibrary *);
 
 struct emulbase
 {
@@ -111,7 +111,7 @@ AROS_UFH3(void, boot,
  
     AROSSupportBase_SetStdOut (stderr);
 */ 
-    submain(DOSBase);
+    submain(SysBase, DOSBase);
 
     /* submain() returns, when the Boot Shell Window is left with EndShell/EndCli */
     

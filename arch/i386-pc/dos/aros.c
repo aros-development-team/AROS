@@ -13,12 +13,10 @@
 #include <proto/intuition.h>
 #include <proto/exec.h>
 
-extern struct DosLibrary *DOSBase;
-
 #define CANNOT_LOAD_SHELL	"Unable to load C:shell\n"
 #define CANNOT_OPEN_CON		"Cannot open boot console\n"
 
-int main(void)
+int main(struct ExecBase * SysBase, struct DosLibrary * DOSBase)
 {
     LONG            rc = RETURN_FAIL;
 
