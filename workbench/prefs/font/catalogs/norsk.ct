@@ -35,45 +35,17 @@ MSG_WINDOW_TITLE
 Fontinstillinger
 ; Font Preferences
 ;
-MSG_MEN_PROJECT
-Prosjekt
-; Project
+MSG_MENU_PREFERENCES
+*** Preferences
+; Preferences
 ;
-MSG_MEN_PROJECT_OPEN
-O\0Åpne...
-; O\0Open...
+MSG_MENU_PREFERENCES_IMPORT
+I\0*** Import...
+; I\0Import...
 ;
-MSG_MEN_PROJECT_SAVEAS
-A\0Lagre som...
-; A\0Save As...
-;
-MSG_MEN_PROJECT_QUIT
-Q\0Avslutt
-; Q\0Quit
-;
-MSG_MEN_EDIT
-Rediger
-; Edit
-;
-MSG_MEN_EDIT_DEFAULT
-D\0Standardinstillinger
-; D\0Reset to Defaults
-;
-MSG_MEN_EDIT_LASTSAVED
-L\0Sist Lagret
-; L\0Last Saved
-;
-MSG_MEN_EDIT_RESTORE
-R\0Gjenopprett
-; R\0Restore
-;
-MSG_MEN_SETTINGS
-Instillinger
-; Settings
-;
-MSG_MEN_SETTINGS_CREATEICONS
-I\0Lage Ikoner?
-; I\0Create Icons?
+MSG_MENU_PREFERENCES_EXPORT
+E\0*** Export...
+; E\0Export...
 ;
 MSG_ASL_OPEN_TITLE
 Hente Fontinstillinger

@@ -35,45 +35,17 @@ MSG_WINDOW_TITLE
 Préférences des polices de caractères (Font)
 ; Font Preferences
 ;
-MSG_MEN_PROJECT
-Projet
-; Project
+MSG_MENU_PREFERENCES
+*** Preferences
+; Preferences
 ;
-MSG_MEN_PROJECT_OPEN
-O\0Ouvrir ...
-; O\0Open...
+MSG_MENU_PREFERENCES_IMPORT
+I\0*** Import...
+; I\0Import...
 ;
-MSG_MEN_PROJECT_SAVEAS
-A\0Sauver sous ...
-; A\0Save As...
-;
-MSG_MEN_PROJECT_QUIT
-Q\0Quitter
-; Q\0Quit
-;
-MSG_MEN_EDIT
-Modifier
-; Edit
-;
-MSG_MEN_EDIT_DEFAULT
-D\0Configuration par défaut
-; D\0Reset to Defaults
-;
-MSG_MEN_EDIT_LASTSAVED
-L\0Dernière sauvegarde
-; L\0Last Saved
-;
-MSG_MEN_EDIT_RESTORE
-R\0Revenir à l'initial
-; R\0Restore
-;
-MSG_MEN_SETTINGS
-Préférences
-; Settings
-;
-MSG_MEN_SETTINGS_CREATEICONS
-I\0Créer des icônes ?
-; I\0Create Icons?
+MSG_MENU_PREFERENCES_EXPORT
+E\0*** Export...
+; E\0Export...
 ;
 MSG_ASL_OPEN_TITLE
 Charger les préférences

@@ -39,45 +39,17 @@ MSG_WINDOW_TITLE
 Typsnittsinställningar
 ; Font Preferences
 ;
-MSG_MEN_PROJECT
-Projekt
-; Project
-;
-MSG_MEN_PROJECT_OPEN
-O\0Öppna...
-; O\0Open...
-;
-MSG_MEN_PROJECT_SAVEAS
-A\0Spara som...
-; A\0Save As...
-;
-MSG_MEN_PROJECT_QUIT
-Q\0Avsluta
-; Q\0Quit
-;
-MSG_MEN_EDIT
-Redigera
-; Edit
-;
-MSG_MEN_EDIT_DEFAULT
-D\0Återgå till standard
-; D\0Reset to Defaults
-;
-MSG_MEN_EDIT_LASTSAVED
-L\0Senast sparade
-; L\0Last Saved
-;
-MSG_MEN_EDIT_RESTORE
-R\0Återställ
-; R\0Restore
-;
-MSG_MEN_SETTINGS
+MSG_MENU_PREFERENCES
 Inställningar
-; Settings
+; Preferences
 ;
-MSG_MEN_SETTINGS_CREATEICONS
-I\0Skapa symboler?
-; I\0Create Icons?
+MSG_MENU_PREFERENCES_IMPORT
+I\0Importera...
+; I\0Import...
+;
+MSG_MENU_PREFERENCES_EXPORT
+E\0Exportera...
+; E\0Export...
 ;
 MSG_ASL_OPEN_TITLE
 Ladda typstilsinställningar
