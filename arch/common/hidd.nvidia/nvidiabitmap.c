@@ -296,7 +296,9 @@ static VOID bm__del(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     LOCK_ALL
 
+    LOCK_HW
     NVSync(sd);
+    UNLOCK_HW
     
     if (bm->fbgfx)
     {
@@ -440,6 +442,10 @@ D(bug("[NVBitMap] PutPixel %d:%d-%x (pitch %d, bpp %d) @ %p\n", msg->x, msg->y, 
     if (bm->fbgfx)
 	ptr += (IPTR)sd->Card.FrameBuffer;
 
+    LOCK_HW
+    
+    NVSync(sd);
+
     switch (bm->bpp)
     {
 	case 1:
@@ -452,6 +458,8 @@ D(bug("[NVBitMap] PutPixel %d:%d-%x (pitch %d, bpp %d) @ %p\n", msg->x, msg->y, 
 	    *(ULONG*)ptr = msg->pixel;
 	    break;
     }
+    
+    UNLOCK_HW
 }
 
 static HIDDT_Pixel bm__getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
@@ -464,6 +472,9 @@ static HIDDT_Pixel bm__getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
     if (bm->fbgfx)
 	ptr += (IPTR)sd->Card.FrameBuffer;
  
+    LOCK_HW
+    
+    NVSync(sd);
 
     switch (bm->bpp)
     {
@@ -478,6 +489,8 @@ static HIDDT_Pixel bm__getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 	    break;
     }
 
+    UNLOCK_HW
+    
     /* Get pen number from colortab */
     return pixel;
 }
