@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := LoadWB ExecuteCommand
+FILES := LoadWB ExecuteCommand Desktop
 
 EXEDIR := $(AROS_C)
 EXE := $(EXEDIR)/LoadWB

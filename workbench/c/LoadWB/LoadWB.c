@@ -59,77 +59,23 @@
 
 #include <stdlib.h>
 
-static const char version[] = "$VER: LoadWB 0.1 (06.04.2002)\n";
-static const char easteregg[] = "Brought to you by the wizzards of AROS!!!";
+#include "Desktop.h"
 
-static ULONG     notifysig;
+static const char version[] = "$VER: LoadWB 0.1 (06.04.2002)\n";
+
+extern struct Window  * wbwindow;
+extern struct Menu *    menus;
+
+ULONG     notifysig;
 struct MsgPort * notifyport;
 struct Screen  * wbscreen;
-struct Window  * wbwindow;
-struct Menu *    menus;
 APTR vi;
-static ULONG     check;
-
-
-static struct NewMenu nm[] =
-{
-  {NM_TITLE, "Workbench"              },
-    {NM_ITEM,  "Backdrop",           "B", CHECKIT | CHECKED},
-    {NM_ITEM,  "Execute Command...", "E"},
-    {NM_ITEM,  "Redraw All" },
-    {NM_ITEM,  "Update All" },
-    {NM_ITEM,  "Last Message" },
-    {NM_ITEM,  "Shell",              "Z"},
-    {NM_ITEM,  "About...",           "?"},
-    {NM_ITEM,  "Quit...",            "Q"},
-
-  {NM_TITLE, "Window",          NULL, NM_MENUDISABLED},
-    {NM_ITEM,  "New Drawer", "N"},
-    {NM_ITEM,  "Open Parent" },
-    {NM_ITEM,  "Close", "K"},
-    {NM_ITEM,  "Update" },
-    {NM_ITEM,  "Select Contents", "A"},
-    {NM_ITEM,  "Clean Up", "."},
-    {NM_ITEM,  "Snapshot" },
-      {NM_SUB, "Window"},
-      {NM_SUB, "All"},
-    {NM_ITEM,  "Show" },
-      {NM_SUB, "Only Icons", NULL, CHECKIT | CHECKED, 32},
-      {NM_SUB, "All Files", NULL, CHECKIT, 16 },
-    {NM_ITEM,  "View By" },
-      {NM_SUB, "Icon", NULL, CHECKIT | CHECKED, 32 + 64 + 128},
-      {NM_SUB, "Name",NULL, CHECKIT, 16 + 64 + 128},
-      {NM_SUB, "Size",NULL, CHECKIT, 16 + 32 + 128},
-      {NM_SUB, "Date", NULL, CHECKIT, 16 + 32 + 64},
-
-  {NM_TITLE, "Icon",          NULL, NM_MENUDISABLED},
-    {NM_ITEM,  "Open", "O"},
-    {NM_ITEM,  "Close","C" },
-    {NM_ITEM,  "Rename...", "R"},
-    {NM_ITEM,  "Information...", "I" },
-    {NM_ITEM,  "Snapshot", "S" },
-    {NM_ITEM,  "Unsnapshot", "U" },
-    {NM_ITEM,  "Leave Out", "L" },
-    {NM_ITEM,  "Put Away", "P" },
-    {NM_ITEM, NM_BARLABEL},
-    {NM_ITEM,  "Delete..." },
-    {NM_ITEM,  "Format Disk..." },
-    {NM_ITEM,  "Empty Trash..." },
-
-  {NM_TITLE, "Tools",          NULL, NM_MENUDISABLED},
-    {NM_ITEM,  "ResetWB" },
-    {NM_ITEM,  "Matt Parsons did a good job?" },
-      {NM_SUB, "Yeah, Kinda...", NULL, CHECKIT | CHECKED, 32},
-      {NM_SUB, "Nope, this sucks!", NULL, CHECKIT, 16 },
-  {NM_END}
-
-};
 
 
 /*********************************************************************************************/
+int QuitRequest(void);
 void Cleanup(STRPTR msg);
 void ExecuteCommand(void);
-void backdrop(BOOL check);
 /*********************************************************************************************/
 
 LONG            __detacher_must_wait_for_signal = SIGBREAKF_CTRL_F;
@@ -166,29 +112,26 @@ int InitWB()
     wbscreen = LockPubScreen(NULL);
     vi = GetVisualInfoA(wbscreen, NULL);
 
-    wbwindow = OpenWindowTags(NULL,
-    WA_ScreenTitle, "AROS Workbench Alpha 0.1 (No file navigation) FreeMem-xxxxxxx",
-	WA_Title,	    "AROS Workbench Alpha Version 0.1 (No file navigation)",
-	WA_Flags,	   (WFLG_BACKDROP | WFLG_BORDERLESS | WFLG_ACTIVATE) ,
-//	WA_Flags,	   (WFLG_BACKDROP | WFLG_ACTIVATE) ,
-	WA_IDCMP,	   (IDCMP_MENUPICK),
-	WA_Left,	   0,
-	WA_Top,		   wbscreen->BarHeight + 1,
-	WA_Width,	   wbscreen->Width,
-	WA_Height,	   wbscreen->Height - wbscreen->BarHeight -1,
-//	WA_Width,	   128,
-//	WA_Height,	   96,
-	TAG_DONE
-	);
-
-    notifysig |= 1L << wbwindow->UserPort->mp_SigBit;
-
-    menus = CreateMenusA(nm, NULL);
-    LayoutMenusA(menus, vi, NULL);
-    SetMenuStrip(wbwindow, menus);
-    OffMenu(wbwindow, FULLMENUNUM(0,0,NOSUB));
+    OpenDesktop(DESKTOP_All);
 
     return TRUE;
+}
+
+/*********************************************************************************************/
+
+int QuitRequest()
+{
+int retval;
+struct EasyStruct es;
+
+    es.es_StructSize   = sizeof(es);
+    es.es_Flags        = 0;
+    es.es_Title        = "AROS Workbench...";
+    es.es_TextFormat   = "Do you really want to quit\nAROS Workbench?";
+    es.es_GadgetFormat = "Ok|Cancel";
+    retval = EasyRequest ( wbwindow, &es, NULL, NULL, NULL );
+
+    return retval;
 }
 
 /*********************************************************************************************/
@@ -202,7 +145,8 @@ void Cleanup(STRPTR msg)
         FPuts(Error(), msg);
     }
 
-    CloseWindow(wbwindow);
+    CloseDesktop(DESKTOP_All);
+
     UnregisterWorkbench(notifyport);
 
     DoDetach();
@@ -227,6 +171,13 @@ kprintf("LoadWB.HandleNotify\n");
 
     switch(class)
     {
+	case IDCMP_CLOSEWINDOW :
+	    if(QuitRequest())
+	    {
+		Cleanup(NULL);
+	    }
+	    break;
+
 	case IDCMP_MENUPICK :
 	    while(code != MENUNULL)
 	    {
@@ -237,12 +188,25 @@ kprintf("LoadWB.HandleNotify\n");
 			switch(ITEMNUM(code))
 			{
 			    case 0: /* Backdrop */
-//                backdrop()  need to read menu status!!!
-      			break;
+				CloseDesktop(DESKTOP_Main);
+				Desktop.Backdrop = !Desktop.Backdrop;
+				OpenDesktop(DESKTOP_Main);
+      				break;
+
 			    case 1: /* Execute Command... */
 				ExecuteCommand();
 				break;
-			    case 2: /* Shell */
+
+			    case 2: /* Redraw All */
+				break;
+
+			    case 3: /* Update All */
+				break;
+
+			    case 4: /* Last Message */
+				break;
+
+			    case 5: /* Shell */
 			    {
 				BPTR win = Open("CON:10/10/640/480/AROS-Shell/CLOSE", FMF_READ);
 				SystemTags
@@ -259,23 +223,39 @@ kprintf("LoadWB.HandleNotify\n");
 
                                 break;
  			    }
- 			    case 3: /* About... */
+			    case 6: /* About... */
 			    {
 				struct EasyStruct es;
 
-                                es.es_StructSize   = sizeof(es);
+				es.es_StructSize   = sizeof(es);
 				es.es_Flags        = 0;
 				es.es_Title        = "About AROS Workbench...";
 				es.es_TextFormat   = "Written by Henning Kiel <hkiel@aros.org>\nCopyright © 2002, The AROS Development Team.\nAll rights reserved.\n\nAROS 0.7x ROM (Alpha)\nWe made it...\nThe AROS Development team: Aaron Digulla, Georg Steger,\nNils Henrik Lorentzen, Henning Kiel, Staf Verhaegen,\nHenrik Berglund, Michal Schulz, Iain Templeton,\nFabio Alemagna, Sebastian Heutling, Johan Grip,\nTobias Seiler, Johan Alfredsson, Adam Chodorowski,\nMatt Parsons...\nTo be continued...";
 				es.es_GadgetFormat = "Better than ever!";
 				EasyRequest ( wbwindow, &es, NULL, NULL, NULL );
 
-                                break;
-		            }
-			    case 4: /* Quit... */
-				Cleanup(NULL);
+				break;
+			    }
+			    case 7: /* Quit... */
+				if(QuitRequest())
+				{
+				    Cleanup(NULL);
+				}
+				break;
+
+			    default:
 				break;
 			}
+			break;
+
+		    case 1: /* Window */
+			break;
+		    case 2: /* Icon */
+			break;
+		    case 3: /* Tools */
+			break;
+		    default:
+			break;
 		}
 
                 if ( (item = ItemAddress ( menus, code ) ) != NULL )
@@ -315,50 +295,8 @@ kprintf("LoadWB.HandleAll\n");
     }
 }
 
-/*********************************************************************************************/
-void backdrop(BOOL check)
-{
-    if (!check)
-    {
-        CloseWindow(wbwindow);
-             wbwindow = OpenWindowTags(NULL,
-    WA_ScreenTitle, "AROS Workbench Alpha 0.1 (No file navigation) FreeMem-xxxxxxx",
-	WA_Title,	    "AROS Workbench Alpha Version 0.1 (No file navigation)",
-//	WA_Flags,	   (WFLG_BACKDROP | WFLG_BORDERLESS | WFLG_ACTIVATE) ,
-	WA_Flags,	   (WFLG_ACTIVATE) ,
-	WA_IDCMP,	   (IDCMP_MENUPICK),
-	WA_Left,	   0,
-	WA_Top,		   wbscreen->BarHeight + 1,
-	WA_Width,	   wbscreen->Width,
-	WA_Height,	   wbscreen->Height - wbscreen->BarHeight -1,
-//	WA_Width,	   128,
-//	WA_Height,	   96,
-	TAG_DONE
-	);
-
-    }
-        if (check)
-    {
-        CloseWindow(wbwindow);
-             wbwindow = OpenWindowTags(NULL,
-    WA_ScreenTitle, "AROS Workbench Alpha 0.1 (No file navigation) FreeMem-xxxxxxx",
-	WA_Title,	    "AROS Workbench Alpha Version 0.1 (No file navigation)",
-	WA_Flags,	   (WFLG_BACKDROP | WFLG_BORDERLESS | WFLG_ACTIVATE) ,
-//	WA_Flags,	   (WFLG_ACTIVATE) ,
-	WA_IDCMP,	   (IDCMP_MENUPICK),
-	WA_Left,	   0,
-	WA_Top,		   wbscreen->BarHeight + 1,
-	WA_Width,	   wbscreen->Width,
-	WA_Height,	   wbscreen->Height - wbscreen->BarHeight -1,
-//	WA_Width,	   128,
-//	WA_Height,	   96,
-	TAG_DONE
-	);
-
-    }
-
-}
 /********************************************************************************************/
+
 int main(void)
 {
     if( InitWB() == 0 )
