@@ -1,4 +1,5 @@
 #include <proto/intuition.h>
+#include <aros/debug.h>
 
 #include <intuition/intuition.h>
 
