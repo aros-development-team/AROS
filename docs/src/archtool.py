@@ -487,8 +487,8 @@ class Archive:
 		    isLocal = 0
 		else:
 		    line = string.rstrip (line)
-		    lib.header.append (isLocal, line)
-		    header.append (isLocal, line)
+		    lib.header.append ((isLocal, line))
+		    header.append ((isLocal, line))
 	    elif mode == 'autodoc':
 		if line[:9] == '#/AutoDoc':
 		    mode = 'searchheader'
