@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 
+#include <intuition/imageclass.h>
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <clib/alib_protos.h>
@@ -21,6 +22,8 @@
 
 #include <string.h>
 
+/*  #define MYDEBUG 1 */
+#include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
@@ -28,14 +31,19 @@
 
 extern struct Library *MUIMasterBase;
 
-#define MIF_FREEVERT   (1<<0)
-#define MIF_FREEHORIZ  (1<<1)
+#define MIF_FREEVERT         (1<<0)
+#define MIF_FREEHORIZ        (1<<1)
+#define MIF_FONTMATCH        (1<<2)
+#define MIF_FONTMATCHWIDTH   (1<<3)
+#define MIF_FONTMATCHHEIGHT  (1<<4)
 
 struct MUI_ImageData
 {
     char *spec;
     ULONG flags;
-    struct MUI_ImageSpec *img;
+    struct MUI_ImageSpec_intern *img;
+    struct Image *old_image;
+    LONG   state; /* see IDS_* in intuition/imageclass.h */
 };
 
 
@@ -47,6 +55,8 @@ static IPTR Image_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ImageData   *data;
     struct TagItem  	    *tag, *tags;
     
+    D(bug("Image_New starts\n"));
+
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return FALSE;
     
@@ -58,44 +68,62 @@ static IPTR Image_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-	    case    MUIA_Image_FreeHoriz:
-		    _handle_bool_tag(data->flags, tag->ti_Data, MIF_FREEHORIZ);
-		    break;
+	    case MUIA_Image_FontMatch:
+		_handle_bool_tag(data->flags, tag->ti_Data, MIF_FONTMATCH);
+		break;
+	    case MUIA_Image_FontMatchWidth:
+		_handle_bool_tag(data->flags, tag->ti_Data, MIF_FONTMATCHWIDTH);
+		break;
+	    case MUIA_Image_FontMatchHeight:
+		_handle_bool_tag(data->flags, tag->ti_Data, MIF_FONTMATCHHEIGHT);
+		break;
+	    case MUIA_Image_FreeHoriz:
+		_handle_bool_tag(data->flags, tag->ti_Data, MIF_FREEHORIZ);
+		break;
+	    case MUIA_Image_FreeVert:
+		_handle_bool_tag(data->flags, tag->ti_Data, MIF_FREEVERT);
+		break;
+	    case MUIA_Image_Spec:
+	    {
+		char *spec;
+		char spec_buf[20];
 
-	    case    MUIA_Image_FreeVert:
-		    _handle_bool_tag(data->flags, tag->ti_Data, MIF_FREEVERT);
-		    break;
-
-	    case    MUIA_Image_Spec:
+		if (tag->ti_Data >= MUII_WindowBack && tag->ti_Data < MUII_BACKGROUND)
+		{
+		    sprintf(spec_buf,"6:%ld",tag->ti_Data);
+		    spec = spec_buf;
+		} else
+		{
+		    if (tag->ti_Data >= MUII_BACKGROUND && tag->ti_Data < MUII_LASTPAT)
 		    {
-		    	char *spec;
-		    	char spec_buf[20];
-
-		    	if (tag->ti_Data >= MUII_WindowBack && tag->ti_Data < MUII_BACKGROUND)
-		    	{
-			    sprintf(spec_buf,"6:%ld",tag->ti_Data);
-			    spec = spec_buf;
-		    	} else
-		    	{
-			    if (tag->ti_Data >= MUII_BACKGROUND && tag->ti_Data < MUII_LASTPAT)
-			    {
-				sprintf(spec_buf,"0:%ld",tag->ti_Data);
-				spec = spec_buf;
-			    } else spec = (char*)tag->ti_Data;
-		    	}
-			data->spec = StrDup(spec);
-		    }
-		    break;
+			sprintf(spec_buf,"0:%ld",tag->ti_Data);
+			spec = spec_buf;
+		    } else spec = (char*)tag->ti_Data;
+		}
+		data->spec = StrDup(spec);
+	    }
+	    break;
+	    case MUIA_Image_OldImage:
+		data->old_image = (struct Image *)tag->ti_Data;
+		break;
+	    case MUIA_Image_State:
+		data->state = (LONG)tag->ti_Data;
+		break;
     	}
     }
 
-    if (!data->spec) data->spec = StrDup("0:128");
-    if (!data->spec)
+    if (!data->spec && !data->old_image)
+    {
+	data->spec = StrDup("0:128");
+    }
+
+    if (!data->spec && !data->old_image)
     {
 	CoerceMethod(cl,obj,OM_DISPOSE);
     	return NULL;
     }
     
+    D(bug("Image_New(%lx) spec=%lx\n", obj, data->img));
     return (IPTR)obj;
 }
 
@@ -105,7 +133,8 @@ static IPTR Image_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static IPTR Image_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
-    if (data->spec) FreeVec(data->spec);
+
+    zune_image_spec_free(data->spec);
     DoSuperMethodA(cl,obj,(Msg)msg);
     return 0;
 }
@@ -122,46 +151,35 @@ static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-	    case    MUIA_Imagedisplay_Spec:
-	    case    MUIA_Image_Spec:
-		    {
-		    	char *spec;
-		    	char spec_buf[20];
+	    case MUIA_Selected:
+		if (tag->ti_Data)
+		    data->state = IDS_SELECTED;
+		else
+		    data->state = IDS_NORMAL;
+		break;
+	    case MUIA_Image_State:
+		data->state = (LONG)tag->ti_Data;
+		break;
+	    case MUIA_Image_Spec:
+		if (data->spec)
+		    zune_image_spec_free(data->spec);
+		data->spec = zune_image_spec_duplicate(tag->ti_Data);
 
-		    	if (tag->ti_Data >= MUII_WindowBack && tag->ti_Data < MUII_BACKGROUND)
-		    	{
-			    sprintf(spec_buf,"6:%ld",tag->ti_Data);
-			    spec = spec_buf;
-		    	} else
-		    	{
-			    if (tag->ti_Data >= MUII_BACKGROUND && tag->ti_Data < MUII_LASTPAT)
-			    {
-				sprintf(spec_buf,"0:%ld",tag->ti_Data);
-				spec = spec_buf;
-			    } else spec = (char*)tag->ti_Data;
-		    	}
 
-		        if (data->spec) FreeVec(data->spec);
-		        data->spec = StrDup(spec);
-		    }
+		if (_flags(obj) & MADF_CANDRAW)
+		    zune_imspec_hide(data->img);
 
-		    if (_flags(obj)&MADF_CANDRAW)
-			zune_imspec_hide(data->img);
+		if (_flags(obj) & MADF_SETUP)
+		{
+		    zune_imspec_cleanup(data->img);
+		    data->img = zune_imspec_setup((IPTR)data->spec, muiRenderInfo(obj));
+		}
 
-		    if (_flags(obj)&MADF_SETUP)
-		    {
-			zune_imspec_cleanup(&data->img, muiRenderInfo(obj));
-			zune_imspec_free(data->img);
-			    
-			data->img = zune_image_spec_to_structure((IPTR)data->spec,obj);
-			zune_imspec_setup(&data->img, muiRenderInfo(obj));
-		    }
+		if (_flags(obj)&MADF_CANDRAW)
+		    zune_imspec_show(data->img, obj);
 
-		    if (_flags(obj)&MADF_CANDRAW)
-			zune_imspec_show(data->img,obj);
-
-		    MUI_Redraw(obj,MADF_DRAWUPDATE);
-		    break;
+		MUI_Redraw(obj,MADF_DRAWOBJECT);
+		break;
     	}
     }
     
@@ -179,10 +197,6 @@ static IPTR Image_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case    MUIA_Image_Spec:
 		*msg->opg_Storage = (ULONG)data->spec;
 	        break;
-
-	case    MUIA_Imagedisplay_Spec:
-		*msg->opg_Storage = (ULONG)data->spec;
-	        break;
     }
 
     return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
@@ -194,10 +208,14 @@ static IPTR Image_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 static IPTR Image_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
-    if (!DoSuperMethodA(cl,obj,(Msg)msg)) return NULL;
 
-    data->img = zune_image_spec_to_structure((IPTR)data->spec,obj);
-    zune_imspec_setup(&data->img, muiRenderInfo(obj));
+    if (!DoSuperMethodA(cl, obj, (Msg)msg))
+	return NULL;
+
+    if (data->spec)
+    {
+	data->img = zune_imspec_setup((IPTR)data->spec, muiRenderInfo(obj));
+    }
     return 1;
 }
 
@@ -207,9 +225,12 @@ static IPTR Image_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 static IPTR Image_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
-    zune_imspec_cleanup(&data->img, muiRenderInfo(obj));
-    zune_imspec_free(data->img);
-    data->img = NULL;
+
+    if (data->spec)
+    {
+	zune_imspec_cleanup(data->img);
+	data->img = NULL;
+    }
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
@@ -219,20 +240,61 @@ static IPTR Image_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 static IPTR Image_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
-    DoSuperMethodA(cl,obj,(Msg)msg);
 
-    msg->MinMaxInfo->MinWidth += zune_imspec_get_minwidth(data->img);
-    msg->MinMaxInfo->MinHeight += zune_imspec_get_minheight(data->img);
+    DoSuperMethodA(cl, obj, (Msg)msg);
+
+    if (data->img)
+    {
+	struct MUI_MinMax minmax;
+
+	zune_imspec_askminmax(data->img, &minmax);
+
+	msg->MinMaxInfo->MinWidth += minmax.MinWidth;
+	msg->MinMaxInfo->MinHeight += minmax.MinHeight;
    
-    msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
-    msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
+	if (data->flags & MIF_FREEHORIZ)
+	{
+	    msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+	    msg->MinMaxInfo->DefWidth += minmax.DefWidth;
+	}
+	else
+	{
+	    msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth;
+	    msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
+	}
 
-    if (data->flags & MIF_FREEHORIZ) msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
-    else  msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth;
+	if (data->flags & MIF_FREEVERT)
+	{
+	    msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
+	    msg->MinMaxInfo->DefHeight += minmax.DefHeight;
+	}
+	else
+	{
+	    msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;
+	    msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
+	}
+    }
+    else if (data->old_image)
+    {
+	msg->MinMaxInfo->MinWidth += data->old_image->Width;
+	msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
+	msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth;
 
-    if (data->flags & MIF_FREEVERT) msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
-    else msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;
+	msg->MinMaxInfo->MinHeight += data->old_image->Height;
+	msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
+	msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;
+    }
+    else /* something's very wrong ! */
+    {
+	D(bug("*** Image_AskMinMax : no img, no old_img\n"));
+	msg->MinMaxInfo->MinWidth += 8;
+	msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
+	msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth;
 
+	msg->MinMaxInfo->MinHeight += 8;
+	msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
+	msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;	
+    }
     return 1;
 }
 
@@ -242,9 +304,10 @@ static IPTR Image_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 static IPTR Image_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
-    DoSuperMethodA(cl,obj,(Msg)msg);
 
-    zune_imspec_show(data->img,obj);
+    DoSuperMethodA(cl,obj,(Msg)msg);
+    if (data->img)
+	zune_imspec_show(data->img, obj);
     return 1;
 }
 
@@ -254,7 +317,9 @@ static IPTR Image_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 static IPTR Image_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
-    zune_imspec_hide(data->img);
+
+    if (data->img)
+	zune_imspec_hide(data->img);
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
@@ -264,14 +329,22 @@ static IPTR Image_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
 static IPTR Image_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
-    LONG selected;
+
     DoSuperMethodA(cl,obj,(Msg)msg);
 
-    get(obj,MUIA_Selected,&selected);
+    if (!(msg->flags & MADF_DRAWOBJECT))
+                return 0;
 
-    zune_draw_image(muiRenderInfo(obj), data->img,
-		    _mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),
-		    0, 0, selected << IMSPEC_SELECTED);
+    if (data->img)
+    {
+	zune_imspec_draw(data->img, muiRenderInfo(obj),
+			_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),
+			0, 0, data->state);
+    }
+    else
+    {
+	DrawImage(_rp(obj), data->old_image, _mleft(obj),_mtop(obj));
+    }
     return 1;
 }
 
