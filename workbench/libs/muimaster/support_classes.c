@@ -119,7 +119,7 @@ static const struct __MUIBuiltinClass *builtins[] =
     ZUNE_IMAGEADJUST_DESC
     ZUNE_POPIMAGE_DESC
     ZUNE_SCALE_DESC
-    &_MUI_Radio_desc,
+    ZUNE_RADIO_DESC
     &_MUI_IconList_desc,
     &_MUI_IconDrawerList_desc,
     &_MUI_IconVolumeList_desc,

@@ -18,6 +18,7 @@ MAKE_BUILTIN_POPASL        := no
 MAKE_BUILTIN_POPFRAME      := no
 MAKE_BUILTIN_POPIMAGE      := no
 MAKE_BUILTIN_POPPEN        := no
+MAKE_BUILTIN_RADIO         := no
 MAKE_BUILTIN_SCALE         := yes
 MAKE_BUILTIN_SCROLLGROUP   := no
 MAKE_BUILTIN_SETTINGSGROUP := no
@@ -46,7 +47,6 @@ CLASSES := \
     popobject \
     popstring \
     prop \
-    radio \
     rectangle \
     register \
     semaphore \
@@ -227,6 +227,14 @@ ifeq ($(MAKE_BUILTIN_POPPEN),yes)
 else
     EXTCLASSES  := $(EXTCLASSES) poppen
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_POPPEN=0
+endif
+
+ifeq ($(MAKE_BUILTIN_RADIO),yes)
+    CLASSES     := $(CLASSES) radio
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_RADIO=1
+else
+    EXTCLASSES  := $(EXTCLASSES) radio
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_RADIO=0
 endif
 
 ifeq ($(MAKE_BUILTIN_SCALE),yes)
