@@ -8,6 +8,7 @@
     Desc: ANSI-C header file stddef.h
     Lang: english
 */
+#define __AROS_CLIB_TYPES_ONLY
 
 #include <aros/systypes.h>
 

@@ -178,6 +178,8 @@
  ***** Other interesting types	 *****
  *************************************/
 
+#ifndef __AROS_CLIB_TYPES_ONLY
+
 #ifndef __typedef_STRPTR
 #   define __typedef_STRPTR
     typedef UBYTE * STRPTR;	/* Pointer to string (NULL terminated) */
@@ -271,6 +273,8 @@
 #define RESTRICT    restrict
 #endif
 #endif
+
+#endif /* __AROS_CLIB_TYPES_ONLY */
 
 /*
     Provide a workaround for non-ANSI compilers that do not understand
