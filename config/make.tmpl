@@ -1138,7 +1138,7 @@ BD_LIBDEFSINC$(BDID) := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
 BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID)))
 BD_REFFILE$(BDID)    := %(reffile)
 BD_LIBS$(BDID)       := $(addprefix -l,%(uselibs)) -llibinit -lautoinit
-BD_DEPLIBS$(BDID)    := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs)))
+BD_DEPLIBS$(BDID)    := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
 
 #Add extra flag if shared AROS C library is used
 ifneq ($(strip $(filter arosc_shared,%(uselibs))),)
