@@ -41,6 +41,12 @@
 #ifndef INTUITION_CLASSES_H
 #   include <intuition/classes.h>
 #endif
+#ifndef UTILITY_HOOKS_H
+#   include <utility/hooks.h>
+#endif
+#ifndef AROS_DEBUG_H
+#   include <aros/debug.h>
+#endif
 
 #ifndef IntuitionBase
 extern struct IntuitionBase * IntuitionBase;
@@ -68,6 +74,60 @@ IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
 
 IPTR DoSuperNewA(Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, struct TagItem *tags);
 IPTR DoSuperNewTags(Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, ULONG methodID, ...);
+
+#if !defined(INTUITION_NO_INLINE_STDARG) && !defined(NO_INLINE_STDARG)
+//IPTR DoSuperNewA(Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, struct TagItem *tags);
+//IPTR DoSuperNewTags(Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, ULONG methodID, ...);
+
+#   ifndef CLIB_BOOPSI_PROTOS_H /* prevent name clashes */
+    //ULONG SetAttrs (APTR obj, Tag tag1, ...);
+    //ULONG SetSuperAttrs (Class * cl, Object * obj, Tag tag1, ...);
+    //APTR NewObject (Class * classPtr, UBYTE * classID, Tag tag1, ...);
+
+#       ifndef USE_BOOPSI_STUBS
+#       define DoMethodA(object, message)                                 \
+        ({                                                                \
+            ASSERT_VALID_PTR((object));                                   \
+            object != NULL ?                                              \
+            ({                                                            \
+                ASSERT_VALID_PTR(OCLASS((object)));                       \
+                ASSERT_VALID_PTR((message));                              \
+                CALLHOOKPKT                                               \
+                (                                                         \
+                    (struct Hook *) OCLASS((object)), (object), (message) \
+                );                                                        \
+            })                                                            \
+            :                                                             \
+                NULL                                                      \
+            ;                                                             \
+        })
+        
+        #define DoMethod(object, methodid, tags...) \
+        ({                                          \
+            IPTR __tags[] = {methodid, tags};       \
+            DoMethodA((object), (__tags));          \
+        })
+        /*
+        #define DoSuperMethodA(class, object, message)                     \
+        ({                                                                 \
+            class != NULL && object != NULL ?                              \
+                CALLHOOKPKT                                                \
+                (                                                          \
+                    (struct Hook *) (class)->cl_Super, (object), (message) \
+                )                                                          \
+            :                                                              \
+                NULL                                                       \
+            ;                                                              \
+        })
+        */
+        //IPTR DoSuperMethodA (Class * cl, Object * obj, Msg message);
+        //IPTR DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...);
+        //IPTR CoerceMethodA (Class * cl, Object * obj, Msg message);
+        //IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
+#       endif /* !USE_BOOPSI_STUBS */
+#   endif /* CLIB_BOOPSI_PROTOS_H */
+    
+#endif /* !INTUITION_NO_INLINE_STDARG */
 
 #ifndef CLIB_BOOPSI_PROTOS_H /* Prevent name clashes */
 IPTR CallHookA (struct Hook * hook, APTR obj, APTR param);

@@ -3,6 +3,8 @@
     $Id$
 */
 
+#define INTUITION_NO_INLINE_STDARG
+
 #include <aros/debug.h>
 #include <intuition/classes.h>
 #include <proto/alib.h>
