@@ -6,8 +6,6 @@
     $Id$
 */
 
-#define ROOTOBJ_OCCUPIES_FULL_AREA 1
-
 #include <exec/types.h>
 #include <exec/memory.h>
 
@@ -917,13 +915,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		data->wd_Flags |= MUIWF_RESIZING;
 	    } else
 	    {
-#if ROOTOBJ_OCCUPIES_FULL_AREA
 		_width(data->wd_RootObject) = data->wd_Width;
 		_height(data->wd_RootObject) = data->wd_Height;
-#else
-		_width(data->wd_RootObject) = data->wd_Width - (data->wd_innerLeft + data->wd_innerRight);
-		_height(data->wd_RootObject) = data->wd_Height - (data->wd_innerBottom + data->wd_innerTop);
-#endif
 		DoMethod(data->wd_RootObject, MUIM_Layout);
 		DoMethod(data->wd_RootObject, MUIM_Show);
 		{
@@ -954,13 +947,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		}
 
 		data->wd_Flags &= ~MUIWF_RESIZING;
-#if ROOTOBJ_OCCUPIES_FULL_AREA
 		_width(data->wd_RootObject) = data->wd_Width;
 		_height(data->wd_RootObject) = data->wd_Height;
-#else
-		_width(data->wd_RootObject) = data->wd_Width - (data->wd_innerLeft + data->wd_innerRight);
-		_height(data->wd_RootObject) = data->wd_Height - (data->wd_innerBottom + data->wd_innerTop);
-#endif
 		DoMethod(data->wd_RootObject, MUIM_Layout);
 		DoMethod(data->wd_RootObject, MUIM_Show);
 
@@ -2030,7 +2018,6 @@ static void window_minmax(Object *obj, struct MUI_WindowData *data)
 	data->wd_innerBottom = muiGlobalInfo(obj)->mgi_Prefs->window_inner_bottom;
     }
 
-#if ROOTOBJ_OCCUPIES_FULL_AREA
     if (!(muiAreaData(data->wd_RootObject)->mad_Flags & MADF_INNERLEFT))
     {
 	muiAreaData(data->wd_RootObject)->mad_Flags |= MADF_INNERLEFT;
@@ -2055,24 +2042,12 @@ static void window_minmax(Object *obj, struct MUI_WindowData *data)
     	muiAreaData(data->wd_RootObject)->mad_HardIBottom = data->wd_innerBottom;
     }
 
-#endif
-
     /* inquire about sizes */
     DoMethod(data->wd_RootObject, MUIM_AskMinMax, (ULONG)&data->wd_MinMax);
 /*      D(bug("*** root minmax = %ld,%ld => %ld,%ld\n", data->wd_MinMax.MinWidth, */
 /*  	  data->wd_MinMax.MinHeight, */
 /*  	  data->wd_MinMax.MaxWidth, data->wd_MinMax.MaxHeight)); */
     __area_finish_minmax(data->wd_RootObject, &data->wd_MinMax);
-
-
-#if !ROOTOBJ_OCCUPIES_FULL_AREA
-    data->wd_MinMax.MinWidth += data->wd_innerLeft + data->wd_innerRight;
-    data->wd_MinMax.MaxWidth += data->wd_innerLeft + data->wd_innerRight;
-    data->wd_MinMax.DefWidth += data->wd_innerLeft + data->wd_innerRight;
-    data->wd_MinMax.MinHeight += data->wd_innerTop + data->wd_innerBottom;
-    data->wd_MinMax.MaxHeight += data->wd_innerTop + data->wd_innerBottom;
-    data->wd_MinMax.DefHeight += data->wd_innerTop + data->wd_innerBottom;
-#endif
 }
 
 
@@ -2120,19 +2095,10 @@ static void window_show (struct IClass *cl, Object *obj)
     struct Window *win = data->wd_RenderInfo.mri_Window;
 /*      D(bug("window_show %s %d\n", __FILE__, __LINE__)); */
 
-#if ROOTOBJ_OCCUPIES_FULL_AREA
     _left(data->wd_RootObject) = win->BorderLeft;
     _top(data->wd_RootObject)  = win->BorderTop;
     _width(data->wd_RootObject) = data->wd_Width;
     _height(data->wd_RootObject) = data->wd_Height;
-#else
-    _left(data->wd_RootObject) = data->wd_innerLeft + win->BorderLeft;
-    _top(data->wd_RootObject)  = data->wd_innerTop  + win->BorderTop;
-    _width(data->wd_RootObject) = data->wd_Width
-	- (data->wd_innerLeft + data->wd_innerRight);
-    _height(data->wd_RootObject) = data->wd_Height
-	- (data->wd_innerBottom + data->wd_innerTop);
-#endif
 
     DoMethod(data->wd_RootObject, MUIM_Layout);
 
