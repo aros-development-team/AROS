@@ -49,8 +49,6 @@ void scan(struct ScannerWorkerContext *swc)
 			strcat(fullPath, "/");
 			strcat(fullPath, ead->ed_Name);
 
-kprintf("worker: %s\n", ead->ed_Name);
-
 			sr[i].sr_DiskObject=GetDiskObjectNew(fullPath);
 			ead=ead->ed_Next;
 			i++;
@@ -125,7 +123,6 @@ ULONG workerEntry(void)
 			{
 				case WM_START:
 				{
-					kprintf("worker:starting\n");
 					swc=(struct ScannerWorkerContext*)AllocVec(sizeof(struct ScannerWorkerContext), MEMF_ANY);
 					swc->swc_Context.workerAction=msg->w_Command;
 					swc->swc_Context.start=(APTR)startScan;
@@ -143,7 +140,6 @@ ULONG workerEntry(void)
 					break;
 				}
 				case WM_RESUME:
-					kprintf("worker:resuming\n");
 					swc->swc_CurrentRequest=msg;
 					swc->swc_Context.resume(swc);
 					if(!swc->swc_More)

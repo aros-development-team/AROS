@@ -1,6 +1,7 @@
 
 #include <exec/types.h>
 #include <exec/resident.h>
+#include <exec/memory.h>
 #include <proto/exec.h>
 #include <aros/libcall.h>
 #include <libraries/mui.h>
@@ -29,7 +30,7 @@
 #include "tooliconobserver.h"
 #include "projecticonobserver.h"
 #include "trashcaniconobserver.h"
-
+#include "desktopobserver.h"
 
 #include "desktop_intern_protos.h"
 
@@ -138,6 +139,9 @@ AROS_LH2(struct DesktopBase *, init,
     DesktopBase->db_SysBase=SysBase;
     DesktopBase->db_SegList=segList;
 	DesktopBase->db_HandlerPort=NULL;
+	/* these will be moved into a new DesktopContext area */
+	DesktopBase->db_DefaultWindow=NULL;
+	DesktopBase->db_DefaultWindowArguments=NULL;
 
 	D(bug("*** Exitiing DesktopBase::init...\n"));
 
@@ -206,6 +210,11 @@ AROS_LH1(struct DesktopBase *, open,
 		if(!DesktopBase->db_MUIMasterBase)
 			return NULL;
 
+		DesktopBase->db_InputIO=AllocVec(sizeof(struct IORequest), MEMF_ANY);
+		if(OpenDevice("input.device", NULL, (struct IORequest*)DesktopBase->db_InputIO, NULL))
+			return NULL;
+		DesktopBase->db_InputBase=(struct Library*)DesktopBase->db_InputIO->io_Device;
+
 		DesktopBase->db_Presentation=MUI_CreateCustomClass(NULL, MUIC_Area, NULL, sizeof(struct PresentationClassData), presentationDispatcher);
 		if(!DesktopBase->db_Presentation)
 			return NULL;
@@ -218,7 +227,7 @@ AROS_LH1(struct DesktopBase *, open,
 		if(!DesktopBase->db_Observer)
 			return NULL;
 
-		DesktopBase->db_IconObserver=MUI_CreateCustomClass(NULL, MUIC_Notify, NULL, sizeof(struct IconObserverClassData), iconObserverDispatcher);
+		DesktopBase->db_IconObserver=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Observer, sizeof(struct IconObserverClassData), iconObserverDispatcher);
 		if(!DesktopBase->db_IconObserver)
 			return NULL;
 
@@ -244,6 +253,10 @@ AROS_LH1(struct DesktopBase *, open,
 
 		DesktopBase->db_IconContainerObserver=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Observer, sizeof(struct IconContainerObserverClassData), iconContainerObserverDispatcher);
 		if(!DesktopBase->db_IconContainerObserver)
+			return NULL;
+
+		DesktopBase->db_DesktopObserver=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Observer, sizeof(struct DesktopObserverClassData), desktopObserverDispatcher);
+		if(!DesktopBase->db_DesktopObserver)
 			return NULL;
 
 		DesktopBase->db_Icon=MUI_CreateCustomClass(NULL, MUIC_Group, NULL, sizeof(struct IconClassData), iconDispatcher);
@@ -348,6 +361,8 @@ AROS_LH0(BPTR, expunge, struct DesktopBase *, DesktopBase, 3, BASENAME)
 		MUI_DeleteCustomClass(DesktopBase->db_TrashcanIconObserver);
 	if(DesktopBase->db_IconObserver)
 		MUI_DeleteCustomClass(DesktopBase->db_IconObserver);
+	if(DesktopBase->db_DesktopObserver)
+		MUI_DeleteCustomClass(DesktopBase->db_DesktopObserver);
 	if(DesktopBase->db_IconContainerObserver)
 		MUI_DeleteCustomClass(DesktopBase->db_IconContainerObserver);
 	if(DesktopBase->db_Observer)
@@ -368,6 +383,9 @@ AROS_LH0(BPTR, expunge, struct DesktopBase *, DesktopBase, 3, BASENAME)
 		MUI_DeleteCustomClass(DesktopBase->db_IconContainer);
 	if(DesktopBase->db_Presentation)
 		MUI_DeleteCustomClass(DesktopBase->db_Presentation);
+
+	if(DesktopBase->db_InputBase)
+		CloseDevice(&DesktopBase->db_InputIO);
 
 	if(DesktopBase->db_MUIMasterBase)
 		CloseLibrary(DesktopBase->db_MUIMasterBase);

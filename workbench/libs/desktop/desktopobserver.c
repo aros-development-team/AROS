@@ -18,6 +18,7 @@
 #include "worker.h"
 #include "desktop_intern.h"
 #include "iconcontainerobserver.h"
+#include "desktopobserver.h"
 #include "presentation.h"
 #include "iconcontainerclass.h"
 #include "observer.h"
@@ -25,18 +26,32 @@
 
 #include "desktop_intern_protos.h"
 
-IPTR iconConObsNew(Class *cl, Object *obj, struct opSet *msg)
+IPTR desktopObsNew(Class *cl, Object *obj, struct opSet *msg)
 {
 	IPTR retval=0;
-	struct IconContainerObserverClassData *data;
+	struct DesktopObserverClassData *data;
 	struct TagItem *tag;
-	UBYTE *directory;
+	struct Class *defaultWindowClass=NULL;
+	struct TagItem *defaultWindowArgs=NULL;
 
-	tag=FindTagItem(ICOA_Directory, msg->ops_AttrList);
+	tag=FindTagItem(DOA_DefaultWindowClass, msg->ops_AttrList);
 	if(tag)
 	{
+		defaultWindowClass=tag->ti_Data;
+		// this will change, save the variable in a new
+		// desktopcontext area
+		DesktopBase->db_DefaultWindow=defaultWindowClass;
 		tag->ti_Tag=TAG_IGNORE;
-		directory=(UBYTE*)tag->ti_Data;
+	}
+
+	tag=FindTagItem(DOA_DefaultWindowArguments, msg->ops_AttrList);
+	if(tag)
+	{
+		defaultWindowArgs=tag->ti_Data;
+		// this will change, save the variable in a new
+		// desktopcontext area
+		DesktopBase->db_DefaultWindowArguments=defaultWindowArgs;
+		tag->ti_Tag=TAG_IGNORE;
 	}
 
 	retval=DoSuperMethodA(cl, obj, (Msg)msg);
@@ -44,38 +59,33 @@ IPTR iconConObsNew(Class *cl, Object *obj, struct opSet *msg)
 	{
 		obj=(Object*)retval;
 		data=INST_DATA(cl, obj);
-		data->directory=directory;
-		data->dirLock=Lock(directory, ACCESS_READ);
+		data->defaultWindow=defaultWindowClass;
+		data->defaultWindowArgs=defaultWindowArgs;
 	}
 
 	return retval;
 }
 
-IPTR iconConObsSet(Class *cl, Object *obj, struct opSet *msg)
+IPTR desktopObsSet(Class *cl, Object *obj, struct opSet *msg)
 {
-	struct IconContainerObserverClassData *data;
+	struct DesktopObserverClassData *data;
 	IPTR retval=1;
 	struct TagItem *tag, *tstate=msg->ops_AttrList;
 
-	data=(struct IconContainerObserverClassData*)INST_DATA(cl, obj);
+	data=(struct DesktopObserverClassData*)INST_DATA(cl, obj);
 
 	while(tag=NextTagItem(&tstate))
     {
 		switch(tag->ti_Tag)
 		{
-			case ICOA_Directory:
-				UnLock(data->dirLock);
-				data->directory=(UBYTE*)tag->ti_Data;
-				data->dirLock=Lock(data->directory, ACCESS_READ);
-				break;
 			case OA_InTree:
 			{
-				struct HandlerScanRequest *hsr;
+				struct HandlerTopLevelRequest *htl;
 
-				hsr=createScanMessage(DIMC_SCANDIRECTORY, NULL, data->dirLock, obj, _app(_presentation(obj)));
-				PutMsg(DesktopBase->db_HandlerPort, (struct Message*)hsr);
+				htl=createTLScanMessage(DIMC_TOPLEVEL, NULL, LDF_VOLUMES, obj, _app(_presentation(obj)));
+				PutMsg(DesktopBase->db_HandlerPort, (struct Message*)htl);
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
-				DoMethod(_presentation(obj), MUIM_KillNotify, PA_InTree);
+
 				break;
 			}
 			default:
@@ -87,18 +97,15 @@ IPTR iconConObsSet(Class *cl, Object *obj, struct opSet *msg)
 	return retval;
 }
 
-IPTR iconConObsGet(Class *cl, Object *obj, struct opGet *msg)
+IPTR desktopObsGet(Class *cl, Object *obj, struct opGet *msg)
 {
 	IPTR retval=1;
-	struct IconContainerObserverClassData *data;
+	struct DesktopObserverClassData *data;
 
-	data=(struct IconContainerObserverClassData*)INST_DATA(cl, obj);
+	data=(struct DesktopObserverClassData*)INST_DATA(cl, obj);
 
 	switch(msg->opg_AttrID)
 	{
-		case ICOA_Directory:
-			*msg->opg_Storage=(ULONG)data->directory;
-			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, (Msg)msg);
 			break;
@@ -107,44 +114,43 @@ IPTR iconConObsGet(Class *cl, Object *obj, struct opGet *msg)
 	return retval;
 }
 
-IPTR iconConObsDispose(Class *cl, Object *obj, Msg msg)
+IPTR desktopObsDispose(Class *cl, Object *obj, Msg msg)
 {
 	IPTR retval;
-	struct IconContainerObserverClassData *data;
+	struct DesktopObserverClassData *data;
 
-	data=(struct IconContainerObserverClassData*)INST_DATA(cl, obj);
-	UnLock(data->dirLock);
+	data=(struct DesktopObserverClassData*)INST_DATA(cl, obj);
 	retval=DoSuperMethodA(cl, obj, msg);
 
 	return retval;
 }
 
-IPTR iconConObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
+IPTR desktopObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 {
 	IPTR retval=0;
 	ULONG i;
 	Object *newIcon;
 	struct TagItem *iconTags;
 	ULONG kind;
-	struct IconContainerObserverClassData *data;
-
-	data=(struct IconContainerObserverClassData*)INST_DATA(cl, obj);
 
 	for(i=0; i<msg->wsr_Results; i++)
 	{
-		iconTags=AllocVec(4*sizeof(struct TagItem), MEMF_ANY);
+		iconTags=AllocVec(3*sizeof(struct TagItem), MEMF_ANY);
 		iconTags[0].ti_Tag=IA_DiskObject;
 		iconTags[0].ti_Data=msg->wsr_ResultsArray[i].sr_DiskObject;
 		iconTags[1].ti_Tag=IA_Label;
 		iconTags[1].ti_Data=msg->wsr_ResultsArray[i].sr_Name;
-		iconTags[2].ti_Tag=IA_Directory;
-		iconTags[2].ti_Data=data->directory;
-		iconTags[3].ti_Tag=TAG_END;
-		iconTags[3].ti_Data=0;
+		iconTags[2].ti_Tag=TAG_END;
+		iconTags[2].ti_Data=0;
+
+kprintf("creating type of DISK : %s\n", iconTags[1].ti_Data);
+
+kprintf("diskobject type: %d\n", msg->wsr_ResultsArray[i].sr_DiskObject->do_Type);
 
 		switch(msg->wsr_ResultsArray[i].sr_DiskObject->do_Type)
 		{
 			case WBDISK:
+				kprintf("creating type of DISK\n");
 				kind=CDO_DiskIcon;
 				break;
 			case WBDRAWER:
@@ -178,7 +184,7 @@ IPTR iconConObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 	return retval;
 }
 
-AROS_UFH3(IPTR, iconContainerObserverDispatcher,
+AROS_UFH3(IPTR, desktopObserverDispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(Msg     , msg, A1))
@@ -188,19 +194,19 @@ AROS_UFH3(IPTR, iconContainerObserverDispatcher,
 	switch(msg->MethodID)
 	{
 		case OM_NEW:
-			retval=iconConObsNew(cl, obj, (struct opSet*)msg);
+			retval=desktopObsNew(cl, obj, (struct opSet*)msg);
 			break;
 		case OM_SET:
-			retval=iconConObsSet(cl, obj, (struct opSet*)msg);
+			retval=desktopObsSet(cl, obj, (struct opSet*)msg);
 			break;
 		case OM_GET:
-			retval=iconConObsGet(cl, obj, (struct opGet*)msg);
+			retval=desktopObsGet(cl, obj, (struct opGet*)msg);
 			break;
 		case OM_DISPOSE:
-			retval=iconConObsDispose(cl, obj, msg);
+			retval=desktopObsDispose(cl, obj, msg);
 			break;
 		case ICOM_AddIcons:
-			retval=iconConObsAddIcons(cl, obj, (struct icoAddIcon*)msg);
+			retval=desktopObsAddIcons(cl, obj, (struct icoAddIcon*)msg);
 			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, msg);

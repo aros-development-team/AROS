@@ -17,9 +17,18 @@ struct HandlerScanRequest
 	Object *hsr_Application;
 };
 
+struct HandlerTopLevelRequest
+{
+	struct DesktopInternMsg htl_Message;
+	ULONG htl_Types;
+	Object *htl_CallBack;
+	Object *htl_Application;
+};
+
 #define DIMC_ADDUSER        10
 #define DIMC_SUBUSER        20
 #define DIMC_SCANDIRECTORY  30
+#define DIMC_TOPLEVEL       40
 
 struct WorkingMessageNode
 {

@@ -9,6 +9,7 @@ BOOL handlerAddUser(void);
 BOOL startDesktopHandler(void);
 ULONG desktopHandler(void);
 struct HandlerScanRequest* createScanMessage(ULONG command, struct MsgPort *replyPort, BPTR dirLock, Object *callback, Object *app);
+struct HandlerTopLevelRequest* createTLScanMessage(ULONG command, struct MsgPort *replyPort, ULONG types, Object *callback, Object *app);
 
 void NewList(struct List *list);
 ULONG DoMethod (Object *obj, ULONG MethodID, ...);
@@ -96,7 +97,10 @@ AROS_UFP3(IPTR, trashcanIconDispatcher,
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(Msg     , msg, A1));
 
-
+AROS_UFH3(IPTR, desktopObserverDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
 
 
 #endif

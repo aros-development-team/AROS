@@ -12,6 +12,7 @@
 #include "desktop_intern.h"
 
 #include <proto/dos.h>
+#include <proto/input.h>
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
@@ -100,6 +101,12 @@ IPTR iconSet(Class *cl, Object *obj, struct opSet *msg)
 					retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
 			case IA_Executed:
+				kprintf("IconClass/IA_Executed\n");
+				retval=DoSuperMethodA(cl, obj, (Msg)msg);
+				break;
+			case IA_Directory:
+				// this is the same as moving a file
+				data->directory=tag->ti_Data;
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
 			default:
@@ -120,6 +127,18 @@ IPTR iconGet(Class *cl, Object *obj, struct opGet *msg)
 
 	switch(msg->opg_AttrID)
 	{
+		case IA_DiskObject:
+			*msg->opg_Storage=data->diskObject;
+			break;
+		case IA_Label:
+			*msg->opg_Storage=data->label;
+			break;
+		case IA_Selected:
+			*msg->opg_Storage=data->selected;
+			break;
+		case IA_Directory:
+			*msg->opg_Storage=data->directory;
+			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, (Msg)msg);
 			break;
@@ -181,18 +200,30 @@ IPTR iconHandleInput(Class *cl, Object *obj, struct MUIP_HandleInput *msg)
 					if(msg->imsg->MouseX >= _mleft(obj) && msg->imsg->MouseX <= _mright(obj) &&
 						msg->imsg->MouseY >= _mtop(obj) && msg->imsg->MouseY <= _mbottom(obj))
 					{
+						UWORD qualifiers;
+
+						qualifiers=PeekQualifier();
+
 						if(data->selected)
 						{
 							ULONG nowSeconds=0, nowMicros=0;
-
 							CurrentTime(&nowSeconds, &nowMicros);
-							DoubleClick(data->lastClickSecs, data->lastClickMicros, nowSeconds, nowMicros);
-							SetAttrs(obj, IA_Executed, TRUE, TAG_END);
+							if(DoubleClick(data->lastClickSecs, data->lastClickMicros, nowSeconds, nowMicros))
+								SetAttrs(obj, IA_Executed, TRUE, TAG_END);
+							else
+							{
+								kprintf("setting selected\n");
+								SetAttrs(obj, IA_Selected, TRUE, TAG_END);
+								data->lastClickSecs=nowSeconds;
+								data->lastClickMicros=nowMicros;
+							}
 						}
 						else
 						{
 							CurrentTime(&data->lastClickSecs, &data->lastClickMicros);
-							DoMethod(_parent(obj), ICM_UnselectAll, obj);
+							if(!(qualifiers & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
+								DoMethod(_parent(obj), ICM_UnselectAll);
+							kprintf("setting selected\n");
 							SetAttrs(obj, IA_Selected, TRUE, TAG_END);
 						}
 					}
