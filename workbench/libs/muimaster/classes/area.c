@@ -597,7 +597,7 @@ static ULONG Area_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
         /* restore the font */
 	_font(obj) = obj_font;
 
-	_subheight(obj) = _subheight(obj) - _addtop(obj) + data->mad_TitleText->height;
+	_subheight(obj) = _subheight(obj) - _addtop(obj) + data->mad_TitleText->height + 1;
 	_addtop(obj) = data->mad_TitleText->height + 1;
 
 	if (__zprefs.group_title_color == GROUP_TITLE_COLOR_3D)
