@@ -25,7 +25,7 @@
 #define REVISION 0
 
 #define NAME_STRING      "reqtools.library"
-#define VERSION_STRING   "$VER: reqtools 39.0 (29.06.2001)\r\n"
+#define VERSION_STRING   "$VER: reqtools 39.1 (08.07.2001)\r\n"
 
 /****************************************************************************************/
 
