@@ -113,7 +113,19 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ aHidd_PixFmt_BitMapType,	0	}, /* 15 */   
 	{ TAG_DONE, 0UL }
     };
-        
+    
+    struct TagItem tags_160_160[] = {
+    	{ aHidd_Sync_HDisp,		160	},
+	{ aHidd_Sync_VDisp,		160	},
+	{ TAG_DONE, 0UL }
+    };
+    
+    struct TagItem tags_240_320[] = {
+    	{ aHidd_Sync_HDisp,		240	},
+	{ aHidd_Sync_VDisp,		320	},
+	{ TAG_DONE, 0UL }
+    };
+
     struct TagItem tags_320_240[] = {
     	{ aHidd_Sync_HDisp,		320	},
 	{ aHidd_Sync_VDisp,		240	},
@@ -144,6 +156,30 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ TAG_DONE, 0UL }
     };
     
+    struct TagItem tags_1152_864[] = {
+    	{ aHidd_Sync_HDisp,		1152	},
+	{ aHidd_Sync_VDisp,		864	},
+	{ TAG_DONE, 0UL }
+    };
+    
+    struct TagItem tags_1280_960[] = {
+    	{ aHidd_Sync_HDisp,		1280	},
+	{ aHidd_Sync_VDisp,		960	},
+	{ TAG_DONE, 0UL }
+    };
+    
+    struct TagItem tags_1280_1024[] = {
+    	{ aHidd_Sync_HDisp,		1280	},
+	{ aHidd_Sync_VDisp,		1024	},
+	{ TAG_DONE, 0UL }
+    };
+    
+    struct TagItem tags_1600_1200[] = {
+    	{ aHidd_Sync_HDisp,		1600	},
+	{ aHidd_Sync_VDisp,		1200	},
+	{ TAG_DONE, 0UL }
+    };
+    
     struct TagItem mode_tags[] = {
 	{ aHidd_Gfx_PixFmtTags, (IPTR)pftags		},
 	
@@ -160,11 +196,17 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	    will be applied to each of these. Note that
 	    you can alter the defaults between the tags bewlow 
 	*/
+	{ aHidd_Gfx_SyncTags,	(IPTR)tags_160_160	},
+	{ aHidd_Gfx_SyncTags,	(IPTR)tags_240_320	},
 	{ aHidd_Gfx_SyncTags,	(IPTR)tags_320_240	},
 	{ aHidd_Gfx_SyncTags,	(IPTR)tags_512_384	},
 	{ aHidd_Gfx_SyncTags,	(IPTR)tags_640_480	},
 	{ aHidd_Gfx_SyncTags,	(IPTR)tags_800_600	},
 	{ aHidd_Gfx_SyncTags,	(IPTR)tags_1024_768	},
+	{ aHidd_Gfx_SyncTags,	(IPTR)tags_1152_864	},
+	{ aHidd_Gfx_SyncTags,	(IPTR)tags_1280_960	},
+	{ aHidd_Gfx_SyncTags,	(IPTR)tags_1280_1024	},
+	{ aHidd_Gfx_SyncTags,	(IPTR)tags_1600_1200	},
 	{ TAG_DONE, 0UL }
     };
     
