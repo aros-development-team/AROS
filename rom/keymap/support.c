@@ -32,7 +32,6 @@ BOOL GetKeyInfo(struct KeyInfo *ki, UWORD code, UWORD qual, struct KeyMap *km)
 {
     BOOL valid = TRUE; /* valid code is default */
 
-
     if (code & IECODE_UP_PREFIX) /* Key pressed ? */
         valid = FALSE;
     else

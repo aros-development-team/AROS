@@ -12,8 +12,6 @@
 
 #include <aros/debug.h>
 
-
-
 /*****************************************************************************
 
     NAME */
@@ -126,7 +124,7 @@
     	             c = GetMapChar(ki.Key_Mapping, idx);
     	        }
     	            
-    	        D(bug("mrk: Putting %c into buffer\n", c));
+    	        D(bug("mrk: Putting %c (%d 0x%x) into buffer\n", c, c, c));
     	        
     	        if (c != 0) /* If we get a 0 from the keymap, it means the char converts to "" */
     	        {
