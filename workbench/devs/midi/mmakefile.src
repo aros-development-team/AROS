@@ -10,6 +10,7 @@ USE_ROMLIB := yes
 USE_MLIB := yes
 USE_AROSLIB := yes
 
+#MM- workbench-devs-complete : workbench-devs-midi
 #MM workbench-devs-midi : setup includes linklibs
 workbench-devs-midi: $(EXE)
 	@$(NOP)

@@ -26,7 +26,8 @@ USE_ROMLIB := yes
 USE_MLIB := yes
 USE_AMIGALIB := yes
 
-#MM- workbench-libs-asl : setup includes linklibs workbench-libs-asl-module
+#MM- workbench-libs-asl : setup includes linklibs setup-asl-catalogs \
+#MM	workbench-libs-asl-module
 %make_module_setup mmake=workbench-libs-asl
 %make_module_cpak
 %make_module mmake=workbench-libs-asl
