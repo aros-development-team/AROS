@@ -63,7 +63,8 @@ extern struct ExecBase * SysBase;
 
 void BltRPtoCR(struct RastPort *    rp,
                struct ClipRect *    cr,
-               ULONG                Mode)
+               ULONG                Mode,
+               struct LayersBase *  LayersBase)
 {
     BltBitMap(rp->BitMap, 
               cr->bounds.MinX, 
@@ -79,7 +80,8 @@ void BltRPtoCR(struct RastPort *    rp,
 
 void BltCRtoRP(struct RastPort *   rp,
                struct ClipRect *   cr,
-               ULONG               Mode)
+               ULONG               Mode,
+               struct LayersBase  * LayersBase)
 {
     BltBitMap(cr->BitMap, 
               ALIGN_OFFSET(cr->bounds.MinX), 
@@ -113,7 +115,8 @@ void _CallLayerHook(struct Hook * h,
                     struct Layer * L,
                     struct Rectangle * R,
                     WORD offsetX,
-                    WORD offsetY)
+                    WORD offsetY,
+                    struct LayersBase * LayersBase)
 {
   struct BitMap * bm = rp->BitMap;
   if (h == LAYERS_BACKFILL)
@@ -815,7 +818,8 @@ kprintf("%s: backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
                              l,
                              &rect,
                              rect.MinX,
-                             rect.MinY);
+                             rect.MinY,
+                             LayersBase);
               _TranslateRect(&rect, -l->bounds.MinX, -l->bounds.MinY);
               OrRectRegion(l->DamageList, &rect);
 #if 0
@@ -1014,7 +1018,8 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
                      l,
                      &rr->bounds,
                      rr->bounds.MinX,
-                     rr->bounds.MinY);
+                     rr->bounds.MinY,
+                     LayersBase);
       _TranslateRect(&rr->bounds, 
                      -dr->bounds.MinX-l->bounds.MinX,
                      -dr->bounds.MinY-l->bounds.MinY);
@@ -1044,6 +1049,9 @@ int _BackupPartsOfLayer(struct Layer * l,
   struct Region r, * clipregion;
   r.RegionRectangle = NULL;  // min. initialization!
 
+if (hide_region == l->VisibleRegion)
+  kprintf("ERROR - same regions!! %s\n",__FUNCTION__);
+
   /*
    * Uninstall clipping region. This causes all pixels to
    * be copied into the cliprects that cover the complete
@@ -1053,10 +1061,11 @@ int _BackupPartsOfLayer(struct Layer * l,
   clipregion = _InternalInstallClipRegion(l, NULL, 0, 0, LayersBase);  
   
   ClearRegionRegion(hide_region,l->VisibleRegion);
-  _SetRegion(l->VisibleRegion, &r);
+  SetRegion(l->VisibleRegion, &r);
   AndRegionRegion(l->visibleshape,&r);
 
   newcr = _CreateClipRectsFromRegion(&r,l,FALSE,NULL,LayersBase);
+  ClearRegion(&r);
 
   _CopyClipRectsToClipRects(l,
                             l->ClipRect /* source */,
@@ -1109,13 +1118,17 @@ int _ShowPartsOfLayer(struct Layer * l,
    * according to the clipregion
    */ 
 
+if (show_region == l->VisibleRegion)
+  kprintf("ERROR - same regions!! %s\n",__FUNCTION__);
+
   clipregion = InstallClipRegion(l, NULL);
 
   OrRegionRegion(show_region,l->VisibleRegion);
-  _SetRegion(l->VisibleRegion,&r);
+  SetRegion(l->VisibleRegion,&r);
   AndRegionRegion(l->visibleshape,&r);
   
   newcr = _CreateClipRectsFromRegion(&r,l,FALSE,NULL,LayersBase);
+  ClearRegion(&r);
 
   _CopyClipRectsToClipRects(l,
                             l->ClipRect /* source */,
@@ -1145,7 +1158,7 @@ int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase)
   int invisible = FALSE;
   
   r.RegionRectangle = NULL;
-  _SetRegion(l->VisibleRegion, &r);
+  SetRegion(l->VisibleRegion, &r);
   AndRegionRegion(l->shape, &r);
   AndRegionRegion(l->parent->shape, &r);
 
@@ -1171,7 +1184,7 @@ int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase)
       cr->bounds.MinY = rr->bounds.MinY + r.bounds.MinY;
       cr->bounds.MaxX = rr->bounds.MaxX + r.bounds.MinX;
       cr->bounds.MaxY = rr->bounds.MaxY + r.bounds.MinY;
-      cr->lobs = invisible;
+      cr->lobs = (struct Layer *)invisible;
 #if 0
 kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
         __FUNCTION__,
@@ -1220,7 +1233,8 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
                          l,
                          &cr->bounds,
                          cr->bounds.MinX,
-                         cr->bounds.MinY);
+                         cr->bounds.MinY,
+                         LayersBase);
         }
       }
       else
@@ -1262,7 +1276,8 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
  */
 void _BackFillRegion(struct Layer * l, 
                      struct Region * r,
-                     int addtodamagelist)
+                     int addtodamagelist,
+                     struct LayersBase * LayersBase)
 {
   struct RegionRectangle * RR;
 
@@ -1329,82 +1344,11 @@ kprintf("\t\t: %s Clearing rect : %d/%d-%d/%d  layer: %p, hook: %p, bitmap: %p\n
                     l,
                     &RR->bounds,
                     RR->bounds.MinX,
-                    RR->bounds.MinY);
+                    RR->bounds.MinY,
+                    LayersBase);
     RR = RR->Next;
   }
 
-}
-
-int _SetRegion(struct Region * src, struct Region * dest)
-{
-  struct RegionRectangle * rrs =  src->RegionRectangle;
-  struct RegionRectangle * rrd = dest->RegionRectangle;
-  struct RegionRectangle * rrd_prev = NULL;
-  
-  dest->bounds = src->bounds;
-
-  while (NULL != rrs)
-  {
-    /*
-     * Is there a destination region rectangle available?
-     */
-    if (NULL == rrd)
-    {
-      rrd = NewRegionRectangle();
-    
-      if (NULL == rrd)
-        return FALSE;
-        
-      if (NULL == rrd_prev)
-        dest->RegionRectangle = rrd;
-      else
-        rrd_prev->Next = rrd;
-      
-      rrd->Next = NULL;
-    }
-    
-    /*
-     * Copy the bounds.
-     */
-    rrd->bounds = rrs->bounds;
-    rrd->Prev   = rrd_prev;
-
-    /*
-     * On to the next one in both lists.
-     */
-    rrs = rrs->Next;
-    rrd_prev = rrd;
-    rrd = rrd->Next;
-  }
-  
-  /*
-   * Deallocate any excessive RegionRectangles that might be in
-   * the destination Region.
-   */
-  if (NULL == rrd_prev)
-  {
-    /*
-     * Did never enter above loop...
-     */
-    rrd = dest->RegionRectangle;
-    dest->RegionRectangle = NULL;
-  }
-  else
-  {
-    /*
-     * Was in the loop.
-     */
-    rrd_prev->Next = NULL;
-  }
-  
-  while (NULL != rrd)
-  {
-    struct RegionRectangle * _rr = rrd->Next;
-    DisposeRegionRectangle(rrd);
-    rrd = _rr;
-  }
-  
-  return TRUE;
 }
 
 struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region,
@@ -1474,7 +1418,7 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
 
       _TranslateRect(&region->bounds, l->bounds.MinX, l->bounds.MinY);
 
-      _SetRegion(region, &r);
+      SetRegion(region, &r);
       AndRegionRegion(l->VisibleRegion, &r);
 
       l->ClipRect = _CreateClipRectsFromRegion(&r,

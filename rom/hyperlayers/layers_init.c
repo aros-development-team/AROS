@@ -34,12 +34,17 @@
 
 #include <libcore/libheader.c>
 
-struct ExecBase * SysBase; /* global variable */
-struct GfxBase * GfxBase;
+
+#ifdef GfxBase
+#undef GfxBase
+#endif
 
 #ifdef UtilityBase
 #undef UtilityBase
 #endif
+
+struct ExecBase * SysBase; /* global variable */
+struct GfxBase * GfxBase; /* unfortunatley need it for AROS to link!!*/
 
 ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
@@ -50,18 +55,20 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
   if (!lh->lb_ClipRectPool)
      lh->lb_ClipRectPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, sizeof(struct ClipRect) * 50, sizeof(struct ClipRect) * 50);
 
-  if (!GfxBase)
-    GfxBase = (struct GfxBase *) OpenLibrary("graphics.library",0);
+  if (NULL == lh->lb_GfxBase)
+    lh->lb_GfxBase = (struct GfxBase *) OpenLibrary("graphics.library",0);
+
+  GfxBase = lh->lb_GfxBase;
 
   if (NULL == lh->lb_UtilityBase)
      lh->lb_UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library",0);
   
-  if (!GfxBase || !lh->lb_UtilityBase || !lh->lb_ClipRectPool)
+  if (!lh->lb_GfxBase || !lh->lb_UtilityBase || !lh->lb_ClipRectPool)
   {
-    if (GfxBase)
+    if (lh->lb_GfxBase)
     {
-      CloseLibrary((struct Library *)GfxBase);
-      GfxBase = NULL;
+      CloseLibrary((struct Library *)lh->lb_GfxBase);
+      lh->lb_GfxBase = NULL;
     }
     if (lh->lb_UtilityBase)
     {

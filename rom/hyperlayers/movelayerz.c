@@ -3,6 +3,7 @@
 #include <proto/graphics.h>
 #include <proto/layers.h>
 #include "basicfuncs.h"
+#include "layers_intern.h"
 
 int _MoveLayerBehind(struct Layer *l,
                      struct Layer *lfront,
@@ -54,7 +55,7 @@ int _MoveLayerBehind(struct Layer *l,
     _l = _l->back;
   }
 
-  _SetRegion(first->VisibleRegion, &show);
+  SetRegion(first->VisibleRegion, &show);
 
   /*
    * First back up the family ... this is like moving them behind the
@@ -90,7 +91,7 @@ int _MoveLayerBehind(struct Layer *l,
       _ShowPartsOfLayer(_l, &show, LayersBase);
     }
     else
-      _SetRegion(&show, _l->VisibleRegion);
+      SetRegion(&show, _l->VisibleRegion);
       
     if (_l == lfront)
       break;
@@ -120,7 +121,7 @@ int _MoveLayerToFront(struct Layer * l,
                       struct Layer * lbehind,
                       struct LayersBase * LayersBase)
 {
-  struct Layer * lfront, * first, * _l, * lvis;
+  struct Layer * lfront, * first, * _l;
   struct Region r, * backupr = NULL;
   int backupr_allocated = FALSE;
   r.RegionRectangle = NULL;
@@ -139,7 +140,7 @@ int _MoveLayerToFront(struct Layer * l,
    * I need exactly that layers visible region later on.
    */
 
-  _SetRegion(lbehind->VisibleRegion,&r);
+  SetRegion(lbehind->VisibleRegion,&r);
     
   /*
    * if the layer l is visible then I will have to backup
@@ -214,7 +215,7 @@ int _MoveLayerToFront(struct Layer * l,
         _ShowPartsOfLayer(_l, &r, LayersBase);
       }
       else
-        _SetRegion(&r, _l->VisibleRegion);      
+        SetRegion(&r, _l->VisibleRegion);      
 
       if (_l == l)
         break;

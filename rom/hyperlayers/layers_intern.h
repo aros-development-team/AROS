@@ -25,15 +25,13 @@
 #include <graphics/gfxbase.h>
 /* ... ??? */
 
-extern struct GfxBase * GfxBase;
-
 struct LIBBASETYPE
 {
     struct Library   	    lb_LibNode;
 
     BPTR	     	    lb_SegList;
     
-    struct Library  	    *lb_GfxBase;
+    struct GfxBase 	    *lb_GfxBase;
     struct ExecBase 	    *lb_SysBase;
     struct UtilityBase      *lb_UtilityBase;
     struct SignalSemaphore  lb_MemLock;
@@ -83,9 +81,9 @@ struct ResourceNode
 
 /*
 #define SysBase         LIBBASE->lb_SysBase
-#define GfxBase		LIBBASE->lb_GfxBase
 */
 
+#define GfxBase		LIBBASE->lb_GfxBase
 #define UtilityBase	LIBBASE->lb_UtilityBase
 
 /* Function prototypes from all files... */
@@ -128,5 +126,13 @@ struct ChangeLayerShapeMsg
   struct ClipRect * cliprect;
   struct Region   * shape;
 };
+
+int _MoveLayerBehind(struct Layer *l,
+                     struct Layer *lfront,
+                     struct LayersBase * LayersBase);
+int _MoveLayerToFront(struct Layer * l,
+                      struct Layer * lbehind,
+                      struct LayersBase * LayersBase);
+
 
 #endif /* _LAYERS_INTERN_H */

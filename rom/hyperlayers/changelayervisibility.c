@@ -106,13 +106,13 @@
         /*
          * It's like the top layer since all others are invisible
          */
-        _SetRegion(l->LayerInfo->check_lp->shape, &r);
+        SetRegion(l->LayerInfo->check_lp->shape, &r);
         break;
       }
 
       if (IS_VISIBLE(_l))
       {
-        _SetRegion(_l->VisibleRegion, &r);
+        SetRegion(_l->VisibleRegion, &r);
         ClearRegionRegion(_l->visibleshape, &r);
         break;
       }
@@ -133,7 +133,7 @@
        * damage list since for those kind of layers
        * nothing was backed up.
        */
-      _SetRegion(l->shape, l->DamageList);
+      SetRegion(l->shape, l->DamageList);
       AndRegionRegion(l->VisibleRegion, l->DamageList);
       /*
        * Since the Damagelist is relative to the layer I have to make
@@ -156,9 +156,9 @@
     l->Flags &= ~LAYERREFRESH;
     ClearRegion(l->DamageList);
 
-    _SetRegion(l->VisibleRegion, &r);
+    SetRegion(l->VisibleRegion, &r);
     
-    _SetRegion(l->visibleshape, &clearr);
+    SetRegion(l->visibleshape, &clearr);
     _BackupPartsOfLayer(l, &clearr, 0, FALSE, LayersBase);
     
     /*
@@ -175,7 +175,7 @@
         _ShowPartsOfLayer(_l, &r, LayersBase);
       }
       else
-        _SetRegion(&r, _l->VisibleRegion);
+        SetRegion(&r, _l->VisibleRegion);
 
       if (IS_VISIBLE(_l) || IS_ROOTLAYER(_l))
         AndRegionRegion(_l->VisibleRegion, &clearr);
@@ -203,7 +203,7 @@
     {
       if (lparent &&
           (IS_SIMPLEREFRESH(lparent) || IS_ROOTLAYER(lparent)))
-        _BackFillRegion(lparent, &clearr, FALSE);
+        _BackFillRegion(lparent, &clearr, FALSE, LayersBase);
     }
 
     
