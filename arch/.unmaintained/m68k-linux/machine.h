@@ -59,12 +59,11 @@
 #undef PassThroughErrnos
 #define PassThroughErrnos 0x40000000
 
-/* Linux/m68k seems to set bit 31 in all memory allocations, so
-   default AllocEntry() checking goes wrong. */
+/* Macros to test/set failure of AllocEntry() */
 #define AROS_ALLOCENTRY_FAILED(memType) \
-	((struct MemList *)NULL)
+	((struct MemList *)((IPTR)(memType) | 0x80ul<<(sizeof(APTR)-1)*8))
 #define AROS_CHECK_ALLOCENTRY(memList) \
-	((APTR)(memList) != NULL)
+	(!((IPTR)(memList) & 0x80ul<<(sizeof(APTR)-1)*8))
 
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the
