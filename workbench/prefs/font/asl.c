@@ -12,6 +12,8 @@
 #include <proto/dos.h>
 #include <proto/muimaster.h>
 
+#include <exec/memory.h>
+
 #include <string.h>
 
 #include "locale.h"
