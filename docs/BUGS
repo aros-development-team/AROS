@@ -23,7 +23,7 @@ I wouldn't be too surprised if RemHead() crashes, too. ('Crash' means:
 Segmentation fault.)
 The problem was that GetTail() didn't return NULL for an empty list.
 
-BUG000004
+BUG000004 fixed
 klaus21@t-online.de
 The DosList structure found in AROS:include/dos/dosextens.h isn't
 compatible to the original (Amiga) one. The biggest problem: dol_Name is a
@@ -31,6 +31,8 @@ STRPTR, but it should be a BSTR. (I wrote a program to show the currently
 mounted devices, and it took me some time to find out why I got those silly
 segfaults. BTW, the first DosList-entry has the name "(Null)", is this the
 list-head or does it have any special meaning (i.e., is it a real device?)
+dol_Name is now called dol_OldName and is still a BSTR. Additionally there is
+now a field called dol_DevName, which is an ordinary STRPTR.
 
 BUG000005 fixed
 digulla@wi-pc44.fh-konstanz.de
