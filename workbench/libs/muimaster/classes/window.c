@@ -1560,7 +1560,7 @@ static IPTR Window_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Win
 	{
 	    newnode->id = 1;
 	    AddHead((struct List*)&data->wd_IDList,(struct Node*)&newnode->node);
-	    return (IPTR)id;
+	    return (IPTR)1;
 	}
 
 	id = 1;
