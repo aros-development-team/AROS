@@ -5,8 +5,13 @@
     Desc: Formats a message and makes sure the user will see it.
     Lang: english
 */
+#include <aros/config.h>
 #include <proto/exec.h>
 #include "exec_private.h"
+
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#define SysBase		*(void **)4
+#endif
 
 /*****************************************************************************
 

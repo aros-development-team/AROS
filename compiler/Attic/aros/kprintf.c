@@ -5,6 +5,7 @@
     Desc: Formats a message and makes sure the user will see it.
     Lang: english
 */
+#include <aros/config.h>
 #include <aros/arosbase.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -17,6 +18,9 @@
 #include "exec_private.h"
 
 #define AROSBase	((struct AROSBase *)(SysBase->DebugData))
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#define SysBase		*(void **)4
+#endif
 
 /* Can't use ctypt.h *sigh* */
 #define isdigit(x)      ((x) >= '0' && (x) <= '9')
