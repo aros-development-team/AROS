@@ -138,6 +138,8 @@
 #define MUICFG_Background_Page          0x95
 #define MUICFG_Background_ReadList      0x96
 #define MUICFG_String_Cursor            0x400
+#define MUICFG_String_MarkedBackground  0x401
+#define MUICFG_String_MarkedText        0x402
 
 
 /*** Methods ****************************************************************/

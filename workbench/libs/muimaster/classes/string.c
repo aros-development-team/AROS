@@ -68,6 +68,8 @@ struct MUI_StringData {
     struct MUI_EventHandlerNode ehn;
     struct MUI_PenSpec_intern inactive_text;
     struct MUI_PenSpec_intern active_text;
+    struct MUI_PenSpec_intern marked_text;
+    struct MUI_PenSpec_intern marked_bg;
     struct MUI_PenSpec_intern cursor;
 
     BOOL is_active;
@@ -520,6 +522,16 @@ static IPTR String_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     zune_penspec_setup(&data->active_text, muiRenderInfo(obj));
 
     zune_pen_spec_to_intern(
+	(const struct MUI_PenSpec *)muiGlobalInfo(obj)->mgi_Prefs->string_text_marked,
+	&data->marked_text);
+    zune_penspec_setup(&data->marked_text, muiRenderInfo(obj));
+
+    zune_pen_spec_to_intern(
+	(const struct MUI_PenSpec *)muiGlobalInfo(obj)->mgi_Prefs->string_bg_marked,
+	&data->marked_bg);
+    zune_penspec_setup(&data->marked_bg, muiRenderInfo(obj));
+
+    zune_pen_spec_to_intern(
 	(const struct MUI_PenSpec *)muiGlobalInfo(obj)->mgi_Prefs->string_cursor,
 	&data->cursor);
     zune_penspec_setup(&data->cursor, muiRenderInfo(obj));
@@ -539,6 +551,8 @@ static IPTR String_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *
 
     zune_penspec_cleanup(&data->inactive_text);
     zune_penspec_cleanup(&data->active_text);
+    zune_penspec_cleanup(&data->marked_text);
+    zune_penspec_cleanup(&data->marked_bg);
     zune_penspec_cleanup(&data->cursor);
 
     return (DoSuperMethodA(cl, obj, (Msg) msg));
@@ -827,7 +841,7 @@ static VOID TextM(Object *obj, struct MUI_StringData *data,
     if (len)
     {
     	//kprintf("B: %d   ", len);
-	SetABPenDrMd(_rp(obj), _pens(obj)[MPEN_SHINE], _pens(obj)[MPEN_FILL], JAM2);
+	SetABPenDrMd(_rp(obj), data->marked_text.p_pen, data->marked_bg.p_pen, JAM2);
     	Text(rp, text, len);
 	
 	text += len; textlen -= len;
