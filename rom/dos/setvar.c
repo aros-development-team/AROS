@@ -5,12 +5,15 @@
     Desc:
     Lang: english
 */
+
+#define AROS_ALMOST_COMPATIBLE 1
 #include "dos_intern.h"
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
+#include <exec/lists.h>
 
 
 /*****************************************************************************
@@ -96,7 +99,11 @@
         /* delete old value of that existing variable */
         FreeMem(lv->lv_Value,lv->lv_Len);
       }
-      else /* create a LocalVar-structure and insert it into the list*/
+      else 
+      {
+        /* 
+        ** create a LocalVar-structure and insert it into the list
+        */
         if(NULL != (lv = AllocVec(sizeof(struct LocalVar) + nameLen + 1,
                                   MEMF_CLEAR|MEMF_PUBLIC) ) )
         {
@@ -109,10 +116,12 @@
           CopyMem(name, lv->lv_Node.ln_Name, nameLen);
           lv->lv_Flags = flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM);
           
-          /* First let's see whether we have to add it at the head of the list 
-             as the list is still empty   OR
-             the very first element is already greater than the one we want to
-             insert */
+          /* 
+          ** First let's see whether we have to add it at the head of the list 
+          ** as the list is still empty   OR
+          ** the very first element is already greater than the one we want to
+          ** insert 
+          */
           
           if( n == (struct LocalVar *)&(pr->pr_LocalVars.mlh_Tail)  ||
               Stricmp(name, n->lv_Node.ln_Name) < 0 
@@ -124,26 +133,33 @@
           }
           else
           {
-            /* now we can be sure that we will have to insert somewhere 
-               behind the first element in the list */
-            while ( n->lv_Node.ln_Succ != 
-                         (struct Node *)&(pr->pr_LocalVars.mlh_Head)
-                    &&
-                    Stricmp(name, n->lv_Node.ln_Name) > 0 
-                  )
+            /*
+            ** Now we can be sure that we will have to insert somewhere 
+            ** behind the first element in the list 
+            */
+            ForeachNode(&pr->pr_LocalVars, n)
             {
-              n = (struct LocalVar *)n->lv_Node.ln_Succ;
+              if (Stricmp(name, n->lv_Node.ln_Name) < 0)
+                break;
             }
-            /* now we have to insert it before the element we have in
-               'n' (this means we have to insert it after the pred. of
-               'n') 
-             */
-            Insert((struct List *)&pr->pr_LocalVars ,
-                   (struct Node *) lv ,
-                   (struct Node *) n->lv_Node.ln_Pred
-                  );
+            
+            if (NULL != n->lv_Node.ln_Succ)
+            {
+              Insert((struct List *)&pr->pr_LocalVars ,
+                     (struct Node *) lv ,
+                     (struct Node *) n->lv_Node.ln_Pred
+                    );
+              
+            }
+            else
+            {
+              AddTail((struct List *)&pr->pr_LocalVars,
+                      (struct Node *) lv
+                     );
+            }
           }
         }
+      }
       /* -1 as size means: buffer contains a null-terminated string*/
       if (-1 == size)
         lv->lv_Len = strlen(buffer) + 1;
