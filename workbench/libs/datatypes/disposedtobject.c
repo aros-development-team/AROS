@@ -56,7 +56,7 @@
 	struct DTSpecialInfo *dtsi = ((struct Gadget *)o)->SpecialInfo;
 	struct Library *DTClassBase = NULL;
 	
-	GetAttr(DTA_Data, o, (IPTR *)DTClassBase);
+	GetAttr(DTA_Data, o, (IPTR *)&DTClassBase);
 	
 	while(dtsi->si_Flags & (DTSIF_PRINTING | DTSIF_LAYOUTPROC))
 	{
