@@ -1,3 +1,7 @@
+/* 
+   $Id$
+*/
+
 #define DEBUG 1
 
 #include <proto/exec.h>

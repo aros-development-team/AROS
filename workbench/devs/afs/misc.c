@@ -1,3 +1,8 @@
+/* 
+   $Id$
+*/
+
+#define DEBUG 1
 #include <proto/dos.h>
 
 #include <dos/dos.h>
@@ -9,7 +14,22 @@
 #include "checksums.h"
 #include "baseredef.h"
 
-ULONG writeHeader(struct afsbase *afsbase, struct Volume *volume, struct BlockCache *blockbuffer) {
+/**********************************************
+ Name  : writeHeader
+ Descr.: update header information (time)
+ Input : afsbase     -
+         volume      -
+         blockbuffer - pointer to struct BlockCache
+                       containing the headerblock
+ Output: 0 for success; error code otherwise
+***********************************************/
+ULONG writeHeader
+	(
+		struct afsbase *afsbase,
+		struct Volume *volume,
+		struct BlockCache *blockbuffer
+	)
+{
 struct DateStamp ds;
 
 	DateStamp(&ds);
@@ -20,9 +40,17 @@ struct DateStamp ds;
 		blockbuffer->buffer[BLK_CHECKSUM]=0;
 		if (!blockbuffer->buffer[BLK_PARENT(volume)])
 			break;
-		blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock, blockbuffer->buffer));
+		blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE
+			(
+				0-calcChkSum(volume->SizeBlock, blockbuffer->buffer)
+			);
 		writeBlock(afsbase, volume,blockbuffer);
-		blockbuffer=getBlock(afsbase, volume, AROS_LONG2BE(blockbuffer->buffer[BLK_PARENT(volume)]));
+		blockbuffer=getBlock
+			(
+				afsbase,
+				volume,
+				AROS_LONG2BE(blockbuffer->buffer[BLK_PARENT(volume)])
+			);
 		if (!blockbuffer)
 			return ERROR_UNKNOWN;
 	}
@@ -31,7 +59,11 @@ struct DateStamp ds;
 	blockbuffer->buffer[BLK_VOLUME_DAYS(volume)]=AROS_LONG2BE(ds.ds_Days);
 	blockbuffer->buffer[BLK_VOLUME_MINS(volume)]=AROS_LONG2BE(ds.ds_Minute);
 	blockbuffer->buffer[BLK_VOLUME_TICKS(volume)]=AROS_LONG2BE(ds.ds_Tick);
-	blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock, blockbuffer->buffer));
+	blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE
+		(
+			0-calcChkSum(volume->SizeBlock, blockbuffer->buffer)
+		);
 	writeBlock(afsbase, volume,blockbuffer);
 	return 0;
 }
+

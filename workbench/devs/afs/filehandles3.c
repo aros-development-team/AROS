@@ -1,3 +1,7 @@
+/*
+   $Id$
+*/
+
 #define DEBUG 1
 
 #include <proto/exec.h>
@@ -12,8 +16,6 @@
 #include "blockaccess.h"
 #include "hashing.h"
 #include "baseredef.h"
-
-extern ULONG error;
 
 LONG sameLock(struct AfsHandle *ah1,struct AfsHandle *ah2) {
 

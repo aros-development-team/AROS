@@ -1,3 +1,7 @@
+/* 
+   $Id$
+*/
+
 #include <aros/macros.h>
 
 #include "checksums.h"

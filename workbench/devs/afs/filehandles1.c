@@ -1,3 +1,7 @@
+/*
+   $Id$
+*/
+
 #define DEBUG 1
 
 #include <proto/exec.h>
@@ -269,20 +273,23 @@ UBYTE filename[34];
 ULONG block;
 
 	D(bug("afs.handler: openfile(%ld,%s,%ld,%d)\n",dirah->header_block,name,mode,protection));
-	if ((dirblock=getDirBlockBuffer(afsbase, dirah, name, filename))) {
+	if ((dirblock=getDirBlockBuffer(afsbase, dirah, name, filename)))
+	{
 		D(bug("afs.handler:    parent of %s is on block %ld\n",name,dirblock->blocknum));
 		dirblock->flags |= BCF_USED;
-		fileblock=getHeaderBlock(afsbase, dirah->volume,filename+1,dirblock,&block);
+		fileblock=getHeaderBlock(afsbase, dirah->volume,filename,dirblock,&block);
 		dirblock->flags &= ~BCF_USED;
 		if ((fileblock) && (AROS_BE2LONG(fileblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)])!=ST_FILE)) {
 			error=ERROR_OBJECT_WRONG_TYPE;
 		}
-		else {
+		else
+		{
 			if (mode & FMF_CLEAR)
 				deleteObject(afsbase, dirah, name);
 			if (mode & FMF_CREATE)
 				fileblock=createNewEntry(afsbase, dirah->volume, ST_FILE, filename, dirblock, protection);
-			if (fileblock) {
+			if (fileblock)
+			{
 				error=0;	//reset error
 				ah=getHandle(afsbase, dirah->volume,fileblock, mode);
 			}

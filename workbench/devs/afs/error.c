@@ -1,4 +1,7 @@
-/* $Id$ */
+/*
+   $Id$
+*/
+
 #include <proto/intuition.h>
 #include <aros/debug.h>
 
@@ -13,9 +16,11 @@ struct EasyStruct es={sizeof (struct EasyStruct),0,"AFFS",0,"Cancel"};
 	es.es_TextFormat=string;
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
 	if (IntuitionBase->FirstScreen)
+	{
 #endif
 		EasyRequestArgs(0,&es,0,args);
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+	}
 	else
 	{
 #warning kprintf for error printing when gfx.hidd is not initialized
@@ -44,8 +49,10 @@ char *texts[]={0,
 				0,
 				"Unknown error"
 };
-	if (error==ERR_ALREADY_PRINTED) return;
-	if (error>=ERR_UNKNOWN) {
+	if (error==ERR_ALREADY_PRINTED)
+		return;
+	if (error>=ERR_UNKNOWN)
+	{
 		showPtrArgsText(afsbase, texts[ERR_UNKNOWN],(ULONG *)&error);
 	}
 	else
