@@ -294,7 +294,7 @@ do                                          \
 		FormatString++;
 
 		if (user_va_list_ptr != NULL)
-		    VaListStream = *user_va_list_ptr;
+		    va_copy(VaListStream, *user_va_list_ptr);
 
 		continue;
 	    }
@@ -314,7 +314,7 @@ do                                          \
 		if (list_ptr != NULL)
 		{
 		    user_va_list_ptr =  list_ptr;
-		    VaListStream     = *list_ptr;
+		    va_copy(VaListStream, *list_ptr);
 		}
 
 		if (new_format != NULL)
@@ -500,7 +500,7 @@ do                                          \
     /* Return the rest of the DataStream. */
     return (user_va_list_ptr != NULL)
     ?
-        ((*user_va_list_ptr = *(va_list *)&VaListStream), user_va_list_ptr)
+        (va_copy(*user_va_list_ptr, *(va_list *)&VaListStream), user_va_list_ptr)
     :
         DataStream;
 
