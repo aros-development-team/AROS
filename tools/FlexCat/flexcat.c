@@ -389,6 +389,10 @@ void MyExit (int Code)
 // quick stricmp
 
 #if !defined(__amigados) && !defined(__CYGWIN32__)
+#    define stricmp strcasecmp
+#endif
+
+#if 0
 int stricmp( const char *str1, const char *str2 )
 {
 int i;
@@ -2829,6 +2833,7 @@ int main(int argc, char *argv [])
       }
     }
 
+    
 #if defined(__amigados)
   if(Modified)
     {
