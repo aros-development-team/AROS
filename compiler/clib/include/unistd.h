@@ -15,6 +15,7 @@ int access (const char *path, int mode);
 int close (int fd);
 int dup(int oldfd);
 int dup2(int oldfd, int newfd);
+char *getcwd(char *buf, size_t size);
 int lseek(int fildes, off_t offset, int whence);
 ssize_t read (int fd, void * buf, size_t count);
 #define rmdir unlink
