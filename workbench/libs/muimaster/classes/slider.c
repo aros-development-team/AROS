@@ -81,11 +81,16 @@ static ULONG Slider_New(struct IClass *cl, Object * obj, struct opSet *msg)
 	}
     }
 
-    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-	MUIA_Background, MUII_SliderBack,
-	MUIA_Font, MUIV_Font_Knob,
-	MUIA_Frame, MUIV_Frame_Slider,
-	TAG_MORE, msg->ops_AttrList);
+    obj = (Object *) DoSuperNewTags
+    (
+        cl, obj, NULL,
+        
+        MUIA_Background, MUII_SliderBack,
+        MUIA_Font,       MUIV_Font_Knob,
+        MUIA_Frame,      MUIV_Frame_Slider,
+        
+        TAG_MORE, (IPTR) msg->ops_AttrList
+    );
 
     if (!obj)
     {
