@@ -15,16 +15,20 @@ setup : make-dirs $(CONFIG_H)
 	$(MAKE) subdirs TARGET=setup
 
 make-dirs:
-	@if [ ! -d $(INCDIR)/aros ]; then $(MKDIR) $(INCDIR)/aros; else true; fi
+	%mkdirs_q $(INCDIR)/aros
+
+#	 @if [ ! -d $(INCDIR)/aros ]; then $(MKDIR) $(INCDIR)/aros; else true; fi
 
 subdirs :
-	@for dir in $(SUBDIRS) ; do \
-	    echo "Making $(TARGET) in $(CURDIR)/$$dir..." ; \
-	    if ( cd $$dir ; \
-		$(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
-		TARGET=$(TARGET) $(TARGET) ) ; \
-	    then true ; else exit 1 ; fi ; \
-	done
+	%subdirs_q
+
+#	 @for dir in $(SUBDIRS) ; do \
+#	     echo "Making $(TARGET) in $(CURDIR)/$$dir..." ; \
+#	     if ( cd $$dir ; \
+#		 $(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
+#		 TARGET=$(TARGET) $(TARGET) ) ; \
+#	     then true ; else exit 1 ; fi ; \
+#	 done
 
 $(CONFIG_H): $(TOP)/configure
 	sh $(TOP)/configure -h $@
@@ -43,6 +47,8 @@ machine:
 	$(CC) -I$(TOP)/compiler/include -I$(TOP)/compiler/arossupport/include -o machine machine.c
 	./machine
 
-ifeq ("$(TARGET)","clean")
-include $(TOP)/config/host.cfg
-endif
+#ifeq ("$(TARGET)","clean")
+#include $(TOP)/config/host.cfg
+#endif
+
+%include_deps $(TOP)/config/host.cfg

@@ -62,6 +62,22 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 	$(LIBDIR)/libarosc.a %(deplibs)
 %end
 
+# Do something in all subdirs
+%define subdirs_q dirs=$(SUBDIRS) target=$(TARGET) curdir=$(CURDIR) mflags=$(MFLAGS)
+	@for dir in %(dirs) ; do \
+	    echo "Making %(target) in %(curdir)/$$dir..." ; \
+	    if test ! -e $$dir/makefile ; then \
+		$(AWK) -f $(TOP)/scripts/genmf.gawk \
+		--assign TOP="$(TOP)/.." \
+		$$dir/makefile.src > $$dir/makefile || exit 1 ; \
+	    fi ; \
+	    if ( cd $$dir ; \
+		$(MAKE) %(mflags) TOP="$(TOP)/.." CURDIR="%(curdir)/$$dir" \
+		TARGET=%(target) %(target) ) ; \
+	    then true ; else exit 1 ; fi ; \
+	done
+%end
+
 # Prepare creation of a shared lib
 %define prepare_shlib lib=dummy shflag=$(SHARED_DUMMY)
 OBJDIR=$(OSGENDIR)/%(lib)

@@ -201,7 +201,13 @@ $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
 subdirs:
 	@for dir in $(SUBDIRS) ; do \
 	    echo "Making $(TARGET) in $$dir..." ; \
-	    if ( cd $$dir ; \
+	    if test ! -e $$dir/makefile ; then \
+		echo "Generating makefile..." ; \
+		$(AWK) -f $(TOP)/scripts/genmf.gawk \
+		    --assign TOP="$(TOP)" \
+		    $$dir/makefile.src > $$dir/makefile || exit 1 ; \
+	    fi ; \
+	    if ( cd $$dir && \
 		$(MAKE) $(MFLAGS) TOP=".." CURDIR="$(CURDIR)/$$dir" \
 		TARGET=$(TARGET) $(TARGET) ) ; \
 	    then true ; else exit 1 ; fi ; \
