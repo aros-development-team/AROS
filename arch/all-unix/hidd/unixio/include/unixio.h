@@ -33,6 +33,8 @@ struct uioMsg
     STACKULONG um_MethodID;
     STACKULONG um_Filedesc;
     STACKULONG um_Mode;
+    APTR um_CallBack;
+    APTR um_CallBackData;
 };
 
 /* UnixIO HIDD Values */
@@ -40,7 +42,7 @@ struct uioMsg
 #define vHidd_UnixIO_Write      0x2
 
 /* Stubs */
-IPTR Hidd_UnixIO_Wait(HIDD *h, ULONG fd, ULONG mode);
+IPTR Hidd_UnixIO_Wait(HIDD *h, ULONG fd, ULONG mode, APTR callback,  APTR callbackdata);
 HIDD *New_UnixIO(struct Library * /* OOPBase */);
 
 

@@ -116,6 +116,8 @@ struct uioMessage
     int 	   fd;
     int 	   mode;
     int 	   result;
+    void *callback;
+    void *callbackdata;
 };
 
 AROS_UFH5 (void, SigIO_IntServer,
@@ -241,8 +243,19 @@ static void WaitForIO (void)
 		}
 		else if (FD_ISSET (msg->fd, &rfds))
 		{
-		    msg->result = 0;
-		    goto reply;
+		    if (msg->callback)
+		    {
+		        if ( ((int (*)(int, void *))msg->callback)(msg->fd, msg->callbackdata) )
+		        {
+			    msg->result = 0;
+			    goto reply;
+			}
+		    }
+		    else
+		    {
+			msg->result = 0;
+			goto reply;
+		    }
 		}
 		else if (FD_ISSET (msg->fd, &wfds))
 		{
@@ -329,6 +342,8 @@ static IPTR unixio_wait(Class *cl, Object *o, struct uioMsg *msg)
 	umsg->Message.mn_ReplyPort = port;
 	umsg->fd   = ((struct uioMsg *)msg)->um_Filedesc;
 	umsg->mode = ((struct uioMsg *)msg)->um_Mode;
+	umsg->callback = ((struct uioMsg *)msg)->um_CallBack;
+	umsg->callbackdata = ((struct uioMsg *)msg)->um_CallBackData;
 
 	D(bug("Sending msg fd=%ld mode=%ld\n", umsg->fd, umsg->mode));
 	PutMsg (ud->ud_Port, (struct Message *)umsg);
@@ -525,7 +540,7 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
 
 #define OOPBase ( ((struct uio_data *)OCLASS(o)->UserData)->ud_OOPBase )
 
-IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode)
+IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode, APTR callback, APTR callbackdata)
 {
      static MethodID mid = NULL;
      struct uioMsg p;
@@ -535,6 +550,8 @@ IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode)
      p.um_MethodID = mid;
      p.um_Filedesc = fd;
      p.um_Mode	   = mode;
+     p.um_CallBack = callback;
+     p.um_CallBackData = callbackdata;
      
      return DoMethod((Object *)o, (Msg)&p);
 }
