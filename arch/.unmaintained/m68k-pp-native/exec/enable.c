@@ -11,6 +11,9 @@
 #include <aros/libcall.h>
 #include <asm/registers.h>
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 /*****************************************************************************/
 #undef Exec
 #ifdef UseExecstubs
@@ -82,7 +85,7 @@
 		/*
 		 * Enable interrupt by allowing all of them.
 		 */
-		WREG_L(IMR) = ~(TMR2_F|UART1_F);
+		SetSR(0,0x700);
 	}
 
 	AROS_LIBFUNC_EXIT
