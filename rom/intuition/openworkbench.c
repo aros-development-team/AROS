@@ -72,6 +72,7 @@
             { SA_PubName    , (IPTR)"Workbench"     },
             { SA_Pens       , (IPTR) pens           },
             { SA_SharePens  , TRUE                  },
+	    { SA_SysFont    , 1     	    	    },
             { TAG_END       , 0                     }
         };
 
