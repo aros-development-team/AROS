@@ -2,7 +2,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-INCLUDES    := -I$(BINDIR)/include -I$(TOP)/amiga/include
+INCLUDES    := -I$(BINDIR)/include -I$(TOP)/amiga/include -I$(TOP)/rom/dos
 #CC	     :=$(PURIFY) $(SYS_CC)
 OBJDIR	    := $(GENDIR)/$(CURDIR)
 
@@ -44,11 +44,14 @@ FILES	    := \
 	Break \
 	ChangeTaskPri \
 	Copy \
+	Else \
+	EndIf \
 	FailAt \
 	Fault \
 	Filenote \
 	Get \
 	Getenv \
+	If \
 	Join \
 	List \
 	Lock \
