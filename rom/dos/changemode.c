@@ -83,10 +83,10 @@
 	if (newmode & FMF_APPEND)
 	{
 	    /* See if the handler supports FSA_SEEK */
-	    if (!(ret->fh_Flags & FHF_APPEND) && Seek(MKBADDR(ret), 0, OFFSET_CUR) != -1)
+	    if (!(fh->fh_Flags & FHF_APPEND) && Seek(MKBADDR(fh), 0, OFFSET_END) != -1)
 	    {
 		/* if so then set the proper flag in the FileHandle struct */
-		 ret->fh_Flags |= FHF_APPEND;
+		 fh->fh_Flags |= FHF_APPEND;
 	    }
 	}
 	else
