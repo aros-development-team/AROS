@@ -4,7 +4,7 @@ CURDIR=.
 
 SPECIAL_CFLAGS = -Dmain=submain
 
-include $(TOP)/make.cfg
+include $(TOP)/config/make.cfg
 
 DEP_LIBS= $(LIBDIR)/libAmigaOS.a \
     $(GENDIR)/filesys/emul_handler.o \
@@ -13,15 +13,31 @@ DEP_LIBS= $(LIBDIR)/libAmigaOS.a \
 LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS -laros
 
-SUBDIRS = $(KERNEL) include aros clib exec dos utility graphics intuition \
+SUBDIRS = config \
+	include aros clib exec dos utility graphics intuition \
 	alib filesys libs devs c Demos
 
 # Extra files which should go in the developer dist
-DIST_FILES = makefile arosshell.c README* make.cfg crypt.c \
-	configure scripts/cint2.awk scripts/makefunctable.awk \
-	scripts/genprotos.h s/Startup-Sequence AFD-COPYRIGHT BUGS \
-	i386-emul m68k-native m68k-emul purify scripts/purify.awk \
-	scripts/CVS s/CVS CVS .cvsignore scripts/.cvsignore
+DIST_FILES = \
+	.cvsignore \
+	AFD-COPYRIGHT \
+	arosshell.c \
+	BUGS \
+	configure \
+	crypt.c \
+	makefile \
+	README* \
+	CVS \
+	s/CVS \
+	s/Startup-Sequence \
+	scripts/.cvsignore \
+	scripts/CVS \
+	scripts/cint2.awk \
+	scripts/genprotos.h \
+	scripts/makefunctable.awk \
+	scripts/purify \
+	scripts/purify.awk
+
 
 TESTDIR = $(BINDIR)/test
 TESTS = $(TESTDIR)/tasktest \
@@ -87,7 +103,8 @@ clean:
 	$(RM) $(ARCHDIR) host.cfg
 	@for dir in $(SUBDIRS) ; do \
 	    ( echo "Cleaning in $$dir..." ; cd $$dir ; \
-	    $(MAKE) $(MFLAGS) clean ) ; \
+	      $(MAKE) $(MFLAGS) TOP=".." CURDIR="$(CURDIR)/$$dir" \
+	      clean ) ; \
 	done
 
 $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
@@ -97,7 +114,8 @@ subdirs:
 	@for dir in $(SUBDIRS) ; do \
 	    echo "Making all in $$dir..." ; \
 	    if ( cd $$dir ; \
-		$(MAKE) $(MFLAGS) CURDIR="$(CURDIR)/$$dir" all ) ; \
+		$(MAKE) $(MFLAGS) TOP=".." CURDIR="$(CURDIR)/$$dir" \
+		all ) ; \
 	    then echo -n ; else exit 1 ; fi ; \
 	done
 
@@ -156,10 +174,6 @@ $(GENDIR)/%.o: %.c
 #	 @$(MKDEPEND) -f$@ -p$(GENDIR)/ -- $(CFLAGS) -- $^
 #
 #include $(GENDIR)/arosshell.d
-
-machine: machine.c
-	$(CC) -I./include -o machine machine.c
-	./machine
 
 cleandep:
 	$(RM) $(GENDIR)/*.d $(GENDIR)/*/*.d
