@@ -430,8 +430,8 @@ SAVEDS ASM VOID RTFuncs_rtUnlockWindow(REGPARAM(a0, struct Window *, window),
     	if (wLock->rtwl_ReqInstalled)
 	    EndRequest((struct Requester *)wLock, window);
 	
-	WindowLimits(window, wLock->rtwl_MinWidth, wLock->rtwl_MaxWidth,
-		     wLock->rtwl_MinHeight, wLock->rtwl_MaxHeight);
+	WindowLimits(window, wLock->rtwl_MinWidth, wLock->rtwl_MinHeight,
+		     wLock->rtwl_MaxWidth, wLock->rtwl_MaxHeight);
 
 	FreeVec(wLock);
     }
