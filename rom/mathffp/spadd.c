@@ -71,105 +71,117 @@ AROS_LH2(float, SPAdd,
 {
     AROS_LIBFUNC_INIT
     
-  LONG Res;
-  ULONG Mant1, Mant2;
-  char Shift;
-  char Exponent;
-
-  SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
-
-  Mant1 = fnum1 & FFPMantisse_Mask;
-  Mant2 = fnum2 & FFPMantisse_Mask;
-  Shift = ((char)fnum1 & FFPExponent_Mask) -
+    LONG Res;
+    ULONG Mant1, Mant2;
+    char Shift;
+    char Exponent;
+    
+    SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
+    
+    Mant1 = fnum1 & FFPMantisse_Mask;
+    Mant2 = fnum2 & FFPMantisse_Mask;
+    Shift = ((char)fnum1 & FFPExponent_Mask) -
           ((char)fnum2 & FFPExponent_Mask);
-
-  if (Shift > 0)
-  {
-    if (Shift >= 31)
-      Mant2 = 0;
-    else
-      Mant2 >>= (Shift + 1);
-    Mant1 >>= 1;
-    Exponent = (fnum1 & FFPExponent_Mask) + 1;
-  }
-  else
-  {
-    if (Shift <= -31)
-      Mant1 = 0;
-    else
-      Mant1 >>= (-Shift + 1);
-    Mant2 >>= 1;
-    Exponent = (fnum2 & FFPExponent_Mask) + 1;
-  }
-
-  /* sign(fnum1) == sign(fnum2)
-  ** simple addition
-  ** 0.5 <= res < 2
-  */
-  if ( ((BYTE) fnum1 & FFPSign_Mask) - ((BYTE) fnum2 & FFPSign_Mask) == 0)
-  {
-    Res = fnum1 & FFPSign_Mask;
-    Mant1 += Mant2;
-    if ((LONG) Mant1 > 0)
+    
+    if (Shift > 0)
     {
-      Exponent --;
-      Mant1 +=Mant1;
+        if (Shift >= 31)
+        {
+            Mant2 = 0;
+        }
+        else
+        {
+            Mant2 >>= (Shift + 1);
+        }
+        Mant1 >>= 1;
+        Exponent = (fnum1 & FFPExponent_Mask) + 1;
     }
-
-    if (0 == Mant1)
+    else
     {
-      SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      return 0;
+        if (Shift <= -31)
+        {
+            Mant1 = 0;
+        }
+        else
+        {
+            Mant1 >>= (-Shift + 1);
+        }
+        Mant2 >>= 1;
+        Exponent = (fnum2 & FFPExponent_Mask) + 1;
     }
-  }
+    
+    /* sign(fnum1) == sign(fnum2)
+    ** simple addition
+    ** 0.5 <= res < 2
+    */
+    if ( ((BYTE) fnum1 & FFPSign_Mask) - ((BYTE) fnum2 & FFPSign_Mask) == 0)
+    {
+        Res = fnum1 & FFPSign_Mask;
+        Mant1 += Mant2;
+        if ((LONG) Mant1 > 0)
+        {
+            Exponent --;
+            Mant1 +=Mant1;
+        }
+    
+        if (0 == Mant1)
+        {
+            SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+            return 0;
+        }
+    }
     /* second case: sign(fnum1) != sign(fnum2)
     ** -1 <= res < 1
     */
-  else
-  {
-    if ((char) fnum1 < 0)
-      Mant1 = Mant2 - Mant1;
-    else /* fnum2 < 0 */
-      Mant1 = Mant1 - Mant2;
-    /* if the result is below zero */
-    if ((LONG) Mant1 < 0)
-    {
-      Res = FFPSign_Mask;
-      Mant1 =-Mant1;
-      SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    }
     else
-      Res = 0;
-      
-    /* test the result for zero, has to be done before normalizing
-    ** the mantisse
-    */
-    if (0 == Mant1)
     {
-      SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
-      return 0;
+        if ((char) fnum1 < 0)
+        {
+            Mant1 = Mant2 - Mant1;
+        }
+        else /* fnum2 < 0 */
+        {
+            Mant1 = Mant1 - Mant2;
+        }
+        /* if the result is below zero */
+        if ((LONG) Mant1 < 0)
+        {
+            Res = FFPSign_Mask;
+            Mant1 =-Mant1;
+            SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        }
+        else
+        {
+            Res = 0;
+        }
+        /* test the result for zero, has to be done before normalizing
+        ** the mantisse
+        */
+        if (0 == Mant1)
+        {
+            SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+            return 0;
+        }
+        /* normalize the mantisse */
+        while ((LONG) Mant1 > 0)
+        {
+            Mant1 += Mant1;  /* one bit to the left. */
+            Exponent--;
+        }    
+    } /* else */
+    
+    if ((char) Exponent < 0)
+    {
+        SetSR(Overflow_Bit, Zero_Bit | Overflow_Bit);
+        /* do NOT change Negative_Bit! */
+        return (Res | (FFPMantisse_Mask | FFPExponent_Mask));
     }
-    /* normalize the mantisse */
-      while ((LONG) Mant1 > 0)
-      {
-        Mant1 += Mant1;  /* one bit to the left. */
-        Exponent --;
-      }
-
-  } /* else */
-
-  if ((char) Exponent < 0)
-  {
-    SetSR(Overflow_Bit, Zero_Bit | Overflow_Bit);
-    /* do NOT change Negative_Bit! */
-    return (Res | (FFPMantisse_Mask | FFPExponent_Mask));
-  }
-
-  Res |= (Mant1 & FFPMantisse_Mask) | Exponent;
-
-kprintf("SPAdd(%x,%x)=%x\n",fnum1,fnum2,Res);
-  
-  return Res;
+    
+    Res |= (Mant1 & FFPMantisse_Mask) | Exponent;
+    
+    kprintf("SPAdd(%x,%x)=%x\n",fnum1,fnum2,Res);
+    
+    return Res;
 
     AROS_LIBFUNC_EXIT
 }

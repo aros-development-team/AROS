@@ -38,46 +38,46 @@ AROS_LH1(LONG, SPFix,
 {
     AROS_LIBFUNC_INIT
     
-  LONG Res;
-  BYTE Shift;
-
-  if ((fnum & FFPExponent_Mask) > 0x60 )
-  {
-    if(fnum < 0) /* don`t hurt the SR! */
+    LONG Res;
+    BYTE Shift;
+    
+    if ((fnum & FFPExponent_Mask) > 0x60 )
     {
-      SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      return 0x80000000;    
+        if(fnum < 0) /* don`t hurt the SR! */
+        {
+            SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+            return 0x80000000;    
+        }
+        else
+        {
+            SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+            return 0x7fffffff;    
+        }
     }
-    else
+    
+    
+    Shift = (fnum & FFPExponent_Mask) - 0x40;
+    Res = ((ULONG)(fnum & FFPMantisse_Mask)) >> (32 - Shift);
+    
+    if (0 == Res)
     {
-      SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      return 0x7fffffff;    
+        SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return 0;
     }
-  }
+    
+    if (0x80000000 == Res) return 0x7fffffff;
+    
+    
+    /* Test for a negative sign */
+    if ((char)fnum < 0)
+    {
+        Res = -Res;
+        SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    }
 
-
-  Shift = (fnum & FFPExponent_Mask) - 0x40;
-  Res = ((ULONG)(fnum & FFPMantisse_Mask)) >> (32 - Shift);
-
-  if (0 == Res)
-  {
-    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 0;
-  }
-
-  if (0x80000000 == Res)
-    return 0x7fffffff;
-
-
-  /* Test for a negative sign */
-  if ((char)fnum < 0)
-  {
-    Res = -Res;
-    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-  }
-;
-kprintf("SPFix(%x)=%d\n",fnum,Res);
-
-  return Res;
+    kprintf("SPFix(%x)=%d\n",fnum,Res);
+    
+    return Res;
+    
     AROS_LIBFUNC_EXIT
 }

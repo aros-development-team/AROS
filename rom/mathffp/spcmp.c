@@ -69,47 +69,47 @@ AROS_LH2(LONG, SPCmp,
 {
     AROS_LIBFUNC_INIT
     
-  /* fnum1 is negative and fnum2 is positive
-  **  or
-  ** exponent of fnum1 is less than the exponent of fnum2
-  ** => fnum1 < fnum2
-  */
-  if ( (char)fnum1 < (char)fnum2 )
-  {
-    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return -1;
-  }
+    /* fnum1 is negative and fnum2 is positive
+    **  or
+    ** exponent of fnum1 is less than the exponent of fnum2
+    ** => fnum1 < fnum2
+    */
+    if ( (char)fnum1 < (char)fnum2 )
+    {
+        SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return -1;
+    }
 
-  /* fnum1 is positive and fnum2 is negative
-  **  or
-  ** exponent of fnum1 is greater tban the exponent if fnum2
-  ** => fnum1 > fnum2
-  */
-  if ((char) fnum1 > (char) fnum2 )
-  {
-    SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
+    /* fnum1 is positive and fnum2 is negative
+    **  or
+    ** exponent of fnum1 is greater tban the exponent if fnum2
+    ** => fnum1 > fnum2
+    */
+    if ((char) fnum1 > (char) fnum2 )
+    {
+        SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
+        return 1;
+    }
+
+    /*the signs and exponents of fnum1 and fnum2 must now be equal
+    **fnum1 == fnum2
+    */
+    if (fnum1 == fnum2)
+    {
+        SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+        return 0;
+    }
+
+    /* mantisse(fnum1) < mantisse(fnum2) */
+    if (fnum1 < fnum2)
+    {
+        SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return -1;
+    }
+    
+    /* Mantisse(fnum1) > mantisse(fnum2) */
+    SetSR(0, Zero_Bit | Negative_Bit | Overflow_Bit);
     return 1;
-  }
-
-  /*the signs and exponents of fnum1 and fnum2 must now be equal
-  **fnum1 == fnum2
-  */
-  if (fnum1 == fnum2)
-  {
-    SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
-    return 0;
-  }
-
-  /* mantisse(fnum1) < mantisse(fnum2) */
-  if (fnum1 < fnum2)
-  {
-    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return -1;
-  }
-
-  /* Mantisse(fnum1) > mantisse(fnum2) */
-  SetSR(0, Zero_Bit | Negative_Bit | Overflow_Bit);
-  return 1;
 
     AROS_LIBFUNC_EXIT
 }
