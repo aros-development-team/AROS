@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: ANSI C function strcspn()
@@ -53,7 +53,7 @@
 
 ******************************************************************************/
 {
-    size_t n;
+    size_t n = 0; /* Must set this to zero */
 
     while (*str && !strchr (reject, *str))
     {

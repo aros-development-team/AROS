@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: ANSI C function strtoul()
@@ -18,8 +18,8 @@
 
 /*  SYNOPSIS */
 	const char * str,
-	char	  ** endptr,
-	int	     base)
+	char      ** endptr,
+	int          base)
 
 /*  FUNCTION
 	Convert a string of digits into an integer according to the
@@ -75,9 +75,9 @@
 
 ******************************************************************************/
 {
-    unsigned long val	= 0;
-    int 	  digit;
-    char	  c;
+    unsigned long val   = 0;
+    int           digit;
+    char          c = 0;
 
     if (base < 0 || base == 1 || base > 36)
     {
