@@ -239,7 +239,7 @@
 /* Check the integrity of the wall <ptr> of size <size> bytes containing <fill>.
  */
 #   define CHECK_WALL(ptr, fill, size) do {		\
-	UBYTE *__p = (ULONG *)(ptr);			\
+	UBYTE *__p = (UBYTE *)(ptr);			\
 	size_t __s = (size);				\
 	while (__s--)					\
 	{						\
