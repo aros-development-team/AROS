@@ -182,24 +182,25 @@ int intui_OpenWindow (struct Window * w,
           - the inner window will be a layer according to the flags
         What is the size of the inner/outer window supposed to be???
         I just make it that the outer window has the size of what is requested
-      */ 
-       
+      */
+      
+
       /* First create outer window */
       struct Layer * L = CreateUpfrontHookLayer(
                              &w->WScreen->LayerInfo
                            , w->WScreen->RastPort.BitMap
                            , w->LeftEdge
                            , w->TopEdge
-                           , w->LeftEdge + w->Width
-                           , w->TopEdge  + w->Height
-                           , LAYERSIMPLE | (layerflags & LAYERBACKDROP)
+                           , w->LeftEdge + w->Width - 1
+                           , w->TopEdge  + w->Height - 1
+                           , LAYERSIMPLE /* Georg Steger: ??? | (layerflags & LAYERBACKDROP) */
                            , LAYERS_NOBACKFILL
                            , SuperBitMap);
                            
       /* Could the layer be created. Nothing bad happened so far, so simply leave */
       if (NULL == L)
         ReturnBool("intui_OpenWindow", FALSE);
-
+				      
       /* install it as the BorderRPort */
       w->BorderRPort = L->rp;
        
@@ -212,8 +213,8 @@ int intui_OpenWindow (struct Window * w,
 	  	  , w->WScreen->RastPort.BitMap
 		  , w->LeftEdge + w->BorderLeft  
 		  , w->TopEdge  + w->BorderTop
-		  , w->LeftEdge + w->GZZWidth
-		  , w->TopEdge  + w->GZZHeight
+		  , w->LeftEdge + w->BorderLeft + w->GZZWidth - 1
+		  , w->TopEdge  + w->BorderTop + w->GZZHeight - 1
 		  , layerflags
 		  , LAYERS_BACKFILL
 		  , SuperBitMap);
@@ -393,7 +394,9 @@ void intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
     		   (width - window->Width),
     		   (height - window->Height) );
       RefreshWindowFrame(window);
-                    
+     
+      window->GZZWidth  += (width - window->Width);
+      window->GZZHeight += (height - window->Height);                
     }
     MoveSizeLayer(window->WLayer,
     		  (x - window->TopEdge),
@@ -525,7 +528,8 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 	BOOL sysgads_ok = TRUE;
 	
 	    
-	db_left = 0; db_width = w->Width;
+	db_left = 0;
+	db_width = 0; /* Georg Steger: was w->Width; */
 	
 	
 	
@@ -636,7 +640,7 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 	    struct TagItem dragbar_tags[] = {
 			{GA_Left,	db_left		},
 			{GA_Top,	0		},
-			{GA_Width,	db_width 	},
+			{GA_RelWidth,	db_width 	},
 			{GA_Height,	TITLEBAR_HEIGHT },
 			{TAG_DONE,	0UL}
 	    };
