@@ -229,7 +229,8 @@ AROS_LH2(struct TrackDiskBase *, init,
     	D(bug("TD: No drives defined in BIOS\n"));
     	ReturnPtr("Trackdisk",struct TrackDiskBase *,NULL);
     }
-
+    /* This bit causes some problems, apparently */
+#if 0
     /* Now lets verify that there really is a controller present */
     outb(0,FDC_DOR);
     outb(0,FDC_DOR);
@@ -245,7 +246,7 @@ AROS_LH2(struct TrackDiskBase *, init,
     td_getbyte(&temp,(struct TrackDiskBase *)NULL);
 
     D(bug("TD: Floppy controller version %x\n",temp));
-    
+#endif
     /* Set up the IRQ system */
     OOPBase = OpenLibrary(AROSOOP_NAME, 0);
 
