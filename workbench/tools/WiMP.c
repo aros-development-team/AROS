@@ -30,7 +30,7 @@
 
 ******************************************************************************/
 
-static const char version[] = "$VER: WiMP 0.1 (12.12.2000)\n";
+static const char version[] = "$VER: WiMP 0.2 (14.12.2000)\n";
 
 #define AROS_ALMOST_COMPATIBLE
 
@@ -160,8 +160,18 @@ struct Gadget *screenlistg = NULL;
 struct Gadget *actiong = NULL;
 #define ACTIONGLENW 6
 #define ACTIONGLENS 2
+UWORD actionmenu[] =
+{
+	FULLMENUNUM(1,7,NOSUB),
+	FULLMENUNUM(1,6,NOSUB),
+	FULLMENUNUM(1,5,NOSUB),
+	FULLMENUNUM(1,4,NOSUB),
+	FULLMENUNUM(1,3,NOSUB),
+	FULLMENUNUM(1,2,NOSUB)
+};
 
-static struct NewMenu nm[] = {
+static struct NewMenu nm[] =
+{
   {NM_TITLE, "Project"},
     {NM_ITEM, "About..."},
     {NM_ITEM, NM_BARLABEL},
@@ -273,10 +283,12 @@ int i, type, max;
     if ( i > max )
     {
       OnGadget(gad,Window,NULL);
+      OnMenu(Window,actionmenu[i-1]);
     }
     else
     {
       OffGadget(gad,Window,NULL);
+      OffMenu(Window,actionmenu[i-1]);
     }
     gad = gad->NextGadget;
   }
@@ -338,7 +350,6 @@ struct Gadget *makegadgets(struct Gadget *gad)
         FreeGadgets(glist);
         printf("GTDemo: Error creating gadgets\n");
     }
-    update_actionglist();
     return gad;
 }
 
@@ -489,6 +500,8 @@ int quit=0;
 
   makemenus();
   
+  update_actionglist();
+
   es.es_StructSize = sizeof(es);
   es.es_Flags	= 0;
   es.es_Title	= "WiMP - The Window Manipulation Program";
