@@ -1,0 +1,31 @@
+#ifndef _STDBOOL_H
+#define _STDBOOL_H
+
+/*
+    Copyright (C) 2001 AROS - The Amiga Research OS
+    $Id$
+
+    Boolean type and values.
+
+    C99 defines a new basic type _Bool, which is a boolean type.
+    However we need to check whether it exists or not.
+*/
+
+/* People are allowed to define their own versions of these */
+#undef bool
+#undef true
+#undef false
+#undef __bool_true_false_are_defined
+
+/* These are the C99 definitions */
+#define bool				    _Bool
+#define	true				    1
+#define false				    0
+#define __bool_true_false_are_defined   1
+
+/* This is to make _Bool a real type if this isn't C99 */
+#if __STDC_VERSION__ < 199901L
+typedef int	_Bool;
+#endif
+
+#endif /* _STDBOOL_H */
