@@ -26,12 +26,6 @@ Can't allocate application memory (%s)!
 MSG_WINDOW_TITLE (//)
 Font Preferences
 ;
-MSG_TAB_SETTINGS (//)
-Settings
-;
-MSG_TAB_PREVIEW (//)
-Preview
-;
 MSG_MEN_PROJECT (//)
 Project
 ;
