@@ -5,20 +5,9 @@
     Desc: Change the stack of a task.
     Lang: english
 */
-#include <setjmp.h>
+#include <jmpdefs.h>
 
 static jmp_buf env;
-
-#ifdef __linux__
-#   define SP(env)      ((APTR)(env[0].__sp))
-#   define FP(env)      ((APTR)(env[0].__bp))
-#   define PC(env)      ((APTR)(env[0].__pc))
-#endif
-#ifdef __FreeBSD__
-#   define SP(env)	((APTR)(env[0]._jb[2]))
-#   define FP(env)	((APTR)(env[0]._jb[3]))
-#   define PC(env)	((APTR)(env[0]._jb[0]))
-#endif
 
 #define DEBUG 0
 
@@ -146,7 +135,7 @@ struct ExecBase * SysBase = (struct ExecBase *)0x0BAD0BAD;
 	IPTR * oldSP;
 	APTR   ptr1;
 	APTR   ptr2;
-	int    t;
+	int    t, i;
 
 	newSP = (IPTR *)(sss->stk_Pointer);
 	oldSP = (IPTR *)SP(env);
@@ -160,7 +149,7 @@ struct ExecBase * SysBase = (struct ExecBase *)0x0BAD0BAD;
 	    0	FP
 	*/
 
-	t = ((IPTR)FP(env) - (IPTR)oldSP)/sizeof(APTR) + 4;
+	t = ((IPTR)FP(env) - (IPTR)oldSP)/sizeof(APTR) + NUM_LONGS;
 
 #if DEBUG
 #ifdef TEST
@@ -168,7 +157,7 @@ struct ExecBase * SysBase = (struct ExecBase *)0x0BAD0BAD;
 #endif
 #endif
 
-	newSP -= t; /* Make room for 20 elements */
+	newSP -= t; /* Make room for t elements */
 
 	/*
 	    Move the contents of the old stack on the new stack.
@@ -180,10 +169,10 @@ struct ExecBase * SysBase = (struct ExecBase *)0x0BAD0BAD;
 
 	FP(env) = newSP; /* Set new frame pointer */
 
-	for (t=0; t<4; t++) /* Copy FP, return address, sss and SysBase */
+	for (i=0; i<NUM_LONGS; i++) /* Copy NUM_LONGS */
 	    *newSP++ = *oldSP++;
 
-	newSP = (IPTR *)(sss->stk_Pointer) - 20;
+	newSP = (IPTR *)(sss->stk_Pointer) - t;
 
 	sss->stk_Pointer = oldSP; /* Save modified old SP */
 
