@@ -8,7 +8,7 @@
 */
 
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <dos/dos.h>
 #include <dos/dosextens.h>
@@ -79,7 +79,7 @@
         D(CONST_STRPTR format;)
     } segfunc_t;
 
-    #define SEGFUNC(format) { InternalLoadSeg_##format, D(#format)}
+    #define SEGFUNC(format) { InternalLoadSeg_##format D(, #format)}
     
     static const segfunc_t funcs[] = 
     {
@@ -102,13 +102,12 @@
 	{
 	    SetIoErr(0);
 	   
-	    D(bug("[InternalLoadSeg] Trying to load %p as an %s object... ", BADDR(fh), funcs[i].format));
-         
-	    segs = (*funcs[i++].func)(fh, MKBADDR(NULL), (LONG *)functionarray, NULL, DOSBase);
+	    segs = (*funcs[i].func)(fh, MKBADDR(NULL), (LONG *)functionarray, NULL, DOSBase);
             
-	    D(bug(segs ? "succeeded.\n" : "FAILED\n"));
+	    D(bug("[InternalLoadSeg] %s loading %p as an %s object.\n",
+	          segs ? "Succeeded" : "FAILED", fh, funcs[i].format));
  	     
-	} while	(!segs && (IoErr() == ERROR_NOT_EXECUTABLE) && (i < num_funcs));
+	} while	(!segs && (IoErr() == ERROR_NOT_EXECUTABLE) && (++i < num_funcs));
     }
 
     return segs;
