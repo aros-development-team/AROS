@@ -7,6 +7,7 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 #include <exec/types.h>
 #include <utility/hooks.h>
 #include <proto/utility.h>

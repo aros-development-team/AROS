@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#include <workbench/icon.h>
 #include <graphics/gfx.h>
 #include <proto/arossupport.h>
 #include "icon_intern.h"

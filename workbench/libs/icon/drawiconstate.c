@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#include <workbench/icon.h>
 #include <intuition/imageclass.h>
 #include "icon_intern.h"
 

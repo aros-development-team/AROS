@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#include <workbench/icon.h>
 #include <proto/arossupport.h>
 #include <proto/dos.h>
 #include <dos/dos.h>

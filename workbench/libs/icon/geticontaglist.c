@@ -9,6 +9,7 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
+#include <stdio.h>
 #include <workbench/icon.h>
 
 #include "icon_intern.h"
