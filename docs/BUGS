@@ -57,16 +57,34 @@ BUG000006
 klaus21@t-online.de
 "dir :" does nothing.
 
-BUG000007
+BUG000007 partial fix (doesn't crash anymore)
 digulla@wi-pc44.fh-konstanz.de
 forkbomb cannot be called from the shell (one has to cut&paste one of
 the lines of the script) and it runs only about 1000 times before it
 GURUs with AN_MemCorrupt (81000005). Does not happen every time, though :-/
 
-BUG000008
+BUG000008 fixed
 digulla@wi-pc44.fh-konstanz.de
 AROS crashes after some time with a GURU Meditation 8100 000e
 Deadend/Exec/Stack appears to extend out of range
 Task: 0x80765e8 (Idle task)
 Either the problem is that the stack grows or the Task structure for the
 idle task gets corrupted. Might be connected to BUG000007.
+
+BUG000009
+digulla@aros.fh-konstanz.de
+demowin doesn't refresh correctly anymore since Moria3D bug has been
+fixed.
+
+BUG000010
+digulla@aros.fh-konstanz.de
+Refresh doesn't work correctly or not at all if the window is resized.
+
+BUG000011
+digulla@aros.fh-konstanz.de
+icon.library crashes in readicon. Maybe due to new library header.
+
+BUG000012
+digulla@aros.fh-konstanz.de
+TestExampleLib creates corrupt memory. Maybe library is freed twice ?
+
