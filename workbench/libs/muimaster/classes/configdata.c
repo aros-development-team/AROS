@@ -33,6 +33,7 @@ extern struct Library *MUIMasterBase;
 struct MUI_ConfigdataData
 {
     Object *app;
+    CONST_STRPTR appbase;
     struct ZunePrefsNew prefs;
     int test;
 };
@@ -214,7 +215,6 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ConfigdataData *data;
     struct TagItem *tags,*tag;
-    STRPTR appbase;
     //APTR cdata;
     int i;
 
@@ -232,6 +232,9 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Configdata_Application:
 		data->app = (Object *)tag->ti_Data;
 		break;
+	    case MUIA_Configdata_ApplicationBase:
+		data->appbase = (CONST_STRPTR)tag->ti_Data;
+		break;
 	}
     }
 
@@ -240,18 +243,19 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	DoMethod(obj, MUIM_Configdata_Load, (IPTR)"ENVARC:zune/global.prefs");
     }
 
-    if (data->app)
+    if (data->app && !data->appbase)
     {
-	get(data->app, MUIA_Application_Base, &appbase);
-	if (appbase)
+	get(data->app, MUIA_Application_Base, &data->appbase);
+    }
+
+    if (data->appbase)
+    {
+	char filename[255];
+	snprintf(filename, 255, "ENV:zune/%s.prefs", data->appbase);
+	if (!DoMethod(obj, MUIM_Configdata_Load, (IPTR)filename))
 	{
-	    char filename[255];
-	    snprintf(filename, 255, "ENV:zune/%s.prefs", appbase);
-	    if (!DoMethod(obj, MUIM_Configdata_Load, (IPTR)filename))
-	    {
-		snprintf(filename, 255, "ENVARC:zune/%s.prefs", appbase);
-		DoMethod(obj, MUIM_Configdata_Load, (IPTR)filename);
-	    }
+	    snprintf(filename, 255, "ENVARC:zune/%s.prefs", data->appbase);
+	    DoMethod(obj, MUIM_Configdata_Load, (IPTR)filename);
 	}
     }
 
