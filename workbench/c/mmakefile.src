@@ -31,6 +31,7 @@ FILES	    := \
 	setlocale \
 	tasklist \
 	crlist \
+	damagelist \
 	type \
 	wait \
 	why \
