@@ -42,13 +42,6 @@
 
 /****************************************************************************************/
 
-#define NEWLIST(l)                          	\
-((l)->lh_Head = (struct Node *)&(l)->lh_Tail, 	\
- (l)->lh_Tail = NULL,                         	\
- (l)->lh_TailPred = (struct Node *)(l))
-
-/****************************************************************************************/
-
 extern const char 	name[];
 extern const char 	version[];
 extern const APTR 	inittabl[4];
