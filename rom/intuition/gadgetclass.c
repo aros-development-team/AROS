@@ -393,7 +393,7 @@ static ULONG get_gadgetclass(Class *cl, Object *o, struct opGet *msg)
 	default:
 	    #if 0
 	    
-	    /* DONT DO THIS!! For example BGUI propclass relies on this!! */
+	    /* DONT DO THIS!! For example BGUI propclass relies on this not happening!! */
 	    
 	    *msg->opg_Storage = (IPTR)NULL; */
 	    #endif
