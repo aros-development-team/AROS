@@ -13,6 +13,12 @@
 #ifndef INTUITION_INTUITION_H
 #   include <intuition/intuition.h>
 #endif
+#ifndef INTUITION_CLASSUSR_H
+#   include <intuition/classusr.h>
+#endif
+#ifndef INTUITION_GADGETCLASS_H
+#   include <intuition/gadgetclass.h>
+#endif
 
 struct BBox
 {
@@ -21,6 +27,13 @@ struct BBox
 
 /* Calculate the size of the Bounding Box of the gadget */
 void CalcBBox (struct Window *, struct Gadget *, struct BBox *);
+void GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox);
+
+/* Render a label */
+ULONG LabelWidth (struct RastPort *, STRPTR label, ULONG len,
+		struct IntuitionBase *);
+void RenderLabel (struct RastPort *, STRPTR label, ULONG len,
+		struct IntuitionBase *);
 
 #endif /* _GADGETS_H_ */
 
