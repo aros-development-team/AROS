@@ -24,8 +24,8 @@
 #else /* ! __AROS__ */
 
 #define bug kprintf
-#define ASSERT(x) x
-#define ASSERT_VALID_PTR(x) x
+#define ASSERT(x)
+#define ASSERT_VALID_PTR(x)
 
 #ifdef MYDEBUG
 void kprintf(char *string, ...);
