@@ -6,6 +6,10 @@
     Lang: english
 */
 #include <aros/libcall.h>
+#include <proto/layers.h>
+#include <graphics/clip.h>
+#include <graphics/layers.h>
+#include "layers_intern.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -14,8 +18,6 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/layers.h>
-#include "layers_intern.h"
 
 	AROS_LH3(struct Layer *, WhichLayer,
 
@@ -49,19 +51,19 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-    struct Layer *l;
+  struct Layer *l;
 
-    D(bug("WhichLayer(li @ $%lx, x %ld, y %ld)\n", li, x, y));
+  D(bug("WhichLayer(li @ $%lx, x %ld, y %ld)\n", li, x, y));
 
-    for(l = li->top_layer; l != NULL; l = l->back)
-	if(x >= l->bounds.MinX && x <= l->bounds.MaxX &&
-	    y >= l->bounds.MinY && y <= l->bounds.MaxY)
-		return l;
+  for(l = li->top_layer; l != NULL; l = l->back)
+    if(x >= l->bounds.MinX && x <= l->bounds.MaxX &&
+       y >= l->bounds.MinY && y <= l->bounds.MaxY)
+       return l;
 
-    return NULL;
+  return NULL;
 
-    AROS_LIBFUNC_EXIT
+  AROS_LIBFUNC_EXIT
 } /* WhichLayer */
