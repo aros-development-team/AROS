@@ -124,17 +124,32 @@ void viewPartitionData
 		struct PartitionNode *pn
 	)
 {
+struct EasyStruct es =
+	{
+		sizeof(struct EasyStruct), 0,
+		"HDToolBox - Warning",
+		"Partition is not cylinder aligned!!!\n"
+		"I wouldn't change anything if this partition\n"
+		"contains important data!",
+		"Ok",
+	};
 
+	if (
+			(pn->pt_entry->first_sector % hdunit->geometry.dg_CylSectors) ||
+			(pn->pt_entry->count_sector % hdunit->geometry.dg_CylSectors)
+		)
+		EasyRequestArgs(0, &es, 0, 0);
 	pcpdeletepartitiontags[0].ti_Data = FALSE;
 //	pcpeditarospartitiontags[0].ti_Data = FALSE;
-	pcpstartcyltags[0].ti_Data = FALSE;
-	pcpstartcyltags[1].ti_Data = pn->pt_entry->first_sector;
-	pcpendcyltags[0].ti_Data = FALSE;
 #warning "non cylinder aligned partitions!"
-	
-	pcpendcyltags[1].ti_Data = pn->pt_entry->first_sector+pn->pt_entry->count_sector-1;
+	pcpstartcyltags[0].ti_Data = FALSE;
+	pcpstartcyltags[1].ti_Data =
+		(pn->pt_entry->first_sector)/hdunit->geometry.dg_CylSectors;
 	pcptotalcyltags[0].ti_Data = FALSE;
-	pcptotalcyltags[1].ti_Data = pn->pt_entry->count_sector;
+	pcptotalcyltags[1].ti_Data =
+		pn->pt_entry->count_sector/hdunit->geometry.dg_CylSectors;
+	pcpendcyltags[0].ti_Data = FALSE;
+	pcpendcyltags[1].ti_Data = pcpstartcyltags[1].ti_Data+pcptotalcyltags[1].ti_Data-1;
 	pcptypelvtags[0].ti_Data = FALSE;
 	pcptypelvtags[2].ti_Data = pn->pt_entry->type;
 	pcptypelvtags[3].ti_Data = pn->pt_entry->type;
@@ -266,9 +281,10 @@ BOOL changeStartCyl
 	)
 {
 
+	value *= hdunit->geometry.dg_CylSectors;
 	if (value != pn->pt_entry->first_sector)
 	{
-		if (value>=hdunit->geometry.dg_TrackSectors)
+		if (value>=hdunit->geometry.dg_CylSectors)
 		{
 			if (validValue(&partition_list, pn, value))
 			{
@@ -276,18 +292,18 @@ BOOL changeStartCyl
 				if (value<pn->pt_entry->first_sector)
 				{
 					/* if so add it to total cylinders */
-					pcptotalcyltags[1].ti_Data =
-						pn->pt_entry->count_sector+
-						(pn->pt_entry->first_sector-value);
+					pn->pt_entry->count_sector = 
+						pn->pt_entry->count_sector+(pn->pt_entry->first_sector-value);
 				}
 				else
 				{
 					/* if not sub it from total cylinders */
-					pcptotalcyltags[1].ti_Data =
-						pn->pt_entry->count_sector-
-						(value-pn->pt_entry->first_sector);
+					pn->pt_entry->count_sector = 
+						pn->pt_entry->count_sector-(value-pn->pt_entry->first_sector);
 				}
 				/* make changes visible */
+				pcptotalcyltags[1].ti_Data =
+					pn->pt_entry->count_sector/hdunit->geometry.dg_CylSectors;
 				SetGadgetAttrsA
 					(
 						pcpgadgets[ID_PCP_TOTALCYL-ID_PCP_FIRST_GADGET].gadget,
@@ -308,7 +324,8 @@ BOOL changeStartCyl
 			else
 			{
 				/* Input wasn't valid */
-				pcpstartcyltags[1].ti_Data = pn->pt_entry->first_sector;
+				pcpstartcyltags[1].ti_Data =
+					pn->pt_entry->first_sector/hdunit->geometry.dg_CylSectors;
 				SetGadgetAttrsA
 					(
 						pcpgadgets[ID_PCP_STARTCYL-ID_PCP_FIRST_GADGET].gadget,
@@ -318,7 +335,8 @@ BOOL changeStartCyl
 		}
 		else
 		{
-			pcpstartcyltags[1].ti_Data = hdunit->geometry.dg_TrackSectors;
+			pcpstartcyltags[1].ti_Data =
+				pn->pt_entry->first_sector/hdunit->geometry.dg_CylSectors;
 			SetGadgetAttrsA
 				(
 					pcpgadgets[ID_PCP_STARTCYL-ID_PCP_FIRST_GADGET].gadget,
@@ -338,13 +356,21 @@ BOOL changeEndCyl
 	)
 {
 
+	value *= hdunit->geometry.dg_CylSectors;
 	if (value>pn->pt_entry->first_sector)
 	{
-		if (value != (pn->pt_entry->count_sector+pn->pt_entry->first_sector-1))
+		if (value !=
+				(
+					pn->pt_entry->count_sector+
+					pn->pt_entry->first_sector-
+					hdunit->geometry.dg_CylSectors
+				)
+			)
 		{
 			if (validValue(&partition_list, pn, value))
 			{
-				pn->pt_entry->count_sector = value-pn->pt_entry->first_sector+1;
+				pn->pt_entry->count_sector =
+					value-pn->pt_entry->first_sector+hdunit->geometry.dg_CylSectors;
 				setComponents
 					(
 						&hdunit->geometry,
@@ -353,7 +379,9 @@ BOOL changeEndCyl
 						&pn->pt_entry->end_sector,
 						&pn->pt_entry->end_cylinder
 					);
-				pcptotalcyltags[1].ti_Data = pn->pt_entry->count_sector;
+				pcptotalcyltags[1].ti_Data =
+					pn->pt_entry->count_sector/
+					hdunit->geometry.dg_CylSectors;
 				/* make changes visible */
 				SetGadgetAttrsA
 					(
@@ -366,7 +394,8 @@ BOOL changeEndCyl
 			{
 				/* invalid entry */
 				pcpendcyltags[1].ti_Data =
-						pn->pt_entry->first_sector+pn->pt_entry->count_sector-1;
+						(pn->pt_entry->first_sector+pn->pt_entry->count_sector-1)/
+						hdunit->geometry.dg_CylSectors;
 				SetGadgetAttrsA
 					(
 						pcpgadgets[ID_PCP_ENDCYL-ID_PCP_FIRST_GADGET].gadget,
@@ -379,7 +408,8 @@ BOOL changeEndCyl
 	{
 		/* value is smaller than first sector */
 		pcpendcyltags[1].ti_Data =
-				pn->pt_entry->first_sector+pn->pt_entry->count_sector-1;
+				(pn->pt_entry->first_sector+pn->pt_entry->count_sector-1)/
+				hdunit->geometry.dg_CylSectors;
 		SetGadgetAttrsA
 			(
 				pcpgadgets[ID_PCP_ENDCYL-ID_PCP_FIRST_GADGET].gadget,
@@ -397,6 +427,7 @@ BOOL changeTotalCyl
 		ULONG value
 	)
 {
+	value *= hdunit->geometry.dg_CylSectors;
 	if (value != pn->pt_entry->count_sector)
 	{
 		if (validValue(&partition_list, pn, value+pn->pt_entry->first_sector-1))
@@ -412,7 +443,8 @@ BOOL changeTotalCyl
 				);
 			/* make changes visible */
 			pcpendcyltags[1].ti_Data =
-					pn->pt_entry->first_sector+pn->pt_entry->count_sector-1;
+					(pn->pt_entry->first_sector+pn->pt_entry->count_sector-1)/
+					hdunit->geometry.dg_CylSectors;
 			SetGadgetAttrsA
 				(
 					pcpgadgets[ID_PCP_ENDCYL-ID_PCP_FIRST_GADGET].gadget,
@@ -423,7 +455,8 @@ BOOL changeTotalCyl
 		else
 		{
 			/* invalid Value */
-			pcptotalcyltags[1].ti_Data = pn->pt_entry->count_sector;
+			pcptotalcyltags[1].ti_Data =
+				pn->pt_entry->count_sector/hdunit->geometry.dg_CylSectors;
 			SetGadgetAttrsA
 				(
 					pcpgadgets[ID_PCP_TOTALCYL-ID_PCP_FIRST_GADGET].gadget,
