@@ -23,7 +23,7 @@
 #include <proto/layers.h>
 #include <proto/gadtools.h>
 
-#define MUI_OBSOLETE /* for the obsolette menu stuff */
+#define MUI_OBSOLETE /* for the obsolete menu stuff */
 
 #include "mui.h"
 #include "support.h"
@@ -97,7 +97,7 @@ struct MUI_WindowData
     ULONG          wd_DisabledKeys;
 
     Object *       wd_DragObject; /* the object which is being dragged */
-    struct Window *wd_DropWindow; /* the destiantion window, for faster access */
+    struct Window *wd_DropWindow; /* the destination window, for faster access */
     Object *       wd_DropObject; /* the destination object */
     struct DragNDrop *wd_dnd;
     struct MUI_DragImage *wd_DragImage;
@@ -941,6 +941,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		{
 		    MUI_EndRefresh(&data->wd_RenderInfo, 0);
 		}
+		RefreshWindowFrame(data->wd_RenderInfo.mri_Window);
 
 		data->wd_Flags &= ~MUIWF_RESIZING;
 		_width(data->wd_RootObject) = data->wd_Width;
