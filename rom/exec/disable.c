@@ -52,7 +52,7 @@
 	the disable - thus interrupts may happen again.
 
     EXAMPLE
-	No you DEFINITATELY don't want to use this function.
+	No you DEFINITELY don't want to use this function.
 
     BUGS
 	The only architecture that you can rely on the registers being
