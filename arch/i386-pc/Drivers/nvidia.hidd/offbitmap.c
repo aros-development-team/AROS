@@ -28,12 +28,18 @@
 /* Don't initialize static variables with "=0", otherwise they go into DATA segment */
 
 static OOP_AttrBase HiddBitMapAttrBase;
+static OOP_AttrBase HiddPixFmtAttrBase;
+static OOP_AttrBase HiddGfxAttrBase;
+static OOP_AttrBase HiddSyncAttrBase;
 static OOP_AttrBase HiddNVGfxAttrBase;
 static OOP_AttrBase HiddNVBitMapAttrBase;
 
 static struct OOP_ABDescr attrbases[] = 
 {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
+    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase },
+    { IID_Hidd_Gfx,		&HiddGfxAttrBase },
+    { IID_Hidd_Sync,		&HiddSyncAttrBase },
     /* Private bases */
     { IID_Hidd_NVgfx,		&HiddNVGfxAttrBase	},
     { IID_Hidd_NVBitMap,	&HiddNVBitMapAttrBase },
