@@ -17,6 +17,7 @@ DEF_OBJ :=
 %prepare_replace rom/boot
 
 OBJS	:= $(foreach f, $(ADDITIONAL_OBJS) $(DEF_OBJ), $(OBJDIR)/$(f).o)
+DEPS	:= $(foreach f, $(ADDITIONAL_OBJS) $(DEF_OBJ), $(OBJDIR)/$(f).d)
 
 %prepare_shlib boot $(SHARED_BOOT)
 
