@@ -452,9 +452,9 @@ static void function_top(FILE *f,struct Var *v,long offset)
 	  if((*p->sl)[i].styp->flags==VOID) break;
 	  fprintf (f, ".stabs \"%s:p", (*p->sl)[i].identifier);
 	  debug_print_stab_type (f, (*p->sl)[i].styp);
-	  /* TODO i*4+4 is a crude method to find the offset of a parameter on
+	  /* TODO i*4+8 is a crude method to find the offset of a parameter on
 	     the stack */
-	  fprintf (f, "\",%d,0,0,%d\n", N_PSYM, i*4+4);
+	  fprintf (f, "\",%d,0,0,%d\n", N_PSYM, i*4+8);
 	}
     }
 
@@ -464,7 +464,19 @@ static void function_top(FILE *f,struct Var *v,long offset)
     /*ADA*/
     debug_offset_func=v->identifier;
 
-    for(pushedsize=0,i=1;i<sp;i++){
+    pushedsize=0;
+
+    if(G_FLAG_USE_FP)
+    {
+	fprintf(f,"\tpushl\t%s\n",regnames[bp]);
+	fprintf(f,"\tmovl\t%s,%s\n",regnames[sp],regnames[bp]);
+	pushedsize+=4;
+    }
+
+    for(i=1;i<sp;i++){
+	if (i==bp && G_FLAG_USE_FP)
+	    continue;
+
 	if(regused[i]&&!regscratch[i]){
 	    fprintf(f,"\tpushl\t%s\n",regnames[i]);
 	    pushedsize+=4;
@@ -472,7 +484,6 @@ static void function_top(FILE *f,struct Var *v,long offset)
     }
 
     if(offset) fprintf(f,"\tsubl\t$%ld,%%esp\n",offset);
-    if(G_FLAG_USE_FP) fprintf(f,"\tmovl\t%s,%s\n",regnames[sp],regnames[7]);
     if(G_FLAG_DEBUG){
       /* Tell GDB that the code of the function starts here */
       emitdebugline (f,fline);
@@ -491,11 +502,22 @@ static void function_bottom(FILE *f,struct Var *v,long offset)
       fprintf (f, "%sBE%d:\n", labprefix, local_debug_func_count);
     }
 
-    if(offset) fprintf(f,"\taddl\t$%ld,%%esp\n",offset);
+    if(!G_FLAG_USE_FP)
+	if(offset) fprintf(f,"\taddl\t$%ld,%s\n",offset,regnames[sp]);
+
     for(i=sp-1;i>0;i--){
+	if (i==bp && G_FLAG_USE_FP)
+	    continue;
+
 	if(regused[i]&&!regscratch[i]){
 	    fprintf(f,"\tpopl\t%s\n",regnames[i]);
 	}
+    }
+
+    if(G_FLAG_USE_FP)
+    {
+	fprintf(f,"\tmovl\t%s,%s\n",regnames[bp],regnames[sp]);
+	fprintf(f,"\tpopl\t%s\n",regnames[bp]);
     }
     fprintf(f,"\tret\n");
 
@@ -806,12 +828,12 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	c=p->code;t=p->typf;
 	if(c==NOP) continue;
 
-/*ADA*/
-if (lastline != p->line)
-{
-    emitdebugline(f,p->line);
-    lastline = p->line;
-}
+	/*ADA*/
+	if (lastline != p->line)
+	{
+	    emitdebugline(f,p->line);
+	    lastline = p->line;
+	}
 
 	if(c==SUBPFP) c=SUB;
 	if(c==SUBIFP) c=SUB;
