@@ -1,22 +1,14 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: DOS function LoadSeg()
     Lang: english
-
-    Revision 1.14
-      LoadSeg now simply calls InternalLoadSeg() with the
-      array of functions
 */
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
-/* iaint: Sigh, I'm getting sick of this...
-#undef DEBUG
-#define DEBUG 1
-*/
-#	include <aros/debug.h>
+#include <aros/debug.h>
 #include "dos_intern.h"
 
 extern LONG Dos_Read();
@@ -80,7 +72,7 @@ extern void Exec_FreeMem();
 
   if (file)
   {
-D(bug("Loading \"%s\"...\n", name));
+    D(bug("Loading \"%s\"...\n", name));
 
     segs = InternalLoadSeg (file, NULL, (void *)FunctionArray, NULL);
 

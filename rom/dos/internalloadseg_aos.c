@@ -1,5 +1,5 @@
 /*
-    (C) 1997-98 AROS - The Amiga Research OS
+    Copyright (C) 1997-98 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -17,10 +17,6 @@
 #include <aros/asmcall.h>
 #include <aros/machine.h>
 #include "dos_intern.h"
-/* iaint: This is really pissing me off...
-#undef DEBUG
-#define DEBUG 1
-*/
 #include <aros/debug.h>
 
 
