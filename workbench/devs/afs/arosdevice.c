@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,13 +19,9 @@
 #include <aros/asmcall.h>
 #include <aros/debug.h>
 
+#include "os.h"
 #include "afshandler.h"
 #include "volumes.h"
-
-#define NEWLIST(l)                          \
-((l)->lh_Head=(struct Node *)&(l)->lh_Tail, \
- (l)->lh_Tail=NULL,                         \
- (l)->lh_TailPred=(struct Node *)(l))
 
 extern const char name[];
 extern const char version[];
@@ -39,7 +35,7 @@ extern BPTR AROS_SLIB_ENTRY(expunge,afsdev)();
 extern int AROS_SLIB_ENTRY(null,afsdev)();
 extern void AROS_SLIB_ENTRY(beginio,afsdev)();
 extern LONG AROS_SLIB_ENTRY(abortio,afsdev)();
-extern void work();
+extern void AFS_work();
 extern const char afshandlerend;
 
 int AFS_entry(void)
@@ -133,7 +129,7 @@ AROS_UFH3(struct afsbase *, AROS_SLIB_ENTRY(init,afsdev),
 					task->tc_SPReg = (BYTE *)task->tc_SPLower-SP_OFFSET+sizeof(APTR);
 					*(APTR *)task->tc_SPLower = afsbase;
 #endif
-					if (AddTask(task,work,NULL) != NULL)
+					if (AddTask(task,AFS_work,NULL) != NULL)
 						return afsbase;
 					FreeMem(stack, AROS_STACKSIZE);
 				}

@@ -2,16 +2,12 @@
 #define FILEHANDLES3_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include <exec/types.h>
-#include <dos/dos.h>
-#include <dos/exall.h>
-
+#include "os.h"
 #include "filehandles.h"
-#include "afshandler.h"
 
 LONG sameLock(struct AfsHandle *, struct AfsHandle *);
 ULONG examine(struct afsbase *, struct AfsHandle *, struct ExAllData *, ULONG, ULONG, ULONG *);

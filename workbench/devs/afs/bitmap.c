@@ -1,17 +1,15 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #ifndef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #endif
 
-#include <aros/debug.h>
-#include <aros/macros.h>
-
+#include "os.h"
 #include "bitmap.h"
-#include "blockaccess.h"
+#include "cache.h"
 #include "checksums.h"
 #include "error.h"
 #include "afsblocks.h"
@@ -47,7 +45,7 @@ struct BlockCache *blockbuffer;
 	{
 		while (maxcount>=32)
 		{
-			lg=AROS_BE2LONG(blockbuffer->buffer[i]);
+			lg=OS_BE2LONG(blockbuffer->buffer[i]);
 			if (!lg)
 			{
 				count += 32;
@@ -68,7 +66,7 @@ struct BlockCache *blockbuffer;
 		/* are there some bits left ? */
 		if (maxcount)
 		{
-			lg=AROS_BE2LONG(blockbuffer->buffer[i]);
+			lg=OS_BE2LONG(blockbuffer->buffer[i]);
 			if (!lg)
 			{
 				count += maxcount;
@@ -158,7 +156,7 @@ struct BlockCache *blockbuffer;
 							(
 								afsbase,
 								volume,
-								AROS_BE2LONG(blockbuffer->buffer[i]),
+								OS_BE2LONG(blockbuffer->buffer[i]),
 								maxinbitmap
 							);
 					blocks -= maxinbitmap;
@@ -169,7 +167,7 @@ struct BlockCache *blockbuffer;
 			blockbuffer->flags &= ~BCF_USED;
 			if (blocks==0)
 				break;
-			curblock=AROS_BE2LONG(blockbuffer->buffer[volume->SizeBlock-1]);
+			curblock=OS_BE2LONG(blockbuffer->buffer[volume->SizeBlock-1]);
 		}
 		if (blocks)
 			showError(afsbase, ERR_MISSING_BITMAP_BLOCKS);
@@ -189,7 +187,7 @@ ULONG i,blocks,maxinbitmap;
 	for (i=1;i<volume->SizeBlock;i++)
 		bitmapblock->buffer[i]=0xFFFFFFFF;
 	bitmapblock->buffer[0]=0;
-	bitmapblock->buffer[0]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,bitmapblock->buffer));
+	bitmapblock->buffer[0]=OS_LONG2BE(0-calcChkSum(volume->SizeBlock,bitmapblock->buffer));
 	/* get nr of blocks to mark in bitmap blocks */
 	blocks=volume->rootblock*2-volume->bootblocks;
 	/* calc max blocks that can be marked in a single bitmap block */
@@ -226,7 +224,7 @@ ULONG i,blocks,maxinbitmap;
 				if (maxinbitmap>blocks)
 					maxinbitmap=blocks;
 				bitmapblock->blocknum += 1;
-				extensionblock->buffer[i]=AROS_LONG2BE(bitmapblock->blocknum);
+				extensionblock->buffer[i]=OS_LONG2BE(bitmapblock->blocknum);
 				writeBlock(afsbase, volume, bitmapblock);
 				blocks=blocks-maxinbitmap;
 				if (blocks==0)
@@ -235,7 +233,7 @@ ULONG i,blocks,maxinbitmap;
 			if (blocks)	/*write another extensionblock ? */
 			{
 				/* fill next extension */
-				extensionblock->buffer[volume->SizeBlock-1]=AROS_LONG2BE(bitmapblock->blocknum+1);
+				extensionblock->buffer[volume->SizeBlock-1]=OS_LONG2BE(bitmapblock->blocknum+1);
 			}
 			writeBlock(afsbase, volume, extensionblock);
 			bitmapblock->blocknum += 1;
@@ -250,13 +248,14 @@ ULONG i,blocks,maxinbitmap;
 LONG setBitmapFlag(struct afsbase *afsbase, struct Volume *volume, LONG flag) {
 struct BlockCache *blockbuffer;
 
+	D(bug("afs.handler: setBitmapFlag()\n"));
 	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
-	if (!blockbuffer)
+	if (blockbuffer == NULL)
 		return DOSFALSE;
 	blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)]=flag;
 	blockbuffer->buffer[BLK_CHECKSUM]=0;
 	blockbuffer->buffer[BLK_CHECKSUM]=
-		AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,blockbuffer->buffer));
+		OS_LONG2BE(0-calcChkSum(volume->SizeBlock,blockbuffer->buffer));
 	writeBlock(afsbase, volume, blockbuffer);
 	/* in case of a concurrent access */
 	blockbuffer->blocknum=0;
@@ -287,7 +286,7 @@ LONG validBitmap(struct afsbase *afsbase, struct Volume *volume) {
 	{
 		volume->bitmapblock->buffer[0]=0;
 		volume->bitmapblock->buffer[0]=
-			AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,volume->bitmapblock->buffer));
+			OS_LONG2BE(0-calcChkSum(volume->SizeBlock,volume->bitmapblock->buffer));
 		writeBlock(afsbase, volume, volume->bitmapblock);
 		volume->bitmapblock->flags &= ~BCF_WRITE;
 	}
@@ -333,7 +332,7 @@ ULONG bblock,togo,maxinbitmap;
 		{
 			volume->bitmapblock->buffer[0]=0;
 			volume->bitmapblock->buffer[0]=
-				AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,volume->bitmapblock->buffer));
+				OS_LONG2BE(0-calcChkSum(volume->SizeBlock,volume->bitmapblock->buffer));
 			writeBlock(afsbase, volume, volume->bitmapblock);
 			volume->bitmapblock->flags &= ~BCF_WRITE;
 		}
@@ -360,7 +359,7 @@ ULONG bblock,togo,maxinbitmap;
 						(
 							afsbase,
 							volume,
-							AROS_BE2LONG(extensionblock->buffer[volume->SizeBlock-1])
+							OS_BE2LONG(extensionblock->buffer[volume->SizeBlock-1])
 						);
 				if (!extensionblock)
 					return;
@@ -372,7 +371,7 @@ ULONG bblock,togo,maxinbitmap;
 					(
 						afsbase,
 						volume,
-						AROS_BE2LONG(extensionblock->buffer[volume->lastposition])
+						OS_BE2LONG(extensionblock->buffer[volume->lastposition])
 					);
 		}
 		volume->bstartblock=bblock*maxinbitmap;
@@ -393,7 +392,7 @@ ULONG bitnr, longnr,null=0;
 	{
 		/* free a block */
 		volume->bitmapblock->buffer[longnr] =
-			AROS_LONG2BE(AROS_BE2LONG(volume->bitmapblock->buffer[longnr]) | (1 << bitnr));
+			OS_LONG2BE(OS_BE2LONG(volume->bitmapblock->buffer[longnr]) | (1 << bitnr));
 		volume->usedblockscount -= 1;
 		if (
 				(
@@ -414,7 +413,7 @@ ULONG bitnr, longnr,null=0;
 	else
 	{
 		volume->bitmapblock->buffer[longnr] =
-			AROS_LONG2BE(AROS_BE2LONG(volume->bitmapblock->buffer[longnr]) & ~(1 << bitnr));
+			OS_LONG2BE(OS_BE2LONG(volume->bitmapblock->buffer[longnr]) & ~(1 << bitnr));
 		volume->usedblockscount += 1;
 		volume->lastaccess=block; /* all blocks before "block" are used! */
 	}
@@ -444,7 +443,7 @@ ULONG bits,trash,lg;
 		while (maxblocks>=32)
 		{
 			/* do we have a free block ? if yes search within this long which block */
-			lg=AROS_BE2LONG(volume->bitmapblock->buffer[longnr]);
+			lg=OS_BE2LONG(volume->bitmapblock->buffer[longnr]);
 			if (lg)
 			{
 				bits=1;
@@ -463,7 +462,7 @@ ULONG bits,trash,lg;
 		}
 		if (maxblocks)
 		{
-			lg=AROS_BE2LONG(volume->bitmapblock->buffer[longnr]);
+			lg=OS_BE2LONG(volume->bitmapblock->buffer[longnr]);
 			bits=1;
 			for (;maxblocks;maxblocks--)
 			{
@@ -496,7 +495,7 @@ ULONG block,longnr,bitnr,lg,maxbitcount;
 		if (maxbitcount)
 		{
 			maxbitcount= ((32-bitnr)<maxbitcount) ? 32 : bitnr+maxbitcount;
-			lg=AROS_BE2LONG(volume->bitmapblock->buffer[longnr]);
+			lg=OS_BE2LONG(volume->bitmapblock->buffer[longnr]);
 			for (;bitnr<maxbitcount;bitnr++)
 			{
 				if ((1<<bitnr) & lg)
