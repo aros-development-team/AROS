@@ -1944,15 +1944,27 @@ ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Libr
 	}
 	
    	case CYBRMATTR_WIDTH:
+	#if 0 /* stegerg: doesn't really work, because of framebuffer bitmap object stuff */
 	    OOP_GetAttr(bm_obj, aHidd_BitMap_Width, &retval);
+	#else
+	    retval = GetBitMapAttr(bitMap, BMA_WIDTH);
+	#endif
 	    break;
 	
    	case CYBRMATTR_HEIGHT:
+	#if 0 /* stegerg: doesn't really work, because of framebuffer bitmap object stuff */
 	    OOP_GetAttr(bm_obj, aHidd_BitMap_Height, &retval);
+	#else
+	    retval = GetBitMapAttr(bitMap, BMA_HEIGHT);
+	#endif
 	    break;
 	
    	case CYBRMATTR_DEPTH:
+	#if 0 /* stegerg: might not really work, because of framebuffer bitmap object stuff */
 	    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &retval);
+	#else
+	    retval = GetBitMapAttr(bitMap, BMA_DEPTH);
+	#endif
 	    break;
 	
    	case CYBRMATTR_ISCYBERGFX: {
