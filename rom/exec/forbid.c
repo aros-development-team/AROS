@@ -9,6 +9,7 @@
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
+#include <aros/atomic.h>
 
 /*****************************************************************************/
 #undef  Exec
@@ -71,7 +72,7 @@
 
     AROS_LIBFUNC_INIT
 
-    SysBase->TDNestCnt++;
+    AROS_ATOMIC_INCB(SysBase->TDNestCnt);
 
     AROS_LIBFUNC_EXIT
 } /* Forbid() */
