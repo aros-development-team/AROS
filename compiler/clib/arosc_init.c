@@ -197,13 +197,11 @@ static void *const functable[]=
 
 int arosc_internalinit(struct AroscUserData *userdata)
 {
-    APTR *tc_UserDataptr = &(FindTask(0)->tc_UserData);
-
     /*save the old value of tc_UserData */
-    userdata->oldtc_UserData = *(struct AroscUserData **)tc_UserDataptr;
+    userdata->olduserdata = FindTask(0)->tc_UserData;
 
     /*store the new one */
-    *(struct AroscUserData **)tc_UserDataptr = userdata;
+    FindTask(0)->tc_UserData = userdata;
 
     /* passes these value to the program */
     userdata->ctype_b       = __ctype_b;
@@ -217,13 +215,12 @@ int arosc_internalinit(struct AroscUserData *userdata)
 
 int arosc_internalexit(void)
 {
-    APTR *tc_UserDataptr = &(FindTask(0)->tc_UserData);
-    struct AroscUserData *userdata = *(struct AroscUserData **)tc_UserDataptr;
+    struct AroscUserData *userdata = FindTask(0)->tc_UserData;
 
     set_call_funcs(SETNAME(EXIT), -1);
 
     /*restore the old value */
-    *tc_UserDataptr = userdata->oldtc_UserData;
+    FindTask(0)->tc_UserData = userdata->olduserdata;
 
     /* Free the memory the program has allocated for us */
     FreeVec(userdata);
