@@ -156,6 +156,10 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 ULONG *para
 
 #if 0
 	case MUIO_Slider: /* STRPTR label, LONG min, LONG max */
+	    return SliderObject, /* control char is missing */
+	        MUIA_Numeric_Min, params[1],
+	        MUIA_Numeric_Max, params[2],
+	        End;
 	    break;
 
 	case MUIO_String: /* STRPTR label, LONG maxlen */
