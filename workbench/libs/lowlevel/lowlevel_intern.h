@@ -8,15 +8,11 @@
 #ifndef __LOWLEVEL_INTERN_H__
 #define __LOWLEVEL_INTERN_H__
 
-#ifndef EXEC_TYPES_H
-#   include <exec/types.h>
-#endif
-#ifndef EXEC_LIBRARIES_H
-#   include <exec/libraries.h>
-#endif
-#ifndef EXEC_EXECBASE_H
-#   include <exec/execbase.h>
-#endif
+#include <exec/types.h>
+#include <exec/libraries.h>
+#include <exec/execbase.h>
+#include <exec/interrupts.h>
+#include <exec/semaphores.h>
 
 #include <aros/debug.h>
 
@@ -26,13 +22,16 @@
     Library, and use the workbench.library functions to get information.
 */
 
-extern struct ExecBase * SysBase;
+extern struct ExecBase *SysBase;
 
 struct LowLevelBase
 {
-    struct Library   	LibNode;
-    BPTR	     	ll_SegList;
-    struct ExecBase  *	ll_SysBase;
+    struct Library   LibNode;
+    BPTR             ll_SegList;
+    struct ExecBase *ll_SysBase;
+
+    struct SignalSemaphore ll_Lock;
+    struct Interrupt       ll_VBlank;
 };
 
 
