@@ -49,7 +49,17 @@
 #define iscsym(c)	(isalnum(c) || (((c) & 127) == 0x5F))	/* SAS C */
 #define iscsymf(c)	(isalpha(c) || (((c) & 127) == 0x5F)) 	/* SAS C */
 
-#define toupper(c)      (__ctype_toupper[(int)(c)])
-#define tolower(c)      (__ctype_tolower[(int)(c)])
+#define _toupper(c)      (__ctype_toupper[(int)(c)])
+#define _tolower(c)      (__ctype_tolower[(int)(c)])
+
+static __inline__ int toupper(int c)
+{
+    return _toupper(c);
+}
+
+static __inline__ int tolower(int c)
+{
+    return _tolower(c);
+}
 
 #endif /* _CTYPE_H_ */
