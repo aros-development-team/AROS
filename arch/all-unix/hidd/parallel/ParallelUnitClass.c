@@ -7,13 +7,11 @@
 */
 
 /* Some POSIX includes */
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <termios.h>
 #include <unistd.h>
 
+#include "unix_funcs.h"
 
 #define AROS_ALMOST_COMPATIBLE 1
 
@@ -101,7 +99,7 @@ static OOP_Object *parallelunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot
 
     D(bug("Opening %s.\n",unitname[data->unitnum]));
 
-    data->filedescriptor = open(unitname[data->unitnum], O_NONBLOCK|O_RDWR);
+    data->filedescriptor = unix_open_nonblock(unitname[data->unitnum]);
 
     D(bug("Opened %s on handle %d\n",unitname[data->unitnum], data->filedescriptor));
     
