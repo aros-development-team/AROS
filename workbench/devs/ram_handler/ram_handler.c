@@ -1788,20 +1788,6 @@ AROS_LH1(BPTR, close,
 }
 
 
-/* Strip off a possible voulume name */
-static STRPTR fixName(STRPTR name)
-{
-    STRPTR colon = strchr(name, ':');
-
-    if (colon != NULL)
-    {
-	return colon + 1;
-    }
-
-    return name;
-}
-
-
 void processFSM(struct rambase *rambase);
 
 
@@ -1880,7 +1866,7 @@ void processFSM(struct rambase *rambase)
 	    
 	    error = open_(rambase,
 			  (struct filehandle **)&iofs->IOFS.io_Unit,
-			  fixName(iofs->io_Union.io_OPEN.io_Filename),
+			  iofs->io_Union.io_OPEN.io_Filename,
 			  iofs->io_Union.io_OPEN.io_FileMode);
 	    break;
 	    
@@ -1895,7 +1881,7 @@ void processFSM(struct rambase *rambase)
 	    
 	    error = open_file(rambase,
 			      (struct filehandle **)&iofs->IOFS.io_Unit,
-			      fixName(iofs->io_Union.io_OPEN_FILE.io_Filename),
+			      iofs->io_Union.io_OPEN_FILE.io_Filename,
 			      iofs->io_Union.io_OPEN_FILE.io_FileMode,
 			      iofs->io_Union.io_OPEN_FILE.io_Protection);
 	    break;
@@ -2011,12 +1997,12 @@ void processFSM(struct rambase *rambase)
 	    */
 	    
 	    // kprintf("Creating directory %s\n",
-	    //	fixName(iofs->io_Union.io_CREATE_DIR.io_Filename));
+	    //	iofs->io_Union.io_CREATE_DIR.io_Filename);
 	    
 	    
 	    error = create_dir(rambase,
 			       (struct filehandle **)&iofs->IOFS.io_Unit,
-			       fixName(iofs->io_Union.io_CREATE_DIR.io_Filename),
+			       iofs->io_Union.io_CREATE_DIR.io_Filename,
 			       iofs->io_Union.io_CREATE_DIR.io_Protection);
 	    break;
 	    
@@ -2028,7 +2014,7 @@ void processFSM(struct rambase *rambase)
 	    */
 	    error = delete_object(rambase,
 				  (struct filehandle *)iofs->IOFS.io_Unit,
-				  fixName(iofs->io_Union.io_DELETE_OBJECT.io_Filename));
+				  iofs->io_Union.io_DELETE_OBJECT.io_Filename);
 	    break;
 	    
 	case FSA_SET_PROTECT:
@@ -2040,7 +2026,7 @@ void processFSM(struct rambase *rambase)
 		  ULONG protect; new protection bits
 		*/
 		
-		STRPTR realName = fixName(iofs->io_Union.io_SET_PROTECT.io_Filename);
+		STRPTR realName = iofs->io_Union.io_SET_PROTECT.io_Filename;
 		
 		dir = ((struct filehandle *)iofs->IOFS.io_Unit)->node;
 		error = findname(rambase, &realName, &dir);
@@ -2063,7 +2049,7 @@ void processFSM(struct rambase *rambase)
 		  ULONG GID;
 		*/
 		
-		STRPTR realName = fixName(iofs->io_Union.io_SET_OWNER.io_Filename);
+		STRPTR realName = iofs->io_Union.io_SET_OWNER.io_Filename;
 		
 		dir = ((struct filehandle *)iofs->IOFS.io_Unit)->node;
 		error = findname(rambase, &realName, &dir);
@@ -2086,7 +2072,7 @@ void processFSM(struct rambase *rambase)
 		  ULONG ticks;   timestamp
 		*/
 		
-		STRPTR realName = fixName(iofs->io_Union.io_SET_DATE.io_Filename);
+		STRPTR realName = iofs->io_Union.io_SET_DATE.io_Filename;
 		
 		dir = ((struct filehandle *)iofs->IOFS.io_Unit)->node;
 		error = findname(rambase, &realName, &dir);
@@ -2107,7 +2093,7 @@ void processFSM(struct rambase *rambase)
 		  STRPTR comment; NUL terminated C string or NULL.
 		*/
 
-		STRPTR realName = fixName(iofs->io_Union.io_SET_COMMENT.io_Filename);
+		STRPTR realName = iofs->io_Union.io_SET_COMMENT.io_Filename;
 		
 		dir = ((struct filehandle *)iofs->IOFS.io_Unit)->node;
 		error = findname(rambase, &realName, &dir);

@@ -230,11 +230,7 @@ AROS_LH1(void, beginio,
 
 	case FSA_OPEN_FILE:
 	    /* No names allowed on ZERO: */
-	    if
-	    (
-	       stricmp(iofs->io_Union.io_NamedFile.io_Filename, "ZERO:") != 0 &&
-	       iofs->io_Union.io_NamedFile.io_Filename[0]
-            )
+	    if (iofs->io_Union.io_NamedFile.io_Filename[0])
 	    {
 		error=ERROR_OBJECT_NOT_FOUND;
 		break;

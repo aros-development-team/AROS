@@ -150,12 +150,6 @@ UBYTE buffer[32];
 		return 0;
 	}
 	*block = dirah->header_block;
-	/* Skip ":" if there is one */
-	pos = name;
-	while ((*pos) && (*pos!=':'))
-		pos++;
-	if (*pos == ':')
-		name = pos+1;
 
 	D(bug("afs.handler:    findBlock: startblock=%ld\n",*block));
 	/* get first entry (root or filelock refers to) */
