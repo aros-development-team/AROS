@@ -429,7 +429,7 @@ activated window.
 The problem was in relation to ActivateGadget(); changing active windows 
 didn't set the active gadget to NULL:
 
-BUG000062
+BUG000062 fixed
 hkiel@aros.org
 When you are in a five-character-directory and produce an "Object not found"
 error by calling a non-existant command, the second call to a non-existant
@@ -448,3 +448,7 @@ bergers@aros.org
 ExNext() does not work on the ram disk. This is the reason why 'Setenv' 
 crashes.
 
+BUG000065
+bernie@aros.org
+AROS dumps core when you attempt to cd into a plain file (try "cd aros" in
+the Workbench: directory).
