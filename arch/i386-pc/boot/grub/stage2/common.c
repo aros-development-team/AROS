@@ -30,6 +30,9 @@
  */
 
 struct multiboot_info mbi;
+struct vbe_controller vbe_info_block;
+struct vbe_mode mode_info_block;
+unsigned short *mode_list;
 unsigned long saved_drive;
 unsigned long saved_partition;
 #ifndef STAGE1_5
@@ -317,19 +320,29 @@ init_bios_info (void)
   /* Get the APM BIOS table.  */
   get_apm_info ();
   if (apm_bios_info.version)
+    {
+    mbi.flags |= MB_INFO_APM_TABLE;
     mbi.apm_table = (unsigned long) &apm_bios_info;
-  
+    }
+
+  /* Set the signature to `VBE2', to obtain VBE 3.0 information.  */
+  grub_memmove (vbe_info_block.signature, "VBE2", 4);
+
+  if (get_vbe_controller_info (&vbe_info_block) == 0x004F)
+    {
+      mbi.flags |= MB_INFO_VIDEO_INFO;
+      mbi.vbe_control_info = (unsigned long) &vbe_info_block;
+      mbi.vbe_mode_info = (unsigned long) &mode_info_block;
+    }
+
   /*
    *  Initialize other Multiboot Info flags.
    */
 
-  mbi.flags = (MB_INFO_MEMORY | MB_INFO_CMDLINE | MB_INFO_BOOTDEV
+  mbi.flags |= (MB_INFO_MEMORY | MB_INFO_CMDLINE | MB_INFO_BOOTDEV
 	       | MB_INFO_DRIVE_INFO | MB_INFO_CONFIG_TABLE
 	       | MB_INFO_BOOT_LOADER_NAME);
   
-  if (apm_bios_info.version)
-    mbi.flags |= MB_INFO_APM_TABLE;
-
 #endif /* STAGE1_5 */
 
 #ifdef SUPPORT_DISKLESS
