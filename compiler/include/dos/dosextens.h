@@ -231,13 +231,15 @@ struct Process
 #define PRB_CLOSEOUTPUT 4
 #define PRB_FREEARGS	5
 #define PRB_CLOSEERROR	6
-#define PRF_FREESEGLIST (1L<<PRB_FREESEGLIST)
-#define PRF_FREECURRDIR (1L<<PRB_FREECURRDIR)
-#define PRF_FREECLI	(1L<<PRB_FREECLI)
-#define PRF_CLOSEINPUT	(1L<<PRB_CLOSEINPUT)
-#define PRF_CLOSEOUTPUT (1L<<PRB_CLOSEOUTPUT)
-#define PRF_FREEARGS	(1L<<PRB_FREEARGS)
-#define PRF_CLOSEERROR	(1L<<PRB_CLOSEERROR)
+#define PRB_SYNCHRONOUS 7
+#define PRF_FREESEGLIST (1L << PRB_FREESEGLIST)
+#define PRF_FREECURRDIR (1L << PRB_FREECURRDIR)
+#define PRF_FREECLI	(1L << PRB_FREECLI)
+#define PRF_CLOSEINPUT	(1L << PRB_CLOSEINPUT)
+#define PRF_CLOSEOUTPUT (1L << PRB_CLOSEOUTPUT)
+#define PRF_FREEARGS	(1L << PRB_FREEARGS)
+#define PRF_CLOSEERROR	(1L << PRB_CLOSEERROR)
+#define PRF_SYNCHRONOUS (1L << PRB_SYNCHRONOUS)
 
 /* Structure used for CLIs and Shells. Allocate this structure with
    AllocDosObject() only! */
@@ -271,7 +273,7 @@ struct CommandLineInterface
     LONG cli_Background;
       /* Current output file. (struct FileLock *) */
     BPTR cli_CurrentOutput;
-      /* Dafault stack size as set by the command "Stack". */
+      /* Default stack size as set by the command "Stack". */
     LONG cli_DefaultStack;
       /* Standard/Default output file. (struct FileLock *) */
     BPTR cli_StandardOutput;   
@@ -326,6 +328,12 @@ struct FileHandle
       /* This is a pointer to a filesystem handler. See <dos/filesystems.h> for
          more information. */
     struct Device * fh_Device;
+
+    /* SDuvan: Added this and removed the #if below. This field allows us
+               to emulate packets -- specifically it makes it possible
+	       to implement the ***Pkt() functions */
+    //    APTR            fh_CompatibilityHack;
+
       /* A private pointer to a device specific filehandle structure. See
          <dos/filesystems.h> for more information. */
     struct Unit   * fh_Unit;
@@ -333,6 +341,8 @@ struct FileHandle
     LONG            fh_NoAROS3; /* not used by AROS */
 #endif
 };
+
+#define  fh_Arg1  fh_Unit      // fh_CompatibilityHack
 
 /* fh_Flags. The flags are AROS specific and therefore PRIVATE.. */
 #define FHF_WRITE (~0UL/2+1)
@@ -570,7 +580,10 @@ struct DosPacket
 #define dp_BufAddr  dp_Arg1
 
 
-#if 0
+/* These are defined for packet emulation purposes only! AROS doesn't use
+   packets at all, but emulates (some of) them via DoPkt(), SendPkt() and
+   others to function like they did in AmigaOS */
+
 /* dp_Type */
 #define ACTION_NIL             0
 #define ACTION_STARTUP         0
@@ -637,11 +650,6 @@ struct DosPacket
 
 #define ACTION_SERIALIZE_DISK 4200
 
-/* Special packet types for shell-startup. */
-#define RUN_EXECUTE       -1
-#define RUN_SYSTEM        -2
-#define RUN_SYSTEM_ASYNCH -3
-
 /* Structure for easy handling of DosPackets. DosPackets don´t have to be in
    this structure, but this struture may ease the use of it. */
 struct StandardPacket
@@ -650,7 +658,15 @@ struct StandardPacket
     struct DosPacket sp_Pkt;
 };
 
-#endif
+
+/* NOTE: AROS doesn't use startup packets. This will ONLY make a difference
+         for shell writers... */
+
+/* Types of command execution */
+#define RUN_EXECUTE       -1
+#define RUN_SYSTEM        -2
+#define RUN_SYSTEM_ASYNCH -3
+
 
 /**********************************************************************
  ****************************** Segments ******************************
