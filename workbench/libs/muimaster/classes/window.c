@@ -1627,7 +1627,7 @@ static ULONG Window_Setup(struct IClass *cl, Object *obj, Msg msg)
     DoMethod(obj,MUIM_GetConfigItem, MUICFG_Background_Window, &background_spec);
     if (!background_spec) background_spec = "0:128"; /* MUII_BACKGROUND */
 
-    data->wd_Background = zune_image_spec_to_structure((IPTR)background_spec);
+    data->wd_Background = zune_image_spec_to_structure((IPTR)background_spec,NULL);
     zune_imspec_setup(&data->wd_Background,&data->wd_RenderInfo);
 
     return TRUE;
