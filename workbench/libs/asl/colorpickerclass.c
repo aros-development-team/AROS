@@ -382,8 +382,23 @@ static IPTR aslcolorpicker_goactive(Class * cl, Object * o, struct gpInput *msg)
     {
     	data->numcolors = 1L << dri->dri_Depth;
     }
-    
+#ifdef AROS_NOFPU
+    {
+        ULONG n = 0;
+        /*
+         * Do a sqrt 'by hand' 
+         */
+        while ((n*n) <= data->numcolors) {
+            n++;
+        }
+        if ((n * n) > data->numcolors) {
+            n--;
+        }
+        data->rows = n;
+    }
+#else
     data->rows = (WORD)sqrt((double)data->numcolors);
+#endif
     data->columns = (data->numcolors + data->rows - 1) / data->rows;
     
     data->cellspacex = 3;
