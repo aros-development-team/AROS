@@ -132,6 +132,7 @@ AROS_LH2(struct serialbase *, init,
     
   SerialDevice->device.dd_Library.lib_OpenCnt=1;
 
+  NEWLIST(&SerialDevice->UnitList);
   return (SerialDevice);
   AROS_LIBFUNC_EXIT
 }
@@ -147,7 +148,7 @@ AROS_LH3(void, open,
 {
   AROS_LIBFUNC_INIT
 
-  struct SerialUnit * SU = SerialDevice->FirstUnit;
+  struct SerialUnit * SU = NULL;
 
   D(bug("serial device: Open unit %d\n",unitnum));
 
@@ -161,13 +162,8 @@ AROS_LH3(void, open,
      UnitNumber as the given one  */
   if (0 == ioreq->io_Error)
   {
-    while (NULL != SU)
-    {
-      if (SU->su_UnitNum == unitnum)
-        break;
-      SU = SU->su_Next;
-    }
-  
+    SU = findUnit(SerialDevice, unitnum);
+
     /* If there is no such unit, yet, then create it */
     if (NULL == SU)
     {
@@ -175,15 +171,16 @@ AROS_LH3(void, open,
       SU = AllocMem(sizeof(struct SerialUnit), MEMF_CLEAR|MEMF_PUBLIC);
       if (NULL != SU)
       {
-        SU->su_InputBuffer = AllocMem(MINBUFSIZE, MEMF_PUBLIC);
+        SU->su_OpenerCount	= 1;
+        SU->su_UnitNum		= unitnum;
+        SU->su_Flags		= ioreq->io_Flags;
+        
+        SU->su_InputBuffer	= AllocMem(MINBUFSIZE, MEMF_PUBLIC);
         
         if (NULL != SU->su_InputBuffer)
         {
           SU->su_InBufLength = MINBUFSIZE;
           ((struct IOExtSer *)ioreq)->io_RBufLen  = MINBUFSIZE;
-          
-
-          SU->su_UnitNum = unitnum;
           
           /*
           ** Initialize the message ports
@@ -206,12 +203,12 @@ AROS_LH3(void, open,
             SerialDevice->device.dd_Library.lib_OpenCnt ++;
             SerialDevice->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
 
-
             /*
             ** put it in the list of open units
             */
-            SU->su_Next = SerialDevice->FirstUnit;
-            SerialDevice->FirstUnit = SU;
+            AddHead(&SerialDevice->UnitList, (struct Node *)SU);
+
+            ioreq->io_Error  = 0;
  
             return;
           }
@@ -230,11 +227,28 @@ AROS_LH3(void, open,
     else
     {
       /* the unit does already exist. */
-      /* Check whether one more opener to this unit is tolerated */
-      // !!! missing code
-      
-      // this will make it fail.
-      ioreq->io_Error = SerErr_DevBusy;
+      /* 
+      ** Check whether one more opener to this unit is tolerated 
+      */
+      if (0 != (SU->su_Flags & SERF_SHARED))
+      {
+        /*
+        ** This unit is in shared mode and one more opener
+        ** won't hurt.
+        */
+        ioreq->io_Device = (struct Device *)SerialDevice;
+        ioreq->io_Unit   = (struct Unit *)SU;
+        ioreq->io_Error  = 0;
+
+        SU->su_OpenerCount++;
+      }
+      else
+      {
+        /*
+        ** I don't allow another opener
+        */
+        ioreq->io_Error = SerErr_DevBusy;
+      }
     }
   }
   
@@ -251,31 +265,43 @@ AROS_LH1(BPTR, close,
 	   struct serialbase *, SerialDevice, 2, Serial)
 {
   AROS_LIBFUNC_INIT
-  struct SerialUnit * u = SerialDevice->FirstUnit;
+  struct SerialUnit * SU = (struct SerialUnit *)ioreq->io_Unit;
 
-  HIDD_Serial_DisposeUnit(SerialDevice->SerialObject, 
-                          ((struct SerialUnit *)ioreq->io_Unit)->su_Unit);
-  /* Let any following attemps to use the device crash hard. */
-  if ((struct Unit *)u == ioreq->io_Unit)
+  /*
+  ** Check whether I am the last opener to this unit
+  */
+  if (1 == SU->su_OpenerCount)
   {
-    SerialDevice->FirstUnit = u->su_Next;
+    /*
+    ** I was the last opener. So let's get rid of it.
+    */
+    /*
+    ** Remove the unit from the list
+    */
+    Remove((struct Node *)&SU->su_Node);
+    
+    HIDD_Serial_DisposeUnit(SerialDevice->SerialObject, SU->su_Unit);
+  
+    if (NULL != SU->su_InputBuffer && 0 != SU->su_InBufLength)
+    {
+      FreeMem(SU->su_InputBuffer, 
+              SU->su_InBufLength);
+    }
+  
+    FreeMem(SU, sizeof(struct SerialUnit));
+  
   }
   else
   {
-    while (NULL != u->su_Next)
-    {
-      if ((struct Unit *)u->su_Next == ioreq->io_Unit)
-      {
-        u->su_Next = u->su_Next->su_Next;
-        u = (struct SerialUnit *)ioreq->io_Unit;
-        break;
-      }
-      u = u->su_Next;
-    }
+    /*
+    ** There are still openers. Decrease the counter.
+    */
+    SU->su_OpenerCount--;
   }
-  FreeMem(u, sizeof(struct SerialUnit));
-  
+
+  /* Let any following attemps to use the device crash hard. */
   ioreq->io_Device=(struct Device *)-1;
+  
   return 0;
   AROS_LIBFUNC_EXIT
 }
@@ -286,12 +312,17 @@ AROS_LH0(BPTR, expunge, struct serialbase *, SerialDevice, 3, Serial)
 {
     AROS_LIBFUNC_INIT
 
-    if (NULL != SerialDevice->SerialHidd)
+    if (NULL != SerialDevice->SerialObject)
     {
+      /*
+      ** Throw away the HIDD object and close the library
+      */
+      DisposeObject(SerialDevice->SerialObject);
       CloseLibrary(SerialDevice->SerialHidd);
-      SerialDevice->SerialHidd = NULL;
+      SerialDevice->SerialHidd   = NULL;
+      SerialDevice->SerialObject = NULL;
     }
-    
+  
     /* Do not expunge the device. Set the delayed expunge flag and return. */
     SerialDevice->device.dd_Library.lib_Flags|=LIBF_DELEXP;
     return 0;
@@ -382,7 +413,9 @@ AROS_LH1(void, beginio,
 	}
 
         if (NULL != SU->su_ActiveRead)
-          kprintf("READ: error in datastructure!");
+        {
+          D(bug("READ: error in datastructure!"));
+        }
 
         SU->su_ActiveRead = (struct Message *)ioreq;
         
@@ -453,7 +486,9 @@ AROS_LH1(void, beginio,
         ** set or cleared at the same time.
         */
         if (NULL != SU->su_ActiveWrite)
-          kprintf("error!!");
+        {
+          D(bug("error!!"));
+        }
 
         if (complete == TRUE)
         {
@@ -609,7 +644,7 @@ AROS_LH1(void, beginio,
         /* pass back the number of unread input characters */
         int unread = SU->su_InputNextPos - SU->su_InputFirst;
         if (unread < 0)
-          ioreq->IOSer.io_Actual = -unread;
+          ioreq->IOSer.io_Actual = SU->su_InBufLength + unread;
         else
           ioreq->IOSer.io_Actual = unread;
       }
@@ -660,12 +695,12 @@ AROS_LH1(void, beginio,
             /* just in case the interrupt wants to write data to
                the input buffer, tell it that it cannot do this right
                now as I am changing the buffer */
-            SU->su_Status     |= STATUS_CHANGING_IN_BUFFER;
+            SU->su_Status      |= STATUS_CHANGING_IN_BUFFER;
             SU->su_InputNextPos = 0;
             SU->su_InputFirst   = 0;
-            SU->su_InputBuffer = NewInBuf;
-            SU->su_InBufLength = ioreq->io_RBufLen;
-            SU->su_Status     &= ~STATUS_CHANGING_IN_BUFFER;
+            SU->su_InputBuffer  = NewInBuf;
+            SU->su_InBufLength  = ioreq->io_RBufLen;
+            SU->su_Status      &= ~STATUS_CHANGING_IN_BUFFER;
            
             /* free the old buffer */ 
             FreeMem(OldInBuf, OldInBufLength); 
@@ -696,7 +731,7 @@ AROS_LH1(void, beginio,
 
         if (FALSE == success)
         {
-          kprintf("Setting baudrate didn't work!\n");
+          D(bug("Setting baudrate didn't work!\n"));
           /* this Baudrate is not supported */
           ioreq->IOSer.io_Error = SerErr_BaudMismatch;
           return; 
@@ -741,12 +776,23 @@ AROS_LH1(void, beginio,
 
     /*******************************************************************/
 
+    default:
+      /* unknown command */
+      ioreq->IOSer.io_Error = SerErr_InvParam;
+      
+      /*
+      ** The request could be completed immediately.
+      ** Check if I have to reply the message
+      */
+      if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
+        ReplyMsg(&ioreq->IOSer.io_Message);
+      
     
   } /* switch () */
 
   ReleaseSemaphore(&SU->su_Lock);  
   
-  kprintf("id: Return from BeginIO()\n");
+  D(bug("id: Return from BeginIO()\n"));
 
   AROS_LIBFUNC_EXIT
 }
@@ -755,12 +801,34 @@ AROS_LH1(LONG, abortio,
  AROS_LHA(struct IORequest *, ioreq, A1),
 	   struct serialbase *, SerialDevice, 6, Serial)
 {
-    AROS_LIBFUNC_INIT
+  AROS_LIBFUNC_INIT
 
-    /* TODO!! */
+  struct SerialUnit  * SU = (struct SerialUnit *)ioreq->io_Unit;
 
-    return 0;
-    AROS_LIBFUNC_EXIT
+  /*
+  ** is it the active request?
+  */
+  if ((struct Message *)ioreq == SU->su_ActiveRead)
+  {
+    /*
+    ** It's the active reuquest. I make the next available
+    ** one the active request.
+    */
+    SU->su_ActiveRead = GetMsg(&SU->su_QReadCommandPort);
+    ReplyMsg(&ioreq->io_Message);
+  }
+  else
+  {
+    /*
+    ** It's not the active request. So I'll take it out of the
+    ** list of queued messages and reply the message.
+    */
+    Remove(&ioreq->io_Message.mn_Node);
+    ReplyMsg(&ioreq->io_Message);
+  }
+
+  return 0;
+  AROS_LIBFUNC_EXIT
 }
 
 static const char end=0;

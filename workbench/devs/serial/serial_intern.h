@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.5  2000/01/12 18:14:04  bergers
+    Update: Support of shared unit. AbortIO() implementation. Bugfixes, clenups etc.
+
     Revision 1.4  2000/01/09 21:35:13  bergers
     Update on serial device.
 
@@ -39,6 +42,9 @@
 #ifndef EXEC_SEMAPHORES_H
 #   include <exec/semaphores.h>
 #endif
+#ifndef EXEC_NODES_H
+#   include <exec/nodes.h>
+#endif
 #ifndef DEVICES_SERIAL_H
 #   include <devices/serial.h>
 #endif
@@ -46,11 +52,6 @@
 #   include <oop/oop.h>
 #endif
 
-
-/* Size of the serial device's stack */
-#define IDTASK_STACKSIZE 20000
-/* Priority of the serial.device task */
-#define IDTASK_PRIORITY 20
 
 /* Predeclaration */
 struct serialbase;
@@ -60,9 +61,11 @@ struct SerialUnit;
 
 
 /* Prototypes */
-struct Task *CreateSerialTask(APTR taskparams, struct serialbase *SerialDevice);
 BOOL copyInData(struct SerialUnit * SU, struct IOStdReq * IOStdReq);
 BOOL copyInDataUntilZero(struct SerialUnit * SU, struct IOStdReq * IOStdReq);
+struct SerialUnit * findUnit(struct serialbase * SerialDevice, 
+                             ULONG unitnum);
+
 
 ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum);
 
@@ -79,7 +82,7 @@ struct serialbase
     struct ExecBase *  sysBase;
     BPTR               seglist;
     
-    struct SerialUnit *FirstUnit;
+    struct List        UnitList;
     ULONG              Status;
     
     struct Library    *SerialHidd;
@@ -91,10 +94,9 @@ struct serialbase
 
 struct SerialUnit
 {
+  struct MinNode      su_Node;
   Object            * su_Unit;
 
-  struct SerialUnit * su_Next;
-  
   struct SignalSemaphore su_Lock;
 
   struct MsgPort      su_QReadCommandPort;
@@ -114,7 +116,8 @@ struct SerialUnit
   UBYTE               su_ReadLen;
   UBYTE               su_WriteLen;
   UBYTE               su_StopBits;
-  
+ 
+  UBYTE               su_OpenerCount; // Count how many openers this unit has. Important in shared mode
 
   BYTE *              su_InputBuffer;
   UWORD               su_InputNextPos; // InputCurPos may never "overtake" InputFirst
@@ -142,7 +145,12 @@ struct SerialUnit
                                       no more byte to write to the UART this
                                       flag has to be cleared immediately
                                     */
-#define STATUS_BUFFEROVERFLOW 8
+#define STATUS_BUFFEROVERFLOW 8     /* This flag indicates that an overflow
+                                       occurred with the internal receive
+                                       buffer. All further bytes will be
+                                       dropped until somebody reads the contents
+                                       of the buffer.
+                                    */
 
 #ifdef SysBase
     #undef SysBase

@@ -15,18 +15,13 @@ extern struct serialbase * pubSerialBase;
 
 ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum)
 {
-  struct SerialUnit * SU = pubSerialBase->FirstUnit;
+  struct SerialUnit * SU = NULL;
   ULONG index = 0;
 
   D(bug("!Received %d bytes on unit %d (%s)\n",length,unitnum,data));
 
-  while (NULL != SU)
-  {
-    if (SU->su_UnitNum == unitnum)
-      break;
-    SU = SU->su_Next;
-  }
-  
+  SU = findUnit(pubSerialBase, unitnum);
+    
   if (NULL != SU)
   {
     if (0 != (SU->su_Status & STATUS_READS_PENDING))

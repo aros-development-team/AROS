@@ -106,3 +106,17 @@ BOOL copyInDataUntilZero(struct SerialUnit * SU, struct IOStdReq * ioreq)
   ioreq->io_Actual = count+1;
   return FALSE;
 }
+
+
+struct SerialUnit * findUnit(struct serialbase * SerialDevice, 
+                             ULONG unitnum)
+{
+  struct SerialUnit * su;
+  ForeachNode(&SerialDevice->UnitList, su)
+  {
+    if (su->su_UnitNum == unitnum)
+      return su;
+  }
+  return NULL;
+}
+
