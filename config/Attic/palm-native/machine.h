@@ -165,20 +165,17 @@ extern void aros_not_implemented ();
     long _n3 = (long)(n3);\
     long _re;\
     __asm__ __volatile__(\
-	"movl   %5,%%eax\n\t"\
-	"pushl  %%eax\n\t"\
-	"movl   %4,%%eax\n\t"\
-	"pushl  %%eax\n\t"\
-	"movl   %3,%%eax\n\t"\
-	"pushl  %%eax\n\t"\
-	"movl   %%esp,%1\n\t"\
-	"movl   %2,%%eax\n\t"\
-	"call   *%%eax\n\t"\
-	"lea    12(%%esp),%%esp\n\t"\
-	"movl   %%eax,%0"\
+	"move.l %5,-(%%sp)\n\t"\
+	"move.l %4,-(%%sp)\n\t"\
+	"move.l %3,-(%%sp)\n\t"\
+	"move.l %%sp,%1\n\t"\
+	"move.l %2,-(%%sp)\n\t"\
+	"rts    \n\t"\
+	"adda.l #12,%%sp\n\t"\
+	"movl   %%d0,%0"\
 	: "=g"(_re), "=m"(*(APTR *)p)\
 	: "ad"(n), "g"(_n1), "g"(_n2), "g"(_n3)\
-	: "cc", "memory", "%eax" );\
+	: "cc", "memory", "%d0" );\
     (t)_re;\
 })
 #define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
