@@ -93,7 +93,7 @@
      data to the newly created structure and connect the cliprects to it,
      of course.
      One problem, however: If the layer is a simple layer and it is
-     move to a new position such that parts are overlapping with the layer
+     moved to a new position such that parts are overlapping with the layer
      at the old position then the pixels in the overlapping area are lost
      as the new simple layer is on top of the old simple layer. Therefore
      this area has to be backed up prior to creating the layer at the
