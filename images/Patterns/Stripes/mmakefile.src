@@ -1,8 +1,8 @@
 include $(TOP)/config/make.cfg
 
 FILES := \
-    Blue.jpeg \
-    Yellow.jpeg
+    Blue.iff \
+    Yellow.iff
     
 #MM workbench-prefs-patterns : setup
 workbench-prefs-patterns : files-copy
