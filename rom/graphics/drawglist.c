@@ -1,3 +1,4 @@
+
 /*
     (C) 1995-99 AROS - The Amiga Research OS
     $Id$
@@ -44,25 +45,89 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    struct VSprite * CurVSprite = rp->GelsInfo->gelHead;
-    struct BitMap * bm = AllocMem(sizeof(struct BitMap), MEMF_ANY|MEMF_CLEAR);
+    struct VSprite * CurVSprite = rp->GelsInfo->gelHead->NextVSprite;
+    struct BitMap bm;
+    ULONG i;
 
-    while (NULL != CurVSprite)
+    while (NULL != CurVSprite->NextVSprite)
     {
-	ULONG i = 0;
 	UBYTE * imagedata = (UBYTE *)CurVSprite->ImageData;
+	/*
+	 * If this VSprite was overlapping with other VSprites
+	 * the follow the ClearPath first and clear all the
+	 * VSprites on that Path. That routine will also reset
+	 * the ClearPath variable on all encountered VSprites.
+	 * If it was not overlapping with other VSprites but
+	 * was visible before it will either clear or back up
+	 * the previous background.
+	 */
+void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *);
 
-	InitBitMap(bm, CurVSprite->Depth,
-		       CurVSprite->Width * 16,
-		       CurVSprite->Height);
-		       
-	while (i < bm->Depth && i < 8)
+	if (NULL != CurVSprite->VSBob)
+	  _ClearBobAndFollowClearPath(CurVSprite,rp);
+
+
+	InitBitMap(&bm, 
+	           CurVSprite->Depth,
+		   CurVSprite->Width * 16,
+		   CurVSprite->Height);
+
+        /*
+         * If I am supposed to back up the background then
+         * I have to do it now!!
+         */
+        if (0 != (CurVSprite->Flags & SAVEBACK) &&
+            NULL != CurVSprite->VSBob)
+        {  
+          UBYTE * savedata = (UBYTE *)CurVSprite->VSBob->SaveBuffer;
+	  i=0;
+	  while (i < bm.Depth && i < 8)
+	  {
+	    bm.Planes[i++] = savedata;
+	    savedata += bm.Rows * bm.BytesPerRow;
+	  }
+
+#if 0
+          BltRastPortBitMap(rp,
+                            CurVSprite->X,
+                            CurVSprite->Y,
+                            &bm,
+                            0,
+                            0,
+                            CurVSprite->Width,
+                            CurVSprite->Height,
+                            0x0c0);
+#else
+#warning Since BltRastPortBitMap (or something similar) does not exist I need to use ClipBlit here which is pretty ugly.
+          {
+            struct RastPort rp_bm;
+            InitRastPort(&rp_bm);
+            rp_bm.BitMap = &bm;
+            ClipBlit(rp,
+                     CurVSprite->X,
+                     CurVSprite->Y,
+                     &rp_bm,
+                     0,
+                     0,
+                     CurVSprite->Width,
+                     CurVSprite->Height,
+                     0x0c0);
+          }
+#endif
+        }
+
+	/*
+	 * Now draw the VSprite at its current location.
+	 * The bitmap has already been initialized!
+	 */
+	i=0;
+	while (i < bm.Depth && i < 8)
 	{
-	    bm->Planes[i++] = imagedata;
-	    imagedata += bm->Rows * bm->BytesPerRow;
+	    bm.Planes[i++] = imagedata;
+	    imagedata += bm.Rows * bm.BytesPerRow;
 	}
 
-	BltBitMapRastPort(bm,
+	BltBitMapRastPort(&bm,
                 	  0,
                 	  0,
                 	  rp,
@@ -72,39 +137,93 @@
                 	  CurVSprite->Height,
                 	  0x0c0);
 
+	/*
+	 * I will need to know the vsprite's coordinates
+	 * that it has now the next time as well for clearing
+	 * purposes.
+	 */
+        CurVSprite->OldX = CurVSprite->X;
+        CurVSprite->OldY = CurVSprite->Y;
+
 	CurVSprite = CurVSprite->NextVSprite;
     }
-
-    FreeMem(bm, sizeof(struct BitMap));
 
     AROS_LIBFUNC_EXIT
 } /* DrawGList */
 
 
-#if 0
-  Some routines to cut and paste later on...
-  
-  /* If there's data stored in the savebuffer then restore it */
-  if (0 != (CurVSprite->Flags & BACKSAVED))
+/*
+ * Erase the VSprite from the list and follow the clear path
+ * first, if necessary! This way of organizing the ClearPath
+ * makes it easy to implement RemIBob but it leads to a recursion!
+ * RemIBob could simply call this function here and then redraw
+ * all cleared Bobs.
+ * If a recursion is not what we want this can be easily
+ * changed.
+ */
+void _ClearBobAndFollowClearPath(struct VSprite * CurVSprite, 
+                                 struct RastPort * rp)
+{
+  if (NULL != CurVSprite->ClearPath)
   {
-    imagedate = CurVSprite->VSBob->SaveBuffer;
-    bm->BytesPerRow = CurVSprite->Width << 1;
-    bm->Rows        = CurVSprite->Height;
-    bm->Depth       = CurVSprite->Depth;
+    /*
+     * Clear the next one first. (recursion!!!)
+     */
+    _ClearBobAndFollowClearPath(CurVSprite->ClearPath, rp);
+    CurVSprite->ClearPath = NULL;
+  }
+
+
+  if (0 != (CurVSprite->Flags & BACKSAVED))
+  { 
+    ULONG i;
+    struct BitMap bm;
+    UBYTE * imagedata = (UBYTE *)CurVSprite->VSBob->SaveBuffer;
     
-    while (i < bm->Depth && i < 8)
+    /*
+     * Restore background!
+     */	 
+    InitBitMap(&bm, 
+               CurVSprite->Depth,
+               CurVSprite->Width * 16,
+               CurVSprite->Height);
+    i=0;
+    while (i < bm.Depth && i < 8)
     {
-      bm->Planes[i++] = imagedata;
-      imagedata += bm->Rows * bm->BytesPerRow;
+      bm.Planes[i++] = imagedata;
+      imagedata += bm.Rows * bm.BytesPerRow;
     }
-   
-    BltBitMapRastPort(bm,
+
+#if 0
+    BltBitMapRastPort(&bm,
                       0,
                       0,
+                      rp,
                       CurVSprite->OldX,
                       CurVSprite->OldY,
-                      CurVSprite->Width  << 4,
+                      CurVSprite->Width *16,
                       CurVSprite->Height,
                       0x0c0);
-  }
 #endif
+
+    CurVSprite->Flags &= ~BACKSAVED;
+  }
+  else
+  {
+    /*
+     * No background was saved. So let's restore the
+     * standard background!
+     */
+
+
+    if (CurVSprite->OldX != CurVSprite->X ||
+        CurVSprite->OldY != CurVSprite->Y)
+    {
+      EraseRect(rp,
+                CurVSprite->OldX,
+                CurVSprite->OldY,
+                CurVSprite->OldX + ( CurVSprite->Width << 4 ) - 1,
+                CurVSprite->OldY +   CurVSprite->Height       - 1);
+    }
+  }
+}
