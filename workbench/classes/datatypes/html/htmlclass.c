@@ -16,6 +16,7 @@
 #include <dos/dostags.h>
 #include <graphics/gfxbase.h>
 #include <graphics/rpattr.h>
+#include <graphics/text.h>
 #include <intuition/imageclass.h>
 #include <intuition/icclass.h>
 #include <intuition/gadgetclass.h>
@@ -86,27 +87,46 @@ static int call_parser( struct HtmlData *data, STRPTR buffer, LONG bytes )
 
 int text_len( layout_struct *ldata, string str, int strlen )
 {
-			/* Compute the width of the line. */
-/*		swidth = TextLength(&trp, &buffer[anchor], num + 1);*/
-	return strlen;
+    struct HtmlData 	*data;
+    int len, i;
+
+    /* Compute the width of the line. */
+    data = ldata->userdata;
+//    len = strlen;
+    D( bug("["); for(i=0; i<strlen; i++) bug("%c", str[i]); bug("] "); )
+    len = TextLength(data->rastport, str, strlen);
+    D(bug("text_len %d -> %d\n", strlen, len);)
+    return len;
 }
 
 int text_height( layout_struct *ldata )
 {
-/*	    data->fontheight = font->tf_YSize;*/
+    struct HtmlData 	*data;
+
+    data = ldata->userdata;
+/*	height = data->font->tf_YSize;*/
 	return 1;
 }
 
 int text_fit( layout_struct *ldata, string str, int strlen, int *strsize, int maxwidth )
 {
-	int t;
+    struct HtmlData 	*data;
+    struct TextExtent	te;
+    int len, i;
+
+    data = ldata->userdata;
+//    fontx = data->font->tf_XSize;
+    D( bug("["); for(i=0; i<strlen; i++) bug("%c", str[i]); bug("] "); )
 	
-	if( strlen > maxwidth )
-		t = maxwidth;
+/*	if( strlen*fontx > maxwidth )
+		len = maxwidth/fontx;
 	else
-		t = strlen;
-	*strsize = t;
-	return t;
+		len = strlen;
+	*strsize = len * fontx; */
+    len = TextFit( data->rastport, str, strlen, &te, NULL, 1, maxwidth, data->font->tf_YSize );
+    D(bug("text_fit %d < %d -> %d %d\n", strlen, maxwidth, len, te.te_Width);)
+    *strsize = te.te_Width;
+    return len;
 }
 
 /*******************************************************************************************/
@@ -155,12 +175,12 @@ void * linelist_store( layout_struct *ldata, string textseg, u_short textlen,
 	line->ln_Text = textseg;
 	line->ln_TextLen = textlen;
 	line->ln_Data = (APTR)data->linenum++;
-	line->ln_XOffset = xpos * font->tf_XSize;
+	line->ln_XOffset = xpos;
 	line->ln_YOffset = ypos * font->tf_YSize + font->tf_Baseline;
-	line->ln_Width = width * font->tf_XSize;
+	line->ln_Width = width;
 	line->ln_Height = height * font->tf_YSize;
 	line->ln_Flags = (linebreak) ? LNF_LF : 0;
-	line->ln_FgPen = data->fgpen;
+	line->ln_FgPen = (softstyle & FSF_UNDERLINED) ? 3 : data->fgpen;
 	line->ln_BgPen = data->bgpen;
 	line->ln_Style = softstyle;
 	D(bug("%08p => num=%2d xo=%2d yo=%2d w=%2d h=%2d flag=%d style=%d\n", line, (int)line->ln_Data,
@@ -365,9 +385,8 @@ static IPTR Html_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 {
     struct DTSpecialInfo 	*si;
     struct HtmlData 		*data;
-    ULONG 			visible = 0, total = 0;
     struct RastPort 		trp;
-    ULONG 			hunit = 1;
+    ULONG 			hunit = 1, vunit = 1;
     ULONG 			bsig = 0;
 
     /* Attributes obtained from super-class */
@@ -381,7 +400,6 @@ static IPTR Html_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
     STRPTR 			title;
 
     struct Line 		*line;
-    ULONG			max_linelength = 0;
     ULONG 			nomwidth = 0, nomheight = 0;
     BOOL			ret;
     int				width, height;
@@ -401,7 +419,7 @@ static IPTR Html_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
                        TDTA_WordWrap	, (IPTR) &wrap		,
                        TAG_DONE) == 8)
     {
-        D(bug("HtmlDataType_AsyncLayout: Got all attrs; Wordwrap %d\n", (int)wrap));
+        D(bug("HtmlDataType_AsyncLayout: Got all attrs\n"));
 
         /* Lock the global object data so that nobody else can manipulate it */
         ObtainSemaphore (&(si->si_Lock));
@@ -419,6 +437,7 @@ static IPTR Html_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 
 	    data->page->ldata->userdata = data;	/* looping :-) */
 	    data->linelist = linelist;
+	    data->rastport = &trp;
 	    data->font = font;
 	    data->style = 0;
 	    data->fgpen = 1;
@@ -427,51 +446,38 @@ static IPTR Html_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 
     	    D(bug("HtmlDataType_AsyncLayout: Checking if layout is needed\n"));
 	    
-            if (wrap || gpl->gpl_Initial)
-            {
-		D(bug("HtmlDataType_AsyncLayout: Layout IS needed. Freeing old LineList\n"));
-		
-                /* Delete the old line list */
-                while ((line = (struct Line *) RemHead (linelist)))
-                    FreePooled (data->mempool, line, sizeof (struct Line));
-
-    		D(bug("HtmlDataType_AsyncLayout. Old LineList freed\n"));
-
-		data->linenum = 1;
-		ret = layout_do( data->page, 30, &width, &height );
-		if( !ret )
-		    return 10;
-		D(bug("layout_do done, width=%d height=%d\n", width, height);)
-                max_linelength	= width;
-		total		= height;
-
-                /* Check to see if layout has been aborted */
-                bsig = CheckSignal (SIGBREAKF_CTRL_C);
-
-	    } /* if (wrap || gpl->gpl_Initial) */
-            else
-            {
-                /* No layout to perform */
-		max_linelength = si->si_TotHoriz;
-                total  = si->si_TotVert;
-            }
+	    D(bug("HtmlDataType_AsyncLayout: Layout IS needed. Freeing old LineList\n"));
 	    
+	    /* Delete the old line list */
+	    while ((line = (struct Line *) RemHead (linelist)))
+		FreePooled (data->mempool, line, sizeof (struct Line));
+
+	    D(bug("HtmlDataType_AsyncLayout. Old LineList freed\n"));
+
+	    data->linenum = 1;
+	    ret = layout_do( data->page, domain->Width, &width, &height );
+	    if( !ret )
+		return 10;
+	    D(bug("layout_do done, width=%d height=%d domainwidth=%d\n", width, height, domain->Width);)
+	    nomwidth = width;
+	    nomheight = height;
+
+	    /* Check to see if layout has been aborted */
+	    bsig = CheckSignal (SIGBREAKF_CTRL_C);
+
 	    DeinitRastPort(&trp);
 	    
         } /* if (buffer) */
 
         /* Compute the lines and columns type information */
-        si->si_VertUnit  = font->tf_YSize;
-        si->si_VisVert   = visible = domain->Height / si->si_VertUnit;
-        si->si_TotVert   = total;
+        si->si_VertUnit  = vunit = font->tf_YSize;
+        si->si_VisVert   = domain->Height / vunit;
+        si->si_TotVert   = height;
 
-/*        si->si_HorizUnit = hunit = 1;
-        si->si_VisHoriz  = (LONG) domain->Width / hunit;
-        si->si_TotHoriz  = domain->Width;*/
-	
-	si->si_HorizUnit = hunit = font->tf_XSize;
+//	si->si_HorizUnit = hunit = font->tf_XSize;
+	si->si_HorizUnit = hunit = 1;
 	si->si_VisHoriz  = domain->Width / hunit;
-	si->si_TotHoriz  = max_linelength;
+	si->si_TotHoriz  = width;
 								   
         /* Release the global data lock */
         ReleaseSemaphore (&si->si_Lock);
@@ -483,13 +489,13 @@ static IPTR Html_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
             NotifyAttrChanges (o, gpl->gpl_GInfo, 0,
                                GA_ID		, G(o)->GadgetID,
 
-                               DTA_VisibleVert	, visible				,
-                               DTA_TotalVert	, total					,
+                               DTA_VisibleVert	, (domain->Height / vunit)		,
+                               DTA_TotalVert	, height				,
                                DTA_NominalVert	, nomheight				,
-                               DTA_VertUnit	, font->tf_YSize			,
+                               DTA_VertUnit	, vunit					,
 
                                DTA_VisibleHoriz	, (domain->Width / hunit)		,
-                               DTA_TotalHoriz	, max_linelength			,
+                               DTA_TotalHoriz	, width					,
                                DTA_NominalHoriz	, nomwidth				,
                                DTA_HorizUnit	, hunit					,
 
@@ -501,9 +507,9 @@ static IPTR Html_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 		
     } /* if GetDTAttrs(... */
 
-    D(bug("HtmlDataType_AsyncLayout: Done. Returning %d\n", total));
+    D(bug("HtmlDataType_AsyncLayout: Done. Returning %d\n", height));
     
-    return (IPTR)total;
+    return (IPTR)height;
 }
 
 

@@ -77,8 +77,7 @@ that the layout engine or the renderer supports them, it just means
 that the associated info is passed to the layout engine.
 
 Known bugs:
-* global variables are used for state tracking, this will soon be fixed
-* HTML syntax warnings aren't output
+* style stack is limited in size
 * <pre> sections have an initial linefeed
 * in <pre> sections tabs are replaced by 8 spcaes
 
@@ -156,9 +155,6 @@ struct seg_struct
 
 Known bugs:
 -----------
-* word wrapping is fixed to 30 chars per line instead of the
-  using the window width :-)
-* proportional fonts not fully supported; to be changed soon
 * word wrapping can occur at style changes, too, even if they
   appear inside a word
 

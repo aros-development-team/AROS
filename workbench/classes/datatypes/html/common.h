@@ -160,12 +160,7 @@ void *		linelist_addlf( layout_struct *ldata, void * line );
 void		linelist_free( layout_struct *ldata );
 
 /*******************************************************************************************/
-/* Private Parse and Layout Data */
-
-struct _parse_struct
-{
-	void		*userdata;
-};
+/* Private Layout Data */
 
 struct _layout_struct
 {

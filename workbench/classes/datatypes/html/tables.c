@@ -16,7 +16,8 @@
 /*******************************************************************************************/
 /* Data Arrays */
 
-/* HTML TAGs */
+/*-----------------------------------------------------------------------------------------*/
+/* HTML Tags */
 tag_struct List_of_Tags[MAX_Tags] =
 {
 /* XHTML Structure Module */	
@@ -46,6 +47,16 @@ tag_struct List_of_Tags[MAX_Tags] =
 	{"img",		&tag_img, NULL,		LEVEL_inline, LEVEL_inline, TSF_INLINE | TSF_NOCLOSETAG},
 };
 
+/*-----------------------------------------------------------------------------------------*/
+/* HTML Tag Attributes */
+attr_struct List_of_Attrs[MAX_Attrs] =
+{
+	{"href",	0},
+	{"src",		0},
+	{"alt",		0},
+};
+
+/*-----------------------------------------------------------------------------------------*/
 /* Paragraphs */
 para_struct List_of_Paras[MAX_Paras] =
 {
@@ -79,6 +90,7 @@ para_struct List_of_Paras[MAX_Paras] =
 		 indent:	20 },
 };
 
+/*-----------------------------------------------------------------------------------------*/
 /* Escape sequences */
 esc_struct List_of_Escs[MAX_Escs] =
 {
@@ -185,6 +197,7 @@ esc_struct List_of_Escs[MAX_Escs] =
 	{"yuml",	255},
 };
 
+/*-----------------------------------------------------------------------------------------*/
 /* Colors */
 color_struct List_of_Colors[MAX_Colors] =
 {
@@ -206,12 +219,15 @@ color_struct List_of_Colors[MAX_Colors] =
 	{"aqua",	0x00ffff},
 };
 
+/*-----------------------------------------------------------------------------------------*/
 /* Levels */
 string List_of_Levels[MAX_Levels] =
 {
 	"none", "top", "html", "head", "block", "inline", "list", "table",
 };
 
+/*-----------------------------------------------------------------------------------------*/
+/* Charlist */
 char charlist[256] =
 {
 /* 00-0f */	CHRGROUP_CTRL, CHRGROUP_CTRL, CHRGROUP_CTRL, CHRGROUP_CTRL,
@@ -234,5 +250,7 @@ char charlist[256] =
 /* d0-df */	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 /* e0-ef */	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 /* f0-ff */	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+
+/*-----------------------------------------------------------------------------------------*/
 };
 

@@ -9,178 +9,108 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
-//#include <string.h>
+#include <string.h>
 
 #include "common.h"
 #include "parse.h"
 #include "tables.h"
-
-#ifdef __AROS__
-int strcasecmp (
-	const char * str1,
-	const char * str2)
-{
-    int diff;
-    while (!(diff = LOWERCASE (*str1) - LOWERCASE (*str2)) && *str1)
-    {
-	str1 ++;
-	str2 ++;
-    }
-    return diff;
-} /* strcasecmp */
-
-int strcmp (
-	const char * str1,
-	const char * str2)
-{
-    int diff;
-    while (!(diff = LOWERCASE (*str1) - LOWERCASE (*str2)) && *str1)
-    {
-	str1 ++;
-	str2 ++;
-    }
-    return diff;
-} /* strcasecmp */
-#endif
 
 extern string List_of_SegCmds[SEG_CMD_MAX];
 
 /*******************************************************************************************/
 /* Prototypes */
 
+int create_hash_table( u_short hashlist[], void *namelist, int num, int size, int havecase );
+
 /* Output */
-WARN( static void	warnlog( string text, ... ); )
-static seg_struct *	seglist_store( u_char cmd );
-static seg_struct *	seglist_check_last( u_char segcmd );
-static void		seglist_delete_last( void );
-static void		seglist_end( void );
-static void		seglist_free( void );
+WARN( static void	warnlog( parse_struct *pdata, string text, ... ); )
+WARN( static seg_struct*	seglist_store_text( parse_struct *pdata, string str ); )
+static seg_struct *	seglist_store( parse_struct *pdata, u_char cmd );
+static seg_struct *	seglist_check_last( parse_struct *pdata, u_char segcmd );
+static void		seglist_delete_last( parse_struct *pdata );
+static void		seglist_end( parse_struct *pdata );
+static void		seglist_free( parse_struct *pdata );
+static int		strpool_expand( parse_struct *pdata );
 
 /* String Parsing */
 D( static void	debug_putc( char c ); )
-static char	skip_spaces( char endchar, int stop );
-static char	copy_text( char endchar );
-static char	escape_to_char( void );
-static int	get_number( int radix, char *lastchar );
-static int	parse_tag( void );
-static void	skip_to_tag_end( void );
+static char	skip_spaces( parse_struct *pdata, char endchar, int stop );
+static char	copy_text( parse_struct *pdata, char endchar );
+static char	escape_to_char( parse_struct *pdata );
+static int	get_number( parse_struct *pdata, int radix, char *lastchar );
+static int	parse_tag( parse_struct *pdata );
+static void	skip_to_tag_end( parse_struct *pdata );
 
 /* Style Stack Handling */
-static void	styles_reset( void );
-static void	change_style( void );
-static void	change_paragraph( para_struct *para );
-static void	stack_push( int tag );
-static int	stack_pop( int searchtag );
-static int	stack_check( void );
+static void	styles_reset( parse_struct *pdata );
+static void	change_style( parse_struct *pdata );
+static void	change_paragraph( parse_struct *pdata, para_struct *para );
+static void	stack_push( parse_struct *pdata, int tag );
+static int	stack_pop( parse_struct *pdata, int searchtag );
+static int	stack_check( parse_struct *pdata );
 
 /* Tag and Paragraph */
-static void	block_start( void );
-static void	block_end( void );
-static void	handle_open_tag( int tag, int dofunc );
-static void	handle_close_tag( int tag, int dofunc );
+static void	block_start( parse_struct *pdata );
+static void	block_end( parse_struct *pdata );
+static void	handle_open_tag( parse_struct *pdata, int tag, int dofunc );
+static void	handle_close_tag( parse_struct *pdata, int tag, int dofunc );
 
 /*******************************************************************************************/
-/* Globals */
+/* Private Parse Data */
+struct _parse_struct
+{
+	void		*userdata;
 
-/* page */
-static page_struct	*page;
+	/* page */
+	page_struct	*page;
 
-/* data arrays */
-static int	MAX_Tag_Length;
-static u_short	Hash_of_Tags[MAX_Tags];
-static int	MAX_Esc_Length;
-static u_short	Hash_of_Escs[MAX_Escs];
+	/* data arrays */
+	int		MAX_Tag_Length;
+	u_short		Hash_of_Tags[MAX_Tags];
+	int		MAX_Attr_Length;
+	u_short		Hash_of_Attrs[MAX_Attrs];
+	int		MAX_Esc_Length;
+	u_short		Hash_of_Escs[MAX_Escs];
 
-static string	inbuf;
-static int	inbufbytes;
+	string		inbuf;
+	int		inbufbytes;
 
-/* output buffers */
-static string	strpool;
-static string	strpoolpos;
-static string	strpoolend;
-static seg_struct *seglistpos;
-int		seglistremain;
+	/* output buffers */
+	string		strpool;
+	string		strpoolpos;
+	string		strpoolend;
+	seg_struct	*seglistpos;
+	int		seglistremain;
+WARN(
+	string		warnpool;
+	string		warnpoolpos;
+	string		warnpoolend;
+)
 
-/* state tracking */
-static int	linenum;
-static int	level;
-static int	block;
-static int	skipspace;
+	/* state tracking */
+	int		linenum;
+	int		level;
+	int		block;
+	int		skipspace;
 
-/* state stack */
-static stack_struct	stack[STACKSIZE];
-static int		stackpos;
-static stack_struct	style;
+	/* state stack */
+	stack_struct	stack[STACKSIZE];
+	int		stackpos;
+	stack_struct	style;
+	style_flags	laststyle;
+	para_struct	*lastpara;
+};
 
 /*******************************************************************************************/
 /* Main parse */
 
 page_struct * parse_init( void *mempool )
 {
-	int		i, j;
-	char		c;
-	string		str;
-	u_short		hash;
 	page_struct	*page;
+	parse_struct	*pdata;
 
-	MAX_Tag_Length = 0;
-	for( i=0; i<MAX_Tags; i++ )
-	{
-		str = List_of_Tags[i].name;
-		j = strlen( str );
-		if( j > MAX_Tag_Length )
-			MAX_Tag_Length = j;
-		hash = 0;
-		while( (c = *str++) )
-		{
-			hash = HASHNOCASE( hash, c );
-		}
-		Hash_of_Tags[i] = hash;
-/*		D( printf("Tag %2d %s:\t hash 0x%04x len %2d prevl %d nextl %d flags %02x\n",
-			i, List_of_Tags[i].name, (int)Hash_of_Tags[i], j, (int)List_of_Tags[i].prevlevel,
-			(int)List_of_Tags[i].nextlevel, (int)List_of_Tags[i].flags); )
-*/	}
-	D(
-		for( i=0; i<MAX_Tags-1; i++ )
-		{
-			for( j=i+1; j<MAX_Tags; j++ )
-			{
-				// printf("Tags %2d=%04x %2d=%04x\n", i, Hash_of_Tags[i], j, Hash_of_Tags[j]);
-				if( Hash_of_Tags[i] == Hash_of_Tags[j] )
-					printf("Duplicate Tag Hash at %d <-> %d !!!\n", i, j);
-			}
-		}
-	)
-	D( printf("Max Tag len %d Num Tags %d\n", MAX_Tag_Length, MAX_Tags); )
 	D( printf("structsize tag %d esc %d stack %d page %d seg %d style %d\n", sizeof(tag_struct),
 		sizeof(esc_struct), sizeof(stack_struct), sizeof(page_struct), sizeof(seg_struct), sizeof(style_flags)); )
-
-	MAX_Esc_Length = 0;
-	for( i=0; i<MAX_Escs; i++ )
-	{
-		str = List_of_Escs[i].name;
-		j = strlen( str );
-		if( j > MAX_Esc_Length )
-			MAX_Esc_Length = j;
-		hash = 0;
-		while( (c = *str++) )
-		{
-			hash = HASHCASE( hash, c );
-		}
-		Hash_of_Escs[i] = hash;
-//		D( printf("Esc %2d %s:\t hash 0x%04x\n", i, List_of_Escs[i].name, (int)Hash_of_Escs[i]); )
-	}
-	D(
-		for( i=0; i<MAX_Escs-1; i++ )
-		{
-			for( j=i+1; j<MAX_Escs; j++ )
-			{
-				// printf("Escs %2d=%04x %2d=%04x\n", i, Hash_of_Escs[i], j, Hash_of_Escs[j]);
-				if( Hash_of_Escs[i] == Hash_of_Escs[j] )
-					printf("Duplicate Esc Hash at %d <-> %d !!!\n", i, j);
-			}
-		}
-	)
 
 	page = MALLOC( mempool, sizeof( page_struct ) );
 	if( !page )
@@ -189,54 +119,71 @@ page_struct * parse_init( void *mempool )
 	page->mempool = mempool;
 	page->title = NULL;
 	page->seglist = NULL;
-	seglistremain = 0;
 
-	strpool = strpoolpos = MALLOC( mempool, STRINGPOOLSIZE );
-	if( !strpool )
+	pdata = page->pdata = MALLOC( mempool, sizeof( parse_struct ) );
+	if( !pdata )
 		return NULL;
-	strpoolend = strpool + STRINGPOOLSIZE;
-	D( printf("strpool: %p < %p < %p\n", strpool, strpoolpos, strpoolend); )
+	pdata->page = page;
+	pdata->seglistpos = NULL;
+	pdata->seglistremain = 0;
+	pdata->strpool = NULL;
+	pdata->strpoolpos = NULL;
+	pdata->strpoolend = NULL;
+	WARN(
+		pdata->warnpool = pdata->warnpoolpos = MALLOC( mempool, WARNPOOLSIZE );
+		if( !pdata->warnpool )
+			return NULL;
+		pdata->warnpoolend = pdata->warnpool + WARNPOOLSIZE;
+	)
+
+	pdata->MAX_Tag_Length = create_hash_table(
+		pdata->Hash_of_Tags, List_of_Tags, MAX_Tags, sizeof(tag_struct), FALSE );
+	pdata->MAX_Attr_Length = create_hash_table(
+		pdata->Hash_of_Attrs, List_of_Attrs, MAX_Attrs, sizeof(attr_struct), FALSE );
+	pdata->MAX_Esc_Length = create_hash_table(
+		pdata->Hash_of_Escs, List_of_Escs, MAX_Escs, sizeof(esc_struct), TRUE );
+
+	pdata->linenum = 1;
+	pdata->level = LEVEL_top;
+	pdata->block = FALSE;
+	pdata->skipspace = TRUE;
+	pdata->stackpos = 0;
+
+	styles_reset( pdata );
 
 	return page;
 }
 
-int parse_do( page_struct *mypage, string myinbuf, int myinbufbytes )
+int parse_do( page_struct *page, string myinbuf, int myinbufbytes )
 {
+	parse_struct	*pdata;
 	int	tag;
 	char	c;
 
-	// global hack
-	page = mypage;
-	inbuf = myinbuf;
-	inbufbytes = myinbufbytes;
-
-	linenum = 1;
-	level = LEVEL_top;
-	block = FALSE;
-	skipspace = TRUE;
-	stackpos = 0;
-	styles_reset();
+	pdata = page->pdata;
+	pdata->inbuf = myinbuf;
+	pdata->inbufbytes = myinbufbytes;
 	do
 	{
 		D( printf("\n"); )
-		if( style.hasnotext )
-			c = skip_spaces( CHR_TAGSTART, FALSE );
+		if( pdata->style.hasnotext )
+			c = skip_spaces( pdata, CHR_TAGSTART, FALSE );
 		else
 		{
-			if( level == LEVEL_inline )
+			if( pdata->level == LEVEL_inline )
 			{
-				c = copy_text( CHR_TAGSTART );
+				c = copy_text( pdata, CHR_TAGSTART );
 			}
 			else
 			{
-				c = skip_spaces( CHR_TAGSTART, TRUE );
+				c = skip_spaces( pdata, CHR_TAGSTART, TRUE );
 				if( c && c != CHR_TAGSTART)
 				{
-					WARN( warnlog("implicit <p> (inline text)"); )
+					WARN( warnlog( pdata, "implicit <p> (inline text)" ); )
 					UNGETCHAR( c )
-					handle_open_tag( TAG_p, FALSE );
-					skipspace = TRUE;
-					c = copy_text( CHR_TAGSTART );
+					handle_open_tag( pdata, TAG_p, FALSE );
+					pdata->skipspace = TRUE;
+					c = copy_text( pdata, CHR_TAGSTART );
 				}
 			}
 		}
@@ -246,109 +193,234 @@ int parse_do( page_struct *mypage, string myinbuf, int myinbufbytes )
 		if( c != '/' )
 		{
 			UNGETCHAR( c )
-			tag = parse_tag();
+			tag = parse_tag( pdata );
 			D( printf("%d: Tag <%s> (%d) opening level {%s} stack %d\n",
-				linenum, tag>=0 ? List_of_Tags[tag].name:"?",
-				tag, List_of_Levels[level], stackpos); )
+				pdata->linenum, tag>=0 ? List_of_Tags[tag].name:"?",
+				tag, List_of_Levels[pdata->level], pdata->stackpos); )
 			if( tag >= 0 )
-				handle_open_tag( tag, TRUE );
+				handle_open_tag( pdata, tag, TRUE );
 		}
 		else
 		{
-			tag = parse_tag();
+			tag = parse_tag( pdata );
 			D( printf("%d: Tag </%s> (%d) closing level {%s} stack %d\n",
-				linenum, tag>=0 ? List_of_Tags[tag].name:"?",
-				tag, List_of_Levels[level], stackpos); )
+				pdata->linenum, tag>=0 ? List_of_Tags[tag].name:"?",
+				tag, List_of_Levels[pdata->level], pdata->stackpos); )
 			if( tag >= 0 )
-				handle_close_tag( tag, TRUE );
+				handle_close_tag( pdata, tag, TRUE );
 		}
-		D( printf("%d: New level {%s} (%d) hasnotext %d\n", linenum, List_of_Levels[level], level, style.hasnotext); )
+		D( printf("%d: New level {%s} (%d) hasnotext %d\n",
+			pdata->linenum, List_of_Levels[pdata->level], pdata->level, pdata->style.hasnotext); )
 	}
-	while( inbufbytes > 0 );
+	while( pdata->inbufbytes > 0 );
 	return TRUE;
 }
 
-int parse_end( page_struct *mypage )
+int parse_end( page_struct *page )
 {
-	if( block )
+	parse_struct	*pdata;
+
+	pdata = page->pdata;
+	if( pdata->block )
 	{
-		WARN( warnlog("implicit block end at end"); )
-		block_end();
+		WARN( warnlog( pdata, "implicit block end at end" ); )
+		block_end( pdata );
 	}
-	if( stackpos != 0 )
+	if( pdata->stackpos != 0 )
 	{
-		WARN( warnlog("stack not empty at end"); )
-		stack_pop( TAG_html );
+		WARN( warnlog( pdata, "stack not empty at end" ); )
+		stack_pop( pdata, TAG_html );
 	}
-	seglist_end();
-	D( printf("strpool: %p < %p < %p\n", strpool, strpoolpos, strpoolend); )
+	WARN({
+		string		str;
+		
+		pdata->warnpoolpos[0] = '\0';	/* empty string at end */
+		str=pdata->warnpool;
+		if( str[0] )
+		{
+			seglist_store( pdata, SEG_CMD_Linebreak );
+			seglist_store( pdata, SEG_CMD_Blockstart );
+			seglist_store( pdata, SEG_CMD_Ruler );
+			seglist_store( pdata, SEG_CMD_Blockend );
+			seglist_store_text( pdata, "Warnings:" );
+			while( str[0] )
+			{
+				seglist_store_text( pdata, str );
+				str += strlen( str ) + 1;
+			}
+		}
+		D(
+			printf("\nWarnings:\n");
+			for(str=pdata->warnpool; str<pdata->warnpoolpos; str++)
+			{
+				if(*str >= ' ') printf("%c", *str);
+				else printf("[%d]\n", *str);
+			}
+			printf("\n\n");
+		)
+	})
+	seglist_end( pdata );
+	D( printf("strpool: %p < %p < %p\n", pdata->strpool, pdata->strpoolpos, pdata->strpoolend); )
 	D( printf("page: %p title %p seglist %p\n", page, page->title, page->seglist); )
 	return TRUE;
 }
 
-void parse_free( page_struct *mypage )
+void parse_free( page_struct *page )
 {
-	seglist_free();
+	parse_struct	*pdata;
+
+	pdata = page->pdata;
+	seglist_free( pdata );
 	D( printf("freed seglist\n"); )
-	MFREE( mypage, strpool );
+	WARN( MFREE( page->mempool, pdata->warnpool ); )
+	MFREE( page->mempool, pdata->strpool );
 	D( printf("freed strpool\n"); )
+}
+
+/*******************************************************************************************/
+/* Hash Handling */
+
+int create_hash_table( u_short hashlist[], void *namelist, int num, int size, int havecase )
+{
+	int		i, j, maxlen;
+	char		c;
+	string		str;
+	string		*strptr;
+	u_short		hash;
+
+	maxlen = 0;
+	for( i=0; i<num; i++ )
+	{
+		strptr = (string *)namelist;
+		str = *strptr;
+		j = strlen( str );
+		if( j > maxlen )
+			maxlen = j;
+		hash = 0;
+		if( havecase )
+			while( (c = *str++) )
+			{
+				hash = HASHCASE( hash, c );
+			}
+		else
+			while( (c = *str++) )
+			{
+				hash = HASHNOCASE( hash, c );
+			}
+		hashlist[i] = hash;
+//		D( str = *strptr; printf("Hash of %2d %p %p list %p [%s]:\t 0x%04x\n", i, strptr, str, &hashlist[i], str /*(string)namelist*/, (int)hashlist[i]); )
+		namelist += size;
+	}
+	D(
+		for( i=0; i<num-1; i++ )
+		{
+			for( j=i+1; j<num; j++ )
+			{
+				// printf("Hash of %2d=%04x %2d=%04x\n", i, hashlist[i], j, hashlist[j]);
+				if( hashlist[i] == hashlist[j] )
+					printf("Duplicate Tag Hash at %d <-> %d !!!\n", i, j);
+			}
+		}
+	)
+	D( printf("maxlen %d num %d\n", maxlen, num); )
+	return maxlen;
 }
 
 /*******************************************************************************************/
 /* Output */
 
 WARN(
-static void warnlog( string format, ... )
+static void warnlog( parse_struct *pdata, string format, ... )
 {
-	va_list	args;
+	va_list		args;
+	string		poolpos;
+	int		poolsize, i;
 
-	va_start (args, format);
-	fprintf( stderr, "*** line %2d: ", linenum);
-	vfprintf( stderr, format, args );
-	fprintf( stderr, "\n");
-	va_end (args);
+	va_start( args, format );
+	D( printf("*** line %2d: %s\n", pdata->linenum, format); )
+	//fprintf( stderr, "*** line %2d: ", pdata->linenum );
+	//vfprintf( stderr, format, args );
+	//fprintf( stderr, "\n");
+
+	poolpos = pdata->warnpoolpos;
+	poolsize = pdata->warnpoolend - poolpos;
+	if( poolsize > 100 )
+	{
+		i = snprintf( poolpos, poolsize, "line %2d: ", pdata->linenum );
+		poolpos += i;
+		poolsize -= i;
+		i = vsnprintf( poolpos, poolsize, format, args );
+		i ++;	/* leading zero */
+		poolpos += i;
+		poolsize -= i;
+		pdata->warnpoolpos = poolpos;
+		if( poolsize <= 100 )
+		{
+			D( printf("*** warnlog overflow\n"); )
+			i = snprintf( poolpos, poolsize, "..." );
+			i ++;
+			pdata->warnpoolpos += i;
+		}
+	}
+	va_end( args );
 }
 )
 
-static seg_struct* seglist_store( u_char cmd )
+WARN(
+static seg_struct* seglist_store_text( parse_struct *pdata, string str )
 {
 	seg_struct	*seg;
 
-	//D( printf("---1 cmd %d seglistpos %p remain %d [%s]\n", cmd, seglistpos, seglistremain, List_of_SegCmds[cmd]); )
-	seglistremain --;	/* make sure a last one remains */
-	if( seglistremain <= 0 )
+	seg = seglist_store( pdata, SEG_CMD_Text );
+	if( !seg )
+		return NULL;
+	seg->textlen = strlen( str );
+	seg->textseg = str;
+	seglist_store( pdata, SEG_CMD_Linebreak );
+	return seg;
+}
+)
+
+static seg_struct* seglist_store( parse_struct *pdata, u_char cmd )
+{
+	seg_struct	*seg;
+
+//	D( printf("---1 cmd %d seglistpos %p remain %d [%s]\n", cmd,
+//		pdata->seglistpos, pdata->seglistremain, List_of_SegCmds[cmd & SEG_CMD_MASK]); )
+	pdata->seglistremain --;	/* make sure a last one remains */
+	if( pdata->seglistremain <= 0 )
 	{
-		seg = MALLOC( page->mempool, SEGLISTSIZE * sizeof(seg_struct) );
+		seg = MALLOC( pdata->page->mempool, SEGLISTSIZE * sizeof(seg_struct) );
 		if( !seg )
 		{
-			seglistremain = 0;	/* keep error state */
+			pdata->seglistremain = 0;	/* keep error state */
 			return NULL;
 		}
-		if( !page->seglist )
+		if( !pdata->page->seglist )
 		{	/* initial */
 			D(printf("initial seglist alloc %p size 0x%x\n", seg, SEGLISTSIZE * sizeof(seg_struct));)
-			page->seglist = seg;
+			pdata->page->seglist = seg;
 		}
 		else
 		{	/* add another list */
 			D(printf("more seglist alloc %p\n", seg);)
-			seglistpos->cmd = SEG_CMD_Next;
-			seglistpos->next = seg;
+			pdata->seglistpos->cmd = SEG_CMD_Next;
+			pdata->seglistpos->next = seg;
 		}
-		seglistremain = SEGLISTSIZE - 1;	/* subtract this one */
-		seglistpos = seg;
-		D( printf("seglist: %p < %p < %d\n", page->seglist, seglistpos, seglistremain); )
+		pdata->seglistremain = SEGLISTSIZE - 1;	/* subtract this one */
+		pdata->seglistpos = seg;
+		D( printf("seglist: %p < %p < %d\n", pdata->page->seglist, pdata->seglistpos, pdata->seglistremain); )
 	}
-	seg = seglistpos ++;
+	seg = pdata->seglistpos ++;
 	seg->cmd = cmd;
 	return seg;
 }
 
-static seg_struct* seglist_check_last( u_char segcmd )
+static seg_struct* seglist_check_last( parse_struct *pdata, u_char segcmd )
 {
 	seg_struct	*seg;
 
-	seg = seglistpos;
+	seg = pdata->seglistpos;
 	seg --;
 	if( seg->cmd == segcmd )
 		return seg;
@@ -356,25 +428,36 @@ static seg_struct* seglist_check_last( u_char segcmd )
 		return NULL;
 }
 
-static void seglist_delete_last( void )
+static void seglist_delete_last( parse_struct *pdata )
 {
-	seglistpos --;
-	seglistremain ++;
+	pdata->seglistpos --;
+	pdata->seglistremain ++;
 }
 
-static void seglist_end( void )
+static void seglist_end( parse_struct *pdata )
 {
 	seg_struct	*seg;
 
-	seg = seglistpos;
+	seg = pdata->seglistpos;
 	seg --;
 	seg->cmd |= SEG_CMD_LAST;
-	D( printf("seglist: %p < %p < %d\n", page->seglist, seglistpos, seglistremain); )
+	D( printf("seglist: %p < %p < %d\n", pdata->page->seglist, pdata->seglistpos, pdata->seglistremain); )
 }
 
-static void seglist_free( void )
+static void seglist_free( parse_struct *pdata )
 {
-	MFREE( page, page->seglist );
+	MFREE( page, pdata->page->seglist );
+}
+
+
+static int strpool_expand( parse_struct *pdata )
+{
+	pdata->strpool = pdata->strpoolpos = MALLOC( pdata->page->mempool, STRINGPOOLSIZE );
+	if( !pdata->strpool )
+		return FALSE;
+	pdata->strpoolend = pdata->strpool + STRINGPOOLSIZE;
+	D( printf("(strpool %p)", pdata->strpool); )
+	return TRUE;
 }
 
 /*******************************************************************************************/
@@ -390,13 +473,13 @@ static void debug_putc( char c )
 }
 )
 
-static char skip_spaces( char endchar, int stop )
+static char skip_spaces( parse_struct *pdata, char endchar, int stop )
 {
 	char	c;
 	char	str[20];
 	int	i, code;
 
-	D( printf("%d: Skip Spaces to %c: [", linenum, endchar); )
+	D( printf("%d: Skip Spaces to %c: [", pdata->linenum, endchar); )
 	i = 0;
 	do
 	{
@@ -405,7 +488,7 @@ static char skip_spaces( char endchar, int stop )
 		if( c == endchar )
 			break;
 		if( c == CHR_NEWLINE )
-			linenum++;
+			pdata->linenum++;
 		code = charlist[(u_char)c];
 		if( !ISSPACE( code ) )
 		{
@@ -418,24 +501,34 @@ static char skip_spaces( char endchar, int stop )
 	while( 1 );
 	D( printf("]\n"); )
 	str[i] = '\0';
-	WARN( if( i ) warnlog("unexpected chars: %s", str); )
+	WARN( if( i ) warnlog( pdata, "unexpected chars: %s", str ); )
 	return c;
 }
 
-static char copy_text( char endchar )
+static char copy_text( parse_struct *pdata, char endchar )
 {
 	char	c;
-	string	strstart;
-	int	space, i, code;
+	string	strstart, strpos;
+	int	space, i, code, maxlen;
 	int	prelayout;
 
-	space = skipspace;
-	prelayout = style.prelayout;
+	space = pdata->skipspace;
+	prelayout = pdata->style.prelayout;
 	do
 	{
-		D( printf("%d: Copy Text (sp %d) to %c: [", linenum, space, endchar); )
-		strstart = strpoolpos;
-		do
+		D( printf("%d: Copy Text (sp %d) to %c: [", pdata->linenum, space, endchar); )
+		strstart = strpos = pdata->strpoolpos;
+		maxlen = pdata->strpoolend - strstart;
+		if( maxlen < 10 )
+		{
+			i = strpool_expand( pdata );
+			if( !i )
+				return 0;
+			strstart = strpos = pdata->strpoolpos;
+			maxlen = pdata->strpoolend - strstart;
+		}
+		c = 0;
+		while( maxlen > 0 )
 		{
 			GETCHAR( c, return 0 )
 			code = charlist[(u_char)c];
@@ -448,13 +541,13 @@ static char copy_text( char endchar )
 			{
 				if( c == CHR_NEWLINE )
 				{
-					linenum++;
+					pdata->linenum++;
 					if( prelayout )
 						break;
 				}
 				if( prelayout )
 				{
-					if( c == '\t' )
+					if( c == '\t' && maxlen >= 8 )
 						for(i=0; i<8; i++)
 						{
 							PUTCHAR( ' ' );
@@ -475,7 +568,7 @@ static char copy_text( char endchar )
 				space = FALSE;
 				if( c == CHR_ESCAPE )
 				{
-					c = escape_to_char();
+					c = escape_to_char( pdata );
 					D( printf("&"); )
 					PUTCHAR( c )
 					D( printf("&"); )
@@ -486,43 +579,45 @@ static char copy_text( char endchar )
 				}
 				else
 				{
-					WARN( warnlog("char %c needs escape", c); )
+					WARN( warnlog( pdata, "char %c needs escape", c ); )
 					PUTCHAR( c )
 				}
 			}
 		}
-		while( 1 );
 		D( printf("]\n"); )
-		if( strpoolpos > strstart )
+		pdata->strpoolpos = strpos;
+		if( strpos > strstart )
 		{
 			seg_struct *seg;
 			int length;
 			
-			if( skipspace && (strpoolpos - strstart) == 1 && strstart[0] == ' ' && !prelayout )
+			if( pdata->skipspace && (strpos - strstart) == 1 && strstart[0] == ' ' && !prelayout )
 				return c;
-			length = strpoolpos - strstart;
-			PUTCHAR( '\0' )
-			D( printf("String %2d: [%s]\n", length, strstart); )
-			skipspace = FALSE;
-			seg = seglist_store( SEG_CMD_Text );
+			length = strpos - strstart;
+			D(	printf("String %2d (max %d): [", length, maxlen);
+				for(i=0; i<length; i++) printf("%c", strstart[i]);
+				printf("]\n"); )
+			pdata->skipspace = FALSE;
+			seg = seglist_store( pdata, SEG_CMD_Text );
 			if( !seg )
 				return 0;
 			seg->textlen = length;
 			seg->textseg = strstart;
 		}
 		if( prelayout && (c == CHR_NEWLINE) )
-			seglist_store( SEG_CMD_Linebreak );
+			seglist_store( pdata, SEG_CMD_Linebreak );
 	}
 	while( c != endchar );
 	return c;
 }
 
-static char escape_to_char( void )
+static char escape_to_char( parse_struct *pdata )
 {
 	char	c;
-	int	i, res, code;
-	char	str[MAX_Esc_Length+1];
+	int	i=0, res, code;
+	char	str[pdata->MAX_Esc_Length+1];
 	u_short	hash;
+	u_short	*hashlist;
 
 	GETCHAR( c, return '?' )
 	if( c == '#' )
@@ -530,19 +625,19 @@ static char escape_to_char( void )
 		GETCHAR( c, return '?' )
 		if( LOWERCASE(c)=='x' )
 		{
-			i = get_number( 16, &c );
+			i = get_number( pdata, 16, &c );
 		}
 		else if( c>='0' && c<='9' )
 		{
 			UNGETCHAR( c )
-			i = get_number( 10, &c );
+			i = get_number( pdata, 10, &c );
 		}
 	}
 	else
 	{
 		UNGETCHAR( c )
 		hash = 0;
-		for( i=0; i<=MAX_Esc_Length; i++ )
+		for( i=0; i<=pdata->MAX_Esc_Length; i++ )
 		{
 			GETCHAR( c, return '?' )
 			code = charlist[(u_char)c];
@@ -554,9 +649,10 @@ static char escape_to_char( void )
 		str[i] = '\0';
 		if( c==';' )
 		{
+			hashlist = pdata->Hash_of_Escs;
 			for( i=0; i<MAX_Escs; i++ )
 			{
-				if( Hash_of_Escs[i] == hash )
+				if( hashlist[i] == hash )
 				{
 					res = strcmp( str, List_of_Escs[i].name );
 					if( res==0 )
@@ -564,18 +660,18 @@ static char escape_to_char( void )
 					D( printf("Hash failure\n"); )
 				}
 			}
-			WARN( warnlog("unknown escape %s", str); )
+			WARN( warnlog( pdata, "unknown escape %s", str ); )
 			return '?';
 		}
 	}
 	if( c==';' )
 		return (char)i;
-	WARN( warnlog("bad end of escape (%c)", c); )
+	WARN( warnlog( pdata, "bad end of escape (%c)", c ); )
 	UNGETCHAR( c )
 	return '?';
 }
 
-static int get_number( int radix, char *lastchar )
+static int get_number( parse_struct *pdata, int radix, char *lastchar )
 {
 	char	c;
 	int	num;
@@ -605,17 +701,18 @@ static int get_number( int radix, char *lastchar )
 	return num;
 }
 
-static int parse_tag( void )
+static int parse_tag( parse_struct *pdata )
 {
 	char	c;
 	int	tag;
 	int	i, res, code;
-	char	str[MAX_Tag_Length+1];
+	char	str[pdata->MAX_Tag_Length+1];
 	u_short	hash;
+	u_short	*hashlist;
 
-	D( printf("%d: Parse Tag: ", linenum); )
+	D( printf("%d: Parse Tag: ", pdata->linenum); )
 	hash = 0;
-	for( i=0; i<=MAX_Tag_Length; i++ )
+	for( i=0; i<=pdata->MAX_Tag_Length; i++ )
 	{
 		GETCHAR( c, return -1 )
 		D( debug_putc( c ); )
@@ -628,9 +725,10 @@ static int parse_tag( void )
 	str[i] = '\0';
 	D( printf("\n"); )
 	UNGETCHAR( c )
+	hashlist = pdata->Hash_of_Tags;
 	for( tag=0; tag<MAX_Tags; tag++ )
 	{
-		if( Hash_of_Tags[tag] == hash )
+		if( hashlist[tag] == hash )
 		{
 			res = strcasecmp( str, List_of_Tags[tag].name );
 //			D( printf("tag: %d res: %d\n", tag, res); )
@@ -639,17 +737,17 @@ static int parse_tag( void )
 			D( printf("Hash failure\n"); )
 		}
 	}
-	WARN( warnlog("skipping unknown tag <%s>", str); )
-	skip_to_tag_end();
+	WARN( warnlog( pdata, "skipping unknown tag <%s>", str ); )
+	skip_to_tag_end( pdata );
 	return -1;
 }
 
-static void skip_to_tag_end( void )
+static void skip_to_tag_end( parse_struct *pdata )
 {
 	char	c;
 	int	quote, code;
 
-	D( printf("%d: Skip to Tag End: ", linenum); )
+	D( printf("%d: Skip to Tag End: ", pdata->linenum); )
 	quote = FALSE;
 	do
 	{
@@ -659,7 +757,7 @@ static void skip_to_tag_end( void )
 		if( ISNORMAL( code ) )
 			continue;
 		if( c == CHR_NEWLINE )
-			linenum++;
+			pdata->linenum++;
 		if( c == CHR_QUOTE )
 		{
 			quote = !quote;
@@ -668,7 +766,7 @@ static void skip_to_tag_end( void )
 		}
 	}
 	while( c != CHR_TAGEND );
-	WARN( if( quote ) warnlog("unmatched quote"); )
+	WARN( if( quote ) warnlog( pdata, "unmatched quote" ); )
 	D( printf("\n"); )
 	return;
 }
@@ -676,50 +774,58 @@ static void skip_to_tag_end( void )
 /*******************************************************************************************/
 /* Style Stack Handling */
 
-static void styles_reset( void )
+static void styles_reset( parse_struct *pdata )
 {
-	style.hasnotext = TRUE;
-	style.prelayout = FALSE;
-	style.styleflags.value = 0;
-	style.styleflags.fl.fontsize = 8;
+	seg_struct		*seg;
+
+	pdata->style.hasnotext = TRUE;
+	pdata->style.prelayout = FALSE;
+	pdata->style.styleflags.value = 0;
+	pdata->laststyle.value = 0;
+	pdata->style.styleflags.fl.fontsize = 8;
+	pdata->laststyle.fl.fontsize = 8;
+	seg = seglist_store( pdata, SEG_CMD_Softstyle );
+	if( seg )
+		seg->styleflags = pdata->style.styleflags;
+
+	pdata->lastpara = NULL;
+	change_paragraph( pdata, &List_of_Paras[PARA_p] );
 }
 
-static void change_style( void )
+static void change_style( parse_struct *pdata )
 {
-	static style_flags	laststyle = {0};
-	seg_struct	*seg;
+	seg_struct		*seg;
 
-	if( block && laststyle.value != style.styleflags.value )
+	if( pdata->block && pdata->laststyle.value != pdata->style.styleflags.value )
 	{
-		laststyle = style.styleflags;
-		seg = seglist_check_last( SEG_CMD_Softstyle );
+		pdata->laststyle = pdata->style.styleflags;
+		seg = seglist_check_last( pdata, SEG_CMD_Softstyle );
 		if( seg )
 		{
-//			D( printf("*****\t\t\texisting style change to %04x\n", style.styleflags.value); )
-			seg->styleflags = style.styleflags;
+//			D( printf("*****\t\t\texisting style change to %04x\n", pdata->style.styleflags.value); )
+			seg->styleflags = pdata->style.styleflags;
 		}
 		else
 		{
-//			D( printf("*****\t\t\tstyle change to %04x\n", style.styleflags.value); )
-			seg = seglist_store( SEG_CMD_Softstyle );
+//			D( printf("*****\t\t\tstyle change to %04x\n", pdata->style.styleflags.value); )
+			seg = seglist_store( pdata, SEG_CMD_Softstyle );
 			if( seg )
-				seg->styleflags = style.styleflags;
+				seg->styleflags = pdata->style.styleflags;
 		}
 	}
 }
 
-static void change_paragraph( para_struct *para )
+static void change_paragraph( parse_struct *pdata, para_struct *para )
 {
-	static para_struct	*lastpara;
 	seg_struct		*seg;
 
-	style.styleflags = para->styleflags;
-	change_style();
-	if( lastpara != para )
+	pdata->style.styleflags = para->styleflags;
+	change_style( pdata );
+	if( pdata->lastpara != para )
 	{
-		lastpara = para;
+		pdata->lastpara = para;
 //		D( printf("*****\t\t\tpara change to %02x\n", para->paraflags.value); )
-		seg = seglist_store( SEG_CMD_Parastyle );
+		seg = seglist_store( pdata, SEG_CMD_Parastyle );
 		if( seg )
 		{
 			seg->paraflags = para->paraflags;
@@ -727,27 +833,34 @@ static void change_paragraph( para_struct *para )
 	}
 }
 
-static void stack_push( int tag )
+static void stack_push( parse_struct *pdata, int tag )
 {
-	if( stackpos < STACKSIZE )
+	int		pos;
+	stack_struct	*stack;
+
+	pos = pdata->stackpos;
+	stack = &pdata->stack[0];
+	if( pos < STACKSIZE )
 	{
-		stack[stackpos]			= style;
-		stack[stackpos].tag		= tag;
-		stack[stackpos].line		= linenum;
-		stackpos++;
-//		D( printf("*****\t\t\tpush tag <%s> style %04x pos %d\n", List_of_Tags[tag].name, style.styleflags.value, stackpos); )
+		stack[pos]	= pdata->style;
+		stack[pos].tag	= tag;
+		stack[pos].line	= pdata->linenum;
+		pdata->stackpos++;
+//		D( printf("*****\t\t\tpush tag <%s> style %04x pos %d\n", List_of_Tags[tag].name, pdata->style.styleflags.value, pdata->stackpos); )
 	}
 	else
 	{
-		WARN( warnlog("stack overflow"); )
+		WARN( warnlog( pdata, "stack overflow" ); )
 	}
 }
 
-static int stack_pop( int searchtag )
+static int stack_pop( parse_struct *pdata, int searchtag )
 {
 	int	tag, pos, count;
+	stack_struct	*stack;
 
-	pos = stackpos;
+	pos = pdata->stackpos;
+	stack = &pdata->stack[0];
 	count = 0;
 	while( pos > 0 )
 	{
@@ -756,30 +869,35 @@ static int stack_pop( int searchtag )
 //		D( printf("*****\t\t\tSearch tag <%s> pos %d\n", List_of_Tags[tag].name, pos); )
 		if( tag == searchtag )
 		{
-			stackpos = pos;
-			style		= stack[stackpos];
-//			D( printf("*****\t\t\tpop tag <%s> style %04x pos %d\n", List_of_Tags[tag].name, style.styleflags.value, stackpos); )
+			pdata->stackpos = pos;
+			pdata->style = stack[pos];
+//			D( printf("*****\t\t\tpop tag <%s> style %04x pos %d\n", List_of_Tags[tag].name, pdata->style.styleflags.value, pdata->stackpos); )
 			return tag;
 		}
 		else
 		{
-			WARN( warnlog("skipped tag <%s> from line %d in stack trying to find </%s>",
-				List_of_Tags[tag].name, stack[pos].line, List_of_Tags[searchtag].name); )
+			WARN( warnlog( pdata, "skipped tag <%s> from line %d in stack trying to find </%s>",
+				List_of_Tags[tag].name, stack[pos].line, List_of_Tags[searchtag].name ); )
 		}
 		count++;
 	}
 	WARN(	if( !count )
-			warnlog("stack underflow");
+			warnlog( pdata, "stack underflow" );
 		else
-			warnlog("missing opening tag for </%s>", List_of_Tags[searchtag].name);
+			warnlog( pdata, "missing opening tag for </%s>", List_of_Tags[searchtag].name );
 	)
 	return -1;
 }
 
-static int stack_check( void )
+static int stack_check( parse_struct *pdata )
 {
-	if( stackpos > 0 )
-		return stack[stackpos-1].tag;
+	int	pos;
+	stack_struct	*stack;
+
+	pos = pdata->stackpos;
+	stack = &pdata->stack[0];
+	if( pos > 0 )
+		return stack[pos-1].tag;
 	else
 		return -1;
 }
@@ -787,42 +905,42 @@ static int stack_check( void )
 /*******************************************************************************************/
 /* Tag Open/Close */
 
-static void block_start( void )
+static void block_start( parse_struct *pdata )
 {
-	if( block )
+	if( pdata->block )
 	{
-		WARN( warnlog("implicit block end"); )
-		block_end();
+		WARN( warnlog( pdata, "implicit block end" ); )
+		block_end( pdata );
 	}
 	D( printf("------- start -------\n"); )
-	seglist_store( SEG_CMD_Blockstart );
-	block = TRUE;
+	seglist_store( pdata, SEG_CMD_Blockstart );
+	pdata->block = TRUE;
 }
 
-static void block_end( void )
+static void block_end( parse_struct *pdata )
 {
 	seg_struct *seg;
 
-	if( block )
+	if( pdata->block )
 	{
 		D( printf("-------  end  -------\n"); )
 		/* remove single space at end */
-		seg = seglist_check_last( SEG_CMD_Text );
+		seg = seglist_check_last( pdata, SEG_CMD_Text );
 		if( seg )
 		{
 			if( seg->textlen == 1 && seg->textseg[0] == ' ' )
-				seglist_delete_last();
+				seglist_delete_last( pdata );
 		}
-		seglist_store( SEG_CMD_Blockend );
-		block = FALSE;
+		seglist_store( pdata, SEG_CMD_Blockend );
+		pdata->block = FALSE;
 	}
 	else
 	{
-		WARN( warnlog("block end without start"); )
+		WARN( warnlog( pdata, "block end without start" ); )
 	}
 }
 
-static void handle_open_tag( int tag, int dofunc )
+static void handle_open_tag( parse_struct *pdata, int tag, int dofunc )
 {
 	int	oldtag;
 	string	name;
@@ -835,53 +953,53 @@ static void handle_open_tag( int tag, int dofunc )
 	flags = List_of_Tags[tag].flags;
 	prevlevel = List_of_Tags[tag].prevlevel;
 	nextlevel = List_of_Tags[tag].nextlevel;
-	oldtag = stack_check();
-	if( (flags & TSF_PARAGRAPH) && block && oldtag > 0 ) /* already in block context before opening new block ? */
+	oldtag = stack_check( pdata );
+	if( (flags & TSF_PARAGRAPH) && pdata->block && oldtag > 0 ) /* already in block context before opening new block ? */
 	{
-		WARN( warnlog("implicit </%s> (block end before new block)", List_of_Tags[oldtag].name); )
-		handle_close_tag( oldtag, FALSE );
+		WARN( warnlog( pdata, "implicit </%s> (block end before new block)", List_of_Tags[oldtag].name ); )
+		handle_close_tag( pdata, oldtag, FALSE );
 	}
 	else if( !(flags & TSF_NESTING) && tag == oldtag )	/* trying to nest directly ? */
 	{
-		WARN( warnlog("implicit </%s> (cannot nest)", name); )
-		handle_close_tag( tag, FALSE );
+		WARN( warnlog( pdata, "implicit </%s> (cannot nest)", name ); )
+		handle_close_tag( pdata, tag, FALSE );
 	}
-	else if( (flags & TSF_INLINE) && !block )	/* inline tag outside inline context ? */
+	else if( (flags & TSF_INLINE) && !pdata->block )	/* inline tag outside inline context ? */
 	{
-		WARN( warnlog("implicit <p> (inline tag)", List_of_Tags[tag].name); )
-		handle_open_tag( TAG_p, FALSE );	/* create new paragraph, *uh* recursively */
+		WARN( warnlog( pdata, "implicit <p> (inline tag)", List_of_Tags[tag].name ); )
+		handle_open_tag( pdata, TAG_p, FALSE );	/* create new paragraph, *uh* recursively */
 	}
 	if( !(flags & TSF_NOCLOSETAG) )
 	{
-		stack_push( tag );
-		style.hasnotext = flags & TSF_HASNOTEXT;
+		stack_push( pdata, tag );
+		pdata->style.hasnotext = flags & TSF_HASNOTEXT;
 	}
-	if( (flags & TSF_PARAGRAPH) || (!block && (flags & TSF_INLINE)) )
+	if( (flags & TSF_PARAGRAPH) || (!pdata->block && (flags & TSF_INLINE)) )
 	{
-		block_start();
-		skipspace = TRUE;
+		block_start( pdata );
+		pdata->skipspace = TRUE;
 	}
 	
 	if( dofunc )
 	{
 		func = List_of_Tags[tag].openfunc;
 		if( func )
-			func();
+			func( pdata );
 		else
-			skip_to_tag_end();
+			skip_to_tag_end( pdata );
 	}
 	
 	if( (flags & TSF_PARAGRAPH) && (flags & TSF_NOCLOSETAG) )
-		block_end();
-	WARN( if( prevlevel && prevlevel != level )
-			warnlog("tag <%s> in level {%s} instead of {%s}",
-				name, List_of_Levels[level], List_of_Levels[prevlevel]); )
+		block_end( pdata );
+	WARN( if( prevlevel && prevlevel != pdata->level )
+			warnlog( pdata, "tag <%s> in level {%s} instead of {%s}",
+				name, List_of_Levels[pdata->level], List_of_Levels[prevlevel] ); )
 	if( nextlevel )
-		level = nextlevel;
-	change_style();
+		pdata->level = nextlevel;
+	change_style( pdata );
 }
 
-static void handle_close_tag( int tag, int dofunc )
+static void handle_close_tag( parse_struct *pdata, int tag, int dofunc )
 {
 	string	name;
 	short	flags;
@@ -897,59 +1015,61 @@ static void handle_close_tag( int tag, int dofunc )
 	{
 		func = List_of_Tags[tag].closefunc;
 		if( func )
-			func();
+			func( pdata );
 		else
-			skip_to_tag_end();
+			skip_to_tag_end( pdata );
 	}
 	
 	if( !(flags & TSF_NOCLOSETAG) )
 	{
-		WARN( if( nextlevel && nextlevel != level )
-				warnlog("tag </%s> in level {%s} instead of {%s}",
-					name, List_of_Levels[level], List_of_Levels[nextlevel]); )
+		WARN( if( nextlevel && nextlevel != pdata->level )
+				warnlog( pdata, "tag </%s> in level {%s} instead of {%s}",
+					name, List_of_Levels[pdata->level], List_of_Levels[nextlevel] ); )
 		if( flags & TSF_PARAGRAPH )
 		{
-			block_end();
-			skipspace = TRUE;
+			block_end( pdata );
+			pdata->skipspace = TRUE;
 		}
 		if( prevlevel )
-			level = prevlevel;
-		stack_pop( tag );
+			pdata->level = prevlevel;
+		stack_pop( pdata, tag );
 	}
 	else
 	{
-		WARN( warnlog("<%s> should have no closing tag", name); )
+		WARN( warnlog( pdata, "<%s> should have no closing tag", name ); )
 	}
-	change_style();
+	change_style( pdata );
 }
 
 /*******************************************************************************************/
 /* Tag Open/Close */
 
-void tag_html_open( void )
+void tag_html_open( parse_struct *pdata )
 {
 	D( printf("opened html\n"); )
-	skip_to_tag_end();
+	skip_to_tag_end( pdata );
 }
 
-void tag_title_close( void )
+void tag_title_close( parse_struct *pdata )
 {
 	seg_struct *seg;
 	
-	seg = seglist_check_last( SEG_CMD_Text );
+	seg = seglist_check_last( pdata, SEG_CMD_Text );
 	if( seg )
 	{
-		page->title = seg->textseg;
-		seglist_delete_last();
+		if( pdata->strpoolpos < pdata->strpoolend )
+			*pdata->strpoolpos++ = '\0';
+		pdata->page->title = seg->textseg;
+		seglist_delete_last( pdata );
 	}
-	skip_to_tag_end();
+	skip_to_tag_end( pdata );
 }
 
-void tag_comment( void )
+void tag_comment( parse_struct *pdata )
 {
 	char	c, c1, c2;
 
-	D( printf("%d: Skipping comment: ", linenum); )
+	D( printf("%d: Skipping comment: ", pdata->linenum); )
 	c = c1 = ' ';
 	do
 	{
@@ -958,117 +1078,117 @@ void tag_comment( void )
 		GETCHAR( c, return )
 		D( debug_putc( c ); )
 		if( c == CHR_NEWLINE )
-			linenum++;
+			pdata->linenum++;
 	}
 	while( c != CHR_TAGEND || c1 != '-' || c2 != '-' );
 	D( printf("\n"); )
 }
 
-void tag_h1_open( void )
+void tag_h1_open( parse_struct *pdata )
 {
 	para_struct	*para;
 
 	D( printf("opened h1\n"); )
 	para = &List_of_Paras[PARA_h1];
-	change_paragraph( para );
-	skip_to_tag_end();
+	change_paragraph( pdata, para );
+	skip_to_tag_end( pdata );
 }
 
-void tag_h2_open( void )
+void tag_h2_open( parse_struct *pdata )
 {
 	para_struct	*para;
 
 	D( printf("opened h2\n"); )
 	para = &List_of_Paras[PARA_h2];
-	change_paragraph( para );
-	skip_to_tag_end();
+	change_paragraph( pdata, para );
+	skip_to_tag_end( pdata );
 }
 
-void tag_p_open( void )
+void tag_p_open( parse_struct *pdata )
 {
 	para_struct	*para;
 
 	D( printf("opened p\n"); )
 	para = &List_of_Paras[PARA_p];
-	change_paragraph( para );
-	skip_to_tag_end();
+	change_paragraph( pdata, para );
+	skip_to_tag_end( pdata );
 }
 
-void tag_pre_open( void )
+void tag_pre_open( parse_struct *pdata )
 {
 	para_struct	*para;
 
 	D( printf("opened pre\n"); )
 	para = &List_of_Paras[PARA_pre];
-	change_paragraph( para );
-	style.prelayout = TRUE;
-	skip_to_tag_end();
+	change_paragraph( pdata, para );
+	pdata->style.prelayout = TRUE;
+	skip_to_tag_end( pdata );
 }
 
-void tag_b_open( void )
+void tag_b_open( parse_struct *pdata )
 {
 	D( printf("opened b\n"); )
-	style.styleflags.fl.bold = TRUE;
-	skip_to_tag_end();
+	pdata->style.styleflags.fl.bold = TRUE;
+	skip_to_tag_end( pdata );
 }
 
-void tag_big_open( void )
+void tag_big_open( parse_struct *pdata )
 {
 	D( printf("opened big\n"); )
-	style.styleflags.fl.fontsize++;
-	skip_to_tag_end();
+	pdata->style.styleflags.fl.fontsize++;
+	skip_to_tag_end( pdata );
 }
 
-void tag_i_open( void )
+void tag_i_open( parse_struct *pdata )
 {
 	D( printf("opened i\n"); )
-	style.styleflags.fl.italics = TRUE;
-	skip_to_tag_end();
+	pdata->style.styleflags.fl.italics = TRUE;
+	skip_to_tag_end( pdata );
 }
 
-void tag_small_open( void )
+void tag_small_open( parse_struct *pdata )
 {
 	D( printf("opened small\n"); )
-	style.styleflags.fl.fontsize--;
-	skip_to_tag_end();
+	pdata->style.styleflags.fl.fontsize--;
+	skip_to_tag_end( pdata );
 }
 
-void tag_tt_open( void )
+void tag_tt_open( parse_struct *pdata )
 {
 	D( printf("opened tt\n"); )
-	style.styleflags.fl.fixedwidth = TRUE;
-	skip_to_tag_end();
+	pdata->style.styleflags.fl.fixedwidth = TRUE;
+	skip_to_tag_end( pdata );
 }
 
-void tag_a_open( void )
+void tag_a_open( parse_struct *pdata )
 {
 	D( printf("opened a\n"); )
-	style.styleflags.fl.underlined = TRUE;
-	skip_to_tag_end();
+	pdata->style.styleflags.fl.underlined = TRUE;
+	skip_to_tag_end( pdata );
 }
 
-void tag_br( void )
+void tag_br( parse_struct *pdata )
 {
-	seglist_store( SEG_CMD_Linebreak );
-	skipspace = TRUE;
-	skip_to_tag_end();
+	seglist_store( pdata, SEG_CMD_Linebreak );
+	pdata->skipspace = TRUE;
+	skip_to_tag_end( pdata );
 }
 
-void tag_hr( void )
+void tag_hr( parse_struct *pdata )
 {
-	seglist_store( SEG_CMD_Ruler );
-	skip_to_tag_end();
+	seglist_store( pdata, SEG_CMD_Ruler );
+	skip_to_tag_end( pdata );
 }
 
-void tag_img( void )
+void tag_img( parse_struct *pdata )
 {
 	seg_struct *seg;
 
-	seg = seglist_store( SEG_CMD_Image );
+	seg = seglist_store( pdata, SEG_CMD_Image );
 	if( seg )
 	{
 		seg->image = NULL;
 	}
-	skip_to_tag_end();
+	skip_to_tag_end( pdata );
 }
 
