@@ -10,8 +10,13 @@ ICONFILES := $(foreach f, $(ICONS), $(AROSDIR)/$(f).info)
 #MM- masonicons : masonworkbenchicons
 
 #MM
-masonworkbenchicons : $(ICONFILES)
+masonworkbenchicons : setup $(ICONFILES)
 	@$(NOP)
 	
 $(AROSDIR)/%.info : %.info.src %_N.png %_S.png
 	%makeicon2
+
+setup :
+	%mkdirs_q $(AROSDIR)
+
+

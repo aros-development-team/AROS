@@ -4,14 +4,22 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Input
-ICONFILES := $(foreach f, $(ICONS), $(AROSDIR)/Prefs/$(f).info)
+ICONS     := Input Zune Time
+ICONDIR   := $(AROSDIR)/Prefs
+ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
-#MM- masonicons : masonworkbenchicons
+#MM- masonicons : masonworkbenchprefsicons
 
 #MM
-masonworkbenchicons : $(ICONFILES)
+masonworkbenchprefsicons : setup $(ICONFILES)
 	@$(NOP)
 	
-$(AROSDIR)/Prefs/%.info : %.info.src %_N.png %_S.png
+$(ICONDIR)/%.info : %.info.src %_N.png %_S.png
 	%makeicon2
+
+setup :
+	%mkdirs_q $(ICONDIR)
+
+
+
+
