@@ -159,6 +159,7 @@ UX11
 	    struct MsgPort 	*port;	    
 	    struct notify_msg 	*msg;
 
+LX11
 	    XStoreName   (GetSysDisplay(), DRAWABLE(data), "AROS");
 	    XSetIconName (GetSysDisplay(), DRAWABLE(data), "AROS Screen");
 		    
@@ -172,7 +173,7 @@ UX11
 	    XSetWMProtocols (GetSysDisplay(), DRAWABLE(data), &XSD(cl)->delete_win_atom, 1);
 
 	    D(bug("Calling XMapRaised\n"));
-LX11	    
+
 	    XMapRaised (GetSysDisplay(), DRAWABLE(data));
 UX11	    
 	    /* Now we need to get some message from the X11 task about when

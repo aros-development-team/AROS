@@ -528,7 +528,9 @@ UX11
 		    break;
 		    
 		case FocusOut:
+LX11
 		    XAutoRepeatOn(xsd->display);
+UX11		    
 ObtainSemaphoreShared(&xsd->sema);
 		    /* Call the user supplied callback func, if supplied */
 		    if (NULL != xsd->activecallback) {
@@ -547,8 +549,9 @@ ReleaseSemaphore(&xsd->sema);
 		    break;
 
 	    	case KeyPress:
+LX11
     		    XAutoRepeatOff(XSD(cl)->display);
-		    
+UX11		    
 	    	    ObtainSemaphoreShared( &xsd->sema );
 		    if (xsd->kbdhidd)
 		    {
@@ -560,8 +563,9 @@ ReleaseSemaphore(&xsd->sema);
 		
 		 
 	    	case KeyRelease:
+LX11
 		    XAutoRepeatOn(XSD(cl)->display);
-		    
+UX11		    
 	    	    ObtainSemaphoreShared( &xsd->sema );
 		    if (xsd->kbdhidd)
 		    {

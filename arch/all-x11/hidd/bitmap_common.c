@@ -203,7 +203,8 @@ static ULONG *ximage_to_buf(Class *cl, Object *bm
     else
     {
     	LONG x, y;
-	
+
+LX11	
 	for (y = 0; y < height; y ++)
 	{
 	    for (x = 0; x < width; x ++)
@@ -212,6 +213,7 @@ static ULONG *ximage_to_buf(Class *cl, Object *bm
 	    }
 	    
 	}
+UX11
     
     }
     
@@ -293,7 +295,8 @@ static UBYTE *ximage_to_buf_lut(Class *cl, Object *bm
     else
     {
     	LONG x, y;
-	
+
+LX11	
 	for (y = 0; y < height; y ++)
 	{
 	    UBYTE *buf = pixarray;
@@ -304,6 +307,7 @@ static UBYTE *ximage_to_buf_lut(Class *cl, Object *bm
 	    pixarray += msg->modulo;
 	    
 	}
+UX11
     
     }
     
@@ -606,7 +610,8 @@ static ULONG *buf_to_ximage(Class *cl, Object *bm
 	    
 	default: {
 	    LONG x, y;
-	    
+
+LX11	    
 	    for (y = 0; y < msg->height; y ++) {
 	    	HIDDT_Pixel *p;
 	    
@@ -616,6 +621,7 @@ static ULONG *buf_to_ximage(Class *cl, Object *bm
 		}
 		((UBYTE *)buf) += msg->modulo;
 	    }
+UX11
 	    break; }
 	
 	} /* switch (image->bits_per_pixel) */
