@@ -1,17 +1,18 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-DEST	:= ../html/
+DEST	:= $(HOME)/www/www.aros.org/www/
 #DEST	 := ../html.test/
-JOBDEST := $(DEST)jobserver/
+JOBDEST := $(ARCHDIR)jobserver/
 MIC	:= $(TOP)/scripts/moveifchanged
 LITE	:= /usr/local/Hughes/bin/lite
 GNUPLOT := gnuplot
 PPMTOGIF := ppmtogif
+DOCGENDIR := $(GENDIR)/docs
 
 FILES := main.src background.src faq.src differences.src cvs.src missing.src \
     included.src style.src devinfo_inside.src devinfo_outside.src \
-    autodoc.src history.src links.src jobserv.src
+    autodoc.src history.src links.src
 
 AUTODOC_SRCS := $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/*/*.c \
 	$(TOP)/compiler/alib/*.c \
@@ -21,72 +22,55 @@ AUTODOC_SRCS := $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/*/*.c \
 
 INCLUDE_SRCS := $(wildcard $(TOP)/include/*.h $(TOP)/include/*/*.h)
 
-SRC2HTML := ./src2html --html --output=index.html --keywords=keywords.db \
-	    --files=files.db main.src
+SRC2HTML := $(DOCGENDIR)/src2html
+RUN_SRC2HTML := $(SRC2HTML) --html --output=index.html \
+		--keywords=keywords.db \
+	    	--files=files.db main.src
 
 #MM docs : setup-docs
-docs : setup src2html autodocs $(DEST)srcs $(DEST)index.html \
+docs : setup $(SRC2HTML) autodocs $(DEST)srcs $(DEST)index.html \
 	$(DEST)filesystems.doc \
-	jobserver cgi-scripte dist copy-files link-pics \
+	copy-files copy-pics \
 	access-rights
+
+#MM all-docs : setup-docs
+all-docs : includes docs
 
 #MM
 setup-docs :
-	@for dir in $(DEST) $(DEST)autodocs $(DEST)cgi-bin \
-		$(JOBDEST) $(JOBDEST)cgi-bin gen ; do \
+	@for dir in $(DEST) $(DEST)autodocs $(DEST)pics $(DEST)other \
+		$(DOCGENDIR) ; do \
 	    if [ ! -d $$dir ]; then \
 		mkdir $$dir ; \
 	    else true ; fi ; \
 	done
-	cd conv ; make
+	cd src2html ; make
 
 copy-files : $(DEST)rtdemo.log $(DEST)pubkey.asc $(DEST)license.html
 
 $(DEST)% : %
 	cp $< $@
 
+# convert pics/% to DEST/pics/% without CVS dir.
+PICS := $(addprefix $(DEST)/pics/, \
+	$(filter-out CVS, $(notdir $(wildcard pics/*))))
+OTHER := $(addprefix $(DEST)/other/, \
+	$(filter-out CVS, $(notdir $(wildcard ../other/*))))
+
+copy-pics : $(PICS) $(OTHER)
+
 $(DEST)license.html : $(TOP)/license.html
 	cp $< $@
 
-link-pics :
-	@if [ ! -L $(DEST)/pics ]; then \
-	    ln -sf ../src/pics $(DEST)/pics ; else true ; \
-	fi
-	@if [ ! -L $(DEST)/other ]; then \
-	    ln -sf ../other $(DEST)/other ; else true ; \
-	fi
-
-dist : $(DEST)dist.src $(DEST)cgi-bin/dist.src $(JOBDEST)dist.src \
-	$(JOBDEST)cgi-bin/dist.src \
-	$(DEST)autodocs/dist.src
-
-$(DEST)dist.src :
-	echo -e "*.html\n*.doc" > $@
-
-$(DEST)cgi-bin/dist.src :
-	echo -e "*.cgi\n*.lib" > $@
-
-$(JOBDEST)dist.src $(DEST)autodocs/dist.src :
-	echo -e "*.html" > $@
-
-$(JOBDEST)cgi-bin/dist.src :
-	echo -e "*.cgi\n*.lib" > $@
-
-cgi-scripte : \
-	$(DEST)cgi-bin/search.cgi \
-	$(DEST)cgi-bin/counter.cgi \
-	$(DEST)cgi-bin/jobserv-showfree.cgi \
-	$(DEST)cgi-bin/jobserv-showwork.cgi \
-	$(DEST)cgi-bin/jobserv-showdone.cgi \
-	$(DEST)cgi-bin/counter.txt
-
+$(DEST)/pics/% : pics/%
+	cp $< $@
+	
+$(DEST)/other/% : ../other/%
+	cp $< $@
+	
 access-rights :
 	cd $(DEST) ; \
-	    chmod -R u=rwX,og=rX . ; \
-	    chmod o+w cgi-bin/counter.txt
-
-$(DEST)cgi-bin/counter.txt :
-	    echo "0" > $@
+	    chmod -R u=rwX,og=rX .
 
 ##MM docs-index : setup-docs docs
 #docs-index :
@@ -95,32 +79,32 @@ $(DEST)cgi-bin/counter.txt :
 $(DEST)srcs :
 	ln -s $(TOP) $(DEST)srcs
 
-$(DEST)cgi-bin/%.cgi : %.cgi
-	cp $< $@
-	chmod 755 $@
-
 $(DEST)filesystems.doc : filesystems.doc
 	cp filesystems.doc $(DEST)
 
 #MM
 clean ::
 	-rm -f $(HTML)
-	-rm -rf gen
-	cd conv ; make clean
+	-rm -rf $(DOCGENDIR)
+	cd src2html ; make clean
 
-src2html : conv/src2html
+$(SRC2HTML) : src2html/src2html
 	cp $< $@
 
-$(DEST)index.html : $(FILES) doc_header.html doc_footer.html autodoc.inc \
-	    src2html keywords.db files.db
+$(DEST)index.html : $(FILES) doc_header.html doc_footer.html \
+		$(DOCGENDIR)/autodoc.inc \
+	    	$(SRC2HTML) keywords.db files.db \
+		page_header.html 
+	cp *.src *.html *.db $(DOCGENDIR)
+	cd $(DOCGENDIR) ; \
 	export TOP="$(TOP)" ; \
-	$(SRC2HTML) ; \
-	$(SRC2HTML) ; \
-	$(SRC2HTML)
-	mv index* $(DEST)
+	$(RUN_SRC2HTML) && \
+	$(RUN_SRC2HTML) && \
+	$(RUN_SRC2HTML) && \
+	mv index.html index-*.html $(DEST)
 
+#MM
 jobserver : jobserver-setup \
-	    $(JOBDEST).htaccess \
 	    $(JOBDEST)jobserv-add.html \
 	    $(JOBDEST)jobserv-free.html \
 	    $(JOBDEST)jobserv-work.shtml \
@@ -207,25 +191,28 @@ $(JOBDEST)index.html : page_header.html jobserv.index \
 	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
 	    > $@
 
-autodocs : autodoc.inc gen/htmlpages
+autodocs : $(DOCGENDIR)/autodoc.inc $(DOCGENDIR)/htmlpages
 
-gen/htmlpages : $(AUTODOC_SRCS)
+$(DOCGENDIR)/htmlpages : $(AUTODOC_SRCS) adoc2html.gawk \
+		cvslog2html.gawk
 	@echo "Regenerating the HTML AutoDocs"
-	@./makeadocs "$(TOP)" "$(CURDIR)" $(AUTODOC_SRCS)
-	@touch gen/htmlpages
+	@TOP="$(TOP)" DESTDIR="$(DEST)" CURDIR="$(CURDIR)" \
+		DOCGENDIR="$(DOCGENDIR)" \
+		./makeadocs $(AUTODOC_SRCS)
+	@touch $(DOCGENDIR)/htmlpages
 
-autodoc.inc : gen/adoc_index.tmp adocpost.gawk adoc_header.html
+$(DOCGENDIR)/autodoc.inc : $(DOCGENDIR)/adoc_index.tmp adocpost.gawk adoc_header.html
 	cat adoc_header.html > $@
-	gawk -F: -f adocpost.gawk --assign mode=pre_bylib gen/adoc_index.tmp | \
+	gawk -F: -f adocpost.gawk --assign mode=pre_bylib $(DOCGENDIR)/adoc_index.tmp | \
 	sort -f | \
 	gawk -F: -f adocpost.gawk --assign mode=post_bylib >> $@
-	gawk -F: -f adocpost.gawk --assign mode=pre_byname gen/adoc_index.tmp | \
+	gawk -F: -f adocpost.gawk --assign mode=pre_byname $(DOCGENDIR)/adoc_index.tmp | \
 	sort -f | \
 	gawk -F: -f adocpost.gawk --assign mode=post_byname >> $@
 	touch autodoc.src
 	chmod a+r $@
 
-gen/adoc_index.tmp : $(AUTODOC_SRCS) adoc2html.gawk
+$(DOCGENDIR)/adoc_index.tmp : $(AUTODOC_SRCS) adochtmlindex.gawk
 	@echo "Generating HTML AutoDoc Index"
 	@gawk -f adochtmlindex.gawk $(AUTODOC_SRCS) > $@
 	chmod -R a+r $(DEST)autodocs
@@ -234,46 +221,35 @@ $(DEST)inc_index.html : $(INCLUDE_SRCS)
 	echo gawk -f inc2html.gawk $(AUTODOC_SRCS) > $@
 	chmod a+r $@
 
-#MM all-docs : setup-docs
-all-docs : includes docs
-
-includes : devlist.inc contents.inc status.inc support.lib \
-	jobserv-free.inc jobserv-work.inc jobserv-done.inc \
+includes : $(DOCGENDIR)/devlist.inc \
+	$(DOCGENDIR)/contents.inc \
+	$(DOCGENDIR)/status.inc \
 	$(DEST)progress.gif
 
-$(DEST)progress.gif : size2plot.gp $(TOP)/../CVSROOT/aros.size
-	$(GNUPLOT) size2plot.gp
-	$(PPMTOGIF) gen/plot.pbm > $@
+$(DEST)progress.gif : size2plot.in $(TOP)/../CVSROOT/aros.size
+	sed -e "s;@DOCGENDIR@;$(DOCGENDIR);" \
+	    -e "s;@AROS-SIZE@;$(TOP)/../CVSROOT/aros.size;" \
+	    size2plot.in > $(DOCGENDIR)/size2plot.gp
+	$(GNUPLOT) $(DOCGENDIR)/size2plot.gp
+	$(PPMTOGIF) $(DOCGENDIR)/plot.pbm > $@
 
-support.lib : support.lsrc
-	$(LITE) -l$@ $<
-
-devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt
+$(DOCGENDIR)/devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt
 	gawk -f $< --assign TOP="$(TOP)" > $@
 
-status.inc :
-	gawk -f stathtml.gawk > $@.new
-	@$(MIC) $@.new $@
-	@if $(TEST) -f $@.new; then $(RM) $@.new ; else touch background.src ; fi
+$(DOCGENDIR)/status.inc : stat2html.gawk
+	@echo "Rebuilding status table..."
+	@if test -x /usr/local/Hughes/bin/lite ; then \
+	    gawk -f stat2html.gawk > $@.new ; \
+	    $(MIC) $@.new $@ ; \
+	    if $(TEST) -e $@.new; then $(RM) $@.new ; else touch background.src ; fi ; \
+	else \
+	    echo "<I>Could not connect to mSQL Server</I>" > $(DOCGENDIR)/status.inc ; \
+	fi
 
-jobserv-free.inc :
-	./jobserv-showfree.cgi > $@.new
-	@$(MIC) $@.new $@
-	@if $(TEST) -f $@.new; then $(RM) $@.new ; else touch jobserv-free.src ; fi
-
-jobserv-work.inc :
-	./jobserv-showwork.cgi > $@.new
-	@$(MIC) $@.new $@
-	@if $(TEST) -f $@.new; then $(RM) $@.new ; else touch jobserv-work.src ; fi
-
-jobserv-done.inc :
-	./jobserv-showdone.cgi > $@.new
-	@$(MIC) $@.new $@
-	@if $(TEST) -f $@.new; then $(RM) $@.new ; else touch jobserv-done.src ; fi
-
-.PHONY : status.inc jobserv-free.inc jobserv-work.inc jobserv-done.inc
-
-contents.inc : collectcontents.sh contents2html.gawk makefile2html.gawk
+$(DOCGENDIR)/contents.inc : collectcontents.sh contents2html.gawk \
+		makefile2html.gawk
 	collectcontents.sh $(TOP) > $@
 
-autodoc.src : autodoc.inc
+.PHONY : status.inc
+
+autodoc.src : $(DOCGENDIR)/autodoc.inc
