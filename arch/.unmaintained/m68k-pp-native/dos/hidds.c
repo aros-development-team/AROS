@@ -153,6 +153,7 @@ void hidd_demo(struct ExecBase * SysBase)
         Draw(win->RPort,180/2-35,150/2-4);
         Draw(win->RPort,195/2-35,140/2-4);
 
+#if 0
 	if (win)
 	{
 	  while (x < 100)
@@ -176,8 +177,8 @@ void hidd_demo(struct ExecBase * SysBase)
 	    y--;
 	  }
 	}
-
-#if 1
+#endif
+#if 0
 	if (IntuitionBase)
 	{
 	  struct Screen	 *screen;
