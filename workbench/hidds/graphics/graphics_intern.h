@@ -364,7 +364,10 @@ void free_colormapclass(struct class_static_data *csd);
 VOID  bitmap_putpixel(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_PutPixel *msg);
 ULONG bitmap_getpixel(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_GetPixel *msg);
 VOID bitmap_convertpixels(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg);
-
+VOID bitmap_fillmemrect8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect8 *msg);
+VOID bitmap_fillmemrect16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect16 *msg);
+VOID bitmap_fillmemrect32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect32 *msg);
+VOID bitmap_invertmemrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_InvertMemRect *msg);
 
 OOP_Class *init_planarbmclass(struct class_static_data *csd);
 void   free_planarbmclass(struct class_static_data *csd);
