@@ -1569,10 +1569,11 @@ OOP_Class *init_gfxhiddclass (struct class_static_data *csd)
         
     cl->UserData = (APTR)csd;
     OOP_AddClass(cl);
-    
+
+#ifndef AROS_CREATE_ROM_BUG
     if (!OOP_ObtainAttrBases(attrbases))
 	goto failexit;
-
+#endif
     csd->bitmapclass = init_bitmapclass(csd);
     if (NULL == csd->bitmapclass)
     	goto failexit;
@@ -1580,7 +1581,6 @@ OOP_Class *init_gfxhiddclass (struct class_static_data *csd)
     csd->gcclass = init_gcclass(csd);
     if (NULL == csd->gcclass)
     	goto failexit;
-            
 	    
     csd->planarbmclass = init_planarbmclass(csd);
     if (NULL == csd->planarbmclass)
@@ -1647,8 +1647,10 @@ VOID free_gfxhiddclass(struct class_static_data *csd)
 	    OOP_DisposeObject((OOP_Object *) csd->gfxhiddclass);
     	    csd->gfxhiddclass = NULL;
 	}
-	
+
+#ifndef AROS_CREATE_ROM_BUG	
 	OOP_ReleaseAttrBases(attrbases);
+#endif
     }
     
     ReturnVoid("free_gfxhiddclass");

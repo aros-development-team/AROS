@@ -197,8 +197,11 @@ OOP_Class *init_pixfmtclass(struct class_static_data *csd)
 
     if(MetaAttrBase)  {
         /* Get attrbase for the PixFmt interface */
+#ifndef AROS_CREATE_ROM_BUG
         HiddPixFmtAttrBase = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
-	if (HiddPixFmtAttrBase) {
+	if (HiddPixFmtAttrBase) 
+#endif
+	{
     	    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     	    if(NULL != cl)  {
         	D(bug("PixFmt class ok\n"));
@@ -231,8 +234,10 @@ void free_pixfmtclass(struct class_static_data *csd)
             csd->pixfmtclass = NULL;
 	}
 	
+#ifndef AROS_CREATE_ROM_BUG
         if(HiddPixFmtAttrBase)
 	    OOP_ReleaseAttrBase(IID_Hidd_PixFmt);
+#endif
     }
 
     ReturnVoid("free_pixfmtclass");

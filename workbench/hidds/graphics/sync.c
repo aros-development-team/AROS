@@ -210,7 +210,10 @@ OOP_Class *init_syncclass(struct class_static_data *csd)
     EnterFunc(bug("init_syncclass(csd=%p)\n", csd));
 
     if(MetaAttrBase) {
-	if (OOP_ObtainAttrBases(attrbases)) {
+#ifndef AROS_CREATE_ROM_BUG
+	if (OOP_ObtainAttrBases(attrbases)) 
+#endif
+	{
 
     	    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     	    if(NULL != cl) {
@@ -240,7 +243,9 @@ void free_syncclass(struct class_static_data *csd)
             csd->syncclass = NULL;
 	}
     }
+#ifndef AROS_CREATE_ROM_BUG
     OOP_ReleaseAttrBases(attrbases);
+#endif
 
     ReturnVoid("free_syncclass");
 }
