@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
-    Lang: english
+    Lang: English
 */
 
 #define AROS_ALMOST_COMPATIBLE
@@ -97,163 +97,176 @@
 	variables.
 
     HISTORY
-        27-11-96    digulla automatically created from
-                            dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* valid input? */
-  if(name && buffer && size)
-  {
-    /* Local variable is default. */
-    if((flags & GVF_GLOBAL_ONLY) == 0)
+    if(name && buffer && size)
     {
-      ULONG nameLen = strlen(name);
-      struct LocalVar *lv;
+	/* Local variable is default. */
+	if((flags & GVF_GLOBAL_ONLY) == 0)
+	{
+	    ULONG nameLen = strlen(name);
+	    struct LocalVar *lv;
       
-      /* does a Variable with that name already exist? */
-      if (NULL != (lv = FindVar(name, flags)))
-      {
-        /* delete old value of that existing variable */
-        FreeMem(lv->lv_Value,lv->lv_Len);
-      }
-      else 
-      {
-        /* 
-        ** create a LocalVar-structure and insert it into the list
-        */
-        if(NULL != (lv = AllocVec(sizeof(struct LocalVar) + nameLen + 1,
-                                  MEMF_CLEAR|MEMF_PUBLIC) ) )
-        {
-          struct Process * pr = (struct Process *)FindTask(NULL);
-          struct LocalVar * n = (struct LocalVar *)pr->pr_LocalVars.mlh_Head;
+	    /* does a Variable with that name already exist? */
+	    if (NULL != (lv = FindVar(name, flags)))
+	    {
+		/* delete old value of that existing variable */
+		FreeMem(lv->lv_Value,lv->lv_Len);
+	    }
+	    else 
+	    {
+		/* 
+		** create a LocalVar-structure and insert it into the list
+		*/
+		if (NULL != (lv = AllocVec(sizeof(struct LocalVar) + nameLen + 1,
+					   MEMF_CLEAR|MEMF_PUBLIC) ) )
+		{
+		    struct Process  *pr = (struct Process *)FindTask(NULL);
+		    struct LocalVar *n  = (struct LocalVar *)pr->pr_LocalVars.mlh_Head;
 
-          /* init the newly created structure */
+		    /* init the newly created structure */
 
-          lv->lv_Node.ln_Type = flags;  /* ln_Type is UBYTE! */
-          lv->lv_Node.ln_Name = (UBYTE *)lv + sizeof(struct LocalVar);
-          CopyMem(name, lv->lv_Node.ln_Name, nameLen);
-          lv->lv_Flags = flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM);
+		    lv->lv_Node.ln_Type = flags;  /* ln_Type is UBYTE! */
+		    lv->lv_Node.ln_Name = (UBYTE *)lv + sizeof(struct LocalVar);
+		    CopyMem(name, lv->lv_Node.ln_Name, nameLen);
+		    lv->lv_Flags = flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM);
           
-          /* 
-          ** First let's see whether we have to add it at the head of the list 
-          ** as the list is still empty   OR
-          ** the very first element is already greater than the one we want to
-          ** insert 
-          */
+		    /* 
+		    ** First let's see whether we have to add it at the head
+		    ** of the list as the list is still empty   OR
+		    ** the very first element is already greater than the one
+		    ** we want to insert 
+		    */
           
-          if( n == (struct LocalVar *)&(pr->pr_LocalVars.mlh_Tail)  ||
-              Stricmp(name, n->lv_Node.ln_Name) < 0 
-            )
-          {
-            AddHead((struct List *)&pr->pr_LocalVars,
-                    (struct Node *) lv
-                   );
-          }
-          else
-          {
-            /*
-            ** Now we can be sure that we will have to insert somewhere 
-            ** behind the first element in the list 
-            */
-            ForeachNode(&pr->pr_LocalVars, n)
-            {
-              if (Stricmp(name, n->lv_Node.ln_Name) < 0)
-                break;
-            }
+		    if (n == (struct LocalVar *)&(pr->pr_LocalVars.mlh_Tail) ||
+			Stricmp(name, n->lv_Node.ln_Name) < 0)
+		    {
+			AddHead((struct List *)&pr->pr_LocalVars,
+				(struct Node *)lv);
+		    }
+		    else
+		    {
+			/*
+			** Now we can be sure that we will have to insert
+			** somewhere behind the first element in the list 
+			*/
+			ForeachNode(&pr->pr_LocalVars, n)
+			{
+			    if (Stricmp(name, n->lv_Node.ln_Name) < 0)
+			    {
+				break;
+			    }
+			}
             
-            if (NULL != n->lv_Node.ln_Succ)
-            {
-              Insert((struct List *)&pr->pr_LocalVars ,
-                     (struct Node *) lv ,
-                     (struct Node *) n->lv_Node.ln_Pred
-                    );
-              
-            }
-            else
-            {
-              AddTail((struct List *)&pr->pr_LocalVars,
-                      (struct Node *) lv
-                     );
-            }
-          }
-        }
-      }
-      /* -1 as size means: buffer contains a null-terminated string*/
-      if (-1 == size)
-        lv->lv_Len = strlen(buffer) + 1;
-      else
-        lv->lv_Len = size;
+			if (NULL != n->lv_Node.ln_Succ)
+			{
+			    Insert((struct List *)&pr->pr_LocalVars ,
+				   (struct Node *) lv ,
+				   (struct Node *) n->lv_Node.ln_Pred);
+			}
+			else
+			{
+			    AddTail((struct List *)&pr->pr_LocalVars,
+				    (struct Node *) lv);
+			}
+		    }
+		}
+	    }
 
-      /* now get some memory for the value*/
-      lv->lv_Value = AllocMem(lv->lv_Len, MEMF_CLEAR|MEMF_PUBLIC);
+	    /* -1 as size means: buffer contains a null-terminated string*/
+	    if (-1 == size)
+	    {
+		lv->lv_Len = strlen(buffer) + 1;
+	    }
+	    else
+	    {
+		lv->lv_Len = size;
+	    }
+	    
+	    /* now get some memory for the value*/
+	    lv->lv_Value = AllocMem(lv->lv_Len, MEMF_PUBLIC);
+	    
+	    if (lv->lv_Value)
+	    {
+		CopyMem(buffer, lv->lv_Value, lv->lv_Len);
+		
+		return DOSTRUE; 
+	    } /* memory for actual value */
+	} /* set a local variable */
+	
+	/* Ok, try and set a global variable. */
+	if ((flags & GVF_LOCAL_ONLY) == 0)
+	{
+	    BPTR file;
+	    /* as a standard: look for the file in ENV: if no path is
+	       given in the variable */
+	    UBYTE nameBuffer[384]= "ENV:";
 
-      if(lv->lv_Value)
-      {
-        CopyMem(buffer, lv->lv_Value, lv->lv_Len);
-        return DOSTRUE; 
-      } /* memory for actual value */
-    } /* set a local variable */
+	    AddPart(nameBuffer, name, 384);
+	    
+	    /* Just try and open the file */
+	    file = Open(nameBuffer, MODE_NEWFILE);
 
-    if(flags & GVF_LOCAL_ONLY)  return DOSFALSE;
+	    if (file != NULL)
+	    {
+		/* Write the data to the file */
+		/* size = -1 means that the value is a null-terminated
+		   string */
+		if (-1 == size)
+		{
+		    Write(file, buffer, strlen(buffer));
+		}
+		else
+		{
+		    Write(file, buffer, size);
+		}
+		
+		Close(file);
+	    }
+	    else
+	    {
+		return DOSFALSE;
+	    }
 
+	    /* Let's see whether we're supposed to make a copy of this to
+	     * envarc also... 
+	     */
+	    if (0 != (flags & GVF_SAVE_VAR))
+	    {
+		CopyMem("ENVARC:", nameBuffer, 8);
+		AddPart(nameBuffer, name, 384);
 
+		file = Open(nameBuffer, MODE_NEWFILE);
 
-    /* Ok, try and set a global variable. */
-    if((flags & GVF_LOCAL_ONLY) == 0)
-    {
-      BPTR file;
-      /* as a standard: look for the file in ENV: if no path is
-         given in the variable
-      */
-      UBYTE nameBuffer[384]= "ENV:";
-      AddPart(nameBuffer, name, 384);
+		if (file != NULL)
+		{
+		    /* Write the data to the file */
+		    /* size = -1 means that the value is a null-terminated
+		       string */
+		    if (-1 == size)
+		    {
+			Write(file, buffer, strlen(buffer));
+		    }
+		    else
+		    {
+			Write(file, buffer, size);
+		    }
 
-      /* Just try and open the file */
-      file = Open(nameBuffer, MODE_NEWFILE);
-      if(file)
-      {
-        /* Write the data to the file */
-        /* size = -1 means that the value is a null-terminated string */
-        if (-1 == size)
-          Write(file, buffer, strlen(buffer));
-        else
-          Write(file, buffer, size);
+		    Close(file);
+		}
+	    }
+	    
+	    /* We created both, bye bye */
+	    return DOSTRUE;
+	} /* try a global variable */
+    } /* input was valid */
 
-        Close(file);
-      }
-      else
-        return DOSFALSE;
+    return DOSFALSE;
 
-      /* Let's see whether we're supposed to make a copy of this to
-       * envarc also... 
-       */
-      if(0 != (flags & GVF_SAVE_VAR))
-      {
-        CopyMem("ENVARC:", nameBuffer, 8);
-        AddPart(nameBuffer, name, 384);
-
-        file = Open(nameBuffer, MODE_NEWFILE);
-        if(file)
-        {
-          /* Write the data to the file */
-          /* size = -1 means that the value is a null-terminated string */
-          if (-1 == size)
-            Write(file, buffer, strlen(buffer));
-          else
-            Write(file, buffer, size);
-          Close(file);
-        }
-      }
-
-    /* We created both, bye bye */
-    return DOSTRUE;
-    } /* try a global variable */
-  } /* input was valid */
-  return DOSFALSE;
-
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* SetVar */
