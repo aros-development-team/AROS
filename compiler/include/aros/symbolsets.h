@@ -41,7 +41,7 @@ extern void * SETNAME(set)[] __attribute__((weak));
 void * SETNAME(set)[] __attribute__((weak))={0,0};
 
 #define ADD2SET(symbol, _set, pri)\
-	static typeof(symbol) * __aros_set_##_set##_##pri##_##symbol __attribute__((section(".aros.set." #_set "." #pri))) = &symbol;
+	static typeof(symbol) * __aros_set_##_set##_##pri##_##symbol __attribute__((section(".aros.set." #_set "." #pri))) __unused = &symbol;
 
 /*
     ctors and dtors sets are used by c++ to store static constructors/destructors
