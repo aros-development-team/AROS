@@ -2,9 +2,11 @@ mmake
 mmake.o
 mmake.cache
 Makefile
+Makefile.in
 config.h
 MetaMake-*.*.tar.gz
 stamp-h
+configure
 config.cache
 config.log
 config.status
