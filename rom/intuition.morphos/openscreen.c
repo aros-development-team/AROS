@@ -21,6 +21,7 @@
 #include <proto/layers.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
+#include <string.h>
 #ifdef __MORPHOS__
 #include <proto/cybergraphics.h>
 #include <cybergraphx/cybergraphics.h>
@@ -479,7 +480,7 @@ AROS_LH1(struct Screen *, OpenScreen,
             sharepens = TRUE; /* not sure */
         }
 
-        while((tag = NextTagItem ((struct TagItem **)&tagList)))
+        while((tag = NextTagItem (&tagList)))
         {
 #if 1
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Tag 0x%08lx Data 0x%08lx\n",
