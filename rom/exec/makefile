@@ -97,8 +97,8 @@ $(SLIBDIR)/exec.strap: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(ASMFUNCTIONS),$(OSGENDIR)/$(f).o) \
-	$(LIBS) -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+	$(LIBS) -o $@ 2>&1|tee execstrap.err
+	@if test ! -s execstrap.err; then rm execstrap.err ; else true ; fi
 	@strip $@
 else
 all: setup \
