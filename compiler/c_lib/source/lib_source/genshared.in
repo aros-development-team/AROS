@@ -166,12 +166,7 @@ case $mode in
 	    ' headers.tmpl >> $out.new
 	fi
         echo "#include <clib/"$libname"_protos.h>" >> $out.new
-        echo >> $out.new
-        echo "#if defined(_AMIGA) && defined(__GNUC__)" >> $out.new
-        echo "#   include <inline/"$libname".h>" >> $out.new
-        echo "#else" >> $out.new
-        echo "#   include <defines/"$libname".h>" >> $out.new
-        echo "#endif" >> $out.new
+        echo "#include <defines/"$libname".h>" >> $out.new
         echo >> $out.new
         if [ $hasrt -ne 0 ]; then
             echo "#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_"$LIBNAME")" >> $out.new
