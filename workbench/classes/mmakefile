@@ -1,7 +1,7 @@
 # $Id$
 
 #MM- workbench-classes-complete : \
-#MM         workbench-classes-gadgets-complete \
+#MM         workbench-gadgets-complete \
 #MM	    workbench-datatypes-complete
 
 # The workbench-classes target points back to config/$(ARCH)/mmakefile:

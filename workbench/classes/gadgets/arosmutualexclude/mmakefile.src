@@ -1,28 +1,21 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -I.
+MODNAME := arosmutualexclude
+MODTYPE := gadget
 
-LIBNAME := arosmutualexclude
-LIBPOST := gadget
+USER_INCLUDES := -I.
 
 FILES := mxclass support
+FUNCS := 
 
-DESTDIR := $(GADGETDIR)
+USE_ROMLIB := yes
 
-%genwblib
+#MM workbench-gadgets-arosmutualexclude : includes linklibs
+workbench-gadgets-arosmutualexclude : workbench-gadgets-arosmutualexclude-module
 
-#MM workbench-classes-arosmutualexclude : workbench-classes-setup includes
-workbench-classes-arosmutualexclude : $(SLIB)
-	@$(NOP)
-
-#MM workbench-classes-arosmutualexclude-quick :
-workbench-classes-arosmutualexclude-quick : $(SLIB)
-	@$(NOP)
-
-#MM workbench-classes-setup
-workbench-classes-setup : setup
-#MM clean
-
+%make_module_setup mmake=workbench-gadgets-arosmutualexclude
+%make_module mmake=workbench-gadgets-arosmutualexclude
 
 %common
+%include_deps

@@ -1,29 +1,22 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
+MODNAME := gradientslider
+MODTYPE := gadget
+
 USER_INCLUDES := -I.
-
-LIBNAME		:= gradientslider
-LIBPOST		:= gadget
-
-DESTDIR		:= $(GADGETDIR)
 
 FILES := gradientsliderclass support
 
-# Make shared object
-%genwblib
+FUNCS :=
+#USE_AMIGALIB := yes
+#USE_MLIB := yes
 
-#MM workbench-classes-gradientslider : workbench-classes-setup includes
-workbench-classes-gradientslider : $(SLIB)
-	@$(NOP)
+#MM workbench-gadgets-gradientslider : includes linklibs
+workbench-gadgets-gradientslider : workbench-gadgets-gradientslider-module
 
-#MM workbench-classes-gadgets-gradientslider-quick :
-workbench-classes-gadgets-gradientslider-quick : $(SLIB)
-	@$(NOP)
-
-#MM workbench-classes-setup
-workbench-classes-setup : setup
-#MM clean
+%make_module_setup mmake=workbench-gadgets-gradientslider
+%make_module mmake=workbench-gadgets-gradientslider
 
 %common
+%include_deps

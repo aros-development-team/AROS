@@ -1,24 +1,22 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES	:= -I.
+MODNAME := aroslist
+MODTYPE := gadget
 
-LIBNAME := aroslist
-LIBPOST := class
+USER_INCLUDES := -I.
 
-DESTDIR := $(GADGETDIR)
+FILES := listclass helpfuncs
+FUNCS := 
 
-FILES	:= listclass helpfuncs
+USE_ROMLIB := yes
+USE_AMIGALIB := yes
 
-%genwblib
+#MM workbench-gadgets-aroslist : includes linklibs
+workbench-gadgets-aroslist : workbench-gadgets-aroslist-module
 
-#MM workbench-classes-aroslist : workbench-classes-setup includes
-workbench-classes-aroslist : $(SLIB)
-	@$(NOP)
-
-
-#MM workbench-classes-setup
-workbench-classes-setup : setup
-#MM clean
+%make_module_setup mmake=workbench-gadgets-aroslist
+%make_module mmake=workbench-gadgets-aroslist
 
 %common
+%include_deps

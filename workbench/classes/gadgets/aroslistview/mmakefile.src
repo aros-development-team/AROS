@@ -1,41 +1,22 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -I.
+MODNAME := aroslistview
+MODTYPE := gadget
 
-LIBNAME := aroslistview
-LIBPOST := gadget
+USER_INCLUDES := -I.
 
 FILES := listviewclass helpfuncs
+FUNCS := 
 
-DESTDIR := $(GADGETDIR)
+USE_ROMLIB := yes
+USE_AMIGALIB := yes
 
+#MM workbench-gadgets-aroslistview : includes linklibs
+workbench-gadgets-aroslistview : workbench-gadgets-aroslistview-module
 
-# (bernie) this hack disables optimization on classes.c to fix a problem in the
-# current Amiga version of gcc and egcs. Using inline asm macros to perform
-# shared library calls sometimes leads the optimizer to a dead-end situation
-# where one of the registers involved in the inline asm macro gets spilled on
-# the frame.
-#
-ifeq ($(ARCH),amiga)
-$(OBJDIR)/helpfuncs.o : helpfuncs.c
-	%compile_q opt="$(filter-out -O%,$(CFLAGS)) -O0"
-endif
-
-
-%genwblib
-
-#MM workbench-classes-aroslistview : workbench-classes-setup includes
-workbench-classes-aroslistview : $(SLIB)
-	@$(NOP)
-
-#MM workbench-classes-aroslistview-quick :
-workbench-classes-aroslistview-quick : $(SLIB)
-	@$(NOP)
-
-#MM workbench-classes-setup
-workbench-classes-setup : setup
-#MM clean
-
+%make_module_setup mmake=workbench-gadgets-aroslistview
+%make_module mmake=workbench-gadgets-aroslistview
 
 %common
+%include_deps

@@ -2,11 +2,12 @@
 
 # A general catch-all target. You can use this if everything compiles on your
 # machine, and you want to save yourself some typing.
-#MM- workbench-classes-gadgets-complete : workbench-classes-aroscheckbox \
-#MM	    workbench-classes-aroslist \
-#MM	    workbench-classes-aroslistview \
-#MM	    workbench-classes-arosmutualexclude \
-#MM	    workbench-classes-aroscycle \
-#MM	    workbench-classes-arospalette \
-#MM         workbench-classes-gadgets-colorwheel \
-#MM	    workbench-classes-gradientslider 
+#MM- workbench-gadgets-complete : \
+#MM	    workbench-gadgets-aroscheckbox \
+#MM	    workbench-gadgets-aroslist \
+#MM	    workbench-gadgets-aroslistview \
+#MM	    workbench-gadgets-arosmutualexclude \
+#MM	    workbench-gadgets-aroscycle \
+#MM	    workbench-gadgets-arospalette \
+#MM         workbench-gadgets-colorwheel \
+#MM	    workbench-gadgets-gradientslider 
