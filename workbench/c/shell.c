@@ -626,7 +626,8 @@ LONG interact(STRPTR script)
     ULONG cliNumber = PROCESS(FindTask(NULL))->pr_TaskNum;
     LONG  error = 0;
 
-    printFlush("New Shell process %ld\n", &cliNumber);
+    if (stricmp(script, "S:Startup-Sequence") != 0)
+    	printFlush("New Shell process %ld\n", &cliNumber);
     
     cli->cli_Interactive = DOSTRUE;
     cli->cli_Background  = DOSFALSE;
