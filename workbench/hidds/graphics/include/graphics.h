@@ -335,9 +335,17 @@ enum {
 	
     /* Chunky formats */
     vHidd_StdPixFmt_RGB24 = num_Hidd_PseudoStdPixFmt,
+    vHidd_StdPixFmt_BGR24,
     vHidd_StdPixFmt_RGB16,
+    vHidd_StdPixFmt_BGR16,
+    vHidd_StdPixFmt_RGB15,
+    vHidd_StdPixFmt_BGR15,
     vHidd_StdPixFmt_ARGB32,
     vHidd_StdPixFmt_RGBA32,
+    vHidd_StdPixFmt_BGRA32,
+    vHidd_StdPixFmt_0RGB32,
+    vHidd_StdPixFmt_RGB032,
+    vHidd_StdPixFmt_BGR032,
     vHidd_StdPixFmt_LUT8,
     vHidd_StdPixFmt_Plane,
 
