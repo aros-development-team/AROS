@@ -27,7 +27,7 @@ ILDFLAGS="-nostartfiles -nostdlib"
 # set, $CC is used.
 # Special flags for $AS are taken from $COMMON_AFLAGS, if it exists or
 # from $COMMON_CFLAGS otherwise.
-# If X11 is installed in a directory of it´s own, you can specify that
+# If X11 is installed in a directory of it's own, you can specify that
 # directory in $X11BASEDIR. $X11LIBDIR will then point to $X11BASEDIR/lib
 # and $X11LDFLAGS will contain -L$X11LIBDIR. The same applies to $X11INCDIR.
 # If only one part is in a nonstandard place (eg. the libs), you
@@ -56,8 +56,11 @@ case "$type" in
 "FreeBSD" )
 	ARCH="freebsd"
 	KERNEL="i386-emul"
-	COMMON_CFLAGS="-Wall -g -O2 -I/usr/X11R6/include"
+	COMMON_CFLAGS="-Wall -g -O2"
 	ILDFLAGS="-nostartfiles -nostdlib"
+	X11BASEDIR="/usr/X11R6"
+	AS="gcc"
+	COMMON_AFLAGS="-x assembler-with-cpp"
 	;;
 "AmigaOS" )
 	CC="gcc"
