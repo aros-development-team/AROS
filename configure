@@ -98,6 +98,8 @@ case "$type" in
 	CC="gcc -pipe"
 	COMMON_AFLAGS="-x assembler-with-cpp"
 	MKDEPEND="makedepend -D__GNUC__ -Di386"
+	AWK="awk"
+	MAKESHELL="/usr/local/bin/bash"
 	CHECKUDS="nm -u"
 	;;
 "AmigaOS" )
@@ -153,6 +155,12 @@ case "$1" in
 	echo "SYS_AS := $CC" >> $2
     else
 	echo "SYS_AS := $AS" >> $2
+    fi
+    if [ -n "$AWK" ]; then
+	echo "AWK := $AWK" >> $2
+    fi
+    if [ -n "$MAKESHELL" ]; then
+	echo "SHELL := $MAKESHELL" >> $2
     fi
     if [ -z "$COMMON_AFLAGS" ]; then
 	echo "COMMON_AFLAGS := $COMMON_CFLAGS" >> $2
