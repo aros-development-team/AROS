@@ -12,7 +12,7 @@ USER_INCLUDES := -I../libs/muimaster
 
 USE_CLIB_SHARED := yes
 USE_AMIGALIB := yes
-USE_MLIB := yes
+USE_MUILIB := yes
 USE_AROSLIB := yes
 
 #MM mui-test :includes linklibs
