@@ -22,6 +22,7 @@ CLASSES := \
     menuitem \
     notify \
     numeric \
+    popasl \
     popobject \
     popstring \
     prop \
