@@ -57,37 +57,19 @@
 ******************************************************************************/
 {
     size_t cnt;
-    BPTR   fh;
 
-    switch ((IPTR)stream)
-    {
-    case 1: /* Stdin */
-	fh = Input ();
-	break;
-
-    case 2: /* Stdout */
-    case 3: /* Stderr */
-	errno = EINVAL;
-	return 0;
-
-    default:
-	fh = (BPTR)stream->fh;
-
-	break;
-    }
-
-    cnt = FRead (fh, buf, size, nblocks);
+    cnt = FRead ((BPTR)stream->fh, buf, size, nblocks);
 
     if (cnt == -1)
     {
-	errno = IoErr2errno (IoErr ());
-	stream->flags |= _STDIO_FILEFLAG_ERROR;
+		errno = IoErr2errno (IoErr ());
+		stream->flags |= _STDIO_FILEFLAG_ERROR;
 
-	cnt = 0;
+		cnt = 0;
     }
     else if (cnt == 0)
     {
-	stream->flags |= _STDIO_FILEFLAG_EOF;
+		stream->flags |= _STDIO_FILEFLAG_EOF;
     }
 
     return cnt;

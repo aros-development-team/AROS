@@ -62,31 +62,14 @@
 
 ******************************************************************************/
 {
-    BPTR fh;
-
-    switch ((IPTR)stream)
-    {
-    case 1: /* Stdin */
-	fh = Input ();
-
-    case 2: /* Stdout */
-    case 3: /* Stderr */
-	errno = EINVAL;
-	return NULL;
-
-    default:
-	fh = (BPTR)stream->fh;
-	break;
-    }
-
-    buffer = FGets (fh, buffer, size);
+    buffer = FGets ((BPTR)stream->fh, buffer, size);
 
     if (!buffer)
     {
-	if (IoErr ())
-	    stream->flags |= _STDIO_FILEFLAG_ERROR;
-	else
-	    stream->flags |= _STDIO_FILEFLAG_EOF;
+		if (IoErr ())
+	    	stream->flags |= _STDIO_FILEFLAG_ERROR;
+		else
+	    	stream->flags |= _STDIO_FILEFLAG_EOF;
     }
 
     return buffer;

@@ -49,21 +49,13 @@
     long cnt;
     BPTR fh;
 
-    if (((IPTR)stream) < 3)
-    {
-	errno = EINVAL;
-	return -1;
-    }
-
     fh = (BPTR)(stream->fh);
 
     Flush (fh);
     cnt = Seek (fh, 0, OFFSET_CURRENT);
 
     if (cnt == -1)
-    {
-	errno = IoErr2errno (IoErr ());
-    }
-
+		errno = IoErr2errno (IoErr ());
+    
     return cnt;
 } /* ftell */

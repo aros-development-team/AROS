@@ -50,35 +50,22 @@
 {
     int c;
 
-    switch ((IPTR)stream)
-    {
-    case 1: /* Stdin */
-	return FGetC (Input());
-
-    case 2: /* Stdout */
-    case 3: /* Stderr */
-	errno = EINVAL;
-	return EOF;
-
-    default:
 	c = FGetC ((BPTR)stream->fh);
-	break;
-    }
 
     if (c == EOF)
     {
-	c = IoErr ();
+		c = IoErr ();
 
-	if (c)
-	{
-	    errno = IoErr2errno (c);
+		if (c)
+		{
+	    	errno = IoErr2errno (c);
 
-	    stream->flags |= _STDIO_FILEFLAG_ERROR;
-	}
-	else
-	    stream->flags |= _STDIO_FILEFLAG_EOF;
+			stream->flags |= _STDIO_FILEFLAG_ERROR;
+		}
+		else
+	    	stream->flags |= _STDIO_FILEFLAG_EOF;
 
-	c = EOF;
+		c = EOF;
     }
 
     return c;

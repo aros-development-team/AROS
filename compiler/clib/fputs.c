@@ -45,10 +45,10 @@
 {
     while (*str)
     {
-	if (putc (*str, fh) == EOF)
-	    return EOF;
+		if (putc (*str, fh) == EOF)
+	    	return EOF;
 
-	str ++;
+		str ++;
     }
 
     return 1;

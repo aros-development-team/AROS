@@ -56,37 +56,14 @@
 ******************************************************************************/
 {
     size_t cnt;
-    BPTR   fh;
 
-    switch ((IPTR)stream)
-    {
-    case 1: /* Stdin */
-	errno = EINVAL;
-	return 0;
-
-    case 2: /* Stdout */
-	fh = Output ();
-	break;
-
-    case 3: { /* Stderr */
-	struct Process * me = (struct Process *)FindTask (NULL);
-
-	fh = me->pr_CES ? me->pr_CES : me->pr_COS;
-
-	break; }
-
-    default:
-	fh = (BPTR)(stream->fh);
-	break;
-    }
-
-    cnt = FWrite (fh, buf, size, nblocks);
+	cnt = FWrite ((BPTR)(stream->fh), buf, size, nblocks);
 
     if (cnt == -1)
     {
-	errno = IoErr2errno (IoErr ());
+		errno = IoErr2errno (IoErr ());
 
-	cnt = 0;
+		cnt = 0;
     }
 
     return cnt;
