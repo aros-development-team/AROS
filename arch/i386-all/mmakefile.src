@@ -25,9 +25,11 @@ includes-linux-i386 : $(INCFILES) machine.i
 #MM
 includes-copy-linux-i386 : $(INCFILES) machine.i
 
+#MM-
+includes-freebsd-i386 :
+
 #MM
-includes-freebsd-i386 : $(INCFILES) machine.i
-	@$(NOP)
+includes-copy-freebsd-i386 : $(INCFILES) machine.i
 
 #MM
 includes-netbsd-i386 : $(INCFILES) machine.i
