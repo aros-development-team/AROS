@@ -8,8 +8,7 @@ CFLAGS2 	:= $(SHARED_CFLAGS) -I$(TOP)/rom/exec \
 		   $(CFLAGS)
 
 
-#MM- AROS-cygwin : setup-cygwin includes compiler kernel workbench \
-#MM	    demos contrib shell
+#MM- AROS-cygwin : setup-cygwin includes compiler kernel workbench demos shell
 
 #MM- kernel-cygwin : kernel-exec-cygwin \
 #MM	    kernel-aros-linklib \
