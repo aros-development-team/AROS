@@ -11,7 +11,9 @@ FILES = ctype printf strcmp stricmp strlen strcpy qsort \
 	strdup malloc free calloc realloc memcpy bcopy \
 	bzero memset vprintf vfprintf fputc putc __stdio \
 	fgetc fprintf errno feof fgetc fflush fputs puts \
-	strncmp memchr memmove
+	strncmp memchr memmove strcat strchr strcspn \
+	strerror strncat strncpy strpbrk strrchr strspn \
+	strstr strtok strncasecmp
 
 all: setup $(OBJDIR)/links $(LIBDIR)/libarosc.a
 
