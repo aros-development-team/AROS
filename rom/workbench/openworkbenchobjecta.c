@@ -264,7 +264,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
         }
     }
     
-    D(bug("OpenWorkbenchObject: success = %d\n"));
+    D(bug("OpenWorkbenchObject: success = %d\n", success));
     
     return success;
 
