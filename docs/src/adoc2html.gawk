@@ -42,8 +42,8 @@ BEGIN {
 		    newfield=="SEE" || newfield=="INTERNALS" || newfield=="HISTORY")
 		{
 		    if (lastfield=="EXAMPLE")
-			print "</PRE>" >> out;
-		    else if (field=="INPUTS")
+			printf ("</PRE>") >> out;
+		    else if (field=="INPUTS" || field=="HISTORY")
 			print "</DL>\n" >> out;
 
 		    if (lastfield!="")
@@ -60,9 +60,11 @@ BEGIN {
 			print "<DL>\n<DT>"newfield"\n<DD>\n" >> out;
 
 		    if (field=="EXAMPLE")
-			print "<PRE>" >> out;
+			printf ("<PRE>") >> out;
 		    else if (field=="INPUTS")
-			print "<DL>\n" >> out;
+			print "<DL COMPACT>\n" >> out;
+		    else if (field=="HISTORY")
+			print "<DL COMPACT>\n" >> out;
 		}
 		else if (match($0,/^.\*\*\*\*\*+\/?$/))
 		{
@@ -175,6 +177,16 @@ BEGIN {
 
 			first=0;
 		    }
+		    else if (field=="EXAMPLE")
+		    {
+			gsub(/^(        |\t)/,"",line);
+			gsub(/&/,"\\&amp;",line);
+			gsub(/</,"\\&lt;",line);
+			gsub(/>/,"\\&gt;",line);
+			gsub(/"/,"\\&quot;",line);
+
+			print line >> out;
+		    }
 		    else if (field=="SEE")
 		    {
 			if (line!="")
@@ -225,6 +237,30 @@ BEGIN {
 
 			    print line >> out;
 			}
+		    }
+		    else if (field=="HISTORY")
+		    {
+			if (match(line,/^[ \t]+[0-3][0-9]-[01][0-9]-[0-9][0-9][ \t]+/))
+			{
+			    date=substr(line,RSTART,RLENGTH);
+			    line=substr(line,RSTART+RLENGTH);
+			    match(line,/^[^ \t]+/);
+			    name=substr(line,RSTART,RLENGTH);
+			    line=substr(line,RSTART+RLENGTH);
+			    gsub(/^[ \t]+/,"",date);
+			    gsub(/[ \t]+$/,"",date);
+
+			    print "<DT>"date " " name"<DD>" >> out;
+			}
+
+			gsub(/&/,"\\&amp;",line);
+			gsub(/</,"\\&lt;",line);
+			gsub(/>/,"\\&gt;",line);
+			gsub(/"/,"\\&quot;",line);
+
+			print line >> out;
+
+			first=0;
 		    }
 		    else
 			print line >> out;
