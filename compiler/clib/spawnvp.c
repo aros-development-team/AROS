@@ -139,14 +139,10 @@
 		CurrentDir(olddir);
 		UnLock(dirlock);
 
-		kprintf("===== Trying to spawn %s in %s\n", command, dir);
 		ret = __spawnv(mode, seg, argv);
-		kprintf("===== ret = %d\n\n", ret);
 
 		if (ret != -1)
 		    return ret;
-
-		kprintf("!!! %s\n", strerror(MAX_ERRNO + IoErr()));
 	    }
 
 	    /* Loop until the program is found and executed */
