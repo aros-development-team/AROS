@@ -22,7 +22,7 @@ hidd-graphics-linklib-quick : $(LIB)
 	@$(NOP)
 
 #MM
-hidd-graphics-linklib : $(LIB) setup x11keymaptable 
+hidd-graphics-linklib : $(LIB) setup
 hidd-graphics-linklib : $(LIB)
 	@$(NOP)
 
@@ -37,8 +37,6 @@ clean ::
 setup :
 	%mkdirs_q $(OBJDIR)
 
-#->8----- stegerg: someone please check if this is okay ------------------------------
-
 #MM x11keymaptable
 x11keymaptable : setup-x11keymaptable $(TOOLDIR)/makexkeytable $(X11KEYMAPTABLE_FILE)
 	@$(SNOP)
@@ -52,11 +50,6 @@ $(X11KEYMAPTABLE_FILE) :
 	
 setup-x11keymaptable :
 	%mkdirs_q $(DEVSDIR)/Keymaps $(DEVSDIR)/Keymaps/X11
-		
-#->8----- stegerg: someone please check if this is okay ------------------------------
-		
-	
-	
 		
 $(TOOLDIR)/makexkeytable: makexkeytable.c
 	$(CC) $(GUI_CCFLAGS) $(GUI_LDFLAGS) -lX11 $< -o $@ 
