@@ -24,11 +24,12 @@ AROS_SLIB_ENTRY(ObtainSemaphore,Exec):
 #if !UseRegisterArgs
 	move.l	24(%sp),-(%sp)
 	move.l	24(%sp),-(%sp)
+#else
+	move.l	%a6,-(%sp)
+	move.l	%a0,-(%sp)
 #endif
-	jbsr	AROS_CSYMNAME(ObtainSemaphore,Exec)
-#if !UseRegisterArgs
+	jbsr	AROS_CSYMNAME(_ObtainSemaphore)
 	addq.w	#8,%sp
-#endif
 	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	rts
 
@@ -39,11 +40,12 @@ AROS_SLIB_ENTRY(ReleaseSemaphore,Exec):
 #if !UseRegisterArgs
 	move.l	24(%sp),-(%sp)
 	move.l	24(%sp),-(%sp)
+#else
+	move.l	%a6,-(%sp)
+	move.l	%a0,-(%sp)
 #endif
-	jbsr	AROS_CSYMNAME(ReleaseSemaphore,Exec)
-#if !UseRegisterArgs
+	jbsr	AROS_CSYMNAME(_ReleaseSemaphore)
 	addq.w	#8,%sp
-#endif
 	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	rts
 
@@ -54,12 +56,69 @@ AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec):
 #if !UseRegisterArgs
 	move.l	24(%sp),-(%sp)
 	move.l	24(%sp),-(%sp)
+#else
+	move.l	%a6,-(%sp)
+	move.l	%a0,-(%sp)
 #endif
-	jbsr	AROS_CSYMNAME(ObtainSemaphoreShared,Exec)
-#if !UseRegisterArgs
+	jbsr	AROS_CSYMNAME(_ObtainSemaphoreShared)
 	addq.w	#8,%sp
-#endif
 	movem.l	(%sp)+,%d0-%d1/%a0-%a1
+	rts
+
+        .globl	AROS_SLIB_ENTRY(Disable,Exec)
+        .type	AROS_SLIB_ENTRY(Disable,Exec),@function
+AROS_SLIB_ENTRY(Disable,Exec):
+	movem.l	%d0-%d1/%a0-%a1,-(%sp)
+#if !UseRegisterArgs
+	move.l	24(%sp),-(%sp)
+#else
+	move.l	%a6,-(%sp)
+#endif
+	jbsr	AROS_CSYMNAME(_Disable)
+	addq.w	#4,%sp
+	movem.l	(%sp)+,%d0-%d1/%a0-%a1
+	rts
+
+	.globl	AROS_SLIB_ENTRY(Enable,Exec)
+	.type	AROS_SLIB_ENTRY(Enable,Exec),@function
+AROS_SLIB_ENTRY(Enable,Exec):
+	movem.l	%d0-%d1/%a0-%a1,-(%sp)
+#if !UseRegisterArgs
+	move.l	24(%sp),-(%sp)
+#else
+	move.l	%a6,-(%sp)
+#endif
+	jbsr	AROS_CSYMNAME(_Enable)
+	addq.w	#4,%sp
+	movem.l	(%sp)+,%d0-%d1/%a0-%a1
+	rts
+
+	.globl	AROS_SLIB_ENTRY(Forbid,Exec)
+	.type	AROS_SLIB_ENTRY(Forbid,Exec),@function
+AROS_SLIB_ENTRY(Forbid,Exec):
+	movem.l %d0-%d1/%a0-%a1,-(%sp)
+#if !UseRegisterArgs
+	move.l	24(%sp),-(%sp)
+#else
+	move.l	%a6,-(%sp)
+#endif
+	jbsr	AROS_CSYMNAME(_Forbid)
+	addq.w	#4,%sp
+	movem.l (%sp)+,%d0-%d1/%a0-%a1
+	rts
+
+	.globl	AROS_SLIB_ENTRY(Permit,Exec)
+	.type	AROS_SLIB_ENTRY(Permit,Exec),@function
+AROS_SLIB_ENTRY(Permit,Exec):
+	movem.l %d0-%d1/%a0-%a1,-(%sp)
+#if !UseRegisterArgs
+	move.l	24(%sp),-(%sp)
+#else
+	move.l	%a6,-(%sp)
+#endif
+	jbsr	AROS_CSYMNAME(_Permit)
+	addq.w	#4,%sp
+	movem.l (%sp)+,%d0-%d1/%a0-%a1
 	rts
 
 	.globl	AROS_CDEFNAME(os_disable)
