@@ -1,13 +1,15 @@
 /*
     (C) 1997 AROS - The Amiga Replacement OS
     $Id$
+    $Log$
+    Revision 1.3  1997/12/29 21:18:41  hkiel
+    Supplied WindowLimits() function with life.
+
 
     Desc: Set the minimum and maximum size of a window.
     Lang: english
 */
 #include "intuition_intern.h"
-
-void aros_print_not_implemented (char * name);
 
 /*****************************************************************************
 
@@ -60,8 +62,28 @@ void aros_print_not_implemented (char * name);
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    aros_print_not_implemented("WindowLimits");
+    BOOL retval = TRUE;
 
-    return FALSE;
+    if(window->Width >= MinWidth)
+	window->MinWidth = MinWidth;
+    else
+	retval = FALSE;
+
+    if(window->Height >= MinHeight)
+	window->MinHeight = MinHeight;
+    else
+	retval = FALSE;
+
+    if(window->Width <= MaxWidth)
+	window->MaxWidth = MaxWidth;
+    else
+	retval = FALSE;
+
+    if(window->Height <= MaxHeight)
+	window->MaxHeight = MaxHeight;
+    else
+	retval = FALSE;
+
+    return retval;
     AROS_LIBFUNC_EXIT
 } /* WindowLimits */
