@@ -39,7 +39,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
    lh->rexxmsgid = "RexxMsgId";
    InitSemaphore(&lh->semaphore);
    NewList(&lh->library.rl_LibList);
-   lh->library.rl_NumList = 0;
+   lh->library.rl_NumLib = 0;
    NewList(&lh->library.rl_ClipList);
    lh->library.rl_NumClip = 0;
    
