@@ -85,5 +85,5 @@
     if (cnt == -1)
     	errno = IoErr2errno (IoErr ());
 
-    return cnt;
+    return cnt + offset;
 } /* lseek */
