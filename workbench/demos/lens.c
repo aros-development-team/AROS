@@ -5,11 +5,13 @@
 #include <graphics/gfx.h>
 #include <graphics/scale.h>
 #include <utility/hooks.h>
+#include <dos/rdargs.h>
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/layers.h>
+#include <proto/dos.h>
 
 #include <aros/asmcall.h>
 #include <aros/libcall.h>
@@ -25,6 +27,9 @@ static struct Screen *scr;
 static struct Window *win;
 static struct DrawInfo *dri;
 static struct BitMap *scalebitmap;
+
+static BOOL follow = FALSE;
+static BOOL do_lens = FALSE;
 
 AROS_UFP3(void, LensCallback,
    AROS_UFPA(struct Hook                  *, hook     , A0),
@@ -109,49 +114,59 @@ AROS_UFH3(void, LensCallback,
 	AROS_USERFUNC_INIT
 	struct LensParam * lp = (struct LensParam *)hook->h_Data;
 	if (NULL != cplm->bm) {
-#if 1
-		/*
-		 * Does a 1:1 copying
-		 */
-		BltBitMapRastPort(
-			cplm->bm,
-			cplm->xSrc,
-			cplm->ySrc,
-			win->RPort,
-			cplm->xDest - win->LeftEdge - lp->dx,
-			cplm->yDest - win->TopEdge  - lp->dy,
-			cplm->width,
-			cplm->height,
-			cplm->minterm);
-#else
-		struct BitScaleArgs bsa;
-		bsa.bsa_SrcX        = cplm->xSrc;
-		bsa.bsa_SrcY        = cplm->ySrc;
-		bsa.bsa_SrcWidth    = cplm->width;
-		bsa.bsa_SrcHeight   = cplm->height;
-		bsa.bsa_DestX       = 0;
-		bsa.bsa_DestY       = 0;
-		bsa.bsa_DestWidth   = cplm->width*2;
-		bsa.bsa_DestHeight  = cplm->height*2;
-		bsa.bsa_XSrcFactor  = cplm->width;
-		bsa.bsa_XDestFactor = cplm->width*2;
-		bsa.bsa_YSrcFactor  = cplm->height;
-		bsa.bsa_YDestFactor = cplm->height*2;
-		bsa.bsa_SrcBitMap   = cplm->bm;
-		bsa.bsa_DestBitMap  = scalebitmap;
-		BitMapScale(&bsa);
 		
-		BltBitMapRastPort(
-			scalebitmap,
-			bsa.bsa_DestX,
-			bsa.bsa_DestY,
-			win->RPort,
-			bsa.bsa_DestX,
-			bsa.bsa_DestY,
-			cplm->width*2,//bsa.bsa_DestWidth,
-			cplm->height*2,//bsa.bsa_DestHeight,
-			cplm->minterm);
-#endif
+		if (FALSE == do_lens) {
+			/*
+			 * Does a 1:1 copying
+			 */
+			BltBitMapRastPort(
+				cplm->bm,
+				cplm->xSrc,
+				cplm->ySrc,
+				win->RPort,
+				cplm->xDest - win->LeftEdge - lp->dx + win->Width/2,
+				cplm->yDest - win->TopEdge  - lp->dy + win->Height/2,
+				cplm->width,
+				cplm->height,
+				cplm->minterm);
+		} else {
+			/*
+			 * This is just a hack for now...
+			 * Need to adjust the destination x/y coordinates
+			 * in accordance to the source x/y coordinates taken
+			 * from the absolute coordinates of the source.
+			 */
+			struct BitScaleArgs bsa;
+			bsa.bsa_SrcX        = cplm->xSrc;
+			bsa.bsa_SrcY        = cplm->ySrc;
+			bsa.bsa_SrcWidth    = cplm->width;
+			bsa.bsa_SrcHeight   = cplm->height;
+			bsa.bsa_DestX       = 0;
+			bsa.bsa_DestY       = 0;
+			bsa.bsa_DestWidth   = cplm->width*2;
+			bsa.bsa_DestHeight  = cplm->height*2;
+			bsa.bsa_XSrcFactor  = cplm->width;
+			bsa.bsa_XDestFactor = cplm->width*2;
+			bsa.bsa_YSrcFactor  = cplm->height;
+			bsa.bsa_YDestFactor = cplm->height*2;
+			bsa.bsa_SrcBitMap   = cplm->bm;
+			bsa.bsa_DestBitMap  = scalebitmap;
+			BitMapScale(&bsa);
+
+			/*
+			 * Display the scaled content.
+			 */
+			BltBitMapRastPort(
+				scalebitmap,
+				bsa.bsa_DestX,
+				bsa.bsa_DestY,
+				win->RPort,
+				bsa.bsa_DestX,
+				bsa.bsa_DestY,
+				cplm->width*2,//bsa.bsa_DestWidth,
+				cplm->height*2,//bsa.bsa_DestHeight,
+				cplm->minterm);
+		}
 	}
 	AROS_USERFUNC_EXIT
 }      
@@ -166,21 +181,27 @@ static void DoLens(struct Window * win, LONG dx, LONG dy)
 	struct LensParam lp = {win,dx,dy};
 	ULONG QWidth  = win->Width  / 4;
 	ULONG QHeight = win->Height / 4;
+	ULONG HWidth  = win->Width  / 2;
+	ULONG HHeight = win->Height / 2;
 	h.h_Entry = (IPTR*)LensCallback;
 	h.h_Data  = (void *)&lp;
 
-	rect.MinX = dx + win->LeftEdge + QWidth;
-	rect.MinY = dy + win->TopEdge  + QHeight;
-	rect.MaxX = dx + win->LeftEdge + win->Width  - 1 - QWidth;
-	rect.MaxY = dy + win->TopEdge  + win->Height - 1 - QHeight;
-	
+	rect.MinX = dx + win->LeftEdge + QWidth  - HWidth;
+	rect.MinY = dy + win->TopEdge  + QHeight - HHeight;
+	rect.MaxX = dx + win->LeftEdge + win->Width  - 1 - QWidth - HWidth;
+	rect.MaxY = dy + win->TopEdge  + win->Height - 1 - QHeight- HHeight;
+
+	if (rect.MinX < 0) 
+		rect.MinX = 0;
+
+	if (rect.MinY < 0) 
+		rect.MinY = 0;
+
 	OrRectRegion(r, &rect);
 
-	Forbid();	
 	CollectPixelsLayer(l->back,
 	                   r,
 	                   &h);
-	Permit();
 	
 	DisposeRegion(r);
 	
@@ -245,19 +266,19 @@ static void HandleAll(void)
 				printf("mouse move %d/%d!\n",
 				       msg->MouseX,
 				       msg->MouseY);
-#if 0
-				MoveWindow(win,
-				           win->MouseX, // - win->LeftEdge,
-				           win->MouseY  //- win->TopEdge
-				);
-				DoLens(win,0,0);
-#else
-				/* 
-				 * Keep window still; 
-				 * this does not works, but center is a bit off.
-				 */
-				DoLens(win,win->MouseX,win->MouseY);
-#endif
+				if (TRUE == follow) {
+					MoveWindow(win,
+					           win->MouseX, // - win->LeftEdge,
+					           win->MouseY  //- win->TopEdge
+					);
+					DoLens(win,0,0);
+				} else {
+					/* 
+					 * Keep window still; 
+					 * this works, but center is a bit off.
+					 */
+					DoLens(win,win->MouseX,win->MouseY);
+				}
 			}
 		break;	
 
@@ -271,9 +292,27 @@ static void HandleAll(void)
     }
 }
 
-
-int main(void)
+void ParseArgs(void)
 {
+	STRPTR args[2] = {(STRPTR)FALSE, (STRPTR)FALSE};
+	struct RDArgs * rda;
+	rda = ReadArgs("FOLLOW/S,LENS/S",(IPTR *)args, NULL);
+	if (TRUE == (ULONG)args[0]) {
+		follow = TRUE;
+	}
+	if (TRUE == (ULONG)args[1]) {
+		do_lens = TRUE;
+	}
+	
+	if (rda) {
+		FreeArgs(rda);
+	}
+}
+
+
+int main(int argc, char **argv)
+{
+    ParseArgs();
     OpenLibs();
     GetVisual();
     MakeWin();
