@@ -642,10 +642,12 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 #endif
 		if (chunk_node->dripen != -1)
 		{
+		    D(bug("chunk_node->dripen == %d\n", chunk_node->dripen));
 		    SetABPenDrMd(rp, _dri(obj)->dri_Pens[chunk_node->dripen],0,JAM1);
 		}
 		else if (chunk_node->pen != -1)
 		{
+		    D(bug("chunk_node->pen == %d\n", chunk_node->pen));
 		    SetABPenDrMd(rp, chunk_node->pen, 0, JAM1);
 		}
 		else
@@ -710,6 +712,7 @@ void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WOR
 		    else cursor_width = _font(obj)->tf_XSize;
 
 		    SetAPen(_rp(obj), _dri(obj)->dri_Pens[FILLPEN]);
+		    D(bug("set FILLPEN a\n"));
 		    RectFill(_rp(obj), x + offx, top - _font(obj)->tf_Baseline, x + offx + cursor_width - 1, top - _font(obj)->tf_Baseline + _font(obj)->tf_YSize-1);
 		    cursorx = -1;
 		} else cursorx -= strlen(chunk_node->str);
@@ -718,15 +721,17 @@ void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WOR
 	    Move(rp,x,top);
 	    if (chunk_node->dripen != -1)
 	    {
+		D(bug("chunk_node->dripen == %d\n", chunk_node->dripen));
 		SetABPenDrMd(rp, _dri(obj)->dri_Pens[chunk_node->dripen],0,JAM1);
 	    }
 	    else if (chunk_node->pen != -1)
 	    {
+		D(bug("chunk_node->pen == %d\n", chunk_node->pen));
 		SetABPenDrMd(rp, chunk_node->pen, 0, JAM1);
 	    }
 	    else
 	    {
-		SetDrMd(rp, JAM1);
+		SetABPenDrMd(rp, _dri(obj)->dri_Pens[TEXTPEN], 0, JAM1);
 	    }
 	    Text(rp,chunk_node->str,strlen(chunk_node->str));
 	    x += chunk_node->cwidth;
@@ -736,6 +741,7 @@ void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WOR
 	{
 	    /* Cursor has not been drawn yet */
 	    SetAPen(_rp(obj), _dri(obj)->dri_Pens[FILLPEN]);
+	    D(bug("set FILLPEN\n"));
 	    RectFill(_rp(obj), x, top - _font(obj)->tf_Baseline, x + _font(obj)->tf_XSize - 1, top - _font(obj)->tf_Baseline + _font(obj)->tf_YSize-1);
 	}
 
@@ -798,6 +804,7 @@ void zune_text_draw_single (ZText *text, Object *obj, WORD left, WORD right, WOR
 	    if (cursor)
 	    {
 		SetAPen(_rp(obj), _dri(obj)->dri_Pens[FILLPEN]);
+		D(bug("set FILLPEN\n"));
 		RectFill(_rp(obj), x + offx, top - _font(obj)->tf_Baseline, x + offx + cursor_width - 1, top - _font(obj)->tf_Baseline + _font(obj)->tf_YSize-1);
 	    } else
 	    {
@@ -808,15 +815,17 @@ void zune_text_draw_single (ZText *text, Object *obj, WORD left, WORD right, WOR
 
 	    if (chunk_node->dripen != -1)
 	    {
+		D(bug("chunk_node->dripen == %d\n", chunk_node->dripen));
 		SetABPenDrMd(rp, _dri(obj)->dri_Pens[chunk_node->dripen],0,JAM1);
 	    }
 	    else if (chunk_node->pen != -1)
 	    {
+		D(bug("chunk_node->pen == %d\n", chunk_node->pen));
 		SetABPenDrMd(rp, chunk_node->pen, 0, JAM1);
 	    }
 	    else
 	    {
-		SetDrMd(rp, JAM1);
+		SetABPenDrMd(rp, _dri(obj)->dri_Pens[TEXTPEN], 0, JAM1);
 	    }
 
 	    Text(rp,&chunk_node->str[xpos],1);
