@@ -82,15 +82,15 @@ BOOL NamesToList
     Object *list, struct TagItem *tags, struct AboutAROS_DATA *data
 )
 {
-    struct TagItem *tstate       = tags,
-                   *tag          = NULL;
-    BOOL            success      = TRUE;
-    IPTR            section      = SID_NONE;
-    STRPTR          sectionName  = NULL;
-    BOOL            sectionFirst = TRUE;
-    STRPTR          name;
-    STRPTR          buffer;
-    ULONG           length       = 0;
+    const struct TagItem *tstate       = tags;
+    struct TagItem       *tag          = NULL;
+    BOOL                  success      = TRUE;
+    IPTR                  section      = SID_NONE;
+    STRPTR                sectionName  = NULL;
+    BOOL                  sectionFirst = TRUE;
+    STRPTR                name;
+    STRPTR                buffer;
+    ULONG                 length       = 0;
     
     if (tags == NULL) return FALSE;
 
@@ -208,7 +208,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         MUIA_Application_Title, __(MSG_TITLE),
 
-        SubWindow, (IPTR) window = WindowObject,
+        SubWindow, (IPTR) (window = WindowObject,
             MUIA_Window_Title,    __(MSG_TITLE),
             MUIA_Window_Width,    MUIV_Window_Width_MinMax(0),
             MUIA_Window_NoMenus,  TRUE,
@@ -269,12 +269,12 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_Text_Contents, (IPTR) " ",
                         MUIA_Weight,               0,
                     End,
-                    Child, (IPTR) licenseButton = TextObject,
+                    Child, (IPTR) (licenseButton = TextObject,
                         MUIA_InputMode,            MUIV_InputMode_RelVerify,
                         MUIA_Text_PreParse, (IPTR) "\0333\033u",
                         MUIA_Text_Contents,        __(MSG_LICENSE_2),
                         MUIA_Weight,        0,
-                    End,
+                    End),
                     Child, (IPTR) TextObject,
                         MUIA_Text_PreParse, (IPTR) "\0333",
                         MUIA_Text_Contents,        __(MSG_LICENSE_3),
@@ -294,27 +294,27 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_Background, REGISTER_BG,
 
                         Child, (IPTR) ListviewObject,
-                            MUIA_Listview_List, (IPTR) authorsList = ListObject,
+                            MUIA_Listview_List, (IPTR) (authorsList = ListObject,
                                 TextFrame,
                                 MUIA_Background, LIST_BG,
-                            End,
+                            End),
                         End,
                         Child, (IPTR) ListviewObject,
-                            MUIA_Listview_List, (IPTR) sponsorsList = ListObject,
+                            MUIA_Listview_List, (IPTR) (sponsorsList = ListObject,
                                 TextFrame,
                                 MUIA_Background, LIST_BG,
-                            End,
+                            End),
                         End,
                         Child, (IPTR) ListviewObject,
-                            MUIA_Listview_List, (IPTR) acknowledgementsList = ListObject,
+                            MUIA_Listview_List, (IPTR) (acknowledgementsList = ListObject,
                                 TextFrame,
                                 MUIA_Background, LIST_BG,
-                            End,
+                            End),
                         End,
                     End,
                 End,
             End,
-        End,
+        End),
 
         TAG_DONE
     );
