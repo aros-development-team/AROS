@@ -26,20 +26,43 @@ SRCS = $(foreach f,$(FILES),$(f).src)
 HTML = $(foreach f,$(FILES),$(DEST)$(f).html) $(DEST)index.html
 
 all : $(DEST)srcs autodocs $(HTML) $(DEST)filesystems.doc \
-	jobserver cgi-scripte \
+	jobserver cgi-scripte dist \
 	access-rights
+
+dist : $(DEST)dist.src $(DEST)cgi-bin/dist.src $(JOBDEST)dist.src \
+	$(JOBDEST)cgi-bin/dist.src \
+	$(DEST)autodocs/dist.src $(DEST)pics/dist.src
+
+$(DEST)dist.src :
+	echo -e "*.html\n*.doc" > $@
+
+$(DEST)cgi-bin/dist.src:
+	echo -e "*.cgi" > $@
+
+$(JOBDEST)dist.src $(DEST)autodocs/dist.src :
+	echo -e "*.html\n" > $@
+
+$(JOBDEST)cgi-bin/dist.src:
+	echo -e "*.cgi" > $@
+
+$(DEST)pics/dist.src:
+	echo -e "aros_logo.gif\nawd50.jpg\ndemowin.gif\nreadicon.gif\nbackground.gif" > $@
 
 cgi-scripte : \
 	$(DEST)cgi-bin/search.cgi \
 	$(DEST)cgi-bin/counter.cgi \
 	$(DEST)cgi-bin/jobserv-showfree.cgi \
 	$(DEST)cgi-bin/jobserv-showwork.cgi \
-	$(DEST)cgi-bin/jobserv-showdone.cgi
+	$(DEST)cgi-bin/jobserv-showdone.cgi \
+	$(DEST)cgi-bin/counter.txt
 
 access-rights:
 	cd $(DEST) ; \
 	    chmod -R u=rwX,og=rX . ; \
 	    chmod o+w cgi-bin/counter.txt
+
+$(DEST)cgi-bin/counter.txt:
+	    echo "0" > $@
 
 index :
 	cd $(DEST) ; glimpseindex -H . -o .
