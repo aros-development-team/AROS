@@ -69,7 +69,8 @@ struct NewGadget
 };
 
 /* ng_Flags
-   The PLACETEXT flags specify where to put the label(s) of the gadget
+   The PLACETEXT flags (specified in <intuition/gadgetclass.h>) specify where
+   to put the label(s) of the gadget
 */
 #define PLACETEXT_LEFT  (1L<<0)
 #define PLACETEXT_RIGHT (1L<<1)

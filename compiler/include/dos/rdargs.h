@@ -22,9 +22,9 @@
 /* This structure emulates an input stream by using a buffer. */
 struct CSource
 {
-    UBYTE * CS_Buffer;
       /* The buffer, which contains the stream. In most cases this may be NULL,
          in which case the current input stream is used. */
+    UBYTE * CS_Buffer;
     LONG    CS_Length; /* The length of the buffer. */
     LONG    CS_CurChr; /* The current position in the buffer. */
 };
@@ -34,25 +34,24 @@ struct CSource
  **********************************************************************/
 
 /* The main structure used for ReadArgs(). It contains everything needed for
-   ReadArgs() handling. */
+   ReadArgs() handling. Allocate this structure with AllocDosObject(). */
 struct RDArgs
 {
-    struct CSource RDA_Source;
-      /* Embedded CSource structure (see below). If CS_Buffer of this structure
+      /* Embedded CSource structure (see above). If CS_Buffer of this structure
          is != NULL, use this structure as source for parsing, otherwise use
          Input() as source. */
+    struct CSource RDA_Source;
 
     LONG RDA_DAList; /* PRIVATE. Must be initialized to 0. */
 
-    /* The next two fields allow an application to supply a buffer to
-       ReadArgs() so that ReadArgs() does not have to allocate a buffer itself.
-       If either of these fields is 0, ReadArgs() allocates this buffer itself.
-    */
+    /* The next two fields allow an application to supply a buffer to be parsed
+       to ReadArgs(). If either of these fields is 0, ReadArgs() allocates this
+       buffer itself. */
     UBYTE * RDA_Buffer; /* Pointer to buffer. May be NULL. */
     LONG    RDA_BufSiz; /* Size of the supplied buffer. May be 0. */
 
-    UBYTE * RDA_ExtHelp;
       /* Additional help, if user requests it, by supplying '?' as argument. */
+    UBYTE * RDA_ExtHelp;
     LONG    RDA_Flags; /* see below */
 };
 
@@ -74,7 +73,7 @@ struct RDArgs
 #define MAX_TEMPLATE_ITEMS 100
 
 /* The maximum number of arguments in an item, which allows to specify multiple
-   arguments (flag "/M"). This may change in future versions.*/
+   arguments (flag '/M'). This may change in future versions.*/
 #define MAX_MULTIARGS      128
 
 #endif /* DOS_RDARGS_H */

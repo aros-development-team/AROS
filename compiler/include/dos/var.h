@@ -35,17 +35,17 @@ struct LocalVar {
 
 /* The following flags may be or'ed into lv_Node.ln_Type, but may also be
    used as flags for the dos variable functions. */
-#define GVB_GLOBAL_ONLY    8
   /* The variable is not to be used locally. */
-#define GVB_LOCAL_ONLY     9
+#define GVB_GLOBAL_ONLY    8
   /* The variable is not to be used globally. */
-#define GVB_BINARY_VAR     10
+#define GVB_LOCAL_ONLY     9
   /* The variable is a binary variable. lv_Value points to binary data. */
-#define GVB_DONT_NULL_TERM 11
+#define GVB_BINARY_VAR     10
   /* lv_Value is not null-terminated. This is only allowed, if GVB_BINARY_VAR
      is also set. */
-#define GVB_SAVE_VAR       12
+#define GVB_DONT_NULL_TERM 11
   /* This flag tells dos to save the variable to ENVARC: too. */
+#define GVB_SAVE_VAR       12
 
 #define GVF_GLOBAL_ONLY    (1L<<GVB_GLOBAL_ONLY)
 #define GVF_LOCAL_ONLY     (1L<<GVB_LOCAL_ONLY)

@@ -10,21 +10,21 @@
 */
 
 
-#define ReadChar()           FGetC(Input())
   /* Read one character from stdin. */
-#define WriteChar(c)         FPutC(Output(),(c))
+#define ReadChar()           FGetC(Input())
   /* Write one character to stdout. */
-#define UnReadChar(c)        UnGetC(Input(),(c))
+#define WriteChar(c)         FPutC(Output(),(c))
   /* Put one character back to stdin. Normally this is only guaranteed to
      work once. */
-#define ReadChars(buf,num)   FRead(Input(), (buf), 1, (num))
+#define UnReadChar(c)        UnGetC(Input(),(c))
   /* Read a number of chars from stdin. */
-#define ReadLn(buf,len)      FGets(Input(), (buf), (len))
+#define ReadChars(buf,num)   FRead(Input(), (buf), 1, (num))
   /* Read a whole line from stdin. */
-#define WriteStr(s)          FPuts(Output(), (s))
+#define ReadLn(buf,len)      FGets(Input(), (buf), (len))
   /* Write a string to stdout. */
-#define VWritef(format,argv) VFWritef(Output(), (format), (argv))
+#define WriteStr(s)          FPuts(Output(), (s))
   /* Write a formatted string to stdout. */
+#define VWritef(format,argv) VFWritef(Output(), (format), (argv))
 
 /* DOS functions will return this when they reach EOF. */
 #define ENDSTREAMCH -1

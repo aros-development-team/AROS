@@ -108,10 +108,10 @@ struct FileSysStartupMsg
     dn_Startup and dn_Handler fields. */
 struct DeviceNode
 {
-    struct DosList * dn_Next;
       /* PRIVATE pointer to next entry. In AmigaOS this used to be a BPTR. */
-    ULONG dn_Type;
+    struct DosList * dn_Next;
       /* Type of this node. Has to be DLT_DEVICE. */
+    ULONG dn_Type;
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     /* The next two fields are not used by AROS. Their original name was:
@@ -120,10 +120,10 @@ struct DeviceNode
     BPTR             dn_NoAROS2;
 #endif
 
-    BSTR  dn_Handler;    /* Null-terminated device name for handler. */
-    LONG  dn_NoAROS3[2]; /* PRIVATE */
-    BPTR  dn_Startup;    /* (struct FileSysStartupMsg *) see above */
-    BPTR  dn_NoAROS4[2]; /* PRIVATE */
+    BSTR dn_Handler;    /* Null-terminated device name for handler. */
+    LONG dn_NoAROS3[2]; /* PRIVATE */
+    BPTR dn_Startup;    /* (struct FileSysStartupMsg *) see above */
+    BPTR dn_NoAROS4[2]; /* PRIVATE */
 
     /* For the following two fields, see comments in <dos/dosextens.h>.
        Both fields specify the name of the handler. */

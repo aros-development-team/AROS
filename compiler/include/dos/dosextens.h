@@ -45,8 +45,8 @@ struct DosLibrary
     struct Library dl_lib;
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    /* The following field is not used by AROS and is just there to
-       guarantee binary compatibility. DO NOT USE THIS FIELD IN ANY WAY.
+    /* The following fields are not used by AROS and are just there to
+       guarantee binary compatibility. DO NOT USE THESE FIELDS IN ANY WAY.
        Original names were: dl_Root, dl_GV, dl_A2, dl_A5 and dl_A6 */
     struct RootNode * NoAROS1;
     APTR              NoAROS2;
@@ -78,38 +78,9 @@ struct DosLibrary
     LONG		   dl_LDReturn;
 
     ULONG		   dl_ProcCnt;
-    ULONG		   dl_Flags; /* see below */
-};
-
-/* The following structures in this sections are not used by AROS and may
-   be removed in the future. So BEWARE, if you use them. */
-
-struct RootNode
-{
-    BPTR             rn_TaskArray;
-      /* (IPTR *) Pointer to an array containing pointers to CLI processes.
-         The CLI process number is equal to the index of that array. The
-         first field (index 0) contains the maximal number of CLI processes.
-         See also rn_CliList. */
-    BPTR             rn_ConsoleSegment;
-      /* (void *) Pointer to the SegList for CLIs. */
-    struct DateStamp rn_Time;
-      /* The current time. */
-    LONG             rn_RestartSeg;
-      /* (APTR) The SegList of the process that handles validation of devices.
-      */
-    BPTR             rn_Info;
-      /* (struct DosInfo *) see below for DosInfo */
-    BPTR             rn_FileHandlerSegment;
-    struct MinList   rn_CliList;
-      /* List of all CLI processes (struct CliProcList - see below). See also
-         rn_TaskArray. */
-    struct MsgPort * rn_BootProc;
-      /* Message port of boot filesystem. (PRIVATE) */
-    BPTR             rn_ShellSegment;
-      /* (void *) Pointer to the SegList for shells. */
-    LONG             rn_Flags;
-      /* Additional flags (see below). */
+      /* The flags are the same, as they were in RootNode->rn_Flags. See below
+         for definitions. */
+    ULONG		   dl_Flags;
 };
 
 /* dl_Flags/rn_Flags */
@@ -117,16 +88,50 @@ struct RootNode
 #define RNF_WILDSTAR (1L<<RNB_WILDSTAR)
 
 
+/* The following structures in this sections are not used by AROS and may
+   be removed in the future. So BEWARE, if you use them. */
+
+#if 0
+struct RootNode
+{
+      /* (IPTR *) Pointer to an array containing pointers to CLI processes.
+         The CLI process number is equal to the index of that array. The
+         first field (index 0) contains the maximal number of CLI processes.
+         See also rn_CliList. */
+    BPTR             rn_TaskArray;
+      /* (void *) Pointer to the SegList for CLIs. */
+    BPTR             rn_ConsoleSegment;
+      /* The current time. */
+    struct DateStamp rn_Time;
+      /* (APTR) The SegList of the process that handles validation of devices.
+      */
+    LONG             rn_RestartSeg;
+      /* (struct DosInfo *) see below for DosInfo */
+    BPTR             rn_Info;
+    BPTR             rn_FileHandlerSegment;
+      /* List of all CLI processes (struct CliProcList - see below). See also
+         rn_TaskArray. */
+    struct MinList   rn_CliList;
+      /* Message port of boot filesystem. (PRIVATE) */
+    struct MsgPort * rn_BootProc;
+      /* (void *) Pointer to the SegList for shells. */
+    BPTR             rn_ShellSegment;
+      /* Additional flags (see above). */
+    LONG             rn_Flags;
+};
+
+
 /* This is a CLI node as pointed to by rn_CliList (see above). This structure
    is READ-ONLY. */
 struct CliProcList
 {
+      /* Embedded node structure as defined in <exec/nodes.h>. */
     struct MinNode    cpl_Node;
-    LONG              cpl_First;
       /* The first CLI process number in this list. */
-    struct MsgPort ** cpl_Array;
+    LONG              cpl_First;
       /* This works like rn_TaskArray (see above), except that the index is
          equal to CLI process number + cpl_First. */
+    struct MsgPort ** cpl_Array;
 };
 
 struct DosInfo
@@ -144,6 +149,8 @@ struct DosInfo
 };
 #define di_ResList di_McName
 
+#endif
+
 /**********************************************************************
  ***************************** Processes ******************************
  **********************************************************************/
@@ -151,61 +158,64 @@ struct DosInfo
 /* Standard process structure. Processes are just extended tasks. */
 struct Process
 {
-    struct Task     pr_Task;
       /* Embedded task structure as defined in <exec/tasks.h>. */
+    struct Task pr_Task;
 
+      /* Processes standard message-port. Used for various puposes. */
     struct MsgPort  pr_MsgPort;
     WORD	    pr_Pad;     /* PRIVATE */
-    BPTR	    pr_SegList;
       /* SegList array, used by this process. (void **) */
-    LONG	    pr_StackSize;
+    BPTR	    pr_SegList;
       /* StackSize of the current process. */
+    LONG	    pr_StackSize;
     APTR	    pr_GlobVec;
-    LONG	    pr_TaskNum;
       /* CLI process number. This may be 0, in which case the process is not
          connected to a CLI. */
-    BPTR	    pr_StackBase;
+    LONG	    pr_TaskNum;
       /* Pointer to upper end of stack. (void *) */
-    LONG	    pr_Result2;
+    BPTR	    pr_StackBase;
       /* Secondary return-value, as defined in <dos/dos.h>. As of now this
          field is declared PRIVATE. Use IoErr()/SetIoErr() to access it. */
-    BPTR	    pr_CurrentDir;
+    LONG	    pr_Result2;
       /* Lock of the current directory. As of now this is declared READ-ONLY.
          Use CurrentDir() to set it. (struct FileLock *) */
-    BPTR	    pr_CIS;
+    BPTR	    pr_CurrentDir;
       /* Standard input file. As of now this is declared WRITE-ONLY. Use
          Input() to query it. */
-    BPTR	    pr_COS;
+    BPTR	    pr_CIS;
       /* Standard output file. As of now this is declared WRITE-ONLY. Use
          Output() to query it. */
-    APTR	    pr_ConsoleTask;
+    BPTR	    pr_COS;
       /* Task to handle the console associated with process. */
-    APTR	    pr_FileSystemTask;
+    APTR	    pr_ConsoleTask;
       /* The task that is responsible for handling the filesystem. */
-    BPTR	    pr_CLI;
+    APTR	    pr_FileSystemTask;
       /* CLI the process is connected to. (struct CommandLineInterface *) */
+    BPTR	    pr_CLI;
     APTR	    pr_ReturnAddr;
-    APTR	    pr_PktWait;
       /* Function to be called, when process waits for a packet-message. */
-    APTR	    pr_WindowPtr;
+    APTR	    pr_PktWait;
       /* Standard-Window of process. */
-    BPTR	    pr_HomeDir;
+    APTR	    pr_WindowPtr;
       /* Lock to home-directory of process. (struct FileLock *) */
+    BPTR	    pr_HomeDir;
     LONG	    pr_Flags; /* see below */
-    void	 (* pr_ExitCode)();
+
       /* Code that is called, when the process exits. pr_ExitData takes an
          argument to be passed to this code. */
-    IPTR	    pr_ExitData;
-    STRPTR	    pr_Arguments;
+    void   (* pr_ExitCode)();
+    IPTR      pr_ExitData;
       /* Arguments passed to the process from caller. */
-    struct MinList  pr_LocalVars;
+    STRPTR    pr_Arguments;
+
       /* List of local environment variables. This list should be in
          alphabetical order. Multiple entries may have the same name, if they
          are of different types. See <dos/var.h> for more information. */
-    ULONG	    pr_ShellPrivate;
-    BPTR	    pr_CES;
+    struct MinList pr_LocalVars;
+    ULONG	   pr_ShellPrivate;
       /* Standard error file. May be NULL, in which case pr_COS is to be used.
          Use this instead of Output() to report errors. */
+    BPTR	   pr_CES;
 };
 
 /* pr_Flags (all PRIVATE) They mainly descibe what happens if the process
@@ -226,42 +236,44 @@ struct Process
 #define PRF_FREEARGS	(1L<<PRB_FREEARGS)
 #define PRF_CLOSEERROR	(1L<<PRB_CLOSEERROR)
 
-/* Structure used for CLIs and Shells. */
+/* Structure used for CLIs and Shells. Allocate this structure with
+   AllocDosObject() only! */
 struct CommandLineInterface
 {
-    LONG cli_Result2;
       /* Secondary error code, set by last command. */
-    BSTR cli_SetName;
+    LONG cli_Result2;
       /* Name of the current directory. */
-    BPTR cli_CommandDir;
+    BSTR cli_SetName;
       /* Lock of the first directory in path. (struct FileLock *) */
-    LONG cli_ReturnCode;
+    BPTR cli_CommandDir;
       /* Error code, the last command returned. See <dos/dos.h> for
          definitions. */
-    BSTR cli_CommandName;
+    LONG cli_ReturnCode;
       /* Name of the command that is currently executed. */
-    LONG cli_FailLevel;
+    BSTR cli_CommandName;
       /* Fail-Level as set by the command "FailAt". */
-    BSTR cli_Prompt;
+    LONG cli_FailLevel;
       /* Current prompt in the CLI window. */
-    BPTR cli_StandardInput;
+    BSTR cli_Prompt;
       /* Standard/Default input file. (struct FileLock *) */
-    BPTR cli_CurrentInput;
+    BPTR cli_StandardInput;
       /* Current input file. (struct FileLock *) */
-    BSTR cli_CommandFile;
+    BPTR cli_CurrentInput;
       /* Name of the file that is currently executed. */
+    BSTR cli_CommandFile;
+      /* TRUE if the currently CLI is connected to a controlling terminal,
+         otherwise FALSE. */
     LONG cli_Interactive;
-      /* !=0 if the currently CLI is connected to a controlling terminal. */
+      /* FALSE if there is no controlling terminal, otherwise TRUE. */
     LONG cli_Background;
-      /* !=0 if there is no controlling terminal. */
-    BPTR cli_CurrentOutput;
       /* Current output file. (struct FileLock *) */
-    LONG cli_DefaultStack;
+    BPTR cli_CurrentOutput;
       /* Dafault stack size as set by the command "Stack". */
-    BPTR cli_StandardOutput;   
+    LONG cli_DefaultStack;
       /* Standard/Default output file. (struct FileLock *) */
-    BPTR cli_Module;
+    BPTR cli_StandardOutput;   
       /* SegList of currently loaded command. */
+    BPTR cli_Module;
 };
 
 
@@ -284,11 +296,11 @@ struct DevProc
  ******************************* Files ********************************
  **********************************************************************/
 
-/* Standard file-handle as returned by Open() (as BPTR). Generaly said, you
+/* Standard file-handle as returned by Open() (as BPTR). Generally said, you
    should not use this structure in any way and only use library-calls to
    access files. Note that this structure is very different to the structure
-   used in AmigaOS! Treat this structure as PRIVATE.
-*/
+   used in AmigaOS! Treat this structure as PRIVATE. If you want to create
+   this structure nevertheless, use AllocDosObject(). */
 struct FileHandle
 {
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
@@ -311,7 +323,7 @@ struct FileHandle
     struct Device * fh_Device;
     struct Unit   * fh_Unit;
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    LONG            fh_NoAROS3; /* not used in AROS */
+    LONG            fh_NoAROS3; /* not used by AROS */
 #endif
 };
 
@@ -320,15 +332,18 @@ struct FileHandle
 #define FHF_BUF   1
 
 
-/* Structure of a lock, as returned by Lock() and similar functions. */
+/* Structure of a lock, as returned by Lock() and similar functions. This
+   structure is not by AROS. Lock() also returns a struct FileHandle! */
+#if 0
 struct FileLock
 {
-    BPTR             fl_Link; /* (struct FileLock *) Pointer to next lock. */
+    BPTR             fl_Link;   /* (struct FileLock *) Pointer to next lock. */
     LONG             fl_Key;
     LONG             fl_Access;
     struct MsgPort * fl_Task;
     BPTR             fl_Volume; /* (struct DeviceList * - see below) */
 };
+#endif
 
 
 /* Constants, defining of what kind a file is. These constants are used in
@@ -351,10 +366,10 @@ struct FileLock
    anyway. Use system-calls for dos list-handling. */
 struct DosList
 {
-    struct DosList * dol_Next;
       /* PRIVATE pointer to next entry. In AmigaOS this used to be a BPTR. */
-    LONG             dol_Type;
+    struct DosList * dol_Next;
       /* Type of the current node (see below). */
+    LONG             dol_Type;
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     /* The next two fields are not used by AROS. Their original name was:
@@ -366,7 +381,6 @@ struct DosList
     IPTR             dol_Union1[3];
     LONG             dol_Union2[3];
 
-    BSTR dol_OldName;
       /* This field is called dol_Name in AmigaOS. It is now named dol_OldName
          to give you a hint that something has changed. Additionally to the
          old nasty BSTR there is now a new clean STRPTR for the same purpose.
@@ -375,6 +389,7 @@ struct DosList
             all BCPL stuff or
          2. just define dol_OldName to dol_Name before including this file
             to stay downwards compatible. */
+    BSTR dol_OldName;
 
     /* The following fields are new to AROS. */
     STRPTR	    dol_DevName;
@@ -396,7 +411,12 @@ struct DosList
    instead of DosList, if you have a list, containing just one type of
    entries. For more information see above. */
 
-/* Structure that describes a volume. */
+/* Structure that describes a volume.
+   ATTENTION: This struture does currently work on 32bit computers only due to
+              the fact that dl_unused does not compensate the missing pointers
+              in this structure. In DevInfo we have three pointer and three
+              longwords, while in this structure we have only two pointers and
+              four longwords. */
 struct DeviceList
 {
     struct DeviceList * dl_Next;
@@ -407,19 +427,14 @@ struct DeviceList
     BPTR             dl_NoAROS2;
 #endif
 
-    struct DateStamp dl_VolumeDate;
       /* Embedded DateStamp structured as defined in <dos/dos.h>. At this
          date the volume was created. */
-    BPTR             dl_LockList;
+    struct DateStamp dl_VolumeDate;
       /* (void *) List of all locks on the volume. */
-    LONG             dl_DiskType;
+    BPTR             dl_LockList;
       /* Type of the disk. (see <dos/dos.h> for definitions) */
+    LONG             dl_DiskType;
     IPTR             dl_unused; /* PRIVATE */
-    /* ATTENTION: This struture does currently work on 32bit computers only
-       due to the fact that dl_unused does not compensate the missing pointers
-       in this structure. In DevInfo we have three pointer and three longwords,
-       while in this structure we have only two pointers and four longwords.
-    */
 
     BSTR dl_OldName;
 
@@ -492,6 +507,13 @@ struct AssignList
  ********************** Low Level File Handling ***********************
  **********************************************************************/
 
+/* This section is OBSOLETE and is not implemented in AROS! AROS uses a
+   different concept for filesystem-handling. See <dos/filesystem.h> for
+   more information. Use the structures and defines in this section only, if
+   you are programming just for AmigaOS. */
+
+
+/* Allocate this structure with AllocDosObject(). */
 struct DosPacket
 {
    struct Message * dp_Link; /* Pointer to a standard exec message. */
@@ -499,7 +521,8 @@ struct DosPacket
 
    LONG dp_Type; /* see below */
    LONG dp_Res1; /* Normal return value. */
-   LONG dp_Res2; /* Secondary return value (as returned by IoErr()). */
+   LONG dp_Res2; /* Secondary return value (as returned by IoErr()). See
+                    <dos/dos.h> for possible values. */
 
    /* The actual data. */
    LONG dp_Arg1;
@@ -515,6 +538,8 @@ struct DosPacket
 #define dp_Status2  dp_Res2
 #define dp_BufAddr  dp_Arg1
 
+
+#if 0
 /* dp_Type */
 #define ACTION_NIL             0
 #define ACTION_STARTUP         0
@@ -597,6 +622,7 @@ struct StandardPacket
 #define CMD_SYSTEM	-1
 #define CMD_INTERNAL	-2
 #define CMD_DISABLED	-999
+#endif
 
 /**********************************************************************
  ****************************** Segments ******************************

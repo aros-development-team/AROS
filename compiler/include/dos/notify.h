@@ -85,13 +85,13 @@ struct NotifyRequest
    NotifyRequest->nr_Flags and the watched file changes. */
 struct NotifyMessage
 {
-    struct Message nm_ExecMessage;
       /* Embedded message structure as defined in <exec/ports.h>. */
+    struct Message nm_ExecMessage;
 
     ULONG                  nm_Class; /* see below */
     UWORD                  nm_Code;  /* see below */
-    struct NotifyRequest * nm_NReq;
       /* The notify structure that was passed to StartNotify(). */
+    struct NotifyRequest * nm_NReq;
 
     /* The following two fields are for PRIVATE use by handlers. */
     IPTR nm_DoNotTouch;

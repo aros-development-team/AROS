@@ -18,8 +18,8 @@
 /* Structure (as used in ExAll()), containing information about a file. This
    structure is only as long as it need to be. If is for example ED_SIZE was
    specified, when calling ExAll(), this structure only consists of the fields
-   ed_Name through ed_Size. You should never allocate this structure by
-   yourself. */
+   ed_Name through ed_Size. Therefore you can use the ED_ definitions below
+   as longword offsets into this structure. */
 struct ExAllData
 {
     struct ExAllData * ed_Next;
@@ -44,7 +44,11 @@ struct ExAllData
 
 /* Type argument for ExAll(). Each number includes the information of all
    lower numbers, too. If you specify for example ED_SIZE, you will get
-   information about name, type and the size of a file. */
+   information about name, type and the size of a file. Note that all
+   filehandlers must handle all types up to ED_OWNER. If they do not support
+   a type, they must return ERROR_WRONG_NUMBER (see <dos/dos.h>). Currently
+   that means, if a value higher than ED_OWNER is specified, filehandlers
+   must fail with this error. */
 #define ED_NAME       1 /* Filename. */
 #define ED_TYPE       2 /* Type of file. See <dos/dosextens.h>. */
 #define ED_SIZE       3 /* Size of file. */
@@ -60,16 +64,16 @@ struct ExAllData
    After calling ExAll() the first time, this structure is READ-ONLY. */
 struct ExAllControl
 {
-    ULONG         eac_Entries;
       /* The number of entries that were returned in the buffer. */
+    ULONG         eac_Entries;
     ULONG         eac_LastKey;     /* PRIVATE */
-    UBYTE       * eac_MatchString;
       /* Parsed pattern string, as created by ParsePattern(). This may be NULL.
       */
-    struct Hook * eac_MatchFunc;
+    UBYTE       * eac_MatchString;
       /* You may supply a hook, which is called for each entry. This hook
          should return TRUE, if the current entry is to be included in
          the file list and FALSE, if it should be ignored. */
+    struct Hook * eac_MatchFunc;
 };
 
 #endif /* DOS_EXALL_H */

@@ -53,23 +53,23 @@ struct AnchorPath
     struct AChain * ap_Base; /* First anchor. */
     struct AChain * ap_Last; /* Last anchor. */
 
-    LONG                 ap_BreakBits;
       /* Signal bits at which the function using this structure should return
          to the caller. See <dos/dos.h> and <exec/tasks.h> for bit definitions.
       */
-    LONG                 ap_FoundBreak;
+    LONG                 ap_BreakBits;
       /* Signal bits that caused the function to break. */
+    LONG                 ap_FoundBreak;
     BYTE                 ap_Flags;    /* see below */
     BYTE                 ap_Reserved; /* PRIVATE */
-    WORD                 ap_Strlen;
       /* Size of ap_Buf (see below). This may be zero. */
-    struct FileInfoBlock ap_Info;
+    WORD                 ap_Strlen;
       /* Embedded FileInfoBlock structure as defined in <dos/dos.h>. This
          describes any files found by matching-functions. */
-    UBYTE                ap_Buf[1];
+    struct FileInfoBlock ap_Info;
       /* Buffer for the fully qualified pathname of files found by
          matching-functions. This may be as large as you want (including
          zero bytes). Put its size into ap_StrLen. */
+    UBYTE                ap_Buf[1];
 };
 #define ap_First   ap_Base
 #define ap_Current ap_Last
