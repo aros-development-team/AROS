@@ -5,8 +5,8 @@ LIBNAME := pcilinux
 
 FILES	:= driverclass
 
-%build_module_macro mmake=workbench-libs-pcilinux \
-    modname=pcilinux modtype=library \
+%build_module_macro mmake=kernel-pci-pcilinux \
+    modname=pcilinux modtype=hidd \
     files=$(FILES) \
     conffile=lib.conf genfunctable=yes \
     uselibs="rom amiga"
