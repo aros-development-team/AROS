@@ -25,11 +25,18 @@
 
 #undef kprintf /* This can't be used in the code here */
 
-extern void *ExecFunctions[];
+extern void *LIBFUNCTABLE[];
 
 extern struct Library * PrepareAROSSupportBase (struct ExecBase *);
 extern struct Resident Exec_resident; /* Need this for lib_IdString */
 extern void AROS_SLIB_ENTRY(CacheClearU,Exec)();
+AROS_UFP1(void, Exec_TrapHandler,
+	  AROS_UFPA(struct ExecBase *, SysBase, A6)
+);
+AROS_UFP1(void, Exec_TaskFinaliser,
+	  AROS_UFPA(struct ExecBase *, SysBase, A6)
+);
+
 extern void AROS_SLIB_ENTRY(TrapHandler,Exec)();
 extern void AROS_SLIB_ENTRY(TaskFinaliser,Exec)();
 
@@ -58,7 +65,7 @@ extern void *stderr;
 struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 {
     ULONG   negsize = 0, i;
-    VOID  **fp      = ExecFunctions;
+    VOID  **fp      = LIBFUNCTABLE;
     
     /*
        Basically this does not get anything useful, but I still need to have 
@@ -81,7 +88,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 
     /* Setup function vectors */
     i  = 1;
-    fp = ExecFunctions;
+    fp = LIBFUNCTABLE;
     
     while(*fp != (VOID *) -1)
     {

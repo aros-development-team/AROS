@@ -52,6 +52,8 @@
 
     ULONG *list = SysBase->ResModules;
 
+    D(bug("enter InitCode(0x%x, %d)\n", startClass, version));
+	  
     if(list)
     {
 	while(*list)
@@ -69,10 +71,15 @@
 			((struct Resident *)(*list))->rt_Name));
 		InitResident((struct Resident *)*list, NULL);
 	    }
-
+	    else
+		D(bug("NOT calling InitResident(\"%s\", NULL)\n",
+		      ((struct Resident *)(*list))->rt_Name)
+		);
 	    list++;
 	}
     }
+
+    D(bug("leave InitCode(0x%x, %d)\n", startClass, version));
 
     AROS_LIBFUNC_EXIT
 } /* InitCode */

@@ -91,7 +91,9 @@
 	    implements this function.
 	*/
 
+#ifndef __CXREF__
 #error You have not written the $(KERNEL) interrupt subsystem!
+#endif
     }
 
     AROS_LIBFUNC_EXIT

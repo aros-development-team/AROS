@@ -9,10 +9,11 @@
 #include <proto/exec.h>
 #include <proto/arossupport.h>
 
-AROS_LH0(void, TrapHandler,
-    struct ExecBase *, SysBase, NONE, Exec)
+AROS_UFH1(void, Exec_TrapHandler,
+	  AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     struct Task * task;
 
@@ -25,5 +26,5 @@ AROS_LH0(void, TrapHandler,
 	    : "-- unknown task --"
     );
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 } /* TrapHandler */

@@ -280,11 +280,14 @@
 } /* NewAddTask */
 
 /* Default finaliser. */
-void AROS_SLIB_ENTRY(TaskFinaliser,Exec)(void)
+AROS_UFH1(void, Exec_TaskFinaliser,
+	  AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
 {
-    /* Get SysBase */
-    AROS_GET_SYSBASE
+    AROS_USERFUNC_INIT
 
     /* Get rid of current task. */
     RemTask(SysBase->ThisTask);
+    
+    AROS_USERFUNC_EXIT
 }

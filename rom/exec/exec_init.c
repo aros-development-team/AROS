@@ -444,11 +444,3 @@ AROS_LH0(BPTR, close,
     return 0;
     AROS_LIBFUNC_EXIT
 }
-
-AROS_LH0I(int, null,
-    struct ExecBase *, SysBase, 4, Exec)
-{
-    AROS_LIBFUNC_INIT
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
