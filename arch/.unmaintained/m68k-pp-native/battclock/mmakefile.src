@@ -1,0 +1,35 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+OBJDIR		:= $(OSGENDIR)/battclock
+OS_INCLUDES	:= -I$(GENINCDIR)
+CFLAGS2 	:= $(CFLAGS) -I../.. -I$(TOP)/rom/battclock
+AFLAGS2 	:= $(AFLAGS) -I../.. -I$(GENINCDIR)
+TESTS		:=
+FILES		:= readbattclock writebattclock
+
+#MM
+kernel-battclock-pp-m68k : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \
+	$(OBJDIR)/battclock_init.o
+	@$(NOP)
+
+#MM-
+setup-battclock-pp-m68k :
+	%mkdirs_q $(OBJDIR)
+	%add_objects $(foreach f,$(FILES), rom/battclock/$(f))
+	%exclude_files $(foreach f,$(FILES), rom/battclock/$(f))
+
+#MM
+clean ::
+	-$(RM) $(TESTS)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt=$(CFLAGS2)
+
+$(OBJDIR)/%.o : %.S
+	%assemble_q opt=$(AFLAGS2)
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
