@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Status CLI command
-    Lang: english
+    Lang: English
 */
 
 /*****************************************************************************
@@ -22,19 +22,22 @@
 
     FUNCTION
 
-        Display information about the processes that are executing within Shells/CLIs.
+        Display information about the processes that are executing
+	within Shells/CLIs.
 
     INPUTS
 
-        PROCESS     - Process Identification number.
+        PROCESS      --  Process Identification number.
 
-        FULL        - Display all information about the processes.
+        FULL         --  Display all information about the processes.
 
-        TCB         - As for Full, except that this option omits the process name.
+        TCB          --  As for Full, except that this option omits the
+	                 process name.
 
-        CLI=ALL     - Default. Displays all processes.
+        CLI=ALL      --  Default. Displays all processes.
 
-        COM=COMMAND - Show the process id of the command given. Specify the command name.
+        COM=COMMAND  --  Show the process id of the command given. Specify
+	                 the command name.
 
     RESULT
 
@@ -54,25 +57,35 @@
 
         Status full
 
-            Process  2: stk 300000, gv 150, pri   0 Loaded as command: c:status
-            Process  3: stk  4096, gv 150, pri   0 Loaded as command: c:NewIcons
-            Process  4: stk  4096, gv 150, pri   0 Loaded as command: GG:Sys/L/fifo-handler
-            Process  5: stk  6000, gv 150, pri   1 Loaded as command: Workbench
-            Process  6: stk  4000, gv 150, pri   2 Loaded as command: ToolsDaemon
+            Process  2: stk 300000, pri   0 Loaded as command: c:status
+            Process  3: stk  4096, pri   0 Loaded as command: c:NewIcons
+            Process  4: stk  4096, pri   0 Loaded as command: GG:Sys/L/fifo-handler
+            Process  5: stk  6000, pri   1 Loaded as command: Workbench
+            Process  6: stk  4000, pri   2 Loaded as command: ToolsDaemon
 
     BUGS
 
     SEE ALSO
 
-        dos/dosextens.h
+        <dos/dosextens.h>
 
     INTERNALS
 
     HISTORY
 
+    17.11.2000  --  SDuvan, rewrote from scratch as the old version was
+                    very buggy and overly complex
+
 ******************************************************************************/
 
+#define  AROS_ALMOST_COMPATIBLE
+#include <exec/lists.h>
+
+#define  DEBUG  1
+#include <aros/debug.h>
+
 #include <proto/dos.h>
+#include <proto/exec.h>
 
 #include <dos/dos.h>
 #include <dos/dosextens.h>
@@ -83,218 +96,141 @@
 #include <stdio.h>
 
 #define ARG_TEMPLATE    "PROCESS/N,FULL/S,TCB/S,CLI=ALL/S,COM=COMMAND/K"
-#define ARG_PROCESS     0
-#define ARG_FULL        1
-#define ARG_TCB         2
-#define ARG_ALL         3
-#define ARG_COM         4
-#define TOTAL_ARGS      5
 
-#define NOT_SET         0
+enum 
+{
+    ARG_PROCESS =  0,
+    ARG_FULL,
+    ARG_TCB,
+    ARG_ALL,
+    ARG_COMMAND,
+    NOOFARGS
+};
 
-static const char version[] = "$VER: Status 41.0 (21.09.1997)\n";
 
-int Do_Status(LONG *, LONG, LONG, LONG, STRPTR *);
+void printProcess(BOOL full, BOOL tcb, struct Process *process);
+
+
+static const char version[] = "$VER: Status 41.1 (17.11.2000)\n";
 
 int main(int argc, char *argv[])
 {
-    struct RDArgs * rda;
-    IPTR          * args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL, NULL };
-    int             Return_Value;
+    struct RootNode *root = ((struct DosLibrary *)DOSBase)->dl_Root;
 
-    Return_Value = RETURN_OK;
+    struct RDArgs *rda;
+    IPTR           args[NOOFARGS] = { (IPTR)0, (IPTR)FALSE, (IPTR)FALSE,
+				      (IPTR)FALSE, NULL };
+    
+    int  retval = RETURN_OK;
 
-    rda = ReadArgs(ARG_TEMPLATE, (LONG *)args, NULL);
-    if (rda)
+    D(bug("Status: Doing ReadArgs()\n"));
+    
+    rda = ReadArgs(ARG_TEMPLATE, args, NULL);
+
+    if(rda != NULL)
     {
-        /* Set to a default.
-         */
-        if (args[ARG_FULL] == NOT_SET && args[ARG_TCB] == NOT_SET)
-        {
-            args[ARG_ALL] = (LONG *)-1;
-        }
+	BOOL   full    = (BOOL)args[ARG_FULL];
+	BOOL   tcb     = (BOOL)args[ARG_TCB];
+	BOOL   all     = (BOOL)args[ARG_ALL];
+	ULONG  process = (LONG)args[ARG_PROCESS];
+	STRPTR command = (STRPTR)args[ARG_COMMAND];
 
-        Return_Value = Do_Status((LONG *)args[ARG_PROCESS],
-                                 (LONG)args[ARG_FULL],
-                                 (LONG)args[ARG_TCB],
-                                 (LONG)args[ARG_ALL],
-                                 (STRPTR *)&args[ARG_COM]
-        );
+	if(!full && !tcb && process == 0 && command == NULL)
+	    all = TRUE;
+
+	// TODO: Use "all"?
+	
+	if(command != NULL)
+	{
+	    struct List *cliList;
+	    struct Process *process;
+
+	    D(bug("command != NULL in Status\n"));
+
+	    /* Get access to the rootnode */
+	    ObtainSemaphore(&root->rn_RootLock);
+
+	    D(bug("Got RootLock\n"));
+
+	    cliList = (struct List *)&root->rn_CliList;
+	    process = (struct Process *)FindName(cliList, command);
+
+	    if(process != NULL)
+	    {
+		if(process->pr_TaskNum != 0)
+		{
+		    printf(" %li\n", process->pr_TaskNum);
+		}
+	    }
+	    else
+		retval = RETURN_WARN;
+
+	    ReleaseSemaphore(&root->rn_RootLock);
+	}
+	else
+	{
+	    struct List     *cliList;
+	    struct CLIInfo  *ci;
+
+	    ObtainSemaphore(&root->rn_RootLock);
+
+	    D(bug("Got RootLock\n"));
+
+	    cliList = (struct List *)&root->rn_CliList;
+
+	    ForeachNode(cliList, (struct CLIInfo *)ci)
+	    {
+		printProcess(full, tcb, ci->ci_Process);
+	    }
+
+	    ReleaseSemaphore(&root->rn_RootLock);
+	}
+
+	FreeArgs(rda);
     }
     else
     {
-        PrintFault(IoErr(), "Fault");
-
-        Return_Value = RETURN_ERROR;
+        PrintFault(IoErr(), "Status");
+        retval = RETURN_ERROR;
     }
-
-    FreeArgs(rda);
-
-    return (Return_Value);
-
-} /* main */
+    
+    return retval;
+}
 
 
-
-#define BUFFER_SIZE   100
-
-void BSTRtoCSTR(BSTR, STRPTR, LONG);
-void DumpInfo(LONG, LONG, LONG, LONG, STRPTR, LONG, LONG, LONG);
-
-int Do_Status(LONG *Process, LONG Full, LONG Tcb, LONG All, STRPTR *Command)
+/* Print the information for a certain cli process */
+void printProcess(BOOL full, BOOL tcb, struct Process *process)
 {
-	struct Process              *Proc;
-	struct CommandLineInterface *CurrentCLI;
-	char                         Buffer[BUFFER_SIZE]="fixme!";
-	BOOL                         Done;
-	LONG                        *Tasks;
-	LONG                         CurrentTask;
-	LONG                         NumberOfTasks;
-	STRPTR                       msg;
-	LONG                         ProcNum;
-	LONG                         ProcStackSize;
-	LONG                        *ProcGlobalVectorSize;
+    struct CommandLineInterface *cli = BADDR(process->pr_CLI);
 
-    /* Initialise some variables.
-     */
-    Proc                 = NULL;
-    ProcNum              = 0;
-    ProcStackSize        = 0;
-    ProcGlobalVectorSize = 0;
-    Tasks                = (LONG *)BADDR(DOSBase->dl_Root->rn_TaskArray);
-    NumberOfTasks        = *Tasks++;
-    CurrentTask          = 1;
-    Done                 = FALSE;
+    /* This should never happen, I guess */
+    if(cli == NULL)
+	return;
 
-    while (Done == FALSE)
+    printf("Process %li ", process->pr_TaskNum);
+
+    if(tcb)
     {
-        msg = (STRPTR)*Tasks++;
-        if (msg)
-        {
-            Proc                 = (struct Process *)(msg - sizeof(struct Task));
-            ProcNum              = Proc->pr_TaskNum;
-            ProcGlobalVectorSize = Proc->pr_GlobVec;
-#warning Some structures are not correct, yet!
-//            CurrentCLI           = (struct CommandLineInterface *)BADDR(Proc->pr_CLI);
-//            ProcStackSize        = CurrentCLI->cli_DefaultStack * 4;
-
-//            BSTRtoCSTR(CurrentCLI->cli_CommandName, &Buffer[0], BUFFER_SIZE);
-
-
-            /* Work out what to display.
-             */
-            if (NULL != *Command)
-            {
-                if (strcmp((STRPTR)*Command, (STRPTR)&Buffer[0]) == 0)
-                {
-                    printf(" %ld\n", ProcNum);
-                }
-            }
-            else if(Process != NULL)
-            {
-                if (CurrentTask == *Process)
-                {
-                    DumpInfo(ProcNum,
-                             1234, //*ProcGlobalVectorSize,
-                             ProcStackSize,
-                             Proc->pr_Task.tc_Node.ln_Pri,
-                             Buffer,
-                             Full,
-                             Tcb,
-                             All
-                    );
-                }    
-            }
-            else
-            {
-                DumpInfo(ProcNum,
-                         1234, //*ProcGlobalVectorSize,
-                         ProcStackSize,
-                         Proc->pr_Task.tc_Node.ln_Pri,
-                         Buffer,
-                         Full,
-                         Tcb,
-                         All
-                );
-            }
-        }
-
-        if (CurrentTask == NumberOfTasks || 
-            (NULL != Process && CurrentTask == *Process))
-        {
-            Done = TRUE;
-        }
-        else
-        {
-            CurrentTask++;
-        }
+	printf("CLI = %p\n", cli);
+	//	LONG olle = cli->cli_DefaultStack;
+	//	printf("stk %u, pri %u", cli->cli_DefaultStack,
+	//	       (ULONG)process->pr_Task.tc_Node.ln_Pri);
     }
 
-    return 0;
-} /* Do_Status */
-
-
-void BSTRtoCSTR(BSTR In, STRPTR Out, LONG Length)
-{
-    LONG   TextLength;
-    LONG   Counter;
-    STRPTR Text;
-
-    Text       = (STRPTR)BADDR(In);
-    TextLength = Text[0];
-
-    for (Counter = 1; Counter < TextLength + 1; Counter++)
+    if(!tcb || full)
     {
-        Out[Counter - 1] = Text[Counter];
-        
-        /* Reached the buffer's maximum size?
-         */
-        if (Counter == Length)
-        {
-            break;
-        }
+	STRPTR  name;
+
+	/* Sort of a hack. We rely on the fact that binary compatibility
+	   BSTR:s is ended with a 0 byte */
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+	name = (STRPTR)cli->cli_CommandName + 1;
+#else
+	name = (STRPTR)cli->cli_CommandName;
+#endif
+
+	printf("Loaded as command: %s", name);
     }
 
-    Out[TextLength] = '\0';
-
-} /* BSTRtoCSTR */
-
-
-void DumpInfo(LONG Num,
-              LONG GVec,
-              LONG Stack,
-              LONG Pri,
-              STRPTR Name,
-              LONG Full,
-              LONG Tcb,
-              LONG All
-)
-{
-    if (Full != NOT_SET)
-    {
-        printf("Process %2ld: Stk %6ld, gv %3ld, Pri %3ld Loaded as command: %s\n",
-               Num,
-               Stack,
-               GVec,
-               Pri,
-               (char *)&Name[0]
-        );
-    }
-    else if (Tcb != NOT_SET)
-    {
-        printf("Process %2ld: Stk %6ld, gv %3ld, Pri %3ld\n",
-               Num,
-               Stack,
-               GVec,
-               Pri
-        );
-    }
-    else if (All != NOT_SET)
-    {
-        printf("Process %2ld: Loaded as command: %s\n",
-               Num,
-               (char *)&Name[0]
-        );
-    }
-
-} /* DumpInfo */
+    printf("\n");
+}
