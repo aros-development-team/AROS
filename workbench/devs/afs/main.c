@@ -188,11 +188,11 @@ LONG retval;
 						iofs->IOFS.io_Device,
 						iofs->io_Union.io_OpenDevice.io_DeviceName,
 						iofs->io_Union.io_OpenDevice.io_Unit,
-						iofs->io_Union.io_OpenDevice.io_Environ
+						(struct DosEnvec *)iofs->io_Union.io_OpenDevice.io_Environ
 					)->ah);
 				iofs->io_DosError = error;
 				PutMsg(&afsbase->rport, &iofs->IOFS.io_Message);
-				break;
+				continue;
 			case (UWORD)-2 :
 				volume=(struct Volume *)iofs->IOFS.io_Unit;
 				if (volume->locklist)
@@ -206,7 +206,7 @@ LONG retval;
 				}
 				iofs->io_DosError = error;
 				PutMsg(&afsbase->rport, &iofs->IOFS.io_Message);
-				break;
+				continue;
 			case FSA_OPEN : //locateObject, findupdate, findinput
 				iofs->IOFS.io_Unit=(struct Unit *)openf
 					(
@@ -362,7 +362,7 @@ LONG retval;
 				break;
 /* morecache */
 			case FSA_INHIBIT :
-				inhibit(((struct Volume *)iofs->IOFS.io_Unit)->volume, iofs->io_Union.io_INHIBIT.io_Inhibit);
+				inhibit(((struct AfsHandle *)iofs->IOFS.io_Unit)->volume, iofs->io_Union.io_INHIBIT.io_Inhibit);
 				break;
 			case FSA_FORMAT :
 				format
@@ -375,7 +375,7 @@ LONG retval;
 			case FSA_RELABEL :
 				iofs->io_Union.io_RELABEL.io_Result=relabel
 					(
-						(struct Volume *)(iofs->IOFS.io_Unit)->volume,
+						((struct AfsHandle *)iofs->IOFS.io_Unit)->volume,
 						iofs->io_Union.io_RELABEL.io_NewName
 					);
 					break;
