@@ -33,7 +33,7 @@ extern struct CountryPrefs
     australiaPrefs,
     deutschPrefs,
     greatBritainPrefs,
-    nederlandsPrefs;
+    nederlandPrefs;
 
 /* Please keep this in alphabetical order, ie the order of Latin 1 */
 struct CountryEntry CountryArray[] =
