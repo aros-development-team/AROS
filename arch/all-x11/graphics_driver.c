@@ -201,7 +201,6 @@ void SetXWindow (struct RastPort * rp, int win)
 	rp->BitMap->BytesPerRow = ((width+15) >> 4)*2;
 	rp->BitMap->Rows = height;
 	rp->BitMap->Depth = depth;
-printf ("Depth = %d\n", depth);
 	rp->BitMap->Flags = 0;
 	rp->BitMap->Pad = BMT_XWINDOW;
 	rp->BitMap->Planes[0] = (PLANEPTR)win;
