@@ -134,18 +134,13 @@ strdupsub (const char * str, int begin, int len)
 
     n = strlen (str);
 
-    if (begin >= n || !len)
+    if (begin >= n || len <= 0)
 	return strdup ("");
 
-    if (len == -1)
+    if (begin+len > n)
 	n -= begin;
     else
-    {
-	if (begin+len > n)
-	    n -= begin;
-	else
-	    n = len;
-    }
+	n = len;
 
     nstr = xmalloc (n+1);
 
@@ -165,7 +160,7 @@ stripquotes (const char * str)
     {
 	begin = 1;
 
-	len = strlen (str + begin)-1;
+	len = strlen (str + begin);
 
 	if (str[len] == '"')
 	    len --;
