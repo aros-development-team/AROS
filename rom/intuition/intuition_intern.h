@@ -82,6 +82,17 @@ struct LayerContext
     WORD 			nestcount;
 };
 
+#define RESOURCELIST_HASHSIZE 256
+
+#define RESOURCE_WINDOW 1
+
+struct HashNode
+{
+    struct MinNode node;
+    UWORD   	   type;
+    APTR    	   resource;
+};
+
 struct IntIntuitionBase
 {
     struct IntuitionBase 	IBase;
@@ -150,6 +161,8 @@ struct IntIntuitionBase
     struct MinList  	    	ClassList;
     struct IClass   	    	RootClass;
 #endif
+
+    struct MinList  	    	ResourceList[RESOURCELIST_HASHSIZE];
 };
 
 struct IntScreen
@@ -330,7 +343,8 @@ struct IntWindow
     struct Image		* AmigaKey;
     struct Image 		* Checkmark;
     struct Window		* menulendwindow;
-
+    struct HashNode 	    	hashnode;
+    
     /* When the Zoom gadget is pressed the window will have the
        dimensions stored here. The old dimensions are backed up here
        again. */
@@ -540,6 +554,10 @@ extern BOOL AllocAndSendIntuiActionMsg(UWORD code, struct Window *win, struct In
 extern void UpdateMouseCoords(struct Window *win);
 extern WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Rectangle *destrectarray);
 
+extern LONG CalcResourceHash(APTR resource);
+extern void AddResourceToList(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase);
+extern void RemoveResourceFromList(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase);
+extern BOOL ResourceExisting(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase);
 
 /* Replacement for dos.library/DisplayError() */
 AROS_UFP3(LONG, Intuition_DisplayError,

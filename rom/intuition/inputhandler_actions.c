@@ -564,6 +564,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
 	    break; }
 
 	    case AMCODE_WINDOWTOFRONT: {
+	    	if (!ResourceExisting(targetwindow, RESOURCE_WINDOW, IntuitionBase)) break;
+		
 		if (!(targetlayer->Flags & LAYERBACKDROP))
 		{
 		    LOCK_REFRESH(targetscreen);
@@ -623,6 +625,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
 	    break; }
 
 	    case AMCODE_WINDOWTOBACK: {
+	    	if (!ResourceExisting(targetwindow, RESOURCE_WINDOW, IntuitionBase)) break;
+		
 		/* I don't move backdrop layers! */
 		if (!(targetlayer->Flags & LAYERBACKDROP))
 		{
@@ -675,6 +679,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
 		   to be true for string gadgets). We just ignore
 		   ActivateWindow in such a case. */
 		   
+	    	if (!ResourceExisting(targetwindow, RESOURCE_WINDOW, IntuitionBase)) break;
+
 		if (!iihdata->ActiveGadget)
 		{
 		    struct Window *w = IntuitionBase->ActiveWindow;
@@ -704,6 +710,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
             case AMCODE_MOVEWINDOW: {
 	    	WORD dx = am->iam_MoveWindow.dx;
 		WORD dy = am->iam_MoveWindow.dy;
+
+	    	if (!ResourceExisting(targetwindow, RESOURCE_WINDOW, IntuitionBase)) break;
 		
 		if (!(targetscreen->LayerInfo.Flags & LIFLG_SUPPORTS_OFFSCREEN_LAYERS))
 		{
@@ -768,6 +776,9 @@ void HandleIntuiActions(struct IIHData *iihdata,
 	        struct Window *BehindWindow = am->iam_MoveWindowInFrontOf.BehindWindow;
 	        struct Layer  *lay;
 	        BOOL 	      movetoback = TRUE;
+
+	    	if (!ResourceExisting(targetwindow, RESOURCE_WINDOW, IntuitionBase)) break;
+	    	if (!ResourceExisting(BehindWindow, RESOURCE_WINDOW, IntuitionBase)) break;
 		
 		for(lay = BehindWindow->WLayer; lay; lay = lay->back)
 		{
@@ -799,16 +810,27 @@ void HandleIntuiActions(struct IIHData *iihdata,
             break; }
 
             case AMCODE_SIZEWINDOW: {
-                WORD OldLeftEdge  = targetwindow->RelLeftEdge;
-                WORD OldTopEdge   = targetwindow->RelTopEdge;
-                WORD OldWidth     = targetwindow->Width;
-                WORD OldHeight    = targetwindow->Height;
-                WORD NewLeftEdge  = OldLeftEdge;
-		WORD NewTopEdge   = OldTopEdge;
-		WORD NewWidth	  = OldWidth  + am->iam_SizeWindow.dx;
-		WORD NewHeight	  = OldHeight + am->iam_SizeWindow.dy;
+                WORD OldLeftEdge;
+                WORD OldTopEdge;
+                WORD OldWidth;
+                WORD OldHeight;
+                WORD NewLeftEdge;
+		WORD NewTopEdge;
+		WORD NewWidth;
+		WORD NewHeight;
 		WORD size_dx, size_dy;
 
+    	    	if (!ResourceExisting(targetwindow, RESOURCE_WINDOW, IntuitionBase)) break;
+
+                OldLeftEdge  = targetwindow->RelLeftEdge;
+                OldTopEdge   = targetwindow->RelTopEdge;
+                OldWidth     = targetwindow->Width;
+                OldHeight    = targetwindow->Height;
+                NewLeftEdge  = OldLeftEdge;
+		NewTopEdge   = OldTopEdge;
+		NewWidth     = OldWidth  + am->iam_SizeWindow.dx;
+		NewHeight    = OldHeight + am->iam_SizeWindow.dy;
+   	    	
                 /* correct new window coords if necessary */
 
 		FixWindowCoords(targetwindow, &NewLeftEdge, &NewTopEdge, &NewWidth, &NewHeight);
@@ -866,6 +888,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
                 struct IntWindow * w = (struct IntWindow *)targetwindow;
                 WORD NewLeftEdge, NewTopEdge, NewWidth, NewHeight;
 		
+	    	if (!ResourceExisting(targetwindow, RESOURCE_WINDOW, IntuitionBase)) break;
+
 		NewLeftEdge = targetwindow->LeftEdge;
 		if (w->ZipLeftEdge != ~0)
 		{
@@ -899,6 +923,7 @@ void HandleIntuiActions(struct IIHData *iihdata,
             break; }
 
 	    case AMCODE_CHANGEWINDOWBOX: {
+	    	if (!ResourceExisting(targetwindow, RESOURCE_WINDOW, IntuitionBase)) break;
 
 		DoMoveSizeWindow(targetwindow,
 				 am->iam_ChangeWindowBox.Left,
@@ -991,6 +1016,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
 
 #ifdef ChangeLayerVisibility
 	    case AMCODE_SHOWWINDOW:
+	    	if (!ResourceExisting(targetwindow, RESOURCE_WINDOW, IntuitionBase)) break;
+		
 	    	LOCK_REFRESH(targetscreen);
 		
                 if (IS_GZZWINDOW(targetwindow))
@@ -1020,6 +1047,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
 
 #ifdef ChangeLayerShape
     	    case AMCODE_CHANGEWINDOWSHAPE:
+	    	if (!ResourceExisting(targetwindow, RESOURCE_WINDOW, IntuitionBase)) break;
+
 	    	/* Note: for now GZZ windows are not supported. See ChangeWindowShape */
 
 		LOCK_ACTIONS();

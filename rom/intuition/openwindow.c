@@ -711,6 +711,8 @@
 
     UnlockIBase (lock);
 
+    AddResourceToList(w, RESOURCE_WINDOW, IntuitionBase);
+    
     /* Send all GA_RelSpecial BOOPSI gadgets in the list the GM_LAYOUT msg */
     DoGMLayout(w->FirstGadget, w, NULL, -1, TRUE, IntuitionBase);
 

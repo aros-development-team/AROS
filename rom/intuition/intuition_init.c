@@ -206,6 +206,15 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
   
     LoadDefaultPreferences(LIBBASE);
           
+    {
+    	WORD i;
+	
+	for(i = 0; i < RESOURCELIST_HASHSIZE; i++)
+	{
+	    NewList((struct List *)&GetPrivIBase(LIBBASE)->ResourceList[i]);
+	}
+    }
+    
     /* You would return NULL if the init failed */
     return LIBBASE;
     AROS_USERFUNC_EXIT

@@ -208,7 +208,9 @@ VOID int_closewindow(struct IntuiActionMessage *msg, struct IntuitionBase *Intui
 
     window = msg->Window;
     msgtask = msg->Task;
-    
+
+    RemoveResourceFromList(window, RESOURCE_WINDOW, IntuitionBase);
+        
     /* Need this in case of a window created under the input.device task context */
     screen = window->WScreen;
     userport = window->UserPort;
