@@ -95,7 +95,6 @@ USER_CFLAGS	:= -O2 -Wall -D_IEEE_LIBM -Iinclude
 #MM linklibs-arosm : includes
 
 %make_linklib_setup mmake=linklibs-arosm
-%make_vpath
 %make_linklib
 
 %common
