@@ -266,11 +266,32 @@ some of today's bad habits wouldn't really be an issue.
 By Sebastian Rittau: Maybe we could rewrite Installer as library, which
 provides functions that are currently contained in Installers language.
 This would allow programmers to easily write Installer scripts in their
-prefered programming language, instead of learning Installer's own 
+prefered programming language, instead of learning Installer's own
 language.
 
 While doing this, we could also add methods to uninstall an installed
 package.
+\end{new}
+
+\begin{new}{8.2.1999}
+By Aaron Digulla: There should be a tool to create a kernel which can be
+put into a Flash ROM or EEPROM or a boot file. The tool should be able to
+fix all absolute addresses in the kernel, it should be able to create the
+resident tags or a simple file system which allows the boot loader to
+find, load and init all parts it needs.
+
+The main reasons for this are: When you add a new driver (eg. a harddisk
+controller), you don't want to have to install a C compiler just to be able
+to boot from it. The ordinary user just wants to call a "install driver"
+tool which does all the work without him worrying. Also to reduce similar
+code, the boot loader will probably use the same code to load drivers
+as will the OS. So the "file system" which is visible to the boot loader
+must be similar to what the OS sees. This becomes more important if some
+driver in the ROM is not loaded/inited during booting. Then the OS will
+use its normal ways to search for the driver and at this time, the
+driver must be visible by some file system-like means or the searching
+for it will fail.
+
 \end{new}
 
 \end{itemize}
