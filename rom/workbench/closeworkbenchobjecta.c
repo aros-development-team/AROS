@@ -2,7 +2,7 @@
     (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Close a named named drawer displayed by Workbench. 
     Lang: english
 */
 

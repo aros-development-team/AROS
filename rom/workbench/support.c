@@ -2,9 +2,11 @@
     (C) 2000 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Misc support functions.
+    Desc: Misc. support functions.
     Lang: English
 */
+
+#define DEBUG 1
 
 #include <dos/dostags.h>
 
@@ -20,17 +22,11 @@ BOOL StartHandler( struct WorkbenchBase *WorkbenchBase ) {
         { TAG_DONE,      NULL                       }
     };
 
-    kprintf( "Workbench: About to star WBHandler...\n" );
-    proc = CreateNewProc( procTags );
-    kprintf( "Workbench: ...DONE!\n" );
-
-    if( proc ) {
-        kprintf( "Workbench: Started Workbench Handler.\n" );
-        WorkbenchBase->wb_HandlerPort = &(proc->pr_MsgPort);
-
+    if( (proc = CreateNewProc( procTags )) ) {
+        D(bug( "Workbench: Started Workbench Handler.\n" ));
         return TRUE;
     } else {
-        kprintf( "Workbench: Starting Workbench Handler failed!\n" );
+        D(bug( "Workbench: Could not start Workbench Handler!\n" ));
         return FALSE;
     }
 }
@@ -38,6 +34,7 @@ BOOL StartHandler( struct WorkbenchBase *WorkbenchBase ) {
 void AddHiddenDevice( STRPTR name, struct WorkbenchBase *WorkbenchBase ) {
     /* Make sure we got valid pointers... */
     if( (name == NULL) || (WorkbenchBase == NULL) ) {
+        D(bug( "Workbench/AddHiddenDevice: Got NULL pointers!\n" ));
         return;
     }
 
@@ -49,7 +46,9 @@ void AddHiddenDevice( STRPTR name, struct WorkbenchBase *WorkbenchBase ) {
             deviceName->ln_Name = name;
             AddTail( &(WorkbenchBase->wb_HiddenDevices), deviceName );
 
-            /* TODO: Notify WB App. */
+            /* TODO: Notify WB App. Not here though. (We might want to use this
+             * onn startup for adding all hidden devices that was set in prefs,
+             * then unneccesery to notify app at each addition... */
         }
     }
 }
@@ -59,6 +58,7 @@ void RemoveHiddenDevice( STRPTR name, struct WorkbenchBase *WorkbenchBase ) {
 
     /* Make sure we got valid pointers... */
     if( (name == NULL) || (WorkbenchBase == NULL) ) {
+        D(bug( "Workbench/RemoveHiddenDevice: Got NULL pointers!\n" ));
         return;
     }
 

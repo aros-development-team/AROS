@@ -2,7 +2,7 @@
     (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Remove an icon from Workbench's list of AppIcons.
     Lang: english
 */
 

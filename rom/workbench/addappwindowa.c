@@ -2,7 +2,7 @@
     (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Add a window to Workbench's list of AppWindows.
     Lang: english
 */
 

@@ -36,10 +36,7 @@
 
 ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR WorkbenchBase) {
     /* Make sure that the libraries are opened in L_OpenLib() */
-    WorkbenchBase->wb_UtilityBase   = NULL;
-    WorkbenchBase->wb_IntuitionBase = NULL;
-    WorkbenchBase->wb_DOSBase       = NULL;
-    /* TODO: Icon.library, ...? */
+    WorkbenchBase->wb_LibsOpened = FALSE;
 
     /* Initialize our private lists. */
     NEWLIST( &(WorkbenchBase->wb_AppWindows) );
@@ -47,29 +44,30 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR WorkbenchBase) {
     NEWLIST( &(WorkbenchBase->wb_AppMenuItems) );
     NEWLIST( &(WorkbenchBase->wb_HiddenDevices) );
 
+    /* Initialize our semaphore. */
+    InitSemaphore( &(WorkbenchBase->wb_Semaphore) );
+
     return TRUE;
 } /* L_InitLib */
 
 ULONG SAVEDS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR WorkbenchBase) {
-    if( WorkbenchBase->wb_UtilityBase == NULL ) {
+    if( !(WorkbenchBase->wb_LibsOpened) ) {
         if( !(WorkbenchBase->wb_UtilityBase = OpenLibrary( UTILITYNAME, 37L )) ) {
             D(bug( "Workbench: Failed to open utility.library!\n" ));
             return FALSE;
         }
-    }
 
-    if( WorkbenchBase->wb_IntuitionBase == NULL ) {
         if( !(WorkbenchBase->wb_IntuitionBase = OpenLibrary( INTUITIONNAME, 37L )) ) {
             D(bug( "Workbench: Failed to open intuition.library!\n" ));
             return FALSE;
         }
-    }
 
-    if( WorkbenchBase->wb_DOSBase == NULL ) {
         if( !(WorkbenchBase->wb_DOSBase = OpenLibrary( DOSNAME, 37L )) ) {
             D(bug( "Workbench: Failed to open dos.library!\n" ));
             return FALSE;
         }
+
+        WorkbenchBase->wb_LibsOpened = TRUE;
     }
 
     return TRUE;

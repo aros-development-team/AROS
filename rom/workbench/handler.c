@@ -6,59 +6,83 @@
     Lang: English
 */
 
+#define DEBUG 1
 
 #include <intuition/intuition.h>
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
 #include <dos/dosextens.h>
 
+#include <proto/alib.h>
 #include <proto/intuition.h>
+#include <proto/workbench.h>
 #include <proto/utility.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#include "workbench_intern.h"
 #include <workbench/workbench.h>
 #include <workbench/startup.h>
+
+#include "workbench_intern.h"
 
 /* This is the main entry point for the Workbench Handler process. */
 
 void WorkbenchHandler( void ) {
     struct WorkbenchBase *WorkbenchBase;
 
-    struct Process       *process = (struct Process *) FindTask( NULL );
-    struct MsgPort       *port    = &(process->pr_MsgPort);
+    struct MsgPort       *port;
 
-    BOOL                  running = TRUE;
-    struct IntuiMessage  *message;
+    ULONG                 openCount = 0;
+    struct WBStartup     *incoming;
+    struct WBStartup     *outgoing;
 
-    kprintf( "WBHandler: I'm alive! Alive I tell you!\n" );
+    D(bug( "WBHandler: I'm alive! Alive I tell you!\n" ));
 
-    /* First of all, open Workbench library so we can get at stuff. */
+    /* First of all, we need to open workbench.library. */
     if( !(WorkbenchBase = (struct WorkbenchBase *) OpenLibrary( WORKBENCHNAME, 37L )) ) {
-        return;
+        D(bug( "WBHandler: Could not open workbench.library!\n" ));
+        goto exit;
     }
+
+    /* Allocate a message port. */
+    if( !(port = CreatePort( NULL, 0 )) ) {
+        D(bug( "WBHandler: Could not create message port!\n" ));
+        goto exit;
+    }
+
+    /* Tell Workbench library we're here... */
+    WorkbenchBase->wb_HandlerPort = port;
 
     /* Main event loop */
-    while( running ) {
+    do {
         WaitPort( port );
 
-        while( (message = (struct IntuiMessage *) GetMsg( port )) != NULL ) {
-            if( message->ExecMessage.mn_Node.ln_Type = NT_REPLYMSG ) {
+        while( (incoming = (struct WBStartup *) GetMsg( port )) != NULL ) {
+            if( incoming->sm_Message.mn_Node.ln_Type == NT_REPLYMSG ) {
+                /* This is a replied message from a WB Program that has finished */
+                /* Deallocate it and the locks ands strings in WBArgs */
 
+                openCount--;
+            } else { /* Start a program */
+                /* Allocate mem for message */
+                /* Copy strings and duplicate locks */
+                /* Load program and start it */
+                /* Send message */
 
-            } else if( message->Class == IDCMP_WBENCHMESSAGE ) {
-                switch( message->Code ) {
+                openCount++;
 
-                    /* TODO: More messages... */
-                }
+                ReplyMsg( (struct Message *) incoming );
             }
 
-            ReplyMsg( (struct Message *) message );
         }
-    }
+    } while( openCount > 0 );
 
+exit:
     WorkbenchBase->wb_HandlerPort = NULL;
+
+    if( port ) {
+        DeletePort( port );
+    }
 
     if( WorkbenchBase ) {
         CloseLibrary( (struct Library *) WorkbenchBase );
