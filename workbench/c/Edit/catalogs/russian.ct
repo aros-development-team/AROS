@@ -1,6 +1,6 @@
-#version $VER: JanoEditor.catalog 1.0 (1.10.2000).
-#codeset 0
-#language russian
+##version $VER: JanoEditor.catalog 1.0 (1.10.2000).
+##codeset 0
+##language russian
 ;
 ; *****************************
 ;  NewMenu strings

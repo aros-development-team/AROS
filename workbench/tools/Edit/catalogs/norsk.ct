@@ -1,9 +1,9 @@
 ;
 ; JanoEditor.catalog
 ;
-#version $VER: JanoEditor.catalog 1.0 (27.01.2002).
-#codeset 0
-#language norsk
+##version $VER: JanoEditor.catalog 1.0 (27.01.2002).
+##codeset 0
+##language norsk
 ;
 MSG_PROJECTTITLE
 Prosjekt
