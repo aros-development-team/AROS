@@ -189,6 +189,9 @@ int verbose = 0;
     cfree (str); \
     str = val ? xstrdup (val) : NULL
 
+#define xstrdup(str)        _xstrdup(str,__FILE__,__LINE__)
+#define xmalloc(size)       _xmalloc(size,__FILE__,__LINE__)
+#define xfree(ptr)          _xfree(ptr,__FILE__,__LINE__)
 
 /* Prototypes */
 extern int execute PARAMS ((Project * prj, const char * cmd, const char * in,
@@ -198,7 +201,7 @@ extern void freecachenodes PARAMS((DirNode * node));
 
 /* Functions */
 char *
-xstrdup (const char * str)
+_xstrdup (const char * str, const char * file, int line)
 {
     char * nstr;
 
@@ -208,7 +211,7 @@ xstrdup (const char * str)
 
     if (!nstr)
     {
-	fprintf (stderr, "Out of memory");
+	fprintf (stderr, "Out of memory in %s:%d", file, line);
 	exit (20);
     }
 
@@ -216,7 +219,7 @@ xstrdup (const char * str)
 }
 
 void *
-xmalloc (size_t size)
+_xmalloc (size_t size, const char * file, int line)
 {
     void * ptr;
 
@@ -224,7 +227,7 @@ xmalloc (size_t size)
 
     if (size && !ptr)
     {
-	fprintf (stderr, "Out of memory");
+	fprintf (stderr, "Out of memory in %s:%d", file, line);
 	exit (20);
     }
 
@@ -232,11 +235,12 @@ xmalloc (size_t size)
 }
 
 void
-xfree (void * ptr)
+_xfree (void * ptr, const char * file, int line)
 {
-    assert (ptr);
-
-    free (ptr);
+    if (ptr)
+	free (ptr);
+    else
+	fprintf (stderr, "Illegal free(NULL) in %s:%d", file, line);
 }
 
 Node *
