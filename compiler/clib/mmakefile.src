@@ -39,6 +39,7 @@ LIB	    := $(STATIC_LIB) $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
 #   - Common always exist in the link library.
 
 COMMON	:= \
+	__alloca \
 	bcmp \
 	bcopy \
 	bzero \
@@ -82,7 +83,6 @@ COMMON	:= \
 
 #   - Shared are in either the shared linklib, or the arosc.library module
 SHARED	:= \
-	__alloca \
 	__assert \
 	__env \
 	__exitfunc \
