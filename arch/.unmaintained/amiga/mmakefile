@@ -21,7 +21,7 @@ workbench-libs-amiga :
 	@$(NOP)
 
 #MM apps-amiga : 
-apps :
+apps-amiga :
 	@$(NOP)
 
 #MM setup-amiga : setup-clib-amiga setup-exec-amiga setup-utility-amiga setup-layers-amiga
