@@ -24,6 +24,14 @@ __AROS_LP1(void, AddClass,
     __AROS_LCA(struct IClass *, classPtr, A0), \
     struct IntuitionBase *, IntuitionBase, 114, Intuition)
 
+__AROS_LP1(BOOL, CloseScreen,
+    __AROS_LPA(struct Screen *, screen, A0),
+    struct IntuitionBase *, IntuitionBase, 11, Intuition)
+#define CloseScreen(screen) \
+    __AROS_LC1(BOOL, CloseScreen, \
+    __AROS_LCA(struct Screen *, screen, A0), \
+    struct IntuitionBase *, IntuitionBase, 11, Intuition)
+
 __AROS_LP1(void, CloseWindow,
     __AROS_LPA(struct Window *, window, A0),
     struct IntuitionBase *, IntuitionBase, 12, Intuition)
@@ -147,6 +155,24 @@ __AROS_LP3(APTR, NewObjectA,
     __AROS_LCA(UBYTE          *, classID, A1), \
     __AROS_LCA(struct TagItem *, tagList, A2), \
     struct IntuitionBase *, IntuitionBase, 106, Intuition)
+
+__AROS_LP1(struct Screen *, OpenScreen,
+    __AROS_LPA(struct NewScreen *, newScreen, A0),
+    struct IntuitionBase *, IntuitionBase, 33, Intuition)
+#define OpenScreen(newScreen) \
+    __AROS_LC1(struct Screen *, OpenScreen, \
+    __AROS_LCA(struct NewScreen *, newScreen, A0), \
+    struct IntuitionBase *, IntuitionBase, 33, Intuition)
+
+__AROS_LP2(struct Screen *, OpenScreenTagList,
+    __AROS_LPA(struct NewScreen *, newScreen, A0),
+    __AROS_LPA(struct TagItem   *, tagList, A1),
+    struct IntuitionBase *, IntuitionBase, 102, Intuition)
+#define OpenScreenTagList(newScreen, tagList) \
+    __AROS_LC2(struct Screen *, OpenScreenTagList, \
+    __AROS_LCA(struct NewScreen *, newScreen, A0), \
+    __AROS_LCA(struct TagItem   *, tagList, A1), \
+    struct IntuitionBase *, IntuitionBase, 102, Intuition)
 
 __AROS_LP1(struct Window *, OpenWindow,
     __AROS_LPA(struct NewWindow *, newWindow, A0),
