@@ -237,6 +237,8 @@ AROS_LH1(struct LIBBASETYPE *, open,
 
 	TimerBase = (struct Library *)TimerIO->tr_node.io_Device;
     }
+
+/* This MUST be moved to after dosBoot process calls InitHidds() (dos/inithidds.c)
     
     if (!GetPrivIBase(LIBBASE)->WorkBench)
     {
@@ -251,7 +253,7 @@ AROS_LH1(struct LIBBASETYPE *, open,
 	    LIBBASE->ActiveScreen =
 	    GetPrivIBase(LIBBASE)->WorkBench = screen;
     }
-
+*/
     if (!intui_open (LIBBASE))
 	return NULL;
 
