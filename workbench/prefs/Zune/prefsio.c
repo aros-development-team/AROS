@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <libraries/iffparse.h>
+
 #include <proto/exec.h>
 #include <proto/iffparse.h>
 

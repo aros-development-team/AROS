@@ -9,7 +9,7 @@
 
 #include <proto/intuition.h>
 
-#ifdef AROS
+#ifdef __AROS__
 #include <proto/muimaster.h>
 #endif
 
