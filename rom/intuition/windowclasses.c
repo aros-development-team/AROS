@@ -92,13 +92,9 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 	
 	/* Clear the dragbar */
 	
-	SetAPen(rp, (IntuitionBase->ActiveWindow == win) ? 
+	SetAPen(rp, (win->Flags & WFLG_WINDOWACTIVE) ? 
 			pens[FILLPEN] : pens[BACKGROUNDPEN]);
 			
-	D(bug("Rendering dragbar with pen %d in win %p, active=%p\n", 
-		(IntuitionBase->ActiveWindow == win) ? 
-			pens[FILLPEN] : pens[BACKGROUNDPEN],
-			win, IntuitionBase->ActiveWindow));			
 	SetDrMd(rp, JAM1);
 	
 	D(bug("Filling from (%d, %d) to (%d, %d)\n",
@@ -482,7 +478,7 @@ static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
 	
 	
 	/* Are we part of the active window ? */
-	if (msg->gpr_GInfo->gi_Window == IntuitionBase->ActiveWindow)
+	if (msg->gpr_GInfo->gi_Window->Flags & WFLG_WINDOWACTIVE)
 	{
 	    state = ( (G(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL );
 	}
