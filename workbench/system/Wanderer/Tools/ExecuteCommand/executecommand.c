@@ -364,6 +364,7 @@ BOOPSI_DISPATCHER(IPTR, ExecuteCommand_Dispatcher, CLASS, self, message)
     
     return NULL;
 }
+BOOPSI_DISPATCHER_END
 
 /*** Setup ******************************************************************/
 struct MUI_CustomClass *ExecuteCommand_CLASS;
