@@ -936,6 +936,16 @@ void HandleIntuiActions(struct IIHData *iihdata,
 	        int_screendepth(am->iam_ScreenDepth.Screen, am->iam_ScreenDepth.Flags, IntuitionBase);
 		break;
 		
+
+#ifdef ChangeLayerVisibility
+	    case AMCODE_SHOWWINDOW:
+                if (IS_GZZWINDOW(targetwindow))
+		{
+                    ChangeLayerVisibility(targetwindow->BorderRPort->Layer, am->iam_ShowWindow.yesno);
+                }
+                ChangeLayerVisibility(targetwindow->WLayer, am->iam_ShowWindow.yesno);
+	        break;
+#endif
 	}
 
  	/* targetwindow might be invalid here (AM_CLOSEWINDOW) !!!!!!!!! */

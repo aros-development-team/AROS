@@ -379,6 +379,10 @@ struct IntuiActionMessage
 	    struct Screen	* Screen;
 	    ULONG		Flags;
 	}			iam_screendepth;
+	struct
+	{
+	    int			yesno;
+	} 			iam_showwindow;
 	
     } 				iam;    
 };
@@ -390,6 +394,7 @@ struct IntuiActionMessage
 #define iam_ShowTitle		iam.iam_showtitle
 #define	iam_SizeWindow		iam.iam_sizewindow
 #define iam_ScreenDepth		iam.iam_screendepth
+#define iam_ShowWindow		iam.iam_showwindow
 
 enum
 {
@@ -406,7 +411,8 @@ enum
     AMCODE_NEWPREFS,
     AMCODE_ACTIVATEGADGET,
     AMCODE_SCREENSHOWTITLE,
-    AMCODE_SCREENDEPTH
+    AMCODE_SCREENDEPTH,
+    AMCODE_SHOWWINDOW
 };
 
 /* Flag definitions for MoreFlags */

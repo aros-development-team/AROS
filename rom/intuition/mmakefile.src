@@ -90,8 +90,10 @@ FUNCTIONS := \
 	getscreendata \
 	getscreendrawinfo \
 	helpcontrol \
+	hidewindow \
 	initrequester \
 	intuitextlength \
+	iswindowvisible \
 	itemaddress \
 	lateintuiinit \
 	lendmenus \
@@ -154,6 +156,7 @@ FUNCTIONS := \
 	setwindowpointera \
 	setwindowtitles \
 	showtitle \
+	showwindow \
 	sizewindow \
 	sysreqhandler \
 	timeddisplayalert \
