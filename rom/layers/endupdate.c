@@ -83,6 +83,8 @@
   /* now I reinstall the regular ClipRects. */
   l->ClipRect = l->cr;
 
+  l->Flags &= ~LAYERUPDATE;
+
   UnlockLayer(l);
 
   AROS_LIBFUNC_EXIT

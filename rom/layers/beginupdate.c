@@ -123,6 +123,8 @@
     l->Flags &= ~LAYERREFRESH;
     return FALSE;
   }
+
+  l-> Flags |= LAYERUPDATE;
   
   return TRUE;
 
