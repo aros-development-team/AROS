@@ -6,8 +6,10 @@
     Lang: english
 */
 #include <aros/debug.h>
-#include "graphics_intern.h"
 #include <proto/graphics.h>
+
+#include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -56,6 +58,11 @@
 	AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 	struct Layer * srcLayer;
 
+    	FIX_GFXCOORD(xSrc);
+    	FIX_GFXCOORD(ySrc);
+    	FIX_GFXCOORD(xDest);
+    	FIX_GFXCOORD(yDest);
+	
 	if (NULL == (srcLayer = srcRastPort->Layer)) {
 		/*
 		 * Rastport without a layer is a screen.

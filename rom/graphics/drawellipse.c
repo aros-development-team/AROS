@@ -63,6 +63,11 @@
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return;
 
+    FIX_GFXCOORD(xCenter);
+    FIX_GFXCOORD(yCenter);
+    FIX_GFXCOORD(a);
+    FIX_GFXCOORD(b);
+    
     /* bug("driver_DrawEllipse(%d %d %d %d)\n", xCenter, yCenter, a, b);	
     */    gc = GetDriverData(rp)->dd_GC;
     

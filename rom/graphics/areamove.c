@@ -8,6 +8,7 @@
 #include <exec/types.h>
 #include <graphics/rastport.h>
 #include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -66,6 +67,9 @@
 
     if (areainfo->Count + 1 <= areainfo->MaxCount)
     {
+    	FIX_GFXCOORD(x);
+	FIX_GFXCOORD(y);
+	
 	/* is this the very first entry in the vector collection matrix */
 	if (0 == areainfo->Count)
 	{

@@ -70,6 +70,13 @@
 
     LONG width, height, absdx, absdy;
 
+    FIX_GFXCOORD(xMin);
+    FIX_GFXCOORD(yMin);
+    FIX_GFXCOORD(xMax);
+    FIX_GFXCOORD(yMax);
+    
+    if ((xMin > xMax) || (yMin > yMax)) return;
+
     /*
        This function will simply call ScrollRaster() and fill the empty
        space with calls to EraseRect()

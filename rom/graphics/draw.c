@@ -71,7 +71,10 @@
     
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return;
-	
+
+    FIX_GFXCOORD(x);
+    FIX_GFXCOORD(y);
+    
     gc = GetDriverData(rp)->dd_GC;
 
     if (rp->cp_x > x)

@@ -5,8 +5,9 @@
     Desc: Graphics function SetRast()
     Lang: english
 */
-#include "graphics_intern.h"
 #include <graphics/rastport.h>
+#include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -58,7 +59,18 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_SetRast (rp, pen, GfxBase);
+    /* We have to use layers to perform clipping */
+    struct BitMap *bm = rp->BitMap;
+    HIDDT_Pixel    pixval;
+    
+    ULONG width, height;
+    
+    width  = GetBitMapAttr(bm, BMA_WIDTH);
+    height = GetBitMapAttr(bm, BMA_HEIGHT);
+    pixval = BM_PIXEL(bm, pen);
+     
+    fillrect_pendrmd(rp, 0, 0, width  - 1, height - 1, pixval,
+    	    	     vHidd_GC_DrawMode_Copy, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* SetRast */

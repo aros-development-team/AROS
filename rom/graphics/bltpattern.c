@@ -104,6 +104,11 @@ static ULONG bltpattern_render(APTR bpr_data, LONG srcx, LONG srcy,
 	EnterFunc(bug("driver_BltPattern(%d, %d, %d, %d, %d)\n"
     	    , xMin, yMin, xMax, yMax, byteCnt));
 
+    	FIX_GFXCOORD(xMin);
+	FIX_GFXCOORD(yMin);
+	FIX_GFXCOORD(xMax);
+	FIX_GFXCOORD(yMax);
+	
 	if (!OBTAIN_DRIVERDATA(rp, GfxBase))
     	    ReturnVoid("driver_BltPattern");
 

@@ -112,6 +112,11 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     LONG planecnt;
     
+    FIX_GFXCOORD(xSrc);
+    FIX_GFXCOORD(ySrc);
+    FIX_GFXCOORD(xDest);
+    FIX_GFXCOORD(yDest);
+    
     /* nlorentz: Also check for BMF_AROS_DISPLAYED flag which if set tells
        that this is a HIDD bitmap and should be handled by the driver */
 

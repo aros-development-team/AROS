@@ -16,6 +16,8 @@
 #define NUM_COLORS  (1L << PEN_BITS)
 #define PEN_MASK    (NUM_COLORS - 1)
 
+#define FIX_GFXCOORD(x) x = (WORD)x
+
 /* !!!! ONLY USE THE BELOW MACROS IF YOU ARE 100% SURE 
    THAT IT IS A HIDD BITMAP AND NOT ONE THE USER
    HAS CREATED BY HAND !!!. You can use IS_HIDD_BM(bitmap) to test
