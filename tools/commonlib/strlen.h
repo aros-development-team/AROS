@@ -1,6 +1,11 @@
 #ifndef COMMONLIB_STRLEN_H
 #define COMMONLIB_STRLEN_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <commonlib/commonlib.h>
 
 #if defined(__GNUC__) && !defined(CommonLib_NoInline)

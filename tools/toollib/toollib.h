@@ -1,6 +1,11 @@
 #ifndef TOOLLIB_TOOLLIB_H
 #define TOOLLIB_TOOLLIB_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <sys/types.h>
 
 /* Do we have <stdarg.h> ? */

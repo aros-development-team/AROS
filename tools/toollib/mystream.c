@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <string.h>
 #include <toollib/mystream.h>
 #include <toollib/error.h>

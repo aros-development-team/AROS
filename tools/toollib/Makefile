@@ -1,4 +1,4 @@
-#   Copyright (C) 1998-2000 AROS - The Amiga Research OS
+#   Copyright © 1995-2001, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: Make the tool library.

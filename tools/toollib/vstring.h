@@ -1,6 +1,11 @@
 #ifndef TOOLLIB_VSTRING_H
 #define TOOLLIB_VSTRING_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef TOOLLIB_TOOLLIB_H
 #   include <toollib/toollib.h>
 #endif

@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2001 AROS - The Amiga Research Operating System
- *  $Id$
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
  */
 
 #include <stdio.h>

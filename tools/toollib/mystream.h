@@ -1,6 +1,11 @@
 #ifndef TOOLLIB_MYSTREAM_H
 #define TOOLLIB_MYSTREAM_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <stdio.h>
 #ifndef TOOLLIB_TOOLLIB_H
 #   include <toollib/toollib.h>
