@@ -25,4 +25,13 @@
 
 #define SpkOff() outb (inb(0x61) & ~3, 0x61)
 
+#define Sound(freq,loop)				\
+	SetSpkFreq(freq);				\
+	SpkOn();					\
+	{						\
+		int i, dummy;				\
+		for (i = 0; i < loop; dummy = i*i, i++);\
+	}						\
+	SpkOff();
+
 #endif /* _SPEAKER_H */
