@@ -96,7 +96,7 @@
 #define GaugeFrame       MUIA_Frame, MUIV_Frame_Gauge
 #define VirtualFrame     MUIA_Frame, MUIV_Frame_Virtual
 #define GroupFrame       MUIA_Frame, MUIV_Frame_Group
-#define GroupFrameT(t)   MUIA_Frame, MUIV_Frame_Group, MUIA_FrameTitle, t, MUIA_Background, MUII_GroupBack
+#define GroupFrameT(t)   MUIA_Frame, MUIV_Frame_Group, MUIA_FrameTitle, ((IPTR) (t)), MUIA_Background, MUII_GroupBack
 
 
 /**************************************************************************
