@@ -1,0 +1,31 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES       := main executecommand
+EXEDIR      := $(AROS_WANDERER)/Tools
+EXE         := $(EXEDIR)/ExecuteCommand
+ICONS       := ExecuteCommand
+ICONFILES   := $(foreach f, $(ICONS), $(EXEDIR)/$(f).info)
+
+USE_AROSLIB     := yes
+USE_CLIB_SHARED := yes
+USE_AMIGALIB    := yes
+USE_MLIB        := yes
+USE_MUILIB      := yes
+
+#MM- workbench-system-wanderer : workbench-system-wanderer-tools-executecommand
+#MM workbench-system-wanderer-tools-executecommand : includes linklibs 
+
+%make_prog_setup mmake=workbench-system-wanderer-tools-executecommand
+
+workbench-system-wanderer-tools-executecommand : setup $(EXE) $(ICONFILES)
+
+%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+
+$(EXEDIR)/%.info : icons/%.info.src icons/%_N.png icons/%_S.png
+	%makeicon2
+
+%common
+%include_deps
