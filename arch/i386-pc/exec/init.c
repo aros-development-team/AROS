@@ -103,6 +103,7 @@ extern const struct Resident
     hiddserial_resident,
     vgaHidd_resident,
     pciHidd_resident,
+    irqHidd_resident,
     Workbench_resident;
 //    Dos_resident,
 //    LDDemon_resident,
@@ -120,6 +121,7 @@ static const struct Resident *romtagList[] =
     &BOOPSI_resident,			    /* ColdStart,   95	 */
     &OOP_resident,			    /* ColdStart,   94	 */
     &HIDD_resident,			    /* ColdStart,   92	 */
+    &irqHidd_resident,                      /* ColdStart,   90   */	// IRQ Hidd!
     &Graphics_resident, 		    /* ColdStart,   65	 */
     &Layers_resident,			    /* ColdStart,   60   */
     &Timer_resident,			    /* ColdStart,   50	 */
