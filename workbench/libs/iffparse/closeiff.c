@@ -56,8 +56,6 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
-    LONG count;
-
     struct IFFStreamCmd    cmd;
 
     if (iff != NULL)
