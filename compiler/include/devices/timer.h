@@ -32,13 +32,13 @@
 #define TR_SETSYSTIME (CMD_NONSTD+2)
 
 /* Avoid name conflict with <sys/time.h> */
-#ifndef _SYS_TIME_H
+#ifndef _SYS_TIME_H_
 struct timeval
 {
     ULONG tv_secs;
     ULONG tv_micro;
 };
-#endif /* _SYS_TIME_H */
+#endif /* _SYS_TIME_H_ */
 
 struct EClockVal
 {
