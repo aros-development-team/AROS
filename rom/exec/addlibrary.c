@@ -13,7 +13,7 @@
 
     NAME */
 
-	AROS_LH1(void, AddLibrary,
+	AROS_LH1(struct Library *, AddLibrary,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Library *, library,A1),
@@ -37,6 +37,9 @@
     EXAMPLE
 
     BUGS
+	Some old Amiga software expects that AddLibrary returns the
+	library which was just added. Therefore, the prototype of
+	this function is not 100% compatible with the AutoDocs.
 
     SEE ALSO
 	RemLibrary(), MakeLibrary(), MakeFunctions(), InitStruct(), SumLibrary().
@@ -50,20 +53,22 @@
     AROS_LIBFUNC_INIT
 
     /* Just in case the user forgot them */
-    library->lib_Node.ln_Type=NT_LIBRARY;
-    library->lib_Flags|=LIBF_CHANGED;
+    library->lib_Node.ln_Type  = NT_LIBRARY;
+    library->lib_Flags	      |= LIBF_CHANGED;
 
     /* Build checksum for library vectors */
-    SumLibrary(library);
+    SumLibrary (library);
 
     /* Arbitrate for the library list */
-    Forbid();
+    Forbid ();
 
     /* And add the library */
-    Enqueue(&SysBase->LibList,&library->lib_Node);
+    Enqueue (&SysBase->LibList, &library->lib_Node);
 
     /* All done. */
-    Permit();
+    Permit ();
+
+    return (library);
     AROS_LIBFUNC_EXIT
 } /* AddLibrary */
 
