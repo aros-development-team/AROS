@@ -1030,15 +1030,27 @@ AROS_UFH3(void, hook_func_action,
 	} 
         else if (ent->type == ST_FILE)
 	{
+	    BPTR newwd, oldwd;
+	    STRPTR pathname;
+
+	    /* Set the CurrentDir to the path of the executable to be started */
+	    pathname = StrDup(ent->filename);
+	    PathPart(pathname)[0] = 0;
+	    newwd = Lock(pathname,SHARED_LOCK);
+	    if(newwd)
+	    {
+		oldwd = CurrentDir(newwd);
+	    }
             if (!OpenWorkbenchObject(ent->filename, TAG_DONE))
             {
-                static char buf[1024];
-                strncpy(buf,ent->filename,1023);
-                buf[1023] = 0;
-                /* truncate the path */
-                PathPart(buf)[0] = 0;
-                execute_open_with_command(buf, FilePart(ent->filename));
+		execute_open_with_command(pathname, FilePart(ent->filename));
             }
+	    FreeVec(pathname);
+	    if(newwd)
+	    {
+		CurrentDir(oldwd);
+		UnLock(newwd);
+	    }
 	}
     } else
     if (msg->type == ICONWINDOW_ACTION_CLICK)
