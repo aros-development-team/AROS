@@ -122,6 +122,8 @@ SMult64
 Fautodocs/smult64.html
 printf
 Fautodocs/printf.html
+strcmp
+Fautodocs/strcmp.html
 if
 K
 struct
@@ -132,4 +134,9 @@ int
 K
 RastPort
 Tsrcs/compiler/include/graphics/rastport.h
-
+ForeachNode
+Fsrcs/compiler/include/exec/lists.h
+AROS_ALMOST_COMPARTIBLE
+D
+ENABLE_RT
+D
