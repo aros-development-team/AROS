@@ -143,6 +143,39 @@
 	    case RPTAG_PatternOriginY:
 	    	RP_PATORIGINY(rp) = (WORD)tag->ti_Data;
 		break;
+
+	    case RPTAG_ClipRectangle:
+	    	if (!havedriverdata)
+		{
+		    havedriverdata = OBTAIN_DRIVERDATA(rp, GfxBase);
+		}
+	    	
+		if (havedriverdata)
+		{
+		    if (tag->ti_Data)
+		    {
+		    	RP_DRIVERDATA(rp)->dd_ClipRectangle = *(struct Rectangle *)tag->ti_Data;
+			RP_DRIVERDATA(rp)->dd_ClipRectangleFlags |= RPCRF_VALID;
+		    }
+		    else
+		    {
+		    	RP_DRIVERDATA(rp)->dd_ClipRectangleFlags &= ~RPCRF_VALID;
+		    }
+		}
+		break;
+		
+	    case RPTAG_ClipRectangleFlags:
+	    	if (!havedriverdata)
+		{
+		    havedriverdata = OBTAIN_DRIVERDATA(rp, GfxBase);
+		}
+	    	
+		if (havedriverdata)
+		{
+		    RP_DRIVERDATA(rp)->dd_ClipRectangleFlags &= ~(RPCRF_RELRIGHT | RPCRF_RELBOTTOM);
+		    RP_DRIVERDATA(rp)->dd_ClipRectangleFlags |= (tag->ti_Data & (RPCRF_RELRIGHT | RPCRF_RELBOTTOM));
+		}
+	    	break;
 		
 	} /* switch (tag) */
 	

@@ -32,7 +32,7 @@
 	Read the current settings of a RastPort into variables.
 	The ti_Tag field specifies the attribute to read and the
 	ti_Data field points to an address where to store the result.
-	All results are stored as LONGs (32 bits)!
+	All results are stored as IPTRs!
 
 	Available tags:
 
@@ -50,6 +50,18 @@
 					return the rectangle's MinX will be
 					greater than its MaxX if there are no
 					active cliprects.
+    	    	RPTAG_FgColor	        Primary rendering color in A8R8G8B8 format.
+		                        Only working on hicolor/truecolor bitmaps/
+					screens. (MorphOS extension)
+    	    	RPTAG_BgColor	    	Secondary rendering color in A8R8G8B8 format.
+		    	    	    	Only working on hicolor/truecolor bitmaps/
+					screens. (MorphOS extension)
+    	    	RPTAG_PatternOriginX	X Origin of fill pattern. (AROS extension)
+		RPTAG_PatternOriginY   	Y Origin of fill pattern. (AROS extension)
+		RPTAG_ClipRectangle 	Rectangle to clip rendering to. Rectangle will
+		                        be cloned. (AROS extension)
+		RPTAG_ClipRectangleFlags See <graphics/rpattr.h> (AROS extension)
+		
 
     INPUTS
 	rp   = pointer to a RastPort structure
@@ -59,7 +71,10 @@
     RESULT
 
     NOTES
-
+    	RPTAG_ClipRectangle and RPTAG_ClipRectangleFlags must not be
+	used on manually inited or cloned rastports. Instead the rastport
+	must have been created with CreateRastPort() or CloneRastPort().
+	
     EXAMPLE
 
     BUGS
@@ -78,10 +93,11 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    struct TagItem * tag, *tstate = tags;
-    ULONG MaxPen, z;
+    struct TagItem *tag, *tstate = tags;
+    ULONG   	    MaxPen, z;
+    BOOL    	    havedriverdata = FALSE;
 
-    while ((tag = NextTagItem (&tstate)))
+    while ((tag = NextTagItem ((const struct Tagitem **)&tstate)))
     {
 	switch(tag->ti_Tag)
 	{
@@ -145,10 +161,54 @@
 	    case RPTAG_PatternOriginY:
 	    	*((IPTR *)tag->ti_Data) = RP_PATORIGINY(rp);
 		break;
-	    
+	    	    
+	    case RPTAG_ClipRectangle:
+	    	if (!havedriverdata)
+		{
+		    havedriverdata = OBTAIN_DRIVERDATA(rp, GfxBase);
+		}
+	    	
+		if (havedriverdata)
+		{
+		    if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_VALID)
+		    {
+			*((struct Rectangle **)tag->ti_Data) = &(RP_DRIVERDATA(rp)->dd_ClipRectangle);
+		    }
+		    else
+		    {
+		    	*((struct Rectangle **)tag->ti_Data) = NULL;
+		    }
+		}
+		else
+		{
+		    *((IPTR *)tag->ti_Data) = 0;
+		}
+		break;
+		
+	    case RPTAG_ClipRectangleFlags:
+	    	if (!havedriverdata)
+		{
+		    havedriverdata = OBTAIN_DRIVERDATA(rp, GfxBase);
+		}
+	    	
+		if (havedriverdata)
+		{
+		    *((IPTR *)tag->ti_Data) = RP_DRIVERDATA(rp)->dd_ClipRectangleFlags;
+		}
+		else
+		{
+		    *((IPTR *)tag->ti_Data) = 0;
+		}
+	    	break;
+		
 	} /* switch(tag->ti_Tag) */
 	
     } /* while ((tag = NextTagItem ((const struct TagItem **)&tstate))) */
+
+    if (havedriverdata)
+    {
+    	RELEASE_DRIVERDATA(rp, GfxBase);
+    }
 
     AROS_LIBFUNC_EXIT
 } /* GetRPAttrsA */
