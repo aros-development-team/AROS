@@ -110,6 +110,10 @@
 #include <datatypes/textclass.h>
 #endif
 
+#ifndef WORKBENCH_STARTUP_H
+#include <workbench/startup.h>
+#endif
+
 /*********************************************************************************************/
 
 #ifndef PROTO_EXEC_H

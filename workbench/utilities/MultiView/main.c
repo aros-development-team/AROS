@@ -131,6 +131,9 @@ void Cleanup(STRPTR msg)
     KillICObjects();
     KillFont();
     FreeArguments();
+    
+    if (cd != NULL) CurrentDir(cd); /* restore current directory */
+    
     CloseLibs();
     CleanupLocale();
     
@@ -192,7 +195,7 @@ static void KillFont(void)
 
 /*********************************************************************************************/
 
-static void GetArguments(void)
+static void InitDefaults(void)
 {
     struct TextFont *defaultfont = GfxBase->DefaultFont;
 
@@ -208,6 +211,12 @@ static void GetArguments(void)
     textattr.ta_YSize = defaultfont->tf_YSize;
     textattr.ta_Style = defaultfont->tf_Style;
     textattr.ta_Flags = defaultfont->tf_Flags;
+}
+
+/*********************************************************************************************/
+
+static void GetArguments(void)
+{
 
     if (!(myargs = ReadArgs(ARG_TEMPLATE, args, NULL)))
     {
@@ -1321,14 +1330,36 @@ static void HandleAll(void)
 
 /*********************************************************************************************/
 
-int main(void)
+int main(int argc, char **argv)
 {
     InitLocale("System/Utilities/MultiView.catalog", 1);
     InitMenus(nm);
     InitMenus(nmpict);
     InitMenus(nmtext);
     OpenLibs();
-    GetArguments();
+    InitDefaults();
+    
+    if (argc == 0)
+    {
+        struct WBStartup *startup = (struct WBStartup *) argv;
+        
+        if (startup->sm_NumArgs >= 2)
+        {
+            /* FIXME: all arguments but the first are ignored */
+            cd       = CurrentDir(startup->sm_ArgList[1].wa_Lock);
+            filename = startup->sm_ArgList[1].wa_Name;
+        }
+        else
+        {
+            filename = GetFileName(MSG_ASL_OPEN_TITLE);
+            if (!filename) Cleanup(NULL);
+        }
+    }
+    else
+    {
+        GetArguments();
+    }
+    
     LoadFont();
     MakeICObjects();
     OpenDTO();
