@@ -825,7 +825,7 @@ void doInfo()
 			    
 			    if(DateToStr(&dt))
 			    {						
-				if(Strnicmp(StrDate, StrDay, strlen(StrDay)) == NULL)
+				if(Strnicmp(StrDate, StrDay, strlen(StrDay)) == 0)
 				{
 				    dt.dat_Flags = 0L;
 				    DateToStr(&dt);		
@@ -873,7 +873,7 @@ ULONG ComputeKBytes(ULONG a, ULONG b)
 void FmtProcedure(struct Hook *hook, char a, struct Locale *locale)
 {
     *((STRPTR)hook->h_Data) = a;
-    ((STRPTR)hook->h_Data)++;
+    hook->h_Data = (STRPTR) hook->h_Data + 1;
 }
 
 
