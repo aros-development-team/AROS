@@ -12,6 +12,7 @@
 #include <asm/io.h>
 #include <exec/types.h>
 #include <exec/execbase.h>
+#include <string.h>
 
 #define __text __attribute__((section(".text")))
 
@@ -48,7 +49,7 @@ BUILD_16_IRQS(0x0)
 #undef BI
 
 #define IRQ(x,y) \
-	IRQ##x##y##_interrupt
+	(const void (*)(void))IRQ##x##y##_interrupt
 
 #define IRQLIST_16(x) \
 	IRQ(x,0), IRQ(x,1), IRQ(x,2), IRQ(x,3), \
@@ -323,6 +324,7 @@ int sys_None(struct pt_regs regs) { return 0; }
 asmlinkage int sys_ColdReboot(struct pt_regs regs)
 {
     __asm__("jmp kernel_startup");
+    return 0;
 }
 
 int (*sys_call_table[])(struct pt_regs) __text =
