@@ -22,7 +22,7 @@
 	AROS_LHA(STRPTR,           name, A0),
 	AROS_LHA(struct TagItem *, tags, A1),
 /*  LOCATION */
-	struct Library *, IconBase, 30, Icon)
+	struct IconBase *, IconBase, 30, Icon)
 
 /*  FUNCTION
 
@@ -43,17 +43,15 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
+    AROS_LIBBASE_EXT_DECL(struct IconBase *,IconBase)
 
-    struct TagItem *tstate = tags,
-                   *tag;
-                   
-    struct DiskObject *dob = NULL;
-    
-    LONG    defaultType       = -1;
-    STRPTR  defaultName       = NULL;
-    BOOL    failIfUnavailable = TRUE;
-    LONG   *isDefaultIcon     = NULL;
+    struct TagItem    *tstate            = tags,
+                      *tag;
+    struct DiskObject *icon              = NULL;
+    LONG               defaultType       = -1;
+    STRPTR             defaultName       = NULL;
+    BOOL               failIfUnavailable = TRUE;
+    LONG              *isDefaultIcon     = NULL;
     
     /* Parse taglist -------------------------------------------------------*/
     while ((tag = NextTagItem(&tstate)) != NULL)
@@ -114,36 +112,57 @@
     {
 	if (isDefaultIcon != NULL) *isDefaultIcon = TRUE;
         
-        /* the name argument have to be ignored */
-
 	if (defaultName)
 	{
 	    char buf[360];
 	    /* TODO: has aros snprintf()? */
 	    sprintf(buf,"ENV:Sys/def_%s",defaultName);
-	    dob = GetDiskObject(defaultName);
+	    icon = GetDiskObject(defaultName);
 	}
 
-	if (!dob && defaultType != -1)
+	if (!icon && defaultType != -1)
 	{
-	    dob = GetDefDiskObject(defaultType);
+	    icon = GetDefDiskObject(defaultType);
 	}
     }
     else
     {
-	/* icon.library v44 uses a global identification hook
-	 * to determine the filetype. We just call GetDiskObjectNew() for now */
-
-	dob = GetDiskObject(name);
+        BPTR file = OpenIcon(name, MODE_OLDFILE);
         
-        if (dob == NULL && !failIfUnavailable)
+        if (file != NULL)
         {
-            if (isDefaultIcon != NULL) *isDefaultIcon = TRUE;
-	    dob = GetDiskObjectNew(name);
-	}
+            struct DiskObject *temp = NULL;
+            
+            if (ReadStruct(&(LB(IconBase)->dsh), &temp, file, IconDesc))
+            {
+                // FIXME: consistency checks! (ie that WBDISK IS for a disk, WBDRAWER for a dir, WBTOOL for an executable)
+                /*
+                    Duplicate the disk object so it can be freed with 
+                    FreeDiskObject(). 
+                */
+                // FIXME: is there any way to avoid this?
+                icon = DupDiskObject
+                (
+                    temp,
+                    ICONDUPA_JustLoadedFromDisk, TRUE,
+                    TAG_DONE
+                );
+            }
+            
+            // FIXME: Read/FreeStruct seem a bit broken in memory handling
+            // FIXME: shouldn't ReadStruct deallocate memory if it fails?!?!
+            FreeStruct(temp, IconDesc); 
+            CloseIcon(file);
+        }
+        else if (!failIfUnavailable)
+        {
+            // FIXME: integrate GetDiskObjectNew here
+            if (isDefaultIcon !=  NULL) *isDefaultIcon = TRUE;
+            icon = GetDiskObjectNew(name);
+        }
     }
 
-    return dob;
+    return icon;
 
     AROS_LIBFUNC_EXIT
 } /* GetIconRectangle */

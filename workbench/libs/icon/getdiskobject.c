@@ -15,8 +15,6 @@
 
 #include "icon_intern.h"
 
-extern const IPTR IconDesc[];
-
 /*****************************************************************************
 
     NAME */
@@ -52,40 +50,7 @@ extern const IPTR IconDesc[];
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IconBase *, IconBase)
     
-    struct DiskObject *temp  = NULL,
-                      *final = NULL;
-    BPTR               file  = OpenIcon(name, MODE_OLDFILE);
-    
-    if (file == NULL)
-    {
-        bug("icon.library: '%s' not found\n", name);
-        return NULL;
-    }
-    
-    /* Read the file in */
-    if (!ReadStruct (&LB(IconBase)->dsh, (APTR *)&temp, file, IconDesc))
-        temp = NULL;
-
-    /* Make the icon "native" so it can be free'd with FreeDiskObject() */
-    if (temp != NULL)
-    {
-        final = DupDiskObject
-        (
-            temp, 
-            ICONDUPA_JustLoadedFromDisk, TRUE, 
-            TAG_DONE
-        );
-    }
-    else
-    {
-        final = NULL;
-    }
-    
-    FreeStruct((APTR) temp, IconDesc);
-
-    CloseIcon(file);
-
-    return final;
+    return GetIconTagList(name, NULL);
     
     AROS_LIBFUNC_EXIT
-} /* GetDiskObject */
+} /* GetDiskObject() */
