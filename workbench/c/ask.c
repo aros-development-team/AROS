@@ -13,9 +13,28 @@
 #include <dos/dos.h>
 #include <proto/utility.h>
 
-static const char version[] = "$VER: Ask 1.0 (19.2.1997)\n";
+static const char version[] = "$VER: Ask 1.1 (28.2.1997)\n";
 
 static struct UtilityBase *UtilityBase;
+
+char * skipwhites(char * buffer)
+{
+    while (buffer[0] == ' ' || buffer[0] == 0x09)
+        buffer++;
+    return(buffer);
+}
+
+int stripwhites(char * buffer)
+{
+    int len;
+    len = strlen(buffer);
+    while ((len != 0) && 
+           (buffer[len - 1] == ' ' || 
+            buffer[len - 1] == 0x09 || 
+            buffer[len - 1] == 0x0a))
+        len--;
+    return(len);
+}
 
 int main(int argc, char **argv)
 {
@@ -36,21 +55,31 @@ int main(int argc, char **argv)
 	        printf("%s ", args[0]);
                 if (FGets(Input(), buffer, 100) == (STRPTR)buffer)
 	        {
-                    if (Stricmp(buffer, "\n") == 0)
+                    char * tmpbuf;
+                    int tmplen;
+                    tmpbuf = skipwhites(buffer);
+                    tmplen = stripwhites(tmpbuf);
+                    if (tmplen == 0)
                         ready = 1;
-                    else
+                    else if (tmplen == 1)
 		    {
-                        STRPTR pos;
-                        printf("string: %s ($%02X.%02X.%02X.%02X)", buffer, buffer[0], buffer[1], buffer[2], buffer[3]);
-                        pos = strchr(buffer, 0x0a);
-                        if (pos != NULL)
-                            pos[0] = 0x00;
-                        if (Stricmp(buffer, "y") == 0 || Stricmp(buffer, "yes") == 0)
-                        {
+                        if (Strnicmp(tmpbuf, "y", 1) == 0)
+			{
                             error = RETURN_WARN;
                             ready = 1;
-                        } else if (Stricmp(buffer, "n") == 0 || Stricmp(buffer, "no") == 0)
+                        } else if (Strnicmp(tmpbuf, "n", 1) == 0)
                             ready = 1;
+                    } else if (tmplen == 2)
+		    {
+                        if (Strnicmp(tmpbuf, "no", 2) == 0)
+                            ready = 1;
+                    } else if (tmplen == 3)
+		    {
+                        if (Strnicmp(tmpbuf, "yes", 3) == 0)
+			{
+                            error = RETURN_WARN;
+                            ready = 1;
+                        }
                     }
                 } else
 	            ready = 1;
@@ -68,6 +97,5 @@ int main(int argc, char **argv)
         error = RETURN_FAIL;
     }
 
-    printf("err: %d\n", error); /* !!! */
     return(error);
 }
