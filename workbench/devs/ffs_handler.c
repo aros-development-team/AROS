@@ -21,6 +21,7 @@
 #include <proto/dos.h>
 #include <aros/libcall.h>
 #include <aros/machine.h>
+#include <aros/debug.h>
 #ifdef __GNUC__
 #include "ffs_handler_gcc.h"
 #endif
@@ -547,7 +548,7 @@ LONG read_block_chk(struct ffsbase *ffsbase, struct dev *dev, struct cinfo **cin
     if(ret)
         return ret;
     if(checksum(dev,*cinfo))
-    {KPrintF("%s\n",(*cinfo)->data->fb_name);
+    {kprintf("%s\n",(*cinfo)->data->fb_name);
 	return ERROR_BAD_NUMBER; /* Checksum error */}
     return 0;
 }
@@ -556,8 +557,8 @@ void dump(struct ffsbase *ffsbase, struct cinfo *block)
 {
     int i;
     for(i=0;i<128;i++)
-        KPrintF("%lx ",EC(((ULONG *)block->data)[i]));
-    KPrintF("\n");
+        kprintf("%lx ",EC(((ULONG *)block->data)[i]));
+    kprintf("\n");
 }
 
 static LONG alloc_block(struct ffsbase *ffsbase, struct dev *dev, ULONG *newblk)
