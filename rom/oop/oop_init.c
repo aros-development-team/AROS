@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP Library
@@ -11,6 +11,7 @@
 #include <utility/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
+#include <aros/symbolsets.h>
 
 #include "intern.h"
 #include LC_LIBDEFS_FILE
@@ -24,29 +25,6 @@
 
 
 BOOL InitUtilityClasses(struct IntOOPBase *OOPBase);
-
-#ifdef SysBase
-#   undef SysBase
-#endif
-
-/* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)   (((struct IntOOPBase *)(lib))->ob_SysBase)
-#define LC_SEGLIST_FIELD(lib)   (((struct IntOOPBase *)(lib))->ob_SegList)
-#define LC_RESIDENTNAME 	OOP_resident
-#define LC_RESIDENTFLAGS	RTF_AUTOINIT|RTF_COLDSTART
-#define LC_RESIDENTPRI		94
-#define LC_LIBBASESIZE		sizeof(struct IntOOPBase)
-#define LC_LIBHEADERTYPEPTR	LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)       (((struct IntOOPBase *)(lib))->ob_LibNode)
-#define LC_NO_OPENLIB
-#define LC_NO_CLOSELIB
-#define LC_NO_EXPUNGELIB
-#define LC_STATIC_INITLIB
-
-#include <libcore/libheader.c>
-
-
-#define SysBase (GetOBase(OOPBase)->ob_SysBase)
 
 /*
 #if 0
@@ -64,8 +42,9 @@ static void FreeAllClasses(struct Library *BOOPIBase)
 */
 
 
-static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
+AROS_SET_LIBFUNC(OOPInit, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT
 
     struct IDDescr intern_ids[] =
     {
@@ -125,7 +104,10 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
     
     return (FALSE);
     
+    AROS_SET_LIBFUNC_EXIT
 }
+
+ADD2INITLIB(OOPInit, 0);
 
 /**************************
 ** InitUtilityClasses()  **
