@@ -6,3 +6,11 @@
 makefile
 getfiledate
 getfilesize
+.cvsignore
+collectcontents.sh
+*.body
+*.lite
+jobserv.*
+jobtable.*
+makeadocs
+support.lsrc

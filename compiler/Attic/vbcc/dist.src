@@ -1,5 +1,6 @@
 *.[ch]
-Makefile
 README
 mf.local
 *.config
+makefile.src
+.cvsignore

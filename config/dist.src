@@ -1,3 +1,5 @@
 machine.c
 make.cfg
-makefile
+makefile.src
+.cvsignore
+make.tmpl

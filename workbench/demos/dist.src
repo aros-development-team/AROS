@@ -1,3 +1,4 @@
 *.c
 forkbomb
-makefile
+makefile.src
+.cvsignore

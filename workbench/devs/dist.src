@@ -1,3 +1,4 @@
 *.[ch]
-makefile
 Mountlist
+makefile.src
+.cvsignore

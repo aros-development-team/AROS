@@ -1,3 +1,5 @@
 *.[ch]
 makefile
-boot.config
+HISTORY
+arosboot.config
+arosboot.doc

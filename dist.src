@@ -8,3 +8,9 @@ makefile
 tpl.c
 contents
 make.defaults
+AROS-Amiga.readme
+README.porting
+README.mp
+.cvsignore
+arosfa.faq
+make.tmpl.doc

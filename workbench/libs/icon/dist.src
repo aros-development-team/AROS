@@ -1,3 +1,4 @@
 *.[ch]
 lib.conf
-makefile
+makefile.src
+.cvsignore
