@@ -73,7 +73,7 @@ struct ReqNode
 {
     struct MinNode	rn_Node;
     APTR		rn_Req;
-    struct	IntReq	*rn_IntReq;
+    struct IntReq	*rn_IntReq;
 };
 
 /*****************************************************************************************/
@@ -102,6 +102,7 @@ struct IntFileReq
     STRPTR	ifr_FileText;
     STRPTR	ifr_LVDrawerText;
     STRPTR	ifr_LVAssignText;
+
     STRPTR	ifr_Menu_Control;
     STRPTR	ifr_Item_Control_LastName;
     STRPTR	ifr_Item_Control_NextName;
@@ -132,29 +133,84 @@ struct IntFontReq
 {
     struct IntReq	ifo_IntReq;
     struct TextAttr	ifo_TextAttr;
-    UBYTE	ifo_FrontPen;
-    UBYTE	ifo_BackPen;
-    UBYTE	ifo_DrawMode;
+    UBYTE		ifo_FrontPen;
+    UBYTE		ifo_BackPen;
+    UBYTE		ifo_DrawMode;
 
-    UBYTE	ifo_Flags;
-    UWORD	ifo_MinHeight;
-    UWORD	ifo_MaxHeight;
-    struct Hook *ifo_FilterFunc;
-    struct Hook *ifo_HookFunc;
-    UBYTE	ifo_MaxFrontPen;
-    UBYTE	ifo_MaxBackPen;
+    UBYTE		ifo_Flags;
+    UWORD		ifo_MinHeight;
+    UWORD		ifo_MaxHeight;
+    struct Hook		*ifo_FilterFunc;
+    struct Hook		*ifo_HookFunc;
+    UBYTE		ifo_MaxFrontPen;
+    UBYTE		ifo_MaxBackPen;
 
-    STRPTR	*ifo_ModeList;
-    UBYTE	*ifo_FrontPens;
-    UBYTE	*ifo_BackPens;
+    STRPTR		*ifo_ModeList;
+    UBYTE		*ifo_FrontPens;
+    UBYTE		*ifo_BackPens;
 
 };
+
+#define ISMF_DOAUTOSCROLL 1
+#define ISMF_DODEPTH      2
+#define ISMF_DOHEIGHT     4
+#define ISMF_DOWIDTH      8
+#define ISMF_DOOVERSCAN   16
 
 /*****************************************************************************************/
 
 struct IntModeReq
 {
     struct IntReq	ism_IntReq;
+    struct List		*ism_CustomSMList;
+    struct Hook		*ism_FilterFunc;		
+    ULONG		ism_Flags;
+    ULONG		ism_DisplayID;
+    ULONG	 	ism_DisplayWidth;
+    ULONG		ism_DisplayHeight;
+    ULONG		ism_BitMapWidth;
+    ULONG		ism_BitMapHeight;
+    UWORD		ism_DisplayDepth;
+    UWORD		ism_OverscanType;
+    BOOL		ism_AutoScroll;
+    ULONG		ism_PropertyFlags;
+    ULONG		ism_PropertyMask;
+    LONG		ism_MinDepth;
+    LONG		ism_MaxDepth;
+    LONG		ism_MinWidth;
+    LONG		ism_MaxWidth;
+    LONG		ism_MinHeight;
+    LONG		ism_MaxHeight;
+    LONG		ism_InfoLeftEdge;
+    LONG		ism_InfoTopEdge;
+    BOOL		ism_InfoOpened;
+    
+    /* Some gadgettext specific for the screenmode requester */
+    
+    STRPTR		ism_OverscanText;
+    STRPTR		ism_Overscan1Text;
+    STRPTR		ism_Overscan2Text;
+    STRPTR		ism_Overscan3Text;
+    STRPTR		ism_Overscan4Text;
+    STRPTR		ism_OverscanNullText;
+    STRPTR		ism_WidthText;
+    STRPTR		ism_HeightText;
+    STRPTR		ism_ColorsText;
+    STRPTR		ism_AutoScrollText;
+    STRPTR		ism_AutoScrollOFFText;
+    STRPTR		ism_AutoScrollONText;
+    STRPTR		ism_AutoScroll0Text;
+    
+    STRPTR		ism_Menu_Control;
+    STRPTR		ism_Item_Control_LastMode;
+    STRPTR		ism_Item_Control_NextMode;
+    STRPTR		ism_Item_Control_PropertyList;
+    STRPTR		ism_Item_Control_Restore;
+    STRPTR		ism_Item_Control_OK;
+    STRPTR		ism_Item_Control_Cancel;
+    
+    STRPTR		ism_PropertyList_Title;
+    
 };
 
 /*****************************************************************************************/
@@ -169,11 +225,11 @@ struct ParseTagArgs
 
 struct AslReqInfo
 {
-    ULONG IntReqSize;
-    ULONG ReqSize;
-    APTR  DefaultReq;
+    ULONG 	IntReqSize;
+    ULONG 	ReqSize;
+    APTR  	DefaultReq;
     /* Size of userdata for GadgetryHook and EventHook */
-    ULONG UserDataSize;
+    ULONG 	UserDataSize;
     struct Hook ParseTagsHook;
     struct Hook GadgetryHook;
 };
@@ -191,33 +247,34 @@ struct AslReqInfo
 
 struct AslBase_intern
 {
-    struct Library	library;
-    struct ExecBase	*sysbase;
-    BPTR		seglist;
+    struct Library		library;
+    struct ExecBase		*sysbase;
+    BPTR			seglist;
 
 #ifndef GLOBAL_DOSBASE
-    struct Library	*dosbase;
+    struct Library		*dosbase;
 #endif
 #ifndef GLOBAL_INTUIBASE
-    struct IntuitionBase *intuitionbase;
+    struct IntuitionBase 	*intuitionbase;
 #endif
 
-    struct GfxBase	*gfxbase;
-    struct Library	*cybergfxbase;
-    struct Library	*boopsibase;
-    struct Library	*utilitybase;
-    struct Library	*gadtoolsbase;
-    struct Library	*aroslistviewbase;
-    struct Library	*aroslistbase;
+    struct GfxBase		*gfxbase;
+    struct Library		*cybergfxbase;
+    struct Library		*boopsibase;
+    struct Library		*utilitybase;
+    struct Library		*gadtoolsbase;
+    struct Library		*aroslistviewbase;
+    struct Library		*aroslistbase;
 
     struct MinList		ReqList;
     struct SignalSemaphore	ReqListSem;
     struct AslReqInfo		ReqInfo[3];
-    Class 		*aslpropclass;
-    Class		*aslarrowclass;
-    Class		*asllistviewclass;
-    Class		*aslbuttonclass;
-    Class		*aslstringclass;
+    Class 			*aslpropclass;
+    Class			*aslarrowclass;
+    Class			*asllistviewclass;
+    Class			*aslbuttonclass;
+    Class			*aslstringclass;
+    Class			*aslcycleclass;
 };
 
 /*****************************************************************************************/
@@ -251,6 +308,7 @@ Class *makeaslarrowclass(struct AslBase_intern *AslBase);
 Class *makeasllistviewclass(struct AslBase_intern *AslBase);
 Class *makeaslbuttonclass(struct AslBase_intern *AslBase);
 Class *makeaslstringclass(struct AslBase_intern *AslBase);
+Class *makeaslcycleclass(struct AslBase_intern *AslBase);
 
 /* gadgets.c */
 
@@ -260,6 +318,7 @@ void killscrollergadget(struct ScrollerGadget *scrollergad, struct AslBase_inter
 void getgadgetcoords(struct Gadget *gad, struct GadgetInfo *gi, WORD *x, WORD *y, WORD *w, WORD *h);
 void connectscrollerandlistview(struct ScrollerGadget *scrollergad, Object *listview,
 				struct AslBase_intern *AslBase);
+void FreeObjects(Object **first, Object **last, struct AslBase_intern *AslBase);
 
 /*****************************************************************************************/
 
@@ -283,6 +342,18 @@ AROS_UFP3(VOID, FOTagHook,
 );
 
 AROS_UFP3(ULONG, FOGadgetryHook,
+    AROS_UFPA(struct Hook *,            hook,           A0),
+    AROS_UFPA(struct LayoutData *,      ld,             A2),
+    AROS_UFPA(struct AslBase_intern *,  AslBase,        A1)
+);
+
+AROS_UFP3(VOID, SMTagHook,
+    AROS_UFPA(struct Hook *,            hook,           A0),
+    AROS_UFPA(struct ParseTagArgs *,    pta,            A2),
+    AROS_UFPA(struct AslBase_intern *,  AslBase,        A1)
+);
+
+AROS_UFP3(ULONG, SMGadgetryHook,
     AROS_UFPA(struct Hook *,            hook,           A0),
     AROS_UFPA(struct LayoutData *,      ld,             A2),
     AROS_UFPA(struct AslBase_intern *,  AslBase,        A1)

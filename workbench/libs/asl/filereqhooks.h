@@ -31,9 +31,11 @@
 #define DEF_PROPWIDTH 20
 #define MAX_PATTERN_LEN 64
 
+#define FREQ_FIRST_OBJECT(x) ((x)->Listview)
+#define FREQ_LAST_OBJECT(x) ((x)->PathGad)
+
 struct FRUserData
 {
-    Object			*Prop;
     Object			*Listview;
 	
     Object			*OKBut;
@@ -44,9 +46,9 @@ struct FRUserData
     Object			*DrawerLabel;
     Object			*FileLabel;
     Object			*DirectoryScanSymbol;
-    struct Gadget		*FileGad;
-    struct Gadget		*PatternGad;
-    struct Gadget		*PathGad;
+    Object			*FileGad;
+    Object			*PatternGad;
+    Object			*PathGad;
     struct ScrollerGadget 	ScrollGad;
     struct List			ListviewList;
     struct Hook			ListviewHook;

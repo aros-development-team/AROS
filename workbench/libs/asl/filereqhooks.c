@@ -675,7 +675,7 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    WORD gadid;
 	    char *text;
 	    WORD maxchars;
-	    struct Gadget **objvar;
+	    Object **objvar;
 	} si [] =
 	{
 	    {ID_STRPATTERN, ifreq->ifr_Pattern, MAX_PATTERN_LEN, &udata->PatternGad },
@@ -711,7 +711,7 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    string_tags[6].ti_Data = si[i].maxchars;
 	    string_tags[7].ti_Data = si[i].gadid;
 	    
-	    *(Object **)(si[i].objvar) = gad = NewObjectA(AslBase->aslstringclass, NULL, string_tags);
+	    *(si[i].objvar) = gad = NewObjectA(AslBase->aslstringclass, NULL, string_tags);
 	    if (!gad) goto failure;
 	    
 	    y += udata->ButHeight + GADGETSPACINGY;
@@ -855,7 +855,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 	    {
 	        UBYTE *dir;
 		
-		GetAttr(STRINGA_TextVal, (Object *)udata->PathGad, (IPTR *)&dir);
+		GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&dir);
 		FRGetDirectory(dir, ld, AslBase);
 	    } else {
 	        FRGetVolumes(ld, AslBase);
@@ -873,7 +873,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		BOOL has_colon = FALSE;
 		BOOL has_slash = FALSE;
 		
-		GetAttr(STRINGA_TextVal, (Object *)udata->FileGad, (IPTR *)&file);
+		GetAttr(STRINGA_TextVal, udata->FileGad, (IPTR *)&file);
 		strcpy(filestring, file);
 		
 		has_colon = strchr(filestring, ':') ? TRUE : FALSE;
@@ -901,7 +901,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 			} else {
 			    char *dir;
 			    
-		            GetAttr(STRINGA_TextVal, (Object *)udata->PathGad, (IPTR *)&dir);
+		            GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&dir);
 			    
 			    strcpy(checkstring, dir);
 			    AddPart(checkstring, filestring, 256);
@@ -974,7 +974,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		        ActivateGadget((struct Gadget *)udata->FileGad, ld->ld_Window, NULL);
 		    }
 		}
-		GetAttr(STRINGA_TextVal, (Object *)udata->PathGad, (IPTR *)&dir);
+		GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&dir);
 		FRNewPath(dir, ld, AslBase);
 	    }
 	    break;
@@ -1040,47 +1040,16 @@ STATIC VOID FRGadCleanup(struct LayoutData *ld, struct AslBase_intern *AslBase)
     req = (struct FileRequester *)ld->ld_Req;
     intreq = ld->ld_IntReq;
 
-    if (udata->Listview)
-	DisposeObject(udata->Listview);
+    if (ld->ld_Window && ld->ld_GList)
+    {
+        RemoveGList(ld->ld_Window, ld->ld_GList, -1);
+    }
+    
+    FreeObjects(&FREQ_FIRST_OBJECT(udata), &FREQ_LAST_OBJECT(udata), AslBase);
 
-    udata->Listview = NULL; /* don't remove */    
+    killscrollergadget(&udata->ScrollGad, AslBase);
+    
     FRFreeListviewList(ld, AslBase);
-
-    if (udata->Prop)
-	DisposeObject(udata->Prop);
-
-    if (udata->OKBut)
-	DisposeObject(udata->OKBut);
-
-    if (udata->VolumesBut)
-	DisposeObject(udata->VolumesBut);
-
-    if (udata->ParentBut)
-	DisposeObject(udata->ParentBut);
-
-    if (udata->CancelBut)
-	DisposeObject(udata->CancelBut);
-
-    if (udata->PatternLabel)
-        DisposeObject(udata->PatternLabel);
-	
-    if (udata->DrawerLabel)
-        DisposeObject(udata->DrawerLabel);
-	
-    if (udata->FileLabel)
-        DisposeObject(udata->FileLabel);
-	
-    if (udata->DirectoryScanSymbol)
-        DisposeObject(udata->DirectoryScanSymbol);
-	
-    if (udata->PatternGad)
-        DisposeObject((Object *)udata->PatternGad);
-	
-    if (udata->PathGad)
-        DisposeObject((Object *)udata->PathGad);
-	
-    if (udata->FileGad)
-        DisposeObject((Object *)udata->FileGad);
 
     if (ld->ld_Window)
     {
@@ -1113,7 +1082,7 @@ STATIC ULONG GetSelectedFiles(  struct FRUserData       *udata,
 
     /* Save drawer string gadget text in fr_Drawer */
     
-    GetAttr(STRINGA_TextVal, (Object *)udata->PathGad, (IPTR *)&name);    
+    GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&name);    
     if (!(req->fr_Drawer = VecPooledCloneString(name, NULL, intreq->ir_MemPool, AslBase))) goto bye;
     ifreq->ifr_Drawer = req->fr_Drawer;
     
@@ -1121,7 +1090,7 @@ STATIC ULONG GetSelectedFiles(  struct FRUserData       *udata,
     
     if (!(ifreq->ifr_Flags2 & FRF_DRAWERSONLY))
     {
-        GetAttr(STRINGA_TextVal, (Object *)udata->FileGad, (IPTR *)&name);
+        GetAttr(STRINGA_TextVal, udata->FileGad, (IPTR *)&name);
 	
 	if (!(req->fr_File = VecPooledCloneString(name, NULL, intreq->ir_MemPool, AslBase))) goto bye;
 	ifreq->ifr_File = req->fr_File;
@@ -1131,7 +1100,7 @@ STATIC ULONG GetSelectedFiles(  struct FRUserData       *udata,
 
     if (ifreq->ifr_Flags1 & FRF_DOPATTERNS)
     {
-        GetAttr(STRINGA_TextVal, (Object *)udata->PatternGad, (IPTR *)&name);
+        GetAttr(STRINGA_TextVal, udata->PatternGad, (IPTR *)&name);
 	
 	if (!(req->fr_Pattern = VecPooledCloneString(name, NULL, intreq->ir_MemPool, AslBase))) goto bye;
 	ifreq->ifr_Pattern = req->fr_Pattern;

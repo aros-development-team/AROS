@@ -253,7 +253,7 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
     {
         char *pat;
 	
-	GetAttr(STRINGA_TextVal, (Object *)udata->PatternGad, (IPTR *)&pat);
+	GetAttr(STRINGA_TextVal, udata->PatternGad, (IPTR *)&pat);
 	if (ParsePatternNoCase(pat, parsedpattern, MAX_PATTERN_LEN * 2 + 3) != -1)
 	{
 	    dopatternstring = TRUE;
@@ -538,9 +538,9 @@ BOOL FRNewPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBas
     
     if (ld->ld_Window)
     {    
-        SetGadgetAttrsA(udata->PathGad, ld->ld_Window, NULL, set_tags);
+        SetGadgetAttrsA((struct Gadget *)udata->PathGad, ld->ld_Window, NULL, set_tags);
     } else {
-        SetAttrsA((Object *)udata->PathGad, set_tags);
+        SetAttrsA(udata->PathGad, set_tags);
     }
     
     result = FRGetDirectory(pathstring, ld, AslBase);
@@ -556,7 +556,7 @@ BOOL FRAddPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBas
     char pathstring[257], *gadpath;
     BOOL result;
     
-    GetAttr(STRINGA_TextVal, (Object *)udata->PathGad, (IPTR *)&gadpath);
+    GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&gadpath);
     
     strcpy(pathstring, gadpath);
     AddPart(pathstring, path, 257);
@@ -576,7 +576,7 @@ BOOL FRParentPath(struct LayoutData *ld, struct AslBase_intern *AslBase)
     WORD len;
     BOOL result;
     
-    GetAttr(STRINGA_TextVal, (Object *)udata->PathGad, (IPTR *)&gadpath);
+    GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&gadpath);
     
     strcpy(pathstring, gadpath);
     fixpath(pathstring);
@@ -619,7 +619,7 @@ void FRSetFile(STRPTR file, struct LayoutData *ld, struct AslBase_intern *AslBas
 	{TAG_DONE				}
     };
 
-    SetGadgetAttrsA(udata->FileGad, ld->ld_Window, NULL, set_tags);
+    SetGadgetAttrsA((struct Gadget *)udata->FileGad, ld->ld_Window, NULL, set_tags);
 }
 
 

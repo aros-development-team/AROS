@@ -13,6 +13,9 @@
 #include <exec/lists.h>
 #include <exec/resident.h>
 #include <aros/libcall.h>
+#include <intuition/screens.h> 
+#include <graphics/modeid.h>
+
 #include <proto/exec.h>
 #include <proto/boopsi.h>
 
@@ -193,7 +196,76 @@ const struct IntFileReq def_filereq =
     
 };
 
-#include <intuition/screens.h> /* Needed for pen constants */
+const struct IntModeReq def_modereq =
+{
+    {
+	ASL_ScreenModeRequest,
+	NULL,	/* Window		*/
+	NULL,	/* Screen		*/
+	NULL,	/* PubScreenName	*/
+	NULL,	/* IntuiMsgFunc 	*/
+	NULL,	/* TextAttr		*/
+	NULL,	/* Locale		*/
+	NULL,	/* MemPool		*/
+	2048,	/* MemPoolPuddle	*/
+	2048,	/* MemPoolThresh	*/
+	"Select Screen Mode",
+	"Ok",
+	"Cancel",
+	-1, -1,	 /* --> center on screen */
+	300, 300
+    },
+
+    NULL,		/* CustomSMList */
+    NULL,		/* FilterFunc */
+    0,			/* Flags */
+    LORES_KEY,		/* DisplayID */
+    640,		/* DisplayWidth */
+    200,		/* DisplayHeight */
+    640,		/* BitMapWidth */
+    200,		/* BitMapHeight */
+    2,			/* DisplayDepth */
+    0,			/* OverscanType */
+    TRUE,		/* AutoScroll */
+    DIPF_IS_WB,		/* PropertyFlags */
+    DIPF_IS_WB,		/* PropertyMask */
+    1,			/* MinDepth */
+    24,			/* MaxDepth */
+    16,			/* MinWidth */
+    16384,		/* MaxWidth */
+    16,			/* MinHeight */
+    16384,		/* MaxHeight */
+    0,			/* InfoLeftEdge */
+    0,			/* InfoTopEdge */
+    FALSE,		/* InfoOpened */
+    
+    "Overscan",
+    "Text Size",
+    "Graphics Size",
+    "Extreme Size",
+    "Maximum Size",
+    NULL,
+    "Width",
+    "Height",
+    "Colors",
+    "AutoScroll",
+    "OFF",
+    "ON",
+    NULL,
+    
+    "Control",
+    "L\0Last Mode",
+    "N\0Next Mode",
+    "?\0Property List",
+    "R\0Restore",
+    "O\0Ok",
+    "C\0Cancel",
+    
+    "Mode Properties"
+    
+    
+};
+
 const struct IntFontReq def_fontreq =
 {
     {
@@ -359,6 +431,11 @@ AROS_LH1(struct AslBase_intern *, open,
         LIBBASE->aslstringclass = makeaslstringclass(LIBBASE);
     if (!LIBBASE->aslstringclass)
         return (NULL);
+
+    if (!LIBBASE->aslcycleclass)
+        LIBBASE->aslcycleclass = makeaslcycleclass(LIBBASE);
+    if (!LIBBASE->aslcycleclass)
+        return (NULL);
 	
     /* ------------------------- */
 
@@ -414,6 +491,10 @@ AROS_LH0(BPTR, close, struct AslBase_intern *, LIBBASE, 2, BASENAME)
 	    FreeClass(LIBBASE->aslstringclass);
 	LIBBASE->aslstringclass = NULL;
 
+	if (LIBBASE->aslcycleclass)
+	    FreeClass(LIBBASE->aslcycleclass);
+	LIBBASE->aslcycleclass = NULL;
+	
 	if (GadToolsBase)
 	    CloseLibrary(GadToolsBase);
 	GadToolsBase = NULL;
@@ -502,7 +583,7 @@ AROS_LH0I(int, null, struct AslBase_intern *, LIBBASE, 4, BASENAME)
 #include <string.h>
 #include "filereqhooks.h"
 #include "fontreqhooks.h"
-
+#include "modereqhooks.h"
 
 VOID InitReqInfo(struct AslBase_intern *AslBase)
 {
@@ -539,13 +620,13 @@ VOID InitReqInfo(struct AslBase_intern *AslBase)
     reqinfo = &(ASLB(AslBase)->ReqInfo[ASL_ScreenModeRequest]);
     reqinfo->IntReqSize 	= sizeof (struct IntModeReq);
     reqinfo->ReqSize		= sizeof (struct ScreenModeRequester);
-    reqinfo->DefaultReq 	= NULL;
-    reqinfo->UserDataSize	= 0;
+    reqinfo->DefaultReq 	= (struct IntModeReq *)&def_modereq;
+    reqinfo->UserDataSize	= sizeof(struct SMUserData);
 
     memset(&(reqinfo->ParseTagsHook), 0, sizeof (struct Hook));
     memset(&(reqinfo->GadgetryHook),  0, sizeof (struct Hook));
-    reqinfo->ParseTagsHook.h_Entry	= NULL;
-    reqinfo->GadgetryHook.h_Entry	= NULL;
+    reqinfo->ParseTagsHook.h_Entry	= (void *)SMTagHook;
+    reqinfo->GadgetryHook.h_Entry	= (void *)SMGadgetryHook;
 
     return;
 }

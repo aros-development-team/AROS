@@ -6,8 +6,11 @@ USER_INCLUDES := -I. -I..
 LIBNAME 	:= asl
 ULIBNAME	:= Asl
 
-FILES := functable filereqhooks basicfuncs fontreqhooks \
-	 filereqsupport classes gadgets coolimagedata
+FILES := functable filereqhooks filereqsupport \
+         basicfuncs fontreqhooks \
+	 propclass arrowclass listviewclass \
+	 buttonclass stringclass cycleclass gadgets \
+	 coolimagedata modereqhooks
 
 FUNCTIONS := \
 	allocfilerequest	\
@@ -23,6 +26,10 @@ FUNCTIONS := \
 
 #MM workbench-libs-asl : setup includes linklibs
 workbench-libs-asl : $(SLIB)
+	@$(NOP)
+
+#MM workbench-libs-asl-quick : 
+workbench-libs-asl-quick : $(SLIB)
 	@$(NOP)
 
 #MM

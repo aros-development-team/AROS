@@ -34,6 +34,8 @@ struct AslBase_intern;
 #define BORDERLVSPACINGX 4
 #define BORDERLVSPACINGY 4
 
+#define BORDERCYCLESPACINGX 4
+
 #define GADGETSPACINGX 4
 #define GADGETSPACINGY 4
 
@@ -42,8 +44,10 @@ struct AslBase_intern;
 
 #define LABELSPACINGX 8
 
-#define BUTTONEXTRAHEIGHT 8
 #define BUTTONEXTRAWIDTH 16
+#define BUTTONEXTRAHEIGHT 8
+
+#define CYCLEEXTRAWIDTH  16
 
 #define IMAGEBUTTONEXTRAHEIGHT 4
 #define IMAGEBUTTONEXTRAWIDTH  4
@@ -79,6 +83,9 @@ struct AslBase_intern;
 #define ASLBT_Dummy		(PGA_Top + 300)
 #define ASLBT_CoolImage		(ASLBT_Dummy + 1)
 
+#define ASLCY_Dummy		(PGA_Top + 400)
+#define ASLCY_Labels		(ASLCY_Dummy + 1)
+#define ASLCY_Active		(ASLCY_Dummy + 2)
 
 /* methods */
 

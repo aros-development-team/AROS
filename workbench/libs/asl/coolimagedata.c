@@ -9,7 +9,7 @@
 #define COOL_WARNIMAGE 		0
 #define COOL_DISKIMAGE 		0
 #define COOL_SWITCHIMAGE 	0
-#define COOL_MONITORIMAGE 	0
+#define COOL_MONITORIMAGE 	1
 #define COOL_INFOIMAGE 		0
 #define COOL_ASKIMAGE 		0
 #define COOL_KEYIMAGE  		0
