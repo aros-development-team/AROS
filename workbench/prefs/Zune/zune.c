@@ -5,6 +5,7 @@
     $Id$
 */
 
+#include <libraries/asl.h>
 #include <libraries/mui.h>
 
 #include <clib/alib_protos.h>
@@ -116,13 +117,26 @@ int init_window_page(struct page_entry *page)
     	Child, ColGroup(2),
 	    GroupFrameT("Fonts"),
 	    Child, MakeLabel("Normal"),
-	    Child, StringObject, StringFrame, End,
+	    Child, PopaslObject,
+		MUIA_Popasl_Type, ASL_FontRequest,
+		MUIA_Popstring_String, StringObject, StringFrame, End,
+		MUIA_Popstring_Button, PopButton(MUII_PopUp),
+		End,
 
 	    Child, MakeLabel("Small"),
-	    Child, StringObject, StringFrame, End,
+	    Child, PopaslObject,
+		MUIA_Popasl_Type, ASL_FontRequest,
+		MUIA_Popstring_String, StringObject, StringFrame, End,
+		MUIA_Popstring_Button, PopButton(MUII_PopUp),
+		End,
 
 	    Child, MakeLabel("Big"),
-	    Child, StringObject, StringFrame, End,
+	    Child, PopaslObject,
+		MUIA_Popasl_Type, ASL_FontRequest,
+		MUIA_Popstring_String, StringObject, StringFrame, End,
+		MUIA_Popstring_Button, PopButton(MUII_PopUp),
+		End,
+
 	    End,
 	End;
 
@@ -214,7 +228,7 @@ int init_gui(void)
     	    MUIA_Window_Title, "Zune - Preferences",
 	    MUIA_Window_Activate, TRUE,
 
-    	    WindowContents, VGroup,
+	    WindowContents, VGroup,
     	    	Child, HGroup,
 		    Child, ListviewObject,
 			MUIA_Listview_List, main_page_list = ListObject,
