@@ -9,10 +9,11 @@
 /****************************************************************************************/
 
 #include <devices/inputevent.h>
-#include "keymap_intern.h"
 #include <string.h>
 
 #include <aros/debug.h>
+
+#include "keymap_intern.h"
 
 /****************************************************************************************/
 
