@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
-    Lang: german
+    Desc: BOOPSI functions DoMethodA() and DoMethod()
+    Lang: english
 */
 #include <intuition/classes.h>
 #include <proto/alib.h>
@@ -22,21 +22,20 @@
 	Msg	 message)
 
 /*  FUNCTION
-	Wendet eine Methode auf ein BOOPSI-Object an. Dazu wird der Dispatcher
-	fuer die Klasse, der das Object angehoert aufgerufen. Die Methoden,
-	welche ein Object unterstuetzt, werden auf einer Klasse-fuer-Klasse
-	Basis definiert.
+	Invokes a method on a BOOPSI object. The dispatcher of the class, the
+	object is inherited from, is called. For more information about methods
+	a class supports, see the class documentation.
 
     INPUTS
-	obj - Das Object, auf welches sich die Operation bezieht.
-	message - Die Method-Message. Das erste ULONG der Message definiert den
-		Typ, der Rest haengt von der Klasse ab.
+	obj - The object, on which the method is to be performed on.
+	message - The message. The first field is the same for all methods and
+		  specifies which method is to be invokes (see
+		  <intuition/classusr.h>).
 
     RESULT
-	Der Rueckgabewert haengt von der Methode ab. Bei OM_NEW ist es z.B. ein
-	Zeiger auf das neu generierte Object; andere Methoden verwenden andere
-	Ergebnis-Werte. Diese werden bei der Beschreibung der Klasse definiert
-	und sind dort nachzulesen.
+	Class and method depending. See the class documentation. A value of 0
+	can mean a valid return code but can also mean that a method was not
+	supported.
 
     NOTES
 
@@ -45,25 +44,29 @@
     BUGS
 
     SEE ALSO
-	NewObject(), SetAttrs(), GetAttr(), DisposeObject(), DoSuperMethod(),
-	"Basic Object-Oriented Programming System for Intuition" und das
-	"boopsi Class Reference" Dokument.
+	NewObjectA(), SetAttrsA(), GetAttr(), DisposeObject(), CoerceMethodA(),
+        DoSuperMethodA(), <intuition/classusr.h>
 
     HISTORY
 	14.09.93    ada created
 
 ******************************************************************************/
 {
+    if (!obj)
+	return 0L;
     return (CallHookPkt ((struct Hook *)OCLASS(obj), obj, message));
 } /* DoMethodA */
 
 ULONG DoMethod (Object * obj, ULONG MethodID, ...)
 {
     AROS_SLOWSTACKMETHODS_PRE(MethodID)
-    retval = CallHookPkt ((struct Hook *)OCLASS(obj)
-	, obj
-	, AROS_SLOWSTACKMETHODS_ARG(MethodID)
-    );
+    if (!obj)
+	retval = 0L;
+    else
+	retval = CallHookPkt ((struct Hook *)OCLASS(obj)
+	    , obj
+	    , AROS_SLOWSTACKMETHODS_ARG(MethodID)
+        );
     AROS_SLOWSTACKMETHODS_POST
 } /* DoMethod */
 
