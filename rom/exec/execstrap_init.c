@@ -15,8 +15,8 @@
 
 #include "exec_extfuncs.h"
 
-#define SetFunc(a,b) \
-    SetFunction((struct Library *)SysBase, (  a * -6), (APTR)&AROS_SLIB_ENTRY(b,Exec));
+#define SetFunc(offset,name) \
+    SetFunction((struct Library *)SysBase, (offset * -6), (APTR)&AROS_SLIB_ENTRY(name,Exec));
 
 /*
     Architecture dependent function variations:
@@ -31,7 +31,7 @@ extern void AROS_SLIB_ENTRY(CachePostDMA_40,Exec)();
 /*
     TODO:
 
-    - Fix functions. :)
+    Expand, improve and generally make the world a better place. :)
 */
 
 int start(void)
@@ -42,13 +42,14 @@ int start(void)
     UBYTE *ciapra = (void *)0xbfe001;
     UWORD cpuflags;
 
-    if(*ciapra & CIAF_GAMEPORT0)
+    if (!(*ciapra & CIAF_GAMEPORT0))
     {
 	/* If left mouse button pressed: don't start this time */
+	/* DEBUGGING FEATURE: will probably be removed */
 	return 0;
     }
 
-    if(SysBase->LibNode.lib_Version < 37)
+    if (SysBase->LibNode.lib_Version < 37)
     {
 	/* Refuse to run on anything less than ROM 2.04 */
 	return 0;
@@ -163,6 +164,7 @@ int start(void)
     }
     Enable();
 
+    SetFunc( 12, InitCode);
 #if 0
     /* Fails, presumably on the AROS_ALIGN restrictions: */
     SetFunc( 13, InitStruct);
@@ -246,7 +248,7 @@ int start(void)
     SetFunc(115, FreeVec);
     SetFunc(120, AttemptSemaphoreShared);
 
-    if(SysBase->LibNode.lib_Version >= 39)
+    if (SysBase->LibNode.lib_Version >= 39)
     {
 	/* V39+ functions: */
 	SetFunc(129, AddMemHandler);
