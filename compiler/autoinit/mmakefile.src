@@ -7,7 +7,6 @@ include $(TOP)/config/make.cfg
 LIBBASEFILES := \
 	aros \
 	asl \
-	arosc \
 	commodities \
 	cybergraphics \
         datatypes \
