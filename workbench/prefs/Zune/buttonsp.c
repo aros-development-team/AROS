@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <string.h>
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <clib/alib_protos.h>
@@ -19,7 +20,6 @@
 #endif
 
 #include "zunestuff.h"
-#include <string.h>
 
 extern struct Library *MUIMasterBase;
 
