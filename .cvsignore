@@ -8,6 +8,7 @@ crypt
 dist
 errors
 make.opts
+make.defaults
 mmake
 mmake.cache
 mmake.config
