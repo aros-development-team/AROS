@@ -1,61 +1,12 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: internal utility functions for amiga.lib
-    Lang: english
+    Internal utility functions.
 */
+
 #include <aros/system.h>
 #include "alib_intern.h"
-
-#undef CallHookPkt
-/******************************************************************************
-
-    NAME */
-	ULONG CallHookPkt (
-
-/*  SYNOPSIS */
-	struct Hook * hook,
-	APTR	      object,
-	APTR	      paramPacket)
-
-/*  FUNCTION
-	Calls a hook with the specified object and parameters.
-
-    INPUTS
-	hook - Call this hook.
-	object - This is the object which is passed to the hook. The valid
-	    values for this parameter depends on the definition of the called
-	    hook.
-	paramPacket - This are the parameters which is passed to the hook.
-	    The valid values for this parameter depends on the definition
-	    of the called hook.
-
-    RESULT
-	The return value depends on the definition of the hook.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	NewObject(), SetAttrs(), GetAttr(), DisposeObject(), DoMethod(),
-	DoSuperMethod(), "Basic Object-Oriented Programming System for
-	Intuition" and the "boopsi Class Reference" Dokument.
-
-    HISTORY
-	22.11.96 digulla documented
-
-******************************************************************************/
-{
-    return AROS_UFC3(IPTR, hook->h_Entry,
-	AROS_UFHA(struct Hook *, hook,        A0),
-	AROS_UFHA(APTR,          object,      A2),
-	AROS_UFHA(APTR,          paramPacket, A1)
-    );
-}
 
 #ifdef AROS_SLOWSTACKMETHODS
 /******************************************************************************

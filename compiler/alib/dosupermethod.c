@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: BOOPSI functions DoSuperMethodA() and DoSuperMethod()
-    Lang: english 
 */
 
 #include <intuition/classes.h>
@@ -51,15 +48,12 @@
 	NewObjectA(), SetAttrsA(), GetAttr(), DisposeObject(), DoMethodA(),
         CoerceMethodA(), <intuition/classes.h>
 
-    HISTORY
-	14.09.93    ada created
-
 ******************************************************************************/
 {
     if ((!obj) || (!cl))
         return 0L;
-    return CallHookPkt ((struct Hook *)cl->cl_Super, obj, message);
-} /* DoSuperMethodA */
+    return CALLHOOKPKT((struct Hook *)cl->cl_Super, obj, message);
+} /* DoSuperMethodA() */
 
 
 ULONG DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...)
@@ -68,10 +62,9 @@ ULONG DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...)
     if ((!obj) || (!cl))
         retval = 0L;
     else
-        retval = CallHookPkt ((struct Hook *)cl->cl_Super
-            , obj
-            , AROS_SLOWSTACKMETHODS_ARG(MethodID)
+        retval = CALLHOOKPKT
+        (
+            (struct Hook *)cl->cl_Super, obj, AROS_SLOWSTACKMETHODS_ARG(MethodID)
         );
     AROS_SLOWSTACKMETHODS_POST
-} /* DoSuperMethod */
-
+} /* DoSuperMethod ()*/
