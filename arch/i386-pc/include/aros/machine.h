@@ -142,7 +142,7 @@ extern void aros_not_implemented ();
 
 /* What to do with the library base in header, prototype and call */
 #define __AROS_LH_BASE(basetype,basename)   basetype basename
-#define __AROS_LP_BASE(basetype,basename)   void *
+#define __AROS_LP_BASE(basetype,basename)   basetype
 #define __AROS_LC_BASE(basetype,basename)   basename
 #define __AROS_LD_BASE(basetype,basename)   basetype
 
