@@ -86,10 +86,11 @@
       l->bounds.MinY+dy < 0 ||
       l->bounds.MaxX - l->bounds.MinX + 1 + dw <= 0 ||
       l->bounds.MaxY - l->bounds.MinY + 1 + dh <= 0 ||
-      l->bounds.MaxX+dx > GetBitMapAttr(l->rp->BitMap, BMA_WIDTH) ||
-      l->bounds.MaxY+dy > GetBitMapAttr(l->rp->BitMap, BMA_HEIGHT))
-    return FALSE; 
-
+      l->bounds.MaxX+dx+dw > GetBitMapAttr(l->rp->BitMap, BMA_WIDTH) ||
+      l->bounds.MaxY+dy+dh > GetBitMapAttr(l->rp->BitMap, BMA_HEIGHT))
+  {
+     return FALSE; 
+  }
   if (0 == dx && 0 == dy && 0 == dw && 0 == dh)
     return TRUE;  
 
