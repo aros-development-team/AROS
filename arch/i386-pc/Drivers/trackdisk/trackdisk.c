@@ -650,12 +650,6 @@ int td_dinit(struct TrackDiskBase *TDBase)
 		td_sendcommand(TDBase);
 		td_readstatus(TDBase, 2);
 	}
-        // Clear powerdown mode register
-        TDBase->comsize = 2;
-        TDBase->rawcom[0] = FD_PDMODE;
-        TDBase->rawcom[1] = PDM_EREG;
-        td_sendcommand(TDBase);
-        td_readstatus(TDBase, 1);
 	// issue Specify
 	TDBase->comsize = 3;
 	TDBase->rawcom[0] = FD_SPECIFY;
