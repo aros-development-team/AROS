@@ -99,8 +99,16 @@ AROS_LH4(BOOL, PrepareContext,
 	#endif
     }
 
+    #ifdef PREPARE_RETURN_ADDRESS
+    
+    PREPARE_RETURN_ADDRESS(task, fallBack);
+    
+    #else
+    
     /* First we push the return address */
     _PUSH(GetSP(task), fallBack);
+    
+    #endif
     
     /* Then set up the frame to be used by Dispatch() */
     PREPARE_INITIAL_FRAME(GetSP(task), entryPoint);
