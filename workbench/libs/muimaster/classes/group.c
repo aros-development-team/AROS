@@ -1478,8 +1478,7 @@ layout_2d_col_precalc (struct MUI_GroupData *data,
     }
 }
 
-void
-static layout_2d_calc_rowcol_dims (struct MUI_GroupData *data,
+static void layout_2d_calc_rowcol_dims (struct MUI_GroupData *data,
 				   struct layout2d_elem *row_infos,
 				   struct layout2d_elem *col_infos,
 				   LONG totBonusHe, LONG totBonusWi)
@@ -1836,7 +1835,9 @@ static ULONG mExport(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
+#ifndef __MAXON__
 #warning Do Export
+#endif
 //	DoMethod(msg->dataspace, MUIM_Dataspace_AddInt,
 //		 _U(id), _U("activePage"), data->active_page);
     }
