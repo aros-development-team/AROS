@@ -19,8 +19,8 @@ LONG entry(struct ExecBase *sysbase)
     DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",39);
     if(DOSBase!=NULL)
     {
-        error=tinymain();
-        CloseLibrary((struct Library *)DOSBase);
+	error=tinymain();
+	CloseLibrary((struct Library *)DOSBase);
     }
     return error;
 }
@@ -30,14 +30,26 @@ static LONG tinymain(void)
     STRPTR args[1]={ 0 };
     struct RDArgs *rda;
     LONG error=0;
-    
+    BPTR lock;
+
     rda=ReadArgs("DIR/A",(ULONG *)args,NULL);
     if(rda!=NULL)
     {
-        UnLock(CreateDir(args[0]));
+	lock = CreateDir(args[0]);
+
+	if (lock)
+	    UnLock(lock);
+	else
+	{
+	    VPrintf ("Cannot create %s:", (ULONG *)args);
+	    error = RETURN_FAIL;
+	}
+
 	FreeArgs(rda);
-    }else
+    }
+    else
 	error=RETURN_FAIL;
+
     if(error)
 	PrintFault(IoErr(),"MakeDir");
     return error;
