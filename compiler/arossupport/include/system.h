@@ -56,8 +56,10 @@
 #define	    __const__	    const
 #define	    __inline__	    inline
 #define	    __volatile__    volatile
-#define	    __CONCAT1(a,b)  a ## b
-#define	    __CONCAT(a,b)   __CONCAT1(a,b)
+#ifndef __CONCAT
+#   define	    __CONCAT1(a,b)  a ## b
+#   define	    __CONCAT(a,b)   __CONCAT1(a,b)
+#endif
 
 /*
  * C99 defines a new keyword restrict that can help do optimisation where
