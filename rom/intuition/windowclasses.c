@@ -23,6 +23,7 @@
 #include "gadgets.h"
 
 #include "intuition_intern.h"
+#include "inputhandler.h"
 #include "inputhandler_support.h"
 
 #undef SDEBUG
