@@ -39,6 +39,7 @@ LIBOBJS = \
   objs/mui_seterror.o
 
 CLASSESOBJS= \
+  objs/classes/aboutmui.o \
   objs/classes/application.o \
   objs/classes/area.o \
   objs/classes/bitmap.o \
@@ -214,6 +215,9 @@ objs/mui_requestidcmp.o: mui_requestidcmp.c
 objs/mui_seterror.o: mui_seterror.c
   sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_seterror.c objname=$@
 
+
+objs/classes/aboutmui.o: classes/aboutmui.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/aboutmui.c objname=$@
 
 objs/classes/application.o: classes/application.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/application.c objname=$@

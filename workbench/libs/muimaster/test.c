@@ -109,7 +109,17 @@ __saveds void objects_function(void)
 
 void about_function(void)
 {
-    MUI_Request(app,NULL,0,"Test", "*Ok|Cancel", "This is a test application of Zune, an OpenSource MUI clone",NULL);
+//    MUI_Request(app,NULL,0,"Test", "*Ok|Cancel", "This is a test application of Zune, an OpenSource MUI clone",NULL);
+
+    static Object *about_wnd;
+    if (!about_wnd)
+    {
+	about_wnd = AboutmuiObject,
+		MUIA_Aboutmui_Application, app,
+		End;
+    }
+
+    if (about_wnd) set(about_wnd,MUIA_Window_Open,TRUE);
 }
 
 __saveds __asm void display_function(register __a0 struct Hook *h, register __a2 char **strings, register __a1 struct list_entry *entry)
