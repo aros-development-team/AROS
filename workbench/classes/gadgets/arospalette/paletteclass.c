@@ -190,12 +190,19 @@ STATIC VOID palette_render(Class *cl, Object *o, struct gpRender *msg)
     {
     	case GREDRAW_REDRAW:
     	    D(bug("Doing total redraw\n"));
+
+	    /* Render gadget label in correct position */
+	    RenderLabel((struct Gadget *)o, gbox, rp,
+    			data->pd_LabelPlace, AROSPaletteBase);
+
+	    RenderFrame(data, rp, gbox, dri, FALSE, AROSPaletteBase);
+
     	    RenderPalette(data, dri, rp, AROSPaletteBase);
     	    
     	    /* Render frame aroun ibox */
     	    if (data->pd_IndWidth || data->pd_IndHeight)
     	    {
-    	    	RenderFrame(rp, &(data->pd_IndicatorBox), dri->dri_Pens, TRUE, AROSPaletteBase);
+    	    	RenderFrame(data, rp, &(data->pd_IndicatorBox), dri, TRUE, AROSPaletteBase);
     	    }
     
     	case GREDRAW_UPDATE:
@@ -228,15 +235,20 @@ STATIC VOID palette_render(Class *cl, Object *o, struct gpRender *msg)
     {
     	DrawDisabledPattern(rp, gbox, dri->dri_Pens[SHADOWPEN], AROSPaletteBase);
     }
-    
-    /* Render gadget label in correct position */
-    RenderLabel((struct Gadget *)o, gbox, rp,
-    		data->pd_LabelPlace, AROSPaletteBase);
-    		
-    RenderFrame(rp, gbox, dri->dri_Pens, FALSE, AROSPaletteBase);
-    
-    	
+        	
     ReturnVoid("Palette::Render");
+}
+
+/*************************
+**  Palette::Dispose()  **
+*************************/
+STATIC IPTR palette_dispose(Class *cl, Object *o, Msg *msg)
+{
+    struct PaletteData *data = INST_DATA(cl, o);
+    
+    if (data->pd_Frame) DisposeObject(data->pd_Frame);
+    
+    DoSuperMethodA(cl, o, msg);
 }
 
 /*************************
@@ -622,6 +634,10 @@ AROS_UFH3S(IPTR, dispatch_paletteclass,
 	    retval = (IPTR)palette_new(cl, o, (struct opSet *)msg);
 	    break;
 	
+	case OM_DISPOSE:
+	    retval = palette_dispose(cl, o, msg);
+	    break;
+	    
 	case GM_RENDER:
 	    palette_render(cl, o, (struct gpRender *)msg);
 	    break;
