@@ -42,7 +42,12 @@ static BPTR __startup_cd_lock;
     	At program exit, the current working directory will be changed back
 	to the one that was current when the program first started. If you
 	do not desire this behaviour, use dos.library/CurrentDir() instead.
-			
+        The path given to chdir can be translated so that getcwd gives back
+        a string that is not the same but points to th same directory. For
+        example, assigns are replaced by the path where the assign points to
+        and device names (like DH0:) are replaced with the volume name
+        (e.g. Workbench:).
+
     EXAMPLE
 
     BUGS
