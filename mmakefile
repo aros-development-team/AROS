@@ -132,6 +132,11 @@ DEPLIB_OOP=$(LIBDIR)/liboop.so
 else
 DEPLIB_OOP=$(LIBDIR)/liboop.a
 endif
+ifeq ("$(SHARED_CGFX)","yes")
+DEPLIB_CGFX=$(LIBDIR)/libcybergraphics.so
+else
+DEPLIB_CGFX=$(LIBDIR)/libcybergraphics.a
+endif
 
 DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(GENDIR)/filesys/emul_handler.o \
@@ -153,6 +158,7 @@ DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(DEPLIB_BOOT) \
     $(DEPLIB_TIMER) \
     $(DEPLIB_BATTCLOCK) \
+    $(DEPLIB_CGFX)	\
     $(LIBDIR)/libconsole.a \
     $(LIBDIR)/libinput.a \
     $(LIBDIR)/libkeymap.a \
@@ -168,7 +174,8 @@ LIBS=-L$(LIBDIR) \
 	-lhiddclass -lunixiocl -lboopsi -lutility -ltimer \
 	-laros -lmathffp -lmathieeesingbas -lexpansion -lbattclock \
 	-lamiga -larossupport -linput -lkeymap -loop -lx11cl \
-	-lhiddgraphicsstubs -lkeyboard -lgameport -lworkbench -lcon_handler
+	-lhiddgraphicsstubs -lkeyboard -lgameport -lworkbench -lcon_handler \
+	-lcybergraphics
 
 # BEGIN_DESC{internaltarget}
 # \item{$(BINDIR)/arosshell} Create the AROS shell for systems which
