@@ -826,6 +826,33 @@ VOID	HIDD_BM_FillMemRect16(OOP_Object *obj
     OOP_DoMethod(obj, (OOP_Msg) &p);
 }
 
+VOID	HIDD_BM_FillMemRect24 (OOP_Object *obj
+    	, APTR dstBuf
+	, WORD minX
+	, WORD minY
+	, WORD maxX
+	, WORD maxY
+	, ULONG dstMod
+	, UWORD fill
+)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_FillMemRect24 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillMemRect24);
+        
+    p.mID = mid;
+    p.dstBuf = dstBuf;
+    p.minX = minX;
+    p.minY = minY;
+    p.maxX = maxX;
+    p.maxY = maxY;
+    p.dstMod = dstMod;
+    p.fill = fill;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
 VOID	HIDD_BM_FillMemRect32 (OOP_Object *obj
     	, APTR dstBuf
 	, WORD minX
@@ -944,6 +971,38 @@ VOID	HIDD_BM_CopyMemBox16(OOP_Object *obj
     OOP_DoMethod(obj, (OOP_Msg) &p);
 }
 
+VOID	HIDD_BM_CopyMemBox24(OOP_Object *obj
+    	, APTR src
+	, WORD srcX
+	, WORD srcY
+	, APTR dst
+	, WORD dstX
+	, WORD dstY
+	, UWORD width
+	, UWORD height
+	, ULONG srcMod
+	, ULONG dstMod)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_CopyMemBox24 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox24);
+        
+    p.mID = mid;
+    p.src = src;
+    p.srcX = srcX;
+    p.srcY = srcY;
+    p.dst = dst;
+    p.dstX = dstX;
+    p.dstY = dstY;
+    p.width = width;
+    p.height = height;
+    p.srcMod = srcMod;  
+    p.dstMod = dstMod;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
 VOID	HIDD_BM_CopyMemBox32(OOP_Object *obj
     	, APTR src
 	, WORD srcX
@@ -993,6 +1052,40 @@ VOID	HIDD_BM_CopyLUTMemBox16(OOP_Object *obj
     struct pHidd_BitMap_CopyLUTMemBox16 p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox16);
+        
+    p.mID = mid;
+    p.src = src;
+    p.srcX = srcX;
+    p.srcY = srcY;
+    p.dst = dst;
+    p.dstX = dstX;
+    p.dstY = dstY;
+    p.width = width;
+    p.height = height;
+    p.srcMod = srcMod;   
+    p.dstMod = dstMod;
+    p.pixlut = pixlut;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+VOID	HIDD_BM_CopyLUTMemBox24(OOP_Object *obj
+    	, APTR src
+	, WORD srcX
+	, WORD srcY
+	, APTR dst
+	, WORD dstX
+	, WORD dstY
+	, UWORD width
+	, UWORD height
+	, ULONG srcMod
+	, ULONG dstMod
+	, HIDDT_PixelLUT *pixlut)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_CopyLUTMemBox24 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox24);
         
     p.mID = mid;
     p.src = src;
@@ -1100,6 +1193,34 @@ VOID	HIDD_BM_PutMem32Image16(OOP_Object *obj,
     OOP_DoMethod(obj, (OOP_Msg) &p);
 }
 
+VOID	HIDD_BM_PutMem32Image24(OOP_Object *obj,
+    	    	    	        APTR src,
+			        APTR dst,
+			        WORD dstX,
+			        WORD dstY,
+			        UWORD width,
+			        UWORD height,
+			        ULONG srcMod,
+			        ULONG dstMod)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_PutMem32Image24 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMem32Image24);
+    
+    p.mID = mid;
+    p.src = src;
+    p.dst = dst;
+    p.dstX = dstX;
+    p.dstY = dstY;
+    p.width = width;
+    p.height = height;
+    p.srcMod = srcMod;
+    p.dstMod = dstMod;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
 VOID	HIDD_BM_GetMem32Image8(OOP_Object *obj,
     	    	    	       APTR src,
 			       WORD srcX,
@@ -1142,6 +1263,34 @@ VOID	HIDD_BM_GetMem32Image16(OOP_Object *obj,
     struct pHidd_BitMap_GetMem32Image16 p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetMem32Image16);
+    
+    p.mID = mid;
+    p.src = src;
+    p.srcX = srcX;
+    p.srcY = srcY;
+    p.dst = dst;
+    p.width = width;
+    p.height = height;
+    p.srcMod = srcMod;
+    p.dstMod = dstMod;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+VOID	HIDD_BM_GetMem32Image24(OOP_Object *obj,
+    	    	    		APTR src,
+				WORD srcX,
+				WORD srcY,
+				APTR dst,
+				UWORD width,
+				UWORD height,
+				ULONG srcMod,
+				ULONG dstMod)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_GetMem32Image24 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetMem32Image24);
     
     p.mID = mid;
     p.src = src;
