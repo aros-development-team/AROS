@@ -14,8 +14,10 @@ CLASSES   := application \
 	     family \
 	     group \
 	     notify \
-	     window \
-	     text
+	     numeric \
+	     slider \
+	     text \
+	     window
 	
 CLASSFILES:= $(foreach f, $(CLASSES), classes/$(f))
      
