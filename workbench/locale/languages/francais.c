@@ -271,27 +271,27 @@ static const STRPTR __french_strings[] =
 	In English this would be Sunday, this depends upon the settings
 	of Locale->CalendarType.
     */
-    "Lundi", "Mardi", "Mercredi", "Vendredi", "Vredi",
+    "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi",
     "Samedi", "Dimanche",
 
     /* Abbreviated days of the week */
-    "Lu", "Ma", "Me", "Ve", "Vr", "Sa", "Di",
+    "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim",
 
     /* Months of the year */
     "Janvier", "Fevrier", "Mars",
     "Avril", "Mai", "Juin",
-    "Juliet", "August", "Septembre",
+    "Juillet", "Aout", "Septembre",
     "Octobre", "Novembre", "Decembre",
 
     /* Abbreviated months of the year */
-    "Jan", "Fev", "Mar", "Avr", "Mai", "Jui",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    "Jan", "Fev", "Mars", "Avr", "Mai", "Juin",
+    "Juil", "Aout", "Sep", "Oct", "Nov", "Dec",
 
     "Oui", /* Yes, affirmative response */
     "Non", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
-    "Matin", "Soir",
+    "AM", "PM",
 
     /* Soft and hard hyphens */
     "-", "-",
@@ -305,7 +305,7 @@ static const STRPTR __french_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Hiere", "au jour d'hui", "Demain", "Futur"
+    "Hier", "Aujourd'hui", "Demain", "Futur"
 };
 
 /* This is the end of ROMtag marker. */
