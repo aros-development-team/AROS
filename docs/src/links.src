@@ -3,6 +3,33 @@
 \section{More Related}
 
 \begin{itemize}
+\item \link{AROS FTP Server}{ftp://aros.fh-konstanz.de/pub/aros/} with
+the last binary release for linux as
+\link{tar.gz- (1.7MB)}{ftp://aros.fh-konstanz.de/pub/aros/AROSbin-1.9.tgz}
+or
+\link{lha-archive (2.4MB)}{ftp://aros.fh-konstanz.de/pub/aros/AROSbin-1.9.lha}
+with
+\link{readme (3K)}{ftp://aros.fh-konstanz.de/pub/aros/AROSbin-1.9.readme}
+and the source as
+\link{tar.gz- (450K)}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-1.9.tgz}
+or
+\link{lha-archive (700K)}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-1.9.tgz}
+with
+\link{readme (3K)}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-1.9.readme}.
+
+Also available is the latest beta for linux binary as
+\link{tar.gz- (3.4MB)}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-1.10b.tgz}
+or
+\link{lha archive (4.6MB)}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-1.10b.lha}
+with
+\link{readme (3K)}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-1.10b.readme}
+and the source as
+\link{tar.gz- (800K)}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-1.10b.tgz}
+or
+\link{lha-archive (1.4MB)}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-1.10b.tgz}
+with
+\link{readme (3K)}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-1.10b.readme}.
+
 \item AROS in \link{Sweden}{http://www.lysator.liu.se/amiga/aros/} and
 \link{Germany}{http://www.lake.de/home/lake/home/}
 
