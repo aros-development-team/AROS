@@ -79,7 +79,11 @@ struct InputEvent
 #define IECLASS_NEWPOINTERPOS  19 /* (IEPointerPixel *) */
 #define IECLASS_MENUHELP       20
 #define IECLASS_CHANGEWINDOW   21
-#define IECLASS_MAX            21
+
+/* NewMouse standard */
+#define IECLASS_NEWMOUSE       22
+
+#define IECLASS_MAX            22
 
 /* InputEvent SubClasses */
 #define IESUBCLASS_COMPATIBLE 0
