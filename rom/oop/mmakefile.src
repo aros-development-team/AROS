@@ -9,6 +9,24 @@ include $(TOP)/config/make.cfg
 # Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
 USER_INCLUDES := -I.
 
+MY_INCLS := $(wildcard include/*.h)
+DEST_INC := $(foreach f,$(MY_INCLS), $(INCDIR)/oop/$(notdir $f))
+GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/oop/$(notdir $f))
+
+#MM
+includes-copy : $(DEST_INC) $(GEN_INC)
+
+$(INCDIR)/oop/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+$(GENINCDIR)/oop/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+#MM
+setup-includes :
+	%mkdirs_q  $(GENINCDIR) $(INCDIR) $(GENINCDIR)/oop $(INCDIR)/oop
+
+
 # BEGIN_DESC{localmakevar}
 # \item{LIBNAME} The lowercase name of the library (without the extension).
 #	This is used to help derive some filenames.
