@@ -5,17 +5,9 @@
     $Id$
 */
 
-/* should avoid code duplication (width/height/image) with cycle gadget,
- * cleanup needed ! -dlc
- */
-
-/*  #include <graphics/gfx.h> */
-/*  #include <graphics/view.h> */
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
-/*  #include <proto/graphics.h> */
 #include <proto/utility.h>
-/*  #include <proto/intuition.h> */
 
 #ifdef _AROS
 #include <proto/muimaster.h>
@@ -26,7 +18,7 @@
 #include "debug.h"
 
 #include "mui.h"
-/*  #include "imspec.h" */
+#include "imspec.h"
 #include "muimaster_intern.h"
 #include "support.h"
 
@@ -80,15 +72,15 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return NULL;
     }
 
-    if ((entries_active < 0) || (entries_active > entries_num - 1))
-	entries_active = 0;
-
     /* Count the number of entries */
     for (i=0;entries[i];i++);
 
     entries_num = i;
 
-    grouptags = AllocVec((1 + 2 * i) * sizeof(struct TagItem), MEMF_PUBLIC);
+    if ((entries_active < 0) || (entries_active > entries_num - 1))
+	entries_active = 0;
+
+    grouptags = AllocateTagItems(2*i+1);
     if (!grouptags)
 	return FALSE;
     buttons = AllocVec(i * sizeof(Object *), MEMF_PUBLIC);
@@ -101,13 +93,15 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	state = (entries_active == i) ? TRUE : FALSE;
 	grouptags[j].ti_Tag = MUIA_Group_Child;
-	grouptags[j].ti_Data = (IPTR)buttons[i] = ImageObject,
+	buttons[i] = (IPTR)ImageObject,
 	    MUIA_Image_Spec, MUII_RadioButton,
 	    MUIA_ShowSelState, FALSE,
 	    MUIA_Frame, MUIV_Frame_None,
 	    MUIA_InputMode, MUIV_InputMode_Immediate,
 	    MUIA_Selected, state,
 	    End;
+        grouptags[j].ti_Data = (ULONG)buttons[i];
+
 	j++;
 	grouptags[j].ti_Tag = MUIA_Group_Child;
 	grouptags[j].ti_Data = (IPTR)TextObject,
@@ -124,7 +118,7 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperNew(cl, obj,
 			       MUIA_Group_Columns, 2,
 			       TAG_MORE, grouptags);
-    FreeVec(grouptags);
+    FreeTagItems(grouptags);
     if (!obj)
     {
 	FreeVec(buttons);
