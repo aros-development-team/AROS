@@ -6,13 +6,12 @@
     Lang: english
 */
 #include "graphics_intern.h"
-#include <graphics/rastport.h>
 
 /*****************************************************************************
 
     NAME */
-	#include <graphics/rastport.h>
-	#include <clib/graphics_protos.h>
+#include <graphics/rastport.h>
+#include <clib/graphics_protos.h>
 
 	AROS_LH2(void, SetAPen,
 

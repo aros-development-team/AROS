@@ -74,7 +74,6 @@ struct ETextFont
 
 #define ETF(tf)         ((struct ETextFont *)tf)
 
-
 int driver_init (struct GfxBase * GfxBase)
 {
     char * displayName;
@@ -186,6 +185,61 @@ Display * GetSysDisplay (void)
 int GetSysScreen (void)
 {
     return sysScreen;
+}
+
+void UpdateLinePtrn (struct RastPort * rp)
+{
+    XGCValues gcval;
+
+    if (rp->LinePtrn != 0xFFFF)
+    {
+	char dash_list[16];
+	int  n;
+	int  mode;
+	UWORD bit;
+
+	bit=0x8000;
+	mode = (rp->LinePtrn & bit) != 0;
+	dash_list[0] = 0;
+
+	for (n=0; bit; bit>>=1)
+	{
+	    if (((rp->LinePtrn & bit) != 0) != mode)
+	    {
+		mode = !mode;
+		n ++;
+		dash_list[n] = 0;
+	    }
+
+	    dash_list[n] ++;
+	}
+
+	gcval.line_style = LineOnOffDash;
+
+	XChangeGC (sysDisplay
+	    , GetGC(rp)
+	    , GCLineStyle
+	    , &gcval
+	);
+
+	XSetDashes (sysDisplay
+	    , GetGC(rp)
+	    , 0
+	    , dash_list
+	    , n+1
+	);
+    }
+    else
+    {
+	gcval.line_style = LineSolid;
+
+	XChangeGC (sysDisplay
+	    , GetGC(rp)
+	    , GCLineStyle
+	    , &gcval
+	);
+
+    }
 }
 
 void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
@@ -338,6 +392,8 @@ void driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
 void driver_DrawEllipse (struct RastPort * rp, LONG x, LONG y, LONG rx, LONG ry,
 		struct GfxBase * GfxBase)
 {
+    UpdateLinePtrn (rp);
+
     XDrawArc (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    x-rx, y-ry, rx*2, ry*2,
 	    0, 360*64);
@@ -375,6 +431,8 @@ void driver_Move (struct RastPort * rp, LONG x, LONG y,
 void driver_Draw (struct RastPort * rp, LONG x, LONG y,
 		    struct GfxBase * GfxBase)
 {
+    UpdateLinePtrn (rp);
+
     XDrawLine (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    rp->cp_x, rp->cp_y,
 	    x, y);
@@ -398,6 +456,8 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 void driver_PolyDraw (struct RastPort * rp, LONG count, WORD * coords,
 		    struct GfxBase * GfxBase)
 {
+    UpdateLinePtrn (rp);
+
     XDrawLines (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    (XPoint *)coords, count,
 	    CoordModeOrigin
@@ -560,3 +620,24 @@ void driver_DeinitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
     }
 }
 
+ULONG driver_SetWriteMask (struct RastPort * rp, ULONG mask,
+			struct GfxBase * GfxBase)
+{
+    XGCValues gcval;
+    GC gc;
+
+    if ((gc = GetGC (rp)))
+    {
+	gcval.plane_mask = sysPlaneMask;
+
+	XChangeGC (sysDisplay
+	    , gc
+	    , GCPlaneMask
+	    , &gcval
+	);
+
+	return TRUE;
+    }
+
+    return FALSE;
+}
