@@ -3,7 +3,6 @@
     $Id$
 
     Desc: Use of aros.library/ArosInquire()
-    Desc: Use of aros.library/ArosInquireTagList
     Lang:
 */
 
