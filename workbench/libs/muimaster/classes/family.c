@@ -193,8 +193,8 @@ static ULONG Family_AddTail(struct IClass *cl, Object *obj, struct MUIP_Family_A
 
     if (msg->obj)
     {
-/*  	D(bug("Family_AddTail(%p): obj=%p\n", obj, msg->obj)); */
-	AddTail(&(data->childs), (struct Node *)_OBJECT(msg->obj));
+        D(bug("Family_AddTail(%p): obj=%p node=%p\n", obj, msg->obj, _OBJECT(msg->obj)));
+	DoMethod(msg->obj, OM_ADDTAIL, (IPTR)&data->childs);
 	return TRUE;
     }
     else
@@ -232,7 +232,7 @@ static ULONG Family_Remove(struct IClass *cl, Object *obj,
     if (msg->obj)
     {
 /*  	D(bug("Family_Remove(%p): obj=%p\n", obj, msg->obj)); */
-	Remove((struct Node *)_OBJECT(msg->obj));
+	DoMethod(msg->obj, OM_REMOVE);
 	return TRUE;
     }
     else
