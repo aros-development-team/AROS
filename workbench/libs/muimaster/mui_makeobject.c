@@ -118,7 +118,7 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 
 /*  SYNOPSIS */
 	AROS_LHA(LONG, type, D0),
-	AROS_LHA(ULONG *, params, A0),
+	AROS_LHA(IPTR *, params, A0),
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 20, MUIMaster)
