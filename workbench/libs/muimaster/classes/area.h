@@ -231,7 +231,7 @@ struct MUI_AreaData
 #define MADF_DRAWOBJECT        (1<< 0) /* draw object completely */
 #define MADF_DRAWUPDATE        (1<< 1) /* update object */
 
-#define MADF_DRAWALL           (1<< 19)
+#define MADF_DRAWALL           (1<< 31)
 
 
 /* mad_Flags, private one */
@@ -267,7 +267,7 @@ struct MUI_AreaData
 #define MADF_ISVIRTUALGROUP	(1<<30) /* PRIV UNDOC: The object is a virtual group */
 
 #define MADF_DRAWFLAGS (MADF_DRAWOBJECT | MADF_DRAWUPDATE | MADF_DRAW_XXX \
-    | MADF_DRAWFRAME | MADF_DRAW_XXX_2)
+    | MADF_DRAWFRAME | MADF_DRAW_XXX_2 | MADF_DRAWALL)
 
 
 // offset 94 (byte) (frame << 1) (lsb is SETUP_DONE flag)

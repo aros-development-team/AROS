@@ -137,8 +137,9 @@
 	}
     }
     
-    //_flags(obj) |= flags;
-    DoMethod(obj, MUIM_Draw, flags);
+    _flags(obj) = (_flags(obj) & ~MADF_DRAWFLAGS) | (flags & MADF_DRAWFLAGS);    
+
+    DoMethod(obj, MUIM_Draw, 0);
 
     if (get(obj, MUIA_Disabled, &disabled))
     {
