@@ -1,42 +1,42 @@
 ## version $VER: multiview.catalog 1.0 (18.10.2000)
 ## codeset 0
-## language svenska
+## language norsk
 ;
 MSG_CANT_OPEN_LIB
-Kunde inte öppna %s V%ld!\n
+Kan ikke åpne %s V%ld!\n
 ;
 MSG_CANT_CREATE_IC 
-Kunde inte skapa sammankopplingsobjekt!
+Kan ikke lage sammenkoblingsobjekt!
 ;
 MSG_CANT_LOCK_SCR
-Kunde inte låse den publika skärmen!
+Kan ikke låse offentlig skjerm!
 ;
 MSG_CANT_GET_DRI
-Kunde inte få DrawInfo!
+Kan ikke hente DrawInfo!
 ;
 MSG_CANT_GET_VI
-Kunde inte få VisualInfo!
+Kan ikke hente VisualInfo!
 ;
 MSG_CANT_CREATE_SYSIMAGE 
-Kunde inte skapa SYSICLASS bilder!
+Kan ikke lage SYSICLASS-bilder!
 ;
 MSG_CANT_CREATE_GADGET 
-Kunde inte skapa knappar!
+Kan ikke lage knapper!
 ;
 MSG_CANT_CREATE_MENUS
-Kunde inte skapa menyerna!
+Kan ikke lage menyer!
 ;
 MSG_CANT_CREATE_WIN 
-Kunde inte öppna fönstret!
+Kan ikke åpne vinduet!
 ;
 MSG_MEN_PROJECT 
-Arkiv
+Fil
 ;
 MSG_MEN_PROJECT_OPEN 
-O\0Öppna...
+O\0Åpne...
 ;
 MSG_MEN_PROJECT_SAVEAS
-A\0Spara som...
+A\0Lagre som...
 ;
 MSG_MEN_PROJECT_PRINT 
 P\0Skriv ut
@@ -45,49 +45,49 @@ MSG_MEN_PROJECT_ABOUT
 ?\0Om...
 ;
 MSG_MEN_PROJECT_QUIT
-Q\0Avsluta
+Q\0Avslutt
 ;
 MSG_MEN_EDIT 
-Redigera
+Rediger
 ;
 MSG_MEN_EDIT_MARK 
-M\0Markera
+M\0Marker
 ;
 MSG_MEN_EDIT_COPY 
-C\0Kopiera
+C\0Kopier
 ;
 MSG_MEN_EDIT_SELECTALL 
-[\0Välj allt
+[\0Merk alt
 ;
 MSG_MEN_EDIT_CLEARSELECTED
-]\0Välj bort
+]\0Fjern merking
 ;
 MSG_MEN_WINDOW 
-Fönster
+Vindu
 ;
 MSG_MEN_WINDOW_SEPSCREEN
- \0Använd separat skärm?
+ \0Bruk separat skjerm?
 ;
 MSG_MEN_WINDOW_MINIMIZE
- \0Minimera
+ \0Minimer
 ;
 MSG_MEN_WINDOW_NORMAL 
  \0Normal
 ;
 MSG_MEN_WINDOW_MAXIMIZE 
- \0Maximera
+ \0Maksimer
 ;
 MSG_MEN_SETTINGS 
-Inställningar
+Instillninger
 ;
 MSG_MEN_SETTINGS_SAVEDEF 
-D\0Spara som standard
+D\0Lagre som standard
 ;
 MSG_ASL_OPEN_TITLE 
-Välj fil att öppna
+Velg fil å åpne
 ;
 MSG_ASL_SAVE_TITLE
-Välj fil att spara till
+Velg fil å lagre til
 ;
 MSG_ABOUT 
 MultiView %ld.%ld (%s)\ndatatypes.library %s\n\n%s %s
@@ -96,7 +96,7 @@ MSG_ABOUT_TITLE
 MultiView
 ;
 MSG_CONTINUE 
-Fortsätt
+Fortsett
 ;
 MSG_OK 
 OK
