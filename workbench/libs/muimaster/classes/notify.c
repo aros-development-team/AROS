@@ -566,6 +566,9 @@ static ULONG mWriteString(struct IClass *cl, Object *obj, struct MUIP_WriteStrin
     return TRUE;
 }
 
+/**************************************************************************
+ MUIM_ConnectParent
+**************************************************************************/
 static ULONG Notify_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
@@ -578,11 +581,23 @@ static ULONG Notify_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Co
     return TRUE;
 }
 
+/**************************************************************************
+ MUIM_DisconnectParent
+**************************************************************************/
 static ULONG Notify_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_DisconnectParent *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
 /*    data->mnd_ParentObject = NULL;*/
     muiGlobalInfo(obj) = NULL;
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_GetConfigItem
+**************************************************************************/
+static ULONG Notify_GetConfigItem(struct IClass *cl, Object *obj, struct MUIP_GetConfigItem *msg)
+{
+    *msg->storage = DoMethod(muiGlobalInfo(obj)->mgi_Configdata,MUIM_Dataspace_Find,msg->id);
     return 0;
 }
 
@@ -644,6 +659,7 @@ AROS_UFH3S(IPTR, MyDispatcher,
 	    return(mWriteString(cl, obj, (APTR)msg));
 	case MUIM_ConnectParent: return Notify_ConnectParent(cl,obj,(APTR)msg);
 	case MUIM_DisconnectParent: return Notify_DisconnectParent(cl,obj,(APTR)msg);
+	case MUIM_GetConfigItem: return Notify_GetConfigItem(cl,obj,(APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
