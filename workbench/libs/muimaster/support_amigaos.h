@@ -29,6 +29,11 @@ int strlcat(char *buf, char *src, int len);
 #   define SAVEDS __saveds
 #endif 
 
+/*** Miscellanous AROS macros ***********************************************/
+#define AROS_LIBFUNC_INIT
+#define AROS_LIBBASE_EXT_DECL(a, b) extern a b;
+#define AROS_LIBFUNC_EXIT
+
 /*** AROS types *************************************************************/
 #ifndef __AROS_TYPES_DEFINED__
 #   define __AROS_TYPES_DEFINED__
