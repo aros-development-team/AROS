@@ -22,6 +22,12 @@
 #include <aros/debug.h>
 #undef kprintf
 
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#   define NATIVE(x)        x
+#else
+#   define NATIVE(x)        /* eps */
+#endif
+
 /*****************************************************************************
 
     NAME */
@@ -59,10 +65,7 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
-    BPTR lc_ret;
-#endif
+    NATIVE(BPTR lc_ret;)
 
     D(bug("CloseLibrary $%lx (\"%s\") by \"%s\"\n", library,
 	library ? library->lib_Node.ln_Name : "(null)",
@@ -75,7 +78,7 @@
 	Forbid();
 
 	/* Do the close */
-	lc_ret = AROS_LVO_CALL0(BPTR,struct Library,library,2,);
+	NATIVE(lc_ret =) AROS_LVO_CALL0(BPTR,struct Library,library,2,);
 	/*
 	    Normally you'd expect the library to be expunged if this returns
 	    non-zero, but this is only exec which doesn't know anything about

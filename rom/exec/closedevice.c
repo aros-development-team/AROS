@@ -23,6 +23,12 @@
 #include <aros/debug.h>
 #undef kprintf
 
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#   define NATIVE(x)        x
+#else
+#   define NATIVE(x)        /* eps */
+#endif
+
 /*****************************************************************************
 
     NAME */
@@ -61,10 +67,7 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
-    BPTR dc_ret;
-#endif
+    NATIVE(BPTR dc_ret;)
 
     D(bug("CloseDevice $%lx $%lx (\"%s\") by \"%s\"\n", iORequest, iORequest->io_Device,
 	iORequest->io_Device ? iORequest->io_Device->dd_Library.lib_Node.ln_Name : "(null)",
@@ -76,7 +79,7 @@
     /* Something to do? */
     if(iORequest->io_Device!=NULL)
     {
-	dc_ret = AROS_LVO_CALL1(BPTR,
+	NATIVE(dc_ret =) AROS_LVO_CALL1(BPTR,
 	    AROS_LCA(struct IORequest *,iORequest, A1),
 	    struct Device *,iORequest->io_Device,2,
 	);
