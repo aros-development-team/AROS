@@ -566,7 +566,10 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
     	/* In case it's a parameter */
 
 	if (toparse <= 0)
+	{
     	    done = TRUE;
+	    break;
+	}
 
     	switch (*write_str)
     	{
@@ -698,7 +701,7 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
 
     	
     	write_str ++;
-    	
+    	toparse --;
 
     } /* while (!done) */
     
