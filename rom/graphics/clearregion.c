@@ -52,10 +52,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    ASSERT_VALID_PTR(region);
-
 #if REGIONS_HAVE_RRPOOL
     struct RegionRectanglePool *Pool;
+
+    ASSERT_VALID_PTR(region);
 
     if (region->RectPoolList)
     {
@@ -94,6 +94,8 @@
     }
 
 #else
+    ASSERT_VALID_PTR(region);
+
     DisposeRegionRectangleList(region->RegionRectangle);
 #endif
 

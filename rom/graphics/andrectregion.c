@@ -56,7 +56,7 @@
 
 #if USE_BANDED_FUNCTIONS
 
-    return _AndRectRegion(region, rectangle, GfxBase);
+    _AndRectRegion(region, rectangle, GfxBase);
 
 #else
 
