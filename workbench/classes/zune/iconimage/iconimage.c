@@ -32,13 +32,7 @@ struct IconImage_DATA
     struct DiskObject *iid_DiskObject;
 };
 
-IPTR DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
-{
-  return DoSuperMethod(cl, obj, OM_NEW, (IPTR) &tag1, NULL);
-}
-
 /*** Methods ****************************************************************/
-
 IPTR IconImage$OM_NEW
 (
     struct IClass *CLASS, Object *self, struct opSet *message 
@@ -77,9 +71,9 @@ IPTR IconImage$OM_NEW
         if (diskObject == NULL) goto error;
     }
     
-    self = (Object *) DoSuperNew
+    self = (Object *) DoSuperNewTags
     (
-        CLASS, self,
+        CLASS, self, NULL,
         
         MUIA_FillArea,        FALSE,
         TAG_MORE,      (IPTR) message->ops_AttrList
