@@ -269,13 +269,15 @@ class XmlFile:
 
 		subtree = self.parseRecursive (level+1)
 		if not isinstance (subtree[-1], Endtag):
-		    print context
+		    print 'Start:',context
+		    print 'End:',self.reader.tokenContext
 		    if isinstance (subtree[-1], Text):
 			print subtree[-1].text
 		    
 		    raise 'Expected </%s>, got %s' % (token.name, subtree[-1])
 		if subtree[-1].name != token.name:
-		    print context
+		    print 'Start:',context
+		    print 'End:',self.reader.tokenContext
 		    raise 'Expected </%s> and found </%s> (%s)' % (
 			token.name, subtree[-1].name, `subtree`
 		    )
