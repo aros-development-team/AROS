@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -81,69 +79,75 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_SlidersPData *data;
     struct MUI_SlidersPData d;
     
-    obj = (Object *)DoSuperNew(cl, obj,
-			       MUIA_Group_Horiz, FALSE,
-			       Child, HGroup,
-			       MUIA_VertWeight, 800,
-			       Child, HGroup,
-			       GroupFrameT("Container Design"),
-			       Child, HGroup,
-			       MUIA_Group_SameWidth, TRUE,
-			       Child, VGroup,
-			       MUIA_Group_VertSpacing, 1,
-			       Child, d.container_background_popimage = MakeBackgroundPopimage(),
-			       Child, CLabel("Background"),
-			       End, /* VGroup BG */
-			       Child, VGroup,
-			       MUIA_Group_VertSpacing, 1,
-			       Child, d.container_popframe = MakePopframe(),
-			       Child, CLabel("Frame"),
-			       End, /* VGroup Frame */
-			       End, /* HGroup Frame/BG */
-			       End, /* HGroup Container Design */
-			       Child, VGroup,
-			       GroupFrameT("Knob Design"),
-			       Child, HGroup,
-			       MUIA_Group_SameWidth, TRUE,
-			       Child, VGroup,
-			       MUIA_Group_VertSpacing, 1,
-			       Child, d.knob_background_popimage = MakeBackgroundPopimage(),
-			       Child, CLabel("Background"),
-			       End, /* VGroup BG */
-			       Child, VGroup,
-			       MUIA_Group_VertSpacing, 1,
-			       Child, d.knob_popframe = MakePopframe(),
-			       Child, CLabel("Frame"),
-			       End, /* VGroup Frame */
-			       End, /* HGroup Frame/BG */
-
-			       Child, HGroup,
-			       Child, Label2("Font:"),
-			       Child, PopaslObject,
-			       MUIA_Popasl_Type, ASL_FontRequest,
-			       MUIA_Popstring_String, d.knob_font_string = StringObject,
-			       MUIA_CycleChain, 1,
-			       StringFrame, End,
-			       MUIA_Popstring_Button, PopButton(MUII_PopUp),
-			       End,
-			       End, /* HGroup font */
-
-			       End, /* VGroup Knob Design */
-			       End, /* HGroup Container/Knob design */
-			       Child, VGroup,
-			       GroupFrameT("Example Sliders"),
-			       Child, VSpace(0),
-			       Child, HGroup,
-			       Child, VGroup,
-			       Child, MakeSmallHorizSlider(),
-			       Child, MakeBigHorizSlider(),
-			       End, /* VGroup horiz sliders */
-			       Child, MakeSmallVertSlider(),
-			       Child, MakeBigVertSlider(),
-			       End, /* HGroup */
-			       Child, HVSpace,
-			       End, /* VGroup Slider examples */
-    	TAG_MORE, msg->ops_AttrList);
+    obj = (Object *) DoSuperNewTags
+    (
+        cl, obj, NULL,
+        
+        MUIA_Group_Horiz, FALSE,
+        
+        Child, HGroup,
+            MUIA_VertWeight, 800,
+            Child, HGroup,
+                GroupFrameT("Container Design"),
+                Child, HGroup,
+                    MUIA_Group_SameWidth, TRUE,
+                    Child, VGroup,
+                        MUIA_Group_VertSpacing, 1,
+                        Child, d.container_background_popimage = MakeBackgroundPopimage(),
+                        Child, CLabel("Background"),
+                    End, /* VGroup BG */
+                    Child, VGroup,
+                        MUIA_Group_VertSpacing, 1,
+                        Child, d.container_popframe = MakePopframe(),
+                        Child, CLabel("Frame"),
+                    End, /* VGroup Frame */
+                End, /* HGroup Frame/BG */
+            End, /* HGroup Container Design */
+            Child, VGroup,
+                GroupFrameT("Knob Design"),
+                Child, HGroup,
+                    MUIA_Group_SameWidth, TRUE,
+                    Child, VGroup,
+                        MUIA_Group_VertSpacing, 1,
+                        Child, d.knob_background_popimage = MakeBackgroundPopimage(),
+                        Child, CLabel("Background"),
+                    End, /* VGroup BG */
+                    Child, VGroup,
+                        MUIA_Group_VertSpacing, 1,
+                        Child, d.knob_popframe = MakePopframe(),
+                        Child, CLabel("Frame"),
+                    End, /* VGroup Frame */
+                End, /* HGroup Frame/BG */
+                Child, HGroup,
+                    Child, Label2("Font:"),
+                    Child, PopaslObject,
+                        MUIA_Popasl_Type, ASL_FontRequest,
+                        MUIA_Popstring_String, d.knob_font_string = StringObject,
+                            StringFrame, 
+                            MUIA_CycleChain, 1,
+                        End,
+                        MUIA_Popstring_Button, PopButton(MUII_PopUp),
+                    End,
+                End, /* HGroup font */
+            End, /* VGroup Knob Design */
+        End, /* HGroup Container/Knob design */
+        
+        Child, VGroup,
+            GroupFrameT("Example Sliders"),
+            Child, VSpace(0),
+            Child, HGroup,
+                Child, VGroup,
+                    Child, MakeSmallHorizSlider(),
+                    Child, MakeBigHorizSlider(),
+                End, /* VGroup horiz sliders */
+                Child, MakeSmallVertSlider(),
+                Child, MakeBigVertSlider(),
+            End, /* HGroup */
+            Child, HVSpace,
+        End, /* VGroup Slider examples */
+        
+        TAG_MORE, msg->ops_AttrList
+    );
 
     if (!obj) return FALSE;
     
