@@ -116,6 +116,8 @@
     l_tmp->LayerInfo  = LI;
     l_tmp->DamageList = l->DamageList;
     l_tmp->SuperBitMap= l->SuperBitMap;
+    l_tmp->Scroll_X   = l->Scroll_X;
+    l_tmp->Scroll_Y   = l->Scroll_Y;
 
     /* init the rastport structure of the temporary layer */
     InitRastPort(RP);

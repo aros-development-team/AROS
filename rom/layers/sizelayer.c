@@ -115,7 +115,6 @@
       l->front->back = l_tmp;
 
     l->front = l_tmp;
-kprintf("l->Flags %d\n",l->Flags);
     /* copy important data to the temporary layer. this list might be 
        shrinkable
        depending on what data deletelayer() needs later on */
@@ -126,6 +125,8 @@ kprintf("l->Flags %d\n",l->Flags);
     l_tmp->LayerInfo  = LI;
     l_tmp->DamageList = l->DamageList;
     l_tmp->SuperBitMap= l->SuperBitMap;
+    l_tmp->Scroll_X   = l->Scroll_X;
+    l_tmp->Scroll_Y   = l->Scroll_Y;
 
     /* init the rastport structure of the temporary layer */
     InitRastPort(RP);
@@ -330,7 +331,6 @@ kprintf("l->Flags %d\n",l->Flags);
 	    }
             else
 	    {
-kprintf("sl: super!!\n");
               /* with superbitmap */
               BltBitMap(
                 l->SuperBitMap /* Source Bitmap = superbitmap */,
@@ -341,7 +341,7 @@ kprintf("sl: super!!\n");
                 CR->bounds.MinY,
                 CR->bounds.MaxX-DestX+1,
                 CR->bounds.MaxY-CR->bounds.MinY+1,
-                0x0c0 /* supposed to clear the destination */,
+                0x0c0 /* copy */,
                 0xff,
                 NULL
               );
@@ -375,7 +375,6 @@ kprintf("sl: super!!\n");
 	    }
             else
 	    {
-kprintf("sl: super!!  b\n");
               /* with superbitmap */
               BltBitMap(
                 l->SuperBitMap /* Source Bitmap = superbitmap*/,
@@ -386,7 +385,7 @@ kprintf("sl: super!!  b\n");
                 DestY,
                 CR->bounds.MaxX-CR->bounds.MinX+1,
                 CR->bounds.MaxY-DestY+1,
-                0x0c0 /* supposed to clear the destination */,
+                0x0c0 /* copy */,
                 0xff,
                 NULL
               );
@@ -397,9 +396,6 @@ kprintf("sl: super!!  b\n");
       }
     }
    
-
-
-
     /* That's it folks! */
 
     /* Now everybody else may play with the layers again */
