@@ -593,12 +593,12 @@ AROS_UFH3(void, serialunit_receive_data,
   struct HIDDSerialUnitData * data = iD;
   ssize_t len;
   UBYTE buffer[READBUFFER_SIZE];
-  struct Message * msg;
+//  struct Message * msg;
 
   /*
   ** Get the unixio message from my port but don't free it
   */
-  msg = GetMsg(data->replyport_read);
+//  msg = GetMsg(data->replyport_read);
 //  FreeMem(msg, sizeof(struct uioMessage));
 
   /*
@@ -612,6 +612,7 @@ AROS_UFH3(void, serialunit_receive_data,
   if (NULL != data->DataReceivedCallBack)
     data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
 
+#if 0
   /*
   ** I want to be notified when the next data are coming in.
   */
@@ -620,6 +621,7 @@ AROS_UFH3(void, serialunit_receive_data,
                               data->replyport_read,
                               vHidd_UnixIO_RW,
                               SysBase);
+#endif
 
   AROS_USERFUNC_EXIT
 }
@@ -632,12 +634,12 @@ AROS_UFH3(void, serialunit_write_more_data,
   AROS_USERFUNC_INIT
 
   struct HIDDSerialUnitData * data = iD;
-  struct Message * msg;
+//  struct Message * msg;
 
   /*
   ** Get the unixio message from my port but don't free it
   */
-  msg = GetMsg(data->replyport_write);
+//  msg = GetMsg(data->replyport_write);
 //  FreeMem(msg, sizeof(struct uioMessage));
 
   /*
