@@ -30,6 +30,25 @@ static const char * ModeDelim[] =
     "cheader",
 };
 
+static void
+emit_html_char (int c, FILE * out)
+{
+    switch (c)
+    {
+    case '&': fputs ("&amp;", out); break;
+    case '<': fputs ("&lt;", out); break;
+    case '>': fputs ("&gt;", out); break;
+    default: fputc (c, out); break;
+    }
+}
+
+static void
+emit_html_string (const char * str, FILE * out)
+{
+    while (*str)
+	emit_html_char (*str ++, out);
+}
+
 int
 main (int argc, char ** argv)
 {
@@ -39,7 +58,7 @@ main (int argc, char ** argv)
     char * outformat;
     char * infilename;
     int    t;
-    enum modes mode = m_space;
+    enum modes mode = m_prespace;
     String ident;
     char * data;
 
@@ -134,14 +153,16 @@ main (int argc, char ** argv)
 	    break;
 
 	case ' ':
+#if 0
 	    if (mode != m_prespace)
 	    {
 		NEWMODE(m_space);
 		putchar (c);
 	    }
 	    else
+#endif
 	    {
-		fputs ("&nbsp", stdout);
+		fputs ("&nbsp;", stdout);
 	    }
 	    break;
 
@@ -265,7 +286,7 @@ rem_again:
 		else
 		{
 		    NEWMODE(m_header);
-		    fputs (ident->buffer, stdout);
+		    emit_html_string (ident->buffer, stdout);
 		}
 	    }
 
