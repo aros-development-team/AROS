@@ -901,9 +901,6 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     
     DoSuperMethodA(cl, obj, (Msg) msg);
 
-    if (!(msg->flags & MADF_DRAWOBJECT))
-	return 0;
-
     if (msg->flags & MADF_DRAWUPDATE)
     {
     	if (data->update == 1)
