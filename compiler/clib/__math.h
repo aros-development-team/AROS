@@ -63,11 +63,11 @@ struct exception
 #endif
 
 extern double __kernel_standard (double, double, int);
-extern double __ieee754_pow	(double, double);
 extern int    matherr		(struct exception *);
 extern double scalbn		(double, int);
+extern double copysign		(double x, double y);
+extern double __ieee754_pow	(double, double);
 extern double __ieee754_log10	(double);
 extern double __ieee754_log	(double);
-
 
 #endif /* __MATH_H */
