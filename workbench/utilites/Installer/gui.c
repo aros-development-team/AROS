@@ -1,5 +1,11 @@
 /* gui.c -- here are all functions for the gui */
 
+/*
+  Uncomment the next line if you want to use the
+  experimental Intuition based GUI
+#define INTUIGUI 1
+*/
+
 #include "Installer.h"
 #include "execute.h"
 
@@ -77,7 +83,6 @@ APTR vi;
 struct Screen *scr;
 struct Gadget *glist = NULL, *first = NULL, *gad = NULL;
 
-#define INTUIGUI 1
 
 #define ID_BOOLGAD 1
 struct NewGadget gt_boolgad = {
