@@ -47,6 +47,7 @@ libtable[] =
     {&UtilityBase       , "utility.library"  	 , 39, TRUE  },
     {&IFFParseBase      , "iffparse.library" 	 , 39, TRUE  },
     {&CyberGfxBase  	, "cybergraphics.library", 39, FALSE },
+    {&DataTypesBase  	, "datatypes.library"	 , 39, FALSE },
     {NULL                                            	     }
 };
 
