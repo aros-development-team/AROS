@@ -153,7 +153,7 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 # Create the dependency file %(to) for %(from) in the directory %(dir)
 %define mkdepend_q flags=$(CFLAGS) from=$< to=$@ dir=$(@D) opt=
 	@$(IF) [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else $(NOP) ; fi
-	@$(ECHO) "Makedepend $(CURDIR)/%(from)..."
+	@$(ECHO) "Makedepend $(CURDIR)/$(notdir %(from))..."
 	@$(MKDEPEND) %(flags) %(from) -o %(to)
 %end
 
@@ -161,7 +161,7 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 # Same but more noisy
 %define mkdepend flags=$(CFLAGS) from=$< to=$@ dir=$(@D) opt=
 	@$(IF) [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else $(NOP) ; fi
-	@$(ECHO) "Makedepend $(CURDIR)/%(from)..."
+	@$(ECHO) "Makedepend $(CURDIR)/$(notdir %(from))..."
 	$(MKDEPEND) %(flags) %(from) -o %(to)
 %end
 
@@ -216,7 +216,7 @@ endif
 # Compile function table
 %define compilefunctable
 $(OBJDIR)/functable.d : $(OBJDIR)/functable.c
-%mkdepend opt="$(MKDEPEND_FLAGS) -I."
+%mkdepend_q opt="$(MKDEPEND_FLAGS) -I."
 
 $(OBJDIR)/functable.o : $(OBJDIR)/functable.c
 %compile_q opt="$(CFLAGS) -I$(OBJDIR) -I."
@@ -226,9 +226,9 @@ $(OBJDIR)/functable.o : $(OBJDIR)/functable.c
 # Generate function table with archtool
 %define mkfunctable_arch archive=$(ARCHIVE)
 $(OBJDIR)/functable.c : mmakefile.src %(archive) libdefs.h
-	@$(ECHO) "Generating $@..."
+	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
 	@$(ARCHTOOL) -t %(archive)
-	$(MV) functable.c $@
+	@$(MV) functable.c $@
 
 %compilefunctable
 %end
@@ -237,7 +237,7 @@ $(OBJDIR)/functable.c : mmakefile.src %(archive) libdefs.h
 # Generate function table with some awk script
 %define mkfunctable_q
 $(OBJDIR)/functable.c : mmakefile.src $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfunctable.awk libdefs.h
-	@$(ECHO) "Generating $@..."
+	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
 	@$(AWK) -f $(BINDIR)/scripts/genfunctable.awk $(FUNCTABLE_SRCS) > $@
 
 %compilefunctable
@@ -248,14 +248,14 @@ $(OBJDIR)/functable.c : mmakefile.src $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfun
 %define mkendtag_q
 $(END_FILE).c : libdefs.h
 	%mkdir_q $(OBJDIR)
-	@$(ECHO) "Generating $@..."
+	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
 	@$(ECHO) "#include <libcore/libtail.c>" > $@
 
 $(ENDFUNC) : $(END_FILE).c libdefs.h
 %compile_q path=""
 
 $(END_FILE).d : $(END_FILE).c
-%mkdepend opt="$(MKDEPEND_CFLAGS) -I."
+%mkdepend_q opt="$(MKDEPEND_CFLAGS) -I."
 %end
 
 #------------------------------------------------------------------------------
@@ -282,7 +282,7 @@ endif
 # rule to generate libdefs.h with archtool (options may go away!)
 %define libdefs_rule conffile=lib.conf genlibdefstool=$(ARCHTOOL) dest=libdefs.h
 %(dest) : %(conffile) %(genlibdefstool)
-	@$(ECHO) "Generating $@..."
+	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
 	@%(genlibdefstool) -c
 %end
 
@@ -376,7 +376,7 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-%mkdepend opt=$(MKDEPEND_FLAGS)
+%mkdepend_q opt=$(MKDEPEND_FLAGS)
 %end
 
 #------------------------------------------------------------------------------
@@ -462,7 +462,7 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-%mkdepend opt=$(MKDEPEND_FLAGS)
+%mkdepend_q opt=$(MKDEPEND_FLAGS)
 %end
 
 #------------------------------------------------------------------------------
@@ -1459,9 +1459,9 @@ endif
 # This version of $(OBJDIR)/functable.c will override the one later.
 # Especially with $(FUNCS) == ""...
 $(OBJDIR)/functable.c : $(ARCHIVE)
-	@$(ECHO) "Generating $@..."
+	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
 	@$(ARCHTOOL) -t $(ARCHIVE)
-	$(MV) functable.c $@
+	@$(MV) functable.c $@
 
 # Because $(FUNCS) is "", then USE_FUNCTABLE is set to no, so I have to do
 # myself. Similarly, USE_LIBDEFS = no breaks the END_OBJ
