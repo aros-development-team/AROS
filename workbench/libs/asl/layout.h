@@ -5,6 +5,10 @@
 #   include <exec/types.h>
 #endif
 
+#ifndef DOS_DOS_H
+#    include <dos/dos.h>
+#endif
+
 #ifndef DOS_EXALL_H
 #    include <dos/exall.h>
 #endif
@@ -21,44 +25,57 @@
 #   include <libraries/gadtools.h>
 #endif
 
+/*****************************************************************************************/
+
 struct AslBase_intern;
+
+/*****************************************************************************************/
 
 /* spacing and sizes for layout */
 
-#define BORDERPROPSPACINGX 4
-#define BORDERPROPSPACINGY 4
+#define BORDERPROPSPACINGX 	4
+#define BORDERPROPSPACINGY 	4
 
-#define BORDERSTRINGSPACINGX 6
-#define BORDERSTRINGSPACINGY 4
+#define BORDERSTRINGSPACINGX 	6
+#define BORDERSTRINGSPACINGY 	4
 
-#define BORDERLVSPACINGX 4
-#define BORDERLVSPACINGY 4
+#define BORDERLVSPACINGX 	4
+#define BORDERLVSPACINGY 	4
 
-#define BORDERCYCLESPACINGX 4
+#define BORDERCYCLESPACINGX 	4
 
-#define GADGETSPACINGX 4
-#define GADGETSPACINGY 4
+#define GADGETSPACINGX 		4
+#define GADGETSPACINGY 		4
 
-#define OUTERSPACINGX 4
-#define OUTERSPACINGY 4
+#define OUTERSPACINGX 		4
+#define OUTERSPACINGY 		4
 
-#define LABELSPACINGX 8
+#define LABELSPACINGX 		8
 
-#define BUTTONEXTRAWIDTH 16
-#define BUTTONEXTRAHEIGHT 8
+#define BUTTONEXTRAWIDTH 	16
+#define BUTTONEXTRAHEIGHT 	8
 
-#define CYCLEEXTRAWIDTH  16
+#define CYCLEEXTRAWIDTH  	16
 
-#define IMAGEBUTTONEXTRAHEIGHT 4
-#define IMAGEBUTTONEXTRAWIDTH  4
-#define BORDERIMAGESPACINGX 4
+#define IMAGEBUTTONEXTRAHEIGHT 	4
+#define IMAGEBUTTONEXTRAWIDTH  	4
+#define BORDERIMAGESPACINGX 	4
 
-#define BORDERLVITEMSPACINGX 2
-#define BORDERLVITEMSPACINGY 1
+#define BORDERLVITEMSPACINGX 	2
+#define BORDERLVITEMSPACINGY 	1
 
-#define PROPSIZE 16
+#define PROPSIZE 		16
 
-#define MIN_SPACING 10
+#define MIN_SPACING 		10
+
+/*****************************************************************************************/
+
+/* defines for string edit hook */
+
+#define STRINGCODE_CURSORUP	1
+#define STRINGCODE_CURSORDOWN	2
+
+/*****************************************************************************************/
 
 /* tags */
 
@@ -79,6 +96,7 @@ struct AslBase_intern;
 #define ASLLV_Visible		(ASLLV_Dummy + 7)
 #define ASLLV_Total		(ASLLV_Dummy + 8)
 #define ASLLV_DoMultiSelect	(ASLLV_Dummy + 9)
+#define ASLLV_MakeVisible	(ASLLV_Dummy + 10)
 
 #define ASLBT_Dummy		(PGA_Top + 300)
 #define ASLBT_CoolImage		(ASLBT_Dummy + 1)
@@ -86,6 +104,8 @@ struct AslBase_intern;
 #define ASLCY_Dummy		(PGA_Top + 400)
 #define ASLCY_Labels		(ASLCY_Dummy + 1)
 #define ASLCY_Active		(ASLCY_Dummy + 2)
+
+/*****************************************************************************************/
 
 /* methods */
 
@@ -101,6 +121,8 @@ struct AslBase_intern;
 #define ASLLV_ALIGN_LEFT	0
 #define ASLLV_ALIGN_RIGHT	1
 
+/*****************************************************************************************/
+
 struct ASLLVDrawMsg
 {
     ULONG              lvdm_MethodID; /* LV_DRAW */
@@ -114,12 +136,15 @@ struct ASLLVFileReqNode
 {
     struct Node 	node;
     char		*text[ASLLV_MAXCOLUMNS];
+    struct DateStamp	date;
     APTR		userdata;
     IPTR		filesize;
     LONG		type;
     LONG		subtype;
     UWORD		dontfreetext;
 };
+
+/*****************************************************************************************/
 
 #define ASLLV_FRNTYPE_DIRECTORY 1
 #define ASLLV_FRNTYPE_VOLUMES   2
@@ -135,6 +160,8 @@ struct ASLLVFileReqNode
 #define MARK_NO_MULTISEL(x) (((struct Node *)(x))->ln_Pri &= ~NODEPRIF_MULTISEL)
 #define IS_MULTISEL(x)      (((struct Node *)(x))->ln_Pri &   NODEPRIF_MULTISEL)
 
+
+/*****************************************************************************************/
 
 /* gadget ids */
 
@@ -162,6 +189,7 @@ user has successfully requested something and hit "OK" */
 
 #define LDRET_FINISHED 2
 
+/*****************************************************************************************/
 
 /* Structure for storing data between LayoutGadgets and HandleEvents type hooks */
 struct LayoutData

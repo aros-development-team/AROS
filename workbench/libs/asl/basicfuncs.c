@@ -143,12 +143,21 @@ VOID ParseCommonTags
 		    intreq->ir_Flags &= ~IF_SLEEPWINDOW;
 		break;
 
+	    case ASLFR_PopToFront:
+/*	    case ASLFO_PopToFront:
+	    case ASLSM_PopToFront: */
+	    	if (tag->ti_Data)
+		    intreq->ir_Flags |= IF_POPTOFRONT;
+		else
+		    intreq->ir_Flags &= ~IF_POPTOFRONT;
+		break;
+
 	    case ASLFR_TextAttr:
 /*	    case ASLFO_TextAttr:
 	    case ASLSM_TextAttr: */
 		intreq->ir_TextAttr = (struct TextAttr *)tag->ti_Data;
 		break;
-
+	    
 	    case ASLFR_Locale:
 /*	    case ASLFO_Locale:
 	    case ASLSM_Locale: */
@@ -582,7 +591,7 @@ BOOL GetRequesterFont(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	{
 	    strcpy (fontname, usedattr->ta_Name);
 
-	    ld->ld_TextAttr.ta_Name	 = fontname;
+	    ld->ld_TextAttr.ta_Name  = fontname;
 	    ld->ld_TextAttr.ta_YSize = usedattr->ta_YSize;
 	    ld->ld_TextAttr.ta_Style = usedattr->ta_Style;
 	    ld->ld_TextAttr.ta_Flags = usedattr->ta_Flags;
@@ -698,7 +707,7 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 	    Wait(1L << port->mp_SigBit);
 	}
     } /* while (!terminated) */
-
+    
     ReturnBool ("HandleEvents", success);
 } /* HandleEvents() */
 
@@ -813,57 +822,21 @@ struct Node *FindListNode(struct List *list, WORD which)
 
 /*****************************************************************************************/
 
-static struct Node *FindPriNode(struct List *list, WORD pri, WORD (*getpri)(APTR))
+void SortInNode(APTR req, struct List *list, struct Node *node,
+		WORD (*compare)(APTR req, APTR node1, APTR node2, struct AslBase_intern *AslBase),
+		struct AslBase_intern *AslBase)
 {
-    struct Node *node, *result = NULL;
+    struct Node *prevnode = NULL;
+    struct Node *checknode;
     
-    ForeachNode(list, node)
+    ForeachNode(list, checknode)
     {
-        result = node;
-        if (pri >= getpri(node))
-        {
-	    break;
-	}
+        if (compare(req, node, checknode, AslBase) < 0) break;
+
+	prevnode = checknode;
     }
     
-    return result;
-}
-
-/*****************************************************************************************/
-
-void SortInNode(struct List *list, struct Node *node, WORD (*getpri)(APTR))
-{
-    struct Node *checknode = list->lh_Head;
-    WORD nodepri = getpri(node);
-    
-    checknode = FindPriNode(list, nodepri, getpri);
-    
-    if (!checknode)
-    {
-        AddHead(list, node);
-    } else {
-	if (getpri(checknode) > nodepri)
-	{
-            Insert(list, node, checknode);
-	} else {
-	    for(;checknode->ln_Succ;)
-	    {
-        	if (getpri(checknode) != nodepri) break;
-		if (stricmp(node->ln_Name, checknode->ln_Name) <= 0) break;
-		checknode = checknode->ln_Succ;	    
-	    }
-            Insert(list, node, checknode->ln_Pred);
-        }
-    }
-
-#if 0    
-    bug("---------------------\n");
-    bug("prinode = %d: %s\n\n",(prinode ? getpri(prinode) : -1) ,(prinode ? prinode->ln_Name : "<NOP>"));
-    ForeachNode(list, node)
-    {
-        bug("%d: %s\n",getpri(node),node->ln_Name);
-    }
-#endif
+    Insert(list, node, prevnode);
 }
 
 /*****************************************************************************************/
@@ -985,6 +958,45 @@ char *PooledIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBas
 }
 
 /*****************************************************************************************/
+
+AROS_UFH3(ULONG, StringEditFunc,
+    AROS_UFHA(struct Hook *,		hook,		A0),
+    AROS_UFHA(struct SGWork *,		sgw,		A2),
+    AROS_UFHA(ULONG *, 			command,	A1))
+{
+    ULONG retcode = 0;
+        
+    switch(*command)
+    {
+        case SGH_KEY:
+	    retcode = 1;
+    	    switch(sgw->IEvent->ie_Code)
+	    {
+	        case CURSORUP:
+		    sgw->EditOp  = EO_SPECIAL;
+		    sgw->Code    = STRINGCODE_CURSORUP;
+		    sgw->Actions = SGA_END;
+		    break;
+		    
+		case CURSORDOWN:
+		    sgw->EditOp  = EO_SPECIAL;
+		    sgw->Code    = STRINGCODE_CURSORDOWN;
+		    sgw->Actions = SGA_END;
+		    break;
+		    
+		case 0x45: /* escape */
+		    sgw->EditOp  = EO_SPECIAL;
+		    sgw->Code    = 27;
+		    sgw->Actions = SGA_END | SGA_REUSE;
+		    break;
+	    }
+    	    break;
+    
+    }
+    
+    return retcode;
+}
+
 /*****************************************************************************************/
 /*****************************************************************************************/
 /*****************************************************************************************/

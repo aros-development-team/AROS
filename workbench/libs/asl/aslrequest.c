@@ -70,7 +70,7 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
     struct IntReq	*intreq;
     struct AslReqInfo	*reqinfo;
     struct LayoutData 	*ld;
-    struct Window *win;	
+    struct Window 	*win;	
 
 
     BOOL success = FALSE;
@@ -171,7 +171,8 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 	    
 	    nw.IDCMPFlags= IDCMP_CLOSEWINDOW | IDCMP_GADGETUP      | IDCMP_MOUSEMOVE  |
 			   IDCMP_NEWSIZE     | IDCMP_REFRESHWINDOW | IDCMP_GADGETDOWN |
-			   IDCMP_MENUPICK;
+			   IDCMP_MENUPICK    | IDCMP_RAWKEY        | IDCMP_VANILLAKEY |
+			   IDCMP_MOUSEBUTTONS;
 			
 	    wintags[1].ti_Data	= nw.Width;
 	    wintags[2].ti_Data	= nw.Height;

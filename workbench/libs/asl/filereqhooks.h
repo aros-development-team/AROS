@@ -36,8 +36,7 @@
 
 struct FRUserData
 {
-    Object			*Listview;
-	
+    Object			*Listview;	
     Object			*OKBut;
     Object			*VolumesBut;
     Object			*ParentBut;
@@ -52,17 +51,41 @@ struct FRUserData
     struct ScrollerGadget 	ScrollGad;
     struct List			ListviewList;
     struct Hook			ListviewHook;
-    UWORD ButWidth;
-    UWORD ButHeight;
+    struct Hook			StringEditHook;
+    UWORD 			ButWidth;
+    UWORD 			ButHeight;
     WORD			LVColumnWidth[ASLLV_MAXCOLUMNS];
     UBYTE			LVColumnAlign[ASLLV_MAXCOLUMNS];
-
-    UBYTE Flags;
+    UBYTE 			Flags;
 	
 };
 
 /* Has the gadgetry been layouted before ? */
+
 #define FRFLG_LAYOUTED 		(1 << 0)
 #define FRFLG_SHOWING_VOLUMES	(1 << 1)
+
+/* Menu IDs */
+
+#define FRMEN_LASTNAME		1
+#define FRMEN_NEXTNAME		2 
+#define FRMEN_RESTORE		3 
+#define FRMEN_PARENT		4 
+#define FRMEN_VOLUMES		5 
+#define FRMEN_UPDATE		6 
+#define FRMEN_DELETE		7 
+#define FRMEN_NEWDRAWER		8 
+#define FRMEN_RENAME		9 
+#define FRMEN_SELECT		10 
+#define FRMEN_OK		11 
+#define FRMEN_CANCEL		12 
+#define FRMEN_BYNAME		13 
+#define FRMEN_BYDATE		14 
+#define FRMEN_BYSIZE		15 
+#define FRMEN_ASCENDING		16 
+#define FRMEN_DESCENDING	17 
+#define FRMEN_DRAWERSFIRST	18 
+#define FRMEN_DRAWERSMIX	19 
+#define FRMEN_DRAWERSLAST	20 
 
 #endif /* FILEREQHOOKS_H */

@@ -649,14 +649,14 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
         struct NewMenu nm[] =
 	{
 	    {NM_TITLE, imreq->ism_Menu_Control},
-	     {NM_ITEM, imreq->ism_Item_Control_LastMode + 2, imreq->ism_Item_Control_LastMode},
-	     {NM_ITEM, imreq->ism_Item_Control_NextMode + 2, imreq->ism_Item_Control_NextMode},
+	     {NM_ITEM, imreq->ism_Item_Control_LastMode + 2	, imreq->ism_Item_Control_LastMode},
+	     {NM_ITEM, imreq->ism_Item_Control_NextMode + 2	, imreq->ism_Item_Control_NextMode},
 	     {NM_ITEM, NM_BARLABEL},
-	     {NM_ITEM, imreq->ism_Item_Control_PropertyList + 2, imreq->ism_Item_Control_PropertyList},
-	     {NM_ITEM, imreq->ism_Item_Control_Restore + 2, imreq->ism_Item_Control_Restore},
+	     {NM_ITEM, imreq->ism_Item_Control_PropertyList + 2	, imreq->ism_Item_Control_PropertyList},
+	     {NM_ITEM, imreq->ism_Item_Control_Restore + 2	, imreq->ism_Item_Control_Restore},
 	     {NM_ITEM, NM_BARLABEL},
-	     {NM_ITEM, imreq->ism_Item_Control_OK + 2, imreq->ism_Item_Control_OK},
-	     {NM_ITEM, imreq->ism_Item_Control_Cancel + 2, imreq->ism_Item_Control_Cancel},
+	     {NM_ITEM, imreq->ism_Item_Control_OK + 2		, imreq->ism_Item_Control_OK},
+	     {NM_ITEM, imreq->ism_Item_Control_Cancel + 2	, imreq->ism_Item_Control_Cancel},
 	    {NM_END}
 	};
 

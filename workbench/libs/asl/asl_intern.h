@@ -17,6 +17,10 @@
 #   include <intuition/classes.h>
 #endif
 
+#ifndef INTUITION_SGHOOKS_H
+#   include <intuition/sghooks.h>
+#endif
+
 #ifndef LIBRARIES_ASL_H
 #    include <libraries/asl.h>
 #endif
@@ -79,52 +83,60 @@ struct ReqNode
 /*****************************************************************************************/
 
 /* Internal filerequester struct */
+
 struct IntFileReq
 {
-	struct IntReq	ifr_IntReq;
+    struct IntReq	ifr_IntReq;
 
-    STRPTR	ifr_File;
-    STRPTR	ifr_Drawer;
-    STRPTR	ifr_Pattern;
-    STRPTR	ifr_AcceptPattern;
-    STRPTR	ifr_RejectPattern;
-    UBYTE	ifr_Flags1;
-    UBYTE	ifr_Flags2;
-    struct Hook *ifr_FilterFunc;
-    ULONG 	(*ifr_HookFunc)(ULONG mask, APTR object, struct FileRequester *fr);
-    		/* ASLFR_HookFunc = Combined callback function */
-
+    STRPTR		ifr_File;
+    STRPTR		ifr_Drawer;
+    STRPTR		ifr_Pattern;
+    STRPTR		ifr_AcceptPattern;
+    STRPTR		ifr_RejectPattern;
+    UBYTE		ifr_Flags1;
+    UBYTE		ifr_Flags2;
+    struct Hook 	*ifr_FilterFunc;
+    ULONG 		(*ifr_HookFunc)(ULONG mask, APTR object, struct FileRequester *fr);
+    			/* ASLFR_HookFunc = Combined callback function */
+    ULONG		*ifr_GetSortBy;
+    ULONG		*ifr_GetSortOrder;
+    ULONG		*ifr_GetSortDrawers;
+    UWORD		ifr_SortBy;
+    UWORD		ifr_SortOrder;
+    UWORD		ifr_SortDrawers;
+    BOOL		ifr_InitialShowVolumes;
+    
     /* Some gadgettext specific for the file requester */
-    STRPTR	ifr_VolumesText;
-    STRPTR	ifr_ParentText;
-    STRPTR	ifr_PatternText;
-    STRPTR	ifr_DrawerText;
-    STRPTR	ifr_FileText;
-    STRPTR	ifr_LVDrawerText;
-    STRPTR	ifr_LVAssignText;
+    STRPTR		ifr_VolumesText;
+    STRPTR		ifr_ParentText;
+    STRPTR		ifr_PatternText;
+    STRPTR		ifr_DrawerText;
+    STRPTR		ifr_FileText;
+    STRPTR		ifr_LVDrawerText;
+    STRPTR		ifr_LVAssignText;
 
-    STRPTR	ifr_Menu_Control;
-    STRPTR	ifr_Item_Control_LastName;
-    STRPTR	ifr_Item_Control_NextName;
-    STRPTR	ifr_Item_Control_Restore;
-    STRPTR	ifr_Item_Control_Parent;
-    STRPTR	ifr_Item_Control_Volumes;
-    STRPTR	ifr_Item_Control_Update;
-    STRPTR	ifr_Item_Control_Delete;
-    STRPTR	ifr_Item_Control_CreateNewDrawer;
-    STRPTR	ifr_Item_Control_Rename;
-    STRPTR	ifr_Item_Control_Select;
-    STRPTR	ifr_Item_Control_OK;
-    STRPTR	ifr_Item_Control_Cancel;
-    STRPTR	ifr_Menu_FileList;
-    STRPTR	ifr_Item_FileList_SortByName;
-    STRPTR	ifr_Item_FileList_SortByDate;
-    STRPTR	ifr_Item_FileList_SortBySize;
-    STRPTR	ifr_Item_FileList_AscendingOrder;
-    STRPTR	ifr_Item_FileList_DescendingOrder;
-    STRPTR	ifr_Item_FileList_ShowDrawersFirst;
-    STRPTR	ifr_Item_FileList_ShowDrawerWithFiles;
-    STRPTR	ifr_Item_FileList_ShowDrawersLast;
+    STRPTR		ifr_Menu_Control;
+    STRPTR		ifr_Item_Control_LastName;
+    STRPTR		ifr_Item_Control_NextName;
+    STRPTR		ifr_Item_Control_Restore;
+    STRPTR		ifr_Item_Control_Parent;
+    STRPTR		ifr_Item_Control_Volumes;
+    STRPTR		ifr_Item_Control_Update;
+    STRPTR		ifr_Item_Control_Delete;
+    STRPTR		ifr_Item_Control_CreateNewDrawer;
+    STRPTR		ifr_Item_Control_Rename;
+    STRPTR		ifr_Item_Control_Select;
+    STRPTR		ifr_Item_Control_OK;
+    STRPTR		ifr_Item_Control_Cancel;
+    STRPTR		ifr_Menu_FileList;
+    STRPTR		ifr_Item_FileList_SortByName;
+    STRPTR		ifr_Item_FileList_SortByDate;
+    STRPTR		ifr_Item_FileList_SortBySize;
+    STRPTR		ifr_Item_FileList_AscendingOrder;
+    STRPTR		ifr_Item_FileList_DescendingOrder;
+    STRPTR		ifr_Item_FileList_ShowDrawersFirst;
+    STRPTR		ifr_Item_FileList_ShowDrawerWithFiles;
+    STRPTR		ifr_Item_FileList_ShowDrawersLast;
 };
 
 /*****************************************************************************************/
@@ -242,6 +254,7 @@ struct AslReqInfo
 #define IF_SLEEPWINDOW	 (1 << 1)
 #define IF_USER_POSTEXT  (1 << 2)
 #define IF_USER_NEGTEXT  (1 << 3)
+#define IF_POPTOFRONT	 (1 << 4)
 
 #define GetIR(ir) ((struct IntReq *)ir)
 
@@ -290,7 +303,9 @@ VOID StripRequester(APTR, UWORD, struct AslBase_intern *AslBase);
 
 WORD CountNodes(struct List *list, WORD flag);
 struct Node *FindListNode(struct List *list, WORD which);
-void SortInNode(struct List *list, struct Node *node, WORD (*getpri)(APTR));
+void SortInNode(APTR req, struct List *list, struct Node *node,
+		WORD (*compare)(APTR, APTR, APTR, struct AslBase_intern *),
+		struct AslBase_intern *AslBase);
 
 APTR AllocVecPooled(APTR pool, IPTR size);
 void FreeVecPooled(APTR mem);
@@ -300,6 +315,11 @@ char *VecCloneString(const char *name1, const char *name2, struct AslBase_intern
 char *VecPooledCloneString(const char *name1, const char *name2, APTR pool,
 			   struct AslBase_intern *AslBase);
 char *PooledIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBase);
+
+AROS_UFP3(ULONG, StringEditFunc,
+    AROS_UFPA(struct Hook *,		hook,		A0),
+    AROS_UFPA(struct SGWork *,		sgw,		A2),
+    AROS_UFPA(ULONG *, 			command,	A1));
 
 /* classes.c */
 

@@ -33,9 +33,10 @@
 
 /*****************************************************************************************/
 
-static WORD SMGetNodePri(struct DisplayMode *node)
+static WORD SMCompareNodes(struct IntModeReq *imreq, struct DisplayMode *node1,
+			   struct DisplayMode *node2, struct AslBase_intern *AslBase)
 {
-    return 0;
+    return Stricmp(node1->dm_Node.ln_Name, node2->dm_Node.ln_Name);
 }
 
 /*****************************************************************************************/
@@ -80,7 +81,7 @@ void SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	        dispmode->dm_DimensionInfo = diminfo;
 		dispmode->dm_PropertyFlags = dispinfo.PropertyFlags;
 		dispmode->dm_Node.ln_Name  = PooledCloneString(name, NULL, ld->ld_IntReq->ir_MemPool, AslBase);
-		SortInNode(&udata->ListviewList, &dispmode->dm_Node, (APTR)SMGetNodePri);
+		SortInNode(imreq, &udata->ListviewList, &dispmode->dm_Node, (APTR)SMCompareNodes, AslBase);
 	    }
 	    
 	} /* if diminfo and dispinfo could be retrieved */

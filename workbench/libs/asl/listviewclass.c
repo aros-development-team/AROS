@@ -325,22 +325,22 @@ static WORD mouseitem(Class *cl, Object *o, WORD mousex, WORD mousey)
 
 static void notifyall(Class *cl, Object *o, struct GadgetInfo *gi, STACKULONG flags)
 {
-    struct AslListViewData * data = INST_DATA(cl, o);
-    struct TagItem tags[] =
+    struct AslListViewData 	*data = INST_DATA(cl, o);
+    struct TagItem 		tags[] =
     {
         {ASLLV_Top	, data->top 	},
 	{ASLLV_Total	, data->total	},
 	{ASLLV_Visible	, data->visible },
 	{TAG_DONE			}
     };
-    struct opUpdate opu;
+    struct opUpdate		 opu;
     
-    opu.MethodID = OM_NOTIFY;
+    opu.MethodID     = OM_NOTIFY;
     opu.opu_AttrList = tags;
-    opu.opu_GInfo = gi;
-    opu.opu_Flags = flags;
+    opu.opu_GInfo    = gi;
+    opu.opu_Flags    = flags;
     
-    D(bug("asl listview notify: top = %d  total = %d  visible  = %d\n",
+    D(bug("asl listview notify all: top = %d  total = %d  visible  = %d\n",
     	 data->top,
 	 data->total,
 	 data->visible));
@@ -351,13 +351,36 @@ static void notifyall(Class *cl, Object *o, struct GadgetInfo *gi, STACKULONG fl
 
 /***********************************************************************************/
 
+static void notifytop(Class *cl, Object *o, struct GadgetInfo *gi, STACKULONG flags)
+{
+    struct AslListViewData 	*data = INST_DATA(cl, o);
+    struct TagItem 		tags[] =
+    {
+        {ASLLV_Top	, data->top 	},
+	{TAG_DONE			}
+    };
+    struct opUpdate 		opu;
+    
+    opu.MethodID     = OM_NOTIFY;
+    opu.opu_AttrList = tags;
+    opu.opu_GInfo    = gi;
+    opu.opu_Flags    = flags;
+    
+    D(bug("asl listview notify top: top = %d\n", data->top));
+	 
+    DoSuperMethodA(cl, o, (Msg)&opu);
+    
+};
+
+/***********************************************************************************/
+
 static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 {
-    struct AslListViewData *data = INST_DATA(cl, o);
-    struct TagItem *tag, *tstate = msg->ops_AttrList;
-    IPTR retval;
-    BOOL redraw = FALSE;
-    WORD newtop;
+    struct AslListViewData 	*data = INST_DATA(cl, o);
+    struct TagItem 		*tag, *tstate = msg->ops_AttrList;
+    IPTR 			retval;
+    BOOL 			redraw = FALSE, notify_all = FALSE, notify_top = FALSE;
+    WORD 			newtop;
     
     retval = DoSuperMethodA(cl, o, (Msg) msg);
 
@@ -376,11 +399,46 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 		if (newtop != data->top)
 		{
 		    data->scroll = newtop - data->top;
-	            data->top = newtop;
-	            redraw = TRUE;
+	            data->top    = newtop;
+		    notify_top   = TRUE;
+	            redraw       = TRUE;
 		}
 		break;
-	
+
+	    case ASLLV_MakeVisible:
+		newtop = (WORD)tag->ti_Data;
+		
+		if (newtop < 0)
+		{
+		    newtop = 0;
+		} else if (newtop >= data->total)
+		{
+		    newtop = data->total - 1;
+		    if (newtop < 0) newtop = 0;
+		}   
+		
+		/* No need to do anything if it is already visible */
+		
+		if (newtop < data->top)
+		{
+		    /* new_top already okay */ 
+
+		    data->scroll = newtop - data->top;
+		    data->top    = newtop;
+		    notify_top   = TRUE;
+		    redraw	 = TRUE;
+		}
+		else if (newtop >= data->top + data->visible)
+		{
+		    newtop -= (data->visible - 1);
+		    
+		    data->scroll = newtop - data->top;
+		    data->top    = newtop;
+		    notify_top   = TRUE;
+		    redraw 	 = TRUE;
+		}
+		break;
+		
 	    case ASLLV_Active:
 	        {
 		    struct Node *node;
@@ -410,8 +468,11 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 
 		    if ((node = findnode(cl, o, data->active)))
 		    {
-		        MARK_SELECTED(node);
-		        rendersingleitem(cl, o, msg->ops_GInfo, data->active);
+		        if (!data->domultiselect || IS_MULTISEL(node))
+			{
+		            MARK_SELECTED(node);
+		            rendersingleitem(cl, o, msg->ops_GInfo, data->active);
+			}
 		    }
 
 		}
@@ -433,15 +494,17 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 		
 		makenodetable(cl, o);
 		
-		notifyall(cl, o, msg->ops_GInfo, 0);
-		
-		redraw = TRUE;
+		notify_all = TRUE;
+		redraw     = TRUE;
 		break;
 
+	    case ASLLV_DoMultiSelect:
+	    	data->domultiselect = tag->ti_Data ? TRUE : FALSE;
+		break;
+		
 	} /* switch(tag->ti_Tag) */
 	 
     } /* while((tag = NextTagItem(&tsate))) */
-
     
     if (redraw)
     {
@@ -459,6 +522,14 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 	    
 	    ReleaseGIRPort(rp);
 	}
+    }
+    
+    if (notify_all)
+    {
+	notifyall(cl, o, msg->ops_GInfo, 0);
+    } else if (notify_top)
+    {
+	notifytop(cl, o, msg->ops_GInfo, 0);
     }
     
     return retval;
@@ -543,6 +614,14 @@ static IPTR asllistview_get(Class * cl, Object * o, struct opGet *msg)
 	    *msg->opg_Storage = data->top;
 	    break;
 	
+	case ASLLV_Total:
+	    *msg->opg_Storage = data->total;
+	    break;
+	    
+	case ASLLV_Visible:
+	    *msg->opg_Storage = data->visible;
+	    break;
+	    
 	default:
 	    retval = DoSuperMethodA(cl, o, (Msg)msg);
 	    break;
@@ -733,7 +812,7 @@ static IPTR asllistview_handleinput(Class *cl, Object *o, struct gpInput *msg)
 				ReleaseGIRPort(rp);
 			    }
 
-			    notifyall(cl, o, msg->gpi_GInfo, OPUF_INTERIM);
+			    notifytop(cl, o, msg->gpi_GInfo, OPUF_INTERIM);
 			    
 			} /* if ((n < data->top) || (n >= data->top + data->visible)) */
 		    
@@ -833,7 +912,7 @@ static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
 	        WORD scrollx1 = data->minx + BORDERLVSPACINGX;
 		WORD scrolly1 = data->miny + BORDERLVSPACINGY;
 		WORD scrollx2 = data->maxx - BORDERLVSPACINGX;
-		WORD scrolly2 = data->maxy - BORDERLVSPACINGY;
+		WORD scrolly2 = scrolly1 + (data->visible * data->lineheight) - 1;
 		WORD i, first, last, step;
 		
 	        ScrollRaster(msg->gpr_RPort, 0, data->scroll * data->lineheight,

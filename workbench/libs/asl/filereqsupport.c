@@ -34,6 +34,12 @@
 
 /*****************************************************************************************/
 
+static WORD FRCompareDirectoryNodes(struct IntFileReq *ifreq, struct ASLLVFileReqNode *node1,
+				    struct ASLLVFileReqNode *node2, struct AslBase_intern *AslBase);
+
+
+/*****************************************************************************************/
+
 static void fixpath(char *pathstring)
 {
     char *start;
@@ -118,8 +124,8 @@ static void fixpath(char *pathstring)
 
 void FRRefreshListview(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct FRUserData * udata = (struct FRUserData *)ld->ld_UserData;	
-    struct TagItem set_tags[] =
+    struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;	
+    struct TagItem 	set_tags[] =
     {
 	{ASLLV_Labels, (IPTR)&udata->ListviewList	},
 	{TAG_DONE					}
@@ -137,9 +143,9 @@ void FRRefreshListview(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 void FRFreeListviewList(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct FRUserData * udata = (struct FRUserData *)ld->ld_UserData;	
-    struct ASLLVFileReqNode *node, *succ;
-    struct TagItem set_tags [] =
+    struct FRUserData 		*udata = (struct FRUserData *)ld->ld_UserData;	
+    struct ASLLVFileReqNode 	*node, *succ;
+    struct TagItem 		set_tags [] =
     {
         {ASLLV_Labels	, NULL	},
 	{TAG_DONE		}
@@ -173,6 +179,44 @@ void FRFreeListviewList(struct LayoutData *ld, struct AslBase_intern *AslBase)
     NEWLIST(&udata->ListviewList);
 }
 
+
+/*****************************************************************************************/
+
+void FRReSortListview(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct FRUserData 		*udata = (struct FRUserData *)ld->ld_UserData;	
+    struct IntFileReq 		*ifreq = (struct IntFileReq *)ld->ld_IntReq;
+    struct Node		 	*node, *succ;
+    struct List			templist;
+    struct TagItem 		set_tags [] =
+    {
+        {ASLLV_Labels	, NULL	},
+	{TAG_DONE		}
+    };
+    
+    if (udata->Flags & FRFLG_SHOWING_VOLUMES) return;
+
+    SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
+	
+    NEWLIST(&templist);
+    
+    ForeachNodeSafe(&udata->ListviewList, node, succ)
+    {
+        Remove(node);
+	MARK_UNSELECTED(node);
+	AddTail(&templist, node);
+    }
+    
+    ForeachNodeSafe(&templist, node, succ)
+    {
+	SortInNode(ifreq, &udata->ListviewList, node, (APTR)FRCompareDirectoryNodes, AslBase);        
+    }
+    
+    set_tags[0].ti_Data = (IPTR)&udata->ListviewList;
+    
+    SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);    
+}
+
 /*****************************************************************************************/
 
 void FRDirectoryScanSymbolState(struct LayoutData *ld, BOOL on, struct AslBase_intern *AslBase)
@@ -180,8 +224,8 @@ void FRDirectoryScanSymbolState(struct LayoutData *ld, BOOL on, struct AslBase_i
     
     if (ld->ld_Window)
     {
-        struct FRUserData * udata = (struct FRUserData *)ld->ld_UserData;	
-	struct TagItem set_tags[] =
+        struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;	
+	struct TagItem 		set_tags[] =
 	{
             {GA_Selected	, on	},
 	    {TAG_DONE		}
@@ -196,9 +240,9 @@ void FRDirectoryScanSymbolState(struct LayoutData *ld, BOOL on, struct AslBase_i
 
 static void FRCalcColumnWidths(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct FRUserData * udata = (struct FRUserData *)ld->ld_UserData;
-    struct ASLLVFileReqNode *node;
-    WORD i;
+    struct FRUserData 		*udata = (struct FRUserData *)ld->ld_UserData;
+    struct ASLLVFileReqNode 	*node;
+    WORD 			i;
     
     for(i = 0; i < ASLLV_MAXCOLUMNS; i++)
     {
@@ -228,24 +272,64 @@ static void FRCalcColumnWidths(struct LayoutData *ld, struct AslBase_intern *Asl
 
 /*****************************************************************************************/
 
-static WORD FRGetDirectoryNodePri(struct ASLLVFileReqNode *node)
+static WORD FRCompareDirectoryNodes(struct IntFileReq *ifreq, struct ASLLVFileReqNode *node1,
+				    struct ASLLVFileReqNode *node2, struct AslBase_intern *AslBase)
 {
-    return (node->subtype > 0) ? 1 : 0; 
+    WORD pri1 = (node1->subtype > 0) ? 1 : 0;
+    WORD pri2 = (node2->subtype > 0) ? 1 : 0;
+    WORD diff = (pri2 - pri1) * -(ifreq->ifr_SortDrawers - 1);
+    LONG bigdiff;
+    
+    if (!diff)
+    {
+        switch(ifreq->ifr_SortBy)
+	{
+	    case ASLFRSORTBY_Name:
+                diff = Stricmp(node1->node.ln_Name, node2->node.ln_Name);
+		break;
+		
+	    case ASLFRSORTBY_Date:
+	    	bigdiff = CompareDates((const struct DateStamp *)&node2->date, (const struct DateStamp *)&node1->date);
+		if (bigdiff < 0)
+		{
+		    diff = -1;
+		} else if (bigdiff > 0)
+		{
+		    diff = 1;
+		}
+	    	break;
+		
+	    case ASLFRSORTBY_Size:
+	    	if (node1->filesize < node2->filesize)
+		{
+		    diff = -1;
+		}
+		else if (node1->filesize > node2->filesize)
+		{
+		    diff = 1;
+		}
+	        break;
+	}
+	
+	if (ifreq->ifr_SortOrder == ASLFRSORTORDER_Descend) diff = -diff;
+    }
+    
+    return diff;
 }
 
 BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct FRUserData * udata = (struct FRUserData *)ld->ld_UserData;	
-    struct IntFileReq *ifreq = (struct IntFileReq *)ld->ld_IntReq;
-    struct FileInfoBlock *fib;
-    UBYTE parsedpattern[MAX_PATTERN_LEN * 2 + 3];
-    BPTR lock;
-
-    BOOL dopatternstring = FALSE, success = FALSE;
+    struct FRUserData 		*udata = (struct FRUserData *)ld->ld_UserData;	
+    struct IntFileReq 		*ifreq = (struct IntFileReq *)ld->ld_IntReq;
+    struct FileInfoBlock 	*fib;
+    UBYTE 			parsedpattern[MAX_PATTERN_LEN * 2 + 3];
+    BPTR 			lock;
+    BOOL 			dopatternstring = FALSE, success = FALSE;
 
     FRDirectoryScanSymbolState(ld, TRUE, AslBase);
 
     FRFreeListviewList(ld, AslBase);
+    FRMultiSelectOnOff(ld, (ifreq->ifr_Flags1 & FRF_DOMULTISELECT) ? TRUE : FALSE, AslBase);
 
     if (ifreq->ifr_Flags1 & FRF_DOPATTERNS)
     {
@@ -295,7 +379,7 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 			WORD len = strlen(fib->fib_FileName);
 			if (len >= 5)
 			{
-		            if (stricmp(fib->fib_FileName + len - 5, ".info") == 0) addentry = FALSE;
+		            if (Stricmp(fib->fib_FileName + len - 5, ".info") == 0) addentry = FALSE;
 			}
 		    }
 
@@ -386,6 +470,9 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 			
 			if (DateToStr(&dt))
 			{
+			    //sprintf(datebuffer, "%x8", fib->fib_Date.ds_Days);
+			    //sprintf(timebuffer, "%x8", fib->fib_Date.ds_Minute);
+			    
 			    node->text[2] = PooledCloneString(datebuffer, NULL, ld->ld_IntReq->ir_MemPool, AslBase);
 			    node->text[3] = PooledCloneString(timebuffer, NULL, ld->ld_IntReq->ir_MemPool, AslBase);
 			}
@@ -396,12 +483,12 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 			}
 			
 			node->userdata = ld;
-			
+			node->date     = fib->fib_Date;
 			node->filesize = fib->fib_Size;
 			node->type     = ASLLV_FRNTYPE_DIRECTORY;
 			node->subtype  = fib->fib_DirEntryType;
 
-			SortInNode(&udata->ListviewList, &node->node, (APTR)FRGetDirectoryNodePri);
+			SortInNode(ifreq, &udata->ListviewList, &node->node, (APTR)FRCompareDirectoryNodes, AslBase);
 		    }
 		    
 		} /* if (addentry) */
@@ -434,36 +521,56 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 
 /*****************************************************************************************/
 
-static WORD FRGetVolumeNodePri(struct ASLLVFileReqNode *node)
+static WORD FRCompareVolumeNodes(struct IntFileReq *ifreq, struct ASLLVFileReqNode *node1,
+				 struct ASLLVFileReqNode *node2, struct AslBase_intern *AslBase)
 {
-    WORD pri;
+    WORD pri1, pri2, diff;
     
-    switch(node->subtype)
+    switch(node1->subtype)
     {
 	case DLT_DIRECTORY:
 	case DLT_LATE:
 	case DLT_NONBINDING:
-	    pri = 0;
+	    pri1 = 0;
 	    break;
 	    
 	default:
-	    pri = 1;
+	    pri1 = 1;
+	    break;
+    }
+
+    switch(node2->subtype)
+    {
+	case DLT_DIRECTORY:
+	case DLT_LATE:
+	case DLT_NONBINDING:
+	    pri2 = 0;
+	    break;
+	    
+	default:
+	    pri2 = 1;
 	    break;
     }
     
-    return pri;
+    diff = pri2 - pri1;
+    if (!diff) diff = Stricmp(node1->node.ln_Name, node2->node.ln_Name);
+    
+    return diff;
 }
+
+/*****************************************************************************************/
 
 BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct FRUserData * udata = (struct FRUserData *)ld->ld_UserData;	
-    struct IntFileReq *ifreq = (struct IntFileReq *)ld->ld_IntReq;
-    struct DosList *dlist;
-    BOOL success = TRUE;
+    struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;	
+    struct IntFileReq 	*ifreq = (struct IntFileReq *)ld->ld_IntReq;
+    struct DosList 	*dlist;
+    BOOL 		success = TRUE;
     
     FRDirectoryScanSymbolState(ld, TRUE, AslBase);
     
     FRFreeListviewList(ld, AslBase);
+    FRMultiSelectOnOff(ld, FALSE, AslBase);
     
     dlist = LockDosList(LDF_READ | LDF_VOLUMES | LDF_ASSIGNS);
     
@@ -496,7 +603,7 @@ BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    node->type	      = ASLLV_FRNTYPE_VOLUMES;
 	    node->subtype     = dlist->dol_Type;
 
-	    SortInNode(&udata->ListviewList, &node->node, (APTR)FRGetVolumeNodePri);
+	    SortInNode(ifreq, &udata->ListviewList, &node->node, (APTR)FRCompareVolumeNodes, AslBase);
 
 	}
 
@@ -519,27 +626,34 @@ BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 /*****************************************************************************************/
 
-BOOL FRNewPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBase)
+void FRSetPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct FRUserData * udata = (struct FRUserData *)ld->ld_UserData;	
-    char pathstring[257];
-    struct TagItem set_tags[] =
+    struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;	
+    struct TagItem 	set_tags[] =
     {
-	{STRINGA_TextVal	, (IPTR)pathstring	},
-	{TAG_DONE					}
-    };
-    
-    BOOL result = FALSE;
-	
-    strcpy(pathstring, path);
-    fixpath(pathstring);
+	{STRINGA_TextVal	, path ? (IPTR)path : (IPTR)""	},
+	{TAG_DONE						}
+    };    
     
     if (ld->ld_Window)
     {    
         SetGadgetAttrsA((struct Gadget *)udata->PathGad, ld->ld_Window, NULL, set_tags);
     } else {
         SetAttrsA(udata->PathGad, set_tags);
-    }
+    }    
+}
+
+/*****************************************************************************************/
+
+BOOL FRNewPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    char 		pathstring[257];
+    BOOL 		result = FALSE;
+	
+    strcpy(pathstring, path);
+    fixpath(pathstring);
+    
+    FRSetPath(pathstring, ld, AslBase);
     
     result = FRGetDirectory(pathstring, ld, AslBase);
 
@@ -550,9 +664,9 @@ BOOL FRNewPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBas
 
 BOOL FRAddPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct FRUserData * udata = (struct FRUserData *)ld->ld_UserData;
-    char pathstring[257], *gadpath;
-    BOOL result;
+    struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;
+    char 		pathstring[257], *gadpath;
+    BOOL 		result;
     
     GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&gadpath);
     
@@ -569,10 +683,10 @@ BOOL FRAddPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBas
 
 BOOL FRParentPath(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct FRUserData * udata = (struct FRUserData *)ld->ld_UserData;
-    char pathstring[257], *gadpath;
-    WORD len;
-    BOOL result;
+    struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;
+    char 		pathstring[257], *gadpath;
+    WORD 		len;
+    BOOL 		result;
     
     GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&gadpath);
     
@@ -609,17 +723,174 @@ BOOL FRParentPath(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 void FRSetFile(STRPTR file, struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct FRUserData * udata = (struct FRUserData *)ld->ld_UserData;	
-
-    struct TagItem set_tags[] =
+    struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;	
+    struct TagItem 	set_tags[] =
     {
-	{STRINGA_TextVal	, (IPTR)file	},
-	{TAG_DONE				}
+	{STRINGA_TextVal	, file ? (IPTR)file : (IPTR)""	},
+	{TAG_DONE						}
     };
 
     SetGadgetAttrsA((struct Gadget *)udata->FileGad, ld->ld_Window, NULL, set_tags);
 }
 
+/*****************************************************************************************/
+
+void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct Gadget *gad, struct AslBase_intern *AslBase)
+{
+    struct FRUserData 		*udata = (struct FRUserData *)ld->ld_UserData;    
+    struct IntFileReq 		*ifreq = (struct IntFileReq *)ld->ld_IntReq;
+    struct ASLLVFileReqNode 	*node;
+    IPTR 			active, total, visible;
+    struct TagItem		set_tags[] =
+    {
+    	{ASLLV_Active		, 0		},
+	{ASLLV_MakeVisible	, 0		},
+	{TAG_DONE				}
+    };
+    
+    GetAttr(ASLLV_Active , udata->Listview, &active );
+    GetAttr(ASLLV_Total  , udata->Listview, &total  );
+    GetAttr(ASLLV_Visible, udata->Listview, &visible);
+    
+    if (total < 1) return;
+    
+    if (quali & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+    {
+        delta *= (visible - 1);
+    }
+    else if (quali & (IEQUALIFIER_LALT | IEQUALIFIER_RALT | IEQUALIFIER_CONTROL))
+    {
+        delta *= total;
+    }
+    else if (gad && (gad != (struct Gadget *)udata->PatternGad))
+    {
+        /* try to jump to first item which matches text in string gadget,
+	   but only if text in string gadget mismatches actual active
+	   item's text (in this case move normally = one step)) */
+	   
+	char buffer[257];
+	char *val;
+	WORD i, len;
+	BOOL dojump = TRUE;
+		
+	GetAttr(STRINGA_TextVal, gad, (IPTR *)&val);
+	strcpy(buffer, val);
+
+	len = strlen(buffer);
+	if (len > 0) if (buffer[len - 1] == '/') buffer[--len] = '\0';
+	
+	if (((LONG)active) >= 0)
+	{
+	    if ((node = (struct ASLLVFileReqNode *)FindListNode(&udata->ListviewList, (WORD)active)))
+	    {
+	        if (stricmp(node->node.ln_Name, buffer) == 0) dojump = FALSE;
+	    }     
+	}
+	
+	if (dojump)
+	{
+	    i = 0;
+	    ForeachNode(&udata->ListviewList, node)
+	    {
+		if (Strnicmp((CONST_STRPTR)node->node.ln_Name, (CONST_STRPTR)buffer, len) == 0)
+		{
+		    active = i;
+		    delta = 0;
+		    break;
+		}
+		i++;
+	    }
+	}
+     
+    }
+    
+    active += delta;
+    
+    if (((LONG)active) < 0) active = 0;
+    if (active >= total) active = total - 1;
+    
+    set_tags[0].ti_Data = set_tags[1].ti_Data = active;
+    
+    SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
+    
+    if ((node = (struct ASLLVFileReqNode *)FindListNode(&udata->ListviewList, (WORD)active)))
+    {
+	if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY)
+	{
+            FRSetPath(node->node.ln_Name, ld, AslBase);
+	} else {
+	    char pathstring[257];
+	    
+	    strcpy(pathstring, node->node.ln_Name);
+	    if ((node->subtype > 0) && (!(udata->Flags & FRFLG_SHOWING_VOLUMES)))
+	    {
+	        strcat(pathstring, "/");
+	    }
+	    
+	    FRSetFile(pathstring, ld, AslBase);
+	}
+    }
+ 
+    if (gad)
+    {
+        ActivateGadget(gad, ld->ld_Window, NULL);
+    } else {
+        FRActivateMainStringGadget(ld, AslBase);
+    }
+}
+
+/*****************************************************************************************/
+
+void FRActivateMainStringGadget(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct FRUserData *udata = (struct FRUserData *)ld->ld_UserData;    
+    struct IntFileReq *ifreq = (struct IntFileReq *)ld->ld_IntReq;
+
+    if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY)
+    {
+        ActivateGadget((struct Gadget *)udata->PathGad, ld->ld_Window, NULL);
+    } else {
+        ActivateGadget((struct Gadget *)udata->FileGad, ld->ld_Window, NULL);
+    }   
+}
+
+/*****************************************************************************************/
+
+void FRMultiSelectOnOff(struct LayoutData *ld, BOOL onoff, struct AslBase_intern *AslBase)
+{
+    struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;	
+    struct TagItem 	set_tags[] =
+    {
+	{ASLLV_DoMultiSelect	, onoff	},
+	{TAG_DONE			}
+    };    
+    
+    if (ld->ld_Window)
+    {    
+        SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
+    } else {
+        SetAttrsA(udata->Listview, set_tags);
+    }    
+}
+
+/*****************************************************************************************/
+
+void FRSetPattern(STRPTR pattern, struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;	
+    struct TagItem 	set_tags[] =
+    {
+	{STRINGA_TextVal	, pattern ? (IPTR)pattern : (IPTR)""	},
+	{TAG_DONE							}
+    };    
+    
+    if (ld->ld_Window)
+    {    
+        SetGadgetAttrsA((struct Gadget *)udata->PatternGad, ld->ld_Window, NULL, set_tags);
+    } else {
+        SetAttrsA(udata->PatternGad, set_tags);
+    }    
+}
 
 /*****************************************************************************************/
 

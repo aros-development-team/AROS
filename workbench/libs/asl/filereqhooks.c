@@ -65,9 +65,6 @@ STATIC ULONG GetSelectedFiles(struct FRUserData *, struct LayoutData *, struct A
 
 /*****************************************************************************************/
 
-/************************
-**  ASLFRRenderHook()  **
-************************/
 AROS_UFH3(IPTR, ASLFRRenderHook,
     AROS_UFHA(struct Hook *,            hook,     	A0),
     AROS_UFHA(struct ASLLVFileReqNode *,node,           A2),
@@ -118,18 +115,17 @@ AROS_UFH3(IPTR, ASLFRRenderHook,
 		
      	    case ASLLVR_NORMAL:
 	    {
-    	    	WORD numfit;
-    	    	struct TextExtent te;
+    	    	WORD 			numfit;
+    	    	struct TextExtent 	te;
     	    
 		SetAPen(rp, dri->dri_Pens[erasepen]);
      	    	RectFill(rp, min_x, min_y, max_x, max_y);
      	    	
 		if (node)
 		{
-		    struct LayoutData *ld = ((struct LayoutData *)node->userdata);
-    		    struct FRUserData *udata = (struct FRUserData *)ld->ld_UserData;	
-
-		    WORD i;
+		    struct LayoutData 	*ld = ((struct LayoutData *)node->userdata);
+    		    struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;	
+		    WORD 		i;
 		    
 		    SetFont(rp, ld->ld_Font);
 		    
@@ -203,19 +199,15 @@ AROS_UFH3(IPTR, ASLFRRenderHook,
 
 /*****************************************************************************************/
 
-/****************
-**  FRTagHook  **
-****************/
-
 AROS_UFH3(VOID, FRTagHook,
     AROS_UFHA(struct Hook *,            hook,           A0),
     AROS_UFHA(struct ParseTagArgs *,    pta,            A2),
     AROS_UFHA(struct AslBase_intern *,  AslBase,        A1)
 )
 {
-    struct TagItem *tag, *tstate;
-
-    struct IntFileReq *ifreq;
+    struct TagItem 	*tag, *tstate;
+    struct IntFileReq 	*ifreq;
+    IPTR		tidata;
     
     EnterFunc(bug("FRTagHook(hook=%p, pta=%p)\n", hook, pta));
 
@@ -224,7 +216,8 @@ AROS_UFH3(VOID, FRTagHook,
     tstate = pta->pta_Tags;
     while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
     {
-
+	tidata = tag->ti_Data;
+	
 	switch (tag->ti_Tag)
 	{
 	    /* The tags that are put "in a row" are defined as the same value,
@@ -232,27 +225,27 @@ AROS_UFH3(VOID, FRTagHook,
 	    */
 	    case ASLFR_InitialDrawer:
 	    /*	case ASL_Dir:  Obsolete */
-		ifreq->ifr_Drawer = (STRPTR)tag->ti_Data;
+		ifreq->ifr_Drawer = (STRPTR)tidata;
 		break;
 
 	    case ASLFR_InitialFile:
 	    /* case ASL_File:  Obsolete */
-		ifreq->ifr_File = (STRPTR)tag->ti_Data;
+		ifreq->ifr_File = (STRPTR)tidata;
 		break;
 
 	    case ASLFR_InitialPattern:
 	    /*	case ASL_Pattern:  Obsolete */
-		ifreq->ifr_Pattern = (STRPTR)tag->ti_Data;
+		ifreq->ifr_Pattern = (STRPTR)tidata;
 		break;
 
 	    case ASLFR_UserData:
-		((struct FileRequester *)pta->pta_Req)->fr_UserData = (APTR)tag->ti_Data;
+		((struct FileRequester *)pta->pta_Req)->fr_UserData = (APTR)tidata;
 		break;
 
 	    /* Options */
 
 	    case ASLFR_Flags1:
-		ifreq->ifr_Flags1 = (UBYTE)tag->ti_Data;
+		ifreq->ifr_Flags1 = (UBYTE)tidata;
 		/* Extract some flags that are common to all requester types and
 		put them into IntReq->ir_Flags
 		*/
@@ -263,72 +256,101 @@ AROS_UFH3(VOID, FRTagHook,
 		break;
 
 	    case ASLFR_Flags2:
-		ifreq->ifr_Flags2 = (UBYTE)tag->ti_Data;
+		ifreq->ifr_Flags2 = (UBYTE)tidata;
 		break;
 
 	    case ASLFR_DoSaveMode:
-		if (tag->ti_Data)
+		if (tidata)
 		    ifreq->ifr_Flags1 |= FRF_DOSAVEMODE;
 		else
 		    ifreq->ifr_Flags1 &= ~FRF_DOSAVEMODE;
 		break;
 
 	    case ASLFR_DoMultiSelect:
-		if (tag->ti_Data)
+		if (tidata)
 		    ifreq->ifr_Flags1 |= FRF_DOMULTISELECT;
 		else
 		    ifreq->ifr_Flags1 &= ~FRF_DOMULTISELECT;
 		break;
 
 	    case ASLFR_DoPatterns:
-		if (tag->ti_Data)
+		if (tidata)
 		    ifreq->ifr_Flags1 |= FRF_DOPATTERNS;
 		else
 		    ifreq->ifr_Flags1 &= ~FRF_DOPATTERNS;
 		break;
 
 	    case ASLFR_DrawersOnly:
-		if (tag->ti_Data)
+		if (tidata)
 		    ifreq->ifr_Flags2 |= FRF_DRAWERSONLY;
 		else
 		    ifreq->ifr_Flags2 &= ~FRF_DRAWERSONLY;
 		break;
 
 	    case ASLFR_FilterFunc:
-		ifreq->ifr_FilterFunc = (struct Hook *)tag->ti_Data;
+		ifreq->ifr_FilterFunc = (struct Hook *)tidata;
 		ifreq->ifr_Flags1 |= FRF_FILTERFUNC;
 		break;
 
 	    case ASLFR_RejectIcons:
-		if (tag->ti_Data)
+		if (tidata)
 		    ifreq->ifr_Flags2 |= FRF_REJECTICONS;
 		else
 		    ifreq->ifr_Flags2 &= ~FRF_REJECTICONS;
 		break;
 
 	    case ASLFR_RejectPattern:
-	        if (tag->ti_Data)
-		    ifreq->ifr_RejectPattern = (STRPTR)tag->ti_Data;
+	        if (tidata)
+		    ifreq->ifr_RejectPattern = (STRPTR)tidata;
 		break;
 
 	    case ASLFR_AcceptPattern:
-	        if (tag->ti_Data)
-		    ifreq->ifr_AcceptPattern = (STRPTR)tag->ti_Data;
+	        if (tidata)
+		    ifreq->ifr_AcceptPattern = (STRPTR)tidata;
 		break;
 		
 	    case ASLFR_FilterDrawers:
-		if (tag->ti_Data)
+		if (tidata)
 		    ifreq->ifr_Flags2 |= FRF_FILTERDRAWERS;
 		else
 		    ifreq->ifr_Flags2 &= ~FRF_FILTERDRAWERS;
 		break;
 
 	    case ASLFR_HookFunc:
-	        ifreq->ifr_HookFunc = (APTR)tag->ti_Data;
+	        ifreq->ifr_HookFunc = (APTR)tidata;
 	        break;
-				
+		
+	    case ASLFR_SetSortBy:
+	    	ifreq->ifr_SortBy = tidata;
+		break;
+		
+	    case ASLFR_GetSortBy:
+	        ifreq->ifr_GetSortBy = (ULONG *)tidata;
+		break;
+		
+	    case ASLFR_SetSortOrder:
+	        ifreq->ifr_SortOrder = tidata;
+		break;
+		
+	    case ASLFR_GetSortOrder:
+	        ifreq->ifr_GetSortOrder = (ULONG *)tidata;
+		break;
+		
+	    case ASLFR_SetSortDrawers:
+	        ifreq->ifr_SortDrawers = tidata;
+		break;
+		
+	    case ASLFR_GetSortDrawers:
+	        ifreq->ifr_GetSortDrawers = (ULONG *)tidata;
+		break;
+	
+	    case ASLFR_InitialShowVolumes:
+	        ifreq->ifr_InitialShowVolumes = tidata ? TRUE : FALSE;
+		break;
+			
 	    default:
 		break;
+		
 	} /* switch (tag->ti_Tag) */
 
     } /* while ((tag = NextTagItem(&tstate)) != 0) */
@@ -345,9 +367,6 @@ AROS_UFH3(VOID, FRTagHook,
 
 /*****************************************************************************************/
 
-/*********************
-**  FRGadgetryHook  **
-*********************/
 AROS_UFH3(ULONG, FRGadgetryHook,
     AROS_UFHA(struct Hook *,            hook,           A0),
     AROS_UFHA(struct LayoutData *,      ld,             A2),
@@ -385,27 +404,24 @@ AROS_UFH3(ULONG, FRGadgetryHook,
 
 /*****************************************************************************************/
 
-
-/****************
-**  FRGadInit  **
-****************/
-
 struct ButtonInfo
 {
-    WORD gadid;  
-    char *text;
-    const struct CoolImage *coolimage;
-    Object **objvar;
+    WORD 			gadid;  
+    char 			*text;
+    const struct CoolImage 	*coolimage;
+    Object 			**objvar;
 };
+
+/*****************************************************************************************/
 
 STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {    
-    struct FRUserData *udata = ld->ld_UserData;
-    struct IntFileReq *ifreq = (struct IntFileReq *)ld->ld_IntReq;
-    const struct CoolImage *okimage = (GetIR(ifreq)->ir_Flags & IF_USER_POSTEXT) ? &cool_useimage :
-    					((ifreq->ifr_Flags1 & FRF_DOSAVEMODE) ? &cool_saveimage :
-					  &cool_loadimage);
-    struct ButtonInfo bi[NUMBUTS] =
+    struct FRUserData 		*udata = ld->ld_UserData;
+    struct IntFileReq 		*ifreq = (struct IntFileReq *)ld->ld_IntReq;
+    const struct CoolImage 	*okimage = (GetIR(ifreq)->ir_Flags & IF_USER_POSTEXT) ? &cool_useimage :
+    					    ((ifreq->ifr_Flags1 & FRF_DOSAVEMODE) ? &cool_saveimage :
+					     &cool_loadimage);
+    struct ButtonInfo 		bi[NUMBUTS] =
     {
         { ID_BUTOK	, GetIR(ifreq)->ir_PositiveText , okimage           , &udata->OKBut	 },
 	{ ID_BUTVOLUMES , ifreq->ifr_VolumesText	, &cool_dotimage    , &udata->VolumesBut },
@@ -413,15 +429,19 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	{ ID_BUTCANCEL  , GetIR(ifreq)->ir_NegativeText , &cool_cancelimage , &udata->CancelBut  }
     };
 
-    Object *gad;
-    STRPTR butstr[NUMBUTS];
-    WORD gadrows, x, y, w, h, i, y2;
+    Object 			*gad;
+    STRPTR 			butstr[NUMBUTS];
+    WORD 			gadrows, x, y, w, h, i, y2;
     
     NEWLIST(&udata->ListviewList);
     
-    udata->ListviewHook.h_Entry = (APTR)AROS_ASMSYMNAME(ASLFRRenderHook);
-    udata->ListviewHook.h_SubEntry = NULL;
-    udata->ListviewHook.h_Data = AslBase;
+    udata->StringEditHook.h_Entry    = (APTR)AROS_ASMSYMNAME(StringEditFunc);
+    udata->StringEditHook.h_SubEntry = NULL;
+    udata->StringEditHook.h_Data     = AslBase;
+    
+    udata->ListviewHook.h_Entry      = (APTR)AROS_ASMSYMNAME(ASLFRRenderHook);
+    udata->ListviewHook.h_SubEntry   = NULL;
+    udata->ListviewHook.h_Data       = AslBase;
 
     /* calc. min. size */
     
@@ -593,9 +613,9 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     {
         struct LabelInfo
 	{
-	    BOOL doit;
-	    char *text;
-	    Object **objvar;
+	    BOOL 	doit;
+	    char 	*text;
+	    Object 	**objvar;
 	} li [] =
 	{
 	    {TRUE, ifreq->ifr_PatternText, &udata->PatternLabel },
@@ -670,10 +690,10 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     {
         struct StrInfo
 	{
-	    WORD gadid;
-	    char *text;
-	    WORD maxchars;
-	    Object **objvar;
+	    WORD 	gadid;
+	    char 	*text;
+	    WORD 	maxchars;
+	    Object 	**objvar;
 	} si [] =
 	{
 	    {ID_STRPATTERN, ifreq->ifr_Pattern, MAX_PATTERN_LEN, &udata->PatternGad },
@@ -694,6 +714,7 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {GA_RelVerify	, TRUE				},
 	    {GA_UserData	, (IPTR)ld			},
 	    {GA_TabCycle	, TRUE				},
+	    {STRINGA_EditHook   , (IPTR)&udata->StringEditHook	},
 	    {TAG_DONE						}
 	};
 
@@ -717,7 +738,12 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	}	
     }
     
-    FRNewPath((STRPTR)ifreq->ifr_Drawer, ld, AslBase);
+    if (ifreq->ifr_InitialShowVolumes)
+    {
+	FRGetVolumes(ld, AslBase);
+    } else {
+        FRNewPath((STRPTR)ifreq->ifr_Drawer, ld, AslBase);
+    }
     
     SetAttrs(udata->Listview, ASLLV_Labels, (IPTR)&udata->ListviewList,
                               TAG_DONE);
@@ -728,35 +754,35 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     {
         struct NewMenu nm[] =
 	{
-	    {NM_TITLE, ifreq->ifr_Menu_Control},
-	     {NM_ITEM, ifreq->ifr_Item_Control_LastName + 2, ifreq->ifr_Item_Control_LastName},
-	     {NM_ITEM, ifreq->ifr_Item_Control_NextName + 2, ifreq->ifr_Item_Control_NextName},
-	     {NM_ITEM, NM_BARLABEL},
-	     {NM_ITEM, ifreq->ifr_Item_Control_Restore + 2, ifreq->ifr_Item_Control_Restore},
-	     {NM_ITEM, ifreq->ifr_Item_Control_Parent + 2, ifreq->ifr_Item_Control_Parent},
-	     {NM_ITEM, ifreq->ifr_Item_Control_Volumes + 2, ifreq->ifr_Item_Control_Volumes},
-	     {NM_ITEM, ifreq->ifr_Item_Control_Update + 2, ifreq->ifr_Item_Control_Update},
-	     {NM_ITEM, NM_BARLABEL},
-	     {NM_ITEM, ifreq->ifr_Item_Control_Delete + 2, ifreq->ifr_Item_Control_Delete},
-	     {NM_ITEM, ifreq->ifr_Item_Control_CreateNewDrawer + 2, ifreq->ifr_Item_Control_CreateNewDrawer},
-	     {NM_ITEM, ifreq->ifr_Item_Control_Rename + 2, ifreq->ifr_Item_Control_Rename},
-	     {NM_ITEM, NM_BARLABEL},
-	     {NM_ITEM, ifreq->ifr_Item_Control_Select + 2, ifreq->ifr_Item_Control_Select},
-	     {NM_ITEM, NM_BARLABEL},
-	     {NM_ITEM, ifreq->ifr_Item_Control_OK + 2, ifreq->ifr_Item_Control_OK},
-	     {NM_ITEM, ifreq->ifr_Item_Control_Cancel + 2, ifreq->ifr_Item_Control_Cancel},
-	    {NM_TITLE, ifreq->ifr_Menu_FileList},
-	     {NM_ITEM, ifreq->ifr_Item_FileList_SortByName + 2, ifreq->ifr_Item_FileList_SortByName},
-	     {NM_ITEM, ifreq->ifr_Item_FileList_SortByDate + 2, ifreq->ifr_Item_FileList_SortByDate},
-	     {NM_ITEM, ifreq->ifr_Item_FileList_SortBySize + 2, ifreq->ifr_Item_FileList_SortBySize},
-	     {NM_ITEM, NM_BARLABEL},
-	     {NM_ITEM, ifreq->ifr_Item_FileList_AscendingOrder + 2, ifreq->ifr_Item_FileList_AscendingOrder},
-	     {NM_ITEM, ifreq->ifr_Item_FileList_DescendingOrder + 2, ifreq->ifr_Item_FileList_DescendingOrder},
-	     {NM_ITEM, NM_BARLABEL},
-	     {NM_ITEM, ifreq->ifr_Item_FileList_ShowDrawersFirst + 2, ifreq->ifr_Item_FileList_ShowDrawersFirst},
-	     {NM_ITEM, ifreq->ifr_Item_FileList_ShowDrawerWithFiles + 2, ifreq->ifr_Item_FileList_ShowDrawerWithFiles},
-	     {NM_ITEM, ifreq->ifr_Item_FileList_ShowDrawersLast + 2, ifreq->ifr_Item_FileList_ShowDrawersLast},
-	    {NM_END}
+	    {NM_TITLE, ifreq->ifr_Menu_Control																		}, /*  0 */ 
+	     {NM_ITEM, ifreq->ifr_Item_Control_LastName + 2		, ifreq->ifr_Item_Control_LastName		, 0		, 0		, (APTR)FRMEN_LASTNAME		}, /*  1 */
+	     {NM_ITEM, ifreq->ifr_Item_Control_NextName + 2		, ifreq->ifr_Item_Control_NextName		, 0		, 0		, (APTR)FRMEN_NEXTNAME		}, /*  2 */
+	     {NM_ITEM, NM_BARLABEL																			}, /*  3 */
+	     {NM_ITEM, ifreq->ifr_Item_Control_Restore + 2		, ifreq->ifr_Item_Control_Restore		, 0		, 0		, (APTR)FRMEN_RESTORE		}, /*  4 */
+	     {NM_ITEM, ifreq->ifr_Item_Control_Parent + 2		, ifreq->ifr_Item_Control_Parent		, 0		, 0		, (APTR)FRMEN_PARENT		}, /*  5 */
+	     {NM_ITEM, ifreq->ifr_Item_Control_Volumes + 2		, ifreq->ifr_Item_Control_Volumes		, 0		, 0		, (APTR)FRMEN_VOLUMES		}, /*  6 */
+	     {NM_ITEM, ifreq->ifr_Item_Control_Update + 2		, ifreq->ifr_Item_Control_Update		, 0		, 0		, (APTR)FRMEN_UPDATE		}, /*  7 */
+	     {NM_ITEM, NM_BARLABEL																			}, /*  8 */
+	     {NM_ITEM, ifreq->ifr_Item_Control_Delete + 2		, ifreq->ifr_Item_Control_Delete		, 0		, 0		, (APTR)FRMEN_DELETE		}, /*  9 */
+	     {NM_ITEM, ifreq->ifr_Item_Control_CreateNewDrawer + 2	, ifreq->ifr_Item_Control_CreateNewDrawer	, 0		, 0		, (APTR)FRMEN_NEWDRAWER		}, /* 10 */
+	     {NM_ITEM, ifreq->ifr_Item_Control_Rename + 2		, ifreq->ifr_Item_Control_Rename		, 0		, 0		, (APTR)FRMEN_RENAME		}, /* 11 */
+	     {NM_ITEM, NM_BARLABEL																			}, /* 12 */
+	     {NM_ITEM, ifreq->ifr_Item_Control_Select + 2		, ifreq->ifr_Item_Control_Select		, 0		, 0		, (APTR)FRMEN_SELECT		}, /* 13 */
+	     {NM_ITEM, NM_BARLABEL																			}, /* 14 */
+	     {NM_ITEM, ifreq->ifr_Item_Control_OK + 2			, ifreq->ifr_Item_Control_OK			, 0		, 0		, (APTR)FRMEN_OK		}, /* 15 */
+	     {NM_ITEM, ifreq->ifr_Item_Control_Cancel + 2		, ifreq->ifr_Item_Control_Cancel		, 0		, 0		, (APTR)FRMEN_CANCEL		}, /* 16 */
+	    {NM_TITLE, ifreq->ifr_Menu_FileList																		}, /* 17 */
+	     {NM_ITEM, ifreq->ifr_Item_FileList_SortByName + 2		, ifreq->ifr_Item_FileList_SortByName		, CHECKIT   	, 2 + 4		, (APTR)FRMEN_BYNAME		}, /* 18 */
+	     {NM_ITEM, ifreq->ifr_Item_FileList_SortByDate + 2		, ifreq->ifr_Item_FileList_SortByDate		, CHECKIT	, 1 + 4		, (APTR)FRMEN_BYDATE		}, /* 19 */
+	     {NM_ITEM, ifreq->ifr_Item_FileList_SortBySize + 2		, ifreq->ifr_Item_FileList_SortBySize		, CHECKIT	, 1 + 2		, (APTR)FRMEN_BYSIZE		}, /* 20 */
+	     {NM_ITEM, NM_BARLABEL																			}, /* 21 */
+	     {NM_ITEM, ifreq->ifr_Item_FileList_AscendingOrder + 2	, ifreq->ifr_Item_FileList_AscendingOrder	, CHECKIT 	, 32		, (APTR)FRMEN_ASCENDING		}, /* 22 */
+	     {NM_ITEM, ifreq->ifr_Item_FileList_DescendingOrder + 2	, ifreq->ifr_Item_FileList_DescendingOrder	, CHECKIT	, 16		, (APTR)FRMEN_DESCENDING	}, /* 23 */
+	     {NM_ITEM, NM_BARLABEL																			}, /* 24 */
+	     {NM_ITEM, ifreq->ifr_Item_FileList_ShowDrawersFirst + 2	, ifreq->ifr_Item_FileList_ShowDrawersFirst	, CHECKIT	, 256 + 512	, (APTR)FRMEN_DRAWERSFIRST	}, /* 25 */
+	     {NM_ITEM, ifreq->ifr_Item_FileList_ShowDrawerWithFiles + 2	, ifreq->ifr_Item_FileList_ShowDrawerWithFiles	, CHECKIT	, 128 + 512	, (APTR)FRMEN_DRAWERSMIX	}, /* 26 */
+	     {NM_ITEM, ifreq->ifr_Item_FileList_ShowDrawersLast + 2	, ifreq->ifr_Item_FileList_ShowDrawersLast	, CHECKIT	, 128 + 256	, (APTR)FRMEN_DRAWERSLAST	}, /* 27 */
+	    {NM_END																					}  /* 28 */
 	};
 
 	struct TagItem menu_tags[] =
@@ -765,6 +791,20 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {TAG_DONE				}
 	};
 	
+	nm[18 + ifreq->ifr_SortBy     ].nm_Flags |= CHECKED;
+	nm[22 + ifreq->ifr_SortOrder  ].nm_Flags |= CHECKED;
+	nm[25 + ifreq->ifr_SortDrawers].nm_Flags |= CHECKED;
+
+        /* Show "Select" menu item only if this is a multiselect file requester.
+	   The orig Amiga asl.library disables (ghosts) the item, but why
+	   show it if it cannot be used anyway. */
+	
+	if (!(ifreq->ifr_Flags1 & FRF_DOMULTISELECT))
+	{
+	    nm[13].nm_Type = NM_IGNORE;
+	    nm[14].nm_Type = NM_IGNORE;
+	}
+
 	/* Don't fail, if menus cannot be created/layouted, because a requester
 	   without menus is still better than no requester at all */
 	   
@@ -790,39 +830,39 @@ D(bug("failure\n"));
 
 /*****************************************************************************************/
 
-/******************
-**  FRGadLayout  **
-******************/
-
 STATIC BOOL FRGadLayout(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct FRUserData *udata = ld->ld_UserData;
-    struct IntFileReq *ifreq = (struct IntFileReq *)ld->ld_IntReq;
-
-    if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY)
-    {
-        ActivateGadget((struct Gadget *)udata->PathGad, ld->ld_Window, NULL);
-    } else {
-        ActivateGadget((struct Gadget *)udata->FileGad, ld->ld_Window, NULL);
-    }
+    FRActivateMainStringGadget(ld, AslBase);
     
     ReturnBool ("FRGadLayout", TRUE );
 }
 
 /*****************************************************************************************/
 
+STATIC VOID FRClickOnVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct FRUserData *udata = (struct FRUserData *)ld->ld_UserData;
+    
+    if (udata->Flags & FRFLG_SHOWING_VOLUMES)
+    {
+	UBYTE *dir;
 
-/*********************
-**  FRHandleEvents  **
-*********************/
+	GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&dir);
+	FRGetDirectory(dir, ld, AslBase);
+    } else {
+	FRGetVolumes(ld, AslBase);
+    }
+}
+
+/*****************************************************************************************/
 
 STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct IntuiMessage *imsg;
-    ULONG retval =GHRET_OK;
-    struct FRUserData *udata;
-    struct IntFileReq *ifreq;
-    WORD gadid;
+    ULONG 		retval = GHRET_OK;
+    struct FRUserData 	*udata;
+    struct IntFileReq 	*ifreq;
+    WORD 		gadid;
 
     EnterFunc(bug("FRHandleEvents: Class: %d\n", imsg->Class));
 
@@ -833,189 +873,382 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 
     switch (imsg->Class)
     {
-    case IDCMP_CLOSEWINDOW:
-	retval = FALSE;
-	break;
-	
-    case IDCMP_GADGETUP:
-	gadid = ((struct Gadget *)imsg->IAddress)->GadgetID;
-	
-	D(bug("GADGETUP! gadgetid=%d\n", gadid));
-
-	switch (gadid)
-	{
-	case ID_BUTCANCEL:
+	case IDCMP_CLOSEWINDOW:
 	    retval = FALSE;
 	    break;
 
-	case ID_BUTVOLUMES:
-	    if (udata->Flags & FRFLG_SHOWING_VOLUMES)
-	    {
-	        UBYTE *dir;
-		
-		GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&dir);
-		FRGetDirectory(dir, ld, AslBase);
-	    } else {
-	        FRGetVolumes(ld, AslBase);
-	    }
+	case IDCMP_MOUSEBUTTONS:
+	    FRActivateMainStringGadget(ld, AslBase);
 	    break;
-
-	case ID_BUTPARENT:
-	    FRParentPath(ld, AslBase);
-	    break;
-
-	case ID_STRFILE:
-	    {
-	        char filestring[257], checkstring[257], *file;
-	        BOOL fall_through = (imsg->Code == 9) ? FALSE : TRUE;
-		BOOL has_colon = FALSE;
-		BOOL has_slash = FALSE;
-		
-		GetAttr(STRINGA_TextVal, udata->FileGad, (IPTR *)&file);
-		strcpy(filestring, file);
-		
-		has_colon = strchr(filestring, ':') ? TRUE : FALSE;
-		has_slash = strchr(filestring, '/') ? TRUE : FALSE;
-		
-		if (has_colon || has_slash)
-		{
-		    fall_through = FALSE;
-		    
-		    if (strcmp(filestring, ":") == 0)
-		    {
-		        FRNewPath(filestring, ld, AslBase);
-			FRSetFile("", ld, AslBase);
-		    } else if (stricmp(filestring,  "/") == 0)
-		    {
-		        FRParentPath(ld, AslBase);
-			FRSetFile("", ld, AslBase);
-		    } else {
-			BPTR lock;
-			BOOL isfile = TRUE;
-
-			if (has_colon)
-			{
-			    strcpy(checkstring, filestring);
-			} else {
-			    char *dir;
-			    
-		            GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&dir);
-			    
-			    strcpy(checkstring, dir);
-			    AddPart(checkstring, filestring, 256);
-			}
-						
-			if ((lock = Lock(checkstring, ACCESS_READ)))
-			{
-			    struct FileInfoBlock *fib;
-			    BOOL isfile = FALSE;
-			    
-			    if ((fib = AllocDosObject(DOS_FIB, NULL)))
-			    {
-			        if (Examine(lock, fib))
-				{
-				    if (fib->fib_DirEntryType > 0) isfile = FALSE;
-				}
-				FreeDosObject(DOS_FIB, fib);
-			    }
-			    UnLock(lock);
-			}
-			
-			if (isfile)
-			{
-			    char *fp = FilePart(checkstring);
-			    char fpc = *fp;
-			    
-			    *fp = '\0';
-			    FRNewPath(checkstring, ld, AslBase);
-			    
-			    *fp = fpc;
-			    FRSetFile(fp, ld, AslBase);
-			    
-			} else {
-			   FRNewPath(filestring, ld, AslBase);
-			   FRSetFile("", ld, AslBase);
-			}
-		    }
-		    
-		    ActivateGadget((struct Gadget *)udata->FileGad, ld->ld_Window, NULL);
-		    
-		} /* has colon or slash */	
-			
-		if (!fall_through) break;
-		
-	    }
-	    /* fall through */
 	    
-	case ID_BUTOK:
-	    retval = GetSelectedFiles(udata, ld, ASLB(AslBase));
-	    break;
-
-        case ID_STRPATTERN:
-	    if (imsg->Code != 9)
+        case IDCMP_RAWKEY:
+	    switch (imsg->Code)
 	    {
-	        ActivateGadget((struct Gadget *)udata->PathGad, ld->ld_Window, NULL);
+	        case CURSORUP:
+		    FRChangeActiveLVItem(ld, -1, imsg->Qualifier, 0, AslBase);
+		    break;
+		    
+		case CURSORDOWN:
+		    FRChangeActiveLVItem(ld, 1, imsg->Qualifier, 0, AslBase);
+		    break;
 	    }
-	    /* fall through */
-	    
-	case ID_STRDRAWER:
+	    break;
+	
+	case IDCMP_VANILLAKEY:
+	    switch(imsg->Code)
 	    {
-	        UBYTE *dir;
-		
-		if ((imsg->Code != 9) && (gadid == ID_STRDRAWER))
-		{
-		    if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY)
+	        case 27:
+		    retval = FALSE;
+		    break;
+	    }
+	    break;
+	    
+	case IDCMP_GADGETUP:
+	    gadid = ((struct Gadget *)imsg->IAddress)->GadgetID;
+
+	    D(bug("GADGETUP! gadgetid=%d\n", gadid));
+
+	    switch (gadid)
+	    {
+		case ID_BUTCANCEL:
+		    retval = FALSE;
+		    break;
+
+		case ID_BUTVOLUMES:
+	            FRClickOnVolumes(ld, AslBase);
+		    break;
+
+		case ID_BUTPARENT:
+		    FRParentPath(ld, AslBase);
+		    break;
+
+		case ID_STRFILE:
+		    if (imsg->Code == STRINGCODE_CURSORUP)
 		    {
-		        retval = GetSelectedFiles(udata, ld, ASLB(AslBase));
+			FRChangeActiveLVItem(ld, -1, imsg->Qualifier, (struct Gadget *)udata->FileGad, AslBase);
 			break;
-		    } else {
-		        ActivateGadget((struct Gadget *)udata->FileGad, ld->ld_Window, NULL);
 		    }
-		}
-		GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&dir);
-		FRNewPath(dir, ld, AslBase);
-	    }
-	    break;
-	    	
-	case ID_LISTVIEW:
-	    {
-	        struct ASLLVFileReqNode *node;
-		IPTR active;
-		
-		GetAttr(ASLLV_Active, udata->Listview, &active);
-
-		if ((node = (struct ASLLVFileReqNode *)FindListNode(&udata->ListviewList, (WORD)active)))
-		{
-		    switch(node->type)
+		    else if (imsg->Code == STRINGCODE_CURSORDOWN)
 		    {
-		        case ASLLV_FRNTYPE_VOLUMES:
-			    FRNewPath((STRPTR)node->text[0], ld, AslBase);
-			    break;
-			
-			case ASLLV_FRNTYPE_DIRECTORY:
-			    if (node->subtype > 0)
+			FRChangeActiveLVItem(ld, 1, imsg->Qualifier, (struct Gadget *)udata->FileGad, AslBase);
+			break;
+		    }
+		    else if ((imsg->Code == 0) || (imsg->Code == 9))
+		    {
+	        	char filestring[257], checkstring[257], *file;
+	        	BOOL fall_through = (imsg->Code == 9) ? FALSE : TRUE;
+			BOOL has_colon = FALSE;
+			BOOL has_slash = FALSE;
+
+			GetAttr(STRINGA_TextVal, udata->FileGad, (IPTR *)&file);
+			strcpy(filestring, file);
+
+			has_colon = strchr(filestring, ':') ? TRUE : FALSE;
+			has_slash = strchr(filestring, '/') ? TRUE : FALSE;
+
+			if (has_colon || has_slash)
+			{
+			    fall_through = FALSE;
+
+			    if (strcmp(filestring, ":") == 0)
 			    {
-			        FRAddPath((STRPTR)node->text[0], ld, AslBase);
+		        	FRNewPath(filestring, ld, AslBase);
+				FRSetFile("", ld, AslBase);
+			    } else if (stricmp(filestring,  "/") == 0)
+			    {
+		        	FRParentPath(ld, AslBase);
+				FRSetFile("", ld, AslBase);
 			    } else {
-			        FRSetFile((STRPTR)node->text[0], ld, AslBase);
-				
-				if (imsg->Code) /* TRUE if double clicked */
+				BPTR lock;
+				BOOL isfile = TRUE;
+
+				if (has_colon)
 				{
-				    retval = GetSelectedFiles(udata, ld, AslBase);
+				    strcpy(checkstring, filestring);
+				} else {
+				    char *dir;
+
+		        	    GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&dir);
+
+				    strcpy(checkstring, dir);
+				    AddPart(checkstring, filestring, 256);
+				}
+
+				if ((lock = Lock(checkstring, ACCESS_READ)))
+				{
+				    struct FileInfoBlock 	*fib;
+				    BOOL 			isfile = FALSE;
+
+				    if ((fib = AllocDosObject(DOS_FIB, NULL)))
+				    {
+			        	if (Examine(lock, fib))
+					{
+					    if (fib->fib_DirEntryType > 0) isfile = FALSE;
+					}
+					FreeDosObject(DOS_FIB, fib);
+				    }
+				    UnLock(lock);
+				}
+
+				if (isfile)
+				{
+				    char *fp = FilePart(checkstring);
+				    char fpc = *fp;
+
+				    *fp = '\0';
+				    FRNewPath(checkstring, ld, AslBase);
+
+				    *fp = fpc;
+				    FRSetFile(fp, ld, AslBase);
+
+				} else {
+				   FRNewPath(filestring, ld, AslBase);
+				   FRSetFile("", ld, AslBase);
 				}
 			    }
-			    break;
-			    
-		    } /* switch(node->type) */
+
+			    ActivateGadget((struct Gadget *)udata->FileGad, ld->ld_Window, NULL);
+
+			} /* has colon or slash */	
+
+			if (!fall_through) break;
+
+		    } /* if ((imsg->Code == 0) || (imsg->Code == 9)) */
+		    else
+		    {
+			break;
+		    }
+
+		    /* fall through */
+
+		case ID_BUTOK:
+		    retval = GetSelectedFiles(udata, ld, ASLB(AslBase));
+		    break;
+
+        	case ID_STRPATTERN:
+		    if (imsg->Code == STRINGCODE_CURSORUP)
+		    {
+			FRChangeActiveLVItem(ld, -1, imsg->Qualifier, (struct Gadget *)udata->PatternGad, AslBase);
+		        break;
+		    }
+		    else if (imsg->Code == STRINGCODE_CURSORDOWN)
+		    {
+			FRChangeActiveLVItem(ld, 1, imsg->Qualifier, (struct Gadget *)udata->PatternGad, AslBase);
+		        break;
+		    }
+		    else if ((imsg->Code == 0) || (imsg->Code == 9))
+		    {
+	        	if (imsg->Code == 0) ActivateGadget((struct Gadget *)udata->PathGad, ld->ld_Window, NULL);
+			/* fall through to ID_STRDRAWER */
+	    	    }
+		    else
+		    {
+		        break;
+		    }
+		    /* no break here!! */
+
+		case ID_STRDRAWER:
+		    if (imsg->Code == STRINGCODE_CURSORUP)
+		    {
+			FRChangeActiveLVItem(ld, -1, imsg->Qualifier, (struct Gadget *)udata->PathGad, AslBase);
+		    }
+		    else if (imsg->Code == STRINGCODE_CURSORDOWN)
+		    {
+			FRChangeActiveLVItem(ld, 1, imsg->Qualifier, (struct Gadget *)udata->PathGad, AslBase);
+		    }
+		    else if ((imsg->Code == 0) || (imsg->Code == 9))
+		    {
+	        	UBYTE *dir;
+
+			if ((imsg->Code == 0) && (gadid == ID_STRDRAWER))
+			{
+			    if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY)
+			    {
+		        	retval = GetSelectedFiles(udata, ld, ASLB(AslBase));
+				break;
+			    } else {
+		        	ActivateGadget((struct Gadget *)udata->FileGad, ld->ld_Window, NULL);
+			    }
+			}
+			GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&dir);
+			FRNewPath(dir, ld, AslBase);
+		    }
+		    break;
+
+		case ID_LISTVIEW:
+		    {
+	        	struct ASLLVFileReqNode 	*node;
+			IPTR 			active;
+
+			GetAttr(ASLLV_Active, udata->Listview, &active);
+
+			if ((node = (struct ASLLVFileReqNode *)FindListNode(&udata->ListviewList, (WORD)active)))
+			{
+			    switch(node->type)
+			    {
+		        	case ASLLV_FRNTYPE_VOLUMES:
+				    FRNewPath((STRPTR)node->text[0], ld, AslBase);
+				    break;
+
+				case ASLLV_FRNTYPE_DIRECTORY:
+				    if (node->subtype > 0)
+				    {
+			        	FRAddPath((STRPTR)node->text[0], ld, AslBase);
+				    } else {
+			        	FRSetFile((STRPTR)node->text[0], ld, AslBase);
+
+					if (imsg->Code) /* TRUE if double clicked */
+					{
+					    retval = GetSelectedFiles(udata, ld, AslBase);
+					}
+				    }
+				    break;
+
+			    } /* switch(node->type) */
+
+			} /* if ((node = (struct ASLLVFileReqNode *)FindNode(&udata->ListviewList, (WORD)active))) */
+
+    			FRActivateMainStringGadget(ld, AslBase);
+
+		    }
+		    break;
+
+	    } /* switch (gadget ID) */
+
+	    break; /* case IDCMP_GADGETUP: */
+
+	case IDCMP_MENUPICK:
+	    if (ld->ld_Menu)
+	    {
+	        UWORD men = imsg->Code;
+
+		while(men != MENUNULL)
+		{
+		    struct MenuItem 	*item;
+		    BOOL	    	resort = FALSE;
 		    
-		} /* if ((node = (struct ASLLVFileReqNode *)FindNode(&udata->ListviewList, (WORD)active))) */
-	    }
-	    break;
+		    if ((item = ItemAddress(ld->ld_Menu, men)))
+		    {
+			switch((IPTR)GTMENUITEM_USERDATA(item))
+			{
+			    /* Control menu */
+			    
+			    case FRMEN_LASTNAME:
+		    		FRChangeActiveLVItem(ld, -1, 0, 0, AslBase);
+			        break;
+				
+			    case FRMEN_NEXTNAME:
+		    		FRChangeActiveLVItem(ld, 1, 0, 0, AslBase);
+			        break;
+				
+			    case FRMEN_RESTORE:
+			        if (ifreq->ifr_Flags1 & FRF_DOPATTERNS)
+				{
+				    FRSetPattern(ifreq->ifr_Pattern, ld, AslBase);
+				}
+				if (!(ifreq->ifr_Flags2 & FRF_DRAWERSONLY))
+				{
+				    FRSetFile(ifreq->ifr_File, ld, AslBase);
+				}
+				FRNewPath(ifreq->ifr_Drawer, ld, AslBase);
+			        break;
+				
+			    case FRMEN_PARENT:
+				FRParentPath(ld, AslBase);
+			        break;
+				
+			    case FRMEN_VOLUMES:
+			        FRClickOnVolumes(ld, AslBase);
+			        break;
+				
+			    case FRMEN_UPDATE:
+			        /* WARNING: a bit hacky */
+				udata->Flags ^= FRFLG_SHOWING_VOLUMES;
+				FRClickOnVolumes(ld, AslBase);
+			        break;
+				
+			    case FRMEN_DELETE:
+			        break;
+				
+			    case FRMEN_NEWDRAWER:
+			        break;
+				
+			    case FRMEN_RENAME:
+			        break;
+				
+			    case FRMEN_SELECT:
+			        break;
+					
+			    case FRMEN_OK:
+			    	retval = GetSelectedFiles(udata, ld, ASLB(AslBase));
+				break;
+
+			    case FRMEN_CANCEL:
+			        retval = FALSE;
+				break;
+			    
+			    /* File list menu */
+			    
+			    case FRMEN_BYNAME:
+			        ifreq->ifr_SortBy = ASLFRSORTBY_Name;
+				resort = TRUE;
+			        break;
+				
+			    case FRMEN_BYDATE:
+			        ifreq->ifr_SortBy = ASLFRSORTBY_Date;
+				resort = TRUE;
+			        break;
+				
+			    case FRMEN_BYSIZE:
+			        ifreq->ifr_SortBy = ASLFRSORTBY_Size;
+				resort = TRUE;
+			        break;
+				
+			    case FRMEN_ASCENDING:
+			        ifreq->ifr_SortOrder = ASLFRSORTORDER_Ascend;
+				resort = TRUE;
+			        break;
+				
+			    case FRMEN_DESCENDING:
+			        ifreq->ifr_SortOrder = ASLFRSORTORDER_Descend;
+				resort = TRUE;
+			        break;
+				
+			    case FRMEN_DRAWERSFIRST:
+			    	ifreq->ifr_SortDrawers = ASLFRSORTDRAWERS_First;
+				resort = TRUE;
+			        break;
+				
+			    case FRMEN_DRAWERSMIX:
+			        ifreq->ifr_SortDrawers = ASLFRSORTDRAWERS_Mix;
+				resort = TRUE;
+			        break;
+				
+			    case FRMEN_DRAWERSLAST:
+			        ifreq->ifr_SortDrawers = ASLFRSORTDRAWERS_Last;
+				resort = TRUE;
+			        break;
+				
+			} /* switch id */
+			
+			if (resort)
+			{
+			    FRReSortListview(ld, AslBase);
+			}
+			
+		        men = item->NextSelect;
+		    } /* if ((item = ItemAddress(ld->ld_Menu, men))) */
+		    else
+		    {
+		        men = MENUNULL;
+		    }
+		    
+		} /* while(men != MENUNULL) */
+		
+	    } /* if (ld->ld_Menu) */
 	    
-	} /* switch (gadget ID) */
-
-	break; /* case IDCMP_GADGETUP: */
-
+	    break; /* case IDCMP_MENUPICK: */
+	    
     } /* switch (imsg->Class) */
 
     ReturnInt ("FRHandleEvents", ULONG, retval);
@@ -1023,14 +1256,11 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 
 /*****************************************************************************************/
 
-/*******************
-**  FRGadCleanup  **
-*******************/
 STATIC VOID FRGadCleanup(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct FRUserData *udata;
-    struct FileRequester *req;
-    struct IntReq *intreq;
+    struct FRUserData 		*udata;
+    struct FileRequester 	*req;
+    struct IntReq 		*intreq;
     
     EnterFunc(bug("FRGadCleanup(ld=%p)\n", ld));
 
@@ -1173,6 +1403,10 @@ STATIC ULONG GetSelectedFiles(  struct FRUserData       *udata,
 	} /* if ((lock = Lock(req->fr_Drawer, ACCESS_READ))) */
 	
     } /* if (ifreq->ifr_Flags1 & FRF_DOMULTISELECT) */
+    
+    if (ifreq->ifr_GetSortBy)      *ifreq->ifr_GetSortBy      = ifreq->ifr_SortBy;
+    if (ifreq->ifr_GetSortOrder)   *ifreq->ifr_GetSortOrder   = ifreq->ifr_SortOrder;
+    if (ifreq->ifr_GetSortDrawers) *ifreq->ifr_GetSortDrawers = ifreq->ifr_SortDrawers;
     
     retval = GHRET_FINISHED_OK;
     

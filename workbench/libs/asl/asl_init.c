@@ -133,38 +133,46 @@ const struct IntFileReq def_filereq =
 {
     {
 	ASL_FileRequest,
-	NULL,	/* Window		*/
-	NULL,	/* Screen		*/
-	NULL,	/* PubScreenName	*/
-	NULL,	/* IntuiMsgFunc 	*/
-	NULL,	/* TextAttr		*/
-	NULL,	/* Locale		*/
-	NULL,	/* MemPool		*/
-	2048,	/* MemPoolPuddle	*/
-	2048,	/* MemPoolThresh	*/
+	NULL,		/* Window		*/
+	NULL,		/* Screen		*/
+	NULL,		/* PubScreenName	*/
+	NULL,		/* IntuiMsgFunc 	*/
+	NULL,		/* TextAttr		*/
+	NULL,		/* Locale		*/
+	NULL,		/* MemPool		*/
+	2048,		/* MemPoolPuddle	*/
+	2048,		/* MemPoolThresh	*/
 	"Select File",
 	"Ok",
 	"Cancel",
-	-1, -1,	 /* --> center on screen */
+	-1, -1,	 	/* --> center on screen */
 	300, 300
     },
 
-    "",			/* File 	 */
-    "",     		/* Drawer        */
-    "#?",       	/* Pattern       */
-    NULL,		/* AcceptPattern */ /* def. = "#?", but must be ParsePatternNoCase'ed */
-    NULL,		/* RejectPattern */ /* def. = "~(#?)", but must be ParsePatternNoCase'ed */
-    0,			/* Flags1	 */
-    FRF_REJECTICONS,	/* Flags2	 */
-    NULL,		/* FilterFunc	 */
-    NULL,		/* HookFunc	 */
-    "Volumes", 	 	/* VolumesText   */
-    "Parent",  		/* CancelText    */
-    "Pattern",		/* PatternText   */
-    "Drawer",		/* DrawerText    */
-    "File",		/* FileText	 */
-    "Drawer",		/* LVDrawerText  */
-    "Assign",		/* LVAssignText */
+    "",				/* File 	 	*/
+    "",     			/* Drawer        	*/
+    "#?",       		/* Pattern       	*/
+    NULL,			/* AcceptPattern 	*/ /* def. = "#?", but must be ParsePatternNoCase'ed */
+    NULL,			/* RejectPattern 	*/ /* def. = "~(#?)", but must be ParsePatternNoCase'ed */
+    0,				/* Flags1	 	*/
+    FRF_REJECTICONS,		/* Flags2	 	*/
+    NULL,			/* FilterFunc	 	*/
+    NULL,			/* HookFunc	 	*/
+    NULL,			/* GetSortBy	 	*/
+    NULL,			/* GetSortOrder  	*/
+    NULL,			/* GetSortDrawers	*/
+    ASLFRSORTBY_Name,   	/* SortBy        	*/
+    ASLFRSORTORDER_Ascend,	/* SortOrder     	*/
+    ASLFRSORTDRAWERS_First,	/* SortDrawers   	*/
+    FALSE,			/* InitialShowVolumes 	*/
+    
+    "Volumes", 	 		/* VolumesText   	*/
+    "Parent",  			/* CancelText    	*/
+    "Pattern",			/* PatternText   	*/
+    "Drawer",			/* DrawerText    	*/
+    "File",			/* FileText	 	*/
+    "Drawer",			/* LVDrawerText  	*/
+    "Assign",			/* LVAssignText  	*/
     
     /* Menus */
     
