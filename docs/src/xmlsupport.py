@@ -52,6 +52,9 @@ class Tag (Token):
 	self.content = content
 	#print self,'setContents',`self.content`
 
+    def append (self, *items):
+	self.content = self.content + list (items)
+
     def dump (self, level):
 	sys.stdout.write ('    '*level)
 	print '<%s' % self.name
