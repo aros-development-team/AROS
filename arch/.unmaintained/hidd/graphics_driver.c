@@ -2022,10 +2022,11 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	
 	if (tf->tf_Flags & FPF_PROPORTIONAL)
 	{
-	    render_x = current_x + ((WORD *)tf->tf_CharKern)[idx];
+//	    render_x = current_x + ((WORD *)tf->tf_CharKern)[idx];
+    	    current_x += ((WORD *)tf->tf_CharKern)[idx];
 	}
-	else
-	    render_x = current_x;	/* Monospace */
+//	else
+//	    render_x = current_x;	/* Monospace */
 	    
 	if (tf->tf_Style & FSF_COLORFONT)
 	{
@@ -2039,7 +2040,8 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	    blit_glyph_fast(rp
 		, fontbm
 		, xoffset
-		, render_x, render_y
+		, current_x // render_x
+		, render_y
 		, charloc & 0xFFFF
 		, tf->tf_YSize
 	    );
