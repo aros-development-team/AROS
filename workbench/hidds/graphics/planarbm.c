@@ -232,21 +232,7 @@ static ULONG planarbm_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixe
 
     for(i = 0; i < data->depth; i++, plane ++)
     {
-<<<<<<< planarbm.c
-#warning Discuss this
-        /* This is because of a "feature" of intuition/DrawImage(), where
-	   all bitmaps are set to depth 8 even if they have lower depth.
-	   Maybe we could just count all planes that are non-null
-	   and set depth according to this. Or may there be "holes"?
-	   Eg. planes 0, 1 and 3 contains data, while plane 2 is NULL.
-	*/
-	if (NULL == *plane)
-	    continue;
-	    
-	if(*(*plane + offset) & pixel)
-=======
         if (*plane == (UBYTE *)-1)
->>>>>>> 1.7
 	{
 	    retval = retval | (1 << i);
 	} else if (*plane != NULL)
