@@ -40,7 +40,7 @@ FILES = aros_init aros_functable
 endif
 
 FUNCTIONS = \
-	arosinquire
+	arosinquirea
 
 # BEGIN_DESC{localmakevar}
 # \item{ASM_PATH} The path to the assembler sources
