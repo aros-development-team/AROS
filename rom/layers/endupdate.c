@@ -67,7 +67,7 @@
 
   if (NULL != l->ClipRect)
     if (IS_SMARTREFRESH(l))
-      CopyAndFreeClipRects(l,l->ClipRect,l->cr2);
+      CopyAndFreeClipRectsClipRects(l,l->ClipRect,l->cr2);
     else
       _FreeClipRectListBM(l,l->ClipRect);
       
