@@ -476,6 +476,7 @@ UX11
 
 
 
+#if 0
 LX11	
 D(bug("Calling XPending\n"));
 	    pending = XPending (xsd->display);
@@ -488,7 +489,18 @@ UX11
 LX11
 	    XNextEvent (xsd->display, &event);
 UX11
-
+#else
+LX11
+	    XFlush(xsd->display);
+	    XSync(xsd->display, FALSE);
+	    pending = XEventsQueued(xsd->display, QueuedAlready);
+UX11
+	    if (pending == 0)
+		break;
+LX11
+	    XNextEvent(xsd->display, &event);
+UX11
+#endif
 	    D(bug("Got Event for X=%d\n", event.xany.window));
 
 	    if (event.type == MappingNotify) {
