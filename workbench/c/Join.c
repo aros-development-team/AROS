@@ -14,6 +14,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
+#include <stdio.h>
+
 #define ARG_TEMPLATE "FILE/M/A,AS=TO/K/A"
 #define ARG_COUNT    2
 #define ARG_FILE     0
@@ -53,20 +55,20 @@ int main( void )
 
     LONG                rc              = RETURN_OK;
 
-    if( rda = ReadArgs( ARG_TEMPLATE , args , NULL ) )
+    if( (rda = ReadArgs( ARG_TEMPLATE , args , NULL )) )
     {
 	if( args[ARG_FILE] && args[ARG_AS] )
 	{
 	    destination = (STRPTR) args[ARG_AS];
 	    filenameptr = (STRPTR *) args[ARG_FILE];
 
-	    if( destfile = Open( destination , MODE_NEWFILE ) )
+	    if( (destfile = Open( destination , MODE_NEWFILE )) )
 	    {
-		while( filename = *filenameptr++ )
+		while( (filename = *filenameptr++) )
 		{
 		    if( append( destfile , filename ) != RETURN_OK )
 		    {
-			Printf( "%s: %s" , ERROR_HEADER , getstring( STR_ABORTED ) );
+			printf( "%s: %s" , ERROR_HEADER , getstring( STR_ABORTED ) );
 			rc = RETURN_FAIL;
 			break;
 		    }
@@ -75,7 +77,7 @@ int main( void )
 		Close( destfile );
 		if( rc == RETURN_FAIL )
 		{
-		    Printf( ", %s.\n" , getstring( STR_REMOVINGDEST ) );
+		    printf( ", %s.\n" , getstring( STR_REMOVINGDEST ) );
 		    DeleteFile( destination );
 		}
 	    }
@@ -109,15 +111,15 @@ LONG append( BPTR destfile , STRPTR srcfilename )
 
     BOOL   rc           = RETURN_OK;
 
-    if( buffer = AllocMem( BUFFERSIZE , MEMF_ANY ) )
+    if( (buffer = AllocMem( BUFFERSIZE , MEMF_ANY )) )
     {
-	if( srcfile = Open( srcfilename , MODE_OLDFILE ) )
+	if( (srcfile = Open( srcfilename , MODE_OLDFILE )) )
 	{
 	    while( (actualLength = Read( srcfile , buffer , BUFFERSIZE )) != -1 )
 	    {
 		if( Write( destfile , buffer , actualLength ) == -1 )
 		{
-		    Printf( "%s: %s.\n" , ERROR_HEADER , getstring( STR_ERR_WRITING ) );
+		    printf( "%s: %s.\n" , ERROR_HEADER , getstring( STR_ERR_WRITING ) );
 		    rc = RETURN_FAIL;
 
 		    break;
@@ -132,7 +134,7 @@ LONG append( BPTR destfile , STRPTR srcfilename )
 	}
 	else
 	{
-	    Printf
+	    printf
 	    (
 		"%s: %s: '%s'\n" ,
 		ERROR_HEADER ,
@@ -147,7 +149,7 @@ LONG append( BPTR destfile , STRPTR srcfilename )
     }
     else
     {
-	Printf( "%s: %s.\n" , ERROR_HEADER , STR_ERR_NOMEM );
+	printf( "%s: %s.\n" , ERROR_HEADER , getstring( STR_ERR_NOMEM ) );
 	rc = RETURN_FAIL;
     }
 
@@ -170,7 +172,7 @@ STRPTR getstring( LONG stringid )
 	    return( "Error while writing" );
 
 	default:
-	    return( "[Unknown StringID]" );
+	    return( "[Error: Unknown StringID]" );
     }
 }
 
