@@ -53,7 +53,7 @@ static struct prefinfo
 preftable[] =
 {
     {"input"	    , inputprefsname    , NULL	    	    	},
-    {"font" 	    , fontprefsname     , NULL	    	    	},
+    {"font" 	    , fontprefsname     , FontPrefs_Handler   	},
     {"screenmode"   , screenprefsname	, NULL	    	    	},
     {"locale"	    , localeprefsname	, LocalePrefs_Handler	},
     {"palette"	    , paletteprefsname  , NULL	    	    	},
@@ -260,6 +260,29 @@ static void PreparePatches(void)
 
 /*********************************************************************************************/
 
+static void HandleNotify(void)
+{
+    struct NotifyMessage *msg;
+
+    while((msg = (struct NotifyMessage *)GetMsg(notifyport)))
+    {
+	WORD id = msg->nm_NReq->nr_UserData;
+
+	D(bug("Received notify message. UserData = %d --> File = \"%s\"\n", id,
+		    	    	    	    	    	    	    	    preftable[id].filenamebuffer));
+
+	if (preftable[id].func)
+	{
+	    preftable[id].func(preftable[id].filenamebuffer);
+	}
+
+	ReplyMsg(&msg->nm_ExecMessage);
+	
+    } /* while((msg = (struct NotifyMessage *)GetMsg(notifyport))) */
+}
+
+/*********************************************************************************************/
+
 static void HandleAll(void)
 {
     ULONG sigs;
@@ -270,27 +293,7 @@ static void HandleAll(void)
 	
 	if (sigs & SIGBREAKF_CTRL_C) break;
 	
-	if (sigs & notifysig)
-	{
-	    struct NotifyMessage *msg;
-	    
-	    while((msg = (struct NotifyMessage *)GetMsg(notifyport)))
-	    {
-	    	WORD id = msg->nm_NReq->nr_UserData;
-
-	    	D(bug("Received notify message. UserData = %d --> File = \"%s\"\n", id,
-		    	    	    	    	    	    	    	    	    preftable[id].filenamebuffer));
-		
-		if (preftable[id].func)
-		{
-		    preftable[id].func(preftable[id].filenamebuffer);
-		}
-		
-	    	ReplyMsg(&msg->nm_ExecMessage);
-		
-	    } /* while((msg = (struct NotifyMessage *)GetMsg(notifyport))) */
-	    
-	} /* if (sigs & notifysig) */
+	if (sigs & notifysig) HandleNotify();
 	
     } /* for(;;) */
 }
