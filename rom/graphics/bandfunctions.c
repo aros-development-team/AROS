@@ -4,6 +4,37 @@
 
 #include "graphics_intern.h"
 #include "intregions.h"
+#include <stdlib.h>
+
+#ifdef LINUXTEST
+#    undef NewRegionRectangle
+#    define NewRegionRectangle() ((struct RegionRectangle *)calloc(1, sizeof(struct RegionRectangle)))
+
+#    undef DisposeRegionRectangle
+#    define DisposeRegionRectangle(x) free(x)
+
+     static struct GfxBase *GfxBase;
+#    undef NewRegion
+#    define NewRegion() ((struct Region *)calloc(1, sizeof(struct Region)))
+#    undef DisposeRegion
+#    define DisposeRegion(x) free(x)
+#    undef DisposeRegionRectangleList
+void DisposeRegionRectangleList
+(
+    struct RegionRectangle *regionrectangle
+)
+{
+    struct RegionRectangle *next;
+
+    while(regionrectangle)
+    {
+    	next = regionrectangle->Next;
+	DisposeRegionRectangle(regionrectangle);
+	regionrectangle = next;
+    }
+} 
+
+#endif
 
 #if USE_BANDED_FUNCTIONS
 
@@ -34,7 +65,7 @@
         (prev)->Next = curr; \
                              \
     (prev) = rr;             \
-}                            \
+}
 
 #define NEWREG(first, rr)                  \
 {                                          \
@@ -156,7 +187,7 @@ if (band)                                   \
     }                                                                     \
 }
 
-#if DOTEST
+#if DOTEST && 0
 #    define DEBUG 1
 #endif
 
@@ -477,6 +508,15 @@ BOOL _XorBandBand
 
     BOOL res = FALSE;
 
+#if 1
+    if (_ClearBandBand(OffX1, OffX2, MinY, MaxY, Src1, Src2, &Diff1, NULL, NULL, GfxBase))
+    {
+        if (_ClearBandBand(OffX2, OffX1, MinY, MaxY, Src2, Src1, &Diff2, NextSrc2Ptr, NextSrc1Ptr, GfxBase))
+	{
+             res = _OrBandBand(0, 0, MinY, MaxY, Diff1, Diff2, DstPtr, NULL, NULL, GfxBase);
+        }
+    }
+#else
     if (_AndBandBand(OffX1, OffX2, MinY, MaxY, Src1, Src2, &Diff1, NULL, NULL, GfxBase))
     {
         if (_OrBandBand(OffX1, OffX2, MinY, MaxY, Src1, Src2, &Diff2, NextSrc1Ptr, NextSrc2Ptr, GfxBase))
@@ -484,7 +524,7 @@ BOOL _XorBandBand
              res = _ClearBandBand(0, 0, MinY, MaxY, Diff1, Diff2, DstPtr, NULL, NULL, GfxBase);
         }
     }
-
+#endif
     DisposeRegionRectangleList(Diff1);
     DisposeRegionRectangleList(Diff2);
 
@@ -958,8 +998,6 @@ BOOL _AndRectRegion
         DisposeRegionRectangleList(rr);
     }
 
-//    _TranslateRegionRectangles(Reg->RegionRectangle, -MinX(Reg->RegionRectangle), -MinY(Reg->RegionRectangle));
-
     return TRUE;
 }
 
@@ -1085,13 +1123,18 @@ BOOL _XorRegionRegion
 
 int main(void)
 {
+    int i;
+
     struct Region *R1 = NewRegion();
     struct Region *R2 = NewRegion();
 
+    _OrRectRegion(R1, &(struct Rectangle){10, 10, 30, 30}, GfxBase);
     _OrRectRegion(R2, &(struct Rectangle){0, 0, 20, 20}, GfxBase);
     _OrRectRegion(R2, &(struct Rectangle){22, 20, 40, 40}, GfxBase);
 
-    _AndRectRegion(R2, &(struct Rectangle){-5, -5, 40, 40}, GfxBase);
+    for (i = 0; i<1000000; i++)
+        _XorRegionRegion(R2, R1, GfxBase);
+
     DisposeRegion(R2);
     DisposeRegion(R1);
     return 0;
@@ -1156,4 +1199,5 @@ void _NormalizeRegion
 }
 
 #endif
+
 #endif /* USE_BANDED_FUNCTIONS */
