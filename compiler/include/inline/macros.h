@@ -688,7 +688,39 @@
    }							\
 })
 
-/* LP10 not needed... */
+/* cybergraphics.library/WritePixelArray() */
+#define LP10(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, t8, v8, r8, t9, v9, r9, t10, v10, r10, bt, bn) \
+({							\
+   t1 _##name##_v1 = (v1);				\
+   t2 _##name##_v2 = (v2);				\
+   t3 _##name##_v3 = (v3);				\
+   t4 _##name##_v4 = (v4);				\
+   t5 _##name##_v5 = (v5);				\
+   t6 _##name##_v6 = (v6);				\
+   t7 _##name##_v7 = (v7);				\
+   t8 _##name##_v8 = (v8);				\
+   t9 _##name##_v9 = (v9);				\
+   t10 _##name##_v10 = (v10);				\
+   {							\
+      register rt _##name##_re __asm("d0");		\
+      register struct Library *const _##name##_bn __asm("a6") = (struct Library*)(bn);\
+      register t1 _n1 __asm(#r1) = _##name##_v1;	\
+      register t2 _n2 __asm(#r2) = _##name##_v2;	\
+      register t3 _n3 __asm(#r3) = _##name##_v3;	\
+      register t4 _n4 __asm(#r4) = _##name##_v4;	\
+      register t5 _n5 __asm(#r5) = _##name##_v5;	\
+      register t6 _n6 __asm(#r6) = _##name##_v6;	\
+      register t7 _n7 __asm(#r7) = _##name##_v7;	\
+      register t8 _n8 __asm(#r8) = _##name##_v8;	\
+      register t9 _n9 __asm(#r9) = _##name##_v9;	\
+      register t10 _n10 __asm(#r10) = _##name##_v10;	\
+      __asm volatile ("jsr a6@(-"#offs":W)"		\
+      : "=r" (_##name##_re)				\
+      : "r" (_##name##_bn), "r"(_n1), "r"(_n2), "r"(_n3), "r"(_n4), "r"(_n5), "r"(_n6), "r"(_n7), "r"(_n8), "r"(_n9), "r"(_n10) \
+      : "d0", "d1", "a0", "a1", "cc", "memory");	\
+      _##name##_re;					\
+   }							\
+})
 
 /* Only graphics.library/BltMaskBitMapRastPort() */
 #define LP10NR(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, t6, v6, r6, t7, v7, r7, t8, v8, r8, t9, v9, r9, t10, v10, r10, bt, bn) \
