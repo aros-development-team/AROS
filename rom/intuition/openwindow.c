@@ -544,6 +544,9 @@
 	    if ((w->RelTopEdge + w->Height) > parentheight)
 		w->RelTopEdge = parentheight - w->Height;
 	}
+	
+	w->GZZWidth  = w->Width  - w->BorderLeft - w->BorderRight;
+	w->GZZHeight = w->Height - w->BorderTop  - w->BorderBottom;
     }
     
     if (NULL == parentwin)
@@ -857,9 +860,6 @@ int intui_OpenWindow (struct Window * w,
       /* This layer belongs to a window */
       L->Window = (APTR)w;
      
-      w->GZZWidth = w->Width  - w->BorderLeft - w->BorderRight;
-      w->GZZHeight= w->Height - w->BorderTop  - w->BorderBottom;
-
       /* Now comes the inner window */
       w->WLayer = CreateUpfrontHookLayer( 
                    &w->WScreen->LayerInfo
