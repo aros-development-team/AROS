@@ -27,12 +27,14 @@
 
 	Encrypting test: xx1LtbDbOY4
 
-    If it prints something else, then you version of crypt(3) is not
+    If it prints something else, then your version of crypt(3) is not
     compatible.
 */
 
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 int main (int argc, char ** argv)
 {
@@ -52,5 +54,7 @@ int main (int argc, char ** argv)
     }
 
     printf ("Encrypting %s: %s\n", argv[1], crypt (argv[1], salt));
+
+    return 0;
 }
 
