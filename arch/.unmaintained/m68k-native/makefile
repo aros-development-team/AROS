@@ -7,8 +7,10 @@ SPECIAL_CFLAGS = -I $(TOP)/exec
 
 ifeq ($(FLAVOUR),native)
 FILES = \
+	disable \
 	forbid \
-	enqueue
+	getcc \
+	cacheclearu
 else
 FILES = \
 	supervisor \
