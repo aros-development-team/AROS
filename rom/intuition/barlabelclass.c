@@ -58,6 +58,8 @@ AROS_UFH3S(IPTR, dispatch_menubarlabelclass,
 	  AROS_UFHA(Msg, msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct MenuBarLabelData 	*data;
     struct RastPort 		*rp;
     struct TagItem 		*ti;
@@ -105,7 +107,7 @@ AROS_UFH3S(IPTR, dispatch_menubarlabelclass,
 		    break;
 	    }
 	    break;
-	       
+
 	case IM_DRAW:
 	    data = INST_DATA(cl, obj);
 	    
@@ -144,6 +146,8 @@ AROS_UFH3S(IPTR, dispatch_menubarlabelclass,
     } /* switch (msg->MethodID) */
     
     return retval;
+
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************/

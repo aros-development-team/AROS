@@ -643,6 +643,8 @@ AROS_UFH3S(IPTR, dispatch_stdconclass,
     AROS_UFHA(Msg,      msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval = 0UL;
     
     switch (msg->MethodID)
@@ -666,7 +668,7 @@ AROS_UFH3S(IPTR, dispatch_stdconclass,
     case M_Console_UnRenderCursor:
     	stdcon_unrendercursor(cl, o, (struct P_Console_UnRenderCursor *)msg);
 	break;
-	
+
     case M_Console_ClearCell:
     	stdcon_clearcell(cl, o, (struct P_Console_ClearCell *)msg);
 	break;
@@ -681,16 +683,17 @@ AROS_UFH3S(IPTR, dispatch_stdconclass,
     }
     
     return retval;
-    
+
+    AROS_USERFUNC_EXIT
 }
 
 #undef ConsoleDevice
 
 Class *makeStdConClass(struct ConsoleBase *ConsoleDevice)
 {
-    
+
    Class *cl;
-   	
+
    cl = MakeClass(NULL, NULL ,CONSOLECLASSPTR , sizeof(struct stdcondata), 0UL);
    if (cl)
    {

@@ -40,13 +40,15 @@ AROS_UFH3(void, intBoot,
     AROS_UFHA(struct ExecBase *,SysBase, A6)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct ExpansionBase *ExpansionBase = NULL;
     struct Library *DOSBase = NULL;
     BPTR lock;
     struct BootNode *bn;
     STRPTR bootname, s1;
     ULONG len;
-    
+
     
     DOSBase = OpenLibrary("dos.library", 0);
 
@@ -63,7 +65,7 @@ AROS_UFH3(void, intBoot,
 	D(bug("Urk, no expansion.library, something's wrong!\n"));
 	Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_ExpansionLib);
     }
-    
+
     /* We have to do all the locking in this because we don't
        have a Process in DOSBoot yet, and we need a process
        to create locks etc.
@@ -153,13 +155,15 @@ AROS_UFH3(void, intBoot,
 	      AROS_UFCA(STRPTR, argString, A0),
 	      AROS_UFCA(ULONG, argSize, D0),
 	      AROS_UFCA(struct ExecBase *, SysBase, A6));
+
+    AROS_USERFUNC_EXIT
 }
 
 void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
 {
     struct ExpansionBase *ExpansionBase;
     struct BootNode *bn;
-    struct TagItem bootprocess[] = 
+    struct TagItem bootprocess[] =
     {
 	{ NP_Entry,	(IPTR)intBoot },
 	{ NP_Name,	(IPTR)"Boot Process" },

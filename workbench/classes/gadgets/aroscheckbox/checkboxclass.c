@@ -330,6 +330,8 @@ AROS_UFH3S(IPTR, dispatch_checkclass,
 	  AROS_UFHA(Msg, msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct CheckData *data;
     struct RastPort  *rport;
     IPTR    	     retval = 0UL;
@@ -413,8 +415,10 @@ AROS_UFH3S(IPTR, dispatch_checkclass,
     }
 
     ReturnPtr("CheckBox::_dispatcher()", IPTR, retval);
-}
 
+    AROS_USERFUNC_EXIT
+
+}
 
 /****************************************************************************************/
 

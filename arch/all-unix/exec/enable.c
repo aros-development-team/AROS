@@ -19,11 +19,12 @@ extern sigset_t sig_int_mask;	/* mask of sig_t that are ints not traps */
 #ifndef UseExecstubs
 AROS_LH0(void, Enable,
     struct ExecBase *, SysBase, 21, Exec)
-#else
-void _Exec_Enable(struct ExecBase * SysBase)
-#endif
 {
     AROS_LIBFUNC_INIT
+#else
+void _Exec_Enable(struct ExecBase * SysBase)
+{
+#endif
 
     if(--SysBase->IDNestCnt < 0)
     {
@@ -33,7 +34,7 @@ void _Exec_Enable(struct ExecBase * SysBase)
 
 #if 0
 
-	if( (SysBase->AttnResched & 0x80) 
+	if( (SysBase->AttnResched & 0x80)
 	 && (SysBase->TDNestCnt < 1)
 	)
 	{
@@ -47,5 +48,7 @@ void _Exec_Enable(struct ExecBase * SysBase)
 
     }
 
+#ifndef UseExecstubs
     AROS_LIBFUNC_EXIT
+#endif
 }

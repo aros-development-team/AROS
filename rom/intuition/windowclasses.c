@@ -137,7 +137,7 @@ static void cliprectfill(struct Screen *scr, struct RastPort *rp,
 	    RectFill(rp, x1, y1, x2, y2);
 	}	
     }
-    
+
 }
 
 /***********************************************************************************/
@@ -196,7 +196,7 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 	struct IBox 		container;
 	struct Window 		*win = msg->gpr_GInfo->gi_Window;
 	struct TextExtent 	te;
-	
+
 	GetGadgetIBox(o, msg->gpr_GInfo, &container);
 	
 	if (container.Width <= 1 || container.Height <= 1)
@@ -209,7 +209,7 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 			pens[FILLPEN] : pens[BACKGROUNDPEN]);
 			
 	SetDrMd(rp, JAM1);
-	
+
 	D(bug("Filling from (%d, %d) to (%d, %d)\n",
 	    container.Left,
 	    container.Top,
@@ -233,7 +233,7 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 		    container.Top,
 		    container.Left + container.Width - 1,
 		    container.Top);
-	
+
 	SetAPen(rp,pens[SHADOWPEN]);
 	RectFill(rp,container.Left + container.Width - 1,
 		    container.Top + 1,
@@ -268,7 +268,7 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 	}
 	
     }  /* if (allowed to render) */
-    
+
     ReturnVoid("DragBar::Render");
 }
 
@@ -292,7 +292,7 @@ static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
 	*/
     
 	w = msg->gpi_GInfo->gi_Window;
-    
+
 	data = INST_DATA(cl, o);
 	
 	
@@ -306,7 +306,7 @@ static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
 	
 	data->rp = CloneRastPort(&w->WScreen->RastPort);
 	if (data->rp)
-	{	    
+	{
 	    /* Lock all layers while the window is dragged */
 D(bug("locking all layers\n"));
 	    LockLayers(&w->WScreen->LayerInfo);
@@ -329,8 +329,8 @@ D(bug("locking all layers\n"));
     }
 
     return retval;
-    
-    
+
+
 }
 
 /***********************************************************************************/
@@ -450,7 +450,7 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 	        break;
 	    
 	} /* switch (ie->ie_Class) */
-	
+
     } /* if (gi) */
     
     return retval;
@@ -484,7 +484,7 @@ static IPTR dragbar_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 	);
 
     }
-	
+
 
     if (!data->drag_canceled)
     {
@@ -497,8 +497,8 @@ static IPTR dragbar_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 		
     }
     data->drag_canceled = FALSE;
-		    
-		
+
+
     /* User throught with drag operation. Unlock layesr and free
 	   rastport clone
     */
@@ -520,6 +520,8 @@ AROS_UFH3S(IPTR, dispatch_dragbarclass,
     AROS_UFHA(Msg,      msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval = 0UL;
     
     EnterFunc(bug("dragbar_dispatcher(mid=%d)\n", msg->MethodID));
@@ -554,13 +556,15 @@ AROS_UFH3S(IPTR, dispatch_dragbarclass,
 	    }
 	    break;
 	
-	    
+
 	default:
 	    retval = DoSuperMethodA(cl, o, msg);
 	    break;
     }
     
     ReturnPtr ("dragbar_dispatcher", IPTR, retval);
+
+    AROS_USERFUNC_EXIT
 }
 
 /***********************************************************************************/
@@ -958,6 +962,8 @@ AROS_UFH3S(IPTR, dispatch_sizebuttonclass,
     AROS_UFHA(Msg,      msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval = 0UL;
 
     EnterFunc(bug("sizebutton_dispatcher(mid=%d)\n", msg->MethodID));
@@ -976,7 +982,7 @@ AROS_UFH3S(IPTR, dispatch_sizebuttonclass,
 	case GM_GOACTIVE:
 	    retval = sizebutton_goactive(cl, o, (struct gpInput *)msg);
 	    break;
-	    
+
 	case GM_GOINACTIVE:
 	    retval = sizebutton_goinactive(cl, o, (struct gpGoInactive *)msg);
 	    break;
@@ -998,8 +1004,10 @@ AROS_UFH3S(IPTR, dispatch_sizebuttonclass,
 	    retval = DoSuperMethodA(cl, o, msg);
 	    break;
     }
-    
+
     ReturnPtr ("sizebutton_dispatcher", IPTR, retval);
+
+    AROS_USERFUNC_EXIT
 }
 
 
@@ -1030,7 +1038,7 @@ static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
     	struct tbb_data *data = INST_DATA(cl, o);
 	ULONG 		dispose_mid = OM_DISPOSE;
 	struct DrawInfo *dri;
-	
+
 	/*
 	  The instance object is cleared memory!
 	  memset(data, 0, sizeof (struct tbb_data));
@@ -1222,7 +1230,7 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		case GTYP_WDEPTH:
 		{
 		    struct Window *w = msg->gpi_GInfo->gi_Window;
-		    
+
 		    if (NULL == w->WLayer->front)
 		    {
 		    	/* Send window to back */
@@ -1270,7 +1278,7 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
     } /* if (gadget no longer active) */
     
     return retval;
-    
+
 }
 
 #endif
@@ -1283,6 +1291,8 @@ AROS_UFH3S(IPTR, dispatch_tbbclass,
     AROS_UFHA(Msg,      msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval = 0UL;
     
     EnterFunc(bug("tbb_dispatcher(mid=%d)\n", msg->MethodID));
@@ -1315,6 +1325,8 @@ AROS_UFH3S(IPTR, dispatch_tbbclass,
     }
     
     ReturnPtr ("tbb_dispatcher", IPTR, retval);
+
+    AROS_USERFUNC_EXIT
 }
 
 /***********************************************************************************/

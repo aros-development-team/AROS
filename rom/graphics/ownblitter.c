@@ -52,6 +52,8 @@
 
 ******************************************************************************/
 {
+  AROS_LIBFUNC_INIT
+
   /* prevent other tasks from doing what I am doing */
   struct Task * me;
   
@@ -125,4 +127,6 @@
   }
   
   Permit();
+
+  AROS_LIBFUNC_EXIT
 } /* OwnBlitter */

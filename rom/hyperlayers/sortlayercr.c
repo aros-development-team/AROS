@@ -14,34 +14,34 @@
 #undef kprintf
 
 AROS_UFP2(BOOL, _SLCR_CompFunc_Down,
-    AROS_UFHA(struct ClipRect *, cr1, A0),
-    AROS_UFHA(struct ClipRect *, cr2, A1));
+    AROS_UFPA(struct ClipRect *, cr1, A0),
+    AROS_UFPA(struct ClipRect *, cr2, A1));
 AROS_UFP2(BOOL, _SLCR_CompFunc_Up,
-    AROS_UFHA(struct ClipRect *, cr1, A0),
-    AROS_UFHA(struct ClipRect *, cr2, A1));
+    AROS_UFPA(struct ClipRect *, cr1, A0),
+    AROS_UFPA(struct ClipRect *, cr2, A1));
 AROS_UFP2(BOOL, _SLCR_CompFunc_Right,
-    AROS_UFHA(struct ClipRect *, cr1, A0),
-    AROS_UFHA(struct ClipRect *, cr2, A1));
+    AROS_UFPA(struct ClipRect *, cr1, A0),
+    AROS_UFPA(struct ClipRect *, cr2, A1));
 AROS_UFP2(BOOL, _SLCR_CompFunc_Left,
-    AROS_UFHA(struct ClipRect *, cr1, A0),
-    AROS_UFHA(struct ClipRect *, cr2, A1));
+    AROS_UFPA(struct ClipRect *, cr1, A0),
+    AROS_UFPA(struct ClipRect *, cr2, A1));
 AROS_UFP2(BOOL, _SLCR_CompFunc_RightDown,
-    AROS_UFHA(struct ClipRect *, cr1, A0),
-    AROS_UFHA(struct ClipRect *, cr2, A1));
+    AROS_UFPA(struct ClipRect *, cr1, A0),
+    AROS_UFPA(struct ClipRect *, cr2, A1));
 AROS_UFP2(BOOL, _SLCR_CompFunc_RightUp,
-    AROS_UFHA(struct ClipRect *, cr1, A0),
-    AROS_UFHA(struct ClipRect *, cr2, A1));
+    AROS_UFPA(struct ClipRect *, cr1, A0),
+    AROS_UFPA(struct ClipRect *, cr2, A1));
 AROS_UFP2(BOOL, _SLCR_CompFunc_LeftDown,
-    AROS_UFHA(struct ClipRect *, cr1, A0),
-    AROS_UFHA(struct ClipRect *, cr2, A1));
+    AROS_UFPA(struct ClipRect *, cr1, A0),
+    AROS_UFPA(struct ClipRect *, cr2, A1));
 AROS_UFP2(BOOL, _SLCR_CompFunc_LeftUp,
-    AROS_UFHA(struct ClipRect *, cr1, A0),
-    AROS_UFHA(struct ClipRect *, cr2, A1));
+    AROS_UFPA(struct ClipRect *, cr1, A0),
+    AROS_UFPA(struct ClipRect *, cr2, A1));
 
 void _SLCR_SortClipRects(struct Layer *layer,
 AROS_UFP2(BOOL, (*CompFunc),
-    AROS_UFHA(struct ClipRect *, cr1, A0),
-    AROS_UFHA(struct ClipRect *, cr2, A1))
+    AROS_UFPA(struct ClipRect *, cr1, A0),
+    AROS_UFPA(struct ClipRect *, cr2, A1))
 );
 
 /*****************************************************************************
@@ -124,68 +124,87 @@ AROS_UFH2(BOOL, _SLCR_CompFunc_Down,
     AROS_UFHA(struct ClipRect *, cr1, A0),
     AROS_UFHA(struct ClipRect *, cr2, A1))
 {
+    AROS_USERFUNC_INIT
     return (BOOL)(cr1->bounds.MinY <= cr2->bounds.MinY);
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH2(BOOL, _SLCR_CompFunc_Up,
     AROS_UFHA(struct ClipRect *, cr1, A0),
     AROS_UFHA(struct ClipRect *, cr2, A1))
 {
+    AROS_USERFUNC_INIT
     return (BOOL)(cr1->bounds.MaxY >= cr2->bounds.MaxY);
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH2(BOOL, _SLCR_CompFunc_Right,
     AROS_UFHA(struct ClipRect *, cr1, A0),
     AROS_UFHA(struct ClipRect *, cr2, A1))
 {
+    AROS_USERFUNC_INIT
     return (BOOL)(cr1->bounds.MinX <= cr2->bounds.MinX);
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH2(BOOL, _SLCR_CompFunc_Left,
     AROS_UFHA(struct ClipRect *, cr1, A0),
     AROS_UFHA(struct ClipRect *, cr2, A1))
 {
+    AROS_USERFUNC_INIT
     return (BOOL)(cr1->bounds.MaxX >= cr2->bounds.MaxX);
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH2(BOOL, _SLCR_CompFunc_RightDown,
     AROS_UFHA(struct ClipRect *, cr1, A0),
     AROS_UFHA(struct ClipRect *, cr2, A1))
 {
+    AROS_USERFUNC_INIT
     if(cr1->bounds.MinY > cr2->bounds.MaxY) return 0;
     return (BOOL)(cr1->bounds.MinX <= cr2->bounds.MaxX);
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH2(BOOL, _SLCR_CompFunc_RightUp,
     AROS_UFHA(struct ClipRect *, cr1, A0),
     AROS_UFHA(struct ClipRect *, cr2, A1))
 {
+    AROS_USERFUNC_INIT
     if(cr1->bounds.MaxY < cr2->bounds.MinY) return 0;
     return (BOOL)(cr1->bounds.MinX <= cr2->bounds.MaxX);
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH2(BOOL, _SLCR_CompFunc_LeftDown,
     AROS_UFHA(struct ClipRect *, cr1, A0),
     AROS_UFHA(struct ClipRect *, cr2, A1))
 {
+    AROS_USERFUNC_INIT
     if(cr1->bounds.MinY > cr2->bounds.MaxY) return 0;
     return (BOOL)(cr1->bounds.MaxX >= cr2->bounds.MinX);
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH2(BOOL, _SLCR_CompFunc_LeftUp,
     AROS_UFHA(struct ClipRect *, cr1, A0),
     AROS_UFHA(struct ClipRect *, cr2, A1))
 {
+    AROS_USERFUNC_INIT
     if(cr1->bounds.MaxY < cr2->bounds.MinY) return 0;
     return (BOOL)(cr1->bounds.MaxX >= cr2->bounds.MinX);
+    AROS_USERFUNC_EXIT
 }
 
 void _SLCR_SortClipRects(struct Layer *layer,
 AROS_UFP2(BOOL, (*CompFunc),
-    AROS_UFHA(struct ClipRect *, cr1, A0),
-    AROS_UFHA(struct ClipRect *, cr2, A1))
+    AROS_UFPA(struct ClipRect *, cr1, A0),
+    AROS_UFPA(struct ClipRect *, cr2, A1))
 )
 {
+
+    AROS_USERFUNC_INIT
+
     struct ClipRect *CurCR;
     struct ClipRect *NextCR;
     struct ClipRect **CRptr;
@@ -195,7 +214,7 @@ AROS_UFP2(BOOL, (*CompFunc),
 	return;
 
     FirstCR = NULL;
-    
+
     for(CurCR = layer->ClipRect, CRptr = &FirstCR; ; )
     {
 	NextCR = CurCR->Next;
@@ -210,7 +229,10 @@ AROS_UFP2(BOOL, (*CompFunc),
 	    if(!(NextCR = *CRptr))
 		break;
 
-	    if((*CompFunc)(CurCR, NextCR))
+	    if(AROS_UFC2(BOOL, (*CompFunc),
+                         AROS_UFCA(struct ClipRect *, CurCR, A0),
+                         AROS_UFCA(struct ClipRect *, NextCR, A1)))
+
 		break;
 
 	    CRptr = &NextCR->Next;
@@ -220,4 +242,5 @@ AROS_UFP2(BOOL, (*CompFunc),
     layer->ClipRect = FirstCR;
 
     return;
+    AROS_USERFUNC_EXIT
 }

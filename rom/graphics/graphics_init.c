@@ -287,6 +287,8 @@ AROS_UFH4(ULONG, TOF_VBlank,
     AROS_UFHA(ULONG, dummy2, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+    AROS_USERFUNC_INIT
+
     struct Node *tNode;
 
     if(!IsListEmpty(&GfxBase->TOF_WaitQ))
@@ -298,6 +300,8 @@ AROS_UFH4(ULONG, TOF_VBlank,
     }
 
     return 0;
+
+    AROS_USERFUNC_EXIT
 }
 
 

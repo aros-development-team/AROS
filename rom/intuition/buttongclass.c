@@ -361,7 +361,7 @@ IPTR buttong_goinactive(Class * cl, Object * o, struct gpGoInactive * msg)
 	    DoMethod(o, OM_NOTIFY, NULL, gi, 0);
 	}
     }
-    
+
     return 0;
 }
 
@@ -377,6 +377,8 @@ AROS_UFH3S(IPTR, dispatch_buttongclass,
     AROS_UFHA(Msg,      msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval = 0UL;
 
     switch(msg->MethodID)
@@ -400,7 +402,7 @@ AROS_UFH3S(IPTR, dispatch_buttongclass,
 	case GM_GOINACTIVE:
 	    retval = buttong_goinactive(cl, o, (struct gpGoInactive *)msg);
 	    break;
-	    
+
 	case OM_SET:
 	case OM_UPDATE:
 	    retval = DoSuperMethodA(cl, o, msg);
@@ -432,7 +434,9 @@ AROS_UFH3S(IPTR, dispatch_buttongclass,
     } /* switch */
 
     return retval;
-    
+
+    AROS_USERFUNC_EXIT
+
 }  /* dispatch_buttongclass */
 
 /***********************************************************************************/

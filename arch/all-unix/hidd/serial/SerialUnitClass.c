@@ -548,6 +548,8 @@ AROS_UFH3(void, serialunit_receive_data,
    AROS_UFHA(APTR, iC, A5),
    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+  AROS_USERFUNC_INIT
+
   ULONG error;
   struct HIDDSerialUnitData * data = iD;
   ssize_t len;
@@ -578,7 +580,7 @@ AROS_UFH3(void, serialunit_receive_data,
                               data->filedescriptor,
                               data->replyport_read,
                               vHidd_UnixIO_Read);
-
+  AROS_USERFUNC_EXIT
 }
 
 AROS_UFH3(void, serialunit_write_more_data,
@@ -586,6 +588,8 @@ AROS_UFH3(void, serialunit_write_more_data,
    AROS_UFHA(APTR, iC, A5),
    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+  AROS_USERFUNC_INIT
+
   struct HIDDSerialUnitData * data = iD;
   struct Message * msg;
 
@@ -605,6 +609,8 @@ AROS_UFH3(void, serialunit_write_more_data,
 
   if (NULL != data->DataWriteCallBack)
     data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
+
+  AROS_USERFUNC_EXIT
 }
 
 

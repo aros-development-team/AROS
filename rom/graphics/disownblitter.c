@@ -50,8 +50,10 @@
      the TaskReadyList.
    */
 
+  AROS_LIBFUNC_INIT
+
   Forbid();
-  
+
   GfxBase -> BlitOwner = NULL;
   
   if (NULL == GfxBase->  blthd &&
@@ -73,4 +75,6 @@
   }
   
   Permit();
+
+  AROS_LIBFUNC_EXIT
 } /* DisownBlitter */

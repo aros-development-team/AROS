@@ -204,9 +204,9 @@ AROS_LH2(struct Library *, OpenLibrary,
 	- task 2 tries to open foobar.library, needs to load it from disk...
 	- it also requests LDDemon to open foobar.library, so it is now
 	  trying to open it twice
-    
+
 	We block all OpenLibrary() callers from searching the list until
-	all the other OpenLibrary() callers have returned. That way, 
+	all the other OpenLibrary() callers have returned. That way,
 	task #2 won't ask for foobar.library until task #1 has got its
 	response back from the LDDemon process.
     */
@@ -215,7 +215,7 @@ AROS_LH2(struct Library *, OpenLibrary,
     /*  We use FilePart() because the liblist is built from resident IDs,
 	and contain no path. Eg. The user can request gadgets/foo.gadget,
 	but the resident only contains foo.gadget
-    */    
+    */
     stripped_libname = FilePart(libname);
     ObtainSemaphore(&DOSBase->dl_LDSigSem);
 
@@ -465,9 +465,11 @@ AROS_UFH3(LONG, LDFlush,
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
     struct Library *library;
-    
+
     bug("LDDemon: Flush called\n");
     DOSBase->dl_LDReturn = MEM_DID_NOTHING;
 
@@ -515,11 +517,13 @@ AROS_UFH3(LONG, LDFlush,
     }
     Permit();
     return MEM_DID_NOTHING;
+
+    AROS_USERFUNC_EXIT
 }
 
 /*
   void LDDemon()
-    The LDDemon process entry. Sits around and does nothing until a 
+    The LDDemon process entry. Sits around and does nothing until a
     request for a library comes, when it will then find the library
     and hopefully open it.
 */
@@ -529,6 +533,8 @@ AROS_UFH3(void, LDDemon,
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
     struct LDDMsg *ldd;
 
@@ -558,6 +564,8 @@ AROS_UFH3(void, LDDemon,
 	    ReplyMsg((struct Message *)ldd);
 	} /* messages available */
     }
+
+    AROS_USERFUNC_EXIT
 }
 
 AROS_LH2(ULONG, Init,

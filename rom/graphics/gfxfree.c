@@ -56,6 +56,8 @@
 
 ******************************************************************************/
 {
+  AROS_LIBFUNC_INIT
+
   const ULONG GfxNew_memsizes[] = { 0,
                                     sizeof(struct ViewExtra),
                                     sizeof(struct ViewPortExtra),
@@ -79,5 +81,7 @@
 
     FreeMem((void *) node, GfxNew_memsizes[node->xln_Subtype]);
   }
+
+  AROS_LIBFUNC_EXIT
 } /* GfxFree */
 

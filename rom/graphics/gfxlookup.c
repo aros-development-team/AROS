@@ -57,6 +57,8 @@
 
 ******************************************************************************/
 {
+  AROS_LIBFUNC_INIT
+
   LONG * Hash = GfxBase -> hash_table;
   ULONG Index = CalcHashIndex((ULONG)pointer);
 
@@ -77,5 +79,7 @@
   }
   /* no associated pointer was found! */
   return NULL;
+
+  AROS_LIBFUNC_EXIT
 } /* GfxFree */
 

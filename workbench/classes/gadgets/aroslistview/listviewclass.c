@@ -752,6 +752,8 @@ AROS_UFH3S(IPTR, dispatch_listviewclass,
     AROS_UFHA(Msg,      msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval = 0UL;
 
 D(bug("lv disph: %d\n", msg->MethodID));
@@ -880,6 +882,7 @@ D(bug("lv disph: %d\n", msg->MethodID));
 
 
     ReturnPtr("lv disp", IPTR, retval);
+    AROS_USERFUNC_EXIT
 }  /* dispatch_listviewclass */
 
 

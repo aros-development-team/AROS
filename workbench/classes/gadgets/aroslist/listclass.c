@@ -543,6 +543,7 @@ AROS_UFH3S(IPTR, dispatch_listclass,
     AROS_UFHA(Msg,      msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
     IPTR retval = 0UL;
     
     D(bug("listclass disp: MethodID: %d\n", msg->MethodID));
@@ -566,7 +567,7 @@ AROS_UFH3S(IPTR, dispatch_listclass,
 	case OM_DISPOSE:
 	    list_dispose(cl, o, msg);
 	    break;
-	    
+
 	case AROSM_List_Insert:
 	    retval = (IPTR)list_insert(cl, o, (struct AROSP_List_Insert *)msg);
 	    break;
@@ -590,7 +591,7 @@ AROS_UFH3S(IPTR, dispatch_listclass,
 	    #undef S
 	    #define S(msg) ((struct AROSP_List_Select *)msg)
 	    struct ListData *data = INST_DATA(cl, o);
-	    
+
 	    
 	    if (S(msg)->Position != AROSV_List_Select_All)
 	    {
@@ -707,6 +708,8 @@ AROS_UFH3S(IPTR, dispatch_listclass,
     } /* switch */
 
     return retval;
+
+    AROS_USERFUNC_EXIT
 }  /* dispatch_listclass */
 
 

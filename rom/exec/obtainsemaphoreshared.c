@@ -56,13 +56,14 @@
 	21-01-96    fleischer implementation
 
 *****************************************************************************/
-#else
-void _Exec_ObtainSemaphoreShared (struct SignalSemaphore * sigSem,
-			    struct ExecBase * SysBase)
-#endif
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
+#else
+void _Exec_ObtainSemaphoreShared (struct SignalSemaphore * sigSem,
+			    struct ExecBase * SysBase)
+{
+#endif
     struct Task *me;
 
     /* Get pointer to current task */
@@ -150,5 +151,7 @@ void _Exec_ObtainSemaphoreShared (struct SignalSemaphore * sigSem,
     /* All Done! */
     Permit();
 
+#ifndef UseExecstubs
     AROS_LIBFUNC_EXIT
+#endif
 } /* ObtainSemaphoreShared */

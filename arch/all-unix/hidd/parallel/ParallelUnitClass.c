@@ -285,6 +285,8 @@ AROS_UFH3(void, parallelunit_receive_data,
    AROS_UFHA(APTR, iC, A5),
    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+  AROS_USERFUNC_INIT
+
   ULONG error;
   struct HIDDParallelUnitData * data = iD;
   ssize_t len;
@@ -316,6 +318,7 @@ AROS_UFH3(void, parallelunit_receive_data,
                               data->replyport_read,
                               vHidd_UnixIO_Read);
 
+  AROS_USERFUNC_EXIT
 }
 
 AROS_UFH3(void, parallelunit_write_more_data,
@@ -323,6 +326,8 @@ AROS_UFH3(void, parallelunit_write_more_data,
    AROS_UFHA(APTR, iC, A5),
    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+  AROS_USERFUNC_INIT
+
   struct HIDDParallelUnitData * data = iD;
   struct Message * msg;
 
@@ -339,6 +344,8 @@ AROS_UFH3(void, parallelunit_write_more_data,
 
   if (NULL != data->DataWriteCallBack)
     data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
+
+  AROS_USERFUNC_EXIT
 }
 
 

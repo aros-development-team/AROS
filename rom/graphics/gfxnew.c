@@ -57,6 +57,8 @@
 
 ******************************************************************************/
 {
+  AROS_LIBFUNC_INIT
+
   struct ExtendedNode * Result;
   const ULONG GfxNew_memsizes[] = { 0,
                                     sizeof(struct ViewExtra),
@@ -109,4 +111,6 @@
     } /* could allocate requested memory */
   } /* node_type is valid */
   return NULL;
+
+  AROS_LIBFUNC_EXIT
 } /* GfxNew */

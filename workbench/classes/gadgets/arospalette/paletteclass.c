@@ -688,6 +688,8 @@ AROS_UFH3S(IPTR, dispatch_paletteclass,
     AROS_UFHA(Msg,      msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval = 0UL;
     
     switch(msg->MethodID)
@@ -711,7 +713,7 @@ AROS_UFH3S(IPTR, dispatch_paletteclass,
 	case GM_HITTEST:
 	    retval = palette_hittest(cl, o, (struct gpHitTest *)msg);
 	    break;
-	    
+
 	case GM_GOACTIVE:
 	    retval = palette_goactive(cl, o, (struct gpInput *)msg);
 	    break;
@@ -759,14 +761,16 @@ AROS_UFH3S(IPTR, dispatch_paletteclass,
 	case OM_GET:
 	    retval = palette_get(cl, o, (struct opGet *)msg);
 	    break;
-	    
+
 	default:
 	    retval = DoSuperMethodA(cl, o, msg);
 	    break;
-	    
+
     } /* switch */
 
     return (retval);
+
+    AROS_USERFUNC_EXIT
 }  /* dispatch_paletteclass */
 
 

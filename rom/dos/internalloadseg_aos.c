@@ -48,7 +48,6 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
                          LONG * funcarray,
                          LONG * stack)
 {
-  AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
   #define ERROR(a)    { *error=a; goto end; }
@@ -458,8 +457,6 @@ end:
     FreeVec(hunktab);
   }
   return last_p;
-
-  AROS_LIBFUNC_EXIT
 } /* InternalLoadSeg */
 
 

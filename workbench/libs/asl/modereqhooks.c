@@ -78,6 +78,8 @@ AROS_UFH3(VOID, SMTagHook,
     AROS_UFHA(struct AslBase_intern *,  AslBase,        A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct TagItem 	*tag, *tstate;
     struct IntSMReq 	*ismreq;
     
@@ -222,11 +224,13 @@ AROS_UFH3(VOID, SMTagHook,
 	    
     if (ismreq->ism_DisplayDepth < ismreq->ism_MinDepth)
         ismreq->ism_DisplayDepth = ismreq->ism_MinDepth;
-	
+
     if (ismreq->ism_DisplayDepth > ismreq->ism_MaxDepth)
         ismreq->ism_DisplayDepth = ismreq->ism_MaxDepth;
-	
+
     ReturnVoid("SMTagHook");
+
+    AROS_USERFUNC_EXIT
 }
 
 /*****************************************************************************************/
@@ -237,6 +241,8 @@ AROS_UFH3(ULONG, SMGadgetryHook,
     AROS_UFHA(struct AslBase_intern *,  AslBase,        A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     ULONG retval;
 
     switch (ld->ld_Command)
@@ -268,6 +274,8 @@ AROS_UFH3(ULONG, SMGadgetryHook,
     }
 
     return (retval);
+
+    AROS_USERFUNC_EXIT
 }
 
 /*****************************************************************************************/

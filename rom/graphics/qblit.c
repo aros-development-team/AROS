@@ -59,6 +59,8 @@
 
 ******************************************************************************/
 {
+  AROS_LIBFUNC_INIT
+
   /* this function uses the simple FIFO queue blthd (blttl) */
   
   /* I am accessing a public structure and there's no semaphore...*/
@@ -88,9 +90,10 @@
   {
     /* queue it at the end */
     GfxBase->blttl->n = bn;
-    GfxBase->blttl    = bn;      
+    GfxBase->blttl    = bn;
   }
-  
+
   Permit();
-  
+
+  AROS_LIBFUNC_EXIT
 } /* QBlit */

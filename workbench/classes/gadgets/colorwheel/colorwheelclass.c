@@ -599,10 +599,12 @@ AROS_UFH3S(IPTR, dispatch_colorwheelclass,
     AROS_UFHA(Object *, o,   A2),
     AROS_UFHA(Msg,      msg, A1)
 )
+{
+    AROS_USERFUNC_INIT
 #else
 IPTR dispatch_colorwheelclass( REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg ) )
-#endif
 {
+#endif
     IPTR retval = 0UL;
     
     switch(msg->MethodID)
@@ -647,7 +649,10 @@ IPTR dispatch_colorwheelclass( REG(a0, Class *cl), REG(a2, Object *o), REG(a1, M
     } /* switch */
 
     return (retval);
-    
+
+#ifdef _AROS
+    AROS_USERFUNC_EXIT
+#endif        
 }  /* dispatch_colorwheelclass */
 
 

@@ -55,6 +55,8 @@ AROS_UFH3S(IPTR, dispatch_modelclass,
     AROS_UFHA(Msg,      msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct ModelData 	*data;
     IPTR 		retval = 0UL;
     
@@ -152,7 +154,8 @@ AROS_UFH3S(IPTR, dispatch_modelclass,
     } /* switch(msg->MethodID) */
 
     return retval;
-    
+
+    AROS_USERFUNC_EXIT
 }  /* dispatch_modelclass */
 
 #undef IntuitionBase

@@ -154,6 +154,8 @@ AROS_UFH3S(IPTR, dispatch_aslstringclass,
 	  AROS_UFHA(Msg, msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval = 0UL;
 
     switch (msg->MethodID)
@@ -177,6 +179,8 @@ AROS_UFH3S(IPTR, dispatch_aslstringclass,
     } /* switch (msg->MethodID) */
     
     return retval;
+
+    AROS_USERFUNC_EXIT
 }
 
 /***********************************************************************************/

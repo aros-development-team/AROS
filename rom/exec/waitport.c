@@ -69,6 +69,7 @@
 
     /* Return the first node in the list. */
     return (struct Message *)port->mp_MsgList.lh_Head;
+
     AROS_LIBFUNC_EXIT
 }
 

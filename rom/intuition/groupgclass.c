@@ -450,7 +450,9 @@ AROS_UFH3S(IPTR, dispatch_groupgclass,
 	  AROS_UFHA(Object *, obj, A2),
 	  AROS_UFHA(Msg, msg, A1)
 )
-{    
+{
+    AROS_USERFUNC_INIT
+
     IPTR retval;
 
     switch (msg->MethodID)
@@ -498,8 +500,10 @@ AROS_UFH3S(IPTR, dispatch_groupgclass,
 	    break;
 
     } /* switch (msg->MethodID) */
-    
+
     return retval;
+
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/
