@@ -75,6 +75,13 @@ static IPTR Image_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
     	}
     }
+
+    if (!data->spec) data->spec = StrDup("0:128");
+    if (!data->spec)
+    {
+	CoerceMethod(cl,obj,OM_DISPOSE);
+    	return NULL;
+    }
     
     return (IPTR)obj;
 }
@@ -102,6 +109,7 @@ static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
+	    case    MUIA_Imagedisplay_Spec:
 	    case    MUIA_Image_Spec:
 		    if (data->spec) FreeVec(data->spec);
 		    data->spec = StrDup((char*)tag->ti_Data);
@@ -135,6 +143,17 @@ static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 static IPTR Image_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
+    switch (msg->opg_AttrID)
+    {
+	case    MUIA_Image_Spec:
+		*msg->opg_Storage = (ULONG)data->spec;
+	        break;
+
+	case    MUIA_Imagedisplay_Spec:
+		*msg->opg_Storage = (ULONG)data->spec;
+	        break;
+    }
+
     return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
