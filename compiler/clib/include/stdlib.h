@@ -12,6 +12,9 @@
 #include <aros/systypes.h>
 #include <sys/_posix.h>
 
+/* It seems that also stdlib.h defines alloca() */
+#include <alloca.h>
+
 /* The following two types can be declared elsewhere */
 #ifdef	_AROS_SIZE_T_
 typedef _AROS_SIZE_T_	    size_t;
