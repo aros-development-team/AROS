@@ -481,6 +481,12 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 		    memcpy((void *)arosmb->drives_addr,(void *)mbinfo->drives_addr,mbinfo->drives_length);
 		}
 	    }
+	    if (mbinfo->flags && MB_FLAGS_GFX)
+	    {
+		arosmb->flags |= MB_FLAGS_GFX;
+		arosmb->vbe_mode = mbinfo->vbe_mode;
+		memcpy((void *)&arosmb->vmi,(void *)mbinfo->vbe_mode_info,sizeof(struct vbe_mode));
+	    }
 	}
     }
 
@@ -1046,6 +1052,12 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 			curr->cyls,curr->heads,curr->secs,
 			curr->mode?"CHS":"LBA");
 	    }
+	}
+	if (arosmb->flags && MB_FLAGS_GFX)
+	{
+	    kprintf(" Received VESA mode info:\n");
+	    kprintf("  VESA mode %04x\n",arosmb->vbe_mode);
+	    kprintf("  Resolution %dx%d with depth %d bits\n",arosmb->vmi.x_resolution,arosmb->vmi.y_resolution,arosmb->vmi.bits_per_pixel);
 	}
     }
     else
