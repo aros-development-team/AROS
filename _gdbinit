@@ -149,8 +149,11 @@ List of all the modules currently loaded in memory
 end
 
 define findaddr
+    set $cont = 1
+
+    #fist search in modules loaded from disk
+    printf "Searching in the loaded modules...\n"
     if debug_seglist
-        set $cont = 1
         set $segnode = (struct debug_segnode *)debug_seglist.mlh_Head
 
         while ($segnode->node.mln_Succ != 0) && $cont
@@ -169,7 +172,30 @@ define findaddr
             set $segnode = (struct debug_segnode *)$segnode->node.mln_Succ
         end
     end
+
+    #then in the resident list
+    if $cont
+        printf "Searching in the resident list...\n"
+    end
+
+    set $resp = (struct Resident **)SysBase->ResModules
+    set $i = 0
+
+    while (($resp)[$i] != 0) && $cont
+	set $res = ($resp)[$i]
+
+        if ($arg0 >= $res) && ($arg0 <= $res->rt_EndSkip)
+            printf "Address found in %s, which resides at 0x%08x\n", $res->rt_Name, $res
+            set $cont = 0
+        end
+
+        set $i = $i + 1
+    end
+
+    if $cont
+        printf "No matching module for this address\n"
+    end
 end
 document findaddr
-Shows the modules that contains the given address
+Shows the module that contains the given address
 end
