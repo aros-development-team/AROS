@@ -19,7 +19,7 @@
 	
 	 0. Check for CPU. AROS needs 80386 or better.
 	 1. Reset HDD controler.
-	 2. Check RAM amount.
+	 2. Check RAM amount. <-- rather invalid.
 	 3. Init video card.
 	 4. Get hd0 data.
 	 5. Get hd1 data if device exists.
@@ -31,6 +31,9 @@
 	11. Set up IRQ.
 	12. Turn on flat protected mode.
 	13. Jump to kernel at 0x00001000.
+
+    HISTORY
+	1.4	A20 switching bug REMOVED!
 
 *****************************************************************************/
 
@@ -70,18 +73,13 @@ start_sys_seg:
     Addr:   Size:   Function:
 
     0x000   W	    Cpu type - 4=386 5=486 6=586 7=686 etc
-    0x002   W	    Memory size in kilobytes
+    0x002   W	    Memory size in kilobytes	<-- invalid if you have more than 64MB!!!!
 
     0x004...
 
-    0x010   W 	    Cursor pos
-    0x012   W	    Video page
-    0x014   B	    Video mode
-    0x015   B	    Video cols
-    0x016   B	    Video lines
     0x017   B	    VGA indicator
-    0x018   B	    Font size
-    0x01a...
+
+    0x018...
 
     0x040   W	    APM BIOS version. If 0 no APM BIOS supported
     0x042   W	    BIOS code segment
@@ -346,7 +344,7 @@ done_apm_bios:
 		out	#0x64,al
 		call	empty_8042
 		mov	al,#0xdf	! A20 on
-		out	#0x64,al
+		out	#0x60,al
 		call	empty_8042
 
 ! Reset fpu
@@ -362,6 +360,7 @@ done_apm_bios:
 ! We need to remap IRQs. Stupid IBM puts some of them at 0x08-0x0f vectors.
 ! This area is used by internal hardware interrupts.
 ! We'll map all IRQs at 0x20-0x2f
+! Besides all IBM problems 0x00-0x1f vectors seems to be reserved by Intel
 
 		mov	al,#0x11	! Initialization sequence
 		out	#0x20,al	! Send it to 8259A-1
@@ -392,7 +391,7 @@ done_apm_bios:
 		out	#0x21,al
 		call	delay
 
-! Now, when we have remap all IRQs, we can't use BIOS anymore. It's no problem
+! Now, when we have remaped all IRQs, we can't use BIOS anymore. It's no problem
 ! because it's 16 bit and useless at all. Using BIOS in AROS would kill
 ! multitasking, but hopefully we don't need this pice of ROM.
 ! Now it's time to turn on the flat protected mode.
@@ -407,7 +406,7 @@ done_apm_bios:
 ! There is one more thing to do. We need to jump into kernel. Then we'll be
 ! in 32bit protected mode (flat). We use only 3 entries in Global Descriptor
 ! Table, so from this moment we can forgot about segment registers. The only
-! thing we need to do with them is setting up.
+! thing we need to do with them is setting up :-))
 
 ! Jump!
 
@@ -476,7 +475,7 @@ gdt:
 		.word	0xffff		! 4GB
 		.word	0x0000		! base address = 0
 		.word	0x9a00		! code read/exec
-		.word	0x00cf		! granularity=4096, 386
+		.word	0x00cf		! granularity=4096, 386 descriptor
 
 		.word	0xffff		! same as abowe except type
 		.word	0x0000

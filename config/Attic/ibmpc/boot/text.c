@@ -2,10 +2,11 @@
 #define C_BGCOLOR 0x70
 #define C_FGCOLOR 0x0f
 #define VGA_BASE (void *)0xb8000
-#define KERNEL_DATA ((unsigned char *)0x98000)
-#define MAXROW KERNEL_DATA[22]
+#define KERNEL_DATA ((unsigned char *)0x900)
+#define MAXROW 30
 
 int c_row = 0, c_col = 0, c_atr = 0x0f;
+void Set_cursor(int pos);
 
 void putc_fg(char c)
 {
@@ -48,6 +49,7 @@ unsigned char *p;
     c_col = 0;
     c_row--;
   }
+  Set_cursor(c_col+c_row*80);
 }
 
 void putc(char c)
@@ -86,6 +88,7 @@ unsigned char *p;
     c_col = 0;
     c_row--;
   }
+  Set_cursor(c_col+c_row*80);
 }
 
 void puts_fg(char *s)
@@ -189,17 +192,20 @@ int i,j;
 
   p = VGA_BASE;
   for(j=0;j<MAXROW;j++)
-    for(i=0;i<160;i++)
-      p[i] = 0;
+    for(i=0;i<80;i++)
+      p[2*i+160*j] = ' ';
+      p[2*i+160*j+1] = c_atr;
 
   c_row = 0;
   c_col = 0;
+  Set_cursor(c_col+c_row*80);
 }
 
 void gotoxy(int x, int y)
 {
   c_col = x%80;
   c_row = y%MAXROW;
+  Set_cursor(c_col+c_row*80);
 }
 
 void setfg(char c)
@@ -221,11 +227,10 @@ void setblink(char c)
     c_atr |= C_BLINK;
 }
 
-int strlen(char *s)
+unsigned int strlen(char *s)
 {
-int i=0;
+unsigned int i=0;
   while(s[i++]);
   --i;
 return i;
 }
-

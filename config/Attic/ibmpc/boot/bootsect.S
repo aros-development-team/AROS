@@ -151,7 +151,7 @@ got_sectors:	mov	ax,#INITSEG
 		xor	bh,bh
 		int	0x10
 		
-		mov	cx,#42		! 42 chars
+		mov	cx,#39		! 39 chars
 		mov	bx,#0x0007	! page zero attrib normal
 		mov	bp,#msg1
 		mov	ax,#0x1301	! Write string, move cursor

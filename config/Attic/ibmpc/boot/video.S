@@ -12,18 +12,15 @@
 	This pice of code detect type of gfx card you have installed and turns
 	mode 80x30 on if you have VGA or better.
 
+	Video params (cursor position and other stuff) removed in 1.3
+	Who have used it? Nobody i think...
+
     BUGS
 	Incompleted initialization
 
 *****************************************************************************/
 
-#define CURSOR_POS	0x10
-#define VIDEO_PAGE	0x12
-#define VIDEO_MODE	0x14
-#define VIDEO_COLS	0x15
-#define VIDEO_LINES	0x16
 #define VGA_INDICATOR	0x17
-#define FONT_SIZE	0x18
 
 ! This function is called from setup.S
 ! DS points to bootsector
@@ -41,8 +38,6 @@ video:		push	ds
 		call	basic_detect	! Test video adapter
 		
 		call	mode_set
-		
-		call	mode_param
 		
 		pop	ds
 		ret
@@ -71,36 +66,13 @@ basic_detect:	seg	fs
 		incb	[adapter]
 basret:		ret
 
-! Get mode parameters. They'll be used later by kernel
-
-mode_param:	mov	ah,#0x03	! Read cursor position
-		xor	bh,bh
-		int	0x10
-		seg	fs
-		mov	(CURSOR_POS),dx
-		
-		mov	ah,#0x0f	! Read page/mode/width
-		int	0x10
-		seg	fs
-		mov	(VIDEO_PAGE),bx
-		seg	fs
-		mov	(VIDEO_MODE),ax	! Video mode and page width
-		seg	gs
-		mov	ax,(0x485)
-		seg	fs
-		mov	(FONT_SIZE),ax	! valid only on EGA/VGA
-		
-		seg	fs
-		mov	(VIDEO_COLS),#80
-		seg	fs
-		mov	(VIDEO_LINES),#30
-		ret
-		
 ! Set 80x30 mode. 480 scanlines and 16 pixel font
 ! If you haven't VGA video.S halts.
 
 mode_set:	cmpb	[adapter],#0	! Hope we have 80x25 set
 		je	no_vga
+		mov	al,#0x03
+		int	0x10
 		mov	dx,#0x3cc	! Get CRTC port
 		in	al,dx
 		mov	dl,#0xd4	! Valid for color mode

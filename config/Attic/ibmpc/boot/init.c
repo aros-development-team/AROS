@@ -21,9 +21,43 @@
 
 *****************************************************************************/
 
+#include <exec/types.h>
+#include <exec/nodes.h>
+#include <exec/memory.h>
+#include <exec/resident.h>
+#include <exec/libraries.h>
+#include <exec/execbase.h>
+#include <proto/exec.h>
+
 #include "text.h"
 #include "logo.h"
 
+unsigned long Memory;	/* Size of whole memory */
+unsigned long Memory24;	/* Size of DMA memory (24 bit) */
+unsigned long ssp=-1;	/* System stack pointer */
+unsigned long usp=-1;	/* User stack pointer */
+unsigned long esp=-1;	/* Points to register set on stack */
+int supervisor=1;	/* Supervisor mode flag */
+
+struct ExecBase *SysBase=NULL;
+struct MemHeader *mh;
+
+int abs(int x)
+{
+    if (x<0)
+	return -x;
+    else
+	return x;
+}    
+
+void assert(void *sth)
+{
+    if(sth==0)
+    {
+	puts_fg("\nPage zero fault. System halted...");
+	while(1);
+    }
+}
 
 void show_status(void)
 {
@@ -35,14 +69,18 @@ int d,i;
   d = p[0]-1;
   puti_fg(d);
   puts_fg("86\nAvailable Memory: ");
-  d = (p[3]<<8) + p[2];
+  d = Memory>>10;
+  puti_fg(d);
+  puts_fg("kB\n");
+  puts_fg("Available DMA Memory: ");
+  d = Memory24>>10;
   puti_fg(d);
   puts_fg("kB\n");
   puts_fg("Video: (");
-  d = p[21];
+  d = 80;
   puti_fg(d);
   puts_fg("x");
-  d = p[22];
+  d = 30;
   puti_fg(d);
   puts_fg(")\n");
   puts_fg("Pointing device: ");
@@ -72,12 +110,42 @@ int d,i;
 
 int main()
 {
-  char text[] = "Now booting AROS - The Amiga Research OS\n";
+    unsigned long temp;
+    static char text[] = "Now booting AROS - The Amiga Research OS\n";
+    static char text2[] = "\nOops! Kernel under construction...\n";
 
-  showlogo();
-  gotoxy(0,0);
-  puts_fg(text);
-  show_status();
+/* Get memory size. This code works even with 4GB of memory
+   BIOS would have some troubles if you have more than 64MB */
 
+    Memory=0x00100000;
+    do
+    {
+	Memory+=0x10;				/* Step by 16 bytes */
+	Memory24=*(unsigned long *)Memory;	/* Memory24 is temporary now */
+	*(unsigned long *)Memory=0xDEADBEEF;
+	temp=*(unsigned long *)Memory;
+	*(unsigned long *)Memory=Memory24;
+    } while (temp==0xDEADBEEF);
+    Memory24=(Memory>0x01000000) ? 0x01000000 : Memory;
+  
+    showlogo();
+    gotoxy(0,0);
+    puts_fg(text);
+    show_status();
+
+    mh=(struct MemHeader*)0x00100000;
+    mh->mh_Node.ln_Type = NT_MEMORY;
+    mh->mh_Node.ln_Name = "24bit memory";
+    mh->mh_Node.ln_Pri = -5;
+    mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA |
+			MEMF_KICK;
+    mh->mh_First = (struct MemChunk *)((UBYTE *)mh + sizeof(struct MemHeader));
+    mh->mh_First->mc_Next = NULL;
+    mh->mh_First->mc_Bytes = Memory24 - 0x00100000 - sizeof(struct MemHeader);
+    mh->mh_Lower = mh->mh_First;
+    mh->mh_Upper = (APTR)Memory24;
+    mh->mh_Free = mh->mh_First->mc_Bytes;
+
+    puts_fg(text2);
 return 0;
 }

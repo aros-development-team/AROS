@@ -4,8 +4,8 @@
 
 CC=gcc -O2 -D__BFD__
 
-build: build.c
-	$(CC) $< -o $@
+$(BUILD): $(BUILD).c
+	gcc -O2 -D__BFD__ $< -o $@
 
 clean:
 	rm -f build

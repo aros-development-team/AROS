@@ -1,8 +1,8 @@
 #ifndef _TEXT_H
 #define _TEXT_H
 
-#define KERNEL_DATA ((unsigned char *)0x98000)
-#define MAXROW KERNEL_DATA[22]
+#define KERNEL_DATA ((unsigned char *)0x900)
+#define MAXROW 30
 extern int c_row, c_col, c_atr;
 
 /* All printing functions to vga text display do auto-wrap and scrolling */
@@ -35,7 +35,7 @@ void setbg(char c);
 /* Set blink tag 0=off else=on */
 void setblink(char c);
 /* Calculate length of string not including trailing 0 */
-int strlen(char *s);
+unsigned int strlen(char *s);
 
 #endif /* !_TEXT_H */
 

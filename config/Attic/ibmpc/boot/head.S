@@ -18,13 +18,17 @@
     0x00000900 - 0x00000b00	data from setup
     0x00000b00 - 0x00000b18	Global Descriptor Table
     0x00001000 - ....		Kernel
-    ....       - 0x0009effc	Supervisor stack
+    ....       - 0x0009f000	Supervisor stack
     0x0009f000 - 0x0009ffff	BIOS private data (e.g. PS mouse block)
 
     *** end of SYSTEM USE ONLY area ***
 
     0x00100000 - 0x00ffffff	24BIT DMA Memory area
     0x01000000 - 0x........	Rest of memory
+
+    History
+
+    1.4		Removed reload_flag. It's useless.
 
 */
 
@@ -40,7 +44,7 @@ startup_32:
 
 		jmp	start	/* Skip header */
 
-		.word	41,0	/* kernel version */
+		.word	41,5	/* kernel version */
 
 		.ascii	"AMIGA Research Operating System (AROS)"
 		.byte	0
@@ -53,16 +57,80 @@ startup_32:
 
 		.balign	16
 
+/* Restart after soft reset here */
+
+		.globl	start_again
+
+start_again:	cld
+		cli
+		movl	$KERNEL_DS,%eax
+		mov	%ax,%ds
+		mov	%ax,%es
+		mov	%ax,%fs
+		mov	%ax,%gs
+		mov	%ax,%ss
+		mov	$0x0009f000,%esp
+
+		sidt	idt
+
+		movl	$0x00000008,%eax
+ 		movl	%eax,(idt_base)
+		movw	$0x07ff,%ax
+		mov	%ax,(idt)
+
+/* Clear first 4 bytes */
+
+		xorl	%eax,%eax
+		movl	%eax,(0x00000000)
+
+		call	make_ientry
+		movl	$0x00000008,%edi
+		movl	(int_entry),%eax
+		movl	(4+int_entry),%ebx
+		movl	$256,%ecx
+		
+/* Fill interrupt table */
+
+copy_idts_2:	movl	%eax,(%edi)
+		movl	%ebx,4(%edi)
+		lea	8(%edi),%edi
+		decl	%ecx
+		jne	copy_idts_2
+
+		lidt	idt
+
+/* System timer to 50Hz */
+
+		mov	$23864,%eax
+		outb	%al,$0x40
+		xchg	%ah,%al
+		outb	%al,$0x40
+
+/* Call C-code kernel */
+
+		call	main
+		jmp	dummy_halt
+
+
 start:		cld
 		cli
-		movl	$(KERNEL_DS),%eax	/* Fill segment registers */
+		movl	$KERNEL_DS,%eax		/* Fill segment registers */
 		mov	%ax,%ds			/* All are the same - one */
 		mov	%ax,%es			/* 4GB data segment */
 		mov	%ax,%fs
 		mov	%ax,%gs
 		mov	%ax,%ss
-		mov	$0x0009effc,%esp	/* Put stack in safe place */
+		mov	$0x0009f000,%esp	/* Put stack in safe place */
 						/* skip BIOS ext area */
+/* Clear BSS */
+
+		xorl	%eax,%eax
+		movl	$_edata,%edi
+		movl	$_end,%ecx
+		subl	%edi,%ecx
+		cld
+		rep
+		stosb		
 
 /* Get GDT and IDT so that you can change them */
 
@@ -86,6 +154,8 @@ start:		cld
 		
 		movl	$0x00000008,%eax
  		movl	%eax,(idt_base)
+		movw	$0x7ff,%ax	/* Store IDT size */
+		movw	%ax,(idt)
 
 /* Clear first 4 bytes */
 
@@ -95,8 +165,6 @@ start:		cld
     Don't touch ExecBase. We'll try (maybe) leter to detect whether OS starts
     first time or after soft reset - We'll control soft resets - Yuppi!!!
 */
-
-/*		movl	%eax,(0x00000004)		*/
 
 		call	make_ientry
 		movl	$0x00000008,%edi
@@ -117,15 +185,12 @@ copy_idts:	movl	%eax,(%edi)
 
 /* Copy data from setup */
 
-		cmpl	$0,(reload_flag)
-		jne	dont_copy
 		movl	$0x00098000,%esi
 		movl	$0x00000900,%edi
 		movl	$128,%ecx	/* 512/4 */
 		cld
 		rep
 		movsl
-dont_copy:	incl	(reload_flag)
 
 /* Turn off floppy led */
 
@@ -140,27 +205,6 @@ dont_copy:	incl	(reload_flag)
 		xchg	%ah,%al		/* BIOS did it for us */
 		outb	%al,$0x40
 
-/*
-    Uncomment this to check whether it works or not. After reset you should see
-    %esp contents in left top corner of screen. It sould be 0009fffc or similar
-*/
-
-/*		movl	%esp,%edx
-		movl	$0x000b8000,%edi
-		movl	$8,%ecx
-qqq:		roll	$4,%edx
-		movb	$15,%al
-		andb	%dl,%al
-		addb	$0x90,%al
-		daa
-		adcb	$0x40,%al
-		daa
-		stosb
-		incl	%edi
-		decl	%ecx
-		jne	qqq
-*/
-		
 /* OK, head has finished its job. Go to the exec now */
 /* In future there will be "jmp ..." instead of "call" */
 
@@ -181,7 +225,7 @@ make_ientry:	lea	(empty_int),%edx
 
 		movw	%dx,(%edi)
 		rorl	$16,%edx
-		movw	$(KERNEL_CS),2(%edi)
+		movw	$KERNEL_CS,2(%edi)
 		movw	$0x8e00,4(%edi)
 		movw	%dx,6(%edi)
 		ret
@@ -189,9 +233,32 @@ make_ientry:	lea	(empty_int),%edx
 int_entry:	.long	0
 		.long	0
 
-reload_flag:		/* We'll increment reload_flag every time OS restarts.
-			We'll know whether to copy data from setup or not */
-	.long	0
+		.globl	Set_cursor
+Set_cursor:	pushl	%ebp
+		movl	%esp,%ebp
+		pushl	%edx
+		pushl	%ecx
+		pushl	%ebx
+		pushl	%eax
+		movl	8(%ebp),%ebx
+		movw	$0x03d4,%dx
+		movb	$0x0e,%al
+		outb	%al,%dx
+		incb	%dx
+		movb	%bh,%al
+		outb	%al,%dx
+		decb	%dx
+		movb	$0x0f,%al
+		outb	%al,%dx
+		incb	%dx
+		movb	%bl,%al
+		outb	%al,%dx
+		popl	%eax
+		popl	%ebx
+		popl	%ecx
+		popl	%edx
+		popl	%ebp
+		ret
 
 gdt:
 	.word	0
