@@ -73,6 +73,8 @@ struct CollectPixelsMsg
 
 *****************************************************************************/
 {
+        AROS_LIBFUNC_INIT
+
 	LockLayers(l->LayerInfo);
 	LockLayer(0,l);
 	D(bug("%s: layer=%p,region=%p\n",
@@ -280,5 +282,7 @@ struct CollectPixelsMsg
 		D(bug("Complete region handled! - Nothing to take from screen!\n"));
 	}
 	UnlockLayers(l->LayerInfo);
+
+        AROS_LIBFUNC_EXIT
 }
 
