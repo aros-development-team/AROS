@@ -31,6 +31,7 @@
 #include <exec/libraries.h>
 #include <exec/execbase.h>
 #include <exec/io.h>
+#include <proto/oop.h>
 #include <proto/exec.h>
 
 #include <graphics/gfx.h>
@@ -39,6 +40,9 @@
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <devices/keyboard.h>
+
+#include <hidd/hidd.h>
+#include <hidd/serial.h>
 
 #include <memory.h>
 
@@ -96,6 +100,7 @@ extern const struct Resident
     Misc_resident,
     Cybergraphics_resident,
     hiddgraphics_resident,
+    hiddserial_resident,
     vgaHidd_resident,
     Workbench_resident;
 //    Dos_resident,
@@ -127,6 +132,7 @@ static const struct Resident *romtagList[] =
     &hiddgraphics_resident,		    /* ColdStart,   9    */
     &kbdHidd_resident,			    /* ColdStart,   9    */
     &vgaHidd_resident,			    /* ColdStart,   9    */
+    &hiddserial_resident,		    /* ColdStart,   9    */
     &Cybergraphics_resident,		    /* ColdStart,   8    */
     &Console_resident,			    /* ColdStart,   5	 */
     &TrackDisk_resident,		    /* Coldsatrt,   4    */	//Trackdisk		
@@ -167,6 +173,8 @@ int abs(int x)
 {
     puts("This function is unfortunately not implemented yet...\n");
 }*/
+
+ULONG InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum);
 
 int main()
 {
@@ -307,6 +315,29 @@ int main()
 	}
     }
 
+    #define ioStd(x) ((struct IOStdReq *)x)
+
+    {
+	struct IORequest *io;
+	struct MsgPort *mp;
+
+	mp=CreateMsgPort();
+	io=CreateIORequest(mp,sizeof(struct IOStdReq));
+	kprintf("Result of opening device %d\n",
+	    OpenDevice("gameport.device",0,io,0));
+	kprintf("Doing CMD_HIDDINIT...\n");
+	{
+	    UBYTE *data;
+	    data = AllocMem(100, MEMF_PUBLIC);
+	    strcpy(data, "hidd.mouse.hw");
+	    ioStd(io)->io_Command=32000;
+	    ioStd(io)->io_Data=data;
+	    ioStd(io)->io_Length=strlen(data);
+	    DoIO(io);
+	    kprintf("Got io_ERROR=%d",io->io_Error);
+	}
+    }
+
     {
         struct IntuitionBase *IntuitionBase;
         struct Window * win;
@@ -368,8 +399,6 @@ int main()
     
 #endif
 
-    #define ioStd(x) ((struct IOStdReq *)x)
-
     /* Small kbdhidd test */
     {
 	struct IORequest *io;
@@ -403,4 +432,11 @@ int main()
 return 0;
 }
 
-
+ULONG InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum)
+{
+    kprintf("%d bytes: ", length);
+    
+    while(length--) {kprintf("%02.2x ", *data++);};
+    
+    kprintf("\n");
+}
