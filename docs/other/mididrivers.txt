@@ -185,11 +185,9 @@ the new driver-format: How on earth are you able to know there aren't any more d
 for all possible situations?)
 
 Also beware that 'ActivateXmit' might be called even if there are no more datas to be picked
-up, and also while you are currently picking up data. And most important: 'ActivateXmit' might
-be called even if another task is simultaniously calling 'ActivateXmit' with the same
-portnum. So if you are picking up data with 'transmitfunc' directly from the 'ActivateXmit'-
-function, you must use a semaphore or something to ensure single-threading before
-calling 'transmitfunc'.
+up, and also while you are currently picking up data with another task
+or interrupt. But luckily, 'ActivateXmit' will not be called again
+until you return, so its single-threaded per port.
 
 Note that 'transmitfunc' returns data that is optimized with running status, so if you
 are not sending data that is going to be directly transmitted via a midi-cable, or the
