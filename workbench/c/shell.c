@@ -272,6 +272,7 @@ LONG execute(STRPTR com)
 	    ;
 	RunCommand(seglist,100000,s2,last-s2-1);
 	UnLoadSeg(seglist);
+	Cli()->cli_Result2 = ((struct Process *)FindTask(NULL))->pr_Result2;
     }else if(infile==NULL&&outfile==NULL)
     {
 	lock=Lock(command,SHARED_LOCK);
@@ -303,7 +304,10 @@ end:
     FreeVec(s1);
     FreeVec(s2);
     if(error)
+    {
+	Cli()->cli_Result2 = error;
 	PrintFault(error,"Couldn't run command");
+    }
     Flush(Output());
     return 0;
 }
