@@ -1007,7 +1007,7 @@ static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
 	/* center image position, we assume image top and left is 0 */
 	ULONG x, y;
         ULONG state;
-	UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
+	/* UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens; */
 	
 	GetGadgetIBox(o, msg->gpr_GInfo, &container);
 	D(bug("Gadget IBOX\n"));
