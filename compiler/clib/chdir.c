@@ -58,11 +58,17 @@ static BPTR __startup_cd_lock;
 
     BPTR oldlock;
     BPTR newlock = Lock( path, SHARED_LOCK );
-    
+
     if( newlock == NULL )
     {
     	errno = IoErr2errno( IoErr() );
-	return -1;
+	goto error;
+    }
+
+    if( SetCurrentDirName( path ) != DOSTRUE ) 
+    {
+    	errno = ENAMETOOLONG;
+	goto error;
     }
     
     oldlock = CurrentDir( newlock );
@@ -78,6 +84,11 @@ static BPTR __startup_cd_lock;
     }    
     
     return 0;
+
+error:
+    if( newlock != NULL ) UnLock( newlock );
+    
+    return -1;
 }
 
 int __init_chdir(void)
