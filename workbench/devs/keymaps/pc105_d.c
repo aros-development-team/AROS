@@ -68,7 +68,7 @@ CONST UBYTE lokeymaptypes[] =
     S|A,	/* 08 */
     S|A,	/* 09 */
     S|A,	/* 0A */
-    S|A,	/* 0B */
+    ST|V,	/* 0B */
     S, 		/* 0C */
     N, 		/* 0D */
     N, 		/* 0E */
@@ -211,6 +211,26 @@ CONST UBYTE hikeymaptypes[] =
 #define BYTES(b0, b1, b2, b3) \
 	(((UBYTE)b3)<<24) | (((UBYTE)b2)<<16) | (((UBYTE)b1)<<8) | (((UBYTE)b0)<<0)
 
+const UBYTE key0b_descr[] =
+{
+    1,16,
+    1,17,
+    1,18,
+    1,19,
+    1,20,
+    1,21,
+    1,22,
+    1,23,
+    'ß',  /* NO QUAL */
+    '?',  /* SHIFT */
+    '\\', /* ALT */
+    '\\', /* ALT + SHIFT */
+    28,   /* CTRL */
+    28,   /* CTRL + SHIFT */
+    28,   /* CTRL + ALT */
+    28,   /* CTRL + ALT + SHIFT */
+};
+
 CONST IPTR lokeymap[] =
 {
     BYTES('°', '^', '°', '^'), 		/* 00 Left of 1 Key */
@@ -224,7 +244,7 @@ CONST IPTR lokeymap[] =
     BYTES('[', '[', '(', '8'), 		/* 08 8 */
     BYTES(']', ']', ')', '9'),		/* 09 9 */
     BYTES('}', '}', '=', '0'),		/* 0A 0 */
-    BYTES('\\', '\\', '?', 'ß'),	/* 0B Right of 0 */
+    STRING(key0b_descr),	    	/* 0B Right of 0 */
     BYTES('+', '=', '`', '´'),		/* 0C 2nd right of 0 */
     BYTES('|', '|', '|', '|'),		/* 0D 3rd right of 0 */
     BYTES(0, 0, 0, 0),			/* 0E undefined */
