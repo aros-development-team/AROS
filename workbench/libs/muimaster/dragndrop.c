@@ -599,7 +599,7 @@ struct BitMapNode *CreateBitMapNodeA( struct TagItem *tagList )
 		struct TagItem *tl=tagList;
 		struct TagItem *tag;
 
-		while(( tag = NextTagItem( &tl )))
+		while(( tag = NextTagItem((const struct TagItem **) &tl )))
 		{
 			ULONG id = tag->ti_Tag;
 			ULONG data = tag->ti_Data;
@@ -863,7 +863,7 @@ VOID UndrawBitMapNode(struct BitMapNode *bmn )
 
 	if( bmn->bmn_SaveWidth > 0 && bmn->bmn_SaveHeight > 0 )
 	{
-		BltBitMapRastPort( bmn->bmn_SaveBitMap,0,0,
+		SafeBltBitMapRastPort( bmn->bmn_SaveBitMap,0,0,
 									rp, bmn->bmn_SaveX, bmn->bmn_SaveY, bmn->bmn_SaveWidth, bmn->bmn_SaveHeight, 0xc0 );
 	}
 	bmn->bmn_SaveWidth = 0;
