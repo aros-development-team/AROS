@@ -23,6 +23,7 @@
 #include <workbench/icon.h>
 #include <workbench/workbench.h>
 #include <workbench/startup.h>
+#include <workbench/handler.h>
 
 #include <proto/intuition.h>
 #include <proto/exec.h>
@@ -63,6 +64,8 @@ struct WorkbenchBase
     
     BOOL                    wb_Initialized;             /* Has the library been intialized in libOpen? */
 };
+
+#define LB(lb)          ((struct WorkbenchBase *) (lb))
 
 #define SysBase         (WorkbenchBase->wb_SysBase)
 #define UtilityBase     ((struct UtilityBase *)(WorkbenchBase->wb_UtilityBase))

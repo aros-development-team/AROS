@@ -532,8 +532,8 @@ BOOL __WB_LaunchProgram
     struct WorkbenchBase *WorkbenchBase
 )
 {
-    struct WBStartup     *startup = NULL;
-    struct LaunchMessage *message = NULL;
+    struct WBStartup        *startup = NULL;
+    struct WBCommandMessage *message = NULL;
        
     /*-- Allocate memory for messages --------------------------------------*/
     startup = AllocMem(sizeof(struct WBStartup), MEMF_PUBLIC | MEMF_CLEAR);
@@ -545,14 +545,13 @@ BOOL __WB_LaunchProgram
     }
     MESSAGE(startup)->mn_Length = sizeof(struct WBStartup);
     
-    message = AllocMem(sizeof(struct LaunchMessage), MEMF_PUBLIC | MEMF_CLEAR);
+    message = CreateWBCM(WBCM_TYPE_LAUNCH);
     if (message == NULL)
     {
         D(bug("workbench.library: WB_LaunchProgram: Failed to allocate memory for launch message\n"));
         SetIoErr(ERROR_NO_FREE_STORE);
         goto error;
     }
-    MESSAGE(message)->mn_Length = sizeof(struct LaunchMessage);
     
     /*-- Build the arguments array -----------------------------------------*/
     if (!WB_BuildArguments(startup, lock, name, tags))
@@ -563,12 +562,11 @@ BOOL __WB_LaunchProgram
 
     /*-- Send message to handler -------------------------------------------*/
     D(bug("workbench.library: WB_LaunchProgram: Setting up message\n"));
-    message->lm_HandlerMessage.hm_Type = HM_TYPE_LAUNCH;
-    message->lm_StartupMessage         = startup; 
+    message->wbcm_Data.Launch.Startup = startup; 
     
     /* The handler will deallocate the memory! */
     D(bug("workbench.library: WB_LaunchProgram: Sending message\n"));
-    PutMsg(&(WorkbenchBase->wb_HandlerPort), MESSAGE(message));
+    PutMsg(&(WorkbenchBase->wb_HandlerPort), (struct Message *) message);
     
     D(bug("workbench.library: WB_LaunchProgram: Success\n"));
     
@@ -576,7 +574,7 @@ BOOL __WB_LaunchProgram
 
 error:
     if (startup != NULL) FreeMem(startup, sizeof(struct WBStartup));
-    if (message != NULL) FreeMem(message, sizeof(struct LaunchMessage));
+    if (message != NULL) DestroyWBCM(message);
     
     D(bug("workbench.library: WB_LaunchProgram: Failure\n"));
     
