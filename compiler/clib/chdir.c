@@ -5,6 +5,8 @@
     ANSI C function chdir().
 */
 
+#include "__arosc_privdata.h"
+
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <proto/dos.h>

@@ -5,6 +5,8 @@
     spavnv() function, used to spawn new processes.
 */
 
+#include "__arosc_privdata.h"
+
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <dos/dos.h>

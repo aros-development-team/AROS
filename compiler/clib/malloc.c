@@ -5,6 +5,8 @@
     ANSI C function malloc().
 */
 
+#include "__arosc_privdata.h"
+
 #include <errno.h>
 #include <dos/dos.h>
 #include <exec/memory.h>

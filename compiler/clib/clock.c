@@ -5,6 +5,8 @@
     Returns time passed since start of program.
 */
 
+#include "__arosc_privdata.h"
+
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <aros/symbolsets.h>

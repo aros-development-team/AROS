@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#include "__arosc_privdata.h"
+
 #include <exec/types.h>
 #include <setjmp.h>
 #include <aros/startup.h>

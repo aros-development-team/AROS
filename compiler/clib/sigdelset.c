@@ -9,6 +9,8 @@
 
     NAME */
 
+#include "__arosc_privdata.h"
+
 #include <signal.h>
 
 	int sigdelset (

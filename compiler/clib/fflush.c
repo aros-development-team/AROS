@@ -5,6 +5,8 @@
     ANSI C function fflush().
 */
 
+#include "__arosc_privdata.h"
+
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <dos/dosextens.h>

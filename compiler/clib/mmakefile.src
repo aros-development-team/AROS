@@ -415,7 +415,7 @@ $(OBJDIR)/static/%.o : %.c
 	%compile_q opt="$(CFLAGS)"
 
 $(OBJDIR)/shared/%.o : %.c
-	%compile_q opt="$(CFLAGS) -include __arosc_privdata.h"
+	%compile_q opt="$(CFLAGS) -DAROSC_SHARED"
 
 $(OBJDIR)/rom/%.o : %.c
 	%compile_q opt="$(CFLAGS)"

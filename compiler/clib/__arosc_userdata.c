@@ -1,7 +1,4 @@
-#ifndef ___AROSC_PRIVDATA_H
-#    define DO_STATIC
-#    include "__arosc_privdata.h"
-#endif
+#include "__arosc_privdata.h"
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -21,7 +18,7 @@ extern struct Library *aroscbase;
 
 struct arosc_userdata * __get_arosc_userdata(void)
 {
-    #ifdef DO_STATIC
+    #ifndef AROSC_SHARED
 
     static struct arosc_privdata acpd_static;
 

@@ -5,6 +5,8 @@
     Query the current time and/or timezone.
 */
 
+#include "__arosc_privdata.h"
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/timer.h>

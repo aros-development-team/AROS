@@ -503,7 +503,7 @@ const int __ctype_tolower_array[384] =
     248,249,250,251, 252,253,254,255,
 };
 
-#ifdef ___AROSC_PRIVDATA_H
+#ifdef AROSC_SHARED
 
 static int __ctype_init(void)
 {
