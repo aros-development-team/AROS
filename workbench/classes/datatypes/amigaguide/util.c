@@ -799,7 +799,7 @@ ULONG SendRexxCommand(Class *cl, Object *obj, STRPTR command, ULONG mode)
 	       else
 		  rxmsg->rm_Action = RXCOMM | RXFF_STRING;
 
-	       if((rxmsg->rm_Args[0] = CreateArgstring(command, strlen(command))))
+	       if((rxmsg->rm_Args[0] = (IPTR)CreateArgstring(command, strlen(command))))
 	       {
 		  if(FindTask(NULL)->tc_Node.ln_Type == NT_PROCESS && mode == AGRX_RX)
 		     rxmsg->rm_Stdout = Open("CON:////AmigaGuide ARexx/AUTO/WAIT/CLOSE", MODE_NEWFILE);

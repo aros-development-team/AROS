@@ -188,7 +188,7 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
 
    /* process attributes that only belongs to this class
       and intialization phase. */
-   while((tag = NextTagItem(&tstate)) != NULL)
+   while((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
    {
       switch(tag->ti_Tag)
       {
@@ -431,7 +431,7 @@ ULONG om_update(Class *cl, Object *obj, struct opSet *msg)
    struct TagItem *tag;
 
    /* process attributes that only belongs to this class */
-   while((tag = NextTagItem(&tstate)) != NULL)
+   while((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
    {
       switch(tag->ti_Tag)
       {
@@ -486,7 +486,7 @@ ULONG om_set(Class *cl,Object *obj,struct opSet *msg)
    struct TagItem *tag;
 
    /* process attributes that only belongs to this class */
-   while((tag = NextTagItem(&tstate)) != NULL)
+   while((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
    {
       switch(tag->ti_Tag)
       {
@@ -1553,15 +1553,15 @@ ULONG dtm_goto(Class *cl, Object *obj, struct dtGoto *msg)
    return rv;
 }
 
-ULONG class_dispatcher(Class *cl, Object *obj, Msg msg)
+IPTR class_dispatcher(Class *cl, Object *obj, Msg msg)
 {
    CLASSBASE;
-   ULONG rv = 0;
+   IPTR rv = 0;
 
    switch(msg->MethodID)
    {
    case OM_NEW:
-      if((rv = DoSuperMethodA(cl, obj, msg)) != NULL)
+      if((rv = DoSuperMethodA(cl, obj, msg)) != 0)
       {
 	 Object *newobj = (Object *) rv;
 
