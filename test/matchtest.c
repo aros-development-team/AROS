@@ -11,28 +11,51 @@
 #include <stdio.h>
 #include <string.h>
 
-LONG _MatchFirst(STRPTR pat, struct AnchorPath * AP);
-LONG _MatchNext(struct AnchorPath *AP);
-void _MatchEnd(struct AnchorPath *AP);
-BOOL writeFullPath(struct AnchorPath *AP);
+
+/* 
+   Uncomment the following defines and function prototypes 
+   if you want to use the code for the Match*-functions that 
+   is in this file. 
+*/
+
+/*
+#undef MatchFirst
+#undef MatchNext
+#undef MatchEnd 
+#define MatchFirst MyMatchFirst
+#define MatchNext  MyMatchNext
+#define MatchEnd   MyMatchEnd
+  LONG MyMatchFirst(STRPTR pat, struct AnchorPath * AP);
+  LONG MyMatchNext(struct AnchorPath *AP);
+  void MyMatchEnd(struct AnchorPath *AP);
+*/
+
+  BOOL writeFullPath(struct AnchorPath *AP);
 
 void main (void)
 {
-  BPTR dirlock,oldlock;
+  //BPTR dirlock,oldlock;
   BOOL error;
   BOOL success;
   int strlength=160;
   struct AnchorPath * AP = AllocVec(sizeof(struct AnchorPath) + strlength,MEMF_CLEAR);
+  char * Pattern = AllocVec(80,MEMF_ANY);
 
-  dirlock = Lock("sys:",ACCESS_READ);
-  oldlock = CurrentDir(dirlock);
+  //dirlock = Lock("sys:",ACCESS_READ);
+  //oldlock = CurrentDir(dirlock);
 
   AP->ap_BreakBits = SIGBREAKF_CTRL_C;
   AP->ap_Flags  = 0;//APF_DODIR;
   AP->ap_Strlen = strlength;
 
-  for(error = _MatchFirst("#?/#?",AP); error == 0;
-      error = _MatchNext(AP))
+  //printf("Give me a pattern: ");
+  /* the following line breaks AROS in MatchEnd() when calling FreeVec() 
+     the second time the program is run. I have no idea why, though. */
+  //scanf("%s",Pattern);
+  //printf("Pattern to search for: %s\n",Pattern);
+
+  for(error = MatchFirst("libs:#?/#?",AP); error == 0;
+      error = MatchNext(AP))
   {
     if (AP->ap_Flags & APF_DIDDIR)
     {
@@ -56,20 +79,26 @@ void main (void)
     }
   }
   printf("error = %i \n",success);
-  _MatchEnd(AP);
+  MatchEnd(AP);
   FreeVec(AP);
+  FreeVec(Pattern);
+  //CurrentDir(oldlock);
 
-  CurrentDir(oldlock);
-
-  UnLock(dirlock);
+  //UnLock(dirlock);
 }
 
-LONG _MatchFirst(STRPTR pat, struct AnchorPath * AP)
+#undef MatchFirst
+#undef MatchNext 
+#undef MatchEnd   
+
+
+LONG MyMatchFirst(STRPTR pat, struct AnchorPath * AP)
 {
   struct AChain * AC;
   struct AChain * AC_Prev = NULL;
   LONG PatLength;
-  STRPTR ParsedPattern; 
+  STRPTR ParsedPattern;
+  BPTR firstlock; 
   
   if (!pat)
     return FALSE;
@@ -83,16 +112,72 @@ LONG _MatchFirst(STRPTR pat, struct AnchorPath * AP)
     LONG PatEnd   = 0;
     BOOL AllDone  = FALSE;
     LONG index;
-    BOOL success;
+    BOOL success = FALSE;
     /* put the preparsed string to some memory */
     /* If there are any wildcards then leave info */
     if (1 == ParsePatternNoCase(pat, ParsedPattern, PatLength))
       AP->ap_Flags = (BYTE)APF_ITSWILD;
+
+    /* First I search for the very first ':'. If a '/' comes along
+       before that I quit. The string before and including the ':' 
+       is assumed to be an assigned director, for example 'libs:'.
+       So I will start looking for the pattern in that directory.
+     */
+    while (TRUE)
+    {
+      if (ParsedPattern[PatEnd] == ':')
+      {
+        success = TRUE;
+        break;
+      }
+      else
+      {
+        if ( ParsedPattern[PatEnd]         == '/'  ||
+             ParsedPattern[PatEnd]         == '\0' ||
+            (ParsedPattern[PatEnd] & 0x80) != 0 
+                           /* a token or nonprintable letter */)
+        {
+          PatEnd = 0;
+          break;
+        }
+      } 
+      PatEnd++;
+    }
+
+    /* Only if success == TRUE an assigned dir was found. */
+    if (TRUE == success)
+    {
+      /* try to create a lock to that assigned dir. */
+      char Remember = ParsedPattern[PatEnd+1];
+      PatEnd++;
+      ParsedPattern[PatEnd] = '\0';
+      
+      firstlock = Lock(ParsedPattern, ACCESS_READ);
+      /* check whether an error occurred */
+      if (NULL == firstlock)
+      {
+        FreeMem(ParsedPattern, PatLength);
+        return ERROR_DIR_NOT_FOUND; /* hope that's the right one... */
+      }
+      
+      /* I have the correct lock. */
+      ParsedPattern[PatEnd] = Remember;
+      PatStart=PatEnd;
+    }
+    else
+    {
+      /* Create a lock to the current dir. */
+      firstlock = CurrentDir(NULL);
+      firstlock = DupLock(firstlock);      
+      (void)CurrentDir(firstlock);
+    }
     
     /* Build the Anchor Chain. For every subdirector I allocate
        a AChain structure and link them all together */   
     while (FALSE == AllDone)
     {
+
+
       /* 
          Search for the next '/' in the pattern and everything behind
          the previous '/' and before this '/' will go to an_String 
@@ -125,7 +210,9 @@ LONG _MatchFirst(STRPTR pat, struct AnchorPath * AP)
           return ERROR_NO_FREE_STORE;
         }
         
-        /* let me out of here. I will at least try to do something */
+        /* let me out of here. I will at least try to do something for you.
+           I can check the first few subdirs but that's gonna be it. 
+         */
         AP->ap_Flags |= APF_NOMEMERR;
         break;
       }
@@ -163,10 +250,7 @@ LONG _MatchFirst(STRPTR pat, struct AnchorPath * AP)
 
     /* The AnchorChain to work with is the very first one. */
     AC = AP->ap_Base;
-
-    /* Create a lock to the current dir. */
-    AC->an_Lock = CurrentDir(NULL);      
-    (void)CurrentDir(AC->an_Lock);
+    AC->an_Lock = firstlock;
     
     /* look for the first file that matches the given pattern */
     success = Examine(AC->an_Lock, &AC->an_Info);
@@ -203,7 +287,7 @@ LONG _MatchFirst(STRPTR pat, struct AnchorPath * AP)
 }
 
 
-LONG _MatchNext(struct AnchorPath * AP)
+LONG MyMatchNext(struct AnchorPath * AP)
 {
   /* If the user says I am supposed to enter the directory then I first check
      whether it is a directory... */
@@ -291,7 +375,7 @@ LONG _MatchNext(struct AnchorPath * AP)
   return 0;
 }
 
-void _MatchEnd(struct AnchorPath * AP)
+void MyMatchEnd(struct AnchorPath * AP)
 {
   /* Free the AChain and unlock all locks that are still there */
   struct AChain * AC = AP->ap_Current;
