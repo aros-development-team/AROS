@@ -15,9 +15,11 @@
 
 #include <aros/config.h>
 
-#define NO_PATTERN 0
+#define NO_PATTERN 1
 
+#if !NO_PATTERN
 static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBase);
+#endif
 
 /*****************************************************************************
 
@@ -65,43 +67,18 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    UWORD pens[] = { ~0 };
+    struct Screen *screen;
 
-    struct TagItem screenTags[] =
-    {
-	{ SA_Depth	, AROS_DEFAULT_WBDEPTH	},
-	{ SA_Type	, WBENCHSCREEN		},
-	{ SA_Title	, (IPTR)"Workbench"   	},
-	{ SA_Width	, AROS_DEFAULT_WBWIDTH	},
-	{ SA_Height	, AROS_DEFAULT_WBHEIGHT	},	
-	{ SA_PubName	, (IPTR)"Workbench"     },
-	{ SA_Pens	, (IPTR) pens           },
-	{ SA_SharePens	, TRUE			},
-	{ TAG_END	, 0 }
-    };
-    if (!GetPrivIBase(IntuitionBase)->WorkBench)
-    {
-	struct Screen *screen;
+    /* Let LockPubScreen() open the Workbench screen for us. */
+    screen = LockPubScreen( NULL );
 
-	screen = OpenScreenTagList (NULL, screenTags);
-	kprintf("WB SCREEN: %p\n", screen);
-
-	if(screen)
-	{
-	    IntuitionBase->FirstScreen =   
-	    	IntuitionBase->ActiveScreen =   
-		GetPrivIBase(IntuitionBase)->WorkBench = screen;
-
-	    /* Make the Workbench screen public... */
-	    PubScreenStatus(screen, 0);
-
-	    /* ...and make it the default */
-	    SetDefaultPubScreen(NULL);
+    if( screen ) {
 #if !NO_PATTERN
-	    MakeWBPattern(screen, IntuitionBase);
+        MakeWBPattern( screen, IntuitionBase );
 #endif
-	    return TRUE;
-	}
+        UnlockPubScreen( NULL, screen );
+
+        return TRUE;
     }
 
     return FALSE;
@@ -488,7 +465,7 @@ static const ULONG patterncoltab[] = {
     0x44444444, 0x44444444, 0x44444444, /* Pattern Col 8 */
     
     0L		/* Termination */
-};    
+};
 
 struct LayerHookMsg
 {
@@ -573,10 +550,10 @@ static void InitBackfillHook(struct IntuitionBase *IntuitionBase)
 static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 {
     static struct BitMap bm;
-    
+
     struct Window *tempwin;
     struct TagItem wintags[] =
-    {	
+    {
     	{WA_PubScreen	,(IPTR)scr			},
     	{WA_Left	,0				},
 	{WA_Top		,0				},
@@ -588,21 +565,21 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 	{TAG_DONE					}
     };
     WORD i;
-    
-    
-    
+
+
+
     InitBitMap(&bm, PATTERN_DEPTH, PATTERN_WIDTH, PATTERN_HEIGHT);
     for(i = 0; i < PATTERN_DEPTH; i++)
     {
     	bm.Planes[i] = (((UBYTE *)patterndata) + (i * PATTERN_PLANESIZE));
     }
-    
+
     LoadRGB32(&scr->ViewPort, patterncoltab);
 
-    
+
     /* nlorentz: Allocate a bitmap with the screen bitmap as friend. This
        way the HIDD knows how to blit from this bitmap onto the screen.
-       
+
     */
     patternbm = AllocBitMap(PATTERN_WIDTH
     	, PATTERN_HEIGHT
@@ -610,8 +587,8 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 	, 0
 	, scr->RastPort.BitMap
     );
-    
-    if (NULL != patternbm) 
+
+    if (NULL != patternbm)
     {
         /* Blit the pattern into the allocated bitmap */
 	BltBitMap(&bm
@@ -623,9 +600,9 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 	    , 0xFF
 	    , NULL
 	);
-    
-    
-    	InitBackfillHook(IntuitionBase);  
+
+
+    	InitBackfillHook(IntuitionBase);
     	InstallLayerInfoHook(&scr->LayerInfo, &backfillhook);
     	tempwin = OpenWindowTagList(0,wintags);
     	if (tempwin) CloseWindow(tempwin);
