@@ -57,18 +57,28 @@ Object *volume_iconlist;
 
 AROS_UFH0(void, repeat_function)
 {
+    AROS_USERFUNC_INIT
+    
     printf("MUI_Timer\n");
+
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH0(void, wheel_function)
 {
+    AROS_USERFUNC_INIT
+    
     nnset(r_slider,MUIA_Numeric_Value, (XGET(wheel,WHEEL_Red) >> 24) & 0xff);
     nnset(g_slider,MUIA_Numeric_Value, (XGET(wheel,WHEEL_Green) >> 24) & 0xff);
     nnset(b_slider,MUIA_Numeric_Value, (XGET(wheel,WHEEL_Blue) >> 24) & 0xff);
+
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH0(void, slider_function)
 {
+    AROS_USERFUNC_INIT
+    
     struct ColorWheelRGB cw;
     ULONG red = XGET(r_slider,MUIA_Numeric_Value);
     ULONG green = XGET(g_slider,MUIA_Numeric_Value);
@@ -80,10 +90,14 @@ AROS_UFH0(void, slider_function)
 
     nnset(wheel, WHEEL_RGB, &cw);
     set(hue_gauge, MUIA_Gauge_Current, XGET(wheel,WHEEL_Hue));
+
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH0(void, objects_function)
 {
+    AROS_USERFUNC_INIT
+    
     Object *new_obj = MUI_MakeObject(MUIO_Button,"Button");
     if (new_obj)
     {
@@ -91,10 +105,14 @@ AROS_UFH0(void, objects_function)
     	DoMethod(group, OM_ADDMEMBER, new_obj);
     	DoMethod(group, MUIM_Group_ExitChange);
     }
+
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH0(void, about_function)
 {
+    AROS_USERFUNC_INIT
+
     static Object *about_wnd;
     if (!about_wnd)
     {
@@ -104,6 +122,8 @@ AROS_UFH0(void, about_function)
     }
 
     if (about_wnd) set(about_wnd,MUIA_Window_Open,TRUE);
+
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH3(void, display_function,
@@ -111,6 +131,8 @@ AROS_UFH3(void, display_function,
     AROS_UFHA(char **, strings, A2),
     AROS_UFHA(struct list_entry *, entry, A1))
 {
+    AROS_USERFUNC_INIT
+
     static char buf[100];
     if (entry)
     {
@@ -124,6 +146,8 @@ AROS_UFH3(void, display_function,
         strings[1] = "Column 1";
         strings[2] = "Column 2";
     }
+    
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH3(void, display2_function,
@@ -131,6 +155,8 @@ AROS_UFH3(void, display2_function,
     AROS_UFHA(char **, strings, A2),
     AROS_UFHA(struct list_entry *, entry, A1))
 {
+    AROS_USERFUNC_INIT
+
     static char buf[100];
     if (entry)
     {
@@ -140,10 +166,14 @@ AROS_UFH3(void, display2_function,
     {
         strings[0] = "Number";
     }
+
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH0(void, save_function)
 {
+    AROS_USERFUNC_INIT
+
     char *text = (char*)XGET(editor_text, MUIA_Text_Contents);
     char *filename = (char*)XGET(filename_string, MUIA_String_Contents);
     BPTR fh;
@@ -153,22 +183,32 @@ AROS_UFH0(void, save_function)
     if ((fh = Open(filename,MODE_NEWFILE)))
     {
     	Write(fh,text,strlen(text));
-	Close(fh);
+        Close(fh);
     }
+
+    AROS_USERFUNC_EXIT
 }
 
 static int id = 1;
 
 AROS_UFH0(void, add_function)
 {
+    AROS_USERFUNC_INIT
+
     DoMethod(list2,MUIM_List_InsertSingle, id++, MUIV_List_Insert_Bottom);
+    
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH0(void, add_child_function)
 {
+    AROS_USERFUNC_INIT
+
     int act = XGET(list2,MUIA_List_Active);
 
     DoMethod(list2,MUIM_List_InsertSingleAsTree, id++, act /* parent */, MUIV_List_InsertSingleAsTree_Bottom, 0);
+
+    AROS_USERFUNC_EXIT
 }
 
 /* IconList callbacks */
@@ -229,6 +269,8 @@ AROS_UFH3S(IPTR, dispatcher,
 	AROS_UFHA(Msg     , msg, A1))
 #endif
 {
+    AROS_USERFUNC_INIT
+    
     switch (msg->MethodID)
     {
     	case MUIM_DragQuery: return MUIV_DragQuery_Accept;
@@ -241,7 +283,10 @@ AROS_UFH3S(IPTR, dispatcher,
 	    set(obj,MUIA_Text_Contents,buf);
     	}
     }
+    
     return DoSuperMethodA(cl,obj,(Msg)msg);
+
+    AROS_USERFUNC_EXIT
 }
 
 struct MUI_CustomClass *CL_DropText;
@@ -257,9 +302,13 @@ AROS_UFH3(void, hook_func_standard,
     AROS_UFHA(void *, dummy, A2),
     AROS_UFHA(void **, funcptr, A1))
 {
+    AROS_USERFUNC_INIT
+
     void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
 
     if (func) func((ULONG *) funcptr + 1);
+
+    AROS_USERFUNC_EXIT
 }
 
 int main(void)
