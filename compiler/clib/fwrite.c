@@ -61,7 +61,6 @@
     size_t cnt;
 
     fdesc *fdesc = __getfdesc(stream->fd);
-    kprintf("clib/fwrite: entering\n");
     if (!fdesc)
     {
         GETUSER;
@@ -80,7 +79,6 @@
 
 	cnt = 0;
     }
-    kprintf("clib/fwrite: exiting\n" );
 
     return cnt;
 } /* fwrite */
