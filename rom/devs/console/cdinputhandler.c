@@ -87,40 +87,22 @@ D(bug("CDInputHandler(events=%p, cdihdata=%p)\n", events, cdihdata));
     {
 
 	/* A rawkey event ? */
-    	if (ie->ie_Class == IECLASS_RAWKEY && !(ie->ie_Code & 0x80))
+    	if ((ie->ie_Class == IECLASS_RAWKEY && !(ie->ie_Code & IECODE_UP_PREFIX)) ||
+	    (ie->ie_Class == IECLASS_SIZEWINDOW))
 	{
 	    /* What console do we send it to ? */
 	    Object *unit;
 
-	    D(bug("Got RAWKEY event\n"));
+	    D(bug("Got some event\n"));
 	    /* find and prevent deletion of unit */
 	    unit = obtainconunit(ConsoleDevice);
 	    if (unit)
 	    {
-	    	LONG actual;
-
+	    	message->unit = unit;
+		message->ie = *ie;
+		send_message = TRUE;
 
 	   	D(bug("Event should be passed to unit %p\n", unit));
-	    	/* Convert it to ANSI chars */
-	    	actual = RawKeyConvert(ie
-				,message->inputBuf
-				,MSGBUFSIZE
-				,NULL);
-
-		D(bug("RawKeyConvert returned %ld\n", actual));
-
-		if (actual != -1)
-	    	{
-
-		    kprintf("Event decoded into %d of len %d\n"
-		    	, *message->inputBuf, actual);
-			
-		    message->numBytes	= actual;
-		    message->unit 	= unit;
-
-		    send_message = TRUE;
-
-		}
 
 		/* deletion of unit is now allowed */
 		releaseconunit(unit, ConsoleDevice);
@@ -305,7 +287,7 @@ struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice)
 			/* Initialize Interrupt struct */
 		    	cdihandler->is_Code = (APTR)AROS_SLIB_ENTRY(CDInputHandler, Console);
 		    	cdihandler->is_Data = cdihdata;
-		    	cdihandler->is_Node.ln_Pri	= 30;
+		    	cdihandler->is_Node.ln_Pri	= 0;
 		    	cdihandler->is_Node.ln_Name	= "console.device InputHandler";
 
 		    	cdihdata->consoleDevice = ConsoleDevice;
