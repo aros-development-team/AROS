@@ -5,30 +5,6 @@
 #include "textengine.h"
 #endif
 
-struct MUI_TextData {
-    ULONG  mtd_Flags;
-    STRPTR contents;
-    STRPTR preparse;
-    TEXT   hichar;
-    ZText *ztext;
-    LONG xpos;
-    LONG ypos;
-    struct MUI_EventHandlerNode ehn;
-
-    LONG update; /* type of update 1 - everything, 2 - insert char, no scroll */
-    LONG update_arg1;
-    LONG update_arg2;
-};
-
-#define MTDF_SETMIN    (1<<0)
-#define MTDF_SETMAX    (1<<1)
-#define MTDF_SETVMAX   (1<<2)
-#define MTDF_HICHAR    (1<<3)
-#define MTDF_HICHARIDX (1<<4)
-#define MTDF_EDITABLE  (1<<5)
-#define MTDF_MULTILINE (1<<6)
-#define MTDF_ADVANCEONCR (1<<7)
-
 #ifdef _DCC
 extern char MUIC_Text[];
 #else

@@ -255,6 +255,53 @@ ZText *zune_text_new (STRPTR preparse, STRPTR content, int argtype, TEXT argbyte
 }
 
 /**************************************************************************
+ Converts a ztext to plain text (iso latin 1) allocated via AllocVec().
+ Calling this with NULL returns NULL
+**************************************************************************/
+char *zune_text_iso_string(ZText *text)
+{
+    char *iso_text, *buf;
+    int len = 0;
+    struct ZTextLine *line;
+    struct ZTextChunk *chunk;
+
+    if (!text) return NULL;
+
+    /* Count the number needed chars first */
+    for (line = (ZTextLine *)text->lines.mlh_Head; line->node.mln_Succ; line = (ZTextLine*)line->node.mln_Succ)
+    {
+	for (chunk = (ZTextChunk*)line->chunklist.mlh_Head; chunk->node.mln_Succ; chunk = (ZTextChunk*)chunk->node.mln_Succ)
+	{
+	    len += chunk->str?(strlen(chunk->str)):0;
+	}
+	len++;
+    }
+
+    if (!(iso_text = (char*)AllocVec(len+2,0))) return NULL;
+    buf = iso_text;
+
+    /* Now copy the stuff */
+    for (line = (ZTextLine *)text->lines.mlh_Head; line->node.mln_Succ; line = (ZTextLine*)line->node.mln_Succ)
+    {
+	for (chunk = (ZTextChunk*)line->chunklist.mlh_Head; chunk->node.mln_Succ; chunk = (ZTextChunk*)chunk->node.mln_Succ)
+	{
+	    if (chunk->str)
+	    {
+	    	strcpy(buf,chunk->str);
+	    	buf += strlen(chunk->str);
+	    }
+	}
+	*buf++ = '\n';
+    }
+
+    /* remove the last newline */
+    if (buf > iso_text) buf[-1] = 0;
+    else *buf = 0;
+
+    return iso_text;
+}
+
+/**************************************************************************
  Completly frees a ZText
 **************************************************************************/
 void zune_text_destroy (ZText *text)
