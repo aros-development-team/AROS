@@ -110,7 +110,7 @@ int main(void)
 	{
 	    if (aFlush)
 	    {
-		FreeVec(AllocVec(~0ul/2, MEMF_CHIP));
+		FreeVec(AllocVec(~0ul/2, MEMF_ANY));
 	    }
 	    
 	    if(aChip)
