@@ -12,6 +12,7 @@ FUNCTIONS	:= \
 	createmenusa \
 	drawbevelboxa \
 	freegadgets \
+	freemenus \
 	freevisualinfo \
 	getvisualinfoa \
 	gt_beginrefresh \

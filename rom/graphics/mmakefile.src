@@ -52,6 +52,7 @@ FUNCTIONS := \
 	areaend \
 	areamove \
 	askfont \
+	asksoftstyle \
 	attemptlocklayerrom \
 	bitmapscale \
 	bltbitmap \
@@ -141,6 +142,7 @@ FUNCTIONS := \
 	setrgb4 \
 	setrgb4cm \
 	setrpattrsa \
+	setsoftstyle \
 	setwritemask \
 	sortglist \
 	stripfont \

@@ -77,10 +77,12 @@ FUNCTIONS := \
 	freescreenbuffer \
 	freescreendrawinfo \
 	freesysrequest \
+	gadgetmouse \
 	getattr \
 	getdefaultpubscreen \
 	getscreendata \
 	getscreendrawinfo \
+	helpcontrol \
 	initrequester \
 	itemaddress \
 	lateintuiinit \
@@ -94,6 +96,7 @@ FUNCTIONS := \
 	movescreen \
 	movewindow \
 	nextobject \
+	nextpubscreen \
 	newmodifyprop \
 	newobjecta \
 	obtaingirport \
@@ -143,7 +146,8 @@ FUNCTIONS := \
 	wbenchtofront \
 	windowlimits \
 	windowtoback \
-	windowtofront
+	windowtofront \
+	zipwindow
 
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of extra libraries that you want included during
