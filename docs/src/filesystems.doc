@@ -356,13 +356,13 @@ RESULT
     ULONG mask;    bits affected
     STRPTR passwd; password for MMF_LOCKED
 
-  FSA_MAKE_HARDLINK
+  FSA_CREATE_HARDLINK
     Create a hard link on a file, directory or soft link
     Unit *current; current directory
     STRPTR name;   hardlink name
     Unit *target;  target handle
 
-  FSA_MAKE_SOFTLINK
+  FSA_CREATE_SOFTLINK
     Create a soft link to another object
     Unit *current; current directory
     STRPTR name;   softlink name
