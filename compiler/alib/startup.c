@@ -35,8 +35,8 @@ extern int main (int argc, char ** argv);
 extern jmp_buf __startup_jmp_buf;
 extern LONG __startup_error;
 
-DECLARESET(INIT);
-DECLARESET(EXIT);
+DECLARESET(CTORS);
+DECLARESET(DTORS);
 
 /*
     This won't work for normal AmigaOS because you can't expect SysBase to be
@@ -94,7 +94,7 @@ AROS_UFH3(LONG, __startup_entry,
     if
     (
         !(__startup_error = set_open_libraries()) &&
-        !(__startup_error = set_call_funcs(SETNAME(INIT), 1))
+        !(__startup_error = set_call_funcs(SETNAME(CTORS), 1))
     )
     {
         /* Invoke main() */
@@ -103,7 +103,7 @@ AROS_UFH3(LONG, __startup_entry,
 
     }
 
-    set_call_funcs(SETNAME(EXIT), -1);
+    set_call_funcs(SETNAME(DTORS), -1);
     set_close_libraries();
 
     /* Reply startup message to Workbench.
@@ -143,8 +143,8 @@ struct WBStartup *WBenchMsg;
 jmp_buf __startup_jmp_buf;
 LONG __startup_error;
 
-DEFINESET(INIT);
-DEFINESET(EXIT);
+DEFINESET(CTORS);
+DEFINESET(DTORS);
 
 /*	Stub function for GCC __main().
 
