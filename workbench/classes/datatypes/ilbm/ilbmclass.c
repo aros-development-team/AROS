@@ -202,7 +202,7 @@ const UBYTE bitmask[] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01, 0 };
 static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct BitMapHeader *bmhd,
     	    	       struct FileBitMapHeader *file_bmhd, struct ContextNode *body_cn, UBYTE *coltab)
 {
-    UBYTE   	*src, *srcline, *srclinestart, *chunkystart, *chunky, *body, *compressed, *uncompressed, *maskptr;
+    UBYTE   	*src, *srcline, *srclinestart, *chunkystart, *chunky, *body, *compressed=0, *uncompressed=0, *maskptr;
     int		width, height, numplanes, mask, hamrot1, hamrot2;
     LONG    	x, y, p, w16, body_bpr, bodysize;
     ULONG	rgb;
@@ -531,6 +531,7 @@ static BOOL ReadILBM(Class *cl, Object *o)
 		D(bug("ilbm.datatype error readrgbpic\n"));
 		return FALSE;
 	    }
+	    bmhd->bmh_Depth = 24;
 	}
 	else
 	{
