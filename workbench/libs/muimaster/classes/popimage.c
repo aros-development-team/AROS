@@ -81,6 +81,7 @@ static ULONG Popimage_Dispose(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->wnd)
     {
+	D(bug("Popimage_Dispose(%p) : MUI_DisposeObject(%p)\n", obj, data->wnd));
     	MUI_DisposeObject(data->wnd);
     	data->wnd = NULL;
     }
@@ -92,14 +93,19 @@ static ULONG Popimage_Dispose(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 static IPTR Popimage_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
 {
+#if 0
     struct MUI_PopimageData *data = INST_DATA(cl, obj);
     if (data->wnd)
     {
+	D(bug("Popimage_Hide(%p) : closing window %p\n", obj, data->wnd));
     	set(data->wnd,MUIA_Window_Open,FALSE);
+	D(bug("Popimage_Hide(%p) : app REMMEMBER win (%p)\n", obj, data->wnd));
     	DoMethod(_app(obj),OM_REMMEMBER,(IPTR)data->wnd);
+	D(bug("Popimage_Hide(%p) : MUI_DisposeObject(%p)\n", obj, data->wnd));
     	MUI_DisposeObject(data->wnd);
     	data->wnd = NULL;
     }
+#endif
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
@@ -192,7 +198,7 @@ STATIC IPTR Popimage_CloseWindow(struct IClass *cl, Object *obj,
     {
 	char *spec;
 	get(data->imageadjust, MUIA_Imageadjust_Spec, &spec);
-	D(bug("popimage: got %s\n", spec));
+/*  	D(bug("popimage: got %s\n", spec)); */
 	set(obj, MUIA_Imagedisplay_Spec, spec);
     }
 
