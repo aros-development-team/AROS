@@ -27,17 +27,29 @@ TESTS = $(TESTDIR)/tasktest \
 	$(TESTDIR)/devicetest \
 	$(TESTDIR)/filetest
 
-all : setup subdirs $(LIBDIR)/libAmigaOS.a \
+all : setup subdirs AmigaOS \
 	    $(BINDIR)/s/Startup-Sequence $(BINDIR)/arosshell
 
 crypt : crypt.c
 	$(CC) -o crypt crypt.c
 
-dist : FORCE
+dist : dist-dir dist-tar dist-lha
+	cp README dist/AROSbin-$(VERSION).readme
+	cp README dist/AROSdev-$(VERSION).readme
+
+dist-dir : FORCE
 	@if [ ! -d dist ]; then $(MKDIR) dist ; fi
+
+dist-tar : FORCE
 	cd bin/$(ARCH) ; \
-	    tar cvvzf ../../dist/AROS_$(ARCH)_bin-$(VERSION).tar.gz AROS
-	cd .. ; tar cvvzf AROS/dist/AROS-$(VERSION).tar.gz \
+	    tar cvvzf ../../dist/AROSbin-$(VERSION).tgz AROS
+	cd .. ; tar cvvzf AROS/dist/AROSdev-$(VERSION).tgz \
+		$(addprefix AROS/, $(SUBDIRS) $(DIST_FILES))
+
+dist-lha : FORCE
+	cd bin/$(ARCH) ; \
+	    lha a ../../dist/AROSbin-$(VERSION).lha AROS
+	cd .. ; lha a AROS/dist/AROSdev-$(VERSION).lha \
 		$(addprefix AROS/, $(SUBDIRS) $(DIST_FILES))
 
 # Alwaye remake rules that depend on this one
@@ -62,7 +74,7 @@ check : $(TESTS)
 	done
 
 clean:
-	$(RM) $(BINDIR) host.cfg
+	$(RM) $(ARCHDIR) host.cfg
 	@for dir in $(SUBDIRS) ; do \
 	    ( echo "Cleaning in $$dir..." ; cd $$dir ; \
 	    $(MAKE) $(MFLAGS) clean ) ; \
@@ -80,6 +92,11 @@ subdirs:
 		RM="$(RM)" \
 		all ) ; \
 	done
+
+# I have to restart make here since not all files might be existing
+# in $(OSGENDIR) at the time when make was started in the first place.
+AmigaOS :
+	$(MAKE) $(MFLAGS) $(LIBDIR)/libAmigaOS.a
 
 $(LIBDIR)/libAmigaOS.a : $(wildcard $(OSGENDIR)/*.o)
 	$(AR) $@ $^
