@@ -26,6 +26,9 @@ Can't create menus!
 MSG_CANT_CREATE_WIN (//)
 Can't create window!
 ;
+MSG_SAVE_FAILED (//)
+Saving to file failed!
+;
 MSG_MEN_PROJECT (//)
 Project
 ;
@@ -34,6 +37,9 @@ O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS (//)
 A\0Save as...
+;
+MSG_MEN_PROJECT_SAVEAS_IFF (//)
+I\0Save as IFF...
 ;
 MSG_MEN_PROJECT_PRINT (//)
 P\0Print
@@ -79,6 +85,36 @@ Settings
 ;
 MSG_MEN_SETTINGS_SAVEDEF (//)
 D\0Save As Defaults
+;
+MSG_MEN_PICT (//)
+Picture
+;
+MSG_MEN_PICT_FIT_WIN (//)
+ \0Fit to Window
+;
+MSG_MEN_PICT_ZOOM_IN (//)
+Z\0Zoom in
+;
+MSG_MEN_PICT_ZOOM_OUT (//)
+ \0Zoom out
+;
+MSG_MEN_PICT_RESET (//)
+ \0Reset Size
+;
+MSG_MEN_TEXT (//)
+Text
+;
+MSG_MEN_TEXT_WORDWRAP (//)
+ \0Enable Word Wrap
+;
+MSG_MEN_TEXT_SEARCH (//)
+ \0Search for...
+;
+MSG_MEN_TEXT_SEARCH_PREV (//)
+ \0Search for previous
+;
+MSG_MEN_TEXT_SEARCH_NEXT (//)
+ \0Search for next
 ;
 MSG_ASL_OPEN_TITLE (//)
 Select File to Open

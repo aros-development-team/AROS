@@ -29,6 +29,9 @@ Kann Menus nicht erzeugen!
 MSG_CANT_CREATE_WIN
 Kann Fenster nicht erzeugen!
 ;
+MSG_SAVE_FAILED
+Datei speichern fehlgeschlagen!
+;
 MSG_MEN_PROJECT
 Projekt
 ;
@@ -37,6 +40,9 @@ O\0Öffnen ...
 ;
 MSG_MEN_PROJECT_SAVEAS
 A\0Speichern als ...
+;
+MSG_MEN_PROJECT_SAVEAS_IFF
+I\0Speichern als IFF...
 ;
 MSG_MEN_PROJECT_PRINT
 P\0Drucken
@@ -82,6 +88,36 @@ Einstellungen
 ;
 MSG_MEN_SETTINGS_SAVEDEF
 D\0Als Vorgabe speichern
+;
+MSG_MEN_PICT
+Bild
+;
+MSG_MEN_PICT_FIT_WIN
+ \0Auf Fenstergröße
+;
+MSG_MEN_PICT_ZOOM_IN
+Z\0Hereinzoomen
+;
+MSG_MEN_PICT_ZOOM_OUT
+ \0Herauszoomen
+;
+MSG_MEN_PICT_RESET
+ \0Orginalgröße
+;
+MSG_MEN_TEXT
+Text
+;
+MSG_MEN_TEXT_WORDWRAP
+ \0Wortumbruch einschalten
+;
+MSG_MEN_TEXT_SEARCH
+ \0Suchen nach...
+;
+MSG_MEN_TEXT_SEARCH_PREV
+ \0Vorheriges suchen
+;
+MSG_MEN_TEXT_SEARCH_NEXT
+ \0Nächstes suchen
 ;
 MSG_ASL_OPEN_TITLE
 Eingabedatei auswählen
