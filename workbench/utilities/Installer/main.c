@@ -9,7 +9,7 @@
 #include "Installer.h"
 #include "main.h"
 
-static const char version[] = "$VER: Installer 43.3 (28.10.2001)\n";
+#include "version.h"
 
 
 /* External variables */

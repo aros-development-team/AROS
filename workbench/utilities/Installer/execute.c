@@ -1167,6 +1167,69 @@ void *params;
 			  }
 			  break;
 
+      case _EXECUTE	: /* Execute an AmigaDOS script */
+#warning TODO: Check me for correctness
+			  if ( current->next != NULL )
+			  {
+			  int success = 0;
+			  BPTR infile;
+			  int safe = FALSE;
+
+			    current = current->next;
+			    ExecuteCommand();
+
+			    if ( current->arg != NULL )
+			    {
+			      string = strip_quotes( current->arg );
+			    }
+			    else
+			    {
+			      error = SCRIPTERROR;
+			      traperr( "<%s> requires a file string as argument!\n", current->parent->cmd->arg );
+			    }
+			    if ( current->next )
+			    {
+			      parameter = get_parameters( current->next, level );
+			      safe = GetPL( parameter, _SAFE ).used;
+			      free_parameterlist( parameter );
+			    }
+			    if ( preferences.pretend == 0 || safe )
+			    {
+			      infile = Open(string, MODE_OLDFILE);
+			      if(infile != NULL)
+			      {
+				if ( preferences.transcriptstream != NULL )
+				{
+				  Write( preferences.transcriptstream, "Started AmigaDOS script: \"", 26 );
+				  Write( preferences.transcriptstream, string, strlen( string ) );
+				  Write( preferences.transcriptstream, "\"\n", 2 );
+				}
+				success = Execute(NULL, infile, preferences.transcriptstream);
+				Close(infile);
+			      }
+			      else
+			      {
+				success = FALSE;
+			      }
+			    }
+			    if ( success )
+			    {
+			      current->parent->intval = 1;
+			    }
+			    else
+			    {
+			      current->parent->intval = 0;
+			      set_variable( "@ioerr", NULL, IoErr() );
+			    }
+			    free( string );
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires a string argument!\n", current->arg );
+			  }
+			  break;
+
       case _RUN		: /* Execute a command line */
 #warning TODO: Check me for correctness
 			  if ( current->next != NULL )
@@ -1308,10 +1371,11 @@ void *params;
 			  break;
 
       case _MAKEDIR	: /* Create directory */
+#warning TODO: Implement (infos)
 			  if ( current->next != NULL )
 			  {
-			  int success = 0,
-			      usrconfirm = FALSE;
+			  BPTR success = 0;
+			  int usrconfirm = FALSE;
 
 			    current = current->next;
 			    ExecuteCommand();
@@ -1371,7 +1435,6 @@ void *params;
       case _COPYFILES	:
       case _COPYLIB	:
       case _EARLIER	:
-      case _EXECUTE	:
       case _EXISTS	:
       case _EXPANDPATH	:
       case _FILEONLY	:

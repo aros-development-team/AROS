@@ -317,3 +317,8 @@
 0050
 - fixed crash of askchoice gui
 
+0051
+- implemented a basic (makedir), no (infos) support.
+- moved version string from main.c to version.h
+- implemented a basic (execute)
+
