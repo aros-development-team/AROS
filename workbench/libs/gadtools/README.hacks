@@ -1,3 +1,8 @@
+stegerg: this hack is not needed anymore, everything is handled in
+GT_FilterIMsg.
+
+OBSOLETE:
+
 Scroller and slider gadgets should pass their current values to the
 window's msgport in the im->Code field in a IDCMP_MOUSEMOVE class message.   
 And only when the gadgets have changed their value.
@@ -7,4 +12,6 @@ When the Intuition inputhandler gets this from GM_HANDLEINPUT,
 it will copy *(gpInput->gpi_Termination) into an IntuiMessage and
 send it to the window. What makes it a hack is that the new return
 value might be incompatible with a later version of AmigaOS.
+
+OBSOLETE:
 
