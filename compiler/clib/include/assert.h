@@ -2,15 +2,21 @@
 #define _ASSERT_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: ANSI-C header file assert.h
     Lang: english
 */
+#ifdef assert
+#undef assert
+#endif
 
-#define assert(expr) \
-    ((void)((expr) || __assert (#expr,__FILE__,__LINE__)))
+#ifdef NDEBUG
+#define assert(expr)	/* eps */
+#else
+#define assert(expr)	((expr)) ? (void)0 : __assert(#expr,__FILE__,__LINE__)
+#endif
 
 extern void __assert (const char *, const char *, unsigned int);
 
