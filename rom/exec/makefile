@@ -6,14 +6,15 @@ SPECIAL_CFLAGS=-I/usr/include
 
 include $(TOP)/config/make.cfg
 
+OBJDIR=$(OSGENDIR)/exec
+
 # ***** Native ***************
 ifeq ($(FLAVOUR),native)
 
-OBJDIR=$(OSGENDIR)/exec
 LIB=$(LIBDIR)/libexec.a
 
 # Main function for exec.strap. Need this apart as an anchor for the link:
-INITFUNC = execstrap_init
+INIT_FILE = execstrap_init
 
 # Other support files:
 FILES =
@@ -40,8 +41,6 @@ ASMFUNCTIONS = forbid disable getcc cacheclearu cachepredma cachepostdma
 
 # ***** Not Native ***************
 else
-
-OBJDIR=$(OSGENDIR)/exec
 
 ifeq ("$(SHARED_EXEC)","yes")
 LIB=$(LIBDIR)/libexec.so
@@ -83,31 +82,30 @@ endif
 # ***** Native ***************
 ifeq ($(FLAVOUR),native)
 
-LIBS = -L$(LIBDIR) -lexec -laros -larosc
+LIBS = -L$(LIBDIR) -lexec -larossupport -larosc
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ASMFUNCTIONS),$(OBJDIR)/$(f).o)
+INITFUNC = $(OBJDIR)/$(INIT_FILE).o
 
 all: setup $(LIB) $(OSMODDIR)/exec.strap
 
-$(OSMODDIR)/exec.strap: $(LIB) $(LIBDIR)/libaros.a $(LIBDIR)/libarosc.a
-	@echo "Compiling $@..."
-	@$(CC) $(ILDFLAGS) -Xlinker -M \
-	 $(OBJDIR)/$(INITFUNC).o \
-	 $(LIBS) -o $@ 2>&1|tee execstrap.map
+$(OSMODDIR)/exec.strap: $(LIB) $(INITFUNC) $(LIBDIR)/libarossupport.a $(LIBDIR)/libarosc.a
+	@echo "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LIBS) -o $@ 2>&1|tee execstrap.map
 	@if test ! -s execstrap.map; then rm execstrap.map ; else true ; fi
 	@strip $@
 
 # To study the assembler output for evaluation (can be helpful in tracking
 # down bugs):
 .PHONY: asm
-asm: $(foreach f,$(FUNCTIONS),$(f).s) all
+asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(FILES),$(f).s) all
 
 %.s: %.c
-	@echo "Generating $@..."
+	@echo "Generating $@ ..."
 	$(CC) -S $(CFLAGS) $< -c -o $@
 
 # Collect all (asm-)functions in a linklib for fast linking:
 $(LIB): $(OBJS)
-	@echo "Adding functions to $@..."
+	@echo "Adding functions to $(notdir $@) ..."
 	@$(AR) $@ $?
 	@$(RANLIB) $@
 
@@ -147,5 +145,5 @@ $(OBJDIR)/%.d: %.c
 	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 ifneq ($(TARGET),clean)
-include $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+include $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
 endif
