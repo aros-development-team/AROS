@@ -52,8 +52,10 @@ POST_UNINSTALL = true
 CC = @CC@
 MAKEINFO = @MAKEINFO@
 PACKAGE = @PACKAGE@
+U = @U@
 VERSION = @VERSION@
 
+AUTOMAKE_OPTIONS = ansi2knr
 bin_PROGRAMS = mmake
 mmake_SOURCES = mmake.c
 EXTRA_DIST = mmake.txt
@@ -68,15 +70,17 @@ DEFS = @DEFS@ -I. -I$(srcdir) -I.
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
-mmake_OBJECTS =  mmake.o
+ANSI2KNR = @ANSI2KNR@
+mmake_OBJECTS =  mmake$U.o
 mmake_LDADD = $(LDADD)
 mmake_LDFLAGS = 
 CFLAGS = @CFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
 LINK = $(CC) $(CFLAGS) $(LDFLAGS) -o $@
 DIST_COMMON =  README AUTHORS COPYING ChangeLog INSTALL Makefile.am \
-Makefile.in NEWS aclocal.m4 config.h.bot config.h.in config.h.top \
-configure configure.in install-sh missing mkinstalldirs stamp-h.in
+Makefile.in NEWS acconfig.h aclocal.m4 ansi2knr.1 ansi2knr.c \
+config.h.bot config.h.in config.h.top configure configure.in install-sh \
+missing mkinstalldirs stamp-h.in
 
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
@@ -113,7 +117,7 @@ stamp-h: $(srcdir)/config.h.in $(top_builddir)/config.status
 	     $(SHELL) ./config.status
 	@echo timestamp > stamp-h
 $(srcdir)/config.h.in: $(srcdir)/stamp-h.in
-$(srcdir)/stamp-h.in: $(top_srcdir)/configure.in $(ACLOCAL_M4) config.h.top config.h.bot
+$(srcdir)/stamp-h.in: $(top_srcdir)/configure.in $(ACLOCAL_M4) acconfig.h config.h.top config.h.bot
 	cd $(top_srcdir) && $(AUTOHEADER)
 	@echo timestamp > $(srcdir)/stamp-h.in
 
@@ -164,9 +168,34 @@ distclean-compile:
 
 maintainer-clean-compile:
 
+mostlyclean-krextra:
+
+clean-krextra:
+	rm -f ansi2knr
+
+distclean-krextra:
+
+maintainer-clean-krextra:
+ansi2knr: ansi2knr.o
+	$(LINK) ansi2knr.o $(LIBS)
+ansi2knr.o: $(CONFIG_HEADER)
+
+
+mostlyclean-kr:
+	rm -f *_.c
+
+clean-kr:
+
+distclean-kr:
+
+maintainer-clean-kr:
+
 mmake: $(mmake_OBJECTS) $(mmake_DEPENDENCIES)
 	@rm -f mmake
 	$(LINK) $(mmake_LDFLAGS) $(mmake_OBJECTS) $(mmake_LDADD) $(LIBS)
+mmake_.c: mmake.c
+	$(ANSI2KNR) $< mmake_.c
+mmake_.o : $(ANSI2KNR)
 
 tags: TAGS
 
@@ -276,7 +305,7 @@ install: install-exec install-data all
 
 uninstall: uninstall-binPROGRAMS
 
-all: Makefile $(PROGRAMS) config.h
+all: Makefile $(ANSI2KNR) $(PROGRAMS) config.h
 
 install-strip:
 	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' INSTALL_SCRIPT='$(INSTALL_PROGRAM)' install
@@ -299,18 +328,20 @@ maintainer-clean-generic:
 	test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
 	test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 mostlyclean:  mostlyclean-hdr mostlyclean-binPROGRAMS \
-		mostlyclean-compile mostlyclean-tags mostlyclean-depend \
-		mostlyclean-generic
+		mostlyclean-compile mostlyclean-krextra mostlyclean-kr \
+		mostlyclean-tags mostlyclean-depend mostlyclean-generic
 
-clean:  clean-hdr clean-binPROGRAMS clean-compile clean-tags \
-		clean-depend clean-generic mostlyclean
+clean:  clean-hdr clean-binPROGRAMS clean-compile clean-krextra clean-kr \
+		clean-tags clean-depend clean-generic mostlyclean
 
 distclean:  distclean-hdr distclean-binPROGRAMS distclean-compile \
-		distclean-tags distclean-depend distclean-generic clean
+		distclean-krextra distclean-kr distclean-tags \
+		distclean-depend distclean-generic clean
 	rm -f config.status
 
 maintainer-clean:  maintainer-clean-hdr maintainer-clean-binPROGRAMS \
-		maintainer-clean-compile maintainer-clean-tags \
+		maintainer-clean-compile maintainer-clean-krextra \
+		maintainer-clean-kr maintainer-clean-tags \
 		maintainer-clean-depend maintainer-clean-generic \
 		distclean
 	@echo "This command is intended for maintainers to use;"
@@ -321,7 +352,9 @@ maintainer-clean:  maintainer-clean-hdr maintainer-clean-binPROGRAMS \
 maintainer-clean-hdr mostlyclean-binPROGRAMS distclean-binPROGRAMS \
 clean-binPROGRAMS maintainer-clean-binPROGRAMS uninstall-binPROGRAMS \
 install-binPROGRAMS mostlyclean-compile distclean-compile clean-compile \
-maintainer-clean-compile tags mostlyclean-tags distclean-tags \
+maintainer-clean-compile mostlyclean-krextra distclean-krextra \
+clean-krextra maintainer-clean-krextra mostlyclean-kr distclean-kr \
+clean-kr maintainer-clean-kr tags mostlyclean-tags distclean-tags \
 clean-tags maintainer-clean-tags distdir mostlyclean-depend \
 distclean-depend clean-depend maintainer-clean-depend info dvi \
 installcheck install-exec install-data install uninstall all \
