@@ -26,6 +26,7 @@
 #include "intuition_intern.h" /* EWFLG_xxx */
 #include "inputhandler_support.h"
 #include "inputhandler_actions.h"
+#include "menus.h"
 
 #undef DEBUG
 #define DEBUG 0
@@ -34,23 +35,39 @@
 void HandleDeferedActions(struct IIHData *iihdata,
 			  struct IntuitionBase *IntuitionBase)
 {
-    struct DeferedActionMessage *am;
+    struct DeferedActionMessage *am, *next_am;
     
     D(bug("Handle defered action messages\n"));
     
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+
+    am = (struct DeferedActionMessage *)iihdata->IntuiDeferedActionQueue.mlh_Head;
+    next_am = (struct DeferedActionMessage *)am->ExecMessage.mn_Node.ln_Succ;
+    
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+
     /* Handle defered action messages */
-    while ((am = (struct DeferedActionMessage *)GetMsg (iihdata->IntuiDeferedActionPort)))
+
+    while(next_am)
     {
+        struct Window * targetwindow = am->Window;
+        struct Layer  * targetlayer = targetwindow->WLayer, *L;
         BOOL CheckLayersBehind = FALSE;
         BOOL CheckLayersInFront = FALSE;
-        struct Window * targetwindow = am->Window;
-        struct Layer  * targetlayer  = targetwindow->WLayer, *L;
+	BOOL remove_am = TRUE;
+	BOOL free_am = TRUE;
 	
-	switch (am->Code)
+	if (MENUS_ACTIVE && (am->Code != AMCODE_CLOSEWINDOW))
+	{
+	    remove_am = FALSE;
+	    free_am = FALSE;
+	    
+	    goto next_action;
+	}
+			
+ 	switch (am->Code)
 	{
 	    case AMCODE_CLOSEWINDOW: {
-		struct closeMessage *cmsg = (struct closeMessage *)am;
-
 		if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
 		{
 		  /* not a GGZ window */
@@ -64,7 +81,15 @@ void HandleDeferedActions(struct IIHData *iihdata,
 
 		if (NULL != L)
 		  CheckLayersBehind = TRUE;
-		int_closewindow(cmsg, IntuitionBase);
+		
+		ObtainSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+		Remove(&am->ExecMessage.mn_Node);
+		ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+		
+		remove_am = FALSE; /* because int_closewindow frees the message!!! */
+		free_am = FALSE;
+		
+		int_closewindow(am, IntuitionBase);
 	    break; }
 
 	    case AMCODE_WINDOWTOFRONT: {
@@ -113,7 +138,6 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		} 
 		
 		NotifyDepthArrangement(targetwindow, IntuitionBase);
-		FreeMem(am, sizeof(struct DeferedActionMessage));
 	    break; }
 
 	    case AMCODE_WINDOWTOBACK: {
@@ -159,7 +183,6 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		}
 
 		NotifyDepthArrangement(targetwindow, IntuitionBase);
-		FreeMem(am, sizeof(struct DeferedActionMessage));
 	    break; }
 
 	    case AMCODE_ACTIVATEWINDOW: {		
@@ -191,7 +214,6 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		    
 		} /* if (!iihdata->ActiveGadget) */
 		
-		FreeMem(am, sizeof (struct DeferedActionMessage));
 	    break; }
 
 
@@ -253,7 +275,6 @@ void HandleDeferedActions(struct IIHData *iihdata,
 
 		} /* if (am->dx || am->dy) */
 		
-                FreeMem(am, sizeof(struct DeferedActionMessage));
             break; }
 
             case AMCODE_MOVEWINDOWINFRONTOF: { 
@@ -272,7 +293,6 @@ void HandleDeferedActions(struct IIHData *iihdata,
                 L = targetlayer;
 
 		NotifyDepthArrangement(targetwindow, IntuitionBase);
-                FreeMem(am, sizeof(struct DeferedActionMessage));
             break; }
 
             case AMCODE_SIZEWINDOW: {
@@ -430,7 +450,6 @@ void HandleDeferedActions(struct IIHData *iihdata,
 				     targetwindow,
 				     IntuitionBase);
 
-                FreeMem(am, sizeof(struct DeferedActionMessage));
             break; }
 
             case AMCODE_ZIPWINDOW: {
@@ -592,7 +611,6 @@ void HandleDeferedActions(struct IIHData *iihdata,
 				     targetwindow,
 				     IntuitionBase);
 
-                FreeMem(am, sizeof(struct DeferedActionMessage));
             break; }
 
 	    case AMCODE_CHANGEWINDOWBOX: {
@@ -745,8 +763,6 @@ void HandleDeferedActions(struct IIHData *iihdata,
 				     targetwindow,
 				     IntuitionBase);
 
-                FreeMem(am, sizeof(struct DeferedActionMessage));
-
 		break; }
 	
 	    case AMCODE_ACTIVATEGADGET:
@@ -871,7 +887,18 @@ void HandleDeferedActions(struct IIHData *iihdata,
 
 	} /* if (TRUE == CheckLayersInFront) */
 
-    } /* while ((am = (struct DeferedActionMessage *)GetMsg (iihdata->DeferedActionPort))) */
+next_action:
+    	ObtainSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);	
+
+	if (remove_am) Remove(&am->ExecMessage.mn_Node);
+	if (free_am)   FreeMem(am, sizeof(struct DeferedActionMessage));
+
+	am = next_am;
+	next_am = (struct DeferedActionMessage *)am->ExecMessage.mn_Node.ln_Succ;
+
+    	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+	
+    } /* while (next_am) */
 
 }
 			  
