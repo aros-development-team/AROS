@@ -61,7 +61,18 @@
 
     	if (nativeicon->iconPNG.img1 && CyberGfxBase && (bmdepth >= 15))
 	{
-	    WritePixelArrayAlpha(nativeicon->iconPNG.img1,
+	    APTR img;
+	    
+	    if ((state == IDS_SELECTED) && nativeicon->iconPNG.img2)
+	    {
+	    	img = nativeicon->iconPNG.img2;
+	    }
+	    else
+	    {
+	    	img = nativeicon->iconPNG.img1;
+	    }
+	    
+	    WritePixelArrayAlpha(img,
 	    	    	    	 0,
 				 0,
 				 nativeicon->iconPNG.width * sizeof(ULONG),
