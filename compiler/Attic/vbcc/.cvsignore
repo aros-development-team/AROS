@@ -1,9 +1,0 @@
-*.err
-*log
-bin?
-stage?
-t*.c
-t*.asm
-tstab
-patch*
-.pure
