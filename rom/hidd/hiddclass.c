@@ -142,8 +142,12 @@ static VOID hidd_get(Class *cl, Object *o, struct pRoot_Get *msg)
             case aoHidd_Status      : *msg->storage = hd->hd_Status;       break;
             case aoHidd_ErrorCode   : *msg->storage = hd->hd_ErrorCode;    break;
             case aoHidd_Locking     : *msg->storage = hd->hd_Locking;      break;
+	    default		    : DoSuperMethod(cl, o, (Msg) msg);	   break;
         }
+    } else {
+        DoSuperMethod(cl, o, (Msg) msg);
     }
+    
     
     ReturnVoid("HIDD::Get");
 }
