@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 #MM
-workbench-s : $(SDIR)/Startup-Sequence $(SDIR)/hidd.prefs
+workbench-s : $(SDIR)/Startup-Sequence $(SDIR)/hidd.prefs $(SDIR)/Shell-Startup
 	@$(NOP)
 
 $(SDIR)/Startup-Sequence : Startup-Sequence
