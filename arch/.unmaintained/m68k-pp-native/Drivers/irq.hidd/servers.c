@@ -124,7 +124,7 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 			I must supply them here. Obviously I will dummy some of these
 			though.
 		*/
-D(bug("timer_interrupt: Calling iv->iv_Code = %p\n",iv->iv_Code));
+//D(bug("timer_interrupt: Calling iv->iv_Code = %p\n",iv->iv_Code));
 		AROS_UFC5(void, iv->iv_Code,
 		  AROS_UFCA(ULONG, 0, D1),
 		  AROS_UFCA(ULONG, 0, A0),
