@@ -36,7 +36,7 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 
-//#include <MUI/NFloattext_mcc.h>
+#include <MUI/NFloattext_mcc.h>
 
 #include "install.h"
 
@@ -45,6 +45,7 @@
 
 #define kDstPartVol 			"DH0"
 #define kDstWorkVol 			"DH1"
+#define package_Path			"SYS:"
 #define kDstPartName 			"AROS"
 #define kDstWorkName 		"Work"
 
@@ -126,13 +127,13 @@ IPTR Install__OM_NEW
     
 /**/
 /* We will generate this info shortly */
-	
+
 	/* IO Related */
-	
+
 	data->IO_Always_overwrite=IIO_Overwrite_Ask;
-	
+
 	/* Main stuff */
-	
+
 	data->welcomeMsg  		= (APTR) GetTagData (MUIA_WelcomeMsg, (ULONG) NULL, message->ops_AttrList);
 	data->doneMsg       		= (APTR) GetTagData (MUIA_FinishedMsg, (ULONG) NULL, message->ops_AttrList);
 
@@ -183,7 +184,7 @@ IPTR Install__OM_NEW
 
 	data->inst_success  		= FALSE;
 	data->disable_back  		= FALSE;
-    
+
 	data->drive_set     		= (BOOL)DoMethod(self, MUIM_FindDrives);
 
 	DoMethod(data->proceed, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_IC_NextStep);
@@ -206,14 +207,13 @@ IPTR Install__OM_NEW
 			fib = (void *) AllocVec(sizeof(*fib), MEMF_PUBLIC);
 			Examine(lock, fib);
 		}
-		
-		
+
 		if((from = Open(data->instc_lic_file, MODE_OLDFILE)))
 		{
 			D(bug("[INSTALLER.i] Allocating buffer [%d] for license file '%s'!", fib->fib_Size, data->instc_lic_file));
 			data->instc_lic_buffer = AllocVec(fib->fib_Size, MEMF_CLEAR | MEMF_PUBLIC );
 			if ((s = Read(from, data->instc_lic_buffer, fib->fib_Size)) == -1)
-			{	
+			{
 				D(bug("[INSTALLER.i] Error processing license file!"));
 				if ((BOOL)data->instc_lic_mandatory)
 				{
@@ -224,12 +224,11 @@ IPTR Install__OM_NEW
 			}
 			else
 			{
-				//set( data->instc_options_main->opt_lic_file,MUIA_NFloattext_Text,data->instc_lic_buffer);
 				set( data->instc_options_main->opt_lic_file,MUIA_Floattext_Text,data->instc_lic_buffer);
 			}
 			Close(from);
 		}
-		
+
 		if (lock != NULL)
 		{
 			if( fib ) FreeVec( fib );
@@ -245,12 +244,11 @@ IPTR Install__OM_NEW
 
 /* UNDO Record */
 
-	//data->instc_undoenabled = TRUE;					/* CHANGE TO ENABLE UNDO! */
 	if ( data->instc_undoenabled==TRUE)
 	{
 		lock = NULL;
 		NEWLIST((struct List *)&data->instc_undorecord);
-			
+
 		if ((lock = Lock(installertmp_path, ACCESS_READ))!=NULL)
 		{
 			D(bug("[INSTALLER.i] Dir '%s' Exists - no nead to create\n",installertmp_path));
@@ -267,7 +265,7 @@ IPTR Install__OM_NEW
 				return 0;
 			}
 		}
-	
+
 		if ((lock = Lock(instalationtmp_path, ACCESS_READ))!=NULL)
 		{
 			D(bug("[INSTALLER.i] Dir '%s' Exists - no nead to create\n",instalationtmp_path));
@@ -285,7 +283,7 @@ IPTR Install__OM_NEW
 			}
 		}
 	}
-	
+
 	return (IPTR) self;
 }
 
@@ -297,11 +295,11 @@ ULONG AskRetry(Class *CLASS, Object *self, char *Message, char *File, char *Opt1
 {
 	struct Install_DATA 	*data    = INST_DATA(CLASS, self);
 	char				*Temp_Message=NULL;
-	
+
 	Temp_Message = AllocVec(1000, MEMF_CLEAR | MEMF_PUBLIC );
-	
+
 	sprintf(Temp_Message, Message, File);
-	
+
 	set(data->IO_RText, MUIA_Text_Contents, Temp_Message);
 
 	set(data->IO_ROpt1, MUIA_Text_Contents, Opt1);
@@ -311,7 +309,7 @@ ULONG AskRetry(Class *CLASS, Object *self, char *Message, char *File, char *Opt1
 	set(data->IO_ROpt1, MUIA_Selected, FALSE);
 	set(data->IO_ROpt2, MUIA_Selected, FALSE);
 	set(data->IO_ROpt3, MUIA_Selected, FALSE);
-	
+
 	set(data->IO_RWindow, MUIA_Window_Open, TRUE);
 	set(data->window,MUIA_Window_Sleep,TRUE);
 
@@ -320,15 +318,15 @@ ULONG AskRetry(Class *CLASS, Object *self, char *Message, char *File, char *Opt1
 	DoMethod(data->IO_ROpt3,MUIM_Notify,MUIA_Selected,TRUE, self,3,MUIM_Set,MUIA_IIO_Flag,IIO_Selected_Opt3);
 
 	data->IO_Flags = 0;
-	
+
 	while (data->IO_Flags == 0) DoMethod(data->installer, MUIM_Application_InputBuffered);
-	
+
 	set(data->window, MUIA_Window_Sleep, FALSE);
 	set(data->IO_RWindow, MUIA_Window_Open, FALSE);
 
 	set(data->IO_RText, MUIA_Text_Contents, NULL);
 	FreeVec(Temp_Message);
-	
+
 	return (data->IO_Flags - 1);
 }
 
@@ -372,7 +370,7 @@ char	*FindPartition(struct PartitionHandle *root)
 	char					*success = NULL;
 	char					*name = NULL;
 	struct	PartitionType 	*type=NULL;
-				
+
 	ForeachNode(&root->table->list, partition)
 	{
 		D(bug("[INSTALLER.fp] checking part\n"));
@@ -394,7 +392,7 @@ char	*FindPartition(struct PartitionHandle *root)
 			struct	PartitionType 	pttype;
 
 			name =AllocVec( 100, MEMF_CLEAR | MEMF_PUBLIC );
-			
+
 			GetPartitionAttrsTags
 			(
 				partition,
@@ -404,7 +402,7 @@ char	*FindPartition(struct PartitionHandle *root)
 			);
 
 			type=&pttype;
-			
+
 			if (type->id_len == 4)
 			{
 				D(bug("[INSTALLER.fp] Found RDB Partition!\n"));
@@ -419,12 +417,12 @@ char	*FindPartition(struct PartitionHandle *root)
 	}
 
 	if ((!success)&&(name)) FreeVec(name);
-	
+
 	return success;
 }
 
 IPTR Install__MUIM_FindDrives
-(     
+(
     Class *CLASS, Object *self, Msg message 
 )
 {
@@ -434,7 +432,7 @@ IPTR Install__MUIM_FindDrives
         struct DevInfo 			*devnode=NULL;
 	struct FileSysStartupMsg	*StartMess=NULL;
 	struct DosEnvec			*DriveEnv=NULL;
-	
+
 	char					*result = NULL;
 	BOOL					founddisk = FALSE;
 
@@ -456,10 +454,10 @@ IPTR Install__MUIM_FindDrives
 					boot_Device = StartMess->fssm_Device;
 					boot_Unit = StartMess->fssm_Unit;
 				}
-				
+
 				if (OpenPartitionTable(root) == 0)
 				{
-					result = FindPartition(root);     
+					result = FindPartition(root);
 					D(bug("[INSTALLER.fd] Partition '%s'\n",result));
 					ClosePartitionTable(root);
 				}
@@ -470,9 +468,9 @@ IPTR Install__MUIM_FindDrives
 		{
 			firstfound_path = result;
 			break;
-		}	
+		}
 	}
-    
+
 	return result;
 }
 
@@ -508,7 +506,7 @@ UBYTE cmd=0xEC; /* identify */
 }
 
 IPTR Install__MUIM_IC_NextStep
-(     
+(
     Class *CLASS, Object *self, Msg message 
 )
 {
@@ -539,30 +537,30 @@ IPTR Install__MUIM_IC_NextStep
 				/* Force acceptance of the license */
 				set(data->instc_options_main->opt_license, MUIA_Selected, FALSE);
 				set(data->proceed, MUIA_Disabled, TRUE);
-			}				
+			}		
 			data->instc_stage_next = EInstallOptionsStage;
 			next_stage = ELicenseStage;
 			break;
 		}
 		/* if no license we ignore this step.. and go to dest options */
-		
+
 	case EInstallOptionsStage:
 		if(!data->drive_set)
 		{
 			set(data->instc_options_main->opt_partition,MUIA_Selected,TRUE);
 			set(data->instc_options_main->opt_partition,MUIA_Disabled,TRUE);
 		}
-		
+
 		set(data->welcomeMsg, MUIA_Text_Contents, KMsgInstallOptions);
 		data->instc_stage_next = EDestOptionsStage;
 		next_stage = EInstallOptionsStage;
 		break;
-	
+
 	case EDestOptionsStage:
 		data->instc_stage_next = EInstallMessageStage;
 		next_stage = EDestOptionsStage;
 		break;
-		
+
 	case EInstallMessageStage:
 		//enum EStage                 theprevStage;
 		//theprevStage=;
@@ -581,11 +579,11 @@ IPTR Install__MUIM_IC_NextStep
 				break;
 			}
 		}
-	
+
 		/* BOOTLOADER */
-		
+
 		option = 0;
-		
+
 		get(data->instc_options_main->opt_bootloader, MUIA_Selected, &option);
 		if (option != 0)
 		{
@@ -593,7 +591,7 @@ IPTR Install__MUIM_IC_NextStep
 			if (data->instc_options_main->bootloaded != TRUE)
 			{
 				data->instc_options_main->bootloaded = TRUE;
-	
+
 				if (data->instc_options_grub->bootinfo != TRUE)
 				{
 					char						*tmp_drive=NULL;
@@ -602,15 +600,14 @@ IPTR Install__MUIM_IC_NextStep
 					char						*tmp_kernel=NULL;
 					struct	IOStdReq			*ioreq=NULL;
 					struct	MsgPort 			*mp=NULL;
-		
-					
+
 					data->instc_options_grub->bootinfo = TRUE;
-		
+
 					tmp_drive =AllocVec( 100, MEMF_CLEAR | MEMF_PUBLIC );
 					tmp_device =AllocVec( 100, MEMF_CLEAR | MEMF_PUBLIC );
 					tmp_grub =AllocVec( 100, MEMF_CLEAR | MEMF_PUBLIC );
 					tmp_kernel =AllocVec( 100, MEMF_CLEAR | MEMF_PUBLIC );
-					
+
 					mp = CreateMsgPort();
 					if (mp)
 					{
@@ -630,32 +627,32 @@ IPTR Install__MUIM_IC_NextStep
 						DeleteMsgPort(mp);
 					}
 					else sprintf(tmp_device ,"Unknown Drive [%s unit %d]",boot_Device,boot_Unit);
-		
+
 					sprintf(tmp_grub ,"%s:boot/GRUB",dest_Path);
 					sprintf(tmp_kernel ,"%s:boot/aros-pc-i386.gz",dest_Path);
-		
+
 					set(data->instc_options_grub->gopt_drive, MUIA_Text_Contents, tmp_device);
 					set(data->instc_options_grub->gopt_grub, MUIA_Text_Contents, tmp_grub);
 					set(data->instc_options_grub->gopt_kernel, MUIA_Text_Contents, tmp_kernel);
 				}
-	
+
 				data->instc_stage_next = EInstallMessageStage;
 				next_stage =  EGrubOptionsStage;
 				data->instc_stage_prev = EInstallOptionsStage;
 				break;
 			}
 		}
-		
+
 		set(data->welcomeMsg, MUIA_Text_Contents, KMsgBeginWithPartition);
 		data->instc_stage_next = EInstallStage;
 		next_stage =  EMessageStage;
 		break;
-	
+
 	case EPartitioningStage:
 		data->disable_back = TRUE;
-	
+
 		set(data->page,MUIA_Group_ActivePage, EPartitioningStage);
-	    
+
 		get(data->instc_options_main->opt_partmethod,MUIA_Radio_Active,&option);
 		switch (option)
 		{
@@ -675,40 +672,40 @@ IPTR Install__MUIM_IC_NextStep
 				Execute("SYS:Tools/QuickPart", NULL, NULL);
 				break;
 		}
-	
+
 		next_stage = EDoneStage;
-		
+
 		DoMethod(data->page, MUIM_Group_InitChange);
 		set(data->doneMsg,MUIA_Text_Contents,KMsgDoneReboot);
 		DoMethod(data->page, MUIM_Group_ExitChange);
-	
+
 		set(data->back, MUIA_Disabled, TRUE);
 		set(data->cancel, MUIA_Disabled, TRUE);
 		data->instc_stage_next = EDoneStage;
 		break;
-	
+
 	case EInstallStage:
 		data->disable_back = TRUE;
 		set(data->page,MUIA_Group_ActivePage, EInstallStage);
-	
+
 		DoMethod(self, MUIM_IC_Install);
-	
+
 		next_stage = EDoneStage;
 		set(data->back, MUIA_Disabled, TRUE);
 		set(data->cancel, MUIA_Disabled, TRUE);
 		data->instc_stage_next = EDoneStage;
 		break;
-	
+
 	default:
 		break;
 	}
-	
+
 	set(data->page,MUIA_Group_ActivePage, next_stage);
 	return 0;
 }
 
 IPTR Install__MUIM_IC_PrevStep
-(     
+(
     Class *CLASS, Object *self, Msg message 
 )
 {
@@ -733,7 +730,7 @@ IPTR Install__MUIM_IC_PrevStep
 			if (data->instc_stage_prev == EDestOptionsStage)
 			{
 				set(data->page,MUIA_Group_ActivePage, EDestOptionsStage);
-				
+
 				data->instc_stage_prev = EInstallOptionsStage;
 			}
 			else
@@ -761,6 +758,7 @@ IPTR Install__MUIM_IC_PrevStep
 			data->instc_stage_prev = EMessageStage;
 			break;
 		}
+
 	case ELicenseStage:
 		set(data->proceed, MUIA_Disabled, FALSE);
 		set(data->back, MUIA_Disabled, TRUE);
@@ -768,7 +766,7 @@ IPTR Install__MUIM_IC_PrevStep
 		set(data->page,MUIA_Group_ActivePage, EMessageStage);
 		data->instc_stage_prev = EMessageStage;
 		break;
-		
+
 	case EDestOptionsStage:
 		set(data->page,MUIA_Group_ActivePage, EInstallOptionsStage);
 		data->instc_stage_next = EDestOptionsStage;
@@ -794,7 +792,7 @@ IPTR Install__MUIM_IC_PrevStep
         case EInstallMessageStage:
 
 		/* Back is disabled from here on.. */
-		
+
         case EPartitioningStage:
         case EInstallStage:
         case EDoneStage:
@@ -806,7 +804,7 @@ IPTR Install__MUIM_IC_PrevStep
 }
 
 IPTR Install__MUIM_IC_CancelInstall
-(     
+(
     Class *CLASS, Object *self, Msg message 
 )
 {
@@ -820,7 +818,7 @@ IPTR Install__MUIM_IC_CancelInstall
 		backupOptions = AllocMem( sizeof(struct optionstmp), MEMF_CLEAR | MEMF_PUBLIC );
 		data->instc_options_backup = backupOptions;
 	}
-	
+
 	get(data->page,MUIA_Group_ActivePage, &this_page);
 
 	get(data->back, MUIA_Disabled, &data->status_back);
@@ -868,9 +866,9 @@ IPTR Install__MUIM_IC_CancelInstall
 
 	case EGrubOptionsStage:
 		goto donecancel;
-		
+
 	default:
-donecancel:		
+donecancel:
 		cancelmessage = KMsgCancelOK;
 		break;
 	}
@@ -883,7 +881,7 @@ donecancel:
 
 	set(data->cancel, MUIA_Selected, FALSE);
 	set(data->cancel, MUIA_Disabled, TRUE);
-	
+
 	if ( !MUI_RequestA(  data->installer, data->window, 0, "Cancel Installation..", "*Continue Install|Cancel Install", cancelmessage, NULL))
 	{
 		DoMethod(self, MUIM_IC_QuitInstall);
@@ -892,9 +890,9 @@ donecancel:
 
 	return 0;
 }
-	
+
 IPTR Install__MUIM_IC_ContinueInstall
-(     
+(
 Class *CLASS, Object *self, Msg message 
 )
 {
@@ -909,13 +907,13 @@ Class *CLASS, Object *self, Msg message
 	if (!(BOOL)data->disable_back) set(data->back, MUIA_Disabled, data->status_back);
 	else set(data->back, MUIA_Disabled, TRUE);
 	set(data->back, MUIA_Selected, FALSE);
-	
+
 	set(data->proceed, MUIA_Disabled, data->status_proceed);
 	set(data->proceed, MUIA_Selected, FALSE);
-	
+
 	set(data->cancel, MUIA_Disabled, data->status_cancel);
 	set(data->cancel, MUIA_Selected, FALSE);
-	
+
 	switch(this_page)
 	{
 	case EInstallOptionsStage:
@@ -935,9 +933,9 @@ Class *CLASS, Object *self, Msg message
 
 		IPTR	reenable=0;
 		get(check_work, MUIA_Selected, &reenable);
-	
+
 		if ((BOOL)reenable==TRUE)
-		{	
+		{
 			set(check_copytowork, MUIA_Disabled, FALSE);
 			set(work_volume, MUIA_Disabled, FALSE);
 		}
@@ -949,7 +947,7 @@ Class *CLASS, Object *self, Msg message
 
 	case EGrubOptionsStage:
 		break;
-		
+
 	default:
 		break;
 	}
@@ -958,19 +956,19 @@ Class *CLASS, Object *self, Msg message
 }
 
 IPTR Install__MUIM_IC_QuitInstall
-(     
+(
     Class *CLASS, Object *self, Msg message 
 )
 {
 	struct Install_DATA* data = INST_DATA(CLASS, self);
-	
+
 	if ( data->inst_success ==  MUIV_Inst_InProgress)
 	{
 		data->inst_success = MUIV_Inst_Cancelled;
-		
+
 		DoMethod(self,MUIM_Reboot);
 	}
-	
+
 	return 0;
 }
 
@@ -982,7 +980,7 @@ IPTR Install__MUIM_IC_QuitInstall
 */
 
 IPTR Install__MUIM_DispatchInstallProcedure
-(     
+(
     Class *CLASS, Object *self, Msg message 
 )
 {
@@ -1001,12 +999,12 @@ IPTR Install__MUIM_Partition
 	struct Install_DATA *data = INST_DATA(CLASS, self);
 	IPTR		option = FALSE;
 	IPTR		tmp = 0;
-	
+
 	if ( data->inst_success ==  MUIV_Inst_InProgress)
 	{
 		set(data->back, MUIA_Disabled, TRUE);
 		set(data->proceed, MUIA_Disabled, TRUE);
-		
+
 		char tmpcmd[100];
 		get(check_work,MUIA_Selected,&option);
 		if (option==FALSE)
@@ -1029,54 +1027,110 @@ IPTR Install__MUIM_Partition
 			if (option==0)
 			{
 				D(bug("[INSTALLER] Partitioning Free Space...\n"));
-				sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%d ANYDISK PART0=%s USEWORK PART1=%s ONLYFREE FORCE QUIET",boot_Device,boot_Unit,dest_Path,work_Path);			
+				sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%d ANYDISK PART0=%s USEWORK PART1=%s ONLYFREE FORCE QUIET",boot_Device,boot_Unit,dest_Path,work_Path);	
 			}
 			else
 			{
 				D(bug("[INSTALLER] Partitioning EVERYTHING! MUAHAHAHA...\n"));
-				sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%d ANYDISK PART0=%s USEWORK PART1=%s FORCE QUIET",boot_Device,boot_Unit,dest_Path,work_Path);			
+				sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%d ANYDISK PART0=%s USEWORK PART1=%s FORCE QUIET",boot_Device,boot_Unit,dest_Path,work_Path);	
 			}
 		}
 		D(bug("[INSTALLER] ### Executing '%s'\n",&tmpcmd));
 		tmp = SystemTagList(&tmpcmd, NULL);
-		
+
 		set(data->proceed, MUIA_Disabled, FALSE);
 	}
-	
+
 	return tmp;
 }
 
+void FixUpPackageFile(char * packagefile, IPTR **fixupdirs, int dircnt)
+{
+	IPTR					*fixuppackage_dirs = *fixupdirs;
+	TEXT					fixdirbuf[1024];
+	register struct FileInfoBlock 	*fib=NULL;
+	char 					*oldpackageline=NULL;
+	BPTR					from=NULL,lock=NULL;
+	LONG					s=0,i;
+
+	lock = (BPTR) Lock(packagefile, SHARED_LOCK);
+	if(lock != NULL)
+	{
+		fib = (void *) AllocVec(sizeof(struct FileInfoBlock), MEMF_PUBLIC);
+		Examine(lock, fib);
+	}
+
+	/* Read in the files content to retrieve the current path */
+
+	if((from = Open(packagefile, MODE_OLDFILE)))
+	{
+		D(bug("[INSTALLER] FixUpPackageFile() Allocating buffer [%d] for package path '%s'!\n", fib->fib_Size, packagefile));
+		oldpackageline = AllocVec(fib->fib_Size, MEMF_CLEAR | MEMF_PUBLIC );
+		if ((s = Read(from, oldpackageline, fib->fib_Size)) == -1)
+		{
+			D(bug("[INSTALLER] FixUpPackageFile() Error processing package file!\n"));
+		}
+		else
+		{
+			for (i = 0; &fixuppackage_dirs[i] !=NULL; i++)
+			{
+				sprintf( fixdirbuf, "%s", package_Path);
+				AddPart( fixdirbuf, &fixuppackage_dirs[i], strlen(package_Path));
+				/* replace files in extras with the work equivelant path */
+				if (!strcmp(fixdirbuf,oldpackageline))
+				{
+					D(bug("[INSTALLER] FixUpPackageFile() Found package path needing changed '%s'\n",oldpackageline));
+					//AllocVec(strlen(oldpackageline)-strlen(package_Path)+strlen(work_Path),MEMF_PUBLIC|MEMF_CLEAR);
+					sprintf(fixdirbuf, "%s", work_Path);
+					AddPart( fixdirbuf, (IPTR)oldpackageline + strlen(package_Path), 1024);
+					D(bug("[INSTALLER] FixUpPackageFile() Corrected path = '%s'\n",fixdirbuf));
+					break;
+				}
+			}
+		}
+		Close(from);
+		FreeVec(oldpackageline);
+	}
+
+	if (lock != NULL)
+	{
+		if( fib ) FreeVec( fib );
+		UnLock(lock);
+	}
+}
+
 IPTR Install__MUIM_IC_Install
-(     
+(
 	Class *CLASS, Object *self, Msg message 
 )
 {
 	struct Install_DATA *data = INST_DATA(CLASS, self);
-	
+
 	BPTR lock   = NULL;
 	IPTR option = FALSE;
-	
+	int	fixupdir_count=0;
+
 	set(data->back, MUIA_Disabled, TRUE);
 	set(data->proceed, MUIA_Disabled, TRUE);
-	
+
 	set(data->pagetitle,MUIA_Text_Contents, "Installing AROS ...");
 
 /** setup work name to use **/
-	
+
 	get(check_copytowork,MUIA_Selected,&option);
 	if (((BOOL)option==FALSE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
 		work_Path = dest_Path;
 	}
-	
+
 	get(check_work,MUIA_Selected,&option);
 	if (((BOOL)option==FALSE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
 		work_Path = dest_Path;
 	}
-	
+
 /** STEP : FORMAT **/
-	
+
 	get(data->instc_options_main->opt_format,MUIA_Selected,&option);
 	if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
@@ -1089,26 +1143,26 @@ IPTR Install__MUIM_IC_Install
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
 
 /** STEP : LOCALE **/
-	
+
 	get(data->instc_options_main->opt_locale,MUIA_Selected,&option);
 	if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
 		D(bug("[INSTALLER] Launching Locale Prefs...\n"));
-		
+
 		ULONG srcLen = strlen(source_Path);
 		ULONG dstLen = (strlen(dest_Path)+1);
 		ULONG envsrcLen = strlen(prefssrc_path);
 		ULONG envdstLen = strlen(prefs_path);
-		
+
 		ULONG localeFileLen = srcLen + strlen(localeFile_path) + 3;
 		ULONG inputFileLen = srcLen + strlen(inputFile_path) + 3;
-		
+
 		ULONG localePFileLen = dstLen + envdstLen + strlen(locale_prfs_file) + 4;
-		
+
 		ULONG inputPFileLen = dstLen + envdstLen + strlen(input_prfs_file) + 4;
-		
+
 		TEXT envDstDir[dstLen + envdstLen];
-		
+
 		TEXT localeFile[localeFileLen];
 		TEXT localesrcPFile[localePFileLen];
 		TEXT localePFile[localePFileLen];
@@ -1116,96 +1170,96 @@ IPTR Install__MUIM_IC_Install
 		TEXT inputsrcPFile[inputPFileLen];
 		TEXT inputPFile[inputPFileLen];
 
-		sprintf(&envDstDir,"%s:",dest_Path);
-		sprintf(&localeFile,"\"%s",source_Path);
-		CopyMem(prefssrc_path,  &localesrcPFile,    envsrcLen + 1);
-		sprintf(&localePFile,"%s:",dest_Path);
-		sprintf(&inputFile,"\"%s",source_Path);
-		CopyMem(prefssrc_path,  &inputsrcPFile,     envsrcLen + 1);
-		sprintf(&inputPFile,"%s:",dest_Path);
+		sprintf(envDstDir,"%s:",dest_Path);
+		sprintf(localeFile,"\"%s",source_Path);
+		CopyMem(prefssrc_path,  localesrcPFile,    envsrcLen + 1);
+		sprintf(localePFile,"%s:",dest_Path);
+		sprintf(inputFile,"\"%s",source_Path);
+		CopyMem(prefssrc_path,  inputsrcPFile,     envsrcLen + 1);
+		sprintf(inputPFile,"%s:",dest_Path);
 
-		AddPart(&localeFile, inputFile_path, inputFileLen);
-		
-		AddPart(&localesrcPFile, locale_prfs_file, envsrcLen + strlen(locale_prfs_file) + 2);
-		
-		AddPart(&localePFile, prefs_path, dstLen + envdstLen + 2);
-		AddPart(&localePFile, locale_prfs_file, dstLen + envdstLen + strlen(locale_prfs_file) + 4);
-		
-		AddPart(&inputFile, localeFile_path, localeFileLen);
-		
-		AddPart(&inputsrcPFile, input_prfs_file, envsrcLen + strlen(input_prfs_file) + 2);
-		
-		AddPart(&inputPFile, prefs_path,  dstLen + envdstLen + 2);
-		AddPart(&inputPFile, input_prfs_file, dstLen + envdstLen + strlen(input_prfs_file) + 4);
+		AddPart(localeFile, inputFile_path, localeFileLen);
 
-		D(bug("[INSTALLER] Excecuting '%s'...\n",&localeFile));
+		AddPart(localesrcPFile, locale_prfs_file, localePFileLen);
 
-		Execute(&localeFile, NULL, NULL);
-		
+		AddPart(localePFile, prefs_path, localePFileLen);
+		AddPart(localePFile, locale_prfs_file, localePFileLen);
+
+		AddPart(inputFile, localeFile_path, inputFileLen);
+
+		AddPart(inputsrcPFile, input_prfs_file, inputPFileLen);
+
+		AddPart(inputPFile, prefs_path,  inputPFileLen);
+		AddPart(inputPFile, input_prfs_file, inputPFileLen);
+
+		D(bug("[INSTALLER] Excecuting '%s'...\n",localeFile));
+
+		Execute(localeFile, NULL, NULL);
+
 		DoMethod(data->installer,MUIM_Application_InputBuffered);
 
-		D(bug("[INSTALLER] Excecuting '%s'...\n",&inputFile));
+		D(bug("[INSTALLER] Excecuting '%s'...\n",inputFile));
 
-		Execute(&inputFile, NULL, NULL);
-		
+		Execute(inputFile, NULL, NULL);
+
 		DoMethod(data->installer,MUIM_Application_InputBuffered);
-		
+
 		D(bug("[INSTALLER] Copying Locale Settings...\n"));
-		
+
 		//create the dirs "Prefs","Prefs/Env-Archive" and "Prefs/Env-Archive/SYS"
-		AddPart(&envDstDir, "Prefs", dstLen + strlen("Prefs") +1);
-		D(bug("[INSTALLER] Create Dir '%s' \n",&envDstDir));
-		
+		AddPart(envDstDir, "Prefs", dstLen + envdstLen);
+		D(bug("[INSTALLER] Create Dir '%s' \n",envDstDir));
+
 		BPTR bootDirLock=NULL;
-		
-		if ((lock = Lock(&envDstDir, ACCESS_READ))!=NULL)
+
+		if ((lock = Lock(envDstDir, ACCESS_READ))!=NULL)
 		{
-			D(bug("[INSTALLER] Dir '%s' Exists - no nead to create\n",&envDstDir));
+			D(bug("[INSTALLER] Dir '%s' Exists - no nead to create\n",envDstDir));
 			UnLock(lock);
 		}
 		else
 		{
-			bootDirLock = CreateDir(&envDstDir);
+			bootDirLock = CreateDir(envDstDir);
 			if(bootDirLock != NULL) UnLock(bootDirLock);
 			else
 			{
 createdirfaild:
-				D(bug("[INSTALLER] Failed to create %s dir!!\n",&envDstDir));
+				D(bug("[INSTALLER] Failed to create %s dir!!\n",envDstDir));
 				data->inst_success = MUIV_Inst_Failed;
 				return 0;
 			}
 		}
-		
+
 		bootDirLock=NULL;
 		lock = NULL;
-		
-		AddPart(&envDstDir, "Env-Archive", dstLen + strlen("Prefs") + strlen("Env-Archive") + 3);
-		D(bug("[INSTALLER] Create Dir '%s' \n",&envDstDir));
-		if ((lock = Lock(&envDstDir, ACCESS_READ))!=NULL)
+
+		AddPart(envDstDir, "Env-Archive", dstLen + envdstLen);
+		D(bug("[INSTALLER] Create Dir '%s' \n",envDstDir));
+		if ((lock = Lock(envDstDir, ACCESS_READ))!=NULL)
 		{
-			D(bug("[INSTALLER] Dir '%s' Exists - no nead to create\n",&envDstDir));
+			D(bug("[INSTALLER] Dir '%s' Exists - no nead to create\n",envDstDir));
 			UnLock(lock);
 		}
 		else
 		{
-			bootDirLock = CreateDir(&envDstDir);
+			bootDirLock = CreateDir(envDstDir);
 			if(bootDirLock != NULL) UnLock(bootDirLock);
 			else goto createdirfaild;
 		}
 
 		bootDirLock=NULL;
 		lock = NULL;
-		
-		AddPart(&envDstDir, "SYS", dstLen + strlen("Prefs") + strlen("Env-Archive") + strlen("SYS") + 5);
-		D(bug("[INSTALLER] Create Dir '%s' \n",&envDstDir));
-		if ((lock = Lock(&envDstDir, ACCESS_READ))!=NULL)
+
+		AddPart(envDstDir, "SYS", dstLen + envdstLen);
+		D(bug("[INSTALLER] Create Dir '%s' \n",envDstDir));
+		if ((lock = Lock(envDstDir, ACCESS_READ))!=NULL)
 		{
-			D(bug("[INSTALLER] Dir '%s' Exists - no nead to create\n",&envDstDir));
+			D(bug("[INSTALLER] Dir '%s' Exists - no nead to create\n",envDstDir));
 			UnLock(lock);
 		}
 		else
-		{		
-			bootDirLock = CreateDir(&envDstDir);
+		{
+			bootDirLock = CreateDir(envDstDir);
 			if(bootDirLock != NULL) UnLock(bootDirLock);
 			else goto createdirfaild;
 		}
@@ -1214,27 +1268,27 @@ createdirfaild:
 		lock = NULL;
 
 		D(bug("[INSTALLER] Copying files\n"));
-		
-		if ((lock = Lock(&localesrcPFile, ACCESS_READ))!=NULL)
+
+		if ((lock = Lock(localesrcPFile, ACCESS_READ))!=NULL)
 		{
 			UnLock(lock);
-			DoMethod(self, MUIM_IC_CopyFile, &localesrcPFile, &localePFile);
+			DoMethod(self, MUIM_IC_CopyFile, localesrcPFile, localePFile);
 		}
-		
+
 		bootDirLock=NULL;
 		lock = NULL;
-		
+
 		if ((lock = Lock(inputsrcPFile, ACCESS_READ))!=NULL)
 		{
 			UnLock(lock);
-			DoMethod(self, MUIM_IC_CopyFile, &inputsrcPFile, &inputPFile);
+			DoMethod(self, MUIM_IC_CopyFile, inputsrcPFile, inputPFile);
 		}
 	}
-	
+
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
-	
+
 /** STEP : COPY CORE **/
-	
+
 	get(data->instc_options_main->opt_copycore,MUIA_Selected,&option);
 	if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
@@ -1253,18 +1307,18 @@ createdirfaild:
 			"Utilities",		"Utilities",
 			NULL
 		};
-		
+
 		// Copying Core system Files
 		D(bug("[INSTALLER] Copying Core files...\n"));
 		set(data->label, MUIA_Text_Contents, "Copying Core System files...");
-		
+
 		CopyDirArray( CLASS, self, data, core_dirs, dest_Path);
 	}
-	
+
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
-	
+
 /** STEP : COPY EXTRAS **/
-	
+
 	get(data->instc_options_main->opt_copyextra,MUIA_Selected,&option);
 	if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
@@ -1274,28 +1328,29 @@ createdirfaild:
 			"Extras",		"Extras",
 			NULL
 		};
-		
+
 		// Copying Extras
 		D(bug("[INSTALLER] Copying Extras...\n"));
 		set(data->label, MUIA_Text_Contents, "Copying Extra Software...");
-		
+
 		CopyDirArray( CLASS, self, data, extras_dirs, work_Path);
+		fixupdir_count +=2;
 	}
-	
+
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
-	
+
 /** STEP : COPY DEVELOPMENT **/
-	
+
 	get(data->instc_options_main->opt_development,MUIA_Selected,&option);
 	if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
 		ULONG srcLen = strlen(source_Path);
 		ULONG developerDirLen = srcLen + strlen("Development") + 2;
 		TEXT developerDir[srcLen + developerDirLen];
-		
+
 		CopyMem(source_Path, &developerDir, srcLen + 1);
-		AddPart(&developerDir, "Development", strlen("Development")+1);
-		
+		AddPart(&developerDir, "Development", srcLen + developerDirLen);
+
 		if ((lock = Lock(&developerDir, ACCESS_READ)) != NULL)
 		{
 			UnLock(lock);
@@ -1305,27 +1360,28 @@ createdirfaild:
 				"Tests",		"Tests",
 				NULL
 			};
-			
+
 			// Copying Developer stuff
 			D(bug("[INSTALLER] Copying Developer Files...\n"));
 			set(data->label, MUIA_Text_Contents, "Copying Developer Files...");
-			
+
 			CopyDirArray( CLASS, self, data, developer_dirs, work_Path);
+			fixupdir_count +=2;
 		}
 		else D(bug("[INSTALLER] Couldnt locate Developer Files...\n"));
 	}
 
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
-	
+
 /** STEP : INSTALL BOOTLOADER **/
-	
+
 	get(data->instc_options_main->opt_bootloader,MUIA_Selected,&option);
 	if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
 		int numgrubfiles = 3,file_count = 0;
 		ULONG srcLen = strlen(source_Path);
 		ULONG dstLen = (strlen(dest_Path)+1);
-		
+
 		TEXT     *grub_files[((3+1)*2)+1] = 
 		{
 			"boot/aros-pc-i386.gz",			"boot/aros-pc-i386.gz",
@@ -1334,66 +1390,84 @@ createdirfaild:
 			"boot/grub/menu.lst.DH0",		"boot/grub/menu.lst",
 			NULL
 		};
-		
+
 		CreateDestDIR( CLASS, self, "boot", dest_Path );
 		CreateDestDIR( CLASS, self, "boot/grub", dest_Path );
-		
+
 		// Installing GRUB
 		D(bug("[INSTALLER] Installing Grub...\n"));
 		set(data->label, MUIA_Text_Contents, "Installing Grub...");
 		set(data->pageheader, MUIA_Text_Contents, KMsgBootLoader);
-		
+
 		set(data->gauge2, MUIA_Gauge_Current, 0);
-		
+
 		set(data->label, MUIA_Text_Contents, "Copying BOOT files...");
-		
+
 		while (grub_files[file_count]!=NULL)
 		{
 			ULONG newSrcLen = srcLen + strlen(grub_files[file_count]) + 2;
 			ULONG newDstLen = dstLen + strlen(grub_files[file_count+1]) + 2;
-			
+
 			TEXT srcFile[newSrcLen];
 			TEXT dstFile[newDstLen];
-			
-			CopyMem(source_Path, &srcFile, srcLen + 1);
-			sprintf(&dstFile,"%s:",dest_Path);
-			AddPart(&srcFile, grub_files[file_count], newSrcLen);
-			AddPart(&dstFile, grub_files[file_count+1], newDstLen);
-			
-			set(data->actioncurrent, MUIA_Text_Contents, &srcFile);
+
+			CopyMem(source_Path, srcFile, srcLen + 1);
+			sprintf(dstFile,"%s:",dest_Path);
+			AddPart(srcFile, grub_files[file_count], newSrcLen);
+			AddPart(dstFile, grub_files[file_count+1], newDstLen);
+
+			set(data->actioncurrent, MUIA_Text_Contents, srcFile);
 			DoMethod(data->installer,MUIM_Application_InputBuffered);
-			
-			DoMethod(self, MUIM_IC_CopyFile, &srcFile, &dstFile);
-			
+
+			DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
+
 			set(data->gauge2, MUIA_Gauge_Current, ((100/(numgrubfiles +1)) * (file_count/2)));
-			
+
 			file_count += 2;
 		}
-		char tmp[100];
-		sprintf(&tmp,"C:install-i386-pc DEVICE %s UNIT %d KERNEL %s:boot/aros-pc-i386.gz GRUB %s:boot/grub",boot_Device,boot_Unit,dest_Path,dest_Path);
+		TEXT tmp[100];
+		sprintf(tmp,"C:install-i386-pc DEVICE %s UNIT %d KERNEL %s:boot/aros-pc-i386.gz GRUB %s:boot/grub",boot_Device,boot_Unit,dest_Path,dest_Path);
 		Execute(tmp, NULL, NULL);
 		set(data->gauge2, MUIA_Gauge_Current, 100);
 	}
-  
+
 	set(data->proceed, MUIA_Disabled, FALSE);
-	
+
 /** STEP : PACKAGE CLEANUP **/
 
 	if ( work_Path != dest_Path)
 	{
+		char		*fixuppackage_dirs = AllocVec((fixupdir_count+1)*sizeof(IPTR),MEMF_PUBLIC|MEMF_CLEAR);
+		int		curfixup = 0;
+
+		get(data->instc_options_main->opt_copyextra,MUIA_Selected,&option);
+		if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
+		{
+			fixuppackage_dirs[curfixup] = "Demos"; curfixup++;
+			fixuppackage_dirs[curfixup] = "Extras"; curfixup++;
+		}
+
+		get(data->instc_options_main->opt_development,MUIA_Selected,&option);
+		if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
+		{
+			fixuppackage_dirs[curfixup] = "Development"; curfixup++;
+			fixuppackage_dirs[curfixup] = "Tests"; curfixup++;
+		}
+
 		D(bug("[INSTALLER] Fix-Up contirbuted package 'PATHS'\n"));
-		set(data->label, MUIA_Text_Contents, "Setting contrib package paths...");
+		set(data->label, MUIA_Text_Contents, "Setting package paths...");
 		set(data->gauge2, MUIA_Gauge_Current, 0);
 
 		ULONG packagesrcLen = strlen(dest_Path);
 		ULONG newpackagesrcLen = packagesrcLen + strlen("Prefs/Env-Archive/SYS/Packages") + 2;
 		TEXT packagesrc[newpackagesrcLen];
-		
-		sprintf(&packagesrc,"%s:",dest_Path);
-		AddPart(&packagesrc, "Prefs/Env-Archive/SYS/Packages", newpackagesrcLen);
-		
-		BPTR lock = Lock(&packagesrc, SHARED_LOCK);
-		
+
+		sprintf(packagesrc,"%s:",dest_Path);
+		AddPart(packagesrc, "Prefs/Env-Archive/SYS/Packages", newpackagesrcLen);
+
+		TEXT		fixupBUF[1024];
+		BPTR lock = Lock(packagesrc, SHARED_LOCK);
+
 		if(lock != 0)
 		{
 			UBYTE buffer[kExallBufSize];
@@ -1401,44 +1475,42 @@ createdirfaild:
 			struct ExAllControl  *eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
 			eac->eac_LastKey = 0;
 			int currFile = 0;
-			
+
 			BOOL  loop;
 			struct ExAllData *oldEad = ead;
-			
+
 			do
 			{
 				ead = oldEad;
 				loop = ExAll(lock, ead, kExallBufSize, ED_COMMENT, eac);
-				
+
 				if(!loop && IoErr() != ERROR_NO_MORE_ENTRIES) break;
-				
+
 				if(eac->eac_Entries != 0)
 				{
 					do
 					{
 						if(ead->ed_Type == ST_FILE || ead->ed_Type == ST_USERDIR)
 						{
-							ULONG srcLen = strlen(&packagesrc);
+							ULONG srcLen = strlen(packagesrc);
 							ULONG newSrcLen = srcLen + strlen(ead->ed_Name) + 2;
 							TEXT srcFile[newSrcLen];
-							
-							CopyMem(&packagesrc, &srcFile, srcLen + 1);
-							if(AddPart(&srcFile, ead->ed_Name, newSrcLen))
+
+							CopyMem(packagesrc, srcFile, srcLen + 1);
+							if(AddPart(srcFile, ead->ed_Name, newSrcLen))
 							{
 								set(data->actioncurrent, MUIA_Text_Contents, ead->ed_Name);
-								
+
 								DoMethod(data->installer,MUIM_Application_InputBuffered);
-								
+
 								switch(ead->ed_Type)
 								{
 								case ST_FILE:
 									currFile++;
 									ULONG	percent = ((100/(eac->eac_Entries))*currFile);
 									set(data->gauge2, MUIA_Gauge_Current, percent);
-									/* Read in the files content to retrieve the current path */
-	
-									/* replace files in extras with the work equivelant path */
-								
+
+									FixUpPackageFile(srcFile, &fixuppackage_dirs,fixupdir_count);
 									break;
 								}
 							}
@@ -1446,29 +1518,29 @@ createdirfaild:
 							{
 							D(bug("[INSTALLER] BUG"));// %s%s (%d - %d - %d) %s\n",message->dir,  ead->ed_Name, dirlen, strlen(ead->ed_Name), newlen, dir));
 							}
-						}               
+						}
 						ead = ead->ed_Next;
 					} while((ead != NULL)&&(data->inst_success == MUIV_Inst_InProgress));
 				}
 			} while((loop)&&(data->inst_success == MUIV_Inst_InProgress));
-			
+
 			FreeDosObject(DOS_EXALLCONTROL, eac);
 			UnLock(lock);
 		}
 		else
 		{
-			D(bug("[INSTALLER] Failed to lock package path: %s (Error: %d)\n", &packagesrc, IoErr()));
+			D(bug("[INSTALLER] Failed to lock package path: %s (Error: %d)\n", packagesrc, IoErr()));
 		}
 
 		set(data->gauge2, MUIA_Gauge_Current, 100);
 	}
-	
+
 /** STEP : UNDORECORD CLEANUP **/
 
 	D(bug("[INSTALLER] Reached end of Install Function - cleaning up undo logs @ %x...\n",&data->instc_undorecord));
 
 	struct InstallC_UndoRecord	*CurUndoNode=NULL;
-	
+
 	ForeachNode(&data->instc_undorecord, CurUndoNode)
 	{
 		D(bug("[INSTALLER] Removing undo record @ %x\n",CurUndoNode));
@@ -1485,24 +1557,24 @@ createdirfaild:
 			break;
 		default:
 			continue;
-		}			
+		}	
 		FreeMem(CurUndoNode, sizeof(struct InstallC_UndoRecord));
 	}
-		
+
 	return 0;
 }
 
 IPTR Install__MUIM_RefreshWindow
-(     
+(
     Class *CLASS, Object *self, Msg message 
 )
 {
 	struct Install_DATA* data = INST_DATA(CLASS, self);
 	ULONG   cur_width,cur_height;
-	
+
 	get( data->window, MUIA_Window_Width, &cur_width);
 	get( data->window, MUIA_Window_Height, &cur_height);
-	
+
 	if ((data->cur_width != cur_width)||(data->cur_height != cur_height))
 	{
 		DoMethod(data->contents,MUIM_Hide);
@@ -1510,7 +1582,7 @@ IPTR Install__MUIM_RefreshWindow
 		DoMethod(data->contents,MUIM_Show);
 	}
 	else MUI_Redraw(data->contents, MADF_DRAWOBJECT);
-	
+
 	return 0;
 }
 
@@ -1520,29 +1592,29 @@ int CreateDestDIR( Class *CLASS, Object *self, TEXT *dest_dir, TEXT * destinatio
 	ULONG   dstLen      = (strlen(destination_Path)+1);
 	ULONG   destDirLen  = dstLen + strlen(dest_dir) + 2;
 	TEXT    newDestDir[destDirLen];
-	
-	sprintf(&newDestDir,"%s:",destination_Path);
-	AddPart(&newDestDir, dest_dir, destDirLen);
-	
-	BPTR destDirLock = Lock(&newDestDir, ACCESS_READ);
+
+	sprintf(newDestDir,"%s:",destination_Path);
+	AddPart(newDestDir, dest_dir, destDirLen);
+
+	BPTR destDirLock = Lock(newDestDir, ACCESS_READ);
 	if (destDirLock == NULL)
 	{
-		destDirLock = CreateDir(&newDestDir);              /* create the newDestDir dir */
+		destDirLock = CreateDir(newDestDir);              /* create the newDestDir dir */
 		if(destDirLock == NULL) 
 		{
-			D(bug("[INSTALLER] CreateDestDIR: Failed to create '%s' dir!!\n",&newDestDir));
+			D(bug("[INSTALLER] CreateDestDIR: Failed to create '%s' dir!!\n",newDestDir));
 			data->inst_success = MUIV_Inst_Failed;
 			return FALSE;
 		}
-		D(bug("[INSTALLER] CreateDestDIR: Created dest dir '%s'\n",&newDestDir));
+		D(bug("[INSTALLER] CreateDestDIR: Created dest dir '%s'\n",newDestDir));
 	}
 	else 
 	{
-		D(bug("[INSTALLER] CreateDestDIR: Dir '%s' already exists ..\n",&newDestDir));
+		D(bug("[INSTALLER] CreateDestDIR: Dir '%s' already exists ..\n",newDestDir));
 	}
-	
+
 	UnLock(destDirLock);
-	
+
 	return TRUE;
 }
 
@@ -1566,21 +1638,21 @@ int CopyDirArray( Class *CLASS, Object *self, struct Install_DATA* data, TEXT *c
         numdirs = (numdirs - 1)/2;
 
 	D(bug("[INSTALLER.CDA] Copying %d Dirs...\n",numdirs));
-	
+
         while (copy_files[dir_count]!=NULL)
         {
 		ULONG newSrcLen = srcLen + strlen(copy_files[dir_count]) + 2;
 		ULONG newDstLen = dstLen + strlen(copy_files[dir_count+1]) + 2;
-		
+
 		TEXT srcDirs[newSrcLen + strlen(".info") ];
 		TEXT dstDirs[newDstLen + strlen(".info")];
-		
-		CopyMem(source_Path, &srcDirs, srcLen + 1);
-		sprintf(&dstDirs,"%s:",destination_Path);
-		AddPart(&srcDirs, copy_files[dir_count], newSrcLen);
-		AddPart(&dstDirs, copy_files[dir_count+1], newDstLen);
-		
-		set(data->actioncurrent, MUIA_Text_Contents, &srcDirs);
+
+		CopyMem(source_Path, srcDirs, srcLen + 1);
+		sprintf(dstDirs,"%s:",destination_Path);
+		AddPart(srcDirs, copy_files[dir_count], newSrcLen);
+		AddPart(dstDirs, copy_files[dir_count+1], newDstLen);
+
+		set(data->actioncurrent, MUIA_Text_Contents, srcDirs);
 
 retrycdadir:
 		if ((lock = Lock(srcDirs, ACCESS_READ)) != NULL)
@@ -1589,7 +1661,7 @@ retrycdadir:
 		}
 		else
 		{
-			retry = AskRetry( CLASS, self,"Couldnt find %s\nRetry?",&dstDirs,"Yes","Skip","Cancel");
+			retry = AskRetry( CLASS, self,"Couldnt find %s\nRetry?",dstDirs,"Yes","Skip","Cancel");
 			switch(retry)
 			{
 				case 0: /*retry */
@@ -1601,23 +1673,23 @@ retrycdadir:
 					DoMethod(self, MUIM_IC_QuitInstall);
 			}
 		}
-		
-		if ((noOfFiles = DoMethod(self, MUIM_IC_MakeDirs, &srcDirs, &dstDirs))==0)
+
+		if ((noOfFiles = DoMethod(self, MUIM_IC_MakeDirs, srcDirs, dstDirs))==0)
 		{
 			data->inst_success = MUIV_Inst_Failed;
-			D(bug("[INSTALLER.CDA] Failed to create %s...\n",&dstDirs));
+			D(bug("[INSTALLER.CDA] Failed to create %s...\n",dstDirs));
 		}
-		
+
 		/* OK Now copy the contents */
-		noOfFiles += DoMethod(self, MUIM_IC_CopyFiles, &srcDirs, &dstDirs, noOfFiles, 0);
-		
+		noOfFiles += DoMethod(self, MUIM_IC_CopyFiles, srcDirs, dstDirs, noOfFiles, 0);
+
 		/* check if folder has an icon */
 		CopyMem(".info", srcDirs + strlen(srcDirs) , strlen(".info") + 1);
 		CopyMem(".info", dstDirs + strlen(dstDirs) , strlen(".info") + 1);
 		if ((lock = Lock(srcDirs, ACCESS_READ)) != NULL)
 		{
 			UnLock(lock);
-			DoMethod(self, MUIM_IC_CopyFile, &srcDirs, &dstDirs);
+			DoMethod(self, MUIM_IC_CopyFile, srcDirs, dstDirs);
 		}
 skipcdadir:
 		set(data->gauge2, MUIA_Gauge_Current, ((100/(numdirs +1)) * (dir_count/2)));
@@ -1631,18 +1703,18 @@ exitcdadir:
 BOOL FormatPartition(CONST_STRPTR device, CONST_STRPTR name)
 {
 	BOOL success = FALSE;
-	
+
 	if (Inhibit(device, DOSTRUE))
 	{
 		success = Format(device, name, ID_FFS_DISK);
 		Inhibit(device, DOSFALSE);
 	}
-	
+
 	return success;
 }
 
 IPTR Install__MUIM_Format
-(     
+(
  Class *CLASS, Object *self, Msg message 
 )
 {
@@ -1652,44 +1724,44 @@ IPTR Install__MUIM_Format
 	BOOL                 success = FALSE;
 	IPTR 			option = FALSE;
 	BPTR                 lock;
-	
-	sprintf(&fmt_nametmp,"Formatting %s ...",dest_Path);
-	D(bug("[INSTALLER] %s\n",&fmt_nametmp));
-	set(data->label, MUIA_Text_Contents, &fmt_nametmp);
+
+	sprintf(fmt_nametmp,"Formatting %s ...",dest_Path);
+	D(bug("[INSTALLER] %s\n",fmt_nametmp));
+	set(data->label, MUIA_Text_Contents, fmt_nametmp);
 	set(data->gauge2, MUIA_Gauge_Current, 0);
     
 	/* Format Vol0 */
-	sprintf(&dev_nametmp,"%s:",dest_Path);
-	
+	sprintf(dev_nametmp,"%s:",dest_Path);
+
 #if	!defined(USE_FORMAT64)
 	D(bug("[INSTALLER] (info) Using FormatPartition\n"));
-	success = FormatPartition(&dev_nametmp, kDstPartName);
+	success = FormatPartition(dev_nametmp, kDstPartName);
 #else
 	char tmp[100];
-	sprintf(&tmp,"SYS:Extras/aminet/Format64 DRIVE=%s NAME=%s FFS QUICK",&dev_nametmp, kDstPartName);
-	D(bug("[INSTALLER] (info) Using '%s'\n",&tmp));
-	Execute(tmp, NULL, NULL);
+	sprintf(tmp,"SYS:Extras/aminet/Format64 DRIVE=%s NAME=%s FFS QUICK",dev_nametmp, kDstPartName);
+	D(bug("[INSTALLER] (info) Using '%s'\n",tmp));
+	success = (BOOL)Execute(tmp, NULL, NULL);
 #endif
 	if (success) set(data->gauge2, MUIA_Gauge_Current, 100);
-	
+
 	get(check_work,MUIA_Selected,&option);
 	if ((BOOL)option==TRUE)
 	{
 		/* Format Vol1, if it's not already formated */
-		sprintf(&fmt_nametmp,"Formatting %s ...",work_Path);
-		D(bug("[INSTALLER] %s\n",&fmt_nametmp));
-		set(data->label, MUIA_Text_Contents, &fmt_nametmp);
+		sprintf(fmt_nametmp,"Formatting %s ...",work_Path);
+		D(bug("[INSTALLER] %s\n",fmt_nametmp));
+		set(data->label, MUIA_Text_Contents, fmt_nametmp);
 
 		set(data->gauge2, MUIA_Gauge_Current, 0);
 
-		sprintf(&dev_nametmp,"%s:",work_Path);
+		sprintf(dev_nametmp,"%s:",work_Path);
 #if	!defined(USE_FORMAT64)
 		D(bug("[INSTALLER] (info) Using FormatPartition\n"));
-		FormatPartition(&dev_nametmp, kDstWorkName);
+		FormatPartition(dev_nametmp, kDstWorkName);
 #else
-		sprintf(&tmp,"SYS:Extras/aminet/Format64 DRIVE=%s NAME=%s FFS QUICK",&dev_nametmp,kDstWorkName);
-		D(bug("[INSTALLER] (info) Using '%s'\n",&tmp));
-		Execute(tmp, NULL, NULL);
+		sprintf(tmp,"SYS:Extras/aminet/Format64 DRIVE=%s NAME=%s FFS QUICK",dev_nametmp,kDstWorkName);
+		D(bug("[INSTALLER] (info) Using '%s'\n",tmp));
+		success = (BOOL)Execute(tmp, NULL, NULL);
 #endif
 		if (success) set(data->gauge2, MUIA_Gauge_Current, 100);
     
@@ -1852,19 +1924,19 @@ IPTR Install__MUIM_IC_CopyFiles
                     TEXT srcFile[newSrcLen];
                     TEXT dstFile[newDstLen];
                     
-                    CopyMem(message->srcDir, &srcFile, srcLen + 1);
-                    CopyMem(message->dstDir, &dstFile, dstLen + 1);
-                    if(AddPart(&srcFile, ead->ed_Name, newSrcLen) && AddPart(&dstFile, ead->ed_Name, newDstLen))
+                    CopyMem(message->srcDir, srcFile, srcLen + 1);
+                    CopyMem(message->dstDir, dstFile, dstLen + 1);
+                    if(AddPart(srcFile, ead->ed_Name, newSrcLen) && AddPart(dstFile, ead->ed_Name, newDstLen))
                     {
                         //D(bug("[INSTALLER] R: %s -> %s \n", srcFile, dstFile));
-                        set(data->actioncurrent, MUIA_Text_Contents, &srcFile);
+                        set(data->actioncurrent, MUIA_Text_Contents, srcFile);
 
                         DoMethod(data->installer,MUIM_Application_InputBuffered);
 
                         switch(ead->ed_Type)
                         {
                             case ST_FILE:
-                                DoMethod(self, MUIM_IC_CopyFile, &srcFile, &dstFile);
+                                DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
                                 
                                 message->currFile++;
                                 break;
@@ -1881,10 +1953,10 @@ IPTR Install__MUIM_IC_CopyFiles
 
 					IPTR		src_point = (((message->dstDir) + strlen(dest_Path))+1),
 							src_len = (strlen(message->dstDir) - strlen(dest_Path));
-		
+
 					sprintf(tmppath,"%s/%s", instalationtmp_path, src_point);
-					
-					D(bug("[INSTALLER.CFs] Creating UNDO dir %s \n", tmppath));					
+			
+					D(bug("[INSTALLER.CFs] Creating UNDO dir %s \n", tmppath));			
 					if ((ulock = Lock(tmppath, ACCESS_READ))!=NULL)
 					{
 						D(bug("[INSTALLER.CFs] Dir '%s' Exists - no nead to create\n",tmppath));
@@ -1901,10 +1973,10 @@ IPTR Install__MUIM_IC_CopyFiles
 							return 0;
 						}
 					}
-					
+			
 					FreeVec(tmppath);
 				}
-                                message->currFile = DoMethod(self, MUIM_IC_CopyFiles, &srcFile, &dstFile, message->noOfFiles, message->currFile);
+                                message->currFile = DoMethod(self, MUIM_IC_CopyFiles, srcFile, dstFile, message->noOfFiles, message->currFile);
                                 break;
                         }
                         ULONG percent = message->currFile == 0 ? 0 : (message->currFile*100)/message->noOfFiles;
@@ -1935,9 +2007,9 @@ IPTR Install__MUIM_IC_CopyFile
 	static TEXT 				buffer[kBufSize];
 	struct	InstallC_UndoRecord	*undorecord=NULL;
 	ULONG					retry=0;
-	
+
 	BOOL						copysuccess=FALSE;
-	
+
 	BPTR 					from=NULL,
 							to=NULL,
 							lock = NULL;
@@ -1946,7 +2018,7 @@ IPTR Install__MUIM_IC_CopyFile
 	{
 		/* File exists */
 		Close(to);
-		
+
 		switch (data->IO_Always_overwrite)
 		{
 		case IIO_Overwrite_Ask:
@@ -1974,19 +2046,19 @@ IPTR Install__MUIM_IC_CopyFile
 copy_backup:
 
 	/* if the user has requested - backup all replaced files */
-	
+
 	if(data->instc_undoenabled==TRUE)
 	{
 		if ((undorecord = AllocMem(sizeof(struct InstallC_UndoRecord), MEMF_CLEAR | MEMF_PUBLIC ))==NULL)DoMethod(self, MUIM_IC_QuitInstall);
 
 		char *tmppath=AllocVec((strlen(message->dstFile) - strlen(dest_Path))+1, MEMF_CLEAR | MEMF_PUBLIC );
-		
+
 		undorecord->undo_src = AllocVec((strlen(message->dstFile) - strlen(dest_Path))+strlen(instalationtmp_path) + 2, MEMF_CLEAR | MEMF_PUBLIC );
 		undorecord->undo_dst = AllocVec(strlen(message->dstFile)+1, MEMF_CLEAR | MEMF_PUBLIC );
 
 		IPTR		src_point = (((message->dstFile) + strlen(dest_Path))+1),
 				src_len = (strlen(message->dstFile) - strlen(dest_Path));
-		
+
 		CopyMem(src_point, tmppath, src_len);
 		sprintf(undorecord->undo_src,"%s/%s", instalationtmp_path, tmppath);
 
@@ -2001,7 +2073,7 @@ copy_backup:
 		tmppath=AllocVec(undosrcpath+1, MEMF_CLEAR | MEMF_PUBLIC );
 
 		CopyMem(undorecord->undo_src, tmppath, undosrcpath);
-		
+
 		if ((lock = Lock(tmppath, ACCESS_READ))!=NULL)
 		{
 			D(bug("[INSTALLER.CF] Dir '%s' Exists - no nead to create\n",tmppath));
@@ -2018,9 +2090,9 @@ copy_backup:
 				return 0;
 			}
 		}
-		
+
 		FreeVec(tmppath);
-		
+
 		if((from = Open(undorecord->undo_dst, MODE_OLDFILE)))
 		{
 			if((to = Open(undorecord->undo_src, MODE_NEWFILE)))
@@ -2030,11 +2102,11 @@ copy_backup:
 		    
 				do
 				{
-					if ((s = Read(from, &buffer, kBufSize)) == -1) return 0;
-					
+					if ((s = Read(from, buffer, kBufSize)) == -1) return 0;
+			
 					DoMethod(data->installer,MUIM_Application_InputBuffered);
-					
-					if (Write(to, &buffer, s) == -1) return 0;
+			
+					if (Write(to, buffer, s) == -1) return 0;
 
 				} while ((s == kBufSize && !err)&&(data->inst_success == MUIV_Inst_InProgress));
 				Close(to);
@@ -2044,7 +2116,7 @@ copy_backup:
 		to = NULL;
 		from = NULL;
 	}
-	
+
 	/* Main copy code */
 copy_retry:
 
@@ -2053,17 +2125,17 @@ copy_retry:
 		if((to = Open(message->dstFile, MODE_NEWFILE)))
 		{
 			LONG	s=0,
-					err = 0;
-            
+				err = 0;
+
 			do
 			{
-				if ((s = Read(from, &buffer, kBufSize)) == -1)
+				if ((s = Read(from, buffer, kBufSize)) == -1)
 				{
 					D(bug("[INSTALLER.CF] Failed to read: %s [ioerr=%d]\n", message->srcFile, IoErr()));
 
 					Close(to);
 					Close(from);
-					
+			
 					retry = AskRetry( CLASS, self, "Couldnt Open %s",message->srcFile,"Retry","Skip","Cancel");
 					switch(retry)
 					{
@@ -2075,19 +2147,19 @@ copy_retry:
 							DoMethod(self, MUIM_IC_QuitInstall);
 					}
 				}
-				
+		
 				DoMethod(data->installer,MUIM_Application_InputBuffered);
-				
-				if (Write(to, &buffer, s) == -1)
+		
+				if (Write(to, buffer, s) == -1)
 				{
 					D(bug("[INSTALLER.CF] Failed to write: %s  [%d bytes, ioerr=%d]\n", message->dstFile, s, IoErr()));
-					
+			
 					if (IoErr()==103) retry = AskRetry( CLASS, self, "Couldnt Write to %s\nDisk Full!",message->dstFile,"Retry","Skip","Cancel");
 					else retry = AskRetry( CLASS, self, "Couldnt Write to %s",message->dstFile,"Retry","Skip","Cancel");
 
 					Close(to);
 					Close(from);
-					
+			
 					switch(retry)
 					{
 						case 0: /* Retry */
@@ -2123,7 +2195,7 @@ copy_skip:
 				/* remove the backup file */
 
 				DeleteFile(undorecord->undo_src);
-				
+		
 				/* remove the undo record */
 				FreeVec(undorecord->undo_dst);
 				FreeVec(undorecord->undo_src);
@@ -2146,7 +2218,7 @@ copy_skip:
 }
 
 IPTR Install__MUIM_IC_UndoSteps
-(     
+(
     Class *CLASS, Object *self, Msg message 
 )
 {
@@ -2154,10 +2226,10 @@ IPTR Install__MUIM_IC_UndoSteps
 	struct InstallC_UndoRecord	*CurUndoNode=NULL;
 
 	D(bug("[INSTALLER.US] Performing UNDO steps..\n"));
-	
+
 	/* Disbale "UNDO" mode to prevent new records */
 	data->instc_undoenabled=FALSE;
-	
+
 	ForeachNode(&data->instc_undorecord, CurUndoNode)
 	{
 		D(bug("[INSTALLER.US] Removing undo record @ %x\n",CurUndoNode));
@@ -2169,7 +2241,7 @@ IPTR Install__MUIM_IC_UndoSteps
 			D(bug("[INSTALLER.US] Reverting file '%s'\n",CurUndoNode->undo_dst));
 
 			DoMethod(self, CurUndoNode->undo_method, CurUndoNode->undo_src, CurUndoNode->undo_dst);
-		
+
 			D(bug("[INSTALLER.US] Deleting undo file '%s'\n",CurUndoNode->undo_src));
 			DeleteFile(CurUndoNode->undo_src);
 
@@ -2178,12 +2250,12 @@ IPTR Install__MUIM_IC_UndoSteps
 			break;
 		default:
 			continue;
-		}			
+		}	
 		FreeMem(CurUndoNode, sizeof(struct InstallC_UndoRecord));
 	}
 
 	D(bug("[INSTALLER.US] UNDO complete..\n"));
-	
+
 	return 0;
 }
 
@@ -2195,7 +2267,7 @@ IPTR Install__MUIM_Reboot
 	struct Install_DATA* data = INST_DATA(CLASS, self);
 
 	IPTR                    option = FALSE;
-	
+
 	get(data->instc_options_main->opt_reboot,MUIA_Selected,&option);        // Make sure the user wants to reboot
 	if ((option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
@@ -2208,7 +2280,7 @@ IPTR Install__MUIM_Reboot
 		if (data->inst_success == MUIV_Inst_InProgress) data->inst_success = MUIV_Inst_Completed;
 		set(data->window,MUIA_Window_CloseRequest,TRUE);
 	}
-	
+
 	return TRUE; /* Keep the compiler happy... */
 }
 
@@ -2247,7 +2319,7 @@ BOOPSI_DISPATCHER(IPTR, Install_Dispatcher, CLASS, self, message)
 
         case OM_SET: 
 		return Install__OM_SET(CLASS, self, (struct opSet *) message);
-		
+
         case MUIM_FindDrives:
 		return Install__MUIM_FindDrives(CLASS, self, message);
 
@@ -2294,11 +2366,11 @@ BOOPSI_DISPATCHER(IPTR, Install_Dispatcher, CLASS, self, message)
 
         case MUIM_IC_UndoSteps:
 		return Install__MUIM_IC_UndoSteps(CLASS, self, message);
-		
+
         default:     
 		return DoSuperMethodA(CLASS, self, message);
 	}
-	
+
 	return 0;
 }
 BOOPSI_DISPATCHER_END
@@ -2336,7 +2408,7 @@ int main(int argc,char *argv[])
 	Object			*currentaction = NULL;
 
 	Object			*radio_part = NULL;
-	
+
 	Object			*gad_back    = SimpleButton("<< _Back..");
 	Object			*gad_proceed = SimpleButton(KMsgProceed);
 	Object			*gad_cancel  = SimpleButton("_Cancel");
@@ -2344,7 +2416,7 @@ int main(int argc,char *argv[])
 /**/
 	Object			*io_retrywnd = NULL;            /* IO retry objects */
 	Object			*io_retrymessage = NULL;
-	
+
 	Object			*gad_io_opt1    = SimpleButton("");
 	Object			*gad_io_opt2    = SimpleButton("");
 	Object			*gad_io_opt3    = SimpleButton("");
@@ -2383,19 +2455,19 @@ int main(int argc,char *argv[])
 	char					*source_path = NULL;
 	char 				*dest_path = NULL;
 	char 				*work_path = NULL;
-	
+
 	IPTR				pathend = 0;
 
 	check_copytowork = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
 	check_work = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
-	
+
 	install_opts = AllocMem( sizeof(struct Install_Options), MEMF_CLEAR | MEMF_PUBLIC );
 	grub_opts = AllocMem( sizeof(struct Grub_Options), MEMF_CLEAR | MEMF_PUBLIC );
 	source_path = AllocVec( 256, MEMF_CLEAR | MEMF_PUBLIC );
 
 	dest_path = AllocVec( 256, MEMF_CLEAR | MEMF_PUBLIC );
 	work_path = AllocVec( 256, MEMF_CLEAR | MEMF_PUBLIC );
-	
+
 	BPTR lock = NULL;
 
 	if (!(ExpansionBase = OpenLibrary("expansion.library", 0))) goto main_error;
@@ -2422,7 +2494,7 @@ int main(int argc,char *argv[])
 	dest_Path = dest_path;
 	sprintf(dest_Path,"" kDstPartVol);
 
-	work_Path =work_path;	
+	work_Path =work_path;
 	sprintf(work_Path,"" kDstWorkVol);
 /**/
 
@@ -2431,8 +2503,7 @@ int main(int argc,char *argv[])
 
 /**/
 
-	//LicenseMsg = NFloattextObject,
-	LicenseMsg = FloattextObject,
+	LicenseMsg = NFloattextObject,
 			MUIA_Background, MUII_TextBack,
 			TextFrame,
 		End;
@@ -2637,7 +2708,6 @@ int main(int argc,char *argv[])
 			End),
 		End),
 
-
 		SubWindow, (IPTR) (io_retrywnd = WindowObject,
 			MUIA_Window_Title, (IPTR) "IO Error has occured",
 			MUIA_Window_SizeGadget, TRUE,
@@ -2688,7 +2758,7 @@ int main(int argc,char *argv[])
 	install_opts->opt_bootloader = check_bootloader;
 
 	install_opts->opt_reboot = check_reboot;
-/**/	
+/**/
 	grub_opts->gopt_drive = grub_drive;
 	grub_opts->gopt_grub = grub_grub;
 	grub_opts->gopt_kernel = grub_kernel;
@@ -2725,7 +2795,9 @@ int main(int argc,char *argv[])
                 MUIA_OBJ_IO_ROpt1, (IPTR) gad_io_opt1,
                 MUIA_OBJ_IO_ROpt2, (IPTR) gad_io_opt2,
                 MUIA_OBJ_IO_ROpt3, (IPTR) gad_io_opt3,
-		
+
+		MUIA_IC_EnableUndo, TRUE,
+
 		MUIA_IC_License_File,"HELP:English/license",
 		MUIA_IC_License_Mandatory, TRUE,
 
@@ -2742,88 +2814,88 @@ if (0)
 	/* welcome page */
 	install_content1[0] = INSTV_TEXT;
 	install_content1[1] = (IPTR) KMsgWelcome;
-	
+
 	install_content1[2] = TAG_DONE;
-	
+
 	/* Options Page */
 	install_content2[0] = INSTV_TEXT;
 	install_content2[1] = (IPTR) KMsgInstallOptions;
-	
+
 	install_content2[0] = INSTV_SPACE;
 	install_content2[1] = TAG_IGNORE;
-	
+
 	install_content2[0] = INSTV_BOOL;
 	install_content2[1] = (IPTR) check_autopart;
-	
+
 	install_content2[2] = INSTV_BOOL;
 	install_content2[3] = (IPTR) check_locale;
-	
+
 	install_content2[4] = INSTV_BOOL;
 	install_content2[5] = (IPTR) check_core;
-	
+
 	install_content2[6] = INSTV_BOOL;
 	install_content2[7] = (IPTR) check_extras;
-	
+
 	install_content2[8] = INSTV_BOOL;
 	install_content2[9] = (IPTR) check_bootloader;
-	
+
 	install_content2[10] = TAG_DONE;
-	
+
 	/* Prepare Drives Page */
 	install_content3[0] = INSTV_TEXT;
 	install_content3[1] = (IPTR) KMsgPartitioning;
-	
+
 	install_content3[2] = INSTV_RETURN;
 	install_content3[3] = OPTION_PREPDRIVES;
-	
+
 	install_content3[4] = TAG_DONE;
-	
+
 	/* Wipe Drives */
 	install_content4[0] = INSTV_TEXT;
 	install_content4[1] = (IPTR) KMsgPartitioningWipe;
-	
+
 	install_content4[2] = INSTV_RETURN;
 	install_content4[3] = OPTION_FORMAT;
-	
+
 	install_content4[4] = TAG_DONE;
-	
+
 	/* */
 	install_content5[4] = TAG_DONE;
-	
+
 	/* ALL DONE !! */
 	install_content6[0] = INSTV_TEXT;
 	install_content6[1] = (IPTR) KMsgDone;
-	
+
 	install_content6[2] = TAG_DONE;
 	/* installer pages */
-	
+
 	install_pages[0] = INSTV_CURR;
 	install_pages[1] = (IPTR) install_content1;
-	
+
 	install_pages[0] = INSTV_TITLE;
 	install_pages[1] = (IPTR)"AROS Installer";
-	
+
 	install_pages[0] = INSTV_LOGO;
 	install_pages[1] = (IPTR)"3:"DEF_INSTALL_IMAGE;
-	
+
 	install_pages[0] = INSTV_PAGE;
 	install_pages[1] = (IPTR) install_content1;
-	
+
 	install_pages[2] = INSTV_PAGE;
 	install_pages[3] = (IPTR) install_content2;
-	
+
 	install_pages[4] = INSTV_PAGE;
 	install_pages[5] = (IPTR) install_content3;
-	
+
 	install_pages[6] = INSTV_PAGE;
 	install_pages[7] = (IPTR) install_content4;
-	
+
 	install_pages[8] = INSTV_PAGE;
 	install_pages[9] = (IPTR) install_content5;
-	
+
 	install_pages[10] = INSTV_PAGE;
 	install_pages[11] = (IPTR) install_content6;
-	
+
 	install_pages[12] = TAG_DONE;
 
 }
@@ -2846,19 +2918,19 @@ if (0)
 	}
 
 	D(bug("[INST-APP] Closing Window\n"));
-	
+
 	set(wnd,MUIA_Window_Open,FALSE);
-	
+
 	D(bug("[INST-APP] Disposing of Installer Object\n"));
-	
+
 	DisposeObject(installer);
-	
+
 	D(bug("[INST-APP] Removing Custom Class\n"));
-	
+
 	MUI_DeleteCustomClass(mcc);
-	
+
 	D(bug("[INST-APP] Removing App Object\n"));
-	
+
 	MUI_DisposeObject(app);
 main_error:
 	return 0;
