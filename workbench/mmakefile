@@ -7,6 +7,7 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-complete : \
 #MM	    workbench-hidds \
+#MM	    workbench-classes-complete \
 #MM	    workbench-devs \
 #MM	    workbench-devs-keymaps \
 #MM	    workbench-libs-complete \
