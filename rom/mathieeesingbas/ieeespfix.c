@@ -60,6 +60,7 @@ AROS_LIBFUNC_INIT
   LONG Shift;
 
   if ((y & IEEESPExponent_Mask) > 0x60000000 )
+  {
     if(y < 0) /* don`t hurt the SR! */
     {
       SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
@@ -70,6 +71,7 @@ AROS_LIBFUNC_INIT
       SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
       return 0x7fffffff;
     }
+  }
 
   if (0 == y || 0x80000000 == y) /* y=+-0; */
   {

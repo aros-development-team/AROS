@@ -102,7 +102,7 @@ char	*errormsgs[] = {
 
 struct Library *IFFParseBase;
 
-void main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     struct IFFHandle	*iff = NULL;
     long		error;
@@ -229,6 +229,7 @@ bye:
 		 * Close the stream itself.
 		 */
 		if (iff->iff_Stream)
+		{
 			if (cbio)
 				CloseClipboard ((struct ClipboardHandle *)
 						iff->iff_Stream);
@@ -237,6 +238,7 @@ bye:
     AROS NOTE: Added cast. See above for reasons.
 */
 				Close ((BPTR)iff->iff_Stream);
+		}
 
 		/* Free the IFF_File structure itself. */
 		FreeIFF (iff);

@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1998/01/23 11:49:00  hkiel
+    Made GCC-2.8.0 happy (Changed return type of main() to int, added braces
+    to avoid ambiguous ´else´)
+
     Revision 1.3  1997/09/16 23:00:46  bergers
     Added the missing AROS_LIBFUNC_INITs and EXITs
 
@@ -69,6 +73,7 @@ AROS_LIBFUNC_INIT
   BYTE Shift;
 
   if ((fnum & FFPExponent_Mask) > 0x60 )
+  {
     if(fnum < 0) /* don`t hurt the SR! */
     {
       SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
@@ -79,6 +84,7 @@ AROS_LIBFUNC_INIT
       SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
       return 0x7fffffff;    
     }
+  }
 
 
   Shift = (fnum & FFPExponent_Mask) - 0x40;

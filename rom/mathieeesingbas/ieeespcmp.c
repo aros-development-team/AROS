@@ -68,6 +68,7 @@ AROS_LIBFUNC_INIT
   }
 
   if (y < 0 && z < 0)
+  {
     if (-y > -z)
     {
       SetSR(0,  Zero_Bit | Negative_Bit | Overflow_Bit);
@@ -78,6 +79,7 @@ AROS_LIBFUNC_INIT
       SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
       return -1;
     }
+  }
 
   if ((LONG)y < (LONG)z)
   {

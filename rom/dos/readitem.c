@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1998/01/23 11:48:59  hkiel
+    Made GCC-2.8.0 happy (Changed return type of main() to int, added braces
+    to avoid ambiguous ´else´)
+
     Revision 1.6  1997/01/27 00:36:28  ldp
     Polish
 
@@ -100,7 +104,7 @@ if(input!=NULL)					\
 }
 
 /* Macro to push the character back */
-#define UNGET() if(input!=NULL) input->CS_CurChr--; else UnGetC(Input(),-1);
+#define UNGET() {if(input!=NULL) input->CS_CurChr--; else UnGetC(Input(),-1);}
 
     STRPTR b=buffer;
     LONG c;
