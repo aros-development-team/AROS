@@ -324,154 +324,79 @@ void intui_CloseWindow (struct Window * w,
     }
 }
 
-static void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2)
-{
-    if ((x2 >= x1) && (y2 >= y1))
-    {
-    	RectFill(rp, x1, y1, x2, y2);
-    }
-}
-
-void intui_RefreshWindowFrame(struct Window *w)
-{
-    /* Draw a frame around the window */
-    struct RastPort *rp = w->BorderRPort;
-    struct DrawInfo *dri;
-    struct Region *old_clipregion;
-    WORD  old_scroll_x, old_scroll_y;
-    ULONG ilock;
-    
-    EnterFunc(bug("intui_RefreshWindowFrame(w=%p)\n", w));
-    
-#warning this code should be moved inside intuition (it does not contain any hardware specific code)
-    if (!(w->Flags & WFLG_BORDERLESS))
-    {
-    	
-	dri = GetScreenDrawInfo(w->WScreen);
-	if (dri)
-	{
-	    LockLayerRom(rp->Layer);
-
-	    old_scroll_x = rp->Layer->Scroll_X;
-	    old_scroll_y = rp->Layer->Scroll_Y;
-	    
-	    rp->Layer->Scroll_X = 0;
-	    rp->Layer->Scroll_Y = 0;
-	    
-	    old_clipregion = InstallClipRegion(rp->Layer, NULL);
-	    
-	    SetAPen(rp, dri->dri_Pens[SHINEPEN]);
-	    if (w->BorderLeft > 0) CheckRectFill(rp, 0, 0, 0, w->Height - 1);
-	    if (w->BorderTop > 0)  CheckRectFill(rp, 0, 0, w->Width - 1, 0);
-	    if (w->BorderRight > 1) CheckRectFill(rp, w->Width - w->BorderRight,w->BorderTop,
-	    					      w->Width - w->BorderRight,w->Height - w->BorderBottom);
-	    if (w->BorderBottom > 1) CheckRectFill(rp,w->BorderLeft,w->Height - w->BorderBottom,
-	    					      w->Width - w->BorderRight,w->Height - w->BorderBottom);
-	    
-	    SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
-	    if (w->BorderRight > 0) CheckRectFill(rp, w->Width - 1, 1, w->Width - 1, w->Height - 1);
-	    if (w->BorderBottom > 0) CheckRectFill(rp, 1, w->Height - 1, w->Width - 1, w->Height - 1);
-	    if (w->BorderLeft > 1) CheckRectFill(rp, w->BorderLeft - 1, w->BorderTop - 1,
-	    					     w->BorderLeft - 1, w->Height - w->BorderBottom);
-	    if (w->BorderTop > 1) CheckRectFill(rp, w->BorderLeft - 1, w->BorderTop - 1,
-	    				       	    w->Width - w->BorderRight, w->BorderTop - 1);
-	    
-	   
-	    SetAPen(rp, dri->dri_Pens[(w->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
-	    if (w->BorderLeft > 2) CheckRectFill(rp, 1, 1, w->BorderLeft - 2,w->Height - 2);
-	    if (w->BorderTop > 2)  CheckRectFill(rp, 1, 1, w->Width - 2, w->BorderTop - 2);
-	    if (w->BorderRight > 2) CheckRectFill(rp, w->Width - w->BorderRight + 1, 1,
-	    					      w->Width - 2, w->Height - 2);
-	    if (w->BorderBottom > 2) CheckRectFill(rp, 1, w->Height - w->BorderBottom + 1,
-	    					       w->Width - 2, w->Height - 2);
-						  
-	    InstallClipRegion(rp->Layer,old_clipregion);
-	    
-	    rp->Layer->Scroll_X = old_scroll_x;
-	    rp->Layer->Scroll_Y = old_scroll_y;
-	    
-	    UnlockLayerRom(rp->Layer);
-	    
-    	    /* Refresh all the gadgets with GACT_???BORDER activation set */
-
-            /* The layer must not be locked when calling RefreshGList,
-	       otherwise a deadlock can happen:
-	       
-	       task a: ObtainGirPort: ObtainSem(GadgetLock)
-	       
-	       ** task switch **
-	       
-	       task b: LockLayer
-	               refreshglist -> ObtainGIRPort : ObtainSem(GadgetLock)
-		                                       must wait because locked by task a
-						       
-	       ** task switch **
-	       
-	       task a: ObtainGirPort: LockLayer
-	                              must wait because layer locked by task b
-				      
-	       --------------------------------------------------------------------
-	       = Deadlock: task a tries to lock layer which is locked by task b
-	                   task b will never unlock the layer because it tries to
-			   ObtainSem GadgetLock which is locked by task a.
-	    
-	    */
-	    
-	    ilock = LockIBase(0);
-	    int_refreshglist(w->FirstGadget, w, NULL, -1, REFRESHGAD_BORDER, 0, IntuitionBase);	    
-	    UnlockIBase(ilock);
-
-	    FreeScreenDrawInfo(w->WScreen, dri);
-	    
-	} /* if (dri) */
-	
-    } /* if (!(win->Flags & WFLG_BORDERLESS)) */
-    
-    ReturnVoid("intui_RefreshWindowFrame");
-}
 
 BOOL intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
     WORD width, WORD height)
 {
     BOOL success;
-
-#warning this code should be moved inside intuition (it does not contain any hardware specific code)
     
     if (0 != (window->Flags & WFLG_GIMMEZEROZERO))
     {
-      success = MoveSizeLayer(window->BorderRPort->Layer,
-    		              x - window->LeftEdge,
+      /*
+      ** Move outer window first
+      ** Refresh later
+      */
+      if (FALSE == MoveSizeLayer(window->BorderRPort->Layer,
+    		                 x - window->LeftEdge,
+    		                 y - window->TopEdge,
+    		                 width - window->Width,
+                                 height - window->Height ))
+        return FALSE;
+
+    }
+
+    /*
+    ** Move (inner) window.
+    */
+    if (TRUE == MoveSizeLayer(window->WLayer,
+    	                      x - window->LeftEdge,
     		              y - window->TopEdge,
-    		              width - window->Width,
-                              height - window->Height );
-      if (FALSE == success)
-        return FALSE;
-     
-#warning Why is this necessary ? There is another RWF() below !
-      RefreshWindowFrame(window);
-
-      window->GZZWidth  += (width - window->Width);
-      window->GZZHeight += (height - window->Height);                
-    }
-    success = MoveSizeLayer(window->WLayer,
-    	                    x - window->LeftEdge,
-    		            y - window->TopEdge,
-                            width - window->Width,
-                            height - window->Height );
-    if (FALSE == success)
+                              width - window->Width,
+                              height - window->Height ))
     {
-#warning FIXME: If this fails, then the MoveSizeLayer() above must be undone.
-        return FALSE;
+      success = TRUE;
+
+      /*
+      ** The window could be moved. 
+      */
+      window->LeftEdge= x;
+      window->TopEdge = y;
+      window->Width   = width;
+      window->Height  = height;
+
+      if (0 != (window->Flags & WFLG_GIMMEZEROZERO))
+      {
+        window->GZZWidth  += (width - window->Width);
+        window->GZZHeight += (height - window->Height);                
+      }
+
+      /*
+      ** Refresh the window frame here. This 
+      ** should also refresh it for GZZ windows.
+      */
+      RefreshWindowFrame(window);
+      
     }
-
-    window->LeftEdge= x;
-    window->TopEdge = y;
-    window->Width   = width;
-    window->Height  = height;
-
-    RefreshWindowFrame(window);
-
-    return TRUE;
+    else
+    {
+      success = FALSE;
+      
+      if (0 != (window->Flags & WFLG_GIMMEZEROZERO))
+      {
+        /*
+        ** The window could not be moved.
+        ** If it's a GZZ window then try to move the
+        ** outer layer back to its old position.
+        ** If this doesn't work then we're in really bad shape.
+        */
+        MoveSizeLayer(window->BorderRPort->Layer,
+      		      x + window->LeftEdge,
+    		      y + window->TopEdge,
+    		      width + window->Width,
+                      height + window->Height);
+      }
+    }
+    return success;
 }
 
 
@@ -538,54 +463,6 @@ LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
 
     return 0;
 } /* intui_RawKeyConvert */
-
-void intui_BeginRefresh (struct Window * win,
-	struct IntuitionBase * IntuitionBase)
-{
-#warning this code should be moved inside intuition (it does not contain any hardware specific code)
-  /* lock all necessary layers */
-  LockLayerRom(win->WLayer);
-  /* Find out whether it's a GimmeZeroZero window with an extra layer to lock */
-  if (0 != (win->Flags & WFLG_GIMMEZEROZERO))
-    LockLayerRom(win->BorderRPort->Layer);
-
-  /* I don't think I ever have to update the BorderRPort's layer */
-  if (FALSE == BeginUpdate(win->WLayer))
-  {
-    EndUpdate(win->WLayer, FALSE);
-kprintf("%s :BeginUpdate returned FALSE!->Aborting BeginUpdate()\n",__FUNCTION__);
-    return;
-  }
-  
-  /* let the user know that we're currently doing a refresh */
-  win->Flags |= WFLG_WINDOWREFRESH;
-  
-} /* intui_BeginRefresh */
-
-void intui_EndRefresh (struct Window * win, BOOL free,
-	struct IntuitionBase * IntuitionBase)
-{
-#warning this code should be moved inside intuition (it does not contain any hardware specific code)
-  
-  /* Check whether the BeginRefresh was aborted due to a FALSE=BeginUpdate()*/
-  if (0 != (win->Flags & WFLG_WINDOWREFRESH))
-    EndUpdate(win->WLayer, free);
-  
-  /* reset all bits indicating a necessary or ongoing refresh */
-  win->Flags &= ~WFLG_WINDOWREFRESH;
-  
-  /* I reset this one only if Complete is TRUE!?! */
-  if (TRUE == free)
-    win->WLayer->Flags &= ~LAYERREFRESH;
-
-  /* Unlock the layers. */
-  if (0 != (win->Flags & WFLG_GIMMEZEROZERO))
-    UnlockLayerRom(win->BorderRPort->Layer);
-  
-  UnlockLayerRom(win->WLayer);
- 
-} /* intui_EndRefresh */
-
 
 
 static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
@@ -828,33 +705,7 @@ static VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase
     }
 }
 
-void intui_ScrollWindowRaster(struct Window * win,
-                              WORD dx,
-                              WORD dy,
-                              WORD xmin,
-                              WORD ymin,
-                              WORD xmax,
-                              WORD ymax,
-                              struct IntuitionBase * IntuitionBase)
-{
-#warning this code should be moved inside intuition (it does not contain any hardware specific code)
-  ScrollRasterBF(win->RPort,
-                 dx,
-                 dy,
-                 xmin,
-                 ymin,
-                 xmax,
-                 ymax);
-  /* Has there been damage to the layer? */
-  if (0 != (win->RPort->Layer->Flags & LAYERREFRESH))
-  {
-    /* 
-       Send a refresh message to the window if it doesn't already
-       have one.
-    */
-    windowneedsrefresh(win, IntuitionBase);
-  } 
-}
+
 
 void windowneedsrefresh(struct Window * w, 
                         struct IntuitionBase * IntuitionBase )
