@@ -111,3 +111,4 @@ BOOPSI_DISPATCHER(IPTR, trashcanIconObserverDispatcher, cl, obj, msg)
 
     return retval;
 }
+BOOPSI_DISPATCHER_END

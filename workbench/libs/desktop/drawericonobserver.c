@@ -124,3 +124,4 @@ BOOPSI_DISPATCHER(IPTR, drawerIconObserverDispatcher, cl, obj, msg)
 
     return retval;
 }
+BOOPSI_DISPATCHER_END

@@ -344,3 +344,4 @@ BOOPSI_DISPATCHER(IPTR, iconObserverDispatcher, cl, obj, msg)
 
     return retval;
 }
+BOOPSI_DISPATCHER_END

@@ -138,3 +138,4 @@ BOOPSI_DISPATCHER(IPTR, internalIconOpsDispatcher, cl, obj, msg)
 
     return retval;
 }
+BOOPSI_DISPATCHER_END

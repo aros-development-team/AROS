@@ -106,11 +106,11 @@ AROS_UFH2(void, __putChr,
     AROS_UFHA(STRPTR *, p, A3)
 )
 {
-    AROS_LIBFUNC_INIT 
+    AROS_USERFUNC_INIT 
     
     *(*p)++ = chr;
     
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 VOID __sprintf(UBYTE * buffer, UBYTE * format, ...)

@@ -114,3 +114,4 @@ BOOPSI_DISPATCHER(IPTR, operationDispatcher, cl, obj, msg)
 
     return retval;
 }
+BOOPSI_DISPATCHER_END
