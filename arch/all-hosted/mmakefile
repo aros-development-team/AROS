@@ -2,6 +2,8 @@
 
 include $(TOP)/config/make.cfg
 
+CC := $(HOST_CC)
+
 # BEGIN_DESC{internaltarget}
 # \item{$(BINDIR)/aros} Create the AROS shell for systems which
 #       support emulation.
