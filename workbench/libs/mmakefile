@@ -6,7 +6,7 @@
 # A general catch-all target. You can use this if everything compiles on your
 # machine, and you want to save yourself some typing.
 #MM- workbench-libs-complete : \
-#MM	    workbench-libs-amigaguide \
+#MM     workbench-libs-amigaguide \
 #MM     workbench-libs-asl \
 #MM     workbench-libs-commodities \
 #MM     workbench-libs-camd \
@@ -25,10 +25,36 @@
 #MM     workbench-libs-partition \
 #MM     workbench-libs-reqtools \
 #MM     workbench-libs-rexxsupport \
-#MM	    workbench-libs-rexxsyslib \
+#MM     workbench-libs-rexxsyslib \
 #MM     workbench-libs-realtime \
 #MM     workbench-libs-nonvolatile \
 #MM     workbench-libs-nvdisk \
 #MM     workbench-libs-muimaster \
 #MM     workbench-libs-coolimages
 
+#MM- includes : \
+#MM     workbench-libs-amigaguide-includes \
+#MM     workbench-libs-asl-includes \
+#MM     workbench-libs-commodities-includes \
+#MM     workbench-libs-camd-includes \
+#MM     workbench-libs-datatypes-includes \
+#MM     workbench-libs-desktop-includes \
+#MM     workbench-libs-diskfont-includes \
+#MM     workbench-libs-gadtools-includes \
+#MM     workbench-libs-icon-includes \
+#MM     workbench-libs-iffparse-includes \
+#MM     workbench-libs-locale-includes \
+#MM     workbench-libs-lowlevel-includes \
+#MM     workbench-libs-mathieeesingtrans-includes \
+#MM     workbench-libs-mathtrans-includes \
+#MM     workbench-libs-mathieeedoubbas-includes \
+#MM     workbench-libs-mathieeedoubtrans-includes \
+#MM     workbench-libs-partition-includes \
+#MM     workbench-libs-reqtools-includes \
+#MM     workbench-libs-rexxsupport-includes \
+#MM     workbench-libs-rexxsyslib-includes \
+#MM     workbench-libs-realtime-includes \
+#MM     workbench-libs-nonvolatile-includes \
+#MM     workbench-libs-nvdisk-includes \
+#MM     workbench-libs-muimaster-includes \
+#MM     workbench-libs-coolimages-includes

@@ -19,3 +19,18 @@
 #MM	    kernel-layers-kobj \
 #MM	    kernel-workbench-kobj \
 #MM	    kernel-cgfx-kobj
+
+#MM- includes : \
+#MM      kernel-aros-includes \
+#MM      kernel-dos-includes \
+#MM      kernel-boot-includes \
+#MM      kernel-graphics-includes \
+#MM      kernel-utility-includes \
+#MM      kernel-intuition-includes \
+#MM      kernel-keymap-includes \
+#MM      kernel-mathffp-includes \
+#MM      kernel-mathieeesingbas-includes \
+#MM      kernel-expansion-includes \
+#MM      kernel-layers-includes \
+#MM      kernel-workbench-includes \
+#MM      kernel-cgfx-includes
