@@ -67,7 +67,7 @@ Object *cycle_new(Class *cl, Class *rootcl, struct opSet *msg)
 
     data = INST_DATA(cl, o);
     data->active = GetTagData(AROSCYCLE_Active, 0, msg->ops_AttrList);
-    data->labels = (STRPTR *)GetTagData(AROSCYCLE_Labels, NULL, msg->ops_AttrList);
+    data->labels = (STRPTR *)GetTagData(AROSCYCLE_Labels, (IPTR) NULL, msg->ops_AttrList);
     data->numlabels = 0;
 
     labels = data->labels;
@@ -80,7 +80,7 @@ Object *cycle_new(Class *cl, Class *rootcl, struct opSet *msg)
         }
     }
 
-    tattr = (struct TextAttr *)GetTagData(GA_TextAttr, NULL, msg->ops_AttrList);
+    tattr = (struct TextAttr *)GetTagData(GA_TextAttr, (IPTR) NULL, msg->ops_AttrList);
     if (tattr) data->font = OpenFont(tattr);
     
     imgtags[0].ti_Data = (IPTR)EG(o)->Width;
@@ -140,11 +140,11 @@ IPTR cycle_get(Class *cl, Object *o, struct opGet *msg)
 
 IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
 {
-    struct CycleData 	*data = INST_DATA(cl, o);
-    struct TagItem  	*tag, *taglist = msg->ops_AttrList;
-    STRPTR  	    	*mylabels;
-    BOOL    	    	rerender = FALSE;
-    IPTR    	    	result;
+    struct CycleData 	 *data = INST_DATA(cl, o);
+    const struct TagItem *tag, *taglist = msg->ops_AttrList;
+    STRPTR  	    	 *mylabels;
+    BOOL    	    	  rerender = FALSE;
+    IPTR    	    	  result;
 
     result = DoSuperMethodA(cl, o, (Msg)msg);
 
