@@ -23,6 +23,10 @@
 #include <libraries/gadtools.h>
 #include <proto/alib.h>
 
+#define SDEBUG 1
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include "aroscheckbox_intern.h"
 
 
@@ -154,6 +158,8 @@ Object *check_new(Class *cl, Class *rootcl, struct opSet *msg)
 	{TAG_DONE, 0L}
     };
 
+    EnterFunc(bug("CheckBox::New()\n"));
+
     obj = (Object *)DoSuperMethodA(cl, (Object *)rootcl, (Msg)msg);
     if (!obj)
 	return NULL;
@@ -178,7 +184,8 @@ Object *check_new(Class *cl, Class *rootcl, struct opSet *msg)
 	CoerceMethod(cl, obj, OM_DISPOSE);
 	return NULL;
     }
-    return obj;
+
+    ReturnPtr("CheckBox::New", Object *, obj);
 }
 
 
@@ -263,6 +270,8 @@ AROS_UFH3(static IPTR, dispatch_checkclass,
     struct CheckData *data;
     struct RastPort *rport;
 
+    EnterFunc(bug("CheckBox::_dispatcher()\n"));
+
     switch (msg->MethodID) {
     case OM_NEW:
 	retval = (IPTR) check_new(cl, (Class *)obj, (struct opSet *) msg);
@@ -332,7 +341,7 @@ AROS_UFH3(static IPTR, dispatch_checkclass,
 	break;
     }
 
-    return retval;
+    ReturnPtr("CheckBox::_dispatcher()", IPTR, retval);
 }
 
 /*************************** Classes *****************************/
