@@ -77,36 +77,37 @@
 */
 
 /* User macro */
-#define EnterFunc(x) {   			\
+#define EnterFunc(x) do {   			\
 	struct Task *sd_task = FindTask(NULL);	\
    	int sd_spaceswritten;					\
    	for (sd_spaceswritten = 0; sd_spaceswritten < (ULONG)sd_task->tc_UserData; sd_spaceswritten ++) kprintf(" "); \
-   	((ULONG)sd_task->tc_UserData) += SDEBUG_INDENT;		} \
-	x
+   	((ULONG)sd_task->tc_UserData) += SDEBUG_INDENT; } while(0); \
+	x 
+	
 
 /* User macro. Add into start of your main() routine */
 #   define SDInit()	\
-	{ struct Task *sd_task = FindTask(NULL); sd_task->tc_UserData = NULL; }
+	do { FindTask(NULL)->tc_UserData = NULL; } while(0)
 
 
 /* Internal */
-#   define Indent {   		\
+#   define Indent do {   		\
 	struct Task *sd_task = FindTask(NULL);	\
    	int sd_spaceswritten;					\
-   	for (sd_spaceswritten = 0; sd_spaceswritten < (ULONG)sd_task->tc_UserData; sd_spaceswritten ++) kprintf(" "); }
+   	for (sd_spaceswritten = 0; sd_spaceswritten < (ULONG)sd_task->tc_UserData; sd_spaceswritten ++) kprintf(" "); } while(0)
 
 /* Internal */
-#define ExitFunc { 				\
+#define ExitFunc do { 				\
 	struct Task *sd_task = FindTask(NULL);	\
    	int sd_spaceswritten;					\
    	((ULONG)sd_task->tc_UserData) -= SDEBUG_INDENT;		\
-   	for (sd_spaceswritten = 0; sd_spaceswritten < (ULONG)sd_task->tc_UserData; sd_spaceswritten ++) kprintf(" "); }
+   	for (sd_spaceswritten = 0; sd_spaceswritten < (ULONG)sd_task->tc_UserData; sd_spaceswritten ++) kprintf(" "); } while(0)
 
 #else
 
 #   define SDInit()
 #   define Indent
-#   define EnterFunc(x) D(x)
+#   define EnterFunc(x...) D(x)
 #   define ExitFunc
 
 #endif /* SDEBUG */
@@ -283,12 +284,12 @@
 
 
 #if DEBUG
-#   define D(x)     Indent x
+#   define D(x...)     Indent x
 
 #   if DEBUG > 1
-#	define DB2(x)    x
+#	define DB2(x...)    x
 #   else
-#	define DB2(x)    /* eps */
+#	define DB2(x...)    /* eps */
 #   endif
 
     /* return-macros. NOTE: I make a copy of the value in __aros_val, because
@@ -317,8 +318,8 @@
 				    __aros_val ? "TRUE" : "FALSE"); \
 				    return __aros_val; }
 #else /* !DEBUG */
-#   define D(x)     /* eps */
-#   define DB2(x)     /* eps */
+#   define D(x...)     /* eps */
+#   define DB2(x...)     /* eps */
 
 #   define ReturnVoid(name)                 return
 #   define ReturnPtr(name,type,val)         return val
