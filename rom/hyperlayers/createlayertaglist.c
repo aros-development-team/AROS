@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
+
 #include <aros/libcall.h>
 #include <graphics/clip.h>
 #include <graphics/layers.h>
@@ -87,16 +85,11 @@
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    layers_lib.fd and clib/layers_protos.h
-
 *****************************************************************************/
 {
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-  int i = 0;
   struct BitMap * superbitmap = NULL;
   struct Hook * hook = NULL, *shapehook = NULL;
   int priority = UPFRONTPRIORITY;
