@@ -72,9 +72,9 @@ BEGIN {
 
     while ((getline < file) > 0)
     {
-        if ($1=="##begin" && $2 == "clib")
+        if ($1=="##begin" && $2 == "inline")
             doprint = 1;
-        else if ($1=="##end" && $2 == "clib")
+        else if ($1=="##end" && $2 == "inline")
             doprint = 0;
         else if (doprint)
         {
