@@ -25,7 +25,7 @@ int main(int argc, char **av)
 	if(new)
 	{
 	    struct Locale *old = NULL;
-	    old = PrefsUpdate(new);
+	    old = LocalePrefsUpdate(new);
 	    FPuts(Output(), "Locale set\n");
 	    CloseLocale(old);
 	    CloseLocale(new);
