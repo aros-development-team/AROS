@@ -33,7 +33,8 @@ APTR AllocSegment
     	*mem++ = segmentsize + sizeof(ULONG) + sizeof(BPTR);
         if (prevsegment) prevsegment[-1] = MKBADDR(mem);
         membptr = (BPTR *) mem;
-        *membptr = NULL;
+        *membptr++ = NULL;
+    	mem = (ULONG *)membptr;
     }
     
     return mem;
