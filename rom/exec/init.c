@@ -209,6 +209,8 @@ int main(int argc,char *argv[])
 	SysBase = (struct ExecBase *)
 		((UBYTE *)allocmem (neg + sizeof (struct ExecBase)) + neg);
 
+printf ("SysBase = %p\n", SysBase);
+
 	for (i=1; i<=NUMVECT; i++)
 	{
 	    __AROS_INITVEC (SysBase, i);
