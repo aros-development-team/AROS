@@ -341,27 +341,27 @@ int	sigaddset(sigset_t *, int);
 int	sigdelset(sigset_t *, int);
 int	sigemptyset(sigset_t *);
 int	sigfillset(sigset_t *);
-int	sighold(int);
-int	sigignore(int);
+/* NOTIMPL int	sighold(int); */
+/* NOTIMPL int	sigignore(int); */
 int	sigismember(const sigset_t *, int);
 int	sigpending(sigset_t *);
 int	sigprocmask(int, const sigset_t *, sigset_t *);
-int	sigrelse(int);
-int	sigset(__sighandler_t *, int);
+/* NOTIMPL int	sigrelse(int); */
+/* NOTIMPL int	sigset(__sighandler_t *, int); */
 int	sigsuspend(const sigset_t *);
-int	sigwait(const sigset_t *, int *);
+/* NOTIMPL int	sigwait(const sigset_t *, int *); */
 
 #if !defined(_POSIX_SOURCE)
-int	killpg(pid_t, int);
-int	sigaltstack(const stack_t *, stack_t *);
-int	siginterrupt(int);
-int	sigpause(int);
+/* NOTIMPL int	killpg(pid_t, int); */
+/* NOTIMPL int	sigaltstack(const stack_t *, stack_t *); */
+/* NOTIMPL int	siginterrupt(int); */
+/* NOTIMPL int	sigpause(int); */
 #endif /* !_POSIX_SOURCE */
 
 #if defined(_P1003_1B_VISIBLE)
-int	sigqueue(pid_t, int, const union sigval);
-int	sigtimedwait(const sigset_t *, siginfo_t *, const struct timespec *);
-int	sigwaitinfo(const sigset_t *, siginfo_t *);
+/* NOTIMPL int	sigqueue(pid_t, int, const union sigval); */
+/* NOTIMPL int	sigtimedwait(const sigset_t *, siginfo_t *, const struct timespec *); */
+/* NOTIMPL int	sigwaitinfo(const sigset_t *, siginfo_t *); */
 #endif /* _P1003_1B */
 
 #endif /* !_ANSI_SOURCE */
