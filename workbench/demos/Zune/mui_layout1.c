@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include <mui.h>
+#undef SysBase
 
 struct Library       *MUIMasterBase;
 

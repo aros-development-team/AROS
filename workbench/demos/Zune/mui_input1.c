@@ -11,25 +11,9 @@
 #include <stdio.h>
 
 #include <mui.h> /* Should be somewhen libraries/mui.h */
+#undef SysBase
 
 struct Library       *MUIMasterBase;
-
-#ifdef _AROS
-#warning FIXME: what is the solution for this?
-Object *MUI_NewObject(char const *className, ULONG tag1, ...)
-{
-    AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = MUI_NewObjectA(className, AROS_SLOWSTACKTAGS_ARG(tag1));
-    AROS_SLOWSTACKTAGS_POST
-}
-
-Object *MUI_MakeObject(long type, ULONG tag1, ...)
-{
-    AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = MUI_MakeObjectA(type, AROS_SLOWSTACKTAGS_ARG(tag1));
-    AROS_SLOWSTACKTAGS_POST
-}
-#endif
 
 #define _U(s) (s)
 
