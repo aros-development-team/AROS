@@ -30,6 +30,7 @@ typedef unsigned long STACKULONG;
 #endif
 #endif
 
+
 /* With the following define a typical dispatcher will
  * looks like this:
  *   BOOPSI_DISPATCHER(IPTR,IconWindow_Dispatcher,cl,obj,msg)
@@ -326,6 +327,7 @@ typedef enum {
     PST_MUI = 'm',
     PST_CMAP = 'p',
     PST_RGB = 'r',
+    PST_SYS = 's',
 } PenSpecType;
 
 /* MUI_PenSpec is a an ascii spec like this:
@@ -333,14 +335,19 @@ typedef enum {
    "m5"     	    	    	(mui pen #5)
    "p123"   	    	    	(cmap entry #123)
    "rFFFFFFFF,00000000,00000000 (rgb #FF0000)
+   "s3"                         (system pen #3)
    
    It needs to be like this, because for example nlist has
    default penspecs in it's source encoded like above which
    it directly passes to MUI_ObtainBestPen */
    
-struct MUI_PenSpec {
+struct MUI_PenSpec
+{
     UBYTE ps_buf[32];
 };
+
+
+struct MUI_FrameSpec;
 
 struct MUI_RGBcolor
 {
@@ -348,10 +355,6 @@ struct MUI_RGBcolor
     ULONG green;
     ULONG blue;
 };
-
-#ifndef _MUI_FRAME_H
-#include "frame.h"
-#endif
 
 #ifndef _MUI_CLASSES_NOTIFY_H
 #include "classes/notify.h"
@@ -469,6 +472,10 @@ struct MUI_RGBcolor
 #include "classes/image.h"
 #endif
 
+#ifndef _MUI_CLASSES_IMAGEDISPLAY_H
+#include "classes/imagedisplay.h"
+#endif
+
 #ifndef _MUI_CLASSES_POPASL_H
 #include "classes/popasl.h"
 #endif
@@ -538,7 +545,7 @@ struct MUI_RGBcolor
 #endif
 
 /**************************************************************************
- Zune/MUI Image and Backgriund definition
+ Zune/MUI Image and Background definition
 **************************************************************************/
 enum {
     /* configured by the user within the prefs programm */
