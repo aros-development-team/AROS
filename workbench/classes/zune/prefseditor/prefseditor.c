@@ -253,6 +253,8 @@ IPTR PrefsEditor__MUIM_PrefsEditor_ExportToDirectory
         );
         
         CurrentDir(oldcd);
+	
+	UnLock(lock);
     }
     
     return success;
@@ -278,6 +280,9 @@ IPTR PrefsEditor__MUIM_PrefsEditor_ImportFromDirectory
         );
         
         CurrentDir(oldcd);
+
+	UnLock(lock);
+
     }
     
     return success;
