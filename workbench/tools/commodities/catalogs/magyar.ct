@@ -1,0 +1,164 @@
+## version $VER: Commodities.catalog 1.0 (22.05.2003)
+## language hungarian
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Nem lehet a %s V%ld -t megnyitni!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Nem lehet a megnyitott ablakot bezárni!\n
+; Can't lock public screen!\n
+;
+MSG_CANT_GET_VI
+Nem lehet a VisualInfo-t felvenni!\n
+; Can't get VisualInfo!\n
+;
+MSG_CANT_CREATE_GADGET
+Nem lehet létrehozni a gadget-eket!\n
+; Can't create gadgets!\n
+;
+MSG_CANT_CREATE_MENUS
+Nem lehet létrehozni a menüket!\n
+; Can't create menus!\n
+;
+MSG_CANT_LAYOUT_MENUS
+Nem lehet a menüket elrendezni!\n
+; Can't layout menus!\n
+;
+MSG_CANT_CREATE_WIN
+Nem lehet az ablakot létrehozni!\n
+; Can't create window!\n
+;
+MSG_CANT_ALLOCATE_MEM
+Nem lehet memóriát kiosztani az alkalmazáshoz!\n
+; Can't allocate application memory!\n
+;
+MSG_CANT_CREATE_MSGPORT
+Nem lehet a MessagePort-ot létrehozni!\n
+; Can't create message port!\n
+;
+MSG_CANT_CREATE_BROKER
+Nem lehet a CxBroker objektet létrehozni!\n
+; Can't create CxBroker object!\n
+;
+MSG_CANT_CREATE_CUSTOM
+Nem lehet a CxCustom objektet létrehozni!\n
+; Can't create CxCustom object!\n
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Kilép
+; Q\0Quit
+;
+MSG_EXCHANGE_CXNAME
+Exchange
+; Exchange
+;
+MSG_EXCHANGE_CXTITLE
+Commoditie csere
+; Commodities Exchange
+;
+MSG_EXCHANGE_CXDESCR
+A irnyító commodities-ek beállítása
+; Controls system commodities
+;
+MSG_EXCHANGE_WINTITLE
+Csere
+; Exchange
+;
+MSG_EXCHANGE_LISTVIEW
+Elérhetô Commodities-ek
+; Available commodities
+;
+MSG_EXCHANGE_INFO
+Információ
+; Information
+;
+MSG_EXCHANGE_GAD_SHOW
+Mutat
+; Show
+;
+MSG_EXCHANGE_GAD_HIDE
+Rejt
+; Hide
+;
+MSG_EXCHANGE_GAD_REMOVE
+Eltávolít
+; Remove
+;
+MSG_EXCHANGE_CYCLE_ACTIVE
+Aktív
+; Active
+;
+MSG_EXCHANGE_CYCLE_INACTIVE
+Inaktív
+; Inactive
+;
+MSG_BLANKER_CXNAME
+Blanker
+; Blanker
+;
+MSG_BLANKER_CXTITLE
+Képernyôpihentetô
+; System Screen Blanker
+;
+MSG_BLANKER_CXDESCR
+Elsötéti a monitort ha nincs használva a rendszer
+; Blanks screen when system inactive
+;
+MSG_CLICK2FNT_CXNAME
+ClickToFront
+; ClickToFront
+;
+MSG_CLICK2FNT_CXTITLE
+ClickToFront
+; Click To Front Utility
+;
+MSG_CLICK2FNT_CXDESCR
+Ablak elôrehozás klikkeléssel
+; Click windows to front
+;
+MSG_OPAQUE_CXNAME
+Opaque
+; Opaque
+;
+MSG_OPAQUE_CXTITLE
+Opaque Ablakok
+; Opaque windows
+;
+MSG_OPAQUE_CXDESCR
+Ablakok valós idejû mozgatása
+; Realtime moving of windows
+;
+MSG_AUTOPOINT_CXNAME
+AutoPoint
+; AutoPoint
+;
+MSG_AUTOPOINT_CXTITLE
+Autofókusz
+; Automatic window activator
+;
+MSG_AUTOPOINT_CXDESCR
+Aktíválja az egérpointer alatti ablakot
+; Activates the window under the mouse
+;
+MSG_STARTMENU_CXNAME
+StartMenu
+; StartMenu
+;
+MSG_STARTMENU_CXTITLE
+Rendszer Program Indító
+; System Program Starter
+;
+MSG_STARTMENU_CXDESCR
+Program indítás menübõl
+; Program launch commodity

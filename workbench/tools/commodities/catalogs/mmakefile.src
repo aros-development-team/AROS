@@ -2,7 +2,7 @@ include $(TOP)/config/make.cfg
 
 DESTDIR := $(BINDIR)/Locale/Catalogs
 
-CATALOGS 	:= svenska deutsch norsk français
+CATALOGS 	:= svenska deutsch norsk français magyar
 CATDESC 	:= commodities
 CATSUBDIR	:= Sys/
 CATNAME 	:= Commodities
