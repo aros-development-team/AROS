@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function getenv()
-    Lang: english
+    Desc: ANSI C function setenv()
 */
 
 #include <proto/dos.h>
@@ -22,14 +21,15 @@
 	const char *value,
 	int         overwrite)
 /*  FUNCTION
-		Change or add an environment variable.
+        Change or add an environment variable.
 
     INPUTS
-		name      - Name of the environment variable,
-		value     - Value wich the variable must be set or changed to.
-		overwrite - If non-zero then, if a variable with the name name already
-	                exists, its value is changet to value, otherwise is not
-		            changed
+        name      - Name of the environment variable,
+        value     - Value wich the variable must be set or changed to.
+        overwrite - If non-zero then, if a variable with the name name already
+                    exists, its value is changet to value, otherwise is not
+                    changed
+                    
     RESULT
     	Returns zero on success, or -1 if there was insufficient
     	space in the environment.
