@@ -135,6 +135,8 @@ static OOP_Object *onbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	    bm->state = (struct CardState *)AllocPooled(sd->memPool, 
 					sizeof(struct CardState));
 	    
+	    bzero(bm->framebuffer, 640*480*2);
+	    
 	    if (bm->state)
 	    {
 		LOCK_HW
