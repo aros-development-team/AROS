@@ -6,6 +6,11 @@
     Lang: English.
 */
 
+/****************************************************************************************/
+
+#ifndef NO_FONT_CACHE
+
+/****************************************************************************************/
 
 #include <string.h>
 
@@ -29,106 +34,9 @@ if not FNF_REUSETAGS: NumTags, FontTags.
 
 */
 
-/* A local define */
-
 /****************************************************************************************/
 
 #define NUMENTRIES_OFFSET sizeof(CACHE_IDSTR) + sizeof(struct  DateStamp)
-
-/****************************************************************************************/
-
-/************/
-/* ReadTags */
-/************/
-
-/****************************************************************************************/
-
-struct TagItem *ReadTags(BPTR fh, ULONG numtags, struct DiskfontBase_intern *DiskfontBase)
-{
-    struct TagItem  *taglist,
-                    *tagptr;
-
-    D(bug("ReadTags(fh=%p, numtags=%d)\n", fh, numtags));
-	
-    /* Allocate memory for the tags */
-    
-    
-    taglist = AllocVec(
-    	numtags * sizeof(struct TagItem),
-        MEMF_ANY);
-       
-    if (!taglist)
-        goto rt_failure;
-
-    tagptr = taglist;
-    
-    /* Read the taglist into the buffer */
-                
-    for (; numtags --; )
-    {
-    	ULONG val;
-	
-        if (!ReadLong( &DFB(DiskfontBase)->dsh, &val, (void *)fh))
-            goto readfail;
-	tagptr->ti_Tag = val;
-                                   
-        if (!ReadLong( &DFB(DiskfontBase)->dsh, &val, (void *)fh ))
-            goto readfail;
-    	tagptr->ti_Data = val;          
-	           
-        tagptr ++;
-    }
-
-    ReturnPtr ("ReadTags", struct TagItem*, taglist);
-
-readfail:   
-    FreeVec(taglist);
-rt_failure:
-    ReturnPtr("ReadTags", struct TagItem*, FALSE);
-    
-}
-
-/****************************************************************************************/
-
-/**************/
-/* WriteTags  */
-/**************/
-
-/****************************************************************************************/
-
-BOOL WriteTags(BPTR fh, struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
-{
-
-    struct TagItem *tag;
-
-    D(bug("WriteTags(fh=%p, taglists=%p)\n", fh, taglist));
-
-#ifdef AROSAMIGA
-    for (; (tag = NextTagItem((struct TagItem **)&taglist)); )
-#else
-    for (; (tag = NextTagItem((const struct TagItem **)&taglist)); )
-#endif
-    {
-        if (!WriteLong( &DFB(DiskfontBase)->dsh, tag->ti_Tag, (void *)fh ))
-            goto wt_failure;
-            
-        if (!WriteLong( &DFB(DiskfontBase)->dsh, tag->ti_Data, (void *)fh))
-            goto wt_failure;
-    }
-    WriteLong(&DFB(DiskfontBase)->dsh, TAG_DONE, (void *)fh);
-    WriteLong(&DFB(DiskfontBase)->dsh, 0, (void *)fh);
-    
-    ReturnBool ("WriteTags", TRUE);
-    
-wt_failure:
-    ReturnBool ("WriteTags", FALSE);
-}
-
-/****************************************************************************************/
-
-/************/
-/* WriteFIN */
-/************/
 
 /****************************************************************************************/
 
@@ -166,12 +74,6 @@ wf_failure:
 
 /****************************************************************************************/
 
-/***********/
-/* ReadFIN */
-/***********/
-
-/****************************************************************************************/
-
 STATIC BOOL ReadFIN(BPTR fh, struct FontInfoNode *finode, struct DiskfontBase_intern *DiskfontBase)
 {
     /* Reads all the fields into the FontInfoNode. */
@@ -205,12 +107,6 @@ rf_failure:
 
 /****************************************************************************************/
 
-/**************/
-/* ReadDate   */
-/**************/
-
-/****************************************************************************************/
-
 BOOL ReadDate(BPTR fh, struct DateStamp *ds, struct DiskfontBase_intern *DiskfontBase)
 {
     D(bug("ReadDate(fh=%p, datestamp=%p)\n", fh, ds));
@@ -232,12 +128,6 @@ rd_failure:
 
 /****************************************************************************************/
 
-/**************/
-/* WriteDate  */
-/**************/
-
-/****************************************************************************************/
-
 BOOL WriteDate(BPTR fh, struct DateStamp *ds, struct DiskfontBase_intern *DiskfontBase)
 {
     D(bug("WriteDate(fh=%p, datestamp=%p)\n", fh, ds));
@@ -256,12 +146,6 @@ BOOL WriteDate(BPTR fh, struct DateStamp *ds, struct DiskfontBase_intern *Diskfo
 wd_failure:
     ReturnBool ("WriteDate", FALSE);
 }
-
-/****************************************************************************************/
-
-/**************/
-/* ReadCache  */
-/**************/
 
 /****************************************************************************************/
 
@@ -363,12 +247,6 @@ rc_failure:
         
     ReturnBool ("ReadCache", FALSE);
 }
-
-/****************************************************************************************/
-
-/****************/
-/* WriteCache   */
-/****************/
 
 /****************************************************************************************/
 
@@ -475,16 +353,6 @@ wc_failure:
 
 /****************************************************************************************/
 
-/******************/
-/* OKToReadCache  */
-/******************/
-
-/* Determine whether or not the cache is outdated, and whether or not
-  the cache file even exists
-*/
-
-/****************************************************************************************/
-
 /* The array of hooks is in diskfont_init.c */
 extern struct AFHookDescr hdescr[];
 
@@ -552,5 +420,9 @@ BOOL OKToReadCache(struct DiskfontBase_intern *DiskfontBase)
     
     ReturnBool ("OKToReadCache", retval && cacheok);
 }
+
+/****************************************************************************************/
+
+#endif
 
 /****************************************************************************************/

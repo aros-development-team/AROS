@@ -78,17 +78,19 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,DiskfontBase)
 
-
     LONG retval = 0;  
-    struct MinList 		filist;
+    struct MinList 	filist;
     struct CopyState	cs;
+#ifndef NO_FONT_CACHE
     BOOL  rebuild_cache = FALSE;
-    
+#endif    
  	D(bug("AvailFonts(buffer=%p, bufbytes=%d,flags=%d)\n", buffer, bufBytes, flags));
   
     /* Initialize the list */
   
     NEWLIST( &filist );
+
+#ifndef NO_FONT_CACHE
     
     /* Shall we read fonts from disk ? If so, read from cache */
 
@@ -111,7 +113,7 @@
                 /* Everything went successfull. No nead to scan for disk fonts
                   anymore
                 */
-                flags ^= AFF_DISK;
+                flags &= ~AFF_DISK;
         }
         else
             /*Set a flag to tell that cache must be rebuilt */
@@ -119,6 +121,7 @@
         
             
     }
+#endif
     
     /* Scan for all available fontinfos. If the cache nees to be rebuilt,
     then also scan for tags */
@@ -127,7 +130,11 @@
         !ScanFontInfo
         (
         	/* If the cache is going to be rebuilt we should scan for tags too */
+    	#ifndef NO_FONT_CACHE
             (rebuild_cache ? (flags | AFF_TAGGED) : flags),
+	#else
+	    flags,
+	#endif
             &filist,
             DFB(DiskfontBase)
         )
@@ -138,9 +145,11 @@
     }
     else
     {
+    #ifndef NO_FONT_CACHE
         /* If necessary, write the cache */
         if (rebuild_cache)
             WriteCache( &filist, DFB(DiskfontBase) );
+    #endif
     
         /* Copy the fontdescriptions into the font buffer */
         if 

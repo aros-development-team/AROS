@@ -232,8 +232,6 @@ VOID FreeFontDescr(struct FontDescrHeader *, struct DiskfontBase_intern *);
 
 /* af_fontcache_io.c */
 
-struct TagItem *ReadTags  (BPTR, ULONG, struct DiskfontBase_intern *);
-BOOL  WriteTags(BPTR, struct TagItem *, struct DiskfontBase_intern *);
 BOOL ReadCache(ULONG, struct MinList *, struct DiskfontBase_intern *);
 BOOL WriteCache(struct MinList *, struct DiskfontBase_intern *);
 BOOL OKToReadCache(struct DiskfontBase_intern *);
@@ -269,6 +267,8 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *, struct TTextAttr *, st
 #define MAKE_REAL_SEGMENT(x) (MKBADDR(((IPTR)(x)) - sizeof(BPTR)))
 
 APTR AllocSegment(APTR, ULONG, ULONG, struct DiskfontBase_intern *);
+struct TagItem *ReadTags(BPTR, ULONG, struct DiskfontBase_intern *);
+BOOL WriteTags(BPTR, struct TagItem *, struct DiskfontBase_intern *);
 
 
 /********************/
