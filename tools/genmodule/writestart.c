@@ -63,6 +63,7 @@ void writestart(void)
 	    fprintf(out,
 		    "         %s *, %s, %u, %s)\n"
 		    "{\n"
+		    "    AROS_LIBFUNC_INIT\n\n"
 		    "    return %s(",
 		    libbasetypeextern, libbase, funclistit->lvo, basename, funclistit->name);
 	    for (arglistit = funclistit->arguments;
@@ -73,7 +74,10 @@ void writestart(void)
 		    fprintf(out, ", ");
 		fprintf(out, "%s", arglistit->name);
 	    }
-	    fprintf(out, ");\n}\n\n");
+	    fprintf(out,
+		    ");\n\n"
+		    "AROS_LIBFUNC_EXIT\n"
+		    "}\n\n");
 	    break;
 	    
 	case REGISTERMACRO:
