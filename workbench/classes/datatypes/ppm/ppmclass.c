@@ -298,7 +298,7 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
 
  FreeVec(RGBBuffer);
 
- SetDTAttrs((Object *) RetVal, NULL, NULL, DTA_ObjName,      Title,
+ SetDTAttrs((Object *) RetVal, NULL, NULL, DTA_ObjName,      (IPTR) Title,
 					   DTA_NominalHoriz, Width,
 					   DTA_NominalVert,  Height,
 					   TAG_DONE);
@@ -485,6 +485,96 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
 /***********************************************************/
 #endif /* else PICDTV43_SUPPORT */
 } /* PPM_New() */
+
+/**************************************************************************************************/
+
+#if PICDTV43_SUPPORT
+static BOOL PPM_Save(struct IClass *cl, Object *o, struct dtWrite *dtw )
+{
+    BPTR		    filehandle;
+    unsigned int            width, height, numplanes, y;
+    UBYTE		    *linebuf;
+    struct BitMapHeader     *bmhd;
+    long                    *colorregs;
+
+    D(bug("ppm.datatype/PPM_Save()\n"));
+
+    /* A NULL file handle is a NOP */
+    if( !dtw->dtw_FileHandle )
+    {
+	D(bug("ppm.datatype/PPM_Save() --- empty Filehandle - just testing\n"));
+	return TRUE;
+    }
+    filehandle = dtw->dtw_FileHandle;
+
+    /* Get BitMapHeader and color palette */
+    if( GetDTAttrs( o,  PDTA_BitMapHeader, (IPTR) &bmhd,
+			PDTA_CRegs,        (IPTR) &colorregs,
+			TAG_DONE ) != 2UL ||
+	!bmhd || !colorregs )
+    {
+	D(bug("ppm.datatype/PPM_Save() --- missing attributes\n"));
+	SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+	return FALSE;
+    }
+
+    width = bmhd->bmh_Width;
+    height = bmhd->bmh_Height;
+    numplanes = bmhd->bmh_Depth;
+    if( numplanes != 24 )
+    {
+	D(bug("ppm.datatype/PPM_Save() --- color depth %d, can save only depths of 24\n", numplanes));
+	SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+	return FALSE;
+    }
+    D(bug("ppm.datatype/PPM_Save() --- Picture size %d x %d (x %d bit)\n", width, height, numplanes));
+
+    /* Write header to file */
+    if( FPrintf( filehandle, "P6\n#Created by AROS ppm.datatype aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n%ld %ld\n255\n",
+	(long)width, (long)height ) == -1 )
+    {
+	D(bug("ppm.datatype/PPM_Save() --- writing header failed\n"));
+	return FALSE;
+    }
+
+    /* Now read the picture data line by line and write it to a chunky buffer */
+    if( !(linebuf = AllocVec(width*3, MEMF_ANY)) )
+    {
+	SetIoErr(ERROR_NO_FREE_STORE);
+	return FALSE;
+    }
+    D(bug("ppm.datatype/PPM_Save() --- copying picture with READPIXELARRAY\n"));
+    for (y=0; y<height; y++)
+    {
+	if(!DoSuperMethod(cl, o,
+			PDTM_READPIXELARRAY,	// Method_ID
+			(IPTR)linebuf,		// PixelData
+			PBPAFMT_RGB,		// PixelFormat
+			width,			// PixelArrayMod (number of bytes per row)
+			0,			// Left edge
+			y,			// Top edge
+			width,			// Width
+			1))			// Height
+	{
+	    D(bug("ppm.datatype/PPM_Save() --- READPIXELARRAY line %d failed !\n", y));
+	    FreeVec(linebuf);
+	    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+	    return FALSE;
+	}
+	if( FWrite( filehandle, linebuf, width*3, 1 ) != 1 )
+	{
+	    D(bug("ppm.datatype/PPM_Save() --- writing picture data line %d failed !\n", y));
+	    FreeVec(linebuf);
+	    return FALSE;
+	}
+    }
+
+    D(bug("ppm.datatype/PPM_Save() --- Normal Exit\n"));
+    FreeVec(linebuf);
+    SetIoErr(0);
+    return TRUE;
+}
+#endif /* PICDTV43_SUPPORT */
 
 /**************************************************************************************************/
 
@@ -923,13 +1013,14 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 #endif
 
     IPTR retval;
+    struct dtWrite *dtw;
 
-#ifdef MYDEBUG
-    register int i;
+#if 0
+    int i;
     int Known;
 
     Known=FALSE;
-#endif /* MYDEBUG */
+#endif
 
     putreg(REG_A4, (long) cl->cl_Dispatcher.h_SubEntry);        /* Small Data */
 
@@ -944,6 +1035,21 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 	    break;
 	}
 
+	case DTM_WRITE:
+	    D(bug("ppm.datatype/DT_Dispatcher: Method DTM_WRITE\n"));
+	    dtw = (struct dtWrite *)msg;
+	    if( (dtw -> dtw_Mode) == DTWM_RAW )
+	    {
+		/* Local data format requested */
+		retval = PPM_Save(cl, o, dtw );
+	    }
+	    else
+	    {
+		/* Pass msg to superclass (which writes an IFF ILBM picture)... */
+		retval = DoSuperMethodA( cl, o, msg );
+	    }
+	    break;
+    
 #if DEBUGMETHODS
 	case OM_UPDATE:
 	case OM_SET:
