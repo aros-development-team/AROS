@@ -1,0 +1,86 @@
+AFD-COPYRIGHT - AROS' copyright message
+
+BUGS - Known bugs of AROS
+
+README - A readme with a short introduction about AROS
+
+amiga - This is the directory where you can (and should) put things which
+	are copyrighted by someone and thus now part of the archive; right
+	now this means only the amiga header files which you get along with
+	your C-Compiler (eg. DICE, SAS/C, StormC++, Maxon C++) or from the
+	Amiga Developer CD 1.1 (recommended since it's the most simple and
+	inexpensive way to get them). The CD is available at your local
+	dealer or by mail order. Just put the includes into a subdir
+	\filename{include/} below this directory and AROS will find them
+	there.
+
+apps - This directory contains the source for applications for AROS.
+	Applications are programs and packages which are not in the basic
+	installation which is in \shell{workbench/}.
+
+arosshell.c - The main code for the shell which allows you to execute AROS
+	commands as you are used to it on your beloved Amiga. Also a very
+	small demo of how it works and also probably the smallest demo
+	that does something useful.
+
+bin - This directory contains all generated files under the name of
+	your OS (eg. \filename{AROS/bin/linux/}). This directory is called
+	\shell{$(ARCHDIR)}. Below this are two more directories:
+	\shell{$(BINDIR)} where the files should be put which the end user
+	should see and \shell{$(GENDIR)} where you can create a directory
+	to put all files one part of AROS needs (eg. \filename{libs/} or
+	\filename{os/}). The directory \shell{$(OSGENDIR)} is below
+	\shell{$(GENDIR)} and all \filename{*.o} files in this directory
+	are collected to the \filename{AmigaOS.lib}.
+
+config - This directory contains the dirty stuff. Code which makes AROS
+	live (mostly hacked up assembler code which you don't want to see).
+	Anything is allowed inside this directory in order to make AROS
+	work on as many hardwares as possible.
+
+configure - This is a small script which examines your system and
+	creates a file named \filename{AROS/config/host.cfg} which is used by
+	the makefiles.
+
+crypt.c - This is a small program which allows you to create a password if
+	you want to use the CVS server (prefered). See the section about
+	\lref{CVS}{CVS} for how it works.
+
+dist \shell{make dist} will put an archive with all files for
+	developers and users in this directory. Make sure the version in
+	make.cfg is set to the correct value because it will be used to
+	determine the name of the archive.
+
+docs - The source and the formatted docs (currently only in HTML
+	format).
+
+makefile - This is the magic file which holds the whole thing together.
+	It has the following rules:
+
+	\begin{description}
+	\item{clean} Delete all generated files.
+
+	\item{all} This is the default rule: Check (almost) all dependencies
+		and generate (almost) all files.
+
+	\item{includes} Generate/update some AROS include files, mostly
+		files in \filename{AROS/include/clib/}.
+
+	\item{dist} Generate \filename{.tar.gz} and \filename{.lha}
+		archives. They are put into \filename{AROS/dist/}. Make
+		sure you have set the version in \filename{AROS/config/make.cfg}
+		beforehand.
+
+	\end{description}
+
+rom - Things which are internal parts of the OS.
+
+scripts - Scripts which are used to generate code.
+
+test - Testcode, which is more complex.
+
+tpl.c - Template file for AROS system library functions. Each function
+	gets it's own file.
+
+workbench - The disk-based part of AROS.
+
