@@ -1169,13 +1169,13 @@ BD_DEPS$(BDID)      += $(BD_EXTRADEPS$(BDID))
 	    $(BD_EXTRAFILES$(BDID)) \
 	    $(BD_EXTRAOBJS$(BDID))
 
-$(BD_REFFILE$(BDID)) : $(BD_SRCS$(BDID)) $(CXREF)
+$(BD_REFFILE$(BDID)) : $(BD_SRCS$(BDID)) $(CXREF) $(BD_OBJDIR$(BDID))
 	@echo "Generating function reference file for module $(BD_MODNAME$(BDID))"
-	@$(CXREF) -raw -CPP "gcc $(strip $(BD_CFLAGS$(BDID))) -E -C -dD" $(subst $(CXREF),,$^) >$@
+	@$(CXREF) -raw -CPP "gcc $(strip $(BD_CFLAGS$(BDID))) -E -C -dD" $(BD_SRCS$(BDID)) >$@
 
 $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.c $(BD_OBJDIR$(BDID))/libdefs.h $(subst .o,.c,$(BD_ENDOBJ$(BDID))) \
 $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) $(BD_EXTRAFILES$(BDID)) : \
-$(BD_CONFFILE$(BDID)) $(GENMODULE) $(BD_REFFILE$(BDID))
+$(BD_CONFFILE$(BDID)) $(GENMODULE) $(BD_REFFILE$(BDID)) $(BD_OBJDIR$(BDID))
 	@echo "Generating functable and includes for module $(BD_MODNAME$(BDID))"
 	@$(GENMODULE) $(BD_MODNAME$(BDID)) $(BD_MODTYPE$(BDID)) $(BD_CONFFILE$(BDID)) $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(BD_REFFILE$(BDID))
 
@@ -1193,6 +1193,9 @@ $(LIBDIR)/lib%(linklibname).a : $(BD_EXTRAOBJS$(BDID))
 $(BD_EXTRAOBJS$(BDID)) : $(addprefix $(AROS_INCLUDES)/, $(BD_GENINCS$(BDID)))
 $(BD_EXTRADEPS$(BDID)) : $(addprefix $(AROS_INCLUDES)/, $(BD_GENINCS$(BDID)))
 endif
+
+$(BD_OBJDIR$(BDID)) :
+	%mkdir_q dir=$@
 
 %include_deps deps=$(BD_DEPS$(BDID))
 %end
