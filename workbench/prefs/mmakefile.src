@@ -1,0 +1,23 @@
+# $Id$
+
+CURDIR = workbench/prefs
+
+include $(TOP)/config/make.cfg
+
+PREFSDIR = $(BINDIR)/Prefs
+
+#MM workbench-prefs : setup copyfiles
+workbench-prefs:
+	@$(NOP)
+
+#MM
+setup :
+	%mkdirs_q $(PREFSDIR) $(PREFSDIR)/Env-Archive $(PREFSDIR)/Env-Archive/Sys
+
+#MM
+copyfiles : setup
+	@$(CP) $(TOP)/$(CURDIR)/env-archive/sys/* $(PREFSDIR)/Env-Archive/Sys/
+
+#MM
+clean ::
+	$(RM) $(PREFSDIR)
