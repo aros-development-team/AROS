@@ -110,7 +110,7 @@ static FILE 	     	    *file, *outfile, *infile;
 static long 	     	    filesize, bodysize, bodysize_packed;
 static long 	     	    filepos;
 static struct ILBMImage     img1, img2;
-static BOOL 	    	    have_bmhd, have_cmap, have_body;
+static BOOL 	    	    have_bmhd, have_cmap, have_body, is_png;
 
 static char 	    	    *image1option;
 static char 	    	    *image2option;
@@ -530,7 +530,7 @@ static void skipbytes(ULONG howmany)
 /****************************************************************************************/
 
 static void openimage(struct ILBMImage *img)
-{
+{    
     file = fopen(filename, "rb");
     if (!file) cleanup("Can't open file!", 1);
     
@@ -549,24 +549,33 @@ static void openimage(struct ILBMImage *img)
     if (fread(filebuffer, 1, filesize, file) != filesize)
     	cleanup("Error reading file!", 1);
     
-    fclose(file); file = NULL;
+    fclose(file); file = NULL;    
 }
 
 /****************************************************************************************/
 
 static void checkimage(struct ILBMImage *img)
 {
+    static UBYTE pngsig[8] = {137, 80, 78, 71, 13, 10, 26, 10};
+
     ULONG id;
     ULONG size;
     
-    id = getlong();
-    if (id != ID_FORM) cleanup("File is not an IFF file!", 1);
-    
-    size = getlong();
-    if (size != filesize - 8) cleanup("File is IFF, but has bad size in IFF header!", 1);
-    
-    id = getlong();
-    if (id != ID_ILBM) cleanup("File is IFF, but not of type ILBM!", 1);
+    if (memcmp(filebuffer, pngsig, 8) == 0)
+    {
+    	is_png = 1;
+    }
+    else
+    {   
+	id = getlong();
+	if (id != ID_FORM) cleanup("File is not an IFF file!", 1);
+
+	size = getlong();
+	if (size != filesize - 8) cleanup("File is IFF, but has bad size in IFF header!", 1);
+
+	id = getlong();
+	if (id != ID_ILBM) cleanup("File is IFF, but not of type ILBM!", 1);
+    }
 }
 
 /****************************************************************************************/
@@ -1013,9 +1022,11 @@ static void loadimage(char *name, struct ILBMImage *img)
     
     openimage(img);
     checkimage(img);
-    scanimage(img);
-    convertbody(img);
-    
+    if (!is_png)
+    {
+    	scanimage(img);
+    	convertbody(img);
+    }    
 }
 
 /****************************************************************************************/
@@ -1279,6 +1290,19 @@ static void writelong(LONG l)
     if (fwrite(f, 1, 4, outfile) != 4)
     {
     	cleanup("Error writing string long value!", 1);
+    }
+    
+}
+
+/****************************************************************************************/
+
+static void writenormalstring(char *s)
+{
+    int len = strlen(s) + 1;
+
+    if (fwrite(s, 1, len, outfile) != len)
+    {
+    	cleanup("Error writing string!", 1);
     }
     
 }
@@ -1658,10 +1682,225 @@ static void writeicon(void)
 
 /****************************************************************************************/
 
+/* Table of CRCs of all 8-bit messages. */
+unsigned long crc_table[256];
+   
+/* Flag: has the table been computed? Initially false. */
+int crc_table_computed = 0;
+
+/* Make the table for a fast CRC. */
+void make_crc_table(void)
+{
+    unsigned long c;
+    int n, k;
+
+    for (n = 0; n < 256; n++)
+    {
+	c = (unsigned long) n;
+	for (k = 0; k < 8; k++)
+	{
+	    if (c & 1)
+        	c = 0xedb88320L ^ (c >> 1);
+	    else
+        	c = c >> 1;
+	}
+	crc_table[n] = c;
+    }
+    crc_table_computed = 1;
+}
+
+/* Update a running CRC with the bytes buf[0..len-1]--the CRC
+   should be initialized to all 1's, and the transmitted value
+   is the 1's complement of the final running CRC (see the
+   crc() routine below)). */
+
+unsigned long update_crc(unsigned long crc, unsigned char *buf,
+                         int len)
+{
+      unsigned long c = crc;
+      int n;
+
+      if (!crc_table_computed)
+	  make_crc_table();
+	  
+      for (n = 0; n < len; n++)
+      {
+	  c = crc_table[(c ^ buf[n]) & 0xff] ^ (c >> 8);
+      }
+      return c;
+}
+
+/* Return the CRC of the bytes buf[0..len-1]. */
+unsigned long crc(unsigned char *buf, int len)
+{
+  return update_crc(0xffffffffL, buf, len) ^ 0xffffffffL;
+}
+
+/****************************************************************************************/
+
+static void writepngiconattr(ULONG id, ULONG val, ULONG *chunksize, ULONG *crc)
+{
+    UBYTE buf[8];
+    
+    buf[0] = id >> 24;
+    buf[1] = id >> 16;
+    buf[2] = id >> 8;
+    buf[3] = id;
+    buf[4] = val >> 24;
+    buf[5] = val >> 16;
+    buf[6] = val >> 8;
+    buf[7] = val;
+    
+    writelong(id);
+    writelong(val);
+    *chunksize += 8;
+    *crc = update_crc(*crc, buf, 8);    
+}
+
+/****************************************************************************************/
+
+static void writepngiconstrattr(ULONG id, char *val, ULONG *chunksize, ULONG *crc)
+{
+    UBYTE buf[4];
+    int len = strlen(val) + 1;
+    
+    buf[0] = id >> 24;
+    buf[1] = id >> 16;
+    buf[2] = id >> 8;
+    buf[3] = id;
+    
+    writelong(id);
+    *crc = update_crc(*crc, buf, 4);    
+    
+    
+    writenormalstring(val);    
+    *crc = update_crc(*crc, val, len);    
+
+    *chunksize += 4 + len;
+}
+
+
+/****************************************************************************************/
+
+static void writepngiconchunk(void)
+{
+    ULONG crc = 0xffffffff;
+    ULONG chunksize = 0;
+    ULONG sizeseek = ftell(outfile);
+    UBYTE iconid[] = {'i', 'c', 'O', 'n'};
+    
+    writelong(0x12345678);
+    writelong(MAKE_ID('i', 'c', 'O', 'n'));
+
+    crc = update_crc(crc, iconid, 4);
+        
+    if (iconleftoption != 0x80000000)
+    {
+    	writepngiconattr(0x80001001, iconleftoption, &chunksize, &crc);
+    }
+    
+    if (icontopoption != 0x80000000)
+    {
+    	writepngiconattr(0x80001002, icontopoption, &chunksize, &crc);
+    }
+    
+    if (drawerdataoption)
+    {
+    	ULONG flags = 0;
+		
+    	writepngiconattr(0x80001003, drawerleftoption, &chunksize, &crc);
+    	writepngiconattr(0x80001004, drawertopoption, &chunksize, &crc);
+    	writepngiconattr(0x80001005, drawerwidthoption, &chunksize, &crc);
+    	writepngiconattr(0x80001006, drawerheightoption, &chunksize, &crc);
+	
+	if (drawershowoption == 2) flags |= 1;
+	
+	if (drawershowasoption < 2)
+	{
+	    flags |= 2;
+	}
+	else
+	{
+	    flags |= drawershowasoption - 2;
+	}
+    	writepngiconattr(0x80001007, flags, &chunksize, &crc);	
+    }
+    
+    writepngiconattr(0x80001009, stackoption, &chunksize, &crc);
+    
+    if (defaulttooloption)
+    {
+    	writepngiconstrattr(0x8000100a, defaulttooloption, &chunksize, &crc);
+    }    
+    
+    if (tooltypesoption)
+    {
+    	char **tt;
+	
+	for(tt = tooltypesoption; *tt; tt++)
+	{
+	    writepngiconstrattr(0x8000100b, *tt, &chunksize, &crc);
+	}
+    }
+    
+    writelong(crc ^ 0xffffffff);
+    fseek(outfile, sizeseek, SEEK_SET);
+    writelong(chunksize);
+    fseek(outfile, 0, SEEK_END);
+    
+}
+
+/****************************************************************************************/
+
+static void writepngicon(void)
+{
+    UBYTE *filepos;
+    BOOL   done = 0;
+    
+    outfile = fopen(outfilename, "wb");
+    if (!outfile) cleanup("Can't open output file for writing!", 1);
+
+    if (fwrite(filebuffer, 1, 8, outfile) != 8) 
+    {
+    	cleanup("Error writing PNG signature!", 1);
+    }
+    
+    filepos = filebuffer + 8;
+    
+    while(!done)
+    {
+    	ULONG chunksize = (filepos[0] << 24) | (filepos[1] << 16) |
+	    	    	  (filepos[2] << 8) | filepos[3];
+    	ULONG chunktype = (filepos[4] << 24) | (filepos[5] << 16) |
+	    	    	  (filepos[6] << 8) | filepos[7];
+	
+	chunksize += 12;
+	
+	if (chunktype == MAKE_ID('I', 'E', 'N', 'D'))
+	{
+	    writepngiconchunk();
+	    done = 1;
+	}
+	
+	if (chunktype != MAKE_ID('i', 'c', 'O', 'n'))
+	{
+	    if (fwrite(filepos, 1, chunksize, outfile) != chunksize)
+	    {
+	    	cleanup("Error writing PNG icon file!", 1);
+	    }
+	}
+	
+	filepos += chunksize;
+    }
+      
+}
+
+/****************************************************************************************/
+
 static void remapicon(void)
 {
     remapplanar(&img1, &std4colpal);
-    if (image2option) remapplanar(&img2, &std4colpal);
+    if (image2option) remapplanar(&img2, &std4colpal);       
 }
 
 /****************************************************************************************/
@@ -1671,9 +1910,16 @@ int main(int argc, char **argv)
     getarguments(argc, argv);
     parseiconsource();
     loadimage(image1option, &img1);
-    if (image2option) loadimage(image2option, &img2);
-    remapicon();
-    writeicon();
+    if (!is_png)
+    {
+    	if (image2option) loadimage(image2option, &img2);
+    	remapicon();
+    	writeicon();
+    }
+    else
+    {
+    	writepngicon();
+    }
     
     cleanup(0, 0);
 }
