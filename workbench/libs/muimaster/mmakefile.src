@@ -19,8 +19,14 @@ CLASSES   := application \
 	
 CLASSFILES:= $(foreach f, $(CLASSES), classes/$(f))
      
-FILES     := muimaster_init support support textengine \
-    	     frame prefs imspec $(CLASSFILES)
+FILES     := muimaster_init \
+    	     support \
+	     textengine \
+    	     frame \
+	     prefs \
+	     imspec \
+	     dragndrop \
+	     $(CLASSFILES)
     	    
 FUNCTIONS := \
 	mui_addclipping \
