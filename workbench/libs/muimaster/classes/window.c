@@ -119,8 +119,9 @@ struct MUI_WindowData
 #define MUIWF_ACTIVE          (1<<2) /* window currently active */
 #define MUIWF_CLOSEREQUESTED  (1<<3) /* when user hits close gadget */
 #define MUIWF_RESIZING        (1<<4) /* window currently resizing, for simple refresh */
-#define MUIWF_HANDLEMESSAGE   (1<<5) /* window is in a messag */
+#define MUIWF_HANDLEMESSAGE   (1<<5) /* window is in a message handler */
 #define MUIWF_CLOSEME         (1<<6) /* close the window after processing the message */
+#define MUIWF_DONTACTIVATE    (1<<7) /* do not activate the window when opening */
 
 struct __dummyXFC3__
 {
@@ -233,10 +234,7 @@ BOOL DisplayWindow(struct MUI_WindowData *data)
     struct NewMenu *newmenu = NULL;
     APTR visinfo = NULL;
 
-/*    ASSERT(data->wd_RenderInfo.mri_Window == NULL);
-    ASSERT(data->wd_RenderInfo.mri_WindowObject != NULL);
-*/
-    if (data->wd_Flags & MUIWF_ACTIVE)
+    if (!(data->wd_Flags & MUIWF_DONTACTIVATE))
         flags |= WFLG_ACTIVATE;
 
     if (!(flags & WFLG_SIZEBRIGHT))
@@ -1192,7 +1190,7 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 
 	    case    MUIA_Window_Activate:
-		    set(obj, MUIA_Window_Activate, tag->ti_Data);
+		    _handle_bool_tag(data->wd_Flags, !tag->ti_Data, MUIWF_DONTACTIVATE);
 		    break;
 
 	    case    MUIA_Window_DefaultObject:
@@ -1296,9 +1294,13 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    data->wd_Y = (LONG)tag->ti_Data;
 		    break;
 
-	    case MUIA_Window_Activate:
-		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ACTIVE);
-		break;
+	    case    MUIA_Window_Activate:
+		    if (data->wd_RenderInfo.mri_Window)
+		    {
+			if (tag->ti_Data) ActivateWindow(data->wd_RenderInfo.mri_Window);
+		    } else _handle_bool_tag(data->wd_Flags, !tag->ti_Data, MUIWF_DONTACTIVATE);
+		    break;
+
 	    case MUIA_Window_ActiveObject:
 		window_set_active_object(data, obj, tag->ti_Data);
 		break;
