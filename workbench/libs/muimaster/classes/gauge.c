@@ -5,6 +5,8 @@
     $Id$
 */
 
+#include <stdio.h>
+
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <clib/alib_protos.h>
@@ -18,16 +20,35 @@
 
 #include "mui.h"
 #include "muimaster_intern.h"
+#include "textengine.h"
 #include "support.h"
 
 extern struct Library *MUIMasterBase;
 
-/********** Gauge ***********/
-
 struct MUI_GaugeData
 {
-    int dummy;
+   BOOL horiz;
+   BOOL dupinfo;
+
+   ULONG current;
+   ULONG max;
+   ULONG divide;
+   STRPTR info;
+
+   char buf[256];
+   LONG info_width;
+   LONG info_height;
 };
+
+static char *StrDup(char *x)
+{
+    char *dup;
+    if (!x) return NULL;
+    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
+    if (dup) CopyMem((x), dup, strlen(x) + 1);
+    return dup;
+}
+
 
 /**************************************************************************
  OM_NEW
@@ -48,10 +69,187 @@ static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
+	    case    MUIA_Gauge_Current:
+	    	    data->current = tag->ti_Data;
+		    break;
+	    case    MUIA_Gauge_Divide:
+	    	    data->divide = tag->ti_Data;
+		    break;
+	    case    MUIA_Gauge_Horiz:
+		    data->horiz = tag->ti_Data;
+		    break;
+	    case    MUIA_Gauge_InfoText:
+	    	    data->info = (STRPTR)tag->ti_Data;
+		    break;
+	    case    MUIA_Gauge_Max:
+	    	    data->max = tag->ti_Data;
+		    break;
+	    case    MUIA_Gauge_DupInfoText:
+		    data->dupinfo = tag->ti_Data;
+		    break;
     	}
     }
-    
+    if (data->dupinfo)
+	data->info = StrDup(data->info);
+
+    if (data->info)
+    {
+	sprintf(data->buf, data->info, data->current/data->divide);
+    } else data->buf[0] = 0;
+
     return (IPTR)obj;
+}
+
+/**************************************************************************
+ OM_DISPOSE
+**************************************************************************/
+static IPTR Gauge_Dispose(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_GaugeData   *data = INST_DATA(cl,obj);
+    if (data->dupinfo && data->info) FreeVec(data->info);
+    return DoSuperMethodA(cl,obj,msg);
+}
+
+/**************************************************************************
+ OM_SET
+**************************************************************************/
+static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct MUI_GaugeData   *data;
+    struct TagItem  	    *tag, *tags;
+    int info_changed = 0;
+    int need_redraw = 0;
+    
+    data = INST_DATA(cl, obj);
+
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    {
+	switch (tag->ti_Tag)
+	{
+	    case    MUIA_Gauge_Current:
+	    	    data->current = tag->ti_Data;
+		    info_changed = 1;
+		    need_redraw = 1;
+		    break;
+	    case    MUIA_Gauge_Divide:
+	    	    data->divide = tag->ti_Data;
+		    info_changed = 1;
+		    need_redraw = 1;
+		    break;
+	    case    MUIA_Gauge_Horiz:
+		    data->horiz = tag->ti_Data;
+		    break;
+	    case    MUIA_Gauge_InfoText:
+	    	    if (data->dupinfo)
+	    	    {
+			if (data->info) FreeVec(data->info);
+			data->info = StrDup((STRPTR)tag->ti_Data);
+		    } else
+		    {
+			data->info = (STRPTR)tag->ti_Data;
+		    }
+		    need_redraw = info_changed = 1;
+		    break;
+	    case    MUIA_Gauge_Max:
+	    	    data->max = tag->ti_Data;
+		    need_redraw = 1;
+		    break;
+    	}
+    }
+
+    if (info_changed)
+    {
+	if (data->info)
+	{
+	    sprintf(data->buf, data->info, data->current/data->divide);
+	} else data->buf[0] = 0;
+    }
+
+    if (need_redraw)
+    {
+    	MUI_Redraw(obj,MADF_DRAWOBJECT);
+    }
+    return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+
+/**************************************************************************
+ OM_SET
+**************************************************************************/
+static IPTR Gauge_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+{
+    struct MUI_GaugeData *data = INST_DATA(cl,obj);
+
+    if (!(DoSuperMethodA(cl, obj, (Msg)msg))) return 0;
+
+    if (data->info)
+    {
+	struct RastPort rp;
+
+	InitRastPort(&rp);
+	SetFont(&rp,_font(obj));
+
+	data->info_width = TextLength(&rp,data->buf,strlen(data->buf));
+	data->info_height = _font(obj)->tf_YSize;
+    } else
+    {
+	data->info_width = 0;
+	data->info_height = 6;
+    }
+
+    return 1;
+}
+
+/**************************************************************************
+ MUIM_AskMinMax
+**************************************************************************/
+static IPTR Gauge_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+{
+    struct MUI_GaugeData *data = INST_DATA(cl,obj);
+    DoSuperMethodA(cl,obj,(Msg)msg);
+
+    if (data->horiz)
+    {
+	msg->MinMaxInfo->MinWidth  += data->info_width;
+	msg->MinMaxInfo->MinHeight += data->info_height + 2;
+	msg->MinMaxInfo->DefWidth  += data->info_width + 10;
+	msg->MinMaxInfo->DefHeight += data->info_height + 2;
+	msg->MinMaxInfo->MaxWidth   = MUI_MAXMAX;
+	msg->MinMaxInfo->MaxHeight += data->info_height + 2;
+    }
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_Draw
+**************************************************************************/
+static IPTR Gauge_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+{
+    struct MUI_GaugeData *data = INST_DATA(cl,obj);
+    DoSuperMethodA(cl,obj,(Msg)msg);
+
+    if (data->horiz)
+    {
+    	ULONG val = data->current / data->divide;
+    	ULONG w;
+
+	if (val > data->max) val = data->max;
+        w = _mwidth(obj) * val / data->max; /* NOTE: should be 64 bit */
+
+    	SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_FILL],0,JAM1);
+    	RectFill(_rp(obj),_mleft(obj),_mtop(obj),_mleft(obj) + w - 1, _mbottom(obj));
+
+	if (data->info)
+	{
+	    ZText *ztext = zune_text_new("\33c\0338",data->buf,NULL,0);
+	    if (ztext)
+	    {
+	    	zune_text_get_bounds(ztext, obj);
+		zune_text_draw(ztext, obj, _mleft(obj),_mright(obj),_mtop(obj) + (_mheight(obj) - ztext->height)/2);
+		zune_text_destroy(ztext);
+	    }
+        }
+    }
+    return 0;
 }
 
 #ifndef _AROS
@@ -65,9 +263,12 @@ AROS_UFH3S(IPTR,Gauge_Dispatcher,
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:
-	    return Gauge_New(cl, obj, (struct opSet *)msg);
-	    
+	case OM_NEW: return Gauge_New(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE: return Gauge_Dispose(cl, obj, (Msg)msg);
+	case OM_SET: return Gauge_Set(cl, obj, (struct opSet *)msg);
+	case MUIM_Setup: return Gauge_Setup(cl, obj, (struct MUIP_Setup *)msg);
+	case MUIM_AskMinMax: return Gauge_AskMinMax(cl, obj, (struct MUIP_AskMinMax*)msg);
+	case MUIM_Draw: return Gauge_Draw(cl, obj, (struct MUIP_Draw*)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
