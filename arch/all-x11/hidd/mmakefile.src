@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 # and there doesn't seem to be a template for handling thiscase
 # so I write the file manually.
 
-USER_INCLUDES := -I/usr/include -I.
+USER_INCLUDES := -I.
 #USER_INCLUDES := -I.
 
 FILES	   := x11 support x11gfx bitmap functable endtag x11_init offscreenbm support x11kbd x11mouse
