@@ -500,7 +500,7 @@ struct AADiskFontHeader *OTAG_AllocFontStruct(STRPTR name, UWORD numchars, LONG 
 
 			dfh->dfh_FileID     = DFH_ID;
 			dfh->dfh_DF.ln_Name = dfh->dfh_Name;
-			dfh->dfh_Segment    = MAKE_REAL_SEGMENT(dfh);
+			dfh->dfh_Segment    = (LONG)MAKE_REAL_SEGMENT(dfh);
 
 			i = strlen(FilePart(name)) + 1;
 			if (i >= sizeof(dfh->dfh_Name)) i = sizeof(dfh->dfh_Name) - 1;

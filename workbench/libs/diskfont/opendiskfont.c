@@ -87,7 +87,7 @@
 
     /* If font name contains a path don´t look into the cache but open it directly from disk */
     if (FilePart(textAttr->ta_Name) != textAttr->ta_Name)
-        return DF_OpenFontPath(textAttr, DiskfontBase);
+        return DF_OpenFontPath(textAttr, DFB(DiskfontBase));
 
     tf = OpenFont(textAttr);
     if (tf!=NULL)
