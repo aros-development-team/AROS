@@ -6,4 +6,4 @@
 #include <proto/datatypes.h>
 #include <aros/symbolsets.h>
 
-ADD2LIBS("datatypes.library", 0, LIBSET_DATATYPES_PRI, struct Library *, DataTypesBase, NULL, NULL);
+ADD2LIBS("datatypes.library", 39, struct Library *, DataTypesBase);

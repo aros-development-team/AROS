@@ -5,4 +5,4 @@
 
 #include <aros/symbolsets.h>
 
-ADD2LIBS("keymap.library", 39, LIBSET_KEYMAP_PRI, struct Library *, KeymapBase, NULL, NULL);
+ADD2LIBS("keymap.library", 39, struct Library *, KeymapBase);

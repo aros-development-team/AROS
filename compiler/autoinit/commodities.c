@@ -6,4 +6,4 @@
 #include <intuition/intuitionbase.h>
 #include <aros/symbolsets.h>
 
-ADD2LIBS("commodities.library", 39, LIBSET_COMMODITIES_PRI, struct Library *, CxBase, NULL, NULL);
+ADD2LIBS("commodities.library", 39, struct Library *, CxBase);
