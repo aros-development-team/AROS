@@ -198,6 +198,7 @@ struct ClipRect * Case_0(struct Rectangle * R,
             NULL
           );
       } /* if (not a simple layer) */
+      
       CR -> lobs = newlayer;
     }
   } /* else */
@@ -260,6 +261,8 @@ struct ClipRect * Case_1(struct Rectangle * R,
     CR_New1->bounds.MaxX = DEF_MAXX;
     CR_New1->bounds.MaxY = DEF_MAXY;
 
+    CR_New1->lobs        = CR->lobs;
+
     /* The new ClipRect goes behind the old one in the list */
     CR_New1->Next = CR->Next;
     CR     ->Next = CR_New1;
@@ -287,7 +290,6 @@ struct ClipRect * Case_1(struct Rectangle * R,
         else
         {
           CR_New1->BitMap = passivelayer->SuperBitMap;
-          CR_New1->lobs   = CR->lobs;
         }
       } /* if (not a simple layer) */
       
@@ -435,6 +437,8 @@ struct ClipRect * Case_2(struct Rectangle * R,
     CR_New1->bounds.MinY = DEF_MINY;
     CR_New1->bounds.MaxX = DEF_MAXX;
     CR_New1->bounds.MaxY = DEF_MAXY;
+    
+    CR_New1->lobs        = CR->lobs;
 
     /* The new ClipRect goes behind the old one in the list */
     CR_New1->Next = CR->Next;
@@ -466,7 +470,6 @@ struct ClipRect * Case_2(struct Rectangle * R,
         else
         {
           CR_New1->BitMap = passivelayer->SuperBitMap;
-          CR_New1->lobs   = CR->lobs;
         }
       } /* if (not a simple layer) */
       
@@ -605,11 +608,15 @@ struct ClipRect * Case_3(struct Rectangle * R,
     CR_New1->bounds.MinY = DEF_MINY;
     CR_New1->bounds.MaxX = DEF_MAXX;
     CR_New1->bounds.MaxY = DEF_Y1;
+    
+    CR_New1->lobs        = CR->lobs;
 
     CR_New2->bounds.MinX = DEF_MINX;
     CR_New2->bounds.MinY = DEF_Y1+1;
     CR_New2->bounds.MaxX = DEF_MAXX;
     CR_New2->bounds.MaxY = DEF_MAXY;
+    
+    CR_New2->lobs        = CR->lobs;
 
     /* The new ClipRects go behind the old one in the list */
     CR_New2->Next = CR->Next;
@@ -642,8 +649,6 @@ struct ClipRect * Case_3(struct Rectangle * R,
         {
           CR_New1->BitMap = passivelayer->SuperBitMap;
           CR_New2->BitMap = passivelayer->SuperBitMap;
-          CR_New1->lobs   = CR->lobs;
-          CR_New2->lobs   = CR->lobs;
         }
 
 
@@ -793,6 +798,8 @@ struct ClipRect * Case_4(struct Rectangle * R,
     CR_New1->bounds.MaxX = DEF_MAXX;
     CR_New1->bounds.MaxY = DEF_Y0-1;
 
+    CR_New1->lobs        = CR->lobs;
+
     /* The new ClipRect goes behind the old one in the list */
     CR_New1->Next = CR->Next;
     CR     ->Next = CR_New1;
@@ -819,7 +826,6 @@ struct ClipRect * Case_4(struct Rectangle * R,
         else
         {
           CR_New1->BitMap = passivelayer->SuperBitMap;
-          CR_New1->lobs   = CR->lobs;
         }
       } /* if (not a simple layer) */
       
@@ -961,11 +967,15 @@ struct ClipRect * Case_5(struct Rectangle * R,
     CR_New1->bounds.MinY = DEF_MINY;
     CR_New1->bounds.MaxX = DEF_MAXX;
     CR_New1->bounds.MaxY = DEF_Y0-1;
-
+    
+    CR_New1->lobs        = CR->lobs;
+    
     CR_New2->bounds.MinX = DEF_MINX;
     CR_New2->bounds.MinY = DEF_Y1+1;
     CR_New2->bounds.MaxX = DEF_MAXX;
     CR_New2->bounds.MaxY = DEF_MAXY;
+
+    CR_New2->lobs        = CR->lobs;
 
     /* The new ClipRects go behind the old one in the list */
     CR_New2->Next = CR->Next;
@@ -999,8 +1009,6 @@ struct ClipRect * Case_5(struct Rectangle * R,
         {
           CR_New1->BitMap = passivelayer->SuperBitMap;
           CR_New2->BitMap = passivelayer->SuperBitMap;
-          CR_New1->lobs   = CR->lobs;
-          CR_New2->lobs   = CR->lobs;
         }
       }
 
@@ -1142,10 +1150,14 @@ struct ClipRect * Case_6(struct Rectangle * R,
     CR_New1->bounds.MaxX = DEF_MAXX;
     CR_New1->bounds.MaxY = DEF_Y0-1;
 
+    CR_New1->lobs        = CR->lobs;
+
     CR_New2->bounds.MinX = DEF_X1+1;
     CR_New2->bounds.MinY = DEF_Y0;
     CR_New2->bounds.MaxX = DEF_MAXX;
     CR_New2->bounds.MaxY = DEF_MAXY;
+
+    CR_New2->lobs        = CR->lobs;
 
     /* The new ClipRects go behind the old one in the list */
     CR_New2->Next = CR->Next;
@@ -1177,8 +1189,6 @@ struct ClipRect * Case_6(struct Rectangle * R,
         {
           CR_New1->BitMap = passivelayer->SuperBitMap;
           CR_New2->BitMap = passivelayer->SuperBitMap;
-          CR_New1->lobs   = CR->lobs;
-          CR_New2->lobs   = CR->lobs;
         }
       } /* if (not a simple layer) */
       
@@ -1321,15 +1331,21 @@ struct ClipRect * Case_7(struct Rectangle * R,
     CR_New1->bounds.MaxX = DEF_MAXX;
     CR_New1->bounds.MaxY = DEF_Y0-1;
 
+    CR_New1->lobs        = CR->lobs;
+
     CR_New2->bounds.MinX = DEF_X1+1;
     CR_New2->bounds.MinY = DEF_Y0;
     CR_New2->bounds.MaxX = DEF_MAXX;
     CR_New2->bounds.MaxY = DEF_Y1;
 
+    CR_New2->lobs        = CR->lobs;
+
     CR_New3->bounds.MinX = DEF_MINX;
     CR_New3->bounds.MinY = DEF_Y1+1;
     CR_New3->bounds.MaxX = DEF_MAXX;
     CR_New3->bounds.MaxY = DEF_MAXY;
+
+    CR_New3->lobs        = CR->lobs;
 
     /* The new ClipRects go behind the old one in the list */
     CR_New3->Next = CR->Next;
@@ -1366,9 +1382,6 @@ struct ClipRect * Case_7(struct Rectangle * R,
           CR_New1->BitMap = passivelayer->SuperBitMap;
           CR_New2->BitMap = passivelayer->SuperBitMap;
           CR_New3->BitMap = passivelayer->SuperBitMap;
-          CR_New1->lobs   = CR->lobs;
-          CR_New2->lobs   = CR->lobs;
-          CR_New3->lobs   = CR->lobs;
         }
       }
       
@@ -1510,6 +1523,8 @@ struct ClipRect * Case_8(struct Rectangle * R,
     CR_New1->bounds.MaxX = DEF_X0-1;
     CR_New1->bounds.MaxY = DEF_MAXY;
 
+    CR_New1->lobs        = CR->lobs;
+
     CR_New1->Next = CR->Next;
     CR     ->Next = CR_New1;
 
@@ -1537,7 +1552,6 @@ struct ClipRect * Case_8(struct Rectangle * R,
         else
         {
           CR_New1 -> BitMap = passivelayer -> SuperBitMap;
-          CR_New1->lobs   = CR->lobs;
         }
       } /* if (not a simple layer) */
       
@@ -1677,10 +1691,14 @@ struct ClipRect * Case_9(struct Rectangle * R,
     CR_New1->bounds.MaxX = DEF_X0-1;
     CR_New1->bounds.MaxY = DEF_Y1;
 
+    CR_New1->lobs        = CR->lobs;
+
     CR_New2->bounds.MinX = DEF_MINX;
     CR_New2->bounds.MinY = DEF_Y1+1;
     CR_New2->bounds.MaxX = DEF_MAXX;
     CR_New2->bounds.MaxY = DEF_MAXY;
+
+    CR_New2->lobs        = CR->lobs;
 
     /* The new ClipRects go behind the old one in the list */
     CR_New2->Next = CR->Next;
@@ -1713,8 +1731,6 @@ struct ClipRect * Case_9(struct Rectangle * R,
         {
           CR_New1 -> BitMap = passivelayer -> SuperBitMap;
           CR_New2 -> BitMap = passivelayer -> SuperBitMap;
-          CR_New1->lobs   = CR->lobs;
-          CR_New2->lobs   = CR->lobs;
         }
       }
        
@@ -1856,10 +1872,14 @@ struct ClipRect * Case_10(struct Rectangle * R,
     CR_New1->bounds.MaxX = DEF_X0-1;
     CR_New1->bounds.MaxY = DEF_MAXY;
 
+    CR_New1->lobs        = CR->lobs;
+
     CR_New2->bounds.MinX = DEF_X1+1;
     CR_New2->bounds.MinY = DEF_MINY;
     CR_New2->bounds.MaxX = DEF_MAXX;
     CR_New2->bounds.MaxY = DEF_MAXY;
+
+    CR_New2->lobs        = CR->lobs;
 
 
     /* The new ClipRects go behind the old one in the list */
@@ -1893,8 +1913,6 @@ struct ClipRect * Case_10(struct Rectangle * R,
         {
           CR_New1 -> BitMap = passivelayer -> SuperBitMap;
           CR_New2 -> BitMap = passivelayer -> SuperBitMap;
-          CR_New1->lobs   = CR->lobs;
-          CR_New2->lobs   = CR->lobs;
         }
       } /* if not a simple layer */
       
@@ -2037,15 +2055,21 @@ struct ClipRect * Case_11(struct Rectangle * R,
     CR_New1->bounds.MaxX = DEF_X0-1;
     CR_New1->bounds.MaxY = DEF_Y1;
 
+    CR_New1->lobs        = CR->lobs;
+
     CR_New2->bounds.MinX = DEF_X1+1;
     CR_New2->bounds.MinY = DEF_MINY;
     CR_New2->bounds.MaxX = DEF_MAXX;
     CR_New2->bounds.MaxY = DEF_Y1;
 
+    CR_New2->lobs        = CR->lobs;
+
     CR_New3->bounds.MinX = DEF_MINX;
     CR_New3->bounds.MinY = DEF_Y1+1;
     CR_New3->bounds.MaxX = DEF_MAXX;
     CR_New3->bounds.MaxY = DEF_MAXY;
+
+    CR_New3->lobs        = CR->lobs;
 
     /* The new ClipRects go behind the old one in the list */
     CR_New3->Next = CR->Next;
@@ -2082,9 +2106,6 @@ struct ClipRect * Case_11(struct Rectangle * R,
           CR_New1 -> BitMap = passivelayer -> SuperBitMap;
           CR_New2 -> BitMap = passivelayer -> SuperBitMap;
           CR_New3 -> BitMap = passivelayer -> SuperBitMap;
-          CR_New1->lobs   = CR->lobs;
-          CR_New2->lobs   = CR->lobs;
-          CR_New3->lobs   = CR->lobs;
         }
       } /* if (not a simple layer) */
 
@@ -2226,11 +2247,14 @@ struct ClipRect * Case_12(struct Rectangle * R,
     CR_New1->bounds.MaxX = DEF_MAXX;
     CR_New1->bounds.MaxY = DEF_Y0-1;
 
+    CR_New1->lobs        = CR->lobs;
+
     CR_New2->bounds.MinX = DEF_MINX;
     CR_New2->bounds.MinY = DEF_Y0;
     CR_New2->bounds.MaxX = DEF_X0-1;
     CR_New2->bounds.MaxY = DEF_MAXY;
 
+    CR_New2->lobs        = CR->lobs;
 
     /* The new ClipRects go behind the old one in the list */
     CR_New2->Next = CR->Next;
@@ -2262,8 +2286,6 @@ struct ClipRect * Case_12(struct Rectangle * R,
         {
           CR_New1 -> BitMap = passivelayer -> SuperBitMap;
           CR_New2 -> BitMap = passivelayer -> SuperBitMap;
-          CR_New1->lobs   = CR->lobs;
-          CR_New2->lobs   = CR->lobs;
         }
       } /* if (not a simple layer) */
       
@@ -2408,15 +2430,21 @@ struct ClipRect * Case_13(struct Rectangle * R,
     CR_New1->bounds.MaxX = DEF_MAXX;
     CR_New1->bounds.MaxY = DEF_Y0-1;
 
+    CR_New1->lobs        = CR->lobs;
+
     CR_New2->bounds.MinX = DEF_MINX;
     CR_New2->bounds.MinY = DEF_Y0;
     CR_New2->bounds.MaxX = DEF_X0-1;
     CR_New2->bounds.MaxY = DEF_Y1;
 
+    CR_New2->lobs        = CR->lobs;
+
     CR_New3->bounds.MinX = DEF_MINX;
     CR_New3->bounds.MinY = DEF_Y1+1;
     CR_New3->bounds.MaxX = DEF_MAXX;
     CR_New3->bounds.MaxY = DEF_MAXY;
+
+    CR_New3->lobs        = CR->lobs;
 
     /* The new ClipRects go behind the old one in the list */
     CR_New3->Next = CR->Next;
@@ -2453,9 +2481,6 @@ struct ClipRect * Case_13(struct Rectangle * R,
           CR_New1 -> BitMap = passivelayer -> SuperBitMap;
           CR_New2 -> BitMap = passivelayer -> SuperBitMap;
           CR_New3 -> BitMap = passivelayer -> SuperBitMap;
-          CR_New1->lobs   = CR->lobs;
-          CR_New2->lobs   = CR->lobs;
-          CR_New3->lobs   = CR->lobs;
         }
       } /* if (not a simple layer) */
       
@@ -2601,15 +2626,21 @@ struct ClipRect * Case_14(struct Rectangle * R,
     CR_New1->bounds.MaxX = DEF_MAXX;
     CR_New1->bounds.MaxY = DEF_Y0-1;
 
+    CR_New1->lobs        = CR->lobs;
+
     CR_New2->bounds.MinX = DEF_MINX;
     CR_New2->bounds.MinY = DEF_Y0;
     CR_New2->bounds.MaxX = DEF_X0-1;
     CR_New2->bounds.MaxY = DEF_MAXY;
 
+    CR_New2->lobs        = CR->lobs;
+
     CR_New3->bounds.MinX = DEF_X1+1;
     CR_New3->bounds.MinY = DEF_Y0;
     CR_New3->bounds.MaxX = DEF_MAXX;
     CR_New3->bounds.MaxY = DEF_MAXY;
+
+    CR_New3->lobs        = CR->lobs;
 
     /* The new ClipRects go behind the old one in the list */
     CR_New3->Next = CR->Next;
@@ -2645,9 +2676,6 @@ struct ClipRect * Case_14(struct Rectangle * R,
           CR_New1 -> BitMap = passivelayer -> SuperBitMap;
           CR_New2 -> BitMap = passivelayer -> SuperBitMap;
           CR_New3 -> BitMap = passivelayer -> SuperBitMap;
-          CR_New1->lobs   = CR->lobs;
-          CR_New2->lobs   = CR->lobs;
-          CR_New3->lobs   = CR->lobs;
         }
       } /* if (not a simple layer) */ 
 
@@ -2798,11 +2826,15 @@ struct ClipRect * Case_15(struct Rectangle * R,
     CR_New1->bounds.MaxX = DEF_MAXX;
     CR_New1->bounds.MaxY = DEF_Y0-1;
 
+    CR_New1->lobs        = CR->lobs;
+
     /* CR_New2 for the middle left one */
     CR_New2->bounds.MinX = DEF_MINX;
     CR_New2->bounds.MinY = DEF_Y0;
     CR_New2->bounds.MaxX = DEF_X0-1;
     CR_New2->bounds.MaxY = DEF_Y1;
+
+    CR_New2->lobs        = CR->lobs;
 
     /* CR_New3 for the middle right one */
     CR_New3->bounds.MinX = DEF_X1+1;
@@ -2810,11 +2842,15 @@ struct ClipRect * Case_15(struct Rectangle * R,
     CR_New3->bounds.MaxX = DEF_MAXX;
     CR_New3->bounds.MaxY = DEF_Y1;
 
+    CR_New3->lobs        = CR->lobs;
+
     /* CR_New4 for the lower one */
     CR_New4->bounds.MinX = DEF_MINX;
     CR_New4->bounds.MinY = DEF_Y1+1;
     CR_New4->bounds.MaxX = DEF_MAXX;
     CR_New4->bounds.MaxY = DEF_MAXY;
+
+    CR_New4->lobs        = CR->lobs;
 
     /* The new ClipRects go behind the old one in the list */
     CR_New4->Next = CR->Next;
@@ -2856,10 +2892,6 @@ struct ClipRect * Case_15(struct Rectangle * R,
           CR_New2 -> BitMap = passivelayer -> SuperBitMap;
           CR_New3 -> BitMap = passivelayer -> SuperBitMap;
           CR_New4 -> BitMap = passivelayer -> SuperBitMap;
-          CR_New1->lobs   = CR->lobs;
-          CR_New2->lobs   = CR->lobs;
-          CR_New3->lobs   = CR->lobs;
-          CR_New4->lobs   = CR->lobs;
         }
       } /* if (not a simple layer) */
       
