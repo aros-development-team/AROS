@@ -21,7 +21,7 @@
 #include <proto/alib.h>
 #include <utility/tagitem.h>
 #include <aros/debug.h>
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 #include "dos_intern.h"
 
 #define INIT	AROS_SLIB_ENTRY(init,Dos)

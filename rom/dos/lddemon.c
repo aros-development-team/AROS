@@ -26,7 +26,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include "dos_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 #include <string.h>
 
