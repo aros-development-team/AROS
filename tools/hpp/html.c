@@ -431,6 +431,7 @@ HTML_BDEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	       * arg;
     HTMLOptArg * option;
 
+    /* Blocks and macros must have different names */
     if (FindNode (&Defs, tag->node.name))
     {
 	Str_PushError (in, "There is already a macro with the same name %s", tag->node.name);
@@ -582,6 +583,13 @@ HTML_EDEF (HTMLTag * tag)
     env->node.name = xstrdup (name->value);
     env->begin	   = begin->value ? xstrdup (begin->value) : NULL;
     env->end	   = end->value   ? xstrdup (end->value) : NULL;
+
+#if 0
+    printf ("New ENV %s begin={%s} end={%s}\n",
+	env->node.name, begin->value ? begin->value : "",
+	end->value ? end->value : ""
+    );
+#endif
 
     strupper (env->node.name);
 
@@ -776,7 +784,9 @@ printf ("Found as BDEF.Def=%s\nBody=%s\n",
 	    if (arg->value)
 	    {
 		Str_Put (out, '=', data);
+		Str_Put (out, '"', data);
 		Str_Puts (out, arg->value, data);
+		Str_Put (out, '"', data);
 	    }
 	}
 
@@ -942,31 +952,6 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 			Str_PushError (in, "HTML_Parse() failed in ENV");
 			return T_ERROR;
 		    }
-		}
-		else if (!strcmp (tag->node.name, "LINK"))
-		{
-		    HTMLTagArg * name, * ref;
-
-		    name = (HTMLTagArg *) FindNodeNC (&tag->args, "NAME");
-		    ref  = (HTMLTagArg *) FindNodeNC (&tag->args, "REF");
-
-		    if (!name)
-		    {
-			Str_PushError (in, "Missing argument NAME in LINK");
-			return T_ERROR;
-		    }
-
-		    if (!ref)
-		    {
-			Str_PushError (in, "Missing argument REF in LINK");
-			return T_ERROR;
-		    }
-
-		    Str_Puts (out, "<A HREF=\"", data);
-		    Str_Puts (out, ref->value, data);
-		    Str_Puts (out, "\">", data);
-		    Str_Puts (out, name->value, data);
-		    Str_Puts (out, "</A>", data);
 		}
 		else
 		{

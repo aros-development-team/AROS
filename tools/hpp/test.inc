@@ -12,7 +12,7 @@
 
 <DEF NAME="filename" OPTION="text"><
     IF COND="$checkdb(filenames,$text)"><
-	filename><LINK NAME="$text" REF="$querydb(filenames,$text)"></filename><
+	filename><A HREF="$querydb(filenames,$text)">$text</A></filename><
     ELSE><
 	filename>$text</filename><
     /IF><

@@ -1,5 +1,5 @@
 printf
-<LINK NAME="<stdfunc>printf</stdfunc>" REF="printf.asc">
+<A HREF="printf.asc"><stdfunc>printf</stdfunc></A>
 int
 <ckeyword>int</ckeyword>
 char
@@ -15,4 +15,4 @@ char
 @punctuation
 <cpunctuation>$text</cpunctuation>
 <stdio.h>
-<LINK NAME="<cheader>&lt;stdio.h&gt;</cheader>" REF="/usr/include/stdio.h">
+<A HREF="/usr/include/stdio.h"><cheader>&lt;stdio.h&gt;</cheader></A>
