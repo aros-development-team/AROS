@@ -64,7 +64,7 @@
 ******************************************************************************/
 
 {
-
+AROS_LIBFUNC_INIT
 const LONG ExpTable[] =
     { 0x8fa1fe6f,  /* e^32  */
       0x87975e58,  /* e^16  */
@@ -144,4 +144,5 @@ char Exponent;
   if ( (char) fnum1 < 0)
     return SPDiv(one, Res);
   return Res;
+AROS_LIBFUNC_EXIT
 } /* SPExp */

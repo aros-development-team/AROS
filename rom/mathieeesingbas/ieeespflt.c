@@ -82,8 +82,13 @@
   else
     y <<= (25 - Exponent) & IEEESPMantisse_Mask;
 
-  if ((char) y < 0)
+  if ((char) (y & 1) != 0)
+  {
     y ++;
+    if (0x02000000 == y)
+      Exponent++;
+  }
+
   y >>= 1;
   y &= IEEESPMantisse_Mask;
 
