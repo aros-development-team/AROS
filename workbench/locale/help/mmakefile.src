@@ -1,0 +1,10 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-locale : workbench-locale-help
+#MM workbench-locale-help : setup
+
+workbench-locale-help : files-copy
+%copy_files_q files=LICENSE src=$(TOP) dst=$(AROS_HELP)
