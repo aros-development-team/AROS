@@ -49,9 +49,7 @@
 
 struct Screen *curscreen;
 
-    curscreen = IntuitionBase->FirstScreen;
-    while( curscreen && !(curscreen->Flags & WBENCHSCREEN) )
-	curscreen = curscreen->NextScreen;
+    curscreen = GetPrivIBase(IntuitionBase)->WorkBench;
 
     if ( curscreen )
     {
@@ -62,6 +60,7 @@ struct Screen *curscreen;
     {
 	return FALSE;
     }
+
 
     AROS_LIBFUNC_EXIT
 } /* WBenchToBack */
