@@ -2637,6 +2637,26 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 }
 
 /**************************************************************************
+ MUIM_DrawBackground
+**************************************************************************/
+static ULONG Group_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_DrawBackground *msg)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    
+    if (data->flags & GROUP_VIRTUAL)
+    {
+    	struct MUIP_DrawBackground msg2 = *msg;
+	
+	msg2.xoffset += data->virt_offx;
+	msg2.yoffset += data->virt_offy;
+	
+	return DoSuperMethodA(cl, obj, (Msg)&msg2);
+    }
+    
+    return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+
+/**************************************************************************
  MUIM_Notify - disabled now because previous Zune versions had a OM_GET
  check in MUIM_Notify which is no longer the case
 **************************************************************************/
@@ -2710,6 +2730,7 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
     case MUIM_Show: return Group_Show(cl, obj, (APTR)msg);
     case MUIM_Hide: return Group_Hide(cl, obj, (APTR)msg);
     case MUIM_HandleEvent: return Group_HandleEvent(cl,obj, (APTR)msg);
+    case MUIM_DrawBackground: return Group_DrawBackground(cl, obj, (APTR)msg);
 #if 0
     /* Disabled. See above */
     case MUIM_Notify: return Group_Notify(cl, obj, (APTR)msg);
@@ -2717,7 +2738,6 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
     case MUIM_Set:
     case MUIM_MultiSet:
     case MUIM_CallHook:
-    case MUIM_DrawBackground:
     case MUIM_DrawParentBackground:
     case MUIM_DragBegin:
     case MUIM_DragDrop: 
