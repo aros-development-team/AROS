@@ -40,7 +40,7 @@ DEST_INCLUDE_FILES = $(subst include,$(INCDIR)/aros,$(INCLUDE_FILES))
 
 all: setup $(LIB)
 
-setup : make-dirs
+setup : make-dirs os-include
 
 os-include: $(DEST_INCLUDE_FILES)
 

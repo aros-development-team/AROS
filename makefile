@@ -176,7 +176,6 @@ setup :
 	@if [ ! -d $(GENDIR) ]; then $(MKDIR) $(GENDIR) ; else true ; fi
 	@if [ ! -d $(GENDIR)/test ]; then $(MKDIR) $(GENDIR)/test ; else true ; fi
 	@if [ ! -d $(GENDIR)/filesys ]; then $(MKDIR) $(GENDIR)/filesys ; else true ; fi
-	@$(MAKE) $(MFLAGS) -C compiler/include
 	@$(MAKE) $(MFLAGS) subdirs TARGET=setup
 
 # BEGIN_DESC{target}

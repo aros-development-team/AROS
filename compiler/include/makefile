@@ -7,7 +7,7 @@ AMIGADIR=$(TOP)/amiga
 
 INCLUDES = $(wildcard *.h */*.h)
 DEST_INCLUDES = $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
-INCSUBDIRS = 	aros \
+INCSUBDIRS =	aros \
 		clib \
 		defines \
 		devices \
@@ -27,10 +27,7 @@ INCSUBDIRS = 	aros \
 
 all: setup
 
-os-include: $(DEST_INCLUDES) aros-include
-
-aros-include:
-	$(CP) $(TOP)/compiler/arossupport/include/*.h $(INCDIR)/aros/
+os-include: $(DEST_INCLUDES)
 
 $(INCDIR)/%.h: %.h
 	$(CP) $< $@

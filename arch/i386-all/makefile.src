@@ -1,19 +1,21 @@
 # $Id$
 TOP=../..
 
+USER_INCLUDES=-I/usr/include
+
 include $(TOP)/config/make.cfg
 
 SUBDIRS= clib exec
 
 MACHINE_H = $(INCDIR)/aros/machine.h
 
-all: setup $(MACHINE_H) subdirs
+all: setup machine.i subdirs
 
-setup: machine.i
-	%mkdirs_q $(INCDIR)
+setup: $(MACHINE_H)
 	%subdirs_q "Setting up" setup
 
 $(MACHINE_H) : machine.h
+	%mkdirs_q $(INCDIR)
 	cp $< $@
 
 clean::
@@ -21,6 +23,7 @@ clean::
 	$(RM) $(MACHINE_H) $(TESTS) machine.i geninc
 
 machine.i: geninc.c $(MACHINE_H)
+	@echo "CFLAGS=$(CFLAGS)"
 	@echo "Creating geninc..."
 	@$(CC) $(CFLAGS) -o geninc $<
 	./geninc > machine.i
