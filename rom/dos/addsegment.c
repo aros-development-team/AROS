@@ -69,7 +69,7 @@
     struct Segment *sptr;
     int namelen = strlen(name)+1;
 
-    sptr = AllocVec(sizeof(struct Segment) + namelen - 3,
+    sptr = AllocVec(sizeof(struct Segment) + namelen - 4,
 		    MEMF_CLEAR | MEMF_PUBLIC);
 
     if( sptr != NULL )
@@ -77,7 +77,7 @@
 	sptr->seg_UC = type;
 	sptr->seg_Seg = seg;
 
-#ifdef AROS_FAST_BSTR
+#ifdef AROS_FAST_BPTR
 	CopyMem(name, sptr->seg_Name, namelen);
 #else
 	CopyMem(name, &sptr->seg_Name[1], namelen);
