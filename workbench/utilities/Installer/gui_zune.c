@@ -1180,8 +1180,153 @@ return retval;
 long int request_options(struct ParameterList *pl)
 {
 long int retval;
+char **mxlabels;
+int i, max;
+Object *marks[33];
+Object *labels[33];
+long int val;
+BOOL j;
+
+    NeedPROMPT(pl);
 
     retval = GetPL(pl, _DEFAULT).intval;
+
+    if ( GetPL(pl, _CHOICES).used == 1 )
+    {
+	max = GetPL(pl, _CHOICES).intval;
+
+	if( max > 32 )
+	{ 
+	    error = SCRIPTERROR;
+	    traperr("More than 32 choices given!\n", NULL);
+	}
+
+	mxlabels = AllocVec((max+1)*sizeof(STRPTR), MEMF_PUBLIC);
+	outofmem(mxlabels);
+
+	for( i = 0 ; i < max ; i++ )
+	{
+	    mxlabels[i] = StrDup(GetPL(pl, _CHOICES).arg[i]);
+	    marks[i] = MUI_MakeObject(MUIO_Checkmark, (IPTR)mxlabels[i]);
+	    labels[i] = LLabel(mxlabels[i]);
+
+	    set(marks[i], MUIA_CycleChain, TRUE);
+	    if( (retval & 1<<i) != 0 )
+		set(marks[i], MUIA_Selected, TRUE);
+	}
+	mxlabels[i] = NULL;
+    }
+    else
+    {
+	error = SCRIPTERROR;
+	traperr("No choices given!\n", NULL);
+    }
+
+    TRANSSCRIPT();
+
+    if ( get_var_int("@user-level") > _NOVICE )
+    {
+    char *out;
+    BOOL running = TRUE;
+    Object *levelmx, *wc;
+    ULONG sigs = 0;
+
+	disable_skip(TRUE);
+	out = collatestrings(GetPL(pl, _PROMPT).intval, GetPL(pl, _PROMPT).arg);
+
+	wc = VGroup,
+	Child, VGroup, GroupFrame,
+		    MUIA_Background, MUII_GroupBack,
+		    Child, TextObject,
+			MUIA_Text_Contents, (IPTR)(out),
+			MUIA_Text_Editable, FALSE,
+			MUIA_Text_Multiline, TRUE,
+		    End,
+		    Child, levelmx = ColGroup(2),
+			GroupFrame,
+			MUIA_Background, MUII_GroupBack,
+		    End,
+		End,
+	    End;
+
+	if (wc)
+	{
+	    for( i = 0 ; i < max ; i++ )
+	    {
+		DoMethod(levelmx, OM_ADDMEMBER, (IPTR)marks[i]);
+		DoMethod(levelmx, OM_ADDMEMBER, (IPTR)labels[i]);
+	    }
+	    AddContents(wc);
+
+	    while (running)
+	    {
+		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
+		{
+		    case MUIV_Application_ReturnID_Quit:
+		    case Push_Abort:
+			DelContents(wc);
+			cleanup();
+			exit(-1);
+			break;
+		    case Push_Proceed:
+			running = FALSE;
+			break;
+		    case Push_Skip:
+kprintf("Skip\n");
+			break;
+		    case Push_Help:
+			if (GetPL(pl, _HELP).intval)
+			{
+			    helpwinpl(HELP_ON_ASKCHOICE, pl, _HELP);
+			}
+			else
+			{
+			    helpwin(HELP_ON_ASKCHOICE, get_var_arg("@asknumber-help"));
+			}
+			break;
+		    default:
+			break;
+		}
+		WaitCTRL(sigs);
+	    }
+	    retval = 0;
+	    for( i = 0 ; i < max ; i++ )
+	    {
+		GetAttr(MUIA_Selected, marks[i], &val);
+		if(val)
+		{
+		    retval |= 1<<i;
+		}
+	    }
+
+	    DelContents(wc);
+	}
+	FreeVec(out);
+	disable_skip(FALSE);
+    }
+    if( preferences.transcriptstream != NULL )
+    {
+	Write(preferences.transcriptstream, "Ask Options: Result was \"", 24);
+	j = FALSE;
+	for( i = 0 ; i < max ; i++ )
+	{
+	    if( (retval & (1<<i)) != 0 )
+	    {
+		if( j )
+		{
+		    Write(preferences.transcriptstream, "\", \"", 4);
+		}
+		Write(preferences.transcriptstream, mxlabels[i], strlen(mxlabels[i]));
+		j = TRUE;
+	    }
+	}
+	Write(preferences.transcriptstream, "\".\n\n", 4);
+    }
+    for( i = 0 ; i < max ; i++ )
+    {
+	FreeVec(mxlabels[i]);
+    }
+    FreeVec(mxlabels);
 
 return retval;
 }
