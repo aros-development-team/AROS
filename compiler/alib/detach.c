@@ -17,7 +17,7 @@ asm("
 	.text
 
 	move.l	4.w,a6
-	jra	_detach_entry(pc)
+	bra	_detach_entry
 ");
 #endif
 
