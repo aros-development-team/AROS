@@ -163,7 +163,7 @@ static BOOL initiate(int argc, char **argv, APState *as)
 
 	if(rda != NULL)
 	{
-	    if(args[0] != NULL)
+	    if(args[ARG_PRI] != NULL)
 		nb.nb_Pri = *args[ARG_PRI];
 	}
 
@@ -215,6 +215,8 @@ static void freeResources(APState *as)
 }
 
 
+/* Our CxCustom() function that is invoked everytime an imputevent is
+   routed to our broker */
 static void autoActivate(CxMsg *msg, CxObj *co)
 {
     struct InputEvent *ie = (struct InputEvent *)CxMsgData(msg);
@@ -267,6 +269,7 @@ static void autoActivate(CxMsg *msg, CxObj *co)
 }
 
 
+/* React on command messages sent by commodities.library */
 static void handleCx(APState *as)
 {
     CxMsg *msg;
@@ -294,6 +297,10 @@ static void handleCx(APState *as)
 			ActivateCxObj(as->as_broker, TRUE);
 			break;
 			
+		    case CXCMD_UNIQUE:
+			/* Running the program twice <=> quit */
+			/* Fall through */
+
 		    case CXCMD_KILL:
 			quit = TRUE;
 			break;

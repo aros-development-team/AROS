@@ -198,7 +198,7 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
 	    if(args[ARG_PRI] != NULL)
 		nb.nb_Pri = *(LONG *)args[ARG_PRI];
 
-	    getQualifier(args[ARG_QUALIFIER]);
+	    getQualifier((STRPTR)args[ARG_QUALIFIER]);
 
 	    cfInfo.ci_doubleClick = args[ARG_DOUBLE];
 
@@ -392,6 +392,11 @@ static void handleCx(CFState *cs)
 			ActivateCxObj(cs->cs_broker, TRUE);
 			break;
 			
+		    case CXCMD_UNIQUE:
+			/* Running the program twice is the same as shutting
+			   down the existing program... */
+			/* Fall through */
+
 		    case CXCMD_KILL:
 			quit = TRUE;
 			break;
