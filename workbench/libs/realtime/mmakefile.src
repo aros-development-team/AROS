@@ -41,7 +41,7 @@ FUNCTIONS := createplayera \
 %genlib_cpak
 
 #MM workbench-libs-realtime : setup includes linklibs
-workbench-libs-realtime : show-flags $(SLIB)
+workbench-libs-realtime : $(SLIB)
 	@$(NOP)
 
 #MM
