@@ -140,16 +140,23 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 #else
 
 #ifdef __mc68000__
-    register APTR pdata asm("a3") = hook->h_Data;
+    register char *pdata asm("a3") = hook->h_Data;
 #else
     char *pdata = hook->h_Data;
 #endif
 
-    AROS_UFC3(void, hook->h_SubEntry,
-    	AROS_UFCA(char, fill, D0),
-	AROS_UFCA(APTR, pdata, A3),
-	AROS_UFCA(struct ExecBase *, IntLB(LocaleBase)->lb_SysBase, A6));
-
+    if (hook->h_SubEntry)
+    {
+	AROS_UFC3(void, hook->h_SubEntry,
+    	    AROS_UFCA(char, fill, D0),
+	    AROS_UFCA(APTR, pdata, A3),
+	    AROS_UFCA(struct ExecBase *, IntLB(LocaleBase)->lb_SysBase, A6));
+    }
+    else
+    {
+    	*pdata++ = fill;
+    }
+    
     hook->h_Data = pdata;
 #endif
 
