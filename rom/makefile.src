@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 ifeq ($(FLAVOUR),native)
 SUBDIRS=aros exec utility alerthook
 else
-SUBDIRS=aros exec utility dos graphics intuition devs
+SUBDIRS=aros exec utility dos graphics intuition devs mathffp
 endif
 
 all:
