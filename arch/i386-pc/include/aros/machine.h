@@ -59,7 +59,7 @@ struct JumpVec
    - The second parameter is the basename,
    - The third parameter is the library vector to be called.
      It's value must be computed by the stub generator with this code:
-     &__AROS_GETVECADDR(0, n), where n is the library vector position in
+     &(__AROS_GETJUMPVEC(0, n+1)->vec), where n is the library vector position in
      the library vectors list.
 
 */
