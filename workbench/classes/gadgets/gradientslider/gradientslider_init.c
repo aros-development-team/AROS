@@ -16,7 +16,7 @@
 #include <proto/intuition.h>
 
 #include "gradientslider_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 /***************************************************************************************************/
 
