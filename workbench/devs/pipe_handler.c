@@ -456,6 +456,8 @@ AROS_UFH3(LONG, pipeproc,
 	    switch (msg->iofs->IOFS.io_Command)
 	    {
 		case FSA_OPEN:
+		    msg->iofs->io_Union.io_OPEN.io_FileMode &= ~(FMF_WRITE|FMF_READ);
+		    /* Fall through */
 		case FSA_OPEN_FILE:
 		{
 		    struct usernode *un;
@@ -469,7 +471,7 @@ AROS_UFH3(LONG, pipeproc,
 		    pipename = SkipColon(msg->iofs->io_Union.io_NamedFile.io_Filename);
 
 		    kprintf("User wants to open pipe \"%s\".\n", pipename);
-		    kprintf("Current pipe type is %d\n", fn->node.ln_Type);
+		    kprintf("Parent dir is \"%s\"\n", fn->node.ln_Name);
 
 		    if (pipename[0])
 		    {
@@ -520,15 +522,20 @@ AROS_UFH3(LONG, pipeproc,
 
 		    if (!fn->numwriters || !fn->numreaders)
 		    {
-			/*
-			   If we're lacking of writers or readers
-			   then add this message to a waiting list.
-			*/
-			kprintf("There are no %s at the moment, so this %s must wait\n",
-				 fn->numwriters?"readers":"writers",
-				 fn->numwriters?"writer":"reader");
+			if (un->mode&(FMF_WRITE|FMF_READ))
+			{
+			    /*
+			       If we're lacking of writers or readers
+			       then add this message to a waiting list.
+			    */
+			    kprintf("There are no %s at the moment, so this %s must wait\n",
+				     fn->numwriters?"readers":"writers",
+				     fn->numwriters?"writer":"reader");
 
-			AddTail(&fn->waitinglist, (struct Node *)msg);
+			    AddTail(&fn->waitinglist, (struct Node *)msg);
+       			}
+			else
+			    SendBack(msg);
                     }
 		    else
 		    {
@@ -566,7 +573,7 @@ AROS_UFH3(LONG, pipeproc,
 			kprintf("There are %d writers at the moment\n", fn->numwriters);
    		    }
 
-		    if (!fn->numwriters)
+		    if (un->mode&FMF_WRITE && !fn->numwriters)
 		    {
 			struct pipemessage *msg;
 
@@ -576,13 +583,12 @@ AROS_UFH3(LONG, pipeproc,
 			        "Reply to all the waiting readers");
 			while ((msg = (struct pipemessage *)RemHead(&fn->pendingreads)))
 			{
-			    msg->iofs->io_DosError = 0;
 			    msg->iofs->io_Union.io_READ_WRITE.io_Length =
 			    msg->iofs->io_Union.io_READ_WRITE.io_Length - msg->curlen;
 			    SendBack(msg);
 			}
 		    }
-		    if (!fn->numreaders)
+		    if (un->mode&FMF_READ && !fn->numreaders)
 		    {
 			struct pipemessage *msg;
 
@@ -603,6 +609,13 @@ AROS_UFH3(LONG, pipeproc,
 		    continue;
 		case FSA_WRITE:
 		    kprintf("Command is FSA_WRITE. ");
+		    if (!un->mode & FMF_WRITE)
+		    {
+		        kprintf("User doesn't have permission to write.\n");
+			msg->iofs->io_DosError = ERROR_BAD_STREAM_NAME;
+			SendBack(msg);
+		        continue;
+		    }
 		    if (!fn->numreaders)
 		    {
 			kprintf("There are no more readers: PIPE BROKEN.\n");
@@ -616,6 +629,13 @@ AROS_UFH3(LONG, pipeproc,
 		    break;
 		case FSA_READ:
 		    kprintf("Command is FSA_READ. ");
+		    if (!un->mode & FMF_READ)
+		    {
+		        kprintf("User doesn't have permission to read.\n");
+			msg->iofs->io_DosError = ERROR_BAD_STREAM_NAME;
+			SendBack(msg);
+		        continue;
+		    }
 		    if (!fn->numwriters)
 		    {
 			kprintf("There's no data to read: send EOF\n");
