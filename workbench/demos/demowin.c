@@ -2,7 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.15  1996/10/02 16:39:16  digulla
+    Revision 1.16  1996/10/02 18:10:17  digulla
+    Fixed a bug in DrawBorder()
+
+    Revision 1.15  1996/10/02 16:39:16	digulla
     Added demo for DrawEllipse
     Show off all 16 colors
     Created Image Gadget and Image structs
@@ -174,18 +177,18 @@ void Refresh (struct RastPort * rp)
 WORD BorderData[6*2*2] =
 {
     0, GAD_HEI-1, /* Top (lighter) edge */
-    1, -1,
-    0, -(GAD_HEI-3),
-    (GAD_WID-3), 0,
-    1, -1,
-    -(GAD_WID-1), 0,
+    1, GAD_HEI-2,
+    1, 1,
+    GAD_WID-2, 1,
+    GAD_WID-1, 0,
+    0, 0,
 
     0, -(GAD_HEI-2), /* Bottom (darker) edge */
-    -1, 1,
-    0, (GAD_HEI-4),
-    -(GAD_WID-4), 0,
-    -1, 1,
-    (GAD_WID-2), 0,
+    -1, -(GAD_HEI-3),
+    -1, -1,
+    -(GAD_WID-3), -1,
+    -(GAD_WID-2), 0,
+    -1, 0,
 };
 struct Border
 DemoBottomBorder =
