@@ -43,25 +43,26 @@ AROS_LHQUAD1(LONG, IEEEDPTst,
 {
     AROS_LIBFUNC_INIT
     
-  QUAD * Qy = (QUAD *)&y;
-
-  /* y is negative */
-  if (is_lessSC(*Qy, 0x0, 0x0) /* y < 0 */)
-  {
-    SetSR(Negative_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
-    return -1;
-  }
-
-  /* fnum1 is zero */
-  if (is_eqC(*Qy, 0x0, 0x0) /* y == 0 */)
-  {
-    SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
-    return 0;
-  }
-
-  /* fnum1 is positive */
-  SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
-  return 1;
+    QUAD * Qy = (QUAD *)&y;
+    
+    /* y is negative */
+    if (is_lessSC(*Qy, 0x0, 0x0) /* y < 0 */)
+    {
+        SetSR(Negative_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+        return -1;
+    }
+    
+    /* fnum1 is zero */
+    if (is_eqC(*Qy, 0x0, 0x0) /* y == 0 */)
+    {
+        SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+        return 0;
+    }
+    
+    /* fnum1 is positive */
+    SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
+    
+    return 1;
 
     AROS_LIBFUNC_EXIT
 }

@@ -45,17 +45,22 @@ AROS_LHQUAD1(double, IEEEDPAbs,
     /*if (0 == (*Qy)) */
     if (is_eqC((*Qy),0,0))
     {
-      /* value is 0 -> set the Zero Flag */
-      SetSR( Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+        /* value is 0 -> set the Zero Flag */
+        SetSR( Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
     }
     else
     {
-      /* set the sign-bit to zero */
-      /* (*Qy) &= (IEEEDPMantisse_Mask | IEEEDPExponent_Mask) */
-      AND64QC((*Qy), (IEEEDPMantisse_Mask_Hi | IEEEDPExponent_Mask_Hi),
-		     (IEEEDPMantisse_Mask_Lo | IEEEDPExponent_Mask_Lo));
-      SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
+        /* set the sign-bit to zero */
+        /* (*Qy) &= (IEEEDPMantisse_Mask | IEEEDPExponent_Mask) */
+        AND64QC
+        (
+            (*Qy), 
+            (IEEEDPMantisse_Mask_Hi | IEEEDPExponent_Mask_Hi),
+            (IEEEDPMantisse_Mask_Lo | IEEEDPExponent_Mask_Lo)
+        );
+        SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
     }
+    
     return y;
 
     AROS_LIBFUNC_EXIT

@@ -41,27 +41,34 @@ AROS_LHQUAD1(double, IEEEDPNeg,
 {
     AROS_LIBFUNC_INIT
     
-  QUAD * Qy = (QUAD *)&y;
-
-  /* change the sign-bit */
-  XOR64QC(*Qy, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
-
-  if (is_eqC(*Qy, 0x0, 0x0 ) ||
-      is_eqC(*Qy, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo) )
-  {
-    SetSR( Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-   return y;
-  }
-
-  /* if (y < 0) */
-  if(is_lessSC(*Qy, 0x0, 0x0) )
-  /* result is negative */
-    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-  else
-  /* result is positive */
-    SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
-
-  return y;
+    QUAD * Qy = (QUAD *)&y;
+    
+    /* change the sign-bit */
+    XOR64QC(*Qy, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
+    
+    if
+    (
+           is_eqC(*Qy, 0x0, 0x0 ) 
+        || is_eqC(*Qy, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo)
+    )
+    {
+        SetSR( Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return y;
+    }
+    
+    /* if (y < 0) */
+    if(is_lessSC(*Qy, 0x0, 0x0) )
+    {
+        /* result is negative */
+        SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    }
+    else
+    {
+        /* result is positive */
+        SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
+    }
+    
+    return y;
 
     AROS_LIBFUNC_EXIT
 }

@@ -41,9 +41,9 @@ AROS_LHQUAD1(LONG, FPU_IEEEDPFix,
     struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 5, MathIeeeDoubBas
 )
 {
-  AROS_LIBFUNC_INIT
-  return (LONG)y;
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_INIT
+    return (LONG)y;
+    AROS_LIBFUNC_EXIT
 } /* FPU_IEEEDPFix */
 
 AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPFlt,
@@ -51,16 +51,16 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPFlt,
     struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 6, MathIeeeDoubBas
 )
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 #if UseRegisterArgs
-  double d;
-  QUAD * Res = (QUAD *)&d; /* this forces the returned value to be in D0/D1 */
-  d = (double)y;
-  return * Res;
+    double d;
+    QUAD * Res = (QUAD *)&d; /* this forces the returned value to be in D0/D1 */
+    d = (double)y;
+    return * Res;
 #else
-  return (double)y;
+    return (double)y;
 #endif
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* FPU_IEEEDPFlt */
 
 AROS_LHQUAD2(LONG, FPU_IEEEDPCmp,
@@ -69,15 +69,13 @@ AROS_LHQUAD2(LONG, FPU_IEEEDPCmp,
     struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 7, MathIeeeDoubBas
 )
 {
-  AROS_LIBFUNC_INIT
-
-  if (y == z)
-    return 0;
-  if (y > z)
-    return 1;
-  return -1;
-
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_INIT
+    
+    if (y == z) return 0;
+    if (y > z)  return 1;
+    return -1;
+    
+    AROS_LIBFUNC_EXIT
 } /* FPU_IEEEDPCmp */
 
 AROS_LHQUAD1(LONG, FPU_IEEEDPTst,
@@ -85,15 +83,13 @@ AROS_LHQUAD1(LONG, FPU_IEEEDPTst,
     struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 8, MathIeeeDoubBas
 )
 {
-  AROS_LIBFUNC_INIT
-
-  if (0.0 == y)
-    return 0;
-  if (y > 0)
-    return 1;
-  return -1;
-
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_INIT
+    
+    if (0.0 == y) return 0;
+    if (y > 0)    return 1;
+    return -1;
+    
+    AROS_LIBFUNC_EXIT
 } /* FPU_IEEEDPTst */
 
 AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPAbs,
@@ -104,11 +100,11 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPAbs,
   AROS_LIBFUNC_INIT
 
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=abs(y);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=abs(y);
+    return * Res;
 #else
-  return abs(y);
+    return abs(y);
 #endif
 
   AROS_LIBFUNC_EXIT
@@ -118,15 +114,15 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPNeg,
 AROS_LHAQUAD(double, y, D0, D1),
 struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 10, MathIeeeDoubBas)
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y; /* this forces the returned value to be in D0/D1 */
-  y = -y;
-  return * Res;
+    QUAD * Res = (QUAD *)&y; /* this forces the returned value to be in D0/D1 */
+    y = -y;
+    return * Res;
 #else
-  return -y;
+    return -y;
 #endif
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* FPU_IEEEDPNeg */
 
 AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPAdd,
@@ -135,15 +131,15 @@ AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPAdd,
     struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 11, MathIeeeDoubBas
 )
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=y+z;
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=y+z;
+    return * Res;
 #else
-  return (y+z);
+    return (y+z);
 #endif
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* FPU_IEEEDPAdd */
 
 AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPSub,
@@ -151,15 +147,15 @@ AROS_LHAQUAD(double, y, D0, D1),
 AROS_LHAQUAD(double, z, D2, D3),
 struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 12, MathIeeeDoubBas)
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y; /* this forces the returned value to be in D0/D1 */
-  y=y-z;
-  return * Res;
+    QUAD * Res = (QUAD *)&y; /* this forces the returned value to be in D0/D1 */
+    y=y-z;
+    return * Res;
 #else
-  return (y-z);
+    return (y-z);
 #endif
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* FPU_IEEEDPSub */
 
 AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPMul,
@@ -168,15 +164,15 @@ AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPMul,
     struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 13, MathIeeeDoubBas
 )
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=y*z;
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=y*z;
+    return * Res;
 #else
-  return y*z;
+    return y*z;
 #endif
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* FPU_IEEEDPMul */
 
 AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPDiv,
@@ -185,15 +181,15 @@ AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPDiv,
     struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 14, MathIeeeDoubBas
 )
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y; /* this forces the returned value to be in D0/D1 */
-  y = y/z;
-  return * Res;
+    QUAD * Res = (QUAD *)&y; /* this forces the returned value to be in D0/D1 */
+    y = y/z;
+    return * Res;
 #else
-  return (y/z);
+    return (y/z);
 #endif
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* FPU_IEEEDPDiv */
 
 AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPFloor,
@@ -201,10 +197,10 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPFloor,
     struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 15, MathIeeeDoubBas
 )
 {
-  AROS_LIBFUNC_INIT
- /*  return floor(y); */
-  return 0xbadc0deULL;
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_INIT
+    /*  return floor(y); */
+    return 0xbadc0deULL;
+    AROS_LIBFUNC_EXIT
 } /* FPU_IEEEDPFloor */
 
 AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPCeil,
@@ -212,8 +208,8 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPCeil,
     struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 16, MathIeeeDoubBas
 )
 {
-  AROS_LIBFUNC_INIT
- /*  return ceil(y); */
-  return 0xbadc0deULL;
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_INIT
+    /*  return ceil(y); */
+    return 0xbadc0deULL;
+    AROS_LIBFUNC_EXIT
 } /* FPU_IEEEDPCeil */

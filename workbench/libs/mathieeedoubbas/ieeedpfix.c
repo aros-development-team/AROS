@@ -37,50 +37,52 @@ AROS_LHQUAD1(LONG, IEEEDPFix,
 {
     AROS_LIBFUNC_INIT
     
-LONG Res, Shift, tmp;
-QUAD y2;
-QUAD * Qy = (QUAD *)&y;
-
-  tmp = Get_High32of64(*Qy) & IEEEDPExponent_Mask_Hi;
-
-  if ( tmp > 0x41d00000 )
-  {
+    LONG Res, Shift, tmp;
+    QUAD y2;
+    QUAD * Qy = (QUAD *)&y;
+    
+    tmp = Get_High32of64(*Qy) & IEEEDPExponent_Mask_Hi;
+    
+    if ( tmp > 0x41d00000 )
+    {
     if( is_lessSC(*Qy, 0x0, 0x0))
     {
-      SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      return 0x80000000;
+    SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    return 0x80000000;
     }
     else
     {
-      SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      return 0x7fffffff;
+    SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    return 0x7fffffff;
     }
-  }
-
-
-  if (is_eqC(*Qy, 0x0, 0x0) ||
-      is_eqC(*Qy,IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo)) /* y=+-0; */
-  {
-    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 0;
-  }
-
-  Shift = (Get_High32of64(*Qy) & IEEEDPExponent_Mask_Hi) >> 20;
-  Shift = 0x433 - Shift;
-  tmp = Get_High32of64(*Qy);
-  AND64QC(*Qy, IEEEDPMantisse_Mask_Hi, IEEEDPMantisse_Mask_Lo);
-  OR64QC(*Qy, 0x00100000, 0x00000000);
-  SHRU64(y2, *Qy , Shift);
-  Res = Get_Low32of64(y2);
-
-  /* Test for a negative sign  */
-  if (tmp < 0) /* y < 0 */
-  {
-    Res = -Res;
-    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-  }
-
-  return Res;
+    }
+    
+    
+    if(
+           is_eqC(*Qy, 0x0, 0x0)
+        || is_eqC(*Qy,IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo)
+    ) /* y=+-0; */
+    {
+        SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return 0;
+    }
+    
+    Shift = (Get_High32of64(*Qy) & IEEEDPExponent_Mask_Hi) >> 20;
+    Shift = 0x433 - Shift;
+    tmp = Get_High32of64(*Qy);
+    AND64QC(*Qy, IEEEDPMantisse_Mask_Hi, IEEEDPMantisse_Mask_Lo);
+    OR64QC(*Qy, 0x00100000, 0x00000000);
+    SHRU64(y2, *Qy , Shift);
+    Res = Get_Low32of64(y2);
+    
+    /* Test for a negative sign  */
+    if (tmp < 0) /* y < 0 */
+    {
+        Res = -Res;
+        SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    }
+    
+    return Res;
 
     AROS_LIBFUNC_EXIT
 }
