@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: 
-    Lang: English
 */
 
 
@@ -20,7 +17,7 @@
 #define min(a,b) ((a)<=(b)?(a):(b))
 #endif
 
-#if defined(_AMIGA) || AROS_BIG_ENDIAN
+#if defined(__AMIGAOS__) || AROS_BIG_ENDIAN
 #  define BUF0 0
 #  define BUF1 1
 #  define BUF2 2
