@@ -27,6 +27,8 @@
 #define KBD_STATUS_OBF 			0x01 	/* keyboard output buffer full */
 #define KBD_STATUS_IBF 			0x02 	/* keyboard input buffer full */
 #define KBD_STATUS_MOUSE_OBF		0x20	/* Mouse output buffer full */
+#define KBD_STATUS_GTO			0x40    /* General receive/xmit timeout */
+#define KBD_STATUS_PERR			0x80    /* Parity error */
 
 #define KBD_CTRLCMD_READ_MODE		0x20
 #define KBD_CTRLCMD_WRITE_MODE		0x60
@@ -118,8 +120,6 @@ struct pHidd_Kbd_HandleEvent
     ULONG 			event;
 };
 
-VOID Hidd_Kbd_HandleEvent(OOP_Object *o, ULONG event);
-
 /* misc */
 
 struct abdescr
@@ -134,16 +134,14 @@ struct kbd_staticdata
 
     struct Library 		*oopbase;
     struct Library 		*utilitybase;
-    struct ExecBase 		*sysbase;
+    struct ExecBase     *sysbase;
 
     OOP_Class 			*kbdclass;
 
     OOP_Object 			*irqhidd;
     OOP_Object 			*kbdhidd;
     
-#if MOUSE_ACTIVE
-    OOP_Object 			*irqhidd_mouse;
-#endif
+    OOP_AttrBase        hiddKbdAB;
 };
 
 /****************************************************************************************/

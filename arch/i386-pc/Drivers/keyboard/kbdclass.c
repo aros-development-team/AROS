@@ -6,12 +6,6 @@
     Lang: English.
 */
 
-/*
- * Define the following to have a combined mouse and keyboard hidd!
- * Has to come before include kbd.h!
- */
-#define MOUSE_ACTIVE 0
-
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -35,10 +29,10 @@
 #include "kbd.h"
 #include "keys.h"
 
-/*#include "../../speaker.h" inb/outb defines in there cause trouble */
-
 #define DEBUG 0
 #include <aros/debug.h>
+
+/* Predefinitions */
 
 void kbd_keyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
@@ -46,8 +40,20 @@ void kbd_updateleds();
 int kbd_reset(void);
 int poll_data(void);
 
-long pckey2hidd (ULONG event);
+unsigned char handle_kbd_event(void);
+void kb_wait(void);
+void kbd_write_cmd(int cmd);
+void aux_write_ack(int val);
+void kbd_write_output_w(int data);
+void kbd_write_command_w(int data);
+void mouse_usleep(ULONG);
 
+/* End of predefinitions */
+
+/* !!!!!!!!!! Remove all .data from file
+ */
+#define HiddKbdAB   (XSD(cl)->hiddKbdAB)
+/*
 static OOP_AttrBase HiddKbdAB;
 
 static struct abdescr attrbases[] =
@@ -55,14 +61,18 @@ static struct abdescr attrbases[] =
     { IID_Hidd_Kbd, &HiddKbdAB },
     { NULL, NULL }
 };
+*/
 
 struct kbd_data
 {
     VOID (*kbd_callback)(APTR, UWORD);
     APTR callbackdata;
+
+    ULONG kbd_keystate;     /* State of special keys */
+    UWORD le;               /* Last event */
 };
 
-static struct _keytable
+static const __attribute__((section(".text"))) struct _keytable
 {
     ULONG  keysym;
     ULONG  hiddcode;
@@ -175,7 +185,6 @@ keytable[] =
     {0, -1 }
 };
 
-
 /***** Kbd::New()  ***************************************/
 static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -252,7 +261,7 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             irq->h_Node.ln_Pri  = 127;		/* Set the highest pri */
             irq->h_Node.ln_Name = "Keyboard class irq";
             irq->h_Code         = kbd_keyint;
-            irq->h_Data         = (APTR)o;
+            irq->h_Data         = (APTR)data;
 
             HIDD_IRQ_AddHandler(XSD(cl)->irqhidd, irq, vHidd_IRQ_Keyboard);
 
@@ -260,32 +269,12 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             kbd_reset();		/* Reset the keyboard */
             Enable();
             
-            kbd_updateleds();
+            kbd_updateleds(0);
             ObtainSemaphore(&XSD(cl)->sema);
             XSD(cl)->kbdhidd = o;
             ReleaseSemaphore(&XSD(cl)->sema);
 
         }
-        
-  /*
-   * Please leave the following lines here.
-   * It only works when they are here. I don't know why, but
-   * I'll find a way to avoid them...
-   */
-
-#if 0
-  Sound(400,100000000);
-  D(bug("reseting keyboard!\n"));
-  kbd_reset();
-#endif
-
-#warning There is an endless loop here for testing purposes.
-#if 0
-  while (1)
-  {
-
-  }
-#endif
     }
     ReturnPtr("Kbd::New", OOP_Object *, o);
 }
@@ -295,21 +284,13 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 static VOID kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_HandleEvent *msg)
 {
     struct kbd_data * data;
-    UWORD key;
 
     EnterFunc(bug("kbd_handleevent()\n"));
+
     data = OOP_INST_DATA(cl, o);
-    key = pckey2hidd(msg->event);
-    D(bug("%lx ",key));
-    if (key == 0x78)	// Reset request
-        ColdReboot();
-    if (data->kbd_callback)
-    {
-       data->kbd_callback(data->callbackdata, key);
-    }
+    
     ReturnVoid("Kbd::HandleEvent");
 }
-
 
 #undef XSD
 #define XSD(cl) xsd
@@ -322,7 +303,13 @@ static VOID kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_Handl
 OOP_Class *init_kbdclass (struct kbd_staticdata *xsd)
 {
     OOP_Class *cl = NULL;
-
+    
+    struct OOP_ABDescr attrbases[] =
+    {
+        {IID_Hidd_Kbd,  &xsd->hiddKbdAB},
+        {NULL, NULL }
+    };
+    
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
         {OOP_METHODDEF(kbd_new),            moRoot_New},
@@ -363,7 +350,7 @@ OOP_Class *init_kbdclass (struct kbd_staticdata *xsd)
             cl->UserData = (APTR)xsd;
             xsd->kbdclass = cl;
     
-            if (obtainattrbases(attrbases, OOPBase))
+            if (OOP_ObtainAttrBases(attrbases))
             {
                 D(bug("KbdHiddClass ok\n"));
 
@@ -384,6 +371,12 @@ OOP_Class *init_kbdclass (struct kbd_staticdata *xsd)
 /*************** free_kbdclass()  **********************************/
 VOID free_kbdclass(struct kbd_staticdata *xsd)
 {
+    struct OOP_ABDescr attrbases[] =
+    {
+        {IID_Hidd_Kbd,  &xsd->hiddKbdAB},
+        {NULL, NULL }
+    };
+    
     EnterFunc(bug("free_kbdclass(xsd=%p)\n", xsd));
 
     if(xsd)
@@ -393,19 +386,12 @@ VOID free_kbdclass(struct kbd_staticdata *xsd)
         if(xsd->kbdclass) OOP_DisposeObject((OOP_Object *) xsd->kbdclass);
         xsd->kbdclass = NULL;
 
-        releaseattrbases(attrbases, OOPBase);
+        OOP_ReleaseAttrBases(attrbases);
     }
     ReturnVoid("free_kbdclass");
 }
 
 /************************* Keyboard Interrupt ****************************/
-
-unsigned char handle_kbd_event(void);
-void kb_wait(void);
-void kbd_write_cmd(int cmd);
-void aux_write_ack(int val);
-void kbd_write_output_w(int data);
-void kbd_write_command_w(int data);
 
 #define WaitForInput        		\
     ({ int i = 0,dummy;     		\
@@ -419,16 +405,6 @@ void kbd_write_command_w(int data);
          i++;           \
        }})
 
-#define WaitForOutput   		\
-    ({  do              		\
-        {               		\
-            info=kbd_read_status();     \
-        } while(info & KBD_STATUS_IBF); \
-        kbd_read_input();              	\
-    })
-
-
-ULONG kbd_keystate;
 #define LCTRL	0x00000008
 #define RCTRL	0x00000010
 #define LALT	0x00000020
@@ -440,7 +416,7 @@ ULONG kbd_keystate;
 
 #warning Old place of kbd_reset
 
-void kbd_updateleds()
+void kbd_updateleds(ULONG kbd_keystate)
 {
     UBYTE key,info;
     kbd_write_output_w(KBD_OUTCMD_SET_LEDS);
@@ -454,25 +430,30 @@ void kbd_updateleds()
 #undef SysBase
 #define SysBase (hw->sysBase)
 
-static UBYTE mouse_data[3];
-static UBYTE mouse_collected_bytes = 0;
-static UBYTE expected_mouse_acks = 0;
-
 void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
     UBYTE   keycode;        /* Recent Keycode get */
     UBYTE   info;           /* Data from info reg */
     UWORD   event;          /* Event sent to handleevent method */
-    static UWORD le;        /* Last event used to prevent from some reps */    
+
+    struct kbd_data *data = (struct kbd_data *)irq->h_Data;
+    ULONG kbd_keystate = data->kbd_keystate;
+    UWORD le = data->le;
+    
+    unsigned int work = 10000;
+    
     info = kbd_read_status();
 
     while ((info & KBD_STATUS_OBF))     	/* data from information port */
     {
-      if (!(info & KBD_STATUS_MOUSE_OBF))       /* If bit 5 set data from mouse. Otherwise keyboard */
-      {
-        keycode=poll_data();
-        if (keycode==0xe0)              /* Special key */
+        /* Ignore errors and messages for mouse */
+        if (!(info & (KBD_STATUS_GTO | KBD_STATUS_PERR | KBD_STATUS_MOUSE_OBF)))
         {
+          keycode=poll_data();
+//            keycode = kbd_read_input();
+	
+          if (keycode==0xe0)              /* Special key */
+          {
             keycode=poll_data();
             if (keycode==0x2a)          /* Shift modifier - we can skip it */
             {
@@ -513,7 +494,7 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         else event=keycode;
         if ((event==le) && (
             le==K_KP_Numl || le==K_Scroll_Lock || le==K_CapsLock ||
-            le==K_LShift || le==K_RShift || le==K_LCtrl || le==K_RCtrl ||
+    	    le==K_LShift || le==K_RShift || le==K_LCtrl || le==K_RCtrl ||
             le==K_LAlt || le==K_RAlt || le==K_LMeta || le==K_RMeta))
         {
             //return -1;	/* Do not repeat shift pressed or something like this */
@@ -523,15 +504,15 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         {
             case K_KP_Numl:
                 kbd_keystate^=0x02;	/* Turn Numlock bit on */
-                kbd_updateleds();
+                kbd_updateleds(kbd_keystate);
                 break;
             case K_Scroll_Lock:
                 kbd_keystate^=0x01;	/* Turn Scrolllock bit on */
-                kbd_updateleds();
+                kbd_updateleds(kbd_keystate);
                 break;
             case K_CapsLock:
                 kbd_keystate^=0x04;	/* Turn Capslock bit on */
-                kbd_updateleds();
+                kbd_updateleds(kbd_keystate);
                 break;
             case K_LShift:
                 kbd_keystate|=LSHIFT;
@@ -582,13 +563,54 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
                 kbd_keystate&=~RALT;
                 break;
         }
-        le=event;
+        data->le=event;
         if ((kbd_keystate & (LCTRL|LMETA|RMETA))==(LCTRL|LMETA|RMETA))
             event=K_ResetRequest;
         if ((event & 0x7f7f)==(K_Scroll_Lock & 0x7f)) event|=0x4000;
-        Hidd_Kbd_HandleEvent((OOP_Object *)irq->h_Data,(ULONG) event);
+
+        /* Update keystate */
+        data->kbd_keystate = kbd_keystate;
+        
+        /* Translate code into Amiga-like code */
+        {
+            long result = -1;
+            short t;
+            UBYTE KeyUpFlag;
+
+            KeyUpFlag=(UBYTE)event & 0x80;
+            event &= ~(0x80);
+
+            for (t=0; keytable[t].hiddcode != -1; t++)
+            {
+                if (event == keytable[t].keysym)
+                {
+                    result = keytable[t].hiddcode;
+                    result|= KeyUpFlag;
+                    break;
+                }
+            }
+            if (result == -1)
+            {
+                result = event & 0xffff;
+                result |= KeyUpFlag;
+            }
+
+            if (result == 0x78)    // Reset request
+                ColdReboot();
+                                           
+            /* Pass the code to handler */
+            data->kbd_callback(data->callbackdata, result);
+        }
       }
+
       info = kbd_read_status();
+
+      /* Protect as from forever loop */
+      if (!--work)
+      {
+        D(bug("kbd.hidd: controller jammed (0x%02X).\n", info));
+        break;
+      }
     } /* while data can be read */
 
     //return 0;	/* Enable processing other intServers */
@@ -599,31 +621,6 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 #undef SysBase
 #endif /* SysBase */
 #define SysBase (*(struct ExecBase **)4UL)
-
-long pckey2hidd (ULONG event)
-{
-    long result;
-    short t;
-    UBYTE KeyUpFlag;
-
-    KeyUpFlag=(UBYTE)event & 0x80;
-    event &= ~(0x80);
-
-    for (t=0; keytable[t].hiddcode != -1; t++)
-    {
-        if (event == keytable[t].keysym)
-        {
-            result = keytable[t].hiddcode;
-            result|= KeyUpFlag;
-            ReturnInt ("xk2h", long, result);
-        }
-    }
-    D(bug("pk2h: Passing PC keycode\n", event & 0xffff));
-
-    result = event & 0xffff;
-    result |= KeyUpFlag;
-    ReturnInt ("xk2h", long, result);
-}
 
 #warning This should go somewhere higher but D(bug()) is not possible there
 
@@ -639,7 +636,8 @@ int poll_data(void)
         {
             unsigned char c;
 
-            TimeDelay(0,0,8);   /* !!! I don't really know if this alib function has any effect on native-i386 yet */
+            mouse_usleep(8);
+            //            TimeDelay(0,0,8);   /* !!! I don't really know if this alib function has any effect on native-i386 yet */
             c = kbd_read_input();
             return(c);
         }
@@ -653,12 +651,11 @@ int poll_data(void)
  */
 int kbd_reset(void)
 {
-    UBYTE retval, status;
-    UBYTE key,info;
+    UBYTE retval;
 
     poll_data();		/* Empty keys queue */
 
-    WaitForOutput;
+    kb_wait();
     kbd_write_command(KBD_CTRLCMD_SELF_TEST); /* Initialize and test keyboard */
 
     retval = (UBYTE)poll_data();
@@ -670,14 +667,14 @@ int kbd_reset(void)
 
     //kbd_write_output_w(KBD_CMD_RESET);
 
-    WaitForOutput;
+    kb_wait();
     kbd_write_command(KBD_CTRLCMD_KBD_ENABLE);  /* enable keyboard */
 
     D(bug("Keyboard enabled!\n"));
 
-    WaitForOutput;
+    kb_wait();
     kbd_write_command(KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
-    WaitForOutput;
+    kb_wait();
     kbd_write_output(KBD_MODE_KCC 	| // set paramters: scan code to pc conversion, 
     		     KBD_MODE_KBD_INT 	| //                enable mouse and keyboard,
 		     KBD_MODE_MOUSE_INT | //                enable IRQ 1 & 12.

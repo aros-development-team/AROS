@@ -3,11 +3,11 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-FILES	:=	kbd_init functable kbdclass support kbd_common endtag
+FILES	:=	kbd_init functable kbdclass kbd_common endtag
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 
 #MM Drivers-native-kbd :
-Drivers-native-kbd : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+Drivers-native-kbd : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) kbdclass.s
 	%add_objects rom/boot/kbd_driver
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
 	    -o $(OSGENDIR)/boot/kbd_driver.o
@@ -29,7 +29,10 @@ $(OBJDIR)/%.o : %.c
 
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
-	
+
+kbdclass.s : kbdclass.c
+	%ctoasm_q	
+
 libdefs.h : lib.conf
 	@$(ECHO) "Generating $@..."
 	@$(ARCHTOOL) -c
