@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES		:= setjmp longjmp __vcformat __vcscan strtol strtoul strtod
+FILES		:= setjmp longjmp strtod __vcformat __vcscan sscanf isinf atof difftime __isinf drand48 strtol strtoul
 CLIBDIR 	:= $(GENDIR)/compiler/clib
 SPECIAL_CFLAGS	:= -I$(TOP)/compiler/clib -I..
 CFLAGS2 	:= $(CFLAGS)
@@ -16,6 +16,8 @@ clib-palm : $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
 setup-clib-palm-m68k :
 	%mkdirs_q $(CLIBDIR)
 	%add_objects $(foreach f,$(FILES), compiler/clib/$(f))
+	%exclude_files $(foreach f,$(FILES), compiler/clib/$(f))
+
 
 #MM
 clean ::
