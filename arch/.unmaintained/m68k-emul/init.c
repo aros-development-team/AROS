@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/12/09 11:55:52  aros
+    No longer used
+
     Revision 1.3  1996/10/19 17:07:31  aros
     Include <aros/machine.h> instead of machine.h
 
