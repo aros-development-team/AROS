@@ -14,7 +14,7 @@ FORCE_LIBS    := $(MOSLIB)/libaros.a $(MOSLIB)/libstringio.a \
 USE_CPAK      := no
 endif
 
-FILES := basicfuncs diskobjio diskobj35io
+FILES := support diskobjio diskobj35io
 
 FUNCS := \
     addfreelist \
