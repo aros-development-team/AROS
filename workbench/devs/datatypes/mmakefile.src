@@ -4,7 +4,7 @@ DTDIR 		:= $(DEVSDIR)/DataTypes
 FILES 		:= FTXT PPM
 DTFILES		:= $(foreach f, $(FILES), $(DTDIR)/$(f))
 
-#MM workbench-devs : setup $(DTFILES)
+#MM workbench-devs : setup
 workbench-devs : $(DTFILES)
 	@$(NOP)
 
