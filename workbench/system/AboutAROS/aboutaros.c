@@ -411,14 +411,11 @@ IPTR AboutAROS__MUIM_Application_Execute
     Class *CLASS, Object *self, Msg message 
 )
 {
-    struct AboutAROS_DATA *data    = INST_DATA(CLASS, self);
-    ULONG                  signals = 0L;
+    struct AboutAROS_DATA *data = INST_DATA(CLASS, self);
     
-    SetAttrs(data->aad_Window, MUIA_Window_Open, TRUE, TAG_DONE);
-    
+    SET(data->aad_Window, MUIA_Window_Open, TRUE);
     DoSuperMethodA(CLASS, self, message);
-    
-    SetAttrs(data->aad_Window, MUIA_Window_Open, FALSE, TAG_DONE);
+    SET(data->aad_Window, MUIA_Window_Open, FALSE);
 
     return NULL;
 }
