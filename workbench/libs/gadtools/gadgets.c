@@ -937,20 +937,20 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
 
     struct TagItem *tag, tags[] =
     {
-    	{GA_Disabled,		FALSE},
-    	{GA_Immediate,		FALSE},
-	{GA_RelVerify,          TRUE},
-    	{GA_TabCycle,		TRUE},
-    	{GTST_String,		(IPTR)NULL},
-    	{GTST_MaxChars,		64UL},		/* Georg Steger: Maxon Hothelp says so */ 
-    	{GTST_EditHook,		(IPTR)NULL},
-    	{STRINGA_ExitHelp,	FALSE},
-    	{STRINGA_Justification,	GACT_STRINGLEFT},
-    	{STRINGA_ReplaceMode,	FALSE},
-    	{GA_TextAttr,		(IPTR)NULL},
-	{GTA_GadgetKind,	STRING_KIND},
-	{GA_Bounds,		(IPTR)&bbox},
-	{TAG_MORE, 	(IPTR)NULL}
+    	{GA_Disabled,		FALSE		}, /* 0 */
+    	{GA_Immediate,		FALSE		}, /* 1 */
+	{GA_RelVerify,          TRUE		}, /* 2 */
+    	{GA_TabCycle,		TRUE		}, /* 3 */
+    	{GTST_String,		(IPTR)NULL	}, /* 4 */
+    	{GTST_MaxChars,		64UL		}, /* 5 Georg Steger: Maxon Hothelp says so */ 
+    	{GTST_EditHook,		(IPTR)NULL	}, /* 6 */
+    	{STRINGA_ExitHelp,	FALSE		}, /* 7 */
+    	{STRINGA_Justification,	GACT_STRINGLEFT	}, /* 8 */
+    	{STRINGA_ReplaceMode,	FALSE		}, /* 9 */
+    	{GA_TextAttr,		(IPTR)NULL	}, /* 10 */
+	{GTA_GadgetKind,	STRING_KIND	}, /* 11 */
+	{GA_Bounds,		(IPTR)&bbox	}, /* 12 */
+	{TAG_MORE, 		(IPTR)NULL	}  /* 13 */
     };
     
    
@@ -1024,17 +1024,18 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
     {
     	{GA_Disabled,		FALSE		}, /* 0 */
     	{GA_Immediate,		FALSE		}, /* 1 */
-    	{GA_TabCycle,		TRUE		}, /* 2 */
-    	{GTIN_Number,		0L		}, /* 3 */
-    	{GTIN_MaxChars,		10L		}, /* 4 */
-    	{GTIN_EditHook,		(IPTR)NULL	}, /* 5 */
-    	{STRINGA_ExitHelp,	FALSE		}, /* 6 */
-    	{STRINGA_Justification,	GACT_STRINGLEFT	}, /* 7 */
-    	{STRINGA_ReplaceMode,	FALSE		}, /* 8 */
-    	{GA_TextAttr,		(IPTR)NULL	}, /* 9 */
-	{GTA_GadgetKind,	INTEGER_KIND	}, /* 10 */
-	{GA_Bounds,		(IPTR)&bbox	}, /* 11 */
-	{TAG_MORE, 		(IPTR)NULL	}
+	{GA_RelVerify,		TRUE		}, /* 2 */
+    	{GA_TabCycle,		TRUE		}, /* 3 */
+    	{GTIN_Number,		0L		}, /* 4 */
+    	{GTIN_MaxChars,		10L		}, /* 5 */
+    	{GTIN_EditHook,		(IPTR)NULL	}, /* 6 */
+    	{STRINGA_ExitHelp,	FALSE		}, /* 7 */
+    	{STRINGA_Justification,	GACT_STRINGLEFT	}, /* 8 */
+    	{STRINGA_ReplaceMode,	FALSE		}, /* 9 */
+    	{GA_TextAttr,		(IPTR)NULL	}, /* 10 */
+	{GTA_GadgetKind,	INTEGER_KIND	}, /* 11 */
+	{GA_Bounds,		(IPTR)&bbox	}, /* 12 */
+	{TAG_MORE, 		(IPTR)NULL	}  /* 13 */
     };
     
    
@@ -1047,21 +1048,22 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
     	{
     	case GA_Disabled:		tags[0].ti_Data = tidata; break;
     	case GA_Immediate:		tags[1].ti_Data	= tidata; break;
-    	case GA_TabCycle:		tags[2].ti_Data	= tidata; break;
-    	case GTIN_Number:		tags[3].ti_Data	= tidata; break;
-    	case GTIN_MaxChars:		tags[4].ti_Data	= tidata; break;
-    	case GTIN_EditHook:		tags[5].ti_Data	= tidata; break;
-    	case STRINGA_ExitHelp:		tags[6].ti_Data	= tidata; break;
-    	case STRINGA_Justification:	tags[7].ti_Data	= tidata; break;
-    	case STRINGA_ReplaceMode:	tags[8].ti_Data	= tidata; break;
+	case GA_RelVerify:		tags[2].ti_Data = tidata; break;
+    	case GA_TabCycle:		tags[3].ti_Data	= tidata; break;
+    	case GTIN_Number:		tags[4].ti_Data	= tidata; break;
+    	case GTIN_MaxChars:		tags[5].ti_Data	= tidata; break;
+    	case GTIN_EditHook:		tags[6].ti_Data	= tidata; break;
+    	case STRINGA_ExitHelp:		tags[7].ti_Data	= tidata; break;
+    	case STRINGA_Justification:	tags[8].ti_Data	= tidata; break;
+    	case STRINGA_ReplaceMode:	tags[9].ti_Data	= tidata; break;
     	}
     	
     } /* while (iterate taglist) */
 
     if (tattr) /* Text Attr supplied ? */
-	tags[9].ti_Data = (IPTR)tattr; 
+	tags[10].ti_Data = (IPTR)tattr; 
     else
-    	tags[9].ti_Tag = TAG_IGNORE; /* Don't pass GA_TextAttr, NULL */
+    	tags[10].ti_Tag = TAG_IGNORE; /* Don't pass GA_TextAttr, NULL */
 
     /* if there is a bounding box the label position
        will be calculated based on this box and not
@@ -1080,7 +1082,7 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
     FindTagItem(GA_Width,stdgadtags)->ti_Data  -= BORDERSTRINGSPACINGX * 2;
     FindTagItem(GA_Height,stdgadtags)->ti_Data -= BORDERSTRINGSPACINGY * 2;
 
-    tags[12].ti_Data = (IPTR)stdgadtags;
+    tags[13].ti_Data = (IPTR)stdgadtags;
 
     cl = makestringclass(GadToolsBase);
     if (!cl)
