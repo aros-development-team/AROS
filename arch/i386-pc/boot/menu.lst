@@ -1,0 +1,10 @@
+# test
+
+default 0
+timeout 10
+fallback 1
+
+#aros
+title AROS
+#root (fd0)
+kernel /Devs/aros-native-i386.gz
