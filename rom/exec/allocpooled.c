@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1997/03/07 04:27:24  ldp
+    Added debugging
+
     Revision 1.8  1997/01/01 03:46:05  ldp
     Committed Amiga native (support) code
 
@@ -33,6 +36,17 @@
 #include "memory.h"
 #include <exec/memory.h>
 #include <proto/exec.h>
+
+#include "exec_debug.h"
+#ifndef DEBUG_InitResident
+#   define DEBUG_InitResident 0
+#endif
+#if DEBUG_InitResident
+#   undef DEBUG
+#   define DEBUG 1
+#endif
+#include <aros/debug.h>
+#undef kprintf
 
 /*****************************************************************************
 
@@ -78,6 +92,8 @@
 
     APTR ret;
     struct Pool *pool=(struct Pool *)poolHeader;
+
+    D(bug("AllocPooled $%lx memsize $%lx by \"%s\"\n", poolHeader, memSize, SysBase->ThisTask->tc_Node.ln_Name));
 
     /* If the memSize is bigger than the ThreshSize allocate seperately. */
     if(memSize>pool->ThreshSize)
