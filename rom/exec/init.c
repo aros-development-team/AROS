@@ -51,7 +51,7 @@ extern const struct Resident Mathffp_resident;
 
 extern void InitCore(void);
 
-#define MEMSIZE 1024*1024
+#define MEMSIZE 1024*1024*2
 /*#define STATIC_MEMORY */ /* So that gdb can disassemble it */
 static struct MemHeader mh;
 #ifdef STATIC_MEMORY
