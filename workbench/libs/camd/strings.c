@@ -16,6 +16,25 @@ ULONG mystrlen(char *string){
 	return ret;
 }
 
+BOOL mystrcmp(char *one,char *two){
+  while(*one==*two){
+    if(*one==0) return TRUE;
+    one++;
+    two++;
+  }
+  return FALSE;
+}
+
+char *findonlyfilename(char *pathfile){
+  char *temp=pathfile;
+  while(*pathfile!=0){
+    if(*pathfile=='/') temp=pathfile+1;
+    if(*pathfile==':') temp=pathfile+1;
+    pathfile++;
+  }
+  return temp;
+}
+
 ASM void stuffChar( REG(d0) UBYTE in,REG(a3) char **stream){
 	stream[0]++;
 	stream[0][-1]=in;

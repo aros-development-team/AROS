@@ -367,6 +367,8 @@ struct Drivers *FindPrevDriverForMidiDeviceData(
 );
 
 ULONG mystrlen(char *string);
+BOOL mystrcmp(char *one,char *two);
+char *findonlyfilename(char *pathfile);
 void mysprintf(struct CamdBase *camdbase,char *string,char *fmt,...);
 struct MidiLink *GetMidiLinkFromOwnerNode(struct MinNode *node);
 

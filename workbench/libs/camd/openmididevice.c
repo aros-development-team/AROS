@@ -15,7 +15,7 @@
 #  define DEBUG 1
 #  include <aros/debug.h>
 
-BOOL isPointerInSeglist(APTR pointer,BPTR seglist);
+BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 
 /*****************************************************************************
 
@@ -80,47 +80,67 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist);
 			size-=AROS_PTRALIGN,addr+=AROS_PTRALIGN
 		){
 			mididevicedata=(struct MidiDeviceData *)addr;
-			if(
-				/* Do some tests to check that we have got a correct mididevicedata.
-				   Its not failproof, but the chance for this to fail should be small.
-				*/
-				mididevicedata->Magic==MDD_Magic && 		//Hopefully, this one should only succeed once.
-				mididevicedata->Name!=NULL &&
-				mididevicedata->Init!=NULL &&
-				mididevicedata->Expunge!=NULL &&
-				mididevicedata->OpenPort!=NULL &&
-				mididevicedata->ClosePort!=NULL &&
-				(((ULONG)(mididevicedata->Init)&(AROS_PTRALIGN-1))==0) &&
-				(((ULONG)(mididevicedata->Expunge)&(AROS_PTRALIGN-1))==0) &&
-				(((ULONG)(mididevicedata->OpenPort)&(AROS_PTRALIGN-1))==0) &&
-				(((ULONG)(mididevicedata->ClosePort)&(AROS_PTRALIGN-1))==0) &&
-//				mididevicedata->NPorts>0 &&	// No, the driver must have the possibility to set number of ports at the init-routine.
-				isPointerInSeglist(mididevicedata->Name,seglist) &&
-				isPointerInSeglist(mididevicedata->Init,seglist) &&
-				isPointerInSeglist(mididevicedata->Expunge,seglist) &&
-				isPointerInSeglist(mididevicedata->OpenPort,seglist) &&
-				isPointerInSeglist(mididevicedata->ClosePort,seglist) &&
-				(
-					mididevicedata->IDString==NULL ||
-					isPointerInSeglist(mididevicedata->Name,seglist)
-				)
-				
-			){
-				driver=AllocMem(sizeof(struct Drivers),MEMF_ANY | MEMF_CLEAR | MEMF_PUBLIC);
-				if(driver==NULL){
-					UnLoadSeg(seglist);
-					return NULL;
-				}
-				driver->seglist=seglist;
-				driver->mididevicedata=mididevicedata;
-				driver->numports=mididevicedata->NPorts;
+			if
+			  (
+			   /* Do some tests to check that we have got a correct mididevicedata.
+			      Its not failproof, but the chance for this to fail should be small.
+			      */
+			   mididevicedata->Magic==MDD_Magic && 		//Hopefully, this one should only succeed once.
+			   mididevicedata->Name!=NULL &&
+			   mididevicedata->Init!=NULL &&
+			   isPointerInSeglist(mididevicedata->Init,seglist,4) &&			   
+			   (((ULONG)(mididevicedata->Init)&(AROS_PTRALIGN-1))==0) &&
+			   isPointerInSeglist(
+					      mididevicedata->Name,
+					      seglist,mystrlen(findonlyfilename(name))
+					      )
+			   &&
+			   mystrcmp(findonlyfilename(name),mididevicedata->Name)==TRUE &&
+			   (
+			    mididevicedata->Expunge==NULL  ||
+			    (
+			     isPointerInSeglist(mididevicedata->Expunge,seglist,4) && 				  
+			     (((ULONG)(mididevicedata->Expunge)&(AROS_PTRALIGN-1))==0)									       
+			     )
+			    )
+			   &&
+			   (
+			    mididevicedata->OpenPort==NULL ||
+			    (
+			     (((ULONG)(mididevicedata->OpenPort)&(AROS_PTRALIGN-1))==0) &&
+			     isPointerInSeglist(mididevicedata->OpenPort,seglist,4)
+			     )
+			    )
+			   &&
+			   (
+			    mididevicedata->ClosePort==NULL ||
+			    (
+			     (((ULONG)(mididevicedata->ClosePort)&(AROS_PTRALIGN-1))==0) &&
+			     isPointerInSeglist(mididevicedata->ClosePort,seglist,4)
+			     )
+			    )
+			   &&
+			   mididevicedata->IDString!=NULL &&
+			   isPointerInSeglist(mididevicedata->IDString,seglist,4)
 
-				ObtainSemaphore(CB(CamdBase)->CLSemaphore);
-					driver->next=CB(CamdBase)->drivers;
-					CB(CamdBase)->drivers=driver;
-				ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
-				return mididevicedata;
-			}
+			   )
+			  {
+
+			    driver=AllocMem(sizeof(struct Drivers),MEMF_ANY | MEMF_CLEAR | MEMF_PUBLIC);
+			    if(driver==NULL){
+			      UnLoadSeg(seglist);
+			      return NULL;
+			    }
+			    driver->seglist=seglist;
+			    driver->mididevicedata=mididevicedata;
+			    driver->numports=mididevicedata->NPorts;
+			    
+			    ObtainSemaphore(CB(CamdBase)->CLSemaphore);
+			    driver->next=CB(CamdBase)->drivers;
+			    CB(CamdBase)->drivers=driver;
+			    ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
+			    return mididevicedata;
+			  }
 		}
 		seg=*(BPTR *)BADDR(seg);
 	}
@@ -132,7 +152,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist);
 
 }
 
-BOOL isPointerInSeglist(APTR pointer,BPTR seglist){
+BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize){
 	STRPTR addr;
 	ULONG size;
 
@@ -141,7 +161,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist){
 		size=*(ULONG *)addr;
 		addr+=sizeof(BPTR)+sizeof(ULONG);
 		size-=sizeof(BPTR)-sizeof(ULONG);
-		if((STRPTR)pointer>=addr && (STRPTR)pointer<=addr+size){
+		if((STRPTR)pointer>=addr && (STRPTR)pointer<=addr+size-minsize){
 			return TRUE;
 		}
 		seglist=*(BPTR *)BADDR(seglist);
