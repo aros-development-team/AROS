@@ -18,7 +18,7 @@
 #include <proto/intuition.h>
 
 struct IntuitionBase *IntuitionBase;
-struct Library *GfxBase;
+struct GfxBase *GfxBase;
 struct Library *LayersBase;
 struct DosLibrary *DOSBase;
 
@@ -33,7 +33,7 @@ int x, y;
 
     if ((IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 0))) 
     {
-	if ((GfxBase = OpenLibrary("graphics.library", 0))) 
+	if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0))) 
         {
 	    if ((DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",0)))
 	    {
@@ -80,7 +80,7 @@ int x, y;
 		}
               CloseLibrary((struct Library *)DOSBase);
 	  }
-	  CloseLibrary(GfxBase);
+	  CloseLibrary((struct Library *)GfxBase);
 	}
 	CloseLibrary((struct Library *) IntuitionBase);
     }

@@ -11,7 +11,7 @@
 #include <proto/intuition.h>
 
 struct IntuitionBase *IntuitionBase;
-struct Library *GfxBase;
+struct GfxBase *GfxBase;
 struct Window *win;
 
 static const char version[] = "$VER: regiontest 41.1 (14.3.1997)\n";
@@ -21,7 +21,7 @@ void doall(void);
 int main(int argc, char **argv)
 {
     if ((IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 0))) {
-	if ((GfxBase = OpenLibrary("graphics.library", 0))) {
+	if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0))) {
 	    if ((win = OpenWindowTags(NULL,
 				     WA_IDCMP,	IDCMP_RAWKEY,
 				     WA_Height, 600,
@@ -30,7 +30,7 @@ int main(int argc, char **argv)
 		doall();
 		CloseWindow(win);
 	    }
-	    CloseLibrary(GfxBase);
+	    CloseLibrary((struct Library *)GfxBase);
 	}
 	CloseLibrary((struct Library *) IntuitionBase);
     }

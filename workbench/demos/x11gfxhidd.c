@@ -25,7 +25,7 @@
 #define USE_TWO_WINDOWS
 
 struct IntuitionBase *IntuitionBase;
-struct Library *GfxBase;
+struct GfxBase *GfxBase;
 struct Library *LayersBase;
 struct DosLibrary *DOSBase;
 

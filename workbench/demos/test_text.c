@@ -26,7 +26,7 @@
 #define WIN_HEIGHT	300
 
 struct IntuitionBase *IntuitionBase;
-struct Library *GfxBase;
+struct GfxBase *GfxBase;
 struct Library *LayersBase;
 struct DosLibrary *DOSBase;
 
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
     
     if ((IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 0))) 
     {
-	if ((GfxBase = OpenLibrary("graphics.library", 0))) 
+	if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0))) 
         {
 	    if ((DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",0)))
 	    {
@@ -97,7 +97,7 @@ quit:
 	      }
               CloseLibrary((struct Library *)DOSBase);
 	  }
-	  CloseLibrary(GfxBase);
+	  CloseLibrary((struct Library *)GfxBase);
 	}
 	CloseLibrary((struct Library *) IntuitionBase);
     }

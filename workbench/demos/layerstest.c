@@ -16,7 +16,7 @@
 #define GFX_SYSTEM X11  /* ord HIDD */
 
 struct IntuitionBase *IntuitionBase;
-struct Library *GfxBase;
+struct GfxBase *GfxBase;
 struct Library *LayersBase;
 struct DosLibrary *DOSBase;
 struct Screen *screen;
@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 {
     if ((IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 0))) 
     {
-	if ((GfxBase = OpenLibrary("graphics.library", 0))) 
+	if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0))) 
         {
 	  if ((LayersBase = OpenLibrary("layers.library", 0))) 
           {
@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 	    }
             CloseLibrary(LayersBase);
 	  }
-	  CloseLibrary(GfxBase);
+	  CloseLibrary((struct Library *)GfxBase);
 	}
 	CloseLibrary((struct Library *) IntuitionBase);
     }
