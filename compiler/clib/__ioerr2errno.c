@@ -24,6 +24,7 @@ int IoErr2errno (int ioerr)
 	case ERROR_NO_FREE_STORE:
 	    return ENOMEM;
 
+        case ERROR_DEVICE_NOT_MOUNTED:
 	case ERROR_OBJECT_NOT_FOUND:
 	    return ENOENT;
 
