@@ -873,7 +873,7 @@ aros_target_nm_flags="-C -ul"
 aros_target_objcopy=${prefix}-objcopy
 aros_target_objdump=${prefix}-objdump
 aros_target_ranlib=${prefix}-ranlib
-aros_target_strip=${prefix}-strip
+aros_target_strip="${prefix}-strip --strip-unneeded -R.comment"
 
 prefix="\$(TOOLDIR)/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros"
 AR="${prefix}-ar $aros_target_ar_flags"
