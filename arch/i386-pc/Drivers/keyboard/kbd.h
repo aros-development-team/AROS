@@ -59,7 +59,8 @@ struct kbd_staticdata
     struct ExecBase *sysbase;
 
     Class *kbdclass;
-    
+
+    Object *irqhidd;
     Object *kbdhidd;
 };
 
