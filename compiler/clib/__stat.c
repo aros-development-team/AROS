@@ -17,7 +17,7 @@
 
 
 static mode_t __prot_a2u(ULONG protect);
-static uid_t  __amiga2unixid(UWORD id);
+static uid_t  __id_a2u(UWORD id);
 
 
 int __stat(BPTR lock, struct stat *sb)
@@ -53,8 +53,8 @@ int __stat(BPTR lock, struct stat *sb)
     sb->st_ctime   =
     sb->st_mtime   = (fib->fib_Date.ds_Days * 24*60 + fib->fib_Date.ds_Minute + __gmtoffset) * 60 +
 	              fib->fib_Date.ds_Tick / TICKS_PER_SECOND + OFFSET_FROM_1970;
-    sb->st_uid     = __amiga2unixid(fib->fib_OwnerUID);
-    sb->st_gid     = __amiga2unixid(fib->fib_OwnerGID);
+    sb->st_uid     = __id_a2u(fib->fib_OwnerUID);
+    sb->st_gid     = __id_a2u(fib->fib_OwnerGID);
     sb->st_mode    = __prot_a2u(fib->fib_Protection);
 
     {
@@ -139,7 +139,7 @@ static mode_t __prot_a2u(ULONG protect)
 }
 
 
-static uid_t __amiga2unixid(UWORD id)
+static uid_t __id_a2u(UWORD id)
 {
     switch(id)
     {
