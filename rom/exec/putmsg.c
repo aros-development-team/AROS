@@ -50,8 +50,6 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -96,5 +94,5 @@
     /* All done. */
     Enable();
     AROS_LIBFUNC_EXIT
-}
+} /* PutMsg() */
 

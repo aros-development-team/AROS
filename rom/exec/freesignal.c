@@ -41,8 +41,6 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -57,5 +55,5 @@
 	Permit();
     }
     AROS_LIBFUNC_EXIT
-}
+} /* FreeSignal() */
 

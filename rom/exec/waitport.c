@@ -44,8 +44,6 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -72,5 +70,5 @@
     return (struct Message *)port->mp_MsgList.lh_Head;
 
     AROS_LIBFUNC_EXIT
-}
+} /* WaitPort() */
 

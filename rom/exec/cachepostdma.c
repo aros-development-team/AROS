@@ -54,8 +54,6 @@
 	This function should be replaced by a function in the $(KERNEL)
 	directory.
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -42,8 +42,6 @@
 	contents to remain as they are, since some programs may use this
 	function when installing resident modules.
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

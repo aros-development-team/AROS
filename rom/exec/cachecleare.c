@@ -69,8 +69,6 @@
 	This is a rather CPU dependant function. You should replace it
 	in your $(KERNEL).
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

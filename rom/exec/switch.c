@@ -43,8 +43,6 @@
 	If you want to have this function save all its registers, you
 	should replace this function in $(KERNEL) or $(ARCH).
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

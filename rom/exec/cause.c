@@ -82,8 +82,6 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -168,3 +166,4 @@ AROS_UFH5(ULONG, SoftIntDispatch,
 
     /* We now re-enable software interrupts. But we can't do it here. */
 }
+

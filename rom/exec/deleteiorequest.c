@@ -40,8 +40,6 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -50,5 +48,4 @@
 	/* Just free the memory */
 	FreeMem(iorequest,iorequest->io_Message.mn_Length);
     AROS_LIBFUNC_EXIT
-}
-
+} /* DeleteIORequest() */

@@ -55,8 +55,6 @@
 	function if you want. But you have to make sure then that you
 	do NOT call Dispatch() from the exec.library function table.
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

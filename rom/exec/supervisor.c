@@ -69,8 +69,6 @@
 
 	You should trust that the programmer know what they are doing :-)
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -52,8 +52,6 @@
 	The memory is allocated and queued in the tc_MemList. This
 	list is freed in RemTask().
 
-    HISTORY
-
 ******************************************************************************/
 {
     struct MemList * ml;
@@ -121,8 +119,6 @@
 	The memory is allocated and queued in the tc_MemList. This
 	list is freed in RemTask().
 
-    HISTORY
-
 ******************************************************************************/
 {
     struct MemList * ml, * next;
@@ -184,8 +180,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {
@@ -252,8 +246,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

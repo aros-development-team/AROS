@@ -57,8 +57,6 @@
     INTERNALS
 	This function MUST be replaced in $(KERNEL) or $(ARCH).
 
-    HISTORY
-
 ******************************************************************************/
 {
     /* For an example see the StackSwap() function in either i386 or

@@ -72,10 +72,6 @@ AROS_LH2(APTR, Allocate,
 
     INTERNALS
 
-    HISTORY
-	17-09-95    created by m. fleischer
-	16-10-95    increased portability
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

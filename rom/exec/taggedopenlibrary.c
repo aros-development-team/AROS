@@ -81,8 +81,6 @@ static const char * const copyrights[] =
     INTERNALS
 	No checks are made on the validity of the tag.
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

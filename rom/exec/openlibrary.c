@@ -48,10 +48,6 @@
 
     INTERNALS
 
-    HISTORY
-	21-10-95    digulla automatically created from
-			    include:clib/exec_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

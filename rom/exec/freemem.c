@@ -61,10 +61,6 @@
 
     INTERNALS
 
-    HISTORY
-	8-10-95    created by m. fleischer
-       16-10-95    increased portability
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

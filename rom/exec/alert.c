@@ -51,9 +51,6 @@ int kprintf(const UBYTE *, ...);
 
     INTERNALS
 
-    HISTORY
-	26-08-95    digulla created after EXEC-Routine
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -55,8 +55,6 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -152,6 +150,5 @@
 
     ReturnVoid ("RemTask");
     AROS_LIBFUNC_EXIT
-}
-
+} /* RemTask() */
 

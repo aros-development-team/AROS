@@ -52,11 +52,6 @@
 
     INTERNALS
 
-    HISTORY
-	29-10-95    digulla automatically created from
-			    exec_lib.fd and clib/exec_protos.h
-	22-01-96    fleischer implementation
-
 *****************************************************************************/
 {
 #undef Exec
