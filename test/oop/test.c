@@ -23,11 +23,9 @@ IPTR TestFunc(Class *cl, Object *o, Msg msg)
      return (12345678);
 }
 
-		    Class *cl;
 
 int main(int argc, char **argv)
 {
-    IPTR (*method)();
    
     if (InitOOP())
     {
@@ -62,7 +60,7 @@ int main(int argc, char **argv)
 		for (b = timercl->HashTable[i]; b; b = b->Next)
 		{
 		    printf("%s, %ld  "
-		    	,b->Class->ClassNode.ln_Name
+		    	,b->mClass->ClassNode.ln_Name
 			,b->MethodID);
 			
 		}
@@ -99,6 +97,8 @@ int main(int argc, char **argv)
 
 		{
 		/*  Fast ivocation test */
+    IPTR (*method)();
+    Class *cl;
 		
 		    printf ("\nUsing fast invocation\n");
 		
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
     	    	
     	    	    for (i = 0; i < NUM_ITERATIONS; i ++)
 		    {
-		    	method(timercl, timer, (Msg)&methodid);
+		    	method(cl, timer, (Msg)&methodid);
 		    }
 		    
 		    Timer_Stop(timer);

@@ -23,7 +23,7 @@
 	{						\
 	    IPTR (*method)(Class *, Object *, Msg);	\
 	    method = b->MethodFunc;			\
-	    return (method(cl, o, msg));		\
+	    return (method(b->mClass, o, msg));		\
 	}    						\
     }							\
     return (NULL);					\
@@ -58,7 +58,7 @@ BOOL GetMethod(Object *o, ULONG methodID, APTR *methodPtrPtr, Class **classPtrPt
        	if (b->MethodID == methodID)
 	{
 	    *methodPtrPtr = b->MethodFunc;
-	    *classPtrPtr  = b->Class;
+	    *classPtrPtr  = b->mClass;
 	    return (TRUE);
 	}
 	b = b->Next;

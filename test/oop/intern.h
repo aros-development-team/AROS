@@ -17,7 +17,7 @@ struct Bucket
     struct Bucket *Next;
     ULONG  MethodID;
     APTR   MethodFunc;
-    Class *Class; /* This is to be able to skip class calls */
+    Class *mClass; /* This is to be able to skip class calls */
 };
 
 #endif /* INTERN_H */

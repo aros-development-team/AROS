@@ -241,7 +241,7 @@ static BOOL AddMethods(Class *cl, struct Bucket **desthtable, ULONG htable_size)
 	    /* Copuy methid info into new bucket */
 	    new_b->MethodID   = b->MethodID;
 	    new_b->MethodFunc = b->MethodFunc;
-	    new_b->Class      = b->Class;
+	    new_b->mClass     = b->mClass;
 
 
 	    /* Add bucket to destination hashtable */
@@ -291,7 +291,7 @@ static BOOL InitHash(Class *cl, struct MethodDescr *mDescr)
 
 		/* The method existed in the superclass. Override it */
 		b->MethodFunc = mDescr->MethodFunc;
-		b->Class = cl;
+		b->mClass = cl;
 
 		must_allocate_new = FALSE;
 		break;
@@ -314,7 +314,7 @@ static BOOL InitHash(Class *cl, struct MethodDescr *mDescr)
 
 	    new_b->MethodID   = mDescr->MethodID;
 	    new_b->MethodFunc = mDescr->MethodFunc;
-	    new_b->Class      = cl;
+	    new_b->mClass     = cl;
 
 	    /* Insert the bucket at the start of the hash entry */
 	    temp_b = cl->HashTable[idx];
