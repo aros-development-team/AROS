@@ -1,7 +1,7 @@
-Short: AROS 1.10 - Amiga Replacement OS (Amiga native binaries)
+Short: AROS 1.10b - Amiga Replacement OS (Amiga native binaries)
 Author:   Aaron "Optimizer" Digulla (digulla@aros.fh-konstanz.de) and many others
 Uploader: Lennard voor den Dag (ldp@worldonline.nl)
-Version:  1.10
+Version:  1.10b
 Type:     misc/emu
 Requires: OS 2.04 or better, 68020 or better
 
@@ -12,8 +12,8 @@ HOW TO USE THIS
 There are three system modules in this archive. They are:
 
 - alert.hook       -- AROS alert.hook 41.6
-- exec.strap       -- AROS exec.strap 1.2
-- utility.library  -- AROS utility.library 39.10
+- exec.strap       -- AROS exec.strap 41.3
+- utility.library  -- AROS utility.library 41.9
 
 These can be loaded into the system by the tool imaginatively called 'boot'.
 Unpack this archive, cd into AROS, and run 'boot -h' for a summary of options.
@@ -35,13 +35,10 @@ WARNING
 -------
 
 The software in this archive is still in Alpha state. This means that it may
-or may not work on your system. Especially 'utility.library' is known to cause
-problems with certain kinds of programs, e.g. amigaguide and multiview. You
-may want to remove 'utility.library' from 'boot.config'. The other two modules
-should cause no problems. We appreciate it if you could drop us a message
-telling us it worked or didn't work on your machine. Please also mention your
-system configuration (processor types/model/kickstart version/etc), so we can
-fix the bugs.
+or may not work on your system. We appreciate it if you could drop us a message
+telling us how it worked or didn't work on your machine. Please also mention
+your system configuration (processor types/model/kickstart version/etc), so we
+can fix the bugs.
 
 It has been tested on an A1200/Blizzard 1230-IV/nofpu/2+8 MB/kick 39.106.
 It has been compiled to run on a 68020 or better.
