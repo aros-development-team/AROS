@@ -226,7 +226,9 @@ static ULONG IconListview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(horiz, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 2, MUIV_TriggerValue);
     DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Left, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 3, MUIV_TriggerValue);
     DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Top, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 4, MUIV_TriggerValue);
-
+    DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Width, MUIV_EveryTime, (IPTR)horiz, 3, MUIM_NoNotifySet, MUIA_Prop_Entries, MUIV_TriggerValue);
+    DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Height, MUIV_EveryTime, (IPTR)vert, 3, MUIM_NoNotifySet, MUIA_Prop_Entries, MUIV_TriggerValue);
+    
     return (ULONG)obj;
 }
 
