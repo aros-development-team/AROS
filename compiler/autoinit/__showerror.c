@@ -19,12 +19,10 @@ void __showerror(char *format, ...)
 {
     AROS_GET_SYSBASE_OK
     struct Process *me     = (struct Process *)FindTask(0);
-    char           *pname  = __getprogramname();
+    char            *pname  = __getprogramname();
 
     va_list args;
     va_start(args, format);
-
-    APTR raw_args[] = { &args, format };
 
     if (me->pr_CLI && !__forceerrorrequester)
     {
@@ -33,8 +31,8 @@ void __showerror(char *format, ...)
             PutStr(pname);
             PutStr(": ");
 	}
-
-	VPrintf("%V", (IPTR *)raw_args);
+#warning This next line might break on bizarre architectures.
+        VPrintf(format, (IPTR *)args);
         PutStr("\n");
     }
     else
@@ -46,11 +44,11 @@ void __showerror(char *format, ...)
 		sizeof(struct EasyStruct),
 		0,
 		pname,
-		"%V",
+		format,
 		"Exit"
 	    };
 
-	    EasyRequestArgs(NULL, &es, NULL, raw_args);
+	    EasyRequestArgs(NULL, &es, NULL, (APTR)args);
 
 	    CloseLibrary((struct Library *)IntuitionBase);
 	}
@@ -61,3 +59,4 @@ void __showerror(char *format, ...)
     if (pname)
         FreeVec(pname);
 }
+
