@@ -16,6 +16,7 @@ include $(TOP)/config/make.cfg
 #MM	    workbench-fonts \
 #MM	    workbench-system \
 #MM	    workbench-utilities \
-#MM	    workbench-tools
+#MM	    workbench-tools \
+#MM         workbench-prefs
 
 #MM- clean : clean-workbench
