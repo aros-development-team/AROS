@@ -10,6 +10,7 @@ struct Imageadjust_DATA
 
     struct Hook gradient_hook;
     Object *gradient_imagedisplay;
+    Object *gradient_type_cycle;
     Object *gradient_angle_slider;
     Object *gradient_start_poppen;
     Object *gradient_end_poppen;
