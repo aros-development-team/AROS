@@ -34,14 +34,14 @@
     extern struct DosLibrary *DOSBase;
 #endif
 
-LONG FWritef(BPTR fh, CONST_STRPTR format, ...);
+LONG FWritef (BPTR fh, CONST_STRPTR format, ...);
 /*
-LONG FPrintf(BPTR fh, CONST_STRPTR format, ...);
-LONG Printf(CONST_STRPTR format, ...);
+LONG FPrintf (BPTR fh, CONST_STRPTR format, ...);
+LONG Printf (CONST_STRPTR format, ...);
 */
-APTR AllocDosObjectTags(ULONG type, ULONG tag1, ...);
-struct Process *CreateNewProcTags(ULONG tag1, ...);
-LONG SystemTags(CONST_STRPTR command, ULONG tag1, ...);
-BPTR NewLoadSegTags(CONST_STRPTR file, ULONG tag1, ...);
+APTR AllocDosObjectTags (ULONG type, ULONG tag1, ...);
+struct Process * CreateNewProcTags (ULONG tag1, ...);
+LONG SystemTags (STRPTR command, ULONG tag1, ...);
+BPTR NewLoadSegTags (STRPTR file, ULONG tag1, ...);
 
 ##end clib
