@@ -15,7 +15,7 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 
-#define MYDEBUG 1
+//#define MYDEBUG 1
 #include "debug.h"
 
 /*****************************************************************************

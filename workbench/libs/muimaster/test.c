@@ -211,6 +211,13 @@ void main(void)
 		    MUIA_String_AdvanceOnCR, TRUE,
 		    End,
 
+		Child, PropObject,
+		    MUIA_Prop_Horiz, TRUE,
+		    MUIA_Prop_Visible, 100,
+		    MUIA_Prop_Entries, 300,
+		    MUIA_Prop_First, 50,
+		    End,
+
     	    	Child, HGroup,
     	    	    Child, quit_button = TextObject,
 			ButtonFrame,
