@@ -90,12 +90,12 @@ static IPTR SpecialP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	MUIA_Group_SameWidth, TRUE,
 	Child, (IPTR) VGroup,
 	MUIA_Group_VertSpacing, 1,
-	Child, (IPTR) d.text_popframe = MakePopframe(),
+	Child, (IPTR) (d.text_popframe = MakePopframe()),
 	Child, (IPTR) CLabel("Frame"),
 	End, // VGroup
 	Child, (IPTR) VGroup,
 	MUIA_Group_VertSpacing, 1,
-	Child, (IPTR) d.text_popimage = MakeBackgroundPopimage(),
+	Child, (IPTR) (d.text_popimage = MakeBackgroundPopimage()),
 	Child, (IPTR) CLabel("Background"),
 	End, // VGroup
 	End, // HGroup

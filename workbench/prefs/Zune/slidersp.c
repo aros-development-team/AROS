@@ -93,12 +93,12 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                     MUIA_Group_SameWidth, TRUE,
                     Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
-                        Child, (IPTR) d.container_background_popimage = MakeBackgroundPopimage(),
+                        Child, (IPTR) (d.container_background_popimage = MakeBackgroundPopimage()),
                         Child, (IPTR) CLabel("Background"),
                     End, /* VGroup BG */
                     Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
-                        Child, (IPTR) d.container_popframe = MakePopframe(),
+                        Child, (IPTR) (d.container_popframe = MakePopframe()),
                         Child, (IPTR) CLabel("Frame"),
                     End, /* VGroup Frame */
                 End, /* HGroup Frame/BG */
@@ -109,18 +109,18 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                     MUIA_Group_SameWidth, TRUE,
                     Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
-                        Child, (IPTR) d.knob_background_popimage = MakeBackgroundPopimage(),
+                        Child, (IPTR) (d.knob_background_popimage = MakeBackgroundPopimage()),
                         Child, (IPTR) CLabel("Background"),
                     End, /* VGroup BG */
                     Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
-                        Child, (IPTR) d.knob_popframe = MakePopframe(),
+                        Child, (IPTR) (d.knob_popframe = MakePopframe()),
                         Child, (IPTR) CLabel("Frame"),
                     End, /* VGroup Frame */
                 End, /* HGroup Frame/BG */
                 Child, (IPTR) HGroup,
                     Child, (IPTR) Label2("Font:"),
-                    Child, (IPTR) d.knob_font_string = MakePopfont(FALSE),
+                    Child, (IPTR) (d.knob_font_string = MakePopfont(FALSE)),
                 End, /* HGroup font */
             End, /* VGroup Knob Design */
         End, /* HGroup Container/Knob design */
