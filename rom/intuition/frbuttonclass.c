@@ -150,6 +150,8 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
     }
 
     /* print label */
+    SetABPenDrMd(rp, pens[TEXTPEN], 0, JAM1);
+    
     printgadgetlabel(cl, o, msg, IntuitionBase);
 
     if ( EG(o)->Flags & GFLG_DISABLED )
