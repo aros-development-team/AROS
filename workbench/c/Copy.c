@@ -53,7 +53,7 @@
         DELETE    --  do not copy, but delete the source files
         HARDLINK  --  make a hardlink to source instead of copying
         SOFTLINK  --  make a softlink to source instead of copying
-        FOLNK     --  also makes links to directories
+        FOLNK     --  also make links to directories
         FODEL     --  delete protected files also
         FOOVR     --  also overwrite protected files
         DONTOVR   --  do never overwrite destination
@@ -242,7 +242,7 @@
 	About links:
 
 	HARDLINKS:
-	When copying one file to annother place on same disk, the file
+	When copying one file to another place on same disk, the file
 	afterwards uses double space. Links are a method to resolve that
 	problem. When using a link, the file is not copied, but only a new
 	entry to the same data as created. This saves space and allows to
