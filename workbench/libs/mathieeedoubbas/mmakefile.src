@@ -9,10 +9,16 @@ ULIBNAME	:= MathIeeeDoubBas
 FILES		:= 
 FUNCTIONS	:= \
 	ieeedpabs \
+	ieeedpadd \
+	ieeedpceil \
 	ieeedpcmp \
+	ieeedpdiv \
 	ieeedpfix \
+	ieeedpfloor \
 	ieeedpflt \
+	ieeedpmul \
 	ieeedpneg \
+	ieeedpsub \
 	ieeedptst
 
 %define_libs prelibs=-l$(LIBNAME)
