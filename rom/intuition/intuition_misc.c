@@ -13,6 +13,7 @@
 #include <proto/layers.h>
 #include <proto/intuition.h>
 #include <proto/dos.h>
+#include <proto/input.h>
 #include <dos/dos.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/gadgetclass.h>
@@ -556,6 +557,8 @@ void SendIntuiActionMsg(struct IntuiActionMessage *msg, struct IntuitionBase *In
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
     AddTail((struct List *)GetPrivIBase(IntuitionBase)->IntuiActionQueue, (struct Node *)msg);
     ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
+    
+    AddNullEvent();
 }
 
 /**********************************************************************************/
