@@ -448,7 +448,10 @@ struct Volume *volume;
 					volume->vbl_int.is_Data = volume;
 					volume->ah.volume=volume;
 					if (diskPresent(afsbase, volume))
+					{
+						volume->flags |= VOLF_DISK_IN;
 						*error = newMedium(afsbase, volume);
+					}
 					else
 						*error = 0;
 					volume->ioport->mp_SigTask=afsbase->port.mp_SigTask;
