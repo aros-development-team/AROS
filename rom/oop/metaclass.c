@@ -36,7 +36,7 @@
     	mid &= METHOD_MASK;						\
 									\
 	b = IFI(cl)->data.iftab_directptr[ifid & IFI(cl)->data.hashmask];	\
-loop:   if (b) 								\
+	while (b) 								\
    	{								\
        	    if (b->InterfaceID == ifid)					\
 	    {								\
@@ -44,7 +44,6 @@ loop:   if (b) 								\
 	    	return (method->MethodFunc(method->mClass, o, msg));	\
 	    }    							\
             b = b->Next;						\
-	    goto loop;							\
     	}								\
     	return (0UL);							\
      }
@@ -178,7 +177,6 @@ static BOOL ifmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_all
     ULONG num_if;
     
     struct ifmeta_inst *inst = (struct ifmeta_inst *)o;
-    
     
     EnterFunc(bug("IFMeta::allocdisptabs(cl=%p, o=%p,ifDescr=%p)\n",
     	cl, o, msg->ifdescr));
@@ -535,10 +533,10 @@ BOOL init_ifmetaclass(struct IntOOPBase *OOPBase)
 
     
     if (ifmeta_allocdisptabs(ifmeta_cl, (OOP_Object *)ifmeta_cl, &adt_msg))
-		
     {
     	D(bug("ifmeta disptabs allocated\n"));
     	/* initialize Class ID */
+
 	imo->inst.base.public.ClassNode.ln_Name = CLID_MIMeta;
 	imo->inst.base.public.InstOffset 	= sizeof (struct metadata);
 	
