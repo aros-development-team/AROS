@@ -1,6 +1,12 @@
 # $Id$
 TOP=../..
 
+ifeq ("$(SHARED_AROS)","yes")
+SPECIAL_CFLAGS=$(SHARED_CFLAGS)
+else
+SPECIAL_CFLAGS=
+endif
+
 include $(TOP)/config/make.cfg
 
 # BEGIN_DESC{makefile}
@@ -120,7 +126,7 @@ $(LIB): $(OBJS)
 # ***** Not Native ***************
 else
 
-LIB=$(LIBDIR)/libaros.so
+%prepare_shlib aros $(SHARED_AROS)
 
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
 
@@ -128,7 +134,7 @@ all: setup $(LIB)
 
 $(LIB) : $(OBJS)
 	@echo "Recreating $@..."
-	@$(SHARED_AR) $@ $(OBJS)
+	@$(AR) $@ $(OBJS)
 
 # ***** END ***************
 endif
