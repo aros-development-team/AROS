@@ -1148,7 +1148,7 @@ void RDBInfo(struct ide_Unit *unit)
                             pp[DE_BUFMEMTYPE+4]=MEMF_PUBLIC|MEMF_CHIP;
                             pp[DE_MAXTRANSFER+4]=0x00200000;
                             pp[DE_MASK+4]=0x7FFFFFFE;
-                            pp[DE_BOOTPRI+4]=0;         /* Raise this to 10 to boot ahead of DF0 */
+                            pp[DE_BOOTPRI+4]=10;         /* Raise this to 10 to boot ahead of DF0 */
                             pp[DE_DOSTYPE+4]=0x444F5301;
                             pp[DE_BOOTBLOCKS+4]=2;
                             devnode = MakeDosNode(pp);
