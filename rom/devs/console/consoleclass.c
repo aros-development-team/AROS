@@ -108,15 +108,8 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
     	SET_MODE(o, PMB_ASM); /* auto-scroll-mode ON */
 	SET_MODE(o, PMB_AWM); /* auto-wrap-mode ON */ 
 
-	/* Need to differentiate between native and hosted here! */
-//	if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
-//	{
-	    SET_MODE(o, M_LNM); /* linefeed mode = linefeed+carriage return */
-//	}
-//	else
-//	{
-//	    CLEAR_MODE(o, M_LNM); /* linefeed mode = linefeed only */
-//	}
+	/* RKM: Default mode is SET */
+	SET_MODE(o, M_LNM); /* linefeed mode = linefeed+carriage return */
     }
 
     ReturnPtr("Console::New", Object *, o);
