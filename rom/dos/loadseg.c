@@ -95,7 +95,9 @@ q        IoErr() gives additional information in that case.
 
                 segnode->seglist = segs;
 
+    	    	Forbid();
                 ADDTAIL(&debug_seglist, segnode);
+		Permit();
             }
 #endif
 
