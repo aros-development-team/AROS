@@ -502,31 +502,47 @@ static const ULONG coltab[] = {
 		screen->Screen.FirstGadget->GadgetType |= GTYP_SCRGADGET;
 	    }
 	}
-	
-	screen->Pens[DETAILPEN] = screen->Screen.DetailPen;
-	screen->Pens[BLOCKPEN] = screen->Screen.BlockPen;
-	screen->Pens[TEXTPEN] = 1;
-	screen->Pens[SHINEPEN] = 2;
-	screen->Pens[SHADOWPEN] = 1;
-	screen->Pens[FILLPEN] = 3;
-	screen->Pens[FILLTEXTPEN] = 2;
-	screen->Pens[BACKGROUNDPEN] = 0;
-	screen->Pens[HIGHLIGHTTEXTPEN] = 1;
-	screen->Pens[BARDETAILPEN] = 1;
-	screen->Pens[BARBLOCKPEN] = 2;
-	screen->Pens[BARTRIMPEN] = 1;
+
+	/* set default values for pens */
+	/* if old-look or two-color-screen */
+	if ((customdripens == NULL) || (ns.Depth == 1))
+	{
+            screen->Pens[DETAILPEN] = screen->Screen.DetailPen;
+       	    screen->Pens[BLOCKPEN] = screen->Screen.BlockPen;
+	    screen->Pens[TEXTPEN] = 1;
+	    screen->Pens[SHINEPEN] = 1;
+	    screen->Pens[SHADOWPEN] = 1;
+	    screen->Pens[FILLPEN] = 1;
+	    screen->Pens[FILLTEXTPEN] = 0;
+	    screen->Pens[BACKGROUNDPEN] = 0;
+	    screen->Pens[HIGHLIGHTTEXTPEN] = 1;
+	    screen->Pens[BARDETAILPEN] = 0;
+	    screen->Pens[BARBLOCKPEN] = 1;
+	    screen->Pens[BARTRIMPEN] = 1;	
+        }
+	else /* if new-look and not two-color-screen */
+	{
+	    screen->Pens[DETAILPEN] = screen->Screen.DetailPen;
+	    screen->Pens[BLOCKPEN] = screen->Screen.BlockPen;
+	    screen->Pens[TEXTPEN] = 1;
+	    screen->Pens[SHINEPEN] = 2;
+	    screen->Pens[SHADOWPEN] = 1;
+	    screen->Pens[FILLPEN] = 3;
+	    screen->Pens[FILLTEXTPEN] = 1;
+	    screen->Pens[BACKGROUNDPEN] = 0;
+	    screen->Pens[HIGHLIGHTTEXTPEN] = 2;
+	    screen->Pens[BARDETAILPEN] = 1;
+	    screen->Pens[BARBLOCKPEN] = 2;
+	    screen->Pens[BARTRIMPEN] = 1;
+        }
 
 	if (customdripens)
 	{
 	    WORD i;
-	    
-	    for(i = 0; i < NUMDRIPENS; i++)
+	
+	    for(i = 0; (i < NUMDRIPENS) && (customdripens[i] != (UWORD)~0); i++)
 	    {
-	        UWORD pen = customdripens[i];
-		
-		if (pen == (UWORD)~0) break;
-		
-	        screen->Pens[i] = pen;
+	        screen->Pens[i] = customdripens[i];
 	    }
 	}
 	
