@@ -89,7 +89,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       case HUNK_UNIT:
         if (read_block(fh, &count, sizeof(count), funcarray))
           goto end;
-        count /= 4;
+        count *= 4;
         if (read_block(fh, name_buf, count, funcarray))
           goto end;
         D(bug("HUNK_UNIT: \"%.*s\"\n", count, name_buf));
