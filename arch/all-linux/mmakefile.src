@@ -38,12 +38,13 @@ setup-linux :
 #MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-x11
 
 #MM setup-exec-linux : setup-exec-unix setup-exec-$(CPU)
-setup-exec-linux : $(TOP)/config/unix/exec/sigcore.h
+setup-exec-linux : $(GENINCDIR)/sigcore.h
 	%add_objects rom/exec/init
 
 #MM
-$(TOP)/config/unix/exec/sigcore.h : $(TOP)/config/linux/exec/sigcore.h.src
-	$(SHELL) $(TOP)/config/linux/exec/mksigcore.sh $(TOP)/config/linux/exec $(TOP)/config/unix/exec/sigcore.h
+$(GENINCDIR)/sigcore.h : $(TOP)/config/linux/exec/sigcore.h.src
+	%mkdirs_q $(GENINCDIR)
+	$(SHELL) $(TOP)/config/linux/exec/mksigcore.sh $(TOP)/config/linux/exec $(GENINCDIR)/sigcore.h
 
 #MM setup-exec-m68k : setup-exec-linux-m68k
 setup-exec-m68k :
