@@ -1,9 +1,9 @@
-'''Read in all archive files and takes them apart.
+'''Read in all archive files and take them apart.
 
 An archive has the following format:
 
     ... any amount of text which is ignored ...
-    #Archvie
+    #Archive
     contents
     #/Archive
 
