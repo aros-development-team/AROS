@@ -60,6 +60,7 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
+  struct Region * r = NewRegion();
   /* 
   ** Convert the list of regionrectangles in the damage list 
   ** to a cliprect list. 
@@ -74,13 +75,16 @@
   l->DamageList->bounds.MaxX += l->bounds.MinX;
   l->DamageList->bounds.MaxY += l->bounds.MinY;
 
-#warning If the damagelist was correct (which it currently is not) then this following statement would not be necessary!
-  AndRegionRegion(l->VisibleRegion, l->DamageList);
+//#warning If the damagelist was correct (which it currently is not) then this following statement would not be necessary!
+  OrRegionRegion(l->DamageList, r);
+  AndRegionRegion(l->VisibleRegion, r);
 
-  l->ClipRect = CreateClipRectsFromRegion(l->DamageList,
-                                          l,
-                                          FALSE,
-                                          TRUE);
+  l->ClipRect = _CreateClipRectsFromRegion(r,
+                                           l,
+                                           FALSE,
+                                           l->DamageList);
+
+  DisposeRegion(r);
 
   l->DamageList->bounds.MinX -= l->bounds.MinX;
   l->DamageList->bounds.MinY -= l->bounds.MinY;

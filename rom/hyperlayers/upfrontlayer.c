@@ -67,7 +67,7 @@
   int found = FALSE;
   LONG ret;
 
-kprintf("\t\t%s called!\n",__FUNCTION__);
+//kprintf("\t\t%s called!\n",__FUNCTION__);
   LockLayers(l->LayerInfo);
 
   /*

@@ -69,7 +69,7 @@ LIBNAME  := layers
 ULIBNAME := Layers
 
 OSMODULE  := layers.library
-FILES	  := basicfuncs createcliprects movelayerz
+FILES	  := basicfuncs movelayerz
 	
 FUNCTIONS := \
 	beginupdate \

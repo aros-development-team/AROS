@@ -108,9 +108,6 @@ void CreateClipRectsTop(struct Layer_Info * li, BOOL notdisplayed);
 void CreateClipRectsOther(struct Layer * L);
 void LayerSplitsLayer(struct Layer * L_active, struct Layer * L_passive, BOOL notdisplayed);
 
-struct ClipRect * CopyClipRectsInRegion(struct Layer *,
-                                        struct ClipRect *,
-                                        struct Region *);
 
 /*
 ** The smart refresh flag is set for super bitmap as well as smart refresh

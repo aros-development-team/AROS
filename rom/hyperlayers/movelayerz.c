@@ -9,7 +9,8 @@ int _MoveLayerBehind(struct Layer *l,
                      struct LayersBase * LayersBase)
 {
   struct Layer * lbackold, *_l, *first;
-  struct Region * hide = NewRegion(), * show = NewRegion();
+  struct Region * hide = NewRegion(), show;
+  show.RegionRectangle = NULL; // min. initialization;
 
   first = GetFirstFamilyMember(l);
 
@@ -46,7 +47,7 @@ int _MoveLayerBehind(struct Layer *l,
      */
     if (l->parent == _l->parent)
     {
-kprintf("Adding a part!\n");
+//kprintf("Adding a part!\n");
       OrRegionRegion(_l->shape, hide);
     }
 
@@ -56,7 +57,7 @@ kprintf("Adding a part!\n");
     _l = _l->back;
   }
 
-  OrRegionRegion(first->VisibleRegion, show);
+  _SetRegion(first->VisibleRegion, &show);
 
   /*
    * First back up the family ... this is like moving them behind the
@@ -67,7 +68,7 @@ kprintf("Adding a part!\n");
   while (1)
   {
     if (IS_VISIBLE(_l) && DO_OVERLAP(&_l->shape->bounds, &hide->bounds))
-      _BackupPartsOfLayer(_l, hide, 0, FALSE);
+      _BackupPartsOfLayer(_l, hide, 0, FALSE, LayersBase);
     else
       ClearRegionRegion(hide, _l->VisibleRegion);
     
@@ -86,21 +87,23 @@ kprintf("Adding a part!\n");
 
   while (1)
   {
-    ClearRegion(_l->VisibleRegion);
-    if (IS_VISIBLE(_l) && DO_OVERLAP(&_l->shape->bounds, &show->bounds))
-      _ShowPartsOfLayer(_l, show);
+    if (IS_VISIBLE(_l) && DO_OVERLAP(&_l->shape->bounds, &show.bounds))
+    {
+      ClearRegion(_l->VisibleRegion);
+      _ShowPartsOfLayer(_l, &show, LayersBase);
+    }
     else
-      OrRegionRegion(show, _l->VisibleRegion);
+      _SetRegion(&show, _l->VisibleRegion);
       
     if (_l == lfront)
       break;
 
-    ClearRegionRegion(_l->shape, show);
+    ClearRegionRegion(_l->shape, &show);
     
     _l = _l->back; 
   }
 
-  DisposeRegion(show);
+  ClearRegion(&show);
 
   /*
    * Link the family into its new place.
@@ -120,7 +123,8 @@ int _MoveLayerToFront(struct Layer * l,
                       struct LayersBase * LayersBase)
 {
   struct Layer * lfront, * first, * _l;
-  struct Region * r = NewRegion();
+  struct Region r;
+  r.RegionRectangle = NULL;
   
   first = GetFirstFamilyMember(l);
 
@@ -137,7 +141,7 @@ int _MoveLayerToFront(struct Layer * l,
    * I need exactly that layers visible region later on.
    */
 
-  OrRegionRegion(lbehind->VisibleRegion,r);
+  _SetRegion(lbehind->VisibleRegion,&r);
     
   /*
    * Now I have to move the layer family in front of layer lbehind.
@@ -151,7 +155,7 @@ int _MoveLayerToFront(struct Layer * l,
   do
   {
     if (IS_VISIBLE(_l) && DO_OVERLAP(&l->shape->bounds, &_l->shape->bounds))
-      _BackupPartsOfLayer(_l, l->shape, 0, FALSE);
+      _BackupPartsOfLayer(_l, l->shape, 0, FALSE, LayersBase);
     else
       ClearRegionRegion(l->shape, _l->VisibleRegion);
 
@@ -168,24 +172,25 @@ int _MoveLayerToFront(struct Layer * l,
     
   while (1)
   {
-    ClearRegion(_l->VisibleRegion);
-//kprintf("\t\t%s: Showing parts of layer %p\n",__FUNCTION__,_l);
 
-    if (IS_VISIBLE(_l) && DO_OVERLAP(&_l->shape->bounds, &r->bounds))
-      _ShowPartsOfLayer(_l, r);
+    if (IS_VISIBLE(_l) && DO_OVERLAP(&_l->shape->bounds, &r.bounds))
+    {
+      ClearRegion(_l->VisibleRegion);
+      _ShowPartsOfLayer(_l, &r, LayersBase);
+    }
     else
-      OrRegionRegion(r, _l->VisibleRegion);      
+      _SetRegion(&r, _l->VisibleRegion);      
       
 
     if (_l == l)
       break;
 
-    ClearRegionRegion(_l->shape, r);
+    ClearRegionRegion(_l->shape, &r);
 
     _l = _l->back;
   }
 
-  DisposeRegion(r);
+  ClearRegion(&r);
 
   /*
    * Link the family into its new place.

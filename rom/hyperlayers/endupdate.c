@@ -68,7 +68,12 @@
   if (NULL != l->ClipRect)
   {
     if (IS_SMARTREFRESH(l))
-      _CopyClipRectsToClipRects(l,l->ClipRect, l->cr2,0,FALSE);
+      _CopyClipRectsToClipRects(l, 
+                                l->ClipRect, 
+                                l->cr2,
+                                0,
+                                FALSE,
+                                TRUE);
     else
       _FreeClipRectListBM(l,l->ClipRect);
   }
