@@ -43,11 +43,11 @@ $inputs
 
 <P>
 <DT>RESULT<DD>
-$result
+<IF COND="$defined(results)">$results<ELSE>None.</IF>
 
 <P>
 <DT>NOTES<DD>
-$notes
+<IF COND="$defined(notes)">$notes</IF>
 
 <P>
 <DT>EXAMPLE<DD>
@@ -61,7 +61,7 @@ $seealso
 
 <P>
 <DT>INTERNALS<DD>
-$internals
+<IF COND="$defined(internals)">$internals</IF>
 
 <P>
 <DT>SOURCE<DD>

@@ -9,11 +9,27 @@
 static List globals;
 static List functions;
 
+static String DefinedCB (const char ** args, int dummy, CBD data);
+
+static String
+DefinedCB (const char ** args, int dummy, CBD data)
+{
+    if (!args[0])
+    {
+	PushError ("$defined(): Expecting one arg");
+	return NULL;
+    }
+
+    return VS_New ((Var_Find (args[0])) ? "1" : "0");
+}
+
 void
 Var_Init (void)
 {
     NewList (&globals);
     NewList (&functions);
+
+    Func_Add ("defined", (CB) DefinedCB, NULL);
 }
 
 void
