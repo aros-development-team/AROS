@@ -26,7 +26,7 @@
 
 /*  LOCATION */
 
-      struct Library *, MathTransBase, 11, Mathtrans)
+      struct MathtransBase *, MathtransBase, 11, Mathtrans)
 
 /*  FUNCTION
 
@@ -85,8 +85,11 @@ LONG tmp;
     Res = SPAdd(Res, SPDiv(Res, one));
 
   /* Res = Res / 2 */
-  ((char)Res) --;
-
+  /* should be ((char)Res) --, but gcc on Linux screws up the result  */
+  tmp = Res & 0xFFFFFF00;
+  (char)Res--; 
+  Res = tmp | Res;
+  
   if (0 == Res || (char)Res < 0 )
   {
     SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);

@@ -129,7 +129,7 @@ AROS_LIBFUNC_INIT
   Exponent |= Sign;
   }
 
-  ld_M = intern_IEEESPLd( (struct MathIeeeSingTransBase_intern *)
+  ld_M = intern_IEEESPLd( (struct MathIeeeSingTransBase *)
                                                   MathIeeeSingTransBase,
                           (y & IEEESPMantisse_Mask) | 0x3f000000 );
 

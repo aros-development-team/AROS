@@ -16,7 +16,7 @@
 #include "mathieeesingtrans_intern.h"
 
 
-LONG intern_IEEESPLd(struct MathIeeeSingTransBase_intern * MathIeeeSingTransBase, ULONG fnum)
+LONG intern_IEEESPLd(struct MathIeeeSingTransBase * MathIeeeSingTransBase, ULONG fnum)
 {
   ULONG i = 0, Res = 0;
   ULONG Mask = 0;

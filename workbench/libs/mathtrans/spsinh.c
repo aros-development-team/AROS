@@ -14,7 +14,6 @@
 #include <exec/types.h>
 #include "mathtrans_intern.h"
 
-
 /*****************************************************************************
 
     NAME */
@@ -27,7 +26,7 @@
 
 /*  LOCATION */
 
-      struct Library *, MathTransBase, 10, Mathtrans)
+      struct MathtransBase *, MathtransBase, 10, Mathtrans)
 
 /*  FUNCTION
 
@@ -83,7 +82,12 @@ LONG tmp;
     Res = SPAdd(Res, ((ULONG)SPDiv(Res, one) | FFPSign_Mask ));
 
   /* Res = Res / 2 */
-  ((char)Res) --;
+  
+  /* should be (char(Res))-- , but gcc on Linux screws up the result! */
+
+  tmp = Res & 0xFFFFFF00;
+  (char)Res--;
+  Res = Res | tmp;
 
   if ( 0 == Res || (char)Res < 0 )
   {

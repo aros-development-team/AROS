@@ -5,14 +5,18 @@
     Desc:
     Lang: english
 */
-#ifndef __MATHTRANS_INTERN_H__
-#define __MATHTRANS_INTERN_H__
+
+#ifndef MATHTRANS_INTERN_H
+#define MATHTRANS_INTERN_H
 
 /* This is a short file that contains a few things every mathffp function
     needs */
 
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
+#endif
+#ifndef PROTO_EXEC_H
+#   include <proto/exec.h>
 #endif
 #ifndef PROTO_MATHFFP_H
 #   include <proto/mathffp.h>
@@ -24,38 +28,29 @@
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
-#ifndef DOS_DOS_H
-#   include <dos/dos.h>
-#endif
 
-struct MathTransBase_intern; /* prereference */
-/* Internal prototypes */
 
-LONG intern_SPLd(struct MathTransBase_intern * MathTransBase, ULONG fnum);
-LONG intern_SPisodd(ULONG fnum);
-
-#define MATHFFPNAME     "mathtrans.library"
-
+extern struct ExecBase * SysBase;
+extern struct MathBase * MathBase;
 /*
-    This is the MathTransBase structure. It is documented here because it is
+    This is the MathtransBase structure. It is documented here because it is
     completely private. Applications should treat it as a struct Library, and
     use the mathtrans.library functions to get information.
 */
 
-struct MathTransBase_intern
+struct MathtransBase
 {
     struct Library     library;
-    struct ExecBase  * sysbase;
     BPTR               seglist;
-
-    struct Library   * MathBase;
 };
 
-#define MTB(mtb) ((struct MathTransBase_intern *)mtb)
-#undef SysBase
-#define SysBase (MTB(MathTransBase)->sysbase)
-#undef MathBase
-#define MathBase (MTB(MathTransBase)->MathBase)
+/* internal prototypes */
+
+LONG intern_SPLd(struct MathtransBase * MathtransBase, ULONG fnum);
+LONG intern_SPisodd(ULONG fnum);
+
+#define expunge() \
+ AROS_LC0(BPTR, expunge, struct MathTransBase *, MathTransBase, 3, Mathtrans)
 
 #define FFPMantisse_Mask 0xFFFFFF00 /* 24 bit for the mantisse */
 #define FFPExponent_Mask 0x0000007F /*  7 bit for the exponent */
@@ -126,10 +121,7 @@ struct MathTransBase_intern
 #define qS3      0xb03361c0 /*0 -6.88283971605453293030e-01 */ 
 #define qS4      0x9dc62e3d /*d  7.70381505559019352791e-02 */
 
-#define expunge() \
- AROS_LC0(BPTR, expunge, struct MathBase *, MathBase, 3, Mathffp)
-
-#endif /* __MATHTRANS_INTERN_H__  */
+#endif /* MATHTRANS_INTERN_H  */
 
 
 

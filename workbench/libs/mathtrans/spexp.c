@@ -27,7 +27,7 @@
 
 /*  LOCATION */
 
-      struct Library *, MathTransBase, 13, Mathtrans)
+      struct MathtransBase *, MathtransBase, 13, Mathtrans)
 
 /*  FUNCTION
 
@@ -100,13 +100,11 @@ ULONG Res, i;
 LONG Mantisse;
 char Exponent;
 
-
-  Exponent = (fnum1 & FFPExponent_Mask) -0x41;
+  Exponent = (fnum1 & FFPExponent_Mask) - 0x41;
 
   /* e^0 = 1, e^(2^(<=-24)) = 1 */
   if ( 0 == fnum1 || Exponent <= -24 )
     return one;
-
 
   /* e^(>= 44) = overflow = infinity) */
   if (Exponent > 5)
@@ -143,6 +141,7 @@ char Exponent;
   }
   if ( (char) fnum1 < 0)
     return SPDiv(one, Res);
+
   return Res;
 AROS_LIBFUNC_EXIT
 } /* SPExp */

@@ -11,7 +11,7 @@
 #include <proto/mathieeesingbas.h>
 #include <proto/exec.h>
 #include <exec/types.h>
-#include "mathieeesp_intern.h"
+#include "mathieeesingbas_intern.h"
 
 /*****************************************************************************
 

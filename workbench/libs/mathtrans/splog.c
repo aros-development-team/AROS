@@ -28,7 +28,7 @@
 
 /*  LOCATION */
 
-      struct Library *, MathTransBase, 14, Mathtrans)
+      struct MathtransBase *, MathtransBase, 14, Mathtrans)
 
 /*  FUNCTION
 
@@ -125,7 +125,7 @@ AROS_LIBFUNC_INIT
   Exponent |= (0x47 - i + Sign);
   }
 
-  ld_M = intern_SPLd((struct MathTransBase_intern *)MathTransBase, 
+  ld_M = intern_SPLd((struct MathtransBase *)MathtransBase, 
                      (fnum1 & FFPMantisse_Mask) | 0x40);
 
   /*               ld M + E

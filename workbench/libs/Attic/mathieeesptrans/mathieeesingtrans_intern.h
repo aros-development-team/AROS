@@ -2,6 +2,9 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1997/09/27 22:00:38  bergers
+    new version of library (uses libheader.c)
+
     Revision 1.3  1997/07/28 20:43:04  bergers
     Some bug-fixes and changes
 
@@ -38,37 +41,29 @@
 #   include <dos/dos.h>
 #endif
 
-struct MathIeeeSingTransBase_intern; /* prereference */
-/* Internal prototypes */
-
-LONG intern_IEEESPLd(struct MathIeeeSingTransBase_intern * MathIeeeSingTransBase, ULONG fnum);
-LONG intern_IEEESPisodd(LONG fnum);
-
-#define MATHIEEESINGTRANSNAME     "mathieeesingtrans.library"
-
 /*
     This is the MathIeeeSingTransBase structure. It is documented here because
     it is completely private. Applications should treat it as a struct 
     Library, and use the mathieeespbas.library functions to get information.
 */
 
+extern struct ExecBase * SysBase;
+extern struct MathIeeeSingBasBase * MathIeeeSingBasBase;
 
-struct MathIeeeSingTransBase_intern
+struct MathIeeeSingTransBase
 {
     struct Library     library;
-    struct ExecBase  * sysbase;
     BPTR               seglist;
-
-    struct Library   * MathIeeeSingBas;
 };
 
-#define MSTB(mstb) ((struct MathIeeeSingTransBase_intern *)mstb)
-#undef SysBase
-#define SysBase (MSTB(MathIeeeSingTransBase) -> sysbase)
-#undef MathIeeeSingBasBase
-#define MathIeeeSingBasBase (MSTB(MathIeeeSingTransBase) -> MathIeeeSingBas)
 
+/* Internal prototypes */
 
+LONG intern_IEEESPLd(struct MathIeeeSingTransBase * MathIeeeSingTransBase, ULONG fnum);
+LONG intern_IEEESPisodd(LONG fnum);
+
+#define expunge() \
+ AROS_LC0(BPTR, expunge, struct MathIeeeSingTransBase *, MathIeeeSingTransBase, 3, Mathieeesingtrans)
 
 #define IEEESPMantisse_Mask 0x007FFFFF // 23 bit for the mantisse
 #define IEEESPExponent_Mask 0x7F800000 //  8 bit for the exponent
@@ -117,8 +112,6 @@ struct MathIeeeSingTransBase_intern
 #define cosf6    0xb493f27e /* -1/10!  */
 
 
-#define expunge() \
- AROS_LC0(BPTR, expunge, struct MathIeeeSingTransBase *, MathIeeeSingTransBase, 3, Mathieeesingtrans)
 
 #endif /* __MATHIEEESINGTRANS_INTERN_H__  */
 
