@@ -1682,27 +1682,30 @@ static VOID bitmap_getimage(OOP_Class *cl, OOP_Object *o,
 		    switch (bpp)
 		    {
 	    		case 1:
-			    *((UBYTE *)pixarray)++ = pix;
+			    *pixarray++ = pix;
 			    break;
 
 			case 2:
-			    *((UWORD *)pixarray)++ = pix;
+			    *((UWORD *)pixarray) = pix;
+			    pixarray += 2;
 			    break;
 
 			case 3:
 			#if AROS_BIG_ENDIAN
-			    *((UBYTE *)pixarray)++ = (pix >> 16) & 0xFF;
-			    *((UBYTE *)pixarray)++ = (pix >> 8) & 0xFF;
-			    *((UBYTE *)pixarray)++ =  pix & 0xFF;
+			    pixarray[0] = (pix >> 16) & 0xFF;
+			    pixarray[1] = (pix >> 8) & 0xFF;
+			    pixarray[2] =  pix & 0xFF;
 			#else
-			    *((UBYTE *)pixarray)++ =  pix & 0xFF;
-			    *((UBYTE *)pixarray)++ = (pix >> 8) & 0xFF;
-			    *((UBYTE *)pixarray)++ = (pix >> 16) & 0xFF;
+			    pixarray[0] =  pix & 0xFF;
+			    pixarray[1] = (pix >> 8) & 0xFF;
+			    pixarray[2] = (pix >> 16) & 0xFF;
 			#endif
+			    pixarray += 3;
 			    break;
 
 			case 4:
-			    *((ULONG *)pixarray)++ = pix;
+			    *(ULONG *)pixarray = pix;
+			    pixarray += 4;
 			    break;
 		    }
 
@@ -1999,7 +2002,7 @@ static VOID bitmap_putalphaimage(OOP_Class *cl, OOP_Object *o,
 	    	xbuf += msg->width;
 	    }
 	    
-	    ((UBYTE *)pixarray) += (msg->modulo - msg->width * 4);
+	    pixarray = (ULONG *)((UBYTE *)pixarray + msg->modulo - msg->width * 4);
 	    
 	    PIXBUF_NEXT_LINE;
 	    
@@ -2055,7 +2058,7 @@ static VOID bitmap_putalphaimage(OOP_Class *cl, OOP_Object *o,
 		
 	    } /* for(x = msg->x; x < msg->x + msg->width; x++) */
 	    
-	    ((UBYTE *)pixarray) += (msg->modulo - msg->width * 4);
+	    pixarray = (ULONG *)((UBYTE *)pixarray + msg->modulo - msg->width * 4);
 	    
 	} /* for(y = msg->y; y < msg->y + msg->height; y++) */
 	
