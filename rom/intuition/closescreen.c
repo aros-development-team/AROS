@@ -137,8 +137,10 @@
 	    	SetFrontBitMap(NULL, FALSE);
 	    }
 
+#ifdef CreateLayerTagList
 	    /* Free the root layer */
 	    DeleteLayer(0UL, ((struct IntScreen *)screen)->rootLayer);
+#endif
 	    
 	    /* Free the screen's bitmap */
 

@@ -462,6 +462,7 @@ static const ULONG coltab[] = {
 
 	InitLayers(&screen->Screen.LayerInfo);
 
+#ifdef CreateLayerTagList
 	{
 		struct Region * ls = NewRegion();
 		struct Rectangle r;
@@ -474,7 +475,7 @@ static const ULONG coltab[] = {
 		r.MinY = screen->Screen.TopEdge;
 		r.MaxX = screen->Screen.LeftEdge + screen->Screen.Width - 1 - 50;
 		r.MaxY = screen->Screen.TopEdge  + screen->Screen.Height - 1 - 50;
-            
+
 #warning Should check whether OrRectRegion succeeds and whether layer gets created!
 		OrRectRegion(ls, &r);
 
@@ -484,6 +485,7 @@ static const ULONG coltab[] = {
 			                   0,
 			                   tags);
 	}
+#endif
 
 	if (NULL != layer_info_hook)
 	  InstallLayerInfoHook(&screen->Screen.LayerInfo, layer_info_hook);
