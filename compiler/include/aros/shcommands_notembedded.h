@@ -188,7 +188,7 @@ DEFINE_main(name)                                              \
 
 #define __AROS_SH4(name, version, help, a1, a2, a3, a4)         \
     __AROS_SH_ARGS(name, version, 4,                            \
-                            __DEF(__SHA_DEF(a1), __SHA_DEF(a2)  \
+                            __DEF(__SHA_DEF(a1), __SHA_DEF(a2), \
                             __SHA_DEF(a3), __SHA_DEF(a4)),      \
                             __SHA_OPT(a1) "," __SHA_OPT(a2) "," \
 		            __SHA_OPT(a3) "," __SHA_OPT(a4),    \
