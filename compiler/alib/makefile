@@ -27,6 +27,7 @@ FILES = alib_util \
 	dogadgetmethod \
 	domethod \
 	dosupermethod \
+	easyrequest \
 	fastrand \
 	hookentry \
 	liballocpooled \
