@@ -21,7 +21,6 @@ FILES = \
 	permit \
 	preparecontext \
 	runprocess \
-	semaphoreglue \
 	setsr \
 	special \
 	stackswap \
