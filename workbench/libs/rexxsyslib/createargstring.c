@@ -54,12 +54,20 @@
 
     /* size is the length of the memory to allocate: size of RexxArg without Buff + length of string + 1 */
     ULONG size = sizeof(struct RexxArg) - 8 + length + 1;
-    struct RexxArg *ra = AllocMem(size, MEMF_PUBLIC|MEMF_CLEAR);
-  
+    struct RexxArg *ra = (struct RexxArg *)AllocMem(size, MEMF_PUBLIC|MEMF_CLEAR);
+    ULONG hash = 0;
+    int i;
+    
     if (ra == NULL) ReturnPtr("CreateArgstring", UBYTE *, NULL);
   
-    ra->ra_Size = length + 1;
+    ra->ra_Size = size;
     ra->ra_Length = length;
+#warning FIXME: Maybe the next two fields only need to be intialized on m68k
+    /* Initialize the depricated fields to a sane value for compatibility under AmigaOS */
+    ra->ra_Depricated1 = 1<<1 | 1<<2 | 1<<6; /* Was ra_Flags = NSF_ALPHA | NSF_EXT */
+    for (i=0; i<length; i++)
+	hash += string[i];
+    ra->ra_Depricated2 = (UBYTE)(hash & 255); /* Was ra_Hash */
     CopyMem(string, ra->ra_Buff, length);
     *(ra->ra_Buff + length) = '\0';
     
