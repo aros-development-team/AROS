@@ -14,9 +14,8 @@
 struct HDTBPartition;
 
 struct PartitionTable {
-	struct DosEnvec de;
-	ULONG *tattrlist;           /* supported partition table attributes */
-	ULONG *pattrlist;           /* supported partition attributes */
+	struct PartitionAttribute *tattrlist; /* supported partition table attributes */
+	struct PartitionAttribute *pattrlist; /* supported partition attributes */
 	ULONG reserved;
 	ULONG max_partitions;
 	ULONG type;

@@ -185,14 +185,15 @@ LONG GetPartitionTableAttrsA(struct PartitionHandle *ph, LONG tag, ...) {
    return GetPartitionTableAttrs(ph, (struct TagItem *)&tag);
 }
 
-BOOL existsAttr(ULONG *attrlist, ULONG attr) {
+ULONG getAttrInfo(struct PartitionAttribute *attrlist, ULONG attr) {
 
-	while (*attrlist)
+	while (attrlist[0].attribute != PTA_DONE)
 	{
-		if (*attrlist++ == attr)
-			return TRUE;
+		if (attrlist[0].attribute == attr)
+			return attrlist[0].mode;
+		attrlist++;
 	}
-	return FALSE;
+	return 0;
 }
 
 UBYTE getBitNum(ULONG val) {

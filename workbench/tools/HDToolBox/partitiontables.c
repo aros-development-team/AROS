@@ -38,12 +38,12 @@ void getPartitionInfo(struct PartitionTable *table, struct PartitionHandle *ph) 
 	GetPartitionTableAttrsA
 	(
 		ph,
-		PTT_DOSENVEC, &table->de,
 		PTT_TYPE, &table->type,
 		PTT_RESERVED, &table->reserved,
 		PTT_MAX_PARTITIONS, &table->max_partitions,
 		TAG_DONE
 	);
+kprintf("type=%ld\n", table->type);
 }
 
 struct PartitionTable *newPartitionTable(struct PartitionHandle *ph) {
