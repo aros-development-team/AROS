@@ -27,8 +27,7 @@
 
 #define IS_BM_ATTR(attr, idx) ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 
-static AttrBase HiddBitMapAttrBase;
-
+static AttrBase HiddBitMapAttrBase = 0;
 
 /*** BitMap::New() ************************************************************/
 
@@ -69,7 +68,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
             {
                 switch(idx)
                 {
-                    case aoHidd_BitMap_Width       : data->width       = tag->ti_Data; D(bug("  width: %i\n", data->width)); break;
+                    case aoHidd_BitMap_Width       : data->width       = tag->ti_Data; break;
                     case aoHidd_BitMap_Height      : data->height      = tag->ti_Data; break;
                     case aoHidd_BitMap_Depth       : data->depth       = tag->ti_Data; break;
                     case aoHidd_BitMap_Displayable : data->displayable = (BOOL) tag->ti_Data; break;
@@ -90,7 +89,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
         {
             /* bitmap is not displayable */
 
-            if(data->format == HIDDV_BitMap_Format_Chunky)
+            if(data->format & HIDDV_BitMap_Format_Chunky)
             {
                 data->bytesPerPixel = (data->depth + 7) / 8;
                 data->bytesPerRow   = data->bytesPerPixel * ((data->width + alignOffset) / alignDiv);
@@ -144,7 +143,7 @@ static void bitmap_dispose(Class *cl, Object *obj, Msg *msg)
 
     EnterFunc(bug("BitMap::Dispose()\n"));
 
-    if(data->format == HIDDV_BitMap_Format_Planar)
+    if(data->format & HIDDV_BitMap_Format_Planar)
     {
         if(data->buffer)
         {
@@ -163,7 +162,7 @@ static void bitmap_dispose(Class *cl, Object *obj, Msg *msg)
 
     DoSuperMethod(cl, obj, (Msg) msg);
 
-    ReturnVoid("BitMap::Dispose()");
+    ReturnVoid("BitMap::Dispose");
 }
 
 
@@ -195,6 +194,48 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 }
 
 
+/*** BitMap::PrivateSet() *****************************************************/
+
+/*
+
+   This makes it easier to create a subclass of the graphics hidd.
+   It only allowd to use this method in the p_RootNew method of a
+   bitmap subclass.
+
+*/
+
+static VOID bitmap_private_set(Class *cl, Object *obj, struct pHidd_BitMap_PrivateSet *msg)
+{
+    struct HIDDBitMapData *data = INST_DATA(cl, obj);
+    struct TagItem *tag, *tstate;
+    ULONG  idx;
+
+    EnterFunc(bug("BitMap::PrivateSet()"));
+
+    tstate = msg->attrList;
+    while((tag = NextTagItem(&tstate)))
+    {
+        if(IS_BM_ATTR(tag->ti_Tag, idx))
+        {
+            switch(idx)
+            {
+                case aoHidd_BitMap_Width         : data->width         = tag->ti_Data; break;
+                case aoHidd_BitMap_Height        : data->height        = tag->ti_Data; break;
+                case aoHidd_BitMap_Depth         : data->depth         = tag->ti_Data; break;
+                case aoHidd_BitMap_Displayable   : data->displayable   = (BOOL) tag->ti_Data; break;
+                case aoHidd_BitMap_Format        : data->format        = tag->ti_Data; break;
+                case aoHidd_BitMap_BytesPerRow   : data->bytesPerRow   = tag->ti_Data; break;
+                case aoHidd_BitMap_BytesPerPixel : data->bytesPerPixel = tag->ti_Data; break;
+                case aoHidd_BitMap_ColorTab      : data->colorTab      = (APTR) tag->ti_Data; break;
+                case aoHidd_BitMap_BaseAddress   : data->buffer        = (APTR) tag->ti_Data; break;
+            }
+        }
+    }
+
+    ReturnVoid("BitMap::PrivateSet");
+}
+
+
 /*** init_bitmapclass *********************************************************/
 
 #undef OOPBase
@@ -204,7 +245,7 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 #define SysBase (csd->sysbase)
 
 #define NUM_ROOT_METHODS   3
-#define NUM_BITMAP_METHODS 0
+#define NUM_BITMAP_METHODS 1
 
 Class *init_bitmapclass(struct class_static_data *csd)
 {
@@ -218,6 +259,7 @@ Class *init_bitmapclass(struct class_static_data *csd)
 
     struct MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
     {
+        {(IPTR (*)())bitmap_private_set, moHidd_BitMap_PrivateSet},
         {NULL, 0UL}
     };
     
@@ -227,9 +269,9 @@ Class *init_bitmapclass(struct class_static_data *csd)
         {bitMap_descr,  IID_Hidd_BitMap, NUM_BITMAP_METHODS},
         {NULL, NULL, 0}
     };
-    
+
     AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
-        
+
     struct TagItem tags[] =
     {
         {aMeta_SuperID,        (IPTR) CLID_Root},
@@ -239,22 +281,32 @@ Class *init_bitmapclass(struct class_static_data *csd)
         {TAG_DONE, 0UL}
     };
     
-    Class *cl;
+    Class *cl = NULL;
 
     EnterFunc(bug("init_bitmapclass(csd=%p)\n", csd));
 
-    cl = NewObject(NULL, CLID_HiddMeta, tags);
-    if(cl)
+    if(MetaAttrBase)
     {
-        D(bug("BitMap class ok\n"));
-        csd->bitmapclass = cl;
-        cl->UserData     = (APTR) csd;
-        
-        /* Get attrbase for the BitMap interface */
-        HiddBitMapAttrBase = GetAttrBase(IID_Hidd_BitMap);
-        D(bug("BMAttr: %i\n", HiddBitMapAttrBase));
-        AddClass(cl);
-    }
+        cl = NewObject(NULL, CLID_HiddMeta, tags);
+        if(cl)
+        {
+            D(bug("BitMap class ok\n"));
+            csd->bitmapclass = cl;
+            cl->UserData     = (APTR) csd;
+            
+            /* Get attrbase for the BitMap interface */
+            HiddBitMapAttrBase = ObtainAttrBase(IID_Hidd_BitMap);
+            if(HiddBitMapAttrBase)
+            {
+                AddClass(cl);
+            }
+            else
+            {
+                free_bitmapclass(csd);
+                cl = NULL;
+            }
+        }
+    } /* if(MetaAttrBase) */
 
     ReturnPtr("init_bitmapclass", Class *,  cl);
 }
@@ -271,6 +323,7 @@ void free_bitmapclass(struct class_static_data *csd)
         RemoveClass(csd->bitmapclass);
         DisposeObject((Object *) csd->bitmapclass);
         csd->bitmapclass = NULL;
+        if(HiddBitMapAttrBase) ReleaseAttrBase(IID_Hidd_BitMap);
     }
 
     ReturnVoid("free_gcclass");

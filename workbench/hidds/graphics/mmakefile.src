@@ -16,7 +16,8 @@ LIBNAME     := graphics
 ULIBNAME    := Graphics
 LIBPOST     := hidd
 
-FILES       := GraphicsClass BM_Class functable
+FILES       := GraphicsClass BM_Class GC_Class functable \
+               GC_WritePixelDirect GC_ReadPixel
 
 INIT_FILE   := $(LIBNAME)_init
 END_FILE    := $(LIBNAME)_end

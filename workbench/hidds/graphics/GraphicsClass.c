@@ -23,60 +23,82 @@
 #include <aros/debug.h>
 
 
-struct GfxHiddData
-{
-    Class *bitmap;  /* bitmap class     */
-    Class *gc;      /* graphics context */
-};
-
 static AttrBase HiddGCAttrBase;
 
-/**************************
-**  GfxHIDD::CreateGC()  **
-**************************/
-static Object *gfxhidd_creategc(Class *cl, Object *o, struct pHidd_Gfx_CreateGC *msg)
+/*** HIDDGfx::NewGC() *********************************************************/
+
+static Object *hiddgfx_newgc(Class *cl, Object *o, struct pHidd_Gfx_NewGC *msg)
 {
     Object *gc = NULL;
-    struct TagItem tags[] =
-    {
-        {aHidd_GC_BitMap,       (IPTR)msg->bitMap},
-        {TAG_DONE,              0}
-    };
-    
-    
+
+    EnterFunc(bug("HIDDGfx::NewGC()\n"));
+
     switch (msg->gcType)
     {
-        case  GCTYPE_QUICK:
-            /* The Quick GC must come from a subclass     */
-            gc = NULL;
+        case  HIDDV_Gfx_GCType_Quick:
+            gc = NewObject(NULL, CLID_Hidd_GCQuick, msg->attrList);
+
             break;
             
-        case GCTYPE_CLIPPING:
-            gc = NewObject(NULL, CLID_Hidd_ClipGC, tags);
+        case HIDDV_Gfx_GCType_Clip:
+            /* The Clip GC must come from a subclass     */
+            gc = NULL;
             break;
             
         
     }
-    return gc;
+
+    ReturnPtr("HIDDGfx::NewGC", Object *, gc);
 }
 
-/**************************
-**  GfxHIDD::DeleteGC()  **
-**************************/
-static VOID gfxhidd_deletegc(Class *cl, Object *o, struct pHidd_Gfx_DeleteGC *msg)
+
+/*** HIDDGfx::DisposeGC() ****************************************************/
+
+static VOID hiddgfx_disposegc(Class *cl, Object *o, struct pHidd_Gfx_DisposeGC *msg)
 {
+    EnterFunc(bug("HIDDGfx::DisposeGC()\n"));
+
     DisposeObject(msg->gc);
-    
+
+    ReturnVoid("HIDDGfx::DisposeGC");
 }
+
+
+/*** HIDDGfx::NewBitMap() ****************************************************/
+
+static Object * hiddgfx_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMap *msg)
+{
+    Object *bitMap = NULL;
+
+    EnterFunc(bug("HIDDGfx::NewBitMap()\n"));
+
+    bitMap = NewObject(NULL, CLID_Hidd_BitMap, msg->attrList);
+
+    ReturnPtr("HIDDGfx::NewBitMap", Object *, bitMap);
+}
+
+
+/*** HIDDGfx::DisposeBitMap() ************************************************/
+
+static VOID hiddgfx_disposebitmap(Class *cl, Object *o, struct pHidd_Gfx_DisposeBitMap *msg)
+{
+    EnterFunc(bug("HIDDGfx::DisposeBitMap()\n"));
+
+    DisposeObject(msg->bitMap);
+
+    ReturnVoid("HIDDGfx::DisposeBitMap");
+}
+
 /*************************** Classes *****************************/
 
 #undef OOPBase
 #undef SysBase
 
 
-#define NUM_GFXHIDD_METHODS 2
+#define NUM_GFXHIDD_METHODS 4
 #define OOPBase (csd->oopbase)
 #define SysBase (csd->sysbase)
+
 Class *init_gfxhiddclass (struct class_static_data *csd)
 {
     Class *cl = NULL;
@@ -84,8 +106,10 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
     
     struct MethodDescr gfxhidd_descr[NUM_GFXHIDD_METHODS + 1] = 
     {
-        {(IPTR (*)())gfxhidd_creategc,  moHidd_Gfx_CreateGC},
-        {(IPTR (*)())gfxhidd_deletegc,  moHidd_Gfx_DeleteGC},
+        {(IPTR (*)())hiddgfx_newgc,         moHidd_Gfx_NewGC},
+        {(IPTR (*)())hiddgfx_disposegc,     moHidd_Gfx_DisposeGC},
+        {(IPTR (*)())hiddgfx_newbitmap,     moHidd_Gfx_NewBitMap},
+        {(IPTR (*)())hiddgfx_disposebitmap, moHidd_Gfx_DisposeBitMap},
         {NULL, 0UL}
     };
     
@@ -105,7 +129,7 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
 
         { aMeta_InterfaceDescr,         (IPTR)ifdescr},
         { aMeta_ID,                     (IPTR)CLID_Hidd_Gfx},
-        { aMeta_InstSize,               (IPTR)sizeof (struct GfxHiddData) },
+        { aMeta_InstSize,               (IPTR)sizeof (struct HIDDGraphicsData) },
         {TAG_DONE, 0UL}
     };
     
@@ -116,37 +140,35 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
     D(bug("Class=%p\n", cl));
     if(cl)
     {
-        D(bug("      GfxHiddClass ok\n"));
+        D(bug("GfxHiddClass ok\n"));
         cl->UserData = (APTR)csd;
         
-        HiddGCAttrBase = GetAttrBase(IID_Hidd_GC);
-
         csd->bitmapclass = init_bitmapclass(csd);
         D(bug("bitmapclass: %p\n", csd->bitmapclass));
 
         if(csd->bitmapclass)
         {
-            ok = TRUE;
-        }
-#if 0
-/*        csd->gcclass = init_gcclass(csd);*/
-        D(bug("      GCClass: %p\n", csd->gcclass));
-        if(csd->gcclass)
-        {
-            D(bug("      Got GCClass\n"));
-            ok = TRUE;
-        }
-#endif
+            D(bug("BitMapClass ok\n"));
 
-        if(ok == FALSE)
-        {
-            free_gfxhiddclass(csd);
-            cl = NULL;
+            csd->gcclass = init_gcclass(csd);
+            D(bug("gcclass: %p\n", csd->gcclass));
+            if(csd->gcclass)
+            {
+                D(bug("GCClass ok\n"));
+
+                ok = TRUE;
+            }
         }
-        else
-        {
-            AddClass(cl);
-        }
+    }
+
+    if(ok == FALSE)
+    {
+        free_gfxhiddclass(csd);
+        cl = NULL;
+    }
+    else
+    {
+        AddClass(cl);
     }
 
     ReturnPtr("init_gfxhiddclass", Class *, cl);
@@ -160,9 +182,8 @@ void free_gfxhiddclass(struct class_static_data *csd)
     if(csd)
     {
         RemoveClass(csd->gfxhiddclass);
+        free_gcclass(csd);
         free_bitmapclass(csd);
-
-     /*   free_gcclass(csd); */
 
         DisposeObject((Object *) csd->gfxhiddclass);
     }

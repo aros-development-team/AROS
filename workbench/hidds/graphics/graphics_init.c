@@ -26,8 +26,10 @@
 /* Customize libheader.c */
 #define LC_SYSBASE_FIELD(lib)   (((struct IntHIDDGraphicsBase *)(lib))->hdg_SysBase)
 #define LC_SEGLIST_FIELD(lib)   (((struct IntHIDDGraphicsBase *)(lib))->hdg_SegList)
+/*
 #define LC_RESIDENTNAME         HIDDGraphics_resident
 #define LC_RESIDENTFLAGS        RTF_AUTOINIT
+*/
 #define LC_RESIDENTPRI          94
 #define LC_LIBBASESIZE          sizeof(struct IntHIDDGraphicsBase)
 #define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
