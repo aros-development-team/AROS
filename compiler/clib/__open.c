@@ -145,26 +145,30 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 	fib = AllocDosObject(DOS_FIB, NULL);
 	if (!fib)
         {
-    	    errno = IoErr2errno(IoErr());
-	    goto err;
+    	   errno = IoErr2errno(IoErr());
+	   goto err;
         }
 
 	if (!Examine(lock, fib))
     	{
-    	    errno = IoErr2errno(IoErr());
-	    goto err;
+	   /* The filesystem in which the files resides doesn't support
+	      This the EXAMINE action. It might be broken or migth also
+	      not be a filesystem at all. So let's assume the file is
+	      not a diretory
+	   */
+	   fib->fib_DirEntryType = 0;
 	}
 
 	#warning implement softlink handling
 
 	/* Check if it's a directory or a softlink.
-	 Softlinks are not handled yet, though */
+	   Softlinks are not handled yet, though */
 	if (fib->fib_DirEntryType > 0)
-	{
+  	{
 	    /* A directory cannot be opened for writing */
 	    if (openmode & FMF_WRITE)
 	    {
-	    	errno = EISDIR;
+	        errno = EISDIR;
 	        goto err;
             }
 
@@ -172,7 +176,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
             FreeDosObject(DOS_FIB, fib);
 
 	    goto success;
-        }
+	}
         FreeDosObject(DOS_FIB, fib);
     }
 
