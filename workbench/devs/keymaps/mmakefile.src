@@ -17,12 +17,10 @@ workbench-devs-keymaps : $(foreach f,$(KEYMAPS),$(AROS_DEVS)/Keymaps/$(f))
 #MM
 workbench-devs-keymaps-quick : workbench-devs-keymaps
 
-CFLAGS := $(USER_CFLAGS) $(TARGET_CFLAGS) $(STATIC_CFLAGS) -I$(AROS_INCLUDES) -D__AROS -D__AROS__ -D_EURO
-LDFLAGS := $(USER_LDFLAGS) $(TARGET_LDFLAGS) $(STATIC_LDFLAGS)
 OBJDIR := $(GENDIR)/$(CURDIR)
 
 $(AROS_DEVS)/Keymaps/% : $(OBJDIR)/%.o
-	%link_q cmd=$(STATIC_LD) startup= libs=
+	%link_q opt="$(LDFLAGS) $(NOSTARTUP_LDFLAGS)"
 
 $(OBJDIR)/%.o : %.c
 	%compile_q cmd=$(TARGET_CC)
