@@ -21,6 +21,8 @@ funct urlDecode (char $str)
     $newstr = sub($str,"+"," ");
     $newstr = sub($newstr,"%40","@");
     $newstr = sub($newstr,"%2D","-");
+    $newstr = sub($newstr,"%25","%");
+    $newstr = sub($newstr,"%27","'");
     $newstr = sub($newstr,"%2F","/");
     return ($newstr);
 }
