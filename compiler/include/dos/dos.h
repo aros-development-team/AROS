@@ -61,6 +61,7 @@ struct FileInfoBlock
 };
 
 #define DOSTRUE 		(-1L)
+#define DOSFALSE		(0L)
 
 #define MODE_OLDFILE		1005
 #define MODE_NEWFILE		1006
@@ -70,6 +71,20 @@ struct FileInfoBlock
 #define ACCESS_READ		SHARED_LOCK
 #define EXCLUSIVE_LOCK		-1
 #define ACCESS_WRITE		EXCLUSIVE_LOCK
+
+#ifndef BITSPERBYTE
+#   define BITSPERBYTE		8
+#endif
+#ifndef BYTESPERLONG
+#   define BYTESPERLONG 	4
+#endif
+#define BITSPERLONG		32 /* This is (U)LONG, not long ! */
+#ifndef MAXINT
+#   define MAXINT		0x7FFFFFFF
+#endif
+#ifndef MININT
+#   define MININT		0x7FFFFFFF
+#endif
 
 #define OFFSET_BEGINNING	-1
 #define OFFSET_CURRENT		0
@@ -84,10 +99,10 @@ struct FileInfoBlock
 #define SIGBREAKB_CTRL_D	13
 #define SIGBREAKB_CTRL_E	14
 #define SIGBREAKB_CTRL_F	15
-#define SIGBREAKF_CTRL_C	0x1000
-#define SIGBREAKF_CTRL_D	0x2000
-#define SIGBREAKF_CTRL_E	0x4000
-#define SIGBREAKF_CTRL_F	0x8000
+#define SIGBREAKF_CTRL_C	0x1000L
+#define SIGBREAKF_CTRL_D	0x2000L
+#define SIGBREAKF_CTRL_E	0x4000L
+#define SIGBREAKF_CTRL_F	0x8000L
 
 #define ITEM_EQUAL		-2
 #define ITEM_ERROR		-1
@@ -181,12 +196,48 @@ struct FileInfoBlock
 #define ERROR_LOCK_TIMEOUT		242
 #define ERROR_UNLOCK_ERROR		243
 
+#define FAULT_MAX		82
+
+struct InfoData
+{
+    LONG id_NumSoftErrors;
+    LONG id_UnitNumber;
+    LONG id_DiskState;
+    LONG id_NumBlocks;
+    LONG id_NumBlocksUsed;
+    LONG id_BytesPerBlock;
+    LONG id_DiskType;
+    BPTR id_VolumeNode;
+    LONG id_InUse;
+};
+
+#define ID_WRITE_PROTECTED	80
+#define ID_VALIDATING		81
+#define ID_VALIDATED		82
+
 /* Filesystem types (multi-character constants of identifier strings) */
-#define ID_DOS_DISK		0x444f5300	/* 'DOS\0' */
-#define ID_FFS_DISK		0x444f5301	/* 'DOS\1' */
-#define ID_INTER_DOS_DISK	0x444f5302	/* 'DOS\2' */
-#define ID_INTER_FFS_DISK	0x444f5303	/* 'DOS\3' */
-#define ID_FASTDIR_DOS_DISK	0x444f5304	/* 'DOS\4' */
-#define ID_FASTDIR_FFS_DISK	0x444f5305	/* 'DOS\5' */
+#define ID_NO_DISK_PRESENT	(-1L)
+#define ID_UNREADABLE_DISK	(0x42414400L)   /* 'BAD\0' */
+#define ID_DOS_DISK		(0x444F5300L)   /* 'DOS\0' */
+#define ID_FFS_DISK		(0x444F5301L)   /* 'DOS\1' */
+#define ID_INTER_DOS_DISK	(0x444F5302L)   /* 'DOS\2' */
+#define ID_INTER_FFS_DISK	(0x444F5303L)   /* 'DOS\3' */
+#define ID_FASTDIR_DOS_DISK	(0x444F5304L)   /* 'DOS\4' */
+#define ID_FASTDIR_FFS_DISK	(0x444F5305L)   /* 'DOS\5' */
+#define ID_NOT_REALLY_DOS	(0x4E444F53L)   /* 'NDOS'  */
+#define ID_KICKSTART_DISK	(0x4B49434BL)   /* 'KICK'  */
+#define ID_MSDOS_DISK		(0x4d534400L)   /* 'MSD\0' */
+
+#define LOCK_DIFFERENT		-1
+#define LOCK_SAME		0
+#define LOCK_SAME_VOLUME	1
+
+#define CHANGE_LOCK		0
+#define CHANGE_FH		1
+
+#define LINK_HARD		0
+#define LINK_SOFT		1
+
+
 
 #endif
