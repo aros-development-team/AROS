@@ -165,4 +165,6 @@ int main(void)
     GetArguments();
     Action();
     Cleanup(0);
+
+    return 0;
 }
