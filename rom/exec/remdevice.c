@@ -68,8 +68,8 @@
     AROS_LIBFUNC_INIT
     NATIVE(BPTR seglist;)
 
-    D(bug("RemDevice $%lx $%lx (\"%s\") by \"%s\"\n", iORequest, iORequest->io_Device,
-	iORequest->io_Device ? iORequest->io_Device->dd_Library.lib_Node.ln_Name : "(null)",
+    D(bug("RemDevice $%lx (\"%s\") by \"%s\"\n", device, 
+	device ? device->dd_Library.lib_Node.ln_Name : "(null)",
 	SysBase->ThisTask->tc_Node.ln_Name));
 
     /* Arbitrate for the device list */

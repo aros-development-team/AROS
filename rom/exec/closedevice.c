@@ -8,6 +8,7 @@
 #include <aros/config.h>
 #include <exec/execbase.h>
 #include <exec/io.h>
+#include <exec/devices.h>
 #include <dos/dos.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
