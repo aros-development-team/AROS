@@ -49,28 +49,37 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    struct Task *task = NULL;
+    struct Process *proc;
 
     /* Okay, simple one first: This task */
-    task = FindTask(NULL);
-    if (task->tc_Node.ln_Type == NT_PROCESS)
-	if (((struct Process *)task)->pr_TaskNum == (LONG)num)
-	    return (struct Process *)task;
+    proc = (struct Process *)FindTask(NULL);
+    if (proc->pr_Task.tc_Node.ln_Type == NT_PROCESS &&
+	proc->pr_TaskNum &&
+	proc->pr_TaskNum == (LONG)num)
+    {
+	return proc;
+    }
 
     /* The ready list */
-    ForeachNode(&SysBase->TaskReady, task)
+    ForeachNode(&SysBase->TaskReady, proc)
     {
-	if (task->tc_Node.ln_Type == NT_PROCESS)
-	    if (((struct Process *)task)->pr_TaskNum == (LONG)num)
-		return (struct Process *)task;
+	if (proc->pr_Task.tc_Node.ln_Type == NT_PROCESS &&
+	    proc->pr_TaskNum &&
+	    proc->pr_TaskNum == (LONG)num)
+	{
+	    return proc;
+	}
     }
 
     /* The waiting list */
-    ForeachNode(&SysBase->TaskWait, task)
+    ForeachNode(&SysBase->TaskWait, proc)
     {
-	if (task->tc_Node.ln_Type == NT_PROCESS)
-	    if (((struct Process *)task)->pr_TaskNum == (LONG)num)
-		return (struct Process *)task;
+	if (proc->pr_Task.tc_Node.ln_Type == NT_PROCESS &&
+	    proc->pr_TaskNum &&
+	    proc->pr_TaskNum == (LONG)num)
+	{
+	    return proc;
+	}
     }
 
     return NULL;
