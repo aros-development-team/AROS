@@ -632,18 +632,19 @@ AROS_UFH3(VOID, sendQueuedEvents,
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     /* Broadcast keys */
-    struct IORequest *ioreq;
+    struct IORequest *ioreq, *nextnode;
     struct List *pendingList = (struct List *)&KBBase->kb_PendingQueue;
     
     D(bug("Inside software irq\n"));
 
-    ForeachNode(pendingList, ioreq)
+    ForeachNodeSafe(pendingList, ioreq, nextnode)
     {
         D(bug("Replying msg: R: %i W: %i\n", kbUn->kbu_readPos,
 	      KBBase->kb_writePos));
 	writeEvents(ioreq, KBBase);
- 	ReplyMsg((struct Message *)&ioreq->io_Message);
+	
 	Remove((struct Node *)ioreq);
+ 	ReplyMsg((struct Message *)&ioreq->io_Message);
 	kbUn->kbu_flags &= ~KBUF_PENDING;
     }
 }
