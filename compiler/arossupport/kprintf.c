@@ -162,7 +162,7 @@
 	    case 'c': {
 		UBYTE c;
 
-		c = va_arg (args, char);
+		c = va_arg (args, int);
 
 		if (isprint (c))
 		    RawPutChar (c);
