@@ -547,6 +547,7 @@ AROS_LH1(LONG, abortio,
     if(kbUn->kbu_flags & KBUF_PENDING)
     {
 	Disable();
+	Remove((struct Node *)ioreq);
 	ReplyMsg(&ioreq->io_Message);
 	kbUn->kbu_flags &= ~KBUF_PENDING;
 	Enable();
