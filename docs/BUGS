@@ -497,3 +497,8 @@ Using Opaque and moving windows around will sooner or later produce an error
     allocbitmap.c, 149: bad pointer: nbm = $0
 resulting in a Segmentation fault.
 
+BUG000073
+henning.kiel@gmx.de
+"List C:" says "Directory is empty" :-(
+"List C" (from Workbench:) and "C:" plus "List" works...
+
