@@ -31,7 +31,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 #include <aros/debug.h>
 
 /* Temporary macro */
-#define P(x) 
+#define P(x)
 /*****************************************************************************
 
     NAME */
@@ -308,20 +308,20 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	    defaults[8].ti_Data = 0;
 	}
     }
-    
+
     /* NP_HomeDir */
-    
+
     if (defaults[21].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
     	defaults[21].ti_Data = 0;
-    	
+
     	if (__is_process(me))
 	{
 	    if (me->pr_HomeDir)
 	    {
 	    	homedir = DupLock(me->pr_HomeDir);
 		ERROR_IF(!homedir);
-		
+
 		defaults[21].ti_Data = (IPTR)homedir;
 	    }
 	}
@@ -329,7 +329,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     CopyMem((APTR)defaults[10].ti_Data, name, namesize);
     CopyMem((APTR)defaults[12].ti_Data, argptr, argsize);
-    
+
     process->pr_Task.tc_Node.ln_Type = NT_PROCESS;
     process->pr_Task.tc_Node.ln_Name = name;
     process->pr_Task.tc_Node.ln_Pri = defaults[11].ti_Data;
@@ -563,7 +563,7 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 	    {
 		return FALSE;
 	    }
-	    
+
 	    CopyMem(varNode, newVar, copyLength);
 	    newVar->lv_Node.ln_Name = (char *)newVar +
 		sizeof(struct LocalVar);
@@ -581,7 +581,7 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 	    }
 	    
 	    CopyMem(varNode->lv_Value, newVar->lv_Value, varNode->lv_Len);
-	    
+
 	    AddTail((struct List *)&toProcess->pr_LocalVars,
 		    (struct Node *)newVar);
 	}
@@ -591,7 +591,7 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 }
 
 #ifdef AROS_CREATE_ROM
-# ifdef SysBase 
+# ifdef SysBase
 #  undef SysBase
 # endif
 #endif
@@ -611,7 +611,17 @@ static void KillCurrentProcess(void)
     /* Call user defined exit function before shutting down. */
     if (me->pr_ExitCode != NULL)
     {
-	me->pr_ExitCode(me->pr_ExitData);
+        /* 
+	   The Ralph Bebel's guru book says that pr_ExitCode
+ 	   is passed the process return code in D0 and pr_ExitData in D1,
+	   but the Matt Dillon's DICE C implementation of vfork shows that
+	   those parameters are passed also on the stack. 
+	   
+	   The AROS macros for functions with register parameters don't
+	   support both register and stack parameters at once, so we use 
+	   the stack only. This oughta be fixed somehow.
+        */
+	me->pr_ExitCode(me->pr_Task.tc_UserData, me->pr_ExitData);
     }
 
     P(kprintf("Deleting local variables\n"));
