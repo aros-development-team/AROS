@@ -108,7 +108,7 @@ static ULONG mNew(struct IClass *cl, Object *obj, struct opSet *msg)
      */
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
-	if (tag->ti_Tag == MUIA_Family_Child)
+	if (tag->ti_Tag == MUIA_Family_Child || tag->ti_Tag == MUIA_Group_Child)
 	{
 	    if (tag->ti_Data) /* add child */
 		DoMethod(obj, MUIM_Family_AddTail, tag->ti_Data);
