@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,13 +8,9 @@
 
 #define MUIC_Popimage "Popimage.mui"
 
-#ifndef METHOD_USER
-#define METHOD_USER TAG_USER
-#endif
-
 /* Popimage methods */
-#define MUIM_Popimage_OpenWindow   (METHOD_USER|0x0042a548)     /* PRIV */
-#define MUIM_Popimage_CloseWindow  (METHOD_USER|0x0042a549)     /* PRIV */
+#define MUIM_Popimage_OpenWindow   (MUIB_MUI|0x0042a548)     /* PRIV */
+#define MUIM_Popimage_CloseWindow  (MUIB_MUI|0x0042a549)     /* PRIV */
 struct MUIP_Popimage_OpenWindow    {ULONG MethodID;};           /* PRIV */
 struct MUIP_Popimage_CloseWindow   {ULONG MethodID; LONG ok;};  /* PRIV */
 

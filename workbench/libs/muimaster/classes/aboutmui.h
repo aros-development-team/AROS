@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,9 +8,8 @@
 
 #define MUIC_Aboutmui "Aboutmui.mui"
 
-#define MUIA_Aboutmui_Application           (TAG_USER|0x00422523) /* V11 i.. Object *          */
+#define MUIA_Aboutmui_Application (MUIB_MUI | 0x00422523) /* V11 i.. Object * */
 
 extern const struct __MUIBuiltinClass _MUI_Aboutmui_desc;
 
-#endif
-
+#endif /* _MUI_CLASSES_ABOUTMUI_H */

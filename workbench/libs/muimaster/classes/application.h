@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2003, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -16,31 +16,27 @@
 /* Classname */
 #define MUIC_Application "Application.mui"
 
-#ifndef METHOD_USER
-#define METHOD_USER TAG_USER
-#endif
-
 /* Method Ids */
-#define MUIM_Application_AboutMUI		(METHOD_USER|0x0042d21d) /* MUI: V14 */
-#define MUIM_Application_AddInputHandler	(METHOD_USER|0x0042f099) /* MUI: V11 */
-#define MUIM_Application_CheckRefresh		(METHOD_USER|0x00424d68) /* MUI: V11 */
-#define MUIM_Application_GetMenuCheck		(METHOD_USER|0x0042c0a7) /* MUI: V4  */
-#define MUIM_Application_GetMenuState		(METHOD_USER|0x0042a58f) /* MUI: V4  */
-#define MUIM_Application_Input			(METHOD_USER|0x0042d0f5) /* MUI: V4  */
-#define MUIM_Application_InputBuffered		(METHOD_USER|0x00427e59) /* MUI: V4  */
-#define MUIM_Application_Load			(METHOD_USER|0x0042f90d) /* MUI: V4  */
-#define MUIM_Application_NewInput		(METHOD_USER|0x00423ba6) /* MUI: V11 */
-#define MUIM_Application_OpenConfigWindow	(METHOD_USER|0x004299ba) /* MUI: V11 */
-#define MUIM_Application_PushMethod		(METHOD_USER|0x00429ef8) /* MUI: V4  */
-#define MUIM_Application_RemInputHandler	(METHOD_USER|0x0042e7af) /* MUI: V11 */
-#define MUIM_Application_ReturnID		(METHOD_USER|0x004276ef) /* MUI: V4  */
-#define MUIM_Application_Save			(METHOD_USER|0x004227ef) /* MUI: V4  */
-#define MUIM_Application_SetConfigItem		(METHOD_USER|0x00424a80) /* MUI: V11 */
-#define MUIM_Application_SetMenuCheck		(METHOD_USER|0x0042a707) /* MUI: V4  */
-#define MUIM_Application_SetMenuState		(METHOD_USER|0x00428bef) /* MUI: V4  */
-#define MUIM_Application_ShowHelp		(METHOD_USER|0x00426479) /* MUI: V4  */
-#define MUIM_Application_SetConfigdata		(METHOD_USER|0x00425ba3) /* Zune 20030407 */
-#define MUIM_Application_OpenWindows		(METHOD_USER|0x00425ba4) /* Zune 20030407 */
+#define MUIM_Application_AboutMUI		(MUIB_MUI|0x0042d21d) /* MUI: V14 */
+#define MUIM_Application_AddInputHandler	(MUIB_MUI|0x0042f099) /* MUI: V11 */
+#define MUIM_Application_CheckRefresh		(MUIB_MUI|0x00424d68) /* MUI: V11 */
+#define MUIM_Application_GetMenuCheck		(MUIB_MUI|0x0042c0a7) /* MUI: V4  */
+#define MUIM_Application_GetMenuState		(MUIB_MUI|0x0042a58f) /* MUI: V4  */
+#define MUIM_Application_Input			(MUIB_MUI|0x0042d0f5) /* MUI: V4  */
+#define MUIM_Application_InputBuffered		(MUIB_MUI|0x00427e59) /* MUI: V4  */
+#define MUIM_Application_Load			(MUIB_MUI|0x0042f90d) /* MUI: V4  */
+#define MUIM_Application_NewInput		(MUIB_MUI|0x00423ba6) /* MUI: V11 */
+#define MUIM_Application_OpenConfigWindow	(MUIB_MUI|0x004299ba) /* MUI: V11 */
+#define MUIM_Application_PushMethod		(MUIB_MUI|0x00429ef8) /* MUI: V4  */
+#define MUIM_Application_RemInputHandler	(MUIB_MUI|0x0042e7af) /* MUI: V11 */
+#define MUIM_Application_ReturnID		(MUIB_MUI|0x004276ef) /* MUI: V4  */
+#define MUIM_Application_Save			(MUIB_MUI|0x004227ef) /* MUI: V4  */
+#define MUIM_Application_SetConfigItem		(MUIB_MUI|0x00424a80) /* MUI: V11 */
+#define MUIM_Application_SetMenuCheck		(MUIB_MUI|0x0042a707) /* MUI: V4  */
+#define MUIM_Application_SetMenuState		(MUIB_MUI|0x00428bef) /* MUI: V4  */
+#define MUIM_Application_ShowHelp		(MUIB_MUI|0x00426479) /* MUI: V4  */
+#define MUIM_Application_SetConfigdata		(MUIB_MUI|0x00425ba3) /* Zune 20030407 */
+#define MUIM_Application_OpenWindows		(MUIB_MUI|0x00425ba4) /* Zune 20030407 */
 
 /* Method Structures */
 struct MUIP_Application_AboutMUI		{ ULONG MethodID; Object *refwindow; };
@@ -65,42 +61,42 @@ struct MUIP_Application_SetConfigdata		{ ULONG MethodID; APTR configdata; };
 struct MUIP_Application_OpenWindows		{ ULONG MethodID; };
 
 /* Attributes */
-#define MUIA_Application_Active             	(TAG_USER|0x004260ab) /* MUI: V4  isg BOOL              */
-#define MUIA_Application_Author             	(TAG_USER|0x00424842) /* MUI: V4  i.g STRPTR            */
-#define MUIA_Application_Base               	(TAG_USER|0x0042e07a) /* MUI: V4  i.g STRPTR            */
-#define MUIA_Application_Broker             	(TAG_USER|0x0042dbce) /* MUI: V4  ..g Broker *          */
-#define MUIA_Application_BrokerHook         	(TAG_USER|0x00428f4b) /* MUI: V4  isg struct Hook *     */
-#define MUIA_Application_BrokerPort         	(TAG_USER|0x0042e0ad) /* MUI: V6  ..g struct MsgPort *  */
-#define MUIA_Application_BrokerPri          	(TAG_USER|0x0042c8d0) /* MUI: V6  i.g LONG              */
-#define MUIA_Application_Commands           	(TAG_USER|0x00428648) /* MUI: V4  isg struct MUI_Command * */
-#define MUIA_Application_Copyright          	(TAG_USER|0x0042ef4d) /* MUI: V4  i.g STRPTR            */
-#define MUIA_Application_Description        	(TAG_USER|0x00421fc6) /* MUI: V4  i.g STRPTR            */
-#define MUIA_Application_DiskObject         	(TAG_USER|0x004235cb) /* MUI: V4  isg struct DiskObject * */
-#define MUIA_Application_DoubleStart        	(TAG_USER|0x00423bc6) /* MUI: V4  ..g BOOL              */
-#define MUIA_Application_DropObject         	(TAG_USER|0x00421266) /* MUI: V5  is. Object *          */
-#define MUIA_Application_ForceQuit          	(TAG_USER|0x004257df) /* MUI: V8  ..g BOOL              */
-#define MUIA_Application_HelpFile           	(TAG_USER|0x004293f4) /* MUI: V8  isg STRPTR            */
-#define MUIA_Application_Iconified          	(TAG_USER|0x0042a07f) /* MUI: V4  .sg BOOL              */
-#define MUIA_Application_MenuAction         	(TAG_USER|0x00428961) /* MUI: V4  ..g ULONG             */
-#define MUIA_Application_MenuHelp           	(TAG_USER|0x0042540b) /* MUI: V4  ..g ULONG             */
-#define MUIA_Application_Menustrip          	(TAG_USER|0x004252d9) /* MUI: V8  i.. Object *          */
-#define MUIA_Application_RexxHook           	(TAG_USER|0x00427c42) /* MUI: V7  isg struct Hook *     */
-#define MUIA_Application_RexxMsg            	(TAG_USER|0x0042fd88) /* MUI: V4  ..g struct RxMsg *    */
-#define MUIA_Application_RexxString         	(TAG_USER|0x0042d711) /* MUI: V4  .s. STRPTR            */
-#define MUIA_Application_SingleTask         	(TAG_USER|0x0042a2c8) /* MUI: V4  i.. BOOL              */
-#define MUIA_Application_Sleep              	(TAG_USER|0x00425711) /* MUI: V4  .s. BOOL              */
-#define MUIA_Application_Title              	(TAG_USER|0x004281b8) /* MUI: V4  i.g STRPTR            */
-#define MUIA_Application_UseCommodities     	(TAG_USER|0x00425ee5) /* MUI: V10 i.. BOOL              */
-#define MUIA_Application_UsedClasses            (TAG_USER|0x0042e9a7) /* MUI undoc: V20 i.. STRPTR [] */
-#define MUIA_Application_UseRexx            	(TAG_USER|0x00422387) /* MUI: V10 i.. BOOL              */
-#define MUIA_Application_Version            	(TAG_USER|0x0042b33f) /* MUI: V4  i.g STRPTR            */
-#define MUIA_Application_Window             	(TAG_USER|0x0042bfe0) /* MUI: V4  i.. Object *          */
-#define MUIA_Application_WindowList         	(TAG_USER|0x00429abe) /* MUI: V13 ..g struct List *     */
-#define MUIA_Application_Configdata         	(TAG_USER|0x00425ba3) /* Zune 20030407 .s. Object *     */
+#define MUIA_Application_Active             	(MUIB_MUI|0x004260ab) /* MUI: V4  isg BOOL              */
+#define MUIA_Application_Author             	(MUIB_MUI|0x00424842) /* MUI: V4  i.g STRPTR            */
+#define MUIA_Application_Base               	(MUIB_MUI|0x0042e07a) /* MUI: V4  i.g STRPTR            */
+#define MUIA_Application_Broker             	(MUIB_MUI|0x0042dbce) /* MUI: V4  ..g Broker *          */
+#define MUIA_Application_BrokerHook         	(MUIB_MUI|0x00428f4b) /* MUI: V4  isg struct Hook *     */
+#define MUIA_Application_BrokerPort         	(MUIB_MUI|0x0042e0ad) /* MUI: V6  ..g struct MsgPort *  */
+#define MUIA_Application_BrokerPri          	(MUIB_MUI|0x0042c8d0) /* MUI: V6  i.g LONG              */
+#define MUIA_Application_Commands           	(MUIB_MUI|0x00428648) /* MUI: V4  isg struct MUI_Command * */
+#define MUIA_Application_Copyright          	(MUIB_MUI|0x0042ef4d) /* MUI: V4  i.g STRPTR            */
+#define MUIA_Application_Description        	(MUIB_MUI|0x00421fc6) /* MUI: V4  i.g STRPTR            */
+#define MUIA_Application_DiskObject         	(MUIB_MUI|0x004235cb) /* MUI: V4  isg struct DiskObject * */
+#define MUIA_Application_DoubleStart        	(MUIB_MUI|0x00423bc6) /* MUI: V4  ..g BOOL              */
+#define MUIA_Application_DropObject         	(MUIB_MUI|0x00421266) /* MUI: V5  is. Object *          */
+#define MUIA_Application_ForceQuit          	(MUIB_MUI|0x004257df) /* MUI: V8  ..g BOOL              */
+#define MUIA_Application_HelpFile           	(MUIB_MUI|0x004293f4) /* MUI: V8  isg STRPTR            */
+#define MUIA_Application_Iconified          	(MUIB_MUI|0x0042a07f) /* MUI: V4  .sg BOOL              */
+#define MUIA_Application_MenuAction         	(MUIB_MUI|0x00428961) /* MUI: V4  ..g ULONG             */
+#define MUIA_Application_MenuHelp           	(MUIB_MUI|0x0042540b) /* MUI: V4  ..g ULONG             */
+#define MUIA_Application_Menustrip          	(MUIB_MUI|0x004252d9) /* MUI: V8  i.. Object *          */
+#define MUIA_Application_RexxHook           	(MUIB_MUI|0x00427c42) /* MUI: V7  isg struct Hook *     */
+#define MUIA_Application_RexxMsg            	(MUIB_MUI|0x0042fd88) /* MUI: V4  ..g struct RxMsg *    */
+#define MUIA_Application_RexxString         	(MUIB_MUI|0x0042d711) /* MUI: V4  .s. STRPTR            */
+#define MUIA_Application_SingleTask         	(MUIB_MUI|0x0042a2c8) /* MUI: V4  i.. BOOL              */
+#define MUIA_Application_Sleep              	(MUIB_MUI|0x00425711) /* MUI: V4  .s. BOOL              */
+#define MUIA_Application_Title              	(MUIB_MUI|0x004281b8) /* MUI: V4  i.g STRPTR            */
+#define MUIA_Application_UseCommodities     	(MUIB_MUI|0x00425ee5) /* MUI: V10 i.. BOOL              */
+#define MUIA_Application_UsedClasses            (MUIB_MUI|0x0042e9a7) /* MUI undoc: V20 i.. STRPTR [] */
+#define MUIA_Application_UseRexx            	(MUIB_MUI|0x00422387) /* MUI: V10 i.. BOOL              */
+#define MUIA_Application_Version            	(MUIB_MUI|0x0042b33f) /* MUI: V4  i.g STRPTR            */
+#define MUIA_Application_Window             	(MUIB_MUI|0x0042bfe0) /* MUI: V4  i.. Object *          */
+#define MUIA_Application_WindowList         	(MUIB_MUI|0x00429abe) /* MUI: V13 ..g struct List *     */
+#define MUIA_Application_Configdata         	(MUIB_MUI|0x00425ba3) /* Zune 20030407 .s. Object *     */
 
 /* MUI Obsolette tags */
 #ifdef MUI_OBSOLETE
-#define MUIA_Application_Menu							  (TAG_USER|0x00420e1f) /* MUI: V4  i.g struct NewMenu *  */
+#define MUIA_Application_Menu							  (MUIB_MUI|0x00420e1f) /* MUI: V4  i.g struct NewMenu *  */
 #endif /* MUI_OBSOLETE */
 
 
@@ -153,7 +149,7 @@ struct MUI_InputHandlerNode
  Zune extensions. Note that the tag values of the Zune extensions
  might be changed in the future
 **************************************************************************/
-#define MUIM_Application_Iconify       (METHOD_USER|0x00429ab8) /* Zune: V1  */
+#define MUIM_Application_Iconify       (MUIB_MUI|0x00429ab8) /* Zune: V1  */
 
 extern const struct __MUIBuiltinClass _MUI_Application_desc; /* PRIV */
 
