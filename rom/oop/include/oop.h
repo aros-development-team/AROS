@@ -78,6 +78,10 @@ struct _Object
 #define DoSuperMethod(cl, o, msg) ((cl)->DoSuperMethod(cl, o, msg))
 #define CoerceMethod(cl, o, msg) ((cl)->CoerceMethod(cl, o, msg))
 
+#define METHODDEF(x) (IPTR (*)())x
+
+
+#define IS_IF_ATTR(attr, idx, attrbase, numifattrs) ( ((idx) = (attr) - (attrbase)) < (numifattrs) )
 
 struct InterfaceDescr
 {
@@ -242,6 +246,7 @@ typedef struct InterfaceStruct
 
 #define CLID_MIMeta   "mimetaclass"	/* Supports multiple interfaces	  */
 #define CLID_SIMeta   "simetaclass"	/* Supports only single intefaces */
+
 
 
 #endif /* OOP_OOP_H */
