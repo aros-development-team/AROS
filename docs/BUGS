@@ -307,7 +307,7 @@ bergers@aros.org
 Only one screen seems to get the focus. If there are more screens than one
 only the one that was opened latest gets correct input events.
 
-BUG000045
+BUG000045 fixed
 bergers@aros.org
 Games/Mine resizes the window. The old windowborder doesn't get erased,
 though.
