@@ -83,15 +83,20 @@ static OOP_Object *MNAME(new)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	data->height = height;
 	data->bpp = depth;
 	data->disp = -1;
-	if (depth>16)
-	    multi = 4;
+
+    	if (depth>24)
+	    multi = 4;	
+	else if (depth>16)
+	    multi = 3;
 	else if (depth>8)
 	    multi = 2;
+	    
 	data->bytesperpix = multi;
 	data->data = &XSD(cl)->data;
 	data->bytesperline = data->data->bytesperline;
 	data->mouse = &XSD(cl)->mouse;
 	data->VideoData = data->data->framebuffer;
+
 	/* We should be able to get modeID from the bitmap */
 	OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
 	if (modeid != vHidd_ModeID_Invalid)

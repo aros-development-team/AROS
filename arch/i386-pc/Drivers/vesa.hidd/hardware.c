@@ -45,17 +45,31 @@ BOOL initVesaGfxHW(struct HWData *data)
 	    data->greenshift = vi->Shifts[VI_Green];
 	    data->blueshift = vi->Shifts[VI_Blue];
 	    data->framebuffer = vi->FrameBuffer;
-	    data->bytesperpixel = 1;
-	    if (data->depth>16)
-		data->bytesperpixel = 4;
-	    else if (data->depth>8)
-		data->bytesperpixel = 2;
+	    
+	    if (data->depth > 24)
+	    {
+	    	data->bytesperpixel = 4;
+	    }
+	    else if (data->depth > 16)
+	    {
+	    	data->bytesperpixel = 3;
+	    }
+	    else if (data->depth > 8)
+	    {
+	    	data->bytesperpixel = 2;
+	    }
+	    else
+	    {
+	    	data->bytesperpixel = 1;
+	    }
+	    
 	    D(bug("[Vesa] HwInit: Linear framebuffer at 0x%08x\n",data->framebuffer));
 	    D(bug("[Vesa] HwInit: Screenmode %dx%dx%d\n",data->width,data->height,data->depth));
 	    D(bug("[Vesa] HwInit: Masks R %08x<<%2d G %08x<<%2d B %08x<<%2d\n",
 			data->redmask, data->redshift,
 			data->greenmask, data->greenshift,
 			data->bluemask, data->blueshift));
+	    D(bug("[vesa] HwInit: BytesPerPixel %d\n", data->bytesperpixel));
 	    return TRUE;
 	}
     }
