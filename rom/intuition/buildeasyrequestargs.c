@@ -1,10 +1,12 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Intuition function BuildEasyRequestArgs()
     Lang: english
 */
+
+/**********************************************************************************************/
 
 #include "intuition_intern.h"
 #include <stdio.h>
@@ -33,6 +35,8 @@
 #define BUTTONBORDER_X 		8
 #define BUTTONBORDER_Y 		4
 
+/**********************************************************************************************/
+
 struct reqdims
 {
     UWORD width;       /* width of the requester */
@@ -40,10 +44,11 @@ struct reqdims
     UWORD fontheight;  /* height of the default font */
     UWORD fontxheight; /* extra height */
     UWORD textleft;
-    int   gadgets;     /* number of gadgets */
+    WORD  gadgets;     /* number of gadgets */
     UWORD gadgetwidth; /* width of a gadget */
 };
 
+/**********************************************************************************************/
 
 static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,STRPTR labeltext,struct IntuitionBase *IntuitionBase);
 static STRPTR buildeasyreq_formattext(STRPTR textformat, APTR args,struct IntuitionBase *IntuitionBase);
@@ -120,14 +125,14 @@ static int charsinstring(STRPTR string, char c);
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    struct Screen *scr = NULL, *lockedscr = NULL;
-    struct Window *req;
-    struct Gadget *gadgets;
-    STRPTR reqtitle;
-    STRPTR formattedtext;
-    STRPTR *gadgetlabels;
-    struct reqdims dims;
-    struct IntRequestUserData *requserdata;
+    struct Screen   	    	*scr = NULL, *lockedscr = NULL;
+    struct Window   	    	*req;
+    struct Gadget   	    	*gadgets;
+    STRPTR  	    	    	reqtitle;
+    STRPTR  	    	    	formattedtext;
+    STRPTR  	    	    	*gadgetlabels;
+    struct  	    	    	reqdims dims;
+    struct IntRequestUserData 	*requserdata;
 
     if (!easyStruct)
 	return FALSE;
@@ -171,19 +176,23 @@ static int charsinstring(STRPTR string, char c);
 					   MEMF_ANY);
 		    if (requserdata)
 		    {
-			req = OpenWindowTags(NULL,
-					     WA_Width, dims.width,
-					     WA_Height, dims.height,
-					     WA_IDCMP, IDCMP_GADGETUP | IDCMP,
-					     WA_Gadgets, (IPTR)gadgets,
-					     WA_Title, (IPTR)reqtitle,
-					     (lockedscr ? WA_PubScreen : WA_CustomScreen), (IPTR)scr,
-					     WA_Flags, WFLG_DRAGBAR |
-						       WFLG_DEPTHGADGET |
-						       WFLG_ACTIVATE |
-						       WFLG_RMBTRAP /*|
-						       WFLG_SIMPLE_REFRESH*/,
-					     TAG_DONE);
+		    	struct TagItem win_tags[] =
+			{
+			    { WA_Width	    	    	    	    	  , dims.width	    	    },
+			    { WA_Height     	    	    	    	  , dims.height     	    },
+			    { WA_IDCMP	    	    	    	    	  , IDCMP_GADGETUP | IDCMP  },
+			    { WA_Gadgets    	    	    	    	  , (IPTR)gadgets   	    },
+			    { WA_Title	    	    	    	    	  , (IPTR)reqtitle  	    },
+			    { (lockedscr ? WA_PubScreen : WA_CustomScreen), (IPTR)scr	    	    },
+			    { WA_Flags	    	    	    	    	  , WFLG_DRAGBAR     |
+			                				    WFLG_DEPTHGADGET |
+									    WFLG_ACTIVATE    |
+									    WFLG_RMBTRAP   /*|
+									    WFLG_SIMPLE_REFRESH*/   },
+			    {TAG_DONE	    	    	    	    	    	    	    	    }
+			};
+			
+			req = OpenWindowTagList(NULL, win_tags);
 			if (req)
 			{
 			    if (lockedscr) UnlockPubScreen(NULL, lockedscr);
@@ -212,12 +221,16 @@ static int charsinstring(STRPTR string, char c);
     if (lockedscr) UnlockPubScreen(NULL, lockedscr);
 
     return NULL;
+
     AROS_LIBFUNC_EXIT
+
 } /* BuildEasyRequestArgs */
 
-
+/**********************************************************************************************/
 
 UWORD BgPattern[2]  = { 0xAAAA, 0x5555 };
+
+/**********************************************************************************************/
 
 /* draw the contents of the requester */
 static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
@@ -225,9 +238,21 @@ static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
 		              struct Gadget *gadgets,
 		              struct IntuitionBase *IntuitionBase)
 {
+    struct TagItem frame_tags[] =
+    {
+	{IA_Left    	, req->BorderLeft + OUTERSPACING_X  	    	    	    	    	},
+	{IA_Top     	, req->BorderTop + OUTERSPACING_Y   	    	    	    	    	},
+	{IA_Width   	, req->Width - req->BorderLeft - req->BorderRight - OUTERSPACING_X * 2	},
+	{IA_Height  	, req->Height - req->BorderTop - req->BorderBottom -
+		          dims->fontheight - OUTERSPACING_Y * 2 -
+			  TEXTGADGETSPACING - BUTTONBORDER_Y * 2    	    	    	    	},
+	{IA_Recessed	, TRUE	    	    	    	    	    	    	    	    	},
+	{IA_EdgesOnly	, FALSE     	    	    	    	    	    	    	    	},
+	{TAG_DONE   	    	    	    	    	    	    	    	    	    	}
+    };
     struct DrawInfo *dri;
-    struct Image *frame;
-    int currentline;
+    struct Image    *frame;
+    LONG    	    currentline;
 
     dri = GetScreenDrawInfo(scr);
     if (!dri)
@@ -247,15 +272,7 @@ static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
     SetAfPt(req->RPort, NULL, 0);
 
     /* draw textframe */
-    frame = (struct Image *)NewObject(NULL, FRAMEICLASS,
-	IA_Left, req->BorderLeft + OUTERSPACING_X,
-	IA_Top, req->BorderTop + OUTERSPACING_Y,
-	IA_Width, req->Width - req->BorderLeft - req->BorderRight - OUTERSPACING_X * 2,
-	IA_Height, req->Height - req->BorderTop - req->BorderBottom -
-		   dims->fontheight - OUTERSPACING_Y * 2 - TEXTGADGETSPACING - BUTTONBORDER_Y * 2,
-	IA_Recessed, TRUE,
-	IA_EdgesOnly, FALSE,
-	TAG_DONE);
+    frame = (struct Image *)NewObjectA(NULL, FRAMEICLASS, frame_tags);
     if (frame)
     {
 	DrawImageState(req->RPort, frame, 0, 0, IDS_NORMAL, dri);
@@ -291,17 +308,17 @@ static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
     FreeScreenDrawInfo(scr, dri);
 }
 
-
+/**********************************************************************************************/
 
 /* create an array of gadgetlabels */
 static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,
 				       STRPTR labeltext,
 				       struct IntuitionBase *IntuitionBase)
 {
-    STRPTR *gadgetlabels;
-    STRPTR label;
-    int currentgadget;
-    int len;
+    STRPTR  	*gadgetlabels;
+    STRPTR  	label;
+    int     	currentgadget;
+    int     	len;
 
     /* make room for pointer-array */
     dims->gadgets = charsinstring(labeltext, '|') + 1;
@@ -336,6 +353,7 @@ static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,
     return gadgetlabels;
 }
 
+/**********************************************************************************************/
 
 AROS_UFH2 (void, EasyReqPutChar,
 	AROS_UFHA(UBYTE, chr, D0),
@@ -349,6 +367,8 @@ AROS_UFH2 (void, EasyReqPutChar,
     AROS_LIBFUNC_EXIT
 }
 
+/**********************************************************************************************/
+
 AROS_UFH2 (void, EasyReqCountChar,
 	AROS_UFHA(UBYTE, chr, D0),
 	AROS_UFHA(ULONG *,counter,A3)
@@ -361,6 +381,7 @@ AROS_UFH2 (void, EasyReqCountChar,
     AROS_LIBFUNC_EXIT
 }
 
+/**********************************************************************************************/
 
 /* format the supplied text string by using the supplied args */
 static STRPTR buildeasyreq_formattext(STRPTR textformat,
@@ -401,7 +422,7 @@ static STRPTR buildeasyreq_formattext(STRPTR textformat,
 
 }
 
-
+/**********************************************************************************************/
 
 /* calculate dimensions of the requester */
 static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
@@ -492,7 +513,7 @@ static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
     return TRUE;
 }
 
-
+/**********************************************************************************************/
 
 /* make all the gadgets */
 static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
@@ -500,18 +521,21 @@ static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
 					       struct Screen *scr,
 					       struct IntuitionBase *IntuitionBase)
 {
+    struct TagItem frame_tags[] =
+    {
+    	{IA_FrameType, FRAME_BUTTON},
+	{IA_EdgesOnly, TRUE 	   },
+	{TAG_DONE   	    	   }
+    };
     struct Gadget *gadgetlist, *thisgadget = NULL;
-    struct Image *gadgetframe;
-    int currentgadget;
-    UWORD xoffset, restwidth;
+    struct Image  *gadgetframe;
+    WORD     	  currentgadget;
+    UWORD   	  xoffset, restwidth;
 
     if (gadgetlabels[0] == NULL)
 	return NULL;
 
-    gadgetframe = (struct Image *)NewObject(NULL, FRAMEICLASS,
-					    IA_FrameType, FRAME_BUTTON,
-					    IA_EdgesOnly, TRUE,
-					    TAG_DONE);
+    gadgetframe = (struct Image *)NewObjectA(NULL, FRAMEICLASS, frame_tags);
     if (!gadgetframe)
 	return NULL;
 
@@ -528,28 +552,25 @@ static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
 
     for (currentgadget = 0; gadgetlabels[currentgadget]; currentgadget++)
     {
-	IPTR gadgetid;
-
-	if (currentgadget == (dims->gadgets - 1))
-	    gadgetid = 0;
-	else
-	    gadgetid = currentgadget + 1;
-
-	thisgadget = NewObject(NULL, FRBUTTONCLASS,
-		GA_ID,		gadgetid,
-		GA_Previous,	thisgadget,
-		GA_Left,	xoffset,
-		GA_Width,	dims->gadgetwidth,
-		GA_Top, 	dims->height -
-				scr->WBorBottom - dims->fontheight
-				- OUTERSPACING_Y - BUTTONBORDER_Y * 2,
-		GA_Height,	dims->fontheight + BUTTONBORDER_Y * 2,
-		GA_Text,	(IPTR)gadgetlabels[currentgadget],
-		GA_Image,	(IPTR)gadgetframe,
-		GA_RelVerify,	TRUE,
-		TAG_DONE
-	);
-
+    	WORD 	       gadgetid = (currentgadget == (dims->gadgets - 1)) ? 0 : currentgadget + 1;
+    	struct TagItem gad_tags[] =
+	{
+	    {GA_ID  	 , gadgetid 	    	    	    	    	},
+	    {GA_Previous , (IPTR)thisgadget	    	   	    	},
+	    {GA_Left	 , xoffset  	    	    	    	    	},
+	    {GA_Width	 , dims->gadgetwidth	    	    	    	},
+	    {GA_Top 	 , dims->height -
+	    	    	   scr->WBorBottom - dims->fontheight -
+			   OUTERSPACING_Y - BUTTONBORDER_Y * 2	    	},
+	    {GA_Height	 , dims->fontheight + BUTTONBORDER_Y * 2	},
+	    {GA_Text	 , (IPTR)gadgetlabels[currentgadget]   	    	},
+	    {GA_Image	 , (IPTR)gadgetframe	    	    	    	},
+	    {GA_RelVerify, TRUE     	    	    	    	    	},
+	    {TAG_DONE	    	    	    	    	    	    	}
+	};
+	
+	thisgadget = NewObjectA(NULL, FRBUTTONCLASS, gad_tags);
+	
 	if (currentgadget == 0)
 	    gadgetlist = thisgadget;
 
@@ -570,9 +591,8 @@ static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
     return gadgetlist;
 }
 
-/***** Support Functions *****/
+/**********************************************************************************************/
 
-/* count the occurences of a specified character in a string */
 static int charsinstring(STRPTR string, char c)
 {
     int count = 0;
@@ -585,3 +605,5 @@ static int charsinstring(STRPTR string, char c)
     }
     return count;
 }
+
+/**********************************************************************************************/

@@ -1,5 +1,5 @@
 /*
-    (C) 1997-98 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: AROS frbuttonclass implementation
@@ -7,6 +7,8 @@
 
     Based on buttongclass by caldi@usa.nai.net
 */
+
+/****************************************************************************/
 
 #include <exec/types.h>
 
@@ -99,17 +101,22 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
 	}
 	else /* GFLG_GADGIMAGE set */
 	{
+	    struct TagItem image_tags[] =
+	    {
+	    	{IA_Width , EG(o)->Width },
+		{IA_Height, EG(o)->Height},
+		{TAG_DONE   	    	 }
+	    };
+	    
 	    if ((EG(o)->SelectRender != NULL) &&
 		(EG(o)->Flags & GFLG_SELECTED)) /* render selected image */
 	    {
                 ULONG x, y;
 
 		/* center image position, we assume image top and left is 0 */
-                SetAttrs(EG(o)->SelectRender,
-                         IA_Width, EG(o)->Width,
-                         IA_Height, EG(o)->Height,
-                         TAG_DONE);
-	        x = container.Left + (container.Width / 2) -
+                SetAttrsA(EG(o)->SelectRender, image_tags);
+ 
+ 	        x = container.Left + (container.Width / 2) -
 		    (IM(EG(o)->SelectRender)->Width / 2);
 		y = container.Top + (container.Height / 2) -
 		    (IM(EG(o)->SelectRender)->Height / 2);
@@ -125,10 +132,8 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
                 ULONG x, y;
 
 	        /* center image position, we assume image top and left is 0 */
-                SetAttrs(EG(o)->GadgetRender,
-                         IA_Width, EG(o)->Width,
-                         IA_Height, EG(o)->Height,
-                         TAG_DONE);
+                SetAttrsA(EG(o)->GadgetRender, image_tags);
+
 	        x = container.Left + (container.Width / 2) -
 		    (IM(EG(o)->GadgetRender)->Width / 2);
 		y = container.Top + (container.Height / 2) -
@@ -143,7 +148,7 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
 	}
 
 	/* print label */
-	printgadgetlabel(cl, o, msg);
+	printgadgetlabel(cl, o, msg, IntuitionBase);
 
 	if ( EG(o)->Flags & GFLG_DISABLED )
 	{
@@ -165,8 +170,6 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
 
 /****************************************************************************/
 
-/* frbuttonclass boopsi dispatcher
- */
 AROS_UFH3S(IPTR, dispatch_frbuttonclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
@@ -177,37 +180,38 @@ AROS_UFH3S(IPTR, dispatch_frbuttonclass,
 
     switch(msg->MethodID)
     {
-    case GM_RENDER:
-        frbutton_render(cl, o, (struct gpRender *)msg);
-        break;
+	case GM_RENDER:
+            frbutton_render(cl, o, (struct gpRender *)msg);
+            break;
 
-    case OM_SET:
-    case OM_UPDATE:
-	retval = DoSuperMethodA(cl, o, msg);
+	case OM_SET:
+	case OM_UPDATE:
+	    retval = DoSuperMethodA(cl, o, msg);
 
-	/* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
-	    * because it would circumvent the subclass from fully overriding it.
-	    * The check of cl == OCLASS(o) should fail if we have been
-	    * subclassed, and we have gotten here via DoSuperMethodA().
-	    */
-	if ( retval && ( (msg->MethodID != OM_UPDATE) || (cl == OCLASS(o)) ) )
-	{
-	    struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
-	    if (gi)
+	    /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
+		* because it would circumvent the subclass from fully overriding it.
+		* The check of cl == OCLASS(o) should fail if we have been
+		* subclassed, and we have gotten here via DoSuperMethodA().
+		*/
+	    if ( retval && ( (msg->MethodID != OM_UPDATE) || (cl == OCLASS(o)) ) )
 	    {
-		struct RastPort *rp = ObtainGIRPort(gi);
-		if (rp)
+		struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
+		if (gi)
 		{
-		    DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
-		    ReleaseGIRPort(rp);
+		    struct RastPort *rp = ObtainGIRPort(gi);
+		    if (rp)
+		    {
+			DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
+			ReleaseGIRPort(rp);
+		    }
 		}
 	    }
-	}
-	break;
+	    break;
 
-    default:
-	retval = DoSuperMethodA(cl, o, msg);
-	break;
+	default:
+	    retval = DoSuperMethodA(cl, o, msg);
+	    break;
+	    
     } /* switch */
 
     return retval;
@@ -218,7 +222,6 @@ AROS_UFH3S(IPTR, dispatch_frbuttonclass,
 
 /****************************************************************************/
 
-/* Initialize our image class. */
 struct IClass *InitFrButtonClass (struct IntuitionBase * IntuitionBase)
 {
     struct IClass *cl = NULL;
@@ -237,3 +240,4 @@ struct IClass *InitFrButtonClass (struct IntuitionBase * IntuitionBase)
     return (cl);
 }
 
+/****************************************************************************/
