@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  2000/02/01 22:48:31  bernie
+    Using CONST_STRPTR for screen name
+
     Revision 1.8  2000/01/30 23:45:34  bernie
     Increment visitor count even for LockPubScreen(NULL); Don't expect that IntuitionBase->DefaultScreen is always non-NULL (the AutoDoc says LockPubScreen() should open the Workbench in that case, but we still don't); Add pointer checking assertions.
 
@@ -40,7 +43,7 @@
 	AROS_LH1(struct Screen *, LockPubScreen,
 
 /*  SYNOPSIS */
-	AROS_LHA(UBYTE *, name, A0),
+	AROS_LHA(CONST_STRPTR, name, A0),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 85, Intuition)
