@@ -296,7 +296,7 @@ AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
 
 #ifndef LC_NO_INITLIB
     ok = ok && __L_InitLib(lh);
-#endif   
+#endif
     if (!ok)
     {
 	__L_ExpungeLib (lh);
@@ -305,7 +305,7 @@ AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
 	set_call_libfuncs(SETNAME(EXPUNGELIB),-1,lh);
 	{
 	    int n = 1;
-	    
+
 	    while (SETNAME(DTORS)[n]) ((VOID_FUNC)(SETNAME(DTORS)[n++]))();
 	}
 	set_call_funcs(SETNAME(EXIT), -1);
@@ -350,12 +350,19 @@ AROS_LH1 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(OpenLib),
 )
 {
     AROS_LIBFUNC_INIT
+
 #ifdef __MAXON__
     GetBaseReg();
     InitModules();
 #endif
 
-    if (__L_OpenLib (lh))
+    if
+    (
+#ifdef AROS_LC_SETFUNCS
+        set_call_libfuncs(SETNAME(OPENLIB), 1, lh) &&
+#endif
+        __L_OpenLib (lh)
+    )
     {
 #ifndef NOEXPUNGE
 	LC_LIB_FIELD(lh).lib_OpenCnt++;
@@ -369,7 +376,7 @@ AROS_LH1 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(OpenLib),
     }
 
     return NULL;
-    
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -391,12 +398,18 @@ AROS_LH0 (BPTR, LC_BUILDNAME(CloseLib),
 )
 {
     AROS_LIBFUNC_INIT
-    
+
 #ifndef NOEXPUNGE
     LC_LIB_FIELD(lh).lib_OpenCnt--;
 
     __L_CloseLib (lh);
+#endif
 
+#ifdef AROS_LC_SETFUNCS
+    set_call_libfuncs(SETNAME(CLOSELIB),-1,lh);
+#endif
+
+#ifndef NOEXPUNGE
     if(!LC_LIB_FIELD(lh).lib_OpenCnt)
     {
 	if(LC_LIB_FIELD(lh).lib_Flags & LIBF_DELEXP)
@@ -410,7 +423,7 @@ AROS_LH0 (BPTR, LC_BUILDNAME(CloseLib),
 #endif /* NOEXPUNGE */
 
     return (NULL);
-    
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -433,7 +446,7 @@ AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
 )
 {
     AROS_LIBFUNC_INIT
-    
+
 #ifndef NOEXPUNGE
     BPTR seglist;
 
@@ -452,7 +465,7 @@ AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
 	set_call_libfuncs(SETNAME(EXPUNGELIB),-1,lh);
 	{
 	    int n = 1;
-	    
+
 	    while (SETNAME(DTORS)[n]) ((VOID_FUNC)(SETNAME(DTORS)[n++]))();
 	}
 	set_call_funcs(SETNAME(EXIT), -1);
