@@ -1,0 +1,28 @@
+# Makefile for loaddesktop program
+
+include $(TOP)/config/make.cfg
+
+FILES	:= loaddesktop
+
+EXEDIR := $(AROSDIR)/test/desktop
+EXE := $(EXEDIR)/loaddesktop
+
+USE_CLIB_SHARED := yes
+USE_AMIGALIB    := yes
+USE_MUILIB      := yes
+USE_AROSLIB     := yes
+
+#MM test-desktop : includes linklibs
+
+%make_prog_setup mmake=test-desktop
+
+test-desktop : setup $(EXE)
+
+%make_prog_single dir=$(EXEDIR)
+
+#MM setup
+setup ::
+	%mkdirs_q $(EXEDIR)
+
+%common
+%include_deps
