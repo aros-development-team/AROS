@@ -75,6 +75,9 @@
 
     HISTORY
 
+        08-Sep-1997     srittau     Use dynamic buffer for gadget-labels
+                                    Small changes/fixes
+
         27-Jul-1997     laguest     Initial inclusion into the AROS tree
 
 ******************************************************************************/
@@ -86,6 +89,7 @@
 #include <dos/dos.h>
 #include <dos/rdargs.h>
 #include <exec/libraries.h>
+#include <exec/memory.h>
 #include <exec/types.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
@@ -103,7 +107,9 @@
 
 struct IntuitionBase * IntuitionBase;
 
-static const char version[] = "$VER: RequestChoice 41.0 (02.07.1997)\n";
+static const char version[] = "$VER: RequestChoice 41.1 (08.09.1997)\n";
+
+static char ERROR_HEADER[] = "RequestChoice";
 
 int Do_RequestChoice(STRPTR, STRPTR, STRPTR *, STRPTR);
 
@@ -126,7 +132,7 @@ int main(int argc, char *argv[])
                                             (STRPTR)args[ARG_PUBSCREEN]
             );
         } else {
-            PrintFault(IoErr(), "RequestChoice");
+            PrintFault(IoErr(), ERROR_HEADER);
             Return_Value = RETURN_FAIL;
         }
 
@@ -145,7 +151,7 @@ int main(int argc, char *argv[])
 } /* main */
 
 
-void ComposeGadgetText(STRPTR *, char *);
+STRPTR ComposeGadgetText(STRPTR *);
 
 int Do_RequestChoice(STRPTR   Title,
                      STRPTR   Body,
@@ -154,7 +160,7 @@ int Do_RequestChoice(STRPTR   Title,
 {
     struct Screen     * Scr;
     struct EasyStruct   ChoiceES;
-    char                GadgetText[512];
+    STRPTR              GadgetText;
     LONG                Result;
     IPTR                args[1];
     int                 Return_Value;
@@ -162,7 +168,9 @@ int Do_RequestChoice(STRPTR   Title,
     Return_Value     = RETURN_OK;
     Result           = 0L;
 
-    ComposeGadgetText(Gadgets, &GadgetText[0]);
+    GadgetText = ComposeGadgetText(Gadgets);
+    if (!GadgetText)
+        return RETURN_FAIL;
 
     /* Make sure we can open the requester on the specified screen.
      *
@@ -173,10 +181,10 @@ int Do_RequestChoice(STRPTR   Title,
     if (Scr != NULL)
     {
         ChoiceES.es_StructSize   = sizeof(struct EasyStruct);
-        ChoiceES.es_Flags        = 0;
+        ChoiceES.es_Flags        = 0L;
         ChoiceES.es_Title        = Title;
         ChoiceES.es_TextFormat   = Body;
-        ChoiceES.es_GadgetFormat = &GadgetText[0];
+        ChoiceES.es_GadgetFormat = GadgetText;
 
         /* Open the requester.
          */
@@ -191,65 +199,57 @@ int Do_RequestChoice(STRPTR   Title,
         {
             Return_Value = RETURN_FAIL;
             SetIoErr(ERROR_NO_FREE_STORE);
-            PrintFault(IoErr(), NULL);
+            PrintFault(IoErr(), ERROR_HEADER);
         }
+        UnlockPubScreen(NULL, Scr);
     }
     else
     {
         Return_Value = RETURN_FAIL;
         SetIoErr(ERROR_NO_FREE_STORE);
-        PrintFault(IoErr(), NULL);
+        PrintFault(IoErr(), ERROR_HEADER);
     }
 
-    UnlockPubScreen(PubScreen, Scr);
+    FreeVec(GadgetText);
 
     return (Return_Value);
 
 } /* Do_RequestChoice */
 
 
-void ComposeGadgetText(STRPTR * Gadgets,
-                       char   * Buffer)
+STRPTR ComposeGadgetText(STRPTR * Gadgets)
 {
-    LONG Length;
-    int  BufferLength;
+    STRPTR GadgetText, BufferPos;
+    int    GadgetLength = 0;
+    int    CurrentGadget;
 
-    BufferLength  = 0L;
-    Buffer[0]     = NULL;
-
-    /* Compose the es_GadgetFormat field.
-     *
-     * This function will take each argument in turn and produce a
-     * string of the form "G1|G2|...|Gn".
-     */
-    while (*Gadgets != NULL)
+    for (CurrentGadget = 0; Gadgets[CurrentGadget]; CurrentGadget++)
     {
-        Length = strlen(*Gadgets);
+        GadgetLength += strlen(Gadgets[CurrentGadget]) + 1;
+    }
 
-        CopyMem((APTR)*Gadgets, (APTR)&Buffer[BufferLength], Length);
+    GadgetText = AllocVec(GadgetLength, MEMF_ANY);
+    if (!GadgetText)
+    {
+        SetIoErr(ERROR_NO_FREE_STORE);
+        PrintFault(IoErr(), ERROR_HEADER);
+        return NULL;
+    }
 
-        BufferLength += Length;
-
-        if (*(Gadgets + 1) != NULL)
+    BufferPos = GadgetText;
+    for (CurrentGadget = 0; Gadgets[CurrentGadget]; CurrentGadget++)
+    {
+        int LabelLength = strlen(Gadgets[CurrentGadget]);
+        CopyMem(Gadgets[CurrentGadget], BufferPos, LabelLength);
+        if (Gadgets[CurrentGadget + 1])
         {
-            Buffer[BufferLength] = '|';
-
-            BufferLength++;
+            BufferPos[LabelLength] = '|';
+            BufferPos += LabelLength + 1;
         }
         else
-        {
-            /* Place a NULL at the end of the array.
-             *
-             * This stops EasyRequest() from displaying too
-             * many characters.
-             */
+            BufferPos[LabelLength] = '\0';
+    }
 
-            Buffer[BufferLength] = NULL;
-
-            BufferLength++;
-        }
-
-        Gadgets++;
-    }    
+    return GadgetText;
 
 } /* ComposeGadgetText */
