@@ -1,0 +1,4 @@
+;
+MSG_ERROR_OPEN_LIBRARY (//)
+Couldn't open library %s.
+;
