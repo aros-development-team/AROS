@@ -66,7 +66,7 @@
     BUGS
 
     SEE ALSO
-	labs(), fabs(), strtol()
+        atoi(), atol(), strtod(), strtol(), strtoul()
 
     INTERNALS
 

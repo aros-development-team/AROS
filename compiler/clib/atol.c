@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: ANSI C function abs()
+    Desc: ANSI C function atol()
     Lang: english
 */
 #include <ctype.h>
@@ -19,7 +19,7 @@
 	const char * str)
 
 /*  FUNCTION
-	Convert a string of digits into an integer.
+	Convert a string of digits into an long integer.
 
     INPUTS
 	str - The string which should be converted. Leading
@@ -27,7 +27,7 @@
 		by a '+' or '-'.
 
     RESULT
-	The absolute value of j.
+	The value of string str.
 
     NOTES
 
@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-	labs(), fabs()
+        atof(), atoi(), strtod(), strtol(), strtoul()
 
     INTERNALS
 

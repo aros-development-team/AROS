@@ -66,7 +66,7 @@
     BUGS
 
     SEE ALSO
-	labs(), fabs()
+        atof(), atoi(), atol(), strtod(), strtoul()
 
     INTERNALS
 
@@ -75,7 +75,7 @@
 
 ******************************************************************************/
 {
-    unsigned long val	= 0;
+    long val	= 0;
     char	* ptr;
     char	* copy;
 
@@ -120,5 +120,5 @@
 	*endptr = (char *)str;
 
     return val;
-} /* strtoul */
+} /* strtol */
 

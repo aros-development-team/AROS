@@ -86,5 +86,5 @@ copy:
     }
 
     return newmem;
-} /* malloc */
+} /* realloc */
 

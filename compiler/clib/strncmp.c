@@ -68,5 +68,5 @@
 
     /* Now return the difference. */
     return diff;
-} /* strcmp */
+} /* strncmp */
 

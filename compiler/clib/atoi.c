@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: ANSI C function abs()
+    Desc: ANSI C function atoi()
     Lang: english
 */
 #include <ctype.h>
@@ -27,7 +27,7 @@
 		by a '+' or '-'.
 
     RESULT
-	The absolute value of j.
+	The value of string str.
 
     NOTES
 
@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-	labs(), fabs()
+        atof(), atol(), strtod(), strtol(), strtoul()
 
     INTERNALS
 
