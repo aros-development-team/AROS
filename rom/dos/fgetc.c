@@ -7,8 +7,12 @@
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
+
+#include <dos/stdio.h>
 #include <dos/dosextens.h>
+
 #include "dos_intern.h"
+
 
 /*****************************************************************************
 
@@ -102,20 +106,10 @@
         /* Is there a buffer? */
         if(fh->fh_Buf == NULL)
         {
-            /* No. Get one. */
-            fh->fh_Buf = AllocMem(IOBUFSIZE, MEMF_ANY);
-
-            if(fh->fh_Buf == NULL)
+            if (NULL == vbuf_alloc(fh, IOBUFSIZE))
             {
-                /* Couldn't get buffer. Return error. */
-                SetIoErr(ERROR_NO_FREE_STORE);
-
-                return EOF;
+                return(EOF);
             }
-
-            /* Got it. Use it. */
-            fh->fh_Flags |= FHF_BUF;
-            fh->fh_Size = IOBUFSIZE;
         }
 
         /* Fill the buffer. */

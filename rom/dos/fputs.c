@@ -6,7 +6,11 @@
     Lang: english
 */
 #include <dos/dosextens.h>
+
 #include "dos_intern.h"
+
+#include <aros/debug.h>
+
 
 /*****************************************************************************
 
@@ -14,6 +18,7 @@
 #include <proto/dos.h>
 
 	AROS_LH2(LONG, FPuts,
+/*		FPuts -- Writes a string the the specified output (buffered) */
 
 /*  SYNOPSIS */
 	AROS_LHA(BPTR,         file,   D1),
@@ -24,6 +29,8 @@
 	struct DosLibrary *, DOSBase, 57, Dos)
 
 /*  FUNCTION
+    This routine writes an unformatted string to the filehandle.  No
+    newline is appended to the string.  This routine is buffered.
 
     INPUTS
 	file   - Filehandle to write to.
@@ -33,27 +40,23 @@
 	0 if all went well or EOF in case of an error.
 	IoErr() gives additional information in that case.
 
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
     SEE ALSO
 	FGetC(), IoErr()
-
-    INTERNALS
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    while(*string)
-	if(FPutC(file,*string++)<0)
-	    return EOF;
+    ASSERT_VALID_PTR(file);
+    ASSERT_VALID_PTR(string);
 
-    return 0;
+        ULONG
+    len = strlen(string);
+
+    return(FWriteChars(file, string, len) == len
+        ? 0
+        : -1);
 
     AROS_LIBFUNC_EXIT
 } /* FPuts */
