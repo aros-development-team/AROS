@@ -16,6 +16,9 @@ OBJS = $(subst .c,.o,$(SRCS))
 .PHONY : all
 all : grammar src2html
 
+clean :
+	rm -f src2html *.o core gram.tab.c gram.tab.h gram.c gram.h scan.c
+
 src2html : $(OBJS) $(LIBS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
