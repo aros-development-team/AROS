@@ -38,12 +38,19 @@ typedef unsigned long STACKULONG;
 #ifndef __AROS__
 #define BOOPSI_DISPATCHER(rettype,name,cl,obj,msg) \
 __saveds __asm rettype name(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
+#define HOOK_FUNC(rettype,name,hookname,a2type, a2name, a1type, a1name) \
+__saveds __asm rettype name(register __a0 struct Hook *hookname, register __a2 a2type a2name, register __a1 a1type a1name)
 #else
 #define BOOPSI_DISPATCHER(rettype,name,cl,obj,msg) \
 AROS_UFH3S(rettype, name,\
 	AROS_UFHA(Class  *, cl,  A0),\
 	AROS_UFHA(Object *, obj, A2),\
 	AROS_UFHA(Msg     , msg, A1))
+#define HOOK_FUNC(rettype,name,hookname,a2type, a2name, a1type, a1name) \
+AROS_UFH3S(rettype, name,\
+	AROS_UFHA(struct Hook *, hookname,  A0),\
+	AROS_UFHA(a2type, a2name, A2),\
+	AROS_UFHA(a1type     , a1name, A1))
 #endif
 
 
@@ -497,6 +504,18 @@ struct MUI_PenSpec {
 
 #ifndef _MUI_CLASSES_BALANCE_H
 #include "classes/balance.h"
+#endif
+
+#ifndef _MUI_CLASSES_PENDISPLAY_H
+#include "classes/pendisplay.h"
+#endif
+
+#ifndef _MUI_CLASSES_PENADJUST_H
+#include "classes/penadjust.h"
+#endif
+
+#ifndef _MUI_CLASSES_POPPEN_H
+#include "classes/poppen.h"
 #endif
 
 /**************************************************************************
