@@ -1,27 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1997/01/27 00:39:37  ldp
-    Include proto instead of clib
 
-    Revision 1.4  1996/11/14 22:35:37  aros
-    Fixed register conflict
-
-    Revision 1.3  1996/10/24 15:50:21  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.2  1996/09/11 16:54:19  digulla
-    Always use AROS_SLIB_ENTRY() to access shared external symbols, because
-    	some systems name an external symbol "x" as "_x" and others as "x".
-    	(The problem arises with assembler symbols which might differ)
-
-    Revision 1.1  1996/08/23 17:32:23  digulla
-    Implementation of the console.device
-
-
-    Desc:
-    Lang:
+    Desc: Console.device
+    Lang: english
 */
 #include <exec/resident.h>
 #include <devices/inputevent.h>
