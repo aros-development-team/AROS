@@ -5,7 +5,7 @@
 
     $Id$
 */
-
+ 
 #include <exec/types.h>
 #include <devices/timer.h>
 #include <dos/dostags.h>
