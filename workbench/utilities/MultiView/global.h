@@ -102,6 +102,14 @@
 #include <datatypes/datatypesclass.h>
 #endif
 
+#ifndef DATATYPES_PICTURECLASS_H
+#include <datatypes/pictureclass.h>
+#endif
+
+#ifndef DATATYPES_TEXTCLASS_H
+#include <datatypes/textclass.h>
+#endif
+
 /*********************************************************************************************/
 
 #ifndef PROTO_EXEC_H
@@ -194,19 +202,21 @@ enum
 
 /* main.c */
 
+void OutputMessage(STRPTR msg);
 void Cleanup(STRPTR msg);
 
 /* misc.c */
 
-void InitMenus(void);
-void MakeMenus(void);
+void InitMenus(struct NewMenu *newm);
+struct Menu * MakeMenus(struct NewMenu *newm);
 void KillMenus(void);
 void SetMenuFlags(void);
 
-STRPTR GetFile(void);
+STRPTR GetFileName(ULONG msgtextid);
 void About(void);
 
-void DoTrigger(ULONG what);
+ULONG DoTrigger(ULONG what);
+ULONG DoWriteMethod(STRPTR name, ULONG mode);
 
 /*********************************************************************************************/
 

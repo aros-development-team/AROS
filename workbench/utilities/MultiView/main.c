@@ -15,6 +15,10 @@
 #include "debug.h"
 #include "arossupport.h"
 
+extern struct NewMenu nm[];
+extern struct NewMenu nmpict[];
+extern struct NewMenu nmtext[];
+
 /*********************************************************************************************/
 
 /* Many datatype classes seem to rely on OM_NOTIFY calls coming back to the datatype object
@@ -88,34 +92,34 @@ static void KillWindow(void);
 
 /*********************************************************************************************/
 
-WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
+void OutputMessage(STRPTR msg)
 {
     struct EasyStruct es;
     
-    es.es_StructSize   = sizeof(es);
-    es.es_Flags        = 0;
-    es.es_Title        = title;
-    es.es_TextFormat   = text;
-    es.es_GadgetFormat = gadtext;
-   
-    return EasyRequestArgs(win, &es, NULL, NULL);  
-}
-
-/*********************************************************************************************/
-
-void Cleanup(STRPTR msg)
-{
     if (msg)
     {
-	if (IntuitionBase && !((struct Process *)FindTask(NULL))->pr_CLI)
+	if ( IntuitionBase && !((struct Process *)FindTask(NULL))->pr_CLI )
 	{
-	    ShowMessage("MultiView", msg, MSG(MSG_OK));     
+	    es.es_StructSize   = sizeof(es);
+	    es.es_Flags        = 0;
+	    es.es_Title        = "MultiView";
+	    es.es_TextFormat   = msg;
+	    es.es_GadgetFormat = MSG(MSG_OK);
+	   
+	    EasyRequestArgs(win, &es, NULL, NULL);  
 	}
 	else
 	{
 	    printf("MultiView: %s\n", msg);
 	}
     }
+}
+
+/*********************************************************************************************/
+
+void Cleanup(STRPTR msg)
+{
+    OutputMessage(msg);
     
     KillWindow();
     KillMenus();
@@ -212,7 +216,7 @@ static void GetArguments(void)
     filename = (STRPTR)args[ARG_FILE];
     if (!filename && !args[ARG_CLIPBOARD])
     {
-	filename = GetFile();
+	filename = GetFileName(MSG_ASL_OPEN_TITLE);
 	if (!filename) Cleanup(NULL);
     }
 
@@ -269,13 +273,13 @@ static void MakeICObjects(void)
 
     model_obj           = NewObject(NULL, MODELCLASS, ICA_TARGET, ICTARGET_IDCMP,
 						      TAG_DONE);
-    dto_to_vert_ic_obj  = NewObject(NULL, ICCLASS, ICA_MAP, dto_to_vert_map,
+    dto_to_vert_ic_obj  = NewObject(NULL, ICCLASS, ICA_MAP, (IPTR)dto_to_vert_map,
 						   TAG_DONE);
-    dto_to_horiz_ic_obj = NewObject(NULL, ICCLASS, ICA_MAP, dto_to_horiz_map,
+    dto_to_horiz_ic_obj = NewObject(NULL, ICCLASS, ICA_MAP, (IPTR)dto_to_horiz_map,
 						   TAG_DONE);
-    vert_to_dto_ic_obj  = NewObject(NULL, ICCLASS, ICA_MAP, vert_to_dto_map,
+    vert_to_dto_ic_obj  = NewObject(NULL, ICCLASS, ICA_MAP, (IPTR)vert_to_dto_map,
 						   TAG_DONE);
-    horiz_to_dto_ic_obj = NewObject(NULL, ICCLASS, ICA_MAP, horiz_to_dto_map,
+    horiz_to_dto_ic_obj = NewObject(NULL, ICCLASS, ICA_MAP, (IPTR)horiz_to_dto_map,
 						   TAG_DONE);
 #if BACK_CONNECTION
     model_to_dto_ic_obj = NewObject(NULL, ICCLASS, TAG_DONE);
@@ -363,8 +367,8 @@ static void MakeGadgets(void)
 
     for(i = 0; i < NUM_IMAGES; i++)
     {
-	img[i] = NewObject(NULL, SYSICLASS, SYSIA_DrawInfo      , dri           ,
-					    SYSIA_Which         , img2which[i]  ,
+	img[i] = NewObject(NULL, SYSICLASS, SYSIA_DrawInfo      , (IPTR)( dri ),
+					    SYSIA_Which         , (IPTR)( img2which[i] ),
 					    TAG_DONE);
 
 	if (!img[i]) Cleanup(MSG(MSG_CANT_CREATE_SYSIMAGE));
@@ -382,82 +386,82 @@ static void MakeGadgets(void)
     h_offset = imageh[IMG_LEFTARROW] / 4;
 
     gad[GAD_UPARROW] = NewObject(NULL, BUTTONGCLASS,
-	    GA_Image            , img[IMG_UPARROW]                                                      ,
-	    GA_RelRight         , -imagew[IMG_UPARROW] + 1                                              ,
-	    GA_RelBottom        , -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1   ,
-	    GA_ID               , GAD_UPARROW                                                           ,
-	    GA_RightBorder      , TRUE                                                                  ,
-	    GA_Immediate        , TRUE                                                                  ,
-	    GA_RelVerify        , TRUE                                          ,
+	    GA_Image            , (IPTR)( img[IMG_UPARROW] ),
+	    GA_RelRight         , (IPTR)( -imagew[IMG_UPARROW] + 1 ),
+	    GA_RelBottom        , (IPTR)( -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1 ),
+	    GA_ID               , (IPTR)( GAD_UPARROW ),
+	    GA_RightBorder      , (IPTR)TRUE,
+	    GA_Immediate        , (IPTR)TRUE,
+	    GA_RelVerify        , (IPTR)TRUE,
 	    TAG_DONE);
 
     gad[GAD_DOWNARROW] = NewObject(NULL, BUTTONGCLASS,
-	    GA_Image            , img[IMG_DOWNARROW]                            ,
-	    GA_RelRight         , -imagew[IMG_UPARROW] + 1                      ,
-	    GA_RelBottom        , -imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1   ,
-	    GA_ID               , GAD_DOWNARROW                                 ,
-	    GA_RightBorder      , TRUE                                          ,
-	    GA_Previous         , gad[GAD_UPARROW]                              ,
-	    GA_Immediate        , TRUE                                          ,
-	    GA_RelVerify        , TRUE                                          ,
+	    GA_Image            , (IPTR)( img[IMG_DOWNARROW] ),
+	    GA_RelRight         , (IPTR)( -imagew[IMG_UPARROW] + 1 ),
+	    GA_RelBottom        , (IPTR)( -imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1 ),
+	    GA_ID               , (IPTR)( GAD_DOWNARROW ),
+	    GA_RightBorder      , (IPTR)TRUE,
+	    GA_Previous         , (IPTR)( gad[GAD_UPARROW] ),
+	    GA_Immediate        , (IPTR)TRUE,
+	    GA_RelVerify        , (IPTR)TRUE,
 	    TAG_DONE);
 
     gad[GAD_VERTSCROLL] = NewObject(NULL, PROPGCLASS,
-	    GA_Top              , btop + 1                                                                      ,
-	    GA_RelRight         , -imagew[IMG_DOWNARROW] + v_offset + 1                                         ,
-	    GA_Width            , imagew[IMG_DOWNARROW] - v_offset * 2                                          ,
-	    GA_RelHeight        , -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] - btop -2     ,
-	    GA_ID               , GAD_VERTSCROLL                                                                ,
-	    GA_Previous         , gad[GAD_DOWNARROW]                                                            ,
-	    GA_RightBorder      , TRUE                                                                          ,
-	    GA_RelVerify        , TRUE                                                                          ,
-	    GA_Immediate        , TRUE                                                                          ,
-	    PGA_NewLook         , TRUE                                                                          ,
-	    PGA_Borderless      , TRUE                                                                          ,
-	    PGA_Total           , 100                                                                           ,
-	    PGA_Visible         , 100                                                                           ,
-	    PGA_Freedom         , FREEVERT                                                                      ,
-	    PGA_NotifyBehaviour , PG_BEHAVIOUR_NICE                                                             ,
+	    GA_Top              , (IPTR)( btop + 1 ),
+	    GA_RelRight         , (IPTR)( -imagew[IMG_DOWNARROW] + v_offset + 1 ),
+	    GA_Width            , (IPTR)( imagew[IMG_DOWNARROW] - v_offset * 2 ),
+	    GA_RelHeight        , (IPTR)( -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] - btop -2 ),
+	    GA_ID               , (IPTR)( GAD_VERTSCROLL ),
+	    GA_Previous         , (IPTR)( gad[GAD_DOWNARROW] ),
+	    GA_RightBorder      , (IPTR)TRUE,
+	    GA_RelVerify        , (IPTR)TRUE,
+	    GA_Immediate        , (IPTR)TRUE,
+	    PGA_NewLook         , (IPTR)TRUE,
+	    PGA_Borderless      , (IPTR)TRUE,
+	    PGA_Total           , (IPTR)100,
+	    PGA_Visible         , (IPTR)100,
+	    PGA_Freedom         , (IPTR)FREEVERT,
+	    PGA_NotifyBehaviour , (IPTR)PG_BEHAVIOUR_NICE,
 	    TAG_DONE);
 
     gad[GAD_RIGHTARROW] = NewObject(NULL, BUTTONGCLASS,
-	    GA_Image            , img[IMG_RIGHTARROW]                           ,
-	    GA_RelRight         , -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] + 1,
-	    GA_RelBottom        , -imageh[IMG_RIGHTARROW] + 1                   ,
-	    GA_ID               , GAD_RIGHTARROW                                ,
-	    GA_BottomBorder     , TRUE                                          ,
-	    GA_Previous         , gad[GAD_VERTSCROLL]                           ,
-	    GA_Immediate        , TRUE                                          ,
-	    GA_RelVerify        , TRUE                                          ,
+	    GA_Image            , (IPTR)( img[IMG_RIGHTARROW] ),
+	    GA_RelRight         , (IPTR)( -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] + 1 ),
+	    GA_RelBottom        , (IPTR)( -imageh[IMG_RIGHTARROW] + 1 ),
+	    GA_ID               , (IPTR)( GAD_RIGHTARROW ),
+	    GA_BottomBorder     , (IPTR)TRUE,
+	    GA_Previous         , (IPTR)( gad[GAD_VERTSCROLL] ),
+	    GA_Immediate        , (IPTR)TRUE,
+	    GA_RelVerify        , (IPTR)TRUE,
 	    TAG_DONE);
 
     gad[GAD_LEFTARROW] = NewObject(NULL, BUTTONGCLASS,
-	    GA_Image            , img[IMG_LEFTARROW]                                                    ,
-	    GA_RelRight         , -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] - imagew[IMG_LEFTARROW] + 1,
-	    GA_RelBottom        , -imageh[IMG_RIGHTARROW] + 1                                           ,
-	    GA_ID               , GAD_LEFTARROW                                                         ,
-	    GA_BottomBorder     , TRUE                                                                  ,
-	    GA_Previous         , gad[GAD_RIGHTARROW]                                                   ,
-	    GA_Immediate        , TRUE                                                                  ,
-	    GA_RelVerify        , TRUE                                                                  ,
+	    GA_Image            , (IPTR)( img[IMG_LEFTARROW] ),
+	    GA_RelRight         , (IPTR)( -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] - imagew[IMG_LEFTARROW] + 1 ),
+	    GA_RelBottom        , (IPTR)( -imageh[IMG_RIGHTARROW] + 1 ),
+	    GA_ID               , (IPTR)( GAD_LEFTARROW ),
+	    GA_BottomBorder     , (IPTR)TRUE,
+	    GA_Previous         , (IPTR)( gad[GAD_RIGHTARROW] ),
+	    GA_Immediate        , (IPTR)TRUE,
+	    GA_RelVerify        , (IPTR)TRUE,
 	    TAG_DONE);
 
-    gad[GAD_HORIZSCROLL] = NewObject(NULL,PROPGCLASS,
-	    GA_Left             ,scr->WBorLeft                                                                          ,
-	    GA_RelBottom        ,-imageh[IMG_LEFTARROW] + h_offset + 1                                                  ,
-	    GA_RelWidth         ,-imagew[IMG_LEFTARROW] - imagew[IMG_RIGHTARROW] - imagew[IMG_SIZE] - scr->WBorRight - 2,
-	    GA_Height           ,imageh[IMG_LEFTARROW] - (h_offset * 2)                                                 ,
-	    GA_ID               ,GAD_HORIZSCROLL                                                                        ,
-	    GA_Previous         ,gad[GAD_LEFTARROW]                                                                     ,
-	    GA_BottomBorder     ,TRUE                                                                                   ,
-	    GA_RelVerify        ,TRUE                                                                                   ,
-	    GA_Immediate        ,TRUE                                                                                   ,
-	    PGA_NewLook         ,TRUE                                                                                   ,
-	    PGA_Borderless      ,TRUE                                                                                   ,
-	    PGA_Total           ,100                                                                                    ,
-	    PGA_Visible         ,100                                                                                    ,
-	    PGA_Freedom         ,FREEHORIZ                                                                              ,
-	    PGA_NotifyBehaviour ,PG_BEHAVIOUR_NICE                                                                  	,
+    gad[GAD_HORIZSCROLL] = NewObject(NULL, PROPGCLASS,
+	    GA_Left             , (IPTR)( scr->WBorLeft ),
+	    GA_RelBottom        , (IPTR)( -imageh[IMG_LEFTARROW] + h_offset + 1 ),
+	    GA_RelWidth         , (IPTR)( -imagew[IMG_LEFTARROW] - imagew[IMG_RIGHTARROW] - imagew[IMG_SIZE] - scr->WBorRight - 2 ),
+	    GA_Height           , (IPTR)( imageh[IMG_LEFTARROW] - (h_offset * 2) ),
+	    GA_ID               , (IPTR)( GAD_HORIZSCROLL ),
+	    GA_Previous         , (IPTR)( gad[GAD_LEFTARROW] ),
+	    GA_BottomBorder     , (IPTR)TRUE,
+	    GA_RelVerify        , (IPTR)TRUE,
+	    GA_Immediate        , (IPTR)TRUE,
+	    PGA_NewLook         , (IPTR)TRUE,
+	    PGA_Borderless      , (IPTR)TRUE,
+	    PGA_Total           , (IPTR)100,
+	    PGA_Visible         , (IPTR)100,
+	    PGA_Freedom         , (IPTR)FREEHORIZ,
+	    PGA_NotifyBehaviour , (IPTR)PG_BEHAVIOUR_NICE,
 	    TAG_DONE);
 
     for(i = 0;i < NUM_GADGETS;i++)
@@ -507,7 +511,7 @@ static void AddDTOToWin(void)
 				 TAG_DONE);
 
     AddDTObject(win, NULL, dto, -1);
-    RefreshDTObjects(dto, win, NULL, NULL);
+    // RefreshDTObjects(dto, win, NULL, NULL); needed ?
 
 }
 
@@ -519,6 +523,7 @@ static void OpenDTO(void)
     ULONG           *methods;
     STRPTR          objname = NULL;
     IPTR            val;
+    struct DataType *dt;
 
     old_dto = dto;
 
@@ -573,7 +578,7 @@ static void OpenDTO(void)
 				strcat(filenamebuffer,"/");
 			    }
 
-			    filename = GetFile();
+			    filename = GetFileName(MSG_ASL_OPEN_TITLE);
 			    if (filename) continue;
 			}
 		        ReleaseDataType(dtn);
@@ -602,8 +607,8 @@ static void OpenDTO(void)
 #endif
 
     val = 0;
-    GetDTAttrs(dto, DTA_NominalHoriz, &val, TAG_DONE); winwidth  = (WORD)val;
-    GetDTAttrs(dto, DTA_NominalVert , &val, TAG_DONE); winheight = (WORD)val;
+    GetDTAttrs(dto, DTA_NominalHoriz, (IPTR)&val, TAG_DONE); winwidth  = (WORD)val;
+    GetDTAttrs(dto, DTA_NominalVert , (IPTR)&val, TAG_DONE); winheight = (WORD)val;
 
     /*
      *  Add 4 Pixels for border around DataType-Object
@@ -619,25 +624,72 @@ static void OpenDTO(void)
      winheight += 4;
     }
 
-    GetDTAttrs(dto, DTA_ObjName, &objname, TAG_DONE);
+    GetDTAttrs(dto, DTA_ObjName, (IPTR)&objname, TAG_DONE);
     strncpy(objnamebuffer, objname ? objname : filenamebuffer, 299);
     
+    dt = NULL;
+    dto_subclass_gid = NULL;
+    if (GetDTAttrs(dto, DTA_DataType, (IPTR)&dt, TAG_DONE))
+    {
+	if (dt)
+	{
+	    dto_subclass_gid = dt->dtn_Header->dth_GroupID;
+	}
+    }
+
+    dto_supports_write = FALSE;
+    dto_supports_write_iff = FALSE;
+    dto_supports_print = FALSE;
     dto_supports_copy = FALSE;
+    dto_supports_selectall = FALSE;
     dto_supports_clearselected = FALSE;
-    
+
+    if (DoWriteMethod(NULL, DTWM_RAW)) dto_supports_write = TRUE;	/* probe raw saving */
     if ((methods = GetDTMethods(dto)))
     {
+	if (FindMethod(methods, DTM_WRITE)) dto_supports_write_iff = TRUE;
+	if (FindMethod(methods, DTM_PRINT)) dto_supports_print = TRUE;
 	if (FindMethod(methods, DTM_COPY)) dto_supports_copy = TRUE;
+	if (FindMethod(methods, DTM_SELECT)) dto_supports_selectall = TRUE;
 	if (FindMethod(methods, DTM_CLEARSELECTED)) dto_supports_clearselected = TRUE;
     }
 
-    if ((triggermethods = GetDTTriggerMethods(dto)))
+    dto_supports_activate_field =  FALSE;
+    dto_supports_next_field =  FALSE;
+    dto_supports_prev_field =  FALSE;
+    dto_supports_retrace =  FALSE;
+    dto_supports_search =  FALSE;
+    dto_supports_search_next =  FALSE;
+    dto_supports_search_prev =  FALSE;
+    
+    if ((triggermethods = (struct DTMethod *)GetDTTriggerMethods(dto)))
     {
 	if (FindTriggerMethod(triggermethods, NULL, STM_ACTIVATE_FIELD)) dto_supports_activate_field = TRUE;
 	if (FindTriggerMethod(triggermethods, NULL, STM_NEXT_FIELD))     dto_supports_next_field     = TRUE;
 	if (FindTriggerMethod(triggermethods, NULL, STM_PREV_FIELD))     dto_supports_prev_field     = TRUE;
-   }
-	
+	if (FindTriggerMethod(triggermethods, NULL, STM_RETRACE))        dto_supports_retrace        = TRUE;
+	if (FindTriggerMethod(triggermethods, NULL, STM_SEARCH))         dto_supports_search         = TRUE;
+	if (FindTriggerMethod(triggermethods, NULL, STM_SEARCH_NEXT))    dto_supports_search_next    = TRUE;
+	if (FindTriggerMethod(triggermethods, NULL, STM_SEARCH_PREV))    dto_supports_search_prev    = TRUE;
+    }
+
+    D(bug("\nMultiview: Found Methods:%s%s%s%s%s%s\n",
+	dto_supports_write ? " DTM_WRITE->RAW" : "",
+	dto_supports_write_iff ? " DTM_WRITE->IFF" : "",
+	dto_supports_print ? " DTM_PRINT" : "",
+	dto_supports_copy ? " DTM_COPY" : "",
+	dto_supports_selectall ? " DTM_SELECT" : "",
+	dto_supports_clearselected ? " DTM_CLEARSELECTED" : ""));
+    
+    D(bug("Multiview: Found Triggers:%s%s%s%s%s%s%s\n\n",
+	dto_supports_activate_field ? " STM_ACTIVATE_FIELD" : "",
+	dto_supports_next_field ? " STM_NEXT_FIELD" : "",
+	dto_supports_prev_field ? " STM_PREV_FIELD" : "",
+	dto_supports_retrace ? " STM_RETRACE" : "",
+	dto_supports_search ? " STM_SEARCH" : "",
+	dto_supports_search_next ? " STM_SEARCH_NEXT" : "",
+	dto_supports_search_prev ? " STM_SEARCH_PREV" : ""));
+    
     if (old_dto)
     {
 	if (win) RemoveDTObject(win, old_dto);
@@ -770,18 +822,24 @@ static void ScrollTo(UWORD dir, UWORD quali)
 	horiz = FALSE;
 	if (dir == CURSORUP) inc = FALSE; else inc = TRUE;
 
-	GetDTAttrs(dto, DTA_TopVert, &val, TAG_DONE);top = (LONG)val;
-	GetDTAttrs(dto, DTA_TotalVert, &val, TAG_DONE);total = (LONG)val;
-	GetDTAttrs(dto, DTA_VisibleVert, &val, TAG_DONE);visible = (LONG)val;
+	GetDTAttrs(dto, DTA_TopVert, (IPTR)&val, TAG_DONE);
+	top = (LONG)val;
+	GetDTAttrs(dto, DTA_TotalVert, (IPTR)&val, TAG_DONE);
+	total = (LONG)val;
+	GetDTAttrs(dto, DTA_VisibleVert, (IPTR)&val, TAG_DONE);
+	visible = (LONG)val;
     }
     else
     {
 	horiz = TRUE;
 	if (dir == CURSORLEFT) inc = FALSE; else inc = TRUE;
 	
-	GetDTAttrs(dto, DTA_TopHoriz, &val, TAG_DONE);top = (LONG)val;
-	GetDTAttrs(dto, DTA_TotalHoriz, &val, TAG_DONE);total = (LONG)val;
-	GetDTAttrs(dto, DTA_VisibleHoriz, &val, TAG_DONE);visible = (LONG)val;
+	GetDTAttrs(dto, DTA_TopHoriz, (IPTR)&val, TAG_DONE);
+	top = (LONG)val;
+	GetDTAttrs(dto, DTA_TotalHoriz, (IPTR)&val, TAG_DONE);
+	total = (LONG)val;
+	GetDTAttrs(dto, DTA_VisibleHoriz, (IPTR)&val, TAG_DONE);
+	visible = (LONG)val;
 
     }
 
@@ -842,12 +900,14 @@ static void HandleAll(void)
     IPTR                tidata;
     UWORD               men;
     BOOL                quitme = FALSE;
+    const STRPTR	not_supported = "Sorry, not supported yet\n";
     
     while (!quitme)
     {
 	WaitPort(win->UserPort);
 	while((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
 	{
+//	    D(if (msg->Class!=IDCMP_INTUITICKS) bug("  Msg Class %08lx\n", (long)msg->Class));
 	    switch (msg->Class)
 	    {
 		case IDCMP_CLOSEWINDOW:
@@ -855,6 +915,7 @@ static void HandleAll(void)
 		    break;
 		
 		case IDCMP_VANILLAKEY:
+//		    D(bug("Vanillakey %d\n", (int)msg->Code));
 		    switch(msg->Code)
 		    {
 			case 27: /* ESC */
@@ -862,11 +923,17 @@ static void HandleAll(void)
 			    break;
 			    
 			case 13: /* RETURN */
-			    DoTrigger(STM_ACTIVATE_FIELD);
+			    if (dto_supports_activate_field) DoTrigger(STM_ACTIVATE_FIELD);
+			    else if (dto_supports_search) DoTrigger(STM_SEARCH);
 			    break;
 			    
 			case 9: /* TAB */
-			    DoTrigger(STM_NEXT_FIELD);
+			    if (dto_supports_next_field) DoTrigger(STM_NEXT_FIELD);
+			    else if (dto_supports_search_next) DoTrigger(STM_SEARCH_NEXT);
+			    break;
+			    
+			case 8: /* Backspace */
+			    if (dto_supports_retrace) DoTrigger(STM_RETRACE);
 			    break;
 			    
 		    } /* switch(msg->Code) */
@@ -909,7 +976,8 @@ static void HandleAll(void)
 			case 0x42: /* SHIFT TAB? */
 			    if (msg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
 			    {
-				DoTrigger(STM_PREV_FIELD);
+				if (dto_supports_prev_field) DoTrigger(STM_PREV_FIELD);
+				else if (dto_supports_search_prev) DoTrigger(STM_SEARCH_PREV);
 			    }
 			    break;
 			    
@@ -976,21 +1044,31 @@ static void HandleAll(void)
 			
 		case IDCMP_MENUPICK:
 		    men = msg->Code;            
+//		    D(bug(" * MV: men %08lx\n", (long)men));
 		    while(men != MENUNULL)
 		    {
 			if ((item = ItemAddress(menus, men)))
 			{
+//			    D(bug(" * MV: item %08lx  menus %08lx\n", (long)item, (long)menus));
 			    switch((ULONG)GTMENUITEM_USERDATA(item))
 			    {
 				case MSG_MEN_PROJECT_OPEN:
-				    filename = GetFile();
+				    filename = GetFileName(MSG_ASL_OPEN_TITLE);
 				    if (filename) OpenDTO();
 				    break;
 
 				case MSG_MEN_PROJECT_SAVEAS:
+				    filename = GetFileName(MSG_ASL_SAVE_TITLE);
+				    if (filename) DoWriteMethod(filename, DTWM_RAW);
+				    break;
+
+				case MSG_MEN_PROJECT_SAVEAS_IFF:
+				    filename = GetFileName(MSG_ASL_SAVE_TITLE);
+				    if (filename) DoWriteMethod(filename, DTWM_IFF);
 				    break;
 
 				case MSG_MEN_PROJECT_PRINT:
+				    OutputMessage(not_supported);
 				    break;
 
 				case MSG_MEN_PROJECT_ABOUT:
@@ -1035,6 +1113,7 @@ static void HandleAll(void)
 				    break;
 				
 				case MSG_MEN_EDIT_SELECTALL:
+				    OutputMessage(not_supported);
 				    break;
 				    
 				case MSG_MEN_EDIT_CLEARSELECTED:
@@ -1048,9 +1127,66 @@ static void HandleAll(void)
 				    }
 				    break;
 
+				case MSG_MEN_WINDOW_SEPSCREEN:
+				    OutputMessage(not_supported);
+				    break;
+
+				case MSG_MEN_WINDOW_MINIMIZE:
+				    OutputMessage(not_supported);
+				    break;
+
+				case MSG_MEN_WINDOW_NORMAL:
+				    OutputMessage(not_supported);
+				    break;
+
+				case MSG_MEN_WINDOW_MAXIMIZE:
+				    OutputMessage(not_supported);
+				    break;
+
 				case MSG_MEN_SETTINGS_SAVEDEF:
+				    OutputMessage(not_supported);
 				    break;
 				    
+				case MSG_MEN_PICT_FIT_WIN:
+				    OutputMessage(not_supported);
+				    break;
+
+				case MSG_MEN_PICT_ZOOM_IN:
+				    OutputMessage(not_supported);
+				    break;
+
+				case MSG_MEN_PICT_ZOOM_OUT:
+				    OutputMessage(not_supported);
+				    break;
+
+				case MSG_MEN_PICT_RESET:
+				    OutputMessage(not_supported);
+				    break;
+
+				case MSG_MEN_TEXT_WORDWRAP:
+				    if (item->Flags & CHECKED)
+					D(bug("wordwrap enabled\n"));
+				    else
+					D(bug("wordwrap disabled\n"));
+				    SetDTAttrs (dto, NULL, NULL,
+						TDTA_WordWrap, (item->Flags & CHECKED) ? TRUE : FALSE,
+						TAG_DONE);
+				    #warning TODO: New layout required
+				    RefreshDTObjects (dto, win, NULL, NULL);
+				    break;
+
+				case MSG_MEN_TEXT_SEARCH:
+				    if (dto_supports_search) DoTrigger(STM_SEARCH);
+				    break;
+
+				case MSG_MEN_TEXT_SEARCH_PREV:
+				    if (dto_supports_search_prev) DoTrigger(STM_SEARCH_PREV);
+				    break;
+
+				case MSG_MEN_TEXT_SEARCH_NEXT:
+				    if (dto_supports_search_next) DoTrigger(STM_SEARCH_NEXT);
+				    break;
+
 			    } /* switch(GTMENUITEM_USERDATA(item)) */
 			    
 			    men = item->NextSelect;
@@ -1068,6 +1204,7 @@ static void HandleAll(void)
 		    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
 		    {
 			tidata = tag->ti_Data;
+//			D(bug("IDCMP UPDATE %08lx\n", (long)tag->ti_Tag));
 			switch (tag->ti_Tag)
 			{
 			    /* Change in busy state */
@@ -1094,6 +1231,7 @@ static void HandleAll(void)
 			    /* Time to refresh */
 			    case DTA_Sync:
 				/* Refresh the DataType object */
+//				    D(bug("dtasync\n\n"));
 				RefreshDTObjects (dto, win, NULL, NULL);
 				break;
 
@@ -1116,7 +1254,9 @@ static void HandleAll(void)
 int main(void)
 {
     InitLocale("System/Utilities/MultiView.catalog", 1);
-    InitMenus();
+    InitMenus(nm);
+    InitMenus(nmpict);
+    InitMenus(nmtext);
     OpenLibs();
     GetArguments();
     LoadFont();
@@ -1124,7 +1264,10 @@ int main(void)
     OpenDTO();
     GetVisual();
     MakeGadgets();
-    MakeMenus();
+    menus = MakeMenus(nm);
+    pictmenus = MakeMenus(nmpict);
+    textmenus = MakeMenus(nmtext);
+    SetMenuFlags();
     MakeWindow();
     HandleAll();
     Cleanup(NULL);
@@ -1133,5 +1276,3 @@ int main(void)
 }
 
 /*********************************************************************************************/
-
-

@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 #ifndef VAR
@@ -32,6 +29,8 @@ VAR struct Screen               *scr;
 VAR struct Window               *win;
 VAR struct DrawInfo             *dri;
 VAR struct Menu                 *menus;
+VAR struct Menu                 *pictmenus;
+VAR struct Menu                 *textmenus;
 VAR STRPTR                      filename;
 VAR APTR                        vi;
 VAR struct Catalog              *catalog;
@@ -49,8 +48,17 @@ VAR WORD                        prog_exitcode;
 VAR UBYTE                       filenamebuffer[300];
 VAR UBYTE                       objnamebuffer[300];
 VAR UBYTE                       s[300];
+VAR ULONG                       dto_subclass_gid;
+VAR UBYTE                       dto_supports_write;
+VAR UBYTE                       dto_supports_write_iff;
+VAR UBYTE                       dto_supports_print;
 VAR UBYTE                       dto_supports_copy;
+VAR UBYTE                       dto_supports_selectall;
 VAR UBYTE                       dto_supports_clearselected;
 VAR UBYTE                       dto_supports_activate_field;
 VAR UBYTE                       dto_supports_next_field;
 VAR UBYTE                       dto_supports_prev_field;
+VAR UBYTE                       dto_supports_retrace;
+VAR UBYTE                       dto_supports_search;
+VAR UBYTE                       dto_supports_search_prev;
+VAR UBYTE                       dto_supports_search_next;

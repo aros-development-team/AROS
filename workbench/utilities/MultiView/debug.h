@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,7 +11,7 @@
 #ifdef __AROS__
 
 #undef DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #else /* __AROS__ */
