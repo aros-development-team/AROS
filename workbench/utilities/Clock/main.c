@@ -35,27 +35,23 @@ char *versionString = VERSIONSTR;
 
 #define NUM_ARGS         4
 
-/*** Options ****************************************************************/
+/*** Variables **************************************************************/
+/* Options ******************************************************************/
 
 static WORD optionLeft   = MUIV_Window_LeftEdge_Centered,
             optionTop    = MUIV_Window_TopEdge_Centered,
             optionWidth  = 150,
             optionHeight = 150;
 
+/* User interface ***********************************************************/
+Object *application, *window;
+
 
 /*** Functions **************************************************************/
 
-WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
+void ShowMessage(CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadgets)
 {
-    struct EasyStruct es;
-    
-    es.es_StructSize   = sizeof(es);
-    es.es_Flags        = 0;
-    es.es_Title        = title;
-    es.es_TextFormat   = text;
-    es.es_GadgetFormat = gadtext;
-   
-    return 0; //EasyRequestArgs(win, &es, NULL, NULL);  
+    MUI_RequestA(application, window, 0, title, gadgets, text, NULL);
 }
 
 void Cleanup(STRPTR message)
@@ -110,8 +106,6 @@ static void GetArguments(void)
 
 int main(void)
 {
-    Object *application, *window;
-    
     if (!Locale_Initialize()) exit(20);
     GetArguments();
     
