@@ -32,7 +32,7 @@ int main (int argc, char **argv)
     	    win = OpenWindowTags(NULL,
     	    	WA_Width,	100,
     	    	WA_Height,	60,
-    	    	WA_Title,	"Maprawkey test",
+    	    	WA_Title,	(IPTR)"Maprawkey test",
     	    	WA_Flags,	WFLG_ACTIVATE,
     	    	WA_IDCMP,	IDCMP_RAWKEY,
     	    	TAG_DONE);

@@ -12,7 +12,6 @@
 struct Library *IFFParseBase;
 
 static struct IFFHandle *iff;
-static BPTR fh;
 static LONG err;
 
 int main(void)
@@ -28,7 +27,7 @@ int main(void)
     
     if ((iff = AllocIFF()))
     {
-        if ((iff->iff_Stream = Open("ram:test.iff", MODE_NEWFILE)))
+        if ((iff->iff_Stream = (IPTR) Open("ram:test.iff", MODE_NEWFILE)))
 	{
 	    InitIFFasDOS(iff);
 	    
@@ -48,21 +47,21 @@ int main(void)
 			{
 			    printf("********* No errors during writing :-) **************\n");
 						    
-			} else printf("WriteChunkBytes(iff, buffer, strlen(buffer)) returned %d\n",err);
+			} else printf("WriteChunkBytes(iff, buffer, strlen(buffer)) returned %ld\n",err);
 		        
 			PopChunk(iff);
 			
-		    } else printf("PushChunk(iff, ID_ILBM, MAKE_ID('A', 'B', 'C', 'D'), IFFSIZE_UNKNOWN) returned error %d\n",err);
+		    } else printf("PushChunk(iff, ID_ILBM, MAKE_ID('A', 'B', 'C', 'D'), IFFSIZE_UNKNOWN) returned error %ld\n",err);
 		    
 		    PopChunk(iff);
 		    
-		} else printf("PushChunk(iff, ID_ILBM, ID_FORM, IFFSIZE) returned error %d\n",err);
+		} else printf("PushChunk(iff, ID_ILBM, ID_FORM, IFFSIZE) returned error %ld\n",err);
 		
 	        CloseIFF(iff);
 		
-	    } else printf("OpenIFF returned error %d\n",err);
+	    } else printf("OpenIFF returned error %ld\n",err);
 	    
-	    Close(iff->iff_Stream);
+	    Close((BPTR) iff->iff_Stream);
 	    
 	} else printf("Could not open ram:test.iff for write!\n");
         

@@ -64,7 +64,7 @@ static void showacflags(struct AChain *ac)
 
     if (flags)
     {
-	 printf("UNKNOWN = %8lx ", flags);
+	 printf("UNKNOWN = %8x ", flags);
     }
 
     printf(")");
@@ -74,7 +74,7 @@ static void showaclist(struct AChain *ac)
 {
     while(ac)
     {
-	printf("achain: address = %8lx flags = %lx ", ac, ac->an_Flags);
+	printf("achain: address = %p flags = %x ", ac, ac->an_Flags);
 	showacflags(ac);
 	printf(" string=\"%s\"\n", ac->an_String);
 	ac = ac->an_Child;
@@ -398,7 +398,7 @@ LONG My_MatchFirst(STRPTR pat, struct AnchorPath *AP)
 
     } /* if (error == 0) */
 
-    printf("My_MatchFirst: returning %ld. Ac = %lx\n", error, ac);
+    printf("My_MatchFirst: returning %ld. Ac = %p\n", error, ac);
 
     SetIoErr(error);
 
@@ -861,7 +861,6 @@ static void getarguments(void)
 static void my_matchme(char *pattern, BOOL all)
 {
     struct AnchorPath stackap[2], *AP;
-    struct AChain *ac;
     LONG error = 0;
 
     AP = (struct AnchorPath *)((((ULONG)stackap) + 3) & ~3);
@@ -876,7 +875,7 @@ static void my_matchme(char *pattern, BOOL all)
     }
     else
     {
-        printf("direntrytype = %d\n", AP->ap_Info.fib_DirEntryType);
+        printf("direntrytype = %ld\n", AP->ap_Info.fib_DirEntryType);
         if (!(AP->ap_Flags & APF_ITSWILD) &&
 	     (AP->ap_Info.fib_DirEntryType > 0))
 	{
@@ -884,7 +883,7 @@ static void my_matchme(char *pattern, BOOL all)
 	     AP->ap_Flags |= APF_DODIR;
 	}
 	
-	printf("ap_Flags = %lx\n", AP->ap_Flags);
+	printf("ap_Flags = %x\n", AP->ap_Flags);
 	NameFromLock(AP->ap_Current->an_Lock, s, 300);
 	printf("BaseLock = \"%s\"\n", s);
 

@@ -112,7 +112,7 @@ static void mouse_driver(IPTR * unit, struct MsgPort * notifport)
         if (NULL != unit)
         	unitnum = *unit;
 
-printf("Unit=%d\n",unitnum);    
+printf("Unit=%ld\n",unitnum);    
 	SerPort = CreatePort(NULL,0);
 	if (NULL != SerPort)  {
 		struct IOExtSer * IORequest;
@@ -153,7 +153,7 @@ printf("Unit=%d\n",unitnum);
 
 int main(int argc, char **argv)
 {
-	IPTR args[NOOFARGS] = {(IPTR)FALSE,  // ARG_KILL
+	IPTR args[NOOFARGS] = {FALSE,  // ARG_KILL
 	                       0             // ARG_UNIT
 	                     };
 	struct RDArgs *rda;
@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 			} else {
 				struct MsgPort * notifport = CreatePort(MSGPORT_NAME, 0);
 				if (NULL != notifport) {
-					mouse_driver(args[ARG_UNIT],notifport);
+					mouse_driver((IPTR *)args[ARG_UNIT],notifport);
 					DeletePort(notifport);
 				} else {
 					printf("Could not create notification port!\n");

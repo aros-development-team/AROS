@@ -24,7 +24,7 @@ int main(void)
 	    dt.dat_StrDate = s;
 	    if (DateToStr(&dt))
 	    {
-	    	printf("Verified date: \"%s\" days = %d min = %d tick = %d\n",
+	    	printf("Verified date: \"%s\" days = %ld min = %ld tick = %ld\n",
 		    	s,
 		    	dt.dat_Stamp.ds_Days,
 			dt.dat_Stamp.ds_Minute,
@@ -65,4 +65,6 @@ int main(void)
 	
     	CloseLibrary((struct Library *)UtilityBase);
     }
+
+    return 0;
 }

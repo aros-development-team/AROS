@@ -48,11 +48,11 @@ int main(int argc, char **argv)
 			ULONG baudrate = 9600;
 			ULONG delay = 5;
 			if (NULL != args[ARG_UNIT])
-				unitnum = atoi(args[ARG_UNIT]);
+				unitnum = atoi((CONST_STRPTR)args[ARG_UNIT]);
 			if (NULL != args[ARG_BAUD])
-				baudrate = atoi(args[ARG_BAUD]);
+				baudrate = atoi((CONST_STRPTR)args[ARG_BAUD]);
 			if (NULL != args[ARG_PAUSE])
-				delay = atoi(args[ARG_PAUSE]);
+				delay = atoi((CONST_STRPTR)args[ARG_PAUSE]);
 			do_auto(SerPort, 
 			        unitnum, 
 			        baudrate,
@@ -72,18 +72,18 @@ VOID do_auto(struct MsgPort * prt, ULONG unitnum, ULONG baudrate, ULONG delay)
 	IORequests[0] = (struct IOExtSer *) 
 		 CreateExtIO(SerPort, sizeof(struct IOExtSer));
 	
-	printf("Opening unit %d. Using baudrate %d baud.\n",
+	printf("Opening unit %ld. Using baudrate %ld baud.\n",
 	       unitnum,
 	       baudrate);
 	
 	err = OpenDevice("serial.device",unitnum,(struct IORequest *)IORequests[0],0);
 	
 	if (0 != err) {
-		printf("Failed to open unit %i of serial device.\n",unitnum);
+		printf("Failed to open unit %ld of serial device.\n",unitnum);
 		DeleteExtIO((struct IORequest *)IORequests[0]);
 		IORequests[0]=NULL;
 	} else {
-		printf("Opened device. Now waiting for %d seconds.\n",delay);
+		printf("Opened device. Now waiting for %ld seconds.\n",delay);
 		if (0 != delay) {
 			Delay(50*delay);
 		}
@@ -104,7 +104,7 @@ VOID do_auto(struct MsgPort * prt, ULONG unitnum, ULONG baudrate, ULONG delay)
 			IORequests[0]->IOSer.io_Data = buffer;
 
 			DoIO((struct IORequest *)IORequests[0]);
-			printf("Now please enter something! Waiting for %d seconds!\n",delay);
+			printf("Now please enter something! Waiting for %ld seconds!\n",delay);
 			if (0 != delay) {
 				Delay(50 * delay);
 			}
@@ -176,7 +176,7 @@ void open_device(void)
 	
 	printf("Open serial device.\n");
 	printf("Unitnumber: ");
-	scanf("%d", &unitnum);
+	scanf("%ld", &unitnum);
 	printf("shared access (y/n):");
 	scanf("%c", &shared);
 	printf("seven wire (y/n):");
@@ -194,13 +194,13 @@ void open_device(void)
 	
 	if (0 != err)
 	{
-		printf("Failed to open unit %i of serial device.\n",unitnum);
+		printf("Failed to open unit %ld of serial device.\n",unitnum);
 		DeleteExtIO((struct IORequest *)IORequests[index]);
 		IORequests[index]=NULL;
 	}	 
 	else
 	{
-		printf("Created unit %i of serial device. Refer to it with number %i\n",unitnum,index);
+		printf("Created unit %ld of serial device. Refer to it with number %d\n",unitnum,index);
 	}
 			
 }

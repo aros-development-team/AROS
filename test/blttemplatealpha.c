@@ -96,7 +96,7 @@ static void makewin(void)
 			       WA_CloseGadget	, TRUE,
 			       WA_Activate	, TRUE,
 			       WA_IDCMP		, IDCMP_CLOSEWINDOW,
-			       WA_BackFill  	, LAYERS_NOBACKFILL,
+			       WA_BackFill  	, (IPTR) LAYERS_NOBACKFILL,
 			       TAG_DONE);
 			       
     if (!win) cleanup("Can't open window");
@@ -138,13 +138,15 @@ static void action(void)
 
 /***********************************************************************************/
 
-void main(void)
+int main(void)
 {
     openlibs();
     getvisual();
     makewin();
     action();
     cleanup(0);
+
+    return 0;
 }
 
 /***********************************************************************************/

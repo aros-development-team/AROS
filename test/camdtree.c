@@ -44,11 +44,11 @@ void printNode(struct MidiNode *midinode,int level,int maxlevel){
 
 	if(level==maxlevel) return;
 
-	GetMidiAttrs(midinode,MIDI_Name,&nodename,TAG_END);
+	GetMidiAttrs(midinode,MIDI_Name,(IPTR)&nodename,TAG_END);
 
 	printSpaces(level);
 	printf(
-		"%x, -%s-\n",
+		"%p, -%s-\n",
 		midinode,
 		nodename
 	);
@@ -81,16 +81,16 @@ BOOL printLink(struct MidiLink *midilink){
 	char *linkname=NULL;
 
 	if(midilink->ml_Node.ln_Type==NT_USER-MLTYPE_Receiver || midilink->ml_Node.ln_Type==NT_USER-MLTYPE_Sender){
-		GetMidiLinkAttrs(midilink,MLINK_Name,&linkname,TAG_END);
+		GetMidiLinkAttrs(midilink,MLINK_Name,(IPTR)&linkname,TAG_END);
 		printf(
-			"%x, -%s-\n",
+			"%p, -%s-\n",
 			midilink,
 			linkname
 		);
 		return TRUE;
 	}
 
-	printf("%x, <driverdata> (private)\n",midilink);
+	printf("%p, <driverdata> (private)\n",midilink);
 	return FALSE;
 }
 
@@ -109,8 +109,6 @@ void printLink_brancheNodes(struct MidiLink *midilink,int level,int maxlevel){
 }
 
 void printLink_brancheClusters(struct MidiLink *midilink,int level,int maxlevel){
-	struct MidiCluster *cluster;
-
 	if(level==maxlevel) return;
 
 	printSpaces(level);
@@ -162,7 +160,6 @@ void printCluster(struct MidiCluster *cluster,int level,int maxlevel){
 int main(){
 
 	APTR lock;
-	struct MidiNode *midinode;
 	struct MidiCluster *cluster;
 
 	CamdBase=OpenLibrary("camd.library",40L);

@@ -37,7 +37,7 @@ int main(void)
   c = 0 ;
   while (c < 30)
   {
-    printf("%d. %x\n",c,lrand48());
+    printf("%d. %lx\n",c,lrand48());
    
     c++;
   }
@@ -47,7 +47,7 @@ int main(void)
   c = 0 ;
   while (c < 30)
   {
-    printf("%d. %x\n",c,lrand48());
+    printf("%d. %lx\n",c,lrand48());
     c++;
   }
   printf("---\n");
@@ -66,7 +66,7 @@ int main(void)
   xsubi[2] = 0;
   while (c < 10)
   {
-    printf("%d. %x (%x,%x,%x)\n",c,nrand48(xsubi),xsubi[0],xsubi[1],xsubi[2]);
+    printf("%d. %lx (%x,%x,%x)\n",c,nrand48(xsubi),xsubi[0],xsubi[1],xsubi[2]);
     c++;
   }
   printf("---\n");
@@ -74,7 +74,7 @@ int main(void)
   c = 0 ;
   while (c < 10)
   {
-    printf("%d. %x (%x,%x,%x)\n",c,jrand48(xsubi),xsubi[0],xsubi[1],xsubi[2]);
+    printf("%d. %lx (%x,%x,%x)\n",c,jrand48(xsubi),xsubi[0],xsubi[1],xsubi[2]);
     c++;
   }
   
