@@ -14,6 +14,10 @@
 
 /****************************************************************************************/
 
+#warning "Doe not yet handle SwapPixelBytes flag of HIDDT_PixelFormat structure!"
+
+/****************************************************************************************/
+
 #define SHIFT_PIX(pix, shift)	\
 	(( (shift) < 0) ? (pix) >> (-shift) : (pix) << (shift) )
 
