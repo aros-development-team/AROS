@@ -529,9 +529,11 @@ APTR vbuffer_alloc(struct nv_staticdata *nsd, int size)
 			
 			return ret;
 	    }
+	    Permit();
 		
 		return AllocMem(size, MEMF_CLEAR | MEMF_PUBLIC);
 	}
+	Permit();
 	return AllocMem(size, MEMF_CLEAR | MEMF_PUBLIC);
 }
 
