@@ -2,7 +2,7 @@
 # You need only uncomment the next line if you run mmake from somewhere
 # else than $(TOP).
 #top /home/digulla/AROS
-maketool make TOP=$(TOP) CURDIR=$(CURDIR) TARGET=$(TARGET)
+maketool make $(MKARGS) TOP=$(TOP) CURDIR=$(CURDIR) TARGET=$(TARGET)
 defaultmakefilename mmakefile
 defaulttarget AROS
 genmakefilescript $(GENMF) $(TOP)/config/make.tmpl < mmakefile.src > mmakefile
