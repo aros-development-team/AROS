@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/10 13:21:22  digulla
+    Returns ULONG instead of BPTR (Fleischer)
+
     Revision 1.2  1996/08/01 17:40:55  digulla
     Added standard header for all files
 
@@ -17,7 +20,7 @@
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH0(BPTR, MaxCli,
+	__AROS_LH0(ULONG, MaxCli,
 
 /*  SYNOPSIS */
 
