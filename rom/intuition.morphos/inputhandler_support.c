@@ -26,6 +26,8 @@
 #include <intuition/cghooks.h>
 #include <intuition/sghooks.h>
 #include <devices/inputevent.h>
+#include <string.h>
+
 #include "inputhandler.h"
 
 #include "boopsigadgets.h"
