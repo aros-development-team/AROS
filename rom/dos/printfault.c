@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc:
@@ -29,7 +29,8 @@
 
     INPUTS
 	code   - Error code.
-	header - Text to print before the error message.
+	header - Text to print before the error message. This may be NULL
+                 in which case only the error message is printed.
 
     RESULT
 	!=0 if all went well. 0 on failure.

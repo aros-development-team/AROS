@@ -38,7 +38,7 @@
     INPUTS
 	code    -   The error code.
 	header  -   The string to prepend to the buffer before the error
-		    text.
+		    text. This may be NULL in which case nothing is prepended.
 	buffer  -   The destination buffer.
 	len     -   Length of the buffer.
 
@@ -70,13 +70,16 @@
     /* Do this to make sure there is room for a NULL terminator */
     len--;
 
-    while((index < len) && *header)
+    if (header)
     {
-	buffer[index++] = *header++;
-    }
+        while((index < len) && *header)
+        {
+            buffer[index++] = *header++;
+        }
 
-    buffer[index++] = ':';
-    buffer[index++] = ' ';
+        buffer[index++] = ':';
+        buffer[index++] = ' ';
+    };
 
     theString = DosGetString(code);
     if(theString)
