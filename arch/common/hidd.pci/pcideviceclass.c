@@ -822,12 +822,12 @@ OOP_Class *init_pcideviceclass(struct pci_staticdata *psd)
 
     struct OOP_MethodDescr pcidevice_descr[_NUM_PCIDEVICE_METHODS + 1] =
     {
-	{ OOP_METHODDEF(pcidevice_RB),  moHidd_PCIDriver_ReadConfigByte },
-	{ OOP_METHODDEF(pcidevice_RW),  moHidd_PCIDriver_ReadConfigWord },
-	{ OOP_METHODDEF(pcidevice_RL),  moHidd_PCIDriver_ReadConfigLong },
-	{ OOP_METHODDEF(pcidevice_WB),  moHidd_PCIDriver_WriteConfigByte },
-	{ OOP_METHODDEF(pcidevice_WW),  moHidd_PCIDriver_WriteConfigWord },
-	{ OOP_METHODDEF(pcidevice_WL),  moHidd_PCIDriver_WriteConfigLong },
+	{ OOP_METHODDEF(pcidevice_RB),  moHidd_PCIDevice_ReadConfigByte },
+	{ OOP_METHODDEF(pcidevice_RW),  moHidd_PCIDevice_ReadConfigWord },
+	{ OOP_METHODDEF(pcidevice_RL),  moHidd_PCIDevice_ReadConfigLong },
+	{ OOP_METHODDEF(pcidevice_WB),  moHidd_PCIDevice_WriteConfigByte },
+	{ OOP_METHODDEF(pcidevice_WW),  moHidd_PCIDevice_WriteConfigWord },
+	{ OOP_METHODDEF(pcidevice_WL),  moHidd_PCIDevice_WriteConfigLong },
 	{ NULL, 0UL }
     };
 
