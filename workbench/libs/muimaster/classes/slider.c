@@ -35,6 +35,23 @@
 
 extern struct Library *MUIMasterBase;
 
+struct MUI_SliderData
+{
+    ULONG flags;
+    struct MUI_EventHandlerNode ehn;
+    struct ZuneFrameGfx *knob_frame;
+    LONG val_width;
+    LONG knob_width;
+    LONG state; /* When using mouse */
+    LONG knob_click,clickx,clicky;
+};
+
+
+enum slider_flags {
+    SLIDER_HORIZ = (1<<0),
+    SLIDER_QUIET = (1<<1),
+};
+
 
 /*
 Slider.mui/MUIA_Slider_Horiz        
@@ -52,7 +69,7 @@ static ULONG Slider_New(struct IClass *cl, Object * obj, struct opSet *msg)
 {
     struct MUI_SliderData *data;
     struct TagItem *tags, *tag;
-    ULONG flags = 0;
+    ULONG flags = SLIDER_HORIZ;
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
