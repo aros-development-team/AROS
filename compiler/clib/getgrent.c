@@ -5,9 +5,9 @@
 
 #include <grp.h>
 
-struct group *getgrgid(gid_t gid)
+struct group *getgrent()
 {
-    #warning Implement getgrgid()
+    #warning Implement getgrent()
     
     return NULL;
 }
