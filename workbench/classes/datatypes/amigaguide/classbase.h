@@ -212,7 +212,7 @@ struct ClassBase
    USERCLASSBASEDATA
 };
 
-#define SysBase                 cb->cb_SysBase
+#define SysBase                 ((struct ExecBase *)cb->cb_SysBase)
 #define UtilityBase             cb->cb_UtilityBase
 #define IntuitionBase           cb->cb_IntuitionBase
 
