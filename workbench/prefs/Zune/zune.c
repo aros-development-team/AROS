@@ -30,6 +30,7 @@
 #include "groupsp.h"
 #include "windowp.h"
 #include "cyclesp.h"
+#include "slidersp.h"
 #include "zunestuff.h"
 
 struct Library *MUIMasterBase;
@@ -262,6 +263,7 @@ struct page_entry main_page_entries[] =
     {"Groups",NULL,NULL,&_MUIP_Groups_desc},
     {"Buttons",NULL,NULL,&_MUIP_Buttons_desc},
     {"Cycles",NULL,NULL,&_MUIP_Cycles_desc},
+    {"Sliders",NULL,NULL,&_MUIP_Sliders_desc},
     {NULL,NULL,NULL,NULL},
 };
 
