@@ -18,17 +18,17 @@ void HTML_InitParse (void)
 {
     HTMLAmpDB = Hash_New ();
 
-    Hash_Store (HTMLAmpDB, "lt", "<");
-    Hash_Store (HTMLAmpDB, "gt", ">");
-    Hash_Store (HTMLAmpDB, "amp", "&");
-    Hash_Store (HTMLAmpDB, "quot", "\"");
-    Hash_Store (HTMLAmpDB, "auml", "ä");
-    Hash_Store (HTMLAmpDB, "ouml", "ö");
-    Hash_Store (HTMLAmpDB, "uuml", "ü");
-    Hash_Store (HTMLAmpDB, "Auml", "ä");
-    Hash_Store (HTMLAmpDB, "Ouml", "ö");
-    Hash_Store (HTMLAmpDB, "Uuml", "ü");
-    Hash_Store (HTMLAmpDB, "sz", "ß");
+    Hash_StoreNC (HTMLAmpDB, "lt", "<");
+    Hash_StoreNC (HTMLAmpDB, "gt", ">");
+    Hash_StoreNC (HTMLAmpDB, "amp", "&");
+    Hash_StoreNC (HTMLAmpDB, "quot", "\"");
+    Hash_StoreNC (HTMLAmpDB, "auml", "ä");
+    Hash_StoreNC (HTMLAmpDB, "ouml", "ö");
+    Hash_StoreNC (HTMLAmpDB, "uuml", "ü");
+    Hash_StoreNC (HTMLAmpDB, "Auml", "ä");
+    Hash_StoreNC (HTMLAmpDB, "Ouml", "ö");
+    Hash_StoreNC (HTMLAmpDB, "Uuml", "ü");
+    Hash_StoreNC (HTMLAmpDB, "sz", "ß");
 }
 
 static int
@@ -42,7 +42,7 @@ HTML_ScanAmp (String buffer, MyStream * stream, CBD data)
 
     if (c == EOF)
     {
-	PushError ("Unexpected EOF while parsing &");
+	Str_PushError (stream, "Unexpected EOF while parsing &");
 	return T_ERROR;
     }
     else if (c == '#')
@@ -53,7 +53,7 @@ HTML_ScanAmp (String buffer, MyStream * stream, CBD data)
 	if (c == EOF)
 	{
 err_amphash:
-	    PushError ("Unexpected EOF while parsing &#");
+	    Str_PushError (stream, "Unexpected EOF while parsing &#");
 	    return T_ERROR;
 	}
 	val = hexval (c);
@@ -64,7 +64,7 @@ err_amphash:
 	c = Str_Get (stream, data);
 	if (c != ';')
 	{
-	    PushError ("Missing ; after &#");
+	    Str_PushError (stream, "Missing ; after &#");
 	    return T_ERROR;
 	}
 
@@ -75,38 +75,46 @@ err_amphash:
 	String str2 = VS_New (NULL);
 	char * ptr;
 
+	VS_AppendChar (str2, c);
+
 	while ((c = Str_Get (stream, data)) != EOF)
 	{
 	    if (c == ';')
 		break;
 	    else if (str2->len > 10)
 	    {
-		PushError ("Unknown &-sequence: \"%s...\"", str2->buffer);
+		Str_PushError (stream, "Unknown &-sequence: \"%s...\"", str2->buffer);
 		return T_ERROR;
 	    }
 
 	    VS_AppendChar (str2, c);
 	}
 
-	ptr = Hash_Find (HTMLAmpDB, str2->buffer);
-
-	VS_Delete (str2);
+	ptr = Hash_FindNC (HTMLAmpDB, str2->buffer);
 
 	if (!ptr)
 	{
-	    PushError ("Unknown &-sequence: \"%s\"", str2->buffer);
+	    Str_PushError (stream, "Unknown &-sequence: \"%s\"", str2->buffer);
+	    VS_Delete (str2);
 	    return T_ERROR;
 	}
 
+	VS_Delete (str2);
 	VS_AppendString (buffer, ptr);
     }
 
     return T_OK;
 }
 
-int HTML_ScanText (String buffer, MyStream * stream, CBD data)
+int
+HTML_ScanText (String buffer, MyStream * stream, CBD data)
 {
-    int c, mode;
+    int    c, mode;
+    int    line;
+    char * ptr;
+
+again:
+    line = Str_GetLine (stream);
 
     VS_Clear (buffer);
 
@@ -127,7 +135,8 @@ int HTML_ScanText (String buffer, MyStream * stream, CBD data)
 
 	if (c == EOF)
 	{
-	    PushError ("Unexpected EOF while parsing HTML tag");
+	    Str_SetLine (stream, line);
+	    Str_PushError (stream, "Unexpected EOF while parsing HTML tag");
 	    return T_ERROR;
 	}
 
@@ -145,11 +154,46 @@ beginOfTag:
 
 	if (c != '>')
 	{
-	    PushError ("Unexpected EOF while parsing HTML tag");
+	    Str_SetLine (stream, line);
+	    Str_PushError (stream, "Unexpected EOF while parsing HTML tag");
 	    return T_ERROR;
 	}
 
 /* printf ("Tag=\"%s\"\n", buffer->buffer); */
+
+	for (ptr=buffer->buffer; *ptr; ptr++)
+	{
+	    if (!isspace (*ptr))
+	    {
+		if (!strncasecmp (ptr, "REM", 3))
+		{
+		    ptr += 3;
+
+		    while (isspace (*ptr)) ptr ++;
+
+		    if (*ptr)
+			goto again;
+		    else
+		    {
+			String rem = HTML_ReadBody (stream, data, "REM", 1);
+
+			if (rem)
+			{
+			    VS_Delete (rem);
+			    goto again;
+			}
+			else
+			{
+			    Str_SetLine (stream, line);
+			    Str_PushError (stream, "Unexpected EOF while reading comment");
+			}
+		    }
+		}
+
+		break;
+	    }
+	}
+
 
 	return T_HTML_TAG;
     }
@@ -163,6 +207,7 @@ beginOfTag:
 	    Str_Unget (stream, c, data);
 	    break;
 	}
+#if 0
 	else if (c == '&')
 	{
 	    String str = VS_New (NULL);
@@ -177,6 +222,7 @@ beginOfTag:
 
 	    VS_Delete (str);
 	}
+#endif
 	else
 	    VS_AppendChar (buffer, c);
     }
@@ -215,7 +261,7 @@ HTML_ParseTag (MyStream * stream, CBD data)
 
     if (!str->len)
     {
-	PushError ("Unexpected EOF while parsing HTML tag name");
+	Str_PushError (stream, "Unexpected EOF while parsing HTML tag name");
 	return NULL;
     }
 
@@ -256,7 +302,7 @@ HTML_ParseTag (MyStream * stream, CBD data)
 
 		    if (rc == T_ERROR)
 		    {
-			PushError ("HTML_ParseTag() failed");
+			Str_PushError (stream, "HTML_ParseTag() failed");
 			return NULL;
 		    }
 
@@ -339,6 +385,7 @@ HTML_ReadBody (MyStream * stream, CBD data, const char * name, int allowNest)
     int    paren = 0;
     int    c;
     int    mode;
+    int    line = Str_GetLine (stream);
 
     mode = 0;
 
@@ -361,7 +408,7 @@ HTML_ReadBody (MyStream * stream, CBD data, const char * name, int allowNest)
 	    {
 		if (!allowNest)
 		{
-		    PushError ("HTML tag %s: Nested %s", name, name);
+		    Str_PushError (stream, "HTML tag %s: Nested %s", name, name);
 		    VS_Delete (str);
 		    return NULL;
 		}
@@ -388,6 +435,14 @@ HTML_ReadBody (MyStream * stream, CBD data, const char * name, int allowNest)
 	}
 
 	VS_AppendChar (str, c);
+    }
+
+    if (level)
+    {
+	Str_SetLine (stream, line);
+	Str_PushError (stream, "Unexpected EOF while reading body of %s\n", name);
+	VS_Delete (str);
+	return NULL;
     }
 
     return str;
@@ -435,7 +490,7 @@ void main (int argc, char ** argv)
 		    break;
 
 		case T_ERROR:
-		    PushError ("%s:%d:", Str_GetName (ss), Str_GetLine (ss));
+		    Str_PushError (ss, "Error in HTML_ScanText()");
 		    PrintErrorStack ();
 		    break;
 		}
