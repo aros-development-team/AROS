@@ -660,11 +660,18 @@ aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
 # Find the tools that we need for the target - this could be quite
 # expensive, but we shall try it anyway.
 # AROS_TOOL_CC(TARGET_CC,$aros_target_cc)
+# AROS_TOOL_CC(TARGET_AS,$aros_target_as)
+# AROS_TOOL_CC(STATIC_LD,$aros_static_ld)
+
 TARGET_CC="${TOPDIR}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc"
+TARGET_AS=$TARGET_CC
+STATIC_LD=$TARGET_CC
+
 AC_SUBST(TARGET_CC)
-AROS_TOOL_CC(TARGET_AS,$aros_target_as)
+AC_SUBST(TARGET_AS)
+AC_SUBST(STATIC_LD)
+
 AROS_TOOL_CC(SHARED_LD,$aros_shared_ld)
-AROS_TOOL_CC(STATIC_LD,$aros_static_ld)
 AROS_TOOL_CC(KERNEL_LD,$aros_kernel_ld)
 
 AROS_TOOL(AR,$aros_target_ar,$aros_target_ar_flags)

@@ -2633,55 +2633,22 @@ aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
 # Find the tools that we need for the target - this could be quite
 # expensive, but we shall try it anyway.
 # AROS_TOOL_CC(TARGET_CC,$aros_target_cc)
+# AROS_TOOL_CC(TARGET_AS,$aros_target_as)
+# AROS_TOOL_CC(STATIC_LD,$aros_static_ld)
+
 TARGET_CC="${TOPDIR}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc"
+TARGET_AS=$TARGET_CC
+STATIC_LD=$TARGET_CC
 
-if test "$cross_compile" = "yes" ; then
-    # Extract the first word of "$aros_target_as", so it can be a program name with args.
-set dummy $aros_target_as; ac_word=$2
-echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2643: checking for $ac_word" >&5
-if eval "test \"`echo '$''{'ac_cv_path_TARGET_AS'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  case "$TARGET_AS" in
-  /*)
-  ac_cv_path_TARGET_AS="$TARGET_AS" # Let the user override the test with a path.
-  ;;
-  ?:/*)			 
-  ac_cv_path_TARGET_AS="$TARGET_AS" # Let the user override the test with a dos path.
-  ;;
-  *)
-  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
-  ac_dummy="$PATH"
-  for ac_dir in $ac_dummy; do 
-    test -z "$ac_dir" && ac_dir=.
-    if test -f $ac_dir/$ac_word; then
-      ac_cv_path_TARGET_AS="$ac_dir/$ac_word"
-      break
-    fi
-  done
-  IFS="$ac_save_ifs"
-  test -z "$ac_cv_path_TARGET_AS" && ac_cv_path_TARGET_AS="$aros_target_as"
-  ;;
-esac
-fi
-TARGET_AS="$ac_cv_path_TARGET_AS"
-if test -n "$TARGET_AS"; then
-  echo "$ac_t""$TARGET_AS" 1>&6
-else
-  echo "$ac_t""no" 1>&6
-fi
 
-else
-    TARGET_AS="$aros_target_as"
-fi
+
 
 
 if test "$cross_compile" = "yes" ; then
     # Extract the first word of "$aros_shared_ld", so it can be a program name with args.
 set dummy $aros_shared_ld; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2685: checking for $ac_word" >&5
+echo "configure:2652: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_SHARED_LD'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2720,52 +2687,10 @@ fi
 
 
 if test "$cross_compile" = "yes" ; then
-    # Extract the first word of "$aros_static_ld", so it can be a program name with args.
-set dummy $aros_static_ld; ac_word=$2
-echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2727: checking for $ac_word" >&5
-if eval "test \"`echo '$''{'ac_cv_path_STATIC_LD'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  case "$STATIC_LD" in
-  /*)
-  ac_cv_path_STATIC_LD="$STATIC_LD" # Let the user override the test with a path.
-  ;;
-  ?:/*)			 
-  ac_cv_path_STATIC_LD="$STATIC_LD" # Let the user override the test with a dos path.
-  ;;
-  *)
-  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
-  ac_dummy="$PATH"
-  for ac_dir in $ac_dummy; do 
-    test -z "$ac_dir" && ac_dir=.
-    if test -f $ac_dir/$ac_word; then
-      ac_cv_path_STATIC_LD="$ac_dir/$ac_word"
-      break
-    fi
-  done
-  IFS="$ac_save_ifs"
-  test -z "$ac_cv_path_STATIC_LD" && ac_cv_path_STATIC_LD="$aros_static_ld"
-  ;;
-esac
-fi
-STATIC_LD="$ac_cv_path_STATIC_LD"
-if test -n "$STATIC_LD"; then
-  echo "$ac_t""$STATIC_LD" 1>&6
-else
-  echo "$ac_t""no" 1>&6
-fi
-
-else
-    STATIC_LD="$aros_static_ld"
-fi
-
-
-if test "$cross_compile" = "yes" ; then
     # Extract the first word of "$aros_kernel_ld", so it can be a program name with args.
 set dummy $aros_kernel_ld; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2769: checking for $ac_word" >&5
+echo "configure:2694: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_KERNEL_LD'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2807,7 +2732,7 @@ fi
 # Extract the first word of "$aros_target_ar", so it can be a program name with args.
 set dummy $aros_target_ar; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2811: checking for $ac_word" >&5
+echo "configure:2736: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_AR'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2845,7 +2770,7 @@ AR="$AR $aros_target_ar_flags"
 # Extract the first word of "$aros_target_ranlib", so it can be a program name with args.
 set dummy $aros_target_ranlib; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2849: checking for $ac_word" >&5
+echo "configure:2774: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_RANLIB'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2883,7 +2808,7 @@ RANLIB="$RANLIB $aros_target_ranlib_flags"
 # Extract the first word of "$aros_target_nm", so it can be a program name with args.
 set dummy $aros_target_nm; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2887: checking for $ac_word" >&5
+echo "configure:2812: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_NM'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2921,7 +2846,7 @@ NM="$NM $aros_target_nm_flags"
 # Extract the first word of "$aros_target_nm", so it can be a program name with args.
 set dummy $aros_target_nm; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2925: checking for $ac_word" >&5
+echo "configure:2850: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_NM_PLAIN'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2959,7 +2884,7 @@ fi
 # Extract the first word of "$aros_target_strip", so it can be a program name with args.
 set dummy $aros_target_strip; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2963: checking for $ac_word" >&5
+echo "configure:2888: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_STRIP'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2997,7 +2922,7 @@ STRIP="$STRIP $aros_target_strip_flags"
 # Extract the first word of "$aros_target_objdump", so it can be a program name with args.
 set dummy $aros_target_objdump; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:3001: checking for $ac_word" >&5
+echo "configure:2926: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_OBJDUMP'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -3035,7 +2960,7 @@ fi
 # Extract the first word of "$aros_target_objcopy", so it can be a program name with args.
 set dummy $aros_target_objcopy; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:3039: checking for $ac_word" >&5
+echo "configure:2964: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_OBJCOPY'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -3075,7 +3000,7 @@ fi
 # Extract the first word of "sdl-config", so it can be a program name with args.
 set dummy sdl-config; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:3079: checking for $ac_word" >&5
+echo "configure:3004: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_SDL_CONFIG'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -3118,7 +3043,7 @@ else
 fi
 
 echo $ac_n "checking whether to use SDL""... $ac_c" 1>&6
-echo "configure:3122: checking whether to use SDL" >&5
+echo "configure:3047: checking whether to use SDL" >&5
 # Check whether --with-sdl or --without-sdl was given.
 if test "${with_sdl+set}" = set; then
   withval="$with_sdl"
@@ -3140,7 +3065,7 @@ echo "$ac_t""$with_sdl" 1>&6
 HAVE_XSHM_SUPPORT=0
 if [ "x$no_x" != "xyes" -a "x$ac_cv_header_sys_ipc_h" = "xyes" -a "x$ac_cv_header_sys_shm_h" = "xyes" ]; then
   echo $ac_n "checking whether the X11 MIT-SHM extension can be compiled in""... $ac_c" 1>&6
-echo "configure:3144: checking whether the X11 MIT-SHM extension can be compiled in" >&5
+echo "configure:3069: checking whether the X11 MIT-SHM extension can be compiled in" >&5
   if test -z "$x_includes" ; then
     CFLAGS=""
   else
@@ -3148,7 +3073,7 @@ echo "configure:3144: checking whether the X11 MIT-SHM extension can be compiled
   fi
   LIBS="-L/usr/X11/lib -L/usr/X11R6/lib -lX11 -lXext"
   cat > conftest.$ac_ext <<EOF
-#line 3152 "configure"
+#line 3077 "configure"
 #include "confdefs.h"
 
 #include <sys/types.h>
@@ -3169,7 +3094,7 @@ shmctl(shminfo.shmid, IPC_RMID, 0);
 
 ; return 0; }
 EOF
-if { (eval echo configure:3173: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:3098: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   HAVE_XSHM_SUPPORT=1
 echo "$ac_t""yes" 1>&6
@@ -3198,14 +3123,14 @@ fi
 
 
 echo $ac_n "checking for the target compiler's include path""... $ac_c" 1>&6
-echo "configure:3202: checking for the target compiler's include path" >&5
+echo "configure:3127: checking for the target compiler's include path" >&5
 if test "$aros_target_cc_includes" = "" ; then
     aros_target_cc_includes=`dirname \`${aros_target_cc} -print-libgcc-file-name\``/include
 fi
 echo "$ac_t"""$aros_target_cc_includes"" 1>&6
 
 echo $ac_n "checking for default resolution of WBScreen""... $ac_c" 1>&6
-echo "configure:3209: checking for default resolution of WBScreen" >&5
+echo "configure:3134: checking for default resolution of WBScreen" >&5
 # Check whether --with-resolution or --without-resolution was given.
 if test "${with_resolution+set}" = set; then
   withval="$with_resolution"
@@ -3232,7 +3157,7 @@ aros_cv_default_wbheight=$aros_default_wbheight
 aros_cv_default_wbdepth=$aros_default_wbdepth
 
 echo $ac_n "checking if bochs hack is enabled""... $ac_c" 1>&6
-echo "configure:3236: checking if bochs hack is enabled" >&5
+echo "configure:3161: checking if bochs hack is enabled" >&5
 # Check whether --enable-bochs_hack or --disable-bochs_hack was given.
 if test "${enable_bochs_hack+set}" = set; then
   enableval="$enable_bochs_hack"
@@ -3247,7 +3172,7 @@ fi
 echo "$ac_t"""$bochs_hack"" 1>&6
 
 echo $ac_n "checking if serial debug is enabled""... $ac_c" 1>&6
-echo "configure:3251: checking if serial debug is enabled" >&5
+echo "configure:3176: checking if serial debug is enabled" >&5
 # Check whether --with-serial-debug or --without-serial-debug was given.
 if test "${with_serial_debug+set}" = set; then
   withval="$with_serial_debug"
@@ -3270,7 +3195,7 @@ else
 fi
 
 echo $ac_n "checking if palm debug hack is enabled""... $ac_c" 1>&6
-echo "configure:3274: checking if palm debug hack is enabled" >&5
+echo "configure:3199: checking if palm debug hack is enabled" >&5
 # Check whether --enable-palm_debug_hack or --disable-palm_debug_hack was given.
 if test "${enable_palm_debug_hack+set}" = set; then
   enableval="$enable_palm_debug_hack"
@@ -3286,7 +3211,7 @@ echo "$ac_t"""$palm_debug_hack"" 1>&6
 
 
 echo $ac_n "checking if nesting supervisor support is enabled""... $ac_c" 1>&6
-echo "configure:3290: checking if nesting supervisor support is enabled" >&5
+echo "configure:3215: checking if nesting supervisor support is enabled" >&5
 # Check whether --enable-nesting_supervisor or --disable-nesting_supervisor was given.
 if test "${enable_nesting_supervisor+set}" = set; then
   enableval="$enable_nesting_supervisor"
@@ -3302,7 +3227,7 @@ echo "$ac_t"""$nesting_supervisor"" 1>&6
 
 
 echo $ac_n "checking if mungwall debug is enabled""... $ac_c" 1>&6
-echo "configure:3306: checking if mungwall debug is enabled" >&5
+echo "configure:3231: checking if mungwall debug is enabled" >&5
 # Check whether --enable-mungwall_debug or --disable-mungwall_debug was given.
 if test "${enable_mungwall_debug+set}" = set; then
   enableval="$enable_mungwall_debug"
@@ -3317,7 +3242,7 @@ fi
 echo "$ac_t"""$mungwall_debug"" 1>&6
 
 echo $ac_n "checking if stack debug is enabled""... $ac_c" 1>&6
-echo "configure:3321: checking if stack debug is enabled" >&5
+echo "configure:3246: checking if stack debug is enabled" >&5
 # Check whether --enable-stack_debug or --disable-stack_debug was given.
 if test "${enable_stack_debug+set}" = set; then
   enableval="$enable_stack_debug"
@@ -3332,7 +3257,7 @@ fi
 echo "$ac_t"""$stack_debug"" 1>&6
 
 echo $ac_n "checking if debug modules is enabled""... $ac_c" 1>&6
-echo "configure:3336: checking if debug modules is enabled" >&5
+echo "configure:3261: checking if debug modules is enabled" >&5
 # Check whether --enable-modules_debug or --disable-modules_debug was given.
 if test "${enable_modules_debug+set}" = set; then
   enableval="$enable_modules_debug"
@@ -3347,7 +3272,7 @@ fi
 echo "$ac_t"""$modules_debug"" 1>&6
 
 echo $ac_n "checking if debug is enabled""... $ac_c" 1>&6
-echo "configure:3351: checking if debug is enabled" >&5
+echo "configure:3276: checking if debug is enabled" >&5
 # Check whether --enable-debug or --disable-debug was given.
 if test "${enable_debug+set}" = set; then
   enableval="$enable_debug"
@@ -3362,7 +3287,7 @@ fi
 echo "$ac_t"""$aros_debug"" 1>&6
 
 echo $ac_n "checking if cpak is enabled""... $ac_c" 1>&6
-echo "configure:3366: checking if cpak is enabled" >&5
+echo "configure:3291: checking if cpak is enabled" >&5
 # Check whether --enable-cpak or --disable-cpak was given.
 if test "${enable_cpak+set}" = set; then
   enableval="$enable_cpak"
@@ -3375,7 +3300,7 @@ echo "$ac_t"""$aros_use_cpak"" 1>&6
 
 if test "$HAVE_XSHM_SUPPORT" = "1" ; then
     echo $ac_n "checking if X11 MIT-SHM extension is enabled""... $ac_c" 1>&6
-echo "configure:3379: checking if X11 MIT-SHM extension is enabled" >&5
+echo "configure:3304: checking if X11 MIT-SHM extension is enabled" >&5
   # Check whether --enable-xshm_extension or --disable-xshm_extension was given.
 if test "${enable_xshm_extension+set}" = set; then
   enableval="$enable_xshm_extension"
@@ -3741,8 +3666,8 @@ s%@IF@%$IF%g
 s%@TEST@%$TEST%g
 s%@TARGET_CC@%$TARGET_CC%g
 s%@TARGET_AS@%$TARGET_AS%g
-s%@SHARED_LD@%$SHARED_LD%g
 s%@STATIC_LD@%$STATIC_LD%g
+s%@SHARED_LD@%$SHARED_LD%g
 s%@KERNEL_LD@%$KERNEL_LD%g
 s%@AR@%$AR%g
 s%@RANLIB@%$RANLIB%g
