@@ -1,25 +1,17 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := bootmenu
-MODTYPE := library
-
-USER_INCLUDES := -I. -I$(TOP)/rom/devs
-
-INIT_FILE := bootmenu_init
-
 FILES := \
 	menu \
 	gadgets
 
-FUNCS :=
+#MM- kernel-bootmenu : includes linklibs
 
-USE_ROMLIB := yes
+USER_INCLUDES := -I$(TOP)/rom/devs
 
-#MM- kernel-bootmenu : includes linklibs kernel-bootmenu-module
-%make_module_setup mmake=kernel-bootmenu
-%make_module_cpak
-%make_module mmake=kernel-bootmenu
+%build_module_macro mmake=kernel-bootmenu \
+  modname=bootmenu modtype=library \
+  files=$(FILES) conffile=lib.conf \
+  uselibs=rom
 
 %common
-%include_deps

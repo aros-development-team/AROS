@@ -1,10 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := layers
-MODTYPE := library
-USER_INCLUDES := -I.
-
 FILES	  := basicfuncs movelayerz
 FUNCS := \
 	beginupdate \
@@ -48,21 +44,14 @@ FUNCS := \
 	upfrontlayer \
 	whichlayer
 
-MAKE_SHLIB := $(SHARED_LAYERS)
+#MM- kernel-layers-linklib : kernel-layers-intern-linklib
+#MM kernel-layers-intern-linklib : setup includes kernel-layers-$(ARCH)-$(CPU)
 
-# This metatarget is so that the xxx-module and xxx-linklib both require
-# the same things to be built before running those targets.
-#MM- kernel-layers : includes linklibs
-
-#MM kernel-layers-linklib : setup includes kernel-layers-$(ARCH)-$(CPU)
-kernel-layers-linklib : $(LIB)
-	@$(NOP)
-
-%make_module_setup mmake=kernel-layers
-%make_module_cpak
-%make_module mmake=kernel-layers
-
-%make_lib_includes
+%build_module_macro mmake=kernel-layers-intern \
+  modname=layers modtype=library \
+  funcs=$(FUNCS) files=$(FILES) \
+  conffile=lib.conf \
+  genshlinklib=$(SHARED_LAYERS) \
+  uselibs="amiga rom"
 
 %common
-%include_deps 

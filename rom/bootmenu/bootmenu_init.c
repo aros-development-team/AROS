@@ -16,7 +16,7 @@
 
 #include "bootmenu_intern.h"
 #include "menu.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 #include <libraries/bootmenu.h>
 
 #undef SysBase

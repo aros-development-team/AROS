@@ -12,9 +12,7 @@
 #include <utility/utility.h>
 
 #include "cybergraphics_intern.h"
-#include "libdefs.h"
-
-
+#include LC_LIBDEFS_FILE
 
 #ifdef SysBase
 #   undef SysBase

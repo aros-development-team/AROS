@@ -4,13 +4,6 @@
 #
 include $(TOP)/config/make.cfg
 
-MODNAME := cybergraphics
-MODTYPE := library
-USER_INCLUDES := -I.
-
-INCLUDE_FILES := $(wildcard include/*.h)
-
-FILES := 
 FUNCS := \
 	alloccmodelisttaglist	\
 	bestcmodeidtaglist	\
@@ -32,17 +25,18 @@ FUNCS := \
 	writepixelarray		\
 	writergbpixel		
 
-MAKE_SHLIB := $(SHARED_CGFX)
-
 #MM- kernel-cgfx : includes linklibs
 
-%make_module_setup mmake=kernel-cgfx
-%make_module_cpak
-%make_module mmake=kernel-cgfx
-%make_lib_includes
+%build_module_macro mmake=kernel-cgfx \
+  modname=cybergraphics modtype=library \
+  funcs=$(FUNCS) \
+  conffile=lib.conf \
+  genshlinklib=$(SHARED_CGFX)
 
 #MM includes-copy
+
+INCLUDE_FILES := $(wildcard include/*.h)
+
 %copy_includes path=cybergraphx
 
 %common
-%include_deps

@@ -1,11 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := workbench
-MODTYPE := library
-
-USER_CFLAGS := -I.
-
 FILES := handler support
 FUNCS := \
     addappicona \
@@ -25,13 +20,13 @@ FUNCS := \
     wbinfo \
     workbenchcontrola
 
-MAKE_SHLIB := $(SHARED_WORKBENCH)
-
 #MM- kernel-workbench : includes linklibs
-%make_module_setup mmake=kernel-workbench
-%make_module_cpak
-%make_module mmake=kernel-workbench
-%make_lib_includes
+
+%build_module_macro mmake=kernel-workbench \
+  modname=workbench modtype=library \
+  conffile=lib.conf \
+  funcs=$(FUNCS) files=$(FILES) \
+  uselibs="amiga rom" \
+  genshlinklib=$(SHARED_WORKBENCH)
 
 %common
-%include_deps

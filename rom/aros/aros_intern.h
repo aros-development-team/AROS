@@ -12,7 +12,7 @@
 #include <exec/libraries.h>
 #include <dos/dos.h>
 
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 /*
     This is the ArosBase structure. It is documented here because it is

@@ -14,7 +14,7 @@
 #include <libcore/base.h>
 #include <libraries/bootmenu.h>
 #include "gadgets.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 #define SysBase (((struct LibHeader *)bootmenubase)->lh_SysBase)
 

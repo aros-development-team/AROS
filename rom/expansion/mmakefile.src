@@ -4,11 +4,6 @@
 #
 include $(TOP)/config/make.cfg
 
-MODNAME := expansion
-MODTYPE := library
-USER_INCLUDES := -I.
-
-FILES := 
 FUNCS :=    addbootnode addconfigdev adddosnode allocboardmem \
 	    allocconfigdev allocexpansionmem configboard configchain \
 	    findconfigdev freeboardmem freeconfigdev freeexpansionmem \
@@ -16,16 +11,13 @@ FUNCS :=    addbootnode addconfigdev adddosnode allocboardmem \
 	    readexpansionbyte readexpansionrom releaseconfigbinding \
 	    remconfigdev setcurrentbinding writeexpansionbyte
 
-USE_CLIB := yes
-MAKE_SHLIB := $(SHARED_EXPANSION)
-USE_CPAK := no
-
 #MM- kernel-expansion : includes linklibs
 
-%make_module_setup mmake=kernel-expansion
-%make_module_cpak
-%make_module mmake=kernel-expansion
-%make_lib_includes
+%build_module_macro mmake=kernel-expansion \
+  modname=expansion modtype=library \
+  funcs=$(FUNCS) \
+  conffile=lib.conf usecpak=no \
+  uselibs=arosc_shared \
+  genshlinklib=$(SHARED_EXPANSION)
 
 %common
-%include_deps

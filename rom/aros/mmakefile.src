@@ -4,24 +4,17 @@
 #
 include $(TOP)/config/make.cfg
 
-MODNAME := aros
-MODTYPE := library
-USER_INCLUDES := -I.
-
-FILES := 
-FUNCS := arosinquirea
-
-MAKE_SHLIB := $(SHARED_AROS)
-
 # This metatarget is so that the xxx-module and xxx-linklib both require
 # the same things to be built before running those targets.
 #MM- kernel-aros : includes linklibs
 
-%make_module_setup mmake=kernel-aros
-%make_module_cpak
-%make_module mmake=kernel-aros
+#MM- kernel-aros-includes : setup-clib
+#MM includes-generate : setup-clib
 
-%make_lib_includes
+%build_module_macro mmake=kernel-aros \
+  modname=aros modtype=library \
+  funcs=arosinquirea \
+  conffile=lib.conf \
+  genshlinklib=$(SHARED_AROS)
 
 %common
-%include_deps 
