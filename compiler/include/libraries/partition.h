@@ -1,6 +1,11 @@
 #ifndef PARTITION_H
 #define PARTITION_H
 
+/*
+    Copyright © 2003, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <devices/trackdisk.h>
 #include <dos/filehandler.h>
 #include <exec/lists.h>
@@ -9,41 +14,46 @@
 #include <exec/ports.h>
 #include <libcore/base.h>
 
-struct PartitionTableInfo {
-	ULONG pti_Type;
-	STRPTR pti_Name;
+struct PartitionTableInfo
+{
+    ULONG pti_Type;
+    STRPTR pti_Name;
 };
 
-struct PartitionBlockDevice {
-	struct MsgPort *port;
-	struct IOExtTD *ioreq;
-	ULONG cmdread;
-	ULONG cmdwrite;
+struct PartitionBlockDevice
+{
+    struct MsgPort *port;
+    struct IOExtTD *ioreq;
+    ULONG cmdread;
+    ULONG cmdwrite;
 };
 
-struct PartitionTableHandler {
-	ULONG type;
-	struct List list;   /* list of partitions */
-	void *handler;      /* the handler which handles this partition table */
-	void *data;         /* private field for the table */
+struct PartitionTableHandler
+{
+    ULONG type;
+    struct List list;   /* list of partitions */
+    void *handler;      /* the handler which handles this partition table */
+    void *data;         /* private field for the table */
 };
 
-struct PartitionHandle {
-	struct Node ln;
-	struct PartitionHandle *root;    /* root partition handle */
-	struct PartitionBlockDevice *bd; /* block device info */
-	ULONG flags;
-	struct PartitionTableHandler *table;
-	void *data;                      /* a private field for the partition */
-	struct DriveGeometry dg;         /* geometry of whole partition */
-	struct DosEnvec de;              /* info about HD/partition including */
+struct PartitionHandle
+{
+    struct Node ln;
+    struct PartitionHandle *root;    /* root partition handle */
+    struct PartitionBlockDevice *bd; /* block device info */
+    ULONG flags;
+    struct PartitionTableHandler *table;
+    void *data;                      /* a private field for the partition */
+    struct DriveGeometry dg;         /* geometry of whole partition */
+    struct DosEnvec de;              /* info about HD/partition including */
                                     /* position within root->dg */
                                     /* (de_Surfaces==root->dg.Heads,...!!!) */
 };
 
-struct PartitionType {
-	UBYTE id[32];
-	UWORD id_len;
+struct PartitionType
+{
+    UBYTE id[32];
+    UWORD id_len;
 };
 
 /* partition table types */
@@ -76,9 +86,10 @@ struct PartitionType {
 
 /* Attributes */
 
-struct PartitionAttribute {
-	ULONG attribute;
-	ULONG mode;
+struct PartitionAttribute
+{
+    ULONG attribute;
+    ULONG mode;
 };
 
 /* are attributes readable/writeable */
@@ -103,10 +114,10 @@ struct PartitionAttribute {
 #define PTA_BOOTABLE        104 /* bootable flag support */
 #define PTA_AUTOMOUNT 105
 
-struct PartitionBase {
-	struct LibHeader lh;
-	struct PartitionTableInfo **tables;
+struct PartitionBase
+{
+    struct LibHeader lh;
+    struct PartitionTableInfo **tables;
 };
 
 #endif /* PARTITION_H */
-
