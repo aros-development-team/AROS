@@ -289,7 +289,7 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 
                 /* Step through the text buffer */
                 for (i = offset = num = numtabs = 0;
-                     (i <= bufferlen) && (bsig == 0) && !abort;
+                     (i < bufferlen) && (bsig == 0) && !abort;
                      i++)
                 {
 		    /* Check for end of line */
@@ -328,6 +328,8 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 			num++;
 		    }
 
+    	    	    if (i == bufferlen - 1) newseg = TRUE;
+		    
 		    /* Time for a new text segment yet? */
 		    if (newseg)
 		    {
@@ -349,7 +351,7 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 
 			    linelength = line->ln_Width + line->ln_XOffset;
 			    if (linelength > max_linelength) max_linelength = linelength;
-			    
+			    			    
 			    /* Add the line to the list */
 			    AddTail(linelist, (struct Node *) line);
 
