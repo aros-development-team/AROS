@@ -113,6 +113,7 @@
     BOOL ces_opened    = FALSE;
     BOOL isBoot        = FALSE;
     BOOL isBackground;
+    BOOL isAsynch;
     LONG rc = -1;
 
     struct TagItem *newtags;
@@ -187,6 +188,8 @@
     }
 
     isBackground = GetTagData(SYS_Background, TRUE, tags);
+    isAsynch     = GetTagData(SYS_Asynch, FALSE, tags);
+
 
     newtags = CloneTagItems(tags);
     if (newtags)
@@ -194,7 +197,6 @@
 	struct CliStartupMessage csm;
 	struct Process *me       = (struct Process *)FindTask(NULL);
 	struct Process *cliproc;
-	BOOL            isAsynch = GetTagData(SYS_Asynch, FALSE, tags);
 
 	struct TagItem proctags[] =
 	{
@@ -236,7 +238,6 @@
 	    NP_Cli,
 	    NULL
 	};
-
 
 	FilterTagItems(newtags, filterList, TAGFILTER_NOT);
 
