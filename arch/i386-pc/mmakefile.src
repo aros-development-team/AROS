@@ -49,7 +49,6 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-devs-native			\
 #MM	kernel-filesys				\
 #MM	kernel-graphics-linklib			\
-#MM	graphics-gfxhidd			\
 #MM	kernel-graphics-native-i386 		\
 #MM	kernel-intuition-native			\
 #MM	kernel-cgfx-native-i386			\
