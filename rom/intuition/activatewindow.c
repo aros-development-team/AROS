@@ -7,6 +7,9 @@
 */
 #include "intuition_intern.h"
 
+/*  # define DEBUG 1 */
+/*  # include <aros/debug.h> */
+
 /*****************************************************************************
 
     NAME */
@@ -89,7 +92,26 @@ VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBa
     }
     
     UnlockIBase(lock);
-    
+    if (window)
+    {
+/*  	D(bug("int_activatewindow %x : setting title to %s, screen=%x\n", */
+/*  	      window, window->ScreenTitle, window->WScreen)); */
+	window->WScreen->Title = window->ScreenTitle;
+	RenderScreenBar(window->WScreen, FALSE, IntuitionBase);
+    }
+    else
+    {
+	struct Screen *scr;
+	lock = LockIBase(0UL);
+	scr = IntuitionBase->ActiveScreen;
+	UnlockIBase(lock);
+	if (scr)
+	{
+	    scr->Title = scr->DefaultTitle;
+	    RenderScreenBar(scr, FALSE, IntuitionBase);
+	}
+    }
+
     if (oldactive && oldactive != window)
     {
         Forbid();
@@ -98,7 +120,6 @@ VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBa
 	
 	RefreshWindowFrame(oldactive);
     }    
-
     
     if (window) RefreshWindowFrame(window);
 }
