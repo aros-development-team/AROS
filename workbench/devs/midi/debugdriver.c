@@ -119,7 +119,16 @@ APTR UserData[NUMPORTS];
 SAVEDS ASM void ActivateXmit(ULONG REG(d0) portnum){
   ULONG data;
   for(;;){
+
+    /* Its problably not the common case to call the TransmitFunc
+       directly from ActivateXmit, so its not ensured that
+       we are single-threaded per port. And its no big point using
+       NUMPORTS number of semaphores for a debugdriver either, therefore
+       Forbid/Permit. */
+    Forbid();
     data=(TransmitFunc)(UserData[portnum-1]);
+    Permit();
+
     if(data==0x100) return;
     kprintf("Debugdriver has received: %lx at port %ld\n",data,portnum);
   }
