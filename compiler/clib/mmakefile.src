@@ -99,7 +99,10 @@ FILES := \
 	rewind \
 	scanf \
 	seed48 \
+	setbuf \
 	setenv \
+	setlinebuf \
+	setvbuf \
 	snprintf \
 	sprintf \
 	srand48 \
