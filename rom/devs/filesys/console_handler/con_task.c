@@ -894,9 +894,9 @@ VOID conTaskEntry(struct conTaskParams *param)
     FreeMem(fh->conreadmp, sizeof (struct MsgPort) * 3);
 
     if (fh->screentitle) FreeVec(fh->screentitle);
+    if (fh->wintitle) FreeVec(fh->wintitle);
 
     FreeMem(fh, sizeof (struct filehandle));
-    if (fh->wintitle) FreeVec(fh->wintitle);
         
     /* let's kill ourselves */
     RemTask(FindTask(NULL));
