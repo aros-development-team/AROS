@@ -120,6 +120,8 @@ class Archive:
 
 	if self.libs.has_key (lib.name):
 	    lib = self.libs[lib.name]
+	else:
+	    self.libs[lib.name] = lib
 
 	func = None
 
@@ -166,6 +168,7 @@ class Archive:
 		    currentsection = ''
 		elif line[:7] == '#Header':
 		    mode = 'readinc'
+		    isLocal = 0
 		    header = []
 		elif line[:5] == '#Code':
 		    mode = 'readcode'
@@ -182,7 +185,6 @@ class Archive:
 		else:
 		    func.code = func.code + line + '\n'
 	    elif mode == 'readinc':
-		isLocal = 0
 		if line[:8] == '#/Header':
 		    mode = 'searchheader'
 		elif line[:6] == '#Local':
