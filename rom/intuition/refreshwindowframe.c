@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  1998/12/31 19:35:39  nlorentz
+    "Implemented" function (Just calls driver)
+
     Revision 1.7  1998/10/20 20:08:04  nlorentz
     Fixed lots of errors due to aros_not_implemented()
 
@@ -67,9 +70,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/RefreshWindowFrame()
-    aros_print_not_implemented ("RefreshWindowFrame");
-
+    intui_RefreshWindowFrame(window);
     return;
 
     AROS_LIBFUNC_EXIT
