@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Set CLI command
-    Lang: English
+    Set CLI command.
 */
 
 /*****************************************************************************
@@ -56,10 +55,6 @@
         Get, Unset
 
     INTERNALS
-
-    HISTORY
-
-        30-Jul-1997     laguest     Initial inclusion into the AROS tree
 
 ******************************************************************************/
 
@@ -119,9 +114,7 @@ AROS_SHA(STRPTR, ,STRING, /F, NULL))
     {
 	SetProc = (struct Process *)FindTask(NULL);
 
-	ForeachNode((struct List *)&(SetProc->pr_LocalVars),
-                    (struct Node *)SetNode
-        )
+	ForeachNode(&(SetProc->pr_LocalVars), SetNode)
         {
             if (SetNode->lv_Node.ln_Type == LV_VAR)
             {
