@@ -430,7 +430,7 @@ dos00033;2;SDuvan,bergers;Write DoPkt
 dos00034;1;SDuvan;Write SendPkt
 dos00035;1;SDuvan;Write WaitPkt
 dos00036;1;SDuvan;Write ReplyPkt
-dos00037;1;SDuvan;Write AbortPkt
+dos00037;2;SDuvan,bergers;Write AbortPkt
 dos00038;2;SDuvan;Write LockRecord
 dos00039;2;bergers,SDuvan;Write LockRecords
 dos00040;2;SDuvan;Write UnLockRecord
