@@ -11,13 +11,13 @@
     NAME */
 	#include <clib/exec_protos.h>
 
-	AROS_LH1(ULONG, ObtainQuickVector,
+	AROS_LH1(struct Resident *, FindResident,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, interruptCode, A0),
+	AROS_LHA(UBYTE *, name, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 131, Exec)
+	struct ExecBase *, SysBase, 16, Exec)
 
 /*  FUNCTION
 
@@ -44,8 +44,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
-    aros_print_not_implemented ("ObtainQuickVector");
+    aros_print_not_implemented ("FindResident");
 
-    return 0L;
+    return NULL;
     AROS_LIBFUNC_EXIT
-} /* ObtainQuickVector */
+} /* FindResident */

@@ -11,13 +11,13 @@
     NAME */
 	#include <clib/exec_protos.h>
 
-	AROS_LH1(ULONG, ObtainQuickVector,
+	AROS_LH0(ULONG, SumKickData,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, interruptCode, A0),
+	/* void */
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 131, Exec)
+	struct ExecBase *, SysBase, 102, Exec)
 
 /*  FUNCTION
 
@@ -44,8 +44,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
-    aros_print_not_implemented ("ObtainQuickVector");
+    aros_print_not_implemented ("SumKickData");
 
     return 0L;
     AROS_LIBFUNC_EXIT
-} /* ObtainQuickVector */
+} /* SumKickData */

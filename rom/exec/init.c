@@ -152,6 +152,11 @@ void _aros_not_implemented (void)
     fprintf (stderr, "This function is not implemented\n");
 }
 
+void aros_print_not_implemented (char * name)
+{
+    fprintf (stderr, "The function %s is not implemented\n", name);
+}
+
 int main(int argc,char *argv[])
 {
     ULONG * space;

@@ -1,41 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.11  1996/12/06 03:58:19  aros
-    Vector shuffle
 
-    Revision 1.10  1996/11/14 08:51:35  aros
-    Some work on the kernel:
-    Mapping of Linux-Signals to AROS interrupts
-    Some documentation to the exec microkernel
-    hopefully all holes plugged now
-
-    Revision 1.9  1996/10/24 15:50:48  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.8  1996/10/23 14:27:37  aros
-    Space/Tab conversion by XDME :-)
-
-    Revision 1.7  1996/10/14 11:17:26  digulla
-    Use AROS_SLIB_ENTRY
-
-    Revision 1.6  1996/10/10 13:22:49  digulla
-    New function: RawPutChar,Exec)()
-
-    Revision 1.5  1996/09/11 16:54:24  digulla
-    Always use AROS_SLIB_ENTRY,Exec)() to access shared external symbols, because
-	some systems name an external symbol "x" as "_x" and others as "x".
-	(The problem arises with assembler symbols which might differ)
-
-    Revision 1.4  1996/08/23 17:07:22  digulla
-    The number of functions is hardcoded in init.c, so it should be the same here.
-
-    Revision 1.3  1996/08/01 17:41:10  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: Exec vector table
+    Lang: english
 */
 #include <aros/libcall.h>
 #ifndef NULL
@@ -151,6 +119,20 @@ void AROS_SLIB_ENTRY(CachePreDMA,Exec)();
 void AROS_SLIB_ENTRY(CachePostDMA,Exec)();
 void AROS_SLIB_ENTRY(AddMemHandler,Exec)();
 void AROS_SLIB_ENTRY(RemMemHandler,Exec)();
+void AROS_SLIB_ENTRY(InitCode,Exec)();
+void AROS_SLIB_ENTRY(FindResident,Exec)();
+void AROS_SLIB_ENTRY(Debug,Exec)();
+void AROS_SLIB_ENTRY(Cause,Exec)();
+void AROS_SLIB_ENTRY(AllocTrap,Exec)();
+void AROS_SLIB_ENTRY(FreeTrap,Exec)();
+void AROS_SLIB_ENTRY(GetCC,Exec)();
+void AROS_SLIB_ENTRY(SumKickData,Exec)();
+void AROS_SLIB_ENTRY(ColdReboot,Exec)();
+void AROS_SLIB_ENTRY(ChildFree,Exec)();
+void AROS_SLIB_ENTRY(ChildOrphan,Exec)();
+void AROS_SLIB_ENTRY(ChildStatus,Exec)();
+void AROS_SLIB_ENTRY(ChildWait,Exec)();
+void AROS_SLIB_ENTRY(ObtainQuickVector,Exec)();
 
 void *ExecFunctions[131]=
 {
@@ -165,14 +147,14 @@ void *ExecFunctions[131]=
 	&AROS_SLIB_ENTRY(Switch,Exec),
 /* 10 */&AROS_SLIB_ENTRY(Dispatch,Exec),
 	&AROS_SLIB_ENTRY(Exception,Exec),
-	NULL,		/* InitCode */
+	&AROS_SLIB_ENTRY(InitCode,Exec),
 	&AROS_SLIB_ENTRY(InitStruct,Exec),
 	&AROS_SLIB_ENTRY(MakeLibrary,Exec),
 	&AROS_SLIB_ENTRY(MakeFunctions,Exec),
-	NULL,		/* FindResident */
+	&AROS_SLIB_ENTRY(FindResident,Exec),
 	&AROS_SLIB_ENTRY(InitResident,Exec),
 	&AROS_SLIB_ENTRY(Alert,Exec),
-	NULL,		/* Debug */
+	&AROS_SLIB_ENTRY(Debug,Exec),
 /* 20 */&AROS_SLIB_ENTRY(Disable,Exec),
 	&AROS_SLIB_ENTRY(Enable,Exec),
 	&AROS_SLIB_ENTRY(Forbid,Exec),
@@ -183,7 +165,7 @@ void *ExecFunctions[131]=
 	&AROS_SLIB_ENTRY(SetIntVector,Exec),
 	&AROS_SLIB_ENTRY(AddIntServer,Exec),
 	&AROS_SLIB_ENTRY(RemIntServer,Exec),
-/* 30 */NULL,		/* Cause */
+/* 30 */&AROS_SLIB_ENTRY(Cause,Exec),
 	&AROS_SLIB_ENTRY(Allocate,Exec),
 	&AROS_SLIB_ENTRY(Deallocate,Exec),
 	&AROS_SLIB_ENTRY(AllocMem,Exec),
@@ -210,8 +192,8 @@ void *ExecFunctions[131]=
 	&AROS_SLIB_ENTRY(Signal,Exec),
 	&AROS_SLIB_ENTRY(AllocSignal,Exec),
 	&AROS_SLIB_ENTRY(FreeSignal,Exec),
-	NULL,		/* AllocTrap */
-	NULL,		/* FreeTrap */
+	&AROS_SLIB_ENTRY(AllocTrap,Exec),
+	&AROS_SLIB_ENTRY(FreeTrap,Exec),
 	&AROS_SLIB_ENTRY(AddPort,Exec),
 /* 60 */&AROS_SLIB_ENTRY(RemPort,Exec),
 	&AROS_SLIB_ENTRY(PutMsg,Exec),
@@ -241,7 +223,7 @@ void *ExecFunctions[131]=
 	NULL,		/* Private8 */
 	&AROS_SLIB_ENTRY(RawPutChar,Exec),
 	&AROS_SLIB_ENTRY(RawDoFmt,Exec),
-	NULL,		/* GetCC */
+	&AROS_SLIB_ENTRY(GetCC,Exec),
 	&AROS_SLIB_ENTRY(TypeOfMem,Exec),
 /* 90 */&AROS_SLIB_ENTRY(Procure,Exec),
 	&AROS_SLIB_ENTRY(Vacate,Exec),
@@ -255,7 +237,7 @@ void *ExecFunctions[131]=
 	&AROS_SLIB_ENTRY(FindSemaphore,Exec),
 /*100 */&AROS_SLIB_ENTRY(AddSemaphore,Exec),
 	&AROS_SLIB_ENTRY(RemSemaphore,Exec),
-	NULL,		/* SumKickData */
+	&AROS_SLIB_ENTRY(SumKickData,Exec),
 	&AROS_SLIB_ENTRY(AddMemList,Exec),
 	&AROS_SLIB_ENTRY(CopyMem,Exec),
 	&AROS_SLIB_ENTRY(CopyMemQuick,Exec),
@@ -274,15 +256,15 @@ void *ExecFunctions[131]=
 	&AROS_SLIB_ENTRY(AllocPooled,Exec),
 	&AROS_SLIB_ENTRY(FreePooled,Exec),
 /*120 */&AROS_SLIB_ENTRY(AttemptSemaphoreShared,Exec),
-	NULL,		/* ColdReboot */
+	&AROS_SLIB_ENTRY(ColdReboot,Exec),
 	&AROS_SLIB_ENTRY(StackSwap,Exec),
-	NULL,		/* ChildFree */
-	NULL,		/* ChildOrphan */
-	NULL,		/* ChildStatus */
-	NULL,		/* ChildWait */
+	&AROS_SLIB_ENTRY(ChildFree,Exec),
+	&AROS_SLIB_ENTRY(ChildOrphan,Exec),
+	&AROS_SLIB_ENTRY(ChildStatus,Exec),
+	&AROS_SLIB_ENTRY(ChildWait,Exec),
 	&AROS_SLIB_ENTRY(CachePreDMA,Exec),
 	&AROS_SLIB_ENTRY(CachePostDMA,Exec),
 	&AROS_SLIB_ENTRY(AddMemHandler,Exec),
 /*130 */&AROS_SLIB_ENTRY(RemMemHandler,Exec),
-	NULL		/* ObtainQuickVector */
+	&AROS_SLIB_ENTRY(ObtainQuickVector,Exec)
 };

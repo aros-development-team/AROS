@@ -46,7 +46,9 @@ FUNCTIONS = \
 	checkio abortio waitio \
 	initresident cause \
 	rawputchar addintserver \
-	remintserver setintvector
+	remintserver setintvector \
+	alloctrap childfree childorphan childstatus childwait coldreboot \
+	debug findresident freetrap initcode sumkickdata obtainquickvector
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
