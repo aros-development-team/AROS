@@ -131,8 +131,8 @@ void Cleanup(STRPTR msg)
 	}
     }
     
-    KillGadgets();
     KillWin();
+    KillGadgets();
     KillPages();
     KillMenus();
     FreeVisual();
@@ -446,11 +446,6 @@ static void KillGadgets(void)
 {
     WORD i;
     
-    if (win)
-    {
-    	RemoveGList(win, buttontable[0].gad, NUM_BUTTONS);
-    }
-    
     for(i = 0; i < 3; i++)
     {
     	if (buttontable[i].gad) DisposeObject((Object *)buttontable[i].gad);
@@ -537,7 +532,11 @@ static void KillWin(void)
 {
     pagetable[reg.active].handler(PAGECMD_REMGADGETS, 0);
     
-    if (win) CloseWindow(win);
+    if (win)
+    {
+    	RemoveGList(win, buttontable[0].gad, NUM_BUTTONS);
+    	CloseWindow(win);
+    }
 }
 
 /*********************************************************************************************/
