@@ -840,6 +840,14 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		
 		Signal(am->Task, SIGF_INTUITION);
 		break;
+	    
+	    case AMCODE_NEWPREFS:
+	      /*
+	      ** The preferences were changed and now I need to inform
+	      ** all interested windows about this.
+	      */
+	      notify_newprefs(IntuitionBase);
+	    break;
 	}
 
 	if (TRUE == CheckLayersBehind)

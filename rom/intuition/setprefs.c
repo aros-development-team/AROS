@@ -76,7 +76,7 @@
     }
   }
 
-#warning Is there any further immediate action to be taken when the prefences are update?
+#warning Is there any further immediate action to be taken when the prefences are updated?
 
   return (struct Preferences *) prefbuffer;
 

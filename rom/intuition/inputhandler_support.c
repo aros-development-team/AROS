@@ -66,6 +66,39 @@ void notify_mousemove_screensandwindows(WORD x,
   }
 }
 
+/*********************************************************************
+** All interested windows of all screens will be notified about new 
+** preferences
+*/
+void notify_newprefs(struct IntuitionBase * IntuitionBase)
+{
+  struct Screen * scr = IntuitionBase->FirstScreen;
+  while (NULL != scr)
+  {
+    /* 
+    ** Visit all windows of this screen
+    */
+    struct Window * win = scr->FirstWindow;
+    
+    while (NULL != win)
+    {
+      /*
+      ** Is this window interested?
+      */
+      if (0 != (win->IDCMPFlags & IDCMP_NEWPREFS))
+      {
+        fire_intuimessage(win,
+                          IDCMP_NEWPREFS,
+                          0,
+                          win,
+                          IntuitionBase);
+      }
+      win = win->NextWindow;
+    }
+    scr = scr->NextScreen;
+  }
+}
+
 /*********************************************************************/
 
 void send_intuimessage(struct IntuiMessage *imsg,

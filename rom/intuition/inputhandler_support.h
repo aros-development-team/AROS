@@ -2,6 +2,8 @@ void notify_mousemove_screensandwindows(WORD x,
                                         WORD y, 
                                         struct IntuitionBase * IntuitionBase);
 
+void notify_newprefs(struct IntuitionBase * IntuitionBase);
+
 /*********************************************************************/
 
 void send_intuimessage(struct IntuiMessage *imsg,

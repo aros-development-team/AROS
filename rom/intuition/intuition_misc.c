@@ -29,7 +29,7 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
     DOSBase = OpenLibrary("dos.library",0);
     if (NULL != DOSBase)
     {
-      if (NULL != (pref_file = Open("sys:???",MODE_OLDFILE)))
+      if (NULL != (pref_file = Open("envarc:",MODE_OLDFILE)))
       {
         *
         **  Read it and check whether the file was valid.
@@ -66,8 +66,7 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
             AllocMem(sizeof(struct Preferences),
                      MEMF_CLEAR);
 
-    
-/*Must not call this function because the defereed action port is not initialized, yet
+/*    
     SetPrefs(GetPrivIBase(IntuitionBase)->DefaultPreferences,
              sizeof(struct Preferences),
              TRUE);
