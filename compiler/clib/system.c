@@ -49,7 +49,7 @@
     }
     else
     {
-	return SystemTagList ((char *)string, list);
+	return (UBYTE)SystemTagList ((char *)string, list);
     }
 
 } /* system */
