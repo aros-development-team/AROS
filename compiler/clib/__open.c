@@ -10,11 +10,18 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <exec/memory.h>
 #include <dos/dos.h>
+#include <dos/filesystem.h>
 #include <aros/symbolsets.h>
+
+#include "__errno.h"
+
+
 #include "__open.h"
 
 void *__stdfiles[3];
@@ -71,6 +78,99 @@ int __getfdslot(int wanted_fd)
 
     return wanted_fd;
 }
+
+int __open(int wanted_fd, const char *pathname, int flags, int mode)
+{
+    BPTR fh;
+    int  openmode;
+    fdesc *currdesc;
+
+    /* filter out invalid modes */
+    switch (flags & (O_CREAT|O_TRUNC|O_EXCL))
+    {
+    	case O_EXCL:
+    	case O_EXCL|O_TRUNC:
+            errno = EINVAL;
+            return -1;
+    }
+
+    switch (flags & O_ACCMODE)
+    {
+        case O_RDONLY:
+	    openmode = FMF_READ;
+	    break;
+
+        case O_WRONLY:
+    	    openmode = FMF_WRITE;
+	    break;
+
+    	case O_RDWR:
+	    openmode = FMF_WRITE | FMF_READ;
+	    break;
+
+     	default:
+	    errno = EINVAL;
+	    return -1;
+    }
+
+    if (flags & O_TRUNC) openmode |= FMF_CLEAR;
+    if (flags & O_CREAT) openmode |= FMF_CREATE;
+
+    currdesc = malloc(sizeof(fdesc));
+    if (!currdesc) return -1;
+
+    wanted_fd = __getfdslot(wanted_fd);
+
+    if (wanted_fd!=-1)
+    {
+	BPTR fh2 = NULL;
+
+	/* See if the file exists and "lock" it. */
+	if (!(flags & O_CREAT) || (flags & O_EXCL))
+	{
+	    fh2 = Open((char *)pathname, FMF_READ);
+	    /* if O_CREAT is not set and the file doesn't exist return an error */
+	    if (!fh2 && !(flags & O_CREAT))
+	    {
+	    	errno = ENOENT;
+		free(currdesc);
+	  	return -1;
+	    }
+	    /* if O_EXCL is set and the file already exist return an error */
+	    else if (fh2 && (flags & O_EXCL))
+	    {
+	    	errno = EEXIST;
+		free(currdesc);
+		Close(fh2);
+	  	return -1;
+            }
+	}
+
+	if (!(fh = Open ((char *)pathname, openmode)) )
+    	{
+	    errno = IoErr2errno (IoErr ());
+	    if (fh2) Close(fh2);
+	    free(currdesc);
+	    return -1;
+        }
+
+	currdesc->fh        = fh;
+	currdesc->flags     = flags;
+	currdesc->opencount = 1;
+
+	__setfdesc(wanted_fd, currdesc);
+
+	/* Unlock the file */
+	if (fh2) Close(fh2);
+    }
+    else
+    {
+        free(currdesc);
+    }
+
+    return wanted_fd;
+}
+
 
 #warning perhaps this has to be handled in a different way...
 void __init_stdfiles(void)
