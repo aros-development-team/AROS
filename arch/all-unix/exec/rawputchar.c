@@ -48,11 +48,15 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
-    /* Write char to stderr */
-    write (2, &chr, 1);
+    /* Don't write 0 bytes */
+    if (chr)
+    {
+	/* Write char to stderr */
+	write (STDERR_FILENO, &chr, 1);
 
-    /* Make sure it makes it to the user. Slow but save. */
-    fsync (2);
+	/* Make sure it makes it to the user. Slow but save. */
+	fsync (STDERR_FILENO);
+    }
 
     AROS_LIBFUNC_EXIT
 } /* RawPutChar */
