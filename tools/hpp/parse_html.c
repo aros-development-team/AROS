@@ -293,6 +293,7 @@ HTML_ParseTag (MyStream * stream, CBD data)
 		if (c == '"')
 		    mode = (mode == M_EOWS) ? M_SKIPQUOTE : M_EOWS;
 
+#if 0
 		if (c == '&')
 		{
 		    String buf = VS_New (NULL);
@@ -311,6 +312,7 @@ HTML_ParseTag (MyStream * stream, CBD data)
 		    VS_Delete (buf);
 		}
 		else
+#endif
 		    VS_AppendChar (str, c);
 	    }
 
