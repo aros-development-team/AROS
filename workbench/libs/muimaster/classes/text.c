@@ -24,7 +24,7 @@
 
 extern struct Library *MUIMasterBase;
 
-/*  #define MYDEBUG 1 */
+//#define MYDEBUG 1
 #include "debug.h"
 
 
@@ -409,16 +409,17 @@ static ULONG Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
     {
 	msg->MinMaxInfo->MinHeight += height;
 	msg->MinMaxInfo->DefHeight += height;
-	msg->MinMaxInfo->MaxHeight += height;
-    } else
+	if (!(data->mtd_Flags & MTDF_SETVMAX))
+	    msg->MinMaxInfo->MaxHeight += MUI_MAXMAX;
+	else
+	    msg->MinMaxInfo->MaxHeight += height;
+    }
+    else
     {
 	msg->MinMaxInfo->MinHeight += _font(obj)->tf_YSize;
 	msg->MinMaxInfo->DefHeight += _font(obj)->tf_YSize*10;
 	msg->MinMaxInfo->MaxHeight += MUI_MAXMAX;
     }
-
-    if (!(data->mtd_Flags & MTDF_SETVMAX))
-	msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
 
     if (!(data->mtd_Flags & MTDF_SETMAX))
 	msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
@@ -426,10 +427,10 @@ static ULONG Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
     if (!(data->mtd_Flags & MTDF_SETMIN))
 	msg->MinMaxInfo->MinWidth = 0;
 
-/*      D(bug("muimaster.library/text.c: Text_AskMinMax 0x%lx: Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n", obj, */
-/*  	msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight, */
-/*  	msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight, */
-/*  	msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->DefHeight)); */
+    D(bug("Text_AskMinMax 0x%lx (%s): Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n", obj, data->contents,
+	msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight,
+	msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight,
+	msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->DefHeight));
 
     return TRUE;
 }
