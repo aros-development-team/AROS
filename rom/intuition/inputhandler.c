@@ -185,6 +185,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     
     D(bug("Inside intuition inputhandler, active window=%p\n", IntuitionBase->ActiveWindow));
 
+    if (!iihdata->InputDeviceTask) iihdata->InputDeviceTask = FindTask(NULL);
+    
     /* First handle IntuiMessages which were replied back to the IntuiReplyPort
        by the apps */
        
