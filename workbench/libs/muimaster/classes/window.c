@@ -75,6 +75,7 @@ struct MUI_WindowData
     ULONG          wd_Events;       /* events received */
     ULONG          wd_CrtFlags;     /* window creation flags, see below */
     Object        *wd_ActiveObject; /* the active object */
+    Object        *wd_OldActive;    /* active object before window was closed */
     APTR           wd_DefaultObject;
     ULONG          wd_ID;
     STRPTR         wd_Title;
@@ -839,9 +840,9 @@ static void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
             Permit();
         }
 
-	D(bug("before CloseWindow\n"));
+/*  	D(bug("before CloseWindow\n")); */
         CloseWindow(win);
-	D(bug("after CloseWindow\n"));
+/*  	D(bug("after CloseWindow\n")); */
 
 #define DISPOSEGADGET(x) \
 	if (x)\
@@ -1133,6 +1134,7 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 	case IDCMP_INACTIVEWINDOW:
 	    data->wd_Flags &= ~MUIWF_ACTIVE;
 	    set(oWin, MUIA_Window_Activate, FALSE);
+	    set(oWin, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
 	    break;
 
 	case IDCMP_NEWSIZE:
@@ -1809,7 +1811,7 @@ static Object *GetPrevNextActiveObject (struct ObjNode *old_activenode, objnode_
  Code for setting MUIA_Window_ActiveObject
  If the current active object is not in a cycle chain it handles
  MUIV_Window_ActiveObject_Next and MUIV_Window_ActiveObject_Prev
- cureently as there is no active object
+ currently as there is no active object
 **************************************************************************/
 static void window_set_active_object (struct MUI_WindowData *data, Object *obj, ULONG newval)
 {
@@ -1819,75 +1821,42 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
     ASSERT_VALID_PTR(data);
     ASSERT_VALID_PTR(obj);
 
-    if ((ULONG)data->wd_ActiveObject == newval) return;
+    if ((ULONG)data->wd_ActiveObject == newval)
+	return;
 
     old_active = data->wd_ActiveObject;
     old_activenode = FindObjNode(&data->wd_CycleChain, old_active);
+    data->wd_ActiveObject = NULL;
+    if ((old_active != NULL) && (_flags(old_active) & MADF_CANDRAW))
+	DoMethod(old_active, MUIM_GoInactive);
 
     switch (newval)
     {
 	case MUIV_Window_ActiveObject_None:
-	    data->wd_ActiveObject = NULL;
-	    if (old_active)
-	    {
-		if (_flags(old_active) & MADF_CANDRAW)
-		    DoMethod(old_active, MUIM_GoInactive);
-	    }
 	    break;
 
 	case MUIV_Window_ActiveObject_Next:
-	    if (data->wd_ActiveObject)
-	    {
-		data->wd_ActiveObject = NULL;
-		if (_flags(old_active) & MADF_CANDRAW)
-		    DoMethod(old_active, MUIM_GoInactive);
-		if (old_activenode)
-		{
-		    data->wd_ActiveObject = GetPrevNextActiveObject(old_activenode, NextObjNodeIterator);
-		}
-		else
-		{
-		    data->wd_ActiveObject = GetFirstActiveObject(data);
-		}
-	    }
-	    else
-	    {
+	    if (old_activenode != NULL)
+		data->wd_ActiveObject = GetPrevNextActiveObject(old_activenode,
+								NextObjNodeIterator);
+	    if (NULL == data->wd_ActiveObject)
 		data->wd_ActiveObject = GetFirstActiveObject(data);
-	    }
 	    break;
 
 	case MUIV_Window_ActiveObject_Prev:
-	    if (data->wd_ActiveObject)
-	    {
-		data->wd_ActiveObject = NULL;
-		if (_flags(old_active) & MADF_CANDRAW)
-		    DoMethod(old_active, MUIM_GoInactive);
-		if (old_activenode)
-		{
-		    data->wd_ActiveObject = GetPrevNextActiveObject(old_activenode, PrevObjNodeIterator);
-		}
-		else
-		{
-		    data->wd_ActiveObject = GetLastActiveObject(data);
-		}
-	    }
-	    else
-	    {
+	    if (old_activenode)
+		data->wd_ActiveObject = GetPrevNextActiveObject(old_activenode,
+								PrevObjNodeIterator);
+	    if (NULL == data->wd_ActiveObject)
 		data->wd_ActiveObject = GetLastActiveObject(data);
-	    }
 	    break;
 
 	default:
-	    if (old_active)
-	    {
-		data->wd_ActiveObject = NULL;
-		DoMethod(old_active, MUIM_GoInactive);
-	    }
 	    data->wd_ActiveObject = (Object*)newval;
 	    break;
     }
 
-    if (data->wd_ActiveObject)
+    if (data->wd_ActiveObject != NULL)
     {
 	if (_flags(data->wd_ActiveObject) & MADF_CANDRAW)
 	    DoMethod(data->wd_ActiveObject, MUIM_GoActive);
@@ -2187,7 +2156,7 @@ static ULONG Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
     if (data->wd_ScreenTitle)
 	FreeVec(data->wd_ScreenTitle);
 
-    D(bug(" Window_Dispose(%p) : calling supermethod\n", obj));
+/*      D(bug(" Window_Dispose(%p) : calling supermethod\n", obj)); */
     return DoSuperMethodA(cl, obj, msg);
 }
 
@@ -2218,6 +2187,7 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_Window_ActiveObject:
+		D(bug("MUIA_Window_ActiveObject %ld (%p)\n", tag->ti_Data, tag->ti_Data));
 		window_set_active_object(data, obj, tag->ti_Data);
 		break;
 	    case MUIA_Window_DefaultObject:
@@ -2613,9 +2583,8 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
 
     MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
 
-    /* If object is active send a initial MUIM_GoActive, note that no MUIM_GoInactive is send yet if window closes */
-    if (data->wd_ActiveObject)
-	DoMethod(data->wd_ActiveObject, MUIM_GoActive);
+    if (data->wd_OldActive)
+	set(obj, MUIA_Window_ActiveObject, data->wd_OldActive);
 
     return TRUE;
 }
@@ -2636,6 +2605,9 @@ static ULONG window_Close(struct IClass *cl, Object *obj)
 	return TRUE;
     }
     D(bug("in window_Close %ld\n", __LINE__));
+
+    data->wd_OldActive = data->wd_ActiveObject;
+    set(obj, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
 
     /* remove from window */
     DoMethod(data->wd_RootObject, MUIM_Hide);
@@ -2740,6 +2712,9 @@ static ULONG Window_AddEventHandler(struct IClass *cl, Object *obj,
 
 //    D(bug("muimaster.library/window.c: Add Eventhandler\n"));
 
+#ifdef __AROS__
+    msg->ehnode->ehn_Node.ln_Pri = msg->ehnode->ehn_Priority;
+#endif
     Enqueue((struct List *)&data->wd_EHList, (struct Node *)msg->ehnode);
     _zune_window_change_events(data, _zune_window_get_default_events());
     return TRUE;
@@ -2806,8 +2781,13 @@ static ULONG Window_AddControlCharHandler(struct IClass *cl, Object *obj, struct
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    if (msg->ccnode->ehn_Events) Enqueue((struct List *)&data->wd_CCList, (struct Node *)msg->ccnode);
-
+    if (msg->ccnode->ehn_Events)
+    {
+#ifdef __AROS__
+	msg->ccnode->ehn_Node.ln_Pri = msg->ccnode->ehn_Priority;
+#endif
+	Enqueue((struct List *)&data->wd_CCList, (struct Node *)msg->ccnode);
+    }
     /* Due to the lack of an better idea ... */
     if (muiAreaData(msg->ccnode->ehn_Object)->mad_Flags & MADF_CYCLECHAIN)
     {
