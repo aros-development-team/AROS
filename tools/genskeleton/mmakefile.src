@@ -1,9 +1,0 @@
-include $(TOP)/config/make.cfg
-
-#MM- build-tools : build-tools-genskeleton
-
-%build_prog mmake=build-tools-genskeleton \
-    progname=genskeleton targetdir=$(AROSDIR)/Build/Tools \
-    uselibs=arosc
-
-%common
