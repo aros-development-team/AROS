@@ -433,7 +433,7 @@ struct AppGUIData * createGadgets()
 	newGadget.ng_GadgetID =	MX_CHOOSEFONT;
 	newGadget.ng_TopEdge =	WINDOW_OFFSET + GADGET_OUTER_SPACING + appGUIData->agd_Screen->WBorTop + appGUIData->agd_Screen->Font->ta_YSize + 1 + appGUIData->agd_RegisterTab->height + offsetY;
 	newGadget.ng_LeftEdge = WINDOW_OFFSET + GADGET_INNER_SPACING + appGUIData->agd_Screen->WBorLeft + offsetX[0] + extraXSpace;
-	newGadget.ng_Flags =	NULL;
+	newGadget.ng_Flags =	PLACETEXT_RIGHT;
 
 	if(!(gadget = CreateGadget(MX_KIND, gadget, &newGadget, GTMX_Labels, mxStrings, GTMX_Active, MX_INIT_ACTIVE, TAG_END)))
 	    return(FALSE);
@@ -457,6 +457,7 @@ struct AppGUIData * createGadgets()
 	newGadget.ng_LeftEdge =       WINDOW_OFFSET + GADGET_INNER_SPACING + appGUIData->agd_Screen->WBorLeft + gadget->Width + GADGET_OUTER_SPACING * 2;
 	newGadget.ng_Height =         appGUIData->agd_Screen->Font->ta_YSize + GADGET_INNER_SPACING * 2;
 	newGadget.ng_Width =          appGUIData->agd_MaxWidth - newGadget.ng_Width - GADGET_OUTER_SPACING * 2; // CHANGE THIS!!!
+    	newGadget.ng_GadgetText =     NULL;
 	newGadget.ng_Flags =          NULL;
 
 	if(!(gadget = CreateGadget(TEXT_KIND, gadget, &newGadget, GTTX_Border, TRUE, TAG_END)))
