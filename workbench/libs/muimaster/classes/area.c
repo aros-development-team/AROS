@@ -123,9 +123,20 @@ static void cleanup_control_char (struct MUI_AreaData *data, Object *obj);
 
 static void _zune_focus_new(Object *obj, int type)
 {
-    Object *parent = _parent(obj);
-    struct RastPort *rp = _rp(obj);
-    UWORD oldDrPt = rp->LinePtrn;
+    Object *parent;
+    struct RastPort *rp;
+    UWORD oldDrPt;
+
+    D(bug("_zune_focus_new 1 %p\n", obj));
+
+    if (NULL == obj || !(_flags(obj) & MADF_CANDRAW))
+	return;
+
+    D(bug("_zune_focus_new 2 %p\n", obj));
+
+    parent = _parent(obj);
+    rp = _rp(obj);
+    oldDrPt = rp->LinePtrn;
 
     int x1 = _left(obj);
     int y1 = _top(obj);
@@ -156,8 +167,16 @@ static void _zune_focus_new(Object *obj, int type)
 
 static void _zune_focus_destroy(Object *obj, int type)
 {
-    Object *parent = _parent(obj);
+    Object *parent;
 
+    D(bug("_zune_focus_destroy 1 %p\n", obj));
+
+    if (NULL == obj || !(_flags(obj) & MADF_CANDRAW))
+	return;
+
+    D(bug("_zune_focus_destroy %p\n", obj));
+
+    parent = _parent(obj);
     int x1 = _left(obj);
     int y1 = _top(obj);
     int x2 = _left(obj) + _width(obj) - 1;
@@ -1196,7 +1215,7 @@ static IPTR Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Draw
  */
 static void setup_control_char (struct MUI_AreaData *data, Object *obj, struct IClass *cl)
 {
-/*    if (data->mad_InputMode != MUIV_InputMode_None) */ /* needed to be commented, because it checks also for the controlchar */
+    if (data->mad_ControlChar != 0 || data->mad_Flags & MADF_CYCLECHAIN)
     {
 	data->mad_ccn.ehn_Events = data->mad_ControlChar;
 	switch (data->mad_InputMode)
@@ -1221,7 +1240,7 @@ static void setup_control_char (struct MUI_AreaData *data, Object *obj, struct I
 
 static void cleanup_control_char (struct MUI_AreaData *data, Object *obj)
 {
-//    if (data->mad_InputMode != MUIV_InputMode_None)
+    if (data->mad_ControlChar != 0 || data->mad_Flags & MADF_CYCLECHAIN)
     {
 	DoMethod(_win(obj),
 		 MUIM_Window_RemControlCharHandler, (IPTR)&data->mad_ccn);
@@ -1309,11 +1328,6 @@ static IPTR Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 				    ZTEXT_ARG_NONE, 0);
     }
 
-    if (data->mad_Flags & MADF_ACTIVE)
-    {
-	set(_win(obj), MUIA_Window_ActiveObject, (IPTR)obj);
-    }
-
     _flags(obj) |= MADF_SETUP;
 
     data->mad_Timer.ihn_Flags = MUIIHNF_TIMER;
@@ -1332,16 +1346,6 @@ static IPTR Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *ms
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
     _flags(obj) &= ~MADF_SETUP;
-
-    /* don't let a pending pointer on us, but be ready to reacquire
-     * focus on next setup, if any. This will call GoInactive, that's why
-     * we must set the active flag again.
-     */
-    if (data->mad_Flags & MADF_ACTIVE)
-    {
-	set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
-	data->mad_Flags |= MADF_ACTIVE;
-    }
 
     if (data->mad_TitleText)
     {
@@ -1393,13 +1397,6 @@ static IPTR Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *ms
 static IPTR Area_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
-    Object *activeobj;
-
-/*  g_print("show %p, bg=%p (%s)\n", obj, data->mad_Background, */
-/*  	zune_imspec_to_string(data->mad_Background)); */
-/*  g_print("dims=%dx%d\n", _width(obj), _height(obj)); */
-
-/*      g_print("showing %s\n", zune_area_to_string(obj)); */
 
     zune_imspec_show(data->mad_Background, obj);
 
@@ -1408,11 +1405,6 @@ static IPTR Area_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     {
 	zune_imspec_show(data->mad_SelBack, obj);
     }
-
-    get(_win(obj), MUIA_Window_ActiveObject, (IPTR *)&activeobj);
-
-    if (obj == activeobj)
-	_zune_focus_new(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
 
     return TRUE;
 }
@@ -1423,14 +1415,6 @@ static IPTR Area_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 static IPTR Area_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
-    Object *activeobj;
-
-    get(_win(obj), MUIA_Window_ActiveObject, (IPTR *)&activeobj);
-    if (obj == activeobj)
-    {
-	set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
-	_zune_focus_destroy(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
-    }
 
     zune_imspec_hide(data->mad_Background);
     if (data->mad_Flags & MADF_SHOWSELSTATE
@@ -1448,31 +1432,14 @@ static IPTR Area_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
     return TRUE;
 }
 
-
-/**************************************************************************
- called by parent object.
-**************************************************************************/
-static IPTR Area_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_DisconnectParent *msg)
-{
-    struct MUI_AreaData *data = INST_DATA(cl, obj);
-
-    /* don't be active if added elsewhere */
-    data->mad_Flags &= ~MADF_ACTIVE;
-    return DoSuperMethodA(cl,obj,(Msg)msg);
-}
-
 /**************************************************************************
  Called when gadget activated
 **************************************************************************/
 static IPTR Area_GoActive(struct IClass *cl, Object *obj, Msg msg)
 {
-    if (!(_flags(obj) & MADF_ACTIVE))
-    {
-	if (_flags(obj) & MADF_CANDRAW)
-	    _zune_focus_new(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
-
-	_flags(obj) |= MADF_ACTIVE;
-    }
+    D(bug("Area_GoActive %p\n", obj));
+    if (_flags(obj) & MADF_CANDRAW)
+	_zune_focus_new(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
     return TRUE;
 }
 
@@ -1481,13 +1448,9 @@ static IPTR Area_GoActive(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 static IPTR Area_GoInactive(struct IClass *cl, Object *obj, Msg msg)
 {
-    if (_flags(obj) & MADF_ACTIVE)
-    {
-	if (_flags(obj) & MADF_CANDRAW)
-	    _zune_focus_destroy(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
-
-	_flags(obj) &= ~MADF_ACTIVE;
-    }
+    D(bug("Area_GoInactive %p\n", obj));
+    if (_flags(obj) & MADF_CANDRAW)
+	_zune_focus_destroy(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
     return TRUE;
 }
 
@@ -2092,7 +2055,6 @@ BOOPSI_DISPATCHER(IPTR, Area_Dispatcher, cl, obj, msg)
 	case MUIM_Cleanup: return Area_Cleanup(cl, obj, (APTR)msg);
 	case MUIM_Show: return Area_Show(cl, obj, (APTR)msg);
 	case MUIM_Hide: return Area_Hide(cl, obj, (APTR)msg);
-	case MUIM_DisconnectParent: return Area_DisconnectParent(cl, obj, (APTR)msg);
 	case MUIM_GoActive: return Area_GoActive(cl, obj, (APTR)msg);
 	case MUIM_GoInactive: return Area_GoInactive(cl, obj, (APTR)msg);
 	case MUIM_Layout: return 1;
