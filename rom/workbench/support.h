@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Headers for the misc support functions.
-    Lang: English
+    Headers for the miscellanous support functions.
 */
 
 #ifndef __WORKBENCH_SUPPORT_H__
@@ -17,5 +16,9 @@ BOOL StartHandler(struct WorkbenchBase *WorkbenchBase);
 void AddHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase);
 void RemoveHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase);
 
+STRPTR __AllocateNameFromLock(BPTR lock, struct WorkbenchBase *WorkbenchBase);
+
+/*** Macros *****************************************************************/
+#define AllocateNameFromLock(lock) (__AllocateNameFromLock((lock), WorkbenchBase))
 
 #endif /* __WORKBENCH_SUPPORT_H__ */
