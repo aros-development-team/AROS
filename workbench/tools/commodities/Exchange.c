@@ -55,7 +55,6 @@
 #define  AROS_ALMOST_COMPATIBLE
 
 #include <cxintern.h>   /* Exchange is the ONLY commodity that may use this */
-
 /* These are necessary as cxintern.h defines them for commodities.library
    purposes. */
 #ifdef SysBase
@@ -972,20 +971,20 @@ void switchActive(struct ExchangeState *ec)
 
 void informBroker(LONG command, struct ExchangeState *ec)
 {
-    IPTR    whichGad;
-    CxObj  *brok;
+    IPTR                whichGad;
+    struct BrokerCopy  *bc;
 
     GT_GetGadgetAttrs(ec->ec_listView, ec->ec_window, NULL,
 		      GTLV_Selected, &whichGad,
 		      TAG_DONE);
 
-    brok = getNth(&ec->ec_brokerList, whichGad); /* TODO: Is this OK? */
+    bc = getNth(&ec->ec_brokerList, whichGad);
 
-    P(kprintf("Informing the broker <%s>. Reason %d\n", brok->co_Node.ln_Name,
+    P(kprintf("Informing the broker <%s>. Reason %d\n", bc->bc_Node.ln_Name,
 	      (int)command));
 
     /* We don't care about errors for now */
-    CxNotify(brok->co_Node.ln_Name, command);
+    CxNotify(bc->bc_Node.ln_Name, command);
 }
 
 
