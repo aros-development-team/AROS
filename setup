@@ -43,7 +43,7 @@ fi
 echo -n "Checking for MetaMake... "
 if [ -x "`which mmake`" ] ; then
   MMAKE="mmake"
-  echo $MMAKE
+  echo `which mmake`
 else
   if [ -x "MetaMake/mmake" ] ; then
     echo "locally installed in tools/MetaMake/mmake."
@@ -104,8 +104,9 @@ fi
 
 echo
 echo "You have installed all necessary tools to compile AROS now."
+echo "Now run './configure' (with option '--help' for more information)"
 echo
-echo "Type '$MMAKE AROS' to start building the tree."
+echo "Then type '$MMAKE AROS' to start building the tree."
 echo
 
 exit 0
