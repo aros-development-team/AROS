@@ -642,9 +642,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 			 WA_NewLookMenus, (IPTR)TRUE,
 			 WA_Gadgets, data->wd_VertProp,
 			 WA_Zoom,         (IPTR)&altdims,
-#if REDUCE_FLICKER_TEST
-			 WA_BackFill, LAYERS_NOBACKFILL,
-#endif
+			 REDUCE_FLICKER_TEST ? WA_BackFill : TAG_IGNORE, LAYERS_NOBACKFILL,
 			 TAG_DONE);
 
     if (win)
