@@ -8,6 +8,11 @@
 #ifndef _MUIMASTER_SUPPORT_AROS_H_
 #define _MUIMASTER_SUPPORT_AROS_H_
 
+/*** OS4 VARARGS support ****************************************************/
+#ifndef VARARGS68K
+#define VARARGS68K
+#endif
+
 /*** OS4 Exec Interface support *********************************************/
 #define EXEC_INTERFACE_DECLARE(x)
 #define EXEC_INTERFACE_GET_MAIN(interface,libbase) 1
