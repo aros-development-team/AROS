@@ -21,9 +21,13 @@ SRCS = $(foreach f,$(FILES),$(f).src)
 HTML = $(DEST)index.html $(foreach f,$(FILES),$(DEST)$(f).html)
 
 all : $(DEST)srcs autodocs $(HTML) $(DEST)filesystems.doc \
+	$(DEST)jobserv.html cgi-scripte \
+	access-rights
+
+cgi-scripte : \
 	$(DEST)cgi-bin/search.cgi \
 	$(DEST)cgi-bin/counter.cgi \
-	access-rights
+	$(DEST)cgi-bin/jobserv.cgi
 
 access-rights:
 	cd $(DEST) ; \
@@ -36,12 +40,8 @@ index :
 $(DEST)srcs:
 	ln -s $(TOP) $(DEST)srcs
 
-$(DEST)cgi-bin/search.cgi : search.cgi
-	cp search.cgi $@
-	chmod 755 $@
-
-$(DEST)cgi-bin/counter.cgi : counter.cgi
-	cp counter.cgi $@
+$(DEST)cgi-bin/%.cgi : %.cgi
+	cp $< $@
 	chmod 755 $@
 
 $(DEST)filesystems.doc: filesystems.doc
@@ -65,6 +65,8 @@ $(DEST)toc.html : $(SRCS) tochtml.gawk
 	@echo "" >> $@
 	chmod a+r $@
 
+$(DEST)links.html: $(wildcard $(TOP)/dist/*)
+
 $(DEST)%.html : %.src src2html.gawk page_header.html page_footer.html
 	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
 	chmod a+r $@
@@ -75,7 +77,8 @@ $(DEST)devinfo-4.html : devinfo-4.src src2html.gawk page_header.html \
 
 $(DEST)background.html: stathtml.gawk $(HOME)/Mail/jobs
 
-$(DEST)links.html: $(TOP)/dist/AROS*.tgz
+$(DEST)jobserv.html: $(HOME)/Mail/jobs jobtable.gawk jobtable.head \
+	    jobtable.tail
 
 autodocs: $(DEST)adoc_index.html gen/htmlpages
 
