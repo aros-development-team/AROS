@@ -156,6 +156,9 @@ static VOID gfxmode_get(Class *cl, Object *o, struct pRoot_Get *msg)
     
     ULONG idx;
     
+kprintf("gfxmode::get()\n");
+    data = INST_DATA(cl, o);
+    
     if (IS_GFXMODE_ATTR(msg->attrID, idx)) {
     	switch (idx) {
 	    case aoHidd_GfxMode_Width:
@@ -248,11 +251,6 @@ static VOID gfxmode_get(Class *cl, Object *o, struct pRoot_Get *msg)
     }
     
     return;
-    
-    
-    
-    
-    data = INST_DATA(cl, o);
     
     
 }
