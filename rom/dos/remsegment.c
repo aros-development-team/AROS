@@ -1,11 +1,13 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Remove a segment from the system list.
-    Lang: english
+    Lang: English
 */
+
 #include "dos_intern.h"
+#include <proto/exec.h>
 
 /*****************************************************************************
 
@@ -47,8 +49,6 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
@@ -56,16 +56,16 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Make sure segment is freeable */
-    if( seg->seg_UC == 0 )
+    if (seg->seg_UC == 0 || seg->seg_UC == 1)
     {
 	struct Segment *next, *prev;
 	prev = NULL;
 	next = BADDR(DOSBase->dl_ResList);
-	while( next != NULL )
+	while (next != NULL)
 	{
-	    if( next == seg )
+	    if (next == seg)
 	    {
-		if( prev )
+		if (prev)
 		{
 		    prev->seg_Next = next->seg_Next;
 		}
@@ -73,13 +73,16 @@
 		{
 		    DOSBase->dl_ResList = MKBADDR(next->seg_Next);
 		}
-		return TRUE;
+
+		return DOSTRUE;
 	    }
+
 	    prev = next;
 	    next = BADDR(next->seg_Next);
 	}
     }
-    return FALSE;
+
+    return DOSFALSE;
 
     AROS_LIBFUNC_EXIT
 } /* RemSegment */

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -8,8 +8,10 @@
 #include "dos_intern.h"
 #include <dos/bptr.h>
 
-LONG    putNumber(STRPTR *format, IPTR **args, ULONG base, BPTR fh);
-STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus);
+LONG    putNumber(STRPTR *format, IPTR **args, ULONG base, BPTR fh,
+		  struct DosLibrary *DOSBase);
+STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus,
+		    struct DosLibrary *DOSBase);
 
 /*****************************************************************************
 
@@ -95,22 +97,25 @@ STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus);
 				   string */
 
 
-    while(*format != 0 && !quitNow)
+    while (*format != 0 && !quitNow)
     {
-	if(*format == '%')
+	if (*format == '%')
 	{
 	    format++;
 	    
-	    switch(*format)
+	    switch (*format)
 	    {
 	    case 'S':		/* Regular c string */
+	    case 's':
 		string = (STRPTR)*args;
 		args++;
 
-		if(string == NULL)
+		if (string == NULL)
+		{
 		    return -1;
+		}
 		
-		while(*string != 0)
+		while (*string != 0)
 		{
 		    FPutC(fh, *string++);
 		    count++;
@@ -119,13 +124,16 @@ STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus);
 		break;
 		
 	    case 'T':		/* BCPL string (possibly filled out) */
+	    case 't':
 		format++;
 		len = *format - '0';
-
-		if(BADDR(*args) == NULL)
+		
+		if (BADDR(*args) == NULL)
+		{
 		    return -1;
+		}
 
-		for(i = 0; i < AROS_BSTR_strlen((BSTR)*args); i++)
+		for (i = 0; i < AROS_BSTR_strlen((BSTR)*args); i++)
 		{
 		    FPutC(fh, AROS_BSTR_getchar((BSTR)*args, i));
 		    count++;
@@ -139,64 +147,78 @@ STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus);
 		    FPutC(fh, ' ');
 		    count++;
 		}
+
 		break;
 		
 	    case 'C':		/* Character */
+	    case 'c':
 		FPutC(fh, (char)*args);
 		count++;
 		args++;
 		break;
 		
 	    case 'O':		/* Octal number */
-		count += putNumber(&format, &args, 8, fh);
+	    case 'o':
+		count += putNumber(&format, &args, 8, fh, DOSBase);
 		break;
 		
 	    case 'X':		/* Hexadecimal number */
-		count += putNumber(&format, &args, 16, fh);
+	    case 'x':
+		count += putNumber(&format, &args, 16, fh, DOSBase);
 		break;
 		
 	    case 'I':		/* Decimal number */
-		count += putNumber(&format, &args, 10, fh);
+	    case 'i':
+		count += putNumber(&format, &args, 10, fh, DOSBase);
 		break;
 		
 	    case 'N':		/* Decimal number (no length restriction) */
+	    case 'n':
 		number = *args;
 		args++;
 		
-		if(number < 0)
+		if (number < 0)
 		{
 		    number = -number;
 		    minus = TRUE;
+		}
+		else
+		{
+		    minus = FALSE;
 		}
 		
 		buffer[bLast] = 0;
 
 		/* Write decimal number */
-		wBuf = writeNumber(&buffer[bLast], 10, number, minus);
+		wBuf = writeNumber(&buffer[bLast], 10, number, minus, DOSBase);
 		
-		while(*wBuf != 0)
+		while (*wBuf != 0)
 		{
 		    FPutC(fh, *wBuf++);
 		    count++;
 		}
+
 		break;
 		
             case 'U':		/* Unsigned decimal number */
+	    case 'u':
 		format++;
 		len = *format - '0';
     
 		number = *args;
 		args++;
 				
-		wBuf = writeNumber(&buffer[bLast], 10, number, FALSE);
+		wBuf = writeNumber(&buffer[bLast], 10, number, FALSE, DOSBase);
 
-		for(i = 0; i < len; i++)
+		for (i = 0; i < len; i++)
 		{
 		    FPutC(fh, *wBuf++);
 		    count++;
 		    
-		    if(*wBuf == 0)
+		    if (*wBuf == 0)
+		    {
 			break;
+		    }
 		}
 
 		break;
@@ -214,7 +236,6 @@ STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus);
 		count++;
 		break;
 	    }
-	    
 	}
 	else
 	{
@@ -232,7 +253,8 @@ STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus);
 } /* VFWritef */
 
 
-LONG putNumber(STRPTR *format, IPTR **args, ULONG base, BPTR fh)
+LONG putNumber(STRPTR *format, IPTR **args, ULONG base, BPTR fh,
+	       struct DosLibrary *DOSBase)
 {
     char    buffer[bLast + 1];
     LONG    icount = 0;
@@ -256,10 +278,10 @@ LONG putNumber(STRPTR *format, IPTR **args, ULONG base, BPTR fh)
 	minus = TRUE;
     }
     
-    aNum = writeNumber(&buffer[bLast], base, number, minus);
+    aNum = writeNumber(&buffer[bLast], base, number, minus, DOSBase);
     
     /* Write the textual number to the file */
-    for(i = 0; i < len; i++)
+    for (i = 0; i < len; i++)
     {
 	FPutC(fh, *aNum++);
 	icount++;
@@ -273,18 +295,22 @@ LONG putNumber(STRPTR *format, IPTR **args, ULONG base, BPTR fh)
     
 
 /* Generate a text string from a number */
-STRPTR writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus)
+STRPTR writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus,
+		   struct DosLibrary *DOSBase)
 {
     int val;
 
-    do {
+    do
+    {
 	val = n % base;
 	*--buffer = val < 10 ? val + '0' : val - 10 + 'A';
 	n /= base;
     } while(n != 0);
 
-    if(minus)
+    if (minus)
+    {
 	*--buffer = '-';
+    }
 
     return buffer;
 }
