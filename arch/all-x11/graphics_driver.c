@@ -262,16 +262,17 @@ void UpdateAreaPtrn (struct RastPort * rp, struct GfxBase * GfxBase)
         Pixmap stipple;
         int width, height;
 	char *pattern;
-	int x, y;
+	int y;
 
 	width = 16;
 	height = 1<<(rp->AreaPtSz);
 
 	pattern = AllocMem(2*height*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
 	for (y=0; y<height; y++)
-	    for (x=0; x<width; x++)
-	        if ((rp->AreaPtrn[y]) & (1<<x))
-	    	    pattern[2*y+((x<8)?0:1)] += 1<<(x % 8);
+	{
+	    pattern[2*y] = (char)( (rp->AreaPtrn[y]) & (255) );
+	    pattern[2*y+1] = (char)( ( (rp->AreaPtrn[y]) & (255<<8) ) >> 8);
+	}
 
         XSetFillStyle (sysDisplay
             , GetGC(rp)
