@@ -118,4 +118,4 @@ if [ "$CFG_MAIL_ENABLE" = "yes" ]; then
 fi
 
 #-- Remove uploaded files ----------------------------------------------------
-rm -rf Archive/*
+rm -rf $(ARCHIVE_ROOT)/*
