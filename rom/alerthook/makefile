@@ -8,25 +8,24 @@ include $(TOP)/config/make.cfg
 
 FILES = alerthook
 
+OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).o)
+
+# ***** Native ***************
 ifeq ($(FLAVOUR),native)
-all: setup \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(FUNCTIONS),$(f).s) \
-	$(OSMODDIR)/alert.hook
 
-$(OSMODDIR)/alert.hook: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-		       $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
-	$(CC) $(ILDFLAGS) \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	-o $@ 2>&1|tee alert.hook.err
-	@if test ! -s alert.hook.err; then rm alert.hook.err ; else true ; fi
+all: setup $(OSMODDIR)/alert.hook
+
+$(OSMODDIR)/alert.hook: $(OBJS)
+	$(CC) $(ILDFLAGS) $(OBJS) -Xlinker -M -o $@ 2>&1|tee alert.map
+	@if test ! -s alert.map ; then rm alert.map ; else true ; fi
 	@strip $@
-else
-all: setup \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
 
+# ***** Not Native ***************
+else
+
+all: setup $(OBJS)
+
+# ***** END ***************
 endif
 
 setup :
