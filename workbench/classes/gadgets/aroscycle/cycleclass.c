@@ -91,6 +91,30 @@ VOID cycle_dispose(Class *cl, Object *o, Msg msg)
 }
 
 
+IPTR cycle_get(Class *cl, Object *o, struct opGet *msg)
+{
+    struct CycleData *data = INST_DATA(cl, o);
+    IPTR   retval = 1;
+
+    switch(msg->opg_AttrID)
+    {
+    case AROSCYCLE_Active:
+	*(msg->opg_Storage) = (IPTR)data->active;
+	break;
+
+    case AROSCYCLE_Labels:
+	*(msg->opg_Storage) = (IPTR)data->labels;
+	break;
+
+    default:
+	retval = DoSuperMethodA(cl, o, (Msg)msg);
+	break;
+    }
+    
+    return retval;
+}
+
+
 IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
 {
     struct TagItem *tag, *taglist = msg->ops_AttrList;
@@ -100,7 +124,7 @@ IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
 
     result = DoSuperMethodA(cl, o, (Msg)msg);
 
-    while ((tag = NextTagItem(&taglist)))
+    while((tag = NextTagItem(&taglist)))
     {
         switch(tag->ti_Tag)
         {
@@ -120,6 +144,7 @@ IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
             }
             rerender = TRUE;
             break;}
+
         case AROSCYCLE_Active:
             data->active = tag->ti_Data;
             rerender = TRUE;
@@ -127,22 +152,26 @@ IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
         }
     }
 
+    /* SDuvan: Removed test (cl == OCLASS(o)) */
 
-    if ((rerender) && (cl == OCLASS(o)))
+    if(rerender)
     {
         struct RastPort *rport;
 
-        if (data->active > data->numlabels-1)
-            data->active = 0;
+        if(data->active > data->numlabels-1)
+	    data->active = 0;
+
+	kprintf("Rerendering\n");
 
         rport = ObtainGIRPort(msg->ops_GInfo);
-        if (rport)
+        if(rport)
         {
             DoMethod(o, GM_RENDER, msg->ops_GInfo, rport, GREDRAW_UPDATE);
             ReleaseGIRPort(rport);
             result = FALSE;
         }
     }
+
     return result;
 }
 
@@ -280,6 +309,10 @@ AROS_UFH3S(IPTR, dispatch_cycleclass,
         retval = cycle_set(cl, o, (struct opSet *)msg);
         break;
 
+    case OM_GET:
+	retval = cycle_get(cl, o, (struct opGet *)msg);
+	break;
+
     case GM_RENDER:
         cycle_render(cl, o, (struct gpRender *)msg);
         break;
@@ -331,7 +364,7 @@ AROS_UFH3S(IPTR, dispatch_cycleclass,
     case GM_HANDLEINPUT:
         retval = cycle_handleinput(cl, o, (struct gpInput *)msg);
         break;
-
+	
     default:
 	retval = DoSuperMethodA(cl, o, msg);
 	break;
