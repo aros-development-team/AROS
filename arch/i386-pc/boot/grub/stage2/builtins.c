@@ -328,10 +328,6 @@ boot_func (char *arg, int flags)
     case KERNEL_TYPE_MULTIBOOT:
       /* Multiboot */
 
-      /* MB specs require this */
-      if (! (mb_header_flags & MULTIBOOT_VIDEO_MODE))
-       mbi.flags &= ~MB_INFO_VIDEO_INFO;
-
       /* Switch to video mode */
       if (mbi.vbe_mode != 0x03 &&
          (set_vbe_mode (mbi.vbe_mode) != 0x004F ||
