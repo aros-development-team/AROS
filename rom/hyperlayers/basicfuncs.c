@@ -183,6 +183,7 @@ void _FreeLayer(struct Layer * l)
     cr = _cr;
   }
 
+  FreeRastPort(l->rp);
   DisposeRegion(l->DamageList);
   DisposeRegion(l->VisibleRegion);
   DisposeRegion(l->shape);
