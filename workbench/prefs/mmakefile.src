@@ -6,6 +6,9 @@ include $(TOP)/config/make.cfg
 
 PREFSDIR = $(BINDIR)/Prefs
 
+SETTINGS = nv_location font.prefs
+SETTINGFILES = $(foreach f, $(SETTINGS), $(PREFSDIR)/Env-Archive/Sys/$(f))
+
 #MM workbench-prefs : setup copyfiles
 workbench-prefs:
 	@$(NOP)
@@ -15,8 +18,11 @@ setup :
 	%mkdirs_q $(PREFSDIR) $(PREFSDIR)/Presets $(PREFSDIR)/Env-Archive $(PREFSDIR)/Env-Archive/Sys
 
 #MM
-copyfiles : setup
-	@$(CP) $(TOP)/$(CURDIR)/env-archive/sys/nv_location $(PREFSDIR)/Env-Archive/Sys/
+copyfiles : setup $(SETTINGFILES)
+	@$(NOP)
+
+$(PREFSDIR)/Env-Archive/Sys/% : env-archive/sys/%
+	@$(CP) $< $@
 
 #MM
 clean ::
