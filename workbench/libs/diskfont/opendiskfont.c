@@ -14,6 +14,8 @@
 #endif
 #  include <aros/debug.h>
 
+#include <graphics/text.h>
+#include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/graphics.h>
 #include "diskfont_intern.h"
@@ -115,7 +117,7 @@
 		break;
 
 	    /* WeightTAMatch does not compare the fontnames, so we do it here */
-	    if ( strcmp(textAttr->ta_Name, destattr->tta_Name) != 0 )
+	    if ( strcmp(FilePart(textAttr->ta_Name), destattr->tta_Name) != 0 )
 		continue;
 
 	    matchfound = TRUE;
@@ -174,7 +176,17 @@
 	CallHookPkt(bestmatch_hook, &fhc, DFB(DiskfontBase) );
 	tf = fhc.fhc_TextFont;
 
-	ExtendFont(tf, NULL);
+    	if (tf)
+	{
+	    if (ExtendFont(tf, NULL))
+	    {
+		#warning CHECKME
+
+		struct TextFontExtension *tfe = (struct TextFontExtension *)tf->tf_Extension;
+
+		tfe->tfe_Flags0 |= TE0F_NOREMFONT;
+	    }
+	}
     }
 
     if (best_so_far.tta_Tags) FreeTagItems(best_so_far.tta_Tags);
