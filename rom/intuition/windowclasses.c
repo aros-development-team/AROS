@@ -851,7 +851,7 @@ static Object *sizebutton_new(Class *cl, Object *o, struct opSet *msg)
 
 	    /* Create a sysimage with gadget's sizes */
 	    data->image = NewObjectA(NULL, SYSICLASS, image_tags);
-	    D(bug("tbb: image=%p\n", data->image));
+	    D(bug("sizebutton: image=%p\n", data->image));
 	    if (data->image)
 	    {
 	    	((struct Gadget *)o)->GadgetType |= GTYP_SYSGADGET;
@@ -974,7 +974,7 @@ static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
 
 	    /* Create a sysimage with gadget's sizes */
 	    data->image = NewObjectA(NULL, SYSICLASS, image_tags);
-	    (bug("tbb: image=%p\n", data->image));
+	    D(bug("tbb: image=%p\n", data->image));
 	    if (data->image)
 	    {
 	    	((struct Gadget *)o)->GadgetType |= GTYP_SYSGADGET;
