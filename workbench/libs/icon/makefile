@@ -6,6 +6,8 @@ USER_INCLUDES = -I..
 include $(TOP)/config/make.cfg
 
 OBJDIR=$(GENDIR)/workbench/libs/icon
+DEPLIBS=$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a
+LIBS=-L$(LIBDIR) -lamiga -larosc
 
 FILES = icon_init icon_functable basicfuncs
 FUNCTIONS = \
@@ -21,8 +23,9 @@ FUNCTIONS = \
 
 all: setup $(SLIBDIR)/icon.library
 
-$(SLIBDIR)/icon.library: $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
-	$(CC) $(ILDFLAGS) $^ -o $@
+$(SLIBDIR)/icon.library: $(DEPLIBS) \
+	    $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+	$(CC) $(ILDFLAGS) $^ $(LIBS) -o $@
 
 setup :
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
