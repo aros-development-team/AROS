@@ -30,7 +30,8 @@ FILES := coldreboot \
 	ints \
 	switchtouser \
 	inithw \
-	offsets
+	offsets \
+	setsr
 
 COREFILES	:= init \
 	execstubs
