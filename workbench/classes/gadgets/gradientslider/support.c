@@ -25,7 +25,9 @@
 
 #define SDEBUG 0
 #define DEBUG 0
+#ifdef _AROS
 #include <aros/debug.h>
+#endif
 
 /***************************************************************************************************/
 
@@ -464,7 +466,7 @@ VOID DrawKnob(struct GradientSliderData *data, struct RastPort *rp, struct DrawI
     {
 	
 	/* black frame around box */
-#ifdef _AROS
+#if 1
 	SetDrMd(rp, JAM1);
     	SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
 		

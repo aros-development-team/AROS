@@ -18,6 +18,10 @@ FILES := gradientsliderclass support
 workbench-classes-gradientslider : $(SLIB)
 	@$(NOP)
 
+#MM workbench-classes-gadgets-gradientslider-quick :
+workbench-classes-gadgets-gradientslider-quick : $(SLIB)
+	@$(NOP)
+
 #MM workbench-classes-setup
 workbench-classes-setup : setup
 #MM clean

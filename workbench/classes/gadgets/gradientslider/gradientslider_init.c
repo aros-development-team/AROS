@@ -71,6 +71,11 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     if (!IntuitionBase)
 	return NULL;
 
+    if (!LayersBase)
+    	LayersBase = OpenLibrary ("layers.library", 39);
+    if (!LayersBase)
+    	return NULL;
+
     if (!CyberGfxBase)
         CyberGfxBase = OpenLibrary ("cybergraphics.library", 0);
     /* we can live even without CyberGfxBase */
@@ -103,6 +108,9 @@ void SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
     
     CloseLibrary ((struct Library *) IntuitionBase);
     IntuitionBase = NULL;
+    
+    CloseLibrary(LayersBase);
+    LayersBase = NULL;
     
     CloseLibrary(CyberGfxBase);
     CyberGfxBase = NULL;

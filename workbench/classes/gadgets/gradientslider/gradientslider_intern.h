@@ -58,9 +58,12 @@
 struct GradientSliderData
 {
     struct BitMap		*savebm;
+    struct BitMap	    	*knobbm;
     Object			*frame;
+    UBYTE			*buffer;
     ULONG			maxval;		/* ISGU 	*/
     ULONG			curval;		/* ISGNU 	*/
+    ULONG			saveval;
     ULONG			skipval;	/* ISGU		*/
     UWORD			knobpixels;	/* I		*/
     UWORD			*penarray;	/* ISU		*/
@@ -72,22 +75,25 @@ struct GradientSliderData
     WORD			savefromy;
     WORD			savebmwidth;
     WORD			savebmheight;
-    BOOL			edgesOnly;
+    WORD			x,y;
+    struct RastPort	    	trp;
 };
 
 
 struct GradientSliderBase_intern
 {
     struct Library 		library;
+    UWORD   	    	    	pad;
+    struct IClass 		*classptr;
     struct ExecBase		*sysbase;
     BPTR			seglist;
-    struct IClass 		*classptr;
 #ifndef GLOBAL_INTUIBASE
     struct IntuitionBase	*intuibase;
 #endif
     struct GfxBase		*gfxbase;
     struct Library		*utilitybase;
     struct Library		*cybergfxbase;
+    struct Library  	    	*layersbase;
     
 };
 
@@ -134,5 +140,8 @@ typedef struct IntuitionBase IntuiBase;
 #define GfxBase		GSB(GradientSliderBase)->gfxbase
 #undef SysBase
 #define SysBase		GSB(GradientSliderBase)->sysbase
+
+#undef LayersBase
+#define LayersBase		GSB(GradientSliderBase)->layersbase
 
 #endif /* GRADIENTSLIDER_INTERN_H */
