@@ -1,4 +1,0 @@
-\chapter{Jobserver}
-
-\section{Free jobs}
-\execverb{jobserv-showfree.cgi}
