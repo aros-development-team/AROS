@@ -5,7 +5,7 @@
 include $(TOP)/config/make.cfg
 
 ICONS     := def_Disk def_Drawer
-ICONDIR   := $(AROSDIR)/Prefs/Env-Archive/Sys
+ICONDIR   := $(AROSDIR)/Prefs/Env-Archive/SYS
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
 #MM- masonicons : masonworkbenchenvicons
