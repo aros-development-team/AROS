@@ -134,6 +134,8 @@ struct IntIntuitionBase
     struct MsgPort	    	* MenuHandlerPort;
     BOOL		    	MenusActive;
 
+    struct TextFont 	    	* ScreenFont;
+    
     /* Dos function DisplayError() before intuition.library patched it */
     APTR                        OldDisplayErrorFunc;
 };
