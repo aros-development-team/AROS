@@ -42,6 +42,7 @@ FUNCTIONS := 	 adddtobject \
 		 getdtstring \
 		 getdttriggermethods \
 		 getdttriggermethoddataflags \
+		 launchtoola \
 		 lockdatatype \
 		 newdtobjecta \
 		 obtaindatatypea \
@@ -66,6 +67,7 @@ workbench-libs-datatypes : $(SLIB)
 #MM workbench-libs-datatypes-quick :
 workbench-libs-datatypes-quick : $(SLIB)
 	@$(NOP)
+
 
 #MM
 setup-includes :
