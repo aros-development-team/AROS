@@ -1,0 +1,19 @@
+It's possible to get debug output done by AROS through
+D(bug("")) (kprintf) out of the Palm Emulation into the
+Linux Shell by doing this:
+
+1. Compile AROS/Palm using this configure option:
+
+   ./configure --target=pp-m68k --enable-palm-debug-hack
+   
+   This will make AROS' exec/RawPutChar() simply poke the
+   debug char into address 0xdddddebc.
+   
+2. Use a special version of XCopilot which turns byte writes
+   to address 0xdddddebc into output going into the Linux
+   shell.
+   
+   All you need to do is get the source of XCopilot 0.6.6 and
+   replace the file "mc68k/memory.c" with "xcopilotpatch/memory.c"
+   before compiling XCopilot.
+   
