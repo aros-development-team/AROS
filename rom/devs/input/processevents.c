@@ -79,8 +79,17 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     struct IOStdReq *kbdio, *gpdio;
     struct InputEvent *kbdie, *gpdie;
     
-    
     struct Library *TimerBase;
+    
+    struct GamePortTrigger mouseTrigger =
+    {
+	GPTF_DOWNKEYS | GPTF_UPKEYS,
+	9999,			/* We dont really care about time triggers */
+	0,			/* Report any mouse change */
+	0
+    };
+
+    BYTE controllerType = GPCT_MOUSE;
     
     /* Initializing command msgport */
     InputDevice->CommandPort->mp_Flags	 = PA_SIGNAL;
@@ -135,16 +144,25 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 
     if ( 0 != OpenDevice("gameport.device", 0, (struct IORequest *)gpdio, 0))
     	Alert(AT_DeadEnd | AG_OpenDev | AN_Unknown);
-    
+
+    /* Set the controller type */
+    gpdio->io_Command = GPD_SETCTYPE;
+    gpdio->io_Data = (APTR)&controllerType;
+    gpdio->io_Length = sizeof(BYTE);
+    DoIO((struct IORequest *)gpdio);
+
+    /* Set the gameport trigger */
+    gpdio->io_Command = GPD_SETTRIGGER;
+    gpdio->io_Data = &mouseTrigger;
+    gpdio->io_Length = sizeof(struct GamePortTrigger);
+    DoIO((struct IORequest *)gpdio);
     
     gpdie = AllocMem(sizeof (struct InputEvent), MEMF_PUBLIC | MEMF_CLEAR);
     if (!gpdie)
         Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
-
-
 	
-    /* Send an initial request to the keyboard device */
 
+    /* Send an initial request to the keyboard device */
     SEND_KBD_REQUEST(kbdio, kbdie);
     
     /* .. and to the gameport.device */
@@ -192,14 +210,13 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	if (wakeupsigs & commandsig)
 	{
 	    struct IOStdReq *ioreq;
+
 	    /* Get all commands from the port */
-	    while ( (ioreq = (struct IOStdReq *)GetMsg(InputDevice->CommandPort)) )
+	    while ((ioreq = (struct IOStdReq *)GetMsg(InputDevice->CommandPort)))
 	    {
 	    	
 		switch (ioreq->io_Command)
 		{
-	    
-	    	
 		case IND_ADDHANDLER:
 		    Enqueue((struct List *)&(InputDevice->HandlerList),
     	    		(struct Node *)ioreq->io_Data);
@@ -209,66 +226,67 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 		    Remove((struct Node *)ioreq->io_Data);
 		    break;
     	    	    
+		case IND_SETMTRIG:
+		    break;
+
+		case IND_SETMTYPE:
+		    break;
+
 		case IND_WRITEEVENT: {
 		    struct InputEvent *ie;
-    	        
+		    
 		    ie = (struct InputEvent *)ioreq->io_Data; 
 		    /* Add a timestamp to the event */
 		    GetSysTime( &(ie->ie_TimeStamp ));
-
+		    
 		    D(bug("id: %d\n", ie->ie_Class));
-    	    	
+		    
 		    /* Add event to queue */
-    	    	
-		    AddEQTail((struct InputEvent *)ioreq->io_Data, InputDevice);
-    	    	
-    	    	
-    	    	/* Forward event (and possible others in the queue) */
+		    AddEQTail((struct InputEvent *)ioreq->io_Data,
+			      InputDevice);
+		    
+		    /* Forward event (and possible others in the queue) */
 		    ForwardQueuedEvents(InputDevice);
-
-
-		    } break;
+		} break;
     	    	
-	    	    
 		} /* switch (IO command) */
-
+		
     		ReplyMsg((struct Message *)ioreq);
     		
 	    } /* while (messages in the command port) */
-	   
 	    
 	} /* if (IO command received) */
+
 	if (wakeupsigs & kbdsig)
 	{
-	    
 	    GetMsg(kbdmp); /* Only one message */
 	    if (kbdio->io_Error != 0)
 	    	continue;
 	    
-	    #define KEY_QUALIFIERS (IEQUALIFIER_LSHIFT     | IEQUALIFIER_RSHIFT   | \
-				    IEQUALIFIER_CAPSLOCK   | IEQUALIFIER_CONTROL  | \
-				    IEQUALIFIER_RALT       | IEQUALIFIER_LALT     | \
-				    IEQUALIFIER_RCOMMAND   | IEQUALIFIER_RCOMMAND | \
-				    IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
-
+#define KEY_QUALIFIERS (IEQUALIFIER_LSHIFT     | IEQUALIFIER_RSHIFT   | \
+			IEQUALIFIER_CAPSLOCK   | IEQUALIFIER_CONTROL  | \
+			IEQUALIFIER_RALT       | IEQUALIFIER_LALT     | \
+			IEQUALIFIER_RCOMMAND   | IEQUALIFIER_RCOMMAND | \
+			IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
+		    
 	    InputDevice->ActQualifier &= ~KEY_QUALIFIERS;
 	    InputDevice->ActQualifier |= (((struct InputEvent *)kbdio->io_Data)->ie_Qualifier & KEY_QUALIFIERS);
-	     
+	    
 	    /* Add event to queue */
 	    AddEQTail((struct InputEvent *)kbdio->io_Data, InputDevice);
+
 	    /* New event from keyboard device */
     	    D(bug("id: Keyboard event\n"));
-    	    	
-    	    	
-    	    D(bug("id: Events forwarded\n"));
-    	    	/* Forward event (and possible others in the queue) */
+	    D(bug("id: Events forwarded\n"));
+
+	    /* Forward event (and possible others in the queue) */
 	    ForwardQueuedEvents(InputDevice);
     	    D(bug("id: Events forwarded\n"));
-
+	    
 	    /* Wit for some more events */
 	    SEND_KBD_REQUEST(kbdio, kbdie);
 	}
-
+	
 	if (wakeupsigs & gpdsig)
 	{
 	    GetMsg(gpdmp); /* Only one message */
@@ -280,7 +298,7 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 		    
 	    InputDevice->ActQualifier &= ~MOUSE_QUALIFIERS;
 	    InputDevice->ActQualifier |= (((struct InputEvent *)gpdio->io_Data)->ie_Qualifier & MOUSE_QUALIFIERS);
-
+	    
 	    /* Gameport just returns the frame count since the last
 	       report in ie_TimeStamp.tv_secs; we therefore must add
 	       a real timestamp ourselves */
@@ -288,20 +306,18 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	    
 	    /* Add event to queue */
 	    AddEQTail((struct InputEvent *)gpdio->io_Data, InputDevice);
+
 	    /* New event from gameport device */
     	    D(bug("id: Gameport event\n"));
+	    D(bug("id: Forwarding events\n"));
 
-    	    	
-    	    D(bug("id: Forwarding events\n"));
-    	    	/* Forward event (and possible others in the queue) */
+	    /* Forward event (and possible others in the queue) */
 	    ForwardQueuedEvents(InputDevice);
     	    D(bug("id: Events forwarded\n"));
-
+	    
 	    /* Wit for some more events */
 	    SEND_GPD_REQUEST(gpdio, gpdie);
-	
 	}
-	
     } /* Forever */
    
 } /* ProcessEvents */
