@@ -1096,7 +1096,7 @@ struct TextFont *DF_OpenFontPath(struct TextAttr *reqattr, struct DiskfontBase_i
        
         for (i=0; i>fdh->NumEntries; i++)
 	{
-	    match_weight = WeighTAMatch((struct TextAttr *)reqattr,
+	    match_weight = WeighTAMatch((struct TTextAttr *)reqattr,
 					(struct TextAttr *)&fdh->TAttrArray[i],
 					fdh->TAttrArray[i].tta_Tags);
 	   

@@ -150,11 +150,7 @@ BOOL WriteTagsNum(BPTR fh, struct TagItem *taglist, struct DiskfontBase_intern *
     if (!WriteLong(&DiskfontBase->dsh, num, (void *)fh))
 	goto wt_failure;
     
-#ifdef AROSAMIGA
-    for (; (tag = NextTagItem((struct TagItem **)&taglist)); )
-#else
-    for (; (tag = NextTagItem((const struct TagItem **)&taglist)); )
-#endif
+    for (; (tag = NextTagItem(&taglist)); )
     {
         if (!WriteLong( &DiskfontBase->dsh, tag->ti_Tag, (void *)fh ))
             goto wt_failure;
@@ -188,13 +184,8 @@ ULONG NumTags(struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
 
     D(bug("NumTags(taglist=%p)\n", taglist));
 
-#ifdef AROSAMIGA
-    for (; NextTagItem((struct TagItem **)&tstate); )
+    for (; NextTagItem(&tstate); )
         numtags ++;
-#else
-    for (; NextTagItem((const struct TagItem **)&tstate); )
-        numtags ++;
-#endif
 
     numtags ++; /* Count TAG_DONE */
   
@@ -225,11 +216,7 @@ ULONG CopyTagItems
 
     D(bug("CopyTagItems(desttaglist=%p, sourcetaglist=%p)\n", desttaglist, sourcetaglist));
 
-#ifdef AROSAMIGA
-    for (; (tag = NextTagItem((struct TagItem **)&sourcetaglist)); )
-#else
-    for (; (tag = NextTagItem((const struct TagItem **)&sourcetaglist)); )
-#endif
+    for (; (tag = NextTagItem(&sourcetaglist)); )
     {
         desttaglist->ti_Tag   = tag->ti_Tag;
         desttaglist->ti_Data  = tag->ti_Data;
