@@ -1,5 +1,5 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    Copyright (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: The Workbench Handler process and associated functions
@@ -45,7 +45,7 @@ void WorkbenchHandler( void ) {
     }
 
     /* Allocate a message port. */
-    if( !(port = CreatePort( NULL, 0 )) ) {
+    if( !(port = CreateMsgPort()) ) {
         D(bug( "WBHandler: Could not create message port!\n" ));
         goto exit;
     }
@@ -81,7 +81,7 @@ exit:
     WorkbenchBase->wb_HandlerPort = NULL;
 
     if( port ) {
-        DeletePort( port );
+        DeleteMsgPort( port );
     }
 
     if( WorkbenchBase ) {
