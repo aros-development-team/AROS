@@ -116,7 +116,14 @@
     Rect.MinY = yDest;
     Rect.MaxY = yDest+ySize;
     /* define the region with this rectangle */
-    OrRectRegion(R,&Rect);
+    /* check whether operation succeeds = enough memory available*/
+    if (FALSE == OrRectRegion(R,&Rect))
+    {
+      if (NULL != srcRP->Layer)
+        UnlockLayerRom(srcRP->Layer);
+      DisposeRegion(R);
+      return;
+    }
 
     /* define the rectangle of the source */
     Rect.MinX = xSrc;
@@ -124,7 +131,7 @@
     Rect.MinY = ySrc;
     Rect.MaxY = ySrc+ySize;
     /* combine them to check for overlapping areas */
-    AndRectRegion(R,&Rect);
+    AndRectRegion(R,&Rect); /* this call cannot fail! */
 
     RR = R->RegionRectangle;
 
@@ -164,13 +171,31 @@
                           GfxBase);
         RR = RR->Next;
       } /* while */
-      /* That's all */
-      if (NULL != srcRP->Layer)
-        UnlockLayerRom(srcRP->Layer);
     } /* if (NULL != RR)*/
-    
+    else
+    {
+      /* they don't overlap */
+      internal_ClipBlit(srcRP,
+                        xSrc,
+                        ySrc,
+                        destRP,
+                        xDest,
+                        yDest,
+                        xSize,
+                        ySize,
+                        minterm,
+                        GfxBase);
+    }
     DisposeRegion(R);
-    return;
+
+    /* only one layer to unlock!*/
+    if (NULL != srcRP->Layer)
+      UnlockLayerRom(srcRP->Layer);
+      
+    DisposeRegion(R);
+    /* I am out of here! */
+    return;     
+    
   } /* if (destRP == srcRP) */
   
   
