@@ -121,6 +121,7 @@
 	
 	ULONG redmask, greenmask, bluemask;
 	ULONG gm_depth, gm_width, gm_height;
+	ULONG found_depth, found_width, found_height;
 	hiddmode = HIDD_Gfx_NextModeID(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pf);
 	if (vHidd_ModeID_Invalid == hiddmode)
 	    break;
@@ -145,11 +146,22 @@
 	    	/* We return the first modeid that fulfill the criterias.
 	 	      Instead we should find the mode that has:
 		           - largest possible depth.
-			   - width/height that are nearest above or equal the desired ones
 	    	*/
-	    found_id = HIDD_TO_AMIGA_MODEID(hiddmode);
-	    break;
-	     
+	    if (
+		    (found_id == INVALID_ID) ||
+		    (
+			(found_id != INVALID_ID) &&
+			(gm_depth < found_depth) &&
+			(gm_width < found_width) &&
+			(gm_height < found_height)
+		    )
+		)
+	    {
+		found_id = HIDD_TO_AMIGA_MODEID(hiddmode);
+		found_depth = gm_depth;
+		found_width = gm_width;
+		found_height = gm_height;
+	    }
 	} 
 	
     } /* for (each HIDD modeid) */
