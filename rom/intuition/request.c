@@ -139,17 +139,22 @@ static VOID int_request(struct RequestActionMsg *msg,
     if (bottom > wbottom)
         bottom = wbottom;
 
-    requester->ReqLayer = CreateUpfrontHookLayer(
-                	  &window->WScreen->LayerInfo
-                	  , window->WScreen->RastPort.BitMap
-                	  , left
-                	  , top
-                	  , right
-                	  , bottom
-                	  , (requester->Flags & SIMPLEREQ ? LAYERSIMPLE : LAYERSMART)
-                	  , LAYERS_NOBACKFILL
-                	  , NULL);
-
+    requester->ReqLayer = NULL;
+    
+    if ((right >= left) && (bottom >= top))
+    {
+	requester->ReqLayer = CreateUpfrontHookLayer(
+                	      &window->WScreen->LayerInfo
+                	      , window->WScreen->RastPort.BitMap
+                	      , left
+                	      , top
+                	      , right
+                	      , bottom
+                	      , (requester->Flags & SIMPLEREQ ? LAYERSIMPLE : LAYERSMART)
+                	      , LAYERS_NOBACKFILL
+                	      , NULL);
+    }
+    
     if (requester->ReqLayer)
     {
         requester->ReqLayer->Window = window;
