@@ -145,9 +145,9 @@ include/clib/console_protos.h: devs/cdinputhandler.c devs/rawkeyconvert.c
 $(GENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@
 
-$(GENDIR)/%.d: %.c
-	@$(RM) $@
-	@touch $@
-	@$(MKDEPEND) -f$@ -p$(GENDIR)/ -- $(CFLAGS) -- $^
-
-include $(GENDIR)/arosshell.d
+#$(GENDIR)/%.d: %.c
+#	 @$(RM) $@
+#	 @touch $@
+#	 @$(MKDEPEND) -f$@ -p$(GENDIR)/ -- $(CFLAGS) -- $^
+#
+#include $(GENDIR)/arosshell.d
