@@ -35,12 +35,19 @@
 # define <string> - The define to use to protect the resulting file
 #		against double inclusion (ie. #ifndef <string>...)
 #		The default is _LIBDEFS_H.
+# type <string> - What kind of library is this ? Valid values
+#		for <string> are: device, library, resource and hidd.
+# option <string>... - Specify an option. Valid values for <string> are
+#		noexpunge, rom. You can specify more than one option
+#		in a config file and more than one option per option line.
+#		Separate options by space.
 #
 BEGIN {
     libbase="";
     libbasetype="";
     basename="";
     define="_LIBDEFS_H";
+    type = "library";
 }
 /^name/ {
     libname=tolower($2);
@@ -83,6 +90,23 @@ BEGIN {
     match ($0,/^copyright[ \t]+/);
     copyright = substr ($0,RSTART+RLENGTH);
 }
+/^type/ {
+    type = $2;
+}
+/^option/ {
+    for (t=2; t<=NF; t++)
+    {
+	if ($t == "noexpunge")
+	    noexpunge = 1;
+	else if ($t == "rom")
+	    rom = 1;
+	else
+	{
+	    print "Unknown option \"" $t "\"" > "/dev/stderr";
+	    exit (10);
+	}
+    }
+}
 END {
     cmd="date \"+%d.%m.%Y\"";
     cmd | getline date;
@@ -95,9 +119,41 @@ END {
 	libbasetypeptr=libbasetype" *";
 
     print "#ifndef "define"\n#define "define
-    print "#define LIBNAME_STRING   \""libname".library\""
-    print "#define DEVNAME_STRING   \""libname".device\""
-    print "#define RESNAME_STRING   \""libname".resource\""
+
+    if (type == "library")
+    {
+	print "#define NAME_STRING      \""libname".library\""
+	print "#define NT_TYPE          NT_LIBRARY"
+    }
+    else if (type == "device")
+    {
+	print "#define NAME_STRING      \""libname".device\""
+	print "#define NT_TYPE          NT_DEVICE"
+    }
+    else if (type == "resource")
+    {
+	print "#define NAME_STRING      \""libname".resource\""
+	print "#define NT_TYPE          NT_RESOURCE"
+    }
+    else if (type == "hidd")
+    {
+	print "#define NAME_STRING      \""libname".hidd\""
+	print "#define NT_TYPE          NT_HIDD"
+    }
+    else
+    {
+	print "Unknown type "type > "/dev/stderr";
+	exit (10);
+    }
+
+    if (rom)
+	noexpunge = 1;
+
+    if (noexpunge)
+	print "#define NOEXPUNGE"
+    if (rom)
+	print "#define ROMBASED"
+
     print "#define LIBBASE          "libbase
     print "#define LIBBASETYPE      "libbasetype
     print "#define LIBBASETYPEPTR   "libbasetypeptr

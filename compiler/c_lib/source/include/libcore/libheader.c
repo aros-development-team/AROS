@@ -66,7 +66,7 @@ struct Resident const ALIGNED ROMTag =	   /* do not change */
     (APTR) &LIBEND,
     RTF_AUTOINIT,
     VERSION_NUMBER,
-    NT_LIBRARY,
+    NT_TYPE,
     0,
     (char *) &ExLibName[0],
     (char *) &ExLibID[0],
@@ -100,7 +100,7 @@ struct DataTable		    /* do not change */
 }
 const DataTab =
 {
-    INITBYTE(OFFSET(Node,         ln_Type),      NT_LIBRARY),
+    INITBYTE(OFFSET(Node,         ln_Type),      NT_TYPE),
     0x80, (UBYTE) OFFSET(Node,    ln_Name),      (ULONG) &ExLibName[0],
     INITBYTE(OFFSET(Library,      lib_Flags),    LIBF_SUMUSED|LIBF_CHANGED),
     INITWORD(OFFSET(Library,      lib_Version),  VERSION_NUMBER),
@@ -109,7 +109,7 @@ const DataTab =
     (ULONG) 0
 };
 
-const char ALIGNED ExLibName [] = LIBNAME_STRING;
+const char ALIGNED ExLibName [] = NAME_STRING;
 const char ALIGNED ExLibID   [] = VERSION_STRING;
 const char ALIGNED Copyright [] = COPYRIGHT_STRING;
 
@@ -157,9 +157,14 @@ AROS_LH1 (struct LibHeader *, OpenLib,
     InitModules();
 #endif
 
+#ifndef NOEXPUNGE
     lh->lh_LibNode.lib_OpenCnt++;
+#else
+    lh->lh_LibNode.lib_OpenCnt = 1;
+#endif /* NOEXPUNGE */
 
     lh->lh_LibNode.lib_Flags &= ~LIBF_DELEXP;
+
 
     return(lh);
 }
@@ -168,6 +173,7 @@ AROS_LH0 (BPTR, CloseLib,
     struct LibHeader *, lh, 2, LibHeader
 )
 {
+#ifndef NOEXPUNGE
     lh->lh_LibNode.lib_OpenCnt--;
 
     if(!lh->lh_LibNode.lib_OpenCnt)
@@ -177,6 +183,7 @@ AROS_LH0 (BPTR, CloseLib,
 	    return (AROS_SLIB_ENTRY(ExpungeLib,LibHeader)(lh));
 	}
     }
+#endif /* NOEXPUNGE */
 
     return (NULL);
 }
@@ -185,6 +192,7 @@ AROS_LH0 (BPTR, ExpungeLib,
     struct LibHeader *, lh, 3, LibHeader
 )
 {
+#ifndef NOEXPUNGE
     BPTR seglist;
 
     if(!lh->lh_LibNode.lib_OpenCnt)
@@ -213,6 +221,7 @@ AROS_LH0 (BPTR, ExpungeLib,
     }
 
     lh->lh_LibNode.lib_Flags |= LIBF_DELEXP;
+#endif /* NOEXPUNGE */
 
     return (NULL);
 }
