@@ -26,6 +26,7 @@ FILES = \
 	dir \
 	echo \
 	execute \
+	liblist \
 	list \
 	makedir \
 	mount \
