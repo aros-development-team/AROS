@@ -3,68 +3,81 @@
     $Id$
 */
 
+#define MUIMASTER_YES_INLINE_STDARG
+
 #include <libraries/asl.h>
 #include <prefs/font.h>
 
-#include <proto/asl.h>
 #include <proto/dos.h>
+#include <proto/muimaster.h>
 
 #include <string.h>
-#include <stdio.h>
 
 #include "locale.h"
+#include "asl.h"
 
 #define DEBUG 1
 #include <aros/debug.h>
 
-TEXT fileName[128]; // Path and the actual file name. Should we increase the size even more?
-
-STRPTR aslOpenPrefs()
+/*** Functions **************************************************************/
+STRPTR ASL_SelectFile(ULONG mode)
 {
-    struct FileRequester *fileReq;
-
-    if((fileReq = AllocAslRequestTags(ASL_FileRequest, TAG_END)))
+    struct FileRequester *request  = NULL;
+    STRPTR                filename = NULL;
+    
+    request = MUI_AllocAslRequestTags
+    (
+        ASL_FileRequest,
+        
+        mode == ASL_MODE_EXPORT ?
+                ASL_FuncFlags   :
+                TAG_IGNORE,       FILF_SAVE,
+        
+        TAG_DONE
+    );
+        
+    if (request == NULL)
     {
-	if(AslRequestTags(fileReq, ASL_Hail, MSG(MSG_ASL_OPEN_TITLE), TAG_END))
-	{
-	    strcpy(fileName, fileReq->rf_Dir);
-	    AddPart(fileName, fileReq->rf_File, sizeof(fileName)); /* Check for success! */
-	}
-	else
-	    kprintf("Requester cancelled?\n");
-
-	FreeAslRequest(fileReq);
+        /* Allocation failed */
+        /* FIXME: error dialog? */
+        return NULL;
     }
-    else
-	printf("%s\n", MSG(MSG_CANT_CREATE_REQ));
-
-    if(fileName[0]) // Does the string contain anything to return?
-	return(fileName);
-    else
-	return(FALSE);
-}
-
-STRPTR aslSavePrefs()
-{
-    struct FileRequester *fileReq;
-
-    if((fileReq = AllocAslRequestTags(ASL_FileRequest, ASL_FuncFlags, FILF_SAVE, TAG_END)))
+     
+    if
+    (
+        MUI_AslRequestTags
+        (
+            request,
+            
+            ASL_Hail, mode == ASL_MODE_EXPORT ? 
+                      MSG(MSG_ASL_SAVE_TITLE) : 
+                      MSG(MSG_ASL_OPEN_TITLE),
+            
+            TAG_DONE
+        )
+    )
     {
-	if(AslRequestTags(fileReq, ASL_Hail, MSG(MSG_ASL_SAVE_TITLE), TAG_END))
-	{
-	    strcpy(fileName, fileReq->rf_Dir);
-	    AddPart(fileName, fileReq->rf_File, sizeof(fileName)); /* Check for success! */
-	}
-	else
-	    kprintf("Requester cancelled?\n");
-
-	FreeAslRequest(fileReq);
+        ULONG length = strlen(request->rf_Dir)  + 1  /* separating '/' */  
+                     + strlen(request->rf_File) + 1; /* terminating '\0' */
+        
+        filename = AllocVec(length, MEMF_ANY);
+        
+        if (filename != NULL)
+        {
+            filename[0] = '\0';
+            strlcat(filename, request->rf_Dir, length);
+            if (!AddPart(filename, request->rf_File, length))
+            {
+                /* FIXME: Error dialog? */
+            }
+        }
+        else
+        {
+            /* FIXME: Error dialog */
+        }
     }
-    else
-	printf("%s\n", MSG(MSG_CANT_CREATE_REQ));
+    
+    MUI_FreeAslRequest(request);
 
-    if(fileName[0]) // Does the string contain anything to return?
-	return(fileName);
-    else
-	return(FALSE);
+    return filename;
 }
