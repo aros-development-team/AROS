@@ -73,6 +73,14 @@ AROS_LP3(BOOL, ChangeMode,
     AROS_LCA(ULONG, newmode, D3), \
     struct DosLibrary *, DOSBase, 75, Dos)
 
+AROS_LP1(LONG, CheckSignal,
+    AROS_LPA(LONG, mask, D1),
+    struct DosLibrary *, DOSBase, 132, Dos)
+#define CheckSignal(mask) \
+    AROS_LC1(LONG, CheckSignal, \
+    AROS_LCA(LONG, mask, D1), \
+    struct DosLibrary *, DOSBase, 132, Dos)
+
 AROS_LP0(struct CommandLineInterface *, Cli,
     struct DosLibrary *, DOSBase, 82, Dos)
 #define Cli() \
@@ -462,6 +470,16 @@ AROS_LP3(LONG, NameFromFH,
     AROS_LCA(STRPTR, buffer, D2), \
     AROS_LCA(LONG  , len, D3), \
     struct DosLibrary *, DOSBase, 68, Dos)
+
+AROS_LP2I(struct DosList *, NextDosEntry,
+    AROS_LPA(struct DosList *, dlist, D1),
+    AROS_LPA(ULONG           , flags, D2),
+    struct DosLibrary *, DOSBase, 115, Dos)
+#define NextDosEntry(dlist, flags) \
+    AROS_LC2I(struct DosList *, NextDosEntry, \
+    AROS_LCA(struct DosList *, dlist, D1), \
+    AROS_LCA(ULONG           , flags, D2), \
+    struct DosLibrary *, DOSBase, 115, Dos)
 
 AROS_LP2(BPTR, Open,
     AROS_LPA(STRPTR, name,       D1),
