@@ -9,6 +9,8 @@
 #include <exec/alerts.h>
 #include <asm/registers.h>
 
+#include <string.h>
+
 #undef DEBUG
 #define DEBUG 0
 #include <aros/debug.h>
