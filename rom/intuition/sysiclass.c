@@ -35,6 +35,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/**************************************************************************************************/
+
 #define DEFSIZE_WIDTH  14
 #define DEFSIZE_HEIGHT 14
 
@@ -135,7 +137,7 @@ UWORD ArrowRight1Data[] =
 
 #endif
 
-/****************************************************************************/
+/**************************************************************************************************/
 
 /* Some handy transparent base class object casting defines.
  */
@@ -150,7 +152,7 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
 #define IntuitionBase	((struct IntuitionBase *)(cl->cl_UserData))
 
 
-/****************************************************************************/
+/**************************************************************************************************/
 
 struct SysIData
 {
@@ -163,7 +165,7 @@ struct SysIData
 #define SYSIFLG_GADTOOLS 1
 #define SYSIFLG_NOBORDER 2
 
-/****************************************************************************/
+/**************************************************************************************************/
 
 /* Some handy drawing functions */
 
@@ -178,10 +180,8 @@ void draw_thick_line(Class *cl, struct RastPort *rport,
     Draw(rport, x2 + 1, y2);
 }
 
-/****************************************************************************/
+/**************************************************************************************************/
 
-
-/****************************************************************************/
 BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 {
     struct SysIData *data = INST_DATA(cl, obj);
@@ -205,40 +205,20 @@ D(bug("SYSIA_Which type: %d\n", data->type));
 #warning if IA_Width, IA_Height was not specified sysiclass should choose size depending on drawinfo (screen resolution)
 
             case LEFTIMAGE:
-		if (IM(obj)->Width  == 0) IM(obj)->Width = DEFSIZE_WIDTH;
-		if (IM(obj)->Height == 0) IM(obj)->Height = DEFSIZE_HEIGHT;
-                break;
-
             case UPIMAGE:
-		if (IM(obj)->Width  == 0) IM(obj)->Width = DEFSIZE_WIDTH;
-		if (IM(obj)->Height == 0) IM(obj)->Height = DEFSIZE_HEIGHT;
-                break;
-
             case RIGHTIMAGE:
-		if (IM(obj)->Width  == 0) IM(obj)->Width = DEFSIZE_WIDTH;
-		if (IM(obj)->Height == 0) IM(obj)->Height = DEFSIZE_HEIGHT;
-                break;
-
             case DOWNIMAGE:
-		if (IM(obj)->Width  == 0) IM(obj)->Width = DEFSIZE_WIDTH;
-		if (IM(obj)->Height == 0) IM(obj)->Height = DEFSIZE_HEIGHT; 
-                break;
-
             case CHECKIMAGE:
             case MXIMAGE:
-                break;
-
             case DEPTHIMAGE:
 	    case SDEPTHIMAGE:
             case ZOOMIMAGE:
             case CLOSEIMAGE:
             case SIZEIMAGE:
-		if (IM(obj)->Width  == 0) IM(obj)->Width = DEFSIZE_WIDTH;
-		if (IM(obj)->Height == 0) IM(obj)->Height = DEFSIZE_HEIGHT;
-	        break;
-		
             case MENUCHECK:
             case AMIGAKEY:
+	        break;
+		
 #warning FIXME: Missing Tags
             default:
                 unsupported = TRUE;
@@ -277,9 +257,41 @@ D(bug("dri: %p, unsupported: %d\n", data->dri, unsupported));
     if ((!data->dri) || (unsupported))
 	return FALSE;
 
+    switch(data->type)
+    {
+        case LEFTIMAGE:
+        case UPIMAGE:
+        case RIGHTIMAGE:
+        case DOWNIMAGE:
+	    if (IM(obj)->Width  == 0) IM(obj)->Width  = DEFSIZE_WIDTH;
+	    if (IM(obj)->Height == 0) IM(obj)->Height = DEFSIZE_HEIGHT; 
+            break;
+
+        case DEPTHIMAGE:
+	case SDEPTHIMAGE:
+        case ZOOMIMAGE:
+        case CLOSEIMAGE:
+        case SIZEIMAGE:
+	    if (IM(obj)->Width  == 0) IM(obj)->Width  = DEFSIZE_WIDTH;
+	    if (IM(obj)->Height == 0) IM(obj)->Height = DEFSIZE_HEIGHT;
+	    break;
+
+        case MENUCHECK:
+	    if (IM(obj)->Width  == 0) IM(obj)->Width  = data->dri->dri_Font->tf_XSize * 3 / 2;
+	    if (IM(obj)->Height == 0) IM(obj)->Height = data->dri->dri_Font->tf_YSize;
+	    break;
+	    
+        case AMIGAKEY:
+	    if (IM(obj)->Width  == 0) IM(obj)->Width  = data->dri->dri_Font->tf_XSize * 2;
+	    if (IM(obj)->Height == 0) IM(obj)->Height = data->dri->dri_Font->tf_YSize;
+	    break;
+    
+    } /* switch(data->type) */
+    
     return TRUE;
 }
 
+/**************************************************************************************************/
 
 Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
 {
@@ -337,6 +349,9 @@ D(bug("sysi_setnew called successfully\n"));
     case ZOOMIMAGE:
     case CLOSEIMAGE:
     case SIZEIMAGE:
+    
+    case MENUCHECK:
+    case AMIGAKEY:
         break;
     
     default:
@@ -347,6 +362,7 @@ D(bug("sysi_setnew called successfully\n"));
     return obj;
 }
 
+/**************************************************************************************************/
 
 void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 {
@@ -358,8 +374,6 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     UWORD height = IM(obj)->Height;
     WORD right = left + width - 1;
     WORD bottom = top + height - 1;
-
-/*    EraseRect(rport, left, top, left + width - 1, top + height - 1);*/
 
     SetDrMd(rport, JAM1);
     
@@ -949,15 +963,52 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	
 	break; }
 	
-	/* Fill rectangle with white color */
+    case MENUCHECK: {
+        UWORD *pens = data->dri->dri_Pens;
 	
-	/* !! need AreaFill() for this */
-    
+    	SetAPen(rport, pens[BARBLOCKPEN]);
+	RectFill(rport, left, top, right, bottom);
+
+	SetAPen(rport, pens[BARDETAILPEN]);
+	draw_thick_line(cl, rport, left + 1, top + height / 3 , left + 1, bottom, 0);
+	draw_thick_line(cl, rport, left + 2, bottom, right - 2, top, 0);
+	
+    	break; }
+
+    case AMIGAKEY: {
+        struct TextFont *oldfont;
+	UBYTE oldstyle;
+	
+        UWORD *pens = data->dri->dri_Pens;
+
+    	SetAPen(rport, pens[BARDETAILPEN]);
+	RectFill(rport, left, top, right, bottom);
+
+	SetAPen(rport, pens[BARBLOCKPEN]);
+	WritePixel(rport, left, top);
+	WritePixel(rport, right, top);
+	WritePixel(rport, right, bottom);
+	WritePixel(rport, left, bottom);
+	
+	oldfont = rport->Font;
+	oldstyle = rport->AlgoStyle;
+	
+	SetFont(rport, GfxBase->DefaultFont);
+	SetSoftStyle(rport, FSF_ITALIC, AskSoftStyle(rport));
+	
+	Move(rport, left + (width - rport->TxWidth) / 2,
+		    top  + (height - rport->TxHeight) / 2 + rport->TxBaseline);
+	Text(rport, "A", 1);
+	
+	SetSoftStyle(rport, oldstyle, AskSoftStyle(rport));
+	SetFont(rport, oldfont);
+    	break; }
+
     } /* switch (image type) */
     return;
 }
 
-/****************************************************************************/
+/**************************************************************************************************/
 
 AROS_UFH3S(IPTR, dispatch_sysiclass,
     AROS_UFHA(Class *,  cl,  A0),
@@ -1001,7 +1052,7 @@ AROS_UFH3S(IPTR, dispatch_sysiclass,
 
 #undef IntuitionBase
 
-/****************************************************************************/
+/**************************************************************************************************/
 
 /* Initialize our class. */
 struct IClass *InitSysIClass (struct IntuitionBase * IntuitionBase)
@@ -1021,6 +1072,7 @@ struct IClass *InitSysIClass (struct IntuitionBase * IntuitionBase)
     return (cl);
 }
 
+/**************************************************************************************************/
 
 static UWORD getbgpen(ULONG state, UWORD *pens)
 {
@@ -1044,6 +1096,7 @@ static UWORD getbgpen(ULONG state, UWORD *pens)
     return bg;
 }
 
+/**************************************************************************************************/
 
 static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWORD *pens,
 			     WORD left, WORD top, WORD width, WORD height,
