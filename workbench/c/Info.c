@@ -224,7 +224,7 @@ int main(void)
 }
 
 
-STRPTR GetStrFromCat(ULONG id, STRPTR def)
+CONST_STRPTR GetStrFromCat(ULONG id, CONST_STRPTR def)
 {
     if(cat != NULL)
     {
@@ -235,7 +235,7 @@ STRPTR GetStrFromCat(ULONG id, STRPTR def)
 }
 
 
-void LPrintf(ULONG id, STRPTR def, ...)
+void LPrintf(ULONG id, CONST_STRPTR def, ...)
 {
     def = GetStrFromCat(id, def);
     
@@ -562,7 +562,7 @@ void doInfo()
 		      (IPTR)FALSE,
 		      (IPTR)NULL };
         
-    STRPTR unit = GetStrFromCat(UNIT, "Unit");
+    CONST_STRPTR unit = GetStrFromCat(UNIT, "Unit");
 
     Pool = CreatePool(MEMF_ANY, 1024, 1024);
 
@@ -627,7 +627,7 @@ void doInfo()
 	/* scan doslist */
 	if(ScanDosList(devs))
 	{
-	    STRPTR  dstate[3] = { GetStrFromCat(READONLY,   "read only"),
+	    CONST_STRPTR  dstate[3] = { GetStrFromCat(READONLY,   "read only"),
 				  GetStrFromCat(VALIDATING, "validating"),
 				  GetStrFromCat(READWRITE,  "read/write") };
 	    STRPTR  datetimeFmt = NULL;
