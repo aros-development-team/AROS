@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/libraries.h>
 #include <intuition/classes.h>
 #include <proto/alib.h>

@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 /* execute.c -- Here are all functions used to execute the script */
 
 #include "Installer.h"

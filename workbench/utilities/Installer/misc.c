@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 /* misc.c -- here are all miscellaneous functions for global use */
 
 #include "Installer.h"
