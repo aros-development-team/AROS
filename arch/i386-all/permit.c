@@ -6,21 +6,19 @@
     Lang:
 */
 #include <exec/execbase.h>
-#include "callsave.h"
-
-static void _Permit (void);
+#include <proto/exec.h>
 
 /******************************************************************************
 
-    NAME */
-#include <proto/exec.h>
+    NAME
+	#include <proto/exec.h>
 
 	AROS_LH0(void, Permit,
 
-/*  LOCATION */
+    LOCATION
 	struct ExecBase *, SysBase, 23, Exec)
 
-/*  FUNCTION
+    FUNCTION
 	This function activates the dispatcher again after a call to Permit().
 
     INPUTS
@@ -44,11 +42,9 @@ static void _Permit (void);
     HISTORY
 
 ******************************************************************************/
-{
-    callsave (_Permit);
-} /* Permit */
 
-void _Permit (void)
+/* The real function is written in assembler as stub which calls me */
+void _Permit (struct ExecBase * SysBase)
 {
     if ((--SysBase->TDNestCnt) < 0
 	&& (SysBase->AttnResched & 0x80)

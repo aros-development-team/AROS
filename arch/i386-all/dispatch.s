@@ -52,7 +52,7 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 	pushl	%ebp
 
 	/* block all signals */
-	call	AROS_CSYMNAME(disable)
+	call	AROS_CSYMNAME(os_disable)
 
 	/* Get SysBase again */
 	movl	32(%esp),%ecx
@@ -126,7 +126,7 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 	/* If called from the signal handler don't do it. */
 	cmpb	$0,AROS_CSYMNAME(supervisor)
 	jne	.noen
-	call	en
+	call	os_enable
 
 .noen:
 	/* Except bit set? */

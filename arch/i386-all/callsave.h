@@ -1,2 +1,0 @@
-
-void callsave (void * func, ...);

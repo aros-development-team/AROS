@@ -9,7 +9,7 @@
 #include <sys/time.h>
 #undef timeval
 
-void disable(void);
+void os_disable(void);
 static int sig2inttabl[NSIG];
 int supervisor;
 
@@ -30,7 +30,7 @@ static void signals(int sig)
 	    AROS_UFCA(struct ExecBase *,SysBase,A6)
 	);
     }
-    disable ();
+    os_disable ();
     supervisor--;
     if(SysBase->AttnResched&0x8000)
     {

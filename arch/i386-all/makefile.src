@@ -28,7 +28,8 @@ FILES = \
 	superstate \
 	supervisor \
 	switch \
-	userstate
+	userstate \
+	stubs
 
 CLIBFILES = \
 	longjmp \
