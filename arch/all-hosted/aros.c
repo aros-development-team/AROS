@@ -32,7 +32,7 @@ int main(void)
 	if ((IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 39)))
 	{
 		/* Open a new console for the initial shell */
-		if ((cis = Open("CON:////Boot Shell/AUTO", MODE_READWRITE))
+		if ((cis = Open("CON:20/20///Boot Shell/AUTO", MODE_READWRITE))
 /* FIXME		&& (cos = DupLock(cis)) */
 /* FIXME		&& (ces = DupLock(cis)) */
 		   )
