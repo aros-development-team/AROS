@@ -330,13 +330,13 @@ const struct IntFontReq def_fontreq =
 	NULL,				/* TextAttr		*/
 	NULL,				/* Locale		*/
 	NULL,				/* MemPool		*/
-	0,				/* MemPoolPuddle	*/
-	0,				/* MemPoolThresh	*/
-	"Open font",			/* TitleText		*/
-	"OK",				/* PositiveText		*/
+	2048,				/* MemPoolPuddle	*/
+	2048,				/* MemPoolThresh	*/
+	"Open Font",			/* TitleText		*/
+	"Ok",				/* PositiveText		*/
 	"Cancel",			/* NegativeText		*/
 	-1, -1,				/* --> center on screen */
-	500, 300			/* Width/Height		*/
+	300, 300			/* Width/Height		*/
     },
     {"topaz", 8, 0, 0}, 		/* Default textattr 	*/
     TEXTPEN,				/* FrontPen		*/
@@ -353,7 +353,16 @@ const struct IntFontReq def_fontreq =
 
     NULL,				/* ModeList		*/
     NULL,				/* FrontPens		*/
-    NULL				/* BackPens		*/
+    NULL,				/* BackPens		*/
+    
+    "Control",
+    "L\0Last Font",
+    "N\0Next Font",
+    "R\0Restore",
+    "D\0Rescan Disk",
+    "O\0Ok",
+    "C\0Cancel"
+
 
 };
 
