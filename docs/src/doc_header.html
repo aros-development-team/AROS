@@ -19,8 +19,48 @@ a counter]">
 since 12. October 1999.
 </CENTER><p>
 <HR WIDTH="100%"><p>
+Looking where to download the software ? Look at the end of the page
+in the <strong>Links</strong> section.<P>
+
 <H2>NEWS</H2>
 <TABLE>
+<TR><TD VALIGN=TOP>05.03.2001</TD><TD>
+Georg Steger fixed a couple of bugs in the initialization code of
+AROS Linux/x86 and AROS Native/x86. Also commands with input
+redirection in shell script should work now. C:ConClip is now
+started in the Startup-Sequence. Global variables are now in the
+BSS segment and get initialized manually, so they have a defined
+value after a reset (otherwise, they would be initilized once and
+keep their value after a reset). And a bug in the menu handling in
+intuition was fixed.<P>
+
+Iain Templeton fixed a bug in text.datatype, added some new alerts
+for our HIDD system and made sure that some more temporary files
+are created in the build rather than in the source tree.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>01.03.2001</TD><TD>
+Stefan Berger fixed the smearing in DrawGList().<P>
+
+Georg Steger fixed some more ULONGs that should have been IPTRs and the
+depth calculations for AROS' screens on X11. Relative mousemovements
+are now confined to the screen borders and two apps can now render text
+at the same time without trashing the screen.<P>
+
+Johan Alfredsson fixed some bugs in the Dos.library and finished
+C:Copy. ENVARC: is now copied to ENV: in the startup sequence so
+saved prefs survive a reset.<P>
+
+Henning Kiel hunted a lot of spelling errors down.<P>
+
+Sebastian Heutling made our new filesystem compile when AROS Native/i386
+is built. The new native kernel now includes a filesystem ! Soon, we'll
+be able to do something with AROS when it runs standalone :-) Also,
+the floppy drives are now searched for bootable floppy disks. And some
+bugs in the filesystem were fixed.<P>
+
+Peter Eriksson added Swedish translation for Locale Preferences.
+</TD></TR>
 
 <TR><TD VALIGN=TOP>25.02.2001</TD><TD>
 Georg Steger finished Locale preferences. Have a look at our
@@ -72,7 +112,7 @@ file didn't always work).<P>
 Kjetil Svalastog Matheussen improved his CAMD/MIDI library.<P>
 
 Georg Steger added a demo for a register tab gadget.  He also committed an
-ILBM->C converter so we can put images in our software (for example, the map of
+ILBM-&gt;C converter so we can put images in our software (for example, the map of
 Earth in the locale preferences). 
 </TD></TR>
 
@@ -80,89 +120,12 @@ Earth in the locale preferences).
 Georg Steger wrote the locale sensitve StrToDate replacement and
 made IPrefs install them. The workbench screen title is now 
 "Workbench Screen" as it should be. Also some bugs which the
-test code showed in the date<->string conversion were
+test code showed in the date&lt;-&gt;string conversion were
 squished by him. Lastly, he added some scripts to start Doom
 with a certain amount of players using his netlocal routines.
 Makes a nice running demo for AROS :-)<P>
 
 Johan Alfredsson completed notifications support.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>12.02.2001</TD><TD>
-Sebastian Heutling fixed the seek() code in his filesystem and he
-implemented FSA_DISK_INFO.<P>
-
-Georg Steger fixed a lot of wrong types in the tools in C:
-(in AROS, you must pass an IPTR, not an ULONG if something can
-contain a pointer and an int). He also fixed the sequence of
-parameters for hooks in locale.library and implemented locale's
-replacement of Exec's RawDoFmt(). IPrefs now installs this
-patch. That made DirOpus crash, but he found and fixed that bug
-immediately. A global semaphore in IPrefs now protects the
-patches IPrefs installs so they are installed only once if
-IPrefs is started more than once. IPrefs will now patch utility.library
-locale sensitive replacements for string functions (Stricmp(),
-ToLower(), etc) and dos.library (DateToStr()). Filenames for
-languages now have their proper accents.<P>
-
-Johan Alfredsson continued his work on the notification code.<P>
-
-Sven Drieling summarized the m68k-emulator thread. When this works
-out, it might be possible to run Amiga code unmodified on AROS.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>08.02.2001</TD><TD>
-Georg Steger continued in his quest to improve all demos we have plus
-the code in AROS which is used by the demos. He also improved catalog loading
-and fixed a bug in diskfont.library (in libclose). Next, he added some
-mountlist entries for our new filesystem and began to work in IPrefs.<P>
-
-Sebastian Heutling fixed a bug in his FFS code.<P>
-
-Henning Kiel made his WiMP tool font sensitive.<P>
-
-Stefan Berger fix a bug in parallel and serial.device.<P>
-
-Johan Alfredsson improved a lot of code which is now used, because we
-have a filesystem (for example, C:Info shows now the volumes). Notification
-should now work with the RAM handler.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>05.02.2001</TD><TD>
-Georg Steger fixed a couple of bugs in the graphics.library (AreaFill)
-and improved locale a bit (if no language could be loaded, say that
-english, which is compiled in, is being used). He also improved some
-old demos from Fish disks and fixed some bugs in exec semaphores and
-c.lib/sscanf(). While improving the fish disk demos, he found a design
-fault in MathFFP (sometimes, ULONG is used and sometimes float).
-Lastly, he improved the bool gadgets, added support for the suomi
-language.<P>
-
-Stefan Berger helped to discover the MathFFP design fault.<P>
-
-Kjetil Svalastog Matheussen improved camd.library.<P>
-
-Michael Schulz improved the boot code for AROS i386/Native. The AROS
-kernel can now be upto 1.2MB (err, no, AROS doesn't need that much.
-It's just that we have no filesystem, yet, and therefore cannot
-load any libraries from disk, so for the time being, they must be
-compiled in :-)<P>
-
-Sebastian Heutling committed our first filesystem. Since we haven't
-got the sources for SFS as we hoped, our first filesystem is FFS.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>03.02.2001</TD><TD>
-Georg Steger added the country specific files for all countries
-which are supported by the AmigaOS and some more languages.
-In the last few days, he made also many demo programs from
-Aminet, Fish Disks and other sources work much better (or
-at all :-).<P>
-
-Stefan Berger finished GetLanguageSelection() in lowlevel.library.<P>
-
-Johan Alfredsson improved realtime.library and Swedish locale
-files.
 </TD></TR>
 
 <TR><TD><A HREF="oldnews.html">Older News</A></TD></TR>
