@@ -100,7 +100,7 @@ case "$host_os" in
 	aros_shared_ar="gcc"
 	aros_common_aflags="-x assembler-with-cpp"
 	aros_cc="$aros_cc -pipe"
-	aros_as="$aros-as -pipe"
+	aros_as="$aros_as -pipe"
 	;;
     freebsd*)
 	# Only do this if we are not cross compiling...
@@ -133,23 +133,26 @@ dnl You should append to the variables here.
 case "$target_os" in
     linux*)
     	aros_arch="linux"
-	aros_cpu="$target_cpu"
 	aros_flavour="emulation"
 	aros_common_cflags="-Wall -O0"
 	aros_ildflags="-nostartfiles -nostdlib -Xlinker -i"
-	if [ "$target_cpu" = "m68k" ]; then
+	case "$target_cpu" in
+	*m68k*)
     	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -D__mc68000__ -D__linux__"
 	    aros_shared_ar="$aros_shared_ar -shared -Wl,-T,\$(TOP)/config/linux/m68k/script.so -o"
 	    aros_shell_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
-
-	else if [ "$target_cpu" = "i386" ]; then
-	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -D__m68000__ -D__linux__"
+	    aros_cpu="m68k"
+	    ;;
+	*i?86*)
+	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -Di386 -D__linux__"
 	    aros_shared_ar="$aros_shared_ar -shared -o"
 	    aros_shell_ldflags="-Wl,-rpath,./lib"
-	else
+	    aros_cpu="i386"
+	    ;;
+	*)
 	    echo "Unknown CPU for Linux --- $target_cpu"
-	fi
-	fi
+	    ;;
+	esac
 	aros_shared_cflags="-fPIC"
 	;;
 	
