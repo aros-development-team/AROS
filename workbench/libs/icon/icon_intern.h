@@ -23,9 +23,17 @@
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
+#ifndef AROS_ASMCALL_H
+#   include <aros/asmcall.h>
+#endif
 #include <string.h>
 
 /* Internal prototypes */
+AROS_UFH3(LONG, dosstreamhook,
+    AROS_UFHA(struct Hook *,   hook, A0),
+    AROS_UFHA(BPTR,            file, A2),
+    AROS_UFHA(ULONG *,         msg, A1)
+);
 VOID	GetDefIconName (LONG, UBYTE *);
 UBYTE * WriteValue     (LONG, UBYTE *);
 
@@ -45,17 +53,18 @@ struct IconInternalMemList
     struct MemEntry iiml_ME[FREELIST_MEMLISTENTRIES];
 };
 
+extern struct ExecBase * SysBase;
+
 struct IconBase
 {
     struct Library    library;
-    struct ExecBase * sysbase;
     BPTR	      seglist;
     struct Library  * dosbase;
     struct Library  * utilitybase;
+    struct Hook       dsh;
 };
 
-#undef SysBase
-#define SysBase     (((struct IconBase *)IconBase)->sysbase)
+#define LB(icon)        ((struct IconBase *)icon)
 #undef DOSBase
 #define DOSBase     (((struct IconBase *)IconBase)->dosbase)
 #undef UtilityBase
