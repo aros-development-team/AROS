@@ -1,7 +1,7 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
  *  Copyright (C) 1996   Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+ *  Copyright (C) 1999, 2000, 2001 Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -260,12 +260,19 @@ ENTRY(grub_halt)
 	xorw	%bx, %bx
 	int	$0x15
 
-	/* connect APM (Is this really necessary?) */
+	/* connect APM */
 	movw	$0x5301, %ax
 	xorw	%bx, %bx
 	int	$0x15
 	jc	EXT_C(hard_stop)
 
+	/* set APM protocol level - 1.1 or bust. (this covers APM 1.2 also) */
+	movw	$0x530E, %ax
+	xorw	%bx, %bx
+	movw	$0x0101, %cx
+	int	$0x15
+	jc	EXT_C(hard_stop)
+	
 	/* set the power state to off */
 	movw	$0x5307, %ax
 	movw	$1, %bx
@@ -288,16 +295,10 @@ ENTRY(track_int13)
 	pushl	%ebx
 	pushl	%edi
 
-	/* save the original int13 handler */
+	/* copy the original int13 handler segment:offset */
 	movl	$0x4c, %edi
-	movw	(%edi), %ax
-	movw	%ax, ABS(set_tf_int13_offset)
-	movw	2(%edi), %ax
-	movw	%ax, ABS(set_tf_int13_segment)
-
-	/* save the new int13 handler */
-	movl	$ABS(set_tf_int13_handler), %eax
-	movl	%eax, (%edi)
+	movl	(%edi), %eax
+	movl	%eax, track_int13_addr
 		
 	/* replace the int1 handler */
 	movl	$0x4, %edi
@@ -310,29 +311,39 @@ ENTRY(track_int13)
 	
 	call	EXT_C(prot_to_real)
 	.code16
-		
+
 	movw	$SCRATCHSEG, %ax
 	movw	%ax, %es
 	xorw	%bx, %bx
 	movw	$1, %cx
 	xorb	%dh, %dh
 
-	movw	$0x201, %ax
-	int	$0x13
+	/* save FLAGS on the stack to emulate int13 */
+	pushfw
+	
+	/* set the TF flag */
+	/* FIXME: this can be simplified not to use AX */
+	pushfw
+	popw	%ax
+	orw	$0x100, %ax
+	pushw	%ax
+	popfw
 
+	movw	$0x0201, %ax
+
+	.byte	0x9a		/* lcall */
+track_int13_addr:
+	.word	0		/* offset */
+	.word	0		/* segment */
+
+	/* TF is cleared here automatically */
+	
 	DATA32	call	EXT_C(real_to_prot)
 	.code32
 
 	/* restore the int1 handler */
 	movl	$0x4, %edi
 	popl	(%edi)
-
-	/* restore the int13 handler */
-	movl	$0x4c, %edi
-	movw	ABS(set_tf_int13_offset), %ax
-	movw	%ax, (%edi)
-	movw	ABS(set_tf_int13_segment), %ax
-	movw	%ax, 2(%edi)
 
 	popl	%edi
 	popl	%ebx
@@ -407,9 +418,8 @@ int1_handler:
 	jg	8f
 
 7:	/* immediate has a port */
-	xorb	%ah, %ah
 	lodsb	(%si), %al
-	movw	%ax, %dx
+	movzbw	%al, %dx
 	
 5:	/* %dx has a port */
 
@@ -447,37 +457,6 @@ int1_handler:
 
 	iret
 	
-
-/*
- * Just set the TF flag. This handler is necessary because any interrupt
- * call clears the flag automatically.
- *
- * Note: we need not to clear this flag after the tracking explicitly,
- * because iret restores the original FLAGS.
- */
-set_tf_int13_handler:
-	/* save %ax int the stack */
-	pushw	%ax
-	
-	/* set the TF flag */
-	pushf
-	popw	%ax
-	orw	$0x100, %ax
-	pushw	%ax
-	popf
-
-	/* restore %ax */
-	popw	%ax
-
-	/* simulate the interrupt call */
-	pushf
-	/* lcall */
-	.byte	0x9a
-set_tf_int13_offset:	.word	0
-set_tf_int13_segment:	.word	0
-
-	iret
-
 	.code32
 
 ENTRY(io_map)
@@ -789,7 +768,7 @@ ENTRY(chain_stage1)
 
 #ifdef STAGE1_5
 /*
- * chain_stage2(segment, offset)
+ * chain_stage2(segment, offset, second_sector)
  *
  *  This starts another stage2 loader, at segment:offset.  It presumes
  *  that the other one starts with this same "asm.S" file, and passes
@@ -819,8 +798,13 @@ ENTRY(chain_stage2)
 	/* set up to pass the drive where stage2 is located in */
 	movb	EXT_C(current_drive), %dl
 
+	/* set up to pass the second sector of stage2 */
+	movl	0xc(%esp), %ecx
+
 	call	EXT_C(prot_to_real)
 	.code16
+
+	movl	%ecx, %ebp
 
 #ifdef ABSOLUTE_WITHOUT_ASTERISK
 	DATA32	ADDR32	ljmp	(offset)
@@ -1236,7 +1220,8 @@ ENTRY(get_diskinfo_standard)
 
 	ret
 
-		
+
+#if 0		
 /*
  *   int get_diskinfo_floppy (int drive, unsigned long *cylinders, 
  *                            unsigned long *heads, unsigned long *sectors)
@@ -1320,72 +1305,15 @@ probe_values:
 	popl	%ebp
 
 	ret
-
-
-/* This is stolen from libc/x86/setjmp.S in the OSKit */
-/* 
- * Mach Operating System
- * Copyright (c) 1991,1990,1989 Carnegie Mellon University
- * All Rights Reserved.
- * 
- * Permission to use, copy, modify and distribute this software and its
- * documentation is hereby granted, provided that both the copyright
- * notice and this permission notice appear in all copies of the
- * software, derivative works or modified versions, and any portions
- * thereof, and that both notices appear in supporting documentation.
- * 
- * CARNEGIE MELLON ALLOWS FREE USE OF THIS SOFTWARE IN ITS "AS IS"
- * CONDITION.  CARNEGIE MELLON DISCLAIMS ANY LIABILITY OF ANY KIND FOR
- * ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
- * 
- * Carnegie Mellon requests users of this software to return to
- * 
- *  Software Distribution Coordinator  or  Software.Distribution@CS.CMU.EDU
- *  School of Computer Science
- *  Carnegie Mellon University
- *  Pittsburgh PA 15213-3890
- * 
- * any improvements or extensions that they make and grant Carnegie Mellon
- * the rights to redistribute these changes.
- */
-/*
- * C library -- _setjmp, _longjmp
- *
- *      _longjmp(a,v)
- * will generate a "return(v)" from
- * the last call to
- *      _setjmp(a)
- * by restoring registers from the stack,
- * The previous signal state is NOT restored.
- *
- */
+#endif
 	
-ENTRY(grub_setjmp)
-	movl	4(%esp), %ecx		/* fetch buffer */
-	movl	%ebx, 0(%ecx)
-	movl	%esi, 4(%ecx)
-	movl	%edi, 8(%ecx)
-	movl	%ebp, 12(%ecx)		/* save frame pointer of caller */
-	popl	%edx
-	movl	%esp, 16(%ecx)		/* save stack pointer of caller */
-	movl	%edx, 20(%ecx)		/* save pc of caller */
-	xorl	%eax, %eax
-        jmp     *%edx
 
-ENTRY(grub_longjmp)
-	movl	8(%esp), %eax		/* return(v) */
-	movl	4(%esp), %ecx		/* fetch buffer */
-	movl	0(%ecx), %ebx
-	movl	4(%ecx), %esi
-	movl	8(%ecx), %edi
-	movl	12(%ecx), %ebp
-	movl	16(%ecx), %esp
-	orl	%eax, %eax
-	jnz	0f
-	incl	%eax
-0:	jmp	*20(%ecx)		/* done, return.... */
-
-	
+/* Source files are splitted, as they have different copyrights.  */
+#ifndef STAGE1_5
+# include "setjmp.S"
+# include "apm.S"
+#endif /* ! STAGE1_5 */
+		
 /*
  * console_putchar(c)
  *
@@ -1596,6 +1524,166 @@ xsmap:
 	pop	%ebp
 	ret
 
+/*
+ * get_rom_config_table()
+ *
+ * Get the linear address of a ROM configuration table. Return zero,
+ * if fails.
+ */
+	
+ENTRY(get_rom_config_table)
+	pushl	%ebp
+	pushl	%ebx
+
+	/* zero %ebx for simplicity */
+	xorl	%ebx, %ebx
+	
+	call	EXT_C(prot_to_real)
+	.code16
+
+	movw	$0xc0, %ax
+	int	$0x15
+
+	jc	no_rom_table
+	testb	%ah, %ah
+	jnz	no_rom_table
+	
+	movw	%es, %dx
+	jmp	found_rom_table
+	
+no_rom_table:
+	xorw	%dx, %dx
+	xorw	%bx, %bx
+	
+found_rom_table:
+	DATA32	call	EXT_C(real_to_prot)
+	.code32
+
+	/* compute the linear address */
+	movw	%dx, %ax
+	shll	$4, %eax
+	addl	%ebx, %eax
+
+	popl	%ebx
+	popl	%ebp
+	ret
+
+
+/*
+ * int get_vbe_controller_info (struct vbe_controller *controller_ptr)
+ *
+ * Get VBE controller information.
+ */
+
+ENTRY(get_vbe_controller_info)
+	pushl	%ebp
+	movl	%esp, %ebp
+	
+	pushl	%edi
+	pushl	%ebx
+
+	/* Convert the linear address to segment:offset */
+	movl	8(%ebp), %eax
+	movl	%eax, %edi
+	andl	$0x0000000f, %edi
+	shrl	$4, %eax
+	movl	%eax, %ebx
+
+	call	EXT_C(prot_to_real)
+	.code16
+
+	movw	%bx, %es
+	movw	$0x4F00, %ax
+	int	$0x10
+
+	movw	%ax, %bx
+	DATA32	call	EXT_C(real_to_prot)
+	.code32
+
+	movzwl	%bx, %eax
+
+	popl	%ebx
+	popl	%edi
+	popl	%ebp
+	ret
+
+	
+/*
+ * int get_vbe_mode_info (int mode_number, struct vbe_mode *mode_ptr)
+ *
+ * Get VBE mode information.
+ */
+
+ENTRY(get_vbe_mode_info)
+	pushl	%ebp
+	movl	%esp, %ebp
+	
+	pushl	%edi
+	pushl	%ebx
+
+	/* Convert the linear address to segment:offset */
+	movl	0xc(%ebp), %eax
+	movl	%eax, %edi
+	andl	$0x0000000f, %edi
+	shrl	$4, %eax
+	movl	%eax, %ebx
+
+	/* Save the mode number in %cx */
+	movl	0x8(%ebp), %ecx
+	
+	call	EXT_C(prot_to_real)
+	.code16
+
+	movw	%bx, %es
+	movw	$0x4F01, %ax
+	int	$0x10
+
+	movw	%ax, %bx
+	DATA32	call	EXT_C(real_to_prot)
+	.code32
+
+	movzwl	%bx, %eax
+
+	popl	%ebx
+	popl	%edi
+	popl	%ebp
+	ret
+
+	
+/*
+ * int set_vbe_mode (int mode_number)
+ *
+ * Set VBE mode. Don't support user-specified CRTC information.
+ */
+
+ENTRY(set_vbe_mode)
+	pushl	%ebp
+	movl	%esp, %ebp
+	
+	pushl	%ebx
+
+	/* Save the mode number in %bx */
+	movl	0x8(%ebp), %ebx
+	/* Clear bit D11 */
+	andl	$0xF7FF, %ebx
+	
+	call	EXT_C(prot_to_real)
+	.code16
+
+	movw	$0x4F02, %ax
+	int	$0x10
+
+	movw	%ax, %bx
+	DATA32	call	EXT_C(real_to_prot)
+	.code32
+
+	movzwl	%bx, %eax
+
+	popl	%ebx
+	popl	%ebp
+	ret
+
+		
 /*
  * gateA20(int linear)
  *
@@ -1864,7 +1952,7 @@ ENTRY(console_gotoxy)
 
 
 /*
- * set_attrib(attr) :  Sets the character attributes for character at
+ * console_set_attrib(attr) :  Sets the character attributes for character at
  *		current cursor position.
  *
  *  Bitfields for character's display attribute:
@@ -1898,7 +1986,7 @@ ENTRY(console_gotoxy)
  *			%cx = count to display (???, possible side-effects!!)
  */
 
-ENTRY(set_attrib)
+ENTRY(console_set_attrib)
 	push	%ebp
 	push	%ebx
 
@@ -2123,6 +2211,16 @@ offset:
 segment:
 	.word	0
 
+VARIABLE(apm_bios_info)
+	.word	0	/* version */
+	.word	0	/* cseg */
+	.long	0	/* offset */
+	.word	0	/* cseg_16 */
+	.word	0	/* dseg_16 */
+	.word	0	/* cseg_len */
+	.word	0	/* cseg_16_len */
+	.word	0	/* dseg_16_len */
+	
 /*
  * This is the Global Descriptor Table
  *

@@ -178,18 +178,6 @@ print_network_configuration (void)
     }
 }
 
-/* Override the server IP address.  */
-int
-arp_server_override (const char *buffer)
-{
-  in_addr in;
-
-  if (! inet_aton ((char *) buffer, &in))
-    return 0;
-
-  arptable[ARP_SERVER].ipaddr.s_addr = in.s_addr;
-  return 1;
-}
 
 /**************************************************************************
 DEFAULT_NETMASK - Return default netmask for IP address
@@ -205,6 +193,49 @@ default_netmask (void)
   else
     return (htonl (0xffffff00));
 }
+
+/* ifconfig - configure network interface.  */
+int
+ifconfig (char *ip, char *sm, char *gw, char *svr)
+{
+  in_addr tmp;
+  
+  if (sm) 
+    {
+      if (! inet_aton (sm, &tmp))
+	return 0;
+      
+      netmask = tmp.s_addr;
+    }
+  
+  if (ip) 
+    {
+      if (! inet_aton (ip, &arptable[ARP_CLIENT].ipaddr)) 
+	return 0;
+      
+      if (! netmask && ! sm) 
+	netmask = default_netmask ();
+    }
+  
+  if (gw && ! inet_aton (gw, &arptable[ARP_GATEWAY].ipaddr)) 
+    return 0;
+  
+  if (svr && ! inet_aton (svr, &arptable[ARP_SERVER].ipaddr)) 
+    return 0;
+  
+  if (ip || sm)
+    {
+      if (IP_BROADCAST == (netmask | arptable[ARP_CLIENT].ipaddr.s_addr)
+	  || netmask == (netmask | arptable[ARP_CLIENT].ipaddr.s_addr)
+	  || ! netmask)
+	network_ready = 0;
+      else
+	network_ready = 1;
+    }
+  
+  return 1;
+}
+
 
 /**************************************************************************
 UDP_TRANSMIT - Send a UDP datagram

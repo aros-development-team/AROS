@@ -11,6 +11,4 @@ stage2/Makefile.in
 	added various *fsys_affs* + libgrub_a_CFLAGS=-DFSYS_AFFS=1
 configure.in
 	added AFFS enable/disable support
-configure
-	added AFFS enable/disable support (because configure.in differs)
 

@@ -1,5 +1,5 @@
 /* boot.S - bootstrap the kernel */
-/* Copyright (C) 1999  Free Software Foundation, Inc.
+/* Copyright (C) 1999, 2001  Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,8 +21,6 @@
 	.text
 
 	.globl	start, _start
-
-	/* This entry is not used actually.  */
 start:
 _start:
 	jmp	multiboot_entry
@@ -38,6 +36,7 @@ multiboot_header:
 	.long	MULTIBOOT_HEADER_FLAGS
 	/* checksum */
 	.long	-(MULTIBOOT_HEADER_MAGIC + MULTIBOOT_HEADER_FLAGS)
+#ifndef __ELF__
 	/* header_addr */
 	.long	multiboot_header
 	/* load_addr */
@@ -48,6 +47,7 @@ multiboot_header:
 	.long	_end
 	/* entry_addr */
 	.long	multiboot_entry
+#endif /* ! __ELF__ */
 
 multiboot_entry:
 	/* Initialize the stack pointer.  */

@@ -2,7 +2,7 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
  *  Copyright (C) 1996  Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 1999, 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	    unsigned long load_flags)
 {
   int len, i, exec_type = 0, align_4k = 1;
+  entry_func real_entry_addr = 0;
   kernel_t type = KERNEL_TYPE_NONE;
   unsigned long flags = 0, text_len = 0, data_len = 0, bss_len = 0;
   char *str = 0, *str2 = 0;
@@ -107,7 +108,7 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
       else
 	entry_addr = (entry_func) (pu.elf->e_entry & 0xFFFFFF);
 
-      if (((int) entry_addr) < 0x100000)
+      if (entry_addr < (entry_func) 0x100000)
 	errnum = ERR_BELOW_1MB;
 
       /* don't want to deal with ELF program header at some random
@@ -493,7 +494,7 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
   else
     /* ELF executable */
     {
-      int loaded = 0, memaddr, memsiz, filesiz;
+      unsigned loaded = 0, memaddr, memsiz, filesiz;
       Elf32_Phdr *phdr;
 
       /* reset this to zero for now */
@@ -519,6 +520,15 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	      memsiz = phdr->p_memsz;
 	      if (memaddr < RAW_ADDR (0x100000))
 		errnum = ERR_BELOW_1MB;
+
+	      /* If the memory range contains the entry address, get the
+		 physical address here.  */
+	      if (type == KERNEL_TYPE_MULTIBOOT
+		  && (unsigned) entry_addr >= phdr->p_vaddr
+		  && (unsigned) entry_addr < phdr->p_vaddr + memsiz)
+		real_entry_addr = (entry_func) ((unsigned) entry_addr
+						+ memaddr - phdr->p_vaddr);
+		
 	      /* make sure we only load what we're supposed to! */
 	      if (filesiz > memsiz)
 		filesiz = memsiz;
@@ -542,19 +552,99 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	    }
 	}
 
-      if (!errnum)
+      if (! errnum)
 	{
-	  if (!loaded)
+	  if (! loaded)
 	    errnum = ERR_EXEC_FORMAT;
 	  else
 	    {
-	      /* FIXME: load ELF symbols */
+	      /* Load ELF symbols.  */
+	      Elf32_Shdr *shdr = NULL;
+	      int tab_size, sec_size;
+	      int symtab_err = 0;
+
+	      mbi.syms.e.num = pu.elf->e_shnum;
+	      mbi.syms.e.size = pu.elf->e_shentsize;
+	      mbi.syms.e.shndx = pu.elf->e_shstrndx;
+	      
+	      /* We should align to a 4K boundary here for good measure.  */
+	      if (align_4k)
+		cur_addr = (cur_addr + 0xFFF) & 0xFFFFF000;
+	      
+	      tab_size = pu.elf->e_shentsize * pu.elf->e_shnum;
+	      
+	      grub_seek (pu.elf->e_shoff);
+	      if (grub_read ((char *) RAW_ADDR (cur_addr), tab_size)
+		  == tab_size)
+		{
+		  mbi.syms.e.addr = cur_addr;
+		  shdr = (Elf32_Shdr *) mbi.syms.e.addr;
+		  cur_addr += tab_size;
+		  
+		  printf (", shtab=0x%x", cur_addr);
+  		  
+		  for (i = 0; i < mbi.syms.e.num; i++)
+		    {
+		      /* This section is a loaded section,
+			 so we don't care.  */
+		      if (shdr[i].sh_addr != 0)
+			continue;
+		      
+		      /* This section is empty, so we don't care.  */
+		      if (shdr[i].sh_size == 0)
+			continue;
+		      
+		      /* Align the section to a sh_addralign bits boundary.  */
+		      cur_addr = ((cur_addr + shdr[i].sh_addralign) & 
+				  - (int) shdr[i].sh_addralign);
+		      
+		      grub_seek (shdr[i].sh_offset);
+		      
+		      sec_size = shdr[i].sh_size;
+
+		      if (! (memcheck (cur_addr, sec_size)
+			     && (grub_read ((char *) RAW_ADDR (cur_addr),
+					    sec_size)
+				 == sec_size)))
+			{
+			  symtab_err = 1;
+			  break;
+			}
+		      
+		      shdr[i].sh_addr = cur_addr;
+		      cur_addr += sec_size;
+		    }
+		}
+	      else 
+		symtab_err = 1;
+	      
+	      if (mbi.syms.e.addr < RAW_ADDR(0x10000))
+		symtab_err = 1;
+	      
+	      if (symtab_err) 
+		{
+		  printf ("(bad)");
+		  mbi.syms.e.num = 0;
+		  mbi.syms.e.size = 0;
+		  mbi.syms.e.addr = 0;
+		  mbi.syms.e.shndx = 0;
+		  cur_addr = 0;
+		}
+	      else
+		mbi.flags |= MB_INFO_ELF_SHDR;
 	    }
 	}
     }
 
-  if (!errnum)
-    printf (", entry=0x%x]\n", (int) entry_addr);
+  if (! errnum)
+    {
+      grub_printf (", entry=0x%x]\n", (unsigned) entry_addr);
+      
+      /* If the entry address is physically different from that of the ELF
+	 header, correct it here.  */
+      if (real_entry_addr)
+	entry_addr = real_entry_addr;
+    }
   else
     {
       putchar ('\n');
@@ -617,14 +707,18 @@ load_initrd (char *initrd)
   unsigned long moveto;
   struct linux_kernel_header *lh;
   
+#ifndef NO_DECOMPRESSION
+  no_decompression = 1;
+#endif
+  
   if (! grub_open (initrd))
-    return 0;
+    goto fail;
 
   len = grub_read ((char *) cur_addr, -1);
   if (! len)
     {
       grub_close ();
-      return 0;
+      goto fail;
     }
 
   moveto = ((mbi.mem_upper + 0x400) * 0x400 - len) & 0xfffff000;
@@ -632,8 +726,10 @@ load_initrd (char *initrd)
     moveto = (LINUX_INITRD_MAX_ADDRESS - len) & 0xfffff000;
   
   /* XXX: Linux 2.3.xx has a bug in the memory range check, so avoid
-     the last page.  */
-  moveto -= 0x1000;
+     the last page.
+     XXX: Linux 2.2.xx has a bug in the memory range check, which is
+     worse than that of Linux 2.3.xx, so avoid the last 64kb. *sigh*  */
+  moveto -= 0x10000;
   memmove ((void *) RAW_ADDR (moveto), (void *) cur_addr, len);
 
   printf ("   [Linux-initrd @ 0x%x, 0x%x bytes]\n", moveto, len);
@@ -644,7 +740,14 @@ load_initrd (char *initrd)
   lh->ramdisk_size = len;
 
   grub_close ();
-  return 1;
+
+ fail:
+  
+#ifndef NO_DECOMPRESSION
+  no_decompression = 0;
+#endif
+
+  return ! errnum;
 }
 
 

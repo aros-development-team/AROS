@@ -1,7 +1,7 @@
 /* asmstub.c - a version of shared_src/asm.S that works under Unix */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999, 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ int grub_stage2 (void);
 #include <shared.h>
 #include <device.h>
 #include <serial.h>
+#include <hercules.h>
 
 /* Simulated memory sizes. */
 #define EXTENDED_MEMSIZE (3 * 1024 * 1024)	/* 3MB */
@@ -71,6 +72,8 @@ int saved_entryno = 0;
 char version_string[] = VERSION;
 char config_file[128] = "/boot/grub/menu.lst"; /* FIXME: arbitrary */
 unsigned long linux_text_len = 0;
+unsigned short io_map[IO_MAP_SIZE];
+struct apm_info apm_bios_info;
 
 /* Emulation requirements. */
 char *grub_scratch_mem = 0;
@@ -272,7 +275,7 @@ chain_stage1 (unsigned long segment, unsigned long offset,
 
 
 void
-chain_stage2 (unsigned long segment, unsigned long offset)
+chain_stage2 (unsigned long segment, unsigned long offset, int second_sector)
 {
   stop ();
 }
@@ -423,6 +426,50 @@ get_mmap_entry (struct mmar_desc *desc, int cont)
   return 0;
 }
 
+/* Track the int13 handler.  */
+void
+track_int13 (int drive)
+{
+  /* Nothing to do in the simulator.  */
+}
+
+/* Get the ROM configuration table.  */
+unsigned long
+get_rom_config_table (void)
+{
+  return 0;
+}
+
+/* Get APM BIOS information.  */
+void
+get_apm_info (void)
+{
+  /* Nothing to do in the simulator.  */
+}
+
+/* Get VBE controller information.  */
+int
+get_vbe_controller_info (struct vbe_controller *controller)
+{
+  /* Always fails.  */
+  return 0;
+}
+
+/* Get VBE mode information.  */
+int
+get_vbe_mode_info (int mode_number, struct vbe_mode *mode)
+{
+  /* Always fails.  */
+  return 0;
+}
+
+/* Set VBE mode.  */
+int
+set_vbe_mode (int mode_number)
+{
+  /* Always fails.  */
+  return 0;
+}
 
 /* low-level timing info */
 int
@@ -596,7 +643,7 @@ console_checkkey (void)
 
 /* sets text mode character attribute at the cursor position */
 void
-set_attrib (int attr)
+console_set_attrib (int attr)
 {
 #ifdef HAVE_LIBCURSES
   if (use_curses)
@@ -825,6 +872,19 @@ biosdisk (int subfunc, int drive, struct geometry *geometry,
   switch (subfunc)
     {
     case BIOSDISK_READ:
+#ifdef __linux__
+      if (sector == 0 && nsec > 1)
+	{
+	  /* Work around a bug in linux's ez remapping.  Linux remaps all
+	     sectors that are read together with the MBR in one read.  It
+	     should only remap the MBR, so we split the read in two 
+	     parts. -jochen  */
+	  if (nread (fd, buf, SECTOR_SIZE) != SECTOR_SIZE)
+	    return -1;
+	  buf += SECTOR_SIZE;
+	  nsec--;
+	}
+#endif
       if (nread (fd, buf, nsec * SECTOR_SIZE) != nsec * SECTOR_SIZE)
 	return -1;
       break;
@@ -966,6 +1026,13 @@ serial_get_port (int unit)
   return 0;
 }
 
+/* Check if a serial port is set up.  */
+int
+serial_exists (void)
+{
+  return serial_fd >= 0;
+}
+
 /* Initialize a serial device. In the grub shell, PORT is unused.  */
 int
 serial_init (unsigned short port, unsigned int speed,
@@ -983,7 +1050,16 @@ serial_init (unsigned short port, unsigned int speed,
     close (serial_fd);
   
   /* Open the device file.  */
-  serial_fd = open (serial_device, O_RDWR | O_NOCTTY | O_SYNC);
+  serial_fd = open (serial_device,
+		    O_RDWR | O_NOCTTY
+#if defined(O_SYNC)
+		    /* O_SYNC is used in Linux (and some others?).  */
+		    | O_SYNC
+#elif defined(O_FSYNC)
+		    /* O_FSYNC is used in FreeBSD.  */
+		    | O_FSYNC
+#endif
+		    );
   if (serial_fd < 0)
     return 0;
 
@@ -1078,4 +1154,35 @@ set_serial_device (const char *device)
     free (serial_device);
   
   serial_device = strdup (device);
+}
+
+/* There is no difference between console and hercules in the grub shell.  */
+void
+herc_cls (void)
+{
+  console_cls ();
+}
+
+int
+herc_getxy (void)
+{
+  return console_getxy ();
+}
+
+void
+herc_gotoxy (int x, int y)
+{
+  console_gotoxy (x, y);
+}
+
+void
+herc_putchar (int c)
+{
+  console_putchar (c);
+}
+
+void
+herc_set_attrib (int attr)
+{
+  console_set_attrib (attr);
 }

@@ -2,7 +2,7 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
  *  Copyright (C) 1996  Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 1999, 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,6 +20,10 @@
  */
 
 #include <shared.h>
+
+#ifdef SUPPORT_HERCULES
+# include <hercules.h>
+#endif
 
 #ifdef SUPPORT_SERIAL
 # include <serial.h>
@@ -302,7 +306,11 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
 	{
 	  xpos -= count;
 
-	  if (terminal & TERMINAL_CONSOLE)
+	  if ((terminal & TERMINAL_CONSOLE)
+# ifdef SUPPORT_HERCULES
+	      || (terminal & TERMINAL_HERCULES)
+# endif /* SUPPORT_HERCULES */
+	      )
 	    {
 	      int y = getxy () & 0xFF;
 	      
@@ -336,7 +344,11 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
 	{
 	  xpos += count;
 
-	  if (terminal & TERMINAL_CONSOLE)
+	  if ((terminal & TERMINAL_CONSOLE)
+# ifdef SUPPORT_HERCULES
+	      || (terminal & TERMINAL_HERCULES)
+# endif /* SUPPORT_HERCULES */
+	      )
 	    {
 	      int y = getxy () & 0xFF;
 	      
@@ -458,7 +470,11 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
 	}
 
       /* Back to XPOS.  */
-      if (terminal & TERMINAL_CONSOLE)
+      if ((terminal & TERMINAL_CONSOLE)
+# ifdef SUPPORT_HERCULES
+	  || (terminal & TERMINAL_HERCULES)
+# endif /* SUPPORT_HERCULES */
+	  )
 	{
 	  int y = getxy () & 0xFF;
 	  
@@ -999,7 +1015,15 @@ grub_strncat (char *s1, const char *s2, int n)
 
   return 1;
 }
+#endif /* ! STAGE1_5 */
 
+/* XXX: This below is an evil hack. Certainly, we should change the
+   strategy to determine what should be defined and what shouldn't be
+   defined for each image. For example, it would be better to create
+   a static library supporting minimal standard C functions and link
+   each image with the library. Complicated things should be left to
+   computer, definitely. -okuji  */
+#if ! defined(STAGE1_5) || defined(FSYS_VSTAFS)
 int
 grub_strcmp (const char *s1, const char *s2)
 {
@@ -1015,14 +1039,20 @@ grub_strcmp (const char *s1, const char *s2)
 
   return 0;
 }
+#endif /* ! STAGE1_5 || FSYS_VSTAFS */
 
+#ifndef STAGE1_5
 /* Wait for a keypress and return its code.  */
 int
 getkey (void)
 {
   int c = -1;
   
-  if (terminal & TERMINAL_CONSOLE)
+  if ((terminal & TERMINAL_CONSOLE)
+#ifdef SUPPORT_HERCULES
+      || (terminal & TERMINAL_HERCULES)
+#endif /* SUPPORT_HERCULES */
+      )
     c = console_getkey ();
 #ifdef SUPPORT_SERIAL
   else if (terminal & TERMINAL_SERIAL)
@@ -1038,9 +1068,13 @@ checkkey (void)
 {
   int c = -1;
 
-  if (terminal & TERMINAL_CONSOLE)
+  if ((terminal & TERMINAL_CONSOLE)
+#ifdef SUPPORT_HERCULES
+      || (terminal & TERMINAL_HERCULES)
+#endif /* SUPPORT_HERCULES */
+      )
     c = console_checkkey ();
-
+  
 #ifdef SUPPORT_SERIAL
   if (terminal & TERMINAL_SERIAL)
     c = serial_checkkey ();
@@ -1090,6 +1124,11 @@ grub_putchar (int c)
   if (terminal & TERMINAL_CONSOLE)
     console_putchar (c);
 
+# ifdef SUPPORT_HERCULES
+  if (terminal & TERMINAL_HERCULES)
+    herc_putchar (c);
+# endif /* SUPPORT_HERCULES */
+
 # ifdef SUPPORT_SERIAL
   if (terminal & TERMINAL_SERIAL)
     serial_putchar (c);
@@ -1104,10 +1143,14 @@ gotoxy (int x, int y)
 {
   if (terminal & TERMINAL_CONSOLE)
     console_gotoxy (x, y);
+#ifdef SUPPORT_HERCULES
+  else if (terminal & TERMINAL_HERCULES)
+    herc_gotoxy (x, y);
+#endif /* SUPPORT_HERCULES */
 #ifdef SUPPORT_SERIAL
   else if (terminal & TERMINAL_SERIAL)
     serial_gotoxy (x, y);
-#endif
+#endif /* SUPPORT_SERIAL */
 }
 
 #ifdef SUPPORT_SERIAL
@@ -1126,10 +1169,14 @@ getxy (void)
   
   if (terminal & TERMINAL_CONSOLE)
     ret = console_getxy ();
+#ifdef SUPPORT_HERCULES
+  else if (terminal & TERMINAL_HERCULES)
+    ret = herc_getxy ();
+#endif /* SUPPORT_HERCULES */
 #ifdef SUPPORT_SERIAL
   else if (terminal & TERMINAL_SERIAL)
     ret = serial_getxy ();
-#endif
+#endif /* SUPPORT_SERIAL */
   
   return ret;
 }
@@ -1225,10 +1272,14 @@ cls (void)
 {
   if (terminal & TERMINAL_CONSOLE)
     console_cls ();
+#ifdef SUPPORT_HERCULES
+  else if (terminal & TERMINAL_HERCULES)
+    herc_cls ();
+#endif /* SUPPORT_HERCULES */
 #ifdef SUPPORT_SERIAL
   else if (terminal & TERMINAL_SERIAL)
     serial_cls ();
-#endif
+#endif /* SUPPORT_SERIAL */
 }
 
 #ifdef SUPPORT_SERIAL
@@ -1243,6 +1294,17 @@ serial_cls (void)
     grub_printf ("\e[H\e[J");
 }
 #endif /* SUPPORT_SERIAL */
+
+void
+set_attrib (int attr)
+{
+#ifdef SUPPORT_HERCULES
+  if (terminal & TERMINAL_HERCULES)
+    herc_set_attrib (attr);
+  else
+#endif /* SUPPORT_HERCULES */
+    console_set_attrib (attr);
+}
 #endif /* ! STAGE1_5 */
 
 int
@@ -1282,17 +1344,20 @@ nul_terminate (char *str)
 char *
 grub_strstr (const char *s1, const char *s2)
 {
-  const char *ptr, *tmp;
-
   while (*s1)
     {
+      const char *ptr, *tmp;
+
       ptr = s1;
       tmp = s2;
 
-      while (*s1 && *s1++ == *tmp++);
+      while (*tmp && *ptr == *tmp)
+	ptr++, tmp++;
+      
+      if (tmp > s2 && ! *tmp)
+	return (char *) s1;
 
-      if (tmp > s2 && !*(tmp - 1))
-	return (char *) ptr;
+      s1++;
     }
 
   return 0;

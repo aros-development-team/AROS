@@ -27,3 +27,9 @@
 
 /* Defined if an absolute indirect call/jump must NOT be prefixed with `*'.  */
 #undef ABSOLUTE_WITHOUT_ASTERISK
+
+/* Defined if the user specifies --enable-preset-menu=FILE.  */
+#undef PRESET_MENU_STRING
+
+/* Defined if the user specified --enable-auto-linux-mem-opt.  */
+#undef AUTO_LINUX_MEM_OPT

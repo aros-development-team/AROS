@@ -1,7 +1,7 @@
 /* fsys_reiserfs.c - an implementation for the ReiserFS filesystem */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 2000, 2001  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -57,12 +57,12 @@ struct reiserfs_super_block
   __u32 s_root_block;           	/* root block number    */
   __u32 s_journal_block;           	/* journal block number    */
   __u32 s_journal_dev;           	/* journal device number  */
-  __u32 s_orig_journal_size; 		/* size of the journal on FS creation.  used to make sure they don't overflow it */
-  __u32 s_journal_trans_max ;           /* max number of blocks in a transaction.  */
-  __u32 s_journal_block_count ;         /* total size of the journal. can change over time  */
-  __u32 s_journal_max_batch ;           /* max number of blocks to batch into a trans */
-  __u32 s_journal_max_commit_age ;      /* in seconds, how old can an async commit be */
-  __u32 s_journal_max_trans_age ;       /* in seconds, how old can a transaction be */
+  __u32 s_journal_size; 		/* size of the journal on FS creation.  used to make sure they don't overflow it */
+  __u32 s_journal_trans_max;            /* max number of blocks in a transaction.  */
+  __u32 s_journal_magic;                /* random value made on fs creation */
+  __u32 s_journal_max_batch;            /* max number of blocks to batch into a trans */
+  __u32 s_journal_max_commit_age;       /* in seconds, how old can an async commit be */
+  __u32 s_journal_max_trans_age;        /* in seconds, how old can a transaction be */
   __u16 s_blocksize;                   	/* block size           */
   __u16 s_oid_maxsize;			/* max size of object id array  */
   __u16 s_oid_cursize;			/* current size of object id array */
@@ -173,8 +173,6 @@ struct key
 };
 
 #define KEY_SIZE (sizeof (struct key))
-#define K_OFFSET(key) (INFO->version < 2 ? \
-		       key.u.v1.k_offset : key.u.v2.k_offset)
 
 /* Header of a disk block.  More precisely, header of a formatted leaf
    or internal node, and not the header of an unformatted node. */
@@ -205,12 +203,25 @@ struct item_head
   u;
   __u16 ih_item_len;           /* total size of the item body                  */
   __u16 ih_item_location;      /* an offset to the item body within the block  */
-  __u16 ih_version;	       /* 0 for all old items, 2 for new
-                                  ones. Highest bit is set by fsck
+  __u16 ih_version;	       /* ITEM_VERSION_1 for all old items, 
+				  ITEM_VERSION_2 for new ones. 
+				  Highest bit is set by fsck
                                   temporary, cleaned after all done */
 };
 /* size of item header     */
 #define IH_SIZE (sizeof (struct item_head))
+
+#define ITEM_VERSION_1 0
+#define ITEM_VERSION_2 1
+#define IH_KEY_OFFSET(ih) (INFO->version < 2 \
+			   || (ih)->ih_version == ITEM_VERSION_1 \
+			   ? (ih)->ih_key.u.v1.k_offset \
+			   : (ih)->ih_key.u.v2.k_offset)
+
+#define IH_KEY_ISTYPE(ih, type) (INFO->version < 2 \
+				 || (ih)->ih_version == ITEM_VERSION_1 \
+				 ? (ih)->ih_key.u.v1.k_uniqueness == V1_##type \
+				 : (ih)->ih_key.u.v2.k_type == V2_##type)
 
 struct disk_child
 {
@@ -285,19 +296,21 @@ struct reiserfs_de_head
 #define FSYSREISER_MIN_BLOCKSIZE SECTOR_SIZE
 #define FSYSREISER_MAX_BLOCKSIZE FSYSREISER_CACHE_SIZE / 3
 
+/* Info about currently opened file */
 struct fsys_reiser_fileinfo
 {
   __u32 k_dir_id;
   __u32 k_objectid;
 };
 
+/* In memory info about the currently mounted filesystem */
 struct fsys_reiser_info
 {
   /* The last read item head */
   struct item_head *current_ih;
   /* The last read item */
   char *current_item;
-  /* The information for the currently open file */
+  /* The information for the currently opened file */
   struct fsys_reiser_fileinfo fileinfo;
   /* The start of the journal */
   __u32 journal_block;
@@ -474,7 +487,6 @@ journal_init (void)
   if (desc_block >= block_count)
     return 0;
 
-  INFO->journal_transactions = 0;
   INFO->journal_first_desc = desc_block;
   next_trans_id = header.j_last_flush_trans_id + 1;
 
@@ -606,16 +618,17 @@ reiserfs_mount (void)
       || (SECTOR_SIZE << INFO->blocksize_shift) != super.s_blocksize)
     return 0;
 
-  if (super.s_journal_block != 0)
+  /* Initialize journal code.  If something fails we end with zero
+   * journal_transactions, so we don't access the journal at all.  
+   */
+  INFO->journal_transactions = 0;
+  if (super.s_journal_block != 0 && super.s_journal_dev == 0)
     {
       INFO->journal_block = super.s_journal_block;
-      INFO->journal_block_count = super.s_journal_block_count;
-      if (INFO->journal_block_count == 0)
-	INFO->journal_block_count = super.s_orig_journal_size;
-      if (! is_power_of_two (INFO->journal_block_count))
-	return 0;
+      INFO->journal_block_count = super.s_journal_size;
+      if (is_power_of_two (INFO->journal_block_count))
+	journal_init ();
 
-      journal_init ();
       /* Read in super block again, maybe it is in the journal */
       block_read (superblock >> INFO->blocksize_shift, 
 		  0, sizeof (struct reiserfs_super_block), (char *) &super);
@@ -645,7 +658,7 @@ reiserfs_mount (void)
 /***************** TREE ACCESSING METHODS *****************************/
 
 /* I assume you are familiar with the ReiserFS tree, if not go to
- * http://devlinux.com/projects/reiserfs/
+ * http://www.namesys.com/content_table.html
  *
  * My tree node cache is organized as following
  *   0   ROOT node
@@ -710,11 +723,12 @@ next_key (void)
   char *cache;
   
 #ifdef REISERDEBUG
-  printf ("next_key:\n  old key %d:%d:%d:%d\n", 
+  printf ("next_key:\n  old ih: key %d:%d:%d:%d version:%d\n", 
 	  INFO->current_ih->ih_key.k_dir_id, 
 	  INFO->current_ih->ih_key.k_objectid, 
 	  INFO->current_ih->ih_key.u.v1.k_offset,
-	  INFO->current_ih->ih_key.u.v1.k_uniqueness);
+	  INFO->current_ih->ih_key.u.v1.k_uniqueness,
+	  INFO->current_ih->ih_version);
 #endif /* REISERDEBUG */
   
   if (ih == &ITEMHEAD[BLOCKHEAD (LEAF)->blk_nr_item])
@@ -772,11 +786,12 @@ next_key (void)
   INFO->current_ih   = ih;
   INFO->current_item = &LEAF[ih->ih_item_location];
 #ifdef REISERDEBUG
-  printf ("  new key %d:%d:%d:%d\n", 
+  printf ("  new ih: key %d:%d:%d:%d version:%d\n", 
 	  INFO->current_ih->ih_key.k_dir_id, 
 	  INFO->current_ih->ih_key.k_objectid, 
 	  INFO->current_ih->ih_key.u.v1.k_offset,
-	  INFO->current_ih->ih_key.u.v1.k_uniqueness);
+	  INFO->current_ih->ih_key.u.v1.k_uniqueness,
+	  INFO->current_ih->ih_version);
 #endif /* REISERDEBUG */
   return 1;
 }
@@ -866,12 +881,12 @@ reiserfs_read (char *buf, int len)
   char *prev_buf = buf;
   
 #ifdef REISERDEBUG
-  printf ("reiserfs_read: filepos=%d len=%d, offset=%d\n",
-	  filepos, len, K_OFFSET (INFO->current_ih->ih_key) - 1);
+  printf ("reiserfs_read: filepos=%d len=%d, offset=%x:%x\n",
+	  filepos, len, (__u64) IH_KEY_OFFSET (INFO->current_ih) - 1);
 #endif /* REISERDEBUG */
   
   if (INFO->current_ih->ih_key.k_objectid != INFO->fileinfo.k_objectid
-      || K_OFFSET (INFO->current_ih->ih_key) > filepos + 1)
+      || IH_KEY_OFFSET (INFO->current_ih) > filepos + 1)
     {
       search_stat (INFO->fileinfo.k_dir_id, INFO->fileinfo.k_objectid);
       goto get_next_key;
@@ -882,7 +897,7 @@ reiserfs_read (char *buf, int len)
       if (INFO->current_ih->ih_key.k_objectid != INFO->fileinfo.k_objectid)
 	break;
       
-      offset = filepos - K_OFFSET (INFO->current_ih->ih_key) + 1;
+      offset = filepos - IH_KEY_OFFSET (INFO->current_ih) + 1;
       blocksize = INFO->current_ih->ih_item_len;
       
 #ifdef REISERDEBUG
@@ -890,16 +905,13 @@ reiserfs_read (char *buf, int len)
 	      filepos, len, offset, blocksize);
 #endif /* REISERDEBUG */
       
-      if ((INFO->version < 2 
-	   ? INFO->current_ih->ih_key.u.v1.k_uniqueness == V1_TYPE_DIRECT
-	   : INFO->current_ih->ih_key.u.v2.k_type == V2_TYPE_DIRECT)
+      if (IH_KEY_ISTYPE(INFO->current_ih, TYPE_DIRECT)
 	  && offset < blocksize)
 	{
 	  to_read = blocksize - offset;
 	  if (to_read > len)
 	    to_read = len;
 	  
-#ifndef STAGE1_5
 	  if (disk_read_hook != NULL)
 	    {
 	      disk_read_func = disk_read_hook;
@@ -910,13 +922,10 @@ reiserfs_read (char *buf, int len)
 	      disk_read_func = NULL;
 	    }
 	  else
-#endif /* ! STAGE1_5 */
 	    memcpy (buf, INFO->current_item + offset, to_read);
 	  goto update_buf_len;
 	}
-      else if (INFO->version < 2 
-	       ? INFO->current_ih->ih_key.u.v1.k_uniqueness == V1_TYPE_INDIRECT
-	       : INFO->current_ih->ih_key.u.v2.k_type == V2_TYPE_INDIRECT)
+      else if (IH_KEY_ISTYPE(INFO->current_ih, TYPE_INDIRECT))
 	{
 	  blocksize = (blocksize >> 2) << INFO->fullblocksize_shift;
 	  
@@ -930,9 +939,7 @@ reiserfs_read (char *buf, int len)
 	      if (to_read > len)
 		to_read = len;
 	      
-#ifndef STAGE1_5
 	      disk_read_func = disk_read_hook;
-#endif /* ! STAGE1_5 */
 	      
 	      /* Journal is only for meta data.  Data blocks can be read
 	       * directly without using block_read
@@ -940,9 +947,7 @@ reiserfs_read (char *buf, int len)
 	      devread (blocknr << INFO->blocksize_shift,
 		       blk_offset, to_read, buf);
 	      
-#ifndef STAGE1_5
 	      disk_read_func = NULL;
-#endif /* ! STAGE1_5 */
 	    update_buf_len:
 	      len -= to_read;
 	      buf += to_read;
@@ -1034,7 +1039,11 @@ reiserfs_dir (char *dirname)
   	  filepos = 0;
 	  if (! next_key ()
 	      || reiserfs_read (linkbuf, filemax) != filemax)
-	    return 0;
+	    {
+	      if (! errnum)
+		errnum = ERR_FSYS_CORRUPT;
+	      return 0;
+	    }
 
 #ifdef REISERDEBUG
 	  printf ("symlink=%s\n", linkbuf);
@@ -1075,7 +1084,8 @@ reiserfs_dir (char *dirname)
 	  /* If this is a new stat data and size is > 4GB set filemax to 
 	   * maximum
 	   */
-	  if (INFO->current_ih->ih_version == 2
+	  if (INFO->version >= 2
+	      && INFO->current_ih->ih_version == ITEM_VERSION_2
 	      && ((struct stat_data *) INFO->current_item)->sd_size_hi > 0)
 	    filemax = 0xffffffff;
 	  
@@ -1108,10 +1118,12 @@ reiserfs_dir (char *dirname)
 	  if (! next_key ())
 	    return 0;
 #ifdef REISERDEBUG
-	  printf ("key %d:%d:%d:%d\n", INFO->current_ih->ih_key.k_dir_id, 
+	  printf ("ih: key %d:%d:%d:%d version:%d\n", 
+		  INFO->current_ih->ih_key.k_dir_id, 
 		  INFO->current_ih->ih_key.k_objectid, 
 		  INFO->current_ih->ih_key.u.v1.k_offset,
-		  INFO->current_ih->ih_key.u.v1.k_uniqueness);
+		  INFO->current_ih->ih_key.u.v1.k_uniqueness,
+		  INFO->current_ih->ih_version);
 #endif /* REISERDEBUG */
 	  
 	  if (INFO->current_ih->ih_key.k_objectid != objectid)

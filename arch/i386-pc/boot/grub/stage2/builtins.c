@@ -2,7 +2,7 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
  *  Copyright (C) 1996  Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 1999, 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -43,6 +43,10 @@
 # include <smp-imps.h>
 #endif /* ! GRUB_UTIL */
 
+#ifdef USE_MD5_PASSWORDS
+# include <md5.h>
+#endif
+
 /* Terminal types.  */
 int terminal = TERMINAL_CONSOLE;
 /* The type of kernel loaded.  */
@@ -62,6 +66,8 @@ int current_entryno;
 static char *mb_cmdline;
 /* The password.  */
 char *password;
+/* The password type.  */
+password_t password_type;
 /* The flag for indicating that the user is authoritative.  */
 int auth = 0;
 /* Color settings.  */
@@ -73,6 +79,10 @@ int grub_timeout = -1;
 int show_menu = 1;
 /* The BIOS drive map.  */
 static unsigned short bios_drive_map[DRIVE_MAP_SIZE + 1];
+
+/* Prototypes for allowing straightfoward calling of builtins functions
+   inside other functions.  */
+static int configfile_func (char *arg, int flags);
 
 /* Initialize the data for builtins.  */
 void
@@ -94,6 +104,26 @@ init_config (void)
   password = 0;
   fallback_entry = -1;
   grub_timeout = -1;
+}
+
+/* Check a password for correctness.  Returns 0 if password was
+   correct, and a value != 0 for error, similarly to strcmp. */
+int
+check_password (char *entered, char* expected, password_t type)
+{
+  switch (type)
+    {
+    case PASSWORD_PLAIN:
+      return strcmp (entered, expected);
+
+#ifdef USE_MD5_PASSWORDS
+    case PASSWORD_MD5:
+      return check_md5_password (entered, expected);
+#endif
+    default: 
+      /* unsupported password type: be secure */
+      return 1;
+    }
 }
 
 /* Print which sector is read when loading a file.  */
@@ -265,6 +295,7 @@ boot_func (char *arg, int flags)
       if (boot_drive & 0x80)
 	{
 	  char *dst, *src;
+	  int i;
 	  
 	  /* Read the MBR here, because it might be modified
 	     after opening the partition.  */
@@ -283,6 +314,12 @@ boot_func (char *arg, int flags)
 	  src = (char *) SCRATCHADDR + BOOTSEC_PART_OFFSET;
 	  while (dst < (char *) BOOT_PART_TABLE + BOOTSEC_PART_LENGTH)
 	    *dst++ = *src++;
+	  
+	  /* Set the active flag of the booted partition.  */
+	  for (i = 0; i < 4; i++)
+	    PC_SLICE_FLAG (BOOT_PART_TABLE, i) = 0;
+
+	  *((unsigned char *) boot_part_addr) = PC_SLICE_FLAG_BOOTABLE;
 	}
       
       chain_stage1 (0, BOOTSEC_LOCATION, boot_part_addr);
@@ -316,6 +353,15 @@ static struct builtin builtin_boot =
 static int
 bootp_func (char *arg, int flags)
 {
+  int with_configfile = 0;
+
+  if (grub_memcmp (arg, "--with-configfile", sizeof ("--with-configfile") - 1)
+      == 0)
+    {
+      with_configfile = 1;
+      arg = skip_to (0, arg);
+    }
+  
   if (! bootp ())
     {
       if (errnum == ERR_NONE)
@@ -326,6 +372,12 @@ bootp_func (char *arg, int flags)
 
   /* Notify the configuration.  */
   print_network_configuration ();
+
+  /* XXX: this can cause an endless loop, but there is no easy way to
+     detect such a loop unfortunately.  */
+  if (with_configfile)
+    configfile_func (config_file, flags);
+  
   return 0;
 }
 
@@ -334,8 +386,10 @@ static struct builtin builtin_bootp =
   "bootp",
   bootp_func,
   BUILTIN_CMDLINE | BUILTIN_MENU,
-  "bootp",
-  "Initialize a network device via BOOTP."
+  "bootp [--with-configfile]",
+  "Initialize a network device via BOOTP. If the option `--with-configfile'"
+  " is given, try to load a configuration file specified by the 150 vendor"
+  " tag."
 };
 #endif /* SUPPORT_NETBOOT */
 
@@ -392,6 +446,12 @@ chainloader_func (char *arg, int flags)
     {
       grub_close ();
       kernel_type = KERNEL_TYPE_NONE;
+
+      /* This below happens, if a file whose size is less than 512 bytes
+	 is loaded.  */
+      if (errnum == ERR_NONE)
+	errnum = ERR_EXEC_FORMAT;
+      
       return 1;
     }
 
@@ -408,6 +468,17 @@ chainloader_func (char *arg, int flags)
 
   grub_close ();
   kernel_type = KERNEL_TYPE_CHAINLOADER;
+
+  /* XXX: Windows evil hack. For now, only the first five letters are
+     checked.  */
+  if (IS_PC_SLICE_TYPE_FAT (current_slice)
+      && ! grub_memcmp ((char *) BOOTSEC_LOCATION + BOOTSEC_BPB_SYSTEM_ID,
+			"MSWIN", 5))
+    *((unsigned long *) (BOOTSEC_LOCATION + BOOTSEC_BPB_HIDDEN_SECTORS))
+      = part_start;
+
+  errnum = ERR_NONE;
+  
   return 0;
 }
 
@@ -801,6 +872,48 @@ static struct builtin builtin_dhcp =
 #endif /* SUPPORT_NETBOOT */
 
 
+/* displayapm */
+static int
+displayapm_func (char *arg, int flags)
+{
+  if (mbi.flags & MB_INFO_APM_TABLE)
+    {
+      grub_printf ("APM BIOS information:
+ Version:          0x%x
+ 32-bit CS:        0x%x
+ Offset:           0x%x
+ 16-bit CS:        0x%x
+ 16-bit DS:        0x%x
+ 32-bit CS length: 0x%x
+ 16-bit CS length: 0x%x
+ 16-bit DS length: 0x%x\n",
+		   (unsigned) apm_bios_info.version,
+		   (unsigned) apm_bios_info.cseg,
+		   apm_bios_info.offset,
+		   (unsigned) apm_bios_info.cseg_16,
+		   (unsigned) apm_bios_info.dseg_16,
+		   (unsigned) apm_bios_info.cseg_len,
+		   (unsigned) apm_bios_info.cseg_16_len,
+		   (unsigned) apm_bios_info.dseg_16_len);
+    }
+  else
+    {
+      grub_printf ("No APM BIOS found or probe failed\n");
+    }
+
+  return 0;
+}
+
+static struct builtin builtin_displayapm =
+{
+  "displayapm",
+  displayapm_func,
+  BUILTIN_CMDLINE,
+  "displayapm",
+  "Display APM BIOS information."
+};
+
+
 /* displaymem */
 static int
 displaymem_func (char *arg, int flags)
@@ -856,6 +969,7 @@ static struct builtin builtin_displaymem =
 };
 
 
+static char embed_info[32];
 /* embed */
 /* Embed a Stage 1.5 in the first cylinder after MBR or in the
    bootloader block in a FFS.  */
@@ -894,6 +1008,11 @@ embed_func (char *arg, int flags)
       /* Embed it after the MBR.  */
       
       char mbr[SECTOR_SIZE];
+      char ezbios_check[2*SECTOR_SIZE];
+
+      /* Open the partition.  */
+      if (! open_partition ())
+	return 1;
 
       /* No floppy has MBR.  */
       if (! (current_drive & 0x80))
@@ -916,6 +1035,23 @@ embed_func (char *arg, int flags)
       /* Check if the disk can store the Stage 1.5.  */
       if (PC_SLICE_START (mbr, 0) - 1 < size)
 	{
+	  errnum = ERR_DEV_VALUES;
+	  return 1;
+	}
+
+      /* Check for EZ-BIOS signature. It should be in the third
+       * sector, but due to remapping it can appear in the second, so
+       * load and check both.  
+       */
+      if (! rawread (current_drive, 1, 0, 2 * SECTOR_SIZE, ezbios_check))
+	return 1;
+
+      if (! memcmp (ezbios_check + 3, "AERMH", 5)
+	  || ! memcmp (ezbios_check + 512 + 3, "AERMH", 5))
+	{
+	  /* The space after the MBR is used by EZ-BIOS which we must 
+	   * not overwrite.
+	   */
 	  errnum = ERR_DEV_VALUES;
 	  return 1;
 	}
@@ -946,38 +1082,11 @@ embed_func (char *arg, int flags)
   buf_track = -1;
 
   /* Now perform the embedding.  */
-#if defined(GRUB_UTIL) && defined(__linux__)
-  if (current_partition != 0xFFFFFF)
-    {
-      /* If the grub shell is running under Linux and the user wants to
-	 embed a Stage 1.5 into a partition instead of a MBR, use system
-	 calls directly instead of biosdisk, because of the bug in
-	 Linux. *sigh*  */
-
-      if (! write_to_partition (device_map, current_drive, current_partition,
-				sector - part_start, size, stage1_5_buffer))
-	return 1;
-    }
-  else
-#endif /* GRUB_UTIL && __linux__ */
-    {
-      int i;
-      
-      for (i = 0; i < size; i++)
-	{
-	  grub_memmove ((char *) SCRATCHADDR,
-			stage1_5_buffer + i * SECTOR_SIZE,
-			SECTOR_SIZE);
-	  if (biosdisk (BIOSDISK_WRITE, current_drive, &buf_geom,
-			sector + i, 1, SCRATCHSEG))
-	    {
-	      errnum = ERR_WRITE;
-	      return 1;
-	    }
-	}
-    }
+  if (! devwrite (sector - part_start, size, stage1_5_buffer))
+    return 1;
   
   grub_printf (" %d sectors are embedded.\n", size);
+  grub_sprintf (embed_info, "%d+%d", sector - part_start, size);
   return 0;
 }
 
@@ -1428,6 +1537,61 @@ static struct builtin builtin_hide =
 };
 
 
+#ifdef SUPPORT_NETBOOT
+/* ifconfig */
+static int
+ifconfig_func (char *arg, int flags)
+{
+  char *svr = 0, *ip = 0, *gw = 0, *sm = 0;
+  
+  if (! eth_probe ())
+    {
+      grub_printf ("No ethernet card found.\n");
+      errnum = ERR_DEV_VALUES;
+      return 1;
+    }
+  
+  while (*arg) 
+    {
+      if (! grub_memcmp ("--server=", arg, sizeof ("--server=") - 1))
+	svr = arg + sizeof("--server=") - 1;
+      else if (! grub_memcmp ("--address=", arg, sizeof ("--address=") - 1))
+	ip = arg + sizeof ("--address=") - 1;
+      else if (! grub_memcmp ("--gateway=", arg, sizeof ("--gateway=") - 1))
+	gw = arg + sizeof ("--gateway=") - 1;
+      else if (! grub_memcmp ("--mask=", arg, sizeof("--mask=") - 1))
+	sm = arg + sizeof ("--mask=") - 1;
+      else
+	{
+	  errnum = ERR_BAD_ARGUMENT;
+	  return 1;
+	}
+      
+      arg = skip_to (0, arg);
+    }
+  
+  if (! ifconfig (ip, sm, gw, svr))
+    {
+      errnum = ERR_BAD_ARGUMENT;
+      return 1;
+    }
+  
+  print_network_configuration ();
+  return 0;
+}
+
+static struct builtin builtin_ifconfig =
+{
+  "ifconfig",
+  ifconfig_func,
+  BUILTIN_CMDLINE | BUILTIN_MENU,
+  "ifconfig [--address=IP] [--gateway=IP] [--mask=MASK] [--server=IP]",
+  "Configure the IP address, the netmask, the gateway and the server"
+  " address or print current network configuration."
+};
+#endif /* SUPPORT_NETBOOT */
+
+
 /* impsprobe */
 static int
 impsprobe_func (char *arg, int flags)
@@ -1493,7 +1657,8 @@ install_func (char *arg, int flags)
 {
   char *stage1_file, *dest_dev, *file, *addr;
   char *stage1_buffer = (char *) RAW_ADDR (0x100000);
-  char *old_sect = stage1_buffer + SECTOR_SIZE;
+  char *stage2_buffer = stage1_buffer + SECTOR_SIZE;
+  char *old_sect = stage2_buffer + SECTOR_SIZE;
   char *stage2_first_buffer = old_sect + SECTOR_SIZE;
   char *stage2_second_buffer = stage2_first_buffer + SECTOR_SIZE;
   /* XXX: Probably SECTOR_SIZE is reasonable.  */
@@ -1847,7 +2012,7 @@ install_func (char *arg, int flags)
 	  grub_seek (SECTOR_SIZE);
 	  
 	  disk_read_hook = disk_read_savesect_func;
-	  if (grub_read ((char *) SCRATCHADDR, SECTOR_SIZE) != SECTOR_SIZE)
+	  if (grub_read (stage2_buffer, SECTOR_SIZE) != SECTOR_SIZE)
 	    goto fail;
 	  
 	  disk_read_hook = 0;
@@ -1855,16 +2020,14 @@ install_func (char *arg, int flags)
 	  is_open = 0;
 	  
 	  /* Sanity check.  */
-	  if (*((unsigned char *) SCRATCHADDR + STAGE2_STAGE2_ID)
-	      != STAGE2_ID_STAGE2)
+	  if (*(stage2_buffer + STAGE2_STAGE2_ID) != STAGE2_ID_STAGE2)
 	    {
 	      errnum = ERR_BAD_VERSION;
 	      goto fail;
 	    }
 
 	  /* Set the "force LBA" flag for Stage2.  */
-	  *((unsigned char *) (SCRATCHADDR + STAGE2_FORCE_LBA))
-	    = is_force_lba;
+	  *(stage2_buffer + STAGE2_FORCE_LBA) = is_force_lba;
 
 	  /* If REAL_CONFIG_FILENAME is specified, copy it to the Stage2.  */
 	  if (*real_config_filename)
@@ -1873,7 +2036,7 @@ install_func (char *arg, int flags)
 	      char *location;
 	      
 	      /* Find a string for the configuration filename.  */
-	      location = (char *) SCRATCHADDR + STAGE2_VER_STR_OFFS;
+	      location = stage2_buffer + STAGE2_VER_STR_OFFS;
 	      while (*(location++))
 		;
 	      
@@ -1905,7 +2068,7 @@ install_func (char *arg, int flags)
 		  goto fail;
 		}
 
-	      if (fwrite ((const void *) SCRATCHADDR, 1, SECTOR_SIZE, fp)
+	      if (fwrite (stage2_buffer, 1, SECTOR_SIZE, fp)
 		  != SECTOR_SIZE)
 		{
 		  fclose (fp);
@@ -1916,28 +2079,10 @@ install_func (char *arg, int flags)
 	      fclose (fp);
 	    }
 	  else
-# ifdef __linux__
-	    /* Avoid the bug in Linux, which makes the disk cache for
-	       the whole disk inconsistent with the one for the partition.  */
-	    if (current_partition != 0xFFFFFF)
-	      {
-		if (! write_to_partition (device_map, current_drive,
-					  current_partition,
-					  saved_sector - part_start,
-					  1,
-					  (const char *) SCRATCHADDR))
-		  goto fail;
-	      }
-	  else
-# endif /* __linux__ */
 #endif /* GRUB_UTIL */
 	    {
-	      if (biosdisk (BIOSDISK_WRITE, current_drive, &buf_geom,
-			    saved_sector, 1, SCRATCHSEG))
-		{
-		  errnum = ERR_WRITE;
-		  goto fail;
-		}
+	      if (! devwrite (saved_sector - part_start, 1, stage2_buffer))
+		goto fail;
 	    }
 	}
     }
@@ -1975,61 +2120,31 @@ install_func (char *arg, int flags)
       fclose (fp);
     }
   else
-# ifdef __linux__
-    if (src_partition != 0xFFFFFF)
-      {
-	if (! write_to_partition (device_map, src_drive, src_partition,
-				  stage2_first_sector - src_part_start,
-				  1, stage2_first_buffer))
-	  goto fail;
-
-	if (! write_to_partition (device_map, src_drive, src_partition,
-				  stage2_second_sector - src_part_start,
-				  1, stage2_second_buffer))
-	  goto fail;
-      }
-  else
-# endif /* __linux__ */
 #endif /* GRUB_UTIL */
     {
       /* The first.  */
-      grub_memmove ((char *) SCRATCHADDR, stage2_first_buffer, SECTOR_SIZE);
-      if (biosdisk (BIOSDISK_WRITE, src_drive, &src_geom,
-		    stage2_first_sector, 1, SCRATCHSEG))
-	{
-	  errnum = ERR_WRITE;
-	  goto fail;
-	}
-      
-      /* The second.  */
-      grub_memmove ((char *) SCRATCHADDR, stage2_second_buffer, SECTOR_SIZE);
-      if (biosdisk (BIOSDISK_WRITE, src_drive, &src_geom,
-		    stage2_second_sector, 1, SCRATCHSEG))
-	{
-	  errnum = ERR_WRITE;
-	  goto fail;
-	}
+      current_drive = src_drive;
+      current_partition = src_partition;
+
+      if (! open_partition ())
+	goto fail;
+
+      if (! devwrite (stage2_first_sector - src_part_start, 1,
+		      stage2_first_buffer))
+	goto fail;
+
+      if (! devwrite (stage2_second_sector - src_part_start, 1,
+		      stage2_second_buffer))
+	goto fail;
     }
   
   /* Write the modified sector of Stage 1 to the disk.  */
-#if defined(GRUB_UTIL) && defined(__linux__)
-  if (dest_partition != 0xFFFFFF)
-    {
-      if (! write_to_partition (device_map, dest_drive, dest_partition,
-				0, 1, stage1_buffer))
-	goto fail;
-    }
-  else
-#endif /* GRUB_UTIL && __linux__ */
-    {
-      grub_memmove ((char *) SCRATCHADDR, stage1_buffer, SECTOR_SIZE);
-      if (biosdisk (BIOSDISK_WRITE, dest_drive, &dest_geom,
-		    dest_sector, 1, SCRATCHSEG))
-	{
-	  errnum = ERR_WRITE;
-	  goto fail;
-	}
-    }
+  current_drive = dest_drive;
+  current_partition = dest_partition;
+  if (! open_partition ())
+    goto fail;
+
+  devwrite (0, 1, stage1_buffer);
 
  fail:
   if (is_open)
@@ -2117,6 +2232,10 @@ kernel_func (char *arg, int flags)
   int len;
   kernel_t suggested_type = KERNEL_TYPE_NONE;
   unsigned long load_flags = 0;
+
+#ifndef AUTO_LINUX_MEM_OPT
+  load_flags |= KERNEL_LOAD_NO_MEM_OPTION;
+#endif
 
   /* Deal with GNU-style long options.  */
   while (1)
@@ -2301,7 +2420,66 @@ static struct builtin builtin_map =
   " when you chain-load some operating systems, such as DOS, if such an"
   " OS resides at a non-first drive."
 };
+
+
+#ifdef USE_MD5_PASSWORDS
+/* md5crypt */
+static int
+md5crypt_func (char *arg, int flags)
+{
+  char crypted[36];
+  char key[32];
+  unsigned int seed;
+  int i;
+  const char *const seedchars =
+    "./0123456789ABCDEFGHIJKLMNOPQRST"
+    "UVWXYZabcdefghijklmnopqrstuvwxyz";
   
+  /* First create a salt.  */
+
+  /* The magical prefix.  */
+  grub_memset (crypted, 0, sizeof (crypted));
+  grub_memmove (crypted, "$1$", 3);
+
+  /* Create the length of a salt.  */
+  seed = currticks ();
+
+  /* Generate a salt.  */
+  for (i = 0; i < 8 && seed; i++)
+    {
+      /* FIXME: This should be more random.  */
+      crypted[3 + i] = seedchars[seed & 0x3f];
+      seed >>= 6;
+    }
+
+  /* A salt must be terminated with `$', if it is less than 8 chars.  */
+  crypted[3 + i] = '$';
+
+#ifdef DEBUG_MD5CRYPT
+  grub_printf ("salt = %s\n", crypted);
+#endif
+  
+  /* Get a password.  */
+  grub_memset (key, 0, sizeof (key));
+  get_cmdline ("Password: ", key, sizeof (key) - 1, '*', 0);
+
+  /* Crypt the key.  */
+  make_md5_password (key, crypted);
+
+  grub_printf ("Encrypted: %s\n", crypted);
+  return 0;
+}
+
+static struct builtin builtin_md5crypt =
+{
+  "md5crypt",
+  md5crypt_func,
+  BUILTIN_CMDLINE,
+  "md5crypt",
+  "Generate a password in MD5 format."
+};
+#endif /* USE_MD5_PASSWORDS */
+
 
 /* module */
 static int
@@ -2389,7 +2567,7 @@ partnew_func (char *arg, int flags)
   int start_cl, start_ch, start_dh;
   int end_cl, end_ch, end_dh;
   int entry;
-  char *mbr = (char *) SCRATCHADDR;
+  char mbr[512];
 
   /* Convert a LBA address to a CHS address in the INT 13 format.  */
   auto void lba_to_chs (int lba, int *cl, int *ch, int *dh);
@@ -2483,11 +2661,8 @@ partnew_func (char *arg, int flags)
   
   /* Write back the MBR to the disk.  */
   buf_track = -1;
-  if (biosdisk (BIOSDISK_WRITE, current_drive, &buf_geom, 0, 1, SCRATCHSEG))
-    {
-      errnum = ERR_WRITE;
-      return 1;
-    }
+  if (! rawwrite (current_drive, 0, mbr))
+    return 1;
 
   return 0;
 }
@@ -2511,7 +2686,7 @@ parttype_func (char *arg, int flags)
   unsigned long part = 0xFFFFFF;
   unsigned long start, len, offset, ext_offset;
   int entry, type;
-  char *mbr = (char *) SCRATCHADDR;
+  char mbr[512];
 
   /* Get the drive and the partition.  */
   if (! set_device (arg))
@@ -2558,12 +2733,8 @@ parttype_func (char *arg, int flags)
 	  
 	  /* Write back the MBR to the disk.  */
 	  buf_track = -1;
-	  if (biosdisk (BIOSDISK_WRITE, current_drive, &buf_geom,
-			offset, 1, SCRATCHSEG))
-	    {
-	      errnum = ERR_WRITE;
-	      return 1;
-	    }
+	  if (! rawwrite (current_drive, offset, mbr))
+	    return 1;
 
 	  /* Succeed.  */
 	  return 0;
@@ -2588,19 +2759,55 @@ static struct builtin builtin_parttype =
 static int
 password_func (char *arg, int flags)
 {
-  int len = grub_strlen (arg);
+  int len;
+  password_t type = PASSWORD_PLAIN;
 
-  /* PASSWORD NUL NUL ... */
-  if (len + 2 > PASSWORD_BUFLEN)
+#ifdef USE_MD5_PASSWORDS
+  if (grub_memcmp (arg, "--md5", 5) == 0)
     {
-      errnum = ERR_WONT_FIT;
-      return 1;
+      type = PASSWORD_MD5;
+      arg = skip_to (0, arg);
+    }
+#endif
+  if (grub_memcmp (arg, "--", 2) == 0)
+    {
+      type = PASSWORD_UNSUPPORTED;
+      arg = skip_to (0, arg);
     }
 
-  /* Copy the password and clear the rest of the buffer.  */
-  password = (char *) PASSWORD_BUF;
-  grub_memmove (password, arg, len);
-  grub_memset (password + len, 0, PASSWORD_BUFLEN - len);
+  if ((flags & (BUILTIN_CMDLINE | BUILTIN_SCRIPT)) != 0)
+    {
+      /* Do password check! */
+      char entered[32];
+      
+      /* Wipe out any previously entered password */
+      entered[0] = 0;
+      get_cmdline ("Password: ", entered, 31, '*', 0);
+
+      nul_terminate (arg);
+      if (check_password (entered, arg, type) != 0)
+	{
+	  errnum = ERR_PRIVILEGED;
+	  return 1;
+	}
+    }
+  else
+    {
+      len = grub_strlen (arg);
+      
+      /* PASSWORD NUL NUL ... */
+      if (len + 2 > PASSWORD_BUFLEN)
+	{
+	  errnum = ERR_WONT_FIT;
+	  return 1;
+	}
+      
+      /* Copy the password and clear the rest of the buffer.  */
+      password = (char *) PASSWORD_BUF;
+      grub_memmove (password, arg, len);
+      grub_memset (password + len, 0, PASSWORD_BUFLEN - len);
+      password_type = type;
+    }
   return 0;
 }
 
@@ -2608,15 +2815,17 @@ static struct builtin builtin_password =
 {
   "password",
   password_func,
-  BUILTIN_MENU,
-#if 0
-  "password PASSWD [FILE]",
-  "Disable all interactive editing control (menu entry editor and"
+  BUILTIN_MENU | BUILTIN_CMDLINE | BUILTIN_HIDDEN,
+  "password [--md5] PASSWD [FILE]",
+  "If used in the first section of a menu file, disable all"
+  " interactive editing control (menu entry editor and"
   " command line). If the password PASSWD is entered, it loads the"
   " FILE as a new config file and restarts the GRUB Stage 2. If you"
   " omit the argument FILE, then GRUB just unlocks privileged"
-  " instructions."
-#endif
+  " instructions.  You can also use it in the script section, in"
+  " which case it will ask for the password, before continueing."
+  " The option --md5 tells GRUB that PASSWD is encrypted with"
+  " md5crypt."
 };
 
 
@@ -2624,6 +2833,8 @@ static struct builtin builtin_password =
 static int
 pause_func (char *arg, int flags)
 {
+  printf("%s\n", arg);
+
   /* If ESC is returned, then abort this entry.  */
   if (ASCII_CHAR (getkey ()) == 27)
     return 1;
@@ -2635,7 +2846,7 @@ static struct builtin builtin_pause =
 {
   "pause",
   pause_func,
-  BUILTIN_CMDLINE,
+  BUILTIN_CMDLINE | BUILTIN_HIDDEN,
   "pause [MESSAGE ...]",
   "Print MESSAGE, then wait until a key is pressed."
 };
@@ -2868,7 +3079,7 @@ static int
 savedefault_func (char *arg, int flags)
 {
 #if !defined(SUPPORT_DISKLESS) && !defined(GRUB_UTIL)
-  struct geometry geom;
+  char buffer[512];
   int *entryno_ptr;
   
   /* This command is only useful when you boot an entry from the menu
@@ -2881,21 +3092,27 @@ savedefault_func (char *arg, int flags)
   
   /* Get the geometry of the boot drive (i.e. the disk which contains
      this stage2).  */
-  if (get_diskinfo (boot_drive, &geom))
+  if (get_diskinfo (boot_drive, &buf_geom))
     {
       errnum = ERR_NO_DISK;
       return 1;
     }
 
   /* Load the second sector of this stage2.  */
-  if (biosdisk (BIOSDISK_READ, boot_drive, &geom,
-		install_second_sector, 1, SCRATCHSEG))
+  if (! rawread (boot_drive, install_second_sector, 0, SECTOR_SIZE, buffer))
     {
-      errnum = ERR_READ;
       return 1;
     }
 
-  entryno_ptr = (int *) ((char *) SCRATCHADDR + STAGE2_SAVED_ENTRYNO);
+  /* Sanity check.  */
+  if (buffer[STAGE2_STAGE2_ID] != STAGE2_ID_STAGE2
+      || *((short *) (buffer + STAGE2_VER_MAJ_OFFS)) != COMPAT_VERSION)
+    {
+      errnum = ERR_BAD_VERSION;
+      return 1;
+    }
+  
+  entryno_ptr = (int *) (buffer + STAGE2_SAVED_ENTRYNO);
 
   /* Check if the saved entry number differs from current entry number.  */
   if (*entryno_ptr != current_entryno)
@@ -2904,12 +3121,8 @@ savedefault_func (char *arg, int flags)
       *entryno_ptr = current_entryno;
       
       /* Save the image in the disk.  */
-      if (biosdisk (BIOSDISK_WRITE, boot_drive, &geom,
-		    install_second_sector, 1, SCRATCHSEG))
-	{
-	  errnum = ERR_WRITE;
-	  return 1;
-	}
+      if (! rawwrite (boot_drive, install_second_sector, buffer))
+	return 1;
       
       /* Clear the cache.  */
       buf_track = -1;
@@ -3213,7 +3426,7 @@ setkey_func (char *arg, int flags)
   to_key = arg;
   from_key = skip_to (0, to_key);
 
-  if (! to_key)
+  if (! *to_key)
     {
       /* If the user specifies no argument, reset the key mappings.  */
       grub_memset (bios_key_map, 0, KEY_MAP_SIZE * sizeof (unsigned short));
@@ -3221,7 +3434,7 @@ setkey_func (char *arg, int flags)
 
       return 0;
     }
-  else if (! from_key)
+  else if (! *from_key)
     {
       /* The user must specify two arguments or zero argument.  */
       errnum = ERR_BAD_ARGUMENT;
@@ -3344,6 +3557,7 @@ setup_func (char *arg, int flags)
   char stage1[64];
   char stage2[64];
   char config_filename[64];
+  char real_config_filename[64];
   char cmd_arg[256];
   char device[16];
   char *buffer = (char *) RAW_ADDR (0x100000);
@@ -3353,6 +3567,7 @@ setup_func (char *arg, int flags)
 
   auto int check_file (char *file);
   auto void sprint_device (int drive, int partition);
+  auto int embed_stage1_5 (char * stage1_5, int drive, int partition);
   
   /* Check if the file FILE exists like Autoconf.  */
   int check_file (char *file)
@@ -3362,7 +3577,10 @@ setup_func (char *arg, int flags)
       grub_printf (" Checking if \"%s\" exists... ", file);
       ret = grub_open (file);
       if (ret)
-	grub_printf ("yes\n");
+	{
+	  grub_close ();
+	  grub_printf ("yes\n");
+	}
       else
 	grub_printf ("no\n");
 
@@ -3389,6 +3607,31 @@ setup_func (char *arg, int flags)
 	}
       grub_strncat (device, ")", 256);
     }
+  
+  int embed_stage1_5 (char *stage1_5, int drive, int partition)
+    {
+      /* We install GRUB into the MBR, so try to embed the
+	 Stage 1.5 in the sectors right after the MBR.  */
+      sprint_device (drive, partition);
+      grub_sprintf (cmd_arg, "%s %s", stage1_5, device);
+	      
+      /* Notify what will be run.  */
+      grub_printf (" Running \"embed %s\"... ", cmd_arg);
+      
+      embed_func (cmd_arg, flags);
+      if (! errnum)
+	{
+	  /* Construct the blocklist representation.  */
+	  grub_sprintf (buffer, "%s%s", device, embed_info);
+	  grub_printf ("succeeded\n");
+	  return 1;
+	}
+      else
+	{
+	  grub_printf ("failed (this is not fatal)\n");
+	  return 0;
+	}
+    }
 	  
   struct stage1_5_map {
     char *fsys;
@@ -3400,7 +3643,9 @@ setup_func (char *arg, int flags)
     {"ffs",      "/ffs_stage1_5"},
     {"fat",      "/fat_stage1_5"},
     {"minix",    "/minix_stage1_5"},
-    {"reiserfs", "/reiserfs_stage1_5"}
+    {"reiserfs", "/reiserfs_stage1_5"},
+    {"jfs",      "/jfs_stage1_5"},
+    {"xfs",      "/xfs_stage1_5"}
   };
 
   tmp_drive = saved_drive;
@@ -3489,81 +3734,46 @@ setup_func (char *arg, int flags)
       if (! check_file (stage1))
 	goto fail;
     }
-  grub_close ();
 
   /* The prefix was determined.  */
   grub_sprintf (stage2, "%s%s", prefix, "/stage2");
   grub_sprintf (config_filename, "%s%s", prefix, "/menu.lst");
+  *real_config_filename = 0;
 
   /* Check if stage2 exists.  */
   if (! check_file (stage2))
     goto fail;
-  grub_close ();
-  
-  /* If the drive where stage2 resides is a hard disk, try to use a
-     Stage 1.5.  */
-  if ((image_drive & 0x80) && (installed_drive & 0x80))
-    {
-      char *fsys = fsys_table[fsys_type].name;
-      int i;
-      int size = sizeof (stage1_5_map) / sizeof (stage1_5_map[0]);
 
-      /* Iterate finding the same filesystem name as FSYS.  */
-      for (i = 0; i < size; i++)
-	if (grub_strcmp (fsys, stage1_5_map[i].fsys) == 0)
-	  {
-	    /* OK, check if the Stage 1.5 exists.  */
-	    char stage1_5[64];
-
-	    grub_sprintf (stage1_5, "%s%s", prefix, stage1_5_map[i].name);
-	    if (check_file (stage1_5))
-	      {
-		int blocksize = (filemax + SECTOR_SIZE - 1) >> SECTOR_BITS;
-		
-		grub_close ();
-		grub_strcpy (config_filename, stage2);
-		grub_strcpy (stage2, stage1_5);
-
-		if (installed_partition == 0xFFFFFF)
-		  {
-		    /* We install GRUB into the MBR, so try to embed the
-		       Stage 1.5 in the sectors right after the MBR.  */
-		    sprint_device (installed_drive, installed_partition);
-		    grub_sprintf (cmd_arg, "%s %s", stage2, device);
-
-		    /* Notify what will be run.  */
-		    grub_printf (" Running \"embed %s\"... ", cmd_arg);
-		    
-		    embed_func (cmd_arg, flags);
-		    if (! errnum)
-		      {
-			/* Construct the blocklist representation.  */
-			grub_sprintf (stage2, "%s1+%d", device, blocksize);
-
-			/* Need to prepend the device name to the
-			   configuration filename.  */
-			sprint_device (image_drive, image_partition);
-			grub_sprintf (buffer, "%s%s", device, config_filename);
-			grub_strcpy (config_filename, buffer);
-
-			grub_printf ("succeeded\n");
-		      }
-		    else
-		      grub_printf ("failed (this is not fatal)\n");
-		  }
-		else if (fsys_table[fsys_type].embed_func != 0)
-		  {
-		    /* We can embed the Stage 1.5 into the "bootloader"
-		       area in the FFS or ReiserFS partition.  */
-
-		    /* FIXME */
-		  }
-	      }
-	    
-	    errnum = 0;
-	    break;
-	  }
-    }
+  {
+    char *fsys = fsys_table[fsys_type].name;
+    int i;
+    int size = sizeof (stage1_5_map) / sizeof (stage1_5_map[0]);
+    
+    /* Iterate finding the same filesystem name as FSYS.  */
+    for (i = 0; i < size; i++)
+      if (grub_strcmp (fsys, stage1_5_map[i].fsys) == 0)
+	{
+	  /* OK, check if the Stage 1.5 exists.  */
+	  char stage1_5[64];
+	  
+	  grub_sprintf (stage1_5, "%s%s", prefix, stage1_5_map[i].name);
+	  if (check_file (stage1_5))
+	    {
+	      if (embed_stage1_5 (stage1_5, 
+				    installed_drive, installed_partition)
+		  || embed_stage1_5 (stage1_5, 
+				     image_drive, image_partition))
+		{
+		  grub_strcpy (real_config_filename, config_filename);
+		  sprint_device (image_drive, image_partition);
+		  grub_sprintf (config_filename, "%s%s", device, stage2);
+		  grub_strcpy (stage2, buffer);
+		}
+	    }
+	  errnum = 0;
+	  break;
+	}
+  }
 
   /* Construct a string that is used by the command "install" as its
      arguments.  */
@@ -3571,7 +3781,7 @@ setup_func (char *arg, int flags)
   
 #ifdef NO_BUGGY_BIOS_IN_THE_WORLD
   /* I prefer this, but...  */
-  grub_sprintf (cmd_arg, "%s%s%s%s %s%s %s p %s",
+  grub_sprintf (cmd_arg, "%s%s%s%s %s%s %s p %s %s",
 		is_force_lba? "--force-lba" : "",
 		stage2_arg? stage2_arg : "",
 		stage2_arg? " " : "",
@@ -3579,20 +3789,22 @@ setup_func (char *arg, int flags)
 		(installed_drive != image_drive) ? "d " : "",
 		device,
 		stage2,
-		config_filename);
+		config_filename,
+		real_config_filename);
 #else /* ! NO_BUGGY_BIOS_IN_THE_WORLD */
   /* Actually, there are several buggy BIOSes in the world, so we
      may not expect that your BIOS will pass a booting drive to stage1
      correctly. Thus, always specify the option `d', whether
      INSTALLED_DRIVE is identical with IMAGE_DRIVE or not. *sigh*  */
-  grub_sprintf (cmd_arg, "%s%s%s%s d %s %s p %s",
+  grub_sprintf (cmd_arg, "%s%s%s%s d %s %s p %s %s",
 		is_force_lba? "--force-lba " : "",
 		stage2_arg? stage2_arg : "",
 		stage2_arg? " " : "",
 		stage1,
 		device,
 		stage2,
-		config_filename);
+		config_filename,
+		real_config_filename);
 #endif /* ! NO_BUGGY_BIOS_IN_THE_WORLD */
   
   /* Notify what will be run.  */
@@ -3634,7 +3846,7 @@ static struct builtin builtin_setup =
 };
 
 
-#ifdef SUPPORT_SERIAL
+#if defined(SUPPORT_SERIAL) || defined(SUPPORT_HERCULES)
 /* terminal */
 static int
 terminal_func (char *arg, int flags)
@@ -3668,9 +3880,17 @@ terminal_func (char *arg, int flags)
       if (terminal & TERMINAL_CONSOLE)
 	grub_printf ("console%s\n",
 		     terminal & TERMINAL_DUMB ? " (dumb)" : "");
+#ifdef SUPPORT_HERCULES
+      else if (terminal & TERMINAL_HERCULES)
+	grub_printf ("hercules%s\n",
+		     terminal & TERMINAL_DUMB ? " (dumb)" : "");
+#endif /* SUPPORT_HERCULES */
+#ifdef SUPPORT_SERIAL
       else if (terminal & TERMINAL_SERIAL)
 	grub_printf ("serial%s\n",
 		     terminal & TERMINAL_DUMB ? " (dumb)" : " (vt100)");
+#endif /* SUPPORT_SERIAL */
+      
       return 0;
     }
 
@@ -3685,12 +3905,31 @@ terminal_func (char *arg, int flags)
 	  if (! default_terminal)
 	    default_terminal = TERMINAL_CONSOLE;
 	}
+#ifdef SUPPORT_HERCULES
+      else if (grub_memcmp (arg, "hercules", sizeof ("hercules") - 1) == 0)
+	{
+	  terminal |= TERMINAL_HERCULES;
+	  if (! default_terminal)
+	    default_terminal = TERMINAL_HERCULES;
+	}
+#endif /* SUPPORT_HERCULES */
+#ifdef SUPPORT_SERIAL
       else if (grub_memcmp (arg, "serial", sizeof ("serial") - 1) == 0)
 	{
-	  terminal |= TERMINAL_SERIAL;
-	  if (! default_terminal)
-	    default_terminal = TERMINAL_SERIAL;
+	  if (serial_exists ())
+	    {
+	      terminal |= TERMINAL_SERIAL;
+	      if (! default_terminal)
+		default_terminal = TERMINAL_SERIAL;
+	    }
+	  else
+	    {
+	      terminal = saved_terminal;
+	      errnum = ERR_NEED_SERIAL;
+	      return 1;
+	    }
 	}
+#endif /* SUPPORT_SERIAL */
       else
 	{
 	  terminal = saved_terminal;
@@ -3763,7 +4002,7 @@ static struct builtin builtin_terminal =
   " If --timeout is present, this command will wait at most for SECS"
   " seconds."
 };
-#endif /* SUPPORT_SERIAL */
+#endif /* SUPPORT_SERIAL || SUPPORT_HERCULES */
 
 
 /* testload */
@@ -3854,12 +4093,117 @@ static struct builtin builtin_testload =
 };
 
 
+/* testvbe MODE */
+static int
+testvbe_func (char *arg, int flags)
+{
+  int mode_number;
+  struct vbe_controller controller;
+  struct vbe_mode mode;
+  
+  if (! *arg)
+    {
+      errnum = ERR_BAD_ARGUMENT;
+      return 1;
+    }
+
+  if (! safe_parse_maxint (&arg, &mode_number))
+    return 1;
+
+  /* Preset `VBE2'.  */
+  grub_memmove (controller.signature, "VBE2", 4);
+
+  /* Detect VBE BIOS.  */
+  if (get_vbe_controller_info (&controller) != 0x004F)
+    {
+      grub_printf (" VBE BIOS is not present.\n");
+      return 0;
+    }
+  
+  if (controller.version < 0x0200)
+    {
+      grub_printf (" VBE version %d.%d is not supported.\n",
+		   (int) (controller.version >> 8),
+		   (int) (controller.version & 0xFF));
+      return 0;
+    }
+
+  if (get_vbe_mode_info (mode_number, &mode) != 0x004F
+      || (mode.mode_attributes & 0x0091) != 0x0091)
+    {
+      grub_printf (" Mode 0x%x is not supported.\n", mode_number);
+      return 0;
+    }
+
+  /* Now trip to the graphics mode.  */
+  if (set_vbe_mode (mode_number | (1 << 14)) != 0x004F)
+    {
+      grub_printf (" Switching to Mode 0x%x failed.\n", mode_number);
+      return 0;
+    }
+
+  /* Draw something on the screen...  */
+  {
+    unsigned char *base_buf = (unsigned char *) mode.phys_base;
+    int scanline = controller.version >= 0x0300
+      ? mode.linear_bytes_per_scanline : mode.bytes_per_scanline;
+    /* FIXME: this assumes that any depth is a modulo of 8.  */
+    int bpp = mode.bits_per_pixel / 8;
+    int width = mode.x_resolution;
+    int height = mode.y_resolution;
+    int x, y;
+    unsigned color = 0;
+
+    /* Iterate drawing on the screen, until the user hits any key.  */
+    while (checkkey () == -1)
+      {
+	for (y = 0; y < height; y++)
+	  {
+	    unsigned char *line_buf = base_buf + scanline * y;
+	    
+	    for (x = 0; x < width; x++)
+	      {
+		unsigned char *buf = line_buf + bpp * x;
+		int i;
+
+		for (i = 0; i < bpp; i++, buf++)
+		  *buf = (color >> (i * 8)) & 0xff;
+	      }
+
+	    color++;
+	  }
+      }
+
+    /* Discard the input.  */
+    getkey ();
+  }
+  
+  /* Back to the default text mode.  */
+  if (set_vbe_mode (0x03) != 0x004F)
+    {
+      /* Why?!  */
+      grub_reboot ();
+    }
+
+  return 0;
+}
+
+static struct builtin builtin_testvbe =
+{
+  "testvbe",
+  testvbe_func,
+  BUILTIN_CMDLINE,
+  "testvbe MODE",
+  "Test the VBE mode MODE. Hit any key to return."
+};
+
+
 #ifdef SUPPORT_NETBOOT
 /* tftpserver */
 static int
 tftpserver_func (char *arg, int flags)
 {
-  if (! *arg || ! arp_server_override (arg))
+  if (! *arg || ! ifconfig (0, 0, 0, arg))
     {
       errnum = ERR_BAD_ARGUMENT;
       return 1;
@@ -3970,6 +4314,125 @@ static struct builtin builtin_uppermem =
 };
 
 
+/* vbeprobe */
+static int
+vbeprobe_func (char *arg, int flags)
+{
+  struct vbe_controller controller;
+  unsigned short *mode_list;
+  int mode_number = -1;
+  int count = 1;
+  
+  auto unsigned long vbe_far_ptr_to_linear (unsigned long);
+  
+  unsigned long vbe_far_ptr_to_linear (unsigned long ptr)
+    {
+      unsigned short seg = (ptr >> 16);
+      unsigned short off = (ptr & 0xFFFF);
+
+      return (seg << 4) + off;
+    }
+  
+  if (*arg)
+    {
+      if (! safe_parse_maxint (&arg, &mode_number))
+	return 1;
+    }
+  
+  /* Set the signature to `VBE2', to obtain VBE 3.0 information.  */
+  grub_memmove (controller.signature, "VBE2", 4);
+  
+  if (get_vbe_controller_info (&controller) != 0x004F)
+    {
+      grub_printf (" VBE BIOS is not present.\n");
+      return 0;
+    }
+
+  /* Check the version.  */
+  if (controller.version < 0x0200)
+    {
+      grub_printf (" VBE version %d.%d is not supported.\n",
+		   (int) (controller.version >> 8),
+		   (int) (controller.version & 0xFF));
+      return 0;
+    }
+
+  /* Print some information.  */
+  grub_printf (" VBE version %d.%d\n",
+	       (int) (controller.version >> 8),
+	       (int) (controller.version & 0xFF));
+
+  /* Iterate probing modes.  */
+  for (mode_list
+	 = (unsigned short *) vbe_far_ptr_to_linear (controller.video_mode);
+       *mode_list != 0xFFFF;
+       mode_list++)
+    {
+      struct vbe_mode mode;
+      
+      if (get_vbe_mode_info (*mode_list, &mode) != 0x004F)
+	continue;
+
+      /* Skip this, if this is not supported or linear frame buffer
+	 mode is not support.  */
+      if ((mode.mode_attributes & 0x0081) != 0x0081)
+	continue;
+
+      if (mode_number == -1 || mode_number == *mode_list)
+	{
+	  char *model;
+	  switch (mode.memory_model)
+	    {
+	    case 0x00: model = "Text"; break;
+	    case 0x01: model = "CGA graphics"; break;
+	    case 0x02: model = "Hercules graphics"; break;
+	    case 0x03: model = "Planar"; break;
+	    case 0x04: model = "Packed pixel"; break;
+	    case 0x05: model = "Non-chain 4, 256 color"; break;
+	    case 0x06: model = "Direct Color"; break;
+	    case 0x07: model = "YUV"; break;
+	    default: model = "Unknown"; break;
+	    }
+	  
+	  grub_printf ("  0x%x: %s, %ux%ux%u\n",
+		       (unsigned) *mode_list,
+		       model,
+		       (unsigned) mode.x_resolution,
+		       (unsigned) mode.y_resolution,
+		       (unsigned) mode.bits_per_pixel);
+	  
+	  if (mode_number != -1)
+	    break;
+
+	  count++;
+
+	  /* XXX: arbitrary.  */
+	  if (count == 22)
+	    {
+	      grub_printf ("\nHit any key to continue.\n");
+	      count = 0;
+	      getkey ();
+	    }
+	}
+    }
+
+  if (mode_number != -1 && mode_number != *mode_list)
+    grub_printf ("  Mode 0x%x is not found or supported.\n", mode_number);
+  
+  return 0;
+}
+
+static struct builtin builtin_vbeprobe =
+{
+  "vbeprobe",
+  vbeprobe_func,
+  BUILTIN_CMDLINE,
+  "vbeprobe [MODE]",
+  "Probe VBE information. If the mode number MODE is specified, show only"
+  "the information about only the mode."
+};
+  
+
 /* The table of builtin commands. Sorted in dictionary order.  */
 struct builtin *builtin_table[] =
 {
@@ -3991,6 +4454,7 @@ struct builtin *builtin_table[] =
 #ifdef SUPPORT_NETBOOT
   &builtin_dhcp,
 #endif /* SUPPORT_NETBOOT */
+  &builtin_displayapm,
   &builtin_displaymem,
   &builtin_embed,
   &builtin_fallback,
@@ -4001,6 +4465,9 @@ struct builtin *builtin_table[] =
   &builtin_help,
   &builtin_hiddenmenu,
   &builtin_hide,
+#ifdef SUPPORT_NETBOOT
+  &builtin_ifconfig,
+#endif /* SUPPORT_NETBOOT */
   &builtin_impsprobe,
   &builtin_initrd,
   &builtin_install,
@@ -4009,6 +4476,9 @@ struct builtin *builtin_table[] =
   &builtin_lock,
   &builtin_makeactive,
   &builtin_map,
+#ifdef USE_MD5_PASSWORDS
+  &builtin_md5crypt,
+#endif /* USE_MD5_PASSWORDS */
   &builtin_module,
   &builtin_modulenounzip,
   &builtin_partnew,
@@ -4031,10 +4501,11 @@ struct builtin *builtin_table[] =
 #endif /* SUPPORT_SERIAL */
   &builtin_setkey,
   &builtin_setup,
-#ifdef SUPPORT_SERIAL
+#if defined(SUPPORT_SERIAL) || defined(SUPPORT_HERCULES)
   &builtin_terminal,
-#endif /* SUPPORT_SERIAL */
+#endif /* SUPPORT_SERIAL || SUPPORT_HERCULES */
   &builtin_testload,
+  &builtin_testvbe,
 #ifdef SUPPORT_NETBOOT
   &builtin_tftpserver,
 #endif /* SUPPORT_NETBOOT */
@@ -4042,5 +4513,6 @@ struct builtin *builtin_table[] =
   &builtin_title,
   &builtin_unhide,
   &builtin_uppermem,
+  &builtin_vbeprobe,
   0
 };

@@ -33,10 +33,12 @@ extern int get_diskinfo_standard (int drive,
 				  unsigned long *cylinders,
 				  unsigned long *heads,
 				  unsigned long *sectors);
+#if 0
 extern int get_diskinfo_floppy (int drive,
 				unsigned long *cylinders,
 				unsigned long *heads,
 				unsigned long *sectors);
+#endif
 
 
 /* Read/write NSEC sectors starting from SECTOR in DRIVE disk with GEOMETRY
@@ -157,7 +159,12 @@ get_diskinfo (int drive, struct geometry *geometry)
 	    unsigned char device_path[8];
 	    unsigned char reserved2;
 	    unsigned char checksum;
-	  } drp;
+
+	    /* XXX: This is necessary, because the BIOS of Thinkpad X20
+	       writes a garbage to the tail of drive parameters,
+	       regardless of a size specified in a caller.  */
+	    unsigned char dummy[16];
+	  } __attribute__ ((packed)) drp;
 	  
 	  drp.size = sizeof (drp);
 	  err = get_diskinfo_int13_extensions (drive, &drp);
@@ -173,7 +180,13 @@ get_diskinfo (int drive, struct geometry *geometry)
 	      /* FIXME: when the 2TB limit becomes critical, we must
 		 change the type of TOTAL_SECTORS to unsigned long
 		 long.  */
-	      total_sectors = drp.total_sectors & ~0L;
+	      if (drp.total_sectors)
+		total_sectors = drp.total_sectors & ~0L;
+	      else
+		/* Some buggy BIOSes doesn't return the total sectors
+		   correctly but returns zero. So if it is zero, compute
+		   it by C/H/S returned by the LBA BIOS call.  */
+		total_sectors = drp.cylinders * drp.heads * drp.sectors;
 	    }
 	}
 
@@ -204,12 +217,15 @@ get_diskinfo (int drive, struct geometry *geometry)
 				   &geometry->heads,
 				   &geometry->sectors);
 
+#if 0
       /* If fails, then try floppy-specific probe routine.  */
       if (err)
 	err = get_diskinfo_floppy (drive,
 				   &geometry->cylinders,
 				   &geometry->heads,
 				   &geometry->sectors);
+#endif
+      
       if (err)
 	return err;
 

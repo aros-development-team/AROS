@@ -60,7 +60,7 @@ cmain (unsigned long magic, unsigned long addr)
   /* Am I booted by a Multiboot-compliant boot loader?  */
   if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
     {
-      printf ("Invalid magic number: 0x%x\n", magic);
+      printf ("Invalid magic number: 0x%x\n", (unsigned) magic);
       return;
     }
 
@@ -68,16 +68,16 @@ cmain (unsigned long magic, unsigned long addr)
   mbi = (multiboot_info_t *) addr;
 
   /* Print out the flags.  */
-  printf ("flags = 0x%x\n", mbi->flags);
+  printf ("flags = 0x%x\n", (unsigned) mbi->flags);
 
   /* Are mem_* valid?  */
   if (CHECK_FLAG (mbi->flags, 0))
-    printf ("mem_lower = %dKB, mem_upper = %dKB\n",
-	    mbi->mem_lower, mbi->mem_upper);
+    printf ("mem_lower = %uKB, mem_upper = %uKB\n",
+	    (unsigned) mbi->mem_lower, (unsigned) mbi->mem_upper);
 
   /* Is boot_device valid?  */
   if (CHECK_FLAG (mbi->flags, 1))
-    printf ("boot_device = 0x%x\n", mbi->boot_device);
+    printf ("boot_device = 0x%x\n", (unsigned) mbi->boot_device);
   
   /* Is the command line passed?  */
   if (CHECK_FLAG (mbi->flags, 2))
@@ -90,12 +90,14 @@ cmain (unsigned long magic, unsigned long addr)
       int i;
       
       printf ("mods_count = %d, mods_addr = 0x%x\n",
-	      mbi->mods_count, mbi->mods_addr);
+	      (int) mbi->mods_count, (int) mbi->mods_addr);
       for (i = 0, mod = (module_t *) mbi->mods_addr;
 	   i < mbi->mods_count;
 	   i++, mod += sizeof (module_t))
 	printf (" mod_start = 0x%x, mod_end = 0x%x, string = %s\n",
-		mod->mod_start, mod->mod_end, (char *) mod->string);
+		(unsigned) mod->mod_start,
+		(unsigned) mod->mod_end,
+		(char *) mod->string);
     }
 
   /* Bits 4 and 5 are mutually exclusive!  */
@@ -112,7 +114,9 @@ cmain (unsigned long magic, unsigned long addr)
       
       printf ("aout_symbol_table: tabsize = 0x%0x, "
 	      "strsize = 0x%x, addr = 0x%x\n",
-	      aout_sym->tabsize, aout_sym->strsize, aout_sym->addr);
+	      (unsigned) aout_sym->tabsize,
+	      (unsigned) aout_sym->strsize,
+	      (unsigned) aout_sym->addr);
     }
 
   /* Is the section header table of ELF valid?  */
@@ -120,10 +124,10 @@ cmain (unsigned long magic, unsigned long addr)
     {
       elf_section_header_table_t *elf_sec = &(mbi->u.elf_sec);
 
-      printf ("elf_sec: num = %d, size = 0x%x,"
+      printf ("elf_sec: num = %u, size = 0x%x,"
 	      " addr = 0x%x, shndx = 0x%x\n",
-	      elf_sec->num, elf_sec->size,
-	      elf_sec->addr, elf_sec->shndx);
+	      (unsigned) elf_sec->num, (unsigned) elf_sec->size,
+	      (unsigned) elf_sec->addr, (unsigned) elf_sec->shndx);
     }
 
   /* Are mmap_* valid?  */
@@ -132,15 +136,19 @@ cmain (unsigned long magic, unsigned long addr)
       memory_map_t *mmap;
       
       printf ("mmap_addr = 0x%x, mmap_length = 0x%x\n",
-	      mbi->mmap_addr, mbi->mmap_length);
+	      (unsigned) mbi->mmap_addr, (unsigned) mbi->mmap_length);
       for (mmap = (memory_map_t *) mbi->mmap_addr;
 	   (unsigned long) mmap < mbi->mmap_addr + mbi->mmap_length;
 	   mmap = (memory_map_t *) ((unsigned long) mmap
 				    + mmap->size + sizeof (mmap->size)))
 	printf (" size = 0x%x, base_addr = 0x%x%x,"
 		" length = 0x%x%x, type = 0x%x\n",
-		mmap->size, mmap->base_addr_high, mmap->base_addr_low,
-		mmap->length_high, mmap->length_low, mmap->type);
+		(unsigned) mmap->size,
+		(unsigned) mmap->base_addr_high,
+		(unsigned) mmap->base_addr_low,
+		(unsigned) mmap->length_high,
+		(unsigned) mmap->length_low,
+		(unsigned) mmap->type);
     }
 }    
 

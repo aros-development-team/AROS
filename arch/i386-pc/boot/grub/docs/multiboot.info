@@ -24,52 +24,47 @@ manual into another language, under the above conditions for modified
 versions.
 
 
-File: multiboot.info,  Node: Top,  Next: Motivation,  Up: (dir)
+File: multiboot.info,  Node: Top,  Next: Overview,  Prev: (dir),  Up: (dir)
 
 Multiboot Specification
 ***********************
 
    This file documents Multiboot Specification, the proposal for the
-boot sequence standard. This edition documents version 0.6.90.
+boot sequence standard. This edition documents version 0.6.93.
+
+* Menu:
+
+* Overview::
+* Terminology::
+* Specification::
+* Examples::
+* History::
+* Index::
+
+
+File: multiboot.info,  Node: Overview,  Next: Terminology,  Prev: Top,  Up: Top
+
+Introduction to Multiboot Specification
+***************************************
+
+   This chapter describes some rough information on the Multiboot
+Specification. Note that this is not a part of the specification itself.
 
 * Menu:
 
 * Motivation::
-* Terminology::
-* Scope and requirements::
-* Details::
-* Examples::
-* Index::
-
- --- The Detailed Node Listing ---
-
-Scope and Requirements
-
 * Architecture::
 * Operating systems::
 * Boot sources::
 * Boot-time configuration::
-* Convenience to the operating system::
+* Convenience to operating systems::
 * Boot modules::
 
-Details
-
-* OS image format::
-* Machine state::
-* Boot information format::
-
-Examples
-
-* Notes on PC::
-* BIOS device mapping techniques::
-* Example OS code::
-* Example boot loader code::
-
 
-File: multiboot.info,  Node: Motivation,  Next: Terminology,  Prev: Top,  Up: Top
+File: multiboot.info,  Node: Motivation,  Next: Architecture,  Prev: Overview,  Up: Overview
 
-Motivation
-**********
+The background of Multiboot Specification
+=========================================
 
    Every operating system ever created tends to have its own boot
 loader.  Installing a new operating system on a machine generally
@@ -92,51 +87,10 @@ specification does _not_ specify how boot loaders should work -- only
 how they must interface with the operating system being loaded.
 
 
-File: multiboot.info,  Node: Terminology,  Next: Scope and requirements,  Prev: Motivation,  Up: Top
+File: multiboot.info,  Node: Architecture,  Next: Operating systems,  Prev: Motivation,  Up: Overview
 
-Terminology
-***********
-
-   Throughout this document, the term "boot loader" means whatever
-program or set of programs loads the image of the final operating system
-to be run on the machine. The boot loader may itself consist of several
-stages, but that is an implementation detail not relevant to this
-specification. Only the _final_ stage of the boot loader -- the stage
-that eventually transfers control to the operating system -- needs to
-follow the rules specified in this document in order to be "MultiBoot
-compliant"; earlier boot loader stages can be designed in whatever way
-is most convenient.
-
-   The term "OS image" is used to refer to the initial binary image
-that the boot loader loads into memory and transfers control to start
-the operating system. The OS image is typically an executable containing
-the operating system kernel.
-
-   The term "boot module" refers to other auxiliary files that the boot
-loader loads into memory along with the OS image, but does not interpret
-in any way other than passing their locations to the operating system
-when it is invoked.
-
-
-File: multiboot.info,  Node: Scope and requirements,  Next: Details,  Prev: Terminology,  Up: Top
-
-Scope and requirements
-**********************
-
-* Menu:
-
-* Architecture::
-* Operating systems::
-* Boot sources::
-* Boot-time configuration::
-* Convenience to the operating system::
-* Boot modules::
-
-
-File: multiboot.info,  Node: Architecture,  Next: Operating systems,  Up: Scope and requirements
-
-Architecture
-============
+The target architecture
+=======================
 
    This specification is primarily targeted at PC, since they are the
 most common and have the largest variety of operating systems and boot
@@ -146,10 +100,10 @@ this specification, stripped of the x86-specific details, could be
 adopted for them as well.
 
 
-File: multiboot.info,  Node: Operating systems,  Next: Boot sources,  Prev: Architecture,  Up: Scope and requirements
+File: multiboot.info,  Node: Operating systems,  Next: Boot sources,  Prev: Architecture,  Up: Overview
 
-Operating systems
-=================
+The target operating systems
+============================
 
    This specification is targeted toward free 32-bit operating systems
 that can be fairly easily modified to support the specification without
@@ -162,7 +116,7 @@ be nice if commercial operating system vendors eventually adopted this
 specification as well, but that's probably a pipe dream.
 
 
-File: multiboot.info,  Node: Boot sources,  Next: Boot-time configuration,  Prev: Operating systems,  Up: Scope and requirements
+File: multiboot.info,  Node: Boot sources,  Next: Boot-time configuration,  Prev: Operating systems,  Up: Overview
 
 Boot sources
 ============
@@ -185,30 +139,30 @@ loading mechanisms, increasing their portability, robustness, and
 user-friendliness.
 
 
-File: multiboot.info,  Node: Boot-time configuration,  Next: Convenience to the operating system,  Prev: Boot sources,  Up: Scope and requirements
+File: multiboot.info,  Node: Boot-time configuration,  Next: Convenience to operating systems,  Prev: Boot sources,  Up: Overview
 
-Boot-time configuration
-=======================
+Configure an operating system at boot-time
+==========================================
 
    It is often necessary for one reason or another for the user to be
-able to provide some configuration information to the operating system
+able to provide some configuration information to an operating system
 dynamically at boot time. While this specification should not dictate
 how this configuration information is obtained by the boot loader, it
 should provide a standard means for the boot loader to pass such
 information to the operating system.
 
 
-File: multiboot.info,  Node: Convenience to the operating system,  Next: Boot modules,  Prev: Boot-time configuration,  Up: Scope and requirements
+File: multiboot.info,  Node: Convenience to operating systems,  Next: Boot modules,  Prev: Boot-time configuration,  Up: Overview
 
-Convenience to the operating system
-===================================
+How to make OS development easier
+=================================
 
    OS images should be easy to generate. Ideally, an OS image should
 simply be an ordinary 32-bit executable file in whatever file format the
 operating system normally uses. It should be possible to `nm' or
 disassemble OS images just like normal executables. Specialized tools
-should not be needed to create OS images in a _special_ file format. If
-this means shifting some work from the operating system to the boot
+should not be required to create OS images in a _special_ file format.
+If this means shifting some work from the operating system to a boot
 loader, that is probably appropriate, because all the memory consumed
 by the boot loader will typically be made available again after the
 boot process is created, whereas every bit of code in the OS image
@@ -229,15 +183,15 @@ formats in existence in order to load the OS image -- otherwise the
 boot loader effectively becomes operating system specific again.
 
    This specification adopts a compromise solution to this problem.
-Multiboot compliant boot images always contain a magic "Multiboot
-header" (*note OS image format::), which allows the boot loader to load
-the image without having to understand numerous a.out variants or other
+Multiboot-compliant OS images always contain a magic "Multiboot header"
+(*note OS image format::), which allows the boot loader to load the
+image without having to understand numerous a.out variants or other
 executable formats. This magic header does not need to be at the very
 beginning of the executable file, so kernel images can still conform to
-the local a.out format variant in addition to being Multiboot compliant.
+the local a.out format variant in addition to being Multiboot-compliant.
 
 
-File: multiboot.info,  Node: Boot modules,  Prev: Convenience to the operating system,  Up: Scope and requirements
+File: multiboot.info,  Node: Boot modules,  Prev: Convenience to operating systems,  Up: Overview
 
 Boot modules
 ============
@@ -260,20 +214,81 @@ support multiple boot modules, but they are strongly encouraged to,
 because some operating systems will be unable to boot without them.
 
 
-File: multiboot.info,  Node: Details,  Next: Examples,  Prev: Scope and requirements,  Up: Top
+File: multiboot.info,  Node: Terminology,  Next: Specification,  Prev: Overview,  Up: Top
 
-Details
-*******
+The definitions of terms used through the specification
+*******************************************************
 
-   There are three main aspects of the boot loader/OS image interface:
+"must"
+     We use the term "must", when any boot loader or OS image needs to
+     follow a rule -- otherwise, the boot loader or OS image is _not_
+     Multiboot-compliant.
 
-  1. The format of the OS image as seen by the boot loader.
+"should"
+     We use the term "should", when any boot loader or OS image is
+     recommended to follow a rule, but it doesn't need to follow the
+     rule.
 
-  2. The state of the machine when the boot loader starts the operating
+"may"
+     We use the term "may", when any boot loader or OS image is allowed
+     to follow a rule.
+
+"boot loader"
+     Whatever program or set of programs loads the image of the final
+     operating system to be run on the machine. The boot loader may
+     itself consist of several stages, but that is an implementation
+     detail not relevant to this specification. Only the _final_ stage
+     of the boot loader -- the stage that eventually transfers control
+     to an operating system -- must follow the rules specified in this
+     document in order to be "Multiboot-compliant"; earlier boot loader
+     stages may be designed in whatever way is most convenient.
+
+"OS image"
+     The initial binary image that a boot loader loads into memory and
+     transfers control to start an operating system. The OS image is
+     typically an executable containing the operating system kernel.
+
+"boot module"
+     Other auxiliary files that a boot loader loads into memory along
+     with an OS image, but does not interpret in any way other than
+     passing their locations to the operating system when it is invoked.
+
+"Multiboot-compliant"
+     A boot loader or an OS image which follows the rules defined as
+     "must" is Multiboot-compliant. When this specification specifies a
+     rule as "should" or "may", a Multiboot-complaint boot loader/OS
+     image doesn't need to follow the rule.
+
+"u8"
+     The type of unsigned 8-bit data.
+
+"u16"
+     The type of unsigned 16-bit data. Because the target architecture
+     is little-endian, WORD is coded in little-endian.
+
+"u32"
+     The type of unsigned 32-bit data. Because the target architecture
+     is little-endian, DWORD is coded in little-endian.
+
+"u64"
+     The type of unsigned 64-bit data. Because the target architecture
+     is little-endian, QWORD is coded in little-endian.
+
+
+File: multiboot.info,  Node: Specification,  Next: Examples,  Prev: Terminology,  Up: Top
+
+The exact definitions of Multiboot Specification
+************************************************
+
+   There are three main aspects of a boot loader/OS image interface:
+
+  1. The format of an OS image as seen by a boot loader.
+
+  2. The state of a machine when a boot loader starts an operating
      system.
 
-  3. The format of the information passed by the boot loader to the
-     operating system.
+  3. The format of information passed by a boot loader to an operating
+     system.
 
 * Menu:
 
@@ -282,111 +297,120 @@ Details
 * Boot information format::
 
 
-File: multiboot.info,  Node: OS image format,  Next: Machine state,  Up: Details
+File: multiboot.info,  Node: OS image format,  Next: Machine state,  Prev: Specification,  Up: Specification
 
 OS image format
 ===============
 
-   An OS image is generally just an ordinary 32-bit executable file in
-the standard format for that particular operating system, except that
-it may be linked at a non-default load address to avoid loading on top
-of the PC's I/O region or other reserved areas, and of course it can't
+   An OS image may be an ordinary 32-bit executable file in the standard
+format for that particular operating system, except that it may be
+linked at a non-default load address to avoid loading on top of the
+PC's I/O region or other reserved areas, and of course it should not
 use shared libraries or other fancy features.
 
-   Unfortunately, the exact meaning of the text, data, bss, and entry
-fields of a.out headers tends to vary widely between different
-executable flavors, and it is sometimes very difficult to distinguish
-one flavor from another (e.g. Linux ZMAGIC executables and Mach ZMAGIC
-executables). Furthermore, there is no simple, reliable way of
-determining at what address in memory the text segment is supposed to
-start. Therefore, this specification requires that an additional header,
-known as a "Multiboot header", appear somewhere near the beginning of
-the executable file. In general it should come _as early as possible_,
-and is typically embedded in the beginning of the text segment after
-the _real_ executable header. It _must_ be contained completely within
-the first 8192 bytes of the executable file, and must be longword
-(32-bit) aligned. These rules allow the boot loader to find and
-synchronize with the text segment in the a.out file without knowing
-beforehand the details of the a.out variant. The layout of the header
-is as follows:
+   An OS image must contain an additional header called "Multiboot
+header", besides the headers of the format used by the OS image. The
+Multiboot header must be contained completely within the first 8192
+bytes of the OS image, and must be longword (32-bit) aligned. In
+general, it should come _as early as possible_, and may be embedded in
+the beginning of the text segment after the _real_ executable header.
 
-             +-------------------+
-     0       | magic: 0x1BADB002 |   (required)
-     4       | flags             |   (required)
-     8       | checksum          |   (required)
-             +-------------------+
-     12      | header_addr       |   (present if flags[16] is set)
-     16      | load_addr         |   (present if flags[16] is set)
-     20      | load_end_addr     |   (present if flags[16] is set)
-     24      | bss_end_addr      |   (present if flags[16] is set)
-     28      | entry_addr        |   (present if flags[16] is set)
-             +-------------------+
-     32      | mode_type         |   (present if flags[2] is set)
-     36      | width             |   (present if flags[2] is set)
-     40      | height            |   (present if flags[2] is set)
-     44      | depth             |   (present if flags[2] is set)
-             +-------------------+
+* Menu:
 
-   All fields are in little-endian byte order, of course. The first
-field is the magic number identifying the header, which must be the hex
-value 0x1BADB002.
+* Header layout::               The layout of Multiboot header
+* Header magic fields::         The magic fields of Multiboot header
+* Header address fields::
+* Header graphics fields::
 
-   The `flags' field specifies features that the OS image requests or
-requires of the boot loader. Bits 0-15 indicate requirements; if the
-boot loader sees any of these bits set but doesn't understand the flag
-or can't fulfill the requirements it indicates for some reason, it must
-notify the user and fail to load the OS image. Bits 16-31 indicate
-optional features; if any bits in this range are set but the boot loader
-doesn't understand them, it can simply ignore them and proceed as
-usual. Naturally, all as-yet-undefined bits in the `flags' word must be
-set to zero in OS images. This way, the `flags' fields serves for
-version control as well as simple feature selection.
+
+File: multiboot.info,  Node: Header layout,  Next: Header magic fields,  Prev: OS image format,  Up: OS image format
 
-   If bit 0 in the `flags' word is set, then all boot modules loaded
-along with the operating system must be aligned on page (4KB)
-boundaries. Some operating systems expect to be able to map the pages
-containing boot modules directly into a paged address space during
-startup, and thus need the boot modules to be page-aligned.
+The layout of Multiboot header
+------------------------------
 
-   If bit 1 in the `flags' word is set, then information on available
-memory via at least the `mem_*' fields of the Multiboot information
-structure (*note Boot information format::) must be included. If the
-bootloader is capable of passing a memory map (the `mmap_*' fields) and
-one exists, then it must be included as well.
+   The layout of the Multiboot header must be as follows:
 
-   If bit 2 in the `flags' word is set, information about the video
-mode table, defined later, must be available to the kernel.
+Offset  Type    Field Name     Note
+0       u32     magic          required
+4       u32     flags          required
+8       u32     checksum       required
+12      u32     header_addr    if flags[16] is set
+16      u32     load_addr      if flags[16] is set
+20      u32     load_end_addr  if flags[16] is set
+24      u32     bss_end_addr   if flags[16] is set
+28      u32     entry_addr     if flags[16] is set
+32      u32     mode_type      if flags[2] is set
+36      u32     width          if flags[2] is set
+40      u32     height         if flags[2] is set
+44      u32     depth          if flags[2] is set
 
-   Also, information about a preferred default mode can be specified in
-the `mode_type', `width', `height' and `depth' fields. This is only a
-_recommended_ mode by the kernel. If the mode exists, the boot loader
-should set it if the user hasn't specified a mode. If not, it should
-fall back to a similar mode, if available.
+   The fields `magic', `flags' and `checksum' are defined in *Note
+Header magic fields::, the fields `header_addr', `load_addr',
+`load_end_addr', `bss_end_addr' and `entry_addr' are defined in *Note
+Header address fields::, and the fields `mode_type', `width', `height'
+and `depth' are defind in *Note Header graphics fields::.
 
-   Valid numbers for `mode_type' is 0 for linear graphics mode and 1
-for EGA-standard text mode. Everything else is reserved for future
-expansion. Please note that even if you set this field to indicate that
-you want a graphics mode, you might get a text mode.
+
+File: multiboot.info,  Node: Header magic fields,  Next: Header address fields,  Prev: Header layout,  Up: OS image format
 
-   `width' and `height' is specified in pixels, if graphics mode, or
-characters in EGA text mode. `depth' is given in bits per pixel for
-graphics, or zero for EGA text modes.
+The magic fields of Multiboot header
+------------------------------------
 
-   Any, some or all of those three fields may be set to zero,
-indicating to the boot loader that no preference is given. This makes
-it possible for a kernel to just say it wants a 32-bit resolution, for
-example.
+`magic'
+     The field `magic' is the magic number identifying the header,
+     which must be the hexadecimal value `0x1BADB002'.
 
-   If bit 16 in the `flags' word is set, then the fields at offsets
-8-24 in the Multiboot header are valid, and the boot loader should use
-them instead of the fields in the actual executable header to calculate
-where to load the OS image. This information does not need to be
-provided if the kernel image is in ELF format, but it _must_ be
-provided if the images is in a.out format or in some other format.
-Compliant boot loaders must be able to load images that either are in
-ELF format or contain the load address information embedded in the
-Multiboot header; they may also directly support other executable
-formats, such as particular a.out variants, but are not required to.
+`flags'
+     The field `flags' specifies features that the OS image requests or
+     requires of an boot loader. Bits 0-15 indicate requirements; if the
+     boot loader sees any of these bits set but doesn't understand the
+     flag or can't fulfill the requirements it indicates for some
+     reason, it must notify the user and fail to load the OS image.
+     Bits 16-31 indicate optional features; if any bits in this range
+     are set but the boot loader doesn't understand them, it may simply
+     ignore them and proceed as usual. Naturally, all as-yet-undefined
+     bits in the `flags' word must be set to zero in OS images. This
+     way, the `flags' fields serves for version control as well as
+     simple feature selection.
+
+     If bit 0 in the `flags' word is set, then all boot modules loaded
+     along with the operating system must be aligned on page (4KB)
+     boundaries. Some operating systems expect to be able to map the
+     pages containing boot modules directly into a paged address space
+     during startup, and thus need the boot modules to be page-aligned.
+
+     If bit 1 in the `flags' word is set, then information on available
+     memory via at least the `mem_*' fields of the Multiboot information
+     structure (*note Boot information format::) must be included. If
+     the boot loader is capable of passing a memory map (the `mmap_*'
+     fields) and one exists, then it may be included as well.
+
+     If bit 2 in the `flags' word is set, information about the video
+     mode table (*note Boot information format::) must be available to
+     the kernel.
+
+     If bit 16 in the `flags' word is set, then the fields at offsets
+     8-24 in the Multiboot header are valid, and the boot loader should
+     use them instead of the fields in the actual executable header to
+     calculate where to load the OS image. This information does not
+     need to be provided if the kernel image is in ELF format, but it
+     _must_ be provided if the images is in a.out format or in some
+     other format. Compliant boot loaders must be able to load images
+     that either are in ELF format or contain the load address
+     information embedded in the Multiboot header; they may also
+     directly support other executable formats, such as particular
+     a.out variants, but are not required to.
+
+`checksum'
+     The field `checksum' is a 32-bit unsigned value which, when added
+     to the other magic fields (i.e. `magic' and `flags'), must have a
+     32-bit unsigned sum of zero.
+
+
+File: multiboot.info,  Node: Header address fields,  Next: Header graphics fields,  Prev: Header magic fields,  Up: OS image format
+
+The address fields of Multiboot header
+--------------------------------------
 
    All of the address fields enabled by flag bit 16 are physical
 addresses.  The meaning of each is as follows:
@@ -421,14 +445,39 @@ addresses.  The meaning of each is as follows:
      The physical address to which the boot loader should jump in order
      to start running the operating system.
 
-   The checksum is a 32-bit unsigned value which, when added to the
-other required fields, must have a 32-bit unsigned sum of zero.
+
+File: multiboot.info,  Node: Header graphics fields,  Prev: Header address fields,  Up: OS image format
+
+The graphics fields of Multiboot header
+---------------------------------------
+
+   Also, information about a preferred default mode can be specified in
+the `mode_type', `width', `height' and `depth' fields. This is only a
+_recommended_ mode by the kernel. If the mode exists, the boot loader
+should set it if the user hasn't specified a mode. If not, it should
+fall back to a similar mode, if available.
+
+   Valid numbers for `mode_type' is 0 for linear graphics mode and 1
+for EGA-standard text mode. Everything else is reserved for future
+expansion. Please note that even if you set this field to indicate that
+you want a graphics mode, you might get a text mode.
+
+   `width' and `height' is specified in pixels, if graphics mode, or
+characters in EGA text mode. `depth' is given in bits per pixel for
+graphics, or zero for EGA text modes.
+
+   Any, some or all of those three fields may be set to zero,
+indicating to the boot loader that no preference is given. This makes
+it possible for a kernel to just say it wants a 32-bit resolution, for
+example.
 
 
-File: multiboot.info,  Node: Machine state,  Next: Boot information format,  Prev: OS image format,  Up: Details
+File: multiboot.info,  Node: Machine state,  Next: Boot information format,  Prev: OS image format,  Up: Specification
 
 Machine state
 =============
+
+   FIXME: Use a table like the chapter "Header layout".
 
    When the boot loader invokes the 32-bit operating system, the machine
 must have the following state:
@@ -481,10 +530,12 @@ BIOS/DOS values, even if it changed them during the switch to 32-bit
 mode.
 
 
-File: multiboot.info,  Node: Boot information format,  Prev: Machine state,  Up: Details
+File: multiboot.info,  Node: Boot information format,  Prev: Machine state,  Up: Specification
 
 Boot information format
 =======================
+
+   FIXME: Split this chapter like the chapter "OS image format".
 
    Upon entry to the operating system, the `EBX' register contains the
 physical address of a "Multiboot information" data structure, through
@@ -521,16 +572,21 @@ follows:
      44      | mmap_length       |    (present if flags[6] is set)
      48      | mmap_addr         |    (present if flags[6] is set)
              +-------------------+
-     52      | drives_count      |    (present if flags[7] is set)
+     52      | drives_length     |    (present if flags[7] is set)
      56      | drives_addr       |    (present if flags[7] is set)
              +-------------------+
      60      | config_table      |    (present if flags[8] is set)
              +-------------------+
      64      | boot_loader_name  |    (present if flags[9] is set)
              +-------------------+
-     68 - ?? | apm_table         |    (present if flags[10] is set)
+     68      | apm_table         |    (present if flags[10] is set)
              +-------------------+
-     ?? - ?? | graphics_table    |    (present if flags[11] is set)
+     72      | vbe_control_info  |    (present if flags[11] is set)
+     76      | vbe_mode_info     |
+     80      | vbe_mode          |
+     82      | vbe_interface_seg |
+     84      | vbe_interface_off |
+     86      | vbe_interface_len |
              +-------------------+
 
    The first longword indicates the presence and validity of other
@@ -696,23 +752,28 @@ be available for normal use.
 
    If bit 7 in the `flags' is set, then the `drives_*' fields are
 valid, and indicate the address of the physical address of the first
-drive structure and the number of drive structures. `drives_addr' is
-the address, and `drives_count' is the number. `drives_count' may be
-zero. Each drive structure is formatted as follows:
+drive structure and the size of drive structures. `drives_addr' is the
+address, and `drives_length' is the total size of drive structures.
+Note that `drives_length' may be zero. Each drive structure is
+formatted as follows:
 
              +-------------------+
-     0       | drive_number      |
+     0       | size              |
              +-------------------+
-     1       | drive_mode        |
+     4       | drive_number      |
              +-------------------+
-     2       | drive_cylinders   |
-     4       | drive_heads       |
-     5       | drive_sectors     |
+     5       | drive_mode        |
              +-------------------+
-     6       | drive_ports       |
+     6       | drive_cylinders   |
+     8       | drive_heads       |
+     9       | drive_sectors     |
              +-------------------+
-     10      | reserved (0)      |
+     10 - xx | drive_ports       |
              +-------------------+
+
+   The `size' field specifies the size of this structure. The size
+varies, depending on the number of ports. Note that the size may not be
+equal to (10 + 2 * the number of ports), because of an alignment.
 
    The `drive_number' field contains the BIOS drive number. The
 `drive_mode' field represents the access mode used by the boot loader.
@@ -730,14 +791,11 @@ BIOS. `drive_cylinders' contains the number of the cylinders.
 `drive_heads' contains the number of the heads. `drive_sectors'
 contains the number of the sectors per track.
 
-   The `drive_ports' field contains the physical address of the array
-of the I/O ports used for the drive in the BIOS code. The array
-consists of zero or more unsigned two-bytes integers, and is terminated
-with zero. Note that the array may contain any number of I/O ports that
-are not related to the drive actually (such as DMA controller's ports).
-
-   The last field `reserved' is reserved for future use, and must be
-zero. The size is four bytes.
+   The `drive_ports' field contains the array of the I/O ports used for
+the drive in the BIOS code. The array consists of zero or more unsigned
+two-bytes integers, and is terminated with zero. Note that the array
+may contain any number of I/O ports that are not related to the drive
+actually (such as DMA controller's ports).
 
    If bit 8 in the `flags' is set, then the `config_table' field is
 valid, and indicates the address of the ROM configuration table
@@ -745,37 +803,62 @@ returned by the "GET CONFIGURATION" BIOS call. If the BIOS call fails,
 then the size of the table must be _zero_.
 
    If bit 9 in the `flags' is set, the `boot_loader_name' field is
-valid, and contains the physical address of the name of the boot loader
+valid, and contains the physical address of the name of a boot loader
 booting the kernel. The name is a normal C-style zero-terminated string.
 
-   If bit 11 in the `flags' is set, video mode information is available
-in the mode table. This should only be done if the kernel has indicated
-in the `Multiboot Header' that it accepts graphics modes.
-
-   The mode table looks like this:
-
+   If bit 10 in the `flags' is set, the `apm_table' field is valid, and
+contains the physical address of an APM table defined as below:
 
              +----------------------+
-     0       | mode_type            |
-     4       | width                |
-     8       | height               |
-     12      | depth                |
-     16      | frame_buffer_address |
+     0       | version              |
+     2       | cseg                 |
+     4       | offset               |
+     8       | cseg_16              |
+     10      | dseg                 |
+     12      | flags                |
+     14      | cseg_len             |
+     16      | cseg_16_len          |
+     18      | dseg_len             |
              +----------------------+
 
-   Valid numbers for `mode_type' is 0 for linear graphics mode and 1
-for EGA-standard text mode. Everything else is reserved for future
-expansion.
+   The fields `version', `cseg', `offset', `cseg_16', `dseg', `flags',
+`cseg_len', `cseg_16_len', `dseg_len' indicate the version number, the
+protected mode 32-bit code segment, the offset of the entry point, the
+protected mode 16-bit code segment, the protected mode 16-bit data
+segment, the flags, the length of the protected mode 32-bit code
+segment, the length of the protected mode 16-bit code segment, and the
+length of the protected mode 16-bit data segment, respectively. Only
+the field `offset' is 4 bytes, and the others are 2 bytes. See Advanced
+Power Management (APM) BIOS Interface Specification
+(http://www.microsoft.com/hwdev/busbios/amp_12.htm), for more
+information.
 
-   `width' and `height' is specified in pixels, if graphics mode, or
-characters in EGA text mode. `depth' is given in bits per pixel for
-graphics, or unused for EGA text mode.
+   If bit 11 in the `flags' is set, the graphics table is available.
+This must only be done if the kernel has indicated in the `Multiboot
+Header' that it accepts a graphics mode.
 
-   `frame_buffer_address' specifies the physical start address of the
-linear frame buffer. This is valid for both graphics and text modes.
+   The fields `vbe_control_info' and `vbe_mode_info' contain the
+physical addresses of VBE control information returned by the VBE
+Function 00h and VBE mode information returned by the VBE Function 01h,
+respectively.
+
+   The field `vbe_mode' indicates current video mode in the format
+specified in VBE 3.0.
+
+   The rest fields `vbe_interface_seg', `vbe_interface_off', and
+`vbe_interface_len' contain the table of a protected mode interface
+defined in VBE 2.0+. If this information is not available, those fields
+contain zero. Note that VBE 3.0 defines another protected mode
+interface which is incompatible with the old one. If you want to use
+the new protected mode interface, you will have to find the table
+yourself.
+
+   The fields for the graphics table are designed for VBE, but
+Multiboot boot loaders may simulate VBE on non-VBE modes, as if they
+were VBE modes.
 
 
-File: multiboot.info,  Node: Examples,  Next: Index,  Prev: Details,  Up: Top
+File: multiboot.info,  Node: Examples,  Next: History,  Prev: Specification,  Up: Top
 
 Examples
 ********
@@ -792,7 +875,7 @@ loader writers.
 * Example boot loader code::
 
 
-File: multiboot.info,  Node: Notes on PC,  Next: BIOS device mapping techniques,  Up: Examples
+File: multiboot.info,  Node: Notes on PC,  Next: BIOS device mapping techniques,  Prev: Examples,  Up: Examples
 
 Notes on PC
 ===========
@@ -849,7 +932,7 @@ drivers.
 * I/O restriction technique::
 
 
-File: multiboot.info,  Node: Data comparison technique,  Next: I/O restriction technique,  Up: BIOS device mapping techniques
+File: multiboot.info,  Node: Data comparison technique,  Next: I/O restriction technique,  Prev: BIOS device mapping techniques,  Up: BIOS device mapping techniques
 
 Data comparison technique
 -------------------------
@@ -940,7 +1023,7 @@ Multiboot information structure.
 * Other Multiboot kernels::
 
 
-File: multiboot.info,  Node: multiboot.h,  Next: boot.S,  Up: Example OS code
+File: multiboot.info,  Node: multiboot.h,  Next: boot.S,  Prev: Example OS code,  Up: Example OS code
 
 multiboot.h
 -----------
@@ -948,7 +1031,7 @@ multiboot.h
    This is the source code in the file `multiboot.h':
 
      /* multiboot.h - the header for Multiboot */
-     /* Copyright (C) 1999  Free Software Foundation, Inc.
+     /* Copyright (C) 1999, 2001  Free Software Foundation, Inc.
      
         This program is free software; you can redistribute it and/or modify
         it under the terms of the GNU General Public License as published by
@@ -970,7 +1053,11 @@ multiboot.h
      #define MULTIBOOT_HEADER_MAGIC          0x1BADB002
      
      /* The flags for the Multiboot header. */
-     #define MULTIBOOT_HEADER_FLAGS          0x00010003
+     #ifdef __ELF__
+     # define MULTIBOOT_HEADER_FLAGS         0x00000003
+     #else
+     # define MULTIBOOT_HEADER_FLAGS         0x00010003
+     #endif
      
      /* The magic number passed by a Multiboot-compliant boot loader. */
      #define MULTIBOOT_BOOTLOADER_MAGIC      0x2BADB002
@@ -1072,7 +1159,7 @@ boot.S
    In the file `boot.S':
 
      /* boot.S - bootstrap the kernel */
-     /* Copyright (C) 1999  Free Software Foundation, Inc.
+     /* Copyright (C) 1999, 2001  Free Software Foundation, Inc.
      
         This program is free software; you can redistribute it and/or modify
         it under the terms of the GNU General Public License as published by
@@ -1094,8 +1181,6 @@ boot.S
              .text
      
              .globl  start, _start
-     
-             /* This entry is not used actually. */
      start:
      _start:
              jmp     multiboot_entry
@@ -1111,6 +1196,7 @@ boot.S
              .long   MULTIBOOT_HEADER_FLAGS
              /* checksum */
              .long   -(MULTIBOOT_HEADER_MAGIC + MULTIBOOT_HEADER_FLAGS)
+     #ifndef __ELF__
              /* header_addr */
              .long   multiboot_header
              /* load_addr */
@@ -1121,6 +1207,7 @@ boot.S
              .long   _end
              /* entry_addr */
              .long   multiboot_entry
+     #endif /* ! __ELF__ */
      
      multiboot_entry:
              /* Initialize the stack pointer. */
@@ -1221,7 +1308,7 @@ kernel.c
        /* Am I booted by a Multiboot-compliant boot loader? */
        if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
          {
-           printf ("Invalid magic number: 0x%x\n", magic);
+           printf ("Invalid magic number: 0x%x\n", (unsigned) magic);
            return;
          }
      
@@ -1229,16 +1316,16 @@ kernel.c
        mbi = (multiboot_info_t *) addr;
      
        /* Print out the flags. */
-       printf ("flags = 0x%x\n", mbi->flags);
+       printf ("flags = 0x%x\n", (unsigned) mbi->flags);
      
        /* Are mem_* valid? */
        if (CHECK_FLAG (mbi->flags, 0))
-         printf ("mem_lower = %dKB, mem_upper = %dKB\n",
-                 mbi->mem_lower, mbi->mem_upper);
+         printf ("mem_lower = %uKB, mem_upper = %uKB\n",
+                 (unsigned) mbi->mem_lower, (unsigned) mbi->mem_upper);
      
        /* Is boot_device valid? */
        if (CHECK_FLAG (mbi->flags, 1))
-         printf ("boot_device = 0x%x\n", mbi->boot_device);
+         printf ("boot_device = 0x%x\n", (unsigned) mbi->boot_device);
      
        /* Is the command line passed? */
        if (CHECK_FLAG (mbi->flags, 2))
@@ -1251,12 +1338,14 @@ kernel.c
            int i;
      
            printf ("mods_count = %d, mods_addr = 0x%x\n",
-                   mbi->mods_count, mbi->mods_addr);
+                   (int) mbi->mods_count, (int) mbi->mods_addr);
            for (i = 0, mod = (module_t *) mbi->mods_addr;
                 i < mbi->mods_count;
                 i++, mod += sizeof (module_t))
              printf (" mod_start = 0x%x, mod_end = 0x%x, string = %s\n",
-                     mod->mod_start, mod->mod_end, (char *) mod->string);
+                     (unsigned) mod->mod_start,
+                     (unsigned) mod->mod_end,
+                     (char *) mod->string);
          }
      
        /* Bits 4 and 5 are mutually exclusive! */
@@ -1273,7 +1362,9 @@ kernel.c
      
            printf ("aout_symbol_table: tabsize = 0x%0x, "
                    "strsize = 0x%x, addr = 0x%x\n",
-                   aout_sym->tabsize, aout_sym->strsize, aout_sym->addr);
+                   (unsigned) aout_sym->tabsize,
+                   (unsigned) aout_sym->strsize,
+                   (unsigned) aout_sym->addr);
          }
      
        /* Is the section header table of ELF valid? */
@@ -1281,10 +1372,10 @@ kernel.c
          {
            elf_section_header_table_t *elf_sec = &(mbi->u.elf_sec);
      
-           printf ("elf_sec: num = %d, size = 0x%x,"
+           printf ("elf_sec: num = %u, size = 0x%x,"
                    " addr = 0x%x, shndx = 0x%x\n",
-                   elf_sec->num, elf_sec->size,
-                   elf_sec->addr, elf_sec->shndx);
+                   (unsigned) elf_sec->num, (unsigned) elf_sec->size,
+                   (unsigned) elf_sec->addr, (unsigned) elf_sec->shndx);
          }
      
        /* Are mmap_* valid? */
@@ -1293,15 +1384,19 @@ kernel.c
            memory_map_t *mmap;
      
            printf ("mmap_addr = 0x%x, mmap_length = 0x%x\n",
-                   mbi->mmap_addr, mbi->mmap_length);
+                   (unsigned) mbi->mmap_addr, (unsigned) mbi->mmap_length);
            for (mmap = (memory_map_t *) mbi->mmap_addr;
                 (unsigned long) mmap < mbi->mmap_addr + mbi->mmap_length;
                 mmap = (memory_map_t *) ((unsigned long) mmap
                                          + mmap->size + sizeof (mmap->size)))
              printf (" size = 0x%x, base_addr = 0x%x%x,"
                      " length = 0x%x%x, type = 0x%x\n",
-                     mmap->size, mmap->base_addr_high, mmap->base_addr_low,
-                     mmap->length_high, mmap->length_low, mmap->type);
+                     (unsigned) mmap->size,
+                     (unsigned) mmap->base_addr_high,
+                     (unsigned) mmap->base_addr_low,
+                     (unsigned) mmap->length_high,
+                     (unsigned) mmap->length_low,
+                     (unsigned) mmap->type);
          }
      }
      
@@ -1465,7 +1560,42 @@ made, but the test release is available from:
 more information.
 
 
-File: multiboot.info,  Node: Index,  Prev: Examples,  Up: Top
+File: multiboot.info,  Node: History,  Next: Index,  Prev: Examples,  Up: Top
+
+The change log of this specification
+************************************
+
+0.7
+        * "Multiboot Standard" is renamed to "Multiboot Specification".
+
+        * Graphics fields are added to Multiboot header.
+
+        * BIOS drive information, BIOS configuration table, the name of
+          a boot loader, APM information, and graphics information are
+          added to Multiboot information.
+
+        * Rewritten in Texinfo format.
+
+        * Rewritten, using more strict words.
+
+        * The maintainer changes to the GNU GRUB maintainer team
+          <bug-grub@gnu.org>, from Bryan Ford and Erich Stefan Boleyn.
+
+0.6
+        * A few wording changes.
+
+        * Header checksum.
+
+        * Clasification of machine state passed to an operating system.
+
+0.5
+        * Name change.
+
+0.4
+        * Major changes plus HTMLification.
+
+
+File: multiboot.info,  Node: Index,  Prev: History,  Up: Top
 
 Index
 *****
@@ -1475,30 +1605,35 @@ Index
 
 Tag Table:
 Node: Top956
-Node: Motivation1697
-Node: Terminology3034
-Node: Scope and requirements4220
-Node: Architecture4519
-Node: Operating systems5020
-Node: Boot sources5801
-Node: Boot-time configuration6780
-Node: Convenience to the operating system7363
-Node: Boot modules9612
-Node: Details10773
-Node: OS image format11275
-Node: Machine state18481
-Node: Boot information format20807
-Node: Examples34492
-Node: Notes on PC34856
-Node: BIOS device mapping techniques36417
-Node: Data comparison technique37322
-Node: I/O restriction technique38175
-Node: Example OS code39383
-Node: multiboot.h40920
-Node: boot.S44720
-Node: kernel.c47418
-Node: Other Multiboot kernels55967
-Node: Example boot loader code56389
-Node: Index56915
+Node: Overview1309
+Node: Motivation1776
+Node: Architecture3186
+Node: Operating systems3714
+Node: Boot sources4503
+Node: Boot-time configuration5468
+Node: Convenience to operating systems6071
+Node: Boot modules8297
+Node: Terminology9441
+Node: Specification11821
+Node: OS image format12383
+Node: Header layout13458
+Node: Header magic fields14641
+Node: Header address fields17490
+Node: Header graphics fields19122
+Node: Machine state20286
+Node: Boot information format22675
+Node: Examples38041
+Node: Notes on PC38413
+Node: BIOS device mapping techniques39991
+Node: Data comparison technique40896
+Node: I/O restriction technique41788
+Node: Example OS code42996
+Node: multiboot.h44533
+Node: boot.S48462
+Node: kernel.c51157
+Node: Other Multiboot kernels60124
+Node: Example boot loader code60546
+Node: History61072
+Node: Index61989
 
 End Tag Table

@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999, 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -160,8 +160,8 @@ struct minix_dir_entry {
 int
 minix_mount (void)
 {
-  if (((current_drive & 0x80 || current_slice != 0))
-      && IS_PC_SLICE_TYPE_MINIX (current_slice)
+  if (((current_drive & 0x80) || current_slice != 0)
+      && ! IS_PC_SLICE_TYPE_MINIX (current_slice)
       && ! IS_PC_SLICE_TYPE_BSD_WITH_FS (current_slice, FS_OTHER))
     return 0;			/* The partition is not of MINIX type */
   
@@ -268,16 +268,12 @@ minix_read (char *buf, int len)
       if (size > len)
 	size = len;
 
-#ifndef STAGE1_5
       disk_read_func = disk_read_hook;
-#endif /* STAGE1_5 */
 
       devread (map * (BLOCK_SIZE / DEV_BSIZE),
 	       offset, size, buf);
 
-#ifndef STAGE1_5
       disk_read_func = NULL;
-#endif /* STAGE1_5 */
 
       buf += size;
       len -= size;

@@ -1,11 +1,21 @@
 \input texinfo @c -*-texinfo-*-
+@c -*-texinfo-*-
+@c %**start of header
 @setfilename multiboot.info
+@settitle Multiboot Specification
+@c %**end of header
 
+@c Unify all our little indices for now.
 @syncodeindex fn cp
 @syncodeindex vr cp
 @syncodeindex ky cp
 @syncodeindex pg cp
 @syncodeindex tp cp
+
+@footnotestyle separate
+@paragraphindent 3
+@finalout
+
 
 @dircategory Kernel
 @direntry
@@ -38,20 +48,16 @@ Permission is granted to copy and distribute translations of this manual
 into another language, under the above conditions for modified versions.
 @end ifinfo
 
-@settitle Multiboot Specification
 @titlepage
-@finalout
+@sp 10
 @title The Multiboot Specification
-@author Bryan Ford
-@author Erich Stefan Boleyn
-@author Kunihiro Ishiguro
-@author OKUJI Yoshinori
+@author OKUJI Yoshinori, Bryan Ford, Erich Stefan Boleyn, Kunihiro Ishiguro
 @page
 
 @vskip 0pt plus 1filll
 Copyright @copyright{} 1995, 96 Bryan Ford <baford@@cs.utah.edu>
 Copyright @copyright{} 1995, 96 Erich Stefan Boleyn <erich@@uruk.org>
-Copyright @copyright{} 1999, 2000 Free Software Foundation, Inc.
+Copyright @copyright{} 1999, 2000, 2001 Free Software Foundation, Inc.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -66,54 +72,46 @@ Permission is granted to copy and distribute translations of this manual
 into another language, under the above conditions for modified versions.
 @end titlepage
 
+@finalout
+@headings double
+
 @ifnottex
-@node Top
+@node Top, Overview, (dir), (dir)
 @top Multiboot Specification
 
 This file documents Multiboot Specification, the proposal for the boot
-sequence standard. This edition documents version 0.6.90.
+sequence standard. This edition documents version 0.6.93.
 @end ifnottex
 
+@menu
+* Overview::                    
+* Terminology::                 
+* Specification::               
+* Examples::                    
+* History::                     
+* Index::                       
+@end menu
+
+
+@node Overview, Terminology, Top, Top
+@chapter Introduction to Multiboot Specification
+
+This chapter describes some rough information on the Multiboot
+Specification. Note that this is not a part of the specification itself.
 
 @menu
 * Motivation::                  
-* Terminology::                 
-* Scope and requirements::      
-* Details::                     
-* Examples::                    
-* Index::                       
-
-@detailmenu
- --- The Detailed Node Listing ---
-
-Scope and Requirements
-
 * Architecture::                
 * Operating systems::           
 * Boot sources::                
 * Boot-time configuration::     
-* Convenience to the operating system::       
+* Convenience to operating systems::  
 * Boot modules::                
-
-Details
-
-* OS image format::             
-* Machine state::               
-* Boot information format::     
-
-Examples
-
-* Notes on PC::        
-* BIOS device mapping techniques::        
-* Example OS code::             
-* Example boot loader code::     
-
-@end detailmenu
 @end menu
 
 
-@node Motivation
-@chapter Motivation
+@node Motivation, Architecture, Overview, Overview
+@section The background of Multiboot Specification
 
 Every operating system ever created tends to have its own boot loader.
 Installing a new operating system on a machine generally involves
@@ -136,45 +134,8 @@ specification does @emph{not} specify how boot loaders should work ---
 only how they must interface with the operating system being loaded.
 
 
-@node Terminology
-@chapter Terminology
-
-Throughout this document, the term @dfn{boot loader} means whatever
-program or set of programs loads the image of the final operating system
-to be run on the machine. The boot loader may itself consist of several
-stages, but that is an implementation detail not relevant to this
-specification. Only the @emph{final} stage of the boot loader --- the
-stage that eventually transfers control to the operating system ---
-needs to follow the rules specified in this document in order to be
-@dfn{MultiBoot compliant}; earlier boot loader stages can be designed in
-whatever way is most convenient.
-
-The term @dfn{OS image} is used to refer to the initial binary image
-that the boot loader loads into memory and transfers control to start
-the operating system. The OS image is typically an executable containing
-the operating system kernel.
-
-The term @dfn{boot module} refers to other auxiliary files that the boot
-loader loads into memory along with the OS image, but does not interpret
-in any way other than passing their locations to the operating system
-when it is invoked.
-
-
-@node Scope and requirements
-@chapter Scope and requirements
-
-@menu
-* Architecture::                
-* Operating systems::           
-* Boot sources::                
-* Boot-time configuration::     
-* Convenience to the operating system::       
-* Boot modules::                
-@end menu
-
-
-@node Architecture
-@section Architecture
+@node Architecture, Operating systems, Motivation, Overview
+@section The target architecture
 
 This specification is primarily targeted at @sc{pc}, since they are the
 most common and have the largest variety of operating systems and boot
@@ -184,8 +145,8 @@ this specification, stripped of the x86-specific details, could be
 adopted for them as well.
 
 
-@node Operating systems
-@section Operating systems
+@node Operating systems, Boot sources, Architecture, Overview
+@section The target operating systems
 
 This specification is targeted toward free 32-bit operating systems
 that can be fairly easily modified to support the specification without
@@ -198,7 +159,7 @@ be nice if commercial operating system vendors eventually adopted this
 specification as well, but that's probably a pipe dream.
 
 
-@node Boot sources
+@node Boot sources, Boot-time configuration, Operating systems, Overview
 @section Boot sources
 
 It should be possible to write compliant boot loaders that load the OS
@@ -219,27 +180,27 @@ loading mechanisms, increasing their portability, robustness, and
 user-friendliness.
 
 
-@node Boot-time configuration
-@section Boot-time configuration
+@node Boot-time configuration, Convenience to operating systems, Boot sources, Overview
+@section Configure an operating system at boot-time
 
 It is often necessary for one reason or another for the user to be able
-to provide some configuration information to the operating system
+to provide some configuration information to an operating system
 dynamically at boot time. While this specification should not dictate
 how this configuration information is obtained by the boot loader, it
 should provide a standard means for the boot loader to pass such
 information to the operating system.
 
 
-@node Convenience to the operating system
-@section Convenience to the operating system
+@node Convenience to operating systems, Boot modules, Boot-time configuration, Overview
+@section How to make OS development easier
 
 OS images should be easy to generate. Ideally, an OS image should simply
 be an ordinary 32-bit executable file in whatever file format the
 operating system normally uses. It should be possible to @code{nm} or
 disassemble OS images just like normal executables. Specialized tools
-should not be needed to create OS images in a @emph{special} file
+should not be required to create OS images in a @emph{special} file
 format. If this means shifting some work from the operating system to
-the boot loader, that is probably appropriate, because all the memory
+a boot loader, that is probably appropriate, because all the memory
 consumed by the boot loader will typically be made available again after
 the boot process is created, whereas every bit of code in the OS image
 typically has to remain in memory forever. The operating system should
@@ -259,16 +220,16 @@ existence in order to load the OS image --- otherwise the boot loader
 effectively becomes operating system specific again.
 
 This specification adopts a compromise solution to this
-problem. Multiboot compliant boot images always contain a magic
+problem. Multiboot-compliant OS images always contain a magic
 @dfn{Multiboot header} (@pxref{OS image format}), which allows the boot
 loader to load the image without having to understand numerous a.out
 variants or other executable formats. This magic header does not need to
 be at the very beginning of the executable file, so kernel images can
 still conform to the local a.out format variant in addition to being
-Multiboot compliant.
+Multiboot-compliant.
 
 
-@node Boot modules
+@node Boot modules,  , Convenience to operating systems, Overview
 @section Boot modules
 
 Many modern operating system kernels, such as those of VSTa and Mach, do
@@ -289,21 +250,81 @@ support multiple boot modules, but they are strongly encouraged to,
 because some operating systems will be unable to boot without them.
 
 
-@node Details
-@chapter Details
+@node Terminology, Specification, Overview, Top
+@chapter The definitions of terms used through the specification
 
-There are three main aspects of the boot loader/OS image interface:
+@table @dfn
+@item must
+We use the term @dfn{must}, when any boot loader or OS image needs to
+follow a rule --- otherwise, the boot loader or OS image is @emph{not}
+Multiboot-compliant.
+
+@item should
+We use the term @dfn{should}, when any boot loader or OS image is
+recommended to follow a rule, but it doesn't need to follow the rule.
+
+@item may
+We use the term @dfn{may}, when any boot loader or OS image is allowed
+to follow a rule.
+
+@item boot loader
+Whatever program or set of programs loads the image of the final
+operating system to be run on the machine. The boot loader may itself
+consist of several stages, but that is an implementation detail not
+relevant to this specification. Only the @emph{final} stage of the boot
+loader --- the stage that eventually transfers control to an operating
+system --- must follow the rules specified in this document in order
+to be @dfn{Multiboot-compliant}; earlier boot loader stages may be
+designed in whatever way is most convenient.
+
+@item OS image
+The initial binary image that a boot loader loads into memory and
+transfers control to start an operating system. The OS image is
+typically an executable containing the operating system kernel.
+
+@item boot module
+Other auxiliary files that a boot loader loads into memory along with
+an OS image, but does not interpret in any way other than passing their
+locations to the operating system when it is invoked.
+
+@item Multiboot-compliant
+A boot loader or an OS image which follows the rules defined as
+@dfn{must} is Multiboot-compliant. When this specification specifies a
+rule as @dfn{should} or @dfn{may}, a Multiboot-complaint boot loader/OS
+image doesn't need to follow the rule.
+
+@item u8
+The type of unsigned 8-bit data.
+
+@item u16
+The type of unsigned 16-bit data. Because the target architecture is
+little-endian, WORD is coded in little-endian.
+
+@item u32
+The type of unsigned 32-bit data. Because the target architecture is
+little-endian, DWORD is coded in little-endian.
+
+@item u64
+The type of unsigned 64-bit data. Because the target architecture is
+little-endian, QWORD is coded in little-endian.
+@end table
+
+
+@node Specification, Examples, Terminology, Top
+@chapter The exact definitions of Multiboot Specification
+
+There are three main aspects of a boot loader/OS image interface:
 
 @enumerate
 @item
-The format of the OS image as seen by the boot loader.
+The format of an OS image as seen by a boot loader.
 
 @item
-The state of the machine when the boot loader starts the operating
+The state of a machine when a boot loader starts an operating
 system.
 
 @item
-The format of the information passed by the boot loader to the operating
+The format of information passed by a boot loader to an operating
 system.
 @end enumerate
 
@@ -314,64 +335,76 @@ system.
 @end menu
 
 
-@node OS image format
+@node OS image format, Machine state, Specification, Specification
 @section OS image format
 
-An OS image is generally just an ordinary 32-bit executable file in the
-standard format for that particular operating system, except that it may
-be linked at a non-default load address to avoid loading on top of the
-@sc{pc}'s I/O region or other reserved areas, and of course it can't use
-shared libraries or other fancy features.
+An OS image may be an ordinary 32-bit executable file in the standard
+format for that particular operating system, except that it may be
+linked at a non-default load address to avoid loading on top of the
+@sc{pc}'s I/O region or other reserved areas, and of course it should
+not use shared libraries or other fancy features.
 
-Unfortunately, the exact meaning of the text, data, bss, and entry
-fields of a.out headers tends to vary widely between different
-executable flavors, and it is sometimes very difficult to distinguish
-one flavor from another (e.g. Linux @sc{zmagic} executables and Mach
-@sc{zmagic} executables). Furthermore, there is no simple, reliable way
-of determining at what address in memory the text segment is supposed to
-start. Therefore, this specification requires that an additional header,
-known as a @dfn{Multiboot header}, appear somewhere near the beginning
-of the executable file. In general it should come @emph{as early as
-possible}, and is typically embedded in the beginning of the text
-segment after the @emph{real} executable header. It @emph{must} be
-contained completely within the first 8192 bytes of the executable file,
-and must be longword (32-bit) aligned. These rules allow the boot loader
-to find and synchronize with the text segment in the a.out file without
-knowing beforehand the details of the a.out variant. The layout of the
-header is as follows:
+An OS image must contain an additional header called @dfn{Multiboot
+header}, besides the headers of the format used by the OS image. The
+Multiboot header must be contained completely within the first 8192
+bytes of the OS image, and must be longword (32-bit) aligned. In
+general, it should come @emph{as early as possible}, and may be
+embedded in the beginning of the text segment after the @emph{real}
+executable header.
 
-@example
-@group
-        +-------------------+
-0       | magic: 0x1BADB002 |   (required)
-4       | flags             |   (required)
-8       | checksum          |   (required)
-        +-------------------+
-12      | header_addr       |   (present if flags[16] is set)
-16      | load_addr         |   (present if flags[16] is set)
-20      | load_end_addr     |   (present if flags[16] is set)
-24      | bss_end_addr      |   (present if flags[16] is set)
-28      | entry_addr        |   (present if flags[16] is set)
-        +-------------------+
-32      | mode_type         |   (present if flags[2] is set)
-36      | width             |   (present if flags[2] is set)
-40      | height            |   (present if flags[2] is set)
-44      | depth             |   (present if flags[2] is set)
-        +-------------------+
-@end group
-@end example
+@menu
+* Header layout::               The layout of Multiboot header
+* Header magic fields::         The magic fields of Multiboot header
+* Header address fields::       
+* Header graphics fields::      
+@end menu
 
-All fields are in little-endian byte order, of course. The first field
-is the magic number identifying the header, which must be the hex value
-0x1BADB002.
 
-The @samp{flags} field specifies features that the OS image requests or
-requires of the boot loader. Bits 0-15 indicate requirements; if the
+@node Header layout, Header magic fields, OS image format, OS image format
+@subsection The layout of Multiboot header
+
+The layout of the Multiboot header must be as follows:
+
+@multitable @columnfractions .1 .1 .2 .5
+@item Offset @tab Type  @tab Field Name    @tab Note
+@item 0      @tab u32 @tab magic         @tab required
+@item 4      @tab u32 @tab flags         @tab required
+@item 8      @tab u32 @tab checksum      @tab required
+@item 12     @tab u32 @tab header_addr   @tab if flags[16] is set
+@item 16     @tab u32 @tab load_addr     @tab if flags[16] is set
+@item 20     @tab u32 @tab load_end_addr @tab if flags[16] is set
+@item 24     @tab u32 @tab bss_end_addr  @tab if flags[16] is set
+@item 28     @tab u32 @tab entry_addr    @tab if flags[16] is set
+@item 32     @tab u32 @tab mode_type     @tab if flags[2] is set
+@item 36     @tab u32 @tab width         @tab if flags[2] is set
+@item 40     @tab u32 @tab height        @tab if flags[2] is set
+@item 44     @tab u32 @tab depth         @tab if flags[2] is set
+@end multitable
+
+The fields @samp{magic}, @samp{flags} and @samp{checksum} are defined in
+@ref{Header magic fields}, the fields @samp{header_addr},
+@samp{load_addr}, @samp{load_end_addr}, @samp{bss_end_addr} and
+@samp{entry_addr} are defined in @ref{Header address fields}, and the
+fields @samp{mode_type}, @samp{width}, @samp{height} and @samp{depth} are
+defind in @ref{Header graphics fields}.
+
+
+@node Header magic fields, Header address fields, Header layout, OS image format
+@subsection The magic fields of Multiboot header
+
+@table @samp
+@item magic
+The field @samp{magic} is the magic number identifying the header,
+which must be the hexadecimal value @code{0x1BADB002}.
+
+@item flags
+The field @samp{flags} specifies features that the OS image requests or
+requires of an boot loader. Bits 0-15 indicate requirements; if the
 boot loader sees any of these bits set but doesn't understand the flag
 or can't fulfill the requirements it indicates for some reason, it must
 notify the user and fail to load the OS image. Bits 16-31 indicate
 optional features; if any bits in this range are set but the boot loader
-doesn't understand them, it can simply ignore them and proceed as
+doesn't understand them, it may simply ignore them and proceed as
 usual. Naturally, all as-yet-undefined bits in the @samp{flags} word
 must be set to zero in OS images. This way, the @samp{flags} fields
 serves for version control as well as simple feature selection.
@@ -385,30 +418,12 @@ startup, and thus need the boot modules to be page-aligned.
 If bit 1 in the @samp{flags} word is set, then information on available
 memory via at least the @samp{mem_*} fields of the Multiboot information
 structure (@pxref{Boot information format}) must be included. If the
-bootloader is capable of passing a memory map (the @samp{mmap_*} fields)
-and one exists, then it must be included as well.
+boot loader is capable of passing a memory map (the @samp{mmap_*} fields)
+and one exists, then it may be included as well.
 
 If bit 2 in the @samp{flags} word is set, information about the video
-mode table, defined later, must be available to the kernel.
-
-Also, information about a preferred default mode can be specified in the
-@samp{mode_type}, @samp{width}, @samp{height} and @samp{depth}
-fields. This is only a @emph{recommended} mode by the kernel. If the
-mode exists, the boot loader should set it if the user hasn't specified
-a mode. If not, it should fall back to a similar mode, if available.
-
-Valid numbers for @samp{mode_type} is 0 for linear graphics mode and 1
-for EGA-standard text mode. Everything else is reserved for future
-expansion. Please note that even if you set this field to indicate that
-you want a graphics mode, you might get a text mode.
-
-@samp{width} and @samp{height} is specified in pixels, if graphics mode,
-or characters in EGA text mode. @samp{depth} is given in bits per pixel
-for graphics, or zero for EGA text modes.
-
-Any, some or all of those three fields may be set to zero, indicating to
-the boot loader that no preference is given. This makes it possible for
-a kernel to just say it wants a 32-bit resolution, for example.
+mode table (@pxref{Boot information format}) must be available to the
+kernel.
 
 If bit 16 in the @samp{flags} word is set, then the fields at offsets
 8-24 in the Multiboot header are valid, and the boot loader should use
@@ -420,6 +435,16 @@ format. Compliant boot loaders must be able to load images that either
 are in @sc{elf} format or contain the load address information embedded
 in the Multiboot header; they may also directly support other executable
 formats, such as particular a.out variants, but are not required to.
+
+@item checksum
+The field @samp{checksum} is a 32-bit unsigned value which, when added
+to the other magic fields (i.e. @samp{magic} and @samp{flags}), must
+have a 32-bit unsigned sum of zero.
+@end table
+
+
+@node Header address fields, Header graphics fields, Header magic fields, OS image format
+@subsection The address fields of Multiboot header
 
 All of the address fields enabled by flag bit 16 are physical addresses.
 The meaning of each is as follows:
@@ -454,12 +479,34 @@ The physical address to which the boot loader should jump in order to
 start running the operating system.
 @end table
 
-The checksum is a 32-bit unsigned value which, when added to
-the other required fields, must have a 32-bit unsigned sum of zero.
+
+@node Header graphics fields,  , Header address fields, OS image format
+@subsection The graphics fields of Multiboot header
+
+Also, information about a preferred default mode can be specified in the
+@samp{mode_type}, @samp{width}, @samp{height} and @samp{depth}
+fields. This is only a @emph{recommended} mode by the kernel. If the
+mode exists, the boot loader should set it if the user hasn't specified
+a mode. If not, it should fall back to a similar mode, if available.
+
+Valid numbers for @samp{mode_type} is 0 for linear graphics mode and 1
+for EGA-standard text mode. Everything else is reserved for future
+expansion. Please note that even if you set this field to indicate that
+you want a graphics mode, you might get a text mode.
+
+@samp{width} and @samp{height} is specified in pixels, if graphics mode,
+or characters in EGA text mode. @samp{depth} is given in bits per pixel
+for graphics, or zero for EGA text modes.
+
+Any, some or all of those three fields may be set to zero, indicating to
+the boot loader that no preference is given. This makes it possible for
+a kernel to just say it wants a 32-bit resolution, for example.
 
 
-@node Machine state
+@node Machine state, Boot information format, OS image format, Specification
 @section Machine state
+
+FIXME: Use a table like the chapter ``Header layout''.
 
 When the boot loader invokes the 32-bit operating system, the machine
 must have the following state:
@@ -527,8 +574,10 @@ structures before doing so. Also, the boot loader must leave the
 changed them during the switch to 32-bit mode.
 
 
-@node Boot information format
+@node Boot information format,  , Machine state, Specification
 @section Boot information format
+
+FIXME: Split this chapter like the chapter ``OS image format''.
 
 Upon entry to the operating system, the @code{EBX} register contains the
 physical address of a @dfn{Multiboot information} data structure,
@@ -567,16 +616,21 @@ follows:
 44      | mmap_length       |    (present if flags[6] is set)
 48      | mmap_addr         |    (present if flags[6] is set)
         +-------------------+
-52      | drives_count      |    (present if flags[7] is set)
+52      | drives_length     |    (present if flags[7] is set)
 56      | drives_addr       |    (present if flags[7] is set)
         +-------------------+
 60      | config_table      |    (present if flags[8] is set)
         +-------------------+
 64      | boot_loader_name  |    (present if flags[9] is set)
         +-------------------+
-68 - ?? | apm_table         |    (present if flags[10] is set)
+68      | apm_table         |    (present if flags[10] is set)
         +-------------------+
-?? - ?? | graphics_table    |    (present if flags[11] is set)
+72      | vbe_control_info  |    (present if flags[11] is set)
+76      | vbe_mode_info     |
+80      | vbe_mode          |
+82      | vbe_interface_seg |
+84      | vbe_interface_off |
+86      | vbe_interface_len |
         +-------------------+
 @end group
 @end example
@@ -765,28 +819,32 @@ be available for normal use.
 
 If bit 7 in the @samp{flags} is set, then the @samp{drives_*} fields
 are valid, and indicate the address of the physical address of the first
-drive structure and the number of drive structures. @samp{drives_addr}
-is the address, and @samp{drives_count} is the
-number. @samp{drives_count} may be zero. Each drive structure is
-formatted as follows:
+drive structure and the size of drive structures. @samp{drives_addr}
+is the address, and @samp{drives_length} is the total size of drive
+structures. Note that @samp{drives_length} may be zero. Each drive
+structure is formatted as follows:
 
 @example
 @group
         +-------------------+
-0       | drive_number      |
+0       | size              |
         +-------------------+
-1       | drive_mode        |
+4       | drive_number      |
         +-------------------+
-2       | drive_cylinders   |
-4       | drive_heads       |
-5       | drive_sectors     |
+5       | drive_mode        |
         +-------------------+
-6       | drive_ports       |
+6       | drive_cylinders   |
+8       | drive_heads       |
+9       | drive_sectors     |
         +-------------------+
-10      | reserved (0)      |
+10 - xx | drive_ports       |
         +-------------------+
 @end group
 @end example
+
+The @samp{size} field specifies the size of this structure. The size
+varies, depending on the number of ports. Note that the size may not be
+equal to (10 + 2 * the number of ports), because of an alignment.
 
 The @samp{drive_number} field contains the BIOS drive number. The
 @samp{drive_mode} field represents the access mode used by the boot
@@ -807,15 +865,11 @@ cylinders. @samp{drive_heads} contains the number of the
 heads. @samp{drive_sectors} contains the number of the sectors per
 track.
 
-The @samp{drive_ports} field contains the physical address of the array
-of the I/O ports used for the drive in the @sc{bios} code. The array
-consists of zero or more unsigned two-bytes integers, and is terminated
-with zero. Note that the array may contain any number of I/O ports that
-are not related to the drive actually (such as @sc{dma} controller's
-ports).
-
-The last field @samp{reserved} is reserved for future use, and must be
-zero. The size is four bytes.
+The @samp{drive_ports} field contains the array of the I/O ports used
+for the drive in the @sc{bios} code. The array consists of zero or more
+unsigned two-bytes integers, and is terminated with zero. Note that the
+array may contain any number of I/O ports that are not related to the
+drive actually (such as @sc{dma} controller's ports).
 
 If bit 8 in the @samp{flags} is set, then the @samp{config_table} field
 is valid, and indicates the address of the @sc{rom} configuration table
@@ -823,44 +877,68 @@ returned by the @dfn{GET CONFIGURATION} @sc{bios} call. If the @sc{bios}
 call fails, then the size of the table must be @emph{zero}.
 
 If bit 9 in the @samp{flags} is set, the @samp{boot_loader_name} field
-is valid, and contains the physical address of the name of the boot
+is valid, and contains the physical address of the name of a boot
 loader booting the kernel. The name is a normal C-style zero-terminated
 string.
 
-@c I haven't defined the apm_table field yet. - okuji
-
-If bit 11 in the @samp{flags} is set, video mode information is
-available in the mode table. This should only be done if the kernel has
-indicated in the @samp{Multiboot Header} that it accepts graphics modes.
-
-The mode table looks like this:
+If bit 10 in the @samp{flags} is set, the @samp{apm_table} field is
+valid, and contains the physical address of an @sc{apm} table defined as
+below:
 
 @example
 @group
-
         +----------------------+
-0       | mode_type            |
-4       | width                |
-8       | height               |
-12      | depth                |
-16      | frame_buffer_address |
+0       | version              |
+2       | cseg                 |
+4       | offset               |
+8       | cseg_16              |
+10      | dseg                 |
+12      | flags                |
+14      | cseg_len             |
+16      | cseg_16_len          |
+18      | dseg_len             |
         +----------------------+
-
 @end group
 @end example
 
-Valid numbers for @samp{mode_type} is 0 for linear graphics mode and 1
-for EGA-standard text mode. Everything else is reserved for future
-expansion.
+The fields @samp{version}, @samp{cseg}, @samp{offset}, @samp{cseg_16},
+@samp{dseg}, @samp{flags}, @samp{cseg_len}, @samp{cseg_16_len},
+@samp{dseg_len} indicate the version number, the protected mode 32-bit
+code segment, the offset of the entry point, the protected mode 16-bit
+code segment, the protected mode 16-bit data segment, the flags, the
+length of the protected mode 32-bit code segment, the length of the
+protected mode 16-bit code segment, and the length of the protected mode
+16-bit data segment, respectively. Only the field @samp{offset} is 4
+bytes, and the others are 2 bytes. See
+@uref{http://www.microsoft.com/hwdev/busbios/amp_12.htm, Advanced Power
+Management (APM) BIOS Interface Specification}, for more information.
 
-@samp{width} and @samp{height} is specified in pixels, if graphics mode,
-or characters in EGA text mode. @samp{depth} is given in bits per pixel
-for graphics, or unused for EGA text mode.
+If bit 11 in the @samp{flags} is set, the graphics table is available.
+This must only be done if the kernel has indicated in the
+@samp{Multiboot Header} that it accepts a graphics mode.
 
-@samp{frame_buffer_address} specifies the physical start address of the
-linear frame buffer. This is valid for both graphics and text modes.
+The fields @samp{vbe_control_info} and @samp{vbe_mode_info} contain
+the physical addresses of @sc{vbe} control information returned by the
+@sc{vbe} Function 00h and @sc{vbe} mode information returned by the
+@sc{vbe} Function 01h, respectively.
 
-@node Examples
+The field @samp{vbe_mode} indicates current video mode in the format
+specified in @sc{vbe} 3.0.
+
+The rest fields @samp{vbe_interface_seg}, @samp{vbe_interface_off}, and
+@samp{vbe_interface_len} contain the table of a protected mode interface
+defined in @sc{vbe} 2.0+. If this information is not available, those
+fields contain zero. Note that @sc{vbe} 3.0 defines another protected
+mode interface which is incompatible with the old one. If you want to
+use the new protected mode interface, you will have to find the table
+yourself.
+
+The fields for the graphics table are designed for @sc{vbe}, but
+Multiboot boot loaders may simulate @sc{vbe} on non-@sc{vbe} modes, as
+if they were @sc{vbe} modes.
+
+
+@node Examples, History, Specification, Top
 @chapter Examples
 
 @strong{Caution:} The following items are not part of the specification
@@ -868,14 +946,14 @@ document, but are included for prospective operating system and boot
 loader writers.
 
 @menu
-* Notes on PC::                
-* BIOS device mapping techniques::
+* Notes on PC::                 
+* BIOS device mapping techniques::  
 * Example OS code::             
-* Example boot loader code::     
+* Example boot loader code::    
 @end menu
 
 
-@node Notes on PC
+@node Notes on PC, BIOS device mapping techniques, Examples, Examples
 @section Notes on PC
 
 In reference to bit 0 of the @samp{flags} parameter in the Multiboot
@@ -905,7 +983,7 @@ boot loader to work unmodified with any reasonable extensions of the
 the operating system as desired.
 
 
-@node BIOS device mapping techniques
+@node BIOS device mapping techniques, Example OS code, Notes on PC, Examples
 @section BIOS device mapping techniques
 
 Both of these techniques should be usable from any PC operating system,
@@ -923,12 +1001,12 @@ remaining @sc{bios} devices when not all of them have operating system
 drivers.
 
 @menu
-* Data comparison technique::
-* I/O restriction technique::
+* Data comparison technique::   
+* I/O restriction technique::   
 @end menu
 
 
-@node Data comparison technique
+@node Data comparison technique, I/O restriction technique, BIOS device mapping techniques, BIOS device mapping techniques
 @subsection Data comparison technique
 
 Before activating @emph{any} of the device drivers, gather enough data
@@ -954,7 +1032,7 @@ of giving up there as well).
 @end enumerate
 
 
-@node I/O restriction technique
+@node I/O restriction technique,  , Data comparison technique, BIOS device mapping techniques
 @subsection I/O restriction technique
 
 This first step may be unnecessary, but first create copy-on-write
@@ -991,7 +1069,7 @@ In general, you have at most 2 disks from each controller given
 logically numbered devices on the controller.
 
 
-@node Example OS code
+@node Example OS code, Example boot loader code, BIOS device mapping techniques, Examples
 @section Example OS code
 
 In this distribution, the example Multiboot kernel @file{kernel} is
@@ -1018,14 +1096,14 @@ Multiboot header, the Multiboot header structure and the Multiboot
 information structure.
 
 @menu
-* multiboot.h::
-* boot.S::
-* kernel.c::
-* Other Multiboot kernels::
+* multiboot.h::                 
+* boot.S::                      
+* kernel.c::                    
+* Other Multiboot kernels::     
 @end menu
 
 
-@node multiboot.h
+@node multiboot.h, boot.S, Example OS code, Example OS code
 @subsection multiboot.h
 
 This is the source code in the file @file{multiboot.h}:
@@ -1035,7 +1113,7 @@ This is the source code in the file @file{multiboot.h}:
 @end example
 
 
-@node boot.S
+@node boot.S, kernel.c, multiboot.h, Example OS code
 @subsection boot.S
 
 In the file @file{boot.S}:
@@ -1045,7 +1123,7 @@ In the file @file{boot.S}:
 @end example
 
 
-@node kernel.c
+@node kernel.c, Other Multiboot kernels, boot.S, Example OS code
 @subsection kernel.c
 
 And, in the file @file{kernel.c}:
@@ -1055,7 +1133,7 @@ And, in the file @file{kernel.c}:
 @end example
 
 
-@node Other Multiboot kernels
+@node Other Multiboot kernels,  , kernel.c, Example OS code
 @subsection Other Multiboot kernels
 
 Other useful information should be available in Multiboot kernels, such
@@ -1065,7 +1143,7 @@ it is worth mentioning the OSKit
 library supporting the specification.
 
 
-@node Example boot loader code
+@node Example boot loader code,  , Example OS code, Examples
 @section Example boot loader code
 
 The GNU GRUB (@pxref{Top, , GRUB, grub.info, The GRUB manual}) project
@@ -1079,7 +1157,61 @@ See the webpage @url{http://www.gnu.org/software/grub/grub.html}, for
 more information.
 
 
-@node Index
+@node History, Index, Examples, Top
+@chapter The change log of this specification
+
+@table @asis
+@item 0.7
+@itemize @bullet
+@item
+@dfn{Multiboot Standard} is renamed to @dfn{Multiboot Specification}.
+
+@item
+Graphics fields are added to Multiboot header.
+
+@item
+BIOS drive information, BIOS configuration table, the name of a boot
+loader, APM information, and graphics information are added to Multiboot
+information.
+
+@item
+Rewritten in Texinfo format.
+
+@item
+Rewritten, using more strict words.
+
+@item
+The maintainer changes to the GNU GRUB maintainer team
+@email{bug-grub@@gnu.org}, from Bryan Ford and Erich Stefan Boleyn.
+@end itemize
+
+@item 0.6
+@itemize @bullet
+@item
+A few wording changes.
+
+@item
+Header checksum.
+
+@item
+Clasification of machine state passed to an operating system.
+@end itemize
+
+@item 0.5
+@itemize @bullet
+@item
+Name change.
+@end itemize
+
+@item 0.4
+@itemize @bullet
+@item
+Major changes plus HTMLification.
+@end itemize
+@end table
+
+
+@node Index,  , History, Top
 @unnumbered Index
 
 @printindex cp

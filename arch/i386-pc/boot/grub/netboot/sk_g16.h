@@ -16,8 +16,8 @@
  *                  network device driver which uses this chip
  *
  * $Log$
- * Revision 1.1  2001/08/13 21:30:31  sheutlin
- * grub with affs support
+ * Revision 1.2  2001/10/30 22:45:26  sheutlin
+ * latest cvs version of grub 0.90 with affs support
  *
  * Revision 1.3  2000/07/29 19:22:54  okuji
  * update the network support to etherboot-4.6.4.

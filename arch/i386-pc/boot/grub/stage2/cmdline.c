@@ -202,8 +202,6 @@ run_script (char *script, char *heap)
 	;
 
       grub_memmove (heap, old_entry, (int) cur_entry - (int) old_entry);
-      grub_printf ("%s\n", old_entry);
-
       if (! *heap)
 	{
 	  /* If there is no more command in SCRIPT...  */
@@ -219,7 +217,13 @@ run_script (char *script, char *heap)
       /* Find a builtin.  */
       builtin = find_command (heap);
       if (! builtin)
-	continue;
+	{
+	  grub_printf ("%s\n", old_entry);
+	  continue;
+	}
+
+      if (! (builtin->flags & BUILTIN_HIDDEN))
+	grub_printf ("%s\n", old_entry);
 
       /* If BUILTIN cannot be run in the command-line, skip it.  */
       if (! (builtin->flags & BUILTIN_CMDLINE))

@@ -1,7 +1,7 @@
 /* serial.c - serial device interface */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 2000, 2001  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ struct divisor
 };
 
 /* Store the port number of a serial unit.  */
-static unsigned short serial_port;
+static unsigned short serial_port = -1;
 
 /* The table which lists common configurations.  */
 static struct divisor divisor_tab[] =
@@ -100,6 +100,13 @@ serial_putchar (int c)
       return;
 
   outb (serial_port + UART_TX, c);
+}
+
+/* Check if a serial port is set up.  */
+int
+serial_exists (void)
+{
+  return serial_port != -1;
 }
 
 /* Return the port number for the UNITth serial device.  */

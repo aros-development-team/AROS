@@ -2,7 +2,7 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
  *  Copyright (C) 1996  Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 1999, 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -68,6 +68,34 @@ int reiserfs_embed (int *start_sector, int needed_sectors);
 #define FSYS_REISERFS_NUM 0
 #endif
 
+#ifdef FSYS_VSTAFS
+#define FSYS_VSTAFS_NUM 1
+int vstafs_mount (void);
+int vstafs_read (char *buf, int len);
+int vstafs_dir (char *dirname);
+#else
+#define FSYS_VSTAFS_NUM 0
+#endif
+
+#ifdef FSYS_JFS
+#define FSYS_JFS_NUM 1
+int jfs_mount (void);
+int jfs_read (char *buf, int len);
+int jfs_dir (char *dirname);
+int jfs_embed (int *start_sector, int needed_sectors);
+#else
+#define FSYS_JFS_NUM 0
+#endif
+
+#ifdef FSYS_XFS
+#define FSYS_XFS_NUM 1
+int xfs_mount (void);
+int xfs_read (char *buf, int len);
+int xfs_dir (char *dirname);
+#else
+#define FSYS_XFS_NUM 0
+#endif
+
 #ifdef FSYS_AFFS
 #define FSYS_AFFS_NUM 1
 int affs_mount (void);
@@ -90,7 +118,8 @@ void tftp_close (void);
 #ifndef NUM_FSYS
 #define NUM_FSYS	\
   (FSYS_FFS_NUM + FSYS_FAT_NUM + FSYS_EXT2FS_NUM + FSYS_MINIX_NUM	\
-   + FSYS_REISERFS_NUM + FSYS_AFFS_NUM + FSYS_TFTP_NUM)
+   + FSYS_REISERFS_NUM + FSYS_VSTAFS_NUM + FSYS_JFS_NUM + FSYS_XFS_NUM	\
+   + FSYS_AFFS_NUM + FSYS_TFTP_NUM)
 #endif
 
 /* defines for the block filesystem info area */

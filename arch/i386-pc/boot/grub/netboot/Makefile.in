@@ -1,6 +1,7 @@
-# Makefile.in generated automatically by automake 1.4a from Makefile.am
+# Makefile.in generated automatically by automake 1.5 from Makefile.am.
 
-# Copyright (C) 1994, 1995-9, 2000 Free Software Foundation, Inc.
+# Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001
+# Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
@@ -9,6 +10,10 @@
 # but WITHOUT ANY WARRANTY, to the extent permitted by law; without
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
+
+@SET_MAKE@
+
+# For <shared.h> and <stage1.h>.
 
 SHELL = @SHELL@
 
@@ -30,11 +35,9 @@ infodir = @infodir@
 mandir = @mandir@
 includedir = @includedir@
 oldincludedir = /usr/include
-
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
-
 top_builddir = ..
 
 ACLOCAL = @ACLOCAL@
@@ -46,51 +49,49 @@ INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
-INSTALL_STRIP_FLAG =
+INSTALL_HEADER = $(INSTALL_DATA)
 transform = @program_transform_name@
-
 NORMAL_INSTALL = :
 PRE_INSTALL = :
 POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-
-@SET_MAKE@
 host_alias = @host_alias@
 host_triplet = @host@
-AMDEP = @AMDEP@
 AMTAR = @AMTAR@
+AS = @AS@
+ASFLAGS = @ASFLAGS@
 AWK = @AWK@
 CC = @CC@
-CPP = @CPP@
-CXX = @CXX@
-CXXCPP = @CXXCPP@
 DEPDIR = @DEPDIR@
+EXEEXT = @EXEEXT@
 FSYS_CFLAGS = @FSYS_CFLAGS@
 GRUB_CFLAGS = @GRUB_CFLAGS@
 GRUB_LIBS = @GRUB_LIBS@
+INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 MAINT = @MAINT@
-MAKEINFO = @MAKEINFO@
 NETBOOT_DRIVERS = @NETBOOT_DRIVERS@
 NET_CFLAGS = @NET_CFLAGS@
 NET_EXTRAFLAGS = @NET_EXTRAFLAGS@
 OBJCOPY = @OBJCOPY@
+OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
 PERL = @PERL@
 RANLIB = @RANLIB@
 STAGE1_CFLAGS = @STAGE1_CFLAGS@
 STAGE2_CFLAGS = @STAGE2_CFLAGS@
 VERSION = @VERSION@
+am__include = @am__include@
+am__quote = @am__quote@
 host_cpu = @host_cpu@
 host_vendor = @host_vendor@
 install_sh = @install_sh@
 
-# For <shared.h> and <stage1.h>.
-
-
 INCLUDES = -I$(top_srcdir)/stage2 -I$(top_srcdir)/stage1
-@NETBOOT_SUPPORT_TRUE@LIBDRIVERS = @NETBOOT_SUPPORT_TRUE@libdrivers.a
+
+# Don't build the netboot support by default.
+@NETBOOT_SUPPORT_TRUE@LIBDRIVERS = libdrivers.a
 @NETBOOT_SUPPORT_FALSE@LIBDRIVERS = 
 
 noinst_LIBRARIES = $(LIBDRIVERS)
@@ -165,104 +166,405 @@ tulip_o_CFLAGS = -DINCLUDE_TULIP=1
 via_rhine_o_CFLAGS = -DINCLUDE_VIA_RHINE=1
 subdir = netboot
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
-CONFIG_HEADER = ../config.h
-CONFIG_CLEAN_FILES = 
-LIBRARIES =  $(noinst_LIBRARIES)
+CONFIG_HEADER = $(top_builddir)/config.h
+CONFIG_CLEAN_FILES =
+LIBRARIES = $(noinst_LIBRARIES)
 
+libdrivers_a_AR = $(AR) cru
+am_libdrivers_a_OBJECTS = libdrivers_a-config.$(OBJEXT) \
+	libdrivers_a-fsys_tftp.$(OBJEXT) libdrivers_a-main.$(OBJEXT) \
+	libdrivers_a-misc.$(OBJEXT) libdrivers_a-pci.$(OBJEXT)
+libdrivers_a_OBJECTS = $(am_libdrivers_a_OBJECTS)
 
-DEFS = @DEFS@ -I. -I$(srcdir) -I..
+DEFS = @DEFS@
+DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
-libdrivers_a_AR = $(AR) cru
-am_libdrivers_a_OBJECTS =  libdrivers_a-config.o \
-libdrivers_a-fsys_tftp.o libdrivers_a-main.o libdrivers_a-misc.o \
-libdrivers_a-pci.o
-libdrivers_a_OBJECTS =  $(am_libdrivers_a_OBJECTS)
-AR = ar
-COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-CFLAGS = @CFLAGS@
+depcomp = $(SHELL) $(top_srcdir)/depcomp
+@AMDEP_TRUE@DEP_FILES = $(DEPDIR)/libdrivers_a-3c509.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-3c595.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-3c90x.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-config.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-cs89x0.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-depca.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-eepro100.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-epic100.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-fsys_tftp.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-i82586.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-lance.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-main.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-misc.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-ns8390.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-otulip.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-pci.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-rtl8139.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-sk_g16.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-smc9000.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-tiara.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-tulip.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libdrivers_a-via-rhine.Po
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-DIST_SOURCES =  $(libdrivers_a_SOURCES) $(EXTRA_libdrivers_a_SOURCES)
-depcomp = $(SHELL) $(top_srcdir)/depcomp
-DEP_FILES =  @AMDEP@ $(DEPDIR)/libdrivers_a-3c509.Po \
-$(DEPDIR)/libdrivers_a-3c595.Po $(DEPDIR)/libdrivers_a-3c90x.Po \
-$(DEPDIR)/libdrivers_a-config.Po $(DEPDIR)/libdrivers_a-cs89x0.Po \
-$(DEPDIR)/libdrivers_a-depca.Po $(DEPDIR)/libdrivers_a-eepro100.Po \
-$(DEPDIR)/libdrivers_a-epic100.Po $(DEPDIR)/libdrivers_a-fsys_tftp.Po \
-$(DEPDIR)/libdrivers_a-i82586.Po $(DEPDIR)/libdrivers_a-lance.Po \
-$(DEPDIR)/libdrivers_a-main.Po $(DEPDIR)/libdrivers_a-misc.Po \
-$(DEPDIR)/libdrivers_a-ns8390.Po $(DEPDIR)/libdrivers_a-otulip.Po \
-$(DEPDIR)/libdrivers_a-pci.Po $(DEPDIR)/libdrivers_a-rtl8139.Po \
-$(DEPDIR)/libdrivers_a-sk_g16.Po $(DEPDIR)/libdrivers_a-smc9000.Po \
-$(DEPDIR)/libdrivers_a-tiara.Po $(DEPDIR)/libdrivers_a-tulip.Po \
-$(DEPDIR)/libdrivers_a-via-rhine.Po
-DIST_COMMON =  Makefile.am Makefile.in
-
-
-DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-
-GZIP_ENV = --best
+CFLAGS = @CFLAGS@
+DIST_SOURCES = $(libdrivers_a_SOURCES) $(EXTRA_libdrivers_a_SOURCES)
+DIST_COMMON = Makefile.am Makefile.in
 SOURCES = $(libdrivers_a_SOURCES) $(EXTRA_libdrivers_a_SOURCES)
-OBJECTS = $(am_libdrivers_a_OBJECTS)
 
-all: all-redirect
+all: all-am
+
 .SUFFIXES:
-.SUFFIXES: .c .h .o
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
-	cd $(top_srcdir) && $(AUTOMAKE) --gnu netboot/Makefile
+.SUFFIXES: .c .o .obj
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am  $(top_srcdir)/configure.in $(ACLOCAL_M4)
+	cd $(top_srcdir) && \
+	  $(AUTOMAKE) --gnu  netboot/Makefile
+Makefile: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.in  $(top_builddir)/config.status
+	cd $(top_builddir) && \
+	  CONFIG_HEADERS= CONFIG_LINKS= \
+	  CONFIG_FILES=$(subdir)/$@ $(SHELL) ./config.status
 
-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
-	cd $(top_builddir) \
-	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
-
-
-mostlyclean-noinstLIBRARIES:
+AR = ar
 
 clean-noinstLIBRARIES:
 	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
-
-distclean-noinstLIBRARIES:
-
-maintainer-clean-noinstLIBRARIES:
+libdrivers_a-config.$(OBJEXT): config.c
+libdrivers_a-fsys_tftp.$(OBJEXT): fsys_tftp.c
+libdrivers_a-main.$(OBJEXT): main.c
+libdrivers_a-misc.$(OBJEXT): misc.c
+libdrivers_a-pci.$(OBJEXT): pci.c
+libdrivers_a-3c509.$(OBJEXT): 3c509.c
+libdrivers_a-3c595.$(OBJEXT): 3c595.c
+libdrivers_a-3c90x.$(OBJEXT): 3c90x.c
+libdrivers_a-cs89x0.$(OBJEXT): cs89x0.c
+libdrivers_a-depca.$(OBJEXT): depca.c
+libdrivers_a-eepro100.$(OBJEXT): eepro100.c
+libdrivers_a-epic100.$(OBJEXT): epic100.c
+libdrivers_a-i82586.$(OBJEXT): i82586.c
+libdrivers_a-lance.$(OBJEXT): lance.c
+libdrivers_a-ns8390.$(OBJEXT): ns8390.c
+libdrivers_a-otulip.$(OBJEXT): otulip.c
+libdrivers_a-rtl8139.$(OBJEXT): rtl8139.c
+libdrivers_a-sk_g16.$(OBJEXT): sk_g16.c
+libdrivers_a-smc9000.$(OBJEXT): smc9000.c
+libdrivers_a-tiara.$(OBJEXT): tiara.c
+libdrivers_a-tulip.$(OBJEXT): tulip.c
+libdrivers_a-via-rhine.$(OBJEXT): via-rhine.c
+libdrivers.a: $(libdrivers_a_OBJECTS) $(libdrivers_a_DEPENDENCIES) 
+	-rm -f libdrivers.a
+	$(libdrivers_a_AR) libdrivers.a $(libdrivers_a_OBJECTS) $(libdrivers_a_LIBADD)
+	$(RANLIB) libdrivers.a
 
 mostlyclean-compile:
-	-rm -f *.o core *.core
-
-clean-compile:
+	-rm -f *.$(OBJEXT) core *.core
 
 distclean-compile:
 	-rm -f *.tab.c
 
-maintainer-clean-compile:
-libdrivers_a-config.o: config.c
-libdrivers_a-fsys_tftp.o: fsys_tftp.c
-libdrivers_a-main.o: main.c
-libdrivers_a-misc.o: misc.c
-libdrivers_a-pci.o: pci.c
-libdrivers_a-3c509.o: 3c509.c
-libdrivers_a-3c595.o: 3c595.c
-libdrivers_a-3c90x.o: 3c90x.c
-libdrivers_a-cs89x0.o: cs89x0.c
-libdrivers_a-depca.o: depca.c
-libdrivers_a-eepro100.o: eepro100.c
-libdrivers_a-epic100.o: epic100.c
-libdrivers_a-i82586.o: i82586.c
-libdrivers_a-lance.o: lance.c
-libdrivers_a-ns8390.o: ns8390.c
-libdrivers_a-otulip.o: otulip.c
-libdrivers_a-rtl8139.o: rtl8139.c
-libdrivers_a-sk_g16.o: sk_g16.c
-libdrivers_a-smc9000.o: smc9000.c
-libdrivers_a-tiara.o: tiara.c
-libdrivers_a-tulip.o: tulip.c
-libdrivers_a-via-rhine.o: via-rhine.c
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-3c509.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-3c595.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-3c90x.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-config.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-cs89x0.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-depca.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-eepro100.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-epic100.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-fsys_tftp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-i82586.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-lance.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-misc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-ns8390.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-otulip.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-pci.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-rtl8139.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-sk_g16.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-smc9000.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-tiara.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-tulip.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libdrivers_a-via-rhine.Po@am__quote@
 
-libdrivers.a: $(libdrivers_a_OBJECTS) $(libdrivers_a_DEPENDENCIES)
-	-rm -f libdrivers.a
-	$(libdrivers_a_AR) libdrivers.a $(libdrivers_a_OBJECTS) $(libdrivers_a_LIBADD)
-	$(RANLIB) libdrivers.a
+distclean-depend:
+	-rm -rf $(DEPDIR)
+
+.c.o:
+@AMDEP_TRUE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/$*.Po' tmpdepfile='$(DEPDIR)/$*.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(COMPILE) -c `test -f $< || echo '$(srcdir)/'`$<
+
+.c.obj:
+@AMDEP_TRUE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/$*.Po' tmpdepfile='$(DEPDIR)/$*.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(COMPILE) -c `cygpath -w $<`
+
+libdrivers_a-config.o: config.c
+@AMDEP_TRUE@	source='config.c' object='libdrivers_a-config.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-config.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-config.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-config.o `test -f config.c || echo '$(srcdir)/'`config.c
+
+libdrivers_a-config.obj: config.c
+@AMDEP_TRUE@	source='config.c' object='libdrivers_a-config.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-config.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-config.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-config.obj `cygpath -w config.c`
+
+libdrivers_a-fsys_tftp.o: fsys_tftp.c
+@AMDEP_TRUE@	source='fsys_tftp.c' object='libdrivers_a-fsys_tftp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-fsys_tftp.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-fsys_tftp.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-fsys_tftp.o `test -f fsys_tftp.c || echo '$(srcdir)/'`fsys_tftp.c
+
+libdrivers_a-fsys_tftp.obj: fsys_tftp.c
+@AMDEP_TRUE@	source='fsys_tftp.c' object='libdrivers_a-fsys_tftp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-fsys_tftp.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-fsys_tftp.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-fsys_tftp.obj `cygpath -w fsys_tftp.c`
+
+libdrivers_a-main.o: main.c
+@AMDEP_TRUE@	source='main.c' object='libdrivers_a-main.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-main.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-main.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-main.o `test -f main.c || echo '$(srcdir)/'`main.c
+
+libdrivers_a-main.obj: main.c
+@AMDEP_TRUE@	source='main.c' object='libdrivers_a-main.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-main.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-main.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-main.obj `cygpath -w main.c`
+
+libdrivers_a-misc.o: misc.c
+@AMDEP_TRUE@	source='misc.c' object='libdrivers_a-misc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-misc.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-misc.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-misc.o `test -f misc.c || echo '$(srcdir)/'`misc.c
+
+libdrivers_a-misc.obj: misc.c
+@AMDEP_TRUE@	source='misc.c' object='libdrivers_a-misc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-misc.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-misc.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-misc.obj `cygpath -w misc.c`
+
+libdrivers_a-pci.o: pci.c
+@AMDEP_TRUE@	source='pci.c' object='libdrivers_a-pci.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-pci.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-pci.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-pci.o `test -f pci.c || echo '$(srcdir)/'`pci.c
+
+libdrivers_a-pci.obj: pci.c
+@AMDEP_TRUE@	source='pci.c' object='libdrivers_a-pci.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-pci.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-pci.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-pci.obj `cygpath -w pci.c`
+
+libdrivers_a-3c509.o: 3c509.c
+@AMDEP_TRUE@	source='3c509.c' object='libdrivers_a-3c509.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-3c509.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-3c509.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-3c509.o `test -f 3c509.c || echo '$(srcdir)/'`3c509.c
+
+libdrivers_a-3c509.obj: 3c509.c
+@AMDEP_TRUE@	source='3c509.c' object='libdrivers_a-3c509.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-3c509.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-3c509.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-3c509.obj `cygpath -w 3c509.c`
+
+libdrivers_a-3c595.o: 3c595.c
+@AMDEP_TRUE@	source='3c595.c' object='libdrivers_a-3c595.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-3c595.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-3c595.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-3c595.o `test -f 3c595.c || echo '$(srcdir)/'`3c595.c
+
+libdrivers_a-3c595.obj: 3c595.c
+@AMDEP_TRUE@	source='3c595.c' object='libdrivers_a-3c595.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-3c595.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-3c595.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-3c595.obj `cygpath -w 3c595.c`
+
+libdrivers_a-3c90x.o: 3c90x.c
+@AMDEP_TRUE@	source='3c90x.c' object='libdrivers_a-3c90x.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-3c90x.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-3c90x.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-3c90x.o `test -f 3c90x.c || echo '$(srcdir)/'`3c90x.c
+
+libdrivers_a-3c90x.obj: 3c90x.c
+@AMDEP_TRUE@	source='3c90x.c' object='libdrivers_a-3c90x.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-3c90x.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-3c90x.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-3c90x.obj `cygpath -w 3c90x.c`
+
+libdrivers_a-cs89x0.o: cs89x0.c
+@AMDEP_TRUE@	source='cs89x0.c' object='libdrivers_a-cs89x0.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-cs89x0.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-cs89x0.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-cs89x0.o `test -f cs89x0.c || echo '$(srcdir)/'`cs89x0.c
+
+libdrivers_a-cs89x0.obj: cs89x0.c
+@AMDEP_TRUE@	source='cs89x0.c' object='libdrivers_a-cs89x0.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-cs89x0.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-cs89x0.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-cs89x0.obj `cygpath -w cs89x0.c`
+
+libdrivers_a-depca.o: depca.c
+@AMDEP_TRUE@	source='depca.c' object='libdrivers_a-depca.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-depca.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-depca.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-depca.o `test -f depca.c || echo '$(srcdir)/'`depca.c
+
+libdrivers_a-depca.obj: depca.c
+@AMDEP_TRUE@	source='depca.c' object='libdrivers_a-depca.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-depca.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-depca.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-depca.obj `cygpath -w depca.c`
+
+libdrivers_a-eepro100.o: eepro100.c
+@AMDEP_TRUE@	source='eepro100.c' object='libdrivers_a-eepro100.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-eepro100.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-eepro100.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-eepro100.o `test -f eepro100.c || echo '$(srcdir)/'`eepro100.c
+
+libdrivers_a-eepro100.obj: eepro100.c
+@AMDEP_TRUE@	source='eepro100.c' object='libdrivers_a-eepro100.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-eepro100.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-eepro100.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-eepro100.obj `cygpath -w eepro100.c`
+
+libdrivers_a-epic100.o: epic100.c
+@AMDEP_TRUE@	source='epic100.c' object='libdrivers_a-epic100.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-epic100.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-epic100.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-epic100.o `test -f epic100.c || echo '$(srcdir)/'`epic100.c
+
+libdrivers_a-epic100.obj: epic100.c
+@AMDEP_TRUE@	source='epic100.c' object='libdrivers_a-epic100.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-epic100.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-epic100.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-epic100.obj `cygpath -w epic100.c`
+
+libdrivers_a-i82586.o: i82586.c
+@AMDEP_TRUE@	source='i82586.c' object='libdrivers_a-i82586.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-i82586.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-i82586.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-i82586.o `test -f i82586.c || echo '$(srcdir)/'`i82586.c
+
+libdrivers_a-i82586.obj: i82586.c
+@AMDEP_TRUE@	source='i82586.c' object='libdrivers_a-i82586.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-i82586.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-i82586.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-i82586.obj `cygpath -w i82586.c`
+
+libdrivers_a-lance.o: lance.c
+@AMDEP_TRUE@	source='lance.c' object='libdrivers_a-lance.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-lance.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-lance.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-lance.o `test -f lance.c || echo '$(srcdir)/'`lance.c
+
+libdrivers_a-lance.obj: lance.c
+@AMDEP_TRUE@	source='lance.c' object='libdrivers_a-lance.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-lance.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-lance.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-lance.obj `cygpath -w lance.c`
+
+libdrivers_a-ns8390.o: ns8390.c
+@AMDEP_TRUE@	source='ns8390.c' object='libdrivers_a-ns8390.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-ns8390.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-ns8390.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-ns8390.o `test -f ns8390.c || echo '$(srcdir)/'`ns8390.c
+
+libdrivers_a-ns8390.obj: ns8390.c
+@AMDEP_TRUE@	source='ns8390.c' object='libdrivers_a-ns8390.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-ns8390.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-ns8390.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-ns8390.obj `cygpath -w ns8390.c`
+
+libdrivers_a-otulip.o: otulip.c
+@AMDEP_TRUE@	source='otulip.c' object='libdrivers_a-otulip.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-otulip.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-otulip.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-otulip.o `test -f otulip.c || echo '$(srcdir)/'`otulip.c
+
+libdrivers_a-otulip.obj: otulip.c
+@AMDEP_TRUE@	source='otulip.c' object='libdrivers_a-otulip.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-otulip.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-otulip.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-otulip.obj `cygpath -w otulip.c`
+
+libdrivers_a-rtl8139.o: rtl8139.c
+@AMDEP_TRUE@	source='rtl8139.c' object='libdrivers_a-rtl8139.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-rtl8139.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-rtl8139.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-rtl8139.o `test -f rtl8139.c || echo '$(srcdir)/'`rtl8139.c
+
+libdrivers_a-rtl8139.obj: rtl8139.c
+@AMDEP_TRUE@	source='rtl8139.c' object='libdrivers_a-rtl8139.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-rtl8139.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-rtl8139.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-rtl8139.obj `cygpath -w rtl8139.c`
+
+libdrivers_a-sk_g16.o: sk_g16.c
+@AMDEP_TRUE@	source='sk_g16.c' object='libdrivers_a-sk_g16.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-sk_g16.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-sk_g16.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-sk_g16.o `test -f sk_g16.c || echo '$(srcdir)/'`sk_g16.c
+
+libdrivers_a-sk_g16.obj: sk_g16.c
+@AMDEP_TRUE@	source='sk_g16.c' object='libdrivers_a-sk_g16.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-sk_g16.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-sk_g16.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-sk_g16.obj `cygpath -w sk_g16.c`
+
+libdrivers_a-smc9000.o: smc9000.c
+@AMDEP_TRUE@	source='smc9000.c' object='libdrivers_a-smc9000.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-smc9000.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-smc9000.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-smc9000.o `test -f smc9000.c || echo '$(srcdir)/'`smc9000.c
+
+libdrivers_a-smc9000.obj: smc9000.c
+@AMDEP_TRUE@	source='smc9000.c' object='libdrivers_a-smc9000.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-smc9000.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-smc9000.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-smc9000.obj `cygpath -w smc9000.c`
+
+libdrivers_a-tiara.o: tiara.c
+@AMDEP_TRUE@	source='tiara.c' object='libdrivers_a-tiara.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-tiara.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-tiara.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-tiara.o `test -f tiara.c || echo '$(srcdir)/'`tiara.c
+
+libdrivers_a-tiara.obj: tiara.c
+@AMDEP_TRUE@	source='tiara.c' object='libdrivers_a-tiara.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-tiara.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-tiara.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-tiara.obj `cygpath -w tiara.c`
+
+libdrivers_a-tulip.o: tulip.c
+@AMDEP_TRUE@	source='tulip.c' object='libdrivers_a-tulip.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-tulip.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-tulip.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-tulip.o `test -f tulip.c || echo '$(srcdir)/'`tulip.c
+
+libdrivers_a-tulip.obj: tulip.c
+@AMDEP_TRUE@	source='tulip.c' object='libdrivers_a-tulip.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-tulip.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-tulip.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-tulip.obj `cygpath -w tulip.c`
+
+libdrivers_a-via-rhine.o: via-rhine.c
+@AMDEP_TRUE@	source='via-rhine.c' object='libdrivers_a-via-rhine.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-via-rhine.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-via-rhine.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-via-rhine.o `test -f via-rhine.c || echo '$(srcdir)/'`via-rhine.c
+
+libdrivers_a-via-rhine.obj: via-rhine.c
+@AMDEP_TRUE@	source='via-rhine.c' object='libdrivers_a-via-rhine.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libdrivers_a-via-rhine.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-via-rhine.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-via-rhine.obj `cygpath -w via-rhine.c`
+CCDEPMODE = @CCDEPMODE@
+uninstall-info-am:
 
 tags: TAGS
 
@@ -288,237 +590,26 @@ TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
 	  || etags $(ETAGS_ARGS) $$tags  $$unique $(LISP)
 
-mostlyclean-tags:
-
-clean-tags:
+GTAGS:
+	here=`CDPATH=: && cd $(top_builddir) && pwd` \
+	  && cd $(top_srcdir) \
+	  && gtags -i $(GTAGS_ARGS) $$here
 
 distclean-tags:
-	-rm -f TAGS ID
+	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH
 
-maintainer-clean-tags:
+DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 
-@AMDEP@include $(DEPDIR)/libdrivers_a-3c509.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-3c595.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-3c90x.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-config.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-cs89x0.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-depca.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-eepro100.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-epic100.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-fsys_tftp.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-i82586.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-lance.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-main.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-misc.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-ns8390.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-otulip.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-pci.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-rtl8139.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-sk_g16.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-smc9000.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-tiara.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-tulip.Po
-@AMDEP@include $(DEPDIR)/libdrivers_a-via-rhine.Po
-
-mostlyclean-depend:
-
-clean-depend:
-
-distclean-depend:
-	-rm -rf $(DEPDIR)
-
-maintainer-clean-depend:
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-.c.o:
-@AMDEP@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/$*.Po' tmpdepfile='$(DEPDIR)/$*.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(COMPILE) -c -o $@ `test -f $< || echo '$(srcdir)/'`$<
-
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-config.o: config.c
-@AMDEP@	source='config.c' object='libdrivers_a-config.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-config.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-config.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-config.o `test -f config.c || echo '$(srcdir)/'`config.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-fsys_tftp.o: fsys_tftp.c
-@AMDEP@	source='fsys_tftp.c' object='libdrivers_a-fsys_tftp.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-fsys_tftp.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-fsys_tftp.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-fsys_tftp.o `test -f fsys_tftp.c || echo '$(srcdir)/'`fsys_tftp.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-main.o: main.c
-@AMDEP@	source='main.c' object='libdrivers_a-main.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-main.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-main.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-main.o `test -f main.c || echo '$(srcdir)/'`main.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-misc.o: misc.c
-@AMDEP@	source='misc.c' object='libdrivers_a-misc.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-misc.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-misc.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-misc.o `test -f misc.c || echo '$(srcdir)/'`misc.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-pci.o: pci.c
-@AMDEP@	source='pci.c' object='libdrivers_a-pci.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-pci.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-pci.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-pci.o `test -f pci.c || echo '$(srcdir)/'`pci.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-3c509.o: 3c509.c
-@AMDEP@	source='3c509.c' object='libdrivers_a-3c509.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-3c509.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-3c509.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-3c509.o `test -f 3c509.c || echo '$(srcdir)/'`3c509.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-3c595.o: 3c595.c
-@AMDEP@	source='3c595.c' object='libdrivers_a-3c595.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-3c595.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-3c595.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-3c595.o `test -f 3c595.c || echo '$(srcdir)/'`3c595.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-3c90x.o: 3c90x.c
-@AMDEP@	source='3c90x.c' object='libdrivers_a-3c90x.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-3c90x.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-3c90x.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-3c90x.o `test -f 3c90x.c || echo '$(srcdir)/'`3c90x.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-cs89x0.o: cs89x0.c
-@AMDEP@	source='cs89x0.c' object='libdrivers_a-cs89x0.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-cs89x0.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-cs89x0.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-cs89x0.o `test -f cs89x0.c || echo '$(srcdir)/'`cs89x0.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-depca.o: depca.c
-@AMDEP@	source='depca.c' object='libdrivers_a-depca.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-depca.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-depca.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-depca.o `test -f depca.c || echo '$(srcdir)/'`depca.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-eepro100.o: eepro100.c
-@AMDEP@	source='eepro100.c' object='libdrivers_a-eepro100.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-eepro100.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-eepro100.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-eepro100.o `test -f eepro100.c || echo '$(srcdir)/'`eepro100.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-epic100.o: epic100.c
-@AMDEP@	source='epic100.c' object='libdrivers_a-epic100.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-epic100.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-epic100.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-epic100.o `test -f epic100.c || echo '$(srcdir)/'`epic100.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-i82586.o: i82586.c
-@AMDEP@	source='i82586.c' object='libdrivers_a-i82586.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-i82586.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-i82586.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-i82586.o `test -f i82586.c || echo '$(srcdir)/'`i82586.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-lance.o: lance.c
-@AMDEP@	source='lance.c' object='libdrivers_a-lance.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-lance.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-lance.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-lance.o `test -f lance.c || echo '$(srcdir)/'`lance.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-ns8390.o: ns8390.c
-@AMDEP@	source='ns8390.c' object='libdrivers_a-ns8390.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-ns8390.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-ns8390.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-ns8390.o `test -f ns8390.c || echo '$(srcdir)/'`ns8390.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-otulip.o: otulip.c
-@AMDEP@	source='otulip.c' object='libdrivers_a-otulip.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-otulip.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-otulip.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-otulip.o `test -f otulip.c || echo '$(srcdir)/'`otulip.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-rtl8139.o: rtl8139.c
-@AMDEP@	source='rtl8139.c' object='libdrivers_a-rtl8139.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-rtl8139.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-rtl8139.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-rtl8139.o `test -f rtl8139.c || echo '$(srcdir)/'`rtl8139.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-sk_g16.o: sk_g16.c
-@AMDEP@	source='sk_g16.c' object='libdrivers_a-sk_g16.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-sk_g16.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-sk_g16.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-sk_g16.o `test -f sk_g16.c || echo '$(srcdir)/'`sk_g16.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-smc9000.o: smc9000.c
-@AMDEP@	source='smc9000.c' object='libdrivers_a-smc9000.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-smc9000.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-smc9000.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-smc9000.o `test -f smc9000.c || echo '$(srcdir)/'`smc9000.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-tiara.o: tiara.c
-@AMDEP@	source='tiara.c' object='libdrivers_a-tiara.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-tiara.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-tiara.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-tiara.o `test -f tiara.c || echo '$(srcdir)/'`tiara.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-tulip.o: tulip.c
-@AMDEP@	source='tulip.c' object='libdrivers_a-tulip.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-tulip.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-tulip.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-tulip.o `test -f tulip.c || echo '$(srcdir)/'`tulip.c
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-libdrivers_a-via-rhine.o: via-rhine.c
-@AMDEP@	source='via-rhine.c' object='libdrivers_a-via-rhine.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/libdrivers_a-via-rhine.Po' tmpdepfile='$(DEPDIR)/libdrivers_a-via-rhine.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libdrivers_a_CFLAGS) $(CFLAGS) -c -o libdrivers_a-via-rhine.o `test -f via-rhine.c || echo '$(srcdir)/'`via-rhine.c
-
-distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
+top_distdir = ..
+distdir = $(top_distdir)/$(PACKAGE)-$(VERSION)
 
 distdir: $(DISTFILES)
 	@for file in $(DISTFILES); do \
-	  d=$(srcdir); \
+	  if test -f $$file; then d=.; else d=$(srcdir); fi; \
+	  dir=`echo "$$file" | sed -e 's,/[^/]*$$,,'`; \
+	  if test "$$dir" != "$$file" && test "$$dir" != "."; then \
+	    $(mkinstalldirs) "$(distdir)/$$dir"; \
+	  fi; \
 	  if test -d $$d/$$file; then \
 	    cp -pR $$d/$$file $(distdir) \
 	    || exit 1; \
@@ -528,78 +619,82 @@ distdir: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
-info-am:
-info: info-am
-dvi-am:
-dvi: dvi-am
 check-am: all-am
 check: check-am
-installcheck-am:
-installcheck: installcheck-am
-install-exec-am:
-install-exec: install-exec-am
+all-am: Makefile $(LIBRARIES)
 
-install-data-am:
+installdirs:
+
+install: install-am
+install-exec: install-exec-am
 install-data: install-data-am
+uninstall: uninstall-am
 
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
-install: install-am
-uninstall-am:
-uninstall: uninstall-am
-all-am: Makefile $(LIBRARIES)
-all-redirect: all-am
+
+installcheck: installcheck-am
 install-strip:
-	$(MAKE) $(AM_MAKEFLAGS) INSTALL_STRIP_FLAG=-s install
-installdirs:
-
-
+	$(MAKE) $(AM_MAKEFLAGS) INSTALL_PROGRAM="$(INSTALL_STRIP_PROGRAM)" \
+	  `test -z '$(STRIP)' || \
+	    echo "INSTALL_PROGRAM_ENV=STRIPPROG='$(STRIP)'"` install
 mostlyclean-generic:
 
 clean-generic:
 
 distclean-generic:
-	-rm -f Makefile $(CONFIG_CLEAN_FILES)
-	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
+	-rm -f Makefile $(CONFIG_CLEAN_FILES) stamp-h stamp-h[0-9]*
 
 maintainer-clean-generic:
-	-rm -f Makefile.in
-mostlyclean-am:  mostlyclean-noinstLIBRARIES mostlyclean-compile \
-		mostlyclean-tags mostlyclean-depend mostlyclean-generic
-
-mostlyclean: mostlyclean-am
-
-clean-am:  clean-noinstLIBRARIES clean-compile clean-tags clean-depend \
-		clean-generic mostlyclean-am
-
+	@echo "This command is intended for maintainers to use"
+	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-distclean-am:  distclean-noinstLIBRARIES distclean-compile \
-		distclean-tags distclean-depend distclean-generic \
-		clean-am
+clean-am: clean-generic clean-noinstLIBRARIES mostlyclean-am
 
 distclean: distclean-am
 
-maintainer-clean-am:  maintainer-clean-noinstLIBRARIES \
-		maintainer-clean-compile maintainer-clean-tags \
-		maintainer-clean-depend maintainer-clean-generic \
-		distclean-am
-	@echo "This command is intended for maintainers to use;"
-	@echo "it deletes files that may require special tools to rebuild."
+distclean-am: clean-am distclean-compile distclean-depend \
+	distclean-generic distclean-tags
+
+dvi: dvi-am
+
+dvi-am:
+
+info: info-am
+
+info-am:
+
+install-data-am:
+
+install-exec-am:
+
+install-info: install-info-am
+
+install-man:
+
+installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 
-.PHONY: mostlyclean-noinstLIBRARIES distclean-noinstLIBRARIES \
-clean-noinstLIBRARIES maintainer-clean-noinstLIBRARIES \
-mostlyclean-compile distclean-compile clean-compile \
-maintainer-clean-compile tags mostlyclean-tags distclean-tags \
-clean-tags maintainer-clean-tags mostlyclean-depend distclean-depend \
-clean-depend maintainer-clean-depend distdir info-am info dvi-am dvi \
-check check-am installcheck-am installcheck install-exec-am \
-install-exec install-data-am install-data install-am install \
-uninstall-am uninstall all-redirect all-am all install-strip \
-installdirs mostlyclean-generic distclean-generic clean-generic \
-maintainer-clean-generic clean mostlyclean distclean maintainer-clean
+maintainer-clean-am: distclean-am maintainer-clean-generic
+
+mostlyclean: mostlyclean-am
+
+mostlyclean-am: mostlyclean-compile mostlyclean-generic
+
+uninstall-am: uninstall-info-am
+
+.PHONY: GTAGS all all-am check check-am clean clean-generic \
+	clean-noinstLIBRARIES distclean distclean-compile \
+	distclean-depend distclean-generic distclean-tags distdir dvi \
+	dvi-am info info-am install install-am install-data \
+	install-data-am install-exec install-exec-am install-info \
+	install-info-am install-man install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic tags uninstall uninstall-am \
+	uninstall-info-am
 
 
 # Is it really necessary to specify dependecies explicitly?
@@ -687,7 +782,6 @@ $(via_rhine_drivers): via-rhine.c
 $(via_rhine_drivers): %.o: via-rhine.c
 	$(COMPILE) $(STAGE2_CFLAGS) -fno-builtin -nostdinc \
 	  $(NET_EXTRAFLAGS) $($(basename $@)_o_CFLAGS) -o $@ -c $<
-
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
