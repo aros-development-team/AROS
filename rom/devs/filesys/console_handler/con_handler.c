@@ -266,14 +266,18 @@ static void con_write(struct conbase *conbase, struct IOFileSys *iofs)
     struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
 
     EnterFunc(bug("con_write(fh=%p, buf=%s)\n", fh, iofs->io_Union.io_WRITE.io_Buffer));
-    
+
+#if !BETTER_WRITE_HANDLING    
     if ((fh->inputsize - fh->inputstart) == 0)
     {
         answer_write_request(conbase, fh, iofs);
     } else {
+#endif
     	AddTail((struct List *)&fh->pendingWrites, (struct Node *)iofs);
 	fh->flags |= FHFLG_WRITEPENDING;
+#if !BETTER_WRITE_HANDLING
     }
+#endif
 }
 
 /************************ Library entry points ************************/
@@ -715,9 +719,21 @@ VOID conTaskEntry(struct conTaskParams *param)
 	ULONG contaskmask = 1L << fh->contaskmp->mp_SigBit;
 	ULONG sigs;
 
-	D(bug("contask: waiting for sigs %x\n",conreadmask | contaskmask));
-	sigs = Wait(conreadmask | contaskmask);
-
+#if BETTER_WRITE_HANDLING
+	/* Dont wait if a write is pending and a write really can be done */
+	if ((fh->flags & FHFLG_WRITEPENDING) &&
+	    (fh->inputpos == fh->inputstart) &&
+	    (fh->inputsize == 0))
+	{
+	    sigs = CheckSignal(conreadmask | contaskmask);
+	}
+	else
+#endif
+	{
+	    D(bug("contask: waiting for sigs %x\n",conreadmask | contaskmask));
+	    sigs = Wait(conreadmask | contaskmask);
+	}
+	
 	if (sigs & contaskmask)
 	{
 	    /* FSA mesages */
@@ -1001,25 +1017,38 @@ VOID conTaskEntry(struct conTaskParams *param)
 
 	    SendIO(ioReq(fh->conreadio));
 	    
-	    /* pending writes ? */
-	    
-	    if ((fh->flags & FHFLG_WRITEPENDING) && (fh->inputpos == fh->inputstart))
-	    {
-	        struct IOFileSys *iofs, *iofs_next;
-		
-		ForeachNodeSafe(&fh->pendingWrites, iofs, iofs_next)
-		{
-		    Remove((struct Node *)iofs);
-		    
-		    answer_write_request(conbase, fh, iofs);
-		}
-		
-		fh->flags &= ~FHFLG_WRITEPENDING;
-	    }
-	    
-
 	} /* if (sigs & conmask) */
 
+	/* pending writes ? */
+
+	if ((fh->flags & FHFLG_WRITEPENDING) &&
+	    (fh->inputpos == fh->inputstart) &&
+	    (fh->inputsize == 0))
+	{
+	    struct IOFileSys *iofs, *iofs_next;
+
+#if BETTER_WRITE_HANDLING
+	    ForeachNodeSafe(&fh->pendingWrites, iofs, iofs_next)
+	    {
+		if (answer_write_request(conbase, fh, iofs) != 0)
+		{
+		    /* Write was done only partly */
+		    break;
+		}
+	    }
+
+	    if (IsListEmpty(&fh->pendingWrites)) fh->flags &= ~FHFLG_WRITEPENDING;
+#else
+	    ForeachNodeSafe(&fh->pendingWrites, iofs, iofs_next)
+	    {
+		Remove((struct Node *)iofs);		    
+		answer_write_request(conbase, fh, iofs);
+	    }
+
+	    fh->flags &= ~FHFLG_WRITEPENDING;
+#endif
+	} /* if ((fh->flags & FHFLG_WRITEPENDING) && (fh->inputpos == fh->inputstart) && (fh->inputsize == 0)) */
+	    
     } /* for(;;) */
 
     /* this point must never be reached */

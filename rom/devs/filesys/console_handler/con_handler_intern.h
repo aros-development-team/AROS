@@ -18,12 +18,29 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#define CONTASK_STACKSIZE (AROS_STACKSIZE)
-#define CONTASK_PRIORITY 0
+/*
+** stegerg:
+**
+** if BETTER_WRITE_HANDLING is #defined then writes are sent to
+** console.device in smaller parts (max. 256 bytes or upto next
+** LINEFEED).
+**
+** NOTE: Could be problematic with control sequences in case of
+**       the 256-Byte-Block write (write size is >256 but no LINE-
+**       FEED was found in this first (or better actual) 256 bytes
+**       to be written.
+**
+**/
 
-#define CONSOLEBUFFER_SIZE 256
-#define INPUTBUFFER_SIZE 256
-#define CMD_HISTORY_SIZE 32
+#define BETTER_WRITE_HANDLING 	1
+#define RMB_FREEZES_OUTPUT	1
+
+#define CONTASK_STACKSIZE 	(AROS_STACKSIZE)
+#define CONTASK_PRIORITY 	0
+
+#define CONSOLEBUFFER_SIZE 	256
+#define INPUTBUFFER_SIZE 	256
+#define CMD_HISTORY_SIZE 	32
 
 struct conTaskParams
 {
@@ -57,6 +74,10 @@ struct filehandle
     struct MinList	pendingReads;
     struct MinList	pendingWrites;
     UBYTE		*wintitle;
+#if BETTER_WRITE_HANDLING
+    LONG		partlywrite_actual;
+    LONG		partlywrite_size;
+#endif
     WORD		conbufferpos;
     WORD		conbuffersize;
     WORD		inputstart; 	/* usually 0, but needed for multi-lines (CONTROL RETURN) */

@@ -499,18 +499,73 @@ void answer_read_request(struct conbase *conbase, struct filehandle *fh, struct 
 
 /******************************************************************************************/
 
-void answer_write_request(struct conbase *conbase, struct filehandle *fh, struct IOFileSys *iofs)
+LONG answer_write_request(struct conbase *conbase, struct filehandle *fh, struct IOFileSys *iofs)
 {
-    UBYTE *buffer = iofs->io_Union.io_WRITE.io_Buffer;
-    LONG *length_ptr = &(iofs->io_Union.io_WRITE.io_Length);
+    UBYTE 	*buffer = iofs->io_Union.io_WRITE.io_Buffer;
+    LONG 	*length_ptr = &(iofs->io_Union.io_WRITE.io_Length);
+#if BETTER_WRITE_HANDLING
+    LONG 	writesize = 0;
+#endif
 
+#if RMB_FREEZES_OUTPUT
+    while(PeekQualifier() & IEQUALIFIER_RBUTTON)
+    {
+        Delay(2);
+    }
+#endif
+
+#if BETTER_WRITE_HANDLING
+   
+    for(;;)
+    {
+        if (writesize == (*length_ptr) - fh->partlywrite_size) break;
+	if (writesize == 256) break;
+	if (buffer[writesize++ +fh->partlywrite_size] == '\n') break;
+    }
+        
+    D(bug("answer_write_request: writing %d bytes (total size = %d)\n", writesize, *length_ptr));
+
+    do_write(conbase, fh, &buffer[fh->partlywrite_size], writesize);
+    fh->partlywrite_size += writesize;
+    fh->partlywrite_actual += fh->conwriteio.io_Actual;
+    
+    if (fh->partlywrite_size == *length_ptr)
+    {
+        iofs->IOFS.io_Error = 0;
+	iofs->io_DosError = fh->conwriteio.io_Error;
+	*length_ptr = fh->partlywrite_actual;
+	
+	fh->partlywrite_actual = 0;
+	fh->partlywrite_size = 0;
+	
+	/* Must remove first from pendingWrites List */
+	
+	Remove((struct Node *)iofs);
+	ReplyMsg(&iofs->IOFS.io_Message);
+
+        D(bug("answer_write_request: returning 0\n"));
+ 	
+	return 0;
+    }
+
+    D(bug("answer_write_request: returning %d\n",  *length_ptr - fh->partlywrite_size));
+  
+    return *length_ptr - fh->partlywrite_size;
+    
+#else
     do_write(conbase, fh, buffer, *length_ptr);
 
     iofs->IOFS.io_Error = 0;
     iofs->io_DosError = fh->conwriteio.io_Error;    
     *length_ptr = fh->conwriteio.io_Actual;
 
+    /* No need to remove from pendingWrites List as it already is removed
+       or was never in */
+    
     ReplyMsg(&iofs->IOFS.io_Message);
+    
+    return 0;
+#endif
 }
 
 

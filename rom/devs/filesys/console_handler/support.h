@@ -80,6 +80,6 @@ void do_eraseindisplay(struct conbase *conbase, struct filehandle *fh);
 WORD scan_input(struct conbase *conbase, struct filehandle *fh, UBYTE *);
 
 void answer_read_request(struct conbase *conbase, struct filehandle *fh, struct IOFileSys *iofs);
-void answer_write_request(struct conbase *conbase, struct filehandle *fh, struct IOFileSys *iofs);
+LONG answer_write_request(struct conbase *conbase, struct filehandle *fh, struct IOFileSys *iofs);
 void add_to_history(struct conbase *conbase, struct filehandle *fh);
 void history_walk(struct conbase *conbase, struct filehandle *fh, WORD inp);
