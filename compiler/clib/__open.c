@@ -72,11 +72,16 @@ int __getfdslot(int wanted_fd)
         bzero(__fd_array + __numslots, (wanted_fd - __numslots + 1) * sizeof(fdesc *));
         __numslots = wanted_fd+1;
     }
-    else if (wanted_fd<0)
+    else if (wanted_fd < 0)
+    {
+        errno = EINVAL;
         return -1;
+    }
     else if (__fd_array[wanted_fd])
+    {
         close(wanted_fd);
-
+    }
+    
     return wanted_fd;
 }
 
