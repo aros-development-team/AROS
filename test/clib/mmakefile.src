@@ -5,7 +5,9 @@
 include $(TOP)/config/make.cfg
 
 FILES := \
-	strchr
+	runtests \
+	strchr \
+	stpblk
 
 EXEDIR := $(AROSDIR)/test/clib
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
