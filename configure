@@ -114,6 +114,8 @@ case "$type" in
 # instructions.
 	COMMON_AFLAGS="-m68060 -x assembler-with-cpp"
 	FLAVOUR="native"
+# Prevent the Amiga c:sort from being found when we really want the GNU sort
+	SORT=/gg/bin/sort
 	;;
 esac
 
@@ -291,3 +293,4 @@ case "$1" in
     ;;
 esac
 
+exit 0
