@@ -553,10 +553,13 @@ static VOID setbitmappixel(struct BitMap *bm
 	{
             UBYTE *plane = bm->Planes[i];
 	
-	    if ((penmask & pen) != 0)
-		plane[idx] |=  mask;
-	    else
-		plane[idx] &=  clr_mask;
+	    if ((plane != NULL) && (plane != (PLANEPTR)-1))
+	    {
+		if ((penmask & pen) != 0)
+		    plane[idx] |=  mask;
+		else
+		    plane[idx] &=  clr_mask;
+            }
 
 	}
 	penmask <<= 1;
@@ -580,16 +583,25 @@ static ULONG getbitmappixel(struct BitMap *bm
     idx = COORD_TO_BYTEIDX(x, y, bm->BytesPerRow);
     mask = XCOORD_TO_MASK( x );
     
-    for (i = depth - 1; depth ; i -- , depth -- )
+    for (i = depth - 1; depth; i -- , depth -- )
     {
+        pen <<= 1; /* stegerg: moved to here, was inside if!? */
+
         if ((1L << i) & plane_mask)
 	{
 	    UBYTE *plane = bm->Planes[i];
-	    pen <<= 1;
 	
-	    if ((plane[idx] & mask) != 0)
-		pen |= 1;
+	    if (plane == (PLANEPTR)-1)
+	    {
+	        pen |= 1;
+	    }
+	    else if (plane != NULL)
+	    {
+		if ((plane[idx] & mask) != 0)
+		    pen |= 1;
+	    }
 	}
+
     }
     return pen;
 }
@@ -5885,3 +5897,24 @@ failexit:
     return NULL;
 }
 #endif
+
+APTR driver_AllocCModeListTagList(struct TagItem *tags, struct Library *CyberGfxBase )
+{
+    kprintf("\n\n\n\n **** driver_AllocCModeListTagList() func called by someone ********** \n\n\n\n");
+    return NULL;
+}
+
+VOID driver_FreeCModeList(struct List *modeList, struct Library *CyberGfxBase)
+{
+    kprintf("\n\n\n\n **** driver_FreeCModeList() func called by someone ********** \n\n\n\n");
+}
+
+ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Library *CyberGfxBase)
+{
+    kprintf("\n\n\n\n **** driver_GetCyberMapAttr() func called by someone ********** \n\n\n\n");
+
+    return NULL;
+}
+
+
+
