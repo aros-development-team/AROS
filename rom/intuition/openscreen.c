@@ -102,7 +102,8 @@ static const ULONG coltab[] = {
     int               success;
     struct Hook      *layer_info_hook = NULL;
     ULONG            *errorPtr;	  /* Store error at user specified location */
-
+    BOOL	      ok = TRUE, rp_inited = FALSE;
+    
     ASSERT_VALID_PTR(newScreen);
 
 
@@ -153,7 +154,10 @@ static const ULONG coltab[] = {
 	    case SA_Depth:	ns.Depth     = tag->ti_Data; break;
 	    case SA_DetailPen:  ns.DetailPen = tag->ti_Data; break;
 	    case SA_BlockPen:   ns.BlockPen  = tag->ti_Data; break;
-	    case SA_Type:	ns.Type	     = tag->ti_Data; break;
+	    case SA_Type:
+	    	ns.Type	&= ~SCREENTYPE;
+		ns.Type |= tag->ti_Data;
+		break;
 
 	    case SA_Title:
 		ns.DefaultTitle = (UBYTE *)tag->ti_Data;
@@ -240,13 +244,29 @@ static const ULONG coltab[] = {
 	    case SA_BackFill:
 	          layer_info_hook = (struct Hook *)tag->ti_Data;
 	        break;
+	
+	    case SA_Quiet:
+	    	if (tag->ti_Data)
+		{
+		    ns.Type |= SCREENQUIET;
+		} else {
+		    ns.Type &= ~SCREENQUIET;
+		}
+		break;
+		
+	    case SA_ShowTitle:
+	        if (tag->ti_Data)
+		{
+		    ns.Type |= SHOWTITLE;
+		} else {
+		    ns.Type &= ~SHOWTITLE;
+		}
+	        break;
 		
 	    case SA_DisplayID:
 	    case SA_DClip:
 	    case SA_Overscan:
-	    case SA_ShowTitle:
 	    case SA_Behind:
-	    case SA_Quiet:
 	    case SA_AutoScroll:
 	    case SA_Pens:
 	    case SA_FullPalette:
@@ -272,7 +292,9 @@ static const ULONG coltab[] = {
     } /* if (tagList) */
 
     /* First Init the RastPort then get the BitPlanes!! */
-    success = InitRastPort (&screen->Screen.RastPort);      
+    
+    if ((success = InitRastPort (&screen->Screen.RastPort))) rp_inited = TRUE;
+        
     screen->Screen.RastPort.BitMap = AllocBitMap(ns.Width, 
 						 ns.Height, 
 						 ns.Depth, 
@@ -292,15 +314,7 @@ static const ULONG coltab[] = {
     
     if(!success || (NULL == screen->Screen.RastPort.BitMap) || (NULL == screen->Screen.ViewPort.RasInfo))
     {
-	if (screen->Screen.RastPort.BitMap)
-            FreeBitMap(screen->Screen.RastPort.BitMap);
-	
-	if (screen->Screen.ViewPort.RasInfo)
-	    FreeMem(screen->Screen.ViewPort.RasInfo, sizeof (struct RasInfo));
-	
-	FreeMem (screen, sizeof (struct IntScreen));
-	screen = NULL;
-	return NULL;
+        ok = FALSE;
     }
     else
     {
@@ -311,7 +325,7 @@ static const ULONG coltab[] = {
 	screen->Screen.ViewPort.RasInfo->BitMap = screen->Screen.RastPort.BitMap;
     }
  
-    if (screen)
+    if (ok)
     {
         D(bug("Loading colors\n"));
         /* Load some default colors for the screen */
@@ -337,12 +351,6 @@ static const ULONG coltab[] = {
         */
 	screen->Screen.BitMap = *screen->Screen.RastPort.BitMap;
 
-	screen->Screen.BarHeight   = 0;
-	screen->Screen.BarVBorder  = 0;
-	screen->Screen.BarHBorder  = 0;
-	screen->Screen.MenuVBorder = 0;
-	screen->Screen.MenuHBorder = 0;
-
 	screen->Screen.WBorTop    = 7;  /* Amiga default is 2 */
 	screen->Screen.WBorLeft   = 4;
 	screen->Screen.WBorRight  = 4;
@@ -351,12 +359,7 @@ static const ULONG coltab[] = {
 
 	screen->Screen.Title = ns.DefaultTitle;
 
-	screen->Screen.NextScreen = IntuitionBase->FirstScreen;
-	IntuitionBase->FirstScreen =
-	    IntuitionBase->ActiveScreen = &screen->Screen;
 
-        D(bug("set active screen\n"));	    
- 
 	InitLayers(&screen->Screen.LayerInfo);
 	if (NULL != layer_info_hook)
 	  InstallLayerInfoHook(&screen->Screen.LayerInfo, layer_info_hook);
@@ -370,50 +373,133 @@ static const ULONG coltab[] = {
 	screen->DInfo.dri_Resolution.X = 44;
 	screen->DInfo.dri_Resolution.Y = 44;
 	screen->DInfo.dri_Flags = 0;
+	
 
 	if (ns.Font)
 	    screen->DInfo.dri_Font = OpenFont(ns.Font);
 
 	if (!screen->DInfo.dri_Font)
-	    screen->DInfo.dri_Font = GfxBase->DefaultFont;
-
-	SetFont(&screen->Screen.RastPort, screen->DInfo.dri_Font);
-
-	AskFont(&screen->Screen.RastPort, &screen->textattr); 
-        screen->Screen.Font = &screen->textattr;
-	
-
-        D(bug("fonts set\n"));	    
-
-	screen->Pens[DETAILPEN] = screen->Screen.DetailPen;
-	screen->Pens[BLOCKPEN]	= screen->Screen.BlockPen;
-	screen->Pens[TEXTPEN] = 1;
-	screen->Pens[SHINEPEN] = 2;
-	screen->Pens[SHADOWPEN] = 1;
-	screen->Pens[FILLPEN] = 3;
-	screen->Pens[FILLTEXTPEN] = 2;
-	screen->Pens[BACKGROUNDPEN] = 0;
-	screen->Pens[HIGHLIGHTTEXTPEN] = 1;
-	screen->Pens[BARDETAILPEN] = 1;
-	screen->Pens[BARBLOCKPEN] = 2;
-	screen->Pens[BARTRIMPEN] = 1;
-
-
-        D(bug("callling SetRast()\n"));	    
-	/* Set screen to background color */
-	SetRast(&screen->Screen.RastPort, screen->Pens[BACKGROUNDPEN]);
-
-        D(bug("SetRast() called\n"));	    
-
-	/* If this is a public screen, we link it into the intuition global
-	   public screen list */
-	if(screen->pubScrNode != NULL)
 	{
-	    AddTail((struct List *)&GetPrivIBase(IntuitionBase)->PubScreenList,
-		    (struct Node *)GetPrivScreen(screen)->pubScrNode);
+	    /* GfxBase->DefaultFont is *not* always topaz 8. It
+	       can be set with the Font prefs program!! */
+	       
+	    SetFont(&screen->Screen.RastPort, GfxBase->DefaultFont);
+	    AskFont(&screen->Screen.RastPort, &screen->textattr);
+	    	    
+	    screen->DInfo.dri_Font = OpenFont(&screen->textattr);
 	}
-    }
+	
+	if (!screen->DInfo.dri_Font) ok = FALSE;
+	
+	if (ok)
+	{
+	    SetFont(&screen->Screen.RastPort, screen->DInfo.dri_Font);
 
-    ReturnPtr ("OpenScreen", struct Screen *, &screen->Screen);
+	    AskFont(&screen->Screen.RastPort, &screen->textattr); 
+            screen->Screen.Font = &screen->textattr;
+
+            D(bug("fonts set\n"));	    
+
+	    screen->Screen.BarVBorder  = 4; /* on the Amiga it is (usually?) 1 */
+	    screen->Screen.BarHBorder  = 5;
+	    screen->Screen.MenuVBorder = 4; /* on teh Amiga it is (usually?) 2 */
+	    screen->Screen.MenuHBorder = 4;
+	    screen->Screen.BarHeight   = screen->DInfo.dri_Font->tf_YSize +
+	    				 screen->Screen.BarVBorder * 2; /* real layer will be 1 pixel higher! */
+
+	    {
+	        #define SDEPTH_HEIGHT (screen->Screen.BarHeight + 1)
+		#define SDEPTH_WIDTH SDEPTH_HEIGHT
+
+	        struct TagItem sdepth_tags[] =
+		{
+	            {GA_RelRight,	-SDEPTH_WIDTH + 1	},
+		    {GA_Top,		0  			},
+		    {GA_Width,		SDEPTH_WIDTH		},
+		    {GA_Height,		SDEPTH_HEIGHT		},
+		    {GA_DrawInfo,	(IPTR)&screen->DInfo 	}, /* required */
+		    {GA_SysGadget,	TRUE			},
+		    {GA_SysGType,	GTYP_SDEPTH	 	},
+		    {GA_RelVerify,	TRUE			},
+		    {TAG_DONE,		0UL			}
+		};
+
+		screen->depthgadget = NewObjectA(GetPrivIBase(IntuitionBase)->tbbclass,
+						 NULL,
+						 sdepth_tags );
+
+		screen->Screen.FirstGadget = (struct Gadget *)screen->depthgadget;
+		if (screen->Screen.FirstGadget)
+		{
+		    screen->Screen.FirstGadget->GadgetType |= GTYP_SCRGADGET;
+		}
+	    }
+
+	    if (!(screen->Screen.Flags & SCREENQUIET))
+	    {
+		CreateScreenBar(&screen->Screen, IntuitionBase);
+	    }
+	    	    
+	    screen->Pens[DETAILPEN] = screen->Screen.DetailPen;
+	    screen->Pens[BLOCKPEN] = screen->Screen.BlockPen;
+	    screen->Pens[TEXTPEN] = 1;
+	    screen->Pens[SHINEPEN] = 2;
+	    screen->Pens[SHADOWPEN] = 1;
+	    screen->Pens[FILLPEN] = 3;
+	    screen->Pens[FILLTEXTPEN] = 2;
+	    screen->Pens[BACKGROUNDPEN] = 0;
+	    screen->Pens[HIGHLIGHTTEXTPEN] = 1;
+	    screen->Pens[BARDETAILPEN] = 1;
+	    screen->Pens[BARBLOCKPEN] = 2;
+	    screen->Pens[BARTRIMPEN] = 1;
+
+
+            D(bug("callling SetRast()\n"));	    
+	    /* Set screen to background color */
+	    SetRast(&screen->Screen.RastPort, screen->Pens[BACKGROUNDPEN]);
+
+            D(bug("SetRast() called\n"));	    
+
+	    
+	    /* If this is a public screen, we link it into the intuition global
+	       public screen list */
+	    if(screen->pubScrNode != NULL)
+	    {
+		AddTail((struct List *)&GetPrivIBase(IntuitionBase)->PubScreenList,
+			(struct Node *)GetPrivScreen(screen)->pubScrNode);
+	    }
+
+	    screen->Screen.NextScreen = IntuitionBase->FirstScreen;
+	    IntuitionBase->FirstScreen =
+		IntuitionBase->ActiveScreen = &screen->Screen;
+
+            D(bug("set active screen\n"));
+	
+	} /* if (ok) */	    
+ 	
+    } /* if (ok) */
+
+    if (!ok)
+    {
+        if (screen->Screen.BarLayer) KillScreenBar(&screen->Screen, IntuitionBase);
+	
+        if (screen->DInfo.dri_Font) CloseFont(screen->DInfo.dri_Font);
+	
+	if (screen->Screen.RastPort.BitMap)
+            FreeBitMap(screen->Screen.RastPort.BitMap);
+
+	if (screen->Screen.ViewPort.RasInfo)
+	    FreeMem(screen->Screen.ViewPort.RasInfo, sizeof (struct RasInfo));
+
+	if (rp_inited) DeinitRastPort(&screen->Screen.RastPort);
+
+	FreeMem (screen, sizeof (struct IntScreen));
+    	
+	screen = 0;
+	
+    } /* if (!ok) */
+    
+    ReturnPtr ("OpenScreen", struct Screen *, (struct Screen *)screen);
+    
     AROS_LIBFUNC_EXIT
 } /* OpenScreen */
