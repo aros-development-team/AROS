@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -191,7 +191,7 @@ DEFINE_main(name)                                              \
                             __DEF(__SHA_DEF(a1), __SHA_DEF(a2)  \
                             __SHA_DEF(a3), __SHA_DEF(a4)),      \
                             __SHA_OPT(a1) "," __SHA_OPT(a2) "," \
-		            __SHA_OPT(a3) "," __SHA_OPT(a4),     \
+		            __SHA_OPT(a3) "," __SHA_OPT(a4),    \
 			    help)                               \
     {                                                           \
 	__SHA_TYPEDEF(a1);                                      \
@@ -400,7 +400,4 @@ DEFINE_main(name)                                              \
 #define AROS_SH0H(name, version, help) \
         __AROS_SH0(name, version, __SH_HELP(name, help))
 
-#endif /* !SHCOMMANDS_NOTEMBEDDED_H */
-
-
-
+#endif /* SHCOMMANDS_NOTEMBEDDED_H */
