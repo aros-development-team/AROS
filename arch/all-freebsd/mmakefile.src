@@ -12,4 +12,6 @@ include $(TOP)/config/make.cfg
 #MM     workbench-unix \
 #MM     workbench-libs-oss-unix
 
+#MM- contrib-freebsd : contrib-complete
+
 %common
