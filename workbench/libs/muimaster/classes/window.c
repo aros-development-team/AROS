@@ -25,6 +25,7 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/graphics.h>
+#include <proto/commodities.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -42,7 +43,7 @@ extern struct Library *MUIMasterBase;
 static const int __version = 1;
 static const int __revision = 1;
 
-static void handle_event(Object *win, struct IntuiMessage *event, ULONG mask);
+static void handle_event(Object *win, struct IntuiMessage *event);
 
 /****************************************************************************/
 /** Public functions                                                       **/
@@ -302,7 +303,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
     }
 
-    handle_event(oWin, imsg, imsg->Class);
+    handle_event(oWin, imsg);
 
 #if 0
     /* If there is a grab in effect...
@@ -482,47 +483,110 @@ handle_key(Object *win, struct IntuiMessageKey *event, gint mask)
 
 #endif
 
-/* handle non-key events
- * event : event to handle
- * mask : event mask to match corresponding to this event
- */
-static void handle_event(Object *win, struct IntuiMessage *event, ULONG mask)
+/**************************************************************************
+ ...
+**************************************************************************/
+static void handle_event(Object *win, struct IntuiMessage *event)
 {
     struct MUI_WindowData *data = muiWindowData(win);
     struct MinNode *mn;
     struct MUI_EventHandlerNode *ehn;
     ULONG res;
+    LONG muikey = MUIKEY_NONE;
+    ULONG mask = event->Class;
 
+    if (mask == IDCMP_RAWKEY)
+    {
+	struct InputEvent ievent;
+	ievent.ie_NextEvent    = NULL;
+	ievent.ie_Class        = IECLASS_RAWKEY;
+	ievent.ie_SubClass     = 0;
+	ievent.ie_Code         = event->Code;
+	ievent.ie_Qualifier    = event->Qualifier;
+	ievent.ie_EventAddress = (APTR *) *((ULONG *)(event->IAddress));
+
+	for (muikey=MUIKEY_COUNT-1;muikey >= 0;muikey--) /* 0 == MUIKEY_PRESS */
+	{
+	    if (__zprefs.muikeys[muikey].ix_well && MatchIX(&ievent,&__zprefs.muikeys[muikey].ix))
+		break;
+	}
+	if (muikey == MUIKEY_PRESS && (event->Code & IECODE_UP_PREFIX)) muikey = MUIKEY_RELEASE;
+    }
+
+    /* try ActiveObject */
+    if (data->wd_ActiveObject)
+    {
+	/* sba: I'm not sure if the active object also receives
+	** other events than the muikey stuff first. IMO not.
+	** Also which method should be used? MUIM_HandleInput or
+	** MUIM_HandleEvent. Also note that there is a flag MUI_EHF_ALWAYSKEYS
+	** which probably means that all keys events are requested??
+	** For now MUIM_HandleEvent is used as this is currently implemented
+	** in Area class ;) although I guess it should be MUIM_HandleInput as this
+	** was earlier
+	*/
+
+	if (muikey != MUIKEY_NONE)
+	{
+	    res = DoMethod(data->wd_ActiveObject->obj, MUIM_HandleEvent, (IPTR)event, muikey);
+	    if (res & MUI_EventHandlerRC_Eat) return;
+	}
+
+/*	for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+	{
+	    ehn = (struct MUI_EventHandlerNode *)mn;
+
+	    if ((ehn->ehn_Object == data->wd_ActiveObject->obj) &&
+		(ehn->ehn_Events & mask))
+	    {
+		res = invoke_event_handler(ehn, (struct IntuiMessage *)event, muikey);
+		if (res & MUI_EventHandlerRC_Eat)
+		    return;
+	    }
+	}*/
+    }
+
+    /* try defaultkey */
+
+    /* try eventhandler */
     for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
     {
 	ehn = (struct MUI_EventHandlerNode *)mn;
 
 	if (ehn->ehn_Events & mask)
 	{
-	    res = invoke_event_handler(ehn, event, MUIKEY_NONE);
+	    res = invoke_event_handler(ehn, event, muikey);
 	    if (res & MUI_EventHandlerRC_Eat)
 		return;
 	}
     }
 
-    if (mask == IDCMP_RAWKEY)
+    /* nobody has eaten the message so we can try out best */
+    switch (muikey)
     {
-	ULONG key;
-
-	if (event->Code == 66) /* tab */
-	{
-	    if (event->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Prev);
-	    else set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);
-	    return;
-	}
-
-	key = ConvertKey(event);
-	switch (key)
-	{
-	    case '\033':
-                set(win, MUIA_Window_CloseRequest, TRUE);
-                break;
-        }
+    	case	MUIKEY_PRESS:break;
+	case	MUIKEY_TOGGLE:break;
+	case	MUIKEY_UP:break;
+	case	MUIKEY_DOWN:break;
+	case	MUIKEY_PAGEUP:break;
+	case	MUIKEY_PAGEDOWN:break;
+	case	MUIKEY_TOP:break;
+	case	MUIKEY_BOTTOM:break;
+	case	MUIKEY_LEFT:break;
+	case	MUIKEY_RIGHT:break;
+	case	MUIKEY_WORDLEFT:break;
+	case	MUIKEY_WORDRIGHT:break;
+	case	MUIKEY_LINESTART:break;
+	case	MUIKEY_LINEEND:break;
+	case	MUIKEY_GADGET_NEXT:set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);break;
+	case	MUIKEY_GADGET_PREV:set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Prev);break;
+	case	MUIKEY_GADGET_OFF:set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);break;
+	case	MUIKEY_WINDOW_CLOSE:set(win, MUIA_Window_CloseRequest, TRUE);break;
+	case	MUIKEY_WINDOW_NEXT:break;
+	case	MUIKEY_WINDOW_PREV:break;
+	case	MUIKEY_HELP:break;
+	case	MUIKEY_POPUP:break;
+	default: break;
     }
 }
 
