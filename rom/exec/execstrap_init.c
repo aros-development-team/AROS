@@ -76,7 +76,7 @@ struct Resident resident =
 };
 
 const char name[] = "exec.strap";
-const char version[] = "$VER: exec.strap 41.7 (6.3.97)";
+const char version[] = "$VER: exec.strap 41.8 (15.3.97)";
 
 int start(void)
 {
@@ -99,7 +99,7 @@ int start(void)
     }
 #endif
 
-    DB2(bug("exec.strap installing...\n"));
+    D(bug("exec.strap installing...\n"));
 
     if (SysBase->LibNode.lib_Version < 37)
     {
@@ -147,7 +147,6 @@ int start(void)
     SetFunc( 65, FindPort);
     SetFunc( 61, PutMsg);
     SetFunc( 63, ReplyMsg);
-
 #if 0
     /* The "move.w ccr,d0" should really be implemented as part of the jumptable, for speed.
        Do not patch, for now. */
@@ -155,6 +154,7 @@ int start(void)
 	SetFunc( 88, GetCC_10);
 #endif
 
+#if 0
     /*
 	BTW:  What bit(s) is (are) set for the MC68060?
 	ANS:  Bit 7.
@@ -174,7 +174,6 @@ int start(void)
 	ANS:  Yep.
     */
 
-#if 0
     /* TODO: Rework this logic so a particular vector isn't patched more than
        once. SetFunction() calls CacheClearU(), so putting the routine address
        directly in the vector+2, and manually clearing of the cache (not with
@@ -268,9 +267,7 @@ int start(void)
     SetFunc( 96, AttemptSemaphore);
 #endif
     SetFunc( 99, FindSemaphore);
-#if 1 /* YYY */
     SetFunc(100, AddSemaphore);
-#endif
     SetFunc(101, RemSemaphore);
     SetFunc(103, AddMemList);
     SetFunc(109, CreateIORequest);
@@ -283,7 +280,7 @@ int start(void)
 #endif
     SetFunc(114, AllocVec);
     SetFunc(115, FreeVec);
-#if 0
+#if 0 /* Enable as a group, as they are not internally compat with orig */
     /* Guru 0100000f-> "DH0 Software Failure"-> 80000003 guru upon reset */
     SetFunc(116, CreatePool);
     SetFunc(117, DeletePool);
@@ -296,7 +293,7 @@ int start(void)
 
     if (SysBase->LibNode.lib_Version >= 39)
     {
-	DB2(bug("Found kickstart >= 39. Extra functions installed.\n"));
+	D(bug("Found kickstart >= 39. Extra functions installed.\n"));
 	/* V39+ functions: */
 	SetFunc(129, AddMemHandler);
 	SetFunc(130, RemMemHandler);
@@ -306,7 +303,7 @@ int start(void)
 
     flash(GREEN);
 
-    DB2(bug("exec.strap installation done.\n"));
+    D(bug("exec.strap installation done.\n"));
     return 0;
 }
 
