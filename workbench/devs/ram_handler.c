@@ -13,6 +13,7 @@
 #include <proto/exec.h>
 #include <utility/tagitem.h>
 #include <proto/utility.h>
+#include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/dosasl.h>
 #include <dos/exall.h>
@@ -24,6 +25,8 @@
 #endif
 #include <aros/machine.h>
 #include <stddef.h>
+
+#include <aros/debug.h>
 
 #define NEWLIST(l)                          \
 ((l)->lh_Head=(struct Node *)&(l)->lh_Tail, \
@@ -972,13 +975,19 @@ static const ULONG sizes[]=
   sizeof(struct ExAllData)
 };
 
-static LONG examine(struct fnode *file, struct ExAllData *ead, ULONG size, ULONG type)
+static LONG examine(struct fnode *file, 
+                    struct ExAllData *ead, 
+                    ULONG  size, 
+                    ULONG  type,
+                    LONG   *dirpos)
 {
     STRPTR next, end, name;
     if(type>ED_OWNER)
 	return ERROR_BAD_NUMBER;
     next=(STRPTR)ead+sizes[type];
     end=(STRPTR)ead+size;
+
+    *dirpos=(LONG)file;
     switch(type)
     {
 	case ED_OWNER:
@@ -1026,12 +1035,87 @@ static LONG examine(struct fnode *file, struct ExAllData *ead, ULONG size, ULONG
     return 0;
 }
 
-static LONG examine_all(struct filehandle *dir, struct ExAllData *ead, ULONG size, ULONG type)
+static LONG examine_next(struct filehandle    *dir,
+                         struct FileInfoBlock *FIB)
+{
+  int i;
+  char * src, * dest;
+  struct fnode * file = (struct fnode *)FIB->fib_DiskKey;
+  
+  if (file == NULL)
+    return ERROR_NO_MORE_ENTRIES;
+  
+  if ( (file->type) == ST_USERDIR)
+  {
+    /* we're going to enter the dir and examine the first entry
+       in the directory which happens to have the same name as
+       the directory we just stepped on.*/
+    file = (struct fnode *)((struct vnode*)file)->list.mlh_Head;
+    
+    if (file != NULL)
+    {
+      /* for the next examination advance to next dir entry. */
+      FIB->fib_DiskKey = (LONG)((struct vnode*)file)->node.mln_Succ;
+    }
+    else
+    {
+      file = (struct fnode*)((struct vnode*)file)->node.mln_Succ;
+      FIB->fib_DiskKey = (LONG)file;
+    }  
+      
+  }
+  else
+  {
+    file = (struct fnode *)file->node.mln_Succ;
+    FIB->fib_DiskKey = (LONG)file;
+  }
+  
+  if ((file->node.mln_Succ && file->type == ST_FILE    ) || 
+      (file                && file->type == ST_USERDIR )    )
+  {
+    FIB->fib_OwnerUID		= 0;
+    FIB->fib_OwnerGID		= 0;
+  
+    FIB->fib_Date.ds_Days	= 0;
+    FIB->fib_Date.ds_Minute	= 0;
+    FIB->fib_Date.ds_Tick	= 0;
+    FIB->fib_Protection		= file->protect;
+    FIB->fib_Size		= file->size;
+
+    FIB->fib_DirEntryType 	= file->type;
+  
+    /* fast copying of the filename */
+    src  = file->name;
+    dest = FIB->fib_FileName;
+
+    for (i=0; i<MAXFILENAMELENGTH-1;i++)
+      if(! (*dest++=*src++) )
+        break;
+
+    /* fast copying of the comment */
+    src  = file->comment;
+    dest = FIB->fib_Comment;
+
+    for (i=0; i<MAXCOMMENTLENGTH-1;i++)
+      if(! (*dest++=*src++) )
+        break;
+
+    return 0;
+  }
+  else 
+    return ERROR_NO_MORE_ENTRIES;
+}
+
+static LONG examine_all(struct filehandle *dir, 
+                        struct ExAllData *ead, 
+                        ULONG size, 
+                        ULONG type)
 {
     STRPTR end;
     struct ExAllData *last=NULL;
     struct fnode *ent;
     LONG error;
+    LONG dummy; /* not anything is done with this value but passed to examine */
     end=(STRPTR)ead+size;
     if(dir->node->type!=ST_USERDIR)
 	return ERROR_OBJECT_WRONG_TYPE;
@@ -1046,7 +1130,7 @@ static LONG examine_all(struct filehandle *dir, struct ExAllData *ead, ULONG siz
     ent->usecount--;
     do
     {
-	error=examine(ent,ead,end-(STRPTR)ead,type);
+	error=examine(ent,ead,end-(STRPTR)ead,type,&dummy);
 	if(error==ERROR_BUFFER_OVERFLOW)
 	{
 	    if(last==NULL)
@@ -1252,12 +1336,26 @@ void deventry(struct rambase *rambase)
 			struct ExAllData *ead; buffer to be filled
 			ULONG size;    size of the buffer
 			ULONG type;    type of information to get
+			iofs->io_DirPos; leave current position so
+					ExNext() knows where to find
+					next object
 		    */
 		    error=examine((struct fnode *)((struct filehandle *)iofs->IOFS.io_Unit)->node,
 				  iofs->io_Union.io_EXAMINE.io_ead,
 				  iofs->io_Union.io_EXAMINE.io_Size,
-                                  iofs->io_Union.io_EXAMINE.io_Mode);
+                                  iofs->io_Union.io_EXAMINE.io_Mode,
+                                  &(iofs->io_DirPos));
 		    break;
+
+		case FSA_EXAMINE_NEXT:
+		    /*
+		       Get information about the next object 
+		       Unit *current; current object
+		       struct FileInfoBlock *fib; 
+		    */
+	            error=examine_next((struct filehandle *)iofs->IOFS.io_Unit,
+	    		               iofs->io_Union.io_EXAMINE_NEXT.io_fib);
+	            break;
 
 		case FSA_EXAMINE_ALL:
 		    /*

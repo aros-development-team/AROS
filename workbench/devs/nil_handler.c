@@ -246,6 +246,7 @@ AROS_LH1(void, beginio,
 
         case FSA_SET_FILE_SIZE:
         case FSA_EXAMINE:
+        case FSA_EXAMINE_NEXT:
         case FSA_EXAMINE_ALL:
         case FSA_CREATE_DIR:
         case FSA_CREATE_HARDLINK:
