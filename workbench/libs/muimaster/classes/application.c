@@ -9,6 +9,8 @@
 #include <exec/types.h>
 #include <devices/timer.h>
 #include <dos/dostags.h>
+#include <dos/datetime.h>
+#include <utility/date.h>
 #include <stdio.h>
 
 #include <clib/alib_protos.h>
@@ -60,6 +62,10 @@ struct MUI_ApplicationData
     STRPTR          	    app_HelpFile;
     STRPTR          	    app_Title;
     STRPTR          	    app_Version;
+    BOOL                    app_VersionAllocated;
+    STRPTR                  app_Version_Number;
+    STRPTR                  app_Version_Date;
+    STRPTR                  app_Version_Extra;
     ULONG           	    app_SleepCount;
     ULONG	    	    app_TimerOutstanding;
     ULONG           	    app_MenuAction; /* Remember last action */
@@ -246,7 +252,8 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ApplicationData *data;
     struct TagItem        *tags,*tag;
     BOOL   bad_childs = FALSE;
-
+    struct Date *date;
+    
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj)
 	return FALSE;
@@ -371,6 +378,15 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	case MUIA_Application_Version:
 	    data->app_Version = (STRPTR)tag->ti_Data;
 	    break;
+        case MUIA_Application_Version_Number:
+            data->app_Version_Number = (STRPTR) tag->ti_Data;
+            break;
+        case MUIA_Application_Version_Date:
+            data->app_Version_Date = (STRPTR) tag->ti_Data;
+            break;
+        case MUIA_Application_Version_Extra:
+            data->app_Version_Extra = (STRPTR) tag->ti_Data;
+            break;
 	case MUIA_Application_Window:
 	    if (tag->ti_Data) DoMethod(obj,OM_ADDMEMBER,tag->ti_Data);
 	    else bad_childs = TRUE;
@@ -404,6 +420,65 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    }
 	}
 	}
+    }
+
+    /* create MUIA_Application_Version if NULL */
+    if
+    (
+           data->app_Version == NULL 
+        && data->app_Title != NULL && data->app_Version_Number != NULL
+    )
+    {
+        STRPTR result = NULL;
+        ULONG  length = 0;
+        
+        /* Calculate length */
+        length = strlen("$VER: ") + strlen(data->app_Title) + 1 /* space */ 
+               + strlen(data->app_Version_Number) + 1 /* NULL */;
+        
+        if (data->app_Version_Date != NULL)
+        {
+            length += 1 /* space */ + 1 /* ( */ 
+                    + strlen(data->app_Version_Date) + 1 /* ) */;
+        }
+        
+        if (data->app_Version_Extra != NULL)
+        {
+            length += 1 /* space */ + 1 /* [ */
+                    + strlen(data->app_Version_Extra) + 1 /* ] */;
+        }
+        
+        /* Allocate memory */
+        result = AllocVec(length, MEMF_ANY);
+                
+        if (result != NULL)
+        {
+            result[0] = '\0';
+            
+            /* Format string */
+            strlcat(result, "$VER: ", length);
+            strlcat(result, data->app_Title, length);
+            strlcat(result, " ", length);
+            strlcat(result, data->app_Version_Number, length);
+            
+            if (data->app_Version_Date != NULL)
+            {
+                strlcat(result, " (", length);
+                strlcat(result, data->app_Version_Date, length);
+                strlcat(result, ")", length);
+            }
+            
+            if (data->app_Version_Extra != NULL)
+            {
+                strlcat(result, " [", length);
+                strlcat(result, data->app_Version_Extra, length);
+                strlcat(result, "]", length);
+            }
+            
+            data->app_Version          = result;
+            data->app_VersionAllocated = TRUE;
+        }
+        
     }
 
     if (bad_childs)
@@ -501,6 +576,11 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->app_Menustrip)
 	MUI_DisposeObject(data->app_Menustrip);
+
+    if (data->app_VersionAllocated && data->app_Version != NULL)
+    {
+        FreeVec(data->app_Version);
+    }
 
     /* free commodities stuff */
     
@@ -666,6 +746,15 @@ static ULONG Application_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     case MUIA_Application_Version:
 	STORE = (IPTR)data->app_Version;
 	return(TRUE);
+    case MUIA_Application_Version_Number:
+        STORE = (IPTR) data->app_Version_Number;
+        return TRUE;
+    case MUIA_Application_Version_Date:
+        STORE = (IPTR) data->app_Version_Date;
+        return TRUE;
+    case MUIA_Application_Version_Extra:
+        STORE = (IPTR) data->app_Version_Extra;
+        return TRUE;
     case MUIA_Application_WindowList:
 	return GetAttr(MUIA_Family_List, data->app_WindowFamily, msg->opg_Storage);
     case MUIA_Application_Menustrip:

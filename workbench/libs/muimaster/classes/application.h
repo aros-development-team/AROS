@@ -94,17 +94,45 @@ struct MUIP_Application_OpenWindows		{ ULONG MethodID; };
 #define MUIA_Application_UseCommodities     	(MUIB_MUI|0x00425ee5) /* MUI: V10 i.. BOOL              */
 #define MUIA_Application_UsedClasses            (MUIB_MUI|0x0042e9a7) /* MUI undoc: V20 i.. STRPTR [] */
 #define MUIA_Application_UseRexx            	(MUIB_MUI|0x00422387) /* MUI: V10 i.. BOOL              */
-#define MUIA_Application_Version            	(MUIB_MUI|0x0042b33f) /* MUI: V4  i.g STRPTR            */
+
+/*+
+    [I-G] CONST_STRPTR
+    Standard DOS version string. Example: "$VER: Program 1.3 (14.11.03)".
+    Zune extension: If unspecified or NULL, it will be automatically 
+    constructed from MUIA_Application_Title, MUIA_Application_Version_Number,
+    MUIA_Application_Version_Date and MUIA_Application_Version_Extra as 
+    follows: "$VER: <title> <version> (<date>) [<extra>]".
++*/
+#define MUIA_Application_Version            	(MUIB_MUI|0x0042b33f)
+
 #define MUIA_Application_Window             	(MUIB_MUI|0x0042bfe0) /* MUI: V4  i.. Object *          */
 #define MUIA_Application_WindowList         	(MUIB_MUI|0x00429abe) /* MUI: V13 ..g struct List *     */
 
 #define MUIA_Application_Configdata         	(MUIB_Application | 0x00000000) /* Zune 20030407 .s. Object *     */
 
+/*+
+    [I-G] CONST_STRPTR
+    Version number. Examples: "1.5", "2.37.4b".
++*/
+#define MUIA_Application_Version_Number         (MUIB_Application | 0x00000001)
+
+/*+
+    [I-G] CONST_STRPTR
+    Date information on the standard international YYYY-MM-DD format. 
++*/
+#define MUIA_Application_Version_Date           (MUIB_Application | 0x00000002)
+
+/*+
+    [I-G] CONST_STRPTR
+    Arbitrary extra version information. Example: "nightly build".
++*/
+#define MUIA_Application_Version_Extra          (MUIB_Application | 0x00000003)
+
+
 /* MUI Obsolette tags */
 #ifdef MUI_OBSOLETE
 #define MUIA_Application_Menu							  (MUIB_MUI|0x00420e1f) /* MUI: V4  i.g struct NewMenu *  */
 #endif /* MUI_OBSOLETE */
-
 
 /**************************************************************************
  Structure used ba MUIM_Application_AddInputHandler/RemInputHandler
